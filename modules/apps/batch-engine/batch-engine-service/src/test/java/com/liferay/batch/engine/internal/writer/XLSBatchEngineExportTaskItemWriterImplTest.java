@@ -1,27 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.writer;
 
 import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.CSVUtil;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,12 +26,10 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.CellType;
-import org.apache.poi.ss.usermodel.CreationHelper;
-import org.apache.poi.ss.usermodel.DataFormat;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -65,20 +59,18 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 	@Test
 	public void testWriteRowsWithDefinedFieldNames2() throws Exception {
 		_testWriteRows(
-			Arrays.asList(
-				"createDate", "description", "id", "name_en", "name_hr"));
+			Arrays.asList("createDate", "description", "id", "name"));
 	}
 
 	@Test
 	public void testWriteRowsWithDefinedFieldNames3() throws Exception {
-		_testWriteRows(Arrays.asList("createDate", "id", "name_en"));
+		_testWriteRows(Arrays.asList("createDate", "id", "name"));
 	}
 
 	@Test
 	public void testWriteRowsWithDefinedFieldNames4() throws Exception {
 		_testWriteRows(
-			Arrays.asList(
-				"id", "name_hr", "name_en", "description", "createDate"));
+			Arrays.asList("id", "name", "description", "createDate"));
 	}
 
 	@Test
@@ -99,7 +91,7 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 		try (Workbook workbook = new XSSFWorkbook()) {
 			Sheet sheet = workbook.createSheet();
 
-			_populateRow(sheet.createRow(0), workbook, fieldNames);
+			_populateRow(sheet.createRow(0), fieldNames);
 
 			for (int i = 0; i < items.size(); i++) {
 				Item item = items.get(i);
@@ -110,22 +102,28 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 					int index = fieldName.indexOf(CharPool.UNDERLINE);
 
 					if (index == -1) {
-						Field field = fieldMap.get(fieldName);
+						ObjectValuePair<Field, Method> objectValuePair =
+							fieldNameObjectValuePairs.get(fieldName);
 
-						values.add(field.get(item));
+						Method method = objectValuePair.getValue();
+
+						values.add(method.invoke(item));
 					}
 					else {
-						Field field = fieldMap.get(
-							fieldName.substring(0, index));
+						ObjectValuePair<Field, Method> objectValuePair =
+							fieldNameObjectValuePairs.get(
+								fieldName.substring(0, index));
 
-						Map<?, ?> valueMap = (Map<?, ?>)field.get(item);
+						Method method = objectValuePair.getValue();
+
+						Map<?, ?> valueMap = (Map<?, ?>)method.invoke(item);
 
 						values.add(
 							valueMap.get(fieldName.substring(index + 1)));
 					}
 				}
 
-				_populateRow(sheet.createRow(i + 1), workbook, values);
+				_populateRow(sheet.createRow(i + 1), values);
 			}
 
 			ByteArrayOutputStream byteArrayOutputStream =
@@ -149,7 +147,7 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 		return expectedSheet.rowIterator();
 	}
 
-	private void _populateRow(Row row, Workbook workbook, List<?> cellValues) {
+	private void _populateRow(Row row, List<?> cellValues) {
 		for (int i = 0; i < cellValues.size(); i++) {
 			Object value = cellValues.get(i);
 
@@ -159,18 +157,38 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 				cell.setCellValue((Boolean)value);
 			}
 			else if (value instanceof Date) {
-				CellStyle cellStyle = workbook.createCellStyle();
+				cell.setCellValue(dateFormat.format(value));
+			}
+			else if (value instanceof Map) {
+				Map<?, ?> map = (Map<?, ?>)value;
 
-				CreationHelper creationHelper = workbook.getCreationHelper();
+				StringBundler sb = new StringBundler(map.size() * 3);
 
-				DataFormat dataFormat = creationHelper.createDataFormat();
+				Set<? extends Map.Entry<?, ?>> entries = map.entrySet();
 
-				cellStyle.setDataFormat(
-					dataFormat.getFormat("yyyy-mm-dd hh:mm:ss"));
+				Iterator<? extends Map.Entry<?, ?>> iterator =
+					entries.iterator();
 
-				cell.setCellStyle(cellStyle);
+				while (iterator.hasNext()) {
+					Map.Entry<?, ?> entry = iterator.next();
 
-				cell.setCellValue((Date)value);
+					sb.append(CSVUtil.encode(entry.getKey()));
+
+					sb.append(StringPool.COLON);
+
+					if (entry.getValue() != null) {
+						sb.append(CSVUtil.encode(entry.getValue()));
+					}
+					else {
+						sb.append(StringPool.BLANK);
+					}
+
+					if (iterator.hasNext()) {
+						sb.append(StringPool.COMMA_AND_SPACE);
+					}
+				}
+
+				cell.setCellValue(sb.toString());
 			}
 			else if (value instanceof Number) {
 				Number cellValue = (Number)value;
@@ -178,7 +196,13 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 				cell.setCellValue(cellValue.doubleValue());
 			}
 			else {
-				cell.setCellValue((String)value);
+				if (value == null) {
+					cell.setCellValue(StringPool.BLANK);
+
+					continue;
+				}
+
+				cell.setCellValue(String.valueOf(value));
 			}
 		}
 	}
@@ -190,7 +214,8 @@ public class XLSBatchEngineExportTaskItemWriterImplTest
 		try (XLSBatchEngineExportTaskItemWriterImpl
 				xlsBatchEngineExportTaskItemWriterImpl =
 					new XLSBatchEngineExportTaskItemWriterImpl(
-						fieldMap, fieldNames, unsyncByteArrayOutputStream)) {
+						null, 0, fieldNameObjectValuePairs, fieldNames,
+						unsyncByteArrayOutputStream, null)) {
 
 			for (Item[] items : getItemGroups()) {
 				xlsBatchEngineExportTaskItemWriterImpl.write(

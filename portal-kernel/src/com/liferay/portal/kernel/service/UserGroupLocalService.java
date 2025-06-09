@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -35,6 +26,7 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -59,6 +51,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.UserGroup"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -72,21 +67,26 @@ public interface UserGroupLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.portal.service.impl.UserGroupLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the user group local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link UserGroupLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	public void addGroupUserGroup(long groupId, long userGroupId);
+	public boolean addGroupUserGroup(long groupId, long userGroupId);
 
-	public void addGroupUserGroup(long groupId, UserGroup userGroup);
+	public boolean addGroupUserGroup(long groupId, UserGroup userGroup);
 
-	public void addGroupUserGroups(long groupId, List<UserGroup> userGroups);
+	public boolean addGroupUserGroups(long groupId, List<UserGroup> userGroups);
 
-	public void addGroupUserGroups(long groupId, long[] userGroupIds);
+	public boolean addGroupUserGroups(long groupId, long[] userGroupIds);
 
-	public void addTeamUserGroup(long teamId, long userGroupId);
+	public UserGroup addOrUpdateUserGroup(
+			String externalReferenceCode, long userId, long companyId,
+			String name, String description, ServiceContext serviceContext)
+		throws PortalException;
 
-	public void addTeamUserGroup(long teamId, UserGroup userGroup);
+	public boolean addTeamUserGroup(long teamId, long userGroupId);
 
-	public void addTeamUserGroups(long teamId, List<UserGroup> userGroups);
+	public boolean addTeamUserGroup(long teamId, UserGroup userGroup);
 
-	public void addTeamUserGroups(long teamId, long[] userGroupIds);
+	public boolean addTeamUserGroups(long teamId, List<UserGroup> userGroups);
+
+	public boolean addTeamUserGroups(long teamId, long[] userGroupIds);
 
 	/**
 	 * Adds a user group.
@@ -108,8 +108,8 @@ public interface UserGroupLocalService
 	 * @return the user group
 	 */
 	public UserGroup addUserGroup(
-			long userId, long companyId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long companyId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -125,13 +125,29 @@ public interface UserGroupLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public UserGroup addUserGroup(UserGroup userGroup);
 
-	public void addUserUserGroup(long userId, long userGroupId);
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserUserGroup(long userId, long userGroupId)
+		throws PortalException;
 
-	public void addUserUserGroup(long userId, UserGroup userGroup);
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserUserGroup(long userId, UserGroup userGroup)
+		throws PortalException;
 
-	public void addUserUserGroups(long userId, List<UserGroup> userGroups);
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserUserGroups(long userId, List<UserGroup> userGroups)
+		throws PortalException;
 
-	public void addUserUserGroups(long userId, long[] userGroupIds);
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserUserGroups(long userId, long[] userGroupIds)
+		throws PortalException;
 
 	public void clearGroupUserGroups(long groupId);
 
@@ -298,24 +314,9 @@ public interface UserGroupLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public UserGroup fetchUserGroup(long companyId, String name);
 
-	/**
-	 * Returns the user group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user group's external reference code
-	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public UserGroup fetchUserGroupByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchUserGroupByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public UserGroup fetchUserGroupByReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the user group with the matching UUID and company.
@@ -424,17 +425,9 @@ public interface UserGroupLocalService
 	public UserGroup getUserGroup(long companyId, String name)
 		throws PortalException;
 
-	/**
-	 * Returns the user group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user group's external reference code
-	 * @return the matching user group
-	 * @throws PortalException if a matching user group could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public UserGroup getUserGroupByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -475,6 +468,11 @@ public interface UserGroupLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<UserGroup> getUserGroups(
 		long companyId, String name, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<UserGroup> getUserGroups(
+		long companyId, String name, int start, int end,
+		OrderByComparator<UserGroup> orderByComparator);
 
 	/**
 	 * Returns all the user groups with the primary keys.
@@ -752,9 +750,15 @@ public interface UserGroupLocalService
 	 */
 	public void unsetTeamUserGroups(long teamId, long[] userGroupIds);
 
+	@Indexable(type = IndexableType.REINDEX)
+	public UserGroup updateExternalReferenceCode(
+			UserGroup userGroup, String externalReferenceCode)
+		throws PortalException;
+
 	/**
 	 * Updates the user group.
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param companyId the primary key of the user group's company
 	 * @param userGroupId the primary key of the user group
 	 * @param name the user group's name
@@ -765,8 +769,8 @@ public interface UserGroupLocalService
 	 * @return the user group
 	 */
 	public UserGroup updateUserGroup(
-			long companyId, long userGroupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long companyId, long userGroupId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**

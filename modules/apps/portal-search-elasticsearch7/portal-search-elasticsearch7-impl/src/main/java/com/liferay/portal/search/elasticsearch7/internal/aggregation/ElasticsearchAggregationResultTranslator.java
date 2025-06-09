@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.aggregation;
@@ -91,9 +82,7 @@ import com.liferay.portal.search.elasticsearch7.internal.hits.SearchHitsTranslat
 import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.geolocation.GeoLocationPoint;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.join.aggregations.Children;
@@ -194,8 +183,7 @@ public class ElasticsearchAggregationResultTranslator
 				children.getName(), children.getDocCount());
 
 		childrenAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
-				children.getAggregations(), childrenAggregation));
+			translate(children.getAggregations(), childrenAggregation));
 
 		return childrenAggregationResult;
 	}
@@ -204,7 +192,7 @@ public class ElasticsearchAggregationResultTranslator
 	public DateHistogramAggregationResult visit(
 		DateHistogramAggregation dateHistogramAggregation) {
 
-		return translateBuckets(
+		return _translateBuckets(
 			(Histogram)_elasticsearchAggregation,
 			_aggregationResults.dateHistogram(
 				_elasticsearchAggregation.getName()),
@@ -215,7 +203,7 @@ public class ElasticsearchAggregationResultTranslator
 	public RangeAggregationResult visit(
 		DateRangeAggregation dateRangeAggregation) {
 
-		return translateBuckets(
+		return _translateBuckets(
 			(Range)_elasticsearchAggregation,
 			_aggregationResults.range(_elasticsearchAggregation.getName()),
 			dateRangeAggregation);
@@ -233,7 +221,7 @@ public class ElasticsearchAggregationResultTranslator
 					sampler.getName(), sampler.getDocCount());
 
 		diversifiedSamplerAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
+			translate(
 				sampler.getAggregations(), diversifiedSamplerAggregation));
 
 		return diversifiedSamplerAggregationResult;
@@ -261,8 +249,7 @@ public class ElasticsearchAggregationResultTranslator
 			_aggregationResults.filter(filter.getName(), filter.getDocCount());
 
 		filterAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
-				filter.getAggregations(), filterAggregation));
+			translate(filter.getAggregations(), filterAggregation));
 
 		return filterAggregationResult;
 	}
@@ -273,7 +260,7 @@ public class ElasticsearchAggregationResultTranslator
 
 		Filters filters = (Filters)_elasticsearchAggregation;
 
-		return translateBuckets(
+		return _translateBuckets(
 			filters, _aggregationResults.filters(filters.getName()),
 			filtersAggregation);
 	}
@@ -285,8 +272,8 @@ public class ElasticsearchAggregationResultTranslator
 		GeoBounds geoBounds = (GeoBounds)_elasticsearchAggregation;
 
 		return _aggregationResults.geoBounds(
-			geoBounds.getName(), translateGeoPoint(geoBounds.topLeft()),
-			translateGeoPoint(geoBounds.bottomRight()));
+			geoBounds.getName(), _translateGeoPoint(geoBounds.topLeft()),
+			_translateGeoPoint(geoBounds.bottomRight()));
 	}
 
 	@Override
@@ -298,7 +285,7 @@ public class ElasticsearchAggregationResultTranslator
 		GeoPoint geoPoint = geoCentroid.centroid();
 
 		return _aggregationResults.geoCentroid(
-			geoCentroid.getName(), translateGeoPoint(geoPoint),
+			geoCentroid.getName(), _translateGeoPoint(geoPoint),
 			geoCentroid.count());
 	}
 
@@ -306,7 +293,7 @@ public class ElasticsearchAggregationResultTranslator
 	public GeoDistanceAggregationResult visit(
 		GeoDistanceAggregation geoDistanceAggregation) {
 
-		return translateBuckets(
+		return _translateBuckets(
 			(Range)_elasticsearchAggregation,
 			_aggregationResults.geoDistance(
 				_elasticsearchAggregation.getName()),
@@ -319,7 +306,7 @@ public class ElasticsearchAggregationResultTranslator
 
 		GeoGrid geoGrid = (GeoGrid)_elasticsearchAggregation;
 
-		return translateBuckets(
+		return _translateBuckets(
 			geoGrid, _aggregationResults.geoHashGrid(geoGrid.getName()),
 			geoHashGridAggregation);
 	}
@@ -332,8 +319,7 @@ public class ElasticsearchAggregationResultTranslator
 			_aggregationResults.global(global.getName(), global.getDocCount());
 
 		globalAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
-				global.getAggregations(), globalAggregation));
+			translate(global.getAggregations(), globalAggregation));
 
 		return globalAggregationResult;
 	}
@@ -342,7 +328,7 @@ public class ElasticsearchAggregationResultTranslator
 	public HistogramAggregationResult visit(
 		HistogramAggregation histogramAggregation) {
 
-		return translateBuckets(
+		return _translateBuckets(
 			(Histogram)_elasticsearchAggregation,
 			_aggregationResults.histogram(_elasticsearchAggregation.getName()),
 			histogramAggregation);
@@ -373,8 +359,7 @@ public class ElasticsearchAggregationResultTranslator
 				missing.getName(), missing.getDocCount());
 
 		missingAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
-				missing.getAggregations(), missingAggregation));
+			translate(missing.getAggregations(), missingAggregation));
 
 		return missingAggregationResult;
 	}
@@ -386,9 +371,8 @@ public class ElasticsearchAggregationResultTranslator
 		NestedAggregationResult nestedAggregationResult =
 			_aggregationResults.nested(nested.getName(), nested.getDocCount());
 
-		List<AggregationResult> aggregationResults =
-			translateAggregationResults(
-				nested.getAggregations(), nestedAggregation);
+		List<AggregationResult> aggregationResults = translate(
+			nested.getAggregations(), nestedAggregation);
 
 		nestedAggregationResult.addChildrenAggregationResults(
 			aggregationResults);
@@ -431,7 +415,7 @@ public class ElasticsearchAggregationResultTranslator
 
 	@Override
 	public RangeAggregationResult visit(RangeAggregation rangeAggregation) {
-		return translateBuckets(
+		return _translateBuckets(
 			(Range)_elasticsearchAggregation,
 			_aggregationResults.range(_elasticsearchAggregation.getName()),
 			rangeAggregation);
@@ -448,7 +432,7 @@ public class ElasticsearchAggregationResultTranslator
 				reverseNested.getName(), reverseNested.getDocCount());
 
 		reverseNestedAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
+			translate(
 				reverseNested.getAggregations(), reverseNestedAggregation));
 
 		return reverseNestedAggregationResult;
@@ -465,8 +449,7 @@ public class ElasticsearchAggregationResultTranslator
 				sampler.getName(), sampler.getDocCount());
 
 		samplerAggregationResult.addChildrenAggregationResults(
-			translateAggregationResults(
-				sampler.getAggregations(), samplerAggregation));
+			translate(sampler.getAggregations(), samplerAggregation));
 
 		return samplerAggregationResult;
 	}
@@ -488,7 +471,7 @@ public class ElasticsearchAggregationResultTranslator
 
 		Terms terms = (Terms)_elasticsearchAggregation;
 
-		return translateBuckets(
+		return _translateBuckets(
 			terms,
 			_aggregationResults.significantTerms(
 				terms.getName(), terms.getDocCountError(),
@@ -502,7 +485,7 @@ public class ElasticsearchAggregationResultTranslator
 
 		Terms terms = (Terms)_elasticsearchAggregation;
 
-		return translateBuckets(
+		return _translateBuckets(
 			terms,
 			_aggregationResults.significantText(
 				terms.getName(), terms.getDocCountError(),
@@ -530,7 +513,7 @@ public class ElasticsearchAggregationResultTranslator
 	public TermsAggregationResult visit(TermsAggregation termsAggregation) {
 		Terms terms = (Terms)_elasticsearchAggregation;
 
-		return translateBuckets(
+		return _translateBuckets(
 			terms,
 			_aggregationResults.terms(
 				terms.getName(), terms.getDocCountError(),
@@ -570,7 +553,7 @@ public class ElasticsearchAggregationResultTranslator
 			weightedAvg.getName(), weightedAvg.getValue());
 	}
 
-	protected Stream<AggregationResult> translate(
+	protected List<AggregationResult> translate(
 		Aggregations elasticsearchAggregations, Aggregation aggregation) {
 
 		ElasticsearchAggregationResultsTranslator
@@ -583,20 +566,7 @@ public class ElasticsearchAggregationResultTranslator
 			elasticsearchAggregations);
 	}
 
-	protected List<AggregationResult> translateAggregationResults(
-		Aggregations elasticsearchAggregations, Aggregation aggregation) {
-
-		List<AggregationResult> aggregationResults = new ArrayList<>();
-
-		Stream<AggregationResult> stream = translate(
-			elasticsearchAggregations, aggregation);
-
-		stream.forEach(aggregationResults::add);
-
-		return aggregationResults;
-	}
-
-	protected <T extends BucketAggregationResult> T translateBuckets(
+	private <T extends BucketAggregationResult> T _translateBuckets(
 		MultiBucketsAggregation multiBucketsAggregation,
 		T bucketAggregationResult, Aggregation aggregation) {
 
@@ -610,17 +580,19 @@ public class ElasticsearchAggregationResultTranslator
 					multiBucketAggregationBucket.getKeyAsString(),
 					multiBucketAggregationBucket.getDocCount());
 
-				Stream<AggregationResult> stream = translate(
-					multiBucketAggregationBucket.getAggregations(),
-					aggregation);
+				for (AggregationResult aggregationResult :
+						translate(
+							multiBucketAggregationBucket.getAggregations(),
+							aggregation)) {
 
-				stream.forEach(bucket::addChildAggregationResult);
+					bucket.addChildAggregationResult(aggregationResult);
+				}
 			});
 
 		return bucketAggregationResult;
 	}
 
-	protected GeoLocationPoint translateGeoPoint(GeoPoint geoPoint) {
+	private GeoLocationPoint _translateGeoPoint(GeoPoint geoPoint) {
 		if (geoPoint == null) {
 			return null;
 		}

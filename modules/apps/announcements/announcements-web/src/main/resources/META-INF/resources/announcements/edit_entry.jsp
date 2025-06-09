@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -76,90 +67,93 @@ if (portletTitleBasedNavigation) {
 
 		<aui:model-context bean="<%= entry %>" model="<%= AnnouncementsEntry.class %>" />
 
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
-				<aui:input autocomplete="off" id="titleEditor" label='<%= LanguageUtil.get(request, "title") %>' name="title" required="<%= true %>" title="" type="text" value="<%= HtmlUtil.escape(title) %>">
-					<aui:validator name="maxLength"><%= ModelHintsUtil.getMaxLength(AnnouncementsEntry.class.getName(), "title") %></aui:validator>
-				</aui:input>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset>
+					<aui:input autocomplete="off" id="titleEditor" label='<%= LanguageUtil.get(request, "title") %>' name="title" required="<%= true %>" title="" type="text" value="<%= HtmlUtil.escape(title) %>">
+						<aui:validator name="maxLength"><%= ModelHintsUtil.getMaxLength(AnnouncementsEntry.class.getName(), "title") %></aui:validator>
+					</aui:input>
 
-				<liferay-editor:editor
-					contents="<%= content %>"
-					editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.portlet.announcements.edit_entry.jsp") %>'
-					name="contentEditor"
-					placeholder="content"
-				/>
+					<liferay-editor:editor
+						contents="<%= content %>"
+						editorName='<%= PropsUtil.get("editor.wysiwyg.portal-web.docroot.html.portlet.announcements.edit_entry.jsp") %>'
+						name="contentEditor"
+						placeholder="content"
+						required="<%= true %>"
+					/>
 
-				<aui:input name="content" type="hidden" />
-			</aui:fieldset>
+					<aui:input name="content" type="hidden" />
+				</aui:fieldset>
 
-			<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="configuration">
-				<c:choose>
-					<c:when test="<%= entry != null %>">
-						<%@ include file="/announcements/entry_scope.jspf" %>
-					</c:when>
-					<c:otherwise>
+				<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="configuration">
+					<c:choose>
+						<c:when test="<%= entry != null %>">
+							<%@ include file="/announcements/entry_scope.jspf" %>
+						</c:when>
+						<c:otherwise>
+
+							<%
+							String distributionScope = ParamUtil.getString(request, "distributionScope");
+
+							long classNameId = 0;
+							long classPK = 0;
+
+							String[] distributionScopeArray = StringUtil.split(distributionScope);
+
+							if (distributionScopeArray.length == 2) {
+								classNameId = GetterUtil.getLong(distributionScopeArray[0]);
+								classPK = GetterUtil.getLong(distributionScopeArray[1]);
+							}
+
+							boolean submitOnChange = false;
+							%>
+
+							<%@ include file="/announcements/entry_select_scope.jspf" %>
+						</c:otherwise>
+					</c:choose>
+
+					<aui:input name="url" />
+
+					<aui:select name="type">
 
 						<%
-						String distributionScope = ParamUtil.getString(request, "distributionScope");
-
-						long classNameId = 0;
-						long classPK = 0;
-
-						String[] distributionScopeArray = StringUtil.split(distributionScope);
-
-						if (distributionScopeArray.length == 2) {
-							classNameId = GetterUtil.getLong(distributionScopeArray[0]);
-							classPK = GetterUtil.getLong(distributionScopeArray[1]);
-						}
-
-						boolean submitOnChange = false;
+						for (String curType : AnnouncementsEntryConstants.TYPES) {
 						%>
 
-						<%@ include file="/announcements/entry_select_scope.jspf" %>
-					</c:otherwise>
-				</c:choose>
+							<aui:option label="<%= curType %>" selected="<%= (entry != null) && curType.equals(entry.getType()) %>" />
 
-				<aui:input name="url" />
+						<%
+						}
+						%>
 
-				<aui:select name="type">
+					</aui:select>
 
-					<%
-					for (String curType : AnnouncementsEntryConstants.TYPES) {
-					%>
+					<c:choose>
+						<c:when test="<%= alert %>">
+							<aui:select disabled="<%= true %>" name="priority">
+								<aui:option label="important" selected="<%= true %>" value="1" />
+							</aui:select>
+						</c:when>
+						<c:otherwise>
+							<aui:select name="priority">
+								<aui:option label="normal" selected="<%= (entry != null) && (entry.getPriority() == 0) %>" value="0" />
+								<aui:option label="important" selected="<%= (entry != null) && (entry.getPriority() == 1) %>" value="1" />
+							</aui:select>
+						</c:otherwise>
+					</c:choose>
 
-						<aui:option label="<%= curType %>" selected="<%= (entry != null) && curType.equals(entry.getType()) %>" />
+					<aui:input dateTogglerCheckboxLabel="display-immediately" disabled="<%= displayImmediately %>" name="displayDate" />
 
-					<%
-					}
-					%>
+					<aui:input name="expirationDate" />
+				</aui:fieldset>
 
-				</aui:select>
+				<div class="sheet-footer">
+					<aui:button primary="<%= true %>" type="submit" />
 
-				<c:choose>
-					<c:when test="<%= alert %>">
-						<aui:select disabled="<%= true %>" name="priority">
-							<aui:option label="important" selected="<%= true %>" value="1" />
-						</aui:select>
-					</c:when>
-					<c:otherwise>
-						<aui:select name="priority">
-							<aui:option label="normal" selected="<%= (entry != null) && (entry.getPriority() == 0) %>" value="0" />
-							<aui:option label="important" selected="<%= (entry != null) && (entry.getPriority() == 1) %>" value="1" />
-						</aui:select>
-					</c:otherwise>
-				</c:choose>
-
-				<aui:input dateTogglerCheckboxLabel="display-immediately" disabled="<%= displayImmediately %>" name="displayDate" />
-
-				<aui:input name="expirationDate" />
-			</aui:fieldset>
-
-			<div class="sheet-footer">
-				<aui:button primary="<%= true %>" type="submit" />
-
-				<aui:button href="<%= redirect %>" type="cancel" />
+					<aui:button href="<%= redirect %>" type="cancel" />
+				</div>
 			</div>
-		</aui:fieldset-group>
+		</div>
 	</aui:form>
 </div>
 

@@ -24,31 +24,28 @@
 	<bean class="com.liferay.portlet.asset.service.impl.AssetCategoryServiceImpl" id="com.liferay.asset.kernel.service.AssetCategoryService" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryModelArgumentsResolver" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetCategoryPersistence" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryFinderImpl" id="com.liferay.asset.kernel.service.persistence.AssetCategoryFinder" />
-	<bean class="com.liferay.portlet.asset.service.impl.AssetCategoryPropertyLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetCategoryPropertyLocalService" />
-	<bean class="com.liferay.portlet.asset.service.impl.AssetCategoryPropertyServiceImpl" id="com.liferay.asset.kernel.service.AssetCategoryPropertyService" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryPropertyModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryPropertyModelArgumentsResolver" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryPropertyPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetCategoryPropertyPersistence" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetCategoryPropertyFinderImpl" id="com.liferay.asset.kernel.service.persistence.AssetCategoryPropertyFinder" />
 	<bean class="com.liferay.portlet.asset.service.impl.AssetEntryLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetEntryLocalService" />
 	<bean class="com.liferay.portlet.asset.service.impl.AssetEntryServiceImpl" id="com.liferay.asset.kernel.service.AssetEntryService" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetEntryModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetEntryModelArgumentsResolver" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetEntryPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetEntryPersistence" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetEntryFinderImpl" id="com.liferay.asset.kernel.service.persistence.AssetEntryFinder" />
-	<bean class="com.liferay.portlet.asset.service.impl.AssetLinkLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetLinkLocalService" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetLinkModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetLinkModelArgumentsResolver" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetLinkPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetLinkPersistence" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetLinkFinderImpl" id="com.liferay.asset.kernel.service.persistence.AssetLinkFinder" />
 	<bean class="com.liferay.portlet.asset.service.impl.AssetTagLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetTagLocalService" />
 	<bean class="com.liferay.portlet.asset.service.impl.AssetTagServiceImpl" id="com.liferay.asset.kernel.service.AssetTagService" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetTagModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetTagModelArgumentsResolver" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetTagPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetTagPersistence" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetTagFinderImpl" id="com.liferay.asset.kernel.service.persistence.AssetTagFinder" />
+	<bean class="com.liferay.portlet.asset.service.impl.AssetTagGroupRelLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetTagGroupRelLocalService" />
+	<bean class="com.liferay.portlet.asset.service.impl.AssetTagGroupRelServiceImpl" id="com.liferay.asset.kernel.service.AssetTagGroupRelService" />
+	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetTagGroupRelModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetTagGroupRelModelArgumentsResolver" />
+	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetTagGroupRelPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetTagGroupRelPersistence" />
 	<bean class="com.liferay.portlet.asset.service.impl.AssetVocabularyLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetVocabularyLocalService" />
 	<bean class="com.liferay.portlet.asset.service.impl.AssetVocabularyServiceImpl" id="com.liferay.asset.kernel.service.AssetVocabularyService" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyModelArgumentsResolver" />
 	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetVocabularyPersistence" />
-	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyFinderImpl" id="com.liferay.asset.kernel.service.persistence.AssetVocabularyFinder" />
+	<bean class="com.liferay.portlet.asset.service.impl.AssetVocabularyGroupRelLocalServiceImpl" id="com.liferay.asset.kernel.service.AssetVocabularyGroupRelLocalService" />
+	<bean class="com.liferay.portlet.asset.service.impl.AssetVocabularyGroupRelServiceImpl" id="com.liferay.asset.kernel.service.AssetVocabularyGroupRelService" />
+	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyGroupRelModelArgumentsResolver" id="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyGroupRelModelArgumentsResolver" />
+	<bean class="com.liferay.portlet.asset.service.persistence.impl.AssetVocabularyGroupRelPersistenceImpl" id="com.liferay.asset.kernel.service.persistence.AssetVocabularyGroupRelPersistence" />
 	<bean class="com.liferay.portlet.documentlibrary.service.impl.DLAppLocalServiceImpl" id="com.liferay.document.library.kernel.service.DLAppLocalService" />
 	<bean class="com.liferay.portlet.documentlibrary.service.impl.DLAppServiceImpl" id="com.liferay.document.library.kernel.service.DLAppService" />
 	<bean class="com.liferay.portlet.documentlibrary.service.impl.DLAppHelperLocalServiceImpl" id="com.liferay.document.library.kernel.service.DLAppHelperLocalService" />
@@ -130,6 +127,7 @@
 	<bean class="com.liferay.portal.service.impl.CountryServiceImpl" id="com.liferay.portal.kernel.service.CountryService" />
 	<bean class="com.liferay.portal.service.persistence.impl.CountryModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.CountryModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.CountryPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.CountryPersistence" />
+	<bean class="com.liferay.portal.service.impl.CountryLocalizationCTServiceImpl" id="com.liferay.portal.kernel.service.CountryLocalizationCTService" />
 	<bean class="com.liferay.portal.service.persistence.impl.CountryLocalizationModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.CountryLocalizationModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.CountryLocalizationPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.CountryLocalizationPersistence" />
 	<bean class="com.liferay.portal.service.impl.EmailAddressLocalServiceImpl" id="com.liferay.portal.kernel.service.EmailAddressLocalService" />
@@ -191,8 +189,6 @@
 	<bean class="com.liferay.portal.service.persistence.impl.OrganizationModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.OrganizationModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.OrganizationPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.OrganizationPersistence" />
 	<bean class="com.liferay.portal.service.persistence.impl.OrganizationFinderImpl" id="com.liferay.portal.kernel.service.persistence.OrganizationFinder" />
-	<bean class="com.liferay.portal.service.persistence.impl.OrgGroupRoleModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.OrgGroupRoleModelArgumentsResolver" />
-	<bean class="com.liferay.portal.service.persistence.impl.OrgGroupRolePersistenceImpl" id="com.liferay.portal.kernel.service.persistence.OrgGroupRolePersistence" />
 	<bean class="com.liferay.portal.service.impl.OrgLaborLocalServiceImpl" id="com.liferay.portal.kernel.service.OrgLaborLocalService" />
 	<bean class="com.liferay.portal.service.impl.OrgLaborServiceImpl" id="com.liferay.portal.kernel.service.OrgLaborService" />
 	<bean class="com.liferay.portal.service.persistence.impl.OrgLaborModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.OrgLaborModelArgumentsResolver" />
@@ -253,11 +249,15 @@
 	<bean class="com.liferay.portal.service.impl.RegionServiceImpl" id="com.liferay.portal.kernel.service.RegionService" />
 	<bean class="com.liferay.portal.service.persistence.impl.RegionModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.RegionModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.RegionPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.RegionPersistence" />
+	<bean class="com.liferay.portal.service.impl.RegionLocalizationCTServiceImpl" id="com.liferay.portal.kernel.service.RegionLocalizationCTService" />
 	<bean class="com.liferay.portal.service.persistence.impl.RegionLocalizationModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.RegionLocalizationModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.RegionLocalizationPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.RegionLocalizationPersistence" />
 	<bean class="com.liferay.portal.service.impl.ReleaseLocalServiceImpl" id="com.liferay.portal.kernel.service.ReleaseLocalService" />
 	<bean class="com.liferay.portal.service.persistence.impl.ReleaseModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.ReleaseModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.ReleasePersistenceImpl" id="com.liferay.portal.kernel.service.persistence.ReleasePersistence" />
+	<bean class="com.liferay.portal.service.impl.RememberMeTokenLocalServiceImpl" id="com.liferay.portal.kernel.service.RememberMeTokenLocalService" />
+	<bean class="com.liferay.portal.service.persistence.impl.RememberMeTokenModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.RememberMeTokenModelArgumentsResolver" />
+	<bean class="com.liferay.portal.service.persistence.impl.RememberMeTokenPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.RememberMeTokenPersistence" />
 	<bean class="com.liferay.portal.service.impl.RepositoryLocalServiceImpl" id="com.liferay.portal.kernel.service.RepositoryLocalService" />
 	<bean class="com.liferay.portal.service.impl.RepositoryServiceImpl" id="com.liferay.portal.kernel.service.RepositoryService" />
 	<bean class="com.liferay.portal.service.persistence.impl.RepositoryModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.RepositoryModelArgumentsResolver" />
@@ -326,6 +326,7 @@
 	<bean class="com.liferay.portal.service.persistence.impl.UserNotificationDeliveryModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.UserNotificationDeliveryModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.UserNotificationDeliveryPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.UserNotificationDeliveryPersistence" />
 	<bean class="com.liferay.portal.service.impl.UserNotificationEventLocalServiceImpl" id="com.liferay.portal.kernel.service.UserNotificationEventLocalService" />
+	<bean class="com.liferay.portal.service.impl.UserNotificationEventServiceImpl" id="com.liferay.portal.kernel.service.UserNotificationEventService" />
 	<bean class="com.liferay.portal.service.persistence.impl.UserNotificationEventModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.UserNotificationEventModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.UserNotificationEventPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.UserNotificationEventPersistence" />
 	<bean class="com.liferay.portal.service.impl.UserTrackerLocalServiceImpl" id="com.liferay.portal.kernel.service.UserTrackerLocalService" />
@@ -345,6 +346,7 @@
 	<bean class="com.liferay.portal.service.persistence.impl.WebsiteModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.WebsiteModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.WebsitePersistenceImpl" id="com.liferay.portal.kernel.service.persistence.WebsitePersistence" />
 	<bean class="com.liferay.portal.service.impl.WorkflowDefinitionLinkLocalServiceImpl" id="com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService" />
+	<bean class="com.liferay.portal.service.impl.WorkflowDefinitionLinkServiceImpl" id="com.liferay.portal.kernel.service.WorkflowDefinitionLinkService" />
 	<bean class="com.liferay.portal.service.persistence.impl.WorkflowDefinitionLinkModelArgumentsResolver" id="com.liferay.portal.service.persistence.impl.WorkflowDefinitionLinkModelArgumentsResolver" />
 	<bean class="com.liferay.portal.service.persistence.impl.WorkflowDefinitionLinkPersistenceImpl" id="com.liferay.portal.kernel.service.persistence.WorkflowDefinitionLinkPersistence" />
 	<bean class="com.liferay.portal.service.impl.WorkflowInstanceLinkLocalServiceImpl" id="com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService" />

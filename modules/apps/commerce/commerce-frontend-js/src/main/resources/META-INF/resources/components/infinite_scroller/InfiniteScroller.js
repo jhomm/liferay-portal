@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLoadingIndicator from '@clayui/loading-indicator';
@@ -24,31 +15,31 @@ function InfiniteScroller({
 	scrollCompleted,
 }) {
 	const [scrollingAreaRendered, setScrollingAreaRendered] = useState(false);
-	const infiniteLoader = useRef(null);
+	const infiniteLoaderRef = useRef(null);
 	const [infiniteLoaderRendered, setInfiniteLoaderRendered] = useState(false);
-	const scrollingArea = useRef(null);
+	const scrollingAreaRef = useRef(null);
 
 	const setScrollingArea = useCallback((node) => {
-		scrollingArea.current = node;
+		scrollingAreaRef.current = node;
 		setScrollingAreaRendered(true);
 	}, []);
 
 	const setInfiniteLoader = useCallback((node) => {
-		infiniteLoader.current = node;
+		infiniteLoaderRef.current = node;
 		setInfiniteLoaderRendered(true);
 	}, []);
 
 	const setObserver = useCallback(() => {
 		if (
-			!scrollingArea.current ||
-			!infiniteLoader.current ||
+			!scrollingAreaRef.current ||
+			!infiniteLoaderRef.current ||
 			!IntersectionObserver
 		) {
 			return;
 		}
 
 		const options = {
-			root: scrollingArea.current,
+			root: scrollingAreaRef.current,
 			rootMargin: '0px',
 			threshold: 1.0,
 		};
@@ -59,7 +50,7 @@ function InfiniteScroller({
 			}
 		}, options);
 
-		observer.observe(infiniteLoader.current);
+		observer.observe(infiniteLoaderRef.current);
 	}, [onBottomTouched]);
 
 	useEffect(() => {
@@ -84,6 +75,7 @@ function InfiniteScroller({
 			style={maxHeight ? {maxHeight} : null}
 		>
 			{children}
+
 			{!scrollCompleted &&
 				(CustomLoader ? (
 					<CustomLoader ref={setInfiniteLoader} />

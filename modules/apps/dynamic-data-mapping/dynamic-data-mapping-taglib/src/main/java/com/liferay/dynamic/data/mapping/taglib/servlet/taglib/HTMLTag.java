@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.taglib.servlet.taglib;
@@ -22,9 +13,13 @@ import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.dynamic.data.mapping.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.dynamic.data.mapping.taglib.servlet.taglib.base.BaseHTMLTag;
 import com.liferay.dynamic.data.mapping.util.DDMUtil;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
+import com.liferay.layout.item.selector.criterion.LayoutItemSelectorCriterion;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -32,10 +27,10 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Bruno Basto
@@ -79,17 +74,18 @@ public class HTMLTag extends BaseHTMLTag {
 		String serializedDDMFormValues = ParamUtil.getString(
 			getRequest(), getDDMFormValuesInputName());
 
-		if (Validator.isNotNull(serializedDDMFormValues)) {
-			DDMForm ddmForm = getDDMForm();
+		if (Validator.isNull(serializedDDMFormValues)) {
+			return null;
+		}
 
-			try {
-				return DDMUtil.getDDMFormValues(
-					ddmForm, serializedDDMFormValues);
-			}
-			catch (PortalException portalException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
-				}
+		DDMForm ddmForm = getDDMForm();
+
+		try {
+			return DDMUtil.getDDMFormValues(ddmForm, serializedDDMFormValues);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
 			}
 		}
 
@@ -186,7 +182,30 @@ public class HTMLTag extends BaseHTMLTag {
 				String.valueOf(themeDisplay.getSiteGroupId()));
 		}
 
+		setNamespacedAttribute(
+			httpServletRequest, "layoutSelectorURL", _getLayoutSelectorURL());
 		setNamespacedAttribute(httpServletRequest, "mode", getMode());
+	}
+
+	private String _getLayoutSelectorURL() {
+		String layoutSelectorURL = getLayoutSelectorURL();
+
+		if (Validator.isNotNull(layoutSelectorURL)) {
+			return layoutSelectorURL;
+		}
+
+		ItemSelector itemSelector = ServletContextUtil.getItemSelector();
+
+		LayoutItemSelectorCriterion layoutItemSelectorCriterion =
+			new LayoutItemSelectorCriterion();
+
+		layoutItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new UUIDItemSelectorReturnType());
+
+		return String.valueOf(
+			itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(getRequest()),
+				"selectLayout", layoutItemSelectorCriterion));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(HTMLTag.class);

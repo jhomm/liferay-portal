@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service.impl;
@@ -18,6 +9,7 @@ import com.liferay.journal.model.JournalContentSearch;
 import com.liferay.journal.service.base.JournalContentSearchLocalServiceBaseImpl;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -111,7 +103,7 @@ public class JournalContentSearchLocalServiceImpl
 
 				String portletId = portletPreferences.getPortletId();
 
-				javax.portlet.PortletPreferences jxPortletPreferences =
+				jakarta.portlet.PortletPreferences jxPortletPreferences =
 					_portletPreferenceValueLocalService.getPreferences(
 						portletPreferences);
 
@@ -222,17 +214,10 @@ public class JournalContentSearchLocalServiceImpl
 	public List<Long> getLayoutIds(
 		long groupId, boolean privateLayout, String articleId) {
 
-		List<Long> layoutIds = new ArrayList<>();
-
-		List<JournalContentSearch> contentSearches =
+		return TransformUtil.transform(
 			journalContentSearchPersistence.findByG_P_A(
-				groupId, privateLayout, articleId);
-
-		for (JournalContentSearch contentSearch : contentSearches) {
-			layoutIds.add(contentSearch.getLayoutId());
-		}
-
-		return layoutIds;
+				groupId, privateLayout, articleId),
+			contentSearch -> contentSearch.getLayoutId());
 	}
 
 	@Override
@@ -324,7 +309,7 @@ public class JournalContentSearchLocalServiceImpl
 	protected void activate(BundleContext bundleContext) {
 		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, DisplayInformationProvider.class,
-			"javax.portlet.name");
+			"jakarta.portlet.name");
 	}
 
 	@Deactivate

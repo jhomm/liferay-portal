@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.util;
@@ -21,7 +12,6 @@ import com.liferay.journal.model.JournalArticleDisplay;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.util.JournalContent;
 import com.liferay.petra.lang.HashUtil;
-import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.MultiVMPool;
@@ -29,14 +19,13 @@ import com.liferay.portal.kernel.cache.PortalCache;
 import com.liferay.portal.kernel.cache.index.IndexEncoder;
 import com.liferay.portal.kernel.cache.index.PortalCacheIndexer;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
-import com.liferay.portal.kernel.cluster.ClusterInvokeAcceptor;
+import com.liferay.portal.kernel.cluster.ClusterExecutorUtil;
 import com.liferay.portal.kernel.cluster.ClusterInvokeThreadLocal;
-import com.liferay.portal.kernel.cluster.ClusterableInvokerUtil;
+import com.liferay.portal.kernel.cluster.ClusterRequest;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutSet;
-import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -44,21 +33,23 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MethodHandler;
+import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.io.Serializable;
+import jakarta.portlet.RenderRequest;
 
-import java.lang.reflect.Method;
+import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Objects;
 
-import javax.portlet.RenderRequest;
-
 import org.apache.commons.lang.time.StopWatch;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -69,14 +60,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  * @author Michael Young
  */
-@Component(
-	service = {
-		CTEventListener.class, IdentifiableOSGiService.class,
-		JournalContent.class
-	}
-)
-public class JournalContentImpl
-	implements CTEventListener, IdentifiableOSGiService, JournalContent {
+@Component(service = JournalContent.class)
+public class JournalContentImpl implements JournalContent {
 
 	@Override
 	public void clearCache() {
@@ -91,35 +76,36 @@ public class JournalContentImpl
 	public void clearCache(
 		long groupId, String articleId, String ddmTemplateKey) {
 
-		_journalArticlePortalCacheIndexer.removeKeys(
-			JournalContentArticleKeyIndexEncoder.encode(
-				groupId, articleId, ddmTemplateKey));
+		_clearCache(groupId, articleId, ddmTemplateKey);
 
 		if (ClusterInvokeThreadLocal.isEnabled()) {
-			try {
-				ClusterableInvokerUtil.invokeOnCluster(
-					ClusterInvokeAcceptor.class, this, _clearArticleCacheMethod,
-					new Object[] {groupId, articleId, ddmTemplateKey});
-			}
-			catch (Throwable throwable) {
-				ReflectionUtil.throwException(throwable);
-			}
+			ClusterRequest clusterRequest =
+				ClusterRequest.createMulticastRequest(
+					new MethodHandler(
+						_clearArticleCacheMethodKey, groupId, articleId,
+						ddmTemplateKey),
+					true);
+
+			clusterRequest.setFireAndForget(true);
+
+			ClusterExecutorUtil.execute(clusterRequest);
 		}
 	}
 
 	@Override
 	public void clearCache(String ddmTemplateKey) {
-		_journalTemplatePortalCacheIndexer.removeKeys(ddmTemplateKey);
+		_clearCache(ddmTemplateKey);
 
 		if (ClusterInvokeThreadLocal.isEnabled()) {
-			try {
-				ClusterableInvokerUtil.invokeOnCluster(
-					ClusterInvokeAcceptor.class, this,
-					_clearTemplateCacheMethod, new Object[] {ddmTemplateKey});
-			}
-			catch (Throwable throwable) {
-				ReflectionUtil.throwException(throwable);
-			}
+			ClusterRequest clusterRequest =
+				ClusterRequest.createMulticastRequest(
+					new MethodHandler(
+						_clearTemplateCacheMethodKey, ddmTemplateKey),
+					true);
+
+			clusterRequest.setFireAndForget(true);
+
+			ClusterExecutorUtil.execute(clusterRequest);
 		}
 	}
 
@@ -226,7 +212,7 @@ public class JournalContentImpl
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 
@@ -298,12 +284,11 @@ public class JournalContentImpl
 		PortletRequestModel portletRequestModel, ThemeDisplay themeDisplay) {
 
 		try {
-			JournalArticle article = _journalArticleLocalService.getArticle(
-				groupId, articleId, version);
-
 			return getDisplay(
-				article, ddmTemplateKey, viewMode, languageId, page,
-				portletRequestModel, themeDisplay);
+				_journalArticleLocalService.getArticle(
+					groupId, articleId, version),
+				ddmTemplateKey, viewMode, languageId, page, portletRequestModel,
+				themeDisplay);
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
@@ -381,18 +366,8 @@ public class JournalContentImpl
 			groupId, articleId, viewMode, languageId, 1, themeDisplay);
 	}
 
-	@Override
-	public String getOSGiServiceIdentifier() {
-		return JournalContent.class.getName();
-	}
-
-	@Override
-	public void onAfterPublish(long ctCollectionId) {
-		_portalCache.removeAll();
-	}
-
 	@Activate
-	protected void activate() {
+	protected void activate(BundleContext bundleContext) {
 		_portalCache =
 			(PortalCache<JournalContentKey, JournalArticleDisplay>)
 				_multiVMPool.getPortalCache(CACHE_NAME);
@@ -401,11 +376,23 @@ public class JournalContentImpl
 			new JournalContentArticleKeyIndexEncoder(), _portalCache);
 		_journalTemplatePortalCacheIndexer = new PortalCacheIndexer<>(
 			new JournalContentTemplateKeyIndexEncoder(), _portalCache);
+		_serviceRegistration = bundleContext.registerService(
+			CTEventListener.class,
+			new CTEventListener() {
+
+				@Override
+				public void onAfterPublish(long ctCollectionId) {
+					_portalCache.removeAll();
+				}
+
+			},
+			null);
 	}
 
 	@Deactivate
 	protected void deactivate() {
 		_multiVMPool.removePortalCache(CACHE_NAME);
+		_serviceRegistration.unregister();
 	}
 
 	protected JournalArticleDisplay getArticleDisplay(
@@ -437,8 +424,8 @@ public class JournalContentImpl
 			if (_log.isWarnEnabled()) {
 				_log.warn(
 					StringBundler.concat(
-						"Unable to get display for ", article.toString(),
-						StringPool.SPACE, languageId),
+						"Unable to get display for ", article, StringPool.SPACE,
+						languageId),
 					exception);
 			}
 
@@ -478,6 +465,18 @@ public class JournalContentImpl
 
 	protected static final String CACHE_NAME = JournalContent.class.getName();
 
+	private static void _clearCache(
+		long groupId, String articleId, String ddmTemplateKey) {
+
+		_journalArticlePortalCacheIndexer.removeKeys(
+			JournalContentArticleKeyIndexEncoder.encode(
+				groupId, articleId, ddmTemplateKey));
+	}
+
+	private static void _clearCache(String ddmTemplateKey) {
+		_journalTemplatePortalCacheIndexer.removeKeys(ddmTemplateKey);
+	}
+
 	private ThemeDisplay _getDefaultThemeDisplay() {
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
@@ -492,8 +491,11 @@ public class JournalContentImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalContentImpl.class);
 
-	private static final Method _clearArticleCacheMethod;
-	private static final Method _clearTemplateCacheMethod;
+	private static final MethodKey _clearArticleCacheMethodKey = new MethodKey(
+		JournalContentImpl.class, "_clearCache", long.class, String.class,
+		String.class);
+	private static final MethodKey _clearTemplateCacheMethodKey = new MethodKey(
+		JournalContentImpl.class, "_clearCache", String.class);
 	private static PortalCacheIndexer
 		<String, JournalContentKey, JournalArticleDisplay>
 			_journalArticlePortalCacheIndexer;
@@ -502,19 +504,6 @@ public class JournalContentImpl
 			_journalTemplatePortalCacheIndexer;
 	private static PortalCache<JournalContentKey, JournalArticleDisplay>
 		_portalCache;
-
-	static {
-		try {
-			_clearArticleCacheMethod = JournalContent.class.getMethod(
-				"clearCache", long.class, String.class, String.class);
-
-			_clearTemplateCacheMethod = JournalContent.class.getMethod(
-				"clearCache", String.class);
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new ExceptionInInitializerError(noSuchMethodException);
-		}
-	}
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
@@ -527,6 +516,8 @@ public class JournalContentImpl
 
 	@Reference
 	private MultiVMPool _multiVMPool;
+
+	private ServiceRegistration<CTEventListener> _serviceRegistration;
 
 	private static class JournalContentArticleKeyIndexEncoder
 		implements IndexEncoder<String, JournalContentKey> {

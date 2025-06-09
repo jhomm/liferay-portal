@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.checkbox.multiple;
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTemplateContextContributor;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
+import com.liferay.dynamic.data.mapping.form.field.type.internal.checkbox.multiple.helper.CheckboxMultipleDDMFormFieldContextHelper;
 import com.liferay.dynamic.data.mapping.form.field.type.internal.util.DDMFormFieldTypeUtil;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
@@ -40,12 +32,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rafael Praxedes
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE,
-	service = {
-		CheckboxMultipleDDMFormFieldTemplateContextContributor.class,
-		DDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class CheckboxMultipleDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -58,7 +46,7 @@ public class CheckboxMultipleDDMFormFieldTemplateContextContributor
 		return HashMapBuilder.<String, Object>put(
 			"inline", GetterUtil.getBoolean(ddmFormField.getProperty("inline"))
 		).put(
-			"options", getOptions(ddmFormField, ddmFormFieldRenderingContext)
+			"options", _getOptions(ddmFormField, ddmFormFieldRenderingContext)
 		).put(
 			"predefinedValue",
 			getValue(
@@ -102,22 +90,6 @@ public class CheckboxMultipleDDMFormFieldTemplateContextContributor
 		return ddmFormFieldOptions;
 	}
 
-	protected List<Object> getOptions(
-		DDMFormField ddmFormField,
-		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
-
-		CheckboxMultipleDDMFormFieldContextHelper
-			checkboxMultipleDDMFormFieldContextHelper =
-				new CheckboxMultipleDDMFormFieldContextHelper(
-					jsonFactory,
-					getDDMFormFieldOptions(
-						ddmFormField, ddmFormFieldRenderingContext),
-					ddmFormFieldRenderingContext.getLocale());
-
-		return checkboxMultipleDDMFormFieldContextHelper.getOptions(
-			ddmFormFieldRenderingContext);
-	}
-
 	protected List<String> getValue(String valueString) {
 		JSONArray jsonArray = null;
 
@@ -126,7 +98,7 @@ public class CheckboxMultipleDDMFormFieldTemplateContextContributor
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 
 			jsonArray = jsonFactory.createJSONArray();
@@ -143,6 +115,22 @@ public class CheckboxMultipleDDMFormFieldTemplateContextContributor
 
 	@Reference
 	protected JSONFactory jsonFactory;
+
+	private List<Object> _getOptions(
+		DDMFormField ddmFormField,
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
+
+		CheckboxMultipleDDMFormFieldContextHelper
+			checkboxMultipleDDMFormFieldContextHelper =
+				new CheckboxMultipleDDMFormFieldContextHelper(
+					jsonFactory,
+					getDDMFormFieldOptions(
+						ddmFormField, ddmFormFieldRenderingContext),
+					ddmFormFieldRenderingContext.getLocale());
+
+		return checkboxMultipleDDMFormFieldContextHelper.getOptions(
+			ddmFormFieldRenderingContext);
+	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CheckboxMultipleDDMFormFieldTemplateContextContributor.class);

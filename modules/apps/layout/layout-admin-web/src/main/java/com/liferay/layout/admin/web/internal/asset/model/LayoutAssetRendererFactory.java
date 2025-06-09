@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.asset.model;
@@ -22,13 +13,11 @@ import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,8 +26,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+	property = "jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 	service = AssetRendererFactory.class
 )
 public class LayoutAssetRendererFactory
@@ -53,6 +41,24 @@ public class LayoutAssetRendererFactory
 	}
 
 	@Override
+	public AssetEntry getAssetEntry(Layout layout) throws PortalException {
+		AssetEntry assetEntry = _assetEntryLocalService.createAssetEntry(
+			layout.getPlid());
+
+		assetEntry.setGroupId(layout.getGroupId());
+		assetEntry.setCompanyId(layout.getCompanyId());
+		assetEntry.setUserId(layout.getUserId());
+		assetEntry.setUserName(layout.getUserName());
+		assetEntry.setCreateDate(layout.getCreateDate());
+		assetEntry.setClassNameId(
+			_portal.getClassNameId(Layout.class.getName()));
+		assetEntry.setClassPK(layout.getPlid());
+		assetEntry.setTitle(layout.getHTMLTitle(LocaleUtil.getSiteDefault()));
+
+		return assetEntry;
+	}
+
+	@Override
 	public AssetEntry getAssetEntry(long assetEntryId) throws PortalException {
 		return getAssetEntry(getClassName(), assetEntryId);
 	}
@@ -61,32 +67,21 @@ public class LayoutAssetRendererFactory
 	public AssetEntry getAssetEntry(String className, long classPK)
 		throws PortalException {
 
-		Layout layout = _layoutLocalService.getLayout(classPK);
-
-		User user = _userLocalService.getUserById(layout.getUserId());
-
-		AssetEntry assetEntry = _assetEntryLocalService.createAssetEntry(
-			classPK);
-
-		assetEntry.setGroupId(layout.getGroupId());
-		assetEntry.setCompanyId(user.getCompanyId());
-		assetEntry.setUserId(user.getUserId());
-		assetEntry.setUserName(user.getFullName());
-		assetEntry.setCreateDate(layout.getCreateDate());
-		assetEntry.setClassNameId(
-			_portal.getClassNameId(Layout.class.getName()));
-		assetEntry.setClassPK(layout.getLayoutId());
-		assetEntry.setTitle(layout.getHTMLTitle(LocaleUtil.getSiteDefault()));
-
-		return assetEntry;
+		return getAssetEntry(_layoutLocalService.getLayout(classPK));
 	}
 
 	@Override
 	public AssetRenderer<Layout> getAssetRenderer(long plid, int type)
 		throws PortalException {
 
+		Layout layout = _layoutLocalService.fetchLayout(plid);
+
+		if (layout == null) {
+			return null;
+		}
+
 		LayoutAssetRenderer layoutAssetRenderer = new LayoutAssetRenderer(
-			_layoutLocalService.getLayout(plid));
+			layout);
 
 		layoutAssetRenderer.setAssetRendererType(type);
 		layoutAssetRenderer.setServletContext(_servletContext);
@@ -114,40 +109,16 @@ public class LayoutAssetRendererFactory
 		return true;
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
-	}
-
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutLocalService(
-		LayoutLocalService layoutLocalService) {
-
-		_layoutLocalService = layoutLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
+	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)")
 	private ServletContext _servletContext;
-	private UserLocalService _userLocalService;
 
 }

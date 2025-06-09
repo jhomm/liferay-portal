@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayIcon from '@clayui/icon';
@@ -56,16 +47,6 @@ function QuantitySelector({
 		setPrevAvailable(currentQuantity - multipleQuantity >= minQuantity);
 	}, [currentQuantity, maxQuantity, minQuantity, multipleQuantity]);
 
-	function updateCurrentQuantity(newQuantity) {
-		if (
-			newQuantity >= minQuantity &&
-			newQuantity <= maxQuantity &&
-			newQuantity % multipleQuantity === 0
-		) {
-			setCurrentQuantity(newQuantity);
-		}
-	}
-
 	function increaseQuantity() {
 		if (nextAvailable) {
 			setCurrentQuantity(currentQuantity + multipleQuantity);
@@ -79,14 +60,14 @@ function QuantitySelector({
 	}
 
 	function handleInputChange(event) {
-		return updateCurrentQuantity(parseInt(event.target.value, 10));
+		return setCurrentQuantity(event.target.value);
 	}
 
 	function handleInputKeyUp(event) {
-		if (event.keyCode == 38) {
+		if (Number(event.keyCode) === 38) {
 			increaseQuantity();
 		}
-		else if (event.keyCode == 40) {
+		else if (Number(event.keyCode) === 40) {
 			decreaseQuantity();
 		}
 	}
@@ -142,6 +123,7 @@ function QuantitySelector({
 							</span>
 						</div>
 					)}
+
 					<div
 						className={classnames(
 							'input-group-item input-group-item-shrink',
@@ -164,6 +146,7 @@ function QuantitySelector({
 							value={currentQuantity}
 						/>
 					</div>
+
 					{(appendedIcon || appendedText) && (
 						<div className="input-group-append input-group-item input-group-item-shrink">
 							<span className="input-group-text">

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.template.model.TemplateEntry;
 
@@ -45,14 +37,15 @@ public class TemplateEntryLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.template.service.impl.TemplateEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static TemplateEntry addTemplateEntry(
-			long userId, long groupId, long ddmTemplateId,
-			String infoItemClassName, String infoItemFormVariationKey,
+			String externalReferenceCode, long userId, long groupId,
+			long ddmTemplateId, String infoItemClassName,
+			String infoItemFormVariationKey,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addTemplateEntry(
-			userId, groupId, ddmTemplateId, infoItemClassName,
-			infoItemFormVariationKey, serviceContext);
+			externalReferenceCode, userId, groupId, ddmTemplateId,
+			infoItemClassName, infoItemFormVariationKey, serviceContext);
 	}
 
 	/**
@@ -99,6 +92,10 @@ public class TemplateEntryLocalServiceUtil {
 		return getService().deletePersistedModel(persistedModel);
 	}
 
+	public static void deleteTemplateEntries(long groupId) {
+		getService().deleteTemplateEntries(groupId);
+	}
+
 	/**
 	 * Deletes the template entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -114,6 +111,12 @@ public class TemplateEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteTemplateEntry(templateEntryId);
+	}
+
+	public static TemplateEntry deleteTemplateEntry(
+		String externalReferenceCode, long groupId) {
+
+		return getService().deleteTemplateEntry(externalReferenceCode, groupId);
 	}
 
 	/**
@@ -227,6 +230,13 @@ public class TemplateEntryLocalServiceUtil {
 		return getService().fetchTemplateEntryByDDMTemplateId(ddmTemplateId);
 	}
 
+	public static TemplateEntry fetchTemplateEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchTemplateEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the template entry matching the UUID and group.
 	 *
@@ -316,6 +326,16 @@ public class TemplateEntryLocalServiceUtil {
 		return getService().getTemplateEntries(groupIds);
 	}
 
+	public static List<TemplateEntry> getTemplateEntries(
+		long[] groupIds, String infoItemClassName,
+		String infoItemFormVariationKey, int start, int end,
+		OrderByComparator<TemplateEntry> orderByComparator) {
+
+		return getService().getTemplateEntries(
+			groupIds, infoItemClassName, infoItemFormVariationKey, start, end,
+			orderByComparator);
+	}
+
 	/**
 	 * Returns all the template entries matching the UUID and company.
 	 *
@@ -374,6 +394,14 @@ public class TemplateEntryLocalServiceUtil {
 		return getService().getTemplateEntry(templateEntryId);
 	}
 
+	public static TemplateEntry getTemplateEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getTemplateEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the template entry matching the UUID and group.
 	 *
@@ -395,6 +423,13 @@ public class TemplateEntryLocalServiceUtil {
 		return getService().updateTemplateEntry(templateEntryId);
 	}
 
+	public static TemplateEntry updateTemplateEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().updateTemplateEntry(externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Updates the template entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -412,9 +447,12 @@ public class TemplateEntryLocalServiceUtil {
 	}
 
 	public static TemplateEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile TemplateEntryLocalService _service;
+	private static final Snapshot<TemplateEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			TemplateEntryLocalServiceUtil.class,
+			TemplateEntryLocalService.class);
 
 }

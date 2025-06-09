@@ -1,36 +1,60 @@
 [
 	{
-		"name": "Main Navigation",
-		"pages": [
+		"externalReferenceCode": "SITENAVIGATIONMENU1",
+		"menuItems": [
 			{
-				"friendlyURL": "/courses",
-				"privateLayout": false
+				"menuItems": [
+					{
+						"key": "/site-initializer/journal-articles/courses/course_design.json",
+						"type": "display-page"
+					},
+					{
+						"key": "/site-initializer/journal-articles/courses/course_management.json",
+						"type": "display-page"
+					},
+					{
+						"key": "/site-initializer/journal-articles/courses/course_marketing.json",
+						"type": "display-page"
+					}
+				],
+				"name_i18n": {
+					"en_US": "Courses"
+				},
+				"title": "Courses",
+				"type": "node"
 			},
 			{
 				"friendlyURL": "/blog",
-				"privateLayout": false
+				"privateLayout": false,
+				"type": "layout"
 			},
 			{
 				"friendlyURL": "/apply",
-				"privateLayout": false
+				"privateLayout": false,
+				"type": "layout"
 			}
-		]
+		],
+		"name": "Main Navigation"
 	},
 	{
-		"name": "Private Area Navigation",
-		"pages": [
+		"externalReferenceCode": "SITENAVIGATIONMENU2",
+		"menuItems": [
 			{
 				"friendlyURL": "/my-learning",
-				"privateLayout": false
+				"privateLayout": false,
+				"type": "layout"
 			},
 			{
 				"friendlyURL": "/notifications",
-				"privateLayout": false
+				"privateLayout": false,
+				"type": "layout"
 			},
 			{
 				"friendlyURL": "/account-settings",
-				"privateLayout": false
+				"privateLayout": false,
+				"type": "layout"
 			}
-		]
+		],
+		"name": "Private Area Navigation"
 	}
 ]

@@ -1,52 +1,51 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
 
 import com.liferay.headless.delivery.dto.v1_0.FragmentInlineValue;
 import com.liferay.headless.delivery.dto.v1_0.FragmentLink;
+import com.liferay.headless.delivery.dto.v1_0.HtmlProperties;
 import com.liferay.headless.delivery.dto.v1_0.Layout;
 import com.liferay.headless.delivery.dto.v1_0.PageElement;
 import com.liferay.headless.delivery.dto.v1_0.PageSectionDefinition;
 import com.liferay.headless.delivery.internal.dto.v1_0.mapper.util.FragmentMappedValueUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.mapper.util.LocalizedValueUtil;
-import com.liferay.layout.page.template.util.AlignConverter;
-import com.liferay.layout.page.template.util.BorderRadiusConverter;
-import com.liferay.layout.page.template.util.ContentDisplayConverter;
-import com.liferay.layout.page.template.util.JustifyConverter;
-import com.liferay.layout.page.template.util.MarginConverter;
-import com.liferay.layout.page.template.util.PaddingConverter;
-import com.liferay.layout.page.template.util.ShadowConverter;
+import com.liferay.headless.delivery.internal.dto.v1_0.mapper.util.StyledLayoutStructureItemUtil;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.layout.converter.AlignConverter;
+import com.liferay.layout.converter.BorderRadiusConverter;
+import com.liferay.layout.converter.ContentDisplayConverter;
+import com.liferay.layout.converter.ContentVisibilityConverter;
+import com.liferay.layout.converter.FlexWrapConverter;
+import com.liferay.layout.converter.HtmlTagConverter;
+import com.liferay.layout.converter.JustifyConverter;
+import com.liferay.layout.converter.MarginConverter;
+import com.liferay.layout.converter.PaddingConverter;
+import com.liferay.layout.converter.ShadowConverter;
+import com.liferay.layout.util.constants.StyledLayoutStructureConstants;
 import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import org.osgi.service.component.annotations.Component;
+import java.util.Objects;
 
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemMapper.class)
 public class ContainerLayoutStructureItemMapper
 	extends BaseStyledLayoutStructureItemMapper {
 
-	@Override
-	public String getClassName() {
-		return ContainerStyledLayoutStructureItem.class.getName();
+	public ContainerLayoutStructureItemMapper(
+		InfoItemServiceRegistry infoItemServiceRegistry, Portal portal) {
+
+		super(infoItemServiceRegistry, portal);
 	}
 
 	@Override
@@ -59,40 +58,82 @@ public class ContainerLayoutStructureItemMapper
 
 		return new PageElement() {
 			{
-				definition = new PageSectionDefinition() {
-					{
-						fragmentLink = _toFragmentLink(
-							containerStyledLayoutStructureItem.
-								getLinkJSONObject(),
-							saveMappingConfiguration);
-						layout = _toLayout(containerStyledLayoutStructureItem);
+				setDefinition(
+					() -> new PageSectionDefinition() {
+						{
+							setContentVisibility(
+								() -> {
+									String contentVisibility =
+										containerStyledLayoutStructureItem.
+											getContentVisibility();
 
-						setFragmentStyle(
-							() -> {
-								JSONObject itemConfigJSONObject =
+									if (Validator.isNull(contentVisibility)) {
+										return null;
+									}
+
+									return ContentVisibilityConverter.
+										convertToExternalValue(
+											contentVisibility);
+								});
+							setCssClasses(
+								() ->
+									StyledLayoutStructureItemUtil.getCssClasses(
+										containerStyledLayoutStructureItem));
+							setCustomCSS(
+								() ->
+									StyledLayoutStructureItemUtil.getCustomCSS(
+										containerStyledLayoutStructureItem));
+							setCustomCSSViewports(
+								() ->
+									StyledLayoutStructureItemUtil.
+										getCustomCSSViewports(
+											containerStyledLayoutStructureItem));
+							setFragmentLink(
+								() -> _toFragmentLink(
 									containerStyledLayoutStructureItem.
-										getItemConfigJSONObject();
+										getLinkJSONObject(),
+									saveMappingConfiguration));
+							setFragmentStyle(
+								() -> {
+									JSONObject itemConfigJSONObject =
+										containerStyledLayoutStructureItem.
+											getItemConfigJSONObject();
 
-								return toFragmentStyle(
-									itemConfigJSONObject.getJSONObject(
-										"styles"),
-									saveMappingConfiguration);
-							});
-
-						setFragmentViewports(
-							() -> {
-								JSONObject itemConfigJSONObject =
+									return toFragmentStyle(
+										itemConfigJSONObject.getJSONObject(
+											"styles"),
+										saveMappingConfiguration);
+								});
+							setFragmentViewports(
+								() -> getFragmentViewPorts(
 									containerStyledLayoutStructureItem.
-										getItemConfigJSONObject();
-
-								return getFragmentViewPorts(
-									itemConfigJSONObject);
-							});
-					}
-				};
-				type = Type.SECTION;
+										getItemConfigJSONObject()));
+							setHtmlProperties(
+								() -> _toHtmlProperties(
+									containerStyledLayoutStructureItem));
+							setIndexed(
+								() ->
+									containerStyledLayoutStructureItem.
+										isIndexed());
+							setLayout(
+								() -> _toLayout(
+									containerStyledLayoutStructureItem));
+							setName(
+								() ->
+									containerStyledLayoutStructureItem.
+										getName());
+						}
+					});
+				setId(layoutStructureItem::getItemId);
+				setType(() -> Type.SECTION);
 			}
 		};
+	}
+
+	private Object _getStyleProperty(
+		JSONObject stylesJSONObject, String propertyKey) {
+
+		return stylesJSONObject.get(propertyKey);
 	}
 
 	private FragmentLink _toFragmentLink(
@@ -122,9 +163,9 @@ public class ContainerLayoutStructureItemMapper
 
 						return new FragmentInlineValue() {
 							{
-								value_i18n =
-									LocalizedValueUtil.toLocalizedValues(
-										jsonObject.getJSONObject("href"));
+								setValue_i18n(
+									() -> LocalizedValueUtil.toLocalizedValues(
+										jsonObject.getJSONObject("href")));
 							}
 						};
 					});
@@ -150,8 +191,32 @@ public class ContainerLayoutStructureItemMapper
 		};
 	}
 
+	private HtmlProperties _toHtmlProperties(
+		ContainerStyledLayoutStructureItem containerStyledLayoutStructureItem) {
+
+		String value = containerStyledLayoutStructureItem.getHtmlTag();
+
+		if (Validator.isNull(value)) {
+			return null;
+		}
+
+		return new HtmlProperties() {
+			{
+				setHtmlTag(
+					() -> HtmlTag.create(
+						HtmlTagConverter.convertToExternalValue(value)));
+			}
+		};
+	}
+
 	private Layout _toLayout(
 		ContainerStyledLayoutStructureItem containerStyledLayoutStructureItem) {
+
+		JSONObject itemConfigJSONObject =
+			containerStyledLayoutStructureItem.getItemConfigJSONObject();
+
+		JSONObject stylesJSONObject = itemConfigJSONObject.getJSONObject(
+			"styles");
 
 		return new Layout() {
 			{
@@ -169,20 +234,19 @@ public class ContainerLayoutStructureItemMapper
 					});
 				setBorderColor(
 					() -> {
-						String borderColor =
-							containerStyledLayoutStructureItem.getBorderColor();
+						Object borderColor = _getStyleProperty(
+							stylesJSONObject, "borderColor");
 
 						if (Validator.isNull(borderColor)) {
 							return null;
 						}
 
-						return borderColor;
+						return GetterUtil.getString(borderColor);
 					});
 				setBorderRadius(
 					() -> {
-						String borderRadius =
-							containerStyledLayoutStructureItem.
-								getBorderRadius();
+						Object borderRadius = _getStyleProperty(
+							stylesJSONObject, "borderRadius");
 
 						if (Validator.isNull(borderRadius)) {
 							return null;
@@ -190,14 +254,16 @@ public class ContainerLayoutStructureItemMapper
 
 						return BorderRadius.create(
 							BorderRadiusConverter.convertToExternalValue(
-								borderRadius));
+								GetterUtil.getString(borderRadius)));
 					});
 				setBorderWidth(
 					() -> {
-						String borderWidth =
-							containerStyledLayoutStructureItem.getBorderWidth();
+						Object borderWidth = _getStyleProperty(
+							stylesJSONObject, "borderWidth");
 
-						if (Validator.isNull(borderWidth)) {
+						if (Validator.isNull(borderWidth) ||
+							(GetterUtil.getInteger(borderWidth) == 0)) {
+
 							return null;
 						}
 
@@ -205,7 +271,7 @@ public class ContainerLayoutStructureItemMapper
 					});
 				setContentDisplay(
 					() -> {
-						String contentDisplay =
+						Object contentDisplay =
 							containerStyledLayoutStructureItem.
 								getContentDisplay();
 
@@ -215,7 +281,19 @@ public class ContainerLayoutStructureItemMapper
 
 						return ContentDisplay.create(
 							ContentDisplayConverter.convertToExternalValue(
-								contentDisplay));
+								GetterUtil.getString(contentDisplay)));
+					});
+				setFlexWrap(
+					() -> {
+						String flexWrap =
+							containerStyledLayoutStructureItem.getFlexWrap();
+
+						if (Validator.isNull(flexWrap)) {
+							return null;
+						}
+
+						return FlexWrap.create(
+							FlexWrapConverter.convertToExternalValue(flexWrap));
 					});
 				setJustify(
 					() -> {
@@ -231,61 +309,80 @@ public class ContainerLayoutStructureItemMapper
 					});
 				setMarginBottom(
 					() -> {
-						String marginBottom =
-							containerStyledLayoutStructureItem.
-								getMarginBottom();
+						Object marginBottom = _getStyleProperty(
+							stylesJSONObject, "marginBottom");
 
-						if (Validator.isNull(marginBottom)) {
+						if (Validator.isNull(marginBottom) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(marginBottom)))) {
+
 							return null;
 						}
 
 						return GetterUtil.getInteger(
 							MarginConverter.convertToExternalValue(
-								marginBottom));
+								GetterUtil.getString(marginBottom)));
 					});
 				setMarginLeft(
 					() -> {
-						String marginLeft =
-							containerStyledLayoutStructureItem.getMarginLeft();
+						Object marginLeft = _getStyleProperty(
+							stylesJSONObject, "marginLeft");
 
-						if (Validator.isNull(marginLeft)) {
-							return null;
-						}
+						if (Validator.isNull(marginLeft) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(marginLeft)))) {
 
-						return GetterUtil.getInteger(
-							MarginConverter.convertToExternalValue(marginLeft));
-					});
-				setMarginRight(
-					() -> {
-						String marginRight =
-							containerStyledLayoutStructureItem.getMarginRight();
-
-						if (Validator.isNull(marginRight)) {
 							return null;
 						}
 
 						return GetterUtil.getInteger(
 							MarginConverter.convertToExternalValue(
-								marginRight));
+								GetterUtil.getString(marginLeft)));
 					});
-				setMarginTop(
+				setMarginRight(
 					() -> {
-						String marginTop =
-							containerStyledLayoutStructureItem.getMarginTop();
+						Object marginRight = _getStyleProperty(
+							stylesJSONObject, "marginRight");
 
-						if (Validator.isNull(marginTop)) {
+						if (Validator.isNull(marginRight) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(marginRight)))) {
+
 							return null;
 						}
 
 						return GetterUtil.getInteger(
-							MarginConverter.convertToExternalValue(marginTop));
+							MarginConverter.convertToExternalValue(
+								GetterUtil.getString(marginRight)));
+					});
+				setMarginTop(
+					() -> {
+						Object marginTop = _getStyleProperty(
+							stylesJSONObject, "marginTop");
+
+						if (Validator.isNull(marginTop) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(marginTop)))) {
+
+							return null;
+						}
+
+						return GetterUtil.getInteger(
+							MarginConverter.convertToExternalValue(
+								GetterUtil.getString(marginTop)));
 					});
 				setOpacity(
 					() -> {
-						String opacity =
-							containerStyledLayoutStructureItem.getOpacity();
+						Object opacity = _getStyleProperty(
+							stylesJSONObject, "opacity");
 
-						if (Validator.isNull(opacity)) {
+						if (Validator.isNull(opacity) ||
+							Objects.equals(opacity, "100")) {
+
 							return null;
 						}
 
@@ -293,90 +390,100 @@ public class ContainerLayoutStructureItemMapper
 					});
 				setPaddingBottom(
 					() -> {
-						String paddingBottom =
-							containerStyledLayoutStructureItem.
-								getPaddingBottom();
+						Object paddingBottom = _getStyleProperty(
+							stylesJSONObject, "paddingBottom");
 
-						if (Validator.isNull(paddingBottom)) {
+						if (Validator.isNull(paddingBottom) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(paddingBottom)))) {
+
 							return null;
 						}
 
 						return GetterUtil.getInteger(
 							PaddingConverter.convertToExternalValue(
-								paddingBottom));
+								GetterUtil.getString(paddingBottom)));
 					});
 				setPaddingLeft(
 					() -> {
-						String paddingLeft =
-							containerStyledLayoutStructureItem.getPaddingLeft();
+						Object paddingLeft = _getStyleProperty(
+							stylesJSONObject, "paddingLeft");
 
-						if (Validator.isNull(paddingLeft)) {
+						if (Validator.isNull(paddingLeft) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(paddingLeft)))) {
+
 							return null;
 						}
 
 						return GetterUtil.getInteger(
 							PaddingConverter.convertToExternalValue(
-								paddingLeft));
+								GetterUtil.getString(paddingLeft)));
 					});
 				setPaddingRight(
 					() -> {
-						String paddingRight =
-							containerStyledLayoutStructureItem.
-								getPaddingRight();
+						Object paddingRight = _getStyleProperty(
+							stylesJSONObject, "paddingRight");
 
-						if (Validator.isNull(paddingRight)) {
+						if (Validator.isNull(paddingRight) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(paddingRight)))) {
+
 							return null;
 						}
 
 						return GetterUtil.getInteger(
 							PaddingConverter.convertToExternalValue(
-								paddingRight));
+								GetterUtil.getString(paddingRight)));
 					});
 				setPaddingTop(
 					() -> {
-						String paddingTop =
-							containerStyledLayoutStructureItem.getPaddingTop();
+						Object paddingTop = _getStyleProperty(
+							stylesJSONObject, "paddingTop");
 
-						if (Validator.isNull(paddingTop)) {
+						if (Validator.isNull(paddingTop) ||
+							Validator.isNull(
+								MarginConverter.convertToExternalValue(
+									GetterUtil.getString(paddingTop)))) {
+
 							return null;
 						}
 
 						return GetterUtil.getInteger(
 							PaddingConverter.convertToExternalValue(
-								paddingTop));
+								GetterUtil.getString(paddingTop)));
 					});
 				setShadow(
 					() -> {
-						String shadow =
-							containerStyledLayoutStructureItem.getShadow();
+						Object shadow = _getStyleProperty(
+							stylesJSONObject, "shadow");
 
 						if (Validator.isNull(shadow)) {
 							return null;
 						}
 
 						return Shadow.create(
-							ShadowConverter.convertToExternalValue(shadow));
+							ShadowConverter.convertToExternalValue(
+								GetterUtil.getString(shadow)));
 					});
 				setWidthType(
 					() -> {
 						String widthType =
 							containerStyledLayoutStructureItem.getWidthType();
 
-						if (Validator.isNotNull(widthType)) {
-							return WidthType.create(
-								StringUtil.upperCaseFirstLetter(widthType));
+						if (Validator.isNull(widthType) ||
+							Objects.equals(
+								widthType,
+								StyledLayoutStructureConstants.WIDTH_TYPE)) {
+
+							return null;
 						}
 
-						String containerType =
-							containerStyledLayoutStructureItem.
-								getContainerType();
-
-						if (Validator.isNotNull(containerType)) {
-							return WidthType.create(
-								StringUtil.upperCaseFirstLetter(containerType));
-						}
-
-						return null;
+						return WidthType.create(
+							StringUtil.upperCaseFirstLetter(widthType));
 					});
 			}
 		};

@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.fido2.credential.internal.upgrade.v2_0_0;
 
-import com.liferay.multi.factor.authentication.fido2.credential.internal.upgrade.v2_0_0.util.MFAFIDO2CredentialEntryTable;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.Validator;
@@ -29,16 +19,14 @@ public class MFAFIDO2CredentialUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		if (hasColumn("MFAFIDO2CredentialEntry", "credentialKey")) {
-			alter(
-				MFAFIDO2CredentialEntryTable.class,
-				new AlterColumnType("credentialKey", "TEXT null"));
-		}
+		dropIndexes("MFAFIDO2CredentialEntry", "credentialKey");
+
+		alterColumnType(
+			"MFAFIDO2CredentialEntry", "credentialKey", "TEXT null");
 
 		if (!hasColumn("MFAFIDO2CredentialEntry", "credentialKeyHash")) {
-			alter(
-				MFAFIDO2CredentialEntryTable.class,
-				new AlterTableAddColumn("credentialKeyHash", "LONG"));
+			alterTableAddColumn(
+				"MFAFIDO2CredentialEntry", "credentialKeyHash", "LONG");
 
 			_updateCredentialKeys();
 		}

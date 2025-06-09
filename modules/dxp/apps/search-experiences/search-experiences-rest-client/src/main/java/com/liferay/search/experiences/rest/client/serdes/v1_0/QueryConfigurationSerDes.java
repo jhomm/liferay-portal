@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.serdes.v1_0;
@@ -18,14 +9,13 @@ import com.liferay.search.experiences.rest.client.dto.v1_0.QueryConfiguration;
 import com.liferay.search.experiences.rest.client.dto.v1_0.QueryEntry;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -146,6 +136,18 @@ public class QueryConfigurationSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "applyIndexerClauses")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "queryEntries")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			QueryConfiguration queryConfiguration, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -158,14 +160,18 @@ public class QueryConfigurationSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "queryEntries")) {
 				if (jsonParserFieldValue != null) {
-					queryConfiguration.setQueryEntries(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> QueryEntrySerDes.toDTO((String)object)
-						).toArray(
-							size -> new QueryEntry[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					QueryEntry[] queryEntriesArray =
+						new QueryEntry[jsonParserFieldValues.length];
+
+					for (int i = 0; i < queryEntriesArray.length; i++) {
+						queryEntriesArray[i] = QueryEntrySerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					queryConfiguration.setQueryEntries(queryEntriesArray);
 				}
 			}
 		}
@@ -200,36 +206,7 @@ public class QueryConfigurationSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -239,6 +216,42 @@ public class QueryConfigurationSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

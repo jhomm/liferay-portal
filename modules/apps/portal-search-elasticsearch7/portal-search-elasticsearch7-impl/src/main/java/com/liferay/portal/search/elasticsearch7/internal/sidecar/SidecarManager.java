@@ -1,57 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.sidecar;
 
 import com.liferay.petra.process.ProcessExecutor;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.cluster.ClusterExecutor;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationObserver;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
-import com.liferay.portal.search.elasticsearch7.internal.configuration.OperationModeResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionBuilder;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
-import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchInstancePaths;
-import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchInstancePathsBuilder;
 import com.liferay.portal.search.elasticsearch7.internal.connection.constants.ConnectionConstants;
-import com.liferay.portal.search.elasticsearch7.internal.index.constants.SidecarVersionConstants;
+import com.liferay.portal.search.elasticsearch7.internal.sidecar.constants.SidecarConstants;
 import com.liferay.portal.search.elasticsearch7.internal.util.ResourceUtil;
-import com.liferay.portal.search.elasticsearch7.settings.SettingsContributor;
+import com.liferay.portal.util.PropsValues;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListSet;
-
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Tina Tian
  */
-@Component(enabled = true, immediate = true, service = {})
+@Component(enabled = true, service = {})
 public class SidecarManager implements ElasticsearchConfigurationObserver {
 
 	@Override
@@ -79,20 +58,8 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 		applyConfigurations();
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY,
-		target = "(operation.mode=SIDECAR)"
-	)
-	protected void addSettingsContributor(
-		SettingsContributor settingsContributor) {
-
-		_settingsContributors.add(settingsContributor);
-	}
-
 	protected void applyConfigurations() {
-		if (operationModeResolver.isProductionModeEnabled()) {
+		if (elasticsearchConfigurationWrapper.isProductionModeEnabled()) {
 			elasticsearchConnectionManager.removeElasticsearchConnection(
 				ConnectionConstants.SIDECAR_CONNECTION_ID);
 		}
@@ -116,10 +83,8 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 			}
 
 			_sidecar = new Sidecar(
-				clusterExecutor, elasticsearchConfigurationWrapper,
-				getElasticsearchInstancePaths(), processExecutor,
-				new ProcessExecutorPathsImpl(props), _settingsContributors,
-				this);
+				elasticsearchConfigurationWrapper,
+				_getElasticsearchInstancePaths(), processExecutor, this);
 
 			ElasticsearchConnectionBuilder elasticsearchConnectionBuilder =
 				new ElasticsearchConnectionBuilder();
@@ -128,6 +93,10 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 				true
 			).connectionId(
 				ConnectionConstants.SIDECAR_CONNECTION_ID
+			).maxConnections(
+				elasticsearchConfigurationWrapper.maxConnections()
+			).maxConnectionsPerRoute(
+				elasticsearchConfigurationWrapper.maxConnectionsPerRoute()
 			).postCloseRunnable(
 				_sidecar::stop
 			).preConnectElasticsearchConnectionConsumer(
@@ -151,39 +120,43 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 		elasticsearchConfigurationWrapper.unregister(this);
 	}
 
-	protected ElasticsearchInstancePaths getElasticsearchInstancePaths() {
+	protected boolean isStartupSuccessful() {
+		return _startupSuccessful;
+	}
+
+	@Reference
+	protected ElasticsearchConfigurationWrapper
+		elasticsearchConfigurationWrapper;
+
+	@Reference
+	protected ElasticsearchConnectionManager elasticsearchConnectionManager;
+
+	@Reference
+	protected ProcessExecutor processExecutor;
+
+	private ElasticsearchInstancePaths _getElasticsearchInstancePaths() {
 		ElasticsearchInstancePathsBuilder elasticsearchInstancePathsBuilder =
 			new ElasticsearchInstancePathsBuilder();
 
-		Path workPath = Paths.get(props.get(PropsKeys.LIFERAY_HOME));
+		Path workPath = Paths.get(PropsValues.LIFERAY_HOME);
 
 		Path dataPath = workPath.resolve("data/elasticsearch7");
 
 		return elasticsearchInstancePathsBuilder.dataPath(
 			dataPath
 		).homePath(
-			resolveHomePath(workPath)
+			_resolveHomePath(workPath)
 		).workPath(
 			workPath
 		).build();
 	}
 
-	protected boolean isStartupSuccessful() {
-		return _startupSuccessful;
-	}
-
-	protected void removeSettingsContributor(
-		SettingsContributor settingsContributor) {
-
-		_settingsContributors.remove(settingsContributor);
-	}
-
-	protected Path resolveHomePath(Path path) {
+	private Path _resolveHomePath(Path path) {
 		String sidecarHome = elasticsearchConfigurationWrapper.sidecarHome();
 
 		if (sidecarHome.equals("elasticsearch-sidecar")) {
 			String versionNumber = ResourceUtil.getResourceAsString(
-				getClass(), SidecarVersionConstants.SIDECAR_VERSION_FILE_NAME);
+				getClass(), SidecarConstants.SIDECAR_VERSION_FILE_NAME);
 
 			sidecarHome = sidecarHome + "/" + versionNumber;
 		}
@@ -201,29 +174,8 @@ public class SidecarManager implements ElasticsearchConfigurationObserver {
 		return relativeSidecarHomePath;
 	}
 
-	@Reference
-	protected ClusterExecutor clusterExecutor;
-
-	@Reference
-	protected volatile ElasticsearchConfigurationWrapper
-		elasticsearchConfigurationWrapper;
-
-	@Reference
-	protected ElasticsearchConnectionManager elasticsearchConnectionManager;
-
-	@Reference
-	protected OperationModeResolver operationModeResolver;
-
-	@Reference
-	protected ProcessExecutor processExecutor;
-
-	@Reference
-	protected Props props;
-
 	private static final Log _log = LogFactoryUtil.getLog(SidecarManager.class);
 
-	private final Set<SettingsContributor> _settingsContributors =
-		new ConcurrentSkipListSet<>();
 	private Sidecar _sidecar;
 	private boolean _startupSuccessful;
 

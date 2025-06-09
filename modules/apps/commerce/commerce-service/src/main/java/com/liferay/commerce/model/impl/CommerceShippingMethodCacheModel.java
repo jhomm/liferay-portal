@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
@@ -78,7 +69,7 @@ public class CommerceShippingMethodCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(33);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -100,14 +91,18 @@ public class CommerceShippingMethodCacheModel
 		sb.append(name);
 		sb.append(", description=");
 		sb.append(description);
-		sb.append(", imageId=");
-		sb.append(imageId);
-		sb.append(", engineKey=");
-		sb.append(engineKey);
-		sb.append(", priority=");
-		sb.append(priority);
 		sb.append(", active=");
 		sb.append(active);
+		sb.append(", engineKey=");
+		sb.append(engineKey);
+		sb.append(", imageId=");
+		sb.append(imageId);
+		sb.append(", priority=");
+		sb.append(priority);
+		sb.append(", trackingURL=");
+		sb.append(trackingURL);
+		sb.append(", typeSettings=");
+		sb.append(typeSettings);
 		sb.append("}");
 
 		return sb.toString();
@@ -160,7 +155,7 @@ public class CommerceShippingMethodCacheModel
 			commerceShippingMethodImpl.setDescription(description);
 		}
 
-		commerceShippingMethodImpl.setImageId(imageId);
+		commerceShippingMethodImpl.setActive(active);
 
 		if (engineKey == null) {
 			commerceShippingMethodImpl.setEngineKey("");
@@ -169,8 +164,22 @@ public class CommerceShippingMethodCacheModel
 			commerceShippingMethodImpl.setEngineKey(engineKey);
 		}
 
+		commerceShippingMethodImpl.setImageId(imageId);
 		commerceShippingMethodImpl.setPriority(priority);
-		commerceShippingMethodImpl.setActive(active);
+
+		if (trackingURL == null) {
+			commerceShippingMethodImpl.setTrackingURL("");
+		}
+		else {
+			commerceShippingMethodImpl.setTrackingURL(trackingURL);
+		}
+
+		if (typeSettings == null) {
+			commerceShippingMethodImpl.setTypeSettings("");
+		}
+		else {
+			commerceShippingMethodImpl.setTypeSettings(typeSettings);
+		}
 
 		commerceShippingMethodImpl.resetOriginalValues();
 
@@ -178,7 +187,9 @@ public class CommerceShippingMethodCacheModel
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
 		mvccVersion = objectInput.readLong();
 
 		commerceShippingMethodId = objectInput.readLong();
@@ -194,12 +205,14 @@ public class CommerceShippingMethodCacheModel
 		name = objectInput.readUTF();
 		description = objectInput.readUTF();
 
-		imageId = objectInput.readLong();
+		active = objectInput.readBoolean();
 		engineKey = objectInput.readUTF();
 
-		priority = objectInput.readDouble();
+		imageId = objectInput.readLong();
 
-		active = objectInput.readBoolean();
+		priority = objectInput.readDouble();
+		trackingURL = objectInput.readUTF();
+		typeSettings = (String)objectInput.readObject();
 	}
 
 	@Override
@@ -238,7 +251,7 @@ public class CommerceShippingMethodCacheModel
 			objectOutput.writeUTF(description);
 		}
 
-		objectOutput.writeLong(imageId);
+		objectOutput.writeBoolean(active);
 
 		if (engineKey == null) {
 			objectOutput.writeUTF("");
@@ -247,9 +260,23 @@ public class CommerceShippingMethodCacheModel
 			objectOutput.writeUTF(engineKey);
 		}
 
+		objectOutput.writeLong(imageId);
+
 		objectOutput.writeDouble(priority);
 
-		objectOutput.writeBoolean(active);
+		if (trackingURL == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(trackingURL);
+		}
+
+		if (typeSettings == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(typeSettings);
+		}
 	}
 
 	public long mvccVersion;
@@ -262,9 +289,11 @@ public class CommerceShippingMethodCacheModel
 	public long modifiedDate;
 	public String name;
 	public String description;
-	public long imageId;
-	public String engineKey;
-	public double priority;
 	public boolean active;
+	public String engineKey;
+	public long imageId;
+	public double priority;
+	public String trackingURL;
+	public String typeSettings;
 
 }

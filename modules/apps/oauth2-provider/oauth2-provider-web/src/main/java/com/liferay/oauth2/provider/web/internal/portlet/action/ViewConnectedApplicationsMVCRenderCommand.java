@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.web.internal.portlet.action;
@@ -20,7 +11,6 @@ import com.liferay.oauth2.provider.model.OAuth2ScopeGrant;
 import com.liferay.oauth2.provider.scope.liferay.ScopeLocator;
 import com.liferay.oauth2.provider.scope.liferay.spi.ApplicationDescriptorLocator;
 import com.liferay.oauth2.provider.scope.liferay.spi.ScopeDescriptorLocator;
-import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalService;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationService;
 import com.liferay.oauth2.provider.service.OAuth2AuthorizationService;
 import com.liferay.oauth2.provider.service.OAuth2ScopeGrantLocalService;
@@ -38,13 +28,11 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Collection;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,7 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_CONNECTED_APPLICATIONS,
+		"jakarta.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_CONNECTED_APPLICATIONS,
 		"mvc.command.name=/",
 		"mvc.command.name=/oauth2_provider/view_connected_applications"
 	},
@@ -124,21 +112,17 @@ public class ViewConnectedApplicationsMVCRenderCommand
 			_applicationDescriptorLocator, themeDisplay.getLocale(),
 			_scopeDescriptorLocator);
 
-		Collection<OAuth2ScopeGrant> oAuth2ScopeGrants =
-			_oAuth2ScopeGrantLocalService.getOAuth2ScopeGrants(
-				oAuth2Authorization.getOAuth2ApplicationScopeAliasesId(),
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+		for (OAuth2ScopeGrant oAuth2ScopeGrant :
+				_oAuth2ScopeGrantLocalService.getOAuth2ScopeGrants(
+					oAuth2Authorization.getOAuth2ApplicationScopeAliasesId(),
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
 
-		Stream<OAuth2ScopeGrant> stream = oAuth2ScopeGrants.stream();
-
-		stream.map(
-			oAuth2ScopeGrant -> _scopeLocator.getLiferayOAuth2Scope(
-				oAuth2ScopeGrant.getCompanyId(),
-				oAuth2ScopeGrant.getApplicationName(),
-				oAuth2ScopeGrant.getScope())
-		).forEach(
-			assignableScopes::addLiferayOAuth2Scope
-		);
+			assignableScopes.addLiferayOAuth2Scope(
+				_scopeLocator.getLiferayOAuth2Scope(
+					oAuth2ScopeGrant.getCompanyId(),
+					oAuth2ScopeGrant.getApplicationName(),
+					oAuth2ScopeGrant.getScope()));
+		}
 
 		OAuth2ConnectedApplicationsPortletDisplayContext
 			oAuth2ConnectedApplicationsPortletDisplayContext =
@@ -162,10 +146,6 @@ public class ViewConnectedApplicationsMVCRenderCommand
 
 	@Reference
 	private DLURLHelper _dlURLHelper;
-
-	@Reference
-	private OAuth2ApplicationScopeAliasesLocalService
-		_oAuth2ApplicationScopeAliasesLocalService;
 
 	@Reference
 	private OAuth2ApplicationService _oAuth2ApplicationService;

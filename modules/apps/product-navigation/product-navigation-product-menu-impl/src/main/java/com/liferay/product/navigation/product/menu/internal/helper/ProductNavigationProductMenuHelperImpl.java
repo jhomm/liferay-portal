@@ -1,42 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.product.menu.internal.helper;
 
 import com.liferay.application.list.PanelAppRegistry;
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.product.navigation.applications.menu.configuration.ApplicationsMenuInstanceConfiguration;
+import com.liferay.product.navigation.control.menu.manager.ProductNavigationControlMenuManager;
 import com.liferay.product.navigation.product.menu.helper.ProductNavigationProductMenuHelper;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eudaldo Alonso
  */
-@Component(immediate = true, service = ProductNavigationProductMenuHelper.class)
+@Component(service = ProductNavigationProductMenuHelper.class)
 public class ProductNavigationProductMenuHelperImpl
 	implements ProductNavigationProductMenuHelper {
 
@@ -54,14 +44,10 @@ public class ProductNavigationProductMenuHelperImpl
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (!themeDisplay.isSignedIn()) {
-			return false;
-		}
+		if (!themeDisplay.isSignedIn() ||
+			!_productNavigationControlMenuManager.isShowControlMenu(
+				httpServletRequest)) {
 
-		String layoutMode = ParamUtil.getString(
-			httpServletRequest, "p_l_mode", Constants.VIEW);
-
-		if (layoutMode.equals(Constants.PREVIEW)) {
 			return false;
 		}
 
@@ -85,7 +71,7 @@ public class ProductNavigationProductMenuHelperImpl
 		}
 
 		List<PanelCategory> childPanelCategories =
-			_panelCategoryRegistry.getChildPanelCategories(
+			PanelCategoryRegistryUtil.getChildPanelCategories(
 				PanelCategoryKeys.ROOT, themeDisplay.getPermissionChecker(),
 				themeDisplay.getScopeGroup());
 
@@ -95,7 +81,7 @@ public class ProductNavigationProductMenuHelperImpl
 
 		if (!_isEnableApplicationsMenu(themeDisplay.getCompanyId())) {
 			childPanelCategories =
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					PanelCategoryKeys.APPLICATIONS_MENU,
 					themeDisplay.getPermissionChecker(),
 					themeDisplay.getScopeGroup());
@@ -114,7 +100,7 @@ public class ProductNavigationProductMenuHelperImpl
 		}
 
 		PanelCategoryHelper panelCategoryHelper = new PanelCategoryHelper(
-			_panelAppRegistry, _panelCategoryRegistry);
+			_panelAppRegistry);
 
 		if (!panelCategoryHelper.isApplicationsMenuApp(
 				themeDisplay.getPpid())) {
@@ -165,6 +151,7 @@ public class ProductNavigationProductMenuHelperImpl
 	private PanelAppRegistry _panelAppRegistry;
 
 	@Reference
-	private PanelCategoryRegistry _panelCategoryRegistry;
+	private ProductNavigationControlMenuManager
+		_productNavigationControlMenuManager;
 
 }

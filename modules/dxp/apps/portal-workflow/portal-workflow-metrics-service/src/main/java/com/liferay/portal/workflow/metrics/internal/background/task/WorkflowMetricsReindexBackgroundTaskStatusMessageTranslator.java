@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.background.task;
@@ -22,7 +13,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.workflow.metrics.internal.background.task.constants.WorkflowMetricsReindexBackgroundTaskConstants;
 
-import org.apache.commons.lang.ArrayUtils;
+import java.util.Objects;
 
 /**
  * @author Rafael Praxedes
@@ -38,7 +29,7 @@ public class WorkflowMetricsReindexBackgroundTaskStatusMessageTranslator
 			WorkflowMetricsReindexBackgroundTaskConstants.PHASE);
 
 		if (Validator.isNotNull(phase)) {
-			setPhaseAttributes(backgroundTaskStatus, message);
+			_setPhaseAttributes(backgroundTaskStatus, message);
 
 			return;
 		}
@@ -63,9 +54,18 @@ public class WorkflowMetricsReindexBackgroundTaskStatusMessageTranslator
 					WorkflowMetricsReindexBackgroundTaskConstants.
 						INDEX_ENTITY_NAMES);
 
+			int index = -1;
+
+			for (int i = 0; i < indexEntityNames.length; i++) {
+				if (Objects.equals(indexEntityNames[i], indexEntityName)) {
+					index = i;
+
+					break;
+				}
+			}
+
 			percentage = _getPercentage(
-				count, ArrayUtils.indexOf(indexEntityNames, indexEntityName),
-				indexEntityNames.length, total);
+				count, index, indexEntityNames.length, total);
 		}
 
 		backgroundTaskStatus.setAttribute(
@@ -76,7 +76,22 @@ public class WorkflowMetricsReindexBackgroundTaskStatusMessageTranslator
 				percentage));
 	}
 
-	protected void setPhaseAttributes(
+	private int _getPercentage(
+		long count, int indexerCount, int indexerTotal, long total) {
+
+		if ((total <= 0) || (indexerTotal <= 0)) {
+			return 100;
+		}
+
+		double indexerPercentage = count / (double)total;
+
+		double totalPercentage =
+			(indexerCount + indexerPercentage) / indexerTotal;
+
+		return (int)Math.min(Math.ceil(totalPercentage * 100), 100);
+	}
+
+	private void _setPhaseAttributes(
 		BackgroundTaskStatus backgroundTaskStatus, Message message) {
 
 		String[] indexEntityNames = (String[])message.get(
@@ -101,21 +116,6 @@ public class WorkflowMetricsReindexBackgroundTaskStatusMessageTranslator
 			WorkflowMetricsReindexBackgroundTaskConstants.PHASE,
 			message.getString(
 				WorkflowMetricsReindexBackgroundTaskConstants.PHASE));
-	}
-
-	private int _getPercentage(
-		long count, int indexerCount, int indexerTotal, long total) {
-
-		if ((total <= 0) || (indexerTotal <= 0)) {
-			return 100;
-		}
-
-		double indexerPercentage = count / (double)total;
-
-		double totalPercentage =
-			(indexerCount + indexerPercentage) / indexerTotal;
-
-		return (int)Math.min(Math.ceil(totalPercentage * 100), 100);
 	}
 
 }

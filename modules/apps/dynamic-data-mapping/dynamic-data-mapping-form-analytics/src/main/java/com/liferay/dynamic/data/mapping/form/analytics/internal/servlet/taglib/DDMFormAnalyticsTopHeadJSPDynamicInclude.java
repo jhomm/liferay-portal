@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.analytics.internal.servlet.taglib;
@@ -21,11 +12,11 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,9 +24,14 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Leonardo Barros
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class DDMFormAnalyticsTopHeadJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
+
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
+	}
 
 	@Override
 	public void include(
@@ -67,20 +63,16 @@ public class DDMFormAnalyticsTopHeadJSPDynamicInclude
 		return _log;
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.dynamic.data.mapping.form.analytics)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
 	private static final String _TMPL_CONTENT = StringUtil.read(
 		DDMFormAnalyticsTopHeadJSPDynamicInclude.class,
 		"/META-INF/resources/form_analytics.tmpl");
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormAnalyticsTopHeadJSPDynamicInclude.class);
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.dynamic.data.mapping.form.analytics)"
+	)
+	private ServletContext _servletContext;
 
 }

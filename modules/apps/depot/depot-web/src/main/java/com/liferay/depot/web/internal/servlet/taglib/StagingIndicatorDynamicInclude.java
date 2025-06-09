@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.servlet.taglib;
@@ -17,14 +8,15 @@ package com.liferay.depot.web.internal.servlet.taglib;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.depot.web.internal.constants.DepotPortletKeys;
+import com.liferay.depot.web.internal.util.StagingIndicatorUtil;
 import com.liferay.exportimport.kernel.staging.Staging;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -34,8 +26,10 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -49,22 +43,21 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
-import com.liferay.site.util.GroupURLProvider;
-import com.liferay.staging.constants.StagingProcessesPortletKeys;
+import com.liferay.site.provider.GroupURLProvider;
 import com.liferay.taglib.util.HtmlTopTag;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
 
 import java.io.IOException;
 import java.io.Writer;
 
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -82,17 +75,12 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 		throws IOException {
 
 		try {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+			if (StagingIndicatorUtil.isShowStagingIndicator(
+					httpServletRequest)) {
 
-			Group scopeGroup = themeDisplay.getScopeGroup();
-
-			if (scopeGroup.isDepot() && scopeGroup.isStaged() &&
-				_portletPermission.contains(
-					themeDisplay.getPermissionChecker(),
-					StagingProcessesPortletKeys.STAGING_PROCESSES,
-					ActionKeys.VIEW)) {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
 
 				_includeStagingIndicator(
 					httpServletRequest, httpServletResponse, themeDisplay);
@@ -103,7 +91,7 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 		}
 		catch (PortalException | PortletException exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 	}
@@ -115,10 +103,12 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 	}
 
 	private <T> JSONArray _createJSONArray(T... values) {
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		for (T value : values) {
-			jsonArray.put(value);
+			if (value != null) {
+				jsonArray.put(value);
+			}
 		}
 
 		return jsonArray;
@@ -206,6 +196,29 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 		return "live";
 	}
 
+	private JSONObject _getPublishToLiveItemJSONObject(
+			HttpServletRequest httpServletRequest, Group stagingGroupId)
+		throws PortalException, PortletException {
+
+		if (!GroupPermissionUtil.contains(
+				PermissionThreadLocal.getPermissionChecker(), stagingGroupId,
+				ActionKeys.PUBLISH_STAGING)) {
+
+			return null;
+		}
+
+		return JSONUtil.put(
+			"action", "publishToLive"
+		).put(
+			"label", _language.get(httpServletRequest, "publish-to-live")
+		).put(
+			"publishURL",
+			_getPublishToLiveURL(stagingGroupId, httpServletRequest)
+		).put(
+			"symbolLeft", "cards2"
+		);
+	}
+
 	private String _getPublishToLiveURL(
 			Group group, HttpServletRequest httpServletRequest)
 		throws PortletException {
@@ -269,7 +282,7 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 			liveGroupURL = _getLiveGroupURL(scopeGroup, httpServletRequest);
 		}
 		catch (SystemException systemException) {
-			_log.error(systemException, systemException);
+			_log.error(systemException);
 		}
 
 		if (Validator.isNotNull(liveGroupURL) ||
@@ -284,17 +297,8 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 				_createJSONArray(
 					_getLiveGroupItemJSONObject(
 						httpServletRequest, scopeGroup, liveGroupURL),
-					JSONUtil.put(
-						"action", "publishToLive"
-					).put(
-						"label",
-						_language.get(httpServletRequest, "publish-to-live")
-					).put(
-						"publishURL",
-						_getPublishToLiveURL(scopeGroup, httpServletRequest)
-					).put(
-						"symbolLeft", "cards2"
-					))
+					_getPublishToLiveItemJSONObject(
+						httpServletRequest, scopeGroup))
 			).put(
 				"title", _language.get(httpServletRequest, "staging")
 			).build();
@@ -351,7 +355,11 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 							httpServletRequest,
 							_servletContext.getContextPath() +
 								"/dynamic_include/StagingIndicator.css"));
-					writer.write("\" rel=\"stylesheet\" type=\"text/css\" />");
+					writer.write(StringPool.QUOTE);
+					writer.write(
+						ContentSecurityPolicyNonceProviderUtil.getNonce(
+							httpServletRequest));
+					writer.write(" rel=\"stylesheet\" type=\"text/css\" />");
 				}
 				catch (IOException ioException) {
 					ReflectionUtil.throwException(ioException);
@@ -377,12 +385,10 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 		String componentId =
 			_portal.getPortletNamespace(DepotPortletKeys.DEPOT_ADMIN) +
 				"IndicatorComponent";
-		String module =
-			_npmResolver.resolveModuleName("depot-web") +
-				"/dynamic_include/StagingIndicator";
 
 		_reactRenderer.renderReact(
-			new ComponentDescriptor(module, componentId),
+			new ComponentDescriptor(
+				"{StagingIndicator} from depot-web", componentId),
 			_getReactData(httpServletRequest, themeDisplay), httpServletRequest,
 			writer);
 
@@ -399,16 +405,13 @@ public class StagingIndicatorDynamicInclude extends BaseDynamicInclude {
 	private GroupURLProvider _groupURLProvider;
 
 	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private Language _language;
 
 	@Reference
-	private NPMResolver _npmResolver;
-
-	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortletPermission _portletPermission;
 
 	@Reference
 	private ReactRenderer _reactRenderer;

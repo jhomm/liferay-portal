@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.resource.v1_0.test;
@@ -22,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.delivery.client.dto.v1_0.Field;
 import com.liferay.headless.delivery.client.dto.v1_0.SitePage;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
 import com.liferay.headless.delivery.client.pagination.Page;
@@ -29,50 +21,50 @@ import com.liferay.headless.delivery.client.pagination.Pagination;
 import com.liferay.headless.delivery.client.resource.v1_0.SitePageResource;
 import com.liferay.headless.delivery.client.serdes.v1_0.SitePageSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONDeserializer;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -96,7 +88,7 @@ public abstract class BaseSitePageResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -110,10 +102,15 @@ public abstract class BaseSitePageResourceTestCase {
 
 		_sitePageResource.setContextCompany(testCompany);
 
-		SitePageResource.Builder builder = SitePageResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		sitePageResource = builder.authentication(
-			"test@liferay.com", "test"
+		sitePageResource = SitePageResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -127,7 +124,32 @@ public abstract class BaseSitePageResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SitePage sitePage1 = randomSitePage();
+
+		String json = objectMapper.writeValueAsString(sitePage1);
+
+		SitePage sitePage2 = SitePageSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(sitePage1, sitePage2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SitePage sitePage = randomSitePage();
+
+		String json1 = objectMapper.writeValueAsString(sitePage);
+		String json2 = SitePageSerDes.toJSON(sitePage);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -142,40 +164,6 @@ public abstract class BaseSitePageResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		SitePage sitePage1 = randomSitePage();
-
-		String json = objectMapper.writeValueAsString(sitePage1);
-
-		SitePage sitePage2 = SitePageSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(sitePage1, sitePage2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		SitePage sitePage = randomSitePage();
-
-		String json1 = objectMapper.writeValueAsString(sitePage);
-		String json2 = SitePageSerDes.toJSON(sitePage);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -202,6 +190,469 @@ public abstract class BaseSitePageResourceTestCase {
 	}
 
 	@Test
+	public void testGetSiteSitePage() throws Exception {
+		SitePage postSitePage = testGetSiteSitePage_addSitePage();
+
+		SitePage getSitePage = sitePageResource.getSiteSitePage(
+			testGetSiteSitePage_getSiteId(postSitePage),
+			postSitePage.getFriendlyUrlPath());
+
+		assertEquals(postSitePage, getSitePage);
+		assertValid(getSitePage);
+	}
+
+	protected Long testGetSiteSitePage_getSiteId(SitePage sitePage)
+		throws Exception {
+
+		return sitePage.getSiteId();
+	}
+
+	protected SitePage testGetSiteSitePage_addSitePage() throws Exception {
+		return sitePageResource.postSiteSitePage(
+			testGroup.getGroupId(), randomSitePage());
+	}
+
+	@Test
+	public void testGraphQLGetSiteSitePage() throws Exception {
+		SitePage sitePage = testGraphQLGetSiteSitePage_addSitePage();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				sitePage,
+				SitePageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"sitePage",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"siteKey",
+											"\"" +
+												testGraphQLGetSiteSitePage_getSiteId(
+													sitePage) + "\"");
+
+										put(
+											"friendlyUrlPath",
+											"\"" +
+												sitePage.getFriendlyUrlPath() +
+													"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/sitePage"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				sitePage,
+				SitePageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"sitePage",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteSitePage_getSiteId(
+														sitePage) + "\"");
+
+											put(
+												"friendlyUrlPath",
+												"\"" +
+													sitePage.
+														getFriendlyUrlPath() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/sitePage"))));
+	}
+
+	protected Long testGraphQLGetSiteSitePage_getSiteId(SitePage sitePage)
+		throws Exception {
+
+		return sitePage.getSiteId();
+	}
+
+	@Test
+	public void testGraphQLGetSiteSitePageNotFound() throws Exception {
+		String irrelevantFriendlyUrlPath =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"sitePage",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" + irrelevantGroup.getGroupId() + "\"");
+								put(
+									"friendlyUrlPath",
+									irrelevantFriendlyUrlPath);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"sitePage",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"friendlyUrlPath",
+										irrelevantFriendlyUrlPath);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected SitePage testGraphQLGetSiteSitePage_addSitePage()
+		throws Exception {
+
+		return testGraphQLSitePage_addSitePage();
+	}
+
+	@Test
+	public void testGetSiteSitePageExperienceExperienceKey() throws Exception {
+		SitePage postSitePage =
+			testGetSiteSitePageExperienceExperienceKey_addSitePage();
+
+		SitePage getSitePage =
+			sitePageResource.getSiteSitePageExperienceExperienceKey(
+				testGetSiteSitePageExperienceExperienceKey_getSiteId(
+					postSitePage),
+				postSitePage.getFriendlyUrlPath(),
+				testGetSiteSitePageExperienceExperienceKey_getExperienceKey());
+
+		assertEquals(postSitePage, getSitePage);
+		assertValid(getSitePage);
+	}
+
+	protected Long testGetSiteSitePageExperienceExperienceKey_getSiteId(
+			SitePage sitePage)
+		throws Exception {
+
+		return sitePage.getSiteId();
+	}
+
+	protected String
+			testGetSiteSitePageExperienceExperienceKey_getExperienceKey()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected SitePage testGetSiteSitePageExperienceExperienceKey_addSitePage()
+		throws Exception {
+
+		return sitePageResource.postSiteSitePage(
+			testGroup.getGroupId(), randomSitePage());
+	}
+
+	@Test
+	public void testGraphQLGetSiteSitePageExperienceExperienceKey()
+		throws Exception {
+
+		SitePage sitePage =
+			testGraphQLGetSiteSitePageExperienceExperienceKey_addSitePage();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				sitePage,
+				SitePageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"sitePageExperienceExperienceKey",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"siteKey",
+											"\"" +
+												testGraphQLGetSiteSitePageExperienceExperienceKey_getSiteId(
+													sitePage) + "\"");
+
+										put(
+											"friendlyUrlPath",
+											"\"" +
+												sitePage.getFriendlyUrlPath() +
+													"\"");
+
+										put(
+											"experienceKey",
+											"\"" +
+												testGraphQLGetSiteSitePageExperienceExperienceKey_getExperienceKey() +
+													"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/sitePageExperienceExperienceKey"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				sitePage,
+				SitePageSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"sitePageExperienceExperienceKey",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteSitePageExperienceExperienceKey_getSiteId(
+														sitePage) + "\"");
+
+											put(
+												"friendlyUrlPath",
+												"\"" +
+													sitePage.
+														getFriendlyUrlPath() +
+															"\"");
+
+											put(
+												"experienceKey",
+												"\"" +
+													testGraphQLGetSiteSitePageExperienceExperienceKey_getExperienceKey() +
+														"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/sitePageExperienceExperienceKey"))));
+	}
+
+	protected Long testGraphQLGetSiteSitePageExperienceExperienceKey_getSiteId(
+			SitePage sitePage)
+		throws Exception {
+
+		return sitePage.getSiteId();
+	}
+
+	protected String
+			testGraphQLGetSiteSitePageExperienceExperienceKey_getExperienceKey()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLGetSiteSitePageExperienceExperienceKeyNotFound()
+		throws Exception {
+
+		String irrelevantFriendlyUrlPath =
+			"\"" + RandomTestUtil.randomString() + "\"";
+		String irrelevantExperienceKey =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"sitePageExperienceExperienceKey",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" + irrelevantGroup.getGroupId() + "\"");
+								put(
+									"friendlyUrlPath",
+									irrelevantFriendlyUrlPath);
+								put("experienceKey", irrelevantExperienceKey);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"sitePageExperienceExperienceKey",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"friendlyUrlPath",
+										irrelevantFriendlyUrlPath);
+									put(
+										"experienceKey",
+										irrelevantExperienceKey);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected SitePage
+			testGraphQLGetSiteSitePageExperienceExperienceKey_addSitePage()
+		throws Exception {
+
+		return testGraphQLSitePage_addSitePage();
+	}
+
+	@Test
+	public void testGetSiteSitePageExperienceExperienceKeyRenderedPage()
+		throws Exception {
+
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGetSiteSitePageRenderedPage() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGetSiteSitePagesExperiencesPage() throws Exception {
+		Long siteId = testGetSiteSitePagesExperiencesPage_getSiteId();
+		Long irrelevantSiteId =
+			testGetSiteSitePagesExperiencesPage_getIrrelevantSiteId();
+		String friendlyUrlPath =
+			testGetSiteSitePagesExperiencesPage_getFriendlyUrlPath();
+		String irrelevantFriendlyUrlPath =
+			testGetSiteSitePagesExperiencesPage_getIrrelevantFriendlyUrlPath();
+
+		Page<SitePage> page = sitePageResource.getSiteSitePagesExperiencesPage(
+			siteId, friendlyUrlPath);
+
+		long totalCount = page.getTotalCount();
+
+		if ((irrelevantSiteId != null) && (irrelevantFriendlyUrlPath != null)) {
+			SitePage irrelevantSitePage =
+				testGetSiteSitePagesExperiencesPage_addSitePage(
+					irrelevantSiteId, irrelevantFriendlyUrlPath,
+					randomIrrelevantSitePage());
+
+			page = sitePageResource.getSiteSitePagesExperiencesPage(
+				irrelevantSiteId, irrelevantFriendlyUrlPath);
+
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
+
+			assertContains(irrelevantSitePage, (List<SitePage>)page.getItems());
+			assertValid(
+				page,
+				testGetSiteSitePagesExperiencesPage_getExpectedActions(
+					irrelevantSiteId, irrelevantFriendlyUrlPath));
+		}
+
+		SitePage sitePage1 = testGetSiteSitePagesExperiencesPage_addSitePage(
+			siteId, friendlyUrlPath, randomSitePage());
+
+		SitePage sitePage2 = testGetSiteSitePagesExperiencesPage_addSitePage(
+			siteId, friendlyUrlPath, randomSitePage());
+
+		page = sitePageResource.getSiteSitePagesExperiencesPage(
+			siteId, friendlyUrlPath);
+
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
+
+		assertContains(sitePage1, (List<SitePage>)page.getItems());
+		assertContains(sitePage2, (List<SitePage>)page.getItems());
+		assertValid(
+			page,
+			testGetSiteSitePagesExperiencesPage_getExpectedActions(
+				siteId, friendlyUrlPath));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetSiteSitePagesExperiencesPage_getExpectedActions(
+				Long siteId, String friendlyUrlPath)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	protected SitePage testGetSiteSitePagesExperiencesPage_addSitePage(
+			Long siteId, String friendlyUrlPath, SitePage sitePage)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected Long testGetSiteSitePagesExperiencesPage_getSiteId()
+		throws Exception {
+
+		return testGroup.getGroupId();
+	}
+
+	protected Long testGetSiteSitePagesExperiencesPage_getIrrelevantSiteId()
+		throws Exception {
+
+		return irrelevantGroup.getGroupId();
+	}
+
+	protected String testGetSiteSitePagesExperiencesPage_getFriendlyUrlPath()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected String
+			testGetSiteSitePagesExperiencesPage_getIrrelevantFriendlyUrlPath()
+		throws Exception {
+
+		return null;
+	}
+
+	@Test
 	public void testGetSiteSitePagesPage() throws Exception {
 		Long siteId = testGetSiteSitePagesPage_getSiteId();
 		Long irrelevantSiteId = testGetSiteSitePagesPage_getIrrelevantSiteId();
@@ -209,21 +660,22 @@ public abstract class BaseSitePageResourceTestCase {
 		Page<SitePage> page = sitePageResource.getSiteSitePagesPage(
 			siteId, null, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantSiteId != null) {
 			SitePage irrelevantSitePage = testGetSiteSitePagesPage_addSitePage(
 				irrelevantSiteId, randomIrrelevantSitePage());
 
 			page = sitePageResource.getSiteSitePagesPage(
-				irrelevantSiteId, null, null, null, Pagination.of(1, 2), null);
+				irrelevantSiteId, null, null, null,
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantSitePage),
-				(List<SitePage>)page.getItems());
-			assertValid(page);
+			assertContains(irrelevantSitePage, (List<SitePage>)page.getItems());
+			assertValid(
+				page,
+				testGetSiteSitePagesPage_getExpectedActions(irrelevantSiteId));
 		}
 
 		SitePage sitePage1 = testGetSiteSitePagesPage_addSitePage(
@@ -235,12 +687,29 @@ public abstract class BaseSitePageResourceTestCase {
 		page = sitePageResource.getSiteSitePagesPage(
 			siteId, null, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(sitePage1, sitePage2),
-			(List<SitePage>)page.getItems());
-		assertValid(page);
+		assertContains(sitePage1, (List<SitePage>)page.getItems());
+		assertContains(sitePage2, (List<SitePage>)page.getItems());
+		assertValid(page, testGetSiteSitePagesPage_getExpectedActions(siteId));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetSiteSitePagesPage_getExpectedActions(Long siteId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/sites/{siteId}/site-pages/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -273,11 +742,39 @@ public abstract class BaseSitePageResourceTestCase {
 	}
 
 	@Test
+	public void testGetSiteSitePagesPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetSiteSitePagesPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetSiteSitePagesPageWithFilterStringContains()
+		throws Exception {
+
+		testGetSiteSitePagesPageWithFilter("contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetSiteSitePagesPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetSiteSitePagesPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetSiteSitePagesPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetSiteSitePagesPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetSiteSitePagesPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -295,7 +792,7 @@ public abstract class BaseSitePageResourceTestCase {
 		for (EntityField entityField : entityFields) {
 			Page<SitePage> page = sitePageResource.getSiteSitePagesPage(
 				siteId, null, null,
-				getFilterString(entityField, "eq", sitePage1),
+				getFilterString(entityField, operator, sitePage1),
 				Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -308,6 +805,11 @@ public abstract class BaseSitePageResourceTestCase {
 	public void testGetSiteSitePagesPageWithPagination() throws Exception {
 		Long siteId = testGetSiteSitePagesPage_getSiteId();
 
+		Page<SitePage> sitePagesPage = sitePageResource.getSiteSitePagesPage(
+			siteId, null, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(sitePagesPage.getTotalCount());
+
 		SitePage sitePage1 = testGetSiteSitePagesPage_addSitePage(
 			siteId, randomSitePage());
 
@@ -317,28 +819,68 @@ public abstract class BaseSitePageResourceTestCase {
 		SitePage sitePage3 = testGetSiteSitePagesPage_addSitePage(
 			siteId, randomSitePage());
 
-		Page<SitePage> page1 = sitePageResource.getSiteSitePagesPage(
-			siteId, null, null, null, Pagination.of(1, 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<SitePage> sitePages1 = (List<SitePage>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(sitePages1.toString(), 2, sitePages1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<SitePage> page1 = sitePageResource.getSiteSitePagesPage(
+				siteId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Page<SitePage> page2 = sitePageResource.getSiteSitePagesPage(
-			siteId, null, null, null, Pagination.of(2, 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(sitePage1, (List<SitePage>)page1.getItems());
 
-		List<SitePage> sitePages2 = (List<SitePage>)page2.getItems();
+			Page<SitePage> page2 = sitePageResource.getSiteSitePagesPage(
+				siteId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		Assert.assertEquals(sitePages2.toString(), 1, sitePages2.size());
+			assertContains(sitePage2, (List<SitePage>)page2.getItems());
 
-		Page<SitePage> page3 = sitePageResource.getSiteSitePagesPage(
-			siteId, null, null, null, Pagination.of(1, 3), null);
+			Page<SitePage> page3 = sitePageResource.getSiteSitePagesPage(
+				siteId, null, null, null,
+				Pagination.of(
+					(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+					pageSizeLimit),
+				null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(sitePage1, sitePage2, sitePage3),
-			(List<SitePage>)page3.getItems());
+			assertContains(sitePage3, (List<SitePage>)page3.getItems());
+		}
+		else {
+			Page<SitePage> page1 = sitePageResource.getSiteSitePagesPage(
+				siteId, null, null, null, Pagination.of(1, totalCount + 2),
+				null);
+
+			List<SitePage> sitePages1 = (List<SitePage>)page1.getItems();
+
+			Assert.assertEquals(
+				sitePages1.toString(), totalCount + 2, sitePages1.size());
+
+			Page<SitePage> page2 = sitePageResource.getSiteSitePagesPage(
+				siteId, null, null, null, Pagination.of(2, totalCount + 2),
+				null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<SitePage> sitePages2 = (List<SitePage>)page2.getItems();
+
+			Assert.assertEquals(sitePages2.toString(), 1, sitePages2.size());
+
+			Page<SitePage> page3 = sitePageResource.getSiteSitePagesPage(
+				siteId, null, null, null, Pagination.of(1, (int)totalCount + 3),
+				null);
+
+			assertContains(sitePage1, (List<SitePage>)page3.getItems());
+			assertContains(sitePage2, (List<SitePage>)page3.getItems());
+			assertContains(sitePage3, (List<SitePage>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -346,9 +888,19 @@ public abstract class BaseSitePageResourceTestCase {
 		testGetSiteSitePagesPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, sitePage1, sitePage2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					sitePage1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetSiteSitePagesPageWithSortDouble() throws Exception {
+		testGetSiteSitePagesPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, sitePage1, sitePage2) -> {
+				BeanTestUtil.setProperty(sitePage1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(sitePage2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -357,8 +909,8 @@ public abstract class BaseSitePageResourceTestCase {
 		testGetSiteSitePagesPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, sitePage1, sitePage2) -> {
-				BeanUtils.setProperty(sitePage1, entityField.getName(), 0);
-				BeanUtils.setProperty(sitePage2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(sitePage1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(sitePage2, entityField.getName(), 1);
 			});
 	}
 
@@ -371,27 +923,27 @@ public abstract class BaseSitePageResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						sitePage1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						sitePage2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						sitePage1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						sitePage2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -399,12 +951,12 @@ public abstract class BaseSitePageResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						sitePage1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						sitePage2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -438,22 +990,25 @@ public abstract class BaseSitePageResourceTestCase {
 
 		sitePage2 = testGetSiteSitePagesPage_addSitePage(siteId, sitePage2);
 
+		Page<SitePage> page = sitePageResource.getSiteSitePagesPage(
+			siteId, null, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<SitePage> ascPage = sitePageResource.getSiteSitePagesPage(
-				siteId, null, null, null, Pagination.of(1, 2),
+				siteId, null, null, null,
+				Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(sitePage1, sitePage2),
-				(List<SitePage>)ascPage.getItems());
+			assertContains(sitePage1, (List<SitePage>)ascPage.getItems());
+			assertContains(sitePage2, (List<SitePage>)ascPage.getItems());
 
 			Page<SitePage> descPage = sitePageResource.getSiteSitePagesPage(
-				siteId, null, null, null, Pagination.of(1, 2),
+				siteId, null, null, null,
+				Pagination.of(1, (int)page.getTotalCount() + 1),
 				entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(sitePage2, sitePage1),
-				(List<SitePage>)descPage.getItems());
+			assertContains(sitePage2, (List<SitePage>)descPage.getItems());
+			assertContains(sitePage1, (List<SitePage>)descPage.getItems());
 		}
 	}
 
@@ -461,8 +1016,7 @@ public abstract class BaseSitePageResourceTestCase {
 			Long siteId, SitePage sitePage)
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return sitePageResource.postSiteSitePage(siteId, sitePage);
 	}
 
 	protected Long testGetSiteSitePagesPage_getSiteId() throws Exception {
@@ -477,150 +1031,204 @@ public abstract class BaseSitePageResourceTestCase {
 
 	@Test
 	public void testGraphQLGetSiteSitePagesPage() throws Exception {
-		Assert.assertTrue(false);
+		Long siteId = testGetSiteSitePagesPage_getSiteId();
+
+		GraphQLField graphQLField = new GraphQLField(
+			"sitePages",
+			new HashMap<String, Object>() {
+				{
+					put("page", 1);
+					put("pageSize", 10);
+
+					put("siteKey", "\"" + siteId + "\"");
+				}
+			},
+			new GraphQLField("items", getGraphQLFields()),
+			new GraphQLField("page"), new GraphQLField("totalCount"));
+
+		// No namespace
+
+		JSONObject sitePagesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/sitePages");
+
+		long totalCount = sitePagesJSONObject.getLong("totalCount");
+
+		SitePage sitePage1 = testGraphQLGetSiteSitePagesPage_addSitePage();
+		SitePage sitePage2 = testGraphQLGetSiteSitePagesPage_addSitePage();
+
+		sitePagesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(graphQLField), "JSONObject/data",
+			"JSONObject/sitePages");
+
+		Assert.assertEquals(
+			totalCount + 2, sitePagesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			sitePage1,
+			Arrays.asList(
+				SitePageSerDes.toDTOs(sitePagesJSONObject.getString("items"))));
+		assertContains(
+			sitePage2,
+			Arrays.asList(
+				SitePageSerDes.toDTOs(sitePagesJSONObject.getString("items"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		sitePagesJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+			"JSONObject/sitePages");
+
+		Assert.assertEquals(
+			totalCount + 2, sitePagesJSONObject.getLong("totalCount"));
+
+		assertContains(
+			sitePage1,
+			Arrays.asList(
+				SitePageSerDes.toDTOs(sitePagesJSONObject.getString("items"))));
+		assertContains(
+			sitePage2,
+			Arrays.asList(
+				SitePageSerDes.toDTOs(sitePagesJSONObject.getString("items"))));
+	}
+
+	protected SitePage testGraphQLGetSiteSitePagesPage_addSitePage()
+		throws Exception {
+
+		return testGraphQLSitePage_addSitePage();
 	}
 
 	@Test
-	public void testGetSiteSitePage() throws Exception {
-		Assert.assertTrue(false);
+	public void testPostSiteSitePage() throws Exception {
+		SitePage randomSitePage = randomSitePage();
+
+		SitePage postSitePage = testPostSiteSitePage_addSitePage(
+			randomSitePage);
+
+		assertEquals(randomSitePage, postSitePage);
+		assertValid(postSitePage);
+	}
+
+	protected SitePage testPostSiteSitePage_addSitePage(SitePage sitePage)
+		throws Exception {
+
+		return sitePageResource.postSiteSitePage(
+			testGetSiteSitePagesPage_getSiteId(), sitePage);
 	}
 
 	@Test
-	public void testGraphQLGetSiteSitePage() throws Exception {
-		Assert.assertTrue(true);
-	}
+	public void testGraphQLPostSiteSitePage() throws Exception {
+		SitePage randomSitePage = randomSitePage();
 
-	@Test
-	public void testGraphQLGetSiteSitePageNotFound() throws Exception {
-		Assert.assertTrue(true);
-	}
+		SitePage sitePage = testGraphQLSitePage_addSitePage(randomSitePage);
 
-	@Test
-	public void testGetSiteSitePageFriendlyUrlPathExperiencesPage()
-		throws Exception {
-
-		Long siteId =
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getSiteId();
-		Long irrelevantSiteId =
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getIrrelevantSiteId();
-		String friendlyUrlPath =
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getFriendlyUrlPath();
-		String irrelevantFriendlyUrlPath =
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getIrrelevantFriendlyUrlPath();
-
-		Page<SitePage> page =
-			sitePageResource.getSiteSitePageFriendlyUrlPathExperiencesPage(
-				siteId, friendlyUrlPath);
-
-		Assert.assertEquals(0, page.getTotalCount());
-
-		if ((irrelevantSiteId != null) && (irrelevantFriendlyUrlPath != null)) {
-			SitePage irrelevantSitePage =
-				testGetSiteSitePageFriendlyUrlPathExperiencesPage_addSitePage(
-					irrelevantSiteId, irrelevantFriendlyUrlPath,
-					randomIrrelevantSitePage());
-
-			page =
-				sitePageResource.getSiteSitePageFriendlyUrlPathExperiencesPage(
-					irrelevantSiteId, irrelevantFriendlyUrlPath);
-
-			Assert.assertEquals(1, page.getTotalCount());
-
-			assertEquals(
-				Arrays.asList(irrelevantSitePage),
-				(List<SitePage>)page.getItems());
-			assertValid(page);
-		}
-
-		SitePage sitePage1 =
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_addSitePage(
-				siteId, friendlyUrlPath, randomSitePage());
-
-		SitePage sitePage2 =
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_addSitePage(
-				siteId, friendlyUrlPath, randomSitePage());
-
-		page = sitePageResource.getSiteSitePageFriendlyUrlPathExperiencesPage(
-			siteId, friendlyUrlPath);
-
-		Assert.assertEquals(2, page.getTotalCount());
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(sitePage1, sitePage2),
-			(List<SitePage>)page.getItems());
-		assertValid(page);
-	}
-
-	protected SitePage
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_addSitePage(
-				Long siteId, String friendlyUrlPath, SitePage sitePage)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Long testGetSiteSitePageFriendlyUrlPathExperiencesPage_getSiteId()
-		throws Exception {
-
-		return testGroup.getGroupId();
-	}
-
-	protected Long
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getIrrelevantSiteId()
-		throws Exception {
-
-		return irrelevantGroup.getGroupId();
-	}
-
-	protected String
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getFriendlyUrlPath()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testGetSiteSitePageFriendlyUrlPathExperiencesPage_getIrrelevantFriendlyUrlPath()
-		throws Exception {
-
-		return null;
-	}
-
-	@Test
-	public void testGetSiteSitePageExperienceExperienceKey() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGraphQLGetSiteSitePageExperienceExperienceKey()
-		throws Exception {
-
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testGraphQLGetSiteSitePageExperienceExperienceKeyNotFound()
-		throws Exception {
-
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testGetSiteSitePageExperienceExperienceKeyRenderedPage()
-		throws Exception {
-
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGetSiteSitePageRenderedPage() throws Exception {
-		Assert.assertTrue(false);
+		Assert.assertTrue(equals(randomSitePage, sitePage));
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
+
+	protected void appendGraphQLFieldValue(StringBuilder sb, Object value)
+		throws Exception {
+
+		if (value instanceof Object[]) {
+			StringBuilder arraySB = new StringBuilder("[");
+
+			for (Object object : (Object[])value) {
+				if (arraySB.length() > 1) {
+					arraySB.append(", ");
+				}
+
+				arraySB.append("{");
+
+				Class<?> clazz = object.getClass();
+
+				for (java.lang.reflect.Field field :
+						getDeclaredFields(clazz.getSuperclass())) {
+
+					arraySB.append(field.getName());
+					arraySB.append(": ");
+
+					appendGraphQLFieldValue(arraySB, field.get(object));
+
+					arraySB.append(", ");
+				}
+
+				arraySB.setLength(arraySB.length() - 2);
+
+				arraySB.append("}");
+			}
+
+			arraySB.append("]");
+
+			sb.append(arraySB.toString());
+		}
+		else if (value instanceof String) {
+			sb.append("\"");
+			sb.append(value);
+			sb.append("\"");
+		}
+		else {
+			sb.append(value);
+		}
+	}
+
+	protected SitePage testGraphQLSitePage_addSitePage() throws Exception {
+		return testGraphQLSitePage_addSitePage(randomSitePage());
+	}
+
+	protected SitePage testGraphQLSitePage_addSitePage(SitePage sitePage)
+		throws Exception {
+
+		JSONDeserializer<SitePage> jsonDeserializer =
+			JSONFactoryUtil.createJSONDeserializer();
+
+		StringBuilder sb = new StringBuilder("{");
+
+		for (java.lang.reflect.Field field :
+				getDeclaredFields(SitePage.class)) {
+
+			if (!ArrayUtil.contains(
+					getAdditionalAssertFieldNames(), field.getName())) {
+
+				continue;
+			}
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append(field.getName());
+			sb.append(": ");
+
+			appendGraphQLFieldValue(sb, field.get(sitePage));
+		}
+
+		sb.append("}");
+
+		List<GraphQLField> graphQLFields = getGraphQLFields();
+
+		graphQLFields.add(new GraphQLField("id"));
+
+		return jsonDeserializer.deserialize(
+			JSONUtil.getValueAsString(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"createSiteSitePage",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" + testGroup.getGroupId() + "\"");
+								put("sitePage", sb.toString());
+							}
+						},
+						graphQLFields)),
+				"JSONObject/data", "JSONObject/createSiteSitePage"),
+			SitePage.class);
+	}
 
 	protected void assertContains(SitePage sitePage, List<SitePage> sitePages) {
 		boolean contains = false;
@@ -693,6 +1301,10 @@ public abstract class BaseSitePageResourceTestCase {
 		}
 
 		if (sitePage.getDateModified() == null) {
+			valid = false;
+		}
+
+		if (sitePage.getId() == null) {
 			valid = false;
 		}
 
@@ -795,6 +1407,14 @@ public abstract class BaseSitePageResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("pagePermissions", additionalAssertFieldName)) {
+				if (sitePage.getPagePermissions() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("pageSettings", additionalAssertFieldName)) {
 				if (sitePage.getPageSettings() == null) {
 					valid = false;
@@ -805,6 +1425,14 @@ public abstract class BaseSitePageResourceTestCase {
 
 			if (Objects.equals("pageType", additionalAssertFieldName)) {
 				if (sitePage.getPageType() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("parentSitePage", additionalAssertFieldName)) {
+				if (sitePage.getParentSitePage() == null) {
 					valid = false;
 				}
 
@@ -880,6 +1508,12 @@ public abstract class BaseSitePageResourceTestCase {
 	}
 
 	protected void assertValid(Page<SitePage> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<SitePage> page, Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<SitePage> sitePages = page.getItems();
@@ -894,6 +1528,25 @@ public abstract class BaseSitePageResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1090,6 +1743,14 @@ public abstract class BaseSitePageResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("id", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(sitePage1.getId(), sitePage2.getId())) {
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("keywords", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						sitePage1.getKeywords(), sitePage2.getKeywords())) {
@@ -1111,6 +1772,17 @@ public abstract class BaseSitePageResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("pagePermissions", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						sitePage1.getPagePermissions(),
+						sitePage2.getPagePermissions())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("pageSettings", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						sitePage1.getPageSettings(),
@@ -1125,6 +1797,17 @@ public abstract class BaseSitePageResourceTestCase {
 			if (Objects.equals("pageType", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						sitePage1.getPageType(), sitePage2.getPageType())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("parentSitePage", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						sitePage1.getParentSitePage(),
+						sitePage2.getParentSitePage())) {
 
 					return false;
 				}
@@ -1247,14 +1930,20 @@ public abstract class BaseSitePageResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1271,6 +1960,10 @@ public abstract class BaseSitePageResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1280,18 +1973,18 @@ public abstract class BaseSitePageResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1334,20 +2027,18 @@ public abstract class BaseSitePageResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = sitePage.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(sitePage.getDateCreated(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(sitePage.getDateCreated(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1357,7 +2048,7 @@ public abstract class BaseSitePageResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(sitePage.getDateCreated()));
+				sb.append(_format.format(sitePage.getDateCreated()));
 			}
 
 			return sb.toString();
@@ -1365,20 +2056,18 @@ public abstract class BaseSitePageResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = sitePage.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(sitePage.getDateModified(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(sitePage.getDateModified(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1388,7 +2077,7 @@ public abstract class BaseSitePageResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(sitePage.getDateModified()));
+				sb.append(_format.format(sitePage.getDateModified()));
 			}
 
 			return sb.toString();
@@ -1396,20 +2085,18 @@ public abstract class BaseSitePageResourceTestCase {
 
 		if (entityFieldName.equals("datePublished")) {
 			if (operator.equals("between")) {
+				Date date = sitePage.getDatePublished();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(sitePage.getDatePublished(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(sitePage.getDatePublished(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1419,7 +2106,7 @@ public abstract class BaseSitePageResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(sitePage.getDatePublished()));
+				sb.append(_format.format(sitePage.getDatePublished()));
 			}
 
 			return sb.toString();
@@ -1431,14 +2118,57 @@ public abstract class BaseSitePageResourceTestCase {
 		}
 
 		if (entityFieldName.equals("friendlyUrlPath")) {
-			sb.append("'");
-			sb.append(String.valueOf(sitePage.getFriendlyUrlPath()));
-			sb.append("'");
+			Object object = sitePage.getFriendlyUrlPath();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("friendlyUrlPath_i18n")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("id")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -1453,17 +2183,65 @@ public abstract class BaseSitePageResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("pagePermissions")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("pageSettings")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
 
 		if (entityFieldName.equals("pageType")) {
-			sb.append("'");
-			sb.append(String.valueOf(sitePage.getPageType()));
-			sb.append("'");
+			Object object = sitePage.getPageType();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
+		}
+
+		if (entityFieldName.equals("parentSitePage")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
 		}
 
 		if (entityFieldName.equals("renderedPage")) {
@@ -1487,9 +2265,47 @@ public abstract class BaseSitePageResourceTestCase {
 		}
 
 		if (entityFieldName.equals("title")) {
-			sb.append("'");
-			sb.append(String.valueOf(sitePage.getTitle()));
-			sb.append("'");
+			Object object = sitePage.getTitle();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1500,9 +2316,47 @@ public abstract class BaseSitePageResourceTestCase {
 		}
 
 		if (entityFieldName.equals("uuid")) {
-			sb.append("'");
-			sb.append(String.valueOf(sitePage.getUuid()));
-			sb.append("'");
+			Object object = sitePage.getUuid();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1526,7 +2380,8 @@ public abstract class BaseSitePageResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1561,6 +2416,7 @@ public abstract class BaseSitePageResourceTestCase {
 				datePublished = RandomTestUtil.nextDate();
 				friendlyUrlPath = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
+				id = RandomTestUtil.randomLong();
 				pageType = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				siteId = testGroup.getGroupId();
@@ -1583,9 +2439,131 @@ public abstract class BaseSitePageResourceTestCase {
 	}
 
 	protected SitePageResource sitePageResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1661,19 +2639,9 @@ public abstract class BaseSitePageResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseSitePageResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.delivery.resource.v1_0.SitePageResource

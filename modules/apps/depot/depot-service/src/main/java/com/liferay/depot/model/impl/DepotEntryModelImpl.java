@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.model.impl;
 
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.model.DepotEntryModel;
-import com.liferay.depot.model.DepotEntrySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -77,11 +64,11 @@ public class DepotEntryModelImpl
 	public static final String TABLE_NAME = "DepotEntry";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
-		{"depotEntryId", Types.BIGINT}, {"groupId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
-		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
-		{"modifiedDate", Types.TIMESTAMP}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"depotEntryId", Types.BIGINT},
+		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
+		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -89,6 +76,7 @@ public class DepotEntryModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("depotEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
@@ -100,7 +88,7 @@ public class DepotEntryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DepotEntry (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,depotEntryId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null)";
+		"create table DepotEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,depotEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,primary key (depotEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table DepotEntry";
 
@@ -153,56 +141,6 @@ public class DepotEntryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static DepotEntry toModel(DepotEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		DepotEntry model = new DepotEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setDepotEntryId(soapModel.getDepotEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DepotEntry> toModels(DepotEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<DepotEntry> models = new ArrayList<DepotEntry>(soapModels.length);
-
-		for (DepotEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public DepotEntryModelImpl() {
@@ -280,94 +218,88 @@ public class DepotEntryModelImpl
 	public Map<String, Function<DepotEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DepotEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DepotEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DepotEntry.class.getClassLoader(), DepotEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DepotEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DepotEntry> constructor =
-				(Constructor<DepotEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DepotEntry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<DepotEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DepotEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DepotEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DepotEntry::getUuid);
+			attributeGetterFunctions.put(
+				"depotEntryId", DepotEntry::getDepotEntryId);
+			attributeGetterFunctions.put("groupId", DepotEntry::getGroupId);
+			attributeGetterFunctions.put("companyId", DepotEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", DepotEntry::getUserId);
+			attributeGetterFunctions.put("userName", DepotEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", DepotEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DepotEntry::getModifiedDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DepotEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DepotEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DepotEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<DepotEntry, Object>>();
-		Map<String, BiConsumer<DepotEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DepotEntry, ?>>();
+		private static final Map<String, BiConsumer<DepotEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", DepotEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DepotEntry, Long>)DepotEntry::setMvccVersion);
-		attributeGetterFunctions.put("uuid", DepotEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<DepotEntry, String>)DepotEntry::setUuid);
-		attributeGetterFunctions.put(
-			"depotEntryId", DepotEntry::getDepotEntryId);
-		attributeSetterBiConsumers.put(
-			"depotEntryId",
-			(BiConsumer<DepotEntry, Long>)DepotEntry::setDepotEntryId);
-		attributeGetterFunctions.put("groupId", DepotEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<DepotEntry, Long>)DepotEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", DepotEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DepotEntry, Long>)DepotEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", DepotEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<DepotEntry, Long>)DepotEntry::setUserId);
-		attributeGetterFunctions.put("userName", DepotEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<DepotEntry, String>)DepotEntry::setUserName);
-		attributeGetterFunctions.put("createDate", DepotEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DepotEntry, Date>)DepotEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DepotEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DepotEntry, Date>)DepotEntry::setModifiedDate);
+		static {
+			Map<String, BiConsumer<DepotEntry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<DepotEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DepotEntry, Long>)DepotEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DepotEntry, Long>)DepotEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<DepotEntry, String>)DepotEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"depotEntryId",
+				(BiConsumer<DepotEntry, Long>)DepotEntry::setDepotEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<DepotEntry, Long>)DepotEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DepotEntry, Long>)DepotEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<DepotEntry, Long>)DepotEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DepotEntry, String>)DepotEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DepotEntry, Date>)DepotEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DepotEntry, Date>)DepotEntry::setModifiedDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -383,6 +315,21 @@ public class DepotEntryModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -628,6 +575,7 @@ public class DepotEntryModelImpl
 		DepotEntryImpl depotEntryImpl = new DepotEntryImpl();
 
 		depotEntryImpl.setMvccVersion(getMvccVersion());
+		depotEntryImpl.setCtCollectionId(getCtCollectionId());
 		depotEntryImpl.setUuid(getUuid());
 		depotEntryImpl.setDepotEntryId(getDepotEntryId());
 		depotEntryImpl.setGroupId(getGroupId());
@@ -648,6 +596,8 @@ public class DepotEntryModelImpl
 
 		depotEntryImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		depotEntryImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		depotEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		depotEntryImpl.setDepotEntryId(
 			this.<Long>getColumnOriginalValue("depotEntryId"));
@@ -739,6 +689,8 @@ public class DepotEntryModelImpl
 		DepotEntryCacheModel depotEntryCacheModel = new DepotEntryCacheModel();
 
 		depotEntryCacheModel.mvccVersion = getMvccVersion();
+
+		depotEntryCacheModel.ctCollectionId = getCtCollectionId();
 
 		depotEntryCacheModel.uuid = getUuid();
 
@@ -834,45 +786,17 @@ public class DepotEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DepotEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DepotEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DepotEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DepotEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DepotEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DepotEntry.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _depotEntryId;
 	private long _groupId;
@@ -886,8 +810,9 @@ public class DepotEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<DepotEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<DepotEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -913,6 +838,7 @@ public class DepotEntryModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("depotEntryId", _depotEntryId);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -946,21 +872,23 @@ public class DepotEntryModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("uuid_", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("depotEntryId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("groupId", 8L);
+		columnBitmasks.put("depotEntryId", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("groupId", 16L);
 
-		columnBitmasks.put("userId", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("userName", 64L);
+		columnBitmasks.put("userId", 64L);
 
-		columnBitmasks.put("createDate", 128L);
+		columnBitmasks.put("userName", 128L);
 
-		columnBitmasks.put("modifiedDate", 256L);
+		columnBitmasks.put("createDate", 256L);
+
+		columnBitmasks.put("modifiedDate", 512L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

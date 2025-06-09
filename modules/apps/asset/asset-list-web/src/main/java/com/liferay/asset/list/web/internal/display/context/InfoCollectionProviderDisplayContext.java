@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.display.context;
 
 import com.liferay.info.collection.provider.InfoCollectionProvider;
-import com.liferay.info.item.InfoItemServiceTracker;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -30,14 +21,15 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Comparator;
 import java.util.List;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -45,14 +37,14 @@ import javax.servlet.http.HttpServletRequest;
 public class InfoCollectionProviderDisplayContext {
 
 	public InfoCollectionProviderDisplayContext(
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoItemServiceRegistry infoItemServiceRegistry,
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
-		_infoItemServiceTracker = infoItemServiceTracker;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 
-		_httpServletRequest = PortalUtil.getHttpServletRequest(_renderRequest);
+		_httpServletRequest = PortalUtil.getHttpServletRequest(renderRequest);
 
 		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -65,14 +57,7 @@ public class InfoCollectionProviderDisplayContext {
 				LanguageUtil.get(
 					_httpServletRequest, "there-are-no-collection-providers"));
 
-		List<InfoCollectionProvider<?>> infoCollectionProviders =
-			_getInfoCollectionProviders();
-
-		searchContainer.setResults(
-			ListUtil.subList(
-				infoCollectionProviders, searchContainer.getStart(),
-				searchContainer.getEnd()));
-		searchContainer.setTotal(infoCollectionProviders.size());
+		searchContainer.setResultsAndTotal(_getInfoCollectionProviders());
 
 		return searchContainer;
 	}
@@ -97,11 +82,16 @@ public class InfoCollectionProviderDisplayContext {
 	private List<InfoCollectionProvider<?>> _getInfoCollectionProviders() {
 		List<InfoCollectionProvider<?>> infoCollectionProviders =
 			(List<InfoCollectionProvider<?>>)
-				(List<?>)_infoItemServiceTracker.getAllInfoItemServices(
+				(List<?>)_infoItemServiceRegistry.getAllInfoItemServices(
 					InfoCollectionProvider.class);
 
-		return ListUtil.filter(
-			infoCollectionProviders, InfoCollectionProvider::isAvailable);
+		return ListUtil.sort(
+			ListUtil.filter(
+				infoCollectionProviders, InfoCollectionProvider::isAvailable),
+			Comparator.comparing(
+				infoCollectionProvider -> infoCollectionProvider.getLabel(
+					_themeDisplay.getLocale()),
+				String.CASE_INSENSITIVE_ORDER));
 	}
 
 	private PortletURL _getPortletURL() {
@@ -113,7 +103,7 @@ public class InfoCollectionProviderDisplayContext {
 		}
 		catch (PortletException portletException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portletException, portletException);
+				_log.debug(portletException);
 			}
 
 			return PortletURLBuilder.createRenderURL(
@@ -128,7 +118,7 @@ public class InfoCollectionProviderDisplayContext {
 		InfoCollectionProviderDisplayContext.class);
 
 	private final HttpServletRequest _httpServletRequest;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private final ThemeDisplay _themeDisplay;

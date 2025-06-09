@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.model;
@@ -46,6 +37,7 @@ public class SamlSpAuthRequestWrapper
 		attributes.put("companyId", getCompanyId());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("samlIdpEntityId", getSamlIdpEntityId());
+		attributes.put("samlRelayState", getSamlRelayState());
 		attributes.put("samlSpAuthRequestKey", getSamlSpAuthRequestKey());
 
 		return attributes;
@@ -76,6 +68,12 @@ public class SamlSpAuthRequestWrapper
 
 		if (samlIdpEntityId != null) {
 			setSamlIdpEntityId(samlIdpEntityId);
+		}
+
+		String samlRelayState = (String)attributes.get("samlRelayState");
+
+		if (samlRelayState != null) {
+			setSamlRelayState(samlRelayState);
 		}
 
 		String samlSpAuthRequestKey = (String)attributes.get(
@@ -129,6 +127,16 @@ public class SamlSpAuthRequestWrapper
 	@Override
 	public String getSamlIdpEntityId() {
 		return model.getSamlIdpEntityId();
+	}
+
+	/**
+	 * Returns the saml relay state of this saml sp auth request.
+	 *
+	 * @return the saml relay state of this saml sp auth request
+	 */
+	@Override
+	public String getSamlRelayState() {
+		return model.getSamlRelayState();
 	}
 
 	/**
@@ -197,6 +205,16 @@ public class SamlSpAuthRequestWrapper
 	}
 
 	/**
+	 * Sets the saml relay state of this saml sp auth request.
+	 *
+	 * @param samlRelayState the saml relay state of this saml sp auth request
+	 */
+	@Override
+	public void setSamlRelayState(String samlRelayState) {
+		model.setSamlRelayState(samlRelayState);
+	}
+
+	/**
 	 * Sets the saml sp authn request ID of this saml sp auth request.
 	 *
 	 * @param samlSpAuthnRequestId the saml sp authn request ID of this saml sp auth request
@@ -214,6 +232,11 @@ public class SamlSpAuthRequestWrapper
 	@Override
 	public void setSamlSpAuthRequestKey(String samlSpAuthRequestKey) {
 		model.setSamlSpAuthRequestKey(samlSpAuthRequestKey);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service.persistence.test;
@@ -125,6 +116,8 @@ public class CommerceWishListPersistenceTest {
 
 		CommerceWishList newCommerceWishList = _persistence.create(pk);
 
+		newCommerceWishList.setMvccVersion(RandomTestUtil.nextLong());
+
 		newCommerceWishList.setUuid(RandomTestUtil.randomString());
 
 		newCommerceWishList.setGroupId(RandomTestUtil.nextLong());
@@ -148,6 +141,9 @@ public class CommerceWishListPersistenceTest {
 		CommerceWishList existingCommerceWishList =
 			_persistence.findByPrimaryKey(newCommerceWishList.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommerceWishList.getMvccVersion(),
+			newCommerceWishList.getMvccVersion());
 		Assert.assertEquals(
 			existingCommerceWishList.getUuid(), newCommerceWishList.getUuid());
 		Assert.assertEquals(
@@ -269,10 +265,10 @@ public class CommerceWishListPersistenceTest {
 
 	protected OrderByComparator<CommerceWishList> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceWishList", "uuid", true, "commerceWishListId", true,
-			"groupId", true, "companyId", true, "userId", true, "userName",
-			true, "createDate", true, "modifiedDate", true, "name", true,
-			"defaultWishList", true);
+			"CommerceWishList", "mvccVersion", true, "uuid", true,
+			"commerceWishListId", true, "groupId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "name", true, "defaultWishList", true);
 	}
 
 	@Test
@@ -560,6 +556,8 @@ public class CommerceWishListPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceWishList commerceWishList = _persistence.create(pk);
+
+		commerceWishList.setMvccVersion(RandomTestUtil.nextLong());
 
 		commerceWishList.setUuid(RandomTestUtil.randomString());
 

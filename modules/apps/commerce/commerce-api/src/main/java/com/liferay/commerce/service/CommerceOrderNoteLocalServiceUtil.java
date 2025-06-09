@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -247,43 +239,32 @@ public class CommerceOrderNoteLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static CommerceOrderNote fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CommerceOrderNote fetchCommerceOrderNote(
 		long commerceOrderNoteId) {
 
 		return getService().fetchCommerceOrderNote(commerceOrderNoteId);
 	}
 
-	/**
-	 * Returns the commerce order note with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order note's external reference code
-	 * @return the matching commerce order note, or <code>null</code> if a matching commerce order note could not be found
-	 */
 	public static CommerceOrderNote
 		fetchCommerceOrderNoteByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+			String externalReferenceCode, long companyId) {
 
 		return getService().fetchCommerceOrderNoteByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceOrderNoteByExternalReferenceCode(long, String)}
+	 * Returns the commerce order note matching the UUID and group.
+	 *
+	 * @param uuid the commerce order note's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce order note, or <code>null</code> if a matching commerce order note could not be found
 	 */
-	@Deprecated
-	public static CommerceOrderNote fetchCommerceOrderNoteByReferenceCode(
-		long companyId, String externalReferenceCode) {
+	public static CommerceOrderNote fetchCommerceOrderNoteByUuidAndGroupId(
+		String uuid, long groupId) {
 
-		return getService().fetchCommerceOrderNoteByReferenceCode(
-			companyId, externalReferenceCode);
+		return getService().fetchCommerceOrderNoteByUuidAndGroupId(
+			uuid, groupId);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -306,20 +287,27 @@ public class CommerceOrderNoteLocalServiceUtil {
 		return getService().getCommerceOrderNote(commerceOrderNoteId);
 	}
 
-	/**
-	 * Returns the commerce order note with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order note's external reference code
-	 * @return the matching commerce order note
-	 * @throws PortalException if a matching commerce order note could not be found
-	 */
 	public static CommerceOrderNote getCommerceOrderNoteByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCommerceOrderNoteByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the commerce order note matching the UUID and group.
+	 *
+	 * @param uuid the commerce order note's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce order note
+	 * @throws PortalException if a matching commerce order note could not be found
+	 */
+	public static CommerceOrderNote getCommerceOrderNoteByUuidAndGroupId(
+			String uuid, long groupId)
+		throws PortalException {
+
+		return getService().getCommerceOrderNoteByUuidAndGroupId(uuid, groupId);
 	}
 
 	/**
@@ -346,9 +334,49 @@ public class CommerceOrderNoteLocalServiceUtil {
 	}
 
 	public static List<CommerceOrderNote> getCommerceOrderNotes(
+		long commerceOrderId, boolean restricted, int start, int end) {
+
+		return getService().getCommerceOrderNotes(
+			commerceOrderId, restricted, start, end);
+	}
+
+	public static List<CommerceOrderNote> getCommerceOrderNotes(
 		long commerceOrderId, int start, int end) {
 
 		return getService().getCommerceOrderNotes(commerceOrderId, start, end);
+	}
+
+	/**
+	 * Returns all the commerce order notes matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce order notes
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce order notes, or an empty list if no matches were found
+	 */
+	public static List<CommerceOrderNote>
+		getCommerceOrderNotesByUuidAndCompanyId(String uuid, long companyId) {
+
+		return getService().getCommerceOrderNotesByUuidAndCompanyId(
+			uuid, companyId);
+	}
+
+	/**
+	 * Returns a range of commerce order notes matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce order notes
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of commerce order notes
+	 * @param end the upper bound of the range of commerce order notes (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching commerce order notes, or an empty list if no matches were found
+	 */
+	public static List<CommerceOrderNote>
+		getCommerceOrderNotesByUuidAndCompanyId(
+			String uuid, long companyId, int start, int end,
+			OrderByComparator<CommerceOrderNote> orderByComparator) {
+
+		return getService().getCommerceOrderNotesByUuidAndCompanyId(
+			uuid, companyId, start, end, orderByComparator);
 	}
 
 	/**
@@ -369,6 +397,14 @@ public class CommerceOrderNoteLocalServiceUtil {
 
 		return getService().getCommerceOrderNotesCount(
 			commerceOrderId, restricted);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -430,9 +466,12 @@ public class CommerceOrderNoteLocalServiceUtil {
 	}
 
 	public static CommerceOrderNoteLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceOrderNoteLocalService _service;
+	private static final Snapshot<CommerceOrderNoteLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceOrderNoteLocalServiceUtil.class,
+			CommerceOrderNoteLocalService.class);
 
 }

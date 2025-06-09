@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.settings.configuration;
@@ -32,6 +23,15 @@ import org.osgi.annotation.versioning.ProviderType;
 )
 @ProviderType
 public interface AnalyticsConfiguration {
+
+	@Meta.AD(required = false)
+	public String[] commerceSyncEnabledAnalyticsChannelIds();
+
+	@Meta.AD(deflt = "true", required = false)
+	public boolean firstSync();
+
+	@Meta.AD(required = false)
+	public String[] previousCommerceSyncEnabledAnalyticsChannelIds();
 
 	@Meta.AD(required = false)
 	public String hostsAllowed();
@@ -64,30 +64,105 @@ public interface AnalyticsConfiguration {
 	public String liferayAnalyticsURL();
 
 	@Meta.AD(required = false)
+	public boolean contentRecommenderMostPopularItemsEnabled();
+
+	@Meta.AD(required = false)
+	public boolean previousContentRecommenderMostPopularItemsEnabled();
+
+	@Meta.AD(required = false)
 	public String publicKey();
 
 	@Meta.AD(required = false)
 	public String siteReportingGrouping();
 
 	@Meta.AD(required = false)
+	public boolean syncAllAccounts();
+
+	@Meta.AD(required = false)
+	public boolean previousSyncAllAccounts();
+
+	@Meta.AD(required = false)
 	public boolean syncAllContacts();
+
+	@Meta.AD(required = false)
+	public boolean previousSyncAllContacts();
+
+	@Meta.AD(required = false)
+	public String[] syncedAccountFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] previousSyncedAccountFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] syncedAccountGroupIds();
+
+	@Meta.AD(required = false)
+	public String[] previousSyncedAccountGroupIds();
+
+	@Meta.AD(required = false)
+	public String[] syncedCategoryFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] syncedCommerceChannelIds();
+
+	@Meta.AD(required = false)
+	public String[] previousSyncedCommerceChannelIds();
 
 	@Meta.AD(required = false)
 	public String[] syncedContactFieldNames();
 
 	@Meta.AD(required = false)
+	public String[] previousSyncedContactFieldNames();
+
+	@Meta.AD(required = false)
 	public String[] syncedGroupIds();
+
+	@Meta.AD(required = false)
+	public String[] syncedOrderFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] previousSyncedOrderFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] syncedOrderItemFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] syncedProductChannelFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] previousSyncedProductFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] syncedProductFieldNames();
 
 	@Meta.AD(required = false)
 	public String[] syncedOrganizationIds();
 
 	@Meta.AD(required = false)
+	public String[] previousSyncedOrganizationIds();
+
+	@Meta.AD(required = false)
 	public String[] syncedUserFieldNames();
+
+	@Meta.AD(required = false)
+	public String[] previousSyncedUserFieldNames();
 
 	@Meta.AD(required = false)
 	public String[] syncedUserGroupIds();
 
 	@Meta.AD(required = false)
+	public String[] previousSyncedUserGroupIds();
+
+	@Meta.AD(required = false)
 	public String token();
+
+	@Meta.AD(required = false)
+	public boolean contentRecommenderUserPersonalizationEnabled();
+
+	@Meta.AD(required = false)
+	public boolean previousContentRecommenderUserPersonalizationEnabled();
+
+	@Meta.AD(deflt = "true", required = false)
+	public boolean wizardMode();
 
 }

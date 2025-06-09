@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.configuration;
@@ -29,7 +20,7 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface SynonymsConfiguration {
 
 	@Meta.AD(
-		deflt = "liferay_filter_synonym_en|liferay_filter_synonym_es",
+		deflt = "liferay_filter_synonym_ar|liferay_filter_synonym_ca|liferay_filter_synonym_de|liferay_filter_synonym_en|liferay_filter_synonym_es|liferay_filter_synonym_fi|liferay_filter_synonym_fr|liferay_filter_synonym_hu|liferay_filter_synonym_it|liferay_filter_synonym_ja|liferay_filter_synonym_nl|liferay_filter_synonym_pt_BR|liferay_filter_synonym_pt_PT|liferay_filter_synonym_sv|liferay_filter_synonym_zh",
 		description = "synonym-filter-names-help",
 		name = "synonym-filter-names", required = false
 	)

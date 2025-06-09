@@ -1,29 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.buffer;
 
+import com.liferay.object.search.StrictObjectReindexThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.ClassedModel;
 import com.liferay.portal.kernel.search.Bufferable;
 import com.liferay.portal.kernel.search.Indexer;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.search.configuration.IndexerRegistryConfiguration;
 import com.liferay.portal.search.index.IndexStatusManager;
+import com.liferay.portal.service.PersistedModelLocalServiceRegistryUtil;
+import com.liferay.portal.util.PortalInstances;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationHandler;
@@ -71,7 +65,7 @@ public class BufferedIndexerInvocationHandler implements InvocationHandler {
 			return null;
 		}
 
-		if (CompanyThreadLocal.isDeleteInProcess()) {
+		if (PortalInstances.isCurrentCompanyInDeletionProcess()) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					"Skipping indexer request buffer because a company " +
@@ -93,34 +87,54 @@ public class BufferedIndexerInvocationHandler implements InvocationHandler {
 			return method.invoke(_indexer, args);
 		}
 
-		if ((args[0] instanceof ClassedModel) &&
-			Objects.equals(method.getName(), "reindex")) {
+		if (args[0] instanceof ClassedModel) {
+			if (StrictObjectReindexThreadLocal.isStrictObjectReindex()) {
+				MethodKey methodKey = new MethodKey(
+					Indexer.class, method.getName(), Object.class);
 
-			MethodKey methodKey = new MethodKey(
-				Indexer.class, method.getName(), String.class, Long.TYPE);
+				IndexerRequest indexerRequest = new IndexerRequest(
+					methodKey.getMethod(), (ClassedModel)args[0], _indexer);
 
-			ClassedModel classedModel = (ClassedModel)args[0];
+				_bufferRequest(indexerRequest, indexerRequestBuffer);
+			}
+			else if (Objects.equals(method.getName(), "reindex")) {
+				MethodKey methodKey = new MethodKey(
+					Indexer.class, method.getName(), String.class, Long.TYPE);
 
-			Long classPK = (Long)classedModel.getPrimaryKeyObj();
+				ClassedModel classedModel = (ClassedModel)args[0];
 
-			bufferRequest(
-				methodKey, classedModel.getModelClassName(), classPK,
-				indexerRequestBuffer);
-		}
-		else if (args[0] instanceof ClassedModel) {
-			MethodKey methodKey = new MethodKey(
-				Indexer.class, method.getName(), Object.class);
+				Long classPK = (Long)classedModel.getPrimaryKeyObj();
 
-			bufferRequest(methodKey, args[0], indexerRequestBuffer);
+				bufferRequest(
+					methodKey, classedModel.getModelClassName(), classPK,
+					indexerRequestBuffer);
+			}
+			else {
+				MethodKey methodKey = new MethodKey(
+					Indexer.class, method.getName(), Object.class);
+
+				bufferRequest(methodKey, args[0], indexerRequestBuffer);
+			}
 		}
 		else if (args.length == 2) {
-			MethodKey methodKey = new MethodKey(
-				Indexer.class, method.getName(), String.class, Long.TYPE);
-
 			String className = (String)args[0];
+
+			PersistedModelLocalService persistedModelLocalService =
+				PersistedModelLocalServiceRegistryUtil.
+					getPersistedModelLocalService(className);
+
 			Long classPK = (Long)args[1];
 
-			bufferRequest(methodKey, className, classPK, indexerRequestBuffer);
+			if ((persistedModelLocalService != null) &&
+				(persistedModelLocalService.fetchPersistedModel(classPK) !=
+					null)) {
+
+				bufferRequest(
+					new MethodKey(
+						Indexer.class, method.getName(), String.class,
+						Long.TYPE),
+					className, classPK, indexerRequestBuffer);
+			}
 		}
 		else {
 			MethodKey methodKey = new MethodKey(
@@ -173,7 +187,7 @@ public class BufferedIndexerInvocationHandler implements InvocationHandler {
 		IndexerRequest indexerRequest = new IndexerRequest(
 			methodKey.getMethod(), classedModel, _indexer);
 
-		doBufferRequest(indexerRequest, indexerRequestBuffer);
+		_bufferRequest(indexerRequest, indexerRequestBuffer);
 	}
 
 	protected void bufferRequest(
@@ -194,10 +208,10 @@ public class BufferedIndexerInvocationHandler implements InvocationHandler {
 		IndexerRequest indexerRequest = new IndexerRequest(
 			methodKey.getMethod(), _indexer, className, classPK);
 
-		doBufferRequest(indexerRequest, indexerRequestBuffer);
+		_bufferRequest(indexerRequest, indexerRequestBuffer);
 	}
 
-	protected void doBufferRequest(
+	private void _bufferRequest(
 			IndexerRequest indexerRequest,
 			IndexerRequestBuffer indexerRequestBuffer)
 		throws Exception {

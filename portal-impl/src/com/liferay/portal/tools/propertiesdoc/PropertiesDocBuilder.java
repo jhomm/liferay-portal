@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.propertiesdoc;
@@ -18,6 +9,8 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.freemarker.FreeMarkerUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -117,13 +110,13 @@ public class PropertiesDocBuilder {
 					context, writer);
 			}
 			catch (Exception exception) {
-				exception.printStackTrace();
+				_log.error(exception);
 			}
 
 			writer.flush();
 		}
 		catch (IOException ioException) {
-			ioException.printStackTrace();
+			_log.error(ioException);
 		}
 	}
 
@@ -364,11 +357,8 @@ public class PropertiesDocBuilder {
 				}
 				else {
 					System.out.println(
-						StringBundler.concat(
-							"Properties section should consist of 3 or more ",
-							"lines:", StringPool.NEW_LINE, "##",
-							StringPool.NEW_LINE, "## Comments",
-							StringPool.NEW_LINE, "##"));
+						"Properties section should consist of 3 or more " +
+							"lines:\n##\n## Comments\n##");
 
 					return null;
 				}
@@ -392,6 +382,9 @@ public class PropertiesDocBuilder {
 		PropertiesDocBuilder.INDENT + PropertiesDocBuilder.INDENT;
 
 	protected static final String INDENT = StringPool.FOUR_SPACES;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		PropertiesDocBuilder.class);
 
 	private static final FileImpl _fileImpl = FileImpl.getInstance();
 

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.sql.transformer;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.db.HypersonicDB;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -61,12 +53,24 @@ public class HypersonicSQLTransformerLogicTest
 
 	@Override
 	protected String getCastClobTextTransformedSQL() {
-		return "select CONVERT(foo, SQL_VARCHAR) from Foo";
+		return StringBundler.concat(
+			"select CONVERT(foo || (CONVERT(foo, SQL_VARCHAR) || (bar || ",
+			"foo)), SQL_VARCHAR), CONVERT(foo || (bar || foo), SQL_VARCHAR) ",
+			"from Foo");
 	}
 
 	@Override
 	protected String getCastLongTransformedSQL() {
-		return "select CONVERT(foo, SQL_BIGINT) from Foo";
+		return "select CONVERT(1 + (CONVERT(foo, SQL_BIGINT) - (bar x 2)), " +
+			"SQL_BIGINT), CONVERT(foo + (bar x 3), SQL_BIGINT) from Foo";
+	}
+
+	@Override
+	protected String getCastTextTransformedSQL() {
+		return StringBundler.concat(
+			"select CONVERT(foo || (CONVERT(foo, SQL_VARCHAR) || (bar || ",
+			"foo)), SQL_VARCHAR), CONVERT(foo || (bar || foo), SQL_VARCHAR) ",
+			"from Foo");
 	}
 
 	@Override

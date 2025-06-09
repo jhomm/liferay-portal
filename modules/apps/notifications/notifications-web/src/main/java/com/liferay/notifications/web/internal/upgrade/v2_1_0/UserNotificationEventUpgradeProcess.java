@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.notifications.web.internal.upgrade.v2_1_0;
@@ -40,31 +31,29 @@ public class UserNotificationEventUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		if (hasTable("Notifications_UserNotificationEvent")) {
-			updateUserNotificationEventActionRequired();
+			_updateUserNotificationEventActionRequired();
 		}
 
-		updateUserNotificationEvents();
+		_updateUserNotificationEvents();
 	}
 
-	protected void updateUserNotificationEventActionRequired()
-		throws Exception {
-
+	private void _updateUserNotificationEventActionRequired() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			runSQL(
 				StringBundler.concat(
-					"update UserNotificationEvent set actionRequired = TRUE ",
-					"where userNotificationEventId in (select ",
+					"update UserNotificationEvent set actionRequired = ",
+					"[$TRUE$] where userNotificationEventId in (select ",
 					"userNotificationEventId from ",
 					"Notifications_UserNotificationEvent where actionRequired ",
-					"= TRUE)"));
+					"= [$TRUE$])"));
 
 			runSQL(
-				"update UserNotificationEvent set actionRequired = FALSE " +
+				"update UserNotificationEvent set actionRequired = [$FALSE$] " +
 					"where actionRequired IS NULL");
 		}
 	}
 
-	protected void updateUserNotificationEvents() throws Exception {
+	private void _updateUserNotificationEvents() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select userNotificationEventId, payload, actionRequired " +
@@ -77,7 +66,7 @@ public class UserNotificationEventUpgradeProcess extends UpgradeProcess {
 						"actionRequired = ? where userNotificationEventId = ?");
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
-			runSQL("update UserNotificationEvent set delivered = TRUE");
+			runSQL("update UserNotificationEvent set delivered = [$TRUE$]");
 
 			runSQL(
 				StringBundler.concat(

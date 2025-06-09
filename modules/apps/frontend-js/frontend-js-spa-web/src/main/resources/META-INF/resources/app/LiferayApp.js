@@ -1,25 +1,51 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {buildFragment, openToast} from 'frontend-js-web';
+import {buildFragment} from 'frontend-js-web';
 
 import LiferaySurface from '../surface/Surface';
+import {openToast} from '../util/openToast';
 import {getPortletBoundaryId, getUid, resetAllPortlets} from '../util/utils';
 import App from './App';
 
 const MAX_TIMEOUT = Math.pow(2, 31) - 1;
 const PROPAGATED_PARAMS = ['bodyCssClass'];
+
+const CSS = `
+@keyframes shift-rightwards {
+	0% {
+		transform: translateX(-100%);
+	}
+	40% {
+		transform: translateX(0%);
+	}
+	60% {
+		transform: translateX(0%);
+	}
+	100% {
+		transform: translateX(100%);
+	}
+}
+
+.lfr-spa-loading-bar {
+	background: var(--primary);
+	display: none;
+	height: 2px;
+	left: 0;
+	position: fixed;
+	right: 0;
+	top: 0;
+	transform: translateX(100%);
+	z-index: 2000;
+}
+
+.lfr-spa-loading .lfr-spa-loading-bar {
+	animation: shift-rightwards 1s ease-in-out infinite;
+	animation-delay: 0.4s;
+	display: block;
+}`;
 
 /**
  * LiferayApp
@@ -48,11 +74,12 @@ class LiferayApp extends App {
 		debugEnabled,
 		navigationExceptionSelectors,
 		portletsBlacklist,
+		preloadCSS,
 		requestTimeout,
 		userNotification,
 		validStatusCodes,
 	}) {
-		super({navigationExceptionSelectors});
+		super({navigationExceptionSelectors, preloadCSS});
 
 		this._cacheExpirationTime = cacheExpirationTime;
 		this._clearScreensCache = clearScreensCache;
@@ -86,6 +113,15 @@ class LiferayApp extends App {
 
 		this.addSurfaces(new LiferaySurface(body.id));
 
+		let styleHTML = `<style`;
+
+		if (Liferay.CSP && Liferay.CSP.nonce) {
+			styleHTML += ` nonce="${Liferay.CSP.nonce}">`;
+		}
+
+		styleHTML += ` type="text/css">${CSS}</style>`;
+
+		document.head.appendChild(buildFragment(styleHTML));
 		body.appendChild(
 			buildFragment('<div class="lfr-spa-loading-bar"></div>')
 		);
@@ -241,8 +277,7 @@ class LiferayApp extends App {
 		if (
 			this.isInPortletBlacklist(
 				event.target.closest(this.getLinkSelector())
-			) ||
-			event.detail > 1
+			)
 		) {
 			return;
 		}
@@ -345,11 +380,7 @@ class LiferayApp extends App {
 
 			Liferay.Data.layoutConfig = this.dataLayoutConfig_;
 
-			this._createNotification({
-				message,
-				title: Liferay.Language.get('error'),
-				type: 'danger',
-			});
+			openToast('error', Liferay.Language.get('error'), message);
 		}
 	}
 
@@ -415,24 +446,6 @@ class LiferayApp extends App {
 	}
 
 	/**
-	 * Creates a user notification
-	 * @param  {!Object} configuration object that's passed to `Liferay.Notification`
-	 * @return {!Promise} A promise that renders a notification when
-	 * resolved
-	 */
-
-	_createNotification(config) {
-		return new Promise((resolve) => {
-			resolve(
-				openToast({
-					type: 'warning',
-					...config,
-				})
-			);
-		});
-	}
-
-	/**
 	 * Hides the request timeout alert
 	 */
 
@@ -485,13 +498,11 @@ class LiferayApp extends App {
 
 				this._hideTimeoutAlert();
 
-				this._createNotification({
-					message: this.userNotification.message,
-					title: this.userNotification.title,
-					type: 'warning',
-				}).then((alert) => {
-					this.timeoutAlert = alert;
-				});
+				this.timeoutAlert = openToast(
+					'warn',
+					this.userNotification.title,
+					this.userNotification.message
+				);
 			}, this.userNotification.timeout);
 		}
 	}

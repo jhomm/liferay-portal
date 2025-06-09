@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link DispatchTriggerLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class DispatchTriggerLocalServiceWrapper
 	implements DispatchTriggerLocalService,
 			   ServiceWrapper<DispatchTriggerLocalService> {
+
+	public DispatchTriggerLocalServiceWrapper() {
+		this(null);
+	}
 
 	public DispatchTriggerLocalServiceWrapper(
 		DispatchTriggerLocalService dispatchTriggerLocalService) {
@@ -52,14 +48,32 @@ public class DispatchTriggerLocalServiceWrapper
 
 	@Override
 	public com.liferay.dispatch.model.DispatchTrigger addDispatchTrigger(
-			long userId, String dispatchTaskExecutorType,
+			String externalReferenceCode, long userId,
+			com.liferay.dispatch.executor.DispatchTaskExecutor
+				dispatchTaskExecutor,
+			String dispatchTaskExecutorType,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				dispatchTaskSettingsUnicodeProperties,
 			String name, boolean system)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dispatchTriggerLocalService.addDispatchTrigger(
-			userId, dispatchTaskExecutorType,
+			externalReferenceCode, userId, dispatchTaskExecutor,
+			dispatchTaskExecutorType, dispatchTaskSettingsUnicodeProperties,
+			name, system);
+	}
+
+	@Override
+	public com.liferay.dispatch.model.DispatchTrigger addDispatchTrigger(
+			String externalReferenceCode, long userId,
+			String dispatchTaskExecutorType,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				dispatchTaskSettingsUnicodeProperties,
+			String name, boolean system)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dispatchTriggerLocalService.addDispatchTrigger(
+			externalReferenceCode, userId, dispatchTaskExecutorType,
 			dispatchTaskSettingsUnicodeProperties, name, system);
 	}
 
@@ -260,6 +274,31 @@ public class DispatchTriggerLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.dispatch.model.DispatchTrigger
+		fetchDispatchTriggerByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _dispatchTriggerLocalService.
+			fetchDispatchTriggerByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the dispatch trigger with the matching UUID and company.
+	 *
+	 * @param uuid the dispatch trigger's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching dispatch trigger, or <code>null</code> if a matching dispatch trigger could not be found
+	 */
+	@Override
+	public com.liferay.dispatch.model.DispatchTrigger
+		fetchDispatchTriggerByUuidAndCompanyId(String uuid, long companyId) {
+
+		return _dispatchTriggerLocalService.
+			fetchDispatchTriggerByUuidAndCompanyId(uuid, companyId);
+	}
+
+	@Override
 	public java.util.Date fetchNextFireDate(long dispatchTriggerId) {
 		return _dispatchTriggerLocalService.fetchNextFireDate(
 			dispatchTriggerId);
@@ -292,6 +331,41 @@ public class DispatchTriggerLocalServiceWrapper
 
 		return _dispatchTriggerLocalService.getDispatchTrigger(
 			dispatchTriggerId);
+	}
+
+	@Override
+	public com.liferay.dispatch.model.DispatchTrigger
+			getDispatchTriggerByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dispatchTriggerLocalService.
+			getDispatchTriggerByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the dispatch trigger with the matching UUID and company.
+	 *
+	 * @param uuid the dispatch trigger's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching dispatch trigger
+	 * @throws PortalException if a matching dispatch trigger could not be found
+	 */
+	@Override
+	public com.liferay.dispatch.model.DispatchTrigger
+			getDispatchTriggerByUuidAndCompanyId(String uuid, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dispatchTriggerLocalService.
+			getDispatchTriggerByUuidAndCompanyId(uuid, companyId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.dispatch.model.DispatchTrigger>
+		getDispatchTriggers(boolean active) {
+
+		return _dispatchTriggerLocalService.getDispatchTriggers(active);
 	}
 
 	@Override
@@ -344,6 +418,16 @@ public class DispatchTriggerLocalServiceWrapper
 	@Override
 	public int getDispatchTriggersCount(long companyId) {
 		return _dispatchTriggerLocalService.getDispatchTriggersCount(companyId);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return _dispatchTriggerLocalService.getExportActionableDynamicQuery(
+			portletDataContext);
 	}
 
 	@Override
@@ -431,14 +515,14 @@ public class DispatchTriggerLocalServiceWrapper
 			int endDateMonth, int endDateDay, int endDateYear, int endDateHour,
 			int endDateMinute, boolean neverEnd, boolean overlapAllowed,
 			int startDateMonth, int startDateDay, int startDateYear,
-			int startDateHour, int startDateMinute)
+			int startDateHour, int startDateMinute, String timeZoneId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dispatchTriggerLocalService.updateDispatchTrigger(
 			dispatchTriggerId, active, cronExpression, dispatchTaskClusterMode,
 			endDateMonth, endDateDay, endDateYear, endDateHour, endDateMinute,
 			neverEnd, overlapAllowed, startDateMonth, startDateDay,
-			startDateYear, startDateHour, startDateMinute);
+			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
 	@Override
@@ -451,6 +535,11 @@ public class DispatchTriggerLocalServiceWrapper
 
 		return _dispatchTriggerLocalService.updateDispatchTrigger(
 			dispatchTriggerId, taskSettingsUnicodeProperties, name);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _dispatchTriggerLocalService.getBasePersistence();
 	}
 
 	@Override

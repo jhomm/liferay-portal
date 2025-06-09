@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.util;
+
+import com.liferay.poshi.core.PoshiProperties;
 
 import java.io.CharArrayWriter;
 import java.io.IOException;
@@ -123,6 +116,24 @@ public class Dom4JUtil {
 		return writer.toString();
 	}
 
+	public static Element getNewAnchorElement(
+		String href, Element parentElement, Object... items) {
+
+		if (ArrayUtil.isEmpty(items)) {
+			return null;
+		}
+
+		Element anchorElement = getNewElement("a", parentElement, items);
+
+		anchorElement.addAttribute("href", href);
+
+		return anchorElement;
+	}
+
+	public static Element getNewAnchorElement(String href, Object... items) {
+		return getNewAnchorElement(href, null, items);
+	}
+
 	public static Element getNewElement(String childElementTag) {
 		return getNewElement(childElementTag, null);
 	}
@@ -141,19 +152,6 @@ public class Dom4JUtil {
 		}
 
 		return childElement;
-	}
-
-	public static boolean isValidDocument(URL url) {
-		SAXReader saxReader = new SAXReader();
-
-		try {
-			saxReader.read(url);
-		}
-		catch (DocumentException documentException) {
-			return false;
-		}
-
-		return true;
 	}
 
 	public static Document parse(String xml) throws DocumentException {
@@ -261,6 +259,24 @@ public class Dom4JUtil {
 		}
 
 		return nodeList;
+	}
+
+	public static void validateDocument(URL url) throws DocumentException {
+		SAXReader saxReader = new SAXReader();
+
+		try {
+			saxReader.read(url);
+		}
+		catch (DocumentException documentException) {
+			PoshiProperties poshiProperties =
+				PoshiProperties.getPoshiProperties();
+
+			if (poshiProperties.debugStacktrace) {
+				documentException.printStackTrace();
+			}
+
+			throw documentException;
+		}
 	}
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
 
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,32 +32,35 @@ public class MBCategoryServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.message.boards.service.impl.MBCategoryServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCategory(
-			userId, parentCategoryId, name, description, serviceContext);
+			externalReferenceCode, userId, parentCategoryId, name, description,
+			serviceContext);
 	}
 
 	public static MBCategory addCategory(
-			long parentCategoryId, String name, String description,
-			String displayStyle, String emailAddress, String inProtocol,
-			String inServerName, int inServerPort, boolean inUseSSL,
-			String inUserName, String inPassword, int inReadInterval,
-			String outEmailAddress, boolean outCustom, String outServerName,
-			int outServerPort, boolean outUseSSL, String outUserName,
-			String outPassword, boolean mailingListActive,
+			String externalReferenceCode, long parentCategoryId, String name,
+			String description, String displayStyle, String emailAddress,
+			String inProtocol, String inServerName, int inServerPort,
+			boolean inUseSSL, String inUserName, String inPassword,
+			int inReadInterval, String outEmailAddress, boolean outCustom,
+			String outServerName, int outServerPort, boolean outUseSSL,
+			String outUserName, String outPassword, boolean mailingListActive,
 			boolean allowAnonymousEmail,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCategory(
-			parentCategoryId, name, description, displayStyle, emailAddress,
-			inProtocol, inServerName, inServerPort, inUseSSL, inUserName,
-			inPassword, inReadInterval, outEmailAddress, outCustom,
-			outServerName, outServerPort, outUseSSL, outUserName, outPassword,
-			mailingListActive, allowAnonymousEmail, serviceContext);
+			externalReferenceCode, parentCategoryId, name, description,
+			displayStyle, emailAddress, inProtocol, inServerName, inServerPort,
+			inUseSSL, inUserName, inPassword, inReadInterval, outEmailAddress,
+			outCustom, outServerName, outServerPort, outUseSSL, outUserName,
+			outPassword, mailingListActive, allowAnonymousEmail,
+			serviceContext);
 	}
 
 	public static void deleteCategory(
@@ -79,6 +74,19 @@ public class MBCategoryServiceUtil {
 		throws PortalException {
 
 		getService().deleteCategory(groupId, categoryId);
+	}
+
+	public static void deleteCategory(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		getService().deleteCategory(externalReferenceCode, groupId);
+	}
+
+	public static MBCategory fetchMBCategory(long groupId, String friendlyURL)
+		throws PortalException {
+
+		return getService().fetchMBCategory(groupId, friendlyURL);
 	}
 
 	public static List<MBCategory> getCategories(long groupId) {
@@ -266,6 +274,12 @@ public class MBCategoryServiceUtil {
 		return getService().getCategoryIds(groupId, categoryId);
 	}
 
+	public static MBCategory getMBCategory(long groupId, String friendlyURL)
+		throws PortalException {
+
+		return getService().getMBCategory(groupId, friendlyURL);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -354,9 +368,10 @@ public class MBCategoryServiceUtil {
 	}
 
 	public static MBCategoryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile MBCategoryService _service;
+	private static final Snapshot<MBCategoryService> _serviceSnapshot =
+		new Snapshot<>(MBCategoryServiceUtil.class, MBCategoryService.class);
 
 }

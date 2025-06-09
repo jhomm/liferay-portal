@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.display.context;
@@ -19,20 +10,19 @@ import com.liferay.journal.model.JournalFeed;
 import com.liferay.journal.service.JournalFeedLocalServiceUtil;
 import com.liferay.journal.web.internal.search.FeedSearch;
 import com.liferay.journal.web.internal.search.FeedSearchTerms;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 /**
  * @author Eudaldo Alonso
@@ -52,8 +42,8 @@ public class JournalFeedsDisplayContext {
 		}
 
 		_displayStyle = SearchDisplayStyleUtil.getDisplayStyle(
-			PortalUtil.getHttpServletRequest(_renderRequest),
-			JournalPortletKeys.JOURNAL, "feeds-display-style", "list");
+			_renderRequest, JournalPortletKeys.JOURNAL, "feeds-display-style",
+			"list");
 
 		return _displayStyle;
 	}
@@ -68,44 +58,43 @@ public class JournalFeedsDisplayContext {
 
 		_feedSearch = new FeedSearch(_renderRequest, getPortletURL());
 
-		_feedSearch.setRowChecker(new EmptyOnClickRowChecker(_renderResponse));
-
 		FeedSearchTerms searchTerms =
 			(FeedSearchTerms)_feedSearch.getSearchTerms();
 
-		int feedsCount = JournalFeedLocalServiceUtil.searchCount(
-			themeDisplay.getCompanyId(), searchTerms.getGroupId(),
-			searchTerms.getKeywords());
+		_feedSearch.setResultsAndTotal(
+			() -> JournalFeedLocalServiceUtil.search(
+				themeDisplay.getCompanyId(), searchTerms.getGroupId(),
+				searchTerms.getKeywords(), _feedSearch.getStart(),
+				_feedSearch.getEnd(), _feedSearch.getOrderByComparator()),
+			JournalFeedLocalServiceUtil.searchCount(
+				themeDisplay.getCompanyId(), searchTerms.getGroupId(),
+				searchTerms.getKeywords()));
 
-		_feedSearch.setTotal(feedsCount);
-
-		List<JournalFeed> feeds = JournalFeedLocalServiceUtil.search(
-			themeDisplay.getCompanyId(), searchTerms.getGroupId(),
-			searchTerms.getKeywords(), _feedSearch.getStart(),
-			_feedSearch.getEnd(), _feedSearch.getOrderByComparator());
-
-		_feedSearch.setResults(feeds);
+		_feedSearch.setRowChecker(new EmptyOnClickRowChecker(_renderResponse));
 
 		return _feedSearch;
 	}
 
 	public String getOrderByCol() {
-		if (_orderByCol != null) {
+		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(_renderRequest, "orderByCol", "name");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_renderRequest, JournalPortletKeys.JOURNAL, "feeds-order-by-col",
+			"name");
 
 		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		if (_orderByType != null) {
+		if (Validator.isNotNull(_orderByType)) {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_renderRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_renderRequest, JournalPortletKeys.JOURNAL, "feeds-order-by-type",
+			"asc");
 
 		return _orderByType;
 	}

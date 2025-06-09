@@ -1,27 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.portlet.shared.search;
 
-import com.liferay.portal.kernel.language.Language;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.blogs.service.BlogsEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFolderLocalService;
+import com.liferay.message.boards.service.MBCategoryLocalService;
+import com.liferay.message.boards.service.MBMessageLocalService;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.filter.ComplexQueryPart;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
+import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.query.MoreLikeThisQuery;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.query.Query;
@@ -29,19 +32,24 @@ import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.similar.results.web.internal.builder.SimilarResultsContributorsRegistry;
 import com.liferay.portal.search.similar.results.web.internal.builder.SimilarResultsRoute;
 import com.liferay.portal.search.similar.results.web.internal.constants.SimilarResultsPortletKeys;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferences;
 import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferencesImpl;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.CriteriaHelper;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchContributor;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchSettings;
+import com.liferay.wiki.service.WikiNodeLocalService;
+import com.liferay.wiki.service.WikiPageLocalService;
 
+import jakarta.portlet.RenderRequest;
+
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Optional;
+import java.util.List;
+import java.util.Objects;
 
-import javax.portlet.RenderRequest;
-
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -49,8 +57,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Wade Cao
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SimilarResultsPortletKeys.SIMILAR_RESULTS,
+	property = "jakarta.portlet.name=" + SimilarResultsPortletKeys.SIMILAR_RESULTS,
 	service = PortletSharedSearchContributor.class
 )
 public class SimilarResultsPortletSharedSearchContributor
@@ -60,17 +67,40 @@ public class SimilarResultsPortletSharedSearchContributor
 	public void contribute(
 		PortletSharedSearchSettings portletSharedSearchSettings) {
 
-		Optional<SimilarResultsRoute> optional =
-			similarResultsContributorsRegistry.detectRoute(
-				getURLString(portletSharedSearchSettings));
+		SimilarResultsRoute similarResultsRoute =
+			_similarResultsContributorsRegistry.detectRoute(
+				_getURLString(portletSharedSearchSettings));
 
-		optional.flatMap(
-			similarResultsRoute -> getSimilarResultsInputOptional(
-				getGroupId(portletSharedSearchSettings), similarResultsRoute)
-		).ifPresent(
-			similarResultsInput -> contribute(
-				similarResultsInput, portletSharedSearchSettings)
-		);
+		if (similarResultsRoute == null) {
+			return;
+		}
+
+		SimilarResultsContributor similarResultsContributor =
+			similarResultsRoute.getContributor();
+
+		CriteriaBuilderImpl criteriaBuilderImpl = new CriteriaBuilderImpl();
+
+		CriteriaHelper criteriaHelper = new CriteriaHelperImpl(
+			getGroupId(portletSharedSearchSettings), similarResultsRoute);
+
+		similarResultsContributor.resolveCriteria(
+			criteriaBuilderImpl, criteriaHelper);
+
+		Criteria criteria = criteriaBuilderImpl.build();
+
+		if (criteria != null) {
+			contribute(criteria, portletSharedSearchSettings);
+		}
+	}
+
+	@Activate
+	protected void activate() {
+		_similarResultsContributorsRegistry =
+			new SimilarResultsContributorsRegistry(
+				_assetEntryLocalService, _blogsEntryLocalService,
+				_dlFileEntryLocalService, _dlFolderLocalService,
+				_mbCategoryLocalService, _mbMessageLocalService, _uidFactory,
+				_wikiNodeLocalService, _wikiPageLocalService);
 	}
 
 	protected void contribute(
@@ -79,20 +109,21 @@ public class SimilarResultsPortletSharedSearchContributor
 
 		SimilarResultsPortletPreferences similarResultsPortletPreferences =
 			new SimilarResultsPortletPreferencesImpl(
-				portletSharedSearchSettings.getPortletPreferencesOptional());
+				portletSharedSearchSettings.getPortletPreferences());
 
 		SearchRequestBuilder searchRequestBuilder =
 			portletSharedSearchSettings.getFederatedSearchRequestBuilder(
-				Optional.of(
-					similarResultsPortletPreferences.getFederatedSearchKey()));
+				similarResultsPortletPreferences.getFederatedSearchKey());
 
-		filterByEntryClassName(
+		_filterByEntryClassName(
 			criteria, portletSharedSearchSettings, searchRequestBuilder);
 
-		filterByGroupId(portletSharedSearchSettings, searchRequestBuilder);
+		_filterByGroupId(
+			searchRequestBuilder, similarResultsPortletPreferences,
+			portletSharedSearchSettings);
 
 		searchRequestBuilder.query(
-			getMoreLikeThisQuery(
+			_getMoreLikeThisQuery(
 				criteria.getUID(), similarResultsPortletPreferences)
 		).emptySearchEnabled(
 			true
@@ -100,51 +131,7 @@ public class SimilarResultsPortletSharedSearchContributor
 			similarResultsPortletPreferences.getMaxItemDisplay()
 		);
 
-		setUIDRenderRequestAttribute(criteria, portletSharedSearchSettings);
-	}
-
-	protected void filterByEntryClassName(
-		Criteria criteria,
-		PortletSharedSearchSettings portletSharedSearchSettings,
-		SearchRequestBuilder searchRequestBuilder) {
-
-		Optional<String> optional =
-			portletSharedSearchSettings.getParameterOptional(
-				"similar.results.all.classes");
-
-		if (optional.isPresent()) {
-			return;
-		}
-
-		Optional<String> classNameOptional = criteria.getTypeOptional();
-
-		classNameOptional.ifPresent(
-			className -> {
-				if (!Validator.isBlank(className)) {
-					searchRequestBuilder.addComplexQueryPart(
-						getComplexQueryPart(getEntryClassNameQuery(className)));
-				}
-			});
-	}
-
-	protected void filterByGroupId(
-		PortletSharedSearchSettings portletSharedSearchSettings,
-		SearchRequestBuilder searchRequestBuilder) {
-
-		searchRequestBuilder.withSearchContext(
-			searchContext -> searchContext.setGroupIds(
-				new long[] {getGroupId(portletSharedSearchSettings)}));
-	}
-
-	protected ComplexQueryPart getComplexQueryPart(Query query) {
-		return _complexQueryPartBuilderFactory.builder(
-		).query(
-			query
-		).build();
-	}
-
-	protected Query getEntryClassNameQuery(String entryClassName) {
-		return _queries.term(Field.ENTRY_CLASS_NAME, entryClassName);
+		_setUIDRenderRequestAttribute(criteria, portletSharedSearchSettings);
 	}
 
 	protected long getGroupId(
@@ -156,7 +143,83 @@ public class SimilarResultsPortletSharedSearchContributor
 		return themeDisplay.getScopeGroupId();
 	}
 
-	protected MoreLikeThisQuery getMoreLikeThisQuery(
+	protected long[] getGroupIds(
+		PortletSharedSearchSettings portletSharedSearchSettings) {
+
+		ThemeDisplay themeDisplay =
+			portletSharedSearchSettings.getThemeDisplay();
+
+		try {
+			List<Long> groupIds = new ArrayList<>();
+
+			groupIds.add(themeDisplay.getScopeGroupId());
+
+			List<Group> groups = _groupLocalService.getGroups(
+				themeDisplay.getCompanyId(), Layout.class.getName(),
+				themeDisplay.getScopeGroupId());
+
+			for (Group group : groups) {
+				groupIds.add(group.getGroupId());
+			}
+
+			return ArrayUtil.toLongArray(groupIds);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			return new long[] {themeDisplay.getScopeGroupId()};
+		}
+	}
+
+	private void _filterByEntryClassName(
+		Criteria criteria,
+		PortletSharedSearchSettings portletSharedSearchSettings,
+		SearchRequestBuilder searchRequestBuilder) {
+
+		String parameterValue = portletSharedSearchSettings.getParameter(
+			"similar.results.all.classes");
+
+		if (parameterValue != null) {
+			return;
+		}
+
+		String className = criteria.getType();
+
+		if (!Validator.isBlank(className)) {
+			searchRequestBuilder.addComplexQueryPart(
+				_getComplexQueryPart(_getEntryClassNameQuery(className)));
+		}
+	}
+
+	private void _filterByGroupId(
+		SearchRequestBuilder searchRequestBuilder,
+		SimilarResultsPortletPreferences similarResultsPortletPreferences,
+		PortletSharedSearchSettings portletSharedSearchSettings) {
+
+		if (Objects.equals(
+				similarResultsPortletPreferences.getSearchScope(),
+				"this-site")) {
+
+			searchRequestBuilder.withSearchContext(
+				searchContext -> searchContext.setGroupIds(
+					getGroupIds(portletSharedSearchSettings)));
+		}
+	}
+
+	private ComplexQueryPart _getComplexQueryPart(Query query) {
+		return _complexQueryPartBuilderFactory.builder(
+		).query(
+			query
+		).build();
+	}
+
+	private Query _getEntryClassNameQuery(String entryClassName) {
+		return _queries.term(Field.ENTRY_CLASS_NAME, entryClassName);
+	}
+
+	private MoreLikeThisQuery _getMoreLikeThisQuery(
 		String uid,
 		SimilarResultsPortletPreferences similarResultsPortletPreferences) {
 
@@ -171,43 +234,12 @@ public class SimilarResultsPortletSharedSearchContributor
 		return moreLikeThisQuery;
 	}
 
-	protected Optional<Criteria> getSimilarResultsInputOptional(
-		long groupId, SimilarResultsRoute similarResultsRoute) {
-
-		SimilarResultsContributor similarResultsContributor =
-			similarResultsRoute.getContributor();
-
-		CriteriaBuilderImpl criteriaBuilderImpl = new CriteriaBuilderImpl();
-
-		CriteriaHelper criteriaHelper = new CriteriaHelperImpl(
-			groupId, similarResultsRoute);
-
-		similarResultsContributor.resolveCriteria(
-			criteriaBuilderImpl, criteriaHelper);
-
-		return criteriaBuilderImpl.build();
-	}
-
-	protected String getURLString(
+	private String _getURLString(
 		PortletSharedSearchSettings portletSharedSearchSettings) {
 
 		return _portal.getCurrentURL(
 			portletSharedSearchSettings.getRenderRequest());
 	}
-
-	protected void setUIDRenderRequestAttribute(
-		Criteria criteria,
-		PortletSharedSearchSettings portletSharedSearchSettings) {
-
-		RenderRequest renderRequest =
-			portletSharedSearchSettings.getRenderRequest();
-
-		renderRequest.setAttribute(Field.UID, criteria.getUID());
-	}
-
-	@Reference
-	protected SimilarResultsContributorsRegistry
-		similarResultsContributorsRegistry;
 
 	private void _populate(
 		MoreLikeThisQuery moreLikeThisQuery,
@@ -249,16 +281,59 @@ public class SimilarResultsPortletSharedSearchContributor
 			similarResultsPortletPreferences.getTermBoost());
 	}
 
+	private void _setUIDRenderRequestAttribute(
+		Criteria criteria,
+		PortletSharedSearchSettings portletSharedSearchSettings) {
+
+		RenderRequest renderRequest =
+			portletSharedSearchSettings.getRenderRequest();
+
+		renderRequest.setAttribute(Field.UID, criteria.getUID());
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SimilarResultsPortletSharedSearchContributor.class);
+
+	@Reference
+	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private BlogsEntryLocalService _blogsEntryLocalService;
+
 	@Reference
 	private ComplexQueryPartBuilderFactory _complexQueryPartBuilderFactory;
 
 	@Reference
-	private Language _language;
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Reference
+	private DLFolderLocalService _dlFolderLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private MBCategoryLocalService _mbCategoryLocalService;
+
+	@Reference
+	private MBMessageLocalService _mbMessageLocalService;
 
 	@Reference
 	private Portal _portal;
 
 	@Reference
 	private Queries _queries;
+
+	private SimilarResultsContributorsRegistry
+		_similarResultsContributorsRegistry;
+
+	@Reference
+	private UIDFactory _uidFactory;
+
+	@Reference
+	private WikiNodeLocalService _wikiNodeLocalService;
+
+	@Reference
+	private WikiPageLocalService _wikiPageLocalService;
 
 }

@@ -12,7 +12,7 @@
 <tbody>
 <tr>
 	<td>ADD_BLOGS_ENTRY</td>
-	<td>//a[contains(@class,'nav-btn') and *[contains(@class,'icon-plus')]][*[name()='svg'][contains(@class,'lexicon-icon-plus')]]</td>
+	<td>//*[self::a or self::button][contains(@class,'btn-primary')][normalize-space()='New']</td>
 	<td></td>
 </tr>
 <tr>
@@ -40,10 +40,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--DESCRIPTIVE_VIEW-->
+
 <tr>
 	<td>DESCRIPTIVE_VIEW_ENTRY_TITLE</td>
-	<td>//div[contains(@id,'blogEntriesSearchContainer')]//*[@data-qa-id='rowItemContent']/h4/a[contains(.,'${key_entryTitle}')]</td>
+	<td>//div[contains(@id,'blogEntriesSearchContainer')]//*[@data-qa-id='rowItemContent']/div[contains(@class,'h4')]/a[contains(.,'${key_entryTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -56,7 +58,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ICON_VIEW-->
+
 <tr>
 	<td>ICON_VIEW_ENTRY_TITLE</td>
 	<td>//div[contains(@id,'blogEntriesSearchContainer')]//p[contains(@class,'card-title') and @title='${key_entryTitle}']</td>
@@ -77,10 +81,17 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--WIDGET_VIEW-->
+
+<tr>
+	<td>WIDGET_VIEW_ENTRY_AUTHOR</td>
+	<td>//div[contains(@class,'widget-mode')]//div[contains(.,'${key_entryTitle}')]//a[contains(@class,'username')]</td>
+	<td></td>
+</tr>
 <tr>
 	<td>WIDGET_VIEW_ENTRY_ELLIPSIS</td>
-	<td>//div[contains(@class,'widget-mode')]//div[contains(.,'${key_entryTitle}')]//div[contains(@class,'dropdown')]//button[span/*[name()='svg'][contains(@class,'lexicon-icon-ellipsis')]]</td>
+	<td>//div[contains(@class,'widget-mode')]//div[contains(.,'${key_entryTitle}')]//div[contains(@class,'dropdown')]//button[span/*[name()='svg'][contains(@class,'lexicon-icon-ellipsis')]] | //div[contains(@class,'widget-mode-detail-text') and contains(.,'${key_entryTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -88,7 +99,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ENTRY_TABLE-->
+
 <tr>
 	<td>ENTRY_TABLE_ALL_CHECKBOX</td>
 	<td>//div[contains(@class,'management-bar')]//input[@type='checkbox'] | //li[@class='nav-item']//div[@class='custom-control custom-checkbox']</td>
@@ -116,23 +129,12 @@
 </tr>
 <tr>
 	<td>ENTRY_TABLE_STATUS</td>
-	<td>//tr[contains(.,'${key_entryTitle}')]/td//span[@class='workflow-status']/strong</td>
+	<td>//tr[contains(.,'${key_entryTitle}')]/td//span[@class='workflow-status']/span</td>
 	<td></td>
 </tr>
 <tr>
 	<td></td>
 	<td></td>
-	<td></td>
-</tr>
-<!--RECENT_BLOGGER-->
-<tr>
-	<td>RECENT_BLOGGER_USER_NAME</td>
-	<td>//span[contains(@class,'user-name') and contains(.,'${key_entryAuthor}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>RECENT_BLOGGER_POSTS</td>
-	<td>//div[@class='blogger-post-count']</td>
 	<td></td>
 </tr>
 </tbody>

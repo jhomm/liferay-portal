@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.web.internal.portlet.action;
@@ -32,18 +23,18 @@ import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,12 +43,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alexander Chow
  */
 @Component(
-	immediate = true,
 	property = {
 		"auth.token.ignore.mvc.action=true",
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS,
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN,
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS_AGGREGATOR,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_AGGREGATOR,
 		"mvc.command.name=/blogs/trackback"
 	},
 	service = MVCActionCommand.class
@@ -69,9 +59,9 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 		throws Exception {
 
 		try {
-			BlogsEntry entry = getBlogsEntry(actionRequest);
+			BlogsEntry entry = _getBlogsEntry(actionRequest);
 
-			validate(entry);
+			_validate(entry);
 
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
@@ -90,21 +80,21 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 			String title = ParamUtil.getString(
 				originalHttpServletRequest, "title");
 
-			validate(actionRequest, httpServletRequest.getRemoteAddr(), url);
+			_validate(actionRequest, httpServletRequest.getRemoteAddr(), url);
 
 			_trackback.addTrackback(
 				entry, themeDisplay, excerpt, url, blogName, title,
 				new ServiceContextFunction(actionRequest));
 		}
 		catch (TrackbackValidationException trackbackValidationException) {
-			sendError(
+			_sendError(
 				actionRequest, actionResponse,
 				trackbackValidationException.getMessage());
 
 			return;
 		}
 
-		sendSuccess(actionRequest, actionResponse);
+		_sendSuccess(actionRequest, actionResponse);
 	}
 
 	@Override
@@ -117,15 +107,15 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 		}
 		catch (NoSuchEntryException noSuchEntryException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(noSuchEntryException, noSuchEntryException);
+				_log.warn(noSuchEntryException);
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
-	protected BlogsEntry getBlogsEntry(ActionRequest actionRequest)
+	private BlogsEntry _getBlogsEntry(ActionRequest actionRequest)
 		throws Exception {
 
 		try {
@@ -139,7 +129,7 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected boolean isCommentsEnabled(ActionRequest actionRequest)
+	private boolean _isCommentsEnabled(ActionRequest actionRequest)
 		throws Exception {
 
 		PortletPreferences portletPreferences =
@@ -154,15 +144,15 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 			portletPreferences.getValue("enableComments", null), true);
 	}
 
-	protected void sendError(
+	private void _sendError(
 			ActionRequest actionRequest, ActionResponse actionResponse,
 			String msg)
 		throws Exception {
 
-		sendResponse(actionRequest, actionResponse, msg, false);
+		_sendResponse(actionRequest, actionResponse, msg, false);
 	}
 
-	protected void sendResponse(
+	private void _sendResponse(
 			ActionRequest actionRequest, ActionResponse actionResponse,
 			String msg, boolean success)
 		throws Exception {
@@ -196,18 +186,18 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 			s.getBytes(StringPool.UTF8), ContentTypes.TEXT_XML_UTF8);
 	}
 
-	protected void sendSuccess(
+	private void _sendSuccess(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		sendResponse(actionRequest, actionResponse, null, true);
+		_sendResponse(actionRequest, actionResponse, null, true);
 	}
 
-	protected void validate(
+	private void _validate(
 			ActionRequest actionRequest, String remoteIP, String url)
 		throws Exception {
 
-		if (!isCommentsEnabled(actionRequest)) {
+		if (!_isCommentsEnabled(actionRequest)) {
 			throw new TrackbackValidationException("Comments are disabled");
 		}
 
@@ -216,7 +206,7 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 				"Trackback requires a valid permanent URL");
 		}
 
-		String trackbackIP = _http.getIpAddress(url);
+		String trackbackIP = HttpComponentsUtil.getIpAddress(url);
 
 		if (!remoteIP.equals(trackbackIP)) {
 			throw new TrackbackValidationException(
@@ -224,7 +214,7 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void validate(BlogsEntry entry)
+	private void _validate(BlogsEntry entry)
 		throws TrackbackValidationException {
 
 		if (!entry.isAllowTrackbacks()) {
@@ -235,9 +225,6 @@ public class TrackbackMVCActionCommand extends BaseMVCActionCommand {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		TrackbackMVCActionCommand.class);
-
-	@Reference
-	private Http _http;
 
 	@Reference
 	private Portal _portal;

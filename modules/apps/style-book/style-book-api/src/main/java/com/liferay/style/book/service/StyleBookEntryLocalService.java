@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.service;
@@ -75,13 +66,10 @@ public interface StyleBookEntryLocalService
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the style book entry local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link StyleBookEntryLocalServiceUtil} if injection and service tracking are not available.
 	 */
 	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -104,7 +92,7 @@ public interface StyleBookEntryLocalService
 		throws PortalException;
 
 	public StyleBookEntry copyStyleBookEntry(
-			long userId, long groupId, long styleBookEntryId,
+			long userId, long groupId, long sourceStyleBookEntryId,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -140,6 +128,8 @@ public interface StyleBookEntryLocalService
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException;
 
+	public void deleteStyleBookEntries(long groupId) throws PortalException;
+
 	/**
 	 * Deletes the style book entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -153,6 +143,10 @@ public interface StyleBookEntryLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public StyleBookEntry deleteStyleBookEntry(long styleBookEntryId)
+		throws PortalException;
+
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -248,7 +242,8 @@ public interface StyleBookEntryLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public StyleBookEntry fetchDefaultStyleBookEntry(long groupId);
+	public StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId);
 
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -336,6 +331,10 @@ public interface StyleBookEntryLocalService
 	public List<StyleBookEntry> getStyleBookEntries(
 		long groupId, int start, int end,
 		OrderByComparator<StyleBookEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<StyleBookEntry> getStyleBookEntries(
@@ -434,7 +433,7 @@ public interface StyleBookEntryLocalService
 	 * <strong>Important:</strong> Inspect StyleBookEntryLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 	 * </p>
 	 *
-	 * @param styleBookEntry the style book entry
+	 * @param draftStyleBookEntry the style book entry
 	 * @return the style book entry that was updated
 	 */
 	@Indexable(type = IndexableType.REINDEX)

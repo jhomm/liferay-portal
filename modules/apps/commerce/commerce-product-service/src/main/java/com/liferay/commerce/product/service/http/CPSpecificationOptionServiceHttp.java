@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.http;
@@ -46,17 +37,17 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Marco Leo
- * @see CPSpecificationOptionServiceSoap
  * @generated
  */
 public class CPSpecificationOptionServiceHttp {
 
 	public static com.liferay.commerce.product.model.CPSpecificationOption
 			addCPSpecificationOption(
-				HttpPrincipal httpPrincipal, long cpOptionCategoryId,
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long cpOptionCategoryId, long[] listTypeDefinitionIds,
 				java.util.Map<java.util.Locale, String> titleMap,
 				java.util.Map<java.util.Locale, String> descriptionMap,
-				boolean facetable, String key,
+				boolean facetable, String key, double priority, boolean visible,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -67,8 +58,9 @@ public class CPSpecificationOptionServiceHttp {
 				_addCPSpecificationOptionParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpOptionCategoryId, titleMap, descriptionMap,
-				facetable, key, serviceContext);
+				methodKey, externalReferenceCode, cpOptionCategoryId,
+				listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+				priority, visible, serviceContext);
 
 			Object returnObj = null;
 
@@ -180,6 +172,50 @@ public class CPSpecificationOptionServiceHttp {
 	}
 
 	public static com.liferay.commerce.product.model.CPSpecificationOption
+			fetchCPSpecificationOptionByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CPSpecificationOptionServiceUtil.class,
+				"fetchCPSpecificationOptionByExternalReferenceCode",
+				_fetchCPSpecificationOptionByExternalReferenceCodeParameterTypes3);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.product.model.CPSpecificationOption)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.commerce.product.model.CPSpecificationOption
 			getCPSpecificationOption(
 				HttpPrincipal httpPrincipal, long cpSpecificationOptionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -188,7 +224,7 @@ public class CPSpecificationOptionServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPSpecificationOptionServiceUtil.class,
 				"getCPSpecificationOption",
-				_getCPSpecificationOptionParameterTypes3);
+				_getCPSpecificationOptionParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, cpSpecificationOptionId);
@@ -231,7 +267,7 @@ public class CPSpecificationOptionServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPSpecificationOptionServiceUtil.class,
 				"getCPSpecificationOption",
-				_getCPSpecificationOptionParameterTypes4);
+				_getCPSpecificationOptionParameterTypes5);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, key);
@@ -269,7 +305,8 @@ public class CPSpecificationOptionServiceHttp {
 		<com.liferay.commerce.product.model.CPSpecificationOption>
 				searchCPSpecificationOptions(
 					HttpPrincipal httpPrincipal, long companyId,
-					Boolean facetable, String keywords, int start, int end,
+					Boolean facetable, Boolean visible, String keywords,
+					int start, int end,
 					com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -277,10 +314,11 @@ public class CPSpecificationOptionServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPSpecificationOptionServiceUtil.class,
 				"searchCPSpecificationOptions",
-				_searchCPSpecificationOptionsParameterTypes5);
+				_searchCPSpecificationOptionsParameterTypes6);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, companyId, facetable, keywords, start, end, sort);
+				methodKey, companyId, facetable, visible, keywords, start, end,
+				sort);
 
 			Object returnObj = null;
 
@@ -314,11 +352,12 @@ public class CPSpecificationOptionServiceHttp {
 
 	public static com.liferay.commerce.product.model.CPSpecificationOption
 			updateCPSpecificationOption(
-				HttpPrincipal httpPrincipal, long cpSpecificationOptionId,
-				long cpOptionCategoryId,
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long cpSpecificationOptionId, long cpOptionCategoryId,
+				long[] listTypeDefinitionIds,
 				java.util.Map<java.util.Locale, String> titleMap,
 				java.util.Map<java.util.Locale, String> descriptionMap,
-				boolean facetable, String key,
+				boolean facetable, String key, double priority, boolean visible,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -326,11 +365,13 @@ public class CPSpecificationOptionServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPSpecificationOptionServiceUtil.class,
 				"updateCPSpecificationOption",
-				_updateCPSpecificationOptionParameterTypes6);
+				_updateCPSpecificationOptionParameterTypes7);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpSpecificationOptionId, cpOptionCategoryId,
-				titleMap, descriptionMap, facetable, key, serviceContext);
+				methodKey, externalReferenceCode, cpSpecificationOptionId,
+				cpOptionCategoryId, listTypeDefinitionIds, titleMap,
+				descriptionMap, facetable, key, priority, visible,
+				serviceContext);
 
 			Object returnObj = null;
 
@@ -366,26 +407,32 @@ public class CPSpecificationOptionServiceHttp {
 
 	private static final Class<?>[] _addCPSpecificationOptionParameterTypes0 =
 		new Class[] {
-			long.class, java.util.Map.class, java.util.Map.class, boolean.class,
-			String.class, com.liferay.portal.kernel.service.ServiceContext.class
+			String.class, long.class, long[].class, java.util.Map.class,
+			java.util.Map.class, boolean.class, String.class, double.class,
+			boolean.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
 		_deleteCPSpecificationOptionParameterTypes1 = new Class[] {long.class};
 	private static final Class<?>[] _fetchCPSpecificationOptionParameterTypes2 =
 		new Class[] {long.class, String.class};
-	private static final Class<?>[] _getCPSpecificationOptionParameterTypes3 =
-		new Class[] {long.class};
+	private static final Class<?>[]
+		_fetchCPSpecificationOptionByExternalReferenceCodeParameterTypes3 =
+			new Class[] {String.class, long.class};
 	private static final Class<?>[] _getCPSpecificationOptionParameterTypes4 =
+		new Class[] {long.class};
+	private static final Class<?>[] _getCPSpecificationOptionParameterTypes5 =
 		new Class[] {long.class, String.class};
 	private static final Class<?>[]
-		_searchCPSpecificationOptionsParameterTypes5 = new Class[] {
-			long.class, Boolean.class, String.class, int.class, int.class,
-			com.liferay.portal.kernel.search.Sort.class
+		_searchCPSpecificationOptionsParameterTypes6 = new Class[] {
+			long.class, Boolean.class, Boolean.class, String.class, int.class,
+			int.class, com.liferay.portal.kernel.search.Sort.class
 		};
 	private static final Class<?>[]
-		_updateCPSpecificationOptionParameterTypes6 = new Class[] {
-			long.class, long.class, java.util.Map.class, java.util.Map.class,
-			boolean.class, String.class,
+		_updateCPSpecificationOptionParameterTypes7 = new Class[] {
+			String.class, long.class, long.class, long[].class,
+			java.util.Map.class, java.util.Map.class, boolean.class,
+			String.class, double.class, boolean.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 

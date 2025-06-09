@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io.util;
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeSettings;
 import com.liferay.dynamic.data.mapping.form.field.type.DefaultDDMFormFieldTypeSettings;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
@@ -45,18 +36,17 @@ import java.util.Set;
 public class DDMFormFieldDeserializerUtil {
 
 	public static List<DDMFormField> deserialize(
-			DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 			JSONArray jsonArray, JSONFactory jsonFactory)
 		throws PortalException {
 
 		List<DDMFormField> ddmFormFields = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			DDMFormField ddmFormField = _getDDMFormField(
-				ddmFormFieldTypeServicesTracker, jsonFactory,
-				jsonArray.getJSONObject(i));
-
-			ddmFormFields.add(ddmFormField);
+			ddmFormFields.add(
+				_getDDMFormField(
+					ddmFormFieldTypeServicesRegistry, jsonFactory,
+					jsonArray.getJSONObject(i)));
 		}
 
 		return ddmFormFields;
@@ -211,7 +201,7 @@ public class DDMFormFieldDeserializerUtil {
 	}
 
 	private static DDMFormField _getDDMFormField(
-			DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 			JSONFactory jsonFactory, JSONObject jsonObject)
 		throws PortalException {
 
@@ -221,11 +211,11 @@ public class DDMFormFieldDeserializerUtil {
 		DDMFormField ddmFormField = new DDMFormField(name, type);
 
 		_setDDMFormFieldProperties(
-			ddmFormField, ddmFormFieldTypeServicesTracker, jsonFactory,
+			ddmFormField, ddmFormFieldTypeServicesRegistry, jsonFactory,
 			jsonObject);
 
 		_setNestedDDMFormField(
-			ddmFormField, ddmFormFieldTypeServicesTracker,
+			ddmFormField, ddmFormFieldTypeServicesRegistry,
 			jsonObject.getJSONArray("nestedFields"), jsonFactory);
 
 		return ddmFormField;
@@ -253,11 +243,11 @@ public class DDMFormFieldDeserializerUtil {
 	}
 
 	private static DDMForm _getDDMFormFieldTypeSettingsDDMForm(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 		String type) {
 
 		DDMFormFieldType ddmFormFieldType =
-			ddmFormFieldTypeServicesTracker.getDDMFormFieldType(type);
+			ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(type);
 
 		Class<? extends DDMFormFieldTypeSettings> ddmFormFieldTypeSettings =
 			DefaultDDMFormFieldTypeSettings.class;
@@ -272,13 +262,13 @@ public class DDMFormFieldDeserializerUtil {
 
 	private static void _setDDMFormFieldProperties(
 			DDMFormField ddmFormField,
-			DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 			JSONFactory jsonFactory, JSONObject jsonObject)
 		throws PortalException {
 
 		DDMForm ddmFormFieldTypeSettingsDDMForm =
 			_getDDMFormFieldTypeSettingsDDMForm(
-				ddmFormFieldTypeServicesTracker, ddmFormField.getType());
+				ddmFormFieldTypeServicesRegistry, ddmFormField.getType());
 
 		for (DDMFormField ddmFormFieldTypeSetting :
 				ddmFormFieldTypeSettingsDDMForm.getDDMFormFields()) {
@@ -295,20 +285,27 @@ public class DDMFormFieldDeserializerUtil {
 
 		String settingName = ddmFormFieldTypeSetting.getName();
 
-		if (jsonObject.has(settingName)) {
-			Object deserializedDDMFormFieldProperty =
-				_deserializeDDMFormFieldProperty(
-					ddmFormFieldTypeSetting, jsonFactory,
-					jsonObject.getString(settingName));
-
-			ddmFormField.setProperty(
-				settingName, deserializedDDMFormFieldProperty);
+		if (!jsonObject.has(settingName)) {
+			return;
 		}
+
+		String settingValue = jsonObject.getString(settingName);
+
+		if (Objects.equals(settingName, "fieldReference") &&
+			Validator.isNull(settingValue)) {
+
+			return;
+		}
+
+		ddmFormField.setProperty(
+			settingName,
+			_deserializeDDMFormFieldProperty(
+				ddmFormFieldTypeSetting, jsonFactory, settingValue));
 	}
 
 	private static void _setNestedDDMFormField(
 			DDMFormField ddmFormField,
-			DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+			DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 			JSONArray jsonArray, JSONFactory jsonFactory)
 		throws PortalException {
 
@@ -318,7 +315,7 @@ public class DDMFormFieldDeserializerUtil {
 
 		ddmFormField.setNestedDDMFormFields(
 			deserialize(
-				ddmFormFieldTypeServicesTracker, jsonArray, jsonFactory));
+				ddmFormFieldTypeServicesRegistry, jsonArray, jsonFactory));
 	}
 
 }

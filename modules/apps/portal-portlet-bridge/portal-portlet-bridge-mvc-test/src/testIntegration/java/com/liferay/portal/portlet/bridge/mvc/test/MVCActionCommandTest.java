@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.portlet.bridge.mvc.test;
@@ -19,12 +10,12 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.test.portlet.MockActionResponse;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionResponse;
 
-import javax.portlet.ActionRequest;
+import jakarta.portlet.ActionRequest;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -59,11 +50,11 @@ public class MVCActionCommandTest {
 		_portlet = new MVCPortlet();
 
 		_portletServiceRegistration = bundleContext.registerService(
-			javax.portlet.Portlet.class, _portlet,
+			jakarta.portlet.Portlet.class, _portlet,
 			HashMapDictionaryBuilder.<String, Object>put(
-				"javax.portlet.init-param.copy-request-parameters", "false"
+				"jakarta.portlet.init-param.copy-request-parameters", "false"
 			).put(
-				"javax.portlet.name", _PORTLET_NAME
+				"jakarta.portlet.name", _PORTLET_NAME
 			).build());
 
 		_mvcActionCommandServiceRegistration1 = bundleContext.registerService(
@@ -76,7 +67,7 @@ public class MVCActionCommandTest {
 				return true;
 			},
 			HashMapDictionaryBuilder.<String, Object>put(
-				"javax.portlet.name", _PORTLET_NAME
+				"jakarta.portlet.name", _PORTLET_NAME
 			).put(
 				"mvc.command.name", _TEST_MVC_ACTION_COMMAND_NAME_1
 			).build());
@@ -91,7 +82,7 @@ public class MVCActionCommandTest {
 				return true;
 			},
 			HashMapDictionaryBuilder.<String, Object>put(
-				"javax.portlet.name", _PORTLET_NAME
+				"jakarta.portlet.name", _PORTLET_NAME
 			).put(
 				"mvc.command.name", _TEST_MVC_ACTION_COMMAND_NAME_2
 			).build());
@@ -206,8 +197,8 @@ public class MVCActionCommandTest {
 		_mvcActionCommandServiceRegistration1;
 	private static ServiceRegistration<MVCActionCommand>
 		_mvcActionCommandServiceRegistration2;
-	private static javax.portlet.Portlet _portlet;
-	private static ServiceRegistration<javax.portlet.Portlet>
+	private static jakarta.portlet.Portlet _portlet;
+	private static ServiceRegistration<jakarta.portlet.Portlet>
 		_portletServiceRegistration;
 
 }

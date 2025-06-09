@@ -1,36 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.test;
 
 import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.exception.NoSuchRoleException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryUserRel;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.model.AccountRoleTable;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.account.service.AccountRoleLocalServiceUtil;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.function.UnsafeFunction;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ModelListener;
@@ -43,6 +36,7 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -54,6 +48,7 @@ import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.comparator.RoleNameComparator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -94,12 +89,9 @@ public class AccountRoleLocalServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		_accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		_accountEntry3 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry1 = AccountEntryTestUtil.addAccountEntry();
+		_accountEntry2 = AccountEntryTestUtil.addAccountEntry();
+		_accountEntry3 = AccountEntryTestUtil.addAccountEntry();
 	}
 
 	@Test
@@ -347,6 +339,38 @@ public class AccountRoleLocalServiceTest {
 	}
 
 	@Test
+	public void testGetOrAddIncompleteAccountRole() throws Exception {
+
+		// Lazy referencing disabled
+
+		try {
+			_accountRoleLocalService.getOrAddIncompleteAccountRole(
+				RandomTestUtil.randomString(), TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), 0, RandomTestUtil.randomString());
+		}
+		catch (NoSuchRoleException noSuchRoleException) {
+			Assert.assertNotNull(noSuchRoleException);
+		}
+
+		// Lazy referencing enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountRole accountRole =
+				_accountRoleLocalService.getOrAddIncompleteAccountRole(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					0, RandomTestUtil.randomString());
+
+			Role role = accountRole.getRole();
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_INCOMPLETE, role.getStatus());
+		}
+	}
+
+	@Test
 	public void testSearchAccountRoles() throws Exception {
 		String keywords = RandomTestUtil.randomString();
 
@@ -386,7 +410,7 @@ public class AccountRoleLocalServiceTest {
 		String keyword = RandomTestUtil.randomString();
 
 		AccountRole accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(),
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
 			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
 			RandomTestUtil.randomString(), null,
 			Collections.singletonMap(LocaleUtil.getDefault(), keyword));
@@ -409,7 +433,7 @@ public class AccountRoleLocalServiceTest {
 		String keyword = RandomTestUtil.randomString();
 
 		AccountRole accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(),
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
 			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
 			RandomTestUtil.randomString(),
 			Collections.singletonMap(LocaleUtil.getDefault(), keyword), null);
@@ -434,14 +458,14 @@ public class AccountRoleLocalServiceTest {
 		String keyword = RandomTestUtil.randomString();
 
 		AccountRole accountRoleA = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(),
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
 			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, keyword, null, null);
 
 		User adminUserB = UserTestUtil.getAdminUser(_company.getCompanyId());
 
 		AccountRole accountRoleB = _accountRoleLocalService.addAccountRole(
-			adminUserB.getUserId(), AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
-			keyword, null, null);
+			RandomTestUtil.randomString(), adminUserB.getUserId(),
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, keyword, null, null);
 
 		for (AccountRole accountRole :
 				new AccountRole[] {accountRoleA, accountRoleB}) {
@@ -477,7 +501,7 @@ public class AccountRoleLocalServiceTest {
 			AccountRoleLocalServiceUtil.searchAccountRoles(
 				_accountEntry1.getCompanyId(),
 				new long[] {_accountEntry1.getAccountEntryId()}, keywords, null,
-				0, 2, null);
+				0, 2, RoleNameComparator.getInstance(true));
 
 		Assert.assertEquals(
 			expectedAccountRoles.toString(), 5,
@@ -492,7 +516,7 @@ public class AccountRoleLocalServiceTest {
 			_accountEntry1.getCompanyId(),
 			new long[] {_accountEntry1.getAccountEntryId()}, keywords, null,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new RoleNameComparator(false));
+			RoleNameComparator.getInstance(false));
 
 		expectedAccountRoles = ListUtil.sort(
 			expectedAccountRoles, Collections.reverseOrder());
@@ -504,24 +528,21 @@ public class AccountRoleLocalServiceTest {
 	@Test
 	public void testSearchAccountRolesWithParams() throws Exception {
 		AccountRole accountRole1 = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry1.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_accountEntry1.getAccountEntryId(),
+			RandomTestUtil.randomString() + " " + RandomTestUtil.randomString(),
+			null, null);
 		AccountRole accountRole2 = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry1.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_accountEntry1.getAccountEntryId(),
+			RandomTestUtil.randomString() + " " + RandomTestUtil.randomString(),
+			null, null);
 
 		_testSearchAccountRolesWithParams(
 			accountRole1.getCompanyId(),
-			new long[] {accountRole1.getAccountEntryId()},
+			new long[] {_accountEntry1.getAccountEntryId()},
 			LinkedHashMapBuilder.<String, Object>put(
 				"excludedRoleNames", new String[] {accountRole1.getRoleName()}
-			).build(),
-			Collections.singletonList(accountRole2));
-		_testSearchAccountRolesWithParams(
-			accountRole1.getCompanyId(),
-			new long[] {accountRole1.getAccountEntryId()},
-			LinkedHashMapBuilder.<String, Object>put(
-				"excludedRoleIds", new Long[] {accountRole1.getRoleId()}
 			).build(),
 			Collections.singletonList(accountRole2));
 	}
@@ -530,7 +551,8 @@ public class AccountRoleLocalServiceTest {
 		throws Exception {
 
 		return _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), accountEntryId, name, null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			accountEntryId, name, null, null);
 	}
 
 	private void _assertHasPermission(
@@ -569,7 +591,7 @@ public class AccountRoleLocalServiceTest {
 
 	private void _testDeleteAccountRole(
 			UnsafeFunction<AccountRole, AccountRole, PortalException>
-				deleteAccountRoleFunction)
+				deleteAccountRoleUnsafeFunction)
 		throws Exception {
 
 		AccountRole accountRole = _addAccountRole(
@@ -586,7 +608,7 @@ public class AccountRoleLocalServiceTest {
 		Assert.assertTrue(
 			ArrayUtil.contains(_getRoleIds(user), accountRole.getRoleId()));
 
-		deleteAccountRoleFunction.apply(accountRole);
+		deleteAccountRoleUnsafeFunction.apply(accountRole);
 
 		Assert.assertFalse(
 			ArrayUtil.contains(
@@ -620,9 +642,6 @@ public class AccountRoleLocalServiceTest {
 	private AccountEntry _accountEntry3;
 
 	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
-
-	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@DeleteAfterTestRun
@@ -634,6 +653,9 @@ public class AccountRoleLocalServiceTest {
 
 	@Inject
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
 
 	@DeleteAfterTestRun
 	private final List<User> _users = new ArrayList<>();

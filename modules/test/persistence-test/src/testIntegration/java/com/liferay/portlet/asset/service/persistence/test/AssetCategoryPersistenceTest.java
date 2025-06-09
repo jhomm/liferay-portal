@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.exception.DuplicateAssetCategoryExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.NoSuchCategoryException;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
@@ -27,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -158,6 +154,8 @@ public class AssetCategoryPersistenceTest {
 
 		newAssetCategory.setLastPublishDate(RandomTestUtil.nextDate());
 
+		newAssetCategory.setStatus(RandomTestUtil.nextInt());
+
 		_assetCategories.add(_persistence.update(newAssetCategory));
 
 		AssetCategory existingAssetCategory = _persistence.findByPrimaryKey(
@@ -212,6 +210,28 @@ public class AssetCategoryPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingAssetCategory.getLastPublishDate()),
 			Time.getShortTimestamp(newAssetCategory.getLastPublishDate()));
+		Assert.assertEquals(
+			existingAssetCategory.getStatus(), newAssetCategory.getStatus());
+	}
+
+	@Test(expected = DuplicateAssetCategoryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		AssetCategory assetCategory = addAssetCategory();
+
+		AssetCategory newAssetCategory = addAssetCategory();
+
+		newAssetCategory.setGroupId(assetCategory.getGroupId());
+
+		newAssetCategory = _persistence.update(newAssetCategory);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newAssetCategory);
+
+		newAssetCategory.setExternalReferenceCode(
+			assetCategory.getExternalReferenceCode());
+
+		_persistence.update(newAssetCategory);
 	}
 
 	@Test
@@ -359,12 +379,12 @@ public class AssetCategoryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_ERC() throws Exception {
-		_persistence.countByG_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
 
-		_persistence.countByG_ERC(0L, "null");
+		_persistence.countByERC_G("null", 0L);
 
-		_persistence.countByG_ERC(0L, (String)null);
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -392,6 +412,24 @@ public class AssetCategoryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -403,7 +441,7 @@ public class AssetCategoryPersistenceTest {
 			"groupId", true, "companyId", true, "userId", true, "userName",
 			true, "createDate", true, "modifiedDate", true, "parentCategoryId",
 			true, "treePath", true, "name", true, "vocabularyId", true,
-			"lastPublishDate", true);
+			"lastPublishDate", true, "status", true);
 	}
 
 	@Test
@@ -698,15 +736,15 @@ public class AssetCategoryPersistenceTest {
 				new Class<?>[] {String.class}, "vocabularyId"));
 
 		Assert.assertEquals(
-			Long.valueOf(assetCategory.getGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				assetCategory, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "groupId"));
-		Assert.assertEquals(
 			assetCategory.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				assetCategory, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(assetCategory.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				assetCategory, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected AssetCategory addAssetCategory() throws Exception {
@@ -747,6 +785,8 @@ public class AssetCategoryPersistenceTest {
 		assetCategory.setVocabularyId(RandomTestUtil.nextLong());
 
 		assetCategory.setLastPublishDate(RandomTestUtil.nextDate());
+
+		assetCategory.setStatus(RandomTestUtil.nextInt());
 
 		_assetCategories.add(_persistence.update(assetCategory));
 

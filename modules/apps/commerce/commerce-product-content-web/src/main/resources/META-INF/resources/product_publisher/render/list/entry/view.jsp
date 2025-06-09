@@ -1,29 +1,20 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
+CPCompareContentHelper cpCompareContentHelper = (CPCompareContentHelper)request.getAttribute(CPContentWebKeys.CP_COMPARE_CONTENT_HELPER);
+
 CPContentHelper cpContentHelper = (CPContentHelper)request.getAttribute(CPContentWebKeys.CP_CONTENT_HELPER);
 
 CPCatalogEntry cpCatalogEntry = cpContentHelper.getCPCatalogEntry(request);
 
-CPSku cpSku = cpContentHelper.getDefaultCPSku(cpCatalogEntry);
-
-String productDetailURL = cpContentHelper.getFriendlyURL(cpCatalogEntry, themeDisplay);
+boolean hasMultipleCPSkus = cpContentHelper.hasMultipleCPSkus(cpCatalogEntry);
 %>
 
 <div class="cp-renderer">
@@ -31,25 +22,60 @@ String productDetailURL = cpContentHelper.getFriendlyURL(cpCatalogEntry, themeDi
 
 	<div class="card d-flex flex-column product-card">
 		<div class="card-item-first position-relative">
+
+			<%
+			String productDetailURL = cpContentHelper.getFriendlyURL(cpCatalogEntry, themeDisplay);
+			%>
+
 			<a href="<%= productDetailURL %>">
-				<liferay-adaptive-media:img
-					class="img-fluid product-card-picture"
-					fileVersion="<%= cpContentHelper.getCPDefinitionImageFileVersion(cpCatalogEntry.getCPDefinitionId(), request) %>"
-				/>
+
+				<%
+				String cpDefinitionCDNURL = cpContentHelper.getCPDefinitionCDNURL(cpCatalogEntry.getCPDefinitionId(), request);
+				%>
+
+				<c:choose>
+					<c:when test="<%= Validator.isNotNull(cpDefinitionCDNURL) %>">
+						<img alt="thumbnail" class="img-fluid product-card-picture" src="<%= cpDefinitionCDNURL %>" />
+					</c:when>
+					<c:otherwise>
+						<liferay-adaptive-media:img
+							alt="thumbnail"
+							class="img-fluid product-card-picture"
+							fileVersion="<%= cpContentHelper.getCPDefinitionImageFileVersion(cpCatalogEntry.getCPDefinitionId(), request) %>"
+						/>
+					</c:otherwise>
+				</c:choose>
 
 				<div class="aspect-ratio-item-bottom-left">
-					<commerce-ui:availability-label
-						CPCatalogEntry="<%= cpCatalogEntry %>"
-					/>
+					<c:if test="<%= !hasMultipleCPSkus %>">
+						<commerce-ui:availability-label
+							CPCatalogEntry="<%= cpCatalogEntry %>"
+						/>
+
+						<commerce-ui:discontinued-label
+							CPCatalogEntry="<%= cpCatalogEntry %>"
+						/>
+					</c:if>
 				</div>
 			</a>
 		</div>
 
 		<div class="card-body d-flex flex-column justify-content-between py-2">
 			<div class="cp-information">
-				<p class="card-subtitle" title="<%= (cpSku == null) ? StringPool.BLANK : cpSku.getSku() %>">
+
+				<%
+				String sku = StringPool.BLANK;
+
+				CPSku cpSku = cpContentHelper.getDefaultCPSku(cpCatalogEntry);
+
+				if (!hasMultipleCPSkus && (cpSku != null)) {
+					sku = cpSku.getSku();
+				}
+				%>
+
+				<p class="card-subtitle" title="<%= sku %>">
 					<span class="text-truncate-inline">
-						<span class="text-truncate"><%= (cpSku == null) ? StringPool.BLANK : cpSku.getSku() %></span>
+						<span class="text-truncate"><%= sku %></span>
 					</span>
 				</p>
 
@@ -75,18 +101,24 @@ String productDetailURL = cpContentHelper.getFriendlyURL(cpCatalogEntry, themeDi
 
 			<div>
 				<c:choose>
-					<c:when test="<%= (cpSku == null) || cpContentHelper.hasCPDefinitionOptionRels(cpCatalogEntry.getCPDefinitionId()) %>">
-						<div class="add-to-cart d-flex my-2 pt-5" id="<%= PortalUtil.generateRandomKey(request, "taglib") + StringPool.UNDERLINE + "add_to_cart" %>">
-							<a class="btn btn-block btn-secondary" href="<%= productDetailURL %>" role="button" style="margin-top: 0.35rem;">
-								<liferay-ui:message key="view-all-variants" />
-							</a>
+					<c:when test="<%= !hasMultipleCPSkus && (cpSku != null) %>">
+						<div class="mt-2">
+							<commerce-ui:add-to-cart
+								alignment="full-width"
+								CPCatalogEntry="<%= cpCatalogEntry %>"
+								inline="<%= false %>"
+								namespace="<%= portletDisplay.getNamespace() %>"
+								size="md"
+								skuOptions="[]"
+							/>
 						</div>
 					</c:when>
 					<c:otherwise>
-						<commerce-ui:add-to-cart
-							block="<%= true %>"
-							CPCatalogEntry="<%= cpCatalogEntry %>"
-						/>
+						<div class="add-to-cart d-flex my-2 pt-5" id="<%= PortalUtil.generateRandomKey(request, "taglib") + StringPool.UNDERLINE %>add_to_cart">
+							<a class="btn btn-block btn-secondary mt-2" href="<%= productDetailURL %>" role="button">
+								<liferay-ui:message key="view-all-variants" />
+							</a>
+						</div>
 					</c:otherwise>
 				</c:choose>
 
@@ -98,6 +130,7 @@ String productDetailURL = cpContentHelper.getFriendlyURL(cpCatalogEntry, themeDi
 									<commerce-ui:compare-checkbox
 										CPCatalogEntry="<%= cpCatalogEntry %>"
 										label='<%= LanguageUtil.get(request, "compare") %>'
+										refreshOnRemove="<%= (cpCompareContentHelper != null) && CPPortletKeys.CP_COMPARE_CONTENT_WEB.equals(portletDisplay.getPortletName()) %>"
 									/>
 								</div>
 							</div>

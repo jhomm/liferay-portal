@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,7 +16,7 @@ WorkflowDefinition workflowDefinition = (WorkflowDefinition)request.getAttribute
 
 String name = BeanParamUtil.getString(workflowDefinition, request, "name");
 int version = BeanParamUtil.getInteger(workflowDefinition, request, "version");
-String content = BeanParamUtil.getString(workflowDefinition, request, "content");
+String content = BeanParamUtil.getString(workflowDefinition, request, "contentAsXML");
 boolean active = BeanParamUtil.getBoolean(workflowDefinition, request, "active");
 
 String duplicateTitle = workflowDefinitionDisplayContext.getDuplicateTitle(workflowDefinition);
@@ -56,50 +47,57 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 </liferay-portlet:actionURL>
 
 <c:if test="<%= workflowDefinition != null %>">
-	<liferay-frontend:info-bar>
+	<div class="management-bar management-bar-light navbar navbar-expand-md">
 		<clay:container-fluid>
-			<div class="info-bar-item">
-				<c:choose>
-					<c:when test="<%= active %>">
-						<clay:label
-							displayType="info"
-							label="published"
-							large="<%= true %>"
-						/>
-					</c:when>
-					<c:otherwise>
-						<clay:label
-							label="not-published"
-							large="<%= true %>"
-						/>
-					</c:otherwise>
-				</c:choose>
-			</div>
+			<ul class="m-auto navbar-nav"></ul>
 
-			<%
-			String userName = workflowDefinitionDisplayContext.getUserName(workflowDefinition);
-			%>
+			<ul class="middle navbar-nav">
+				<li class="nav-item">
+					<c:choose>
+						<c:when test="<%= active %>">
+							<clay:label
+								displayType="info"
+								label="published"
+								large="<%= true %>"
+							/>
+						</c:when>
+						<c:otherwise>
+							<clay:label
+								label="not-published"
+								large="<%= true %>"
+							/>
+						</c:otherwise>
+					</c:choose>
 
-			<span>
-				<c:choose>
-					<c:when test="<%= userName == null %>">
-						<%= dateFormatTime.format(workflowDefinition.getModifiedDate()) %>
-					</c:when>
-					<c:otherwise>
-						<liferay-ui:message arguments="<%= new String[] {dateFormatTime.format(workflowDefinition.getModifiedDate()), HtmlUtil.escape(userName)} %>" key="x,-by-x" translateArguments="<%= false %>" />
-					</c:otherwise>
-				</c:choose>
-			</span>
+					<%
+					String userName = workflowDefinitionDisplayContext.getUserName(workflowDefinition);
+					%>
+
+					<span>
+						<c:choose>
+							<c:when test="<%= userName == null %>">
+								<%= displayDateFormat.format(workflowDefinition.getModifiedDate()) %>
+							</c:when>
+							<c:otherwise>
+								<liferay-ui:message arguments="<%= new String[] {displayDateFormat.format(workflowDefinition.getModifiedDate()), HtmlUtil.escape(userName)} %>" key="x,-by-x" translateArguments="<%= false %>" />
+							</c:otherwise>
+						</c:choose>
+					</span>
+				</li>
+			</ul>
+
+			<ul class="end navbar-nav">
+				<li class="nav-item">
+					<liferay-frontend:sidebar-toggler-button
+						cssClass="btn-secondary"
+						icon="info-circle"
+						label="info"
+						typeMobile="relative"
+					/>
+				</li>
+			</ul>
 		</clay:container-fluid>
-
-		<liferay-frontend:info-bar-buttons>
-			<liferay-frontend:info-bar-sidenav-toggler-button
-				icon="info-circle"
-				label="info"
-				typeMobile="relative"
-			/>
-		</liferay-frontend:info-bar-buttons>
-	</liferay-frontend:info-bar>
+	</div>
 </c:if>
 
 <div class="closed sidenav-container sidenav-right" id="<portlet:namespace />infoPanelId">
@@ -111,7 +109,7 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						<clay:container-fluid>
 							<ul class="tbar-nav">
 								<li class="tbar-item">
-									<aui:icon cssClass="component-action sidenav-close" image="times" markupView="lexicon" url="javascript:;" />
+									<aui:icon cssClass="component-action sidenav-close" image="times" markupView="lexicon" url="javascript:void(0);" />
 								</li>
 							</ul>
 						</clay:container-fluid>
@@ -125,11 +123,11 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						<clay:content-col
 							expand="<%= true %>"
 						>
-							<h4 class="component-title">
+							<div class="component-title">
 								<span class="text-truncate-inline">
 									<span class="text-truncate"><%= HtmlUtil.escape(workflowDefinition.getTitle(LanguageUtil.getLanguageId(request))) %></span>
 								</span>
-							</h4>
+							</div>
 						</clay:content-col>
 					</clay:content-row>
 				</div>
@@ -141,49 +139,56 @@ renderResponse.setTitle((workflowDefinition == null) ? LanguageUtil.get(request,
 						refresh="<%= false %>"
 					>
 						<liferay-ui:section>
-							<div style="margin-top: 1.5rem;">
+							<div class="mt-4">
 
 								<%
 								String creatorUserName = workflowDefinitionDisplayContext.getCreatorUserName(workflowDefinition);
 								String userName = workflowDefinitionDisplayContext.getUserName(workflowDefinition);
 								%>
 
-								<dl class="sidebar-dl sidebar-section">
-									<dt class="sidebar-dt">
-										<liferay-ui:message key="created" />
-									</dt>
-									<dd class="sidebar-dd">
-										<c:choose>
-											<c:when test="<%= creatorUserName == null %>">
-												<%= dateFormatTime.format(workflowDefinitionDisplayContext.getCreatedDate(workflowDefinition)) %>
-											</c:when>
-											<c:otherwise>
-												<liferay-ui:message arguments="<%= new String[] {dateFormatTime.format(workflowDefinitionDisplayContext.getCreatedDate(workflowDefinition)), HtmlUtil.escape(creatorUserName)} %>" key="x,-by-x" translateArguments="<%= false %>" />
-											</c:otherwise>
-										</c:choose>
-									</dd>
-									<dt class="sidebar-dt">
-										<liferay-ui:message key="last-modified" />
-									</dt>
-									<dd class="sidebar-dd">
-										<c:choose>
-											<c:when test="<%= userName == null %>">
-												<%= dateFormatTime.format(workflowDefinition.getModifiedDate()) %>
-											</c:when>
-											<c:otherwise>
-												<liferay-ui:message arguments="<%= new String[] {dateFormatTime.format(workflowDefinition.getModifiedDate()), HtmlUtil.escape(userName)} %>" key="x,-by-x" translateArguments="<%= false %>" />
-											</c:otherwise>
-										</c:choose>
-									</dd>
-									<dt class="sidebar-dt">
-										<liferay-ui:message key="total-modifications" />
-									</dt>
-									<dd class="sidebar-dd">
-										<liferay-ui:message arguments='<%= workflowDefinitionDisplayContext.getWorkflowDefinitionsCount(workflowDefinition) + "" %>' key="x-revisions" translateArguments="<%= false %>" />
-									</dd>
-									<dt class="sidebar-dt"></dt>
-									<dd class="sidebar-dd"></dd>
-								</dl>
+								<ul class="list-group sidebar-dl sidebar-section">
+									<li class="list-group-item px-0 py-0">
+										<p class="sidebar-dt">
+											<liferay-ui:message key="created" />
+										</p>
+
+										<p class="sidebar-dd">
+											<c:choose>
+												<c:when test="<%= creatorUserName == null %>">
+													<%= displayDateFormat.format(workflowDefinitionDisplayContext.getCreatedDate(workflowDefinition)) %>
+												</c:when>
+												<c:otherwise>
+													<liferay-ui:message arguments="<%= new String[] {displayDateFormat.format(workflowDefinitionDisplayContext.getCreatedDate(workflowDefinition)), HtmlUtil.escape(creatorUserName)} %>" key="x,-by-x" translateArguments="<%= false %>" />
+												</c:otherwise>
+											</c:choose>
+										</p>
+									</li>
+									<li class="list-group-item px-0 py-0">
+										<p class="sidebar-dt">
+											<liferay-ui:message key="last-modified" />
+										</p>
+
+										<p class="sidebar-dd">
+											<c:choose>
+												<c:when test="<%= userName == null %>">
+													<%= displayDateFormat.format(workflowDefinition.getModifiedDate()) %>
+												</c:when>
+												<c:otherwise>
+													<liferay-ui:message arguments="<%= new String[] {displayDateFormat.format(workflowDefinition.getModifiedDate()), HtmlUtil.escape(userName)} %>" key="x,-by-x" translateArguments="<%= false %>" />
+												</c:otherwise>
+											</c:choose>
+										</p>
+									</li>
+									<li class="list-group-item px-0 py-0">
+										<p class="sidebar-dt">
+											<liferay-ui:message key="total-modifications" />
+										</p>
+
+										<p class="sidebar-dd">
+											<liferay-ui:message arguments='<%= workflowDefinitionDisplayContext.getWorkflowDefinitionsCount(workflowDefinition) + "" %>' key="x-revisions" translateArguments="<%= false %>" />
+										</p>
+									</li>
+								</ul>
 							</div>
 						</liferay-ui:section>
 

@@ -1,31 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.internal.engine;
 
 import com.liferay.commerce.constants.CommerceOrderConstants;
+import com.liferay.commerce.constants.CommerceOrderPaymentConstants;
 import com.liferay.commerce.constants.CommerceSubscriptionEntryConstants;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceSubscriptionEntry;
 import com.liferay.commerce.order.engine.CommerceOrderEngine;
 import com.liferay.commerce.payment.engine.CommerceSubscriptionEngine;
+import com.liferay.commerce.payment.helper.CommercePaymentHelper;
 import com.liferay.commerce.payment.method.CommercePaymentMethod;
 import com.liferay.commerce.payment.request.CommercePaymentRequest;
 import com.liferay.commerce.payment.request.CommercePaymentRequestProvider;
 import com.liferay.commerce.payment.result.CommercePaymentResult;
-import com.liferay.commerce.payment.util.CommercePaymentUtils;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderPaymentLocalService;
 import com.liferay.commerce.service.CommerceSubscriptionEntryLocalService;
@@ -37,9 +29,9 @@ import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.util.Objects;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,10 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CommerceSubscriptionEngine.class
-)
+@Component(service = CommerceSubscriptionEngine.class)
 public class CommerceSubscriptionEngineImpl
 	implements CommerceSubscriptionEngine {
 
@@ -99,7 +88,7 @@ public class CommerceSubscriptionEngineImpl
 		CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
 		CommercePaymentMethod commercePaymentMethod =
-			_commercePaymentUtils.getCommercePaymentMethod(
+			_commercePaymentHelper.getCommercePaymentMethod(
 				commerceOrder.getCommerceOrderId());
 
 		if ((commercePaymentMethod == null) ||
@@ -109,17 +98,14 @@ public class CommerceSubscriptionEngineImpl
 		}
 
 		CommercePaymentRequestProvider commercePaymentRequestProvider =
-			_commercePaymentUtils.getCommercePaymentRequestProvider(
+			_commercePaymentHelper.getCommercePaymentRequestProvider(
 				commercePaymentMethod);
-
-		CommercePaymentRequest commercePaymentRequest =
-			commercePaymentRequestProvider.getCommercePaymentRequest(
-				null, commerceOrder.getCommerceOrderId(), null, null, null,
-				commerceOrder.getTransactionId());
 
 		boolean activateSubscription =
 			commercePaymentMethod.activateRecurringPayment(
-				commercePaymentRequest);
+				commercePaymentRequestProvider.getCommercePaymentRequest(
+					null, commerceOrder.getCommerceOrderId(), null, null, null,
+					commerceOrder.getTransactionId()));
 
 		if (activateSubscription) {
 			_commerceSubscriptionEntryLocalService.updateSubscriptionStatus(
@@ -161,7 +147,7 @@ public class CommerceSubscriptionEngineImpl
 		CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
 		CommercePaymentMethod commercePaymentMethod =
-			_commercePaymentUtils.getCommercePaymentMethod(
+			_commercePaymentHelper.getCommercePaymentMethod(
 				commerceOrder.getCommerceOrderId());
 
 		if ((commercePaymentMethod == null) ||
@@ -171,17 +157,14 @@ public class CommerceSubscriptionEngineImpl
 		}
 
 		CommercePaymentRequestProvider commercePaymentRequestProvider =
-			_commercePaymentUtils.getCommercePaymentRequestProvider(
+			_commercePaymentHelper.getCommercePaymentRequestProvider(
 				commercePaymentMethod);
-
-		CommercePaymentRequest commercePaymentRequest =
-			commercePaymentRequestProvider.getCommercePaymentRequest(
-				null, commerceOrder.getCommerceOrderId(), null, null, null,
-				commerceOrder.getTransactionId());
 
 		boolean activateSubscription =
 			commercePaymentMethod.cancelRecurringPayment(
-				commercePaymentRequest);
+				commercePaymentRequestProvider.getCommercePaymentRequest(
+					null, commerceOrder.getCommerceOrderId(), null, null, null,
+					commerceOrder.getTransactionId()));
 
 		if (activateSubscription) {
 			_commerceSubscriptionEntryLocalService.updateSubscriptionStatus(
@@ -203,12 +186,12 @@ public class CommerceSubscriptionEngineImpl
 		throws Exception {
 
 		CommercePaymentMethod commercePaymentMethod =
-			_commercePaymentUtils.getCommercePaymentMethod(commerceOrderId);
+			_commercePaymentHelper.getCommercePaymentMethod(commerceOrderId);
 
 		if ((commercePaymentMethod == null) ||
 			!commercePaymentMethod.isCompleteRecurringEnabled()) {
 
-			return _commercePaymentUtils.emptyResult(
+			return _commercePaymentHelper.emptyResult(
 				commerceOrderId, transactionId);
 		}
 
@@ -216,7 +199,7 @@ public class CommerceSubscriptionEngineImpl
 			_commerceOrderLocalService.getCommerceOrder(commerceOrderId);
 
 		CommercePaymentRequest commercePaymentRequest =
-			_commercePaymentUtils.getCommercePaymentRequest(
+			_commercePaymentHelper.getCommercePaymentRequest(
 				commerceOrder, _portal.getLocale(httpServletRequest),
 				transactionId, null, httpServletRequest, commercePaymentMethod);
 
@@ -237,14 +220,14 @@ public class CommerceSubscriptionEngineImpl
 			StringPool.BLANK);
 
 		if (commercePaymentResult.getNewPaymentStatus() ==
-				CommerceOrderConstants.PAYMENT_STATUS_PAID) {
+				CommerceOrderPaymentConstants.STATUS_COMPLETED) {
 
 			PermissionChecker permissionChecker =
 				PermissionThreadLocal.getPermissionChecker();
 
 			_commerceOrderEngine.transitionCommerceOrder(
 				commerceOrder, CommerceOrderConstants.ORDER_STATUS_PENDING,
-				permissionChecker.getUserId());
+				permissionChecker.getUserId(), true);
 		}
 
 		return commercePaymentResult;
@@ -255,7 +238,7 @@ public class CommerceSubscriptionEngineImpl
 		throws Exception {
 
 		CommercePaymentMethod commercePaymentMethod =
-			_commercePaymentUtils.getCommercePaymentMethod(commerceOrderId);
+			_commercePaymentHelper.getCommercePaymentMethod(commerceOrderId);
 
 		if ((commercePaymentMethod == null) ||
 			!commercePaymentMethod.isProcessRecurringEnabled()) {
@@ -264,19 +247,16 @@ public class CommerceSubscriptionEngineImpl
 		}
 
 		CommercePaymentRequestProvider commercePaymentRequestProvider =
-			_commercePaymentUtils.getCommercePaymentRequestProvider(
+			_commercePaymentHelper.getCommercePaymentRequestProvider(
 				commercePaymentMethod);
 
 		CommerceOrder commerceOrder =
 			_commerceOrderLocalService.getCommerceOrder(commerceOrderId);
 
-		CommercePaymentRequest commercePaymentRequest =
+		return commercePaymentMethod.getSubscriptionValidity(
 			commercePaymentRequestProvider.getCommercePaymentRequest(
 				null, commerceOrderId, null, null, null,
-				commerceOrder.getTransactionId());
-
-		return commercePaymentMethod.getSubscriptionValidity(
-			commercePaymentRequest);
+				commerceOrder.getTransactionId()));
 	}
 
 	@Override
@@ -292,17 +272,17 @@ public class CommerceSubscriptionEngineImpl
 			_commerceOrderLocalService.getCommerceOrder(commerceOrderId);
 
 		CommercePaymentMethod commercePaymentMethod =
-			_commercePaymentUtils.getCommercePaymentMethod(commerceOrderId);
+			_commercePaymentHelper.getCommercePaymentMethod(commerceOrderId);
 
 		if ((commercePaymentMethod == null) ||
 			!commercePaymentMethod.isProcessRecurringEnabled()) {
 
-			return _commercePaymentUtils.emptyResult(
+			return _commercePaymentHelper.emptyResult(
 				commerceOrderId, StringPool.BLANK);
 		}
 
 		CommercePaymentRequest commercePaymentRequest =
-			_commercePaymentUtils.getCommercePaymentRequest(
+			_commercePaymentHelper.getCommercePaymentRequest(
 				commerceOrder, _portal.getLocale(httpServletRequest), null,
 				checkoutStepUrl, httpServletRequest, commercePaymentMethod);
 
@@ -370,7 +350,7 @@ public class CommerceSubscriptionEngineImpl
 		CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
 		CommercePaymentMethod commercePaymentMethod =
-			_commercePaymentUtils.getCommercePaymentMethod(
+			_commercePaymentHelper.getCommercePaymentMethod(
 				commerceOrder.getCommerceOrderId());
 
 		if ((commercePaymentMethod == null) ||
@@ -380,17 +360,14 @@ public class CommerceSubscriptionEngineImpl
 		}
 
 		CommercePaymentRequestProvider commercePaymentRequestProvider =
-			_commercePaymentUtils.getCommercePaymentRequestProvider(
+			_commercePaymentHelper.getCommercePaymentRequestProvider(
 				commercePaymentMethod);
-
-		CommercePaymentRequest commercePaymentRequest =
-			commercePaymentRequestProvider.getCommercePaymentRequest(
-				null, commerceOrder.getCommerceOrderId(), null, null, null,
-				commerceOrder.getTransactionId());
 
 		boolean suspendSubscription =
 			commercePaymentMethod.suspendRecurringPayment(
-				commercePaymentRequest);
+				commercePaymentRequestProvider.getCommercePaymentRequest(
+					null, commerceOrder.getCommerceOrderId(), null, null, null,
+					commerceOrder.getTransactionId()));
 
 		if (suspendSubscription) {
 			_commerceSubscriptionEntryLocalService.updateSubscriptionStatus(
@@ -412,7 +389,7 @@ public class CommerceSubscriptionEngineImpl
 	private CommerceOrderPaymentLocalService _commerceOrderPaymentLocalService;
 
 	@Reference
-	private CommercePaymentUtils _commercePaymentUtils;
+	private CommercePaymentHelper _commercePaymentHelper;
 
 	@Reference
 	private CommerceSubscriptionEntryLocalService

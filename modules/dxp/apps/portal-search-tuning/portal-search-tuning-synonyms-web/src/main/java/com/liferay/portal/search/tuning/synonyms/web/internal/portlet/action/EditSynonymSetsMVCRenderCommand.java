@@ -1,31 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.portlet.action;
 
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.search.index.IndexNameBuilder;
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexNameBuilder;
 import com.liferay.portal.search.tuning.synonyms.web.internal.constants.SynonymsPortletKeys;
 import com.liferay.portal.search.tuning.synonyms.web.internal.display.context.EditSynonymSetsDisplayBuilder;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetIndexReader;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -33,9 +25,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Filipe Oshiro
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SynonymsPortletKeys.SYNONYMS,
+		"jakarta.portlet.name=" + SynonymsPortletKeys.SYNONYMS,
 		"mvc.command.name=/synonyms/edit_synonym_sets"
 	},
 	service = MVCRenderCommand.class
@@ -60,16 +51,21 @@ public class EditSynonymSetsMVCRenderCommand implements MVCRenderCommand {
 		return "/edit_synonym_sets.jsp";
 	}
 
-	@Reference
-	private IndexNameBuilder _indexNameBuilder;
+	@Activate
+	protected void activate() {
+		_synonymSetIndexReader = new SynonymSetIndexReader(
+			_searchEngineAdapter);
+	}
 
 	@Reference
 	private Portal _portal;
 
 	@Reference
-	private SynonymSetIndexNameBuilder _synonymSetIndexNameBuilder;
+	private SearchEngineAdapter _searchEngineAdapter;
 
 	@Reference
+	private SynonymSetIndexNameBuilder _synonymSetIndexNameBuilder;
+
 	private SynonymSetIndexReader _synonymSetIndexReader;
 
 }

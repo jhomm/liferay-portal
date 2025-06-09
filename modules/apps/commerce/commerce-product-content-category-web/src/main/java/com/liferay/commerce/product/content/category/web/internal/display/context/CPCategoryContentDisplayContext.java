@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.category.web.internal.display.context;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryService;
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.media.CommerceMediaResolver;
@@ -24,17 +14,22 @@ import com.liferay.commerce.product.constants.CPAttachmentFileEntryConstants;
 import com.liferay.commerce.product.content.category.web.internal.configuration.CPCategoryContentPortletInstanceConfiguration;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryService;
+import com.liferay.commerce.util.CommerceUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Marco Leo
@@ -47,31 +42,40 @@ public class CPCategoryContentDisplayContext {
 			AssetCategoryService assetCategoryService,
 			CommerceMediaResolver commerceMediaResolver,
 			CPAttachmentFileEntryService cpAttachmentFileEntryService,
-			Portal portal)
+			GroupLocalService groupLocalService, Portal portal)
 		throws ConfigurationException {
 
 		_httpServletRequest = httpServletRequest;
 		_assetCategoryService = assetCategoryService;
 		_commerceMediaResolver = commerceMediaResolver;
 		_cpAttachmentFileEntryService = cpAttachmentFileEntryService;
+		_groupLocalService = groupLocalService;
 		_portal = portal;
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
 		_cpCategoryContentPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				CPCategoryContentPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				CPCategoryContentPortletInstanceConfiguration.class,
+				_themeDisplay);
 	}
 
 	public AssetCategory getAssetCategory() throws PortalException {
 		if (_cpCategoryContentPortletInstanceConfiguration.useAssetCategory()) {
-			_assetCategory = _assetCategoryService.fetchCategory(
-				_cpCategoryContentPortletInstanceConfiguration.
-					assetCategoryId());
+			_assetCategory =
+				_assetCategoryService.fetchCategoryByExternalReferenceCode(
+					_cpCategoryContentPortletInstanceConfiguration.
+						assetCategoryExternalReferenceCode(),
+					_themeDisplay.getScopeGroupId());
+
+			if (_assetCategory == null) {
+				_assetCategory =
+					_assetCategoryService.fetchCategoryByExternalReferenceCode(
+						_cpCategoryContentPortletInstanceConfiguration.
+							assetCategoryExternalReferenceCode(),
+						_themeDisplay.getCompanyGroupId());
+			}
 		}
 		else {
 			_assetCategory = (AssetCategory)_httpServletRequest.getAttribute(
@@ -106,20 +110,10 @@ public class CPCategoryContentDisplayContext {
 			return null;
 		}
 
-		long commerceAccountId = 0;
-
-		CommerceContext commerceContext =
-			(CommerceContext)_httpServletRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
-		CommerceAccount commerceAccount = commerceContext.getCommerceAccount();
-
-		if (commerceAccount != null) {
-			commerceAccountId = commerceAccount.getCommerceAccountId();
-		}
-
 		return _commerceMediaResolver.getURL(
-			commerceAccountId,
+			CommerceUtil.getCommerceAccountId(
+				(CommerceContext)_httpServletRequest.getAttribute(
+					CommerceWebKeys.COMMERCE_CONTEXT)),
 			cpAttachmentFileEntry.getCPAttachmentFileEntryId());
 	}
 
@@ -128,23 +122,57 @@ public class CPCategoryContentDisplayContext {
 	}
 
 	public long getDisplayStyleGroupId() {
-		if (_displayStyleGroupId > 0) {
+		if (_displayStyleGroupId != null) {
 			return _displayStyleGroupId;
 		}
 
-		_displayStyleGroupId =
+		String displayStyleGroupExternalReferenceCode =
 			_cpCategoryContentPortletInstanceConfiguration.
-				displayStyleGroupId();
+				displayStyleGroupExternalReferenceCode();
 
-		if (_displayStyleGroupId <= 0) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)_httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+		Group group = _themeDisplay.getScopeGroup();
 
-			_displayStyleGroupId = themeDisplay.getScopeGroupId();
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			_displayStyleGroupId = _themeDisplay.getScopeGroupId();
 		}
 
 		return _displayStyleGroupId;
+	}
+
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_cpCategoryContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		Group group = _themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
 	}
 
 	public boolean useAssetCategory() {
@@ -158,8 +186,11 @@ public class CPCategoryContentDisplayContext {
 	private final CPAttachmentFileEntryService _cpAttachmentFileEntryService;
 	private final CPCategoryContentPortletInstanceConfiguration
 		_cpCategoryContentPortletInstanceConfiguration;
-	private long _displayStyleGroupId;
+	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
+	private final GroupLocalService _groupLocalService;
 	private final HttpServletRequest _httpServletRequest;
 	private final Portal _portal;
+	private final ThemeDisplay _themeDisplay;
 
 }

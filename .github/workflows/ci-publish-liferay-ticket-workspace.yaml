@@ -1,0 +1,12 @@
+jobs:
+    publish-liferay-ticket-workspace:
+        secrets: inherit
+        uses: ./.github/workflows/ci-publish-workspace.yaml
+        with:
+            workspace-name: liferay-ticket-workspace
+on:
+    push:
+        branches:
+            -   master
+        paths:
+            -   workspaces/liferay-ticket-workspace/**

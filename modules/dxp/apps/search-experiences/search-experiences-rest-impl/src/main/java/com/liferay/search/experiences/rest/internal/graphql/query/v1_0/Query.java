@@ -1,30 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.internal.graphql.query.v1_0;
 
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
+import com.liferay.portal.vulcan.graphql.annotation.GraphQLTypeExtension;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.search.experiences.rest.dto.v1_0.ElementInstance;
 import com.liferay.search.experiences.rest.dto.v1_0.FieldMappingInfo;
 import com.liferay.search.experiences.rest.dto.v1_0.KeywordQueryContributor;
 import com.liferay.search.experiences.rest.dto.v1_0.ModelPrefilterContributor;
@@ -32,6 +23,7 @@ import com.liferay.search.experiences.rest.dto.v1_0.QueryPrefilterContributor;
 import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 import com.liferay.search.experiences.rest.dto.v1_0.SXPElement;
 import com.liferay.search.experiences.rest.dto.v1_0.SXPParameterContributorDefinition;
+import com.liferay.search.experiences.rest.dto.v1_0.SearchIndex;
 import com.liferay.search.experiences.rest.dto.v1_0.SearchableAssetName;
 import com.liferay.search.experiences.rest.dto.v1_0.SearchableAssetNameDisplay;
 import com.liferay.search.experiences.rest.resource.v1_0.FieldMappingInfoResource;
@@ -41,18 +33,20 @@ import com.liferay.search.experiences.rest.resource.v1_0.QueryPrefilterContribut
 import com.liferay.search.experiences.rest.resource.v1_0.SXPBlueprintResource;
 import com.liferay.search.experiences.rest.resource.v1_0.SXPElementResource;
 import com.liferay.search.experiences.rest.resource.v1_0.SXPParameterContributorDefinitionResource;
+import com.liferay.search.experiences.rest.resource.v1_0.SearchIndexResource;
 import com.liferay.search.experiences.rest.resource.v1_0.SearchableAssetNameDisplayResource;
 import com.liferay.search.experiences.rest.resource.v1_0.SearchableAssetNameResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Map;
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -123,6 +117,14 @@ public class Query {
 			sxpParameterContributorDefinitionResourceComponentServiceObjects;
 	}
 
+	public static void setSearchIndexResourceComponentServiceObjects(
+		ComponentServiceObjects<SearchIndexResource>
+			searchIndexResourceComponentServiceObjects) {
+
+		_searchIndexResourceComponentServiceObjects =
+			searchIndexResourceComponentServiceObjects;
+	}
+
 	public static void setSearchableAssetNameResourceComponentServiceObjects(
 		ComponentServiceObjects<SearchableAssetNameResource>
 			searchableAssetNameResourceComponentServiceObjects) {
@@ -143,10 +145,12 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {fieldMappingInfos(query: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {fieldMappingInfos(external: ___, indexName: ___, query: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
 	public FieldMappingInfoPage fieldMappingInfos(
+			@GraphQLName("external") Boolean external,
+			@GraphQLName("indexName") String indexName,
 			@GraphQLName("query") String query)
 		throws Exception {
 
@@ -154,7 +158,8 @@ public class Query {
 			_fieldMappingInfoResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			fieldMappingInfoResource -> new FieldMappingInfoPage(
-				fieldMappingInfoResource.getFieldMappingInfosPage(query)));
+				fieldMappingInfoResource.getFieldMappingInfosPage(
+					external, indexName, query)));
 	}
 
 	/**
@@ -213,27 +218,7 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPBlueprints(page: ___, pageSize: ___, search: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public SXPBlueprintPage sXPBlueprints(
-			@GraphQLName("search") String search,
-			@GraphQLName("pageSize") int pageSize,
-			@GraphQLName("page") int page)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_sxpBlueprintResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			sxpBlueprintResource -> new SXPBlueprintPage(
-				sxpBlueprintResource.getSXPBlueprintsPage(
-					search, Pagination.of(page, pageSize))));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPBlueprint(sxpBlueprintId: ___){configuration, description, description_i18n, elementDefinitions, id, title, title_i18n}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPBlueprint(sxpBlueprintId: ___){actions, collectionProviderSubtypeName, collectionProviderTypeName, configuration, createDate, description, description_i18n, elementInstances, externalReferenceCode, id, modifiedDate, schemaVersion, title, title_i18n, userName, version}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
 	public SXPBlueprint sXPBlueprint(
@@ -250,27 +235,68 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPElements(page: ___, pageSize: ___, search: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPBlueprintByExternalReferenceCode(externalReferenceCode: ___){actions, collectionProviderSubtypeName, collectionProviderTypeName, configuration, createDate, description, description_i18n, elementInstances, externalReferenceCode, id, modifiedDate, schemaVersion, title, title_i18n, userName, version}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
-	public SXPElementPage sXPElements(
-			@GraphQLName("search") String search,
-			@GraphQLName("pageSize") int pageSize,
-			@GraphQLName("page") int page)
+	public SXPBlueprint sXPBlueprintByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
-			_sxpElementResourceComponentServiceObjects,
+			_sxpBlueprintResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			sxpElementResource -> new SXPElementPage(
-				sxpElementResource.getSXPElementsPage(
-					search, Pagination.of(page, pageSize))));
+			sxpBlueprintResource ->
+				sxpBlueprintResource.getSXPBlueprintByExternalReferenceCode(
+					externalReferenceCode));
 	}
 
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPElement(sxpElementId: ___){description, description_i18n, elementDefinition, hidden, id, title, title_i18n}}"}' -u 'test@liferay.com:test'
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPBlueprintExport(sxpBlueprintId: ___){}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public Response sXPBlueprintExport(
+			@GraphQLName("sxpBlueprintId") Long sxpBlueprintId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_sxpBlueprintResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			sxpBlueprintResource -> sxpBlueprintResource.getSXPBlueprintExport(
+				sxpBlueprintId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPBlueprints(filter: ___, page: ___, pageSize: ___, search: ___, sorts: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public SXPBlueprintPage sXPBlueprints(
+			@GraphQLName("search") String search,
+			@GraphQLName("filter") String filterString,
+			@GraphQLName("pageSize") int pageSize,
+			@GraphQLName("page") int page,
+			@GraphQLName("sort") String sortsString)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_sxpBlueprintResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			sxpBlueprintResource -> new SXPBlueprintPage(
+				sxpBlueprintResource.getSXPBlueprintsPage(
+					search,
+					_filterBiFunction.apply(sxpBlueprintResource, filterString),
+					Pagination.of(page, pageSize),
+					_sortsBiFunction.apply(
+						sxpBlueprintResource, sortsString))));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPElement(sxpElementId: ___){actions, createDate, description, description_i18n, elementDefinition, externalReferenceCode, fallbackDescription, fallbackTitle, hidden, id, modifiedDate, readOnly, schemaVersion, title, title_i18n, type, userName, version}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
 	public SXPElement sXPElement(@GraphQLName("sxpElementId") Long sxpElementId)
@@ -281,6 +307,66 @@ public class Query {
 			this::_populateResourceContext,
 			sxpElementResource -> sxpElementResource.getSXPElement(
 				sxpElementId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPElementByExternalReferenceCode(externalReferenceCode: ___){actions, createDate, description, description_i18n, elementDefinition, externalReferenceCode, fallbackDescription, fallbackTitle, hidden, id, modifiedDate, readOnly, schemaVersion, title, title_i18n, type, userName, version}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public SXPElement sXPElementByExternalReferenceCode(
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_sxpElementResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			sxpElementResource ->
+				sxpElementResource.getSXPElementByExternalReferenceCode(
+					externalReferenceCode));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPElementExport(sxpElementId: ___){}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public Response sXPElementExport(
+			@GraphQLName("sxpElementId") Long sxpElementId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_sxpElementResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			sxpElementResource -> sxpElementResource.getSXPElementExport(
+				sxpElementId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {sXPElements(filter: ___, page: ___, pageSize: ___, search: ___, sorts: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public SXPElementPage sXPElements(
+			@GraphQLName("search") String search,
+			@GraphQLName("filter") String filterString,
+			@GraphQLName("pageSize") int pageSize,
+			@GraphQLName("page") int page,
+			@GraphQLName("sort") String sortsString)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_sxpElementResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			sxpElementResource -> new SXPElementPage(
+				sxpElementResource.getSXPElementsPage(
+					search,
+					_filterBiFunction.apply(sxpElementResource, filterString),
+					Pagination.of(page, pageSize),
+					_sortsBiFunction.apply(sxpElementResource, sortsString))));
 	}
 
 	/**
@@ -300,6 +386,20 @@ public class Query {
 				new SXPParameterContributorDefinitionPage(
 					sxpParameterContributorDefinitionResource.
 						getSXPParameterContributorDefinitionsPage()));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {searchIndexes{items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public SearchIndexPage searchIndexes() throws Exception {
+		return _applyComponentServiceObjects(
+			_searchIndexResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			searchIndexResource -> new SearchIndexPage(
+				searchIndexResource.getSearchIndexesPage()));
 	}
 
 	/**
@@ -335,6 +435,115 @@ public class Query {
 						getSearchableAssetNameLanguagePage(languageId)));
 	}
 
+	@GraphQLTypeExtension(SXPBlueprint.class)
+	public class GetSXPElementByExternalReferenceCodeTypeExtension {
+
+		public GetSXPElementByExternalReferenceCodeTypeExtension(
+			SXPBlueprint sXPBlueprint) {
+
+			_sXPBlueprint = sXPBlueprint;
+		}
+
+		@GraphQLField
+		public SXPElement sXPElementByExternalReferenceCode() throws Exception {
+			return _applyComponentServiceObjects(
+				_sxpElementResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				sxpElementResource ->
+					sxpElementResource.getSXPElementByExternalReferenceCode(
+						_sXPBlueprint.getExternalReferenceCode()));
+		}
+
+		private SXPBlueprint _sXPBlueprint;
+
+	}
+
+	@GraphQLTypeExtension(SXPElement.class)
+	public class GetSXPElementExportTypeExtension {
+
+		public GetSXPElementExportTypeExtension(SXPElement sXPElement) {
+			_sXPElement = sXPElement;
+		}
+
+		@GraphQLField
+		public Response export() throws Exception {
+			return _applyComponentServiceObjects(
+				_sxpElementResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				sxpElementResource -> sxpElementResource.getSXPElementExport(
+					_sXPElement.getId()));
+		}
+
+		private SXPElement _sXPElement;
+
+	}
+
+	@GraphQLTypeExtension(ElementInstance.class)
+	public class GetSXPElementTypeExtension {
+
+		public GetSXPElementTypeExtension(ElementInstance elementInstance) {
+			_elementInstance = elementInstance;
+		}
+
+		@GraphQLField
+		public SXPElement sXPElement() throws Exception {
+			return _applyComponentServiceObjects(
+				_sxpElementResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				sxpElementResource -> sxpElementResource.getSXPElement(
+					_elementInstance.getSxpElementId()));
+		}
+
+		private ElementInstance _elementInstance;
+
+	}
+
+	@GraphQLTypeExtension(SXPElement.class)
+	public class GetSXPBlueprintByExternalReferenceCodeTypeExtension {
+
+		public GetSXPBlueprintByExternalReferenceCodeTypeExtension(
+			SXPElement sXPElement) {
+
+			_sXPElement = sXPElement;
+		}
+
+		@GraphQLField
+		public SXPBlueprint sXPBlueprintByExternalReferenceCode()
+			throws Exception {
+
+			return _applyComponentServiceObjects(
+				_sxpBlueprintResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				sxpBlueprintResource ->
+					sxpBlueprintResource.getSXPBlueprintByExternalReferenceCode(
+						_sXPElement.getExternalReferenceCode()));
+		}
+
+		private SXPElement _sXPElement;
+
+	}
+
+	@GraphQLTypeExtension(SXPBlueprint.class)
+	public class GetSXPBlueprintExportTypeExtension {
+
+		public GetSXPBlueprintExportTypeExtension(SXPBlueprint sXPBlueprint) {
+			_sXPBlueprint = sXPBlueprint;
+		}
+
+		@GraphQLField
+		public Response export() throws Exception {
+			return _applyComponentServiceObjects(
+				_sxpBlueprintResourceComponentServiceObjects,
+				Query.this::_populateResourceContext,
+				sxpBlueprintResource ->
+					sxpBlueprintResource.getSXPBlueprintExport(
+						_sXPBlueprint.getId()));
+		}
+
+		private SXPBlueprint _sXPBlueprint;
+
+	}
+
 	@GraphQLName("FieldMappingInfoPage")
 	public class FieldMappingInfoPage {
 
@@ -349,7 +558,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<FieldMappingInfo> items;
@@ -382,7 +591,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<KeywordQueryContributor> items;
@@ -417,7 +626,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<ModelPrefilterContributor> items;
@@ -452,7 +661,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<QueryPrefilterContributor> items;
@@ -485,7 +694,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SXPBlueprint> items;
@@ -518,7 +727,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SXPElement> items;
@@ -553,10 +762,43 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SXPParameterContributorDefinition> items;
+
+		@GraphQLField
+		protected long lastPage;
+
+		@GraphQLField
+		protected long page;
+
+		@GraphQLField
+		protected long pageSize;
+
+		@GraphQLField
+		protected long totalCount;
+
+	}
+
+	@GraphQLName("SearchIndexPage")
+	public class SearchIndexPage {
+
+		public SearchIndexPage(Page searchIndexPage) {
+			actions = searchIndexPage.getActions();
+
+			items = searchIndexPage.getItems();
+			lastPage = searchIndexPage.getLastPage();
+			page = searchIndexPage.getPage();
+			pageSize = searchIndexPage.getPageSize();
+			totalCount = searchIndexPage.getTotalCount();
+		}
+
+		@GraphQLField
+		protected Map<String, Map<String, String>> actions;
+
+		@GraphQLField
+		protected java.util.Collection<SearchIndex> items;
 
 		@GraphQLField
 		protected long lastPage;
@@ -586,7 +828,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SearchableAssetName> items;
@@ -621,7 +863,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SearchableAssetNameDisplay> items;
@@ -780,6 +1022,20 @@ public class Query {
 	}
 
 	private void _populateResourceContext(
+			SearchIndexResource searchIndexResource)
+		throws Exception {
+
+		searchIndexResource.setContextAcceptLanguage(_acceptLanguage);
+		searchIndexResource.setContextCompany(_company);
+		searchIndexResource.setContextHttpServletRequest(_httpServletRequest);
+		searchIndexResource.setContextHttpServletResponse(_httpServletResponse);
+		searchIndexResource.setContextUriInfo(_uriInfo);
+		searchIndexResource.setContextUser(_user);
+		searchIndexResource.setGroupLocalService(_groupLocalService);
+		searchIndexResource.setRoleLocalService(_roleLocalService);
+	}
+
+	private void _populateResourceContext(
 			SearchableAssetNameResource searchableAssetNameResource)
 		throws Exception {
 
@@ -830,6 +1086,8 @@ public class Query {
 	private static ComponentServiceObjects
 		<SXPParameterContributorDefinitionResource>
 			_sxpParameterContributorDefinitionResourceComponentServiceObjects;
+	private static ComponentServiceObjects<SearchIndexResource>
+		_searchIndexResourceComponentServiceObjects;
 	private static ComponentServiceObjects<SearchableAssetNameResource>
 		_searchableAssetNameResourceComponentServiceObjects;
 	private static ComponentServiceObjects<SearchableAssetNameDisplayResource>
@@ -837,12 +1095,15 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 

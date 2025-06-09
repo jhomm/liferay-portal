@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults.internal.util;
@@ -18,18 +9,17 @@ import aQute.bnd.osgi.Constants;
 
 import com.liferay.gradle.plugins.cache.WriteDigestTask;
 import com.liferay.gradle.plugins.defaults.LiferayThemeDefaultsPlugin;
-import com.liferay.gradle.plugins.defaults.tasks.WriteArtifactPublishCommandsTask;
+import com.liferay.gradle.plugins.defaults.task.WriteArtifactPublishCommandsTask;
 import com.liferay.gradle.util.Validator;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import java.lang.reflect.Method;
-
 import java.nio.file.Files;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -41,11 +31,10 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ProjectDependency;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
-import org.gradle.api.artifacts.maven.MavenDeployer;
+import org.gradle.api.artifacts.repositories.ArtifactRepository;
+import org.gradle.api.internal.artifacts.repositories.DefaultMavenArtifactRepository;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.plugins.BasePlugin;
-import org.gradle.api.plugins.MavenRepositoryHandlerConvention;
-import org.gradle.api.tasks.Upload;
+import org.gradle.api.publish.PublishingExtension;
 import org.gradle.util.GUtil;
 import org.gradle.util.VersionNumber;
 
@@ -56,8 +45,7 @@ import org.gradle.util.VersionNumber;
 public class LiferayRelengUtil {
 
 	public static String getArtifactRemoteURL(
-			Project project, PublishArtifact publishArtifact, boolean cdn)
-		throws Exception {
+		Project project, PublishArtifact publishArtifact, boolean cdn) {
 
 		StringBuilder sb = _getArtifactRemoteBaseURL(project, cdn);
 
@@ -101,6 +89,24 @@ public class LiferayRelengUtil {
 		return getRelengDir(project.getProjectDir());
 	}
 
+	public static String getUnpublishedDependencyName(Project project) {
+		List<File> artifactPropertiesFiles = _getArtifactPropertiesFiles(
+			project, false);
+
+		for (File artifactPropertiesFile : artifactPropertiesFiles) {
+			File artifactProjectDir = _getArtifactProjectDir(
+				artifactPropertiesFile);
+
+			if (hasUnpublishedCommits(
+					project, artifactProjectDir, artifactPropertiesFile)) {
+
+				return artifactProjectDir.getName();
+			}
+		}
+
+		return null;
+	}
+
 	public static boolean hasStaleParentTheme(Project project) {
 		WriteDigestTask writeDigestTask = (WriteDigestTask)GradleUtil.getTask(
 			project,
@@ -122,20 +128,24 @@ public class LiferayRelengUtil {
 	}
 
 	public static boolean hasStalePortalDependencies(
-		Project project, String artifactGitId) {
+		Project project, File artifactPropertiesFile) {
+
+		if (!artifactPropertiesFile.exists()) {
+			return false;
+		}
 
 		List<File> artifactPropertiesFiles = _getArtifactPropertiesFiles(
 			project, true);
 
-		for (File artifactPropertiesFile : artifactPropertiesFiles) {
+		for (File curArtifactPropertiesFile : artifactPropertiesFiles) {
 			Properties artifactProperties = GUtil.loadProperties(
-				artifactPropertiesFile);
+				curArtifactPropertiesFile);
 
 			String artifactUrl = artifactProperties.getProperty("artifact.url");
 
 			if (Validator.isNull(artifactUrl)) {
 				File artifactProjectDir = _getArtifactProjectDir(
-					artifactPropertiesFile);
+					curArtifactPropertiesFile);
 
 				throw new GradleException(
 					"The dependency '" + artifactProjectDir.getName() +
@@ -144,9 +154,10 @@ public class LiferayRelengUtil {
 
 			String[] tokens = artifactUrl.split("/");
 
+			String artifactName = tokens[tokens.length - 3];
+
 			String compatVersion = GradleUtil.getProperty(
-				project, "build.compat.version." + tokens[tokens.length - 3],
-				(String)null);
+				project, "build.compat.version." + artifactName, (String)null);
 
 			if (Validator.isNotNull(compatVersion)) {
 				continue;
@@ -156,7 +167,7 @@ public class LiferayRelengUtil {
 				tokens[tokens.length - 2]);
 
 			File artifactProjectDir = _getArtifactProjectDir(
-				artifactPropertiesFile);
+				curArtifactPropertiesFile);
 
 			Properties properties = GUtil.loadProperties(
 				new File(artifactProjectDir, "bnd.bnd"));
@@ -164,7 +175,25 @@ public class LiferayRelengUtil {
 			VersionNumber versionNumber = VersionNumber.parse(
 				properties.getProperty(Constants.BUNDLE_VERSION));
 
-			if (versionNumber.getMinor() != artifactVersionNumber.getMinor()) {
+			if (versionNumber.getMinor() == artifactVersionNumber.getMinor()) {
+				continue;
+			}
+
+			Properties bndProperties = null;
+
+			try {
+				bndProperties = FileUtil.readProperties(project, "bnd.bnd");
+			}
+			catch (IOException ioException) {
+				throw new UncheckedIOException(ioException);
+			}
+
+			String includeResource = bndProperties.getProperty(
+				Constants.INCLUDERESOURCE);
+
+			if (Validator.isNotNull(includeResource) &&
+				includeResource.contains(artifactName)) {
+
 				return true;
 			}
 		}
@@ -293,32 +322,6 @@ public class LiferayRelengUtil {
 		return false;
 	}
 
-	public static boolean hasUnpublishedDependencies(Project project) {
-		List<File> artifactPropertiesFiles = _getArtifactPropertiesFiles(
-			project, false);
-
-		for (File artifactPropertiesFile : artifactPropertiesFiles) {
-			File artifactProjectDir = _getArtifactProjectDir(
-				artifactPropertiesFile);
-
-			if (hasUnpublishedCommits(
-					project, artifactProjectDir, artifactPropertiesFile)) {
-
-				Logger logger = project.getLogger();
-
-				if (logger.isQuietEnabled()) {
-					logger.quiet(
-						"The project dependency '{}' has new commits.",
-						artifactProjectDir.getName());
-				}
-
-				return true;
-			}
-		}
-
-		return false;
-	}
-
 	private static void _createNewFile(File file) {
 		File dir = file.getParentFile();
 
@@ -414,31 +417,45 @@ public class LiferayRelengUtil {
 	}
 
 	private static StringBuilder _getArtifactRemoteBaseURL(
-			Project project, boolean cdn)
-		throws Exception {
+		Project project, boolean cdn) {
 
-		Upload upload = (Upload)GradleUtil.getTask(
-			project, BasePlugin.UPLOAD_ARCHIVES_TASK_NAME);
+		String url = null;
 
-		RepositoryHandler repositoryHandler = upload.getRepositories();
+		PublishingExtension publishingExtension = GradleUtil.getExtension(
+			project, PublishingExtension.class);
 
-		MavenDeployer mavenDeployer = (MavenDeployer)repositoryHandler.getAt(
-			MavenRepositoryHandlerConvention.DEFAULT_MAVEN_DEPLOYER_NAME);
+		RepositoryHandler repositoryHandler =
+			publishingExtension.getRepositories();
 
-		Object repository = mavenDeployer.getRepository();
+		Iterator<ArtifactRepository> iterator = repositoryHandler.iterator();
 
-		// org.apache.maven.artifact.ant.RemoteRepository is not in the
-		// classpath
+		while (iterator.hasNext()) {
+			ArtifactRepository artifactRepository = iterator.next();
 
-		Class<?> repositoryClass = repository.getClass();
+			if (artifactRepository instanceof DefaultMavenArtifactRepository) {
+				DefaultMavenArtifactRepository defaultMavenArtifactRepository =
+					(DefaultMavenArtifactRepository)artifactRepository;
 
-		Method getUrlMethod = repositoryClass.getMethod("getUrl");
+				String curURL = String.valueOf(
+					defaultMavenArtifactRepository.getUrl());
 
-		String url = (String)getUrlMethod.invoke(repository);
+				if (!curURL.contains("liferay.com")) {
+					continue;
+				}
 
-		if (cdn) {
-			url = url.replace(
-				"repository.liferay.com", "repository-cdn.liferay.com");
+				url = curURL;
+
+				if (cdn) {
+					url = curURL.replace(
+						"repository.liferay.com", "repository-cdn.liferay.com");
+				}
+
+				break;
+			}
+		}
+
+		if (url == null) {
+			throw new GradleException("Unable to get Nexus repository url");
 		}
 
 		StringBuilder sb = new StringBuilder(url);

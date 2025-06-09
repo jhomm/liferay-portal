@@ -1,29 +1,56 @@
 definition {
 
-	macro getClientVersion {
+	@summary = "Default summary"
+	macro assertElasticsearchIsReady() {
+		var port = Elasticsearch.getServerPort();
+		var portalHostname = PropsUtil.get("portal.hostname");
+
+		while ((IsElementPresent(locator1 = "Message#ERROR")) && (maxIterations = "15")) {
+			Refresh();
+
+			echo("Elasticsearch is not available");
+		}
+
+		Navigator.openSpecificURL(url = "http://${portalHostname}:${port}");
+
+		Elasticsearch.viewClusterStatus(clusterStatus = "\"cluster_name\" : \"LiferayElasticsearchCluster\"");
+
+		Navigator.openSpecificURL(url = "http://${portalHostname}:${port}/_cluster/health?pretty");
+
+		while (((IsTextNotEqual(locator1 = "//pre", value1 = "\"status\" : \"green\"")) || (IsTextNotEqual(locator1 = "//pre", value1 = "\"status\" : \"yellow\"")) || (IsElementNotPresent(locator1 = "//pre"))) && (maxIterations = "10")) {
+			Refresh();
+
+			echo("## Elasticsearch cluster not stable");
+		}
+	}
+
+	@summary = "Default summary"
+	macro getClientVersion() {
 		var projectDir = PropsUtil.get("project.dir");
 
 		var fileContent = FileUtil.read("${projectDir}/modules/apps/portal-search-elasticsearch7/portal-search-elasticsearch7-impl/build.gradle");
 
-		var clientVersion = RegexUtil.replace("${fileContent}", "elasticsearchClientVersion = &quot;(\d+\.\d+\.\d+)", "1");
+		var clientVersion = RegexUtil.replace(${fileContent}, "elasticsearchClientVersion = \"(\d+\.\d+\.\d+)", 1);
 
 		echo("Elasticsearch client version: ${clientVersion}");
 
-		return "${clientVersion}";
+		return ${clientVersion};
 	}
 
-	macro getServerPort {
+	@summary = "Default summary"
+	macro getServerPort() {
 		var remoteEnabled = Elasticsearch.isRemoteMode();
 
-		if ("${remoteEnabled}" == "true") {
-			return "9200";
+		if (${remoteEnabled} == "true") {
+			return 9200;
 		}
 		else {
-			return "9201";
+			return 9201;
 		}
 	}
 
-	macro getServerVersion {
+	@summary = "Default summary"
+	macro getServerVersion() {
 		if (!(isSet(port))) {
 			var port = Elasticsearch.getServerPort();
 		}
@@ -32,62 +59,75 @@ definition {
 
 		var curl = "http://${portalHostname}:${port}";
 
-		var serverInfo = JSONCurlUtil.get("${curl}");
+		var serverInfo = JSONCurlUtil.get(${curl});
 
-		var serverVersion = RegexUtil.replace("${serverInfo}", "number&quot; : &quot;(\d+\.\d+\.\d+)", "1");
+		var serverVersion = RegexUtil.replace(${serverInfo}, "number\" : \"(\d+\.\d+\.\d+)", 1);
 
 		echo("Version of the Elasticsearch server on port ${port}: ${serverVersion}");
 
-		return "${serverVersion}";
+		return ${serverVersion};
 	}
 
-	macro isRemoteMode {
+	@summary = "Default summary"
+	macro isRemoteMode() {
 		var liferayHome = PropsUtil.get("liferay.home.dir.name");
 
-		var fileLocation = "${liferayHome}/osgi/configs/com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config";
+		var openSearchConfigPath = "${liferayHome}/osgi/configs/com.liferay.portal.search.opensearch2.configuration.OpenSearchConfiguration.config";
 
-		var fileExists = FileUtil.exists("${fileLocation}");
+		var openSearchConfigExists = FileUtil.exists(${openSearchConfigPath});
 
-		if ("${fileExists}" == "true") {
-			var fileContent = FileUtil.read("${fileLocation}");
+		if (${openSearchConfigExists} == "true") {
+			return "true";
+		}
+		else {
+			var elasticsearchConfigPath = "${liferayHome}/osgi/configs/com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration.config";
 
-			var productionModeEnabled = RegexUtil.replace("${fileContent}", "productionModeEnabled=&quot;(.*)&quot;", "1");
+			var elasticsearchConfigExists = FileUtil.exists(${elasticsearchConfigPath});
 
-			if ("${productionModeEnabled}" == "true") {
-				return "true";
+			if (${elasticsearchConfigExists} == "true") {
+				var configContent = FileUtil.read(${elasticsearchConfigPath});
+
+				var productionModeEnabled = RegexUtil.replace(${configContent}, "productionModeEnabled=\"(.*)\"", 1);
+				var updatedProductionMode = RegexUtil.replace(${configContent}, "productionModeEnabled=B\"(.*)\"", 1);
+
+				if ((${productionModeEnabled} == "true") || (${updatedProductionMode} == "true")) {
+					return "true";
+				}
+				else {
+					return "false";
+				}
 			}
 			else {
 				return "false";
 			}
 		}
-		else {
-			return "false";
-		}
 	}
 
-	macro viewClusterStatus {
+	@summary = "Default summary"
+	macro viewClusterStatus(clusterStatus = null) {
 		AssertTextPresent(
 			locator1 = "//pre",
-			value1 = "${clusterStatus}");
+			value1 = ${clusterStatus});
 	}
 
 	@description = "Elasticsearch provides a Cluster Health API (http://localhost:${nodePort}/_cluster/health?pretty=true) to easily view the current status of the cluster."
-	macro viewClusterStatusViaClusterHealthAPI {
+	@summary = "Default summary"
+	macro viewClusterStatusViaClusterHealthAPI(numberOfNodes = null, nodePort = null) {
 		var portalHostname = PropsUtil.get("portal.hostname");
 
-		Navigator.openSpecificURL(url = "http://${portalHostname}:${nodePort}/_cluster/health?level=indices&amp;pretty");
+		Navigator.openSpecificURL(url = "http://${portalHostname}:${nodePort}/_cluster/health?level=indices&pretty");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "//body",
-			value1 = "&quot;cluster_name&quot; : &quot;LiferayElasticsearchCluster&quot;");
+			value1 = "\"cluster_name\" : \"Liferay");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "//body",
-			value1 = "&quot;number_of_nodes&quot; : ${numberOfNodes}");
+			value1 = "\"number_of_nodes\" : ${numberOfNodes}");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "//body",
-			value1 = "&quot;number_of_data_nodes&quot; : ${numberOfNodes}");
+			value1 = "\"number_of_data_nodes\" : ${numberOfNodes}");
 	}
 
 }

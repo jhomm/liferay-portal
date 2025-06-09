@@ -1,0 +1,89 @@
+definition {
+
+	@summary = "Default summary"
+	macro _addAccountEntry(countryNumber = null, threeLetterISOCode = null, subjectToVAT = null, creatorEmailAddress = null, twoLetterISOCode = null, shippingAllowed = null, creatorPassword = null, billingAllowed = null, countryPriority = null, countryName = null, countryStatus = null) {
+		Variables.assertDefined(parameterList = "${countryName},${countryNumber},${threeLetterISOCode},${twoLetterISOCode}");
+
+		var companyId = JSONCompany.getCompanyId();
+		var portalURL = JSONCompany.getPortalURL();
+
+		var curl = '''
+			${portalURL}/api/jsonws/country/add-country \
+				-u ${creatorEmailAddress}:${creatorPassword} \
+				-d a2=${twoLetterISOCode} \
+				-d a3=${threeLetterISOCode} \
+				-d active=${countryStatus} \
+				-d billingAllowed=${billingAllowed} \
+				-d idd='' \
+				-d name=${countryName} \
+				-d number=${countryNumber} \
+				-d position=${countryPriority} \
+				-d shippingAllowed=${shippingAllowed} \
+				-d subjectToVAT=${subjectToVAT} \
+				-d zipRequired=false
+		''';
+
+		com.liferay.poshi.runner.util.JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro _getCountryAbbreviation() {
+		Variables.assertDefined(parameterList = ${countryName});
+
+		var countryName = StringUtil.replace(${countryName}, " ", "-");
+		var portalURL = PropsUtil.get("portal.url");
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/country/get-country-by-name \
+				-u ${userLoginInfo} \
+				-d name=${countryName} \
+		''';
+
+		echo(${curl});
+
+		var countryAbbreviation = JSONCurlUtil.post(${curl}, "$.a2");
+
+		return ${countryAbbreviation};
+	}
+
+	@summary = "Default summary"
+	macro _getCountryByName(countryName = null) {
+		Variables.assertDefined(parameterList = ${countryName});
+
+		var portalURL = PropsUtil.get("portal.url");
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/country/get-country-by-name \
+				-u ${userLoginInfo} \
+				-d name=${countryName}
+		''';
+
+		var country = JSONCurlUtil.post(${curl});
+
+		return ${country};
+	}
+
+	@summary = "Default summary"
+	macro _getCountryRegions(countryAbbreviation = null) {
+		Variables.assertDefined(parameterList = ${countryAbbreviation});
+
+		var companyId = JSONCompany.getCompanyId();
+		var portalURL = PropsUtil.get("portal.url");
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/region/get-regions \
+				-u ${userLoginInfo} \
+				-d companyId=${companyId} \
+				-d a2=${countryAbbreviation} \
+				-d active=true
+		''';
+
+		var countryRegions = JSONCurlUtil.post(${curl});
+
+		return ${countryRegions};
+	}
+
+}

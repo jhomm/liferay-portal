@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.model;
@@ -44,6 +35,7 @@ public class CommerceWishListItemWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("commerceWishListItemId", getCommerceWishListItemId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -61,6 +53,12 @@ public class CommerceWishListItemWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		Long commerceWishListItemId = (Long)attributes.get(
 			"commerceWishListItemId");
 
@@ -253,6 +251,16 @@ public class CommerceWishListItemWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this commerce wish list item.
+	 *
+	 * @return the mvcc version of this commerce wish list item
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the primary key of this commerce wish list item.
 	 *
 	 * @return the primary key of this commerce wish list item
@@ -395,6 +403,16 @@ public class CommerceWishListItemWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this commerce wish list item.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce wish list item
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the primary key of this commerce wish list item.
 	 *
 	 * @param primaryKey the primary key of this commerce wish list item
@@ -432,6 +450,11 @@ public class CommerceWishListItemWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

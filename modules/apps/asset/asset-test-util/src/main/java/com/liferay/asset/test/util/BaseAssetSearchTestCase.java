@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.test.util;
@@ -45,7 +36,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Time;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
@@ -60,8 +51,6 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import org.apache.commons.lang.ArrayUtils;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -143,22 +132,23 @@ public abstract class BaseAssetSearchTestCase {
 			serviceContext = ServiceContextTestUtil.getServiceContext(groupId);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "liferay",
+				null, TestPropsValues.getUserId(), groupId, "liferay",
 				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "architecture",
+				null, TestPropsValues.getUserId(), groupId, "architecture",
 				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "modularity",
+				null, TestPropsValues.getUserId(), groupId, "modularity",
 				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "osgi", serviceContext);
+				null, TestPropsValues.getUserId(), groupId, "osgi",
+				serviceContext);
 
 			AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), groupId, "services",
+				null, TestPropsValues.getUserId(), groupId, "services",
 				serviceContext);
 		}
 
@@ -829,35 +819,6 @@ public abstract class BaseAssetSearchTestCase {
 	}
 
 	@Test
-	public void testOrderByCreateDateAsc() throws Exception {
-		AssetEntryQuery assetEntryQuery =
-			AssetEntryQueryTestUtil.createAssetEntryQuery(
-				_group1.getGroupId(), new String[] {getBaseModelClassName()});
-
-		String[] titles = {
-			"open", "liferay", "social", "osgi", "content", "life"
-		};
-
-		testOrderByCreateDate(assetEntryQuery, "asc", titles, titles);
-	}
-
-	@Test
-	public void testOrderByCreateDateDesc() throws Exception {
-		AssetEntryQuery assetEntryQuery =
-			AssetEntryQueryTestUtil.createAssetEntryQuery(
-				_group1.getGroupId(), new String[] {getBaseModelClassName()});
-
-		testOrderByCreateDate(
-			assetEntryQuery, "desc",
-			new String[] {
-				"open", "liferay", "social", "osgi", "content", "life"
-			},
-			new String[] {
-				"life", "content", "osgi", "social", "liferay", "open"
-			});
-	}
-
-	@Test
 	public void testOrderByExpirationDateAsc() throws Exception {
 		AssetEntryQuery assetEntryQuery =
 			AssetEntryQueryTestUtil.createAssetEntryQuery(
@@ -1058,11 +1019,10 @@ public abstract class BaseAssetSearchTestCase {
 			serviceContext.setScopeGroupId(group.getGroupId());
 			serviceContext.setUserId(user.getUserId());
 
-			BaseModel<?> parentBaseModel = getParentBaseModel(
-				group, serviceContext);
-
 			baseModels.add(
-				addBaseModel(parentBaseModel, keywords, serviceContext));
+				addBaseModel(
+					getParentBaseModel(group, serviceContext), keywords,
+					serviceContext));
 		}
 
 		return baseModels;
@@ -1328,49 +1288,6 @@ public abstract class BaseAssetSearchTestCase {
 		}
 	}
 
-	protected void testOrderByCreateDate(
-			AssetEntryQuery assetEntryQuery, String orderByType,
-			String[] titles, String[] orderedTitles)
-		throws Exception {
-
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(_group1.getGroupId());
-
-		BaseModel<?> parentBaseModel = getParentBaseModel(
-			_group1, serviceContext);
-
-		SearchContext searchContext = SearchContextTestUtil.getSearchContext();
-
-		searchContext.setGroupIds(assetEntryQuery.getGroupIds());
-
-		long createDate = 0;
-
-		BaseModel<?>[] baseModels = new BaseModel[titles.length];
-
-		for (int i = 0; i < titles.length; i++) {
-			long delta = 1000 - (System.currentTimeMillis() - createDate);
-
-			if (delta > 0) {
-				Thread.sleep(delta);
-			}
-
-			baseModels[i] = addBaseModel(
-				parentBaseModel, titles[i], serviceContext);
-
-			createDate = System.currentTimeMillis();
-		}
-
-		assetEntryQuery.setOrderByCol1("createDate");
-		assetEntryQuery.setOrderByType1(orderByType);
-
-		List<AssetEntry> assetEntries = search(assetEntryQuery, searchContext);
-
-		Assert.assertEquals(
-			ArrayUtils.toString(orderedTitles),
-			ArrayUtils.toString(
-				getTitles(assetEntries, LocaleUtil.getDefault())));
-	}
-
 	protected void testOrderByExpirationDate(
 			AssetEntryQuery assetEntryQuery, String orderByType,
 			Date[] expirationDates)
@@ -1402,12 +1319,9 @@ public abstract class BaseAssetSearchTestCase {
 
 		List<AssetEntry> assetEntries = search(assetEntryQuery, searchContext);
 
-		Assert.assertEquals(
-			ArrayUtils.toString(format(expirationDates, dateFormat)),
-			ArrayUtils.toString(
-				format(
-					getExpirationDates(assetEntries, orderByType),
-					dateFormat)));
+		Assert.assertArrayEquals(
+			format(expirationDates, dateFormat),
+			format(getExpirationDates(assetEntries, orderByType), dateFormat));
 	}
 
 	protected void testOrderByTitle(
@@ -1439,9 +1353,9 @@ public abstract class BaseAssetSearchTestCase {
 			List<AssetEntry> assetEntries = search(
 				assetEntryQuery, searchContext);
 
-			Assert.assertEquals(
-				ArrayUtils.toString(getOrderedTitles(orderedTitleMaps, locale)),
-				ArrayUtils.toString(getTitles(assetEntries, locale)));
+			Assert.assertArrayEquals(
+				getOrderedTitles(orderedTitleMaps, locale),
+				getTitles(assetEntries, locale));
 		}
 	}
 

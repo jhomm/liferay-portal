@@ -1,0 +1,103 @@
+<html>
+<head>
+<title>ObjectAction</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead><tr><td rowspan="1" colspan="3">ObjectAction</td></tr></thead>
+<tbody>
+	<tr>
+		<td>SELECT_ACTION_TYPE</td>
+		<td>//input[@placeholder="Choose an Action"]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_ACTION_TYPE_VALUE</td>
+		<td>//input[@placeholder="Choose an Action" and contains(@value, ${value1})]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_OPTION_TYPE</td>
+		<td>//input[@placeholder="Choose an Option"]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_OPTION_TYPE_VALUE</td>
+		<td>//input[@placeholder="Choose an Option" and contains(@value, ${value1})]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_TRIGGER</td>
+		<td>//input[@placeholder="Choose a Trigger"]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_TRIGGER_VALUE</td>
+		<td>//input[contains(@placeholder,'Choose a Trigger') and contains(@value, ${value1})]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>TAB_GENERIC</td>
+		<td>//button[contains(.,'${key_tabName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>INPUT_VALUE</td>
+		<td>xpath=(//input[(@placeholder='Input a value.')])[${key_rowNumber}]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>INPUT_EXPRESSION</td>
+		<td>//input[(@placeholder="Create an expression.")]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>INPUT_EXPRESSION_VALUE</td>
+		<td>//input[(@placeholder="Create an expression.") and contains(@value, ${value1})]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>INPUT_NEW_VALUE</td>
+		<td>//input[(@placeholder="Input a value or create an expression.")]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>INPUT_METHOD</td>
+		<td>xpath=(//input[contains(@class, 'custom-control-input') and contains(@type,'checkbox')]/..//span[contains(text(),'Input as a value.')])[${key_rowNumber}]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>IFRAME_SIDE_PANEL</td>
+		<td>//div[contains(@class,'side-panel') and contains(@class,'is-visible')]//iframe</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENABLE_DISABLE_CONDITION</td>
+		<td>//span[contains(., 'Enable Condition')]/..//span[contains(@class, 'toggle-switch-check-bar')]//input[contains(@type, 'checkbox')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ACTIONS_STATUS_INFO</td>
+		<td>//*[contains(@class,'label label') and contains(.,'${key_statusInfo}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>AUTOCOMPLETE_INPUT</td>
+		<td>//div[@class='dropdown-menu autocomplete-dropdown-menu show']//button[@class='dropdown-item lfr-object__single-select--with-label' and contains(., '${key_entryName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SECTION_TITLE</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='${key_title}']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ADD_ERROR_MESSAGE_VALIDATION</td>
+		<td>//div[contains(@class,'form-group')]//label[text()='Message']/..//input[@type='text']</td>
+		<td></td>
+	</tr>
+</tbody>
+</table>
+</body>
+</html>

@@ -1,25 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import classnames from 'classnames';
 import PropTypes from 'prop-types';
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 
 import ServiceProvider from '../../ServiceProvider/index';
 import {
+	CART_RESET,
+	CART_UPDATED,
 	CURRENT_ACCOUNT_UPDATED,
+	CURRENT_ORDER_DELETED,
 	CURRENT_ORDER_UPDATED,
+	GUEST_ORDER_ENABLED,
 } from '../../utilities/eventsDefinitions';
 import {showErrorNotification} from '../../utilities/notifications';
 import MiniCartContext from './MiniCartContext';
@@ -44,84 +39,141 @@ import {regenerateOrderDetailURL, summaryDataMapper} from './util/index';
 import {DEFAULT_LABELS} from './util/labels';
 import {resolveCartViews} from './util/views';
 
+import './mini_cart.scss';
+
+const CartResource = ServiceProvider.DeliveryCartAPI('v1');
+
 function MiniCart({
+	accountId,
 	cartActionURLs,
 	cartViews,
+	channel,
 	displayDiscountLevels,
 	displayTotalItemsQuantity,
+	guestOrderEnabled,
 	itemsQuantity,
 	labels,
 	onAddToCart,
 	orderId,
 	productURLSeparator,
-	spritemap,
+	requestQuoteEnabled,
 	summaryDataMapper,
 	toggleable,
 }) {
-	const CartResource = useMemo(
-		() => ServiceProvider.DeliveryCartAPI('v1'),
-		[]
-	);
-
 	const [isOpen, setIsOpen] = useState(!toggleable);
 	const [isUpdating, setIsUpdating] = useState(false);
+	const [editedItem, setEditedItem] = useState(null);
 	const [actionURLs, setActionURLs] = useState(cartActionURLs);
 	const [CartViews, setCartViews] = useState({});
-	const [cartState, updateCartState] = useState({
+	const [cartState, setCartState] = useState({
+		accountId,
+		channel: {channel},
 		id: orderId,
 		summary: {itemsQuantity},
 	});
 
-	const closeCart = () => setIsOpen(false);
-	const openCart = () => setIsOpen(true);
+	const closeCart = () => {
+		setIsOpen(false);
+
+		if (toggleable) {
+			document.body.classList.remove('overflow-hidden');
+		}
+
+		if (editedItem) {
+			setEditedItem(null);
+		}
+	};
+	const openCart = () => {
+		if (toggleable) {
+			document.body.classList.add('overflow-hidden');
+		}
+
+		setIsOpen(true);
+	};
+
+	const [replacementSKUList, setReplacementSKUList] = useState([]);
+
 	const resetCartState = useCallback(
-		({accountId = 0}) =>
-			updateCartState({
-				accountId,
-				id: 0,
-				summary: {itemsQuantity: 0},
-			}),
-		[updateCartState]
+		({accountId = 0, id = 0}) => {
+			const isAccountChanged = cartState.accountId !== accountId;
+			const isCartEmptied = cartState.id === id;
+			const isOrderDeleted =
+				id === 0 && cartState.accountId === accountId;
+
+			if (isAccountChanged || isCartEmptied || isOrderDeleted) {
+				setCartState({
+					accountId,
+					channel: {channel},
+					id,
+					summary: {itemsQuantity: 0},
+				});
+			}
+		},
+		[cartState.accountId, cartState.id, channel, setCartState]
 	);
 
 	const updateCartModel = useCallback(
-		({id: cartId}) => {
-			CartResource.getCartByIdWithItems(cartId)
-				.then((model) => {
-					let latestActionURLs, latestCartState;
+		async ({order, updatedFromCart = true}) => {
+			try {
+				const updatedCart = order.orderUUID
+					? order
+					: await CartResource.getCartByIdWithItems(order.id);
 
-					setActionURLs((currentURLs) => {
-						const {orderUUID} = model;
+				let latestActionURLs;
+				let latestCartState;
 
-						latestActionURLs = {
-							...currentURLs,
-							orderDetailURL: regenerateOrderDetailURL(
-								orderUUID,
-								currentURLs.siteDefaultURL
-							),
-						};
+				setActionURLs((currentURLs) => {
+					const orderDetailURL = currentURLs.orderDetailURL;
 
-						return latestActionURLs;
-					});
+					latestActionURLs = {
+						...currentURLs,
+						orderDetailURL: !orderDetailURL
+							? regenerateOrderDetailURL(
+									currentURLs.baseOrderDetailURL,
+									updatedCart.id,
+									updatedCart.orderUUID
+								)
+							: new URL(orderDetailURL),
+					};
 
-					updateCartState((currentState) => {
-						latestCartState = {...currentState, ...model};
+					return latestActionURLs;
+				});
 
-						return latestCartState;
-					});
+				setCartState((currentState) => {
+					latestCartState = {...currentState, ...updatedCart};
 
-					return Promise.resolve({
-						actionURLs: latestActionURLs,
-						cartState: latestCartState,
-					});
-				})
-				.then(({actionURLs, cartState}) => {
-					onAddToCart(actionURLs, cartState);
-				})
-				.catch(showErrorNotification);
+					return latestCartState;
+				});
+
+				Liferay.fire(CART_UPDATED, {
+					order: updatedCart,
+					updatedFromCart,
+				});
+
+				onAddToCart(latestActionURLs, latestCartState);
+			}
+			catch (error) {
+				showErrorNotification(error);
+			}
 		},
-		[CartResource, onAddToCart]
+		[onAddToCart]
 	);
+
+	const updateReplacedSKUList = useCallback(
+		() =>
+			cartState.cartItems
+				? setReplacementSKUList(
+						cartState.cartItems.filter(
+							({replacedSku: replacedSKU}) => Boolean(replacedSKU)
+						)
+					)
+				: null,
+		[cartState.cartItems]
+	);
+
+	useEffect(() => {
+		updateReplacedSKUList();
+	}, [updateReplacedSKUList]);
 
 	useEffect(() => {
 		resolveCartViews(cartViews).then((views) => setCartViews(views));
@@ -137,39 +189,51 @@ function MiniCart({
 
 	useEffect(() => {
 		if (orderId) {
-			updateCartModel({id: orderId});
+			updateCartModel({order: {id: orderId}});
 		}
 	}, [orderId, updateCartModel]);
 
 	useEffect(() => {
+		Liferay.on(CART_RESET, resetCartState);
 		Liferay.on(CURRENT_ACCOUNT_UPDATED, resetCartState);
+		Liferay.on(CURRENT_ORDER_DELETED, resetCartState);
 
 		return () => {
+			Liferay.detach(CART_RESET, resetCartState);
 			Liferay.detach(CURRENT_ACCOUNT_UPDATED, resetCartState);
+			Liferay.detach(CURRENT_ORDER_DELETED, resetCartState);
 		};
 	}, [resetCartState]);
+
+	useEffect(() => {
+		Liferay.fire(GUEST_ORDER_ENABLED, {guestOrderEnabled});
+	}, [guestOrderEnabled]);
 
 	return (
 		<MiniCartContext.Provider
 			value={{
-				CartResource,
 				CartViews,
 				actionURLs,
 				cartState,
 				closeCart,
 				displayDiscountLevels,
 				displayTotalItemsQuantity,
+				editedItem,
+				guestOrderEnabled,
 				isOpen,
 				isUpdating,
 				labels: {...DEFAULT_LABELS, ...labels},
 				openCart,
 				productURLSeparator,
+				replacementSKUList,
+				requestQuoteEnabled,
+				setCartState,
+				setEditedItem,
 				setIsUpdating,
-				spritemap,
+				setReplacementSKUList,
 				summaryDataMapper,
 				toggleable,
 				updateCartModel,
-				updateCartState,
 			}}
 		>
 			{!!CartViews[CART] && (
@@ -183,7 +247,7 @@ function MiniCart({
 						<>
 							<div
 								className="mini-cart-overlay"
-								onClick={() => setIsOpen(false)}
+								onClick={() => closeCart()}
 							/>
 
 							<CartViews.Opener />
@@ -201,19 +265,23 @@ MiniCart.defaultProps = {
 	cartViews: {},
 	displayDiscountLevels: false,
 	displayTotalItemsQuantity: false,
+	guestOrderEnabled: false,
 	itemsQuantity: 0,
 	labels: DEFAULT_LABELS,
 	onAddToCart: () => {},
 	orderId: 0,
+	requestQuoteEnabled: false,
 	summaryDataMapper,
 	toggleable: true,
 };
 
 MiniCart.propTypes = {
 	cartActionURLs: PropTypes.shape({
+		baseOrderDetailURL: PropTypes.string,
 		checkoutURL: PropTypes.string,
 		orderDetailURL: PropTypes.string,
 		productURLSeparator: PropTypes.string,
+		signInURL: PropTypes.string,
 		siteDefaultURL: PropTypes.string,
 	}).isRequired,
 	cartViews: PropTypes.shape({
@@ -284,6 +352,7 @@ MiniCart.propTypes = {
 	}),
 	displayDiscountLevels: PropTypes.bool,
 	displayTotalItemsQuantity: PropTypes.bool,
+	guestOrderEnabled: PropTypes.bool,
 	itemsQuantity: PropTypes.number,
 	labels: PropTypes.shape({
 		[ADD_PRODUCT]: PropTypes.string,
@@ -296,7 +365,7 @@ MiniCart.propTypes = {
 	}),
 	onAddToCart: PropTypes.func,
 	orderId: PropTypes.number,
-	spritemap: PropTypes.string,
+	requestQuoteEnabled: PropTypes.bool,
 	summaryDataMapper: PropTypes.func,
 	toggleable: PropTypes.bool,
 };

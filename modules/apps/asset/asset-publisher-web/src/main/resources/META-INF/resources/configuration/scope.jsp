@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,16 +9,6 @@
 
 <%
 PortletURL configurationRenderURL = (PortletURL)request.getAttribute("configuration.jsp-configurationRenderURL");
-String eventName = "_" + HtmlUtil.escapeJS(assetPublisherDisplayContext.getPortletResource()) + "_selectSite";
-
-Set<Group> availableGroups = new HashSet<Group>();
-
-availableGroups.add(company.getGroup());
-availableGroups.add(themeDisplay.getScopeGroup());
-
-if (layout.hasScopeGroup()) {
-	availableGroups.add(layout.getScopeGroup());
-}
 
 List<Group> selectedGroups = GroupLocalServiceUtil.getGroups(assetPublisherDisplayContext.getGroupIds());
 %>
@@ -65,10 +46,12 @@ List<Group> selectedGroups = GroupLocalServiceUtil.getGroups(assetPublisherDispl
 				<portlet:param name="scopeId" value="<%= assetPublisherHelper.getScopeId(group, scopeGroupId) %>" />
 			</liferay-portlet:actionURL>
 
-			<liferay-ui:icon
+			<clay:link
+				aria-label='<%= LanguageUtil.get(request, "delete") %>'
+				cssClass="lfr-portal-tooltip"
+				href="<%= deleteURL %>"
 				icon="times-circle"
-				markupView="lexicon"
-				url="<%= deleteURL %>"
+				title='<%= LanguageUtil.get(request, "delete") %>'
 			/>
 		</liferay-ui:search-container-column-text>
 	</liferay-ui:search-container-row>
@@ -79,98 +62,14 @@ List<Group> selectedGroups = GroupLocalServiceUtil.getGroups(assetPublisherDispl
 	/>
 </liferay-ui:search-container>
 
-<liferay-ui:icon-menu
-	cssClass="select-existing-selector"
-	direction="right"
-	message="select"
-	showArrow="<%= false %>"
-	showWhenSingleIcon="<%= true %>"
->
+<liferay-portlet:actionURL portletConfiguration="<%= true %>" varImpl="addScopeURL">
+	<portlet:param name="<%= Constants.CMD %>" value="add-scope" />
+	<portlet:param name="redirect" value="<%= configurationRenderURL.toString() %>" />
+</liferay-portlet:actionURL>
 
-	<%
-	for (Group group : availableGroups) {
-		if (ArrayUtil.contains(assetPublisherDisplayContext.getGroupIds(), group.getGroupId())) {
-			continue;
-		}
-	%>
-
-		<liferay-portlet:actionURL portletConfiguration="<%= true %>" var="addScopeURL">
-			<portlet:param name="<%= Constants.CMD %>" value="add-scope" />
-			<portlet:param name="redirect" value="<%= configurationRenderURL.toString() %>" />
-			<portlet:param name="groupId" value="<%= String.valueOf(group.getGroupId()) %>" />
-		</liferay-portlet:actionURL>
-
-		<liferay-ui:icon
-			id='<%= "scope" + group.getGroupId() %>'
-			message="<%= group.getScopeDescriptiveName(themeDisplay) %>"
-			method="post"
-			url="<%= addScopeURL %>"
-		/>
-
-	<%
-	}
-	%>
-
-	<liferay-ui:icon
-		cssClass="highlited scope-selector"
-		id="selectManageableGroup"
-		message='<%= LanguageUtil.get(request, "other-site-or-asset-library") + StringPool.TRIPLE_PERIOD %>'
-		method="get"
-		url="javascript:;"
-	/>
-</liferay-ui:icon-menu>
-
-<%
-ItemSelector itemSelector = (ItemSelector)request.getAttribute(AssetPublisherWebKeys.ITEM_SELECTOR);
-
-GroupItemSelectorCriterion groupItemSelectorCriterion = new GroupItemSelectorCriterion(layout.isPrivateLayout());
-
-groupItemSelectorCriterion.setDesiredItemSelectorReturnTypes(new GroupItemSelectorReturnType());
-groupItemSelectorCriterion.setIncludeChildSites(true);
-groupItemSelectorCriterion.setIncludeLayoutScopes(true);
-groupItemSelectorCriterion.setIncludeMySites(false);
-groupItemSelectorCriterion.setIncludeParentSites(true);
-groupItemSelectorCriterion.setIncludeRecentSites(false);
-groupItemSelectorCriterion.setIncludeSitesThatIAdminister(true);
-
-PortletURL itemSelectorURL = PortletURLBuilder.create(
-	itemSelector.getItemSelectorURL(RequestBackedPortletURLFactoryUtil.create(renderRequest), eventName, groupItemSelectorCriterion)
-).setPortletResource(
-	assetPublisherDisplayContext.getPortletResource()
-).setParameter(
-	"groupId", layout.getGroupId()
-).setParameter(
-	"plid", layout.getPlid()
-).buildPortletURL();
-%>
-
-<aui:script sandbox="<%= true %>">
-	const form = document.<portlet:namespace />fm;
-
-	const scopeSelect = document.getElementById(
-		'<portlet:namespace />selectManageableGroup'
-	);
-
-	if (scopeSelect) {
-		scopeSelect.addEventListener('click', (event) => {
-			event.preventDefault();
-
-			const opener = Liferay.Util.getOpener();
-
-			opener.Liferay.Util.openSelectionModal({
-				id: '<%= eventName %>' + event.currentTarget.id,
-				onSelect: function (event) {
-					Liferay.Util.postForm(form, {
-						data: {
-							cmd: 'add-scope',
-							groupId: event.groupid,
-						},
-					});
-				},
-				selectEventName: '<%= eventName %>',
-				title: '<liferay-ui:message key="scopes" />',
-				url: '<%= itemSelectorURL.toString() %>',
-			});
-		});
-	}
-</aui:script>
+<clay:dropdown-menu
+	displayType="secondary"
+	dropdownItems="<%= assetPublisherDisplayContext.getScopeDropdownItems(addScopeURL) %>"
+	label="select"
+	propsTransformer="{ScopeActionDropdownPropsTransformer} from asset-publisher-web"
+/>

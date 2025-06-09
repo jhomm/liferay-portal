@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test.util.internal.exportimport.staged.model.repository;
@@ -24,7 +15,6 @@ import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.test.util.model.DummyReference;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.dao.orm.hibernate.DynamicQueryImpl;
 import com.liferay.portal.kernel.dao.orm.Conjunction;
 import com.liferay.portal.kernel.dao.orm.Criterion;
 import com.liferay.portal.kernel.dao.orm.Disjunction;
@@ -40,10 +30,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.service.SystemEventLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-
-import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -52,11 +42,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import org.hibernate.criterion.DetachedCriteria;
-import org.hibernate.impl.CriteriaImpl;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,7 +50,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Akos Thurzo
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.exportimport.test.util.model.DummyReference",
 	service = StagedModelRepository.class
 )
@@ -96,7 +80,7 @@ public class DummyReferenceStagedModelRepository
 
 		if (_dummyReferences.remove(dummyReference)) {
 			systemEventLocalService.addSystemEvent(
-				0, dummyReference.getGroupId(),
+				0, dummyReference.getGroupId(), StringPool.BLANK,
 				dummyReference.getModelClassName(),
 				dummyReference.getPrimaryKey(), dummyReference.getUuid(),
 				StringPool.BLANK, SystemEventConstants.TYPE_DELETE,
@@ -111,8 +95,8 @@ public class DummyReferenceStagedModelRepository
 
 		_dummyReferences.removeIf(
 			dummyReference ->
-				Objects.equals(dummyReference.getUuid(), uuid) &&
-				(dummyReference.getGroupId() == groupId));
+				Objects.equals(uuid, dummyReference.getUuid()) &&
+				(groupId == dummyReference.getGroupId()));
 	}
 
 	@Override
@@ -131,36 +115,26 @@ public class DummyReferenceStagedModelRepository
 	public DummyReference fetchStagedModelByUuidAndGroupId(
 		String uuid, long groupId) {
 
-		Stream<DummyReference> dummyReferenceStream = _dummyReferences.stream();
+		for (DummyReference dummyReference : _dummyReferences) {
+			if (Objects.equals(uuid, dummyReference.getUuid()) &&
+				(groupId == dummyReference.getGroupId())) {
 
-		List<DummyReference> dummies = dummyReferenceStream.filter(
-			dummyReference ->
-				Objects.equals(dummyReference.getUuid(), uuid) &&
-				(dummyReference.getGroupId() == groupId)
-		).collect(
-			Collectors.toList()
-		);
-
-		if (dummies.isEmpty()) {
-			return null;
+				return dummyReference;
+			}
 		}
 
-		return dummies.get(0);
+		return null;
 	}
 
 	@Override
 	public List<DummyReference> fetchStagedModelsByUuidAndCompanyId(
 		String uuid, long companyId) {
 
-		Stream<DummyReference> dummyReferenceStream = _dummyReferences.stream();
-
-		return dummyReferenceStream.filter(
+		return ListUtil.filter(
+			_dummyReferences,
 			dummyReference ->
-				Objects.equals(dummyReference.getUuid(), uuid) &&
-				(dummyReference.getCompanyId() == companyId)
-		).collect(
-			Collectors.toList()
-		);
+				Objects.equals(uuid, dummyReference.getUuid()) &&
+				(companyId == dummyReference.getCompanyId()));
 	}
 
 	@Override
@@ -203,9 +177,7 @@ public class DummyReferenceStagedModelRepository
 		exportActionableDynamicQuery.setClassLoader(clazz.getClassLoader());
 
 		exportActionableDynamicQuery.setModelClass(DummyReference.class);
-
 		exportActionableDynamicQuery.setPrimaryKeyPropertyName("id");
-
 		exportActionableDynamicQuery.setAddCriteriaMethod(
 			dynamicQuery -> {
 				Criterion modifiedDateCriterion =
@@ -292,18 +264,14 @@ public class DummyReferenceStagedModelRepository
 							stagedModelDataHandler.getExportableStatuses()));
 				}
 			});
-
 		exportActionableDynamicQuery.setCompanyId(
 			portletDataContext.getCompanyId());
-
 		exportActionableDynamicQuery.setGroupId(
 			portletDataContext.getScopeGroupId());
-
 		exportActionableDynamicQuery.setPerformActionMethod(
 			(DummyReference dummyReference) ->
 				StagedModelDataHandlerUtil.exportStagedModel(
 					portletDataContext, dummyReference));
-
 		exportActionableDynamicQuery.setStagedModelType(
 			new StagedModelType(
 				portal.getClassNameId(DummyReference.class.getName()),
@@ -348,45 +316,33 @@ public class DummyReferenceStagedModelRepository
 		extends BaseLocalServiceImpl {
 
 		public List<DummyReference> dynamicQuery(DynamicQuery dynamicQuery) {
-			DynamicQueryImpl dynamicQueryImpl = (DynamicQueryImpl)dynamicQuery;
-
-			DetachedCriteria detachedCriteria =
-				dynamicQueryImpl.getDetachedCriteria();
-
-			Class<?> detachedCriteriaClass = detachedCriteria.getClass();
-
-			List<DummyReference> result = _dummyReferences;
-
 			try {
-				Method method = detachedCriteriaClass.getDeclaredMethod(
-					"getCriteriaImpl");
+				Object detachedCriteria = ReflectionTestUtil.getFieldValue(
+					dynamicQuery, "_detachedCriteria");
 
-				method.setAccessible(true);
+				Object criteriaImpl = ReflectionTestUtil.invoke(
+					detachedCriteria, "getCriteriaImpl", new Class<?>[0]);
 
-				CriteriaImpl detachedCriteriaImpl = (CriteriaImpl)method.invoke(
-					detachedCriteria);
+				Iterator<?> iterator = ReflectionTestUtil.invoke(
+					criteriaImpl, "iterateExpressionEntries", new Class<?>[0]);
 
-				Iterator<CriteriaImpl.CriterionEntry> iterator =
-					detachedCriteriaImpl.iterateExpressionEntries();
+				if (!iterator.hasNext()) {
+					return _dummyReferences;
+				}
+
+				Predicate<DummyReference> predicate = getPredicate(
+					String.valueOf(iterator.next()));
 
 				while (iterator.hasNext()) {
-					CriteriaImpl.CriterionEntry criteriaImpl = iterator.next();
-
-					Stream<DummyReference> dummyReferenceStream =
-						result.stream();
-
-					result = dummyReferenceStream.filter(
-						getPredicate(criteriaImpl.toString())
-					).collect(
-						Collectors.toList()
-					);
+					predicate = predicate.and(
+						getPredicate(String.valueOf(iterator.next())));
 				}
+
+				return ListUtil.filter(_dummyReferences, predicate);
 			}
 			catch (Exception exception) {
 				throw new RuntimeException(exception);
 			}
-
-			return result;
 		}
 
 		public long dynamicQueryCount(
@@ -395,26 +351,24 @@ public class DummyReferenceStagedModelRepository
 			return _dummyReferences.size();
 		}
 
-		public Predicate<? super DummyReference> getPredicate(
-			String expression) {
-
+		public Predicate<DummyReference> getPredicate(String expression) {
 			if (expression.startsWith("groupId=")) {
-				return d ->
-					d.getGroupId() == Long.valueOf(
+				return dummyReference ->
+					dummyReference.getGroupId() == Long.valueOf(
 						expression.substring("groupId=".length()));
 			}
 
 			if (expression.contains("id>-1")) {
-				return d -> d.getId() > -1;
+				return dummyReference -> dummyReference.getId() > -1;
 			}
 
 			if (expression.startsWith("companyId=")) {
-				return d ->
-					d.getCompanyId() == Long.valueOf(
+				return dummyReference ->
+					dummyReference.getCompanyId() == Long.valueOf(
 						expression.substring("companyId=".length()));
 			}
 
-			return d -> true;
+			return dummyReference -> true;
 		}
 
 		@Override

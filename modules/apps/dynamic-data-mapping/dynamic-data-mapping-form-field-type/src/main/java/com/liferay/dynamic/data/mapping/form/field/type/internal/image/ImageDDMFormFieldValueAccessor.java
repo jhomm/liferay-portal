@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.image;
@@ -40,11 +31,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.IMAGE,
-	service = {
-		DDMFormFieldValueAccessor.class, ImageDDMFormFieldValueAccessor.class
-	}
+	service = DDMFormFieldValueAccessor.class
 )
 public class ImageDDMFormFieldValueAccessor
 	implements DDMFormFieldValueAccessor<JSONObject> {
@@ -114,14 +102,31 @@ public class ImageDDMFormFieldValueAccessor
 			return null;
 		}
 
+		String uuid = valueJSONObject.getString("uuid");
+		long groupId = valueJSONObject.getLong("groupId");
+
 		try {
-			return _dlAppService.getFileEntryByUuidAndGroupId(
-				valueJSONObject.getString("uuid"),
-				valueJSONObject.getLong("groupId"));
+			return _dlAppService.getFileEntryByUuidAndGroupId(uuid, groupId);
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to retrieve file entry ", portalException);
+				_log.debug("Unable to get file entry", portalException);
+			}
+
+			return _getFileEntryByExternalReferenceCode(uuid, groupId);
+		}
+	}
+
+	private FileEntry _getFileEntryByExternalReferenceCode(
+		String uuid, long groupId) {
+
+		try {
+			return _dlAppService.getFileEntryByExternalReferenceCode(
+				uuid, groupId);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Unable to get file entry", portalException);
 			}
 
 			return null;

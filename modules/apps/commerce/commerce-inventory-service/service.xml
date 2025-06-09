@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder auto-namespace-tables="false" mvcc-enabled="false" package-path="com.liferay.commerce.inventory">
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.commerce.inventory">
 	<author>Luca Pellizzon</author>
 	<namespace>Commerce</namespace>
 	<entity local-service="true" name="CommerceInventoryAudit" remote-service="true" table="CIAudit">
@@ -20,10 +20,11 @@
 
 		<!-- Other fields -->
 
-		<column name="sku" type="String" />
 		<column name="logType" type="String" />
 		<column name="logTypeSettings" type="String" />
-		<column name="quantity" type="int" />
+		<column name="quantity" type="BigDecimal" />
+		<column name="sku" type="String" />
+		<column name="unitOfMeasureKey" type="String" />
 
 		<!-- Order -->
 
@@ -36,9 +37,10 @@
 		<finder name="LtCreateDate" return-type="Collection">
 			<finder-column comparator="&lt;" name="createDate" />
 		</finder>
-		<finder name="C_S" return-type="Collection">
+		<finder name="C_S_U" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="sku" />
+			<finder-column name="unitOfMeasureKey" />
 		</finder>
 	</entity>
 	<entity local-service="true" mvcc-enabled="true" name="CommerceInventoryBookedQuantity" remote-service="true" table="CIBookedQuantity">
@@ -57,25 +59,27 @@
 
 		<!-- Other fields -->
 
-		<column name="sku" type="String" />
-		<column name="quantity" type="int" />
-		<column name="expirationDate" type="Date" />
 		<column name="bookedNote" type="String" />
+		<column name="expirationDate" type="Date" />
+		<column name="quantity" type="BigDecimal" />
+		<column name="sku" type="String" />
+		<column name="unitOfMeasureKey" type="String" />
 
 		<!-- Finder methods -->
 
-		<finder name="Sku" return-type="Collection">
-			<finder-column name="sku" />
-		</finder>
 		<finder name="LtExpirationDate" return-type="Collection">
 			<finder-column comparator="&lt;" name="expirationDate" />
 		</finder>
-		<finder name="C_S" return-type="Collection">
-			<finder-column name="companyId" />
+		<finder name="Sku" return-type="Collection">
 			<finder-column name="sku" />
 		</finder>
+		<finder name="C_S_U" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="sku" />
+			<finder-column name="unitOfMeasureKey" />
+		</finder>
 	</entity>
-	<entity local-service="true" mvcc-enabled="true" name="CommerceInventoryReplenishmentItem" remote-service="true" table="CIReplenishmentItem">
+	<entity external-reference-code="company" local-service="true" mvcc-enabled="true" name="CommerceInventoryReplenishmentItem" remote-service="true" table="CIReplenishmentItem" uuid="true">
 
 		<!-- PK fields -->
 
@@ -92,31 +96,34 @@
 		<!-- Other fields -->
 
 		<column name="commerceInventoryWarehouseId" type="long" />
-		<column name="sku" type="String" />
 		<column name="availabilityDate" type="Date" />
-		<column name="quantity" type="int" />
+		<column name="quantity" type="BigDecimal" />
+		<column name="sku" type="String" />
+		<column name="unitOfMeasureKey" type="String" />
 
 		<!-- Finder methods -->
 
 		<finder name="CommerceInventoryWarehouseId" return-type="Collection">
 			<finder-column name="commerceInventoryWarehouseId" />
 		</finder>
-		<finder name="Sku" return-type="Collection">
-			<finder-column name="sku" />
-		</finder>
 		<finder name="AvailabilityDate" return-type="Collection">
 			<finder-column name="availabilityDate" />
 		</finder>
-		<finder name="C_S" return-type="Collection">
+		<finder name="Sku" return-type="Collection">
+			<finder-column name="sku" />
+		</finder>
+		<finder name="C_S_U" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="sku" />
+			<finder-column name="unitOfMeasureKey" />
 		</finder>
-		<finder name="S_AD" return-type="Collection">
-			<finder-column name="sku" />
+		<finder name="AD_S_U" return-type="Collection">
 			<finder-column name="availabilityDate" />
+			<finder-column name="sku" />
+			<finder-column name="unitOfMeasureKey" />
 		</finder>
 	</entity>
-	<entity external-reference-code="true" local-service="true" mvcc-enabled="true" name="CommerceInventoryWarehouse" remote-service="true" table="CIWarehouse">
+	<entity external-reference-code="company" local-service="true" mvcc-enabled="true" name="CommerceInventoryWarehouse" remote-service="true" table="CIWarehouse" uuid="true">
 
 		<!-- PK fields -->
 
@@ -132,8 +139,8 @@
 
 		<!-- Other fields -->
 
-		<column name="name" type="String" />
-		<column name="description" type="String" />
+		<column localized="true" name="name" type="String" />
+		<column localized="true" name="description" type="String" />
 		<column name="active" type="boolean" />
 		<column name="street1" type="String" />
 		<column name="street2" type="String" />
@@ -171,7 +178,7 @@
 			<finder-column name="countryTwoLettersISOCode" />
 		</finder>
 	</entity>
-	<entity external-reference-code="true" local-service="true" mvcc-enabled="true" name="CommerceInventoryWarehouseItem" remote-service="true" table="CIWarehouseItem">
+	<entity external-reference-code="company" local-service="true" mvcc-enabled="true" name="CommerceInventoryWarehouseItem" remote-service="true" table="CIWarehouseItem" uuid="true">
 
 		<!-- PK fields -->
 
@@ -188,9 +195,10 @@
 		<!-- Other fields -->
 
 		<column name="commerceInventoryWarehouseId" type="long" />
+		<column name="quantity" type="BigDecimal" />
+		<column name="reservedQuantity" type="BigDecimal" />
 		<column name="sku" type="String" />
-		<column name="quantity" type="int" />
-		<column name="reservedQuantity" type="int" />
+		<column name="unitOfMeasureKey" type="String" />
 
 		<!-- Finder methods -->
 
@@ -200,20 +208,69 @@
 		<finder name="CommerceInventoryWarehouseId" return-type="Collection">
 			<finder-column name="commerceInventoryWarehouseId" />
 		</finder>
-		<finder name="CompanyId_Sku" return-type="Collection">
+		<finder name="C_S_U" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="sku" />
+			<finder-column name="unitOfMeasureKey" />
 		</finder>
-		<finder name="C_S" return-type="CommerceInventoryWarehouseItem" unique="true">
+		<finder name="CIWI_S_U" return-type="CommerceInventoryWarehouseItem" unique="true">
 			<finder-column name="commerceInventoryWarehouseId" />
 			<finder-column name="sku" />
+			<finder-column name="unitOfMeasureKey" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="CommerceInventoryWarehouseRel" remote-service="true" table="CIWarehouseRel">
+
+		<!-- PK fields -->
+
+		<column db-name="CIWarehouseRelId" name="commerceInventoryWarehouseRelId" primary="true" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+		<column name="userName" type="String" />
+		<column name="createDate" type="Date" />
+		<column name="modifiedDate" type="Date" />
+
+		<!-- Other fields -->
+
+		<column name="classNameId" type="long" />
+		<column name="classPK" type="long" />
+		<column db-name="CIWarehouseId" name="commerceInventoryWarehouseId" type="long" />
+
+		<!-- Order -->
+
+		<order by="desc">
+			<order-column name="createDate" />
+		</order>
+
+		<!-- Finder methods -->
+
+		<finder name="CommerceInventoryWarehouseId" return-type="Collection">
+			<finder-column name="commerceInventoryWarehouseId" />
+		</finder>
+		<finder name="C_C" return-type="Collection">
+			<finder-column name="classNameId" />
+			<finder-column name="commerceInventoryWarehouseId" />
+		</finder>
+		<finder name="C_C_CIWI" return-type="CommerceInventoryWarehouseRel" unique="true">
+			<finder-column name="classNameId" />
+			<finder-column name="classPK" />
+			<finder-column name="commerceInventoryWarehouseId" />
 		</finder>
 	</entity>
 	<exceptions>
+		<exception>CommerceInventoryReplenishmentQuantity</exception>
+		<exception>CommerceInventoryReplenishmentSku</exception>
 		<exception>CommerceInventoryWarehouseActive</exception>
 		<exception>CommerceInventoryWarehouseItemQuantity</exception>
+		<exception>CommerceInventoryWarehouseItemSku</exception>
+		<exception>CommerceInventoryWarehouseItemUnitOfMeasureKey</exception>
 		<exception>CommerceInventoryWarehouseName</exception>
+		<exception>DuplicateCommerceInventoryReplenishmentItem</exception>
 		<exception>DuplicateCommerceInventoryWarehouseItem</exception>
+		<exception>DuplicateCommerceInventoryWarehouseRel</exception>
 		<exception>MVCC</exception>
 	</exceptions>
 </service-builder>

@@ -1,20 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
 
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
+import com.liferay.commerce.price.list.exception.CommercePriceEntryPriceException;
+import com.liferay.commerce.price.list.exception.CommercePriceListMaxPriceValueException;
+import com.liferay.commerce.price.list.exception.CommercePriceListMinPriceValueException;
 import com.liferay.commerce.price.list.exception.DuplicateCommercePriceEntryException;
+import com.liferay.commerce.price.list.exception.DuplicateCommercePriceEntryExternalReferenceCodeException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceEntryException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
@@ -33,10 +29,12 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.math.BigDecimal;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Calendar;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,9 +43,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_instance_commerce_price_entry"
 	},
 	service = MVCActionCommand.class
@@ -80,8 +77,10 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 
 		for (long addCommercePriceListId : addCommercePriceListIds) {
 			_commercePriceEntryService.addCommercePriceEntry(
-				cpInstanceId, addCommercePriceListId, cpInstance.getPrice(),
-				cpInstance.getPromoPrice(), serviceContext);
+				null, cpInstanceId, addCommercePriceListId,
+				cpInstance.getPrice(), false, cpInstance.getPromoPrice(),
+				ParamUtil.getString(actionRequest, "unitOfMeasureKey"),
+				serviceContext);
 		}
 	}
 
@@ -130,17 +129,10 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 			}
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchCPInstanceException ||
-				exception instanceof NoSuchPriceEntryException ||
-				exception instanceof NoSuchPriceListException ||
-				exception instanceof PrincipalException) {
-
-				SessionErrors.add(actionRequest, exception.getClass());
-
-				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
-			}
-			else if (exception instanceof
-						DuplicateCommercePriceEntryException) {
+			if (exception instanceof CommercePriceEntryPriceException ||
+				exception instanceof CommercePriceListMaxPriceValueException ||
+				exception instanceof CommercePriceListMinPriceValueException ||
+				exception instanceof DuplicateCommercePriceEntryException) {
 
 				hideDefaultErrorMessage(actionRequest);
 				hideDefaultSuccessMessage(actionRequest);
@@ -151,6 +143,17 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 					actionRequest, "redirect");
 
 				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else if (exception instanceof
+						DuplicateCommercePriceEntryExternalReferenceCodeException ||
+					 exception instanceof NoSuchCPInstanceException ||
+					 exception instanceof NoSuchPriceEntryException ||
+					 exception instanceof NoSuchPriceListException ||
+					 exception instanceof PrincipalException) {
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
 			else {
 				throw exception;
@@ -165,20 +168,95 @@ public class EditCPInstanceCommercePriceEntryMVCActionCommand
 		long commercePriceEntryId = ParamUtil.getLong(
 			actionRequest, "commercePriceEntryId");
 
-		BigDecimal price = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "price", BigDecimal.ZERO);
-		BigDecimal promoPrice = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "promoPrice", BigDecimal.ZERO);
+		CommercePriceEntry commercePriceEntry =
+			_commercePriceEntryService.getCommercePriceEntry(
+				commercePriceEntryId);
 
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommercePriceEntry.class.getName(), actionRequest);
+		boolean bulkPricing = ParamUtil.getBoolean(
+			actionRequest, "bulkPricing");
+		boolean overrideDiscount = ParamUtil.getBoolean(
+			actionRequest, "overrideDiscount");
+		BigDecimal discountLevel1 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel1");
+		BigDecimal discountLevel2 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel2");
+		BigDecimal discountLevel3 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel3");
+		BigDecimal discountLevel4 = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(),
+			"discountLevel4");
+		int displayDateMonth = ParamUtil.getInteger(
+			actionRequest, "displayDateMonth");
+		int displayDateDay = ParamUtil.getInteger(
+			actionRequest, "displayDateDay");
+		int displayDateYear = ParamUtil.getInteger(
+			actionRequest, "displayDateYear");
+		int displayDateHour = ParamUtil.getInteger(
+			actionRequest, "displayDateHour");
+		int displayDateMinute = ParamUtil.getInteger(
+			actionRequest, "displayDateMinute");
+		int displayDateAmPm = ParamUtil.getInteger(
+			actionRequest, "displayDateAmPm");
+
+		if (displayDateAmPm == Calendar.PM) {
+			displayDateHour += 12;
+		}
+
+		int expirationDateMonth = ParamUtil.getInteger(
+			actionRequest, "expirationDateMonth");
+		int expirationDateDay = ParamUtil.getInteger(
+			actionRequest, "expirationDateDay");
+		int expirationDateYear = ParamUtil.getInteger(
+			actionRequest, "expirationDateYear");
+		int expirationDateHour = ParamUtil.getInteger(
+			actionRequest, "expirationDateHour");
+		int expirationDateMinute = ParamUtil.getInteger(
+			actionRequest, "expirationDateMinute");
+		int expirationDateAmPm = ParamUtil.getInteger(
+			actionRequest, "expirationDateAmPm");
+
+		if (expirationDateAmPm == Calendar.PM) {
+			expirationDateHour += 12;
+		}
+
+		boolean neverExpire = ParamUtil.getBoolean(
+			actionRequest, "neverExpire");
+
+		BigDecimal price = _commercePriceFormatter.parse(
+			actionRequest, false, CommercePriceEntry.class.getName(), "price");
+		boolean priceOnApplication = ParamUtil.getBoolean(
+			actionRequest, "priceOnApplication");
+
+		if (priceOnApplication) {
+			bulkPricing = commercePriceEntry.isBulkPricing();
+			overrideDiscount = !commercePriceEntry.isDiscountDiscovery();
+			discountLevel1 = commercePriceEntry.getDiscountLevel1();
+			discountLevel2 = commercePriceEntry.getDiscountLevel2();
+			discountLevel3 = commercePriceEntry.getDiscountLevel3();
+			discountLevel4 = commercePriceEntry.getDiscountLevel4();
+			price = commercePriceEntry.getPrice();
+		}
 
 		return _commercePriceEntryService.updateCommercePriceEntry(
-			commercePriceEntryId, price, promoPrice, serviceContext);
+			commercePriceEntryId, bulkPricing, !overrideDiscount,
+			discountLevel1, discountLevel2, discountLevel3, discountLevel4,
+			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
+			displayDateMinute, expirationDateMonth, expirationDateDay,
+			expirationDateYear, expirationDateHour, expirationDateMinute,
+			neverExpire, price, priceOnApplication,
+			commercePriceEntry.getUnitOfMeasureKey(),
+			ServiceContextFactory.getInstance(
+				CommercePriceEntry.class.getName(), actionRequest));
 	}
 
 	@Reference
 	private CommercePriceEntryService _commercePriceEntryService;
+
+	@Reference
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
 	private CPInstanceService _cpInstanceService;

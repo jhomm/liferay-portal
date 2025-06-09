@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.reading.time.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
@@ -29,7 +23,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -50,11 +44,15 @@ import com.liferay.reading.time.service.persistence.impl.constants.ReadingTimePe
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -77,7 +75,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {ReadingTimeEntryPersistence.class, BasePersistence.class})
+@Component(service = ReadingTimeEntryPersistence.class)
 public class ReadingTimeEntryPersistenceImpl
 	extends BasePersistenceImpl<ReadingTimeEntry>
 	implements ReadingTimeEntryPersistence {
@@ -172,106 +170,111 @@ public class ReadingTimeEntryPersistenceImpl
 		OrderByComparator<ReadingTimeEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			uuid = Objects.toString(uuid, "");
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid;
+					finderArgs = new Object[] {uuid};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid;
+				finderArgs = new Object[] {uuid, start, end, orderByComparator};
+			}
+
+			List<ReadingTimeEntry> list = null;
 
 			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
-			}
-		}
-		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
+				list = (List<ReadingTimeEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-		List<ReadingTimeEntry> list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (ReadingTimeEntry readingTimeEntry : list) {
+						if (!uuid.equals(readingTimeEntry.getUuid())) {
+							list = null;
 
-		if (useFinderCache) {
-			list = (List<ReadingTimeEntry>)finderCache.getResult(
-				finderPath, finderArgs);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (ReadingTimeEntry readingTimeEntry : list) {
-					if (!uuid.equals(readingTimeEntry.getUuid())) {
-						list = null;
-
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(ReadingTimeEntryModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<ReadingTimeEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
 
-				cacheResult(list);
+				boolean bindUuid = false;
 
-				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
+
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(ReadingTimeEntryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					list = (List<ReadingTimeEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -573,58 +576,64 @@ public class ReadingTimeEntryPersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		FinderPath finderPath = _finderPathCountByUuid;
+			uuid = Objects.toString(uuid, "");
 
-		Object[] finderArgs = new Object[] {uuid};
+			FinderPath finderPath = _finderPathCountByUuid;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+			Object[] finderArgs = new Object[] {uuid};
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			sb.append(_SQL_COUNT_READINGTIMEENTRY_WHERE);
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			boolean bindUuid = false;
+				sb.append(_SQL_COUNT_READINGTIMEENTRY_WHERE);
 
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
+				boolean bindUuid = false;
 
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+
+			return count.intValue();
 		}
-
-		return count.intValue();
 	}
 
 	private static final String _FINDER_COLUMN_UUID_UUID_2 =
@@ -634,7 +643,6 @@ public class ReadingTimeEntryPersistenceImpl
 		"(readingTimeEntry.uuid IS NULL OR readingTimeEntry.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the reading time entry where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
@@ -697,95 +705,100 @@ public class ReadingTimeEntryPersistenceImpl
 	public ReadingTimeEntry fetchByUUID_G(
 		String uuid, long groupId, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		Object[] finderArgs = null;
+			uuid = Objects.toString(uuid, "");
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {uuid, groupId};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
-		}
-
-		if (result instanceof ReadingTimeEntry) {
-			ReadingTimeEntry readingTimeEntry = (ReadingTimeEntry)result;
-
-			if (!Objects.equals(uuid, readingTimeEntry.getUuid()) ||
-				(groupId != readingTimeEntry.getGroupId())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {uuid, groupId};
 			}
 
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+			Object result = null;
 
-			String sql = sb.toString();
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByUUID_G, finderArgs, this);
+			}
 
-			Session session = null;
+			if (result instanceof ReadingTimeEntry) {
+				ReadingTimeEntry readingTimeEntry = (ReadingTimeEntry)result;
 
-			try {
-				session = openSession();
+				if (!Objects.equals(uuid, readingTimeEntry.getUuid()) ||
+					(groupId != readingTimeEntry.getGroupId())) {
 
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					result = null;
 				}
+			}
 
-				queryPos.add(groupId);
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				List<ReadingTimeEntry> list = query.list();
+				sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
 
-				if (list.isEmpty()) {
-					if (useFinderCache) {
-						finderCache.putResult(
-							_finderPathFetchByUUID_G, finderArgs, list);
-					}
+				boolean bindUuid = false;
+
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
 				}
 				else {
-					ReadingTimeEntry readingTimeEntry = list.get(0);
+					bindUuid = true;
 
-					result = readingTimeEntry;
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+				}
 
-					cacheResult(readingTimeEntry);
+				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(groupId);
+
+					List<ReadingTimeEntry> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByUUID_G, finderArgs, list);
+						}
+					}
+					else {
+						ReadingTimeEntry readingTimeEntry = list.get(0);
+
+						result = readingTimeEntry;
+
+						cacheResult(readingTimeEntry);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (ReadingTimeEntry)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (ReadingTimeEntry)result;
+			}
 		}
 	}
 
@@ -814,62 +827,13 @@ public class ReadingTimeEntryPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		ReadingTimeEntry readingTimeEntry = fetchByUUID_G(uuid, groupId);
 
-		FinderPath finderPath = _finderPathCountByUUID_G;
-
-		Object[] finderArgs = new Object[] {uuid, groupId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_READINGTIMEENTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (readingTimeEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -962,114 +926,119 @@ public class ReadingTimeEntryPersistenceImpl
 		OrderByComparator<ReadingTimeEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			uuid = Objects.toString(uuid, "");
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_C;
+					finderArgs = new Object[] {uuid, companyId};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C;
+				finderArgs = new Object[] {
+					uuid, companyId, start, end, orderByComparator
+				};
+			}
+
+			List<ReadingTimeEntry> list = null;
 
 			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
-			}
-		}
-		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
+				list = (List<ReadingTimeEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-		List<ReadingTimeEntry> list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (ReadingTimeEntry readingTimeEntry : list) {
+						if (!uuid.equals(readingTimeEntry.getUuid()) ||
+							(companyId != readingTimeEntry.getCompanyId())) {
 
-		if (useFinderCache) {
-			list = (List<ReadingTimeEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+							list = null;
 
-			if ((list != null) && !list.isEmpty()) {
-				for (ReadingTimeEntry readingTimeEntry : list) {
-					if (!uuid.equals(readingTimeEntry.getUuid()) ||
-						(companyId != readingTimeEntry.getCompanyId())) {
-
-						list = null;
-
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(ReadingTimeEntryModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
 
-				list = (List<ReadingTimeEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(ReadingTimeEntryModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					list = (List<ReadingTimeEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1397,62 +1366,68 @@ public class ReadingTimeEntryPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		FinderPath finderPath = _finderPathCountByUuid_C;
+			uuid = Objects.toString(uuid, "");
 
-		Object[] finderArgs = new Object[] {uuid, companyId};
+			FinderPath finderPath = _finderPathCountByUuid_C;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+			Object[] finderArgs = new Object[] {uuid, companyId};
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			sb.append(_SQL_COUNT_READINGTIMEENTRY_WHERE);
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			boolean bindUuid = false;
+				sb.append(_SQL_COUNT_READINGTIMEENTRY_WHERE);
 
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
+				boolean bindUuid = false;
 
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				finderCache.putResult(finderPath, finderArgs, count);
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+
+			return count.intValue();
 		}
-
-		return count.intValue();
 	}
 
 	private static final String _FINDER_COLUMN_UUID_C_UUID_2 =
@@ -1465,7 +1440,6 @@ public class ReadingTimeEntryPersistenceImpl
 		"readingTimeEntry.companyId = ?";
 
 	private FinderPath _finderPathFetchByG_C_C;
-	private FinderPath _finderPathCountByG_C_C;
 
 	/**
 	 * Returns the reading time entry where groupId = &#63; and classNameId = &#63; and classPK = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
@@ -1538,86 +1512,92 @@ public class ReadingTimeEntryPersistenceImpl
 	public ReadingTimeEntry fetchByG_C_C(
 		long groupId, long classNameId, long classPK, boolean useFinderCache) {
 
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {groupId, classNameId, classPK};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_C_C, finderArgs);
-		}
-
-		if (result instanceof ReadingTimeEntry) {
-			ReadingTimeEntry readingTimeEntry = (ReadingTimeEntry)result;
-
-			if ((groupId != readingTimeEntry.getGroupId()) ||
-				(classNameId != readingTimeEntry.getClassNameId()) ||
-				(classPK != readingTimeEntry.getClassPK())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {groupId, classNameId, classPK};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(5);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByG_C_C, finderArgs, this);
+			}
 
-			sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
+			if (result instanceof ReadingTimeEntry) {
+				ReadingTimeEntry readingTimeEntry = (ReadingTimeEntry)result;
 
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
+				if ((groupId != readingTimeEntry.getGroupId()) ||
+					(classNameId != readingTimeEntry.getClassNameId()) ||
+					(classPK != readingTimeEntry.getClassPK())) {
 
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
+					result = null;
+				}
+			}
 
-			String sql = sb.toString();
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
 
-			Session session = null;
+				sb.append(_SQL_SELECT_READINGTIMEENTRY_WHERE);
 
-			try {
-				session = openSession();
+				sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
 
-				Query query = session.createQuery(sql);
+				sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+				sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
 
-				queryPos.add(groupId);
+				String sql = sb.toString();
 
-				queryPos.add(classNameId);
+				Session session = null;
 
-				queryPos.add(classPK);
+				try {
+					session = openSession();
 
-				List<ReadingTimeEntry> list = query.list();
+					Query query = session.createQuery(sql);
 
-				if (list.isEmpty()) {
-					if (useFinderCache) {
-						finderCache.putResult(
-							_finderPathFetchByG_C_C, finderArgs, list);
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(classNameId);
+
+					queryPos.add(classPK);
+
+					List<ReadingTimeEntry> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByG_C_C, finderArgs, list);
+						}
+					}
+					else {
+						ReadingTimeEntry readingTimeEntry = list.get(0);
+
+						result = readingTimeEntry;
+
+						cacheResult(readingTimeEntry);
 					}
 				}
-				else {
-					ReadingTimeEntry readingTimeEntry = list.get(0);
-
-					result = readingTimeEntry;
-
-					cacheResult(readingTimeEntry);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (ReadingTimeEntry)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (ReadingTimeEntry)result;
+			}
 		}
 	}
 
@@ -1650,53 +1630,14 @@ public class ReadingTimeEntryPersistenceImpl
 	 */
 	@Override
 	public int countByG_C_C(long groupId, long classNameId, long classPK) {
-		FinderPath finderPath = _finderPathCountByG_C_C;
+		ReadingTimeEntry readingTimeEntry = fetchByG_C_C(
+			groupId, classNameId, classPK);
 
-		Object[] finderArgs = new Object[] {groupId, classNameId, classPK};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_READINGTIMEENTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (readingTimeEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_C_C_GROUPID_2 =
@@ -1730,24 +1671,30 @@ public class ReadingTimeEntryPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(ReadingTimeEntry readingTimeEntry) {
-		entityCache.putResult(
-			ReadingTimeEntryImpl.class, readingTimeEntry.getPrimaryKey(),
-			readingTimeEntry);
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					readingTimeEntry.getCtCollectionId())) {
 
-		finderCache.putResult(
-			_finderPathFetchByUUID_G,
-			new Object[] {
-				readingTimeEntry.getUuid(), readingTimeEntry.getGroupId()
-			},
-			readingTimeEntry);
+			entityCache.putResult(
+				ReadingTimeEntryImpl.class, readingTimeEntry.getPrimaryKey(),
+				readingTimeEntry);
 
-		finderCache.putResult(
-			_finderPathFetchByG_C_C,
-			new Object[] {
-				readingTimeEntry.getGroupId(),
-				readingTimeEntry.getClassNameId(), readingTimeEntry.getClassPK()
-			},
-			readingTimeEntry);
+			finderCache.putResult(
+				_finderPathFetchByUUID_G,
+				new Object[] {
+					readingTimeEntry.getUuid(), readingTimeEntry.getGroupId()
+				},
+				readingTimeEntry);
+
+			finderCache.putResult(
+				_finderPathFetchByG_C_C,
+				new Object[] {
+					readingTimeEntry.getGroupId(),
+					readingTimeEntry.getClassNameId(),
+					readingTimeEntry.getClassPK()
+				},
+				readingTimeEntry);
+		}
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -1768,11 +1715,16 @@ public class ReadingTimeEntryPersistenceImpl
 		}
 
 		for (ReadingTimeEntry readingTimeEntry : readingTimeEntries) {
-			if (entityCache.getResult(
-					ReadingTimeEntryImpl.class,
-					readingTimeEntry.getPrimaryKey()) == null) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						readingTimeEntry.getCtCollectionId())) {
 
-				cacheResult(readingTimeEntry);
+				if (entityCache.getResult(
+						ReadingTimeEntryImpl.class,
+						readingTimeEntry.getPrimaryKey()) == null) {
+
+					cacheResult(readingTimeEntry);
+				}
 			}
 		}
 	}
@@ -1823,24 +1775,27 @@ public class ReadingTimeEntryPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		ReadingTimeEntryModelImpl readingTimeEntryModelImpl) {
 
-		Object[] args = new Object[] {
-			readingTimeEntryModelImpl.getUuid(),
-			readingTimeEntryModelImpl.getGroupId()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					readingTimeEntryModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(_finderPathCountByUUID_G, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByUUID_G, args, readingTimeEntryModelImpl);
+			Object[] args = new Object[] {
+				readingTimeEntryModelImpl.getUuid(),
+				readingTimeEntryModelImpl.getGroupId()
+			};
 
-		args = new Object[] {
-			readingTimeEntryModelImpl.getGroupId(),
-			readingTimeEntryModelImpl.getClassNameId(),
-			readingTimeEntryModelImpl.getClassPK()
-		};
+			finderCache.putResult(
+				_finderPathFetchByUUID_G, args, readingTimeEntryModelImpl);
 
-		finderCache.putResult(_finderPathCountByG_C_C, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByG_C_C, args, readingTimeEntryModelImpl);
+			args = new Object[] {
+				readingTimeEntryModelImpl.getGroupId(),
+				readingTimeEntryModelImpl.getClassNameId(),
+				readingTimeEntryModelImpl.getClassPK()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByG_C_C, args, readingTimeEntryModelImpl);
+		}
 	}
 
 	/**
@@ -1933,7 +1888,9 @@ public class ReadingTimeEntryPersistenceImpl
 					readingTimeEntry.getPrimaryKeyObj());
 			}
 
-			if (readingTimeEntry != null) {
+			if ((readingTimeEntry != null) &&
+				ctPersistenceHelper.isRemove(readingTimeEntry)) {
+
 				session.delete(readingTimeEntry);
 			}
 		}
@@ -2011,7 +1968,13 @@ public class ReadingTimeEntryPersistenceImpl
 		try {
 			session = openSession();
 
-			if (isNew) {
+			if (ctPersistenceHelper.isInsert(readingTimeEntry)) {
+				if (!isNew) {
+					session.evict(
+						ReadingTimeEntryImpl.class,
+						readingTimeEntry.getPrimaryKeyObj());
+				}
+
 				session.save(readingTimeEntry);
 			}
 			else {
@@ -2082,12 +2045,187 @@ public class ReadingTimeEntryPersistenceImpl
 	/**
 	 * Returns the reading time entry with the primary key or returns <code>null</code> if it could not be found.
 	 *
+	 * @param primaryKey the primary key of the reading time entry
+	 * @return the reading time entry, or <code>null</code> if a reading time entry with the primary key could not be found
+	 */
+	@Override
+	public ReadingTimeEntry fetchByPrimaryKey(Serializable primaryKey) {
+		if (ctPersistenceHelper.isProductionMode(
+				ReadingTimeEntry.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
+		}
+
+		ReadingTimeEntry readingTimeEntry =
+			(ReadingTimeEntry)entityCache.getResult(
+				ReadingTimeEntryImpl.class, primaryKey);
+
+		if (readingTimeEntry != null) {
+			return readingTimeEntry;
+		}
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			readingTimeEntry = (ReadingTimeEntry)session.get(
+				ReadingTimeEntryImpl.class, primaryKey);
+
+			if (readingTimeEntry != null) {
+				cacheResult(readingTimeEntry);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return readingTimeEntry;
+	}
+
+	/**
+	 * Returns the reading time entry with the primary key or returns <code>null</code> if it could not be found.
+	 *
 	 * @param readingTimeEntryId the primary key of the reading time entry
 	 * @return the reading time entry, or <code>null</code> if a reading time entry with the primary key could not be found
 	 */
 	@Override
 	public ReadingTimeEntry fetchByPrimaryKey(long readingTimeEntryId) {
 		return fetchByPrimaryKey((Serializable)readingTimeEntryId);
+	}
+
+	@Override
+	public Map<Serializable, ReadingTimeEntry> fetchByPrimaryKeys(
+		Set<Serializable> primaryKeys) {
+
+		if (ctPersistenceHelper.isProductionMode(ReadingTimeEntry.class)) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
+		}
+
+		if (primaryKeys.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Map<Serializable, ReadingTimeEntry> map =
+			new HashMap<Serializable, ReadingTimeEntry>();
+
+		if (primaryKeys.size() == 1) {
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			Serializable primaryKey = iterator.next();
+
+			ReadingTimeEntry readingTimeEntry = fetchByPrimaryKey(primaryKey);
+
+			if (readingTimeEntry != null) {
+				map.put(primaryKey, readingTimeEntry);
+			}
+
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						ReadingTimeEntry.class, primaryKey)) {
+
+				ReadingTimeEntry readingTimeEntry =
+					(ReadingTimeEntry)entityCache.getResult(
+						ReadingTimeEntryImpl.class, primaryKey);
+
+				if (readingTimeEntry == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, readingTimeEntry);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
+			return map;
+		}
+
+		if ((databaseInMaxParameters > 0) &&
+			(primaryKeys.size() > databaseInMaxParameters)) {
+
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			while (iterator.hasNext()) {
+				Set<Serializable> page = new HashSet<>();
+
+				for (int i = 0;
+					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
+
+					page.add(iterator.next());
+				}
+
+				map.putAll(fetchByPrimaryKeys(page));
+			}
+
+			return map;
+		}
+
+		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
+
+		sb.append(getSelectSQL());
+		sb.append(" WHERE ");
+		sb.append(getPKDBName());
+		sb.append(" IN (");
+
+		for (Serializable primaryKey : primaryKeys) {
+			sb.append((long)primaryKey);
+
+			sb.append(",");
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		sb.append(")");
+
+		String sql = sb.toString();
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Query query = session.createQuery(sql);
+
+			for (ReadingTimeEntry readingTimeEntry :
+					(List<ReadingTimeEntry>)query.list()) {
+
+				map.put(readingTimeEntry.getPrimaryKeyObj(), readingTimeEntry);
+
+				cacheResult(readingTimeEntry);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return map;
 	}
 
 	/**
@@ -2155,75 +2293,80 @@ public class ReadingTimeEntryPersistenceImpl
 		OrderByComparator<ReadingTimeEntry> orderByComparator,
 		boolean useFinderCache) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<ReadingTimeEntry> list = null;
-
-		if (useFinderCache) {
-			list = (List<ReadingTimeEntry>)finderCache.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_READINGTIMEENTRY);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_READINGTIMEENTRY;
-
-				sql = sql.concat(ReadingTimeEntryModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<ReadingTimeEntry>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
 				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<ReadingTimeEntry> list = null;
+
+			if (useFinderCache) {
+				list = (List<ReadingTimeEntry>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_READINGTIMEENTRY);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_READINGTIMEENTRY;
+
+					sql = sql.concat(ReadingTimeEntryModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<ReadingTimeEntry>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -2244,31 +2387,37 @@ public class ReadingTimeEntryPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					ReadingTimeEntry.class)) {
 
-		if (count == null) {
-			Session session = null;
+			Long count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-			try {
-				session = openSession();
+			if (count == null) {
+				Session session = null;
 
-				Query query = session.createQuery(_SQL_COUNT_READINGTIMEENTRY);
+				try {
+					session = openSession();
 
-				count = (Long)query.uniqueResult();
+					Query query = session.createQuery(
+						_SQL_COUNT_READINGTIMEENTRY);
 
-				finderCache.putResult(
-					_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(
+						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+
+			return count.intValue();
 		}
-
-		return count.intValue();
 	}
 
 	@Override
@@ -2292,8 +2441,73 @@ public class ReadingTimeEntryPersistenceImpl
 	}
 
 	@Override
-	protected Map<String, Integer> getTableColumnsMap() {
+	public Set<String> getCTColumnNames(
+		CTColumnResolutionType ctColumnResolutionType) {
+
+		return _ctColumnNamesMap.getOrDefault(
+			ctColumnResolutionType, Collections.emptySet());
+	}
+
+	@Override
+	public List<String> getMappingTableNames() {
+		return _mappingTableNames;
+	}
+
+	@Override
+	public Map<String, Integer> getTableColumnsMap() {
 		return ReadingTimeEntryModelImpl.TABLE_COLUMNS_MAP;
+	}
+
+	@Override
+	public String getTableName() {
+		return "ReadingTimeEntry";
+	}
+
+	@Override
+	public List<String[]> getUniqueIndexColumnNames() {
+		return _uniqueIndexColumnNames;
+	}
+
+	private static final Map<CTColumnResolutionType, Set<String>>
+		_ctColumnNamesMap = new EnumMap<CTColumnResolutionType, Set<String>>(
+			CTColumnResolutionType.class);
+	private static final List<String> _mappingTableNames =
+		new ArrayList<String>();
+	private static final List<String[]> _uniqueIndexColumnNames =
+		new ArrayList<String[]>();
+
+	static {
+		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
+		Set<String> ctStrictColumnNames = new HashSet<String>();
+
+		ctControlColumnNames.add("mvccVersion");
+		ctControlColumnNames.add("ctCollectionId");
+		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("groupId");
+		ctStrictColumnNames.add("companyId");
+		ctStrictColumnNames.add("createDate");
+		ctIgnoreColumnNames.add("modifiedDate");
+		ctStrictColumnNames.add("classNameId");
+		ctStrictColumnNames.add("classPK");
+		ctMergeColumnNames.add("readingTime");
+
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.PK,
+			Collections.singleton("readingTimeEntryId"));
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.STRICT, ctStrictColumnNames);
+
+		_uniqueIndexColumnNames.add(new String[] {"uuid_", "groupId"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"groupId", "classNameId", "classPK"});
 	}
 
 	/**
@@ -2339,11 +2553,6 @@ public class ReadingTimeEntryPersistenceImpl
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
 
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
-
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
 			new String[] {
@@ -2370,37 +2579,14 @@ public class ReadingTimeEntryPersistenceImpl
 			},
 			new String[] {"groupId", "classNameId", "classPK"}, true);
 
-		_finderPathCountByG_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName()
-			},
-			new String[] {"groupId", "classNameId", "classPK"}, false);
-
-		_setReadingTimeEntryUtilPersistence(this);
+		ReadingTimeEntryUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setReadingTimeEntryUtilPersistence(null);
+		ReadingTimeEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(ReadingTimeEntryImpl.class.getName());
-	}
-
-	private void _setReadingTimeEntryUtilPersistence(
-		ReadingTimeEntryPersistence readingTimeEntryPersistence) {
-
-		try {
-			Field field = ReadingTimeEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, readingTimeEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -2428,6 +2614,9 @@ public class ReadingTimeEntryPersistenceImpl
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		super.setSessionFactory(sessionFactory);
 	}
+
+	@Reference
+	protected CTPersistenceHelper ctPersistenceHelper;
 
 	@Reference
 	protected EntityCache entityCache;
@@ -2465,9 +2654,5 @@ public class ReadingTimeEntryPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private ReadingTimeEntryModelArgumentsResolver
-		_readingTimeEntryModelArgumentsResolver;
 
 }

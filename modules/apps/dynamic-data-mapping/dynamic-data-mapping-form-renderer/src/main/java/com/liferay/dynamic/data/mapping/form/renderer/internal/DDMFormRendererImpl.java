@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.renderer.internal;
 
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingContext;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderingException;
@@ -22,18 +12,17 @@ import com.liferay.dynamic.data.mapping.form.renderer.DDMFormTemplateContextFact
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.util.DDM;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Writer;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marcellus Tavares
  */
-@Component(immediate = true, service = DDMFormRenderer.class)
+@Component(service = DDMFormRenderer.class)
 public class DDMFormRendererImpl implements DDMFormRenderer {
 
 	@Override
@@ -65,11 +54,8 @@ public class DDMFormRendererImpl implements DDMFormRenderer {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		String pathThemeImages = themeDisplay.getPathThemeImages();
-
-		String spriteMap = pathThemeImages.concat("/clay/icons.svg");
-
-		ddmFormTemplateContext.put("spritemap", spriteMap);
+		ddmFormTemplateContext.put(
+			"spritemap", themeDisplay.getPathThemeSpritemap());
 
 		return ddmFormTemplateContext;
 	}
@@ -81,7 +67,7 @@ public class DDMFormRendererImpl implements DDMFormRenderer {
 		throws DDMFormRenderingException {
 
 		try {
-			return doRender(ddmForm, ddmFormLayout, ddmFormRenderingContext);
+			return _render(ddmForm, ddmFormLayout, ddmFormRenderingContext);
 		}
 		catch (DDMFormRenderingException ddmFormRenderingException) {
 			throw ddmFormRenderingException;
@@ -97,7 +83,7 @@ public class DDMFormRendererImpl implements DDMFormRenderer {
 		throws DDMFormRenderingException {
 
 		try {
-			return doRender(
+			return _render(
 				ddmForm, _ddm.getDefaultDDMFormLayout(ddmForm),
 				ddmFormRenderingContext);
 		}
@@ -109,7 +95,7 @@ public class DDMFormRendererImpl implements DDMFormRenderer {
 		}
 	}
 
-	protected String doRender(
+	private String _render(
 			DDMForm ddmForm, DDMFormLayout ddmFormLayout,
 			DDMFormRenderingContext ddmFormRenderingContext)
 		throws Exception {
@@ -122,7 +108,7 @@ public class DDMFormRendererImpl implements DDMFormRenderer {
 
 		_reactRenderer.renderReact(
 			new ComponentDescriptor(
-				_npmResolver.resolveModuleName(_MODULE_NAME)),
+				"{FormView} from data-engine-js-components-web"),
 			getDDMFormTemplateContext(
 				ddmForm, ddmFormLayout, ddmFormRenderingContext),
 			ddmFormRenderingContext.getHttpServletRequest(), writer);
@@ -132,20 +118,11 @@ public class DDMFormRendererImpl implements DDMFormRenderer {
 		return writer.toString();
 	}
 
-	private static final String _MODULE_NAME =
-		"data-engine-js-components-web/js/custom/form/FormView.es";
-
 	@Reference
 	private DDM _ddm;
 
 	@Reference
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
-
-	@Reference
 	private DDMFormTemplateContextFactory _ddmFormTemplateContextFactory;
-
-	@Reference
-	private NPMResolver _npmResolver;
 
 	@Reference
 	private ReactRenderer _reactRenderer;

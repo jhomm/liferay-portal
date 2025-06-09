@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow;
@@ -23,17 +14,17 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.service.ServiceContext;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Adolfo Pérez
@@ -59,6 +50,13 @@ public class WorkflowHandlerWrapper<T> implements WorkflowHandler<T> {
 	@Override
 	public String getClassName() {
 		return _workflowHandler.getClassName();
+	}
+
+	@Override
+	public long getDiscussionClassPK(
+		Map<String, Serializable> workflowContext) {
+
+		return _workflowHandler.getDiscussionClassPK(workflowContext);
 	}
 
 	@Override
@@ -103,20 +101,6 @@ public class WorkflowHandlerWrapper<T> implements WorkflowHandler<T> {
 			classPK, liferayPortletRequest, liferayPortletResponse);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getNotificationLink(long, ServiceContext)}}
-	 */
-	@Deprecated
-	@Override
-	public String getURLEditWorkflowTask(
-			long workflowTaskId, ServiceContext serviceContext)
-		throws PortalException {
-
-		return _workflowHandler.getURLEditWorkflowTask(
-			workflowTaskId, serviceContext);
-	}
-
 	@Override
 	public PortletURL getURLViewDiffs(
 		long classPK, LiferayPortletRequest liferayPortletRequest,
@@ -158,6 +142,11 @@ public class WorkflowHandlerWrapper<T> implements WorkflowHandler<T> {
 	@Override
 	public boolean isAssetTypeSearchable() {
 		return _workflowHandler.isAssetTypeSearchable();
+	}
+
+	@Override
+	public boolean isCommentable() {
+		return _workflowHandler.isCommentable();
 	}
 
 	@Override

@@ -1,45 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.google.places.util;
 
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Rodrigo Paulino
  */
-@PrepareForTest(PrefsPropsUtil.class)
-@RunWith(PowerMockRunner.class)
-public class GooglePlacesUtilTest extends PowerMockito {
+public class GooglePlacesUtilTest {
 
-	@Before
-	public void setUp() {
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@BeforeClass
+	public static void setUpClass() {
 		_setUpPrefsPropsUtil();
 	}
 
@@ -74,11 +67,41 @@ public class GooglePlacesUtilTest extends PowerMockito {
 				0, 0, _mockGroupLocalService(true, true)));
 	}
 
+	private static PortletPreferences _mockPortletPreferences() {
+		PortletPreferences portletPreferences = Mockito.mock(
+			PortletPreferences.class);
+
+		Mockito.when(
+			portletPreferences.getValue(
+				Mockito.nullable(String.class), Mockito.nullable(String.class))
+		).thenReturn(
+			_COMPANY_GOOGLE_PLACES_API_KEY
+		);
+
+		return portletPreferences;
+	}
+
+	private static void _setUpPrefsPropsUtil() {
+		PrefsPropsUtil prefsPropsUtil = new PrefsPropsUtil();
+
+		PrefsProps prefsProps = Mockito.mock(PrefsProps.class);
+
+		PortletPreferences portletPreferences = _mockPortletPreferences();
+
+		Mockito.when(
+			prefsProps.getPreferences(Mockito.anyLong())
+		).thenReturn(
+			portletPreferences
+		);
+
+		prefsPropsUtil.setPrefsProps(prefsProps);
+	}
+
 	private Group _mockGroup(boolean stagingGroup, String googlePlacesAPIKey) {
-		Group group = mock(Group.class);
+		Group group = Mockito.mock(Group.class);
 
 		if (!_LIVE_GROUP_GOOGLE_PLACES_API_KEY.equals(googlePlacesAPIKey)) {
-			when(
+			Mockito.when(
 				group.isStagingGroup()
 			).thenReturn(
 				stagingGroup
@@ -89,15 +112,15 @@ public class GooglePlacesUtilTest extends PowerMockito {
 			Group liveGroup = _mockGroup(
 				false, _LIVE_GROUP_GOOGLE_PLACES_API_KEY);
 
-			when(
+			Mockito.when(
 				group.getLiveGroup()
 			).thenReturn(
 				liveGroup
 			);
 		}
 		else {
-			when(
-				group.getTypeSettingsProperty(Matchers.anyString())
+			Mockito.when(
+				group.getTypeSettingsProperty(Mockito.anyString())
 			).thenReturn(
 				googlePlacesAPIKey
 			);
@@ -109,45 +132,21 @@ public class GooglePlacesUtilTest extends PowerMockito {
 	private GroupLocalService _mockGroupLocalService(
 		boolean mockGroup, boolean stagingGroup) {
 
-		GroupLocalService groupLocalService = mock(GroupLocalService.class);
+		GroupLocalService groupLocalService = Mockito.mock(
+			GroupLocalService.class);
 
 		if (mockGroup) {
 			Group group = _mockGroup(
 				stagingGroup, _GROUP_GOOGLE_PLACES_API_KEY);
 
-			when(
-				groupLocalService.fetchGroup(Matchers.anyLong())
+			Mockito.when(
+				groupLocalService.fetchGroup(Mockito.anyLong())
 			).thenReturn(
 				group
 			);
 		}
 
 		return groupLocalService;
-	}
-
-	private PortletPreferences _mockPortletPreferences() {
-		PortletPreferences portletPreferences = mock(PortletPreferences.class);
-
-		when(
-			portletPreferences.getValue(
-				Matchers.anyString(), Matchers.anyString())
-		).thenReturn(
-			_COMPANY_GOOGLE_PLACES_API_KEY
-		);
-
-		return portletPreferences;
-	}
-
-	private void _setUpPrefsPropsUtil() {
-		mockStatic(PrefsPropsUtil.class);
-
-		PortletPreferences portletPreferences = _mockPortletPreferences();
-
-		when(
-			PrefsPropsUtil.getPreferences(Matchers.anyLong())
-		).thenReturn(
-			portletPreferences
-		);
 	}
 
 	private static final String _COMPANY_GOOGLE_PLACES_API_KEY =

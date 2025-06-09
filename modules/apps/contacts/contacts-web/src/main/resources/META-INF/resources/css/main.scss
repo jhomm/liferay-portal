@@ -30,6 +30,10 @@ $section-header-bg: #cce6f7;
 		margin-bottom: 0;
 	}
 
+	.contacts-container {
+		overflow: auto;
+	}
+
 	.toolbar .filter-container {
 		float: left;
 	}
@@ -67,17 +71,11 @@ $section-header-bg: #cce6f7;
 			margin-left: 10px;
 		}
 
-		.lfr-contact-thumb {
-			float: left;
-		}
-
 		.lfr-contact-thumb img {
 			width: 100px;
 		}
 
 		.lfr-contact-info {
-			margin-left: 100px;
-
 			&.no-icon {
 				margin-left: 0;
 			}
@@ -97,14 +95,6 @@ $section-header-bg: #cce6f7;
 					margin-right: 10px;
 				}
 			}
-		}
-
-		.lfr-contact-extra,
-		.lfr-contact-job-title,
-		.lfr-contact-name {
-			overflow-x: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
 		}
 	}
 
@@ -240,15 +230,10 @@ $section-header-bg: #cce6f7;
 
 		.lfr-contact-name {
 			font-size: 2em;
-			height: 1.25em;
-			line-height: 1em;
-			overflow: hidden;
-			position: relative;
-			text-overflow: ellipsis;
 		}
 
 		.lfr-contact-name a {
-			position: absolute;
+			white-space: normal;
 		}
 
 		.lfr-contact-job-title {
@@ -269,8 +254,8 @@ $section-header-bg: #cce6f7;
 			display: none;
 		}
 
-		.field-group .lexicon-icon-pencil {
-			display: none;
+		.lfr-field-group .edit-button {
+			opacity: 0;
 		}
 	}
 
@@ -369,7 +354,7 @@ $section-header-bg: #cce6f7;
 			display: block;
 		}
 
-		h3 {
+		.h3 {
 			color: #b4bec8;
 			float: left;
 			font-size: 1em;
@@ -533,22 +518,23 @@ $section-header-bg: #cce6f7;
 		overflow: hidden;
 	}
 
-	.my-profile .field-group {
+	.my-profile .lfr-field-group {
 		position: relative;
 
 		&.user-tags-wrapper {
 			width: initial;
 		}
 
-		.lexicon-icon-pencil {
+		.edit-button {
 			position: absolute;
 			right: 5px;
 			top: 5px;
 		}
 
+		&:focus-within,
 		&:hover {
-			.lexicon-icon-pencil {
-				display: block;
+			.edit-button {
+				opacity: 1;
 			}
 		}
 
@@ -698,6 +684,16 @@ $section-header-bg: #cce6f7;
 	.lfr-user-profile-preferences .column {
 		margin-right: 1em;
 	}
+}
+
+.portlet-msg {
+	background: #eee none no-repeat 6px 50%;
+	border: 1px solid #555;
+	color: #34404f;
+	font-weight: bold;
+	margin: 2px auto 14px;
+	padding: 6px 6px 6px 30px;
+	text-align: left;
 }
 
 // ---------- Extras ----------
@@ -860,5 +856,21 @@ $section-header-bg: #cce6f7;
 				display: block;
 			}
 		}
+	}
+}
+
+.lfr-token {
+	background-color: $primary-l3;
+	border: 1px solid $primary-l1;
+	color: $dark-l2;
+	cursor: pointer;
+	display: inline-block;
+	line-height: 1;
+	margin: 0.1em 0.2em;
+	padding: 0.3em 0.5em;
+	text-decoration: none;
+
+	&:hover {
+		background-color: $primary-l2;
 	}
 }

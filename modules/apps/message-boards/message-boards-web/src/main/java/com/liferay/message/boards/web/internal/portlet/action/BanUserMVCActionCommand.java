@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.portlet.action;
@@ -26,8 +17,8 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,22 +28,13 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
-		"javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
+		"jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
+		"jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
 		"mvc.command.name=/message_boards/ban_user"
 	},
 	service = MVCActionCommand.class
 )
 public class BanUserMVCActionCommand extends BaseMVCActionCommand {
-
-	protected void banUser(ActionRequest actionRequest) throws Exception {
-		long banUserId = ParamUtil.getLong(actionRequest, "banUserId");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			MBBan.class.getName(), actionRequest);
-
-		_mbBanService.addBan(banUserId, serviceContext);
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -63,10 +45,10 @@ public class BanUserMVCActionCommand extends BaseMVCActionCommand {
 
 		try {
 			if (cmd.equals("ban")) {
-				banUser(actionRequest);
+				_banUser(actionRequest);
 			}
 			else if (cmd.equals("unban")) {
-				unbanUser(actionRequest);
+				_unbanUser(actionRequest);
 			}
 		}
 		catch (PrincipalException principalException) {
@@ -77,7 +59,16 @@ public class BanUserMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void unbanUser(ActionRequest actionRequest) throws Exception {
+	private void _banUser(ActionRequest actionRequest) throws Exception {
+		long banUserId = ParamUtil.getLong(actionRequest, "banUserId");
+
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			MBBan.class.getName(), actionRequest);
+
+		_mbBanService.addBan(banUserId, serviceContext);
+	}
+
+	private void _unbanUser(ActionRequest actionRequest) throws Exception {
 		long[] banUserIds = null;
 
 		long banUserId = ParamUtil.getLong(actionRequest, "banUserId");

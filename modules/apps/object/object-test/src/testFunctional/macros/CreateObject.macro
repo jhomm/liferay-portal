@@ -1,0 +1,310 @@
+definition {
+
+	@summary = "Default summary"
+	macro activeCustomObject(objectLabel = null) {
+		ObjectPortlet.selectCustomObject(label = ${objectLabel});
+
+		CreateObject.checkToggleActive();
+
+		CreateObject.saveObject();
+	}
+
+	@summary = "Default summary"
+	macro activeToogleAccountRestriction() {
+		Check.checkToggleSwitch(locator1 = "CreateObject#TOGGLE_ACCOUNT_RESTRICTION");
+	}
+
+	@summary = "Default summary"
+	macro addRelationshipAndSelectEntry(titleFieldName = null) {
+		LexiconEntry.gotoAdd();
+
+		var menuItem = "Select Existing One";
+
+		if (IsElementPresent(key_menuItem = ${menuItem}, locator1 = "MenuItem#ANY_MENU_ITEM")) {
+			MenuItem.click(menuItem = ${menuItem});
+		}
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		ClickNoError(
+			key_titleFieldName = ${titleFieldName},
+			locator1 = "CreateObject#SELECT_ENTRY_IN_RELATIONSHIP_TAB");
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro assertAddedEntryRelationshipIsDisplayed(entry = null) {
+		LexiconEntry.gotoAdd();
+
+		Click(locator1 = "ObjectPortlet#SEARCH_RELATIONSHIP_ENTRY");
+
+		WaitForSPARefresh();
+
+		AssertElementPresent(
+			key_entry = ${entry},
+			locator1 = "CreateObject#ENTRY_RELATIONSHIP_FIELD_OPTION");
+	}
+
+	@summary = "Default summary"
+	macro assertDisabledAllFields() {
+		for (var fieldsDisabled : list "Name,Label,Scope,Panel Link") {
+			AssertElementPresent(
+				key_nameDisabled = ${fieldsDisabled},
+				locator1 = "CreateObject#VIEW_OBJECT_DATA_DISABLED");
+		}
+
+		AssertElementPresent(locator1 = "CreateObject#SAVE_BUTTON_DISABLED");
+	}
+
+	@summary = "Default summary"
+	macro assertLabelBasicInfo(fieldLabel = null) {
+		var key_fieldType = "value";
+
+		WaitForSPARefresh();
+
+		if (!(IsElementPresent(locator1 = "CreateObject#FIELD_VALUE"))) {
+			SelectFrame.selectFrameTop();
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+		}
+
+		AssertElementPresent(
+			fieldLabel = ${fieldLabel},
+			locator1 = "CreateObject#FIELD_VALUE");
+	}
+
+	@summary = "Default summary"
+	macro assertLabelBasicInfoNotPresent(fieldLabel = null) {
+		var key_fieldType = "value";
+
+		WaitForSPARefresh();
+
+		if (!(IsElementPresent(locator1 = "CreateObject#FIELD_VALUE"))) {
+			SelectFrame.selectFrameTop();
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+		}
+
+		AssertElementNotPresent(
+			fieldLabel = ${fieldLabel},
+			locator1 = "CreateObject#FIELD_VALUE");
+	}
+
+	@summary = "Default summary"
+	macro assertObjectFieldNameIsAutofilled(fieldName = null, fieldLabel = null) {
+		LexiconEntry.gotoAdd();
+
+		Type(
+			locator1 = "ObjectField#LABEL_INPUT",
+			value1 = ${fieldLabel});
+
+		AssertElementPresent(
+			key_fieldName = ${fieldName},
+			locator1 = "CreateObject#VIEW_OBJECT_FIELD_NAME");
+	}
+
+	@summary = "Default summary"
+	macro assertOneColumnOnFieldEntry() {
+		AssertElementPresent(locator1 = "CreateObject#ASSERT_ONE_COLUMN_FIELD_ENTRY");
+
+		AssertElementNotPresent(locator1 = "CreateObject#ASSERT_TWO_COLUMN_FIELD_ENTRY");
+	}
+
+	@summary = "Default summary"
+	macro assertRelationshipNotPresent() {
+		LexiconEntry.gotoAdd();
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		AssertTextEquals(
+			locator1 = "Message#NO_ENTRIES",
+			value1 = "No entries were found.");
+	}
+
+	@summary = "Default summary"
+	macro assertValuesOnObjectData(fieldLabel = null) {
+		var key_fieldType = "form-control";
+
+		AssertElementPresent(
+			fieldLabel = ${fieldLabel},
+			locator1 = "CreateObject#FIELD_VALUE");
+	}
+
+	@summary = "Default summary"
+	macro assertValuesOnScope(valuePanelCategory = null, valueScope = null) {
+		AssertTextEquals(
+			key_labelName = "Scope",
+			locator1 = "ObjectAdmin#CLAY_GENERIC_BUTTON",
+			value1 = ${valueScope});
+
+		AssertTextEquals(
+			key_labelName = "Panel Link",
+			locator1 = "ObjectAdmin#CLAY_GENERIC_BUTTON",
+			value1 = ${valuePanelCategory});
+	}
+
+	@summary = "Default summary"
+	macro checkToggleActive() {
+		Check.checkToggleSwitch(locator1 = "CreateObject#ACTIVE_TOGGLE");
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
+	}
+
+	@summary = "Default summary"
+	macro checkToggleInactive() {
+		Uncheck.uncheckToggleSwitch(locator1 = "CreateObject#ACTIVE_TOGGLE");
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
+	}
+
+	@summary = "Default summary"
+	macro deleteEntryInRelationshipTab(entryName = null, labelName = null) {
+		ObjectAdmin.gotoRelationshipsTab();
+
+		if (isSet(entryName)) {
+			Click.clickNoMouseOver(
+				key_entryName = ${entryName},
+				locator1 = "ObjectPortlet#DELETE_RELATIONSHIP_ENTRY");
+		}
+		else if (isSet(labelName)) {
+			Click(
+				key_objectLabel = ${labelName},
+				locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU");
+
+			MenuItem.clickNoError(menuItem = "Delete");
+		}
+
+		WaitForSPARefresh();
+
+		WaitForPageLoad();
+	}
+
+	@summary = "Default summary"
+	macro deleteFieldOnBlock() {
+		Click(locator1 = "CreateObject#KEBAB_MENU_BLOCK_FIELD");
+
+		Click(locator1 = "CreateObject#KEBAB_MENU_BLOCK_FIELD_OPTION_DELETE");
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectViaUI(objectLabel = null) {
+		Click(
+			key_objectLabel = ${objectLabel},
+			locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU");
+
+		MenuItem.clickNoError(menuItem = "Delete");
+	}
+
+	@summary = "Default summary"
+	macro desactiveToogleAccountRestriction() {
+		Uncheck.uncheckToggleSwitch(locator1 = "CreateObject#TOGGLE_ACCOUNT_RESTRICTION");
+	}
+
+	@summary = "Default summary"
+	macro editLabel(labelName = null) {
+		Type(
+			locator1 = "CreateObject#OBJECT_LABEL",
+			value1 = ${labelName});
+	}
+
+	@summary = "Default summary"
+	macro editPluralLabel(pluralLabelName = null) {
+		Type(
+			locator1 = "CreateObject#OBJECT_PLURAL_LABEL",
+			value1 = ${pluralLabelName});
+	}
+
+	@summary = "Default summary"
+	macro inactiveCustomObject(objectLabel = null) {
+		ObjectPortlet.selectCustomObject(label = ${objectLabel});
+
+		CreateObject.checkToggleInactive();
+
+		CreateObject.saveObject();
+	}
+
+	@summary = "Default summary"
+	macro saveObject() {
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+
+		WaitForElementNotPresent(locator1 = "Message#SUCCESS");
+
+		WaitForPageLoad();
+	}
+
+	@summary = "Default summary"
+	macro selectAccountRestrictedField(accountRestrictedField = null) {
+		Click(locator1 = "CreateObject#ACCOUNT_RESTRICTED_FIELD");
+
+		Click(
+			key_menuItem = ${accountRestrictedField},
+			locator1 = "MenuItem#ANY_MENU_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro selectDeletionType(fieldName = null, deletionType = null) {
+		ObjectAdmin.gotoRelationshipsTab();
+
+		ObjectAdmin.goToRelationshipsDetails(fieldName = ${fieldName});
+
+		WaitForSPARefresh();
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+		Select(
+			locator1 = "CreateObject#SELECT_DELETION_TYPE",
+			value1 = ${deletionType});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro selectScope(fieldLabel = null) {
+		Click(locator1 = "CreateObject#SCOPE");
+
+		Click(
+			key_menuItem = ${fieldLabel},
+			locator1 = "MenuItem#ANY_MENU_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro selectTitleField(currentOption = null,fieldLabel = null) {
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Entry Title Field",
+			optionName = ${fieldLabel});
+	}
+
+	@summary = "Default summary"
+	macro viewAccountRestrictedFieldIsRequiredOnEntries(relationshipName = null) {
+		AssertElementPresent(
+			key_fieldName = ${relationshipName},
+			locator1 = "FormFields#TEXT_FIELD");
+
+		Button.clickSave();
+
+		Alert.viewRequiredField();
+	}
+
+	@summary = "Default summary"
+	macro withdrawObjectTask(objectLabel = null) {
+		Click(
+			key_taskName = ${objectLabel},
+			locator1 = "WorkflowSubmissions#SUBMISSIONS_TASK_NAME");
+
+		Click(locator1 = "WorkflowSubmissions#SUBMISSIONS_DETAILS_PAGE_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Withdraw Submission");
+	}
+
+}

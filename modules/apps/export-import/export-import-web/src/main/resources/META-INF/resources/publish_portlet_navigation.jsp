@@ -1,61 +1,62 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
-<%
-String tabs3 = ParamUtil.getString(request, "tabs3", "new-publish-process");
-
-PortletURL portletURL = PortletURLBuilder.createRenderURL(
-	renderResponse
-).setMVCRenderCommandName(
-	"/export_import/publish_portlet"
-).setPortletResource(
-	portletResource
-).buildPortletURL();
-%>
-
 <c:if test="<%= (themeDisplay.getURLPublishToLive() != null) || layout.isTypeControlPanel() %>">
-	<aui:nav-bar cssClass="navbar-collapse-absolute navbar-expand-md navbar-underline navigation-bar navigation-bar-light" markupView="lexicon">
-		<aui:nav cssClass="navbar-nav">
 
-			<%
-			portletURL.setParameter("tabs3", "new-publish-process");
-			%>
+	<%
+	String tabs3 = ParamUtil.getString(request, "tabs3", "new-publish-process");
 
-			<aui:nav-item href="<%= portletURL.toString() %>" label="new-publish-process" selected='<%= tabs3.equals("new-publish-process") %>' />
+	PortletURL portletURL = PortletURLBuilder.createRenderURL(
+		renderResponse
+	).setMVCRenderCommandName(
+		"/export_import/publish_portlet"
+	).setPortletResource(
+		portletResource
+	).buildPortletURL();
+	%>
 
-			<%
-			Group scopeGroup = themeDisplay.getScopeGroup();
-			%>
+	<clay:navigation-bar
+		navigationItems='<%=
+			new JSPNavigationItemList(pageContext) {
+				{
+					portletURL.setParameter("tabs3", "new-publish-process");
 
-			<c:if test="<%= !scopeGroup.isStagedRemotely() %>">
+					add(
+						navigationItem -> {
+							navigationItem.setActive(tabs3.equals("new-publish-process"));
+							navigationItem.setHref(portletURL.toString());
+							navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "new-publish-process"));
+						});
 
-				<%
-				portletURL.setParameter("tabs3", "copy-from-live");
-				%>
+					Group scopeGroup = themeDisplay.getScopeGroup();
 
-				<aui:nav-item href="<%= portletURL.toString() %>" label="copy-from-live" selected='<%= tabs3.equals("copy-from-live") %>' />
-			</c:if>
+					if (!scopeGroup.isStagedRemotely()) {
+						portletURL.setParameter("tabs3", "copy-from-live");
 
-			<%
-			portletURL.setParameter("tabs3", "current-and-previous");
-			%>
+						add(
+							navigationItem -> {
+								navigationItem.setActive(tabs3.equals("copy-from-live"));
+								navigationItem.setHref(portletURL.toString());
+								navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "copy-from-live"));
+							});
+					}
 
-			<aui:nav-item href="<%= portletURL.toString() %>" label="current-and-previous" selected='<%= tabs3.equals("current-and-previous") %>' />
-		</aui:nav>
-	</aui:nav-bar>
+					portletURL.setParameter("tabs3", "current-and-previous");
+
+					add(
+						navigationItem -> {
+							navigationItem.setActive(tabs3.equals("current-and-previous"));
+							navigationItem.setHref(portletURL.toString());
+							navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "current-and-previous"));
+						});
+				}
+			}
+		%>'
+	/>
 </c:if>

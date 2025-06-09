@@ -1,237 +1,416 @@
 @component-name = "portal-commerce"
 definition {
 
+	property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		CommerceConfiguration.commerceSetUp(minium = "true");
 
-		User.firstLoginPG();
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		task ("Setup: Create an account with a buyer user") {
+			CommerceEntry.addAccountEntryUser(
+				accountName = "Commerce Account",
+				accountType = "Business",
+				agreeToTermsAndAnswerReminderQuery = "true",
+				createNewAccount = "true",
+				requireReset = "false",
+				userEmailAddress = "buyer@liferay.com",
+				userFirstName = "Buyer",
+				userLastName = "User",
+				userRole = "Buyer",
+				userScreenName = "buyeruser",
+				userSiteMembership = "Minium");
+		}
 	}
 
 	tearDown {
-		Navigator.openURL();
+		CommerceConfiguration.commerceTearDown();
+	}
 
-		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+	@description = "COMMERCE-5912. Verify buyers can select a product for comparison from the product's details page."
+	@priority = 5
+	test AddComparisonItemFromProductDetailsPage {
+		property portal.acceptance = "true";
+
+		// TODO Review
+
+		task ("Given the buyer goes to a product's details page") {
 			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+
+			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Transmission Fluid");
 		}
 
-		User.firstLoginPG();
+		task ("When the buyer clicks on the comparison checkbox") {
+			Click.clickAtNotVisible(
+				checkboxName = "Compare",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
 
-		CommerceConfiguration.commerceAdminTearDown();
-
-		CommerceConfiguration.commerceInitializersTearDown();
+		task ("Then the product is selected for comparison") {
+			FrontStore.assertMiniCompareItems(products = "Transmission Fluid");
+		}
 	}
 
-	@description = "COMMERCE-5912. As a buyer, I want to select an item in Product Details for compare in Product Widget"
-	@priority = "3"
-	test AddComparisonItemFromProductDetailsPage {
-		property portal.acceptance = "false";
-
-		// TODO Review
-
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "U-Joint");
-
-		Click.clickAtNotVisible(
-			checkboxName = "Compare",
-			locator1 = "Checkbox#ANY_CHECKBOX");
-
-		AssertElementPresent(locator1 = "CommerceEntry#MINI_COMPARE_ITEM_ACTIVE");
-	}
-
-	@description = "COMMERCE-5911. As a buyer, I want to select items in Search Results page for compare and see those items in MiniCompare widget at the bottom pf the page"
-	@priority = "3"
+	@description = "COMMERCE-5911. Verify products selected for comparison are visible in the mini compare widget at the bottom of the page."
+	@priority = 5
 	test AssertComparisonItemsAreVisibleOnMiniCompare {
-		property portal.acceptance = "false";
+		property portal.acceptance = "true";
 
 		// TODO Review
 
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		task ("When multiple products are selected for comparison") {
+			User.logoutPG();
 
-		ApplicationsMenu.gotoSite(site = "Minium");
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
 
-		for (var productName : list "U-Joint,Transmission Cooler Line Assembly,Torque Converters") {
+			FrontStore.compareProducts(
+				clickCompare = "false",
+				products = "U-Joint,Transmission Fluid");
+		}
+
+		task ("Then those products are visible in the mini compare widget") {
+			FrontStore.assertMiniCompareItems(products = "U-Joint,Transmission Fluid");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-10449. As a buyer, I can handle declined cookies using product comparison"
+	@priority = 5
+	test CanHandleDeclinedCookiesUsingProductComparison {
+		property portal.acceptance = "true";
+
+		task ("Given cookie preference handling is enabled and functional cookies are declined") {
+			CookieNavigator.gotoInstanceSettings(portlet = "Preference Handling");
+
+			FormFields.enableCheckbox(fieldName = "Enabled");
+
+			CookiePreferenceHandlingAdmin.saveConfiguration();
+
+			CookieBanner.openCookieConsentPanel();
+
+			CookieConsentPanel.cookiesDeclineAll();
+
+			CookieHelper.checkAllCookieAreDeclinedAndSaved();
+		}
+
+		task ("And the buyer logs in") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
+
+		task ("When the U-Joint's product compare checkbox is checked") {
 			Check.checkToggleSwitch(
-				key_productName = "${productName}",
+				key_productName = "U-Joint",
 				locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
 		}
 
-		for (var value : list "1,2,3") {
+		task ("Then 'Product Comparison uses Functional Cookies' panel pops up") {
 			AssertElementPresent(
-				key_value = "${value}",
-				locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_ACTIVE_N");
+				key_text = "Product Comparison Uses Functional Cookies",
+				locator1 = "CookieConsentPanel#COOKIES_CONSENT_PANEL_TITLE");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CookieConsentPanel#COOKIES_CONSENT_PANEL_IFRAME");
+
+			CookieConsentPanel.verifyAllElementsArePresent();
+		}
+
+		task ("When functional cookies are declined") {
+			CookieConsentPanel.cookiesDeclineAll();
+
+			Alert.viewWarningSpecific(warningMessage = "Cookies Not Allowed:You cannot compare products when functional cookies are not allowed.");
+		}
+
+		task ("Then the buyer navigates to the catalog page") {
+			AssertLocation.assertPartialLocation(value1 = "web/minium/catalog");
+		}
+
+		task ("When another product's 'Transmission Fluid' compare checkbox is checked") {
+			Check.checkToggleSwitch(
+				key_productName = "Transmission Fluid",
+				locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
+		}
+
+		task ("Then 'Product Comparison uses Functional Cookies' panel pops up again") {
+			AssertElementPresent(
+				key_text = "Product Comparison Uses Functional Cookies",
+				locator1 = "CookieConsentPanel#COOKIES_CONSENT_PANEL_TITLE");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CookieConsentPanel#COOKIES_CONSENT_PANEL_IFRAME");
+
+			CookieConsentPanel.verifyAllElementsArePresent();
+		}
+
+		task ("When the buyer accepts functional cookies") {
+			CookieConsentPanel.cookiesAcceptAll();
+
+			Alert.viewSuccessMessageText(successMessage = "Cookies Allowed:You can compare products.");
+
+			CookieHelper.checkAllCookieAreAcceptedAndSaved();
+		}
+
+		task ("Then product comparison can proceed") {
+			FrontStore.compareProducts(products = "U-Joint,Transmission Fluid");
+
+			FrontStore.assertProductComparisonTable(products = "U-Joint,Transmission Fluid");
+		}
+
+		task ("When the buyer resets all declined cookies and accepts the functional cookies") {
+			CookieHelper.deleteAllCookiesAndRefreshPage();
+
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+			CookieBanner.verifyAllElementsArePresent();
+
+			CookieConsentPanel.cookiesAcceptAll();
+
+			CookieHelper.checkAllCookieAreAcceptedAndSaved();
+		}
+
+		task ("Then product comparison can proceed") {
+			FrontStore.compareProducts(products = "U-Joint,Transmission Fluid");
+
+			FrontStore.assertProductComparisonTable(products = "U-Joint,Transmission Fluid");
 		}
 	}
 
-	@description = "COMMERCE-5915. As a buyer, I want to see max number of compare items allowed in Compare page"
-	@ignore = "true"
-	@priority = "3"
+	@description = "COMMERCE-5918. As a buyer, I want to deselect a item in Product Compare page"
+	@priority = 3
+	test CanRemoveComparisonItemFromComparePage {
+		property portal.acceptance = "false";
+
+		task ("Given buyer user navigates to Minium site") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+		}
+
+		task ("And multiple products are selected for comparison") {
+			FrontStore.compareProducts(products = "U-Joint,Transmission Fluid,Torque Converters");
+
+			for (var product : list "U-Joint,Transmission Fluid,Torque Converters") {
+				AssertElementPresent(
+					key_productName = ${product},
+					locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
+
+				AssertChecked.assertCheckedNotVisible(
+					key_productName = ${product},
+					locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
+			}
+		}
+
+		task ("When the buyer deselects one of the products") {
+			Click.clickAtNotVisible(
+				key_productName = "Torque Converters",
+				locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
+		}
+
+		task ("Then the product is removed from the Compare page") {
+			for (var product : list "U-Joint,Transmission Fluid") {
+				AssertElementPresent(
+					key_productName = ${product},
+					locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
+			}
+
+			AssertElementNotPresent(
+				key_productName = "Torque Converters",
+				locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
+		}
+	}
+
+	@description = "COMMERCE-5915. Verify buyers can only see the max number of comparison items allowed in the Compare page."
+	@priority = 3
 	test EditMaxNumberOfComparisonItemsInComparePage {
 		property portal.acceptance = "false";
 
-		// TODO COMMERCE-5915 EditMaxNumberOfComparisonItemsInComparePage pending implementation
+		task ("Given 4 products are selected for comparison") {
+			User.logoutPG();
 
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+
+			FrontStore.compareProducts(products = "U-Joint,Transmission Fluid,Torque Converters,Mount");
+		}
+
+		task ("And given the admin changes the Products Limit in the product comparison table to 3") {
+			User.logoutAndLoginPG();
+
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium/compare");
+
+			FrontStore.setMaxComparisonItems(maxItems = 3);
+		}
+
+		task ("When the buyer views the comparison from the Compare page") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+
+			Click(locator1 = "CommerceFrontStore#MINI_COMPARE_COMPARE_BUTTON");
+		}
+
+		task ("Then the buyer cannot see the fourth product in the comparison table") {
+			for (var product : list "U-Joint,Transmission Fluid,Torque Converters,Mount") {
+				if (${product} == "Mount") {
+					AssertElementNotPresent(
+						key_productName = ${product},
+						locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
+				}
+				else {
+					AssertElementPresent(
+						key_productName = ${product},
+						locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
+				}
+			}
+		}
 	}
 
-	@description = "COMMERCE-5916. As a buyer, I want to see max number of compare items allowed in MiniCompare widget"
-	@ignore = "true"
-	@priority = "3"
+	@description = "COMMERCE-5916. Verify buyers can only add the max number of comparison items allowed in the MiniCompare widget."
+	@priority = 3
 	test EditMaxNumberOfComparisonItemsInMiniCompare {
 		property portal.acceptance = "false";
 
-		// TODO COMMERCE-5916 EditMaxNumberOfComparisonItemsInMiniCompare pending implementation
+		task ("Given the admin changes the Products Limit in the MiniCompare widget to 3") {
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
 
+			WaitForPageLoad();
+
+			FrontStore.setMaxComparisonItems(maxItems = 3);
+		}
+
+		task ("When buyer select 3 products for comparison") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
+
+			FrontStore.compareProducts(
+				clickCompare = "false",
+				products = "U-Joint,Transmission Fluid,Torque Converters");
+		}
+
+		task ("Then the buyer cannot add a fourth product to the comparison") {
+			AssertElementPresent(
+				key_productName = "Mount",
+				locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX_DISABLED");
+
+			AssertElementNotPresent(
+				key_value = 4,
+				locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_N");
+		}
 	}
 
-	@description = "COMMERCE-5918. As a buyer, I want to deselect a item in Product Compare page"
-	@ignore = "true"
-	@priority = "3"
-	test RemoveComparisonItemFromComparePage {
-		property portal.acceptance = "false";
-
-		// TODO COMMERCE-5918 RemoveComparisonItemFromComparePage pending implementation
-
-	}
-
-	@description = "COMMERCE-5913. As a buyer, I want to deselect items in Catalog for compare in MiniCompare widget"
-	@priority = "3"
+	@description = "COMMERCE-5913. Verify buyers can deselect items that are being compared from the MiniCompare widget."
+	@priority = 3
 	test RemoveComparisonItemFromMiniCompare {
 		property portal.acceptance = "false";
 
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		task ("Given multiple products are selected for comparison") {
+			User.logoutPG();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
 
-		CommerceNavigator.searchEntry(entryName = "U-Joint");
+			FrontStore.compareProducts(
+				clickCompare = "false",
+				products = "U-Joint,Transmission Fluid");
+		}
 
-		CommerceNavigator.gotoEntry(entryName = "U-Joint");
+		task ("When the buyer clicks on the X button on a product in the mini compare widget") {
+			var transmissionFluidImageId = CommerceJSONProductsAPI._getCommerceProductImageIds(productName = "Transmission Fluid");
 
-		CommerceEntry.gotoMenuTab(menuTab = "Media");
+			Click(
+				key_productMediaId = ${transmissionFluidImageId},
+				locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_REMOVE_BUTTON");
+		}
 
-		CommerceNavigator.gotoEntry(entryName = "Minium_ProductImage_64.png");
+		task ("Then that product is removed from the comparison") {
+			AssertElementNotPresent(
+				key_productMediaId = ${transmissionFluidImageId},
+				locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_CUSTOM_IMAGE");
 
-		var firstProductFileEntryId = CommerceProductImages.getProductMediaId();
+			Click(locator1 = "CommerceFrontStore#MINI_COMPARE_COMPARE_BUTTON");
 
-		Click(locator1 = "Icon#BACK");
-
-		CommerceNavigator.searchEntry(entryName = "Transmission Fluid");
-
-		CommerceNavigator.gotoEntry(entryName = "Transmission Fluid");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Media");
-
-		CommerceNavigator.gotoEntry(entryName = "Minium_ProductImage_103.png");
-
-		var secondProductFileEntryId = CommerceProductImages.getProductMediaId();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		Click.clickAtNotVisible(
-			key_productName = "U-Joint",
-			locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
-
-		Click.clickAtNotVisible(
-			key_productName = "Transmission Fluid",
-			locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
-
-		Refresh();
-
-		AssertElementPresent(
-			key_productMediaId = "${firstProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_REMOVE_BUTTON");
-
-		AssertElementPresent(
-			key_productMediaId = "${secondProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_REMOVE_BUTTON");
-
-		Click(
-			key_productMediaId = "${firstProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_REMOVE_BUTTON");
-
-		AssertElementNotPresent(
-			key_productMediaId = "${firstProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_CUSTOM_IMAGE");
+			AssertElementNotPresent(
+				key_productName = "transmission-fluid",
+				locator1 = "CommerceFrontStore#PRODUCT_CARD_IMAGE");
+		}
 	}
 
-	@description = "COMMERCE-5914. As a buyer, I want to deselect a item in Product Details for compare in Product Widget"
-	@priority = "3"
+	@description = "COMMERCE-5914. Verify buyers can deselect items that are being compared from the product's details page."
+	@priority = 5
 	test RemoveComparisonItemFromProductDetailsPage {
-		property portal.acceptance = "false";
+		property portal.acceptance = "true";
 
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		task ("Given multiple products are selected for comparison") {
+			User.logoutPG();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
 
-		CommerceNavigator.searchEntry(entryName = "U-Joint");
+			FrontStore.compareProducts(
+				clickCompare = "false",
+				products = "U-Joint,Transmission Fluid");
+		}
 
-		CommerceNavigator.gotoEntry(entryName = "U-Joint");
+		task ("And given the buyer goes to one of the product's details page") {
+			CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "Transmission Fluid");
+		}
 
-		CommerceEntry.gotoMenuTab(menuTab = "Media");
+		task ("When the buyer clicks on the comparison checkbox") {
+			var transmissionFluidImageId = CommerceJSONProductsAPI._getCommerceProductImageIds(productName = "Transmission Fluid");
 
-		CommerceNavigator.gotoEntry(entryName = "Minium_ProductImage_64.png");
+			Click.clickAtNotVisible(
+				checkboxName = "Compare",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
 
-		var firstProductFileEntryId = CommerceProductImages.getProductMediaId();
+		task ("Then that product is removed from the comparison") {
+			AssertElementNotPresent(
+				key_productMediaId = ${transmissionFluidImageId},
+				locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_CUSTOM_IMAGE");
 
-		Click(locator1 = "Icon#BACK");
+			Click(locator1 = "CommerceFrontStore#MINI_COMPARE_COMPARE_BUTTON");
 
-		CommerceNavigator.searchEntry(entryName = "Transmission Fluid");
-
-		CommerceNavigator.gotoEntry(entryName = "Transmission Fluid");
-
-		CommerceEntry.gotoMenuTab(menuTab = "Media");
-
-		CommerceNavigator.gotoEntry(entryName = "Minium_ProductImage_103.png");
-
-		var secondProductFileEntryId = CommerceProductImages.getProductMediaId();
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		Click.clickAtNotVisible(
-			key_productName = "U-Joint",
-			locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
-
-		Click.clickAtNotVisible(
-			key_productName = "Transmission Fluid",
-			locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
-
-		CommerceAcceleratorsInitializer.gotoMiniumProductDetailsPage(productName = "U-Joint");
-
-		AssertElementPresent(
-			key_productMediaId = "${firstProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_CUSTOM_IMAGE");
-
-		AssertElementPresent(
-			key_productMediaId = "${secondProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_CUSTOM_IMAGE");
-
-		AssertChecked.assertCheckedNotVisible(
-			checkboxName = "Compare",
-			locator1 = "Checkbox#ANY_CHECKBOX_CHECKED");
-
-		Click.clickAtNotVisible(
-			checkboxName = "Compare",
-			locator1 = "Checkbox#ANY_CHECKBOX");
-
-		AssertElementNotPresent(
-			key_productMediaId = "${firstProductFileEntryId}",
-			locator1 = "CommerceFrontStore#MINI_COMPARE_ITEM_CUSTOM_IMAGE");
+			AssertElementNotPresent(
+				key_productName = "transmission-fluid",
+				locator1 = "CommerceFrontStore#PRODUCT_CARD_IMAGE");
+		}
 	}
 
 	@description = "COMMERCE-6662. I want to be able to use ADT to render Commerce Comparison Bar widget and I want to be able to select a Display Template and see it applied to the widget"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test UseADTInCommerceComparisonBarWidget {
-		property portal.acceptance = "false";
 
 		// TODO COMMERCE-6662 UseADTInCommerceComparisonBarWidget pending implementation
 
@@ -239,58 +418,34 @@ definition {
 
 	@description = "COMMERCE-6661. I want to be able to use ADT to render Commerce Comparison Table widget and I want to be able to select a Display Template and see it applied to the widget"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test UseADTInCommerceComparisonTableWidget {
-		property portal.acceptance = "false";
 
 		// TODO COMMERCE-6661 UseADTInCommerceComparisonTableWidget pending implementation
 
 	}
 
-	@description = "COMMERCE-5919. As a buyer, when comparing items in Compare page, I want to view product options and specifications, if set"
-	@priority = "3"
+	@description = "COMMERCE-5919. Verify buyers can view product options and specifications, if set, when comparing items in the Compare page."
+	@priority = 5
 	test ViewProductOptionsAndSpecificationsWhenComparingItemsInComparePage {
-		property portal.acceptance = "false";
+		property portal.acceptance = "true";
 
 		// TODO Review
 
-		CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		task ("When the buyer selects multiple products for comparison and clicks compare") {
+			User.logoutPG();
 
-		ApplicationsMenu.gotoSite(site = "Minium");
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "buyer@liferay.com");
 
-		CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+			FrontStore.compareProducts(products = "U-Joint,Transmission Fluid");
+		}
 
-		CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
-
-		CommerceAcceleratorsInitializer.inviteNewMemberWithRoleToAccount(
-			accountName = "Commerce Account",
-			emailAddress = "buyer@liferay.com",
-			role = "Buyer",
-			userFirstName = "Buyer",
-			userLastName = "User",
-			userScreenName = "buyeruser");
-
-		ApplicationsMenu.gotoSite(site = "Minium");
-
-		CommerceAcceleratorsInitializer.changeProductsSorting(sortingType = "Name Ascending");
-
-		Check.checkToggleSwitch(
-			key_productName = "ABS Sensor",
-			locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
-
-		Check.checkToggleSwitch(
-			key_productName = "Brake Fluid",
-			locator1 = "CommerceEntry#PRODUCT_CARD_COMPARE_CHECKBOX");
-
-		Button.click(button = "Compare");
-
-		AssertElementPresent(
-			key_productName = "ABS Sensor",
-			locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
-
-		AssertElementPresent(
-			key_productName = "Brake Fluid",
-			locator1 = "CommerceAccelerators#PRODUCT_CARD_NAME");
+		task ("Then the options and specifications for all selected products are shown in the Product Comparison Table widget") {
+			FrontStore.assertProductComparisonTable(products = "U-Joint,Transmission Fluid");
+		}
 	}
 
 }

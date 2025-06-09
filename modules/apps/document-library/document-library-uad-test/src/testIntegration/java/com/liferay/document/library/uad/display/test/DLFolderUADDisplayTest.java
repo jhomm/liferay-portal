@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.uad.display.test;
@@ -21,8 +12,8 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFolderLocalService;
-import com.liferay.document.library.uad.test.DLFileEntryUADTestUtil;
-import com.liferay.document.library.uad.test.DLFolderUADTestUtil;
+import com.liferay.document.library.uad.test.util.DLFileEntryUADTestUtil;
+import com.liferay.document.library.uad.test.util.DLFolderUADTestUtil;
 import com.liferay.message.boards.constants.MBConstants;
 import com.liferay.message.boards.constants.MBMessageConstants;
 import com.liferay.message.boards.model.MBMessage;
@@ -289,7 +280,9 @@ public class DLFolderUADDisplayTest extends BaseUADDisplayTestCase<DLFolder> {
 	@Inject
 	private RepositoryLocalService _repositoryLocalService;
 
-	@Inject(filter = "component.name=*.DLFolderUADDisplay")
+	@Inject(
+		filter = "component.name=com.liferay.document.library.uad.display.DLFolderUADDisplay"
+	)
 	private UADDisplay<DLFolder> _uadDisplay;
 
 }

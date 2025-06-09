@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.inventory;
@@ -19,13 +10,17 @@ import com.liferay.commerce.inventory.CPDefinitionInventoryEngine;
 import com.liferay.commerce.model.CPDAvailabilityEstimate;
 import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.model.CommerceAvailabilityEstimate;
+import com.liferay.commerce.product.model.CPConfigurationEntry;
+import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.service.CPDAvailabilityEstimateLocalService;
 import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ArrayUtil;
+
+import java.math.BigDecimal;
 
 import java.util.Locale;
 
@@ -36,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"cp.definition.inventory.engine.key=" + CPDefinitionInventoryEngineImpl.KEY,
 		"cp.definition.inventory.engine.priority:Integer=1"
@@ -49,30 +43,44 @@ public class CPDefinitionInventoryEngineImpl
 	public static final String KEY = "default";
 
 	@Override
-	public String[] getAllowedOrderQuantities(CPInstance cpInstance)
+	public String[] getAllowedOrderQuantities(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return new String[0];
+			if (cpDefinitionInventory == null) {
+				return new String[0];
+			}
+
+			return ArrayUtil.toStringArray(
+				cpDefinitionInventory.getAllowedOrderQuantitiesArray());
 		}
 
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
 		return ArrayUtil.toStringArray(
-			cpDefinitionInventory.getAllowedOrderQuantitiesArray());
+			cpConfigurationEntry.getAllowedOrderQuantitiesArray());
 	}
 
 	@Override
-	public String getAvailabilityEstimate(CPInstance cpInstance, Locale locale)
+	public String getAvailabilityEstimate(
+			long cpConfigurationListId, CPInstance cpInstance, Locale locale)
 		throws PortalException {
+
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
 		CPDAvailabilityEstimate cpDefinitionAvailabilityEstimate =
 			_cpdAvailabilityEstimateLocalService.
-				fetchCPDAvailabilityEstimateByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+				fetchCPDAvailabilityEstimateByCProductId(
+					cpDefinition.getCProductId());
 
 		if (cpDefinitionAvailabilityEstimate == null) {
 			return StringPool.BLANK;
@@ -95,120 +103,192 @@ public class CPDefinitionInventoryEngineImpl
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, KEY);
+		return _language.get(locale, KEY);
 	}
 
 	@Override
-	public int getMaxOrderQuantity(CPInstance cpInstance)
+	public BigDecimal getMaxOrderQuantity(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY;
+			if (cpDefinitionInventory == null) {
+				return CPDefinitionInventoryConstants.
+					DEFAULT_MAX_ORDER_QUANTITY;
+			}
+
+			return cpDefinitionInventory.getMaxOrderQuantity();
 		}
 
-		return cpDefinitionInventory.getMaxOrderQuantity();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.getMaxOrderQuantity();
 	}
 
 	@Override
-	public int getMinOrderQuantity(CPInstance cpInstance)
+	public BigDecimal getMinOrderQuantity(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return CPDefinitionInventoryConstants.DEFAULT_MIN_ORDER_QUANTITY;
+			if (cpDefinitionInventory == null) {
+				return CPDefinitionInventoryConstants.
+					DEFAULT_MIN_ORDER_QUANTITY;
+			}
+
+			return cpDefinitionInventory.getMinOrderQuantity();
 		}
 
-		return cpDefinitionInventory.getMinOrderQuantity();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.getMinOrderQuantity();
 	}
 
 	@Override
-	public int getMinStockQuantity(CPInstance cpInstance)
+	public BigDecimal getMinStockQuantity(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return 0;
+			if (cpDefinitionInventory == null) {
+				return BigDecimal.ZERO;
+			}
+
+			return cpDefinitionInventory.getMinStockQuantity();
 		}
 
-		return cpDefinitionInventory.getMinStockQuantity();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.getMinStockQuantity();
 	}
 
 	@Override
-	public int getMultipleOrderQuantity(CPInstance cpInstance)
+	public BigDecimal getMultipleOrderQuantity(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return CPDefinitionInventoryConstants.
-				DEFAULT_MULTIPLE_ORDER_QUANTITY;
+			if (cpDefinitionInventory == null) {
+				return CPDefinitionInventoryConstants.
+					DEFAULT_MULTIPLE_ORDER_QUANTITY;
+			}
+
+			return cpDefinitionInventory.getMultipleOrderQuantity();
 		}
 
-		return cpDefinitionInventory.getMultipleOrderQuantity();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.getMultipleOrderQuantity();
 	}
 
 	@Override
-	public boolean isBackOrderAllowed(CPInstance cpInstance)
+	public boolean isBackOrderAllowed(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return false;
+			if (cpDefinitionInventory == null) {
+				return false;
+			}
+
+			return cpDefinitionInventory.isBackOrders();
 		}
 
-		return cpDefinitionInventory.isBackOrders();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.isBackOrders();
 	}
 
 	@Override
-	public boolean isDisplayAvailability(CPInstance cpInstance)
+	public boolean isDisplayAvailability(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return false;
+			if (cpDefinitionInventory == null) {
+				return false;
+			}
+
+			return cpDefinitionInventory.isDisplayAvailability();
 		}
 
-		return cpDefinitionInventory.isDisplayAvailability();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.isDisplayAvailability();
 	}
 
 	@Override
-	public boolean isDisplayStockQuantity(CPInstance cpInstance)
+	public boolean isDisplayStockQuantity(
+			long cpConfigurationListId, CPInstance cpInstance)
 		throws PortalException {
 
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpInstance.getCPDefinitionId());
+		if (cpConfigurationListId == 0) {
+			CPDefinitionInventory cpDefinitionInventory =
+				_cpDefinitionInventoryLocalService.
+					fetchCPDefinitionInventoryByCPDefinitionId(
+						cpInstance.getCPDefinitionId());
 
-		if (cpDefinitionInventory == null) {
-			return false;
+			if (cpDefinitionInventory == null) {
+				return false;
+			}
+
+			return cpDefinitionInventory.isDisplayStockQuantity();
 		}
 
-		return cpDefinitionInventory.isDisplayStockQuantity();
+		CPDefinition cpDefinition = cpInstance.getCPDefinition();
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchCPConfigurationEntry(cpConfigurationListId);
+
+		return cpConfigurationEntry.isDisplayStockQuantity();
 	}
 
 	@Reference
@@ -218,5 +298,8 @@ public class CPDefinitionInventoryEngineImpl
 	@Reference
 	private CPDefinitionInventoryLocalService
 		_cpDefinitionInventoryLocalService;
+
+	@Reference
+	private Language _language;
 
 }

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharepoint.soap.repository.connector.operation;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.sharepoint.soap.repository.connector.SharepointException;
@@ -25,7 +17,6 @@ import com.microsoft.webservices.sharepoint.queryservice.QueryServiceSoap12Stub;
 
 import java.rmi.RemoteException;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -103,33 +94,29 @@ public final class GetObjectsByQueryPacketOperation extends BaseOperation {
 		List<String> queryServiceSoapResultLinkURLs =
 			queryServiceStubResult.getLinkURLs();
 
-		List<SharepointObject> sharepointObjects = new ArrayList<>();
+		return TransformUtil.transform(
+			queryServiceSoapResultLinkURLs,
+			queryServiceSoapResultLinkURL -> {
+				if (!queryServiceSoapResultLinkURL.startsWith(_searchPrefix)) {
+					return null;
+				}
 
-		for (String queryServiceSoapResultLinkURL :
-				queryServiceSoapResultLinkURLs) {
+				String path = queryServiceSoapResultLinkURL.substring(
+					_searchPrefixLength);
 
-			if (!queryServiceSoapResultLinkURL.startsWith(_searchPrefix)) {
-				continue;
-			}
+				SharepointObject sharepointObject =
+					_getSharepointObjectByPathOperation.execute(path);
 
-			String path = queryServiceSoapResultLinkURL.substring(
-				_searchPrefixLength);
+				if (sharepointObject != null) {
+					return sharepointObject;
+				}
 
-			SharepointObject sharepointObject =
-				_getSharepointObjectByPathOperation.execute(path);
-
-			if (sharepointObject == null) {
 				if (_log.isWarnEnabled()) {
 					_log.warn("Ignored Sharepoint object at path " + path);
 				}
 
-				continue;
-			}
-
-			sharepointObjects.add(sharepointObject);
-		}
-
-		return sharepointObjects;
+				return null;
+			});
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

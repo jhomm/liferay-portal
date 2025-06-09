@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.service;
@@ -17,6 +8,8 @@ package com.liferay.layout.seo.service;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.layout.seo.exception.NoSuchEntryException;
 import com.liferay.layout.seo.model.LayoutSEOEntry;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTag;
+import com.liferay.layout.seo.model.LayoutSEOEntryCustomMetaTagProperty;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.change.tracking.CTAware;
@@ -88,13 +81,8 @@ public interface LayoutSEOEntryLocalService
 	public LayoutSEOEntry addLayoutSEOEntry(LayoutSEOEntry layoutSEOEntry);
 
 	public LayoutSEOEntry copyLayoutSEOEntry(
-			long userId, long groupId, boolean privateLayout, long layoutId,
-			boolean canonicalURLEnabled, Map<Locale, String> canonicalURLMap,
-			long copyDDMStorageId, boolean openGraphDescriptionEnabled,
-			Map<Locale, String> openGraphDescriptionMap,
-			Map<Locale, String> openGraphImageAltMap,
-			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
-			Map<Locale, String> openGraphTitleMap,
+			long userId, long groupId, boolean privateLayout,
+			long targetLayoutId, LayoutSEOEntry sourceLayoutSEOEntry,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -327,6 +315,10 @@ public interface LayoutSEOEntryLocalService
 			String uuid, long groupId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutSEOEntryCustomMetaTag> getLayoutSEOEntryCustomMetaTags(
+		long groupId, long layoutSEOEntryId);
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -344,6 +336,8 @@ public interface LayoutSEOEntryLocalService
 
 	public LayoutSEOEntry updateCustomMetaTags(
 			long userId, long groupId, boolean privateLayout, long layoutId,
+			List<LayoutSEOEntryCustomMetaTagProperty>
+				layoutSEOEntryCustomMetaTagProperties,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -363,6 +357,16 @@ public interface LayoutSEOEntryLocalService
 	public LayoutSEOEntry updateLayoutSEOEntry(
 			long userId, long groupId, boolean privateLayout, long layoutId,
 			boolean canonicalURLEnabled, Map<Locale, String> canonicalURLMap,
+			boolean openGraphDescriptionEnabled,
+			Map<Locale, String> openGraphDescriptionMap,
+			Map<Locale, String> openGraphImageAltMap,
+			long openGraphImageFileEntryId, boolean openGraphTitleEnabled,
+			Map<Locale, String> openGraphTitleMap,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public LayoutSEOEntry updateLayoutSEOEntry(
+			long userId, long groupId, boolean privateLayout, long layoutId,
 			boolean openGraphDescriptionEnabled,
 			Map<Locale, String> openGraphDescriptionMap,
 			Map<Locale, String> openGraphImageAltMap,

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.resource.v1_0.test;
@@ -24,6 +15,7 @@ import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestHelper;
 import com.liferay.headless.delivery.client.dto.v1_0.ContentStructure;
+import com.liferay.headless.delivery.client.pagination.Page;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
@@ -35,6 +27,8 @@ import com.liferay.portal.test.rule.Inject;
 
 import java.io.InputStream;
 
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
@@ -43,6 +37,25 @@ import org.junit.runner.RunWith;
 @RunWith(Arquillian.class)
 public class ContentStructureResourceTest
 	extends BaseContentStructureResourceTestCase {
+
+	@Test
+	public void testGetSiteContentStructuresPageSearch() throws Exception {
+		DDMStructure ddmStructure = _addDDMStructure(
+			testGroup, RandomTestUtil.randomString());
+
+		Page<ContentStructure> page =
+			contentStructureResource.getSiteContentStructuresPage(
+				testGroup.getGroupId(), ddmStructure.getName("en_US"), null,
+				null, null, null);
+
+		Assert.assertEquals(1, page.getTotalCount());
+
+		page = contentStructureResource.getSiteContentStructuresPage(
+			testGroup.getGroupId(), ddmStructure.getDescription("en_US"), null,
+			null, null, null);
+
+		Assert.assertEquals(1, page.getTotalCount());
+	}
 
 	@Override
 	protected String[] getAdditionalAssertFieldNames() {
@@ -113,7 +126,7 @@ public class ContentStructureResourceTest
 
 	@Override
 	protected ContentStructure
-			testPutAssetLibraryContentStructurePermission_addContentStructure()
+			testPutAssetLibraryContentStructurePermissionsPage_addContentStructure()
 		throws Exception {
 
 		return testGetContentStructure_addContentStructure();
@@ -121,7 +134,7 @@ public class ContentStructureResourceTest
 
 	@Override
 	protected ContentStructure
-			testPutContentStructurePermission_addContentStructure()
+			testPutContentStructurePermissionsPage_addContentStructure()
 		throws Exception {
 
 		return testGetContentStructure_addContentStructure();
@@ -129,7 +142,7 @@ public class ContentStructureResourceTest
 
 	@Override
 	protected ContentStructure
-			testPutSiteContentStructurePermission_addContentStructure()
+			testPutSiteContentStructurePermissionsPage_addContentStructure()
 		throws Exception {
 
 		return testGetContentStructure_addContentStructure();
@@ -144,7 +157,7 @@ public class ContentStructureResourceTest
 
 		return ddmStructureTestHelper.addStructure(
 			PortalUtil.getClassNameId(JournalArticle.class),
-			RandomTestUtil.randomString(), name,
+			RandomTestUtil.randomString(), name, RandomTestUtil.randomString(),
 			_deserialize(_read("test-ddm-structure.json")),
 			StorageType.DEFAULT.getValue(), DDMStructureConstants.TYPE_DEFAULT);
 	}

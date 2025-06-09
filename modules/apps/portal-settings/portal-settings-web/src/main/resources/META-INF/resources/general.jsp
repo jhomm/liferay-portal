@@ -1,34 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
-<%
-VirtualHost virtualHost = null;
-
-try {
-	virtualHost = VirtualHostLocalServiceUtil.getVirtualHost(company.getCompanyId(), 0);
-}
-catch (Exception e) {
-}
-%>
-
 <aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 
-<h4><liferay-ui:message key="main-configuration" /></h4>
+<div class="h4"><liferay-ui:message key="main-configuration" /></div>
 
 <aui:model-context bean="<%= company %>" model="<%= Company.class %>" />
 
@@ -46,7 +27,7 @@ catch (Exception e) {
 
 		<liferay-ui:error exception="<%= CompanyVirtualHostException.class %>" message="please-enter-a-valid-virtual-host" />
 
-		<aui:input bean="<%= virtualHost %>" fieldParam="virtualHostname" label="virtual-host" model="<%= VirtualHost.class %>" name="hostname" />
+		<aui:input bean="<%= VirtualHostLocalServiceUtil.fetchCompanyDefaultVirtualHost(company.getCompanyId()) %>" fieldParam="virtualHostname" label="virtual-host" model="<%= VirtualHost.class %>" name="hostname" />
 	</clay:col>
 
 	<clay:col
@@ -60,7 +41,7 @@ catch (Exception e) {
 	</clay:col>
 </clay:row>
 
-<h4><liferay-ui:message key="navigation" /></h4>
+<div class="h4"><liferay-ui:message key="navigation" /></div>
 
 <clay:row>
 	<clay:col
@@ -78,7 +59,7 @@ catch (Exception e) {
 	</clay:col>
 </clay:row>
 
-<h4><liferay-ui:message key="additional-information" /></h4>
+<div class="h4"><liferay-ui:message key="additional-information" /></div>
 
 <clay:row>
 	<clay:col

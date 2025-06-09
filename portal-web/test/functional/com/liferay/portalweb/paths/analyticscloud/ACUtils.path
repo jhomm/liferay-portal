@@ -12,7 +12,42 @@
 <tbody>
 <tr>
 	<td>NAME_LIST</td>
-	<td>//div[contains(@class,'table-title')][normalize-space()='${key_nameList}']</td>
+	<td>//*[contains(@class,'table-title')][normalize-space()='${key_nameList}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PARTIAL_NAME_LIST</td>
+	<td>//div[contains(@class,'table-title')][contains(normalize-space(),'${key_nameList}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERIC_TEXT</td>
+	<td>//*[text()='${key_textValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GENERIC_TEXT_ORDER</td>
+	<td>xpath=(//*[normalize-space(text())='${key_textValue}'])[${index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TOGGLE_ICON</td>
+	<td>//*[contains(@class, 'toggle-switch-check')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TOGGLE_ICON_ON_OFF</td>
+	<td>//*[contains(@data-testid, '${key_toggleType}__${key_boolean}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EDIT_NAME_BUTTON</td>
+	<td>//div[contains(@class,'editor')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NAME_FIELD</td>
+	<td>//input[@name='name']</td>
 	<td></td>
 </tr>
 <tr>
@@ -25,21 +60,40 @@
 	<td>//span[contains(@class,'loading-animation')]</td>
 	<td></td>
 </tr>
+<tr>
+	<td>TABLE_CELL_INFORMATION</td>
+	<td>//a[contains(text(),'${key_nameList}')]//ancestor::tr//td[contains(@class,'table-column-text-end') and text()='${key_numberValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DELETE_BUTTON</td>
+	<td>//*[text()='${key_nameList}']/ancestor::tr//div[@class='quick-action-menu']//button[contains(@title,'Delete')]</td>
+	<td></td>
+</tr>
+
 <!-- CLOSE MODAL -->
+
 <tr>
 	<td>MODAL_CLOSE_BUTTON</td>
 	<td>//button[contains(@class, 'close')]</td>
 	<td></td>
 </tr>
+
 <!-- FILTER ORDER -->
+
+<tr>
+	<td>PAGE_SEGMENT_FILTER</td>
+	<td>//button[contains(@class,'dropdown-item') and text()='${key_nameList}']</td>
+	<td></td>
+</tr>
 <tr>
 	<td>ORDER_ARROW_BUTTON_ASC</td>
-	<td>//a[contains(@class, 'nav-link-monospaced btn-outline-borderless')][*[name()='svg'][contains(@class,'lexicon-icon-order-arrow-ascending')]]</td>
+	<td>//*[contains(@class,'lexicon-icon-order-arrow-up')]//ancestor::a</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ORDER_ARROW_BUTTON_DES</td>
-	<td>//a[contains(@class, 'nav-link-monospaced btn-outline-borderless')][*[name()='svg'][contains(@class,'lexicon-icon-order-arrow-descending')]]</td>
+	<td>//*[contains(@class,'lexicon-icon-order-arrow-down')]//ancestor::a</td>
 	<td></td>
 </tr>
 <tr>
@@ -52,7 +106,14 @@
 	<td>//a[contains(@class, 'text-truncate-inline')]/span[contains(@class, 'inline-item-after')][*[name()='svg'][contains(@class,'lexicon-icon-order-arrow-down')]]</td>
 	<td></td>
 </tr>
+<tr>
+	<td>GENERIC_ORDER_BUTTON</td>
+	<td>//a[contains(@href,'sortOrder')]//span[text()='${key_columnName}']</td>
+	<td></td>
+</tr>
+
 <!-- PAGE_PAGINATION-->
+
 <tr>
 	<td>ACTIVE_PAGE</td>
 	<td>//li[@class='page-item active']</td>
@@ -83,7 +144,9 @@
 	<td>//div[@class='pagination-results']</td>
 	<td></td>
 </tr>
+
 <!-- SEARCH_BAR -->
+
 <tr>
 	<td>CLEAR_SEARCH_BAR_BUTTON</td>
 	<td>//div[contains(@class, 'input-group-item')]//button[contains(@class, 'button-root')]</td>
@@ -91,7 +154,7 @@
 </tr>
 <tr>
 	<td>GENERIC_BUTTON</td>
-	<td>//button[contains(@class,'button-root')and text()='${key_buttonName}']</td>
+	<td>//*[contains(@class,'button-root')and text()='${key_buttonName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -99,7 +162,9 @@
 	<td>//span[@class='text-truncate'and text()='${key_pageTitle}']</td>
 	<td></td>
 </tr>
+
 <!-- SVG_TIMED_GRAPH -->
+
 <tr>
 	<td>SVG_TIMED_GRAPH</td>
 	<td>//*[text()='${key_parentName}']/parent::div/following-sibling::div[contains(@class, 'card-body')]//*[contains(@class, 'recharts-surface')]</td>
@@ -110,7 +175,19 @@
 	<td>xpath=(//*[contains(@class,'recharts-pie-labels')])[${key_index}]//*[contains(text(),'${key_percentage}')]</td>
 	<td></td>
 </tr>
+<tr>
+	<td>AUDIENCE_TOTAL_METRIC</td>
+	<td>xpath=(//div[@class='audience-report-chart-donut'])[${key_index}]//*[text()='${key_metricValue}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>VIEWER_SEGMENTS_CHART</td>
+	<td>//div[contains(@class,'analytics-bar-chart')]//span[text()='${key_segmentName}']</td>
+	<td></td>
+</tr>
+
 <!-- CLICKABLE -->
+
 <tr>
 	<td>DROPDOWN_ITEM</td>
 	<td>//div[contains(@class, 'dropdown-menu show')]//*[text()='${key_dropdownItem}']</td>

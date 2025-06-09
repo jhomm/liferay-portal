@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.impl;
@@ -40,7 +31,6 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.CacheDi
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -80,7 +70,6 @@ public class CacheDisabledEntryPersistenceImpl
 	private FinderPath _finderPathWithoutPaginationFindAll;
 	private FinderPath _finderPathCountAll;
 	private FinderPath _finderPathFetchByName;
-	private FinderPath _finderPathCountByName;
 
 	/**
 	 * Returns the cache disabled entry where name = &#63; or throws a <code>NoSuchCacheDisabledEntryException</code> if it could not be found.
@@ -147,7 +136,7 @@ public class CacheDisabledEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = dummyFinderCache.getResult(
-				_finderPathFetchByName, finderArgs);
+				_finderPathFetchByName, finderArgs, this);
 		}
 
 		if (result instanceof CacheDisabledEntry) {
@@ -244,58 +233,13 @@ public class CacheDisabledEntryPersistenceImpl
 	 */
 	@Override
 	public int countByName(String name) {
-		name = Objects.toString(name, "");
+		CacheDisabledEntry cacheDisabledEntry = fetchByName(name);
 
-		FinderPath finderPath = _finderPathCountByName;
-
-		Object[] finderArgs = new Object[] {name};
-
-		Long count = (Long)dummyFinderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_CACHEDISABLEDENTRY_WHERE);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_NAME_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_NAME_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				dummyFinderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (cacheDisabledEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_NAME_NAME_2 =
@@ -406,8 +350,6 @@ public class CacheDisabledEntryPersistenceImpl
 
 		Object[] args = new Object[] {cacheDisabledEntryModelImpl.getName()};
 
-		dummyFinderCache.putResult(
-			_finderPathCountByName, args, Long.valueOf(1));
 		dummyFinderCache.putResult(
 			_finderPathFetchByName, args, cacheDisabledEntryModelImpl);
 	}
@@ -713,7 +655,7 @@ public class CacheDisabledEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CacheDisabledEntry>)dummyFinderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -783,7 +725,7 @@ public class CacheDisabledEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)dummyFinderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -853,34 +795,13 @@ public class CacheDisabledEntryPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByName",
 			new String[] {String.class.getName()}, new String[] {"name"}, true);
 
-		_finderPathCountByName = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByName",
-			new String[] {String.class.getName()}, new String[] {"name"},
-			false);
-
-		_setCacheDisabledEntryUtilPersistence(this);
+		CacheDisabledEntryUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setCacheDisabledEntryUtilPersistence(null);
+		CacheDisabledEntryUtil.setPersistence(null);
 
 		dummyEntityCache.removeCache(CacheDisabledEntryImpl.class.getName());
-	}
-
-	private void _setCacheDisabledEntryUtilPersistence(
-		CacheDisabledEntryPersistence cacheDisabledEntryPersistence) {
-
-		try {
-			Field field = CacheDisabledEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, cacheDisabledEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_CACHEDISABLEDENTRY =

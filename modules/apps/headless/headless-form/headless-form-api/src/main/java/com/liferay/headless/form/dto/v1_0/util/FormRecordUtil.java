@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.form.dto.v1_0.util;
@@ -22,6 +13,7 @@ import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.headless.form.dto.v1_0.FormDocument;
 import com.liferay.headless.form.dto.v1_0.FormFieldValue;
 import com.liferay.headless.form.dto.v1_0.FormRecord;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -31,7 +23,6 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.util.Locale;
 
@@ -46,41 +37,51 @@ public class FormRecordUtil {
 			Portal portal, UserLocalService userLocalService)
 		throws Exception {
 
-		DDMFormValues ddmFormValues = ddmFormInstanceRecord.getDDMFormValues();
-
 		return new FormRecord() {
 			{
-				creator = CreatorUtil.toCreator(
-					portal,
-					userLocalService.fetchUser(
-						ddmFormInstanceRecord.getUserId()));
-				dateCreated = ddmFormInstanceRecord.getCreateDate();
-				dateModified = ddmFormInstanceRecord.getModifiedDate();
-				datePublished = ddmFormInstanceRecord.getLastPublishDate();
-				draft =
-					ddmFormInstanceRecord.getStatus() ==
-						WorkflowConstants.STATUS_DRAFT;
-				formFieldValues = TransformUtil.transformToArray(
-					ddmFormValues.getDDMFormFieldValues(),
-					ddmFormFieldValue -> {
-						Value localizedValue = ddmFormFieldValue.getValue();
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						portal,
+						userLocalService.fetchUser(
+							ddmFormInstanceRecord.getUserId())));
+				setDateCreated(ddmFormInstanceRecord::getCreateDate);
+				setDateModified(ddmFormInstanceRecord::getModifiedDate);
+				setDatePublished(ddmFormInstanceRecord::getLastPublishDate);
+				setDraft(
+					() ->
+						ddmFormInstanceRecord.getStatus() ==
+							WorkflowConstants.STATUS_DRAFT);
+				setFormFieldValues(
+					() -> {
+						DDMFormValues ddmFormValues =
+							ddmFormInstanceRecord.getDDMFormValues();
 
-						if (localizedValue == null) {
-							return null;
-						}
+						return TransformUtil.transformToArray(
+							ddmFormValues.getDDMFormFieldValues(),
+							ddmFormFieldValue -> {
+								Value localizedValue =
+									ddmFormFieldValue.getValue();
 
-						return new FormFieldValue() {
-							{
-								formDocument = _toFormDocument(
-									dlAppService, dlurlHelper, locale,
-									localizedValue);
-								name = ddmFormFieldValue.getName();
-								value = localizedValue.getString(locale);
-							}
-						};
-					},
-					FormFieldValue.class);
-				id = ddmFormInstanceRecord.getFormInstanceRecordId();
+								if (localizedValue == null) {
+									return null;
+								}
+
+								return new FormFieldValue() {
+									{
+										setFormDocument(
+											() -> _toFormDocument(
+												dlAppService, dlurlHelper,
+												locale, localizedValue));
+										setName(ddmFormFieldValue::getName);
+										setValue(
+											() -> localizedValue.getString(
+												locale));
+									}
+								};
+							},
+							FormFieldValue.class);
+					});
+				setId(ddmFormInstanceRecord::getFormInstanceRecordId);
 			}
 		};
 	}
@@ -104,7 +105,7 @@ public class FormRecordUtil {
 		}
 		catch (JSONException jsonException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(jsonException, jsonException);
+				_log.warn(jsonException);
 			}
 		}
 

@@ -1,25 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayLayout from '@clayui/layout';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
-import {fetch, navigate} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {fetch, navigate, unescapeHTML} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useMemo, useReducer, useState} from 'react';
 
-import TranslateActionBar from './components/TranslateActionBar';
+import TranslateActionBar from './components/TranslateActionBar/TranslateActionBar';
 import TranslateFieldSetEntries from './components/TranslateFieldSetEntries';
 import TranslateHeader from './components/TranslateHeader';
 import {FETCH_STATUS} from './constants';
@@ -36,14 +28,20 @@ const getInfoFields = (infoFieldSetEntries = []) => {
 	const targetFields = {};
 
 	infoFieldSetEntries.forEach(({fields}) => {
-		fields.forEach(({id, sourceContent, targetContent}) => {
-			sourceFields[id] = sourceContent;
+		fields.forEach(({html, id: idSet, sourceContent, targetContent}) => {
+			sourceContent.forEach((content, index) => {
+				const id = `${idSet}${index}`;
 
-			targetFields[id] = {
-				content: targetContent,
-				message: '',
-				status: '',
-			};
+				sourceFields[id] = {
+					content,
+					html,
+				};
+				targetFields[id] = {
+					content: targetContent[index],
+					message: '',
+					status: '',
+				};
+			});
 		});
 	});
 
@@ -83,6 +81,7 @@ const reducer = (state, action) => {
 const Translate = ({
 	additionalFields,
 	autoTranslateEnabled = false,
+	concurrentUserError: initialConcurrentUserError,
 	currentUrl,
 	experiencesSelectorData,
 	getAutoTranslateURL,
@@ -104,6 +103,9 @@ const Translate = ({
 }) => {
 	const isMounted = useIsMounted();
 
+	const [concurrentUserError, setConcurrentUserError] = useState(
+		initialConcurrentUserError
+	);
 	const [workflowAction, setWorkflowAction] = useState(
 		workflowActions.PUBLISH
 	);
@@ -130,16 +132,20 @@ const Translate = ({
 
 		if (!state.formHasChanges) {
 			navigate(url);
+
+			return;
 		}
-		else if (
-			confirm(
-				Liferay.Language.get(
-					'are-you-sure-you-want-to-leave-the-page-you-may-lose-your-changes'
-				)
-			)
-		) {
-			navigate(url);
-		}
+
+		openConfirmModal({
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-leave-the-page-you-may-lose-your-changes'
+			),
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					navigate(url);
+				}
+			},
+		});
 	};
 
 	const handleOnSaveDraft = () => {
@@ -156,7 +162,12 @@ const Translate = ({
 	const fetchAutoTranslation = ({fields}) =>
 		fetch(getAutoTranslateURL, {
 			body: JSON.stringify({
-				fields,
+				fields: Object.fromEntries(
+					Object.entries(fields).map((a) => [a[0], a[1].content])
+				),
+				html: Object.fromEntries(
+					Object.entries(fields).map((a) => [a[0], a[1].html])
+				),
 				sourceLanguageId,
 				targetLanguageId,
 			}),
@@ -172,7 +183,7 @@ const Translate = ({
 		});
 
 		fetchAutoTranslation({fields: sourceFields})
-			.then(({error, fields}) => {
+			.then(({error, fields, html}) => {
 				if (error) {
 					throw error;
 				}
@@ -182,7 +193,9 @@ const Translate = ({
 						payload: Object.entries(fields).reduce(
 							(acc, [id, content]) => {
 								acc[id] = {
-									content: Liferay.Util.unescapeHTML(content),
+									content: html?.[id]
+										? content
+										: unescapeHTML(content),
 								};
 
 								return acc;
@@ -231,7 +244,7 @@ const Translate = ({
 		fetchAutoTranslation({
 			fields: {[fieldId]: sourceFields[fieldId]},
 		})
-			.then(({error, fields}) => {
+			.then(({error, fields, html}) => {
 				if (error) {
 					throw error;
 				}
@@ -240,12 +253,11 @@ const Translate = ({
 					dispatch({
 						payload: {
 							field: {
-								content: Liferay.Util.unescapeHTML(
-									fields[fieldId]
-								),
-								message: Liferay.Language.get(
-									'field-translated'
-								),
+								content: html?.[fieldId]
+									? fields[fieldId]
+									: unescapeHTML(fields[fieldId]),
+								message:
+									Liferay.Language.get('field-translated'),
 								status: FETCH_STATUS.SUCCESS,
 							},
 							id: fieldId,
@@ -288,6 +300,7 @@ const Translate = ({
 				name={`${portletNamespace}workflowAction`}
 				type="hidden"
 			/>
+
 			{Object.entries(additionalFields).map(([name, value]) => (
 				<input
 					defaultValue={value}
@@ -314,6 +327,17 @@ const Translate = ({
 			/>
 
 			<ClayLayout.ContainerFluid view>
+				{concurrentUserError && (
+					<ClayAlert
+						displayType="danger"
+						onClose={() => setConcurrentUserError(false)}
+					>
+						{Liferay.Language.get(
+							'another-user-has-made-changes-since-you-started-editing'
+						)}
+					</ClayAlert>
+				)}
+
 				<div className="sheet translation-edit-body-form">
 					{!translationPermission ? (
 						<ClayAlert>
@@ -349,6 +373,7 @@ const Translate = ({
 
 Translate.propTypes = {
 	autoTranslateEnabled: PropTypes.bool,
+	concurrentUserError: PropTypes.bool.isRequired,
 	currentUrl: PropTypes.string.isRequired,
 	experiencesSelectorData: PropTypes.shape({
 		label: PropTypes.string.isRequired,
@@ -370,9 +395,11 @@ Translate.propTypes = {
 					id: PropTypes.string.isRequired,
 					label: PropTypes.string.isRequired,
 					multiline: PropTypes.bool,
-					sourceContent: PropTypes.string.isRequired,
+					sourceContent: PropTypes.arrayOf(PropTypes.string)
+						.isRequired,
 					sourceContentDir: PropTypes.string.isRequired,
-					targetContent: PropTypes.string,
+					targetContent: PropTypes.arrayOf(PropTypes.string)
+						.isRequired,
 					targetContentDir: PropTypes.string,
 				})
 			),

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -43,7 +36,9 @@ public class EmailAddressWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("emailAddressId", getEmailAddressId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -53,7 +48,7 @@ public class EmailAddressWrapper
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
 		attributes.put("address", getAddress());
-		attributes.put("typeId", getTypeId());
+		attributes.put("listTypeId", getListTypeId());
 		attributes.put("primary", isPrimary());
 
 		return attributes;
@@ -67,10 +62,23 @@ public class EmailAddressWrapper
 			setMvccVersion(mvccVersion);
 		}
 
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long emailAddressId = (Long)attributes.get("emailAddressId");
@@ -127,10 +135,10 @@ public class EmailAddressWrapper
 			setAddress(address);
 		}
 
-		Long typeId = (Long)attributes.get("typeId");
+		Long listTypeId = (Long)attributes.get("listTypeId");
 
-		if (typeId != null) {
-			setTypeId(typeId);
+		if (listTypeId != null) {
+			setListTypeId(listTypeId);
 		}
 
 		Boolean primary = (Boolean)attributes.get("primary");
@@ -206,6 +214,16 @@ public class EmailAddressWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this email address.
+	 *
+	 * @return the ct collection ID of this email address
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the email address ID of this email address.
 	 *
 	 * @return the email address ID of this email address
@@ -213,6 +231,33 @@ public class EmailAddressWrapper
 	@Override
 	public long getEmailAddressId() {
 		return model.getEmailAddressId();
+	}
+
+	/**
+	 * Returns the external reference code of this email address.
+	 *
+	 * @return the external reference code of this email address
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	@Override
+	public ListType getListType()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListType();
+	}
+
+	/**
+	 * Returns the list type ID of this email address.
+	 *
+	 * @return the list type ID of this email address
+	 */
+	@Override
+	public long getListTypeId() {
+		return model.getListTypeId();
 	}
 
 	/**
@@ -253,23 +298,6 @@ public class EmailAddressWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
-	}
-
-	@Override
-	public ListType getType()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getType();
-	}
-
-	/**
-	 * Returns the type ID of this email address.
-	 *
-	 * @return the type ID of this email address
-	 */
-	@Override
-	public long getTypeId() {
-		return model.getTypeId();
 	}
 
 	/**
@@ -383,6 +411,16 @@ public class EmailAddressWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this email address.
+	 *
+	 * @param ctCollectionId the ct collection ID of this email address
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the email address ID of this email address.
 	 *
 	 * @param emailAddressId the email address ID of this email address
@@ -390,6 +428,26 @@ public class EmailAddressWrapper
 	@Override
 	public void setEmailAddressId(long emailAddressId) {
 		model.setEmailAddressId(emailAddressId);
+	}
+
+	/**
+	 * Sets the external reference code of this email address.
+	 *
+	 * @param externalReferenceCode the external reference code of this email address
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the list type ID of this email address.
+	 *
+	 * @param listTypeId the list type ID of this email address
+	 */
+	@Override
+	public void setListTypeId(long listTypeId) {
+		model.setListTypeId(listTypeId);
 	}
 
 	/**
@@ -433,16 +491,6 @@ public class EmailAddressWrapper
 	}
 
 	/**
-	 * Sets the type ID of this email address.
-	 *
-	 * @param typeId the type ID of this email address
-	 */
-	@Override
-	public void setTypeId(long typeId) {
-		model.setTypeId(typeId);
-	}
-
-	/**
 	 * Sets the user ID of this email address.
 	 *
 	 * @param userId the user ID of this email address
@@ -480,6 +528,25 @@ public class EmailAddressWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<EmailAddress, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<EmailAddress, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

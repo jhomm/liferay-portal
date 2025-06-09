@@ -1,31 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.client.test;
 
+import com.liferay.oauth2.provider.model.OAuth2Authorization;
+import com.liferay.oauth2.provider.service.OAuth2AuthorizationLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.json.JSONObjectImpl;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.util.CookieKeys;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.Digester;
 import com.liferay.portal.kernel.util.DigesterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.test.rule.Inject;
+
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import java.net.URI;
 
@@ -36,19 +47,6 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 import org.apache.cxf.jaxrs.client.spec.ClientBuilderImpl;
 import org.apache.cxf.jaxrs.impl.RuntimeDelegateImpl;
@@ -100,10 +98,73 @@ public abstract class BaseClientTestCase {
 		_bundleActivator.stop(_bundleContext);
 	}
 
+	protected static Invocation.Builder getInvocationBuilder(
+		String hostname, WebTarget webTarget,
+		Function<Invocation.Builder, Invocation.Builder>
+			invocationBuilderFunction) {
+
+		Invocation.Builder invocationBuilder = webTarget.request();
+
+		if (hostname != null) {
+			invocationBuilder = invocationBuilder.header("Host", hostname);
+		}
+
+		return invocationBuilderFunction.apply(invocationBuilder);
+	}
+
+	protected static WebTarget getOAuth2WebTarget() {
+		WebTarget webTarget = getWebTarget();
+
+		webTarget = webTarget.path("o");
+		webTarget = webTarget.path("oauth2");
+
+		return webTarget;
+	}
+
+	protected static WebTarget getTokenWebTarget() {
+		WebTarget webTarget = getOAuth2WebTarget();
+
+		return webTarget.path("token");
+	}
+
+	protected static WebTarget getWebTarget() {
+		ClientBuilder clientBuilder = new ClientBuilderImpl();
+
+		Client client = clientBuilder.build();
+
+		RuntimeDelegate runtimeDelegate = new RuntimeDelegateImpl();
+
+		UriBuilder uriBuilder = runtimeDelegate.createUriBuilder();
+
+		try {
+			Company company = CompanyLocalServiceUtil.getCompany(
+				TestPropsValues.getCompanyId());
+
+			return client.target(
+				uriBuilder.uri(
+					"http://" + company.getVirtualHostname() + ":8080"));
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
+	}
+
 	protected Invocation.Builder authorize(
 		Invocation.Builder invocationBuilder, String token) {
 
 		return invocationBuilder.header("Authorization", "Bearer " + token);
+	}
+
+	protected OAuth2Authorization fetchOAuth2AuthorizationByAccessTokenContent(
+		String accessTokenContent) {
+
+		OAuth2AuthorizationLocalService oAuth2AuthorizationLocalService =
+			_bundleContext.getService(
+				_bundleContext.getServiceReference(
+					OAuth2AuthorizationLocalService.class));
+
+		return oAuth2AuthorizationLocalService.
+			fetchOAuth2AuthorizationByAccessTokenContent(accessTokenContent);
 	}
 
 	protected String generateCodeChallenge(String codeVerifier) {
@@ -128,8 +189,9 @@ public abstract class BaseClientTestCase {
 		Map<String, NewCookie> newCookies = response.getCookies();
 
 		NewCookie cookieSupportNewCookie = newCookies.get(
-			CookieKeys.COOKIE_SUPPORT);
-		NewCookie jSessionIdNewCookie = newCookies.get(CookieKeys.JSESSIONID);
+			CookiesConstants.NAME_COOKIE_SUPPORT);
+		NewCookie jSessionIdNewCookie = newCookies.get(
+			CookiesConstants.NAME_JSESSIONID);
 
 		invocationBuilder = getInvocationBuilder(hostname, getLoginWebTarget());
 
@@ -146,7 +208,7 @@ public abstract class BaseClientTestCase {
 
 		newCookies = response.getCookies();
 
-		jSessionIdNewCookie = newCookies.get(CookieKeys.JSESSIONID);
+		jSessionIdNewCookie = newCookies.get(CookiesConstants.NAME_JSESSIONID);
 
 		if (jSessionIdNewCookie == null) {
 			return null;
@@ -327,8 +389,8 @@ public abstract class BaseClientTestCase {
 				return response;
 			}
 
-			Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
-				uri.getQuery());
+			Map<String, String[]> parameterMap =
+				HttpComponentsUtil.getParameterMap(uri.getQuery());
 
 			if (parameterMap.containsKey("error") || skipAuthorization) {
 				return response;
@@ -431,20 +493,6 @@ public abstract class BaseClientTestCase {
 		return getInvocationBuilder(hostname, webTarget, Function.identity());
 	}
 
-	protected Invocation.Builder getInvocationBuilder(
-		String hostname, WebTarget webTarget,
-		Function<Invocation.Builder, Invocation.Builder>
-			invocationBuilderFunction) {
-
-		Invocation.Builder invocationBuilder = webTarget.request();
-
-		if (hostname != null) {
-			invocationBuilder = invocationBuilder.header("Host", hostname);
-		}
-
-		return invocationBuilderFunction.apply(invocationBuilder);
-	}
-
 	protected WebTarget getJsonWebTarget(String... paths) {
 		WebTarget webTarget = getWebTarget();
 
@@ -464,15 +512,6 @@ public abstract class BaseClientTestCase {
 		webTarget = webTarget.path("c");
 		webTarget = webTarget.path("portal");
 		webTarget = webTarget.path("login");
-
-		return webTarget;
-	}
-
-	protected WebTarget getOAuth2WebTarget() {
-		WebTarget webTarget = getWebTarget();
-
-		webTarget = webTarget.path("o");
-		webTarget = webTarget.path("oauth2");
 
 		return webTarget;
 	}
@@ -546,24 +585,6 @@ public abstract class BaseClientTestCase {
 		return getInvocationBuilder(hostname, getTokenWebTarget());
 	}
 
-	protected WebTarget getTokenWebTarget() {
-		WebTarget webTarget = getOAuth2WebTarget();
-
-		return webTarget.path("token");
-	}
-
-	protected WebTarget getWebTarget() {
-		ClientBuilder clientBuilder = new ClientBuilderImpl();
-
-		Client client = clientBuilder.build();
-
-		RuntimeDelegate runtimeDelegate = new RuntimeDelegateImpl();
-
-		UriBuilder uriBuilder = runtimeDelegate.createUriBuilder();
-
-		return client.target(uriBuilder.uri("http://localhost:8080"));
-	}
-
 	protected WebTarget getWebTarget(String... paths) {
 		WebTarget target = getWebTarget();
 
@@ -586,7 +607,7 @@ public abstract class BaseClientTestCase {
 					"from which code is extracted");
 		}
 
-		Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
+		Map<String, String[]> parameterMap = HttpComponentsUtil.getParameterMap(
 			uri.getQuery());
 
 		if (!parameterMap.containsKey("code")) {
@@ -609,7 +630,7 @@ public abstract class BaseClientTestCase {
 					"from which error is extracted");
 		}
 
-		Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
+		Map<String, String[]> parameterMap = HttpComponentsUtil.getParameterMap(
 			uri.getQuery());
 
 		if (!parameterMap.containsKey("error")) {
@@ -655,12 +676,30 @@ public abstract class BaseClientTestCase {
 		return parseJsonField(response, "access_token");
 	}
 
+	protected void revokeOAuth2AuthorizationByAccessToken(String token)
+		throws PortalException {
+
+		_oAuth2AuthorizationLocalService.deleteOAuth2Authorization(
+			_oAuth2AuthorizationLocalService.
+				getOAuth2AuthorizationByAccessTokenContent(token));
+	}
+
+	protected OAuth2Authorization updateOAuth2Authorization(
+		OAuth2Authorization oAuth2Authorization) {
+
+		return _oAuth2AuthorizationLocalService.updateOAuth2Authorization(
+			oAuth2Authorization);
+	}
+
 	private static Set<String> _originalRestrictedHeaderSet;
 	private static final Pattern _pAuthTokenPattern = Pattern.compile(
-		"Liferay.authToken\\s*=\\s*(['\"])(((?!\\1).)*)\\1;");
+		"authToken:\\s*(['\"])(((?!\\1).)*)\\1,");
 	private static Set<String> _restrictedHeaderSet;
 
 	private BundleActivator _bundleActivator;
 	private BundleContext _bundleContext;
+
+	@Inject
+	private OAuth2AuthorizationLocalService _oAuth2AuthorizationLocalService;
 
 }

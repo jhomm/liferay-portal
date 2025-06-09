@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.generator.internal.processor;
@@ -34,7 +25,6 @@ import aQute.lib.filter.Filter;
 import com.liferay.ant.bnd.jsp.JspAnalyzerPlugin;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.events.GlobalStartupAction;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployException;
@@ -47,11 +37,13 @@ import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.servlet.PortalClassLoaderFilter;
 import com.liferay.portal.kernel.servlet.PortalClassLoaderServlet;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ConcurrentHashMapBuilder;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
@@ -68,6 +60,7 @@ import com.liferay.portal.kernel.xml.Node;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.kernel.xml.XPath;
+import com.liferay.portal.plugin.PluginPackageUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.util.JS;
 import com.liferay.whip.util.ReflectionUtil;
@@ -82,8 +75,12 @@ import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import java.nio.charset.StandardCharsets;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import java.text.Format;
 
@@ -98,15 +95,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.jar.Attributes;
-import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * @author Raymond Augé
  * @author Miguel Pastor
+ * @author Gregory Amerson
  */
 public class WabProcessor {
 
@@ -118,7 +115,17 @@ public class WabProcessor {
 	}
 
 	public File getProcessedFile() throws IOException {
-		_pluginDir = autoDeploy();
+		Properties pluginPackageProperties = _getPluginPackageProperties();
+
+		if (Objects.equals(
+				MapUtil.getString(_parameters, "fileExtension"), "zip")) {
+
+			_pluginDir = _convertToClientExtensionBundleDir(
+				pluginPackageProperties);
+		}
+		else {
+			_pluginDir = _autoDeploy();
+		}
 
 		if ((_pluginDir == null) || !_pluginDir.exists() ||
 			!_pluginDir.isDirectory()) {
@@ -130,7 +137,8 @@ public class WabProcessor {
 
 		try (Jar jar = new Jar(_pluginDir)) {
 			if (jar.getBsn() == null) {
-				outputFile = transformToOSGiBundle(jar);
+				outputFile = _transformToOSGiBundle(
+					jar, pluginPackageProperties);
 			}
 		}
 		catch (Exception exception) {
@@ -138,28 +146,43 @@ public class WabProcessor {
 		}
 
 		if (PropsValues.MODULE_FRAMEWORK_WEB_GENERATOR_GENERATED_WABS_STORE) {
-			writeGeneratedWab(outputFile);
+			_writeGeneratedWab(outputFile);
 		}
 
 		return outputFile;
 	}
 
-	protected void addElement(Element element, String name, String text) {
-		Element childElement = element.addElement(name);
+	protected void executeAutoDeployers(
+		AutoDeploymentContext autoDeploymentContext) {
 
-		childElement.addText(GetterUtil.getString(text));
+		boolean enabled = DependencyManagementThreadLocal.isEnabled();
+
+		try {
+			DependencyManagementThreadLocal.setEnabled(false);
+
+			AutoDeployListener autoDeployListener = _getAutoDeployListener(
+				autoDeploymentContext, _autoDeployListeners);
+
+			autoDeployListener.deploy(autoDeploymentContext);
+		}
+		catch (AutoDeployException autoDeployException) {
+			throw new RuntimeException(autoDeployException);
+		}
+		finally {
+			DependencyManagementThreadLocal.setEnabled(enabled);
+		}
 	}
 
-	protected void appendProperty(
+	private void _appendProperty(
 		Analyzer analyzer, String property, String string) {
 
 		analyzer.setProperty(
 			property, Analyzer.append(analyzer.getProperty(property), string));
 	}
 
-	protected File autoDeploy() {
+	private File _autoDeploy() {
 		AutoDeploymentContext autoDeploymentContext =
-			buildAutoDeploymentContext(getWebContextPath());
+			_buildAutoDeploymentContext(_getWebContextPath());
 
 		executeAutoDeployers(autoDeploymentContext);
 
@@ -191,7 +214,7 @@ public class WabProcessor {
 
 				});
 
-			if ((files == null) || (files.length == 0)) {
+			if (ArrayUtil.isEmpty(files)) {
 				_log.error("Unable to find any WARs in " + parentFile);
 
 				return null;
@@ -215,13 +238,13 @@ public class WabProcessor {
 		}
 
 		if (_AUTODEPLOYED_WARS_STORE) {
-			writeAutoDeployedWar(deployDir);
+			_writeAutoDeployedWar(deployDir);
 		}
 
 		return deployDir;
 	}
 
-	protected AutoDeploymentContext buildAutoDeploymentContext(String context) {
+	private AutoDeploymentContext _buildAutoDeploymentContext(String context) {
 		AutoDeploymentContext autoDeploymentContext =
 			new AutoDeploymentContext();
 
@@ -229,8 +252,6 @@ public class WabProcessor {
 		autoDeploymentContext.setFile(_file);
 
 		if (_file.isDirectory()) {
-			autoDeploymentContext.setDestDir(_file.getAbsolutePath());
-
 			return autoDeploymentContext;
 		}
 
@@ -243,29 +264,204 @@ public class WabProcessor {
 		return autoDeploymentContext;
 	}
 
-	protected void executeAutoDeployers(
-		AutoDeploymentContext autoDeploymentContext) {
+	private File _convertToClientExtensionBundleDir(
+		Properties pluginPackageProperties) {
 
-		boolean enabled = DependencyManagementThreadLocal.isEnabled();
+		Path clientExtensionBundlePath = null;
 
-		try {
-			DependencyManagementThreadLocal.setEnabled(false);
+		boolean batchDetected = false;
 
-			AutoDeployListener autoDeployListener = getAutoDeployListener(
-				autoDeploymentContext,
-				GlobalStartupAction.getAutoDeployListeners(false));
+		String batchPathString = pluginPackageProperties.getProperty(
+			_LIFERAY_CLIENT_EXTENSION_BATCH, "batch/");
 
-			autoDeployListener.deploy(autoDeploymentContext);
+		if (!batchPathString.endsWith("/")) {
+			batchPathString += "/";
 		}
-		catch (AutoDeployException autoDeployException) {
-			throw new RuntimeException(autoDeployException);
+
+		boolean frontendDetected = false;
+
+		String frontendPathString = pluginPackageProperties.getProperty(
+			_LIFERAY_CLIENT_EXTENSION_FRONTEND, "static/");
+
+		if (!frontendPathString.endsWith("/")) {
+			frontendPathString += "/";
 		}
-		finally {
-			DependencyManagementThreadLocal.setEnabled(enabled);
+
+		boolean siteInitializerDetected = false;
+
+		String siteInitializerPathString = pluginPackageProperties.getProperty(
+			_LIFERAY_CLIENT_EXTENSION_SITE_INITIALIZER, "site-initializer/");
+
+		if (!siteInitializerPathString.endsWith("/")) {
+			siteInitializerPathString += "/";
 		}
+
+		try (ZipFile zipFile = new ZipFile(_file)) {
+			clientExtensionBundlePath = Files.createTempDirectory(
+				"clientextension");
+
+			Path metatInfBatchPath = _createPath(
+				clientExtensionBundlePath, "META-INF/batch");
+			Path metatInfResourcesPath = _createPath(
+				clientExtensionBundlePath, "META-INF/resources");
+			Path osgiInfConfiguratorPath = _createPath(
+				clientExtensionBundlePath, "OSGI-INF/configurator");
+			Path siteInitializerResourcesPath = _createPath(
+				clientExtensionBundlePath, "site-initializer");
+
+			Enumeration<? extends ZipEntry> enumeration = zipFile.entries();
+
+			while (enumeration.hasMoreElements()) {
+				ZipEntry zipEntry = enumeration.nextElement();
+
+				String name = zipEntry.getName();
+
+				if (zipEntry.isDirectory()) {
+					if (name.startsWith(batchPathString)) {
+						Files.createDirectories(
+							metatInfBatchPath.resolve(
+								name.replaceFirst("^" + batchPathString, "")));
+
+						batchDetected = true;
+					}
+					else if (name.startsWith(frontendPathString)) {
+						Files.createDirectories(
+							metatInfResourcesPath.resolve(
+								name.replaceFirst(
+									"^" + frontendPathString, "")));
+
+						frontendDetected = true;
+					}
+					else if (name.startsWith(siteInitializerPathString)) {
+						Files.createDirectories(
+							siteInitializerResourcesPath.resolve(
+								name.replaceFirst(
+									"^" + siteInitializerPathString, "")));
+
+						siteInitializerDetected = true;
+					}
+
+					continue;
+				}
+
+				if (!name.contains("/") &&
+					name.endsWith(".client-extension-config.json")) {
+
+					Files.copy(
+						zipFile.getInputStream(zipEntry),
+						osgiInfConfiguratorPath.resolve(name));
+				}
+				else if (name.startsWith(batchPathString)) {
+					Files.copy(
+						zipFile.getInputStream(zipEntry),
+						metatInfBatchPath.resolve(
+							name.replaceFirst("^" + batchPathString, "")));
+
+					batchDetected = true;
+				}
+				else if (name.startsWith(frontendPathString)) {
+					Files.copy(
+						zipFile.getInputStream(zipEntry),
+						metatInfResourcesPath.resolve(
+							name.replaceFirst("^" + frontendPathString, "")));
+
+					frontendDetected = true;
+				}
+				else if (name.startsWith(siteInitializerPathString)) {
+					Files.copy(
+						zipFile.getInputStream(zipEntry),
+						siteInitializerResourcesPath.resolve(
+							name.replaceFirst(
+								"^" + siteInitializerPathString, "")));
+
+					siteInitializerDetected = true;
+				}
+			}
+
+			if (batchDetected) {
+				pluginPackageProperties.setProperty(
+					_LIFERAY_CLIENT_EXTENSION_BATCH, "META-INF/batch");
+			}
+			else {
+				pluginPackageProperties.remove(_LIFERAY_CLIENT_EXTENSION_BATCH);
+			}
+
+			if (frontendDetected) {
+				pluginPackageProperties.setProperty(
+					_LIFERAY_CLIENT_EXTENSION_FRONTEND, "META-INF/resources");
+			}
+			else {
+				pluginPackageProperties.remove(
+					_LIFERAY_CLIENT_EXTENSION_FRONTEND);
+			}
+
+			if (siteInitializerDetected) {
+				pluginPackageProperties.setProperty(
+					_LIFERAY_CLIENT_EXTENSION_SITE_INITIALIZER,
+					"site-initializer");
+			}
+			else {
+				pluginPackageProperties.remove(
+					_LIFERAY_CLIENT_EXTENSION_SITE_INITIALIZER);
+			}
+		}
+		catch (Exception exception) {
+			_log.error(exception);
+		}
+
+		_pluginPackage = PluginPackageUtil.readPluginPackageProperties(
+			_getClientExtensionDisplayName(), pluginPackageProperties);
+
+		return clientExtensionBundlePath.toFile();
 	}
 
-	protected void formatDocument(File file, Document document)
+	private Path _createPath(Path parentPath, String pathString)
+		throws IOException {
+
+		Path path = parentPath.resolve(pathString);
+
+		Files.createDirectories(path);
+
+		return path;
+	}
+
+	private Discover _findDiscoveryMode(Document document) {
+		if (!document.hasContent()) {
+			return Discover.all;
+		}
+
+		Element rootElement = document.getRootElement();
+
+		// bean-discovery-mode="all" version="1.1"
+
+		XPath xPath = SAXReaderUtil.createXPath(
+			"/cdi-beans:beans/@version", _xsds);
+
+		Node versionNode = xPath.selectSingleNode(rootElement);
+
+		if (versionNode == null) {
+			return Discover.all;
+		}
+
+		Version version = Version.valueOf(versionNode.getStringValue());
+
+		if (_CDI_ARCHIVE_VERSION.compareTo(version) <= 0) {
+			xPath = SAXReaderUtil.createXPath(
+				"/cdi-beans:beans/@bean-discovery-mode", _xsds);
+
+			Node beanDiscoveryModeNode = xPath.selectSingleNode(rootElement);
+
+			if (beanDiscoveryModeNode == null) {
+				return Discover.annotated;
+			}
+
+			return Discover.valueOf(beanDiscoveryModeNode.getStringValue());
+		}
+
+		return Discover.all;
+	}
+
+	private void _formatDocument(File file, Document document)
 		throws IOException {
 
 		try {
@@ -276,7 +472,7 @@ public class WabProcessor {
 		}
 	}
 
-	protected AutoDeployListener getAutoDeployListener(
+	private AutoDeployListener _getAutoDeployListener(
 		AutoDeploymentContext autoDeploymentContext,
 		List<AutoDeployListener> autoDeployListeners) {
 
@@ -321,33 +517,51 @@ public class WabProcessor {
 		return deployableAutoDeployListeners.get(0);
 	}
 
-	protected Properties getPluginPackageProperties() {
-		File file = new File(
-			_pluginDir, "WEB-INF/liferay-plugin-package.properties");
+	private String _getClientExtensionDisplayName() {
+		String displayName = _file.getName();
 
-		if (!file.exists()) {
-			return new Properties();
+		if (StringUtil.endsWith(displayName, ".zip")) {
+			displayName = displayName.substring(0, displayName.length() - 4);
 		}
 
-		try {
-			return PropertiesUtil.load(FileUtil.read(file));
+		return displayName.concat("-client-extension");
+	}
+
+	private Properties _getPluginPackageProperties() throws IOException {
+		if (_pluginPackageProperties != null) {
+			return _pluginPackageProperties;
 		}
-		catch (IOException ioException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+
+		try (ZipFile zipFile = new ZipFile(_file)) {
+			ZipEntry zipEntry = zipFile.getEntry(
+				"WEB-INF/liferay-plugin-package.properties");
+
+			if (zipEntry == null) {
+				return _pluginPackageProperties = new Properties();
 			}
 
-			return new Properties();
+			try {
+				return _pluginPackageProperties = PropertiesUtil.load(
+					zipFile.getInputStream(zipEntry),
+					StandardCharsets.UTF_8.name());
+			}
+			catch (IOException ioException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(ioException);
+				}
+
+				return _pluginPackageProperties = new Properties();
+			}
 		}
 	}
 
-	protected String getVersionedServicePackageName(String partialPackageName) {
+	private String _getVersionedServicePackageName(String partialPackageName) {
 		return StringBundler.concat(
 			_servicePackageName, partialPackageName, ";version=",
 			_bundleVersion);
 	}
 
-	protected String getWebContextPath() {
+	private String _getWebContextPath() {
 		String webContextpath = MapUtil.getString(
 			_parameters, "Web-ContextPath");
 
@@ -358,7 +572,7 @@ public class WabProcessor {
 		return webContextpath;
 	}
 
-	protected void processBeans(Builder analyzer) throws IOException {
+	private void _processBeans(Builder analyzer) throws IOException {
 		String beansXMLFile = "WEB-INF/beans.xml";
 
 		File file = new File(_pluginDir, beansXMLFile);
@@ -425,22 +639,19 @@ public class WabProcessor {
 			return;
 		}
 
-		Document document = readDocument(file);
+		Document document = _readDocument(file);
 
 		Discover discover = _findDiscoveryMode(document);
 
 		analyzer.setProperty(
 			Constants.CDIANNOTATIONS, "*;discover=" + discover);
 
-		appendProperty(
-			analyzer, Constants.REQUIRE_CAPABILITY, _CDI_REQUIREMENTS);
+		_appendProperty(
+			analyzer, Constants.REQUIRE_CAPABILITY, _REQUIRE_CAPABILITY_CDI);
 	}
 
-	protected void processBundleClasspath(
-			Analyzer analyzer, Properties pluginPackageProperties)
-		throws IOException {
-
-		appendProperty(
+	private void _processBundleClasspath(Analyzer analyzer) throws IOException {
+		_appendProperty(
 			analyzer, Constants.BUNDLE_CLASSPATH, "ext/WEB-INF/classes");
 
 		// Class path order is critical
@@ -449,16 +660,17 @@ public class WabProcessor {
 			"WEB-INF/classes", new File(_pluginDir, "WEB-INF/classes")
 		).build();
 
-		appendProperty(analyzer, Constants.BUNDLE_CLASSPATH, "WEB-INF/classes");
+		_appendProperty(
+			analyzer, Constants.BUNDLE_CLASSPATH, "WEB-INF/classes");
 
-		processFiles(classPath, analyzer);
+		_processFiles(classPath, analyzer);
 
 		Collection<File> files = classPath.values();
 
 		analyzer.setClasspath(files.toArray(new File[classPath.size()]));
 	}
 
-	protected void processBundleManifestVersion(Analyzer analyzer) {
+	private void _processBundleManifestVersion(Analyzer analyzer) {
 		String bundleManifestVersion = MapUtil.getString(
 			_parameters, Constants.BUNDLE_MANIFESTVERSION);
 
@@ -470,7 +682,7 @@ public class WabProcessor {
 			Constants.BUNDLE_MANIFESTVERSION, bundleManifestVersion);
 	}
 
-	protected void processBundleSymbolicName(Analyzer analyzer) {
+	private void _processBundleSymbolicName(Analyzer analyzer) {
 		String bundleSymbolicName = MapUtil.getString(
 			_parameters, Constants.BUNDLE_SYMBOLICNAME);
 
@@ -481,7 +693,7 @@ public class WabProcessor {
 		analyzer.setProperty(Constants.BUNDLE_SYMBOLICNAME, bundleSymbolicName);
 	}
 
-	protected void processBundleVersion(Analyzer analyzer) {
+	private void _processBundleVersion(Analyzer analyzer) {
 		_bundleVersion = MapUtil.getString(
 			_parameters, Constants.BUNDLE_VERSION);
 
@@ -514,7 +726,7 @@ public class WabProcessor {
 		analyzer.setProperty(Constants.BUNDLE_VERSION, _bundleVersion);
 	}
 
-	protected void processClass(Analyzer analyzer, String value) {
+	private void _processClass(Analyzer analyzer, String value) {
 		int index = value.lastIndexOf('.');
 
 		if (index == -1) {
@@ -528,33 +740,33 @@ public class WabProcessor {
 		packages.put(analyzer.getPackageRef(packageName), new Attrs());
 	}
 
-	protected void processDeclarativeReferences(Analyzer analyzer)
+	private void _processDeclarativeReferences(Analyzer analyzer)
 		throws IOException {
 
-		processDefaultServletPackages();
-		processTLDDependencies(analyzer);
+		_processDefaultServletPackages();
+		_processTLDDependencies(analyzer);
 
-		processPortalListenerClassesDependencies(analyzer);
+		_processPortalListenerClassesDependencies(analyzer);
 
 		Path pluginPath = _pluginDir.toPath();
 
-		processXMLDependencies(
+		_processXMLDependencies(
 			analyzer, "WEB-INF/liferay-hook.xml", _XPATHS_HOOK);
-		processXMLDependencies(
+		_processXMLDependencies(
 			analyzer, "WEB-INF/liferay-portlet.xml", _XPATHS_LIFERAY);
-		processXMLDependencies(
+		_processXMLDependencies(
 			analyzer, "WEB-INF/portlet.xml", _XPATHS_PORTLET);
-		processXMLDependencies(analyzer, "WEB-INF/web.xml", _XPATHS_JAVAEE);
+		_processXMLDependencies(analyzer, "WEB-INF/web.xml", _XPATHS_JAVAEE);
 
 		Path classes = pluginPath.resolve("WEB-INF/classes/");
 
-		processPropertiesDependencies(
+		_processPropertiesDependencies(
 			analyzer, classes, ".properties", _KNOWN_PROPERTY_KEYS);
-		processXMLDependencies(analyzer, classes, ".xml", _XPATHS_HBM);
-		processXMLDependencies(analyzer, classes, ".xml", _XPATHS_SPRING);
+		_processXMLDependencies(analyzer, classes, ".xml");
+		_processXMLDependencies(analyzer, classes, ".xml");
 	}
 
-	protected void processDefaultServletPackages() {
+	private void _processDefaultServletPackages() {
 		for (String value :
 				PropsValues.
 					MODULE_FRAMEWORK_WEB_GENERATOR_DEFAULT_SERVLET_PACKAGES) {
@@ -571,12 +783,44 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processExportPackageNames(Analyzer analyzer) {
+	private void _processExcludedJSPs(Analyzer analyzer) {
+		File file = new File(_pluginDir, "/WEB-INF/liferay-hook.xml");
+
+		if (!file.exists()) {
+			return;
+		}
+
+		Document document = _readDocument(file);
+
+		if (!document.hasContent()) {
+			return;
+		}
+
+		Element rootElement = document.getRootElement();
+
+		List<Node> nodes = rootElement.selectNodes("//custom-jsp-dir");
+
+		String value = analyzer.getProperty("-jsp");
+
+		for (Node node : nodes) {
+			String text = node.getText();
+
+			if (text.startsWith("/")) {
+				text = text.substring(1);
+			}
+
+			value = StringBundler.concat("!", text, "/*,", value);
+		}
+
+		analyzer.setProperty("-jsp", value);
+	}
+
+	private void _processExportPackageNames(Analyzer analyzer) {
 		analyzer.setProperty(
 			Constants.EXPORT_CONTENTS, _exportPackageParameters.toString());
 	}
 
-	protected void processExtraHeaders(Analyzer analyzer) {
+	private void _processExtraHeaders(Analyzer analyzer) {
 		String bundleSymbolicName = analyzer.getProperty(
 			Constants.BUNDLE_SYMBOLICNAME);
 
@@ -620,7 +864,7 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processExtraRequirements() {
+	private void _processExtraRequirements() {
 		Attrs attrs = new Attrs(_optionalAttrs);
 
 		attrs.put("x-liferay-compatibility:", "spring");
@@ -630,7 +874,7 @@ public class WabProcessor {
 		_importPackageParameters.add("!junit.*", new Attrs());
 	}
 
-	protected void processFiles(Map<String, File> classPath, Analyzer analyzer)
+	private void _processFiles(Map<String, File> classPath, Analyzer analyzer)
 		throws IOException {
 
 		Jar jar = analyzer.getJar();
@@ -647,7 +891,7 @@ public class WabProcessor {
 			String path = entry.getKey();
 
 			if (path.equals("WEB-INF/service.xml")) {
-				processServicePackageName(entry.getValue());
+				_processServicePackageName(entry.getValue());
 			}
 			else if (path.startsWith("WEB-INF/lib/")) {
 
@@ -670,7 +914,7 @@ public class WabProcessor {
 
 					classPath.put(path, fileResource.getFile());
 
-					appendProperty(analyzer, Constants.BUNDLE_CLASSPATH, path);
+					_appendProperty(analyzer, Constants.BUNDLE_CLASSPATH, path);
 				}
 			}
 			else if (_ignoredResourcePaths.contains(path)) {
@@ -679,7 +923,7 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processImportPackageNames(Analyzer analyzer) {
+	private void _processImportPackageNames(Analyzer analyzer) {
 		String packageName = MapUtil.getString(
 			_parameters, Constants.IMPORT_PACKAGE);
 
@@ -729,14 +973,14 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processLiferayPortletXML() throws IOException {
+	private void _processLiferayPortletXML() throws IOException {
 		File file = new File(_pluginDir, "WEB-INF/liferay-portlet.xml");
 
 		if (!file.exists()) {
 			return;
 		}
 
-		Document document = readDocument(file);
+		Document document = _readDocument(file);
 
 		Element rootElement = document.getRootElement();
 
@@ -757,15 +1001,29 @@ public class WabProcessor {
 				Portal.PATH_MODULE.substring(1) + _context + strutsPath);
 		}
 
-		formatDocument(file, document);
+		_formatDocument(file, document);
 	}
 
-	protected void processPackageNames(Analyzer analyzer) {
-		processExportPackageNames(analyzer);
-		processImportPackageNames(analyzer);
+	private void _processOSGiConfigurator(Jar jar, Builder analyzer) {
+		Map<String, Resource> resources = jar.getResources();
+
+		for (String resourceName : resources.keySet()) {
+			if (resourceName.startsWith("OSGI-INF/configurator/")) {
+				_appendProperty(
+					analyzer, Constants.REQUIRE_CAPABILITY,
+					_REQUIRE_CAPABILITY_OSGI_CONFIGURATOR);
+
+				break;
+			}
+		}
 	}
 
-	protected void processPluginPackagePropertiesExportImportPackages(
+	private void _processPackageNames(Analyzer analyzer) {
+		_processExportPackageNames(analyzer);
+		_processImportPackageNames(analyzer);
+	}
+
+	private void _processPluginPackagePropertiesExportImportPackages(
 		Properties pluginPackageProperties) {
 
 		if (pluginPackageProperties == null) {
@@ -795,14 +1053,14 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processPortalListenerClassesDependencies(Analyzer analyzer) {
+	private void _processPortalListenerClassesDependencies(Analyzer analyzer) {
 		File file = new File(_pluginDir, "WEB-INF/web.xml");
 
 		if (!file.exists()) {
 			return;
 		}
 
-		Document document = readDocument(file);
+		Document document = _readDocument(file);
 
 		Element rootElement = document.getRootElement();
 
@@ -824,13 +1082,13 @@ public class WabProcessor {
 				for (String portalListenerClassName :
 						portalListenerClassNames) {
 
-					processClass(analyzer, portalListenerClassName.trim());
+					_processClass(analyzer, portalListenerClassName.trim());
 				}
 			}
 		}
 	}
 
-	protected void processPropertiesDependencies(
+	private void _processPropertiesDependencies(
 		Analyzer analyzer, File file, String[] knownPropertyKeys) {
 
 		if (!file.exists()) {
@@ -855,12 +1113,12 @@ public class WabProcessor {
 
 				value = value.trim();
 
-				processClass(analyzer, value);
+				_processClass(analyzer, value);
 			}
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			// Ignore this case
@@ -868,7 +1126,7 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processPropertiesDependencies(
+	private void _processPropertiesDependencies(
 			Analyzer analyzer, Path path, String suffix,
 			String[] knownPropertyKeys)
 		throws IOException {
@@ -879,22 +1137,29 @@ public class WabProcessor {
 			return;
 		}
 
-		Stream<Path> pathStream = Files.walk(path);
+		Files.walkFileTree(
+			path,
+			new SimpleFileVisitor<Path>() {
 
-		Stream<File> fileStream = pathStream.map(Path::toFile);
+				@Override
+				public FileVisitResult visitFile(
+						Path filePath, BasicFileAttributes basicFileAttributes)
+					throws IOException {
 
-		fileStream.forEach(
-			entry -> {
-				String pathString = entry.getPath();
+					String pathString = filePath.toString();
 
-				if (pathString.endsWith(suffix)) {
-					processPropertiesDependencies(
-						analyzer, entry, knownPropertyKeys);
+					if (pathString.endsWith(suffix)) {
+						_processPropertiesDependencies(
+							analyzer, filePath.toFile(), knownPropertyKeys);
+					}
+
+					return FileVisitResult.CONTINUE;
 				}
+
 			});
 	}
 
-	protected void processRequiredDeploymentContexts(Analyzer analyzer) {
+	private void _processRequiredDeploymentContexts(Analyzer analyzer) {
 		if (_pluginPackage == null) {
 			return;
 		}
@@ -928,32 +1193,35 @@ public class WabProcessor {
 		analyzer.setProperty(Constants.REQUIRE_BUNDLE, sb.toString());
 	}
 
-	protected void processResourceActionXML() throws IOException {
+	private void _processResourceActionXML() throws IOException {
 		File dir = new File(_pluginDir, "WEB-INF/classes");
 
 		URI uri = dir.toURI();
 
-		ClassLoader classLoader = new URLClassLoader(new URL[] {uri.toURL()});
+		try (URLClassLoader urlClassLoader = new URLClassLoader(
+				new URL[] {uri.toURL()})) {
 
-		if (classLoader.getResource("portlet.properties") == null) {
-			return;
-		}
+			if (urlClassLoader.getResource("portlet.properties") == null) {
+				return;
+			}
 
-		Configuration configuration = ConfigurationFactoryUtil.getConfiguration(
-			classLoader, "portlet");
+			Configuration configuration =
+				ConfigurationFactoryUtil.getConfiguration(
+					urlClassLoader, "portlet");
 
-		Properties properties = configuration.getProperties();
+			Properties properties = configuration.getProperties();
 
-		for (String xmlFile :
-				StringUtil.split(
-					properties.getProperty(
-						PropsKeys.RESOURCE_ACTIONS_CONFIGS))) {
+			for (String xmlFile :
+					StringUtil.split(
+						properties.getProperty(
+							PropsKeys.RESOURCE_ACTIONS_CONFIGS))) {
 
-			processResourceActionXML(dir, xmlFile);
+				_processResourceActionXML(dir, xmlFile);
+			}
 		}
 	}
 
-	protected void processResourceActionXML(File dir, String xmlFile)
+	private void _processResourceActionXML(File dir, String xmlFile)
 		throws IOException {
 
 		File file = new File(dir, xmlFile);
@@ -962,7 +1230,7 @@ public class WabProcessor {
 			return;
 		}
 
-		Document document = readDocument(file);
+		Document document = _readDocument(file);
 
 		Element rootElement = document.getRootElement();
 
@@ -999,21 +1267,21 @@ public class WabProcessor {
 			}
 		}
 
-		formatDocument(file, document);
+		_formatDocument(file, document);
 
 		if (!xmlFile.endsWith("-ext.xml")) {
-			processResourceActionXML(
+			_processResourceActionXML(
 				dir, StringUtil.replace(xmlFile, ".xml", "-ext.xml"));
 		}
 
 		for (Element resourceFileElement : rootElement.elements("resource")) {
-			processResourceActionXML(
+			_processResourceActionXML(
 				dir,
 				StringUtil.trim(resourceFileElement.attributeValue("file")));
 		}
 	}
 
-	protected void processServicePackageName(Resource resource) {
+	private void _processServicePackageName(Resource resource) {
 		try (InputStream inputStream = resource.openInputStream()) {
 			Document document = UnsecureSAXReaderUtil.read(inputStream);
 
@@ -1029,7 +1297,7 @@ public class WabProcessor {
 
 			for (String partialPackageName : partialPackageNames) {
 				Parameters parameters = new Parameters(
-					getVersionedServicePackageName(partialPackageName));
+					_getVersionedServicePackageName(partialPackageName));
 
 				_exportPackageParameters.mergeWith(parameters, false);
 				_importPackageParameters.mergeWith(parameters, false);
@@ -1039,13 +1307,11 @@ public class WabProcessor {
 				"com.liferay.portal.osgi.web.wab.generator", _optionalAttrs);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
-	protected void processTLDDependencies(Analyzer analyzer)
-		throws IOException {
-
+	private void _processTLDDependencies(Analyzer analyzer) throws IOException {
 		File dir = new File(_pluginDir, "WEB-INF/tld");
 
 		if (!dir.exists() || !dir.isDirectory()) {
@@ -1060,11 +1326,7 @@ public class WabProcessor {
 
 				String fileName = file.getName();
 
-				if (fileName.endsWith(".tld")) {
-					return true;
-				}
-
-				return false;
+				return fileName.endsWith(".tld");
 			});
 
 		for (File file : files) {
@@ -1077,18 +1339,12 @@ public class WabProcessor {
 
 				value = value.trim();
 
-				processClass(analyzer, value);
+				_processClass(analyzer, value);
 			}
 		}
 	}
 
-	protected void processWebContextPath(Manifest manifest) {
-		Attributes attributes = manifest.getMainAttributes();
-
-		attributes.putValue("Web-ContextPath", getWebContextPath());
-	}
-
-	protected void processWebXML(
+	private void _processWebXML(
 		Element element, List<Element> initParamElements, Class<?> clazz) {
 
 		if (element == null) {
@@ -1120,21 +1376,21 @@ public class WabProcessor {
 		}
 	}
 
-	protected void processWebXML(String path) throws IOException {
+	private void _processWebXML(String path) throws IOException {
 		File file = new File(_pluginDir, path);
 
 		if (!file.exists()) {
 			return;
 		}
 
-		Document document = readDocument(file);
+		Document document = _readDocument(file);
 
 		Element rootElement = document.getRootElement();
 
 		for (Element element : rootElement.elements("filter")) {
 			Element filterClassElement = element.element("filter-class");
 
-			processWebXML(
+			_processWebXML(
 				filterClassElement, element.elements("init-param"),
 				PortalClassLoaderFilter.class);
 		}
@@ -1142,22 +1398,22 @@ public class WabProcessor {
 		for (Element element : rootElement.elements("servlet")) {
 			Element servletClassElement = element.element("servlet-class");
 
-			processWebXML(
+			_processWebXML(
 				servletClassElement, element.elements("init-param"),
 				PortalClassLoaderServlet.class);
 		}
 
-		formatDocument(file, document);
+		_formatDocument(file, document);
 	}
 
-	protected void processXMLDependencies(
+	private void _processXMLDependencies(
 		Analyzer analyzer, File file, String xPathExpression) {
 
 		if (!file.exists()) {
 			return;
 		}
 
-		Document document = readDocument(file);
+		Document document = _readDocument(file);
 
 		if (!document.hasContent()) {
 			return;
@@ -1174,12 +1430,12 @@ public class WabProcessor {
 
 			text = text.trim();
 
-			processClass(analyzer, text);
+			_processClass(analyzer, text);
 		}
 	}
 
-	protected void processXMLDependencies(
-			Analyzer analyzer, Path path, String suffix, String xPathExpression)
+	private void _processXMLDependencies(
+			Analyzer analyzer, Path path, String suffix)
 		throws IOException {
 
 		File file = path.toFile();
@@ -1188,29 +1444,37 @@ public class WabProcessor {
 			return;
 		}
 
-		Stream<Path> pathStream = Files.walk(path);
+		Files.walkFileTree(
+			path,
+			new SimpleFileVisitor<Path>() {
 
-		Stream<File> fileStream = pathStream.map(Path::toFile);
+				@Override
+				public FileVisitResult visitFile(
+						Path filePath, BasicFileAttributes basicFileAttributes)
+					throws IOException {
 
-		fileStream.forEach(
-			entry -> {
-				String pathString = entry.getPath();
+					String pathString = filePath.toString();
 
-				if (pathString.endsWith(suffix)) {
-					processXMLDependencies(analyzer, entry, _XPATHS_SPRING);
+					if (pathString.endsWith(suffix)) {
+						_processXMLDependencies(
+							analyzer, filePath.toFile(), _XPATHS_SPRING);
+					}
+
+					return FileVisitResult.CONTINUE;
 				}
+
 			});
 	}
 
-	protected void processXMLDependencies(
+	private void _processXMLDependencies(
 		Analyzer analyzer, String fileName, String xPathExpression) {
 
 		File file = new File(_pluginDir, fileName);
 
-		processXMLDependencies(analyzer, file, xPathExpression);
+		_processXMLDependencies(analyzer, file, xPathExpression);
 	}
 
-	protected Document readDocument(File file) {
+	private Document _readDocument(File file) {
 		try {
 			String content = FileUtil.read(file);
 
@@ -1218,19 +1482,22 @@ public class WabProcessor {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return SAXReaderUtil.createDocument();
 		}
 	}
 
-	protected File transformToOSGiBundle(Jar jar) throws IOException {
+	private File _transformToOSGiBundle(
+			Jar jar, Properties pluginPackageProperties)
+		throws IOException {
+
 		try (Builder analyzer = new Builder()) {
 			analyzer.setBase(_pluginDir);
 			analyzer.setJar(jar);
 			analyzer.setProperty("-jsp", "*.jsp,*.jspf,*.jspx");
-			analyzer.setProperty("Web-ContextPath", getWebContextPath());
+			analyzer.setProperty("Web-ContextPath", _getWebContextPath());
 
 			List<Object> disabledPlugins = new ArrayList<>();
 			Properties properties = PropsUtil.getProperties(
@@ -1262,8 +1529,6 @@ public class WabProcessor {
 
 			plugins.add(new JspAnalyzerPlugin());
 
-			Properties pluginPackageProperties = getPluginPackageProperties();
-
 			if (pluginPackageProperties.containsKey("portal-dependency-jars") &&
 				_log.isWarnEnabled()) {
 
@@ -1273,34 +1538,42 @@ public class WabProcessor {
 							"path.");
 			}
 
-			processBundleVersion(analyzer);
-			processBundleClasspath(analyzer, pluginPackageProperties);
-			processBundleSymbolicName(analyzer);
-			processExtraHeaders(analyzer);
-			processPluginPackagePropertiesExportImportPackages(
+			_processBundleVersion(analyzer);
+			_processBundleClasspath(analyzer);
+			_processBundleSymbolicName(analyzer);
+			_processExtraHeaders(analyzer);
+			_processPluginPackagePropertiesExportImportPackages(
 				pluginPackageProperties);
 
-			processBundleManifestVersion(analyzer);
+			_processBundleManifestVersion(analyzer);
 
-			processLiferayPortletXML();
-			processWebXML("WEB-INF/web.xml");
-			processWebXML("WEB-INF/liferay-web.xml");
+			_processLiferayPortletXML();
+			_processWebXML("WEB-INF/web.xml");
+			_processWebXML("WEB-INF/liferay-web.xml");
 
-			processResourceActionXML();
+			_processResourceActionXML();
 
-			processDeclarativeReferences(analyzer);
+			_processDeclarativeReferences(analyzer);
 
-			processExtraRequirements();
+			_processExtraRequirements();
 
-			processPackageNames(analyzer);
+			_processPackageNames(analyzer);
 
-			processRequiredDeploymentContexts(analyzer);
+			_processRequiredDeploymentContexts(analyzer);
 
 			_processExcludedJSPs(analyzer);
 
-			analyzer.setProperties(pluginPackageProperties);
+			_processBeans(analyzer);
 
-			processBeans(analyzer);
+			_processOSGiConfigurator(jar, analyzer);
+
+			for (String stringPropertyName :
+					pluginPackageProperties.stringPropertyNames()) {
+
+				analyzer.setProperty(
+					stringPropertyName,
+					pluginPackageProperties.getProperty(stringPropertyName));
+			}
 
 			try {
 				jar = analyzer.build();
@@ -1318,7 +1591,7 @@ public class WabProcessor {
 		}
 	}
 
-	protected void writeAutoDeployedWar(File pluginDir) {
+	private void _writeAutoDeployedWar(File pluginDir) {
 		File dir = new File(
 			PropsValues.
 				MODULE_FRAMEWORK_WEB_GENERATOR_GENERATED_WABS_STORE_DIR);
@@ -1350,7 +1623,7 @@ public class WabProcessor {
 		}
 	}
 
-	protected void writeGeneratedWab(File file) throws IOException {
+	private void _writeGeneratedWab(File file) throws IOException {
 		File dir = new File(
 			PropsValues.
 				MODULE_FRAMEWORK_WEB_GENERATOR_GENERATED_WABS_STORE_DIR);
@@ -1377,74 +1650,6 @@ public class WabProcessor {
 		FileUtil.copyFile(file, new File(dir, sb.toString()));
 	}
 
-	private Discover _findDiscoveryMode(Document document) {
-		if (!document.hasContent()) {
-			return Discover.all;
-		}
-
-		Element rootElement = document.getRootElement();
-
-		// bean-discovery-mode="all" version="1.1"
-
-		XPath xPath = SAXReaderUtil.createXPath(
-			"/cdi-beans:beans/@version", _xsds);
-
-		Node versionNode = xPath.selectSingleNode(rootElement);
-
-		if (versionNode == null) {
-			return Discover.all;
-		}
-
-		Version version = Version.valueOf(versionNode.getStringValue());
-
-		if (_CDI_ARCHIVE_VERSION.compareTo(version) <= 0) {
-			xPath = SAXReaderUtil.createXPath(
-				"/cdi-beans:beans/@bean-discovery-mode", _xsds);
-
-			Node beanDiscoveryModeNode = xPath.selectSingleNode(rootElement);
-
-			if (beanDiscoveryModeNode == null) {
-				return Discover.annotated;
-			}
-
-			return Discover.valueOf(beanDiscoveryModeNode.getStringValue());
-		}
-
-		return Discover.all;
-	}
-
-	private void _processExcludedJSPs(Analyzer analyzer) {
-		File file = new File(_pluginDir, "/WEB-INF/liferay-hook.xml");
-
-		if (!file.exists()) {
-			return;
-		}
-
-		Document document = readDocument(file);
-
-		if (!document.hasContent()) {
-			return;
-		}
-
-		Element rootElement = document.getRootElement();
-
-		List<Node> nodes = rootElement.selectNodes("//custom-jsp-dir");
-
-		String value = analyzer.getProperty("-jsp");
-
-		for (Node node : nodes) {
-			String text = node.getText();
-
-			if (text.startsWith("/")) {
-				text = text.substring(1);
-			}
-
-			value = StringBundler.concat("!", text, "/*,", value);
-		}
-
-		analyzer.setProperty("-jsp", value);
-	}
-
 	/**
 	 * Used diagnostic testing.
 	 */
@@ -1455,22 +1660,28 @@ public class WabProcessor {
 
 	private static final Version _CDI_ARCHIVE_VERSION = new Version(1, 1, 0);
 
-	private static final String _CDI_REQUIREMENTS = StringBundler.concat(
+	private static final String[] _KNOWN_PROPERTY_KEYS = {
+		"jdbc.driverClassName"
+	};
+
+	private static final String _LIFERAY_CLIENT_EXTENSION_BATCH =
+		"Liferay-Client-Extension-Batch";
+
+	private static final String _LIFERAY_CLIENT_EXTENSION_FRONTEND =
+		"Liferay-Client-Extension-Frontend";
+
+	private static final String _LIFERAY_CLIENT_EXTENSION_SITE_INITIALIZER =
+		"Liferay-Client-Extension-Site-Initializer";
+
+	private static final String _REQUIRE_CAPABILITY_CDI = StringBundler.concat(
 		"osgi.cdi.extension;filter:='(osgi.cdi.extension=aries.cdi.http)',",
 		"osgi.cdi.extension;filter:='(osgi.cdi.extension=aries.cdi.el.jsp)',",
 		"osgi.cdi.extension;filter:='(osgi.cdi.extension=",
 		"com.liferay.bean.portlet.cdi.extension)'");
 
-	private static final String[] _KNOWN_PROPERTY_KEYS = {
-		"jdbc.driverClassName"
-	};
-
-	private static final String _XPATHS_HBM = StringUtil.merge(
-		new String[] {
-			"//class/@name", "//id/@access", "//import/@class",
-			"//property/@type"
-		},
-		"|");
+	private static final String _REQUIRE_CAPABILITY_OSGI_CONFIGURATOR =
+		"osgi.extender;filter:=\"(&(osgi.extender=osgi.configurator)" +
+			"(version>=1.0)(!(version>=2.0)))\"";
 
 	private static final String _XPATHS_HOOK = StringUtil.merge(
 		new String[] {
@@ -1482,8 +1693,10 @@ public class WabProcessor {
 	private static final String _XPATHS_JAVAEE = StringUtil.merge(
 		new String[] {
 			"//j2ee:filter-class", "//j2ee:listener-class",
-			"//j2ee:servlet-class", "//javaee:filter-class",
-			"//javaee:listener-class", "//javaee:servlet-class"
+			"//j2ee:servlet-class", "//jakartaee:filter-class",
+			"//jakartaee:listener-class", "//jakartaee:servlet-class",
+			"//javaee:filter-class", "//javaee:listener-class",
+			"//javaee:servlet-class"
 		},
 		"|");
 
@@ -1493,9 +1706,9 @@ public class WabProcessor {
 			"//configuration-action-class", "//control-panel-entry-class",
 			"//custom-attributes-display", "//friendly-url-mapper-class",
 			"//indexer-class", "//open-search-class", "//permission-propagator",
-			"//poller-processor-class", "//pop-message-listener-class",
-			"//portlet-data-handler-class", "//portlet-layout-listener-class",
-			"//portlet-url-class", "//social-activity-interpreter-class",
+			"//pop-message-listener-class", "//portlet-data-handler-class",
+			"//portlet-layout-listener-class", "//portlet-url-class",
+			"//social-activity-interpreter-class",
 			"//social-request-interpreter-class", "//url-encoder-class",
 			"//webdav-storage-class", "//workflow-handler",
 			"//xml-rpc-method-class"
@@ -1526,6 +1739,7 @@ public class WabProcessor {
 
 	private static final Log _log = LogFactoryUtil.getLog(WabProcessor.class);
 
+	private static final List<AutoDeployListener> _autoDeployListeners;
 	private static final Attrs _optionalAttrs = new Attrs() {
 		{
 			put("resolution:", "optional");
@@ -1551,6 +1765,8 @@ public class WabProcessor {
 			"http://www.eclipse.org/gemini/blueprint/schema/blueprint"
 		).put(
 			"j2ee", "http://java.sun.com/xml/ns/j2ee"
+		).put(
+			"jakartaee", "https://jakarta.ee/xml/ns/jakartaee"
 		).put(
 			"javaee", "http://java.sun.com/xml/ns/javaee"
 		).put(
@@ -1579,6 +1795,36 @@ public class WabProcessor {
 			"xsl", "http://www.w3.org/1999/XSL/Transform"
 		).build();
 
+	static {
+		List<AutoDeployListener> autoDeployListeners = new ArrayList<>();
+
+		String[] autoDeployListenerClassNames =
+			com.liferay.portal.util.PropsUtil.getArray(
+				PropsKeys.AUTO_DEPLOY_LISTENERS);
+
+		for (String autoDeployListenerClassName :
+				autoDeployListenerClassNames) {
+
+			try {
+				if (_log.isDebugEnabled()) {
+					_log.debug("Instantiating " + autoDeployListenerClassName);
+				}
+
+				AutoDeployListener autoDeployListener =
+					(AutoDeployListener)InstanceFactory.newInstance(
+						autoDeployListenerClassName);
+
+				autoDeployListeners.add(autoDeployListener);
+			}
+			catch (Exception exception) {
+				_log.error(
+					"Unable to initialiaze auto deploy listener", exception);
+			}
+		}
+
+		_autoDeployListeners = autoDeployListeners;
+	}
+
 	private String _bundleVersion;
 	private String _context;
 	private final Parameters _exportPackageParameters = new Parameters();
@@ -1589,6 +1835,7 @@ public class WabProcessor {
 	private final Map<String, String[]> _parameters;
 	private File _pluginDir;
 	private PluginPackage _pluginPackage;
+	private Properties _pluginPackageProperties;
 	private String _servicePackageName;
 
 }

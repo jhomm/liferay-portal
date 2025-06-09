@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.storage;
@@ -19,10 +10,14 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.document.DocumentBuilderFactory;
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetIndexWriter;
+import com.liferay.portal.search.tuning.synonyms.web.internal.storage.helper.SynonymSetJSONStorageHelper;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -44,7 +39,7 @@ public class SynonymSetStorageAdapter {
 
 		synonymSetBuilder.synonymSetDocumentId(synonymSetDocumentId);
 
-		synonymSetIndexWriter.create(
+		_synonymSetIndexWriter.create(
 			synonymSetIndexName, synonymSetBuilder.build());
 
 		return synonymSetDocumentId;
@@ -58,7 +53,8 @@ public class SynonymSetStorageAdapter {
 		synonymSetJSONStorageHelper.deleteJSONStorageEntry(
 			_getClassPK(synonymSetDocumentId));
 
-		synonymSetIndexWriter.remove(synonymSetIndexName, synonymSetDocumentId);
+		_synonymSetIndexWriter.remove(
+			synonymSetIndexName, synonymSetDocumentId);
 	}
 
 	public void update(
@@ -69,11 +65,14 @@ public class SynonymSetStorageAdapter {
 			_getClassPK(synonymSet.getSynonymSetDocumentId()),
 			synonymSet.getSynonyms());
 
-		synonymSetIndexWriter.update(synonymSetIndexName, synonymSet);
+		_synonymSetIndexWriter.update(synonymSetIndexName, synonymSet);
 	}
 
-	@Reference
-	protected SynonymSetIndexWriter synonymSetIndexWriter;
+	@Activate
+	protected void activate() {
+		_synonymSetIndexWriter = new SynonymSetIndexWriter(
+			_documentBuilderFactory, _searchEngineAdapter);
+	}
 
 	@Reference
 	protected SynonymSetJSONStorageHelper synonymSetJSONStorageHelper;
@@ -100,5 +99,13 @@ public class SynonymSetStorageAdapter {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SynonymSetStorageAdapter.class);
+
+	@Reference
+	private DocumentBuilderFactory _documentBuilderFactory;
+
+	@Reference
+	private SearchEngineAdapter _searchEngineAdapter;
+
+	private SynonymSetIndexWriter _synonymSetIndexWriter;
 
 }

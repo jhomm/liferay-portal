@@ -16,8 +16,23 @@
 	<td></td>
 </tr>
 <tr>
+	<td>DELETE_ANYWAY</td>
+	<td>//div[contains(@class,'header')]//button[@name='Delete']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DELETE_CONFIRMATION</td>
 	<td>//button[@data-automationid='confirmbutton']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DELETE_MESSAGE</td>
+	<td>//div[contains(@class,'ProgressIndicator-itemDescription')]//div[contains(.,'Done')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DELETE_CONFIRM_MESSAGE</td>
+	<td>//div[contains(@class,'ProgressIndicator-itemDescription')]//div[contains(.,'Delete anyway')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -31,14 +46,31 @@
 	<td></td>
 </tr>
 <tr>
+	<td>MENU_ITEM</td>
+	<td>//li[contains(@class,'Menu-item')]//div//*[normalize-space(text())="${key_menuItem}"]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MORE_OPTIONS</td>
+	<td>//div[contains(@class,'CommandBar')]//button[@aria-label='More']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>PAGE_TITLE</td>
 	<td>title=Documents - OneDrive</td>
 	<td></td>
 </tr>
+
 <!--DOCUMENTS-->
+
 <tr>
 	<td>DOCUMENTS_SAVE_STATUS</td>
-	<td>//span[@data-unique-id='DocumentTitleSaveStatus' and contains(.,'Saved')]</td>
+	<td>//div[contains(@aria-label,'aved') and not(contains(@aria-label,'Saving'))] | //i[contains(@data-icon-name,'BreadcrumbTitle')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DOCUMENTS_SAVE_STATUS_DETAILS</td>
+	<td>//div[contains(@id,'saveStatusValue') and contains(text(), 'aved') and not(contains(text(),'Saving'))]</td>
 	<td></td>
 </tr>
 <tr>
@@ -48,7 +80,7 @@
 </tr>
 <tr>
 	<td>DOCUMENTS_TITLE_RENAME</td>
-	<td>//input[@id='CommitNewDocumentTitle']</td>
+	<td>//input[@id='CommitNewDocumentTitle' and not(@readonly)]</td>
 	<td></td>
 </tr>
 <tr>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.taglib.servlet.taglib;
@@ -18,9 +9,9 @@ import com.liferay.portal.workflow.taglib.internal.constants.WorkflowStatusConst
 import com.liferay.portal.workflow.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Feliphe Marinho
@@ -42,8 +33,8 @@ public class WorkflowStatusTag extends IncludeTag {
 		return _id;
 	}
 
-	public Class<?> getModel() {
-		return _model;
+	public Class<?> getModelClass() {
+		return _modelClass;
 	}
 
 	public Integer getStatus() {
@@ -74,8 +65,8 @@ public class WorkflowStatusTag extends IncludeTag {
 		_id = id;
 	}
 
-	public void setModel(Class<?> model) {
-		_model = model;
+	public void setModelClass(Class<?> modelClass) {
+		_modelClass = modelClass;
 	}
 
 	@Override
@@ -111,7 +102,7 @@ public class WorkflowStatusTag extends IncludeTag {
 
 		_bean = null;
 		_id = null;
-		_model = null;
+		_modelClass = null;
 		_showInstanceTracker = false;
 		_showStatusLabel = true;
 		_status = null;
@@ -140,14 +131,14 @@ public class WorkflowStatusTag extends IncludeTag {
 		setNamespacedAttribute(httpServletRequest, "bean", bean);
 		setNamespacedAttribute(httpServletRequest, "id", _id);
 
-		Class<?> model = getModel();
+		Class<?> modelClass = getModelClass();
 
-		if (model == null) {
-			model = (Class<?>)pageContext.getAttribute(
+		if (modelClass == null) {
+			modelClass = (Class<?>)pageContext.getAttribute(
 				"aui:model-context:model");
 		}
 
-		setNamespacedAttribute(httpServletRequest, "model", model);
+		setNamespacedAttribute(httpServletRequest, "modelClass", modelClass);
 		setNamespacedAttribute(
 			httpServletRequest, "showInstanceTracker", _showInstanceTracker);
 		setNamespacedAttribute(
@@ -160,7 +151,7 @@ public class WorkflowStatusTag extends IncludeTag {
 
 	private Object _bean;
 	private String _id;
-	private Class<?> _model;
+	private Class<?> _modelClass;
 	private boolean _showInstanceTracker;
 	private boolean _showStatusLabel = true;
 	private Integer _status;

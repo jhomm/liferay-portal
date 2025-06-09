@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.index.contributor.helper;
@@ -22,15 +13,11 @@ import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
 import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Adam Brandizzi
@@ -42,14 +29,9 @@ public class ModelIndexerWriterDocumentHelperTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-	}
-
 	@Test
 	public void testException() throws PortalException {
-		throwIndexNameBuilderException(new SystemException());
+		_throwIndexNameBuilderException(new SystemException());
 
 		ModelIndexerWriterDocumentHelper modelIndexerWriterDocumentHelper =
 			new ModelIndexerWriterDocumentHelperImpl(
@@ -58,18 +40,16 @@ public class ModelIndexerWriterDocumentHelperTest {
 		modelIndexerWriterDocumentHelper.getDocument(baseModel);
 	}
 
-	protected void throwIndexNameBuilderException(Exception exception) {
+	protected BaseModel<?> baseModel = Mockito.mock(BaseModel.class);
+	protected IndexerDocumentBuilder indexDocumentBuilder = Mockito.mock(
+		IndexerDocumentBuilder.class);
+
+	private void _throwIndexNameBuilderException(Exception exception) {
 		Mockito.when(
-			indexDocumentBuilder.getDocument(Matchers.any())
+			indexDocumentBuilder.getDocument(Mockito.any())
 		).thenThrow(
 			exception
 		);
 	}
-
-	@Mock
-	protected BaseModel<?> baseModel;
-
-	@Mock
-	protected IndexerDocumentBuilder indexDocumentBuilder;
 
 }

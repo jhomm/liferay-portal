@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLabel from '@clayui/label';
@@ -20,21 +11,20 @@ import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
 
-import EmptyResultMessage from '../../EmptyResultMessage';
-import ActionsDropdownRenderer from '../../data_renderers/ActionsDropdownRenderer';
+import Actions from '../../actions/Actions';
 
 function Email({
 	actionDropdownItems,
 	author,
 	borderBottom,
-	dataSetContext,
 	date,
+	frontendDataSetContext,
 	href,
 	status,
 	subject,
 	summary,
 }) {
-	const {openSidePanel} = useContext(dataSetContext);
+	const {openSidePanel} = useContext(frontendDataSetContext);
 
 	function handleClickOnSubject(event) {
 		event.preventDefault();
@@ -74,16 +64,19 @@ function Email({
 										</ClaySticker>
 									</div>
 								)}
+
 								<div className="col d-flex flex-column justify-content-center">
 									<small className="d-block text-body">
 										<strong>{author.name}</strong>
 									</small>
+
 									<small className="d-block">
 										{author.email}
 									</small>
 								</div>
 							</div>
 						</div>
+
 						<div className="col-auto d-flex flex-column justify-content-center">
 							<ClayLabel
 								displayType={status.displayStyle || 'success'}
@@ -91,24 +84,26 @@ function Email({
 								{status.label}
 							</ClayLabel>
 						</div>
+
 						<div className="col-auto d-flex flex-column justify-content-center">
 							<small>{date}</small>
 						</div>
+
 						<div className="col-12">
-							<h5 className="mt-3">
+							<div className="h5 mt-3">
 								<a href="#" onClick={handleClickOnSubject}>
 									{subject}
 								</a>
-							</h5>
+							</div>
+
 							<div>{summary}</div>
 						</div>
 					</div>
 				</div>
+
 				{actionDropdownItems.length ? (
 					<div className="col-auto d-flex flex-column justify-content-center">
-						<ActionsDropdownRenderer
-							actions={actionDropdownItems}
-						/>
+						<Actions actions={actionDropdownItems} />
 					</div>
 				) : null}
 			</div>
@@ -138,15 +133,15 @@ Email.defaultProps = {
 	actionItems: [],
 };
 
-function EmailsList({dataLoading, dataSetContext, items}) {
-	const {style} = useContext(dataSetContext);
+function EmailsList({dataLoading, frontendDataSetContext, items}) {
+	const {style} = useContext(frontendDataSetContext);
 
 	if (dataLoading) {
 		return <ClayLoadingIndicator className="mt-7" />;
 	}
 
 	if (!items?.length) {
-		return <EmptyResultMessage />;
+		return null;
 	}
 
 	return (
@@ -161,7 +156,7 @@ function EmailsList({dataLoading, dataSetContext, items}) {
 					key={i}
 					{...item}
 					borderBottom={i !== items.length - 1}
-					dataSetContext={dataSetContext}
+					frontendDataSetContext={frontendDataSetContext}
 				/>
 			))}
 		</ClayList>
@@ -169,8 +164,7 @@ function EmailsList({dataLoading, dataSetContext, items}) {
 }
 
 EmailsList.propTypes = {
-	dataRenderers: PropTypes.object,
-	dataSetContext: PropTypes.any,
+	frontendDataSetContext: PropTypes.any,
 	items: PropTypes.array,
 };
 

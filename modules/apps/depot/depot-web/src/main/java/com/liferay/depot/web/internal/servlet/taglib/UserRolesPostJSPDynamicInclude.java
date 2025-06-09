@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.servlet.taglib;
 
 import com.liferay.depot.web.internal.display.context.DepotAdminRolesDisplayContext;
-import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -24,14 +14,14 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,6 +31,11 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = DynamicInclude.class)
 public class UserRolesPostJSPDynamicInclude extends BaseJSPDynamicInclude {
+
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
+	}
 
 	@Override
 	public void include(
@@ -65,7 +60,7 @@ public class UserRolesPostJSPDynamicInclude extends BaseJSPDynamicInclude {
 			super.include(httpServletRequest, httpServletResponse, key);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 	}
 
@@ -86,21 +81,13 @@ public class UserRolesPostJSPDynamicInclude extends BaseJSPDynamicInclude {
 		return _log;
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.depot.web)", unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		UserRolesPostJSPDynamicInclude.class);
 
 	@Reference
-	private ItemSelector _itemSelector;
-
-	@Reference
 	private Portal _portal;
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.depot.web)")
+	private ServletContext _servletContext;
 
 }

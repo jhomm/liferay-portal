@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.search.index;
@@ -18,10 +9,13 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.internal.sla.WorkflowMetricsInstanceSLAStatus;
 import com.liferay.portal.workflow.metrics.search.index.InstanceWorkflowMetricsIndexer;
 import com.liferay.portal.workflow.metrics.search.index.TaskWorkflowMetricsIndexer;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 
 import java.time.Duration;
 
@@ -35,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Inácio Nery
  */
-@Component(immediate = true, service = InstanceWorkflowMetricsIndexer.class)
+@Component(service = InstanceWorkflowMetricsIndexer.class)
 public class InstanceWorkflowMetricsIndexerImpl
 	extends BaseWorkflowMetricsIndexer
 	implements InstanceWorkflowMetricsIndexer {
@@ -49,7 +43,9 @@ public class InstanceWorkflowMetricsIndexerImpl
 
 		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
 
-		documentBuilder.setString(
+		documentBuilder.setValue(
+			"active", true
+		).setString(
 			"className", className
 		).setLong(
 			"classPK", classPK
@@ -142,43 +138,14 @@ public class InstanceWorkflowMetricsIndexerImpl
 			() -> {
 				updateDocument(document);
 
-				BooleanQuery booleanQuery = queries.booleanQuery();
-
-				booleanQuery.addMustQueryClauses(
-					queries.term("companyId", companyId),
-					queries.term("instanceId", instanceId));
-
-				_slaInstanceResultWorkflowMetricsIndexer.updateDocuments(
+				_updateDocuments(
 					companyId,
 					HashMapBuilder.<String, Object>put(
 						"completionDate", document.getDate("completionDate")
 					).put(
 						"instanceCompleted", Boolean.TRUE
 					).build(),
-					booleanQuery);
-
-				_slaTaskResultWorkflowMetricsIndexer.updateDocuments(
-					companyId,
-					HashMapBuilder.<String, Object>put(
-						"instanceCompleted", Boolean.TRUE
-					).put(
-						"instanceCompletionDate",
-						document.getDate("completionDate")
-					).build(),
-					booleanQuery);
-
-				BaseWorkflowMetricsIndexer baseWorkflowMetricsIndexer =
-					(BaseWorkflowMetricsIndexer)_taskWorkflowMetricsIndexer;
-
-				baseWorkflowMetricsIndexer.updateDocuments(
-					companyId,
-					HashMapBuilder.<String, Object>put(
-						"instanceCompleted", Boolean.TRUE
-					).put(
-						"instanceCompletionDate",
-						document.getDate("completionDate")
-					).build(),
-					booleanQuery);
+					instanceId);
 			});
 
 		return document;
@@ -210,22 +177,27 @@ public class InstanceWorkflowMetricsIndexerImpl
 
 	@Override
 	public String getIndexName(long companyId) {
-		return _instanceWorkflowMetricsIndex.getIndexName(companyId);
+		return WorkflowMetricsIndex.getIndexName(
+			_indexNameBuilder,
+			WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE, companyId);
 	}
 
 	@Override
 	public String getIndexType() {
-		return _instanceWorkflowMetricsIndex.getIndexType();
+		return WorkflowMetricsIndexTypeConstants.INSTANCE_TYPE;
 	}
 
 	@Override
 	public Document updateInstance(
-		Map<Locale, String> assetTitleMap, Map<Locale, String> assetTypeMap,
-		long companyId, long instanceId, Date modifiedDate) {
+		boolean active, Map<Locale, String> assetTitleMap,
+		Map<Locale, String> assetTypeMap, long companyId, long instanceId,
+		Date modifiedDate) {
 
 		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
 
-		documentBuilder.setLong(
+		documentBuilder.setValue(
+			"active", active
+		).setLong(
 			"companyId", companyId
 		).setDate(
 			"modifiedDate", getDate(modifiedDate)
@@ -238,7 +210,17 @@ public class InstanceWorkflowMetricsIndexerImpl
 
 		Document document = documentBuilder.build();
 
-		workflowMetricsPortalExecutor.execute(() -> updateDocument(document));
+		workflowMetricsPortalExecutor.execute(
+			() -> {
+				updateDocument(document);
+
+				_updateDocuments(
+					companyId,
+					HashMapBuilder.<String, Object>put(
+						"active", active
+					).build(),
+					instanceId);
+			});
 
 		return document;
 	}
@@ -250,8 +232,30 @@ public class InstanceWorkflowMetricsIndexerImpl
 		return duration.toMillis();
 	}
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
+	private void _updateDocuments(
+		long companyId, Map<String, Object> fieldsMap, long instanceId) {
+
+		BooleanQuery booleanQuery = queries.booleanQuery();
+
+		booleanQuery.addMustQueryClauses(
+			queries.term("companyId", companyId),
+			queries.term("instanceId", instanceId));
+
+		_slaInstanceResultWorkflowMetricsIndexer.updateDocuments(
+			companyId, fieldsMap, booleanQuery);
+
+		_slaTaskResultWorkflowMetricsIndexer.updateDocuments(
+			companyId, fieldsMap, booleanQuery);
+
+		BaseWorkflowMetricsIndexer baseWorkflowMetricsIndexer =
+			(BaseWorkflowMetricsIndexer)_taskWorkflowMetricsIndexer;
+
+		baseWorkflowMetricsIndexer.updateDocuments(
+			companyId, fieldsMap, booleanQuery);
+	}
+
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private SLAInstanceResultWorkflowMetricsIndexer

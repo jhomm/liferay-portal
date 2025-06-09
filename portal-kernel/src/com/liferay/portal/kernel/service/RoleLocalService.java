@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -35,6 +26,7 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -61,6 +53,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Role"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -74,40 +69,13 @@ public interface RoleLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.portal.service.impl.RoleLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the role local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link RoleLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	public void addGroupRole(long groupId, long roleId);
+	public boolean addGroupRole(long groupId, long roleId);
 
-	public void addGroupRole(long groupId, Role role);
+	public boolean addGroupRole(long groupId, Role role);
 
-	public void addGroupRoles(long groupId, List<Role> roles);
+	public boolean addGroupRoles(long groupId, List<Role> roles);
 
-	public void addGroupRoles(long groupId, long[] roleIds);
-
-	/**
-	 * Adds a role with additional parameters. The user is reindexed after role
-	 * is added.
-	 *
-	 * @param userId the primary key of the user
-	 * @param className the name of the class for which the role is created
-	 (optionally <code>null</code>)
-	 * @param classPK the primary key of the class for which the role is
-	 created (optionally <code>0</code>)
-	 * @param name the role's name
-	 * @param titleMap the role's localized titles (optionally
-	 <code>null</code>)
-	 * @param descriptionMap the role's localized descriptions (optionally
-	 <code>null</code>)
-	 * @param type the role's type (optionally <code>0</code>)
-	 * @param subtype the role's subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 role.
-	 * @return the role
-	 */
-	public Role addRole(
-			long userId, String className, long classPK, String name,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			int type, String subtype, ServiceContext serviceContext)
-		throws PortalException;
+	public boolean addGroupRoles(long groupId, long[] roleIds);
 
 	/**
 	 * Adds the role to the database. Also notifies the appropriate model listeners.
@@ -122,26 +90,34 @@ public interface RoleLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Role addRole(Role role);
 
-	/**
-	 * @throws PortalException
-	 */
-	public void addUserRole(long userId, long roleId) throws PortalException;
-
-	/**
-	 * @throws PortalException
-	 */
-	public void addUserRole(long userId, Role role) throws PortalException;
-
-	/**
-	 * @throws PortalException
-	 */
-	public void addUserRoles(long userId, List<Role> roles)
+	@Indexable(type = IndexableType.REINDEX)
+	public Role addRole(
+			String externalReferenceCode, long userId, String className,
+			long classPK, String name, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap, int type, String subtype,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addUserRoles(long userId, long[] roleIds)
+	public boolean addUserRole(long userId, long roleId) throws PortalException;
+
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserRole(long userId, Role role) throws PortalException;
+
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserRoles(long userId, List<Role> roles)
+		throws PortalException;
+
+	/**
+	 * @throws PortalException
+	 */
+	public boolean addUserRoles(long userId, long[] roleIds)
 		throws PortalException;
 
 	/**
@@ -341,6 +317,10 @@ public interface RoleLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Role fetchRole(long companyId, String name);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Role fetchRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the role with the matching UUID and company.
 	 *
@@ -404,20 +384,27 @@ public interface RoleLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Role> getGroupRolesAndTeamRoles(
-		long companyId, String keywords, List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId, int start,
-		int end);
+		long companyId, String name, List<String> excludedNames, String title,
+		String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getGroupRolesAndTeamRolesCount(
-		long companyId, String keywords, List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId);
+		long companyId, String name, List<String> excludedNames, String title,
+		String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getGroupRolesCount(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Role getOrAddIncompleteRole(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK, String name, int type)
+		throws Exception;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -488,6 +475,11 @@ public interface RoleLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Role getRole(long companyId, String name) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
 
 	/**
 	 * Returns the role with the matching UUID and company.
@@ -701,7 +693,9 @@ public interface RoleLocalService
 	public long[] getUserPrimaryKeys(long roleId);
 
 	/**
-	 * Returns the union of all the user's roles within the groups.
+	 * Returns the union of all the user's roles within the groups. If no
+	 * groups are provided, only the user's directly assigned roles are
+	 * returned.
 	 *
 	 * @param userId the primary key of the user
 	 * @param groups the groups (optionally <code>null</code>)
@@ -721,7 +715,9 @@ public interface RoleLocalService
 	public List<Role> getUserRelatedRoles(long userId, long groupId);
 
 	/**
-	 * Returns the union of all the user's roles within the groups.
+	 * Returns the union of all the user's roles within the groups. If no
+	 * groupIds are provided, only the user's directly assigned roles are
+	 * returned.
 	 *
 	 * @param userId the primary key of the user
 	 * @param groupIds the primary keys of the groups
@@ -793,33 +789,6 @@ public interface RoleLocalService
 	public boolean hasUserRoles(
 			long userId, long companyId, String[] names, boolean inherited)
 		throws PortalException;
-
-	/**
-	 * Returns a role with the name in the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param name the role's name (optionally <code>null</code>)
-	 * @return the role with the name, or <code>null</code> if a role with the
-	 name could not be found in the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #fetchRole(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Role loadFetchRole(long companyId, String name);
-
-	/**
-	 * Returns a role with the name in the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param name the role's name
-	 * @return the role with the name in the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getRole(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Role loadGetRole(long companyId, String name) throws PortalException;
 
 	/**
 	 * Returns an ordered range of all the roles that match the keywords and
@@ -1034,6 +1003,27 @@ public interface RoleLocalService
 	public void unsetUserRoles(long userId, long[] roleIds)
 		throws PortalException;
 
+	public Role updateExternalReferenceCode(
+			long roleId, String externalReferenceCode)
+		throws PortalException;
+
+	public Role updateExternalReferenceCode(
+			Role role, String externalReferenceCode)
+		throws PortalException;
+
+	/**
+	 * Updates the role in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect RoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
+	 * @param role the role
+	 * @return the role that was updated
+	 */
+	@Indexable(type = IndexableType.REINDEX)
+	public Role updateRole(Role role);
+
 	/**
 	 * Updates the role with the primary key.
 	 *
@@ -1049,24 +1039,12 @@ public interface RoleLocalService
 	 role.
 	 * @return the role with the primary key
 	 */
-	public Role updateRole(
-			long roleId, String name, Map<Locale, String> titleMap,
-			Map<Locale, String> descriptionMap, String subtype,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * Updates the role in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
-	 *
-	 * <p>
-	 * <strong>Important:</strong> Inspect RoleLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
-	 * </p>
-	 *
-	 * @param role the role
-	 * @return the role that was updated
-	 */
 	@Indexable(type = IndexableType.REINDEX)
-	public Role updateRole(Role role);
+	public Role updateRole(
+			String externalReferenceCode, long roleId, String name,
+			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
+			String subtype, ServiceContext serviceContext)
+		throws PortalException;
 
 	public void validateName(String name) throws PortalException;
 

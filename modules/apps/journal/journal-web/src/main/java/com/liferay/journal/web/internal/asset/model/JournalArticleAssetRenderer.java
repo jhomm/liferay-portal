@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.asset.model;
@@ -20,7 +11,8 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.model.BaseJSPAssetRenderer;
 import com.liferay.asset.kernel.model.DDMFormValuesReader;
-import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverter;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalPortletKeys;
@@ -28,53 +20,52 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalArticleDisplay;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.util.JournalContent;
-import com.liferay.journal.util.JournalConverter;
+import com.liferay.journal.util.JournalHelper;
 import com.liferay.journal.web.internal.asset.JournalArticleDDMFormValuesReader;
 import com.liferay.journal.web.internal.security.permission.resource.JournalArticlePermission;
 import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
-import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Julio Camarero
@@ -97,8 +88,13 @@ public class JournalArticleAssetRenderer
 		return article.getResourcePrimKey();
 	}
 
-	public JournalArticleAssetRenderer(JournalArticle article) {
+	public JournalArticleAssetRenderer(
+		JournalArticle article, HtmlParser htmlParser,
+		JournalHelper journalHelper) {
+
 		_article = article;
+		_htmlParser = htmlParser;
+		_journalHelper = journalHelper;
 	}
 
 	public JournalArticle getArticle() {
@@ -132,15 +128,7 @@ public class JournalArticleAssetRenderer
 
 	@Override
 	public DDMFormValuesReader getDDMFormValuesReader() {
-		JournalArticleDDMFormValuesReader journalArticleDDMFormValuesReader =
-			new JournalArticleDDMFormValuesReader(_article);
-
-		journalArticleDDMFormValuesReader.setFieldsToDDMFormValuesConverter(
-			_fieldsToDDMFormValuesConverter);
-		journalArticleDDMFormValuesReader.setJournalConverter(
-			_journalConverter);
-
-		return journalArticleDDMFormValuesReader;
+		return new JournalArticleDDMFormValuesReader(_article);
 	}
 
 	@Override
@@ -158,7 +146,7 @@ public class JournalArticleAssetRenderer
 						_article.getCompanyId());
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				return null;
 			}
@@ -207,41 +195,10 @@ public class JournalArticleAssetRenderer
 	public String getSummary(
 		PortletRequest portletRequest, PortletResponse portletResponse) {
 
-		Locale locale = getLocale(portletRequest);
-
-		String summary = _article.getDescription(locale);
+		String summary = _article.getDescription(getLocale(portletRequest));
 
 		if (Validator.isNotNull(summary)) {
-			return HtmlUtil.render(HtmlUtil.stripHtml(summary));
-		}
-
-		try {
-			PortletRequestModel portletRequestModel = null;
-			ThemeDisplay themeDisplay = null;
-
-			if ((portletRequest != null) && (portletResponse != null)) {
-				portletRequestModel = new PortletRequestModel(
-					portletRequest, portletResponse);
-				themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-			}
-
-			String ddmTemplateKey = ParamUtil.getString(
-				portletRequest, "ddmTemplateKey");
-
-			JournalArticleDisplay articleDisplay =
-				JournalArticleLocalServiceUtil.getArticleDisplay(
-					_article, ddmTemplateKey, null,
-					LanguageUtil.getLanguageId(locale), 1, portletRequestModel,
-					themeDisplay);
-
-			summary = HtmlUtil.render(
-				HtmlUtil.stripHtml(articleDisplay.getContent()));
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
+			return _htmlParser.render(HtmlUtil.stripHtml(summary));
 		}
 
 		return summary;
@@ -291,8 +248,8 @@ public class JournalArticleAssetRenderer
 			PortalUtil.getControlPanelPortletURL(
 				httpServletRequest, group, JournalPortletKeys.JOURNAL, 0, 0,
 				PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/edit_article.jsp"
+		).setMVCRenderCommandName(
+			"/journal/edit_article"
 		).setParameter(
 			"articleId", _article.getArticleId()
 		).setParameter(
@@ -347,7 +304,7 @@ public class JournalArticleAssetRenderer
 			return _article.getUrlTitle(locale);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return getUrlTitle();
@@ -391,63 +348,80 @@ public class JournalArticleAssetRenderer
 			LiferayPortletRequest liferayPortletRequest,
 			LiferayPortletResponse liferayPortletResponse,
 			String noSuchEntryRedirect)
-		throws Exception {
+		throws PortalException {
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getURLViewInContext(
+			ThemeDisplay themeDisplay, String noSuchEntryRedirect)
+		throws PortalException {
+
+		if (!_isShowDisplayPage(themeDisplay.getScopeGroupId(), _article)) {
+			return _getHitLayoutURL(noSuchEntryRedirect, themeDisplay);
+		}
+
 		Layout layout = _article.getLayout();
 
 		if (layout == null) {
-			layout = themeDisplay.getLayout();
+			AssetRendererFactory<JournalArticle> assetRendererFactory =
+				getAssetRendererFactory();
+
+			AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
+				getClassName(), getClassPK());
+
+			layout = _getArticleLayout(
+				assetEntry.getLayoutUuid(), assetEntry.getGroupId());
 		}
 
-		if (!_isShowDisplayPage(themeDisplay.getScopeGroupId(), _article)) {
-			return getHitLayoutURL(noSuchEntryRedirect, themeDisplay);
+		if (layout != null) {
+			String friendlyURL = _journalHelper.createURLPattern(
+				_article, themeDisplay.getLocale(), layout.isPrivateLayout(),
+				JournalArticleConstants.CANONICAL_URL_SEPARATOR, themeDisplay);
+
+			if (!_article.isApproved()) {
+				friendlyURL = HttpComponentsUtil.addParameter(
+					friendlyURL, "version", _article.getVersion());
+			}
+
+			return PortalUtil.addPreservedParameters(themeDisplay, friendlyURL);
 		}
 
 		if (_assetDisplayPageFriendlyURLProvider != null) {
 			String friendlyURL =
 				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					getClassName(), _article.getResourcePrimKey(),
+					new InfoItemReference(
+						getClassName(),
+						new ClassPKInfoItemIdentifier(
+							_article.getResourcePrimKey())),
 					themeDisplay);
 
 			if (Validator.isNotNull(friendlyURL)) {
 				if (!_article.isApproved()) {
-					friendlyURL = HttpUtil.addParameter(
-						friendlyURL, "version", _article.getId());
+					friendlyURL = HttpComponentsUtil.addParameter(
+						friendlyURL, "version", _article.getVersion());
 				}
 
 				return friendlyURL;
 			}
 		}
 
-		String groupFriendlyURL = PortalUtil.getGroupFriendlyURL(
-			LayoutSetLocalServiceUtil.getLayoutSet(
-				_article.getGroupId(), layout.isPrivateLayout()),
-			themeDisplay, false, false);
-
-		String friendlyURL = StringBundler.concat(
-			groupFriendlyURL, JournalArticleConstants.CANONICAL_URL_SEPARATOR,
-			_article.getUrlTitle(themeDisplay.getLocale()));
-
-		if (!_article.isApproved()) {
-			friendlyURL = HttpUtil.addParameter(
-				friendlyURL, "version", _article.getId());
-		}
-
-		return PortalUtil.addPreservedParameters(themeDisplay, friendlyURL);
+		return noSuchEntryRedirect;
 	}
 
 	@Override
 	public long getUserId() {
-		return _article.getUserId();
+		return _article.getStatusByUserId();
 	}
 
 	@Override
 	public String getUserName() {
-		return _article.getUserName();
+		return _article.getStatusByUserName();
 	}
 
 	@Override
@@ -483,10 +457,9 @@ public class JournalArticleAssetRenderer
 		throws Exception {
 
 		httpServletRequest.setAttribute(WebKeys.JOURNAL_ARTICLE, _article);
-
 		httpServletRequest.setAttribute(
 			WebKeys.JOURNAL_ARTICLE_DISPLAY,
-			getArticleDisplay(httpServletRequest, httpServletResponse));
+			_getArticleDisplay(httpServletRequest));
 
 		return super.include(httpServletRequest, httpServletResponse, template);
 	}
@@ -533,24 +506,13 @@ public class JournalArticleAssetRenderer
 			assetDisplayPageFriendlyURLProvider;
 	}
 
-	public void setFieldsToDDMFormValuesConverter(
-		FieldsToDDMFormValuesConverter fieldsToDDMFormValuesConverter) {
-
-		_fieldsToDDMFormValuesConverter = fieldsToDDMFormValuesConverter;
-	}
-
 	public void setJournalContent(JournalContent journalContent) {
 		_journalContent = journalContent;
 	}
 
-	public void setJournalConverter(JournalConverter journalConverter) {
-		_journalConverter = journalConverter;
-	}
-
-	protected JournalArticleDisplay getArticleDisplay(
-			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse)
-		throws PortalException {
+	private JournalArticleDisplay _getArticleDisplay(
+			HttpServletRequest httpServletRequest)
+		throws Exception {
 
 		boolean workflowAssetPreview = GetterUtil.getBoolean(
 			httpServletRequest.getAttribute(WebKeys.WORKFLOW_ASSET_PREVIEW));
@@ -583,8 +545,8 @@ public class JournalArticleAssetRenderer
 		}
 
 		int articlePage = ParamUtil.getInteger(httpServletRequest, "page", 1);
-		PortletRequestModel portletRequestModel = getPortletRequestModel(
-			httpServletRequest, httpServletResponse);
+		PortletRequestModel portletRequestModel = _getPortletRequestModel(
+			httpServletRequest);
 
 		if (!workflowAssetPreview && _article.isApproved()) {
 			return _journalContent.getDisplay(
@@ -598,7 +560,23 @@ public class JournalArticleAssetRenderer
 			portletRequestModel, themeDisplay);
 	}
 
-	protected String getHitLayoutURL(
+	private Layout _getArticleLayout(String layoutUuid, long groupId) {
+		if (Validator.isNull(layoutUuid)) {
+			return null;
+		}
+
+		Layout layout = LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
+			layoutUuid, groupId, false);
+
+		if (layout == null) {
+			layout = LayoutLocalServiceUtil.fetchLayoutByUuidAndGroupId(
+				layoutUuid, groupId, true);
+		}
+
+		return layout;
+	}
+
+	private String _getHitLayoutURL(
 			String noSuchEntryRedirect, ThemeDisplay themeDisplay)
 		throws PortalException {
 
@@ -625,9 +603,8 @@ public class JournalArticleAssetRenderer
 		return noSuchEntryRedirect;
 	}
 
-	protected PortletRequestModel getPortletRequestModel(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse) {
+	private PortletRequestModel _getPortletRequestModel(
+		HttpServletRequest httpServletRequest) {
 
 		PortletRequest portletRequest =
 			(PortletRequest)httpServletRequest.getAttribute(
@@ -644,16 +621,21 @@ public class JournalArticleAssetRenderer
 	}
 
 	private boolean _isShowDisplayPage(long groupId, JournalArticle article)
-		throws Exception {
+		throws PortalException {
 
 		AssetRendererFactory<JournalArticle> assetRendererFactory =
 			getAssetRendererFactory();
 
 		AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
-			JournalArticle.class.getName(), article.getResourcePrimKey());
+			getClassName(), getClassPK());
 
 		if (Validator.isNull(article.getLayoutUuid()) &&
-			!AssetDisplayPageUtil.hasAssetDisplayPage(groupId, assetEntry)) {
+			Validator.isNull(assetEntry.getLayoutUuid()) &&
+			!AssetDisplayPageUtil.hasAssetDisplayPage(
+				groupId,
+				assetRendererFactory.getAssetEntry(
+					JournalArticle.class.getName(),
+					article.getResourcePrimKey()))) {
 
 			return false;
 		}
@@ -667,9 +649,9 @@ public class JournalArticleAssetRenderer
 	private final JournalArticle _article;
 	private AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
-	private FieldsToDDMFormValuesConverter _fieldsToDDMFormValuesConverter;
+	private final HtmlParser _htmlParser;
 	private JournalContent _journalContent;
-	private JournalConverter _journalConverter;
+	private final JournalHelper _journalHelper;
 	private JournalServiceConfiguration _journalServiceConfiguration;
 
 }

@@ -1,65 +1,62 @@
 definition {
 
-	macro _convertNameToKey {
-		Variables.assertDefined(parameterList = "${name}");
+	@summary = "Default summary"
+	macro _convertNameToKey(name = null) {
+		Variables.assertDefined(parameterList = ${name});
 
-		var key = StringUtil.replace("${name}", " ", "-");
-		var key = StringUtil.lowerCase("${key}");
+		var key = StringUtil.replace(${name}, " ", "-");
 
-		return "${key}";
+		var key = StringUtil.lowerCase(${key});
+
+		return ${key};
 	}
 
-	macro goToTranslation {
-		SitePages.clickPageMenu(pageName = "${pageName}");
+	@summary = "Default summary"
+	macro goToTranslation(pageName = null) {
+		PagesAdmin.openPageEllipsisMenu(pageName = ${pageName});
 
 		MenuItem.click(menuItem = "Translate");
 	}
 
-	macro openEditContentPage {
-		if (!(isSet(siteURLKey))) {
-			var siteURLKey = ContentPagesNavigator._convertNameToKey(name = "${siteName}");
+	@summary = "Default summary"
+	macro openEditContentPage(pageFriendlyURL = null, siteURLKey = null, siteName = null, locale = null, privateLayout = null, pageName = null) {
+		if (contains(${siteName}, "Staging")) {
+			Navigator.openSiteURL(siteName = ${siteName});
 		}
 
-		if (!(isSet(pageFriendlyUrl))) {
-			var pageFriendlyUrl = ContentPagesNavigator._convertNameToKey(name = "${pageName}");
-		}
+		ContentPagesNavigator.openViewContentPage(
+			locale = ${locale},
+			pageFriendlyURL = ${pageFriendlyURL},
+			pageName = ${pageName},
+			privateLayout = ${privateLayout},
+			siteName = ${siteName},
+			siteURLKey = ${siteURLKey});
 
-		if ("${privateLayout}" == "true") {
-			var type = "group";
-		}
-
-		else {
-			var type = "web";
-		}
-
-		Navigator.openWithAppendToBaseURL(urlAppend = "${type}/${siteURLKey}/${pageFriendlyUrl}?p_l_mode=edit");
-
-		PageEditor.assertFragmentSidebarLoaded();
+		ContentPages.gotoPageEditor();
 	}
 
-	macro openViewContentPage {
+	@summary = "Default summary"
+	macro openViewContentPage(siteName = null, privateLayout = null, locale = null, pageName = null) {
 		if (!(isSet(siteURLKey))) {
-			var siteURLKey = ContentPagesNavigator._convertNameToKey(name = "${siteName}");
+			var siteURLKey = ContentPagesNavigator._convertNameToKey(name = ${siteName});
 		}
 
-		if (!(isSet(pageFriendlyUrl))) {
-			var pageFriendlyUrl = ContentPagesNavigator._convertNameToKey(name = "${pageName}");
+		if (!(isSet(pageFriendlyURL))) {
+			var pageFriendlyURL = ContentPagesNavigator._convertNameToKey(name = ${pageName});
 		}
 
-		if ("${privateLayout}" == "true") {
+		if (${privateLayout} == "true") {
 			var type = "group";
 		}
-
 		else {
 			var type = "web";
 		}
 
 		if (isSet(locale)) {
-			Navigator.openWithAppendToBaseURL(urlAppend = "${locale}/${type}/${siteURLKey}/${pageFriendlyUrl}");
+			Navigator.openWithAppendToBaseURL(urlAppend = "${locale}/${type}/${siteURLKey}/${pageFriendlyURL}");
 		}
-
 		else {
-			Navigator.openWithAppendToBaseURL(urlAppend = "${type}/${siteURLKey}/${pageFriendlyUrl}");
+			Navigator.openWithAppendToBaseURL(urlAppend = "${type}/${siteURLKey}/${pageFriendlyURL}");
 		}
 	}
 

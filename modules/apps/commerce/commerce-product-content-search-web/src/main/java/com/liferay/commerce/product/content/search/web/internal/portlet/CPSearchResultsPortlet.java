@@ -1,27 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.search.web.internal.portlet;
 
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.content.constants.CPContentWebKeys;
+import com.liferay.commerce.product.content.helper.CPContentHelper;
+import com.liferay.commerce.product.content.helper.CPContentSkuOptionsHelper;
 import com.liferay.commerce.product.content.render.list.CPContentListRendererRegistry;
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
 import com.liferay.commerce.product.content.search.web.internal.display.context.CPSearchResultsDisplayContext;
-import com.liferay.commerce.product.content.util.CPContentHelper;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.type.CPTypeRegistry;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
@@ -31,14 +24,14 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,7 +40,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-cp-search-results",
@@ -59,13 +51,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Search Results",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/search_results/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.CP_SEARCH_RESULTS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"jakarta.portlet.display-name=Search Results",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/search_results/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.CP_SEARCH_RESULTS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -85,9 +78,9 @@ public class CPSearchResultsPortlet extends MVCPortlet {
 		try {
 			CPSearchResultsDisplayContext cpSearchResultsDisplayContext =
 				new CPSearchResultsDisplayContext(
-					_cpContentListEntryRendererRegistry,
+					_configurationProvider, _cpContentListEntryRendererRegistry,
 					_cpContentListRendererRegistry, _cpDefinitionHelper,
-					_cpTypeServicesTracker, httpServletRequest,
+					_cpTypeRegistry, httpServletRequest,
 					portletSharedSearchResponse);
 
 			renderRequest.setAttribute(
@@ -95,9 +88,12 @@ public class CPSearchResultsPortlet extends MVCPortlet {
 
 			renderRequest.setAttribute(
 				CPContentWebKeys.CP_CONTENT_HELPER, _cpContentHelper);
+			renderRequest.setAttribute(
+				CPContentWebKeys.CP_CONTENT_SKU_OPTIONS_HELPER,
+				_cpContentSkuOptionsHelper);
 		}
 		catch (ConfigurationException configurationException) {
-			_log.error(configurationException, configurationException);
+			_log.error(configurationException);
 		}
 
 		super.render(renderRequest, renderResponse);
@@ -105,6 +101,9 @@ public class CPSearchResultsPortlet extends MVCPortlet {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CPSearchResultsPortlet.class);
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private CPContentHelper _cpContentHelper;
@@ -117,10 +116,13 @@ public class CPSearchResultsPortlet extends MVCPortlet {
 	private CPContentListRendererRegistry _cpContentListRendererRegistry;
 
 	@Reference
+	private CPContentSkuOptionsHelper _cpContentSkuOptionsHelper;
+
+	@Reference
 	private CPDefinitionHelper _cpDefinitionHelper;
 
 	@Reference
-	private CPTypeServicesTracker _cpTypeServicesTracker;
+	private CPTypeRegistry _cpTypeRegistry;
 
 	@Reference
 	private Portal _portal;

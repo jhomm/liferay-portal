@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.saml.persistence.model.SamlPeerBindingModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -99,7 +89,7 @@ public class SamlPeerBindingModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table SamlPeerBinding (samlPeerBindingId LONG not null primary key,companyId LONG,createDate DATE null,userId LONG,userName VARCHAR(75) null,deleted BOOLEAN,samlNameIdFormat VARCHAR(75) null,samlNameIdNameQualifier VARCHAR(75) null,samlNameIdSpNameQualifier VARCHAR(75) null,samlNameIdSpProvidedId VARCHAR(75) null,samlNameIdValue VARCHAR(75) null,samlPeerEntityId VARCHAR(75) null)";
+		"create table SamlPeerBinding (samlPeerBindingId LONG not null primary key,companyId LONG,createDate DATE null,userId LONG,userName VARCHAR(75) null,deleted BOOLEAN,samlNameIdFormat VARCHAR(128) null,samlNameIdNameQualifier VARCHAR(1024) null,samlNameIdSpNameQualifier VARCHAR(75) null,samlNameIdSpProvidedId VARCHAR(75) null,samlNameIdValue VARCHAR(1024) null,samlPeerEntityId VARCHAR(1024) null)";
 
 	public static final String TABLE_SQL_DROP = "drop table SamlPeerBinding";
 
@@ -131,32 +121,26 @@ public class SamlPeerBindingModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SAMLNAMEIDFORMAT_COLUMN_BITMASK = 4L;
+	public static final long SAMLNAMEIDVALUE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SAMLNAMEIDNAMEQUALIFIER_COLUMN_BITMASK = 8L;
+	public static final long SAMLPEERENTITYID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SAMLNAMEIDVALUE_COLUMN_BITMASK = 16L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long SAMLPEERENTITYID_COLUMN_BITMASK = 32L;
+	public static final long USERID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SAMLPEERBINDINGID_COLUMN_BITMASK = 64L;
+	public static final long SAMLPEERBINDINGID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -248,127 +232,121 @@ public class SamlPeerBindingModelImpl
 	public Map<String, Function<SamlPeerBinding, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SamlPeerBinding, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SamlPeerBinding>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SamlPeerBinding.class.getClassLoader(), SamlPeerBinding.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SamlPeerBinding, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SamlPeerBinding> constructor =
-				(Constructor<SamlPeerBinding>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SamlPeerBinding, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SamlPeerBinding, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"samlPeerBindingId", SamlPeerBinding::getSamlPeerBindingId);
+			attributeGetterFunctions.put(
+				"companyId", SamlPeerBinding::getCompanyId);
+			attributeGetterFunctions.put(
+				"createDate", SamlPeerBinding::getCreateDate);
+			attributeGetterFunctions.put("userId", SamlPeerBinding::getUserId);
+			attributeGetterFunctions.put(
+				"userName", SamlPeerBinding::getUserName);
+			attributeGetterFunctions.put(
+				"deleted", SamlPeerBinding::getDeleted);
+			attributeGetterFunctions.put(
+				"samlNameIdFormat", SamlPeerBinding::getSamlNameIdFormat);
+			attributeGetterFunctions.put(
+				"samlNameIdNameQualifier",
+				SamlPeerBinding::getSamlNameIdNameQualifier);
+			attributeGetterFunctions.put(
+				"samlNameIdSpNameQualifier",
+				SamlPeerBinding::getSamlNameIdSpNameQualifier);
+			attributeGetterFunctions.put(
+				"samlNameIdSpProvidedId",
+				SamlPeerBinding::getSamlNameIdSpProvidedId);
+			attributeGetterFunctions.put(
+				"samlNameIdValue", SamlPeerBinding::getSamlNameIdValue);
+			attributeGetterFunctions.put(
+				"samlPeerEntityId", SamlPeerBinding::getSamlPeerEntityId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SamlPeerBinding, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SamlPeerBinding, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SamlPeerBinding, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<SamlPeerBinding, Object>>();
-		Map<String, BiConsumer<SamlPeerBinding, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<SamlPeerBinding, ?>>();
+		private static final Map<String, BiConsumer<SamlPeerBinding, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"samlPeerBindingId", SamlPeerBinding::getSamlPeerBindingId);
-		attributeSetterBiConsumers.put(
-			"samlPeerBindingId",
-			(BiConsumer<SamlPeerBinding, Long>)
-				SamlPeerBinding::setSamlPeerBindingId);
-		attributeGetterFunctions.put(
-			"companyId", SamlPeerBinding::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SamlPeerBinding, Long>)SamlPeerBinding::setCompanyId);
-		attributeGetterFunctions.put(
-			"createDate", SamlPeerBinding::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SamlPeerBinding, Date>)SamlPeerBinding::setCreateDate);
-		attributeGetterFunctions.put("userId", SamlPeerBinding::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SamlPeerBinding, Long>)SamlPeerBinding::setUserId);
-		attributeGetterFunctions.put("userName", SamlPeerBinding::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<SamlPeerBinding, String>)SamlPeerBinding::setUserName);
-		attributeGetterFunctions.put("deleted", SamlPeerBinding::getDeleted);
-		attributeSetterBiConsumers.put(
-			"deleted",
-			(BiConsumer<SamlPeerBinding, Boolean>)SamlPeerBinding::setDeleted);
-		attributeGetterFunctions.put(
-			"samlNameIdFormat", SamlPeerBinding::getSamlNameIdFormat);
-		attributeSetterBiConsumers.put(
-			"samlNameIdFormat",
-			(BiConsumer<SamlPeerBinding, String>)
-				SamlPeerBinding::setSamlNameIdFormat);
-		attributeGetterFunctions.put(
-			"samlNameIdNameQualifier",
-			SamlPeerBinding::getSamlNameIdNameQualifier);
-		attributeSetterBiConsumers.put(
-			"samlNameIdNameQualifier",
-			(BiConsumer<SamlPeerBinding, String>)
-				SamlPeerBinding::setSamlNameIdNameQualifier);
-		attributeGetterFunctions.put(
-			"samlNameIdSpNameQualifier",
-			SamlPeerBinding::getSamlNameIdSpNameQualifier);
-		attributeSetterBiConsumers.put(
-			"samlNameIdSpNameQualifier",
-			(BiConsumer<SamlPeerBinding, String>)
-				SamlPeerBinding::setSamlNameIdSpNameQualifier);
-		attributeGetterFunctions.put(
-			"samlNameIdSpProvidedId",
-			SamlPeerBinding::getSamlNameIdSpProvidedId);
-		attributeSetterBiConsumers.put(
-			"samlNameIdSpProvidedId",
-			(BiConsumer<SamlPeerBinding, String>)
-				SamlPeerBinding::setSamlNameIdSpProvidedId);
-		attributeGetterFunctions.put(
-			"samlNameIdValue", SamlPeerBinding::getSamlNameIdValue);
-		attributeSetterBiConsumers.put(
-			"samlNameIdValue",
-			(BiConsumer<SamlPeerBinding, String>)
-				SamlPeerBinding::setSamlNameIdValue);
-		attributeGetterFunctions.put(
-			"samlPeerEntityId", SamlPeerBinding::getSamlPeerEntityId);
-		attributeSetterBiConsumers.put(
-			"samlPeerEntityId",
-			(BiConsumer<SamlPeerBinding, String>)
-				SamlPeerBinding::setSamlPeerEntityId);
+		static {
+			Map<String, BiConsumer<SamlPeerBinding, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<SamlPeerBinding, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"samlPeerBindingId",
+				(BiConsumer<SamlPeerBinding, Long>)
+					SamlPeerBinding::setSamlPeerBindingId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SamlPeerBinding, Long>)
+					SamlPeerBinding::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SamlPeerBinding, Date>)
+					SamlPeerBinding::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SamlPeerBinding, Long>)SamlPeerBinding::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setUserName);
+			attributeSetterBiConsumers.put(
+				"deleted",
+				(BiConsumer<SamlPeerBinding, Boolean>)
+					SamlPeerBinding::setDeleted);
+			attributeSetterBiConsumers.put(
+				"samlNameIdFormat",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setSamlNameIdFormat);
+			attributeSetterBiConsumers.put(
+				"samlNameIdNameQualifier",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setSamlNameIdNameQualifier);
+			attributeSetterBiConsumers.put(
+				"samlNameIdSpNameQualifier",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setSamlNameIdSpNameQualifier);
+			attributeSetterBiConsumers.put(
+				"samlNameIdSpProvidedId",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setSamlNameIdSpProvidedId);
+			attributeSetterBiConsumers.put(
+				"samlNameIdValue",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setSamlNameIdValue);
+			attributeSetterBiConsumers.put(
+				"samlPeerEntityId",
+				(BiConsumer<SamlPeerBinding, String>)
+					SamlPeerBinding::setSamlPeerEntityId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -453,6 +431,15 @@ public class SamlPeerBindingModelImpl
 	public void setUserUuid(String userUuid) {
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalUserId() {
+		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
+	}
+
 	@Override
 	public String getUserName() {
 		if (_userName == null) {
@@ -520,15 +507,6 @@ public class SamlPeerBindingModelImpl
 		_samlNameIdFormat = samlNameIdFormat;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalSamlNameIdFormat() {
-		return getColumnOriginalValue("samlNameIdFormat");
-	}
-
 	@Override
 	public String getSamlNameIdNameQualifier() {
 		if (_samlNameIdNameQualifier == null) {
@@ -546,15 +524,6 @@ public class SamlPeerBindingModelImpl
 		}
 
 		_samlNameIdNameQualifier = samlNameIdNameQualifier;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalSamlNameIdNameQualifier() {
-		return getColumnOriginalValue("samlNameIdNameQualifier");
 	}
 
 	@Override
@@ -969,41 +938,12 @@ public class SamlPeerBindingModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SamlPeerBinding, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SamlPeerBinding, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SamlPeerBinding, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SamlPeerBinding)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SamlPeerBinding>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SamlPeerBinding.class, ModelWrapper.class);
 
 	}
 
@@ -1022,7 +962,8 @@ public class SamlPeerBindingModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<SamlPeerBinding, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

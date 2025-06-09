@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.extensions;
@@ -52,6 +43,10 @@ public class ProjectTemplatesArgs {
 		return _groupId;
 	}
 
+	public String getLiferayProduct() {
+		return _liferayProduct;
+	}
+
 	public String getLiferayVersion() {
 		return _liferayVersion;
 	}
@@ -62,10 +57,6 @@ public class ProjectTemplatesArgs {
 
 	public String getPackageName() {
 		return _packageName;
-	}
-
-	public String getProduct() {
-		return _product;
 	}
 
 	public ProjectTemplatesArgsExt getProjectTemplatesArgsExt() {
@@ -138,6 +129,10 @@ public class ProjectTemplatesArgs {
 		_groupId = groupId;
 	}
 
+	public void setLiferayProduct(String liferayiProduct) {
+		_liferayProduct = liferayiProduct;
+	}
+
 	public void setLiferayVersion(String version) {
 		_liferayVersion = version;
 	}
@@ -152,10 +147,6 @@ public class ProjectTemplatesArgs {
 
 	public void setPackageName(String packageName) {
 		_packageName = packageName;
-	}
-
-	public void setProduct(String product) {
-		_product = product;
 	}
 
 	public void setProjectTemplatesArgsExt(
@@ -225,6 +216,12 @@ public class ProjectTemplatesArgs {
 	private boolean _help;
 
 	@Parameter(
+		description = "The option for Liferay Platform product. (portal)|(dxp)",
+		names = "--liferay-product"
+	)
+	private String _liferayProduct = "portal";
+
+	@Parameter(
 		description = "The version of Liferay to target when creating the project.",
 		names = "--liferay-version"
 	)
@@ -254,12 +251,6 @@ public class ProjectTemplatesArgs {
 		names = "--package-name"
 	)
 	private String _packageName;
-
-	@Parameter(
-		description = "The option for Liferay Platform product. (portal)|(dxp)",
-		names = "--product"
-	)
-	private String _product = "portal";
 
 	private ProjectTemplatesArgsExt _projectTemplatesArgsExt;
 

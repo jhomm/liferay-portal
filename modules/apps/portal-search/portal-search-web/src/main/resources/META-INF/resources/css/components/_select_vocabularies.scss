@@ -1,0 +1,21 @@
+html#{$cadmin-selector} {
+	.portlet-category-facet .cadmin {
+		.select-vocabularies {
+			.treeview-group {
+				.treeview-link {
+					padding-left: 36px !important;
+
+					.c-inner {
+						margin-right: -36px !important;
+					}
+				}
+			}
+
+			.treeview-link-site-row {
+				.lexicon-icon {
+					font-size: 10px;
+				}
+			}
+		}
+	}
+}

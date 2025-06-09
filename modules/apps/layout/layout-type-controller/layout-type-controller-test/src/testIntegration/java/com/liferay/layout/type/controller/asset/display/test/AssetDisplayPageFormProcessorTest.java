@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.asset.display.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
-import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.portlet.AssetDisplayPageEntryFormProcessor;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalService;
 import com.liferay.asset.display.page.util.AssetDisplayPageUtil;
@@ -25,17 +15,14 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.test.util.DLTestUtil;
-import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
-import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.CompanyLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.servlet.PortletServlet;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -52,23 +39,23 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.portlet.PortalContext;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderParameters;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.Cookie;
+
 import java.security.Principal;
 
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortalContext;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderParameters;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.Cookie;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -103,11 +90,9 @@ public class AssetDisplayPageFormProcessorTest {
 		long classNameId = _portal.getClassNameId(FileEntry.class.getName());
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				classNameId, 0, RandomTestUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.TYPE_DISPLAY_PAGE, true, 0,
-				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				_group.getGroupId(), classNameId, 0, true,
+				WorkflowConstants.STATUS_APPROVED);
 
 		_withAndWithoutAssetEntry(
 			fileEntry -> {
@@ -156,14 +141,12 @@ public class AssetDisplayPageFormProcessorTest {
 						String.valueOf(AssetDisplayPageConstants.TYPE_DEFAULT),
 						null));
 
-				AssetDisplayPageEntry assetDisplayPageEntry =
+				Assert.assertNull(
 					_assetDisplayPageEntryLocalService.
 						fetchAssetDisplayPageEntry(
 							_group.getGroupId(),
 							_portal.getClassNameId(FileEntry.class.getName()),
-							fileEntry.getFileEntryId());
-
-				Assert.assertNull(assetDisplayPageEntry);
+							fileEntry.getFileEntryId()));
 			});
 	}
 
@@ -199,11 +182,9 @@ public class AssetDisplayPageFormProcessorTest {
 		long classNameId = _portal.getClassNameId(FileEntry.class.getName());
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
-			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), 0,
-				classNameId, 0, RandomTestUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.TYPE_DISPLAY_PAGE, true, 0,
-				0, 0, WorkflowConstants.STATUS_APPROVED, new ServiceContext());
+			DisplayPageTemplateTestUtil.addDisplayPageTemplate(
+				_group.getGroupId(), classNameId, 0, true,
+				WorkflowConstants.STATUS_APPROVED);
 
 		_withAndWithoutAssetEntry(
 			fileEntry -> {
@@ -243,13 +224,11 @@ public class AssetDisplayPageFormProcessorTest {
 						String.valueOf(AssetDisplayPageConstants.TYPE_DEFAULT),
 						String.valueOf(defaultAssetDisplayPageEntryId)));
 
-				AssetDisplayPageEntry assetDisplayPageEntry =
+				Assert.assertNull(
 					_assetDisplayPageEntryLocalService.
 						fetchAssetDisplayPageEntry(
 							_group.getGroupId(), classNameId,
-							fileEntry.getFileEntryId());
-
-				Assert.assertNull(assetDisplayPageEntry);
+							fileEntry.getFileEntryId()));
 			});
 	}
 
@@ -263,13 +242,11 @@ public class AssetDisplayPageFormProcessorTest {
 					FileEntry.class.getName(), fileEntry.getFileEntryId(),
 					new MockPortletRequest(null, null));
 
-				AssetDisplayPageEntry assetDisplayPageEntry =
+				Assert.assertNull(
 					_assetDisplayPageEntryLocalService.
 						fetchAssetDisplayPageEntry(
 							_group.getGroupId(), classNameId,
-							fileEntry.getFileEntryId());
-
-				Assert.assertNull(assetDisplayPageEntry);
+							fileEntry.getFileEntryId()));
 			});
 	}
 
@@ -314,14 +291,10 @@ public class AssetDisplayPageFormProcessorTest {
 	private ThemeDisplay _getThemeDisplay() throws PortalException {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
+		themeDisplay.setCompany(
+			_companyLocalService.getCompany(_group.getCompanyId()));
 		themeDisplay.setScopeGroupId(_group.getGroupId());
-
 		themeDisplay.setUser(TestPropsValues.getUser());
-
-		Company company = _companyLocalService.getCompany(
-			_group.getCompanyId());
-
-		themeDisplay.setCompany(company);
 
 		return themeDisplay;
 	}
@@ -363,10 +336,6 @@ public class AssetDisplayPageFormProcessorTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
-
-	@Inject
-	private LayoutPageTemplateEntryLocalService
-		_layoutPageTemplateEntryLocalService;
 
 	@Inject
 	private Portal _portal;

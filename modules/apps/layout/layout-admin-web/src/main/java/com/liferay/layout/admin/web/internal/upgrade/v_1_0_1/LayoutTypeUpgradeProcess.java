@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.upgrade.v_1_0_1;
@@ -33,10 +24,10 @@ import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.PortletPreferencesImpl;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Alec Shay
@@ -50,25 +41,22 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 			journalArticleResourceLocalService;
 	}
 
-	protected void addPortletPreferences(
+	@Override
+	protected void doUpgrade() throws Exception {
+		_updateLayouts();
+	}
+
+	private void _addPortletPreferences(
 			long companyId, long groupId, long plid, String portletId,
 			String journalArticleId)
 		throws Exception {
 
-		String portletPreferences = getPortletPreferences(
-			groupId, journalArticleId);
-
 		PortletPreferencesLocalServiceUtil.addPortletPreferences(
 			companyId, 0, PortletKeys.PREFS_OWNER_TYPE_LAYOUT, plid, portletId,
-			null, portletPreferences);
+			null, _getPortletPreferences(groupId, journalArticleId));
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		updateLayouts();
-	}
-
-	protected long getAssetEntryId(long resourcePrimKey) throws Exception {
+	private long _getAssetEntryId(long resourcePrimKey) throws Exception {
 		AssetEntry assetEntry = AssetEntryLocalServiceUtil.fetchEntry(
 			_CLASS_NAME, resourcePrimKey);
 
@@ -81,7 +69,7 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 		return assetEntry.getEntryId();
 	}
 
-	protected String getJournalArticleId(String typeSettings) throws Exception {
+	private String _getJournalArticleId(String typeSettings) throws Exception {
 		UnicodeProperties typeSettingsUnicodeProperties =
 			UnicodePropertiesBuilder.create(
 				true
@@ -92,12 +80,11 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 		return typeSettingsUnicodeProperties.getProperty("article-id");
 	}
 
-	protected String getPortletId() {
+	private String _getPortletId() {
 		return PortletIdCodec.encode(_PORTLET_ID_JOURNAL_CONTENT);
 	}
 
-	protected String getPortletPreferences(
-			long groupId, String journalArticleId)
+	private String _getPortletPreferences(long groupId, String journalArticleId)
 		throws Exception {
 
 		if (Validator.isNull(journalArticleId)) {
@@ -122,17 +109,17 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 			}
 		}
 		else {
-			long assetEntryId = getAssetEntryId(
-				journalArticleResource.getResourcePrimKey());
-
 			portletPreferences.setValue(
-				"assetEntryId", String.valueOf(assetEntryId));
+				"assetEntryId",
+				String.valueOf(
+					_getAssetEntryId(
+						journalArticleResource.getResourcePrimKey())));
 		}
 
 		return PortletPreferencesFactoryUtil.toXML(portletPreferences);
 	}
 
-	protected String getTypeSettings(String portletId) {
+	private String _getTypeSettings(String portletId) {
 		return UnicodePropertiesBuilder.create(
 			true
 		).put(
@@ -142,12 +129,12 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 		).buildString();
 	}
 
-	protected void updateLayout(long plid, String portletId) throws Exception {
+	private void _updateLayout(long plid, String portletId) throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update Layout set typeSettings = ?, type_ = ? where plid = " +
 					"?")) {
 
-			preparedStatement.setString(1, getTypeSettings(portletId));
+			preparedStatement.setString(1, _getTypeSettings(portletId));
 			preparedStatement.setString(2, "portlet");
 			preparedStatement.setLong(3, plid);
 
@@ -155,7 +142,7 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateLayouts() throws Exception {
+	private void _updateLayouts() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select plid, groupId, companyId, typeSettings from Layout " +
 					"where type_ = ?")) {
@@ -170,13 +157,13 @@ public class LayoutTypeUpgradeProcess extends UpgradeProcess {
 
 					String typeSettings = resultSet.getString("typeSettings");
 
-					String portletId = getPortletId();
+					String portletId = _getPortletId();
 
-					addPortletPreferences(
+					_addPortletPreferences(
 						companyId, groupId, plid, portletId,
-						getJournalArticleId(typeSettings));
+						_getJournalArticleId(typeSettings));
 
-					updateLayout(plid, portletId);
+					_updateLayout(plid, portletId);
 				}
 			}
 		}

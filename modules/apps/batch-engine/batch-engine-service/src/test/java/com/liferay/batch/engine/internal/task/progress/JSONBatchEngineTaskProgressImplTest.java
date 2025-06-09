@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.task.progress;
@@ -51,7 +42,7 @@ public class JSONBatchEngineTaskProgressImplTest
 		sb.append(StringPool.OPEN_BRACKET);
 
 		for (int i = 0; i < expectedTotalItemsCount; i++) {
-			sb.append(productJSON);
+			sb.append(productJSONObject.toString());
 
 			if (i < (PRODUCTS_COUNT - 1)) {
 				sb.append(StringPool.COMMA);
@@ -62,11 +53,13 @@ public class JSONBatchEngineTaskProgressImplTest
 			sb.append(StringPool.CLOSE_BRACKET);
 		}
 
+		String content = sb.toString();
+
 		Assert.assertEquals(
 			expectedTotalItemsCount,
 			_batchEngineTaskProgress.getTotalItemsCount(
 				compress(
-					sb.toString(),
+					content.getBytes(),
 					BatchEngineTaskContentType.JSON.toString())));
 	}
 

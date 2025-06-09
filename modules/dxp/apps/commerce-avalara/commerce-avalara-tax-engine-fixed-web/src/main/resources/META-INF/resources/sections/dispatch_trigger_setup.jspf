@@ -1,0 +1,50 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<%
+boolean jobPreviouslyRun = GetterUtil.getBoolean(request.getAttribute(CommerceAvalaraWebKeys.JOB_PREVIOUSLY_RUN));
+DispatchLog latestDispatchLog = (DispatchLog)GetterUtil.getObject(request.getAttribute(CommerceAvalaraWebKeys.LATEST_DISPATCH_LOG));
+%>
+
+<liferay-frontend:fieldset
+	collapsible="<%= true %>"
+	label="settings"
+>
+	<c:choose>
+		<c:when test="<%= !jobPreviouslyRun || (latestDispatchLog == null) %>">
+			<clay:alert
+				displayType="warning"
+				message="sync-avalara-tax-rates-to-finish-connector-setup"
+			/>
+
+			<%@ include file="/buttons/sync_tax_rates.jspf" %>
+		</c:when>
+		<c:otherwise>
+			<c:if test="<%= latestDispatchLog.getStatus() == DispatchTaskStatus.IN_PROGRESS.getStatus() %>">
+				<clay:alert
+					message="tax-rates-are-syncing"
+				/>
+			</c:if>
+
+			<c:if test="<%= latestDispatchLog.getStatus() == DispatchTaskStatus.FAILED.getStatus() %>">
+				<clay:alert
+					displayType="danger"
+					message="tax-rate-sync-failed"
+				/>
+
+				<%@ include file="/buttons/sync_tax_rates.jspf" %>
+			</c:if>
+
+			<c:if test="<%= latestDispatchLog.getStatus() == DispatchTaskStatus.SUCCESSFUL.getStatus() %>">
+				<clay:alert
+					displayType="success"
+					message="tax-rate-sync-completed-successfully"
+				/>
+			</c:if>
+		</c:otherwise>
+	</c:choose>
+</liferay-frontend:fieldset>

@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.internal.export.builder;
 
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.workflow.kaleo.definition.Assignment;
+import com.liferay.portal.workflow.kaleo.definition.NodeType;
 import com.liferay.portal.workflow.kaleo.definition.Task;
 import com.liferay.portal.workflow.kaleo.definition.TaskForm;
 import com.liferay.portal.workflow.kaleo.definition.TaskFormReference;
@@ -30,19 +21,43 @@ import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Michael C. Han
  */
-@Component(
-	immediate = true, property = "node.type=TASK", service = NodeBuilder.class
-)
-public class TaskNodeBuilder
-	extends BaseNodeBuilder<Task> implements NodeBuilder {
+public class TaskNodeBuilder extends BaseNodeBuilder<Task> {
 
-	protected Set<TaskForm> buildTaskForms(String name, long kaleoTaskId)
+	public TaskNodeBuilder(
+		KaleoTaskFormLocalService kaleoTaskFormLocalService,
+		KaleoTaskLocalService kaleoTaskLocalService) {
+
+		_kaleoTaskFormLocalService = kaleoTaskFormLocalService;
+		_kaleoTaskLocalService = kaleoTaskLocalService;
+	}
+
+	@Override
+	public NodeType getNodeType() {
+		return NodeType.TASK;
+	}
+
+	@Override
+	protected Task createNode(KaleoNode kaleoNode) throws PortalException {
+		KaleoTask kaleoTask = _kaleoTaskLocalService.getKaleoNodeKaleoTask(
+			kaleoNode.getKaleoNodeId());
+
+		Task task = new Task(kaleoNode.getName(), kaleoNode.getDescription());
+
+		task.setAssignments(
+			buildAssigments(
+				KaleoTask.class.getName(), kaleoTask.getKaleoTaskId()));
+
+		Set<TaskForm> taskForms = _buildTaskForms(kaleoTask.getKaleoTaskId());
+
+		task.addTaskForms(taskForms);
+
+		return task;
+	}
+
+	private Set<TaskForm> _buildTaskForms(long kaleoTaskId)
 		throws PortalException {
 
 		List<KaleoTaskForm> kaleoTaskForms =
@@ -78,30 +93,7 @@ public class TaskNodeBuilder
 		return taskForms;
 	}
 
-	@Override
-	protected Task createNode(KaleoNode kaleoNode) throws PortalException {
-		KaleoTask kaleoTask = _kaleoTaskLocalService.getKaleoNodeKaleoTask(
-			kaleoNode.getKaleoNodeId());
-
-		Task task = new Task(kaleoNode.getName(), kaleoNode.getDescription());
-
-		Set<Assignment> assignments = buildAssigments(
-			KaleoTask.class.getName(), kaleoTask.getKaleoTaskId());
-
-		task.setAssignments(assignments);
-
-		Set<TaskForm> taskForms = buildTaskForms(
-			KaleoTask.class.getName(), kaleoTask.getKaleoTaskId());
-
-		task.addTaskForms(taskForms);
-
-		return task;
-	}
-
-	@Reference
-	private KaleoTaskFormLocalService _kaleoTaskFormLocalService;
-
-	@Reference
-	private KaleoTaskLocalService _kaleoTaskLocalService;
+	private final KaleoTaskFormLocalService _kaleoTaskFormLocalService;
+	private final KaleoTaskLocalService _kaleoTaskLocalService;
 
 }

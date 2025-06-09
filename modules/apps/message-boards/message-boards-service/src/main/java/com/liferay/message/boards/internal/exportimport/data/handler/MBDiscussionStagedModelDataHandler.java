@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.exportimport.data.handler;
@@ -43,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Daniel Kocsis
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class MBDiscussionStagedModelDataHandler
 	extends BaseStagedModelDataHandler<MBDiscussion> {
 
@@ -98,7 +89,7 @@ public class MBDiscussionStagedModelDataHandler
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return discussion.getUuid();
@@ -152,17 +143,14 @@ public class MBDiscussionStagedModelDataHandler
 				discussion.getClassName(), newClassPK);
 
 		if (existingDiscussion == null) {
-			long userId = portletDataContext.getUserId(
-				discussion.getUserUuid());
-
 			MBMessage rootMessage = _mbMessageLocalService.addDiscussionMessage(
-				userId, discussion.getUserName(),
-				portletDataContext.getScopeGroupId(), className, newClassPK,
-				WorkflowConstants.ACTION_PUBLISH);
+				portletDataContext.getUserId(discussion.getUserUuid()),
+				discussion.getUserName(), portletDataContext.getScopeGroupId(),
+				className, newClassPK, WorkflowConstants.ACTION_PUBLISH);
 
 			rootMessage.setCreateDate(discussion.getCreateDate());
 
-			_mbMessageLocalService.updateMBMessage(rootMessage);
+			rootMessage = _mbMessageLocalService.updateMBMessage(rootMessage);
 
 			existingDiscussion = _mbDiscussionLocalService.getThreadDiscussion(
 				rootMessage.getThreadId());
@@ -183,32 +171,16 @@ public class MBDiscussionStagedModelDataHandler
 			discussion.getThreadId(), existingDiscussion.getThreadId());
 	}
 
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBDiscussionLocalService(
-		MBDiscussionLocalService mbDiscussionLocalService) {
-
-		_mbDiscussionLocalService = mbDiscussionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMBMessageLocalService(
-		MBMessageLocalService mbMessageLocalService) {
-
-		_mbMessageLocalService = mbMessageLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		MBDiscussionStagedModelDataHandler.class);
 
+	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private MBDiscussionLocalService _mbDiscussionLocalService;
+
+	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
 
 }

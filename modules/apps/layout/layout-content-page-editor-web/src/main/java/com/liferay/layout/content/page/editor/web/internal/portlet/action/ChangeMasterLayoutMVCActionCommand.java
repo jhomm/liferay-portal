@@ -1,54 +1,48 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.renderer.FragmentRendererController;
-import com.liferay.fragment.renderer.FragmentRendererTracker;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
-import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
-import com.liferay.item.selector.ItemSelector;
+import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
-import com.liferay.layout.content.page.editor.web.internal.util.FragmentEntryLinkUtil;
+import com.liferay.layout.content.page.editor.web.internal.manager.FragmentEntryLinkManager;
 import com.liferay.layout.content.page.editor.web.internal.util.StyleBookEntryUtil;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.constants.SegmentsExperienceConstants;
 import com.liferay.style.book.model.StyleBookEntry;
+import com.liferay.style.book.service.StyleBookEntryLocalService;
 import com.liferay.style.book.util.DefaultStyleBookEntryUtil;
+import com.liferay.style.book.util.StyleBookUtil;
+import com.liferay.style.book.util.comparator.StyleBookEntryNameComparator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,9 +51,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Víctor Galán
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/change_master_layout"
 	},
 	service = MVCActionCommand.class
@@ -80,44 +73,57 @@ public class ChangeMasterLayoutMVCActionCommand
 
 		Layout layout = _layoutLocalService.fetchLayout(themeDisplay.getPlid());
 
-		LayoutPermissionUtil.check(
-			themeDisplay.getPermissionChecker(), layout, ActionKeys.UPDATE);
+		LayoutPermissionUtil.checkLayoutRestrictedUpdatePermission(
+			themeDisplay.getPermissionChecker(), layout);
 
 		Layout updatedLayout = _layoutLocalService.updateMasterLayoutPlid(
 			layout.getGroupId(), layout.isPrivateLayout(), layout.getLayoutId(),
 			masterLayoutPlid);
 
+		if (layout.isDraftLayout()) {
+			UnicodeProperties layoutTypeSettingsUnicodeProperties =
+				layout.getTypeSettingsProperties();
+
+			layoutTypeSettingsUnicodeProperties.put(
+				LayoutTypeSettingsConstants.KEY_DESIGN_CONFIGURATION_MODIFIED,
+				Boolean.TRUE.toString());
+
+			updatedLayout = _layoutLocalService.updateLayout(
+				layout.getGroupId(), layout.isPrivateLayout(),
+				layout.getLayoutId(),
+				layoutTypeSettingsUnicodeProperties.toString());
+		}
+
+		actionRequest.setAttribute(WebKeys.LAYOUT, updatedLayout);
+
 		if (masterLayoutPlid == 0) {
 			return JSONUtil.put(
-				"styleBook",
-				_getStyleBookJSONObject(updatedLayout, themeDisplay));
+				"styleBookEntryId", _getStyleBookEntryId(updatedLayout)
+			).put(
+				"styleBooks",
+				_getStyleBooksJSONArray(updatedLayout, themeDisplay)
+			);
 		}
 
 		LayoutStructure layoutStructure =
 			LayoutStructureUtil.getLayoutStructure(
 				themeDisplay.getScopeGroupId(), masterLayoutPlid,
-				SegmentsExperienceConstants.ID_DEFAULT);
+				SegmentsExperienceConstants.KEY_DEFAULT);
 
 		List<FragmentEntryLink> fragmentEntryLinks =
 			_fragmentEntryLinkLocalService.getFragmentEntryLinksByPlid(
 				themeDisplay.getScopeGroupId(), masterLayoutPlid);
 
 		JSONObject fragmentEntryLinksJSONObject =
-			JSONFactoryUtil.createJSONObject();
+			_jsonFactory.createJSONObject();
 
 		for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
-			JSONObject editableValuesJSONObject =
-				JSONFactoryUtil.createJSONObject(
-					fragmentEntryLink.getEditableValues());
-
 			JSONObject fragmentEntryLinkJSONObject =
-				FragmentEntryLinkUtil.getFragmentEntryLinkJSONObject(
-					actionRequest, actionResponse,
-					_fragmentEntryConfigurationParser, fragmentEntryLink,
-					_fragmentCollectionContributorTracker,
-					_fragmentRendererController, _fragmentRendererTracker,
-					_itemSelector,
-					editableValuesJSONObject.getString("portletId"));
+				_fragmentEntryLinkManager.getFragmentEntryLinkJSONObject(
+					fragmentEntryLink,
+					_portal.getHttpServletRequest(actionRequest),
+					_portal.getHttpServletResponse(actionResponse),
+					layoutStructure);
 
 			fragmentEntryLinkJSONObject.put("masterLayout", Boolean.TRUE);
 
@@ -131,75 +137,142 @@ public class ChangeMasterLayoutMVCActionCommand
 		).put(
 			"masterLayoutData", layoutStructure.toJSONObject()
 		).put(
-			"styleBook", _getStyleBookJSONObject(updatedLayout, themeDisplay)
+			"styleBookEntryId", _getStyleBookEntryId(updatedLayout)
+		).put(
+			"styleBooks", _getStyleBooksJSONArray(updatedLayout, themeDisplay)
 		);
 	}
 
-	private JSONObject _getStyleBookJSONObject(
-			Layout layout, ThemeDisplay themeDisplay)
-		throws Exception {
+	@Override
+	protected boolean isLayoutLockRequired() {
+		return false;
+	}
 
-		StyleBookEntry defaultMasterStyleBookEntry =
-			DefaultStyleBookEntryUtil.getDefaultMasterStyleBookEntry(layout);
-
-		String defaultStyleBookEntryName = StringPool.BLANK;
-		String defaultStyleBookEntryImagePreviewURL = StringPool.BLANK;
-
-		if (defaultMasterStyleBookEntry != null) {
-			defaultStyleBookEntryName = defaultMasterStyleBookEntry.getName();
-			defaultStyleBookEntryImagePreviewURL =
-				defaultMasterStyleBookEntry.getImagePreviewURL(themeDisplay);
-		}
-
-		JSONObject jsonObject = JSONUtil.put(
-			"defaultStyleBookEntryImagePreviewURL",
-			defaultStyleBookEntryImagePreviewURL
-		).put(
-			"defaultStyleBookEntryName", defaultStyleBookEntryName
-		);
-
+	private String _getStyleBookEntryId(Layout layout) {
 		StyleBookEntry styleBookEntry =
 			DefaultStyleBookEntryUtil.getDefaultStyleBookEntry(layout);
 
-		LayoutSet layoutSet = layout.getLayoutSet();
+		if (styleBookEntry != null) {
+			return String.valueOf(styleBookEntry.getStyleBookEntryId());
+		}
 
-		FrontendTokenDefinition frontendTokenDefinition =
-			_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
-
-		return jsonObject.put(
-			"styleBookEntryId", layout.getStyleBookEntryId()
-		).put(
-			"tokenValues",
-			StyleBookEntryUtil.getFrontendTokensValues(
-				frontendTokenDefinition, themeDisplay.getLocale(),
-				styleBookEntry)
-		);
+		return "0";
 	}
 
-	@Reference
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private JSONArray _getStyleBooksJSONArray(
+			Layout layout, ThemeDisplay themeDisplay)
+		throws Exception {
 
-	@Reference
-	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
+		JSONArray styleBooksJSONArray = _jsonFactory.createJSONArray();
+
+		List<StyleBookEntry> styleBookEntries = new ArrayList<>();
+
+		FrontendTokenDefinition frontendTokenDefinition = null;
+
+		if (FeatureFlagManagerUtil.isEnabled("LPD-30204")) {
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					layout);
+
+			if (frontendTokenDefinition != null) {
+				styleBookEntries =
+					_styleBookEntryLocalService.getStyleBookEntries(
+						layout.getGroupId(),
+						frontendTokenDefinition.getThemeId());
+			}
+		}
+		else {
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					layout.getLayoutSet());
+
+			styleBookEntries = _styleBookEntryLocalService.getStyleBookEntries(
+				layout.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				StyleBookEntryNameComparator.getInstance(true));
+		}
+
+		if (frontendTokenDefinition != null) {
+			StyleBookEntry defaultStyleBookEntry =
+				DefaultStyleBookEntryUtil.getDefaultMasterStyleBookEntry(
+					layout);
+
+			styleBooksJSONArray.put(
+				JSONUtil.put(
+					"imagePreviewURL",
+					() -> {
+						if (defaultStyleBookEntry != null) {
+							return defaultStyleBookEntry.getImagePreviewURL(
+								themeDisplay);
+						}
+
+						return StringPool.BLANK;
+					}
+				).put(
+					"name",
+					DefaultStyleBookEntryUtil.getStyleBookEntryName(
+						layout, themeDisplay.getLocale(),
+						StyleBookUtil.getStyleFromThemeStyleBookEntry(
+							layout, themeDisplay.getLocale()))
+				).put(
+					"styleBookEntryId", "0"
+				).put(
+					"subtitle",
+					() -> {
+						if (defaultStyleBookEntry != null) {
+							return defaultStyleBookEntry.getName();
+						}
+
+						return null;
+					}
+				).put(
+					"tokenValues",
+					StyleBookEntryUtil.getFrontendTokensValues(
+						frontendTokenDefinition, themeDisplay.getLocale(),
+						defaultStyleBookEntry)
+				));
+		}
+
+		for (StyleBookEntry styleBookEntry : styleBookEntries) {
+			styleBooksJSONArray.put(
+				JSONUtil.put(
+					"imagePreviewURL",
+					styleBookEntry.getImagePreviewURL(themeDisplay)
+				).put(
+					"name", styleBookEntry.getName()
+				).put(
+					"styleBookEntryId",
+					String.valueOf(styleBookEntry.getStyleBookEntryId())
+				).put(
+					"tokenValues",
+					StyleBookEntryUtil.getFrontendTokensValues(
+						_frontendTokenDefinitionRegistry.
+							getFrontendTokenDefinition(layout),
+						themeDisplay.getLocale(), styleBookEntry)
+				));
+		}
+
+		return styleBooksJSONArray;
+	}
 
 	@Reference
 	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
 
 	@Reference
-	private FragmentRendererController _fragmentRendererController;
-
-	@Reference
-	private FragmentRendererTracker _fragmentRendererTracker;
+	private FragmentEntryLinkManager _fragmentEntryLinkManager;
 
 	@Reference
 	private FrontendTokenDefinitionRegistry _frontendTokenDefinitionRegistry;
 
 	@Reference
-	private ItemSelector _itemSelector;
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private StyleBookEntryLocalService _styleBookEntryLocalService;
 
 }

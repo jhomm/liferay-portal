@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -51,20 +42,24 @@ if (portletTitleBasedNavigation) {
 
 <c:if test="<%= !print %>">
 	<c:if test="<%= wikiVisualizationHelper.isNodeNavigationVisible() %>">
-		<aui:nav cssClass="nav-tabs">
+		<clay:navigation-bar
+			navigationItems="<%=
+				new JSPNavigationItemList(pageContext) {
+					{
+						for (WikiNode curNode : nodes) {
+							PortletURL viewPageURL = wikiURLHelper.getViewFrontPagePageURL(curNode);
 
-			<%
-			for (WikiNode curNode : nodes) {
-				PortletURL viewPageURL = wikiURLHelper.getViewFrontPagePageURL(curNode);
-			%>
-
-				<aui:nav-item href="<%= viewPageURL.toString() %>" label="<%= HtmlUtil.escape(curNode.getName()) %>" selected="<%= curNode.getNodeId() == node.getNodeId() %>" />
-
-			<%
-			}
-			%>
-
-		</aui:nav>
+							add(
+								navigationItem -> {
+									navigationItem.setActive(curNode.getNodeId() == node.getNodeId());
+									navigationItem.setHref(viewPageURL.toString());
+									navigationItem.setLabel(HtmlUtil.escape(curNode.getName()));
+								});
+						}
+					}
+				}
+			%>"
+		/>
 	</c:if>
 
 	<clay:navigation-bar
@@ -99,12 +94,14 @@ if (portletTitleBasedNavigation) {
 							navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "orphan-pages"));
 						});
 
-					add(
-						navigationItem -> {
-							navigationItem.setActive(wikiVisualizationHelper.isViewDraftPagesNavItemSelected());
-							navigationItem.setHref(wikiURLHelper.getViewDraftPagesURL(node));
-							navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "draft-pages"));
-						});
+					if (themeDisplay.isSignedIn()) {
+						add(
+							navigationItem -> {
+								navigationItem.setActive(wikiVisualizationHelper.isViewDraftPagesNavItemSelected());
+								navigationItem.setHref(wikiURLHelper.getViewDraftPagesURL(node));
+								navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "draft-pages"));
+							});
+					}
 				}
 			}
 		%>'

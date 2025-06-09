@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.model;
@@ -71,6 +62,8 @@ public class DLFileVersionWrapper
 		attributes.put("version", getVersion());
 		attributes.put("size", getSize());
 		attributes.put("checksum", getChecksum());
+		attributes.put("storeUUID", getStoreUUID());
+		attributes.put("displayDate", getDisplayDate());
 		attributes.put("expirationDate", getExpirationDate());
 		attributes.put("reviewDate", getReviewDate());
 		attributes.put("lastPublishDate", getLastPublishDate());
@@ -234,6 +227,18 @@ public class DLFileVersionWrapper
 			setChecksum(checksum);
 		}
 
+		String storeUUID = (String)attributes.get("storeUUID");
+
+		if (storeUUID != null) {
+			setStoreUUID(storeUUID);
+		}
+
+		Date displayDate = (Date)attributes.get("displayDate");
+
+		if (displayDate != null) {
+			setDisplayDate(displayDate);
+		}
+
 		Date expirationDate = (Date)attributes.get("expirationDate");
 
 		if (expirationDate != null) {
@@ -346,6 +351,11 @@ public class DLFileVersionWrapper
 		return model.getCtCollectionId();
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 DLFileEntryTypeUtil#getDDMStructures(DLFileEntryType)}
+	 */
+	@Deprecated
 	@Override
 	public java.util.List<com.liferay.dynamic.data.mapping.kernel.DDMStructure>
 			getDDMStructures()
@@ -362,6 +372,16 @@ public class DLFileVersionWrapper
 	@Override
 	public String getDescription() {
 		return model.getDescription();
+	}
+
+	/**
+	 * Returns the display date of this document library file version.
+	 *
+	 * @return the display date of this document library file version
+	 */
+	@Override
+	public Date getDisplayDate() {
+		return model.getDisplayDate();
 	}
 
 	@Override
@@ -622,6 +642,21 @@ public class DLFileVersionWrapper
 		return model.getStatusDate();
 	}
 
+	@Override
+	public String getStoreFileName() {
+		return model.getStoreFileName();
+	}
+
+	/**
+	 * Returns the store uuid of this document library file version.
+	 *
+	 * @return the store uuid of this document library file version
+	 */
+	@Override
+	public String getStoreUUID() {
+		return model.getStoreUUID();
+	}
+
 	/**
 	 * Returns the title of this document library file version.
 	 *
@@ -835,6 +870,16 @@ public class DLFileVersionWrapper
 	@Override
 	public void setDescription(String description) {
 		model.setDescription(description);
+	}
+
+	/**
+	 * Sets the display date of this document library file version.
+	 *
+	 * @param displayDate the display date of this document library file version
+	 */
+	@Override
+	public void setDisplayDate(Date displayDate) {
+		model.setDisplayDate(displayDate);
 	}
 
 	/**
@@ -1066,6 +1111,16 @@ public class DLFileVersionWrapper
 	}
 
 	/**
+	 * Sets the store uuid of this document library file version.
+	 *
+	 * @param storeUUID the store uuid of this document library file version
+	 */
+	@Override
+	public void setStoreUUID(String storeUUID) {
+		model.setStoreUUID(storeUUID);
+	}
+
+	/**
 	 * Sets the title of this document library file version.
 	 *
 	 * @param title the title of this document library file version
@@ -1133,6 +1188,11 @@ public class DLFileVersionWrapper
 	@Override
 	public void setVersion(String version) {
 		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

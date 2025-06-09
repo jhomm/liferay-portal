@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,17 +18,26 @@ RoleTypeContributor currentRoleTypeContributor = RoleTypeContributorRetrieverUti
 		<liferay-ui:search-container-column-text
 			colspan="<%= 2 %>"
 		>
-			<h5>
+			<div class="list-group-title">
 				<aui:a href="<%= (rowURL != null) ? rowURL.toString() : null %>"><%= HtmlUtil.escape(role.getTitle(locale)) %></aui:a>
-			</h5>
+			</div>
 
-			<h6 class="text-default">
+			<div class="list-group-text">
 				<span><%= HtmlUtil.escape(role.getDescription(locale)) %></span>
-			</h6>
+			</div>
 
-			<h6 class="text-default">
-				<span><%= _getAssigneesMessage(request, role, roleDisplayContext) %></span>
-			</h6>
+			<div class="list-group-subtext">
+				<span><%= roleDisplayContext.getAssigneesMessage(role) %></span>
+			</div>
+
+			<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-47858") %>'>
+				<div class="list-group-text">
+					<clay:label
+						displayType="<%= WorkflowConstants.getStatusStyle(role.getStatus()) %>"
+						label="<%= WorkflowConstants.getStatusLabel(role.getStatus()) %>"
+					/>
+				</div>
+			</c:if>
 		</liferay-ui:search-container-column-text>
 
 		<liferay-ui:search-container-column-jsp
@@ -71,8 +71,20 @@ RoleTypeContributor currentRoleTypeContributor = RoleTypeContributorRetrieverUti
 			cssClass="table-cell-expand-smallest table-cell-ws-nowrap table-column-text-center"
 			href="<%= rowURL %>"
 			name="number-of-assignees"
-			value='<%= roleDisplayContext.isAutomaticallyAssigned(role) ? LanguageUtil.get(request, "not-available") : String.valueOf(_getAssigneesTotal(role.getRoleId())) %>'
+			value='<%= roleDisplayContext.isAutomaticallyAssigned(role) ? LanguageUtil.get(request, "not-available") : String.valueOf(roleDisplayContext.getAssigneesTotal(role.getRoleId())) %>'
 		/>
+
+		<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-47858") %>'>
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand-smallest table-cell-ws-nowrap table-column-text-center"
+				name="status"
+			>
+				<clay:label
+					displayType="<%= WorkflowConstants.getStatusStyle(role.getStatus()) %>"
+					label="<%= WorkflowConstants.getStatusLabel(role.getStatus()) %>"
+				/>
+			</liferay-ui:search-container-column-text>
+		</c:if>
 
 		<liferay-ui:search-container-column-jsp
 			path="/role_action.jsp"

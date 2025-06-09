@@ -1,32 +1,23 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-AccountEntryDisplay accountEntryDisplay = AccountEntryDisplay.of(ParamUtil.getLong(request, "accountEntryId"));
+AccountEntryDisplay accountEntryDisplay = AccountEntryDisplayFactoryUtil.create(ParamUtil.getLong(request, "accountEntryId"), request);
 
 long defaultAddressId = 0;
 
 String type = ParamUtil.getString(request, "type");
 
-if (Objects.equals("billing", type)) {
+if (Objects.equals(type, "billing")) {
 	defaultAddressId = accountEntryDisplay.getDefaultBillingAddressId();
 }
-else if (Objects.equals("shipping", type)) {
+else if (Objects.equals(type, "shipping")) {
 	defaultAddressId = accountEntryDisplay.getDefaultShippingAddressId();
 }
 
@@ -35,22 +26,9 @@ SearchContainer<AddressDisplay> accountEntryAddressDisplaySearchContainer = Acco
 accountEntryAddressDisplaySearchContainer.setRowChecker(null);
 %>
 
-<portlet:renderURL var="addAccountEntryDefaultAddressURL">
-	<portlet:param name="mvcRenderCommandName" value="/account_admin/edit_account_entry_address" />
-	<portlet:param name="backURL" value='<%= ParamUtil.getString(request, "redirect") %>' />
-	<portlet:param name="accountEntryId" value='<%= ParamUtil.getString(request, "accountEntryId") %>' />
-	<portlet:param name="defaultType" value="<%= type %>" />
-</portlet:renderURL>
-
 <clay:management-toolbar
-	additionalProps='<%=
-		HashMapBuilder.<String, Object>put(
-			"addAccountEntryDefaultAddressURL", addAccountEntryDefaultAddressURL.toString()
-		).build()
-	%>'
 	managementToolbarDisplayContext="<%= new SelectAccountEntryAddressManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, accountEntryAddressDisplaySearchContainer) %>"
-	propsTransformer="account_entries_admin/js/SelectAccountDefaultAddressManagementToolbarPropsTransformer"
-	showCreationMenu="<%= true %>"
+	propsTransformer="{SelectAccountDefaultAddressManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid

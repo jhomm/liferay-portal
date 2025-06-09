@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,7 +17,6 @@ List<Website> websites = WebsiteServiceUtil.getWebsites(className, classPK);
 %>
 
 <clay:content-row
-	containerElement="h3"
 	cssClass="sheet-subtitle"
 >
 	<clay:content-col
@@ -37,11 +27,11 @@ List<Website> websites = WebsiteServiceUtil.getWebsites(className, classPK);
 
 	<clay:content-col>
 		<span class="heading-end">
-			<liferay-ui:icon
-				label="<%= true %>"
-				linkCssClass="add-website-link btn btn-secondary btn-sm"
-				message="add"
-				url='<%=
+			<clay:link
+				aria-label='<%= LanguageUtil.format(request, "add-x", "websites") %>'
+				cssClass="add-website-link btn btn-secondary btn-sm"
+				displayType="null"
+				href='<%=
 					PortletURLBuilder.createRenderURL(
 						liferayPortletResponse
 					).setMVCPath(
@@ -54,6 +44,8 @@ List<Website> websites = WebsiteServiceUtil.getWebsites(className, classPK);
 						"classPK", classPK
 					).buildString()
 				%>'
+				label="add"
+				role="button"
 			/>
 		</span>
 	</clay:content-col>
@@ -71,7 +63,8 @@ List<Website> websites = WebsiteServiceUtil.getWebsites(className, classPK);
 	total="<%= websites.size() %>"
 >
 	<liferay-ui:search-container-results
-		results="<%= websites.subList(searchContainer.getStart(), searchContainer.getResultEnd()) %>"
+		calculateStartAndEnd="<%= true %>"
+		results="<%= websites %>"
 	/>
 
 	<liferay-ui:search-container-row
@@ -87,15 +80,13 @@ List<Website> websites = WebsiteServiceUtil.getWebsites(className, classPK);
 		/>
 
 		<%
-		ListType websiteListType = ListTypeServiceUtil.getListType(website.getTypeId());
-
-		String websiteTypeKey = websiteListType.getName();
+		ListType listType = website.getListType();
 		%>
 
 		<liferay-ui:search-container-column-text
 			cssClass="table-cell-expand-small"
 			name="type"
-			value="<%= LanguageUtil.get(request, websiteTypeKey) %>"
+			value="<%= LanguageUtil.get(request, listType.getName()) %>"
 		/>
 
 		<liferay-ui:search-container-column-text

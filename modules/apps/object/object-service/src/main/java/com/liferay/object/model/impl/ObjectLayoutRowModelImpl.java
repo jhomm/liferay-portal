@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -227,109 +217,104 @@ public class ObjectLayoutRowModelImpl
 	public Map<String, Function<ObjectLayoutRow, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ObjectLayoutRow, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ObjectLayoutRow>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ObjectLayoutRow.class.getClassLoader(), ObjectLayoutRow.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ObjectLayoutRow, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ObjectLayoutRow> constructor =
-				(Constructor<ObjectLayoutRow>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ObjectLayoutRow, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ObjectLayoutRow, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ObjectLayoutRow::getMvccVersion);
+			attributeGetterFunctions.put("uuid", ObjectLayoutRow::getUuid);
+			attributeGetterFunctions.put(
+				"objectLayoutRowId", ObjectLayoutRow::getObjectLayoutRowId);
+			attributeGetterFunctions.put(
+				"companyId", ObjectLayoutRow::getCompanyId);
+			attributeGetterFunctions.put("userId", ObjectLayoutRow::getUserId);
+			attributeGetterFunctions.put(
+				"userName", ObjectLayoutRow::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", ObjectLayoutRow::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ObjectLayoutRow::getModifiedDate);
+			attributeGetterFunctions.put(
+				"objectLayoutBoxId", ObjectLayoutRow::getObjectLayoutBoxId);
+			attributeGetterFunctions.put(
+				"priority", ObjectLayoutRow::getPriority);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ObjectLayoutRow, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ObjectLayoutRow, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ObjectLayoutRow, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<ObjectLayoutRow, Object>>();
-		Map<String, BiConsumer<ObjectLayoutRow, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<ObjectLayoutRow, ?>>();
+		private static final Map<String, BiConsumer<ObjectLayoutRow, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ObjectLayoutRow::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ObjectLayoutRow, Long>)ObjectLayoutRow::setMvccVersion);
-		attributeGetterFunctions.put("uuid", ObjectLayoutRow::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<ObjectLayoutRow, String>)ObjectLayoutRow::setUuid);
-		attributeGetterFunctions.put(
-			"objectLayoutRowId", ObjectLayoutRow::getObjectLayoutRowId);
-		attributeSetterBiConsumers.put(
-			"objectLayoutRowId",
-			(BiConsumer<ObjectLayoutRow, Long>)
-				ObjectLayoutRow::setObjectLayoutRowId);
-		attributeGetterFunctions.put(
-			"companyId", ObjectLayoutRow::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ObjectLayoutRow, Long>)ObjectLayoutRow::setCompanyId);
-		attributeGetterFunctions.put("userId", ObjectLayoutRow::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<ObjectLayoutRow, Long>)ObjectLayoutRow::setUserId);
-		attributeGetterFunctions.put("userName", ObjectLayoutRow::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<ObjectLayoutRow, String>)ObjectLayoutRow::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", ObjectLayoutRow::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ObjectLayoutRow, Date>)ObjectLayoutRow::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ObjectLayoutRow::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ObjectLayoutRow, Date>)
-				ObjectLayoutRow::setModifiedDate);
-		attributeGetterFunctions.put(
-			"objectLayoutBoxId", ObjectLayoutRow::getObjectLayoutBoxId);
-		attributeSetterBiConsumers.put(
-			"objectLayoutBoxId",
-			(BiConsumer<ObjectLayoutRow, Long>)
-				ObjectLayoutRow::setObjectLayoutBoxId);
-		attributeGetterFunctions.put("priority", ObjectLayoutRow::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<ObjectLayoutRow, Integer>)ObjectLayoutRow::setPriority);
+		static {
+			Map<String, BiConsumer<ObjectLayoutRow, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<ObjectLayoutRow, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ObjectLayoutRow, Long>)
+					ObjectLayoutRow::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<ObjectLayoutRow, String>)ObjectLayoutRow::setUuid);
+			attributeSetterBiConsumers.put(
+				"objectLayoutRowId",
+				(BiConsumer<ObjectLayoutRow, Long>)
+					ObjectLayoutRow::setObjectLayoutRowId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ObjectLayoutRow, Long>)
+					ObjectLayoutRow::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<ObjectLayoutRow, Long>)ObjectLayoutRow::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<ObjectLayoutRow, String>)
+					ObjectLayoutRow::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ObjectLayoutRow, Date>)
+					ObjectLayoutRow::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ObjectLayoutRow, Date>)
+					ObjectLayoutRow::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"objectLayoutBoxId",
+				(BiConsumer<ObjectLayoutRow, Long>)
+					ObjectLayoutRow::setObjectLayoutBoxId);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<ObjectLayoutRow, Integer>)
+					ObjectLayoutRow::setPriority);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -811,41 +796,12 @@ public class ObjectLayoutRowModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ObjectLayoutRow, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ObjectLayoutRow, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ObjectLayoutRow, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ObjectLayoutRow)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ObjectLayoutRow>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ObjectLayoutRow.class, ModelWrapper.class);
 
 	}
 
@@ -865,7 +821,8 @@ public class ObjectLayoutRowModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ObjectLayoutRow, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

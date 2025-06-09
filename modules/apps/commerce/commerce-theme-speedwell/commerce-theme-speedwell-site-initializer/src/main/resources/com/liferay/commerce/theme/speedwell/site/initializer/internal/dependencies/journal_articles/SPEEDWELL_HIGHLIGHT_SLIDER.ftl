@@ -1,6 +1,6 @@
 <div class="product-highlight speedwell-slider" data-will-load>
 	<#if (Image2x9w)?? && Image2x9w.getSiblings()?has_content>
-<script class="slider-dataset" type="application/ld+json">
+<script ${nonceAttribute} class="slider-dataset" type="application/ld+json">
 			[
 			<#list Image2x9w.getSiblings() as cur_Image2x9w>
 				{
@@ -41,7 +41,7 @@
 		</div>
 	</div>
 
-	<script>
+	<script ${nonceAttribute}>
 		var Speedwell = Speedwell || { features: {} };
 
 		Speedwell.features.sliderCallbacks =
@@ -78,12 +78,12 @@
 
 				const backgroundImageSlideImg = window.document.createElement('div');
 
-				backgroundImageSlideImg.setAttribute('style',
-						'background-image: url(' + dataset[index].backgroundImageUrl + ')');
+				backgroundImageSlideImg.style.backgroundImage =
+					'url(' + dataset[index].backgroundImageUrl + ')';
 				backgroundImageSlide.appendChild(backgroundImageSlideImg);
 
-				captionImageSlide.setAttribute('style',
-						'background-image: url(' + dataset[index].captionImageUrl + ')');
+				captionImageSlide.style.backgroundImage =
+					'url(' + dataset[index].captionImageUrl + ')';
 				captionTextSlide.innerText = dataset[index].captionText;
 
 				captionButtonSlide.href = dataset[index].captionButtonUrl;
@@ -113,16 +113,12 @@
 
 					switch (type) {
 						case 'backgroundImage':
-							willBeNextElement.querySelector('div').setAttribute(
-									'style',
-									'background-image: url(' + nextSlideContent.backgroundImageUrl + ')'
-							);
+							willBeNextElement.querySelector('div').style.backgroundImage =
+								'url(' + nextSlideContent.backgroundImageUrl + ')';
 							break;
 						case 'captionImage':
-							willBeNextElement.setAttribute(
-									'style',
-									'background-image: url(' + nextSlideContent.captionImageUrl + ')'
-							);
+							willBeNextElement.style.backgroundImage =
+								'url(' + nextSlideContent.captionImageUrl + ')';
 							break;
 						case 'captionText':
 							willBeNextElement.innerText = nextSlideContent.captionText;

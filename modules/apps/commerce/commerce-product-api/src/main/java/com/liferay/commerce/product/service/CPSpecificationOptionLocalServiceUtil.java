@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -63,16 +55,18 @@ public class CPSpecificationOptionLocalServiceUtil {
 	}
 
 	public static CPSpecificationOption addCPSpecificationOption(
-			long userId, long cpOptionCategoryId,
+			String externalReferenceCode, long userId, long cpOptionCategoryId,
+			long[] listTypeDefinitionIds,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key,
+			String key, double priority, boolean visible,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPSpecificationOption(
-			userId, cpOptionCategoryId, titleMap, descriptionMap, facetable,
-			key, serviceContext);
+			externalReferenceCode, userId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	/**
@@ -248,6 +242,14 @@ public class CPSpecificationOptionLocalServiceUtil {
 		return getService().fetchCPSpecificationOption(companyId, key);
 	}
 
+	public static CPSpecificationOption
+		fetchCPSpecificationOptionByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchCPSpecificationOptionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the cp specification option with the matching UUID and company.
 	 *
@@ -288,6 +290,15 @@ public class CPSpecificationOptionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCPSpecificationOption(companyId, key);
+	}
+
+	public static CPSpecificationOption
+			getCPSpecificationOptionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCPSpecificationOptionByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -368,12 +379,13 @@ public class CPSpecificationOptionLocalServiceUtil {
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<CPSpecificationOption> searchCPSpecificationOptions(
-				long companyId, Boolean facetable, String keywords, int start,
-				int end, com.liferay.portal.kernel.search.Sort sort)
+				long companyId, Boolean facetable, Boolean visible,
+				String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 			throws PortalException {
 
 		return getService().searchCPSpecificationOptions(
-			companyId, facetable, keywords, start, end, sort);
+			companyId, facetable, visible, keywords, start, end, sort);
 	}
 
 	public static CPSpecificationOption updateCPOptionCategoryId(
@@ -401,22 +413,27 @@ public class CPSpecificationOptionLocalServiceUtil {
 	}
 
 	public static CPSpecificationOption updateCPSpecificationOption(
-			long cpSpecificationOptionId, long cpOptionCategoryId,
+			String externalReferenceCode, long cpSpecificationOptionId,
+			long cpOptionCategoryId, long[] listTypeDefinitionIds,
 			Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap, boolean facetable,
-			String key,
+			String key, double priority, boolean visible,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPSpecificationOption(
-			cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-			descriptionMap, facetable, key, serviceContext);
+			externalReferenceCode, cpSpecificationOptionId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	public static CPSpecificationOptionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPSpecificationOptionLocalService _service;
+	private static final Snapshot<CPSpecificationOptionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPSpecificationOptionLocalServiceUtil.class,
+			CPSpecificationOptionLocalService.class);
 
 }

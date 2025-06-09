@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
@@ -46,7 +39,6 @@ import com.liferay.portal.model.impl.PortletPreferencesModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -167,96 +159,100 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByOwnerId;
-				finderArgs = new Object[] {ownerId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByOwnerId;
+					finderArgs = new Object[] {ownerId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByOwnerId;
-			finderArgs = new Object[] {ownerId, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByOwnerId;
+				finderArgs = new Object[] {
+					ownerId, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if (ownerId != portletPreferences.getOwnerId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if (ownerId != portletPreferences.getOwnerId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-			sb.append(_FINDER_COLUMN_OWNERID_OWNERID_2);
+				sb.append(_FINDER_COLUMN_OWNERID_OWNERID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(ownerId);
+					queryPos.add(ownerId);
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -549,57 +545,51 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByOwnerId(long ownerId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByOwnerId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {ownerId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByOwnerId;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {ownerId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_OWNERID_OWNERID_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_OWNERID_OWNERID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(ownerId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(ownerId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_OWNERID_OWNERID_2 =
@@ -678,96 +668,98 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByPlid;
-				finderArgs = new Object[] {plid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByPlid;
+					finderArgs = new Object[] {plid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByPlid;
-			finderArgs = new Object[] {plid, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByPlid;
+				finderArgs = new Object[] {plid, start, end, orderByComparator};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if (plid != portletPreferences.getPlid()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if (plid != portletPreferences.getPlid()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-			sb.append(_FINDER_COLUMN_PLID_PLID_2);
+				sb.append(_FINDER_COLUMN_PLID_PLID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(plid);
+					queryPos.add(plid);
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1057,57 +1049,51 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByPlid(long plid) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByPlid;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {plid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByPlid;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {plid};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_PLID_PLID_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_PLID_PLID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(plid);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(plid);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_PLID_PLID_2 =
@@ -1189,111 +1175,115 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByPortletId;
-				finderArgs = new Object[] {portletId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByPortletId;
+					finderArgs = new Object[] {portletId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByPortletId;
-			finderArgs = new Object[] {
-				portletId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByPortletId;
+				finderArgs = new Object[] {
+					portletId, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if (!portletId.equals(portletPreferences.getPortletId())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if (!portletId.equals(
+								portletPreferences.getPortletId())) {
 
-						break;
+							list = null;
+
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-				cacheResult(list);
+				boolean bindPortletId = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
+
+					sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1604,70 +1594,64 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByPortletId(String portletId) {
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByPortletId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {portletId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByPortletId;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {portletId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindPortletId = false;
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
 
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					sb.append(_FINDER_COLUMN_PORTLETID_PORTLETID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_PORTLETID_PORTLETID_2 =
@@ -1757,117 +1741,120 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByO_P;
-				finderArgs = new Object[] {ownerType, portletId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByO_P;
+					finderArgs = new Object[] {ownerType, portletId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByO_P;
-			finderArgs = new Object[] {
-				ownerType, portletId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByO_P;
+				finderArgs = new Object[] {
+					ownerType, portletId, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if ((ownerType != portletPreferences.getOwnerType()) ||
-						!portletId.equals(portletPreferences.getPortletId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if ((ownerType != portletPreferences.getOwnerType()) ||
+							!portletId.equals(
+								portletPreferences.getPortletId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_O_P_OWNERTYPE_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_P_PORTLETID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerType);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_O_P_OWNERTYPE_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				boolean bindPortletId = false;
+
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_P_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
+
+					sb.append(_FINDER_COLUMN_O_P_PORTLETID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerType);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2196,74 +2183,68 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByO_P(int ownerType, String portletId) {
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByO_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {ownerType, portletId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByO_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {ownerType, portletId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_O_P_OWNERTYPE_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				boolean bindPortletId = false;
 
-			sb.append(_FINDER_COLUMN_O_P_OWNERTYPE_2);
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_P_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
 
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_P_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerType);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					sb.append(_FINDER_COLUMN_O_P_PORTLETID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerType);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_O_P_OWNERTYPE_2 =
@@ -2355,117 +2336,120 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByP_P;
-				finderArgs = new Object[] {plid, portletId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByP_P;
+					finderArgs = new Object[] {plid, portletId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByP_P;
-			finderArgs = new Object[] {
-				plid, portletId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByP_P;
+				finderArgs = new Object[] {
+					plid, portletId, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if ((plid != portletPreferences.getPlid()) ||
-						!portletId.equals(portletPreferences.getPortletId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if ((plid != portletPreferences.getPlid()) ||
+							!portletId.equals(
+								portletPreferences.getPortletId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_P_P_PLID_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_P_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_P_P_PORTLETID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(plid);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_P_P_PLID_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				boolean bindPortletId = false;
+
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_P_P_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
+
+					sb.append(_FINDER_COLUMN_P_P_PORTLETID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(plid);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2794,74 +2778,68 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByP_P(long plid, String portletId) {
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByP_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {plid, portletId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByP_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {plid, portletId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_P_P_PLID_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				boolean bindPortletId = false;
 
-			sb.append(_FINDER_COLUMN_P_P_PLID_2);
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_P_P_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
 
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_P_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_P_P_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(plid);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					sb.append(_FINDER_COLUMN_P_P_PORTLETID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(plid);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_P_P_PLID_2 =
@@ -2961,109 +2939,111 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByO_O_P;
-				finderArgs = new Object[] {ownerId, ownerType, plid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByO_O_P;
+					finderArgs = new Object[] {ownerId, ownerType, plid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByO_O_P;
-			finderArgs = new Object[] {
-				ownerId, ownerType, plid, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByO_O_P;
+				finderArgs = new Object[] {
+					ownerId, ownerType, plid, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if ((ownerId != portletPreferences.getOwnerId()) ||
-						(ownerType != portletPreferences.getOwnerType()) ||
-						(plid != portletPreferences.getPlid())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if ((ownerId != portletPreferences.getOwnerId()) ||
+							(ownerType != portletPreferences.getOwnerType()) ||
+							(plid != portletPreferences.getPlid())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-			sb.append(_FINDER_COLUMN_O_O_P_OWNERID_2);
+				sb.append(_FINDER_COLUMN_O_O_P_OWNERID_2);
 
-			sb.append(_FINDER_COLUMN_O_O_P_OWNERTYPE_2);
+				sb.append(_FINDER_COLUMN_O_O_P_OWNERTYPE_2);
 
-			sb.append(_FINDER_COLUMN_O_O_P_PLID_2);
+				sb.append(_FINDER_COLUMN_O_O_P_PLID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(ownerId);
+					queryPos.add(ownerId);
 
-				queryPos.add(ownerType);
+					queryPos.add(ownerType);
 
-				queryPos.add(plid);
+					queryPos.add(plid);
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -3396,65 +3376,59 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByO_O_P(long ownerId, int ownerType, long plid) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByO_O_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {ownerId, ownerType, plid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByO_O_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {ownerId, ownerType, plid};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_O_O_P_OWNERID_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				sb.append(_FINDER_COLUMN_O_O_P_OWNERTYPE_2);
 
-			sb.append(_FINDER_COLUMN_O_O_P_OWNERID_2);
+				sb.append(_FINDER_COLUMN_O_O_P_PLID_2);
 
-			sb.append(_FINDER_COLUMN_O_O_P_OWNERTYPE_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_O_O_P_PLID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(ownerId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(ownerType);
 
-				queryPos.add(ownerId);
+					queryPos.add(plid);
 
-				queryPos.add(ownerType);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(plid);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_O_O_P_OWNERID_2 =
@@ -3554,122 +3528,125 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByO_O_PI;
-				finderArgs = new Object[] {ownerId, ownerType, portletId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByO_O_PI;
+					finderArgs = new Object[] {ownerId, ownerType, portletId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByO_O_PI;
-			finderArgs = new Object[] {
-				ownerId, ownerType, portletId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByO_O_PI;
+				finderArgs = new Object[] {
+					ownerId, ownerType, portletId, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if ((ownerId != portletPreferences.getOwnerId()) ||
-						(ownerType != portletPreferences.getOwnerType()) ||
-						!portletId.equals(portletPreferences.getPortletId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if ((ownerId != portletPreferences.getOwnerId()) ||
+							(ownerType != portletPreferences.getOwnerType()) ||
+							!portletId.equals(
+								portletPreferences.getPortletId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_O_O_PI_OWNERID_2);
-
-			sb.append(_FINDER_COLUMN_O_O_PI_OWNERTYPE_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerId);
-
-				queryPos.add(ownerType);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
 				}
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_O_O_PI_OWNERID_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				sb.append(_FINDER_COLUMN_O_O_PI_OWNERTYPE_2);
+
+				boolean bindPortletId = false;
+
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
+
+					sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerId);
+
+					queryPos.add(ownerType);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4016,78 +3993,72 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByO_O_PI(long ownerId, int ownerType, String portletId) {
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByO_O_PI;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {ownerId, ownerType, portletId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByO_O_PI;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {ownerId, ownerType, portletId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_O_O_PI_OWNERID_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				sb.append(_FINDER_COLUMN_O_O_PI_OWNERTYPE_2);
 
-			sb.append(_FINDER_COLUMN_O_O_PI_OWNERID_2);
+				boolean bindPortletId = false;
 
-			sb.append(_FINDER_COLUMN_O_O_PI_OWNERTYPE_2);
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
 
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerId);
-
-				queryPos.add(ownerType);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					sb.append(_FINDER_COLUMN_O_O_PI_PORTLETID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerId);
+
+					queryPos.add(ownerType);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_O_O_PI_OWNERID_2 =
@@ -4190,122 +4161,125 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByO_P_P;
-				finderArgs = new Object[] {ownerType, plid, portletId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByO_P_P;
+					finderArgs = new Object[] {ownerType, plid, portletId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByO_P_P;
-			finderArgs = new Object[] {
-				ownerType, plid, portletId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByO_P_P;
+				finderArgs = new Object[] {
+					ownerType, plid, portletId, start, end, orderByComparator
+				};
+			}
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if ((ownerType != portletPreferences.getOwnerType()) ||
-						(plid != portletPreferences.getPlid()) ||
-						!portletId.equals(portletPreferences.getPortletId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if ((ownerType != portletPreferences.getOwnerType()) ||
+							(plid != portletPreferences.getPlid()) ||
+							!portletId.equals(
+								portletPreferences.getPortletId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_O_P_P_OWNERTYPE_2);
-
-			sb.append(_FINDER_COLUMN_O_P_P_PLID_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerType);
-
-				queryPos.add(plid);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
 				}
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_O_P_P_OWNERTYPE_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				sb.append(_FINDER_COLUMN_O_P_P_PLID_2);
+
+				boolean bindPortletId = false;
+
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
+
+					sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerType);
+
+					queryPos.add(plid);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4652,78 +4626,72 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countByO_P_P(int ownerType, long plid, String portletId) {
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByO_P_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {ownerType, plid, portletId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByO_P_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {ownerType, plid, portletId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_O_P_P_OWNERTYPE_2);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				sb.append(_FINDER_COLUMN_O_P_P_PLID_2);
 
-			sb.append(_FINDER_COLUMN_O_P_P_OWNERTYPE_2);
+				boolean bindPortletId = false;
 
-			sb.append(_FINDER_COLUMN_O_P_P_PLID_2);
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
 
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerType);
-
-				queryPos.add(plid);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					sb.append(_FINDER_COLUMN_O_P_P_PORTLETID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerType);
+
+					queryPos.add(plid);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_O_P_P_OWNERTYPE_2 =
@@ -4834,120 +4802,122 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByC_O_O_LikeP;
-		finderArgs = new Object[] {
-			companyId, ownerId, ownerType, portletId, start, end,
-			orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByC_O_O_LikeP;
+			finderArgs = new Object[] {
+				companyId, ownerId, ownerType, portletId, start, end,
+				orderByComparator
+			};
 
-		List<PortletPreferences> list = null;
+			List<PortletPreferences> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (PortletPreferences portletPreferences : list) {
-					if ((companyId != portletPreferences.getCompanyId()) ||
-						(ownerId != portletPreferences.getOwnerId()) ||
-						(ownerType != portletPreferences.getOwnerType()) ||
-						!StringUtil.wildcardMatches(
-							portletPreferences.getPortletId(), portletId, '_',
-							'%', '\\', true)) {
+				if ((list != null) && !list.isEmpty()) {
+					for (PortletPreferences portletPreferences : list) {
+						if ((companyId != portletPreferences.getCompanyId()) ||
+							(ownerId != portletPreferences.getOwnerId()) ||
+							(ownerType != portletPreferences.getOwnerType()) ||
+							!StringUtil.wildcardMatches(
+								portletPreferences.getPortletId(), portletId,
+								'_', '%', '\\', true)) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_O_O_LIKEP_COMPANYID_2);
-
-			sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERID_2);
-
-			sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERTYPE_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				queryPos.add(ownerId);
-
-				queryPos.add(ownerType);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
 				}
 
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_COMPANYID_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERID_2);
+
+				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERTYPE_2);
+
+				boolean bindPortletId = false;
+
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
+
+					sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					queryPos.add(ownerId);
+
+					queryPos.add(ownerType);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -5317,84 +5287,78 @@ public class PortletPreferencesPersistenceImpl
 	public int countByC_O_O_LikeP(
 		long companyId, long ownerId, int ownerType, String portletId) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathWithPaginationCountByC_O_O_LikeP;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByC_O_O_LikeP;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				companyId, ownerId, ownerType, portletId
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
+				sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_O_O_LIKEP_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERID_2);
+				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERID_2);
 
-			sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERTYPE_2);
+				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_OWNERTYPE_2);
 
-			boolean bindPortletId = false;
+				boolean bindPortletId = false;
 
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_3);
+				}
+				else {
+					bindPortletId = true;
 
-				sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				queryPos.add(ownerId);
-
-				queryPos.add(ownerType);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					sb.append(_FINDER_COLUMN_C_O_O_LIKEP_PORTLETID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					queryPos.add(ownerId);
+
+					queryPos.add(ownerType);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_C_O_O_LIKEP_COMPANYID_2 =
@@ -5413,7 +5377,6 @@ public class PortletPreferencesPersistenceImpl
 		"(portletPreferences.portletId IS NULL OR portletPreferences.portletId LIKE '')";
 
 	private FinderPath _finderPathFetchByO_O_P_P;
-	private FinderPath _finderPathCountByO_O_P_P;
 
 	/**
 	 * Returns the portlet preferences where ownerId = &#63; and ownerType = &#63; and plid = &#63; and portletId = &#63; or throws a <code>NoSuchPortletPreferencesException</code> if it could not be found.
@@ -5493,108 +5456,112 @@ public class PortletPreferencesPersistenceImpl
 		long ownerId, int ownerType, long plid, String portletId,
 		boolean useFinderCache) {
 
-		portletId = Objects.toString(portletId, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+			portletId = Objects.toString(portletId, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {ownerId, ownerType, plid, portletId};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByO_O_P_P, finderArgs);
-		}
-
-		if (result instanceof PortletPreferences) {
-			PortletPreferences portletPreferences = (PortletPreferences)result;
-
-			if ((ownerId != portletPreferences.getOwnerId()) ||
-				(ownerType != portletPreferences.getOwnerType()) ||
-				(plid != portletPreferences.getPlid()) ||
-				!Objects.equals(portletId, portletPreferences.getPortletId())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_O_O_P_P_OWNERID_2);
-
-			sb.append(_FINDER_COLUMN_O_O_P_P_OWNERTYPE_2);
-
-			sb.append(_FINDER_COLUMN_O_O_P_P_PLID_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_O_P_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_O_P_P_PORTLETID_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {ownerId, ownerType, plid, portletId};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByO_O_P_P, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof PortletPreferences) {
+				PortletPreferences portletPreferences =
+					(PortletPreferences)result;
 
-				Query query = session.createQuery(sql);
+				if ((ownerId != portletPreferences.getOwnerId()) ||
+					(ownerType != portletPreferences.getOwnerType()) ||
+					(plid != portletPreferences.getPlid()) ||
+					!Objects.equals(
+						portletId, portletPreferences.getPortletId())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerId);
-
-				queryPos.add(ownerType);
-
-				queryPos.add(plid);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
+					result = null;
 				}
+			}
 
-				List<PortletPreferences> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(6);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByO_O_P_P, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_PORTLETPREFERENCES_WHERE);
+
+				sb.append(_FINDER_COLUMN_O_O_P_P_OWNERID_2);
+
+				sb.append(_FINDER_COLUMN_O_O_P_P_OWNERTYPE_2);
+
+				sb.append(_FINDER_COLUMN_O_O_P_P_PLID_2);
+
+				boolean bindPortletId = false;
+
+				if (portletId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_O_O_P_P_PORTLETID_3);
 				}
 				else {
-					PortletPreferences portletPreferences = list.get(0);
+					bindPortletId = true;
 
-					result = portletPreferences;
+					sb.append(_FINDER_COLUMN_O_O_P_P_PORTLETID_2);
+				}
 
-					cacheResult(portletPreferences);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(ownerId);
+
+					queryPos.add(ownerType);
+
+					queryPos.add(plid);
+
+					if (bindPortletId) {
+						queryPos.add(portletId);
+					}
+
+					List<PortletPreferences> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByO_O_P_P, finderArgs, list);
+						}
+					}
+					else {
+						PortletPreferences portletPreferences = list.get(0);
+
+						result = portletPreferences;
+
+						cacheResult(portletPreferences);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (PortletPreferences)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (PortletPreferences)result;
+			}
 		}
 	}
 
@@ -5631,82 +5598,14 @@ public class PortletPreferencesPersistenceImpl
 	public int countByO_O_P_P(
 		long ownerId, int ownerType, long plid, String portletId) {
 
-		portletId = Objects.toString(portletId, "");
+		PortletPreferences portletPreferences = fetchByO_O_P_P(
+			ownerId, ownerType, plid, portletId);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByO_O_P_P;
-
-			finderArgs = new Object[] {ownerId, ownerType, plid, portletId};
-
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		if (portletPreferences == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_COUNT_PORTLETPREFERENCES_WHERE);
-
-			sb.append(_FINDER_COLUMN_O_O_P_P_OWNERID_2);
-
-			sb.append(_FINDER_COLUMN_O_O_P_P_OWNERTYPE_2);
-
-			sb.append(_FINDER_COLUMN_O_O_P_P_PLID_2);
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_O_O_P_P_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_O_O_P_P_PORTLETID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(ownerId);
-
-				queryPos.add(ownerType);
-
-				queryPos.add(plid);
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_O_O_P_P_OWNERID_2 =
@@ -5740,22 +5639,24 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(PortletPreferences portletPreferences) {
-		if (portletPreferences.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					portletPreferences.getCtCollectionId())) {
+
+			EntityCacheUtil.putResult(
+				PortletPreferencesImpl.class,
+				portletPreferences.getPrimaryKey(), portletPreferences);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByO_O_P_P,
+				new Object[] {
+					portletPreferences.getOwnerId(),
+					portletPreferences.getOwnerType(),
+					portletPreferences.getPlid(),
+					portletPreferences.getPortletId()
+				},
+				portletPreferences);
 		}
-
-		EntityCacheUtil.putResult(
-			PortletPreferencesImpl.class, portletPreferences.getPrimaryKey(),
-			portletPreferences);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByO_O_P_P,
-			new Object[] {
-				portletPreferences.getOwnerId(),
-				portletPreferences.getOwnerType(), portletPreferences.getPlid(),
-				portletPreferences.getPortletId()
-			},
-			portletPreferences);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -5776,15 +5677,16 @@ public class PortletPreferencesPersistenceImpl
 		}
 
 		for (PortletPreferences portletPreferences : portletPreferenceses) {
-			if (portletPreferences.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						portletPreferences.getCtCollectionId())) {
 
-			if (EntityCacheUtil.getResult(
-					PortletPreferencesImpl.class,
-					portletPreferences.getPrimaryKey()) == null) {
+				if (EntityCacheUtil.getResult(
+						PortletPreferencesImpl.class,
+						portletPreferences.getPrimaryKey()) == null) {
 
-				cacheResult(portletPreferences);
+					cacheResult(portletPreferences);
+				}
 			}
 		}
 	}
@@ -5837,17 +5739,20 @@ public class PortletPreferencesPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		PortletPreferencesModelImpl portletPreferencesModelImpl) {
 
-		Object[] args = new Object[] {
-			portletPreferencesModelImpl.getOwnerId(),
-			portletPreferencesModelImpl.getOwnerType(),
-			portletPreferencesModelImpl.getPlid(),
-			portletPreferencesModelImpl.getPortletId()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					portletPreferencesModelImpl.getCtCollectionId())) {
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByO_O_P_P, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByO_O_P_P, args, portletPreferencesModelImpl);
+			Object[] args = new Object[] {
+				portletPreferencesModelImpl.getOwnerId(),
+				portletPreferencesModelImpl.getOwnerType(),
+				portletPreferencesModelImpl.getPlid(),
+				portletPreferencesModelImpl.getPortletId()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByO_O_P_P, args, portletPreferencesModelImpl);
+		}
 	}
 
 	/**
@@ -6011,16 +5916,6 @@ public class PortletPreferencesPersistenceImpl
 			closeSession(session);
 		}
 
-		if (portletPreferences.getCtCollectionId() != 0) {
-			if (isNew) {
-				portletPreferences.setNew(false);
-			}
-
-			portletPreferences.resetOriginalValues();
-
-			return portletPreferences;
-		}
-
 		EntityCacheUtil.putResult(
 			PortletPreferencesImpl.class, portletPreferencesModelImpl, false,
 			true);
@@ -6084,12 +5979,23 @@ public class PortletPreferencesPersistenceImpl
 	@Override
 	public PortletPreferences fetchByPrimaryKey(Serializable primaryKey) {
 		if (CTPersistenceHelperUtil.isProductionMode(
-				PortletPreferences.class)) {
+				PortletPreferences.class, primaryKey)) {
 
-			return super.fetchByPrimaryKey(primaryKey);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		PortletPreferences portletPreferences = null;
+		PortletPreferences portletPreferences =
+			(PortletPreferences)EntityCacheUtil.getResult(
+				PortletPreferencesImpl.class, primaryKey);
+
+		if (portletPreferences != null) {
+			return portletPreferences;
+		}
 
 		Session session = null;
 
@@ -6131,7 +6037,12 @@ public class PortletPreferencesPersistenceImpl
 		if (CTPersistenceHelperUtil.isProductionMode(
 				PortletPreferences.class)) {
 
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -6153,6 +6064,34 @@ public class PortletPreferencesPersistenceImpl
 				map.put(primaryKey, portletPreferences);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+						PortletPreferences.class, primaryKey)) {
+
+				PortletPreferences portletPreferences =
+					(PortletPreferences)EntityCacheUtil.getResult(
+						PortletPreferencesImpl.class, primaryKey);
+
+				if (portletPreferences == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, portletPreferences);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -6286,78 +6225,80 @@ public class PortletPreferencesPersistenceImpl
 		OrderByComparator<PortletPreferences> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<PortletPreferences> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<PortletPreferences>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_PORTLETPREFERENCES);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_PORTLETPREFERENCES;
-
-				sql = sql.concat(PortletPreferencesModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<PortletPreferences>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<PortletPreferences> list = null;
+
+			if (useFinderCache) {
+				list = (List<PortletPreferences>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_PORTLETPREFERENCES);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_PORTLETPREFERENCES;
+
+					sql = sql.concat(PortletPreferencesModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<PortletPreferences>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -6378,41 +6319,37 @@ public class PortletPreferencesPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			PortletPreferences.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					PortletPreferences.class)) {
 
-		Long count = null;
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(
+						_SQL_COUNT_PORTLETPREFERENCES);
 
-				Query query = session.createQuery(
-					_SQL_COUNT_PORTLETPREFERENCES);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -6468,18 +6405,20 @@ public class PortletPreferencesPersistenceImpl
 
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("companyId");
-		ctStrictColumnNames.add("ownerId");
-		ctStrictColumnNames.add("ownerType");
-		ctStrictColumnNames.add("plid");
-		ctStrictColumnNames.add("portletId");
+		ctMergeColumnNames.add("ownerId");
+		ctMergeColumnNames.add("ownerType");
+		ctMergeColumnNames.add("plid");
+		ctMergeColumnNames.add("portletId");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("portletPreferencesId"));
@@ -6702,37 +6641,13 @@ public class PortletPreferencesPersistenceImpl
 			},
 			new String[] {"ownerId", "ownerType", "plid", "portletId"}, true);
 
-		_finderPathCountByO_O_P_P = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByO_O_P_P",
-			new String[] {
-				Long.class.getName(), Integer.class.getName(),
-				Long.class.getName(), String.class.getName()
-			},
-			new String[] {"ownerId", "ownerType", "plid", "portletId"}, false);
-
-		_setPortletPreferencesUtilPersistence(this);
+		PortletPreferencesUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setPortletPreferencesUtilPersistence(null);
+		PortletPreferencesUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(PortletPreferencesImpl.class.getName());
-	}
-
-	private void _setPortletPreferencesUtilPersistence(
-		PortletPreferencesPersistence portletPreferencesPersistence) {
-
-		try {
-			Field field = PortletPreferencesUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, portletPreferencesPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_PORTLETPREFERENCES =

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.service;
 
 import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.Map;
 
@@ -41,7 +33,7 @@ public class CPDefinitionVirtualSettingServiceUtil {
 	public static CPDefinitionVirtualSetting addCPDefinitionVirtualSetting(
 			String className, long classPK, long fileEntryId, String url,
 			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<java.util.Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey, boolean override,
@@ -50,26 +42,17 @@ public class CPDefinitionVirtualSettingServiceUtil {
 
 		return getService().addCPDefinitionVirtualSetting(
 			className, classPK, fileEntryId, url, activationStatus, duration,
-			maxUsages, useSample, sampleFileEntryId, sampleUrl,
+			maxUsages, useSample, sampleFileEntryId, sampleURL,
 			termsOfUseRequired, termsOfUseContentMap,
 			termsOfUseJournalArticleResourcePrimKey, override, serviceContext);
 	}
 
-	public static CPDefinitionVirtualSetting addCPDefinitionVirtualSetting(
-			String className, long classPK, long fileEntryId, String url,
-			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
-			boolean termsOfUseRequired,
-			Map<java.util.Locale, String> termsOfUseContentMap,
-			long termsOfUseJournalArticleResourcePrimKey,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public static CPDefinitionVirtualSetting deleteCPDefinitionVirtualSetting(
+			String className, long classPK)
 		throws PortalException {
 
-		return getService().addCPDefinitionVirtualSetting(
-			className, classPK, fileEntryId, url, activationStatus, duration,
-			maxUsages, useSample, sampleFileEntryId, sampleUrl,
-			termsOfUseRequired, termsOfUseContentMap,
-			termsOfUseJournalArticleResourcePrimKey, serviceContext);
+		return getService().deleteCPDefinitionVirtualSetting(
+			className, classPK);
 	}
 
 	public static CPDefinitionVirtualSetting fetchCPDefinitionVirtualSetting(
@@ -77,6 +60,14 @@ public class CPDefinitionVirtualSettingServiceUtil {
 		throws PortalException {
 
 		return getService().fetchCPDefinitionVirtualSetting(className, classPK);
+	}
+
+	public static CPDefinitionVirtualSetting getCPDefinitionVirtualSetting(
+			long cpDefinitionVirtualSettingId)
+		throws PortalException {
+
+		return getService().getCPDefinitionVirtualSetting(
+			cpDefinitionVirtualSettingId);
 	}
 
 	/**
@@ -91,7 +82,7 @@ public class CPDefinitionVirtualSettingServiceUtil {
 	public static CPDefinitionVirtualSetting updateCPDefinitionVirtualSetting(
 			long cpDefinitionVirtualSettingId, long fileEntryId, String url,
 			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<java.util.Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey, boolean override,
@@ -100,7 +91,7 @@ public class CPDefinitionVirtualSettingServiceUtil {
 
 		return getService().updateCPDefinitionVirtualSetting(
 			cpDefinitionVirtualSettingId, fileEntryId, url, activationStatus,
-			duration, maxUsages, useSample, sampleFileEntryId, sampleUrl,
+			duration, maxUsages, useSample, sampleFileEntryId, sampleURL,
 			termsOfUseRequired, termsOfUseContentMap,
 			termsOfUseJournalArticleResourcePrimKey, override, serviceContext);
 	}
@@ -108,7 +99,7 @@ public class CPDefinitionVirtualSettingServiceUtil {
 	public static CPDefinitionVirtualSetting updateCPDefinitionVirtualSetting(
 			long cpDefinitionVirtualSettingId, long fileEntryId, String url,
 			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<java.util.Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey,
@@ -117,15 +108,18 @@ public class CPDefinitionVirtualSettingServiceUtil {
 
 		return getService().updateCPDefinitionVirtualSetting(
 			cpDefinitionVirtualSettingId, fileEntryId, url, activationStatus,
-			duration, maxUsages, useSample, sampleFileEntryId, sampleUrl,
+			duration, maxUsages, useSample, sampleFileEntryId, sampleURL,
 			termsOfUseRequired, termsOfUseContentMap,
 			termsOfUseJournalArticleResourcePrimKey, serviceContext);
 	}
 
 	public static CPDefinitionVirtualSettingService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPDefinitionVirtualSettingService _service;
+	private static final Snapshot<CPDefinitionVirtualSettingService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionVirtualSettingServiceUtil.class,
+			CPDefinitionVirtualSettingService.class);
 
 }

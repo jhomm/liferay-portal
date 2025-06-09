@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -144,6 +135,15 @@ public class StringUtil_IW {
 		return StringUtil.extractLeadingDigits(s);
 	}
 
+	public java.lang.String getTitleCase(java.lang.String s, boolean allowDash,
+		java.lang.String... exceptions) {
+		return StringUtil.getTitleCase(s, allowDash, exceptions);
+	}
+
+	public byte[] hexStringToBytes(java.lang.String hexString) {
+		return StringUtil.hexStringToBytes(hexString);
+	}
+
 	public int indexOfAny(java.lang.String s, char[] chars) {
 		return StringUtil.indexOfAny(s, chars);
 	}
@@ -248,13 +248,13 @@ public class StringUtil_IW {
 		return StringUtil.merge(array, delimiter);
 	}
 
-	public java.lang.String merge(java.util.Collection<?> col) {
-		return StringUtil.merge(col);
+	public java.lang.String merge(java.util.Collection<?> collection) {
+		return StringUtil.merge(collection);
 	}
 
-	public java.lang.String merge(java.util.Collection<?> col,
+	public java.lang.String merge(java.util.Collection<?> collection,
 		java.lang.String delimiter) {
-		return StringUtil.merge(col, delimiter);
+		return StringUtil.merge(collection, delimiter);
 	}
 
 	public java.lang.String merge(double[] array) {
@@ -430,6 +430,11 @@ public class StringUtil_IW {
 		java.lang.String end,
 		java.util.Map<java.lang.String, java.lang.String> values) {
 		return StringUtil.replace(s, begin, end, values);
+	}
+
+	public java.lang.String replace(java.lang.String s,
+		java.lang.String[] oldSubs, java.lang.Object[] newSubs) {
+		return StringUtil.replace(s, oldSubs, newSubs);
 	}
 
 	public java.lang.String replace(java.lang.String s,

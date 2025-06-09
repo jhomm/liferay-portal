@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.freemarker.internal;
 
+import com.liferay.petra.function.UnsafeSupplierValue;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.template.StringTemplateResource;
@@ -21,9 +13,9 @@ import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateException;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.TemplateResourceCache;
-import com.liferay.portal.template.BaseTemplate;
-import com.liferay.portal.template.TemplateContextHelper;
 import com.liferay.portal.template.TemplateResourceThreadLocal;
+import com.liferay.portal.template.engine.BaseTemplate;
+import com.liferay.portal.template.engine.TemplateContextHelper;
 
 import freemarker.core.ParseException;
 
@@ -44,14 +36,14 @@ import freemarker.template.TemplateModelWithAPISupport;
 import freemarker.template.WrappingTemplateModel;
 import freemarker.template.utility.ObjectWrapperWithAPISupport;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Serializable;
 import java.io.Writer;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Mika Koivisto
@@ -216,6 +208,13 @@ public class FreeMarkerTemplate extends BaseTemplate {
 			}
 
 			Object value = _map.get(key);
+
+			if (value instanceof UnsafeSupplierValue) {
+				UnsafeSupplierValue<?, RuntimeException> unsafeSupplierValue =
+					(UnsafeSupplierValue<?, RuntimeException>)value;
+
+				value = unsafeSupplierValue.getValue();
+			}
 
 			if (value == null) {
 				_wrappedValueMap.put(key, _NULL_TEMPLATE_MODEL);

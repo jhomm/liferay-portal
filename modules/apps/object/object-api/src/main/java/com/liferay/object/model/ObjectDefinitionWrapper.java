@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
@@ -45,6 +36,7 @@ public class ObjectDefinitionWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("objectDefinitionId", getObjectDefinitionId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -52,12 +44,31 @@ public class ObjectDefinitionWrapper
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put(
+			"accountEntryRestrictedObjectFieldId",
+			getAccountEntryRestrictedObjectFieldId());
+		attributes.put(
 			"descriptionObjectFieldId", getDescriptionObjectFieldId());
+		attributes.put("objectFolderId", getObjectFolderId());
 		attributes.put("titleObjectFieldId", getTitleObjectFieldId());
+		attributes.put("accountEntryRestricted", isAccountEntryRestricted());
 		attributes.put("active", isActive());
-		attributes.put("dbTableName", getDBTableName());
-		attributes.put("label", getLabel());
 		attributes.put("className", getClassName());
+		attributes.put("dbTableName", getDBTableName());
+		attributes.put("enableCategorization", isEnableCategorization());
+		attributes.put("enableComments", isEnableComments());
+		attributes.put(
+			"enableFriendlyURLCustomization",
+			isEnableFriendlyURLCustomization());
+		attributes.put("enableIndexSearch", isEnableIndexSearch());
+		attributes.put("enableLocalization", isEnableLocalization());
+		attributes.put("enableObjectEntryDraft", isEnableObjectEntryDraft());
+		attributes.put(
+			"enableObjectEntryHistory", isEnableObjectEntryHistory());
+		attributes.put(
+			"enableObjectEntryVersioning", isEnableObjectEntryVersioning());
+		attributes.put("friendlyURLSeparator", getFriendlyURLSeparator());
+		attributes.put("label", getLabel());
+		attributes.put("modifiable", isModifiable());
 		attributes.put("name", getName());
 		attributes.put("panelAppOrder", getPanelAppOrder());
 		attributes.put("panelCategoryKey", getPanelCategoryKey());
@@ -65,7 +76,9 @@ public class ObjectDefinitionWrapper
 			"pkObjectFieldDBColumnName", getPKObjectFieldDBColumnName());
 		attributes.put("pkObjectFieldName", getPKObjectFieldName());
 		attributes.put("pluralLabel", getPluralLabel());
+		attributes.put("portlet", isPortlet());
 		attributes.put("scope", getScope());
+		attributes.put("storageType", getStorageType());
 		attributes.put("system", isSystem());
 		attributes.put("version", getVersion());
 		attributes.put("status", getStatus());
@@ -85,6 +98,13 @@ public class ObjectDefinitionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long objectDefinitionId = (Long)attributes.get("objectDefinitionId");
@@ -123,11 +143,25 @@ public class ObjectDefinitionWrapper
 			setModifiedDate(modifiedDate);
 		}
 
+		Long accountEntryRestrictedObjectFieldId = (Long)attributes.get(
+			"accountEntryRestrictedObjectFieldId");
+
+		if (accountEntryRestrictedObjectFieldId != null) {
+			setAccountEntryRestrictedObjectFieldId(
+				accountEntryRestrictedObjectFieldId);
+		}
+
 		Long descriptionObjectFieldId = (Long)attributes.get(
 			"descriptionObjectFieldId");
 
 		if (descriptionObjectFieldId != null) {
 			setDescriptionObjectFieldId(descriptionObjectFieldId);
+		}
+
+		Long objectFolderId = (Long)attributes.get("objectFolderId");
+
+		if (objectFolderId != null) {
+			setObjectFolderId(objectFolderId);
 		}
 
 		Long titleObjectFieldId = (Long)attributes.get("titleObjectFieldId");
@@ -136,10 +170,23 @@ public class ObjectDefinitionWrapper
 			setTitleObjectFieldId(titleObjectFieldId);
 		}
 
+		Boolean accountEntryRestricted = (Boolean)attributes.get(
+			"accountEntryRestricted");
+
+		if (accountEntryRestricted != null) {
+			setAccountEntryRestricted(accountEntryRestricted);
+		}
+
 		Boolean active = (Boolean)attributes.get("active");
 
 		if (active != null) {
 			setActive(active);
+		}
+
+		String className = (String)attributes.get("className");
+
+		if (className != null) {
+			setClassName(className);
 		}
 
 		String dbTableName = (String)attributes.get("dbTableName");
@@ -148,16 +195,78 @@ public class ObjectDefinitionWrapper
 			setDBTableName(dbTableName);
 		}
 
+		Boolean enableCategorization = (Boolean)attributes.get(
+			"enableCategorization");
+
+		if (enableCategorization != null) {
+			setEnableCategorization(enableCategorization);
+		}
+
+		Boolean enableComments = (Boolean)attributes.get("enableComments");
+
+		if (enableComments != null) {
+			setEnableComments(enableComments);
+		}
+
+		Boolean enableFriendlyURLCustomization = (Boolean)attributes.get(
+			"enableFriendlyURLCustomization");
+
+		if (enableFriendlyURLCustomization != null) {
+			setEnableFriendlyURLCustomization(enableFriendlyURLCustomization);
+		}
+
+		Boolean enableIndexSearch = (Boolean)attributes.get(
+			"enableIndexSearch");
+
+		if (enableIndexSearch != null) {
+			setEnableIndexSearch(enableIndexSearch);
+		}
+
+		Boolean enableLocalization = (Boolean)attributes.get(
+			"enableLocalization");
+
+		if (enableLocalization != null) {
+			setEnableLocalization(enableLocalization);
+		}
+
+		Boolean enableObjectEntryDraft = (Boolean)attributes.get(
+			"enableObjectEntryDraft");
+
+		if (enableObjectEntryDraft != null) {
+			setEnableObjectEntryDraft(enableObjectEntryDraft);
+		}
+
+		Boolean enableObjectEntryHistory = (Boolean)attributes.get(
+			"enableObjectEntryHistory");
+
+		if (enableObjectEntryHistory != null) {
+			setEnableObjectEntryHistory(enableObjectEntryHistory);
+		}
+
+		Boolean enableObjectEntryVersioning = (Boolean)attributes.get(
+			"enableObjectEntryVersioning");
+
+		if (enableObjectEntryVersioning != null) {
+			setEnableObjectEntryVersioning(enableObjectEntryVersioning);
+		}
+
+		String friendlyURLSeparator = (String)attributes.get(
+			"friendlyURLSeparator");
+
+		if (friendlyURLSeparator != null) {
+			setFriendlyURLSeparator(friendlyURLSeparator);
+		}
+
 		String label = (String)attributes.get("label");
 
 		if (label != null) {
 			setLabel(label);
 		}
 
-		String className = (String)attributes.get("className");
+		Boolean modifiable = (Boolean)attributes.get("modifiable");
 
-		if (className != null) {
-			setClassName(className);
+		if (modifiable != null) {
+			setModifiable(modifiable);
 		}
 
 		String name = (String)attributes.get("name");
@@ -197,10 +306,22 @@ public class ObjectDefinitionWrapper
 			setPluralLabel(pluralLabel);
 		}
 
+		Boolean portlet = (Boolean)attributes.get("portlet");
+
+		if (portlet != null) {
+			setPortlet(portlet);
+		}
+
 		String scope = (String)attributes.get("scope");
 
 		if (scope != null) {
 			setScope(scope);
+		}
+
+		String storageType = (String)attributes.get("storageType");
+
+		if (storageType != null) {
+			setStorageType(storageType);
 		}
 
 		Boolean system = (Boolean)attributes.get("system");
@@ -225,6 +346,26 @@ public class ObjectDefinitionWrapper
 	@Override
 	public ObjectDefinition cloneWithOriginalValues() {
 		return wrap(model.cloneWithOriginalValues());
+	}
+
+	/**
+	 * Returns the account entry restricted of this object definition.
+	 *
+	 * @return the account entry restricted of this object definition
+	 */
+	@Override
+	public boolean getAccountEntryRestricted() {
+		return model.getAccountEntryRestricted();
+	}
+
+	/**
+	 * Returns the account entry restricted object field ID of this object definition.
+	 *
+	 * @return the account entry restricted object field ID of this object definition
+	 */
+	@Override
+	public long getAccountEntryRestrictedObjectFieldId() {
+		return model.getAccountEntryRestrictedObjectFieldId();
 	}
 
 	/**
@@ -287,6 +428,11 @@ public class ObjectDefinitionWrapper
 		return model.getDefaultLanguageId();
 	}
 
+	@Override
+	public java.util.Locale getDefaultLocale() {
+		return model.getDefaultLocale();
+	}
+
 	/**
 	 * Returns the description object field ID of this object definition.
 	 *
@@ -302,9 +448,109 @@ public class ObjectDefinitionWrapper
 		return model.getDestinationName();
 	}
 
+	/**
+	 * Returns the enable categorization of this object definition.
+	 *
+	 * @return the enable categorization of this object definition
+	 */
+	@Override
+	public boolean getEnableCategorization() {
+		return model.getEnableCategorization();
+	}
+
+	/**
+	 * Returns the enable comments of this object definition.
+	 *
+	 * @return the enable comments of this object definition
+	 */
+	@Override
+	public boolean getEnableComments() {
+		return model.getEnableComments();
+	}
+
+	/**
+	 * Returns the enable friendly url customization of this object definition.
+	 *
+	 * @return the enable friendly url customization of this object definition
+	 */
+	@Override
+	public boolean getEnableFriendlyURLCustomization() {
+		return model.getEnableFriendlyURLCustomization();
+	}
+
+	/**
+	 * Returns the enable index search of this object definition.
+	 *
+	 * @return the enable index search of this object definition
+	 */
+	@Override
+	public boolean getEnableIndexSearch() {
+		return model.getEnableIndexSearch();
+	}
+
+	/**
+	 * Returns the enable localization of this object definition.
+	 *
+	 * @return the enable localization of this object definition
+	 */
+	@Override
+	public boolean getEnableLocalization() {
+		return model.getEnableLocalization();
+	}
+
+	/**
+	 * Returns the enable object entry draft of this object definition.
+	 *
+	 * @return the enable object entry draft of this object definition
+	 */
+	@Override
+	public boolean getEnableObjectEntryDraft() {
+		return model.getEnableObjectEntryDraft();
+	}
+
+	/**
+	 * Returns the enable object entry history of this object definition.
+	 *
+	 * @return the enable object entry history of this object definition
+	 */
+	@Override
+	public boolean getEnableObjectEntryHistory() {
+		return model.getEnableObjectEntryHistory();
+	}
+
+	/**
+	 * Returns the enable object entry versioning of this object definition.
+	 *
+	 * @return the enable object entry versioning of this object definition
+	 */
+	@Override
+	public boolean getEnableObjectEntryVersioning() {
+		return model.getEnableObjectEntryVersioning();
+	}
+
 	@Override
 	public String getExtensionDBTableName() {
 		return model.getExtensionDBTableName();
+	}
+
+	/**
+	 * Returns the external reference code of this object definition.
+	 *
+	 * @return the external reference code of this object definition
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
+	 * Returns the friendly url separator of this object definition.
+	 *
+	 * @return the friendly url separator of this object definition
+	 */
+	@Override
+	public String getFriendlyURLSeparator() {
+		return model.getFriendlyURLSeparator();
 	}
 
 	/**
@@ -383,6 +629,21 @@ public class ObjectDefinitionWrapper
 		return model.getLabelMap();
 	}
 
+	@Override
+	public String getLocalizationDBTableName() {
+		return model.getLocalizationDBTableName();
+	}
+
+	/**
+	 * Returns the modifiable of this object definition.
+	 *
+	 * @return the modifiable of this object definition
+	 */
+	@Override
+	public boolean getModifiable() {
+		return model.getModifiable();
+	}
+
 	/**
 	 * Returns the modified date of this object definition.
 	 *
@@ -421,6 +682,38 @@ public class ObjectDefinitionWrapper
 	@Override
 	public long getObjectDefinitionId() {
 		return model.getObjectDefinitionId();
+	}
+
+	@Override
+	public java.util.List<ObjectDefinitionSetting>
+		getObjectDefinitionSettings() {
+
+		return model.getObjectDefinitionSettings();
+	}
+
+	@Override
+	public String getObjectFolderExternalReferenceCode() {
+		return model.getObjectFolderExternalReferenceCode();
+	}
+
+	/**
+	 * Returns the object folder ID of this object definition.
+	 *
+	 * @return the object folder ID of this object definition
+	 */
+	@Override
+	public long getObjectFolderId() {
+		return model.getObjectFolderId();
+	}
+
+	@Override
+	public String getOSGiJaxRsName() {
+		return model.getOSGiJaxRsName();
+	}
+
+	@Override
+	public String getOSGiJaxRsName(String className) {
+		return model.getOSGiJaxRsName(className);
 	}
 
 	/**
@@ -539,9 +832,24 @@ public class ObjectDefinitionWrapper
 		return model.getPluralLabelMap();
 	}
 
+	/**
+	 * Returns the portlet of this object definition.
+	 *
+	 * @return the portlet of this object definition
+	 */
+	@Override
+	public boolean getPortlet() {
+		return model.getPortlet();
+	}
+
 	@Override
 	public String getPortletId() {
 		return model.getPortletId();
+	}
+
+	@Override
+	public String getPreviousRESTContextPath() {
+		return model.getPreviousRESTContextPath();
 	}
 
 	/**
@@ -562,6 +870,16 @@ public class ObjectDefinitionWrapper
 	@Override
 	public String getRESTContextPath() {
 		return model.getRESTContextPath();
+	}
+
+	@Override
+	public String getRootObjectDefinitionExternalReferenceCode() {
+		return model.getRootObjectDefinitionExternalReferenceCode();
+	}
+
+	@Override
+	public long getRootObjectDefinitionId() {
+		return model.getRootObjectDefinitionId();
 	}
 
 	/**
@@ -587,6 +905,16 @@ public class ObjectDefinitionWrapper
 	@Override
 	public int getStatus() {
 		return model.getStatus();
+	}
+
+	/**
+	 * Returns the storage type of this object definition.
+	 *
+	 * @return the storage type of this object definition
+	 */
+	@Override
+	public String getStorageType() {
+		return model.getStorageType();
 	}
 
 	/**
@@ -660,6 +988,16 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
+	 * Returns <code>true</code> if this object definition is account entry restricted.
+	 *
+	 * @return <code>true</code> if this object definition is account entry restricted; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isAccountEntryRestricted() {
+		return model.isAccountEntryRestricted();
+	}
+
+	/**
 	 * Returns <code>true</code> if this object definition is active.
 	 *
 	 * @return <code>true</code> if this object definition is active; <code>false</code> otherwise
@@ -674,6 +1012,136 @@ public class ObjectDefinitionWrapper
 		return model.isApproved();
 	}
 
+	@Override
+	public boolean isDefaultStorageType() {
+		return model.isDefaultStorageType();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable categorization.
+	 *
+	 * @return <code>true</code> if this object definition is enable categorization; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableCategorization() {
+		return model.isEnableCategorization();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable comments.
+	 *
+	 * @return <code>true</code> if this object definition is enable comments; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableComments() {
+		return model.isEnableComments();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable friendly url customization.
+	 *
+	 * @return <code>true</code> if this object definition is enable friendly url customization; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableFriendlyURLCustomization() {
+		return model.isEnableFriendlyURLCustomization();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable index search.
+	 *
+	 * @return <code>true</code> if this object definition is enable index search; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableIndexSearch() {
+		return model.isEnableIndexSearch();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable localization.
+	 *
+	 * @return <code>true</code> if this object definition is enable localization; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableLocalization() {
+		return model.isEnableLocalization();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry draft.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry draft; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableObjectEntryDraft() {
+		return model.isEnableObjectEntryDraft();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry history.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry history; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableObjectEntryHistory() {
+		return model.isEnableObjectEntryHistory();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry versioning.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry versioning; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isEnableObjectEntryVersioning() {
+		return model.isEnableObjectEntryVersioning();
+	}
+
+	@Override
+	public boolean isLinkedToObjectFolder(long objectFolderId) {
+		return model.isLinkedToObjectFolder(objectFolderId);
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is modifiable.
+	 *
+	 * @return <code>true</code> if this object definition is modifiable; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isModifiable() {
+		return model.isModifiable();
+	}
+
+	@Override
+	public boolean isModifiableAndSystem() {
+		return model.isModifiableAndSystem();
+	}
+
+	@Override
+	public boolean isNodeCandidate() {
+		return model.isNodeCandidate();
+	}
+
+	/**
+	 * Returns <code>true</code> if this object definition is portlet.
+	 *
+	 * @return <code>true</code> if this object definition is portlet; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isPortlet() {
+		return model.isPortlet();
+	}
+
+	@Override
+	public boolean isRootDescendantNode() {
+		return model.isRootDescendantNode();
+	}
+
+	@Override
+	public boolean isRootNode() {
+		return model.isRootNode();
+	}
+
 	/**
 	 * Returns <code>true</code> if this object definition is system.
 	 *
@@ -682,6 +1150,11 @@ public class ObjectDefinitionWrapper
 	@Override
 	public boolean isSystem() {
 		return model.isSystem();
+	}
+
+	@Override
+	public boolean isUnmodifiableSystemObject() {
+		return model.isUnmodifiableSystemObject();
 	}
 
 	@Override
@@ -702,6 +1175,29 @@ public class ObjectDefinitionWrapper
 		throws com.liferay.portal.kernel.exception.LocaleException {
 
 		model.prepareLocalizedFieldsForImport(defaultImportLocale);
+	}
+
+	/**
+	 * Sets whether this object definition is account entry restricted.
+	 *
+	 * @param accountEntryRestricted the account entry restricted of this object definition
+	 */
+	@Override
+	public void setAccountEntryRestricted(boolean accountEntryRestricted) {
+		model.setAccountEntryRestricted(accountEntryRestricted);
+	}
+
+	/**
+	 * Sets the account entry restricted object field ID of this object definition.
+	 *
+	 * @param accountEntryRestrictedObjectFieldId the account entry restricted object field ID of this object definition
+	 */
+	@Override
+	public void setAccountEntryRestrictedObjectFieldId(
+		long accountEntryRestrictedObjectFieldId) {
+
+		model.setAccountEntryRestrictedObjectFieldId(
+			accountEntryRestrictedObjectFieldId);
 	}
 
 	/**
@@ -762,6 +1258,110 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setDescriptionObjectFieldId(long descriptionObjectFieldId) {
 		model.setDescriptionObjectFieldId(descriptionObjectFieldId);
+	}
+
+	/**
+	 * Sets whether this object definition is enable categorization.
+	 *
+	 * @param enableCategorization the enable categorization of this object definition
+	 */
+	@Override
+	public void setEnableCategorization(boolean enableCategorization) {
+		model.setEnableCategorization(enableCategorization);
+	}
+
+	/**
+	 * Sets whether this object definition is enable comments.
+	 *
+	 * @param enableComments the enable comments of this object definition
+	 */
+	@Override
+	public void setEnableComments(boolean enableComments) {
+		model.setEnableComments(enableComments);
+	}
+
+	/**
+	 * Sets whether this object definition is enable friendly url customization.
+	 *
+	 * @param enableFriendlyURLCustomization the enable friendly url customization of this object definition
+	 */
+	@Override
+	public void setEnableFriendlyURLCustomization(
+		boolean enableFriendlyURLCustomization) {
+
+		model.setEnableFriendlyURLCustomization(enableFriendlyURLCustomization);
+	}
+
+	/**
+	 * Sets whether this object definition is enable index search.
+	 *
+	 * @param enableIndexSearch the enable index search of this object definition
+	 */
+	@Override
+	public void setEnableIndexSearch(boolean enableIndexSearch) {
+		model.setEnableIndexSearch(enableIndexSearch);
+	}
+
+	/**
+	 * Sets whether this object definition is enable localization.
+	 *
+	 * @param enableLocalization the enable localization of this object definition
+	 */
+	@Override
+	public void setEnableLocalization(boolean enableLocalization) {
+		model.setEnableLocalization(enableLocalization);
+	}
+
+	/**
+	 * Sets whether this object definition is enable object entry draft.
+	 *
+	 * @param enableObjectEntryDraft the enable object entry draft of this object definition
+	 */
+	@Override
+	public void setEnableObjectEntryDraft(boolean enableObjectEntryDraft) {
+		model.setEnableObjectEntryDraft(enableObjectEntryDraft);
+	}
+
+	/**
+	 * Sets whether this object definition is enable object entry history.
+	 *
+	 * @param enableObjectEntryHistory the enable object entry history of this object definition
+	 */
+	@Override
+	public void setEnableObjectEntryHistory(boolean enableObjectEntryHistory) {
+		model.setEnableObjectEntryHistory(enableObjectEntryHistory);
+	}
+
+	/**
+	 * Sets whether this object definition is enable object entry versioning.
+	 *
+	 * @param enableObjectEntryVersioning the enable object entry versioning of this object definition
+	 */
+	@Override
+	public void setEnableObjectEntryVersioning(
+		boolean enableObjectEntryVersioning) {
+
+		model.setEnableObjectEntryVersioning(enableObjectEntryVersioning);
+	}
+
+	/**
+	 * Sets the external reference code of this object definition.
+	 *
+	 * @param externalReferenceCode the external reference code of this object definition
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the friendly url separator of this object definition.
+	 *
+	 * @param friendlyURLSeparator the friendly url separator of this object definition
+	 */
+	@Override
+	public void setFriendlyURLSeparator(String friendlyURLSeparator) {
+		model.setFriendlyURLSeparator(friendlyURLSeparator);
 	}
 
 	/**
@@ -829,6 +1429,16 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
+	 * Sets whether this object definition is modifiable.
+	 *
+	 * @param modifiable the modifiable of this object definition
+	 */
+	@Override
+	public void setModifiable(boolean modifiable) {
+		model.setModifiable(modifiable);
+	}
+
+	/**
 	 * Sets the modified date of this object definition.
 	 *
 	 * @param modifiedDate the modified date of this object definition
@@ -866,6 +1476,23 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setObjectDefinitionId(long objectDefinitionId) {
 		model.setObjectDefinitionId(objectDefinitionId);
+	}
+
+	@Override
+	public void setObjectDefinitionSettings(
+		java.util.List<ObjectDefinitionSetting> objectDefinitionSettings) {
+
+		model.setObjectDefinitionSettings(objectDefinitionSettings);
+	}
+
+	/**
+	 * Sets the object folder ID of this object definition.
+	 *
+	 * @param objectFolderId the object folder ID of this object definition
+	 */
+	@Override
+	public void setObjectFolderId(long objectFolderId) {
+		model.setObjectFolderId(objectFolderId);
 	}
 
 	/**
@@ -976,6 +1603,21 @@ public class ObjectDefinitionWrapper
 	}
 
 	/**
+	 * Sets whether this object definition is portlet.
+	 *
+	 * @param portlet the portlet of this object definition
+	 */
+	@Override
+	public void setPortlet(boolean portlet) {
+		model.setPortlet(portlet);
+	}
+
+	@Override
+	public void setPreviousRESTContextPath(String previousRESTContextPath) {
+		model.setPreviousRESTContextPath(previousRESTContextPath);
+	}
+
+	/**
 	 * Sets the primary key of this object definition.
 	 *
 	 * @param primaryKey the primary key of this object definition
@@ -983,6 +1625,11 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setPrimaryKey(long primaryKey) {
 		model.setPrimaryKey(primaryKey);
+	}
+
+	@Override
+	public void setRootObjectDefinitionId(long rootObjectDefinitionId) {
+		model.setRootObjectDefinitionId(rootObjectDefinitionId);
 	}
 
 	/**
@@ -1003,6 +1650,16 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setStatus(int status) {
 		model.setStatus(status);
+	}
+
+	/**
+	 * Sets the storage type of this object definition.
+	 *
+	 * @param storageType the storage type of this object definition
+	 */
+	@Override
+	public void setStorageType(String storageType) {
+		model.setStorageType(storageType);
 	}
 
 	/**
@@ -1073,6 +1730,11 @@ public class ObjectDefinitionWrapper
 	@Override
 	public void setVersion(int version) {
 		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

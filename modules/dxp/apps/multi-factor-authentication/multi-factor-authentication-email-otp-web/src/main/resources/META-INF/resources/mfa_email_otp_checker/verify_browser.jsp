@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -49,11 +40,14 @@ long mfaEmailOTPFailedAttemptsRetryTimeout = GetterUtil.getLong(request.getAttri
 <aui:script use="aui-base,aui-io-request">
 	<liferay-portlet:resourceURL id="/mfa_email_otp_verify/send_mfa_email_otp" portletName="<%= MFAEmailOTPPortletKeys.MFA_EMAIL_OTP_VERIFY %>" var="sendEmailOTPURL" />
 
-	var configuredResendDuration = <%= mfaEmailOTPConfiguration.resendEmailTimeout() %>;
+	var configuredResendDuration =
+		<%= mfaEmailOTPConfiguration.resendEmailTimeout() %>;
 
-	var failedAttemptsRetryTimeout = <%=mfaEmailOTPFailedAttemptsRetryTimeout %>;
+	var failedAttemptsRetryTimeout = <%= mfaEmailOTPFailedAttemptsRetryTimeout %>;
 
 	var countdown;
+
+	var messageContainer = A.one('#<portlet:namespace />messageContainer');
 
 	var sendEmailButton = A.one('#<portlet:namespace />sendEmailButton');
 
@@ -61,7 +55,8 @@ long mfaEmailOTPFailedAttemptsRetryTimeout = GetterUtil.getLong(request.getAttri
 
 	var originalButtonText = sendEmailButton.text();
 
-	var previousSetTime = <%= GetterUtil.getLong(request.getAttribute(MFAEmailOTPWebKeys.MFA_EMAIL_OTP_SET_AT_TIME)) %>;
+	var previousSetTime =
+		<%= GetterUtil.getLong(request.getAttribute(MFAEmailOTPWebKeys.MFA_EMAIL_OTP_SET_AT_TIME)) %>;
 
 	var elapsedTime = Math.floor((Date.now() - previousSetTime) / 1000);
 
@@ -79,6 +74,10 @@ long mfaEmailOTPFailedAttemptsRetryTimeout = GetterUtil.getLong(request.getAttri
 			sendEmailButton.removeAttribute('disabled');
 
 			clearInterval(countdown);
+
+			messageContainer.html(
+				'<span class="alert alert-success"><liferay-ui:message key="your-otp-has-been-sent-by-email" /></span>'
+			);
 		}
 		else {
 			sendEmailButton.text(resendDuration);
@@ -169,12 +168,8 @@ long mfaEmailOTPFailedAttemptsRetryTimeout = GetterUtil.getLong(request.getAttri
 					clearInterval(interval);
 				},
 				success: function (event, id, obj) {
-					var messageContainer = A.one(
-						'#<portlet:namespace />messageContainer'
-					);
-
 					messageContainer.html(
-						'<span class="alert alert-success"><liferay-ui:message key="your-otp-has-been-sent-by-email" /></span>'
+						'<span class="alert alert-success"><liferay-ui:message key="your-otp-has-been-sent-by-email" /> <liferay-ui:message key="please-wait-before-requesting-a-new-otp" /></span>'
 					);
 
 					var phaseTwo = A.one('#<portlet:namespace />phaseTwo');

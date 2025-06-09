@@ -1,30 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.comment.taglib.servlet.taglib;
 
-import com.liferay.comment.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.comment.Discussion;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Charles May
@@ -67,6 +59,10 @@ public class DiscussionTag extends IncludeTag {
 		return _ratingsEnabled;
 	}
 
+	public boolean isRefreshPageOnReply() {
+		return _refreshPageOnReply;
+	}
+
 	public void setAssetEntryVisible(boolean assetEntryVisible) {
 		_assetEntryVisible = assetEntryVisible;
 	}
@@ -99,7 +95,7 @@ public class DiscussionTag extends IncludeTag {
 	public void setPageContext(PageContext pageContext) {
 		super.setPageContext(pageContext);
 
-		setServletContext(ServletContextUtil.getServletContext());
+		setServletContext(_servletContextSnapshot.get());
 	}
 
 	public void setRatingsEnabled(boolean ratingsEnabled) {
@@ -108,6 +104,10 @@ public class DiscussionTag extends IncludeTag {
 
 	public void setRedirect(String redirect) {
 		_redirect = redirect;
+	}
+
+	public void setRefreshPageOnReply(boolean refreshPageOnReply) {
+		_refreshPageOnReply = refreshPageOnReply;
 	}
 
 	public void setUserId(long userId) {
@@ -127,6 +127,7 @@ public class DiscussionTag extends IncludeTag {
 		_hideControls = false;
 		_ratingsEnabled = true;
 		_redirect = null;
+		_refreshPageOnReply = false;
 		_userId = 0;
 	}
 
@@ -141,9 +142,9 @@ public class DiscussionTag extends IncludeTag {
 
 		return StringBundler.concat(
 			themeDisplay.getPathMain(),
-			"/portal/comment/discussion/get_editor?p_p_isolated=1&",
-			"doAsUserId=", URLCodec.encodeURL(themeDisplay.getDoAsUserId()),
-			"&portletId=", portletId);
+			"/portal/comment/discussion/get_editor?p_l_id=",
+			themeDisplay.getPlid(), "&p_p_id=", portletId, "&p_p_isolated=1&",
+			"doAsUserId=", URLCodec.encodeURL(themeDisplay.getDoAsUserId()));
 	}
 
 	protected String getFormAction(HttpServletRequest httpServletRequest) {
@@ -155,10 +156,15 @@ public class DiscussionTag extends IncludeTag {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+
+		String portletId = portletDisplay.getId();
+
 		return StringBundler.concat(
 			themeDisplay.getPathMain(),
 			"/portal/comment/discussion/edit?doAsUserId=",
-			URLCodec.encodeURL(themeDisplay.getDoAsUserId()));
+			URLCodec.encodeURL(themeDisplay.getDoAsUserId()), "&p_p_id=",
+			portletId, "&p_l_id=", themeDisplay.getPlid());
 	}
 
 	@Override
@@ -179,7 +185,7 @@ public class DiscussionTag extends IncludeTag {
 			themeDisplay.getPathMain(),
 			"/portal/comment/discussion/get_comments?p_p_isolated=1&",
 			"doAsUserId=", URLCodec.encodeURL(themeDisplay.getDoAsUserId()),
-			"&portletId=", portletId);
+			"&p_p_id=", portletId, "&p_l_id=", themeDisplay.getPlid());
 	}
 
 	@Override
@@ -218,10 +224,18 @@ public class DiscussionTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-comment:discussion:redirect", _redirect);
 		httpServletRequest.setAttribute(
+			"liferay-comment:discussion:refreshPageOnReply",
+			_refreshPageOnReply);
+		httpServletRequest.setAttribute(
 			"liferay-comment:discussion:userId", String.valueOf(_userId));
 	}
 
 	private static final String _PAGE = "/discussion/page.jsp";
+
+	private static final Snapshot<ServletContext> _servletContextSnapshot =
+		new Snapshot<>(
+			DiscussionTag.class, ServletContext.class,
+			"(osgi.web.symbolicname=com.liferay.comment.taglib)");
 
 	private boolean _assetEntryVisible = true;
 	private String _className;
@@ -232,6 +246,7 @@ public class DiscussionTag extends IncludeTag {
 	private boolean _hideControls;
 	private boolean _ratingsEnabled = true;
 	private String _redirect;
+	private boolean _refreshPageOnReply;
 	private long _userId;
 
 }

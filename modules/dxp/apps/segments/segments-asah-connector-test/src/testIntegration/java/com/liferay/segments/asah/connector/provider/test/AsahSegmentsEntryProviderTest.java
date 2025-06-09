@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.asah.connector.provider.test;
@@ -74,26 +65,21 @@ public class AsahSegmentsEntryProviderTest {
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(),
 			CriteriaSerializer.serialize(new Criteria()),
-			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
-			RandomTestUtil.randomString(), serviceContext);
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND, serviceContext);
 
 		_segmentsEntryRelLocalService.addSegmentsEntryRel(
 			segmentsEntry.getSegmentsEntryId(),
 			_portal.getClassNameId(User.class.getName()), _user1.getUserId(),
 			serviceContext);
 
-		int segmentsEntryClassPKsCount =
+		Assert.assertEquals(
+			1,
 			_segmentsEntryProvider.getSegmentsEntryClassPKsCount(
-				segmentsEntry.getSegmentsEntryId());
-
-		Assert.assertEquals(1, segmentsEntryClassPKsCount);
-
-		long[] segmentsEntryClassPKs =
-			_segmentsEntryProvider.getSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(), 0, 1);
-
+				segmentsEntry.getSegmentsEntryId()));
 		Assert.assertArrayEquals(
-			new long[] {_user1.getUserId()}, segmentsEntryClassPKs);
+			new long[] {_user1.getUserId()},
+			_segmentsEntryProvider.getSegmentsEntryClassPKs(
+				segmentsEntry.getSegmentsEntryId(), 0, 1));
 	}
 
 	@Test
@@ -108,8 +94,7 @@ public class AsahSegmentsEntryProviderTest {
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(),
 			CriteriaSerializer.serialize(new Criteria()),
-			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
-			User.class.getName(), serviceContext);
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND, serviceContext);
 
 		_segmentsEntryRelLocalService.addSegmentsEntryRel(
 			segmentsEntry1.getSegmentsEntryId(),
@@ -120,8 +105,7 @@ public class AsahSegmentsEntryProviderTest {
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString(),
 			CriteriaSerializer.serialize(new Criteria()),
-			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND,
-			User.class.getName(), serviceContext);
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND, serviceContext);
 
 		_segmentsEntryRelLocalService.addSegmentsEntryRel(
 			segmentsEntry2.getSegmentsEntryId(),
@@ -134,7 +118,7 @@ public class AsahSegmentsEntryProviderTest {
 
 		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
 			_group.getGroupId(), User.class.getName(), _user1.getUserId(),
-			context);
+			context, new long[0], new long[0]);
 
 		Assert.assertEquals(
 			StringUtil.merge(segmentsEntryIds, StringPool.COMMA), 2,
@@ -145,6 +129,54 @@ public class AsahSegmentsEntryProviderTest {
 					segmentsEntry1.getSegmentsEntryId(),
 					segmentsEntry2.getSegmentsEntryId()
 				},
+				segmentsEntryIds));
+	}
+
+	@Test
+	public void testGetSegmentsEntryIdsWithSignedInUserAndFilterSegmentEntryIds()
+		throws Exception {
+
+		_user1 = UserTestUtil.addUser(_group.getGroupId());
+		_user2 = UserTestUtil.addUser(_group.getGroupId());
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+		SegmentsEntry segmentsEntry1 = SegmentsTestUtil.addSegmentsEntry(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			CriteriaSerializer.serialize(new Criteria()),
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND, serviceContext);
+
+		_segmentsEntryRelLocalService.addSegmentsEntryRel(
+			segmentsEntry1.getSegmentsEntryId(),
+			_portal.getClassNameId(User.class.getName()), _user1.getUserId(),
+			serviceContext);
+
+		SegmentsEntry segmentsEntry2 = SegmentsTestUtil.addSegmentsEntry(
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(),
+			CriteriaSerializer.serialize(new Criteria()),
+			SegmentsEntryConstants.SOURCE_ASAH_FARO_BACKEND, serviceContext);
+
+		_segmentsEntryRelLocalService.addSegmentsEntryRel(
+			segmentsEntry2.getSegmentsEntryId(),
+			_portal.getClassNameId(User.class.getName()), _user1.getUserId(),
+			serviceContext);
+
+		Context context = new Context();
+
+		context.put(Context.SIGNED_IN, Boolean.TRUE);
+
+		long[] segmentsEntryIds = _segmentsEntryProvider.getSegmentsEntryIds(
+			_group.getGroupId(), User.class.getName(), _user1.getUserId(),
+			context, new long[] {segmentsEntry1.getSegmentsEntryId()},
+			new long[0]);
+
+		Assert.assertTrue(
+			StringUtil.merge(segmentsEntryIds, StringPool.COMMA),
+			ArrayUtil.containsAll(
+				new long[] {segmentsEntry1.getSegmentsEntryId()},
 				segmentsEntryIds));
 	}
 

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,43 +11,11 @@
 CommercePriceListItemSelectorViewDisplayContext commercePriceListItemSelectorViewDisplayContext = (CommercePriceListItemSelectorViewDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 String itemSelectedEventName = commercePriceListItemSelectorViewDisplayContext.getItemSelectedEventName();
-
-PortletURL portletURL = commercePriceListItemSelectorViewDisplayContext.getPortletURL();
 %>
 
-<liferay-frontend:management-bar
-	includeCheckBox="<%= true %>"
-	searchContainerId="commercePriceLists"
->
-	<liferay-frontend:management-bar-buttons>
-		<liferay-frontend:management-bar-display-buttons
-			displayViews='<%= new String[] {"list"} %>'
-			portletURL="<%= portletURL %>"
-			selectedDisplayStyle="list"
-		/>
-	</liferay-frontend:management-bar-buttons>
-
-	<liferay-frontend:management-bar-filters>
-		<liferay-frontend:management-bar-navigation
-			navigationKeys='<%= new String[] {"all"} %>'
-			portletURL="<%= portletURL %>"
-		/>
-
-		<liferay-frontend:management-bar-sort
-			orderByCol="<%= commercePriceListItemSelectorViewDisplayContext.getOrderByCol() %>"
-			orderByType="<%= commercePriceListItemSelectorViewDisplayContext.getOrderByType() %>"
-			orderColumns='<%= new String[] {"create-date", "display-date"} %>'
-			portletURL="<%= portletURL %>"
-		/>
-
-		<li>
-			<liferay-commerce:search-input
-				actionURL="<%= commercePriceListItemSelectorViewDisplayContext.getPortletURL() %>"
-				formName="searchFm"
-			/>
-		</li>
-	</liferay-frontend:management-bar-filters>
-</liferay-frontend:management-bar>
+<clay:management-toolbar
+	managementToolbarDisplayContext="<%= new CommercePriceListItemSelectorViewManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, commercePriceListItemSelectorViewDisplayContext.getSearchContainer()) %>"
+/>
 
 <div class="container-fluid container-fluid-max-xl" id="<portlet:namespace />commercePriceListSelectorWrapper">
 	<liferay-ui:search-container
@@ -104,10 +63,6 @@ PortletURL portletURL = commercePriceListItemSelectorViewDisplayContext.getPortl
 			markupView="lexicon"
 			searchContainer="<%= commercePriceListItemSelectorViewDisplayContext.getSearchContainer() %>"
 		/>
-
-		<liferay-ui:search-paginator
-			searchContainer="<%= commercePriceListItemSelectorViewDisplayContext.getSearchContainer() %>"
-		/>
 	</liferay-ui:search-container>
 </div>
 
@@ -124,7 +79,7 @@ PortletURL portletURL = commercePriceListItemSelectorViewDisplayContext.getPortl
 		Liferay.Util.getOpener().Liferay.fire(
 			'<%= HtmlUtil.escapeJS(itemSelectedEventName) %>',
 			{
-				data: Liferay.Util.listCheckedExcept(
+				data: Liferay.Util.getCheckedCheckboxes(
 					commercePriceListSelectorWrapper,
 					'<portlet:namespace />allRowIds'
 				),

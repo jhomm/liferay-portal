@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
@@ -20,6 +11,9 @@ import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -35,9 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Cookie;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -664,7 +655,7 @@ public class MetaInfoCacheServletResponseTest {
 		Assert.assertEquals(
 			LocaleUtil.US, toMetaInfoCacheServletResponse.getLocale());
 		Assert.assertEquals(2048, contentLengthReference.get());
-		Assert.assertEquals("moved", messageReference.get());
+		Assert.assertNull(messageReference.get());
 		Assert.assertEquals(302, statusReference.get());
 
 		// Finish response after commit
@@ -1544,7 +1535,7 @@ public class MetaInfoCacheServletResponseTest {
 
 		metaInfoCacheServletResponse.setStatus(400, "Bad Page");
 
-		Assert.assertEquals("Bad Page", messageReference.get());
+		Assert.assertNull(messageReference.get());
 		Assert.assertEquals(400, metaInfoCacheServletResponse.getStatus());
 		Assert.assertEquals(400, statusReference.get());
 

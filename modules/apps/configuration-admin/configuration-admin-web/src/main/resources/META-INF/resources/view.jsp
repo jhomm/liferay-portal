@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,30 +10,51 @@
 <%
 List<ConfigurationCategorySectionDisplay> configurationCategorySectionDisplays = (List<ConfigurationCategorySectionDisplay>)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_CATEGORY_SECTION_DISPLAYS);
 ConfigurationEntryRetriever configurationEntryRetriever = (ConfigurationEntryRetriever)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_ENTRY_RETRIEVER);
+
 ConfigurationScopeDisplayContext configurationScopeDisplayContext = ConfigurationScopeDisplayContextFactory.create(renderRequest);
+
+ExtendedObjectClassDefinition.Scope scope = configurationScopeDisplayContext.getScope();
 %>
 
-<portlet:renderURL var="redirectURL" />
+<aui:style type="text/css">
+	.configuration-admin--main {
+		top: var(--control-menu-container-height);
+	}
+</aui:style>
 
-<portlet:renderURL var="searchURL">
-	<portlet:param name="mvcRenderCommandName" value="/configuration_admin/search_results" />
-	<portlet:param name="redirect" value="<%= redirectURL %>" />
-</portlet:renderURL>
+<div class="configuration-admin--main sticky-top">
+	<clay:management-toolbar
+		managementToolbarDisplayContext="<%= new ConfigurationScopeManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, 0) %>"
+	/>
+</div>
 
-<clay:management-toolbar
-	searchActionURL="<%= searchURL %>"
-	selectable="<%= false %>"
-	showSearch="<%= true %>"
-/>
-
-<liferay-ui:success key='<%= ConfigurationAdminPortletKeys.SITE_SETTINGS + "requestProcessed" %>' message="site-was-added" />
+<liferay-ui:success key='<%= ConfigurationAdminPortletKeys.SITE_SETTINGS + "requestProcessed" %>'>
+	<liferay-ui:message key="site-was-successfully-added" />
+</liferay-ui:success>
 
 <clay:container-fluid
 	cssClass="container-view"
+	size="xxxl"
 >
+	<c:if test="<%= scope.equals(ExtendedObjectClassDefinition.Scope.COMPANY) || scope.equals(ExtendedObjectClassDefinition.Scope.SYSTEM) %>">
+
+		<%
+		String[] installedPatchNames = PatcherValues.INSTALLED_PATCH_NAMES;
+		%>
+
+		<div class="alert alert-info">
+			<strong><liferay-ui:message key="info" /></strong>: <%= ReleaseInfo.getReleaseInfo() %>
+
+			<c:if test="<%= (installedPatchNames != null) && (installedPatchNames.length > 0) %>">
+				<strong><liferay-ui:message key="patch" /></strong>: <%= StringUtil.merge(installedPatchNames, StringPool.COMMA_AND_SPACE) %>
+			</c:if>
+		</div>
+	</c:if>
+
 	<c:if test="<%= configurationCategorySectionDisplays.isEmpty() %>">
-		<liferay-ui:empty-result-message
-			message="no-configurations-were-found"
+		<liferay-frontend:empty-result-message
+			animationType="<%= EmptyResultMessageKeys.AnimationType.SEARCH %>"
+			title='<%= LanguageUtil.get(resourceBundle, "no-configurations-were-found") %>'
 		/>
 	</c:if>
 
@@ -53,9 +65,9 @@ ConfigurationScopeDisplayContext configurationScopeDisplayContext = Configuratio
 		%>
 
 			<li class="list-group-header">
-				<h3 class="list-group-header-title text-uppercase">
+				<p class="list-group-header-title text-uppercase">
 					<%= HtmlUtil.escape(configurationCategorySectionDisplay.getConfigurationCategorySectionLabel(locale)) %>
-				</h3>
+				</p>
 			</li>
 			<li class="list-group-card">
 				<ul class="list-group">

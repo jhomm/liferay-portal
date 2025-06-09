@@ -11,8 +11,18 @@
 
 <tbody>
 <tr>
+	<td>DROPDOWN_MENU_ITEM</td>
+	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//li//button//span[text()='${key_locale}']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>FIELD_ACTIONS_CONTAINER_INDEXED</td>
 	<td>xpath=((//label[normalize-space(text())='${key_fieldLabel}'] | //legend[normalize-space(text())='${key_fieldLabel}'])[${index}])/ancestor::div[contains(@class,'ddm-field-container')][1]/div[contains(@class,'ddm-field-actions-container')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FIELD_BODY</td>
+	<td>//div[contains(@class,'ddm')]//div[contains(@draggable,'true')][1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -46,6 +56,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>FIELD_REFERENCE_DEFAULT_VALUE</td>
+	<td>//*[label[contains(.,'Field Reference')]]//input[contains(@value,'Text')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>FIELDS_GROUP_FIELD_WITH_DEPTH</td>
 	<td>//div[contains(@class, 'fields-group')]//label[text()='${key_fieldGroupLabel}'][count(ancestor::div[contains(@class, 'fields-group')]) = ${key_fieldGroupDepth}]/..//label[text()='${key_fieldFieldLabel}'][contains(@class, 'ddm-label')][count(ancestor::div[contains(@class, 'fields-group')]) = ${key_fieldGroupDepth}] | //div[contains(@class, 'fields-group')]//label[text()='${key_fieldGroupLabel}'][count(ancestor::div[contains(@class, 'fields-group')]) = ${key_fieldGroupDepth}]/..//label[text()='${key_fieldFieldLabel}'][not(contains(@class, 'ddm-label'))][count(ancestor::div[contains(@class, 'fields-group')]) = ${key_fieldGroupDepth} + 1]</td>
 	<td></td>
@@ -72,7 +87,7 @@
 </tr>
 <tr>
 	<td>OPTION_REFERENCE_ERROR</td>
-	<td>xpath=(//div[contains(@class,'ddm-option-entry')])[${index}]//div[contains(@class,'form-feedback-item')]</td>
+	<td>xpath=(//div[contains(@class,'ddm-option-entry')])[${index}]//div[contains(@class,'form-feedback-item') and text()='${assertErrorMessage}']</td>
 	<td></td>
 </tr>
 <tr>

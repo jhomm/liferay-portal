@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.entry.rel.test;
@@ -17,9 +8,15 @@ package com.liferay.asset.entry.rel.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.entry.rel.model.AssetEntryAssetCategoryRel;
 import com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalService;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.test.util.AssetTestUtil;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -46,7 +43,9 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 		new LiferayIntegrationTestRule();
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
+		_group = GroupTestUtil.addGroup();
+
 		_initialAssetEntryAssetCategoryRelsCount =
 			_assetEntryAssetCategoryRelLocalService.
 				getAssetEntryAssetCategoryRelsCount();
@@ -155,15 +154,22 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 	}
 
 	@Test
-	public void testDeleteAssetEntryAssetCategoryRelByAssetEntryId() {
-		long assetEntryId1 = RandomTestUtil.randomLong();
+	public void testDeleteAssetEntryAssetCategoryRelByAssetEntryId()
+		throws Exception {
+
+		_group = GroupTestUtil.addGroup();
+
+		_assetEntry1 = AssetTestUtil.addAssetEntry(_group.getGroupId());
+
 		long assetCategoryId = RandomTestUtil.randomLong();
 
-		_addAssetEntryAssetCategoryRel(assetEntryId1, assetCategoryId);
+		_addAssetEntryAssetCategoryRel(
+			_assetEntry1.getEntryId(), assetCategoryId);
 
-		long assetEntryId2 = RandomTestUtil.randomLong();
+		_assetEntry2 = AssetTestUtil.addAssetEntry(_group.getGroupId());
 
-		_addAssetEntryAssetCategoryRel(assetEntryId2, assetCategoryId);
+		_addAssetEntryAssetCategoryRel(
+			_assetEntry2.getEntryId(), assetCategoryId);
 
 		Assert.assertEquals(
 			_initialAssetEntryAssetCategoryRelsCount + 2,
@@ -171,7 +177,8 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 				getAssetEntryAssetCategoryRelsCount());
 
 		_assetEntryAssetCategoryRelLocalService.
-			deleteAssetEntryAssetCategoryRelByAssetEntryId(assetEntryId1);
+			deleteAssetEntryAssetCategoryRelByAssetEntryId(
+				_assetEntry1.getEntryId());
 
 		Assert.assertEquals(
 			_initialAssetEntryAssetCategoryRelsCount + 1,
@@ -187,7 +194,8 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 			assetEntryAssetCategoryRels.get(0);
 
 		Assert.assertEquals(
-			assetEntryId2, assetEntryAssetCategoryRel.getAssetEntryId());
+			_assetEntry2.getEntryId(),
+			assetEntryAssetCategoryRel.getAssetEntryId());
 		Assert.assertEquals(
 			assetCategoryId, assetEntryAssetCategoryRel.getAssetCategoryId());
 		Assert.assertEquals(0, assetEntryAssetCategoryRel.getPriority());
@@ -220,12 +228,10 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 
 	@Test
 	public void testFetchAssetEntryAssetCategoryRelWithInvalidAssetEntryId() {
-		AssetEntryAssetCategoryRel assetEntryAssetCategoryRel =
+		Assert.assertNull(
 			_assetEntryAssetCategoryRelLocalService.
 				fetchAssetEntryAssetCategoryRel(
-					RandomTestUtil.randomLong(), RandomTestUtil.randomLong());
-
-		Assert.assertNull(assetEntryAssetCategoryRel);
+					RandomTestUtil.randomLong(), RandomTestUtil.randomLong()));
 	}
 
 	@Test
@@ -315,11 +321,27 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 		_addAssetEntryAssetCategoryRel(
 			assetEntryId, RandomTestUtil.randomLong());
 
-		int assetEntryAssetCategoryRelsCount =
+		Assert.assertEquals(
+			2,
 			_assetEntryAssetCategoryRelLocalService.
-				getAssetEntryAssetCategoryRelsCount(assetEntryId);
+				getAssetEntryAssetCategoryRelsCount(assetEntryId));
+	}
 
-		Assert.assertEquals(2, assetEntryAssetCategoryRelsCount);
+	@Test
+	public void testGetAssetEntryAssetCategoryRelsCountByClassNameId() {
+		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
+			_group.getGroupId(), null, FriendlyURLEntry.class.getName());
+		long assetCategoryId = RandomTestUtil.randomLong();
+
+		_addAssetEntryAssetCategoryRel(
+			assetEntry.getEntryId(), assetCategoryId);
+
+		Assert.assertEquals(
+			_initialAssetEntryAssetCategoryRelsCount + 1,
+			_assetEntryAssetCategoryRelLocalService.
+				getAssetEntryAssetCategoryRelsCountByClassNameId(
+					assetCategoryId,
+					_portal.getClassNameId(FriendlyURLEntry.class)));
 	}
 
 	@Test
@@ -364,6 +386,12 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 		return assetEntryAssetCategoryRel;
 	}
 
+	@DeleteAfterTestRun
+	private AssetEntry _assetEntry1;
+
+	@DeleteAfterTestRun
+	private AssetEntry _assetEntry2;
+
 	@Inject
 	private AssetEntryAssetCategoryRelLocalService
 		_assetEntryAssetCategoryRelLocalService;
@@ -372,6 +400,12 @@ public class AssetEntryAssetCategoryRelLocalServiceTest {
 	private final List<AssetEntryAssetCategoryRel>
 		_assetEntryAssetCategoryRels = new ArrayList<>();
 
+	@DeleteAfterTestRun
+	private Group _group;
+
 	private int _initialAssetEntryAssetCategoryRelsCount;
+
+	@Inject
+	private Portal _portal;
 
 }

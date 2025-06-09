@@ -1,35 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	createPortletURL,
-	delegate,
-	fetch,
-	openSelectionModal,
-	openToast,
-} from 'frontend-js-web';
+import {openSelectionModal, openToast} from 'frontend-js-components-web';
+import {delegate, fetch, toggleRadio} from 'frontend-js-web';
 
-export default function ({
-	actionURL,
-	ddmStructure,
-	ddmStructureId,
-	eventName,
-	namespace,
-	portletNamespace,
-	portletURL,
-	windowState,
-}) {
+export default function ({actionURL, namespace, portletNamespace, portletURL}) {
 	const form = document.getElementById(`${namespace}fm`);
 	const templateKeyInput = document.getElementById(
 		`${namespace}ddmTemplateKey`
@@ -53,7 +30,9 @@ export default function ({
 
 		openSelectionModal({
 			onSelect: (selectedItem) => {
-				templateKeyInput.value = selectedItem.ddmtemplatekey;
+				const itemValue = JSON.parse(selectedItem.value);
+
+				templateKeyInput.value = itemValue.ddmtemplatekey;
 
 				createTemplatePreview({
 					className: 'loading-animation',
@@ -62,7 +41,7 @@ export default function ({
 
 				const data = new URLSearchParams(
 					Liferay.Util.ns(portletNamespace, {
-						ddmTemplateKey: selectedItem.ddmtemplatekey,
+						ddmTemplateKey: itemValue.ddmtemplatekey,
 					})
 				);
 
@@ -94,13 +73,9 @@ export default function ({
 					type: 'info',
 				});
 			},
-			selectEventName: eventName,
+			selectEventName: 'selectDDMTemplate',
 			title: Liferay.Language.get('templates'),
-			url: createPortletURL(portletURL, {
-				eventName,
-				p_p_state: windowState,
-				...(ddmStructure !== null && {ddmStructureId}),
-			}).toString(),
+			url: portletURL,
 		});
 	};
 
@@ -127,13 +102,13 @@ export default function ({
 		),
 	];
 
-	Liferay.Util.toggleRadio(
+	toggleRadio(
 		`${namespace}ddmTemplateTypeCustom`,
 		`${namespace}customDDMTemplateContainer`,
 		null
 	);
 
-	Liferay.Util.toggleRadio(
+	toggleRadio(
 		`${namespace}ddmTemplateTypeDefault`,
 		null,
 		`${namespace}customDDMTemplateContainer`

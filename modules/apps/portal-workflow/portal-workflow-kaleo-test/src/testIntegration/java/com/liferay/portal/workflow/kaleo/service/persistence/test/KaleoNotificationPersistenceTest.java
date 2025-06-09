@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -126,6 +117,8 @@ public class KaleoNotificationPersistenceTest {
 
 		newKaleoNotification.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoNotification.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoNotification.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoNotification.setCompanyId(RandomTestUtil.nextLong());
@@ -170,6 +163,9 @@ public class KaleoNotificationPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoNotification.getMvccVersion(),
 			newKaleoNotification.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoNotification.getCtCollectionId(),
+			newKaleoNotification.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoNotification.getKaleoNotificationId(),
 			newKaleoNotification.getKaleoNotificationId());
@@ -283,13 +279,14 @@ public class KaleoNotificationPersistenceTest {
 
 	protected OrderByComparator<KaleoNotification> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoNotification", "mvccVersion", true, "kaleoNotificationId",
-			true, "groupId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true,
-			"kaleoClassName", true, "kaleoClassPK", true, "kaleoDefinitionId",
-			true, "kaleoDefinitionVersionId", true, "kaleoNodeName", true,
-			"name", true, "description", true, "executionType", true,
-			"templateLanguage", true, "notificationTypes", true);
+			"KaleoNotification", "mvccVersion", true, "ctCollectionId", true,
+			"kaleoNotificationId", true, "groupId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "kaleoClassName", true, "kaleoClassPK", true,
+			"kaleoDefinitionId", true, "kaleoDefinitionVersionId", true,
+			"kaleoNodeName", true, "name", true, "description", true,
+			"executionType", true, "templateLanguage", true,
+			"notificationTypes", true);
 	}
 
 	@Test
@@ -518,6 +515,8 @@ public class KaleoNotificationPersistenceTest {
 		KaleoNotification kaleoNotification = _persistence.create(pk);
 
 		kaleoNotification.setMvccVersion(RandomTestUtil.nextLong());
+
+		kaleoNotification.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoNotification.setGroupId(RandomTestUtil.nextLong());
 

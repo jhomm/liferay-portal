@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.renderer;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 /**
  * @author Leonardo Barros
@@ -28,12 +19,20 @@ public class DataLayoutRendererContext {
 		return _containerId;
 	}
 
+	public String getContentType() {
+		return _contentType;
+	}
+
 	public Map<String, Object> getDataRecordValues() {
 		return _dataRecordValues;
 	}
 
 	public String getDefaultLanguageId() {
 		return _defaultLanguageId;
+	}
+
+	public String getDisplayType() {
+		return _displayType;
 	}
 
 	public HttpServletRequest getHttpServletRequest() {
@@ -50,6 +49,10 @@ public class DataLayoutRendererContext {
 
 	public String getPortletNamespace() {
 		return _portletNamespace;
+	}
+
+	public boolean isDisableFieldRepetition() {
+		return _disableFieldRepetition;
 	}
 
 	public boolean isPersistDefaultValues() {
@@ -72,12 +75,24 @@ public class DataLayoutRendererContext {
 		_containerId = containerId;
 	}
 
+	public void setContentType(String contentType) {
+		_contentType = contentType;
+	}
+
 	public void setDataRecordValues(Map<String, Object> dataRecordValues) {
 		_dataRecordValues = dataRecordValues;
 	}
 
 	public void setDefaultLanguageId(String defaultLanguageId) {
 		_defaultLanguageId = defaultLanguageId;
+	}
+
+	public void setDisableFieldRepetition(boolean disableFieldRepetition) {
+		_disableFieldRepetition = disableFieldRepetition;
+	}
+
+	public void setDisplayType(String displayType) {
+		_displayType = displayType;
 	}
 
 	public void setHttpServletRequest(HttpServletRequest httpServletRequest) {
@@ -115,8 +130,11 @@ public class DataLayoutRendererContext {
 	}
 
 	private String _containerId;
+	private String _contentType;
 	private Map<String, Object> _dataRecordValues;
 	private String _defaultLanguageId;
+	private boolean _disableFieldRepetition;
+	private String _displayType;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private String _languageId;

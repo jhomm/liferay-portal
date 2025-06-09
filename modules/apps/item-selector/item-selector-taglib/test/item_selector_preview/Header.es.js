@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {cleanup, fireEvent, render} from '@testing-library/react';
 import React from 'react';
 
-import Header from '../../src/main/resources/META-INF/resources/item_selector_preview/js/Header.es';
+import Header from '../../src/main/resources/META-INF/resources/js/item_selector_preview/Header';
 
 const headerTitle = 'Images';
 
@@ -63,7 +54,7 @@ describe('Header', () => {
 	it('renders the header title', () => {
 		const {getByText} = render(<Header {...headerProps} />);
 
-		expect(getByText(headerTitle));
+		expect(getByText(headerTitle)).toBeTruthy();
 	});
 
 	it('calls to handleClickBack when click on back button', () => {
@@ -94,23 +85,23 @@ describe('Header', () => {
 		expect(headerProps.handleClickAdd).toHaveBeenCalled();
 	});
 
-	it('renders the "info-panel-open" icon when "showInfoIcon" prop is set to true', () => {
+	it('renders the "info-circle-open" icon when "showInfoIcon" prop is set to true', () => {
 		const {container} = render(<Header {...headerProps} />);
 
 		const infoIcon = container.querySelector(
-			'.lexicon-icon-info-panel-open'
+			'.lexicon-icon-info-circle-open'
 		);
 
 		expect(infoIcon).not.toBeNull();
 	});
 
-	it('does not render the "info-panel-open" icon when "showInfoIcon" prop is set to false', () => {
+	it('does not render the "info-circle-open" icon when "showInfoIcon" prop is set to false', () => {
 		const props = {...headerProps, showInfoIcon: false};
 
 		const {container} = render(<Header {...props} />);
 
 		const infoIcon = container.querySelector(
-			'.lexicon-icon-info-panel-open'
+			'.lexicon-icon-info-circle-open'
 		);
 
 		expect(infoIcon).toBeNull();

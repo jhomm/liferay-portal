@@ -1,0 +1,17 @@
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
+clean {
+	ext {
+		cleanDeployed = false
+	}
+}
+
+dependencies {
+	compileOnly group: "com.liferay", name: "com.liferay.jenkins.results.parser", version: "1.0.1603"
+	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.14"
+}
+
+liferay {
+	deployDir = file("../../../lib/development")
+}

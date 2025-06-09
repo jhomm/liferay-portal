@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.server.admin.web.internal.portlet.action;
@@ -25,14 +16,14 @@ import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
 
 import java.util.ResourceBundle;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.jfree.chart.ChartUtilities;
 import org.jfree.chart.JFreeChart;
@@ -51,7 +42,7 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + PortletKeys.SERVER_ADMIN,
+		"jakarta.portlet.name=" + PortletKeys.SERVER_ADMIN,
 		"mvc.command.name=/server_admin/view_chart"
 	},
 	service = MVCResourceCommand.class
@@ -102,8 +93,8 @@ public class ViewChartMVCResourceCommand extends BaseMVCResourceCommand {
 				ResourceBundleUtil.getString(resourceBundle, "maximum-memory"));
 		}
 
-		JFreeChart jFreeChart = getJFreeChart(
-			sb.toString(), getMeterPlot(themeDisplay, valueDataset));
+		JFreeChart jFreeChart = _getJFreeChart(
+			sb.toString(), _getMeterPlot(themeDisplay, valueDataset));
 
 		resourceResponse.setContentType(ContentTypes.IMAGE_PNG);
 
@@ -111,7 +102,7 @@ public class ViewChartMVCResourceCommand extends BaseMVCResourceCommand {
 			resourceResponse.getPortletOutputStream(), jFreeChart, 280, 180);
 	}
 
-	protected JFreeChart getJFreeChart(String title, MeterPlot meterPlot) {
+	private JFreeChart _getJFreeChart(String title, MeterPlot meterPlot) {
 		JFreeChart jFreeChart = new JFreeChart(
 			title, new Font(null, Font.PLAIN, 13), meterPlot, true);
 
@@ -121,7 +112,7 @@ public class ViewChartMVCResourceCommand extends BaseMVCResourceCommand {
 		return jFreeChart;
 	}
 
-	protected MeterPlot getMeterPlot(
+	private MeterPlot _getMeterPlot(
 		ThemeDisplay themeDisplay, ValueDataset valueDataset) {
 
 		MeterPlot meterPlot = new MeterPlot(valueDataset);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.retriever.test;
@@ -17,7 +8,6 @@ package com.liferay.account.retriever.test;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountEntryOrganizationRel;
 import com.liferay.account.retriever.AccountOrganizationRetriever;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
@@ -30,7 +20,7 @@ import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.comparator.OrganizationNameComparator;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -57,8 +47,7 @@ public class AccountOrganizationRetrieverTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry = AccountEntryTestUtil.addAccountEntry();
 	}
 
 	@Test
@@ -185,7 +174,7 @@ public class AccountOrganizationRetrieverTest {
 		Assert.assertEquals(organizations.toString(), 4, organizations.size());
 		Assert.assertEquals(
 			ListUtil.sort(
-				_organizations, new OrganizationNameComparator(false)),
+				_organizations, OrganizationNameComparator.getInstance(false)),
 			organizations);
 	}
 
@@ -193,13 +182,7 @@ public class AccountOrganizationRetrieverTest {
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	@DeleteAfterTestRun
-	private final List<AccountEntry> _accountEntries = new ArrayList<>();
-
-	@DeleteAfterTestRun
 	private AccountEntry _accountEntry;
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Inject
 	private AccountEntryOrganizationRelLocalService

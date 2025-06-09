@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cluster.multiple.internal;
@@ -31,7 +22,9 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.Serializable;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -56,7 +49,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 
 	@Test
 	public void testDeactivate() {
-		ClusterLinkImpl clusterLinkImpl = getClusterLinkImpl(1);
+		ClusterLinkImpl clusterLinkImpl = _getClusterLinkImpl(1);
 
 		List<TestClusterChannel> clusterChannels =
 			TestClusterChannel.getClusterChannels();
@@ -79,7 +72,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 
 	@Test
 	public void testGetChannel() {
-		ClusterLinkImpl clusterLinkImpl = getClusterLinkImpl(2);
+		ClusterLinkImpl clusterLinkImpl = _getClusterLinkImpl(2);
 
 		ClusterChannel clusterChannel1 = clusterLinkImpl.getChannel(
 			Priority.LEVEL1);
@@ -130,7 +123,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 			List<LogEntry> logEntries = logCapture.getLogEntries();
 
 			try {
-				getClusterLinkImpl(ClusterLinkImpl.MAX_CHANNEL_COUNT + 1);
+				_getClusterLinkImpl(ClusterLinkImpl.MAX_CHANNEL_COUNT + 1);
 
 				Assert.fail();
 			}
@@ -148,7 +141,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 			logEntries = logCapture.resetPriority(String.valueOf(Level.SEVERE));
 
 			try {
-				getClusterLinkImpl(0);
+				_getClusterLinkImpl(0);
 
 				Assert.fail();
 			}
@@ -171,7 +164,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 
 	@Test
 	public void testInitialize() {
-		ClusterLinkImpl clusterLinkImpl = getClusterLinkImpl(2);
+		ClusterLinkImpl clusterLinkImpl = _getClusterLinkImpl(2);
 
 		Assert.assertNotNull(clusterLinkImpl.getExecutorService());
 
@@ -193,7 +186,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 
 	@Test
 	public void testSendMulticastMessage() {
-		ClusterLinkImpl clusterLinkImpl = getClusterLinkImpl(1);
+		ClusterLinkImpl clusterLinkImpl = _getClusterLinkImpl(1);
 
 		List<Serializable> multicastMessages =
 			TestClusterChannel.getMulticastMessages();
@@ -219,7 +212,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 
 	@Test
 	public void testSendUnicastMessage() {
-		ClusterLinkImpl clusterLinkImpl = getClusterLinkImpl(1);
+		ClusterLinkImpl clusterLinkImpl = _getClusterLinkImpl(1);
 
 		List<Serializable> multicastMessages =
 			TestClusterChannel.getMulticastMessages();
@@ -248,8 +241,21 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 		Assert.assertSame(address, unicastMessage.getValue());
 	}
 
-	protected ClusterLinkImpl getClusterLinkImpl(int channels) {
-		ClusterLinkImpl clusterLinkImpl = new ClusterLinkImpl();
+	private ClusterLinkImpl _getClusterLinkImpl(int channels) {
+		ClusterLinkImpl clusterLinkImpl = new ClusterLinkImpl() {
+
+			@Override
+			protected void modified(Map<String, Object> properties) {
+				ReflectionTestUtil.setFieldValue(
+					this, "_clusterChannelFactory",
+					new TestClusterChannelFactory());
+			}
+
+		};
+
+		ReflectionTestUtil.setFieldValue(
+			clusterLinkImpl, "_portalExecutorManager",
+			new MockPortalExecutorManager());
 
 		Properties channelNameProperties = new Properties();
 		Properties channelPropertiesProperties = new Properties();
@@ -262,7 +268,8 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 				"test-channel-properties-transport-" + i);
 		}
 
-		clusterLinkImpl.setProps(
+		ReflectionTestUtil.setFieldValue(
+			clusterLinkImpl, "_props",
 			PropsTestUtil.setProps(
 				HashMapBuilder.<String, Object>put(
 					PropsKeys.CLUSTER_LINK_CHANNEL_LOGIC_NAME_TRANSPORT,
@@ -275,12 +282,7 @@ public class ClusterLinkImplTest extends BaseClusterTestCase {
 					channelPropertiesProperties
 				).build()));
 
-		clusterLinkImpl.setClusterChannelFactory(
-			new TestClusterChannelFactory());
-		clusterLinkImpl.setPortalExecutorManager(
-			new MockPortalExecutorManager());
-
-		clusterLinkImpl.activate();
+		clusterLinkImpl.activate(Collections.emptyMap());
 
 		return clusterLinkImpl;
 	}

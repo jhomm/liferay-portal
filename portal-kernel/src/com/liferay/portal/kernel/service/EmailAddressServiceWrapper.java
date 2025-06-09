@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
+
+import com.liferay.portal.kernel.model.EmailAddress;
 
 /**
  * Provides a wrapper for {@link EmailAddressService}.
@@ -24,18 +17,24 @@ package com.liferay.portal.kernel.service;
 public class EmailAddressServiceWrapper
 	implements EmailAddressService, ServiceWrapper<EmailAddressService> {
 
+	public EmailAddressServiceWrapper() {
+		this(null);
+	}
+
 	public EmailAddressServiceWrapper(EmailAddressService emailAddressService) {
 		_emailAddressService = emailAddressService;
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.EmailAddress addEmailAddress(
-			java.lang.String className, long classPK, java.lang.String address,
-			long typeId, boolean primary, ServiceContext serviceContext)
+	public EmailAddress addEmailAddress(
+			String externalReferenceCode, String className, long classPK,
+			String address, long typeId, boolean primary,
+			ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _emailAddressService.addEmailAddress(
-			className, classPK, address, typeId, primary, serviceContext);
+			externalReferenceCode, className, classPK, address, typeId, primary,
+			serviceContext);
 	}
 
 	@Override
@@ -54,24 +53,31 @@ public class EmailAddressServiceWrapper
 	 the user did not have permission to view the email address
 	 */
 	@Override
-	public com.liferay.portal.kernel.model.EmailAddress fetchEmailAddress(
-			long emailAddressId)
+	public EmailAddress fetchEmailAddress(long emailAddressId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _emailAddressService.fetchEmailAddress(emailAddressId);
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.EmailAddress getEmailAddress(
-			long emailAddressId)
+	public EmailAddress fetchEmailAddressByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _emailAddressService.fetchEmailAddressByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public EmailAddress getEmailAddress(long emailAddressId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _emailAddressService.getEmailAddress(emailAddressId);
 	}
 
 	@Override
-	public java.util.List<com.liferay.portal.kernel.model.EmailAddress>
-			getEmailAddresses(java.lang.String className, long classPK)
+	public java.util.List<EmailAddress> getEmailAddresses(
+			String className, long classPK)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _emailAddressService.getEmailAddresses(className, classPK);
@@ -83,18 +89,18 @@ public class EmailAddressServiceWrapper
 	 * @return the OSGi service identifier
 	 */
 	@Override
-	public java.lang.String getOSGiServiceIdentifier() {
+	public String getOSGiServiceIdentifier() {
 		return _emailAddressService.getOSGiServiceIdentifier();
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.EmailAddress updateEmailAddress(
-			long emailAddressId, java.lang.String address, long typeId,
-			boolean primary)
+	public EmailAddress updateEmailAddress(
+			String externalReferenceCode, long emailAddressId, String address,
+			long typeId, boolean primary)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _emailAddressService.updateEmailAddress(
-			emailAddressId, address, typeId, primary);
+			externalReferenceCode, emailAddressId, address, typeId, primary);
 	}
 
 	@Override

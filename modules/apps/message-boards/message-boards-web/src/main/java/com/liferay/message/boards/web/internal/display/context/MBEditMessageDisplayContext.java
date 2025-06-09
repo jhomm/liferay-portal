@@ -1,33 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.display.context;
 
 import com.liferay.message.boards.model.MBMessage;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.trash.TrashHelper;
+
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Map;
-
-import javax.portlet.ResourceURL;
 
 /**
  * @author Ambrín Chaudhary
@@ -35,12 +31,18 @@ import javax.portlet.ResourceURL;
 public class MBEditMessageDisplayContext {
 
 	public MBEditMessageDisplayContext(
+		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse, MBMessage message) {
+		LiferayPortletResponse liferayPortletResponse, MBMessage message,
+		TrashHelper trashHelper) {
 
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
 		_message = message;
+		_trashHelper = trashHelper;
+
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 	}
 
 	public Map<String, Object> getMBPortletComponentContext() throws Exception {
@@ -64,6 +66,9 @@ public class MBEditMessageDisplayContext {
 		).put(
 			"rootNodeId",
 			_liferayPortletResponse.getNamespace() + "mbEditPageContainer"
+		).put(
+			"trashEnabled",
+			() -> _trashHelper.isTrashEnabled(_themeDisplay.getScopeGroupId())
 		).build();
 
 		if (_message != null) {
@@ -99,5 +104,7 @@ public class MBEditMessageDisplayContext {
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private MBMessage _message;
+	private final ThemeDisplay _themeDisplay;
+	private final TrashHelper _trashHelper;
 
 }

@@ -1,5 +1,8 @@
 {
-	"externalReferenceCode": "BOOTCAT0001",
+	"externalReferenceCode": "MASCAT0001",
 	"name": "Design",
+	"name_i18n": {
+		"en_US": "Design"
+	},
 	"viewableBy": "Anyone"
 }

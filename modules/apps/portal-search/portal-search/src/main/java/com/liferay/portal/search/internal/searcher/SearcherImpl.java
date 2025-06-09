@@ -1,27 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.searcher;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.HitsImpl;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.facet.faceted.searcher.FacetedSearcher;
 import com.liferay.portal.kernel.search.facet.faceted.searcher.FacetedSearcherManager;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.search.constants.SearchContextAttributes;
+import com.liferay.portal.search.internal.searcher.helper.IndexSearcherHelper;
 import com.liferay.portal.search.legacy.searcher.SearchResponseBuilderFactory;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
@@ -29,112 +29,38 @@ import com.liferay.portal.search.searcher.SearchResponseBuilder;
 import com.liferay.portal.search.searcher.Searcher;
 import com.liferay.portal.search.spi.searcher.SearchRequestContributor;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author André de Oliveira
  */
-@Component(immediate = true, service = Searcher.class)
+@Component(service = Searcher.class)
 public class SearcherImpl implements Searcher {
 
 	@Override
 	public SearchResponse search(SearchRequest searchRequest) {
-		return doSearch(transformSearchRequest(searchRequest));
+		return doSearch(_transformSearchRequest(searchRequest));
 	}
 
-	protected static <T> T transform(T t, Stream<Function<T, T>> stream) {
-		return stream.reduce(
-			(beforeFunction, afterFunction) -> beforeFunction.andThen(
-				afterFunction)
-		).orElse(
-			Function.identity()
-		).apply(
-			t
-		);
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, SearchRequestContributor.class,
+			"search.request.contributor.id");
 	}
 
-	protected static RuntimeException uncheck(SearchException searchException) {
-		if (searchException.getCause() instanceof RuntimeException) {
-			return (RuntimeException)searchException.getCause();
-		}
-
-		if (searchException.getCause() != null) {
-			return new RuntimeException(searchException.getCause());
-		}
-
-		return new RuntimeException(searchException);
-	}
-
-	protected void doFederatedSearches(
-		SearchRequest searchRequest,
-		SearchResponseBuilder searchResponseBuilder) {
-
-		List<SearchRequest> list = searchRequest.getFederatedSearchRequests();
-
-		list.stream(
-		).map(
-			this::search
-		).forEach(
-			searchResponseBuilder::addFederatedSearchResponse
-		);
-	}
-
-	protected void doIndexerSearch(
-		SearchRequestImpl searchRequestImpl,
-		SearchResponseBuilder searchResponseBuilder) {
-
-		String singleIndexerClassName = getSingleIndexerClassName(
-			searchRequestImpl);
-
-		if (singleIndexerClassName != null) {
-			doSingleIndexerSearch(
-				singleIndexerClassName, searchRequestImpl,
-				searchResponseBuilder);
-		}
-		else {
-			doMultiIndexerSearch(searchRequestImpl, searchResponseBuilder);
-		}
-	}
-
-	protected void doLowLevelSearch(
-		SearchRequestImpl searchRequestImpl,
-		SearchResponseBuilder searchResponseBuilder) {
-
-		SearchContext searchContext = searchRequestImpl.getSearchContext();
-
-		if (isCount(searchRequestImpl)) {
-			indexSearcherHelper.searchCount(searchContext, null);
-
-			return;
-		}
-
-		Hits hits = indexSearcherHelper.search(searchContext, null);
-
-		searchResponseBuilder.hits(hits);
-	}
-
-	protected void doMultiIndexerSearch(
-		SearchRequestImpl searchRequestImpl,
-		SearchResponseBuilder searchResponseBuilder) {
-
-		FacetedSearcher facetedSearcher =
-			facetedSearcherManager.createFacetedSearcher();
-
-		Hits hits = search(
-			facetedSearcher, searchRequestImpl.getSearchContext());
-
-		if (isCount(searchRequestImpl)) {
-			searchResponseBuilder.count(hits.getLength());
-
-			return;
-		}
-
-		searchResponseBuilder.hits(hits);
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
 	}
 
 	protected SearchResponse doSearch(SearchRequest searchRequest) {
@@ -145,14 +71,23 @@ public class SearcherImpl implements Searcher {
 		SearchRequestImpl searchRequestImpl = (SearchRequestImpl)searchRequest;
 
 		SearchResponseBuilder searchResponseBuilder =
-			searchResponseBuilderFactory.builder(
+			_searchResponseBuilderFactory.builder(
 				searchRequestImpl.getSearchContext());
 
-		doSmartSearch(searchRequestImpl, searchResponseBuilder);
-
-		doFederatedSearches(searchRequestImpl, searchResponseBuilder);
-
 		SearchContext searchContext = searchRequestImpl.getSearchContext();
+
+		if (Validator.isBlank(StringUtil.trim(searchContext.getKeywords())) &&
+			!GetterUtil.getBoolean(
+				searchContext.getAttribute(
+					SearchContextAttributes.ATTRIBUTE_KEY_EMPTY_SEARCH))) {
+
+			searchResponseBuilder.hits(new HitsImpl());
+		}
+		else {
+			_smartSearch(searchRequestImpl, searchResponseBuilder);
+		}
+
+		_federatedSearches(searchRequestImpl, searchResponseBuilder);
 
 		String exceptionMessage = (String)searchContext.getAttribute(
 			"search.exception.message");
@@ -168,52 +103,69 @@ public class SearcherImpl implements Searcher {
 		).build();
 	}
 
-	protected void doSingleIndexerSearch(
-		String singleIndexerClassName, SearchRequestImpl searchRequestImpl,
-		SearchResponseBuilder searchResponseBuilder) {
+	protected Hits search(
+		FacetedSearcher facetedSearcher, SearchContext searchContext) {
 
-		Indexer<?> indexer = indexerRegistry.getIndexer(singleIndexerClassName);
-
-		SearchContext searchContext = searchRequestImpl.getSearchContext();
-
-		if (isCount(searchRequestImpl)) {
-			searchResponseBuilder.count(searchCount(indexer, searchContext));
-
-			return;
+		try {
+			return facetedSearcher.search(searchContext);
 		}
-
-		Hits hits = search(indexer, searchContext);
-
-		searchResponseBuilder.hits(hits);
-	}
-
-	protected void doSmartSearch(
-		SearchRequestImpl searchRequestImpl,
-		SearchResponseBuilder searchResponseBuilder) {
-
-		List<String> indexes = searchRequestImpl.getIndexes();
-
-		if (indexes.isEmpty()) {
-			doIndexerSearch(searchRequestImpl, searchResponseBuilder);
-		}
-		else {
-			doLowLevelSearch(searchRequestImpl, searchResponseBuilder);
+		catch (SearchException searchException) {
+			throw _uncheck(searchException);
 		}
 	}
 
-	protected Stream<Function<SearchRequest, SearchRequest>> getContributors(
+	protected Hits search(Indexer<?> indexer, SearchContext searchContext) {
+		try {
+			return indexer.search(searchContext);
+		}
+		catch (SearchException searchException) {
+			throw _uncheck(searchException);
+		}
+	}
+
+	@Reference
+	protected FacetedSearcherManager facetedSearcherManager;
+
+	@Reference
+	protected IndexSearcherHelper indexSearcherHelper;
+
+	private void _federatedSearches(
+		SearchRequest searchRequest,
+		SearchResponseBuilder searchResponseBuilder) {
+
+		List<SearchRequest> federatedSearchRequests =
+			searchRequest.getFederatedSearchRequests();
+
+		for (SearchRequest federatedSearchRequest : federatedSearchRequests) {
+			searchResponseBuilder.addFederatedSearchResponse(
+				search(federatedSearchRequest));
+		}
+	}
+
+	private Collection<Function<SearchRequest, SearchRequest>> _getContributors(
 		SearchRequest searchRequest) {
 
-		Stream<SearchRequestContributor> stream =
-			searchRequestContributorsHolder.stream(
-				searchRequest.getIncludeContributors(),
-				searchRequest.getExcludeContributors());
+		List<String> contributors = new ArrayList<>(
+			searchRequest.getIncludeContributors());
 
-		return stream.map(
+		if (ListUtil.isEmpty(contributors)) {
+			contributors = new ArrayList<>(_serviceTrackerMap.keySet());
+		}
+
+		contributors.removeAll(searchRequest.getExcludeContributors());
+
+		Collection<SearchRequestContributor> collection = new ArrayList<>();
+
+		for (String contributor : contributors) {
+			collection.addAll(_serviceTrackerMap.getService(contributor));
+		}
+
+		return TransformUtil.transform(
+			collection,
 			searchRequestContributor -> searchRequestContributor::contribute);
 	}
 
-	protected String getSingleIndexerClassName(
+	private String _getSingleIndexerClassName(
 		SearchRequestImpl searchRequestImpl) {
 
 		List<String> modelIndexerClassNames =
@@ -226,7 +178,24 @@ public class SearcherImpl implements Searcher {
 		return null;
 	}
 
-	protected boolean isCount(SearchRequestImpl searchRequestImpl) {
+	private void _indexerSearch(
+		SearchRequestImpl searchRequestImpl,
+		SearchResponseBuilder searchResponseBuilder) {
+
+		String singleIndexerClassName = _getSingleIndexerClassName(
+			searchRequestImpl);
+
+		if (singleIndexerClassName != null) {
+			_singleIndexerSearch(
+				singleIndexerClassName, searchRequestImpl,
+				searchResponseBuilder);
+		}
+		else {
+			_multiIndexerSearch(searchRequestImpl, searchResponseBuilder);
+		}
+	}
+
+	private boolean _isCount(SearchRequestImpl searchRequestImpl) {
 		if ((searchRequestImpl.getSize() != null) &&
 			(searchRequestImpl.getSize() == 0)) {
 
@@ -236,56 +205,118 @@ public class SearcherImpl implements Searcher {
 		return false;
 	}
 
-	protected Hits search(
-		FacetedSearcher facetedSearcher, SearchContext searchContext) {
+	private void _lowLevelSearch(
+		SearchRequestImpl searchRequestImpl,
+		SearchResponseBuilder searchResponseBuilder) {
 
-		try {
-			return facetedSearcher.search(searchContext);
+		SearchContext searchContext = searchRequestImpl.getSearchContext();
+
+		if (_isCount(searchRequestImpl)) {
+			indexSearcherHelper.searchCount(searchContext, null);
+
+			return;
 		}
-		catch (SearchException searchException) {
-			throw uncheck(searchException);
-		}
+
+		Hits hits = indexSearcherHelper.search(searchContext, null);
+
+		searchResponseBuilder.hits(hits);
 	}
 
-	protected Hits search(Indexer<?> indexer, SearchContext searchContext) {
-		try {
-			return indexer.search(searchContext);
+	private void _multiIndexerSearch(
+		SearchRequestImpl searchRequestImpl,
+		SearchResponseBuilder searchResponseBuilder) {
+
+		FacetedSearcher facetedSearcher =
+			facetedSearcherManager.createFacetedSearcher();
+
+		Hits hits = search(
+			facetedSearcher, searchRequestImpl.getSearchContext());
+
+		if (_isCount(searchRequestImpl)) {
+			searchResponseBuilder.count(hits.getLength());
+
+			return;
 		}
-		catch (SearchException searchException) {
-			throw uncheck(searchException);
-		}
+
+		searchResponseBuilder.hits(hits);
 	}
 
-	protected long searchCount(
-		Indexer<?> indexer, SearchContext searchContext) {
-
+	private long _searchCount(Indexer<?> indexer, SearchContext searchContext) {
 		try {
 			return indexer.searchCount(searchContext);
 		}
 		catch (SearchException searchException) {
-			throw uncheck(searchException);
+			throw _uncheck(searchException);
 		}
 	}
 
-	protected SearchRequest transformSearchRequest(
-		SearchRequest searchRequest) {
+	private void _singleIndexerSearch(
+		String singleIndexerClassName, SearchRequestImpl searchRequestImpl,
+		SearchResponseBuilder searchResponseBuilder) {
 
-		return transform(searchRequest, getContributors(searchRequest));
+		Indexer<?> indexer = _indexerRegistry.getIndexer(
+			singleIndexerClassName);
+
+		SearchContext searchContext = searchRequestImpl.getSearchContext();
+
+		if (_isCount(searchRequestImpl)) {
+			searchResponseBuilder.count(_searchCount(indexer, searchContext));
+
+			return;
+		}
+
+		Hits hits = search(indexer, searchContext);
+
+		searchResponseBuilder.hits(hits);
+	}
+
+	private void _smartSearch(
+		SearchRequestImpl searchRequestImpl,
+		SearchResponseBuilder searchResponseBuilder) {
+
+		List<String> indexes = searchRequestImpl.getIndexes();
+
+		if (indexes.isEmpty()) {
+			_indexerSearch(searchRequestImpl, searchResponseBuilder);
+		}
+		else {
+			_lowLevelSearch(searchRequestImpl, searchResponseBuilder);
+		}
+	}
+
+	private <T> T _transform(T t, Collection<Function<T, T>> collection) {
+		Function<T, T> function = Function.identity();
+
+		for (Function<T, T> curFunction : collection) {
+			function = function.andThen(curFunction);
+		}
+
+		return function.apply(t);
+	}
+
+	private SearchRequest _transformSearchRequest(SearchRequest searchRequest) {
+		return _transform(searchRequest, _getContributors(searchRequest));
+	}
+
+	private RuntimeException _uncheck(SearchException searchException) {
+		if (searchException.getCause() instanceof RuntimeException) {
+			return (RuntimeException)searchException.getCause();
+		}
+
+		if (searchException.getCause() != null) {
+			return new RuntimeException(searchException.getCause());
+		}
+
+		return new RuntimeException(searchException);
 	}
 
 	@Reference
-	protected FacetedSearcherManager facetedSearcherManager;
+	private IndexerRegistry _indexerRegistry;
 
 	@Reference
-	protected IndexerRegistry indexerRegistry;
+	private SearchResponseBuilderFactory _searchResponseBuilderFactory;
 
-	@Reference
-	protected IndexSearcherHelper indexSearcherHelper;
-
-	@Reference
-	protected SearchRequestContributorsHolder searchRequestContributorsHolder;
-
-	@Reference
-	protected SearchResponseBuilderFactory searchResponseBuilderFactory;
+	private ServiceTrackerMap<String, List<SearchRequestContributor>>
+		_serviceTrackerMap;
 
 }

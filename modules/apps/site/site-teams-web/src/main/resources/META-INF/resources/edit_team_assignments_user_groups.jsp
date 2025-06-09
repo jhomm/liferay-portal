@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,12 +18,12 @@ EditSiteTeamAssignmentsUserGroupsDisplayContext editSiteTeamAssignmentsUserGroup
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= new EditSiteTeamAssignmentsUserGroupsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, editSiteTeamAssignmentsUserGroupsDisplayContext) %>"
-	propsTransformer="js/EditSiteTeamAssignmentsUserGroupsManagementToolbarPropsTransformer"
+	propsTransformer="{EditSiteTeamAssignmentsUserGroupsManagementToolbarPropsTransformer} from site-teams-web"
 />
 
 <portlet:actionURL name="deleteTeamUserGroups" var="deleteTeamUserGroupsURL" />
 
-<aui:form action="<%= deleteTeamUserGroupsURL %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+<aui:form action="<%= deleteTeamUserGroupsURL %>" cssClass="container-fluid" method="post" name="fm">
 	<aui:input name="tabs1" type="hidden" value="<%= editSiteTeamAssignmentsUserGroupsDisplayContext.getTabs1() %>" />
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 	<aui:input name="teamId" type="hidden" value="<%= String.valueOf(editSiteTeamAssignmentsUserGroupsDisplayContext.getTeamId()) %>" />
@@ -50,7 +41,7 @@ EditSiteTeamAssignmentsUserGroupsDisplayContext editSiteTeamAssignmentsUserGroup
 
 			<%
 			int usersCount = UserLocalServiceUtil.searchCount(
-				company.getCompanyId(), StringPool.BLANK, WorkflowConstants.STATUS_ANY,
+				company.getCompanyId(), StringPool.BLANK, WorkflowConstants.STATUS_APPROVED,
 				LinkedHashMapBuilder.<String, Object>put(
 					"usersUserGroups", Long.valueOf(userGroup.getUserGroupId())
 				).build());
@@ -66,15 +57,15 @@ EditSiteTeamAssignmentsUserGroupsDisplayContext editSiteTeamAssignmentsUserGroup
 					<liferay-ui:search-container-column-text
 						colspan="<%= 2 %>"
 					>
-						<h5><%= userGroup.getName() %></h5>
+						<div class="h5"><%= userGroup.getName() %></div>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<span><%= userGroup.getDescription() %></span>
-						</h6>
+						</div>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<span><liferay-ui:message arguments="<%= usersCount %>" key="x-users" /></span>
-						</h6>
+						</div>
 					</liferay-ui:search-container-column-text>
 
 					<liferay-ui:search-container-column-jsp

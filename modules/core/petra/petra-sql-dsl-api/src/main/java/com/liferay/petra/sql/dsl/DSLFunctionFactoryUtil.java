@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.sql.dsl;
@@ -108,6 +99,18 @@ public class DSLFunctionFactoryUtil {
 		return _DSL_FUNCTION_FACTORY.divide(expression, value);
 	}
 
+	public static <N extends Number> Expression<Float> floatDivide(
+		Expression<N> expression1, Expression<N> expression2) {
+
+		return _DSL_FUNCTION_FACTORY.floatDivide(expression1, expression2);
+	}
+
+	public static <N extends Number> Expression<Float> floatDivide(
+		Expression<N> expression, N value) {
+
+		return _DSL_FUNCTION_FACTORY.floatDivide(expression, value);
+	}
+
 	public static Expression<String> lower(Expression<String> expression) {
 		return _DSL_FUNCTION_FACTORY.lower(expression);
 	}
@@ -152,6 +155,10 @@ public class DSLFunctionFactoryUtil {
 		Expression<? extends Number> expression) {
 
 		return _DSL_FUNCTION_FACTORY.sum(expression);
+	}
+
+	public static Expression<Long> withParentheses(Expression<?> expression) {
+		return _DSL_FUNCTION_FACTORY.withParentheses(expression);
 	}
 
 	private static final DSLFunctionFactory _DSL_FUNCTION_FACTORY;

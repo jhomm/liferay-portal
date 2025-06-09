@@ -2,7 +2,6 @@ package ${package}.portlet;
 
 import ${package}.constants.${className}PortletKeys;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 
 import java.io.IOException;
@@ -19,7 +18,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author ${author}
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.display-category=category.sample",
 		"com.liferay.portlet.header-portlet-css=/css/index.css",
@@ -33,20 +31,4 @@ import org.osgi.service.component.annotations.Reference;
 	service = Portlet.class
 )
 public class ${className}Portlet extends MVCPortlet {
-
-	@Override
-	public void doView(
-			RenderRequest renderRequest, RenderResponse renderResponse)
-		throws IOException, PortletException {
-
-		renderRequest.setAttribute(
-			"mainRequire",
-			_npmResolver.resolveModuleName("${artifactId}") + " as main");
-
-		super.doView(renderRequest, renderResponse);
-	}
-
-	@Reference
-	private NPMResolver _npmResolver;
-
 }

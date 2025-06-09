@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -23,23 +14,24 @@ import {createSubTopicQuery, createTopicQuery} from '../utils/client.es';
 import lang from '../utils/lang.es';
 import {deleteCache} from '../utils/utils.es';
 
-export default ({
+export default function NewTopicModal({
 	currentSectionId,
 	onClose,
 	onCreateNavigateTo,
 	setError,
 	visible,
-}) => {
+}) {
 	const context = useContext(AppContext);
-	const topicName = useRef(null);
-	const topicDescription = useRef(null);
+	const topicNameRef = useRef(null);
+	const topicDescriptionRef = useRef(null);
 
 	const [createNewSubTopic] = useMutation(createSubTopicQuery);
 
 	const [createNewTopic] = useMutation(createTopicQuery);
 
 	const isValidTopic = (topic) => {
-		const invalidCharacters = /.*[-|&|'|@|\\\\|\]|}|:|,|=|>|/|<|\n|[|{|||+|#|`|?|\\"|\r|;|/|*|~|%]/g;
+		const invalidCharacters =
+			/.*[-|&|'|@|\\\\|\]|}|:|,|=|>|/|<|\n|[|{|||+|#|`|?|\\"|\r|;|/|*|~|%]/g;
 		if (invalidCharacters.test(topic)) {
 			const error = {
 				message: lang.sub(
@@ -61,19 +53,21 @@ export default ({
 	};
 
 	const createTopic = () => {
-		if (isValidTopic(topicName.current.value)) {
+		const topicName = topicNameRef.current.value.trim();
+		if (isValidTopic(topicName)) {
 			deleteCache();
 			if (currentSectionId) {
 				createNewSubTopic({
 					variables: {
-						description: topicDescription.current.value,
+						description: topicDescriptionRef.current.value,
 						parentMessageBoardSectionId: currentSectionId,
-						title: topicName.current.value,
+						title: topicName,
 					},
 				}).then(
 					({
 						data: {
-							createMessageBoardSectionMessageBoardSection: section,
+							createMessageBoardSectionMessageBoardSection:
+								section,
 						},
 					}) =>
 						onCreateNavigateTo(
@@ -86,9 +80,9 @@ export default ({
 			else {
 				createNewTopic({
 					variables: {
-						description: topicDescription.current.value,
+						description: topicDescriptionRef.current.value,
 						siteKey: context.siteKey,
-						title: topicName.current.value,
+						title: topicName,
 					},
 				}).then(({data: {createSiteMessageBoardSection: section}}) =>
 					onCreateNavigateTo(
@@ -97,6 +91,13 @@ export default ({
 				);
 			}
 		}
+	};
+
+	const handleSubmit = (event) => {
+		event.preventDefault();
+
+		createTopic();
+		close();
 	};
 
 	const {observer, onClose: close} = useModal({
@@ -110,58 +111,67 @@ export default ({
 					<ClayModal.Header>
 						{Liferay.Language.get('new-topic')}
 					</ClayModal.Header>
-					<ClayModal.Body>
-						<ClayForm>
+
+					<ClayForm onSubmit={handleSubmit}>
+						<ClayModal.Body>
 							<ClayForm.Group className="form-group-sm">
 								<label htmlFor="basicInput">
 									{Liferay.Language.get('topic-name')}
 								</label>
+
 								<ClayInput
 									placeholder={Liferay.Language.get(
 										'please-enter-a-valid-topic-name'
 									)}
-									ref={topicName}
+									ref={topicNameRef}
 									type="text"
 								/>
 							</ClayForm.Group>
+
 							<ClayForm.Group className="form-group-sm">
 								<label htmlFor="basicInput">
 									{Liferay.Language.get('description')}
 								</label>
+
 								<ClayInput
 									className="form-control"
 									component="textarea"
 									placeholder={Liferay.Language.get(
 										'description'
 									)}
-									ref={topicDescription}
+									ref={topicDescriptionRef}
 								/>
 							</ClayForm.Group>
-						</ClayForm>
-					</ClayModal.Body>
-					<ClayModal.Footer
-						last={
-							<ClayButton.Group spaced>
-								<ClayButton
-									displayType="secondary"
-									onClick={close}
-								>
-									{Liferay.Language.get('cancel')}
-								</ClayButton>
-								<ClayButton
-									displayType="primary"
-									onClick={() => {
-										createTopic();
-										close();
-									}}
-								>
-									{Liferay.Language.get('create')}
-								</ClayButton>
-							</ClayButton.Group>
-						}
-					/>
+						</ClayModal.Body>
+
+						<ClayModal.Footer
+							last={
+								<ClayButton.Group spaced>
+									<ClayButton
+										aria-label={Liferay.Language.get(
+											'cancel'
+										)}
+										displayType="secondary"
+										onClick={close}
+									>
+										{Liferay.Language.get('cancel')}
+									</ClayButton>
+
+									<ClayButton
+										aria-label={Liferay.Language.get(
+											'create'
+										)}
+										displayType="primary"
+										type="submit"
+									>
+										{Liferay.Language.get('create')}
+									</ClayButton>
+								</ClayButton.Group>
+							}
+						/>
+					</ClayForm>
 				</ClayModal>
 			)}
 		</>
 	);
-};
+}

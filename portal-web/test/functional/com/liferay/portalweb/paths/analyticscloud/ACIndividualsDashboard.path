@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!--KNOWN_INDIVIDUALS-->
+
 <tr>
 	<td>KNOWN_INDIVIDUAL_ATTRIBUTES_FILTER</td>
 	<td>//*[contains(@class,'btn')]/span[@class='text-truncate' and text()='${key_rowName}']</td>
@@ -36,7 +38,9 @@
 	<td>//tbody//tr[${resultOrder}]//a[contains(@class,'text-truncate') and text()='${key_itemName}']</td>
 	<td></td>
 </tr>
+
 <!-- INDIVIDUALS DASHBOARD -->
+
 <tr>
 	<td>ASSOCIATED_SEGMENT_ITEM</td>
 	<td>//span[contains(@class,'text-truncate')]//a[contains(text(),'${key_itemName}')]</td>
@@ -59,7 +63,7 @@
 </tr>
 <tr>
 	<td>DELETE_BREAKDOWN_BUTTON</td>
-	<td>//div[contains(@class,'distribution-card')]//div[contains(@class,'tab-title')][normalize-space(text())='${breakdownName}']//button[*[name()='svg'][contains(@class,'icon-times')]]</td>
+	<td>//div[contains(@class,'distribution-card')]//div[contains(@class,'tab-title')]//button[*[name()='svg'][contains(@class,'icon-times')]]</td>
 	<td></td>
 </tr>
 <tr>
@@ -89,12 +93,12 @@
 </tr>
 <tr>
 	<td>INDIVIDUALS_EVENTS_DATE</td>
-	<td>//div[contains(@class,'activities-date')]//h4</td>
+	<td>//div[contains(@class,'activities-date')]//div</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ACTIVE_INDIVIDUAL_CHART</td>
-	<td>//*[contains(@class,'recharts-layer recharts-bar-rectangle')]/*[contains(@fill-opacity,'1')]</td>
+	<td>//*[contains(@class,'recharts-layer recharts-bar-rectangle')]/*[contains(@fill,'#')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -104,7 +108,7 @@
 </tr>
 <tr>
 	<td>TOTAL_ACTIVITIES</td>
-	<td>//a[@class='text-truncate'and text()='${key_userName}']/ancestor::td/following-sibling::td[text()='${key_activitiesNumber}']</td>
+	<td>//a[@class='text-truncate'and text()='${key_userName}']/ancestor::td/following-sibling::td[@class='table-column-text-end']</td>
 	<td></td>
 </tr>
 <tr>
@@ -117,7 +121,9 @@
 	<td>//span[contains(text(),'${key_visitorLegend}')]</td>
 	<td></td>
 </tr>
+
 <!--INDIVIDUAL_DETAILS_CARD-->
+
 <tr>
 	<td>INDIVIDUAL_DETAILS_CARD_AVATAR</td>
 	<td>//div[contains(@class,'individual-details-card')]//div[contains(@class,'avatar')]</td>
@@ -130,35 +136,12 @@
 </tr>
 <tr>
 	<td>INDIVIDUAL_DETAILS_CARD_FULL_NAME</td>
-	<td>//div[contains(@class,'individual-details-card')]//div[contains(@class,'card-body')]//h4[normalize-space(text())='${fullName}']</td>
+	<td>//div[contains(@class,'individual-details-card')]//div[contains(@class,'card-body')]//div[normalize-space(text())='${fullName}']</td>
 	<td></td>
 </tr>
+
 <!--INDIVIDUALS_ACTIVITIES_CHART-->
-<tr>
-	<td>BASE_RESULTS_TIMELINE</td>
-	<td>//div[contains(@class,'base-results')]//li[contains(@class,'timeline-item')]//span[contains(@class,'title')]//span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>BASE_RESULTS_TIMELINE_ITEM</td>
-	<td>xpath=(//div[contains(@class,'base-results')]//li[contains(@class,'timeline-item')]//span[contains(@class,'title')][normalize-space(text())='${itemName}'])[${index}]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>BASE_RESULTS_TIMELINE_ITEM_GENERAL</td>
-	<td>//div[contains(@class,'base-results')]//li[contains(@class,'timeline-item')]//span[contains(@class,'title')][normalize-space(text())='${itemName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>BASE_RESULTS_TIMELINE_ITEM_SUBTITLE</td>
-	<td>xpath=(//div[contains(@class,'base-results')]//li[contains(@class,'timeline-item')][.//span[contains(@class,'title')][normalize-space(text())='Visited ${itemName}']])[${index}]//span[contains(@class,'subtitle')][normalize-space()='${subtitle}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>BASE_RESULTS_TIMELINE_ITEM_NESTED</td>
-	<td>xpath=(//div[contains(@class,'base-results')]//li[contains(@class,'timeline-item')][.//span[contains(@class,'title')][normalize-space(text())='Visited ${itemName}']]//ul[contains(@class,'timeline-nested')]//a[contains(@class,'title')][normalize-space()='Visited ${pageName}'])[${index}]</td>
-	<td></td>
-</tr>
+
 <tr>
 	<td>BASE_RESULTS_TIMELINE_ATTRIBUTES_TITLE</td>
 	<td>//div[contains(@class,'attributes-title')]</td>
@@ -174,12 +157,9 @@
 	<td>xpath=(//tr[contains(@class,'analytics-tooltip-chart-row')])[1]//td[1]//div[contains(@class,'analytics-tooltip-chart-content')]</td>
 	<td></td>
 </tr>
+
 <!-- OVERVIEW -->
-<tr>
-	<td>NO_EVENTS_FOUND</td>
-	<td>//span[contains(text(),'No Events Found')]</td>
-	<td></td>
-</tr>
+
 <tr>
 	<td>CHARTS_WRAPPER</td>
 	<td>//div[contains(@class,'recharts-wrapper')]</td>

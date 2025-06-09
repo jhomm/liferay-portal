@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,34 +12,39 @@
 <%
 String message = null;
 
-if (exception instanceof PrincipalException) {
-	_log.warn("User ID " + request.getRemoteUser());
-	_log.warn("Current URL " + PortalUtil.getCurrentURL(request));
-	_log.warn("Referer " + request.getHeader("Referer"));
-	_log.warn("Remote address " + request.getRemoteAddr());
+StringBundler sb = new StringBundler(9);
 
+sb.append("User ID ");
+sb.append(request.getRemoteUser());
+sb.append(", current URL ");
+sb.append(PortalUtil.getCurrentURL(request));
+sb.append(", referer ");
+sb.append(request.getHeader("Referer"));
+sb.append(", remote address ");
+sb.append(request.getRemoteAddr());
+
+if (exception == null) {
+	sb.append(", null exception");
+}
+
+if (exception != null) {
+	message = exception.getMessage();
+}
+
+if (exception instanceof PrincipalException) {
 	if (exception != null) {
 		_log.warn(exception, exception);
-
-		message = exception.getMessage();
 	}
 	else {
-		_log.warn("Exception is null");
+		_log.warn(sb.toString());
 	}
 }
 else {
-	_log.error("User ID " + request.getRemoteUser());
-	_log.error("Current URL " + PortalUtil.getCurrentURL(request));
-	_log.error("Referer " + request.getHeader("Referer"));
-	_log.error("Remote address " + request.getRemoteAddr());
-
 	if (exception != null) {
 		_log.error(exception, exception);
-
-		message = exception.getMessage();
 	}
 	else {
-		_log.error("Exception is null");
+		_log.error(sb.toString());
 	}
 }
 %>

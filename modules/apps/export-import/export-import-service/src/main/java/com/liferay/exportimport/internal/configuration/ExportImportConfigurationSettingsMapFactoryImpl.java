@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.configuration;
@@ -26,12 +17,14 @@ import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletRequest;
 
 import java.io.Serializable;
 
@@ -39,8 +32,6 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,10 +45,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Akos Thurzo
  * @since  7.0
  */
-@Component(
-	immediate = true,
-	service = ExportImportConfigurationSettingsMapFactory.class
-)
+@Component(service = ExportImportConfigurationSettingsMapFactory.class)
 public class ExportImportConfigurationSettingsMapFactoryImpl
 	implements ExportImportConfigurationSettingsMapFactory {
 
@@ -266,13 +254,13 @@ public class ExportImportConfigurationSettingsMapFactoryImpl
 				portletRequest);
 
 		if (liveGroup != null) {
-			long[] layoutIds = _exportImportHelper.getLayoutIds(
-				layoutIdMap, liveGroup.getGroupId());
-
 			return buildPublishLayoutLocalSettingsMap(
 				themeDisplay.getUserId(), stagingGroup.getGroupId(),
-				liveGroup.getGroupId(), privateLayout, layoutIds, parameterMap,
-				themeDisplay.getLocale(), themeDisplay.getTimeZone());
+				liveGroup.getGroupId(), privateLayout,
+				_exportImportHelper.getLayoutIds(
+					layoutIdMap, liveGroup.getGroupId()),
+				parameterMap, themeDisplay.getLocale(),
+				themeDisplay.getTimeZone());
 		}
 
 		UnicodeProperties groupTypeSettingsUnicodeProperties =
@@ -282,7 +270,7 @@ public class ExportImportConfigurationSettingsMapFactoryImpl
 			portletRequest, "remoteAddress",
 			groupTypeSettingsUnicodeProperties.getProperty("remoteAddress"));
 
-		remoteAddress = _http.removeProtocol(remoteAddress);
+		remoteAddress = HttpComponentsUtil.removeProtocol(remoteAddress);
 
 		int remotePort = ParamUtil.getInteger(
 			portletRequest, "remotePort",
@@ -415,8 +403,5 @@ public class ExportImportConfigurationSettingsMapFactoryImpl
 
 	@Reference
 	private GroupLocalService _groupLocalService;
-
-	@Reference
-	private Http _http;
 
 }

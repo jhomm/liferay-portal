@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.model.impl;
@@ -37,22 +28,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.reports.engine.console.model.Source;
 import com.liferay.portal.reports.engine.console.model.SourceModel;
-import com.liferay.portal.reports.engine.console.model.SourceSoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -123,6 +110,9 @@ public class SourceModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY Reports_Source.sourceId ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY source.sourceId ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -166,61 +156,6 @@ public class SourceModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static Source toModel(SourceSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		Source model = new SourceImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setSourceId(soapModel.getSourceId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setName(soapModel.getName());
-		model.setDriverClassName(soapModel.getDriverClassName());
-		model.setDriverUrl(soapModel.getDriverUrl());
-		model.setDriverUserName(soapModel.getDriverUserName());
-		model.setDriverPassword(soapModel.getDriverPassword());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<Source> toModels(SourceSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<Source> models = new ArrayList<Source>(soapModels.length);
-
-		for (SourceSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public SourceModelImpl() {
@@ -295,108 +230,97 @@ public class SourceModelImpl
 	}
 
 	public Map<String, Function<Source, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Source, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Source>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Source.class.getClassLoader(), Source.class, ModelWrapper.class);
+		private static final Map<String, Function<Source, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Source> constructor =
-				(Constructor<Source>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Source, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Source, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("uuid", Source::getUuid);
+			attributeGetterFunctions.put("sourceId", Source::getSourceId);
+			attributeGetterFunctions.put("groupId", Source::getGroupId);
+			attributeGetterFunctions.put("companyId", Source::getCompanyId);
+			attributeGetterFunctions.put("userId", Source::getUserId);
+			attributeGetterFunctions.put("userName", Source::getUserName);
+			attributeGetterFunctions.put("createDate", Source::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", Source::getModifiedDate);
+			attributeGetterFunctions.put(
+				"lastPublishDate", Source::getLastPublishDate);
+			attributeGetterFunctions.put("name", Source::getName);
+			attributeGetterFunctions.put(
+				"driverClassName", Source::getDriverClassName);
+			attributeGetterFunctions.put("driverUrl", Source::getDriverUrl);
+			attributeGetterFunctions.put(
+				"driverUserName", Source::getDriverUserName);
+			attributeGetterFunctions.put(
+				"driverPassword", Source::getDriverPassword);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Source, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Source, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Source, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Source, Object>>();
-		Map<String, BiConsumer<Source, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Source, ?>>();
+		private static final Map<String, BiConsumer<Source, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", Source::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<Source, String>)Source::setUuid);
-		attributeGetterFunctions.put("sourceId", Source::getSourceId);
-		attributeSetterBiConsumers.put(
-			"sourceId", (BiConsumer<Source, Long>)Source::setSourceId);
-		attributeGetterFunctions.put("groupId", Source::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<Source, Long>)Source::setGroupId);
-		attributeGetterFunctions.put("companyId", Source::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<Source, Long>)Source::setCompanyId);
-		attributeGetterFunctions.put("userId", Source::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<Source, Long>)Source::setUserId);
-		attributeGetterFunctions.put("userName", Source::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<Source, String>)Source::setUserName);
-		attributeGetterFunctions.put("createDate", Source::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<Source, Date>)Source::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", Source::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate", (BiConsumer<Source, Date>)Source::setModifiedDate);
-		attributeGetterFunctions.put(
-			"lastPublishDate", Source::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<Source, Date>)Source::setLastPublishDate);
-		attributeGetterFunctions.put("name", Source::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<Source, String>)Source::setName);
-		attributeGetterFunctions.put(
-			"driverClassName", Source::getDriverClassName);
-		attributeSetterBiConsumers.put(
-			"driverClassName",
-			(BiConsumer<Source, String>)Source::setDriverClassName);
-		attributeGetterFunctions.put("driverUrl", Source::getDriverUrl);
-		attributeSetterBiConsumers.put(
-			"driverUrl", (BiConsumer<Source, String>)Source::setDriverUrl);
-		attributeGetterFunctions.put(
-			"driverUserName", Source::getDriverUserName);
-		attributeSetterBiConsumers.put(
-			"driverUserName",
-			(BiConsumer<Source, String>)Source::setDriverUserName);
-		attributeGetterFunctions.put(
-			"driverPassword", Source::getDriverPassword);
-		attributeSetterBiConsumers.put(
-			"driverPassword",
-			(BiConsumer<Source, String>)Source::setDriverPassword);
+		static {
+			Map<String, BiConsumer<Source, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Source, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<Source, String>)Source::setUuid);
+			attributeSetterBiConsumers.put(
+				"sourceId", (BiConsumer<Source, Long>)Source::setSourceId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<Source, Long>)Source::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<Source, Long>)Source::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<Source, Long>)Source::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName", (BiConsumer<Source, String>)Source::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate", (BiConsumer<Source, Date>)Source::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Source, Date>)Source::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<Source, Date>)Source::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<Source, String>)Source::setName);
+			attributeSetterBiConsumers.put(
+				"driverClassName",
+				(BiConsumer<Source, String>)Source::setDriverClassName);
+			attributeSetterBiConsumers.put(
+				"driverUrl", (BiConsumer<Source, String>)Source::setDriverUrl);
+			attributeSetterBiConsumers.put(
+				"driverUserName",
+				(BiConsumer<Source, String>)Source::setDriverUserName);
+			attributeSetterBiConsumers.put(
+				"driverPassword",
+				(BiConsumer<Source, String>)Source::setDriverPassword);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1173,40 +1097,12 @@ public class SourceModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Source, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Source, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Source, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Source)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Source>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Source.class, ModelWrapper.class);
 
 	}
 
@@ -1230,8 +1126,9 @@ public class SourceModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<Source, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Source, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

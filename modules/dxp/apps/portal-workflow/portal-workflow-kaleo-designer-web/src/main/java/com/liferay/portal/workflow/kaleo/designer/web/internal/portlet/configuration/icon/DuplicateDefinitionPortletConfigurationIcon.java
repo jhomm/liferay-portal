@@ -1,44 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.configuration.icon;
 
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.portlet.configuration.icon.BaseJSPPortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
-import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.workflow.configuration.WorkflowDefinitionConfiguration;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.workflow.kaleo.designer.web.constants.KaleoDesignerPortletKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDesignerActionKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDesignerWebKeys;
 import com.liferay.portal.workflow.kaleo.designer.web.internal.permission.KaleoDesignerPermission;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.Map;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -47,42 +35,43 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jeyvison Nascimento
  */
 @Component(
-	configurationPid = "com.liferay.portal.workflow.configuration.WorkflowDefinitionConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
 	property = {
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
 		"path=/designer/edit_kaleo_definition_version.jsp"
 	},
 	service = PortletConfigurationIcon.class
 )
 public class DuplicateDefinitionPortletConfigurationIcon
-	extends BasePortletConfigurationIcon {
+	extends BaseJSPPortletConfigurationIcon {
+
+	@Override
+	public Map<String, Object> getContext(PortletRequest portletRequest) {
+		return HashMapBuilder.<String, Object>put(
+			"action", getNamespace(portletRequest) + "duplicateDefinition"
+		).put(
+			"globalAction", true
+		).build();
+	}
+
+	@Override
+	public String getJspPath() {
+		return "/designer/configuration/icon/duplicate_definition.jsp";
+	}
 
 	@Override
 	public String getMessage(PortletRequest portletRequest) {
-		return LanguageUtil.get(getLocale(portletRequest), "duplicate");
-	}
-
-	@Override
-	public String getOnClick(
-		PortletRequest portletRequest, PortletResponse portletResponse) {
-
-		String portletNamespace = _portal.getPortletNamespace(
-			_portal.getPortletId(portletRequest));
-
-		return "Liferay.fire('" + portletNamespace + "duplicateDefinition');";
-	}
-
-	@Override
-	public String getURL(
-		PortletRequest portletRequest, PortletResponse portletResponse) {
-
-		return "javascript:;";
+		return _language.get(getLocale(portletRequest), "duplicate");
 	}
 
 	@Override
 	public boolean isShow(PortletRequest portletRequest) {
-		if (!canPublishWorkflowDefinition()) {
+		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		if (!_portletResourcePermission.contains(
+				themeDisplay.getPermissionChecker(),
+				themeDisplay.getCompanyGroupId(), ActionKeys.VIEW)) {
+
 			return false;
 		}
 
@@ -93,38 +82,10 @@ public class DuplicateDefinitionPortletConfigurationIcon
 			return false;
 		}
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
 		return KaleoDesignerPermission.contains(
 			themeDisplay.getPermissionChecker(),
 			themeDisplay.getCompanyGroupId(),
 			KaleoDesignerActionKeys.ADD_NEW_WORKFLOW);
-	}
-
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		WorkflowDefinitionConfiguration workflowDefinitionConfiguration =
-			ConfigurableUtil.createConfigurable(
-				WorkflowDefinitionConfiguration.class, properties);
-
-		_companyAdministratorCanPublish =
-			workflowDefinitionConfiguration.companyAdministratorCanPublish();
-	}
-
-	protected boolean canPublishWorkflowDefinition() {
-		PermissionChecker permissionChecker =
-			PermissionThreadLocal.getPermissionChecker();
-
-		if ((_companyAdministratorCanPublish &&
-			 permissionChecker.isCompanyAdmin()) ||
-			permissionChecker.isOmniadmin()) {
-
-			return true;
-		}
-
-		return false;
 	}
 
 	protected KaleoDefinitionVersion getKaleoDefinitionVersion(
@@ -134,9 +95,22 @@ public class DuplicateDefinitionPortletConfigurationIcon
 			KaleoDesignerWebKeys.KALEO_DRAFT_DEFINITION);
 	}
 
-	private volatile boolean _companyAdministratorCanPublish;
+	@Override
+	protected ServletContext getServletContext() {
+		return _servletContext;
+	}
 
 	@Reference
-	private Portal _portal;
+	private Language _language;
+
+	@Reference(
+		target = "(resource.name=" + WorkflowConstants.RESOURCE_NAME + ")"
+	)
+	private PortletResourcePermission _portletResourcePermission;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.portal.workflow.kaleo.designer.web)"
+	)
+	private ServletContext _servletContext;
 
 }

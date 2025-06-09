@@ -1,43 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.user.facet.portlet;
 
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.search.facet.Facet;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
-import com.liferay.portal.search.web.internal.facet.display.builder.UserSearchFacetDisplayBuilder;
 import com.liferay.portal.search.web.internal.facet.display.context.UserSearchFacetDisplayContext;
+import com.liferay.portal.search.web.internal.facet.display.context.builder.UserSearchFacetDisplayContextBuilder;
 import com.liferay.portal.search.web.internal.user.facet.constants.UserFacetPortletKeys;
-import com.liferay.portal.search.web.internal.util.SearchOptionalUtil;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +35,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lino Alves
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-user-facet",
@@ -60,13 +48,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=User Facet",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/user/facet/view.jsp",
-		"javax.portlet.name=" + UserFacetPortletKeys.USER_FACET,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"jakarta.portlet.display-name=User Facet",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/user/facet/view.jsp",
+		"jakarta.portlet.name=" + UserFacetPortletKeys.USER_FACET,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -81,7 +70,7 @@ public class UserFacetPortlet extends MVCPortlet {
 			portletSharedSearchRequest.search(renderRequest);
 
 		UserSearchFacetDisplayContext userSearchFacetDisplayContext =
-			buildDisplayContext(portletSharedSearchResponse, renderRequest);
+			_buildDisplayContext(portletSharedSearchResponse, renderRequest);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, userSearchFacetDisplayContext);
@@ -94,62 +83,86 @@ public class UserFacetPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected UserSearchFacetDisplayContext buildDisplayContext(
+	@Reference
+	protected Portal portal;
+
+	@Reference
+	protected PortletSharedSearchRequest portletSharedSearchRequest;
+
+	@Reference
+	protected UserLocalService userLocalService;
+
+	private UserSearchFacetDisplayContext _buildDisplayContext(
 		PortletSharedSearchResponse portletSharedSearchResponse,
 		RenderRequest renderRequest) {
 
-		Facet facet = portletSharedSearchResponse.getFacet(
-			getAggregationName(renderRequest));
+		UserSearchFacetDisplayContextBuilder
+			userSearchFacetDisplayContextBuilder =
+				_createUserSearchFacetDisplayContextBuilder(renderRequest);
 
-		UserFacetConfiguration userFacetConfiguration =
-			new UserFacetConfigurationImpl(facet.getFacetConfiguration());
+		userSearchFacetDisplayContextBuilder.setFacet(
+			portletSharedSearchResponse.getFacet(
+				_getAggregationName(renderRequest)));
 
 		UserFacetPortletPreferences userFacetPortletPreferences =
 			new UserFacetPortletPreferencesImpl(
 				portletSharedSearchResponse.getPortletPreferences(
 					renderRequest));
 
-		UserSearchFacetDisplayBuilder userSearchFacetDisplayBuilder =
-			createUserSearchFacetDisplayBuilder(renderRequest);
-
-		userSearchFacetDisplayBuilder.setFacet(facet);
-		userSearchFacetDisplayBuilder.setFrequenciesVisible(
+		userSearchFacetDisplayContextBuilder.setFrequenciesVisible(
 			userFacetPortletPreferences.isFrequenciesVisible());
-		userSearchFacetDisplayBuilder.setFrequencyThreshold(
-			userFacetConfiguration.getFrequencyThreshold());
-		userSearchFacetDisplayBuilder.setMaxTerms(
-			userFacetConfiguration.getMaxTerms());
-		userSearchFacetDisplayBuilder.setPaginationStartParameterName(
-			getPaginationStartParameterName(portletSharedSearchResponse));
+		userSearchFacetDisplayContextBuilder.setFrequencyThreshold(
+			userFacetPortletPreferences.getFrequencyThreshold());
+
+		userSearchFacetDisplayContextBuilder.setLocale(
+			_getLocale(portletSharedSearchResponse, renderRequest));
+		userSearchFacetDisplayContextBuilder.setMaxTerms(
+			userFacetPortletPreferences.getMaxTerms());
+		userSearchFacetDisplayContextBuilder.setOrder(
+			userFacetPortletPreferences.getOrder());
+		userSearchFacetDisplayContextBuilder.setPaginationStartParameterName(
+			_getPaginationStartParameterName(portletSharedSearchResponse));
 
 		String parameterName = userFacetPortletPreferences.getParameterName();
 
-		userSearchFacetDisplayBuilder.setParamName(parameterName);
+		userSearchFacetDisplayContextBuilder.setParamName(parameterName);
+		userSearchFacetDisplayContextBuilder.setParamValues(
+			portletSharedSearchResponse.getParameterValues(
+				parameterName, renderRequest));
 
-		SearchOptionalUtil.copy(
-			() -> getParameterValuesOptional(
-				parameterName, portletSharedSearchResponse, renderRequest),
-			userSearchFacetDisplayBuilder::setParamValues);
+		userSearchFacetDisplayContextBuilder.setUserLocalService(
+			userLocalService);
 
-		return userSearchFacetDisplayBuilder.build();
+		return userSearchFacetDisplayContextBuilder.build();
 	}
 
-	protected UserSearchFacetDisplayBuilder createUserSearchFacetDisplayBuilder(
-		RenderRequest renderRequest) {
+	private UserSearchFacetDisplayContextBuilder
+		_createUserSearchFacetDisplayContextBuilder(
+			RenderRequest renderRequest) {
 
 		try {
-			return new UserSearchFacetDisplayBuilder(renderRequest);
+			return new UserSearchFacetDisplayContextBuilder(renderRequest);
 		}
 		catch (ConfigurationException configurationException) {
 			throw new RuntimeException(configurationException);
 		}
 	}
 
-	protected String getAggregationName(RenderRequest renderRequest) {
+	private String _getAggregationName(RenderRequest renderRequest) {
 		return portal.getPortletId(renderRequest);
 	}
 
-	protected String getPaginationStartParameterName(
+	private Locale _getLocale(
+		PortletSharedSearchResponse portletSharedSearchResponse,
+		RenderRequest renderRequest) {
+
+		ThemeDisplay themeDisplay = portletSharedSearchResponse.getThemeDisplay(
+			renderRequest);
+
+		return themeDisplay.getLocale();
+	}
+
+	private String _getPaginationStartParameterName(
 		PortletSharedSearchResponse portletSharedSearchResponse) {
 
 		SearchResponse searchResponse =
@@ -159,23 +172,5 @@ public class UserFacetPortlet extends MVCPortlet {
 
 		return searchRequest.getPaginationStartParameterName();
 	}
-
-	protected Optional<List<String>> getParameterValuesOptional(
-		String parameterName,
-		PortletSharedSearchResponse portletSharedSearchResponse,
-		RenderRequest renderRequest) {
-
-		Optional<String[]> optional =
-			portletSharedSearchResponse.getParameterValues(
-				parameterName, renderRequest);
-
-		return optional.map(Arrays::asList);
-	}
-
-	@Reference
-	protected Portal portal;
-
-	@Reference
-	protected PortletSharedSearchRequest portletSharedSearchRequest;
 
 }

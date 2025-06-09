@@ -1,35 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.results.portlet;
 
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.search.Document;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.web.internal.result.display.context.SearchResultSummaryDisplayContext;
 import com.liferay.portal.search.web.internal.search.results.configuration.SearchResultsPortletInstanceConfiguration;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author André de Oliveira
@@ -42,15 +34,11 @@ public class SearchResultsPortletDisplayContext implements Serializable {
 
 		_httpServletRequest = httpServletRequest;
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
 		_searchResultsPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				SearchResultsPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				SearchResultsPortletInstanceConfiguration.class,
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY));
 	}
 
 	public long getDisplayStyleGroupId() {
@@ -114,6 +102,14 @@ public class SearchResultsPortletDisplayContext implements Serializable {
 		return _renderNothing;
 	}
 
+	public boolean isShowEmptyResultMessage() {
+		return _showEmptyResultMessage;
+	}
+
+	public boolean isShowPagination() {
+		return _showPagination;
+	}
+
 	public void setDocuments(List<Document> documents) {
 		_documents = documents;
 	}
@@ -144,6 +140,14 @@ public class SearchResultsPortletDisplayContext implements Serializable {
 			searchResultSummaryDisplayContexts;
 	}
 
+	public void setShowEmptyResultMessage(boolean showEmptyResultMessage) {
+		_showEmptyResultMessage = showEmptyResultMessage;
+	}
+
+	public void setShowPagination(boolean showPagination) {
+		_showPagination = showPagination;
+	}
+
 	public void setTotalHits(int totalHits) {
 		_totalHits = totalHits;
 	}
@@ -151,16 +155,10 @@ public class SearchResultsPortletDisplayContext implements Serializable {
 	public List<SearchResultSummaryDisplayContext>
 		translateSearchResultSummaryDisplayContexts(List<Document> documents) {
 
-		List<SearchResultSummaryDisplayContext>
-			searchResultSummaryDisplayContexts = new ArrayList<>();
-
-		for (Document doc : documents) {
-			searchResultSummaryDisplayContexts.add(
-				Objects.requireNonNull(
-					getSearchResultSummaryDisplayContext(doc)));
-		}
-
-		return searchResultSummaryDisplayContexts;
+		return TransformUtil.transform(
+			documents,
+			document -> Objects.requireNonNull(
+				getSearchResultSummaryDisplayContext(document)));
 	}
 
 	private long _displayStyleGroupId;
@@ -174,6 +172,8 @@ public class SearchResultsPortletDisplayContext implements Serializable {
 	private SearchResultsSummariesHolder _searchResultsSummariesHolder;
 	private List<SearchResultSummaryDisplayContext>
 		_searchResultSummaryDisplayContexts;
+	private boolean _showEmptyResultMessage;
+	private boolean _showPagination;
 	private int _totalHits;
 
 }

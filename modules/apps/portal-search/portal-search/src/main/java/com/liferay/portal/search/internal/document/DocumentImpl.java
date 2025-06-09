@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.document;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.document.Document;
@@ -27,8 +19,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Michael C. Han
@@ -162,23 +152,15 @@ public class DocumentImpl implements Document {
 	}
 
 	public <T> List<T> getValues(String name, Function<Object, T> function) {
-		List<Object> values = getValues(name);
-
-		Stream<Object> stream = values.stream();
-
-		return stream.map(
-			function
-		).collect(
-			Collectors.toList()
-		);
+		return TransformUtil.transform(getValues(name), function::apply);
 	}
 
 	public void setFieldValues(String name, Collection<Object> values) {
 		if ((values == null) || values.isEmpty()) {
-			removeField(name);
+			_removeField(name);
 		}
 		else {
-			putField(name, values);
+			_putField(name, values);
 		}
 	}
 
@@ -188,23 +170,15 @@ public class DocumentImpl implements Document {
 	}
 
 	public void unsetField(String name) {
-		removeField(name);
-	}
-
-	protected Field putField(String name, Collection<Object> values) {
-		return _fields.put(name, new FieldImpl(name, values));
-	}
-
-	protected Field removeField(String name) {
-		return _fields.remove(name);
+		_removeField(name);
 	}
 
 	protected void setFieldValue(String name, Object value) {
 		if (_isEmpty(value)) {
-			removeField(name);
+			_removeField(name);
 		}
 		else {
-			putField(name, Collections.singleton(value));
+			_putField(name, Collections.singleton(value));
 		}
 	}
 
@@ -226,6 +200,14 @@ public class DocumentImpl implements Document {
 		}
 
 		return false;
+	}
+
+	private Field _putField(String name, Collection<Object> values) {
+		return _fields.put(name, new FieldImpl(name, values));
+	}
+
+	private Field _removeField(String name) {
+		return _fields.remove(name);
 	}
 
 	private Collection<Object> _toCollection(Object[] values) {

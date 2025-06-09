@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.item.selector.web.internal.display.context;
@@ -18,24 +9,27 @@ import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCrite
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
-import com.liferay.site.util.GroupSearchProvider;
-import com.liferay.sites.kernel.util.SitesUtil;
+import com.liferay.site.provider.GroupSearchProvider;
+import com.liferay.site.search.GroupSearch;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Arrays;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * @author Julio Camarero
@@ -46,43 +40,47 @@ public class MySitesItemSelectorViewDisplayContext
 	public MySitesItemSelectorViewDisplayContext(
 		HttpServletRequest httpServletRequest,
 		GroupItemSelectorCriterion groupItemSelectorCriterion,
-		String itemSelectedEventName, PortletURL portletURL,
-		GroupSearchProvider groupSearchProvider) {
+		String itemSelectedEventName, PortletURL portletURL) {
 
 		super(
 			httpServletRequest, groupItemSelectorCriterion,
 			itemSelectedEventName, portletURL);
 
-		_groupSearchProvider = groupSearchProvider;
-
 		_portletRequest = getPortletRequest();
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		addBreadcrumbEntries();
+		_addBreadcrumbEntries();
 	}
 
 	@Override
 	public GroupSearch getGroupSearch() throws Exception {
+		if (_groupSearch != null) {
+			return _groupSearch;
+		}
+
+		GroupItemSelectorCriterion groupItemSelectorCriterion =
+			getGroupItemSelectorCriterion();
+
 		PortletURL portletURL = getPortletURL();
 
-		Group group = getGroup();
+		Group group = _getGroup();
 
 		if (group != null) {
 			portletURL.setParameter(
 				"groupId", String.valueOf(group.getGroupId()));
 		}
 
-		GroupSearch groupSearch = _groupSearchProvider.getGroupSearch(
-			_portletRequest, portletURL);
+		_groupSearch = new GroupSearch(_portletRequest, portletURL);
 
-		if (groupSearch.getStart() == 0) {
-			GroupItemSelectorCriterion groupItemSelectorCriterion =
-				getGroupItemSelectorCriterion();
+		GroupSearchProvider.setResultsAndTotal(
+			_getClassNames(), groupItemSelectorCriterion.getExcludedGroupIds(),
+			_groupSearch, _portletRequest);
 
+		if (_groupSearch.getStart() == 0) {
 			if (groupItemSelectorCriterion.isIncludeUserPersonalSite()) {
 				_prependGroup(
-					groupSearch,
+					_groupSearch,
 					GroupLocalServiceUtil.getGroup(
 						_themeDisplay.getCompanyId(),
 						GroupConstants.USER_PERSONAL_SITE));
@@ -90,13 +88,13 @@ public class MySitesItemSelectorViewDisplayContext
 
 			if (groupItemSelectorCriterion.isIncludeFormsSite()) {
 				_prependGroup(
-					groupSearch,
+					_groupSearch,
 					GroupLocalServiceUtil.getGroup(
 						_themeDisplay.getCompanyId(), GroupConstants.FORMS));
 			}
 		}
 
-		return groupSearch;
+		return _groupSearch;
 	}
 
 	@Override
@@ -109,8 +107,8 @@ public class MySitesItemSelectorViewDisplayContext
 		return true;
 	}
 
-	protected void addBreadcrumbEntries() {
-		Group group = getGroup();
+	private void _addBreadcrumbEntries() {
+		Group group = _getGroup();
 
 		if (group == null) {
 			return;
@@ -123,8 +121,7 @@ public class MySitesItemSelectorViewDisplayContext
 				httpServletRequest, LanguageUtil.get(httpServletRequest, "all"),
 				portletURL.toString());
 
-			SitesUtil.addPortletBreadcrumbEntries(
-				group, httpServletRequest, portletURL);
+			_addPortletBreadcrumbEntries(group, httpServletRequest, portletURL);
 		}
 		catch (Exception exception) {
 			_log.error(
@@ -134,7 +131,46 @@ public class MySitesItemSelectorViewDisplayContext
 		}
 	}
 
-	protected Group getGroup() {
+	private void _addPortletBreadcrumbEntries(
+			Group group, HttpServletRequest httpServletRequest,
+			PortletURL portletURL)
+		throws Exception {
+
+		List<Group> ancestorGroups = group.getAncestors();
+
+		Collections.reverse(ancestorGroups);
+
+		for (Group ancestorGroup : ancestorGroups) {
+			portletURL.setParameter(
+				"groupId", String.valueOf(ancestorGroup.getGroupId()));
+
+			PortalUtil.addPortletBreadcrumbEntry(
+				httpServletRequest, ancestorGroup.getDescriptiveName(),
+				portletURL.toString());
+		}
+
+		Group unescapedGroup = group.toUnescapedModel();
+
+		portletURL.setParameter(
+			"groupId", String.valueOf(unescapedGroup.getGroupId()));
+
+		PortalUtil.addPortletBreadcrumbEntry(
+			httpServletRequest, unescapedGroup.getDescriptiveName(),
+			portletURL.toString());
+	}
+
+	private List<String> _getClassNames() {
+		if (groupItemSelectorCriterion.isIncludeCompany()) {
+			return Arrays.asList(
+				Company.class.getName(), Group.class.getName(),
+				Organization.class.getName());
+		}
+
+		return Arrays.asList(
+			Group.class.getName(), Organization.class.getName());
+	}
+
+	private Group _getGroup() {
 		long groupId = ParamUtil.getLong(
 			httpServletRequest, "groupId",
 			GroupConstants.DEFAULT_PARENT_GROUP_ID);
@@ -147,16 +183,16 @@ public class MySitesItemSelectorViewDisplayContext
 	}
 
 	private void _prependGroup(GroupSearch groupSearch, Group group) {
-		groupSearch.setResults(
-			ListUtil.concat(Arrays.asList(group), groupSearch.getResults()));
-
-		groupSearch.setTotal(groupSearch.getTotal() + 1);
+		groupSearch.setResultsAndTotal(
+			() -> ListUtil.concat(
+				Arrays.asList(group), groupSearch.getResults()),
+			groupSearch.getTotal() + 1);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		MySitesItemSelectorViewDisplayContext.class);
 
-	private final GroupSearchProvider _groupSearchProvider;
+	private GroupSearch _groupSearch;
 	private final PortletRequest _portletRequest;
 	private final ThemeDisplay _themeDisplay;
 

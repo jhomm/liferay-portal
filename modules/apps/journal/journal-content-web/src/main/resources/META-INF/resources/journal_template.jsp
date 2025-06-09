@@ -1,25 +1,13 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-JournalArticle article = journalContentDisplayContext.getArticle();
-DDMStructure ddmStructure = journalContentDisplayContext.getDDMStructure();
-
 String refererPortletName = ParamUtil.getString(request, "refererPortletName");
 %>
 
@@ -60,48 +48,22 @@ String refererPortletName = ParamUtil.getString(request, "refererPortletName");
 			</c:choose>
 		</div>
 
-		<aui:button id='<%= refererPortletName + "selectDDMTemplateButton" %>' useNamespace="<%= false %>" value="select" />
+		<clay:button
+			displayType="secondary"
+			id='<%= refererPortletName + "selectDDMTemplateButton" %>'
+			label="select"
+		/>
 
-		<aui:button id='<%= refererPortletName + "clearddmTemplateButton" %>' useNamespace="<%= false %>" value="clear" />
+		<clay:button
+			displayType="secondary"
+			id='<%= refererPortletName + "clearddmTemplateButton" %>'
+			label="clear"
+		/>
 	</div>
 </clay:sheet-section>
 
-<%
-AssetRendererFactory<JournalArticle> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClass(JournalArticle.class);
-
-AssetRenderer<JournalArticle> assetRenderer = assetRendererFactory.getAssetRenderer(article, 0);
-
-String className = DDMTemplate.class.getName() + "_" + JournalArticle.class.getName();
-
-String portletId = PortletProviderUtil.getPortletId(className, PortletProvider.Action.BROWSE);
-%>
-
-<liferay-portlet:resourceURL portletName="<%= JournalContentPortletKeys.JOURNAL_CONTENT %>" var="actionURL" windowState="<%= LiferayWindowState.EXCLUSIVE.toString() %>">
-	<portlet:param name="mvcPath" value="/journal_template_resources.jsp" />
-	<portlet:param name="articleResourcePrimKey" value="<%= String.valueOf(assetRenderer.getClassPK()) %>" />
-</liferay-portlet:resourceURL>
-
 <liferay-frontend:component
 	componentId="journalTemplate"
-	context='<%=
-		HashMapBuilder.<String, Object>put(
-			"actionURL", actionURL
-		).put(
-			"ddmStructure", ddmStructure
-		).put(
-			"ddmStructureId", (ddmStructure != null) ? String.valueOf(ddmStructure.getStructureId()) : StringPool.BLANK
-		).put(
-			"eventName", PortalUtil.getPortletNamespace(portletId) + "selectDDMTemplate"
-		).put(
-			"portletNamespace", PortalUtil.getPortletNamespace(JournalContentPortletKeys.JOURNAL_CONTENT)
-		).put(
-			"portletURL",
-			PortletURLBuilder.create(
-				PortletProviderUtil.getPortletURL(renderRequest, className, PortletProvider.Action.BROWSE)
-			).buildString()
-		).put(
-			"windowState", LiferayWindowState.POP_UP.toString()
-		).build()
-	%>'
-	module="js/JournalTemplate"
+	context="<%= journalContentDisplayContext.getJournalTemplateContext() %>"
+	module="{JournalTemplate} from journal-content-web"
 />

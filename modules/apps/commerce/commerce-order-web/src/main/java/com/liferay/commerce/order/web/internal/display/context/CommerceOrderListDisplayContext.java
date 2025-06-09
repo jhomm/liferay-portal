@@ -1,36 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.web.internal.display.context;
 
 import com.liferay.commerce.model.CommerceOrder;
-import com.liferay.commerce.order.web.internal.display.context.util.CommerceOrderRequestHelper;
+import com.liferay.commerce.order.web.internal.display.context.helper.CommerceOrderRequestHelper;
 import com.liferay.commerce.order.web.internal.search.CommerceOrderDisplayTerms;
 import com.liferay.commerce.order.web.internal.security.permission.resource.CommerceOrderPermission;
 import com.liferay.commerce.service.CommerceOrderNoteService;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSSortItemBuilder;
+import com.liferay.frontend.data.set.model.FDSSortItemList;
+import com.liferay.frontend.data.set.model.FDSSortItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.SortItemBuilder;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.SortItemList;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.SortItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -39,11 +30,11 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import java.util.List;
 
 /**
  * @author Andrea Di Giorgi
@@ -70,7 +61,7 @@ public class CommerceOrderListDisplayContext {
 			_commerceOrderRequestHelper.getThemeDisplay();
 
 		return ListUtil.fromArray(
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				PortletURLBuilder.create(
 					PortletURLFactoryUtil.create(
 						_commerceOrderRequestHelper.getRequest(),
@@ -89,12 +80,26 @@ public class CommerceOrderListDisplayContext {
 				"delete", null));
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getClayDataSetActionDropdownItems()
+	public int getCommerceOrderNotesCount(CommerceOrder commerceOrder)
+		throws PortalException {
+
+		if (CommerceOrderPermission.contains(
+				_commerceOrderRequestHelper.getPermissionChecker(),
+				commerceOrder, ActionKeys.UPDATE_DISCUSSION)) {
+
+			return _commerceOrderNoteService.getCommerceOrderNotesCount(
+				commerceOrder.getCommerceOrderId());
+		}
+
+		return _commerceOrderNoteService.getCommerceOrderNotesCount(
+			commerceOrder.getCommerceOrderId(), false);
+	}
+
+	public List<FDSActionDropdownItem> getFDSActionDropdownItems()
 		throws PortalException {
 
 		return ListUtil.fromArray(
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				PortletURLBuilder.create(
 					PortletProviderUtil.getPortletURL(
 						_commerceOrderRequestHelper.getRequest(),
@@ -109,27 +114,21 @@ public class CommerceOrderListDisplayContext {
 				LanguageUtil.get(
 					_commerceOrderRequestHelper.getRequest(), "view"),
 				"get", null, null),
-			new ClayDataSetActionDropdownItem(
-				"/o/headless-commerce-admin-order/v1.0/orders/{id}", "trash",
-				"delete",
+			new FDSActionDropdownItem(
+				null, "trash", "delete",
 				LanguageUtil.get(
 					_commerceOrderRequestHelper.getRequest(), "delete"),
-				"delete", "delete", "async"));
+				"delete", "delete", "link"));
 	}
 
-	public int getCommerceOrderNotesCount(CommerceOrder commerceOrder)
-		throws PortalException {
-
-		if (CommerceOrderPermission.contains(
-				_commerceOrderRequestHelper.getPermissionChecker(),
-				commerceOrder, ActionKeys.UPDATE_DISCUSSION)) {
-
-			return _commerceOrderNoteService.getCommerceOrderNotesCount(
-				commerceOrder.getCommerceOrderId());
-		}
-
-		return _commerceOrderNoteService.getCommerceOrderNotesCount(
-			commerceOrder.getCommerceOrderId(), false);
+	public FDSSortItemList getFDSSortItemList() {
+		return FDSSortItemListBuilder.add(
+			FDSSortItemBuilder.setDirection(
+				"desc"
+			).setKey(
+				"createDate"
+			).build()
+		).build();
 	}
 
 	public PortletURL getPortletURL() {
@@ -158,16 +157,6 @@ public class CommerceOrderListDisplayContext {
 		}
 
 		return portletURL;
-	}
-
-	public SortItemList getSortItemList() {
-		return SortItemListBuilder.add(
-			SortItemBuilder.setDirection(
-				"desc"
-			).setKey(
-				"createDate"
-			).build()
-		).build();
 	}
 
 	private final CommerceOrderNoteService _commerceOrderNoteService;

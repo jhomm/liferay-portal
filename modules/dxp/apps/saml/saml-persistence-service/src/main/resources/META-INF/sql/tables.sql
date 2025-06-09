@@ -48,12 +48,12 @@ create table SamlPeerBinding (
 	userId LONG,
 	userName VARCHAR(75) null,
 	deleted BOOLEAN,
-	samlNameIdFormat VARCHAR(75) null,
-	samlNameIdNameQualifier VARCHAR(75) null,
+	samlNameIdFormat VARCHAR(128) null,
+	samlNameIdNameQualifier VARCHAR(1024) null,
 	samlNameIdSpNameQualifier VARCHAR(75) null,
 	samlNameIdSpProvidedId VARCHAR(75) null,
-	samlNameIdValue VARCHAR(75) null,
-	samlPeerEntityId VARCHAR(75) null
+	samlNameIdValue VARCHAR(1024) null,
+	samlPeerEntityId VARCHAR(1024) null
 );
 
 create table SamlSpAuthRequest (
@@ -61,6 +61,7 @@ create table SamlSpAuthRequest (
 	companyId LONG,
 	createDate DATE null,
 	samlIdpEntityId VARCHAR(1024) null,
+	samlRelayState VARCHAR(2048) null,
 	samlSpAuthRequestKey VARCHAR(75) null
 );
 
@@ -108,6 +109,6 @@ create table SamlSpSession (
 	assertionXml TEXT null,
 	jSessionId VARCHAR(200) null,
 	samlSpSessionKey VARCHAR(75) null,
-	sessionIndex VARCHAR(75) null,
+	sessionIndex VARCHAR(200) null,
 	terminated_ BOOLEAN
 );

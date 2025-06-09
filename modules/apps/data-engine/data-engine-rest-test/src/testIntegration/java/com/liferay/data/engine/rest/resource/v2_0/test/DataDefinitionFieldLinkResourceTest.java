@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.resource.v2_0.test;
@@ -21,11 +12,17 @@ import com.liferay.data.engine.rest.client.dto.v2_0.DataDefinitionFieldLink;
 import com.liferay.data.engine.rest.client.dto.v2_0.DataLayout;
 import com.liferay.data.engine.rest.client.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
+import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.test.rule.Inject;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 
 /**
@@ -35,6 +32,19 @@ import org.junit.runner.RunWith;
 @RunWith(Arquillian.class)
 public class DataDefinitionFieldLinkResourceTest
 	extends BaseDataDefinitionFieldLinkResourceTestCase {
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		BaseDataDefinitionFieldLinkResourceTestCase.setUpClass();
+
+		ModelResourceActionTestUtil.populateModelResourceAction(
+			_resourceActions);
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
+	}
 
 	@Before
 	@Override
@@ -49,7 +59,7 @@ public class DataDefinitionFieldLinkResourceTest
 			DataDefinitionResource.builder();
 
 		_dataDefinitionResource = builder.authentication(
-			"test@liferay.com", "test"
+			"test@liferay.com", TestPropsValues.USER_PASSWORD
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -87,7 +97,7 @@ public class DataDefinitionFieldLinkResourceTest
 
 	@Override
 	protected DataDefinitionFieldLink
-			testGetDataDefinitionDataDefinitionFieldLinkPage_addDataDefinitionFieldLink(
+			testGetDataDefinitionDataDefinitionFieldLinksPage_addDataDefinitionFieldLink(
 				Long dataDefinitionId,
 				DataDefinitionFieldLink dataDefinitionFieldLink)
 		throws Exception {
@@ -100,11 +110,14 @@ public class DataDefinitionFieldLinkResourceTest
 
 	@Override
 	protected Long
-			testGetDataDefinitionDataDefinitionFieldLinkPage_getDataDefinitionId()
+			testGetDataDefinitionDataDefinitionFieldLinksPage_getDataDefinitionId()
 		throws Exception {
 
 		return _dataDefinition.getId();
 	}
+
+	@Inject
+	private static ResourceActions _resourceActions;
 
 	private DataDefinition _dataDefinition;
 	private DataDefinitionResource _dataDefinitionResource;

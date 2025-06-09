@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.persistence.test;
@@ -17,7 +8,9 @@ package com.liferay.portal.configuration.persistence.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.persistence.ConfigurationOverridePropertiesUtil;
+import com.liferay.portal.configuration.persistence.InMemoryOnlyConfigurationThreadLocal;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
+import com.liferay.portal.file.install.constants.FileInstallConstants;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.util.HashMapBuilder;
@@ -28,10 +21,16 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import java.io.Closeable;
 import java.io.IOException;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+
+import javax.sql.DataSource;
 
 import org.apache.felix.cm.PersistenceManager;
 
@@ -58,7 +57,7 @@ public class ConfigurationPersistenceManagerTest {
 	@Test
 	public void testConfigurationOverride() throws IOException {
 
-		// Override nonexisting configuration
+		// Override nonexistent configuration
 
 		String testPid = "testPid";
 
@@ -204,12 +203,24 @@ public class ConfigurationPersistenceManagerTest {
 
 	@Test
 	public void testCreateFactoryConfiguration() throws Exception {
-		_assertConfiguration(true);
+		_assertConfiguration(true, true);
 	}
 
 	@Test
 	public void testGetConfiguration() throws Exception {
-		_assertConfiguration(false);
+		_assertConfiguration(false, true);
+	}
+
+	@Test
+	public void testMemoryOnlyConfiguration() throws Exception {
+		InMemoryOnlyConfigurationThreadLocal.setInMemoryOnly(true);
+
+		try {
+			_assertConfiguration(false, false);
+		}
+		finally {
+			InMemoryOnlyConfigurationThreadLocal.setInMemoryOnly(false);
+		}
 	}
 
 	@Test
@@ -217,10 +228,13 @@ public class ConfigurationPersistenceManagerTest {
 		ReflectionTestUtil.invoke(
 			_persistenceManager, "_verifyDictionary",
 			new Class<?>[] {String.class, String.class}, "whitespace.pid",
-			"felix.fileinstall.filename=\"file:/whitespace path/file.config\"");
+			FileInstallConstants.FELIX_FILE_INSTALL_FILENAME +
+				"=\"file:/whitespace path/file.config\"");
 	}
 
-	private void _assertConfiguration(boolean factory) throws Exception {
+	private void _assertConfiguration(boolean factory, boolean shouldBeStored)
+		throws Exception {
+
 		Configuration configuration = null;
 
 		if (factory) {
@@ -244,6 +258,8 @@ public class ConfigurationPersistenceManagerTest {
 
 		Assert.assertEquals("bar", properties.get("foo"));
 
+		_assertStoredInDatabase(pid, shouldBeStored);
+
 		properties.put("fee", "fum");
 
 		ConfigurationTestUtil.saveConfiguration(configuration, properties);
@@ -256,6 +272,27 @@ public class ConfigurationPersistenceManagerTest {
 		ConfigurationTestUtil.deleteConfiguration(configuration);
 
 		Assert.assertFalse(_persistenceManager.exists(pid));
+
+		_assertStoredInDatabase(pid, false);
+	}
+
+	private void _assertStoredInDatabase(String pid, boolean shouldBeStored)
+		throws Exception {
+
+		try (Connection connection = _dataSource.getConnection();
+			PreparedStatement preparedStatement = connection.prepareStatement(
+				"select configurationId, dictionary from Configuration_ " +
+					"where configurationId = ?")) {
+
+			preparedStatement.setString(1, pid);
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				boolean stored = resultSet.next();
+
+				Assert.assertFalse(!shouldBeStored && stored);
+				Assert.assertFalse(shouldBeStored && !stored);
+			}
+		}
 	}
 
 	private void _reload() {
@@ -292,6 +329,9 @@ public class ConfigurationPersistenceManagerTest {
 
 	@Inject
 	private static ConfigurationAdmin _configurationAdmin;
+
+	@Inject
+	private static DataSource _dataSource;
 
 	@Inject
 	private static PersistenceManager _persistenceManager;

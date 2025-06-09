@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
@@ -31,6 +22,8 @@ import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -45,6 +38,8 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.mockito.Mockito;
 
 import org.skyscreamer.jsonassert.JSONAssert;
 
@@ -63,7 +58,8 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		setUpDDMFormValuesJSONDeserializer();
+		_setUpDDMFormValuesJSONDeserializer();
+		_setUpLanguage();
 	}
 
 	@Test
@@ -190,7 +186,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			DDMFormFieldValue separatorDDMFormFieldValue =
 				ddmFormFieldValues.get(i);
 
-			testSeparatorDDMFormFieldValueValue(separatorDDMFormFieldValue);
+			_testSeparatorDDMFormFieldValueValue(separatorDDMFormFieldValue);
 
 			List<DDMFormFieldValue> separatorNestedDDMFormFieldValues =
 				separatorDDMFormFieldValue.getNestedDDMFormFieldValues();
@@ -199,7 +195,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 				separatorNestedDDMFormFieldValues.toString(), 1,
 				separatorNestedDDMFormFieldValues.size());
 
-			testTextDDMFormFieldValue(
+			_testTextDDMFormFieldValue(
 				separatorNestedDDMFormFieldValues.get(0), "Content " + i,
 				"Conteudo " + i);
 		}
@@ -225,7 +221,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			ddmFormFieldValues.toString(), 3, ddmFormFieldValues.size());
 
 		for (int i = 0; i < ddmFormFieldValues.size(); i++) {
-			testTextDDMFormFieldValue(
+			_testTextDDMFormFieldValue(
 				ddmFormFieldValues.get(i), "Name " + i, "Nome " + i);
 		}
 	}
@@ -281,13 +277,13 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 		Assert.assertEquals(
 			ddmFormFieldValues.toString(), 7, ddmFormFieldValues.size());
 
-		testBooleanDDMFormFieldValueValues(ddmFormFieldValues.get(0));
-		testDocumentLibraryDDMFormFieldValueValues(ddmFormFieldValues.get(1));
-		testGeolocationDDMFormFieldValueValues(ddmFormFieldValues.get(2));
-		testHTMLDDMFormFieldValueValues(ddmFormFieldValues.get(3));
-		testImageDDMFormFieldValueValues(ddmFormFieldValues.get(4));
-		testLinkToPageDDMFormFieldValueValues(ddmFormFieldValues.get(5));
-		testSelectDDMFormFieldValueValues(ddmFormFieldValues.get(6));
+		_testBooleanDDMFormFieldValueValues(ddmFormFieldValues.get(0));
+		_testDocumentLibraryDDMFormFieldValueValues(ddmFormFieldValues.get(1));
+		_testGeolocationDDMFormFieldValueValues(ddmFormFieldValues.get(2));
+		_testHTMLDDMFormFieldValueValues(ddmFormFieldValues.get(3));
+		_testImageDDMFormFieldValueValues(ddmFormFieldValues.get(4));
+		_testLinkToPageDDMFormFieldValueValues(ddmFormFieldValues.get(5));
+		_testSelectDDMFormFieldValueValues(ddmFormFieldValues.get(6));
 	}
 
 	@Test
@@ -365,21 +361,6 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
 	}
 
-	protected void setUpDDMFormValuesJSONDeserializer() throws Exception {
-		field(
-			DDMFormValuesJSONDeserializer.class, "_jsonFactory"
-		).set(
-			_ddmFormValuesDeserializer, new JSONFactoryImpl()
-		);
-
-		field(
-			DDMFormValuesJSONDeserializer.class, "_serviceTrackerMap"
-		).set(
-			_ddmFormValuesDeserializer,
-			ProxyFactory.newDummyInstance(ServiceTrackerMap.class)
-		);
-	}
-
 	protected void testAvailableLocales(DDMFormValues ddmFormValues) {
 		Set<Locale> availableLocales = ddmFormValues.getAvailableLocales();
 
@@ -393,7 +374,32 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			availableLocales.contains(LocaleUtil.BRAZIL));
 	}
 
-	protected void testBooleanDDMFormFieldValueValues(
+	protected void testDefaultLocale(DDMFormValues ddmFormValues) {
+		Assert.assertEquals(LocaleUtil.US, ddmFormValues.getDefaultLocale());
+	}
+
+	private void _setUpDDMFormValuesJSONDeserializer() throws Exception {
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesDeserializer, "_jsonFactory", new JSONFactoryImpl());
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesDeserializer, "_serviceTrackerMap",
+			ProxyFactory.newDummyInstance(ServiceTrackerMap.class));
+	}
+
+	private void _setUpLanguage() {
+		Language language = Mockito.mock(Language.class);
+
+		Mockito.when(
+			language.isAvailableLocale(Mockito.anyString())
+		).thenReturn(
+			true
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormValuesDeserializer, "_language", language);
+	}
+
+	private void _testBooleanDDMFormFieldValueValues(
 		DDMFormFieldValue ddmFormFieldValue) {
 
 		Assert.assertEquals("maky", ddmFormFieldValue.getInstanceId());
@@ -404,11 +410,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 		Assert.assertEquals("true", value.getString(LocaleUtil.BRAZIL));
 	}
 
-	protected void testDefaultLocale(DDMFormValues ddmFormValues) {
-		Assert.assertEquals(LocaleUtil.US, ddmFormValues.getDefaultLocale());
-	}
-
-	protected void testDocumentLibraryDDMFormFieldValueValues(
+	private void _testDocumentLibraryDDMFormFieldValueValues(
 			DDMFormFieldValue ddmFormFieldValue)
 		throws Exception {
 
@@ -432,7 +434,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			false);
 	}
 
-	protected void testGeolocationDDMFormFieldValueValues(
+	private void _testGeolocationDDMFormFieldValueValues(
 			DDMFormFieldValue ddmFormFieldValue)
 		throws Exception {
 
@@ -457,7 +459,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			value.getString(LocaleUtil.BRAZIL), false);
 	}
 
-	protected void testHTMLDDMFormFieldValueValues(
+	private void _testHTMLDDMFormFieldValueValues(
 		DDMFormFieldValue ddmFormFieldValue) {
 
 		Assert.assertEquals("lamn", ddmFormFieldValue.getInstanceId());
@@ -470,7 +472,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			"<p>Isto e um teste.</p>", value.getString(LocaleUtil.BRAZIL));
 	}
 
-	protected void testImageDDMFormFieldValueValues(
+	private void _testImageDDMFormFieldValueValues(
 			DDMFormFieldValue ddmFormFieldValue)
 		throws Exception {
 
@@ -495,7 +497,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			value.getString(LocaleUtil.BRAZIL), false);
 	}
 
-	protected void testLinkToPageDDMFormFieldValueValues(
+	private void _testLinkToPageDDMFormFieldValueValues(
 			DDMFormFieldValue ddmFormFieldValue)
 		throws Exception {
 
@@ -524,7 +526,7 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			value.getString(LocaleUtil.BRAZIL), false);
 	}
 
-	protected void testSelectDDMFormFieldValueValues(
+	private void _testSelectDDMFormFieldValueValues(
 			DDMFormFieldValue ddmFormFieldValue)
 		throws Exception {
 
@@ -545,13 +547,13 @@ public class DDMFormValuesJSONDeserializerTest extends BaseDDMTestCase {
 			false);
 	}
 
-	protected void testSeparatorDDMFormFieldValueValue(
+	private void _testSeparatorDDMFormFieldValueValue(
 		DDMFormFieldValue ddmFormFieldValue) {
 
 		Assert.assertNull(ddmFormFieldValue.getValue());
 	}
 
-	protected void testTextDDMFormFieldValue(
+	private void _testTextDDMFormFieldValue(
 		DDMFormFieldValue ddmFormFieldValue, String expectedEnUS,
 		String expectedPtBR) {
 

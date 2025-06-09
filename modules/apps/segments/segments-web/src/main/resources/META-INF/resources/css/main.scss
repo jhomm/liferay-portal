@@ -1,10 +1,14 @@
+@import 'cadmin-variables';
 @import 'mixins';
 @import 'variables';
 
 @import 'globals';
 
+html#{$cadmin-selector} .portlet-layout .cadmin.control-menu-container {
+	position: static;
+}
+
 .segments-root {
-	@import 'clay_button';
 	@import 'conjunction';
 	@import 'contributor_builder';
 	@import 'criteria_builder';
@@ -13,6 +17,6 @@
 	@import 'criteria_sidebar';
 	@import 'drop_zone';
 	@import 'empty_drop_zone';
-	@import 'localized_title';
+	@import 'keyboard_movement_preview';
 	@import 'segment_edit';
 }

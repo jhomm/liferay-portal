@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {buildFragment, runScriptsInElement} from 'frontend-js-web';
+import {buildFragment, fetch, runScriptsInElement} from 'frontend-js-web';
 
 import Surface from '../surface/Surface';
 import {
@@ -82,14 +73,14 @@ class HtmlScreen extends RequestScreen {
 	 * @param {Element} newStyle
 	 */
 	appendStyleIntoDocument_(newStyle) {
-		var isTemporaryStyle = newStyle.matches(
+		const isTemporaryStyle = newStyle.matches(
 			HtmlScreen.selectors.stylesTemporary
 		);
 		if (isTemporaryStyle) {
 			this.pendingStyles.push(newStyle);
 		}
 		if (newStyle.id) {
-			var styleInDoc = document.getElementById(newStyle.id);
+			const styleInDoc = document.getElementById(newStyle.id);
 			if (styleInDoc) {
 				styleInDoc.parentNode.insertBefore(
 					newStyle,
@@ -107,7 +98,7 @@ class HtmlScreen extends RequestScreen {
 	 * of the initial page.
 	 */
 	assertSameBodyIdInVirtualDocument() {
-		var bodySurface = this.virtualDocument.querySelector('body');
+		const bodySurface = this.virtualDocument.querySelector('body');
 		if (!document.body.id) {
 			document.body.id = 'senna_surface_' + getUid();
 		}
@@ -154,7 +145,7 @@ class HtmlScreen extends RequestScreen {
 	 * @Override
 	 */
 	evaluateScripts(surfaces) {
-		var evaluateTrackedScripts = this.evaluateTrackedResources_(
+		const evaluateTrackedScripts = this.evaluateTrackedResources_(
 			runScriptsInElement,
 			HtmlScreen.selectors.scripts,
 			HtmlScreen.selectors.scriptsTemporary,
@@ -169,9 +160,35 @@ class HtmlScreen extends RequestScreen {
 	/**
 	 * @Override
 	 */
+	preloadStyles(surfaces) {
+		const tracked = this.virtualQuerySelectorAll_(
+			HtmlScreen.selectors.styles
+		);
+
+		return Promise.all(
+			tracked.map((resource) => {
+				const resourceKey = this.getResourceKey_(resource);
+
+				if (
+					!HtmlScreen.permanentResourcesInDoc[resourceKey] &&
+					resource.href
+				) {
+					return fetch(resource.href).then((response) =>
+						response.ok ? response.text() : Promise.resolve()
+					);
+				}
+
+				return Promise.resolve();
+			})
+		).then(() => super.preloadStyles(surfaces));
+	}
+
+	/**
+	 * @Override
+	 */
 	evaluateStyles(surfaces) {
 		this.pendingStyles = [];
-		var evaluateTrackedStyles = this.evaluateTrackedResources_(
+		const evaluateTrackedStyles = this.evaluateTrackedResources_(
 			runStylesInElement,
 			HtmlScreen.selectors.styles,
 			HtmlScreen.selectors.stylesTemporary,
@@ -222,22 +239,22 @@ class HtmlScreen extends RequestScreen {
 		selectorPermanent,
 		opt_appendResourceFn
 	) {
-		var tracked = this.virtualQuerySelectorAll_(selector);
-		var temporariesInDoc = this.querySelectorAll_(selectorTemporary);
-		var permanentsInDoc = this.querySelectorAll_(selectorPermanent);
+		const tracked = this.virtualQuerySelectorAll_(selector);
+		const temporariesInDoc = this.querySelectorAll_(selectorTemporary);
+		const permanentsInDoc = this.querySelectorAll_(selectorPermanent);
 
 		// Adds permanent resources in document to cache.
 
 		permanentsInDoc.forEach((resource) => {
-			var resourceKey = this.getResourceKey_(resource);
+			const resourceKey = this.getResourceKey_(resource);
 			if (resourceKey) {
 				HtmlScreen.permanentResourcesInDoc[resourceKey] = true;
 			}
 		});
 
-		var frag = buildFragment();
+		const frag = buildFragment();
 		tracked.forEach((resource) => {
-			var resourceKey = this.getResourceKey_(resource);
+			const resourceKey = this.getResourceKey_(resource);
 
 			// Do not load permanent resources if already in document.
 
@@ -303,9 +320,9 @@ class HtmlScreen extends RequestScreen {
 	 * @inheritDoc
 	 */
 	getSurfaceContent(surfaceId) {
-		var surface = this.virtualDocument.querySelector('#' + surfaceId);
+		const surface = this.virtualDocument.querySelector('#' + surfaceId);
 		if (surface) {
-			var defaultChild = surface.querySelector(
+			const defaultChild = surface.querySelector(
 				'#' + surfaceId + '-' + Surface.DEFAULT
 			);
 			if (defaultChild) {
@@ -347,8 +364,6 @@ class HtmlScreen extends RequestScreen {
 	runFaviconInElement_(elements) {
 		return new Promise((resolve) => {
 			elements.forEach((element) => {
-				element.href = element.href + '?q=' + Math.random();
-
 				document.head.appendChild(element);
 			});
 			resolve();

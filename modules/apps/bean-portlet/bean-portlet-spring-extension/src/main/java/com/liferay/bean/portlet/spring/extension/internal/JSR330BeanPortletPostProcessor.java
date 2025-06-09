@@ -1,18 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal;
+
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.beans.PropertyDescriptor;
 
@@ -57,12 +51,15 @@ public class JSR330BeanPortletPostProcessor
 			@SuppressWarnings("unchecked")
 			Class<? extends Annotation> injectAnnotation =
 				(Class<? extends Annotation>)ClassUtils.forName(
-					"javax.inject.Inject",
+					"jakarta.inject.Inject",
 					JSR330BeanPortletPostProcessor.class.getClassLoader());
 
 			_autowiredAnnotationTypes.add(injectAnnotation);
 		}
 		catch (ClassNotFoundException classNotFoundException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(classNotFoundException);
+			}
 		}
 
 		_autowiredAnnotationTypes.add(Value.class);
@@ -149,17 +146,19 @@ public class JSR330BeanPortletPostProcessor
 
 		Annotation[] annotations = accessibleObject.getAnnotations();
 
-		if (annotations.length > 0) {
-			for (Class<? extends Annotation> autowiredAnnotationType :
-					_autowiredAnnotationTypes) {
+		if (annotations.length <= 0) {
+			return null;
+		}
 
-				AnnotationAttributes mergedAnnotationAttributes =
-					AnnotatedElementUtils.getMergedAnnotationAttributes(
-						accessibleObject, autowiredAnnotationType);
+		for (Class<? extends Annotation> autowiredAnnotationType :
+				_autowiredAnnotationTypes) {
 
-				if (mergedAnnotationAttributes != null) {
-					return mergedAnnotationAttributes;
-				}
+			AnnotationAttributes mergedAnnotationAttributes =
+				AnnotatedElementUtils.getMergedAnnotationAttributes(
+					accessibleObject, autowiredAnnotationType);
+
+			if (mergedAnnotationAttributes != null) {
+				return mergedAnnotationAttributes;
 			}
 		}
 
@@ -167,12 +166,12 @@ public class JSR330BeanPortletPostProcessor
 	}
 
 	private InjectionMetadata _getInjectionMetadata(Class<?> beanClass) {
-		List<InjectionMetadata.InjectedElement> injectedElements =
+		List<InjectionMetadata.InjectedElement> injectedElements1 =
 			new ArrayList<>();
 		Class<?> curClass = beanClass;
 
 		while ((curClass != null) && (curClass != Object.class)) {
-			List<InjectionMetadata.InjectedElement> injectionElements =
+			List<InjectionMetadata.InjectedElement> injectedElements2 =
 				new ArrayList<>();
 
 			Field[] fields = curClass.getDeclaredFields();
@@ -189,7 +188,7 @@ public class JSR330BeanPortletPostProcessor
 					boolean required = determineRequiredStatus(
 						annotationAttributes);
 
-					injectionElements.add(
+					injectedElements2.add(
 						new JSR330InjectedFieldElement(
 							_configurableListableBeanFactory, field, required));
 				}
@@ -224,19 +223,19 @@ public class JSR330BeanPortletPostProcessor
 					boolean required = determineRequiredStatus(
 						annotationAttributes);
 
-					injectionElements.add(
+					injectedElements2.add(
 						new JSR330InjectedMethodElement(
 							_configurableListableBeanFactory, method,
 							propertyDescriptor, required));
 				}
 			}
 
-			injectedElements.addAll(0, injectionElements);
+			injectedElements1.addAll(0, injectedElements2);
 
 			curClass = curClass.getSuperclass();
 		}
 
-		return new InjectionMetadata(beanClass, injectedElements);
+		return new InjectionMetadata(beanClass, injectedElements1);
 	}
 
 	private InjectionMetadata _getInjectionMetadata(
@@ -270,6 +269,9 @@ public class JSR330BeanPortletPostProcessor
 
 		return injectionMetadata;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		JSR330BeanPortletPostProcessor.class);
 
 	private final Set<Class<? extends Annotation>> _autowiredAnnotationTypes =
 		new LinkedHashSet<>();

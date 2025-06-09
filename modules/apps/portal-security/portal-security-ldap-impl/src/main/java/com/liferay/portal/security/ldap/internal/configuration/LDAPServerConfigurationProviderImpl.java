@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.ldap.internal.configuration;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.ldap.configuration.BaseConfigurationProvider;
 import com.liferay.portal.security.ldap.configuration.ConfigurationProvider;
 import com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration;
@@ -32,8 +24,10 @@ import com.liferay.portal.security.ldap.constants.LDAPConstants;
 import java.io.IOException;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true,
 	property = "factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration",
 	service = ConfigurationProvider.class
 )
@@ -159,7 +152,7 @@ public class LDAPServerConfigurationProviderImpl
 			objectValuePair = objectValuePairs.get(ldapServerId);
 
 		if ((objectValuePair == null) &&
-			!MapUtil.isEmpty(defaultObjectValuePairs)) {
+			MapUtil.isNotEmpty(defaultObjectValuePairs)) {
 
 			objectValuePair = defaultObjectValuePairs.get(
 				LDAPServerConfiguration.LDAP_SERVER_ID_DEFAULT);
@@ -210,7 +203,7 @@ public class LDAPServerConfigurationProviderImpl
 			objectValuePair = objectValuePairs.get(ldapServerId);
 
 		if ((objectValuePair == null) &&
-			!MapUtil.isEmpty(defaultObjectValuePairs)) {
+			MapUtil.isNotEmpty(defaultObjectValuePairs)) {
 
 			objectValuePair = defaultObjectValuePairs.get(
 				LDAPServerConfiguration.LDAP_SERVER_ID_DEFAULT);
@@ -247,7 +240,7 @@ public class LDAPServerConfigurationProviderImpl
 		if (MapUtil.isEmpty(objectValuePairs) && useDefault) {
 			ldapServerConfigurations.add(_defaultLDAPServerConfiguration);
 		}
-		else if (!MapUtil.isEmpty(objectValuePairs)) {
+		else if (MapUtil.isNotEmpty(objectValuePairs)) {
 			List<ObjectValuePair<Configuration, LDAPServerConfiguration>>
 				objectValuePairsList = new ArrayList<>(
 					objectValuePairs.values());
@@ -267,9 +260,7 @@ public class LDAPServerConfigurationProviderImpl
 						}
 						catch (IllegalStateException illegalStateException) {
 							if (_log.isDebugEnabled()) {
-								_log.debug(
-									illegalStateException,
-									illegalStateException);
+								_log.debug(illegalStateException);
 							}
 
 							return 0L;
@@ -294,6 +285,9 @@ public class LDAPServerConfigurationProviderImpl
 	public List<Dictionary<String, Object>> getConfigurationsProperties(
 		long companyId, boolean useDefault) {
 
+		List<Dictionary<String, Object>> configurationsProperties =
+			new ArrayList<>();
+
 		Map<Long, ObjectValuePair<Configuration, LDAPServerConfiguration>>
 			objectValuePairs = _configurations.get(companyId);
 
@@ -301,14 +295,11 @@ public class LDAPServerConfigurationProviderImpl
 			objectValuePairs = _configurations.get(CompanyConstants.SYSTEM);
 		}
 
-		List<Dictionary<String, Object>> configurationsProperties =
-			new ArrayList<>();
-
 		if (MapUtil.isEmpty(objectValuePairs) && useDefault) {
 			configurationsProperties.add(
 				new HashMapDictionary<String, Object>());
 		}
-		else if (!MapUtil.isEmpty(objectValuePairs)) {
+		else if (MapUtil.isNotEmpty(objectValuePairs)) {
 			for (ObjectValuePair<Configuration, LDAPServerConfiguration>
 					objectValuePair : objectValuePairs.values()) {
 
@@ -366,7 +357,9 @@ public class LDAPServerConfigurationProviderImpl
 				objectValuePairs = _configurations.get(companyId);
 			}
 
-			if ((ldapServerId != null) && !MapUtil.isEmpty(objectValuePairs)) {
+			if ((ldapServerId != null) &&
+				MapUtil.isNotEmpty(objectValuePairs)) {
+
 				objectValuePairs.remove(ldapServerId);
 			}
 		}
@@ -402,11 +395,22 @@ public class LDAPServerConfigurationProviderImpl
 			Configuration configuration = null;
 
 			if (objectValuePair == null) {
-				configuration = configurationAdmin.createFactoryConfiguration(
+				configuration = _configurationAdmin.createFactoryConfiguration(
 					getMetatypeId(), StringPool.QUESTION);
 			}
 			else {
 				configuration = objectValuePair.getKey();
+			}
+
+			if (_isCustomMappingModified(
+					configuration, LDAPConstants.CONTACT_CUSTOM_MAPPINGS,
+					properties) ||
+				_isCustomMappingModified(
+					configuration, LDAPConstants.USER_CUSTOM_MAPPINGS,
+					properties)) {
+
+				properties.put(
+					LDAPConstants.MODIFIED_DATE, String.valueOf(new Date()));
 			}
 
 			configuration.update(properties);
@@ -417,16 +421,27 @@ public class LDAPServerConfigurationProviderImpl
 		}
 	}
 
-	@Override
-	@Reference(unbind = "-")
-	protected void setConfigurationAdmin(
-		ConfigurationAdmin configurationAdmin) {
+	private boolean _isCustomMappingModified(
+		Configuration configuration, String key,
+		Dictionary<String, Object> properties) {
 
-		super.configurationAdmin = configurationAdmin;
+		if (Validator.isNull(configuration.getProperties())) {
+			return false;
+		}
+
+		Dictionary<String, Object> oldProperties =
+			configuration.getProperties();
+
+		return !Arrays.equals(
+			GetterUtil.getStringValues(oldProperties.get(key)),
+			GetterUtil.getStringValues(properties.get(key)));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		LDAPServerConfigurationProviderImpl.class);
+
+	@Reference
+	private ConfigurationAdmin _configurationAdmin;
 
 	private final Map
 		<Long,

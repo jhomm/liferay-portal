@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -44,22 +35,49 @@ public class CompanyServiceUtil {
 	/**
 	 * Adds a company.
 	 *
+	 * @param companyId the primary key of the company (optionally <code>null</code> or
+	 <code>0</code> to generate a key automatically)
 	 * @param webId the company's web domain
 	 * @param virtualHost the company's virtual host name
 	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e., the
 	 * @param maxUsers the max number of company users (optionally
 	 <code>0</code>)
 	 * @param active whether the company is active
 	 * @return the company
 	 */
 	public static Company addCompany(
-			String webId, String virtualHost, String mx, boolean system,
+			long companyId, String webId, String virtualHost, String mx,
 			int maxUsers, boolean active)
 		throws PortalException {
 
 		return getService().addCompany(
-			webId, virtualHost, mx, system, maxUsers, active);
+			companyId, webId, virtualHost, mx, maxUsers, active);
+	}
+
+	/**
+	 * Adds a company.
+	 *
+	 * @param webId the company's web domain
+	 * @param virtualHost the company's virtual host name
+	 * @param mx the company's mail domain
+	 * @param maxUsers the max number of company users (optionally
+	 <code>0</code>)
+	 * @param active whether the company is active
+	 * @return the company
+	 */
+	public static Company addCompany(
+			Long companyId, String webId, String virtualHost, String mx,
+			int maxUsers, boolean active, String defaultAdminPassword,
+			String defaultAdminScreenName, String defaultAdminEmailAddress,
+			String defaultAdminFirstName, String defaultAdminMiddleName,
+			String defaultAdminLastName)
+		throws PortalException {
+
+		return getService().addCompany(
+			companyId, webId, virtualHost, mx, maxUsers, active,
+			defaultAdminPassword, defaultAdminScreenName,
+			defaultAdminEmailAddress, defaultAdminFirstName,
+			defaultAdminMiddleName, defaultAdminLastName);
 	}
 
 	public static Company deleteCompany(long companyId) throws PortalException {
@@ -73,6 +91,14 @@ public class CompanyServiceUtil {
 	 */
 	public static void deleteLogo(long companyId) throws PortalException {
 		getService().deleteLogo(companyId);
+	}
+
+	public static void forEachCompany(
+			com.liferay.petra.function.UnsafeConsumer<Company, Exception>
+				unsafeConsumer)
+		throws Exception {
+
+		getService().forEachCompany(unsafeConsumer);
 	}
 
 	/**
@@ -94,28 +120,6 @@ public class CompanyServiceUtil {
 		throws PortalException {
 
 		return getService().getCompanyById(companyId);
-	}
-
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	public static Company getCompanyByLogoId(long logoId)
-		throws PortalException {
-
-		return getService().getCompanyByLogoId(logoId);
-	}
-
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	public static Company getCompanyByMx(String mx) throws PortalException {
-		return getService().getCompanyByMx(mx);
 	}
 
 	/**
@@ -366,6 +370,10 @@ public class CompanyServiceUtil {
 
 	public static CompanyService getService() {
 		return _service;
+	}
+
+	public static void setService(CompanyService service) {
+		_service = service;
 	}
 
 	private static volatile CompanyService _service;

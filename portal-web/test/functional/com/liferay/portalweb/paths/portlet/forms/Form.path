@@ -37,7 +37,7 @@
 </tr>
 <tr>
 	<td>FIELDS_GROUP_EXPANDED</td>
-	<td>//button[contains(@class,'collapse-icon')]//following-sibling::div[contains(@class,'collapse show')]</td>
+	<td>//button[contains(@class,'panel-header') and contains(@class,'show')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -73,6 +73,11 @@
 <tr>
 	<td>SETTINGS_FORM_BUTTON</td>
 	<td>//button[contains(@class,'lfr-ddm-settings-button')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SUBMIT_AGAIN_BUTTON</td>
+	<td>//button[@type='button' and text()='${key_submitAgainButton}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -156,11 +161,43 @@
 	<td></td>
 </tr>
 <tr>
+	<td>FORM_PAGE_TOP_LIST</td>
+	<td>//div[@class='ddm-form-pagination position-relative wizard-mode']//div//div[text()='${key_formPageName}']/..//span[@data-multi-step-icon='${key_formPageNumber}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FORM_BACK_BUTTON</td>
+	<td>//li[contains(@class,'control-menu-nav-item')]//span[a//*[name()='svg'][contains(@class,'icon-angle-left')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FORM_PORTLET_HEADER</td>
+	<td>//h1[contains(@data-qa-id, 'headerTitle') and contains(text(), '${key_fieldLabel}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SOURCE_FORM_BUTTON</td>
+	<td>//span[@id='cke_29_label']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SOURCE_FORM_EDITOR</td>
+	<td>//div[contains(@class,'CodeMirror cm-s-default')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SOURCE_FORM_EDITOR_PUBLISHED</td>
+	<td>//strong[contains(text(),'${key_richText}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ALT_PAGINATION-->
+
 <tr>
 	<td>ALT_PAGINATION_PAGE</td>
 	<td>//*[contains(@class,'ddm-pagination')]//*[contains(@class,'page-item')]//*[contains(text(),'${key_page}')]</td>
@@ -173,7 +210,7 @@
 </tr>
 <tr>
 	<td>PAGINATION_NUMBER</td>
-	<td>//h5[contains(@class,'pagination') and contains(text(),'${key_pagination}')]</td>
+	<td>//div[contains(@class,'pagination') and contains(text(),'${key_pagination}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -181,7 +218,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PAGE_CONTROLS-->
+
 <tr>
 	<td>PAGE_CONTROLS_ELLIPSIS_ICON</td>
 	<td>xpath=(//div[@class="page"])[${key_formPageNumber}]//div[contains(@class,'paginated-builder-dropdown')]//button[contains(@class,'dropdown-toggle')]</td>
@@ -237,7 +276,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ADD_FIELD-->
+
 <tr>
 	<td>ADD_FIELD</td>
 	<td>//button[contains(@class,'add-button-large')]/span | //div[contains(@class,'portlet-forms')]//button[contains(@class,'ddm-add-field')]</td>
@@ -283,7 +324,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SUCCESS_PAGE-->
+
 <tr>
 	<td>SUCCESS_PAGE_ADD</td>
 	<td>//div[contains(@class,'add-page-button-container')]//button[contains(text(), 'Add Success Page')]</td>
@@ -304,25 +347,22 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PUBLISH-->
+
 <tr>
 	<td>PUBLISH_FORM_DESCRIPTION_FIELD</td>
-	<td>//div[contains(@class,'ddm-form-basic-info')]//p[contains(text(), '${key_formDescription}')]</td>
+	<td>//span[contains(@class,'lfr-ddm__default-page-header-description') and contains(., '${key_formDescription}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PUBLISH_FORM_NAME_FIELD</td>
-	<td>//h1[contains(@class,'form-name') and contains(.,'${key_formName}')]</td>
+	<td>//div[contains(@class,'lfr-ddm__default-page-header-title') and contains(.,'${key_formName}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PUBLISH_FORM_PUBLIC_URL</td>
 	<td>//div[contains(@class,'share-form-modal-item-link')]//input[@class='form-control' and @type='text']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PUBLISH_URL_FORM_PAGE</td>
-	<td>//div[contains(@class,'ddm-form-basic-info')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -345,7 +385,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SETTINGS_TAB-->
+
 <tr>
 	<td>SETTINGS_TAB_EMAIL_NOTIFICATIONS</td>
 	<td>//a[contains(@class,'tab-content') and contains(.,'Notifications')] | //span[contains(text(),'Notifications')]</td>
@@ -367,14 +409,26 @@
 	<td></td>
 </tr>
 <tr>
+	<td>MODULE_DEFINITION_TIMEOUT_JAVASCRIPT_LOADER</td>
+	<td>//div[@data-field-name="waitTimeout"]//input[@type="text"]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SETTINGS_TAB_SUBMISSIONS</td>
+	<td>//a[contains(@class,'tab-content') and contains(.,'Submissions')] | //span[contains(text(),'Submissions')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--FIELD-->
+
 <tr>
 	<td>FIELD_BODY</td>
-	<td>//div[contains(@class,'form-group')]//label[contains(text(),'${key_fieldName}')] | //div[contains(@class,'form-group')]//legend[contains(text(),'${key_fieldName}')] |//div[contains(@data-field-name,'${key_fieldName}')] | //div[contains(@class,'form-group')]//input[contains(@name,'${key_fieldName}')]/parent::div/parent::div</td>
+	<td>//div[contains(@class,'form-group')]//label[contains(text(),'${key_fieldName}')] | //div[contains(@class,'form-group')]//legend[contains(text(),'${key_fieldName}')] |//div[contains(@data-field-name,'${key_fieldName}')] | //div[contains(@class,'form-group')]//input[contains(@name,'${key_fieldName}')]/parent::div/parent::div | //div[contains(@class,'custom-checkbox')]//span[text()='${key_fieldName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -394,7 +448,7 @@
 </tr>
 <tr>
 	<td>FIELD_LABEL</td>
-	<td>//div[@data-field-name='${key_fieldName}' and contains(@class,'ddm-field')]//label[contains(@class,'ddm-label')] | //div[contains(@class,'ddm-field-container')]//label[text()='${key_fieldName}'] | //div[@data-field-name='${key_fieldName}' and contains(@class,'ddm-field')]//legend[contains(@class,'lfr-ddm-legend')] | //div[contains(@class,'ddm-field-container')]//legend[text()='${key_fieldName}']</td>
+	<td>//div[@data-field-name='${key_fieldName}' and contains(@class,'ddm-field')]//label[contains(@class,'ddm-label')] | //div[contains(@class,'ddm-field-container')]//label[text()='${key_fieldName}'] | //div[@data-field-name='${key_fieldName}' and contains(@class,'ddm-field')]//label[contains(@class,'lfr-ddm-legend')] | //div[contains(@class,'ddm-field-container')]//legend[text()='${key_fieldName}'] | //div[@class='ddm-field']//label[text()='${key_fieldName}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -422,10 +476,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SIDEBAR -->
+
 <tr>
 	<td>BUILDER_SIDEBAR_PANEL</td>
-	<td>//div[contains(@class,'sidebar')]//*[@*='Builder']</td>
+	<td>//div[contains(@class,'sidebar')]//*[@*='Builder'] | //div[contains(@class,'builder-sidebar')]//div[contains(@class,'sidebar-body')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -495,12 +551,17 @@
 </tr>
 <tr>
 	<td>SIDEBAR_ELLIPSIS</td>
-	<td>//div[contains(@class,'ddm-field-actions-container')]//button[contains(@class,'dropdown-toggle btn btn-monospaced btn-unstyled')]</td>
+	<td>//div[contains(@class,'form-builder-layout')]//label[text()='${key_fieldName}']/../../../..//button[@aria-label='Actions'] | //div[contains(@class,'ddm-field-actions-container')]//span[text()='${key_fieldName}']/..//button[@aria-label='Actions']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SIDEBAR_FIELDS_TAB</td>
 	<td>//*[contains(@class,'nav-link') and .='Fields']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SIDEBAR_FIELDS_TAB_LOCALE</td>
+	<td>//*[contains(@class,'nav-link') and .='${key_localeFields}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -548,7 +609,37 @@
 	<td></td>
 	<td></td>
 </tr>
+
+<!--DATA_PROVIDER_INPUT_PARAMETER-->
+
+<tr>
+	<td>DATA_PROVIDER_INPUT_PARAMETER_LABEL_FIELD</td>
+	<td>//div[contains(@data-field-name,'inputParameters')]//input[@type='text' and contains(@name,'inputParameters') and contains(@placeholder,'label')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATA_PROVIDER_INPUT_PARAMETER_NAME_FIELD</td>
+	<td>//div[contains(@data-field-name,'inputParameters')]//input[@type='text' and contains(@name,'inputParameters') and contains(@placeholder,'parameter')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATA_PROVIDER_INPUT_PARAMETER_TYPE_FIELD</td>
+	<td>//div[contains(@data-field-name, 'inputParameters')]//button[contains(@aria-labelledby, 'inputParameters')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DATA_PROVIDER_INPUT_PARAMETER_TYPE_FIELD_OPTIONS_LIST</td>
+	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//*//li/button[contains(.,'${key_inputParameterType}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
 <!--DATA_PROVIDER_OUTPUT_PARAMETER-->
+
 <tr>
 	<td>DATA_PROVIDER_OUTPUT_PARAMETER_PATH_FIELD_2</td>
 	<td>//div[@data-field-name='outputParameters'][2]//div[@data-field-name='outputParameterPath']//input[contains(@class,'ddm-field-text')]</td>
@@ -561,22 +652,17 @@
 </tr>
 <tr>
 	<td>DATA_PROVIDER_OUTPUT_PARAMETER_TYPE_FIELD</td>
-	<td>//div[contains(@data-field-name,'outputParameters')]//div[contains(@data-field-name,'outputParameterType')]//div[contains(@class,'form-builder-select-field')]</td>
+	<td>xpath=(//div[contains(@data-field-name, 'outputParameters')]//button[contains(@aria-labelledby, 'outputParameterType')])[1]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DATA_PROVIDER_OUTPUT_PARAMETER_TYPE_FIELD_2</td>
-	<td>//div[contains(@data-field-name,'outputParameters')]/following-sibling::div//div[contains(@data-field-name,'outputParameterType')]//div[contains(@class,'form-builder-select-field')]</td>
+	<td>//div[contains(@data-field-name,'outputParameters')]/following-sibling::div//div[contains(@data-field-name,'outputParameterType')]//button[contains(@class,'form-control')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DATA_PROVIDER_OUTPUT_PARAMETER_TYPE_FIELD_OPTIONS_LIST</td>
-	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//li[contains(.,'${key_outputParameterType}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>DATA_PROVIDER_OUTPUT_PARAMETER_TYPE_FIELD_OPTIONS_LIST_2</td>
-	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//li[contains(.,'${key_outputParameterType}')]</td>
+	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//*//li/button[contains(.,'${key_outputParameterType}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -589,7 +675,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--DATA_PROVIDER_PERMISSIONS_PARAMETER-->
+
 <tr>
 	<td>DATA_PROVIDER_PERMISSIONS_PARAMETER_PANEL</td>
 	<td>//div[contains(@id,'dataProviderPermissions')]//a[contains(@class,'collapse-icon')]</td>
@@ -605,7 +693,9 @@
 	<td>//button[contains(@class,'disabled') and contains (text(),'${key_value}')]</td>
 	<td></td>
 </tr>
+
 <!--PAGE-->
+
 <tr>
 	<td>PAGE_MOVE_DISABLED</td>
 	<td>//input[contains(@class,'page-header-title') and @value='${key_formPageName}']/../../../../..//button[@disabled and @title='${key_movePage}']</td>
@@ -623,12 +713,78 @@
 </tr>
 <tr>
 	<td>PAGE_NAME</td>
-	<td>//div[contains(@class,'ddm-form-page-container wizard')]['${key_pageName}']//h2[contains(text(),'${pageName}')]</td>
+	<td>//div[contains(@class,'ddm-form-page-container wizard')]['${key_pageName}']//div[contains(text(),'${pageName}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PAGE_PAGINATION</td>
-	<td>//input[contains(@class,'page-header-title') and @value='${key_fieldName}']/../../../h5[contains(.,'${key_pagination}')]</td>
+	<td>//input[contains(@class,'page-header-title') and @value='${key_fieldName}']/../../../div[contains(@class,'h5') and contains(.,'${key_pagination}')]</td>
+	<td></td>
+</tr>
+
+<!--SUBMISSIONS-->
+
+<tr>
+	<td>EXPIRATION_DATE_DISABLED</td>
+	<td>//input[contains(@name, 'datePicker') and contains(@type, 'hidden')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKBOX_SUBMISSIONS</td>
+	<td>//input[contains(@type, 'checkbox')]//..//span[contains(text(), '${key_checkboxOption}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EXPIRATION_DATE</td>
+	<td>//div[contains(@class, 'input-group-item')]/ancestor::div//input[contains(@placeholder, '${value}') and contains(@value, '${value}')]/../label[contains(text(), 'Expiration Date')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FEEDBACK_MESSAGE</td>
+	<td>//div[contains(@class, 'form-feedback-group')]//div[contains(@class, 'form-feedback-item') and contains(text(), '${key_feedbackMessage}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LANGUAGE_ICON</td>
+	<td>//div[contains(@class, 'ddm-field')]//label[contains(., '${key_fieldLabel}')]/..//../button[contains(@data-testid, 'triggerButton')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LANGUAGE_ICON_SELECTED</td>
+	<td>//div[contains(@class, 'dropdown-menu')]//button[contains(@class, 'dropdown-item') and contains(text(), '${key_language}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_EXISTING_SUBMISSIONS</td>
+	<td>//button[contains(text(), 'Preview Existing Submissions')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FORM_ANSWER</td>
+	<td>//li[contains(text(),'${key_reportData}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FORM_ANSWER_SINGLE_SELECTION</td>
+	<td>//div[contains(@class, 'card-header') and contains(., 'Single Selection')]/..//following-sibling::div/div[@class='legend-list' and contains(., '${optionValue}')]</td>
+	<td></td>
+</tr>
+
+<!--LANGUAGE-->
+
+<tr>
+	<td>LANGUAGE_ADD_BUTTON</td>
+	<td>//div[contains(@class, 'ddm-translation-manager')]//button[contains(@class, 'btn-outline-borderless')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LANGUAGE_FORM_SELECT</td>
+	<td>//li/button[contains(@class, 'dropdown-item') and contains(text(), '${key_language}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LANGUAGE_FORM_SELECTED</td>
+	<td>//button//span[contains(text(),'${key_language}')]</td>
 	<td></td>
 </tr>
 </tbody>

@@ -1,25 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.fragment.exception.DuplicateFragmentCompositionExternalReferenceCodeException;
 import com.liferay.fragment.exception.FragmentCompositionNameException;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.service.FragmentCompositionLocalService;
-import com.liferay.fragment.util.FragmentTestUtil;
+import com.liferay.fragment.test.util.FragmentTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -31,6 +23,7 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -69,10 +62,74 @@ public class FragmentCompositionLocalServiceTest {
 			_group.getGroupId());
 	}
 
+	@Test
+	public void testAddFragmentComposition() throws Exception {
+		FragmentComposition fragmentComposition =
+			_fragmentCompositionLocalService.addFragmentComposition(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				_group.getGroupId(),
+				_fragmentCollection.getFragmentCollectionId(),
+				StringUtil.randomId(), RandomTestUtil.randomString(),
+				StringPool.BLANK, StringPool.BLANK, 0,
+				WorkflowConstants.STATUS_APPROVED,
+				ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertTrue(
+			Validator.isNotNull(
+				fragmentComposition.getExternalReferenceCode()));
+	}
+
+	@Test(
+		expected = DuplicateFragmentCompositionExternalReferenceCodeException.class
+	)
+	public void testAddFragmentCompositionWithExistingExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = RandomTestUtil.randomString();
+
+		_fragmentCompositionLocalService.addFragmentComposition(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
+			StringUtil.randomId(), RandomTestUtil.randomString(),
+			StringPool.BLANK, StringPool.BLANK, 0,
+			WorkflowConstants.STATUS_APPROVED,
+			ServiceContextTestUtil.getServiceContext());
+		_fragmentCompositionLocalService.addFragmentComposition(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
+			StringUtil.randomId(), RandomTestUtil.randomString(),
+			StringPool.BLANK, StringPool.BLANK, 0,
+			WorkflowConstants.STATUS_APPROVED,
+			ServiceContextTestUtil.getServiceContext());
+	}
+
+	@Test
+	public void testDeleteFragmentCompositionByExternalReferenceCode()
+		throws Exception {
+
+		FragmentComposition fragmentComposition =
+			_fragmentCompositionLocalService.addFragmentComposition(
+				RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+				_group.getGroupId(),
+				_fragmentCollection.getFragmentCollectionId(),
+				StringUtil.randomId(), RandomTestUtil.randomString(),
+				StringPool.BLANK, StringPool.BLANK, 0,
+				WorkflowConstants.STATUS_APPROVED,
+				ServiceContextTestUtil.getServiceContext());
+
+		_fragmentCompositionLocalService.deleteFragmentComposition(
+			fragmentComposition.getExternalReferenceCode(),
+			fragmentComposition.getGroupId());
+
+		Assert.assertNull(
+			_fragmentCompositionLocalService.fetchFragmentComposition(
+				fragmentComposition.getFragmentCompositionId()));
+	}
+
 	@Test(expected = FragmentCompositionNameException.class)
 	public void testFragmentCompositionNameRequired() throws Exception {
 		_fragmentCompositionLocalService.addFragmentComposition(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			_fragmentCollection.getFragmentCollectionId(),
 			StringUtil.randomId(), StringPool.BLANK, StringPool.BLANK,
 			StringPool.BLANK, 0, WorkflowConstants.STATUS_APPROVED,
@@ -94,7 +151,7 @@ public class FragmentCompositionLocalServiceTest {
 
 		FragmentComposition fragmentComposition =
 			_fragmentCompositionLocalService.addFragmentComposition(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				_fragmentCollection.getFragmentCollectionId(),
 				fragmentCompositionKey, name, description, data,
 				previewFileEntryId, status, serviceContext);

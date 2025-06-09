@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -60,13 +51,14 @@ public class EmailAddressLocalServiceUtil {
 	}
 
 	public static EmailAddress addEmailAddress(
-			long userId, String className, long classPK, String address,
-			long typeId, boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String className,
+			long classPK, String address, long listTypeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addEmailAddress(
-			userId, className, classPK, address, typeId, primary,
-			serviceContext);
+			externalReferenceCode, userId, className, classPK, address,
+			listTypeId, primary, serviceContext);
 	}
 
 	/**
@@ -225,6 +217,13 @@ public class EmailAddressLocalServiceUtil {
 		return getService().fetchEmailAddress(emailAddressId);
 	}
 
+	public static EmailAddress fetchEmailAddressByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchEmailAddressByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the email address with the matching UUID and company.
 	 *
@@ -256,6 +255,14 @@ public class EmailAddressLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getEmailAddress(emailAddressId);
+	}
+
+	public static EmailAddress getEmailAddressByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getEmailAddressByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -355,15 +362,21 @@ public class EmailAddressLocalServiceUtil {
 	}
 
 	public static EmailAddress updateEmailAddress(
-			long emailAddressId, String address, long typeId, boolean primary)
+			String externalReferenceCode, long emailAddressId, String address,
+			long listTypeId, boolean primary)
 		throws PortalException {
 
 		return getService().updateEmailAddress(
-			emailAddressId, address, typeId, primary);
+			externalReferenceCode, emailAddressId, address, listTypeId,
+			primary);
 	}
 
 	public static EmailAddressLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(EmailAddressLocalService service) {
+		_service = service;
 	}
 
 	private static volatile EmailAddressLocalService _service;

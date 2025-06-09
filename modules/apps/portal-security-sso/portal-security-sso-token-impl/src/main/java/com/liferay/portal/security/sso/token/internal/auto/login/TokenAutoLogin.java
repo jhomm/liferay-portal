@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.token.internal.auto.login;
@@ -18,12 +9,11 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.security.auto.login.AutoLogin;
 import com.liferay.portal.kernel.security.auto.login.BaseAutoLogin;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -32,19 +22,18 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.security.exportimport.UserImporter;
+import com.liferay.portal.security.ldap.exportimport.LDAPUserImporter;
 import com.liferay.portal.security.sso.token.configuration.TokenConfiguration;
 import com.liferay.portal.security.sso.token.constants.TokenConstants;
 import com.liferay.portal.security.sso.token.security.auth.TokenRetriever;
 import com.liferay.portal.util.PropsValues;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
@@ -60,21 +49,20 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	configurationPid = "com.liferay.portal.security.sso.token.internal.configuration.TokenConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL,
+	configurationPid = "com.liferay.portal.security.sso.token.configuration.TokenConfiguration",
 	service = AutoLogin.class
 )
 public class TokenAutoLogin extends BaseAutoLogin {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_tokenRetrievers = ServiceTrackerMapFactory.openSingleValueMap(
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, TokenRetriever.class, "token.location");
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_tokenRetrievers.close();
+		_serviceTrackerMap.close();
 	}
 
 	@Override
@@ -85,21 +73,21 @@ public class TokenAutoLogin extends BaseAutoLogin {
 
 		long companyId = _portal.getCompanyId(httpServletRequest);
 
-		TokenConfiguration tokenCompanyServiceSettings =
+		TokenConfiguration tokenConfiguration =
 			_configurationProvider.getConfiguration(
 				TokenConfiguration.class,
 				new CompanyServiceSettingsLocator(
 					companyId, TokenConstants.SERVICE_NAME));
 
-		if (!tokenCompanyServiceSettings.enabled()) {
+		if (!tokenConfiguration.enabled()) {
 			return null;
 		}
 
-		String userTokenName = tokenCompanyServiceSettings.userTokenName();
+		String userTokenName = tokenConfiguration.userTokenName();
 
-		String tokenLocation = tokenCompanyServiceSettings.tokenLocation();
+		String tokenLocation = tokenConfiguration.tokenLocation();
 
-		TokenRetriever tokenRetriever = _tokenRetrievers.getService(
+		TokenRetriever tokenRetriever = _serviceTrackerMap.getService(
 			tokenLocation);
 
 		if (tokenRetriever == null) {
@@ -121,7 +109,7 @@ public class TokenAutoLogin extends BaseAutoLogin {
 			return null;
 		}
 
-		User user = getUser(companyId, login, tokenCompanyServiceSettings);
+		User user = _getUser(companyId, login, tokenConfiguration);
 
 		addRedirect(httpServletRequest);
 
@@ -134,10 +122,9 @@ public class TokenAutoLogin extends BaseAutoLogin {
 		return credentials;
 	}
 
-	protected User getUser(
-			long companyId, String login,
-			TokenConfiguration tokenCompanyServiceSettings)
-		throws PortalException {
+	private User _getUser(
+			long companyId, String login, TokenConfiguration tokenConfiguration)
+		throws Exception {
 
 		User user = null;
 
@@ -145,14 +132,14 @@ public class TokenAutoLogin extends BaseAutoLogin {
 			companyId, PropsKeys.COMPANY_SECURITY_AUTH_TYPE,
 			PropsValues.COMPANY_SECURITY_AUTH_TYPE);
 
-		if (tokenCompanyServiceSettings.importFromLDAP()) {
+		if (tokenConfiguration.importFromLDAP()) {
 			try {
 				if (authType.equals(CompanyConstants.AUTH_TYPE_SN)) {
-					user = _userImporter.importUser(
+					user = _ldapUserImporter.importUser(
 						companyId, StringPool.BLANK, login);
 				}
 				else if (authType.equals(CompanyConstants.AUTH_TYPE_EA)) {
-					user = _userImporter.importUser(
+					user = _ldapUserImporter.importUser(
 						companyId, login, StringPool.BLANK);
 				}
 				else {
@@ -199,32 +186,20 @@ public class TokenAutoLogin extends BaseAutoLogin {
 		return user;
 	}
 
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserImporter(UserImporter userImporter) {
-		_userImporter = userImporter;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(TokenAutoLogin.class);
 
+	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private LDAPUserImporter _ldapUserImporter;
 
 	@Reference
 	private Portal _portal;
 
-	private ServiceTrackerMap<String, TokenRetriever> _tokenRetrievers;
-	private UserImporter _userImporter;
+	private ServiceTrackerMap<String, TokenRetriever> _serviceTrackerMap;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

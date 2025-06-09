@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -20,6 +11,8 @@ package com.liferay.portal.kernel.util;
 public interface WebKeys {
 
 	public static final String ADDRESS = "ADDRESS";
+
+	public static final String ALL_PORTLETS = "ALL_PORTLETS";
 
 	public static final String ASSET_ADDON_ENTRIES = "ASSET_ADDON_ENTRIES";
 
@@ -63,6 +56,8 @@ public interface WebKeys {
 	public static final String BEAN_FILTER_NAMES = "BEAN_FILTER_NAMES";
 
 	public static final String BEAN_PORTLET_IDS = "BEAN_PORTLET_IDS";
+
+	public static final String BLOCK_LOGIN_PROMPT = "BLOCK_LOGIN_PROMPT";
 
 	public static final String BLOGS_CATEGORY = "BLOGS_CATEGORY";
 
@@ -197,9 +192,6 @@ public interface WebKeys {
 
 	public static final String GOOGLE_GADGET = "GOOGLE_GADGET";
 
-	public static final String GOOGLE_INCOMPLETE_USER_ID =
-		"GOOGLE_INCOMPLETE_USER_ID";
-
 	public static final String GROUP = "GROUP";
 
 	public static final String HTTPS_INITIAL = "HTTPS_INITIAL";
@@ -323,7 +315,12 @@ public interface WebKeys {
 
 	public static final String LAYOUTS = "LAYOUTS";
 
+	public static final String LINKED_ASSET_ENTRY_IDS =
+		"LIFERAY_SHARED_LINKED_ASSET_ENTRY_IDS";
+
 	public static final String LOCALE = "LOCALE";
+
+	public static final String LOGIN_REQUEST = "LOGIN_REQUEST";
 
 	public static final String LOGOUT = "LOGOUT";
 
@@ -397,25 +394,17 @@ public interface WebKeys {
 	public static final String MESSAGE_BOARDS_TREE_WALKER_VIEWABLE_THREAD =
 		"MESSAGE_BOARDS_TREE_WALKER_VIEWABLE_THREAD";
 
+	public static final String MFA_ENABLED = "MFA_ENABLED";
+
 	public static final String NETVIBES = "NETVIBES";
 
 	public static final String NOTES_LIST = "NOTES_LIST";
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String OPEN_ID_LOGIN = "OPEN_ID_LOGIN";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String OPEN_ID_LOGIN_PENDING = "OPEN_ID_LOGIN_PENDING";
-
 	public static final String ORG_LABOR = "ORG_LABOR";
 
 	public static final String ORGANIZATION = "ORGANIZATION";
+
+	public static final String ORIGINAL_PATH_INFO = "ORIGINAL_PATH_INFO";
 
 	public static final String OSGI_BUNDLE = "OSGI_BUNDLE";
 
@@ -434,25 +423,13 @@ public interface WebKeys {
 
 	public static final String PAGE_KEYWORDS = "LIFERAY_SHARED_PAGE_KEYWORDS";
 
+	public static final String PAGE_ROBOTS = "LIFERAY_SHARED_PAGE_ROBOTS";
+
 	public static final String PAGE_SUBTITLE = "LIFERAY_SHARED_PAGE_SUBTITLE";
 
 	public static final String PAGE_TITLE = "LIFERAY_SHARED_PAGE_TITLE";
 
 	public static final String PAGE_TOP = "PAGE_TOP";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String PARALLEL_RENDERING_MERGE_LOCK =
-		"PARALLEL_RENDERING_MERGE_LOCK";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String PARALLEL_RENDERING_TIMEOUT_ERROR =
-		"PARALLEL_RENDERING_TIMEOUT_ERROR";
 
 	public static final String PASSWORD_POLICY = "PASSWORD_POLICY";
 
@@ -472,13 +449,6 @@ public interface WebKeys {
 		"LIFERAY_SHARED_PORTAL_MESSAGES";
 
 	public static final String PORTAL_PREFERENCES = "PORTAL_PREFERENCES";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String PORTAL_RESILIENCY_ACTION =
-		"PORTAL_RESILIENCY_ACTION";
 
 	public static final String PORTAL_SERVLET_URL_PATTERNS =
 		"PORTAL_SERVLET_URL_PATTERNS";
@@ -512,13 +482,6 @@ public interface WebKeys {
 
 	public static final String PORTLET_ID = "PORTLET_ID";
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String PORTLET_PARALLEL_RENDER =
-		"PORTLET_PARALLEL_RENDER";
-
 	public static final String PORTLET_PREFERENCES_MAP =
 		"PORTLET_PREFERENCES_MAP";
 
@@ -529,7 +492,7 @@ public interface WebKeys {
 		"PORTLET_RENDER_PARAMETERS_";
 
 	public static final String PORTLET_RESOURCE_STATIC_URLS =
-		"PORTLET_RESOURCE_STATIC_URLS";
+		"LIFERAY_SHARED_PORTLET_RESOURCE_STATIC_URLS";
 
 	public static final String PORTLET_SESSION = "PORTLET_SESSION";
 
@@ -613,12 +576,6 @@ public interface WebKeys {
 	public static final String SERVLET_CONTEXT_INCLUDE_FILTER_THEME =
 		"SERVLET_CONTEXT_INCLUDE_FILTER_THEME";
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SERVLET_MAPPING = "SERVLET_MAPPING";
-
 	public static final String SERVLET_PATH = "SERVLET_PATH";
 
 	public static final String SESSION_LISTENER = "SESSION_LISTENER";
@@ -662,70 +619,6 @@ public interface WebKeys {
 
 	public static final String SOURCE_VERSION = "SOURCE_VERSION";
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_ACTION_RESULT =
-		"SPI_AGENT_ACTION_RESULT";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_EVENT = "SPI_AGENT_EVENT";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_EVENT_RESULT =
-		"SPI_AGENT_EVENT_RESULT";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_LAYOUT = "SPI_AGENT_LAYOUT";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_LAYOUT_TYPE_SETTINGS =
-		"SPI_AGENT_LAYOUT_TYPE_SETTINGS";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_LIFECYCLE = "SPI_AGENT_LIFECYCLE";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_ORIGINAL_RESPONSE =
-		"SPI_AGENT_ORIGINAL_RESPONSE";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_PORTLET = "SPI_AGENT_PORTLET";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_REQUEST = "SPI_AGENT_REQUEST";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final String SPI_AGENT_RESPONSE = "SPI_AGENT_RESPONSE";
-
 	public static final String STALE_SESSION = "STALE_SESSION";
 
 	public static final String STARTUP_FINISHED = "STARTUP_FINISHED";
@@ -756,6 +649,8 @@ public interface WebKeys {
 
 	public static final String TITLE = "TITLE";
 
+	public static final String TITLE_SET_PASSWORD = "TITLE_SET_PASSWORD";
+
 	public static final String TRANSLATOR_TRANSLATION =
 		"TRANSLATOR_TRANSLATION";
 
@@ -781,9 +676,13 @@ public interface WebKeys {
 	public static final String UNIQUE_ELEMENT_IDS =
 		"LIFERAY_SHARED_UNIQUE_ELEMENT_IDS";
 
+	public static final String UNKNOWN_VIRTUAL_HOST = "UNKNOWN_VIRTUAL_HOST";
+
 	public static final String UPLOAD_EXCEPTION = "UPLOAD_EXCEPTION";
 
 	public static final String USER = "USER";
+
+	public static final String USER_DIGEST = "USER_DIGEST";
 
 	public static final String USER_GROUP = "USER_GROUP";
 
@@ -791,7 +690,13 @@ public interface WebKeys {
 
 	public static final String USER_PASSWORD = "USER_PASSWORD";
 
+	public static final String USER_PASSWORD_MODIFIED_TIME =
+		"USER_PASSWORD_MODIFIED_TIME";
+
 	public static final String USERS_NOTIFIED = "USERS_NOTIFIED";
+
+	public static final String VIRTUAL_HOST_LANGUAGE_ID =
+		"VIRTUAL_HOST_LANGUAGE_ID";
 
 	public static final String VIRTUAL_HOST_LAYOUT_SET =
 		"VIRTUAL_HOST_LAYOUT_SET";
@@ -823,7 +728,7 @@ public interface WebKeys {
 
 	public static final String WORKFLOW_TASK = "WORKFLOW_TASK";
 
-	public static final String XUGGLER_INSTALL_STATUS =
-		"XUGGLER_INSTALL_STATUS";
+	public static final String WORKFLOW_TASK_READ_ONLY =
+		"WORKFLOW_TASK_READ_ONLY";
 
 }

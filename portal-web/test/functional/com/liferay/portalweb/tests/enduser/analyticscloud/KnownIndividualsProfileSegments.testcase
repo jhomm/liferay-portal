@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -23,10 +25,6 @@ definition {
 			ACUtils.addSiteAndPage();
 		}
 
-		task ("Connect the DXP to AC") {
-			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
 		task ("Add 2 new users") {
 			for (var n : list "1,2") {
 				JSONUser.addUser(
@@ -34,110 +32,46 @@ definition {
 					userFirstName = "user${n}",
 					userLastName = "user${n}",
 					userScreenName = "user${n}");
+
+				JSONUser.setFirstPassword(
+					agreeToTermsAndAnswerReminderQuery = "true",
+					requireReset = "false",
+					userEmailAddress = "user${n}@liferay.com");
 			}
 		}
 
-		task ("Sync the Contact Data") {
-			ACDXPSettings.syncNewContactData();
+		task ("Connect the DXP to AC") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
 		}
 
-		JSONUser.tearDownNonAdminUsers();
-
 		ACUtils.tearDownAC();
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8992 | Test Summary: Clicking an associated segment navigates to segment profile"
-	@priority = "3"
-	test AssertIndividualOverviewAssociatedSegmentProfile {
-		var emailList = "user1@liferay.com,user2@liferay.com";
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
-		task ("View the page as different users") {
-			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
-				pageName = "AC Page",
-				siteName = "Site Name");
-
-			ACUtils.closeAllSessionsAndWait();
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-		}
-
-		task ("Add 2 new Static Segments") {
-			for (var segmentName : list "Static Segment Test1,Static Segment Test2") {
-				ACNavigation.goToSegments();
-
-				ACSegments.createStaticSegment();
-
-				ACSegments.nameSegment(segmentName = "${segmentName}");
-
-				if ("${segmentName}" == "Static Segment Test1") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1,user2 user2");
-				}
-
-				if ("${segmentName}" == "Static Segment Test2") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1");
-				}
-
-				ACSegments.saveSegment();
-			}
-		}
-
-		task ("Go to the Individual > KnownIndividual > Segments") {
-			ACNavigation.goToIndividuals();
-
-			ACIndividualsDashboard.goToKnownIndividualsTab();
-
-			ACIndividualsDashboard.goToKnownIndividualDetails(individualName = "user1 user1");
-		}
-
-		task ("Assert clicking an associated segment in Associated Segment card list navigates to segment profile") {
-			ACUtils.searchBar(
-				cardTitle = "Associated Segments",
-				searchItem = "Test1");
-
-			ACIndividualsDashboard.assertSegmentInAssociatedSegmentsCard(itemName = "Static Segment Test1");
-
-			ACNavigation.openItem(itemName = "Static Segment Test1");
-
-			ACNavigation.switchTab(tabName = "Membership");
-
-			ACUtils.viewNameList(nameList = "user1 user1");
-		}
-	}
-
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8993 | Test Summary: Selecting a Segment in Individuals"
-	@priority = "3"
+	@priority = 3
 	test AssertIndividualsSegmentSelected {
-		var emailList = "user1@liferay.com,user2@liferay.com";
+		property test.run.type = "single";
 
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+		var emailList = "user1@liferay.com";
 
 		task ("View the page as different users") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				actionType = "View WC",
+				documentTitleList = "View Page 1,View Page 2,View Page 3",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -147,7 +81,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add 2 new Static Segments") {
@@ -156,15 +90,9 @@ definition {
 
 				ACSegments.createStaticSegment();
 
-				ACSegments.nameSegment(segmentName = "${segmentName}");
+				ACUtils.setItemName(itemName = ${segmentName});
 
-				if ("${segmentName}" == "Static Segment Test1") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1,user2 user2");
-				}
-
-				if ("${segmentName}" == "Static Segment Test2") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1");
-				}
+				ACSegments.addStaticMember(tableMember = "user1 user1");
 
 				ACSegments.saveSegment();
 			}
@@ -194,29 +122,15 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8991 | Test Summary: Order an Individual's Associated Segments List"
-	@priority = "3"
+	@priority = 3
 	test OrderIndividualsAssociatedSegments {
-		var emailList = "user1@liferay.com,user2@liferay.com,user3@liferay.com";
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
-		task ("Add one more new user") {
-			JSONUser.addUser(
-				userEmailAddress = "user3@liferay.com",
-				userFirstName = "user3",
-				userLastName = "user3",
-				userScreenName = "user3");
-		}
-
-		task ("Sync the Contact Data") {
-			ACDXPSettings.syncNewContactData();
-		}
+		property test.run.type = "single";
 
 		task ("View the page as different users") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				emailList = "user1@liferay.com",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -226,7 +140,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add 3 new Static Segments") {
@@ -235,19 +149,9 @@ definition {
 
 				ACSegments.createStaticSegment();
 
-				ACSegments.nameSegment(segmentName = "${segmentName}");
+				ACUtils.setItemName(itemName = ${segmentName});
 
-				if ("${segmentName}" == "Static Segment Test1") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1,user2 user2,user3 user3");
-				}
-
-				if ("${segmentName}" == "Static Segment Test2") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1,user2 user2");
-				}
-
-				if ("${segmentName}" == "Static Segment Test3") {
-					ACSegments.addStaticMultiMember(tableMember = "user1 user1");
-				}
+				ACSegments.addStaticMember(tableMember = "user1 user1");
 
 				ACSegments.saveSegment();
 			}
@@ -271,15 +175,15 @@ definition {
 
 		task ("Assert 3 segments in order filter by Name display") {
 			ACUtils.viewNameListInOrder(
-				index = "1",
+				index = 1,
 				name = "Static Segment Test1");
 
 			ACUtils.viewNameListInOrder(
-				index = "2",
+				index = 2,
 				name = "Static Segment Test2");
 
 			ACUtils.viewNameListInOrder(
-				index = "3",
+				index = 3,
 				name = "Static Segment Test3");
 		}
 
@@ -289,63 +193,61 @@ definition {
 
 		task ("Assert 3 segments in order filter by Name display") {
 			ACUtils.viewNameListInOrder(
-				index = "1",
+				index = 1,
 				name = "Static Segment Test3");
 
 			ACUtils.viewNameListInOrder(
-				index = "2",
+				index = 2,
 				name = "Static Segment Test2");
 
 			ACUtils.viewNameListInOrder(
-				index = "3",
+				index = 3,
 				name = "Static Segment Test1");
 		}
 
-		task ("Go to Segments and filter by "Membership"") {
+		task ("Go to Segments and filter by "Date Created"") {
 			ACSegments.filterAndOrderForSegLists(
-				filterName = "Members",
+				filterName = "Date Created",
 				key_dropdownName = "Order");
 		}
 
-		task ("Assert 3 segments in order filter by membership display") {
+		task ("Assert 3 segments in order filter by date created display") {
 			ACUtils.viewNameListInOrder(
-				index = "1",
-				name = "Static Segment Test1");
+				index = 1,
+				name = "Static Segment Test3");
 
 			ACUtils.viewNameListInOrder(
-				index = "2",
+				index = 2,
 				name = "Static Segment Test2");
 
 			ACUtils.viewNameListInOrder(
-				index = "3",
-				name = "Static Segment Test3");
+				index = 3,
+				name = "Static Segment Test1");
 		}
 
-		task ("Check descending arrow descending of table title of Membership") {
+		task ("Check descending arrow descending of the Date Created column") {
 			ACUtils.orderTableTitleArrow(type = "up");
 		}
 
-		task ("Assert 3 segments in order filter by membership display") {
+		task ("Assert 3 segments in order filter by date created display") {
 			ACUtils.viewNameListInOrder(
-				index = "1",
-				name = "Static Segment Test3");
+				index = 1,
+				name = "Static Segment Test1");
 
 			ACUtils.viewNameListInOrder(
-				index = "2",
+				index = 2,
 				name = "Static Segment Test2");
 
 			ACUtils.viewNameListInOrder(
-				index = "3",
-				name = "Static Segment Test1");
+				index = 3,
+				name = "Static Segment Test3");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9003 | Test Summary: Individuals Segment list has pagination"
-	@priority = "3"
+	@priority = 3
 	test PaginateIndividualsSegmentList {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+		property test.run.type = "single";
 
 		task ("View the page as the new user") {
 			User.logoutAndLoginPG(
@@ -353,6 +255,8 @@ definition {
 				userLoginFullName = "user1 user1");
 
 			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -362,7 +266,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add 6 new Static Segments") {
@@ -371,7 +275,7 @@ definition {
 
 				ACSegments.createStaticSegment();
 
-				ACSegments.nameSegment(segmentName = "${segmentName}");
+				ACUtils.setItemName(itemName = ${segmentName});
 
 				ACSegments.addStaticMember(tableMember = "user1 user1");
 
@@ -391,7 +295,7 @@ definition {
 
 		task ("Assert 6 segments display") {
 			for (var segmentName : list "Static Segment Test1,Static Segment Test2,Static Segment Test3,Static Segment Test4,Static Segment Test5,Static Segment Test6") {
-				ACSegments.assertSegmentPresent(segmentName = "${segmentName}");
+				ACSegments.assertSegmentPresent(segmentName = ${segmentName});
 			}
 		}
 
@@ -402,48 +306,50 @@ definition {
 
 			ACUtils.viewResultsMessage(results = "Showing 1 to 6 of 6 entries.");
 
-			ACUtils.viewResultsPages(pageNumber = "1");
+			ACUtils.viewResultsPages(pageNumber = 1);
 		}
 
-		task ("Change the pagination to "5"") {
-			ACUtils.changePagination(itemsPerPage = "5");
+		task ("Change the pagination to "4"") {
+			ACUtils.changePagination(itemsPerPage = 4);
 
-			for (var segmentName : list "Static Segment Test1,Static Segment Test2,Static Segment Test3,Static Segment Test4,Static Segment Test5") {
-				ACSegments.assertSegmentPresent(segmentName = "${segmentName}");
+			for (var segmentName : list "Static Segment Test1,Static Segment Test2,Static Segment Test3,Static Segment Test4") {
+				ACSegments.assertSegmentPresent(segmentName = ${segmentName});
 			}
 
-			ACUtils.viewResultsMessage(results = "Showing 1 to 5 of 6 entries.");
+			ACUtils.viewResultsMessage(results = "Showing 1 to 4 of 6 entries.");
 
-			ACUtils.viewResultsPages(pageNumber = "1");
+			ACUtils.viewResultsPages(pageNumber = 1);
 
-			ACUtils.viewResultsPages(pageNumber = "2");
+			ACUtils.viewResultsPages(pageNumber = 2);
 		}
 
 		task ("Page number display 1 2 and check previous next button") {
 			ACUtils.checkPreviousNextButton(nextButton = "true");
 
-			ACUtils.viewResultsMessage(results = "Showing 6 to 6 of 6 entries.");
+			ACUtils.viewResultsMessage(results = "Showing 5 to 6 of 6 entries.");
+
+			ACSegments.assertSegmentPresent(segmentName = "Static Segment Test5");
 
 			ACSegments.assertSegmentPresent(segmentName = "Static Segment Test6");
 
 			ACUtils.checkPreviousNextButton(previousButton = "true");
 
-			ACUtils.viewResultsMessage(results = "Showing 1 to 5 of 6 entries.");
+			ACUtils.viewResultsMessage(results = "Showing 1 to 4 of 6 entries.");
 		}
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8948 | Test Summary: Segments the individual Belongs To appear in the list"
-	@priority = "5"
+	@description = "Feature ID: Legacy | Automation ID: LRAC-8948 | Test Summary: Segments the individual Belongs To appear in the list and Clicking an associated segment navigates to segment profile"
+	@priority = 5
 	test SegmentsIndividualBelongsToAppearInList {
-		var emailList = "user1@liferay.com,user2@liferay.com";
+		property test.run.type = "single";
 
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+		var emailList = "user1@liferay.com,user2@liferay.com";
 
 		task ("View the page as different users") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4,5",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name");
 
@@ -453,7 +359,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add 2 new Static Segments") {
@@ -462,13 +368,13 @@ definition {
 
 				ACSegments.createStaticSegment();
 
-				ACSegments.nameSegment(segmentName = "${segmentName}");
+				ACUtils.setItemName(itemName = ${segmentName});
 
-				if ("${segmentName}" == "Static Segment Test1") {
+				if (${segmentName} == "Static Segment Test1") {
 					ACSegments.addStaticMultiMember(tableMember = "user1 user1,user2 user2");
 				}
 
-				if ("${segmentName}" == "Static Segment Test2") {
+				if (${segmentName} == "Static Segment Test2") {
 					ACSegments.addStaticMultiMember(tableMember = "user1 user1");
 				}
 
@@ -476,29 +382,43 @@ definition {
 			}
 		}
 
-		task ("Go to the Individual > KnownIndividual > Segments") {
+		task ("Go to the Individual > KnownIndividual") {
 			ACNavigation.goToIndividuals();
 
 			ACIndividualsDashboard.goToKnownIndividualsTab();
 
 			ACIndividualsDashboard.goToKnownIndividualDetails(individualName = "user1 user1");
+		}
 
+		task ("Check if the Associated Segment appears in the overview tab") {
+			for (var individualAttribute : list "Static Segment Test1,Static Segment Test2") {
+				ACIndividualsDashboard.assertSegmentInAssociatedSegmentsCard(itemName = ${individualAttribute});
+			}
+		}
+
+		task ("Go to the Segments tab") {
 			ACNavigation.switchTab(tabName = "Segments");
 		}
 
 		task ("Assert segments the individual Belongs To appear in the list") {
 			for (var individualAttribute : list "Static Segment Test1,Static Segment Test2") {
-				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "${individualAttribute}");
+				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = ${individualAttribute});
 			}
 		}
 
-		task ("Go to the Individual > KnownIndividual > Segments") {
+		task ("Go to the Individual > KnownIndividual") {
 			ACNavigation.goToIndividuals();
 
 			ACIndividualsDashboard.goToKnownIndividualsTab();
 
 			ACIndividualsDashboard.goToKnownIndividualDetails(individualName = "user2 user2");
+		}
 
+		task ("Check if the Associated Segment appears in the overview tab") {
+			ACIndividualsDashboard.assertSegmentInAssociatedSegmentsCard(itemName = "Static Segment Test1");
+		}
+
+		task ("Go to the Segments tab") {
 			ACNavigation.switchTab(tabName = "Segments");
 		}
 
@@ -506,6 +426,14 @@ definition {
 			ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "Static Segment Test1");
 
 			ACIndividualsDashboard.assertNoIndividualAttribute(key_individualAttribute = "Static Segment Test2");
+		}
+
+		task ("Check that clicking an associated segment in Associated Segment card list navigates to segment profile") {
+			ACNavigation.openItem(itemName = "Static Segment Test1");
+
+			ACNavigation.switchTab(tabName = "Membership");
+
+			ACUtils.viewNameList(nameList = "user1 user1,user2 user2");
 		}
 	}
 

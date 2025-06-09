@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.google.drive.web.internal.portlet.toolbar.contributor;
@@ -18,7 +9,7 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.opener.constants.DLOpenerMimeTypes;
 import com.liferay.document.library.opener.google.drive.web.internal.DLOpenerGoogleDriveManager;
 import com.liferay.document.library.portlet.toolbar.contributor.DLPortletToolbarContributorContext;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.portal.kernel.bean.BeanProperties;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
@@ -36,12 +27,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -93,7 +84,7 @@ public class DLOpenerGoogleDriveDLPortletToolbarContributorContext
 					_ICON_NAME_SPREADSHEET, _ICON_COLOR_SPREADSHEET));
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 	}
 
@@ -126,14 +117,14 @@ public class DLOpenerGoogleDriveDLPortletToolbarContributorContext
 				"/document_library/edit_in_google_docs");
 			liferayPortletURL.setParameter(Constants.CMD, Constants.ADD);
 
-			long repositoryId = BeanPropertiesUtil.getLong(
+			long repositoryId = _beanProperties.getLong(
 				folder, "repositoryId",
 				_portal.getScopeGroupId(portletRequest));
 
 			liferayPortletURL.setParameter(
 				"repositoryId", String.valueOf(repositoryId));
 
-			long folderId = BeanPropertiesUtil.getLong(
+			long folderId = _beanProperties.getLong(
 				folder, "folderId", DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 			liferayPortletURL.setParameter(
@@ -171,6 +162,9 @@ public class DLOpenerGoogleDriveDLPortletToolbarContributorContext
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLOpenerGoogleDriveDLPortletToolbarContributorContext.class);
+
+	@Reference
+	private BeanProperties _beanProperties;
 
 	@Reference
 	private DLOpenerGoogleDriveManager _dlOpenerGoogleDriveManager;

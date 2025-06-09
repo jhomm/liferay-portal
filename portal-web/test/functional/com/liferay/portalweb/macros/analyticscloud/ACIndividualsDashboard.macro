@@ -1,60 +1,81 @@
 definition {
 
-	macro assertCustomRangeNotApplied {
-		var key_timeRange = "${timeRange}";
+	@summary = "Default summary"
+	macro assertCustomRangeNotApplied(timeRange = null) {
+		var key_timeRange = ${timeRange};
 
 		AssertElementNotPresent(locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_TIME_RANGE");
 	}
 
-	macro assertIndividualAttribute {
-		var key_individualAttribute = "${individualAttribute}";
+	@summary = "Default summary"
+	macro assertIndividualAttribute(individualAttribute = null) {
+		var key_individualAttribute = ${individualAttribute};
+
 		AssertElementPresent(locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_ATTRIBUTE");
 	}
 
-	macro assertIndividualAttributeNotPresent {
-		var key_individualAttribute = "${individualAttribute}";
+	@summary = "Default summary"
+	macro assertIndividualAttributeNotPresent(individualAttribute = null) {
+		var key_individualAttribute = ${individualAttribute};
+
 		AssertElementNotPresent(locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_ATTRIBUTE");
 	}
 
-	macro assertIndividualAttributeValue {
-		var key_individualAttribute = "${individualAttribute}";
+	@summary = "Default summary"
+	macro assertIndividualAttributeValue(individualAttribute = null, individualAttributeValue = null) {
+		var key_individualAttribute = ${individualAttribute};
+
 		AssertTextEquals(
 			locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_ATTRIBUTE_VALUE",
-			value1 = "${individualAttributeValue}");
+			value1 = ${individualAttributeValue});
 	}
 
-	macro assertIndividualsActivitiesTimeRange {
-		var key_timeRange = "${timeRange}";
+	@summary = "Default summary"
+	macro assertIndividualsActivitiesTimeRange(timeRange = null) {
+		var key_timeRange = ${timeRange};
 
 		AssertElementPresent(locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_TIME_RANGE");
 	}
 
-	macro assertNoIndividualAttribute {
-		var key_individualAttribute = "${individualAttribute}";
+	@summary = "Default summary"
+	macro assertNoIndividualAttribute(individualAttribute = null) {
+		var key_individualAttribute = ${individualAttribute};
+
 		AssertElementNotPresent(locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_ATTRIBUTE");
 	}
 
-	macro assertSegmentInAssociatedSegmentsCard {
+	@summary = "Default summary"
+	macro assertSegmentInAssociatedSegmentsCard(itemName = null) {
 		AssertElementPresent(
-			key_itemName = "${itemName}",
+			key_itemName = ${itemName},
 			locator1 = "ACIndividualsDashboard#ASSOCIATED_SEGMENT_ITEM");
 	}
 
-	macro clickBreakdownTab {
+	@summary = "Default summary"
+	macro clickBreakdownTab(breakdownName = null) {
 		Click(
-			breakdownName = "${breakdownName}",
+			breakdownName = ${breakdownName},
 			locator1 = "ACIndividualsDashboard#BREAKDOWN_TAB");
 	}
 
-	macro deleteBreakdown {
-		Click(
-			breakdownName = "${breakdownName}",
-			locator1 = "ACIndividualsDashboard#DELETE_BREAKDOWN_BUTTON");
+	@summary = "Default summary"
+	macro deleteBreakdown() {
+		while (IsElementPresent(locator1 = "ACIndividualsDashboard#DELETE_BREAKDOWN_BUTTON")) {
+			Click(locator1 = "ACIndividualsDashboard#DELETE_BREAKDOWN_BUTTON");
+		}
 	}
 
-	macro filterKnownIndividualList {
+	@summary = "Default summary"
+	macro expandActivity(eventName = null) {
 		Click(
-			key_rowName = "${rowName}",
+			key_pageTitle = ${eventName},
+			locator1 = "ACUtils#PAGE_TITLE");
+	}
+
+	@summary = "Default summary"
+	macro filterKnownIndividualList(rowName = null) {
+		Click(
+			key_rowName = ${rowName},
 			locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_ATTRIBUTES_FILTER");
 
 		if (isSet(desc)) {
@@ -65,166 +86,246 @@ definition {
 		}
 	}
 
-	macro getChartPopoverDate {
+	@summary = "Default summary"
+	macro getChartPopoverDate() {
 		if (!(isSet(index))) {
-			var index = "1";
+			var index = 1;
 		}
 
 		Click(
-			index = "${index}",
+			index = ${index},
 			locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_CHART_RECHARTS_BAR");
 
 		SelectFrame.selectFrame(locator1 = "ACIndividualsDashboard#CHART_POPOVER");
 
 		var formattedDate = selenium.getText("ACIndividualsDashboard#CHART_POPOVER_ACTIVITIES_DATE");
 
-		return "${formattedDate}";
+		return ${formattedDate};
 	}
 
-	macro getChartPopoverDateWithoutBar {
+	@summary = "Default summary"
+	macro getChartPopoverDateWithoutBar() {
 		Click(locator1 = "ACIndividualsDashboard#CHARTS_WRAPPER");
 
 		SelectFrame.selectFrame(locator1 = "ACIndividualsDashboard#CHARTS_WRAPPER");
 
 		var formattedDate = selenium.getText("ACIndividualsDashboard#CHART_POPOVER_ACTIVITIES_DATE");
 
-		return "${formattedDate}";
+		return ${formattedDate};
 	}
 
-	macro goToDistributionTab {
+	@summary = "Default summary"
+	macro goToDistributionTab() {
 		ACNavigation.switchTab(tabName = "Distribution");
 	}
 
-	macro goToInterestsTab {
+	@summary = "Default summary"
+	macro goToInterestsTab() {
 		ACNavigation.switchTab(tabName = "Interests");
 	}
 
-	macro goToKnownIndividualDetails {
-		var key_individualName = "${individualName}";
+	@summary = "Default summary"
+	macro goToKnownIndividualDetails(individualName = null) {
+		var key_individualName = ${individualName};
 
-		while (IsElementNotPresent(locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUALS_LIST_ITEMS") && (maxIterations = "50")) {
+		while ((IsElementNotPresent(locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUALS_LIST_ITEMS")) && (maxIterations = "50")) {
 			Refresh();
 		}
 
 		Click(locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUALS_LIST_ITEMS");
 	}
 
-	macro goToKnownIndividualsTab {
+	@summary = "Default summary"
+	macro goToKnownIndividualsTab() {
 		ACNavigation.switchTab(tabName = "Known Individuals");
 	}
 
-	macro goToOverviewTab {
+	@summary = "Default summary"
+	macro goToOverviewTab() {
 		ACNavigation.switchTab(tabName = "Overview");
 	}
 
-	macro goToTabName {
-		var key_tabName = "${tabName}";
+	@summary = "Default summary"
+	macro goToTabName(tabName = null) {
+		var key_tabName = ${tabName};
 
 		Click(locator1 = "ACIndividualsDashboard#INDIVIDUALS_TAB");
 	}
 
-	macro goToVisitedPageOverviewViaIndividualActivity {
-		if (!(isSet(itemIndex))) {
-			var itemIndex = "1";
-		}
-
-		Click(
-			index = "${itemIndex}",
-			itemName = "${itemName}",
-			locator1 = "ACIndividualsDashboard#BASE_RESULTS_TIMELINE_ITEM");
-
-		if (!(isSet(pageIndex))) {
-			var pageIndex = "1";
-		}
-
-		Click(
-			index = "${pageIndex}",
-			itemName = "${itemName}",
-			locator1 = "ACIndividualsDashboard#BASE_RESULTS_TIMELINE_ITEM_NESTED",
-			pageName = "${pageName}");
-	}
-
-	macro selectDataOnIndividualsActivitiesChart {
+	@summary = "Default summary"
+	macro selectDataOnIndividualsActivitiesChart() {
 		if (!(isSet(index))) {
-			var index = "1";
+			var index = 1;
 		}
 
-		Click(
-			index = "${index}",
+		Click.clickNoMouseOver(
+			index = ${index},
 			locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_CHART_RECHARTS_BAR");
 	}
 
-	macro viewActivitiesNumberInPeriod {
+	@summary = "Default summary"
+	macro viewActivitiesNumberInPeriod(activitiesNumber = null) {
 		AssertTextEquals(
 			locator1 = "ACIndividualsDashboard#ACTIVITIES_NUMBER",
-			value1 = "${activitiesNumber}");
+			value1 = ${activitiesNumber});
 	}
 
-	macro viewBreakdownNotPresent {
+	@summary = "Default summary"
+	macro viewActivitiesOnGraph(typeList = null, valueList = null, notEquals = null) {
+		while ((IsElementNotPresent(locator1 = "ACIndividualsDashboard#ACTIVE_INDIVIDUAL_CHART")) && (maxIterations = "50")) {
+			TestUtils.hardRefresh();
+
+			ACTimeFilter.clickTimeFilterButton();
+
+			ACTimeFilter.setLast24Hours();
+		}
+
+		Click(locator1 = "ACIndividualsDashboard#ACTIVE_INDIVIDUAL_CHART");
+
+		MouseOver(
+			key_cardTitle = "Individual Events",
+			locator1 = "ACCards#CARD_TITLE");
+
+		var list1 = ListUtil.newListFromString(${typeList});
+		var list2 = ListUtil.newListFromString(${valueList});
+		var size = ListUtil.size(${list1});
+		var i = 0;
+
+		while (${i} != ${size}) {
+			var type = ListUtil.get(${list1}, ${i});
+			var value = ListUtil.get(${list2}, ${i});
+
+			while ((IsElementNotPresent(key_value = ${value}, key_visitors = ${type}, locator1 = "ACSites#TOOLTIP_UNIQUE_VISITORS")) && (maxIterations = "50")) {
+				TestUtils.hardRefresh();
+
+				ACTimeFilter.clickTimeFilterButton();
+
+				ACTimeFilter.setLast24Hours();
+
+				Click(locator1 = "ACIndividualsDashboard#ACTIVE_INDIVIDUAL_CHART");
+
+				MouseOver(
+					key_cardTitle = "Individual Events",
+					locator1 = "ACCards#CARD_TITLE");
+			}
+
+			AssertElementPresent(
+				key_value = ${value},
+				key_visitors = ${type},
+				locator1 = "ACSites#TOOLTIP_UNIQUE_VISITORS");
+
+			if (isSet(notEquals)) {
+				AssertTextNotEquals(
+					key_value = ${value},
+					key_visitors = ${type},
+					locator1 = "ACSites#TOOLTIP_UNIQUE_VISITORS",
+					value1 = ${notEquals});
+			}
+
+			var i = ${i} + 1;
+
+			var i = StringUtil.valueOf(${i});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewBreakdownNotPresent(breakdownName = null) {
 		AssertElementNotPresent(
-			breakdownName = "${breakdownName}",
+			breakdownName = ${breakdownName},
 			locator1 = "ACIndividualsDashboard#BREAKDOWN_TAB");
 	}
 
-	macro viewBreakdownRecharts {
+	@summary = "Default summary"
+	macro viewBreakdownRecharts(fillColor = null, tick = null) {
 		if (!(isSet(index))) {
-			var index = "1";
+			var index = 1;
 		}
 
 		AssertTextEquals.assertPartialText(
-			index = "${index}",
+			index = ${index},
 			locator1 = "ACIndividualsDashboard#BREAKDOWN_RECHARTS_CARTESIAN_Y_AXIS_TICK",
-			value1 = "${tick}");
+			value1 = ${tick});
 
 		AssertAttributeValue(
-			attribute1 = "fill",
-			index = "${index}",
+			index = ${index},
 			locator1 = "ACIndividualsDashboard#BREAKDOWN_RECHARTS_BAR_FILL_COLOR",
-			value1 = "${fillColor}");
+			value1 = "fill",
+			value2 = ${fillColor});
 	}
 
-	macro viewIndividualDetailsCard {
+	@summary = "Default summary"
+	macro viewDistributionBarByAttribute(type = null, value = null) {
+		if (!(isSet(index))) {
+			var index = 1;
+		}
+
+		ACUtils.waitForChartLoad();
+
+		while (IsElementNotPresent(index = ${index}, locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_CHART_RECHARTS_BAR")) {
+			TestUtils.hardRefresh();
+
+			ACUtils.waitForChartLoad();
+		}
+
+		Click(
+			key_cardTitle = "Distribution by attribute",
+			locator1 = "ACCards#CARD_TITLE");
+
+		MouseOver.mouseOverInvisible(
+			index = ${index},
+			locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_CHART_RECHARTS_BAR");
+
+		AssertElementPresent(
+			key_value = ${value},
+			key_visitors = ${type},
+			locator1 = "ACSites#TOOLTIP_UNIQUE_VISITORS");
+	}
+
+	@summary = "Default summary"
+	macro viewIndividualDetailsCard(fullName = null, userEmailAddress = null) {
 		AssertVisible(locator1 = "ACIndividualsDashboard#INDIVIDUAL_DETAILS_CARD_AVATAR");
 
 		AssertVisible(
-			fullName = "${fullName}",
+			fullName = ${fullName},
 			locator1 = "ACIndividualsDashboard#INDIVIDUAL_DETAILS_CARD_FULL_NAME");
 
 		AssertVisible(
 			locator1 = "ACIndividualsDashboard#INDIVIDUAL_DETAILS_CARD_EMAIL",
-			userEmailAddress = "${userEmailAddress}");
+			userEmailAddress = ${userEmailAddress});
 	}
 
-	macro viewKnownIndividualDetailsSpecificOrder {
-		var resultOrder = "0";
+	@summary = "Default summary"
+	macro viewKnownIndividualDetailsSpecificOrder() {
+		var resultOrder = 0;
 
-		for (var itemName : list "${itemName}") {
+		for (var itemName : list ${itemName}) {
 			var resultOrder = ${resultOrder} + 1;
 
 			AssertVisible(
-				key_itemName = "${itemName}",
+				key_itemName = ${itemName},
 				locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_DETAILS_VIEW_SPECIFIC_ORDER",
-				resultOrder = "${resultOrder}");
+				resultOrder = ${resultOrder});
 		}
 	}
 
-	macro viewKnownIndividualSpecificOrder {
-		var resultOrder = "0";
+	@summary = "Default summary"
+	macro viewKnownIndividualSpecificOrder() {
+		var resultOrder = 0;
 
-		for (var itemName : list "${itemName}") {
+		for (var itemName : list ${itemName}) {
 			var resultOrder = ${resultOrder} + 1;
 
 			AssertVisible(
-				key_itemName = "${itemName}",
+				key_itemName = ${itemName},
 				locator1 = "ACIndividualsDashboard#KNOWN_INDIVIDUAL_VIEW_SPECIFIC_ORDER",
-				resultOrder = "${resultOrder}");
+				resultOrder = ${resultOrder});
 		}
 	}
 
-	@summary = "This macro asserts in the individual chart bar. The pause is necessary because the bar takes a while to load into the chart. For more information about pause see LRAC-9517"
-	macro viewRechartsBarOnIndividualsActivitiesChart {
+	@summary = "Default summary"
+	macro viewRechartsBarOnIndividualsActivitiesChart() {
 		if (!(isSet(index))) {
-			var index = "1";
+			var index = 1;
 		}
 
 		while (IsElementNotPresent(locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_CHART_RECHARTS_BAR")) {
@@ -236,37 +337,56 @@ definition {
 
 			// The pause is necessary because the bar takes a while to load into the chart. For more information about pause see LRAC-9517
 
-			Pause(locator1 = "2000");
+			Pause(value1 = 5000);
 		}
 
 		AssertVisible(
-			index = "${index}",
+			index = ${index},
 			locator1 = "ACIndividualsDashboard#INDIVIDUALS_ACTIVITIES_CHART_RECHARTS_BAR");
 	}
 
-	macro viewTimelineItem {
-		for (var activityName : list "${activityNameList}") {
-			AssertTextEquals(
-				locator1 = "ACIndividualsDashboard#BASE_RESULTS_TIMELINE",
-				value1 = "${activityName}");
+	@summary = "Default summary"
+	macro viewTimelineItem(positionList = null, activityNameList = null) {
+		var list1 = ListUtil.newListFromString(${activityNameList});
+		var list2 = ListUtil.newListFromString(${positionList});
+		var size = ListUtil.size(${list1});
+		var i = 0;
+
+		while (${i} != ${size}) {
+			var activityName = ListUtil.get(${list1}, ${i});
+			var position = ListUtil.get(${list2}, ${i});
+
+			AssertElementPresent(
+				index = ${position},
+				key_commonInformation = ${activityName},
+				locator1 = "ACEventAnalysis#VIEW_ANALYSIS_INFORMATION_SPECIFIC_ORDER");
+
+			var i = ${i} + 1;
+
+			var i = StringUtil.valueOf(${i});
 		}
 	}
 
-	macro viewTimelineItemNotPresent {
-		for (var activityName : list "${activityNameList}") {
-			AssertTextNotEquals(
-				locator1 = "ACIndividualsDashboard#BASE_RESULTS_TIMELINE",
-				value1 = "${activityName}");
+	@summary = "Default summary"
+	macro viewTimelineItemNotPresent(positionList = null, activityNameList = null) {
+		var list1 = ListUtil.newListFromString(${activityNameList});
+		var list2 = ListUtil.newListFromString(${positionList});
+		var size = ListUtil.size(${list1});
+		var i = 0;
+
+		while (${i} != ${size}) {
+			var activityName = ListUtil.get(${list1}, ${i});
+			var position = ListUtil.get(${list2}, ${i});
+
+			AssertElementNotPresent(
+				index = ${position},
+				key_commonInformation = ${activityName},
+				locator1 = "ACEventAnalysis#VIEW_ANALYSIS_INFORMATION_SPECIFIC_ORDER");
+
+			var i = ${i} + 1;
+
+			var i = StringUtil.valueOf(${i});
 		}
-	}
-
-	macro viewTotalActivities {
-		var key_userName = "${userName}";
-		var key_activitiesNumber = "${activitiesNumber}";
-
-		AssertTextEquals(
-			locator1 = "ACIndividualsDashboard#TOTAL_ACTIVITIES",
-			value1 = "${activitiesNumber}");
 	}
 
 }

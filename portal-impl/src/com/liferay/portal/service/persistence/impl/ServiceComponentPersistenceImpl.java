@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -43,7 +34,6 @@ import com.liferay.portal.model.impl.ServiceComponentModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.HashMap;
@@ -184,7 +174,7 @@ public class ServiceComponentPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ServiceComponent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ServiceComponent serviceComponent : list) {
@@ -581,7 +571,8 @@ public class ServiceComponentPersistenceImpl
 
 		Object[] finderArgs = new Object[] {buildNamespace};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -636,7 +627,6 @@ public class ServiceComponentPersistenceImpl
 		"(serviceComponent.buildNamespace IS NULL OR serviceComponent.buildNamespace = '')";
 
 	private FinderPath _finderPathFetchByBNS_BNU;
-	private FinderPath _finderPathCountByBNS_BNU;
 
 	/**
 	 * Returns the service component where buildNamespace = &#63; and buildNumber = &#63; or throws a <code>NoSuchServiceComponentException</code> if it could not be found.
@@ -715,7 +705,7 @@ public class ServiceComponentPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByBNS_BNU, finderArgs);
+				_finderPathFetchByBNS_BNU, finderArgs, this);
 		}
 
 		if (result instanceof ServiceComponent) {
@@ -823,62 +813,14 @@ public class ServiceComponentPersistenceImpl
 	 */
 	@Override
 	public int countByBNS_BNU(String buildNamespace, long buildNumber) {
-		buildNamespace = Objects.toString(buildNamespace, "");
+		ServiceComponent serviceComponent = fetchByBNS_BNU(
+			buildNamespace, buildNumber);
 
-		FinderPath finderPath = _finderPathCountByBNS_BNU;
-
-		Object[] finderArgs = new Object[] {buildNamespace, buildNumber};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_SERVICECOMPONENT_WHERE);
-
-			boolean bindBuildNamespace = false;
-
-			if (buildNamespace.isEmpty()) {
-				sb.append(_FINDER_COLUMN_BNS_BNU_BUILDNAMESPACE_3);
-			}
-			else {
-				bindBuildNamespace = true;
-
-				sb.append(_FINDER_COLUMN_BNS_BNU_BUILDNAMESPACE_2);
-			}
-
-			sb.append(_FINDER_COLUMN_BNS_BNU_BUILDNUMBER_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindBuildNamespace) {
-					queryPos.add(buildNamespace);
-				}
-
-				queryPos.add(buildNumber);
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (serviceComponent == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_BNS_BNU_BUILDNAMESPACE_2 =
@@ -1005,8 +947,6 @@ public class ServiceComponentPersistenceImpl
 			serviceComponentModelImpl.getBuildNumber()
 		};
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByBNS_BNU, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByBNS_BNU, args, serviceComponentModelImpl);
 	}
@@ -1306,7 +1246,7 @@ public class ServiceComponentPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ServiceComponent>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1376,7 +1316,7 @@ public class ServiceComponentPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1469,34 +1409,13 @@ public class ServiceComponentPersistenceImpl
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"buildNamespace", "buildNumber"}, true);
 
-		_finderPathCountByBNS_BNU = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByBNS_BNU",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"buildNamespace", "buildNumber"}, false);
-
-		_setServiceComponentUtilPersistence(this);
+		ServiceComponentUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setServiceComponentUtilPersistence(null);
+		ServiceComponentUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(ServiceComponentImpl.class.getName());
-	}
-
-	private void _setServiceComponentUtilPersistence(
-		ServiceComponentPersistence serviceComponentPersistence) {
-
-		try {
-			Field field = ServiceComponentUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, serviceComponentPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_SERVICECOMPONENT =

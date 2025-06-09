@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.web.internal.portlet.util;
@@ -42,16 +33,16 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -249,19 +240,20 @@ public class BookmarksUtil {
 		OrderByComparator<BookmarksEntry> orderByComparator = null;
 
 		if (orderByCol.equals("create-date")) {
-			orderByComparator = new EntryCreateDateComparator(orderByAsc);
+			orderByComparator = EntryCreateDateComparator.getInstance(
+				orderByAsc);
 		}
 		else if (orderByCol.equals("modified-date")) {
 			orderByComparator = new EntryModifiedDateComparator(orderByAsc);
 		}
 		else if (orderByCol.equals("name")) {
-			orderByComparator = new EntryNameComparator(orderByAsc);
+			orderByComparator = EntryNameComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("priority")) {
-			orderByComparator = new EntryPriorityComparator(orderByAsc);
+			orderByComparator = EntryPriorityComparator.getInstance(orderByAsc);
 		}
 		else if (orderByCol.equals("url")) {
-			orderByComparator = new EntryURLComparator(orderByAsc);
+			orderByComparator = EntryURLComparator.getInstance(orderByAsc);
 		}
 
 		return orderByComparator;

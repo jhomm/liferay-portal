@@ -1,6 +1,7 @@
-@component-name = "portal-security"
+@component-name = "portal-application-security"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Login";
@@ -12,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -22,21 +23,20 @@ definition {
 		}
 	}
 
-	@description = "This is a use case for LPS-75977. Redirect on expire"
-	@priority = "5"
+	@description = "This is a use case for LPS-75977. Redirect on expire."
+	@priority = 5
 	test RedirectOnExpire {
 		property custom.properties = "session.timeout=2${line.separator}session.timeout.redirect.on.expire=true";
-		property test.name.skip.portal.instance = "SessionTimeout#RedirectOnExpire";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 		property web.xml.timeout = "2";
 
 		task ("Add public page") {
 			Navigator.openURL();
 
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			SitePages.addPublicPage(pageName = "Session Page");
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Session Page");
 		}
 
 		task ("Assert expired session error message and user sign in not present ") {
@@ -46,7 +46,10 @@ definition {
 		}
 
 		task ("Wait for expiration time") {
-			Pause(locator1 = "60000");
+
+			// This pause is required to allow the test to wait for the warning message of a session expiring soon.
+
+			Pause(value1 = 60000);
 		}
 
 		task ("Assert expired session error message") {
@@ -54,7 +57,10 @@ definition {
 		}
 
 		task ("Wait and sign in") {
-			Pause(locator1 = "60000");
+
+			// This pause is required to allow the test to wait for the session to expire.
+
+			Pause(value1 = 60000);
 
 			User.viewSignInPresent();
 		}
@@ -64,10 +70,12 @@ definition {
 		}
 	}
 
-	@description = "This is a use cae for LRQA-7765. Remember me checked"
-	@priority = "4"
+	@description = "This is a use cae for LRQA-7765. Remember me checked."
+	@priority = 5
 	test RememberMeChecked {
 		property custom.properties = "session.timeout=2";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 		property web.xml.timeout = "2";
 
 		task ("Assert session not expired and user sign in not present") {
@@ -77,11 +85,14 @@ definition {
 		}
 
 		task ("Wait for expiration time") {
-			Pause(locator1 = "120000");
+
+			// This pause is required to allow the test to wait for the session to expire.
+
+			Pause(value1 = 120000);
 		}
 
 		task ("Assert session expired message") {
-			User.viewExpiredSessionErrorMessage(message = "Danger:Due to inactivity, your session has expired. Please save any data you may have entered before refreshing the page.");
+			User.viewExpiredSessionErrorMessage(message = "Danger:Due to inactivity, your session has expired. Before you continue, make sure your entered data is saved locally.");
 		}
 
 		task ("Refresh and sign in") {
@@ -90,7 +101,7 @@ definition {
 			User.viewSignIn();
 
 			User.firstLoginUI(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				rememberMeChecked = "true",
 				userEmailAddress = "test@liferay.com");
 		}
@@ -98,11 +109,11 @@ definition {
 		task ("Wait for session expired") {
 			Navigator.openURL();
 
-			Pause(locator1 = "120000");
+			// This pause is required to allow the test to wait for the session to expire.
+
+			Pause(value1 = 120000);
+
 			User.viewSessionNotExpired(sigin = "False");
-
-			//AssertElementNotPresent(locator1 = "Home#ERROR_MESSAGE_EXPIRED_SESSION");
-
 		}
 
 		task ("Refresh and assert welcome message") {
@@ -112,9 +123,7 @@ definition {
 		}
 
 		task ("Logout and login") {
-			User.logoutPG();
-
-			User.loginPG();
+			User.logoutAndLoginPG();
 		}
 
 		task ("Open portal, assert session expired message and user sign in not present") {
@@ -124,9 +133,12 @@ definition {
 		}
 
 		task ("Wait for session expired") {
-			Pause(locator1 = "120000");
 
-			User.viewExpiredSessionErrorMessage(message = "Danger:Due to inactivity, your session has expired. Please save any data you may have entered before refreshing the page.");
+			// This pause is required to allow the test to wait for the session to expire.
+
+			Pause(value1 = 120000);
+
+			User.viewExpiredSessionErrorMessage(message = "Danger:Due to inactivity, your session has expired. Before you continue, make sure your entered data is saved locally.");
 		}
 
 		task ("Refresh and assert user sign in present") {

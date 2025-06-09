@@ -1,16 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {cleanup, fireEvent, render, wait} from '@testing-library/react';
+import {fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
 import Main from '../../../src/main/resources/META-INF/resources/js/components/Main';
@@ -202,7 +196,7 @@ const mockedProps = {
 		url: '',
 	},
 	canonicalURL: 'http://localhost:8080/en/web/guest/-/basic-web-content',
-	dataProviders: [mockViewsDataProvider, mockReadsDataProvider],
+	chartDataProviders: [mockViewsDataProvider, mockReadsDataProvider],
 	onSelectedLanguageClick: () => {},
 	onTrafficSourceClick: () => {},
 	pagePublishDate: mockPublishDate,
@@ -233,7 +227,6 @@ const mockedProps = {
 describe('Main', () => {
 	afterEach(() => {
 		jest.clearAllMocks();
-		cleanup();
 	});
 
 	it('displays date range selector and charts for default time span', async () => {
@@ -245,7 +238,7 @@ describe('Main', () => {
 			</StoreContextProvider>
 		);
 
-		await wait(() => {
+		await waitFor(() => {
 			expect(mockTotalViewsDataProvider).toHaveBeenCalledTimes(1);
 			expect(mockTrafficSourcesDataProvider).toHaveBeenCalledTimes(1);
 		});
@@ -268,14 +261,14 @@ describe('Main', () => {
 		);
 
 		expect(getByText('20 - Jan 26, 2020')).toBeInTheDocument();
-		await wait(() => {
+		await waitFor(() => {
 			expect(mockTrafficSourcesDataProvider).toHaveBeenCalledTimes(2);
 		});
 
 		fireEvent.click(container.querySelector('[aria-label="next-period"]'));
 
 		expect(getByText('Jan 27 - Feb 2, 2020')).toBeInTheDocument();
-		await wait(() => {
+		await waitFor(() => {
 			expect(mockTrafficSourcesDataProvider).toHaveBeenCalledTimes(3);
 		});
 	});

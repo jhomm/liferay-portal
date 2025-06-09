@@ -1,5 +1,6 @@
 @import 'components/breadcrumb';
 @import 'components/color';
+@import 'components/commerce/index';
 @import 'components/group-item';
 @import 'components/info-panel';
 @import 'components/navbars';
@@ -52,8 +53,8 @@ body {
 			}
 
 			.user-avatar-link .panel-notifications-count {
-				right: calc(100% - 0.75rem);
-				top: -0.35rem;
+				right: calc(100% - 1rem);
+				top: -0.6rem;
 			}
 		}
 	}
@@ -100,4 +101,8 @@ body {
 		padding-bottom: 3rem;
 		padding-top: 3rem;
 	}
+}
+
+.media:has(div[data-oembed-url]) {
+	display: inherit;
 }

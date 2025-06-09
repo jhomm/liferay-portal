@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.properties.swapper.internal;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -22,7 +14,6 @@ import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
 
 import java.util.Objects;
@@ -34,7 +25,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Shuyang Zhou
  */
-@Component(enabled = false, immediate = true, service = {})
+@Component(enabled = false, service = {})
 public class DefaultCompanyNameSwapper {
 
 	@Activate
@@ -49,7 +40,7 @@ public class DefaultCompanyNameSwapper {
 
 		try {
 			Company defaultCompany = _companyLocalService.getCompany(
-				PortalInstances.getDefaultCompanyId());
+				PortalInstancePool.getDefaultCompanyId());
 
 			if (!_hasCustomCompanyName(
 					defaultCompany, originalCompanyDefaultName)) {

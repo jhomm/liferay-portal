@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, getByText, render} from '@testing-library/react';
+import {act, render, screen} from '@testing-library/react';
 import React from 'react';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 
-import {CollectionItemWithControls} from '../../../../src/main/resources/META-INF/resources/page_editor/app/components/layout-data-items';
-import Collection from '../../../../src/main/resources/META-INF/resources/page_editor/app/components/layout-data-items/Collection';
+import {CollectionItemWithControls} from '../../../../src/main/resources/META-INF/resources/page_editor/app/components/layout_data_items';
+import Collection from '../../../../src/main/resources/META-INF/resources/page_editor/app/components/layout_data_items/Collection';
 import {StoreAPIContextProvider} from '../../../../src/main/resources/META-INF/resources/page_editor/app/contexts/StoreContext';
 import CollectionService from '../../../../src/main/resources/META-INF/resources/page_editor/app/services/CollectionService';
-import {DragAndDropContextProvider} from '../../../../src/main/resources/META-INF/resources/page_editor/app/utils/drag-and-drop/useDragAndDrop';
+import {DragAndDropContextProvider} from '../../../../src/main/resources/META-INF/resources/page_editor/app/utils/drag_and_drop/useDragAndDrop';
 
 jest.mock(
 	'../../../../src/main/resources/META-INF/resources/page_editor/app/services/CollectionService',
@@ -37,11 +28,27 @@ jest.mock(
 	})
 );
 
-function renderCollection(itemConfig = {}) {
-	Liferay.Util.sub.mockImplementation((langKey, args) =>
-		[langKey, ...args].join('-')
-	);
+jest.mock(
+	'../../../../src/main/resources/META-INF/resources/page_editor/app/config/index',
+	() => ({
+		config: {
+			maxNumberOfItemsInEditMode: 2,
+			searchContainerPageMaxDelta: 10,
+		},
+	})
+);
 
+jest.mock(
+	'../../../../src/main/resources/META-INF/resources/page_editor/app/services/serviceFetch',
+	() => jest.fn(() => Promise.resolve({}))
+);
+
+jest.mock(
+	'../../../../src/main/resources/META-INF/resources/page_editor/common/components/ItemSelector.js',
+	() => () => <div />
+);
+
+function renderCollection(itemConfig = {}) {
 	const state = {
 		permissions: {
 			UPDATE: true,
@@ -94,45 +101,17 @@ function renderCollection(itemConfig = {}) {
 }
 
 describe('Collection', () => {
-	afterEach(() => {
-		cleanup();
+	beforeAll(() => {
+		jest.useFakeTimers();
 	});
 
 	it('renders not collection message when no collection is selected', async () => {
-		CollectionService.getCollectionField.mockImplementation(() =>
-			Promise.resolve()
-		);
-
 		await act(async () => {
 			renderCollection();
 		});
 
 		expect(
-			getByText(document.body, 'no-collection-selected-yet')
-		).toBeInTheDocument();
-	});
-
-	it('renders an item when the collection is empty', async () => {
-		CollectionService.getCollectionField.mockImplementation(() =>
-			Promise.resolve({
-				items: [],
-				length: 0,
-				totalNumberOfItems: 1,
-			})
-		);
-
-		await act(async () => {
-			renderCollection({
-				collection: {
-					itemSubtype: 'CollectionItemSubtype',
-					itemType: 'CollectionItemType',
-				},
-				listStyle: '',
-			});
-		});
-
-		expect(
-			document.body.querySelector('.page-editor__collection-item')
+			screen.getByText('select-a-collection-to-display')
 		).toBeInTheDocument();
 	});
 
@@ -157,13 +136,15 @@ describe('Collection', () => {
 					itemType: 'CollectionItemType',
 				},
 				numberOfItems: 2,
-				numberOfItemsPerPage: 2,
-				paginationType: '',
+				numberOfPages: 1,
+				paginationType: 'none',
 			});
+
+			jest.runAllTimers();
 		});
 
 		items.forEach((item) =>
-			expect(getByText(document.body, item.title)).toBeInTheDocument()
+			expect(screen.getByText(item.title)).toBeInTheDocument()
 		);
 	});
 
@@ -176,12 +157,13 @@ describe('Collection', () => {
 					title: 'collection1',
 				},
 				numberOfItemsPerPage: 5,
+				numberOfPages: 1,
 				paginationType: 'numeric',
 			});
 		});
 
 		expect(
-			getByText(document.body, 'showing-x-to-x-of-x-entries-1-2-2')
+			screen.getByText('showing-x-to-x-of-x-entries')
 		).toBeInTheDocument();
 	});
 
@@ -194,11 +176,87 @@ describe('Collection', () => {
 					title: 'collection1',
 				},
 				numberOfItemsPerPage: 5,
+				numberOfPages: 1,
 				paginationType: 'simple',
 			});
 		});
 
-		expect(getByText(document.body, 'previous')).toBeInTheDocument();
-		expect(getByText(document.body, 'next')).toBeInTheDocument();
+		expect(screen.getByText('previous')).toBeInTheDocument();
+		expect(screen.getByText('next')).toBeInTheDocument();
+	});
+
+	it('shows alert when edit mode max number of items is being exceeded', async () => {
+		const items = [
+			{content: 'Item 1 Content', title: 'Item 1 Title'},
+			{content: 'Item 2 Content', title: 'Item 2 Title'},
+			{content: 'Item 3 Content', title: 'Item 3 Title'},
+		];
+
+		CollectionService.getCollectionField.mockImplementation(() =>
+			Promise.resolve({
+				items,
+				length: 3,
+				totalNumberOfItems: 3,
+			})
+		);
+
+		await act(async () => {
+			renderCollection({
+				collection: {
+					classNameId: '1',
+					classPK: '1',
+					title: 'collection1',
+				},
+				numberOfItems: 3,
+				numberOfPages: 1,
+				paginationType: 'none',
+			});
+
+			jest.runAllTimers();
+		});
+
+		expect(
+			screen.getByText(
+				'in-edit-mode,-the-number-of-elements-displayed-is-limited-to-x-due-to-performance'
+			)
+		).toBeInTheDocument();
+	});
+
+	it('shows a permission restriction message when user does not have update permissions', async () => {
+		const items = [
+			{content: 'Item 1 Content', title: 'Item 1 Title'},
+			{content: 'Item 2 Content', title: 'Item 2 Title'},
+			{content: 'Item 3 Content', title: 'Item 3 Title'},
+		];
+
+		CollectionService.getCollectionField.mockImplementation(() =>
+			Promise.resolve({
+				isRestricted: true,
+				items,
+				length: 3,
+				totalNumberOfItems: 3,
+			})
+		);
+
+		await act(async () => {
+			renderCollection({
+				collection: {
+					classNameId: '1',
+					classPK: '1',
+					title: 'collection1',
+				},
+				numberOfItems: 3,
+				numberOfPages: 1,
+				paginationType: 'none',
+			});
+
+			jest.runAllTimers();
+		});
+
+		expect(
+			screen.getByText(
+				'this-content-cannot-be-displayed-due-to-permission-restrictions'
+			)
+		).toBeInTheDocument();
 	});
 });

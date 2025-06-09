@@ -1,27 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.resolver;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.portal.kernel.bean.BeanProperties;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.saml.opensaml.integration.internal.BaseSamlTestCase;
-import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManager;
 import com.liferay.saml.opensaml.integration.internal.util.OpenSamlUtil;
+
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,27 +42,16 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 	public void setUp() throws Exception {
 		super.setUp();
 
-		BeanPropertiesUtil beanPropertiesUtil = new BeanPropertiesUtil();
+		_beanProperties = Mockito.mock(BeanProperties.class);
 
-		_beanProperties = mock(BeanProperties.class);
+		ReflectionTestUtil.setFieldValue(
+			_defaultNameIdResolver, "_beanProperties", _beanProperties);
 
-		beanPropertiesUtil.setBeanProperties(_beanProperties);
+		_user = Mockito.mock(User.class);
 
-		_metadataManager = mock(MetadataManager.class);
+		_expandoBridge = Mockito.mock(ExpandoBridge.class);
 
-		_defaultNameIdResolver.setMetadataManager(_metadataManager);
-
-		when(
-			_metadataManager.getNameIdFormat(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			NameID.EMAIL.toString()
-		);
-
-		_user = mock(User.class);
-
-		_expandoBridge = mock(ExpandoBridge.class);
-
-		when(
+		Mockito.when(
 			_user.getExpandoBridge()
 		).thenReturn(
 			_expandoBridge
@@ -78,18 +60,14 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveEmailAddressNameId() throws Exception {
-		when(
+		Mockito.when(
 			_beanProperties.getObject(
 				Mockito.any(User.class), Mockito.eq("emailAddress"))
 		).thenReturn(
 			"test@liferay.com"
 		);
 
-		when(
-			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			"emailAddress"
-		);
+		_nameIdAttributeNameAtomicReference.set("emailAddress");
 
 		String nameId = _defaultNameIdResolver.resolve(
 			_user, SP_ENTITY_ID, null, null, false, null);
@@ -100,17 +78,13 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveExpandoNameId() throws Exception {
-		when(
+		Mockito.when(
 			_expandoBridge.getAttribute(Mockito.eq("customerId"))
 		).thenReturn(
 			"12345"
 		);
 
-		when(
-			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			"expando:customerId"
-		);
+		_nameIdAttributeNameAtomicReference.set("expando:customerId");
 
 		String nameId = _defaultNameIdResolver.resolve(
 			_user, SP_ENTITY_ID, null, null, false, null);
@@ -121,26 +95,22 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveNameIdWithPolicy() throws Exception {
-		when(
+		Mockito.when(
 			_beanProperties.getObject(
 				Mockito.any(User.class), Mockito.eq("screenName"))
 		).thenReturn(
 			"test"
 		);
 
-		when(
-			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			"screenName"
-		);
+		_nameIdAttributeNameAtomicReference.set("screenName");
 
 		NameIDPolicy nameIDPolicy = OpenSamlUtil.buildNameIdPolicy();
 
-		nameIDPolicy.setFormat(NameID.ENTITY.toString());
+		nameIDPolicy.setFormat(NameID.ENTITY);
 		nameIDPolicy.setSPNameQualifier("urn:liferay");
 
 		String nameId = _defaultNameIdResolver.resolve(
-			_user, SP_ENTITY_ID, NameID.ENTITY.toString(), null, false, null);
+			_user, SP_ENTITY_ID, NameID.ENTITY, null, false, null);
 
 		Assert.assertNotNull(nameId);
 		Assert.assertEquals("test", nameId);
@@ -148,24 +118,14 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveScreenNameNameId() throws Exception {
-		when(
+		Mockito.when(
 			_beanProperties.getObject(
 				Mockito.any(User.class), Mockito.eq("screenName"))
 		).thenReturn(
 			"test"
 		);
 
-		when(
-			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			"screenName"
-		);
-
-		when(
-			_metadataManager.getNameIdFormat(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			NameID.ENTITY.toString()
-		);
+		_nameIdAttributeNameAtomicReference.set("screenName");
 
 		String nameId = _defaultNameIdResolver.resolve(
 			_user, SP_ENTITY_ID, null, null, false, null);
@@ -176,11 +136,7 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 
 	@Test
 	public void testResolveStaticNameId() throws Exception {
-		when(
-			_metadataManager.getNameIdAttribute(Mockito.eq(SP_ENTITY_ID))
-		).thenReturn(
-			"static:test@liferay.com"
-		);
+		_nameIdAttributeNameAtomicReference.set("static:test@liferay.com");
 
 		String nameId = _defaultNameIdResolver.resolve(
 			_user, SP_ENTITY_ID, null, null, false, null);
@@ -190,10 +146,24 @@ public class DefaultNameIdResolverTest extends BaseSamlTestCase {
 	}
 
 	private BeanProperties _beanProperties;
+
 	private final DefaultNameIdResolver _defaultNameIdResolver =
-		new DefaultNameIdResolver();
+		new DefaultNameIdResolver() {
+
+			@Override
+			protected String getNameIdAttributeName(String entityId) {
+				if (Objects.equals(SP_ENTITY_ID, entityId)) {
+					return _nameIdAttributeNameAtomicReference.get();
+				}
+
+				return null;
+			}
+
+		};
+
 	private ExpandoBridge _expandoBridge;
-	private MetadataManager _metadataManager;
+	private final AtomicReference<String> _nameIdAttributeNameAtomicReference =
+		new AtomicReference<>();
 	private User _user;
 
 }

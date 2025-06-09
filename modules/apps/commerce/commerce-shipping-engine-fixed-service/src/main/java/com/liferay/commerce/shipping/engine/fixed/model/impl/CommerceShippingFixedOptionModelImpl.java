@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.model.impl;
 
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOption;
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionModel;
-import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -39,7 +29,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.math.BigDecimal;
@@ -47,12 +36,10 @@ import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -85,19 +72,21 @@ public class CommerceShippingFixedOptionModelImpl
 	public static final String TABLE_NAME = "CommerceShippingFixedOption";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT},
 		{"commerceShippingFixedOptionId", Types.BIGINT},
 		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"commerceShippingMethodId", Types.BIGINT}, {"name", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"amount", Types.DECIMAL},
-		{"priority", Types.DOUBLE}
+		{"commerceShippingMethodId", Types.BIGINT}, {"amount", Types.DECIMAL},
+		{"description", Types.VARCHAR}, {"key_", Types.VARCHAR},
+		{"name", Types.VARCHAR}, {"priority", Types.DOUBLE}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("commerceShippingFixedOptionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -106,14 +95,15 @@ public class CommerceShippingFixedOptionModelImpl
 		TABLE_COLUMNS_MAP.put("createDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("commerceShippingMethodId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("description", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("amount", Types.DECIMAL);
+		TABLE_COLUMNS_MAP.put("description", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("key_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("priority", Types.DOUBLE);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommerceShippingFixedOption (commerceShippingFixedOptionId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,commerceShippingMethodId LONG,name STRING null,description STRING null,amount DECIMAL(30, 16) null,priority DOUBLE)";
+		"create table CommerceShippingFixedOption (mvccVersion LONG default 0 not null,commerceShippingFixedOptionId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,commerceShippingMethodId LONG,amount BIGDECIMAL null,description STRING null,key_ VARCHAR(75) null,name STRING null,priority DOUBLE)";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CommerceShippingFixedOption";
@@ -131,101 +121,43 @@ public class CommerceShippingFixedOptionModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
 	public static final long COMMERCESHIPPINGMETHODID_COLUMN_BITMASK = 1L;
 
 	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long COMPANYID_COLUMN_BITMASK = 2L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long KEY_COLUMN_BITMASK = 4L;
+
+	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 2L;
+	public static final long PRIORITY_COLUMN_BITMASK = 8L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceShippingFixedOption toModel(
-		CommerceShippingFixedOptionSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceShippingFixedOption model =
-			new CommerceShippingFixedOptionImpl();
-
-		model.setCommerceShippingFixedOptionId(
-			soapModel.getCommerceShippingFixedOptionId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCommerceShippingMethodId(
-			soapModel.getCommerceShippingMethodId());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setAmount(soapModel.getAmount());
-		model.setPriority(soapModel.getPriority());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceShippingFixedOption> toModels(
-		CommerceShippingFixedOptionSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceShippingFixedOption> models =
-			new ArrayList<CommerceShippingFixedOption>(soapModels.length);
-
-		for (CommerceShippingFixedOptionSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.shipping.engine.fixed.service.util.ServiceProps.
-			get(
-				"lock.expiration.time.com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOption"));
 
 	public CommerceShippingFixedOptionModelImpl() {
 	}
@@ -305,139 +237,154 @@ public class CommerceShippingFixedOptionModelImpl
 	public Map<String, Function<CommerceShippingFixedOption, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceShippingFixedOption, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceShippingFixedOption>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceShippingFixedOption.class.getClassLoader(),
-			CommerceShippingFixedOption.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CommerceShippingFixedOption, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceShippingFixedOption> constructor =
-				(Constructor<CommerceShippingFixedOption>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceShippingFixedOption, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<CommerceShippingFixedOption, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceShippingFixedOption::getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceShippingFixedOptionId",
+				CommerceShippingFixedOption::getCommerceShippingFixedOptionId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceShippingFixedOption::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceShippingFixedOption::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceShippingFixedOption::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceShippingFixedOption::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceShippingFixedOption::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommerceShippingFixedOption::getModifiedDate);
+			attributeGetterFunctions.put(
+				"commerceShippingMethodId",
+				CommerceShippingFixedOption::getCommerceShippingMethodId);
+			attributeGetterFunctions.put(
+				"amount", CommerceShippingFixedOption::getAmount);
+			attributeGetterFunctions.put(
+				"description", CommerceShippingFixedOption::getDescription);
+			attributeGetterFunctions.put(
+				"key", CommerceShippingFixedOption::getKey);
+			attributeGetterFunctions.put(
+				"name", CommerceShippingFixedOption::getName);
+			attributeGetterFunctions.put(
+				"priority", CommerceShippingFixedOption::getPriority);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map
-		<String, Function<CommerceShippingFixedOption, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CommerceShippingFixedOption, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceShippingFixedOption, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CommerceShippingFixedOption, Object>>();
-		Map<String, BiConsumer<CommerceShippingFixedOption, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommerceShippingFixedOption, ?>>();
+		private static final Map
+			<String, BiConsumer<CommerceShippingFixedOption, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"commerceShippingFixedOptionId",
-			CommerceShippingFixedOption::getCommerceShippingFixedOptionId);
-		attributeSetterBiConsumers.put(
-			"commerceShippingFixedOptionId",
-			(BiConsumer<CommerceShippingFixedOption, Long>)
-				CommerceShippingFixedOption::setCommerceShippingFixedOptionId);
-		attributeGetterFunctions.put(
-			"groupId", CommerceShippingFixedOption::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceShippingFixedOption, Long>)
-				CommerceShippingFixedOption::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceShippingFixedOption::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceShippingFixedOption, Long>)
-				CommerceShippingFixedOption::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CommerceShippingFixedOption::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceShippingFixedOption, Long>)
-				CommerceShippingFixedOption::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceShippingFixedOption::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceShippingFixedOption, String>)
-				CommerceShippingFixedOption::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceShippingFixedOption::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceShippingFixedOption, Date>)
-				CommerceShippingFixedOption::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceShippingFixedOption::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceShippingFixedOption, Date>)
-				CommerceShippingFixedOption::setModifiedDate);
-		attributeGetterFunctions.put(
-			"commerceShippingMethodId",
-			CommerceShippingFixedOption::getCommerceShippingMethodId);
-		attributeSetterBiConsumers.put(
-			"commerceShippingMethodId",
-			(BiConsumer<CommerceShippingFixedOption, Long>)
-				CommerceShippingFixedOption::setCommerceShippingMethodId);
-		attributeGetterFunctions.put(
-			"name", CommerceShippingFixedOption::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<CommerceShippingFixedOption, String>)
-				CommerceShippingFixedOption::setName);
-		attributeGetterFunctions.put(
-			"description", CommerceShippingFixedOption::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<CommerceShippingFixedOption, String>)
-				CommerceShippingFixedOption::setDescription);
-		attributeGetterFunctions.put(
-			"amount", CommerceShippingFixedOption::getAmount);
-		attributeSetterBiConsumers.put(
-			"amount",
-			(BiConsumer<CommerceShippingFixedOption, BigDecimal>)
-				CommerceShippingFixedOption::setAmount);
-		attributeGetterFunctions.put(
-			"priority", CommerceShippingFixedOption::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<CommerceShippingFixedOption, Double>)
-				CommerceShippingFixedOption::setPriority);
+		static {
+			Map<String, BiConsumer<CommerceShippingFixedOption, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CommerceShippingFixedOption, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceShippingFixedOption, Long>)
+					CommerceShippingFixedOption::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceShippingFixedOptionId",
+				(BiConsumer<CommerceShippingFixedOption, Long>)
+					CommerceShippingFixedOption::
+						setCommerceShippingFixedOptionId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceShippingFixedOption, Long>)
+					CommerceShippingFixedOption::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceShippingFixedOption, Long>)
+					CommerceShippingFixedOption::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceShippingFixedOption, Long>)
+					CommerceShippingFixedOption::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceShippingFixedOption, String>)
+					CommerceShippingFixedOption::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceShippingFixedOption, Date>)
+					CommerceShippingFixedOption::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceShippingFixedOption, Date>)
+					CommerceShippingFixedOption::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"commerceShippingMethodId",
+				(BiConsumer<CommerceShippingFixedOption, Long>)
+					CommerceShippingFixedOption::setCommerceShippingMethodId);
+			attributeSetterBiConsumers.put(
+				"amount",
+				(BiConsumer<CommerceShippingFixedOption, BigDecimal>)
+					CommerceShippingFixedOption::setAmount);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<CommerceShippingFixedOption, String>)
+					CommerceShippingFixedOption::setDescription);
+			attributeSetterBiConsumers.put(
+				"key",
+				(BiConsumer<CommerceShippingFixedOption, String>)
+					CommerceShippingFixedOption::setKey);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CommerceShippingFixedOption, String>)
+					CommerceShippingFixedOption::setName);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<CommerceShippingFixedOption, Double>)
+					CommerceShippingFixedOption::setPriority);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
 	}
 
 	@JSON
@@ -485,6 +432,16 @@ public class CommerceShippingFixedOptionModelImpl
 		}
 
 		_companyId = companyId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalCompanyId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("companyId"));
 	}
 
 	@JSON
@@ -601,109 +558,17 @@ public class CommerceShippingFixedOptionModelImpl
 
 	@JSON
 	@Override
-	public String getName() {
-		if (_name == null) {
-			return "";
-		}
-		else {
-			return _name;
-		}
+	public BigDecimal getAmount() {
+		return _amount;
 	}
 
 	@Override
-	public String getName(Locale locale) {
-		String languageId = LocaleUtil.toLanguageId(locale);
-
-		return getName(languageId);
-	}
-
-	@Override
-	public String getName(Locale locale, boolean useDefault) {
-		String languageId = LocaleUtil.toLanguageId(locale);
-
-		return getName(languageId, useDefault);
-	}
-
-	@Override
-	public String getName(String languageId) {
-		return LocalizationUtil.getLocalization(getName(), languageId);
-	}
-
-	@Override
-	public String getName(String languageId, boolean useDefault) {
-		return LocalizationUtil.getLocalization(
-			getName(), languageId, useDefault);
-	}
-
-	@Override
-	public String getNameCurrentLanguageId() {
-		return _nameCurrentLanguageId;
-	}
-
-	@JSON
-	@Override
-	public String getNameCurrentValue() {
-		Locale locale = getLocale(_nameCurrentLanguageId);
-
-		return getName(locale);
-	}
-
-	@Override
-	public Map<Locale, String> getNameMap() {
-		return LocalizationUtil.getLocalizationMap(getName());
-	}
-
-	@Override
-	public void setName(String name) {
+	public void setAmount(BigDecimal amount) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_name = name;
-	}
-
-	@Override
-	public void setName(String name, Locale locale) {
-		setName(name, locale, LocaleUtil.getSiteDefault());
-	}
-
-	@Override
-	public void setName(String name, Locale locale, Locale defaultLocale) {
-		String languageId = LocaleUtil.toLanguageId(locale);
-		String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
-
-		if (Validator.isNotNull(name)) {
-			setName(
-				LocalizationUtil.updateLocalization(
-					getName(), "Name", name, languageId, defaultLanguageId));
-		}
-		else {
-			setName(
-				LocalizationUtil.removeLocalization(
-					getName(), "Name", languageId));
-		}
-	}
-
-	@Override
-	public void setNameCurrentLanguageId(String languageId) {
-		_nameCurrentLanguageId = languageId;
-	}
-
-	@Override
-	public void setNameMap(Map<Locale, String> nameMap) {
-		setNameMap(nameMap, LocaleUtil.getSiteDefault());
-	}
-
-	@Override
-	public void setNameMap(Map<Locale, String> nameMap, Locale defaultLocale) {
-		if (nameMap == null) {
-			return;
-		}
-
-		setName(
-			LocalizationUtil.updateLocalization(
-				nameMap, getName(), "Name",
-				LocaleUtil.toLanguageId(defaultLocale)));
+		_amount = amount;
 	}
 
 	@JSON
@@ -820,17 +685,138 @@ public class CommerceShippingFixedOptionModelImpl
 
 	@JSON
 	@Override
-	public BigDecimal getAmount() {
-		return _amount;
+	public String getKey() {
+		if (_key == null) {
+			return "";
+		}
+		else {
+			return _key;
+		}
 	}
 
 	@Override
-	public void setAmount(BigDecimal amount) {
+	public void setKey(String key) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_amount = amount;
+		_key = key;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalKey() {
+		return getColumnOriginalValue("key_");
+	}
+
+	@JSON
+	@Override
+	public String getName() {
+		if (_name == null) {
+			return "";
+		}
+		else {
+			return _name;
+		}
+	}
+
+	@Override
+	public String getName(Locale locale) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return getName(languageId);
+	}
+
+	@Override
+	public String getName(Locale locale, boolean useDefault) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		return getName(languageId, useDefault);
+	}
+
+	@Override
+	public String getName(String languageId) {
+		return LocalizationUtil.getLocalization(getName(), languageId);
+	}
+
+	@Override
+	public String getName(String languageId, boolean useDefault) {
+		return LocalizationUtil.getLocalization(
+			getName(), languageId, useDefault);
+	}
+
+	@Override
+	public String getNameCurrentLanguageId() {
+		return _nameCurrentLanguageId;
+	}
+
+	@JSON
+	@Override
+	public String getNameCurrentValue() {
+		Locale locale = getLocale(_nameCurrentLanguageId);
+
+		return getName(locale);
+	}
+
+	@Override
+	public Map<Locale, String> getNameMap() {
+		return LocalizationUtil.getLocalizationMap(getName());
+	}
+
+	@Override
+	public void setName(String name) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_name = name;
+	}
+
+	@Override
+	public void setName(String name, Locale locale) {
+		setName(name, locale, LocaleUtil.getSiteDefault());
+	}
+
+	@Override
+	public void setName(String name, Locale locale, Locale defaultLocale) {
+		String languageId = LocaleUtil.toLanguageId(locale);
+		String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
+
+		if (Validator.isNotNull(name)) {
+			setName(
+				LocalizationUtil.updateLocalization(
+					getName(), "Name", name, languageId, defaultLanguageId));
+		}
+		else {
+			setName(
+				LocalizationUtil.removeLocalization(
+					getName(), "Name", languageId));
+		}
+	}
+
+	@Override
+	public void setNameCurrentLanguageId(String languageId) {
+		_nameCurrentLanguageId = languageId;
+	}
+
+	@Override
+	public void setNameMap(Map<Locale, String> nameMap) {
+		setNameMap(nameMap, LocaleUtil.getSiteDefault());
+	}
+
+	@Override
+	public void setNameMap(Map<Locale, String> nameMap, Locale defaultLocale) {
+		if (nameMap == null) {
+			return;
+		}
+
+		setName(
+			LocalizationUtil.updateLocalization(
+				nameMap, getName(), "Name",
+				LocaleUtil.toLanguageId(defaultLocale)));
 	}
 
 	@JSON
@@ -890,9 +876,9 @@ public class CommerceShippingFixedOptionModelImpl
 	public String[] getAvailableLanguageIds() {
 		Set<String> availableLanguageIds = new TreeSet<String>();
 
-		Map<Locale, String> nameMap = getNameMap();
+		Map<Locale, String> descriptionMap = getDescriptionMap();
 
-		for (Map.Entry<Locale, String> entry : nameMap.entrySet()) {
+		for (Map.Entry<Locale, String> entry : descriptionMap.entrySet()) {
 			Locale locale = entry.getKey();
 			String value = entry.getValue();
 
@@ -901,9 +887,9 @@ public class CommerceShippingFixedOptionModelImpl
 			}
 		}
 
-		Map<Locale, String> descriptionMap = getDescriptionMap();
+		Map<Locale, String> nameMap = getNameMap();
 
-		for (Map.Entry<Locale, String> entry : descriptionMap.entrySet()) {
+		for (Map.Entry<Locale, String> entry : nameMap.entrySet()) {
 			Locale locale = entry.getKey();
 			String value = entry.getValue();
 
@@ -918,7 +904,7 @@ public class CommerceShippingFixedOptionModelImpl
 
 	@Override
 	public String getDefaultLanguageId() {
-		String xml = getName();
+		String xml = getDescription();
 
 		if (xml == null) {
 			return "";
@@ -953,15 +939,6 @@ public class CommerceShippingFixedOptionModelImpl
 
 		String modelDefaultLanguageId = getDefaultLanguageId();
 
-		String name = getName(defaultLocale);
-
-		if (Validator.isNull(name)) {
-			setName(getName(modelDefaultLanguageId), defaultLocale);
-		}
-		else {
-			setName(getName(defaultLocale), defaultLocale, defaultLocale);
-		}
-
 		String description = getDescription(defaultLocale);
 
 		if (Validator.isNull(description)) {
@@ -971,6 +948,15 @@ public class CommerceShippingFixedOptionModelImpl
 		else {
 			setDescription(
 				getDescription(defaultLocale), defaultLocale, defaultLocale);
+		}
+
+		String name = getName(defaultLocale);
+
+		if (Validator.isNull(name)) {
+			setName(getName(modelDefaultLanguageId), defaultLocale);
+		}
+		else {
+			setName(getName(defaultLocale), defaultLocale, defaultLocale);
 		}
 	}
 
@@ -994,6 +980,7 @@ public class CommerceShippingFixedOptionModelImpl
 		CommerceShippingFixedOptionImpl commerceShippingFixedOptionImpl =
 			new CommerceShippingFixedOptionImpl();
 
+		commerceShippingFixedOptionImpl.setMvccVersion(getMvccVersion());
 		commerceShippingFixedOptionImpl.setCommerceShippingFixedOptionId(
 			getCommerceShippingFixedOptionId());
 		commerceShippingFixedOptionImpl.setGroupId(getGroupId());
@@ -1004,9 +991,10 @@ public class CommerceShippingFixedOptionModelImpl
 		commerceShippingFixedOptionImpl.setModifiedDate(getModifiedDate());
 		commerceShippingFixedOptionImpl.setCommerceShippingMethodId(
 			getCommerceShippingMethodId());
-		commerceShippingFixedOptionImpl.setName(getName());
-		commerceShippingFixedOptionImpl.setDescription(getDescription());
 		commerceShippingFixedOptionImpl.setAmount(getAmount());
+		commerceShippingFixedOptionImpl.setDescription(getDescription());
+		commerceShippingFixedOptionImpl.setKey(getKey());
+		commerceShippingFixedOptionImpl.setName(getName());
 		commerceShippingFixedOptionImpl.setPriority(getPriority());
 
 		commerceShippingFixedOptionImpl.resetOriginalValues();
@@ -1019,6 +1007,8 @@ public class CommerceShippingFixedOptionModelImpl
 		CommerceShippingFixedOptionImpl commerceShippingFixedOptionImpl =
 			new CommerceShippingFixedOptionImpl();
 
+		commerceShippingFixedOptionImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
 		commerceShippingFixedOptionImpl.setCommerceShippingFixedOptionId(
 			this.<Long>getColumnOriginalValue("commerceShippingFixedOptionId"));
 		commerceShippingFixedOptionImpl.setGroupId(
@@ -1035,12 +1025,14 @@ public class CommerceShippingFixedOptionModelImpl
 			this.<Date>getColumnOriginalValue("modifiedDate"));
 		commerceShippingFixedOptionImpl.setCommerceShippingMethodId(
 			this.<Long>getColumnOriginalValue("commerceShippingMethodId"));
-		commerceShippingFixedOptionImpl.setName(
-			this.<String>getColumnOriginalValue("name"));
-		commerceShippingFixedOptionImpl.setDescription(
-			this.<String>getColumnOriginalValue("description"));
 		commerceShippingFixedOptionImpl.setAmount(
 			this.<BigDecimal>getColumnOriginalValue("amount"));
+		commerceShippingFixedOptionImpl.setDescription(
+			this.<String>getColumnOriginalValue("description"));
+		commerceShippingFixedOptionImpl.setKey(
+			this.<String>getColumnOriginalValue("key_"));
+		commerceShippingFixedOptionImpl.setName(
+			this.<String>getColumnOriginalValue("name"));
 		commerceShippingFixedOptionImpl.setPriority(
 			this.<Double>getColumnOriginalValue("priority"));
 
@@ -1104,7 +1096,7 @@ public class CommerceShippingFixedOptionModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -1113,7 +1105,7 @@ public class CommerceShippingFixedOptionModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1130,6 +1122,8 @@ public class CommerceShippingFixedOptionModelImpl
 		CommerceShippingFixedOptionCacheModel
 			commerceShippingFixedOptionCacheModel =
 				new CommerceShippingFixedOptionCacheModel();
+
+		commerceShippingFixedOptionCacheModel.mvccVersion = getMvccVersion();
 
 		commerceShippingFixedOptionCacheModel.commerceShippingFixedOptionId =
 			getCommerceShippingFixedOptionId();
@@ -1171,13 +1165,7 @@ public class CommerceShippingFixedOptionModelImpl
 		commerceShippingFixedOptionCacheModel.commerceShippingMethodId =
 			getCommerceShippingMethodId();
 
-		commerceShippingFixedOptionCacheModel.name = getName();
-
-		String name = commerceShippingFixedOptionCacheModel.name;
-
-		if ((name != null) && (name.length() == 0)) {
-			commerceShippingFixedOptionCacheModel.name = null;
-		}
+		commerceShippingFixedOptionCacheModel.amount = getAmount();
 
 		commerceShippingFixedOptionCacheModel.description = getDescription();
 
@@ -1187,7 +1175,21 @@ public class CommerceShippingFixedOptionModelImpl
 			commerceShippingFixedOptionCacheModel.description = null;
 		}
 
-		commerceShippingFixedOptionCacheModel.amount = getAmount();
+		commerceShippingFixedOptionCacheModel.key = getKey();
+
+		String key = commerceShippingFixedOptionCacheModel.key;
+
+		if ((key != null) && (key.length() == 0)) {
+			commerceShippingFixedOptionCacheModel.key = null;
+		}
+
+		commerceShippingFixedOptionCacheModel.name = getName();
+
+		String name = commerceShippingFixedOptionCacheModel.name;
+
+		if ((name != null) && (name.length() == 0)) {
+			commerceShippingFixedOptionCacheModel.name = null;
+		}
 
 		commerceShippingFixedOptionCacheModel.priority = getPriority();
 
@@ -1244,48 +1246,17 @@ public class CommerceShippingFixedOptionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceShippingFixedOption, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceShippingFixedOption, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceShippingFixedOption, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommerceShippingFixedOption)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CommerceShippingFixedOption>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommerceShippingFixedOption.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
 	private long _commerceShippingFixedOptionId;
 	private long _groupId;
 	private long _companyId;
@@ -1295,16 +1266,20 @@ public class CommerceShippingFixedOptionModelImpl
 	private Date _modifiedDate;
 	private boolean _setModifiedDate;
 	private long _commerceShippingMethodId;
-	private String _name;
-	private String _nameCurrentLanguageId;
+	private BigDecimal _amount;
 	private String _description;
 	private String _descriptionCurrentLanguageId;
-	private BigDecimal _amount;
+	private String _key;
+	private String _name;
+	private String _nameCurrentLanguageId;
 	private double _priority;
 
 	public <T> T getColumnValue(String columnName) {
+		columnName = _attributeNames.getOrDefault(columnName, columnName);
+
 		Function<CommerceShippingFixedOption, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1329,6 +1304,7 @@ public class CommerceShippingFixedOptionModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put(
 			"commerceShippingFixedOptionId", _commerceShippingFixedOptionId);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -1339,10 +1315,21 @@ public class CommerceShippingFixedOptionModelImpl
 		_columnOriginalValues.put("modifiedDate", _modifiedDate);
 		_columnOriginalValues.put(
 			"commerceShippingMethodId", _commerceShippingMethodId);
-		_columnOriginalValues.put("name", _name);
-		_columnOriginalValues.put("description", _description);
 		_columnOriginalValues.put("amount", _amount);
+		_columnOriginalValues.put("description", _description);
+		_columnOriginalValues.put("key_", _key);
+		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("priority", _priority);
+	}
+
+	private static final Map<String, String> _attributeNames;
+
+	static {
+		Map<String, String> attributeNames = new HashMap<>();
+
+		attributeNames.put("key_", "key");
+
+		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
 
 	private transient Map<String, Object> _columnOriginalValues;
@@ -1356,29 +1343,33 @@ public class CommerceShippingFixedOptionModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("commerceShippingFixedOptionId", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("groupId", 2L);
+		columnBitmasks.put("commerceShippingFixedOptionId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("groupId", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("userName", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("createDate", 32L);
+		columnBitmasks.put("userName", 32L);
 
-		columnBitmasks.put("modifiedDate", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("commerceShippingMethodId", 128L);
+		columnBitmasks.put("modifiedDate", 128L);
 
-		columnBitmasks.put("name", 256L);
+		columnBitmasks.put("commerceShippingMethodId", 256L);
 
-		columnBitmasks.put("description", 512L);
+		columnBitmasks.put("amount", 512L);
 
-		columnBitmasks.put("amount", 1024L);
+		columnBitmasks.put("description", 1024L);
 
-		columnBitmasks.put("priority", 2048L);
+		columnBitmasks.put("key_", 2048L);
+
+		columnBitmasks.put("name", 4096L);
+
+		columnBitmasks.put("priority", 8192L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

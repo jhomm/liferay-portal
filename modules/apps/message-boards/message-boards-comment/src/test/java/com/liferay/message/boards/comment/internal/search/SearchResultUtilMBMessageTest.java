@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.comment.internal.search;
@@ -26,30 +17,38 @@ import com.liferay.portal.kernel.search.SearchResultManager;
 import com.liferay.portal.kernel.search.SummaryFactory;
 import com.liferay.portal.kernel.search.result.SearchResultContributor;
 import com.liferay.portal.kernel.search.result.SearchResultTranslator;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.internal.result.SearchResultManagerImpl;
 import com.liferay.portal.search.internal.result.SearchResultTranslatorImpl;
 import com.liferay.portal.search.internal.result.SummaryFactoryImpl;
 import com.liferay.portal.search.test.util.BaseSearchResultUtilTestCase;
 import com.liferay.portal.search.test.util.SearchTestUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author André de Oliveira
  */
-@RunWith(PowerMockRunner.class)
 public class SearchResultUtilMBMessageTest
 	extends BaseSearchResultUtilTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	@Override
@@ -87,8 +86,16 @@ public class SearchResultUtilMBMessageTest
 		);
 	}
 
+	@After
+	public void tearDown() {
+		ReflectionTestUtil.invoke(
+			_searchResultManagerImpl, "deactivate", new Class<?>[0]);
+
+		_serviceRegistration.unregister();
+	}
+
 	@Test
-	public void testMBMessage() throws Exception {
+	public void testMBMessage() {
 		SearchResult searchResult = assertOneSearchResult(
 			SearchTestUtil.createDocument(_CLASS_NAME_MB_MESSAGE));
 
@@ -104,7 +111,7 @@ public class SearchResultUtilMBMessageTest
 			commentRelatedSearchResults.toString(),
 			commentRelatedSearchResults.isEmpty());
 
-		Mockito.verifyZeroInteractions(_mbMessageLocalService);
+		Mockito.verifyNoInteractions(_mbMessageLocalService);
 
 		Assert.assertNull(searchResult.getSummary());
 
@@ -113,7 +120,7 @@ public class SearchResultUtilMBMessageTest
 	}
 
 	@Test
-	public void testMBMessageAttachment() throws Exception {
+	public void testMBMessageAttachment() {
 		SearchResult searchResult = assertOneSearchResult(
 			SearchTestUtil.createAttachmentDocument(_CLASS_NAME_MB_MESSAGE));
 
@@ -164,46 +171,59 @@ public class SearchResultUtilMBMessageTest
 			SearchTestUtil.ATTACHMENT_OWNER_CLASS_PK);
 	}
 
-	protected SearchResultContributor createSearchResultContributor() {
-		MBMessageCommentSearchResultContributor
-			mbMessageCommentSearchResultContributor =
-				new MBMessageCommentSearchResultContributor();
-
-		mbMessageCommentSearchResultContributor.setCommentManager(
-			_commentManager);
-		mbMessageCommentSearchResultContributor.setMBMessageLocalService(
-			_mbMessageLocalService);
-
-		return mbMessageCommentSearchResultContributor;
-	}
-
-	protected SearchResultManager createSearchResultManager() {
-		SearchResultManagerImpl searchResultManagerImpl =
-			new SearchResultManagerImpl();
-
-		searchResultManagerImpl.addSearchResultContributor(
-			createSearchResultContributor());
-		searchResultManagerImpl.setClassNameLocalService(classNameLocalService);
-		searchResultManagerImpl.setSummaryFactory(createSummaryFactory());
-
-		return searchResultManagerImpl;
-	}
-
 	@Override
 	protected SearchResultTranslator createSearchResultTranslator() {
 		SearchResultTranslatorImpl searchResultTranslatorImpl =
 			new SearchResultTranslatorImpl();
 
-		searchResultTranslatorImpl.setSearchResultManager(
-			createSearchResultManager());
+		ReflectionTestUtil.setFieldValue(
+			searchResultTranslatorImpl, "_searchResultManager",
+			_createSearchResultManager());
 
 		return searchResultTranslatorImpl;
 	}
 
-	protected SummaryFactory createSummaryFactory() {
+	private SearchResultContributor _createSearchResultContributor() {
+		MBMessageCommentSearchResultContributor
+			mbMessageCommentSearchResultContributor =
+				new MBMessageCommentSearchResultContributor();
+
+		ReflectionTestUtil.setFieldValue(
+			mbMessageCommentSearchResultContributor, "_commentManager",
+			_commentManager);
+		ReflectionTestUtil.setFieldValue(
+			mbMessageCommentSearchResultContributor, "_mbMessageLocalService",
+			_mbMessageLocalService);
+
+		return mbMessageCommentSearchResultContributor;
+	}
+
+	private SearchResultManager _createSearchResultManager() {
+		_searchResultManagerImpl = new SearchResultManagerImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			_searchResultManagerImpl, "_classNameLocalService",
+			classNameLocalService);
+		ReflectionTestUtil.setFieldValue(
+			_searchResultManagerImpl, "_summaryFactory",
+			_createSummaryFactory());
+
+		_serviceRegistration = bundleContext.registerService(
+			SearchResultContributor.class, _createSearchResultContributor(),
+			null);
+
+		ReflectionTestUtil.invoke(
+			_searchResultManagerImpl, "activate",
+			new Class<?>[] {BundleContext.class}, bundleContext);
+
+		return _searchResultManagerImpl;
+	}
+
+	private SummaryFactory _createSummaryFactory() {
 		SummaryFactoryImpl summaryFactoryImpl = new SummaryFactoryImpl();
 
-		summaryFactoryImpl.setIndexerRegistry(_indexerRegistry);
+		ReflectionTestUtil.setFieldValue(
+			summaryFactoryImpl, "_indexerRegistry", _indexerRegistry);
 
 		return summaryFactoryImpl;
 	}
@@ -211,19 +231,15 @@ public class SearchResultUtilMBMessageTest
 	private static final String _CLASS_NAME_MB_MESSAGE =
 		MBMessage.class.getName();
 
-	@Mock
-	private Comment _comment;
-
-	@Mock
-	private CommentManager _commentManager;
-
-	@Mock
-	private IndexerRegistry _indexerRegistry;
-
-	@Mock
-	private MBMessage _mbMessage;
-
-	@Mock
-	private MBMessageLocalService _mbMessageLocalService;
+	private final Comment _comment = Mockito.mock(Comment.class);
+	private final CommentManager _commentManager = Mockito.mock(
+		CommentManager.class);
+	private final IndexerRegistry _indexerRegistry = Mockito.mock(
+		IndexerRegistry.class);
+	private final MBMessage _mbMessage = Mockito.mock(MBMessage.class);
+	private final MBMessageLocalService _mbMessageLocalService = Mockito.mock(
+		MBMessageLocalService.class);
+	private SearchResultManagerImpl _searchResultManagerImpl;
+	private ServiceRegistration<SearchResultContributor> _serviceRegistration;
 
 }

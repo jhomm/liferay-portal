@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.list.service;
 import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class AssetListEntryLocalServiceWrapper
 	implements AssetListEntryLocalService,
 			   ServiceWrapper<AssetListEntryLocalService> {
+
+	public AssetListEntryLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AssetListEntryLocalServiceWrapper(
 		AssetListEntryLocalService assetListEntryLocalService) {
@@ -73,43 +69,50 @@ public class AssetListEntryLocalServiceWrapper
 
 	@Override
 	public AssetListEntry addAssetListEntry(
-			long userId, long groupId, String title, int type,
+			String externalReferenceCode, long userId, long groupId,
+			String title, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryLocalService.addAssetListEntry(
-			userId, groupId, title, type, serviceContext);
+			externalReferenceCode, userId, groupId, title, type,
+			serviceContext);
 	}
 
 	@Override
 	public AssetListEntry addAssetListEntry(
-			long userId, long groupId, String title, int type,
-			String typeSettings,
+			String externalReferenceCode, long userId, long groupId,
+			String title, int type, String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryLocalService.addAssetListEntry(
-			userId, groupId, title, type, typeSettings, serviceContext);
+			externalReferenceCode, userId, groupId, title, type, typeSettings,
+			serviceContext);
 	}
 
 	@Override
 	public AssetListEntry addDynamicAssetListEntry(
-			long userId, long groupId, String title, String typeSettings,
+			String externalReferenceCode, long userId, long groupId,
+			String title, String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryLocalService.addDynamicAssetListEntry(
-			userId, groupId, title, typeSettings, serviceContext);
+			externalReferenceCode, userId, groupId, title, typeSettings,
+			serviceContext);
 	}
 
 	@Override
 	public AssetListEntry addManualAssetListEntry(
-			long userId, long groupId, String title, long[] assetEntryIds,
+			String externalReferenceCode, long userId, long groupId,
+			String title, long[] assetEntryIds,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryLocalService.addManualAssetListEntry(
-			userId, groupId, title, assetEntryIds, serviceContext);
+			externalReferenceCode, userId, groupId, title, assetEntryIds,
+			serviceContext);
 	}
 
 	/**
@@ -188,6 +191,15 @@ public class AssetListEntryLocalServiceWrapper
 
 		return _assetListEntryLocalService.deleteAssetListEntry(
 			assetListEntryId, segmentsEntryId);
+	}
+
+	@Override
+	public AssetListEntry deleteAssetListEntry(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetListEntryLocalService.deleteAssetListEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -310,6 +322,15 @@ public class AssetListEntryLocalServiceWrapper
 			assetListEntryId);
 	}
 
+	@Override
+	public AssetListEntry fetchAssetListEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return _assetListEntryLocalService.
+			fetchAssetListEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the asset list entry matching the UUID and group.
 	 *
@@ -424,6 +445,16 @@ public class AssetListEntryLocalServiceWrapper
 			groupId, assetListEntryKey);
 	}
 
+	@Override
+	public AssetListEntry getAssetListEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetListEntryLocalService.
+			getAssetListEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the asset list entry matching the UUID and group.
 	 *
@@ -530,6 +561,11 @@ public class AssetListEntryLocalServiceWrapper
 
 		_assetListEntryLocalService.updateAssetListEntryTypeSettings(
 			assetListEntryId, segmentsEntryId, typeSettings);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _assetListEntryLocalService.getBasePersistence();
 	}
 
 	@Override

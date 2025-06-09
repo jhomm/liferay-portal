@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.aui;
@@ -26,18 +17,19 @@ import com.liferay.taglib.aui.base.BaseIconTag;
 import com.liferay.taglib.ui.MessageTag;
 import com.liferay.taglib.util.InlineUtil;
 
-import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Eduardo Lundgren
  * @author Bruno Basto
  * @author Nathan Cavanaugh
  * @author Julio Camarero
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.frontend.taglib.clay.servlet.taglib.IconTag}
  */
+@Deprecated
 public class IconTag extends BaseIconTag {
 
 	@Override
@@ -95,6 +87,7 @@ public class IconTag extends BaseIconTag {
 		else {
 			ATag aTag = new ATag();
 
+			aTag.setAriaLabel(getAriaLabel());
 			aTag.setCssClass(getCssClass());
 			aTag.setData(getData());
 			aTag.setHref(getUrl());
@@ -127,44 +120,37 @@ public class IconTag extends BaseIconTag {
 		JspWriter jspWriter = pageContext.getOut();
 
 		try {
-			if (Objects.equals(getMarkupView(), "lexicon")) {
-				jspWriter.write("<svg aria-hidden=\"true\" ");
-				jspWriter.write("class=\"lexicon-icon lexicon-icon-");
-				jspWriter.write(GetterUtil.getString(getImage()));
-				jspWriter.write("\" focusable=\"false\" ");
-				jspWriter.write(
-					InlineUtil.buildDynamicAttributes(getDynamicAttributes()));
-				jspWriter.write("><use href=\"");
+			jspWriter.write("<svg aria-hidden=\"true\" ");
+			jspWriter.write("class=\"lexicon-icon lexicon-icon-");
+			jspWriter.write(GetterUtil.getString(getImage()));
+			jspWriter.write("\" focusable=\"false\" ");
+			jspWriter.write(
+				InlineUtil.buildDynamicAttributes(getDynamicAttributes()));
+			jspWriter.write("><use href=\"");
 
-				String src = getSrc();
+			String src = getSrc();
 
-				if (src == null) {
-					HttpServletRequest httpServletRequest =
-						(HttpServletRequest)pageContext.getRequest();
+			if (src == null) {
+				HttpServletRequest httpServletRequest =
+					(HttpServletRequest)pageContext.getRequest();
 
-					ThemeDisplay themeDisplay =
-						(ThemeDisplay)httpServletRequest.getAttribute(
-							WebKeys.THEME_DISPLAY);
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)httpServletRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
 
-					src = themeDisplay.getPathThemeImages() + "/clay/icons.svg";
-				}
-
-				jspWriter.write(src);
-				jspWriter.write(StringPool.POUND);
-				jspWriter.write(GetterUtil.getString(getImage()));
-				jspWriter.write("\"></use>");
-				jspWriter.write("</svg>");
+				src = themeDisplay.getPathThemeSpritemap();
 			}
-			else {
-				jspWriter.write("<i class=\"icon-");
-				jspWriter.write(GetterUtil.getString(getImage()));
-				jspWriter.write("\"></i>");
-			}
+
+			jspWriter.write(src);
+			jspWriter.write(StringPool.POUND);
+			jspWriter.write(GetterUtil.getString(getImage()));
+			jspWriter.write("\"></use>");
+			jspWriter.write("</svg>");
 
 			String label = getLabel();
 
 			if (label != null) {
-				jspWriter.write("<span class=\"taglib-icon-label\">");
+				jspWriter.write("<span class=\"ml-2 taglib-icon-label\">");
 
 				MessageTag messageTag = new MessageTag();
 

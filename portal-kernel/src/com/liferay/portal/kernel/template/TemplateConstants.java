@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.template;
@@ -25,7 +16,7 @@ public interface TemplateConstants {
 		TemplateConstants.LANG_TYPE_CSS, TemplateConstants.LANG_TYPE_FTL,
 		TemplateConstants.LANG_TYPE_JSON, TemplateConstants.LANG_TYPE_SOY,
 		TemplateConstants.LANG_TYPE_TPL, TemplateConstants.LANG_TYPE_VM,
-		TemplateConstants.LANG_TYPE_XML, TemplateConstants.LANG_TYPE_XSL
+		TemplateConstants.LANG_TYPE_XML
 	};
 
 	public static final String BUNDLE_SEPARATOR = "_BUNDLE_CONTEXT_";
@@ -50,8 +41,6 @@ public interface TemplateConstants {
 	public static final String LANG_TYPE_VM = "vm";
 
 	public static final String LANG_TYPE_XML = "xml";
-
-	public static final String LANG_TYPE_XSL = "xsl";
 
 	public static final String NAMESPACE = "namespace";
 

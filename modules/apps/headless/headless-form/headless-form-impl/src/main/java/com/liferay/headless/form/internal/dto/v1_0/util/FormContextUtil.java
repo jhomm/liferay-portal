@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.form.internal.dto.v1_0.util;
@@ -22,14 +13,12 @@ import com.liferay.headless.form.dto.v1_0.FormContext;
 import com.liferay.headless.form.dto.v1_0.FormFieldContext;
 import com.liferay.headless.form.dto.v1_0.FormFieldValue;
 import com.liferay.headless.form.dto.v1_0.FormPageContext;
-import com.liferay.portal.vulcan.util.TransformUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Victor Oliveira
@@ -57,14 +46,19 @@ public class FormContextUtil {
 
 		return new FormContext() {
 			{
-				formPageContexts = TransformUtil.transformToArray(
-					_getMaps(ddmFormTemplateContext, "pages"),
-					FormContextUtil::_toFormPageContext, FormPageContext.class);
-				readOnly = _getBoolean(ddmFormTemplateContext, "readOnly");
-				showRequiredFieldsWarning = _getBoolean(
-					ddmFormTemplateContext, "showRequiredFieldsWarning");
-				showSubmitButton = _getBoolean(
-					ddmFormTemplateContext, "showSubmitButton");
+				setFormPageContexts(
+					() -> TransformUtil.transformToArray(
+						_getMaps(ddmFormTemplateContext, "pages"),
+						FormContextUtil::_toFormPageContext,
+						FormPageContext.class));
+				setReadOnly(
+					() -> _getBoolean(ddmFormTemplateContext, "readOnly"));
+				setShowRequiredFieldsWarning(
+					() -> _getBoolean(
+						ddmFormTemplateContext, "showRequiredFieldsWarning"));
+				setShowSubmitButton(
+					() -> _getBoolean(
+						ddmFormTemplateContext, "showSubmitButton"));
 			}
 		};
 	}
@@ -89,14 +83,15 @@ public class FormContextUtil {
 
 		return new FormFieldContext() {
 			{
-				evaluable = _getBoolean(fieldContext, "evaluable");
-				name = _getString(fieldContext, "fieldName");
-				readOnly = _getBoolean(fieldContext, "readOnly");
-				required = _getBoolean(fieldContext, "required");
-				valid = _getBoolean(fieldContext, "valid");
-				value = _getString(fieldContext, "value");
-				valueChanged = _getBoolean(fieldContext, "valueChanged");
-				visible = _getBoolean(fieldContext, "visible");
+				setEvaluable(() -> _getBoolean(fieldContext, "evaluable"));
+				setName(() -> _getString(fieldContext, "fieldName"));
+				setReadOnly(() -> _getBoolean(fieldContext, "readOnly"));
+				setRequired(() -> _getBoolean(fieldContext, "required"));
+				setValid(() -> _getBoolean(fieldContext, "valid"));
+				setValue(() -> _getString(fieldContext, "value"));
+				setValueChanged(
+					() -> _getBoolean(fieldContext, "valueChanged"));
+				setVisible(() -> _getBoolean(fieldContext, "visible"));
 			}
 		};
 	}
@@ -106,30 +101,33 @@ public class FormContextUtil {
 
 		return new FormPageContext() {
 			{
-				enabled = _getBoolean(formPageContext, "enabled");
+				setEnabled(() -> _getBoolean(formPageContext, "enabled"));
+				setFormFieldContexts(
+					() -> {
+						List<FormFieldContext> formFieldContextsList =
+							new ArrayList<>();
 
-				List<Map<String, Object>> maps = _getMaps(
-					formPageContext, "rows");
+						for (Map<String, Object> rowsMap :
+								_getMaps(formPageContext, "rows")) {
 
-				Stream<Map<String, Object>> stream = maps.stream();
+							for (Map<String, Object> columnsMap :
+									_getMaps(rowsMap, "columns")) {
 
-				formFieldContexts = TransformUtil.transformToArray(
-					stream.map(
-						row -> _getMaps(row, "columns")
-					).flatMap(
-						List::stream
-					).map(
-						column -> _getMaps(column, "fields")
-					).flatMap(
-						List::stream
-					).collect(
-						Collectors.toList()
-					),
-					FormContextUtil::_toFormFieldContext,
-					FormFieldContext.class);
+								for (Map<String, Object> fieldsMap :
+										_getMaps(columnsMap, "fields")) {
 
-				showRequiredFieldsWarning = _getBoolean(
-					formPageContext, "showRequiredFieldsWarning");
+									formFieldContextsList.add(
+										_toFormFieldContext(fieldsMap));
+								}
+							}
+						}
+
+						return formFieldContextsList.toArray(
+							new FormFieldContext[0]);
+					});
+				setShowRequiredFieldsWarning(
+					() -> _getBoolean(
+						formPageContext, "showRequiredFieldsWarning"));
 			}
 		};
 	}

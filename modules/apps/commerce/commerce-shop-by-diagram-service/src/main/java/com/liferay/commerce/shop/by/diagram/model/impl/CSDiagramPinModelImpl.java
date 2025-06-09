@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shop.by.diagram.model.impl;
 
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramPin;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramPinModel;
-import com.liferay.commerce.shop.by.diagram.model.CSDiagramPinSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -35,18 +25,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -75,6 +62,7 @@ public class CSDiagramPinModelImpl
 	public static final String TABLE_NAME = "CSDiagramPin";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"CSDiagramPinId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
@@ -86,6 +74,8 @@ public class CSDiagramPinModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("CSDiagramPinId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -99,7 +89,7 @@ public class CSDiagramPinModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CSDiagramPin (CSDiagramPinId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,CPDefinitionId LONG,positionX DOUBLE,positionY DOUBLE,sequence VARCHAR(75) null)";
+		"create table CSDiagramPin (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,CSDiagramPinId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,CPDefinitionId LONG,positionX DOUBLE,positionY DOUBLE,sequence VARCHAR(75) null,primary key (CSDiagramPinId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CSDiagramPin";
 
@@ -140,58 +130,6 @@ public class CSDiagramPinModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static CSDiagramPin toModel(CSDiagramPinSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		CSDiagramPin model = new CSDiagramPinImpl();
-
-		model.setCSDiagramPinId(soapModel.getCSDiagramPinId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCPDefinitionId(soapModel.getCPDefinitionId());
-		model.setPositionX(soapModel.getPositionX());
-		model.setPositionY(soapModel.getPositionY());
-		model.setSequence(soapModel.getSequence());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<CSDiagramPin> toModels(CSDiagramPinSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CSDiagramPin> models = new ArrayList<CSDiagramPin>(
-			soapModels.length);
-
-		for (CSDiagramPinSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public CSDiagramPinModelImpl() {
@@ -270,101 +208,137 @@ public class CSDiagramPinModelImpl
 	public Map<String, Function<CSDiagramPin, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CSDiagramPin, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CSDiagramPin>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CSDiagramPin.class.getClassLoader(), CSDiagramPin.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CSDiagramPin, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CSDiagramPin> constructor =
-				(Constructor<CSDiagramPin>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CSDiagramPin, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<CSDiagramPin, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CSDiagramPin::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CSDiagramPin::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"CSDiagramPinId", CSDiagramPin::getCSDiagramPinId);
+			attributeGetterFunctions.put(
+				"companyId", CSDiagramPin::getCompanyId);
+			attributeGetterFunctions.put("userId", CSDiagramPin::getUserId);
+			attributeGetterFunctions.put("userName", CSDiagramPin::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CSDiagramPin::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CSDiagramPin::getModifiedDate);
+			attributeGetterFunctions.put(
+				"CPDefinitionId", CSDiagramPin::getCPDefinitionId);
+			attributeGetterFunctions.put(
+				"positionX", CSDiagramPin::getPositionX);
+			attributeGetterFunctions.put(
+				"positionY", CSDiagramPin::getPositionY);
+			attributeGetterFunctions.put("sequence", CSDiagramPin::getSequence);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CSDiagramPin, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CSDiagramPin, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CSDiagramPin, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CSDiagramPin, Object>>();
-		Map<String, BiConsumer<CSDiagramPin, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CSDiagramPin, ?>>();
+		private static final Map<String, BiConsumer<CSDiagramPin, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"CSDiagramPinId", CSDiagramPin::getCSDiagramPinId);
-		attributeSetterBiConsumers.put(
-			"CSDiagramPinId",
-			(BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setCSDiagramPinId);
-		attributeGetterFunctions.put("companyId", CSDiagramPin::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setCompanyId);
-		attributeGetterFunctions.put("userId", CSDiagramPin::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setUserId);
-		attributeGetterFunctions.put("userName", CSDiagramPin::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CSDiagramPin, String>)CSDiagramPin::setUserName);
-		attributeGetterFunctions.put("createDate", CSDiagramPin::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CSDiagramPin, Date>)CSDiagramPin::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CSDiagramPin::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CSDiagramPin, Date>)CSDiagramPin::setModifiedDate);
-		attributeGetterFunctions.put(
-			"CPDefinitionId", CSDiagramPin::getCPDefinitionId);
-		attributeSetterBiConsumers.put(
-			"CPDefinitionId",
-			(BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setCPDefinitionId);
-		attributeGetterFunctions.put("positionX", CSDiagramPin::getPositionX);
-		attributeSetterBiConsumers.put(
-			"positionX",
-			(BiConsumer<CSDiagramPin, Double>)CSDiagramPin::setPositionX);
-		attributeGetterFunctions.put("positionY", CSDiagramPin::getPositionY);
-		attributeSetterBiConsumers.put(
-			"positionY",
-			(BiConsumer<CSDiagramPin, Double>)CSDiagramPin::setPositionY);
-		attributeGetterFunctions.put("sequence", CSDiagramPin::getSequence);
-		attributeSetterBiConsumers.put(
-			"sequence",
-			(BiConsumer<CSDiagramPin, String>)CSDiagramPin::setSequence);
+		static {
+			Map<String, BiConsumer<CSDiagramPin, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<CSDiagramPin, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CSDiagramPin, Long>)
+					CSDiagramPin::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"CSDiagramPinId",
+				(BiConsumer<CSDiagramPin, Long>)
+					CSDiagramPin::setCSDiagramPinId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CSDiagramPin, Long>)CSDiagramPin::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CSDiagramPin, String>)CSDiagramPin::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CSDiagramPin, Date>)CSDiagramPin::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CSDiagramPin, Date>)CSDiagramPin::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"CPDefinitionId",
+				(BiConsumer<CSDiagramPin, Long>)
+					CSDiagramPin::setCPDefinitionId);
+			attributeSetterBiConsumers.put(
+				"positionX",
+				(BiConsumer<CSDiagramPin, Double>)CSDiagramPin::setPositionX);
+			attributeSetterBiConsumers.put(
+				"positionY",
+				(BiConsumer<CSDiagramPin, Double>)CSDiagramPin::setPositionY);
+			attributeSetterBiConsumers.put(
+				"sequence",
+				(BiConsumer<CSDiagramPin, String>)CSDiagramPin::setSequence);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -615,6 +589,8 @@ public class CSDiagramPinModelImpl
 	public Object clone() {
 		CSDiagramPinImpl csDiagramPinImpl = new CSDiagramPinImpl();
 
+		csDiagramPinImpl.setMvccVersion(getMvccVersion());
+		csDiagramPinImpl.setCtCollectionId(getCtCollectionId());
 		csDiagramPinImpl.setCSDiagramPinId(getCSDiagramPinId());
 		csDiagramPinImpl.setCompanyId(getCompanyId());
 		csDiagramPinImpl.setUserId(getUserId());
@@ -635,6 +611,10 @@ public class CSDiagramPinModelImpl
 	public CSDiagramPin cloneWithOriginalValues() {
 		CSDiagramPinImpl csDiagramPinImpl = new CSDiagramPinImpl();
 
+		csDiagramPinImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		csDiagramPinImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		csDiagramPinImpl.setCSDiagramPinId(
 			this.<Long>getColumnOriginalValue("CSDiagramPinId"));
 		csDiagramPinImpl.setCompanyId(
@@ -729,6 +709,10 @@ public class CSDiagramPinModelImpl
 	public CacheModel<CSDiagramPin> toCacheModel() {
 		CSDiagramPinCacheModel csDiagramPinCacheModel =
 			new CSDiagramPinCacheModel();
+
+		csDiagramPinCacheModel.mvccVersion = getMvccVersion();
+
+		csDiagramPinCacheModel.ctCollectionId = getCtCollectionId();
 
 		csDiagramPinCacheModel.CSDiagramPinId = getCSDiagramPinId();
 
@@ -828,44 +812,17 @@ public class CSDiagramPinModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CSDiagramPin, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CSDiagramPin, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CSDiagramPin, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CSDiagramPin)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CSDiagramPin>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CSDiagramPin.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private long _CSDiagramPinId;
 	private long _companyId;
 	private long _userId;
@@ -879,8 +836,9 @@ public class CSDiagramPinModelImpl
 	private String _sequence;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<CSDiagramPin, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<CSDiagramPin, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -905,6 +863,8 @@ public class CSDiagramPinModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("CSDiagramPinId", _CSDiagramPinId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -928,25 +888,29 @@ public class CSDiagramPinModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("CSDiagramPinId", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("companyId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("userId", 4L);
+		columnBitmasks.put("CSDiagramPinId", 4L);
 
-		columnBitmasks.put("userName", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("createDate", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("modifiedDate", 32L);
+		columnBitmasks.put("userName", 32L);
 
-		columnBitmasks.put("CPDefinitionId", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("positionX", 128L);
+		columnBitmasks.put("modifiedDate", 128L);
 
-		columnBitmasks.put("positionY", 256L);
+		columnBitmasks.put("CPDefinitionId", 256L);
 
-		columnBitmasks.put("sequence", 512L);
+		columnBitmasks.put("positionX", 512L);
+
+		columnBitmasks.put("positionY", 1024L);
+
+		columnBitmasks.put("sequence", 2048L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

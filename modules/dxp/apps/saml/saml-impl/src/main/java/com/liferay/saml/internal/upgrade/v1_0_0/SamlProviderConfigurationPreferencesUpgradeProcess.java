@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.internal.upgrade.v1_0_0;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.configuration.Filter;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -27,11 +18,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.saml.internal.constants.LegacySamlPropsKeys;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Stian Sigvartsen
@@ -59,7 +50,7 @@ public class SamlProviderConfigurationPreferencesUpgradeProcess
 		Filter propsFilter = null;
 
 		PortletPreferences portletPreferences = _prefsProps.getPreferences(
-			companyId, true);
+			companyId);
 
 		String entityId = portletPreferences.getValue(
 			LegacySamlPropsKeys.SAML_ENTITY_ID, null);
@@ -120,17 +111,12 @@ public class SamlProviderConfigurationPreferencesUpgradeProcess
 		}
 
 		if (!migratedPrefsPropsKeys.isEmpty()) {
-			long companyThreadLocalCompanyId =
-				CompanyThreadLocal.getCompanyId();
-
-			try {
-				CompanyThreadLocal.setCompanyId(companyId);
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						companyId)) {
 
 				_samlProviderConfigurationHelper.updateProperties(
 					unicodeProperties);
-			}
-			finally {
-				CompanyThreadLocal.setCompanyId(companyThreadLocalCompanyId);
 			}
 		}
 
@@ -169,18 +155,8 @@ public class SamlProviderConfigurationPreferencesUpgradeProcess
 		}
 
 		if (!unicodeProperties.isEmpty()) {
-			long companyThreadLocalCompanyId =
-				CompanyThreadLocal.getCompanyId();
-
-			try {
-				CompanyThreadLocal.setCompanyId(CompanyConstants.SYSTEM);
-
-				_samlProviderConfigurationHelper.updateProperties(
-					unicodeProperties);
-			}
-			finally {
-				CompanyThreadLocal.setCompanyId(companyThreadLocalCompanyId);
-			}
+			_samlProviderConfigurationHelper.updateProperties(
+				unicodeProperties);
 		}
 	}
 

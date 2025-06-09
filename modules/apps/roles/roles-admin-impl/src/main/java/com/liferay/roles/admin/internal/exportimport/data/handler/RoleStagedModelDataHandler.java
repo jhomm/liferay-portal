@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.internal.exportimport.data.handler;
@@ -30,19 +21,22 @@ import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.model.adapter.ModelAdapterUtil;
+import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionConversionFilter;
-import com.liferay.portal.kernel.security.permission.PermissionConverterUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
+import com.liferay.portal.security.permission.converter.PermissionConverter;
 import com.liferay.site.model.adapter.StagedGroup;
 
 import java.util.List;
@@ -54,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author David Mendez Gonzalez
  * @author Michael C. Han
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class RoleStagedModelDataHandler
 	extends BaseStagedModelDataHandler<Role> {
 
@@ -98,44 +92,6 @@ public class RoleStagedModelDataHandler
 		return role.getName();
 	}
 
-	protected void deleteRolePermissions(
-		PortletDataContext portletDataContext, Role importedRole) {
-
-		List<ResourcePermission> resourcePermissions =
-			_resourcePermissionLocalService.getRoleResourcePermissions(
-				importedRole.getRoleId(),
-				new int[] {
-					ResourceConstants.SCOPE_COMPANY,
-					ResourceConstants.SCOPE_GROUP_TEMPLATE
-				},
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		for (ResourcePermission resourcePermission : resourcePermissions) {
-			_resourcePermissionLocalService.deleteResourcePermission(
-				resourcePermission);
-		}
-
-		List<ResourcePermission> groupResourcePermissions =
-			_resourcePermissionLocalService.getRoleResourcePermissions(
-				importedRole.getRoleId(),
-				new int[] {ResourceConstants.SCOPE_GROUP}, QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS);
-
-		for (ResourcePermission groupResourcePermission :
-				groupResourcePermissions) {
-
-			long groupId = GetterUtil.getLong(
-				groupResourcePermission.getPrimKey());
-
-			if ((groupId == portletDataContext.getCompanyGroupId()) ||
-				(groupId == portletDataContext.getUserPersonalSiteGroupId())) {
-
-				_resourcePermissionLocalService.deleteResourcePermission(
-					groupResourcePermission);
-			}
-		}
-	}
-
 	@Override
 	protected void doExportStagedModel(
 			PortletDataContext portletDataContext, Role role)
@@ -144,9 +100,8 @@ public class RoleStagedModelDataHandler
 		String permissionsPath = ExportImportPathUtil.getModelPath(
 			role, "permissions.xml");
 
-		List<Permission> permissions =
-			PermissionConverterUtil.convertPermissions(
-				role, _permissionConversionFilter);
+		List<Permission> permissions = _permissionConverter.convertPermissions(
+			role, _permissionConversionFilter);
 
 		String xml = portletDataContext.toXML(permissions);
 
@@ -189,16 +144,17 @@ public class RoleStagedModelDataHandler
 			serviceContext.setUuid(role.getUuid());
 
 			importedRole = _roleLocalService.addRole(
-				userId, null, 0, role.getName(), role.getTitleMap(),
-				role.getDescriptionMap(), role.getType(), role.getSubtype(),
-				serviceContext);
+				role.getExternalReferenceCode(), userId, role.getClassName(), 0,
+				role.getName(), role.getTitleMap(), role.getDescriptionMap(),
+				role.getType(), role.getSubtype(), serviceContext);
 		}
 		else {
 			importedRole = _roleLocalService.updateRole(
-				existingRole.getRoleId(), role.getName(), role.getTitleMap(),
-				role.getDescriptionMap(), role.getSubtype(), serviceContext);
+				role.getExternalReferenceCode(), existingRole.getRoleId(),
+				role.getName(), role.getTitleMap(), role.getDescriptionMap(),
+				role.getSubtype(), serviceContext);
 
-			deleteRolePermissions(portletDataContext, importedRole);
+			_deleteRolePermissions(portletDataContext, importedRole);
 		}
 
 		String permissionsPath = ExportImportPathUtil.getModelPath(
@@ -210,7 +166,7 @@ public class RoleStagedModelDataHandler
 
 		for (Permission permission : permissions) {
 			try {
-				importResourcePermissions(
+				_importResourcePermissions(
 					portletDataContext, importedRole, permission);
 			}
 			catch (NoSuchResourceActionException
@@ -229,11 +185,45 @@ public class RoleStagedModelDataHandler
 
 		for (Element groupElement : groupElements) {
 			String uuid = groupElement.attributeValue("uuid");
-			long companyId = GetterUtil.getLong(
-				groupElement.attributeValue("company-id"));
 
 			Group group = _groupLocalService.fetchGroupByUuidAndCompanyId(
-				uuid, companyId);
+				uuid, portletDataContext.getCompanyId());
+
+			String className = groupElement.attributeValue(
+				"attached-class-name");
+
+			if ((group == null) && Validator.isNotNull(className) &&
+				className.equals(UserGroup.class.getName())) {
+
+				Group exportedGroup =
+					_groupLocalService.fetchGroupByUuidAndCompanyId(
+						uuid,
+						GetterUtil.getLong(
+							groupElement.attributeValue("company-id")));
+
+				if (exportedGroup == null) {
+					continue;
+				}
+
+				UserGroup exportedUserGroup =
+					_userGroupLocalService.getUserGroup(
+						exportedGroup.getClassPK());
+
+				if (exportedUserGroup == null) {
+					continue;
+				}
+
+				UserGroup importedUserGroup =
+					_userGroupLocalService.fetchUserGroupByUuidAndCompanyId(
+						exportedUserGroup.getUuid(),
+						portletDataContext.getCompanyId());
+
+				if (importedUserGroup == null) {
+					continue;
+				}
+
+				group = importedUserGroup.getGroup();
+			}
 
 			if (group != null) {
 				_groupLocalService.addRoleGroup(
@@ -244,7 +234,45 @@ public class RoleStagedModelDataHandler
 		portletDataContext.importClassedModel(role, importedRole);
 	}
 
-	protected void importResourcePermissions(
+	private void _deleteRolePermissions(
+		PortletDataContext portletDataContext, Role importedRole) {
+
+		List<ResourcePermission> resourcePermissions =
+			_resourcePermissionLocalService.getRoleResourcePermissions(
+				importedRole.getRoleId(),
+				new int[] {
+					ResourceConstants.SCOPE_COMPANY,
+					ResourceConstants.SCOPE_GROUP_TEMPLATE
+				},
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		for (ResourcePermission resourcePermission : resourcePermissions) {
+			_resourcePermissionLocalService.deleteResourcePermission(
+				resourcePermission);
+		}
+
+		List<ResourcePermission> groupResourcePermissions =
+			_resourcePermissionLocalService.getRoleResourcePermissions(
+				importedRole.getRoleId(),
+				new int[] {ResourceConstants.SCOPE_GROUP}, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS);
+
+		for (ResourcePermission groupResourcePermission :
+				groupResourcePermissions) {
+
+			long groupId = GetterUtil.getLong(
+				groupResourcePermission.getPrimKey());
+
+			if ((groupId == portletDataContext.getCompanyGroupId()) ||
+				(groupId == portletDataContext.getUserPersonalSiteGroupId())) {
+
+				_resourcePermissionLocalService.deleteResourcePermission(
+					groupResourcePermission);
+			}
+		}
+	}
+
+	private void _importResourcePermissions(
 			PortletDataContext portletDataContext, Role importedRole,
 			Permission permission)
 		throws PortalException {
@@ -299,38 +327,28 @@ public class RoleStagedModelDataHandler
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setResourcePermissionLocalService(
-		ResourcePermissionLocalService resourcePermissionLocalService) {
-
-		_resourcePermissionLocalService = resourcePermissionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setResourcePermissionService(
-		ResourcePermissionService resourcePermissionService) {
-
-		_resourcePermissionService = resourcePermissionService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setRoleLocalService(RoleLocalService roleLocalService) {
-		_roleLocalService = roleLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		RoleStagedModelDataHandler.class);
 
+	@Reference
 	private GroupLocalService _groupLocalService;
+
 	private final PermissionConversionFilter _permissionConversionFilter =
 		new ImportExportPermissionConversionFilter();
+
+	@Reference
+	private PermissionConverter _permissionConverter;
+
+	@Reference
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Reference
 	private ResourcePermissionService _resourcePermissionService;
+
+	@Reference
 	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private UserGroupLocalService _userGroupLocalService;
 
 }

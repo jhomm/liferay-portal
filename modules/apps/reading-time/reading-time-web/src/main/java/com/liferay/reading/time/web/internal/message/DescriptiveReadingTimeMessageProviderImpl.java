@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.reading.time.web.internal.message;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.reading.time.message.ReadingTimeMessageProvider;
 import com.liferay.reading.time.model.ReadingTimeEntry;
 
@@ -23,12 +14,13 @@ import java.time.Duration;
 import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alejandro Tardín
  */
 @Component(
-	immediate = true, property = "display.style=descriptive",
+	property = "display.style=descriptive",
 	service = ReadingTimeMessageProvider.class
 )
 public class DescriptiveReadingTimeMessageProviderImpl
@@ -39,14 +31,13 @@ public class DescriptiveReadingTimeMessageProviderImpl
 		long readingTimeInMinutes = readingTimeDuration.toMinutes();
 
 		if (readingTimeInMinutes == 0) {
-			return LanguageUtil.get(locale, "less-than-a-minute-read");
+			return _language.get(locale, "less-than-a-minute-read");
 		}
 		else if (readingTimeInMinutes == 1) {
-			return LanguageUtil.get(locale, "a-minute-read");
+			return _language.get(locale, "a-minute-read");
 		}
 
-		return LanguageUtil.format(
-			locale, "x-minute-read", readingTimeInMinutes);
+		return _language.format(locale, "x-minute-read", readingTimeInMinutes);
 	}
 
 	@Override
@@ -54,5 +45,8 @@ public class DescriptiveReadingTimeMessageProviderImpl
 		return provide(
 			Duration.ofMillis(readingTimeEntry.getReadingTime()), locale);
 	}
+
+	@Reference
+	private Language _language;
 
 }

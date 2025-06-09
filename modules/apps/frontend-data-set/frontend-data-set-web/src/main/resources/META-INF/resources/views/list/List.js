@@ -1,143 +1,164 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayCheckbox, ClayRadio} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
+import ClayLayout from '@clayui/layout';
 import ClayList from '@clayui/list';
-import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClaySticker from '@clayui/sticker';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useContext} from 'react';
 
-import EmptyResultMessage from '../../EmptyResultMessage';
-import ActionsDropdownRenderer from '../../data_renderers/ActionsDropdownRenderer';
-import ImageRenderer from '../../data_renderers/ImageRenderer';
+import FrontendDataSetContext from '../../FrontendDataSetContext';
+import Actions from '../../actions/Actions';
+import ImageRenderer from '../../cell_renderers/ImageRenderer';
+import {getLocalizedValue} from '../../utils/getLocalizedValue';
 
-function List({
-	dataLoading,
-	dataSetContext,
-	items,
-	schema: {description, image, sticker, symbol, title},
-}) {
-	const {
-		itemActions,
-		selectItems,
-		selectedItemsKey,
-		selectedItemsValue,
-		selectionType,
-	} = useContext(dataSetContext);
-
-	if (dataLoading) {
-		return <ClayLoadingIndicator className="mt-7" />;
-	}
+const List = ({header, items, schema}) => {
+	const {selectedItemsKey} = useContext(FrontendDataSetContext);
 
 	if (!items?.length) {
-		return <EmptyResultMessage />;
+		return null;
 	}
 
 	return (
-		<ClayList>
-			{items.map((item, i) => (
-				<ClayList.Item
-					className={classNames(
-						i
-							? 'border-left-0 border-bottom-0 border-right-0'
-							: 'border-0'
-					)}
-					flex
-					key={item.id}
-				>
-					<ClayList.ItemField className="justify-content-center">
-						{selectionType === 'single' ? (
-							<ClayRadio
-								checked={selectedItemsValue
-									.map((element) => String(element))
-									.includes(String(item[selectedItemsKey]))}
-								onChange={() =>
-									selectItems(item[selectedItemsKey])
-								}
-							/>
-						) : (
-							<ClayCheckbox
-								checked={selectedItemsValue
-									.map((element) => String(element))
-									.includes(String(item[selectedItemsKey]))}
-								onChange={() =>
-									selectItems(item[selectedItemsKey])
-								}
-							/>
-						)}
-					</ClayList.ItemField>
-					{image && item[image] ? (
-						<ClayList.ItemField>
-							<ImageRenderer
-								sticker={sticker && item[sticker]}
-								value={{src: item[image]}}
-							/>
-						</ClayList.ItemField>
-					) : (
-						symbol &&
-						item[symbol] && (
-							<ClayList.ItemField>
-								<ClaySticker {...(sticker && item[sticker])}>
-									{item[symbol] && (
-										<ClayIcon symbol={item[symbol]} />
-									)}
-								</ClaySticker>
-							</ClayList.ItemField>
-						)
-					)}
-					<ClayList.ItemField
-						className="justify-content-center"
-						expand
-					>
-						{title && (
-							<ClayList.ItemTitle>
-								{item[title]}
-							</ClayList.ItemTitle>
-						)}
-						{description && (
-							<ClayList.ItemText>
-								{item[description]}
-							</ClayList.ItemText>
-						)}
-					</ClayList.ItemField>
+		<ClayLayout.Sheet
+			className={classNames('list-sheet', {
+				'no-header': !header?.title,
+			})}
+		>
+			{header?.title && (
+				<ClayLayout.SheetHeader className="mb-4">
+					<h2 className="sheet-title">{header?.title}</h2>
+				</ClayLayout.SheetHeader>
+			)}
 
-					<ClayList.ItemField>
-						{(itemActions || item.actionDropdownItems) && (
-							<ActionsDropdownRenderer
-								actions={
-									itemActions || item.actionDropdownItems
-								}
-								itemData={item}
-								itemId={item[selectedItemsKey] || i}
-							/>
-						)}
-					</ClayList.ItemField>
-				</ClayList.Item>
-			))}
-		</ClayList>
+			<ClayList>
+				{items.map((item, index) => (
+					<ListItem
+						item={item}
+						key={item[selectedItemsKey] || index}
+						schema={schema}
+					/>
+				))}
+			</ClayList>
+		</ClayLayout.Sheet>
 	);
-}
+};
+
+const Title = ({item, title, titleRenderer}) => {
+	const TitleRendererComponent = titleRenderer?.component;
+
+	if (TitleRendererComponent) {
+		return <TitleRendererComponent itemData={item} />;
+	}
+
+	if (title) {
+		return (
+			<ClayList.ItemTitle>
+				{getLocalizedValue(item, title).value}
+			</ClayList.ItemTitle>
+		);
+	}
+
+	return null;
+};
+
+const ListItem = ({item, schema}) => {
+	const {
+		itemsActions,
+		onSelect,
+		selectItems,
+		selectable,
+		selectedItemsKey,
+		selectedItemsValue,
+		selectionType,
+	} = useContext(FrontendDataSetContext);
+
+	const {description, image, sticker, symbol, title, titleRenderer} = schema;
+
+	const SelectionInput =
+		selectionType === 'single' ? ClayRadio : ClayCheckbox;
+
+	return (
+		<ClayList.Item
+			className={classNames({
+				selectable,
+				selected: selectedItemsValue.includes(item[selectedItemsKey]),
+			})}
+			flex
+			onClick={() => {
+				if (selectable) {
+					selectItems(item[selectedItemsKey]);
+
+					onSelect({selectedItems: [item]});
+				}
+			}}
+		>
+			{selectable && (
+				<ClayList.ItemField className="justify-content-center selection-control">
+					<SelectionInput
+						checked={selectedItemsValue
+							.map((element) => String(element))
+							.includes(String(item[selectedItemsKey]))}
+						onChange={() => {}}
+					/>
+				</ClayList.ItemField>
+			)}
+
+			{image && item[image] ? (
+				<ClayList.ItemField>
+					<ImageRenderer
+						sticker={sticker && item[sticker]}
+						value={item[image]}
+					/>
+				</ClayList.ItemField>
+			) : (
+				symbol &&
+				item[symbol] && (
+					<ClayList.ItemField>
+						<ClaySticker {...(sticker && item[sticker])}>
+							{item[symbol] && <ClayIcon symbol={item[symbol]} />}
+						</ClaySticker>
+					</ClayList.ItemField>
+				)
+			)}
+
+			<ClayList.ItemField className="justify-content-center" expand>
+				<Title
+					item={item}
+					title={title}
+					titleRenderer={titleRenderer}
+				/>
+
+				{description && (
+					<ClayList.ItemText>
+						{getLocalizedValue(item, description).value}
+					</ClayList.ItemText>
+				)}
+			</ClayList.ItemField>
+
+			<ClayList.ItemField>
+				{(itemsActions || item.actionDropdownItems) && (
+					<Actions
+						actions={itemsActions || item.actionDropdownItems}
+						itemData={item}
+						itemId={item[selectedItemsKey]}
+					/>
+				)}
+			</ClayList.ItemField>
+		</ClayList.Item>
+	);
+};
 
 List.propTypes = {
 	context: PropTypes.any,
 	items: PropTypes.arrayOf(
 		PropTypes.shape({
-			id: PropTypes.oneOfType([PropTypes.string, PropTypes.number])
-				.isRequired,
+			id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 		})
 	),
 	schema: PropTypes.shape({

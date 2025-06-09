@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.test;
@@ -17,6 +8,7 @@ package com.liferay.portal.search.internal.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Organization;
@@ -37,18 +29,30 @@ import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUti
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.internal.test.util.BaseTestFilterVisitor;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.segments.criteria.Criteria;
+import com.liferay.segments.criteria.CriteriaSerializer;
+import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
+import com.liferay.segments.model.SegmentsEntry;
+import com.liferay.segments.service.SegmentsEntryRoleLocalServiceUtil;
+import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -62,6 +66,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;
+
+import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * @author Preston Crary
@@ -97,12 +103,12 @@ public class SearchPermissionCheckerTest {
 
 	@Test
 	public void testAdministratorRolePermissionFilter() throws Exception {
-		_user = UserTestUtil.addOmniAdminUser();
+		_user = UserTestUtil.addOmniadminUser();
 
 		PermissionThreadLocal.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(_user));
 
-		BooleanFilter booleanFilter = getBooleanFilter(null);
+		BooleanFilter booleanFilter = _getBooleanFilter(null);
 
 		Assert.assertFalse(booleanFilter.hasClauses());
 	}
@@ -118,13 +124,61 @@ public class SearchPermissionCheckerTest {
 
 		UserLocalServiceUtil.addRoleUser(_role.getRoleId(), _user.getUserId());
 
-		addViewPermission(
+		_addViewPermission(
 			ResourceConstants.SCOPE_COMPANY, TestPropsValues.getCompanyId(),
 			_role.getRoleId());
 
-		BooleanFilter booleanFilter = getBooleanFilter(null);
+		BooleanFilter booleanFilter = _getBooleanFilter(null);
 
 		Assert.assertFalse(booleanFilter.hasClauses());
+	}
+
+	@Test
+	public void testContributedRolesPermissionFilter() throws Exception {
+		try (ConfigurationTemporarySwapper configurationTemporarySwapper =
+				new ConfigurationTemporarySwapper(
+					_CLASS_NAME_SEGMENTS_CONFIGURATION,
+					HashMapDictionaryBuilder.<String, Object>put(
+						"roleSegmentationEnabled", true
+					).build())) {
+
+			_user = UserTestUtil.addUser();
+
+			PermissionThreadLocal.setPermissionChecker(
+				PermissionCheckerFactoryUtil.create(_user));
+
+			Criteria criteria = new Criteria();
+
+			_segmentsCriteriaContributor.contribute(
+				criteria,
+				String.format("(firstName eq '%s')", _user.getFirstName()),
+				Criteria.Conjunction.AND);
+
+			SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+				_group.getGroupId(), CriteriaSerializer.serialize(criteria));
+
+			_role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+			SegmentsEntryRoleLocalServiceUtil.addSegmentsEntryRole(
+				segmentsEntry.getSegmentsEntryId(), _role.getRoleId(),
+				ServiceContextTestUtil.getServiceContext());
+
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext();
+
+			MockHttpServletRequest mockHttpServletRequest =
+				new MockHttpServletRequest();
+
+			mockHttpServletRequest.setAttribute(WebKeys.USER, _user);
+
+			serviceContext.setRequest(mockHttpServletRequest);
+
+			ServiceContextThreadLocal.pushServiceContext(serviceContext);
+
+			_assertFieldValue(
+				new long[] {_group.getGroupId()}, Field.ROLE_ID,
+				String.valueOf(_role.getRoleId()));
+		}
 	}
 
 	@Test
@@ -138,8 +192,11 @@ public class SearchPermissionCheckerTest {
 			TestPropsValues.getCompanyId(),
 			RoleConstants.ORGANIZATION_ADMINISTRATOR);
 
-		assertFieldValue(
+		_assertFieldValue(
 			new long[] {_group.getGroupId()}, Field.GROUP_ROLE_ID,
+			_group.getGroupId() + StringPool.DASH + role.getRoleId(), false);
+		_assertFieldValue(
+			null, Field.GROUP_ROLE_ID,
 			_group.getGroupId() + StringPool.DASH + role.getRoleId(), false);
 	}
 
@@ -153,13 +210,14 @@ public class SearchPermissionCheckerTest {
 		Role role = RoleLocalServiceUtil.getRole(
 			TestPropsValues.getCompanyId(), RoleConstants.SITE_ADMINISTRATOR);
 
-		addViewPermission(
+		_addViewPermission(
 			ResourceConstants.SCOPE_GROUP, _group.getGroupId(),
 			role.getRoleId());
 
-		assertFieldValue(
+		_assertFieldValue(
 			null, Field.GROUP_ID, String.valueOf(_group.getGroupId()));
-		assertFieldValue(null, Field.ROLE_ID, String.valueOf(role.getRoleId()));
+		_assertFieldValue(
+			null, Field.ROLE_ID, String.valueOf(role.getRoleId()));
 	}
 
 	@Test
@@ -173,11 +231,11 @@ public class SearchPermissionCheckerTest {
 
 		UserLocalServiceUtil.addRoleUser(_role.getRoleId(), _user.getUserId());
 
-		addViewPermission(
+		_addViewPermission(
 			ResourceConstants.SCOPE_GROUP_TEMPLATE,
 			GroupConstants.DEFAULT_PARENT_GROUP_ID, _role.getRoleId());
 
-		BooleanFilter booleanFilter = getBooleanFilter(null);
+		BooleanFilter booleanFilter = _getBooleanFilter(null);
 
 		Assert.assertFalse(booleanFilter.hasClauses());
 	}
@@ -192,14 +250,16 @@ public class SearchPermissionCheckerTest {
 		Role role = RoleLocalServiceUtil.getRole(
 			TestPropsValues.getCompanyId(), RoleConstants.GUEST);
 
-		addViewPermission(
+		_addViewPermission(
 			ResourceConstants.SCOPE_GROUP, _group.getGroupId(),
 			role.getRoleId());
 
-		assertFieldValue(
+		_assertFieldValue(
 			new long[] {_group.getGroupId()}, Field.GROUP_ID,
 			String.valueOf(_group.getGroupId()));
-		assertFieldValue(
+		_assertFieldValue(
+			null, Field.GROUP_ID, String.valueOf(_group.getGroupId()));
+		_assertFieldValue(
 			new long[] {_group.getGroupId()}, Field.ROLE_ID,
 			String.valueOf(role.getRoleId()));
 	}
@@ -215,13 +275,14 @@ public class SearchPermissionCheckerTest {
 			TestPropsValues.getCompanyId(),
 			RoleConstants.ORGANIZATION_ADMINISTRATOR);
 
-		addViewPermission(
+		_addViewPermission(
 			ResourceConstants.SCOPE_GROUP, _organization.getGroupId(),
 			role.getRoleId());
 
-		assertFieldValue(
+		_assertFieldValue(
 			null, Field.GROUP_ID, String.valueOf(_organization.getGroupId()));
-		assertFieldValue(null, Field.ROLE_ID, String.valueOf(role.getRoleId()));
+		_assertFieldValue(
+			null, Field.ROLE_ID, String.valueOf(role.getRoleId()));
 	}
 
 	@Test
@@ -240,7 +301,7 @@ public class SearchPermissionCheckerTest {
 			_user.getUserId(), _group.getGroupId(),
 			new long[] {_role.getRoleId()});
 
-		assertFieldValue(
+		_assertFieldValue(
 			null, Field.GROUP_ROLE_ID,
 			_group.getGroupId() + StringPool.DASH + _role.getRoleId());
 	}
@@ -248,7 +309,11 @@ public class SearchPermissionCheckerTest {
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
-	protected void addViewPermission(int scope, long primKey, long roleId)
+	protected String getClassName() {
+		return DLFileEntry.class.getName();
+	}
+
+	private void _addViewPermission(int scope, long primKey, long roleId)
 		throws Exception {
 
 		ResourcePermissionLocalServiceUtil.addResourcePermission(
@@ -261,17 +326,17 @@ public class SearchPermissionCheckerTest {
 				String.valueOf(primKey), roleId);
 	}
 
-	protected void assertFieldValue(long[] groupIds, String field, String value)
+	private void _assertFieldValue(long[] groupIds, String field, String value)
 		throws Exception {
 
-		assertFieldValue(groupIds, field, value, true);
+		_assertFieldValue(groupIds, field, value, true);
 	}
 
-	protected void assertFieldValue(
+	private void _assertFieldValue(
 			long[] groupIds, String field, String value, boolean expected)
 		throws Exception {
 
-		BooleanFilter booleanFilter = getBooleanFilter(groupIds);
+		BooleanFilter booleanFilter = _getBooleanFilter(groupIds);
 
 		TestFilterVisitor testFilterVisitor = new TestFilterVisitor(
 			expected, field, value);
@@ -281,15 +346,14 @@ public class SearchPermissionCheckerTest {
 		testFilterVisitor.assertField();
 	}
 
-	protected BooleanFilter getBooleanFilter(long[] groupIds) throws Exception {
+	private BooleanFilter _getBooleanFilter(long[] groupIds) throws Exception {
 		return _searchPermissionChecker.getPermissionBooleanFilter(
 			TestPropsValues.getCompanyId(), groupIds, _user.getUserId(),
 			getClassName(), new BooleanFilter(), new SearchContext());
 	}
 
-	protected String getClassName() {
-		return DLFileEntry.class.getName();
-	}
+	private static final String _CLASS_NAME_SEGMENTS_CONFIGURATION =
+		"com.liferay.segments.configuration.SegmentsConfiguration";
 
 	private BundleContext _bundleContext;
 
@@ -306,6 +370,13 @@ public class SearchPermissionCheckerTest {
 	private Role _role;
 
 	private SearchPermissionChecker _searchPermissionChecker;
+
+	@Inject(
+		filter = "segments.criteria.contributor.key=user",
+		type = SegmentsCriteriaContributor.class
+	)
+	private SegmentsCriteriaContributor _segmentsCriteriaContributor;
+
 	private ServiceReference<SearchPermissionChecker> _serviceReference;
 
 	@DeleteAfterTestRun

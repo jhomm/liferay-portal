@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.internal.helper;
@@ -22,9 +13,9 @@ import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
 import com.liferay.commerce.pricing.configuration.CommercePricingConfiguration;
 import com.liferay.commerce.pricing.constants.CommercePricingConstants;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -37,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Riccardo Alberti
  */
-@Component(enabled = false, service = CommerceBasePriceListHelper.class)
+@Component(service = CommerceBasePriceListHelper.class)
 public class CommerceBasePriceListHelper {
 
 	public void addCatalogBaseCommercePriceList(CommerceCatalog commerceCatalog)
@@ -64,14 +55,14 @@ public class CommerceBasePriceListHelper {
 
 		_addCatalogBaseCommercePriceList(
 			commerceCatalog, CommercePriceListConstants.TYPE_PRICE_LIST,
-			LanguageUtil.format(
+			_language.format(
 				LocaleUtil.fromLanguageId(
 					commerceCatalog.getCatalogDefaultLanguageId()),
 				"x-base-price-list", commerceCatalog.getName(), false),
 			serviceContext);
 		_addCatalogBaseCommercePriceList(
 			commerceCatalog, CommercePriceListConstants.TYPE_PROMOTION,
-			LanguageUtil.format(
+			_language.format(
 				LocaleUtil.fromLanguageId(
 					commerceCatalog.getCatalogDefaultLanguageId()),
 				"x-base-promotion", commerceCatalog.getName(), false),
@@ -107,8 +98,7 @@ public class CommerceBasePriceListHelper {
 
 			_commercePriceListLocalService.addCatalogBaseCommercePriceList(
 				commerceCatalog.getGroupId(), serviceContext.getUserId(),
-				commerceCurrency.getCommerceCurrencyId(), type, name,
-				serviceContext);
+				commerceCurrency.getCode(), type, name, serviceContext);
 		}
 	}
 
@@ -135,5 +125,8 @@ public class CommerceBasePriceListHelper {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private Language _language;
 
 }

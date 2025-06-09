@@ -11,8 +11,23 @@
 
 <tbody>
 <tr>
-	<td>ADD_ACTION</td>
-	<td>//span[contains(.,'Add Action')]</td>
+	<td>ADD</td>
+	<td>//button[contains(@id, 'addButton')] | //button[contains(@data-qa-id, 'addButton')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ADD_DISABLED</td>
+	<td>//button[contains(@id, 'addButton') and @disabled]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ADD_REPEATABLE</td>
+	<td>//button[${key_index}][contains(@class, 'repeatable-add-button')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISABLED_BUTTON</td>
+	<td>//button[@disabled]</td>
 	<td></td>
 </tr>
 <tr>
@@ -81,8 +96,13 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ANY_SECONDARY</td>
+	<td>//*[not(self::div)][contains(@class,'btn-secondary')][normalize-space()='${key_text}'][not(contains(@class,'navbar'))]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ANY_TITLE</td>
-	<td>//button[@title='${key_title}']</td>
+	<td>//button[@*='${key_title}'] | //button//span[@*='${key_title}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -93,6 +113,11 @@
 <tr>
 	<td>ANY_WITH_ARIA_LABEL</td>
 	<td>//button[@aria-label='${ariaLabel}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_WITH_CLASS_AND_INDEX</td>
+	<td>xpath=(//button[contains(@class,'${key_class}')])[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -107,17 +132,27 @@
 </tr>
 <tr>
 	<td>ANY_WITH_SPAN</td>
-	<td>//button/span[contains(.,'${key_text}')]</td>
+	<td>//button/span[contains(.,'${key_text}')] | //button[contains(@class, 'select-button')]/descendant::span[contains(text(), '${key_text}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ANY_DISABLED</td>
-	<td>//button[@disabled][contains(@class,'btn')][normalize-space()='${key_text}']</td>
+	<td>//button[@disabled][contains(@class,'btn')][normalize-space()='${key_text}'] | //button[@disabled][contains(@class,'btn')][@*='${key_text}'] | //button[@disabled][contains(@class,'btn') and contains(@aria-label,'${key_text}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_DISABLED_CLASS</td>
+	<td>//button[contains(@class,'disabled')][normalize-space()='${key_text}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TRASH_DISABLED</td>
 	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-trash')]][@disabled='']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TRASH_ENABLED</td>
+	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-trash')]] | //a[contains(@class,'btn')]/*[name()='svg'][contains(@class,'trash')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -142,7 +177,7 @@
 </tr>
 <tr>
 	<td>BORDER_BOTTOM_PALETTE_ITEM</td>
-	<td>//label[normalize-space(text())='${key_borderBottom}']/following-sibling::div[1]//li[contains(@class,'palette-item')]//button[contains(@class,'bg-${key_paletteItem}')]</td>
+	<td>//label[normalize-space(text())='${key_borderBottom}']/following-sibling::div[1]//li[contains(@class,'palette-item')]//button[contains(@class,'palette-item')][@*='${key_paletteItem}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -157,7 +192,7 @@
 </tr>
 <tr>
 	<td>BUTTON_LABEL</td>
-	<td>//div[./label[normalize-space(text())='${fieldLabel}']]//button[normalize-space()='${text}']</td>
+	<td>//div[./label[normalize-space(text())='${fieldLabel}']]//button[normalize-space()='${text}'] | //div[contains(@class,'form-group')][.//label[normalize-space(text())='${fieldLabel}']]//button[normalize-space()='${text}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -171,13 +206,13 @@
 	<td></td>
 </tr>
 <tr>
-	<td>CHANGE</td>
-	<td>//button[contains(.,'Change')]</td>
+	<td>CANCEL_SPECIAL</td>
+	<td>//div[contains(text(),'Cancel')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>CHANGE_LOGO</td>
-	<td>//button[contains(@class,'edit-logo') and contains(.,'Change')]</td>
+	<td>CHANGE</td>
+	<td>//button[contains(.,'Change')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -203,6 +238,11 @@
 <tr>
 	<td>CHOOSE_THIS_FOLDER</td>
 	<td>//button[contains(.,'Choose This Folder')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CLEAR</td>
+	<td>//button[@title='Clear']</td>
 	<td></td>
 </tr>
 <tr>
@@ -236,13 +276,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>COLOR_PICKER_BUTTON</td>
+	<td>//div[contains(@class,'input-group')]//button[contains(@class,'clay-color-btn')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>COLOR_PICKER</td>
-	<td>//label[normalize-space(text())='${key_fieldLabel}']/following-sibling::div//div[contains(@class,'color-picker')]//button[contains(@class,'clay-color-btn')] | //div[contains(@class,'color-picker')][./label[normalize-space(text())='${key_fieldLabel}']]//button[contains(@class,'clay-color-btn')]</td>
+	<td>//label[normalize-space(text())='${key_fieldLabel}']/following-sibling::div//div[contains(@class,'color-picker')]//button[contains(@class,'clay-color-btn')] | //div[contains(@class,'color-picker')][./label[normalize-space(text())='${key_fieldLabel}']]//button[contains(@class,'clay-color-btn')] | //label[normalize-space(text())='${key_fieldLabel}']/following-sibling::div//div[contains(@class,'color-picker')]//button[contains(@class,'color-picker__selector')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>COLOR_SWATCH_ITEM</td>
-	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//button[contains(@class,'color')][@*='${key_colorSwatchItem}']</td>
+	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//button[contains(@class,'color')][@*='${key_colorSwatchItem}'] | //div[contains(@class,'dropdown-menu')]//button[@title='#${key_colorSwatchItem}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -296,11 +341,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>DELETE_LAYOUT_LOGO</td>
-	<td>//button[contains(@class,'delete-logo')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>DELETE_ROW_N</td>
 	<td>xpath=(//button[contains(@class,'delete-row')])[${key_rowIndexNumber}]</td>
 	<td></td>
@@ -308,6 +348,11 @@
 <tr>
 	<td>DELETE_ROW_LAST</td>
 	<td>xpath=(//button[contains(@class,'delete-row')])[last()]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>EXPAND</td>
+	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-expand')]]</td>
 	<td></td>
 </tr>
 <tr>
@@ -336,13 +381,23 @@
 	<td></td>
 </tr>
 <tr>
+	<td>DOWNLOAD_BUTTON_ON_PORTLET</td>
+	<td>//button[@type='button']//span[text()='Download']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DOWNLOAD_SIDEBAR</td>
 	<td>//div[contains(@class,'sidebar-section')]//a[contains(@class,'btn') and contains(.,'Download')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>DUPLICATE</td>
-	<td>//button[contains(@class, 'ddm-form-field-repeatable-add-button p-0 btn btn-sm btn-primary')]</td>
+	<td>//button[contains(@class, 'repeatable-add-button')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DUPLICATE_SPECIFIC</td>
+	<td>//button[contains(@class, 'repeatable-add-button') and contains(@aria-label, '${key_label}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -372,7 +427,7 @@
 </tr>
 <tr>
 	<td>EXECUTE</td>
-	<td>//button[contains(.,'Execute')]</td>
+	<td>//button[contains(.,'Execute')] | //div[contains(@id,'${method}')]//button[contains(.,'Execute')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -387,17 +442,12 @@
 </tr>
 <tr>
 	<td>EXPORT_MODAL</td>
-	<td>//div[contains(@class,'btn-group-item')]/button[contains(@class,'btn') and contains(.,'Export')]</td>
+	<td>//div[contains(@class,'btn-group-spaced')]/button[contains(@class,'btn') and contains(.,'Export')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>EXPORT_MODAL_DISABLED</td>
-	<td>//div[contains(@class,'btn-group-item')]/button[@disabled and contains(.,'Export')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>FIELD_FILTER_APPLY</td>
-	<td>//tr[contains(.,'${key_fieldName}')]//button[contains(.,'Apply')]</td>
+	<td>//div[contains(@class,'btn-group-spaced')]/button[@disabled and contains(.,'Export')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -431,8 +481,13 @@
 	<td></td>
 </tr>
 <tr>
-	<td>IGNORE_REDIRECT_URLS</td>
-	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-hidden')]]</td>
+	<td>IMAGE_CLEAR</td>
+	<td>//label[normalize-space(text())='${key_fieldLabel}']/following-sibling::div//button[contains(@id,'openGraphClearImageButton')] | //div[normalize-space(text())='${key_fieldLabel}']/../following-sibling::div//button[contains(@id,'openGraphClearImageButton')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>IMAGE_SELECTOR</td>
+	<td>//label[normalize-space(text())='${key_fieldLabel}']/following-sibling::div//button[contains(@id,'openGraphImageButton')] | //div[normalize-space(text())='${key_fieldLabel}']/../following-sibling::div//button[contains(@id,'openGraphImageButton')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -442,7 +497,7 @@
 </tr>
 <tr>
 	<td>INVITE_MEMBERS</td>
-	<td>//a[contains(@id,'InviteMembersPortlet') and contains(@class,'btn')]</td>
+	<td>//button[contains(.,'Invite Members')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -472,7 +527,12 @@
 </tr>
 <tr>
 	<td>LOCALIZATION_GENERIC</td>
-	<td>//div[contains(@class,'form-group')]//div[contains(@class,'localized')]//button[contains(@class,'localized')] | //button[contains(@class,'localized')]</td>
+	<td>//div[contains(@class,'form-group')]//div[contains(@class,'localized')]//button[contains(@class,'localized')] | //button[contains(@class,'localized')] | //div[contains(@class,'translation-manager')]/button</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LOCALIZATION_GENERIC_1</td>
+	<td>xpath=(//div[contains(@class,'form-group')]//div[contains(@class,'localized')]//button[contains(@class,'localized')])[1]</td>
 	<td></td>
 </tr>
 <tr>
@@ -491,6 +551,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>LOCALIZATION_TRANSLATED</td>
+	<td>//div[@role='group']//ul[@class='tbar-nav']//button[@role='combobox']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>MAKE_DEFAULT</td>
 	<td>//button[contains(.,'Make Default') and contains(@data-value,'${key_language}')]</td>
 	<td></td>
@@ -498,6 +563,11 @@
 <tr>
 	<td>MERGE</td>
 	<td>//button[contains(.,'Merge')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MODAL_DELETE</td>
+	<td>//div[contains(@class, 'modal-content')]//button[contains(., 'Delete')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -512,22 +582,22 @@
 </tr>
 <tr>
 	<td>MOVE_AVAILABLE_TO_CURRENT</td>
-	<td>//button[@title='Move selected items from Available to Current.']</td>
+	<td>//button[@aria-label='Move selected items from Available to Current.']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MOVE_CURRENT_TO_AVAILABLE</td>
-	<td>//button[@title='Move selected items from Current to Available.']</td>
+	<td>//button[@aria-label='Move selected items from Current to Available.']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>MOVE_TO_RECYCLE_BIN</td>
-	<td>//a[contains(@class,'btn') and contains(.,'Move to Recycle Bin')] | //button[contains(.,'Move to Recycle Bin')] | //*[contains(@class, 'icon-trash')]</td>
+	<td>//a[contains(@class,'btn') and contains(.,'Delete')] | //button[contains(.,'Delete')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NEW</td>
-	<td>//button[@*='New']</td>
+	<td>//button[contains(@class,'btn-secondary')][normalize-space()='New']</td>
 	<td></td>
 </tr>
 <tr>
@@ -546,13 +616,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>OPEN</td>
+	<td>//a[*[name()='svg'][contains(@class,'circle-open')]]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>PALETTE_ITEM</td>
 	<td>//li[contains(@class,'palette-item')]//button[contains(@class,'bg-${key_paletteItem}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PARENT_FOLDER_SELECT</td>
-	<td>//button[contains(@id,'selectFolderButton')]</td>
+	<td>//div[@id='basicInformationContent']//button[text()='Select']</td>
 	<td></td>
 </tr>
 <tr>
@@ -567,7 +642,7 @@
 </tr>
 <tr>
 	<td>PLUS</td>
-	<td>//a[contains(@class,'btn')][contains(@href,'new') or contains(@href,'redirect') or contains(@href,'mvc') or contains(@href,'javascript')][.//*[name()='svg'][contains(@class,'icon-plus')]][not(contains(@class,'borderless'))] | //button[*[contains(@class,'icon-plus')]]</td>
+	<td>//button[not(contains(@class,'borderless'))][not(contains(@class,'btn-unstyled') or contains(@class,'none'))][*[contains(@class,'icon-plus')]] | //*[self::a or self::button][contains(@class,'btn-primary')][normalize-space()='New'] | //button[not(contains(@class,'d-md-none'))][contains(@class, 'd-md-flex')][contains(@data-qa-id,'creationMenuNewButton')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -583,11 +658,6 @@
 <tr>
 	<td>PREVIOUS</td>
 	<td>//button[contains(.,'Previous')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PROPAGATE</td>
-	<td>//button[@*='Propagate']</td>
 	<td></td>
 </tr>
 <tr>
@@ -618,6 +688,11 @@
 <tr>
 	<td>REMOVE_REDIRECT</td>
 	<td>//button[contains(.,'Remove Redirect')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REMOVE_REPEATABLE</td>
+	<td>//*[contains(@class,'sheet-section')]/div[${key_index}]//button[contains(@class,'repeatable-delete-button')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -658,11 +733,6 @@
 <tr>
 	<td>RESET_CHANGES</td>
 	<td>//a[contains(@class,'btn')][contains(.,'Reset Changes')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>RESET_VALUES</td>
-	<td>//button/span[contains(.,'Reset Values')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -756,6 +826,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SELECT_BUTTON</td>
+	<td>//label[text()='${key_fieldName}']/..//*[text()='Select']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SELECT_CONTENT</td>
 	<td>//div[@data-fieldname='${key_fieldName}']//button[contains(.,'Select')]</td>
 	<td></td>
@@ -781,23 +856,23 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SELECT_MOBILE_DEVICE_RULES</td>
-	<td>//div[@class='btn-toolbar']/button[contains(.,'Select')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>TRANSLATIONS_DONE</td>
 	<td>//a[contains(@class,'btn-sm btn-primary') and text()='Done']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TRANSLATIONS_LOCALIZATION</td>
-	<td>//div[contains(@class,'dropdown')]//button[contains(@class,'dropdown-toggle')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')]</td>
+	<td>//div[contains(@class,'dropdown')]//button[contains(@class,'dropdown-toggle')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')] | //button[contains(@aria-haspopup,'listbox')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')] | //button[contains(@aria-haspopup,'true')]//*[name()='svg'][contains(@class,'lexicon-icon-${key_currentLocale}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SEND_INVITATIONS</td>
-	<td>//button[contains(@id,'InviteMembersPortlet')]//span[contains(.,'Send Invitations')]</td>
+	<td>//button[contains(.,'Send Invitations')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SEND_NEW_PASSWORD</td>
+	<td>//button[contains(.,'Send New Password')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -813,6 +888,11 @@
 <tr>
 	<td>SHARE_SIDENAV</td>
 	<td>//a[contains(@class,'btn')][contains(.,'Share')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SHOW_MORE</td>
+	<td>//button[contains(.,'Show More')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -846,6 +926,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>MODAL_IFRAME_FOOTER_SUBMIT</td>
+	<td>//div[@class='modal-iframe-footer']/button[@type='submit']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>TAB_SUBMIT_BTN</td>
 	<td>//button[contains(@type,'submit') and contains(.,'${key_tab}')]</td>
 	<td></td>
@@ -871,13 +956,13 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SUBMIT_FOR_PUBLICATION</td>
-	<td>//button[contains(.,'Submit for Publication')]</td>
+	<td>SUBMIT_FOR_WORKFLOW</td>
+	<td>//button[contains(.,'Submit for Workflow')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>SUBMIT_FOR_PUBLICATION_DISABLED</td>
-	<td>//div[contains(@class,'btn-group-item')]//button[@disabled and contains(.,'Submit for Publication')]</td>
+	<td>SUBMIT_FOR_WORKFLOW_DISABLED</td>
+	<td>//div[contains(@class,'btn-group-spaced')]//button[@disabled and contains(.,'Submit for Workflow')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -896,11 +981,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>UNIGNORE_REDIRECT_URLS</td>
-	<td>//button[*[name()='svg'][contains(@class,'lexicon-icon-view')]]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>UNLOCK</td>
 	<td>//button[contains(.,'Unlock')]</td>
 	<td></td>
@@ -912,7 +992,7 @@
 </tr>
 <tr>
 	<td>UNSUBSCRIBE</td>
-	<td>//button[contains(.,'Unsubscribe')] | //li[contains(@class,'nav-item')]/*[contains(@class,'nav-link')]</td>
+	<td>//button[contains(.,'Unsubscribe')] | //a[contains(.,'Unsubscribe')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -936,11 +1016,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>WEB_CONTENT_CHOOSE</td>
-	<td>//tr[contains(.,'${key_webContentTitle}')]/td//button</td>
-	<td></td>
-</tr>
-<tr>
 	<td>YOUTUBE_PLAY</td>
 	<td>//button[contains(@class,'ytp-large-play-button')]</td>
 	<td></td>
@@ -948,6 +1023,11 @@
 <tr>
 	<td>BUTTON_PLUS_PRODUCT_VISIBILITY</td>
 	<td>//li[contains(@class,'nav-item')]//button[contains(@title,'${key_webContentTitle}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>BUTTON_WITH_VALUE</td>
+	<td>//button[contains(.,'${value}') or contains(@title,'${value}')]</td>
 	<td></td>
 </tr>
 </tbody>

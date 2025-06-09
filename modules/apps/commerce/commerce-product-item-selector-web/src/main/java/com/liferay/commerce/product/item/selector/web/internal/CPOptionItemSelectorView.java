@@ -1,28 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.item.selector.web.internal;
 
-import com.liferay.commerce.product.item.selector.criterion.CPOptionItemSelectorCriterion;
+import com.liferay.commerce.product.item.selector.CPOptionItemSelectorCriterion;
 import com.liferay.commerce.product.item.selector.web.internal.display.context.CPOptionItemSelectorViewDisplayContext;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorView;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -30,22 +30,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import javax.portlet.PortletURL;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Marco Leo
  */
-@Component(enabled = false, immediate = true, service = ItemSelectorView.class)
+@Component(service = ItemSelectorView.class)
 public class CPOptionItemSelectorView
 	implements ItemSelectorView<CPOptionItemSelectorCriterion> {
 
@@ -67,7 +58,7 @@ public class CPOptionItemSelectorView
 
 	@Override
 	public String getTitle(Locale locale) {
-		return LanguageUtil.get(locale, "options");
+		return _language.get(locale, "options");
 	}
 
 	@Override
@@ -76,6 +67,11 @@ public class CPOptionItemSelectorView
 			CPOptionItemSelectorCriterion cpOptionItemSelectorCriterion,
 			PortletURL portletURL, String itemSelectedEventName, boolean search)
 		throws IOException, ServletException {
+
+		ServletContext servletContext = getServletContext();
+
+		RequestDispatcher requestDispatcher =
+			servletContext.getRequestDispatcher("/option_item_selector.jsp");
 
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)servletRequest;
@@ -90,11 +86,6 @@ public class CPOptionItemSelectorView
 			WebKeys.PORTLET_DISPLAY_CONTEXT,
 			cpOptionItemSelectorViewDisplayContext);
 
-		ServletContext servletContext = getServletContext();
-
-		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher("/option_item_selector.jsp");
-
 		requestDispatcher.include(servletRequest, servletResponse);
 	}
 
@@ -104,6 +95,9 @@ public class CPOptionItemSelectorView
 
 	@Reference
 	private CPOptionService _cpOptionService;
+
+	@Reference
+	private Language _language;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.product.item.selector.web)"

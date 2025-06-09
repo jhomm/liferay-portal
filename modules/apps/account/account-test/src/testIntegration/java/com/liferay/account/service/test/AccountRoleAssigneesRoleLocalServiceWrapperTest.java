@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.test;
@@ -23,11 +14,14 @@ import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -54,8 +48,7 @@ public class AccountRoleAssigneesRoleLocalServiceWrapperTest {
 	public void testGetAssigneesTotalForAccountSpecificAccountRole()
 		throws Exception {
 
-		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		AccountRole accountRole = _addAccountRole(
 			accountEntry.getAccountEntryId(), RandomTestUtil.randomString());
@@ -68,14 +61,18 @@ public class AccountRoleAssigneesRoleLocalServiceWrapperTest {
 
 		Assert.assertEquals(
 			1, _roleLocalService.getAssigneesTotal(accountRole.getRoleId()));
+
+		_userLocalService.updateStatus(
+			user, WorkflowConstants.STATUS_INACTIVE, new ServiceContext());
+
+		Assert.assertEquals(
+			0, _roleLocalService.getAssigneesTotal(accountRole.getRoleId()));
 	}
 
 	@Test
 	public void testGetAssigneesTotalForSharedAccountRole() throws Exception {
-		AccountEntry accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		AccountEntry accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		AccountEntry accountEntry1 = AccountEntryTestUtil.addAccountEntry();
+		AccountEntry accountEntry2 = AccountEntryTestUtil.addAccountEntry();
 
 		AccountRole accountRole = _addAccountRole(
 			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
@@ -108,7 +105,8 @@ public class AccountRoleAssigneesRoleLocalServiceWrapperTest {
 		throws Exception {
 
 		return _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), accountEntryId, name, null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			accountEntryId, name, null, null);
 	}
 
 	@Inject
@@ -119,5 +117,8 @@ public class AccountRoleAssigneesRoleLocalServiceWrapperTest {
 
 	@Inject
 	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 }

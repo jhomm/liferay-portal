@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,11 +22,9 @@ String randomNamespace = (String)request.getAttribute("liferay-comment:discussio
 
 DiscussionComment rootDiscussionComment = discussion.getRootDiscussionComment();
 
-DiscussionRequestHelper discussionRequestHelper = new DiscussionRequestHelper(request);
+CommentTreeDisplayContext commentTreeDisplayContext = CommentDisplayContextProviderUtil.getCommentTreeDisplayContext(request, response, DiscussionPermissionUtil.getDiscussionPermission(), discussionComment);
 
-CommentTreeDisplayContext commentTreeDisplayContext = CommentDisplayContextProviderUtil.getCommentTreeDisplayContext(request, response, CommentManagerUtil.getDiscussionPermission(discussionRequestHelper.getPermissionChecker()), discussionComment);
-
-Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
+Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 %>
 
 <c:if test="<%= commentTreeDisplayContext.isDiscussionVisible() %>">
@@ -46,10 +35,9 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 				noGutters="x"
 			>
 				<clay:content-col>
-					<liferay-ui:user-portrait
-						cssClass="sticker-lg"
+					<liferay-user:user-portrait
+						size="lg"
 						userId="<%= discussionComment.getUserId() %>"
-						userName="<%= discussionComment.getUserName() %>"
 					/>
 				</clay:content-col>
 
@@ -103,7 +91,7 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 										/>
 
 										<react:component
-											module="discussion/js/components/ReplyPopover"
+											module="{ReplyPopover} from comment-taglib"
 											props='<%=
 												HashMapBuilder.<String, Object>put(
 													"ariaLabel", LanguageUtil.format(request, "in-reply-to-x", parentDiscussionComment.getUserName(), false)
@@ -127,7 +115,7 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 							</div>
 
 							<div class="text-secondary">
-								<span class="lfr-portal-tooltip" title="<%= dateFormatDateTime.format(createDate) %>"><liferay-ui:message arguments="<%= createDateDescription %>" key="x-ago" translateArguments="<%= false %>" /></span>
+								<span class="lfr-portal-tooltip" title="<%= dateTimeFormat.format(createDate) %>"><liferay-ui:message arguments="<%= createDateDescription %>" key="x-ago" translateArguments="<%= false %>" /></span>
 
 								<%
 								Date modifiedDate = discussionComment.getModifiedDate();
@@ -135,7 +123,7 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 
 								<c:if test="<%= createDate.before(modifiedDate) %>">
 									-
-									<strong class="lfr-portal-tooltip" title="<%= dateFormatDateTime.format(modifiedDate) %>">
+									<strong class="lfr-portal-tooltip" title="<%= dateTimeFormat.format(modifiedDate) %>">
 										<liferay-ui:message key="edited" />
 									</strong>
 								</c:if>
@@ -193,22 +181,22 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 				</div>
 
 				<div class="lfr-discussion-message">
-					<div class="lfr-discussion-message-body" id="<%= namespace + "discussionMessage" + index %>">
+					<div class="lfr-discussion-message-body" id="<%= namespace %>discussionMessage<%= index %>">
 						<%= discussionComment.getTranslatedBody(themeDisplay.getPathThemeImages()) %>
 					</div>
 
 					<c:if test="<%= commentTreeDisplayContext.isEditControlsVisible() %>">
-						<div class="lfr-discussion-form lfr-discussion-form-edit" id="<%= namespace %>editForm<%= index %>" style="display: none;">
+						<div class="hide lfr-discussion-form lfr-discussion-form-edit" id="<%= namespace %>editForm<%= index %>">
 							<div class="editor-wrapper"></div>
 
 							<aui:button-row>
-								<aui:button cssClass="btn-comment btn-primary btn-sm" name='<%= "editReplyButton" + index %>' onClick='<%= randomNamespace + "updateMessage(" + index + ");" %>' value="<%= commentTreeDisplayContext.getPublishButtonLabel(locale) %>" />
+								<aui:button cssClass="btn-comment btn-sm" name='<%= "editReplyButton" + index %>' onClick='<%= randomNamespace + "updateMessage(" + index + ");" %>' primary="<%= true %>" value="<%= commentTreeDisplayContext.getPublishButtonLabel(locale) %>" />
 
 								<%
 								String taglibCancel = randomNamespace + "showEl('" + namespace + "discussionMessage" + index + "');" + randomNamespace + "hideEditor('" + randomNamespace + "editReplyBody" + index + "', '" + namespace + "editForm" + index + "');";
 								%>
 
-								<aui:button cssClass="btn-comment btn-secondary btn-sm" onClick="<%= taglibCancel %>" type="cancel" />
+								<aui:button cssClass="btn-comment btn-sm" onClick="<%= taglibCancel %>" type="cancel" />
 							</aui:button-row>
 						</div>
 					</c:if>
@@ -222,9 +210,11 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 							<c:if test="<%= !discussion.isMaxCommentsLimitExceeded() %>">
 								<c:choose>
 									<c:when test="<%= commentTreeDisplayContext.isReplyButtonVisible() %>">
-										<button class="btn btn-outline-borderless btn-outline-secondary btn-sm" onclick="<%= randomNamespace + "showPostReplyEditor(" + index + ");" %>" type="button">
-											<liferay-ui:message key="reply" />
-										</button>
+										<liferay-ui:csp>
+											<button class="btn btn-outline-borderless btn-outline-secondary btn-sm" onclick="<%= randomNamespace %>showPostReplyEditor(<%= index %>);" type="button">
+												<liferay-ui:message key="reply" />
+											</button>
+										</liferay-ui:csp>
 									</c:when>
 									<c:otherwise>
 										<a class="btn btn-outline-borderless btn-outline-secondary btn-sm" href="<%= themeDisplay.getURLSignIn() %>">
@@ -251,7 +241,7 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 			</div>
 		</div>
 
-		<div class="lfr-discussion lfr-discussion-form-reply" id="<%= namespace + "postReplyForm" + index %>" style="display: none;">
+		<div class="hide lfr-discussion lfr-discussion-form-reply" id="<%= namespace %>postReplyForm<%= index %>">
 			<div class="lfr-discussion-reply-container">
 				<clay:content-row
 					noGutters="true"
@@ -259,8 +249,8 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 					<clay:content-col
 						cssClass="lfr-discussion-details"
 					>
-						<liferay-ui:user-portrait
-							cssClass="sticker-lg"
+						<liferay-user:user-portrait
+							size="lg"
 							user="<%= user %>"
 						/>
 					</clay:content-col>
@@ -271,7 +261,7 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 						<div class="editor-wrapper"></div>
 
 						<aui:button-row>
-							<aui:button cssClass="btn-comment btn-primary btn-sm" disabled="<%= true %>" id='<%= "postReplyButton" + index %>' onClick='<%= randomNamespace + "postReply(" + index + ");" %>' value='<%= themeDisplay.isSignedIn() ? "reply" : "reply-as" %>' />
+							<aui:button cssClass="btn-comment btn-sm" disabled="<%= true %>" id='<%= "postReplyButton" + index %>' onClick='<%= randomNamespace + "postReply(" + index + ");" %>' primary="<%= true %>" value='<%= themeDisplay.isSignedIn() ? "reply" : "reply-as" %>' />
 
 							<%
 							String taglibCancel = randomNamespace + "hideEditor('" + randomNamespace + "postReplyBody" + index + "', '" + namespace + "postReplyForm" + index + "')";
@@ -306,11 +296,9 @@ Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZo
 			HashMapBuilder.<String, Object>put(
 				"index", index
 			).put(
-				"namespace", namespace
-			).put(
-				"randomNamespace", randomNamespace
+				"portletNamespace", namespace
 			).build()
 		%>'
-		module="discussion/js/ViewMessageThread"
+		module="{ViewMessageThread} from comment-taglib"
 	/>
 </c:if>

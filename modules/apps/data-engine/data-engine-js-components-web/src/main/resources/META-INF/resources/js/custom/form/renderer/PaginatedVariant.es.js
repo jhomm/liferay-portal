@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -20,14 +11,14 @@ import {useConfig} from '../../../core/hooks/useConfig.es';
 import {Pagination} from '../components/Pagination.es';
 import {PaginationControls} from '../components/PaginationControls.es';
 
-export const Container = ({
+export function Container({
 	activePage,
 	children,
 	pageIndex,
 	pages,
 	readOnly,
 	strings,
-}) => {
+}) {
 	const {showSubmitButton, submitLabel} = useConfig();
 
 	return (
@@ -41,7 +32,7 @@ export const Container = ({
 
 			{pageIndex === activePage && (
 				<>
-					{pages.length > 0 && (
+					{!!pages.length && (
 						<>
 							<Pagination activePage={activePage} pages={pages} />
 							<PaginationControls
@@ -57,7 +48,7 @@ export const Container = ({
 
 					{!pages.length && showSubmitButton && (
 						<ClayButton
-							className="float-right lfr-ddm-form-submit"
+							className="float-right"
 							id="ddm-form-submit"
 							type="submit"
 						>
@@ -68,6 +59,6 @@ export const Container = ({
 			)}
 		</div>
 	);
-};
+}
 
 Container.displayName = 'PaginatedVariant.Container';

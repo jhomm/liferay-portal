@@ -1,0 +1,41 @@
+<html>
+<head>
+<title>ClusterSamplePortlet</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">ClusterSamplePortlet</td></tr>
+</thead>
+
+<tbody>
+<tr>
+	<td>GENERATED_DATA_MESSAGE</td>
+	<td>//div[@class='portlet-body' and contains(.,'Generated Cluster Sample Data')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>STORED_DATA</td>
+	<td>//div[@class='portlet-body']/ul/li[contains(.,'Stored Data')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>STORED_DATA_VALUE</td>
+	<td>//p[@class='stored-data']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SESSION_ID</td>
+	<td>//p[@class='session-id']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LOGGED_IN_SESSION_COUNT</td>
+	<td>//div[@class='logged-in-session-count'][contains(., '${sessionCount}')]</td>
+	<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

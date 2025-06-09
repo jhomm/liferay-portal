@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.client.test;
@@ -18,10 +9,10 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.oauth2.provider.internal.test.TestAnnotatedApplication;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import org.junit.Assert;
@@ -52,9 +43,13 @@ public class GrantClientKillSwitchTest extends BaseClientTestCase {
 				this::getClientCredentialsResponse, this::parseError));
 	}
 
-	public static class
-		GrantKillClientCredentialsSwitchTestPreparatorBundleActivator
-			extends BaseTestPreparatorBundleActivator {
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new GrantKillClientCredentialsSwitchTestPreparatorBundleActivator();
+	}
+
+	private class GrantKillClientCredentialsSwitchTestPreparatorBundleActivator
+		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
@@ -62,9 +57,9 @@ public class GrantClientKillSwitchTest extends BaseClientTestCase {
 				MapUtil.singletonDictionary(
 					"oauth2.allow.client.credentials.grant", false));
 
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			User user = UserTestUtil.getAdminUser(companyId);
 
 			registerJaxRsApplication(
 				new TestAnnotatedApplication(), "annotated",
@@ -72,15 +67,9 @@ public class GrantClientKillSwitchTest extends BaseClientTestCase {
 					"oauth2.scope.checker.type", "annotations"
 				).build());
 
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplication");
+			createOAuth2Application(companyId, user, "oauthTestApplication");
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new GrantKillClientCredentialsSwitchTestPreparatorBundleActivator();
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.util.comparator;
@@ -30,12 +21,14 @@ public class CommerceDiscountCreateDateComparator
 
 	public static final String[] ORDER_BY_FIELDS = {"createDate"};
 
-	public CommerceDiscountCreateDateComparator() {
-		this(false);
-	}
+	public static CommerceDiscountCreateDateComparator getInstance(
+		boolean ascending) {
 
-	public CommerceDiscountCreateDateComparator(boolean ascending) {
-		_ascending = ascending;
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
+
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -72,6 +65,16 @@ public class CommerceDiscountCreateDateComparator
 	public boolean isAscending() {
 		return _ascending;
 	}
+
+	private CommerceDiscountCreateDateComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final CommerceDiscountCreateDateComparator
+		_INSTANCE_ASCENDING = new CommerceDiscountCreateDateComparator(true);
+
+	private static final CommerceDiscountCreateDateComparator
+		_INSTANCE_DESCENDING = new CommerceDiscountCreateDateComparator(false);
 
 	private final boolean _ascending;
 

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.internal;
 
 import com.nimbusds.oauth2.sdk.id.State;
+import com.nimbusds.oauth2.sdk.pkce.CodeVerifier;
 import com.nimbusds.openid.connect.sdk.Nonce;
 
 import java.io.Serializable;
@@ -25,27 +17,34 @@ import java.io.Serializable;
 public class OpenIdConnectAuthenticationSession implements Serializable {
 
 	public OpenIdConnectAuthenticationSession(
-		Nonce nonce, String providerName, State state) {
+		CodeVerifier codeVerifier, Nonce nonce, long oAuthClientEntryId,
+		State state) {
 
+		_codeVerifier = codeVerifier;
 		_nonce = nonce;
-		_providerName = providerName;
+		_oAuthClientEntryId = oAuthClientEntryId;
 		_state = state;
+	}
+
+	public CodeVerifier getCodeVerifier() {
+		return _codeVerifier;
 	}
 
 	public Nonce getNonce() {
 		return _nonce;
 	}
 
-	public String getProviderName() {
-		return _providerName;
+	public long getOAuthClientEntryId() {
+		return _oAuthClientEntryId;
 	}
 
 	public State getState() {
 		return _state;
 	}
 
+	private final CodeVerifier _codeVerifier;
 	private final Nonce _nonce;
-	private final String _providerName;
+	private final long _oAuthClientEntryId;
 	private final State _state;
 
 }

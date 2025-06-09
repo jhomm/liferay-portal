@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.localization.test;
@@ -23,7 +14,6 @@ import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
@@ -35,19 +25,15 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.search.localization.SearchLocalizationHelper;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Stream;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,16 +49,6 @@ public class SearchLocalizationHelperTest {
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
-
-	@Before
-	public void setUp() {
-		_companyId = CompanyThreadLocal.getCompanyId();
-	}
-
-	@After
-	public void tearDown() {
-		CompanyThreadLocal.setCompanyId(_companyId);
-	}
 
 	@Test
 	public void testAddLocalizedField() {
@@ -97,11 +73,10 @@ public class SearchLocalizationHelperTest {
 
 	@Test
 	public void testGetLocalesFromCompany() throws Exception {
-		SearchContext searchContext = getSearchContext(
-			addCompany(LocaleUtil.BRAZIL, LocaleUtil.JAPAN));
-
 		assertSameValues(
-			searchLocalizationHelper.getLocales(searchContext),
+			searchLocalizationHelper.getLocales(
+				getSearchContext(
+					addCompany(LocaleUtil.BRAZIL, LocaleUtil.JAPAN))),
 			LocaleUtil.BRAZIL, LocaleUtil.JAPAN);
 	}
 
@@ -111,22 +86,19 @@ public class SearchLocalizationHelperTest {
 			LocaleUtil.BRAZIL, LocaleUtil.JAPAN, LocaleUtil.GERMANY,
 			LocaleUtil.SPAIN);
 
-		SearchContext searchContext = getSearchContext(
-			company, addGroup(company, LocaleUtil.GERMANY),
-			addGroup(company, LocaleUtil.SPAIN));
-
 		assertSameValues(
-			searchLocalizationHelper.getLocales(searchContext),
+			searchLocalizationHelper.getLocales(
+				getSearchContext(
+					company, addGroup(company, LocaleUtil.GERMANY),
+					addGroup(company, LocaleUtil.SPAIN))),
 			LocaleUtil.GERMANY, LocaleUtil.SPAIN);
 	}
 
 	@Test
 	public void testGetLocalizedFieldNamesFromCompany() throws Exception {
-		SearchContext searchContext = getSearchContext(
-			addCompany(LocaleUtil.BRAZIL, LocaleUtil.JAPAN));
-
 		String[] locales = searchLocalizationHelper.getLocalizedFieldNames(
-			new String[] {"test", "example"}, searchContext);
+			new String[] {"test", "example"},
+			getSearchContext(addCompany(LocaleUtil.BRAZIL, LocaleUtil.JAPAN)));
 
 		assertSameValues(
 			locales, "test_pt_BR", "test_ja_JP", "example_pt_BR",
@@ -139,12 +111,11 @@ public class SearchLocalizationHelperTest {
 			LocaleUtil.BRAZIL, LocaleUtil.JAPAN, LocaleUtil.GERMANY,
 			LocaleUtil.SPAIN);
 
-		SearchContext searchContext = getSearchContext(
-			company, addGroup(company, LocaleUtil.GERMANY),
-			addGroup(company, LocaleUtil.SPAIN));
-
 		String[] locales = searchLocalizationHelper.getLocalizedFieldNames(
-			new String[] {"test", "example"}, searchContext);
+			new String[] {"test", "example"},
+			getSearchContext(
+				company, addGroup(company, LocaleUtil.GERMANY),
+				addGroup(company, LocaleUtil.SPAIN)));
 
 		assertSameValues(
 			locales, "test_de_DE", "test_es_ES", "example_de_DE",
@@ -196,11 +167,13 @@ public class SearchLocalizationHelperTest {
 
 		searchContext.setCompanyId(company.getCompanyId());
 
-		Stream<Group> stream = Arrays.stream(groups);
+		long[] groupIds = new long[groups.length];
 
-		long[] groupIds = stream.mapToLong(
-			Group::getGroupId
-		).toArray();
+		for (int i = 0; i < groups.length; i++) {
+			Group group = groups[i];
+
+			groupIds[i] = group.getGroupId();
+		}
 
 		searchContext.setGroupIds(groupIds);
 
@@ -212,8 +185,6 @@ public class SearchLocalizationHelperTest {
 
 	@DeleteAfterTestRun
 	private Company _company;
-
-	private Long _companyId;
 
 	@DeleteAfterTestRun
 	private List<Group> _groups = new ArrayList<>();

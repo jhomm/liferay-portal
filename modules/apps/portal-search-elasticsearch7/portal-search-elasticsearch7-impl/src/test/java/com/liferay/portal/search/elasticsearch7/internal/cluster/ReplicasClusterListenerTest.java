@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.cluster;
@@ -30,9 +21,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author André de Oliveira
@@ -46,10 +35,8 @@ public class ReplicasClusterListenerTest {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
-		setEmbeddedCluster(true);
-		setMasterExecutor(true);
+		_setEmbeddedCluster(true);
+		_setMasterExecutor(true);
 
 		Mockito.when(
 			_replicasClusterContext.getClusterSize()
@@ -76,7 +63,7 @@ public class ReplicasClusterListenerTest {
 	@Test
 	public void testAHappyDay() {
 		processClusterEvent();
-		assertReplicasChanged();
+		_assertReplicasChanged();
 	}
 
 	@Test
@@ -100,32 +87,32 @@ public class ReplicasClusterListenerTest {
 	public void testMasterTokenAcquired() {
 		masterTokenAcquired();
 
-		assertReplicasChanged();
+		_assertReplicasChanged();
 	}
 
 	@Test
 	public void testMasterTokenReleased() {
 		masterTokenReleased();
 
-		assertReplicasUnchanged();
+		_assertReplicasUnchanged();
 	}
 
 	@Test
 	public void testNonmasterLiferayNodeDoesNothing() {
-		setMasterExecutor(false);
+		_setMasterExecutor(false);
 
 		processClusterEvent();
 
-		assertReplicasUnchanged();
+		_assertReplicasUnchanged();
 	}
 
 	@Test
 	public void testRemoteElasticsearchClusterIsLeftAlone() {
-		setEmbeddedCluster(false);
+		_setEmbeddedCluster(false);
 
 		processClusterEvent();
 
-		assertReplicasUnchanged();
+		_assertReplicasUnchanged();
 	}
 
 	@Test
@@ -137,7 +124,7 @@ public class ReplicasClusterListenerTest {
 		).when(
 			_replicasManager
 		).updateNumberOfReplicas(
-			Mockito.anyInt(), (String[])Mockito.anyVararg()
+			Mockito.anyInt(), Mockito.any()
 		);
 
 		try (LogCapture logCapture = LoggerTestUtil.configureJDKLogger(
@@ -157,22 +144,6 @@ public class ReplicasClusterListenerTest {
 		}
 	}
 
-	protected void assertReplicasChanged() {
-		Mockito.verify(
-			_replicasManager
-		).updateNumberOfReplicas(
-			_REPLICAS, _INDICES
-		);
-	}
-
-	protected void assertReplicasUnchanged() {
-		Mockito.verify(
-			_replicasManager, Mockito.never()
-		).updateNumberOfReplicas(
-			Mockito.anyInt(), (String[])Mockito.anyVararg()
-		);
-	}
-
 	protected void masterTokenAcquired() {
 		_replicasClusterListener.masterTokenAcquired();
 	}
@@ -185,7 +156,23 @@ public class ReplicasClusterListenerTest {
 		_replicasClusterListener.processClusterEvent(ClusterEvent.join());
 	}
 
-	protected void setEmbeddedCluster(boolean value) {
+	private void _assertReplicasChanged() {
+		Mockito.verify(
+			_replicasManager
+		).updateNumberOfReplicas(
+			_REPLICAS, _INDICES
+		);
+	}
+
+	private void _assertReplicasUnchanged() {
+		Mockito.verify(
+			_replicasManager, Mockito.never()
+		).updateNumberOfReplicas(
+			Mockito.anyInt(), Mockito.any()
+		);
+	}
+
+	private void _setEmbeddedCluster(boolean value) {
 		Mockito.when(
 			_replicasClusterContext.isEmbeddedOperationMode()
 		).thenReturn(
@@ -193,7 +180,7 @@ public class ReplicasClusterListenerTest {
 		);
 	}
 
-	protected void setMasterExecutor(boolean value) {
+	private void _setMasterExecutor(boolean value) {
 		Mockito.when(
 			_replicasClusterContext.isMaster()
 		).thenReturn(
@@ -207,12 +194,10 @@ public class ReplicasClusterListenerTest {
 
 	private static final int _REPLICAS = RandomTestUtil.randomInt() - 1;
 
-	@Mock
-	private ReplicasClusterContext _replicasClusterContext;
-
+	private final ReplicasClusterContext _replicasClusterContext = Mockito.mock(
+		ReplicasClusterContext.class);
 	private ReplicasClusterListener _replicasClusterListener;
-
-	@Mock
-	private ReplicasManager _replicasManager;
+	private final ReplicasManager _replicasManager = Mockito.mock(
+		ReplicasManager.class);
 
 }

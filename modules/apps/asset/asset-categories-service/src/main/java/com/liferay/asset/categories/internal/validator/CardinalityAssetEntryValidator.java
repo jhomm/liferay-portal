@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.validator;
@@ -21,12 +12,13 @@ import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.asset.kernel.validator.AssetEntryValidator;
+import com.liferay.depot.group.provider.SiteConnectedGroupGroupProvider;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.kernel.util.Portal;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,87 +26,39 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Juan Fernández
  */
-@Component(
-	immediate = true, property = "model.class.name=*",
-	service = AssetEntryValidator.class
-)
+@Component(property = "model.class.name=*", service = AssetEntryValidator.class)
 public class CardinalityAssetEntryValidator implements AssetEntryValidator {
 
 	@Override
 	public void validate(
 			long groupId, String className, long classPK, long classTypePK,
-			long[] categoryIds, String[] entryNames)
+			long[] categoryIds, String[] tagNames)
 		throws PortalException {
 
-		long classNameId = _classNameLocalService.getClassNameId(className);
-
-		if (!isCategorizable(groupId, classNameId, classPK)) {
+		if (!_isCategorizable(groupId, className, classPK)) {
 			return;
 		}
 
+		if (className.equals(Group.class.getName())) {
+			groupId = classPK;
+		}
+
+		long classNameId = _classNameLocalService.getClassNameId(className);
+
 		for (AssetVocabulary assetVocabulary :
 				_assetVocabularyLocalService.getGroupsVocabularies(
-					_portal.getCurrentAndAncestorSiteGroupIds(groupId))) {
+					_siteConnectedGroupGroupProvider.
+						getCurrentAndAncestorSiteAndDepotGroupIds(groupId))) {
 
-			validate(classNameId, classTypePK, categoryIds, assetVocabulary);
+			validate(
+				groupId, classNameId, classTypePK, categoryIds,
+				assetVocabulary);
 		}
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x)
-	 */
-	@Deprecated
-	@Override
-	public void validate(
-			long groupId, String className, long classTypePK,
-			long[] categoryIds, String[] entryNames)
-		throws PortalException {
-
-		validate(groupId, className, 0L, classTypePK, categoryIds, entryNames);
-	}
-
-	protected boolean isCategorizable(
-		long groupId, long classNameId, long classPK) {
-
-		AssetRendererFactory<?> assetRendererFactory =
-			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
-				_portal.getClassName(classNameId));
-
-		if ((assetRendererFactory == null) ||
-			!assetRendererFactory.isCategorizable()) {
-
-			return false;
-		}
-
-		if (classPK != 0L) {
-			try {
-				AssetRenderer<?> assetRenderer =
-					assetRendererFactory.getAssetRenderer(classPK);
-
-				if (!assetRenderer.isCategorizable(groupId)) {
-					return false;
-				}
-			}
-			catch (PortalException portalException) {
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						StringBundler.concat(
-							"Entity with ClassPK: ", classPK,
-							" and ClassNameId: ", classNameId,
-							" is not categorizable"),
-						portalException);
-				}
-
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 	protected void validate(
-			long classNameId, long classTypePK, long[] categoryIds,
-			AssetVocabulary assetVocabulary)
+			long groupId, long classNameId, long classTypePK,
+			long[] categoryIds, AssetVocabulary assetVocabulary)
 		throws PortalException {
 
 		if (!assetVocabulary.isAssociatedToClassNameIdAndClassTypePK(
@@ -124,7 +68,7 @@ public class CardinalityAssetEntryValidator implements AssetEntryValidator {
 		}
 
 		if (assetVocabulary.isMissingRequiredCategory(
-				classNameId, classTypePK, categoryIds)) {
+				classNameId, classTypePK, categoryIds, groupId)) {
 
 			throw new AssetCategoryException(
 				assetVocabulary, AssetCategoryException.AT_LEAST_ONE_CATEGORY);
@@ -138,6 +82,47 @@ public class CardinalityAssetEntryValidator implements AssetEntryValidator {
 		}
 	}
 
+	private boolean _isCategorizable(
+		long groupId, String className, long classPK) {
+
+		AssetRendererFactory<?> assetRendererFactory =
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
+				className);
+
+		if ((assetRendererFactory == null) ||
+			!assetRendererFactory.isCategorizable()) {
+
+			return false;
+		}
+
+		if (classPK != 0L) {
+			try {
+				AssetRenderer<?> assetRenderer =
+					assetRendererFactory.getAssetRenderer(classPK);
+
+				if ((assetRenderer == null) ||
+					!assetRenderer.isCategorizable(groupId)) {
+
+					return false;
+				}
+			}
+			catch (PortalException portalException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						StringBundler.concat(
+							"Asset entry with class PK ", classPK,
+							" and class name ", className,
+							" is not categorizable"),
+						portalException);
+				}
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		CardinalityAssetEntryValidator.class.getName());
 
@@ -148,6 +133,6 @@ public class CardinalityAssetEntryValidator implements AssetEntryValidator {
 	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
-	private Portal _portal;
+	private SiteConnectedGroupGroupProvider _siteConnectedGroupGroupProvider;
 
 }

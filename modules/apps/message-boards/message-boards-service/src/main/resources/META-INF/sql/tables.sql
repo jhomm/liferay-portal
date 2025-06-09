@@ -18,6 +18,7 @@ create table MBCategory (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	categoryId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -26,9 +27,10 @@ create table MBCategory (
 	createDate DATE null,
 	modifiedDate DATE null,
 	parentCategoryId LONG,
-	name VARCHAR(75) null,
+	name VARCHAR(255) null,
 	description STRING null,
 	displayStyle VARCHAR(75) null,
+	friendlyURL VARCHAR(255) null,
 	lastPublishDate DATE null,
 	status INTEGER,
 	statusByUserId LONG,
@@ -106,7 +108,7 @@ create table MBMessage (
 	rootMessageId LONG,
 	parentMessageId LONG,
 	treePath STRING null,
-	subject VARCHAR(75) null,
+	subject VARCHAR(255) null,
 	urlSubject VARCHAR(255) null,
 	body TEXT null,
 	format VARCHAR(75) null,
@@ -120,6 +122,24 @@ create table MBMessage (
 	statusByUserName VARCHAR(75) null,
 	statusDate DATE null,
 	primary key (messageId, ctCollectionId)
+);
+
+create table MBSuspiciousActivity (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
+	suspiciousActivityId LONG not null,
+	groupId LONG,
+	companyId LONG,
+	userId LONG,
+	userName VARCHAR(75) null,
+	createDate DATE null,
+	modifiedDate DATE null,
+	messageId LONG,
+	threadId LONG,
+	reason VARCHAR(255) null,
+	validated BOOLEAN,
+	primary key (suspiciousActivityId, ctCollectionId)
 );
 
 create table MBThread (
@@ -136,7 +156,7 @@ create table MBThread (
 	categoryId LONG,
 	rootMessageId LONG,
 	rootMessageUserId LONG,
-	title VARCHAR(75) null,
+	title VARCHAR(255) null,
 	lastPostByUserId LONG,
 	lastPostDate DATE null,
 	priority DOUBLE,

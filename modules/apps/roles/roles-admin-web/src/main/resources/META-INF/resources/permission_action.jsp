@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,6 +14,7 @@ Object[] objArray = (Object[])row.getObject();
 
 Permission permission = (Permission)objArray[0];
 Role role = (Role)objArray[1];
+String[] primKeys = (String[])objArray[2];
 %>
 
 <liferay-ui:icon-menu
@@ -32,17 +24,16 @@ Role role = (Role)objArray[1];
 	<portlet:actionURL name="deletePermission" var="deletePermissionURL">
 		<portlet:param name="mvcPath" value="/edit_role_permissions.jsp" />
 		<portlet:param name="tabs1" value="define-permissions" />
-		<portlet:param name="redirect" value="<%= currentURL %>" />
 		<portlet:param name="roleId" value="<%= String.valueOf(role.getRoleId()) %>" />
 		<portlet:param name="name" value="<%= permission.getName() %>" />
 		<portlet:param name="scope" value="<%= String.valueOf(permission.getScope()) %>" />
-		<portlet:param name="primKey" value="<%= permission.getPrimKey() %>" />
+		<portlet:param name="primKeys" value="<%= StringUtil.merge(primKeys, StringPool.COMMA) %>" />
 		<portlet:param name="actionId" value="<%= String.valueOf(permission.getActionId()) %>" />
 	</portlet:actionURL>
 
 	<liferay-ui:icon-delete
 		confirmation="are-you-sure-you-want-to-remove-this-permission"
 		message="remove"
-		url="<%= deletePermissionURL %>"
+		url='<%= "submitForm(document." + liferayPortletResponse.getNamespace() + "fm, '" + HtmlUtil.escapeJS(deletePermissionURL) + "');" %>'
 	/>
 </liferay-ui:icon-menu>

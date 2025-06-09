@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -34,11 +25,24 @@ else if (collapsible) {
 			<liferay-util:buffer
 				var="header"
 			>
-				<liferay-ui:message key="<%= label %>" localizeKey="<%= localizeLabel %>" />
+				<div class="d-flex">
+					<liferay-ui:message key="<%= label %>" localizeKey="<%= localizeLabel %>" />
 
-				<c:if test="<%= Validator.isNotNull(helpMessage) %>">
-					<liferay-ui:icon-help message="<%= helpMessage %>" />
-				</c:if>
+					<c:if test="<%= Validator.isNotNull(helpMessage) %>">
+						<clay:icon
+							aria-label="<%= LanguageUtil.get(request, helpMessage) %>"
+							cssClass="lfr-portal-tooltip"
+							symbol="question-circle-full"
+							title="<%= LanguageUtil.get(request, helpMessage) %>"
+						/>
+					</c:if>
+
+					<c:if test="<%= deprecated %>">
+						<liferay-frontend:feature-indicator
+							type="deprecated"
+						/>
+					</c:if>
+				</div>
 			</liferay-util:buffer>
 
 			<c:choose>
@@ -48,7 +52,7 @@ else if (collapsible) {
 					</legend>
 
 					<a aria-controls="<%= id %>Content" aria-expanded="<%= !collapsed %>" class="collapse-icon <%= collapsed ? "collapsed" : StringPool.BLANK %> sheet-subtitle" data-toggle="liferay-collapse" href="#<%= id %>Content" role="button">
-						<span aria-hidden="true">
+						<span>
 							<%= header %>
 						</span>
 

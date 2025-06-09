@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -62,15 +54,17 @@ public class FragmentCompositionLocalServiceUtil {
 	}
 
 	public static FragmentComposition addFragmentComposition(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFragmentComposition(
-			userId, groupId, fragmentCollectionId, fragmentCompositionKey, name,
-			description, data, previewFileEntryId, status, serviceContext);
+			externalReferenceCode, userId, groupId, fragmentCollectionId,
+			fragmentCompositionKey, name, description, data, previewFileEntryId,
+			status, serviceContext);
 	}
 
 	/**
@@ -129,6 +123,14 @@ public class FragmentCompositionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteFragmentComposition(fragmentCompositionId);
+	}
+
+	public static FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteFragmentComposition(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -239,6 +241,14 @@ public class FragmentCompositionLocalServiceUtil {
 			groupId, fragmentCompositionKey);
 	}
 
+	public static FragmentComposition
+		fetchFragmentCompositionByExternalReferenceCode(
+			String externalReferenceCode, long groupId) {
+
+		return getService().fetchFragmentCompositionByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the fragment composition matching the UUID and group.
 	 *
@@ -285,6 +295,15 @@ public class FragmentCompositionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getFragmentComposition(fragmentCompositionId);
+	}
+
+	public static FragmentComposition
+			getFragmentCompositionByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getFragmentCompositionByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -434,6 +453,13 @@ public class FragmentCompositionLocalServiceUtil {
 		return getService().getTempFileNames(userId, groupId, folderName);
 	}
 
+	public static String getUniqueFragmentCompositionName(
+		long groupId, long fragmentCollectionId, String name) {
+
+		return getService().getUniqueFragmentCompositionName(
+			groupId, fragmentCollectionId, name);
+	}
+
 	public static FragmentComposition moveFragmentComposition(
 			long fragmentCompositionId, long fragmentCollectionId)
 		throws PortalException {
@@ -477,22 +503,6 @@ public class FragmentCompositionLocalServiceUtil {
 			description, data, previewFileEntryId, status);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateFragmentComposition(long, long, long, String, String, String, long, int)}
-	 */
-	@Deprecated
-	public static FragmentComposition updateFragmentComposition(
-			long userId, long fragmentCompositionId, String name,
-			String description, String data, long previewFileEntryId,
-			int status)
-		throws PortalException {
-
-		return getService().updateFragmentComposition(
-			userId, fragmentCompositionId, name, description, data,
-			previewFileEntryId, status);
-	}
-
 	public static FragmentComposition updateFragmentComposition(
 			long fragmentCompositionId, String name)
 		throws PortalException {
@@ -502,9 +512,12 @@ public class FragmentCompositionLocalServiceUtil {
 	}
 
 	public static FragmentCompositionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile FragmentCompositionLocalService _service;
+	private static final Snapshot<FragmentCompositionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			FragmentCompositionLocalServiceUtil.class,
+			FragmentCompositionLocalService.class);
 
 }

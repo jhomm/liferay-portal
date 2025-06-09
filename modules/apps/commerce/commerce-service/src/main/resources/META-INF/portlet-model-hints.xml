@@ -13,13 +13,23 @@
 		<field name="modifiedDate" type="Date" />
 		<field name="classNameId" type="long" />
 		<field name="classPK" type="long" />
+		<field name="countryId" type="long" />
+		<field name="regionId" type="long" />
+		<field name="city" type="String">
+			<validator name="required" />
+		</field>
+		<field name="defaultBilling" type="boolean" />
+		<field name="defaultShipping" type="boolean" />
+		<field name="description" type="String">
+			<hint-collection name="TEXTAREA" />
+		</field>
+		<field name="latitude" type="double" />
+		<field name="longitude" type="double" />
 		<field name="name" type="String">
 			<hint name="max-length">255</hint>
 			<validator name="required" />
 		</field>
-		<field name="description" type="String">
-			<hint-collection name="TEXTAREA" />
-		</field>
+		<field name="phoneNumber" type="String" />
 		<field name="street1" type="String">
 			<hint name="max-length">255</hint>
 			<validator name="required" />
@@ -30,20 +40,11 @@
 		<field name="street3" type="String">
 			<hint name="max-length">255</hint>
 		</field>
-		<field name="city" type="String">
-			<validator name="required" />
-		</field>
+		<field name="subtype" type="String" />
+		<field name="type" type="int" />
 		<field name="zip" type="String">
 			<validator name="required" />
 		</field>
-		<field name="regionId" type="long" />
-		<field name="countryId" type="long" />
-		<field name="latitude" type="double" />
-		<field name="longitude" type="double" />
-		<field name="phoneNumber" type="String" />
-		<field name="defaultBilling" type="boolean" />
-		<field name="defaultShipping" type="boolean" />
-		<field name="type" type="int" />
 	</model>
 	<model name="com.liferay.commerce.model.CommerceAddressRestriction">
 		<field name="mvccVersion" type="long" />
@@ -86,34 +87,66 @@
 		<field name="userName" type="String" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
-		<field name="commerceAccountId" type="long" />
-		<field name="commerceCurrencyId" type="long" />
-		<field name="commerceOrderTypeId" type="long" />
 		<field name="billingAddressId" type="long" />
-		<field name="shippingAddressId" type="long" />
-		<field name="commercePaymentMethodKey" type="String" />
-		<field name="transactionId" type="String">
-			<hint-collection name="CLOB" />
-		</field>
+		<field name="commerceAccountId" type="long" />
+		<field name="commerceCurrencyCode" type="String" />
+		<field name="commerceOrderTypeId" type="long" />
 		<field name="commerceShippingMethodId" type="long" />
-		<field name="shippingOptionName" type="String">
-			<hint name="max-length">255</hint>
+		<field name="deliveryCommerceTermEntryId" type="long" />
+		<field name="paymentCommerceTermEntryId" type="long" />
+		<field name="shippingAddressId" type="long" />
+		<field name="advanceStatus" type="String" />
+		<field name="commercePaymentMethodKey" type="String" />
+		<field name="couponCode" type="String" />
+		<field name="deliveryCommerceTermEntryDescription" type="String">
+			<hint-collection name="CLOB" />
+			<sanitize content-type="text/plain" modes="ALL" />
+		</field>
+		<field name="deliveryCommerceTermEntryName" type="String" />
+		<field name="lastPriceUpdateDate" type="Date" />
+		<field name="manuallyAdjusted" type="boolean" />
+		<field name="name" type="String" />
+		<field name="orderDate" type="Date" />
+		<field name="orderStatus" type="int" />
+		<field name="paymentCommerceTermEntryDescription" type="String">
+			<hint-collection name="CLOB" />
+			<sanitize content-type="text/plain" modes="ALL" />
+		</field>
+		<field name="paymentCommerceTermEntryName" type="String" />
+		<field name="paymentStatus" type="int" />
+		<field name="printedNote" type="String">
+			<hint-collection name="TEXTAREA" />
 		</field>
 		<field name="purchaseOrderNumber" type="String" />
-		<field name="couponCode" type="String" />
-		<field name="lastPriceUpdateDate" type="Date" />
-		<field name="subtotal" type="BigDecimal" />
-		<field name="subtotalDiscountAmount" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel1" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel2" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel3" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel4" type="BigDecimal" />
+		<field name="requestedDeliveryDate" type="Date" />
+		<field name="shippable" type="boolean" />
 		<field name="shippingAmount" type="BigDecimal" />
 		<field name="shippingDiscountAmount" type="BigDecimal" />
 		<field name="shippingDiscountPercentageLevel1" type="BigDecimal" />
 		<field name="shippingDiscountPercentageLevel2" type="BigDecimal" />
 		<field name="shippingDiscountPercentageLevel3" type="BigDecimal" />
 		<field name="shippingDiscountPercentageLevel4" type="BigDecimal" />
+		<field name="shippingDiscountPercentageLevel1WithTaxAmount" type="BigDecimal" />
+		<field name="shippingDiscountPercentageLevel2WithTaxAmount" type="BigDecimal" />
+		<field name="shippingDiscountPercentageLevel3WithTaxAmount" type="BigDecimal" />
+		<field name="shippingDiscountPercentageLevel4WithTaxAmount" type="BigDecimal" />
+		<field name="shippingDiscountWithTaxAmount" type="BigDecimal" />
+		<field name="shippingOptionName" type="String">
+			<hint name="max-length">255</hint>
+		</field>
+		<field name="shippingWithTaxAmount" type="BigDecimal" />
+		<field name="subtotal" type="BigDecimal" />
+		<field name="subtotalDiscountAmount" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel1" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel2" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel3" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel4" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel1WithTaxAmount" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel2WithTaxAmount" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel3WithTaxAmount" type="BigDecimal" />
+		<field name="subtotalDiscountPercentageLevel4WithTaxAmount" type="BigDecimal" />
+		<field name="subtotalDiscountWithTaxAmount" type="BigDecimal" />
+		<field name="subtotalWithTaxAmount" type="BigDecimal" />
 		<field name="taxAmount" type="BigDecimal" />
 		<field name="total" type="BigDecimal" />
 		<field name="totalDiscountAmount" type="BigDecimal" />
@@ -121,33 +154,15 @@
 		<field name="totalDiscountPercentageLevel2" type="BigDecimal" />
 		<field name="totalDiscountPercentageLevel3" type="BigDecimal" />
 		<field name="totalDiscountPercentageLevel4" type="BigDecimal" />
-		<field name="subtotalWithTaxAmount" type="BigDecimal" />
-		<field name="subtotalDiscountWithTaxAmount" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel1WithTaxAmount" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel2WithTaxAmount" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel3WithTaxAmount" type="BigDecimal" />
-		<field name="subtotalDiscountPercentageLevel4WithTaxAmount" type="BigDecimal" />
-		<field name="shippingWithTaxAmount" type="BigDecimal" />
-		<field name="shippingDiscountWithTaxAmount" type="BigDecimal" />
-		<field name="shippingDiscountPercentageLevel1WithTaxAmount" type="BigDecimal" />
-		<field name="shippingDiscountPercentageLevel2WithTaxAmount" type="BigDecimal" />
-		<field name="shippingDiscountPercentageLevel3WithTaxAmount" type="BigDecimal" />
-		<field name="shippingDiscountPercentageLevel4WithTaxAmount" type="BigDecimal" />
-		<field name="totalWithTaxAmount" type="BigDecimal" />
-		<field name="totalDiscountWithTaxAmount" type="BigDecimal" />
 		<field name="totalDiscountPercentageLevel1WithTaxAmount" type="BigDecimal" />
 		<field name="totalDiscountPercentageLevel2WithTaxAmount" type="BigDecimal" />
 		<field name="totalDiscountPercentageLevel3WithTaxAmount" type="BigDecimal" />
 		<field name="totalDiscountPercentageLevel4WithTaxAmount" type="BigDecimal" />
-		<field name="advanceStatus" type="String" />
-		<field name="paymentStatus" type="int" />
-		<field name="orderDate" type="Date" />
-		<field name="orderStatus" type="int" />
-		<field name="printedNote" type="String">
-			<hint-collection name="TEXTAREA" />
+		<field name="totalDiscountWithTaxAmount" type="BigDecimal" />
+		<field name="totalWithTaxAmount" type="BigDecimal" />
+		<field name="transactionId" type="String">
+			<hint-collection name="CLOB" />
 		</field>
-		<field name="requestedDeliveryDate" type="Date" />
-		<field name="manuallyAdjusted" type="boolean" />
 		<field name="status" type="int" />
 		<field name="statusByUserId" type="long" />
 		<field name="statusByUserName" type="String" />
@@ -155,6 +170,7 @@
 	</model>
 	<model name="com.liferay.commerce.model.CommerceOrderItem">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commerceOrderItemId" type="long" />
 		<field name="groupId" type="long" />
@@ -163,20 +179,23 @@
 		<field name="userName" type="String" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
-		<field name="bookedQuantityId" type="long" />
+		<field name="commerceInventoryBookedQuantityId" type="long" />
 		<field name="commerceOrderId" type="long" />
 		<field name="commercePriceListId" type="long" />
 		<field name="CPInstanceId" type="long" />
+		<field name="CPMeasurementUnitId" type="long" />
 		<field name="CProductId" type="long" />
+		<field name="customerCommerceOrderItemId" type="long" />
 		<field name="parentCommerceOrderItemId" type="long" />
 		<field name="shippingAddressId" type="long" />
-		<field name="deliveryGroup" type="String" />
+		<field name="deliveryGroupName" type="String" />
 		<field name="deliveryMaxSubscriptionCycles" type="long" />
 		<field name="deliverySubscriptionLength" type="int" />
 		<field name="deliverySubscriptionType" type="String" />
 		<field name="deliverySubscriptionTypeSettings" type="String" />
 		<field name="depth" type="double" />
 		<field name="discountAmount" type="BigDecimal" />
+		<field name="discountManuallyAdjusted" type="boolean" />
 		<field name="discountPercentageLevel1" type="BigDecimal" />
 		<field name="discountPercentageLevel2" type="BigDecimal" />
 		<field name="discountPercentageLevel3" type="BigDecimal" />
@@ -196,22 +215,28 @@
 		<field name="manuallyAdjusted" type="boolean" />
 		<field name="maxSubscriptionCycles" type="long" />
 		<field localized="true" name="name" type="String" />
+		<field name="priceManuallyAdjusted" type="boolean" />
+		<field name="priceOnApplication" type="boolean" />
 		<field name="printedNote" type="String">
 			<hint-collection name="TEXTAREA" />
 		</field>
 		<field name="promoPrice" type="BigDecimal" />
 		<field name="promoPriceWithTaxAmount" type="BigDecimal" />
-		<field name="quantity" type="int" />
+		<field name="quantity" type="BigDecimal" />
+		<field name="replacedCPInstanceId" type="long" />
+		<field name="replacedSku" type="String" />
 		<field name="requestedDeliveryDate" type="Date" />
 		<field name="shipSeparately" type="boolean" />
 		<field name="shippable" type="boolean" />
-		<field name="shippedQuantity" type="int" />
+		<field name="shippedQuantity" type="BigDecimal" />
 		<field name="shippingExtraPrice" type="double" />
 		<field name="sku" type="String" />
 		<field name="subscription" type="boolean" />
 		<field name="subscriptionLength" type="int" />
 		<field name="subscriptionType" type="String" />
 		<field name="subscriptionTypeSettings" type="String" />
+		<field name="unitOfMeasureIncrementalOrderQuantity" type="BigDecimal" />
+		<field name="unitOfMeasureKey" type="String" />
 		<field name="unitPrice" type="BigDecimal" />
 		<field name="unitPriceWithTaxAmount" type="BigDecimal" />
 		<field name="weight" type="double" />
@@ -219,6 +244,7 @@
 	</model>
 	<model name="com.liferay.commerce.model.CommerceOrderNote">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commerceOrderNoteId" type="long" />
 		<field name="groupId" type="long" />
@@ -252,6 +278,7 @@
 	</model>
 	<model name="com.liferay.commerce.model.CommerceOrderType">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commerceOrderTypeId" type="long" />
 		<field name="companyId" type="long" />
@@ -273,6 +300,7 @@
 	</model>
 	<model name="com.liferay.commerce.model.CommerceOrderTypeRel">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commerceOrderTypeRelId" type="long" />
 		<field name="companyId" type="long" />
@@ -286,6 +314,8 @@
 	</model>
 	<model name="com.liferay.commerce.model.CommerceShipment">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="commerceShipmentId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -296,17 +326,22 @@
 		<field name="commerceAccountId" type="long" />
 		<field name="commerceAddressId" type="long" />
 		<field name="commerceShippingMethodId" type="long" />
+		<field name="carrier" type="String" />
+		<field name="expectedDate" type="Date" />
+		<field name="shippingDate" type="Date" />
 		<field name="shippingOptionName" type="String">
 			<hint-collection name="CLOB" />
 		</field>
-		<field name="carrier" type="String" />
 		<field name="trackingNumber" type="String" />
-		<field name="shippingDate" type="Date" />
-		<field name="expectedDate" type="Date" />
+		<field name="trackingURL" type="String">
+			<hint-collection name="TEXTAREA" />
+		</field>
 		<field name="status" type="int" />
 	</model>
 	<model name="com.liferay.commerce.model.CommerceShipmentItem">
 		<field name="mvccVersion" type="long" />
+		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="commerceShipmentItemId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -317,7 +352,8 @@
 		<field name="commerceShipmentId" type="long" />
 		<field name="commerceOrderItemId" type="long" />
 		<field name="commerceInventoryWarehouseId" type="long" />
-		<field name="quantity" type="int" />
+		<field name="quantity" type="BigDecimal" />
+		<field name="unitOfMeasureKey" type="String" />
 	</model>
 	<model name="com.liferay.commerce.model.CommerceShippingMethod">
 		<field name="mvccVersion" type="long" />
@@ -332,12 +368,31 @@
 			<validator name="required" />
 		</field>
 		<field localized="true" name="description" type="String" />
-		<field name="imageId" type="long" />
+		<field name="active" type="boolean" />
 		<field name="engineKey" type="String" />
+		<field name="imageId" type="long" />
 		<field name="priority" type="double">
 			<validator name="number" />
 		</field>
-		<field name="active" type="boolean" />
+		<field name="trackingURL" type="String">
+			<hint-collection name="TEXTAREA" />
+		</field>
+		<field name="typeSettings" type="String">
+			<hint-collection name="CLOB" />
+		</field>
+	</model>
+	<model name="com.liferay.commerce.model.CommerceShippingOptionAccountEntryRel">
+		<field name="mvccVersion" type="long" />
+		<field name="CommerceShippingOptionAccountEntryRelId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="accountEntryId" type="long" />
+		<field name="commerceChannelId" type="long" />
+		<field name="commerceShippingMethodKey" type="String" />
+		<field name="commerceShippingOptionKey" type="String" />
 	</model>
 	<model name="com.liferay.commerce.model.CommerceSubscriptionEntry">
 		<field name="mvccVersion" type="long" />
@@ -392,6 +447,7 @@
 	</model>
 	<model name="com.liferay.commerce.model.CPDefinitionInventory">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="CPDefinitionInventoryId" type="long" />
 		<field name="groupId" type="long" />
@@ -405,18 +461,18 @@
 		<field name="lowStockActivity" type="String" />
 		<field name="displayAvailability" type="boolean" />
 		<field name="displayStockQuantity" type="boolean" />
-		<field name="minStockQuantity" type="int">
+		<field name="minStockQuantity" type="BigDecimal">
 			<validator name="number" />
 		</field>
 		<field name="backOrders" type="boolean" />
-		<field name="minOrderQuantity" type="int">
+		<field name="minOrderQuantity" type="BigDecimal">
 			<validator name="number" />
 		</field>
-		<field name="maxOrderQuantity" type="int">
+		<field name="maxOrderQuantity" type="BigDecimal">
 			<validator name="number" />
 		</field>
 		<field name="allowedOrderQuantities" type="String" />
-		<field name="multipleOrderQuantity" type="int">
+		<field name="multipleOrderQuantity" type="BigDecimal">
 			<validator name="number" />
 		</field>
 	</model>

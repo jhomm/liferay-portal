@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
@@ -24,6 +15,7 @@ import com.liferay.headless.delivery.internal.dto.v1_0.util.CommentUtil;
 import com.liferay.headless.delivery.resource.v1_0.CommentResource;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleService;
+import com.liferay.knowledge.base.exception.NoSuchCommentException;
 import com.liferay.message.boards.exception.DiscussionMaxCommentsException;
 import com.liferay.message.boards.exception.MessageSubjectException;
 import com.liferay.message.boards.model.MBMessage;
@@ -54,16 +46,14 @@ import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
+import jakarta.ws.rs.ClientErrorException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.util.Map;
 import java.util.function.Function;
-
-import javax.ws.rs.ClientErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -76,16 +66,78 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/comment.properties",
 	scope = ServiceScope.PROTOTYPE, service = CommentResource.class
 )
-public class CommentResourceImpl
-	extends BaseCommentResourceImpl implements EntityModelResource {
+public class CommentResourceImpl extends BaseCommentResourceImpl {
 
 	@Override
 	public void deleteComment(Long commentId) throws Exception {
-		DiscussionPermission discussionPermission = _getDiscussionPermission();
+		_deleteComment(commentId);
+	}
 
-		discussionPermission.checkDeletePermission(commentId);
+	@Override
+	public void
+			deleteSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String blogPostingExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
 
-		_commentManager.deleteComment(commentId);
+		BlogsEntry blogsEntry =
+			_blogsEntryService.getBlogsEntryByExternalReferenceCode(
+				siteId, blogPostingExternalReferenceCode);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, BlogsEntry.class.getName(),
+			blogsEntry.getEntryId());
+
+		_deleteComment(comment.getCommentId());
+	}
+
+	@Override
+	public void
+			deleteSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String parentCommentExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, parentCommentExternalReferenceCode, siteId);
+
+		_deleteComment(comment.getCommentId());
+	}
+
+	@Override
+	public void
+			deleteSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String documentExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		DLFileEntry dlFileEntry =
+			_dlFileEntryService.getFileEntryByExternalReferenceCode(
+				documentExternalReferenceCode, siteId);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, DLFileEntry.class.getName(),
+			dlFileEntry.getFileEntryId());
+
+		_deleteComment(comment.getCommentId());
+	}
+
+	@Override
+	public void
+			deleteSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String structuredContentExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		JournalArticle journalArticle =
+			_journalArticleService.getLatestArticleByExternalReferenceCode(
+				siteId, structuredContentExternalReferenceCode);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey());
+
+		_deleteComment(comment.getCommentId());
 	}
 
 	@Override
@@ -112,6 +164,12 @@ public class CommentResourceImpl
 					"postBlogPostingComment", blogsEntry.getUserId(),
 					BlogsEntry.class.getName(), blogsEntry.getGroupId())
 			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_DISCUSSION, blogPostingId,
+					"postBlogPostingCommentBatch", blogsEntry.getUserId(),
+					BlogsEntry.class.getName(), blogsEntry.getGroupId())
+			).put(
 				"get",
 				addAction(
 					ActionKeys.VIEW, blogPostingId,
@@ -132,9 +190,8 @@ public class CommentResourceImpl
 				"No comment exists with comment ID " + commentId);
 		}
 
-		DiscussionPermission discussionPermission = _getDiscussionPermission();
-
-		discussionPermission.checkViewPermission(
+		_discussionPermission.checkViewPermission(
+			PermissionThreadLocal.getPermissionChecker(),
 			contextCompany.getCompanyId(), comment.getGroupId(),
 			comment.getClassName(), comment.getClassPK());
 
@@ -148,8 +205,18 @@ public class CommentResourceImpl
 		throws Exception {
 
 		return _getComments(
-			Collections.emptyMap(), parentCommentId, search, aggregation,
-			filter, pagination, sorts);
+			HashMapBuilder.put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteCommentBatch",
+					Comment.class.getName(), null)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putCommentBatch",
+					Comment.class.getName(), null)
+			).build(),
+			parentCommentId, search, aggregation, filter, pagination, sorts);
 	}
 
 	@Override
@@ -176,6 +243,12 @@ public class CommentResourceImpl
 					"postDocumentComment", dlFileEntry.getUserId(),
 					DLFileEntry.class.getName(), dlFileEntry.getGroupId())
 			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_DISCUSSION, documentId,
+					"postDocumentCommentBatch", dlFileEntry.getUserId(),
+					DLFileEntry.class.getName(), dlFileEntry.getGroupId())
+			).put(
 				"get",
 				addAction(
 					ActionKeys.VIEW, documentId, "getDocumentCommentsPage",
@@ -189,6 +262,93 @@ public class CommentResourceImpl
 	@Override
 	public EntityModel getEntityModel(MultivaluedMap multivaluedMap) {
 		return new CommentEntityModel();
+	}
+
+	@Override
+	public Comment
+			getSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String blogPostingExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		BlogsEntry blogsEntry =
+			_blogsEntryService.getBlogsEntryByExternalReferenceCode(
+				siteId, blogPostingExternalReferenceCode);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, BlogsEntry.class.getName(),
+			blogsEntry.getEntryId());
+
+		_discussionPermission.checkViewPermission(
+			PermissionThreadLocal.getPermissionChecker(),
+			contextCompany.getCompanyId(), comment.getGroupId(),
+			comment.getClassName(), comment.getClassPK());
+
+		return CommentUtil.toComment(comment, _commentManager, _portal);
+	}
+
+	@Override
+	public Comment
+			getSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String parentCommentExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, parentCommentExternalReferenceCode, siteId);
+
+		_discussionPermission.checkViewPermission(
+			PermissionThreadLocal.getPermissionChecker(),
+			contextCompany.getCompanyId(), comment.getGroupId(),
+			comment.getClassName(), comment.getClassPK());
+
+		return CommentUtil.toComment(comment, _commentManager, _portal);
+	}
+
+	@Override
+	public Comment
+			getSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String documentExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		DLFileEntry dlFileEntry =
+			_dlFileEntryService.getFileEntryByExternalReferenceCode(
+				documentExternalReferenceCode, siteId);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, DLFileEntry.class.getName(),
+			dlFileEntry.getFileEntryId());
+
+		_discussionPermission.checkViewPermission(
+			PermissionThreadLocal.getPermissionChecker(),
+			contextCompany.getCompanyId(), comment.getGroupId(),
+			comment.getClassName(), comment.getClassPK());
+
+		return CommentUtil.toComment(comment, _commentManager, _portal);
+	}
+
+	@Override
+	public Comment
+			getSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String structuredContentExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		JournalArticle journalArticle =
+			_journalArticleService.getLatestArticleByExternalReferenceCode(
+				siteId, structuredContentExternalReferenceCode);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, JournalArticle.class.getName(),
+			journalArticle.getResourcePrimKey());
+
+		_discussionPermission.checkViewPermission(
+			PermissionThreadLocal.getPermissionChecker(),
+			contextCompany.getCompanyId(), comment.getGroupId(),
+			comment.getClassName(), comment.getClassPK());
+
+		return CommentUtil.toComment(comment, _commentManager, _portal);
 	}
 
 	@Override
@@ -216,6 +376,13 @@ public class CommentResourceImpl
 					"postStructuredContentComment", journalArticle.getUserId(),
 					JournalArticle.class.getName(), journalArticle.getGroupId())
 			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_DISCUSSION, structuredContentId,
+					"postStructuredContentCommentBatch",
+					journalArticle.getUserId(), JournalArticle.class.getName(),
+					journalArticle.getGroupId())
+			).put(
 				"get",
 				addAction(
 					ActionKeys.VIEW, structuredContentId,
@@ -234,8 +401,8 @@ public class CommentResourceImpl
 		BlogsEntry blogsEntry = _blogsEntryService.getEntry(blogPostingId);
 
 		return _postEntityComment(
-			BlogsEntry.class.getName(), blogPostingId, comment.getText(),
-			blogsEntry.getGroupId());
+			comment.getExternalReferenceCode(), blogsEntry.getGroupId(),
+			BlogsEntry.class.getName(), blogPostingId, comment.getText());
 	}
 
 	@Override
@@ -249,15 +416,10 @@ public class CommentResourceImpl
 			throw new NotFoundException();
 		}
 
-		return _postComment(
-			() -> _commentManager.addComment(
-				_getUserId(), parentComment.getClassName(),
-				parentComment.getClassPK(), StringPool.BLANK,
-				parentComment.getCommentId(), StringPool.BLANK,
-				StringBundler.concat("<p>", comment.getText(), "</p>"),
-				_createServiceContextFunction()),
-			parentComment.getClassName(), parentComment.getClassPK(),
-			parentComment.getGroupId());
+		return _postParentCommentComment(
+			comment.getExternalReferenceCode(), parentComment.getGroupId(),
+			parentComment.getCommentId(), parentComment.getClassName(),
+			parentComment.getClassPK(), comment.getText());
 	}
 
 	@Override
@@ -267,8 +429,8 @@ public class CommentResourceImpl
 		DLFileEntry fileEntry = _dlFileEntryService.getFileEntry(documentId);
 
 		return _postEntityComment(
-			DLFileEntry.class.getName(), documentId, comment.getText(),
-			fileEntry.getGroupId());
+			comment.getExternalReferenceCode(), fileEntry.getGroupId(),
+			DLFileEntry.class.getName(), documentId, comment.getText());
 	}
 
 	@Override
@@ -280,36 +442,132 @@ public class CommentResourceImpl
 			structuredContentId);
 
 		return _postEntityComment(
+			comment.getExternalReferenceCode(), journalArticle.getGroupId(),
 			JournalArticle.class.getName(), structuredContentId,
-			comment.getText(), journalArticle.getGroupId());
+			comment.getText());
 	}
 
 	@Override
 	public Comment putComment(Long commentId, Comment comment)
 		throws Exception {
 
-		DiscussionPermission discussionPermission = _getDiscussionPermission();
+		return _updateComment(
+			_commentManager.fetchComment(commentId), commentId,
+			comment.getText());
+	}
 
-		discussionPermission.checkUpdatePermission(commentId);
+	@Override
+	public Comment
+			putSiteBlogPostingByExternalReferenceCodeBlogPostingExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String blogPostingExternalReferenceCode,
+				String externalReferenceCode, Comment comment)
+		throws Exception {
+
+		BlogsEntry blogsEntry =
+			_blogsEntryService.getBlogsEntryByExternalReferenceCode(
+				siteId, blogPostingExternalReferenceCode);
 
 		com.liferay.portal.kernel.comment.Comment existingComment =
-			_commentManager.fetchComment(commentId);
+			_fetchComment(
+				externalReferenceCode, siteId, BlogsEntry.class.getName(),
+				blogsEntry.getEntryId());
 
-		try {
-			_commentManager.updateComment(
-				existingComment.getUserId(), existingComment.getClassName(),
-				existingComment.getClassPK(), commentId, StringPool.BLANK,
-				StringBundler.concat("<p>", comment.getText(), "</p>"),
-				_createServiceContextFunction());
+		if (existingComment != null) {
+			return _updateComment(
+				existingComment, existingComment.getCommentId(),
+				comment.getText());
+		}
 
-			return CommentUtil.toComment(
-				_commentManager.fetchComment(commentId), _commentManager,
-				_portal);
+		return _postEntityComment(
+			externalReferenceCode, blogsEntry.getGroupId(),
+			BlogsEntry.class.getName(), blogsEntry.getEntryId(),
+			comment.getText());
+	}
+
+	@Override
+	public Comment
+			putSiteCommentByExternalReferenceCodeParentCommentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String parentCommentExternalReferenceCode,
+				String externalReferenceCode, Comment comment)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment parentComment = _getComment(
+			parentCommentExternalReferenceCode, siteId);
+
+		com.liferay.portal.kernel.comment.Comment existingComment =
+			_fetchComment(
+				externalReferenceCode, siteId, parentComment.getClassName(),
+				parentComment.getClassPK());
+
+		if ((existingComment != null) &&
+			(parentComment.getCommentId() ==
+				existingComment.getParentCommentId())) {
+
+			return _updateComment(
+				existingComment, existingComment.getCommentId(),
+				comment.getText());
 		}
-		catch (MessageSubjectException messageSubjectException) {
-			throw new ClientErrorException(
-				"Comment text is null", 422, messageSubjectException);
+
+		return _postParentCommentComment(
+			externalReferenceCode, parentComment.getGroupId(),
+			parentComment.getCommentId(), parentComment.getClassName(),
+			parentComment.getClassPK(), comment.getText());
+	}
+
+	@Override
+	public Comment
+			putSiteDocumentByExternalReferenceCodeDocumentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String documentExternalReferenceCode,
+				String externalReferenceCode, Comment comment)
+		throws Exception {
+
+		DLFileEntry dlFileEntry =
+			_dlFileEntryService.getFileEntryByExternalReferenceCode(
+				documentExternalReferenceCode, siteId);
+
+		com.liferay.portal.kernel.comment.Comment existingComment =
+			_fetchComment(
+				externalReferenceCode, siteId, DLFileEntry.class.getName(),
+				dlFileEntry.getFileEntryId());
+
+		if (existingComment != null) {
+			return _updateComment(
+				existingComment, existingComment.getCommentId(),
+				comment.getText());
 		}
+
+		return _postEntityComment(
+			externalReferenceCode, dlFileEntry.getGroupId(),
+			DLFileEntry.class.getName(), dlFileEntry.getFileEntryId(),
+			comment.getText());
+	}
+
+	@Override
+	public Comment
+			putSiteStructuredContentByExternalReferenceCodeStructuredContentExternalReferenceCodeCommentByExternalReferenceCode(
+				Long siteId, String structuredContentExternalReferenceCode,
+				String externalReferenceCode, Comment comment)
+		throws Exception {
+
+		JournalArticle journalArticle =
+			_journalArticleService.getLatestArticleByExternalReferenceCode(
+				siteId, structuredContentExternalReferenceCode);
+
+		com.liferay.portal.kernel.comment.Comment existingComment =
+			_fetchComment(
+				externalReferenceCode, siteId, JournalArticle.class.getName(),
+				journalArticle.getResourcePrimKey());
+
+		if (existingComment != null) {
+			return _updateComment(
+				existingComment, existingComment.getCommentId(),
+				comment.getText());
+		}
+
+		return _postEntityComment(
+			externalReferenceCode, journalArticle.getGroupId(),
+			JournalArticle.class.getName(), journalArticle.getResourcePrimKey(),
+			comment.getText());
 	}
 
 	private Function<String, ServiceContext> _createServiceContextFunction() {
@@ -320,6 +578,94 @@ public class CommentResourceImpl
 
 			return serviceContext;
 		};
+	}
+
+	private void _deleteComment(Long commentId) throws Exception {
+		_discussionPermission.checkDeletePermission(
+			PermissionThreadLocal.getPermissionChecker(), commentId);
+
+		_commentManager.deleteComment(commentId);
+	}
+
+	private com.liferay.portal.kernel.comment.Comment _fetchComment(
+			String externalReferenceCode, long siteId, String className,
+			long classPK)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment comment =
+			_commentManager.fetchComment(siteId, externalReferenceCode);
+
+		if ((comment != null) && _isAssociated(className, classPK, comment)) {
+			return comment;
+		}
+
+		return null;
+	}
+
+	private com.liferay.portal.kernel.comment.Comment _getComment(
+			String externalReferenceCode, long siteId, String className,
+			long classPK)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment comment =
+			_commentManager.getComment(siteId, externalReferenceCode);
+
+		if (!_isAssociated(className, classPK, comment)) {
+			StringBundler sb = new StringBundler(5);
+
+			sb.append("A comment with external reference code ");
+			sb.append(externalReferenceCode);
+			sb.append(" and site ID ");
+			sb.append(siteId);
+			sb.append(" is associated to another entity");
+
+			throw new NoSuchCommentException(sb.toString());
+		}
+
+		return comment;
+	}
+
+	private com.liferay.portal.kernel.comment.Comment _getComment(
+			String externalReferenceCode, Long siteId)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment comment =
+			_commentManager.getComment(siteId, externalReferenceCode);
+
+		_discussionPermission.checkViewPermission(
+			PermissionThreadLocal.getPermissionChecker(),
+			contextCompany.getCompanyId(), comment.getGroupId(),
+			comment.getClassName(), comment.getClassPK());
+
+		return comment;
+	}
+
+	private com.liferay.portal.kernel.comment.Comment _getComment(
+			String externalReferenceCode, String parentExternalReferenceCode,
+			Long siteId)
+		throws Exception {
+
+		com.liferay.portal.kernel.comment.Comment parentComment = _getComment(
+			parentExternalReferenceCode, siteId);
+
+		com.liferay.portal.kernel.comment.Comment comment = _getComment(
+			externalReferenceCode, siteId, parentComment.getClassName(),
+			parentComment.getClassPK());
+
+		if (parentComment.getCommentId() != comment.getParentCommentId()) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append("No comment exists with external reference code ");
+			sb.append(externalReferenceCode);
+			sb.append(", site ID ");
+			sb.append(parentComment.getGroupId());
+			sb.append(", and parent comment with external reference code ");
+			sb.append(parentExternalReferenceCode);
+
+			throw new NotFoundException(sb.toString());
+		}
+
+		return comment;
 	}
 
 	private Page<Comment> _getComments(
@@ -357,11 +703,6 @@ public class CommentResourceImpl
 				_commentManager, _portal));
 	}
 
-	private DiscussionPermission _getDiscussionPermission() {
-		return _commentManager.getDiscussionPermission(
-			PermissionThreadLocal.getPermissionChecker());
-	}
-
 	private long _getUserId() {
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
@@ -369,14 +710,26 @@ public class CommentResourceImpl
 		return permissionChecker.getUserId();
 	}
 
+	private boolean _isAssociated(
+		String className, long classPK,
+		com.liferay.portal.kernel.comment.Comment comment) {
+
+		if (className.equals(comment.getClassName()) &&
+			(classPK == comment.getClassPK())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
 	private Comment _postComment(
 			UnsafeSupplier<Long, ? extends Exception> addCommentUnsafeSupplier,
 			String className, long classPK, long groupId)
 		throws Exception {
 
-		DiscussionPermission discussionPermission = _getDiscussionPermission();
-
-		discussionPermission.checkAddPermission(
+		_discussionPermission.checkAddPermission(
+			PermissionThreadLocal.getPermissionChecker(),
 			contextCompany.getCompanyId(), groupId, className, classPK);
 
 		try {
@@ -403,15 +756,56 @@ public class CommentResourceImpl
 	}
 
 	private Comment _postEntityComment(
-			String className, long classPK, String text, long groupId)
+			String externalReferenceCode, long groupId, String className,
+			long classPK, String text)
 		throws Exception {
 
 		return _postComment(
 			() -> _commentManager.addComment(
-				_getUserId(), groupId, className, classPK, StringPool.BLANK,
-				StringPool.BLANK, StringBundler.concat("<p>", text, "</p>"),
+				externalReferenceCode, _getUserId(), groupId, className,
+				classPK, StringPool.BLANK, StringPool.BLANK,
+				StringBundler.concat("<p>", text, "</p>"),
 				_createServiceContextFunction()),
 			className, classPK, groupId);
+	}
+
+	private Comment _postParentCommentComment(
+			String externalReferenceCode, long groupId, long parentCommentId,
+			String className, long classPK, String text)
+		throws Exception {
+
+		return _postComment(
+			() -> _commentManager.addComment(
+				externalReferenceCode, _getUserId(), className, classPK,
+				StringPool.BLANK, parentCommentId, StringPool.BLANK,
+				StringBundler.concat("<p>", text, "</p>"),
+				_createServiceContextFunction()),
+			className, classPK, groupId);
+	}
+
+	private Comment _updateComment(
+			com.liferay.portal.kernel.comment.Comment comment, long commentId,
+			String text)
+		throws Exception {
+
+		_discussionPermission.checkUpdatePermission(
+			PermissionThreadLocal.getPermissionChecker(), commentId);
+
+		try {
+			_commentManager.updateComment(
+				comment.getUserId(), comment.getClassName(),
+				comment.getClassPK(), comment.getCommentId(), StringPool.BLANK,
+				StringBundler.concat("<p>", text, "</p>"),
+				_createServiceContextFunction());
+
+			return CommentUtil.toComment(
+				_commentManager.fetchComment(comment.getCommentId()),
+				_commentManager, _portal);
+		}
+		catch (MessageSubjectException messageSubjectException) {
+			throw new ClientErrorException(
+				"Comment text is null", 422, messageSubjectException);
+		}
 	}
 
 	@Reference
@@ -419,6 +813,9 @@ public class CommentResourceImpl
 
 	@Reference
 	private CommentManager _commentManager;
+
+	@Reference
+	private DiscussionPermission _discussionPermission;
 
 	@Reference
 	private DLFileEntryService _dlFileEntryService;

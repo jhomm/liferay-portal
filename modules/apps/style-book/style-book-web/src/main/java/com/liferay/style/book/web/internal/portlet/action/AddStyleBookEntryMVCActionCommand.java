@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.web.internal.portlet.action;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -22,6 +12,7 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
@@ -30,10 +21,10 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryService;
-import com.liferay.style.book.web.internal.handler.StyleBookEntryExceptionRequestHandler;
+import com.liferay.style.book.web.internal.handler.StyleBookEntryExceptionRequestHandlerUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,9 +33,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK,
+		"jakarta.portlet.name=" + StyleBookPortletKeys.STYLE_BOOK,
 		"mvc.command.name=/style_book/add_style_book_entry"
 	},
 	service = MVCActionCommand.class
@@ -60,7 +50,7 @@ public class AddStyleBookEntryMVCActionCommand extends BaseMVCActionCommand {
 			StyleBookEntry styleBookEntry = _addStyleBookEntry(actionRequest);
 
 			JSONObject jsonObject = JSONUtil.put(
-				"redirectURL", getRedirectURL(actionResponse, styleBookEntry));
+				"redirectURL", _getRedirectURL(actionResponse, styleBookEntry));
 
 			if (SessionErrors.contains(
 					actionRequest, "styleBookEntryNameInvalid")) {
@@ -76,12 +66,26 @@ public class AddStyleBookEntryMVCActionCommand extends BaseMVCActionCommand {
 
 			hideDefaultErrorMessage(actionRequest);
 
-			_styleBookEntryExceptionRequestHandler.handlePortalException(
+			StyleBookEntryExceptionRequestHandlerUtil.handlePortalException(
 				actionRequest, actionResponse, portalException);
 		}
 	}
 
-	protected String getRedirectURL(
+	private StyleBookEntry _addStyleBookEntry(ActionRequest actionRequest)
+		throws PortalException {
+
+		String name = ParamUtil.getString(actionRequest, "name");
+		String themeId = ParamUtil.getString(actionRequest, "themeId");
+
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			actionRequest);
+
+		return _styleBookEntryService.addStyleBookEntry(
+			null, serviceContext.getScopeGroupId(), name, StringPool.BLANK,
+			themeId, serviceContext);
+	}
+
+	private String _getRedirectURL(
 		ActionResponse actionResponse, StyleBookEntry styleBookEntry) {
 
 		return PortletURLBuilder.createRenderURL(
@@ -93,25 +97,8 @@ public class AddStyleBookEntryMVCActionCommand extends BaseMVCActionCommand {
 		).buildString();
 	}
 
-	private StyleBookEntry _addStyleBookEntry(ActionRequest actionRequest)
-		throws PortalException {
-
-		String name = ParamUtil.getString(actionRequest, "name");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			actionRequest);
-
-		return _styleBookEntryService.addStyleBookEntry(
-			serviceContext.getScopeGroupId(), name, StringPool.BLANK,
-			serviceContext);
-	}
-
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private StyleBookEntryExceptionRequestHandler
-		_styleBookEntryExceptionRequestHandler;
 
 	@Reference
 	private StyleBookEntryService _styleBookEntryService;

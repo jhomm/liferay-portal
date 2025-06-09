@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.display.context;
@@ -24,19 +15,21 @@ import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
-import com.liferay.portlet.usersadmin.search.GroupSearchTerms;
+import com.liferay.site.search.GroupSearch;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -45,14 +38,13 @@ public class SitesThatIAdministerItemSelectorViewDisplayContext
 	extends BaseItemSelectorViewDisplayContext {
 
 	public SitesThatIAdministerItemSelectorViewDisplayContext(
-		HttpServletRequest httpServletRequest,
-		AssetPublisherHelper assetPublisherHelper,
 		GroupItemSelectorCriterion groupItemSelectorCriterion,
-		String itemSelectedEventName, PortletURL portletURL) {
+		HttpServletRequest httpServletRequest,
+		AssetPublisherHelper assetPublisherHelper, PortletURL portletURL) {
 
-		super(
-			httpServletRequest, assetPublisherHelper,
-			groupItemSelectorCriterion, itemSelectedEventName, portletURL);
+		super(httpServletRequest, assetPublisherHelper, portletURL);
+
+		_groupItemSelectorCriterion = groupItemSelectorCriterion;
 	}
 
 	@Override
@@ -62,23 +54,18 @@ public class SitesThatIAdministerItemSelectorViewDisplayContext
 				WebKeys.THEME_DISPLAY);
 
 		GroupSearch groupSearch = new GroupSearch(
-			getPortletRequest(), getPortletURL());
+			getPortletRequest(), portletURL);
 
-		GroupSearchTerms groupSearchTerms =
-			(GroupSearchTerms)groupSearch.getSearchTerms();
-
-		List<Group> groups = GroupLocalServiceUtil.search(
-			themeDisplay.getCompanyId(), _CLASS_NAME_IDS,
-			groupSearchTerms.getKeywords(), _getGroupParams(),
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			groupSearch.getOrderByComparator());
-
-		groupSearch.setTotal(groups.size());
-
-		groups = groups.subList(
-			groupSearch.getStart(), groupSearch.getResultEnd());
-
-		groupSearch.setResults(groups);
+		groupSearch.setResultsAndTotal(
+			GroupLocalServiceUtil.search(
+				themeDisplay.getCompanyId(),
+				new long[] {
+					PortalUtil.getClassNameId(Group.class),
+					PortalUtil.getClassNameId(Organization.class)
+				},
+				ParamUtil.getString(httpServletRequest, "keywords"),
+				_getGroupParams(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				groupSearch.getOrderByComparator()));
 
 		return groupSearch;
 	}
@@ -95,48 +82,65 @@ public class SitesThatIAdministerItemSelectorViewDisplayContext
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
 
-		boolean filterManageableGroups = true;
-
-		if (permissionChecker.isCompanyAdmin()) {
-			filterManageableGroups = false;
-		}
+		boolean filterManageableGroups = !permissionChecker.isCompanyAdmin();
 
 		_groupParams = LinkedHashMapBuilder.<String, Object>put(
+			"actionId",
+			() -> {
+				if (filterManageableGroups) {
+					return ActionKeys.UPDATE;
+				}
+
+				return null;
+			}
+		).put(
 			"active", Boolean.TRUE
+		).put(
+			"excludedGroupIds",
+			() -> {
+				List<Long> excludedGroupIds = new ArrayList<>();
+
+				if (_groupItemSelectorCriterion.getExcludedGroupIds() != null) {
+					Collections.addAll(
+						excludedGroupIds,
+						ArrayUtil.toLongArray(
+							_groupItemSelectorCriterion.getExcludedGroupIds()));
+				}
+
+				if (getGroupId() <= 0) {
+					return excludedGroupIds;
+				}
+
+				Group group = GroupLocalServiceUtil.getGroup(getGroupId());
+
+				if (group.isStagingGroup()) {
+					excludedGroupIds.add(group.getLiveGroupId());
+				}
+				else {
+					excludedGroupIds.add(getGroupId());
+				}
+
+				return excludedGroupIds;
+			}
+		).put(
+			"site", Boolean.TRUE
+		).put(
+			"usersGroups",
+			() -> {
+				if (!filterManageableGroups) {
+					return null;
+				}
+
+				User user = themeDisplay.getUser();
+
+				return user.getUserId();
+			}
 		).build();
-
-		if (filterManageableGroups) {
-			User user = themeDisplay.getUser();
-
-			_groupParams.put("actionId", ActionKeys.UPDATE);
-			_groupParams.put("usersGroups", user.getUserId());
-		}
-
-		_groupParams.put("site", Boolean.TRUE);
-
-		if (getGroupId() > 0) {
-			List<Long> excludedGroupIds = new ArrayList<>();
-
-			Group group = GroupLocalServiceUtil.getGroup(getGroupId());
-
-			if (group.isStagingGroup()) {
-				excludedGroupIds.add(group.getLiveGroupId());
-			}
-			else {
-				excludedGroupIds.add(getGroupId());
-			}
-
-			_groupParams.put("excludedGroupIds", excludedGroupIds);
-		}
 
 		return _groupParams;
 	}
 
-	private static final long[] _CLASS_NAME_IDS = {
-		PortalUtil.getClassNameId(Group.class),
-		PortalUtil.getClassNameId(Organization.class)
-	};
-
+	private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
 	private LinkedHashMap<String, Object> _groupParams;
 
 }

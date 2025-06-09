@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -61,30 +53,22 @@ public class CommerceWishListItemLocalServiceUtil {
 		return getService().addCommerceWishListItem(commerceWishListItem);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
 	public static CommerceWishListItem addCommerceWishListItem(
-			long commerceWishListId, long cpDefinitionId, long cpInstanceId,
-			String json,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+			long userId, long commerceWishListId, String cpInstanceUuid,
+			long cProductId, String json)
 		throws PortalException {
 
 		return getService().addCommerceWishListItem(
-			commerceWishListId, cpDefinitionId, cpInstanceId, json,
-			serviceContext);
+			userId, commerceWishListId, cpInstanceUuid, cProductId, json);
 	}
 
-	public static CommerceWishListItem addCommerceWishListItem(
-			long commerceWishListId, long cProductId, String cpInstanceUuid,
-			String json,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public static CommerceWishListItem addOrUpdateCommerceWishListItem(
+			long userId, long commerceWishListId, String cpInstanceUuid,
+			long cProductId, String json)
 		throws PortalException {
 
-		return getService().addCommerceWishListItem(
-			commerceWishListId, cProductId, cpInstanceUuid, json,
-			serviceContext);
+		return getService().addOrUpdateCommerceWishListItem(
+			userId, commerceWishListId, cpInstanceUuid, cProductId, json);
 	}
 
 	/**
@@ -269,6 +253,13 @@ public class CommerceWishListItemLocalServiceUtil {
 		return getService().fetchCommerceWishListItem(commerceWishListItemId);
 	}
 
+	public static CommerceWishListItem fetchCommerceWishListItem(
+		long commerceWishListId, String cpInstanceUuid, long cProductId) {
+
+		return getService().fetchCommerceWishListItem(
+			commerceWishListId, cpInstanceUuid, cProductId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -390,10 +381,22 @@ public class CommerceWishListItemLocalServiceUtil {
 		return getService().updateCommerceWishListItem(commerceWishListItem);
 	}
 
-	public static CommerceWishListItemLocalService getService() {
-		return _service;
+	public static CommerceWishListItem updateCommerceWishListItem(
+			long commerceWishListId, String cpInstanceUuid, long cProductId,
+			String json)
+		throws PortalException {
+
+		return getService().updateCommerceWishListItem(
+			commerceWishListId, cpInstanceUuid, cProductId, json);
 	}
 
-	private static volatile CommerceWishListItemLocalService _service;
+	public static CommerceWishListItemLocalService getService() {
+		return _serviceSnapshot.get();
+	}
+
+	private static final Snapshot<CommerceWishListItemLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceWishListItemLocalServiceUtil.class,
+			CommerceWishListItemLocalService.class);
 
 }

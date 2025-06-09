@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.action;
@@ -21,32 +12,35 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
+import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.portlet.LayoutFriendlyURLSeparatorComposite;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
-import com.liferay.portal.util.PropsValues;
-import com.liferay.portlet.admin.util.AdminUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -75,17 +69,8 @@ public class UpdateLanguageAction implements Action {
 				httpServletRequest, "persistState", true);
 
 			if (themeDisplay.isSignedIn() && persistState) {
-				User user = themeDisplay.getUser();
-
-				Contact contact = user.getContact();
-
-				AdminUtil.updateUser(
-					httpServletRequest, user.getUserId(), user.getScreenName(),
-					user.getEmailAddress(), user.getFacebookId(),
-					user.getOpenId(), languageId, user.getTimeZoneId(),
-					user.getGreeting(), user.getComments(), contact.getSmsSn(),
-					contact.getFacebookSn(), contact.getJabberSn(),
-					contact.getSkypeSn(), contact.getTwitterSn());
+				UserServiceUtil.updateLanguageId(
+					themeDisplay.getUserId(), languageId);
 			}
 
 			HttpSession httpSession = httpServletRequest.getSession();
@@ -103,6 +88,10 @@ public class UpdateLanguageAction implements Action {
 				getRedirect(httpServletRequest, themeDisplay, locale));
 		}
 		catch (IllegalArgumentException | NoSuchLayoutException exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			httpServletResponse.sendError(
 				HttpServletResponse.SC_BAD_REQUEST,
 				httpServletRequest.getRequestURI());
@@ -121,6 +110,14 @@ public class UpdateLanguageAction implements Action {
 
 		if (Validator.isNull(redirect)) {
 			throw new IllegalArgumentException();
+		}
+
+		String contextPath = httpServletRequest.getContextPath();
+
+		if (Validator.isNotNull(contextPath) &&
+			!contextPath.equals(StringPool.SLASH)) {
+
+			redirect = redirect.substring(contextPath.length());
 		}
 
 		String layoutURL = redirect;
@@ -191,10 +188,29 @@ public class UpdateLanguageAction implements Action {
 			layoutURL = layoutURL.substring(0, friendlyURLSeparatorIndex);
 		}
 
+		String mappingPart = StringPool.BLANK;
+
+		List<FriendlyURLMapper> friendlyURLMappers =
+			PortletLocalServiceUtil.getFriendlyURLMappers();
+
+		for (FriendlyURLMapper friendlyURLMapper : friendlyURLMappers) {
+			if (friendlyURLMapper.isCheckMappingWithPrefix()) {
+				continue;
+			}
+
+			int mappingIndex = layoutURL.indexOf(
+				friendlyURLMapper.getMapping());
+
+			if (mappingIndex != -1) {
+				mappingPart =
+					StringPool.SLASH + layoutURL.substring(mappingIndex);
+			}
+		}
+
+		Locale currentLocale = themeDisplay.getLocale();
+
 		if (themeDisplay.isI18n()) {
 			String i18nPath = themeDisplay.getI18nPath();
-
-			Locale currentLocale = themeDisplay.getLocale();
 
 			String currentLocalePath =
 				StringPool.SLASH + currentLocale.toLanguageTag();
@@ -207,14 +223,24 @@ public class UpdateLanguageAction implements Action {
 			}
 		}
 
-		if (isFriendlyURLResolver(layoutURL) || layout.isTypeControlPanel()) {
+		int localePrependFriendlyURLStyle = PrefsPropsUtil.getInteger(
+			PortalUtil.getCompanyId(httpServletRequest),
+			PropsKeys.LOCALE_PREPEND_FRIENDLY_URL_STYLE);
+
+		if (!Validator.isBlank(themeDisplay.getPathMain()) &&
+			layoutURL.startsWith(themeDisplay.getPathMain())) {
+
+			redirect = layoutURL;
+		}
+		else if (isFriendlyURLResolver(layoutURL) ||
+				 layout.isTypeControlPanel()) {
+
 			redirect = layoutURL + friendlyURLSeparatorPart;
 		}
-		else if (layoutURL.equals(StringPool.SLASH) ||
-				 isGroupFriendlyURL(
-					 layout.getGroup(), layout, layoutURL, locale)) {
+		else if (isGroupFriendlyURL(
+					layout.getGroup(), layout, layoutURL, currentLocale)) {
 
-			if (PropsValues.LOCALE_PREPEND_FRIENDLY_URL_STYLE == 0) {
+			if (localePrependFriendlyURLStyle == 0) {
 				redirect = layoutURL;
 			}
 			else {
@@ -233,7 +259,7 @@ public class UpdateLanguageAction implements Action {
 			}
 		}
 		else {
-			if (PropsValues.LOCALE_PREPEND_FRIENDLY_URL_STYLE == 0) {
+			if (localePrependFriendlyURLStyle == 0) {
 				redirect = PortalUtil.getLayoutURL(
 					layout, themeDisplay, locale);
 			}
@@ -244,6 +270,10 @@ public class UpdateLanguageAction implements Action {
 
 			if (Validator.isNotNull(friendlyURLSeparatorPart)) {
 				redirect += friendlyURLSeparatorPart;
+			}
+
+			if (Validator.isNotNull(mappingPart)) {
+				redirect += mappingPart;
 			}
 		}
 
@@ -270,22 +300,25 @@ public class UpdateLanguageAction implements Action {
 	protected boolean isGroupFriendlyURL(
 		Group group, Layout layout, String layoutURL, Locale locale) {
 
-		if (Validator.isNull(layoutURL)) {
-			return true;
-		}
-
-		int pos = layoutURL.lastIndexOf(CharPool.SLASH);
-
-		String layoutURLLanguageId = layoutURL.substring(pos + 1);
-
-		Locale layoutURLLocale = LocaleUtil.fromLanguageId(
-			layoutURLLanguageId, true, false);
-
-		if ((layoutURLLocale != null) ||
+		if (Validator.isNull(layoutURL) ||
+			Objects.equals(layoutURL, StringPool.SLASH) ||
 			PortalUtil.isGroupFriendlyURL(
 				layoutURL, group.getFriendlyURL(),
 				layout.getFriendlyURL(locale))) {
 
+			return true;
+		}
+
+		int index = layoutURL.indexOf(StringPool.SLASH);
+
+		String string = layoutURL.substring(index + 1);
+
+		index = string.indexOf(CharPool.SLASH);
+
+		Locale layoutURLLocale = LocaleUtil.fromLanguageId(
+			string.substring(index + 1), true, false);
+
+		if (layoutURLLocale != null) {
 			return true;
 		}
 

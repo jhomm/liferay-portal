@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.permission;
@@ -24,15 +15,18 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleServiceUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jorge Ferrer
@@ -40,6 +34,8 @@ import javax.servlet.http.HttpServletRequest;
 public class ModelPermissionsFactory {
 
 	public static final String MODEL_PERMISSIONS_PREFIX = "modelPermissions";
+
+	public static final String ROLE_PERMISSIONS_PREFIX = "rolePermissions";
 
 	public static ModelPermissions create(
 		HttpServletRequest httpServletRequest) {
@@ -86,7 +82,7 @@ public class ModelPermissionsFactory {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -174,6 +170,50 @@ public class ModelPermissionsFactory {
 		return parameterName + StringPool.UNDERLINE + className;
 	}
 
+	private static void _addRolePermissions(
+		ModelPermissions modelPermissions, Map<String, String[]> parameterMap) {
+
+		boolean inputPermissionsShowAllRoles = MapUtil.getBoolean(
+			parameterMap, "inputPermissionsShowAllRoles");
+
+		if (inputPermissionsShowAllRoles) {
+			for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+				String key = entry.getKey();
+
+				if (!key.startsWith(ROLE_PERMISSIONS_PREFIX)) {
+					continue;
+				}
+
+				String[] keyTokens = key.split(StringPool.UNDERLINE);
+
+				if (keyTokens.length != 2) {
+					continue;
+				}
+
+				try {
+					Role role = RoleServiceUtil.fetchRole(
+						GetterUtil.getLong(keyTokens[1]));
+
+					if (role == null) {
+						continue;
+					}
+
+					modelPermissions.addRolePermissions(
+						role.getName(), entry.getValue());
+				}
+				catch (PortalException portalException) {
+					if (_log.isInfoEnabled()) {
+						_log.info("Unable to get role " + keyTokens[1]);
+					}
+
+					if (_log.isDebugEnabled()) {
+						_log.debug(portalException);
+					}
+				}
+			}
+		}
+	}
+
 	private static ModelPermissions _createModelPermissions(
 		Map<String, String[]> parameterMap, String className) {
 
@@ -188,9 +228,18 @@ public class ModelPermissionsFactory {
 			_addClassNamePostfix("groupPermissions", className));
 		String[] guestPermissions = parameterMap.get(
 			_addClassNamePostfix("guestPermissions", className));
+		String inputPermissionsViewRole = MapUtil.getString(
+			parameterMap, "inputPermissionsViewRole");
 
-		if ((groupPermissions != null) || (guestPermissions != null)) {
-			return create(groupPermissions, guestPermissions, className);
+		if ((groupPermissions != null) || (guestPermissions != null) ||
+			Validator.isNotNull(inputPermissionsViewRole)) {
+
+			ModelPermissions modelPermissions = create(
+				groupPermissions, guestPermissions, className);
+
+			_addRolePermissions(modelPermissions, parameterMap);
+
+			return modelPermissions;
 		}
 
 		if (Validator.isNull(className)) {

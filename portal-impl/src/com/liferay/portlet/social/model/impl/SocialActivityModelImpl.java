@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.model.impl;
@@ -33,22 +24,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.social.kernel.model.SocialActivity;
 import com.liferay.social.kernel.model.SocialActivityModel;
-import com.liferay.social.kernel.model.SocialActivitySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -204,66 +191,6 @@ public class SocialActivityModelImpl
 	@Deprecated
 	public static final long USERID_COLUMN_BITMASK = 512L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static SocialActivity toModel(SocialActivitySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		SocialActivity model = new SocialActivityImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setActivityId(soapModel.getActivityId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setActivitySetId(soapModel.getActivitySetId());
-		model.setMirrorActivityId(soapModel.getMirrorActivityId());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setParentClassNameId(soapModel.getParentClassNameId());
-		model.setParentClassPK(soapModel.getParentClassPK());
-		model.setType(soapModel.getType());
-		model.setExtraData(soapModel.getExtraData());
-		model.setReceiverUserId(soapModel.getReceiverUserId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<SocialActivity> toModels(
-		SocialActivitySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<SocialActivity> models = new ArrayList<SocialActivity>(
-			soapModels.length);
-
-		for (SocialActivitySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialActivity"));
@@ -344,137 +271,135 @@ public class SocialActivityModelImpl
 	public Map<String, Function<SocialActivity, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SocialActivity, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SocialActivity>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SocialActivity.class.getClassLoader(), SocialActivity.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SocialActivity, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SocialActivity> constructor =
-				(Constructor<SocialActivity>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SocialActivity, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SocialActivity, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", SocialActivity::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", SocialActivity::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"activityId", SocialActivity::getActivityId);
+			attributeGetterFunctions.put("groupId", SocialActivity::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", SocialActivity::getCompanyId);
+			attributeGetterFunctions.put("userId", SocialActivity::getUserId);
+			attributeGetterFunctions.put(
+				"createDate", SocialActivity::getCreateDate);
+			attributeGetterFunctions.put(
+				"activitySetId", SocialActivity::getActivitySetId);
+			attributeGetterFunctions.put(
+				"mirrorActivityId", SocialActivity::getMirrorActivityId);
+			attributeGetterFunctions.put(
+				"classNameId", SocialActivity::getClassNameId);
+			attributeGetterFunctions.put("classPK", SocialActivity::getClassPK);
+			attributeGetterFunctions.put(
+				"parentClassNameId", SocialActivity::getParentClassNameId);
+			attributeGetterFunctions.put(
+				"parentClassPK", SocialActivity::getParentClassPK);
+			attributeGetterFunctions.put("type", SocialActivity::getType);
+			attributeGetterFunctions.put(
+				"extraData", SocialActivity::getExtraData);
+			attributeGetterFunctions.put(
+				"receiverUserId", SocialActivity::getReceiverUserId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SocialActivity, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SocialActivity, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SocialActivity, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<SocialActivity, Object>>();
-		Map<String, BiConsumer<SocialActivity, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<SocialActivity, ?>>();
+		private static final Map<String, BiConsumer<SocialActivity, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", SocialActivity::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", SocialActivity::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<SocialActivity, Long>)
-				SocialActivity::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"activityId", SocialActivity::getActivityId);
-		attributeSetterBiConsumers.put(
-			"activityId",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setActivityId);
-		attributeGetterFunctions.put("groupId", SocialActivity::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setGroupId);
-		attributeGetterFunctions.put("companyId", SocialActivity::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setCompanyId);
-		attributeGetterFunctions.put("userId", SocialActivity::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setUserId);
-		attributeGetterFunctions.put(
-			"createDate", SocialActivity::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setCreateDate);
-		attributeGetterFunctions.put(
-			"activitySetId", SocialActivity::getActivitySetId);
-		attributeSetterBiConsumers.put(
-			"activitySetId",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setActivitySetId);
-		attributeGetterFunctions.put(
-			"mirrorActivityId", SocialActivity::getMirrorActivityId);
-		attributeSetterBiConsumers.put(
-			"mirrorActivityId",
-			(BiConsumer<SocialActivity, Long>)
-				SocialActivity::setMirrorActivityId);
-		attributeGetterFunctions.put(
-			"classNameId", SocialActivity::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setClassNameId);
-		attributeGetterFunctions.put("classPK", SocialActivity::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setClassPK);
-		attributeGetterFunctions.put(
-			"parentClassNameId", SocialActivity::getParentClassNameId);
-		attributeSetterBiConsumers.put(
-			"parentClassNameId",
-			(BiConsumer<SocialActivity, Long>)
-				SocialActivity::setParentClassNameId);
-		attributeGetterFunctions.put(
-			"parentClassPK", SocialActivity::getParentClassPK);
-		attributeSetterBiConsumers.put(
-			"parentClassPK",
-			(BiConsumer<SocialActivity, Long>)SocialActivity::setParentClassPK);
-		attributeGetterFunctions.put("type", SocialActivity::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<SocialActivity, Integer>)SocialActivity::setType);
-		attributeGetterFunctions.put("extraData", SocialActivity::getExtraData);
-		attributeSetterBiConsumers.put(
-			"extraData",
-			(BiConsumer<SocialActivity, String>)SocialActivity::setExtraData);
-		attributeGetterFunctions.put(
-			"receiverUserId", SocialActivity::getReceiverUserId);
-		attributeSetterBiConsumers.put(
-			"receiverUserId",
-			(BiConsumer<SocialActivity, Long>)
-				SocialActivity::setReceiverUserId);
+		static {
+			Map<String, BiConsumer<SocialActivity, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<SocialActivity, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"activityId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setActivityId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<SocialActivity, Long>)SocialActivity::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SocialActivity, Long>)SocialActivity::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SocialActivity, Long>)SocialActivity::setUserId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"activitySetId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setActivitySetId);
+			attributeSetterBiConsumers.put(
+				"mirrorActivityId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setMirrorActivityId);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<SocialActivity, Long>)SocialActivity::setClassPK);
+			attributeSetterBiConsumers.put(
+				"parentClassNameId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setParentClassNameId);
+			attributeSetterBiConsumers.put(
+				"parentClassPK",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setParentClassPK);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<SocialActivity, Integer>)SocialActivity::setType);
+			attributeSetterBiConsumers.put(
+				"extraData",
+				(BiConsumer<SocialActivity, String>)
+					SocialActivity::setExtraData);
+			attributeSetterBiConsumers.put(
+				"receiverUserId",
+				(BiConsumer<SocialActivity, Long>)
+					SocialActivity::setReceiverUserId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1159,41 +1084,12 @@ public class SocialActivityModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SocialActivity, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SocialActivity, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SocialActivity, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SocialActivity)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SocialActivity>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SocialActivity.class, ModelWrapper.class);
 
 	}
 
@@ -1218,7 +1114,8 @@ public class SocialActivityModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<SocialActivity, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

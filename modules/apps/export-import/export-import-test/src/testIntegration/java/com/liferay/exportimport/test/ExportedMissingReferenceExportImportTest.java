@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test;
@@ -37,8 +28,10 @@ import com.liferay.exportimport.test.util.model.util.DummyTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.dao.orm.hibernate.DynamicQueryFactoryImpl;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletBag;
 import com.liferay.portal.kernel.portlet.PortletBagPool;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
@@ -47,7 +40,8 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.xml.Element;
-import com.liferay.portal.kernel.zip.ZipReaderFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipReaderFactory;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.ArrayList;
@@ -156,18 +150,16 @@ public class ExportedMissingReferenceExportImportTest
 
 	@Test
 	public void testMissingDummy() throws Exception {
-		List<PortletDataHandler> portletDataHandlers = setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			DummyFolderWithMissingDummyPortletDataHandler.class);
+		try (SafeCloseable safeCloseable =
+				setPortletDataHandlerWithSafeCloseable(
+					DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
+					DummyFolderWithMissingDummyPortletDataHandler.class)) {
 
-		exportImportLayouts(
-			new long[] {layout.getLayoutId()}, getImportParameterMap());
+			exportImportLayouts(
+				new long[] {layout.getLayoutId()}, getImportParameterMap());
 
-		assertMissingReferences();
-
-		setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			portletDataHandlers);
+			assertMissingReferences();
+		}
 	}
 
 	@Test
@@ -182,18 +174,16 @@ public class ExportedMissingReferenceExportImportTest
 
 	@Test
 	public void testMissingLayout() throws Exception {
-		List<PortletDataHandler> portletDataHandlers = setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			DummyFolderWithMissingLayoutPortletDataHandler.class);
+		try (SafeCloseable safeCloseable =
+				setPortletDataHandlerWithSafeCloseable(
+					DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
+					DummyFolderWithMissingLayoutPortletDataHandler.class)) {
 
-		exportImportLayouts(
-			new long[] {layout.getLayoutId()}, getImportParameterMap());
+			exportImportLayouts(
+				new long[] {layout.getLayoutId()}, getImportParameterMap());
 
-		assertMissingReferences();
-
-		setPortletDataHandler(
-			DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-			portletDataHandlers);
+			assertMissingReferences();
+		}
 	}
 
 	protected void assertMissingReferences() throws Exception {
@@ -204,7 +194,7 @@ public class ExportedMissingReferenceExportImportTest
 				ExportImportHelperUtil.getUserIdStrategy(
 					TestPropsValues.getUserId(),
 					TestUserIdStrategy.CURRENT_USER_ID),
-				ZipReaderFactoryUtil.getZipReader(larFile));
+				_zipReaderFactory.getZipReader(larFile));
 
 		Element missingReferencesElement =
 			portletDataContext.getMissingReferencesElement();
@@ -248,8 +238,8 @@ public class ExportedMissingReferenceExportImportTest
 
 		ServiceTrackerList<PortletDataHandler> portletDataHandlerInstances =
 			ServiceTrackerListFactory.open(
-				bundle.getBundleContext(),
-				(Class<PortletDataHandler>)portletDataHandlerClass);
+				bundle.getBundleContext(), PortletDataHandler.class,
+				"(component.name=" + portletDataHandlerClass.getName() + ")");
 
 		Assert.assertEquals(
 			portletDataHandlerInstances.toString(), 1,
@@ -263,61 +253,6 @@ public class ExportedMissingReferenceExportImportTest
 		return portletDataHandlerInstance.getRank();
 	}
 
-	protected List<PortletDataHandler> setPortletDataHandler(
-			String portletId, Class<?> portletDataHandlerClass)
-		throws Exception {
-
-		Bundle bundle = FrameworkUtil.getBundle(
-			ExportedMissingReferenceExportImportTest.class);
-
-		ServiceTrackerList<PortletDataHandler> portletDataHandlerInstances =
-			ServiceTrackerListFactory.open(
-				bundle.getBundleContext(),
-				(Class<PortletDataHandler>)portletDataHandlerClass);
-
-		Iterator<PortletDataHandler> iterator =
-			portletDataHandlerInstances.iterator();
-
-		List<PortletDataHandler> portletDataHandlerList = new ArrayList<>();
-
-		iterator.forEachRemaining(portletDataHandlerList::add);
-
-		return setPortletDataHandler(portletId, portletDataHandlerList);
-	}
-
-	protected List<PortletDataHandler> setPortletDataHandler(
-			String portletId,
-			List<PortletDataHandler> portletDataHandlerInstances)
-		throws Exception {
-
-		PortletBag portletBag = PortletBagPool.get(portletId);
-
-		List<PortletDataHandler> oldDataHandlerInstances =
-			portletBag.getPortletDataHandlerInstances();
-
-		ReflectionTestUtil.setFieldValue(
-			portletBag, "_portletDataHandlerInstances",
-			new ServiceTrackerList<PortletDataHandler>() {
-
-				@Override
-				public void close() {
-				}
-
-				@Override
-				public Iterator<PortletDataHandler> iterator() {
-					return portletDataHandlerInstances.iterator();
-				}
-
-				@Override
-				public int size() {
-					return portletDataHandlerInstances.size();
-				}
-
-			});
-
-		return oldDataHandlerInstances;
-	}
-
 	protected void setPortletDataHandlerRank(
 		Class<?> portletDataHandlerClass, int rank) {
 
@@ -326,8 +261,8 @@ public class ExportedMissingReferenceExportImportTest
 
 		ServiceTrackerList<PortletDataHandler> portletDataHandlerInstances =
 			ServiceTrackerListFactory.open(
-				bundle.getBundleContext(),
-				(Class<PortletDataHandler>)portletDataHandlerClass);
+				bundle.getBundleContext(), PortletDataHandler.class,
+				"(component.name=" + portletDataHandlerClass.getName() + ")");
 
 		Assert.assertEquals(
 			portletDataHandlerInstances.toString(), 1,
@@ -341,6 +276,49 @@ public class ExportedMissingReferenceExportImportTest
 		portletDataHandlerInstance.setRank(rank);
 	}
 
+	protected SafeCloseable setPortletDataHandlerWithSafeCloseable(
+			String portletId, Class<?> portletDataHandlerClass)
+		throws Exception {
+
+		Bundle bundle = FrameworkUtil.getBundle(
+			ExportedMissingReferenceExportImportTest.class);
+
+		ServiceTrackerList<PortletDataHandler> portletDataHandlerInstances =
+			ServiceTrackerListFactory.open(
+				bundle.getBundleContext(), PortletDataHandler.class,
+				"(component.name=" + portletDataHandlerClass.getName() + ")");
+
+		Iterator<PortletDataHandler> iterator =
+			portletDataHandlerInstances.iterator();
+
+		return setPortletDataHandlerWithSafeCloseable(
+			portletId, iterator.next());
+	}
+
+	protected SafeCloseable setPortletDataHandlerWithSafeCloseable(
+			String portletId, PortletDataHandler portletDataHandler)
+		throws Exception {
+
+		PortletBag portletBag = PortletBagPool.get(portletId);
+
+		Snapshot<PortletDataHandler> portletDataHandlerSnapshot =
+			ReflectionTestUtil.getAndSetFieldValue(
+				portletBag, "_portletDataHandlerSnapshot",
+				new Snapshot<PortletDataHandler>(
+					PortletBag.class, PortletDataHandler.class) {
+
+					@Override
+					public PortletDataHandler get() {
+						return portletDataHandler;
+					}
+
+				});
+
+		return () -> ReflectionTestUtil.setFieldValue(
+			portletBag, "_portletDataHandlerSnapshot",
+			portletDataHandlerSnapshot);
+	}
+
 	private void _testMissingDummyOrder(boolean missingFirst) throws Exception {
 		int dummyFolderPortletDataHandlerRank = getPortletDataHandlerRank(
 			DummyFolderPortletDataHandler.class);
@@ -348,18 +326,16 @@ public class ExportedMissingReferenceExportImportTest
 			getPortletDataHandlerRank(
 				DummyFolderWithMissingDummyPortletDataHandler.class);
 
-		List<PortletDataHandler> portletDataHandlers = null;
+		try (SafeCloseable safeCloseable =
+				setPortletDataHandlerWithSafeCloseable(
+					DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
+					DummyFolderWithMissingDummyPortletDataHandler.class)) {
 
-		try {
 			setPortletDataHandlerRank(
 				DummyFolderPortletDataHandler.class, missingFirst ? 200 : 100);
 			setPortletDataHandlerRank(
 				DummyFolderWithMissingDummyPortletDataHandler.class,
 				missingFirst ? 100 : 200);
-
-			portletDataHandlers = setPortletDataHandler(
-				DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-				DummyFolderWithMissingDummyPortletDataHandler.class);
 
 			LayoutTestUtil.addPortletToLayout(
 				layout,
@@ -373,10 +349,6 @@ public class ExportedMissingReferenceExportImportTest
 			}
 		}
 		finally {
-			setPortletDataHandler(
-				DummyFolderPortletKeys.DUMMY_FOLDER_WITH_MISSING_REFERENCE,
-				portletDataHandlers);
-
 			setPortletDataHandlerRank(
 				DummyFolderPortletDataHandler.class,
 				dummyFolderPortletDataHandlerRank);
@@ -391,5 +363,8 @@ public class ExportedMissingReferenceExportImportTest
 	private StagedModelRepository<DummyReference>
 		_dummyReferenceStagedModelRepository;
 	private StagedModelRepository<Dummy> _dummyStagedModelRepository;
+
+	@Inject
+	private ZipReaderFactory _zipReaderFactory;
 
 }

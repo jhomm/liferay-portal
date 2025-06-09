@@ -1,0 +1,55 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies;
+
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+
+import java.util.HashMap;
+
+/**
+ * @author Kevin Lee
+ */
+public class Builder {
+
+	public HashMap<String, Object> includeMethodCall() {
+		HashMap<String, Object> hashMap = HashMapBuilder.<String, Object>put(
+			"a", 1
+		).build();
+
+		hashMap.put("b", 2);
+
+		return hashMap;
+	}
+
+	public HashMap<String, Object> inlineStatement() {
+		Company company = _getCompany();
+
+		return HashMapBuilder.<String, Object>put(
+			"companyGroup", company.getGroup()
+		).build();
+	}
+
+	public HashMap<String, Object> noNullValues() {
+		return HashMapBuilder.<String, Object>put(
+			"a", null
+		).build();
+	}
+
+	public HashMap<String, Object> useBuilder() {
+		HashMap<String, Object> hashMap = new HashMap<>();
+
+		hashMap.put("a", 1);
+		hashMap.put("b", 2);
+
+		return new HashMap<String, Object>() {
+			{
+				putAll(hashMap);
+			}
+		};
+	}
+
+}

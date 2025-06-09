@@ -1,39 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.forecast.alert.service.base;
 
 import com.liferay.commerce.machine.learning.forecast.alert.model.CommerceMLForecastAlertEntry;
 import com.liferay.commerce.machine.learning.forecast.alert.service.CommerceMLForecastAlertEntryService;
-import com.liferay.commerce.machine.learning.forecast.alert.service.CommerceMLForecastAlertEntryServiceUtil;
 import com.liferay.commerce.machine.learning.forecast.alert.service.persistence.CommerceMLForecastAlertEntryPersistence;
-import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
-import com.liferay.portal.kernel.service.persistence.ClassNamePersistence;
-import com.liferay.portal.kernel.service.persistence.UserPersistence;
-import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * Provides the base implementation for the commerce ml forecast alert entry remote service.
@@ -48,265 +38,30 @@ import javax.sql.DataSource;
  */
 public abstract class CommerceMLForecastAlertEntryServiceBaseImpl
 	extends BaseServiceImpl
-	implements CommerceMLForecastAlertEntryService, IdentifiableOSGiService {
+	implements AopService, CommerceMLForecastAlertEntryService,
+			   IdentifiableOSGiService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>CommerceMLForecastAlertEntryService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>CommerceMLForecastAlertEntryServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>CommerceMLForecastAlertEntryService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.commerce.machine.learning.forecast.alert.service.CommerceMLForecastAlertEntryServiceUtil</code>.
 	 */
-
-	/**
-	 * Returns the commerce ml forecast alert entry local service.
-	 *
-	 * @return the commerce ml forecast alert entry local service
-	 */
-	public com.liferay.commerce.machine.learning.forecast.alert.service.
-		CommerceMLForecastAlertEntryLocalService
-			getCommerceMLForecastAlertEntryLocalService() {
-
-		return commerceMLForecastAlertEntryLocalService;
+	@Deactivate
+	protected void deactivate() {
 	}
 
-	/**
-	 * Sets the commerce ml forecast alert entry local service.
-	 *
-	 * @param commerceMLForecastAlertEntryLocalService the commerce ml forecast alert entry local service
-	 */
-	public void setCommerceMLForecastAlertEntryLocalService(
-		com.liferay.commerce.machine.learning.forecast.alert.service.
-			CommerceMLForecastAlertEntryLocalService
-				commerceMLForecastAlertEntryLocalService) {
-
-		this.commerceMLForecastAlertEntryLocalService =
-			commerceMLForecastAlertEntryLocalService;
+	@Override
+	public Class<?>[] getAopInterfaces() {
+		return new Class<?>[] {
+			CommerceMLForecastAlertEntryService.class,
+			IdentifiableOSGiService.class
+		};
 	}
 
-	/**
-	 * Returns the commerce ml forecast alert entry remote service.
-	 *
-	 * @return the commerce ml forecast alert entry remote service
-	 */
-	public CommerceMLForecastAlertEntryService
-		getCommerceMLForecastAlertEntryService() {
-
-		return commerceMLForecastAlertEntryService;
-	}
-
-	/**
-	 * Sets the commerce ml forecast alert entry remote service.
-	 *
-	 * @param commerceMLForecastAlertEntryService the commerce ml forecast alert entry remote service
-	 */
-	public void setCommerceMLForecastAlertEntryService(
-		CommerceMLForecastAlertEntryService
-			commerceMLForecastAlertEntryService) {
-
-		this.commerceMLForecastAlertEntryService =
-			commerceMLForecastAlertEntryService;
-	}
-
-	/**
-	 * Returns the commerce ml forecast alert entry persistence.
-	 *
-	 * @return the commerce ml forecast alert entry persistence
-	 */
-	public CommerceMLForecastAlertEntryPersistence
-		getCommerceMLForecastAlertEntryPersistence() {
-
-		return commerceMLForecastAlertEntryPersistence;
-	}
-
-	/**
-	 * Sets the commerce ml forecast alert entry persistence.
-	 *
-	 * @param commerceMLForecastAlertEntryPersistence the commerce ml forecast alert entry persistence
-	 */
-	public void setCommerceMLForecastAlertEntryPersistence(
-		CommerceMLForecastAlertEntryPersistence
-			commerceMLForecastAlertEntryPersistence) {
-
-		this.commerceMLForecastAlertEntryPersistence =
-			commerceMLForecastAlertEntryPersistence;
-	}
-
-	/**
-	 * Returns the counter local service.
-	 *
-	 * @return the counter local service
-	 */
-	public com.liferay.counter.kernel.service.CounterLocalService
-		getCounterLocalService() {
-
-		return counterLocalService;
-	}
-
-	/**
-	 * Sets the counter local service.
-	 *
-	 * @param counterLocalService the counter local service
-	 */
-	public void setCounterLocalService(
-		com.liferay.counter.kernel.service.CounterLocalService
-			counterLocalService) {
-
-		this.counterLocalService = counterLocalService;
-	}
-
-	/**
-	 * Returns the class name local service.
-	 *
-	 * @return the class name local service
-	 */
-	public com.liferay.portal.kernel.service.ClassNameLocalService
-		getClassNameLocalService() {
-
-		return classNameLocalService;
-	}
-
-	/**
-	 * Sets the class name local service.
-	 *
-	 * @param classNameLocalService the class name local service
-	 */
-	public void setClassNameLocalService(
-		com.liferay.portal.kernel.service.ClassNameLocalService
-			classNameLocalService) {
-
-		this.classNameLocalService = classNameLocalService;
-	}
-
-	/**
-	 * Returns the class name remote service.
-	 *
-	 * @return the class name remote service
-	 */
-	public com.liferay.portal.kernel.service.ClassNameService
-		getClassNameService() {
-
-		return classNameService;
-	}
-
-	/**
-	 * Sets the class name remote service.
-	 *
-	 * @param classNameService the class name remote service
-	 */
-	public void setClassNameService(
-		com.liferay.portal.kernel.service.ClassNameService classNameService) {
-
-		this.classNameService = classNameService;
-	}
-
-	/**
-	 * Returns the class name persistence.
-	 *
-	 * @return the class name persistence
-	 */
-	public ClassNamePersistence getClassNamePersistence() {
-		return classNamePersistence;
-	}
-
-	/**
-	 * Sets the class name persistence.
-	 *
-	 * @param classNamePersistence the class name persistence
-	 */
-	public void setClassNamePersistence(
-		ClassNamePersistence classNamePersistence) {
-
-		this.classNamePersistence = classNamePersistence;
-	}
-
-	/**
-	 * Returns the resource local service.
-	 *
-	 * @return the resource local service
-	 */
-	public com.liferay.portal.kernel.service.ResourceLocalService
-		getResourceLocalService() {
-
-		return resourceLocalService;
-	}
-
-	/**
-	 * Sets the resource local service.
-	 *
-	 * @param resourceLocalService the resource local service
-	 */
-	public void setResourceLocalService(
-		com.liferay.portal.kernel.service.ResourceLocalService
-			resourceLocalService) {
-
-		this.resourceLocalService = resourceLocalService;
-	}
-
-	/**
-	 * Returns the user local service.
-	 *
-	 * @return the user local service
-	 */
-	public com.liferay.portal.kernel.service.UserLocalService
-		getUserLocalService() {
-
-		return userLocalService;
-	}
-
-	/**
-	 * Sets the user local service.
-	 *
-	 * @param userLocalService the user local service
-	 */
-	public void setUserLocalService(
-		com.liferay.portal.kernel.service.UserLocalService userLocalService) {
-
-		this.userLocalService = userLocalService;
-	}
-
-	/**
-	 * Returns the user remote service.
-	 *
-	 * @return the user remote service
-	 */
-	public com.liferay.portal.kernel.service.UserService getUserService() {
-		return userService;
-	}
-
-	/**
-	 * Sets the user remote service.
-	 *
-	 * @param userService the user remote service
-	 */
-	public void setUserService(
-		com.liferay.portal.kernel.service.UserService userService) {
-
-		this.userService = userService;
-	}
-
-	/**
-	 * Returns the user persistence.
-	 *
-	 * @return the user persistence
-	 */
-	public UserPersistence getUserPersistence() {
-		return userPersistence;
-	}
-
-	/**
-	 * Sets the user persistence.
-	 *
-	 * @param userPersistence the user persistence
-	 */
-	public void setUserPersistence(UserPersistence userPersistence) {
-		this.userPersistence = userPersistence;
-	}
-
-	public void afterPropertiesSet() {
-		_setServiceUtilService(commerceMLForecastAlertEntryService);
-	}
-
-	public void destroy() {
-		_setServiceUtilService(null);
+	@Override
+	public void setAopProxy(Object aopProxy) {
+		commerceMLForecastAlertEntryService =
+			(CommerceMLForecastAlertEntryService)aopProxy;
 	}
 
 	/**
@@ -333,97 +88,47 @@ public abstract class CommerceMLForecastAlertEntryServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource =
+			commerceMLForecastAlertEntryPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource =
-				commerceMLForecastAlertEntryPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
 		}
 	}
 
-	private void _setServiceUtilService(
-		CommerceMLForecastAlertEntryService
-			commerceMLForecastAlertEntryService) {
-
-		try {
-			Field field =
-				CommerceMLForecastAlertEntryServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceMLForecastAlertEntryService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@BeanReference(
-		type = com.liferay.commerce.machine.learning.forecast.alert.service.CommerceMLForecastAlertEntryLocalService.class
-	)
+	@Reference
 	protected com.liferay.commerce.machine.learning.forecast.alert.service.
 		CommerceMLForecastAlertEntryLocalService
 			commerceMLForecastAlertEntryLocalService;
 
-	@BeanReference(type = CommerceMLForecastAlertEntryService.class)
 	protected CommerceMLForecastAlertEntryService
 		commerceMLForecastAlertEntryService;
 
-	@BeanReference(type = CommerceMLForecastAlertEntryPersistence.class)
+	@Reference
 	protected CommerceMLForecastAlertEntryPersistence
 		commerceMLForecastAlertEntryPersistence;
 
-	@ServiceReference(
-		type = com.liferay.counter.kernel.service.CounterLocalService.class
-	)
+	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@ServiceReference(
-		type = com.liferay.portal.kernel.service.ClassNameLocalService.class
-	)
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@ServiceReference(
-		type = com.liferay.portal.kernel.service.ClassNameService.class
-	)
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@ServiceReference(type = ClassNamePersistence.class)
-	protected ClassNamePersistence classNamePersistence;
-
-	@ServiceReference(
-		type = com.liferay.portal.kernel.service.ResourceLocalService.class
-	)
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@ServiceReference(
-		type = com.liferay.portal.kernel.service.UserLocalService.class
-	)
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@ServiceReference(
-		type = com.liferay.portal.kernel.service.UserService.class
-	)
-	protected com.liferay.portal.kernel.service.UserService userService;
-
-	@ServiceReference(type = UserPersistence.class)
-	protected UserPersistence userPersistence;
+	private static final Log _log = LogFactoryUtil.getLog(
+		CommerceMLForecastAlertEntryServiceBaseImpl.class);
 
 }

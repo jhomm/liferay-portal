@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.internal.search;
@@ -33,10 +24,10 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alec Sloan
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CommerceShippingFixedOptionIndexer
 	extends BaseIndexer<CommerceShippingFixedOption> {
 
@@ -69,11 +60,11 @@ public class CommerceShippingFixedOptionIndexer
 			"commerceShippingMethodId");
 
 		if (commerceShippingMethodId != -1) {
-			TermFilter termFilter = new TermFilter(
-				"commerceShippingMethodId",
-				String.valueOf(commerceShippingMethodId));
-
-			contextBooleanFilter.add(termFilter, BooleanClauseOccur.MUST);
+			contextBooleanFilter.add(
+				new TermFilter(
+					"commerceShippingMethodId",
+					String.valueOf(commerceShippingMethodId)),
+				BooleanClauseOccur.MUST);
 		}
 	}
 
@@ -91,6 +82,7 @@ public class CommerceShippingFixedOptionIndexer
 		addSearchTerm(
 			searchQuery, searchContext, "commerceShippingMethodId", false);
 		addSearchTerm(searchQuery, searchContext, "description", false);
+		addSearchTerm(searchQuery, searchContext, "key", true);
 	}
 
 	@Override
@@ -110,24 +102,27 @@ public class CommerceShippingFixedOptionIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Indexing shipping fixed option " +
+				"Indexing commerce shipping fixed option " +
 					commerceShippingFixedOption);
 		}
 
 		Document document = getBaseModelDocument(
 			CLASS_NAME, commerceShippingFixedOption);
 
-		document.addKeyword(Field.NAME, commerceShippingFixedOption.getName());
 		document.addKeyword(
-			Field.DESCRIPTION, commerceShippingFixedOption.getDescription());
+			Field.DESCRIPTION, commerceShippingFixedOption.getDescription(),
+			true);
+		document.addKeyword(
+			Field.NAME, commerceShippingFixedOption.getName(), true);
 		document.addKeyword(
 			"commerceShippingMethodId",
 			commerceShippingFixedOption.getCommerceShippingMethodId());
+		document.addKeyword("key", commerceShippingFixedOption.getKey(), true);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + commerceShippingFixedOption +
-					" indexed successfully");
+				"Commerce shipping fixed option " +
+					commerceShippingFixedOption + " indexed successfully");
 		}
 
 		return document;
@@ -148,8 +143,8 @@ public class CommerceShippingFixedOptionIndexer
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), commerceShippingFixedOption.getCompanyId(),
-			getDocument(commerceShippingFixedOption), isCommitImmediately());
+			commerceShippingFixedOption.getCompanyId(),
+			getDocument(commerceShippingFixedOption));
 	}
 
 	@Override
@@ -163,7 +158,7 @@ public class CommerceShippingFixedOptionIndexer
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCommerceShippingFixedOptions(companyId);
+		_reindexCommerceShippingFixedOptions(companyId);
 	}
 
 	@Override
@@ -181,7 +176,7 @@ public class CommerceShippingFixedOptionIndexer
 		return super.isUseSearchResultPermissionFilter(searchContext);
 	}
 
-	protected void reindexCommerceShippingFixedOptions(long companyId)
+	private void _reindexCommerceShippingFixedOptions(long companyId)
 		throws Exception {
 
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
@@ -197,18 +192,13 @@ public class CommerceShippingFixedOptionIndexer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						long commerceShippingFixedOptionId =
-							commerceShippingFixedOption.
-								getCommerceShippingFixedOptionId();
-
 						_log.warn(
 							"Unable to index commerce shipping fixed option " +
-								commerceShippingFixedOptionId,
+								commerceShippingFixedOption,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}

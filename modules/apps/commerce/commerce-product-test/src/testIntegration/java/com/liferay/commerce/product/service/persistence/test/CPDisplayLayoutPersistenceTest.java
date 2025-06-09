@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
@@ -124,6 +115,10 @@ public class CPDisplayLayoutPersistenceTest {
 
 		CPDisplayLayout newCPDisplayLayout = _persistence.create(pk);
 
+		newCPDisplayLayout.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCPDisplayLayout.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPDisplayLayout.setUuid(RandomTestUtil.randomString());
 
 		newCPDisplayLayout.setGroupId(RandomTestUtil.nextLong());
@@ -142,6 +137,9 @@ public class CPDisplayLayoutPersistenceTest {
 
 		newCPDisplayLayout.setClassPK(RandomTestUtil.nextLong());
 
+		newCPDisplayLayout.setLayoutPageTemplateEntryUuid(
+			RandomTestUtil.randomString());
+
 		newCPDisplayLayout.setLayoutUuid(RandomTestUtil.randomString());
 
 		_cpDisplayLayouts.add(_persistence.update(newCPDisplayLayout));
@@ -149,6 +147,12 @@ public class CPDisplayLayoutPersistenceTest {
 		CPDisplayLayout existingCPDisplayLayout = _persistence.findByPrimaryKey(
 			newCPDisplayLayout.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCPDisplayLayout.getMvccVersion(),
+			newCPDisplayLayout.getMvccVersion());
+		Assert.assertEquals(
+			existingCPDisplayLayout.getCtCollectionId(),
+			newCPDisplayLayout.getCtCollectionId());
 		Assert.assertEquals(
 			existingCPDisplayLayout.getUuid(), newCPDisplayLayout.getUuid());
 		Assert.assertEquals(
@@ -178,6 +182,9 @@ public class CPDisplayLayoutPersistenceTest {
 		Assert.assertEquals(
 			existingCPDisplayLayout.getClassPK(),
 			newCPDisplayLayout.getClassPK());
+		Assert.assertEquals(
+			existingCPDisplayLayout.getLayoutPageTemplateEntryUuid(),
+			newCPDisplayLayout.getLayoutPageTemplateEntryUuid());
 		Assert.assertEquals(
 			existingCPDisplayLayout.getLayoutUuid(),
 			newCPDisplayLayout.getLayoutUuid());
@@ -226,6 +233,15 @@ public class CPDisplayLayoutPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_LPTEU() throws Exception {
+		_persistence.countByG_LPTEU(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByG_LPTEU(0L, "null");
+
+		_persistence.countByG_LPTEU(0L, (String)null);
+	}
+
+	@Test
 	public void testCountByG_L() throws Exception {
 		_persistence.countByG_L(RandomTestUtil.nextLong(), "");
 
@@ -240,6 +256,22 @@ public class CPDisplayLayoutPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_C(0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_C_LPTEU() throws Exception {
+		_persistence.countByC_C_LPTEU(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_C_LPTEU(0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_C_L() throws Exception {
+		_persistence.countByC_C_L(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_C_L(0L, 0L);
 	}
 
 	@Test
@@ -276,10 +308,11 @@ public class CPDisplayLayoutPersistenceTest {
 
 	protected OrderByComparator<CPDisplayLayout> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPDisplayLayout", "uuid", true, "CPDisplayLayoutId", true,
-			"groupId", true, "companyId", true, "userId", true, "userName",
-			true, "createDate", true, "modifiedDate", true, "classNameId", true,
-			"classPK", true, "layoutUuid", true);
+			"CPDisplayLayout", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "CPDisplayLayoutId", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "classNameId", true, "classPK", true,
+			"layoutPageTemplateEntryUuid", true, "layoutUuid", true);
 	}
 
 	@Test
@@ -582,6 +615,10 @@ public class CPDisplayLayoutPersistenceTest {
 
 		CPDisplayLayout cpDisplayLayout = _persistence.create(pk);
 
+		cpDisplayLayout.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpDisplayLayout.setCtCollectionId(RandomTestUtil.nextLong());
+
 		cpDisplayLayout.setUuid(RandomTestUtil.randomString());
 
 		cpDisplayLayout.setGroupId(RandomTestUtil.nextLong());
@@ -599,6 +636,9 @@ public class CPDisplayLayoutPersistenceTest {
 		cpDisplayLayout.setClassNameId(RandomTestUtil.nextLong());
 
 		cpDisplayLayout.setClassPK(RandomTestUtil.nextLong());
+
+		cpDisplayLayout.setLayoutPageTemplateEntryUuid(
+			RandomTestUtil.randomString());
 
 		cpDisplayLayout.setLayoutUuid(RandomTestUtil.randomString());
 

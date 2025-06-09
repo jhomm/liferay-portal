@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.impl;
@@ -20,6 +11,8 @@ import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.base.CommercePriceListServiceBaseImpl;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -29,31 +22,39 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.List;
-import java.util.stream.Stream;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
  * @author Zoltán Takács
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommercePriceList"
+	},
+	service = AopService.class
+)
 public class CommercePriceListServiceImpl
 	extends CommercePriceListServiceBaseImpl {
 
 	@Override
 	public CommercePriceList addCommercePriceList(
-			String externalReferenceCode, long groupId, long commerceCurrencyId,
-			boolean netPrice, String type, long parentCommercePriceListId,
-			boolean catalogBasePriceList, String name, double priority,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
+			String externalReferenceCode, long groupId,
+			String commerceCurrencyCode, boolean netPrice, String type,
+			long parentCommercePriceListId, boolean catalogBasePriceList,
+			String name, double priority, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
 			int expirationDateDay, int expirationDateYear,
 			int expirationDateHour, int expirationDateMinute,
 			boolean neverExpire, ServiceContext serviceContext)
@@ -63,7 +64,7 @@ public class CommercePriceListServiceImpl
 			groupId, CommercePriceListActionKeys.ADD_COMMERCE_PRICE_LIST);
 
 		return commercePriceListLocalService.addCommercePriceList(
-			externalReferenceCode, groupId, getUserId(), commerceCurrencyId,
+			externalReferenceCode, getUserId(), groupId, commerceCurrencyCode,
 			netPrice, type, parentCommercePriceListId, catalogBasePriceList,
 			name, priority, displayDateMonth, displayDateDay, displayDateYear,
 			displayDateHour, displayDateMinute, expirationDateMonth,
@@ -74,8 +75,8 @@ public class CommercePriceListServiceImpl
 	@Override
 	public CommercePriceList addOrUpdateCommercePriceList(
 			String externalReferenceCode, long groupId,
-			long commercePriceListId, long commerceCurrencyId, boolean netPrice,
-			String type, long parentCommercePriceListId,
+			long commercePriceListId, String commerceCurrencyCode,
+			boolean netPrice, String type, long parentCommercePriceListId,
 			boolean catalogBasePriceList, String name, double priority,
 			int displayDateMonth, int displayDateDay, int displayDateYear,
 			int displayDateHour, int displayDateMinute, int expirationDateMonth,
@@ -89,7 +90,7 @@ public class CommercePriceListServiceImpl
 		if (commercePriceListId > 0) {
 			try {
 				return updateCommercePriceList(
-					commercePriceListId, commerceCurrencyId, netPrice, type,
+					commercePriceListId, commerceCurrencyCode, netPrice, type,
 					parentCommercePriceListId, catalogBasePriceList, name,
 					priority, displayDateMonth, displayDateDay, displayDateYear,
 					displayDateHour, displayDateMinute, expirationDateMonth,
@@ -106,19 +107,15 @@ public class CommercePriceListServiceImpl
 			}
 		}
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
 		if (Validator.isNotNull(externalReferenceCode)) {
 			CommercePriceList commercePriceList =
-				commercePriceListPersistence.fetchByC_ERC(
-					serviceContext.getCompanyId(), externalReferenceCode);
+				commercePriceListPersistence.fetchByERC_C(
+					externalReferenceCode, serviceContext.getCompanyId());
 
 			if (commercePriceList != null) {
 				return updateCommercePriceList(
 					commercePriceList.getCommercePriceListId(),
-					commerceCurrencyId, netPrice, type,
+					commerceCurrencyCode, netPrice, type,
 					parentCommercePriceListId, catalogBasePriceList, name,
 					priority, displayDateMonth, displayDateDay, displayDateYear,
 					displayDateHour, displayDateMinute, expirationDateMonth,
@@ -130,12 +127,12 @@ public class CommercePriceListServiceImpl
 		// Add
 
 		return addCommercePriceList(
-			externalReferenceCode, groupId, commerceCurrencyId, netPrice, type,
-			parentCommercePriceListId, catalogBasePriceList, name, priority,
-			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
-			displayDateMinute, expirationDateMonth, expirationDateDay,
-			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, serviceContext);
+			externalReferenceCode, groupId, commerceCurrencyCode, netPrice,
+			type, parentCommercePriceListId, catalogBasePriceList, name,
+			priority, displayDateMonth, displayDateDay, displayDateYear,
+			displayDateHour, displayDateMinute, expirationDateMonth,
+			expirationDateDay, expirationDateYear, expirationDateHour,
+			expirationDateMinute, neverExpire, serviceContext);
 	}
 
 	@Override
@@ -147,23 +144,6 @@ public class CommercePriceListServiceImpl
 
 		commercePriceListLocalService.deleteCommercePriceList(
 			commercePriceListId);
-	}
-
-	@Override
-	public CommercePriceList fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		CommercePriceList commercePriceList =
-			commercePriceListLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
-
-		if (commercePriceList != null) {
-			_commercePriceListModelResourcePermission.check(
-				getPermissionChecker(), commercePriceList, ActionKeys.VIEW);
-		}
-
-		return commercePriceList;
 	}
 
 	@Override
@@ -183,19 +163,6 @@ public class CommercePriceListServiceImpl
 		return commercePriceList;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public CommercePriceList fetchCommerceCatalogBasePriceListByType(
-			long groupId, String type)
-		throws PortalException {
-
-		return commercePriceListService.fetchCatalogBaseCommercePriceListByType(
-			groupId, type);
-	}
-
 	@Override
 	public CommercePriceList fetchCommercePriceList(long commercePriceListId)
 		throws PortalException {
@@ -207,6 +174,24 @@ public class CommercePriceListServiceImpl
 		if (commercePriceList != null) {
 			_commercePriceListModelResourcePermission.check(
 				getPermissionChecker(), commercePriceListId, ActionKeys.VIEW);
+		}
+
+		return commercePriceList;
+	}
+
+	@Override
+	public CommercePriceList fetchCommercePriceListByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		CommercePriceList commercePriceList =
+			commercePriceListLocalService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, companyId);
+
+		if (commercePriceList != null) {
+			_commercePriceListModelResourcePermission.check(
+				getPermissionChecker(), commercePriceList, ActionKeys.VIEW);
 		}
 
 		return commercePriceList;
@@ -229,14 +214,7 @@ public class CommercePriceListServiceImpl
 			OrderByComparator<CommercePriceList> orderByComparator)
 		throws PortalException {
 
-		List<CommerceCatalog> commerceCatalogs = _commerceCatalogService.search(
-			companyId, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-
-		Stream<CommerceCatalog> stream = commerceCatalogs.stream();
-
-		long[] groupIds = stream.mapToLong(
-			CommerceCatalog::getGroupId
-		).toArray();
+		long[] groupIds = _getGroupIds(companyId);
 
 		if (status == WorkflowConstants.STATUS_ANY) {
 			return commercePriceListPersistence.filterFindByG_C_NotS(
@@ -249,17 +227,28 @@ public class CommercePriceListServiceImpl
 	}
 
 	@Override
+	public List<CommercePriceList> getCommercePriceLists(
+			long companyId, String type, int status, int start, int end,
+			OrderByComparator<CommercePriceList> orderByComparator)
+		throws PortalException {
+
+		long[] groupIds = _getGroupIds(companyId);
+
+		if (status == WorkflowConstants.STATUS_ANY) {
+			return commercePriceListPersistence.filterFindByG_C_T_NotS(
+				groupIds, companyId, type, WorkflowConstants.STATUS_IN_TRASH,
+				start, end, orderByComparator);
+		}
+
+		return commercePriceListPersistence.filterFindByG_C_T_S(
+			groupIds, companyId, type, status, start, end, orderByComparator);
+	}
+
+	@Override
 	public int getCommercePriceListsCount(long companyId, int status)
 		throws PortalException {
 
-		List<CommerceCatalog> commerceCatalogs = _commerceCatalogService.search(
-			companyId, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-
-		Stream<CommerceCatalog> stream = commerceCatalogs.stream();
-
-		long[] groupIds = stream.mapToLong(
-			CommerceCatalog::getGroupId
-		).toArray();
+		long[] groupIds = _getGroupIds(companyId);
 
 		if (status == WorkflowConstants.STATUS_ANY) {
 			return commercePriceListPersistence.filterCountByG_C_NotS(
@@ -294,17 +283,9 @@ public class CommercePriceListServiceImpl
 			Sort sort)
 		throws PortalException {
 
-		List<CommerceCatalog> commerceCatalogs = _commerceCatalogService.search(
-			companyId, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-
-		Stream<CommerceCatalog> stream = commerceCatalogs.stream();
-
-		long[] groupIds = stream.mapToLong(
-			CommerceCatalog::getGroupId
-		).toArray();
-
 		return commercePriceListLocalService.searchCommercePriceLists(
-			companyId, groupIds, keywords, status, start, end, sort);
+			companyId, _getGroupIds(companyId), keywords, status, start, end,
+			sort);
 	}
 
 	@Override
@@ -312,17 +293,8 @@ public class CommercePriceListServiceImpl
 			long companyId, String keywords, int status)
 		throws PortalException {
 
-		List<CommerceCatalog> commerceCatalogs = _commerceCatalogService.search(
-			companyId, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-
-		Stream<CommerceCatalog> stream = commerceCatalogs.stream();
-
-		long[] groupIds = stream.mapToLong(
-			CommerceCatalog::getGroupId
-		).toArray();
-
 		return commercePriceListLocalService.searchCommercePriceListsCount(
-			companyId, groupIds, keywords, status);
+			companyId, _getGroupIds(companyId), keywords, status);
 	}
 
 	@Override
@@ -339,20 +311,21 @@ public class CommercePriceListServiceImpl
 
 	@Override
 	public CommercePriceList updateCommercePriceList(
-			long commercePriceListId, long commerceCurrencyId, boolean netPrice,
-			long parentCommercePriceListId, String name, double priority,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
+			long commercePriceListId, String commerceCurrencyCode,
+			boolean netPrice, long parentCommercePriceListId, String name,
+			double priority, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		_commercePriceListModelResourcePermission.check(
 			getPermissionChecker(), commercePriceListId, ActionKeys.UPDATE);
 
 		return commercePriceListLocalService.updateCommercePriceList(
-			commercePriceListId, commerceCurrencyId, netPrice,
+			commercePriceListId, commerceCurrencyCode, netPrice,
 			parentCommercePriceListId, name, priority, displayDateMonth,
 			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
 			expirationDateMonth, expirationDateDay, expirationDateYear,
@@ -362,8 +335,8 @@ public class CommercePriceListServiceImpl
 
 	@Override
 	public CommercePriceList updateCommercePriceList(
-			long commercePriceListId, long commerceCurrencyId, boolean netPrice,
-			String type, long parentCommercePriceListId,
+			long commercePriceListId, String commerceCurrencyCode,
+			boolean netPrice, String type, long parentCommercePriceListId,
 			boolean catalogBasePriceList, String name, double priority,
 			int displayDateMonth, int displayDateDay, int displayDateYear,
 			int displayDateHour, int displayDateMinute, int expirationDateMonth,
@@ -376,7 +349,7 @@ public class CommercePriceListServiceImpl
 			getPermissionChecker(), commercePriceListId, ActionKeys.UPDATE);
 
 		return commercePriceListLocalService.updateCommercePriceList(
-			commercePriceListId, commerceCurrencyId, netPrice, type,
+			commercePriceListId, commerceCurrencyCode, netPrice, type,
 			parentCommercePriceListId, catalogBasePriceList, name, priority,
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
 			displayDateMinute, expirationDateMonth, expirationDateDay,
@@ -408,17 +381,23 @@ public class CommercePriceListServiceImpl
 			getPermissionChecker(), groupId, actionId);
 	}
 
+	private long[] _getGroupIds(long companyId) throws PortalException {
+		return TransformUtil.transformToLongArray(
+			_commerceCatalogService.search(
+				companyId, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null),
+			CommerceCatalog::getGroupId);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommercePriceListServiceImpl.class);
 
-	private static volatile ModelResourcePermission<CommercePriceList>
-		_commercePriceListModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommercePriceListServiceImpl.class,
-				"_commercePriceListModelResourcePermission",
-				CommercePriceList.class);
-
-	@ServiceReference(type = CommerceCatalogService.class)
+	@Reference
 	private CommerceCatalogService _commerceCatalogService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.price.list.model.CommercePriceList)"
+	)
+	private ModelResourcePermission<CommercePriceList>
+		_commercePriceListModelResourcePermission;
 
 }

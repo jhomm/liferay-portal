@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.service.impl;
@@ -27,6 +18,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -37,7 +29,7 @@ import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -51,6 +43,8 @@ import com.liferay.rss.model.SyndFeed;
 import com.liferay.rss.model.SyndLink;
 import com.liferay.rss.model.SyndModelFactory;
 import com.liferay.rss.util.RSSUtil;
+
+import java.io.InputStream;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -77,6 +71,20 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 	service = AopService.class
 )
 public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
+
+	@Override
+	public FileEntry addAttachmentFileEntry(
+			String externalReferenceCode, long groupId, String fileName,
+			String mimeType, InputStream inputStream)
+		throws PortalException {
+
+		_portletResourcePermission.check(
+			getPermissionChecker(), groupId, ActionKeys.ADD_ENTRY);
+
+		return blogsEntryLocalService.addAttachmentFileEntry(
+			externalReferenceCode, getUserId(), groupId, fileName, mimeType,
+			inputStream);
+	}
 
 	@Override
 	public Folder addAttachmentsFolder(long groupId) throws PortalException {
@@ -135,6 +143,19 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 	}
 
 	@Override
+	public void deleteAttachmentFileEntry(long fileEntryId)
+		throws PortalException {
+
+		FileEntry fileEntry = blogsEntryLocalService.getAttachmentFileEntry(
+			fileEntryId);
+
+		_fileEntryModelResourcePermission.check(
+			getPermissionChecker(), fileEntry, ActionKeys.DELETE);
+
+		blogsEntryLocalService.deleteAttachmentFileEntry(fileEntryId);
+	}
+
+	@Override
 	public void deleteEntry(long entryId) throws PortalException {
 		_blogsEntryModelResourcePermission.check(
 			getPermissionChecker(), entryId, ActionKeys.DELETE);
@@ -143,46 +164,108 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 	}
 
 	@Override
+	public BlogsEntry fetchBlogsEntryByExternalReferenceCode(
+			long groupId, String externalReferenceCode)
+		throws PortalException {
+
+		BlogsEntry blogsEntry = blogsEntryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		if (blogsEntry != null) {
+			_blogsEntryModelResourcePermission.check(
+				getPermissionChecker(), blogsEntry, ActionKeys.VIEW);
+		}
+
+		return blogsEntry;
+	}
+
+	@Override
+	public FileEntry getAttachmentFileEntry(long fileEntryId)
+		throws PortalException {
+
+		FileEntry fileEntry = blogsEntryLocalService.getAttachmentFileEntry(
+			fileEntryId);
+
+		_fileEntryModelResourcePermission.check(
+			getPermissionChecker(), fileEntry, ActionKeys.VIEW);
+
+		return fileEntry;
+	}
+
+	@Override
+	public FileEntry getAttachmentFileEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		FileEntry fileEntry =
+			blogsEntryLocalService.
+				getAttachmentFileEntryByExternalReferenceCode(
+					externalReferenceCode, groupId);
+
+		_fileEntryModelResourcePermission.check(
+			getPermissionChecker(), fileEntry, ActionKeys.VIEW);
+
+		return fileEntry;
+	}
+
+	@Override
+	public BlogsEntry getBlogsEntryByExternalReferenceCode(
+			long groupId, String externalReferenceCode)
+		throws PortalException {
+
+		BlogsEntry entry =
+			blogsEntryLocalService.getBlogsEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		_blogsEntryModelResourcePermission.check(
+			getPermissionChecker(), entry, ActionKeys.VIEW);
+
+		return entry;
+	}
+
+	@Override
 	public List<BlogsEntry> getCompanyEntries(
 			long companyId, Date displayDate, int status, int max)
 		throws PortalException {
 
-		List<BlogsEntry> entries = new ArrayList<>();
+		List<BlogsEntry> blogsEntries1 = new ArrayList<>();
 
 		boolean listNotExhausted = true;
 
 		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
-			status, false, 0, 0, new EntryDisplayDateComparator());
+			status, false, 0, 0, EntryDisplayDateComparator.getInstance(false));
 
 		if (status == WorkflowConstants.STATUS_ANY) {
 			queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
 		}
 
-		while ((entries.size() < max) && listNotExhausted) {
+		while ((blogsEntries1.size() < max) && listNotExhausted) {
 			queryDefinition.setEnd(queryDefinition.getStart() + max);
 
-			List<BlogsEntry> entryList =
+			List<BlogsEntry> blogsEntries2 =
 				blogsEntryLocalService.getCompanyEntries(
 					companyId, displayDate, queryDefinition);
 
 			queryDefinition.setStart(queryDefinition.getStart() + max);
 
-			listNotExhausted = entryList.size() == max;
+			listNotExhausted = blogsEntries2.size() == max;
 
-			for (BlogsEntry entry : entryList) {
-				if (entries.size() >= max) {
+			for (BlogsEntry blogsEntry : blogsEntries2) {
+				if (blogsEntries1.size() >= max) {
 					break;
 				}
 
-				if (_blogsEntryModelResourcePermission.contains(
-						getPermissionChecker(), entry, ActionKeys.VIEW)) {
+				if (!_blogsEntryModelResourcePermission.contains(
+						getPermissionChecker(), blogsEntry, ActionKeys.VIEW)) {
 
-					entries.add(entry);
+					continue;
 				}
+
+				blogsEntries1.add(blogsEntry);
 			}
 		}
 
-		return entries;
+		return blogsEntries1;
 	}
 
 	@Override
@@ -199,7 +282,7 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		List<BlogsEntry> blogsEntries = getCompanyEntries(
 			companyId, displayDate, status, max);
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, name, type, version, displayStyle, feedURL, entryURL,
 			blogsEntries, themeDisplay);
 	}
@@ -216,13 +299,14 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		BlogsEntry[] entries =
 			blogsEntryPersistence.filterFindByG_D_S_PrevAndNext(
 				entryId, entry.getGroupId(), entry.getDisplayDate(),
-				WorkflowConstants.STATUS_APPROVED, new EntryIdComparator(true));
+				WorkflowConstants.STATUS_APPROVED,
+				EntryIdComparator.getInstance(true));
 
 		if (entries[0] == null) {
 			entries[0] = blogsEntryPersistence.fetchByG_LtD_S_Last(
 				entry.getGroupId(), entry.getDisplayDate(),
 				WorkflowConstants.STATUS_APPROVED,
-				new EntryDisplayDateComparator(true));
+				EntryDisplayDateComparator.getInstance(true));
 
 			if ((entries[0] != null) &&
 				!_blogsEntryModelResourcePermission.contains(
@@ -236,7 +320,7 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			entries[2] = blogsEntryPersistence.fetchByG_GtD_S_First(
 				entry.getGroupId(), entry.getDisplayDate(),
 				WorkflowConstants.STATUS_APPROVED,
-				new EntryDisplayDateComparator(true));
+				EntryDisplayDateComparator.getInstance(true));
 
 			if ((entries[2] != null) &&
 				!_blogsEntryModelResourcePermission.contains(
@@ -362,7 +446,7 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		List<BlogsEntry> blogsEntries = getGroupEntries(
 			groupId, displayDate, status, max);
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, name, type, version, displayStyle, feedURL, entryURL,
 			blogsEntries, themeDisplay);
 	}
@@ -372,42 +456,44 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			long companyId, long groupId, Date displayDate, int status, int max)
 		throws PortalException {
 
-		List<BlogsEntry> entries = new ArrayList<>();
+		List<BlogsEntry> blogsEntries1 = new ArrayList<>();
 
 		boolean listNotExhausted = true;
 
 		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
-			status, false, 0, 0, new EntryDisplayDateComparator());
+			status, false, 0, 0, EntryDisplayDateComparator.getInstance(false));
 
 		if (status == WorkflowConstants.STATUS_ANY) {
 			queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
 		}
 
-		while ((entries.size() < max) && listNotExhausted) {
+		while ((blogsEntries1.size() < max) && listNotExhausted) {
 			queryDefinition.setEnd(queryDefinition.getStart() + max);
 
-			List<BlogsEntry> entryList =
+			List<BlogsEntry> blogsEntries2 =
 				blogsEntryLocalService.getGroupsEntries(
 					companyId, groupId, displayDate, queryDefinition);
 
 			queryDefinition.setStart(queryDefinition.getStart() + max);
 
-			listNotExhausted = entryList.size() == max;
+			listNotExhausted = blogsEntries2.size() == max;
 
-			for (BlogsEntry entry : entryList) {
-				if (entries.size() >= max) {
+			for (BlogsEntry blogsEntry : blogsEntries2) {
+				if (blogsEntries1.size() >= max) {
 					break;
 				}
 
-				if (_blogsEntryModelResourcePermission.contains(
-						getPermissionChecker(), entry, ActionKeys.VIEW)) {
+				if (!_blogsEntryModelResourcePermission.contains(
+						getPermissionChecker(), blogsEntry, ActionKeys.VIEW)) {
 
-					entries.add(entry);
+					continue;
 				}
+
+				blogsEntries1.add(blogsEntry);
 			}
 		}
 
-		return entries;
+		return blogsEntries1;
 	}
 
 	@Override
@@ -458,41 +544,44 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			long organizationId, Date displayDate, int status, int max)
 		throws PortalException {
 
-		List<BlogsEntry> entries = new ArrayList<>();
+		List<BlogsEntry> blogsEntries1 = new ArrayList<>();
 
 		boolean listNotExhausted = true;
 
 		QueryDefinition<BlogsEntry> queryDefinition = new QueryDefinition<>(
-			status, false, 0, 0, new EntryDisplayDateComparator());
+			status, false, 0, 0, EntryDisplayDateComparator.getInstance(false));
 
 		if (status == WorkflowConstants.STATUS_ANY) {
 			queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
 		}
 
-		while ((entries.size() < max) && listNotExhausted) {
+		while ((blogsEntries1.size() < max) && listNotExhausted) {
 			queryDefinition.setEnd(queryDefinition.getStart() + max);
 
-			List<BlogsEntry> entryList = blogsEntryFinder.findByOrganizationId(
-				organizationId, displayDate, queryDefinition);
+			List<BlogsEntry> blogsEntries2 =
+				blogsEntryFinder.findByOrganizationId(
+					organizationId, displayDate, queryDefinition);
 
 			queryDefinition.setStart(queryDefinition.getStart() + max);
 
-			listNotExhausted = entryList.size() == max;
+			listNotExhausted = blogsEntries2.size() == max;
 
-			for (BlogsEntry entry : entryList) {
-				if (entries.size() >= max) {
+			for (BlogsEntry blogsEntry : blogsEntries2) {
+				if (blogsEntries1.size() >= max) {
 					break;
 				}
 
-				if (_blogsEntryModelResourcePermission.contains(
-						getPermissionChecker(), entry, ActionKeys.VIEW)) {
+				if (!_blogsEntryModelResourcePermission.contains(
+						getPermissionChecker(), blogsEntry, ActionKeys.VIEW)) {
 
-					entries.add(entry);
+					continue;
 				}
+
+				blogsEntries1.add(blogsEntry);
 			}
 		}
 
-		return entries;
+		return blogsEntries1;
 	}
 
 	@Override
@@ -510,7 +599,7 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 		List<BlogsEntry> blogsEntries = getOrganizationEntries(
 			organizationId, displayDate, status, max);
 
-		return exportToRSS(
+		return _exportToRSS(
 			name, name, type, version, displayStyle, feedURL, entryURL,
 			blogsEntries, themeDisplay);
 	}
@@ -590,7 +679,7 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 			smallImageImageSelector, serviceContext);
 	}
 
-	protected String exportToRSS(
+	private String _exportToRSS(
 		String name, String description, String type, double version,
 		String displayStyle, String feedURL, String entryURL,
 		List<BlogsEntry> blogsEntries, ThemeDisplay themeDisplay) {
@@ -622,7 +711,7 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 				}
 
 				value = StringUtil.shorten(
-					HtmlUtil.extractText(summary),
+					_htmlParser.extractText(summary),
 					PropsValues.BLOGS_RSS_ABSTRACT_LENGTH, StringPool.BLANK);
 			}
 			else if (displayStyle.equals(RSSUtil.DISPLAY_STYLE_TITLE)) {
@@ -695,8 +784,17 @@ public class BlogsEntryServiceImpl extends BlogsEntryServiceBaseImpl {
 	@Reference
 	private CompanyLocalService _companyLocalService;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.kernel.repository.model.FileEntry)"
+	)
+	private ModelResourcePermission<FileEntry>
+		_fileEntryModelResourcePermission;
+
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private HtmlParser _htmlParser;
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

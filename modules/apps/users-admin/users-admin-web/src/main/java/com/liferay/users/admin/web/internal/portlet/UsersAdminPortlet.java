@@ -1,31 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.portlet;
 
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-users-admin",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -37,15 +38,42 @@ import org.osgi.service.component.annotations.Component;
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.struts-path=users_admin",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Users Admin",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Users Admin",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
 public class UsersAdminPortlet extends MVCPortlet {
+
+	@Override
+	public void render(
+			RenderRequest renderRequest, RenderResponse renderResponse)
+		throws IOException, PortletException {
+
+		renderRequest.setAttribute(ItemSelector.class.getName(), itemSelector);
+
+		super.render(renderRequest, renderResponse);
+	}
+
+	@Override
+	protected boolean callActionMethod(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws PortletException {
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
+
+			return super.callActionMethod(actionRequest, actionResponse);
+		}
+	}
+
+	@Reference
+	protected ItemSelector itemSelector;
+
 }

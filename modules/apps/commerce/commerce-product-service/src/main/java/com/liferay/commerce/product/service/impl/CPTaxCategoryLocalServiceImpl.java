@@ -1,79 +1,78 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
 
 import com.liferay.commerce.product.exception.CPTaxCategoryNameException;
+import com.liferay.commerce.product.exception.DuplicateCPTaxCategoryException;
 import com.liferay.commerce.product.model.CPTaxCategory;
+import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.base.CPTaxCategoryLocalServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.search.document.Document;
+import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.searcher.SearchRequest;
+import com.liferay.portal.search.searcher.SearchRequestBuilder;
+import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.searcher.SearchResponse;
+import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.sort.FieldSort;
+import com.liferay.portal.search.sort.SortFieldBuilder;
+import com.liferay.portal.search.sort.SortOrder;
+import com.liferay.portal.search.sort.Sorts;
+
+import java.io.Serializable;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.product.model.CPTaxCategory",
+	service = AopService.class
+)
 public class CPTaxCategoryLocalServiceImpl
 	extends CPTaxCategoryLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #addCPTaxCategory(String, Map, Map, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public CPTaxCategory addCPTaxCategory(
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		User user = userLocalService.getUser(serviceContext.getUserId());
-
-		validate(nameMap);
-
-		long cpTaxCategoryId = counterLocalService.increment();
-
-		CPTaxCategory cpTaxCategory = cpTaxCategoryPersistence.create(
-			cpTaxCategoryId);
-
-		cpTaxCategory.setCompanyId(user.getCompanyId());
-		cpTaxCategory.setUserId(user.getUserId());
-		cpTaxCategory.setUserName(user.getFullName());
-		cpTaxCategory.setNameMap(nameMap);
-		cpTaxCategory.setDescriptionMap(descriptionMap);
-
-		return cpTaxCategoryPersistence.update(cpTaxCategory);
-	}
-
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPTaxCategory addCPTaxCategory(
 			String externalReferenceCode, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
-		validate(nameMap);
+		_validate(user.getCompanyId(), 0, externalReferenceCode, nameMap);
 
 		long cpTaxCategoryId = counterLocalService.increment();
 
@@ -101,6 +100,7 @@ public class CPTaxCategoryLocalServiceImpl
 		cpTaxCategoryPersistence.removeByCompanyId(companyId);
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CPTaxCategory deleteCPTaxCategory(CPTaxCategory cpTaxCategory)
@@ -112,7 +112,7 @@ public class CPTaxCategoryLocalServiceImpl
 
 		// Commerce product definitions
 
-		cpDefinitionLocalService.updateCPDefinitionsByCPTaxCategoryId(
+		_cpDefinitionLocalService.updateCPDefinitionsByCPTaxCategoryId(
 			cpTaxCategory.getCPTaxCategoryId());
 
 		return cpTaxCategory;
@@ -155,28 +155,43 @@ public class CPTaxCategoryLocalServiceImpl
 		return cpTaxCategoryPersistence.countByCompanyId(companyId);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #updateCPTaxCategory(String, long, Map, Map)}
-	 */
-	@Deprecated
 	@Override
-	public CPTaxCategory updateCPTaxCategory(
-			long cpTaxCategoryId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap)
+	public BaseModelSearchResult<CPTaxCategory> searchCPTaxCategories(
+			long companyId, String keywords, int start, int end, Sort sort)
 		throws PortalException {
 
-		CPTaxCategory cpTaxCategory = cpTaxCategoryPersistence.findByPrimaryKey(
-			cpTaxCategoryId);
+		SearchResponse searchResponse = _searcher.search(
+			_getSearchRequest(companyId, keywords, start, end, sort));
 
-		validate(nameMap);
+		SearchHits searchHits = searchResponse.getSearchHits();
 
-		cpTaxCategory.setNameMap(nameMap);
-		cpTaxCategory.setDescriptionMap(descriptionMap);
+		List<CPTaxCategory> cpTaxCategories = TransformUtil.transform(
+			searchHits.getSearchHits(),
+			searchHit -> {
+				Document document = searchHit.getDocument();
 
-		return cpTaxCategoryPersistence.update(cpTaxCategory);
+				long cpTaxCategoryId = document.getLong(Field.ENTRY_CLASS_PK);
+
+				CPTaxCategory cpTaxCategory = fetchCPTaxCategory(
+					cpTaxCategoryId);
+
+				if (cpTaxCategory == null) {
+					Indexer<CPTaxCategory> indexer =
+						IndexerRegistryUtil.getIndexer(CPTaxCategory.class);
+
+					indexer.delete(
+						document.getLong(Field.COMPANY_ID),
+						document.getString(Field.UID));
+				}
+
+				return cpTaxCategory;
+			});
+
+		return new BaseModelSearchResult<>(
+			cpTaxCategories, searchResponse.getTotalHits());
 	}
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CPTaxCategory updateCPTaxCategory(
 			String externalReferenceCode, long cpTaxCategoryId,
@@ -186,7 +201,9 @@ public class CPTaxCategoryLocalServiceImpl
 		CPTaxCategory cpTaxCategory = cpTaxCategoryPersistence.findByPrimaryKey(
 			cpTaxCategoryId);
 
-		validate(nameMap);
+		_validate(
+			cpTaxCategory.getCompanyId(), cpTaxCategoryId,
+			externalReferenceCode, nameMap);
 
 		cpTaxCategory.setExternalReferenceCode(externalReferenceCode);
 		cpTaxCategory.setNameMap(nameMap);
@@ -195,9 +212,97 @@ public class CPTaxCategoryLocalServiceImpl
 		return cpTaxCategoryPersistence.update(cpTaxCategory);
 	}
 
-	protected void validate(Map<Locale, String> nameMap)
+	private SearchRequest _getSearchRequest(
+		long companyId, String keywords, int start, int end, Sort sort) {
+
+		SearchRequestBuilder searchRequestBuilder =
+			_searchRequestBuilderFactory.builder();
+
+		searchRequestBuilder.entryClassNames(
+			CPTaxCategory.class.getName()
+		).emptySearchEnabled(
+			true
+		).highlightEnabled(
+			false
+		).withSearchContext(
+			searchContext -> _populateSearchContext(
+				searchContext, companyId, keywords, start, end, sort)
+		);
+
+		if (start != QueryUtil.ALL_POS) {
+			searchRequestBuilder.from(start);
+			searchRequestBuilder.size(end);
+		}
+
+		if (Validator.isNotNull(sort.getFieldName())) {
+			SortOrder sortOrder = SortOrder.ASC;
+
+			if (sort.isReverse()) {
+				sortOrder = SortOrder.DESC;
+			}
+
+			FieldSort fieldSort = _sorts.field(
+				_sortFieldBuilder.getSortField(
+					CPTaxCategory.class, sort.getFieldName()),
+				sortOrder);
+
+			searchRequestBuilder.sorts(fieldSort);
+		}
+
+		return searchRequestBuilder.build();
+	}
+
+	private void _populateSearchContext(
+		SearchContext searchContext, long companyId, String keywords, int start,
+		int end, Sort sort) {
+
+		searchContext.setAttributes(
+			HashMapBuilder.<String, Serializable>put(
+				Field.DESCRIPTION, keywords
+			).put(
+				Field.NAME, keywords
+			).put(
+				"params",
+				LinkedHashMapBuilder.<String, Object>put(
+					"keywords", keywords
+				).build()
+			).build());
+		searchContext.setCompanyId(companyId);
+		searchContext.setEnd(end);
+
+		if (Validator.isNotNull(keywords)) {
+			searchContext.setKeywords(keywords);
+		}
+
+		if (sort != null) {
+			searchContext.setSorts(sort);
+		}
+
+		searchContext.setStart(start);
+	}
+
+	private void _validate(
+			long companyId, long cpTaxCategoryId, String externalReferenceCode,
+			Map<Locale, String> nameMap)
 		throws PortalException {
 
+		if (Validator.isNotNull(externalReferenceCode)) {
+			CPTaxCategory cpTaxCategory = cpTaxCategoryPersistence.fetchByERC_C(
+				externalReferenceCode, companyId);
+
+			if ((cpTaxCategory != null) &&
+				(cpTaxCategory.getCPTaxCategoryId() != cpTaxCategoryId)) {
+
+				throw new DuplicateCPTaxCategoryException(
+					"There is another commerce tax category with external " +
+						"reference code " + externalReferenceCode);
+			}
+		}
+
+		_validate(nameMap);
+	}
+
+	private void _validate(Map<Locale, String> nameMap) throws PortalException {
 		Locale locale = LocaleUtil.getSiteDefault();
 
 		String name = nameMap.get(locale);
@@ -206,5 +311,23 @@ public class CPTaxCategoryLocalServiceImpl
 			throw new CPTaxCategoryNameException();
 		}
 	}
+
+	@Reference
+	private CPDefinitionLocalService _cpDefinitionLocalService;
+
+	@Reference
+	private Searcher _searcher;
+
+	@Reference
+	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
+
+	@Reference
+	private SortFieldBuilder _sortFieldBuilder;
+
+	@Reference
+	private Sorts _sorts;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service.persistence.test;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -31,6 +24,7 @@ import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.search.experiences.exception.DuplicateSXPElementExternalReferenceCodeException;
 import com.liferay.search.experiences.exception.NoSuchSXPElementException;
 import com.liferay.search.experiences.model.SXPElement;
 import com.liferay.search.experiences.service.SXPElementLocalServiceUtil;
@@ -127,6 +121,8 @@ public class SXPElementPersistenceTest {
 
 		newSXPElement.setUuid(RandomTestUtil.randomString());
 
+		newSXPElement.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newSXPElement.setCompanyId(RandomTestUtil.nextLong());
 
 		newSXPElement.setUserId(RandomTestUtil.nextLong());
@@ -141,13 +137,21 @@ public class SXPElementPersistenceTest {
 
 		newSXPElement.setElementDefinitionJSON(RandomTestUtil.randomString());
 
+		newSXPElement.setFallbackDescription(RandomTestUtil.randomString());
+
+		newSXPElement.setFallbackTitle(RandomTestUtil.randomString());
+
 		newSXPElement.setHidden(RandomTestUtil.randomBoolean());
 
 		newSXPElement.setReadOnly(RandomTestUtil.randomBoolean());
 
+		newSXPElement.setSchemaVersion(RandomTestUtil.randomString());
+
 		newSXPElement.setTitle(RandomTestUtil.randomString());
 
 		newSXPElement.setType(RandomTestUtil.nextInt());
+
+		newSXPElement.setVersion(RandomTestUtil.randomString());
 
 		newSXPElement.setStatus(RandomTestUtil.nextInt());
 
@@ -161,6 +165,9 @@ public class SXPElementPersistenceTest {
 			newSXPElement.getMvccVersion());
 		Assert.assertEquals(
 			existingSXPElement.getUuid(), newSXPElement.getUuid());
+		Assert.assertEquals(
+			existingSXPElement.getExternalReferenceCode(),
+			newSXPElement.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingSXPElement.getSXPElementId(),
 			newSXPElement.getSXPElementId());
@@ -183,15 +190,46 @@ public class SXPElementPersistenceTest {
 			existingSXPElement.getElementDefinitionJSON(),
 			newSXPElement.getElementDefinitionJSON());
 		Assert.assertEquals(
+			existingSXPElement.getFallbackDescription(),
+			newSXPElement.getFallbackDescription());
+		Assert.assertEquals(
+			existingSXPElement.getFallbackTitle(),
+			newSXPElement.getFallbackTitle());
+		Assert.assertEquals(
 			existingSXPElement.isHidden(), newSXPElement.isHidden());
 		Assert.assertEquals(
 			existingSXPElement.isReadOnly(), newSXPElement.isReadOnly());
+		Assert.assertEquals(
+			existingSXPElement.getSchemaVersion(),
+			newSXPElement.getSchemaVersion());
 		Assert.assertEquals(
 			existingSXPElement.getTitle(), newSXPElement.getTitle());
 		Assert.assertEquals(
 			existingSXPElement.getType(), newSXPElement.getType());
 		Assert.assertEquals(
+			existingSXPElement.getVersion(), newSXPElement.getVersion());
+		Assert.assertEquals(
 			existingSXPElement.getStatus(), newSXPElement.getStatus());
+	}
+
+	@Test(expected = DuplicateSXPElementExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		SXPElement sxpElement = addSXPElement();
+
+		SXPElement newSXPElement = addSXPElement();
+
+		newSXPElement.setCompanyId(sxpElement.getCompanyId());
+
+		newSXPElement = _persistence.update(newSXPElement);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newSXPElement);
+
+		newSXPElement.setExternalReferenceCode(
+			sxpElement.getExternalReferenceCode());
+
+		_persistence.update(newSXPElement);
 	}
 
 	@Test
@@ -220,6 +258,14 @@ public class SXPElementPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_R() throws Exception {
+		_persistence.countByC_R(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByC_R(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
 	public void testCountByC_T() throws Exception {
 		_persistence.countByC_T(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
@@ -234,6 +280,15 @@ public class SXPElementPersistenceTest {
 			RandomTestUtil.nextInt());
 
 		_persistence.countByC_T_S(0L, 0, 0);
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -261,10 +316,12 @@ public class SXPElementPersistenceTest {
 
 	protected OrderByComparator<SXPElement> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"SXPElement", "mvccVersion", true, "uuid", true, "sxpElementId",
-			true, "companyId", true, "userId", true, "userName", true,
-			"createDate", true, "modifiedDate", true, "description", true,
-			"hidden", true, "readOnly", true, "title", true, "type", true,
+			"SXPElement", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "sxpElementId", true, "companyId",
+			true, "userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "description", true, "fallbackDescription",
+			true, "fallbackTitle", true, "hidden", true, "readOnly", true,
+			"schemaVersion", true, "title", true, "type", true, "version", true,
 			"status", true);
 	}
 
@@ -477,6 +534,69 @@ public class SXPElementPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		SXPElement newSXPElement = addSXPElement();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(newSXPElement.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		SXPElement newSXPElement = addSXPElement();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			SXPElement.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq(
+				"sxpElementId", newSXPElement.getSXPElementId()));
+
+		List<SXPElement> result = _persistence.findWithDynamicQuery(
+			dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(SXPElement sxpElement) {
+		Assert.assertEquals(
+			sxpElement.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				sxpElement, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(sxpElement.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				sxpElement, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+	}
+
 	protected SXPElement addSXPElement() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
@@ -485,6 +605,8 @@ public class SXPElementPersistenceTest {
 		sxpElement.setMvccVersion(RandomTestUtil.nextLong());
 
 		sxpElement.setUuid(RandomTestUtil.randomString());
+
+		sxpElement.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		sxpElement.setCompanyId(RandomTestUtil.nextLong());
 
@@ -500,13 +622,21 @@ public class SXPElementPersistenceTest {
 
 		sxpElement.setElementDefinitionJSON(RandomTestUtil.randomString());
 
+		sxpElement.setFallbackDescription(RandomTestUtil.randomString());
+
+		sxpElement.setFallbackTitle(RandomTestUtil.randomString());
+
 		sxpElement.setHidden(RandomTestUtil.randomBoolean());
 
 		sxpElement.setReadOnly(RandomTestUtil.randomBoolean());
 
+		sxpElement.setSchemaVersion(RandomTestUtil.randomString());
+
 		sxpElement.setTitle(RandomTestUtil.randomString());
 
 		sxpElement.setType(RandomTestUtil.nextInt());
+
+		sxpElement.setVersion(RandomTestUtil.randomString());
 
 		sxpElement.setStatus(RandomTestUtil.nextInt());
 

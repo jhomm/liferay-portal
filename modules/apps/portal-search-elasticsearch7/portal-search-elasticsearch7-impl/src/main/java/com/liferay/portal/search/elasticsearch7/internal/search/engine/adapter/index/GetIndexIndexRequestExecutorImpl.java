@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.index;
@@ -53,7 +44,7 @@ public class GetIndexIndexRequestExecutorImpl
 		GetIndexRequest getIndexRequest = createGetIndexRequest(
 			getIndexIndexRequest);
 
-		GetIndexResponse getIndexResponse = getGetIndexResponse(
+		GetIndexResponse getIndexResponse = _getGetIndexResponse(
 			getIndexRequest, getIndexIndexRequest);
 
 		GetIndexIndexResponse getIndexIndexResponse =
@@ -64,17 +55,27 @@ public class GetIndexIndexRequestExecutorImpl
 		ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetadata>>
 			indicesMappings = getIndexResponse.getMappings();
 
-		getIndexIndexResponse.setMappings(convertMappings(indicesMappings));
+		getIndexIndexResponse.setMappings(_convertMappings(indicesMappings));
 
 		ImmutableOpenMap<String, Settings> indicesSettings =
 			getIndexResponse.getSettings();
 
-		getIndexIndexResponse.setSettings(convertSettings(indicesSettings));
+		getIndexIndexResponse.setSettings(_convertSettings(indicesSettings));
 
 		return getIndexIndexResponse;
 	}
 
-	protected Map<String, Map<String, String>> convertMappings(
+	protected GetIndexRequest createGetIndexRequest(
+		GetIndexIndexRequest getIndexIndexRequest) {
+
+		GetIndexRequest getIndexRequest = new GetIndexRequest();
+
+		getIndexRequest.indices(getIndexIndexRequest.getIndexNames());
+
+		return getIndexRequest;
+	}
+
+	private Map<String, Map<String, String>> _convertMappings(
 		ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetadata>>
 			indicesMappings) {
 
@@ -119,7 +120,7 @@ public class GetIndexIndexRequestExecutorImpl
 		return indexMappings;
 	}
 
-	protected Map<String, String> convertSettings(
+	private Map<String, String> _convertSettings(
 		ImmutableOpenMap<String, Settings> indicesSettings) {
 
 		Iterator<ObjectObjectCursor<String, Settings>> iterator =
@@ -139,17 +140,7 @@ public class GetIndexIndexRequestExecutorImpl
 		return indicesSettingsMap;
 	}
 
-	protected GetIndexRequest createGetIndexRequest(
-		GetIndexIndexRequest getIndexIndexRequest) {
-
-		GetIndexRequest getIndexRequest = new GetIndexRequest();
-
-		getIndexRequest.indices(getIndexIndexRequest.getIndexNames());
-
-		return getIndexRequest;
-	}
-
-	protected GetIndexResponse getGetIndexResponse(
+	private GetIndexResponse _getGetIndexResponse(
 		GetIndexRequest getIndexRequest,
 		GetIndexIndexRequest getIndexIndexRequest) {
 
@@ -168,13 +159,7 @@ public class GetIndexIndexRequestExecutorImpl
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setElasticsearchClientResolver(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		_elasticsearchClientResolver = elasticsearchClientResolver;
-	}
-
+	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 
 }

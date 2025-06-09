@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model;
@@ -50,6 +41,10 @@ public class FragmentEntryVersionTable
 			"version", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryVersionTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<FragmentEntryVersionTable, String>
+		externalReferenceCode = createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryVersionTable, Long> fragmentEntryId =
 		createColumn(
 			"fragmentEntryId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
@@ -91,15 +86,23 @@ public class FragmentEntryVersionTable
 	public final Column<FragmentEntryVersionTable, Clob> configuration =
 		createColumn(
 			"configuration", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
+	public final Column<FragmentEntryVersionTable, String> icon = createColumn(
+		"icon", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryVersionTable, Long> previewFileEntryId =
 		createColumn(
 			"previewFileEntryId", Long.class, Types.BIGINT,
 			Column.FLAG_DEFAULT);
+	public final Column<FragmentEntryVersionTable, Boolean> marketplace =
+		createColumn(
+			"marketplace", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryVersionTable, Boolean> readOnly =
 		createColumn(
 			"readOnly", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryVersionTable, Integer> type = createColumn(
 		"type_", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
+	public final Column<FragmentEntryVersionTable, Clob> typeOptions =
+		createColumn(
+			"typeOptions", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<FragmentEntryVersionTable, Date> lastPublishDate =
 		createColumn(
 			"lastPublishDate", Date.class, Types.TIMESTAMP,

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util;
@@ -35,6 +26,7 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.MethodHandler;
 import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -44,13 +36,14 @@ import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.File;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.URI;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -63,26 +56,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.conn.HttpClientConnectionManager;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.BasicHttpClientConnectionManager;
 
 /**
  * @author Amos Fong
@@ -142,7 +115,7 @@ public class LicenseUtil {
 			return (Map<String, String>)clusterNodeResponse.getResult();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw exception;
 		}
@@ -226,7 +199,7 @@ public class LicenseUtil {
 						productEntryName, maxServers);
 				}
 				catch (Exception exception) {
-					_log.error(exception, exception);
+					_log.error(exception);
 
 					InetAddress inetAddress = clusterNode.getBindInetAddress();
 
@@ -288,7 +261,7 @@ public class LicenseUtil {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			attributes.put(
 				"ERROR_MESSAGE",
@@ -299,92 +272,22 @@ public class LicenseUtil {
 	}
 
 	public static String sendRequest(String request) throws Exception {
-		HttpClient httpClient = null;
+		Http.Options options = new Http.Options();
 
-		HttpClientConnectionManager httpClientConnectionManager =
-			new BasicHttpClientConnectionManager(
-				RegistryBuilder.<ConnectionSocketFactory>create(
-				).register(
-					Http.HTTP, PlainConnectionSocketFactory.getSocketFactory()
-				).register(
-					Http.HTTPS,
-					SSLConnectionSocketFactory.getSystemSocketFactory()
-				).build());
+		String serverURL = LICENSE_SERVER_URL;
 
-		try {
-			HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();
-
-			httpClientBuilder.setConnectionManager(httpClientConnectionManager);
-
-			String serverURL = LICENSE_SERVER_URL;
-
-			if (!serverURL.endsWith(StringPool.SLASH)) {
-				serverURL += StringPool.SLASH;
-			}
-
-			serverURL += "osb-portlet/license";
-
-			URI uri = new URI(serverURL);
-
-			HttpPost httpPost = new HttpPost(uri);
-
-			CredentialsProvider credentialsProvider =
-				new BasicCredentialsProvider();
-
-			HttpHost proxyHttpHost = null;
-
-			if (Validator.isNotNull(_PROXY_URL)) {
-				if (_log.isInfoEnabled()) {
-					_log.info(
-						StringBundler.concat(
-							"Using proxy ", _PROXY_URL, StringPool.COLON,
-							_PROXY_PORT));
-				}
-
-				proxyHttpHost = new HttpHost(_PROXY_URL, _PROXY_PORT);
-
-				if (Validator.isNotNull(_PROXY_USER_NAME)) {
-					credentialsProvider.setCredentials(
-						new AuthScope(_PROXY_URL, _PROXY_PORT),
-						new UsernamePasswordCredentials(
-							_PROXY_USER_NAME, _PROXY_PASSWORD));
-				}
-			}
-
-			httpClientBuilder.setDefaultCredentialsProvider(
-				credentialsProvider);
-			httpClientBuilder.setProxy(proxyHttpHost);
-
-			httpClient = httpClientBuilder.build();
-
-			ByteArrayEntity byteArrayEntity = new ByteArrayEntity(
-				request.getBytes(StringPool.UTF8));
-
-			byteArrayEntity.setContentType(ContentTypes.APPLICATION_JSON);
-
-			httpPost.setEntity(byteArrayEntity);
-
-			HttpResponse httpResponse = httpClient.execute(httpPost);
-
-			HttpEntity httpEntity = httpResponse.getEntity();
-
-			String response = StringUtil.read(httpEntity.getContent());
-
-			if (_log.isDebugEnabled()) {
-				_log.debug("Server response: " + response);
-			}
-
-			if (Validator.isNull(response)) {
-				throw new Exception("Server response is null");
-			}
-
-			return response;
+		if (!serverURL.endsWith(StringPool.SLASH)) {
+			serverURL += StringPool.SLASH;
 		}
-		finally {
-			if (httpClient != null) {
-				httpClientConnectionManager.shutdown();
-			}
-		}
+
+		serverURL += "osb-portlet/license";
+
+		options.setLocation(serverURL);
+		options.setPost(true);
+		options.setBody(
+			request, ContentTypes.APPLICATION_JSON, StringPool.UTF8);
+
+		return HttpUtil.URLtoString(options);
 	}
 
 	public static void writeServerProperties(byte[] serverIdBytes)
@@ -514,17 +417,6 @@ public class LicenseUtil {
 				entry.getValue());
 		}
 	}
-
-	private static final String _PROXY_PASSWORD = GetterUtil.getString(
-		PropsUtil.get("license.proxy.password"));
-
-	private static final int _PROXY_PORT = GetterUtil.getInteger(
-		PropsUtil.get("license.proxy.port"), 80);
-
-	private static final String _PROXY_URL = PropsUtil.get("license.proxy.url");
-
-	private static final String _PROXY_USER_NAME = GetterUtil.getString(
-		PropsUtil.get("license.proxy.username"));
 
 	private static final Log _log = LogFactoryUtil.getLog(LicenseUtil.class);
 

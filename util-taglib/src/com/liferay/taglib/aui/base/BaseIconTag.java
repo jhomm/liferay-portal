@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.aui.base;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
 
 /**
  * @author Eduardo Lundgren
@@ -31,6 +22,10 @@ public abstract class BaseIconTag extends com.liferay.taglib.util.IncludeTag {
 		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
 
 		return super.doStartTag();
+	}
+
+	public java.lang.String getAriaLabel() {
+		return _ariaLabel;
 	}
 
 	public java.lang.String getCssClass() {
@@ -67,6 +62,10 @@ public abstract class BaseIconTag extends com.liferay.taglib.util.IncludeTag {
 
 	public java.lang.String getUrl() {
 		return _url;
+	}
+
+	public void setAriaLabel(java.lang.String ariaLabel) {
+		_ariaLabel = ariaLabel;
 	}
 
 	public void setCssClass(java.lang.String cssClass) {
@@ -109,6 +108,7 @@ public abstract class BaseIconTag extends com.liferay.taglib.util.IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_ariaLabel = null;
 		_cssClass = null;
 		_data = null;
 		_id = null;
@@ -127,6 +127,7 @@ public abstract class BaseIconTag extends com.liferay.taglib.util.IncludeTag {
 
 	@Override
 	protected void setAttributes(HttpServletRequest request) {
+		setNamespacedAttribute(request, "ariaLabel", _ariaLabel);
 		setNamespacedAttribute(request, "cssClass", _cssClass);
 		setNamespacedAttribute(request, "data", _data);
 		setNamespacedAttribute(request, "id", _id);
@@ -143,6 +144,7 @@ public abstract class BaseIconTag extends com.liferay.taglib.util.IncludeTag {
 	private static final String _PAGE =
 		"/html/taglib/aui/icon/page.jsp";
 
+	private java.lang.String _ariaLabel = null;
 	private java.lang.String _cssClass = null;
 	private java.util.Map<java.lang.String, java.lang.Object> _data = null;
 	private java.lang.String _id = null;

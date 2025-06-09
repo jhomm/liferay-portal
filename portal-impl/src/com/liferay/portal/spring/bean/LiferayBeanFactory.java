@@ -1,22 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.spring.bean;
 
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.spring.aop.BaseServiceBeanAutoProxyCreator;
+import com.liferay.portal.util.PropsValues;
 
 import java.beans.PropertyDescriptor;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import org.springframework.beans.BeanWrapper;
 import org.springframework.beans.MutablePropertyValues;
@@ -46,6 +42,30 @@ public class LiferayBeanFactory extends DefaultListableBeanFactory {
 			!(beanPostProcessor instanceof BaseServiceBeanAutoProxyCreator)) {
 
 			_postProcessPropertyValues = true;
+		}
+	}
+
+	@Override
+	protected void invokeCustomInitMethod(
+			String beanName, Object bean, RootBeanDefinition rootBeanDefinition)
+		throws Throwable {
+
+		if (!PropsValues.SPRING_BEANFACTORY_STRICT_LIFECYCLE_ENABLED) {
+			super.invokeCustomInitMethod(beanName, bean, rootBeanDefinition);
+
+			return;
+		}
+
+		Method initMethod = _getMethod(
+			bean.getClass(), rootBeanDefinition.getInitMethodName());
+
+		if (initMethod != null) {
+			try {
+				initMethod.invoke(bean);
+			}
+			catch (InvocationTargetException invocationTargetException) {
+				throw invocationTargetException.getTargetException();
+			}
 		}
 	}
 
@@ -151,6 +171,48 @@ public class LiferayBeanFactory extends DefaultListableBeanFactory {
 
 		applyPropertyValues(
 			beanName, rootBeanDefinition, beanWrapper, propertyValues);
+	}
+
+	@Override
+	protected void registerDisposableBeanIfNecessary(
+		String beanName, Object bean, RootBeanDefinition rootBeanDefinition) {
+
+		if (!PropsValues.SPRING_BEANFACTORY_STRICT_LIFECYCLE_ENABLED) {
+			super.registerDisposableBeanIfNecessary(
+				beanName, bean, rootBeanDefinition);
+
+			return;
+		}
+
+		String destroyMethodName = rootBeanDefinition.getDestroyMethodName();
+
+		if (destroyMethodName == null) {
+			return;
+		}
+
+		Method destroyMethod = _getMethod(bean.getClass(), destroyMethodName);
+
+		if (destroyMethod != null) {
+			Method finalDestroyMethod = destroyMethod;
+
+			registerDisposableBean(
+				beanName, () -> finalDestroyMethod.invoke(bean));
+		}
+	}
+
+	private Method _getMethod(Class<?> clazz, String methodName) {
+		while ((clazz != null) && (clazz != Object.class)) {
+			Method method = ReflectionUtil.fetchDeclaredMethod(
+				clazz, methodName);
+
+			if (method != null) {
+				return method;
+			}
+
+			clazz = clazz.getSuperclass();
+		}
+
+		return null;
 	}
 
 	private boolean _isContinueWithPropertyPopulation(

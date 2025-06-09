@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.expando.kernel.model;
@@ -217,12 +208,7 @@ public class ExpandoColumnConstants {
 		if (type == BOOLEAN) {
 			return PROPERTY_DISPLAY_TYPE_BOOLEAN;
 		}
-		else if ((type == BOOLEAN_ARRAY) || (type == DATE_ARRAY) ||
-				 (type == DOUBLE_ARRAY) || (type == FLOAT_ARRAY) ||
-				 (type == INTEGER_ARRAY) || (type == LONG_ARRAY) ||
-				 (type == NUMBER_ARRAY) || (type == SHORT_ARRAY) ||
-				 (type == STRING_ARRAY) || (type == STRING_ARRAY_LOCALIZED)) {
-
+		else if (isArray(type)) {
 			return PROPERTY_DISPLAY_TYPE_SELECTION_LIST;
 		}
 		else if (type == DATE) {
@@ -399,6 +385,19 @@ public class ExpandoColumnConstants {
 		}
 
 		return UNKNOWN_LABEL;
+	}
+
+	public static boolean isArray(int type) {
+		if ((type == BOOLEAN_ARRAY) || (type == DATE_ARRAY) ||
+			(type == DOUBLE_ARRAY) || (type == FLOAT_ARRAY) ||
+			(type == INTEGER_ARRAY) || (type == LONG_ARRAY) ||
+			(type == NUMBER_ARRAY) || (type == SHORT_ARRAY) ||
+			(type == STRING_ARRAY) || (type == STRING_ARRAY_LOCALIZED)) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
 
 import com.liferay.commerce.model.CommerceAddressRestriction;
 import com.liferay.commerce.model.CommerceAddressRestrictionModel;
-import com.liferay.commerce.model.CommerceAddressRestrictionSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -38,18 +28,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -124,24 +111,6 @@ public class CommerceAddressRestrictionModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -167,66 +136,18 @@ public class CommerceAddressRestrictionModelImpl
 	public static final long CREATEDATE_COLUMN_BITMASK = 8L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceAddressRestriction toModel(
-		CommerceAddressRestrictionSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceAddressRestriction model = new CommerceAddressRestrictionImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCommerceAddressRestrictionId(
-			soapModel.getCommerceAddressRestrictionId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setCountryId(soapModel.getCountryId());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceAddressRestriction> toModels(
-		CommerceAddressRestrictionSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceAddressRestriction> models =
-			new ArrayList<CommerceAddressRestriction>(soapModels.length);
-
-		for (CommerceAddressRestrictionSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.model.CommerceAddressRestriction"));
 
 	public CommerceAddressRestrictionModelImpl() {
 	}
@@ -306,132 +227,120 @@ public class CommerceAddressRestrictionModelImpl
 	public Map<String, Function<CommerceAddressRestriction, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceAddressRestriction, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceAddressRestriction>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceAddressRestriction.class.getClassLoader(),
-			CommerceAddressRestriction.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CommerceAddressRestriction, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceAddressRestriction> constructor =
-				(Constructor<CommerceAddressRestriction>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceAddressRestriction, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<CommerceAddressRestriction, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceAddressRestriction::getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceAddressRestrictionId",
+				CommerceAddressRestriction::getCommerceAddressRestrictionId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceAddressRestriction::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceAddressRestriction::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceAddressRestriction::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceAddressRestriction::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceAddressRestriction::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommerceAddressRestriction::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", CommerceAddressRestriction::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", CommerceAddressRestriction::getClassPK);
+			attributeGetterFunctions.put(
+				"countryId", CommerceAddressRestriction::getCountryId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map
-		<String, Function<CommerceAddressRestriction, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CommerceAddressRestriction, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceAddressRestriction, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CommerceAddressRestriction, Object>>();
-		Map<String, BiConsumer<CommerceAddressRestriction, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommerceAddressRestriction, ?>>();
+		private static final Map
+			<String, BiConsumer<CommerceAddressRestriction, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CommerceAddressRestriction::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setMvccVersion);
-		attributeGetterFunctions.put(
-			"commerceAddressRestrictionId",
-			CommerceAddressRestriction::getCommerceAddressRestrictionId);
-		attributeSetterBiConsumers.put(
-			"commerceAddressRestrictionId",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setCommerceAddressRestrictionId);
-		attributeGetterFunctions.put(
-			"groupId", CommerceAddressRestriction::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceAddressRestriction::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CommerceAddressRestriction::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceAddressRestriction::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceAddressRestriction, String>)
-				CommerceAddressRestriction::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceAddressRestriction::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceAddressRestriction, Date>)
-				CommerceAddressRestriction::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceAddressRestriction::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceAddressRestriction, Date>)
-				CommerceAddressRestriction::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", CommerceAddressRestriction::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setClassNameId);
-		attributeGetterFunctions.put(
-			"classPK", CommerceAddressRestriction::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setClassPK);
-		attributeGetterFunctions.put(
-			"countryId", CommerceAddressRestriction::getCountryId);
-		attributeSetterBiConsumers.put(
-			"countryId",
-			(BiConsumer<CommerceAddressRestriction, Long>)
-				CommerceAddressRestriction::setCountryId);
+		static {
+			Map<String, BiConsumer<CommerceAddressRestriction, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CommerceAddressRestriction, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceAddressRestrictionId",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::
+						setCommerceAddressRestrictionId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceAddressRestriction, String>)
+					CommerceAddressRestriction::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceAddressRestriction, Date>)
+					CommerceAddressRestriction::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceAddressRestriction, Date>)
+					CommerceAddressRestriction::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setClassPK);
+			attributeSetterBiConsumers.put(
+				"countryId",
+				(BiConsumer<CommerceAddressRestriction, Long>)
+					CommerceAddressRestriction::setCountryId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -836,7 +745,7 @@ public class CommerceAddressRestrictionModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -845,7 +754,7 @@ public class CommerceAddressRestrictionModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -961,45 +870,13 @@ public class CommerceAddressRestrictionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceAddressRestriction, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceAddressRestriction, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceAddressRestriction, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommerceAddressRestriction)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CommerceAddressRestriction>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommerceAddressRestriction.class, ModelWrapper.class);
 
 	}
 
@@ -1018,7 +895,8 @@ public class CommerceAddressRestrictionModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<CommerceAddressRestriction, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

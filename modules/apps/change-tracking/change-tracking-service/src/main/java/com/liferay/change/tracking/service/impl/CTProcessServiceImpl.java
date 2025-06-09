@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service.impl;
 
+import com.liferay.change.tracking.constants.CTConstants;
 import com.liferay.change.tracking.constants.CTPortletKeys;
 import com.liferay.change.tracking.model.CTCollectionTable;
 import com.liferay.change.tracking.model.CTProcess;
@@ -30,8 +22,8 @@ import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.InlineSQLHelper;
-import com.liferay.portal.kernel.service.permission.PortletPermission;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
@@ -53,12 +45,22 @@ import org.osgi.service.component.annotations.Reference;
 public class CTProcessServiceImpl extends CTProcessServiceBaseImpl {
 
 	@Override
+	public CTProcess deleteCTProcess(long ctProcessId) throws PortalException {
+		_ctProcessModelResourcePermission.check(
+			getPermissionChecker(), ctProcessId, ActionKeys.DELETE);
+
+		CTProcess ctProcess = ctProcessLocalService.getCTProcess(ctProcessId);
+
+		return ctProcessLocalService.deleteCTProcess(ctProcess);
+	}
+
+	@Override
 	public List<CTProcess> getCTProcesses(
 			long companyId, long userId, String keywords, int status, int start,
 			int end, OrderByComparator<CTProcess> orderByComparator)
 		throws PortalException {
 
-		_portletPermission.check(
+		PortletPermissionUtil.check(
 			getPermissionChecker(), CTPortletKeys.PUBLICATIONS,
 			ActionKeys.VIEW);
 
@@ -129,16 +131,19 @@ public class CTProcessServiceImpl extends CTProcessServiceBaseImpl {
 			companyId
 		).and(
 			() -> {
-				if (userId > 0) {
-					return CTProcessTable.INSTANCE.userId.eq(userId);
+				if (status != WorkflowConstants.STATUS_ANY) {
+					return BackgroundTaskTable.INSTANCE.status.eq(status);
 				}
 
 				return null;
 			}
 		).and(
+			() -> CTProcessTable.INSTANCE.type.eq(
+				CTConstants.CT_PROCESS_PUBLISH)
+		).and(
 			() -> {
-				if (status != WorkflowConstants.STATUS_ANY) {
-					return BackgroundTaskTable.INSTANCE.status.eq(status);
+				if (userId > 0) {
+					return CTProcessTable.INSTANCE.userId.eq(userId);
 				}
 
 				return null;
@@ -181,13 +186,13 @@ public class CTProcessServiceImpl extends CTProcessServiceBaseImpl {
 		return predicate.and(keywordsPredicate.withParentheses());
 	}
 
+	@Reference(
+		target = "(model.class.name=com.liferay.change.tracking.model.CTProcess)"
+	)
+	private ModelResourcePermission<CTProcess>
+		_ctProcessModelResourcePermission;
+
 	@Reference
 	private CustomSQL _customSQL;
-
-	@Reference
-	private InlineSQLHelper _inlineSQLHelper;
-
-	@Reference
-	private PortletPermission _portletPermission;
 
 }

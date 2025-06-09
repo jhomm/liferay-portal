@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -44,6 +37,7 @@ public class WikiPageWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("pageId", getPageId());
 		attributes.put("resourcePrimKey", getResourcePrimKey());
@@ -79,6 +73,12 @@ public class WikiPageWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -312,6 +312,16 @@ public class WikiPageWrapper
 	}
 
 	@Override
+	public com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentsFileEntryByExternalReferenceCode(
+				long groupId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getAttachmentsFileEntryByExternalReferenceCode(
+			groupId, externalReferenceCode);
+	}
+
+	@Override
 	public long getAttachmentsFolderId() {
 		return model.getAttachmentsFolderId();
 	}
@@ -369,6 +379,16 @@ public class WikiPageWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this wiki page.
+	 *
+	 * @return the ct collection ID of this wiki page
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	@Override
@@ -644,18 +664,6 @@ public class WikiPageWrapper
 	}
 
 	/**
-	 * Returns the trash entry created when this wiki page was moved to the Recycle Bin. The trash entry may belong to one of the ancestors of this wiki page.
-	 *
-	 * @return the trash entry created when this wiki page was moved to the Recycle Bin
-	 */
-	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getTrashEntry();
-	}
-
-	/**
 	 * Returns the class primary key of the trash entry for this wiki page.
 	 *
 	 * @return the class primary key of the trash entry for this wiki page
@@ -663,18 +671,6 @@ public class WikiPageWrapper
 	@Override
 	public long getTrashEntryClassPK() {
 		return model.getTrashEntryClassPK();
-	}
-
-	/**
-	 * Returns the trash handler for this wiki page.
-	 *
-	 * @return the trash handler for this wiki page
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return model.getTrashHandler();
 	}
 
 	/**
@@ -823,26 +819,6 @@ public class WikiPageWrapper
 	}
 
 	/**
-	 * Returns <code>true</code> if the parent of this wiki page is in the Recycle Bin.
-	 *
-	 * @return <code>true</code> if the parent of this wiki page is in the Recycle Bin; <code>false</code> otherwise
-	 */
-	@Override
-	public boolean isInTrashContainer() {
-		return model.isInTrashContainer();
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		return model.isInTrashExplicitly();
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		return model.isInTrashImplicitly();
-	}
-
-	/**
 	 * Returns <code>true</code> if this wiki page is minor edit.
 	 *
 	 * @return <code>true</code> if this wiki page is minor edit; <code>false</code> otherwise
@@ -925,6 +901,16 @@ public class WikiPageWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this wiki page.
+	 *
+	 * @param ctCollectionId the ct collection ID of this wiki page
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -1195,6 +1181,25 @@ public class WikiPageWrapper
 	@Override
 	public void setVersion(double version) {
 		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<WikiPage, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<WikiPage, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

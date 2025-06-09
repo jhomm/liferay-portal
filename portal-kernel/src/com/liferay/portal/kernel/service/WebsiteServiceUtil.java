@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -39,16 +30,26 @@ public class WebsiteServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.WebsiteServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static Website addWebsite(
-			String className, long classPK, String url, long typeId,
-			boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			String url, long typeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addWebsite(
-			className, classPK, url, typeId, primary, serviceContext);
+			externalReferenceCode, className, classPK, url, typeId, primary,
+			serviceContext);
 	}
 
 	public static void deleteWebsite(long websiteId) throws PortalException {
 		getService().deleteWebsite(websiteId);
+	}
+
+	public static Website fetchWebsiteByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchWebsiteByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -71,14 +72,20 @@ public class WebsiteServiceUtil {
 	}
 
 	public static Website updateWebsite(
-			long websiteId, String url, long typeId, boolean primary)
+			String externalReferenceCode, long websiteId, String url,
+			long typeId, boolean primary)
 		throws PortalException {
 
-		return getService().updateWebsite(websiteId, url, typeId, primary);
+		return getService().updateWebsite(
+			externalReferenceCode, websiteId, url, typeId, primary);
 	}
 
 	public static WebsiteService getService() {
 		return _service;
+	}
+
+	public static void setService(WebsiteService service) {
+		_service = service;
 	}
 
 	private static volatile WebsiteService _service;

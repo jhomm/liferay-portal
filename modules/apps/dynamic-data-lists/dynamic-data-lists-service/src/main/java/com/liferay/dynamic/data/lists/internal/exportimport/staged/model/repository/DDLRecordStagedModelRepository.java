@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.exportimport.staged.model.repository;
@@ -19,8 +10,6 @@ import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.model.DDLRecordVersion;
 import com.liferay.dynamic.data.lists.service.DDLRecordLocalService;
-import com.liferay.dynamic.data.lists.service.DDLRecordVersionLocalService;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
@@ -37,10 +26,8 @@ import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.service.ServiceContext;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,11 +36,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Tamas Molnar
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.dynamic.data.lists.model.DDLRecord",
-	service = {
-		DDLRecordStagedModelRepository.class, StagedModelRepository.class
-	}
+	service = StagedModelRepository.class
 )
 public class DDLRecordStagedModelRepository
 	implements StagedModelRepository<DDLRecord> {
@@ -64,29 +48,6 @@ public class DDLRecordStagedModelRepository
 		throws PortalException {
 
 		throw new UnsupportedOperationException();
-	}
-
-	public DDLRecord addStagedModel(
-			PortletDataContext portletDataContext, DDLRecord ddlRecord,
-			DDMFormValues ddmFormValues)
-		throws PortalException {
-
-		long userId = portletDataContext.getUserId(ddlRecord.getUserUuid());
-
-		ServiceContext serviceContext = portletDataContext.createServiceContext(
-			ddlRecord);
-
-		if (portletDataContext.isDataStrategyMirror()) {
-			serviceContext.setUuid(ddlRecord.getUuid());
-		}
-
-		DDLRecord importedRecord = _ddlRecordLocalService.addRecord(
-			userId, ddlRecord.getGroupId(), ddlRecord.getRecordSetId(),
-			ddlRecord.getDisplayIndex(), ddmFormValues, serviceContext);
-
-		updateVersions(importedRecord, ddlRecord.getVersion());
-
-		return importedRecord;
 	}
 
 	@Override
@@ -160,13 +121,13 @@ public class DDLRecordStagedModelRepository
 					"recordId");
 
 				dynamicQuery.add(
-					recordIdProperty.in(getRecordVersionDynamicQuery()));
+					recordIdProperty.in(_getRecordVersionDynamicQuery()));
 
 				Property recordSetIdProperty = PropertyFactoryUtil.forName(
 					"recordSetId");
 
 				dynamicQuery.add(
-					recordSetIdProperty.in(getRecordSetDynamicQuery(scope)));
+					recordSetIdProperty.in(_getRecordSetDynamicQuery(scope)));
 			});
 
 		return exportActionableDynamicQuery;
@@ -192,26 +153,7 @@ public class DDLRecordStagedModelRepository
 		throw new UnsupportedOperationException();
 	}
 
-	public DDLRecord updateStagedModel(
-			PortletDataContext portletDataContext, DDLRecord ddlRecord,
-			DDMFormValues ddmFormValues)
-		throws PortalException {
-
-		long userId = portletDataContext.getUserId(ddlRecord.getUserUuid());
-
-		ServiceContext serviceContext = portletDataContext.createServiceContext(
-			ddlRecord);
-
-		DDLRecord importedRecord = _ddlRecordLocalService.updateRecord(
-			userId, ddlRecord.getRecordId(), false, ddlRecord.getDisplayIndex(),
-			ddmFormValues, serviceContext);
-
-		updateVersions(importedRecord, ddlRecord.getVersion());
-
-		return importedRecord;
-	}
-
-	protected DynamicQuery getRecordSetDynamicQuery(int scope) {
+	private DynamicQuery _getRecordSetDynamicQuery(int scope) {
 		StagedModelDataHandler<?> stagedModelDataHandler =
 			StagedModelDataHandlerRegistryUtil.getStagedModelDataHandler(
 				DDLRecord.class.getName());
@@ -235,7 +177,7 @@ public class DDLRecordStagedModelRepository
 		return recordSetDynamicQuery;
 	}
 
-	protected DynamicQuery getRecordVersionDynamicQuery() {
+	private DynamicQuery _getRecordVersionDynamicQuery() {
 		StagedModelDataHandler<?> stagedModelDataHandler =
 			StagedModelDataHandlerRegistryUtil.getStagedModelDataHandler(
 				DDLRecord.class.getName());
@@ -265,31 +207,8 @@ public class DDLRecordStagedModelRepository
 		return recordVersionDynamicQuery;
 	}
 
-	protected void updateVersions(DDLRecord importedRecord, String version)
-		throws PortalException {
-
-		if (Objects.equals(importedRecord.getVersion(), version)) {
-			return;
-		}
-
-		DDLRecordVersion importedRecordVersion =
-			importedRecord.getRecordVersion();
-
-		importedRecordVersion.setVersion(version);
-
-		_ddlRecordVersionLocalService.updateDDLRecordVersion(
-			importedRecordVersion);
-
-		importedRecord.setVersion(version);
-
-		_ddlRecordLocalService.updateDDLRecord(importedRecord);
-	}
-
 	@Reference
 	private DDLRecordLocalService _ddlRecordLocalService;
-
-	@Reference
-	private DDLRecordVersionLocalService _ddlRecordVersionLocalService;
 
 	@Reference
 	private StagedModelRepositoryHelper _stagedModelRepositoryHelper;

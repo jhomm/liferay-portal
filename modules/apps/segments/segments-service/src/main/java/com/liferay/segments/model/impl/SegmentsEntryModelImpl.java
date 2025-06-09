@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.model.impl;
@@ -38,22 +29,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsEntryModel;
-import com.liferay.segments.model.SegmentsEntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -93,7 +80,7 @@ public class SegmentsEntryModelImpl
 		{"segmentsEntryKey", Types.VARCHAR}, {"name", Types.VARCHAR},
 		{"description", Types.VARCHAR}, {"active_", Types.BOOLEAN},
 		{"criteria", Types.CLOB}, {"source", Types.VARCHAR},
-		{"type_", Types.VARCHAR}, {"lastPublishDate", Types.TIMESTAMP}
+		{"lastPublishDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -116,12 +103,11 @@ public class SegmentsEntryModelImpl
 		TABLE_COLUMNS_MAP.put("active_", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("criteria", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("source", Types.VARCHAR);
-		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table SegmentsEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,segmentsEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,segmentsEntryKey VARCHAR(75) null,name STRING null,description STRING null,active_ BOOLEAN,criteria TEXT null,source VARCHAR(75) null,type_ VARCHAR(75) null,lastPublishDate DATE null,primary key (segmentsEntryId, ctCollectionId))";
+		"create table SegmentsEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,segmentsEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,segmentsEntryKey VARCHAR(75) null,name STRING null,description STRING null,active_ BOOLEAN,criteria TEXT null,source VARCHAR(75) null,lastPublishDate DATE null,primary key (segmentsEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table SegmentsEntry";
 
@@ -130,6 +116,9 @@ public class SegmentsEntryModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY SegmentsEntry.modifiedDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY segmentsEntry.modifiedDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -159,19 +148,19 @@ public class SegmentsEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SEGMENTSENTRYKEY_COLUMN_BITMASK = 8L;
+	public static final long SEGMENTSENTRYID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SOURCE_COLUMN_BITMASK = 16L;
+	public static final long SEGMENTSENTRYKEY_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 32L;
+	public static final long SOURCE_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -198,66 +187,6 @@ public class SegmentsEntryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static SegmentsEntry toModel(SegmentsEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		SegmentsEntry model = new SegmentsEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setSegmentsEntryId(soapModel.getSegmentsEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setSegmentsEntryKey(soapModel.getSegmentsEntryKey());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setActive(soapModel.isActive());
-		model.setCriteria(soapModel.getCriteria());
-		model.setSource(soapModel.getSource());
-		model.setType(soapModel.getType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<SegmentsEntry> toModels(SegmentsEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<SegmentsEntry> models = new ArrayList<SegmentsEntry>(
-			soapModels.length);
-
-		for (SegmentsEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public SegmentsEntryModelImpl() {
@@ -336,137 +265,133 @@ public class SegmentsEntryModelImpl
 	public Map<String, Function<SegmentsEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SegmentsEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SegmentsEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SegmentsEntry.class.getClassLoader(), SegmentsEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SegmentsEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SegmentsEntry> constructor =
-				(Constructor<SegmentsEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SegmentsEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SegmentsEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", SegmentsEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", SegmentsEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", SegmentsEntry::getUuid);
+			attributeGetterFunctions.put(
+				"segmentsEntryId", SegmentsEntry::getSegmentsEntryId);
+			attributeGetterFunctions.put("groupId", SegmentsEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", SegmentsEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", SegmentsEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", SegmentsEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", SegmentsEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SegmentsEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"segmentsEntryKey", SegmentsEntry::getSegmentsEntryKey);
+			attributeGetterFunctions.put("name", SegmentsEntry::getName);
+			attributeGetterFunctions.put(
+				"description", SegmentsEntry::getDescription);
+			attributeGetterFunctions.put("active", SegmentsEntry::getActive);
+			attributeGetterFunctions.put(
+				"criteria", SegmentsEntry::getCriteria);
+			attributeGetterFunctions.put("source", SegmentsEntry::getSource);
+			attributeGetterFunctions.put(
+				"lastPublishDate", SegmentsEntry::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SegmentsEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SegmentsEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SegmentsEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<SegmentsEntry, Object>>();
-		Map<String, BiConsumer<SegmentsEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<SegmentsEntry, ?>>();
+		private static final Map<String, BiConsumer<SegmentsEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", SegmentsEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", SegmentsEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", SegmentsEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<SegmentsEntry, String>)SegmentsEntry::setUuid);
-		attributeGetterFunctions.put(
-			"segmentsEntryId", SegmentsEntry::getSegmentsEntryId);
-		attributeSetterBiConsumers.put(
-			"segmentsEntryId",
-			(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setSegmentsEntryId);
-		attributeGetterFunctions.put("groupId", SegmentsEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", SegmentsEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", SegmentsEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setUserId);
-		attributeGetterFunctions.put("userName", SegmentsEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", SegmentsEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SegmentsEntry, Date>)SegmentsEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SegmentsEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SegmentsEntry, Date>)SegmentsEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"segmentsEntryKey", SegmentsEntry::getSegmentsEntryKey);
-		attributeSetterBiConsumers.put(
-			"segmentsEntryKey",
-			(BiConsumer<SegmentsEntry, String>)
-				SegmentsEntry::setSegmentsEntryKey);
-		attributeGetterFunctions.put("name", SegmentsEntry::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<SegmentsEntry, String>)SegmentsEntry::setName);
-		attributeGetterFunctions.put(
-			"description", SegmentsEntry::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setDescription);
-		attributeGetterFunctions.put("active", SegmentsEntry::getActive);
-		attributeSetterBiConsumers.put(
-			"active",
-			(BiConsumer<SegmentsEntry, Boolean>)SegmentsEntry::setActive);
-		attributeGetterFunctions.put("criteria", SegmentsEntry::getCriteria);
-		attributeSetterBiConsumers.put(
-			"criteria",
-			(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setCriteria);
-		attributeGetterFunctions.put("source", SegmentsEntry::getSource);
-		attributeSetterBiConsumers.put(
-			"source",
-			(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setSource);
-		attributeGetterFunctions.put("type", SegmentsEntry::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<SegmentsEntry, String>)SegmentsEntry::setType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", SegmentsEntry::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<SegmentsEntry, Date>)SegmentsEntry::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<SegmentsEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<SegmentsEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<SegmentsEntry, Long>)
+					SegmentsEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"segmentsEntryId",
+				(BiConsumer<SegmentsEntry, Long>)
+					SegmentsEntry::setSegmentsEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SegmentsEntry, Long>)SegmentsEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SegmentsEntry, Date>)SegmentsEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SegmentsEntry, Date>)
+					SegmentsEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"segmentsEntryKey",
+				(BiConsumer<SegmentsEntry, String>)
+					SegmentsEntry::setSegmentsEntryKey);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<SegmentsEntry, String>)
+					SegmentsEntry::setDescription);
+			attributeSetterBiConsumers.put(
+				"active",
+				(BiConsumer<SegmentsEntry, Boolean>)SegmentsEntry::setActive);
+			attributeSetterBiConsumers.put(
+				"criteria",
+				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setCriteria);
+			attributeSetterBiConsumers.put(
+				"source",
+				(BiConsumer<SegmentsEntry, String>)SegmentsEntry::setSource);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<SegmentsEntry, Date>)
+					SegmentsEntry::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -541,6 +466,16 @@ public class SegmentsEntryModelImpl
 		}
 
 		_segmentsEntryId = segmentsEntryId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalSegmentsEntryId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("segmentsEntryId"));
 	}
 
 	@JSON
@@ -1009,35 +944,6 @@ public class SegmentsEntryModelImpl
 
 	@JSON
 	@Override
-	public String getType() {
-		if (_type == null) {
-			return "";
-		}
-		else {
-			return _type;
-		}
-	}
-
-	@Override
-	public void setType(String type) {
-		if (_columnOriginalValues == Collections.EMPTY_MAP) {
-			_setColumnOriginalValues();
-		}
-
-		_type = type;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public String getOriginalType() {
-		return getColumnOriginalValue("type_");
-	}
-
-	@JSON
-	@Override
 	public Date getLastPublishDate() {
 		return _lastPublishDate;
 	}
@@ -1217,7 +1123,6 @@ public class SegmentsEntryModelImpl
 		segmentsEntryImpl.setActive(isActive());
 		segmentsEntryImpl.setCriteria(getCriteria());
 		segmentsEntryImpl.setSource(getSource());
-		segmentsEntryImpl.setType(getType());
 		segmentsEntryImpl.setLastPublishDate(getLastPublishDate());
 
 		segmentsEntryImpl.resetOriginalValues();
@@ -1259,7 +1164,6 @@ public class SegmentsEntryModelImpl
 			this.<String>getColumnOriginalValue("criteria"));
 		segmentsEntryImpl.setSource(
 			this.<String>getColumnOriginalValue("source"));
-		segmentsEntryImpl.setType(this.<String>getColumnOriginalValue("type_"));
 		segmentsEntryImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
 
@@ -1429,14 +1333,6 @@ public class SegmentsEntryModelImpl
 			segmentsEntryCacheModel.source = null;
 		}
 
-		segmentsEntryCacheModel.type = getType();
-
-		String type = segmentsEntryCacheModel.type;
-
-		if ((type != null) && (type.length() == 0)) {
-			segmentsEntryCacheModel.type = null;
-		}
-
 		Date lastPublishDate = getLastPublishDate();
 
 		if (lastPublishDate != null) {
@@ -1498,41 +1394,12 @@ public class SegmentsEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SegmentsEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SegmentsEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SegmentsEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SegmentsEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SegmentsEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SegmentsEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1555,14 +1422,14 @@ public class SegmentsEntryModelImpl
 	private boolean _active;
 	private String _criteria;
 	private String _source;
-	private String _type;
 	private Date _lastPublishDate;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<SegmentsEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1603,7 +1470,6 @@ public class SegmentsEntryModelImpl
 		_columnOriginalValues.put("active_", _active);
 		_columnOriginalValues.put("criteria", _criteria);
 		_columnOriginalValues.put("source", _source);
-		_columnOriginalValues.put("type_", _type);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 	}
 
@@ -1614,7 +1480,6 @@ public class SegmentsEntryModelImpl
 
 		attributeNames.put("uuid_", "uuid");
 		attributeNames.put("active_", "active");
-		attributeNames.put("type_", "type");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -1662,9 +1527,7 @@ public class SegmentsEntryModelImpl
 
 		columnBitmasks.put("source", 32768L);
 
-		columnBitmasks.put("type_", 65536L);
-
-		columnBitmasks.put("lastPublishDate", 131072L);
+		columnBitmasks.put("lastPublishDate", 65536L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

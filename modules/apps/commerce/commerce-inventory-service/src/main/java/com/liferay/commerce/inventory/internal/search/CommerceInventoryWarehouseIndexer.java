@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.internal.search;
@@ -35,10 +26,12 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.math.BigDecimal;
+
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CommerceInventoryWarehouseIndexer
 	extends BaseIndexer<CommerceInventoryWarehouse> {
 
@@ -66,6 +59,7 @@ public class CommerceInventoryWarehouseIndexer
 
 	public CommerceInventoryWarehouseIndexer() {
 		setFilterSearch(true);
+		setPermissionAware(false);
 	}
 
 	@Override
@@ -132,18 +126,21 @@ public class CommerceInventoryWarehouseIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Indexing inventory warehouse " + commerceInventoryWarehouse);
+				"Indexing commerce inventory warehouse " +
+					commerceInventoryWarehouse);
 		}
 
 		Document document = getBaseModelDocument(
 			CLASS_NAME, commerceInventoryWarehouse);
 
 		document.addKeyword(
-			Field.DESCRIPTION, commerceInventoryWarehouse.getDescription());
+			Field.DESCRIPTION, commerceInventoryWarehouse.getDescription(),
+			true);
 		document.addNumberSortable(
 			Field.ENTRY_CLASS_PK,
 			commerceInventoryWarehouse.getCommerceInventoryWarehouseId());
-		document.addKeyword(Field.NAME, commerceInventoryWarehouse.getName());
+		document.addKeyword(
+			Field.NAME, commerceInventoryWarehouse.getName(), true);
 		document.addKeyword(
 			FIELD_ACTIVE, commerceInventoryWarehouse.isActive());
 		document.addKeyword(
@@ -154,7 +151,7 @@ public class CommerceInventoryWarehouseIndexer
 			FIELD_STREET_1, commerceInventoryWarehouse.getStreet1());
 		document.addKeyword(FIELD_ZIP, commerceInventoryWarehouse.getZip());
 		document.addNumber(
-			"itemsQuantity", getItemsQuantity(commerceInventoryWarehouse));
+			"itemsQuantity", _getItemsQuantity(commerceInventoryWarehouse));
 		document.addNumber(
 			"latitude", commerceInventoryWarehouse.getLatitude());
 		document.addNumber(
@@ -166,7 +163,7 @@ public class CommerceInventoryWarehouseIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + commerceInventoryWarehouse +
+				"Commerce inventory warehouse " + commerceInventoryWarehouse +
 					" indexed successfully");
 		}
 
@@ -188,8 +185,8 @@ public class CommerceInventoryWarehouseIndexer
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), commerceInventoryWarehouse.getCompanyId(),
-			getDocument(commerceInventoryWarehouse), isCommitImmediately());
+			commerceInventoryWarehouse.getCompanyId(),
+			getDocument(commerceInventoryWarehouse));
 	}
 
 	@Override
@@ -203,22 +200,7 @@ public class CommerceInventoryWarehouseIndexer
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCommerceInventoryWarehouses(companyId);
-	}
-
-	protected int getItemsQuantity(
-		CommerceInventoryWarehouse commerceInventoryWarehouse) {
-
-		int count = 0;
-
-		for (CommerceInventoryWarehouseItem commerceInventoryWarehouseItem :
-				commerceInventoryWarehouse.
-					getCommerceInventoryWarehouseItems()) {
-
-			count += commerceInventoryWarehouseItem.getQuantity();
-		}
-
-		return count;
+		_reindexCommerceInventoryWarehouses(companyId);
 	}
 
 	@Override
@@ -236,7 +218,27 @@ public class CommerceInventoryWarehouseIndexer
 		return super.isUseSearchResultPermissionFilter(searchContext);
 	}
 
-	protected void reindexCommerceInventoryWarehouses(long companyId)
+	private BigDecimal _getItemsQuantity(
+		CommerceInventoryWarehouse commerceInventoryWarehouse) {
+
+		BigDecimal count = BigDecimal.ZERO;
+
+		for (CommerceInventoryWarehouseItem commerceInventoryWarehouseItem :
+				commerceInventoryWarehouse.
+					getCommerceInventoryWarehouseItems()) {
+
+			BigDecimal commerceInventoryWarehouseItemQuantity =
+				commerceInventoryWarehouseItem.getQuantity();
+
+			if (commerceInventoryWarehouseItemQuantity != null) {
+				count = count.add(commerceInventoryWarehouseItemQuantity);
+			}
+		}
+
+		return count;
+	}
+
+	private void _reindexCommerceInventoryWarehouses(long companyId)
 		throws Exception {
 
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
@@ -252,18 +254,13 @@ public class CommerceInventoryWarehouseIndexer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						long commerceInventoryWarehouseId =
-							commerceInventoryWarehouse.
-								getCommerceInventoryWarehouseId();
-
 						_log.warn(
 							"Unable to index commerce inventory warehouse " +
-								commerceInventoryWarehouseId,
+								commerceInventoryWarehouse,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.portlet.action;
@@ -23,7 +14,7 @@ import com.liferay.configuration.admin.web.internal.util.ConfigurationFormRender
 import com.liferay.configuration.admin.web.internal.util.ConfigurationModelRetriever;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationModelToDDMFormConverter;
 import com.liferay.configuration.admin.web.internal.util.DDMFormValuesToPropertiesConverter;
-import com.liferay.configuration.admin.web.internal.util.ResourceBundleLoaderProvider;
+import com.liferay.configuration.admin.web.internal.util.ResourceBundleLoaderProviderUtil;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
@@ -46,6 +37,10 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -55,10 +50,6 @@ import java.util.Hashtable;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.cm.Configuration;
@@ -71,11 +62,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/configuration_admin/bind_configuration"
 	},
 	service = MVCActionCommand.class
@@ -116,7 +106,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 			configurationModel = configurationModels.get(pid);
 		}
 
-		configurationModel = _getConfigurationModel(
+		configurationModel = new ConfigurationModel(
 			_configurationModelRetriever.getConfiguration(
 				pid, configurationScopeDisplayContext.getScope(),
 				configurationScopeDisplayContext.getScopePK()),
@@ -127,7 +117,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 				_log.debug("Writing a new factory instance for service " + pid);
 			}
 
-			configurationModel = _getConfigurationModel(
+			configurationModel = new ConfigurationModel(
 				null, configurationModel);
 		}
 
@@ -144,28 +134,28 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 						configurationScopeDisplayContext.getScopePK()));
 			}
 
-			configurationModel = _getConfigurationModel(
+			configurationModel = new ConfigurationModel(
 				null, configurationModel);
 		}
 
 		Dictionary<String, Object> properties = null;
 
-		Map<String, Object> requestParameters = getRequestParameters(
-			actionRequest, pid);
+		Map<String, Object> requestParameters = _getRequestParameters(
+			actionRequest, configurationModel.getBaseID());
 
 		if (requestParameters != null) {
-			properties = toDictionary(requestParameters);
+			properties = _toDictionary(requestParameters);
 		}
 		else {
 			ResourceBundleLoader resourceBundleLoader =
-				_resourceBundleLoaderProvider.getResourceBundleLoader(
+				ResourceBundleLoaderProviderUtil.getResourceBundleLoader(
 					configurationModel.getBundleSymbolicName());
 
 			ResourceBundle resourceBundle =
 				resourceBundleLoader.loadResourceBundle(
 					themeDisplay.getLocale());
 
-			properties = getDDMRequestParameters(
+			properties = _getDDMRequestParameters(
 				actionRequest, configurationModel, resourceBundle);
 		}
 
@@ -176,7 +166,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 		}
 
 		try {
-			configureTargetService(
+			_configureTargetService(
 				configurationModel, properties,
 				configurationScopeDisplayContext.getScope(),
 				configurationScopeDisplayContext.getScopePK());
@@ -205,7 +195,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 		return true;
 	}
 
-	protected void configureTargetService(
+	private void _configureTargetService(
 			ConfigurationModel configurationModel,
 			Dictionary<String, Object> properties,
 			ExtendedObjectClassDefinition.Scope scope, Serializable scopePK)
@@ -299,13 +289,13 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 		}
 	}
 
-	protected DDMFormValues getDDMFormValues(
+	private DDMFormValues _getDDMFormValues(
 		ActionRequest actionRequest, DDMForm ddmForm) {
 
 		return _ddmFormValuesFactory.create(actionRequest, ddmForm);
 	}
 
-	protected Dictionary<String, Object> getDDMRequestParameters(
+	private Dictionary<String, Object> _getDDMRequestParameters(
 		ActionRequest actionRequest, ConfigurationModel configurationModel,
 		ResourceBundle resourceBundle) {
 
@@ -318,7 +308,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 					configurationModel, themeDisplay.getLocale(),
 					resourceBundle);
 
-		DDMFormValues ddmFormValues = getDDMFormValues(
+		DDMFormValues ddmFormValues = _getDDMFormValues(
 			actionRequest, configurationModelToDDMFormConverter.getDDMForm());
 
 		LocationVariableResolver locationVariableResolver =
@@ -335,7 +325,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 		return ddmFormValuesToPropertiesConverter.getProperties();
 	}
 
-	protected Map<String, Object> getRequestParameters(
+	private Map<String, Object> _getRequestParameters(
 		ActionRequest actionRequest, String pid) {
 
 		ConfigurationFormRenderer configurationFormRenderer =
@@ -346,7 +336,7 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 			_portal.getHttpServletRequest(actionRequest));
 	}
 
-	protected Dictionary<String, Object> toDictionary(
+	private Dictionary<String, Object> _toDictionary(
 		Map<String, Object> requestParameters) {
 
 		Dictionary<String, Object> properties = new Hashtable<>();
@@ -356,17 +346,6 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 		}
 
 		return properties;
-	}
-
-	private ConfigurationModel _getConfigurationModel(
-		Configuration configuration, ConfigurationModel configurationModel) {
-
-		return new ConfigurationModel(
-			configurationModel.getBundleLocation(),
-			configurationModel.getBundleSymbolicName(),
-			configurationModel.getClassLoader(), configuration,
-			configurationModel.getExtendedObjectClassDefinition(),
-			configurationModel.isFactory());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -390,9 +369,6 @@ public class BindConfigurationMVCActionCommand implements MVCActionCommand {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private ResourceBundleLoaderProvider _resourceBundleLoaderProvider;
 
 	@Reference
 	private SettingsLocatorHelper _settingsLocatorHelper;

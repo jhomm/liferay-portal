@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {config} from '../../../app/config/index';
@@ -21,35 +12,44 @@ export default function removeExperience({
 	segmentsExperienceId,
 	selectedExperienceId,
 }) {
-	return (dispatch) => {
+	return (dispatch, getState) => {
 		if (segmentsExperienceId === selectedExperienceId) {
+			const loadedSegmentsExperiences =
+				getState().loadedSegmentsExperiences || [];
+
 			return ExperienceService.selectExperience({
 				body: {
+					loadFragmentEntryLinks: !loadedSegmentsExperiences.includes(
+						config.defaultSegmentsExperienceId
+					),
 					segmentsExperienceId: config.defaultSegmentsExperienceId,
 				},
 				dispatch,
-			}).then((portletIds) => {
-				dispatch(
-					selectExperienceAction({
-						portletIds,
-						segmentsExperienceId:
-							config.defaultSegmentsExperienceId,
-					})
-				);
-
-				ExperienceService.removeExperience({
-					body: {
-						segmentsExperienceId,
-					},
-					dispatch,
-				}).then(() => {
+			})
+				.then(({fragmentEntryLinks, portletIds}) => {
 					return dispatch(
-						deleteExperienceAction({
-							segmentsExperienceId,
+						selectExperienceAction({
+							fragmentEntryLinks,
+							portletIds,
+							segmentsExperienceId:
+								config.defaultSegmentsExperienceId,
 						})
 					);
+				})
+				.then(() => {
+					ExperienceService.removeExperience({
+						body: {
+							segmentsExperienceId,
+						},
+						dispatch,
+					}).then(() => {
+						return dispatch(
+							deleteExperienceAction({
+								segmentsExperienceId,
+							})
+						);
+					});
 				});
-			});
 		}
 		else {
 			return ExperienceService.removeExperience({

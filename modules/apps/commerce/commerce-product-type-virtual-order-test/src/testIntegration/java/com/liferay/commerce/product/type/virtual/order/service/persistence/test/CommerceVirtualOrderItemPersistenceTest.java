@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.service.persistence.test;
@@ -130,6 +121,8 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		CommerceVirtualOrderItem newCommerceVirtualOrderItem =
 			_persistence.create(pk);
 
+		newCommerceVirtualOrderItem.setMvccVersion(RandomTestUtil.nextLong());
+
 		newCommerceVirtualOrderItem.setUuid(RandomTestUtil.randomString());
 
 		newCommerceVirtualOrderItem.setGroupId(RandomTestUtil.nextLong());
@@ -147,16 +140,10 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		newCommerceVirtualOrderItem.setCommerceOrderItemId(
 			RandomTestUtil.nextLong());
 
-		newCommerceVirtualOrderItem.setFileEntryId(RandomTestUtil.nextLong());
-
-		newCommerceVirtualOrderItem.setUrl(RandomTestUtil.randomString());
-
 		newCommerceVirtualOrderItem.setActivationStatus(
 			RandomTestUtil.nextInt());
 
 		newCommerceVirtualOrderItem.setDuration(RandomTestUtil.nextLong());
-
-		newCommerceVirtualOrderItem.setUsages(RandomTestUtil.nextInt());
 
 		newCommerceVirtualOrderItem.setMaxUsages(RandomTestUtil.nextInt());
 
@@ -173,6 +160,9 @@ public class CommerceVirtualOrderItemPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommerceVirtualOrderItem.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommerceVirtualOrderItem.getMvccVersion(),
+			newCommerceVirtualOrderItem.getMvccVersion());
 		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getUuid(),
 			newCommerceVirtualOrderItem.getUuid());
@@ -205,20 +195,11 @@ public class CommerceVirtualOrderItemPersistenceTest {
 			existingCommerceVirtualOrderItem.getCommerceOrderItemId(),
 			newCommerceVirtualOrderItem.getCommerceOrderItemId());
 		Assert.assertEquals(
-			existingCommerceVirtualOrderItem.getFileEntryId(),
-			newCommerceVirtualOrderItem.getFileEntryId());
-		Assert.assertEquals(
-			existingCommerceVirtualOrderItem.getUrl(),
-			newCommerceVirtualOrderItem.getUrl());
-		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getActivationStatus(),
 			newCommerceVirtualOrderItem.getActivationStatus());
 		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getDuration(),
 			newCommerceVirtualOrderItem.getDuration());
-		Assert.assertEquals(
-			existingCommerceVirtualOrderItem.getUsages(),
-			newCommerceVirtualOrderItem.getUsages());
 		Assert.assertEquals(
 			existingCommerceVirtualOrderItem.getMaxUsages(),
 			newCommerceVirtualOrderItem.getMaxUsages());
@@ -299,13 +280,12 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceVirtualOrderItem", "uuid", true,
+			"CommerceVirtualOrderItem", "mvccVersion", true, "uuid", true,
 			"commerceVirtualOrderItemId", true, "groupId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "commerceOrderItemId", true, "fileEntryId",
-			true, "url", true, "activationStatus", true, "duration", true,
-			"usages", true, "maxUsages", true, "active", true, "startDate",
-			true, "endDate", true);
+			"modifiedDate", true, "commerceOrderItemId", true,
+			"activationStatus", true, "duration", true, "maxUsages", true,
+			"active", true, "startDate", true, "endDate", true);
 	}
 
 	@Test
@@ -629,6 +609,8 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		CommerceVirtualOrderItem commerceVirtualOrderItem = _persistence.create(
 			pk);
 
+		commerceVirtualOrderItem.setMvccVersion(RandomTestUtil.nextLong());
+
 		commerceVirtualOrderItem.setUuid(RandomTestUtil.randomString());
 
 		commerceVirtualOrderItem.setGroupId(RandomTestUtil.nextLong());
@@ -646,15 +628,9 @@ public class CommerceVirtualOrderItemPersistenceTest {
 		commerceVirtualOrderItem.setCommerceOrderItemId(
 			RandomTestUtil.nextLong());
 
-		commerceVirtualOrderItem.setFileEntryId(RandomTestUtil.nextLong());
-
-		commerceVirtualOrderItem.setUrl(RandomTestUtil.randomString());
-
 		commerceVirtualOrderItem.setActivationStatus(RandomTestUtil.nextInt());
 
 		commerceVirtualOrderItem.setDuration(RandomTestUtil.nextLong());
-
-		commerceVirtualOrderItem.setUsages(RandomTestUtil.nextInt());
 
 		commerceVirtualOrderItem.setMaxUsages(RandomTestUtil.nextInt());
 

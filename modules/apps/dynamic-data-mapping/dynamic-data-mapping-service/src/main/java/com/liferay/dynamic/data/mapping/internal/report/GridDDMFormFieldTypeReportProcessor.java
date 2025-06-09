@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.report;
@@ -24,7 +15,7 @@ import com.liferay.dynamic.data.mapping.report.DDMFormFieldTypeReportProcessor;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 
@@ -38,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcos Martins
  */
 @Component(
-	immediate = true, property = "ddm.form.field.type.name=grid",
+	property = "ddm.form.field.type.name=grid",
 	service = DDMFormFieldTypeReportProcessor.class
 )
 public class GridDDMFormFieldTypeReportProcessor
@@ -54,7 +45,7 @@ public class GridDDMFormFieldTypeReportProcessor
 
 		Value value = ddmFormFieldValue.getValue();
 
-		JSONObject valueJSONObject = JSONFactoryUtil.createJSONObject(
+		JSONObject valueJSONObject = _jsonFactory.createJSONObject(
 			value.getString(value.getDefaultLocale()));
 
 		Iterator<String> iterator = valueJSONObject.keys();
@@ -65,7 +56,7 @@ public class GridDDMFormFieldTypeReportProcessor
 			JSONObject rowJSONObject = valuesJSONObject.getJSONObject(rowName);
 
 			if (rowJSONObject == null) {
-				rowJSONObject = JSONFactoryUtil.createJSONObject();
+				rowJSONObject = _jsonFactory.createJSONObject();
 			}
 
 			String columnName = valueJSONObject.getString(rowName);
@@ -114,7 +105,7 @@ public class GridDDMFormFieldTypeReportProcessor
 	private JSONArray _getOptionValuesJSONArray(
 		DDMFormField ddmFormField, String propertyName) {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		DDMFormFieldOptions ddmFormFieldOptions =
 			(DDMFormFieldOptions)ddmFormField.getProperty(propertyName);
@@ -127,5 +118,8 @@ public class GridDDMFormFieldTypeReportProcessor
 
 		return jsonArray;
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

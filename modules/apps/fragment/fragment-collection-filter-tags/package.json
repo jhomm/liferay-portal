@@ -1,0 +1,15 @@
+{
+	"dependencies": {
+		"@liferay/fragment-renderer-collection-filter-impl": "*",
+		"asset-taglib": "*",
+		"react": "18.2.0"
+	},
+	"main": "js/index.tsx",
+	"name": "@liferay/fragment-collection-filter-tags",
+	"scripts": {
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format"
+	},
+	"version": "1.0.22"
+}

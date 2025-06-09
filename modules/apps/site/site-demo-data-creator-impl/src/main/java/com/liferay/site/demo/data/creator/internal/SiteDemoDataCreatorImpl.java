@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.demo.data.creator.internal;
@@ -24,7 +15,7 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -54,7 +45,7 @@ public class SiteDemoDataCreatorImpl implements SiteDemoDataCreator {
 	public Group create(long companyId, String name) throws PortalException {
 		Company company = _companyLocalService.fetchCompany(companyId);
 
-		User user = company.getDefaultUser();
+		User user = company.getGuestUser();
 
 		Map<Locale, String> nameMap = HashMapBuilder.put(
 			LocaleUtil.getDefault(), name
@@ -63,7 +54,7 @@ public class SiteDemoDataCreatorImpl implements SiteDemoDataCreator {
 		Map<Locale, String> descriptionMap = new HashMap<>();
 		int type = GroupConstants.TYPE_SITE_OPEN;
 		String friendlyURL =
-			StringPool.SLASH + FriendlyURLNormalizerUtil.normalize(name);
+			StringPool.SLASH + _friendlyURLNormalizer.normalize(name);
 		boolean site = true;
 		boolean active = true;
 		boolean manualMembership = true;
@@ -89,7 +80,7 @@ public class SiteDemoDataCreatorImpl implements SiteDemoDataCreator {
 			}
 			catch (PortalException portalException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(portalException, portalException);
+					_log.warn(portalException);
 				}
 			}
 
@@ -102,6 +93,9 @@ public class SiteDemoDataCreatorImpl implements SiteDemoDataCreator {
 
 	@Reference
 	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
 
 	private final List<Long> _groupIds = new CopyOnWriteArrayList<>();
 

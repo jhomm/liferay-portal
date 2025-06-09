@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.internal.util.v1_0;
@@ -21,14 +12,15 @@ import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramEntry;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramEntryService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.MappedProduct;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 
 import java.io.Serializable;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -49,8 +41,9 @@ public class MappedProductUtil {
 
 		long skuId = GetterUtil.getLong(mappedProduct.getSkuId());
 
-		CPInstance cpInstance = cpInstanceService.fetchByExternalReferenceCode(
-			mappedProduct.getSkuExternalReferenceCode(), companyId);
+		CPInstance cpInstance =
+			cpInstanceService.fetchCPInstanceByExternalReferenceCode(
+				mappedProduct.getSkuExternalReferenceCode(), companyId);
 
 		if (cpInstance != null) {
 			skuId = cpInstance.getCPInstanceId();
@@ -70,12 +63,8 @@ public class MappedProductUtil {
 		ServiceContext serviceContext = serviceContextHelper.getServiceContext(
 			groupId);
 
-		Map<String, Serializable> expandoBridgeAttributes =
-			getExpandoBridgeAttributes(companyId, locale, mappedProduct);
-
-		if (expandoBridgeAttributes != null) {
-			serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
-		}
+		serviceContext.setExpandoBridgeAttributes(
+			getExpandoBridgeAttributes(companyId, locale, mappedProduct));
 
 		return csDiagramEntryService.addCSDiagramEntry(
 			cpDefinitionId, skuId, productId, isDiagram(null, mappedProduct),
@@ -112,9 +101,16 @@ public class MappedProductUtil {
 	public static Map<String, Serializable> getExpandoBridgeAttributes(
 		long companyId, Locale locale, MappedProduct mappedProduct) {
 
-		return CustomFieldsUtil.toMap(
-			CSDiagramEntry.class.getName(), companyId,
-			mappedProduct.getCustomFields(), locale);
+		Map<String, Serializable> expandoBridgeAttributes =
+			CustomFieldsUtil.toMap(
+				CSDiagramEntry.class.getName(), companyId,
+				mappedProduct.getCustomFields(), locale);
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		return expandoBridgeAttributes;
 	}
 
 	public static boolean isDiagram(
@@ -143,12 +139,8 @@ public class MappedProductUtil {
 		ServiceContext serviceContext = serviceContextHelper.getServiceContext(
 			groupId);
 
-		Map<String, Serializable> expandoBridgeAttributes =
-			getExpandoBridgeAttributes(companyId, locale, mappedProduct);
-
-		if (expandoBridgeAttributes != null) {
-			serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
-		}
+		serviceContext.setExpandoBridgeAttributes(
+			getExpandoBridgeAttributes(companyId, locale, mappedProduct));
 
 		return csDiagramEntryService.updateCSDiagramEntry(
 			csDiagramEntry.getCSDiagramEntryId(),

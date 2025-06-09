@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.task.progress;
 
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -30,7 +22,7 @@ import java.util.zip.ZipOutputStream;
  */
 public abstract class BaseBatchEngineTaskProgressImplTestCase {
 
-	protected InputStream compress(String content, String contentType)
+	protected InputStream compress(byte[] bytes, String contentType)
 		throws Exception {
 
 		try (ByteArrayOutputStream byteArrayOutputStream =
@@ -44,8 +36,6 @@ public abstract class BaseBatchEngineTaskProgressImplTestCase {
 
 				zipOutputStream.putNextEntry(zipEntry);
 
-				byte[] bytes = content.getBytes();
-
 				zipOutputStream.write(bytes, 0, bytes.length);
 			}
 
@@ -56,7 +46,7 @@ public abstract class BaseBatchEngineTaskProgressImplTestCase {
 
 	protected static final int PRODUCTS_COUNT = 10;
 
-	protected final String productJSON = JSONUtil.put(
+	protected final JSONObject productJSONObject = JSONUtil.put(
 		"active", true
 	).put(
 		"catalogId", 111
@@ -68,6 +58,6 @@ public abstract class BaseBatchEngineTaskProgressImplTestCase {
 		"tags", new String[0]
 	).put(
 		"workflowStatusInfo", MapUtil.singletonDictionary("code", 0)
-	).toString();
+	);
 
 }

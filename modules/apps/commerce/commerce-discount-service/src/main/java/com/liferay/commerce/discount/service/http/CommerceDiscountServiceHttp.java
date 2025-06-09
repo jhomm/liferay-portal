@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Marco Leo
- * @see CommerceDiscountServiceSoap
  * @generated
  */
 public class CommerceDiscountServiceHttp {
@@ -459,94 +449,6 @@ public class CommerceDiscountServiceHttp {
 	}
 
 	public static com.liferay.commerce.discount.model.CommerceDiscount
-			fetchByExternalReferenceCode(
-				HttpPrincipal httpPrincipal, long companyId,
-				String externalReferenceCode)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		try {
-			MethodKey methodKey = new MethodKey(
-				CommerceDiscountServiceUtil.class,
-				"fetchByExternalReferenceCode",
-				_fetchByExternalReferenceCodeParameterTypes7);
-
-			MethodHandler methodHandler = new MethodHandler(
-				methodKey, companyId, externalReferenceCode);
-
-			Object returnObj = null;
-
-			try {
-				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
-			}
-			catch (Exception exception) {
-				if (exception instanceof
-						com.liferay.portal.kernel.exception.PortalException) {
-
-					throw (com.liferay.portal.kernel.exception.PortalException)
-						exception;
-				}
-
-				throw new com.liferay.portal.kernel.exception.SystemException(
-					exception);
-			}
-
-			return (com.liferay.commerce.discount.model.CommerceDiscount)
-				returnObj;
-		}
-		catch (com.liferay.portal.kernel.exception.SystemException
-					systemException) {
-
-			_log.error(systemException, systemException);
-
-			throw systemException;
-		}
-	}
-
-	public static com.liferay.commerce.discount.model.CommerceDiscount
-			fetchByExternalReferenceCode(
-				HttpPrincipal httpPrincipal, String externalReferenceCode,
-				long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		try {
-			MethodKey methodKey = new MethodKey(
-				CommerceDiscountServiceUtil.class,
-				"fetchByExternalReferenceCode",
-				_fetchByExternalReferenceCodeParameterTypes8);
-
-			MethodHandler methodHandler = new MethodHandler(
-				methodKey, externalReferenceCode, companyId);
-
-			Object returnObj = null;
-
-			try {
-				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
-			}
-			catch (Exception exception) {
-				if (exception instanceof
-						com.liferay.portal.kernel.exception.PortalException) {
-
-					throw (com.liferay.portal.kernel.exception.PortalException)
-						exception;
-				}
-
-				throw new com.liferay.portal.kernel.exception.SystemException(
-					exception);
-			}
-
-			return (com.liferay.commerce.discount.model.CommerceDiscount)
-				returnObj;
-		}
-		catch (com.liferay.portal.kernel.exception.SystemException
-					systemException) {
-
-			_log.error(systemException, systemException);
-
-			throw systemException;
-		}
-	}
-
-	public static com.liferay.commerce.discount.model.CommerceDiscount
 			fetchCommerceDiscount(
 				HttpPrincipal httpPrincipal, long commerceDiscountId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -554,10 +456,54 @@ public class CommerceDiscountServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceDiscountServiceUtil.class, "fetchCommerceDiscount",
-				_fetchCommerceDiscountParameterTypes9);
+				_fetchCommerceDiscountParameterTypes7);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commerceDiscountId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.discount.model.CommerceDiscount)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.commerce.discount.model.CommerceDiscount
+			fetchCommerceDiscountByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommerceDiscountServiceUtil.class,
+				"fetchCommerceDiscountByExternalReferenceCode",
+				_fetchCommerceDiscountByExternalReferenceCodeParameterTypes8);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
 
 			Object returnObj = null;
 
@@ -596,7 +542,7 @@ public class CommerceDiscountServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceDiscountServiceUtil.class, "getCommerceDiscount",
-				_getCommerceDiscountParameterTypes10);
+				_getCommerceDiscountParameterTypes9);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commerceDiscountId);
@@ -640,10 +586,55 @@ public class CommerceDiscountServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceDiscountServiceUtil.class, "getCommerceDiscounts",
-				_getCommerceDiscountsParameterTypes11);
+				_getCommerceDiscountsParameterTypes10);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, couponCode);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (java.util.List
+				<com.liferay.commerce.discount.model.CommerceDiscount>)
+					returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static java.util.List
+		<com.liferay.commerce.discount.model.CommerceDiscount>
+				getCommerceDiscounts(
+					HttpPrincipal httpPrincipal, long companyId, String level,
+					boolean active, int status)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommerceDiscountServiceUtil.class, "getCommerceDiscounts",
+				_getCommerceDiscountsParameterTypes11);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, companyId, level, active, status);
 
 			Object returnObj = null;
 
@@ -1197,20 +1188,17 @@ public class CommerceDiscountServiceHttp {
 		};
 	private static final Class<?>[] _deleteCommerceDiscountParameterTypes6 =
 		new Class[] {long.class};
-	private static final Class<?>[]
-		_fetchByExternalReferenceCodeParameterTypes7 = new Class[] {
-			long.class, String.class
-		};
-	private static final Class<?>[]
-		_fetchByExternalReferenceCodeParameterTypes8 = new Class[] {
-			String.class, long.class
-		};
-	private static final Class<?>[] _fetchCommerceDiscountParameterTypes9 =
+	private static final Class<?>[] _fetchCommerceDiscountParameterTypes7 =
 		new Class[] {long.class};
-	private static final Class<?>[] _getCommerceDiscountParameterTypes10 =
+	private static final Class<?>[]
+		_fetchCommerceDiscountByExternalReferenceCodeParameterTypes8 =
+			new Class[] {String.class, long.class};
+	private static final Class<?>[] _getCommerceDiscountParameterTypes9 =
 		new Class[] {long.class};
-	private static final Class<?>[] _getCommerceDiscountsParameterTypes11 =
+	private static final Class<?>[] _getCommerceDiscountsParameterTypes10 =
 		new Class[] {long.class, String.class};
+	private static final Class<?>[] _getCommerceDiscountsParameterTypes11 =
+		new Class[] {long.class, String.class, boolean.class, int.class};
 	private static final Class<?>[] _getCommerceDiscountsCountParameterTypes12 =
 		new Class[] {long.class, String.class};
 	private static final Class<?>[]

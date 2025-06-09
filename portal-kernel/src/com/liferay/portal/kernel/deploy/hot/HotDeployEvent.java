@@ -1,41 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.deploy.hot;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.deploy.DeployManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.plugin.PluginPackage;
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.PortalLifecycle;
 import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.servlet.ServletContext;
+
 import java.io.IOException;
 import java.io.InputStream;
 
-import java.util.List;
 import java.util.Properties;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentLinkedQueue;
-
-import javax.servlet.ServletContext;
 
 /**
  * @author Ivica Cardic
@@ -59,20 +44,8 @@ public class HotDeployEvent {
 			initDependentServletContextNames();
 		}
 		catch (IOException ioException) {
-			_log.error(ioException, ioException);
+			_log.error(ioException);
 		}
-	}
-
-	public void addPortalLifecycle(PortalLifecycle portalLifecycle) {
-		_portalLifecycles.add(portalLifecycle);
-	}
-
-	public void flushInits() {
-		for (PortalLifecycle portalLifecycle : _portalLifecycles) {
-			portalLifecycle.portalInit();
-		}
-
-		_portalLifecycles.clear();
 	}
 
 	public ClassLoader getContextClassLoader() {
@@ -102,27 +75,6 @@ public class HotDeployEvent {
 	protected void initDependentServletContextNames() throws IOException {
 		if (!DependencyManagementThreadLocal.isEnabled() || isWAB()) {
 			return;
-		}
-
-		List<String[]> levelsRequiredDeploymentContexts =
-			DeployManagerUtil.getLevelsRequiredDeploymentContexts();
-
-		for (String[] levelRequiredDeploymentContexts :
-				levelsRequiredDeploymentContexts) {
-
-			if (ArrayUtil.contains(
-					levelRequiredDeploymentContexts,
-					_servletContext.getServletContextName())) {
-
-				break;
-			}
-
-			for (String levelRequiredDeploymentContext :
-					levelRequiredDeploymentContexts) {
-
-				_dependentServletContextNames.add(
-					levelRequiredDeploymentContext);
-			}
 		}
 
 		InputStream inputStream = _servletContext.getResourceAsStream(
@@ -177,8 +129,6 @@ public class HotDeployEvent {
 	private final ClassLoader _contextClassLoader;
 	private final Set<String> _dependentServletContextNames = new TreeSet<>();
 	private PluginPackage _pluginPackage;
-	private final Queue<PortalLifecycle> _portalLifecycles =
-		new ConcurrentLinkedQueue<>();
 	private final ServletContext _servletContext;
 
 }

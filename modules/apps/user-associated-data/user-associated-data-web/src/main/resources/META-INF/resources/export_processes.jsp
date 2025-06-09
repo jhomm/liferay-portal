@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,9 +23,9 @@ UADExportProcessDisplayContext uadExportProcessDisplayContext = new UADExportPro
 			cssClass="lfr-title-column"
 		>
 			<div id="<portlet:namespace />exportStatus">
-				<h5>
+				<div class="h5">
 					<liferay-ui:message key="<%= UADLanguageUtil.getApplicationName(UADExportProcessUtil.getApplicationKey(backgroundTask), locale) %>" />
-				</h5>
+				</div>
 
 				<clay:label
 					displayType="<%= UADExportProcessUtil.getStatusStyle(backgroundTask.getStatus()) %>"
@@ -48,9 +39,9 @@ UADExportProcessDisplayContext uadExportProcessDisplayContext = new UADExportPro
 		%>
 
 		<liferay-ui:search-container-column-text
-			cssClass="lfr-create-date-column table-cell-expand"
+			cssClass="lfr-create-date-column table-cell-expand text-nowrap"
 		>
-			<%= LanguageUtil.get(request, "create-date") + ": " + dateFormat.format(backgroundTask.getCreateDate()) %>
+			<liferay-ui:message key="create-date" />: <%= dateFormat.format(backgroundTask.getCreateDate()) %>
 
 			<c:if test="<%= backgroundTask.isInProgress() %>">
 
@@ -65,14 +56,14 @@ UADExportProcessDisplayContext uadExportProcessDisplayContext = new UADExportPro
 		</liferay-ui:search-container-column-text>
 
 		<liferay-ui:search-container-column-text
-			cssClass="lfr-completion-date-column table-cell-expand"
+			cssClass="lfr-completion-date-column table-cell-expand text-nowrap"
 		>
 			<c:choose>
 				<c:when test="<%= backgroundTask.isCompleted() %>">
-					<%= LanguageUtil.get(request, "completion-date") + ": " + dateFormat.format(backgroundTask.getCompletionDate()) %>
+					<liferay-ui:message key="completion-date" />: <%= dateFormat.format(backgroundTask.getCompletionDate()) %>
 				</c:when>
 				<c:otherwise>
-					<%= LanguageUtil.get(request, "in-progress") %>
+					<liferay-ui:message key="in-progress" />
 				</c:otherwise>
 			</c:choose>
 		</liferay-ui:search-container-column-text>

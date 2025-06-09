@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -41,6 +32,7 @@ import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -54,6 +46,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -68,6 +61,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.document.library.kernel.model.DLFileEntry"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -96,34 +94,21 @@ public interface DLFileEntryLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public DLFileEntry addDLFileEntry(DLFileEntry dlFileEntry);
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addFileEntry(String, long, long, long, long, String, String,
-	 String, String, String, long, Map, File, InputStream, long,
-	 Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	public DLFileEntry addFileEntry(
-			long userId, long groupId, long repositoryId, long folderId,
-			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, long fileEntryTypeId,
-			Map<String, DDMFormValues> ddmFormValuesMap, File file,
-			InputStream inputStream, long size, ServiceContext serviceContext)
-		throws PortalException;
-
 	public DLFileEntry addFileEntry(
 			String externalReferenceCode, long userId, long groupId,
 			long repositoryId, long folderId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			long fileEntryTypeId, Map<String, DDMFormValues> ddmFormValuesMap,
-			File file, InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, long fileEntryTypeId,
+			Map<String, DDMFormValues> ddmFormValuesMap, File file,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	public DLFileVersion cancelCheckOut(long userId, long fileEntryId)
 		throws PortalException;
 
-	public void checkFileEntries(long checkInterval) throws PortalException;
+	public void checkFileEntries(long companyId, long checkInterval)
+		throws PortalException;
 
 	public void checkInFileEntry(
 			long userId, long fileEntryId,
@@ -158,13 +143,14 @@ public interface DLFileEntryLocalService
 	public void convertExtraSettings(String[] keys) throws PortalException;
 
 	public DLFileEntry copyFileEntry(
-			long userId, long groupId, long repositoryId, long fileEntryId,
-			long destFolderId, ServiceContext serviceContext)
+			long userId, long groupId, long repositoryId,
+			long sourceFileEntryId, long targetFolderId, String fileName,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void copyFileEntryMetadata(
 			long companyId, long fileEntryTypeId, long fileEntryId,
-			long fromFileVersionId, long toFileVersionId,
+			long sourceFileVersionId, long targetFileVersionId,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -231,6 +217,11 @@ public interface DLFileEntryLocalService
 
 	@Indexable(type = IndexableType.DELETE)
 	public DLFileEntry deleteFileEntry(long userId, long fileEntryId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.DELETE)
+	public DLFileEntry deleteFileEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -330,24 +321,9 @@ public interface DLFileEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry fetchDLFileEntry(long fileEntryId);
 
-	/**
-	 * Returns the document library file entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the document library file entry's external reference code
-	 * @return the matching document library file entry, or <code>null</code> if a matching document library file entry could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry fetchDLFileEntryByExternalReferenceCode(
-		long groupId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchDLFileEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public DLFileEntry fetchDLFileEntryByReferenceCode(
-		long groupId, String externalReferenceCode);
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the document library file entry matching the UUID and group.
@@ -381,6 +357,16 @@ public interface DLFileEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry fetchFileEntryByName(
 		long groupId, long folderId, String name);
+
+	public void forEachFileEntry(
+			long companyId, Consumer<DLFileEntry> consumer, long maximumSize,
+			String[] mimeTypes)
+		throws PortalException;
+
+	public void forEachFileEntry(
+			long companyId, long classNameId, Consumer<DLFileEntry> consumer,
+			long maximumSize, String[] mimeTypes)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -450,17 +436,9 @@ public interface DLFileEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry getDLFileEntry(long fileEntryId) throws PortalException;
 
-	/**
-	 * Returns the document library file entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the document library file entry's external reference code
-	 * @return the matching document library file entry
-	 * @throws PortalException if a matching document library file entry could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry getDLFileEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -531,6 +509,10 @@ public interface DLFileEntryLocalService
 	public List<DLFileEntry> getFileEntries(long folderId, String name);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DLFileEntry> getFileEntriesByClassNameIdAndTreePath(
+		long classNameId, String treePath);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFileEntriesCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -559,7 +541,7 @@ public interface DLFileEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry getFileEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -575,6 +557,10 @@ public interface DLFileEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileEntry getFileEntryByUuidAndGroupId(String uuid, long groupId)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, Long> getFileEntryTypeIds(
+		long companyId, long[] groupIds, String treePath);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DLFileEntry> getGroupFileEntries(
@@ -709,36 +695,16 @@ public interface DLFileEntryLocalService
 
 	public DLFileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
 			long fileEntryTypeId, Map<String, DDMFormValues> ddmFormValuesMap,
-			File file, InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #updateFileEntry(long, long, String, String, String, String, String, DLVersionNumberIncrease, long, Map, File, InputStream, long, Date, Date, ServiceContext)}
-	 */
-	@Deprecated
-	public DLFileEntry updateFileEntry(
-			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease,
-			long fileEntryTypeId, Map<String, DDMFormValues> ddmFormValuesMap,
-			File file, InputStream inputStream, long size,
-			ServiceContext serviceContext)
+			File file, InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	public DLFileEntry updateFileEntryType(
 			long userId, long fileEntryId, long fileEntryTypeId,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	public void updateSmallImage(long smallImageId, long largeImageId)
 		throws PortalException;
 
 	public DLFileEntry updateStatus(

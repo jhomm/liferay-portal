@@ -1,0 +1,31 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.frontend.data.set.model;
+
+import java.util.HashMap;
+
+/**
+ * @author Luca Pellizzon
+ */
+public class FDSSortItem extends HashMap<String, Object> {
+
+	public void setActive(Boolean active) {
+		put("active", active);
+	}
+
+	public void setDirection(String direction) {
+		put("direction", direction);
+	}
+
+	public void setKey(String key) {
+		put("key", key);
+	}
+
+	public void setLabel(String label) {
+		put("label", label);
+	}
+
+}

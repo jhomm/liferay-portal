@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useContext, useState} from 'react';
@@ -18,7 +9,7 @@ import {ITEM_TYPES} from '../config/constants/itemTypes';
 import {LAYOUT_DATA_ITEM_TYPES} from '../config/constants/layoutDataItemTypes';
 import {CollectionItemContext, INITIAL_STATE} from './CollectionItemContext';
 import {
-	useActiveItemId,
+	useActiveItemIds,
 	useActiveItemType,
 	useIsActive,
 } from './ControlsContext';
@@ -40,7 +31,7 @@ export function CollectionActiveItemContextProvider({children}) {
 }
 
 export function useSetCollectionActiveItemContext(itemId) {
-	const activeItemId = useActiveItemId();
+	const activeItemIds = useActiveItemIds();
 	const activeItemType = useActiveItemType();
 	const isActive = useIsActive();
 	const collectionContext = useContext(CollectionItemContext);
@@ -51,13 +42,17 @@ export function useSetCollectionActiveItemContext(itemId) {
 		[itemId]
 	);
 
+	const activeItemIdsIsEditable = () =>
+		activeItemIds.some((itemId) =>
+			itemId?.startsWith(item.config.fragmentEntryLinkId)
+		);
+
 	if (
 		isActive(itemId) ||
 		(item &&
 			item.type === LAYOUT_DATA_ITEM_TYPES.fragment &&
 			activeItemType === ITEM_TYPES.editable &&
-			activeItemId &&
-			activeItemId.startsWith(item.config.fragmentEntryLinkId))
+			activeItemIdsIsEditable())
 	) {
 		setState(collectionContext);
 	}

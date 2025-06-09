@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.list.type.client.serdes.v1_0;
 
 import com.liferay.headless.admin.list.type.client.dto.v1_0.ListTypeEntry;
 import com.liferay.headless.admin.list.type.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -25,8 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Gabriel Albuquerque
@@ -59,7 +50,7 @@ public class ListTypeEntrySerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (listTypeEntry.getActions() != null) {
 			if (sb.length() > 1) {
@@ -98,6 +89,20 @@ public class ListTypeEntrySerDes {
 			sb.append(
 				liferayToJSONDateFormat.format(
 					listTypeEntry.getDateModified()));
+
+			sb.append("\"");
+		}
+
+		if (listTypeEntry.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(listTypeEntry.getExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -150,6 +155,16 @@ public class ListTypeEntrySerDes {
 			sb.append(_toJSON(listTypeEntry.getName_i18n()));
 		}
 
+		if (listTypeEntry.getSystem() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"system\": ");
+
+			sb.append(listTypeEntry.getSystem());
+		}
+
 		if (listTypeEntry.getType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -184,7 +199,7 @@ public class ListTypeEntrySerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (listTypeEntry.getActions() == null) {
 			map.put("actions", null);
@@ -210,6 +225,15 @@ public class ListTypeEntrySerDes {
 				"dateModified",
 				liferayToJSONDateFormat.format(
 					listTypeEntry.getDateModified()));
+		}
+
+		if (listTypeEntry.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(listTypeEntry.getExternalReferenceCode()));
 		}
 
 		if (listTypeEntry.getId() == null) {
@@ -240,6 +264,13 @@ public class ListTypeEntrySerDes {
 			map.put("name_i18n", String.valueOf(listTypeEntry.getName_i18n()));
 		}
 
+		if (listTypeEntry.getSystem() == null) {
+			map.put("system", null);
+		}
+		else {
+			map.put("system", String.valueOf(listTypeEntry.getSystem()));
+		}
+
 		if (listTypeEntry.getType() == null) {
 			map.put("type", null);
 		}
@@ -264,6 +295,44 @@ public class ListTypeEntrySerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "key")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name_i18n")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "system")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ListTypeEntry listTypeEntry, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -271,8 +340,7 @@ public class ListTypeEntrySerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					listTypeEntry.setActions(
-						(Map)ListTypeEntrySerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
@@ -285,6 +353,14 @@ public class ListTypeEntrySerDes {
 				if (jsonParserFieldValue != null) {
 					listTypeEntry.setDateModified(
 						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					listTypeEntry.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -306,8 +382,12 @@ public class ListTypeEntrySerDes {
 			else if (Objects.equals(jsonParserFieldName, "name_i18n")) {
 				if (jsonParserFieldValue != null) {
 					listTypeEntry.setName_i18n(
-						(Map)ListTypeEntrySerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "system")) {
+				if (jsonParserFieldValue != null) {
+					listTypeEntry.setSystem((Boolean)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "type")) {
@@ -347,36 +427,7 @@ public class ListTypeEntrySerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -386,6 +437,42 @@ public class ListTypeEntrySerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

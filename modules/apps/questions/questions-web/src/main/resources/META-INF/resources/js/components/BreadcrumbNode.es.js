@@ -1,113 +1,95 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
 import ClayIcon from '@clayui/icon';
-import React, {useContext, useState} from 'react';
+import classNames from 'classnames';
+import React, {useContext} from 'react';
 
 import {AppContext} from '../AppContext.es';
 import Link from './Link.es';
 
-export default ({
+const getSectionURL = (context, section) => {
+	if (section.href) {
+		return section.href;
+	}
+
+	return context.useTopicNamesInURL ? section.friendlyUrlPath : section.id;
+};
+
+export default function BreadcrumbNode({
 	hasDropdown = false,
 	isEllipsis = false,
 	isFirstNode = false,
 	section = {},
 	ui,
-}) => {
+}) {
 	const context = useContext(AppContext);
-	const [active, setActive] = useState(false);
 
 	return (
-		<>
-			<li className="breadcrumb-item breadcrumb-text-truncate mr-0">
-				{hasDropdown &&
-				section.subSections &&
-				section.subSections.length > 0 ? (
-					<ClayDropDown
-						active={active}
-						onActiveChange={setActive}
-						trigger={
-							<ClayButton
-								className="c-p-0 questions-breadcrumb-unstyled text-truncate"
-								displayType="unstyled"
-							>
-								{isEllipsis ? (
-									<ClayIcon symbol="ellipsis-h" />
-								) : (
-									<Link
-										className="breadcrumb-item breadcrumb-text-truncate questions-breadcrumb-item"
-										onClick={() => {
-											setActive(false);
-										}}
-										to={`/questions/${
-											context.useTopicNamesInURL
-												? section.title
-												: section.id
-										}`}
-									>
-										{ui || section.title}
-									</Link>
-								)}
-								<ClayIcon symbol="caret-bottom-l" />
-							</ClayButton>
-						}
-					>
-						<ClayDropDown.ItemList>
-							<ClayDropDown.Group>
-								{section.subSections.map((section, i) => (
-									<Link
-										className="text-decoration-none"
-										key={i}
-										onClick={() => {
-											setActive(false);
-										}}
-										to={`/questions/${
-											context.useTopicNamesInURL
-												? section.title
-												: section.id
-										}`}
-									>
-										<ClayDropDown.Item key={i}>
-											{section.title}
-										</ClayDropDown.Item>
-									</Link>
-								))}
-							</ClayDropDown.Group>
-						</ClayDropDown.ItemList>
-					</ClayDropDown>
-				) : context.showCardsForTopicNavigation && isFirstNode ? (
-					<Link
-						className="breadcrumb-item questions-breadcrumb-unstyled"
-						to="/questions"
-					>
-						{ui || section.title}
-					</Link>
-				) : (
-					<Link
-						className="breadcrumb-item questions-breadcrumb-unstyled"
-						to={`/questions/${
-							context.useTopicNamesInURL
-								? section.title
-								: section.id
-						}`}
-					>
-						{ui || section.title}
-					</Link>
-				)}
-			</li>
-		</>
+		<li className="breadcrumb-item breadcrumb-text-truncate mr-0">
+			{hasDropdown &&
+			section.subSections &&
+			!!section.subSections.length ? (
+				<ClayDropDown
+					trigger={
+						<span className="c-p-0 questions-breadcrumb-unstyled text-truncate">
+							{isEllipsis ? (
+								<ClayIcon
+									aria-label={Liferay.Language.get('options')}
+									symbol="ellipsis-h"
+								/>
+							) : (
+								<span className="breadcrumb-item breadcrumb-text-truncate questions-breadcrumb-item">
+									{ui || section.title}
+								</span>
+							)}
+
+							<ClayIcon aria-label="Icon" symbol="caret-bottom" />
+						</span>
+					}
+				>
+					<ClayDropDown.ItemList>
+						<ClayDropDown.Group>
+							{section.subSections.map((subSection, index) => (
+								<Link
+									className={classNames(
+										'dropdown-item text-decoration-none',
+										{
+											'font-weight-bold text-dark':
+												subSection.title ===
+												section.title,
+										}
+									)}
+									key={index}
+									to={`/questions/${getSectionURL(
+										context,
+										subSection
+									)}`}
+								>
+									{subSection.title}
+								</Link>
+							))}
+						</ClayDropDown.Group>
+					</ClayDropDown.ItemList>
+				</ClayDropDown>
+			) : context.showCardsForTopicNavigation && isFirstNode ? (
+				<Link
+					className="breadcrumb-item questions-breadcrumb-unstyled"
+					to="/questions"
+				>
+					{ui || section.title}
+				</Link>
+			) : (
+				<Link
+					className="breadcrumb-item questions-breadcrumb-unstyled"
+					to={`/questions/${getSectionURL(context, section)}`}
+				>
+					{ui || section.title}
+				</Link>
+			)}
+		</li>
 	);
-};
+}

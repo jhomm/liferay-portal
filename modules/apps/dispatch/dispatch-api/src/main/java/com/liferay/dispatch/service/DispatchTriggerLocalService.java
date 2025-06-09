@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.service;
 
 import com.liferay.dispatch.executor.DispatchTaskClusterMode;
+import com.liferay.dispatch.executor.DispatchTaskExecutor;
 import com.liferay.dispatch.model.DispatchTrigger;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -81,7 +75,16 @@ public interface DispatchTriggerLocalService
 	public DispatchTrigger addDispatchTrigger(DispatchTrigger dispatchTrigger);
 
 	public DispatchTrigger addDispatchTrigger(
-			long userId, String dispatchTaskExecutorType,
+			String externalReferenceCode, long userId,
+			DispatchTaskExecutor dispatchTaskExecutor,
+			String dispatchTaskExecutorType,
+			UnicodeProperties dispatchTaskSettingsUnicodeProperties,
+			String name, boolean system)
+		throws PortalException;
+
+	public DispatchTrigger addDispatchTrigger(
+			String externalReferenceCode, long userId,
+			String dispatchTaskExecutorType,
 			UnicodeProperties dispatchTaskSettingsUnicodeProperties,
 			String name, boolean system)
 		throws PortalException;
@@ -219,6 +222,21 @@ public interface DispatchTriggerLocalService
 	public DispatchTrigger fetchDispatchTrigger(long companyId, String name);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DispatchTrigger fetchDispatchTriggerByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the dispatch trigger with the matching UUID and company.
+	 *
+	 * @param uuid the dispatch trigger's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching dispatch trigger, or <code>null</code> if a matching dispatch trigger could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DispatchTrigger fetchDispatchTriggerByUuidAndCompanyId(
+		String uuid, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Date fetchNextFireDate(long dispatchTriggerId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -237,6 +255,27 @@ public interface DispatchTriggerLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DispatchTrigger getDispatchTrigger(long dispatchTriggerId)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DispatchTrigger getDispatchTriggerByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	/**
+	 * Returns the dispatch trigger with the matching UUID and company.
+	 *
+	 * @param uuid the dispatch trigger's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching dispatch trigger
+	 * @throws PortalException if a matching dispatch trigger could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DispatchTrigger getDispatchTriggerByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DispatchTrigger> getDispatchTriggers(boolean active);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DispatchTrigger> getDispatchTriggers(
@@ -270,6 +309,10 @@ public interface DispatchTriggerLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getDispatchTriggersCount(long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -323,7 +366,7 @@ public interface DispatchTriggerLocalService
 			int endDateDay, int endDateYear, int endDateHour, int endDateMinute,
 			boolean neverEnd, boolean overlapAllowed, int startDateMonth,
 			int startDateDay, int startDateYear, int startDateHour,
-			int startDateMinute)
+			int startDateMinute, String timeZoneId)
 		throws PortalException;
 
 	public DispatchTrigger updateDispatchTrigger(

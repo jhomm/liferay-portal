@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.portlet.action;
@@ -19,13 +10,15 @@ import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Objects;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,10 +27,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
 		"mvc.command.name=/account_admin/update_account_entry_default_address"
 	},
 	service = MVCActionCommand.class
@@ -50,28 +42,41 @@ public class UpdateAccountEntryDefaultAddressMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		long accountEntryId = ParamUtil.getLong(
-			actionRequest, "accountEntryId");
+		try {
+			long accountEntryId = ParamUtil.getLong(
+				actionRequest, "accountEntryId");
 
-		long addressId = ParamUtil.getLong(actionRequest, "addressId");
-		String type = ParamUtil.getString(actionRequest, "type");
+			long addressId = ParamUtil.getLong(actionRequest, "addressId");
+			String type = ParamUtil.getString(actionRequest, "type");
 
-		AccountEntry accountEntry = _accountEntryService.getAccountEntry(
-			accountEntryId);
+			AccountEntry accountEntry = _accountEntryService.getAccountEntry(
+				accountEntryId);
 
-		if (Objects.equals("billing", type)) {
-			accountEntry.setDefaultBillingAddressId(addressId);
+			if (Objects.equals(type, "billing")) {
+				accountEntry.setDefaultBillingAddressId(addressId);
+			}
+			else if (Objects.equals(type, "shipping")) {
+				accountEntry.setDefaultShippingAddressId(addressId);
+			}
+
+			_accountEntryService.updateAccountEntry(accountEntry);
+
+			String redirect = ParamUtil.getString(actionRequest, "redirect");
+
+			if (Validator.isNotNull(redirect)) {
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
 		}
-		else if (Objects.equals("shipping", type)) {
-			accountEntry.setDefaultShippingAddressId(addressId);
-		}
+		catch (Exception exception) {
+			if (exception instanceof PrincipalException) {
+				SessionErrors.add(actionRequest, exception.getClass());
 
-		_accountEntryService.updateAccountEntry(accountEntry);
-
-		String redirect = ParamUtil.getString(actionRequest, "redirect");
-
-		if (Validator.isNotNull(redirect)) {
-			sendRedirect(actionRequest, actionResponse, redirect);
+				actionResponse.setRenderParameter(
+					"mvcPath", "/account_entries_admin/error.jsp");
+			}
+			else {
+				throw exception;
+			}
 		}
 	}
 

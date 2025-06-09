@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.test;
@@ -106,13 +97,11 @@ public class MBThreadLocalServiceTest {
 		Assert.assertEquals(1, splitMessage.getAttachmentsFileEntriesCount());
 		Assert.assertEquals(1, childMessage.getAttachmentsFileEntriesCount());
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBThreadLocalServiceUtil.splitThread(
 			TestPropsValues.getUserId(), splitMessage.getMessageId(),
-			RandomTestUtil.randomString(), serviceContext);
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		rootMessage = MBMessageLocalServiceUtil.getMBMessage(
 			rootMessage.getMessageId());
@@ -205,13 +194,11 @@ public class MBThreadLocalServiceTest {
 
 		Assert.assertNotEquals(splitMessage.getSubject(), thread.getTitle());
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		MBThreadLocalServiceUtil.splitThread(
 			TestPropsValues.getUserId(), splitMessage.getMessageId(),
-			RandomTestUtil.randomString(), serviceContext);
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		rootMessage = MBMessageLocalServiceUtil.getMBMessage(
 			rootMessage.getMessageId());
@@ -270,16 +257,14 @@ public class MBThreadLocalServiceTest {
 		long parentMessageId = BeanPropertiesUtil.getLong(
 			parentMessage, "messageId");
 
-		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
-			MBTestUtil.getInputStreamOVPs(
-				"attachment.txt", getClass(), StringPool.BLANK);
-
 		return MBMessageLocalServiceUtil.addMessage(
 			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
 			_group.getGroupId(), categoryId, threadId, parentMessageId,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			MBMessageConstants.DEFAULT_FORMAT, inputStreamOVPs, false, 0.0,
-			false, serviceContext);
+			MBMessageConstants.DEFAULT_FORMAT,
+			MBTestUtil.getInputStreamOVPs(
+				"attachment.txt", getClass(), StringPool.BLANK),
+			false, 0.0, false, serviceContext);
 	}
 
 	private MBMessage _addMessageWithExpando(String name, String value)

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,16 +23,19 @@ if (addPortletBreadcrumbEntries) {
 }
 
 boolean portletTitleBasedNavigation = GetterUtil.getBoolean(portletConfig.getInitParameter("portlet-title-based-navigation"));
+boolean showBackIcon = Validator.isNotNull(dlViewFileEntryDisplayContext.getRedirect());
 
 if (portletTitleBasedNavigation) {
-	portletDisplay.setShowBackIcon(true);
+	portletDisplay.setShowBackIcon(showBackIcon);
 	portletDisplay.setURLBack(dlViewFileEntryDisplayContext.getRedirect());
 
 	renderResponse.setTitle(fileVersion.getTitle());
 }
 %>
 
-<div class="<%= portletTitleBasedNavigation ? StringPool.BLANK : "closed sidenav-container sidenav-right" %>" id="<%= liferayPortletResponse.getNamespace() + (portletTitleBasedNavigation ? "FileEntry" : ("infoPanelId_" + fileEntry.getFileEntryId())) %>">
+<liferay-ui:success key='<%= portletDisplay.getId() + "requestProcessed" %>' message="your-request-completed-successfully" />
+
+<div class="<%= portletTitleBasedNavigation ? "document-libray-preview-container" : "closed sidenav-container sidenav-right" %>" id="<%= liferayPortletResponse.getNamespace() + (portletTitleBasedNavigation ? "FileEntry" : ("infoPanelId_" + fileEntry.getFileEntryId())) %>">
 	<c:if test="<%= portletTitleBasedNavigation %>">
 		<liferay-util:include page="/document_library/file_entry_upper_tbar.jsp" servletContext="<%= application %>" />
 	</c:if>
@@ -57,14 +51,6 @@ if (portletTitleBasedNavigation) {
 		<aui:input name="rowIdsFileEntry" type="hidden" />
 		<aui:input name="rowIdsFolder" type="hidden" />
 	</aui:form>
-
-	<c:if test="<%= !portletTitleBasedNavigation && dlViewFileEntryDisplayContext.isShowHeader() %>">
-		<liferay-ui:header
-			backURL="<%= dlViewFileEntryDisplayContext.getRedirect() %>"
-			localizeTitle="<%= false %>"
-			title="<%= dlViewFileEntryDisplayContext.getDocumentTitle() %>"
-		/>
-	</c:if>
 
 	<c:choose>
 		<c:when test="<%= portletTitleBasedNavigation %>">
@@ -93,47 +79,62 @@ if (portletTitleBasedNavigation) {
 	</c:choose>
 
 	<div class="<%= portletTitleBasedNavigation ? "contextual-sidebar-content" : "sidenav-content" %>">
-		<clay:container-fluid>
-			<div class="alert alert-danger hide" id="<portlet:namespace />openMSOfficeError"></div>
+		<div class="alert alert-danger hide" id="<portlet:namespace />openMSOfficeError"></div>
 
-			<c:if test="<%= !portletTitleBasedNavigation %>">
-				<div class="file-entry-actions">
-					<liferay-frontend:management-bar-sidenav-toggler-button
-						label="info"
-						sidenavId='<%= liferayPortletResponse.getNamespace() + "infoPanelId_" + fileEntry.getFileEntryId() %>'
-					/>
+		<c:if test="<%= !portletTitleBasedNavigation %>">
+			<div class="file-entry-actions management-bar management-bar-light navbar navbar-expand-md">
+				<ul class="navbar-nav navbar-nav-expand">
+					<li class="nav-item nav-item-expand">
+						<c:if test="<%= showBackIcon %>">
+							<clay:link
+								aria-label='<%= LanguageUtil.get(request, "back") %>'
+								borderless="<%= true %>"
+								displayType="secondary"
+								href="<%= dlViewFileEntryDisplayContext.getRedirect() %>"
+								icon="angle-left"
+								monospaced="<%= true %>"
+								type="button"
+							/>
+						</c:if>
 
-					<%
-					for (ToolbarItem toolbarItem : dlViewFileEntryDisplayContext.getToolbarItems()) {
-					%>
-
-						<liferay-ui:toolbar-item
-							toolbarItem="<%= toolbarItem %>"
+						<h3 class="mb-1 text-secondary"><%= HtmlUtil.escape(dlViewFileEntryDisplayContext.getDocumentTitle()) %></h3>
+					</li>
+					<li class="nav-item">
+						<liferay-frontend:sidebar-toggler-button
+							cssClass="btn btn-monospaced btn-secondary btn-sm btn-unstyled"
+							icon="info-circle-open"
+							sidenavId='<%= liferayPortletResponse.getNamespace() + "infoPanelId_" + fileEntry.getFileEntryId() %>'
 						/>
+					</li>
+					<li class="nav-item">
+						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+							dropdownItems="<%= dlViewFileEntryDisplayContext.getActionDropdownItems() %>"
+							propsTransformer="{DLFileEntryDropdownPropsTransformer} from document-library-web"
+						/>
+					</li>
+				</ul>
+			</div>
+		</c:if>
 
-					<%
-					}
-					%>
+		<c:if test="<%= dlViewFileEntryDisplayContext.isShowLockInfo() %>">
+			<clay:stripe
+				displayType="<%= dlViewFileEntryDisplayContext.getLockInfoDisplayType() %>"
+				message="<%= dlViewFileEntryDisplayContext.getLockInfoMessage(locale) %>"
+			/>
+		</c:if>
 
-				</div>
+		<div class="body-row">
+			<c:if test="<%= PropsValues.DL_FILE_ENTRY_PREVIEW_ENABLED %>">
+
+				<%
+				dlViewFileEntryDisplayContext.renderPreview(pageContext);
+				%>
+
 			</c:if>
 
-			<c:if test="<%= dlViewFileEntryDisplayContext.isShowLockInfo() %>">
-				<div class="alert <%= dlViewFileEntryDisplayContext.getLockInfoCssClass() %>">
-					<%= dlViewFileEntryDisplayContext.getLockInfoMessage(locale) %>
-				</div>
-			</c:if>
-
-			<div class="body-row">
-				<c:if test="<%= PropsValues.DL_FILE_ENTRY_PREVIEW_ENABLED %>">
-
-					<%
-					dlViewFileEntryDisplayContext.renderPreview(pageContext);
-					%>
-
-				</c:if>
-
-				<c:if test="<%= dlViewFileEntryDisplayContext.isShowComments() %>">
+			<c:if test="<%= dlViewFileEntryDisplayContext.isShowComments() %>">
+				<clay:container-fluid>
 					<liferay-comment:discussion
 						className="<%= dlViewFileEntryDisplayContext.getDiscussionClassName() %>"
 						classPK="<%= dlViewFileEntryDisplayContext.getDiscussionClassPK() %>"
@@ -142,9 +143,9 @@ if (portletTitleBasedNavigation) {
 						redirect="<%= currentURL %>"
 						userId="<%= dlViewFileEntryDisplayContext.getDiscussionUserId() %>"
 					/>
-				</c:if>
-			</div>
-		</clay:container-fluid>
+				</clay:container-fluid>
+			</c:if>
+		</div>
 	</div>
 </div>
 
@@ -161,7 +162,7 @@ if (portletTitleBasedNavigation) {
 	<portlet:actionURL name="/document_library/edit_file_entry_image_editor" var="editImageURL" />
 
 	<react:component
-		module="document_library/js/image-editor/EditImageWithImageEditor"
+		module="{EditImageWithImageEditor} from document-library-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"editImageURL", editImageURL
@@ -175,13 +176,7 @@ if (portletTitleBasedNavigation) {
 <%
 ItemSelector itemSelector = (ItemSelector)request.getAttribute(ItemSelector.class.getName());
 
-FolderItemSelectorCriterion folderItemSelectorCriterion = new FolderItemSelectorCriterion();
-
-folderItemSelectorCriterion.setDesiredItemSelectorReturnTypes(new FolderItemSelectorReturnType());
-folderItemSelectorCriterion.setFolderId(fileEntry.getFolderId());
-folderItemSelectorCriterion.setSelectedFolderId(fileEntry.getFolderId());
-
-PortletURL selectFolderURL = itemSelector.getItemSelectorURL(RequestBackedPortletURLFactoryUtil.create(request), portletDisplay.getNamespace() + "folderSelected", folderItemSelectorCriterion);
+FolderItemSelectorURLProvider folderItemSelectorURLProvider = new FolderItemSelectorURLProvider(request, itemSelector);
 %>
 
 <portlet:actionURL name="/document_library/edit_entry" var="editEntryURL" />
@@ -215,13 +210,12 @@ PortletURL selectFolderURL = itemSelector.getItemSelectorURL(RequestBackedPortle
 
 				form.elements[namespace + 'cmd'].value = 'move';
 				form.elements[namespace + 'newFolderId'].value =
-					selectedItem.folderid;
+					selectedItem.resourceid;
 
 				submitForm(form, actionUrl, false);
 			},
-			title:
-				'<liferay-ui:message arguments="<%= 1 %>" key="select-destination-folder-for-x-items" translateArguments="<%= false %>" />',
-			url: '<%= HtmlUtil.escapeJS(selectFolderURL.toString()) %>',
+			title: '<liferay-ui:message arguments="<%= 1 %>" key="select-destination-folder-for-x-items" translateArguments="<%= false %>" />',
+			url: '<%= HtmlUtil.escapeJS(folderItemSelectorURLProvider.getSelectMoveToFolderURL(fileEntry.getRepositoryId(), fileEntry.getFolderId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID)) %>',
 		});
 	}
 </aui:script>
@@ -245,3 +239,5 @@ PortletURL selectFolderURL = itemSelector.getItemSelectorURL(RequestBackedPortle
 </c:if>
 
 <liferay-util:dynamic-include key="com.liferay.document.library.web#/document_library/view_file_entry.jsp#post" />
+
+<%@ include file="/document_library/session_messages.jspf" %>

@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.web.internal.display.context;
 
+import com.liferay.dispatch.constants.DispatchPortletKeys;
 import com.liferay.dispatch.scheduler.SchedulerResponseManager;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.scheduler.SchedulerException;
 import com.liferay.portal.kernel.scheduler.TriggerState;
 import com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse;
@@ -25,13 +18,12 @@ import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
 import java.text.Format;
 
 import java.util.Date;
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
 
 /**
  * @author Matija Petanjek
@@ -46,7 +38,7 @@ public class SchedulerResponseDisplayContext extends BaseDisplayContext {
 
 		_schedulerResponseManager = schedulerResponseManager;
 
-		_dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(
+		_dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(
 			dispatchRequestHelper.getLocale());
 	}
 
@@ -58,22 +50,34 @@ public class SchedulerResponseDisplayContext extends BaseDisplayContext {
 			schedulerResponse.getStorageType());
 
 		if (nextFireDate != null) {
-			return _dateFormatDateTime.format(nextFireDate);
+			return _dateTimeFormat.format(nextFireDate);
 		}
 
 		return StringPool.BLANK;
 	}
 
 	public String getOrderByCol() {
-		return ParamUtil.getString(
-			dispatchRequestHelper.getRequest(),
-			SearchContainer.DEFAULT_ORDER_BY_COL_PARAM, "start-date");
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
+		}
+
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			dispatchRequestHelper.getRequest(), DispatchPortletKeys.DISPATCH,
+			"scheduler-response-order-by-col", "start-date");
+
+		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		return ParamUtil.getString(
-			dispatchRequestHelper.getRequest(),
-			SearchContainer.DEFAULT_ORDER_BY_TYPE_PARAM, "desc");
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
+		}
+
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			dispatchRequestHelper.getRequest(), DispatchPortletKeys.DISPATCH,
+			"scheduler-response-order-by-type", "desc");
+
+		return _orderByType;
 	}
 
 	public PortletURL getPortletURL() {
@@ -121,14 +125,10 @@ public class SchedulerResponseDisplayContext extends BaseDisplayContext {
 		_searchContainer.setOrderByCol(getOrderByCol());
 		_searchContainer.setOrderByComparator(null);
 		_searchContainer.setOrderByType(getOrderByType());
-		_searchContainer.setTotal(
+		_searchContainer.setResultsAndTotal(
+			() -> _schedulerResponseManager.getSchedulerResponses(
+				_searchContainer.getStart(), _searchContainer.getEnd()),
 			_schedulerResponseManager.getSchedulerResponsesCount());
-
-		List<SchedulerResponse> results =
-			_schedulerResponseManager.getSchedulerResponses(
-				_searchContainer.getStart(), _searchContainer.getEnd());
-
-		_searchContainer.setResults(results);
 
 		return _searchContainer;
 	}
@@ -145,7 +145,9 @@ public class SchedulerResponseDisplayContext extends BaseDisplayContext {
 			schedulerResponse.getStorageType());
 	}
 
-	private final Format _dateFormatDateTime;
+	private final Format _dateTimeFormat;
+	private String _orderByCol;
+	private String _orderByType;
 	private final SchedulerResponseManager _schedulerResponseManager;
 	private SearchContainer<SchedulerResponse> _searchContainer;
 

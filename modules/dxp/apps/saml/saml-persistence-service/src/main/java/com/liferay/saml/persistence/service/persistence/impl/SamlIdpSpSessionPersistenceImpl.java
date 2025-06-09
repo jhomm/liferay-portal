@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service.persistence.impl;
@@ -29,7 +20,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -47,7 +37,6 @@ import com.liferay.saml.persistence.service.persistence.impl.constants.SamlPersi
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Timestamp;
@@ -74,7 +63,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mika Koivisto
  * @generated
  */
-@Component(service = {SamlIdpSpSessionPersistence.class, BasePersistence.class})
+@Component(service = SamlIdpSpSessionPersistence.class)
 public class SamlIdpSpSessionPersistenceImpl
 	extends BasePersistenceImpl<SamlIdpSpSession>
 	implements SamlIdpSpSessionPersistence {
@@ -184,7 +173,7 @@ public class SamlIdpSpSessionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<SamlIdpSpSession>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SamlIdpSpSession samlIdpSpSession : list) {
@@ -574,7 +563,7 @@ public class SamlIdpSpSessionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {_getTime(createDate)};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -730,7 +719,7 @@ public class SamlIdpSpSessionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<SamlIdpSpSession>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SamlIdpSpSession samlIdpSpSession : list) {
@@ -1101,7 +1090,7 @@ public class SamlIdpSpSessionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {samlIdpSsoSessionId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1553,7 +1542,7 @@ public class SamlIdpSpSessionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<SamlIdpSpSession>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1623,7 +1612,7 @@ public class SamlIdpSpSessionPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1720,30 +1709,14 @@ public class SamlIdpSpSessionPersistenceImpl
 			"countBySamlIdpSsoSessionId", new String[] {Long.class.getName()},
 			new String[] {"samlIdpSsoSessionId"}, false);
 
-		_setSamlIdpSpSessionUtilPersistence(this);
+		SamlIdpSpSessionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setSamlIdpSpSessionUtilPersistence(null);
+		SamlIdpSpSessionUtil.setPersistence(null);
 
 		entityCache.removeCache(SamlIdpSpSessionImpl.class.getName());
-	}
-
-	private void _setSamlIdpSpSessionUtilPersistence(
-		SamlIdpSpSessionPersistence samlIdpSpSessionPersistence) {
-
-		try {
-			Field field = SamlIdpSpSessionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, samlIdpSpSessionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1813,9 +1786,5 @@ public class SamlIdpSpSessionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private SamlIdpSpSessionModelArgumentsResolver
-		_samlIdpSpSessionModelArgumentsResolver;
 
 }

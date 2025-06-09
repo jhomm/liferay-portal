@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 (function (A) {
-	var CLICK_EVENTS = {};
-	var Util = Liferay.Util;
+	const CLICK_EVENTS = {};
+	const Util = Liferay.Util;
 
 	A.use('attribute', 'oop', (A) => {
 		A.augment(Liferay, A.Attribute, true);
@@ -24,17 +15,19 @@
 		Liferay,
 		'delegateClick',
 		(id, fn) => {
-			var element = A.config.doc.getElementById(id);
+			const element = A.config.doc.getElementById(id);
 
-			if (!element || element.id != id) {
+			if (!element || element.id !== id) {
 				return;
 			}
 
-			var guid = A.one(element).addClass('lfr-delegate-click').guid();
+			// eslint-disable-next-line @liferay/aui/no-one
+			const guid = A.one(element).addClass('lfr-delegate-click').guid();
 
 			CLICK_EVENTS[guid] = fn;
 
 			if (!Liferay._baseDelegateHandle) {
+
 				// eslint-disable-next-line @liferay/aui/no-get-body
 				Liferay._baseDelegateHandle = A.getBody().delegate(
 					'click',
@@ -47,9 +40,9 @@
 	);
 
 	Liferay._baseDelegate = function (event) {
-		var id = event.currentTarget.attr('id');
+		const id = event.currentTarget.attr('id');
 
-		var fn = CLICK_EVENTS[id];
+		const fn = CLICK_EVENTS[id];
 
 		if (fn) {
 			fn.apply(this, arguments);
@@ -69,6 +62,8 @@
 
 				Liferay.fire('submitForm', {
 					action,
+
+					// eslint-disable-next-line @liferay/aui/no-one
 					form: A.one(form),
 					singleSubmit,
 					validate: validate !== false,
@@ -80,15 +75,15 @@
 
 	Liferay.publish('submitForm', {
 		defaultFn(event) {
-			var form = event.form;
+			const form = event.form;
 
-			var hasErrors = false;
+			let hasErrors = false;
 
 			if (event.validate) {
-				var liferayForm = Liferay.Form.get(form.attr('id'));
+				const liferayForm = Liferay.Form.get(form.attr('id'));
 
 				if (liferayForm) {
-					var validator = liferayForm.formValidator;
+					const validator = liferayForm.formValidator;
 
 					if (A.instanceOf(validator, A.FormValidator)) {
 						validator.validate();
@@ -102,22 +97,35 @@
 				}
 			}
 
+			function enableFormButtons(inputs) {
+				Util._submitLocked = null;
+
+				Util.toggleDisabled(inputs, false);
+			}
+
 			if (!hasErrors) {
-				var action = event.action || form.getAttribute('action');
+				let action = event.action || form.getAttribute('action');
 
-				var singleSubmit = event.singleSubmit;
+				const singleSubmit = event.singleSubmit;
 
-				var inputs = form.all(
+				const inputs = form.all(
 					'button[type=submit], input[type=button], input[type=image], input[type=reset], input[type=submit]'
 				);
 
-				Util.disableFormButtons(inputs, form);
+				const inputsArray = Array.from(inputs._nodes);
+
+				if (inputsArray.length) {
+					inputsArray.map((input) => {
+						input.disabled = true;
+						input.style.opacity = 0.5;
+					});
+				}
 
 				if (singleSubmit === false) {
 					Util._submitLocked = A.later(
 						1000,
 						Util,
-						Util.enableFormButtons,
+						enableFormButtons,
 						[inputs, form]
 					);
 				}
@@ -125,9 +133,9 @@
 					Util._submitLocked = true;
 				}
 
-				var baseURL;
-				var queryString;
-				var searchParamsIndex = action.indexOf('?');
+				let baseURL;
+				let queryString;
+				const searchParamsIndex = action.indexOf('?');
 
 				if (searchParamsIndex === -1) {
 					baseURL = action;
@@ -138,9 +146,9 @@
 					queryString = action.slice(searchParamsIndex + 1);
 				}
 
-				var searchParams = new URLSearchParams(queryString);
+				const searchParams = new URLSearchParams(queryString);
 
-				var authToken = searchParams.get('p_auth') || '';
+				let authToken = searchParams.get('p_auth') || '';
 
 				if (authToken.includes('#')) {
 					authToken = authToken.substring(0, authToken.indexOf('#'));
@@ -160,7 +168,12 @@
 
 				form.attr('action', action);
 
-				Util.submitForm(form);
+				if (Util.submitForm) {
+					Util.submitForm(form);
+				}
+				else {
+					form.submit();
+				}
 
 				form.attr('target', '');
 
@@ -170,24 +183,26 @@
 	});
 
 	Liferay.after('closeWindow', (event) => {
-		var id = event.id;
+		const id = event.id;
 
-		var dialog = Util.getTop().Liferay.Util.Window.getById(id);
+		const dialog = Util.getTop().Liferay.Util.Window.getById(id);
 
 		if (dialog && dialog.iframe) {
-			var dialogWindow = dialog.iframe.node.get('contentWindow').getDOM();
+			const dialogWindow = dialog.iframe.node
+				.get('contentWindow')
+				.getDOM();
 
-			var openingWindow = dialogWindow.Liferay.Util.getOpener();
-			var redirect = event.redirect;
+			const openingWindow = dialogWindow.Liferay.Util.getOpener();
+			const redirect = event.redirect;
 
 			if (redirect) {
 				openingWindow.Liferay.Util.navigate(redirect);
 			}
 			else {
-				var refresh = event.refresh;
+				const refresh = event.refresh;
 
 				if (refresh && openingWindow) {
-					var data;
+					let data;
 
 					if (!event.portletAjaxable) {
 						data = {

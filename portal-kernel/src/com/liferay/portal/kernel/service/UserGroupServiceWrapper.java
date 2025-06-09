@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -26,6 +17,10 @@ import com.liferay.portal.kernel.model.UserGroup;
 public class UserGroupServiceWrapper
 	implements ServiceWrapper<UserGroupService>, UserGroupService {
 
+	public UserGroupServiceWrapper() {
+		this(null);
+	}
+
 	public UserGroupServiceWrapper(UserGroupService userGroupService) {
 		_userGroupService = userGroupService;
 	}
@@ -41,6 +36,16 @@ public class UserGroupServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_userGroupService.addGroupUserGroups(groupId, userGroupIds);
+	}
+
+	@Override
+	public UserGroup addOrUpdateUserGroup(
+			String externalReferenceCode, String name, String description,
+			ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupService.addOrUpdateUserGroup(
+			externalReferenceCode, name, description, serviceContext);
 	}
 
 	/**
@@ -64,6 +69,7 @@ public class UserGroupServiceWrapper
 	 * including its resources, metadata, and internal data structures.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param name the user group's name
 	 * @param description the user group's description
 	 * @param serviceContext the service context to be applied (optionally
@@ -73,11 +79,12 @@ public class UserGroupServiceWrapper
 	 */
 	@Override
 	public UserGroup addUserGroup(
-			String name, String description, ServiceContext serviceContext)
+			String externalReferenceCode, String name, String description,
+			ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupService.addUserGroup(
-			name, description, serviceContext);
+			externalReferenceCode, name, description, serviceContext);
 	}
 
 	/**
@@ -103,6 +110,15 @@ public class UserGroupServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupService.fetchUserGroup(userGroupId);
+	}
+
+	@Override
+	public UserGroup fetchUserGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupService.fetchUserGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -147,6 +163,15 @@ public class UserGroupServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupService.getUserGroup(name);
+	}
+
+	@Override
+	public UserGroup getUserGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupService.getUserGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -333,9 +358,19 @@ public class UserGroupServiceWrapper
 		_userGroupService.unsetTeamUserGroups(teamId, userGroupIds);
 	}
 
+	@Override
+	public UserGroup updateExternalReferenceCode(
+			UserGroup userGroup, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _userGroupService.updateExternalReferenceCode(
+			userGroup, externalReferenceCode);
+	}
+
 	/**
 	 * Updates the user group.
 	 *
+	 * @param externalReferenceCode the user group's external reference code
 	 * @param userGroupId the primary key of the user group
 	 * @param name the user group's name
 	 * @param description the the user group's description
@@ -346,12 +381,13 @@ public class UserGroupServiceWrapper
 	 */
 	@Override
 	public UserGroup updateUserGroup(
-			long userGroupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userGroupId, String name,
+			String description, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _userGroupService.updateUserGroup(
-			userGroupId, name, description, serviceContext);
+			externalReferenceCode, userGroupId, name, description,
+			serviceContext);
 	}
 
 	@Override

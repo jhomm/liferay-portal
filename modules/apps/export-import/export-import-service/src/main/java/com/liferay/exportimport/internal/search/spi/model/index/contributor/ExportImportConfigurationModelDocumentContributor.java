@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.search.spi.model.index.contributor;
@@ -43,7 +34,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luan Maoski
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.exportimport.kernel.model.ExportImportConfiguration",
 	service = ModelDocumentContributor.class
 )
@@ -66,19 +56,19 @@ public class ExportImportConfigurationModelDocumentContributor
 		Map<String, Serializable> settingsMap =
 			exportImportConfiguration.getSettingsMap();
 
-		populateDates(document, settingsMap);
-		populateLayoutIds(document, settingsMap);
-		populateLocale(document, settingsMap);
-		populateParameterMap(document, settingsMap);
-		populateSiteInformation(document, settingsMap);
-		populateTimeZone(document, settingsMap);
+		_populateDates(document, settingsMap);
+		_populateLayoutIds(document, settingsMap);
+		_populateLocale(document, settingsMap);
+		_populateParameterMap(document, settingsMap);
+		_populateSiteInformation(document, settingsMap);
+		_populateTimeZone(document, settingsMap);
 
 		document.addKeyword(
 			_PREFIX_SETTING + Field.USER_ID,
 			MapUtil.getLong(settingsMap, "userId"));
 	}
 
-	protected void populateDates(
+	private void _populateDates(
 		Document document, Map<String, Serializable> settingsMap) {
 
 		if (settingsMap.containsKey("endDate")) {
@@ -94,7 +84,7 @@ public class ExportImportConfigurationModelDocumentContributor
 		}
 	}
 
-	protected void populateLayoutIds(
+	private void _populateLayoutIds(
 		Document document, Map<String, Serializable> settingsMap) {
 
 		if (!settingsMap.containsKey("layoutIdMap") &&
@@ -118,7 +108,7 @@ public class ExportImportConfigurationModelDocumentContributor
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -126,7 +116,7 @@ public class ExportImportConfigurationModelDocumentContributor
 		document.addKeyword("layoutIds", layoutIds);
 	}
 
-	protected void populateLocale(
+	private void _populateLocale(
 		Document document, Map<String, Serializable> settingsMap) {
 
 		Locale locale = (Locale)settingsMap.get("locale");
@@ -134,7 +124,7 @@ public class ExportImportConfigurationModelDocumentContributor
 		document.addText(_PREFIX_SETTING + "locale", locale.toString());
 	}
 
-	protected void populateParameterMap(
+	private void _populateParameterMap(
 		Document document, Map<String, Serializable> settingsMap) {
 
 		if (!settingsMap.containsKey("parameterMap")) {
@@ -174,7 +164,7 @@ public class ExportImportConfigurationModelDocumentContributor
 		}
 	}
 
-	protected void populateSiteInformation(
+	private void _populateSiteInformation(
 		Document document, Map<String, Serializable> settingsMap) {
 
 		document.addKeyword(
@@ -188,7 +178,7 @@ public class ExportImportConfigurationModelDocumentContributor
 			MapUtil.getLong(settingsMap, "targetGroupId"));
 	}
 
-	protected void populateTimeZone(
+	private void _populateTimeZone(
 		Document document, Map<String, Serializable> settingsMap) {
 
 		TimeZone timeZone = (TimeZone)settingsMap.get("timeZone");

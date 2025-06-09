@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.persistence.impl;
@@ -29,18 +20,21 @@ import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelper;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.Iterator;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Riccardo Alberti
  */
+@Component(service = CommercePriceModifierRelFinder.class)
 public class CommercePriceModifierRelFinderImpl
 	extends CommercePriceModifierRelFinderBaseImpl
 	implements CommercePriceModifierRelFinder {
@@ -94,7 +88,7 @@ public class CommercePriceModifierRelFinderImpl
 				getClass(), COUNT_CATEGORIES_BY_COMMERCE_PRICE_MODIFIER_ID);
 
 			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
+				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
 					"CommercePriceModifier.commercePriceListId", null, null,
 					new long[] {0}, null);
@@ -122,8 +116,7 @@ public class CommercePriceModifierRelFinderImpl
 			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
 			queryPos.add(commercePriceModifierId);
-			queryPos.add(
-				PortalUtil.getClassNameId(AssetCategory.class.getName()));
+			queryPos.add(_portal.getClassNameId(AssetCategory.class.getName()));
 
 			if (Validator.isNotNull(name)) {
 				queryPos.add(keywords, 2);
@@ -171,7 +164,7 @@ public class CommercePriceModifierRelFinderImpl
 				getClass(), COUNT_CP_DEFINITIONS_BY_COMMERCE_PRICE_MODIFIER_ID);
 
 			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
+				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
 					"CommercePriceModifier.commercePriceListId", null, null,
 					new long[] {0}, null);
@@ -200,8 +193,7 @@ public class CommercePriceModifierRelFinderImpl
 
 			queryPos.add(languageId);
 			queryPos.add(commercePriceModifierId);
-			queryPos.add(
-				PortalUtil.getClassNameId(CPDefinition.class.getName()));
+			queryPos.add(_portal.getClassNameId(CPDefinition.class.getName()));
 
 			if (Validator.isNotNull(name)) {
 				queryPos.add(keywords, 2);
@@ -249,7 +241,7 @@ public class CommercePriceModifierRelFinderImpl
 				COUNT_PRICING_CLASSES_BY_COMMERCE_PRICE_MODIFIER_ID);
 
 			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
+				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
 					"CommercePriceModifier.commercePriceListId", null, null,
 					new long[] {0}, null);
@@ -278,8 +270,7 @@ public class CommercePriceModifierRelFinderImpl
 
 			queryPos.add(commercePriceModifierId);
 			queryPos.add(
-				PortalUtil.getClassNameId(
-					CommercePricingClass.class.getName()));
+				_portal.getClassNameId(CommercePricingClass.class.getName()));
 
 			if (Validator.isNotNull(title)) {
 				queryPos.add(keywords, 2);
@@ -331,7 +322,7 @@ public class CommercePriceModifierRelFinderImpl
 				getClass(), FIND_CATEGORIES_BY_COMMERCE_PRICE_MODIFIER_ID);
 
 			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
+				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
 					"CommercePriceModifier.commercePriceListId", null, null,
 					new long[] {0}, null);
@@ -359,8 +350,7 @@ public class CommercePriceModifierRelFinderImpl
 			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
 			queryPos.add(commercePriceModifierId);
-			queryPos.add(
-				PortalUtil.getClassNameId(AssetCategory.class.getName()));
+			queryPos.add(_portal.getClassNameId(AssetCategory.class.getName()));
 
 			if (Validator.isNotNull(name)) {
 				queryPos.add(keywords, 2);
@@ -404,7 +394,7 @@ public class CommercePriceModifierRelFinderImpl
 				getClass(), FIND_CP_DEFINITIONS_BY_COMMERCE_PRICE_MODIFIER_ID);
 
 			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
+				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
 					"CommercePriceModifier.commercePriceListId", null, null,
 					new long[] {0}, null);
@@ -433,8 +423,7 @@ public class CommercePriceModifierRelFinderImpl
 
 			queryPos.add(languageId);
 			queryPos.add(commercePriceModifierId);
-			queryPos.add(
-				PortalUtil.getClassNameId(CPDefinition.class.getName()));
+			queryPos.add(_portal.getClassNameId(CPDefinition.class.getName()));
 
 			if (Validator.isNotNull(name)) {
 				queryPos.add(keywords, 2);
@@ -477,7 +466,7 @@ public class CommercePriceModifierRelFinderImpl
 				getClass(), FIND_PRICING_CLASSES_BY_COMMERCE_PRICE_MODIFIER_ID);
 
 			if (inlineSQLHelper) {
-				sql = InlineSQLHelperUtil.replacePermissionCheck(
+				sql = _inlineSQLHelper.replacePermissionCheck(
 					sql, CommercePriceList.class.getName(),
 					"CommercePriceModifier.commercePriceListId", null, null,
 					new long[] {0}, null);
@@ -506,8 +495,7 @@ public class CommercePriceModifierRelFinderImpl
 
 			queryPos.add(commercePriceModifierId);
 			queryPos.add(
-				PortalUtil.getClassNameId(
-					CommercePricingClass.class.getName()));
+				_portal.getClassNameId(CommercePricingClass.class.getName()));
 
 			if (Validator.isNotNull(title)) {
 				queryPos.add(keywords, 2);
@@ -524,7 +512,13 @@ public class CommercePriceModifierRelFinderImpl
 		}
 	}
 
-	@ServiceReference(type = CustomSQL.class)
+	@Reference
 	private CustomSQL _customSQL;
+
+	@Reference
+	private InlineSQLHelper _inlineSQLHelper;
+
+	@Reference
+	private Portal _portal;
 
 }

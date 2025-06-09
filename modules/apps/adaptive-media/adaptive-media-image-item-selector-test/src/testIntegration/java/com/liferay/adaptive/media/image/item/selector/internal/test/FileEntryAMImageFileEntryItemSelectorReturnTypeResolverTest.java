@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.item.selector.internal.test;
@@ -64,16 +55,12 @@ public class FileEntryAMImageFileEntryItemSelectorReturnTypeResolverTest {
 
 	@Test
 	public void testAddingFileEntryWithImageCreatesMedia() throws Exception {
-		ServiceContext serviceContext =
+		FileEntry fileEntry = _addImageFileEntry(
 			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
+				_group, TestPropsValues.getUserId()));
 
-		FileEntry fileEntry = _addImageFileEntry(serviceContext);
-
-		String value = _itemSelectorReturnTypeResolver.getValue(
-			fileEntry, null);
-
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(value);
+		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			_itemSelectorReturnTypeResolver.getValue(fileEntry, null));
 
 		String url = jsonObject.getString("url");
 		long fileEntryId = jsonObject.getLong("fileEntryId");
@@ -94,13 +81,13 @@ public class FileEntryAMImageFileEntryItemSelectorReturnTypeResolverTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.IMAGE_JPEG,
-			_getImageBytes(), null, null, serviceContext);
+			_getImageBytes(), null, null, null, serviceContext);
 	}
 
 	private byte[] _getImageBytes() throws Exception {
 		return FileUtil.getBytes(
 			FileEntryAMImageFileEntryItemSelectorReturnTypeResolverTest.class,
-			"image.jpg");
+			"dependencies/image.jpg");
 	}
 
 	@Inject
@@ -113,7 +100,7 @@ public class FileEntryAMImageFileEntryItemSelectorReturnTypeResolverTest {
 	private Group _group;
 
 	@Inject(
-		filter = "component.name=*.FileEntryAMImageFileEntryItemSelectorReturnTypeResolver"
+		filter = "component.name=com.liferay.adaptive.media.image.item.selector.internal.FileEntryAMImageFileEntryItemSelectorReturnTypeResolver"
 	)
 	private ItemSelectorReturnTypeResolver<?, FileEntry>
 		_itemSelectorReturnTypeResolver;

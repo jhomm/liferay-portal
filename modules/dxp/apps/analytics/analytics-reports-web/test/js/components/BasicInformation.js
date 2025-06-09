@@ -1,24 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {cleanup, render} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import React from 'react';
 
 import BasicInformation from '../../../src/main/resources/META-INF/resources/js/components/BasicInformation';
+import {StoreStateContext} from '../../../src/main/resources/META-INF/resources/js/context/StoreContext';
 
 import '@testing-library/jest-dom/extend-expect';
 
-describe('BasicInformation', () => {
-	afterEach(cleanup);
+jest.mock('frontend-js-web', () => ({
+	sub: jest.fn((langKey, arg) => langKey.replace('x', arg)),
+}));
 
+describe('BasicInformation', () => {
 	it('renders author, publish date and title', () => {
 		const testProps = {
 			author: {
@@ -51,13 +48,18 @@ describe('BasicInformation', () => {
 			],
 		};
 
-		const {getByText} = render(<BasicInformation {...testProps} />);
+		const {getByText} = render(
+			<StoreStateContext.Provider value={{languageTag: 'en-US'}}>
+				<BasicInformation {...testProps} />
+			</StoreStateContext.Provider>
+		);
 
 		expect(getByText(testProps.title)).toBeInTheDocument();
 
 		expect(getByText(testProps.canonicalURL)).toBeInTheDocument();
 
 		const formattedPublishDate = 'September 20, 2021';
+
 		expect(
 			getByText('published-on-' + formattedPublishDate)
 		).toBeInTheDocument();

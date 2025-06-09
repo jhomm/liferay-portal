@@ -1,38 +1,29 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-QuestionsConfiguration questionsConfiguration = portletDisplay.getPortletInstanceConfiguration(QuestionsConfiguration.class);
+QuestionsConfiguration questionsConfiguration = ConfigurationProviderUtil.getPortletInstanceConfiguration(QuestionsConfiguration.class, themeDisplay);
 
-long rootTopicId = questionsConfiguration.rootTopicId();
+String rootTopicExternalReferenceCode = questionsConfiguration.rootTopicExternalReferenceCode();
 
 MBCategory mbCategory = null;
 
 String rootTopicName = StringPool.BLANK;
 
 try {
-	mbCategory = MBCategoryLocalServiceUtil.getCategory(rootTopicId);
+	mbCategory = MBCategoryLocalServiceUtil.getMBCategoryByExternalReferenceCode(rootTopicExternalReferenceCode, themeDisplay.getScopeGroupId());
 
 	rootTopicName = mbCategory.getName();
 }
 catch (Exception exception) {
 	if (_log.isDebugEnabled()) {
-		_log.debug(exception, exception);
+		_log.debug(exception);
 	}
 }
 %>
@@ -48,39 +39,96 @@ catch (Exception exception) {
 >
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
 	<aui:input name="redirect" type="hidden" value="<%= configurationRenderURL %>" />
-	<aui:input name="preferences--rootTopicId--" type="hidden" value="<%= rootTopicId %>" />
+	<aui:input name="preferences--rootTopicExternalReferenceCode--" type="hidden" value="<%= rootTopicExternalReferenceCode %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset
-				collapsible="<%= false %>"
-				label="general-settings"
-			>
-				<aui:input name="preferences--showCardsForTopicNavigation--" type="checkbox" value="<%= questionsConfiguration.showCardsForTopicNavigation() %>" />
+		<liferay-frontend:fieldset
+			collapsible="<%= false %>"
+			label="general-settings"
+		>
+			<aui:input name="preferences--showCardsForTopicNavigation--" type="checkbox" value="<%= questionsConfiguration.showCardsForTopicNavigation() %>" />
 
-				<div class="form-group">
-					<aui:input label="root-topic-id" name="rootTopicName" type="resource" value="<%= rootTopicName %>" />
+			<div class="form-group">
+				<label>
+					<liferay-ui:message key="ask-question-button-text" />
+				</label>
 
-					<aui:button name="selectRootTopicButton" value="select" />
+				<liferay-ui:input-localized
+					fieldPrefix="preferences"
+					fieldPrefixSeparator="--"
+					name="askQuestionButtonTextAsLocalizedXML"
+					xml="<%= questionsConfiguration.askQuestionButtonTextAsLocalizedXML() %>"
+				/>
+			</div>
 
-					<%
-					String taglibRemoveRootTopic = "Liferay.Util.removeEntitySelection('rootTopicId', 'rootTopicName', this, '" + liferayPortletResponse.getNamespace() + "');";
-					%>
+			<div class="form-group">
+				<label>
+					<liferay-ui:message key="edit-question-page-title" />
+				</label>
 
-					<aui:button disabled="<%= rootTopicId <= 0 %>" name="removeRootTopicButton" onClick="<%= taglibRemoveRootTopic %>" value="remove" />
-				</div>
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+				<liferay-ui:input-localized
+					fieldPrefix="preferences"
+					fieldPrefixSeparator="--"
+					name="editQuestionPageTitleAsLocalizedXML"
+					xml="<%= questionsConfiguration.editQuestionPageTitleAsLocalizedXML() %>"
+				/>
+			</div>
+
+			<div class="form-group">
+				<label>
+					<liferay-ui:message key="new-question-page-title" />
+				</label>
+
+				<liferay-ui:input-localized
+					fieldPrefix="preferences"
+					fieldPrefixSeparator="--"
+					name="newQuestionPageTitleAsLocalizedXML"
+					xml="<%= questionsConfiguration.newQuestionPageTitleAsLocalizedXML() %>"
+				/>
+			</div>
+
+			<div class="form-group">
+				<label>
+					<liferay-ui:message key="post-your-question-button-text" />
+				</label>
+
+				<liferay-ui:input-localized
+					fieldPrefix="preferences"
+					fieldPrefixSeparator="--"
+					name="postYourQuestionButtonTextAsLocalizedXML"
+					xml="<%= questionsConfiguration.postYourQuestionButtonTextAsLocalizedXML() %>"
+				/>
+			</div>
+
+			<div class="form-group">
+				<label>
+					<liferay-ui:message key="update-your-question-button-text" />
+				</label>
+
+				<liferay-ui:input-localized
+					fieldPrefix="preferences"
+					fieldPrefixSeparator="--"
+					name="updateYourQuestionButtonTextAsLocalizedXML"
+					xml="<%= questionsConfiguration.updateYourQuestionButtonTextAsLocalizedXML() %>"
+				/>
+			</div>
+
+			<div class="form-group">
+				<aui:input label="root-topic" name="rootTopicName" type="resource" value="<%= rootTopicName %>" />
+
+				<aui:button name="selectRootTopicButton" value="select" />
+
+				<aui:button disabled="<%= Validator.isBlank(rootTopicExternalReferenceCode) %>" name="removeRootTopicButton" value="remove" />
+			</div>
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
-<script>
+<aui:script>
 	var selectRootTopicButton = document.getElementById(
 		'<portlet:namespace />selectRootTopicButton'
 	);
@@ -92,8 +140,9 @@ catch (Exception exception) {
 					var form = document.<portlet:namespace />fm;
 
 					Liferay.Util.setFormValues(form, {
-						rootTopicName: Liferay.Util.unescape(event.name),
-						rootTopicId: event.categoryid,
+						rootTopicExternalReferenceCode:
+							event.resourceexternalreferencecode,
+						rootTopicName: Liferay.Util.unescape(event.resourcename),
 					});
 
 					var removeRootTopicButton = document.getElementById(
@@ -113,7 +162,7 @@ catch (Exception exception) {
 				).setMVCRenderCommandName(
 					"/message_boards/select_category"
 				).setParameter(
-					"mbCategoryId", rootTopicId
+					"mbCategoryExternalReferenceCode", rootTopicExternalReferenceCode
 				).setWindowState(
 					LiferayWindowState.POP_UP
 				).buildPortletURL();
@@ -123,7 +172,28 @@ catch (Exception exception) {
 			});
 		});
 	}
-</script>
+
+	var removeRootTopicButton = document.getElementById(
+		'<portlet:namespace />removeRootTopicButton'
+	);
+
+	if (removeRootTopicButton) {
+		removeRootTopicButton.addEventListener('click', (event) => {
+			const form = document.<portlet:namespace />fm;
+
+			if (!form) {
+				return;
+			}
+
+			Liferay.Util.setFormValues(form, {
+				rootTopicExternalReferenceCode: '',
+				rootTopicName: '',
+			});
+
+			Liferay.Util.toggleDisabled(removeRootTopicButton, true);
+		});
+	}
+</aui:script>
 
 <%!
 private static final Log _log = LogFactoryUtil.getLog("com_liferay_questions_web.configuarion_jsp");

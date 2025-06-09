@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.js.portlet.extender.internal.portlet.action;
@@ -25,7 +16,7 @@ import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.util.DDM;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -37,12 +28,23 @@ import com.liferay.portal.kernel.portlet.DefaultConfigurationAction;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.InputStream;
 import java.io.PrintWriter;
@@ -52,17 +54,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Gustavo Mantuan
@@ -80,7 +71,7 @@ public class PortletExtenderConfigurationAction
 		_ddmFormValuesFactory = ddmFormValuesFactory;
 		_preferencesJSONObject = preferencesJSONObject;
 
-		_ddmForm = ddm.getDDMForm(preferencesJSONObject.toJSONString());
+		_ddmForm = ddm.getDDMForm(preferencesJSONObject.toString());
 
 		_ddmFormFieldsMap = _ddmForm.getDDMFormFieldsMap(true);
 
@@ -141,17 +132,14 @@ public class PortletExtenderConfigurationAction
 		for (Map.Entry<String, List<DDMFormFieldValue>> entry :
 				ddmFormFieldValuesMap.entrySet()) {
 
-			List<DDMFormFieldValue> ddmFormFieldValues = entry.getValue();
-
-			Stream<DDMFormFieldValue> stream = ddmFormFieldValues.stream();
-
 			DDMFormField ddmFormField = _ddmFormFieldsMap.get(entry.getKey());
 
 			String ddmFormFieldType = ddmFormField.getType();
 
 			setPreference(
 				actionRequest, entry.getKey(),
-				stream.map(
+				TransformUtil.transformToArray(
+					entry.getValue(),
 					ddmFormFieldValue -> {
 						Value value = ddmFormFieldValue.getValue();
 
@@ -166,10 +154,8 @@ public class PortletExtenderConfigurationAction
 						}
 
 						return stringValue;
-					}
-				).toArray(
-					String[]::new
-				));
+					},
+					String.class));
 		}
 
 		super.processAction(portletConfig, actionRequest, actionResponse);

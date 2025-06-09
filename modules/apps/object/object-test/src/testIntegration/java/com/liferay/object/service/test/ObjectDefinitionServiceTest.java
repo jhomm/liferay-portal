@@ -1,41 +1,54 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.object.constants.ObjectActionKeys;
+import com.liferay.object.constants.ObjectConstants;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.field.builder.TextObjectFieldBuilder;
+import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectFolder;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectDefinitionService;
-import com.liferay.object.util.LocalizedMapUtil;
+import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -56,12 +69,33 @@ public class ObjectDefinitionServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_defaultUser = _userLocalService.getDefaultUser(
-			TestPropsValues.getCompanyId());
+		_adminUser = TestPropsValues.getUser();
+
+		_objectFolder = _objectFolderLocalService.addObjectFolder(
+			RandomTestUtil.randomString(), _adminUser.getUserId(),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			RandomTestUtil.randomString());
+
 		_originalName = PrincipalThreadLocal.getName();
 		_originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
-		_user = TestPropsValues.getUser();
+		_user1 = UserTestUtil.addUser();
+		_user2 = UserTestUtil.addUser();
+
+		Role role = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		RoleTestUtil.addResourcePermission(
+			role, ObjectConstants.RESOURCE_NAME,
+			ResourceConstants.SCOPE_COMPANY,
+			String.valueOf(TestPropsValues.getCompanyId()),
+			ObjectActionKeys.ADD_OBJECT_DEFINITION);
+
+		RoleTestUtil.addResourcePermission(
+			role, ObjectDefinition.class.getName(),
+			ResourceConstants.SCOPE_COMPANY,
+			String.valueOf(TestPropsValues.getCompanyId()), ActionKeys.UPDATE);
+
+		_userLocalService.addRoleUser(role.getRoleId(), _user2.getUserId());
 	}
 
 	@After
@@ -73,100 +107,209 @@ public class ObjectDefinitionServiceTest {
 
 	@Test
 	public void testAddCustomObjectDefinition() throws Exception {
-		try {
-			_testAddCustomObjectDefinition(_defaultUser);
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(), " must have ",
+				"ADD_OBJECT_DEFINITION permission for com.liferay.object "),
+			() -> _testAddCustomObjectDefinition(0, _user1));
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user2.getUserId(),
+				" must have ADD_OBJECT_DEFINITION permission for ",
+				"com.liferay.object.model.ObjectFolder ",
+				_objectFolder.getObjectFolderId()),
+			() -> _testAddCustomObjectDefinition(
+				_objectFolder.getObjectFolderId(), _user2));
 
-			Assert.fail();
-		}
-		catch (PrincipalException.MustHavePermission principalException) {
-			String message = principalException.getMessage();
+		_testAddCustomObjectDefinition(0, _adminUser);
+		_testAddCustomObjectDefinition(
+			_objectFolder.getObjectFolderId(), _adminUser);
+	}
 
-			Assert.assertTrue(
-				message.contains(
-					"User " + _defaultUser.getUserId() +
-						" must have ADD_OBJECT_DEFINITION permission for"));
-		}
+	@Test
+	public void testAddObjectDefinition() throws Exception {
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(), " must have ",
+				"ADD_OBJECT_DEFINITION permission for com.liferay.object "),
+			() -> _testAddObjectDefinition(0, _user1));
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user2.getUserId(),
+				" must have ADD_OBJECT_DEFINITION permission for ",
+				"com.liferay.object.model.ObjectFolder ",
+				_objectFolder.getObjectFolderId()),
+			() -> _testAddObjectDefinition(
+				_objectFolder.getObjectFolderId(), _user2));
 
-		_testAddCustomObjectDefinition(_user);
+		_testAddObjectDefinition(0, _adminUser);
+		_testAddObjectDefinition(_objectFolder.getObjectFolderId(), _adminUser);
+	}
+
+	@Test
+	public void testAddSystemObjectDefinition() throws Exception {
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(), " must have ",
+				"ADD_OBJECT_DEFINITION permission for com.liferay.object "),
+			() -> _testAddSystemObjectDefinition(0, _user1));
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user2.getUserId(),
+				" must have ADD_OBJECT_DEFINITION permission for ",
+				"com.liferay.object.model.ObjectFolder ",
+				_objectFolder.getObjectFolderId()),
+			() -> _testAddSystemObjectDefinition(
+				_objectFolder.getObjectFolderId(), _user2));
+
+		_testAddSystemObjectDefinition(0, _adminUser);
+		_testAddSystemObjectDefinition(
+			_objectFolder.getObjectFolderId(), _adminUser);
 	}
 
 	@Test
 	public void testDeleteObjectDefinition() throws Exception {
-		try {
-			_testDeleteObjectDefinition(_user, _defaultUser);
+		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
+			_adminUser);
 
-			Assert.fail();
-		}
-		catch (PrincipalException.MustHavePermission principalException) {
-			String message = principalException.getMessage();
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(),
+				" must have DELETE permission for ",
+				"com.liferay.object.model.ObjectDefinition ",
+				objectDefinition.getObjectDefinitionId()),
+			() -> _testDeleteObjectDefinition(objectDefinition, _user1));
 
-			Assert.assertTrue(
-				message.contains(
-					"User " + _defaultUser.getUserId() +
-						" must have DELETE permission for"));
-		}
-
-		_testDeleteObjectDefinition(_defaultUser, _defaultUser);
-		_testDeleteObjectDefinition(_user, _user);
+		_testDeleteObjectDefinition(
+			_addCustomObjectDefinition(_adminUser), _adminUser);
+		_testDeleteObjectDefinition(_addCustomObjectDefinition(_user1), _user1);
 	}
 
 	@Test
 	public void testGetObjectDefinition() throws Exception {
-		try {
-			_testGetObjectDefinition(_user, _defaultUser);
+		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
+			_adminUser);
 
-			Assert.fail();
-		}
-		catch (PrincipalException.MustHavePermission principalException) {
-			String message = principalException.getMessage();
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(), " must have VIEW permission for ",
+				"com.liferay.object.model.ObjectDefinition ",
+				objectDefinition.getObjectDefinitionId()),
+			() -> _testGetObjectDefinition(objectDefinition, _user1));
 
-			Assert.assertTrue(
-				message.contains(
-					"User " + _defaultUser.getUserId() +
-						" must have VIEW permission for"));
-		}
-
-		_testGetObjectDefinition(_defaultUser, _defaultUser);
-		_testGetObjectDefinition(_user, _user);
+		_testGetObjectDefinition(
+			_addCustomObjectDefinition(_adminUser), _adminUser);
+		_testGetObjectDefinition(_addCustomObjectDefinition(_user1), _user1);
 	}
 
 	@Test
 	public void testPublishCustomObjectDefinition() throws Exception {
-		try {
-			_testPublishCustomObjectDefinition(_defaultUser);
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(),
+				" must have PUBLISH_OBJECT_DEFINITION permission for ",
+				"com.liferay.object "),
+			() -> _testPublishCustomObjectDefinition(
+				_addCustomObjectDefinition(_adminUser), _user1));
 
-			Assert.fail();
-		}
-		catch (PrincipalException.MustHavePermission principalException) {
-			String message = principalException.getMessage();
-
-			Assert.assertTrue(
-				message.contains(
-					"User " + _defaultUser.getUserId() +
-						" must have PUBLISH_OBJECT_DEFINITION permission for"));
-		}
-
-		_testPublishCustomObjectDefinition(_user);
+		_testPublishCustomObjectDefinition(
+			_addCustomObjectDefinition(_adminUser), _adminUser);
 	}
 
 	@Test
 	public void testUpdateCustomObjectDefinition() throws Exception {
-		try {
-			_testUpdateCustomObjectDefinition(_user, _defaultUser);
+		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
+			_adminUser);
 
-			Assert.fail();
-		}
-		catch (PrincipalException.MustHavePermission principalException) {
-			String message = principalException.getMessage();
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(),
+				" must have UPDATE permission for ",
+				"com.liferay.object.model.ObjectDefinition ",
+				objectDefinition.getObjectDefinitionId()),
+			() -> _testUpdateCustomObjectDefinition(
+				objectDefinition, 0, _user1));
 
-			Assert.assertTrue(
-				message.contains(
-					"User " + _defaultUser.getUserId() +
-						" must have UPDATE permission for"));
-		}
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user2.getUserId(),
+				" must have ADD_OBJECT_DEFINITION permission for ",
+				"com.liferay.object.model.ObjectFolder ",
+				_objectFolder.getObjectFolderId()),
+			() -> _testUpdateCustomObjectDefinition(
+				_addCustomObjectDefinition(_adminUser),
+				_objectFolder.getObjectFolderId(), _user2));
 
-		_testUpdateCustomObjectDefinition(_defaultUser, _defaultUser);
-		_testUpdateCustomObjectDefinition(_user, _user);
+		_testUpdateCustomObjectDefinition(
+			_addCustomObjectDefinition(_adminUser),
+			_objectFolder.getObjectFolderId(), _adminUser);
+		_testUpdateCustomObjectDefinition(
+			_addCustomObjectDefinition(_user1), 0, _user1);
+	}
+
+	@Test
+	public void testUpdateSystemObjectDefinition() throws Exception {
+		ObjectDefinition objectDefinition = _addSystemObjectDefinition(
+			0, _adminUser);
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(),
+				" must have UPDATE permission for ",
+				"com.liferay.object.model.ObjectDefinition ",
+				objectDefinition.getObjectDefinitionId()),
+			() -> _testUpdateSystemObjectDefinition(
+				objectDefinition, 0, _user1));
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user2.getUserId(),
+				" must have ADD_OBJECT_DEFINITION permission for ",
+				"com.liferay.object.model.ObjectFolder ",
+				_objectFolder.getObjectFolderId()),
+			() -> _testUpdateSystemObjectDefinition(
+				_addSystemObjectDefinition(0, _adminUser),
+				_objectFolder.getObjectFolderId(), _user2));
+
+		_testUpdateSystemObjectDefinition(
+			_addSystemObjectDefinition(0, _adminUser),
+			_objectFolder.getObjectFolderId(), _adminUser);
+		_testUpdateSystemObjectDefinition(
+			_addSystemObjectDefinition(0, _user2), 0, _user2);
+	}
+
+	@Test
+	public void testUpdateTitleObjectFieldId() throws Exception {
+		ObjectDefinition objectDefinition = _addCustomObjectDefinition(
+			_adminUser);
+
+		AssertUtils.assertFailure(
+			PrincipalException.MustHavePermission.class,
+			StringBundler.concat(
+				"User ", _user1.getUserId(),
+				" must have UPDATE permission for ",
+				"com.liferay.object.model.ObjectDefinition ",
+				objectDefinition.getObjectDefinitionId()),
+			() -> _testUpdateTitleObjectFieldId(
+				objectDefinition, _adminUser, _user1));
+
+		_testUpdateTitleObjectFieldId(
+			_addCustomObjectDefinition(_adminUser), _adminUser, _adminUser);
+		_testUpdateTitleObjectFieldId(
+			_addCustomObjectDefinition(_user1), _user1, _user1);
 	}
 
 	private ObjectDefinition _addCustomObjectDefinition(User user)
@@ -183,11 +326,40 @@ public class ObjectDefinitionServiceTest {
 			user.getUserId(), objectDefinition.getObjectDefinitionId());*/
 
 		return _objectDefinitionLocalService.addCustomObjectDefinition(
-			user.getUserId(),
+			user.getUserId(), 0, null, false, false, true, false, false, false,
+			null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			"A" + RandomTestUtil.randomString(), null, null,
+			ObjectDefinitionTestUtil.getRandomName(), null, null,
 			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			ObjectDefinitionConstants.SCOPE_COMPANY, null);
+			true, ObjectDefinitionConstants.SCOPE_COMPANY,
+			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+			Collections.emptyList(),
+			Arrays.asList(
+				ObjectFieldUtil.createObjectField(
+					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+					ObjectFieldConstants.DB_TYPE_STRING,
+					RandomTestUtil.randomString(), StringUtil.randomId())));
+	}
+
+	private ObjectDefinition _addSystemObjectDefinition(
+			long objectFolderId, User user)
+		throws Exception {
+
+		_setUser(user);
+
+		return _objectDefinitionService.addSystemObjectDefinition(
+			RandomTestUtil.randomString(), user.getUserId(), objectFolderId,
+			null, false, false, true, false, false, false, null,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			"Test", null, null,
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			false, ObjectDefinitionConstants.SCOPE_COMPANY,
+			Collections.emptyList(),
+			Arrays.asList(
+				ObjectFieldUtil.createObjectField(
+					ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+					ObjectFieldConstants.DB_TYPE_STRING,
+					RandomTestUtil.randomString(), StringUtil.randomId())));
 	}
 
 	private void _setUser(User user) {
@@ -197,7 +369,9 @@ public class ObjectDefinitionServiceTest {
 		PrincipalThreadLocal.setName(user.getUserId());
 	}
 
-	private void _testAddCustomObjectDefinition(User user) throws Exception {
+	private void _testAddCustomObjectDefinition(long objectFolderId, User user)
+		throws Exception {
+
 		ObjectDefinition objectDefinition = null;
 
 		try {
@@ -205,12 +379,22 @@ public class ObjectDefinitionServiceTest {
 
 			objectDefinition =
 				_objectDefinitionService.addCustomObjectDefinition(
+					objectFolderId, null, false, false, true, false, false,
+					false, null,
 					LocalizedMapUtil.getLocalizedMap(
 						RandomTestUtil.randomString()),
-					"A" + RandomTestUtil.randomString(), null, null,
+					ObjectDefinitionTestUtil.getRandomName(), null, null,
 					LocalizedMapUtil.getLocalizedMap(
 						RandomTestUtil.randomString()),
-					ObjectDefinitionConstants.SCOPE_COMPANY, null);
+					true, ObjectDefinitionConstants.SCOPE_COMPANY,
+					ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+					Collections.emptyList(),
+					Collections.singletonList(
+						ObjectFieldUtil.createObjectField(
+							ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+							ObjectFieldConstants.DB_TYPE_STRING,
+							RandomTestUtil.randomString(),
+							StringUtil.randomId())));
 
 			objectDefinition =
 				_objectDefinitionLocalService.publishCustomObjectDefinition(
@@ -224,16 +408,52 @@ public class ObjectDefinitionServiceTest {
 		}
 	}
 
-	private void _testDeleteObjectDefinition(User ownerUser, User user)
+	private void _testAddObjectDefinition(long objectFolderId, User user)
 		throws Exception {
 
-		ObjectDefinition deleteObjectDefinition = null;
 		ObjectDefinition objectDefinition = null;
 
 		try {
 			_setUser(user);
 
-			objectDefinition = _addCustomObjectDefinition(ownerUser);
+			objectDefinition = _objectDefinitionService.addObjectDefinition(
+				RandomTestUtil.randomString(), objectFolderId, true,
+				ObjectDefinitionConstants.SCOPE_COMPANY, false);
+		}
+		finally {
+			if (objectDefinition != null) {
+				_objectDefinitionLocalService.deleteObjectDefinition(
+					objectDefinition);
+			}
+		}
+	}
+
+	private void _testAddSystemObjectDefinition(long objectFolderId, User user)
+		throws Exception {
+
+		ObjectDefinition objectDefinition = null;
+
+		try {
+			_setUser(user);
+
+			objectDefinition = _addSystemObjectDefinition(objectFolderId, user);
+		}
+		finally {
+			if (objectDefinition != null) {
+				_objectDefinitionLocalService.deleteObjectDefinition(
+					objectDefinition);
+			}
+		}
+	}
+
+	private void _testDeleteObjectDefinition(
+			ObjectDefinition objectDefinition, User user)
+		throws Exception {
+
+		ObjectDefinition deleteObjectDefinition = null;
+
+		try {
+			_setUser(user);
 
 			deleteObjectDefinition =
 				_objectDefinitionService.deleteObjectDefinition(
@@ -247,15 +467,12 @@ public class ObjectDefinitionServiceTest {
 		}
 	}
 
-	private void _testGetObjectDefinition(User ownerUser, User user)
+	private void _testGetObjectDefinition(
+			ObjectDefinition objectDefinition, User user)
 		throws Exception {
-
-		ObjectDefinition objectDefinition = null;
 
 		try {
 			_setUser(user);
-
-			objectDefinition = _addCustomObjectDefinition(ownerUser);
 
 			_objectDefinitionService.getObjectDefinition(
 				objectDefinition.getObjectDefinitionId());
@@ -268,23 +485,12 @@ public class ObjectDefinitionServiceTest {
 		}
 	}
 
-	private void _testPublishCustomObjectDefinition(User user)
+	private void _testPublishCustomObjectDefinition(
+			ObjectDefinition objectDefinition, User user)
 		throws Exception {
-
-		ObjectDefinition objectDefinition = null;
 
 		try {
 			_setUser(user);
-
-			objectDefinition =
-				_objectDefinitionLocalService.addCustomObjectDefinition(
-					user.getUserId(),
-					LocalizedMapUtil.getLocalizedMap(
-						RandomTestUtil.randomString()),
-					"A" + RandomTestUtil.randomString(), null, null,
-					LocalizedMapUtil.getLocalizedMap(
-						RandomTestUtil.randomString()),
-					ObjectDefinitionConstants.SCOPE_COMPANY, null);
 
 			objectDefinition =
 				_objectDefinitionService.publishCustomObjectDefinition(
@@ -298,31 +504,22 @@ public class ObjectDefinitionServiceTest {
 		}
 	}
 
-	private void _testUpdateCustomObjectDefinition(User ownerUser, User user)
+	private void _testUpdateCustomObjectDefinition(
+			ObjectDefinition objectDefinition, long objectFolderId, User user)
 		throws Exception {
-
-		ObjectDefinition objectDefinition = null;
 
 		try {
 			_setUser(user);
 
 			objectDefinition =
-				_objectDefinitionLocalService.addCustomObjectDefinition(
-					ownerUser.getUserId(),
-					LocalizedMapUtil.getLocalizedMap(
-						RandomTestUtil.randomString()),
-					"A" + RandomTestUtil.randomString(), null, null,
-					LocalizedMapUtil.getLocalizedMap(
-						RandomTestUtil.randomString()),
-					ObjectDefinitionConstants.SCOPE_COMPANY, null);
-
-			objectDefinition =
 				_objectDefinitionService.updateCustomObjectDefinition(
-					objectDefinition.getObjectDefinitionId(), 0, 0,
-					objectDefinition.isActive(),
+					null, objectDefinition.getObjectDefinitionId(), 0, 0,
+					objectFolderId, 0, false, objectDefinition.isActive(), null,
+					true, false, false, true, false, false, false, false, null,
 					LocalizedMapUtil.getLocalizedMap("Able"), "Able", null,
-					null, LocalizedMapUtil.getLocalizedMap("Ables"),
-					objectDefinition.getScope());
+					null, false, LocalizedMapUtil.getLocalizedMap("Ables"),
+					objectDefinition.getScope(), objectDefinition.getStatus(),
+					Collections.emptyList());
 		}
 		finally {
 			if (objectDefinition != null) {
@@ -332,7 +529,62 @@ public class ObjectDefinitionServiceTest {
 		}
 	}
 
-	private User _defaultUser;
+	private void _testUpdateSystemObjectDefinition(
+			ObjectDefinition objectDefinition, long objectFolderId, User user)
+		throws Exception {
+
+		try {
+			_setUser(user);
+
+			objectDefinition =
+				_objectDefinitionService.updateSystemObjectDefinition(
+					RandomTestUtil.randomString(),
+					objectDefinition.getObjectDefinitionId(), objectFolderId,
+					objectDefinition.getTitleObjectFieldId(),
+					Collections.emptyList());
+		}
+		finally {
+			if (objectDefinition != null) {
+				_objectDefinitionLocalService.deleteObjectDefinition(
+					objectDefinition);
+			}
+		}
+	}
+
+	private void _testUpdateTitleObjectFieldId(
+			ObjectDefinition objectDefinition, User ownerUser, User user)
+		throws Exception {
+
+		try {
+			_setUser(user);
+
+			ObjectField objectField = ObjectFieldUtil.addCustomObjectField(
+				new TextObjectFieldBuilder(
+				).userId(
+					ownerUser.getUserId()
+				).labelMap(
+					LocalizedMapUtil.getLocalizedMap(
+						RandomTestUtil.randomString())
+				).name(
+					StringUtil.randomId()
+				).objectDefinitionId(
+					objectDefinition.getObjectDefinitionId()
+				).build());
+
+			objectDefinition =
+				_objectDefinitionService.updateTitleObjectFieldId(
+					objectDefinition.getObjectDefinitionId(),
+					objectField.getObjectFieldId());
+		}
+		finally {
+			if (objectDefinition != null) {
+				_objectDefinitionLocalService.deleteObjectDefinition(
+					objectDefinition);
+			}
+		}
+	}
+
+	private User _adminUser;
 
 	@Inject
 	private ObjectDefinitionLocalService _objectDefinitionLocalService;
@@ -340,9 +592,19 @@ public class ObjectDefinitionServiceTest {
 	@Inject
 	private ObjectDefinitionService _objectDefinitionService;
 
+	@Inject
+	private ObjectFieldLocalService _objectFieldLocalService;
+
+	@DeleteAfterTestRun
+	private ObjectFolder _objectFolder;
+
+	@Inject
+	private ObjectFolderLocalService _objectFolderLocalService;
+
 	private String _originalName;
 	private PermissionChecker _originalPermissionChecker;
-	private User _user;
+	private User _user1;
+	private User _user2;
 
 	@Inject(type = UserLocalService.class)
 	private UserLocalService _userLocalService;

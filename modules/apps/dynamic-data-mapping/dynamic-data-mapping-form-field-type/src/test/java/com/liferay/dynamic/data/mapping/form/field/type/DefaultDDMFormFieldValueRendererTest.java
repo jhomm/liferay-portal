@@ -1,36 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type;
 
 import com.liferay.dynamic.data.mapping.model.UnlocalizedValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
-import com.liferay.portal.kernel.util.Html;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Marcellus Tavares
@@ -42,15 +29,11 @@ public class DefaultDDMFormFieldValueRendererTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
-		setUpHtmlUtil();
-	}
-
 	@Test
 	public void testRender() {
+		MockedStatic<HtmlUtil> htmlUtilMockedStatic = Mockito.mockStatic(
+			HtmlUtil.class);
+
 		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
 
 		ddmFormFieldValue.setName("Text");
@@ -60,24 +43,13 @@ public class DefaultDDMFormFieldValueRendererTest {
 		_defaultDDMFormFieldValueRenderer.render(
 			ddmFormFieldValue, LocaleUtil.US);
 
-		Mockito.verify(
-			_html
-		).escape(
-			Matchers.anyString()
-		);
-	}
+		htmlUtilMockedStatic.verify(() -> HtmlUtil.escape(Mockito.anyString()));
 
-	protected void setUpHtmlUtil() {
-		HtmlUtil htmlUtil = new HtmlUtil();
-
-		htmlUtil.setHtml(_html);
+		htmlUtilMockedStatic.close();
 	}
 
 	private final DefaultDDMFormFieldValueRenderer
 		_defaultDDMFormFieldValueRenderer =
 			new DefaultDDMFormFieldValueRenderer();
-
-	@Mock
-	private Html _html;
 
 }

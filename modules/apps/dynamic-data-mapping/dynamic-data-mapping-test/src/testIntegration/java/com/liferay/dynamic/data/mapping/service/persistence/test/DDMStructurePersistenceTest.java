@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.test;
@@ -27,14 +18,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -131,6 +126,8 @@ public class DDMStructurePersistenceTest {
 
 		newDDMStructure.setUuid(RandomTestUtil.randomString());
 
+		newDDMStructure.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newDDMStructure.setGroupId(RandomTestUtil.nextLong());
 
 		newDDMStructure.setCompanyId(RandomTestUtil.nextLong());
@@ -180,6 +177,9 @@ public class DDMStructurePersistenceTest {
 			newDDMStructure.getCtCollectionId());
 		Assert.assertEquals(
 			existingDDMStructure.getUuid(), newDDMStructure.getUuid());
+		Assert.assertEquals(
+			existingDDMStructure.getExternalReferenceCode(),
+			newDDMStructure.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingDDMStructure.getStructureId(),
 			newDDMStructure.getStructureId());
@@ -320,6 +320,16 @@ public class DDMStructurePersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_G_C() throws Exception {
+		_persistence.countByERC_G_C(
+			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G_C("null", 0L, 0L);
+
+		_persistence.countByERC_G_C((String)null, 0L, 0L);
+	}
+
+	@Test
 	public void testCountByG_C_S() throws Exception {
 		_persistence.countByG_C_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "");
@@ -381,6 +391,24 @@ public class DDMStructurePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -388,12 +416,12 @@ public class DDMStructurePersistenceTest {
 	protected OrderByComparator<DDMStructure> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"DDMStructure", "mvccVersion", true, "ctCollectionId", true, "uuid",
-			true, "structureId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "versionUserId", true,
-			"versionUserName", true, "createDate", true, "modifiedDate", true,
-			"parentStructureId", true, "classNameId", true, "structureKey",
-			true, "version", true, "name", true, "storageType", true, "type",
-			true, "lastPublishDate", true);
+			true, "externalReferenceCode", true, "structureId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"versionUserId", true, "versionUserName", true, "createDate", true,
+			"modifiedDate", true, "parentStructureId", true, "classNameId",
+			true, "structureKey", true, "version", true, "name", true,
+			"storageType", true, "type", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -672,6 +700,22 @@ public class DDMStructurePersistenceTest {
 				new Class<?>[] {String.class}, "groupId"));
 
 		Assert.assertEquals(
+			ddmStructure.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				ddmStructure, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(ddmStructure.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				ddmStructure, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
+		Assert.assertEquals(
+			Long.valueOf(ddmStructure.getClassNameId()),
+			ReflectionTestUtil.<Long>invoke(
+				ddmStructure, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "classNameId"));
+
+		Assert.assertEquals(
 			Long.valueOf(ddmStructure.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(
 				ddmStructure, "getColumnOriginalValue",
@@ -698,6 +742,8 @@ public class DDMStructurePersistenceTest {
 		ddmStructure.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmStructure.setUuid(RandomTestUtil.randomString());
+
+		ddmStructure.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		ddmStructure.setGroupId(RandomTestUtil.nextLong());
 

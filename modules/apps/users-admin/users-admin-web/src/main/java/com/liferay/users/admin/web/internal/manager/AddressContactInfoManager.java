@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.manager;
@@ -21,9 +12,9 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.List;
+import jakarta.portlet.ActionRequest;
 
-import javax.portlet.ActionRequest;
+import java.util.List;
 
 /**
  * @author Samuel Trong Tran
@@ -31,13 +22,13 @@ import javax.portlet.ActionRequest;
 public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 
 	public AddressContactInfoManager(
-		String className, long classPK, AddressLocalService addressLocalService,
-		AddressService addressService) {
+		AddressLocalService addressLocalService, AddressService addressService,
+		String className, long classPK) {
 
-		_className = className;
-		_classPK = classPK;
 		_addressLocalService = addressLocalService;
 		_addressService = addressService;
+		_className = className;
+		_classPK = classPK;
 	}
 
 	@Override
@@ -61,9 +52,10 @@ public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 		Address address = _addressLocalService.createAddress(addressId);
 
 		address.setCountryId(countryId);
+		address.setListTypeId(
+			ParamUtil.getLong(actionRequest, "addressListTypeId"));
 		address.setRegionId(
 			ParamUtil.getLong(actionRequest, "addressRegionId"));
-		address.setTypeId(ParamUtil.getLong(actionRequest, "addressTypeId"));
 		address.setCity(city);
 		address.setMailing(
 			ParamUtil.getBoolean(actionRequest, "addressMailing"));
@@ -80,10 +72,12 @@ public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 	@Override
 	protected Address doAdd(Address address) throws Exception {
 		return _addressService.addAddress(
-			_className, _classPK, address.getStreet1(), address.getStreet2(),
-			address.getStreet3(), address.getCity(), address.getZip(),
-			address.getRegionId(), address.getCountryId(), address.getTypeId(),
-			address.isMailing(), address.isPrimary(), new ServiceContext());
+			address.getExternalReferenceCode(), _className, _classPK,
+			address.getCountryId(), address.getListTypeId(),
+			address.getRegionId(), address.getCity(), null, address.isMailing(),
+			null, address.isPrimary(), address.getStreet1(),
+			address.getStreet2(), address.getStreet3(), address.getSubtype(),
+			address.getZip(), null, new ServiceContext());
 	}
 
 	@Override
@@ -94,10 +88,12 @@ public class AddressContactInfoManager extends BaseContactInfoManager<Address> {
 	@Override
 	protected void doUpdate(Address address) throws Exception {
 		_addressService.updateAddress(
-			address.getAddressId(), address.getStreet1(), address.getStreet2(),
-			address.getStreet3(), address.getCity(), address.getZip(),
-			address.getRegionId(), address.getCountryId(), address.getTypeId(),
-			address.isMailing(), address.isPrimary());
+			address.getExternalReferenceCode(), address.getAddressId(),
+			address.getCountryId(), address.getListTypeId(),
+			address.getRegionId(), address.getCity(), address.getDescription(),
+			address.isMailing(), address.getName(), address.isPrimary(),
+			address.getStreet1(), address.getStreet2(), address.getStreet3(),
+			address.getSubtype(), address.getZip(), address.getPhoneNumber());
 	}
 
 	@Override

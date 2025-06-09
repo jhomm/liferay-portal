@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.search.test;
@@ -18,10 +9,12 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -32,10 +25,10 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -91,7 +84,10 @@ public class MBThreadIndexerIndexedFieldsTest {
 		indexedFieldsFixture.postProcessDocument(document);
 
 		FieldValuesAssert.assertFieldValues(
-			_expectedFieldValues(mbThread, mbMessage), document, searchTerm);
+			document, _expectedFieldValues(mbThread, mbMessage),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
@@ -99,7 +95,7 @@ public class MBThreadIndexerIndexedFieldsTest {
 
 	protected void setUpIndexedFieldsFixture() {
 		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService);
+			resourcePermissionLocalService, searchEngineHelper);
 	}
 
 	protected void setUpMBFixture() {
@@ -138,6 +134,9 @@ public class MBThreadIndexerIndexedFieldsTest {
 	@Inject
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
 	protected UserSearchFixture userSearchFixture;
 
 	private Map<String, String> _expectedFieldValues(
@@ -165,6 +164,8 @@ public class MBThreadIndexerIndexedFieldsTest {
 		).put(
 			"discussion", "false"
 		).put(
+			"groupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
 			"lastPostDate",
 			() -> {
 				Date lastPostDate = mbThread.getLastPostDate();
@@ -174,6 +175,15 @@ public class MBThreadIndexerIndexedFieldsTest {
 		).put(
 			"participantUserIds",
 			String.valueOf(_getValues(mbThread.getParticipantUserIds()))
+		).put(
+			"scopeGroupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
+			"statusByUserExternalReferenceCode",
+			_user.getExternalReferenceCode()
+		).put(
+			"statusByUserId", String.valueOf(mbThread.getStatusByUserId())
+		).put(
+			"userExternalReferenceCode", _user.getExternalReferenceCode()
 		).build();
 
 		indexedFieldsFixture.populateUID(
@@ -205,9 +215,11 @@ public class MBThreadIndexerIndexedFieldsTest {
 		MBThread mbThread, MBMessage mbMessage, Map<String, String> map) {
 
 		indexedFieldsFixture.populateDate(
+			Field.CREATE_DATE, mbThread.getCreateDate(), map);
+		indexedFieldsFixture.populateDate(
 			Field.MODIFIED_DATE, mbMessage.getModifiedDate(), map);
 		indexedFieldsFixture.populateDate(
-			Field.CREATE_DATE, mbThread.getCreateDate(), map);
+			"lastPostDate", mbThread.getLastPostDate(), map);
 	}
 
 	private void _populateRoles(MBThread mbThread, Map<String, String> map)

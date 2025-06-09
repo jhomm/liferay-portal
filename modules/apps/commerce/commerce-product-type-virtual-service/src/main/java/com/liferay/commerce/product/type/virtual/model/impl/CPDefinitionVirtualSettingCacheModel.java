@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSettin
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,8 @@ import java.util.Date;
  * @generated
  */
 public class CPDefinitionVirtualSettingCacheModel
-	implements CacheModel<CPDefinitionVirtualSetting>, Externalizable {
+	implements CacheModel<CPDefinitionVirtualSetting>, Externalizable,
+			   MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -49,9 +42,10 @@ public class CPDefinitionVirtualSettingCacheModel
 			cpDefinitionVirtualSettingCacheModel =
 				(CPDefinitionVirtualSettingCacheModel)object;
 
-		if (CPDefinitionVirtualSettingId ==
+		if ((CPDefinitionVirtualSettingId ==
 				cpDefinitionVirtualSettingCacheModel.
-					CPDefinitionVirtualSettingId) {
+					CPDefinitionVirtualSettingId) &&
+			(mvccVersion == cpDefinitionVirtualSettingCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -61,14 +55,28 @@ public class CPDefinitionVirtualSettingCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, CPDefinitionVirtualSettingId);
+		int hashCode = HashUtil.hash(0, CPDefinitionVirtualSettingId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(47);
+		StringBundler sb = new StringBundler(45);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", CPDefinitionVirtualSettingId=");
 		sb.append(CPDefinitionVirtualSettingId);
@@ -88,10 +96,6 @@ public class CPDefinitionVirtualSettingCacheModel
 		sb.append(classNameId);
 		sb.append(", classPK=");
 		sb.append(classPK);
-		sb.append(", fileEntryId=");
-		sb.append(fileEntryId);
-		sb.append(", url=");
-		sb.append(url);
 		sb.append(", activationStatus=");
 		sb.append(activationStatus);
 		sb.append(", duration=");
@@ -102,8 +106,8 @@ public class CPDefinitionVirtualSettingCacheModel
 		sb.append(useSample);
 		sb.append(", sampleFileEntryId=");
 		sb.append(sampleFileEntryId);
-		sb.append(", sampleUrl=");
-		sb.append(sampleUrl);
+		sb.append(", sampleURL=");
+		sb.append(sampleURL);
 		sb.append(", termsOfUseRequired=");
 		sb.append(termsOfUseRequired);
 		sb.append(", termsOfUseContent=");
@@ -123,6 +127,8 @@ public class CPDefinitionVirtualSettingCacheModel
 	public CPDefinitionVirtualSetting toEntityModel() {
 		CPDefinitionVirtualSettingImpl cpDefinitionVirtualSettingImpl =
 			new CPDefinitionVirtualSettingImpl();
+
+		cpDefinitionVirtualSettingImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
 			cpDefinitionVirtualSettingImpl.setUuid("");
@@ -161,26 +167,17 @@ public class CPDefinitionVirtualSettingCacheModel
 
 		cpDefinitionVirtualSettingImpl.setClassNameId(classNameId);
 		cpDefinitionVirtualSettingImpl.setClassPK(classPK);
-		cpDefinitionVirtualSettingImpl.setFileEntryId(fileEntryId);
-
-		if (url == null) {
-			cpDefinitionVirtualSettingImpl.setUrl("");
-		}
-		else {
-			cpDefinitionVirtualSettingImpl.setUrl(url);
-		}
-
 		cpDefinitionVirtualSettingImpl.setActivationStatus(activationStatus);
 		cpDefinitionVirtualSettingImpl.setDuration(duration);
 		cpDefinitionVirtualSettingImpl.setMaxUsages(maxUsages);
 		cpDefinitionVirtualSettingImpl.setUseSample(useSample);
 		cpDefinitionVirtualSettingImpl.setSampleFileEntryId(sampleFileEntryId);
 
-		if (sampleUrl == null) {
-			cpDefinitionVirtualSettingImpl.setSampleUrl("");
+		if (sampleURL == null) {
+			cpDefinitionVirtualSettingImpl.setSampleURL("");
 		}
 		else {
-			cpDefinitionVirtualSettingImpl.setSampleUrl(sampleUrl);
+			cpDefinitionVirtualSettingImpl.setSampleURL(sampleURL);
 		}
 
 		cpDefinitionVirtualSettingImpl.setTermsOfUseRequired(
@@ -214,6 +211,7 @@ public class CPDefinitionVirtualSettingCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		CPDefinitionVirtualSettingId = objectInput.readLong();
@@ -231,9 +229,6 @@ public class CPDefinitionVirtualSettingCacheModel
 
 		classPK = objectInput.readLong();
 
-		fileEntryId = objectInput.readLong();
-		url = objectInput.readUTF();
-
 		activationStatus = objectInput.readInt();
 
 		duration = objectInput.readLong();
@@ -243,7 +238,7 @@ public class CPDefinitionVirtualSettingCacheModel
 		useSample = objectInput.readBoolean();
 
 		sampleFileEntryId = objectInput.readLong();
-		sampleUrl = objectInput.readUTF();
+		sampleURL = objectInput.readUTF();
 
 		termsOfUseRequired = objectInput.readBoolean();
 		termsOfUseContent = objectInput.readUTF();
@@ -256,6 +251,8 @@ public class CPDefinitionVirtualSettingCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
@@ -285,15 +282,6 @@ public class CPDefinitionVirtualSettingCacheModel
 
 		objectOutput.writeLong(classPK);
 
-		objectOutput.writeLong(fileEntryId);
-
-		if (url == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(url);
-		}
-
 		objectOutput.writeInt(activationStatus);
 
 		objectOutput.writeLong(duration);
@@ -304,11 +292,11 @@ public class CPDefinitionVirtualSettingCacheModel
 
 		objectOutput.writeLong(sampleFileEntryId);
 
-		if (sampleUrl == null) {
+		if (sampleURL == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(sampleUrl);
+			objectOutput.writeUTF(sampleURL);
 		}
 
 		objectOutput.writeBoolean(termsOfUseRequired);
@@ -326,6 +314,7 @@ public class CPDefinitionVirtualSettingCacheModel
 		objectOutput.writeLong(lastPublishDate);
 	}
 
+	public long mvccVersion;
 	public String uuid;
 	public long CPDefinitionVirtualSettingId;
 	public long groupId;
@@ -336,14 +325,12 @@ public class CPDefinitionVirtualSettingCacheModel
 	public long modifiedDate;
 	public long classNameId;
 	public long classPK;
-	public long fileEntryId;
-	public String url;
 	public int activationStatus;
 	public long duration;
 	public int maxUsages;
 	public boolean useSample;
 	public long sampleFileEntryId;
-	public String sampleUrl;
+	public String sampleURL;
 	public boolean termsOfUseRequired;
 	public String termsOfUseContent;
 	public long termsOfUseJournalArticleResourcePrimKey;

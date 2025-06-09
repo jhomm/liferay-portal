@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service;
@@ -17,6 +8,7 @@ package com.liferay.journal.service;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -30,6 +22,10 @@ public class JournalFolderLocalServiceWrapper
 	implements JournalFolderLocalService,
 			   ServiceWrapper<JournalFolderLocalService> {
 
+	public JournalFolderLocalServiceWrapper() {
+		this(null);
+	}
+
 	public JournalFolderLocalServiceWrapper(
 		JournalFolderLocalService journalFolderLocalService) {
 
@@ -38,13 +34,14 @@ public class JournalFolderLocalServiceWrapper
 
 	@Override
 	public JournalFolder addFolder(
-			long userId, long groupId, long parentFolderId, String name,
-			String description,
+			String externalReferenceCode, long userId, long groupId,
+			long parentFolderId, String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _journalFolderLocalService.addFolder(
-			userId, groupId, parentFolderId, name, description, serviceContext);
+			externalReferenceCode, userId, groupId, parentFolderId, name,
+			description, serviceContext);
 	}
 
 	/**
@@ -293,6 +290,15 @@ public class JournalFolderLocalServiceWrapper
 		return _journalFolderLocalService.fetchJournalFolder(folderId);
 	}
 
+	@Override
+	public JournalFolder fetchJournalFolderByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return _journalFolderLocalService.
+			fetchJournalFolderByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the journal folder matching the UUID and group.
 	 *
@@ -499,6 +505,16 @@ public class JournalFolderLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _journalFolderLocalService.getJournalFolder(folderId);
+	}
+
+	@Override
+	public JournalFolder getJournalFolderByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _journalFolderLocalService.
+			getJournalFolderByExternalReferenceCode(
+				externalReferenceCode, groupId);
 	}
 
 	/**
@@ -785,6 +801,11 @@ public class JournalFolderLocalServiceWrapper
 
 		_journalFolderLocalService.validateFolderDDMStructures(
 			folderId, parentFolderId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _journalFolderLocalService.getBasePersistence();
 	}
 
 	@Override

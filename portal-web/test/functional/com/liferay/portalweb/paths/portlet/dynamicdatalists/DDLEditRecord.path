@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!--FIELDS-->
+
 <tr>
 	<td>FIELD_LABEL</td>
 	<td>//div[@data-fieldname='${key_fieldName}']//label | //div[@data-fieldname='${key_fieldName}']//span</td>
@@ -62,23 +64,8 @@
 	<td></td>
 </tr>
 <tr>
-	<td>LINK_TO_PAGE_NAV_ITEM</td>
-	<td>//nav[contains(@class,'navbar-default')]//a[contains(.,'${key_navItem}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>LINK_TO_PAGE_BREADCRUMB</td>
-	<td>//ul[contains(@class,'breadcrumb')]/li[${key_number}]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>LINK_TO_PAGE_PAGE_RADIO</td>
 	<td>//a[contains(.,'${key_pageName}')]/../input[@type='radio']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>LINK_TO_PAGE_PAGE_CARET</td>
-	<td>//a[contains(.,'${key_pageName}')]/../input[@type='radio']/../a</td>
 	<td></td>
 </tr>
 <tr>
@@ -98,7 +85,7 @@
 </tr>
 <tr>
 	<td>SEPARATOR_FIELD</td>
-	<td>//div[@class='separator']</td>
+	<td>//div[@class='separator'] | //hr[@class='separator']</td>
 	<td></td>
 </tr>
 <tr>

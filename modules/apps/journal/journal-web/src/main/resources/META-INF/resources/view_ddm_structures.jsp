@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,19 +20,102 @@ JournalDDMStructuresManagementToolbarDisplayContext journalDDMStructuresManageme
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= journalDDMStructuresManagementToolbarDisplayContext %>"
-	propsTransformer="js/DDMStructuresManagementToolbarPropsTransformer"
+	propsTransformer="{DDMStructuresManagementToolbarPropsTransformer} from journal-web"
 />
 
 <portlet:actionURL copyCurrentRenderParameters="<%= true %>" name="/journal/delete_data_definition" var="deleteDataDefinitionURL">
 	<portlet:param name="mvcPath" value="/view_ddm_structures.jsp" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteDataDefinitionURL %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+<div>
+	<react:component
+		module="{ImportAndOverrideDataDefinitionModal} from journal-web"
+	/>
+</div>
+
+<aui:form action="<%= deleteDataDefinitionURL %>" cssClass="container-fluid container-fluid-max-xxxl" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 
 	<liferay-ui:success key="importDataDefinitionSuccessMessage" message="the-structure-was-successfully-imported" />
 
-	<liferay-ui:error embed="<%= false %>" key="importDataDefinitionErrorMessage" message="the-structure-was-not-successfully-imported" />
+	<liferay-ui:error embed="<%= false %>" key="importDataDefinitionErrorMessage">
+		<c:choose>
+			<c:when test="<%= errorException instanceof DataDefinitionValidationException.MustNotDuplicateFieldName %>">
+
+				<%
+				DataDefinitionValidationException.MustNotDuplicateFieldName mndfn = (DataDefinitionValidationException.MustNotDuplicateFieldName)errorException;
+				%>
+
+				<liferay-ui:message arguments="<%= HtmlUtil.escape(StringUtil.merge(mndfn.getDuplicatedFieldNames(), StringPool.COMMA_AND_SPACE)) %>" key="the-definition-field-name-x-was-defined-more-than-once" translateArguments="<%= false %>" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataDefinitionValidationException.MustSetFields %>">
+				<liferay-ui:message key="at-least-one-field-must-be-added" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataDefinitionValidationException.MustSetOptionsForField %>">
+
+				<%
+				DataDefinitionValidationException.MustSetOptionsForField msoff = (DataDefinitionValidationException.MustSetOptionsForField)errorException;
+				%>
+
+				<liferay-ui:message arguments="<%= HtmlUtil.escape(msoff.getFieldLabel()) %>" key="at-least-one-option-should-be-set-for-field-x" translateArguments="<%= false %>" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataDefinitionValidationException.MustSetValidCharactersForFieldName %>">
+
+				<%
+				DataDefinitionValidationException.MustSetValidCharactersForFieldName msvcffn = (DataDefinitionValidationException.MustSetValidCharactersForFieldName)errorException;
+				%>
+
+				<liferay-ui:message arguments="<%= HtmlUtil.escape(msvcffn.getFieldName()) %>" key="invalid-characters-were-defined-for-field-name-x" translateArguments="<%= false %>" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataDefinitionValidationException.MustSetValidName %>">
+				<liferay-ui:message key="please-enter-a-valid-name" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataDefinitionValidationException %>">
+				<liferay-ui:message key="please-enter-a-valid-form-definition" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataLayoutValidationException.MustNotDuplicateFieldName %>">
+
+				<%
+				DataLayoutValidationException.MustNotDuplicateFieldName mndfn = (DataLayoutValidationException.MustNotDuplicateFieldName)errorException;
+				%>
+
+				<liferay-ui:message arguments="<%= HtmlUtil.escape(StringUtil.merge(mndfn.getDuplicatedFieldNames(), StringPool.COMMA_AND_SPACE)) %>" key="the-definition-field-name-x-was-defined-more-than-once" translateArguments="<%= false %>" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DataLayoutValidationException %>">
+				<liferay-ui:message key="please-enter-a-valid-form-layout" />
+			</c:when>
+			<c:when test="<%= errorException instanceof DDMStructureValidationModelListenerException %>">
+				<liferay-ui:message key="the-structure-key-cannot-be-modified" />
+			</c:when>
+			<c:when test="<%= errorException instanceof PrincipalException.MustHavePermission %>">
+				<liferay-ui:message key="you-do-not-have-the-required-permissions" />
+			</c:when>
+			<c:when test="<%= errorException instanceof StructureDuplicateStructureKeyException %>">
+
+				<%
+				StructureDuplicateStructureKeyException sdske = (StructureDuplicateStructureKeyException)errorException;
+				%>
+
+				<liferay-ui:message arguments="<%= sdske.getStructureKey() %>" key="dynamic-data-mapping-structure-with-structure-key-x-already-exists" translateArguments="<%= false %>" />
+			</c:when>
+			<c:otherwise>
+
+				<%
+				Exception exception = (Exception)errorException;
+				%>
+
+				<c:choose>
+					<c:when test="<%= Validator.isNotNull(exception.getMessage()) %>">
+						<liferay-ui:message key="<%= exception.getMessage() %>" />
+					</c:when>
+					<c:otherwise>
+						<liferay-ui:message key="the-structure-failed-to-import" />
+					</c:otherwise>
+				</c:choose>
+			</c:otherwise>
+		</c:choose>
+	</liferay-ui:error>
+
 	<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByStructureLinks.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-structure-links" />
 	<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByTemplates.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-templates" />
 	<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureThatHasChild.class %>" message="the-structure-cannot-be-deleted-because-it-has-one-or-more-substructures" />
@@ -54,7 +128,7 @@ JournalDDMStructuresManagementToolbarDisplayContext journalDDMStructuresManageme
 
 	<liferay-ui:search-container
 		id="ddmStructures"
-		searchContainer="<%= journalDDMStructuresDisplayContext.getDDMStructureSearch() %>"
+		searchContainer="<%= journalDDMStructuresDisplayContext.getDDMStructureSearchContainer() %>"
 	>
 		<liferay-ui:search-container-row
 			className="com.liferay.dynamic.data.mapping.model.DDMStructure"
@@ -117,9 +191,18 @@ JournalDDMStructuresManagementToolbarDisplayContext journalDDMStructuresManageme
 				value="<%= ddmStructure.getModifiedDate() %>"
 			/>
 
-			<liferay-ui:search-container-column-jsp
-				path="/ddm_structure_action.jsp"
-			/>
+			<liferay-ui:search-container-column-text>
+
+				<%
+				DDMStructureActionDropdownItemsProvider ddmStructureActionDropdownItemsProvider = new DDMStructureActionDropdownItemsProvider(ddmStructure, liferayPortletRequest, liferayPortletResponse);
+				%>
+
+				<clay:dropdown-actions
+					aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+					dropdownItems="<%= ddmStructureActionDropdownItemsProvider.getActionDropdownItems() %>"
+					propsTransformer="{DDMStructrureElementsDefaultPropsTransformer} from journal-web"
+				/>
+			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>
 
 		<liferay-ui:search-iterator

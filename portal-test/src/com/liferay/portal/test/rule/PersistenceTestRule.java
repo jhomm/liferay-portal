@@ -1,22 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.test.rule;
 
+import com.liferay.osgi.service.tracker.collections.EagerServiceTrackerCustomizer;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.ModelListenerRegistrationUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AbstractTestRule;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
@@ -28,6 +23,9 @@ import java.util.Map;
 
 import org.junit.runner.Description;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+
 /**
  * @author Shuyang Zhou
  */
@@ -38,16 +36,22 @@ public class PersistenceTestRule extends AbstractTestRule<Object, Object> {
 
 	@Override
 	public void afterMethod(
-		Description description, Object copyModelListeners, Object target) {
+		Description description, Object copiedServiceTrackerBuckets,
+		Object target) {
 
 		CacheRegistryUtil.setActive(true);
 
-		Map<Class<?>, List<ModelListener<?>>> modelListeners =
-			ReflectionTestUtil.getFieldValue(
-				ModelListenerRegistrationUtil.class, "_modelListeners");
+		Object modelListeners = ReflectionTestUtil.getFieldValue(
+			ModelListenerRegistrationUtil.class, "_modelListeners");
 
-		modelListeners.putAll(
-			(Map<Class<?>, List<ModelListener<?>>>)copyModelListeners);
+		Map<Object, Object> serviceTrackerBuckets =
+			ReflectionTestUtil.getFieldValue(
+				modelListeners, "_serviceTrackerBuckets");
+
+		serviceTrackerBuckets.clear();
+
+		serviceTrackerBuckets.putAll(
+			(Map<Object, Object>)copiedServiceTrackerBuckets);
 	}
 
 	@Override
@@ -59,20 +63,27 @@ public class PersistenceTestRule extends AbstractTestRule<Object, Object> {
 	public Object beforeMethod(Description description, Object target)
 		throws Exception {
 
-		Map<Class<?>, List<ModelListener<?>>> modelListeners =
+		Object modelListeners = ReflectionTestUtil.getFieldValue(
+			ModelListenerRegistrationUtil.class, "_modelListeners");
+
+		Map<Object, Object> serviceTrackerBuckets =
 			ReflectionTestUtil.getFieldValue(
-				ModelListenerRegistrationUtil.class, "_modelListeners");
+				modelListeners, "_serviceTrackerBuckets");
 
-		Map<Class<?>, List<ModelListener<?>>> copyModelListeners =
-			new HashMap<>(modelListeners);
+		Map<Object, Object> copiedServiceTrackerBuckets = new HashMap<>(
+			serviceTrackerBuckets);
 
-		modelListeners.clear();
+		serviceTrackerBuckets.clear();
+
+		serviceTrackerBuckets.putAll(
+			ReflectionTestUtil.getFieldValue(
+				_excludedModelListeners, "_serviceTrackerBuckets"));
 
 		CacheRegistryUtil.setActive(false);
 
 		UserTestUtil.setUser(TestPropsValues.getUser());
 
-		return copyModelListeners;
+		return copiedServiceTrackerBuckets;
 	}
 
 	@Override
@@ -80,6 +91,70 @@ public class PersistenceTestRule extends AbstractTestRule<Object, Object> {
 	}
 
 	private PersistenceTestRule() {
+	}
+
+	private static final ServiceTrackerMap<String, List<ModelListener<?>>>
+		_excludedModelListeners;
+
+	static {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		_excludedModelListeners = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext,
+			(Class<ModelListener<?>>)(Class<?>)ModelListener.class,
+			"(persistence.test.rule.aware=true)",
+			(serviceReference, emitter) -> {
+				ModelListener<?> modelListener = bundleContext.getService(
+					serviceReference);
+
+				Class<?> modelClass = modelListener.getModelClass();
+
+				if (modelClass != null) {
+					emitter.emit(modelClass.getName());
+				}
+			},
+			new EagerServiceTrackerCustomizer
+				<ModelListener<?>, ModelListener<?>>() {
+
+				@Override
+				public ModelListener<?> addingService(
+					ServiceReference<ModelListener<?>> serviceReference) {
+
+					return bundleContext.getService(serviceReference);
+				}
+
+				@Override
+				public void modifiedService(
+					ServiceReference<ModelListener<?>> serviceReference,
+					ModelListener<?> modelListener) {
+				}
+
+				@Override
+				public void removedService(
+					ServiceReference<ModelListener<?>> serviceReference,
+					ModelListener<?> modelListener) {
+
+					bundleContext.ungetService(serviceReference);
+				}
+
+			},
+			(serviceReference1, serviceReference2) -> {
+				ModelListener<?> modelListener1 = bundleContext.getService(
+					serviceReference1);
+
+				Class<?> clazz1 = modelListener1.getClass();
+
+				String name1 = clazz1.getName();
+
+				ModelListener<?> modelListener2 = bundleContext.getService(
+					serviceReference2);
+
+				Class<?> clazz2 = modelListener2.getClass();
+
+				String name2 = clazz2.getName();
+
+				return name1.compareTo(name2);
+			});
 	}
 
 }

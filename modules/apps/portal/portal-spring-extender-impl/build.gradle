@@ -13,26 +13,25 @@ configurations {
 }
 
 dependencies {
-	compileOnly group: "com.liferay", name: "org.hibernate.core", version: "3.6.10.LIFERAY-PATCHED-6"
-	compileOnly group: "com.liferay", name: "org.springframework.orm", version: "4.3.22.LIFERAY-PATCHED-1"
+	compileOnly group: "com.liferay", name: "org.hibernate.core", version: "5.6.7.LIFERAY-PATCHED-2.JAKARTA-LIFERAY-PATCHED-1"
+	compileOnly group: "com.liferay", name: "org.springframework.beans", version: "5.3.39.LIFERAY-PATCHED-1"
+	compileOnly group: "com.liferay", name: "org.springframework.context", version: "5.3.39.LIFERAY-PATCHED-1"
+	compileOnly group: "com.liferay", name: "org.springframework.orm", version: "5.3.39.LIFERAY-PATCHED-1.JAKARTA-LIFERAY-PATCHED-1"
+	compileOnly group: "com.liferay", name: "org.springframework.tx", version: "5.3.39.LIFERAY-PATCHED-1"
 	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.impl", version: "default"
 	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.kernel", version: "default"
+	compileOnly group: "jakarta.persistence", name: "jakarta.persistence-api", version: "3.1.0"
 	compileOnly group: "org.apache.felix", name: "org.apache.felix.dependencymanager", version: "4.6.0"
 	compileOnly group: "org.osgi", name: "org.osgi.service.component.annotations", version: "1.4.0"
 	compileOnly group: "org.osgi", name: "osgi.core", version: "6.0.0"
-	compileOnly group: "org.springframework", name: "spring-aop", version: "5.2.2.RELEASE"
-	compileOnly group: "org.springframework", name: "spring-beans", version: "5.2.2.RELEASE"
-	compileOnly group: "org.springframework", name: "spring-context", version: "5.2.2.RELEASE"
-	compileOnly group: "org.springframework", name: "spring-core", version: "5.2.2.RELEASE"
-	compileOnly group: "org.springframework", name: "spring-tx", version: "5.2.2.RELEASE"
-	compileOnly project(":apps:static:portal-configuration:portal-configuration-metatype-api")
+	compileOnly group: "org.springframework", name: "spring-aop", version: "5.3.39"
+	compileOnly group: "org.springframework", name: "spring-core", version: "5.3.39"
 	compileOnly project(":apps:static:portal:portal-upgrade-api")
-	compileOnly project(":core:osgi-service-tracker-collections")
 	compileOnly project(":core:petra:petra-concurrent")
 	compileOnly project(":core:petra:petra-function")
-	compileOnly project(":core:petra:petra-memory")
+	compileOnly project(":core:petra:petra-io")
+	compileOnly project(":core:petra:petra-lang")
 	compileOnly project(":core:petra:petra-reflect")
 	compileOnly project(":core:petra:petra-string")
-
 	springExtenderApi project(":apps:portal:portal-spring-extender-api")
 }

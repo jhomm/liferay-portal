@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.js.bundle.config.extender.internal.servlet.taglib;
 
-import com.liferay.frontend.js.bundle.config.extender.internal.JSBundleConfigTracker;
+import com.liferay.frontend.js.bundle.config.extender.internal.JSBundleConfigRegistryUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.ModuleNameUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
@@ -27,20 +20,20 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import java.net.URL;
 
 import java.util.Collection;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Chema Balsas
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=" + Integer.MIN_VALUE,
+	property = "service.ranking:Integer=" + Integer.MIN_VALUE,
 	service = DynamicInclude.class
 )
 public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
@@ -60,27 +53,50 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 			HttpServletResponse httpServletResponse, String key)
 		throws IOException {
 
+		String nonce = ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+			httpServletRequest);
+
+		if (Validator.isNotNull(nonce)) {
+			_writeResponse(httpServletResponse, _getBundleConfig(nonce));
+
+			return;
+		}
+
 		if (!_isStale()) {
 			_writeResponse(httpServletResponse, _objectValuePair.getValue());
 
 			return;
 		}
 
+		String bundleConfig = _getBundleConfig(StringPool.BLANK);
+
+		_objectValuePair = new ObjectValuePair<>(
+			JSBundleConfigRegistryUtil.getLastModified(), bundleConfig);
+
+		_writeResponse(httpServletResponse, bundleConfig);
+	}
+
+	@Override
+	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
+		dynamicIncludeRegistry.register(
+			"/html/common/themes/top_js.jspf#resources");
+	}
+
+	private String _getBundleConfig(String nonce) {
 		StringWriter stringWriter = new StringWriter();
 
-		Collection<JSBundleConfigTracker.JSConfig> jsConfigs =
-			_jsBundleConfigTracker.getJSConfigs();
+		Collection<JSBundleConfigRegistryUtil.JSConfig> jsConfigs =
+			JSBundleConfigRegistryUtil.getJSConfigs();
 
 		if (!jsConfigs.isEmpty()) {
-			stringWriter.write("<script data-senna-track=\"temporary\" ");
-			stringWriter.write("type=\"");
+			stringWriter.write("<script");
+			stringWriter.write(nonce);
+			stringWriter.write(" data-senna-track=\"temporary\" type=\"");
 			stringWriter.write(ContentTypes.TEXT_JAVASCRIPT);
 			stringWriter.write("\">");
 
-			for (JSBundleConfigTracker.JSConfig jsConfig : jsConfigs) {
-				URL url = jsConfig.getURL();
-
-				try (InputStream inputStream = url.openStream()) {
+			for (JSBundleConfigRegistryUtil.JSConfig jsConfig : jsConfigs) {
+				try {
 					stringWriter.write("try {");
 
 					ServletContext servletContext =
@@ -98,7 +114,7 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 
 					stringWriter.write(
 						StringUtil.removeSubstring(
-							StringUtil.read(inputStream),
+							URLUtil.toString(jsConfig.getURL()),
 							"//# sourceMappingURL=config.js.map"));
 
 					stringWriter.write(
@@ -112,58 +128,41 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 			stringWriter.write("</script>");
 		}
 
-		String bundleConfig = stringWriter.toString();
-
-		_objectValuePair = new ObjectValuePair<>(
-			_jsBundleConfigTracker.getLastModified(), bundleConfig);
-
-		_writeResponse(httpServletResponse, bundleConfig);
+		return stringWriter.toString();
 	}
 
-	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register(
-			"/html/common/themes/top_js.jspf#resources");
-	}
+	private String _getModuleMain(
+		JSBundleConfigRegistryUtil.JSConfig jsConfig) {
 
-	protected JSBundleConfigTracker getJSBundleConfigTracker() {
-		return _jsBundleConfigTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJSBundleConfigTracker(
-		JSBundleConfigTracker jsBundleConfigTracker) {
-
-		_jsBundleConfigTracker = jsBundleConfigTracker;
-	}
-
-	private String _getModuleMain(JSBundleConfigTracker.JSConfig jsConfig) {
 		try {
 			ServletContext servletContext = jsConfig.getServletContext();
 
-			URL url = servletContext.getResource("package.json");
+			URL url = servletContext.getResource(
+				"META-INF/resources/package.json");
+
+			if (url == null) {
+				url = servletContext.getResource("package.json");
+			}
 
 			if (url == null) {
 				return null;
 			}
 
-			try (InputStream inputStream = url.openStream()) {
-				JSONObject jsonObject = _jsonFactory.createJSONObject(
-					StringUtil.read(inputStream));
+			JSONObject jsonObject = _jsonFactory.createJSONObject(
+				URLUtil.toString(url));
 
-				String moduleName = jsonObject.getString("name");
-				String moduleVersion = jsonObject.getString("version");
+			String moduleName = jsonObject.getString("name");
+			String moduleVersion = jsonObject.getString("version");
 
-				String moduleMain = jsonObject.getString("main");
+			String moduleMain = jsonObject.getString("main");
 
-				if (Validator.isNull(moduleMain)) {
-					moduleMain = "index.js";
-				}
-
-				return StringBundler.concat(
-					moduleName, "@", moduleVersion, "/",
-					ModuleNameUtil.toModuleName(moduleMain));
+			if (Validator.isNull(moduleMain)) {
+				moduleMain = "index.js";
 			}
+
+			return StringBundler.concat(
+				moduleName, "@", moduleVersion, "/",
+				ModuleNameUtil.toModuleName(moduleMain));
 		}
 		catch (Exception exception) {
 			throw new RuntimeException(exception);
@@ -171,7 +170,7 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 	}
 
 	private boolean _isStale() {
-		if (_jsBundleConfigTracker.getLastModified() >
+		if (JSBundleConfigRegistryUtil.getLastModified() >
 				_objectValuePair.getKey()) {
 
 			return true;
@@ -191,8 +190,6 @@ public class JSBundleConfigTopHeadDynamicInclude extends BaseDynamicInclude {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JSBundleConfigTopHeadDynamicInclude.class);
-
-	private JSBundleConfigTracker _jsBundleConfigTracker;
 
 	@Reference
 	private JSONFactory _jsonFactory;

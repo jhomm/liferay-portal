@@ -44,6 +44,10 @@
 
 .ddm-field-container {
 	padding: 0 12px;
+
+	.ddm-form-builder-app.borderless & {
+		padding: 0;
+	}
 }
 
 body .ddm-user-view-content {
@@ -69,18 +73,19 @@ body .ddm-user-view-content {
 			margin-right: 16px;
 		}
 
-		.custom-control-inline + .custom-control-inline {
+		.custom-control-inline {
 			margin-left: 16px;
 		}
 	}
+}
 
-	.multi-step-icon {
-		cursor: default;
-	}
+.form-control {
+	@extend %text-ellipsis;
+	white-space: normal;
 }
 
 .portlet-forms .ddm-form-basic-info .ddm-form-name {
-	color: #000;
+	color: $black;
 	font-weight: 500;
 	margin-top: 40px;
 	padding: 0;
@@ -95,8 +100,45 @@ body .ddm-user-view-content {
 .lfr-ddm-form-container {
 	word-break: normal;
 
+	.custom-control-label-text:disabled {
+		color: $secondary;
+	}
+
+	.custom-radio
+		.custom-control-input:checked:disabled
+		~ .custom-control-label::before {
+		background-color: $primary;
+		border-color: #0043c5;
+	}
+
+	.custom-checkbox
+		.custom-control-input:checked:disabled
+		~ .custom-control-label::before {
+		background-color: $primary;
+		border-color: #0043c5;
+	}
+
+	.form-control:disabled {
+		color: $secondary;
+	}
+
 	.form-control-feedback {
 		margin-left: -20px;
+	}
+
+	.has-error {
+		.liferay-ddm-form-field-grid.table-responsive {
+			margin-bottom: 0;
+		}
+
+		select.form-control[multiple] {
+			background-image: none;
+		}
+
+		td,
+		th {
+			color: $danger;
+		}
 	}
 
 	.icon-angle-left {
@@ -105,19 +147,6 @@ body .ddm-user-view-content {
 
 	.input-group-addon .form-control-feedback {
 		left: -18px;
-	}
-
-	.required-warning {
-		margin-bottom: 25px;
-		padding-left: 32px;
-
-		.icon-asterisk {
-			margin-left: 4px;
-		}
-	}
-
-	.select-arrow-down-container:focus {
-		outline: none;
 	}
 
 	.lfr-ddm-form-field-container {
@@ -162,6 +191,15 @@ body .ddm-user-view-content {
 		}
 	}
 
+	.lfr-ddm-form-field-repeatable-toolbar a {
+		color: #65b6f0;
+		text-decoration: none;
+
+		&:hover {
+			text-decoration: none;
+		}
+	}
+
 	.lfr-ddm-form-page {
 		display: none;
 		padding: 0;
@@ -191,34 +229,39 @@ body .ddm-user-view-content {
 		button {
 			margin-bottom: 20px;
 		}
+
+		.lfr-ddm-form-pagination-prev {
+			margin-right: 16px;
+		}
+	}
+
+	.option-selected {
+		color: $secondary;
 	}
 
 	.row {
 		min-height: auto;
 	}
 
-	.has-error {
-		.liferay-ddm-form-field-grid.table-responsive {
-			margin-bottom: 0;
-		}
+	.required-warning {
+		margin-bottom: 25px;
+		padding-left: 32px;
 
-		select.form-control[multiple] {
-			background-image: none;
-		}
-
-		td,
-		th {
-			color: #da1414;
+		.icon-asterisk {
+			margin-left: 4px;
 		}
 	}
 
-	.lfr-ddm-form-field-repeatable-toolbar a {
-		color: #65b6f0;
-		text-decoration: none;
+	.select-arrow-down-container:focus {
+		outline: none;
+	}
+}
 
-		&:hover {
-			text-decoration: none;
-		}
+.lfr-de__partial-results--background {
+	.ddm-form-builder-app {
+		margin-top: 0;
+		padding-bottom: 25px;
+		padding-top: 28px;
 	}
 }
 
@@ -252,7 +295,7 @@ body .ddm-user-view-content {
 }
 
 .liferay-ddm-form-field-paragraph {
-	color: #272833;
+	color: $dark;
 	font-size: 14px;
 	line-height: 16px;
 }
@@ -344,10 +387,10 @@ body .ddm-user-view-content {
 		}
 
 		.placeholder-dropdown-item {
-			color: #a7a9bc;
+			color: $secondary-l1;
 
 			&:hover {
-				color: #a7a9bc;
+				color: $secondary-l1;
 			}
 		}
 
@@ -357,7 +400,7 @@ body .ddm-user-view-content {
 	}
 
 	.select-arrow-down-container {
-		color: #6b6c7e;
+		color: $secondary;
 	}
 
 	.search-chosen {
@@ -404,7 +447,7 @@ body .ddm-user-view-content {
 	}
 
 	.drop-chosen {
-		background-color: #fff;
+		background-color: $white;
 		border-radius: 0 0 4px 4px;
 		box-shadow: 0 2px 14px 0 rgba(58, 75, 87, 0.1);
 		left: 0;
@@ -433,10 +476,12 @@ body .ddm-user-view-content {
 		display: flex;
 		flex-flow: row;
 		flex-wrap: wrap;
+		justify-content: flex-start;
 		list-style: none;
 		margin: 0;
 		padding-right: 20px;
 		width: auto;
+		word-break: break-all;
 
 		li {
 			overflow: hidden;
@@ -475,6 +520,11 @@ body .ddm-user-view-content {
 .lfr-ddm-form-page-title {
 	padding-left: 8px;
 	padding-right: 32px;
+
+	.ddm-form-builder-app.borderless & {
+		padding-left: 0;
+		padding-right: 0;
+	}
 }
 
 .lfr-ddm-form-paginated .pagination {
@@ -621,7 +671,7 @@ body .ddm-user-view-content {
 }
 
 .ddm-tooltip {
-	color: #a7a9bc;
+	color: $secondary-l1;
 	display: inline-block;
 	padding-left: 4px;
 }
@@ -638,7 +688,7 @@ div.ddm-tooltip-container {
 }
 
 p.ddm-label {
-	color: #272833;
+	color: $dark;
 	cursor: default;
 	display: inline-block;
 	font-size: 0.875rem;
@@ -650,7 +700,7 @@ p.ddm-label {
 
 legend .reference-mark,
 p .reference-mark {
-	color: #b95000;
+	color: $warning;
 	font-size: 6px;
 	margin: 4px 0 32px;
 	padding-left: 8px;

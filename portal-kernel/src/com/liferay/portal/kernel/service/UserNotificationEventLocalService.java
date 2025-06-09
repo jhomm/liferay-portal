@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -27,6 +18,7 @@ import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.NotificationEvent;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -50,6 +42,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see UserNotificationEventLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.portal.kernel.model.UserNotificationEvent"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -68,34 +65,16 @@ public interface UserNotificationEventLocalService
 			NotificationEvent notificationEvent)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	public UserNotificationEvent addUserNotificationEvent(
-			long userId, boolean actionRequired,
-			NotificationEvent notificationEvent)
-		throws PortalException;
-
 	public UserNotificationEvent addUserNotificationEvent(
 			long userId, NotificationEvent notificationEvent)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public UserNotificationEvent addUserNotificationEvent(
 			long userId, String type, long timestamp, int deliveryType,
 			long deliverBy, boolean delivered, String payload,
 			boolean actionRequired, boolean archived,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	public UserNotificationEvent addUserNotificationEvent(
-			long userId, String type, long timestamp, int deliveryType,
-			long deliverBy, String payload, boolean actionRequired,
-			boolean archived, ServiceContext serviceContext)
 		throws PortalException;
 
 	public UserNotificationEvent addUserNotificationEvent(
@@ -165,7 +144,8 @@ public interface UserNotificationEventLocalService
 			long userNotificationEventId)
 		throws PortalException;
 
-	public void deleteUserNotificationEvent(String uuid, long companyId);
+	public void deleteUserNotificationEvent(String uuid, long companyId)
+		throws PortalException;
 
 	/**
 	 * Deletes the user notification event from the database. Also notifies the appropriate model listeners.
@@ -182,9 +162,11 @@ public interface UserNotificationEventLocalService
 		UserNotificationEvent userNotificationEvent);
 
 	public void deleteUserNotificationEvents(
-		Collection<String> uuids, long companyId);
+			Collection<String> uuids, long companyId)
+		throws PortalException;
 
-	public void deleteUserNotificationEvents(long userId);
+	public void deleteUserNotificationEvents(long userId)
+		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public <T> T dslQuery(DSLQuery dslQuery);
@@ -488,6 +470,15 @@ public interface UserNotificationEventLocalService
 	public List<UserNotificationEvent> getUserNotificationEvents(
 		long userId, int deliveryType, int start, int end);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<UserNotificationEvent> getUserNotificationEvents(
+		long userId, int start, int end,
+		OrderByComparator<UserNotificationEvent> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<UserNotificationEvent> getUserNotificationEvents(
+		long userId, String type, long timestamp, boolean delivered);
+
 	/**
 	 * Returns the number of user notification events.
 	 *
@@ -534,6 +525,7 @@ public interface UserNotificationEventLocalService
 			JSONObject notificationEventJSONObject)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public UserNotificationEvent updateUserNotificationEvent(
 		String uuid, long companyId, boolean archive);
 

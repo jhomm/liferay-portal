@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.remote.rest.extender.internal;
@@ -19,9 +10,9 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.remote.rest.extender.configuration.RestExtenderConfiguration;
 
-import java.util.Map;
+import jakarta.ws.rs.core.Application;
 
-import javax.ws.rs.core.Application;
+import java.util.Map;
 
 import org.apache.cxf.Bus;
 import org.apache.felix.dm.DependencyManager;
@@ -32,9 +23,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
-import org.osgi.service.jaxrs.runtime.JaxrsServiceRuntime;
 
 /**
  * @author Carlos Sierra Andrés
@@ -65,15 +54,20 @@ public class RESTExtender {
 
 		_component.setImplementation(cxfJaxRsServiceRegistrator);
 
-		addBusDependencies();
-		addJaxRsApplicationDependencies();
-		addJaxRsProviderServiceDependencies();
-		addJaxRsServiceDependencies();
+		_addBusDependencies();
+		_addJaxRsApplicationDependencies();
+		_addJaxRsProviderServiceDependencies();
+		_addJaxRsServiceDependencies();
 
 		_dependencyManager.add(_component);
 	}
 
-	protected void addBusDependencies() {
+	@Deactivate
+	protected void deactivate() {
+		_dependencyManager.clear();
+	}
+
+	private void _addBusDependencies() {
 		RestExtenderConfiguration restExtenderConfiguration =
 			getRestExtenderConfiguration();
 
@@ -88,7 +82,7 @@ public class RESTExtender {
 				continue;
 			}
 
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				true, Bus.class,
 				StringBundler.concat(
 					"(", HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH,
@@ -97,7 +91,7 @@ public class RESTExtender {
 		}
 	}
 
-	protected void addJaxRsApplicationDependencies() {
+	private void _addJaxRsApplicationDependencies() {
 		RestExtenderConfiguration restExtenderConfiguration =
 			getRestExtenderConfiguration();
 
@@ -105,7 +99,7 @@ public class RESTExtender {
 			restExtenderConfiguration.jaxRsApplicationFilterStrings();
 
 		if (jaxRsApplicationFilterStrings == null) {
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				false, Application.class, null, "addApplication",
 				"removeApplication");
 
@@ -115,18 +109,18 @@ public class RESTExtender {
 		for (String jaxRsApplicationFilterString :
 				jaxRsApplicationFilterStrings) {
 
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				false, Application.class, jaxRsApplicationFilterString,
 				"addApplication", "removeApplication");
 		}
 	}
 
-	protected void addJaxRsProviderServiceDependencies() {
-		RestExtenderConfiguration soapExtenderConfiguration =
+	private void _addJaxRsProviderServiceDependencies() {
+		RestExtenderConfiguration restExtenderConfiguration =
 			getRestExtenderConfiguration();
 
 		String[] jaxRsProviderFilterStrings =
-			soapExtenderConfiguration.jaxRsProviderFilterStrings();
+			restExtenderConfiguration.jaxRsProviderFilterStrings();
 
 		if (jaxRsProviderFilterStrings == null) {
 			return;
@@ -137,18 +131,18 @@ public class RESTExtender {
 				continue;
 			}
 
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				false, null, jaxRsProviderFilterString, "addProvider",
 				"removeProvider");
 		}
 	}
 
-	protected void addJaxRsServiceDependencies() {
-		RestExtenderConfiguration soapExtenderConfiguration =
+	private void _addJaxRsServiceDependencies() {
+		RestExtenderConfiguration restExtenderConfiguration =
 			getRestExtenderConfiguration();
 
 		String[] jaxRsServiceFilterStrings =
-			soapExtenderConfiguration.jaxRsServiceFilterStrings();
+			restExtenderConfiguration.jaxRsServiceFilterStrings();
 
 		if (jaxRsServiceFilterStrings == null) {
 			return;
@@ -159,13 +153,13 @@ public class RESTExtender {
 				continue;
 			}
 
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				false, null, jaxRsServiceFilterString, "addService",
 				"removeService");
 		}
 	}
 
-	protected ServiceDependency addTCCLServiceDependency(
+	private ServiceDependency _addTCCLServiceDependency(
 		boolean required, Class<?> clazz, String filter, String addName,
 		String removeName) {
 
@@ -192,17 +186,8 @@ public class RESTExtender {
 		return serviceDependency;
 	}
 
-	@Deactivate
-	protected void deactivate() {
-		_dependencyManager.clear();
-	}
-
 	private org.apache.felix.dm.Component _component;
 	private DependencyManager _dependencyManager;
-
-	@Reference
-	private JaxrsServiceRuntime _jaxrsServiceRuntime;
-
 	private RestExtenderConfiguration _restExtenderConfiguration;
 
 }

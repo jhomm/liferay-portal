@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.attachments.test;
@@ -19,6 +10,7 @@ import com.liferay.blogs.constants.BlogsConstants;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalServiceUtil;
 import com.liferay.blogs.test.util.BlogsTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.editor.constants.EditorConstants;
@@ -28,7 +20,6 @@ import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -175,13 +166,11 @@ public class BlogsEntryAttachmentFileEntryHelperTest {
 			getBlogsEntryAttachmentFileEntryReferences(FileEntry tempFileEntry)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), _user.getUserId());
-
 		BlogsEntry entry = BlogsEntryLocalServiceUtil.addEntry(
 			_user.getUserId(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), serviceContext);
+			RandomTestUtil.randomString(),
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), _user.getUserId()));
 
 		List<FileEntry> tempFileEntries = new ArrayList<>();
 
@@ -237,23 +226,19 @@ public class BlogsEntryAttachmentFileEntryHelperTest {
 				List<FileEntry> tempFileEntries)
 		throws Exception {
 
-		List<BlogsEntryAttachmentFileEntryReference>
-			blogsEntryAttachmentFileEntryReferences = new ArrayList<>();
+		return TransformUtil.transform(
+			tempFileEntries,
+			tempFileEntry -> {
+				FileEntry blogsEntryAttachmentFileEntry =
+					_addBlogsEntryAttachmentFileEntry(
+						groupId, userId, blogsEntryId, folderId,
+						tempFileEntry.getTitle(), tempFileEntry.getMimeType(),
+						tempFileEntry.getContentStream());
 
-		for (FileEntry tempFileEntry : tempFileEntries) {
-			FileEntry blogsEntryAttachmentFileEntry =
-				_addBlogsEntryAttachmentFileEntry(
-					groupId, userId, blogsEntryId, folderId,
-					tempFileEntry.getTitle(), tempFileEntry.getMimeType(),
-					tempFileEntry.getContentStream());
-
-			blogsEntryAttachmentFileEntryReferences.add(
-				new BlogsEntryAttachmentFileEntryReference(
+				return new BlogsEntryAttachmentFileEntryReference(
 					tempFileEntry.getFileEntryId(),
-					blogsEntryAttachmentFileEntry));
-		}
-
-		return blogsEntryAttachmentFileEntryReferences;
+					blogsEntryAttachmentFileEntry);
+			});
 	}
 
 	private FileEntry _addBlogsEntryAttachmentFileEntry(
@@ -264,7 +249,7 @@ public class BlogsEntryAttachmentFileEntryHelperTest {
 		String uniqueFileName = _getUniqueFileName(groupId, fileName, folderId);
 
 		return PortletFileRepositoryUtil.addPortletFileEntry(
-			groupId, userId, BlogsEntry.class.getName(), blogsEntryId,
+			null, groupId, userId, BlogsEntry.class.getName(), blogsEntryId,
 			BlogsConstants.SERVICE_NAME, folderId, inputStream, uniqueFileName,
 			mimeType, true);
 	}

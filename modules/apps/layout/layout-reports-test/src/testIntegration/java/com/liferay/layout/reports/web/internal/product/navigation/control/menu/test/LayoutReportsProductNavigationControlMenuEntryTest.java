@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.reports.web.internal.product.navigation.control.menu.test;
@@ -18,7 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.journal.model.JournalArticle;
-import com.liferay.layout.reports.web.internal.util.LayoutReportsTestUtil;
+import com.liferay.layout.reports.web.internal.test.util.LayoutReportsTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -49,7 +40,7 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -78,17 +69,77 @@ public class LayoutReportsProductNavigationControlMenuEntryTest {
 		_group = GroupTestUtil.addGroup(
 			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(), 0);
 
-		_layout = LayoutTestUtil.addLayout(_group);
+		_layout = LayoutTestUtil.addTypePortletLayout(_group);
 	}
 
 	@Test
 	public void testIsShow() throws Exception {
+		User user = TestPropsValues.getUser();
+
 		LayoutReportsTestUtil.
 			withLayoutReportsGooglePageSpeedGroupConfiguration(
 				StringPool.BLANK, true, _group.getGroupId(),
 				() -> Assert.assertTrue(
 					_productNavigationControlMenuEntry.isShow(
-						_getHttpServletRequest())));
+						_getHttpServletRequest(
+							PermissionCheckerFactoryUtil.create(user), user))));
+	}
+
+	@Test
+	public void testIsShowWithGooglePageSpeedDisabledAndLayoutTypeAssetDisplay()
+		throws Exception {
+
+		_layout.setType(LayoutConstants.TYPE_ASSET_DISPLAY);
+
+		_layout = _layoutLocalService.updateLayout(_layout);
+
+		User user = TestPropsValues.getUser();
+
+		LayoutReportsTestUtil.
+			withLayoutReportsGooglePageSpeedGroupConfiguration(
+				StringPool.BLANK, false, _group.getGroupId(),
+				() -> Assert.assertTrue(
+					_productNavigationControlMenuEntry.isShow(
+						_getHttpServletRequest(
+							PermissionCheckerFactoryUtil.create(user), user))));
+	}
+
+	@Test
+	public void testIsShowWithGooglePageSpeedDisabledAndLayoutTypeContent()
+		throws Exception {
+
+		_layout.setType(LayoutConstants.TYPE_CONTENT);
+
+		_layout = _layoutLocalService.updateLayout(_layout);
+
+		User user = TestPropsValues.getUser();
+
+		LayoutReportsTestUtil.
+			withLayoutReportsGooglePageSpeedGroupConfiguration(
+				StringPool.BLANK, false, _group.getGroupId(),
+				() -> Assert.assertTrue(
+					_productNavigationControlMenuEntry.isShow(
+						_getHttpServletRequest(
+							PermissionCheckerFactoryUtil.create(user), user))));
+	}
+
+	@Test
+	public void testIsShowWithGooglePageSpeedDisabledAndLayoutTypePortlet()
+		throws Exception {
+
+		_layout.setType(LayoutConstants.TYPE_PORTLET);
+
+		_layout = _layoutLocalService.updateLayout(_layout);
+
+		User user = TestPropsValues.getUser();
+
+		LayoutReportsTestUtil.
+			withLayoutReportsGooglePageSpeedGroupConfiguration(
+				StringPool.BLANK, false, _group.getGroupId(),
+				() -> Assert.assertFalse(
+					_productNavigationControlMenuEntry.isShow(
+						_getHttpServletRequest(
+							PermissionCheckerFactoryUtil.create(user), user))));
 	}
 
 	@Test
@@ -97,31 +148,40 @@ public class LayoutReportsProductNavigationControlMenuEntryTest {
 
 		_layout = _layoutLocalService.updateLayout(_layout);
 
+		User user = TestPropsValues.getUser();
+
 		LayoutReportsTestUtil.
 			withLayoutReportsGooglePageSpeedGroupConfiguration(
 				RandomTestUtil.randomString(), true, _group.getGroupId(),
 				() -> Assert.assertTrue(
 					_productNavigationControlMenuEntry.isShow(
-						_getHttpServletRequest())));
+						_getHttpServletRequest(
+							PermissionCheckerFactoryUtil.create(user), user))));
 	}
 
 	@Test
 	public void testIsShowWithoutEnableCompanyConfiguration() throws Exception {
+		User user = TestPropsValues.getUser();
+
 		LayoutReportsTestUtil.
 			withLayoutReportsGooglePageSpeedCompanyConfiguration(
 				_group.getCompanyId(), false,
 				() -> Assert.assertFalse(
 					_productNavigationControlMenuEntry.isShow(
-						_getHttpServletRequest())));
+						_getHttpServletRequest(
+							PermissionCheckerFactoryUtil.create(user), user))));
 	}
 
 	@Test
 	public void testIsShowWithoutEnableSystemConfiguration() throws Exception {
+		User user = TestPropsValues.getUser();
+
 		LayoutReportsTestUtil.withLayoutReportsGooglePageSpeedConfiguration(
 			false,
 			() -> Assert.assertFalse(
 				_productNavigationControlMenuEntry.isShow(
-					_getHttpServletRequest())));
+					_getHttpServletRequest(
+						PermissionCheckerFactoryUtil.create(user), user))));
 	}
 
 	@Test
@@ -213,30 +273,6 @@ public class LayoutReportsProductNavigationControlMenuEntryTest {
 		}
 	}
 
-	private HttpServletRequest _getHttpServletRequest() throws Exception {
-		MockHttpServletRequest mockHttpServletRequest =
-			new MockHttpServletRequest();
-
-		mockHttpServletRequest.setAttribute(WebKeys.LAYOUT, _layout);
-
-		User user = TestPropsValues.getUser();
-
-		ThemeDisplay themeDisplay = new ThemeDisplay();
-
-		themeDisplay.setPermissionChecker(
-			PermissionCheckerFactoryUtil.create(user));
-		themeDisplay.setCompany(
-			_companyLocalService.getCompany(TestPropsValues.getCompanyId()));
-		themeDisplay.setLayout(_layout);
-		themeDisplay.setPlid(_layout.getPlid());
-		themeDisplay.setUser(user);
-
-		mockHttpServletRequest.setAttribute(
-			WebKeys.THEME_DISPLAY, themeDisplay);
-
-		return mockHttpServletRequest;
-	}
-
 	private HttpServletRequest _getHttpServletRequest(
 			PermissionChecker permissionChecker, User user)
 		throws PortalException {
@@ -253,6 +289,7 @@ public class LayoutReportsProductNavigationControlMenuEntryTest {
 		themeDisplay.setLayout(_layout);
 		themeDisplay.setPermissionChecker(permissionChecker);
 		themeDisplay.setPlid(_layout.getPlid());
+		themeDisplay.setScopeGroupId(_group.getGroupId());
 		themeDisplay.setUser(user);
 
 		mockHttpServletRequest.setAttribute(

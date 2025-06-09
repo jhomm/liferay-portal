@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.list.retriever.test;
@@ -27,12 +18,11 @@ import com.liferay.info.pagination.InfoPage;
 import com.liferay.layout.list.retriever.DefaultLayoutListRetrieverContext;
 import com.liferay.layout.list.retriever.KeyListObjectReference;
 import com.liferay.layout.list.retriever.LayoutListRetriever;
-import com.liferay.layout.list.retriever.LayoutListRetrieverTracker;
+import com.liferay.layout.list.retriever.LayoutListRetrieverRegistry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -48,7 +38,6 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -105,7 +94,7 @@ public class LayoutListRetrieverTest {
 
 		LayoutListRetriever<?, KeyListObjectReference> layoutListRetriever =
 			(LayoutListRetriever<?, KeyListObjectReference>)
-				_layoutListRetrieverTracker.getLayoutListRetriever(
+				_layoutListRetrieverRegistry.getLayoutListRetriever(
 					InfoListProviderItemSelectorReturnType.class.getName());
 
 		KeyListObjectReference keyListObjectReference =
@@ -115,24 +104,24 @@ public class LayoutListRetrieverTest {
 					AssetEntryRelatedInfoItemCollectionProvider.class.
 						getName()));
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId(),
-				new String[] {"tag1", "tag2"});
-
 		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			new byte[0], null, null, serviceContext);
+			new byte[0], null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId(),
+				new String[] {"tag1", "tag2"}));
 
 		DefaultLayoutListRetrieverContext layoutListRetrieverContext =
 			new DefaultLayoutListRetrieverContext();
 
 		layoutListRetrieverContext.setContextObject(fileEntry);
 
-		List<Object> list = layoutListRetriever.getList(
+		InfoPage<?> infoPage = layoutListRetriever.getInfoPage(
 			keyListObjectReference, layoutListRetrieverContext);
+
+		List<Object> list = (List<Object>)infoPage.getPageItems();
 
 		Assert.assertEquals(list.toString(), 2, list.size());
 
@@ -161,7 +150,7 @@ public class LayoutListRetrieverTest {
 
 		LayoutListRetriever<?, KeyListObjectReference> layoutListRetriever =
 			(LayoutListRetriever<?, KeyListObjectReference>)
-				_layoutListRetrieverTracker.getLayoutListRetriever(
+				_layoutListRetrieverRegistry.getLayoutListRetriever(
 					InfoListProviderItemSelectorReturnType.class.getName());
 
 		KeyListObjectReference keyListObjectReference =
@@ -169,8 +158,10 @@ public class LayoutListRetrieverTest {
 				JSONUtil.put(
 					"key", TestInfoCollectionProvider.class.getName()));
 
-		List<Object> list = layoutListRetriever.getList(
+		InfoPage<?> infoPage = layoutListRetriever.getInfoPage(
 			keyListObjectReference, new DefaultLayoutListRetrieverContext());
+
+		List<Object> list = (List<Object>)infoPage.getPageItems();
 
 		Assert.assertEquals(list.toString(), 1, list.size());
 		Assert.assertEquals(
@@ -183,7 +174,7 @@ public class LayoutListRetrieverTest {
 	private Group _group;
 
 	@Inject
-	private LayoutListRetrieverTracker _layoutListRetrieverTracker;
+	private LayoutListRetrieverRegistry _layoutListRetrieverRegistry;
 
 	private static class AssetEntryRelatedInfoItemCollectionProvider
 		implements RelatedInfoItemCollectionProvider<AssetEntry, AssetTag> {
@@ -192,10 +183,7 @@ public class LayoutListRetrieverTest {
 		public InfoPage<AssetTag> getCollectionInfoPage(
 			CollectionQuery collectionQuery) {
 
-			Optional<Object> relatedItemOptional =
-				collectionQuery.getRelatedItemObjectOptional();
-
-			Object relatedItem = relatedItemOptional.orElse(null);
+			Object relatedItem = collectionQuery.getRelatedItem();
 
 			if (!(relatedItem instanceof AssetEntry)) {
 				return InfoPage.of(

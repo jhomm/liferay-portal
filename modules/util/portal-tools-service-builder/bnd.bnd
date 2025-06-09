@@ -1,15 +1,6 @@
 Bundle-Name: Liferay Portal Tools Service Builder
 Bundle-SymbolicName: com.liferay.portal.tools.service.builder
-Bundle-Version: 1.0.410
-Import-Package:\
-	!javax.portlet.*,\
-	\
-	!javax.servlet.*,\
-	\
-	!org.apache.maven.plugin.*,\
-	!org.apache.tools.ant.*,\
-	\
-	*
+Bundle-Version: 1.0.503
 Main-Class: com.liferay.portal.tools.service.builder.ServiceBuilder
 -includeresource:\
 	com/liferay/account/service.xml=../../../modules/apps/account/account-service/service.xml,\
@@ -17,7 +8,6 @@ Main-Class: com.liferay.portal.tools.service.builder.ServiceBuilder
 	com/liferay/dynamic/data/lists/service.xml=../../../modules/apps/dynamic-data-lists/dynamic-data-lists-service/service.xml,\
 	com/liferay/dynamic/data/mapping/service.xml=../../../modules/apps/dynamic-data-mapping/dynamic-data-mapping-service/service.xml,\
 	com/liferay/journal/service.xml=../../../modules/apps/journal/journal-service/service.xml,\
-	com/liferay/mobile/device/rules/service.xml=../../../modules/apps/mobile-device-rules/mobile-device-rules-service/service.xml,\
 	com/liferay/portlet/messageboards/service.xml=../../../modules/apps/message-boards/message-boards-service/service.xml,\
 	@checkstyle-[0-9.]*.jar!/com/puppycrawl/tools/checkstyle/JavaParser.class,\
 	@checkstyle-[0-9.]*.jar!/com/puppycrawl/tools/checkstyle/api/CheckstyleException.class,\
@@ -37,6 +27,8 @@ Main-Class: com.liferay.portal.tools.service.builder.ServiceBuilder
 	@com.liferay.petra.concurrent-*.jar!/com/liferay/petra/concurrent/ConcurrentMapperHashMap.class,\
 	@com.liferay.petra.concurrent-*.jar!/com/liferay/petra/concurrent/ConcurrentReferenceKeyHashMap.class,\
 	@com.liferay.petra.concurrent-*.jar!/com/liferay/petra/concurrent/ConcurrentReferenceKeyHashMap$*.class,\
+	@com.liferay.petra.function-*.jar!/com/liferay/petra/function/UnsafeFunction.class,\
+	@com.liferay.petra.function-*.jar!/com/liferay/petra/function/transform/TransformUtil.class,\
 	@com.liferay.petra.io-*.jar!/com/liferay/petra/io/unsync/BoundaryCheckerUtil.class,\
 	@com.liferay.petra.io-*.jar!/com/liferay/petra/io/unsync/UnsyncBufferedReader.class,\
 	@com.liferay.petra.io-*.jar!/com/liferay/petra/io/unsync/UnsyncStringReader.class,\
@@ -51,9 +43,6 @@ Main-Class: com.liferay.portal.tools.service.builder.ServiceBuilder
 	@com.liferay.petra.reflect-*.jar!/com/liferay/petra/reflect/ReflectionUtil.class,\
 	@com.liferay.petra.sql.dsl.api-*.jar!/com/liferay/petra/sql/dsl/query/sort/OrderByInfo.class,\
 	@com.liferay.petra.string-*.jar!/com/liferay/petra/string/*.class,\
-	@com.liferay.petra.xml-*.jar!/com/liferay/petra/xml/Dom4jUtil.class,\
-	@com.liferay.petra.xml-*.jar!/com/liferay/petra/xml/XMLUtil.class,\
-	@com.liferay.portal.impl-*.jar!/com/liferay/mail/service.xml,\
 	@com.liferay.portal.impl-*.jar!/com/liferay/portal/model/BaseModelHintsImpl.class,\
 	@com.liferay.portal.impl-*.jar!/com/liferay/portal/service.xml,\
 	@com.liferay.portal.impl-*.jar!/com/liferay/portal/tools/ArgumentsMap.class,\
@@ -77,7 +66,6 @@ Main-Class: com.liferay.portal.tools.service.builder.ServiceBuilder
 	@com.liferay.portal.impl-*.jar!/com/liferay/portlet/mobiledevicerules/service.xml,\
 	@com.liferay.portal.impl-*.jar!/com/liferay/portlet/ratings/service.xml,\
 	@com.liferay.portal.impl-*.jar!/com/liferay/portlet/social/service.xml,\
-	@com.liferay.portal.impl-*.jar!/com/liferay/portlet/trash/service.xml,\
 	@com.liferay.portal.kernel-*.jar!/com/liferay/portal/kernel/bean/BeanProperties.class,\
 	@com.liferay.portal.kernel-*.jar!/com/liferay/portal/kernel/bean/BeanPropertiesUtil.class,\
 	@com.liferay.portal.kernel-*.jar!/com/liferay/portal/kernel/change/tracking/CTAware.class,\

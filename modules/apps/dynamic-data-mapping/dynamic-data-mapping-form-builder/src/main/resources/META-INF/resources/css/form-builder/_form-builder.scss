@@ -6,7 +6,6 @@
 @import './form-pagination';
 @import './moveable';
 @import './resizeable';
-@import './sidebar';
 
 $c: '.ddm-form-builder';
 
@@ -29,6 +28,8 @@ $c: '.ddm-form-builder';
 	.ddm-field-container {
 		border: 2px solid transparent;
 
+		&:focus,
+		&:focus-within,
 		&.dragging,
 		&.expanded,
 		&.hovered,
@@ -39,11 +40,6 @@ $c: '.ddm-form-builder';
 			&.ddm-fieldset {
 				border-color: #5aca75;
 			}
-		}
-
-		&.hovered {
-			border-width: 1px;
-			margin: 1px 2px;
 		}
 
 		&.active-drop-child {

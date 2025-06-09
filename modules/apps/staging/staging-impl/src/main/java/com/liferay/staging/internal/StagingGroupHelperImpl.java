@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.staging.internal;
@@ -17,7 +8,10 @@ package com.liferay.staging.internal;
 import com.liferay.exportimport.kernel.lar.ExportImportHelper;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.staging.StagingURLHelper;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -34,9 +28,11 @@ import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.service.http.GroupServiceHttp;
 import com.liferay.staging.StagingGroupHelper;
+import com.liferay.staging.internal.constants.CompanyGroupConstants;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,8 +40,18 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Akos Thurzo
  */
-@Component(immediate = true, service = StagingGroupHelper.class)
+@Component(service = StagingGroupHelper.class)
 public class StagingGroupHelperImpl implements StagingGroupHelper {
+
+	@Override
+	public Group fetchCompanyGroup(long companyId) {
+		if (!FeatureFlagManagerUtil.isEnabled("LPD-35914")) {
+			return null;
+		}
+
+		return _groupLocalService.fetchFriendlyURLGroup(
+			companyId, CompanyGroupConstants.FRIENDLY_URL);
+	}
 
 	@Override
 	public Group fetchLiveGroup(Group group) {
@@ -105,11 +111,9 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 
 		group = _getParentGroupForScopeGroup(group);
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				PortalClassLoaderUtil.getClassLoader())) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
 			PermissionChecker permissionChecker =
 				PermissionThreadLocal.getPermissionChecker();
 
@@ -125,9 +129,6 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 			long remoteGroupId = GetterUtil.getLong(
 				_getTypeSettingsProperty(group, "remoteGroupId"));
 
-			currentThread.setContextClassLoader(
-				PortalClassLoaderUtil.getClassLoader());
-
 			return GroupServiceHttp.getGroup(httpPrincipal, remoteGroupId);
 		}
 		catch (PortalException portalException) {
@@ -139,14 +140,58 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 
 			return null;
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
 	}
 
 	@Override
 	public Group fetchRemoteLiveGroup(long groupId) {
 		return fetchRemoteLiveGroup(_groupLocalService.fetchGroup(groupId));
+	}
+
+	@Override
+	public Group getStagedPortletGroup(Group group, String portletId) {
+		if (isLocalStagingGroup(group.getGroupId()) &&
+			!isStagedPortlet(group.getGroupId(), portletId)) {
+
+			return group.getLiveGroup();
+		}
+
+		return group;
+	}
+
+	@Override
+	public long getStagedPortletGroupId(long groupId, String portletId) {
+		if (!isStagedPortlet(groupId, portletId) &&
+			!isRemoteStagingGroup(groupId)) {
+
+			Group liveGroup = fetchLiveGroup(groupId);
+
+			if (liveGroup != null) {
+				return liveGroup.getGroupId();
+			}
+		}
+
+		return groupId;
+	}
+
+	@Override
+	public boolean isCompanyGroup(Group group) {
+		return isCompanyGroup(group.getCompanyId(), group.getGroupId());
+	}
+
+	@Override
+	public boolean isCompanyGroup(long companyId, long groupId) {
+		Group companyGroup = fetchCompanyGroup(companyId);
+
+		if ((companyGroup != null) && (companyGroup.getGroupId() == groupId)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean isCompanyGroupFriendlyURL(String friendlyURL) {
+		return Objects.equals(friendlyURL, CompanyGroupConstants.FRIENDLY_URL);
 	}
 
 	@Override
@@ -284,9 +329,8 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 
 	@Override
 	public boolean isStagedPortlet(long groupId, String portletId) {
-		Group group = _groupLocalService.fetchGroup(groupId);
-
-		return isStagedPortlet(group, portletId);
+		return isStagedPortlet(
+			_groupLocalService.fetchGroup(groupId), portletId);
 	}
 
 	@Override
@@ -306,7 +350,7 @@ public class StagingGroupHelperImpl implements StagingGroupHelper {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return true;

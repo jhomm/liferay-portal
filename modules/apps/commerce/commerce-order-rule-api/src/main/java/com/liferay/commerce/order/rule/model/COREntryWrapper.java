@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.model;
 
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
@@ -42,6 +34,8 @@ public class COREntryWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("COREntryId", getCOREntryId());
 		attributes.put("companyId", getCompanyId());
@@ -68,6 +62,18 @@ public class COREntryWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
+		}
+
 		String externalReferenceCode = (String)attributes.get(
 			"externalReferenceCode");
 
@@ -296,6 +302,16 @@ public class COREntryWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this cor entry.
+	 *
+	 * @return the mvcc version of this cor entry
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the name of this cor entry.
 	 *
 	 * @return the name of this cor entry
@@ -423,6 +439,16 @@ public class COREntryWrapper
 	@Override
 	public String getUserUuid() {
 		return model.getUserUuid();
+	}
+
+	/**
+	 * Returns the uuid of this cor entry.
+	 *
+	 * @return the uuid of this cor entry
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
 	}
 
 	/**
@@ -621,6 +647,16 @@ public class COREntryWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this cor entry.
+	 *
+	 * @param mvccVersion the mvcc version of this cor entry
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the name of this cor entry.
 	 *
 	 * @param name the name of this cor entry
@@ -756,6 +792,26 @@ public class COREntryWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this cor entry.
+	 *
+	 * @param uuid the uuid of this cor entry
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public StagedModelType getStagedModelType() {
+		return model.getStagedModelType();
 	}
 
 	@Override

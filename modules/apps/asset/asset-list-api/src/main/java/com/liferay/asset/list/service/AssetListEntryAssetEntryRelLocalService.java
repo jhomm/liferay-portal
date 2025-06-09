@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -122,10 +113,13 @@ public interface AssetListEntryAssetEntryRelLocalService
 	 *
 	 * @param assetListEntryAssetEntryRel the asset list entry asset entry rel
 	 * @return the asset list entry asset entry rel that was removed
+	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public AssetListEntryAssetEntryRel deleteAssetListEntryAssetEntryRel(
-		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel);
+			AssetListEntryAssetEntryRel assetListEntryAssetEntryRel)
+		throws PortalException;
 
 	/**
 	 * Deletes the asset list entry asset entry rel with the primary key from the database. Also notifies the appropriate model listeners.
@@ -146,6 +140,10 @@ public interface AssetListEntryAssetEntryRelLocalService
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public AssetListEntryAssetEntryRel deleteAssetListEntryAssetEntryRel(
 			long assetListEntryId, long segmentsEntryId, int position)
+		throws PortalException;
+
+	public void deleteAssetListEntryAssetEntryRelByAssetEntryId(
+			long assetEntryId)
 		throws PortalException;
 
 	public void deleteAssetListEntryAssetEntryRelByAssetListEntryId(
@@ -261,6 +259,10 @@ public interface AssetListEntryAssetEntryRelLocalService
 			long assetListEntryAssetEntryRelId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<AssetListEntryAssetEntryRel>
+		getAssetListEntryAssetEntryRelByAssetEntryId(long assetEntryId);
+
 	/**
 	 * Returns the asset list entry asset entry rel matching the UUID and group.
 	 *
@@ -301,15 +303,6 @@ public interface AssetListEntryAssetEntryRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetListEntryAssetEntryRel> getAssetListEntryAssetEntryRels(
 		long assetListEntryId, long[] segmentsEntryIds, int start, int end);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetListEntryAssetEntryRel> getAssetListEntryAssetEntryRels(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds, int start, int end);
 
 	/**
 	 * Returns all the asset list entry asset entry rels matching the UUID and company.
@@ -356,20 +349,7 @@ public interface AssetListEntryAssetEntryRelLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getAssetListEntryAssetEntryRelsCount(
-		long assetLIstEntryId, long segmentsEntryId, boolean visible);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getAssetListEntryAssetEntryRelsCount(
 		long assetListEntryId, long[] segmentsEntryIds);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getAssetListEntryAssetEntryRelsCount(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(

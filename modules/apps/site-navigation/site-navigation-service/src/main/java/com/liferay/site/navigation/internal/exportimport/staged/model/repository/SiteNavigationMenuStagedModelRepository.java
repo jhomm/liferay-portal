@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.internal.exportimport.staged.model.repository;
@@ -34,7 +25,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.site.navigation.model.SiteNavigationMenu",
 	service = StagedModelRepository.class
 )
@@ -58,9 +48,10 @@ public class SiteNavigationMenuStagedModelRepository
 		}
 
 		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
-			userId, siteNavigationMenu.getGroupId(),
-			siteNavigationMenu.getName(), siteNavigationMenu.getType(),
-			siteNavigationMenu.isAuto(), serviceContext);
+			siteNavigationMenu.getExternalReferenceCode(), userId,
+			siteNavigationMenu.getGroupId(), siteNavigationMenu.getName(),
+			siteNavigationMenu.getType(), siteNavigationMenu.isAuto(),
+			serviceContext);
 	}
 
 	@Override
@@ -146,11 +137,9 @@ public class SiteNavigationMenuStagedModelRepository
 			SiteNavigationMenu siteNavigationMenu)
 		throws PortalException {
 
-		long userId = portletDataContext.getUserId(
-			siteNavigationMenu.getUserUuid());
-
 		return _siteNavigationMenuLocalService.updateSiteNavigationMenu(
-			userId, siteNavigationMenu.getSiteNavigationMenuId(),
+			portletDataContext.getUserId(siteNavigationMenu.getUserUuid()),
+			siteNavigationMenu.getSiteNavigationMenuId(),
 			siteNavigationMenu.getGroupId(), siteNavigationMenu.getName(),
 			siteNavigationMenu.getType(), siteNavigationMenu.isAuto());
 	}

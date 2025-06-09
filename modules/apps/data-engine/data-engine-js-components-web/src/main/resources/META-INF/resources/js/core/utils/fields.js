@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {findFieldByFieldName} from '../../utils/FormSupport.es';
@@ -29,13 +20,13 @@ import {
 import {sub} from '../../utils/strings';
 import {PagesVisitor} from '../../utils/visitors.es';
 
-export const generateFieldName = (
+export function generateFieldName(
 	pages,
 	desiredName,
 	currentName = null,
 	blacklist = [],
 	generateFieldNameUsingFieldLabel
-) => {
+) {
 	let fieldName;
 	let existingField;
 
@@ -77,9 +68,9 @@ export const generateFieldName = (
 
 		return fieldName;
 	}
-};
+}
 
-export const getFieldProperty = (pages, fieldName, propertyName) => {
+export function getFieldProperty(pages, fieldName, propertyName) {
 	const visitor = new PagesVisitor(pages);
 	let propertyValue;
 
@@ -94,13 +85,13 @@ export const getFieldProperty = (pages, fieldName, propertyName) => {
 	);
 
 	return propertyValue;
-};
+}
 
-export const getFieldValue = (pages, fieldName) => {
+export function getFieldValue(pages, fieldName) {
 	return getFieldProperty(pages, fieldName, 'value');
-};
+}
 
-export const getField = (pages, fieldName) => {
+export function getField(pages, fieldName) {
 	const visitor = new PagesVisitor(pages);
 	let field;
 
@@ -111,9 +102,9 @@ export const getField = (pages, fieldName) => {
 	});
 
 	return field;
-};
+}
 
-export const getFieldLocalizedValue = (pages, fieldName, locale) => {
+export function getFieldLocalizedValue(pages, fieldName, locale) {
 	const fieldLocalizedValue = getFieldProperty(
 		pages,
 		fieldName,
@@ -121,13 +112,9 @@ export const getFieldLocalizedValue = (pages, fieldName, locale) => {
 	);
 
 	return fieldLocalizedValue[locale];
-};
+}
 
-export const getLabel = (
-	originalField,
-	defaultLanguageId,
-	editingLanguageId
-) => {
+export function getLabel(originalField, defaultLanguageId, editingLanguageId) {
 	const labelFieldLocalizedValue = getFieldLocalizedValue(
 		originalField.settingsContext.pages,
 		'label',
@@ -139,14 +126,14 @@ export const getLabel = (
 	}
 
 	return sub(Liferay.Language.get('copy-of-x'), [labelFieldLocalizedValue]);
-};
+}
 
-export const updateFieldValidationProperty = (
+export function updateFieldValidationProperty(
 	pages,
 	fieldName,
 	propertyName,
 	propertyValue
-) => {
+) {
 	const visitor = new PagesVisitor(pages);
 
 	return visitor.mapFields((field) => {
@@ -179,18 +166,18 @@ export const updateFieldValidationProperty = (
 
 		return field;
 	});
-};
+}
 
-export const getValidation = (originalField) => {
+export function getValidation(originalField) {
 	const validation = getSettingsContextProperty(
 		originalField.settingsContext,
 		'validation'
 	);
 
 	return validation;
-};
+}
 
-export const createDuplicatedField = (originalField, props, blacklist = []) => {
+export function createDuplicatedField(originalField, props, blacklist = []) {
 	const {
 		availableLanguageIds,
 		defaultLanguageId,
@@ -317,23 +304,31 @@ export const createDuplicatedField = (originalField, props, blacklist = []) => {
 		'validation',
 		getValidation(duplicatedField)
 	);
-};
+}
 
-export const findInvalidFieldReference = (focusedField, pages, value) => {
+export function isValueAlreadyUsed(focusedField, pages, value, propertyName) {
 	let hasInvalidFieldReference = false;
 
 	const visitor = new PagesVisitor(pages);
 
 	visitor.mapFields(
 		(field) => {
-			const fieldReference = getSettingsContextProperty(
+			const foundValue = getSettingsContextProperty(
 				field.settingsContext,
-				'fieldReference'
+				propertyName
 			);
 
 			if (
+				propertyName === 'fieldReference' &&
 				focusedField.fieldName !== field.fieldName &&
-				fieldReference?.toLowerCase() === value?.toLowerCase()
+				foundValue?.toLowerCase() === value?.toLowerCase()
+			) {
+				hasInvalidFieldReference = true;
+			}
+			else if (
+				propertyName === 'name' &&
+				focusedField.fieldReference !== field.fieldReference &&
+				foundValue?.toLowerCase() === value?.toLowerCase()
 			) {
 				hasInvalidFieldReference = true;
 			}
@@ -343,4 +338,4 @@ export const findInvalidFieldReference = (focusedField, pages, value) => {
 	);
 
 	return hasInvalidFieldReference;
-};
+}

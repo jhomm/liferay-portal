@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.exportimport.model.impl;
@@ -18,16 +9,12 @@ import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.exportimport.kernel.model.ExportImportConfigurationModel;
-import com.liferay.exportimport.kernel.model.ExportImportConfigurationSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
-import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
-import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -36,23 +23,19 @@ import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -182,69 +165,6 @@ public class ExportImportConfigurationModelImpl
 	@Deprecated
 	public static final long CREATEDATE_COLUMN_BITMASK = 16L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static ExportImportConfiguration toModel(
-		ExportImportConfigurationSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		ExportImportConfiguration model = new ExportImportConfigurationImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setExportImportConfigurationId(
-			soapModel.getExportImportConfigurationId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setType(soapModel.getType());
-		model.setSettings(soapModel.getSettings());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<ExportImportConfiguration> toModels(
-		ExportImportConfigurationSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<ExportImportConfiguration> models =
-			new ArrayList<ExportImportConfiguration>(soapModels.length);
-
-		for (ExportImportConfigurationSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.exportimport.kernel.model.ExportImportConfiguration"));
@@ -326,162 +246,149 @@ public class ExportImportConfigurationModelImpl
 	public Map<String, Function<ExportImportConfiguration, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ExportImportConfiguration, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ExportImportConfiguration>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ExportImportConfiguration.class.getClassLoader(),
-			ExportImportConfiguration.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<ExportImportConfiguration, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<ExportImportConfiguration> constructor =
-				(Constructor<ExportImportConfiguration>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<ExportImportConfiguration, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ExportImportConfiguration, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ExportImportConfiguration::getMvccVersion);
+			attributeGetterFunctions.put(
+				"exportImportConfigurationId",
+				ExportImportConfiguration::getExportImportConfigurationId);
+			attributeGetterFunctions.put(
+				"groupId", ExportImportConfiguration::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", ExportImportConfiguration::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", ExportImportConfiguration::getUserId);
+			attributeGetterFunctions.put(
+				"userName", ExportImportConfiguration::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", ExportImportConfiguration::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ExportImportConfiguration::getModifiedDate);
+			attributeGetterFunctions.put(
+				"name", ExportImportConfiguration::getName);
+			attributeGetterFunctions.put(
+				"description", ExportImportConfiguration::getDescription);
+			attributeGetterFunctions.put(
+				"type", ExportImportConfiguration::getType);
+			attributeGetterFunctions.put(
+				"settings", ExportImportConfiguration::getSettings);
+			attributeGetterFunctions.put(
+				"status", ExportImportConfiguration::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", ExportImportConfiguration::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName",
+				ExportImportConfiguration::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", ExportImportConfiguration::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map
-		<String, Function<ExportImportConfiguration, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<ExportImportConfiguration, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ExportImportConfiguration, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<ExportImportConfiguration, Object>>();
-		Map<String, BiConsumer<ExportImportConfiguration, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<ExportImportConfiguration, ?>>();
+		private static final Map
+			<String, BiConsumer<ExportImportConfiguration, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ExportImportConfiguration::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ExportImportConfiguration, Long>)
-				ExportImportConfiguration::setMvccVersion);
-		attributeGetterFunctions.put(
-			"exportImportConfigurationId",
-			ExportImportConfiguration::getExportImportConfigurationId);
-		attributeSetterBiConsumers.put(
-			"exportImportConfigurationId",
-			(BiConsumer<ExportImportConfiguration, Long>)
-				ExportImportConfiguration::setExportImportConfigurationId);
-		attributeGetterFunctions.put(
-			"groupId", ExportImportConfiguration::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<ExportImportConfiguration, Long>)
-				ExportImportConfiguration::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", ExportImportConfiguration::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ExportImportConfiguration, Long>)
-				ExportImportConfiguration::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", ExportImportConfiguration::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<ExportImportConfiguration, Long>)
-				ExportImportConfiguration::setUserId);
-		attributeGetterFunctions.put(
-			"userName", ExportImportConfiguration::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<ExportImportConfiguration, String>)
-				ExportImportConfiguration::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", ExportImportConfiguration::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ExportImportConfiguration, Date>)
-				ExportImportConfiguration::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ExportImportConfiguration::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ExportImportConfiguration, Date>)
-				ExportImportConfiguration::setModifiedDate);
-		attributeGetterFunctions.put(
-			"name", ExportImportConfiguration::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<ExportImportConfiguration, String>)
-				ExportImportConfiguration::setName);
-		attributeGetterFunctions.put(
-			"description", ExportImportConfiguration::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<ExportImportConfiguration, String>)
-				ExportImportConfiguration::setDescription);
-		attributeGetterFunctions.put(
-			"type", ExportImportConfiguration::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<ExportImportConfiguration, Integer>)
-				ExportImportConfiguration::setType);
-		attributeGetterFunctions.put(
-			"settings", ExportImportConfiguration::getSettings);
-		attributeSetterBiConsumers.put(
-			"settings",
-			(BiConsumer<ExportImportConfiguration, String>)
-				ExportImportConfiguration::setSettings);
-		attributeGetterFunctions.put(
-			"status", ExportImportConfiguration::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<ExportImportConfiguration, Integer>)
-				ExportImportConfiguration::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", ExportImportConfiguration::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<ExportImportConfiguration, Long>)
-				ExportImportConfiguration::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", ExportImportConfiguration::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<ExportImportConfiguration, String>)
-				ExportImportConfiguration::setStatusByUserName);
-		attributeGetterFunctions.put(
-			"statusDate", ExportImportConfiguration::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<ExportImportConfiguration, Date>)
-				ExportImportConfiguration::setStatusDate);
+		static {
+			Map<String, BiConsumer<ExportImportConfiguration, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<ExportImportConfiguration, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ExportImportConfiguration, Long>)
+					ExportImportConfiguration::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"exportImportConfigurationId",
+				(BiConsumer<ExportImportConfiguration, Long>)
+					ExportImportConfiguration::setExportImportConfigurationId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<ExportImportConfiguration, Long>)
+					ExportImportConfiguration::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ExportImportConfiguration, Long>)
+					ExportImportConfiguration::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<ExportImportConfiguration, Long>)
+					ExportImportConfiguration::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<ExportImportConfiguration, String>)
+					ExportImportConfiguration::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ExportImportConfiguration, Date>)
+					ExportImportConfiguration::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ExportImportConfiguration, Date>)
+					ExportImportConfiguration::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<ExportImportConfiguration, String>)
+					ExportImportConfiguration::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<ExportImportConfiguration, String>)
+					ExportImportConfiguration::setDescription);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<ExportImportConfiguration, Integer>)
+					ExportImportConfiguration::setType);
+			attributeSetterBiConsumers.put(
+				"settings",
+				(BiConsumer<ExportImportConfiguration, String>)
+					ExportImportConfiguration::setSettings);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<ExportImportConfiguration, Integer>)
+					ExportImportConfiguration::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<ExportImportConfiguration, Long>)
+					ExportImportConfiguration::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<ExportImportConfiguration, String>)
+					ExportImportConfiguration::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<ExportImportConfiguration, Date>)
+					ExportImportConfiguration::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -829,74 +736,8 @@ public class ExportImportConfigurationModelImpl
 	}
 
 	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException {
-
-		if (!isInTrash()) {
-			return null;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return trashEntry;
-		}
-
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if (Validator.isNotNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			ContainerModel containerModel = null;
-
-			try {
-				containerModel = trashHandler.getParentContainerModel(this);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-				return null;
-			}
-
-			while (containerModel != null) {
-				if (containerModel instanceof TrashedModel) {
-					TrashedModel trashedModel = (TrashedModel)containerModel;
-
-					return trashedModel.getTrashEntry();
-				}
-
-				trashHandler =
-					com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-						getTrashHandler(
-							trashHandler.getContainerModelClassName(
-								containerModel.getContainerModelId()));
-
-				if (trashHandler == null) {
-					return null;
-				}
-
-				containerModel = trashHandler.getContainerModel(
-					containerModel.getParentContainerModelId());
-			}
-		}
-
-		return null;
-	}
-
-	@Override
 	public long getTrashEntryClassPK() {
 		return getPrimaryKey();
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-			getTrashHandler(getModelClassName());
 	}
 
 	@Override
@@ -907,70 +748,6 @@ public class ExportImportConfigurationModelImpl
 		else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean isInTrashContainer() {
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if ((trashHandler == null) ||
-			Validator.isNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			return false;
-		}
-
-		try {
-			ContainerModel containerModel =
-				trashHandler.getParentContainerModel(this);
-
-			if (containerModel == null) {
-				return false;
-			}
-
-			if (containerModel instanceof TrashedModel) {
-				return ((TrashedModel)containerModel).isInTrash();
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override
@@ -1394,44 +1171,13 @@ public class ExportImportConfigurationModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ExportImportConfiguration, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ExportImportConfiguration, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ExportImportConfiguration, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((ExportImportConfiguration)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, ExportImportConfiguration>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						ExportImportConfiguration.class, ModelWrapper.class);
 
 	}
 
@@ -1457,7 +1203,8 @@ public class ExportImportConfigurationModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ExportImportConfiguration, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

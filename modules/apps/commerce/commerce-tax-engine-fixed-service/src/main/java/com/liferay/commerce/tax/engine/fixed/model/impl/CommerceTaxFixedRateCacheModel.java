@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.engine.fixed.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.tax.engine.fixed.model.CommerceTaxFixedRate;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CommerceTaxFixedRateCacheModel
-	implements CacheModel<CommerceTaxFixedRate>, Externalizable {
+	implements CacheModel<CommerceTaxFixedRate>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,8 +40,9 @@ public class CommerceTaxFixedRateCacheModel
 		CommerceTaxFixedRateCacheModel commerceTaxFixedRateCacheModel =
 			(CommerceTaxFixedRateCacheModel)object;
 
-		if (commerceTaxFixedRateId ==
-				commerceTaxFixedRateCacheModel.commerceTaxFixedRateId) {
+		if ((commerceTaxFixedRateId ==
+				commerceTaxFixedRateCacheModel.commerceTaxFixedRateId) &&
+			(mvccVersion == commerceTaxFixedRateCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -59,14 +52,28 @@ public class CommerceTaxFixedRateCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceTaxFixedRateId);
+		int hashCode = HashUtil.hash(0, commerceTaxFixedRateId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(21);
+		StringBundler sb = new StringBundler(23);
 
-		sb.append("{commerceTaxFixedRateId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", commerceTaxFixedRateId=");
 		sb.append(commerceTaxFixedRateId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -96,6 +103,7 @@ public class CommerceTaxFixedRateCacheModel
 		CommerceTaxFixedRateImpl commerceTaxFixedRateImpl =
 			new CommerceTaxFixedRateImpl();
 
+		commerceTaxFixedRateImpl.setMvccVersion(mvccVersion);
 		commerceTaxFixedRateImpl.setCommerceTaxFixedRateId(
 			commerceTaxFixedRateId);
 		commerceTaxFixedRateImpl.setGroupId(groupId);
@@ -134,6 +142,8 @@ public class CommerceTaxFixedRateCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
 		commerceTaxFixedRateId = objectInput.readLong();
 
 		groupId = objectInput.readLong();
@@ -154,6 +164,8 @@ public class CommerceTaxFixedRateCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(commerceTaxFixedRateId);
 
 		objectOutput.writeLong(groupId);
@@ -179,6 +191,7 @@ public class CommerceTaxFixedRateCacheModel
 		objectOutput.writeDouble(rate);
 	}
 
+	public long mvccVersion;
 	public long commerceTaxFixedRateId;
 	public long groupId;
 	public long companyId;

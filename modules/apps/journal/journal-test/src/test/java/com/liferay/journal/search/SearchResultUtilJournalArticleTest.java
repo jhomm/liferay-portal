@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.search;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.search.SearchResult;
 import com.liferay.portal.kernel.search.SearchResultManager;
 import com.liferay.portal.kernel.search.SummaryFactory;
 import com.liferay.portal.kernel.search.result.SearchResultTranslator;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.internal.result.SearchResultManagerImpl;
 import com.liferay.portal.search.internal.result.SearchResultTranslatorImpl;
@@ -35,22 +27,22 @@ import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.List;
 import java.util.logging.Level;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+
+import org.osgi.framework.BundleContext;
 
 /**
  * @author André de Oliveira
@@ -66,8 +58,13 @@ public class SearchResultUtilJournalArticleTest
 	@Before
 	@Override
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
 		super.setUp();
+	}
+
+	@After
+	public void tearDown() {
+		ReflectionTestUtil.invoke(
+			_searchResultManagerImpl, "deactivate", new Class<?>[0]);
 	}
 
 	@Test
@@ -86,8 +83,8 @@ public class SearchResultUtilJournalArticleTest
 		).when(
 			_indexer
 		).getSummary(
-			(Document)Matchers.any(), Matchers.anyString(),
-			(PortletRequest)Matchers.any(), (PortletResponse)Matchers.any()
+			(Document)Mockito.any(), Mockito.anyString(),
+			(PortletRequest)Mockito.any(), (PortletResponse)Mockito.any()
 		);
 
 		Mockito.when(
@@ -151,12 +148,16 @@ public class SearchResultUtilJournalArticleTest
 	}
 
 	protected SearchResultManager createSearchResultManager() {
-		SearchResultManagerImpl searchResultManagerImpl =
-			new SearchResultManagerImpl();
+		_searchResultManagerImpl = new SearchResultManagerImpl();
 
-		searchResultManagerImpl.setSummaryFactory(createSummaryFactory());
+		ReflectionTestUtil.setFieldValue(
+			_searchResultManagerImpl, "_summaryFactory",
+			createSummaryFactory());
+		ReflectionTestUtil.invoke(
+			_searchResultManagerImpl, "activate",
+			new Class<?>[] {BundleContext.class}, bundleContext);
 
-		return searchResultManagerImpl;
+		return _searchResultManagerImpl;
 	}
 
 	@Override
@@ -164,7 +165,8 @@ public class SearchResultUtilJournalArticleTest
 		SearchResultTranslatorImpl searchResultTranslatorImpl =
 			new SearchResultTranslatorImpl();
 
-		searchResultTranslatorImpl.setSearchResultManager(
+		ReflectionTestUtil.setFieldValue(
+			searchResultTranslatorImpl, "_searchResultManager",
 			createSearchResultManager());
 
 		return searchResultTranslatorImpl;
@@ -173,7 +175,8 @@ public class SearchResultUtilJournalArticleTest
 	protected SummaryFactory createSummaryFactory() {
 		SummaryFactoryImpl summaryFactoryImpl = new SummaryFactoryImpl();
 
-		summaryFactoryImpl.setIndexerRegistry(_indexerRegistry);
+		ReflectionTestUtil.setFieldValue(
+			summaryFactoryImpl, "_indexerRegistry", _indexerRegistry);
 
 		return summaryFactoryImpl;
 	}
@@ -184,10 +187,9 @@ public class SearchResultUtilJournalArticleTest
 	private static final String _DOCUMENT_VERSION = String.valueOf(
 		RandomTestUtil.randomInt());
 
-	@Mock
-	private Indexer<Object> _indexer;
-
-	@Mock
-	private IndexerRegistry _indexerRegistry;
+	private final Indexer<Object> _indexer = Mockito.mock(Indexer.class);
+	private final IndexerRegistry _indexerRegistry = Mockito.mock(
+		IndexerRegistry.class);
+	private SearchResultManagerImpl _searchResultManagerImpl;
 
 }

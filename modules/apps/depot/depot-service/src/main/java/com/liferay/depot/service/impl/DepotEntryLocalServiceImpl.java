@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service.impl;
@@ -19,20 +10,21 @@ import com.liferay.depot.exception.DepotEntryGroupException;
 import com.liferay.depot.exception.DepotEntryNameException;
 import com.liferay.depot.exception.DepotEntryStagedException;
 import com.liferay.depot.model.DepotEntry;
-import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.depot.service.DepotAppCustomizationLocalService;
+import com.liferay.depot.service.DepotEntryPinLocalService;
 import com.liferay.depot.service.base.DepotEntryLocalServiceBaseImpl;
 import com.liferay.depot.service.persistence.DepotEntryGroupRelPersistence;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.GroupKeyException;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -50,11 +42,9 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -127,7 +117,7 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 
 		User user = _userLocalService.getUser(serviceContext.getUserId());
 
-		if (!user.isDefaultUser()) {
+		if (!user.isGuestUser()) {
 			Role role = _roleLocalService.getRole(
 				group.getCompanyId(), DepotRolesConstants.ASSET_LIBRARY_OWNER);
 
@@ -140,7 +130,6 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 		}
 
 		depotEntry.setGroupId(group.getGroupId());
-
 		depotEntry.setCompanyId(serviceContext.getCompanyId());
 		depotEntry.setUserId(serviceContext.getUserId());
 
@@ -155,15 +144,32 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 	}
 
 	@Override
+	public DepotEntry deleteDepotEntry(DepotEntry depotEntry)
+		throws PortalException {
+
+		if (_isStaged(depotEntry)) {
+			throw new DepotEntryStagedException(
+				"Unstage depot entry " + depotEntry.getDepotEntryId() +
+					" before deleting it");
+		}
+
+		depotEntryPersistence.remove(depotEntry);
+
+		_resourceLocalService.deleteResource(
+			depotEntry, ResourceConstants.SCOPE_INDIVIDUAL);
+
+		_depotEntryPinLocalService.deleteDepotEntryDepotEntryPins(
+			depotEntry.getDepotEntryId());
+
+		return depotEntry;
+	}
+
+	@Override
 	public DepotEntry deleteDepotEntry(long depotEntryId)
 		throws PortalException {
 
-		if (_isStaged(depotEntryPersistence.fetchByPrimaryKey(depotEntryId))) {
-			throw new DepotEntryStagedException(
-				"Unstage depot entry " + depotEntryId + " before deleting it");
-		}
-
-		return super.deleteDepotEntry(depotEntryId);
+		return deleteDepotEntry(
+			depotEntryPersistence.fetchByPrimaryKey(depotEntryId));
 	}
 
 	@Override
@@ -187,20 +193,11 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 			long groupId, boolean ddmStructuresAvailable, int start, int end)
 		throws PortalException {
 
-		List<DepotEntry> depotEntries = new ArrayList<>();
-
-		List<DepotEntryGroupRel> depotEntryGroupRels =
+		return TransformUtil.transform(
 			_depotEntryGroupRelPersistence.findByDDMSA_TGI(
-				ddmStructuresAvailable, groupId, start, end);
-
-		for (DepotEntryGroupRel depotEntryGroupRel : depotEntryGroupRels) {
-			DepotEntry depotEntry = depotEntryLocalService.getDepotEntry(
-				depotEntryGroupRel.getDepotEntryId());
-
-			depotEntries.add(depotEntry);
-		}
-
-		return depotEntries;
+				ddmStructuresAvailable, groupId, start, end),
+			depotEntryGroupRel -> depotEntryLocalService.getDepotEntry(
+				depotEntryGroupRel.getDepotEntryId()));
 	}
 
 	@Override
@@ -208,19 +205,10 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 			long groupId, int start, int end)
 		throws PortalException {
 
-		List<DepotEntry> depotEntries = new ArrayList<>();
-
-		List<DepotEntryGroupRel> depotEntryGroupRels =
-			_depotEntryGroupRelPersistence.findByToGroupId(groupId, start, end);
-
-		for (DepotEntryGroupRel depotEntryGroupRel : depotEntryGroupRels) {
-			DepotEntry depotEntry = depotEntryLocalService.getDepotEntry(
-				depotEntryGroupRel.getDepotEntryId());
-
-			depotEntries.add(depotEntry);
-		}
-
-		return depotEntries;
+		return TransformUtil.transform(
+			_depotEntryGroupRelPersistence.findByToGroupId(groupId, start, end),
+			depotEntryGroupRel -> depotEntryLocalService.getDepotEntry(
+				depotEntryGroupRel.getDepotEntryId()));
 	}
 
 	@Override
@@ -279,8 +267,7 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 			typeSettingsUnicodeProperties.setProperty(
 				PropsKeys.LOCALES,
 				StringUtil.merge(
-					LocaleUtil.toLanguageIds(
-						LanguageUtil.getAvailableLocales())));
+					LocaleUtil.toLanguageIds(_language.getAvailableLocales())));
 		}
 
 		currentTypeSettingsUnicodeProperties.putAll(
@@ -289,11 +276,11 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 		Locale locale = LocaleUtil.fromLanguageId(
 			currentTypeSettingsUnicodeProperties.getProperty("languageId"));
 
-		Optional<String> defaultNameOptional = _getDefaultNameOptional(
-			nameMap, locale);
+		String defaultName = _getDefaultName(nameMap, locale);
 
-		defaultNameOptional.ifPresent(
-			defaultName -> nameMap.put(locale, defaultName));
+		if (defaultName != null) {
+			nameMap.put(locale, defaultName);
+		}
 
 		group = _groupLocalService.updateGroup(
 			depotEntry.getGroupId(), group.getParentGroupId(), nameMap,
@@ -308,15 +295,14 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 		return depotEntry;
 	}
 
-	private Optional<String> _getDefaultNameOptional(
+	private String _getDefaultName(
 		Map<Locale, String> nameMap, Locale defaultLocale) {
 
 		if (Validator.isNotNull(nameMap.get(defaultLocale))) {
-			return Optional.empty();
+			return null;
 		}
 
-		return Optional.of(
-			_language.get(defaultLocale, "unnamed-asset-library"));
+		return _language.get(defaultLocale, "unnamed-asset-library");
 	}
 
 	private boolean _isStaged(DepotEntry depotEntry) throws PortalException {
@@ -324,13 +310,13 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 			return false;
 		}
 
-		Group group = depotEntry.getGroup();
+		Group group = _groupLocalService.fetchGroup(depotEntry.getGroupId());
 
-		if (group.isStaged()) {
-			return true;
+		if (group == null) {
+			return false;
 		}
 
-		return false;
+		return group.isStaged();
 	}
 
 	private void _validateName(String name) throws PortalException {
@@ -397,6 +383,9 @@ public class DepotEntryLocalServiceImpl extends DepotEntryLocalServiceBaseImpl {
 
 	@Reference
 	private DepotEntryGroupRelPersistence _depotEntryGroupRelPersistence;
+
+	@Reference
+	private DepotEntryPinLocalService _depotEntryPinLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;

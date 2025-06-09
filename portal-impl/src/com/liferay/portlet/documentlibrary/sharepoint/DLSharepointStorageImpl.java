@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.sharepoint;
@@ -32,7 +23,7 @@ import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.sharepoint.BaseSharepointStorageImpl;
@@ -40,12 +31,12 @@ import com.liferay.portal.sharepoint.SharepointRequest;
 import com.liferay.portal.sharepoint.SharepointUtil;
 import com.liferay.portal.sharepoint.Tree;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.File;
 import java.io.InputStream;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Bruno Farache
@@ -105,7 +96,8 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 		serviceContext.setAddGuestPermissions(true);
 
 		DLAppServiceUtil.addFolder(
-			groupId, parentFolderId, folderName, description, serviceContext);
+			null, groupId, parentFolderId, folderName, description,
+			serviceContext);
 	}
 
 	@Override
@@ -209,7 +201,8 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 		long parentFolderId = folderIds.get(folderIds.size() - 1);
 
 		Folder folder = DLAppServiceUtil.getFolder(
-			groupId, parentFolderId, HttpUtil.decodePath(pathArray[0]));
+			groupId, parentFolderId,
+			HttpComponentsUtil.decodePath(pathArray[0]));
 
 		folderIds.add(folder.getFolderId());
 
@@ -244,6 +237,9 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 					fileEntry = getFileEntry(sharepointRequest);
 				}
 				catch (Exception exception2) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception2);
+					}
 				}
 			}
 		}
@@ -280,16 +276,16 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 
 				file = FileUtil.createTempFile(inputStream);
 
-				String[] assetTagNames = AssetTagLocalServiceUtil.getTagNames(
-					DLFileEntryConstants.getClassName(),
-					fileEntry.getFileEntryId());
-
-				serviceContext.setAssetTagNames(assetTagNames);
+				serviceContext.setAssetTagNames(
+					AssetTagLocalServiceUtil.getTagNames(
+						DLFileEntryConstants.getClassName(),
+						fileEntry.getFileEntryId()));
 
 				fileEntry = DLAppServiceUtil.updateFileEntry(
-					fileEntryId, newName, mimeType, newName, description,
-					changeLog, DLVersionNumberIncrease.fromMajorVersion(false),
-					file, fileEntry.getExpirationDate(),
+					fileEntryId, newName, mimeType, newName, StringPool.BLANK,
+					description, changeLog,
+					DLVersionNumberIncrease.fromMajorVersion(false), file,
+					fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
 					fileEntry.getReviewDate(), serviceContext);
 
 				if (folderId != newParentFolderId) {
@@ -375,28 +371,27 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 
 				description = fileEntry.getDescription();
 
-				String[] assetTagNames = AssetTagLocalServiceUtil.getTagNames(
-					DLFileEntryConstants.getClassName(),
-					fileEntry.getFileEntryId());
-
-				serviceContext.setAssetTagNames(assetTagNames);
+				serviceContext.setAssetTagNames(
+					AssetTagLocalServiceUtil.getTagNames(
+						DLFileEntryConstants.getClassName(),
+						fileEntry.getFileEntryId()));
 
 				DLAppServiceUtil.updateFileEntry(
 					fileEntry.getFileEntryId(), title, contentType, title,
-					description, changeLog,
+					StringPool.BLANK, description, changeLog,
 					DLVersionNumberIncrease.fromMajorVersion(false), file,
-					fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
-					serviceContext);
+					fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+					fileEntry.getReviewDate(), serviceContext);
 			}
 			catch (NoSuchFileEntryException noSuchFileEntryException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						noSuchFileEntryException, noSuchFileEntryException);
+					_log.debug(noSuchFileEntryException);
 				}
 
 				DLAppServiceUtil.addFileEntry(
-					null, groupId, parentFolderId, title, contentType, title,
-					description, changeLog, file, null, null, serviceContext);
+					null, groupId, parentFolderId, title, contentType, null,
+					null, description, changeLog, file, null, null, null,
+					serviceContext);
 			}
 		}
 		finally {
@@ -426,6 +421,9 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 					fileEntry = getFileEntry(sharepointRequest);
 				}
 				catch (Exception exception2) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception2);
+					}
 				}
 			}
 		}
@@ -447,10 +445,17 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 				removedDocsTree.addChild(documentTree);
 			}
 			catch (Exception exception1) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception1);
+				}
+
 				try {
 					failedDocsTree.addChild(documentTree);
 				}
 				catch (Exception exception2) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception2);
+					}
 				}
 			}
 		}
@@ -465,10 +470,17 @@ public class DLSharepointStorageImpl extends BaseSharepointStorageImpl {
 				removedDirsTree.addChild(folderTree);
 			}
 			catch (Exception exception1) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception1);
+				}
+
 				try {
 					failedDirsTree.addChild(folderTree);
 				}
 				catch (Exception exception2) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception2);
+					}
 				}
 			}
 		}

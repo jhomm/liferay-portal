@@ -1,0 +1,104 @@
+@component-name = "portal-db-infrastructure"
+definition {
+
+	property ci.retries.disabled = "true";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property test.liferay.virtual.instance = "false";
+	property test.run.type = "single";
+	property testray.main.component.name = "Database Upgrade Framework";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+	}
+
+	@description = "LPS-109189: Given a user starts the portal with a database created previously. When property database.indexes.update.on.startup is set to true. Then portal does update indexes for both core and modules."
+	@priority = 4
+	test CoreAndModuleIndexesAreUpdatedWithIndexesUpdateOnStartup {
+		property custom.properties = "database.indexes.update.on.startup=true";
+
+		task ("Restart portal and cleaning the logs") {
+			Portlet.shutdownServer();
+
+			Portlet.startServer(keepOsGiState = "true");
+		}
+
+		AssertConsoleTextPresent(value1 = "Updating database indexes");
+	}
+
+	@description = "LPS-109189: Given a user starts the portal with a database created previously. When core and module indexes are missing and property database.indexes.update.on.startup is set to true. Then portal creates missing indexes."
+	@priority = 4
+	test MissingIndexesAreCreatedWithIndexesUpdateOnStartup {
+		property custom.properties = "database.indexes.update.on.startup=true";
+		property database.types = "mysql";
+
+		SQL.dropMySQLIndex(
+			indexName = "IX_EC00543C",
+			tableName = "Company");
+
+		SQL.dropMySQLIndex(
+			indexName = "IX_D3ACAD4A",
+			tableName = "JournalArticle");
+
+		task ("Restart portal and cleaning the logs") {
+			Portlet.shutdownServer();
+
+			Portlet.startServer(keepOsGiState = "true");
+		}
+
+		var hasCompanyMissingIndex = SQL.hasMySQLIndex(indexName = "IX_EC00543C");
+
+		if (${hasCompanyMissingIndex} == "false") {
+			fail("Company index IX_EC00543C wasn't recreated");
+		}
+
+		var hasJournalArticleMissingIndex = SQL.hasMySQLIndex(indexName = "IX_D3ACAD4A");
+
+		if (${hasJournalArticleMissingIndex} == "false") {
+			fail("JournalArticle index IX_D3ACAD4A wasn't recreated");
+		}
+	}
+
+	@description = "LPS-158090. Given auto upgrade is enabled. Then all upgrades finish before server startup."
+	@priority = 5
+	test UpgradeCheckReturnsEmptyOnStartupWithAutoUpgrade {
+		property custom.properties = "initial.system.check.enabled=false${line.separator}upgrade.database.auto.run=true";
+		property database.bare.enabled = "true";
+		property portal.acceptance = "true";
+
+		task ("Pending upgrades are not found in the logs") {
+			AssertConsoleTextNotPresent(value1 = "Run the upgrade process or type upgrade:checkAll in the Gogo shell to get more information.");
+
+			AssertConsoleTextNotPresent(value1 = "Unable to get pending upgrade information for the portal");
+		}
+	}
+
+	@description = "LPS-162455: Given a user starts the portal with a database created previously. When property upgrade.database.auto.run is set to false. Then portal does not run any UpgradeProcess or VerifyProcess."
+	@priority = 4
+	test UpgradeProcessAndVerifyProcessDoNotRunOnStaleDB {
+		property database.types = "db2,mariadb,mysql,oracle,postgresql";
+
+		AssertConsoleTextNotPresent(value1 = "UpgradeProcess");
+
+		AssertConsoleTextPresent(value1 = "VerifyProcess");
+
+		task ("Restart portal and cleaning the logs") {
+			Portlet.shutdownServer();
+
+			Portlet.startServer(keepOsGiState = "true");
+		}
+
+		AssertConsoleTextNotPresent(value1 = "UpgradeProcess");
+
+		AssertConsoleTextNotPresent(value1 = "VerifyProcess");
+	}
+
+}

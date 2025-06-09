@@ -1,0 +1,79 @@
+{
+	"date_detection": false,
+	"dynamic_templates": [
+		{
+			"template_long_sortable": {
+				"mapping": {
+					"type": "long"
+				},
+				"match": "*_sortable",
+				"match_mapping_type": "long"
+			}
+		}
+	],
+	"properties": {
+		"active": {
+			"type": "boolean"
+		},
+		"assigneeIds": {
+			"type": "long"
+		},
+		"assigneeType": {
+			"type": "keyword"
+		},
+		"breached": {
+			"type": "boolean"
+		},
+		"companyId": {
+			"type": "long"
+		},
+		"completionDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"completionUserId": {
+			"type": "long"
+		},
+		"deleted": {
+			"type": "boolean"
+		},
+		"instanceCompleted": {
+			"type": "boolean"
+		},
+		"instanceCompletionDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"instanceId": {
+			"type": "long"
+		},
+		"modifiedDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"nodeId": {
+			"type": "long"
+		},
+		"onTime": {
+			"type": "boolean"
+		},
+		"processId": {
+			"type": "long"
+		},
+		"slaDefinitionId": {
+			"type": "long"
+		},
+		"status": {
+			"type": "keyword"
+		},
+		"taskId": {
+			"type": "long"
+		},
+		"taskName": {
+			"type": "keyword"
+		},
+		"uid": {
+			"type": "keyword"
+		}
+	}
+}

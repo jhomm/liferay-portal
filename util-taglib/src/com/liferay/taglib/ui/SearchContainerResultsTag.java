@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
 
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspTagException;
+import jakarta.servlet.jsp.tagext.TagSupport;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspTagException;
-import javax.servlet.jsp.tagext.TagSupport;
 
 /**
  * @author Raymond Augé
@@ -53,7 +44,13 @@ public class SearchContainerResultsTag<R> extends TagSupport {
 				}
 			}
 
-			searchContainer.setResults(_results);
+			if ((_results != null) && _calculateStartAndEnd) {
+				_results = _results.subList(
+					searchContainer.getStart(), searchContainer.getResultEnd());
+			}
+
+			searchContainer.setResultsAndTotal(
+				() -> _results, searchContainer.getTotal());
 
 			pageContext.setAttribute(_resultsVar, _results);
 
@@ -63,6 +60,7 @@ public class SearchContainerResultsTag<R> extends TagSupport {
 			throw new JspException(exception);
 		}
 		finally {
+			_calculateStartAndEnd = false;
 			_results = null;
 			_resultsVar = SearchContainer.DEFAULT_RESULTS_VAR;
 		}
@@ -93,6 +91,14 @@ public class SearchContainerResultsTag<R> extends TagSupport {
 		return _resultsVar;
 	}
 
+	public boolean isCalculateStartAndEnd() {
+		return _calculateStartAndEnd;
+	}
+
+	public void setCalculateStartAndEnd(boolean calculateStartAndEnd) {
+		_calculateStartAndEnd = calculateStartAndEnd;
+	}
+
 	public void setResults(List<R> results) {
 		_results = results;
 	}
@@ -101,6 +107,7 @@ public class SearchContainerResultsTag<R> extends TagSupport {
 		_resultsVar = resultsVar;
 	}
 
+	private boolean _calculateStartAndEnd;
 	private List<R> _results;
 	private String _resultsVar = SearchContainer.DEFAULT_RESULTS_VAR;
 

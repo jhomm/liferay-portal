@@ -1,31 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.serdes.v1_0;
 
 import com.liferay.search.experiences.rest.client.dto.v1_0.Field;
-import com.liferay.search.experiences.rest.client.dto.v1_0.Option;
+import com.liferay.search.experiences.rest.client.dto.v1_0.FieldMapping;
 import com.liferay.search.experiences.rest.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -55,14 +45,41 @@ public class FieldSerDes {
 
 		sb.append("{");
 
-		if (field.getBoost() != null) {
+		if (field.getDefaultValue() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"boost\": ");
+			sb.append("\"defaultValue\": ");
 
-			sb.append(field.getBoost());
+			if (field.getDefaultValue() instanceof String) {
+				sb.append("\"");
+				sb.append((String)field.getDefaultValue());
+				sb.append("\"");
+			}
+			else {
+				sb.append(field.getDefaultValue());
+			}
+		}
+
+		if (field.getFieldMappings() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fieldMappings\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < field.getFieldMappings().length; i++) {
+				sb.append(String.valueOf(field.getFieldMappings()[i]));
+
+				if ((i + 1) < field.getFieldMappings().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
 		}
 
 		if (field.getHelpText() != null) {
@@ -75,6 +92,20 @@ public class FieldSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(field.getHelpText()));
+
+			sb.append("\"");
+		}
+
+		if (field.getHelpTextLocalized() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"helpTextLocalized\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(field.getHelpTextLocalized()));
 
 			sb.append("\"");
 		}
@@ -93,6 +124,20 @@ public class FieldSerDes {
 			sb.append("\"");
 		}
 
+		if (field.getLabelLocalized() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"labelLocalized\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(field.getLabelLocalized()));
+
+			sb.append("\"");
+		}
+
 		if (field.getName() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -107,96 +152,28 @@ public class FieldSerDes {
 			sb.append("\"");
 		}
 
-		if (field.getNullable() != null) {
+		if (field.getType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"nullable\": ");
-
-			sb.append(field.getNullable());
-		}
-
-		if (field.getOptions() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"options\": ");
-
-			sb.append("[");
-
-			for (int i = 0; i < field.getOptions().length; i++) {
-				sb.append(String.valueOf(field.getOptions()[i]));
-
-				if ((i + 1) < field.getOptions().length) {
-					sb.append(", ");
-				}
-			}
-
-			sb.append("]");
-		}
-
-		if (field.getRequired() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"required\": ");
-
-			sb.append(field.getRequired());
-		}
-
-		if (field.getUiType() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"uiType\": ");
+			sb.append("\"type\": ");
 
 			sb.append("\"");
 
-			sb.append(_escape(field.getUiType()));
+			sb.append(_escape(field.getType()));
 
 			sb.append("\"");
 		}
 
-		if (field.getUnit() != null) {
+		if (field.getTypeOptions() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"unit\": ");
+			sb.append("\"typeOptions\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(field.getUnit()));
-
-			sb.append("\"");
-		}
-
-		if (field.getUnitSuffix() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"unitSuffix\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(field.getUnitSuffix()));
-
-			sb.append("\"");
-		}
-
-		if (field.getValueDefinition() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"valueDefinition\": ");
-
-			sb.append(String.valueOf(field.getValueDefinition()));
+			sb.append(String.valueOf(field.getTypeOptions()));
 		}
 
 		sb.append("}");
@@ -217,11 +194,18 @@ public class FieldSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
-		if (field.getBoost() == null) {
-			map.put("boost", null);
+		if (field.getDefaultValue() == null) {
+			map.put("defaultValue", null);
 		}
 		else {
-			map.put("boost", String.valueOf(field.getBoost()));
+			map.put("defaultValue", String.valueOf(field.getDefaultValue()));
+		}
+
+		if (field.getFieldMappings() == null) {
+			map.put("fieldMappings", null);
+		}
+		else {
+			map.put("fieldMappings", String.valueOf(field.getFieldMappings()));
 		}
 
 		if (field.getHelpText() == null) {
@@ -231,11 +215,28 @@ public class FieldSerDes {
 			map.put("helpText", String.valueOf(field.getHelpText()));
 		}
 
+		if (field.getHelpTextLocalized() == null) {
+			map.put("helpTextLocalized", null);
+		}
+		else {
+			map.put(
+				"helpTextLocalized",
+				String.valueOf(field.getHelpTextLocalized()));
+		}
+
 		if (field.getLabel() == null) {
 			map.put("label", null);
 		}
 		else {
 			map.put("label", String.valueOf(field.getLabel()));
+		}
+
+		if (field.getLabelLocalized() == null) {
+			map.put("labelLocalized", null);
+		}
+		else {
+			map.put(
+				"labelLocalized", String.valueOf(field.getLabelLocalized()));
 		}
 
 		if (field.getName() == null) {
@@ -245,54 +246,18 @@ public class FieldSerDes {
 			map.put("name", String.valueOf(field.getName()));
 		}
 
-		if (field.getNullable() == null) {
-			map.put("nullable", null);
+		if (field.getType() == null) {
+			map.put("type", null);
 		}
 		else {
-			map.put("nullable", String.valueOf(field.getNullable()));
+			map.put("type", String.valueOf(field.getType()));
 		}
 
-		if (field.getOptions() == null) {
-			map.put("options", null);
+		if (field.getTypeOptions() == null) {
+			map.put("typeOptions", null);
 		}
 		else {
-			map.put("options", String.valueOf(field.getOptions()));
-		}
-
-		if (field.getRequired() == null) {
-			map.put("required", null);
-		}
-		else {
-			map.put("required", String.valueOf(field.getRequired()));
-		}
-
-		if (field.getUiType() == null) {
-			map.put("uiType", null);
-		}
-		else {
-			map.put("uiType", String.valueOf(field.getUiType()));
-		}
-
-		if (field.getUnit() == null) {
-			map.put("unit", null);
-		}
-		else {
-			map.put("unit", String.valueOf(field.getUnit()));
-		}
-
-		if (field.getUnitSuffix() == null) {
-			map.put("unitSuffix", null);
-		}
-		else {
-			map.put("unitSuffix", String.valueOf(field.getUnitSuffix()));
-		}
-
-		if (field.getValueDefinition() == null) {
-			map.put("valueDefinition", null);
-		}
-		else {
-			map.put(
-				"valueDefinition", String.valueOf(field.getValueDefinition()));
+			map.put("typeOptions", String.valueOf(field.getTypeOptions()));
 		}
 
 		return map;
@@ -311,13 +276,62 @@ public class FieldSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "defaultValue")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fieldMappings")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "helpText")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "helpTextLocalized")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "label")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "labelLocalized")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "typeOptions")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Field field, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "boost")) {
+			if (Objects.equals(jsonParserFieldName, "defaultValue")) {
 				if (jsonParserFieldValue != null) {
-					field.setBoost((Boolean)jsonParserFieldValue);
+					field.setDefaultValue((Object)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "fieldMappings")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					FieldMapping[] fieldMappingsArray =
+						new FieldMapping[jsonParserFieldValues.length];
+
+					for (int i = 0; i < fieldMappingsArray.length; i++) {
+						fieldMappingsArray[i] = FieldMappingSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					field.setFieldMappings(fieldMappingsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "helpText")) {
@@ -325,9 +339,19 @@ public class FieldSerDes {
 					field.setHelpText((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "helpTextLocalized")) {
+				if (jsonParserFieldValue != null) {
+					field.setHelpTextLocalized((String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "label")) {
 				if (jsonParserFieldValue != null) {
 					field.setLabel((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "labelLocalized")) {
+				if (jsonParserFieldValue != null) {
+					field.setLabelLocalized((String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "name")) {
@@ -335,48 +359,15 @@ public class FieldSerDes {
 					field.setName((String)jsonParserFieldValue);
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "nullable")) {
+			else if (Objects.equals(jsonParserFieldName, "type")) {
 				if (jsonParserFieldValue != null) {
-					field.setNullable((Boolean)jsonParserFieldValue);
+					field.setType((String)jsonParserFieldValue);
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "options")) {
+			else if (Objects.equals(jsonParserFieldName, "typeOptions")) {
 				if (jsonParserFieldValue != null) {
-					field.setOptions(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> OptionSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Option[size]
-						));
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "required")) {
-				if (jsonParserFieldValue != null) {
-					field.setRequired((Boolean)jsonParserFieldValue);
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "uiType")) {
-				if (jsonParserFieldValue != null) {
-					field.setUiType((String)jsonParserFieldValue);
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "unit")) {
-				if (jsonParserFieldValue != null) {
-					field.setUnit((String)jsonParserFieldValue);
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "unitSuffix")) {
-				if (jsonParserFieldValue != null) {
-					field.setUnitSuffix((String)jsonParserFieldValue);
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "valueDefinition")) {
-				if (jsonParserFieldValue != null) {
-					field.setValueDefinition(
-						ValueDefinitionSerDes.toDTO(
-							(String)jsonParserFieldValue));
+					field.setTypeOptions(
+						TypeOptionsSerDes.toDTO((String)jsonParserFieldValue));
 				}
 			}
 		}
@@ -411,36 +402,7 @@ public class FieldSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -450,6 +412,42 @@ public class FieldSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

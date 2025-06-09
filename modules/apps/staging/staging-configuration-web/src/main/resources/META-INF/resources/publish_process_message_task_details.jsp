@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -46,10 +37,10 @@ catch (Exception e) {
 
 			<c:choose>
 				<c:when test="<%= exported && !validated %>">
-					<h4 class="upload-error-message"><liferay-ui:message key="the-publish-process-did-not-start-due-to-validation-errors" /></h4>
+					<div class="h4 upload-error-message"><liferay-ui:message key="the-publish-process-did-not-start-due-to-validation-errors" /></div>
 				</c:when>
 				<c:otherwise>
-					<h4 class="upload-error-message"><liferay-ui:message key="an-unexpected-error-occurred-with-the-publish-process.-please-check-your-portal-and-publishing-configuration" /></h4>
+					<div class="h4 upload-error-message"><liferay-ui:message key="an-unexpected-error-occurred-with-the-publish-process.-please-check-your-portal-and-publishing-configuration" /></div>
 				</c:otherwise>
 			</c:choose>
 
@@ -95,7 +86,7 @@ catch (Exception e) {
 
 		<c:if test="<%= (warningMessagesJSONArray != null) && (warningMessagesJSONArray.length() > 0) %>">
 			<div class="alert upload-error">
-				<span class="error-message"><liferay-ui:message key='<%= ((messageListItemsJSONArray != null) && (messageListItemsJSONArray.length() > 0)) ? "consider-that-the-following-data-would-not-have-been-published-either" : "the-following-data-has-not-been-published" %>' /></span>
+				<span class="error-message"><liferay-ui:message key='<%= ((messageListItemsJSONArray != null) && (messageListItemsJSONArray.length() > 0)) ? "consider-that-the-following-data-would-not-have-been-published-either" : "the-following-data-was-not-published" %>' /></span>
 
 				<ul class="error-list-items">
 

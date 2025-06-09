@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useContext, useRef} from 'react';
@@ -26,7 +17,7 @@ ConfigContext.displayName = 'ConfigContext';
  * in the same `store` may be rendering unnecessary components
  * that use only configuration properties.
  */
-export const ConfigProvider = ({children, config, initialConfig}) => {
+export function ConfigProvider({children, config, initialConfig}) {
 
 	// Use `useRef` to avoid causing a new rendering of components that
 	// consume context data. We do not want to cause a new rendering after
@@ -40,8 +31,10 @@ export const ConfigProvider = ({children, config, initialConfig}) => {
 			{children}
 		</ConfigContext.Provider>
 	);
-};
+}
 
 ConfigProvider.displayName = 'ConfigProvider';
 
-export const useConfig = () => useContext(ConfigContext);
+export function useConfig() {
+	return useContext(ConfigContext);
+}

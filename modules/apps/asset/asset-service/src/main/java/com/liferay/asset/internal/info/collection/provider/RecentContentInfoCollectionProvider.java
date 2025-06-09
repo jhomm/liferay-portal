@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.internal.info.collection.provider;
@@ -20,7 +11,7 @@ import com.liferay.asset.util.AssetHelper;
 import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.info.pagination.InfoPage;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Field;
@@ -43,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = InfoCollectionProvider.class)
+@Component(service = InfoCollectionProvider.class)
 public class RecentContentInfoCollectionProvider
 	extends BaseAssetsInfoCollectionProvider
 	implements InfoCollectionProvider<AssetEntry> {
@@ -52,8 +43,13 @@ public class RecentContentInfoCollectionProvider
 	public InfoPage<AssetEntry> getCollectionInfoPage(
 		CollectionQuery collectionQuery) {
 
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
 		AssetEntryQuery assetEntryQuery = getAssetEntryQuery(
-			Field.MODIFIED_DATE, "DESC", collectionQuery.getPagination());
+			serviceContext.getCompanyId(), serviceContext.getScopeGroupId(),
+			collectionQuery.getPagination(),
+			new com.liferay.info.sort.Sort(Field.MODIFIED_DATE, true), null);
 
 		try {
 			SearchContext searchContext = _getSearchContext();
@@ -62,12 +58,12 @@ public class RecentContentInfoCollectionProvider
 				searchContext, assetEntryQuery, assetEntryQuery.getStart(),
 				assetEntryQuery.getEnd());
 
-			Long count = _assetHelper.searchCount(
+			long count = _assetHelper.searchCount(
 				searchContext, assetEntryQuery);
 
 			return InfoPage.of(
 				_assetHelper.getAssetEntries(hits),
-				collectionQuery.getPagination(), count.intValue());
+				collectionQuery.getPagination(), (int)count);
 		}
 		catch (Exception exception) {
 			_log.error("Unable to get asset entries", exception);
@@ -79,7 +75,7 @@ public class RecentContentInfoCollectionProvider
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "recent-content");
+		return _language.get(locale, "recent-content");
 	}
 
 	private SearchContext _getSearchContext() {
@@ -105,5 +101,8 @@ public class RecentContentInfoCollectionProvider
 
 	@Reference
 	private AssetHelper _assetHelper;
+
+	@Reference
+	private Language _language;
 
 }

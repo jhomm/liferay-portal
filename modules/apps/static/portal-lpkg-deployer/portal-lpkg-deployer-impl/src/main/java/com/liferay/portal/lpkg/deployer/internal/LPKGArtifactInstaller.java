@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.lpkg.deployer.internal;
@@ -23,9 +14,9 @@ import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.lpkg.deployer.LPKGDeployer;
-import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.InputStream;
@@ -53,13 +44,11 @@ import org.osgi.framework.wiring.FrameworkWiring;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.url.URLConstants;
-import org.osgi.service.url.URLStreamHandlerService;
 
 /**
  * @author Shuyang Zhou
  */
-@Component(immediate = true, service = FileInstaller.class)
+@Component(service = FileInstaller.class)
 public class LPKGArtifactInstaller implements FileInstaller {
 
 	@Override
@@ -83,8 +72,7 @@ public class LPKGArtifactInstaller implements FileInstaller {
 
 		Properties properties = new Properties();
 
-		List<File> lpkgFiles = ContainerLPKGUtil.deploy(
-			file, _bundleContext, properties);
+		List<File> lpkgFiles = ContainerLPKGUtil.deploy(file, properties);
 
 		if (lpkgFiles == null) {
 			_install(file, properties);
@@ -93,7 +81,8 @@ public class LPKGArtifactInstaller implements FileInstaller {
 		}
 
 		try (SafeCloseable safeCloseable =
-				LPKGBatchInstallThreadLocal.setBatchInstallInProcess(true)) {
+				LPKGBatchInstallThreadLocal.
+					setBatchInstallInProcessWithSafeCloseable(true)) {
 
 			_batchInstall(lpkgFiles);
 		}
@@ -155,14 +144,15 @@ public class LPKGArtifactInstaller implements FileInstaller {
 					if (header == null) {
 						BundleStartLevelUtil.setStartLevelAndStart(
 							bundle,
-							PropsValues.
+							ModuleFrameworkPropsValues.
 								MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL,
 							_bundleContext);
 					}
 					else {
 						BundleStartLevelUtil.setStartLevelAndStart(
 							bundle,
-							PropsValues.MODULE_FRAMEWORK_WEB_START_LEVEL,
+							ModuleFrameworkPropsValues.
+								MODULE_FRAMEWORK_WEB_START_LEVEL,
 							_bundleContext);
 					}
 				}
@@ -356,8 +346,5 @@ public class LPKGArtifactInstaller implements FileInstaller {
 
 	@Reference
 	private LPKGDeployer _lpkgDeployer;
-
-	@Reference(target = "(" + URLConstants.URL_HANDLER_PROTOCOL + "=webbundle)")
-	private URLStreamHandlerService _urlStreamHandlerService;
 
 }

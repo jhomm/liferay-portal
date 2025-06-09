@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
@@ -23,15 +14,23 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.TagResourceBundleUtil;
+
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -39,12 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Marko Cikos
@@ -167,12 +160,17 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		return _itemsTotal;
 	}
 
+	public String getItemsType() {
+		return _itemsType;
+	}
+
 	public ManagementToolbarDisplayContext
 		getManagementToolbarDisplayContext() {
 
 		return _managementToolbarDisplayContext;
 	}
 
+	@Override
 	public String getNamespace() {
 		if (_namespace != null) {
 			return _namespace;
@@ -193,6 +191,16 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		}
 
 		return _namespace;
+	}
+
+	public List<DropdownItem> getOrderDropdownItems() {
+		if ((_orderDropdownItems == null) &&
+			(_managementToolbarDisplayContext != null)) {
+
+			return _managementToolbarDisplayContext.getOrderDropdownItems();
+		}
+
+		return _orderDropdownItems;
 	}
 
 	public String getSearchActionURL() {
@@ -240,13 +248,33 @@ public class ManagementToolbarTag extends BaseContainerTag {
 	public String getSearchInputName() {
 		if (_searchInputName == null) {
 			if (_managementToolbarDisplayContext != null) {
-				_managementToolbarDisplayContext.getSearchInputName();
+				return _managementToolbarDisplayContext.getSearchInputName();
 			}
 
 			return ManagementToolbarDefaults.getSearchInputName();
 		}
 
 		return _searchInputName;
+	}
+
+	public String getSearchResultsTitle() {
+		String searchResultsTitle = _searchResultsTitle;
+
+		if (searchResultsTitle == null) {
+			if (_managementToolbarDisplayContext != null) {
+				searchResultsTitle =
+					_managementToolbarDisplayContext.getSearchResultsTitle();
+			}
+
+			if (searchResultsTitle == null) {
+				searchResultsTitle =
+					ManagementToolbarDefaults.getSearchResultsTitle();
+			}
+		}
+
+		return LanguageUtil.get(
+			TagResourceBundleUtil.getResourceBundle(pageContext),
+			searchResultsTitle);
 	}
 
 	public String getSearchValue() {
@@ -320,7 +348,8 @@ public class ManagementToolbarTag extends BaseContainerTag {
 	public Boolean isSearchInputAutoFocus() {
 		if (_searchInputAutoFocus == null) {
 			if (_managementToolbarDisplayContext != null) {
-				_managementToolbarDisplayContext.isSearchInputAutoFocus();
+				return _managementToolbarDisplayContext.
+					isSearchInputAutoFocus();
 			}
 
 			return ManagementToolbarDefaults.isSearchInputAutoFocus();
@@ -458,14 +487,23 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		_itemsTotal = itemsTotal;
 	}
 
+	public void setItemsType(String itemsType) {
+		_itemsType = itemsType;
+	}
+
 	public void setManagementToolbarDisplayContext(
 		ManagementToolbarDisplayContext managementToolbarDisplayContext) {
 
 		_managementToolbarDisplayContext = managementToolbarDisplayContext;
 	}
 
+	@Override
 	public void setNamespace(String namespace) {
 		_namespace = namespace;
+	}
+
+	public void setOrderDropdownItems(List<DropdownItem> orderDropdownItems) {
+		_orderDropdownItems = orderDropdownItems;
 	}
 
 	public void setSearchActionURL(String searchActionURL) {
@@ -490,6 +528,10 @@ public class ManagementToolbarTag extends BaseContainerTag {
 
 	public void setSearchInputName(String searchInputName) {
 		_searchInputName = searchInputName;
+	}
+
+	public void setSearchResultsTitle(String searchResultsTitle) {
+		_searchResultsTitle = searchResultsTitle;
 	}
 
 	public void setSearchValue(String searchValue) {
@@ -583,14 +625,17 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		_filterLabelItems = null;
 		_infoPanelId = null;
 		_itemsTotal = null;
+		_itemsType = "items";
 		_managementToolbarDisplayContext = null;
 		_namespace = null;
+		_orderDropdownItems = null;
 		_searchActionURL = null;
 		_searchContainerId = null;
 		_searchFormMethod = null;
 		_searchFormName = null;
 		_searchInputAutoFocus = null;
 		_searchInputName = null;
+		_searchResultsTitle = null;
 		_searchValue = null;
 		_selectable = null;
 		_selectAllURL = null;
@@ -611,7 +656,7 @@ public class ManagementToolbarTag extends BaseContainerTag {
 
 	@Override
 	protected String getHydratedModuleName() {
-		return "frontend-taglib-clay/management_toolbar/ManagementToolbar";
+		return "{ManagementToolbar} from frontend-taglib-clay";
 	}
 
 	@Override
@@ -632,6 +677,8 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		props.put("initialSelectAllButtonVisible", isShowSelectAllButton());
 		props.put("initialSelectedItems", getSelectedItems());
 		props.put("itemsTotal", getItemsTotal());
+		props.put("itemsType", _getLocalizedItemsType());
+		props.put("orderDropdownItems", getOrderDropdownItems());
 
 		String searchActionURL = getSearchActionURL();
 
@@ -651,6 +698,7 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		props.put("searchInputAutoFocus", isSearchInputAutoFocus());
 		props.put(
 			"searchInputName", _namespace(namespace, getSearchInputName()));
+		props.put("searchResultsTitle", getSearchResultsTitle());
 		props.put("searchValue", getSearchValue());
 		props.put("selectAllURL", getSelectAllURL());
 		props.put("selectable", isSelectable());
@@ -685,7 +733,7 @@ public class ManagementToolbarTag extends BaseContainerTag {
 
 		JspWriter jspWriter = pageContext.getOut();
 
-		Boolean active = !getCheckboxStatus().equals("unchecked");
+		Boolean active = !Objects.equals(getCheckboxStatus(), "unchecked");
 
 		jspWriter.write("<nav class=\"management-bar navbar navbar-expand-md");
 
@@ -696,52 +744,71 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			jspWriter.write(" management-bar-light");
 		}
 
-		jspWriter.write("\"><div class=\"container-fluid");
-		jspWriter.write(" container-fluid-max-xl\"><ul class=\"navbar-nav\">");
+		jspWriter.write("\"><div class=\"container-fluid ");
+		jspWriter.write("container-fluid-max-xxxl\"><ul class=\"navbar-nav\">");
+
+		ResourceBundle resourceBundle = TagResourceBundleUtil.getResourceBundle(
+			pageContext);
 
 		Boolean disabled = isDisabled();
 
+		Integer itemsTotal = getItemsTotal();
+		String localizedItemsType = _getLocalizedItemsType();
+		Integer selectedItems = getSelectedItems();
+
 		if (isSelectable()) {
 			jspWriter.write("<li class=\"nav-item\"><div class=\"");
-			jspWriter.write("custom-control custom-checkbox\"><label><input");
+			jspWriter.write(
+				"custom-control custom-checkbox\"><label><input disabled");
 
 			if (active) {
 				jspWriter.write(" checked");
 			}
 
-			if (disabled) {
-				jspWriter.write(" disabled");
+			jspWriter.write(" aria-label=\"");
+
+			if (active) {
+				jspWriter.write(
+					LanguageUtil.format(
+						resourceBundle,
+						"clear-selection.-there-are-currently-x-of-x-x-" +
+							"selected",
+						new Object[] {
+							selectedItems, itemsTotal, localizedItemsType
+						}));
+			}
+			else {
+				jspWriter.write(
+					LanguageUtil.format(
+						resourceBundle, "select-all-x-on-the-page",
+						new Object[] {localizedItemsType}));
 			}
 
-			jspWriter.write(" class=\"custom-control-input\" type=\"checkbox");
+			jspWriter.write(
+				"\" class=\"custom-control-input\" type=\"checkbox");
 			jspWriter.write("\" /><span class=\"custom-control-label\">");
 			jspWriter.write("</span></label></div></li>");
 		}
 
 		IconTag iconTag;
 
-		ResourceBundle resourceBundle = TagResourceBundleUtil.getResourceBundle(
-			pageContext);
-
 		if (active) {
-			Integer itemsTotal = getItemsTotal();
-			Integer selectedItems = getSelectedItems();
-
 			jspWriter.write("<li class=\"nav-item\"><span class=\"navbar-text");
 			jspWriter.write("\">");
+
+			String selectedItemslabel = LanguageUtil.format(
+				resourceBundle, "x-of-x-x-selected",
+				new Object[] {selectedItems, itemsTotal, localizedItemsType});
 
 			if (itemsTotal == selectedItems) {
 				jspWriter.write(
 					LanguageUtil.get(resourceBundle, "all-selected"));
+				jspWriter.write(" (");
+				jspWriter.write(selectedItemslabel);
+				jspWriter.write(")");
 			}
 			else {
-				jspWriter.write(
-					LanguageUtil.format(
-						resourceBundle, "x-of-x",
-						new Object[] {selectedItems, itemsTotal}));
-
-				jspWriter.write(StringPool.SPACE);
-				jspWriter.write(LanguageUtil.get(resourceBundle, "selected"));
+				jspWriter.write(selectedItemslabel);
 			}
 
 			jspWriter.write("</span></li>");
@@ -804,10 +871,10 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			}
 		}
 
-		if (!active && (getFilterDropdownItems() != null)) {
+		if (!active && ListUtil.isNotEmpty(getFilterDropdownItems())) {
 			jspWriter.write("<li class=\"nav-item\"><div class=\"dropdown\">");
-			jspWriter.write("<button class=\"btn btn-unstyled dropdown-toggle");
-			jspWriter.write(" nav-link\"");
+			jspWriter.write("<button class=\"btn btn-unstyled ");
+			jspWriter.write("dropdown-toggle ml-2 mr-2 nav-link\"");
 
 			if (disabled) {
 				jspWriter.write(" disabled");
@@ -815,9 +882,16 @@ public class ManagementToolbarTag extends BaseContainerTag {
 
 			jspWriter.write(" type=\"button\"><span class=\"");
 			jspWriter.write("navbar-breakpoint-down-d-none\"><span class=\"");
-			jspWriter.write("navbar-text-truncate\">");
-			jspWriter.write(
-				LanguageUtil.get(resourceBundle, "filter-and-order"));
+			jspWriter.write("inline-item inline-item-before\">");
+
+			iconTag = new IconTag();
+
+			iconTag.setSymbol("filter");
+
+			iconTag.doTag(pageContext);
+
+			jspWriter.write("</span><span class=\"navbar-text-truncate\">");
+			jspWriter.write(LanguageUtil.get(resourceBundle, "filter"));
 			jspWriter.write("</span>");
 
 			iconTag = new IconTag();
@@ -838,7 +912,63 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			jspWriter.write("</span></button></div></li>");
 		}
 
-		if (getSortingURL() != null) {
+		List<DropdownItem> orderDropdownItems = getOrderDropdownItems();
+
+		if (!active && (orderDropdownItems != null) &&
+			(orderDropdownItems.size() > 1)) {
+
+			jspWriter.write("<li class=\"nav-item\"><div class=\"dropdown\">");
+			jspWriter.write("<button class=\"btn btn-unstyled dropdown-toggle");
+			jspWriter.write(" ml-2 mr-2 nav-link\"");
+
+			if (disabled) {
+				jspWriter.write(" disabled");
+			}
+
+			jspWriter.write(" type=\"button\"><span class=\"");
+			jspWriter.write("navbar-breakpoint-down-d-none\"><span class=\"");
+			jspWriter.write("inline-item inline-item-before\">");
+
+			iconTag = new IconTag();
+
+			String orderSymbol = "order-list-down";
+
+			if (Objects.equals(getSortingOrder(), "asc")) {
+				orderSymbol = "order-list-up";
+			}
+
+			iconTag.setSymbol(orderSymbol);
+
+			iconTag.doTag(pageContext);
+
+			jspWriter.write("</span><span class=\"navbar-text-truncate\">");
+			jspWriter.write(LanguageUtil.get(resourceBundle, "order[sort]"));
+			jspWriter.write("</span>");
+
+			iconTag = new IconTag();
+
+			iconTag.setCssClass("inline-item inline-item-after");
+			iconTag.setSymbol("caret-bottom");
+
+			iconTag.doTag(pageContext);
+
+			jspWriter.write("</span><span class=\"navbar-breakpoint-d-none\">");
+
+			iconTag = new IconTag();
+
+			iconTag.setSymbol(orderSymbol);
+
+			iconTag.doTag(pageContext);
+
+			jspWriter.write("</span></button></div></li>");
+		}
+
+		Boolean showOrderToggle =
+			((orderDropdownItems != null) &&
+			 (orderDropdownItems.size() == 1)) ||
+			ListUtil.isEmpty(orderDropdownItems);
+
+		if ((getSortingURL() != null) && showOrderToggle) {
 			jspWriter.write("<li class=\"nav-item\">");
 
 			LinkTag linkTag = new LinkTag();
@@ -901,14 +1031,14 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		if (!active && isShowSearch()) {
 			jspWriter.write("<div class=\"navbar-form navbar-form-autofit ");
 			jspWriter.write(" navbar-overlay navbar-overlay-sm-down\"><div");
-			jspWriter.write(" class=\"container-fluid container-fluid-max-xl");
-			jspWriter.write("\"><form");
+			jspWriter.write(" class=\"container-fluid ");
+			jspWriter.write("container-fluid-max-xxxl\"><form");
 
 			String searchActionURL = getSearchActionURL();
 
 			if (searchActionURL != null) {
 				jspWriter.write(" action=\"");
-				jspWriter.write(searchActionURL);
+				jspWriter.write(HtmlUtil.escapeAttribute(searchActionURL));
 				jspWriter.write("\"");
 			}
 
@@ -929,14 +1059,10 @@ public class ManagementToolbarTag extends BaseContainerTag {
 				jspWriter.write("\"");
 			}
 
-			jspWriter.write("role=\"search\"><div class=\"input-group\"><div");
+			jspWriter.write(" role=\"search\"><div class=\"input-group\"><div");
 			jspWriter.write(" class=\"input-group-item\"><input class=\"");
 			jspWriter.write("form-control form-control input-group-inset");
-			jspWriter.write(" input-group-inset-after\"");
-
-			if (disabled) {
-				jspWriter.write(" disabled");
-			}
+			jspWriter.write(" input-group-inset-after\" disabled");
 
 			String searchInputName = getSearchInputName();
 
@@ -947,7 +1073,11 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			}
 
 			jspWriter.write(" placeholder=\"");
-			jspWriter.write(LanguageUtil.get(resourceBundle, "search-for"));
+			jspWriter.write(
+				LanguageUtil.get(
+					resourceBundle,
+					FeatureFlagManagerUtil.isEnabled("LPD-11313") ? "search" :
+						"search-for"));
 			jspWriter.write("\" type=\"text\"");
 
 			if (searchValue != null) {
@@ -959,13 +1089,7 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			jspWriter.write(" /><span class=\"input-group-inset-item");
 			jspWriter.write(" input-group-inset-item-after\"><button class=\"");
 			jspWriter.write(" navbar-breakpoint-d-none btn btn-monospaced");
-			jspWriter.write(" btn-unstyled\">");
-
-			if (disabled) {
-				jspWriter.write(" disabled");
-			}
-
-			jspWriter.write(" type=\"button\">");
+			jspWriter.write(" btn-unstyled\" disabled type=\"button\">");
 
 			iconTag = new IconTag();
 
@@ -973,14 +1097,10 @@ public class ManagementToolbarTag extends BaseContainerTag {
 
 			iconTag.doTag(pageContext);
 
-			jspWriter.write("</button><button class=\"btn btn-monospaced");
-			jspWriter.write(" btn-unstyled\"");
-
-			if (disabled) {
-				jspWriter.write(" disabled");
-			}
-
-			jspWriter.write(" type=\"submit\">");
+			jspWriter.write("</button><button aria-label=\"");
+			jspWriter.write(LanguageUtil.get(resourceBundle, "search"));
+			jspWriter.write("\" class=\"btn btn-monospaced");
+			jspWriter.write(" btn-unstyled\" disabled type=\"submit\">");
 
 			iconTag = new IconTag();
 
@@ -1005,32 +1125,26 @@ public class ManagementToolbarTag extends BaseContainerTag {
 
 			jspWriter.write("</button></li>");
 
-			if (isShowInfoButton()) {
-				jspWriter.write("<li class=\"nav-item\"><button class=\"");
-				jspWriter.write(" nav-link nav-link-monospaced btn");
-				jspWriter.write(" btn-monospaced btn-unstyled\" type=\"button");
-				jspWriter.write("\">");
-
-				iconTag = new IconTag();
-
-				iconTag.setSymbol("info-circle-open");
-
-				iconTag.doTag(pageContext);
-
-				jspWriter.write("</button></li>");
-			}
-
 			if (getViewTypeItems() != null) {
 				jspWriter.write("<li class=\"nav-item\"><div class=\"dropdown");
-				jspWriter.write("\"><button class=\"dropdown-toggle nav-link");
-				jspWriter.write(" nav-link-monospaced btn btn-monospaced");
-				jspWriter.write(" btn-unstyled\" type=\"button\">");
+				jspWriter.write("\"><button aria-label=\"");
+				jspWriter.write(
+					LanguageUtil.get(resourceBundle, "show-view-options"));
+				jspWriter.write("\" class=\"dropdown-toggle nav-link");
+				jspWriter.write(" btn btn-unstyled\" type=\"button\">");
 
 				for (ViewTypeItem viewTypeItem : getViewTypeItems()) {
 					if ((Boolean)viewTypeItem.get("active")) {
 						iconTag = new IconTag();
 
 						iconTag.setSymbol((String)viewTypeItem.get("icon"));
+
+						iconTag.doTag(pageContext);
+
+						iconTag = new IconTag();
+
+						iconTag.setCssClass("inline-item inline-item-after");
+						iconTag.setSymbol("caret-double-l");
 
 						iconTag.doTag(pageContext);
 
@@ -1047,12 +1161,38 @@ public class ManagementToolbarTag extends BaseContainerTag {
 				LinkTag linkTag = new LinkTag();
 
 				linkTag.setCssClass(
-					"nav-btn nav-btn-monospaced btn btn-primary");
+					"d-md-none nav-btn nav-btn-monospaced btn btn-primary");
+
 				linkTag.setIcon("plus");
 
 				linkTag.doTag(pageContext);
 
+				jspWriter.write("</li><li class=\"nav-item\">");
+
+				linkTag = new LinkTag();
+
+				linkTag.setCssClass(
+					"nav-btn d-md-flex d-none pl-4 pr-4 btn btn-primary");
+				linkTag.setLabel(LanguageUtil.get(resourceBundle, "new"));
+
+				linkTag.doTag(pageContext);
+
 				jspWriter.write("</li>");
+			}
+
+			if (isShowInfoButton()) {
+				jspWriter.write("<li class=\"nav-item\"><button class=\"");
+				jspWriter.write(" nav-link nav-link-monospaced btn");
+				jspWriter.write(" btn-monospaced btn-unstyled\" type=\"button");
+				jspWriter.write("\">");
+
+				iconTag = new IconTag();
+
+				iconTag.setSymbol("info-circle-open");
+
+				iconTag.doTag(pageContext);
+
+				jspWriter.write("</button></li>");
 			}
 
 			jspWriter.write("</ul>");
@@ -1063,9 +1203,9 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		if (isShowResultsBar()) {
 			jspWriter.write("<nav class=\"subnav-tbar subnav-tbar-primary");
 			jspWriter.write(" tbar tbar-inline-xs-down\"><div class=\"");
-			jspWriter.write("container-fluid container-fluid-max-xl\">");
-			jspWriter.write("<ul class=\"tbar-nav tbar-nav-wrap\">");
-			jspWriter.write("<li class=\"tbar-item");
+			jspWriter.write("container-fluid container-fluid-max-xxxl\">");
+			jspWriter.write("<ul class=\"tbar-nav tbar-nav-wrap\"><li ");
+			jspWriter.write("class=\"tbar-item");
 
 			List<LabelItem> filterLabelItems = getFilterLabelItems();
 
@@ -1077,14 +1217,16 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			jspWriter.write("component-text text-truncate-inline\"><span");
 			jspWriter.write(" class=\"text-truncate\">");
 
+			String searchValueHTML =
+				"<strong>\"" + HtmlUtil.escape(searchValue) + "\"</strong>";
+
 			jspWriter.write(
 				LanguageUtil.format(
-					resourceBundle, "x-results-for-x",
-					new Object[] {
-						getItemsTotal(),
-						(searchValue == null) ? StringPool.BLANK :
-							HtmlUtil.escape(searchValue)
-					}));
+					resourceBundle,
+					_getResultsLanguageKey(
+						ListUtil.isNotEmpty(filterLabelItems), getItemsTotal(),
+						searchValue),
+					new Object[] {getItemsTotal(), searchValueHTML}));
 
 			jspWriter.write("</span></span></div></li>");
 
@@ -1102,7 +1244,7 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			LinkTag linkTag = new LinkTag();
 
 			linkTag.setCssClass("component-link tbar-link");
-			linkTag.setHref(getClearResultsURL());
+			linkTag.setHref(HtmlUtil.escapeAttribute(getClearResultsURL()));
 			linkTag.setLabel(LanguageUtil.get(resourceBundle, "clear"));
 
 			linkTag.doTag(pageContext);
@@ -1110,14 +1252,35 @@ public class ManagementToolbarTag extends BaseContainerTag {
 			jspWriter.write("</div></li></ul></div></nav>");
 		}
 
+		String searchResultsTitle = getSearchResultsTitle();
+
+		if (isShowResultsBar() && Validator.isNotNull(searchResultsTitle)) {
+			jspWriter.write("<div class=\"c-mt-4 container-fluid ");
+			jspWriter.write("container-fluid-max-xl\"><h3>");
+			jspWriter.write(searchResultsTitle);
+			jspWriter.write("<h3></div>");
+		}
+
 		return SKIP_BODY;
+	}
+
+	private String _getLocalizedItemsType() {
+		String itemsType = getItemsType();
+
+		if (Validator.isNotNull(itemsType)) {
+			return LanguageUtil.get(
+				TagResourceBundleUtil.getResourceBundle(pageContext),
+				itemsType);
+		}
+
+		return itemsType;
 	}
 
 	private Map<String, List<String>> _getParamsMap(String url) {
 		Map<String, List<String>> searchData = new HashMap<>();
 
 		String[] parameters = StringUtil.split(
-			HttpUtil.getQueryString(url), CharPool.AMPERSAND);
+			HttpComponentsUtil.getQueryString(url), CharPool.AMPERSAND);
 
 		for (String parameter : parameters) {
 			if (parameter.length() == 0) {
@@ -1139,7 +1302,7 @@ public class ManagementToolbarTag extends BaseContainerTag {
 				parameterValue = parameterParts[1];
 			}
 
-			parameterValue = HttpUtil.decodeURL(parameterValue);
+			parameterValue = HttpComponentsUtil.decodeURL(parameterValue);
 
 			List<String> parameterValues = searchData.get(parameterName);
 
@@ -1153,6 +1316,40 @@ public class ManagementToolbarTag extends BaseContainerTag {
 		}
 
 		return searchData;
+	}
+
+	private String _getResultsLanguageKey(
+		boolean hasFilters, int itemsTotal, String searchValue) {
+
+		if (Validator.isNull(searchValue)) {
+			if (hasFilters) {
+				if (itemsTotal == 1) {
+					return "x-result-found-with-filters";
+				}
+
+				return "x-results-found-with-filters";
+			}
+
+			if (itemsTotal == 1) {
+				return "x-result-found";
+			}
+
+			return "x-results-found";
+		}
+
+		if (hasFilters) {
+			if (itemsTotal == 1) {
+				return "x-result-found-for-x-with-filters";
+			}
+
+			return "x-results-found-for-x-with-filters";
+		}
+
+		if (itemsTotal == 1) {
+			return "x-result-found-for-x";
+		}
+
+		return "x-results-found-for-x";
 	}
 
 	private String _namespace(String namespace, String prop) {
@@ -1205,14 +1402,17 @@ public class ManagementToolbarTag extends BaseContainerTag {
 	private List<LabelItem> _filterLabelItems;
 	private String _infoPanelId;
 	private Integer _itemsTotal;
+	private String _itemsType = "items";
 	private ManagementToolbarDisplayContext _managementToolbarDisplayContext;
 	private String _namespace;
+	private List<DropdownItem> _orderDropdownItems;
 	private String _searchActionURL;
 	private String _searchContainerId;
 	private String _searchFormMethod;
 	private String _searchFormName;
 	private Boolean _searchInputAutoFocus;
 	private String _searchInputName;
+	private String _searchResultsTitle;
 	private String _searchValue;
 	private Boolean _selectable;
 	private String _selectAllURL;

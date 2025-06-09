@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -43,7 +34,6 @@ import com.liferay.portal.model.impl.BrowserTrackerModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -82,7 +72,6 @@ public class BrowserTrackerPersistenceImpl
 	private FinderPath _finderPathWithoutPaginationFindAll;
 	private FinderPath _finderPathCountAll;
 	private FinderPath _finderPathFetchByUserId;
-	private FinderPath _finderPathCountByUserId;
 
 	/**
 	 * Returns the browser tracker where userId = &#63; or throws a <code>NoSuchBrowserTrackerException</code> if it could not be found.
@@ -147,7 +136,7 @@ public class BrowserTrackerPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByUserId, finderArgs);
+				_finderPathFetchByUserId, finderArgs, this);
 		}
 
 		if (result instanceof BrowserTracker) {
@@ -233,45 +222,13 @@ public class BrowserTrackerPersistenceImpl
 	 */
 	@Override
 	public int countByUserId(long userId) {
-		FinderPath finderPath = _finderPathCountByUserId;
+		BrowserTracker browserTracker = fetchByUserId(userId);
 
-		Object[] finderArgs = new Object[] {userId};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_BROWSERTRACKER_WHERE);
-
-			sb.append(_FINDER_COLUMN_USERID_USERID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(userId);
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (browserTracker == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_USERID_USERID_2 =
@@ -376,8 +333,6 @@ public class BrowserTrackerPersistenceImpl
 
 		Object[] args = new Object[] {browserTrackerModelImpl.getUserId()};
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByUserId, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByUserId, args, browserTrackerModelImpl);
 	}
@@ -677,7 +632,7 @@ public class BrowserTrackerPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BrowserTracker>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -747,7 +702,7 @@ public class BrowserTrackerPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -816,34 +771,13 @@ public class BrowserTrackerPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUserId",
 			new String[] {Long.class.getName()}, new String[] {"userId"}, true);
 
-		_finderPathCountByUserId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUserId",
-			new String[] {Long.class.getName()}, new String[] {"userId"},
-			false);
-
-		_setBrowserTrackerUtilPersistence(this);
+		BrowserTrackerUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setBrowserTrackerUtilPersistence(null);
+		BrowserTrackerUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(BrowserTrackerImpl.class.getName());
-	}
-
-	private void _setBrowserTrackerUtilPersistence(
-		BrowserTrackerPersistence browserTrackerPersistence) {
-
-		try {
-			Field field = BrowserTrackerUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, browserTrackerPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_BROWSERTRACKER =

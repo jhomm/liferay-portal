@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.resource.actions.test;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.portlet.PortletBag;
 import com.liferay.portal.kernel.portlet.PortletBagPool;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
+import com.liferay.portal.kernel.util.PropertiesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
@@ -29,15 +21,16 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.portlet.Portlet;
+
 import java.io.InputStream;
 
 import java.net.URL;
 
 import java.util.Dictionary;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
-
-import javax.portlet.Portlet;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -71,6 +64,12 @@ public class ResourceActionsDefinitionTest {
 		StringBundler sb = new StringBundler();
 
 		for (Bundle bundle : bundleContext.getBundles()) {
+			Dictionary<String, String> headers = bundle.getHeaders("");
+
+			if (Objects.equals(headers.get("Eclipse-BuddyPolicy"), "parent")) {
+				continue;
+			}
+
 			BundleWiring bundleWiring = bundle.adapt(BundleWiring.class);
 
 			ClassLoader bundleClassLoader = bundleWiring.getClassLoader();
@@ -89,11 +88,7 @@ public class ResourceActionsDefinitionTest {
 				continue;
 			}
 
-			Properties properties = new Properties();
-
-			try (InputStream inputStream = url.openStream()) {
-				properties.load(inputStream);
-			}
+			Properties properties = PropertiesUtil.load(url);
 
 			for (String resourceActionConfig :
 					StringUtil.split(

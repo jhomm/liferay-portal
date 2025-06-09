@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.web.internal.portlet.action;
 
+import com.liferay.login.web.constants.LoginPortletKeys;
 import com.liferay.multi.factor.authentication.spi.checker.browser.BrowserMFAChecker;
 import com.liferay.multi.factor.authentication.web.internal.constants.MFAPortletKeys;
 import com.liferay.multi.factor.authentication.web.internal.constants.MFAWebKeys;
 import com.liferay.multi.factor.authentication.web.internal.policy.MFAPolicy;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -27,14 +20,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + MFAPortletKeys.MFA_VERIFY,
+		"jakarta.portlet.name=" + MFAPortletKeys.MFA_VERIFY,
 		"mvc.command.name=/mfa_verify/verify"
 	},
 	service = MVCActionCommand.class
@@ -92,7 +85,25 @@ public class VerifyMVCActionCommand extends BaseMVCActionCommand {
 					_portal.getHttpServletResponse(actionResponse),
 					mfaUserId)) {
 
+				hideDefaultErrorMessage(actionRequest);
+
 				SessionErrors.add(actionRequest, "mfaVerificationFailed");
+			}
+			else {
+				actionRequest.setAttribute(
+					WebKeys.REDIRECT,
+					PortletURLBuilder.createActionURL(
+						_portal.getLiferayPortletResponse(actionResponse),
+						LoginPortletKeys.LOGIN
+					).setActionName(
+						"/login/login"
+					).setRedirect(
+						ParamUtil.getString(actionRequest, "redirect")
+					).setParameter(
+						"saveLastPath", Boolean.FALSE
+					).setParameter(
+						"state", ParamUtil.getString(actionRequest, "state")
+					).buildString());
 			}
 		}
 		catch (Exception exception) {

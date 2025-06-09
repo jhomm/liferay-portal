@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
@@ -20,11 +11,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -60,61 +51,91 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 			ParentKnowledgeBaseFolder.class, json);
 	}
 
-	@Schema(description = "The parent folder's ID.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The parent folder's ID."
+	)
 	public Long getFolderId() {
+		if (_folderIdSupplier != null) {
+			folderId = _folderIdSupplier.get();
+
+			_folderIdSupplier = null;
+		}
+
 		return folderId;
 	}
 
 	public void setFolderId(Long folderId) {
 		this.folderId = folderId;
+
+		_folderIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFolderId(
 		UnsafeSupplier<Long, Exception> folderIdUnsafeSupplier) {
 
-		try {
-			folderId = folderIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_folderIdSupplier = () -> {
+			try {
+				return folderIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The parent folder's ID.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long folderId;
 
-	@Schema(description = "The parent folder's name.")
+	@JsonIgnore
+	private Supplier<Long> _folderIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The parent folder's name."
+	)
 	public String getFolderName() {
+		if (_folderNameSupplier != null) {
+			folderName = _folderNameSupplier.get();
+
+			_folderNameSupplier = null;
+		}
+
 		return folderName;
 	}
 
 	public void setFolderName(String folderName) {
 		this.folderName = folderName;
+
+		_folderNameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFolderName(
 		UnsafeSupplier<String, Exception> folderNameUnsafeSupplier) {
 
-		try {
-			folderName = folderNameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_folderNameSupplier = () -> {
+			try {
+				return folderNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The parent folder's name.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String folderName;
+
+	@JsonIgnore
+	private Supplier<String> _folderNameSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -144,6 +165,8 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 
 		sb.append("{");
 
+		Long folderId = getFolderId();
+
 		if (folderId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -153,6 +176,8 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 
 			sb.append(folderId);
 		}
+
+		String folderName = getFolderName();
 
 		if (folderName != null) {
 			if (sb.length() > 1) {
@@ -173,17 +198,17 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.ParentKnowledgeBaseFolder",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -209,7 +234,7 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -220,7 +245,10 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -241,7 +269,7 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -257,5 +285,12 @@ public class ParentKnowledgeBaseFolder implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

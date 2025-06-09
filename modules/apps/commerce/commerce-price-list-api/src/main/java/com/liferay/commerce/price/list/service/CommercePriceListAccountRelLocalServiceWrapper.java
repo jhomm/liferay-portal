@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service;
 
+import com.liferay.commerce.price.list.model.CommercePriceListAccountRel;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link CommercePriceListAccountRelLocalService}.
@@ -26,6 +21,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommercePriceListAccountRelLocalServiceWrapper
 	implements CommercePriceListAccountRelLocalService,
 			   ServiceWrapper<CommercePriceListAccountRelLocalService> {
+
+	public CommercePriceListAccountRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommercePriceListAccountRelLocalServiceWrapper(
 		CommercePriceListAccountRelLocalService
@@ -46,21 +45,18 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @return the commerce price list account rel that was added
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-		addCommercePriceListAccountRel(
-			com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-				commercePriceListAccountRel) {
+	public CommercePriceListAccountRel addCommercePriceListAccountRel(
+		CommercePriceListAccountRel commercePriceListAccountRel) {
 
 		return _commercePriceListAccountRelLocalService.
 			addCommercePriceListAccountRel(commercePriceListAccountRel);
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-			addCommercePriceListAccountRel(
-				long userId, long commercePriceListId, long commerceAccountId,
-				int order,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommercePriceListAccountRel addCommercePriceListAccountRel(
+			long userId, long commercePriceListId, long commerceAccountId,
+			int order,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListAccountRelLocalService.
@@ -76,8 +72,8 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @return the new commerce price list account rel
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-		createCommercePriceListAccountRel(long commercePriceListAccountRelId) {
+	public CommercePriceListAccountRel createCommercePriceListAccountRel(
+		long commercePriceListAccountRelId) {
 
 		return _commercePriceListAccountRelLocalService.
 			createCommercePriceListAccountRel(commercePriceListAccountRelId);
@@ -107,10 +103,8 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @throws PortalException
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-			deleteCommercePriceListAccountRel(
-				com.liferay.commerce.price.list.model.
-					CommercePriceListAccountRel commercePriceListAccountRel)
+	public CommercePriceListAccountRel deleteCommercePriceListAccountRel(
+			CommercePriceListAccountRel commercePriceListAccountRel)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListAccountRelLocalService.
@@ -129,9 +123,8 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @throws PortalException if a commerce price list account rel with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-			deleteCommercePriceListAccountRel(
-				long commercePriceListAccountRelId)
+	public CommercePriceListAccountRel deleteCommercePriceListAccountRel(
+			long commercePriceListAccountRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListAccountRelLocalService.
@@ -274,17 +267,16 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-		fetchCommercePriceListAccountRel(long commercePriceListAccountRelId) {
+	public CommercePriceListAccountRel fetchCommercePriceListAccountRel(
+		long commercePriceListAccountRelId) {
 
 		return _commercePriceListAccountRelLocalService.
 			fetchCommercePriceListAccountRel(commercePriceListAccountRelId);
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-		fetchCommercePriceListAccountRel(
-			long commerceAccountId, long commercePriceListId) {
+	public CommercePriceListAccountRel fetchCommercePriceListAccountRel(
+		long commerceAccountId, long commercePriceListId) {
 
 		return _commercePriceListAccountRelLocalService.
 			fetchCommercePriceListAccountRel(
@@ -299,7 +291,7 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @return the matching commerce price list account rel, or <code>null</code> if a matching commerce price list account rel could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
+	public CommercePriceListAccountRel
 		fetchCommercePriceListAccountRelByUuidAndCompanyId(
 			String uuid, long companyId) {
 
@@ -323,8 +315,8 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @throws PortalException if a commerce price list account rel with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-			getCommercePriceListAccountRel(long commercePriceListAccountRelId)
+	public CommercePriceListAccountRel getCommercePriceListAccountRel(
+			long commercePriceListAccountRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListAccountRelLocalService.
@@ -340,7 +332,7 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @throws PortalException if a matching commerce price list account rel could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
+	public CommercePriceListAccountRel
 			getCommercePriceListAccountRelByUuidAndCompanyId(
 				String uuid, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -361,31 +353,27 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @return the range of commerce price list account rels
 	 */
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListAccountRel>
-			getCommercePriceListAccountRels(int start, int end) {
+	public java.util.List<CommercePriceListAccountRel>
+		getCommercePriceListAccountRels(int start, int end) {
 
 		return _commercePriceListAccountRelLocalService.
 			getCommercePriceListAccountRels(start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListAccountRel>
-			getCommercePriceListAccountRels(long commercePriceListId) {
+	public java.util.List<CommercePriceListAccountRel>
+		getCommercePriceListAccountRels(long commercePriceListId) {
 
 		return _commercePriceListAccountRelLocalService.
 			getCommercePriceListAccountRels(commercePriceListId);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListAccountRel>
-			getCommercePriceListAccountRels(
-				long commercePriceListId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.price.list.model.
-						CommercePriceListAccountRel> orderByComparator) {
+	public java.util.List<CommercePriceListAccountRel>
+		getCommercePriceListAccountRels(
+			long commercePriceListId, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<CommercePriceListAccountRel> orderByComparator) {
 
 		return _commercePriceListAccountRelLocalService.
 			getCommercePriceListAccountRels(
@@ -393,10 +381,9 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListAccountRel>
-			getCommercePriceListAccountRels(
-				long commercePriceListId, String name, int start, int end) {
+	public java.util.List<CommercePriceListAccountRel>
+		getCommercePriceListAccountRels(
+			long commercePriceListId, String name, int start, int end) {
 
 		return _commercePriceListAccountRelLocalService.
 			getCommercePriceListAccountRels(
@@ -480,13 +467,36 @@ public class CommercePriceListAccountRelLocalServiceWrapper
 	 * @return the commerce price list account rel that was updated
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-		updateCommercePriceListAccountRel(
-			com.liferay.commerce.price.list.model.CommercePriceListAccountRel
-				commercePriceListAccountRel) {
+	public CommercePriceListAccountRel updateCommercePriceListAccountRel(
+		CommercePriceListAccountRel commercePriceListAccountRel) {
 
 		return _commercePriceListAccountRelLocalService.
 			updateCommercePriceListAccountRel(commercePriceListAccountRel);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commercePriceListAccountRelLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<CommercePriceListAccountRel> getCTPersistence() {
+		return _commercePriceListAccountRelLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<CommercePriceListAccountRel> getModelClass() {
+		return _commercePriceListAccountRelLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CommercePriceListAccountRel>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _commercePriceListAccountRelLocalService.
+			updateWithUnsafeFunction(updateUnsafeFunction);
 	}
 
 	@Override

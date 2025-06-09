@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.service.impl;
@@ -20,13 +11,11 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceShippingMethodService;
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOption;
 import com.liferay.commerce.shipping.engine.fixed.service.base.CommerceShippingFixedOptionServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.math.BigDecimal;
 
@@ -34,42 +23,35 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceShippingFixedOption"
+	},
+	service = AopService.class
+)
 public class CommerceShippingFixedOptionServiceImpl
 	extends CommerceShippingFixedOptionServiceBaseImpl {
 
 	@Override
 	public CommerceShippingFixedOption addCommerceShippingFixedOption(
-			long groupId, long commerceShippingMethodId,
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			BigDecimal amount, double priority)
+			long groupId, long commerceShippingMethodId, BigDecimal amount,
+			Map<Locale, String> descriptionMap, String key,
+			Map<Locale, String> nameMap, double priority)
 		throws PortalException {
 
 		_checkCommerceChannel(groupId);
 
 		return commerceShippingFixedOptionLocalService.
 			addCommerceShippingFixedOption(
-				getUserId(), groupId, commerceShippingMethodId, nameMap,
-				descriptionMap, amount, priority);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public CommerceShippingFixedOption addCommerceShippingFixedOption(
-			long commerceShippingMethodId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, BigDecimal amount,
-			double priority, ServiceContext serviceContext)
-		throws PortalException {
-
-		return commerceShippingFixedOptionService.
-			addCommerceShippingFixedOption(
-				serviceContext.getScopeGroupId(), commerceShippingMethodId,
-				nameMap, descriptionMap, amount, priority);
+				getUserId(), groupId, commerceShippingMethodId, amount,
+				descriptionMap, key, nameMap, priority);
 	}
 
 	@Override
@@ -95,6 +77,22 @@ public class CommerceShippingFixedOptionServiceImpl
 		CommerceShippingFixedOption commerceShippingFixedOption =
 			commerceShippingFixedOptionLocalService.
 				fetchCommerceShippingFixedOption(commerceShippingFixedOptionId);
+
+		if (commerceShippingFixedOption != null) {
+			_checkCommerceChannel(commerceShippingFixedOption.getGroupId());
+		}
+
+		return commerceShippingFixedOption;
+	}
+
+	@Override
+	public CommerceShippingFixedOption fetchCommerceShippingFixedOption(
+			long companyId, String key)
+		throws PortalException {
+
+		CommerceShippingFixedOption commerceShippingFixedOption =
+			commerceShippingFixedOptionLocalService.
+				fetchCommerceShippingFixedOption(companyId, key);
 
 		if (commerceShippingFixedOption != null) {
 			_checkCommerceChannel(commerceShippingFixedOption.getGroupId());
@@ -183,9 +181,9 @@ public class CommerceShippingFixedOptionServiceImpl
 
 	@Override
 	public CommerceShippingFixedOption updateCommerceShippingFixedOption(
-			long commerceShippingFixedOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, BigDecimal amount,
-			double priority)
+			long commerceShippingFixedOptionId, BigDecimal amount,
+			Map<Locale, String> descriptionMap, String key,
+			Map<Locale, String> nameMap, double priority)
 		throws PortalException {
 
 		CommerceShippingFixedOption commerceShippingFixedOption =
@@ -196,8 +194,8 @@ public class CommerceShippingFixedOptionServiceImpl
 
 		return commerceShippingFixedOptionLocalService.
 			updateCommerceShippingFixedOption(
-				commerceShippingFixedOptionId, nameMap, descriptionMap, amount,
-				priority);
+				commerceShippingFixedOptionId, amount, descriptionMap, key,
+				nameMap, priority);
 	}
 
 	private void _checkCommerceChannel(long groupId) throws PortalException {
@@ -208,17 +206,16 @@ public class CommerceShippingFixedOptionServiceImpl
 			getPermissionChecker(), commerceChannel, ActionKeys.UPDATE);
 	}
 
-	private static volatile ModelResourcePermission<CommerceChannel>
-		_commerceChannelModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommerceShippingFixedOptionServiceImpl.class,
-				"_commerceChannelModelResourcePermission",
-				CommerceChannel.class);
-
-	@ServiceReference(type = CommerceChannelLocalService.class)
+	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
 
-	@ServiceReference(type = CommerceShippingMethodService.class)
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceChannel)"
+	)
+	private ModelResourcePermission<CommerceChannel>
+		_commerceChannelModelResourcePermission;
+
+	@Reference
 	private CommerceShippingMethodService _commerceShippingMethodService;
 
 }

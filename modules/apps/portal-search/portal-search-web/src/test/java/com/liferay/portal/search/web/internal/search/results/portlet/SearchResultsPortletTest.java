@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.results.portlet;
 
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.util.AssetRendererFactoryLookup;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
+import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletConfig;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
@@ -24,11 +18,13 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
@@ -36,37 +32,36 @@ import com.liferay.portal.search.summary.Summary;
 import com.liferay.portal.search.summary.SummaryBuilder;
 import com.liferay.portal.search.summary.SummaryBuilderFactory;
 import com.liferay.portal.search.web.internal.display.context.PortletURLFactory;
-import com.liferay.portal.search.web.internal.portlet.shared.task.PortletSharedRequestHelper;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 import com.liferay.portal.search.web.search.request.SearchSettings;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.portal.util.PortalImpl;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.RenderURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.RenderURL;
-
-import javax.servlet.http.HttpServletRequest;
-
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author André de Oliveira
@@ -78,34 +73,74 @@ public class SearchResultsPortletTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		_configurationProviderUtilMockedStatic = Mockito.mockStatic(
+			ConfigurationProviderUtil.class);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_configurationProviderUtilMockedStatic.close();
+	}
+
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
+		_setUpPortalUtil();
+		_setUpPortletSharedSearchResponse();
+		_setUpPropsUtil();
+		_setUpSearchSettings();
+		_setUpUserLocalService();
 
-		setUpPortletSharedSearchResponse();
-		setUpPropsUtil();
-		setUpSearchSettings();
+		_portletURLFactory = _createPortletURLFactory();
+		_renderRequest = _createRenderRequest();
+		_renderResponse = _createRenderResponse();
 
-		_portletURLFactory = createPortletURLFactory();
-		_renderRequest = createRenderRequest();
-		_renderResponse = createRenderResponse();
-		_searchResultsPortlet = createSearchResultsPortlet();
+		_searchResultsPortlet = _createSearchResultsPortlet();
+
+		ReflectionTestUtil.setFieldValue(
+			_searchResultsPortlet, "_portal", PortalUtil.getPortal());
 	}
 
 	@Test
 	public void testDocumentWithoutSummaryIsRemoved() throws Exception {
-		Document document = createDocumentWithSummary();
+		Document document = _createDocumentWithSummary();
 
-		setUpSearchResponseDocuments(document, createDocument());
+		_setUpSearchResponseDocuments(document, _createDocument());
 
 		render();
 
-		assertDisplayContextDocuments(document);
+		_assertDisplayContextDocuments(document);
 	}
 
-	protected void assertDisplayContextDocuments(
-		Document... expectedDocuments) {
+	@Test
+	public void testGetIteratorURL() throws Exception {
+		Mockito.doReturn(
+			"/search?delta=10&start=2"
+		).when(
+			_renderRequest
+		).getAttribute(
+			WebKeys.CURRENT_URL
+		);
 
+		render();
+
+		SearchResultsPortletDisplayContext searchResultsPortletDisplayContext =
+			_getDisplayContext();
+
+		SearchContainer<Document> searchContainer =
+			searchResultsPortletDisplayContext.getSearchContainer();
+
+		Assert.assertEquals(
+			"/search?delta=10",
+			String.valueOf(searchContainer.getIteratorURL()));
+	}
+
+	protected void render() throws IOException, PortletException {
+		_searchResultsPortlet.render(_renderRequest, _renderResponse);
+	}
+
+	private void _assertDisplayContextDocuments(Document... expectedDocuments) {
 		SearchResultsPortletDisplayContext searchResultsPortletDisplayContext =
 			_getDisplayContext();
 
@@ -114,7 +149,7 @@ public class SearchResultsPortletTest {
 			searchResultsPortletDisplayContext.getDocuments());
 	}
 
-	protected Document createDocument() {
+	private Document _createDocument() {
 		Document document = new DocumentImpl();
 
 		String className = RandomTestUtil.randomString();
@@ -124,7 +159,7 @@ public class SearchResultsPortletTest {
 		return document;
 	}
 
-	protected Document createDocumentWithSummary() throws Exception {
+	private Document _createDocumentWithSummary() throws Exception {
 		Document document = new DocumentImpl();
 
 		String className = RandomTestUtil.randomString();
@@ -142,7 +177,21 @@ public class SearchResultsPortletTest {
 		return document;
 	}
 
-	protected PortletSharedSearchRequest createPortletSharedSearchRequest() {
+	private Indexer<?> _createIndexerWithSummary() throws Exception {
+		Indexer<?> indexer = Mockito.mock(Indexer.class);
+
+		Mockito.doReturn(
+			new com.liferay.portal.kernel.search.Summary(null, null, null)
+		).when(
+			indexer
+		).getSummary(
+			Mockito.any(), Mockito.anyString(), Mockito.any(), Mockito.any()
+		);
+
+		return indexer;
+	}
+
+	private PortletSharedSearchRequest _createPortletSharedSearchRequest() {
 		PortletSharedSearchRequest portletSharedSearchRequest = Mockito.mock(
 			PortletSharedSearchRequest.class);
 
@@ -157,7 +206,7 @@ public class SearchResultsPortletTest {
 		return portletSharedSearchRequest;
 	}
 
-	protected PortletURLFactory createPortletURLFactory() throws Exception {
+	private PortletURLFactory _createPortletURLFactory() throws Exception {
 		PortletURLFactory portletURLFactory = Mockito.mock(
 			PortletURLFactory.class);
 
@@ -170,7 +219,7 @@ public class SearchResultsPortletTest {
 		return portletURLFactory;
 	}
 
-	protected RenderRequest createRenderRequest() {
+	private RenderRequest _createRenderRequest() {
 		RenderRequest renderRequest = Mockito.mock(RenderRequest.class);
 
 		Mockito.doReturn(
@@ -192,7 +241,7 @@ public class SearchResultsPortletTest {
 		return renderRequest;
 	}
 
-	protected RenderResponse createRenderResponse() {
+	private RenderResponse _createRenderResponse() {
 		RenderResponse renderResponse = Mockito.mock(RenderResponse.class);
 
 		Mockito.doReturn(
@@ -204,7 +253,7 @@ public class SearchResultsPortletTest {
 		return renderResponse;
 	}
 
-	protected SearchResultsPortlet createSearchResultsPortlet()
+	private SearchResultsPortlet _createSearchResultsPortlet()
 		throws Exception {
 
 		SearchResultsPortlet searchResultsPortlet = new SearchResultsPortlet() {
@@ -213,13 +262,12 @@ public class SearchResultsPortletTest {
 					AssetEntryLocalService.class);
 				assetRendererFactoryLookup = Mockito.mock(
 					AssetRendererFactoryLookup.class);
-				http = Mockito.mock(Http.class);
 				indexerRegistry = _indexerRegistry;
-				portletSharedRequestHelper = Mockito.mock(
-					PortletSharedRequestHelper.class);
-				portletSharedSearchRequest = createPortletSharedSearchRequest();
+				portletSharedSearchRequest =
+					_createPortletSharedSearchRequest();
 				resourceActions = Mockito.mock(ResourceActions.class);
-				summaryBuilderFactory = createSummaryBuilderFactory();
+				summaryBuilderFactory = _createSummaryBuilderFactory();
+				userLocalService = _userLocalService;
 			}
 
 			@Override
@@ -275,7 +323,7 @@ public class SearchResultsPortletTest {
 		return searchResultsPortlet;
 	}
 
-	protected SummaryBuilderFactory createSummaryBuilderFactory() {
+	private SummaryBuilderFactory _createSummaryBuilderFactory() {
 		SummaryBuilder summaryBuilder = Mockito.mock(SummaryBuilder.class);
 
 		Mockito.doReturn(
@@ -296,19 +344,34 @@ public class SearchResultsPortletTest {
 		return summaryBuilderFactory;
 	}
 
-	protected void render() throws IOException, PortletException {
-		_searchResultsPortlet.render(_renderRequest, _renderResponse);
+	private SearchResultsPortletDisplayContext _getDisplayContext() {
+		ArgumentCaptor<SearchResultsPortletDisplayContext> argumentCaptor =
+			ArgumentCaptor.forClass(SearchResultsPortletDisplayContext.class);
+
+		Mockito.verify(
+			_renderRequest
+		).setAttribute(
+			Mockito.eq(WebKeys.PORTLET_DISPLAY_CONTEXT),
+			argumentCaptor.capture()
+		);
+
+		return argumentCaptor.getValue();
 	}
 
-	protected void setUpPortletSharedSearchResponse() {
+	private void _setUpPortalUtil() {
+		ReflectionTestUtil.setFieldValue(
+			PortalUtil.class, "_portal", new PortalImpl());
+	}
+
+	private void _setUpPortletSharedSearchResponse() {
 		Mockito.doReturn(
-			Optional.empty()
+			null
 		).when(
 			_portletSharedSearchResponse
-		).getKeywordsOptional();
+		).getKeywords();
 
 		Mockito.doReturn(
-			Optional.empty()
+			null
 		).when(
 			_portletSharedSearchResponse
 		).getPortletPreferences(
@@ -344,11 +407,11 @@ public class SearchResultsPortletTest {
 		);
 	}
 
-	protected void setUpPropsUtil() {
+	private void _setUpPropsUtil() {
 		PropsTestUtil.setProps(Collections.emptyMap());
 	}
 
-	protected void setUpSearchResponseDocuments(Document... documents) {
+	private void _setUpSearchResponseDocuments(Document... documents) {
 		Mockito.doReturn(
 			Arrays.asList(documents)
 		).when(
@@ -356,7 +419,7 @@ public class SearchResultsPortletTest {
 		).getDocuments71();
 	}
 
-	protected void setUpSearchSettings() {
+	private void _setUpSearchSettings() {
 		Mockito.when(
 			_searchSettings.getSearchContext()
 		).thenReturn(
@@ -364,58 +427,36 @@ public class SearchResultsPortletTest {
 		);
 	}
 
-	private Indexer<?> _createIndexerWithSummary() throws Exception {
-		Indexer<?> indexer = Mockito.mock(Indexer.class);
-
+	private void _setUpUserLocalService() {
 		Mockito.doReturn(
-			new com.liferay.portal.kernel.search.Summary(null, null, null)
+			Mockito.mock(User.class)
 		).when(
-			indexer
-		).getSummary(
-			Mockito.any(), Mockito.anyString(), Mockito.any(), Mockito.any()
+			_userLocalService
+		).fetchUser(
+			Mockito.anyLong()
 		);
-
-		return indexer;
 	}
 
-	private SearchResultsPortletDisplayContext _getDisplayContext() {
-		ArgumentCaptor<SearchResultsPortletDisplayContext> argumentCaptor =
-			ArgumentCaptor.forClass(SearchResultsPortletDisplayContext.class);
+	private static MockedStatic<ConfigurationProviderUtil>
+		_configurationProviderUtilMockedStatic;
 
-		Mockito.verify(
-			_renderRequest
-		).setAttribute(
-			Matchers.eq(WebKeys.PORTLET_DISPLAY_CONTEXT),
-			argumentCaptor.capture()
-		);
-
-		return argumentCaptor.getValue();
-	}
-
-	@Mock
-	private IndexerRegistry _indexerRegistry;
-
-	@Mock
-	private PortletSharedSearchResponse _portletSharedSearchResponse;
-
+	private final IndexerRegistry _indexerRegistry = Mockito.mock(
+		IndexerRegistry.class);
+	private final PortletSharedSearchResponse _portletSharedSearchResponse =
+		Mockito.mock(PortletSharedSearchResponse.class);
 	private PortletURLFactory _portletURLFactory;
 	private RenderRequest _renderRequest;
-
-	@Mock
-	private RenderResponse _renderResponse;
-
-	@Mock
-	private SearchContext _searchContext;
-
-	@Mock
-	private SearchRequest _searchRequest;
-
-	@Mock
-	private SearchResponse _searchResponse;
-
+	private RenderResponse _renderResponse = Mockito.mock(RenderResponse.class);
+	private final SearchContext _searchContext = Mockito.mock(
+		SearchContext.class);
+	private final SearchRequest _searchRequest = Mockito.mock(
+		SearchRequest.class);
+	private final SearchResponse _searchResponse = Mockito.mock(
+		SearchResponse.class);
 	private SearchResultsPortlet _searchResultsPortlet;
-
-	@Mock
-	private SearchSettings _searchSettings;
+	private final SearchSettings _searchSettings = Mockito.mock(
+		SearchSettings.class);
+	private final UserLocalService _userLocalService = Mockito.mock(
+		UserLocalService.class);
 
 }

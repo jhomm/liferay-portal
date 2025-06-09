@@ -1,40 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.internal.resource.v1_0;
 
+import com.liferay.commerce.constants.CommerceOrderActionKeys;
+import com.liferay.commerce.exception.NoSuchOrderException;
+import com.liferay.commerce.exception.NoSuchOrderNoteException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderNote;
 import com.liferay.commerce.service.CommerceOrderNoteService;
 import com.liferay.commerce.service.CommerceOrderService;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.delivery.cart.dto.v1_0.Cart;
 import com.liferay.headless.commerce.delivery.cart.dto.v1_0.CartComment;
-import com.liferay.headless.commerce.delivery.cart.internal.dto.v1_0.NoteDTOConverter;
 import com.liferay.headless.commerce.delivery.cart.resource.v1_0.CartCommentResource;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.fields.NestedFieldId;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,26 +37,84 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Andrea Sbarra
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/cart-comment.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {CartCommentResource.class, NestedFieldSupport.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = CartCommentResource.class
 )
-public class CartCommentResourceImpl
-	extends BaseCartCommentResourceImpl implements NestedFieldSupport {
+public class CartCommentResourceImpl extends BaseCartCommentResourceImpl {
 
 	@Override
-	public Response deleteCartComment(Long commentId) throws Exception {
+	public void deleteCartComment(Long commentId) throws Exception {
 		_commerceOrderNoteService.deleteCommerceOrderNote(commentId);
+	}
 
-		Response.ResponseBuilder responseBuilder = Response.ok();
+	@Override
+	public void deleteCartCommentByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
 
-		return responseBuilder.build();
+		CommerceOrderNote commerceOrderNote =
+			_commerceOrderNoteService.
+				fetchCommerceOrderNoteByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrderNote == null) {
+			throw new NoSuchOrderNoteException(
+				"Unable to find order note with external reference code " +
+					externalReferenceCode);
+		}
+
+		deleteCartComment(commerceOrderNote.getCommerceOrderNoteId());
+	}
+
+	@Override
+	public Page<CartComment> getCartByExternalReferenceCodeCommentsPage(
+			String externalReferenceCode, Pagination pagination)
+		throws Exception {
+
+		CommerceOrder commerceOrder =
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrder == null) {
+			throw new NoSuchOrderException(
+				"Unable to find order with external reference code " +
+					externalReferenceCode);
+		}
+
+		return Page.of(
+			_toOrderNotes(
+				_commerceOrderNoteService.getCommerceOrderNotes(
+					commerceOrder.getCommerceOrderId(), false,
+					pagination.getStartPosition(),
+					pagination.getEndPosition())),
+			pagination,
+			_commerceOrderNoteService.getCommerceOrderNotesCount(
+				commerceOrder.getCommerceOrderId(), false));
 	}
 
 	@Override
 	public CartComment getCartComment(Long commentId) throws Exception {
 		return _toOrderNote(GetterUtil.getLong(commentId));
+	}
+
+	@Override
+	public CartComment getCartCommentByExternalReferenceCode(
+			String externalReferenceCode)
+		throws Exception {
+
+		CommerceOrderNote commerceOrderNote =
+			_commerceOrderNoteService.
+				fetchCommerceOrderNoteByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrderNote == null) {
+			throw new NoSuchOrderNoteException(
+				"Unable to find order note with external reference code " +
+					externalReferenceCode);
+		}
+
+		return getCartComment(commerceOrderNote.getCommerceOrderNoteId());
 	}
 
 	@NestedField(parentClass = Cart.class, value = "notes")
@@ -72,14 +123,53 @@ public class CartCommentResourceImpl
 			@NestedFieldId("id") Long cartId, Pagination pagination)
 		throws Exception {
 
-		List<CommerceOrderNote> commerceOrderNotes =
-			_commerceOrderNoteService.getCommerceOrderNotes(cartId, false);
+		PortletResourcePermission portletResourcePermission =
+			_modelResourcePermission.getPortletResourcePermission();
 
-		int totalItems = _commerceOrderNoteService.getCommerceOrderNotesCount(
-			cartId, false);
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			cartId);
+
+		if (portletResourcePermission.contains(
+				PermissionThreadLocal.getPermissionChecker(),
+				commerceOrder.getGroupId(),
+				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_NOTES)) {
+
+			return Page.of(
+				_toOrderNotes(
+					_commerceOrderNoteService.getCommerceOrderNotes(
+						cartId, pagination.getStartPosition(),
+						pagination.getEndPosition())),
+				pagination,
+				_commerceOrderNoteService.getCommerceOrderNotesCount(
+					cartId, false));
+		}
 
 		return Page.of(
-			_toOrderNotes(commerceOrderNotes), pagination, totalItems);
+			_toOrderNotes(
+				_commerceOrderNoteService.getCommerceOrderNotes(
+					cartId, false, pagination.getStartPosition(),
+					pagination.getEndPosition())),
+			pagination,
+			_commerceOrderNoteService.getCommerceOrderNotesCount(
+				cartId, false));
+	}
+
+	@Override
+	public CartComment postCartByExternalReferenceCodeComment(
+			String externalReferenceCode, CartComment cartComment)
+		throws Exception {
+
+		CommerceOrder commerceOrder =
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrder == null) {
+			throw new NoSuchOrderException(
+				"Unable to find order with external reference code " +
+					externalReferenceCode);
+		}
+
+		return _addOrUpdateOrderNote(commerceOrder, cartComment);
 	}
 
 	@Override
@@ -100,9 +190,29 @@ public class CartCommentResourceImpl
 		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
 			commerceOrderNote.getCommerceOrderId());
 
-		cartComment.setId(commentId);
+		cartComment.setId(() -> commentId);
 
 		return _addOrUpdateOrderNote(commerceOrder, cartComment);
+	}
+
+	@Override
+	public CartComment putCartCommentByExternalReferenceCode(
+			String externalReferenceCode, CartComment cartComment)
+		throws Exception {
+
+		CommerceOrderNote commerceOrderNote =
+			_commerceOrderNoteService.
+				fetchCommerceOrderNoteByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrderNote == null) {
+			throw new NoSuchOrderNoteException(
+				"Unable to find order note with external reference code " +
+					externalReferenceCode);
+		}
+
+		return putCartComment(
+			commerceOrderNote.getCommerceOrderNoteId(), cartComment);
 	}
 
 	private CartComment _addOrUpdateOrderNote(
@@ -133,14 +243,10 @@ public class CartCommentResourceImpl
 			List<CommerceOrderNote> commerceOrderNotes)
 		throws Exception {
 
-		List<CartComment> orders = new ArrayList<>();
-
-		for (CommerceOrderNote commerceOrderNote : commerceOrderNotes) {
-			orders.add(
-				_toOrderNote(commerceOrderNote.getCommerceOrderNoteId()));
-		}
-
-		return orders;
+		return transform(
+			commerceOrderNotes,
+			commerceOrderNote -> _toOrderNote(
+				commerceOrderNote.getCommerceOrderNoteId()));
 	}
 
 	@Reference
@@ -149,8 +255,15 @@ public class CartCommentResourceImpl
 	@Reference
 	private CommerceOrderService _commerceOrderService;
 
-	@Reference
-	private NoteDTOConverter _noteDTOConverter;
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
+	)
+	private ModelResourcePermission<CommerceOrder> _modelResourcePermission;
+
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.delivery.cart.internal.dto.v1_0.converter.NoteDTOConverter)"
+	)
+	private DTOConverter<CommerceOrderNote, CartComment> _noteDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

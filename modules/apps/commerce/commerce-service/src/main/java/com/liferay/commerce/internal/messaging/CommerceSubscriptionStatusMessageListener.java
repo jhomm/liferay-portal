@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.messaging;
@@ -20,7 +11,7 @@ import com.liferay.commerce.notification.util.CommerceNotificationHelper;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceSubscriptionEntryLocalService;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.DestinationNames;
@@ -34,7 +25,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "destination.name=" + DestinationNames.COMMERCE_SUBSCRIPTION_STATUS,
 	service = MessageListener.class
 )
@@ -43,7 +33,7 @@ public class CommerceSubscriptionStatusMessageListener
 
 	@Override
 	protected void doReceive(Message message) throws Exception {
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			String.valueOf(message.getPayload()));
 
 		int subscriptionStatus = jsonObject.getInt("subscriptionStatus");
@@ -76,5 +66,8 @@ public class CommerceSubscriptionStatusMessageListener
 	@Reference
 	private CommerceSubscriptionEntryLocalService
 		_commerceSubscriptionEntryLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

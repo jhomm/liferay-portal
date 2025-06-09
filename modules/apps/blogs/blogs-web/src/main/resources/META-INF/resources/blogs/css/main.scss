@@ -3,20 +3,6 @@
 
 @import 'common_main';
 
-html#{$cadmin-selector} {
-	.portlet-blogs {
-		.cadmin {
-			.info-bar-container {
-				min-height: 35px;
-
-				.info-bar-center {
-					margin-top: 5px;
-				}
-			}
-		}
-	}
-}
-
 .portlet-blogs {
 	.taglib-custom-attributes-list {
 		margin-bottom: 1em;
@@ -37,6 +23,10 @@ html#{$cadmin-selector} {
 	.entry-body {
 		img {
 			max-width: 100%;
+		}
+
+		img[data-cke-saved-src^='data:image']:not([data-fileentryid]) {
+			display: none;
 		}
 
 		.cover-image-container {
@@ -233,7 +223,7 @@ html#{$cadmin-selector} {
 			width: 100%;
 		}
 
-		.cover-image-caption .cke_editable {
+		.cke_editable {
 			background-color: white;
 		}
 
@@ -250,9 +240,9 @@ html#{$cadmin-selector} {
 			resize: none;
 
 			&::placeholder {
-				border-color: #b0b4bb;
+				border-color: $secondary;
 				border-left: 2px solid;
-				color: #b0b4bb;
+				color: $secondary;
 				padding-left: 10px;
 			}
 
@@ -263,6 +253,12 @@ html#{$cadmin-selector} {
 
 		.has-error .form-control.form-control-edit:not(:focus)::placeholder {
 			border-color: #c67;
+		}
+
+		.has-error .alloy-editor-container .form-feedback-item {
+			font-size: 0.875rem;
+			font-weight: 600;
+			line-height: 4;
 		}
 
 		.form-control.form-control-unstyled {
@@ -300,17 +296,25 @@ html#{$cadmin-selector} {
 		padding: 30px 0;
 	}
 
-	.entry-navigation h2 {
-		margin-bottom: 15px;
-		margin-top: 0;
-	}
-
 	.entry-navigation {
 		padding: 60px 0;
 		width: 100%;
 
+		h2 {
+			margin-bottom: 15px;
+			margin-top: 0;
+		}
+
 		.small-image {
 			height: 140px;
+		}
+
+		.widget-mode-card .card-page-item {
+			max-width: 40rem;
+			min-width: 20rem;
+			padding-left: $grid-gutter-width / 2;
+			padding-right: $grid-gutter-width / 2;
+			width: 50%;
 		}
 	}
 
@@ -379,6 +383,7 @@ html#{$cadmin-selector} {
 		padding-top: 0.5rem;
 	}
 
+	.widget-mode-card,
 	.widget-mode-simple {
 		margin-top: 24px;
 	}
@@ -392,22 +397,6 @@ html#{$cadmin-selector} {
 
 		.autofit-col + .autofit-col {
 			padding-left: 0.5rem;
-		}
-	}
-
-	.widget-mode-card {
-		.card-page-item {
-			max-width: 20rem;
-			padding-left: $grid-gutter-width / 2;
-			padding-right: $grid-gutter-width / 2;
-			width: 100%;
-
-			@include media-breakpoint-up(lg) {
-				max-width: 26rem;
-			}
-			@include media-breakpoint-up(xl) {
-				max-width: 33.25rem;
-			}
 		}
 	}
 
@@ -501,7 +490,87 @@ html#{$cadmin-selector} {
 		color: #999;
 	}
 
-	.separator {
+	hr {
 		border-color: transparent;
+	}
+}
+
+.widget-toolbar {
+	.btn + .btn,
+	.widget-group + .widget-group {
+		margin-left: $spacer;
+	}
+}
+
+.widget-mode-detail {
+	padding-top: 1rem;
+
+	.title {
+		font-size: 36px;
+	}
+
+	.sub-title {
+		font-size: 26px;
+		margin-bottom: 32px;
+	}
+
+	.widget-metadata {
+		margin-bottom: 2rem;
+	}
+
+	.widget-mode-detail-text {
+		margin-top: 48px;
+
+		img {
+			max-width: 100%;
+		}
+
+		p {
+			font-size: 18px;
+			line-height: 1.8;
+		}
+	}
+}
+
+.widget-mode-card {
+	.card {
+		display: flex;
+		flex-direction: column;
+		height: calc(100% - 24px);
+		margin-bottom: 24px;
+	}
+
+	.card-header {
+		overflow: hidden;
+		padding: 0;
+	}
+
+	.card-title {
+		position: relative;
+	}
+
+	.visible-interaction {
+		@include media-breakpoint-up(md) {
+			position: absolute;
+			right: -8px;
+		}
+	}
+}
+
+.widget-mode-simple {
+	.widget-topbar {
+		margin-bottom: 8px;
+	}
+
+	.widget-metadata {
+		margin-bottom: 24px;
+	}
+
+	.widget-toolbar {
+		margin-top: 1.5rem;
+	}
+
+	.widget-content .cover-image {
+		margin-bottom: 24px;
 	}
 }

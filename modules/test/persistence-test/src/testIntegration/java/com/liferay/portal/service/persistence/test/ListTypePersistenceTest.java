@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -34,6 +25,7 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -124,6 +116,18 @@ public class ListTypePersistenceTest {
 
 		newListType.setMvccVersion(RandomTestUtil.nextLong());
 
+		newListType.setUuid(RandomTestUtil.randomString());
+
+		newListType.setCompanyId(RandomTestUtil.nextLong());
+
+		newListType.setUserId(RandomTestUtil.nextLong());
+
+		newListType.setUserName(RandomTestUtil.randomString());
+
+		newListType.setCreateDate(RandomTestUtil.nextDate());
+
+		newListType.setModifiedDate(RandomTestUtil.nextDate());
+
 		newListType.setName(RandomTestUtil.randomString());
 
 		newListType.setType(RandomTestUtil.randomString());
@@ -135,28 +139,66 @@ public class ListTypePersistenceTest {
 
 		Assert.assertEquals(
 			existingListType.getMvccVersion(), newListType.getMvccVersion());
+		Assert.assertEquals(existingListType.getUuid(), newListType.getUuid());
 		Assert.assertEquals(
 			existingListType.getListTypeId(), newListType.getListTypeId());
+		Assert.assertEquals(
+			existingListType.getCompanyId(), newListType.getCompanyId());
+		Assert.assertEquals(
+			existingListType.getUserId(), newListType.getUserId());
+		Assert.assertEquals(
+			existingListType.getUserName(), newListType.getUserName());
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingListType.getCreateDate()),
+			Time.getShortTimestamp(newListType.getCreateDate()));
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingListType.getModifiedDate()),
+			Time.getShortTimestamp(newListType.getModifiedDate()));
 		Assert.assertEquals(existingListType.getName(), newListType.getName());
 		Assert.assertEquals(existingListType.getType(), newListType.getType());
 	}
 
 	@Test
-	public void testCountByType() throws Exception {
-		_persistence.countByType("");
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
 
-		_persistence.countByType("null");
+		_persistence.countByUuid("null");
 
-		_persistence.countByType((String)null);
+		_persistence.countByUuid((String)null);
 	}
 
 	@Test
-	public void testCountByN_T() throws Exception {
-		_persistence.countByN_T("", "");
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByN_T("null", "null");
+		_persistence.countByUuid_C("null", 0L);
 
-		_persistence.countByN_T((String)null, (String)null);
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
+	public void testCountByC_T() throws Exception {
+		_persistence.countByC_T(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_T(0L, "null");
+
+		_persistence.countByC_T(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByC_N_T() throws Exception {
+		_persistence.countByC_N_T(RandomTestUtil.nextLong(), "", "");
+
+		_persistence.countByC_N_T(0L, "null", "null");
+
+		_persistence.countByC_N_T(0L, (String)null, (String)null);
 	}
 
 	@Test
@@ -184,8 +226,9 @@ public class ListTypePersistenceTest {
 
 	protected OrderByComparator<ListType> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"ListType", "mvccVersion", true, "listTypeId", true, "name", true,
-			"type", true);
+			"ListType", "mvccVersion", true, "uuid", true, "listTypeId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "name", true, "type", true);
 	}
 
 	@Test
@@ -446,6 +489,11 @@ public class ListTypePersistenceTest {
 
 	private void _assertOriginalValues(ListType listType) {
 		Assert.assertEquals(
+			Long.valueOf(listType.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				listType, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+		Assert.assertEquals(
 			listType.getName(),
 			ReflectionTestUtil.invoke(
 				listType, "getColumnOriginalValue",
@@ -463,6 +511,18 @@ public class ListTypePersistenceTest {
 		ListType listType = _persistence.create(pk);
 
 		listType.setMvccVersion(RandomTestUtil.nextLong());
+
+		listType.setUuid(RandomTestUtil.randomString());
+
+		listType.setCompanyId(RandomTestUtil.nextLong());
+
+		listType.setUserId(RandomTestUtil.nextLong());
+
+		listType.setUserName(RandomTestUtil.randomString());
+
+		listType.setCreateDate(RandomTestUtil.nextDate());
+
+		listType.setModifiedDate(RandomTestUtil.nextDate());
 
 		listType.setName(RandomTestUtil.randomString());
 

@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -25,31 +27,31 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
-
-			JSONUser.tearDownNonAdminUsers();
 		}
 
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9018 | Test Summary: Search an Individual's Activities List with a query that won't return results"
-	@priority = "3"
+	@priority = 3
 	test AssertNoIndividualsActivitiesResults {
+		property test.run.type = "single";
+
 		task ("Add DM to AC Page") {
 			ACUtils.createDMAndAddToPage();
 		}
 
 		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Add a new user in DXP") {
@@ -81,7 +83,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Individual Activity Overview") {
@@ -107,13 +109,15 @@ definition {
 		}
 
 		task ("Assert there are no activities found") {
-			AssertElementPresent(locator1 = "ACIndividualsDashboard#NO_EVENTS_FOUND");
+			ACUtils.viewGenericText(textValueList = "There are no events found.,Check back later to verify if data has been received from your data sources.,Learn more about individuals.");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9020 | Test Summary: Search associated segment will not return results in the individual List"
-	@priority = "3"
+	@priority = 3
 	test AssertNoIndividualsAssociatedSegmentsResults {
+		property test.run.type = "single";
+
 		task ("Get site assigned property name") {
 			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
@@ -136,6 +140,8 @@ definition {
 				userLoginFullName = "ac ac");
 
 			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -145,7 +151,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Go to Segments and add a new segment") {
@@ -153,7 +159,7 @@ definition {
 
 			ACSegments.createStaticSegment();
 
-			ACSegments.nameSegment(segmentName = "New Segment Test");
+			ACUtils.setItemName(itemName = "New Segment Test");
 
 			ACSegments.addStaticMember(tableMember = "ac ac");
 
@@ -175,81 +181,15 @@ definition {
 		}
 
 		task ("Assert there are no segments found") {
-			ACUtils.viewNoResultsMessage(noResultMessage = "There are no Associated Segments found.");
-		}
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-9019 | Test Summary: Search an Individual's Interest List with a query that won't return results"
-	@ignore = "true"
-	@priority = "3"
-	test AssertNoIndividualsInterestsResults {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: After going to a specific individual details page and switch tab to "Interests" the message "An unexpected error occurred" appears.
-		// AC Refactor ticket: LRAC-9645
-		// AC Bug ticket: LRAC-9646
-
-		task ("Add web contents to Site as interest topics") {
-			ACUtils.createWCAndAddToPage();
-		}
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
-		task ("Add a new user and sync the Contact Data") {
-			JSONUser.addUser(
-				userEmailAddress = "ac@liferay.com",
-				userFirstName = "ac",
-				userLastName = "ac",
-				userScreenName = "ac");
-
-			ACDXPSettings.syncNewContactData();
-		}
-
-		task ("Sign in with the new user to visit the site pages") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "ac@liferay.com",
-				userLoginFullName = "ac ac");
-
-			ACUtils.navigateToSitePage(
-				pageName = "AC Page",
-				siteName = "Site Name");
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-		}
-
-		task ("Navigate to Individule Interests") {
-			ACNavigation.goToIndividuals();
-
-			ACNavigation.switchTab(tabName = "Known Individuals");
-
-			ACIndividualsDashboard.goToKnownIndividualDetails(individualName = "ac ac");
-
-			ACNavigation.switchTab(tabName = "Interests");
-		}
-
-		task ("Search non-existent interest") {
-			ACUtils.searchBar(searchItem = "sport");
-
-			// In the interests tab the message "An unexpected error occurred" appears.
-
-		}
-
-		task ("Assert there are no interests found") {
-			ACUtils.viewNoResultsMessage(noResultMessage = "There are no Interests found.");
+			ACUtils.viewGenericText(textValueList = "There are no results found.,Please try a different search term.");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9021 | Test Summary: Search associated segment will not return results in the individual overview List"
-	@priority = "3"
+	@priority = 3
 	test AssertNoResultsInIndividualsOverviewAssociatedSegment {
+		property test.run.type = "single";
+
 		task ("Get site assigned property name") {
 			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
@@ -272,6 +212,8 @@ definition {
 				userLoginFullName = "ac ac");
 
 			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -281,7 +223,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Go to Segments and add a new segment") {
@@ -289,14 +231,14 @@ definition {
 
 			ACSegments.createStaticSegment();
 
-			ACSegments.nameSegment(segmentName = "New Segment Test");
+			ACUtils.setItemName(itemName = "New Segment Test");
 
 			ACSegments.addStaticMember(tableMember = "ac ac");
 
 			ACSegments.saveSegment();
 		}
 
-		task ("Navigate to Individule Segments") {
+		task ("Navigate to Known Individuals") {
 			ACNavigation.goToIndividuals();
 
 			ACNavigation.switchTab(tabName = "Known Individuals");
@@ -311,18 +253,14 @@ definition {
 		}
 
 		task ("Assert there are no segments found") {
-			ACUtils.viewNoResultsMessage(noResultMessage = "There are no Segments found.");
+			ACUtils.viewGenericText(textValueList = "There are no results found.,Please try a different search term.");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9033 | Test Summary: Case Insensitive Search"
-	@priority = "5"
+	@priority = 5
 	test CanCaseInsensitiveSearch {
 		var emailList = "randy.smith@liferay.com,maria.rau@liferay.com";
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
 
 		task ("Add new users in DXP and sync the Contact Data") {
 			JSONUser.addUser(
@@ -336,13 +274,17 @@ definition {
 				userFirstName = "Maria",
 				userLastName = "Rau",
 				userScreenName = "Mariasn");
+		}
 
-			ACDXPSettings.syncNewContactData();
+		task ("Get site assigned property name") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Sign in with the new user to visit the site pages") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -352,7 +294,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Go to the Individual > KnownIndividual > Details") {
@@ -379,43 +321,46 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9032 | Test Summary: Search and Clear Field"
-	@priority = "1"
+	@priority = 4
 	test SearchAndClearField {
 		var usernameList = "user1,user2";
-
 		var emailList = "user1@liferay.com,user2@liferay.com";
-
 		var nameList = "user1 user1,user2 user2";
 
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
 		task ("Add 2 new users and sync the Contact Data") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
-			}
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 
-			ACDXPSettings.syncNewContactData();
+				JSONUser.setFirstPassword(
+					agreeToTermsAndAnswerReminderQuery = "true",
+					requireReset = "false",
+					userEmailAddress = "${name}@liferay.com");
+			}
+		}
+
+		task ("Connect the DXP to AC") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Sign in with the new user to visit the site pages") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4,5",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name");
+
+			ACUtils.closeAllSessionsAndWait();
 		}
 
 		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Go to the Individual > KnownIndividual") {
@@ -435,19 +380,19 @@ definition {
 		task ("Clear the search result") {
 			ACUtils.clearSearchBar();
 
-			for (var individualAttribute : list "${nameList}") {
-				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "${individualAttribute}");
+			for (var individualAttribute : list ${nameList}) {
+				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = ${individualAttribute});
 			}
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9024 | Test Summary: Search an Individual's Details in the individual List"
-	@priority = "4"
+	@priority = 4
 	test SearchIndividualDetails {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+		property test.run.type = "single";
 
-			var dataSource = StringUtil.extractFirst("${propertyName}"," ");
+		task ("Connect the DXP to AC") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Add new users in DXP and sync the Contact Data") {
@@ -458,25 +403,31 @@ definition {
 				userLastName = "Smith",
 				userScreenName = "Randysn");
 
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "randy.smith@liferay.com");
+		}
+
+		task ("Sync the Contact Data") {
 			ACDXPSettings.syncNewContactData();
 		}
 
 		task ("Sign in with the new user to visit the site pages") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "randy.smith@liferay.com",
-				userLoginFullName = "Randy Smith");
-
-			ACUtils.navigateToSitePage(
+			ACUtils.navigateToSitePageWithUser(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4,5",
+				emailList = "randy.smith@liferay.com",
 				pageName = "AC Page",
 				siteName = "Site Name");
+
+			ACUtils.closeAllSessionsAndWait();
 		}
 
 		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Go to the Individual > KnownIndividual > Details") {
@@ -492,18 +443,18 @@ definition {
 		task ("Search and return no results") {
 			ACUtils.searchBar(searchItem = "some invalid query");
 
-			ACUtils.viewNoResultsMessage(noResultMessage = "There are no items found.");
+			ACUtils.viewGenericText(textValueList = "There are no results found.");
 		}
 
 		task ("Search for upper case") {
 			ACUtils.searchBar(searchItem = "SMITH");
 
 			for (var individualAttribute : list "email,familyName") {
-				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "${individualAttribute}");
+				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = ${individualAttribute});
 			}
 
-			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,givenName,jobTitle,modifiedDate") {
-				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = "${individualAttribute}");
+			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,givenName,modifiedDate") {
+				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = ${individualAttribute});
 			}
 		}
 
@@ -511,29 +462,21 @@ definition {
 			ACUtils.searchBar(searchItem = "randy");
 
 			for (var individualAttribute : list "email,givenName") {
-				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "${individualAttribute}");
+				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = ${individualAttribute});
 			}
 
-			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,familyName,jobTitle,modifiedDate") {
-				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = "${individualAttribute}");
+			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,familyName,modifiedDate") {
+				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = ${individualAttribute});
 			}
 		}
 
 		task ("Search for property name") {
-			ACUtils.searchBar(searchItem = "classPK");
+			ACUtils.searchBar(searchItem = "createDate");
 
-			ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "classPK");
+			ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "createDate");
 
-			for (var individualAttribute : list "birthDate,contactId,createDate,email,familyName,givenName,jobTitle,modifiedDate") {
-				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = "${individualAttribute}");
-			}
-		}
-
-		task ("Search for data source") {
-			ACUtils.searchBar(searchItem = "${dataSource}");
-
-			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,email,familyName,givenName,jobTitle,modifiedDate") {
-				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "${individualAttribute}");
+			for (var individualAttribute : list "birthDate,classPK,contactId,email,familyName,givenName,modifiedDate") {
+				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = ${individualAttribute});
 			}
 		}
 
@@ -544,20 +487,16 @@ definition {
 				ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "familyName");
 			}
 
-			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,email,givenName,jobTitle,modifiedDate") {
-				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = "${individualAttribute}");
+			for (var individualAttribute : list "birthDate,classPK,contactId,createDate,email,givenName,modifiedDate") {
+				ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = ${individualAttribute});
 			}
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9026 | Test Summary: Search for an Individual in the individual List"
-	@priority = "4"
+	@priority = 4
 	test SearchIndividualList {
 		var emailList = "randy.smith@liferay.com,maria.rau@liferay.com";
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
 
 		task ("Add new users in DXP and sync the Contact Data") {
 			JSONUser.addUser(
@@ -575,23 +514,25 @@ definition {
 				userScreenName = "Mariasn");
 		}
 
-		task ("Sync the Contact Data") {
-			ACDXPSettings.syncNewContactData();
+		task ("Connect the DXP to AC") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Sign in with the new user to visit the site pages") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4,5",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name");
+
+			ACUtils.closeAllSessionsAndWait();
 		}
 
 		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Go to the Individual > KnownIndividual") {
@@ -642,7 +583,7 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9022 | Test Summary: Search an Individual's Activities List"
-	@priority = "4"
+	@priority = 4
 	test SearchIndividualsActivitiesList {
 		task ("Create a Document And Media") {
 			ACUtils.createDMAndAddToPage();
@@ -679,7 +620,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Navigate to the Individual > Known Individuals > Overview") {
@@ -697,93 +638,25 @@ definition {
 
 			ACUtils.searchBar(searchItem = "pageViewed");
 
-			ACIndividualsDashboard.viewTimelineItem(activityNameList = "pageViewed");
+			ACIndividualsDashboard.viewTimelineItem(
+				activityNameList = "pageViewed",
+				positionList = 1);
 
-			ACIndividualsDashboard.viewTimelineItemNotPresent(activityNameList = "documentPreviewed");
-		}
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-9028 | Test Summary: Search an Individual's Interest List"
-	@ignore = "true"
-	@priority = "4"
-	test SearchIndividualsInterests {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: data doesn't appear on time
-		// AC Refactor ticket: LRAC-9184
-
-		task ("Connect DXP to AC") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
-		task ("Add specific pages and web contents to Site as interest topics") {
-			Navigator.openSiteURL(siteName = "Site Name");
-
-			for (var layoutName : list "Movies,Sports") {
-				ACUtils.addPage(layoutName = "${layoutName}");
-
-				ACUtils.createWCAndAddToPage(
-					layoutName = "${layoutName}",
-					webContentTitle = "Web Content Title ${layoutName}");
-			}
-		}
-
-		task ("Add a new user and sync the Contact Data") {
-			JSONUser.addUser(
-				userEmailAddress = "ac@liferay.com",
-				userFirstName = "ac",
-				userLastName = "ac",
-				userScreenName = "ac");
-
-			ACDXPSettings.syncNewContactData();
-		}
-
-		task ("View new pages in site as new user") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "ac@liferay.com",
-				userLoginFullName = "ac ac");
-
-			for (var pageName : list "Movies,Sports") {
-				ACUtils.navigateToSitePage(
-					pageName = "${pageName}",
-					siteName = "Site Name");
-			}
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-		}
-
-		task ("Navigate to the Individual Interests") {
-			ACNavigation.goToIndividuals();
-
-			ACNavigation.switchTab(tabName = "Known Individuals");
-
-			ACIndividualsDashboard.goToKnownIndividualDetails(individualName = "ac ac");
-
-			ACNavigation.switchTab(tabName = "Interests");
-		}
-
-		task ("Search an Individual's Interest List") {
-			ACUtils.searchBar(searchItem = "Sports");
-
-			ACInterests.viewInterest(
-				interestTopic = "sports",
-				knownIndividuals = "true");
-
-			ACInterests.viewInterestNotPresent(interestTopic = "movies");
+			ACIndividualsDashboard.viewTimelineItemNotPresent(
+				activityNameList = "documentPreviewed",
+				positionList = 1);
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9029 | Test Summary: Sort Individuals List"
-	@priority = "3"
+	@ignore = "true"
+	@priority = 3
 	test SortIndividualList {
-		var usernameList = "user1,user2,user3";
 
+		// AC Refactor: Data doesn't appear on time
+		// AC Refactor ticket: LRAC-14011
+
+		var usernameList = "user1,user2,user3";
 		var emailList = "user1@liferay.com,user2@liferay.com,user3@liferay.com";
 
 		task ("Get site assigned property name") {
@@ -791,12 +664,12 @@ definition {
 		}
 
 		task ("Add 3 new users and sync the Contact Data") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 			}
 
 			ACDXPSettings.syncNewContactData();
@@ -804,7 +677,7 @@ definition {
 
 		task ("Sign in with the new user to visit the site pages") {
 			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -814,7 +687,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Go to the Individual > KnownIndividual") {
@@ -838,86 +711,14 @@ definition {
 		}
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-9030 | Test Summary: Sorting a List Returns a User to the First Page"
-	@priority = "3"
-	test SortingReturnsUserToFirstPage {
-		var usernameList = "user1,user2,user3,user4,user5,user6,user7";
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
-		task ("Add 7 new users and sync the Contact Data") {
-			for (var name : list "${usernameList}") {
-				JSONUser.addUser(
-					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
-
-				ACDXPSettings.syncNewContactData();
-			}
-		}
-
-		task ("View the page as different users") {
-			for (var name : list "${usernameList}") {
-				ACUtils.navigateToSitePageWithUser(
-					emailList = "${name}@liferay.com",
-					pageName = "AC Page",
-					siteName = "Site Name");
-			}
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-		}
-
-		task ("Go to the Individual > KnownIndividual") {
-			ACNavigation.goToIndividuals();
-
-			ACIndividualsDashboard.goToKnownIndividualsTab();
-		}
-
-		task ("Change the pagination to "5" and view individuals in the first page") {
-			ACUtils.changePagination(itemsPerPage = "5");
-
-			ACIndividualsDashboard.viewKnownIndividualSpecificOrder(itemName = "user1 user1,user2 user2,user3 user3,user4 user4,user5 user5");
-
-			ACUtils.viewActivePage(pageNumber = "1");
-
-			ACUtils.viewResultsMessage(results = "Showing 1 to 5 of 7 entries.");
-		}
-
-		task ("Go to the second page and view individuals") {
-			ACUtils.checkPreviousNextButton(nextButton = "true");
-
-			ACIndividualsDashboard.viewKnownIndividualSpecificOrder(itemName = "user6 user6,user7 user7");
-
-			ACUtils.viewActivePage(pageNumber = "2");
-
-			ACUtils.viewResultsMessage(results = "Showing 6 to 7 of 7 entries.");
-		}
-
-		task ("Sort the table by the 'Name | Email' column header in descending order and return to the first Page") {
-			ACIndividualsDashboard.filterKnownIndividualList(
-				desc = "true",
-				rowName = "Name | Email");
-
-			ACIndividualsDashboard.viewKnownIndividualSpecificOrder(itemName = "user7 user7,user6 user6,user5 user5,user4 user4,user3 user3");
-
-			ACUtils.viewActivePage(pageNumber = "1");
-
-			ACUtils.viewResultsMessage(results = "Showing 1 to 5 of 7 entries.");
-		}
-	}
-
 	@description = "Feature ID: Legacy | Automation ID: LRAC-9031 | Test Summary: Table Pagination"
-	@priority = "4"
+	@ignore = "true"
+	@priority = 4
 	test TablePagination {
+
+		// AC Refactor: Data doesn't appear on time
+		// AC Refactor ticket: LRAC-14011
+
 		var usernameList = "user1,user2,user3,user4,user5,user6";
 
 		task ("Get site assigned property name") {
@@ -925,19 +726,19 @@ definition {
 		}
 
 		task ("Add 6 new users and sync the Contact Data") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 
 				ACDXPSettings.syncNewContactData();
 			}
 		}
 
 		task ("View the page as different users") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				ACUtils.navigateToSitePageWithUser(
 					emailList = "${name}@liferay.com",
 					pageName = "AC Page",
@@ -950,7 +751,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 		}
 
 		task ("Go to the Individual > KnownIndividual") {
@@ -959,12 +760,12 @@ definition {
 			ACIndividualsDashboard.goToKnownIndividualsTab();
 		}
 
-		task ("Change the pagination to "5" and "75"") {
-			ACUtils.changePagination(itemsPerPage = "5");
+		task ("Change the pagination to "4" and "60"") {
+			ACUtils.changePagination(itemsPerPage = 4);
 
 			ACIndividualsDashboard.assertIndividualAttributeNotPresent(key_individualAttribute = "user6 user6");
 
-			ACUtils.changePagination(itemsPerPage = "75");
+			ACUtils.changePagination(itemsPerPage = 60);
 
 			ACIndividualsDashboard.assertIndividualAttribute(key_individualAttribute = "user6 user6");
 		}

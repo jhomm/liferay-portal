@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.service.test;
@@ -28,9 +19,8 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -98,26 +88,26 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 
 	@Test
 	public void testCompanies() throws Exception {
-		Long companyId = CompanyThreadLocal.getCompanyId();
+		long[] companyIds = new long[_COMPANIES_COUNT];
 
 		for (int i = 0; i < _COMPANIES_COUNT; i++) {
-			long newCompanyId = createCompany();
-
-			CompanyThreadLocal.setCompanyId(newCompanyId);
-
-			Group group = updateTrashEntriesMaxAge(
-				createGroup(newCompanyId), _MAX_AGE);
-
-			createTrashEntries(group);
+			companyIds[i] = createCompany();
 		}
+
+		CompanyLocalServiceUtil.forEachCompanyId(
+			companyId -> {
+				Group group = updateTrashEntriesMaxAge(
+					createGroup(companyId), _MAX_AGE);
+
+				createTrashEntries(group);
+			},
+			companyIds);
 
 		TrashEntryLocalServiceUtil.checkEntries();
 
 		Assert.assertEquals(
 			_COMPANIES_COUNT * _NOT_EXPIRED_TRASH_ENTRIES_COUNT,
 			TrashEntryLocalServiceUtil.getTrashEntriesCount());
-
-		CompanyThreadLocal.setCompanyId(companyId);
 	}
 
 	@Test
@@ -234,15 +224,13 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 
 		User user = UserTestUtil.getAdminUser(group.getCompanyId());
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), user.getUserId());
-
 		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
 			null, user.getUserId(), group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), user.getUserId()));
 
 		DLTrashLocalServiceUtil.moveFileEntryToTrash(
 			user.getUserId(), fileEntry.getRepositoryId(),
@@ -279,7 +267,7 @@ public class TrashEntryLocalServiceCheckEntriesTest {
 	protected Group createLayoutGroup(Group group) throws Exception {
 		User user = UserTestUtil.getAdminUser(group.getCompanyId());
 
-		Layout layout = LayoutTestUtil.addLayout(group);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(group);
 
 		return GroupLocalServiceUtil.addGroup(
 			user.getUserId(), GroupConstants.DEFAULT_PARENT_GROUP_ID,

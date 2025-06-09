@@ -1,0 +1,133 @@
+components:
+    schemas:
+        AnalyticsMostViewedContentRecommendation:
+            properties:
+                assetCategoryIds:
+                    items:
+                        format: int64
+                        type: integer
+                    type: array
+                createDate:
+                    format: date
+                    type: string
+                jobId:
+                    type: string
+                rank:
+                    format: int32
+                    type: integer
+                recommendedAssetEntryId:
+                    format: int64
+                    type: integer
+                score:
+                    format: float
+                    type: number
+            type: object
+        AnalyticsUserContentRecommendation:
+            properties:
+                assetCategoryIds:
+                    items:
+                        format: int64
+                        type: integer
+                    type: array
+                createDate:
+                    format: date
+                    type: string
+                jobId:
+                    type: string
+                rank:
+                    format: int32
+                    type: integer
+                recommendedAssetEntryId:
+                    format: int64
+                    type: integer
+                score:
+                    format: float
+                    type: number
+                userId:
+                    format: int64
+                    type: integer
+            type: object
+        AssetEntity:
+            properties:
+                assetCategoryIds:
+                    items:
+                        format: int64
+                        type: integer
+                    type: array
+                assetTagNames:
+                    items:
+                        type: string
+                    type: array
+                className:
+                    type: string
+                classPK:
+                    format: int64
+                    type: integer
+                classTypeId:
+                    format: int64
+                    type: integer
+                classTypeName:
+                    type: string
+                createDate:
+                    format: date
+                    type: string
+                expirationDate:
+                    format: date
+                    type: string
+                groupId:
+                    format: int64
+                    type: integer
+                id:
+                    format: int64
+                    type: integer
+                modifiedDate:
+                    format: date
+                    type: string
+                publishDate:
+                    format: date
+                    type: string
+                title:
+                    type: string
+        DXPEntity:
+            properties:
+                expandoFields:
+                    items:
+                        $ref: "#/components/schemas/ExpandoField"
+                    type: array
+                fields:
+                    items:
+                        $ref: "#/components/schemas/Field"
+                    type: array
+                id:
+                    type: string
+                modifiedDate:
+                    format: date
+                    type: string
+                type:
+                    type: string
+            type: object
+        ExpandoField:
+            properties:
+                columnId:
+                    format: int64
+                    type: integer
+                name:
+                    type: string
+                value:
+                    type: string
+            type: object
+        Field:
+            properties:
+                name:
+                    type: string
+                value:
+                    type: string
+            type: object
+info:
+    license:
+        name: Apache 2.0
+        url: http://www.apache.org/licenses/LICENSE-2.0.html
+    title: Liferay Analytics DXP Entity REST
+    version: v1.0
+openapi: 3.0.1
+paths:

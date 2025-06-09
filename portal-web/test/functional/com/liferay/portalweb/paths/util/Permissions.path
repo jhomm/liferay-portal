@@ -26,11 +26,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SELECT_ALL</td>
+	<td>//div[contains(@class,'title')][normalize-space(text())='${title}']//following-sibling::div[contains(@class,'search-container')]//input[contains(@title,'Select All')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PERMISSIONS_MODAL-->
+
 <tr>
 	<td>PERMISSIONS_MODAL_CHECKBOX</td>
 	<td>//input[@id='${key_roleTitle}_ACTION_${key_actionName}']</td>
@@ -41,7 +48,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--CONFIGURATION_PERMISSIONS-->
+
 <tr>
 	<td>CONFIGURATION_PERMISSIONS_ROLE_NAME</td>
 	<td>//tr[contains(.,'${key_roleName}')]/td[1]</td>
@@ -117,7 +126,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--INLINE_PERMISSIONS-->
+
 <tr>
 	<td>INLINE_PERMISSIONS_ADD_DISCUSSION_CHECKBOX</td>
 	<td>//input[@id='${key_roleTitle}_ACTION_ADD_DISCUSSION']</td>
@@ -149,6 +160,11 @@
 	<td></td>
 </tr>
 <tr>
+	<td>INLINE_PERMISSIONS_ASSIGN_MEMBERS_CHECKBOX</td>
+	<td>//input[@id='${key_roleTitle}_ACTION_ASSIGN_MEMBERS']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>INLINE_PERMISSIONS_PERMISSIONS_CHECKBOX</td>
 	<td>//input[@id='${key_roleTitle}_ACTION_PERMISSIONS']</td>
 	<td></td>
@@ -156,6 +172,11 @@
 <tr>
 	<td>INLINE_PERMISSIONS_DELETE_CHECKBOX</td>
 	<td>//input[@id='${key_roleTitle}_ACTION_DELETE']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_PERMISSIONS_DOWNLOAD_CHECKBOX</td>
+	<td>//input[@id='${key_roleTitle}_ACTION_DOWNLOAD']</td>
 	<td></td>
 </tr>
 <tr>
@@ -179,11 +200,41 @@
 	<td></td>
 </tr>
 <tr>
+	<td>INLINE_PERMISSIONS_ADD_WEB_CONTENT_CHECKBOX</td>
+	<td>//input[@id='${key_roleTitle}_ACTION_ADD_ARTICLE']</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
+<!--INLINE_PERMISSIONS_INDETERMINATE-->
+
+<tr>
+	<td>INLINE_PERMISSIONS_ADD_DISCUSSION_CHECKBOX_INDETERMINATE</td>
+	<td>//input[@id='${key_roleTitle}_ACTION_ADD_DISCUSSION' and @value='indeterminate']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_PERMISSIONS_DOWNLOAD_CHECKBOX_INDETERMINATE</td>
+	<td>//input[@id='${key_roleTitle}_ACTION_DOWNLOAD' and @value='indeterminate']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>INLINE_PERMISSIONS_VIEW_CHECKBOX_INDETERMINATE</td>
+	<td>//input[@id='${key_roleTitle}_ACTION_VIEW' and @value='indeterminate']</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
 <!--CONTENT_PERMISSIONS-->
+
 <tr>
 	<td>CONTENT_PERMISSIONS_ROLE_NAME</td>
 	<td>//tr[contains(.,'${key_roleTitle}')]/td[1]</td>
@@ -299,7 +350,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--EVENT_PERMISSIONS-->
+
 <tr>
 	<td>EVENT_PERMISSIONS_VIEW_CHECKBOX</td>
 	<td>//input[contains(@id,'${key_roleTitle}_ACTION_VIEW')]</td>

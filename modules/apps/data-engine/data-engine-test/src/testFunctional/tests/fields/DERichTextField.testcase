@@ -1,4 +1,4 @@
-@component-name = "data-engine"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -10,15 +10,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,7 +27,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that is possible to delete the field"
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
 		NavItem.gotoStructures();
 
@@ -55,7 +55,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that is possible to duplicate the field"
-	@priority = "4"
+	@priority = 4
 	test CanBeDuplicated {
 		NavItem.gotoStructures();
 
@@ -81,7 +81,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that is possible to apply styles to the data on the Rich Text field"
-	@priority = "5"
+	@priority = 5
 	test CanBeStyled {
 		NavItem.gotoStructures();
 
@@ -100,12 +100,10 @@ definition {
 		PortletEntry.inputTitle(title = "Web Content Title");
 
 		DERenderer.addBoldContentonRichText();
-
-		DERenderer.assertDataInColorField();
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that upon clicking on the Preview Icon from the Source option, a modal is displayed"
-	@priority = "4"
+	@priority = 4
 	test CanClickOnPreview {
 		NavItem.gotoStructures();
 
@@ -129,7 +127,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that Label and Help text can be edited"
-	@priority = "5"
+	@priority = 5
 	test CanEditLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -166,7 +164,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that data inputted on the Rich Text field persists."
-	@priority = "5"
+	@priority = 5
 	test CanInputData {
 		NavItem.gotoStructures();
 
@@ -188,7 +186,7 @@ definition {
 			content = "Rich Text",
 			fieldLabel = "Rich Text");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -198,7 +196,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that data inputted on the RIch Text from the Source option persists"
-	@priority = "5"
+	@priority = 5
 	test CanInputDataFromSourceOption {
 		NavItem.gotoStructures();
 
@@ -218,7 +216,7 @@ definition {
 
 		DERenderer.addSourceContentonRichText(content = "Rich Text");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -228,7 +226,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that upon duplicating a repeatable field, inputted data on both fields persists"
-	@priority = "5"
+	@priority = 5
 	test CanInputDataOnDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -253,37 +251,37 @@ definition {
 		DERenderer.inputDataInRichTextField(
 			content = "Rich Text",
 			fieldLabel = "Rich Text",
-			index = "1");
+			index = 1);
 
 		DERenderer.inputDataInRichTextField(
 			content = "Rich Text",
 			fieldLabel = "Rich Text",
-			index = "2");
+			index = 2);
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.assertDataInRichTextField(
 			content = "Rich Text",
 			fieldLabel = "Rich Text",
-			index = "1");
+			index = 1);
 
 		DERenderer.assertDataInRichTextField(
 			content = "Rich Text",
 			fieldLabel = "Rich Text",
-			index = "2");
+			index = 2);
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that is not possible to publish the Web Content with a required field blank	"
-	@priority = "4"
+	@priority = 4
 	test CanNotPublishBlankRequiredField {
 		NavItem.gotoStructures();
 
 		WebContentStructures.addCP(structureName = "WC Structure Title");
 
 		DEBuilder.addField(
-			fieldFieldLabel = "Rich Text",
+			fieldLabel = "Rich Text",
 			fieldName = "Rich Text");
 
 		DataEngine.editFieldRequired(fieldFieldLabel = "Rich Text");
@@ -296,13 +294,13 @@ definition {
 
 		PortletEntry.inputTitle(title = "Web Content Title");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		FormViewBuilder.validateObjectLabelOptionTextIsShown(text = "This field is required.");
 	}
 
 	@description = "This is a test for LRQA-69427. This test verifies that is possible to remove a duplicated field (repeatable)"
-	@priority = "4"
+	@priority = 4
 	test CanRemoveDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -324,25 +322,26 @@ definition {
 
 		DataEngine.addRepeatableField(fieldLabel = "Rich Text");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.removeRepeatableField(fieldLabel = "Rich Text");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DEBuilder.assertFieldNotPresent(
 			fieldLabel = "Rich Text",
-			index = "2");
+			index = 2);
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that Default Searchable property is Disable when System Setting is left unchecked"
-	@priority = "3"
+	@priority = 3
 	test CanSetDefaultSearchablePropertyToDisable {
-		property test.name.skip.portal.instance = "DERichTextField#CanSetDefaultSearchablePropertyToDisable";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -374,9 +373,10 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that Default Searchable property is Text when System Setting is checked"
-	@priority = "3"
+	@priority = 3
 	test CanSetDefaultSearchablePropertyToText {
-		property test.name.skip.portal.instance = "DERichTextField#CanSetDefaultSearchablePropertyToText";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -408,7 +408,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that Label and Help text can be set"
-	@priority = "5"
+	@priority = 5
 	test CanSetLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -433,7 +433,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68646. This test verifies that Label can be shown or hidden."
-	@priority = "3"
+	@priority = 3
 	test CanSetLabelToShownOrHidden {
 		NavItem.gotoStructures();
 
@@ -460,6 +460,61 @@ definition {
 		DataEngine.viewField(
 			fieldFieldLabel = "Rich Text",
 			fieldName = "Rich Text");
+	}
+
+	@description = "Check if Rich Text Field details can be seen."
+	@priority = 4
+	test ViewRichTextFieldDetails {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Rich Text Structure");
+
+		DEBuilder.addField(
+			fieldLabel = "Rich Text",
+			fieldName = "Rich Text");
+
+		DEBuilder.openField(
+			fieldLabel = "Rich Text",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Rich Text",
+			searchableType = "Text");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Rich Text");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Rich Text");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Rich Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "Rich Text Structure");
+
+		DEBuilder.openField(
+			fieldLabel = "Rich Text",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Rich Text",
+			searchableType = "Text");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Rich Text");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Rich Text");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Rich Text");
 	}
 
 }

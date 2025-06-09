@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.item.selector.web.internal.display.context;
@@ -18,20 +9,21 @@ import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCrite
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.item.selector.display.context.SitesItemSelectorViewDisplayContext;
+import com.liferay.site.item.selector.web.internal.constants.SitesItemSelectorWebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -45,7 +37,7 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 		String itemSelectedEventName, PortletURL portletURL) {
 
 		this.httpServletRequest = httpServletRequest;
-		_groupItemSelectorCriterion = groupItemSelectorCriterion;
+		this.groupItemSelectorCriterion = groupItemSelectorCriterion;
 		_itemSelectedEventName = itemSelectedEventName;
 		this.portletURL = portletURL;
 	}
@@ -56,15 +48,16 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 			return _displayStyle;
 		}
 
-		_displayStyle = ParamUtil.getString(
-			httpServletRequest, "displayStyle", "icon");
+		_displayStyle = SearchDisplayStyleUtil.getDisplayStyle(
+			httpServletRequest, SitesItemSelectorWebKeys.SITES_ITEM_SELECTOR,
+			"icon");
 
 		return _displayStyle;
 	}
 
 	@Override
 	public GroupItemSelectorCriterion getGroupItemSelectorCriterion() {
-		return _groupItemSelectorCriterion;
+		return groupItemSelectorCriterion;
 	}
 
 	@Override
@@ -115,11 +108,11 @@ public abstract class BaseSitesItemSelectorViewDisplayContext
 		return false;
 	}
 
+	protected final GroupItemSelectorCriterion groupItemSelectorCriterion;
 	protected final HttpServletRequest httpServletRequest;
 	protected final PortletURL portletURL;
 
 	private String _displayStyle;
-	private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
 	private final String _itemSelectedEventName;
 
 }

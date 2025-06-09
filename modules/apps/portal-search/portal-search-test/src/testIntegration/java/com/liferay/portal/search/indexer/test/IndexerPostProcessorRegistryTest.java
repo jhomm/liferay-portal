@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.indexer.test;
@@ -18,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
@@ -29,14 +21,12 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.TestIndexer;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -205,16 +195,13 @@ public class IndexerPostProcessorRegistryTest {
 
 			List<String> expectedClassNames = Arrays.asList(
 				TestSampleModelIndexerPostProcessor.class.getName());
+			List<String> actualClassNames = TransformUtil.transformToList(
+				indexer.getIndexerPostProcessors(),
+				indexerPostProcessor -> {
+					Class<?> clazz = indexerPostProcessor.getClass();
 
-			List<String> actualClassNames = Stream.of(
-				indexer.getIndexerPostProcessors()
-			).map(
-				IndexerPostProcessor::getClass
-			).map(
-				Class::getName
-			).collect(
-				Collectors.toList()
-			);
+					return clazz.getName();
+				});
 
 			Assert.assertEquals(
 				expectedClassNames.toString(), actualClassNames.toString());
@@ -231,9 +218,8 @@ public class IndexerPostProcessorRegistryTest {
 		Indexer<BlogsEntry> blogsEntryIndexer = IndexerRegistryUtil.getIndexer(
 			BlogsEntry.class.getName());
 
-		Class<?> clazz = blogsEntryIndexer.getClass();
-
-		testQueuedIndexerPostProcessor(blogsEntryIndexer, clazz.getName());
+		testQueuedIndexerPostProcessor(
+			blogsEntryIndexer, blogsEntryIndexer.getClassName());
 	}
 
 	@Test
@@ -297,8 +283,6 @@ public class IndexerPostProcessorRegistryTest {
 			Arrays.toString(indexerPostProcessors), 0,
 			indexerPostProcessors.length);
 
-		IndexerRegistryUtil.unregister(indexer);
-
 		Bundle bundle = FrameworkUtil.getBundle(getClass());
 
 		BundleContext bundleContext = bundle.getBundleContext();
@@ -314,8 +298,6 @@ public class IndexerPostProcessorRegistryTest {
 				).build());
 
 		try {
-			IndexerRegistryUtil.register(indexer);
-
 			indexerPostProcessors = indexer.getIndexerPostProcessors();
 
 			Assert.assertEquals(

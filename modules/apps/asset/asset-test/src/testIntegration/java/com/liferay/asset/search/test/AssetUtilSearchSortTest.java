@@ -1,28 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.asset.util.AssetHelper;
-import com.liferay.journal.model.JournalArticle;
-import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.constants.JournalFolderConstants;
+import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
@@ -31,16 +20,15 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Arrays;
-import java.util.List;
-import java.util.function.Consumer;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -64,13 +52,6 @@ public class AssetUtilSearchSortTest {
 		UserTestUtil.setUser(TestPropsValues.getUser());
 
 		_group = GroupTestUtil.addGroup();
-
-		_journalArticleFixture.setGroup(_group);
-
-		_journalArticleFixture.setJournalArticleLocalService(
-			_journalArticleLocalService);
-
-		_journalArticles = _journalArticleFixture.getJournalArticles();
 	}
 
 	@Test
@@ -78,8 +59,15 @@ public class AssetUtilSearchSortTest {
 		double[] priorities = {10, 1, 40, 5.3};
 
 		for (double priority : priorities) {
-			addJournalArticle(
-				serviceContext -> serviceContext.setAssetPriority(priority));
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId());
+
+			serviceContext.setAssetPriority(priority);
+
+			JournalTestUtil.addArticle(
+				_group.getGroupId(),
+				JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+				serviceContext);
 		}
 
 		SearchContext searchContext = createSearchContext();
@@ -103,22 +91,6 @@ public class AssetUtilSearchSortTest {
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
-	protected void addJournalArticle(Consumer<ServiceContext> consumer)
-		throws Exception {
-
-		ServiceContext serviceContext = createServiceContext();
-
-		consumer.accept(serviceContext);
-
-		addJournalArticle(serviceContext);
-	}
-
-	protected JournalArticle addJournalArticle(ServiceContext serviceContext)
-		throws Exception {
-
-		return _journalArticleFixture.addJournalArticle(serviceContext);
-	}
-
 	protected AssetEntryQuery createAssetEntryQueryOrderBy(String orderByCol1) {
 		AssetEntryQuery assetEntryQuery = new AssetEntryQuery();
 
@@ -141,26 +113,10 @@ public class AssetUtilSearchSortTest {
 		return searchContext;
 	}
 
-	protected ServiceContext createServiceContext() throws PortalException {
-		return _journalArticleFixture.createServiceContext();
-	}
-
-	@Inject
-	private static AssetEntryLocalService _assetEntryLocalService;
-
-	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
-
 	@Inject
 	private AssetHelper _assetHelper;
 
 	@DeleteAfterTestRun
 	private Group _group;
-
-	private final JournalArticleFixture _journalArticleFixture =
-		new JournalArticleFixture();
-
-	@DeleteAfterTestRun
-	private List<JournalArticle> _journalArticles;
 
 }

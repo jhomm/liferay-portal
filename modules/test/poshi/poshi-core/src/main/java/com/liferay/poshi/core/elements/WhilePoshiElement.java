@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.elements;
@@ -49,6 +40,59 @@ public class WhilePoshiElement extends IfPoshiElement {
 		return null;
 	}
 
+	@Override
+	public void parsePoshiScript(String poshiScript)
+		throws PoshiScriptParserException {
+
+		for (String poshiScriptSnippet :
+				getPoshiScriptSnippets(poshiScript, false)) {
+
+			String trimmedPoshiScriptSnippet = poshiScriptSnippet.trim();
+
+			if (!trimmedPoshiScriptSnippet.startsWith(
+					getPoshiScriptKeyword())) {
+
+				continue;
+			}
+
+			String blockName = getBlockName(poshiScriptSnippet);
+
+			add(PoshiNodeFactory.newPoshiNode(this, getCondition(blockName)));
+
+			add(new ThenPoshiElement(this, poshiScriptSnippet));
+
+			if (!blockName.contains("&& (maxIterations = ")) {
+				continue;
+			}
+
+			int index = blockName.lastIndexOf("&&");
+
+			String maxIterationsAssignment = blockName.substring(index + 2);
+
+			maxIterationsAssignment = getParentheticalContent(
+				maxIterationsAssignment);
+
+			String maxIterationsValue = getValueFromAssignment(
+				maxIterationsAssignment);
+
+			addAttribute(
+				"max-iterations", getDoubleQuotedContent(maxIterationsValue));
+		}
+	}
+
+	@Override
+	public String toPoshiScript() {
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("\n");
+
+		PoshiElement thenElement = (PoshiElement)element("then");
+
+		sb.append(createPoshiScriptBlock(thenElement.getPoshiNodes()));
+
+		return sb.toString();
+	}
+
 	protected WhilePoshiElement() {
 		super(_ELEMENT_NAME);
 	}
@@ -80,7 +124,9 @@ public class WhilePoshiElement extends IfPoshiElement {
 
 		List<Element> equalsPoshiElement = elements("equals");
 
-		if (equalsPoshiElement.size() == 1) {
+		if ((equalsPoshiElement.size() == 1) ||
+			(attributeValue("max-iterations") != null)) {
+
 			parentheticalContent = "(" + parentheticalContent + ")";
 		}
 
@@ -95,31 +141,6 @@ public class WhilePoshiElement extends IfPoshiElement {
 		sb.append(")");
 
 		return sb.toString();
-	}
-
-	@Override
-	protected String getCondition(String poshiScript) {
-		String parentheticalContent = getParentheticalContent(poshiScript);
-
-		if (parentheticalContent.contains("&& (maxIterations = ")) {
-			int index = parentheticalContent.lastIndexOf("&&");
-
-			String maxIterationsAssignment = parentheticalContent.substring(
-				index + 2);
-
-			maxIterationsAssignment = getParentheticalContent(
-				maxIterationsAssignment);
-
-			String maxIterationsValue = getValueFromAssignment(
-				maxIterationsAssignment);
-
-			addAttribute(
-				"max-iterations", getDoubleQuotedContent(maxIterationsValue));
-
-			parentheticalContent = parentheticalContent.substring(0, index);
-		}
-
-		return parentheticalContent.trim();
 	}
 
 	@Override

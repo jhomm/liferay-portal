@@ -1,66 +1,195 @@
 definition {
 
-	macro clickPublish {
-		Button.clickNoError(button = "Publish");
+	@summary = "Default summary"
+	macro clickManagementBar() {
+		Click(locator1 = "StyleBookEditor#MANAGEMENT_BAR");
+	}
 
-		AssertConfirm.assertConfirmationNoError(value1 = "Once published, these changes will affect all instances of the site using these properties. Do you want to publish now?");
+	@summary = "Default summary"
+	macro clickPublish(publishing = null) {
+		Button.click(button = "Publish");
+
+		if (IsTextEqual(locator1 = "Modal#HEADER", value1 = "Style Errors Detected")) {
+			AssertTextEquals(
+				locator1 = "Modal#BODY",
+				value1 = "Some of the fields have invalid values. If you continue publishing, the latest valid values will display.");
+
+			if (${publishing} == "Cancel") {
+				Click(
+					key_text = "Cancel",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+			}
+			else {
+				Click(
+					key_text = "Continue",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+
+				AssertTextEquals(
+					locator1 = "Modal#BODY",
+					value1 = "Once published, these changes will affect all instances of the site using these properties. Do you want to publish now?");
+
+				Click(
+					key_text = "Publish",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+			}
+		}
+		else {
+			AssertTextEquals(
+				locator1 = "Modal#BODY",
+				value1 = "Once published, these changes will affect all instances of the site using these properties. Do you want to publish now?");
+
+			Click(
+				key_text = "Publish",
+				locator1 = "Modal#MODAL_FOOTER_BUTTON");
+		}
 
 		Alert.viewSuccessMessage();
 	}
 
-	macro expandSection {
-		if (IsElementPresent(locator1 = "StyleBookEditor#STYLE_BOOK_EDITOR_SIDEBAR_COLLAPSED", key_sectionName = "${sectionName}")) {
+	@summary = "Default summary"
+	macro configureUnit(unit = null, fieldLabel = null) {
+		Click(
+			key_fieldLabel = ${fieldLabel},
+			locator1 = "Dropdown#DROPDOWN_TOGGLE_BUTTON_WITH_LABEL");
+
+		MenuItem.click(menuItem = ${unit});
+	}
+
+	@summary = "Default summary"
+	macro expandSection(sectionName = null) {
+		WaitForVisible(
+			key_panel = ${sectionName},
+			locator1 = "Panel#PANEL");
+
+		if (IsElementPresent(key_sectionName = ${sectionName}, locator1 = "StyleBookEditor#STYLE_BOOK_EDITOR_SIDEBAR_COLLAPSED")) {
 			AssertClick(
-				key_sectionName = "${sectionName}",
+				key_sectionName = ${sectionName},
 				locator1 = "StyleBookEditor#STYLE_BOOK_EDITOR_SIDEBAR_COLLAPSED",
-				value1 = "${sectionName}");
+				value1 = ${sectionName});
 		}
 
 		AssertElementPresent(
-			key_sectionName = "${sectionName}",
+			key_sectionName = ${sectionName},
 			locator1 = "StyleBookEditor#STYLE_BOOK_EDITOR_SIDEBAR_EXPANDED");
 	}
 
-	macro goToPageViaPagePreviewInfoBar {
-		Click(locator1 = "StyleBookEditor#PAGE_PREVIEW_INFO_BAR_TOGGLE");
+	@summary = "Default summary"
+	macro linkValueFromStyleBook(fieldLabel = null, colorSwatchItem = null) {
+		Click.clickNoWaitForVisible(
+			key_fieldLabel = ${fieldLabel},
+			key_text = "theme",
+			locator1 = "Icon#ANY_ITEM_SELECTOR");
 
-		MenuItem.click(menuItem = "${pageName}");
-	}
+		Click(
+			key_colorSwatchItem = ${colorSwatchItem},
+			locator1 = "Button#COLOR_SWATCH_ITEM");
 
-	macro selectForm {
-		Click(locator1 = "StyleBookEditor#FORM_CONTROL_SELECT_BUTTON");
-
-		MenuItem.click(menuItem = "${formName}");
-	}
-
-	macro selectStyleBook {
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		LexiconCard.clickCardTitle(card = "${styleBookName}");
+		StyleBooks.waitForAutoSave();
 
 		AssertElementPresent(
-			key_card = "${styleBookName}",
-			locator1 = "Card#CARD_SELECTED");
-
-		SelectFrameTop();
-
-		Button.clickDone();
+			key_fieldLabel = ${fieldLabel},
+			key_text = "chain-broken",
+			locator1 = "Icon#ANY_ITEM_SELECTOR");
 	}
 
-	macro selectStyleBookViaPageDesignOptions {
+	@summary = "Default summary"
+	macro selectForm(formName = null) {
+		Click.waitForMenuToggleJSClick(locator1 = "StyleBookEditor#FORM_CONTROL_SELECT_BUTTON");
+
+		MenuItem.click(menuItem = ${formName});
+	}
+
+	@summary = "Default summary"
+	macro selectPreviewItem(scope = null, caption = null, previewType = null, previewItem = null) {
+		Click(
+			index = 2,
+			locator1 = "StyleBookEditor#PREVIEW_SELECTOR");
+
+		if ((IsElementNotPresent(key_menuItem = ${previewItem}, locator1 = "MenuItem#ANY_MENU_ITEM")) && (IsElementPresent(key_text = "More", locator1 = "Button#ANY"))) {
+			if (isSet(caption)) {
+				AssertElementPresent(
+					key_caption = ${caption},
+					locator1 = "Dropdown#CAPTION");
+			}
+
+			WaitForLiferayEvent.initializeLiferayEventLog();
+
+			Button.clickMore();
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			if (isSet(scope)) {
+				NavItem.click(navItem = ${scope});
+			}
+
+			if (${previewType} == "Pages") {
+				Portlet.expandTree();
+
+				Click(
+					key_nodeName = ${previewItem},
+					locator1 = "Treeview#NODE_UNSELECTED");
+			}
+			else {
+				LexiconCard.clickCard(card = ${previewItem});
+			}
+
+			SelectFrameTop();
+		}
+		else {
+			MenuItem.click(menuItem = ${previewItem});
+		}
+	}
+
+	@summary = "Default summary"
+	macro selectPreviewType(previewType = null) {
+		Click(
+			index = 1,
+			locator1 = "StyleBookEditor#PREVIEW_SELECTOR");
+
+		MenuItem.click(menuItem = ${previewType});
+	}
+
+	@summary = "Default summary"
+	macro selectStyleBook(styleBookName = null) {
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		LexiconCard.clickCard(card = ${styleBookName});
+
+		SelectFrameTop();
+	}
+
+	@summary = "Default summary"
+	macro selectStyleBookViaPageDesignOptions(styleBookName = null) {
 		Navigator.gotoNavTab(navTab = "Style Book");
 
 		Click.waitForMenuToggleJSClick(
-			key_card = "${styleBookName}",
+			key_card = ${styleBookName},
 			locator1 = "Card#CARD_TYPE_ASSET");
 
 		AssertElementPresent(
-			key_card = "${styleBookName}",
+			key_card = ${styleBookName},
 			locator1 = "Card#CARD_SELECTED");
 	}
 
-	macro waitForAutoSave {
-		Pause(locator1 = "1000");
+	@summary = "Default summary"
+	macro viewCurrentPreviewItem(previewItem = null) {
+		AssertTextEquals(
+			index = 2,
+			locator1 = "StyleBookEditor#PREVIEW_SELECTOR",
+			value1 = ${previewItem});
+	}
+
+	@summary = "Default summary"
+	macro viewCurrentPreviewType(previewType = null) {
+		AssertTextEquals(
+			index = 1,
+			locator1 = "StyleBookEditor#PREVIEW_SELECTOR",
+			value1 = ${previewType});
+	}
+
+	@summary = "Default summary"
+	macro waitForAutoSave() {
+		WaitForElementNotPresent(locator1 = "StyleBookEditor#DRAFT_SAVING_MESSAGE");
 
 		AssertVisible(locator1 = "StyleBookEditor#DRAFT_SAVED_MESSAGE");
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.search;
@@ -32,16 +23,16 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marco Leo
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CPDefinitionOptionRelIndexer
 	extends BaseIndexer<CPDefinitionOptionRel> {
 
@@ -88,14 +79,14 @@ public class CPDefinitionOptionRelIndexer
 			SearchContext searchContext)
 		throws Exception {
 
-		addSearchLocalizedTerm(
-			searchQuery, searchContext, Field.CONTENT, false);
 		addSearchTerm(
 			searchQuery, searchContext,
 			CPField.DEFINITION_OPTION_VALUE_REL_NAME, false);
 		addSearchLocalizedTerm(
 			searchQuery, searchContext,
 			CPField.DEFINITION_OPTION_VALUE_REL_NAME, false);
+		addSearchLocalizedTerm(
+			searchQuery, searchContext, Field.CONTENT, false);
 		addSearchLocalizedTerm(
 			searchQuery, searchContext, Field.DESCRIPTION, false);
 		addSearchTerm(searchQuery, searchContext, Field.ENTRY_CLASS_PK, false);
@@ -130,7 +121,8 @@ public class CPDefinitionOptionRelIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Indexing definition option rel " + cpDefinitionOptionRel);
+				"Indexing commerce product definition option relationship " +
+					cpDefinitionOptionRel);
 		}
 
 		Document document = getBaseModelDocument(
@@ -140,10 +132,9 @@ public class CPDefinitionOptionRelIndexer
 			cpDefinitionOptionRel.getCPDefinitionOptionValueRels();
 
 		String cpDefinitionOptionRelDefaultLanguageId =
-			LocalizationUtil.getDefaultLanguageId(
-				cpDefinitionOptionRel.getName());
+			_localization.getDefaultLanguageId(cpDefinitionOptionRel.getName());
 
-		String[] languageIds = LocalizationUtil.getAvailableLanguageIds(
+		String[] languageIds = _localization.getAvailableLanguageIds(
 			cpDefinitionOptionRel.getName());
 
 		for (String languageId : languageIds) {
@@ -161,8 +152,24 @@ public class CPDefinitionOptionRelIndexer
 					cpDefinitionOptionValueRel.getName(languageId));
 			}
 
+			document.addKeyword(
+				CPField.CP_DEFINITION_ID,
+				cpDefinitionOptionRel.getCPDefinitionId());
+
 			String[] cpDefinitionOptionValueRelNames =
 				cpDefinitionOptionValueRelNamesList.toArray(new String[0]);
+
+			document.addText(
+				_localization.getLocalizedName(
+					CPField.DEFINITION_OPTION_VALUE_REL_NAME, languageId),
+				cpDefinitionOptionValueRelNames);
+
+			document.addText(Field.CONTENT, name);
+			document.addText(
+				_localization.getLocalizedName(Field.DESCRIPTION, languageId),
+				description);
+			document.addText(
+				_localization.getLocalizedName(Field.NAME, languageId), name);
 
 			if (languageId.equals(cpDefinitionOptionRelDefaultLanguageId)) {
 				document.addText(
@@ -172,30 +179,12 @@ public class CPDefinitionOptionRelIndexer
 				document.addText(Field.NAME, name);
 				document.addText("defaultLanguageId", languageId);
 			}
-
-			document.addText(
-				LocalizationUtil.getLocalizedName(Field.NAME, languageId),
-				name);
-			document.addText(
-				LocalizationUtil.getLocalizedName(
-					Field.DESCRIPTION, languageId),
-				description);
-
-			document.addText(Field.CONTENT, name);
-
-			document.addKeyword(
-				CPField.CP_DEFINITION_ID,
-				cpDefinitionOptionRel.getCPDefinitionId());
-
-			document.addText(
-				LocalizationUtil.getLocalizedName(
-					CPField.DEFINITION_OPTION_VALUE_REL_NAME, languageId),
-				cpDefinitionOptionValueRelNames);
 		}
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + cpDefinitionOptionRel + " indexed successfully");
+				"Commerce product definition option relationship " +
+					cpDefinitionOptionRel + " indexed successfully");
 		}
 
 		return document;
@@ -219,8 +208,8 @@ public class CPDefinitionOptionRelIndexer
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), cpDefinitionOptionRel.getCompanyId(),
-			getDocument(cpDefinitionOptionRel), isCommitImmediately());
+			cpDefinitionOptionRel.getCompanyId(),
+			getDocument(cpDefinitionOptionRel));
 	}
 
 	@Override
@@ -234,11 +223,11 @@ public class CPDefinitionOptionRelIndexer
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCPDefinitionOptionRels(companyId);
+		_reindexCPDefinitionOptionRels(companyId);
 	}
 
-	protected void reindexCPDefinitionOptionRels(long companyId)
-		throws PortalException {
+	private void _reindexCPDefinitionOptionRels(long companyId)
+		throws Exception {
 
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_cpDefinitionOptionRelLocalService.
@@ -253,17 +242,13 @@ public class CPDefinitionOptionRelIndexer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						long cpDefinitionOptionRelId =
-							cpDefinitionOptionRel.getCPDefinitionOptionRelId();
-
 						_log.warn(
-							"Unable to index definition option rel " +
-								cpDefinitionOptionRelId,
+							"Unable to index commerce product definition " +
+								"option relationship " + cpDefinitionOptionRel,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}
@@ -277,5 +262,8 @@ public class CPDefinitionOptionRelIndexer
 
 	@Reference
 	private IndexWriterHelper _indexWriterHelper;
+
+	@Reference
+	private Localization _localization;
 
 }

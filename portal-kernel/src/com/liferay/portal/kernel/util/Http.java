@@ -1,35 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
+import jakarta.servlet.http.Cookie;
+
 import java.io.IOException;
 import java.io.InputStream;
 
-import java.net.URI;
 import java.net.URL;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -56,121 +42,13 @@ public interface Http {
 
 	public static final int URL_MAXIMUM_LENGTH = 2083;
 
-	public String addParameter(String url, String name, boolean value);
-
-	public String addParameter(String url, String name, double value);
-
-	public String addParameter(String url, String name, int value);
-
-	public String addParameter(String url, String name, long value);
-
-	public String addParameter(String url, String name, short value);
-
-	public String addParameter(String url, String name, String value);
-
-	public String decodePath(String path);
-
-	public String decodeURL(String url);
-
-	public String encodeParameters(String url);
-
-	public String encodePath(String path);
-
-	public String fixPath(String path);
-
-	public String fixPath(String path, boolean leading, boolean trailing);
-
-	public String getCompleteURL(HttpServletRequest httpServletRequest);
-
 	public Cookie[] getCookies();
 
-	public String getDomain(String url);
-
-	public String getIpAddress(String url);
-
-	public String getParameter(String url, String name);
-
-	public String getParameter(String url, String name, boolean escaped);
-
-	public Map<String, String[]> getParameterMap(String queryString);
-
-	public String getPath(String url);
-
-	public String getProtocol(ActionRequest actionRequest);
-
-	public String getProtocol(boolean secure);
-
-	public String getProtocol(HttpServletRequest httpServletRequest);
-
-	public String getProtocol(RenderRequest renderRequest);
-
-	public String getProtocol(String url);
-
-	public String getQueryString(HttpServletRequest httpServletRequest);
-
-	public String getQueryString(String url);
-
-	public String getRequestURL(HttpServletRequest httpServletRequest);
-
-	public URI getURI(String uriString);
-
-	public boolean hasDomain(String url);
-
-	public boolean hasProtocol(String url);
-
 	public boolean hasProxyConfig();
-
-	public boolean isForwarded(HttpServletRequest httpServletRequest);
 
 	public boolean isNonProxyHost(String host);
 
 	public boolean isProxyHost(String host);
-
-	public boolean isSecure(String url);
-
-	public String normalizePath(String uri);
-
-	public Map<String, String[]> parameterMapFromString(String queryString);
-
-	public String parameterMapToString(Map<String, String[]> parameterMap);
-
-	public String parameterMapToString(
-		Map<String, String[]> parameterMap, boolean addQuestion);
-
-	public String protocolize(String url, ActionRequest actionRequest);
-
-	public String protocolize(String url, boolean secure);
-
-	public String protocolize(
-		String url, HttpServletRequest httpServletRequest);
-
-	public String protocolize(String url, int port, boolean secure);
-
-	public String protocolize(String url, RenderRequest renderRequest);
-
-	public String removeDomain(String url);
-
-	public String removeParameter(String url, String name);
-
-	public String removePathParameters(String uri);
-
-	public String removeProtocol(String url);
-
-	public String sanitizeHeader(String header);
-
-	public String setParameter(String url, String name, boolean value);
-
-	public String setParameter(String url, String name, double value);
-
-	public String setParameter(String url, String name, int value);
-
-	public String setParameter(String url, String name, long value);
-
-	public String setParameter(String url, String name, short value);
-
-	public String setParameter(String url, String name, String value);
-
-	public String shortenURL(String url);
 
 	public byte[] URLtoByteArray(Http.Options options) throws IOException;
 
@@ -273,6 +151,12 @@ public interface Http {
 
 	}
 
+	public enum CookieSpec {
+
+		DEFAULT, IGNORE_COOKIES, NETSCAPE, STANDARD, STANDARD_STRICT
+
+	}
+
 	public class FilePart {
 
 		public FilePart(
@@ -314,6 +198,41 @@ public interface Http {
 
 	}
 
+	public class InputStreamPart {
+
+		public InputStreamPart(
+			String name, String inputStreamName, InputStream inputStream,
+			String contentType) {
+
+			_name = name;
+			_inputStreamName = inputStreamName;
+			_inputStream = inputStream;
+			_contentType = contentType;
+		}
+
+		public String getContentType() {
+			return _contentType;
+		}
+
+		public InputStream getInputStream() {
+			return _inputStream;
+		}
+
+		public String getInputStreamName() {
+			return _inputStreamName;
+		}
+
+		public String getName() {
+			return _name;
+		}
+
+		private final String _contentType;
+		private final InputStream _inputStream;
+		private final String _inputStreamName;
+		private final String _name;
+
+	}
+
 	public enum Method {
 
 		DELETE, GET, HEAD, PATCH, POST, PUT
@@ -350,6 +269,26 @@ public interface Http {
 			_headers.put(name, value);
 		}
 
+		public void addInputStreamPart(
+			String name, String inputStreamName, InputStream inputStream,
+			String contentType) {
+
+			if (_body != null) {
+				throw new IllegalArgumentException(
+					"Input stream part cannot be added because a body has " +
+						"already been set");
+			}
+
+			if (_inputStreamParts == null) {
+				_inputStreamParts = new ArrayList<>();
+			}
+
+			InputStreamPart inputStreamPart = new InputStreamPart(
+				name, inputStreamName, inputStream, contentType);
+
+			_inputStreamParts.add(inputStreamPart);
+		}
+
 		public void addPart(String name, String value) {
 			if (_body != null) {
 				throw new IllegalArgumentException(
@@ -375,6 +314,10 @@ public interface Http {
 			return _cookies;
 		}
 
+		public CookieSpec getCookieSpec() {
+			return _cookieSpec;
+		}
+
 		public List<FilePart> getFileParts() {
 			return _fileParts;
 		}
@@ -389,6 +332,10 @@ public interface Http {
 
 		public Map<String, String> getHeaders() {
 			return _headers;
+		}
+
+		public List<InputStreamPart> getInputStreamParts() {
+			return _inputStreamParts;
 		}
 
 		public String getLocation() {
@@ -437,6 +384,10 @@ public interface Http {
 			}
 
 			return false;
+		}
+
+		public boolean isNormalizeURI() {
+			return _normalizeURI;
 		}
 
 		public boolean isPatch() {
@@ -496,6 +447,12 @@ public interface Http {
 			_cookies = cookies;
 		}
 
+		public void setCookieSpec(Http.CookieSpec cookieSpec) {
+			if (cookieSpec != null) {
+				_cookieSpec = cookieSpec;
+			}
+		}
+
 		public void setDelete(boolean delete) {
 			if (delete) {
 				_method = Method.DELETE;
@@ -526,6 +483,12 @@ public interface Http {
 			_headers = headers;
 		}
 
+		public void setInputStreamParts(
+			List<InputStreamPart> inputStreamParts) {
+
+			_inputStreamParts = inputStreamParts;
+		}
+
 		public void setLocation(String location) {
 			_location = location;
 		}
@@ -534,6 +497,10 @@ public interface Http {
 			if (method != null) {
 				_method = method;
 			}
+		}
+
+		public void setNormalizeURI(boolean normalizeURI) {
+			_normalizeURI = normalizeURI;
 		}
 
 		public void setParts(Map<String, String> parts) {
@@ -578,11 +545,14 @@ public interface Http {
 		private Auth _auth;
 		private Body _body;
 		private Cookie[] _cookies;
+		private CookieSpec _cookieSpec;
 		private List<FilePart> _fileParts;
 		private boolean _followRedirects = true;
 		private Map<String, String> _headers;
+		private List<InputStreamPart> _inputStreamParts;
 		private String _location;
 		private Method _method = Method.GET;
+		private boolean _normalizeURI = true;
 		private Map<String, String> _parts;
 		private Response _response = new Response();
 		private int _timeout;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -78,15 +69,15 @@ public class LayoutTemplateLocalServiceUtil {
 	}
 
 	public static List<com.liferay.portal.kernel.model.LayoutTemplate> init(
-		javax.servlet.ServletContext servletContext, String[] xmls,
+		jakarta.servlet.ServletContext servletContext, String[] xmls,
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage) {
 
 		return getService().init(servletContext, xmls, pluginPackage);
 	}
 
 	public static List<com.liferay.portal.kernel.model.LayoutTemplate> init(
-		String servletContextName, javax.servlet.ServletContext servletContext,
-		String[] xmls,
+		String servletContextName,
+		jakarta.servlet.ServletContext servletContext, String[] xmls,
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage) {
 
 		return getService().init(
@@ -94,7 +85,8 @@ public class LayoutTemplateLocalServiceUtil {
 	}
 
 	public static void readLayoutTemplate(
-		String servletContextName, javax.servlet.ServletContext servletContext,
+		String servletContextName,
+		jakarta.servlet.ServletContext servletContext,
 		Set<com.liferay.portal.kernel.model.LayoutTemplate> layoutTemplates,
 		com.liferay.portal.kernel.xml.Element element, boolean standard,
 		String themeId,
@@ -117,6 +109,10 @@ public class LayoutTemplateLocalServiceUtil {
 
 	public static LayoutTemplateLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(LayoutTemplateLocalService service) {
+		_service = service;
 	}
 
 	private static volatile LayoutTemplateLocalService _service;

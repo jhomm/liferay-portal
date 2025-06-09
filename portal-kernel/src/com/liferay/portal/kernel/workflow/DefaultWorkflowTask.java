@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow;
@@ -30,7 +21,8 @@ import java.util.Map;
  * @author Brian Wing Shun Chan
  * @author Marcellus Tavares
  */
-public class DefaultWorkflowTask implements Serializable, WorkflowTask {
+public class DefaultWorkflowTask
+	extends BaseWorkflowNode implements Serializable, WorkflowTask {
 
 	@Override
 	public long getAssigneeUserId() {
@@ -65,13 +57,13 @@ public class DefaultWorkflowTask implements Serializable, WorkflowTask {
 	}
 
 	@Override
-	public String getName() {
-		return _name;
+	public Map<String, Serializable> getOptionalAttributes() {
+		return _optionalAttributes;
 	}
 
 	@Override
-	public Map<String, Serializable> getOptionalAttributes() {
-		return _optionalAttributes;
+	public String getUserName() {
+		return _userName;
 	}
 
 	@Override
@@ -121,11 +113,8 @@ public class DefaultWorkflowTask implements Serializable, WorkflowTask {
 
 		String userClassName = User.class.getName();
 
-		if (userClassName.equals(workflowTaskAssignee.getAssigneeClassName())) {
-			return true;
-		}
-
-		return false;
+		return userClassName.equals(
+			workflowTaskAssignee.getAssigneeClassName());
 	}
 
 	@Override
@@ -162,14 +151,14 @@ public class DefaultWorkflowTask implements Serializable, WorkflowTask {
 		_dueDate = dueDate;
 	}
 
-	public void setName(String name) {
-		_name = name;
-	}
-
 	public void setOptionalAttributes(
 		Map<String, Serializable> optionalAttributes) {
 
 		_optionalAttributes = optionalAttributes;
+	}
+
+	public void setUserName(String userName) {
+		_userName = userName;
 	}
 
 	public void setWorkflowDefinitionId(long workflowDefinitionId) {
@@ -215,8 +204,8 @@ public class DefaultWorkflowTask implements Serializable, WorkflowTask {
 	private Date _createDate;
 	private String _description;
 	private Date _dueDate;
-	private String _name;
 	private Map<String, Serializable> _optionalAttributes;
+	private String _userName;
 	private long _workflowDefinitionId;
 	private String _workflowDefinitionName;
 	private int _workflowDefinitionVersion;

@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
-import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.portal.kernel.security.auth.CompanyCentralizedThreadLocal;
 
 import java.util.LinkedList;
 
@@ -24,47 +15,55 @@ import java.util.LinkedList;
 public class ServiceContextThreadLocal {
 
 	public static ServiceContext getServiceContext() {
-		LinkedList<ServiceContext> serviceContextStack =
-			_serviceContextThreadLocal.get();
+		LinkedList<ServiceContext> serviceContexts = _serviceContexts.get();
 
-		return serviceContextStack.peek();
+		return serviceContexts.peek();
 	}
 
 	public static ServiceContext popServiceContext() {
-		LinkedList<ServiceContext> serviceContextStack =
-			_serviceContextThreadLocal.get();
+		LinkedList<ServiceContext> serviceContexts = _serviceContexts.get();
 
-		if (serviceContextStack.isEmpty()) {
+		if (serviceContexts.isEmpty()) {
 			return null;
 		}
 
-		return serviceContextStack.pop();
+		return serviceContexts.pop();
 	}
 
 	public static void pushServiceContext(ServiceContext serviceContext) {
-		LinkedList<ServiceContext> serviceContextStack =
-			_serviceContextThreadLocal.get();
+		LinkedList<ServiceContext> serviceContexts = _serviceContexts.get();
 
-		serviceContextStack.push(serviceContext);
+		serviceContexts.push(serviceContext);
+	}
+
+	public static void remove() {
+		LinkedList<ServiceContext> serviceContexts = _serviceContexts.get();
+
+		if (serviceContexts != null) {
+			serviceContexts.clear();
+		}
 	}
 
 	private static final ThreadLocal<LinkedList<ServiceContext>>
-		_serviceContextThreadLocal = new CentralizedThreadLocal<>(
-			ServiceContextThreadLocal.class + "._serviceContextThreadLocal",
+		_serviceContexts = new CompanyCentralizedThreadLocal<>(
+			ServiceContextThreadLocal.class + "._serviceContexts",
 			LinkedList::new,
 			serviceContexts -> {
 				LinkedList<ServiceContext> cloneServiceContexts =
 					new LinkedList<>();
 
 				for (ServiceContext serviceContext : serviceContexts) {
-					ServiceContext cloneServiceContext =
-						(ServiceContext)serviceContext.clone();
+					ServiceContext cloneServiceContext = null;
+
+					if (serviceContext != null) {
+						cloneServiceContext =
+							(ServiceContext)serviceContext.clone();
+					}
 
 					cloneServiceContexts.add(cloneServiceContext);
 				}
 
 				return cloneServiceContexts;
-			},
-			true);
+			});
 
 }

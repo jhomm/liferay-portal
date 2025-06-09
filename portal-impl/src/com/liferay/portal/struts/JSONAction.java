@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.struts;
@@ -39,14 +30,14 @@ import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.OutputStream;
 
 import java.util.Set;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Ming-Gih Lam
@@ -81,7 +72,7 @@ public abstract class JSONAction implements Action {
 			}
 		}
 		catch (PrincipalException principalException) {
-			_log.error(principalException.getMessage());
+			_log.error(principalException);
 
 			PortalUtil.sendError(
 				HttpServletResponse.SC_FORBIDDEN, principalException,
@@ -91,7 +82,7 @@ public abstract class JSONAction implements Action {
 		}
 		catch (SecurityException securityException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(securityException.getMessage());
+				_log.warn(securityException);
 			}
 
 			if (PropsValues.JSON_SERVICE_SERIALIZE_THROWABLE) {
@@ -106,7 +97,7 @@ public abstract class JSONAction implements Action {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception.getMessage());
+			_log.error(exception);
 
 			PortalUtil.sendError(
 				HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception,

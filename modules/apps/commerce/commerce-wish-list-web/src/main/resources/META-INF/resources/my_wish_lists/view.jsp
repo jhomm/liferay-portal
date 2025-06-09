@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,14 +20,15 @@ CommerceWishListDisplayContext commerceWishListDisplayContext = (CommerceWishLis
 			<portlet:param name="redirect" value="<%= currentURL %>" />
 		</portlet:actionURL>
 
-		<liferay-frontend:add-menu
-			inline="<%= true %>"
-		>
-			<liferay-frontend:add-menu-item
-				title='<%= LanguageUtil.get(request, "add-wish-list") %>'
-				url="<%= addCommerceWishListActionURL %>"
-			/>
-		</liferay-frontend:add-menu>
+		<liferay-ui:icon
+			icon="plus"
+			label="<%= false %>"
+			linkCssClass="btn btn-monospaced btn-primary"
+			markupView="lexicon"
+			message="add-wish-list"
+			toolTip="<%= true %>"
+			url="<%= addCommerceWishListActionURL %>"
+		/>
 	</div>
 </div>
 
@@ -58,9 +50,10 @@ CommerceWishListDisplayContext commerceWishListDisplayContext = (CommerceWishLis
 				modelVar="commerceWishList"
 			>
 				<liferay-ui:search-container-column-text
-					cssClass="important table-cell-expand"
+					cssClass="font-weight-bold important table-cell-expand"
 					href="<%= commerceWishListDisplayContext.getRowURL(commerceWishList.getCommerceWishListId()) %>"
-					property="name"
+					name="name"
+					value="<%= HtmlUtil.escape(commerceWishList.getName()) %>"
 				/>
 
 				<liferay-ui:search-container-column-jsp

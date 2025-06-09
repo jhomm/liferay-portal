@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.runtime.form.internal;
@@ -37,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Michael C. Han
  */
-@Component(immediate = true, service = FormValueProcessor.class)
+@Component(service = FormValueProcessor.class)
 public class DDMFormValueProcessor implements FormValueProcessor {
 
 	@Override
@@ -52,7 +43,7 @@ public class DDMFormValueProcessor implements FormValueProcessor {
 
 		DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
 
-		DDMFormValues ddmFormValues = deserialize(
+		DDMFormValues ddmFormValues = _deserialize(
 			formValues, ddmStructure.getDDMForm());
 
 		DDLRecord ddlRecord = _ddlRecordLocalService.addRecord(
@@ -68,7 +59,7 @@ public class DDMFormValueProcessor implements FormValueProcessor {
 		return kaleoTaskFormInstance;
 	}
 
-	protected DDMFormValues deserialize(String content, DDMForm ddmForm) {
+	private DDMFormValues _deserialize(String content, DDMForm ddmForm) {
 		DDMFormValuesDeserializerDeserializeRequest.Builder builder =
 			DDMFormValuesDeserializerDeserializeRequest.Builder.newBuilder(
 				content, ddmForm);

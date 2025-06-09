@@ -1,27 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.persistence.impl;
 
+import com.liferay.document.library.kernel.exception.DuplicateDLFolderExternalReferenceCodeException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderTable;
 import com.liferay.document.library.kernel.service.persistence.DLFileEntryTypePersistence;
 import com.liferay.document.library.kernel.service.persistence.DLFolderPersistence;
 import com.liferay.document.library.kernel.service.persistence.DLFolderUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
@@ -33,9 +27,14 @@ import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -44,6 +43,7 @@ import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.service.persistence.impl.TableMapper;
 import com.liferay.portal.kernel.service.persistence.impl.TableMapperFactory;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -59,7 +59,6 @@ import com.liferay.portlet.documentlibrary.model.impl.DLFolderModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -176,109 +175,111 @@ public class DLFolderPersistenceImpl
 		String uuid, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid;
+					finderArgs = new Object[] {uuid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid;
+				finderArgs = new Object[] {uuid, start, end, orderByComparator};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if (!uuid.equals(dlFolder.getUuid())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if (!uuid.equals(dlFolder.getUuid())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-				cacheResult(list);
+				boolean bindUuid = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
+
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -575,70 +576,64 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_UUID_2 =
@@ -648,7 +643,6 @@ public class DLFolderPersistenceImpl
 		"(dlFolder.uuid IS NULL OR dlFolder.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the document library folder where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
@@ -711,98 +705,100 @@ public class DLFolderPersistenceImpl
 	public DLFolder fetchByUUID_G(
 		String uuid, long groupId, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			uuid = Objects.toString(uuid, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {uuid, groupId};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
-		}
-
-		if (result instanceof DLFolder) {
-			DLFolder dlFolder = (DLFolder)result;
-
-			if (!Objects.equals(uuid, dlFolder.getUuid()) ||
-				(groupId != dlFolder.getGroupId())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {uuid, groupId};
 			}
 
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+			Object result = null;
 
-			String sql = sb.toString();
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByUUID_G, finderArgs, this);
+			}
 
-			Session session = null;
+			if (result instanceof DLFolder) {
+				DLFolder dlFolder = (DLFolder)result;
 
-			try {
-				session = openSession();
+				if (!Objects.equals(uuid, dlFolder.getUuid()) ||
+					(groupId != dlFolder.getGroupId())) {
 
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					result = null;
 				}
+			}
 
-				queryPos.add(groupId);
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				List<DLFolder> list = query.list();
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByUUID_G, finderArgs, list);
-					}
+				boolean bindUuid = false;
+
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
 				}
 				else {
-					DLFolder dlFolder = list.get(0);
+					bindUuid = true;
 
-					result = dlFolder;
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+				}
 
-					cacheResult(dlFolder);
+				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(groupId);
+
+					List<DLFolder> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByUUID_G, finderArgs, list);
+						}
+					}
+					else {
+						DLFolder dlFolder = list.get(0);
+
+						result = dlFolder;
+
+						cacheResult(dlFolder);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (DLFolder)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DLFolder)result;
+			}
 		}
 	}
 
@@ -831,74 +827,13 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		DLFolder dlFolder = fetchByUUID_G(uuid, groupId);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByUUID_G;
-
-			finderArgs = new Object[] {uuid, groupId};
-
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		if (dlFolder == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -990,117 +925,119 @@ public class DLFolderPersistenceImpl
 		String uuid, long companyId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_C;
+					finderArgs = new Object[] {uuid, companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C;
+				finderArgs = new Object[] {
+					uuid, companyId, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if (!uuid.equals(dlFolder.getUuid()) ||
-						(companyId != dlFolder.getCompanyId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if (!uuid.equals(dlFolder.getUuid()) ||
+							(companyId != dlFolder.getCompanyId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1423,74 +1360,68 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_C_UUID_2 =
@@ -1575,96 +1506,100 @@ public class DLFolderPersistenceImpl
 		long groupId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByGroupId;
-				finderArgs = new Object[] {groupId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByGroupId;
+					finderArgs = new Object[] {groupId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByGroupId;
-			finderArgs = new Object[] {groupId, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByGroupId;
+				finderArgs = new Object[] {
+					groupId, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if (groupId != dlFolder.getGroupId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if (groupId != dlFolder.getGroupId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2014,7 +1949,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -2205,7 +2140,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -2273,57 +2208,51 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId(long groupId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByGroupId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByGroupId;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -2450,98 +2379,100 @@ public class DLFolderPersistenceImpl
 		long companyId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByCompanyId;
-				finderArgs = new Object[] {companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByCompanyId;
+					finderArgs = new Object[] {companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByCompanyId;
-			finderArgs = new Object[] {
-				companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByCompanyId;
+				finderArgs = new Object[] {
+					companyId, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if (companyId != dlFolder.getCompanyId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if (companyId != dlFolder.getCompanyId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2828,57 +2759,51 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByCompanyId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByCompanyId;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_COMPANYID_COMPANYID_2 =
@@ -2960,98 +2885,100 @@ public class DLFolderPersistenceImpl
 		long repositoryId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByRepositoryId;
-				finderArgs = new Object[] {repositoryId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByRepositoryId;
+					finderArgs = new Object[] {repositoryId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByRepositoryId;
-			finderArgs = new Object[] {
-				repositoryId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByRepositoryId;
+				finderArgs = new Object[] {
+					repositoryId, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if (repositoryId != dlFolder.getRepositoryId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if (repositoryId != dlFolder.getRepositoryId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_REPOSITORYID_REPOSITORYID_2);
+				sb.append(_FINDER_COLUMN_REPOSITORYID_REPOSITORYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(repositoryId);
+					queryPos.add(repositoryId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -3339,57 +3266,51 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByRepositoryId(long repositoryId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByRepositoryId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {repositoryId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByRepositoryId;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {repositoryId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_REPOSITORYID_REPOSITORYID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_REPOSITORYID_REPOSITORYID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(repositoryId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(repositoryId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_REPOSITORYID_REPOSITORYID_2 =
@@ -3476,104 +3397,106 @@ public class DLFolderPersistenceImpl
 		long groupId, long parentFolderId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_P;
-				finderArgs = new Object[] {groupId, parentFolderId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_P;
+					finderArgs = new Object[] {groupId, parentFolderId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_P;
-			finderArgs = new Object[] {
-				groupId, parentFolderId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_P;
+				finderArgs = new Object[] {
+					groupId, parentFolderId, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(parentFolderId != dlFolder.getParentFolderId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(parentFolderId != dlFolder.getParentFolderId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_P_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_P_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_P_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_P_PARENTFOLDERID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -3954,7 +3877,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -4152,7 +4075,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -4225,61 +4148,55 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByG_P(long groupId, long parentFolderId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId, parentFolderId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, parentFolderId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_G_P_GROUPID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_G_P_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_P_GROUPID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_P_PARENTFOLDERID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(groupId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(parentFolderId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -4420,94 +4337,96 @@ public class DLFolderPersistenceImpl
 		long companyId, int status, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByC_NotS;
-		finderArgs = new Object[] {
-			companyId, status, start, end, orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByC_NotS;
+			finderArgs = new Object[] {
+				companyId, status, start, end, orderByComparator
+			};
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((companyId != dlFolder.getCompanyId()) ||
-						(status == dlFolder.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((companyId != dlFolder.getCompanyId()) ||
+							(status == dlFolder.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_C_NOTS_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_NOTS_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_NOTS_STATUS_2);
+				sb.append(_FINDER_COLUMN_C_NOTS_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4817,61 +4736,55 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByC_NotS(long companyId, int status) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathWithPaginationCountByC_NotS;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId, status};
 
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByC_NotS;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId, status};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_C_NOTS_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_C_NOTS_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_C_NOTS_COMPANYID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_C_NOTS_STATUS_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(status);
 
-				queryPos.add(companyId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(status);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_C_NOTS_COMPANYID_2 =
@@ -4881,7 +4794,6 @@ public class DLFolderPersistenceImpl
 		"dlFolder.status != ?";
 
 	private FinderPath _finderPathFetchByR_M;
-	private FinderPath _finderPathCountByR_M;
 
 	/**
 	 * Returns the document library folder where repositoryId = &#63; and mountPoint = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
@@ -4944,102 +4856,104 @@ public class DLFolderPersistenceImpl
 	public DLFolder fetchByR_M(
 		long repositoryId, boolean mountPoint, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {repositoryId, mountPoint};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByR_M, finderArgs);
-		}
-
-		if (result instanceof DLFolder) {
-			DLFolder dlFolder = (DLFolder)result;
-
-			if ((repositoryId != dlFolder.getRepositoryId()) ||
-				(mountPoint != dlFolder.isMountPoint())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {repositoryId, mountPoint};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByR_M, finderArgs, this);
+			}
 
-			sb.append(_FINDER_COLUMN_R_M_REPOSITORYID_2);
+			if (result instanceof DLFolder) {
+				DLFolder dlFolder = (DLFolder)result;
 
-			sb.append(_FINDER_COLUMN_R_M_MOUNTPOINT_2);
+				if ((repositoryId != dlFolder.getRepositoryId()) ||
+					(mountPoint != dlFolder.isMountPoint())) {
 
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(repositoryId);
-
-				queryPos.add(mountPoint);
-
-				List<DLFolder> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByR_M, finderArgs, list);
-					}
+					result = null;
 				}
-				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
+			}
 
-						if (_log.isWarnEnabled()) {
-							if (!productionMode || !useFinderCache) {
-								finderArgs = new Object[] {
-									repositoryId, mountPoint
-								};
-							}
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-							_log.warn(
-								"DLFolderPersistenceImpl.fetchByR_M(long, boolean, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+
+				sb.append(_FINDER_COLUMN_R_M_REPOSITORYID_2);
+
+				sb.append(_FINDER_COLUMN_R_M_MOUNTPOINT_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(repositoryId);
+
+					queryPos.add(mountPoint);
+
+					List<DLFolder> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByR_M, finderArgs, list);
 						}
 					}
+					else {
+						if (list.size() > 1) {
+							Collections.sort(list, Collections.reverseOrder());
 
-					DLFolder dlFolder = list.get(0);
+							if (_log.isWarnEnabled()) {
+								if (!useFinderCache) {
+									finderArgs = new Object[] {
+										repositoryId, mountPoint
+									};
+								}
 
-					result = dlFolder;
+								_log.warn(
+									"DLFolderPersistenceImpl.fetchByR_M(long, boolean, boolean) with parameters (" +
+										StringUtil.merge(finderArgs) +
+											") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
+							}
+						}
 
-					cacheResult(dlFolder);
+						DLFolder dlFolder = list.get(0);
+
+						result = dlFolder;
+
+						cacheResult(dlFolder);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (DLFolder)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DLFolder)result;
+			}
 		}
 	}
 
@@ -5068,61 +4982,13 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByR_M(long repositoryId, boolean mountPoint) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		DLFolder dlFolder = fetchByR_M(repositoryId, mountPoint);
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByR_M;
-
-			finderArgs = new Object[] {repositoryId, mountPoint};
-
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		if (dlFolder == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
-
-			sb.append(_FINDER_COLUMN_R_M_REPOSITORYID_2);
-
-			sb.append(_FINDER_COLUMN_R_M_MOUNTPOINT_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(repositoryId);
-
-				queryPos.add(mountPoint);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_R_M_REPOSITORYID_2 =
@@ -5212,104 +5078,106 @@ public class DLFolderPersistenceImpl
 		long repositoryId, long parentFolderId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByR_P;
-				finderArgs = new Object[] {repositoryId, parentFolderId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByR_P;
+					finderArgs = new Object[] {repositoryId, parentFolderId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByR_P;
-			finderArgs = new Object[] {
-				repositoryId, parentFolderId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByR_P;
+				finderArgs = new Object[] {
+					repositoryId, parentFolderId, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((repositoryId != dlFolder.getRepositoryId()) ||
-						(parentFolderId != dlFolder.getParentFolderId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((repositoryId != dlFolder.getRepositoryId()) ||
+							(parentFolderId != dlFolder.getParentFolderId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_R_P_REPOSITORYID_2);
+				sb.append(_FINDER_COLUMN_R_P_REPOSITORYID_2);
 
-			sb.append(_FINDER_COLUMN_R_P_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_R_P_PARENTFOLDERID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(repositoryId);
+					queryPos.add(repositoryId);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -5622,61 +5490,55 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByR_P(long repositoryId, long parentFolderId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByR_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {repositoryId, parentFolderId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByR_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {repositoryId, parentFolderId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_R_P_REPOSITORYID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_R_P_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_R_P_REPOSITORYID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_R_P_PARENTFOLDERID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(repositoryId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(repositoryId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(parentFolderId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_R_P_REPOSITORYID_2 =
@@ -5765,117 +5627,119 @@ public class DLFolderPersistenceImpl
 		long parentFolderId, String name, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByP_N;
-				finderArgs = new Object[] {parentFolderId, name};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByP_N;
+					finderArgs = new Object[] {parentFolderId, name};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByP_N;
-			finderArgs = new Object[] {
-				parentFolderId, name, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByP_N;
+				finderArgs = new Object[] {
+					parentFolderId, name, start, end, orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((parentFolderId != dlFolder.getParentFolderId()) ||
-						!name.equals(dlFolder.getName())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((parentFolderId != dlFolder.getParentFolderId()) ||
+							!name.equals(dlFolder.getName())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			sb.append(_FINDER_COLUMN_P_N_PARENTFOLDERID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_P_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_P_N_NAME_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(parentFolderId);
-
-				if (bindName) {
-					queryPos.add(name);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_P_N_PARENTFOLDERID_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_P_N_NAME_3);
+				}
+				else {
+					bindName = true;
+
+					sb.append(_FINDER_COLUMN_P_N_NAME_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(parentFolderId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -6200,74 +6064,68 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByP_N(long parentFolderId, String name) {
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByP_N;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {parentFolderId, name};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByP_N;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {parentFolderId, name};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_P_N_PARENTFOLDERID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				boolean bindName = false;
 
-			sb.append(_FINDER_COLUMN_P_N_PARENTFOLDERID_2);
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_P_N_NAME_3);
+				}
+				else {
+					bindName = true;
 
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_P_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_P_N_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(parentFolderId);
-
-				if (bindName) {
-					queryPos.add(name);
+					sb.append(_FINDER_COLUMN_P_N_NAME_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(parentFolderId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_P_N_PARENTFOLDERID_2 =
@@ -6367,99 +6225,102 @@ public class DLFolderPersistenceImpl
 		long folderId, long companyId, long parentFolderId, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByGtF_C_P;
-		finderArgs = new Object[] {
-			folderId, companyId, parentFolderId, start, end, orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByGtF_C_P;
+			finderArgs = new Object[] {
+				folderId, companyId, parentFolderId, start, end,
+				orderByComparator
+			};
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((folderId >= dlFolder.getFolderId()) ||
-						(companyId != dlFolder.getCompanyId()) ||
-						(parentFolderId != dlFolder.getParentFolderId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((folderId >= dlFolder.getFolderId()) ||
+							(companyId != dlFolder.getCompanyId()) ||
+							(parentFolderId != dlFolder.getParentFolderId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_FOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_FOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_PARENTFOLDERID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(folderId);
+					queryPos.add(folderId);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -6631,65 +6492,61 @@ public class DLFolderPersistenceImpl
 	public int countByGtF_C_P(
 		long folderId, long companyId, long parentFolderId) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathWithPaginationCountByGtF_C_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				folderId, companyId, parentFolderId
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByGtF_C_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {folderId, companyId, parentFolderId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_GTF_C_P_FOLDERID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_GTF_C_P_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_FOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_COMPANYID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_PARENTFOLDERID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(folderId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(companyId);
 
-				queryPos.add(folderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(companyId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(parentFolderId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_GTF_C_P_FOLDERID_2 =
@@ -6792,110 +6649,114 @@ public class DLFolderPersistenceImpl
 		int end, OrderByComparator<DLFolder> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_M_P;
-				finderArgs = new Object[] {groupId, mountPoint, parentFolderId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_M_P;
+					finderArgs = new Object[] {
+						groupId, mountPoint, parentFolderId
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_M_P;
-			finderArgs = new Object[] {
-				groupId, mountPoint, parentFolderId, start, end,
-				orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_M_P;
+				finderArgs = new Object[] {
+					groupId, mountPoint, parentFolderId, start, end,
+					orderByComparator
+				};
+			}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(mountPoint != dlFolder.isMountPoint()) ||
-						(parentFolderId != dlFolder.getParentFolderId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(mountPoint != dlFolder.isMountPoint()) ||
+							(parentFolderId != dlFolder.getParentFolderId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						5 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(5);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_M_P_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_MOUNTPOINT_2);
+				sb.append(_FINDER_COLUMN_G_M_P_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_PARENTFOLDERID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(mountPoint);
+					queryPos.add(mountPoint);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -7303,7 +7164,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -7508,7 +7369,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -7589,65 +7450,61 @@ public class DLFolderPersistenceImpl
 	public int countByG_M_P(
 		long groupId, boolean mountPoint, long parentFolderId) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_M_P;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, mountPoint, parentFolderId
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_M_P;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, mountPoint, parentFolderId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_G_M_P_GROUPID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_G_M_P_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_MOUNTPOINT_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_M_P_PARENTFOLDERID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(mountPoint);
 
-				queryPos.add(groupId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(mountPoint);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(parentFolderId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -7720,7 +7577,6 @@ public class DLFolderPersistenceImpl
 		"dlFolder.parentFolderId = ?";
 
 	private FinderPath _finderPathFetchByG_P_N;
-	private FinderPath _finderPathCountByG_P_N;
 
 	/**
 	 * Returns the document library folder where groupId = &#63; and parentFolderId = &#63; and name = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
@@ -7792,103 +7648,105 @@ public class DLFolderPersistenceImpl
 		long groupId, long parentFolderId, String name,
 		boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			name = Objects.toString(name, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {groupId, parentFolderId, name};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_P_N, finderArgs);
-		}
-
-		if (result instanceof DLFolder) {
-			DLFolder dlFolder = (DLFolder)result;
-
-			if ((groupId != dlFolder.getGroupId()) ||
-				(parentFolderId != dlFolder.getParentFolderId()) ||
-				!Objects.equals(name, dlFolder.getName())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_P_N_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_P_N_PARENTFOLDERID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_P_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_P_N_NAME_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {groupId, parentFolderId, name};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByG_P_N, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof DLFolder) {
+				DLFolder dlFolder = (DLFolder)result;
 
-				Query query = session.createQuery(sql);
+				if ((groupId != dlFolder.getGroupId()) ||
+					(parentFolderId != dlFolder.getParentFolderId()) ||
+					!Objects.equals(name, dlFolder.getName())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(parentFolderId);
-
-				if (bindName) {
-					queryPos.add(name);
+					result = null;
 				}
+			}
 
-				List<DLFolder> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByG_P_N, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+
+				sb.append(_FINDER_COLUMN_G_P_N_GROUPID_2);
+
+				sb.append(_FINDER_COLUMN_G_P_N_PARENTFOLDERID_2);
+
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_P_N_NAME_3);
 				}
 				else {
-					DLFolder dlFolder = list.get(0);
+					bindName = true;
 
-					result = dlFolder;
+					sb.append(_FINDER_COLUMN_G_P_N_NAME_2);
+				}
 
-					cacheResult(dlFolder);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(parentFolderId);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					List<DLFolder> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByG_P_N, finderArgs, list);
+						}
+					}
+					else {
+						DLFolder dlFolder = list.get(0);
+
+						result = dlFolder;
+
+						cacheResult(dlFolder);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (DLFolder)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DLFolder)result;
+			}
 		}
 	}
 
@@ -7920,78 +7778,13 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countByG_P_N(long groupId, long parentFolderId, String name) {
-		name = Objects.toString(name, "");
+		DLFolder dlFolder = fetchByG_P_N(groupId, parentFolderId, name);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_P_N;
-
-			finderArgs = new Object[] {groupId, parentFolderId, name};
-
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		if (dlFolder == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_P_N_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_P_N_PARENTFOLDERID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_P_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_P_N_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(parentFolderId);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_P_N_GROUPID_2 =
@@ -8100,105 +7893,107 @@ public class DLFolderPersistenceImpl
 		int start, int end, OrderByComparator<DLFolder> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByGtF_C_P_NotS;
-		finderArgs = new Object[] {
-			folderId, companyId, parentFolderId, status, start, end,
-			orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByGtF_C_P_NotS;
+			finderArgs = new Object[] {
+				folderId, companyId, parentFolderId, status, start, end,
+				orderByComparator
+			};
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((folderId >= dlFolder.getFolderId()) ||
-						(companyId != dlFolder.getCompanyId()) ||
-						(parentFolderId != dlFolder.getParentFolderId()) ||
-						(status == dlFolder.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((folderId >= dlFolder.getFolderId()) ||
+							(companyId != dlFolder.getCompanyId()) ||
+							(parentFolderId != dlFolder.getParentFolderId()) ||
+							(status == dlFolder.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_FOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_FOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_STATUS_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(folderId);
+					queryPos.add(folderId);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -8384,71 +8179,66 @@ public class DLFolderPersistenceImpl
 	public int countByGtF_C_P_NotS(
 		long folderId, long companyId, long parentFolderId, int status) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath =
+				_finderPathWithPaginationCountByGtF_C_P_NotS;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByGtF_C_P_NotS;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				folderId, companyId, parentFolderId, status
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_FOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_FOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_STATUS_2);
+				sb.append(_FINDER_COLUMN_GTF_C_P_NOTS_STATUS_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(folderId);
+					queryPos.add(folderId);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_GTF_C_P_NOTS_FOLDERID_2 =
@@ -8558,117 +8348,119 @@ public class DLFolderPersistenceImpl
 		int start, int end, OrderByComparator<DLFolder> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_M_P_H;
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_M_P_H;
+					finderArgs = new Object[] {
+						groupId, mountPoint, parentFolderId, hidden
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_M_P_H;
 				finderArgs = new Object[] {
-					groupId, mountPoint, parentFolderId, hidden
+					groupId, mountPoint, parentFolderId, hidden, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_M_P_H;
-			finderArgs = new Object[] {
-				groupId, mountPoint, parentFolderId, hidden, start, end,
-				orderByComparator
-			};
-		}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(mountPoint != dlFolder.isMountPoint()) ||
-						(parentFolderId != dlFolder.getParentFolderId()) ||
-						(hidden != dlFolder.isHidden())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(mountPoint != dlFolder.isMountPoint()) ||
+							(parentFolderId != dlFolder.getParentFolderId()) ||
+							(hidden != dlFolder.isHidden())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_MOUNTPOINT_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_HIDDEN_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_HIDDEN_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(mountPoint);
+					queryPos.add(mountPoint);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(hidden);
+					queryPos.add(hidden);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -9098,7 +8890,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -9309,7 +9101,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -9394,71 +9186,65 @@ public class DLFolderPersistenceImpl
 	public int countByG_M_P_H(
 		long groupId, boolean mountPoint, long parentFolderId, boolean hidden) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_M_P_H;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_M_P_H;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, mountPoint, parentFolderId, hidden
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_MOUNTPOINT_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_HIDDEN_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_HIDDEN_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(mountPoint);
+					queryPos.add(mountPoint);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(hidden);
+					queryPos.add(hidden);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -9635,119 +9421,122 @@ public class DLFolderPersistenceImpl
 		int start, int end, OrderByComparator<DLFolder> orderByComparator,
 		boolean useFinderCache) {
 
-		treePath = Objects.toString(treePath, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			treePath = Objects.toString(treePath, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByG_M_LikeT_H;
-		finderArgs = new Object[] {
-			groupId, mountPoint, treePath, hidden, start, end, orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByG_M_LikeT_H;
+			finderArgs = new Object[] {
+				groupId, mountPoint, treePath, hidden, start, end,
+				orderByComparator
+			};
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(mountPoint != dlFolder.isMountPoint()) ||
-						!StringUtil.wildcardMatches(
-							dlFolder.getTreePath(), treePath, '_', '%', '\\',
-							true) ||
-						(hidden != dlFolder.isHidden())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(mountPoint != dlFolder.isMountPoint()) ||
+							!StringUtil.wildcardMatches(
+								dlFolder.getTreePath(), treePath, '_', '%',
+								'\\', true) ||
+							(hidden != dlFolder.isHidden())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_MOUNTPOINT_2);
-
-			boolean bindTreePath = false;
-
-			if (treePath.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_3);
-			}
-			else {
-				bindTreePath = true;
-
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_HIDDEN_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(mountPoint);
-
-				if (bindTreePath) {
-					queryPos.add(treePath);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
 				}
 
-				queryPos.add(hidden);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_GROUPID_2);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_MOUNTPOINT_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				boolean bindTreePath = false;
+
+				if (treePath.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_3);
+				}
+				else {
+					bindTreePath = true;
+
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_2);
+				}
+
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_HIDDEN_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(mountPoint);
+
+					if (bindTreePath) {
+						queryPos.add(treePath);
+					}
+
+					queryPos.add(hidden);
+
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -10199,7 +9988,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -10422,7 +10211,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -10509,82 +10298,78 @@ public class DLFolderPersistenceImpl
 	public int countByG_M_LikeT_H(
 		long groupId, boolean mountPoint, String treePath, boolean hidden) {
 
-		treePath = Objects.toString(treePath, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			treePath = Objects.toString(treePath, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathWithPaginationCountByG_M_LikeT_H;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, mountPoint, treePath, hidden
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByG_M_LikeT_H;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, mountPoint, treePath, hidden};
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_GROUPID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_GROUPID_2);
+				boolean bindTreePath = false;
 
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_MOUNTPOINT_2);
+				if (treePath.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_3);
+				}
+				else {
+					bindTreePath = true;
 
-			boolean bindTreePath = false;
-
-			if (treePath.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_3);
-			}
-			else {
-				bindTreePath = true;
-
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_HIDDEN_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(mountPoint);
-
-				if (bindTreePath) {
-					queryPos.add(treePath);
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_TREEPATH_2);
 				}
 
-				queryPos.add(hidden);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_HIDDEN_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(mountPoint);
+
+					if (bindTreePath) {
+						queryPos.add(treePath);
+					}
+
+					queryPos.add(hidden);
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -10778,117 +10563,119 @@ public class DLFolderPersistenceImpl
 		int start, int end, OrderByComparator<DLFolder> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_P_H_S;
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_P_H_S;
+					finderArgs = new Object[] {
+						groupId, parentFolderId, hidden, status
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_P_H_S;
 				finderArgs = new Object[] {
-					groupId, parentFolderId, hidden, status
+					groupId, parentFolderId, hidden, status, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_P_H_S;
-			finderArgs = new Object[] {
-				groupId, parentFolderId, hidden, status, start, end,
-				orderByComparator
-			};
-		}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(parentFolderId != dlFolder.getParentFolderId()) ||
-						(hidden != dlFolder.isHidden()) ||
-						(status != dlFolder.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(parentFolderId != dlFolder.getParentFolderId()) ||
+							(hidden != dlFolder.isHidden()) ||
+							(status != dlFolder.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_P_H_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_P_H_S_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_HIDDEN_2);
+				sb.append(_FINDER_COLUMN_G_P_H_S_HIDDEN_2);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_P_H_S_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(hidden);
+					queryPos.add(hidden);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -11316,7 +11103,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -11526,7 +11313,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -11611,69 +11398,65 @@ public class DLFolderPersistenceImpl
 	public int countByG_P_H_S(
 		long groupId, long parentFolderId, boolean hidden, int status) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_P_H_S;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				groupId, parentFolderId, hidden, status
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByG_P_H_S;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId, parentFolderId, hidden, status};
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+				sb.append(_FINDER_COLUMN_G_P_H_S_GROUPID_2);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_FINDER_COLUMN_G_P_H_S_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_P_H_S_HIDDEN_2);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_P_H_S_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_HIDDEN_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_G_P_H_S_STATUS_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(groupId);
+					queryPos.add(hidden);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(status);
 
-				queryPos.add(hidden);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(status);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -11858,122 +11641,124 @@ public class DLFolderPersistenceImpl
 		int status, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_M_P_H_S;
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByG_M_P_H_S;
+					finderArgs = new Object[] {
+						groupId, mountPoint, parentFolderId, hidden, status
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByG_M_P_H_S;
 				finderArgs = new Object[] {
-					groupId, mountPoint, parentFolderId, hidden, status
+					groupId, mountPoint, parentFolderId, hidden, status, start,
+					end, orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_M_P_H_S;
-			finderArgs = new Object[] {
-				groupId, mountPoint, parentFolderId, hidden, status, start, end,
-				orderByComparator
-			};
-		}
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(mountPoint != dlFolder.isMountPoint()) ||
-						(parentFolderId != dlFolder.getParentFolderId()) ||
-						(hidden != dlFolder.isHidden()) ||
-						(status != dlFolder.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(mountPoint != dlFolder.isMountPoint()) ||
+							(parentFolderId != dlFolder.getParentFolderId()) ||
+							(hidden != dlFolder.isHidden()) ||
+							(status != dlFolder.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					7 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(7);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						7 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(7);
+				}
 
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_MOUNTPOINT_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_HIDDEN_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_HIDDEN_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(mountPoint);
+					queryPos.add(mountPoint);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(hidden);
+					queryPos.add(hidden);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -12431,7 +12216,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -12647,7 +12432,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -12738,75 +12523,69 @@ public class DLFolderPersistenceImpl
 		long groupId, boolean mountPoint, long parentFolderId, boolean hidden,
 		int status) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByG_M_P_H_S;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_M_P_H_S;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, mountPoint, parentFolderId, hidden, status
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(6);
+			if (count == null) {
+				StringBundler sb = new StringBundler(6);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_MOUNTPOINT_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_MOUNTPOINT_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_PARENTFOLDERID_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_PARENTFOLDERID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_HIDDEN_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_HIDDEN_2);
 
-			sb.append(_FINDER_COLUMN_G_M_P_H_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_G_M_P_H_S_STATUS_2);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				queryPos.add(mountPoint);
+					queryPos.add(mountPoint);
 
-				queryPos.add(parentFolderId);
+					queryPos.add(parentFolderId);
 
-				queryPos.add(hidden);
+					queryPos.add(hidden);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -12999,125 +12778,127 @@ public class DLFolderPersistenceImpl
 		int status, int start, int end,
 		OrderByComparator<DLFolder> orderByComparator, boolean useFinderCache) {
 
-		treePath = Objects.toString(treePath, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			treePath = Objects.toString(treePath, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		finderPath = _finderPathWithPaginationFindByG_M_LikeT_H_NotS;
-		finderArgs = new Object[] {
-			groupId, mountPoint, treePath, hidden, status, start, end,
-			orderByComparator
-		};
+			finderPath = _finderPathWithPaginationFindByG_M_LikeT_H_NotS;
+			finderArgs = new Object[] {
+				groupId, mountPoint, treePath, hidden, status, start, end,
+				orderByComparator
+			};
 
-		List<DLFolder> list = null;
+			List<DLFolder> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DLFolder dlFolder : list) {
-					if ((groupId != dlFolder.getGroupId()) ||
-						(mountPoint != dlFolder.isMountPoint()) ||
-						!StringUtil.wildcardMatches(
-							dlFolder.getTreePath(), treePath, '_', '%', '\\',
-							true) ||
-						(hidden != dlFolder.isHidden()) ||
-						(status == dlFolder.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DLFolder dlFolder : list) {
+						if ((groupId != dlFolder.getGroupId()) ||
+							(mountPoint != dlFolder.isMountPoint()) ||
+							!StringUtil.wildcardMatches(
+								dlFolder.getTreePath(), treePath, '_', '%',
+								'\\', true) ||
+							(hidden != dlFolder.isHidden()) ||
+							(status == dlFolder.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					7 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(7);
-			}
-
-			sb.append(_SQL_SELECT_DLFOLDER_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_MOUNTPOINT_2);
-
-			boolean bindTreePath = false;
-
-			if (treePath.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_3);
-			}
-			else {
-				bindTreePath = true;
-
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_HIDDEN_2);
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_STATUS_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(mountPoint);
-
-				if (bindTreePath) {
-					queryPos.add(treePath);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						7 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(7);
 				}
 
-				queryPos.add(hidden);
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
 
-				queryPos.add(status);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_GROUPID_2);
 
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_MOUNTPOINT_2);
 
-				cacheResult(list);
+				boolean bindTreePath = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (treePath.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_3);
+				}
+				else {
+					bindTreePath = true;
+
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_2);
+				}
+
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_HIDDEN_2);
+
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_STATUS_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(mountPoint);
+
+					if (bindTreePath) {
+						queryPos.add(treePath);
+					}
+
+					queryPos.add(hidden);
+
+					queryPos.add(status);
+
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -13594,7 +13375,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -13823,7 +13604,7 @@ public class DLFolderPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(DLFolderModelImpl.ORDER_BY_JPQL);
+				sb.append(DLFolderModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(DLFolderModelImpl.ORDER_BY_SQL);
@@ -13916,88 +13697,83 @@ public class DLFolderPersistenceImpl
 		long groupId, boolean mountPoint, String treePath, boolean hidden,
 		int status) {
 
-		treePath = Objects.toString(treePath, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+			treePath = Objects.toString(treePath, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath =
+				_finderPathWithPaginationCountByG_M_LikeT_H_NotS;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathWithPaginationCountByG_M_LikeT_H_NotS;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				groupId, mountPoint, treePath, hidden, status
 			};
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(6);
+			if (count == null) {
+				StringBundler sb = new StringBundler(6);
 
-			sb.append(_SQL_COUNT_DLFOLDER_WHERE);
+				sb.append(_SQL_COUNT_DLFOLDER_WHERE);
 
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_GROUPID_2);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_GROUPID_2);
 
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_MOUNTPOINT_2);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_MOUNTPOINT_2);
 
-			boolean bindTreePath = false;
+				boolean bindTreePath = false;
 
-			if (treePath.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_3);
-			}
-			else {
-				bindTreePath = true;
+				if (treePath.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_3);
+				}
+				else {
+					bindTreePath = true;
 
-				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_HIDDEN_2);
-
-			sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_STATUS_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(mountPoint);
-
-				if (bindTreePath) {
-					queryPos.add(treePath);
+					sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_TREEPATH_2);
 				}
 
-				queryPos.add(hidden);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_HIDDEN_2);
 
-				queryPos.add(status);
+				sb.append(_FINDER_COLUMN_G_M_LIKET_H_NOTS_STATUS_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(mountPoint);
+
+					if (bindTreePath) {
+						queryPos.add(treePath);
+					}
+
+					queryPos.add(hidden);
+
+					queryPos.add(status);
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -14106,6 +13882,211 @@ public class DLFolderPersistenceImpl
 	private static final String _FINDER_COLUMN_G_M_LIKET_H_NOTS_STATUS_2 =
 		"dlFolder.status != ?";
 
+	private FinderPath _finderPathFetchByERC_G;
+
+	/**
+	 * Returns the document library folder where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching document library folder
+	 * @throws NoSuchFolderException if a matching document library folder could not be found
+	 */
+	@Override
+	public DLFolder findByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchFolderException {
+
+		DLFolder dlFolder = fetchByERC_G(externalReferenceCode, groupId);
+
+		if (dlFolder == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", groupId=");
+			sb.append(groupId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchFolderException(sb.toString());
+		}
+
+		return dlFolder;
+	}
+
+	/**
+	 * Returns the document library folder where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching document library folder, or <code>null</code> if a matching document library folder could not be found
+	 */
+	@Override
+	public DLFolder fetchByERC_G(String externalReferenceCode, long groupId) {
+		return fetchByERC_G(externalReferenceCode, groupId, true);
+	}
+
+	/**
+	 * Returns the document library folder where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching document library folder, or <code>null</code> if a matching document library folder could not be found
+	 */
+	@Override
+	public DLFolder fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
+
+			externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+			Object[] finderArgs = null;
+
+			if (useFinderCache) {
+				finderArgs = new Object[] {externalReferenceCode, groupId};
+			}
+
+			Object result = null;
+
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByERC_G, finderArgs, this);
+			}
+
+			if (result instanceof DLFolder) {
+				DLFolder dlFolder = (DLFolder)result;
+
+				if (!Objects.equals(
+						externalReferenceCode,
+						dlFolder.getExternalReferenceCode()) ||
+					(groupId != dlFolder.getGroupId())) {
+
+					result = null;
+				}
+			}
+
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
+
+				sb.append(_SQL_SELECT_DLFOLDER_WHERE);
+
+				boolean bindExternalReferenceCode = false;
+
+				if (externalReferenceCode.isEmpty()) {
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3);
+				}
+				else {
+					bindExternalReferenceCode = true;
+
+					sb.append(_FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2);
+				}
+
+				sb.append(_FINDER_COLUMN_ERC_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindExternalReferenceCode) {
+						queryPos.add(externalReferenceCode);
+					}
+
+					queryPos.add(groupId);
+
+					List<DLFolder> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByERC_G, finderArgs, list);
+						}
+					}
+					else {
+						DLFolder dlFolder = list.get(0);
+
+						result = dlFolder;
+
+						cacheResult(dlFolder);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DLFolder)result;
+			}
+		}
+	}
+
+	/**
+	 * Removes the document library folder where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the document library folder that was removed
+	 */
+	@Override
+	public DLFolder removeByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchFolderException {
+
+		DLFolder dlFolder = findByERC_G(externalReferenceCode, groupId);
+
+		return remove(dlFolder);
+	}
+
+	/**
+	 * Returns the number of document library folders where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching document library folders
+	 */
+	@Override
+	public int countByERC_G(String externalReferenceCode, long groupId) {
+		DLFolder dlFolder = fetchByERC_G(externalReferenceCode, groupId);
+
+		if (dlFolder == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_2 =
+		"dlFolder.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_EXTERNALREFERENCECODE_3 =
+		"(dlFolder.externalReferenceCode IS NULL OR dlFolder.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_G_GROUPID_2 =
+		"dlFolder.groupId = ?";
+
 	public DLFolderPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -14129,29 +14110,40 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(DLFolder dlFolder) {
-		if (dlFolder.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					dlFolder.getCtCollectionId())) {
+
+			EntityCacheUtil.putResult(
+				DLFolderImpl.class, dlFolder.getPrimaryKey(), dlFolder);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByUUID_G,
+				new Object[] {dlFolder.getUuid(), dlFolder.getGroupId()},
+				dlFolder);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByR_M,
+				new Object[] {
+					dlFolder.getRepositoryId(), dlFolder.isMountPoint()
+				},
+				dlFolder);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByG_P_N,
+				new Object[] {
+					dlFolder.getGroupId(), dlFolder.getParentFolderId(),
+					dlFolder.getName()
+				},
+				dlFolder);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByERC_G,
+				new Object[] {
+					dlFolder.getExternalReferenceCode(), dlFolder.getGroupId()
+				},
+				dlFolder);
 		}
-
-		EntityCacheUtil.putResult(
-			DLFolderImpl.class, dlFolder.getPrimaryKey(), dlFolder);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByUUID_G,
-			new Object[] {dlFolder.getUuid(), dlFolder.getGroupId()}, dlFolder);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByR_M,
-			new Object[] {dlFolder.getRepositoryId(), dlFolder.isMountPoint()},
-			dlFolder);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByG_P_N,
-			new Object[] {
-				dlFolder.getGroupId(), dlFolder.getParentFolderId(),
-				dlFolder.getName()
-			},
-			dlFolder);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -14171,14 +14163,15 @@ public class DLFolderPersistenceImpl
 		}
 
 		for (DLFolder dlFolder : dlFolders) {
-			if (dlFolder.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						dlFolder.getCtCollectionId())) {
 
-			if (EntityCacheUtil.getResult(
-					DLFolderImpl.class, dlFolder.getPrimaryKey()) == null) {
+				if (EntityCacheUtil.getResult(
+						DLFolderImpl.class, dlFolder.getPrimaryKey()) == null) {
 
-				cacheResult(dlFolder);
+					cacheResult(dlFolder);
+				}
 			}
 		}
 	}
@@ -14228,33 +14221,42 @@ public class DLFolderPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		DLFolderModelImpl dlFolderModelImpl) {
 
-		Object[] args = new Object[] {
-			dlFolderModelImpl.getUuid(), dlFolderModelImpl.getGroupId()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					dlFolderModelImpl.getCtCollectionId())) {
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByUUID_G, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByUUID_G, args, dlFolderModelImpl);
+			Object[] args = new Object[] {
+				dlFolderModelImpl.getUuid(), dlFolderModelImpl.getGroupId()
+			};
 
-		args = new Object[] {
-			dlFolderModelImpl.getRepositoryId(),
-			dlFolderModelImpl.isMountPoint()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByUUID_G, args, dlFolderModelImpl);
 
-		FinderCacheUtil.putResult(_finderPathCountByR_M, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByR_M, args, dlFolderModelImpl);
+			args = new Object[] {
+				dlFolderModelImpl.getRepositoryId(),
+				dlFolderModelImpl.isMountPoint()
+			};
 
-		args = new Object[] {
-			dlFolderModelImpl.getGroupId(),
-			dlFolderModelImpl.getParentFolderId(), dlFolderModelImpl.getName()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByR_M, args, dlFolderModelImpl);
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByG_P_N, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByG_P_N, args, dlFolderModelImpl);
+			args = new Object[] {
+				dlFolderModelImpl.getGroupId(),
+				dlFolderModelImpl.getParentFolderId(),
+				dlFolderModelImpl.getName()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByG_P_N, args, dlFolderModelImpl);
+
+			args = new Object[] {
+				dlFolderModelImpl.getExternalReferenceCode(),
+				dlFolderModelImpl.getGroupId()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByERC_G, args, dlFolderModelImpl);
+		}
 	}
 
 	/**
@@ -14395,6 +14397,66 @@ public class DLFolderPersistenceImpl
 			dlFolder.setUuid(uuid);
 		}
 
+		if (Validator.isNull(dlFolder.getExternalReferenceCode())) {
+			dlFolder.setExternalReferenceCode(dlFolder.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					dlFolderModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					dlFolder.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = dlFolder.getCompanyId();
+
+					long groupId = dlFolder.getGroupId();
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = dlFolder.getPrimaryKey();
+					}
+
+					try {
+						dlFolder.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								DLFolder.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								dlFolder.getExternalReferenceCode(), null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			DLFolder ercDLFolder = fetchByERC_G(
+				dlFolder.getExternalReferenceCode(), dlFolder.getGroupId());
+
+			if (isNew) {
+				if (ercDLFolder != null) {
+					throw new DuplicateDLFolderExternalReferenceCodeException(
+						"Duplicate document library folder with external reference code " +
+							dlFolder.getExternalReferenceCode() +
+								" and group " + dlFolder.getGroupId());
+				}
+			}
+			else {
+				if ((ercDLFolder != null) &&
+					(dlFolder.getFolderId() != ercDLFolder.getFolderId())) {
+
+					throw new DuplicateDLFolderExternalReferenceCodeException(
+						"Duplicate document library folder with external reference code " +
+							dlFolder.getExternalReferenceCode() +
+								" and group " + dlFolder.getGroupId());
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -14440,16 +14502,6 @@ public class DLFolderPersistenceImpl
 		}
 		finally {
 			closeSession(session);
-		}
-
-		if (dlFolder.getCtCollectionId() != 0) {
-			if (isNew) {
-				dlFolder.setNew(false);
-			}
-
-			dlFolder.resetOriginalValues();
-
-			return dlFolder;
 		}
 
 		EntityCacheUtil.putResult(
@@ -14513,11 +14565,23 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public DLFolder fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(DLFolder.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (CTPersistenceHelperUtil.isProductionMode(
+				DLFolder.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		DLFolder dlFolder = null;
+		DLFolder dlFolder = (DLFolder)EntityCacheUtil.getResult(
+			DLFolderImpl.class, primaryKey);
+
+		if (dlFolder != null) {
+			return dlFolder;
+		}
 
 		Session session = null;
 
@@ -14556,7 +14620,12 @@ public class DLFolderPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (CTPersistenceHelperUtil.isProductionMode(DLFolder.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -14576,6 +14645,33 @@ public class DLFolderPersistenceImpl
 				map.put(primaryKey, dlFolder);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+						DLFolder.class, primaryKey)) {
+
+				DLFolder dlFolder = (DLFolder)EntityCacheUtil.getResult(
+					DLFolderImpl.class, primaryKey);
+
+				if (dlFolder == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, dlFolder);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -14704,78 +14800,80 @@ public class DLFolderPersistenceImpl
 		int start, int end, OrderByComparator<DLFolder> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<DLFolder> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<DLFolder>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_DLFOLDER);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_DLFOLDER;
-
-				sql = sql.concat(DLFolderModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<DLFolder>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<DLFolder> list = null;
+
+			if (useFinderCache) {
+				list = (List<DLFolder>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_DLFOLDER);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_DLFOLDER;
+
+					sql = sql.concat(DLFolderModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<DLFolder>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -14796,40 +14894,36 @@ public class DLFolderPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			DLFolder.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					DLFolder.class)) {
 
-		Long count = null;
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(_SQL_COUNT_DLFOLDER);
 
-				Query query = session.createQuery(_SQL_COUNT_DLFOLDER);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -14951,17 +15045,18 @@ public class DLFolderPersistenceImpl
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryTypePK the primary key of the document library file entry type
+	 * @return <code>true</code> if an association between the document library folder and the document library file entry type was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addDLFileEntryType(long pk, long dlFileEntryTypePK) {
+	public boolean addDLFileEntryType(long pk, long dlFileEntryTypePK) {
 		DLFolder dlFolder = fetchByPrimaryKey(pk);
 
 		if (dlFolder == null) {
-			dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
+			return dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, dlFileEntryTypePK);
 		}
 		else {
-			dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
+			return dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
 				dlFolder.getCompanyId(), pk, dlFileEntryTypePK);
 		}
 	}
@@ -14971,9 +15066,10 @@ public class DLFolderPersistenceImpl
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryType the document library file entry type
+	 * @return <code>true</code> if an association between the document library folder and the document library file entry type was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addDLFileEntryType(
+	public boolean addDLFileEntryType(
 		long pk,
 		com.liferay.document.library.kernel.model.DLFileEntryType
 			dlFileEntryType) {
@@ -14981,12 +15077,12 @@ public class DLFolderPersistenceImpl
 		DLFolder dlFolder = fetchByPrimaryKey(pk);
 
 		if (dlFolder == null) {
-			dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
+			return dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk,
 				dlFileEntryType.getPrimaryKey());
 		}
 		else {
-			dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
+			return dlFolderToDLFileEntryTypeTableMapper.addTableMapping(
 				dlFolder.getCompanyId(), pk, dlFileEntryType.getPrimaryKey());
 		}
 	}
@@ -14996,9 +15092,10 @@ public class DLFolderPersistenceImpl
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryTypePKs the primary keys of the document library file entry types
+	 * @return <code>true</code> if at least one association between the document library folder and the document library file entry types was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addDLFileEntryTypes(long pk, long[] dlFileEntryTypePKs) {
+	public boolean addDLFileEntryTypes(long pk, long[] dlFileEntryTypePKs) {
 		long companyId = 0;
 
 		DLFolder dlFolder = fetchByPrimaryKey(pk);
@@ -15010,8 +15107,15 @@ public class DLFolderPersistenceImpl
 			companyId = dlFolder.getCompanyId();
 		}
 
-		dlFolderToDLFileEntryTypeTableMapper.addTableMappings(
-			companyId, pk, dlFileEntryTypePKs);
+		long[] addedKeys =
+			dlFolderToDLFileEntryTypeTableMapper.addTableMappings(
+				companyId, pk, dlFileEntryTypePKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -15019,14 +15123,15 @@ public class DLFolderPersistenceImpl
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryTypes the document library file entry types
+	 * @return <code>true</code> if at least one association between the document library folder and the document library file entry types was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addDLFileEntryTypes(
+	public boolean addDLFileEntryTypes(
 		long pk,
 		List<com.liferay.document.library.kernel.model.DLFileEntryType>
 			dlFileEntryTypes) {
 
-		addDLFileEntryTypes(
+		return addDLFileEntryTypes(
 			pk,
 			ListUtil.toLongArray(
 				dlFileEntryTypes,
@@ -15238,28 +15343,29 @@ public class DLFolderPersistenceImpl
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("groupId");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("repositoryId");
-		ctStrictColumnNames.add("mountPoint");
-		ctStrictColumnNames.add("parentFolderId");
-		ctStrictColumnNames.add("treePath");
-		ctStrictColumnNames.add("name");
+		ctMergeColumnNames.add("repositoryId");
+		ctMergeColumnNames.add("mountPoint");
+		ctMergeColumnNames.add("parentFolderId");
+		ctMergeColumnNames.add("treePath");
+		ctMergeColumnNames.add("name");
 		ctMergeColumnNames.add("description");
 		ctMaxColumnNames.add("lastPostDate");
-		ctStrictColumnNames.add("defaultFileEntryTypeId");
-		ctStrictColumnNames.add("hidden_");
-		ctStrictColumnNames.add("restrictionType");
-		ctStrictColumnNames.add("lastPublishDate");
-		ctStrictColumnNames.add("status");
-		ctStrictColumnNames.add("statusByUserId");
-		ctStrictColumnNames.add("statusByUserName");
-		ctStrictColumnNames.add("statusDate");
-		ctStrictColumnNames.add("fileEntryTypes");
+		ctMergeColumnNames.add("defaultFileEntryTypeId");
+		ctMergeColumnNames.add("hidden_");
+		ctMergeColumnNames.add("restrictionType");
+		ctMergeColumnNames.add("lastPublishDate");
+		ctMergeColumnNames.add("status");
+		ctMergeColumnNames.add("statusByUserId");
+		ctMergeColumnNames.add("statusByUserName");
+		ctMergeColumnNames.add("statusDate");
+		ctMergeColumnNames.add("fileEntryTypes");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
@@ -15278,6 +15384,9 @@ public class DLFolderPersistenceImpl
 
 		_uniqueIndexColumnNames.add(
 			new String[] {"groupId", "parentFolderId", "name"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "groupId"});
 	}
 
 	/**
@@ -15326,11 +15435,6 @@ public class DLFolderPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -15443,11 +15547,6 @@ public class DLFolderPersistenceImpl
 			new String[] {Long.class.getName(), Boolean.class.getName()},
 			new String[] {"repositoryId", "mountPoint"}, true);
 
-		_finderPathCountByR_M = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByR_M",
-			new String[] {Long.class.getName(), Boolean.class.getName()},
-			new String[] {"repositoryId", "mountPoint"}, false);
-
 		_finderPathWithPaginationFindByR_P = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByR_P",
 			new String[] {
@@ -15534,14 +15633,6 @@ public class DLFolderPersistenceImpl
 				String.class.getName()
 			},
 			new String[] {"groupId", "parentFolderId", "name"}, true);
-
-		_finderPathCountByG_P_N = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_P_N",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				String.class.getName()
-			},
-			new String[] {"groupId", "parentFolderId", "name"}, false);
 
 		_finderPathWithPaginationFindByGtF_C_P_NotS = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByGtF_C_P_NotS",
@@ -15703,30 +15794,20 @@ public class DLFolderPersistenceImpl
 			},
 			false);
 
-		_setDLFolderUtilPersistence(this);
+		_finderPathFetchByERC_G = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_G",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "groupId"}, true);
+
+		DLFolderUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setDLFolderUtilPersistence(null);
+		DLFolderUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(DLFolderImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("DLFileEntryTypes_DLFolders");
-	}
-
-	private void _setDLFolderUtilPersistence(
-		DLFolderPersistence dlFolderPersistence) {
-
-		try {
-			Field field = DLFolderUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, dlFolderPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@BeanReference(type = DLFileEntryTypePersistence.class)

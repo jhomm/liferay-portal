@@ -1,0 +1,63 @@
+{
+	"properties": {
+		"aliases": {
+			"type": "text"
+		},
+		"blocks": {
+			"type": "keyword"
+		},
+		"groupExternalReferenceCode": {
+			"type": "keyword"
+		},
+		"index": {
+			"type": "keyword"
+		},
+		"name": {
+			"fields": {
+				"keyword": {
+					"type": "keyword"
+				}
+			},
+			"type": "text"
+		},
+		"pins": {
+			"properties": {
+				"position": {
+					"type": "integer"
+				},
+				"uid": {
+					"type": "keyword"
+				}
+			},
+			"type": "nested"
+		},
+		"queryString": {
+			"fields": {
+				"keyword": {
+					"type": "keyword"
+				}
+			},
+			"type": "text"
+		},
+		"queryStrings": {
+			"fields": {
+				"keyword": {
+					"type": "keyword"
+				}
+			},
+			"type": "text"
+		},
+		"status": {
+			"type": "keyword"
+		},
+		"sxpBlueprintExternalReferenceCode": {
+			"type": "keyword"
+		},
+		"timestamp": {
+			"type": "date"
+		},
+		"uid": {
+			"type": "keyword"
+		}
+	}
+}

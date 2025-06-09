@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.model.listener;
@@ -20,6 +11,7 @@ import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.counter.kernel.service.CounterLocalService;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredRoleException;
@@ -27,11 +19,12 @@ import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.util.PortalInstances;
 
 import java.util.Objects;
 
@@ -41,7 +34,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Drew Brokke
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class RoleModelListener extends BaseModelListener<Role> {
 
 	@Override
@@ -64,10 +57,21 @@ public class RoleModelListener extends BaseModelListener<Role> {
 		accountRole = _accountRoleLocalService.createAccountRole(
 			_counterLocalService.increment());
 
+		accountRole.setExternalReferenceCode(role.getExternalReferenceCode());
 		accountRole.setCompanyId(role.getCompanyId());
 		accountRole.setAccountEntryId(
 			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT);
 		accountRole.setRoleId(role.getRoleId());
+
+		try {
+			_resourceLocalService.addResources(
+				role.getCompanyId(), 0, role.getUserId(),
+				AccountRole.class.getName(), accountRole.getAccountRoleId(),
+				false, false, false);
+		}
+		catch (PortalException portalException) {
+			throw new ModelListenerException(portalException);
+		}
 
 		_accountRoleLocalService.addAccountRole(accountRole);
 
@@ -96,8 +100,31 @@ public class RoleModelListener extends BaseModelListener<Role> {
 	}
 
 	@Override
+	public void onAfterUpdate(Role originalRole, Role role)
+		throws ModelListenerException {
+
+		if (StringUtil.equalsIgnoreCase(
+				originalRole.getExternalReferenceCode(),
+				role.getExternalReferenceCode())) {
+
+			return;
+		}
+
+		AccountRole accountRole =
+			_accountRoleLocalService.fetchAccountRoleByRoleId(role.getRoleId());
+
+		if (accountRole == null) {
+			return;
+		}
+
+		accountRole.setExternalReferenceCode(role.getExternalReferenceCode());
+
+		_accountRoleLocalService.updateAccountRole(accountRole);
+	}
+
+	@Override
 	public void onBeforeRemove(Role role) throws ModelListenerException {
-		if (CompanyThreadLocal.isDeleteInProcess()) {
+		if (PortalInstances.isCurrentCompanyInDeletionProcess()) {
 			return;
 		}
 
@@ -139,6 +166,9 @@ public class RoleModelListener extends BaseModelListener<Role> {
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,7 +22,7 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountEntryAddressesManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/AccountEntryAddressesManagementToolbarPropsTransformer"
+	propsTransformer="{AccountEntryAddressesManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -62,7 +53,7 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 				</portlet:renderURL>
 
 				<%
-				if (!AccountEntryPermission.contains(permissionChecker, accountEntryDisplay.getAccountEntryId(), ActionKeys.UPDATE)) {
+				if (!AccountEntryPermission.contains(permissionChecker, accountEntryDisplay.getAccountEntryId(), AccountActionKeys.MANAGE_ADDRESSES)) {
 					rowURL = null;
 				}
 				%>
@@ -108,6 +99,27 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 					name="type"
 					value="<%= addressDisplay.getType(themeDisplay.getLocale()) %>"
 				/>
+
+				<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-43000") %>'>
+					<liferay-ui:search-container-column-text
+						cssClass="table-cell-expand-small table-cell-minw-150"
+						href="<%= rowURL %>"
+						name="subtype"
+						value="<%= addressDisplay.getSubtype() %>"
+					/>
+				</c:if>
+
+				<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-47858") %>'>
+					<liferay-ui:search-container-column-text
+						cssClass="table-cell-expand-small table-cell-minw-150"
+						name="status"
+					>
+						<clay:label
+							displayType="<%= WorkflowConstants.getStatusStyle(addressDisplay.getStatus()) %>"
+							label="<%= WorkflowConstants.getStatusLabel(addressDisplay.getStatus()) %>"
+						/>
+					</liferay-ui:search-container-column-text>
+				</c:if>
 
 				<liferay-ui:search-container-column-jsp
 					path="/account_entries_admin/account_entry_address_action.jsp"

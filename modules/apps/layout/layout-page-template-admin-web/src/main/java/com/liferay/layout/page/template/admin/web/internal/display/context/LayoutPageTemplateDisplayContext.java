@@ -1,48 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.VerticalNavItemList;
+import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplateCollectionPermission;
 import com.liferay.layout.page.template.admin.web.internal.security.permission.resource.LayoutPageTemplatePermission;
 import com.liferay.layout.page.template.admin.web.internal.util.LayoutPageTemplatePortletUtil;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionServiceUtil;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -82,6 +76,7 @@ public class LayoutPageTemplateDisplayContext {
 				getLayoutPageTemplateCollectionId(), ActionKeys.DELETE),
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteCollections");
+				dropdownItem.setIcon("trash");
 				dropdownItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "delete"));
 			}
@@ -132,9 +127,15 @@ public class LayoutPageTemplateDisplayContext {
 					getLayoutPageTemplateCollectionId();
 		}
 
-		_layoutPageTemplateCollectionId = ParamUtil.getLong(
-			_httpServletRequest, "layoutPageTemplateCollectionId",
-			defaultLayoutPageTemplateCollectionId);
+		long layoutPageTemplateCollectionId = ParamUtil.getLong(
+			_httpServletRequest, "layoutPageTemplateCollectionId");
+
+		if (layoutPageTemplateCollectionId <= 0) {
+			layoutPageTemplateCollectionId =
+				defaultLayoutPageTemplateCollectionId;
+		}
+
+		_layoutPageTemplateCollectionId = layoutPageTemplateCollectionId;
 
 		return _layoutPageTemplateCollectionId;
 	}
@@ -149,7 +150,8 @@ public class LayoutPageTemplateDisplayContext {
 		_layoutPageTemplateCollections =
 			LayoutPageTemplateCollectionServiceUtil.
 				getLayoutPageTemplateCollections(
-					_themeDisplay.getScopeGroupId());
+					_themeDisplay.getScopeGroupId(),
+					LayoutPageTemplateEntryTypeConstants.BASIC);
 
 		return _layoutPageTemplateCollections;
 	}
@@ -166,60 +168,49 @@ public class LayoutPageTemplateDisplayContext {
 				_renderRequest, getPortletURL(), null,
 				"there-are-no-page-templates");
 
-		layoutPageTemplateEntriesSearchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(_renderResponse));
-
 		layoutPageTemplateEntriesSearchContainer.setOrderByCol(getOrderByCol());
-
-		OrderByComparator<LayoutPageTemplateEntry> orderByComparator =
+		layoutPageTemplateEntriesSearchContainer.setOrderByComparator(
 			LayoutPageTemplatePortletUtil.
 				getLayoutPageTemplateEntryOrderByComparator(
-					getOrderByCol(), getOrderByType());
-
-		layoutPageTemplateEntriesSearchContainer.setOrderByComparator(
-			orderByComparator);
-
+					getOrderByCol(), getOrderByType()));
 		layoutPageTemplateEntriesSearchContainer.setOrderByType(
 			getOrderByType());
 
-		List<LayoutPageTemplateEntry> layoutPageTemplateEntries = null;
-		int layoutPageTemplateEntriesCount = 0;
-
 		if (isSearch()) {
-			layoutPageTemplateEntries =
-				LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
-					_themeDisplay.getScopeGroupId(),
-					getLayoutPageTemplateCollectionId(), getKeywords(),
-					layoutPageTemplateEntriesSearchContainer.getStart(),
-					layoutPageTemplateEntriesSearchContainer.getEnd(),
-					orderByComparator);
-
-			layoutPageTemplateEntriesCount =
+			layoutPageTemplateEntriesSearchContainer.setResultsAndTotal(
+				() ->
+					LayoutPageTemplateEntryServiceUtil.
+						getLayoutPageTemplateEntries(
+							_themeDisplay.getScopeGroupId(),
+							getLayoutPageTemplateCollectionId(), getKeywords(),
+							layoutPageTemplateEntriesSearchContainer.getStart(),
+							layoutPageTemplateEntriesSearchContainer.getEnd(),
+							layoutPageTemplateEntriesSearchContainer.
+								getOrderByComparator()),
 				LayoutPageTemplateEntryServiceUtil.
 					getLayoutPageTemplateEntriesCount(
 						_themeDisplay.getScopeGroupId(),
-						getLayoutPageTemplateCollectionId(), getKeywords());
+						getLayoutPageTemplateCollectionId(), getKeywords()));
 		}
 		else {
-			layoutPageTemplateEntries =
-				LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
-					_themeDisplay.getScopeGroupId(),
-					getLayoutPageTemplateCollectionId(),
-					layoutPageTemplateEntriesSearchContainer.getStart(),
-					layoutPageTemplateEntriesSearchContainer.getEnd(),
-					orderByComparator);
-
-			layoutPageTemplateEntriesCount =
+			layoutPageTemplateEntriesSearchContainer.setResultsAndTotal(
+				() ->
+					LayoutPageTemplateEntryServiceUtil.
+						getLayoutPageTemplateEntries(
+							_themeDisplay.getScopeGroupId(),
+							getLayoutPageTemplateCollectionId(),
+							layoutPageTemplateEntriesSearchContainer.getStart(),
+							layoutPageTemplateEntriesSearchContainer.getEnd(),
+							layoutPageTemplateEntriesSearchContainer.
+								getOrderByComparator()),
 				LayoutPageTemplateEntryServiceUtil.
 					getLayoutPageTemplateEntriesCount(
 						_themeDisplay.getScopeGroupId(),
-						getLayoutPageTemplateCollectionId());
+						getLayoutPageTemplateCollectionId()));
 		}
 
-		layoutPageTemplateEntriesSearchContainer.setResults(
-			layoutPageTemplateEntries);
-		layoutPageTemplateEntriesSearchContainer.setTotal(
-			layoutPageTemplateEntriesCount);
+		layoutPageTemplateEntriesSearchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(_renderResponse));
 
 		_layoutPageTemplateEntriesSearchContainer =
 			layoutPageTemplateEntriesSearchContainer;
@@ -235,7 +226,7 @@ public class LayoutPageTemplateDisplayContext {
 		}
 
 		_layoutPageTemplateEntry =
-			LayoutPageTemplateEntryServiceUtil.fetchLayoutPageTemplateEntry(
+			LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntry(
 				getLayoutPageTemplateEntryId());
 
 		return _layoutPageTemplateEntry;
@@ -257,8 +248,10 @@ public class LayoutPageTemplateDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "create-date");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest,
+			LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+			"layout-page-template-order-by-col", "create-date");
 
 		return _orderByCol;
 	}
@@ -268,8 +261,10 @@ public class LayoutPageTemplateDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest,
+			LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+			"layout-page-template-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -328,23 +323,50 @@ public class LayoutPageTemplateDisplayContext {
 		).buildPortletURL();
 	}
 
-	public boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
+	public VerticalNavItemList getVerticalNavItemList() {
+		VerticalNavItemList verticalNavItemList = new VerticalNavItemList();
+
+		for (LayoutPageTemplateCollection layoutPageTemplateCollection :
+				getLayoutPageTemplateCollections()) {
+
+			verticalNavItemList.add(
+				verticalNavItem -> {
+					String name = layoutPageTemplateCollection.getName();
+
+					long layoutPageTemplateCollectionId =
+						layoutPageTemplateCollection.
+							getLayoutPageTemplateCollectionId();
+
+					verticalNavItem.setActive(
+						layoutPageTemplateCollectionId ==
+							getLayoutPageTemplateCollectionId());
+
+					verticalNavItem.setHref(
+						PortletURLBuilder.createRenderURL(
+							_renderResponse
+						).setTabs1(
+							"page-templates"
+						).setParameter(
+							"layoutPageTemplateCollectionId",
+							layoutPageTemplateCollection.
+								getLayoutPageTemplateCollectionId()
+						).buildString());
+					verticalNavItem.setId(name);
+					verticalNavItem.setLabel(name);
+				});
 		}
 
-		return false;
+		return verticalNavItemList;
+	}
+
+	public boolean isSearch() {
+		return Validator.isNotNull(getKeywords());
 	}
 
 	public boolean isShowAddButton(String actionId) {
-		if (LayoutPageTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(),
-				_themeDisplay.getSiteGroupId(), actionId)) {
-
-			return true;
-		}
-
-		return false;
+		return LayoutPageTemplatePermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getSiteGroupId(), actionId);
 	}
 
 	private final HttpServletRequest _httpServletRequest;

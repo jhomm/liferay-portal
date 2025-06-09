@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
@@ -22,7 +13,7 @@ import {generateName, getRepeatedIndex, parseName} from './repeatable.es';
 import {updateField} from './settingsContext';
 import {PagesVisitor} from './visitors.es';
 
-export const addFieldToPage = ({
+export function addFieldToPage({
 	defaultLanguageId,
 	editingLanguageId,
 	fieldNameGenerator,
@@ -31,7 +22,7 @@ export const addFieldToPage = ({
 	newField,
 	pages,
 	parentFieldName,
-}) => {
+}) {
 	const {columnIndex, pageIndex, rowIndex} = indexes;
 
 	if (!parentFieldName) {
@@ -99,29 +90,28 @@ export const addFieldToPage = ({
 		true,
 		true
 	);
-};
+}
 
-export const generateInstanceId = (isNumbersOnly) =>
-	Math.random()
+export function generateInstanceId(isNumbersOnly) {
+	return Math.random()
 		.toString(isNumbersOnly ? 10 : 36)
 		.substr(2, 8);
+}
 
-export const getDefaultFieldName = (isOptionField = false, fieldType = '') => {
-	const defaultFieldName = fieldType?.label
-		? normalizeFieldName(fieldType.label)
+export function getDefaultFieldName(isOptionField = false, fieldType = '') {
+	const defaultFieldName = fieldType?.name
+		? normalizeFieldName(fieldType.name)
+				.split('_')
+				.map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+				.join('')
 		: isOptionField
-		? Liferay.Language.get('option')
-		: Liferay.Language.get('field');
+			? Liferay.Language.get('option')
+			: Liferay.Language.get('field');
 
 	return defaultFieldName + generateInstanceId(true);
-};
+}
 
-export const removeField = (
-	props,
-	pages,
-	fieldName,
-	removeEmptyRows = true
-) => {
+export function removeField(props, pages, fieldName, removeEmptyRows = true) {
 	const visitor = new PagesVisitor(pages);
 
 	const filter = (fields) =>
@@ -185,13 +175,13 @@ export const removeField = (
 		...column,
 		fields: filter(column.fields),
 	}));
-};
+}
 
-export const getFieldProperties = (
+export function getFieldProperties(
 	{pages},
 	defaultLanguageId,
 	editingLanguageId
-) => {
+) {
 	const properties = {};
 	const visitor = new PagesVisitor(pages);
 
@@ -206,7 +196,7 @@ export const getFieldProperties = (
 			else if (localizable && localizedValue[defaultLanguageId]) {
 				properties[fieldName] = localizedValue[defaultLanguageId];
 			}
-			else if (type == 'options') {
+			else if (type === 'options') {
 				if (!value[editingLanguageId] && value[defaultLanguageId]) {
 					properties[fieldName] = value[defaultLanguageId];
 				}
@@ -214,12 +204,13 @@ export const getFieldProperties = (
 					properties[fieldName] = value[editingLanguageId];
 				}
 			}
-			else if (type == 'validation') {
+			else if (type === 'validation') {
 				if (!value.errorMessage[editingLanguageId]) {
 					value.errorMessage[editingLanguageId] =
 						value.errorMessage[defaultLanguageId];
 				}
 
+				/* TODO: define a proper parameter type and apply it here */
 				if (!value.parameter[editingLanguageId]) {
 					value.parameter[editingLanguageId] =
 						value.parameter[defaultLanguageId];
@@ -234,15 +225,15 @@ export const getFieldProperties = (
 	);
 
 	return properties;
-};
+}
 
-export const normalizeSettingsContextPages = (
+export function normalizeSettingsContextPages(
 	pages,
 	defaultLanguageId,
 	editingLanguageId,
 	fieldType,
 	generatedFieldName
-) => {
+) {
 	const visitor = new PagesVisitor(pages);
 
 	return visitor.mapFields(
@@ -353,9 +344,9 @@ export const normalizeSettingsContextPages = (
 		false,
 		true
 	);
-};
+}
 
-export const createField = ({
+export function createField({
 	defaultLanguageId,
 	editingLanguageId,
 	fieldNameGenerator,
@@ -363,7 +354,7 @@ export const createField = ({
 	portletNamespace,
 	skipFieldNameGeneration = false,
 	useFieldName = '',
-}) => {
+}) {
 	let newFieldName = useFieldName;
 
 	if (!useFieldName) {
@@ -412,13 +403,8 @@ export const createField = ({
 		},
 	};
 
-	const {
-		editorConfig,
-		fieldName,
-		fieldReference,
-		name,
-		settingsContext,
-	} = newField;
+	const {editorConfig, fieldName, fieldReference, name, settingsContext} =
+		newField;
 
 	return {
 		...getFieldProperties(
@@ -434,9 +420,9 @@ export const createField = ({
 		settingsContext,
 		type: fieldType.name,
 	};
-};
+}
 
-export const updateEditorConfigInstanceId = (editorConfig, instanceId) => {
+export function updateEditorConfigInstanceId(editorConfig, instanceId) {
 	const updatedEditorConfig = {...editorConfig};
 	for (const [key, value] of Object.entries(updatedEditorConfig)) {
 		if (typeof value === 'string') {
@@ -452,57 +438,67 @@ export const updateEditorConfigInstanceId = (editorConfig, instanceId) => {
 	}
 
 	return updatedEditorConfig;
-};
+}
 
-export const formatFieldName = (instanceId, languageId, value) => {
+export function updateInputMaskProperties(editingLanguageId, field) {
+	let inputMaskFormat = '';
+	let numericInputMask = {};
+	let predefinedValueField;
+	let validationField;
+
+	const visitor = new PagesVisitor(field.settingsContext.pages);
+
+	visitor.visitFields((setting) => {
+		if (setting.fieldName === 'inputMaskFormat') {
+			inputMaskFormat = setting.localizedValue?.[editingLanguageId];
+		}
+		else if (setting.fieldName === 'numericInputMask') {
+			numericInputMask = setting.localizedValue?.[editingLanguageId];
+
+			if (typeof numericInputMask === 'string') {
+				numericInputMask = JSON.parse(numericInputMask);
+			}
+		}
+		else if (setting.fieldName === 'predefinedValue') {
+			predefinedValueField = setting;
+		}
+		else if (setting.fieldName === 'validation') {
+			validationField = setting;
+		}
+	});
+
+	field.inputMaskFormat = inputMaskFormat;
+	predefinedValueField.inputMaskFormat = inputMaskFormat;
+	validationField.inputMaskFormat = inputMaskFormat;
+
+	Object.keys(numericInputMask).forEach((key) => {
+		field[key] = numericInputMask[key];
+		predefinedValueField[key] = numericInputMask[key];
+		validationField[key] = numericInputMask[key];
+	});
+}
+
+export function formatFieldName(instanceId, languageId, value) {
 	return `ddm$$${value}$${instanceId}$0$$${languageId}`;
-};
+}
 
-export const getField = (pages, fieldName) => {
+export function getField(pages, fieldName) {
 	const visitor = new PagesVisitor(pages);
 
 	return visitor.findField((field) => field.fieldName === fieldName);
-};
+}
 
-export const getParentField = (pages, fieldName) => {
-	let parentField = null;
+export function getParentField(pages, fieldName) {
 	const visitor = new PagesVisitor(pages);
 
-	visitor.visitFields((field) => {
+	return visitor.findField((field) => {
 		const nestedFieldsVisitor = new PagesVisitor(field.nestedFields || []);
 
-		if (nestedFieldsVisitor.containsField(fieldName)) {
-			parentField = field;
-		}
-
-		return false;
+		return nestedFieldsVisitor.containsField(fieldName);
 	});
+}
 
-	return parentField;
-};
-
-export const isFieldSet = (field) =>
-	field.type === FIELD_TYPE_FIELDSET && field.ddmStructureId;
-
-export const getParentFieldSet = (pages, fieldName) => {
-	let parentField = getParentField(pages, fieldName);
-
-	while (parentField) {
-		if (isFieldSet(parentField)) {
-			return parentField;
-		}
-
-		parentField = getParentField(pages, parentField.fieldName);
-	}
-
-	return null;
-};
-
-export const isFieldSetChild = (pages, fieldName) => {
-	return !!getParentFieldSet(pages, fieldName);
-};
-
-export const localizeField = (field, defaultLanguageId, editingLanguageId) => {
+export function localizeField(field, defaultLanguageId, editingLanguageId) {
 	let value = field.value;
 
 	if (
@@ -524,7 +520,7 @@ export const localizeField = (field, defaultLanguageId, editingLanguageId) => {
 	if (field.localizable && field.localizedValue) {
 		let localizedValue = field.localizedValue[editingLanguageId];
 
-		if (localizedValue === undefined) {
+		if (localizedValue === undefined || localizedValue === '') {
 			localizedValue = field.localizedValue[defaultLanguageId];
 		}
 
@@ -576,4 +572,4 @@ export const localizeField = (field, defaultLanguageId, editingLanguageId) => {
 		},
 		value,
 	};
-};
+}

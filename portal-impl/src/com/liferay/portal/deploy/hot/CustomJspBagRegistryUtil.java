@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.hot;
@@ -21,13 +12,16 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.log.SanitizerLogWrapper;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.url.URLContainer;
 import com.liferay.portal.kernel.util.CustomJspRegistryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.spring.context.PortalContextLoaderListener;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -136,13 +130,16 @@ public class CustomJspBagRegistryUtil {
 		boolean customJspGlobal = customJspBag.isCustomJspGlobal();
 		List<String> customJsps = customJspBag.getCustomJsps();
 
-		String portalWebDir = PortalUtil.getPortalWebDir();
+		ServletContext servletContext = ServletContextPool.get(
+			PortalContextLoaderListener.getPortalServletContextName());
+
+		_portalWebDir = servletContext.getRealPath(StringPool.SLASH);
 
 		for (String customJsp : customJsps) {
 			String portalJsp = getPortalJsp(customJsp, customJspDir);
 
 			if (customJspGlobal) {
-				File portalJspFile = new File(portalWebDir + portalJsp);
+				File portalJspFile = new File(_portalWebDir, portalJsp);
 
 				File portalJspBackupFile = getPortalJspBackupFile(
 					portalJspFile);
@@ -157,7 +154,7 @@ public class CustomJspBagRegistryUtil {
 			}
 
 			FileUtil.write(
-				portalWebDir + portalJsp,
+				new File(_portalWebDir, portalJsp),
 				getCustomJspInputStream(
 					customJspBag.getURLContainer(), customJsp));
 		}
@@ -175,10 +172,8 @@ public class CustomJspBagRegistryUtil {
 		Set<String> customJsps = new HashSet<>();
 
 		for (String customJsp : customJspBag.getCustomJsps()) {
-			String portalJsp = getPortalJsp(
-				customJsp, customJspBag.getCustomJspDir());
-
-			customJsps.add(portalJsp);
+			customJsps.add(
+				getPortalJsp(customJsp, customJspBag.getCustomJspDir()));
 		}
 
 		Map<String, String> conflictingCustomJsps = new HashMap<>();
@@ -255,6 +250,7 @@ public class CustomJspBagRegistryUtil {
 		SystemBundleUtil.getBundleContext();
 	private static final Map<ServiceReference<CustomJspBag>, CustomJspBag>
 		_customJspBagsMap = new ConcurrentHashMap<>();
+	private static String _portalWebDir;
 	private static final ServiceTracker<CustomJspBag, CustomJspBag>
 		_serviceTracker;
 
@@ -316,9 +312,7 @@ public class CustomJspBagRegistryUtil {
 							duplicateCustomJspException) {
 
 					if (_log.isWarnEnabled()) {
-						_log.warn(
-							duplicateCustomJspException.getMessage(),
-							duplicateCustomJspException);
+						_log.warn(duplicateCustomJspException);
 					}
 
 					_bundleContext.ungetService(serviceReference);
@@ -335,7 +329,7 @@ public class CustomJspBagRegistryUtil {
 			}
 			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(exception.getMessage(), exception);
+					_log.warn(exception);
 				}
 
 				_bundleContext.ungetService(serviceReference);
@@ -377,8 +371,7 @@ public class CustomJspBagRegistryUtil {
 					pos + customJspDir.length());
 
 				if (customJspBag.isCustomJspGlobal()) {
-					File portalJspFile = new File(
-						PortalUtil.getPortalWebDir() + portalJsp);
+					File portalJspFile = new File(_portalWebDir + portalJsp);
 
 					File portalJspBackupFile = getPortalJspBackupFile(
 						portalJspFile);
@@ -390,7 +383,7 @@ public class CustomJspBagRegistryUtil {
 						}
 						catch (IOException ioException) {
 							if (_log.isDebugEnabled()) {
-								_log.debug(ioException, ioException);
+								_log.debug(ioException);
 							}
 
 							return;
@@ -406,8 +399,7 @@ public class CustomJspBagRegistryUtil {
 					portalJsp = CustomJspRegistryUtil.getCustomJspFileName(
 						contextId, portalJsp);
 
-					File portalJspFile = new File(
-						PortalUtil.getPortalWebDir() + portalJsp);
+					File portalJspFile = new File(_portalWebDir + portalJsp);
 
 					if (portalJspFile.exists()) {
 						portalJspFile.delete();

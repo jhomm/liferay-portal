@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -19,6 +10,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -45,6 +38,7 @@ public class CPDefinitionLocalizationWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put(
 			"cpDefinitionLocalizationId", getCpDefinitionLocalizationId());
 		attributes.put("companyId", getCompanyId());
@@ -66,6 +60,12 @@ public class CPDefinitionLocalizationWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		Long cpDefinitionLocalizationId = (Long)attributes.get(
@@ -163,6 +163,16 @@ public class CPDefinitionLocalizationWrapper
 	@Override
 	public long getCpDefinitionLocalizationId() {
 		return model.getCpDefinitionLocalizationId();
+	}
+
+	/**
+	 * Returns the ct collection ID of this cp definition localization.
+	 *
+	 * @return the ct collection ID of this cp definition localization
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -286,6 +296,16 @@ public class CPDefinitionLocalizationWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this cp definition localization.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition localization
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the description of this cp definition localization.
 	 *
 	 * @param description the description of this cp definition localization
@@ -373,6 +393,25 @@ public class CPDefinitionLocalizationWrapper
 	@Override
 	public void setShortDescription(String shortDescription) {
 		model.setShortDescription(shortDescription);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CPDefinitionLocalization, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CPDefinitionLocalization, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

@@ -25,9 +25,10 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>dataAnalyticsTrackEnabled</name>
+			<name>dataAnalyticsTrackingEnabled</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
 		</attribute>
 		<attribute>
 			<name>ddmTemplateKey</name>
@@ -65,6 +66,17 @@
 		<attribute>
 			<name>articleDisplay</name>
 			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>dataAnalyticsTrackingEnabled</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
+			<name>paginationURL</name>
+			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>

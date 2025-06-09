@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -19,13 +10,14 @@ package com.liferay.portal.kernel.util;
  */
 public class PortletKeys {
 
-	public static final String ADMIN_PLUGINS = "136";
-
 	public static final String ALERTS =
 		"com_liferay_announcements_web_portlet_AlertsPortlet";
 
 	public static final String ANNOUNCEMENTS =
 		"com_liferay_announcements_web_portlet_AnnouncementsPortlet";
+
+	public static final String ASSET_LIST =
+		"com_liferay_asset_list_web_portlet_AssetListPortlet";
 
 	public static final String BACKGROUND_TASK = "189";
 
@@ -78,6 +70,9 @@ public class PortletKeys {
 
 	public static final String ITEM_SELECTOR =
 		"com_liferay_item_selector_web_portlet_ItemSelectorPortlet";
+
+	public static final String JOURNAL =
+		"com_liferay_journal_web_portlet_JournalPortlet";
 
 	public static final String LICENSE_MANAGER =
 		"com_liferay_license_manager_web_portlet_LicenseManagerPortlet";
@@ -162,6 +157,8 @@ public class PortletKeys {
 	public static final String RECENT_DOCUMENTS =
 		"com_liferay_recent_documents_web_portlet_RecentDocumentsPortlet";
 
+	public static final String RECOMMENDATIONS = "198";
+
 	public static final String REQUESTS = "121";
 
 	public static final String ROLES_ADMIN =
@@ -179,6 +176,9 @@ public class PortletKeys {
 		"com_liferay_directory_web_portlet_SiteMembersDirectoryPortlet";
 
 	public static final String STOCKS = "12";
+
+	public static final String TRANSLATION =
+		"com_liferay_translation_web_internal_portlet_TranslationPortlet";
 
 	public static final String TRANSLATOR = "26";
 

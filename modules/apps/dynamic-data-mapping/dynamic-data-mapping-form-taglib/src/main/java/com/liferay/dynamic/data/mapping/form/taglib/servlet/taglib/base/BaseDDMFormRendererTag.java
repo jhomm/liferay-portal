@@ -1,56 +1,47 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.taglib.servlet.taglib.base;
 
 import com.liferay.dynamic.data.mapping.form.taglib.internal.servlet.ServletContextUtil;
+import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Pedro Queiroz
  * @author Rafael Praxedes
- * @generated
  */
-public abstract class BaseDDMFormRendererTag extends com.liferay.taglib.util.IncludeTag {
+public abstract class BaseDDMFormRendererTag extends IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
-		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
+		setAttributeNamespace(ATTRIBUTE_NAMESPACE);
 
 		return super.doStartTag();
 	}
 
-	public java.lang.Long getDdmFormInstanceId() {
+	public Long getDdmFormInstanceId() {
 		return _ddmFormInstanceId;
 	}
 
-	public java.lang.Long getDdmFormInstanceRecordId() {
+	public Long getDdmFormInstanceRecordId() {
 		return _ddmFormInstanceRecordId;
 	}
 
-	public java.lang.Long getDdmFormInstanceRecordVersionId() {
+	public Long getDdmFormInstanceRecordVersionId() {
 		return _ddmFormInstanceRecordVersionId;
 	}
 
-	public java.lang.Long getDdmFormInstanceVersionId() {
+	public Long getDdmFormInstanceVersionId() {
 		return _ddmFormInstanceVersionId;
 	}
 
-	public java.lang.String getNamespace() {
+	public String getNamespace() {
 		return _namespace;
 	}
 
@@ -62,24 +53,33 @@ public abstract class BaseDDMFormRendererTag extends com.liferay.taglib.util.Inc
 		return _showSubmitButton;
 	}
 
-	public void setDdmFormInstanceId(java.lang.Long ddmFormInstanceId) {
+	public void setDdmFormInstanceId(Long ddmFormInstanceId) {
 		_ddmFormInstanceId = ddmFormInstanceId;
 	}
 
-	public void setDdmFormInstanceRecordId(java.lang.Long ddmFormInstanceRecordId) {
+	public void setDdmFormInstanceRecordId(Long ddmFormInstanceRecordId) {
 		_ddmFormInstanceRecordId = ddmFormInstanceRecordId;
 	}
 
-	public void setDdmFormInstanceRecordVersionId(java.lang.Long ddmFormInstanceRecordVersionId) {
+	public void setDdmFormInstanceRecordVersionId(
+		Long ddmFormInstanceRecordVersionId) {
+
 		_ddmFormInstanceRecordVersionId = ddmFormInstanceRecordVersionId;
 	}
 
-	public void setDdmFormInstanceVersionId(java.lang.Long ddmFormInstanceVersionId) {
+	public void setDdmFormInstanceVersionId(Long ddmFormInstanceVersionId) {
 		_ddmFormInstanceVersionId = ddmFormInstanceVersionId;
 	}
 
-	public void setNamespace(java.lang.String namespace) {
+	public void setNamespace(String namespace) {
 		_namespace = namespace;
+	}
+
+	@Override
+	public void setPageContext(PageContext pageContext) {
+		super.setPageContext(pageContext);
+
+		setServletContext(ServletContextUtil.getServletContext());
 	}
 
 	public void setShowFormBasicInfo(boolean showFormBasicInfo) {
@@ -88,13 +88,6 @@ public abstract class BaseDDMFormRendererTag extends com.liferay.taglib.util.Inc
 
 	public void setShowSubmitButton(boolean showSubmitButton) {
 		_showSubmitButton = showSubmitButton;
-	}
-
-	@Override
-	public void setPageContext(PageContext pageContext) {
-		super.setPageContext(pageContext);
-
-		setServletContext(ServletContextUtil.getServletContext());
 	}
 
 	@Override
@@ -116,26 +109,35 @@ public abstract class BaseDDMFormRendererTag extends com.liferay.taglib.util.Inc
 	}
 
 	@Override
-	protected void setAttributes(HttpServletRequest request) {
-		setNamespacedAttribute(request, "ddmFormInstanceId", _ddmFormInstanceId);
-		setNamespacedAttribute(request, "ddmFormInstanceRecordId", _ddmFormInstanceRecordId);
-		setNamespacedAttribute(request, "ddmFormInstanceRecordVersionId", _ddmFormInstanceRecordVersionId);
-		setNamespacedAttribute(request, "ddmFormInstanceVersionId", _ddmFormInstanceVersionId);
-		setNamespacedAttribute(request, "namespace", _namespace);
-		setNamespacedAttribute(request, "showFormBasicInfo", _showFormBasicInfo);
-		setNamespacedAttribute(request, "showSubmitButton", _showSubmitButton);
+	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		setNamespacedAttribute(
+			httpServletRequest, "ddmFormInstanceId", _ddmFormInstanceId);
+		setNamespacedAttribute(
+			httpServletRequest, "ddmFormInstanceRecordId",
+			_ddmFormInstanceRecordId);
+		setNamespacedAttribute(
+			httpServletRequest, "ddmFormInstanceRecordVersionId",
+			_ddmFormInstanceRecordVersionId);
+		setNamespacedAttribute(
+			httpServletRequest, "ddmFormInstanceVersionId",
+			_ddmFormInstanceVersionId);
+		setNamespacedAttribute(httpServletRequest, "namespace", _namespace);
+		setNamespacedAttribute(
+			httpServletRequest, "showFormBasicInfo", _showFormBasicInfo);
+		setNamespacedAttribute(
+			httpServletRequest, "showSubmitButton", _showSubmitButton);
 	}
 
-	protected static final String _ATTRIBUTE_NAMESPACE = "liferay-form:ddm-form-renderer:";
+	protected static final String ATTRIBUTE_NAMESPACE =
+		"liferay-form:ddm-form-renderer:";
 
-	private static final String _PAGE =
-		"/ddm_form_renderer/page.jsp";
+	private static final String _PAGE = "/ddm_form_renderer/page.jsp";
 
-	private java.lang.Long _ddmFormInstanceId = null;
-	private java.lang.Long _ddmFormInstanceRecordId = null;
-	private java.lang.Long _ddmFormInstanceRecordVersionId = null;
-	private java.lang.Long _ddmFormInstanceVersionId = null;
-	private java.lang.String _namespace = null;
+	private Long _ddmFormInstanceId;
+	private Long _ddmFormInstanceRecordId;
+	private Long _ddmFormInstanceRecordVersionId;
+	private Long _ddmFormInstanceVersionId;
+	private String _namespace;
 	private boolean _showFormBasicInfo = true;
 	private boolean _showSubmitButton = true;
 

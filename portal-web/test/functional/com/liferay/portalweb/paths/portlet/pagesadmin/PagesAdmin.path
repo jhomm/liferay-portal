@@ -1,0 +1,232 @@
+<html>
+<head>
+<title>PagesAdmin</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">PagesAdmin</td></tr>
+</thead>
+
+<tbody>
+
+<!--DETAILS-->
+
+<tr>
+	<td>DETAILS_FRIENDLY_BASE_URL</td>
+	<td>//div[contains(@class,'friendly-url')]/div[contains(@class,'form-text')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PAGE_TYPE_DESCRIPTION</td>
+	<td>//div[contains(@class,'type')]/p[contains(@class,'text')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PAGE_TYPE_PANEL_CHECKBOX</td>
+	<td>//li[contains(@class,'treeview-item')][*//span[normalize-space(text())='${key_componentOrPortletName}']]//input[@type='checkbox']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PAGE_TYPE_PANEL_CHECKBOX_INPUT</td>
+	<td>//input[@type="hidden"][contains(@name,'panelSelectedPortlets')][contains(@value,'${key_componentOrPortletName}')]</td>
+	<td></td>
+</tr>
+
+<!--DETAILS_PAGE_TYPE_PANEL-->
+
+<tr>
+	<td>DETAILS_PAGE_TYPE_PANEL_COMPONENT_TREE_ARROW</td>
+	<td>//li[contains(@class,'treeview-item')][*//span[normalize-space(text())='${key_componentName}']]//button[contains(@class,'collapsed')][@aria-expanded='false']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DETAILS_PAGE_TYPE_PANEL_COMPONENT_TREE_EXPANDED</td>
+	<td>//li[contains(@class,'treeview-item')][*//span[normalize-space(text())='${key_componentName}']]//button[contains(@class,'collapsed')][@aria-expanded='true']</td>
+	<td></td>
+</tr>
+
+<!--FRIENDLY_URL-->
+
+<tr>
+	<td>FRIENDLY_URL</td>
+	<td>//input[contains(@name,'friendlyURL') and contains(@value,'${key_friendlyURL}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FRIENDLY_URL_ACTIVE_URL</td>
+	<td>//div[contains(@class,'modal-dialog')]//div[contains(@class,'active-url')]//p[normalize-space(text())='${key_activeURL}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FRIENDLY_URL_HISTORY_ITEM</td>
+	<td>//div[contains(@class,'modal-dialog')]//ul/li[contains(@class,'list-group-item')]//p[normalize-space(text())='${key_oldFriendlyURL}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FRIENDLY_URL_HISTORY_ITEM_LAST</td>
+	<td>xpath=(//div[contains(@class,'modal-dialog')]//ul/li[contains(@class,'list-group-item')]//p[normalize-space(text())='${key_oldFriendlyURL}'])[last()]</td>
+	<td></td>
+</tr>
+
+<!--LIST_GROUP_ITEM-->
+
+<tr>
+	<td>LIST_GROUP_ITEM</td>
+	<td>//*[contains(@class,'list-group-item')][contains(.,'${key_itemName}')]/a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_CHECKBOX</td>
+	<td>//li[contains(.,'${key_pageName}')]//input[@type='checkbox']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_CHILD_INDICATOR</td>
+	<td>//li[contains(.,'${key_pageName}')]//*[contains(@class,'child-indicator')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_DEPTH</td>
+	<td>//ul[${key_depth}]/li[contains(@class,'list-group-item')]/a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_DRAG_HANDLER</td>
+	<td>//div[contains(@class,'miller-columns')]//li[contains(.,'${key_pageName}')]//div[contains(@class,'drag-handler')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_DROP_TARGET</td>
+	<td>//li[contains(.,'${key_pageNameTo}')]/a</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_HREF_BLANK</td>
+	<td>//a[@class='dropdown-item'][@href='${key_href}'][@target='_blank']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_ELLIPSIS_ICON</td>
+	<td>//li[contains(@class,'miller-columns')][contains(.,'${key_pageName}')]//*[*[name()='svg'][contains(@class,'ellipsis-v')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_ENTRY_TITLE_LINK</td>
+	<td>//*[contains(@class,'list-group-item')]//a[normalize-space(text())='${key_pageName}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_PAGE_STATUS</td>
+	<td>xpath=(//li[contains(@class,'list-group-item') and contains(.,'${key_itemName}')]//*[contains(@class,'label-item')])[${index}]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_PAGE_TYPE</td>
+	<td>//*[contains(@class,'list-group-item')]//div[contains(@class,'list-group-title')][contains(.,'${key_pageName}')]//following-sibling::div[contains(@class,'list-group-subtitle')]//span[normalize-space()='${key_pageType}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_PLUS_ICON</td>
+	<td>//li[contains(.,'${key_pageName}')]//*[*[name()='svg'][contains(@class,'icon-plus')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_ROW_ENTRY</td>
+	<td>//ul[${key_depth}]/li[contains(@class,'list-group-item')][${key_index}]//*[contains(@class,'list-group-title')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIST_GROUP_ITEM_ROW_ELLIPSIS</td>
+	<td>xpath=(//*[contains(@class,'list-group-item')])[${key_index}]//button[*[name()='svg'][contains(@class,'icon-ellipsis-v')]]</td>
+	<td></td>
+</tr>
+
+<!--SEO-->
+
+<tr>
+	<td>PREVIEW_DESCRIPTION</td>
+	<td>//div[contains(@class,'preview-seo-description')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_IMAGE</td>
+	<td>//div[contains(@class,'preview-seo-image')]//img[contains(@src,'${key_imageName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_SERP</td>
+	<td>//div[contains(@class,'preview-seo-serp')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_TITLE</td>
+	<td>//div[contains(@class,'preview-seo-title text-truncate')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_URL</td>
+	<td>//div[contains(@class,'preview-seo-url text-truncate')]</td>
+	<td></td>
+</tr>
+
+<!--LOOK_AND_FEEL-->
+
+<tr>
+	<td>MASTER_LAYOUT_NAME</td>
+	<td>//div[contains(@class,'sheet-section')]/*[normalize-space()='Basic Settings']//following-sibling::div//label[normalize-space(text())='Master']//following-sibling::div//input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOMIZATION_BUTTON_SECONDARY_TEXT</td>
+	<td>//div[contains(@class,'panel')]//button[contains(.,'${key_buttonName}')]/following-sibling::p | //div[contains(@class,'panel')]//button[contains(.,'${key_buttonName}')]/../following-sibling::p</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FIELD_LABEL_IN_SECTION</td>
+	<td>//div[contains(@class,'sheet-section')]//h3[normalize-space(text())='${key_sectionTitle}']//following-sibling::div//label[normalize-space(text())='${key_fieldLabel}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SECTION_TITLE</td>
+	<td>//div[contains(@class,'sheet-section')]//h3[normalize-space(text())='${key_sectionTitle}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SECTION_SUBTITLE</td>
+	<td>//div[contains(@class,'sheet-section')]//h3[normalize-space(text())='${key_sectionTitle}']//following-sibling::p[last()]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>STYLE_BOOK_NAME</td>
+	<td>//div[contains(@class,'sheet-section')]/*[normalize-space()='Basic Settings']//following-sibling::div//label[normalize-space(text())='Style Book']//following-sibling::div//input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FAVICON_NAME</td>
+	<td>//label[normalize-space(text())='Favicon']//following-sibling::div//input</td>
+	<td></td>
+</tr>
+
+<!--CUSTOMIZATION-->
+
+<tr>
+	<td>NO_CSS_THEME_LOADED</td>
+	<td>//button[contains(@class,'nav-link active') and contains(text(),'CSS')]//ancestor::div//p[normalize-space(text())='No CSS Client extensions were loaded.']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NO_JAVASCRIPT_EXTENSIONS_LOADED</td>
+	<td>//button[contains(@class,'nav-link active') and contains(text(),'JavaScript')]//ancestor::div//p[normalize-space(text())='No JavaScript client extensions were loaded.']</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

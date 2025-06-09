@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_0_5;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
@@ -39,15 +31,11 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		try (LoggingTimer loggingTimer = new LoggingTimer();
-			PreparedStatement preparedStatement = connection.prepareStatement(
-				"select companyId from Company");
-			ResultSet resultSet = preparedStatement.executeQuery()) {
-
+		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			upgradePortalPreferences(PortletKeys.PREFS_OWNER_ID_DEFAULT);
 
-			while (resultSet.next()) {
-				upgradePortalPreferences(resultSet.getLong("companyId"));
+			for (long companyId : PortalInstancePool.getCompanyIds()) {
+				upgradePortalPreferences(companyId);
 			}
 		}
 	}
@@ -125,16 +113,13 @@ public class UpgradePortalPreferences extends UpgradeProcess {
 	}
 
 	private static final String[] _OBSOLETE_PORTAL_PREFERENCES = {
-		PropsKeys.AUTO_DEPLOY_CUSTOM_PORTLET_XML,
-		PropsKeys.AUTO_DEPLOY_DEPLOY_DIR, PropsKeys.AUTO_DEPLOY_DEST_DIR,
-		PropsKeys.AUTO_DEPLOY_ENABLED, PropsKeys.AUTO_DEPLOY_INTERVAL,
-		PropsKeys.AUTO_DEPLOY_JBOSS_PREFIX,
-		PropsKeys.AUTO_DEPLOY_TOMCAT_CONF_DIR,
-		PropsKeys.AUTO_DEPLOY_TOMCAT_LIB_DIR, PropsKeys.AUTO_DEPLOY_UNPACK_WAR,
-		PropsKeys.PLUGIN_NOTIFICATIONS_ENABLED,
-		PropsKeys.PLUGIN_NOTIFICATIONS_PACKAGES_IGNORED,
-		PropsKeys.PLUGIN_REPOSITORIES_TRUSTED,
-		PropsKeys.PLUGIN_REPOSITORIES_UNTRUSTED
+		"auto.deploy.custom.portlet.xml", PropsKeys.AUTO_DEPLOY_DEPLOY_DIR,
+		"auto.deploy.dest.dir", PropsKeys.AUTO_DEPLOY_ENABLED,
+		PropsKeys.AUTO_DEPLOY_INTERVAL, "auto.deploy.jboss.prefix",
+		PropsKeys.AUTO_DEPLOY_TOMCAT_CONF_DIR, "auto.deploy.tomcat.lib.dir",
+		"auto.deploy.unpack.war", "plugin.notifications.enabled",
+		"plugin.notifications.packages.ignored", "plugin.repositories.trusted",
+		"plugin.repositories.untrusted"
 	};
 
 	private static final Log _log = LogFactoryUtil.getLog(

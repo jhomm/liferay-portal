@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.util;
@@ -28,18 +19,20 @@ import com.liferay.dynamic.data.mapping.model.DDMFormFieldType;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
 import com.liferay.dynamic.data.mapping.util.DDM;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesToFieldsConverter;
 import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverter;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -48,12 +41,9 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -62,7 +52,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  * @author Eduardo Lundgren
  */
-@Component(immediate = true, service = DDL.class)
+@Component(service = DDL.class)
 public class DDLImpl implements DDL {
 
 	@Override
@@ -70,11 +60,11 @@ public class DDLImpl implements DDL {
 			DDLRecord record, boolean latestRecordVersion, Locale locale)
 		throws Exception {
 
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
+
 		DDLRecordSet recordSet = record.getRecordSet();
 
 		DDMStructure ddmStructure = recordSet.getDDMStructure();
-
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
 
 		for (String fieldName : ddmStructure.getFieldNames()) {
 			jsonObject.put(fieldName, StringPool.BLANK);
@@ -92,14 +82,13 @@ public class DDLImpl implements DDL {
 			recordVersion = record.getLatestRecordVersion();
 		}
 
-		DDMFormValues ddmFormValues = _storageEngine.getDDMFormValues(
-			recordVersion.getDDMStorageId());
+		for (Field field :
+				_ddmFormValuesToFieldsConverter.convert(
+					ddmStructure,
+					_ddmStorageEngineManager.getDDMFormValues(
+						recordVersion.getDDMStorageId()))) {
 
-		Fields fields = _ddmFormValuesToFieldsConverter.convert(
-			ddmStructure, ddmFormValues);
-
-		for (Field field : fields) {
-			Object[] fieldValues = getFieldValues(field, locale);
+			Object[] fieldValues = _getFieldValues(field, locale);
 
 			if (fieldValues.length == 0) {
 				continue;
@@ -108,61 +97,58 @@ public class DDLImpl implements DDL {
 			String fieldName = field.getName();
 			String fieldType = field.getType();
 
-			Stream<Object> fieldValuesStream = Arrays.stream(fieldValues);
-
 			if (fieldType.equals(DDMFormFieldType.DOCUMENT_LIBRARY)) {
-				Stream<String> fieldValuesStringStream = fieldValuesStream.map(
-					fieldValue -> getDocumentLibraryFieldValue(fieldValue));
-
 				JSONObject fieldJSONObject = JSONUtil.put(
 					"title",
-					fieldValuesStringStream.collect(
-						Collectors.joining(StringPool.COMMA_AND_SPACE)));
+					StringUtil.merge(
+						TransformUtil.transformToList(
+							fieldValues, this::_getDocumentLibraryFieldValue),
+						StringPool.COMMA_AND_SPACE));
 
 				jsonObject.put(fieldName, fieldJSONObject.toString());
 			}
 			else if (fieldType.equals(DDMFormFieldType.LINK_TO_PAGE)) {
-				Stream<String> fieldValuesStringStream = fieldValuesStream.map(
-					fieldValue -> getLinkToPageFieldValue(fieldValue, locale));
-
 				JSONObject fieldJSONObject = JSONUtil.put(
 					"name",
-					fieldValuesStringStream.collect(
-						Collectors.joining(StringPool.COMMA_AND_SPACE)));
+					StringUtil.merge(
+						TransformUtil.transformToList(
+							fieldValues,
+							fieldValue -> _getLinkToPageFieldValue(
+								fieldValue, locale)),
+						StringPool.COMMA_AND_SPACE));
 
 				jsonObject.put(fieldName, fieldJSONObject.toString());
 			}
 			else if (fieldType.equals(DDMFormFieldType.SELECT)) {
-				JSONArray fieldJSONArray = JSONFactoryUtil.createJSONArray();
+				JSONArray fieldJSONArray = _jsonFactory.createJSONArray();
 
-				fieldValuesStream.forEach(
-					fieldValue -> {
-						JSONArray valueJSONArray = getJSONArrayValue(
-							fieldValue);
+				for (Object fieldValue : fieldValues) {
+					JSONArray valueJSONArray = _getJSONArrayValue(fieldValue);
 
-						for (Object object : valueJSONArray) {
-							fieldJSONArray.put(object);
-						}
-					});
+					for (Object object : valueJSONArray) {
+						fieldJSONArray.put(object);
+					}
+				}
 
 				jsonObject.put(fieldName, fieldJSONArray);
 			}
 			else {
-				Stream<String> fieldValuesStringStream = fieldValuesStream.map(
-					fieldValue -> {
-						if (fieldValue instanceof Date) {
-							Date fieldValueDate = (Date)fieldValue;
-
-							return String.valueOf(fieldValueDate.getTime());
-						}
-
-						return String.valueOf(fieldValue);
-					});
-
 				jsonObject.put(
 					fieldName,
-					fieldValuesStringStream.collect(
-						Collectors.joining(StringPool.COMMA_AND_SPACE)));
+					StringUtil.merge(
+						TransformUtil.transformToList(
+							fieldValues,
+							fieldValue -> {
+								if (fieldValue instanceof Date) {
+									Date fieldValueDate = (Date)fieldValue;
+
+									return String.valueOf(
+										fieldValueDate.getTime());
+								}
+
+								return String.valueOf(fieldValue);
+							}),
+						StringPool.COMMA_AND_SPACE));
 			}
 		}
 
@@ -174,13 +160,11 @@ public class DDLImpl implements DDL {
 			DDLRecordSet recordSet, Locale locale)
 		throws Exception {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		DDMStructure ddmStructure = recordSet.getDDMStructure();
 
-		List<DDMFormField> ddmFormFields = ddmStructure.getDDMFormFields(false);
-
-		for (DDMFormField ddmFormField : ddmFormFields) {
+		for (DDMFormField ddmFormField : ddmStructure.getDDMFormFields(false)) {
 			jsonArray.put(
 				JSONUtil.put(
 					"dataType", ddmFormField.getDataType()
@@ -209,19 +193,13 @@ public class DDLImpl implements DDL {
 
 	@Override
 	public JSONArray getRecordsJSONArray(
-			List<DDLRecord> records, boolean latestRecordVersion, Locale locale)
+			List<DDLRecord> ddlRecords, boolean latestRecordVersion,
+			Locale locale)
 		throws Exception {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
-
-		for (DDLRecord record : records) {
-			JSONObject jsonObject = getRecordJSONObject(
-				record, latestRecordVersion, locale);
-
-			jsonArray.put(jsonObject);
-		}
-
-		return jsonArray;
+		return JSONUtil.toJSONArray(
+			ddlRecords,
+			record -> getRecordJSONObject(record, latestRecordVersion, locale));
 	}
 
 	@Override
@@ -249,7 +227,7 @@ public class DDLImpl implements DDL {
 					record.getLatestRecordVersion();
 
 				DDMFormValues existingDDMFormValues =
-					_storageEngine.getDDMFormValues(
+					_ddmStorageEngineManager.getDDMFormValues(
 						recordVersion.getDDMStorageId());
 
 				Fields existingFields = _ddmFormValuesToFieldsConverter.convert(
@@ -298,40 +276,40 @@ public class DDLImpl implements DDL {
 		return record;
 	}
 
-	protected String getDocumentLibraryFieldValue(Object fieldValue) {
+	private String _getDocumentLibraryFieldValue(Object fieldValue) {
 		try {
-			JSONObject fieldValueJSONObject = JSONFactoryUtil.createJSONObject(
+			JSONObject fieldValueJSONObject = _jsonFactory.createJSONObject(
 				String.valueOf(fieldValue));
 
 			String uuid = fieldValueJSONObject.getString("uuid");
 			long groupId = fieldValueJSONObject.getLong("groupId");
 
-			return getFileEntryTitle(uuid, groupId);
+			return _getFileEntryTitle(uuid, groupId);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
 		}
 	}
 
-	protected Object[] getFieldValues(Field field, Locale locale) {
+	private Object[] _getFieldValues(Field field, Locale locale) {
 		Object fieldValue = field.getValue(locale);
 
 		if (fieldValue == null) {
 			return new Object[0];
 		}
 
-		if (isArray(fieldValue)) {
+		if (_isArray(fieldValue)) {
 			return (Object[])fieldValue;
 		}
 
 		return new Object[] {fieldValue};
 	}
 
-	protected String getFileEntryTitle(String uuid, long groupId) {
+	private String _getFileEntryTitle(String uuid, long groupId) {
 		try {
 			FileEntry fileEntry =
 				_dlAppLocalService.getFileEntryByUuidAndGroupId(uuid, groupId);
@@ -340,29 +318,29 @@ public class DDLImpl implements DDL {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
-			return LanguageUtil.format(
+			return _language.format(
 				LocaleUtil.getSiteDefault(), "is-temporarily-unavailable",
 				"content");
 		}
 	}
 
-	protected JSONArray getJSONArrayValue(Object fieldValue) {
+	private JSONArray _getJSONArrayValue(Object fieldValue) {
 		try {
-			return JSONFactoryUtil.createJSONArray(String.valueOf(fieldValue));
+			return _jsonFactory.createJSONArray(String.valueOf(fieldValue));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
-			return JSONFactoryUtil.createJSONArray();
+			return _jsonFactory.createJSONArray();
 		}
 	}
 
-	protected String getLayoutName(
+	private String _getLayoutName(
 		long groupId, boolean privateLayout, long layoutId, String languageId) {
 
 		try {
@@ -371,18 +349,18 @@ public class DDLImpl implements DDL {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
-			return LanguageUtil.format(
+			return _language.format(
 				LocaleUtil.getSiteDefault(), "is-temporarily-unavailable",
 				"content");
 		}
 	}
 
-	protected String getLinkToPageFieldValue(Object fieldValue, Locale locale) {
+	private String _getLinkToPageFieldValue(Object fieldValue, Locale locale) {
 		try {
-			JSONObject fieldValueJSONObject = JSONFactoryUtil.createJSONObject(
+			JSONObject fieldValueJSONObject = _jsonFactory.createJSONObject(
 				String.valueOf(fieldValue));
 
 			long groupId = fieldValueJSONObject.getLong("groupId");
@@ -390,88 +368,58 @@ public class DDLImpl implements DDL {
 				"privateLayout");
 			long layoutId = fieldValueJSONObject.getLong("layoutId");
 
-			return getLayoutName(
+			return _getLayoutName(
 				groupId, privateLayout, layoutId,
-				LanguageUtil.getLanguageId(locale));
+				_language.getLanguageId(locale));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
 		}
 	}
 
-	protected boolean isArray(Object parameter) {
+	private boolean _isArray(Object parameter) {
 		Class<?> clazz = parameter.getClass();
 
 		return clazz.isArray();
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDLRecordLocalService(
-		DDLRecordLocalService ddlRecordLocalService) {
-
-		_ddlRecordLocalService = ddlRecordLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordService(DDLRecordService ddlRecordService) {
-		_ddlRecordService = ddlRecordService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordSetLocalService(
-		DDLRecordSetLocalService ddlRecordSetLocalService) {
-
-		_ddlRecordSetLocalService = ddlRecordSetLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDM(DDM ddm) {
-		_ddm = ddm;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMFormValuesToFieldsConverter(
-		DDMFormValuesToFieldsConverter ddmFormValuesToFieldsConverter) {
-
-		_ddmFormValuesToFieldsConverter = ddmFormValuesToFieldsConverter;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLAppLocalService(DLAppLocalService dlAppLocalService) {
-		_dlAppLocalService = dlAppLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setFieldsToDDMFormValuesConverter(
-		FieldsToDDMFormValuesConverter fieldsToDDMFormValuesConverter) {
-
-		_fieldsToDDMFormValuesConverter = fieldsToDDMFormValuesConverter;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutService(LayoutService layoutService) {
-		_layoutService = layoutService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setStorageEngine(StorageEngine storageEngine) {
-		_storageEngine = storageEngine;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(DDLImpl.class);
 
+	@Reference
 	private DDLRecordLocalService _ddlRecordLocalService;
+
+	@Reference
 	private DDLRecordService _ddlRecordService;
+
+	@Reference
 	private DDLRecordSetLocalService _ddlRecordSetLocalService;
+
+	@Reference
 	private DDM _ddm;
+
+	@Reference
 	private DDMFormValuesToFieldsConverter _ddmFormValuesToFieldsConverter;
+
+	@Reference
+	private DDMStorageEngineManager _ddmStorageEngineManager;
+
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
 	private FieldsToDDMFormValuesConverter _fieldsToDDMFormValuesConverter;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
+
+	@Reference
 	private LayoutService _layoutService;
-	private StorageEngine _storageEngine;
 
 }

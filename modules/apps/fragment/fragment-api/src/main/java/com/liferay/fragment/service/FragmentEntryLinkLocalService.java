@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
@@ -44,7 +36,6 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
-import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -88,27 +79,13 @@ public interface FragmentEntryLinkLocalService
 	public FragmentEntryLink addFragmentEntryLink(
 		FragmentEntryLink fragmentEntryLink);
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addFragmentEntryLink(long, long, long, long, long, long,
-	 String, String, String, String, String, String, int, String,
-	 ServiceContext)}
-	 */
-	@Deprecated
 	public FragmentEntryLink addFragmentEntryLink(
-			long userId, long groupId, long originalFragmentEntryLinkId,
-			long fragmentEntryId, long segmentsExperienceId, long classNameId,
-			long classPK, String css, String html, String js,
-			String configuration, String editableValues, String namespace,
-			int position, String rendererKey, ServiceContext serviceContext)
-		throws PortalException;
-
-	public FragmentEntryLink addFragmentEntryLink(
-			long userId, long groupId, long originalFragmentEntryLinkId,
-			long fragmentEntryId, long segmentsExperienceId, long plid,
-			String css, String html, String js, String configuration,
-			String editableValues, String namespace, int position,
-			String rendererKey, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long originalFragmentEntryLinkId, long fragmentEntryId,
+			long segmentsExperienceId, long plid, String css, String html,
+			String js, String configuration, String editableValues,
+			String namespace, int position, String rendererKey, int type,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -156,10 +133,22 @@ public interface FragmentEntryLinkLocalService
 	public FragmentEntryLink deleteFragmentEntryLink(long fragmentEntryLinkId)
 		throws PortalException;
 
+	public FragmentEntryLink deleteFragmentEntryLink(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	public void deleteFragmentEntryLinks(long groupId);
+
+	public void deleteFragmentEntryLinks(
+		long groupId, long plid, boolean deleted);
 
 	public void deleteFragmentEntryLinks(long[] fragmentEntryLinkIds)
 		throws PortalException;
+
+	public void deleteFragmentEntryLinksByFragmentEntryId(long fragmentEntryId);
+
+	public void deleteFragmentEntryLinksByFragmentEntryId(
+		long fragmentEntryId, boolean deleted);
 
 	public List<FragmentEntryLink>
 		deleteLayoutPageTemplateEntryFragmentEntryLinks(
@@ -173,6 +162,10 @@ public interface FragmentEntryLinkLocalService
 	public List<FragmentEntryLink>
 		deleteLayoutPageTemplateEntryFragmentEntryLinks(
 			long groupId, long classNameId, long classPK);
+
+	public List<FragmentEntryLink>
+		deleteLayoutPageTemplateEntryFragmentEntryLinks(
+			long groupId, long[] segmentsExperienceIds, long plid);
 
 	/**
 	 * @throws PortalException
@@ -256,6 +249,10 @@ public interface FragmentEntryLinkLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentEntryLink fetchFragmentEntryLink(long fragmentEntryLinkId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntryLink fetchFragmentEntryLinkByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
 	/**
 	 * Returns the fragment entry link matching the UUID and group.
 	 *
@@ -303,6 +300,15 @@ public interface FragmentEntryLinkLocalService
 	public FragmentEntryLink getFragmentEntryLink(long fragmentEntryLinkId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntryLink getFragmentEntryLink(
+		long groupId, long originalFragmentEntryLinkId, long plid);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntryLink getFragmentEntryLinkByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Returns the fragment entry link matching the UUID and group.
 	 *
@@ -337,17 +343,6 @@ public interface FragmentEntryLinkLocalService
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getAllFragmentEntryLinksByFragmentEntryId(long, long, int,
-	 int, OrderByComparator)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<FragmentEntryLink> getFragmentEntryLinks(
-		long groupId, long fragmentEntryId, int start, int end,
-		OrderByComparator<FragmentEntryLink> orderByComparator);
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 #getFragmentEntryLinksByPlid(long, long)}
 	 */
 	@Deprecated
@@ -355,28 +350,13 @@ public interface FragmentEntryLinkLocalService
 	public List<FragmentEntryLink> getFragmentEntryLinks(
 		long groupId, long classNameId, long classPK);
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getLayoutPageTemplateFragmentEntryLinksByFragmentEntryId(
-	 long, long, int, int, int, OrderByComparator)}
-	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinks(
-		long groupId, long fragmentEntryId, long classNameId,
-		int layoutPageTemplateType, int start, int end,
-		OrderByComparator<FragmentEntryLink> orderByComparator);
+		long companyId, String rendererKey);
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFragmentEntryLinks(long, long, int, int,
-	 OrderByComparator)}
-	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinks(
-		long groupId, long fragmentEntryId, long classNameId, int start,
-		int end, OrderByComparator<FragmentEntryLink> orderByComparator);
+		long companyId, String[] rendererKeys);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinks(String rendererKey);
@@ -386,6 +366,10 @@ public interface FragmentEntryLinkLocalService
 		long fragmentEntryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinksByFragmentEntryId(
+		long fragmentEntryId, boolean deleted);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksByPlid(
 		long groupId, long plid);
 
@@ -393,20 +377,21 @@ public interface FragmentEntryLinkLocalService
 	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
 		long groupId, long segmentsExperienceId, long plid);
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFragmentEntryLinksBySegmentsExperienceId(long, long,
-	 long)}
-	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
-		long groupId, long segmentsExperienceId, long classNameId,
-		long classPK);
+		long groupId, long segmentsExperienceId, long plid, boolean deleted);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
 		long groupId, long segmentsExperienceId, long plid, String rendererKey);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
+		long groupId, long[] segmentsExperienceIds, long plid);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntryLink> getFragmentEntryLinksBySegmentsExperienceId(
+		long groupId, long[] segmentsExperienceIds, long plid, boolean deleted);
 
 	/**
 	 * Returns all the fragment entry links matching the UUID and company.
@@ -442,37 +427,17 @@ public interface FragmentEntryLinkLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFragmentEntryLinksCount();
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getAllFragmentEntryLinksCountByFragmentEntryId(long, long)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getFragmentEntryLinksCount(long groupId, long fragmentEntryId);
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFragmentEntryLinksCount(long, long)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getFragmentEntryLinksCount(
-		long groupId, long fragmentEntryId, long classNameId);
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getLayoutPageTemplateFragmentEntryLinksCountByFragmentEntryId(
-	 long, long, int)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getFragmentEntryLinksCount(
-		long groupId, long fragmentEntryId, long classNameId,
-		int layoutPageTemplateType);
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFragmentEntryLinksCountByFragmentEntryId(
 		long fragmentEntryId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentEntryLinksCountByFragmentEntryId(
+		long fragmentEntryId, boolean deleted);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getFragmentEntryLinksCountByFragmentEntryId(
+		long groupId, long fragmentEntryId, boolean deleted);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFragmentEntryLinksCountByPlid(long groupId, long plid);
@@ -517,12 +482,8 @@ public interface FragmentEntryLinkLocalService
 
 	public void updateClassedModel(long plid);
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateClassedModel(long)}
-	 */
-	@Deprecated
-	public void updateClassedModel(long classNameId, long classPK)
+	public FragmentEntryLink updateDeleted(
+			long userId, long fragmentEntryLinkId, boolean deleted)
 		throws PortalException;
 
 	/**
@@ -540,60 +501,28 @@ public interface FragmentEntryLinkLocalService
 		FragmentEntryLink fragmentEntryLink);
 
 	public FragmentEntryLink updateFragmentEntryLink(
-			long fragmentEntryLinkId, int position)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateFragmentEntryLink(long, long, long, long, long,
-	 String, String, String, String, String, String, int,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public FragmentEntryLink updateFragmentEntryLink(
-			long userId, long fragmentEntryLinkId,
-			long originalFragmentEntryLinkId, long fragmentEntryId,
-			long classNameId, long classPK, String css, String html, String js,
-			String configuration, String editableValues, String namespace,
-			int position, ServiceContext serviceContext)
+			long userId, long fragmentEntryLinkId, int position)
 		throws PortalException;
 
 	public FragmentEntryLink updateFragmentEntryLink(
 			long userId, long fragmentEntryLinkId,
 			long originalFragmentEntryLinkId, long fragmentEntryId, long plid,
 			String css, String html, String js, String configuration,
-			String editableValues, String namespace, int position,
+			String editableValues, String namespace, int position, int type,
 			ServiceContext serviceContext)
 		throws PortalException;
 
 	public FragmentEntryLink updateFragmentEntryLink(
-			long fragmentEntryLinkId, String editableValues)
+			long userId, long fragmentEntryLinkId, String editableValues)
 		throws PortalException;
 
 	public FragmentEntryLink updateFragmentEntryLink(
-			long fragmentEntryLinkId, String editableValues,
+			long userId, long fragmentEntryLinkId, String editableValues,
 			boolean updateClassedModel)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateFragmentEntryLinks(long, long, long, long[], String,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public void updateFragmentEntryLinks(
-			long userId, long groupId, long classNameId, long classPK,
-			long[] fragmentEntryIds, String editableValues,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public void updateFragmentEntryLinks(
-			long userId, long groupId, long plid, long[] fragmentEntryIds,
-			String editableValues, ServiceContext serviceContext)
-		throws PortalException;
-
-	public void updateFragmentEntryLinks(
-			Map<Long, String> fragmentEntryLinksEditableValuesMap)
+	public void updateLatestChanges(
+			FragmentEntry fragmentEntry, FragmentEntryLink fragmentEntryLink)
 		throws PortalException;
 
 	public void updateLatestChanges(long fragmentEntryLinkId)

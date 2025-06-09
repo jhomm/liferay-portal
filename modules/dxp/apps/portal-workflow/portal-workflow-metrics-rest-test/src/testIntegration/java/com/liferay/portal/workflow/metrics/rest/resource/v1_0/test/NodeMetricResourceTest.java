@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.resource.v1_0.test;
@@ -20,8 +11,10 @@ import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Assignee;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Node;
@@ -32,10 +25,9 @@ import com.liferay.portal.workflow.metrics.rest.client.pagination.Pagination;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.test.helper.WorkflowMetricsRESTTestHelper;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -188,8 +180,8 @@ public class NodeMetricResourceTest extends BaseNodeMetricResourceTestCase {
 
 		page = nodeMetricResource.getProcessNodeMetricsPage(
 			_process.getId(), true, RandomTestUtil.nextDate(),
-			DateUtils.addMinutes(RandomTestUtil.nextDate(), -2), null, null,
-			Pagination.of(1, 2), "durationAvg:desc");
+			new Date(System.currentTimeMillis() - (2 * Time.MINUTE)), null,
+			null, Pagination.of(1, 2), "durationAvg:desc");
 
 		assertEquals(
 			Arrays.asList(
@@ -219,8 +211,8 @@ public class NodeMetricResourceTest extends BaseNodeMetricResourceTestCase {
 
 		page = nodeMetricResource.getProcessNodeMetricsPage(
 			_process.getId(), true,
-			DateUtils.addHours(RandomTestUtil.nextDate(), -1),
-			DateUtils.addHours(RandomTestUtil.nextDate(), -2), null, null,
+			new Date(System.currentTimeMillis() - (1 * Time.HOUR)),
+			new Date(System.currentTimeMillis() - (2 * Time.HOUR)), null, null,
 			Pagination.of(1, 2), "durationAvg:desc");
 
 		Assert.assertEquals(2, page.getTotalCount());
@@ -384,6 +376,56 @@ public class NodeMetricResourceTest extends BaseNodeMetricResourceTestCase {
 		page = nodeMetricResource.getProcessNodeMetricsPage(
 			_process.getId(), true, null, null, node5.getName(), "3.0",
 			Pagination.of(1, 2), null);
+
+		assertEquals(
+			Arrays.asList(
+				new NodeMetric() {
+					{
+						breachedInstanceCount =
+							nodeMetric5.getBreachedInstanceCount();
+						breachedInstancePercentage =
+							nodeMetric5.getBreachedInstancePercentage();
+						durationAvg = nodeMetric5.getDurationAvg();
+						instanceCount = nodeMetric5.getInstanceCount();
+						node = new Node() {
+							{
+								label = node5.getLabel();
+								name = node5.getName();
+							}
+						};
+					}
+				}),
+			(List<NodeMetric>)page.getItems());
+
+		page = nodeMetricResource.getProcessNodeMetricsPage(
+			_process.getId(), true, null, null,
+			StringUtil.toLowerCase(node5.getName()), "3.0", Pagination.of(1, 2),
+			null);
+
+		assertEquals(
+			Arrays.asList(
+				new NodeMetric() {
+					{
+						breachedInstanceCount =
+							nodeMetric5.getBreachedInstanceCount();
+						breachedInstancePercentage =
+							nodeMetric5.getBreachedInstancePercentage();
+						durationAvg = nodeMetric5.getDurationAvg();
+						instanceCount = nodeMetric5.getInstanceCount();
+						node = new Node() {
+							{
+								label = node5.getLabel();
+								name = node5.getName();
+							}
+						};
+					}
+				}),
+			(List<NodeMetric>)page.getItems());
+
+		page = nodeMetricResource.getProcessNodeMetricsPage(
+			_process.getId(), true, null, null,
+			StringUtil.toUpperCase(node5.getName()), "3.0", Pagination.of(1, 2),
+			null);
 
 		assertEquals(
 			Arrays.asList(

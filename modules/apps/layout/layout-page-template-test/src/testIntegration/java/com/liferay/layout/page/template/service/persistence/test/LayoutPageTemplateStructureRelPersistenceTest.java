@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service.persistence.test;
@@ -164,6 +155,20 @@ public class LayoutPageTemplateStructureRelPersistenceTest {
 		newLayoutPageTemplateStructureRel.setData(
 			RandomTestUtil.randomString());
 
+		newLayoutPageTemplateStructureRel.setLastPublishDate(
+			RandomTestUtil.nextDate());
+
+		newLayoutPageTemplateStructureRel.setStatus(RandomTestUtil.nextInt());
+
+		newLayoutPageTemplateStructureRel.setStatusByUserId(
+			RandomTestUtil.nextLong());
+
+		newLayoutPageTemplateStructureRel.setStatusByUserName(
+			RandomTestUtil.randomString());
+
+		newLayoutPageTemplateStructureRel.setStatusDate(
+			RandomTestUtil.nextDate());
+
 		_layoutPageTemplateStructureRels.add(
 			_persistence.update(newLayoutPageTemplateStructureRel));
 
@@ -218,6 +223,25 @@ public class LayoutPageTemplateStructureRelPersistenceTest {
 		Assert.assertEquals(
 			existingLayoutPageTemplateStructureRel.getData(),
 			newLayoutPageTemplateStructureRel.getData());
+		Assert.assertEquals(
+			Time.getShortTimestamp(
+				existingLayoutPageTemplateStructureRel.getLastPublishDate()),
+			Time.getShortTimestamp(
+				newLayoutPageTemplateStructureRel.getLastPublishDate()));
+		Assert.assertEquals(
+			existingLayoutPageTemplateStructureRel.getStatus(),
+			newLayoutPageTemplateStructureRel.getStatus());
+		Assert.assertEquals(
+			existingLayoutPageTemplateStructureRel.getStatusByUserId(),
+			newLayoutPageTemplateStructureRel.getStatusByUserId());
+		Assert.assertEquals(
+			existingLayoutPageTemplateStructureRel.getStatusByUserName(),
+			newLayoutPageTemplateStructureRel.getStatusByUserName());
+		Assert.assertEquals(
+			Time.getShortTimestamp(
+				existingLayoutPageTemplateStructureRel.getStatusDate()),
+			Time.getShortTimestamp(
+				newLayoutPageTemplateStructureRel.getStatusDate()));
 	}
 
 	@Test
@@ -306,7 +330,9 @@ public class LayoutPageTemplateStructureRelPersistenceTest {
 			"layoutPageTemplateStructureRelId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "layoutPageTemplateStructureId", true,
-			"segmentsExperienceId", true);
+			"segmentsExperienceId", true, "lastPublishDate", true, "status",
+			true, "statusByUserId", true, "statusByUserName", true,
+			"statusDate", true);
 	}
 
 	@Test
@@ -680,6 +706,19 @@ public class LayoutPageTemplateStructureRelPersistenceTest {
 			RandomTestUtil.nextLong());
 
 		layoutPageTemplateStructureRel.setData(RandomTestUtil.randomString());
+
+		layoutPageTemplateStructureRel.setLastPublishDate(
+			RandomTestUtil.nextDate());
+
+		layoutPageTemplateStructureRel.setStatus(RandomTestUtil.nextInt());
+
+		layoutPageTemplateStructureRel.setStatusByUserId(
+			RandomTestUtil.nextLong());
+
+		layoutPageTemplateStructureRel.setStatusByUserName(
+			RandomTestUtil.randomString());
+
+		layoutPageTemplateStructureRel.setStatusDate(RandomTestUtil.nextDate());
 
 		_layoutPageTemplateStructureRels.add(
 			_persistence.update(layoutPageTemplateStructureRel));

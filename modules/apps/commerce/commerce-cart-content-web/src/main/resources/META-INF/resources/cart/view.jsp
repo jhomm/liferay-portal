@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -35,7 +26,7 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 
 List<CommerceOrderValidatorResult> commerceOrderValidatorResults = new ArrayList<>();
 
-Map<Long, List<CommerceOrderValidatorResult>> commerceOrderValidatorResultMap = commerceCartContentDisplayContext.getCommerceOrderValidatorResults();
+Map<Long, List<CommerceOrderValidatorResult>> commerceOrderValidatorResultsMap = commerceCartContentDisplayContext.getCommerceOrderValidatorResults();
 %>
 
 <liferay-ui:error exception="<%= CommerceOrderValidatorException.class %>">
@@ -85,6 +76,8 @@ Map<Long, List<CommerceOrderValidatorResult>> commerceOrderValidatorResultMap = 
 
 					StringJoiner stringJoiner = new StringJoiner(StringPool.COMMA);
 
+					String cpInstanceCDNURL = commerceCartContentDisplayContext.getCPInstanceCDNURL(commerceOrderItem);
+
 					if (cpInstance != null) {
 						CPDefinition cpDefinition = commerceOrderItem.getCPDefinition();
 
@@ -101,10 +94,18 @@ Map<Long, List<CommerceOrderValidatorResult>> commerceOrderValidatorResultMap = 
 					>
 						<span class="sticker sticker-xl">
 							<span class="sticker-overlay">
-								<liferay-adaptive-media:img
-									class="sticker-img"
-									fileVersion="<%= commerceCartContentDisplayContext.getCPInstanceImageFileVersion(commerceOrderItem) %>"
-								/>
+								<c:choose>
+									<c:when test="<%= Validator.isNotNull(cpInstanceCDNURL) %>">
+										<img alt="thumbnail" class="sticker-img" src="<%= cpInstanceCDNURL %>" />
+									</c:when>
+									<c:otherwise>
+										<liferay-adaptive-media:img
+											alt="thumbnail"
+											class="sticker-img"
+											fileVersion="<%= commerceCartContentDisplayContext.getCPInstanceImageFileVersion(commerceOrderItem) %>"
+										/>
+									</c:otherwise>
+								</c:choose>
 							</span>
 						</span>
 					</liferay-ui:search-container-column-text>
@@ -116,14 +117,14 @@ Map<Long, List<CommerceOrderValidatorResult>> commerceOrderValidatorResultMap = 
 							<%= HtmlUtil.escape(commerceOrderItem.getName(languageId)) %>
 						</a>
 
-						<h6 class="text-default">
+						<div class="h6 text-default">
 							<%= HtmlUtil.escape(stringJoiner.toString()) %>
-						</h6>
+						</div>
 
-						<c:if test="<%= !commerceOrderValidatorResultMap.isEmpty() %>">
+						<c:if test="<%= !commerceOrderValidatorResultsMap.isEmpty() %>">
 
 							<%
-							commerceOrderValidatorResults = commerceOrderValidatorResultMap.get(commerceOrderItem.getCommerceOrderItemId());
+							commerceOrderValidatorResults = commerceOrderValidatorResultsMap.get(commerceOrderItem.getCommerceOrderItemId());
 
 							for (CommerceOrderValidatorResult commerceOrderValidatorResult : commerceOrderValidatorResults) {
 							%>
@@ -220,9 +221,7 @@ Map<Long, List<CommerceOrderValidatorResult>> commerceOrderValidatorResultMap = 
 		</div>
 	</div>
 
-	<aui:script>
-		Liferay.after('current-order-updated', (event) => {
-			Liferay.Portlet.refresh('#p_p_id<portlet:namespace />');
-		});
-	</aui:script>
+	<liferay-frontend:component
+		module="{cartView} from commerce-cart-content-web"
+	/>
 </liferay-ddm:template-renderer>

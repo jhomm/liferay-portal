@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.json;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -37,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collector;
 
 /**
  * @author Brian Wing Shun Chan
@@ -87,11 +79,6 @@ public class JSONUtil {
 		}
 
 		return newJSONArray;
-	}
-
-	public static Collector<Object, JSONArray, JSONArray> createCollector() {
-		return Collector.of(
-			JSONUtil::_createJSONArray, JSONArray::put, JSONUtil::concat);
 	}
 
 	public static boolean equals(JSONArray jsonArray1, JSONArray jsonArray2) {
@@ -198,15 +185,72 @@ public class JSONUtil {
 		return false;
 	}
 
-	public static boolean isValid(String json) {
+	public static boolean isEmpty(JSONArray jsonArray) {
+		if ((jsonArray == null) || (jsonArray.length() == 0)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public static boolean isEmpty(JSONObject jsonObject) {
+		if ((jsonObject == null) || (jsonObject.length() == 0)) {
+			return true;
+		}
+
+		return false;
+	}
+
+	public static boolean isJSONArray(String json) {
+		try {
+			_createJSONArray(json);
+
+			return true;
+		}
+		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
+			return false;
+		}
+	}
+
+	public static boolean isJSONObject(String json) {
+		if (json == null) {
+			return false;
+		}
+
+		json = json.trim();
+
+		if ((json.length() < 2) ||
+			(json.charAt(0) != CharPool.OPEN_CURLY_BRACE) ||
+			(json.charAt(json.length() - 1) != CharPool.CLOSE_CURLY_BRACE)) {
+
+			return false;
+		}
+
 		try {
 			_createJSONObject(json);
 
 			return true;
 		}
 		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
 			return false;
 		}
+	}
+
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 *             #isJSONObject(String)}
+	 */
+	@Deprecated
+	public static boolean isValid(String json) {
+		return isJSONObject(json);
 	}
 
 	public static JSONObject merge(
@@ -240,14 +284,6 @@ public class JSONUtil {
 		jsonArray.put(value);
 
 		return jsonArray;
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link #putAll(Object...)}
-	 */
-	@Deprecated
-	public static JSONArray put(Object... values) {
-		return putAll(values);
 	}
 
 	public static JSONObject put(String key, Object value) {
@@ -656,17 +692,20 @@ public class JSONUtil {
 	}
 
 	public static <T> JSONArray toJSONArray(
-			List<T> list, UnsafeFunction<T, Object, Exception> unsafeFunction)
+			Collection<T> collection,
+			UnsafeFunction<T, Object, Exception> unsafeFunction)
 		throws Exception {
 
 		JSONArray jsonArray = _createJSONArray();
 
-		if (list == null) {
+		if (collection == null) {
 			return jsonArray;
 		}
 
-		for (T t : list) {
-			Object item = unsafeFunction.apply(t);
+		Iterator<T> iterator = collection.iterator();
+
+		while (iterator.hasNext()) {
+			Object item = unsafeFunction.apply(iterator.next());
 
 			if (item != null) {
 				jsonArray.put(item);
@@ -677,18 +716,21 @@ public class JSONUtil {
 	}
 
 	public static <T> JSONArray toJSONArray(
-		List<T> list, UnsafeFunction<T, Object, Exception> unsafeFunction,
+		Collection<T> collection,
+		UnsafeFunction<T, Object, Exception> unsafeFunction,
 		Consumer<Exception> exceptionConsumer) {
 
 		JSONArray jsonArray = _createJSONArray();
 
-		if (list == null) {
+		if (collection == null) {
 			return jsonArray;
 		}
 
-		for (T t : list) {
+		Iterator<T> iterator = collection.iterator();
+
+		while (iterator.hasNext()) {
 			try {
-				Object item = unsafeFunction.apply(t);
+				Object item = unsafeFunction.apply(iterator.next());
 
 				if (item != null) {
 					jsonArray.put(item);
@@ -703,71 +745,11 @@ public class JSONUtil {
 	}
 
 	public static <T> JSONArray toJSONArray(
-		List<T> list, UnsafeFunction<T, Object, Exception> unsafeFunction,
-		Log log) {
+		Collection<T> collection,
+		UnsafeFunction<T, Object, Exception> unsafeFunction, Log log) {
 
 		return toJSONArray(
-			list, unsafeFunction,
-			exception -> {
-				if (log.isWarnEnabled()) {
-					log.warn(exception, exception);
-				}
-			});
-	}
-
-	public static <T> JSONArray toJSONArray(
-			Set<T> set, UnsafeFunction<T, Object, Exception> unsafeFunction)
-		throws Exception {
-
-		JSONArray jsonArray = _createJSONArray();
-
-		if (set == null) {
-			return jsonArray;
-		}
-
-		for (T t : set) {
-			Object item = unsafeFunction.apply(t);
-
-			if (item != null) {
-				jsonArray.put(item);
-			}
-		}
-
-		return jsonArray;
-	}
-
-	public static <T> JSONArray toJSONArray(
-		Set<T> set, UnsafeFunction<T, Object, Exception> unsafeFunction,
-		Consumer<Exception> exceptionConsumer) {
-
-		JSONArray jsonArray = _createJSONArray();
-
-		if (set == null) {
-			return jsonArray;
-		}
-
-		for (T t : set) {
-			try {
-				Object item = unsafeFunction.apply(t);
-
-				if (item != null) {
-					jsonArray.put(item);
-				}
-			}
-			catch (Exception exception) {
-				exceptionConsumer.accept(exception);
-			}
-		}
-
-		return jsonArray;
-	}
-
-	public static <T> JSONArray toJSONArray(
-		Set<T> set, UnsafeFunction<T, Object, Exception> unsafeFunction,
-		Log log) {
-
-		return toJSONArray(
-			set, unsafeFunction,
+			collection, unsafeFunction,
 			exception -> {
 				if (log.isWarnEnabled()) {
 					log.warn(exception, exception);
@@ -1177,6 +1159,16 @@ public class JSONUtil {
 		return values;
 	}
 
+	public static Map<String, String> toStringMap(JSONObject jsonObject) {
+		Map<String, String> values = new HashMap<>();
+
+		for (String key : jsonObject.keySet()) {
+			values.put(key, jsonObject.getString(key));
+		}
+
+		return values;
+	}
+
 	public static Set<String> toStringSet(JSONArray jsonArray) {
 		if (jsonArray == null) {
 			return new HashSet<>();
@@ -1215,6 +1207,12 @@ public class JSONUtil {
 
 	private static JSONArray _createJSONArray() {
 		return JSONFactoryUtil.createJSONArray();
+	}
+
+	private static JSONArray _createJSONArray(String json)
+		throws JSONException {
+
+		return JSONFactoryUtil.createJSONArray(json);
 	}
 
 	private static JSONObject _createJSONObject() {
@@ -1325,5 +1323,7 @@ public class JSONUtil {
 
 		return sb.toString();
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(JSONUtil.class);
 
 }

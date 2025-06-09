@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.document;
@@ -38,7 +29,7 @@ public class DocumentBuilderTest {
 
 	@Test
 	public void testDefaults() {
-		assertDocument(
+		_assertDocument(
 			"{double=3.1415, doubles=[3.1415, 142857.0], string=a, " +
 				"strings=[a, b], value=x, values=[2147483647, " +
 					"9223372036854775807, {foo=bar}]}",
@@ -62,7 +53,7 @@ public class DocumentBuilderTest {
 
 	@Test
 	public void testEmpty() {
-		assertDocument(
+		_assertDocument(
 			"{}",
 			documentBuilder.setStrings(
 				"strings1"
@@ -77,7 +68,7 @@ public class DocumentBuilderTest {
 
 	@Test
 	public void testFieldOrderIsStable() {
-		assertDocument(
+		_assertDocument(
 			"{z=26, y=25, x=24, b=2, a=1}",
 			documentBuilder.setInteger(
 				"z", 26
@@ -94,7 +85,7 @@ public class DocumentBuilderTest {
 
 	@Test
 	public void testFieldValueOrderIsStable() {
-		assertDocument(
+		_assertDocument(
 			"{longs=[1, 10, 2, 20, 3, 30]}",
 			documentBuilder.setLongs("longs", 1L, 10L, 2L, 20L, 3L, 30L));
 	}
@@ -103,7 +94,7 @@ public class DocumentBuilderTest {
 	public void testNull() {
 		List<String> nulls = Arrays.asList(null, null);
 
-		assertDocument(
+		_assertDocument(
 			"{}",
 			documentBuilder.setString(
 				"string", null
@@ -120,7 +111,7 @@ public class DocumentBuilderTest {
 
 	@Test
 	public void testNullValues() {
-		assertDocument(
+		_assertDocument(
 			"{strings1=[null, null], strings2=[null, null], values1=null, " +
 				"values2=[null, null]}",
 			documentBuilder.setStrings(
@@ -134,12 +125,12 @@ public class DocumentBuilderTest {
 			));
 	}
 
-	protected static void assertDocument(
+	protected DocumentBuilder documentBuilder = new DocumentBuilderImpl();
+
+	private void _assertDocument(
 		String expected, DocumentBuilder documentBuilder) {
 
 		Assert.assertEquals(expected, String.valueOf(documentBuilder.build()));
 	}
-
-	protected DocumentBuilder documentBuilder = new DocumentBuilderImpl();
 
 }

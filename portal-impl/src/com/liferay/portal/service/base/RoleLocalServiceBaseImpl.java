@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.base;
@@ -24,8 +15,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -37,13 +27,14 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
@@ -58,7 +49,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -263,6 +254,21 @@ public abstract class RoleLocalServiceBaseImpl
 		return rolePersistence.fetchByUuid_C_First(uuid, companyId, null);
 	}
 
+	@Override
+	public Role fetchRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return rolePersistence.fetchByERC_C(externalReferenceCode, companyId);
+	}
+
+	@Override
+	public Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return rolePersistence.findByERC_C(externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the role with the primary key.
 	 *
@@ -421,6 +427,11 @@ public abstract class RoleLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement RoleLocalServiceImpl#deleteRole(Role) to avoid orphaned data");
+		}
+
 		return roleLocalService.deleteRole((Role)persistedModel);
 	}
 
@@ -499,29 +510,29 @@ public abstract class RoleLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addGroupRole(long groupId, long roleId) {
-		groupPersistence.addRole(groupId, roleId);
+	public boolean addGroupRole(long groupId, long roleId) {
+		return groupPersistence.addRole(groupId, roleId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupRole(long groupId, Role role) {
-		groupPersistence.addRole(groupId, role);
+	public boolean addGroupRole(long groupId, Role role) {
+		return groupPersistence.addRole(groupId, role);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupRoles(long groupId, long[] roleIds) {
-		groupPersistence.addRoles(groupId, roleIds);
+	public boolean addGroupRoles(long groupId, long[] roleIds) {
+		return groupPersistence.addRoles(groupId, roleIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupRoles(long groupId, List<Role> roles) {
-		groupPersistence.addRoles(groupId, roles);
+	public boolean addGroupRoles(long groupId, List<Role> roles) {
+		return groupPersistence.addRoles(groupId, roles);
 	}
 
 	/**
@@ -627,36 +638,38 @@ public abstract class RoleLocalServiceBaseImpl
 	 * @throws PortalException
 	 */
 	@Override
-	public void addUserRole(long userId, long roleId) throws PortalException {
-		userPersistence.addRole(userId, roleId);
-	}
-
-	/**
-	 * @throws PortalException
-	 */
-	@Override
-	public void addUserRole(long userId, Role role) throws PortalException {
-		userPersistence.addRole(userId, role);
-	}
-
-	/**
-	 * @throws PortalException
-	 */
-	@Override
-	public void addUserRoles(long userId, long[] roleIds)
+	public boolean addUserRole(long userId, long roleId)
 		throws PortalException {
 
-		userPersistence.addRoles(userId, roleIds);
+		return userPersistence.addRole(userId, roleId);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
 	@Override
-	public void addUserRoles(long userId, List<Role> roles)
+	public boolean addUserRole(long userId, Role role) throws PortalException {
+		return userPersistence.addRole(userId, role);
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
+	public boolean addUserRoles(long userId, long[] roleIds)
 		throws PortalException {
 
-		userPersistence.addRoles(userId, roles);
+		return userPersistence.addRoles(userId, roleIds);
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
+	public boolean addUserRoles(long userId, List<Role> roles)
+		throws PortalException {
+
+		return userPersistence.addRoles(userId, roles);
 	}
 
 	/**
@@ -849,17 +862,11 @@ public abstract class RoleLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.kernel.model.Role", roleLocalService);
-
-		_setLocalServiceUtilService(roleLocalService);
+		RoleLocalServiceUtil.setService(roleLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.kernel.model.Role");
-
-		_setLocalServiceUtilService(null);
+		RoleLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -900,37 +907,26 @@ public abstract class RoleLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = rolePersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = rolePersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		RoleLocalService roleLocalService) {
-
-		try {
-			Field field = RoleLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, roleLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -955,8 +951,7 @@ public abstract class RoleLocalServiceBaseImpl
 	@BeanReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		RoleLocalServiceBaseImpl.class);
 
 }

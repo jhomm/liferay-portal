@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.action;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
@@ -25,21 +16,21 @@ import com.liferay.portal.workflow.kaleo.designer.web.constants.KaleoDesignerPor
 import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDesignerWebKeys;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Inácio Nery
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
 		"mvc.command.name=/kaleo_designer/save_kaleo_definition_version"
 	},
 	service = MVCActionCommand.class
@@ -55,14 +46,14 @@ public class SaveKaleoDefinitionVersionMVCActionCommand
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
 			actionRequest, "title");
 		String name = ParamUtil.getString(actionRequest, "name");
 		String content = ParamUtil.getString(actionRequest, "content");
 
 		WorkflowDefinition workflowDefinition =
 			workflowDefinitionManager.saveWorkflowDefinition(
-				themeDisplay.getCompanyId(), themeDisplay.getUserId(),
+				null, themeDisplay.getCompanyId(), themeDisplay.getUserId(),
 				getTitle(actionRequest, titleMap), name, content.getBytes());
 
 		KaleoDefinitionVersion kaleoDefinitionVersion =
@@ -78,8 +69,14 @@ public class SaveKaleoDefinitionVersionMVCActionCommand
 
 	@Override
 	protected String getSuccessMessage(ActionRequest actionRequest) {
-		return LanguageUtil.get(
+		return _language.get(
 			getResourceBundle(actionRequest), "workflow-saved");
 	}
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private Localization _localization;
 
 }

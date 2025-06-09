@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.portlet.action;
@@ -27,10 +18,10 @@ import com.liferay.message.boards.exception.MailingListOutUserNameException;
 import com.liferay.message.boards.exception.NoSuchCategoryException;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.service.MBCategoryService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.captcha.CaptchaConfigurationException;
 import com.liferay.portal.kernel.captcha.CaptchaException;
 import com.liferay.portal.kernel.model.TrashedModel;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -41,15 +32,16 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.service.TrashEntryService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,15 +52,74 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
-		"javax.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
+		"jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS,
+		"jakarta.portlet.name=" + MBPortletKeys.MESSAGE_BOARDS_ADMIN,
 		"mvc.command.name=/message_boards/edit_category"
 	},
 	service = MVCActionCommand.class
 )
 public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 
-	protected void deleteCategories(
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		try {
+			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
+				_updateCategory(actionRequest);
+			}
+			else if (cmd.equals(Constants.DELETE)) {
+				_deleteCategories(actionRequest, false);
+			}
+			else if (cmd.equals(Constants.MOVE_TO_TRASH)) {
+				_deleteCategories(actionRequest, true);
+			}
+			else if (cmd.equals(Constants.RESTORE)) {
+				_restoreTrashEntries(actionRequest);
+			}
+			else if (cmd.equals(Constants.SUBSCRIBE)) {
+				_subscribeCategory(actionRequest);
+			}
+			else if (cmd.equals(Constants.UNSUBSCRIBE)) {
+				_unsubscribeCategory(actionRequest);
+			}
+		}
+		catch (NoSuchCategoryException | PrincipalException exception) {
+			SessionErrors.add(actionRequest, exception.getClass());
+
+			actionResponse.setRenderParameter(
+				"mvcPath", "/message_boards/error.jsp");
+		}
+		catch (CaptchaException | CategoryNameException |
+			   MailingListEmailAddressException |
+			   MailingListInServerNameException |
+			   MailingListInUserNameException |
+			   MailingListOutEmailAddressException |
+			   MailingListOutServerNameException |
+			   MailingListOutUserNameException exception) {
+
+			SessionErrors.add(actionRequest, exception.getClass());
+		}
+	}
+
+	protected CaptchaConfiguration getCaptchaConfiguration(
+			ActionRequest actionRequest)
+		throws CaptchaConfigurationException {
+
+		try {
+			return _configurationProvider.getCompanyConfiguration(
+				CaptchaConfiguration.class,
+				_portal.getCompanyId(actionRequest));
+		}
+		catch (Exception exception) {
+			throw new CaptchaConfigurationException(exception);
+		}
+	}
+
+	private void _deleteCategories(
 			ActionRequest actionRequest, boolean moveToTrash)
 		throws Exception {
 
@@ -111,64 +162,7 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		try {
-			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateCategory(actionRequest);
-			}
-			else if (cmd.equals(Constants.DELETE)) {
-				deleteCategories(actionRequest, false);
-			}
-			else if (cmd.equals(Constants.MOVE_TO_TRASH)) {
-				deleteCategories(actionRequest, true);
-			}
-			else if (cmd.equals(Constants.RESTORE)) {
-				restoreTrashEntries(actionRequest);
-			}
-			else if (cmd.equals(Constants.SUBSCRIBE)) {
-				subscribeCategory(actionRequest);
-			}
-			else if (cmd.equals(Constants.UNSUBSCRIBE)) {
-				unsubscribeCategory(actionRequest);
-			}
-		}
-		catch (NoSuchCategoryException | PrincipalException exception) {
-			SessionErrors.add(actionRequest, exception.getClass());
-
-			actionResponse.setRenderParameter(
-				"mvcPath", "/message_boards/error.jsp");
-		}
-		catch (CaptchaException | CategoryNameException |
-			   MailingListEmailAddressException |
-			   MailingListInServerNameException |
-			   MailingListInUserNameException |
-			   MailingListOutEmailAddressException |
-			   MailingListOutServerNameException |
-			   MailingListOutUserNameException exception) {
-
-			SessionErrors.add(actionRequest, exception.getClass());
-		}
-	}
-
-	protected CaptchaConfiguration getCaptchaConfiguration()
-		throws CaptchaConfigurationException {
-
-		try {
-			return _configurationProvider.getSystemConfiguration(
-				CaptchaConfiguration.class);
-		}
-		catch (Exception exception) {
-			throw new CaptchaConfigurationException(exception);
-		}
-	}
-
-	protected void restoreTrashEntries(ActionRequest actionRequest)
+	private void _restoreTrashEntries(ActionRequest actionRequest)
 		throws Exception {
 
 		long[] restoreTrashEntryIds = StringUtil.split(
@@ -179,7 +173,7 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void subscribeCategory(ActionRequest actionRequest)
+	private void _subscribeCategory(ActionRequest actionRequest)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -191,7 +185,7 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 			themeDisplay.getScopeGroupId(), categoryId);
 	}
 
-	protected void unsubscribeCategory(ActionRequest actionRequest)
+	private void _unsubscribeCategory(ActionRequest actionRequest)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -203,9 +197,7 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 			themeDisplay.getScopeGroupId(), categoryId);
 	}
 
-	protected void updateCategory(ActionRequest actionRequest)
-		throws Exception {
-
+	private void _updateCategory(ActionRequest actionRequest) throws Exception {
 		long categoryId = ParamUtil.getLong(actionRequest, "mbCategoryId");
 
 		long parentCategoryId = ParamUtil.getLong(
@@ -245,8 +237,8 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 			MBCategory.class.getName(), actionRequest);
 
 		if (categoryId <= 0) {
-			CaptchaConfiguration captchaConfiguration =
-				getCaptchaConfiguration();
+			CaptchaConfiguration captchaConfiguration = getCaptchaConfiguration(
+				actionRequest);
 
 			if (captchaConfiguration.messageBoardsEditMessageCaptchaEnabled()) {
 				CaptchaUtil.check(actionRequest);
@@ -255,10 +247,10 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 			// Add category
 
 			_mbCategoryService.addCategory(
-				parentCategoryId, name, description, displayStyle, emailAddress,
-				inProtocol, inServerName, inServerPort, inUseSSL, inUserName,
-				inPassword, inReadInterval, outEmailAddress, outCustom,
-				outServerName, outServerPort, outUseSSL, outUserName,
+				null, parentCategoryId, name, description, displayStyle,
+				emailAddress, inProtocol, inServerName, inServerPort, inUseSSL,
+				inUserName, inPassword, inReadInterval, outEmailAddress,
+				outCustom, outServerName, outServerPort, outUseSSL, outUserName,
 				outPassword, allowAnonymous, mailingListActive, serviceContext);
 		}
 		else {
@@ -283,6 +275,9 @@ public class EditCategoryMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private MBCategoryService _mbCategoryService;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private TrashEntryService _trashEntryService;

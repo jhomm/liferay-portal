@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service.impl;
@@ -41,8 +32,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.framework.Bundle;
 import org.osgi.service.component.annotations.Component;
@@ -182,14 +171,14 @@ public class OAuth2ApplicationScopeAliasesLocalServiceImpl
 		List<String> assignedScopeAliases = getScopeAliasesList(
 			oAuth2ApplicationScopeAliasesId);
 
-		if ((scopeAliases.size() == assignedScopeAliases.size()) &&
-			assignedScopeAliases.containsAll(scopeAliases)) {
+		if ((scopeAliases.size() != assignedScopeAliases.size()) ||
+			!assignedScopeAliases.containsAll(scopeAliases)) {
 
-			return fetchOAuth2ApplicationScopeAliases(
-				oAuth2ApplicationScopeAliasesId);
+			return null;
 		}
 
-		return null;
+		return fetchOAuth2ApplicationScopeAliases(
+			oAuth2ApplicationScopeAliasesId);
 	}
 
 	@Override
@@ -208,12 +197,10 @@ public class OAuth2ApplicationScopeAliasesLocalServiceImpl
 	public List<String> getScopeAliasesList(
 		long oAuth2ApplicationScopeAliasesId) {
 
-		Collection<OAuth2ScopeGrant> oAuth2ScopeGrants =
+		return _getScopeAliasesList(
 			_oAuth2ScopeGrantLocalService.getOAuth2ScopeGrants(
 				oAuth2ApplicationScopeAliasesId, QueryUtil.ALL_POS,
-				QueryUtil.ALL_POS, null);
-
-		return _getScopeAliasesList(oAuth2ScopeGrants);
+				QueryUtil.ALL_POS, null));
 	}
 
 	@Override
@@ -425,14 +412,11 @@ public class OAuth2ApplicationScopeAliasesLocalServiceImpl
 	private List<String> _getScopeAliasesList(
 		Collection<OAuth2ScopeGrant> oAuth2ScopeGrants) {
 
-		Stream<OAuth2ScopeGrant> stream = oAuth2ScopeGrants.stream();
+		Set<String> scopeAliases = new HashSet<>();
 
-		Set<String> scopeAliases = stream.flatMap(
-			oa2sg -> oa2sg.getScopeAliasesList(
-			).stream()
-		).collect(
-			Collectors.toSet()
-		);
+		for (OAuth2ScopeGrant oAuth2ScopeGrant : oAuth2ScopeGrants) {
+			scopeAliases.addAll(oAuth2ScopeGrant.getScopeAliasesList());
+		}
 
 		return new ArrayList<>(scopeAliases);
 	}

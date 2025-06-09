@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.base;
@@ -19,8 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -29,6 +19,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
@@ -37,7 +29,6 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.GroupFinder;
 import com.liferay.portal.kernel.service.persistence.GroupPersistence;
@@ -48,11 +39,10 @@ import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -257,6 +247,21 @@ public abstract class GroupLocalServiceBaseImpl
 		return groupPersistence.fetchByUuid_C_First(uuid, companyId, null);
 	}
 
+	@Override
+	public Group fetchGroupByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return groupPersistence.fetchByERC_C(externalReferenceCode, companyId);
+	}
+
+	@Override
+	public Group getGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return groupPersistence.findByERC_C(externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the group with the primary key.
 	 *
@@ -325,6 +330,11 @@ public abstract class GroupLocalServiceBaseImpl
 	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement GroupLocalServiceImpl#deleteGroup(Group) to avoid orphaned data");
+		}
 
 		return groupLocalService.deleteGroup((Group)persistedModel);
 	}
@@ -404,29 +414,31 @@ public abstract class GroupLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addOrganizationGroup(long organizationId, long groupId) {
-		organizationPersistence.addGroup(organizationId, groupId);
+	public boolean addOrganizationGroup(long organizationId, long groupId) {
+		return organizationPersistence.addGroup(organizationId, groupId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOrganizationGroup(long organizationId, Group group) {
-		organizationPersistence.addGroup(organizationId, group);
+	public boolean addOrganizationGroup(long organizationId, Group group) {
+		return organizationPersistence.addGroup(organizationId, group);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOrganizationGroups(long organizationId, long[] groupIds) {
-		organizationPersistence.addGroups(organizationId, groupIds);
+	public boolean addOrganizationGroups(long organizationId, long[] groupIds) {
+		return organizationPersistence.addGroups(organizationId, groupIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOrganizationGroups(long organizationId, List<Group> groups) {
-		organizationPersistence.addGroups(organizationId, groups);
+	public boolean addOrganizationGroups(
+		long organizationId, List<Group> groups) {
+
+		return organizationPersistence.addGroups(organizationId, groups);
 	}
 
 	/**
@@ -535,29 +547,29 @@ public abstract class GroupLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addRoleGroup(long roleId, long groupId) {
-		rolePersistence.addGroup(roleId, groupId);
+	public boolean addRoleGroup(long roleId, long groupId) {
+		return rolePersistence.addGroup(roleId, groupId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addRoleGroup(long roleId, Group group) {
-		rolePersistence.addGroup(roleId, group);
+	public boolean addRoleGroup(long roleId, Group group) {
+		return rolePersistence.addGroup(roleId, group);
 	}
 
 	/**
 	 */
 	@Override
-	public void addRoleGroups(long roleId, long[] groupIds) {
-		rolePersistence.addGroups(roleId, groupIds);
+	public boolean addRoleGroups(long roleId, long[] groupIds) {
+		return rolePersistence.addGroups(roleId, groupIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addRoleGroups(long roleId, List<Group> groups) {
-		rolePersistence.addGroups(roleId, groups);
+	public boolean addRoleGroups(long roleId, List<Group> groups) {
+		return rolePersistence.addGroups(roleId, groups);
 	}
 
 	/**
@@ -661,29 +673,29 @@ public abstract class GroupLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addUserGroupGroup(long userGroupId, long groupId) {
-		userGroupPersistence.addGroup(userGroupId, groupId);
+	public boolean addUserGroupGroup(long userGroupId, long groupId) {
+		return userGroupPersistence.addGroup(userGroupId, groupId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserGroupGroup(long userGroupId, Group group) {
-		userGroupPersistence.addGroup(userGroupId, group);
+	public boolean addUserGroupGroup(long userGroupId, Group group) {
+		return userGroupPersistence.addGroup(userGroupId, group);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserGroupGroups(long userGroupId, long[] groupIds) {
-		userGroupPersistence.addGroups(userGroupId, groupIds);
+	public boolean addUserGroupGroups(long userGroupId, long[] groupIds) {
+		return userGroupPersistence.addGroups(userGroupId, groupIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserGroupGroups(long userGroupId, List<Group> groups) {
-		userGroupPersistence.addGroups(userGroupId, groups);
+	public boolean addUserGroupGroups(long userGroupId, List<Group> groups) {
+		return userGroupPersistence.addGroups(userGroupId, groups);
 	}
 
 	/**
@@ -790,29 +802,29 @@ public abstract class GroupLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addUserGroup(long userId, long groupId) {
-		userPersistence.addGroup(userId, groupId);
+	public boolean addUserGroup(long userId, long groupId) {
+		return userPersistence.addGroup(userId, groupId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserGroup(long userId, Group group) {
-		userPersistence.addGroup(userId, group);
+	public boolean addUserGroup(long userId, Group group) {
+		return userPersistence.addGroup(userId, group);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserGroups(long userId, long[] groupIds) {
-		userPersistence.addGroups(userId, groupIds);
+	public boolean addUserGroups(long userId, long[] groupIds) {
+		return userPersistence.addGroups(userId, groupIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addUserGroups(long userId, List<Group> groups) {
-		userPersistence.addGroups(userId, groups);
+	public boolean addUserGroups(long userId, List<Group> groups) {
+		return userPersistence.addGroups(userId, groups);
 	}
 
 	/**
@@ -993,17 +1005,11 @@ public abstract class GroupLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.kernel.model.Group", groupLocalService);
-
-		_setLocalServiceUtilService(groupLocalService);
+		GroupLocalServiceUtil.setService(groupLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.kernel.model.Group");
-
-		_setLocalServiceUtilService(null);
+		GroupLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -1044,37 +1050,26 @@ public abstract class GroupLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = groupPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = groupPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		GroupLocalService groupLocalService) {
-
-		try {
-			Field field = GroupLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, groupLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -1105,8 +1100,7 @@ public abstract class GroupLocalServiceBaseImpl
 	@BeanReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		GroupLocalServiceBaseImpl.class);
 
 }

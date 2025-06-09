@@ -1,37 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.task.web.internal.search;
 
 import com.liferay.portal.kernel.dao.search.DisplayTerms;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.task.web.internal.util.WorkflowTaskPortletUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Marcellus Tavares
@@ -42,6 +30,7 @@ public class WorkflowTaskSearch extends SearchContainer<WorkflowTask> {
 		{
 			add("asset-title");
 			add("asset-type");
+			add("author");
 			add("task");
 			add("last-activity-date");
 			add("due-date");
@@ -54,54 +43,37 @@ public class WorkflowTaskSearch extends SearchContainer<WorkflowTask> {
 	).build();
 
 	public WorkflowTaskSearch(
-		PortletRequest portletRequest, PortletURL iteratorURL) {
+		PortletRequest portletRequest, PortletURL iteratorURL,
+		WorkflowComparatorFactory workflowComparatorFactory) {
 
-		this(portletRequest, DEFAULT_CUR_PARAM, iteratorURL);
+		this(
+			portletRequest, DEFAULT_CUR_PARAM, iteratorURL,
+			workflowComparatorFactory);
 	}
 
 	public WorkflowTaskSearch(
-		PortletRequest portletRequest, String curParam,
-		PortletURL iteratorURL) {
+		PortletRequest portletRequest, String curParam, PortletURL iteratorURL,
+		WorkflowComparatorFactory workflowComparatorFactory) {
 
 		super(
 			portletRequest, new DisplayTerms(portletRequest),
 			new DisplayTerms(portletRequest), curParam, DEFAULT_DELTA,
 			iteratorURL, headerNames, null);
 
-		PortalPreferences preferences =
-			PortletPreferencesFactoryUtil.getPortalPreferences(portletRequest);
-
-		String orderByCol = ParamUtil.getString(portletRequest, "orderByCol");
-
-		if (Validator.isNotNull(orderByCol)) {
-			preferences.setValue(
-				PortletKeys.MY_WORKFLOW_TASK, "order-by-col", orderByCol);
-		}
-		else {
-			orderByCol = preferences.getValue(
-				PortletKeys.MY_WORKFLOW_TASK, "order-by-col",
-				"last-activity-date");
-		}
-
-		String orderByType = ParamUtil.getString(portletRequest, "orderByType");
-
-		if (Validator.isNotNull(orderByType)) {
-			preferences.setValue(
-				PortletKeys.MY_WORKFLOW_TASK, "order-by-type", orderByType);
-		}
-		else {
-			orderByType = preferences.getValue(
-				PortletKeys.MY_WORKFLOW_TASK, "order-by-type", "asc");
-		}
-
-		OrderByComparator<WorkflowTask> orderByComparator =
-			WorkflowTaskPortletUtil.getWorkflowTaskOrderByComparator(
-				orderByCol, orderByType);
-
 		setOrderableHeaders(orderableHeaders);
+
+		String orderByCol = SearchOrderByUtil.getOrderByCol(
+			portletRequest, PortletKeys.MY_WORKFLOW_TASK, "last-activity-date");
+
 		setOrderByCol(orderByCol);
+
+		String orderByType = SearchOrderByUtil.getOrderByType(
+			portletRequest, PortletKeys.MY_WORKFLOW_TASK, "asc");
+
+		setOrderByComparator(
+			WorkflowTaskPortletUtil.getWorkflowTaskOrderByComparator(
+				orderByCol, orderByType, workflowComparatorFactory));
 		setOrderByType(orderByType);
-		setOrderByComparator(orderByComparator);
 	}
 
 }

@@ -1,25 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String protocol = HttpUtil.getProtocol(request);
+String protocol = HttpComponentsUtil.getProtocol(request);
 
-String bootstrapRequire = (String)request.getAttribute("liferay-map:map:bootstrapRequire");
 boolean geolocation = GetterUtil.getBoolean(request.getAttribute("liferay-map:map:geolocation"));
 double latitude = (Double)request.getAttribute("liferay-map:map:latitude");
 double longitude = (Double)request.getAttribute("liferay-map:map:longitude");
@@ -30,80 +20,61 @@ name = AUIUtil.getNamespace(liferayPortletRequest, liferayPortletResponse) + nam
 %>
 
 <liferay-util:html-top
-	outputKey="js_maps_google_skip_map_loading"
+	outputKey="com.liferay.map.google.maps#/view.jsp"
 >
-	<script>
+	<aui:script>
 		Liferay.namespace('Maps').onGMapsReady = function (event) {
 			Liferay.Maps.gmapsReady = true;
 
 			Liferay.fire('gmapsReady');
 		};
-	</script>
 
-	<%
-	String apiURL = protocol + "://maps.googleapis.com/maps/api/js?v=3.exp&libraries=places&callback=Liferay.Maps.onGMapsReady";
+		if (!Liferay.Maps.gmapsReady) {
+			var apiURL =
+				'<%= protocol %>' +
+				'://maps.googleapis.com/maps/api/js?v=3.exp&libraries=places&callback=Liferay.Maps.onGMapsReady';
 
-	if (Validator.isNotNull(googleMapDisplayContext.getGoogleMapsAPIKey())) {
-		apiURL += "&key=" + googleMapDisplayContext.getGoogleMapsAPIKey();
-	}
-	%>
+			<c:if test="<%= Validator.isNotNull(googleMapsDisplayContext.getGoogleMapsAPIKey()) %>">
+				apiURL += '&key=' + '<%= googleMapsDisplayContext.getGoogleMapsAPIKey() %>';
+			</c:if>
 
-	<script src="<%= apiURL %>" type="text/javascript"></script>
+			var script = document.createElement('script');
+
+			script.setAttribute('src', apiURL);
+
+			document.head.appendChild(script);
+
+			script = null;
+		}
+	</aui:script>
 </liferay-util:html-top>
 
-<aui:script require="<%= bootstrapRequire %>">
-	var MapControls = Liferay.MapBase.CONTROLS;
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"boundingBox", "#" + HtmlUtil.escapeJS(name) + "Map"
+		).put(
+			"data",
+			() -> {
+				if (Validator.isNull(points)) {
+					return null;
+				}
 
-	var mapConfig = {
-		boundingBox: '#<%= HtmlUtil.escapeJS(name) %>Map',
-
-		<c:if test="<%= geolocation %>">
-			<c:choose>
-				<c:when test="<%= BrowserSnifferUtil.isMobile(request) %>">
-					controls: [MapControls.HOME, MapControls.SEARCH],
-				</c:when>
-				<c:otherwise>
-					controls: [
-						MapControls.HOME,
-						MapControls.PAN,
-						MapControls.SEARCH,
-						MapControls.TYPE,
-						MapControls.ZOOM,
-					],
-				</c:otherwise>
-			</c:choose>
-		</c:if>
-
-		<c:if test="<%= Validator.isNotNull(points) %>">
-			data: <%= points %>,
-		</c:if>
-
-		geolocation: <%= geolocation %>,
-
-		<c:if test="<%= (latitude != 0) && (longitude != 0) %>">
-			position: {
-				location: {
-					lat: <%= latitude %>,
-					lng: <%= longitude %>,
-				},
-			},
-		</c:if>
-	};
-
-	var createMap = function () {
-		var map = new MapGoogleMaps.default(mapConfig);
-
-		Liferay.MapBase.register(
-			'<%= HtmlUtil.escapeJS(name) %>',
-			map,
-			'<%= portletDisplay.getId() %>'
-		);
-	};
-
-	if (Liferay.Maps.gmapsReady) {
-		createMap();
-	}
-	else {
-		Liferay.once('gmapsReady', createMap);
-	}
-</aui:script>
+				return JSONFactoryUtil.createJSONObject(points);
+			}
+		).put(
+			"geolocation", geolocation
+		).put(
+			"isMobile", BrowserSnifferUtil.isMobile(request)
+		).put(
+			"latitude", latitude
+		).put(
+			"longitude", longitude
+		).put(
+			"name", HtmlUtil.escapeJS(name)
+		).put(
+			"portletId", portletDisplay.getId()
+		).build()
+	%>'
+	module="{App} from map-google-maps"
+/>

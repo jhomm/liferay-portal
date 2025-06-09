@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -17,6 +8,7 @@ package com.liferay.portal.service.impl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.NoSuchWorkflowInstanceLinkException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -30,11 +22,13 @@ import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.workflow.DefaultWorkflowNode;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManagerUtil;
+import com.liferay.portal.kernel.workflow.WorkflowNode;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
 import com.liferay.portal.service.base.WorkflowInstanceLinkLocalServiceBaseImpl;
 
@@ -83,10 +77,8 @@ public class WorkflowInstanceLinkLocalServiceImpl
 			long workflowInstanceLinkId)
 		throws PortalException {
 
-		WorkflowInstanceLink workflowInstanceLink = fetchWorkflowInstanceLink(
-			workflowInstanceLinkId);
-
-		return deleteWorkflowInstanceLink(workflowInstanceLink);
+		return deleteWorkflowInstanceLink(
+			fetchWorkflowInstanceLink(workflowInstanceLinkId));
 	}
 
 	@Override
@@ -94,10 +86,8 @@ public class WorkflowInstanceLinkLocalServiceImpl
 			long companyId, long groupId, String className, long classPK)
 		throws PortalException {
 
-		WorkflowInstanceLink workflowInstanceLink = fetchWorkflowInstanceLink(
-			companyId, groupId, className, classPK);
-
-		return deleteWorkflowInstanceLink(workflowInstanceLink);
+		return deleteWorkflowInstanceLink(
+			fetchWorkflowInstanceLink(companyId, groupId, className, classPK));
 	}
 
 	@Override
@@ -160,10 +150,14 @@ public class WorkflowInstanceLinkLocalServiceImpl
 			WorkflowInstanceManagerUtil.getWorkflowInstance(
 				companyId, workflowInstanceLink.getWorkflowInstanceId());
 
-		List<String> currentNodeNames = workflowInstance.getCurrentNodeNames();
+		List<WorkflowNode> currentWorkflowNodes =
+			workflowInstance.getCurrentWorkflowNodes();
 
-		if (ListUtil.isNotEmpty(currentNodeNames)) {
-			return currentNodeNames.get(0);
+		if (ListUtil.isNotEmpty(currentWorkflowNodes)) {
+			DefaultWorkflowNode defaultWorkflowNode =
+				(DefaultWorkflowNode)currentWorkflowNodes.get(0);
+
+			return defaultWorkflowNode.getLabel(LocaleUtil.getDefault());
 		}
 
 		return StringPool.BLANK;
@@ -202,6 +196,14 @@ public class WorkflowInstanceLinkLocalServiceImpl
 
 		return workflowInstanceLinkPersistence.findByG_C_C_C(
 			groupId, companyId, classNameId, classPK);
+	}
+
+	@Override
+	public List<WorkflowInstanceLink> getWorkflowInstanceLinks(
+		long companyId, String className) {
+
+		return workflowInstanceLinkPersistence.findByC_C(
+			companyId, _classNameLocalService.getClassNameId(className));
 	}
 
 	@Override
@@ -264,7 +266,7 @@ public class WorkflowInstanceLinkLocalServiceImpl
 		}
 
 		if (userId == 0) {
-			userId = _userLocalService.getDefaultUserId(companyId);
+			userId = _userLocalService.getGuestUserId(companyId);
 		}
 
 		WorkflowHandler<?> workflowHandler =
@@ -283,6 +285,9 @@ public class WorkflowInstanceLinkLocalServiceImpl
 
 		workflowContext.put(
 			WorkflowConstants.CONTEXT_COMPANY_ID, String.valueOf(companyId));
+		workflowContext.put(
+			WorkflowConstants.CONTEXT_CT_COLLECTION_ID,
+			String.valueOf(CTCollectionThreadLocal.getCTCollectionId()));
 		workflowContext.put(
 			WorkflowConstants.CONTEXT_ENTRY_CLASS_NAME, className);
 		workflowContext.put(

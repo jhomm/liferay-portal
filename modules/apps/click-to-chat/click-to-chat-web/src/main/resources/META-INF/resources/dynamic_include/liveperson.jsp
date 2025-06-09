@@ -1,22 +1,13 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/dynamic_include/init.jsp" %>
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	(window.lpTag = window.lpTag || {}),
 		'undefined' == typeof window.lpTag._tagCount
 			? ((window.lpTag = {
@@ -27,8 +18,10 @@
 						0 === e
 							? ((this._defB = this._defB || []), this._defB.push(t))
 							: 1 === e
-							? ((this._defT = this._defT || []), this._defT.push(t))
-							: ((this._defL = this._defL || []), this._defL.push(t));
+								? ((this._defT = this._defT || []),
+									this._defT.push(t))
+								: ((this._defL = this._defL || []),
+									this._defL.push(t));
 					},
 					ev: lpTag.ev || [],
 					events: {
@@ -52,21 +45,21 @@
 						window.attachEvent
 							? window.attachEvent('onload', () => {
 									t._domReady('domReady');
-							  })
+								})
 							: (window.addEventListener(
 									'DOMContentLoaded',
 									() => {
 										t._domReady('contReady');
 									},
 									!1
-							  ),
-							  window.addEventListener(
+								),
+								window.addEventListener(
 									'load',
 									() => {
 										t._domReady('domReady');
 									},
 									!1
-							  )),
+								)),
 							'undefined' === typeof window._lptStop && this.load();
 					},
 					load: function (t, e, i) {
@@ -117,8 +110,8 @@
 					},
 					_tagCount: 1,
 					_v: '1.10.0',
-			  }),
-			  lpTag.init())
+				}),
+				lpTag.init())
 			: (window.lpTag._tagCount += 1);
 
 	lpTag.sdes = lpTag.sdes || [];
@@ -143,4 +136,4 @@
 		},
 		type: 'ctmrinfo',
 	});
-</script>
+</aui:script>

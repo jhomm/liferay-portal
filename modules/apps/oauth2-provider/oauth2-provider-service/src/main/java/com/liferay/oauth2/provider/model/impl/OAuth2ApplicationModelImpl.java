@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.model.impl;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.model.OAuth2ApplicationModel;
-import com.liferay.oauth2.provider.model.OAuth2ApplicationSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -30,23 +21,21 @@ import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -75,25 +64,30 @@ public class OAuth2ApplicationModelImpl
 	public static final String TABLE_NAME = "OAuth2Application";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
 		{"oAuth2ApplicationId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"oA2AScopeAliasesId", Types.BIGINT},
 		{"allowedGrantTypes", Types.VARCHAR},
+		{"clientAuthenticationMethod", Types.VARCHAR},
 		{"clientCredentialUserId", Types.BIGINT},
 		{"clientCredentialUserName", Types.VARCHAR},
 		{"clientId", Types.VARCHAR}, {"clientProfile", Types.INTEGER},
 		{"clientSecret", Types.VARCHAR}, {"description", Types.VARCHAR},
 		{"features", Types.VARCHAR}, {"homePageURL", Types.VARCHAR},
-		{"iconFileEntryId", Types.BIGINT}, {"name", Types.VARCHAR},
-		{"privacyPolicyURL", Types.VARCHAR}, {"redirectURIs", Types.VARCHAR},
-		{"rememberDevice", Types.BOOLEAN}, {"trustedApplication", Types.BOOLEAN}
+		{"iconFileEntryId", Types.BIGINT}, {"jwks", Types.VARCHAR},
+		{"name", Types.VARCHAR}, {"privacyPolicyURL", Types.VARCHAR},
+		{"redirectURIs", Types.VARCHAR}, {"rememberDevice", Types.BOOLEAN},
+		{"trustedApplication", Types.BOOLEAN}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("oAuth2ApplicationId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -102,6 +96,7 @@ public class OAuth2ApplicationModelImpl
 		TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("oA2AScopeAliasesId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("allowedGrantTypes", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("clientAuthenticationMethod", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("clientCredentialUserId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("clientCredentialUserName", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("clientId", Types.VARCHAR);
@@ -111,6 +106,7 @@ public class OAuth2ApplicationModelImpl
 		TABLE_COLUMNS_MAP.put("features", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("homePageURL", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("iconFileEntryId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("jwks", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("privacyPolicyURL", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("redirectURIs", Types.VARCHAR);
@@ -119,7 +115,7 @@ public class OAuth2ApplicationModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table OAuth2Application (oAuth2ApplicationId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,oA2AScopeAliasesId LONG,allowedGrantTypes VARCHAR(75) null,clientCredentialUserId LONG,clientCredentialUserName VARCHAR(75) null,clientId VARCHAR(75) null,clientProfile INTEGER,clientSecret VARCHAR(75) null,description STRING null,features STRING null,homePageURL STRING null,iconFileEntryId LONG,name VARCHAR(75) null,privacyPolicyURL STRING null,redirectURIs STRING null,rememberDevice BOOLEAN,trustedApplication BOOLEAN)";
+		"create table OAuth2Application (uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(1000) null,oAuth2ApplicationId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,oA2AScopeAliasesId LONG,allowedGrantTypes VARCHAR(128) null,clientAuthenticationMethod VARCHAR(75) null,clientCredentialUserId LONG,clientCredentialUserName VARCHAR(75) null,clientId VARCHAR(75) null,clientProfile INTEGER,clientSecret VARCHAR(75) null,description STRING null,features STRING null,homePageURL STRING null,iconFileEntryId LONG,jwks VARCHAR(3999) null,name VARCHAR(255) null,privacyPolicyURL STRING null,redirectURIs STRING null,rememberDevice BOOLEAN,trustedApplication BOOLEAN)";
 
 	public static final String TABLE_SQL_DROP = "drop table OAuth2Application";
 
@@ -128,6 +124,9 @@ public class OAuth2ApplicationModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY OAuth2Application.oAuth2ApplicationId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY oAuth2Application.oAuth2ApplicationId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -145,14 +144,32 @@ public class OAuth2ApplicationModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long COMPANYID_COLUMN_BITMASK = 2L;
+	public static final long CLIENTPROFILE_COLUMN_BITMASK = 2L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long COMPANYID_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 8L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OAUTH2APPLICATIONID_COLUMN_BITMASK = 4L;
+	public static final long OAUTH2APPLICATIONID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -166,74 +183,6 @@ public class OAuth2ApplicationModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static OAuth2Application toModel(OAuth2ApplicationSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		OAuth2Application model = new OAuth2ApplicationImpl();
-
-		model.setOAuth2ApplicationId(soapModel.getOAuth2ApplicationId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setOAuth2ApplicationScopeAliasesId(
-			soapModel.getOAuth2ApplicationScopeAliasesId());
-		model.setAllowedGrantTypes(soapModel.getAllowedGrantTypes());
-		model.setClientCredentialUserId(soapModel.getClientCredentialUserId());
-		model.setClientCredentialUserName(
-			soapModel.getClientCredentialUserName());
-		model.setClientId(soapModel.getClientId());
-		model.setClientProfile(soapModel.getClientProfile());
-		model.setClientSecret(soapModel.getClientSecret());
-		model.setDescription(soapModel.getDescription());
-		model.setFeatures(soapModel.getFeatures());
-		model.setHomePageURL(soapModel.getHomePageURL());
-		model.setIconFileEntryId(soapModel.getIconFileEntryId());
-		model.setName(soapModel.getName());
-		model.setPrivacyPolicyURL(soapModel.getPrivacyPolicyURL());
-		model.setRedirectURIs(soapModel.getRedirectURIs());
-		model.setRememberDevice(soapModel.isRememberDevice());
-		model.setTrustedApplication(soapModel.isTrustedApplication());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<OAuth2Application> toModels(
-		OAuth2ApplicationSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<OAuth2Application> models = new ArrayList<OAuth2Application>(
-			soapModels.length);
-
-		for (OAuth2ApplicationSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public OAuth2ApplicationModelImpl() {
@@ -312,193 +261,266 @@ public class OAuth2ApplicationModelImpl
 	public Map<String, Function<OAuth2Application, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<OAuth2Application, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, OAuth2Application>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			OAuth2Application.class.getClassLoader(), OAuth2Application.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<OAuth2Application, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<OAuth2Application> constructor =
-				(Constructor<OAuth2Application>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<OAuth2Application, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<OAuth2Application, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("uuid", OAuth2Application::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				OAuth2Application::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"oAuth2ApplicationId",
+				OAuth2Application::getOAuth2ApplicationId);
+			attributeGetterFunctions.put(
+				"companyId", OAuth2Application::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", OAuth2Application::getUserId);
+			attributeGetterFunctions.put(
+				"userName", OAuth2Application::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", OAuth2Application::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", OAuth2Application::getModifiedDate);
+			attributeGetterFunctions.put(
+				"oAuth2ApplicationScopeAliasesId",
+				OAuth2Application::getOAuth2ApplicationScopeAliasesId);
+			attributeGetterFunctions.put(
+				"allowedGrantTypes", OAuth2Application::getAllowedGrantTypes);
+			attributeGetterFunctions.put(
+				"clientAuthenticationMethod",
+				OAuth2Application::getClientAuthenticationMethod);
+			attributeGetterFunctions.put(
+				"clientCredentialUserId",
+				OAuth2Application::getClientCredentialUserId);
+			attributeGetterFunctions.put(
+				"clientCredentialUserName",
+				OAuth2Application::getClientCredentialUserName);
+			attributeGetterFunctions.put(
+				"clientId", OAuth2Application::getClientId);
+			attributeGetterFunctions.put(
+				"clientProfile", OAuth2Application::getClientProfile);
+			attributeGetterFunctions.put(
+				"clientSecret", OAuth2Application::getClientSecret);
+			attributeGetterFunctions.put(
+				"description", OAuth2Application::getDescription);
+			attributeGetterFunctions.put(
+				"features", OAuth2Application::getFeatures);
+			attributeGetterFunctions.put(
+				"homePageURL", OAuth2Application::getHomePageURL);
+			attributeGetterFunctions.put(
+				"iconFileEntryId", OAuth2Application::getIconFileEntryId);
+			attributeGetterFunctions.put("jwks", OAuth2Application::getJwks);
+			attributeGetterFunctions.put("name", OAuth2Application::getName);
+			attributeGetterFunctions.put(
+				"privacyPolicyURL", OAuth2Application::getPrivacyPolicyURL);
+			attributeGetterFunctions.put(
+				"redirectURIs", OAuth2Application::getRedirectURIs);
+			attributeGetterFunctions.put(
+				"rememberDevice", OAuth2Application::getRememberDevice);
+			attributeGetterFunctions.put(
+				"trustedApplication", OAuth2Application::getTrustedApplication);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map<String, BiConsumer<OAuth2Application, Object>>
+			_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<OAuth2Application, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<OAuth2Application, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"oAuth2ApplicationId",
+				(BiConsumer<OAuth2Application, Long>)
+					OAuth2Application::setOAuth2ApplicationId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<OAuth2Application, Long>)
+					OAuth2Application::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<OAuth2Application, Long>)
+					OAuth2Application::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<OAuth2Application, Date>)
+					OAuth2Application::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<OAuth2Application, Date>)
+					OAuth2Application::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"oAuth2ApplicationScopeAliasesId",
+				(BiConsumer<OAuth2Application, Long>)
+					OAuth2Application::setOAuth2ApplicationScopeAliasesId);
+			attributeSetterBiConsumers.put(
+				"allowedGrantTypes",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setAllowedGrantTypes);
+			attributeSetterBiConsumers.put(
+				"clientAuthenticationMethod",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setClientAuthenticationMethod);
+			attributeSetterBiConsumers.put(
+				"clientCredentialUserId",
+				(BiConsumer<OAuth2Application, Long>)
+					OAuth2Application::setClientCredentialUserId);
+			attributeSetterBiConsumers.put(
+				"clientCredentialUserName",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setClientCredentialUserName);
+			attributeSetterBiConsumers.put(
+				"clientId",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setClientId);
+			attributeSetterBiConsumers.put(
+				"clientProfile",
+				(BiConsumer<OAuth2Application, Integer>)
+					OAuth2Application::setClientProfile);
+			attributeSetterBiConsumers.put(
+				"clientSecret",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setClientSecret);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setDescription);
+			attributeSetterBiConsumers.put(
+				"features",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setFeatures);
+			attributeSetterBiConsumers.put(
+				"homePageURL",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setHomePageURL);
+			attributeSetterBiConsumers.put(
+				"iconFileEntryId",
+				(BiConsumer<OAuth2Application, Long>)
+					OAuth2Application::setIconFileEntryId);
+			attributeSetterBiConsumers.put(
+				"jwks",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setJwks);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setName);
+			attributeSetterBiConsumers.put(
+				"privacyPolicyURL",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setPrivacyPolicyURL);
+			attributeSetterBiConsumers.put(
+				"redirectURIs",
+				(BiConsumer<OAuth2Application, String>)
+					OAuth2Application::setRedirectURIs);
+			attributeSetterBiConsumers.put(
+				"rememberDevice",
+				(BiConsumer<OAuth2Application, Boolean>)
+					OAuth2Application::setRememberDevice);
+			attributeSetterBiConsumers.put(
+				"trustedApplication",
+				(BiConsumer<OAuth2Application, Boolean>)
+					OAuth2Application::setTrustedApplication);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public String getUuid() {
+		if (_uuid == null) {
+			return "";
+		}
+		else {
+			return _uuid;
 		}
 	}
 
-	private static final Map<String, Function<OAuth2Application, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<OAuth2Application, Object>>
-		_attributeSetterBiConsumers;
+	@Override
+	public void setUuid(String uuid) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
 
-	static {
-		Map<String, Function<OAuth2Application, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<OAuth2Application, Object>>();
-		Map<String, BiConsumer<OAuth2Application, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<OAuth2Application, ?>>();
+		_uuid = uuid;
+	}
 
-		attributeGetterFunctions.put(
-			"oAuth2ApplicationId", OAuth2Application::getOAuth2ApplicationId);
-		attributeSetterBiConsumers.put(
-			"oAuth2ApplicationId",
-			(BiConsumer<OAuth2Application, Long>)
-				OAuth2Application::setOAuth2ApplicationId);
-		attributeGetterFunctions.put(
-			"companyId", OAuth2Application::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<OAuth2Application, Long>)
-				OAuth2Application::setCompanyId);
-		attributeGetterFunctions.put("userId", OAuth2Application::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<OAuth2Application, Long>)OAuth2Application::setUserId);
-		attributeGetterFunctions.put(
-			"userName", OAuth2Application::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", OAuth2Application::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<OAuth2Application, Date>)
-				OAuth2Application::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", OAuth2Application::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<OAuth2Application, Date>)
-				OAuth2Application::setModifiedDate);
-		attributeGetterFunctions.put(
-			"oAuth2ApplicationScopeAliasesId",
-			OAuth2Application::getOAuth2ApplicationScopeAliasesId);
-		attributeSetterBiConsumers.put(
-			"oAuth2ApplicationScopeAliasesId",
-			(BiConsumer<OAuth2Application, Long>)
-				OAuth2Application::setOAuth2ApplicationScopeAliasesId);
-		attributeGetterFunctions.put(
-			"allowedGrantTypes", OAuth2Application::getAllowedGrantTypes);
-		attributeSetterBiConsumers.put(
-			"allowedGrantTypes",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setAllowedGrantTypes);
-		attributeGetterFunctions.put(
-			"clientCredentialUserId",
-			OAuth2Application::getClientCredentialUserId);
-		attributeSetterBiConsumers.put(
-			"clientCredentialUserId",
-			(BiConsumer<OAuth2Application, Long>)
-				OAuth2Application::setClientCredentialUserId);
-		attributeGetterFunctions.put(
-			"clientCredentialUserName",
-			OAuth2Application::getClientCredentialUserName);
-		attributeSetterBiConsumers.put(
-			"clientCredentialUserName",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setClientCredentialUserName);
-		attributeGetterFunctions.put(
-			"clientId", OAuth2Application::getClientId);
-		attributeSetterBiConsumers.put(
-			"clientId",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setClientId);
-		attributeGetterFunctions.put(
-			"clientProfile", OAuth2Application::getClientProfile);
-		attributeSetterBiConsumers.put(
-			"clientProfile",
-			(BiConsumer<OAuth2Application, Integer>)
-				OAuth2Application::setClientProfile);
-		attributeGetterFunctions.put(
-			"clientSecret", OAuth2Application::getClientSecret);
-		attributeSetterBiConsumers.put(
-			"clientSecret",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setClientSecret);
-		attributeGetterFunctions.put(
-			"description", OAuth2Application::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setDescription);
-		attributeGetterFunctions.put(
-			"features", OAuth2Application::getFeatures);
-		attributeSetterBiConsumers.put(
-			"features",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setFeatures);
-		attributeGetterFunctions.put(
-			"homePageURL", OAuth2Application::getHomePageURL);
-		attributeSetterBiConsumers.put(
-			"homePageURL",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setHomePageURL);
-		attributeGetterFunctions.put(
-			"iconFileEntryId", OAuth2Application::getIconFileEntryId);
-		attributeSetterBiConsumers.put(
-			"iconFileEntryId",
-			(BiConsumer<OAuth2Application, Long>)
-				OAuth2Application::setIconFileEntryId);
-		attributeGetterFunctions.put("name", OAuth2Application::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<OAuth2Application, String>)OAuth2Application::setName);
-		attributeGetterFunctions.put(
-			"privacyPolicyURL", OAuth2Application::getPrivacyPolicyURL);
-		attributeSetterBiConsumers.put(
-			"privacyPolicyURL",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setPrivacyPolicyURL);
-		attributeGetterFunctions.put(
-			"redirectURIs", OAuth2Application::getRedirectURIs);
-		attributeSetterBiConsumers.put(
-			"redirectURIs",
-			(BiConsumer<OAuth2Application, String>)
-				OAuth2Application::setRedirectURIs);
-		attributeGetterFunctions.put(
-			"rememberDevice", OAuth2Application::getRememberDevice);
-		attributeSetterBiConsumers.put(
-			"rememberDevice",
-			(BiConsumer<OAuth2Application, Boolean>)
-				OAuth2Application::setRememberDevice);
-		attributeGetterFunctions.put(
-			"trustedApplication", OAuth2Application::getTrustedApplication);
-		attributeSetterBiConsumers.put(
-			"trustedApplication",
-			(BiConsumer<OAuth2Application, Boolean>)
-				OAuth2Application::setTrustedApplication);
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalUuid() {
+		return getColumnOriginalValue("uuid_");
+	}
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -667,6 +689,28 @@ public class OAuth2ApplicationModelImpl
 
 	@JSON
 	@Override
+	public String getClientAuthenticationMethod() {
+		if (_clientAuthenticationMethod == null) {
+			return "";
+		}
+		else {
+			return _clientAuthenticationMethod;
+		}
+	}
+
+	@Override
+	public void setClientAuthenticationMethod(
+		String clientAuthenticationMethod) {
+
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_clientAuthenticationMethod = clientAuthenticationMethod;
+	}
+
+	@JSON
+	@Override
 	public long getClientCredentialUserId() {
 		return _clientCredentialUserId;
 	}
@@ -759,6 +803,16 @@ public class OAuth2ApplicationModelImpl
 		}
 
 		_clientProfile = clientProfile;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public int getOriginalClientProfile() {
+		return GetterUtil.getInteger(
+			this.<Integer>getColumnOriginalValue("clientProfile"));
 	}
 
 	@JSON
@@ -854,6 +908,26 @@ public class OAuth2ApplicationModelImpl
 		}
 
 		_iconFileEntryId = iconFileEntryId;
+	}
+
+	@JSON
+	@Override
+	public String getJwks() {
+		if (_jwks == null) {
+			return "";
+		}
+		else {
+			return _jwks;
+		}
+	}
+
+	@Override
+	public void setJwks(String jwks) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_jwks = jwks;
 	}
 
 	@JSON
@@ -958,6 +1032,12 @@ public class OAuth2ApplicationModelImpl
 		_trustedApplication = trustedApplication;
 	}
 
+	@Override
+	public StagedModelType getStagedModelType() {
+		return new StagedModelType(
+			PortalUtil.getClassNameId(OAuth2Application.class.getName()));
+	}
+
 	public long getColumnBitmask() {
 		if (_columnBitmask > 0) {
 			return _columnBitmask;
@@ -1015,6 +1095,9 @@ public class OAuth2ApplicationModelImpl
 		OAuth2ApplicationImpl oAuth2ApplicationImpl =
 			new OAuth2ApplicationImpl();
 
+		oAuth2ApplicationImpl.setUuid(getUuid());
+		oAuth2ApplicationImpl.setExternalReferenceCode(
+			getExternalReferenceCode());
 		oAuth2ApplicationImpl.setOAuth2ApplicationId(getOAuth2ApplicationId());
 		oAuth2ApplicationImpl.setCompanyId(getCompanyId());
 		oAuth2ApplicationImpl.setUserId(getUserId());
@@ -1024,6 +1107,8 @@ public class OAuth2ApplicationModelImpl
 		oAuth2ApplicationImpl.setOAuth2ApplicationScopeAliasesId(
 			getOAuth2ApplicationScopeAliasesId());
 		oAuth2ApplicationImpl.setAllowedGrantTypes(getAllowedGrantTypes());
+		oAuth2ApplicationImpl.setClientAuthenticationMethod(
+			getClientAuthenticationMethod());
 		oAuth2ApplicationImpl.setClientCredentialUserId(
 			getClientCredentialUserId());
 		oAuth2ApplicationImpl.setClientCredentialUserName(
@@ -1035,6 +1120,7 @@ public class OAuth2ApplicationModelImpl
 		oAuth2ApplicationImpl.setFeatures(getFeatures());
 		oAuth2ApplicationImpl.setHomePageURL(getHomePageURL());
 		oAuth2ApplicationImpl.setIconFileEntryId(getIconFileEntryId());
+		oAuth2ApplicationImpl.setJwks(getJwks());
 		oAuth2ApplicationImpl.setName(getName());
 		oAuth2ApplicationImpl.setPrivacyPolicyURL(getPrivacyPolicyURL());
 		oAuth2ApplicationImpl.setRedirectURIs(getRedirectURIs());
@@ -1051,6 +1137,10 @@ public class OAuth2ApplicationModelImpl
 		OAuth2ApplicationImpl oAuth2ApplicationImpl =
 			new OAuth2ApplicationImpl();
 
+		oAuth2ApplicationImpl.setUuid(
+			this.<String>getColumnOriginalValue("uuid_"));
+		oAuth2ApplicationImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		oAuth2ApplicationImpl.setOAuth2ApplicationId(
 			this.<Long>getColumnOriginalValue("oAuth2ApplicationId"));
 		oAuth2ApplicationImpl.setCompanyId(
@@ -1067,6 +1157,8 @@ public class OAuth2ApplicationModelImpl
 			this.<Long>getColumnOriginalValue("oA2AScopeAliasesId"));
 		oAuth2ApplicationImpl.setAllowedGrantTypes(
 			this.<String>getColumnOriginalValue("allowedGrantTypes"));
+		oAuth2ApplicationImpl.setClientAuthenticationMethod(
+			this.<String>getColumnOriginalValue("clientAuthenticationMethod"));
 		oAuth2ApplicationImpl.setClientCredentialUserId(
 			this.<Long>getColumnOriginalValue("clientCredentialUserId"));
 		oAuth2ApplicationImpl.setClientCredentialUserName(
@@ -1085,6 +1177,8 @@ public class OAuth2ApplicationModelImpl
 			this.<String>getColumnOriginalValue("homePageURL"));
 		oAuth2ApplicationImpl.setIconFileEntryId(
 			this.<Long>getColumnOriginalValue("iconFileEntryId"));
+		oAuth2ApplicationImpl.setJwks(
+			this.<String>getColumnOriginalValue("jwks"));
 		oAuth2ApplicationImpl.setName(
 			this.<String>getColumnOriginalValue("name"));
 		oAuth2ApplicationImpl.setPrivacyPolicyURL(
@@ -1173,6 +1267,26 @@ public class OAuth2ApplicationModelImpl
 		OAuth2ApplicationCacheModel oAuth2ApplicationCacheModel =
 			new OAuth2ApplicationCacheModel();
 
+		oAuth2ApplicationCacheModel.uuid = getUuid();
+
+		String uuid = oAuth2ApplicationCacheModel.uuid;
+
+		if ((uuid != null) && (uuid.length() == 0)) {
+			oAuth2ApplicationCacheModel.uuid = null;
+		}
+
+		oAuth2ApplicationCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			oAuth2ApplicationCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			oAuth2ApplicationCacheModel.externalReferenceCode = null;
+		}
+
 		oAuth2ApplicationCacheModel.oAuth2ApplicationId =
 			getOAuth2ApplicationId();
 
@@ -1216,6 +1330,18 @@ public class OAuth2ApplicationModelImpl
 
 		if ((allowedGrantTypes != null) && (allowedGrantTypes.length() == 0)) {
 			oAuth2ApplicationCacheModel.allowedGrantTypes = null;
+		}
+
+		oAuth2ApplicationCacheModel.clientAuthenticationMethod =
+			getClientAuthenticationMethod();
+
+		String clientAuthenticationMethod =
+			oAuth2ApplicationCacheModel.clientAuthenticationMethod;
+
+		if ((clientAuthenticationMethod != null) &&
+			(clientAuthenticationMethod.length() == 0)) {
+
+			oAuth2ApplicationCacheModel.clientAuthenticationMethod = null;
 		}
 
 		oAuth2ApplicationCacheModel.clientCredentialUserId =
@@ -1276,6 +1402,14 @@ public class OAuth2ApplicationModelImpl
 		}
 
 		oAuth2ApplicationCacheModel.iconFileEntryId = getIconFileEntryId();
+
+		oAuth2ApplicationCacheModel.jwks = getJwks();
+
+		String jwks = oAuth2ApplicationCacheModel.jwks;
+
+		if ((jwks != null) && (jwks.length() == 0)) {
+			oAuth2ApplicationCacheModel.jwks = null;
+		}
 
 		oAuth2ApplicationCacheModel.name = getName();
 
@@ -1358,44 +1492,17 @@ public class OAuth2ApplicationModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<OAuth2Application, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<OAuth2Application, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<OAuth2Application, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((OAuth2Application)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, OAuth2Application>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					OAuth2Application.class, ModelWrapper.class);
 
 	}
 
+	private String _uuid;
+	private String _externalReferenceCode;
 	private long _oAuth2ApplicationId;
 	private long _companyId;
 	private long _userId;
@@ -1405,6 +1512,7 @@ public class OAuth2ApplicationModelImpl
 	private boolean _setModifiedDate;
 	private long _oAuth2ApplicationScopeAliasesId;
 	private String _allowedGrantTypes;
+	private String _clientAuthenticationMethod;
 	private long _clientCredentialUserId;
 	private String _clientCredentialUserName;
 	private String _clientId;
@@ -1414,6 +1522,7 @@ public class OAuth2ApplicationModelImpl
 	private String _features;
 	private String _homePageURL;
 	private long _iconFileEntryId;
+	private String _jwks;
 	private String _name;
 	private String _privacyPolicyURL;
 	private String _redirectURIs;
@@ -1424,7 +1533,8 @@ public class OAuth2ApplicationModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<OAuth2Application, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1449,6 +1559,9 @@ public class OAuth2ApplicationModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("oAuth2ApplicationId", _oAuth2ApplicationId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -1458,6 +1571,8 @@ public class OAuth2ApplicationModelImpl
 		_columnOriginalValues.put(
 			"oA2AScopeAliasesId", _oAuth2ApplicationScopeAliasesId);
 		_columnOriginalValues.put("allowedGrantTypes", _allowedGrantTypes);
+		_columnOriginalValues.put(
+			"clientAuthenticationMethod", _clientAuthenticationMethod);
 		_columnOriginalValues.put(
 			"clientCredentialUserId", _clientCredentialUserId);
 		_columnOriginalValues.put(
@@ -1469,6 +1584,7 @@ public class OAuth2ApplicationModelImpl
 		_columnOriginalValues.put("features", _features);
 		_columnOriginalValues.put("homePageURL", _homePageURL);
 		_columnOriginalValues.put("iconFileEntryId", _iconFileEntryId);
+		_columnOriginalValues.put("jwks", _jwks);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("privacyPolicyURL", _privacyPolicyURL);
 		_columnOriginalValues.put("redirectURIs", _redirectURIs);
@@ -1481,6 +1597,7 @@ public class OAuth2ApplicationModelImpl
 	static {
 		Map<String, String> attributeNames = new HashMap<>();
 
+		attributeNames.put("uuid_", "uuid");
 		attributeNames.put(
 			"oA2AScopeAliasesId", "oAuth2ApplicationScopeAliasesId");
 
@@ -1498,49 +1615,57 @@ public class OAuth2ApplicationModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("oAuth2ApplicationId", 1L);
+		columnBitmasks.put("uuid_", 1L);
 
-		columnBitmasks.put("companyId", 2L);
+		columnBitmasks.put("externalReferenceCode", 2L);
 
-		columnBitmasks.put("userId", 4L);
+		columnBitmasks.put("oAuth2ApplicationId", 4L);
 
-		columnBitmasks.put("userName", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("createDate", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("modifiedDate", 32L);
+		columnBitmasks.put("userName", 32L);
 
-		columnBitmasks.put("oA2AScopeAliasesId", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("allowedGrantTypes", 128L);
+		columnBitmasks.put("modifiedDate", 128L);
 
-		columnBitmasks.put("clientCredentialUserId", 256L);
+		columnBitmasks.put("oA2AScopeAliasesId", 256L);
 
-		columnBitmasks.put("clientCredentialUserName", 512L);
+		columnBitmasks.put("allowedGrantTypes", 512L);
 
-		columnBitmasks.put("clientId", 1024L);
+		columnBitmasks.put("clientAuthenticationMethod", 1024L);
 
-		columnBitmasks.put("clientProfile", 2048L);
+		columnBitmasks.put("clientCredentialUserId", 2048L);
 
-		columnBitmasks.put("clientSecret", 4096L);
+		columnBitmasks.put("clientCredentialUserName", 4096L);
 
-		columnBitmasks.put("description", 8192L);
+		columnBitmasks.put("clientId", 8192L);
 
-		columnBitmasks.put("features", 16384L);
+		columnBitmasks.put("clientProfile", 16384L);
 
-		columnBitmasks.put("homePageURL", 32768L);
+		columnBitmasks.put("clientSecret", 32768L);
 
-		columnBitmasks.put("iconFileEntryId", 65536L);
+		columnBitmasks.put("description", 65536L);
 
-		columnBitmasks.put("name", 131072L);
+		columnBitmasks.put("features", 131072L);
 
-		columnBitmasks.put("privacyPolicyURL", 262144L);
+		columnBitmasks.put("homePageURL", 262144L);
 
-		columnBitmasks.put("redirectURIs", 524288L);
+		columnBitmasks.put("iconFileEntryId", 524288L);
 
-		columnBitmasks.put("rememberDevice", 1048576L);
+		columnBitmasks.put("jwks", 1048576L);
 
-		columnBitmasks.put("trustedApplication", 2097152L);
+		columnBitmasks.put("name", 2097152L);
+
+		columnBitmasks.put("privacyPolicyURL", 4194304L);
+
+		columnBitmasks.put("redirectURIs", 8388608L);
+
+		columnBitmasks.put("rememberDevice", 16777216L);
+
+		columnBitmasks.put("trustedApplication", 33554432L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

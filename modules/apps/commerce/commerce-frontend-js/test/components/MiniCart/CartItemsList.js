@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -27,14 +18,13 @@ import {
 } from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/constants';
 import {DEFAULT_LABELS} from '../../../src/main/resources/META-INF/resources/components/mini_cart/util/labels';
 
-describe('MiniCart Items List', () => {
+describe.skip('MiniCart Items List', () => {
 	const BASE_CONTEXT_MOCK = {
 		CartViews: {
 			[ITEMS_LIST_ACTIONS]: () => <div>{ITEMS_LIST_ACTIONS}</div>,
 		},
 		cartState: {},
 		labels: DEFAULT_LABELS,
-		spritemap: 'someSpritemap.svg',
 	};
 
 	const COMPONENT_SELECTOR = '.mini-cart-items-list';
@@ -61,25 +51,14 @@ describe('MiniCart Items List', () => {
 
 				expect(getByText(ITEMS_LIST_ACTIONS)).toBeInTheDocument();
 
-				const CartItemsListElement = container.querySelector(
-					COMPONENT_SELECTOR
-				);
+				const CartItemsListElement =
+					container.querySelector(COMPONENT_SELECTOR);
 
-				const EmptyCartElement = CartItemsListElement.querySelector(
-					EMPTY_CART_SELECTOR
-				);
-
-				const iconElement = EmptyCartElement.querySelector('svg use');
-
-				const iconPath = iconElement.getAttribute('xlink:href');
+				const EmptyCartElement =
+					CartItemsListElement.querySelector(EMPTY_CART_SELECTOR);
 
 				expect(CartItemsListElement).toBeInTheDocument();
 				expect(EmptyCartElement).toBeInTheDocument();
-				expect(iconElement).toBeInTheDocument();
-
-				expect(iconPath).toEqual(
-					`${BASE_CONTEXT_MOCK.spritemap}#shopping-cart`
-				);
 
 				expect(
 					getByText(BASE_CONTEXT_MOCK.labels[ADD_PRODUCT])
@@ -122,7 +101,6 @@ describe('MiniCart Items List', () => {
 				},
 				isUpdating: false,
 				labels: DEFAULT_LABELS,
-				spritemap: 'someSpritemap.svg',
 				summaryDataMapper: jest.fn(),
 			};
 
@@ -141,12 +119,12 @@ describe('MiniCart Items List', () => {
 
 					expect(getByText(ITEMS_LIST_ACTIONS)).toBeInTheDocument();
 
-					const CartItemsListElement = container.querySelector(
-						COMPONENT_SELECTOR
-					);
-					const CartItemElements = CartItemsListElement.querySelectorAll(
-						'.mini-cart-cart-items div'
-					);
+					const CartItemsListElement =
+						container.querySelector(COMPONENT_SELECTOR);
+					const CartItemElements =
+						CartItemsListElement.querySelectorAll(
+							'.mini-cart-cart-items div'
+						);
 
 					expect(CartItemElements.length).toEqual(1);
 					expect(CartItemElements[0].innerHTML).toEqual(

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -70,9 +61,9 @@ SiteAdminDisplayContext siteAdminDisplayContext = (SiteAdminDisplayContext)reque
 				<liferay-ui:search-container-column-text
 					colspan="<%= 2 %>"
 				>
-					<h5>
+					<div class="h5">
 						<aui:a href="<%= !curGroup.isCompany() ? viewSubsitesURL : StringPool.BLANK %>" label="<%= HtmlUtil.escape(curGroup.getDescriptiveName(locale)) %>" localizeLabel="<%= false %>" />
-					</h5>
+					</div>
 
 					<span class="text-secondary">
 						<c:choose>
@@ -93,14 +84,16 @@ SiteAdminDisplayContext siteAdminDisplayContext = (SiteAdminDisplayContext)reque
 
 				<liferay-ui:search-container-column-text>
 					<clay:dropdown-actions
+						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= siteAdminDisplayContext.getActionDropdownItems(curGroup) %>"
-						propsTransformer="js/SiteDropdownDefaultPropsTransformer"
+						propsTransformer="{SiteDropdownDefaultPropsTransformer} from site-admin-web"
 					/>
 				</liferay-ui:search-container-column-text>
 			</c:when>
 			<c:when test='<%= Objects.equals(siteAdminDisplayContext.getDisplayStyle(), "icon") %>'>
 				<liferay-ui:search-container-column-text>
 					<clay:vertical-card
+						propsTransformer="{SiteDropdownDefaultPropsTransformer} from site-admin-web"
 						verticalCard="<%= new SiteVerticalCard(curGroup, liferayPortletRequest, liferayPortletResponse, searchContainer.getRowChecker(), siteAdminDisplayContext) %>"
 					/>
 				</liferay-ui:search-container-column-text>
@@ -123,9 +116,9 @@ SiteAdminDisplayContext siteAdminDisplayContext = (SiteAdminDisplayContext)reque
 					</c:if>
 
 					<%
-					List<String> names = SitesUtil.getOrganizationNames(curGroup, user);
+					List<String> names = TransformUtil.transform(OrganizationLocalServiceUtil.getGroupUserOrganizations(curGroup.getGroupId(), user.getUserId()), Organization::getName);
 
-					names.addAll(SitesUtil.getUserGroupNames(curGroup, user));
+					names.addAll(TransformUtil.transform(UserGroupLocalServiceUtil.getGroupUserUserGroups(curGroup.getGroupId(), user.getUserId()), UserGroup::getName));
 					%>
 
 					<c:if test="<%= ListUtil.isNotEmpty(names) %>">
@@ -172,40 +165,42 @@ SiteAdminDisplayContext siteAdminDisplayContext = (SiteAdminDisplayContext)reque
 					name="members"
 				>
 					<span class="lfr-portal-tooltip" title="<liferay-ui:message key="inherited-memberships-are-not-included-in-members-count" />">
+						<div>
 
-						<%
-						int usersCount = UserLocalServiceUtil.getGroupUsersCount(curGroup.getGroupId(), WorkflowConstants.STATUS_APPROVED);
-						%>
+							<%
+							int usersCount = UserLocalServiceUtil.getGroupUsersCount(curGroup.getGroupId(), WorkflowConstants.STATUS_APPROVED);
+							%>
 
-						<c:if test="<%= usersCount > 0 %>">
-							<div class="user-count">
-								<%= LanguageUtil.format(request, usersCount > 1 ? "x-users" : "x-user", usersCount, false) %>
-							</div>
-						</c:if>
+							<c:if test="<%= usersCount > 0 %>">
+								<div class="user-count">
+									<%= LanguageUtil.format(request, usersCount > 1 ? "x-users" : "x-user", usersCount, false) %>
+								</div>
+							</c:if>
 
-						<%
-						int organizationsCount = OrganizationLocalServiceUtil.getGroupOrganizationsCount(curGroup.getGroupId());
-						%>
+							<%
+							int organizationsCount = OrganizationLocalServiceUtil.getGroupOrganizationsCount(curGroup.getGroupId());
+							%>
 
-						<c:if test="<%= organizationsCount > 0 %>">
-							<div class="organization-count">
-								<%= LanguageUtil.format(request, organizationsCount > 1 ? "x-organizations" : "x-organization", organizationsCount, false) %>
-							</div>
-						</c:if>
+							<c:if test="<%= organizationsCount > 0 %>">
+								<div class="organization-count">
+									<%= LanguageUtil.format(request, organizationsCount > 1 ? "x-organizations" : "x-organization", organizationsCount, false) %>
+								</div>
+							</c:if>
 
-						<%
-						int userGroupsCount = UserGroupLocalServiceUtil.getGroupUserGroupsCount(curGroup.getGroupId());
-						%>
+							<%
+							int userGroupsCount = UserGroupLocalServiceUtil.getGroupUserGroupsCount(curGroup.getGroupId());
+							%>
 
-						<c:if test="<%= userGroupsCount > 0 %>">
-							<div class="user-group-count">
-								<%= LanguageUtil.format(request, userGroupsCount > 1 ? "x-user-groups" : "x-user-group", userGroupsCount, false) %>
-							</div>
-						</c:if>
+							<c:if test="<%= userGroupsCount > 0 %>">
+								<div class="user-group-count">
+									<%= LanguageUtil.format(request, userGroupsCount > 1 ? "x-user-groups" : "x-user-group", userGroupsCount, false) %>
+								</div>
+							</c:if>
 
-						<c:if test="<%= (usersCount + organizationsCount + userGroupsCount) <= 0 %>">
-							0
-						</c:if>
+							<c:if test="<%= (usersCount + organizationsCount + userGroupsCount) <= 0 %>">
+								0
+							</c:if>
+						</div>
 					</span>
 				</liferay-ui:search-container-column-text>
 
@@ -217,15 +212,16 @@ SiteAdminDisplayContext siteAdminDisplayContext = (SiteAdminDisplayContext)reque
 				</c:if>
 
 				<liferay-ui:search-container-column-text
-					cssClass="table-cell-smallest table-cell-ws-nowrap table-column-text-center"
+					cssClass="table-cell-expand-smallest table-cell-ws-nowrap table-column-text-center"
 					name="active"
 					value='<%= LanguageUtil.get(request, (curGroup.isActive() ? "yes" : "no")) %>'
 				/>
 
 				<liferay-ui:search-container-column-text>
 					<clay:dropdown-actions
+						aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 						dropdownItems="<%= siteAdminDisplayContext.getActionDropdownItems(curGroup) %>"
-						propsTransformer="js/SiteDropdownDefaultPropsTransformer"
+						propsTransformer="{SiteDropdownDefaultPropsTransformer} from site-admin-web"
 					/>
 				</liferay-ui:search-container-column-text>
 			</c:otherwise>

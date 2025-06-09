@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -52,49 +43,51 @@ renderResponse.setTitle((ddmDataProviderInstance == null) ? LanguageUtil.get(req
 	<clay:container-fluid
 		cssClass="container-form-lg lfr-ddm-edit-data-provider"
 	>
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
-				<liferay-util:buffer
-					var="requiredMark"
-				>
-					<span class="hide-accessible"><liferay-ui:message key="required" />&nbsp;</span>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset>
+					<liferay-util:buffer
+						var="requiredMark"
+					>
+						<span class="hide-accessible sr-only"><liferay-ui:message key="required" />&nbsp;</span>
 
-					<svg aria-hidden="true" class="lexicon-icon lexicon-icon-asterisk reference-mark">
-						<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#asterisk" />
-					</svg>
-				</liferay-util:buffer>
+						<svg aria-hidden="true" class="lexicon-icon lexicon-icon-asterisk reference-mark">
+							<use xlink:href="<%= themeDisplay.getPathThemeSpritemap() %>#asterisk" />
+						</svg>
+					</liferay-util:buffer>
 
-				<label class="required-warning">
-					<liferay-ui:message arguments="<%= requiredMark %>" key="all-fields-marked-with-x-are-required" translateArguments="<%= false %>" />
-				</label>
+					<label class="required-warning">
+						<liferay-ui:message arguments="<%= requiredMark %>" key="all-fields-marked-with-x-are-required" translateArguments="<%= false %>" />
+					</label>
 
-				<aui:input name="name" placeholder="enter-the-data-providers-name" required="<%= true %>" type="text" value="<%= ddmDataProviderDisplayContext.getDataProviderInstanceName() %>" />
+					<aui:input name="name" placeholder="enter-the-data-providers-name" required="<%= true %>" type="text" value="<%= ddmDataProviderDisplayContext.getDataProviderInstanceName() %>" />
 
-				<aui:input name="description" placeholder="enter-a-short-description" type="textarea" value="<%= ddmDataProviderDisplayContext.getDataProviderInstanceDescription() %>" />
-			</aui:fieldset>
+					<aui:input name="description" placeholder="enter-a-short-description" type="textarea" value="<%= ddmDataProviderDisplayContext.getDataProviderInstanceDescription() %>" />
+				</aui:fieldset>
 
-			<aui:fieldset>
-				<%= ddmDataProviderDisplayContext.getDataProviderInstanceDDMFormHTML() %>
-			</aui:fieldset>
+				<aui:fieldset>
+					<%= ddmDataProviderDisplayContext.getDataProviderInstanceDDMFormHTML() %>
+				</aui:fieldset>
 
-			<c:if test="<%= ddmDataProviderInstance == null %>">
-				<div id="<portlet:namespace />dataProviderPermissions">
-					<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
-						<liferay-ui:input-permissions
-							modelName="<%= DDMDataProviderInstance.class.getName() %>"
-						/>
-					</aui:fieldset>
-				</div>
-			</c:if>
+				<c:if test="<%= ddmDataProviderInstance == null %>">
+					<div id="<portlet:namespace />dataProviderPermissions">
+						<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
+							<liferay-ui:input-permissions
+								modelName="<%= DDMDataProviderInstance.class.getName() %>"
+							/>
+						</aui:fieldset>
+					</div>
+				</c:if>
 
-			<c:if test="<%= !windowState.equals(LiferayWindowState.POP_UP) %>">
-				<div class="sheet-footer">
-					<aui:button id="submit" label="save" type="submit" />
+				<c:if test="<%= !windowState.equals(LiferayWindowState.POP_UP) %>">
+					<div class="sheet-footer">
+						<aui:button id="submit" label="save" type="submit" />
 
-					<aui:button href="<%= redirect %>" name="cancelButton" type="cancel" />
-				</div>
-			</c:if>
-		</aui:fieldset-group>
+						<aui:button href="<%= redirect %>" name="cancelButton" type="cancel" />
+					</div>
+				</c:if>
+			</div>
+		</div>
 	</clay:container-fluid>
 
 	<aui:button cssClass="hide" type="submit" />

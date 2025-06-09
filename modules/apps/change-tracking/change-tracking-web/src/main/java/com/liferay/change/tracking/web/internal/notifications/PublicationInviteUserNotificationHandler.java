@@ -1,26 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.notifications;
 
 import com.liferay.change.tracking.constants.CTPortletKeys;
+import com.liferay.change.tracking.constants.PublicationRoleConstants;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
-import com.liferay.change.tracking.web.internal.constants.PublicationRoleConstants;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
@@ -28,15 +18,16 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseUserNotificationHandler;
-import com.liferay.portal.kernel.notifications.UserNotificationHandler;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,11 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Samuel Trong Tran
  */
-@Component(
-	immediate = true,
-	property = "javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
-	service = UserNotificationHandler.class
-)
+@Component(service = PublicationInviteUserNotificationHandler.class)
 public class PublicationInviteUserNotificationHandler
 	extends BaseUserNotificationHandler {
 
@@ -62,7 +49,53 @@ public class PublicationInviteUserNotificationHandler
 			ServiceContext serviceContext)
 		throws Exception {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		return _getMessage(userNotificationEvent, serviceContext);
+	}
+
+	@Override
+	protected String getLink(
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
+			userNotificationEvent.getPayload());
+
+		long ctCollectionId = jsonObject.getLong("classPK");
+
+		CTCollection ctCollection = _ctCollectionLocalService.fetchCTCollection(
+			ctCollectionId);
+
+		if (ctCollection == null) {
+			return null;
+		}
+
+		return PortletURLBuilder.create(
+			_portal.getControlPanelPortletURL(
+				serviceContext.getRequest(), serviceContext.getScopeGroup(),
+				CTPortletKeys.PUBLICATIONS, 0, 0, PortletRequest.RENDER_PHASE)
+		).setMVCRenderCommandName(
+			"/change_tracking/view_changes"
+		).setParameter(
+			"ctCollectionId", ctCollectionId
+		).buildString();
+	}
+
+	@Override
+	protected String getTitle(
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		return _getMessage(userNotificationEvent, serviceContext);
+	}
+
+	private String _getMessage(
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			userNotificationEvent.getPayload());
 
 		long ctCollectionId = jsonObject.getLong("classPK");
@@ -108,41 +141,25 @@ public class PublicationInviteUserNotificationHandler
 		return _language.format(
 			serviceContext.getLocale(), "x-has-invited-you-to-work-on-x-as-a-x",
 			new Object[] {
-				userName, ctCollection.getName(),
+				userName, HtmlUtil.escape(ctCollection.getName()),
 				_language.get(
-					serviceContext.getLocale(),
-					PublicationRoleConstants.getRoleLabel(roleValue))
+					serviceContext.getLocale(), _getRoleLabel(roleValue))
 			},
 			false);
 	}
 
-	@Override
-	protected String getLink(
-			UserNotificationEvent userNotificationEvent,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			userNotificationEvent.getPayload());
-
-		long ctCollectionId = jsonObject.getLong("classPK");
-
-		CTCollection ctCollection = _ctCollectionLocalService.fetchCTCollection(
-			ctCollectionId);
-
-		if (ctCollection == null) {
-			return null;
+	private String _getRoleLabel(int role) {
+		if (role == PublicationRoleConstants.ROLE_ADMIN) {
+			return PublicationRoleConstants.LABEL_ADMIN;
+		}
+		else if (role == PublicationRoleConstants.ROLE_EDITOR) {
+			return PublicationRoleConstants.LABEL_EDITOR;
+		}
+		else if (role == PublicationRoleConstants.ROLE_PUBLISHER) {
+			return PublicationRoleConstants.LABEL_PUBLISHER;
 		}
 
-		return PortletURLBuilder.create(
-			_portal.getControlPanelPortletURL(
-				serviceContext.getRequest(), serviceContext.getScopeGroup(),
-				CTPortletKeys.PUBLICATIONS, 0, 0, PortletRequest.RENDER_PHASE)
-		).setMVCRenderCommandName(
-			"/change_tracking/view_changes"
-		).setParameter(
-			"ctCollectionId", ctCollectionId
-		).buildString();
+		return PublicationRoleConstants.LABEL_VIEWER;
 	}
 
 	@Reference
@@ -150,6 +167,9 @@ public class PublicationInviteUserNotificationHandler
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Language _language;

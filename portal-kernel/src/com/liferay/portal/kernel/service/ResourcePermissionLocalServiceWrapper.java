@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.ResourcePermission;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -28,6 +20,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class ResourcePermissionLocalServiceWrapper
 	implements ResourcePermissionLocalService,
 			   ServiceWrapper<ResourcePermissionLocalService> {
+
+	public ResourcePermissionLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ResourcePermissionLocalServiceWrapper(
 		ResourcePermissionLocalService resourcePermissionLocalService) {
@@ -162,19 +158,29 @@ public class ResourcePermissionLocalServiceWrapper
 	 optionally an empty string if no instance exists
 	 * @param portletActions whether to associate portlet actions with the
 	 resource
-	 * @param addGroupPermissions whether to add group permissions
-	 * @param addGuestPermissions whether to add guest permissions
 	 */
 	@Override
 	public void addResourcePermissions(
 			long companyId, long groupId, long userId, String name,
-			String primKey, boolean portletActions, boolean addGroupPermissions,
-			boolean addGuestPermissions)
+			String primKey, boolean portletActions,
+			ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_resourcePermissionLocalService.addResourcePermissions(
 			companyId, groupId, userId, name, primKey, portletActions,
-			addGroupPermissions, addGuestPermissions);
+			serviceContext);
+	}
+
+	@Override
+	public void addResourcePermissions(
+			long companyId, long groupId, long userId, String name,
+			String[] primKeys, boolean portletActions,
+			ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_resourcePermissionLocalService.addResourcePermissions(
+			companyId, groupId, userId, name, primKeys, portletActions,
+			serviceContext);
 	}
 
 	/**
@@ -205,11 +211,11 @@ public class ResourcePermissionLocalServiceWrapper
 
 	@Override
 	public void copyModelResourcePermissions(
-			long companyId, String name, long oldPrimKey, long newPrimKey)
+			long companyId, String name, long sourcePrimKey, long targetPrimKey)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_resourcePermissionLocalService.copyModelResourcePermissions(
-			companyId, name, oldPrimKey, newPrimKey);
+			companyId, name, sourcePrimKey, targetPrimKey);
 	}
 
 	/**
@@ -288,6 +294,15 @@ public class ResourcePermissionLocalServiceWrapper
 			resourcePermission);
 	}
 
+	@Override
+	public void deleteResourcePermissions(
+			long companyId, String name, int scope)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_resourcePermissionLocalService.deleteResourcePermissions(
+			companyId, name, scope);
+	}
+
 	/**
 	 * Deletes all resource permissions at the scope to resources of the type.
 	 * This method should not be confused with any of the
@@ -346,6 +361,11 @@ public class ResourcePermissionLocalServiceWrapper
 
 		_resourcePermissionLocalService.deleteResourcePermissions(
 			companyId, name, scope, primKey);
+	}
+
+	@Override
+	public void deleteResourcePermissions(String name) {
+		_resourcePermissionLocalService.deleteResourcePermissions(name);
 	}
 
 	@Override
@@ -601,6 +621,15 @@ public class ResourcePermissionLocalServiceWrapper
 
 		return _resourcePermissionLocalService.getResourcePermissions(
 			start, end);
+	}
+
+	@Override
+	public java.util.List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope, long roleId,
+		boolean viewActionId) {
+
+		return _resourcePermissionLocalService.getResourcePermissions(
+			companyId, name, scope, roleId, viewActionId);
 	}
 
 	/**
@@ -887,6 +916,15 @@ public class ResourcePermissionLocalServiceWrapper
 	}
 
 	@Override
+	public void initDefaultModelResourcePermissions(
+			long companyId, java.util.Collection<String> modelResources)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_resourcePermissionLocalService.initDefaultModelResourcePermissions(
+			companyId, modelResources);
+	}
+
+	@Override
 	public void initPortletDefaultPermissions(
 			com.liferay.portal.kernel.model.Portlet portlet)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -1169,6 +1207,11 @@ public class ResourcePermissionLocalServiceWrapper
 
 		_resourcePermissionLocalService.updateResourcePermissions(
 			companyId, name, scope, primKey, newPrimKey);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _resourcePermissionLocalService.getBasePersistence();
 	}
 
 	@Override

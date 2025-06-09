@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.servlet.jsp.compiler.internal;
 
 import com.liferay.portal.kernel.util.GetterUtil;
 
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.Tag;
+
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.JspTag;
-import javax.servlet.jsp.tagext.Tag;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.runtime.TagHandlerPool;
@@ -36,14 +26,12 @@ import org.apache.jasper.runtime.TagHandlerPool;
 public class JspTagHandlerPool extends TagHandlerPool {
 
 	@Override
-	public <T extends JspTag> JspTag get(Class<T> jspTagClass)
-		throws JspException {
+	public Tag get(Class<? extends Tag> tagClass) throws JspException {
+		Tag tag = _tags.poll();
 
-		JspTag jspTag = _jspTags.poll();
-
-		if (jspTag == null) {
+		if (tag == null) {
 			try {
-				jspTag = jspTagClass.newInstance();
+				tag = tagClass.newInstance();
 			}
 			catch (Exception exception) {
 				throw new JspException(exception);
@@ -53,32 +41,26 @@ public class JspTagHandlerPool extends TagHandlerPool {
 			_counter.getAndDecrement();
 		}
 
-		return jspTag;
+		return tag;
 	}
 
 	@Override
 	public void release() {
-		JspTag jspTag = null;
+		Tag tag = null;
 
-		while ((jspTag = _jspTags.poll()) != null) {
-			if (jspTag instanceof Tag) {
-				Tag tag = (Tag)jspTag;
-
-				tag.release();
-			}
+		while ((tag = _tags.poll()) != null) {
+			tag.release();
 		}
 	}
 
 	@Override
-	public void reuse(JspTag jspTag) {
+	public void reuse(Tag tag) {
 		if (_counter.get() < _maxSize) {
 			_counter.getAndIncrement();
 
-			_jspTags.offer(jspTag);
+			_tags.offer(tag);
 		}
-		else if (jspTag instanceof Tag) {
-			Tag tag = (Tag)jspTag;
-
+		else {
 			tag.release();
 		}
 	}
@@ -90,7 +72,7 @@ public class JspTagHandlerPool extends TagHandlerPool {
 	}
 
 	private final AtomicInteger _counter = new AtomicInteger();
-	private final Queue<JspTag> _jspTags = new ConcurrentLinkedQueue<>();
 	private int _maxSize;
+	private final Queue<Tag> _tags = new ConcurrentLinkedQueue<>();
 
 }

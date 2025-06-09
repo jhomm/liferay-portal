@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.layout.display.page;
@@ -20,9 +11,11 @@ import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.friendly.url.info.item.provider.InfoItemFriendlyURLProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -36,10 +29,21 @@ import java.util.Locale;
 public class FileEntryLayoutDisplayPageObjectProvider
 	implements LayoutDisplayPageObjectProvider<FileEntry> {
 
-	public FileEntryLayoutDisplayPageObjectProvider(FileEntry fileEntry) {
+	public FileEntryLayoutDisplayPageObjectProvider(
+		FileEntry fileEntry,
+		InfoItemFriendlyURLProvider<FileEntry> infoItemFriendlyURLProvider,
+		Language language) {
+
 		_fileEntry = fileEntry;
+		_infoItemFriendlyURLProvider = infoItemFriendlyURLProvider;
+		_language = language;
 
 		_assetEntry = _getAssetEntry(fileEntry);
+	}
+
+	@Override
+	public String getClassName() {
+		return FileEntry.class.getName();
 	}
 
 	@Override
@@ -88,14 +92,14 @@ public class FileEntryLayoutDisplayPageObjectProvider
 
 	@Override
 	public String getURLTitle(Locale locale) {
-		return String.valueOf(_fileEntry.getFileEntryId());
+		return _infoItemFriendlyURLProvider.getFriendlyURL(
+			_fileEntry, _language.getLanguageId(locale));
 	}
 
 	private AssetEntry _getAssetEntry(FileEntry fileEntry) {
 		AssetRendererFactory<?> assetRendererFactory =
-			AssetRendererFactoryRegistryUtil.
-				getAssetRendererFactoryByClassNameId(
-					PortalUtil.getClassNameId(DLFileEntry.class));
+			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClass(
+				DLFileEntry.class);
 
 		if (assetRendererFactory == null) {
 			return null;
@@ -106,13 +110,17 @@ public class FileEntryLayoutDisplayPageObjectProvider
 				assetRendererFactory.getAssetRenderer(
 					fileEntry.getFileEntryId());
 
+			if (assetRenderer == null) {
+				return null;
+			}
+
 			return assetRendererFactory.getAssetEntry(
 				DLFileEntryConstants.getClassName(),
 				assetRenderer.getClassPK());
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return null;
@@ -124,5 +132,8 @@ public class FileEntryLayoutDisplayPageObjectProvider
 
 	private final AssetEntry _assetEntry;
 	private final FileEntry _fileEntry;
+	private final InfoItemFriendlyURLProvider<FileEntry>
+		_infoItemFriendlyURLProvider;
+	private final Language _language;
 
 }

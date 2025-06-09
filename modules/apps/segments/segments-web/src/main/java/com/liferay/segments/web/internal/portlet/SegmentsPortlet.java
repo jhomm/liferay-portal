@@ -1,53 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.web.internal.portlet;
 
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.item.selector.ItemSelector;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
 import com.liferay.roles.admin.role.type.contributor.provider.RoleTypeContributorProvider;
-import com.liferay.segments.configuration.SegmentsConfiguration;
+import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.service.SegmentsEntryService;
-import com.liferay.segments.web.internal.constants.SegmentsWebKeys;
 import com.liferay.segments.web.internal.display.context.SegmentsDisplayContext;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
-import java.util.Map;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eduardo García
  */
 @Component(
-	configurationPid = "com.liferay.segments.configuration.SegmentsConfiguration",
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-segments",
@@ -59,14 +42,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-request-attributes=false",
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
-		"javax.portlet.display-name=Segments",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=Segments",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {Portlet.class, SegmentsPortlet.class}
+	service = Portlet.class
 )
 public class SegmentsPortlet extends MVCPortlet {
 
@@ -76,61 +60,36 @@ public class SegmentsPortlet extends MVCPortlet {
 		throws IOException, PortletException {
 
 		renderRequest.setAttribute(
-			SegmentsWebKeys.EXCLUDED_ROLE_NAMES, _getExcludedRoleNames());
-		renderRequest.setAttribute(
-			SegmentsWebKeys.ITEM_SELECTOR, _itemSelector);
-
-		SegmentsDisplayContext segmentsDisplayContext =
+			SegmentsDisplayContext.class.getName(),
 			new SegmentsDisplayContext(
-				_portal.getHttpServletRequest(renderRequest), renderRequest,
-				renderResponse, _roleSegmentationEnabled,
-				_segmentsEntryService);
-
-		renderRequest.setAttribute(
-			SegmentsWebKeys.SEGMENTS_DISPLAY_CONTEXT, segmentsDisplayContext);
+				_analyticsSettingsManager, _groupLocalService, _itemSelector,
+				_language, _portal, renderRequest, renderResponse,
+				_roleTypeContributorProvider, _segmentsConfigurationProvider,
+				_segmentsEntryService));
 
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Activate
-	protected void activate(
-		BundleContext bundleContext, Map<String, Object> properties) {
+	@Reference
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
-		SegmentsConfiguration segmentsConfiguration =
-			ConfigurableUtil.createConfigurable(
-				SegmentsConfiguration.class, properties);
-
-		_roleSegmentationEnabled =
-			segmentsConfiguration.roleSegmentationEnabled();
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		_roleSegmentationEnabled = false;
-	}
-
-	private String[] _getExcludedRoleNames() {
-		RoleTypeContributor roleTypeContributor =
-			_roleTypeContributorProvider.getRoleTypeContributor(
-				RoleConstants.TYPE_SITE);
-
-		if (roleTypeContributor != null) {
-			return roleTypeContributor.getExcludedRoleNames();
-		}
-
-		return new String[0];
-	}
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private ItemSelector _itemSelector;
 
 	@Reference
-	private Portal _portal;
+	private Language _language;
 
-	private boolean _roleSegmentationEnabled;
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private RoleTypeContributorProvider _roleTypeContributorProvider;
+
+	@Reference
+	private SegmentsConfigurationProvider _segmentsConfigurationProvider;
 
 	@Reference
 	private SegmentsEntryService _segmentsEntryService;

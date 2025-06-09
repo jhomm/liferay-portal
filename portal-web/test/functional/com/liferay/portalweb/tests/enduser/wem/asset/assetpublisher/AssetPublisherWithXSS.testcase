@@ -1,9 +1,10 @@
-@component-name = "portal-wcm"
+@component-name = "portal-content-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Asset Publisher";
+	property testray.main.component.name = "Asset Publisher Widget";
 
 	setUp {
 		task ("Set up instance and sign in") {
@@ -12,8 +13,12 @@ definition {
 			User.firstLoginPG();
 		}
 
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
 		task ("Add a site") {
-			JSONGroup.addGroup(groupName = "Test Site Name");
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 
 		task ("Add a widget page") {
@@ -31,9 +36,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -42,7 +47,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-124704. No alert popup on view asset in Asset Publisher when replace the value of assetEntryId by XSS in URL."
-	@priority = "4"
+	@priority = 4
 	@uitest
 	test ViewAssetWhenReplaceValueOfAssetEntryIdByXSSInURL {
 		task ("Add three web contents") {
@@ -73,13 +78,12 @@ definition {
 
 			var url = selenium.getLocation();
 
-			var value = StringUtil.extractLast("${url}", "assetEntryId=");
-
+			var value = StringUtil.extractLast(${url}, "assetEntryId=");
 			var script = '''</script> <script> alert (1) </script>''';
 
-			var url = StringUtil.replace("${url}", "${value}", "${script}");
+			var url = StringUtil.replace(${url}, ${value}, ${script});
 
-			Navigator.openSpecificURL(url = "${url}");
+			Navigator.openSpecificURL(url = ${url});
 		}
 
 		task ("View the alert not shown") {

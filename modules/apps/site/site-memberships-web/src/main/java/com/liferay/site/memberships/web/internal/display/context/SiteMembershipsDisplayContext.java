@@ -1,40 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.memberships.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -77,16 +67,6 @@ public class SiteMembershipsDisplayContext {
 		return group.getGroupId();
 	}
 
-	public List<NavigationItem> getInfoPanelNavigationItems() {
-		return NavigationItemListBuilder.add(
-			navigationItem -> {
-				navigationItem.setActive(true);
-				navigationItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "details"));
-			}
-		).build();
-	}
-
 	public PortletURL getPortletURL() {
 		return PortletURLBuilder.createRenderURL(
 			_liferayPortletResponse
@@ -97,22 +77,6 @@ public class SiteMembershipsDisplayContext {
 		).setParameter(
 			"groupId", getGroupId()
 		).buildPortletURL();
-	}
-
-	public String getRedirect() {
-		if (_redirect != null) {
-			return _redirect;
-		}
-
-		_redirect = ParamUtil.getString(_httpServletRequest, "redirect");
-
-		if (Validator.isNull(_redirect)) {
-			PortletURL portletURL = _liferayPortletResponse.createRenderURL();
-
-			_redirect = portletURL.toString();
-		}
-
-		return _redirect;
 	}
 
 	public User getSelUser() throws PortalException {
@@ -133,16 +97,6 @@ public class SiteMembershipsDisplayContext {
 		_tabs1 = ParamUtil.getString(_httpServletRequest, "tabs1", "users");
 
 		return _tabs1;
-	}
-
-	public long getUserGroupId() {
-		if (_userGroupId != null) {
-			return _userGroupId;
-		}
-
-		_userGroupId = ParamUtil.getLong(_httpServletRequest, "userGroupId");
-
-		return _userGroupId;
 	}
 
 	public long getUserId() throws PortalException {
@@ -186,9 +140,7 @@ public class SiteMembershipsDisplayContext {
 	private Group _group;
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
-	private String _redirect;
 	private User _selUser;
 	private String _tabs1;
-	private Long _userGroupId;
 
 }

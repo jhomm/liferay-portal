@@ -1,0 +1,1619 @@
+definition {
+
+	@summary = "Default summary"
+	macro addEmailNotificationTemplateViaAPI(cc = null, bcc = null, templateName = null, subject = null, fromName = null, bodyContent = null, fromAddress = null, toAddress = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/notification/v1.0/notification-templates \
+				-H 'Content-Type:application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"body": {
+						"en_US": "<p>${bodyContent}</p>\n"
+					},
+					"editorType": "richText",
+					"name": "${templateName}",
+					"name_i18n": {
+						"en_US": "${templateName}"
+					},
+					"recipientType": "email",
+					"recipients": [
+						{
+							"bcc": "${bcc}",
+							"cc": "${cc}",
+							"from": "${fromAddress}",
+							"fromName": {
+								"en_US": "${fromName}"
+							},
+							"to": {
+								"en_US": "${toAddress}"
+							}
+						}
+					],
+					"subject": {
+						"en_US": "${subject}"
+					},
+					"type": "email",
+					"typeLabel": "Email"
+				}'
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addObject(objectName = null, labelName = null, pluralLabelName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(panelCategoryKey))) {
+			var panelCategoryKey = "control_panel.object";
+		}
+
+		if (!(isSet(scope))) {
+			var scope = "company";
+		}
+
+		if (!(isSet(externalReferenceCode))) {
+			var externalReferenceCode = "";
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"externalReferenceCode": "${externalReferenceCode}",
+					"label": {
+						"en_US": "${labelName}"
+					},
+					"name": "${objectName}",
+					"objectFields": [
+					],
+					"panelCategoryKey": "${panelCategoryKey}",
+					"pluralLabel": {
+						"en_US": "${pluralLabelName}"
+					},
+					"scope": "${scope}"
+				}'
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addObjectEntry(fieldNameList = null, valueList = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+		var list1 = ListUtil.newListFromString(${fieldNameList});
+		var list2 = ListUtil.newListFromString(${valueList});
+		var size1 = ListUtil.size(${list1});
+		var fieldName = ListUtil.get(${list1}, 0);
+		var value = ListUtil.get(${list2}, 0);
+
+		var data1 = "\"${fieldName}\": \"${value}\"";
+
+		if (isSet(entryLanguageList)) {
+			var list3 = ListUtil.newListFromString(${entryLanguageList});
+
+			var size2 = ListUtil.size(${list3});
+			var language = ListUtil.get(${list3}, 0);
+
+			var data2 = "\"${language}\": \"${value}\"";
+		}
+
+		var i = 1;
+
+		if (isSet(entryLanguageList)) {
+			while (${i} != ${size2}) {
+				var language = ListUtil.get(${list3}, ${i});
+				var value = ListUtil.get(${list2}, ${i});
+
+				var data2 = StringUtil.add(${data2}, ",\"${language}\": \"${value}\"", "");
+				var i = ${i} + 1;
+			}
+
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H accept: application/json \
+					-H Content-Type: application/json \
+					-u ${userEmailAddress}:${userPassword} \
+					-d {
+						"${fieldNameList}_i18n": {
+							${data2}
+						}
+					}
+			''';
+
+			var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
+
+			return ${objectEntryId};
+		}
+		else {
+			while (${i} != ${size1}) {
+				var fieldName = ListUtil.get(${list1}, ${i});
+				var value = ListUtil.get(${list2}, ${i});
+
+				var data1 = StringUtil.add(${data1}, ",\"${fieldName}\": \"${value}\"", "");
+				var i = ${i} + 1;
+			}
+
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H accept: application/json \
+					-H Content-Type: application/json \
+					-u ${userEmailAddress}:${userPassword} \
+					-d {
+						${data1}
+					}
+			''';
+
+			var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
+
+			return ${objectEntryId};
+		}
+	}
+
+	@summary = "Default summary"
+	macro addObjectEntryViaJSONAPI(scope = null) {
+		Variables.assertDefined(parameterList = ${objectName});
+
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (${scope} == "site") {
+			if (!(isSet(groupName))) {
+				var groupName = "Guest";
+			}
+
+			var groupId = JSONGroupAPI._getGroupIdByName(
+				groupName = ${groupName},
+				site = "true");
+		}
+		else {
+			var groupId = 0;
+		}
+
+		var objectId = JSONObject.getObjectId(
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		if (!(isSet(fieldList))) {
+			Variables.assertDefined(parameterList = "${fieldName},${fieldValue}");
+
+			var entryValues = "\"${fieldName}\": \"${fieldValue}\"";
+		}
+		else {
+			Variables.assertDefined(parameterList = ${fieldList});
+
+			var fieldList = ListUtil.newListFromString(${fieldList});
+			var entryValues = "";
+
+			for (var fieldNameValue : list ${fieldList}) {
+				var fieldName = StringUtil.extractFirst(${fieldNameValue}, "/");
+				var fieldValue = StringUtil.extractLast(${fieldNameValue}, "/");
+
+				var entryValues = "${entryValues}\"${fieldName}\": \"${fieldValue}\"";
+
+				ListUtil.remove(${fieldList}, ${fieldNameValue});
+
+				var listEmpty = ListUtil.isEmpty(${fieldList});
+
+				if (${listEmpty} == "false") {
+					var entryValues = "${entryValues},";
+				}
+			}
+		}
+
+		var curl = '''
+			${portalURL}/api/jsonws/object.objectentry/add-object-entry \
+				-u ${userEmailAddress}:${userPassword} \
+				-d defaultLanguageId='' \
+				-d groupId=${groupId} \
+				-d objectDefinitionId=${objectId} \
+				-d objectEntryFolderId=0 \
+				-d values={${entryValues}}
+		''';
+
+		var objectEntryId = JSONCurlUtil.post(${curl}, "$.objectEntryId");
+
+		return ${objectEntryId};
+	}
+
+	@summary = "Default summary"
+	macro addObjectField(externalReferenceCode = null, fieldName = null, fieldBusinessType = null, fieldLabelName = null, fieldType = null, fileSource = null, formulaScript = null, isRequired = null, objectName = null, outputOption = null, picklistName = null, timeStorageOption = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var objectId = JSONObject.getObjectId(
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(picklistName))) {
+			var picklistId = 0;
+		}
+		else {
+			var picklistId = JSONObject.getPicklistId(
+				picklistName = ${picklistName},
+				userEmailAddress = ${userEmailAddress},
+				userPassword = ${userPassword});
+		}
+
+		if (!(isSet(indexed))) {
+			var indexed = "true";
+		}
+
+		if (!(isSet(indexedAsKeyword))) {
+			var indexedAsKeyword = "true";
+		}
+
+		if (!(isSet(showFilesInDocumentsAndMedia))) {
+			var showFilesInDocumentsAndMedia = "false";
+		}
+
+		if (!(isSet(storageDLFolderPath))) {
+			var storageDLFolderPath = StringUtil.removeSpaces(${objectName});
+
+			var storageDLFolderPath = "/${storageDLFolderPath}";
+		}
+
+		if (!(isSet(isReadOnly))) {
+			var isReadOnly = "false";
+		}
+
+		if (isSet(readOnlyExpression)) {
+			var single_quote = "'";
+			var scape_quotes = "'\''";
+
+			var readOnlyExpression = StringUtil.replace(${readOnlyExpression}, ${single_quote}, ${scape_quotes});
+		}
+		else {
+			var readOnlyExpression = "";
+		}
+
+		if (!(isSet(externalReferenceCode))) {
+			var externalReferenceCode = "";
+		}
+
+		if (${fileSource} == "userComputer") {
+			if (${showFilesInDocumentsAndMedia} == "false") {
+				var curl = '''
+					${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+						-H 'Content-Type: application/json' \
+						-u ${userEmailAddress}:${userPassword} \
+						-d '{
+							"DBType": "${fieldType}",
+							"businessType": "${fieldBusinessType}",
+							"indexed": ${indexed},
+							"indexedAsKeyword": ${indexedAsKeyword},
+							"label": {
+								"en_US": "${fieldLabelName}"
+							},
+							"listTypeDefinitionId": ${picklistId},
+							"name": "${fieldName}",
+							"objectFieldSettings": [
+								{
+									"name": "acceptedFileExtensions",
+									"value": "jpeg, jpg, pdf, png"
+								},
+								{
+									"name": "maximumFileSize",
+									"value": "100"
+								},
+								{
+									"name": "fileSource",
+									"value": "userComputer"
+								},
+								{
+									"name": "showFilesInDocumentsAndMedia",
+									"value": "false"
+								}
+							],
+							"readOnly": "${isReadOnly}",
+							"readOnlyConditionExpression": "${readOnlyExpression}",
+							"required": ${isRequired}
+						}'
+				''';
+			}
+			else {
+				var curl = '''
+					${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+						-H 'Content-Type: application/json' \
+						-u ${userEmailAddress}:${userPassword} \
+						-d '{
+							"DBType": "${fieldType}",
+							"businessType": "${fieldBusinessType}",
+							"indexed": ${indexed},
+							"indexedAsKeyword": ${indexedAsKeyword},
+							"label": {
+								"en_US": "${fieldLabelName}"
+							},
+							"listTypeDefinitionId": ${picklistId},
+							"name": "${fieldName}",
+							"objectFieldSettings": [
+								{
+									"name": "acceptedFileExtensions",
+									"value": "jpeg, jpg, pdf, png"
+								},
+								{
+									"name": "maximumFileSize",
+									"value": "100"
+								},
+								{
+									"name": "fileSource",
+									"value": "userComputer"
+								},
+								{
+									"name": "showFilesInDocumentsAndMedia",
+									"value": "true"
+								},
+								{
+									"name": "storageDLFolderPath",
+									"value": "${storageDLFolderPath}"
+								}
+							],
+							"readOnly": "${isReadOnly}",
+							"readOnlyConditionExpression": "${readOnlyExpression}",
+							"required": ${isRequired}
+						}'
+				''';
+			}
+		}
+		else if (${fileSource} == "documentsAndMedia") {
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"DBType": "${fieldType}",
+						"businessType": "${fieldBusinessType}",
+						"indexed": ${indexed},
+						"indexedAsKeyword": ${indexedAsKeyword},
+						"label": {
+							"en_US": "${fieldLabelName}"
+						},
+						"listTypeDefinitionId": ${picklistId},
+						"name": "${fieldName}",
+						"objectFieldSettings": [
+							{
+								"name": "acceptedFileExtensions",
+								"value": "jpeg, jpg, pdf, png"
+							},
+							{
+								"name": "maximumFileSize",
+								"value": "100"
+							},
+							{
+								"name": "fileSource",
+								"value": "documentsAndMedia"
+							}
+						],
+						"readOnly": "${isReadOnly}",
+						"readOnlyConditionExpression": "${readOnlyExpression}",
+						"required": ${isRequired}
+					}'
+			''';
+		}
+		else if (${fieldBusinessType} == "Formula") {
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"DBType": "${fieldType}",
+						"businessType": "${fieldBusinessType}",
+						"indexed": ${indexed},
+						"indexedAsKeyword": ${indexedAsKeyword},
+						"label": {
+							"en_US": "${fieldLabelName}"
+						},
+						"listTypeDefinitionId": ${picklistId},
+						"name": "${fieldName}",
+						"objectFieldSettings": [
+							{
+								"name": "output",
+								"value": "${outputOption}"
+							},
+							{
+								"name": "script",
+								"value": "${formulaScript}"
+							}
+						],
+						"required": ${isRequired}
+					}'
+			''';
+		}
+		else if (${fieldBusinessType} == "MultiselectPicklist") {
+			var picklist = JSONObject.getPicklistId(
+				picklistName = ${picklistName},
+				userEmailAddress = ${userEmailAddress},
+				userPassword = ${userPassword});
+
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"DBType": "${fieldType}",
+						"businessType": "${fieldBusinessType}",
+						"label": {
+							"en_US": "${fieldLabelName}"
+						},
+						"listTypeDefinitionId": ${picklist},
+						"name": "${fieldName}",
+						"objectFieldSettings": [],
+						"readOnly": "${isReadOnly}",
+						"readOnlyConditionExpression": "${readOnlyExpression}",
+						"required": ${isRequired},
+						"system": false,
+						"type": "String"
+					}'
+			''';
+		}
+		else if (${fieldBusinessType} == "DateTime") {
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"DBType": "${fieldType}",
+						"businessType": "${fieldBusinessType}",
+						"indexed": ${indexed},
+						"indexedAsKeyword": ${indexedAsKeyword},
+						"label": {
+							"en_US": "${fieldLabelName}"
+						},
+						"listTypeDefinitionId": 0,
+						"name": "${fieldName}",
+						"objectFieldSettings": [
+							
+							{
+								"name": "timeStorage",
+								"value": "${timeStorageOption}"
+							}
+							
+						],
+						"readOnly": "${isReadOnly}",
+						"readOnlyConditionExpression": "${readOnlyExpression}",
+						"required": ${isRequired}
+					}'
+			''';
+		}
+		else if (${fieldBusinessType} == "AutoIncrement") {
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"type": "${fieldType}",
+						"businessType": "${fieldBusinessType}",
+						"indexed": ${indexed},
+						"indexedAsKeyword": ${indexedAsKeyword},
+						"label": {
+							"en_US": "${fieldLabelName}"
+						},
+						"name": "${fieldName}",
+						"objectFieldSettings": [
+							{
+								"name": "prefix",
+								"value": "${prefix}"
+							},
+							{
+								"name": "initialValue",
+								"value": "${initialValue}"
+							},
+							{
+								"name": "suffix",
+								"value": "${suffix}"
+							}
+						],
+						"required": false
+					}'
+			''';
+		}
+		else {
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"DBType": "${fieldType}",
+						"businessType": "${fieldBusinessType}",
+						"indexed": ${indexed},
+						"indexedAsKeyword": ${indexedAsKeyword},
+						"label": {
+							"en_US": "${fieldLabelName}"
+						},
+						"listTypeDefinitionId": ${picklistId},
+						"externalReferenceCode": "${externalReferenceCode}",
+						"name": "${fieldName}",
+						"readOnly": "${isReadOnly}",
+						"readOnlyConditionExpression": "${readOnlyExpression}",
+						"required": ${isRequired}
+					}'
+			''';
+		}
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addObjectLayout(objectName = null, layoutName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var objectId = JSONObject.getObjectId(
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-layouts \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"defaultObjectLayout": false,
+					"name": {
+						"en_US": "${layoutName}"
+					},
+					"objectDefinitionId": ${objectId}
+				}'
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addObjectRelationship(relationshipName = null, relationshipType = null, objectName_1 = null, objectName_2 = null, relationshipLabel = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var objectID_1 = JSONObject.getObjectId(
+			objectName = ${objectName_1},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+		var objectID_2 = JSONObject.getObjectId(
+			objectName = ${objectName_2},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(deletionType))) {
+			var deletionType = "prevent";
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectID_1}/object-relationships \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"deletionType": "${deletionType}",
+					"label": {
+						"en_US": "${relationshipLabel}"
+					},
+					"name": "${relationshipName}",
+					"objectDefinitionId1": ${objectID_1},
+					"objectDefinitionId2": ${objectID_2},
+					"objectDefinitionName2": "${objectName_2}",
+					"type": "${relationshipType}"
+				}'
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addObjectSingleFieldEntry(fieldName = null, value = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(ercName))) {
+			var ercName = "";
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		if (${fieldType} == "MultiselectPicklist") {
+			var fieldValue = "";
+			var list = ListUtil.newListFromString(${valueList});
+
+			var size = ListUtil.size(${list});
+			var i = 0;
+
+			while (${i} != ${size}) {
+				var value = ListUtil.get(${list}, ${i});
+
+				var key = StringUtil.replace(${value}, " ", "");
+
+				if (${i} != 0) {
+					var fieldValue = StringUtil.add(${fieldValue}, ",{\"key\": \"${key}\", \"name\": \"${value}\"}", "");
+				}
+				else {
+					var fieldValue = StringUtil.add(${fieldValue}, "{\"key\": \"${key}\", \"name\": \"${value}\"}", "");
+				}
+
+				var i = ${i} + 1;
+			}
+
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H 'accept: application/json' \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"externalReferenceCode": "${ercName}",
+						"${fieldName}": [${fieldValue}]
+						}'
+			''';
+		}
+		else {
+			var curl = '''
+				${portalURL}/o/c/${objectName}s \
+					-H 'accept: application/json' \
+					-H 'Content-Type: application/json' \
+					-u ${userEmailAddress}:${userPassword} \
+					-d '{
+						"${fieldName}": "${value}",
+						"externalReferenceCode": "${ercName}"
+					}'
+			''';
+		}
+
+		var objectEntryId = JSONCurlUtil.post(${curl}, "$.id");
+
+		return ${objectEntryId};
+	}
+
+	@summary = "Add partial or full object validations"
+	macro addObjectValidation(validationType, objectName, labelName, fieldName = null, isActive = null) {
+		Variables.assertDefined(parameterList = "${objectName},${labelName},${script},${validationType}");
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONSuperAdminUser();
+		var objectId = JSONObject.getObjectId(
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(errorMessage))) {
+			var errorMessage = "Please enter a valid entry.";
+		}
+
+		if (!(isSet(isActive))) {
+			var isActive = "true";
+		}
+
+		var single_quote = "'";
+		var escape_quotes = "'\''";
+
+		var script = StringUtil.replace(${script}, ${single_quote}, ${escape_quotes});
+
+		if (${outputValidationType} == "partialValidation") {
+			var objectFieldERC = JSONObject.getObjectFieldERC(
+				fieldName = ${fieldName},
+				objectName = ${objectName});
+
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-validation-rules \
+					-u ${userLoginInfo} \
+					-H Content-Type: application/json \
+					-d '{
+						"active": "${isActive}",
+						"engine": "${validationType}",
+						"errorLabel": {
+							"en_US": "${errorMessage}"
+						},
+						"name": {
+							"en_US": "${labelName}"
+						},
+						"objectValidationRuleSettings": [
+							{
+								"name": "outputObjectFieldExternalReferenceCode",
+								"value": "${objectFieldERC}"
+							}
+						],
+						"outputType": "${outputValidationType}",
+						"script": "${script}",
+						"system": false
+					}'
+			''';
+		}
+		else {
+			var curl = '''
+				${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-validation-rules \
+					-u ${userLoginInfo} \
+					-H Content-Type: application/json \
+					-d '{
+						"active": "${isActive}",
+						"engine": "${validationType}",
+						"errorLabel": {
+							"en_US": "${errorMessage}"
+						},
+						"name": {
+							"en_US": "${labelName}"
+						},
+						"outputType": "fullValidation",
+						"script": "${script}",
+						"system": false
+					}'
+			''';
+		}
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addPicklist(picklistName = null) {
+		Variables.assertDefined(parameterList = ${picklistName});
+
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(externalReferenceCode))) {
+			var externalReferenceCode = "";
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"externalReferenceCode": "${externalReferenceCode}",
+					"name": "${picklistName}",
+					"name_i18n": {
+						"en_US": "${picklistName}"
+					}
+				}'
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro addPicklistItem(picklistName = null, itemName = null, itemKey = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var picklistId = JSONObject.getPicklistId(
+			picklistName = ${picklistName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+		var itemKey = StringUtil.removeSpaces(${itemKey});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions/${picklistId}/list-type-entries \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"key": "${itemKey}",
+					"name": "${itemName}",
+					"name_i18n": {
+						"en_US": "${itemName}"
+					}
+				}'
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deleteAllCustomObjects() {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions?pageSize=-1 \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var objectIdList = JSONCurlUtil.get(${curl}, "$.items[?(@['system'] == false)]['id']");
+
+		if (${objectIdList} != "") {
+			for (var objectId : list ${objectIdList}) {
+				var curl = '''
+					${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
+						-u ${userEmailAddress}:${userPassword}
+				''';
+
+				JSONCurlUtil.delete(${curl});
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro deleteAllPicklists() {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var picklistIdList = JSONCurlUtil.get(${curl}, "$.items..id");
+
+		if (${picklistIdList} != "") {
+			for (var picklistId : list ${picklistIdList}) {
+				var curl = '''
+					${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions/${picklistId} \
+						-u ${userEmailAddress}:${userPassword}
+				''';
+
+				JSONCurlUtil.delete(${curl});
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro deleteObject(objectName = null, virtualHost = null, token = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		var objectId = JSONObject.getObjectId(
+			objectName = ${objectName},
+			token = ${token},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword},
+			virtualHost = ${virtualHost});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		if (isSet(token)) {
+			var curl = StringUtil.add(${curl}, " -H 'Authorization: Bearer ${token}'", "");
+		}
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectEntry(fieldName = null, value = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var entryId = JSONObject.getObjectEntryId(
+			entryValue = ${value},
+			fieldName = ${fieldName},
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s/${entryId} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectEntryByERC(objectName,fieldName,value) {
+		var portalURL = JSONCompany.getPortalURL();
+		var entryERC = JSONObject.getObjectEntryERC(
+			entryValue = ${value},
+			fieldName = ${fieldName},
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s/by-external-reference-code/${entryERC} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectRelationship(objectRelationshipId = null) {
+		Variables.assertDefined(parameterList = ${objectRelationshipId});
+
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-relationships/${objectRelationshipId} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro deletePicklist(picklistName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var picklistId = JSONObject.getPicklistId(
+			picklistName = ${picklistName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions/${picklistId} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro filterObjectEntry(fieldName = null, value = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var entryId = JSONObject.getObjectEntryId(
+			entryValue = ${value},
+			fieldName = ${fieldName},
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s/${entryId} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+	}
+
+	@summary = "Default summary"
+	macro getAllObjectDefinitionsId() {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var objectDefinitionIdList = JSONCurlUtil.get(${curl}, "$.items[*].id");
+
+		return ${objectDefinitionIdList};
+	}
+
+	@summary = "Default summary"
+	macro getCustomObjectRelationshipIds(objectName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(objectDefinitionId))) {
+			var objectDefinitionId = ObjectDefinitionAPI.getObjectDefinitionIdByName(name = ${objectName});
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectDefinitionId}/object-relationships?filter=system%20eq%20false \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var customObjectRelationshipIds = JSONCurlUtil.get(${curl}, "$.items..id");
+
+		return ${customObjectRelationshipIds};
+	}
+
+	@summary = "Default summary"
+	macro getObjectDefinition(objectName = null) {
+		Variables.assertDefined(parameterList = ${objectName});
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
+		var objectId = JSONObject.getObjectId(objectName = ${objectName});
+		var userPassword = PropsUtil.get("default.admin.password");
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
+				-u test@liferay.com:${userPassword}
+		''';
+
+		var objectDefinition = JSONCurlUtil.get(${curl});
+
+		return ${objectDefinition};
+	}
+
+	@summary = "Default summary"
+	macro getObjectDefinitionId(name = null) {
+		Variables.assertDefined(parameterList = ${name});
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
+
+		var curl = '''
+			${portalURL}/api/jsonws/object.objectdefinition/get-object-definitions \
+				-u test@liferay.com:${userPassword} \
+				-d <CURL_DATA[start=-1]CURL_DATA> \
+				-d <CURL_DATA[end=-1]CURL_DATA>
+		''';
+
+		var objectDefinitionId = JSONCurlUtil.post(${curl}, "$.[?(@['name'] == '${name}')]['objectDefinitionId']");
+
+		if (${objectDefinitionId} == "") {
+			echo("The ${name} doesn't exist.");
+		}
+
+		return ${objectDefinitionId};
+	}
+
+	@summary = "Default summary"
+	macro getObjectEntryERC(entryValue,fieldName,objectName) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var entryERC = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] == '${entryValue}')]['externalReferenceCode']");
+
+		var commaCount = StringUtil.count(${entryERC}, ",");
+
+		if (${commaCount} != 0) {
+			var entryERC = StringUtil.extractFirst(${entryERC}, ",");
+		}
+
+		return ${entryERC};
+	}
+
+	@summary = "Default summary"
+	macro getObjectEntryFieldValue(fieldName = null, attributeValue = null, attribute = null, type = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		if ((${type} == "Attachment") || (${type} == "Picklist")) {
+			var fieldValue = JSONCurlUtil.get(${curl}, "$.items[?(@['${attribute}'] == '${attributeValue}')]['${fieldName}'].name");
+		}
+		else {
+			var fieldValue = JSONCurlUtil.get(${curl}, "$.items[?(@['${attribute}'] == '${attributeValue}')]['${fieldName}']");
+		}
+
+		return ${fieldValue};
+	}
+
+	@summary = "Default summary"
+	macro getObjectEntryId(fieldName = null, entryValue = null, virtualHost = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		if (${entryValue} == "") {
+			var entryId = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] empty true)]['id']");
+		}
+		else {
+			var entryId = JSONCurlUtil.get(${curl}, "$.items[?(@['${fieldName}'] == '${entryValue}')]['id']");
+		}
+
+		return ${entryId};
+	}
+
+	@summary = "Default summary"
+	macro getObjectEntryIdByIndex(virtualHost = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		if (!(isSet(index))) {
+			var index = 0;
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var entryId = JSONCurlUtil.get(${curl}, "$.items[${index}]['id']");
+
+		return ${entryId};
+	}
+
+	@summary = "Get the external reference code of an object field"
+	macro getObjectFieldERC(objectName, fieldName) {
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONSuperAdminUser();
+		var objectId = JSONObject.getObjectId(objectName = ${objectName});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectFieldId = JSONObject.getObjectFieldId(
+			fieldName = ${fieldName},
+			objectId = ${objectId});
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-fields/${objectFieldId} \
+				-u ${userLoginInfo}
+		''';
+
+		var objectFiedERC = JSONCurlUtil.get(${curl}, "$..['externalReferenceCode']");
+
+		return ${objectFiedERC};
+	}
+
+	@summary = "Default summary"
+	macro getObjectFieldId(fieldName = null, virtualHost = null, objectId = null, token = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/object-fields \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		if (isSet(token)) {
+			var curl = StringUtil.add(${curl}, " -H 'Authorization: Bearer ${token}'", "");
+		}
+
+		var objectFieldId = JSONCurlUtil.get(${curl}, "$.items[?(@['name'] == '${fieldName}')]['id']");
+
+		return ${objectFieldId};
+	}
+
+	@summary = "Default summary"
+	macro getObjectId(objectName = null, virtualHost = null, token = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		if (isSet(token)) {
+			var curl = StringUtil.add(${curl}, " -H 'Authorization: Bearer ${token}'", "");
+		}
+
+		var objectId = JSONCurlUtil.get(${curl}, "$.items[?(@['name'] == '${objectName}')]['id']");
+
+		return ${objectId};
+	}
+
+	@summary = "Default summary"
+	macro getObjectSearchEntry(searchString = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s/?search=${searchString} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var searchEntryId = JSONCurlUtil.get(${curl}, "$.items[*].id");
+
+		return ${searchEntryId};
+	}
+
+	@summary = "Default summary"
+	macro getObjectSortedEntry(sortString = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var objectName = StringUtil.toLowerCase(${objectName});
+
+		var curl = '''
+			${portalURL}/o/c/${objectName}s/?sort=${sortString} \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var sortEntry = JSONCurlUtil.get(${curl});
+
+		return ${sortEntry};
+	}
+
+	@summary = "Default summary"
+	macro getPicklistId(picklistName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-list-type/v1.0/list-type-definitions \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		var picklistId = JSONCurlUtil.get(${curl}, "$.items[?(@['name'] == '${picklistName}')]['id']");
+
+		return ${picklistId};
+	}
+
+	@summary = "Default summary"
+	macro publishObject(objectName = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var objectId = JSONObject.getObjectId(
+			objectName = ${objectName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId}/publish \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword}
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro setAccountRestriction(objectName = null) {
+		Variables.assertDefined(parameterList = ${objectName});
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
+		var objectId = JSONObject.getObjectId(objectName = ${objectName});
+		var objectDefinition = JSONObject.getObjectDefinition(objectName = ${objectName});
+
+		var accountEntryRestrictedObjectFieldName = JSONUtil.getWithJSONPath(${objectDefinition}, "$..objectFields[?(@.businessType=='Relationship')].name");
+
+		if (${accountEntryRestrictedObjectFieldName} == "") {
+			fail("FAIL. Cannot find relationship between ${objectName} and AccountEntry.");
+		}
+
+		var userPassword = PropsUtil.get("default.admin.password");
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
+				-H 'Content-Type: application/json' \
+				-u test@liferay.com:${userPassword} \
+				-d '{
+					"accountEntryRestricted": true,
+					"accountEntryRestrictedObjectFieldName": "${accountEntryRestrictedObjectFieldName}"
+				}'
+		''';
+
+		JSONCurlUtil.patch(${curl});
+	}
+
+	@summary = "Default summary"
+	macro updateObject(configKey = null, objectName = null, configValue = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var objectId = JSONObject.getObjectId(objectName = ${objectName});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-definitions/${objectId} \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"${configKey}": "${configValue}"
+				}'
+		''';
+
+		JSONCurlUtil.patch(${curl});
+	}
+
+	@summary = "Default summary"
+	macro updateObjectField(configKey = null, fieldName = null, objectName = null, configValue = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var objectId = JSONObject.getObjectId(objectName = ${objectName});
+
+		var objectFieldId = JSONObject.getObjectFieldId(
+			fieldName = ${fieldName},
+			objectId = ${objectId});
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var curl = '''
+			${portalURL}/o/object-admin/v1.0/object-fields/${objectFieldId} \
+				-H 'Content-Type: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-d '{
+					"${configKey}": "${configValue}"
+				}'
+		''';
+
+		JSONCurlUtil.patch(${curl});
+	}
+
+}

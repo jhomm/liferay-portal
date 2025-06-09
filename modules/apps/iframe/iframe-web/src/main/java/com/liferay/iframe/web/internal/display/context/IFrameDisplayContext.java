@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.iframe.web.internal.display.context;
@@ -17,11 +8,12 @@ package com.liferay.iframe.web.internal.display.context;
 import com.liferay.iframe.web.internal.configuration.IFramePortletInstanceConfiguration;
 import com.liferay.iframe.web.internal.constants.IFrameWebKeys;
 import com.liferay.iframe.web.internal.util.IFrameUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -29,12 +21,12 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.WindowState;
+
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
 
 /**
  * @author Juergen Kappler
@@ -49,11 +41,9 @@ public class IFrameDisplayContext {
 		_themeDisplay = (ThemeDisplay)request.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
-
 		_iFramePortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				IFramePortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				IFramePortletInstanceConfiguration.class, _themeDisplay);
 	}
 
 	public String getAuthType() {
@@ -94,28 +84,24 @@ public class IFrameDisplayContext {
 	}
 
 	public List<KeyValuePair> getHiddenVariableKVPs() {
-		List<KeyValuePair> hiddenVariableKVPs = new ArrayList<>();
-
 		List<String> hiddenVariables = ListUtil.fromArray(
-			StringUtil.split(getHiddenVariables(), CharPool.SEMICOLON));
+			StringUtil.split(getHiddenVariables(), CharPool.PIPE));
 
 		hiddenVariables.addAll(getIFrameVariables());
 
-		for (String hiddenVariable : hiddenVariables) {
-			String key = StringPool.BLANK;
-			String value = StringPool.BLANK;
+		return TransformUtil.transform(
+			hiddenVariables,
+			hiddenVariable -> {
+				int pos = hiddenVariable.indexOf(StringPool.EQUAL);
 
-			int pos = hiddenVariable.indexOf(StringPool.EQUAL);
+				if (pos == -1) {
+					return new KeyValuePair(StringPool.BLANK, StringPool.BLANK);
+				}
 
-			if (pos != -1) {
-				key = hiddenVariable.substring(0, pos);
-				value = hiddenVariable.substring(pos + 1);
-			}
-
-			hiddenVariableKVPs.add(new KeyValuePair(key, value));
-		}
-
-		return hiddenVariableKVPs;
+				return new KeyValuePair(
+					hiddenVariable.substring(0, pos),
+					hiddenVariable.substring(pos + 1));
+			});
 	}
 
 	public String getHiddenVariables() {
@@ -169,7 +155,7 @@ public class IFrameDisplayContext {
 
 		_iFrameSrc += (String)_request.getAttribute(IFrameWebKeys.IFRAME_SRC);
 
-		if (!ListUtil.isEmpty(getIFrameVariables())) {
+		if (ListUtil.isNotEmpty(getIFrameVariables())) {
 			if (_iFrameSrc.contains(StringPool.QUESTION)) {
 				_iFrameSrc += StringPool.AMPERSAND;
 			}

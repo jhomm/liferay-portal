@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
+import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.PluginsGitWorkingDirectory;
 import com.liferay.jenkins.results.parser.PortalTestClassJob;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
 
 import java.io.File;
 
@@ -23,10 +16,26 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 /**
  * @author Michael Hashimoto
  */
 public class PluginsGulpBatchTestClassGroup extends BatchTestClassGroup {
+
+	@Override
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
+
+		jsonObject = super.getJSONObject();
+
+		jsonObject.put("modified_files_list", _modifiedFilesList);
+
+		return jsonObject;
+	}
 
 	public List<File> getTestBaseDirNames() {
 		List<File> testBaseDirNames = new ArrayList<>();
@@ -48,20 +57,43 @@ public class PluginsGulpBatchTestClassGroup extends BatchTestClassGroup {
 		return testBaseDirNames;
 	}
 
-	public static class PluginsGulpBatchTestClass extends BaseTestClass {
+	protected PluginsGulpBatchTestClassGroup(
+		JSONObject jsonObject, PortalTestClassJob portalTestClassJob) {
 
-		protected PluginsGulpBatchTestClass(File testBaseDirName) {
-			super(testBaseDirName);
+		super(jsonObject, portalTestClassJob);
 
-			addTestClassMethod("gulpfile.js");
+		_modifiedFilesList = new ArrayList<>();
+
+		JSONArray modifiedFilesJSONArray = jsonObject.optJSONArray(
+			"modified_files_list");
+
+		if ((modifiedFilesJSONArray == null) ||
+			modifiedFilesJSONArray.isEmpty()) {
+
+			return;
 		}
 
+		for (int i = 0; i < modifiedFilesJSONArray.length(); i++) {
+			String modifiedFilePath = modifiedFilesJSONArray.getString(i);
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(modifiedFilePath)) {
+				continue;
+			}
+
+			_modifiedFilesList.add(new File(modifiedFilePath));
+		}
 	}
 
 	protected PluginsGulpBatchTestClassGroup(
 		String batchName, PortalTestClassJob portalTestClassJob) {
 
 		super(batchName, portalTestClassJob);
+
+		if (ignore()) {
+			_modifiedFilesList = null;
+
+			return;
+		}
 
 		_modifiedFilesList = portalGitWorkingDirectory.getModifiedFilesList();
 
@@ -90,7 +122,8 @@ public class PluginsGulpBatchTestClassGroup extends BatchTestClassGroup {
 
 	private void _setTestClasses() {
 		for (File testBaseDirName : getTestBaseDirNames()) {
-			testClasses.add(new PluginsGulpBatchTestClass(testBaseDirName));
+			testClasses.add(
+				TestClassFactory.newTestClass(this, testBaseDirName));
 		}
 
 		Collections.sort(testClasses);

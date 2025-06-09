@@ -1,9 +1,10 @@
-@component-name = "portal-wcm"
+@component-name = "portal-site-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Navigation";
+	property testray.main.component.name = "Navigation Menus";
 
 	setUp {
 		task ("Set up instance and sign in") {
@@ -13,37 +14,28 @@ definition {
 		}
 
 		task ("Add a site via JSON") {
-			JSONGroup.addGroup(groupName = "Test Site Name");
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 
 		task ("Enable local live") {
-			JSONStaging.enableLocalStaging(
-				branchingPrivate = "false",
-				branchingPublic = "false",
-				groupName = "Test Site Name");
+			JSONStaging.enableLocalStaging(groupName = "Test Site Name");
 		}
 	}
 
-	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
-
-		if ("${testPortalInstance}" == "true") {
-			PortalInstances.tearDownCP();
-		}
-		else {
-			JSONGroup.deleteGroupByName(groupName = "Test Site Name");
-		}
-	}
-
-	@description = "This is a test for LPS-135675. The user can create navigate menu items based on assets with associated display page template in staging site."
-	@priority = "4"
+	@description = "This is a test for LPS-135675 and LPS-141351. The user can create navigate menu items based on assets with associated display page template in staging site."
+	@priority = 5
 	test AddDisplayPageTypeNavigationMenuItems {
+		property portal.acceptance = "true";
+
+		var groupId = JSONGroupSetter.setGroupId(
+			groupName = "Test Site Name (Staging)",
+			site = "false");
+
 		task ("Add the first display page template for Web Content Article and Basic Web Content") {
 			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
 				contentType = "Web Content Article",
 				displayPageTemplateEntryName = "Web Content DPT",
-				groupName = "Test Site Name-staging",
-				site = "false",
+				groupId = ${groupId},
 				subType = "Basic Web Content");
 		}
 
@@ -56,7 +48,7 @@ definition {
 				collectionName = "Content Display",
 				fragmentName = "Display Page Content");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Mark the first display page template as default") {
@@ -67,8 +59,7 @@ definition {
 			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
 				contentType = "Blogs Entry",
 				displayPageTemplateEntryName = "Blogs Entry DPT",
-				groupName = "Test Site Name-staging",
-				site = "false");
+				groupId = ${groupId});
 		}
 
 		task ("Add a Display Page Content fragment to the second display page template") {
@@ -80,7 +71,7 @@ definition {
 				collectionName = "Content Display",
 				fragmentName = "Display Page Content");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Mark the second display page template as default") {
@@ -91,8 +82,7 @@ definition {
 			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
 				contentType = "Document",
 				displayPageTemplateEntryName = "Document DPT",
-				groupName = "Test Site Name-staging",
-				site = "false",
+				groupId = ${groupId},
 				subType = "Basic Document");
 		}
 
@@ -105,7 +95,7 @@ definition {
 				collectionName = "Content Display",
 				fragmentName = "Display Page Content");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Mark the third display page template as default") {
@@ -116,8 +106,7 @@ definition {
 			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
 				contentType = "Category",
 				displayPageTemplateEntryName = "Category DPT",
-				groupName = "Test Site Name-staging",
-				site = "false");
+				groupId = ${groupId});
 		}
 
 		task ("Add a Display Page Content fragment to the fourth display page template") {
@@ -129,7 +118,7 @@ definition {
 				collectionName = "Content Display",
 				fragmentName = "Display Page Content");
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Mark the fourth display page template as default") {
@@ -139,47 +128,41 @@ definition {
 		task ("Add a web content based on Basic Web Content") {
 			JSONWebcontent.addWebContent(
 				content = "Web Content Content",
-				groupName = "Test Site Name (Staging)",
-				site = "false",
+				groupId = ${groupId},
 				title = "Web Content Title");
 		}
 
 		task ("Add a blogs entry") {
 			HeadlessBlog.addBlogEntry(
 				content = "Blogs Entry Content",
-				groupName = "Test Site Name (Staging)",
-				site = "false",
+				groupId = ${groupId},
 				title = "Blogs Entry Title");
 		}
 
 		task ("Add a document with an image") {
 			JSONDocument.addFileWithUploadedFile(
 				dmDocumentTitle = "Document Title",
-				groupName = "Test Site Name-staging",
 				mimeType = "image/jpeg",
-				site = "false",
+				repositoryId = ${groupId},
 				sourceFileName = "Document_1.jpg");
 		}
 
 		task ("Add a vocabulary") {
 			JSONCategory.addVocabulary(
-				groupName = "Test Site Name (Staging)",
-				site = "false",
+				groupId = ${groupId},
 				title = "Vocabulary Name");
 		}
 
 		task ("Add a category") {
 			JSONCategory.addCategory(
-				groupName = "Test Site Name (Staging)",
-				site = "false",
+				groupId = ${groupId},
 				title = "Category Name",
 				vocabularyName = "Vocabulary Name");
 		}
 
 		task ("Add a navigation menu") {
 			JSONSitenavigation.addSiteNavigationMenu(
-				groupName = "Test Site Name (Staging)",
-				site = "false",
+				groupId = ${groupId},
 				siteNavigationMenuName = "Navigation Menu Name");
 		}
 
@@ -194,36 +177,31 @@ definition {
 		task ("Add the Display Page items to the navigation menu") {
 			NavigationMenusAdmin.addItem(
 				assetTitle = "Web Content Title",
-				item = "Display Page",
-				navItem = "Web Content");
+				item = "Web Content Article");
 
 			NavigationMenusAdmin.addItem(
 				assetTitle = "Blogs Entry Title",
-				item = "Display Page",
-				navItem = "Blogs");
+				item = "Blogs Entry");
 
 			NavigationMenusAdmin.addItem(
 				assetTitle = "Document Title",
-				item = "Display Page",
-				navItem = "Documents and Media");
+				item = "Document");
 
 			NavigationMenusAdmin.addItem(
-				assetTitle = "Category Name",
-				item = "Display Page",
-				navItem = "Categories");
+				assetTitleList = "Category Name",
+				item = "Category");
 		}
 
 		task ("View the Display Page items") {
 			for (var itemName : list "Web Content Title,Blogs Entry Title,Document Title,Category Name") {
-				NavigationMenusAdmin.viewItem(itemName = "${itemName}");
+				NavigationMenusAdmin.viewItem(itemName = ${itemName});
 			}
 		}
 
 		task ("Add a widget page") {
 			JSONLayout.addPublicLayout(
-				groupName = "Test Site Name (Staging)",
-				layoutName = "Test Page Name",
-				site = "false");
+				groupId = ${groupId},
+				layoutName = "Test Page Name");
 		}
 
 		task ("Select the navigation menu in Navigation Menu widget") {
@@ -243,7 +221,7 @@ definition {
 		task ("View the items shown in Navigation Menu widget") {
 			for (var itemName : list "Web Content Title,Blogs Entry Title,Document Title,Category Name") {
 				AssertVisible(
-					key_pageName = "${itemName}",
+					key_pageName = ${itemName},
 					locator1 = "Home#PAGE");
 			}
 		}
@@ -253,9 +231,10 @@ definition {
 				key_pageName = "Web Content Title",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Web Content DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Web Content Title");
 
 			AssertTextEquals(
+				index = 1,
 				locator1 = "WCD#WEB_CONTENT_CONTENT",
 				value1 = "Web Content Content");
 
@@ -263,7 +242,7 @@ definition {
 				key_pageName = "Blogs Entry Title",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Blogs Entry DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Blogs Entry Title");
 
 			AssertVisible(
 				key_entryContent = "Blogs Entry Content",
@@ -273,7 +252,7 @@ definition {
 				key_pageName = "Document Title",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Document DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Document Title");
 
 			ContentPages.viewFragmentBackgroundImage(image = "Document_1.jpg");
 
@@ -281,7 +260,7 @@ definition {
 				key_pageName = "Category Name",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Category DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Category Name");
 
 			ContentPages.viewFragmentText(
 				fragmentName = "Content Display",
@@ -305,13 +284,14 @@ definition {
 				key_pageName = "Web Content Title",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Web Content DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Web Content Title");
 
 			AssertVisible(
 				key_tab = "Live",
 				locator1 = "NavTab#ACTIVE_TAB_LINK");
 
 			AssertTextEquals(
+				index = 1,
 				locator1 = "WCD#WEB_CONTENT_CONTENT",
 				value1 = "Web Content Content");
 
@@ -319,7 +299,7 @@ definition {
 				key_pageName = "Blogs Entry Title",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Blogs Entry DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Blogs Entry Title");
 
 			AssertVisible(
 				key_tab = "Live",
@@ -333,7 +313,7 @@ definition {
 				key_pageName = "Document Title",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Document DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Document Title");
 
 			AssertVisible(
 				key_tab = "Live",
@@ -345,7 +325,7 @@ definition {
 				key_pageName = "Category Name",
 				locator1 = "Home#PAGE");
 
-			ControlMenu.viewHeaderTitle(headerTitle = "Category DPT");
+			ControlMenu.viewHeaderTitle(headerTitle = "Category Name");
 
 			AssertVisible(
 				key_tab = "Live",
@@ -358,7 +338,7 @@ definition {
 	}
 
 	@description = "The user can edit the navigation menus in the staging site but cannot in the live site."
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test CannotEditNavigationMenuInLive {
 		property portal.acceptance = "true";
@@ -414,7 +394,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-89358. Deleted navigation menus will not appear in live after publish."
-	@priority = "3"
+	@priority = 3
 	test DeletedNavigationMenuNotShownInLiveAfterPublish {
 		task ("Add a page in staging site") {
 			JSONLayout.addPublicLayout(
@@ -468,9 +448,7 @@ definition {
 		}
 
 		task ("Delete the navigation menu") {
-			LexiconEntry.delete(
-				menuItem = "Delete",
-				rowEntry = "Navigation Menu Name");
+			NavigationMenusAdmin.deleteCP(navigationMenuName = "Navigation Menu Name");
 		}
 
 		task ("Publish to live") {
@@ -491,7 +469,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-86525. The user could publish changes of navigation menu to live."
-	@priority = "5"
+	@priority = 5
 	test PublishEditedNavigationMenuToLive {
 		property portal.acceptance = "true";
 
@@ -611,7 +589,9 @@ definition {
 
 			LexiconEntry.gotoAdd();
 
-			Check(locator1 = "StagingPublishToLive#DELETIONS_REPLICATE_INDIVIDUAL_DELETIONS_CHECKBOX");
+			Check.checkNotVisible(
+				inputFieldId = "StagingProcessesPortlet_DELETIONS",
+				locator1 = "TextInput#INPUT_ID");
 
 			AssertClickNoError(
 				locator1 = "Staging#STAGING_PUBLISH_TO_LIVE_BUTTON",
@@ -656,7 +636,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-86529. The user could publish changes of primary navigation menu to live."
-	@priority = "5"
+	@priority = 5
 	test PublishEditedPrimaryNavigationMenuToLive {
 		property portal.acceptance = "true";
 
@@ -741,6 +721,8 @@ definition {
 
 		task ("Delete the first page from the navigation menu") {
 			NavigationMenusAdmin.deleteItem(itemName = "Test Page Name 1");
+
+			NavigationMenusAdmin.viewItemNotPresent(itemNameList = "Test Page Name 1");
 		}
 
 		task ("Navigate to the Navigation Menu widget in the staging site") {
@@ -784,7 +766,9 @@ definition {
 
 			LexiconEntry.gotoAdd();
 
-			Check(locator1 = "StagingPublishToLive#DELETIONS_REPLICATE_INDIVIDUAL_DELETIONS_CHECKBOX");
+			Check.checkNotVisible(
+				inputFieldId = "StagingProcessesPortlet_DELETIONS",
+				locator1 = "TextInput#INPUT_ID");
 
 			AssertClickNoError(
 				locator1 = "Staging#STAGING_PUBLISH_TO_LIVE_BUTTON",
@@ -833,7 +817,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-86142 and LPS-112993. The user could publish navigation menu to live."
-	@priority = "5"
+	@priority = 5
 	test PublishNavigationMenuToLive {
 		property portal.acceptance = "true";
 
@@ -950,7 +934,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-86525. The user could publish a navigation menu without deleted pages from live."
-	@priority = "5"
+	@priority = 5
 	test PublishNavigationMenuWithoutDeletedPagesFromLive {
 		property portal.acceptance = "true";
 
@@ -1001,11 +985,11 @@ definition {
 		}
 
 		task ("Navigate to Pages admin in the live site") {
-			SitePages.openPagesAdmin(siteURLKey = "test-site-name");
+			PagesAdmin.openPagesAdmin(siteURLKey = "test-site-name");
 		}
 
 		task ("Delete the third page from the live site") {
-			SitePages.deletePage(pageName = "Test Page Name 3");
+			PagesAdmin.deletePage(pageName = "Test Page Name 3");
 		}
 
 		task ("Publish to live without the third page") {
@@ -1013,27 +997,13 @@ definition {
 
 			LexiconEntry.gotoAdd();
 
-			if (IsElementPresent(locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_CHECKED", key_entryName = "Test Page Name 3")) {
-				Click(
+			if (IsElementPresent(key_entryName = "Test Page Name 3", locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_CHECKED")) {
+				Uncheck.uncheckNotVisible(
 					key_entryName = "Test Page Name 3",
 					locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_CHECKED");
 			}
 
-			AssertVisible(
-				key_entryName = "Test Page Name 3",
-				locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_UNCHECKED");
-
-			AssertClickNoError(
-				locator1 = "Staging#STAGING_PUBLISH_TO_LIVE_BUTTON",
-				value1 = "Publish to Live");
-
-			WaitForElementNotPresent(
-				key_listEntry = "In Progress",
-				locator1 = "LexiconList#LIST_ENTRY_INFO");
-
-			AssertTextEquals(
-				locator1 = "Staging#PROCESS_RESULT",
-				value1 = "Successful");
+			Staging.publishToLive();
 		}
 
 		task ("Navigate to the Navigation Menu widget in the live site") {
@@ -1054,7 +1024,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-86142. The user could publish primary navigation menu to live.."
-	@priority = "5"
+	@priority = 5
 	test PublishPrimaryNavigationMenuToLive {
 		property portal.acceptance = "true";
 
@@ -1165,7 +1135,7 @@ definition {
 	}
 
 	@description = "This is a test for LPS-86525. The user could publish a primary navigation menu without deleted pages from live."
-	@priority = "5"
+	@priority = 5
 	test PublishPrimaryNavigationMenuWithoutDeletedPagesFromLive {
 		property portal.acceptance = "true";
 
@@ -1226,11 +1196,11 @@ definition {
 		}
 
 		task ("Navigate to pages admin in the live site") {
-			SitePages.openPagesAdmin(siteURLKey = "test-site-name");
+			PagesAdmin.openPagesAdmin(siteURLKey = "test-site-name");
 		}
 
 		task ("Delete the third page from the live site") {
-			SitePages.deletePage(pageName = "Test Page Name 3");
+			PagesAdmin.deletePage(pageName = "Test Page Name 3");
 		}
 
 		task ("Publish to live without the third page") {
@@ -1238,27 +1208,13 @@ definition {
 
 			LexiconEntry.gotoAdd();
 
-			if (IsElementPresent(locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_CHECKED", key_entryName = "Test Page Name 3")) {
-				Click(
+			if (IsElementPresent(key_entryName = "Test Page Name 3", locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_CHECKED")) {
+				Uncheck.uncheckNotVisible(
 					key_entryName = "Test Page Name 3",
 					locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_CHECKED");
 			}
 
-			AssertVisible(
-				key_entryName = "Test Page Name 3",
-				locator1 = "StagingPublishToLive#PAGES_TO_PUBLISH_CHECKBOX_UNCHECKED");
-
-			AssertClickNoError(
-				locator1 = "Staging#STAGING_PUBLISH_TO_LIVE_BUTTON",
-				value1 = "Publish to Live");
-
-			WaitForElementNotPresent(
-				key_listEntry = "In Progress",
-				locator1 = "LexiconList#LIST_ENTRY_INFO");
-
-			AssertTextEquals(
-				locator1 = "Staging#PROCESS_RESULT",
-				value1 = "Successful");
+			Staging.publishToLive();
 		}
 
 		task ("Navigate to the Navigation Menu widget in the live site") {
@@ -1278,8 +1234,96 @@ definition {
 		}
 	}
 
+	@description = "This is a test for LPS-137577. The user can select multiple categories in the navigation menu in a staging site."
+	@priority = 4
+	test SelectMultipleCategories {
+		task ("Add three hierarchy levels categories to a vocabulary within Global site") {
+			JSONCategory.addVocabulary(
+				groupName = "Global",
+				title = "Global Vocabulary Name");
+
+			JSONCategory.addCategory(
+				groupName = "Global",
+				title = "Global Category Name",
+				vocabularyName = "Global Vocabulary Name");
+
+			JSONCategory.addSubcategory(
+				groupName = "Global",
+				parentCategoryName = "Global Category Name",
+				title = "Global Subcategory Name",
+				vocabularyName = "Global Vocabulary Name");
+
+			JSONCategory.addSubcategory(
+				groupName = "Global",
+				parentCategoryName = "Global Subcategory Name",
+				title = "Global SubSubcategory Name",
+				vocabularyName = "Global Vocabulary Name");
+		}
+
+		task ("Add three hierarchy levels categories to a vocabulary within a staging site") {
+			JSONCategory.addVocabulary(
+				groupName = "Test Site Name (Staging)",
+				site = "false",
+				title = "Site Vocabulary Name");
+
+			JSONCategory.addCategory(
+				groupName = "Test Site Name (Staging)",
+				site = "false",
+				title = "Site Category Name",
+				vocabularyName = "Site Vocabulary Name");
+
+			JSONCategory.addSubcategory(
+				groupName = "Test Site Name (Staging)",
+				parentCategoryName = "Site Category Name",
+				site = "false",
+				title = "Site Subcategory Name",
+				vocabularyName = "Site Vocabulary Name");
+
+			JSONCategory.addSubcategory(
+				groupName = "Test Site Name (Staging)",
+				parentCategoryName = "Site Subcategory Name",
+				site = "false",
+				title = "Site SubSubcategory Name",
+				vocabularyName = "Site Vocabulary Name");
+		}
+
+		task ("Add a navigation menu") {
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupName = "Test Site Name (Staging)",
+				site = "false",
+				siteNavigationMenuName = "Navigation Menu Name");
+		}
+
+		task ("Add all categories from each vocabulary into Navigation Menu") {
+			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name-staging");
+
+			NavigationMenusAdmin.editMenu(navigationMenuName = "Navigation Menu Name");
+
+			NavigationMenusAdmin.addItem(
+				assetTitleList = "Global Category Name,Global Subcategory Name,Global SubSubcategory Name,Site Category Name,Site Subcategory Name,Site SubSubcategory Name",
+				item = "Category");
+		}
+
+		task ("View categories are shown in hiearchy order") {
+			NavigationMenusAdmin.viewItemNested(
+				groupName = "Test Site Name (Staging)",
+				itemNameList = "Global Subcategory Name,Global SubSubcategory Name,Site Subcategory Name,Site SubSubcategory Name",
+				parentItemNameList = "Global Category Name,Global Subcategory Name,Site Category Name,Site Subcategory Name",
+				site = "false",
+				siteNavigationMenuName = "Navigation Menu Name");
+
+			NavigationMenusAdmin.viewItemNotNested(itemNameList = "Global Category Name,Site Category Name");
+		}
+
+		task ("Delete the global vocabulary") {
+			JSONCategory.deleteVocabulary(
+				groupName = "Global",
+				vocabularyName = "Global Vocabulary Name");
+		}
+	}
+
 	@description = "This is a use case for LPS-113994. The Navigation Menu widget can display more than 2 sublevels page hierarchy when use the default template after enable Live."
-	@priority = "3"
+	@priority = 3
 	@uitest
 	test ShowMoreThanTwoSublevelsWhenSelectPublicPagesHierarchyAndBarMinimallyStyled {
 		task ("Add a widget page with 3 sublevels child pages") {
@@ -1316,13 +1360,17 @@ definition {
 		task ("Select Public Pages Hierarchy and Bar minimally styled") {
 			NavigationMenusWidget.gotoNavigationMenuWidgetConfig();
 
-			NavigationMenusWidget.selectNavigation(menuType = "Public Pages Hierarchy");
+			NavigationMenusWidget.selectNavigation(menuType = "Pages Hierarchy");
 
-			Pause(locator1 = "1000");
+			AssertSelectedLabel(
+				locator1 = "NavigationMenusWidget#SELECT_NAVIGATION",
+				value1 = "Pages Hierarchy");
 
 			NavigationMenusWidget.selectDisplayTemplate(templateName = "Bar minimally styled");
 
-			Pause(locator1 = "1000");
+			AssertTextEquals(
+				locator1 = "Select#DISPLAY_TEMPLATE",
+				value1 = "Bar minimally styled");
 
 			Portlet.saveAndCloseConfig();
 		}
@@ -1355,6 +1403,56 @@ definition {
 				type = "Drop Down");
 
 			AssertLocation.assertPartialLocation(value1 = "web/test-site-name/child-child-page");
+		}
+	}
+
+	@description = "This is a test for LPS-164269. The navigation menu creator could view a tooltip with the page URL on selection modal on staging site."
+	@priority = 4
+	test ViewPageURLOnTooltipWhenSelectPageItem {
+		task ("Given a navigation menu opens the select pages modal in staging site") {
+			task ("Add a Navigation menu") {
+				JSONSitenavigation.addSiteNavigationMenu(
+					groupName = "Test Site Name (Staging)",
+					site = "false",
+					siteNavigationMenuName = "Navigation Menu Name");
+			}
+
+			task ("Add a widget page") {
+				JSONLayout.addPublicLayout(
+					groupName = "Test Site Name (Staging)",
+					layoutName = "Test Page Name",
+					site = "false");
+			}
+
+			task ("Navigate to select pages modal of Navigation menu") {
+				NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name-staging");
+
+				NavigationMenusAdmin.editMenu(navigationMenuName = "Navigation Menu Name");
+
+				Button.clickAdd();
+
+				MenuItem.click(menuItem = "Page");
+
+				SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+				Portlet.expandTree();
+			}
+		}
+
+		task ("When the navigation menu creator hovers on the content page item") {
+			MouseOver.javaScriptFocus(
+				key_nodeName = "Test Page Name",
+				locator1 = "Treeview#NODE_ITEM");
+
+			MouseOver.javaScriptFocus(
+				key_nodeName = "Test Page Name",
+				locator1 = "Treeview#NODE_ITEM");
+		}
+
+		task ("Then the navigation menu creator could view a tooltip with the page url") {
+			AssertVisible(
+				key_content = "/web/test-site-name-staging/test-page-name",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
 		}
 	}
 

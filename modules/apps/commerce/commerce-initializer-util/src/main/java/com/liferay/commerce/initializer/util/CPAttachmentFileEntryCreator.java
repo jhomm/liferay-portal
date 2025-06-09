@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.initializer.util;
@@ -19,6 +10,7 @@ import com.liferay.commerce.product.service.CPAttachmentFileEntryLocalService;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassedModel;
@@ -29,8 +21,6 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
-import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.MimeTypes;
@@ -56,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Andrea Di Giorgi
  */
-@Component(enabled = false, service = CPAttachmentFileEntryCreator.class)
+@Component(service = CPAttachmentFileEntryCreator.class)
 public class CPAttachmentFileEntryCreator {
 
 	@SuppressFBWarnings("PATH_TRAVERSAL_IN")
@@ -118,23 +108,23 @@ public class CPAttachmentFileEntryCreator {
 		}
 		catch (NoSuchFileEntryException noSuchFileEntryException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileEntryException, noSuchFileEntryException);
+				_log.debug(noSuchFileEntryException);
 			}
 
 			Repository repository = _repositoryProvider.getRepository(
 				serviceContext.getScopeGroupId());
 
-			file = FileUtil.createTempFile(inputStream);
+			file = _file.createTempFile(inputStream);
 
 			fileEntry = _dlAppService.addFileEntry(
-				repository.getRepositoryId(),
+				null, repository.getRepositoryId(),
 				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
-				_mimeTypes.getContentType(file), fileName, null, null, file,
-				serviceContext);
+				_mimeTypes.getContentType(file), fileName, null, null, null,
+				file, null, null, null, serviceContext);
 		}
 		finally {
 			if (file != null) {
-				FileUtil.delete(file);
+				_file.delete(file);
 			}
 
 			inputStream.close();
@@ -175,14 +165,14 @@ public class CPAttachmentFileEntryCreator {
 		long classPK = GetterUtil.getLong(classedModel.getPrimaryKeyObj());
 
 		return _cpAttachmentFileEntryLocalService.addCPAttachmentFileEntry(
-			_friendlyURLNormalizer.normalize(fileName),
-			serviceContext.getUserId(), fileEntry.getGroupId(),
+			StringPool.BLANK, serviceContext.getUserId(),
+			fileEntry.getGroupId(),
 			_portal.getClassNameId(classedModel.getModelClass()), classPK,
 			fileEntry.getFileEntryId(), false, null, displayDateMonth,
 			displayDateDay, displayDateYear, displayDateHour, displayDateMinute,
 			expirationDateMonth, expirationDateDay, expirationDateYear,
-			expirationDateHour, expirationDateMinute, true, titleMap, null,
-			priority, type, serviceContext);
+			expirationDateHour, expirationDateMinute, true, true, titleMap,
+			null, priority, type, serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -196,7 +186,7 @@ public class CPAttachmentFileEntryCreator {
 	private DLAppService _dlAppService;
 
 	@Reference
-	private FriendlyURLNormalizer _friendlyURLNormalizer;
+	private com.liferay.portal.kernel.util.File _file;
 
 	@Reference
 	private MimeTypes _mimeTypes;

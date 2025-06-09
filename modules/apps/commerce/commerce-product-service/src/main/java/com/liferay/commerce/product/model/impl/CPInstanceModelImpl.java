@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
 
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPInstanceModel;
-import com.liferay.commerce.product.model.CPInstanceSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -39,7 +29,6 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.math.BigDecimal;
@@ -47,12 +36,10 @@ import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -81,6 +68,7 @@ public class CPInstanceModelImpl
 	public static final String TABLE_NAME = "CPInstance";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
 		{"CPInstanceId", Types.BIGINT}, {"groupId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
@@ -106,7 +94,10 @@ public class CPInstanceModelImpl
 		{"deliverySubscriptionType", Types.VARCHAR},
 		{"deliverySubTypeSettings", Types.VARCHAR},
 		{"deliveryMaxSubscriptionCycles", Types.BIGINT},
-		{"unspsc", Types.VARCHAR}, {"status", Types.INTEGER},
+		{"unspsc", Types.VARCHAR}, {"discontinued", Types.BOOLEAN},
+		{"discontinuedDate", Types.TIMESTAMP},
+		{"replacementCPInstanceUuid", Types.VARCHAR},
+		{"replacementCProductId", Types.BIGINT}, {"status", Types.INTEGER},
 		{"statusByUserId", Types.BIGINT}, {"statusByUserName", Types.VARCHAR},
 		{"statusDate", Types.TIMESTAMP}
 	};
@@ -115,6 +106,8 @@ public class CPInstanceModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("CPInstanceId", Types.BIGINT);
@@ -153,6 +146,10 @@ public class CPInstanceModelImpl
 		TABLE_COLUMNS_MAP.put("deliverySubTypeSettings", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("deliveryMaxSubscriptionCycles", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("unspsc", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("discontinued", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("discontinuedDate", Types.TIMESTAMP);
+		TABLE_COLUMNS_MAP.put("replacementCPInstanceUuid", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("replacementCProductId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("statusByUserId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("statusByUserName", Types.VARCHAR);
@@ -160,7 +157,7 @@ public class CPInstanceModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CPInstance (uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,CPInstanceId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,CPDefinitionId LONG,CPInstanceUuid VARCHAR(75) null,sku VARCHAR(75) null,gtin VARCHAR(75) null,manufacturerPartNumber VARCHAR(75) null,purchasable BOOLEAN,width DOUBLE,height DOUBLE,depth DOUBLE,weight DOUBLE,price DECIMAL(30, 16) null,promoPrice DECIMAL(30, 16) null,cost DECIMAL(30, 16) null,published BOOLEAN,displayDate DATE null,expirationDate DATE null,lastPublishDate DATE null,overrideSubscriptionInfo BOOLEAN,subscriptionEnabled BOOLEAN,subscriptionLength INTEGER,subscriptionType VARCHAR(75) null,subscriptionTypeSettings TEXT null,maxSubscriptionCycles LONG,deliverySubscriptionEnabled BOOLEAN,deliverySubscriptionLength INTEGER,deliverySubscriptionType VARCHAR(75) null,deliverySubTypeSettings VARCHAR(75) null,deliveryMaxSubscriptionCycles LONG,unspsc VARCHAR(75) null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
+		"create table CPInstance (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,CPInstanceId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,CPDefinitionId LONG,CPInstanceUuid VARCHAR(75) null,sku VARCHAR(75) null,gtin VARCHAR(75) null,manufacturerPartNumber VARCHAR(75) null,purchasable BOOLEAN,width DOUBLE,height DOUBLE,depth DOUBLE,weight DOUBLE,price BIGDECIMAL null,promoPrice BIGDECIMAL null,cost BIGDECIMAL null,published BOOLEAN,displayDate DATE null,expirationDate DATE null,lastPublishDate DATE null,overrideSubscriptionInfo BOOLEAN,subscriptionEnabled BOOLEAN,subscriptionLength INTEGER,subscriptionType VARCHAR(75) null,subscriptionTypeSettings TEXT null,maxSubscriptionCycles LONG,deliverySubscriptionEnabled BOOLEAN,deliverySubscriptionLength INTEGER,deliverySubscriptionType VARCHAR(75) null,deliverySubTypeSettings VARCHAR(75) null,deliveryMaxSubscriptionCycles LONG,unspsc VARCHAR(75) null,discontinued BOOLEAN,discontinuedDate DATE null,replacementCPInstanceUuid VARCHAR(75) null,replacementCProductId LONG,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (CPInstanceId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CPInstance";
 
@@ -170,29 +167,14 @@ public class CPInstanceModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CPInstance.displayDate DESC, CPInstance.createDate DESC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY cpInstance.displayDate DESC, cpInstance.createDate DESC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
 
 	public static final String TX_MANAGER = "liferayTransactionManager";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -234,120 +216,52 @@ public class CPInstanceModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long SKU_COLUMN_BITMASK = 64L;
+	public static final long REPLACEMENTCPINSTANCEUUID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 128L;
+	public static final long REPLACEMENTCPRODUCTID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 256L;
+	public static final long SKU_COLUMN_BITMASK = 256L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long STATUS_COLUMN_BITMASK = 512L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long CREATEDATE_COLUMN_BITMASK = 512L;
+	public static final long CREATEDATE_COLUMN_BITMASK = 2048L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CPInstance toModel(CPInstanceSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		CPInstance model = new CPInstanceImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setExternalReferenceCode(soapModel.getExternalReferenceCode());
-		model.setCPInstanceId(soapModel.getCPInstanceId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCPDefinitionId(soapModel.getCPDefinitionId());
-		model.setCPInstanceUuid(soapModel.getCPInstanceUuid());
-		model.setSku(soapModel.getSku());
-		model.setGtin(soapModel.getGtin());
-		model.setManufacturerPartNumber(soapModel.getManufacturerPartNumber());
-		model.setPurchasable(soapModel.isPurchasable());
-		model.setWidth(soapModel.getWidth());
-		model.setHeight(soapModel.getHeight());
-		model.setDepth(soapModel.getDepth());
-		model.setWeight(soapModel.getWeight());
-		model.setPrice(soapModel.getPrice());
-		model.setPromoPrice(soapModel.getPromoPrice());
-		model.setCost(soapModel.getCost());
-		model.setPublished(soapModel.isPublished());
-		model.setDisplayDate(soapModel.getDisplayDate());
-		model.setExpirationDate(soapModel.getExpirationDate());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setOverrideSubscriptionInfo(
-			soapModel.isOverrideSubscriptionInfo());
-		model.setSubscriptionEnabled(soapModel.isSubscriptionEnabled());
-		model.setSubscriptionLength(soapModel.getSubscriptionLength());
-		model.setSubscriptionType(soapModel.getSubscriptionType());
-		model.setSubscriptionTypeSettings(
-			soapModel.getSubscriptionTypeSettings());
-		model.setMaxSubscriptionCycles(soapModel.getMaxSubscriptionCycles());
-		model.setDeliverySubscriptionEnabled(
-			soapModel.isDeliverySubscriptionEnabled());
-		model.setDeliverySubscriptionLength(
-			soapModel.getDeliverySubscriptionLength());
-		model.setDeliverySubscriptionType(
-			soapModel.getDeliverySubscriptionType());
-		model.setDeliverySubscriptionTypeSettings(
-			soapModel.getDeliverySubscriptionTypeSettings());
-		model.setDeliveryMaxSubscriptionCycles(
-			soapModel.getDeliveryMaxSubscriptionCycles());
-		model.setUnspsc(soapModel.getUnspsc());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CPInstance> toModels(CPInstanceSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CPInstance> models = new ArrayList<CPInstance>(soapModels.length);
-
-		for (CPInstanceSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.product.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.product.model.CPInstance"));
 
 	public CPInstanceModelImpl() {
 	}
@@ -424,252 +338,318 @@ public class CPInstanceModelImpl
 	public Map<String, Function<CPInstance, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CPInstance, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CPInstance>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CPInstance.class.getClassLoader(), CPInstance.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CPInstance, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CPInstance> constructor =
-				(Constructor<CPInstance>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CPInstance, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<CPInstance, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CPInstance::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CPInstance::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", CPInstance::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", CPInstance::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"CPInstanceId", CPInstance::getCPInstanceId);
+			attributeGetterFunctions.put("groupId", CPInstance::getGroupId);
+			attributeGetterFunctions.put("companyId", CPInstance::getCompanyId);
+			attributeGetterFunctions.put("userId", CPInstance::getUserId);
+			attributeGetterFunctions.put("userName", CPInstance::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CPInstance::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CPInstance::getModifiedDate);
+			attributeGetterFunctions.put(
+				"CPDefinitionId", CPInstance::getCPDefinitionId);
+			attributeGetterFunctions.put(
+				"CPInstanceUuid", CPInstance::getCPInstanceUuid);
+			attributeGetterFunctions.put("sku", CPInstance::getSku);
+			attributeGetterFunctions.put("gtin", CPInstance::getGtin);
+			attributeGetterFunctions.put(
+				"manufacturerPartNumber",
+				CPInstance::getManufacturerPartNumber);
+			attributeGetterFunctions.put(
+				"purchasable", CPInstance::getPurchasable);
+			attributeGetterFunctions.put("width", CPInstance::getWidth);
+			attributeGetterFunctions.put("height", CPInstance::getHeight);
+			attributeGetterFunctions.put("depth", CPInstance::getDepth);
+			attributeGetterFunctions.put("weight", CPInstance::getWeight);
+			attributeGetterFunctions.put("price", CPInstance::getPrice);
+			attributeGetterFunctions.put(
+				"promoPrice", CPInstance::getPromoPrice);
+			attributeGetterFunctions.put("cost", CPInstance::getCost);
+			attributeGetterFunctions.put("published", CPInstance::getPublished);
+			attributeGetterFunctions.put(
+				"displayDate", CPInstance::getDisplayDate);
+			attributeGetterFunctions.put(
+				"expirationDate", CPInstance::getExpirationDate);
+			attributeGetterFunctions.put(
+				"lastPublishDate", CPInstance::getLastPublishDate);
+			attributeGetterFunctions.put(
+				"overrideSubscriptionInfo",
+				CPInstance::getOverrideSubscriptionInfo);
+			attributeGetterFunctions.put(
+				"subscriptionEnabled", CPInstance::getSubscriptionEnabled);
+			attributeGetterFunctions.put(
+				"subscriptionLength", CPInstance::getSubscriptionLength);
+			attributeGetterFunctions.put(
+				"subscriptionType", CPInstance::getSubscriptionType);
+			attributeGetterFunctions.put(
+				"subscriptionTypeSettings",
+				CPInstance::getSubscriptionTypeSettings);
+			attributeGetterFunctions.put(
+				"maxSubscriptionCycles", CPInstance::getMaxSubscriptionCycles);
+			attributeGetterFunctions.put(
+				"deliverySubscriptionEnabled",
+				CPInstance::getDeliverySubscriptionEnabled);
+			attributeGetterFunctions.put(
+				"deliverySubscriptionLength",
+				CPInstance::getDeliverySubscriptionLength);
+			attributeGetterFunctions.put(
+				"deliverySubscriptionType",
+				CPInstance::getDeliverySubscriptionType);
+			attributeGetterFunctions.put(
+				"deliverySubscriptionTypeSettings",
+				CPInstance::getDeliverySubscriptionTypeSettings);
+			attributeGetterFunctions.put(
+				"deliveryMaxSubscriptionCycles",
+				CPInstance::getDeliveryMaxSubscriptionCycles);
+			attributeGetterFunctions.put("unspsc", CPInstance::getUnspsc);
+			attributeGetterFunctions.put(
+				"discontinued", CPInstance::getDiscontinued);
+			attributeGetterFunctions.put(
+				"discontinuedDate", CPInstance::getDiscontinuedDate);
+			attributeGetterFunctions.put(
+				"replacementCPInstanceUuid",
+				CPInstance::getReplacementCPInstanceUuid);
+			attributeGetterFunctions.put(
+				"replacementCProductId", CPInstance::getReplacementCProductId);
+			attributeGetterFunctions.put("status", CPInstance::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", CPInstance::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", CPInstance::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", CPInstance::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CPInstance, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CPInstance, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CPInstance, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CPInstance, Object>>();
-		Map<String, BiConsumer<CPInstance, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CPInstance, ?>>();
+		private static final Map<String, BiConsumer<CPInstance, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", CPInstance::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<CPInstance, String>)CPInstance::setUuid);
-		attributeGetterFunctions.put(
-			"externalReferenceCode", CPInstance::getExternalReferenceCode);
-		attributeSetterBiConsumers.put(
-			"externalReferenceCode",
-			(BiConsumer<CPInstance, String>)
-				CPInstance::setExternalReferenceCode);
-		attributeGetterFunctions.put(
-			"CPInstanceId", CPInstance::getCPInstanceId);
-		attributeSetterBiConsumers.put(
-			"CPInstanceId",
-			(BiConsumer<CPInstance, Long>)CPInstance::setCPInstanceId);
-		attributeGetterFunctions.put("groupId", CPInstance::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<CPInstance, Long>)CPInstance::setGroupId);
-		attributeGetterFunctions.put("companyId", CPInstance::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CPInstance, Long>)CPInstance::setCompanyId);
-		attributeGetterFunctions.put("userId", CPInstance::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<CPInstance, Long>)CPInstance::setUserId);
-		attributeGetterFunctions.put("userName", CPInstance::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CPInstance, String>)CPInstance::setUserName);
-		attributeGetterFunctions.put("createDate", CPInstance::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CPInstance, Date>)CPInstance::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CPInstance::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CPInstance, Date>)CPInstance::setModifiedDate);
-		attributeGetterFunctions.put(
-			"CPDefinitionId", CPInstance::getCPDefinitionId);
-		attributeSetterBiConsumers.put(
-			"CPDefinitionId",
-			(BiConsumer<CPInstance, Long>)CPInstance::setCPDefinitionId);
-		attributeGetterFunctions.put(
-			"CPInstanceUuid", CPInstance::getCPInstanceUuid);
-		attributeSetterBiConsumers.put(
-			"CPInstanceUuid",
-			(BiConsumer<CPInstance, String>)CPInstance::setCPInstanceUuid);
-		attributeGetterFunctions.put("sku", CPInstance::getSku);
-		attributeSetterBiConsumers.put(
-			"sku", (BiConsumer<CPInstance, String>)CPInstance::setSku);
-		attributeGetterFunctions.put("gtin", CPInstance::getGtin);
-		attributeSetterBiConsumers.put(
-			"gtin", (BiConsumer<CPInstance, String>)CPInstance::setGtin);
-		attributeGetterFunctions.put(
-			"manufacturerPartNumber", CPInstance::getManufacturerPartNumber);
-		attributeSetterBiConsumers.put(
-			"manufacturerPartNumber",
-			(BiConsumer<CPInstance, String>)
-				CPInstance::setManufacturerPartNumber);
-		attributeGetterFunctions.put("purchasable", CPInstance::getPurchasable);
-		attributeSetterBiConsumers.put(
-			"purchasable",
-			(BiConsumer<CPInstance, Boolean>)CPInstance::setPurchasable);
-		attributeGetterFunctions.put("width", CPInstance::getWidth);
-		attributeSetterBiConsumers.put(
-			"width", (BiConsumer<CPInstance, Double>)CPInstance::setWidth);
-		attributeGetterFunctions.put("height", CPInstance::getHeight);
-		attributeSetterBiConsumers.put(
-			"height", (BiConsumer<CPInstance, Double>)CPInstance::setHeight);
-		attributeGetterFunctions.put("depth", CPInstance::getDepth);
-		attributeSetterBiConsumers.put(
-			"depth", (BiConsumer<CPInstance, Double>)CPInstance::setDepth);
-		attributeGetterFunctions.put("weight", CPInstance::getWeight);
-		attributeSetterBiConsumers.put(
-			"weight", (BiConsumer<CPInstance, Double>)CPInstance::setWeight);
-		attributeGetterFunctions.put("price", CPInstance::getPrice);
-		attributeSetterBiConsumers.put(
-			"price", (BiConsumer<CPInstance, BigDecimal>)CPInstance::setPrice);
-		attributeGetterFunctions.put("promoPrice", CPInstance::getPromoPrice);
-		attributeSetterBiConsumers.put(
-			"promoPrice",
-			(BiConsumer<CPInstance, BigDecimal>)CPInstance::setPromoPrice);
-		attributeGetterFunctions.put("cost", CPInstance::getCost);
-		attributeSetterBiConsumers.put(
-			"cost", (BiConsumer<CPInstance, BigDecimal>)CPInstance::setCost);
-		attributeGetterFunctions.put("published", CPInstance::getPublished);
-		attributeSetterBiConsumers.put(
-			"published",
-			(BiConsumer<CPInstance, Boolean>)CPInstance::setPublished);
-		attributeGetterFunctions.put("displayDate", CPInstance::getDisplayDate);
-		attributeSetterBiConsumers.put(
-			"displayDate",
-			(BiConsumer<CPInstance, Date>)CPInstance::setDisplayDate);
-		attributeGetterFunctions.put(
-			"expirationDate", CPInstance::getExpirationDate);
-		attributeSetterBiConsumers.put(
-			"expirationDate",
-			(BiConsumer<CPInstance, Date>)CPInstance::setExpirationDate);
-		attributeGetterFunctions.put(
-			"lastPublishDate", CPInstance::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<CPInstance, Date>)CPInstance::setLastPublishDate);
-		attributeGetterFunctions.put(
-			"overrideSubscriptionInfo",
-			CPInstance::getOverrideSubscriptionInfo);
-		attributeSetterBiConsumers.put(
-			"overrideSubscriptionInfo",
-			(BiConsumer<CPInstance, Boolean>)
-				CPInstance::setOverrideSubscriptionInfo);
-		attributeGetterFunctions.put(
-			"subscriptionEnabled", CPInstance::getSubscriptionEnabled);
-		attributeSetterBiConsumers.put(
-			"subscriptionEnabled",
-			(BiConsumer<CPInstance, Boolean>)
-				CPInstance::setSubscriptionEnabled);
-		attributeGetterFunctions.put(
-			"subscriptionLength", CPInstance::getSubscriptionLength);
-		attributeSetterBiConsumers.put(
-			"subscriptionLength",
-			(BiConsumer<CPInstance, Integer>)CPInstance::setSubscriptionLength);
-		attributeGetterFunctions.put(
-			"subscriptionType", CPInstance::getSubscriptionType);
-		attributeSetterBiConsumers.put(
-			"subscriptionType",
-			(BiConsumer<CPInstance, String>)CPInstance::setSubscriptionType);
-		attributeGetterFunctions.put(
-			"subscriptionTypeSettings",
-			CPInstance::getSubscriptionTypeSettings);
-		attributeSetterBiConsumers.put(
-			"subscriptionTypeSettings",
-			(BiConsumer<CPInstance, String>)
-				CPInstance::setSubscriptionTypeSettings);
-		attributeGetterFunctions.put(
-			"maxSubscriptionCycles", CPInstance::getMaxSubscriptionCycles);
-		attributeSetterBiConsumers.put(
-			"maxSubscriptionCycles",
-			(BiConsumer<CPInstance, Long>)CPInstance::setMaxSubscriptionCycles);
-		attributeGetterFunctions.put(
-			"deliverySubscriptionEnabled",
-			CPInstance::getDeliverySubscriptionEnabled);
-		attributeSetterBiConsumers.put(
-			"deliverySubscriptionEnabled",
-			(BiConsumer<CPInstance, Boolean>)
-				CPInstance::setDeliverySubscriptionEnabled);
-		attributeGetterFunctions.put(
-			"deliverySubscriptionLength",
-			CPInstance::getDeliverySubscriptionLength);
-		attributeSetterBiConsumers.put(
-			"deliverySubscriptionLength",
-			(BiConsumer<CPInstance, Integer>)
-				CPInstance::setDeliverySubscriptionLength);
-		attributeGetterFunctions.put(
-			"deliverySubscriptionType",
-			CPInstance::getDeliverySubscriptionType);
-		attributeSetterBiConsumers.put(
-			"deliverySubscriptionType",
-			(BiConsumer<CPInstance, String>)
-				CPInstance::setDeliverySubscriptionType);
-		attributeGetterFunctions.put(
-			"deliverySubscriptionTypeSettings",
-			CPInstance::getDeliverySubscriptionTypeSettings);
-		attributeSetterBiConsumers.put(
-			"deliverySubscriptionTypeSettings",
-			(BiConsumer<CPInstance, String>)
-				CPInstance::setDeliverySubscriptionTypeSettings);
-		attributeGetterFunctions.put(
-			"deliveryMaxSubscriptionCycles",
-			CPInstance::getDeliveryMaxSubscriptionCycles);
-		attributeSetterBiConsumers.put(
-			"deliveryMaxSubscriptionCycles",
-			(BiConsumer<CPInstance, Long>)
-				CPInstance::setDeliveryMaxSubscriptionCycles);
-		attributeGetterFunctions.put("unspsc", CPInstance::getUnspsc);
-		attributeSetterBiConsumers.put(
-			"unspsc", (BiConsumer<CPInstance, String>)CPInstance::setUnspsc);
-		attributeGetterFunctions.put("status", CPInstance::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<CPInstance, Integer>)CPInstance::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", CPInstance::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<CPInstance, Long>)CPInstance::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", CPInstance::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<CPInstance, String>)CPInstance::setStatusByUserName);
-		attributeGetterFunctions.put("statusDate", CPInstance::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<CPInstance, Date>)CPInstance::setStatusDate);
+		static {
+			Map<String, BiConsumer<CPInstance, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<CPInstance, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CPInstance, Long>)CPInstance::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CPInstance, Long>)CPInstance::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<CPInstance, String>)CPInstance::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"CPInstanceId",
+				(BiConsumer<CPInstance, Long>)CPInstance::setCPInstanceId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CPInstance, Long>)CPInstance::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CPInstance, Long>)CPInstance::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<CPInstance, Long>)CPInstance::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CPInstance, String>)CPInstance::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"CPDefinitionId",
+				(BiConsumer<CPInstance, Long>)CPInstance::setCPDefinitionId);
+			attributeSetterBiConsumers.put(
+				"CPInstanceUuid",
+				(BiConsumer<CPInstance, String>)CPInstance::setCPInstanceUuid);
+			attributeSetterBiConsumers.put(
+				"sku", (BiConsumer<CPInstance, String>)CPInstance::setSku);
+			attributeSetterBiConsumers.put(
+				"gtin", (BiConsumer<CPInstance, String>)CPInstance::setGtin);
+			attributeSetterBiConsumers.put(
+				"manufacturerPartNumber",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setManufacturerPartNumber);
+			attributeSetterBiConsumers.put(
+				"purchasable",
+				(BiConsumer<CPInstance, Boolean>)CPInstance::setPurchasable);
+			attributeSetterBiConsumers.put(
+				"width", (BiConsumer<CPInstance, Double>)CPInstance::setWidth);
+			attributeSetterBiConsumers.put(
+				"height",
+				(BiConsumer<CPInstance, Double>)CPInstance::setHeight);
+			attributeSetterBiConsumers.put(
+				"depth", (BiConsumer<CPInstance, Double>)CPInstance::setDepth);
+			attributeSetterBiConsumers.put(
+				"weight",
+				(BiConsumer<CPInstance, Double>)CPInstance::setWeight);
+			attributeSetterBiConsumers.put(
+				"price",
+				(BiConsumer<CPInstance, BigDecimal>)CPInstance::setPrice);
+			attributeSetterBiConsumers.put(
+				"promoPrice",
+				(BiConsumer<CPInstance, BigDecimal>)CPInstance::setPromoPrice);
+			attributeSetterBiConsumers.put(
+				"cost",
+				(BiConsumer<CPInstance, BigDecimal>)CPInstance::setCost);
+			attributeSetterBiConsumers.put(
+				"published",
+				(BiConsumer<CPInstance, Boolean>)CPInstance::setPublished);
+			attributeSetterBiConsumers.put(
+				"displayDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setDisplayDate);
+			attributeSetterBiConsumers.put(
+				"expirationDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setExpirationDate);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"overrideSubscriptionInfo",
+				(BiConsumer<CPInstance, Boolean>)
+					CPInstance::setOverrideSubscriptionInfo);
+			attributeSetterBiConsumers.put(
+				"subscriptionEnabled",
+				(BiConsumer<CPInstance, Boolean>)
+					CPInstance::setSubscriptionEnabled);
+			attributeSetterBiConsumers.put(
+				"subscriptionLength",
+				(BiConsumer<CPInstance, Integer>)
+					CPInstance::setSubscriptionLength);
+			attributeSetterBiConsumers.put(
+				"subscriptionType",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setSubscriptionType);
+			attributeSetterBiConsumers.put(
+				"subscriptionTypeSettings",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setSubscriptionTypeSettings);
+			attributeSetterBiConsumers.put(
+				"maxSubscriptionCycles",
+				(BiConsumer<CPInstance, Long>)
+					CPInstance::setMaxSubscriptionCycles);
+			attributeSetterBiConsumers.put(
+				"deliverySubscriptionEnabled",
+				(BiConsumer<CPInstance, Boolean>)
+					CPInstance::setDeliverySubscriptionEnabled);
+			attributeSetterBiConsumers.put(
+				"deliverySubscriptionLength",
+				(BiConsumer<CPInstance, Integer>)
+					CPInstance::setDeliverySubscriptionLength);
+			attributeSetterBiConsumers.put(
+				"deliverySubscriptionType",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setDeliverySubscriptionType);
+			attributeSetterBiConsumers.put(
+				"deliverySubscriptionTypeSettings",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setDeliverySubscriptionTypeSettings);
+			attributeSetterBiConsumers.put(
+				"deliveryMaxSubscriptionCycles",
+				(BiConsumer<CPInstance, Long>)
+					CPInstance::setDeliveryMaxSubscriptionCycles);
+			attributeSetterBiConsumers.put(
+				"unspsc",
+				(BiConsumer<CPInstance, String>)CPInstance::setUnspsc);
+			attributeSetterBiConsumers.put(
+				"discontinued",
+				(BiConsumer<CPInstance, Boolean>)CPInstance::setDiscontinued);
+			attributeSetterBiConsumers.put(
+				"discontinuedDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setDiscontinuedDate);
+			attributeSetterBiConsumers.put(
+				"replacementCPInstanceUuid",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setReplacementCPInstanceUuid);
+			attributeSetterBiConsumers.put(
+				"replacementCProductId",
+				(BiConsumer<CPInstance, Long>)
+					CPInstance::setReplacementCProductId);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<CPInstance, Integer>)CPInstance::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<CPInstance, Long>)CPInstance::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<CPInstance, String>)
+					CPInstance::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<CPInstance, Date>)CPInstance::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -1436,6 +1416,96 @@ public class CPInstanceModelImpl
 
 	@JSON
 	@Override
+	public boolean getDiscontinued() {
+		return _discontinued;
+	}
+
+	@JSON
+	@Override
+	public boolean isDiscontinued() {
+		return _discontinued;
+	}
+
+	@Override
+	public void setDiscontinued(boolean discontinued) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_discontinued = discontinued;
+	}
+
+	@JSON
+	@Override
+	public Date getDiscontinuedDate() {
+		return _discontinuedDate;
+	}
+
+	@Override
+	public void setDiscontinuedDate(Date discontinuedDate) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_discontinuedDate = discontinuedDate;
+	}
+
+	@JSON
+	@Override
+	public String getReplacementCPInstanceUuid() {
+		if (_replacementCPInstanceUuid == null) {
+			return "";
+		}
+		else {
+			return _replacementCPInstanceUuid;
+		}
+	}
+
+	@Override
+	public void setReplacementCPInstanceUuid(String replacementCPInstanceUuid) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_replacementCPInstanceUuid = replacementCPInstanceUuid;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalReplacementCPInstanceUuid() {
+		return getColumnOriginalValue("replacementCPInstanceUuid");
+	}
+
+	@JSON
+	@Override
+	public long getReplacementCProductId() {
+		return _replacementCProductId;
+	}
+
+	@Override
+	public void setReplacementCProductId(long replacementCProductId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_replacementCProductId = replacementCProductId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalReplacementCProductId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("replacementCProductId"));
+	}
+
+	@JSON
+	@Override
 	public int getStatus() {
 		return _status;
 	}
@@ -1667,6 +1737,8 @@ public class CPInstanceModelImpl
 	public Object clone() {
 		CPInstanceImpl cpInstanceImpl = new CPInstanceImpl();
 
+		cpInstanceImpl.setMvccVersion(getMvccVersion());
+		cpInstanceImpl.setCtCollectionId(getCtCollectionId());
 		cpInstanceImpl.setUuid(getUuid());
 		cpInstanceImpl.setExternalReferenceCode(getExternalReferenceCode());
 		cpInstanceImpl.setCPInstanceId(getCPInstanceId());
@@ -1712,6 +1784,11 @@ public class CPInstanceModelImpl
 		cpInstanceImpl.setDeliveryMaxSubscriptionCycles(
 			getDeliveryMaxSubscriptionCycles());
 		cpInstanceImpl.setUnspsc(getUnspsc());
+		cpInstanceImpl.setDiscontinued(isDiscontinued());
+		cpInstanceImpl.setDiscontinuedDate(getDiscontinuedDate());
+		cpInstanceImpl.setReplacementCPInstanceUuid(
+			getReplacementCPInstanceUuid());
+		cpInstanceImpl.setReplacementCProductId(getReplacementCProductId());
 		cpInstanceImpl.setStatus(getStatus());
 		cpInstanceImpl.setStatusByUserId(getStatusByUserId());
 		cpInstanceImpl.setStatusByUserName(getStatusByUserName());
@@ -1726,6 +1803,10 @@ public class CPInstanceModelImpl
 	public CPInstance cloneWithOriginalValues() {
 		CPInstanceImpl cpInstanceImpl = new CPInstanceImpl();
 
+		cpInstanceImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		cpInstanceImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		cpInstanceImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		cpInstanceImpl.setExternalReferenceCode(
 			this.<String>getColumnOriginalValue("externalReferenceCode"));
@@ -1792,6 +1873,14 @@ public class CPInstanceModelImpl
 		cpInstanceImpl.setDeliveryMaxSubscriptionCycles(
 			this.<Long>getColumnOriginalValue("deliveryMaxSubscriptionCycles"));
 		cpInstanceImpl.setUnspsc(this.<String>getColumnOriginalValue("unspsc"));
+		cpInstanceImpl.setDiscontinued(
+			this.<Boolean>getColumnOriginalValue("discontinued"));
+		cpInstanceImpl.setDiscontinuedDate(
+			this.<Date>getColumnOriginalValue("discontinuedDate"));
+		cpInstanceImpl.setReplacementCPInstanceUuid(
+			this.<String>getColumnOriginalValue("replacementCPInstanceUuid"));
+		cpInstanceImpl.setReplacementCProductId(
+			this.<Long>getColumnOriginalValue("replacementCProductId"));
 		cpInstanceImpl.setStatus(
 			this.<Integer>getColumnOriginalValue("status"));
 		cpInstanceImpl.setStatusByUserId(
@@ -1861,7 +1950,7 @@ public class CPInstanceModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -1870,7 +1959,7 @@ public class CPInstanceModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1885,6 +1974,10 @@ public class CPInstanceModelImpl
 	@Override
 	public CacheModel<CPInstance> toCacheModel() {
 		CPInstanceCacheModel cpInstanceCacheModel = new CPInstanceCacheModel();
+
+		cpInstanceCacheModel.mvccVersion = getMvccVersion();
+
+		cpInstanceCacheModel.ctCollectionId = getCtCollectionId();
 
 		cpInstanceCacheModel.uuid = getUuid();
 
@@ -2092,6 +2185,31 @@ public class CPInstanceModelImpl
 			cpInstanceCacheModel.unspsc = null;
 		}
 
+		cpInstanceCacheModel.discontinued = isDiscontinued();
+
+		Date discontinuedDate = getDiscontinuedDate();
+
+		if (discontinuedDate != null) {
+			cpInstanceCacheModel.discontinuedDate = discontinuedDate.getTime();
+		}
+		else {
+			cpInstanceCacheModel.discontinuedDate = Long.MIN_VALUE;
+		}
+
+		cpInstanceCacheModel.replacementCPInstanceUuid =
+			getReplacementCPInstanceUuid();
+
+		String replacementCPInstanceUuid =
+			cpInstanceCacheModel.replacementCPInstanceUuid;
+
+		if ((replacementCPInstanceUuid != null) &&
+			(replacementCPInstanceUuid.length() == 0)) {
+
+			cpInstanceCacheModel.replacementCPInstanceUuid = null;
+		}
+
+		cpInstanceCacheModel.replacementCProductId = getReplacementCProductId();
+
 		cpInstanceCacheModel.status = getStatus();
 
 		cpInstanceCacheModel.statusByUserId = getStatusByUserId();
@@ -2165,44 +2283,17 @@ public class CPInstanceModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CPInstance, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CPInstance, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CPInstance, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CPInstance)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CPInstance>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CPInstance.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private String _externalReferenceCode;
 	private long _CPInstanceId;
@@ -2242,6 +2333,10 @@ public class CPInstanceModelImpl
 	private String _deliverySubscriptionTypeSettings;
 	private long _deliveryMaxSubscriptionCycles;
 	private String _unspsc;
+	private boolean _discontinued;
+	private Date _discontinuedDate;
+	private String _replacementCPInstanceUuid;
+	private long _replacementCProductId;
 	private int _status;
 	private long _statusByUserId;
 	private String _statusByUserName;
@@ -2250,8 +2345,9 @@ public class CPInstanceModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<CPInstance, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<CPInstance, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -2276,6 +2372,8 @@ public class CPInstanceModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
 			"externalReferenceCode", _externalReferenceCode);
@@ -2324,6 +2422,12 @@ public class CPInstanceModelImpl
 		_columnOriginalValues.put(
 			"deliveryMaxSubscriptionCycles", _deliveryMaxSubscriptionCycles);
 		_columnOriginalValues.put("unspsc", _unspsc);
+		_columnOriginalValues.put("discontinued", _discontinued);
+		_columnOriginalValues.put("discontinuedDate", _discontinuedDate);
+		_columnOriginalValues.put(
+			"replacementCPInstanceUuid", _replacementCPInstanceUuid);
+		_columnOriginalValues.put(
+			"replacementCProductId", _replacementCProductId);
 		_columnOriginalValues.put("status", _status);
 		_columnOriginalValues.put("statusByUserId", _statusByUserId);
 		_columnOriginalValues.put("statusByUserName", _statusByUserName);
@@ -2353,89 +2457,101 @@ public class CPInstanceModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("externalReferenceCode", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("CPInstanceId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("groupId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("CPInstanceId", 16L);
 
-		columnBitmasks.put("userId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userName", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("createDate", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("modifiedDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("CPDefinitionId", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("CPInstanceUuid", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("sku", 2048L);
+		columnBitmasks.put("CPDefinitionId", 2048L);
 
-		columnBitmasks.put("gtin", 4096L);
+		columnBitmasks.put("CPInstanceUuid", 4096L);
 
-		columnBitmasks.put("manufacturerPartNumber", 8192L);
+		columnBitmasks.put("sku", 8192L);
 
-		columnBitmasks.put("purchasable", 16384L);
+		columnBitmasks.put("gtin", 16384L);
 
-		columnBitmasks.put("width", 32768L);
+		columnBitmasks.put("manufacturerPartNumber", 32768L);
 
-		columnBitmasks.put("height", 65536L);
+		columnBitmasks.put("purchasable", 65536L);
 
-		columnBitmasks.put("depth", 131072L);
+		columnBitmasks.put("width", 131072L);
 
-		columnBitmasks.put("weight", 262144L);
+		columnBitmasks.put("height", 262144L);
 
-		columnBitmasks.put("price", 524288L);
+		columnBitmasks.put("depth", 524288L);
 
-		columnBitmasks.put("promoPrice", 1048576L);
+		columnBitmasks.put("weight", 1048576L);
 
-		columnBitmasks.put("cost", 2097152L);
+		columnBitmasks.put("price", 2097152L);
 
-		columnBitmasks.put("published", 4194304L);
+		columnBitmasks.put("promoPrice", 4194304L);
 
-		columnBitmasks.put("displayDate", 8388608L);
+		columnBitmasks.put("cost", 8388608L);
 
-		columnBitmasks.put("expirationDate", 16777216L);
+		columnBitmasks.put("published", 16777216L);
 
-		columnBitmasks.put("lastPublishDate", 33554432L);
+		columnBitmasks.put("displayDate", 33554432L);
 
-		columnBitmasks.put("overrideSubscriptionInfo", 67108864L);
+		columnBitmasks.put("expirationDate", 67108864L);
 
-		columnBitmasks.put("subscriptionEnabled", 134217728L);
+		columnBitmasks.put("lastPublishDate", 134217728L);
 
-		columnBitmasks.put("subscriptionLength", 268435456L);
+		columnBitmasks.put("overrideSubscriptionInfo", 268435456L);
 
-		columnBitmasks.put("subscriptionType", 536870912L);
+		columnBitmasks.put("subscriptionEnabled", 536870912L);
 
-		columnBitmasks.put("subscriptionTypeSettings", 1073741824L);
+		columnBitmasks.put("subscriptionLength", 1073741824L);
 
-		columnBitmasks.put("maxSubscriptionCycles", 2147483648L);
+		columnBitmasks.put("subscriptionType", 2147483648L);
 
-		columnBitmasks.put("deliverySubscriptionEnabled", 4294967296L);
+		columnBitmasks.put("subscriptionTypeSettings", 4294967296L);
 
-		columnBitmasks.put("deliverySubscriptionLength", 8589934592L);
+		columnBitmasks.put("maxSubscriptionCycles", 8589934592L);
 
-		columnBitmasks.put("deliverySubscriptionType", 17179869184L);
+		columnBitmasks.put("deliverySubscriptionEnabled", 17179869184L);
 
-		columnBitmasks.put("deliverySubTypeSettings", 34359738368L);
+		columnBitmasks.put("deliverySubscriptionLength", 34359738368L);
 
-		columnBitmasks.put("deliveryMaxSubscriptionCycles", 68719476736L);
+		columnBitmasks.put("deliverySubscriptionType", 68719476736L);
 
-		columnBitmasks.put("unspsc", 137438953472L);
+		columnBitmasks.put("deliverySubTypeSettings", 137438953472L);
 
-		columnBitmasks.put("status", 274877906944L);
+		columnBitmasks.put("deliveryMaxSubscriptionCycles", 274877906944L);
 
-		columnBitmasks.put("statusByUserId", 549755813888L);
+		columnBitmasks.put("unspsc", 549755813888L);
 
-		columnBitmasks.put("statusByUserName", 1099511627776L);
+		columnBitmasks.put("discontinued", 1099511627776L);
 
-		columnBitmasks.put("statusDate", 2199023255552L);
+		columnBitmasks.put("discontinuedDate", 2199023255552L);
+
+		columnBitmasks.put("replacementCPInstanceUuid", 4398046511104L);
+
+		columnBitmasks.put("replacementCProductId", 8796093022208L);
+
+		columnBitmasks.put("status", 17592186044416L);
+
+		columnBitmasks.put("statusByUserId", 35184372088832L);
+
+		columnBitmasks.put("statusByUserName", 70368744177664L);
+
+		columnBitmasks.put("statusDate", 140737488355328L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

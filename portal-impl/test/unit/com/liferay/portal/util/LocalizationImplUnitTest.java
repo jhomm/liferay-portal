@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util;
@@ -142,7 +133,8 @@ public class LocalizationImplUnitTest {
 
 				}));
 
-		Locale locale = LocaleUtil.fromLanguageId(defaultContentLanguageId);
+		Locale locale = LocaleUtil.fromLanguageId(
+			defaultContentLanguageId, false);
 
 		LocaleUtil.setDefault(
 			locale.getLanguage(), locale.getCountry(), locale.getVariant());
@@ -151,25 +143,22 @@ public class LocalizationImplUnitTest {
 
 		localizationUtil.setLocalization(new LocalizationImpl());
 
-		Locale contentDefaultLocale = LocaleUtil.fromLanguageId("es_ES");
-
-		Locale[] contentAvailableLocales = _getContentAvailableLocales(
-			"es_ES,en_US,de_DE");
+		Locale contentDefaultLocale = LocaleUtil.fromLanguageId("es_ES", false);
 
 		Locale defaultImportLocale = LocalizationUtil.getDefaultImportLocale(
 			"com.liferay.portal.className", 0L, contentDefaultLocale,
-			contentAvailableLocales);
+			_getContentAvailableLocales("es_ES,en_US,de_DE"));
 
 		if (expectedResult) {
 			Assert.assertTrue(
 				LocaleUtil.equals(
-					LocaleUtil.fromLanguageId(expectedLanguageId),
+					LocaleUtil.fromLanguageId(expectedLanguageId, false),
 					defaultImportLocale));
 		}
 		else {
 			Assert.assertFalse(
 				LocaleUtil.equals(
-					LocaleUtil.fromLanguageId(expectedLanguageId),
+					LocaleUtil.fromLanguageId(expectedLanguageId, false),
 					defaultImportLocale));
 		}
 	}

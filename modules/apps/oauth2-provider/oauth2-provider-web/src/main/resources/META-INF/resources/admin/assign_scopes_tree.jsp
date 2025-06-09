@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -74,20 +65,20 @@ pageContext.setAttribute("scopeAliasesDescriptionsMap", assignScopesTreeDisplayC
 										<clay:row>
 												<c:choose>
 													<c:when test="${parentNodes.size() > 0}">
-													<div class="col-md-6">
+													<div class="col-md-8">
 														<div class="scope-children-${parentNodes.size()}">
-															<aui:input checked="${assignedScopeAliases.contains(tree.value)}" data-has-childrens="true" data-parent="${parentNodes.getFirst().value}" disabled="${assignedDeletedScopeAliases.contains(tree.value)}" id="${tree.value}" label="${tree.value}" name="scopeAliases" type="checkbox" value="${tree.value}" />
+															<aui:input checked="${assignedScopeAliases.contains(tree.value)}" data-has-children="true" data-parent="${parentNodes.getFirst().value}" disabled="${assignedDeletedScopeAliases.contains(tree.value)}" id="${tree.value}" label="${tree.value}" name="scopeAliases" type="checkbox" value="${tree.value}" />
 														</div>
 													</div>
 													</c:when>
 													<c:otherwise>
-													<div class="col-md-6">
-														<aui:input checked="${assignedScopeAliases.contains(tree.value)}" data-has-childrens="true" disabled="${assignedDeletedScopeAliases.contains(tree.value)}" id="${tree.value}" label="${tree.value}" name="scopeAliases" type="checkbox" value="${tree.value}" />
+													<div class="col-md-8">
+														<aui:input checked="${assignedScopeAliases.contains(tree.value)}" data-has-children="true" disabled="${assignedDeletedScopeAliases.contains(tree.value)}" id="${tree.value}" label="${tree.value}" name="scopeAliases" type="checkbox" value="${tree.value}" />
 													</div>
 													</c:otherwise>
 												</c:choose>
 
-												<div class="col-md-6 text-left">
+												<div class="col-md-4 text-left">
 													<c:choose>
 														<c:when test="${assignedDeletedScopeAliases.contains(tree.value)}">
 															<liferay-ui:message key="this-scope-is-no-longer-available" />
@@ -108,20 +99,20 @@ pageContext.setAttribute("scopeAliasesDescriptionsMap", assignScopesTreeDisplayC
 										<clay:row>
 											<c:choose>
 												<c:when test="${parentNodes.size() > 0}">
-												<div class="col-md-6">
+												<div class="col-md-8">
 													<div class="scope-children-${parentNodes.size()}">
 														<aui:input checked="${assignedScopeAliases.contains(tree.value)}" data-parent="${parentNodes.getFirst().value}" disabled="${assignedDeletedScopeAliases.contains(tree.value)}" id="${tree.value}" label="${tree.value}" name="scopeAliases" type="checkbox" value="${tree.value}" />
 													</div>
 												</div>
 												</c:when>
 												<c:otherwise>
-												<div class="col-md-6">
+												<div class="col-md-8">
 													<aui:input checked="${assignedScopeAliases.contains(tree.value)}" disabled="${assignedDeletedScopeAliases.contains(tree.value)}" id="${tree.value}" label="${tree.value}" name="scopeAliases" type="checkbox" value="${tree.value}" />
 												</div>
 												</c:otherwise>
 											</c:choose>
 
-											<div class="col-md-6 text-left">
+											<div class="col-md-4 text-left">
 												<c:choose>
 													<c:when test="${assignedDeletedScopeAliases.contains(tree.value)}">
 														<liferay-ui:message key="this-scope-is-no-longer-available" />
@@ -151,62 +142,70 @@ pageContext.setAttribute("scopeAliasesDescriptionsMap", assignScopesTreeDisplayC
 </clay:container-fluid>
 
 <aui:script sandbox="<%= true %>">
-	AUI().use('node', 'aui-modal', (A) => {
-		A.all('input[name="<portlet:namespace />scopeAliases"]').each(function () {
-			this.on('click', function () {
-				<portlet:namespace />recalculateScopeChildrens(this);
-				<portlet:namespace />recalculateScopeParents(this);
-			});
-		});
+	Liferay.Util.delegate(
+		document.body,
+		'click',
+		'input[name="<portlet:namespace />scopeAliases"]',
+		(event) => {
+			recalculateScopeChildren(event.target);
+			recalculateScopeParents(event.target);
+		}
+	);
 
-		<portlet:namespace />recalculateScopeChildrens = function (
-			checkboxElement
-		) {
-			var valueId = checkboxElement.val();
-			var isChecked = checkboxElement.attr('checked');
+	const recalculateScopeChildren = (checkboxElement) => {
+		const valueId = checkboxElement.value;
+		const isChecked = checkboxElement.checked;
 
-			A.all('input[data-parent=' + valueId + ']').each(function () {
-				this.attr('checked', isChecked);
-				var hasChildrens = checkboxElement.attr('data-has-childrens');
-				if (hasChildrens) {
-					<portlet:namespace />recalculateScopeChildrens(this);
+		document
+			.querySelectorAll('input[data-parent="' + valueId + '"]')
+			.forEach((element) => {
+				element.checked = isChecked;
+				const hasChildren = checkboxElement.dataset.hasChildren;
+				if (hasChildren) {
+					recalculateScopeChildren(element);
 				}
 			});
-		};
+	};
 
-		<portlet:namespace />recalculateScopeParents = function (checkboxElement) {
-			var parent = checkboxElement.attr('data-parent');
-			var isChecked = checkboxElement.attr('checked');
+	const recalculateScopeParents = (checkboxElement) => {
+		const parent = checkboxElement.dataset.parent;
+		const isChecked = checkboxElement.checked;
 
-			if (parent && !isChecked) {
-				var parentElement = A.one('input[value=' + parent + ']');
-				parentElement.attr('checked', isChecked);
-				<portlet:namespace />recalculateScopeParents(parentElement);
-			}
-		};
+		if (parent && !isChecked) {
+			const parentElement = document.querySelector(
+				'input[value="' + parent + '"]'
+			);
+			parentElement.checked = isChecked;
+			recalculateScopeParents(parentElement);
+		}
+	};
 
-		<portlet:namespace />checkNewScopesInCheckedParents = function () {
-			A.all('input[data-has-childrens="true"]').each(function () {
-				if (this.attr('checked')) {
-					var parentValue = this.attr('value');
-					A.all('input[data-parent=' + parentValue + ']').each(
-						function () {
-							if (!this.attr('checked')) {
-								this.attr('checked', true);
-								var elementId = this.attr('value');
+	const checkNewScopesInCheckedParents = () => {
+		document
+			.querySelectorAll('input[data-has-children="true"]')
+			.forEach((parent) => {
+				if (parent.checked) {
+					const parentValue = parent.value;
+					document
+						.querySelectorAll(
+							'input[data-parent="' + parentValue + '"]'
+						)
+						.forEach((element) => {
+							if (!element.checked) {
+								element.checked = true;
 
-								var container = document.getElementById(
+								const elementId = element.value;
+
+								const container = document.getElementById(
 									elementId + '-container'
 								);
 
 								container.classList.add('added-scope');
 							}
-						}
-					);
+						});
 				}
 			});
-		};
+	};
 
-		<portlet:namespace />checkNewScopesInCheckedParents();
-	});
+	checkNewScopesInCheckedParents();
 </aui:script>

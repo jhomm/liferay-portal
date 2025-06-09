@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,7 +15,7 @@ LayoutPageTemplateManagementToolbarDisplayContext layoutPageTemplateManagementTo
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= layoutPageTemplateManagementToolbarDisplayContext %>"
-	propsTransformer="js/propsTransformers/LayoutPageTemplateEntryManagementToolbarPropsTransformer"
+	propsTransformer="{LayoutPageTemplateEntryManagementToolbarPropsTransformer} from layout-page-template-admin-web"
 />
 
 <portlet:actionURL name="/layout_page_template_admin/delete_layout_page_template_entry" var="deleteLayoutPageTemplateEntryURL">
@@ -32,7 +23,8 @@ LayoutPageTemplateManagementToolbarDisplayContext layoutPageTemplateManagementTo
 </portlet:actionURL>
 
 <aui:form action="<%= deleteLayoutPageTemplateEntryURL %>" name="fm">
-	<liferay-ui:error key="<%= PortalException.class.getName() %>" message="you-cannot-delete-page-templates-that-are-used-by-a-page" />
+	<liferay-ui:error exception="<%= PortalException.class %>" message="one-or-more-entries-could-not-be-deleted" />
+	<liferay-ui:error exception="<%= RequiredLayoutPrototypeException.class %>" message="you-cannot-delete-page-templates-that-are-used-by-a-page" />
 
 	<liferay-ui:search-container
 		id="layoutPageTemplateEntries"
@@ -53,7 +45,7 @@ LayoutPageTemplateManagementToolbarDisplayContext layoutPageTemplateManagementTo
 
 			<liferay-ui:search-container-column-text>
 				<clay:vertical-card
-					propsTransformer="js/propsTransformers/LayoutPageTemplateEntryPropsTransformer"
+					propsTransformer="{LayoutPageTemplateEntryPropsTransformer} from layout-page-template-admin-web"
 					verticalCard="<%= new LayoutPageTemplateEntryVerticalCard(layoutPageTemplateEntry, renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 				/>
 			</liferay-ui:search-container-column-text>

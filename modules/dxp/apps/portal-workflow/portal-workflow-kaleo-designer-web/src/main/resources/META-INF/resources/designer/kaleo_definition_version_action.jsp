@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,7 +22,7 @@ String kaleoNamespace = PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.
 %>
 
 <liferay-portlet:actionURL name="/kaleo_designer/duplicate_workflow_definition" portletName="<%= KaleoDesignerPortletKeys.KALEO_DESIGNER %>" var="duplicateWorkflowDefinition">
-	<portlet:param name="mvcPath" value="<%= KaleoDesignerUtil.getEditJspPath() %>" />
+	<portlet:param name="mvcPath" value="/designer/edit_workflow_definition.jsp" />
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </liferay-portlet:actionURL>
 
@@ -43,7 +34,7 @@ String kaleoNamespace = PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.
 	showWhenSingleIcon="<%= true %>"
 >
 	<liferay-portlet:renderURL portletName="<%= KaleoDesignerPortletKeys.KALEO_DESIGNER %>" var="viewURL">
-		<portlet:param name="mvcPath" value="<%= KaleoDesignerUtil.getEditJspPath() %>" />
+		<portlet:param name="mvcPath" value="/designer/edit_workflow_definition.jsp" />
 		<portlet:param name="redirect" value="<%= currentURL %>" />
 		<portlet:param name="name" value="<%= kaleoDefinitionVersion.getName() %>" />
 		<portlet:param name="draftVersion" value="<%= kaleoDefinitionVersion.getVersion() %>" />
@@ -57,7 +48,7 @@ String kaleoNamespace = PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.
 
 	<c:if test="<%= KaleoDefinitionVersionPermission.contains(permissionChecker, kaleoDefinitionVersion, ActionKeys.UPDATE) %>">
 		<liferay-portlet:renderURL portletName="<%= KaleoDesignerPortletKeys.KALEO_DESIGNER %>" var="editURL">
-			<portlet:param name="mvcPath" value="<%= KaleoDesignerUtil.getEditJspPath() %>" />
+			<portlet:param name="mvcPath" value="/designer/edit_workflow_definition.jsp" />
 			<portlet:param name="redirect" value="<%= currentURL %>" />
 			<portlet:param name="name" value="<%= kaleoDefinitionVersion.getName() %>" />
 			<portlet:param name="draftVersion" value="<%= kaleoDefinitionVersion.getVersion() %>" />
@@ -74,7 +65,7 @@ String kaleoNamespace = PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.
 		<liferay-ui:icon
 			id='<%= "duplicate" + kaleoDefinition.getKaleoDefinitionId() %>'
 			message="duplicate"
-			url="javascript:;"
+			url="javascript:void(0);"
 		/>
 	</c:if>
 
@@ -134,7 +125,7 @@ String kaleoNamespace = PortalUtil.getPortletNamespace(KaleoDesignerPortletKeys.
 			<aui:input name="randomNamespace" type="hidden" value="<%= randomNamespace %>" />
 			<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 			<aui:input name="name" type="hidden" value="<%= PortalUUIDUtil.generate() %>" />
-			<aui:input name="content" type="hidden" value="<%= kaleoDefinition.getContent() %>" />
+			<aui:input name="content" type="hidden" value="<%= kaleoDefinition.getContentAsXML() %>" />
 			<aui:input name="defaultDuplicationTitle" type="hidden" value="<%= duplicateTitle %>" />
 			<aui:input name="duplicatedDefinitionName" type="hidden" value="<%= kaleoDefinition.getName() %>" />
 			<aui:input name="duplicatedDefinitionTitle" type="hidden" value="<%= kaleoDefinition.getTitle(LanguageUtil.getLanguageId(request)) %>" />

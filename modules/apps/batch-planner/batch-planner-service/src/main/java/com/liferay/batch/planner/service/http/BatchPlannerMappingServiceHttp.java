@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Igor Beslic
- * @see BatchPlannerMappingServiceSoap
  * @generated
  */
 public class BatchPlannerMappingServiceHttp {
@@ -143,6 +133,43 @@ public class BatchPlannerMappingServiceHttp {
 		}
 	}
 
+	public static void deleteBatchPlannerMappings(
+			HttpPrincipal httpPrincipal, long batchPlannerPlanId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				BatchPlannerMappingServiceUtil.class,
+				"deleteBatchPlannerMappings",
+				_deleteBatchPlannerMappingsParameterTypes2);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, batchPlannerPlanId);
+
+			try {
+				TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static java.util.List
 		<com.liferay.batch.planner.model.BatchPlannerMapping>
 				getBatchPlannerMappings(
@@ -152,7 +179,7 @@ public class BatchPlannerMappingServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				BatchPlannerMappingServiceUtil.class, "getBatchPlannerMappings",
-				_getBatchPlannerMappingsParameterTypes2);
+				_getBatchPlannerMappingsParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, batchPlannerPlanId);
@@ -197,7 +224,7 @@ public class BatchPlannerMappingServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				BatchPlannerMappingServiceUtil.class,
 				"updateBatchPlannerMapping",
-				_updateBatchPlannerMappingParameterTypes3);
+				_updateBatchPlannerMappingParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, batchPlannerMappingId, externalFieldName,
@@ -242,9 +269,11 @@ public class BatchPlannerMappingServiceHttp {
 		};
 	private static final Class<?>[] _deleteBatchPlannerMappingParameterTypes1 =
 		new Class[] {long.class, String.class, String.class};
-	private static final Class<?>[] _getBatchPlannerMappingsParameterTypes2 =
+	private static final Class<?>[] _deleteBatchPlannerMappingsParameterTypes2 =
 		new Class[] {long.class};
-	private static final Class<?>[] _updateBatchPlannerMappingParameterTypes3 =
+	private static final Class<?>[] _getBatchPlannerMappingsParameterTypes3 =
+		new Class[] {long.class};
+	private static final Class<?>[] _updateBatchPlannerMappingParameterTypes4 =
 		new Class[] {long.class, String.class, String.class, String.class};
 
 }

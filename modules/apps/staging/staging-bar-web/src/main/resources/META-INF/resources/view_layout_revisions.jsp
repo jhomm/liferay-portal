@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -34,7 +25,7 @@ else {
 
 Long liveLayoutRevisionId = null;
 
-List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChildLayoutRevisions(layoutSetBranchId, LayoutRevisionConstants.DEFAULT_PARENT_LAYOUT_REVISION_ID, plid, QueryUtil.ALL_POS, QueryUtil.ALL_POS, new LayoutRevisionCreateDateComparator(true));
+List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChildLayoutRevisions(layoutSetBranchId, LayoutRevisionConstants.DEFAULT_PARENT_LAYOUT_REVISION_ID, plid, QueryUtil.ALL_POS, QueryUtil.ALL_POS, LayoutRevisionCreateDateComparator.getInstance(true));
 %>
 
 <liferay-util:include page="/navigation.jsp" servletContext="<%= application %>">
@@ -64,7 +55,8 @@ List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChi
 		<div class="layout-revision-container" id="<portlet:namespace />layoutRevisionsContainer">
 
 			<%
-			for (LayoutRevision rootLayoutRevision : rootLayoutRevisions) {
+			for (int i = 0; i < rootLayoutRevisions.size(); i++) {
+				LayoutRevision rootLayoutRevision = rootLayoutRevisions.get(i);
 			%>
 
 				<div class="layout-variation-container <%= (recentLayoutRevision.getLayoutBranchId() == rootLayoutRevision.getLayoutBranchId()) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace /><%= rootLayoutRevision.getLayoutRevisionId() %>">
@@ -78,10 +70,11 @@ List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChi
 					</c:if>
 
 					<liferay-ui:search-container
+						id='<%= liferayPortletResponse.getNamespace() + "layoutRevisionsSearchContainer_" + i %>'
 						total="<%= LayoutRevisionLocalServiceUtil.getLayoutRevisionsCount(rootLayoutRevision.getLayoutSetBranchId(), rootLayoutRevision.getLayoutBranchId(), rootLayoutRevision.getPlid()) %>"
 					>
 						<liferay-ui:search-container-results
-							results="<%= LayoutRevisionLocalServiceUtil.getLayoutRevisions(rootLayoutRevision.getLayoutSetBranchId(), rootLayoutRevision.getLayoutBranchId(), rootLayoutRevision.getPlid(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, new LayoutRevisionCreateDateComparator(false)) %>"
+							results="<%= LayoutRevisionLocalServiceUtil.getLayoutRevisions(rootLayoutRevision.getLayoutSetBranchId(), rootLayoutRevision.getLayoutBranchId(), rootLayoutRevision.getPlid(), QueryUtil.ALL_POS, QueryUtil.ALL_POS, LayoutRevisionCreateDateComparator.getInstance(false)) %>"
 						/>
 
 						<liferay-ui:search-container-row
@@ -118,9 +111,11 @@ List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChi
 										<span class="current-version"><liferay-ui:message key="current-version" /></span>
 									</c:when>
 									<c:otherwise>
-										<a class="layout-revision selection-handle" data-layoutRevisionId="<%= curLayoutRevision.getLayoutRevisionId() %>" data-layoutSetBranchId="<%= curLayoutRevision.getLayoutSetBranchId() %>" href="javascript:;" onclick="<%= liferayPortletResponse.getNamespace() + "selectRevision(" + curLayoutRevision.getLayoutRevisionId() + ", " + curLayoutRevision.getLayoutSetBranchId() + ");" %>" title="<liferay-ui:message key="go-to-this-version" />">
-											<%= curLayoutRevision.getLayoutRevisionId() %>
-										</a>
+										<liferay-ui:csp>
+											<a class="layout-revision selection-handle" data-layoutRevisionId="<%= curLayoutRevision.getLayoutRevisionId() %>" data-layoutSetBranchId="<%= curLayoutRevision.getLayoutSetBranchId() %>" href="javascript:void(0);" onclick="<portlet:namespace />selectRevision(<%= curLayoutRevision.getLayoutRevisionId() %>, <%= curLayoutRevision.getLayoutSetBranchId() %>);" title="<liferay-ui:message key="go-to-this-version" />">
+												<%= curLayoutRevision.getLayoutRevisionId() %>
+											</a>
+										</liferay-ui:csp>
 									</c:otherwise>
 								</c:choose>
 							</liferay-ui:search-container-column-text>
@@ -168,7 +163,7 @@ List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChi
 	</c:if>
 </clay:container-fluid>
 
-<script>
+<aui:script>
 	function <portlet:namespace />selectRevision(
 		layoutRevisionId,
 		layoutSetBranchId
@@ -232,4 +227,4 @@ List<LayoutRevision> rootLayoutRevisions = LayoutRevisionLocalServiceUtil.getChi
 			});
 		}
 	})();
-</script>
+</aui:script>

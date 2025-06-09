@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.dto.v2_0;
@@ -20,11 +11,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Jeyvison Nascimento
@@ -59,42 +50,63 @@ public class DataRecord implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DataRecord.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getDataRecordCollectionId() {
+		if (_dataRecordCollectionIdSupplier != null) {
+			dataRecordCollectionId = _dataRecordCollectionIdSupplier.get();
+
+			_dataRecordCollectionIdSupplier = null;
+		}
+
 		return dataRecordCollectionId;
 	}
 
 	public void setDataRecordCollectionId(Long dataRecordCollectionId) {
 		this.dataRecordCollectionId = dataRecordCollectionId;
+
+		_dataRecordCollectionIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDataRecordCollectionId(
 		UnsafeSupplier<Long, Exception> dataRecordCollectionIdUnsafeSupplier) {
 
-		try {
-			dataRecordCollectionId = dataRecordCollectionIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataRecordCollectionIdSupplier = () -> {
+			try {
+				return dataRecordCollectionIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long dataRecordCollectionId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _dataRecordCollectionIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getDataRecordValues() {
+		if (_dataRecordValuesSupplier != null) {
+			dataRecordValues = _dataRecordValuesSupplier.get();
+
+			_dataRecordValuesSupplier = null;
+		}
+
 		return dataRecordValues;
 	}
 
 	public void setDataRecordValues(Map<String, Object> dataRecordValues) {
 		this.dataRecordValues = dataRecordValues;
+
+		_dataRecordValuesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -102,74 +114,105 @@ public class DataRecord implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			dataRecordValuesUnsafeSupplier) {
 
-		try {
-			dataRecordValues = dataRecordValuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataRecordValuesSupplier = () -> {
+			try {
+				return dataRecordValuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> dataRecordValues;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _dataRecordValuesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Integer getStatus() {
+		if (_statusSupplier != null) {
+			status = _statusSupplier.get();
+
+			_statusSupplier = null;
+		}
+
 		return status;
 	}
 
 	public void setStatus(Integer status) {
 		this.status = status;
+
+		_statusSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setStatus(
 		UnsafeSupplier<Integer, Exception> statusUnsafeSupplier) {
 
-		try {
-			status = statusUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_statusSupplier = () -> {
+			try {
+				return statusUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Integer status;
+
+	@JsonIgnore
+	private Supplier<Integer> _statusSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -198,6 +241,8 @@ public class DataRecord implements Serializable {
 
 		sb.append("{");
 
+		Long dataRecordCollectionId = getDataRecordCollectionId();
+
 		if (dataRecordCollectionId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -207,6 +252,8 @@ public class DataRecord implements Serializable {
 
 			sb.append(dataRecordCollectionId);
 		}
+
+		Map<String, Object> dataRecordValues = getDataRecordValues();
 
 		if (dataRecordValues != null) {
 			if (sb.length() > 1) {
@@ -218,6 +265,8 @@ public class DataRecord implements Serializable {
 			sb.append(_toJSON(dataRecordValues));
 		}
 
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -227,6 +276,8 @@ public class DataRecord implements Serializable {
 
 			sb.append(id);
 		}
+
+		Integer status = getStatus();
 
 		if (status != null) {
 			if (sb.length() > 1) {
@@ -243,17 +294,17 @@ public class DataRecord implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.data.engine.rest.dto.v2_0.DataRecord",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -279,7 +330,7 @@ public class DataRecord implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -290,7 +341,10 @@ public class DataRecord implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -311,7 +365,7 @@ public class DataRecord implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -327,5 +381,12 @@ public class DataRecord implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -17,9 +8,6 @@ package com.liferay.jenkins.results.parser;
 import java.io.IOException;
 
 import java.net.URL;
-
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Michael Hashimoto
@@ -31,6 +19,18 @@ public class UpstreamPortalTopLevelBuild
 		String url, TopLevelBuild topLevelBuild) {
 
 		super(url, topLevelBuild);
+	}
+
+	@Override
+	public String getBranchName() {
+		String portalUpstreamBranchName = getParameterValue(
+			"PORTAL_UPSTREAM_BRANCH_NAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(portalUpstreamBranchName)) {
+			return portalUpstreamBranchName;
+		}
+
+		return super.getBranchName();
 	}
 
 	@Override
@@ -55,8 +55,6 @@ public class UpstreamPortalTopLevelBuild
 			portalWorkspace.setBuildProfile(getBuildProfile());
 			portalWorkspace.setOSBAsahGitHubURL(_getOSBAsahGitHubURL());
 			portalWorkspace.setOSBFaroGitHubURL(_getOSBFaroGitHubURL());
-			portalWorkspace.setPortalPrivateGitHubURL(
-				_getPortalPrivateGitHubURL());
 		}
 
 		WorkspaceGitRepository workspaceGitRepository =
@@ -103,10 +101,15 @@ public class UpstreamPortalTopLevelBuild
 		Build controllerBuild = getControllerBuild();
 
 		if (controllerBuild != null) {
-			return controllerBuild.getParameterValue("OSB_FARO_GITHUB_URL");
+			osbFaroGitHubURL = controllerBuild.getParameterValue(
+				"OSB_FARO_GITHUB_URL");
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(osbFaroGitHubURL)) {
+				return osbFaroGitHubURL;
+			}
 		}
 
-		return null;
+		return "https://github.com/liferay/liferay-portal/tree/master";
 	}
 
 	private String _getPortalGitCommit() {
@@ -204,33 +207,5 @@ public class UpstreamPortalTopLevelBuild
 
 		return sb.toString();
 	}
-
-	private String _getPortalPrivateGitHubURL() {
-		String branchName = getBranchName();
-
-		if (branchName.startsWith("ee-") || branchName.endsWith("-private")) {
-			return null;
-		}
-
-		String portalGitHubURL = _getPortalGitHubURL();
-
-		if (JenkinsResultsParserUtil.isNullOrEmpty(portalGitHubURL)) {
-			return null;
-		}
-
-		Matcher matcher = _pattern.matcher(portalGitHubURL);
-
-		if (!matcher.find()) {
-			return null;
-		}
-
-		return JenkinsResultsParserUtil.combine(
-			"https://github.com/", matcher.group("username"),
-			"/liferay-portal-ee/tree/", branchName, "-private");
-	}
-
-	private static final Pattern _pattern = Pattern.compile(
-		"https://github.com/(?<username>[^/]+)/(?<repositoryName>[^/]+)/tree" +
-			"/(?<branchName>[^/]+)");
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.expando.kernel.service;
@@ -113,8 +104,11 @@ public class ExpandoTableLocalServiceUtil {
 	 *
 	 * @param expandoTable the expando table
 	 * @return the expando table that was removed
+	 * @throws PortalException
 	 */
-	public static ExpandoTable deleteExpandoTable(ExpandoTable expandoTable) {
+	public static ExpandoTable deleteExpandoTable(ExpandoTable expandoTable)
+		throws PortalException {
+
 		return getService().deleteExpandoTable(expandoTable);
 	}
 
@@ -145,7 +139,7 @@ public class ExpandoTableLocalServiceUtil {
 		return getService().deletePersistedModel(persistedModel);
 	}
 
-	public static void deleteTable(ExpandoTable table) {
+	public static void deleteTable(ExpandoTable table) throws PortalException {
 		getService().deleteTable(table);
 	}
 
@@ -167,11 +161,15 @@ public class ExpandoTableLocalServiceUtil {
 		getService().deleteTable(companyId, className, name);
 	}
 
-	public static void deleteTables(long companyId, long classNameId) {
+	public static void deleteTables(long companyId, long classNameId)
+		throws PortalException {
+
 		getService().deleteTables(companyId, classNameId);
 	}
 
-	public static void deleteTables(long companyId, String className) {
+	public static void deleteTables(long companyId, String className)
+		throws PortalException {
+
 		getService().deleteTables(companyId, className);
 	}
 
@@ -414,6 +412,10 @@ public class ExpandoTableLocalServiceUtil {
 
 	public static ExpandoTableLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(ExpandoTableLocalService service) {
+		_service = service;
 	}
 
 	private static volatile ExpandoTableLocalService _service;

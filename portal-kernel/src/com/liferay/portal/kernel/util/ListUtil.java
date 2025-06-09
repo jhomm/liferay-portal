@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -39,8 +30,11 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
 /**
@@ -117,7 +111,7 @@ public class ListUtil {
 		}
 
 		if (comparator != null) {
-			Collections.sort(list, comparator);
+			list.sort(comparator);
 		}
 	}
 
@@ -158,6 +152,36 @@ public class ListUtil {
 		List<? extends T> inputList, Predicate<T> predicate) {
 
 		return filter(inputList, new ArrayList<T>(inputList.size()), predicate);
+	}
+
+	public static <T> List<T> filter(
+		List<T> list, BiFunction<Integer, Integer, List<T>> listBiFunction,
+		Supplier<Integer> countSupplier, Predicate<T> predicate, int start,
+		int end) {
+
+		list = filter(list, predicate);
+
+		int count = countSupplier.get();
+		int delta = end - start;
+
+		int pageCount = (count / delta) + (((count % delta) == 0) ? 0 : 1);
+		int pageIndex = (int)Math.ceil((double)start / delta);
+
+		int pageSize = end - start;
+
+		while ((list.size() < pageSize) && (pageIndex < pageCount)) {
+			pageIndex++;
+
+			start += delta;
+			end += delta;
+
+			list.addAll(
+				subList(
+					filter(listBiFunction.apply(start, end), predicate), 0,
+					pageSize - list.size()));
+		}
+
+		return list;
 	}
 
 	public static List<Boolean> fromArray(boolean[] array) {
@@ -357,6 +381,14 @@ public class ListUtil {
 		return !isEmpty(list);
 	}
 
+	public static <E> void isNotEmptyForEach(
+		List<? extends E> list, Consumer<? super E> consumer) {
+
+		if (!isEmpty(list)) {
+			list.forEach(consumer);
+		}
+	}
+
 	public static boolean isNotNull(List<?> list) {
 		return !isNull(list);
 	}
@@ -427,7 +459,7 @@ public class ListUtil {
 			list = copy(list);
 		}
 
-		Collections.sort(list, comparator);
+		list.sort(comparator);
 
 		return list;
 	}
@@ -469,116 +501,8 @@ public class ListUtil {
 		return array;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(boolean[])}
-	 */
-	@Deprecated
-	public static List<Boolean> toList(boolean[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Boolean> list = new ArrayList<>(array.length);
-
-		for (boolean value : array) {
-			list.add(value);
-		}
-
-		return list;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(char[])}
-	 */
-	@Deprecated
-	public static List<Character> toList(char[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Character> list = new ArrayList<>(array.length);
-
-		for (char value : array) {
-			list.add(value);
-		}
-
-		return list;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(double[])}
-	 */
-	@Deprecated
-	public static List<Double> toList(double[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Double> list = new ArrayList<>(array.length);
-
-		for (double value : array) {
-			list.add(value);
-		}
-
-		return list;
-	}
-
 	public static <E> List<E> toList(E value) {
 		return new ArrayList<>(Arrays.asList(value));
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(E...)}
-	 */
-	@Deprecated
-	public static <E> List<E> toList(E[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		return new ArrayList<>(Arrays.asList(array));
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(float[])}
-	 */
-	@Deprecated
-	public static List<Float> toList(float[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Float> list = new ArrayList<>(array.length);
-
-		for (float value : array) {
-			list.add(value);
-		}
-
-		return list;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(int[])}
-	 */
-	@Deprecated
-	public static List<Integer> toList(int[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Integer> list = new ArrayList<>(array.length);
-
-		for (int value : array) {
-			list.add(value);
-		}
-
-		return list;
 	}
 
 	public static <T, A> List<A> toList(List<T> list, Accessor<T, A> accessor) {
@@ -603,44 +527,6 @@ public class ListUtil {
 
 	public static <T, V extends T> List<T> toList(List<V> vlist) {
 		return new ArrayList<T>(vlist);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(long[])}
-	 */
-	@Deprecated
-	public static List<Long> toList(long[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Long> list = new ArrayList<>(array.length);
-
-		for (long value : array) {
-			list.add(value);
-		}
-
-		return list;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #fromArray(short[])}
-	 */
-	@Deprecated
-	public static List<Short> toList(short[] array) {
-		if (ArrayUtil.isEmpty(array)) {
-			return new ArrayList<>();
-		}
-
-		List<Short> list = new ArrayList<>(array.length);
-
-		for (short value : array) {
-			list.add(value);
-		}
-
-		return list;
 	}
 
 	public static <T> long[] toLongArray(

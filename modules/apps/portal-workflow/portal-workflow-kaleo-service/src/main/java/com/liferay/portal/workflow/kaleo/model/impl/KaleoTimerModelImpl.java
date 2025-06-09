@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.portal.workflow.kaleo.model.KaleoTimerModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -70,12 +60,12 @@ public class KaleoTimerModelImpl
 	public static final String TABLE_NAME = "KaleoTimer";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"kaleoTimerId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"kaleoClassName", Types.VARCHAR}, {"kaleoClassPK", Types.BIGINT},
-		{"kaleoDefinitionId", Types.BIGINT},
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"kaleoTimerId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"kaleoClassName", Types.VARCHAR},
+		{"kaleoClassPK", Types.BIGINT}, {"kaleoDefinitionId", Types.BIGINT},
 		{"kaleoDefinitionVersionId", Types.BIGINT}, {"name", Types.VARCHAR},
 		{"blocking", Types.BOOLEAN}, {"description", Types.VARCHAR},
 		{"duration", Types.DOUBLE}, {"scale", Types.VARCHAR},
@@ -87,6 +77,7 @@ public class KaleoTimerModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("kaleoTimerId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -108,7 +99,7 @@ public class KaleoTimerModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table KaleoTimer (mvccVersion LONG default 0 not null,kaleoTimerId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(200) null,createDate DATE null,modifiedDate DATE null,kaleoClassName VARCHAR(200) null,kaleoClassPK LONG,kaleoDefinitionId LONG,kaleoDefinitionVersionId LONG,name VARCHAR(75) null,blocking BOOLEAN,description STRING null,duration DOUBLE,scale VARCHAR(75) null,recurrenceDuration DOUBLE,recurrenceScale VARCHAR(75) null)";
+		"create table KaleoTimer (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,kaleoTimerId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(200) null,createDate DATE null,modifiedDate DATE null,kaleoClassName VARCHAR(200) null,kaleoClassPK LONG,kaleoDefinitionId LONG,kaleoDefinitionVersionId LONG,name VARCHAR(75) null,blocking BOOLEAN,description STRING null,duration DOUBLE,scale VARCHAR(75) null,recurrenceDuration DOUBLE,recurrenceScale VARCHAR(75) null,primary key (kaleoTimerId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table KaleoTimer";
 
@@ -238,141 +229,137 @@ public class KaleoTimerModelImpl
 	public Map<String, Function<KaleoTimer, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<KaleoTimer, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, KaleoTimer>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			KaleoTimer.class.getClassLoader(), KaleoTimer.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<KaleoTimer, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<KaleoTimer> constructor =
-				(Constructor<KaleoTimer>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<KaleoTimer, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<KaleoTimer, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", KaleoTimer::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", KaleoTimer::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"kaleoTimerId", KaleoTimer::getKaleoTimerId);
+			attributeGetterFunctions.put("groupId", KaleoTimer::getGroupId);
+			attributeGetterFunctions.put("companyId", KaleoTimer::getCompanyId);
+			attributeGetterFunctions.put("userId", KaleoTimer::getUserId);
+			attributeGetterFunctions.put("userName", KaleoTimer::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", KaleoTimer::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", KaleoTimer::getModifiedDate);
+			attributeGetterFunctions.put(
+				"kaleoClassName", KaleoTimer::getKaleoClassName);
+			attributeGetterFunctions.put(
+				"kaleoClassPK", KaleoTimer::getKaleoClassPK);
+			attributeGetterFunctions.put(
+				"kaleoDefinitionId", KaleoTimer::getKaleoDefinitionId);
+			attributeGetterFunctions.put(
+				"kaleoDefinitionVersionId",
+				KaleoTimer::getKaleoDefinitionVersionId);
+			attributeGetterFunctions.put("name", KaleoTimer::getName);
+			attributeGetterFunctions.put("blocking", KaleoTimer::getBlocking);
+			attributeGetterFunctions.put(
+				"description", KaleoTimer::getDescription);
+			attributeGetterFunctions.put("duration", KaleoTimer::getDuration);
+			attributeGetterFunctions.put("scale", KaleoTimer::getScale);
+			attributeGetterFunctions.put(
+				"recurrenceDuration", KaleoTimer::getRecurrenceDuration);
+			attributeGetterFunctions.put(
+				"recurrenceScale", KaleoTimer::getRecurrenceScale);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<KaleoTimer, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<KaleoTimer, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<KaleoTimer, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<KaleoTimer, Object>>();
-		Map<String, BiConsumer<KaleoTimer, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<KaleoTimer, ?>>();
+		private static final Map<String, BiConsumer<KaleoTimer, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", KaleoTimer::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<KaleoTimer, Long>)KaleoTimer::setMvccVersion);
-		attributeGetterFunctions.put(
-			"kaleoTimerId", KaleoTimer::getKaleoTimerId);
-		attributeSetterBiConsumers.put(
-			"kaleoTimerId",
-			(BiConsumer<KaleoTimer, Long>)KaleoTimer::setKaleoTimerId);
-		attributeGetterFunctions.put("groupId", KaleoTimer::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<KaleoTimer, Long>)KaleoTimer::setGroupId);
-		attributeGetterFunctions.put("companyId", KaleoTimer::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<KaleoTimer, Long>)KaleoTimer::setCompanyId);
-		attributeGetterFunctions.put("userId", KaleoTimer::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<KaleoTimer, Long>)KaleoTimer::setUserId);
-		attributeGetterFunctions.put("userName", KaleoTimer::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<KaleoTimer, String>)KaleoTimer::setUserName);
-		attributeGetterFunctions.put("createDate", KaleoTimer::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<KaleoTimer, Date>)KaleoTimer::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", KaleoTimer::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<KaleoTimer, Date>)KaleoTimer::setModifiedDate);
-		attributeGetterFunctions.put(
-			"kaleoClassName", KaleoTimer::getKaleoClassName);
-		attributeSetterBiConsumers.put(
-			"kaleoClassName",
-			(BiConsumer<KaleoTimer, String>)KaleoTimer::setKaleoClassName);
-		attributeGetterFunctions.put(
-			"kaleoClassPK", KaleoTimer::getKaleoClassPK);
-		attributeSetterBiConsumers.put(
-			"kaleoClassPK",
-			(BiConsumer<KaleoTimer, Long>)KaleoTimer::setKaleoClassPK);
-		attributeGetterFunctions.put(
-			"kaleoDefinitionId", KaleoTimer::getKaleoDefinitionId);
-		attributeSetterBiConsumers.put(
-			"kaleoDefinitionId",
-			(BiConsumer<KaleoTimer, Long>)KaleoTimer::setKaleoDefinitionId);
-		attributeGetterFunctions.put(
-			"kaleoDefinitionVersionId",
-			KaleoTimer::getKaleoDefinitionVersionId);
-		attributeSetterBiConsumers.put(
-			"kaleoDefinitionVersionId",
-			(BiConsumer<KaleoTimer, Long>)
-				KaleoTimer::setKaleoDefinitionVersionId);
-		attributeGetterFunctions.put("name", KaleoTimer::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<KaleoTimer, String>)KaleoTimer::setName);
-		attributeGetterFunctions.put("blocking", KaleoTimer::getBlocking);
-		attributeSetterBiConsumers.put(
-			"blocking",
-			(BiConsumer<KaleoTimer, Boolean>)KaleoTimer::setBlocking);
-		attributeGetterFunctions.put("description", KaleoTimer::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<KaleoTimer, String>)KaleoTimer::setDescription);
-		attributeGetterFunctions.put("duration", KaleoTimer::getDuration);
-		attributeSetterBiConsumers.put(
-			"duration",
-			(BiConsumer<KaleoTimer, Double>)KaleoTimer::setDuration);
-		attributeGetterFunctions.put("scale", KaleoTimer::getScale);
-		attributeSetterBiConsumers.put(
-			"scale", (BiConsumer<KaleoTimer, String>)KaleoTimer::setScale);
-		attributeGetterFunctions.put(
-			"recurrenceDuration", KaleoTimer::getRecurrenceDuration);
-		attributeSetterBiConsumers.put(
-			"recurrenceDuration",
-			(BiConsumer<KaleoTimer, Double>)KaleoTimer::setRecurrenceDuration);
-		attributeGetterFunctions.put(
-			"recurrenceScale", KaleoTimer::getRecurrenceScale);
-		attributeSetterBiConsumers.put(
-			"recurrenceScale",
-			(BiConsumer<KaleoTimer, String>)KaleoTimer::setRecurrenceScale);
+		static {
+			Map<String, BiConsumer<KaleoTimer, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<KaleoTimer, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"kaleoTimerId",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setKaleoTimerId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<KaleoTimer, Long>)KaleoTimer::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<KaleoTimer, String>)KaleoTimer::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<KaleoTimer, Date>)KaleoTimer::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<KaleoTimer, Date>)KaleoTimer::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"kaleoClassName",
+				(BiConsumer<KaleoTimer, String>)KaleoTimer::setKaleoClassName);
+			attributeSetterBiConsumers.put(
+				"kaleoClassPK",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setKaleoClassPK);
+			attributeSetterBiConsumers.put(
+				"kaleoDefinitionId",
+				(BiConsumer<KaleoTimer, Long>)KaleoTimer::setKaleoDefinitionId);
+			attributeSetterBiConsumers.put(
+				"kaleoDefinitionVersionId",
+				(BiConsumer<KaleoTimer, Long>)
+					KaleoTimer::setKaleoDefinitionVersionId);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<KaleoTimer, String>)KaleoTimer::setName);
+			attributeSetterBiConsumers.put(
+				"blocking",
+				(BiConsumer<KaleoTimer, Boolean>)KaleoTimer::setBlocking);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<KaleoTimer, String>)KaleoTimer::setDescription);
+			attributeSetterBiConsumers.put(
+				"duration",
+				(BiConsumer<KaleoTimer, Double>)KaleoTimer::setDuration);
+			attributeSetterBiConsumers.put(
+				"scale", (BiConsumer<KaleoTimer, String>)KaleoTimer::setScale);
+			attributeSetterBiConsumers.put(
+				"recurrenceDuration",
+				(BiConsumer<KaleoTimer, Double>)
+					KaleoTimer::setRecurrenceDuration);
+			attributeSetterBiConsumers.put(
+				"recurrenceScale",
+				(BiConsumer<KaleoTimer, String>)KaleoTimer::setRecurrenceScale);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -387,6 +374,20 @@ public class KaleoTimerModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@Override
@@ -784,6 +785,7 @@ public class KaleoTimerModelImpl
 		KaleoTimerImpl kaleoTimerImpl = new KaleoTimerImpl();
 
 		kaleoTimerImpl.setMvccVersion(getMvccVersion());
+		kaleoTimerImpl.setCtCollectionId(getCtCollectionId());
 		kaleoTimerImpl.setKaleoTimerId(getKaleoTimerId());
 		kaleoTimerImpl.setGroupId(getGroupId());
 		kaleoTimerImpl.setCompanyId(getCompanyId());
@@ -815,6 +817,8 @@ public class KaleoTimerModelImpl
 
 		kaleoTimerImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		kaleoTimerImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		kaleoTimerImpl.setKaleoTimerId(
 			this.<Long>getColumnOriginalValue("kaleoTimerId"));
 		kaleoTimerImpl.setGroupId(this.<Long>getColumnOriginalValue("groupId"));
@@ -931,6 +935,8 @@ public class KaleoTimerModelImpl
 		KaleoTimerCacheModel kaleoTimerCacheModel = new KaleoTimerCacheModel();
 
 		kaleoTimerCacheModel.mvccVersion = getMvccVersion();
+
+		kaleoTimerCacheModel.ctCollectionId = getCtCollectionId();
 
 		kaleoTimerCacheModel.kaleoTimerId = getKaleoTimerId();
 
@@ -1071,45 +1077,17 @@ public class KaleoTimerModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<KaleoTimer, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<KaleoTimer, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<KaleoTimer, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((KaleoTimer)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, KaleoTimer>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					KaleoTimer.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private long _kaleoTimerId;
 	private long _groupId;
 	private long _companyId;
@@ -1131,8 +1109,9 @@ public class KaleoTimerModelImpl
 	private String _recurrenceScale;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<KaleoTimer, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<KaleoTimer, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1158,6 +1137,7 @@ public class KaleoTimerModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("kaleoTimerId", _kaleoTimerId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1192,41 +1172,43 @@ public class KaleoTimerModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("kaleoTimerId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("kaleoTimerId", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("groupId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("kaleoClassName", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("kaleoClassPK", 512L);
+		columnBitmasks.put("kaleoClassName", 512L);
 
-		columnBitmasks.put("kaleoDefinitionId", 1024L);
+		columnBitmasks.put("kaleoClassPK", 1024L);
 
-		columnBitmasks.put("kaleoDefinitionVersionId", 2048L);
+		columnBitmasks.put("kaleoDefinitionId", 2048L);
 
-		columnBitmasks.put("name", 4096L);
+		columnBitmasks.put("kaleoDefinitionVersionId", 4096L);
 
-		columnBitmasks.put("blocking", 8192L);
+		columnBitmasks.put("name", 8192L);
 
-		columnBitmasks.put("description", 16384L);
+		columnBitmasks.put("blocking", 16384L);
 
-		columnBitmasks.put("duration", 32768L);
+		columnBitmasks.put("description", 32768L);
 
-		columnBitmasks.put("scale", 65536L);
+		columnBitmasks.put("duration", 65536L);
 
-		columnBitmasks.put("recurrenceDuration", 131072L);
+		columnBitmasks.put("scale", 131072L);
 
-		columnBitmasks.put("recurrenceScale", 262144L);
+		columnBitmasks.put("recurrenceDuration", 262144L);
+
+		columnBitmasks.put("recurrenceScale", 524288L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

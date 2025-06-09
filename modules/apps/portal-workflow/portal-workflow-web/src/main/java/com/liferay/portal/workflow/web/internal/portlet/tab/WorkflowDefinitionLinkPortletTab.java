@@ -1,31 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.web.internal.portlet.tab;
 
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.workflow.WorkflowHandlerVisibleFilter;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
 import com.liferay.portal.workflow.portlet.tab.BaseWorkflowPortletTab;
 import com.liferay.portal.workflow.portlet.tab.WorkflowPortletTab;
 import com.liferay.portal.workflow.web.internal.display.context.WorkflowDefinitionLinkDisplayContext;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +28,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adam Brandizzi
  */
 @Component(
-	immediate = true,
 	property = "portal.workflow.tabs.name=" + WorkflowWebKeys.WORKFLOW_TAB_DEFINITION_LINK,
 	service = WorkflowPortletTab.class
 )
@@ -46,8 +39,8 @@ public class WorkflowDefinitionLinkPortletTab extends BaseWorkflowPortletTab {
 	}
 
 	@Override
-	public String getSearchJspPath() {
-		return "/definition_link/workflow_definition_link_search.jsp";
+	public ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
@@ -59,7 +52,9 @@ public class WorkflowDefinitionLinkPortletTab extends BaseWorkflowPortletTab {
 			new WorkflowDefinitionLinkDisplayContext(
 				renderRequest, renderResponse,
 				workflowDefinitionLinkLocalService,
-				ResourceBundleLoaderUtil.getPortalResourceBundleLoader());
+				ResourceBundleLoaderUtil.getPortalResourceBundleLoader(),
+				_workflowHandlerVisibleFilterSnapshot.get(),
+				_workflowComparatorFactory);
 
 		renderRequest.setAttribute(
 			WorkflowWebKeys.WORKFLOW_DEFINITION_LINK_DISPLAY_CONTEXT,
@@ -71,17 +66,21 @@ public class WorkflowDefinitionLinkPortletTab extends BaseWorkflowPortletTab {
 		return "/definition_link/view.jsp";
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.portal.workflow.web)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
 	@Reference(unbind = "-")
 	protected WorkflowDefinitionLinkLocalService
 		workflowDefinitionLinkLocalService;
+
+	private static final Snapshot<WorkflowHandlerVisibleFilter>
+		_workflowHandlerVisibleFilterSnapshot = new Snapshot<>(
+			WorkflowDefinitionLinkPortletTab.class,
+			WorkflowHandlerVisibleFilter.class, null, true);
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.portal.workflow.web)"
+	)
+	private ServletContext _servletContext;
+
+	@Reference
+	private WorkflowComparatorFactory _workflowComparatorFactory;
 
 }

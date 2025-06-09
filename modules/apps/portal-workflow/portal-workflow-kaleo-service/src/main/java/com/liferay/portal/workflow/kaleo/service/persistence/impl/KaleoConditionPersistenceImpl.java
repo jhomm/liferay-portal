@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
@@ -29,7 +23,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -48,11 +42,15 @@ import com.liferay.portal.workflow.kaleo.service.persistence.impl.constants.Kale
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +72,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {KaleoConditionPersistence.class, BasePersistence.class})
+@Component(service = KaleoConditionPersistence.class)
 public class KaleoConditionPersistenceImpl
 	extends BasePersistenceImpl<KaleoCondition>
 	implements KaleoConditionPersistence {
@@ -172,95 +170,100 @@ public class KaleoConditionPersistenceImpl
 		OrderByComparator<KaleoCondition> orderByComparator,
 		boolean useFinderCache) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByCompanyId;
+					finderArgs = new Object[] {companyId};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByCompanyId;
+				finderArgs = new Object[] {
+					companyId, start, end, orderByComparator
+				};
+			}
+
+			List<KaleoCondition> list = null;
 
 			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindByCompanyId;
-				finderArgs = new Object[] {companyId};
-			}
-		}
-		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindByCompanyId;
-			finderArgs = new Object[] {
-				companyId, start, end, orderByComparator
-			};
-		}
+				list = (List<KaleoCondition>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-		List<KaleoCondition> list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (KaleoCondition kaleoCondition : list) {
+						if (companyId != kaleoCondition.getCompanyId()) {
+							list = null;
 
-		if (useFinderCache) {
-			list = (List<KaleoCondition>)finderCache.getResult(
-				finderPath, finderArgs);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (KaleoCondition kaleoCondition : list) {
-					if (companyId != kaleoCondition.getCompanyId()) {
-						list = null;
-
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_KALEOCONDITION_WHERE);
+				sb.append(_SQL_SELECT_KALEOCONDITION_WHERE);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(KaleoConditionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(KaleoConditionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				list = (List<KaleoCondition>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<KaleoCondition>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -549,45 +552,51 @@ public class KaleoConditionPersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		FinderPath finderPath = _finderPathCountByCompanyId;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		Object[] finderArgs = new Object[] {companyId};
+			FinderPath finderPath = _finderPathCountByCompanyId;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+			Object[] finderArgs = new Object[] {companyId};
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			sb.append(_SQL_COUNT_KALEOCONDITION_WHERE);
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_SQL_COUNT_KALEOCONDITION_WHERE);
 
-			String sql = sb.toString();
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			Session session = null;
+				String sql = sb.toString();
 
-			try {
-				session = openSession();
+				Session session = null;
 
-				Query query = session.createQuery(sql);
+				try {
+					session = openSession();
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					Query query = session.createQuery(sql);
 
-				queryPos.add(companyId);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				count = (Long)query.uniqueResult();
+					queryPos.add(companyId);
 
-				finderCache.putResult(finderPath, finderArgs, count);
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+
+			return count.intValue();
 		}
-
-		return count.intValue();
 	}
 
 	private static final String _FINDER_COLUMN_COMPANYID_COMPANYID_2 =
@@ -675,100 +684,105 @@ public class KaleoConditionPersistenceImpl
 		OrderByComparator<KaleoCondition> orderByComparator,
 		boolean useFinderCache) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindByKaleoDefinitionVersionId;
+					finderArgs = new Object[] {kaleoDefinitionVersionId};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath =
+					_finderPathWithPaginationFindByKaleoDefinitionVersionId;
+				finderArgs = new Object[] {
+					kaleoDefinitionVersionId, start, end, orderByComparator
+				};
+			}
+
+			List<KaleoCondition> list = null;
 
 			if (useFinderCache) {
-				finderPath =
-					_finderPathWithoutPaginationFindByKaleoDefinitionVersionId;
-				finderArgs = new Object[] {kaleoDefinitionVersionId};
-			}
-		}
-		else if (useFinderCache) {
-			finderPath =
-				_finderPathWithPaginationFindByKaleoDefinitionVersionId;
-			finderArgs = new Object[] {
-				kaleoDefinitionVersionId, start, end, orderByComparator
-			};
-		}
+				list = (List<KaleoCondition>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-		List<KaleoCondition> list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (KaleoCondition kaleoCondition : list) {
+						if (kaleoDefinitionVersionId !=
+								kaleoCondition.getKaleoDefinitionVersionId()) {
 
-		if (useFinderCache) {
-			list = (List<KaleoCondition>)finderCache.getResult(
-				finderPath, finderArgs);
+							list = null;
 
-			if ((list != null) && !list.isEmpty()) {
-				for (KaleoCondition kaleoCondition : list) {
-					if (kaleoDefinitionVersionId !=
-							kaleoCondition.getKaleoDefinitionVersionId()) {
-
-						list = null;
-
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_KALEOCONDITION_WHERE);
+				sb.append(_SQL_SELECT_KALEOCONDITION_WHERE);
 
-			sb.append(
-				_FINDER_COLUMN_KALEODEFINITIONVERSIONID_KALEODEFINITIONVERSIONID_2);
+				sb.append(
+					_FINDER_COLUMN_KALEODEFINITIONVERSIONID_KALEODEFINITIONVERSIONID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(KaleoConditionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(KaleoConditionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(kaleoDefinitionVersionId);
+					queryPos.add(kaleoDefinitionVersionId);
 
-				list = (List<KaleoCondition>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<KaleoCondition>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1068,46 +1082,52 @@ public class KaleoConditionPersistenceImpl
 	 */
 	@Override
 	public int countByKaleoDefinitionVersionId(long kaleoDefinitionVersionId) {
-		FinderPath finderPath = _finderPathCountByKaleoDefinitionVersionId;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		Object[] finderArgs = new Object[] {kaleoDefinitionVersionId};
+			FinderPath finderPath = _finderPathCountByKaleoDefinitionVersionId;
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+			Object[] finderArgs = new Object[] {kaleoDefinitionVersionId};
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			sb.append(_SQL_COUNT_KALEOCONDITION_WHERE);
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			sb.append(
-				_FINDER_COLUMN_KALEODEFINITIONVERSIONID_KALEODEFINITIONVERSIONID_2);
+				sb.append(_SQL_COUNT_KALEOCONDITION_WHERE);
 
-			String sql = sb.toString();
+				sb.append(
+					_FINDER_COLUMN_KALEODEFINITIONVERSIONID_KALEODEFINITIONVERSIONID_2);
 
-			Session session = null;
+				String sql = sb.toString();
 
-			try {
-				session = openSession();
+				Session session = null;
 
-				Query query = session.createQuery(sql);
+				try {
+					session = openSession();
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					Query query = session.createQuery(sql);
 
-				queryPos.add(kaleoDefinitionVersionId);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				count = (Long)query.uniqueResult();
+					queryPos.add(kaleoDefinitionVersionId);
 
-				finderCache.putResult(finderPath, finderArgs, count);
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+
+			return count.intValue();
 		}
-
-		return count.intValue();
 	}
 
 	private static final String
@@ -1115,7 +1135,6 @@ public class KaleoConditionPersistenceImpl
 			"kaleoCondition.kaleoDefinitionVersionId = ?";
 
 	private FinderPath _finderPathFetchByKaleoNodeId;
-	private FinderPath _finderPathCountByKaleoNodeId;
 
 	/**
 	 * Returns the kaleo condition where kaleoNodeId = &#63; or throws a <code>NoSuchConditionException</code> if it could not be found.
@@ -1172,91 +1191,97 @@ public class KaleoConditionPersistenceImpl
 	public KaleoCondition fetchByKaleoNodeId(
 		long kaleoNodeId, boolean useFinderCache) {
 
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {kaleoNodeId};
-		}
+			Object[] finderArgs = null;
 
-		Object result = null;
-
-		if (useFinderCache) {
-			result = finderCache.getResult(
-				_finderPathFetchByKaleoNodeId, finderArgs);
-		}
-
-		if (result instanceof KaleoCondition) {
-			KaleoCondition kaleoCondition = (KaleoCondition)result;
-
-			if (kaleoNodeId != kaleoCondition.getKaleoNodeId()) {
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {kaleoNodeId};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(3);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_KALEOCONDITION_WHERE);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByKaleoNodeId, finderArgs, this);
+			}
 
-			sb.append(_FINDER_COLUMN_KALEONODEID_KALEONODEID_2);
+			if (result instanceof KaleoCondition) {
+				KaleoCondition kaleoCondition = (KaleoCondition)result;
 
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(kaleoNodeId);
-
-				List<KaleoCondition> list = query.list();
-
-				if (list.isEmpty()) {
-					if (useFinderCache) {
-						finderCache.putResult(
-							_finderPathFetchByKaleoNodeId, finderArgs, list);
-					}
+				if (kaleoNodeId != kaleoCondition.getKaleoNodeId()) {
+					result = null;
 				}
-				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
+			}
 
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {kaleoNodeId};
-							}
+			if (result == null) {
+				StringBundler sb = new StringBundler(3);
 
-							_log.warn(
-								"KaleoConditionPersistenceImpl.fetchByKaleoNodeId(long, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
+				sb.append(_SQL_SELECT_KALEOCONDITION_WHERE);
+
+				sb.append(_FINDER_COLUMN_KALEONODEID_KALEONODEID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(kaleoNodeId);
+
+					List<KaleoCondition> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByKaleoNodeId, finderArgs,
+								list);
 						}
 					}
+					else {
+						if (list.size() > 1) {
+							Collections.sort(list, Collections.reverseOrder());
 
-					KaleoCondition kaleoCondition = list.get(0);
+							if (_log.isWarnEnabled()) {
+								if (!useFinderCache) {
+									finderArgs = new Object[] {kaleoNodeId};
+								}
 
-					result = kaleoCondition;
+								_log.warn(
+									"KaleoConditionPersistenceImpl.fetchByKaleoNodeId(long, boolean) with parameters (" +
+										StringUtil.merge(finderArgs) +
+											") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
+							}
+						}
 
-					cacheResult(kaleoCondition);
+						KaleoCondition kaleoCondition = list.get(0);
+
+						result = kaleoCondition;
+
+						cacheResult(kaleoCondition);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (KaleoCondition)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (KaleoCondition)result;
+			}
 		}
 	}
 
@@ -1283,45 +1308,13 @@ public class KaleoConditionPersistenceImpl
 	 */
 	@Override
 	public int countByKaleoNodeId(long kaleoNodeId) {
-		FinderPath finderPath = _finderPathCountByKaleoNodeId;
+		KaleoCondition kaleoCondition = fetchByKaleoNodeId(kaleoNodeId);
 
-		Object[] finderArgs = new Object[] {kaleoNodeId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_KALEOCONDITION_WHERE);
-
-			sb.append(_FINDER_COLUMN_KALEONODEID_KALEONODEID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(kaleoNodeId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (kaleoCondition == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_KALEONODEID_KALEONODEID_2 =
@@ -1343,13 +1336,18 @@ public class KaleoConditionPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(KaleoCondition kaleoCondition) {
-		entityCache.putResult(
-			KaleoConditionImpl.class, kaleoCondition.getPrimaryKey(),
-			kaleoCondition);
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					kaleoCondition.getCtCollectionId())) {
 
-		finderCache.putResult(
-			_finderPathFetchByKaleoNodeId,
-			new Object[] {kaleoCondition.getKaleoNodeId()}, kaleoCondition);
+			entityCache.putResult(
+				KaleoConditionImpl.class, kaleoCondition.getPrimaryKey(),
+				kaleoCondition);
+
+			finderCache.putResult(
+				_finderPathFetchByKaleoNodeId,
+				new Object[] {kaleoCondition.getKaleoNodeId()}, kaleoCondition);
+		}
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -1369,11 +1367,16 @@ public class KaleoConditionPersistenceImpl
 		}
 
 		for (KaleoCondition kaleoCondition : kaleoConditions) {
-			if (entityCache.getResult(
-					KaleoConditionImpl.class, kaleoCondition.getPrimaryKey()) ==
-						null) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						kaleoCondition.getCtCollectionId())) {
 
-				cacheResult(kaleoCondition);
+				if (entityCache.getResult(
+						KaleoConditionImpl.class,
+						kaleoCondition.getPrimaryKey()) == null) {
+
+					cacheResult(kaleoCondition);
+				}
 			}
 		}
 	}
@@ -1423,12 +1426,17 @@ public class KaleoConditionPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		KaleoConditionModelImpl kaleoConditionModelImpl) {
 
-		Object[] args = new Object[] {kaleoConditionModelImpl.getKaleoNodeId()};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					kaleoConditionModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(
-			_finderPathCountByKaleoNodeId, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByKaleoNodeId, args, kaleoConditionModelImpl);
+			Object[] args = new Object[] {
+				kaleoConditionModelImpl.getKaleoNodeId()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByKaleoNodeId, args, kaleoConditionModelImpl);
+		}
 	}
 
 	/**
@@ -1517,7 +1525,9 @@ public class KaleoConditionPersistenceImpl
 					kaleoCondition.getPrimaryKeyObj());
 			}
 
-			if (kaleoCondition != null) {
+			if ((kaleoCondition != null) &&
+				ctPersistenceHelper.isRemove(kaleoCondition)) {
+
 				session.delete(kaleoCondition);
 			}
 		}
@@ -1589,7 +1599,13 @@ public class KaleoConditionPersistenceImpl
 		try {
 			session = openSession();
 
-			if (isNew) {
+			if (ctPersistenceHelper.isInsert(kaleoCondition)) {
+				if (!isNew) {
+					session.evict(
+						KaleoConditionImpl.class,
+						kaleoCondition.getPrimaryKeyObj());
+				}
+
 				session.save(kaleoCondition);
 			}
 			else {
@@ -1659,12 +1675,186 @@ public class KaleoConditionPersistenceImpl
 	/**
 	 * Returns the kaleo condition with the primary key or returns <code>null</code> if it could not be found.
 	 *
+	 * @param primaryKey the primary key of the kaleo condition
+	 * @return the kaleo condition, or <code>null</code> if a kaleo condition with the primary key could not be found
+	 */
+	@Override
+	public KaleoCondition fetchByPrimaryKey(Serializable primaryKey) {
+		if (ctPersistenceHelper.isProductionMode(
+				KaleoCondition.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
+		}
+
+		KaleoCondition kaleoCondition = (KaleoCondition)entityCache.getResult(
+			KaleoConditionImpl.class, primaryKey);
+
+		if (kaleoCondition != null) {
+			return kaleoCondition;
+		}
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			kaleoCondition = (KaleoCondition)session.get(
+				KaleoConditionImpl.class, primaryKey);
+
+			if (kaleoCondition != null) {
+				cacheResult(kaleoCondition);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return kaleoCondition;
+	}
+
+	/**
+	 * Returns the kaleo condition with the primary key or returns <code>null</code> if it could not be found.
+	 *
 	 * @param kaleoConditionId the primary key of the kaleo condition
 	 * @return the kaleo condition, or <code>null</code> if a kaleo condition with the primary key could not be found
 	 */
 	@Override
 	public KaleoCondition fetchByPrimaryKey(long kaleoConditionId) {
 		return fetchByPrimaryKey((Serializable)kaleoConditionId);
+	}
+
+	@Override
+	public Map<Serializable, KaleoCondition> fetchByPrimaryKeys(
+		Set<Serializable> primaryKeys) {
+
+		if (ctPersistenceHelper.isProductionMode(KaleoCondition.class)) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
+		}
+
+		if (primaryKeys.isEmpty()) {
+			return Collections.emptyMap();
+		}
+
+		Map<Serializable, KaleoCondition> map =
+			new HashMap<Serializable, KaleoCondition>();
+
+		if (primaryKeys.size() == 1) {
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			Serializable primaryKey = iterator.next();
+
+			KaleoCondition kaleoCondition = fetchByPrimaryKey(primaryKey);
+
+			if (kaleoCondition != null) {
+				map.put(primaryKey, kaleoCondition);
+			}
+
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						KaleoCondition.class, primaryKey)) {
+
+				KaleoCondition kaleoCondition =
+					(KaleoCondition)entityCache.getResult(
+						KaleoConditionImpl.class, primaryKey);
+
+				if (kaleoCondition == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, kaleoCondition);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
+			return map;
+		}
+
+		if ((databaseInMaxParameters > 0) &&
+			(primaryKeys.size() > databaseInMaxParameters)) {
+
+			Iterator<Serializable> iterator = primaryKeys.iterator();
+
+			while (iterator.hasNext()) {
+				Set<Serializable> page = new HashSet<>();
+
+				for (int i = 0;
+					 (i < databaseInMaxParameters) && iterator.hasNext(); i++) {
+
+					page.add(iterator.next());
+				}
+
+				map.putAll(fetchByPrimaryKeys(page));
+			}
+
+			return map;
+		}
+
+		StringBundler sb = new StringBundler((primaryKeys.size() * 2) + 1);
+
+		sb.append(getSelectSQL());
+		sb.append(" WHERE ");
+		sb.append(getPKDBName());
+		sb.append(" IN (");
+
+		for (Serializable primaryKey : primaryKeys) {
+			sb.append((long)primaryKey);
+
+			sb.append(",");
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		sb.append(")");
+
+		String sql = sb.toString();
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			Query query = session.createQuery(sql);
+
+			for (KaleoCondition kaleoCondition :
+					(List<KaleoCondition>)query.list()) {
+
+				map.put(kaleoCondition.getPrimaryKeyObj(), kaleoCondition);
+
+				cacheResult(kaleoCondition);
+			}
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+
+		return map;
 	}
 
 	/**
@@ -1731,75 +1921,80 @@ public class KaleoConditionPersistenceImpl
 		int start, int end, OrderByComparator<KaleoCondition> orderByComparator,
 		boolean useFinderCache) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-			if (useFinderCache) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<KaleoCondition> list = null;
-
-		if (useFinderCache) {
-			list = (List<KaleoCondition>)finderCache.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_KALEOCONDITION);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_KALEOCONDITION;
-
-				sql = sql.concat(KaleoConditionModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<KaleoCondition>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
 				if (useFinderCache) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<KaleoCondition> list = null;
+
+			if (useFinderCache) {
+				list = (List<KaleoCondition>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_KALEOCONDITION);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_KALEOCONDITION;
+
+					sql = sql.concat(KaleoConditionModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<KaleoCondition>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -1820,31 +2015,37 @@ public class KaleoConditionPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					KaleoCondition.class)) {
 
-		if (count == null) {
-			Session session = null;
+			Long count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-			try {
-				session = openSession();
+			if (count == null) {
+				Session session = null;
 
-				Query query = session.createQuery(_SQL_COUNT_KALEOCONDITION);
+				try {
+					session = openSession();
 
-				count = (Long)query.uniqueResult();
+					Query query = session.createQuery(
+						_SQL_COUNT_KALEOCONDITION);
 
-				finderCache.putResult(
-					_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(
+						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+
+			return count.intValue();
 		}
-
-		return count.intValue();
 	}
 
 	@Override
@@ -1863,8 +2064,72 @@ public class KaleoConditionPersistenceImpl
 	}
 
 	@Override
-	protected Map<String, Integer> getTableColumnsMap() {
+	public Set<String> getCTColumnNames(
+		CTColumnResolutionType ctColumnResolutionType) {
+
+		return _ctColumnNamesMap.getOrDefault(
+			ctColumnResolutionType, Collections.emptySet());
+	}
+
+	@Override
+	public List<String> getMappingTableNames() {
+		return _mappingTableNames;
+	}
+
+	@Override
+	public Map<String, Integer> getTableColumnsMap() {
 		return KaleoConditionModelImpl.TABLE_COLUMNS_MAP;
+	}
+
+	@Override
+	public String getTableName() {
+		return "KaleoCondition";
+	}
+
+	@Override
+	public List<String[]> getUniqueIndexColumnNames() {
+		return _uniqueIndexColumnNames;
+	}
+
+	private static final Map<CTColumnResolutionType, Set<String>>
+		_ctColumnNamesMap = new EnumMap<CTColumnResolutionType, Set<String>>(
+			CTColumnResolutionType.class);
+	private static final List<String> _mappingTableNames =
+		new ArrayList<String>();
+	private static final List<String[]> _uniqueIndexColumnNames =
+		new ArrayList<String[]>();
+
+	static {
+		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
+		Set<String> ctStrictColumnNames = new HashSet<String>();
+
+		ctControlColumnNames.add("mvccVersion");
+		ctControlColumnNames.add("ctCollectionId");
+		ctStrictColumnNames.add("groupId");
+		ctStrictColumnNames.add("companyId");
+		ctStrictColumnNames.add("userId");
+		ctStrictColumnNames.add("userName");
+		ctStrictColumnNames.add("createDate");
+		ctIgnoreColumnNames.add("modifiedDate");
+		ctMergeColumnNames.add("kaleoDefinitionId");
+		ctMergeColumnNames.add("kaleoDefinitionVersionId");
+		ctMergeColumnNames.add("kaleoNodeId");
+		ctMergeColumnNames.add("script");
+		ctMergeColumnNames.add("scriptLanguage");
+		ctMergeColumnNames.add("scriptRequiredContexts");
+
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.PK,
+			Collections.singleton("kaleoConditionId"));
+		_ctColumnNamesMap.put(
+			CTColumnResolutionType.STRICT, ctStrictColumnNames);
 	}
 
 	/**
@@ -1933,35 +2198,14 @@ public class KaleoConditionPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"kaleoNodeId"},
 			true);
 
-		_finderPathCountByKaleoNodeId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByKaleoNodeId",
-			new String[] {Long.class.getName()}, new String[] {"kaleoNodeId"},
-			false);
-
-		_setKaleoConditionUtilPersistence(this);
+		KaleoConditionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setKaleoConditionUtilPersistence(null);
+		KaleoConditionUtil.setPersistence(null);
 
 		entityCache.removeCache(KaleoConditionImpl.class.getName());
-	}
-
-	private void _setKaleoConditionUtilPersistence(
-		KaleoConditionPersistence kaleoConditionPersistence) {
-
-		try {
-			Field field = KaleoConditionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, kaleoConditionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1989,6 +2233,9 @@ public class KaleoConditionPersistenceImpl
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		super.setSessionFactory(sessionFactory);
 	}
+
+	@Reference
+	protected CTPersistenceHelper ctPersistenceHelper;
 
 	@Reference
 	protected EntityCache entityCache;
@@ -2023,9 +2270,5 @@ public class KaleoConditionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private KaleoConditionModelArgumentsResolver
-		_kaleoConditionModelArgumentsResolver;
 
 }

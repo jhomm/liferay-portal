@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -68,8 +59,6 @@ public class CompanyLocalServiceUtil {
 	 * @param webId the the company's web domain
 	 * @param virtualHostname the company's virtual host name
 	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e., the
-	 super company)
 	 * @param maxUsers the max number of company users (optionally
 	 <code>0</code>)
 	 * @param active whether the company is active
@@ -77,37 +66,31 @@ public class CompanyLocalServiceUtil {
 	 */
 	public static Company addCompany(
 			Long companyId, String webId, String virtualHostname, String mx,
-			boolean system, int maxUsers, boolean active)
+			int maxUsers, boolean active, boolean addDefaultAdminUser,
+			String defaultAdminPassword, String defaultAdminScreenName,
+			String defaultAdminEmailAddress, String defaultAdminFirstName,
+			String defaultAdminMiddleName, String defaultAdminLastName)
 		throws PortalException {
 
 		return getService().addCompany(
-			companyId, webId, virtualHostname, mx, system, maxUsers, active);
+			companyId, webId, virtualHostname, mx, maxUsers, active,
+			addDefaultAdminUser, defaultAdminPassword, defaultAdminScreenName,
+			defaultAdminEmailAddress, defaultAdminFirstName,
+			defaultAdminMiddleName, defaultAdminLastName);
 	}
 
-	/**
-	 * Adds a company.
-	 *
-	 * @param webId the the company's web domain
-	 * @param virtualHostname the company's virtual host name
-	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e.,
-	 the super company)
-	 * @param maxUsers the max number of company users (optionally
-	 <code>0</code>)
-	 * @param active whether the company is active
-	 * @return the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addCompany(Long, String, String, String, boolean, int,
-	 boolean)}
-	 */
-	@Deprecated
-	public static Company addCompany(
-			String webId, String virtualHostname, String mx, boolean system,
-			int maxUsers, boolean active)
+	public static Company addDBPartitionCompany(
+			long companyId, String name, String virtualHostname, String webId)
 		throws PortalException {
 
-		return getService().addCompany(
-			webId, virtualHostname, mx, system, maxUsers, active);
+		return getService().addDBPartitionCompany(
+			companyId, name, virtualHostname, webId);
+	}
+
+	public static Company checkCompany(Company company, boolean newCompany)
+		throws PortalException {
+
+		return getService().checkCompany(company, newCompany);
 	}
 
 	/**
@@ -124,22 +107,6 @@ public class CompanyLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the company with the web domain and mail domain.
-	 *
-	 * The method goes through a series of checks to ensure that the company
-	 * contains default users, groups, etc.
-	 *
-	 * @param webId the company's web domain
-	 * @param mx the company's mail domain
-	 * @return the company with the web domain and mail domain
-	 */
-	public static Company checkCompany(String webId, String mx)
-		throws PortalException {
-
-		return getService().checkCompany(webId, mx);
-	}
-
-	/**
 	 * Checks if the company has an encryption key. It will create a key if one
 	 * does not exist.
 	 *
@@ -147,6 +114,15 @@ public class CompanyLocalServiceUtil {
 	 */
 	public static void checkCompanyKey(long companyId) throws PortalException {
 		getService().checkCompanyKey(companyId);
+	}
+
+	public static Company copyDBPartitionCompany(
+			long fromCompanyId, Long toCompanyId, String name,
+			String virtualHostname, String webId)
+		throws PortalException {
+
+		return getService().copyDBPartitionCompany(
+			fromCompanyId, toCompanyId, name, virtualHostname, webId);
 	}
 
 	/**
@@ -306,6 +282,10 @@ public class CompanyLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
+	public static Company exportCompany(long companyId) throws PortalException {
+		return getService().exportCompany(companyId);
+	}
+
 	public static Company fetchCompany(long companyId) {
 		return getService().fetchCompany(companyId);
 	}
@@ -380,23 +360,6 @@ public class CompanyLocalServiceUtil {
 	}
 
 	/**
-	 * Returns all the companies used by WSRP.
-	 *
-	 * @param system whether the company is the very first company (i.e., the
-	 super company)
-	 * @return the companies used by WSRP
-	 */
-	public static List<Company> getCompanies(boolean system) {
-		return getService().getCompanies(system);
-	}
-
-	public static List<Company> getCompanies(
-		boolean system, int start, int end) {
-
-		return getService().getCompanies(system, start, end);
-	}
-
-	/**
 	 * Returns a range of all the companies.
 	 *
 	 * <p>
@@ -421,17 +384,6 @@ public class CompanyLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the number of companies used by WSRP.
-	 *
-	 * @param system whether the company is the very first company (i.e., the
-	 super company)
-	 * @return the number of companies used by WSRP
-	 */
-	public static int getCompaniesCount(boolean system) {
-		return getService().getCompaniesCount(system);
-	}
-
-	/**
 	 * Returns the company with the primary key.
 	 *
 	 * @param companyId the primary key of the company
@@ -452,28 +404,6 @@ public class CompanyLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCompanyById(companyId);
-	}
-
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return the company with the logo
-	 */
-	public static Company getCompanyByLogoId(long logoId)
-		throws PortalException {
-
-		return getService().getCompanyByLogoId(logoId);
-	}
-
-	/**
-	 * Returns the company with the mail domain.
-	 *
-	 * @param mx the company's mail domain
-	 * @return the company with the mail domain
-	 */
-	public static Company getCompanyByMx(String mx) throws PortalException {
-		return getService().getCompanyByMx(mx);
 	}
 
 	/**
@@ -694,6 +624,21 @@ public class CompanyLocalServiceUtil {
 		getService().updateDisplayGroupNames(companyId);
 	}
 
+	public static Company updateIndexNameNext(
+			long companyId, String indexNameNext)
+		throws PortalException {
+
+		return getService().updateIndexNameNext(companyId, indexNameNext);
+	}
+
+	public static Company updateIndexNames(
+			long companyId, String indexNameCurrent, String indexNameNext)
+		throws PortalException {
+
+		return getService().updateIndexNames(
+			companyId, indexNameCurrent, indexNameNext);
+	}
+
 	/**
 	 * Updates the company's logo.
 	 *
@@ -779,6 +724,10 @@ public class CompanyLocalServiceUtil {
 
 	public static CompanyLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(CompanyLocalService service) {
+		_service = service;
 	}
 
 	private static volatile CompanyLocalService _service;

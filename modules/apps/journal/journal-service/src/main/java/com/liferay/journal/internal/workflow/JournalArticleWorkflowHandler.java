@@ -1,42 +1,53 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.workflow;
 
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.asset.display.page.util.AssetDisplayPageUtil;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
+import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.journal.constants.JournalArticleConstants;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalFolderLocalService;
+import com.liferay.layout.model.LayoutClassedModelUsage;
+import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.service.permission.LayoutPermission;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.BaseWorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.Serializable;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -57,6 +68,24 @@ public class JournalArticleWorkflowHandler
 	extends BaseWorkflowHandler<JournalArticle> {
 
 	@Override
+	public void contributeWorkflowContext(
+			Map<String, Serializable> workflowContext)
+		throws PortalException {
+
+		ServiceContext serviceContext = (ServiceContext)workflowContext.get(
+			WorkflowConstants.CONTEXT_SERVICE_CONTEXT);
+
+		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+		if (themeDisplay == null) {
+			return;
+		}
+
+		serviceContext.setAttribute(
+			"scopeGroupId", themeDisplay.getScopeGroupId());
+	}
+
+	@Override
 	public String getClassName() {
 		return JournalArticle.class.getName();
 	}
@@ -64,6 +93,50 @@ public class JournalArticleWorkflowHandler
 	@Override
 	public String getType(Locale locale) {
 		return ResourceActionsUtil.getModelResource(locale, getClassName());
+	}
+
+	@Override
+	public String getURLViewInContext(
+		long classPK, LiferayPortletRequest liferayPortletRequest,
+		LiferayPortletResponse liferayPortletResponse,
+		String noSuchEntryRedirect) {
+
+		JournalArticle article = _journalArticleLocalService.fetchArticle(
+			classPK);
+
+		if (article == null) {
+			article = _journalArticleLocalService.fetchLatestArticle(classPK);
+		}
+
+		if (article == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Unable to find article " + classPK);
+			}
+
+			return null;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		try {
+			if (!_isShowDisplayPage(
+					classPK, themeDisplay.getScopeGroupId(), article)) {
+
+				return _getHitLayoutURL(
+					article, liferayPortletRequest, themeDisplay);
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return super.getURLViewInContext(
+			classPK, liferayPortletRequest, liferayPortletResponse,
+			noSuchEntryRedirect);
 	}
 
 	@Override
@@ -77,15 +150,10 @@ public class JournalArticleWorkflowHandler
 		long folderId = _journalFolderLocalService.getInheritedWorkflowFolderId(
 			article.getFolderId());
 
-		DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
-			_portal.getSiteGroupId(article.getGroupId()),
-			_portal.getClassNameId(JournalArticle.class),
-			article.getDDMStructureKey(), true);
-
 		WorkflowDefinitionLink workflowDefinitionLink =
 			_workflowDefinitionLinkLocalService.fetchWorkflowDefinitionLink(
 				companyId, groupId, JournalFolder.class.getName(), folderId,
-				ddmStructure.getStructureId(), true);
+				article.getDDMStructureId(), true);
 
 		if (workflowDefinitionLink == null) {
 			workflowDefinitionLink =
@@ -148,44 +216,98 @@ public class JournalArticleWorkflowHandler
 			workflowContext);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMStructureLocalService(
-		DDMStructureLocalService ddmStructureLocalService) {
+	private String _getHitLayoutURL(
+			JournalArticle article, LiferayPortletRequest liferayPortletRequest,
+			ThemeDisplay themeDisplay)
+		throws PortalException {
 
-		_ddmStructureLocalService = ddmStructureLocalService;
+		List<LayoutClassedModelUsage> layoutClassedModelUsages =
+			_layoutClassedModelUsageLocalService.getLayoutClassedModelUsages(
+				_portal.getClassNameId(JournalArticle.class),
+				article.getResourcePrimKey());
+
+		for (LayoutClassedModelUsage layoutClassedModelUsage :
+				layoutClassedModelUsages) {
+
+			Layout layout = _layoutLocalService.fetchLayout(
+				layoutClassedModelUsage.getPlid());
+
+			if ((layout != null) && !layout.isSystem() &&
+				_layoutPermission.contains(
+					themeDisplay.getPermissionChecker(), layout,
+					ActionKeys.VIEW)) {
+
+				return PortletURLBuilder.create(
+					PortletURLFactoryUtil.create(
+						liferayPortletRequest,
+						layoutClassedModelUsage.getContainerKey(),
+						layoutClassedModelUsage.getPlid(),
+						PortletRequest.RENDER_PHASE)
+				).setParameter(
+					"previewClassNameId",
+					layoutClassedModelUsage.getClassNameId()
+				).setParameter(
+					"previewClassPK", layoutClassedModelUsage.getClassPK()
+				).setParameter(
+					"previewType", AssetRendererFactory.TYPE_LATEST
+				).setParameter(
+					"previewVersion", InfoItemIdentifier.VERSION_LATEST
+				).buildString();
+			}
+		}
+
+		return null;
 	}
 
-	@Reference(unbind = "-")
-	protected void setJournalArticleLocalService(
-		JournalArticleLocalService journalArticleLocalService) {
+	private boolean _isShowDisplayPage(
+			long classPK, long groupId, JournalArticle article)
+		throws PortalException {
 
-		_journalArticleLocalService = journalArticleLocalService;
-	}
+		AssetRendererFactory<JournalArticle> assetRendererFactory =
+			getAssetRendererFactory();
 
-	@Reference(unbind = "-")
-	protected void setJournalFolderLocalService(
-		JournalFolderLocalService journalFolderLocalService) {
+		AssetEntry assetEntry = assetRendererFactory.getAssetEntry(
+			getClassName(), classPK);
 
-		_journalFolderLocalService = journalFolderLocalService;
-	}
+		if (Validator.isNull(article.getLayoutUuid()) &&
+			Validator.isNull(assetEntry.getLayoutUuid()) &&
+			!AssetDisplayPageUtil.hasAssetDisplayPage(
+				groupId,
+				assetRendererFactory.getAssetEntry(
+					JournalArticle.class.getName(),
+					article.getResourcePrimKey()))) {
 
-	@Reference(unbind = "-")
-	protected void setWorkflowDefinitionLinkLocalService(
-		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService) {
+			return false;
+		}
 
-		_workflowDefinitionLinkLocalService =
-			workflowDefinitionLinkLocalService;
+		return true;
 	}
 
 	private static final boolean _VISIBLE = true;
 
-	private DDMStructureLocalService _ddmStructureLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		JournalArticleWorkflowHandler.class);
+
+	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
+
+	@Reference
 	private JournalFolderLocalService _journalFolderLocalService;
+
+	@Reference
+	private LayoutClassedModelUsageLocalService
+		_layoutClassedModelUsageLocalService;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private LayoutPermission _layoutPermission;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private WorkflowDefinitionLinkLocalService
 		_workflowDefinitionLinkLocalService;
 

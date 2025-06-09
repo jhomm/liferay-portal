@@ -1,26 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.results.builder;
 
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.Ranking;
-import com.liferay.portal.search.tuning.rankings.web.internal.searcher.RankingSearchRequestHelper;
+import com.liferay.portal.search.tuning.rankings.index.Ranking;
+import com.liferay.portal.search.tuning.rankings.web.internal.searcher.helper.RankingSearchRequestHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-
-import java.util.Optional;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -28,7 +17,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -44,15 +32,14 @@ public class RankingGetVisibleResultsBuilderTest
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_setUpRankingSearchRequestHelper();
 
 		_rankingGetVisibleResultsBuilder = new RankingGetVisibleResultsBuilder(
 			complexQueryPartBuilderFactory, dlAppLocalService,
-			fastDateFormatFactory, rankingIndexName, rankingIndexReader,
-			_rankingSearchRequestHelper, resourceActions, resourceRequest,
-			resourceResponse, queries, searcher, searchRequestBuilderFactory);
+			fastDateFormatFactory, groupLocalService, rankingIndexName,
+			rankingIndexReader, _rankingSearchRequestHelper, resourceActions,
+			resourceRequest, resourceResponse, queries, searcher,
+			searchRequestBuilderFactory);
 	}
 
 	@Test
@@ -60,8 +47,9 @@ public class RankingGetVisibleResultsBuilderTest
 		setUpComplexQueryPartBuilderFactory(setUpComplexQueryPartBuilder());
 		setUpDLAppLocalService();
 		setUpFastDateFormatFactory();
-		setUpQuery();
+		setUpPortalUtil();
 		setUpPropsUtil();
+		setUpQuery();
 
 		Ranking ranking = Mockito.mock(Ranking.class);
 
@@ -71,23 +59,22 @@ public class RankingGetVisibleResultsBuilderTest
 			ranking
 		).getQueryString();
 
-		setUpRankingIndexReader(Optional.of(ranking));
+		setUpRankingIndexReader(ranking);
 
-		setUpRankingResultUtil();
 		setUpResourceRequest();
 		setUpSearchRequestBuilderFactory(setUpSearchRequestBuilder());
 		setUpSearcher(setUpSearchResponse(setUpDocumentWithGetString()));
 
 		Assert.assertEquals(
-			mapper.readTree(_getExpectedDocumentsString()),
-			mapper.readTree(
+			objectMapper.readTree(_getExpectedDocumentsString()),
+			objectMapper.readTree(
 				_rankingGetVisibleResultsBuilder.build(
 				).toJSONString()));
 	}
 
 	@Test
-	public void testBuildWithOptionalRankingNotPresent() {
-		setUpRankingIndexReader(Optional.empty());
+	public void testBuildWithRankingNotPresent() {
+		setUpRankingIndexReader(null);
 
 		Assert.assertEquals(
 			JSONUtil.put(
@@ -128,7 +115,7 @@ public class RankingGetVisibleResultsBuilderTest
 				))
 		).put(
 			"total", 1
-		).toJSONString();
+		).toString();
 	}
 
 	private void _setUpRankingSearchRequestHelper() {
@@ -136,13 +123,12 @@ public class RankingGetVisibleResultsBuilderTest
 		).when(
 			_rankingSearchRequestHelper
 		).contribute(
-			Mockito.anyObject(), Mockito.anyObject()
+			Mockito.any(), Mockito.any()
 		);
 	}
 
 	private RankingGetVisibleResultsBuilder _rankingGetVisibleResultsBuilder;
-
-	@Mock
-	private RankingSearchRequestHelper _rankingSearchRequestHelper;
+	private final RankingSearchRequestHelper _rankingSearchRequestHelper =
+		Mockito.mock(RankingSearchRequestHelper.class);
 
 }

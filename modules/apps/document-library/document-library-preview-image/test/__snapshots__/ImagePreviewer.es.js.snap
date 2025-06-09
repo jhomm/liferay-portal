@@ -23,6 +23,7 @@ exports[`document-library-preview-image renders an image previewer 1`] = `
         role="group"
       >
         <button
+          aria-label="zoom-out"
           class="btn-floating-bar btn btn-monospaced"
           title="zoom-out"
           type="button"
@@ -32,11 +33,12 @@ exports[`document-library-preview-image renders an image previewer 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#hr"
+              href="#hr"
             />
           </svg>
         </button>
         <button
+          aria-label="real-size"
           class="btn-floating-bar btn-floating-bar-text btn"
           title="real-size"
           type="button"
@@ -48,6 +50,7 @@ exports[`document-library-preview-image renders an image previewer 1`] = `
           </span>
         </button>
         <button
+          aria-label="zoom-in"
           class="btn-floating-bar btn btn-monospaced"
           title="zoom-in"
           type="button"
@@ -57,7 +60,7 @@ exports[`document-library-preview-image renders an image previewer 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#plus"
+              href="#plus"
             />
           </svg>
         </button>

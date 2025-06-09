@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.initializer.util;
@@ -19,10 +10,11 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.MappingJsonFactory;
 
+import com.liferay.account.model.AccountGroup;
+import com.liferay.account.service.AccountGroupLocalService;
+import com.liferay.account.service.AccountGroupRelLocalService;
 import com.liferay.asset.kernel.model.AssetCategory;
-import com.liferay.commerce.account.model.CommerceAccountGroup;
-import com.liferay.commerce.account.service.CommerceAccountGroupLocalService;
-import com.liferay.commerce.account.service.CommerceAccountGroupRelLocalService;
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.commerce.constants.CPDefinitionInventoryConstants;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemLocalService;
 import com.liferay.commerce.model.CPDAvailabilityEstimate;
@@ -30,6 +22,8 @@ import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.model.CommerceAvailabilityEstimate;
 import com.liferay.commerce.product.constants.CPAttachmentFileEntryConstants;
 import com.liferay.commerce.product.exception.NoSuchSkuContributorCPDefinitionOptionRelException;
+import com.liferay.commerce.product.model.CPConfigurationEntry;
+import com.liferay.commerce.product.model.CPConfigurationList;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
@@ -37,9 +31,10 @@ import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.model.CPOptionCategory;
-import com.liferay.commerce.product.model.CPOptionValue;
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.commerce.product.model.CPTaxCategory;
+import com.liferay.commerce.product.model.CommerceChannelRel;
+import com.liferay.commerce.product.service.CPConfigurationEntryLocalService;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPDefinitionOptionValueRelLocalService;
@@ -60,7 +55,7 @@ import com.liferay.portal.json.JSONArrayImpl;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -74,10 +69,11 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
@@ -90,6 +86,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -101,7 +98,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, service = CPDefinitionsImporter.class)
+@Component(service = CPDefinitionsImporter.class)
 public class CPDefinitionsImporter {
 
 	public void importCPDefinitions(
@@ -129,7 +126,7 @@ public class CPDefinitionsImporter {
 		while (jsonFactoryParser.nextToken() != JsonToken.END_ARRAY) {
 			TreeNode treeNode = jsonFactoryParser.readValueAsTree();
 
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			JSONObject jsonObject = _jsonFactory.createJSONObject(
 				treeNode.toString());
 
 			if (_log.isDebugEnabled()) {
@@ -177,11 +174,12 @@ public class CPDefinitionsImporter {
 	protected ServiceContext getServiceContext(long scopeGroupId, long userId)
 		throws PortalException {
 
-		User user = _userLocalService.getUser(userId);
-
 		ServiceContext serviceContext = new ServiceContext();
 
+		User user = _userLocalService.getUser(userId);
+
 		serviceContext.setCompanyId(user.getCompanyId());
+
 		serviceContext.setScopeGroupId(scopeGroupId);
 		serviceContext.setUserId(userId);
 
@@ -245,7 +243,7 @@ public class CPDefinitionsImporter {
 			locale, description);
 
 		return _cpDefinitionLocalService.addCPDefinition(
-			externalReferenceCode, catalogGroupId, user.getUserId(), nameMap,
+			externalReferenceCode, user.getUserId(), catalogGroupId, nameMap,
 			shortDescriptionMap, descriptionMap, nameMap, null, null, null,
 			"simple", true, shippable, false, false, 0D, width, height, depth,
 			weight, _getCPTaxCategoryId(taxCategory, serviceContext), false,
@@ -255,7 +253,7 @@ public class CPDefinitionsImporter {
 			expirationDateHour, expirationDateMinute, true, sku,
 			subscriptionEnabled, subscriptionLength, subscriptionType,
 			subscriptionTypeSettingsUnicodeProperties, maxSubscriptionCycles,
-			serviceContext);
+			WorkflowConstants.STATUS_DRAFT, serviceContext);
 	}
 
 	private void _addWarehouseQuantities(
@@ -273,9 +271,11 @@ public class CPDefinitionsImporter {
 
 				_commerceInventoryWarehouseItemLocalService.
 					addOrUpdateCommerceInventoryWarehouseItem(
+						StringPool.BLANK, serviceContext.getCompanyId(),
 						serviceContext.getUserId(),
-						commerceInventoryWarehouseId, cpInstance.getSku(),
-						quantity);
+						commerceInventoryWarehouseId,
+						BigDecimal.valueOf(quantity), cpInstance.getSku(),
+						StringPool.BLANK);
 			}
 		}
 	}
@@ -345,7 +345,7 @@ public class CPDefinitionsImporter {
 
 		// Categories
 
-		List<AssetCategory> assetCategories = Collections.emptyList();
+		List<AssetCategory> assetCategories = new ArrayList<>();
 
 		JSONArray categoriesJSONArray = jsonObject.getJSONArray("categories");
 
@@ -380,9 +380,30 @@ public class CPDefinitionsImporter {
 					externalReferenceCode, company.getCompanyId());
 
 		if (cpDefinition != null) {
-			_commerceChannelRelLocalService.addCommerceChannelRel(
-				CPDefinition.class.getName(), cpDefinition.getCPDefinitionId(),
-				commerceChannelId, serviceContext);
+			CommerceChannelRel commerceChannelRel =
+				_commerceChannelRelLocalService.fetchCommerceChannelRel(
+					CPDefinition.class.getName(),
+					cpDefinition.getCPDefinitionId(), commerceChannelId);
+
+			if (commerceChannelRel == null) {
+				_commerceChannelRelLocalService.addCommerceChannelRel(
+					CPDefinition.class.getName(),
+					cpDefinition.getCPDefinitionId(), commerceChannelId,
+					serviceContext);
+			}
+
+			List<AssetCategory> cpDefinitionAssetCategories =
+				_assetCategoryLocalService.getCategories(
+					cpDefinition.getModelClassName(),
+					cpDefinition.getCPDefinitionId());
+
+			assetCategories.addAll(cpDefinitionAssetCategories);
+
+			cpDefinition = _updateCPDefinition(
+				cpDefinition,
+				ListUtil.toLongArray(
+					assetCategories, AssetCategory.CATEGORY_ID_ACCESSOR),
+				serviceContext);
 
 			Indexer<CPDefinition> indexer =
 				IndexerRegistryUtil.nullSafeGetIndexer(CPDefinition.class);
@@ -514,30 +535,16 @@ public class CPDefinitionsImporter {
 
 				double priceDouble = jsonObject.getDouble("price", 0);
 
-				BigDecimal price = BigDecimal.valueOf(priceDouble);
+				cpInstance.setManufacturerPartNumber(
+					jsonObject.getString("manufacturerPartNumber"));
+				cpInstance.setPrice(BigDecimal.valueOf(priceDouble));
+				cpInstance.setPromoPrice(
+					BigDecimal.valueOf(jsonObject.getDouble("promoPrice", 0)));
+				cpInstance.setCost(
+					BigDecimal.valueOf(jsonObject.getDouble("cost", 0)));
 
-				BigDecimal cost = BigDecimal.valueOf(
-					jsonObject.getDouble("cost", 0));
-
-				BigDecimal promoPrice = BigDecimal.valueOf(
-					jsonObject.getDouble("promoPrice", 0));
-
-				cpInstance.setPrice(price);
-				cpInstance.setPromoPrice(promoPrice);
-				cpInstance.setCost(cost);
-
-				String manufacturerPartNumber = jsonObject.getString(
-					"manufacturerPartNumber");
-
-				cpInstance.setManufacturerPartNumber(manufacturerPartNumber);
-
-				String cpInstanceExternalReferenceCode =
-					FriendlyURLNormalizerUtil.normalize(sku);
-
-				cpInstance.setExternalReferenceCode(
-					cpInstanceExternalReferenceCode);
-
-				_cpInstanceLocalService.updateCPInstance(cpInstance);
+				cpInstance = _cpInstanceLocalService.updateCPInstance(
+					cpInstance);
 
 				// Commerce warehouse items
 
@@ -556,19 +563,26 @@ public class CPDefinitionsImporter {
 			"displayAvailability");
 		boolean displayStockQuantity = jsonObject.getBoolean(
 			"displayStockQuantity");
-		int minStockQuantity = jsonObject.getInt("minStockQuantity");
+		BigDecimal minStockQuantity = BigDecimal.valueOf(
+			jsonObject.getInt("minStockQuantity"));
 		boolean backOrders = jsonObject.getBoolean("backOrders");
-		int minOrderQuantity = jsonObject.getInt(
-			"minOrderQuantity",
-			CPDefinitionInventoryConstants.DEFAULT_MIN_ORDER_QUANTITY);
-		int maxOrderQuantity = jsonObject.getInt(
-			"maxOrderQuantity",
-			CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY);
+		BigDecimal minOrderQuantity = BigDecimal.valueOf(
+			jsonObject.getInt(
+				"minOrderQuantity",
+				CPDefinitionInventoryConstants.DEFAULT_MIN_ORDER_QUANTITY.
+					intValue()));
+		BigDecimal maxOrderQuantity = BigDecimal.valueOf(
+			jsonObject.getInt(
+				"maxOrderQuantity",
+				CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY.
+					intValue()));
 		String allowedOrderQuantities = jsonObject.getString(
 			"allowedOrderQuantities");
-		int multipleOrderQuantity = jsonObject.getInt(
-			"multipleOrderQuantity",
-			CPDefinitionInventoryConstants.DEFAULT_MULTIPLE_ORDER_QUANTITY);
+		BigDecimal multipleOrderQuantity = BigDecimal.valueOf(
+			jsonObject.getInt(
+				"multipleOrderQuantity",
+				CPDefinitionInventoryConstants.DEFAULT_MULTIPLE_ORDER_QUANTITY.
+					intValue()));
 
 		CPDefinitionInventory cpDefinitionInventory =
 			_cpDefinitionInventoryLocalService.
@@ -597,10 +611,55 @@ public class CPDefinitionsImporter {
 		String availabilityEstimate = jsonObject.getString(
 			"availabilityEstimate");
 
+		long commerceAvailabilityEstimateId = 0;
+
 		if (Validator.isNotNull(availabilityEstimate)) {
-			_updateCPDAvailabilityEstimate(
-				cpDefinition.getCProductId(), availabilityEstimate,
-				serviceContext);
+			CPDAvailabilityEstimate cpdAvailabilityEstimate =
+				_updateCPDAvailabilityEstimate(
+					cpDefinition.getCProductId(), availabilityEstimate,
+					serviceContext);
+
+			commerceAvailabilityEstimateId =
+				cpdAvailabilityEstimate.getCommerceAvailabilityEstimateId();
+		}
+
+		CPConfigurationEntry cpConfigurationEntry =
+			cpDefinition.fetchMasterCPConfigurationEntry();
+
+		if (cpConfigurationEntry == null) {
+			CPConfigurationList masterCPConfigurationList =
+				cpDefinition.getMasterCPConfigurationList();
+
+			_cpConfigurationEntryLocalService.addCPConfigurationEntry(
+				null, serviceContext.getUserId(), cpDefinition.getGroupId(),
+				_portal.getClassNameId(CPDefinition.class),
+				cpDefinition.getCPDefinitionId(),
+				masterCPConfigurationList.getCPConfigurationListId(),
+				_getCPTaxCategoryId(taxCategory, serviceContext),
+				allowedOrderQuantities, backOrders,
+				commerceAvailabilityEstimateId, cpDefinitionInventoryEngine,
+				cpDefinition.getDepth(), displayAvailability,
+				displayStockQuantity, cpDefinition.isFreeShipping(), height,
+				lowStockActivity, maxOrderQuantity, minOrderQuantity,
+				minStockQuantity, multipleOrderQuantity, true, shippable,
+				cpDefinition.getShippingExtraPrice(),
+				cpDefinition.isShipSeparately(), cpDefinition.isTaxExempt(),
+				true, weight, width);
+		}
+		else {
+			_cpConfigurationEntryLocalService.updateCPConfigurationEntry(
+				cpConfigurationEntry.getExternalReferenceCode(),
+				cpConfigurationEntry.getCPConfigurationEntryId(),
+				_getCPTaxCategoryId(taxCategory, serviceContext),
+				allowedOrderQuantities, backOrders,
+				commerceAvailabilityEstimateId, cpDefinitionInventoryEngine,
+				cpDefinition.getDepth(), displayAvailability,
+				displayStockQuantity, cpDefinition.isFreeShipping(), height,
+				lowStockActivity, maxOrderQuantity, minOrderQuantity,
+				minStockQuantity, multipleOrderQuantity, true, shippable,
+				cpDefinition.getShippingExtraPrice(),
+				cpDefinition.isShipSeparately(), cpDefinition.isTaxExempt(),
+				true, weight, width);
 		}
 
 		// Commerce product images
@@ -669,22 +728,20 @@ public class CPDefinitionsImporter {
 
 			for (int i = 0; i < filterAccountGroupsJSONArray.length(); i++) {
 				String accountGroupExternalReferenceCode =
-					FriendlyURLNormalizerUtil.normalize(
+					_friendlyURLNormalizer.normalize(
 						filterAccountGroupsJSONArray.getString(i));
 
-				CommerceAccountGroup commerceAccountGroup =
-					_commerceAccountGroupLocalService.
-						fetchByExternalReferenceCode(
-							company.getCompanyId(),
-							accountGroupExternalReferenceCode);
+				AccountGroup accountGroup =
+					_accountGroupLocalService.
+						fetchAccountGroupByExternalReferenceCode(
+							accountGroupExternalReferenceCode,
+							company.getCompanyId());
 
-				if (commerceAccountGroup != null) {
-					_commerceAccountGroupRelLocalService.
-						addCommerceAccountGroupRel(
-							CPDefinition.class.getName(),
-							cpDefinition.getCPDefinitionId(),
-							commerceAccountGroup.getCommerceAccountGroupId(),
-							serviceContext);
+				if (accountGroup != null) {
+					_accountGroupRelLocalService.addAccountGroupRel(
+						accountGroup.getAccountGroupId(),
+						CPDefinition.class.getName(),
+						accountGroup.getAccountGroupId());
 				}
 			}
 		}
@@ -757,15 +814,13 @@ public class CPDefinitionsImporter {
 			ServiceContext serviceContext)
 		throws Exception {
 
-		CPOptionValue cpOptionValue =
-			_cpOptionValueLocalService.getCPOptionValue(
-				cpDefinitionOptionRel.getCPOptionId(),
-				FriendlyURLNormalizerUtil.normalize(key));
-
 		return _cpDefinitionOptionValueRelLocalService.
 			addCPDefinitionOptionValueRel(
 				cpDefinitionOptionRel.getCPDefinitionOptionRelId(),
-				cpOptionValue, serviceContext);
+				_cpOptionValueLocalService.getCPOptionValue(
+					cpDefinitionOptionRel.getCPOptionId(),
+					_friendlyURLNormalizer.normalize(key)),
+				serviceContext);
 	}
 
 	private CPDefinitionSpecificationOptionValue
@@ -799,9 +854,13 @@ public class CPDefinitionsImporter {
 
 		return _cpDefinitionSpecificationOptionValueLocalService.
 			addCPDefinitionSpecificationOptionValue(
-				cpDefinitionId,
+				StringPool.BLANK, cpDefinitionId,
 				cpSpecificationOption.getCPSpecificationOptionId(),
-				cpOptionCategoryId, valueMap, priority, serviceContext);
+				cpOptionCategoryId, priority, valueMap,
+				GetterUtil.getBoolean(
+					jsonObject.get("visible"),
+					cpSpecificationOption.isVisible()),
+				serviceContext);
 	}
 
 	private CPInstance _importCPInstance(
@@ -810,6 +869,8 @@ public class CPDefinitionsImporter {
 			ServiceContext serviceContext)
 		throws Exception {
 
+		String externalReferenceCode = skuJSONObject.getString(
+			"externalReferenceCode");
 		String sku = skuJSONObject.getString("sku");
 		String manufacturerPartNumber = skuJSONObject.getString(
 			"manufacturerPartNumber");
@@ -822,7 +883,7 @@ public class CPDefinitionsImporter {
 		String optionsJSON = null;
 
 		if (optionsJSONArray != null) {
-			JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+			JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 			for (int i = 0; i < optionsJSONArray.length(); i++) {
 				JSONObject optionsJSONObject = optionsJSONArray.getJSONObject(
@@ -877,11 +938,9 @@ public class CPDefinitionsImporter {
 		CPDefinition cpDefinition = _cpDefinitionLocalService.getCPDefinition(
 			cpDefinitionId);
 
-		String externalReferenceCode = FriendlyURLNormalizerUtil.normalize(sku);
-
 		boolean overrideSubscriptionInfo = false;
 		boolean subscriptionEnabled = false;
-		int subscriptionLength = 0;
+		int subscriptionLength = 1;
 		String subscriptionType = null;
 		long maxSubscriptionCycles = 0;
 
@@ -917,7 +976,8 @@ public class CPDefinitionsImporter {
 			subscriptionLength, subscriptionType,
 			_getSubscriptionTypeSettingsUnicodeProperties(
 				subscriptionInfoJSONObject),
-			maxSubscriptionCycles, serviceContext);
+			maxSubscriptionCycles, false, 1, null, null, 0, null, false, null,
+			0, 0, 0, 0, serviceContext);
 
 		_addWarehouseQuantities(
 			skuJSONObject, commerceInventoryWarehouseIds, serviceContext,
@@ -936,7 +996,8 @@ public class CPDefinitionsImporter {
 				getCommerceAvailabilityEstimates(
 					serviceContext.getCompanyId(), QueryUtil.ALL_POS,
 					QueryUtil.ALL_POS,
-					new CommerceAvailabilityEstimatePriorityComparator(true));
+					CommerceAvailabilityEstimatePriorityComparator.getInstance(
+						true));
 
 		for (CommerceAvailabilityEstimate commerceAvailabilityEstimate :
 				commerceAvailabilityEstimates) {
@@ -947,10 +1008,9 @@ public class CPDefinitionsImporter {
 
 				return _cpdAvailabilityEstimateLocalService.
 					updateCPDAvailabilityEstimateByCProductId(
-						0, cProductId,
+						serviceContext.getUserId(), 0, cProductId,
 						commerceAvailabilityEstimate.
-							getCommerceAvailabilityEstimateId(),
-						serviceContext);
+							getCommerceAvailabilityEstimateId());
 			}
 		}
 
@@ -963,27 +1023,72 @@ public class CPDefinitionsImporter {
 
 		return _cpdAvailabilityEstimateLocalService.
 			updateCPDAvailabilityEstimateByCProductId(
-				0, cProductId,
+				serviceContext.getUserId(), 0, cProductId,
 				commerceAvailabilityEstimate.
-					getCommerceAvailabilityEstimateId(),
-				serviceContext);
+					getCommerceAvailabilityEstimateId());
+	}
+
+	private CPDefinition _updateCPDefinition(
+			CPDefinition cpDefinition, long[] assetCategoryIds,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		serviceContext.setAssetCategoryIds(assetCategoryIds);
+
+		Date displayDate = cpDefinition.getDisplayDate();
+
+		User user = _userLocalService.getUser(serviceContext.getUserId());
+
+		Calendar calendar = CalendarFactoryUtil.getCalendar(
+			displayDate.getTime(), user.getTimeZone());
+
+		int month = calendar.get(Calendar.MONTH);
+		int day = calendar.get(Calendar.DAY_OF_MONTH);
+		int year = calendar.get(Calendar.YEAR);
+		int hour = calendar.get(Calendar.HOUR);
+		int minute = calendar.get(Calendar.MINUTE);
+
+		int amPm = calendar.get(Calendar.AM_PM);
+
+		if (amPm == Calendar.PM) {
+			hour += 12;
+		}
+
+		return _cpDefinitionLocalService.updateCPDefinition(
+			cpDefinition.getCPDefinitionId(), cpDefinition.getNameMap(),
+			cpDefinition.getShortDescriptionMap(),
+			cpDefinition.getDescriptionMap(), cpDefinition.getUrlTitleMap(),
+			cpDefinition.getMetaTitleMap(),
+			cpDefinition.getMetaDescriptionMap(),
+			cpDefinition.getMetaKeywordsMap(),
+			cpDefinition.isIgnoreSKUCombinations(), cpDefinition.isShippable(),
+			cpDefinition.isFreeShipping(), cpDefinition.isShipSeparately(),
+			cpDefinition.getShippingExtraPrice(), cpDefinition.getWidth(),
+			cpDefinition.getHeight(), cpDefinition.getDepth(),
+			cpDefinition.getWeight(), cpDefinition.getCPTaxCategoryId(),
+			cpDefinition.isTaxExempt(), cpDefinition.isTelcoOrElectronics(),
+			cpDefinition.getDDMStructureKey(), cpDefinition.isPublished(),
+			month, day, year, hour, minute, month, day, year, hour, minute,
+			true, serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CPDefinitionsImporter.class);
 
 	@Reference
+	private AccountGroupLocalService _accountGroupLocalService;
+
+	@Reference
+	private AccountGroupRelLocalService _accountGroupRelLocalService;
+
+	@Reference
 	private AssetCategoriesImporter _assetCategoriesImporter;
 
 	@Reference
+	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
 	private AssetTagsImporter _assetTagsImporter;
-
-	@Reference
-	private CommerceAccountGroupLocalService _commerceAccountGroupLocalService;
-
-	@Reference
-	private CommerceAccountGroupRelLocalService
-		_commerceAccountGroupRelLocalService;
 
 	@Reference
 	private CommerceAvailabilityEstimateLocalService
@@ -1001,6 +1106,9 @@ public class CPDefinitionsImporter {
 
 	@Reference
 	private CPAttachmentFileEntryCreator _cpAttachmentFileEntryCreator;
+
+	@Reference
+	private CPConfigurationEntryLocalService _cpConfigurationEntryLocalService;
 
 	@Reference
 	private CPDAvailabilityEstimateLocalService
@@ -1043,6 +1151,15 @@ public class CPDefinitionsImporter {
 
 	@Reference
 	private CPTaxCategoryLocalService _cpTaxCategoryLocalService;
+
+	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference
 	private UserLocalService _userLocalService;

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder auto-import-default-references="false" auto-namespace-tables="false" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.depot">
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.depot">
 	<namespace>Depot</namespace>
 	<entity local-service="true" name="DepotAppCustomization" remote-service="false">
 
@@ -102,6 +102,38 @@
 		<finder name="S_TGI" return-type="Collection">
 			<finder-column name="searchable" />
 			<finder-column name="toGroupId" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="DepotEntryPin" remote-service="true" trash-enabled="false" uuid="true">
+
+		<!-- PK fields -->
+
+		<column name="depotEntryPinId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+		<column name="userId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="depotEntryId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="UserId" return-type="Collection">
+			<finder-column name="userId" />
+		</finder>
+		<finder name="DepotEntryId" return-type="Collection">
+			<finder-column name="depotEntryId" />
+		</finder>
+		<finder name="U_D" return-type="DepotEntryPin" unique="true">
+			<finder-column name="userId" />
+			<finder-column name="depotEntryId" />
 		</finder>
 	</entity>
 	<exceptions>

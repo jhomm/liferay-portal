@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-portlet-base',
 	(A) => {
-		var PortletBase = function (config) {
-			var instance = this;
+		const PortletBase = function (config) {
+			const instance = this;
 
-			var namespace;
+			let namespace;
 
 			if ('namespace' in config) {
 				namespace = config.namespace;
@@ -44,7 +35,7 @@ AUI.add(
 				getter: '_getRootNode',
 				setter: '_setRootNode',
 				valueFn() {
-					var instance = this;
+					const instance = this;
 
 					return A.one('#p_p_id' + instance.NS);
 				},
@@ -60,21 +51,21 @@ AUI.add(
 			},
 
 			_getNS() {
-				var instance = this;
+				const instance = this;
 
 				return instance.NS;
 			},
 
 			_getRootNode() {
-				var instance = this;
+				const instance = this;
 
 				return instance.rootNode;
 			},
 
 			_setRootNode(value) {
-				var instance = this;
+				const instance = this;
 
-				var rootNode = A.one(value);
+				const rootNode = A.one(value);
 
 				instance.rootNode = rootNode;
 
@@ -82,7 +73,7 @@ AUI.add(
 			},
 
 			all(selector, root) {
-				var instance = this;
+				const instance = this;
 
 				root = A.one(root) || instance.rootNode || A;
 
@@ -92,19 +83,19 @@ AUI.add(
 			},
 
 			byId(id) {
-				var instance = this;
+				const instance = this;
 
 				return A.one('#' + A.Lang.String.prefix(instance.NS, id));
 			},
 
 			ns(str) {
-				var instance = this;
+				const instance = this;
 
 				return Liferay.Util.ns(instance.NS, str);
 			},
 
 			one(selector, root) {
-				var instance = this;
+				const instance = this;
 
 				root = A.one(root) || instance.rootNode || A;
 

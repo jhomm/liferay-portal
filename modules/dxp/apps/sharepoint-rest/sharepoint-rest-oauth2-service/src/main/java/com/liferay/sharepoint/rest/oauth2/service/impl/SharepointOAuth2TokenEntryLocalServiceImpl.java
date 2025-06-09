@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharepoint.rest.oauth2.service.impl;
@@ -17,12 +8,14 @@ package com.liferay.sharepoint.rest.oauth2.service.impl;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.sharepoint.rest.oauth2.model.SharepointOAuth2TokenEntry;
 import com.liferay.sharepoint.rest.oauth2.service.base.SharepointOAuth2TokenEntryLocalServiceBaseImpl;
 
 import java.util.Date;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adolfo Pérez
@@ -61,12 +54,11 @@ public class SharepointOAuth2TokenEntryLocalServiceImpl
 
 		sharepointOAuth2TokenEntry.setUserId(userId);
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		sharepointOAuth2TokenEntry.setUserName(user.getFullName());
 
 		sharepointOAuth2TokenEntry.setCreateDate(new Date());
-
 		sharepointOAuth2TokenEntry.setAccessToken(accessToken);
 		sharepointOAuth2TokenEntry.setConfigurationPid(configurationPid);
 		sharepointOAuth2TokenEntry.setExpirationDate(expirationDate);
@@ -111,5 +103,8 @@ public class SharepointOAuth2TokenEntryLocalServiceImpl
 	public int getUserSharepointOAuth2TokenEntriesCount(long userId) {
 		return sharepointOAuth2TokenEntryPersistence.countByUserId(userId);
 	}
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

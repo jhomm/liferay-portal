@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.reading.time.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -43,6 +36,8 @@ public class ReadingTimeEntryWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("readingTimeEntryId", getReadingTimeEntryId());
 		attributes.put("groupId", getGroupId());
@@ -58,6 +53,18 @@ public class ReadingTimeEntryWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
@@ -169,6 +176,16 @@ public class ReadingTimeEntryWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this reading time entry.
+	 *
+	 * @return the ct collection ID of this reading time entry
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the group ID of this reading time entry.
 	 *
 	 * @return the group ID of this reading time entry
@@ -186,6 +203,16 @@ public class ReadingTimeEntryWrapper
 	@Override
 	public Date getModifiedDate() {
 		return model.getModifiedDate();
+	}
+
+	/**
+	 * Returns the mvcc version of this reading time entry.
+	 *
+	 * @return the mvcc version of this reading time entry
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
 	}
 
 	/**
@@ -229,18 +256,6 @@ public class ReadingTimeEntryWrapper
 	}
 
 	/**
-	 * Returns the trash entry created when this reading time entry was moved to the Recycle Bin. The trash entry may belong to one of the ancestors of this reading time entry.
-	 *
-	 * @return the trash entry created when this reading time entry was moved to the Recycle Bin
-	 */
-	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getTrashEntry();
-	}
-
-	/**
 	 * Returns the class primary key of the trash entry for this reading time entry.
 	 *
 	 * @return the class primary key of the trash entry for this reading time entry
@@ -248,18 +263,6 @@ public class ReadingTimeEntryWrapper
 	@Override
 	public long getTrashEntryClassPK() {
 		return model.getTrashEntryClassPK();
-	}
-
-	/**
-	 * Returns the trash handler for this reading time entry.
-	 *
-	 * @return the trash handler for this reading time entry
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return model.getTrashHandler();
 	}
 
 	/**
@@ -280,26 +283,6 @@ public class ReadingTimeEntryWrapper
 	@Override
 	public boolean isInTrash() {
 		return model.isInTrash();
-	}
-
-	/**
-	 * Returns <code>true</code> if the parent of this reading time entry is in the Recycle Bin.
-	 *
-	 * @return <code>true</code> if the parent of this reading time entry is in the Recycle Bin; <code>false</code> otherwise
-	 */
-	@Override
-	public boolean isInTrashContainer() {
-		return model.isInTrashContainer();
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		return model.isInTrashExplicitly();
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		return model.isInTrashImplicitly();
 	}
 
 	@Override
@@ -353,6 +336,16 @@ public class ReadingTimeEntryWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this reading time entry.
+	 *
+	 * @param ctCollectionId the ct collection ID of this reading time entry
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the group ID of this reading time entry.
 	 *
 	 * @param groupId the group ID of this reading time entry
@@ -370,6 +363,16 @@ public class ReadingTimeEntryWrapper
 	@Override
 	public void setModifiedDate(Date modifiedDate) {
 		model.setModifiedDate(modifiedDate);
+	}
+
+	/**
+	 * Sets the mvcc version of this reading time entry.
+	 *
+	 * @param mvccVersion the mvcc version of this reading time entry
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
 	}
 
 	/**
@@ -410,6 +413,25 @@ public class ReadingTimeEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<ReadingTimeEntry, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<ReadingTimeEntry, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

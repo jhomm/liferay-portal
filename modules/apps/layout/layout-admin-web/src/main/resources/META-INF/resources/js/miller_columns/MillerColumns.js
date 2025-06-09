@@ -1,35 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {usePrevious} from '@liferay/frontend-js-react-web';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {DragPreview} from '@liferay/layout-js-components-web';
+import {sub} from 'frontend-js-web';
+import React, {
+	useCallback,
+	useContext,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from 'react';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 
-import DragPreview from './DragPreview';
 import MillerColumnsColumn from './MillerColumnsColumn';
+import {DROP_POSITIONS} from './constants/dropPositions';
+import {
+	KeyboardMovementContext,
+	KeyboardMovementProvider,
+} from './contexts/KeyboardMovementContext';
+import {KeyboardNavigationProvider} from './contexts/KeyboardNavigationContext';
+import {LayoutColumnsContext} from './contexts/LayoutColumnsContext';
 
 const getItemsMap = (columns, oldItems = new Map()) => {
 	const map = new Map();
 
-	let parentId, parentKey;
+	let parentId;
+	let parentIndex;
+	let parentKey;
 
 	columns.forEach((column, columnIndex) => {
 		let childrenCount = 0;
-		let newParentId, newParentKey;
+		let newParentId;
+		let newParentIndex;
+		let newParentKey;
 
-		column.forEach((item) => {
+		column.forEach((item, itemIndex) => {
 			childrenCount++;
 
 			const oldItem = Array.from(oldItems.values()).find(
@@ -40,12 +50,15 @@ const getItemsMap = (columns, oldItems = new Map()) => {
 				...item,
 				checked: oldItem ? oldItem.checked : false,
 				columnIndex,
+				itemIndex,
 				parentId,
+				parentIndex,
 				parentKey,
 			});
 
 			if (item.active && item.hasChild) {
 				newParentId = item.id;
+				newParentIndex = itemIndex;
 				newParentKey = item.key;
 			}
 		});
@@ -58,6 +71,7 @@ const getItemsMap = (columns, oldItems = new Map()) => {
 		}
 
 		parentId = newParentId;
+		parentIndex = newParentIndex;
 		parentKey = newParentKey;
 	});
 
@@ -67,18 +81,22 @@ const getItemsMap = (columns, oldItems = new Map()) => {
 const noop = () => {};
 
 const MillerColumns = ({
-	actionHandlers,
-	initialColumns = [],
+	createPageTemplateURL,
+	getPageTemplateCollectionsURL,
+	getItemActionsURL,
+	isLayoutSetPrototype,
 	namespace,
 	onColumnsChange = noop,
-	onItemMove = noop,
-	onItemStayHover,
+	getItemChildren,
 	rtl,
+	saveData = noop,
 	searchContainer,
 }) => {
 	const ref = useRef();
 
-	const [items, setItems] = useState(() => getItemsMap(initialColumns));
+	const {layoutColumns} = useContext(LayoutColumnsContext);
+
+	const [items, setItems] = useState(() => getItemsMap(layoutColumns));
 
 	// Transform items map into a columns-like array.
 
@@ -117,13 +135,13 @@ const MillerColumns = ({
 	}, [items]);
 
 	const previousColumnsValue = usePrevious(columns);
-	const previousInitialColumnsValue = usePrevious(initialColumns);
+	const previousLayoutColumnsValue = usePrevious(layoutColumns);
 
 	useEffect(() => {
-		if (previousInitialColumnsValue !== initialColumns) {
-			setItems(getItemsMap(initialColumns, items));
+		if (previousLayoutColumnsValue !== layoutColumns) {
+			setItems(getItemsMap(layoutColumns, items));
 		}
-	}, [initialColumns, items, previousInitialColumnsValue]);
+	}, [layoutColumns, items, previousLayoutColumnsValue]);
 
 	useEffect(() => {
 		if (previousColumnsValue !== columns) {
@@ -162,122 +180,259 @@ const MillerColumns = ({
 		}
 	}, [searchContainer]);
 
-	const getMovedItems = (sources, newParentId, targetIndex) => {
-		const targetColumnItems = Array.from(items.values()).filter(
-			(item) => item.parentId === newParentId
-		);
+	const getMovedItems = useCallback(
+		(sources, newParentId, targetIndex) => {
+			const targetColumnItems = Array.from(items.values()).filter(
+				(item) => item.parentId === newParentId
+			);
 
-		// Return sources if target column has no items
+			// Return sources if target column has no items
 
-		if (!targetColumnItems.length) {
-			return sources.map((source, index) => ({
-				plid: source.id,
-				position: targetIndex + index,
-			}));
-		}
-
-		// Calculate all items of the target column that are changing position
-
-		const movedItems = new Map();
-
-		let previousSources = 0;
-
-		targetColumnItems.forEach((item, index) => {
-
-			// Iterating on target position. Insert sources into movedItems
-
-			if (index === targetIndex) {
-				sources.forEach((source, sourceIndex) => {
-					movedItems.set(source.id, {
-						plid: source.id,
-						position: index - previousSources + sourceIndex,
-					});
-				});
-
-				previousSources = sources.length - previousSources;
-			}
-
-			// Iterating on a source. Don't insert it into movedItems but we
-			// update previous sources counter
-
-			if (sources.some((source) => source.id === item.id)) {
-				previousSources =
-					index < targetIndex
-						? previousSources + 1
-						: previousSources - 1;
-			}
-
-			// Insert item that is not a source into movedItems if it has a new
-			// position
-
-			else if (previousSources) {
-				movedItems.set(item.id, {
-					plid: item.id,
-					position:
-						index < targetIndex
-							? index - previousSources
-							: index + previousSources,
-				});
-			}
-		});
-
-		// Insert sources into movedItems in the case we are targeting last
-		// position of column so the loop does not reach it
-
-		sources.forEach((source, index) => {
-			if (!movedItems.has(source.id)) {
-				movedItems.set(source.id, {
+			if (!targetColumnItems.length) {
+				return sources.map((source, index) => ({
 					plid: source.id,
 					position: targetIndex + index,
-				});
+				}));
 			}
-		});
 
-		return Array.from(movedItems.values());
-	};
+			// Calculate all items of the target column that are changing position
 
-	const onItemDrop = (sources, newParentId, targetIndex) => {
+			const movedItems = new Map();
 
-		// Update checked items to keep them selected after updating items
-		// with server response
+			let previousSources = 0;
 
-		const newItems = new Map(items);
+			targetColumnItems.forEach((item, index) => {
 
-		sources.forEach((source) => {
-			if (source.checked) {
-				newItems.set(source.id, source);
+				// Iterating on target position. Insert sources into movedItems
+
+				if (index === targetIndex) {
+					sources.forEach((source, sourceIndex) => {
+						movedItems.set(source.id, {
+							plid: source.id,
+							position: index - previousSources + sourceIndex,
+						});
+					});
+
+					previousSources = sources.length - previousSources;
+				}
+
+				// Iterating on a source. Don't insert it into movedItems but we
+				// update previous sources counter
+
+				if (sources.some((source) => source.id === item.id)) {
+					previousSources =
+						index < targetIndex
+							? previousSources + 1
+							: previousSources - 1;
+				}
+
+				// Insert item that is not a source into movedItems if it has a new
+				// position
+
+				else if (previousSources) {
+					movedItems.set(item.id, {
+						plid: item.id,
+						position:
+							index < targetIndex
+								? index - previousSources
+								: index + previousSources,
+					});
+				}
+			});
+
+			// Insert sources into movedItems in the case we are targeting last
+			// position of column so the loop does not reach it
+
+			sources.forEach((source, index) => {
+				if (!movedItems.has(source.id)) {
+					movedItems.set(source.id, {
+						plid: source.id,
+						position: targetIndex + index,
+					});
+				}
+			});
+
+			return Array.from(movedItems.values());
+		},
+		[items]
+	);
+
+	const onItemDrop = useCallback(
+		(sources, target, position) => {
+			let targetId;
+			let targetIndex;
+
+			if (position === DROP_POSITIONS.middle) {
+				targetId = target.id;
+
+				targetIndex = Array.from(items.values()).filter(
+					(item) => item.id === target.id
+				).length;
 			}
-		});
+			else {
+				targetId = target.parentId;
 
-		setItems(newItems);
+				targetIndex = target.itemIndex;
 
-		onItemMove(
-			getMovedItems(sources, newParentId, targetIndex),
-			newParentId
-		);
+				if (position === DROP_POSITIONS.bottom) {
+					targetIndex = target.itemIndex + 1;
+				}
+			}
+
+			// Update checked items to keep them selected after updating items
+			// with server response
+
+			const newItems = new Map(items);
+
+			sources.forEach((source) => {
+				if (source.checked) {
+					newItems.set(source.id, source);
+				}
+			});
+
+			setItems(newItems);
+
+			saveData(
+				getMovedItems(sources, targetId, targetIndex),
+				targetId,
+				sources[0].url
+			);
+		},
+		[getMovedItems, items, saveData]
+	);
+
+	const columnSizes = layoutColumns
+		.filter((col) => col.length)
+		.map((col) => col.length);
+
+	const onKeyDown = (event) => {
+		const activeElement = document.activeElement;
+		const resizes = document.querySelectorAll('[id*="resize"]');
+
+		// Modify the semantic order of the page by placing the resizers last
+
+		if (
+			event.key === 'Tab' &&
+			event.shiftKey &&
+			activeElement.id === 'resize-0'
+		) {
+			event.preventDefault();
+
+			[...resizes].forEach((resize) => {
+				resize.tabIndex = -1;
+			});
+
+			document
+				.querySelector(
+					'.miller-columns-item-mask[role="menuitem"][tabindex="0"]'
+				)
+				.parentElement.querySelector('.btn-options')
+				?.focus();
+		}
+
+		if (
+			event.key === 'Tab' &&
+			!event.shiftKey &&
+			activeElement.classList.contains('btn-options')
+		) {
+			event.preventDefault();
+
+			[...resizes].forEach((resize) => {
+				resize.tabIndex = 1;
+			});
+			document.getElementById('resize-0')?.focus();
+		}
 	};
 
 	return (
-		<DndProvider backend={HTML5Backend}>
-			<DragPreview rtl={rtl} />
-			<div className="bg-white miller-columns-row" ref={ref}>
-				{columns.map((column, index) => (
-					<MillerColumnsColumn
-						actionHandlers={actionHandlers}
-						columnItems={column.items}
-						columnsContainer={ref}
-						items={items}
-						key={index}
-						namespace={namespace}
-						onItemDrop={onItemDrop}
-						onItemStayHover={onItemStayHover}
-						parent={column.parent}
-						rtl={rtl}
-					/>
-				))}
-			</div>
-		</DndProvider>
+		<KeyboardNavigationProvider columnSizes={columnSizes}>
+			<KeyboardMovementProvider
+				columnSizes={columnSizes}
+				items={items}
+				onMove={onItemDrop}
+				rtl={rtl}
+			>
+				<DndProvider backend={HTML5Backend}>
+					<div
+						className="bg-white miller-columns-row"
+						onKeyDown={onKeyDown}
+						ref={ref}
+						role="application"
+					>
+						{columns.map((column, index) => (
+							<MillerColumnsColumn
+								columnItems={column.items}
+								columnsContainer={ref}
+								createPageTemplateURL={createPageTemplateURL}
+								getItemActionsURL={getItemActionsURL}
+								getItemChildren={getItemChildren}
+								getPageTemplateCollectionsURL={
+									getPageTemplateCollectionsURL
+								}
+								index={index}
+								isLayoutSetPrototype={isLayoutSetPrototype}
+								items={items}
+								key={index}
+								namespace={namespace}
+								onItemDrop={onItemDrop}
+								parent={column.parent}
+								rtl={rtl}
+							/>
+						))}
+
+						<DragPreviewWrapper />
+					</div>
+				</DndProvider>
+			</KeyboardMovementProvider>
+		</KeyboardNavigationProvider>
 	);
 };
+
+function DragPreviewWrapper() {
+	const {sources, target} = useContext(KeyboardMovementContext);
+
+	const getDragPreviewLabel = (item) => {
+		const items = sources.length ? sources : item?.items;
+
+		if (items) {
+			if (items.length > 1) {
+				return sub(Liferay.Language.get('x-elements'), items.length);
+			}
+			else {
+				const [item] = items;
+
+				return item.title;
+			}
+		}
+	};
+
+	const alignment = useMemo(() => {
+		if (!target) {
+			return null;
+		}
+
+		const {columnIndex, itemIndex, position} = target;
+
+		const column = document.querySelectorAll('.miller-columns-col')[
+			columnIndex
+		];
+
+		const item = column.querySelectorAll('.miller-columns-item')[itemIndex];
+
+		return {
+			element: item,
+			position,
+			scrollElement: document.querySelector('.miller-columns-row'),
+		};
+	}, [target]);
+
+	return (
+		<DragPreview
+			alignment={alignment}
+			focusElement={!!sources.length}
+			getLabel={getDragPreviewLabel}
+		/>
+	);
+}
 
 export default MillerColumns;

@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_10_2;
 
 import com.liferay.dynamic.data.mapping.internal.upgrade.v3_10_2.util.DDMFormFieldUpgradeProcessUtil;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -39,19 +29,17 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement selectPreparedStatement =
 				connection.prepareStatement(
-					StringBundler.concat(
-						"select DDMFormInstanceReport.data_, ",
-						"DDMFormInstanceReport.formInstanceReportId from ",
-						"DDMFormInstanceReport"));
+					"select ctCollectionId, formInstanceReportId, data_ from " +
+						"DDMFormInstanceReport");
 			PreparedStatement updatePreparedStatement =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMFormInstanceReport set data_ = ? where " +
-						"formInstanceReportId = ?")) {
+						"ctCollectionId = ? and formInstanceReportId = ?")) {
 
 			try (ResultSet resultSet = selectPreparedStatement.executeQuery()) {
 				while (resultSet.next()) {
-					String data = resultSet.getString(1);
+					String data = resultSet.getString("data_");
 
 					String newData = upgradeDDMFormInstanceReportData(data);
 
@@ -60,7 +48,10 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 					}
 
 					updatePreparedStatement.setString(1, newData);
-					updatePreparedStatement.setLong(2, resultSet.getLong(2));
+					updatePreparedStatement.setLong(
+						2, resultSet.getLong("ctCollectionId"));
+					updatePreparedStatement.setLong(
+						3, resultSet.getLong("formInstanceReportId"));
 
 					updatePreparedStatement.addBatch();
 				}
@@ -127,10 +118,12 @@ public class DDMFormInstanceReportUpgradeProcess extends UpgradeProcess {
 
 		JSONObject normalizedValuesJSONObject = _jsonFactory.createJSONObject();
 
-		for (String key : valuesJSONObject.keySet()) {
-			normalizedValuesJSONObject.put(
-				DDMFormFieldUpgradeProcessUtil.getNormalizedName(key),
-				valuesJSONObject.getInt(key));
+		if ((valuesJSONObject != null) && (valuesJSONObject.length() > 0)) {
+			for (String key : valuesJSONObject.keySet()) {
+				normalizedValuesJSONObject.put(
+					DDMFormFieldUpgradeProcessUtil.getNormalizedName(key),
+					valuesJSONObject.getInt(key));
+			}
 		}
 
 		return normalizedValuesJSONObject;

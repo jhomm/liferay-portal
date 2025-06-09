@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.data.handler;
@@ -25,12 +16,14 @@ import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.segments.model.SegmentsExperience;
 
 import java.util.Map;
 
@@ -42,7 +35,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class FragmentEntryLinkStagedModelDataHandler
 	extends BaseStagedModelDataHandler<FragmentEntryLink> {
 
@@ -60,17 +53,6 @@ public class FragmentEntryLinkStagedModelDataHandler
 			PortletDataContext portletDataContext,
 			FragmentEntryLink fragmentEntryLink)
 		throws Exception {
-
-		FragmentEntryLink originalFragmentEntryLink =
-			_fragmentEntryLinkLocalService.fetchFragmentEntryLink(
-				fragmentEntryLink.getOriginalFragmentEntryLinkId());
-
-		if (originalFragmentEntryLink != null) {
-			StagedModelDataHandlerUtil.exportReferenceStagedModel(
-				portletDataContext, fragmentEntryLink,
-				originalFragmentEntryLink,
-				PortletDataContext.REFERENCE_TYPE_PARENT);
-		}
 
 		Element fragmentEntryLinkElement =
 			portletDataContext.getExportDataElement(fragmentEntryLink);
@@ -111,6 +93,39 @@ public class FragmentEntryLinkStagedModelDataHandler
 		}
 
 		fragmentEntryLink.setEditableValues(editableValues);
+
+		FragmentEntry fragmentEntry =
+			_fragmentEntryLocalService.fetchFragmentEntry(
+				fragmentEntryLink.getFragmentEntryId());
+
+		if (fragmentEntry != null) {
+			if (fragmentEntry.getGroupId() != fragmentEntryLink.getGroupId()) {
+				Group group = _groupLocalService.fetchGroup(
+					fragmentEntry.getGroupId());
+
+				if (group != null) {
+					Group companyGroup = _groupLocalService.getCompanyGroup(
+						group.getCompanyId());
+
+					if (group.getGroupId() == companyGroup.getGroupId()) {
+						fragmentEntryLinkElement.addAttribute(
+							"fragment-entry-group-global",
+							Boolean.TRUE.toString());
+					}
+
+					fragmentEntryLinkElement.addAttribute(
+						"fragment-entry-group-key", group.getGroupKey());
+				}
+
+				fragmentEntryLinkElement.addAttribute(
+					"fragment-entry-key", fragmentEntry.getFragmentEntryKey());
+			}
+			else {
+				StagedModelDataHandlerUtil.exportReferenceStagedModel(
+					portletDataContext, fragmentEntryLink, fragmentEntry,
+					PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
+			}
+		}
 
 		portletDataContext.addClassedModel(
 			fragmentEntryLinkElement,
@@ -182,6 +197,29 @@ public class FragmentEntryLinkStagedModelDataHandler
 					fragmentEntryId = fragmentEntryLink.getFragmentEntryId();
 				}
 			}
+			else {
+				Element fragmentEntryLinkElement =
+					portletDataContext.getImportDataStagedModelElement(
+						fragmentEntryLink);
+
+				Group group = _fetchGroup(
+					portletDataContext.getCompanyId(),
+					fragmentEntryLinkElement);
+
+				if (group != null) {
+					String fragmentEntryKey = GetterUtil.getString(
+						fragmentEntryLinkElement.attributeValue(
+							"fragment-entry-key"));
+
+					fragmentEntry =
+						_fragmentEntryLocalService.fetchFragmentEntry(
+							group.getGroupId(), fragmentEntryKey);
+				}
+
+				if (fragmentEntry != null) {
+					fragmentEntryId = fragmentEntry.getFragmentEntryId();
+				}
+			}
 		}
 
 		Map<Long, Long> referenceClassPKs =
@@ -200,24 +238,29 @@ public class FragmentEntryLinkStagedModelDataHandler
 		importedFragmentEntryLink.setOriginalFragmentEntryLinkId(
 			originalFragmentEntryLinkId);
 		importedFragmentEntryLink.setFragmentEntryId(fragmentEntryId);
+
+		Map<Long, Long> segmentsExperienceIds =
+			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+				SegmentsExperience.class);
+
+		importedFragmentEntryLink.setSegmentsExperienceId(
+			MapUtil.getLong(
+				segmentsExperienceIds,
+				fragmentEntryLink.getSegmentsExperienceId(),
+				fragmentEntryLink.getSegmentsExperienceId()));
+
 		importedFragmentEntryLink.setClassPK(referenceClassPK);
 		importedFragmentEntryLink.setPlid(referenceClassPK);
-
-		String html =
+		importedFragmentEntryLink.setHtml(
 			_dlReferencesExportImportContentProcessor.
 				replaceImportContentReferences(
 					portletDataContext, fragmentEntryLink,
-					fragmentEntryLink.getHtml());
-
-		importedFragmentEntryLink.setHtml(html);
-
-		String editableValues =
+					fragmentEntryLink.getHtml()));
+		importedFragmentEntryLink.setEditableValues(
 			_fragmentEntryLinkExportImportContentProcessor.
 				replaceImportContentReferences(
 					portletDataContext, fragmentEntryLink,
-					fragmentEntryLink.getEditableValues());
-
-		importedFragmentEntryLink.setEditableValues(editableValues);
+					fragmentEntryLink.getEditableValues()));
 
 		FragmentEntryLink existingFragmentEntryLink =
 			_stagedModelRepository.fetchStagedModelByUuidAndGroupId(
@@ -252,6 +295,24 @@ public class FragmentEntryLinkStagedModelDataHandler
 		return _stagedModelRepository;
 	}
 
+	private Group _fetchGroup(
+		long companyId, Element fragmentEntryLinkElement) {
+
+		boolean fragmentEntryGroupGlobal = GetterUtil.getBoolean(
+			fragmentEntryLinkElement.attributeValue(
+				"fragment-entry-group-global"));
+
+		if (fragmentEntryGroupGlobal) {
+			return _groupLocalService.fetchCompanyGroup(companyId);
+		}
+
+		String fragmentEntryGroupKey = GetterUtil.getString(
+			fragmentEntryLinkElement.attributeValue(
+				"fragment-entry-group-key"));
+
+		return _groupLocalService.fetchGroup(companyId, fragmentEntryGroupKey);
+	}
+
 	@Reference(target = "(content.processor.type=DLReferences)")
 	private ExportImportContentProcessor<String>
 		_dlReferencesExportImportContentProcessor;
@@ -265,13 +326,10 @@ public class FragmentEntryLinkStagedModelDataHandler
 		_fragmentEntryLinkExportImportContentProcessor;
 
 	@Reference
-	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
-
-	@Reference
 	private FragmentEntryLocalService _fragmentEntryLocalService;
 
 	@Reference
-	private Portal _portal;
+	private GroupLocalService _groupLocalService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.fragment.model.FragmentEntryLink)",

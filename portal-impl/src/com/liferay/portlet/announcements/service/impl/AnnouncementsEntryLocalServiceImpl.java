@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.announcements.service.impl;
@@ -30,7 +21,7 @@ import com.liferay.mail.kernel.template.MailTemplate;
 import com.liferay.mail.kernel.template.MailTemplateContext;
 import com.liferay.mail.kernel.template.MailTemplateContextBuilder;
 import com.liferay.mail.kernel.template.MailTemplateFactoryUtil;
-import com.liferay.petra.content.ContentUtil;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -61,19 +52,21 @@ import com.liferay.portal.kernel.service.persistence.UserGroupPersistence;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.EscapableLocalizableFunction;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.EscapableObject;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.util.PrefsPropsUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.announcements.service.base.AnnouncementsEntryLocalServiceBaseImpl;
+
+import jakarta.mail.internet.InternetAddress;
 
 import java.io.IOException;
 
@@ -84,8 +77,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.mail.internet.InternetAddress;
 
 /**
  * @author Brian Wing Shun Chan
@@ -565,8 +556,18 @@ public class AnnouncementsEntryLocalServiceImpl
 
 		Class<?> clazz = getClass();
 
-		String body = ContentUtil.get(
-			clazz.getClassLoader(), PropsValues.ANNOUNCEMENTS_EMAIL_BODY);
+		String body = null;
+
+		try {
+			body = StringUtil.read(
+				clazz.getClassLoader(), PropsValues.ANNOUNCEMENTS_EMAIL_BODY);
+		}
+		catch (IOException ioException) {
+			_log.error(
+				"Unable to read the content for " +
+					PropsValues.ANNOUNCEMENTS_EMAIL_BODY,
+				ioException);
+		}
 
 		String fromAddress = PrefsPropsUtil.getStringFromNames(
 			entry.getCompanyId(), PropsKeys.ANNOUNCEMENTS_EMAIL_FROM_ADDRESS,
@@ -574,8 +575,20 @@ public class AnnouncementsEntryLocalServiceImpl
 		String fromName = PrefsPropsUtil.getStringFromNames(
 			entry.getCompanyId(), PropsKeys.ANNOUNCEMENTS_EMAIL_FROM_NAME,
 			PropsKeys.ADMIN_EMAIL_FROM_NAME);
-		String subject = ContentUtil.get(
-			clazz.getClassLoader(), PropsValues.ANNOUNCEMENTS_EMAIL_SUBJECT);
+
+		String subject = null;
+
+		try {
+			subject = StringUtil.read(
+				clazz.getClassLoader(),
+				PropsValues.ANNOUNCEMENTS_EMAIL_SUBJECT);
+		}
+		catch (IOException ioException) {
+			_log.error(
+				"Unable to read the content for " +
+					PropsValues.ANNOUNCEMENTS_EMAIL_SUBJECT,
+				ioException);
+		}
 
 		Company company = _companyLocalService.getCompany(entry.getCompanyId());
 
@@ -642,12 +655,12 @@ public class AnnouncementsEntryLocalServiceImpl
 			"[$COMPANY_ID$]", String.valueOf(company.getCompanyId()));
 		mailTemplateContextBuilder.put("[$COMPANY_MX$]", company.getMx());
 		mailTemplateContextBuilder.put(
-			"[$COMPANY_NAME$]", HtmlUtil.escape(company.getName()));
+			"[$COMPANY_NAME$]", new EscapableObject<>(company.getName()));
 		mailTemplateContextBuilder.put("[$ENTRY_CONTENT$]", entry.getContent());
 		mailTemplateContextBuilder.put(
 			"[$ENTRY_ID$]", String.valueOf(entry.getEntryId()));
 		mailTemplateContextBuilder.put(
-			"[$ENTRY_TITLE$]", HtmlUtil.escape(entry.getTitle()));
+			"[$ENTRY_TITLE$]", new EscapableObject<>(entry.getTitle()));
 		mailTemplateContextBuilder.put(
 			"[$ENTRY_TYPE$]",
 			new EscapableLocalizableFunction(
@@ -655,7 +668,7 @@ public class AnnouncementsEntryLocalServiceImpl
 		mailTemplateContextBuilder.put("[$ENTRY_URL$]", entry.getUrl());
 		mailTemplateContextBuilder.put("[$FROM_ADDRESS$]", fromAddress);
 		mailTemplateContextBuilder.put(
-			"[$FROM_NAME$]", HtmlUtil.escape(fromName));
+			"[$FROM_NAME$]", new EscapableObject<>(fromName));
 		mailTemplateContextBuilder.put(
 			"[$PORTAL_URL$]", company.getPortalURL(0));
 		mailTemplateContextBuilder.put(
@@ -668,11 +681,13 @@ public class AnnouncementsEntryLocalServiceImpl
 			Group group = _groupLocalService.getGroup(entry.getGroupId());
 
 			mailTemplateContextBuilder.put(
-				"[$SITE_NAME$]", HtmlUtil.escape(group.getDescriptiveName()));
+				"[$SITE_NAME$]",
+				new EscapableObject<>(group.getDescriptiveName()));
 		}
 
 		mailTemplateContextBuilder.put("[$TO_ADDRESS$]", toAddress);
-		mailTemplateContextBuilder.put("[$TO_NAME$]", HtmlUtil.escape(toName));
+		mailTemplateContextBuilder.put(
+			"[$TO_NAME$]", new EscapableObject<>(toName));
 
 		MailTemplateContext mailTemplateContext =
 			mailTemplateContextBuilder.build();

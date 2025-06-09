@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
 
 import com.liferay.headless.delivery.client.dto.v1_0.NavigationMenuItem;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -25,9 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -60,7 +50,7 @@ public class NavigationMenuItemSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (navigationMenuItem.getAvailableLanguages() != null) {
 			if (sb.length() > 1) {
@@ -74,12 +64,8 @@ public class NavigationMenuItemSerDes {
 			for (int i = 0;
 				 i < navigationMenuItem.getAvailableLanguages().length; i++) {
 
-				sb.append("\"");
-
 				sb.append(
-					_escape(navigationMenuItem.getAvailableLanguages()[i]));
-
-				sb.append("\"");
+					_toJSON(navigationMenuItem.getAvailableLanguages()[i]));
 
 				if ((i + 1) <
 						navigationMenuItem.getAvailableLanguages().length) {
@@ -99,6 +85,28 @@ public class NavigationMenuItemSerDes {
 			sb.append("\"creator\": ");
 
 			sb.append(String.valueOf(navigationMenuItem.getCreator()));
+		}
+
+		if (navigationMenuItem.getCustomFields() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customFields\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < navigationMenuItem.getCustomFields().length;
+				 i++) {
+
+				sb.append(navigationMenuItem.getCustomFields()[i]);
+
+				if ((i + 1) < navigationMenuItem.getCustomFields().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
 		}
 
 		if (navigationMenuItem.getDateCreated() != null) {
@@ -133,6 +141,20 @@ public class NavigationMenuItemSerDes {
 			sb.append("\"");
 		}
 
+		if (navigationMenuItem.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(navigationMenuItem.getExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (navigationMenuItem.getId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -141,30 +163,6 @@ public class NavigationMenuItemSerDes {
 			sb.append("\"id\": ");
 
 			sb.append(navigationMenuItem.getId());
-		}
-
-		if (navigationMenuItem.getLink() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"link\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(navigationMenuItem.getLink()));
-
-			sb.append("\"");
-		}
-
-		if (navigationMenuItem.getLink_i18n() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"link_i18n\": ");
-
-			sb.append(_toJSON(navigationMenuItem.getLink_i18n()));
 		}
 
 		if (navigationMenuItem.getName() != null) {
@@ -227,20 +225,6 @@ public class NavigationMenuItemSerDes {
 			sb.append(navigationMenuItem.getParentNavigationMenuId());
 		}
 
-		if (navigationMenuItem.getSitePageURL() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"sitePageURL\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(navigationMenuItem.getSitePageURL()));
-
-			sb.append("\"");
-		}
-
 		if (navigationMenuItem.getType() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -255,18 +239,14 @@ public class NavigationMenuItemSerDes {
 			sb.append("\"");
 		}
 
-		if (navigationMenuItem.getUrl() != null) {
+		if (navigationMenuItem.getTypeSettings() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"url\": ");
+			sb.append("\"typeSettings\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(navigationMenuItem.getUrl()));
-
-			sb.append("\"");
+			sb.append(_toJSON(navigationMenuItem.getTypeSettings()));
 		}
 
 		if (navigationMenuItem.getUseCustomName() != null) {
@@ -301,7 +281,7 @@ public class NavigationMenuItemSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (navigationMenuItem.getAvailableLanguages() == null) {
 			map.put("availableLanguages", null);
@@ -317,6 +297,15 @@ public class NavigationMenuItemSerDes {
 		}
 		else {
 			map.put("creator", String.valueOf(navigationMenuItem.getCreator()));
+		}
+
+		if (navigationMenuItem.getCustomFields() == null) {
+			map.put("customFields", null);
+		}
+		else {
+			map.put(
+				"customFields",
+				String.valueOf(navigationMenuItem.getCustomFields()));
 		}
 
 		if (navigationMenuItem.getDateCreated() == null) {
@@ -339,26 +328,20 @@ public class NavigationMenuItemSerDes {
 					navigationMenuItem.getDateModified()));
 		}
 
+		if (navigationMenuItem.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(navigationMenuItem.getExternalReferenceCode()));
+		}
+
 		if (navigationMenuItem.getId() == null) {
 			map.put("id", null);
 		}
 		else {
 			map.put("id", String.valueOf(navigationMenuItem.getId()));
-		}
-
-		if (navigationMenuItem.getLink() == null) {
-			map.put("link", null);
-		}
-		else {
-			map.put("link", String.valueOf(navigationMenuItem.getLink()));
-		}
-
-		if (navigationMenuItem.getLink_i18n() == null) {
-			map.put("link_i18n", null);
-		}
-		else {
-			map.put(
-				"link_i18n", String.valueOf(navigationMenuItem.getLink_i18n()));
 		}
 
 		if (navigationMenuItem.getName() == null) {
@@ -394,15 +377,6 @@ public class NavigationMenuItemSerDes {
 				String.valueOf(navigationMenuItem.getParentNavigationMenuId()));
 		}
 
-		if (navigationMenuItem.getSitePageURL() == null) {
-			map.put("sitePageURL", null);
-		}
-		else {
-			map.put(
-				"sitePageURL",
-				String.valueOf(navigationMenuItem.getSitePageURL()));
-		}
-
 		if (navigationMenuItem.getType() == null) {
 			map.put("type", null);
 		}
@@ -410,11 +384,13 @@ public class NavigationMenuItemSerDes {
 			map.put("type", String.valueOf(navigationMenuItem.getType()));
 		}
 
-		if (navigationMenuItem.getUrl() == null) {
-			map.put("url", null);
+		if (navigationMenuItem.getTypeSettings() == null) {
+			map.put("typeSettings", null);
 		}
 		else {
-			map.put("url", String.valueOf(navigationMenuItem.getUrl()));
+			map.put(
+				"typeSettings",
+				String.valueOf(navigationMenuItem.getTypeSettings()));
 		}
 
 		if (navigationMenuItem.getUseCustomName() == null) {
@@ -443,6 +419,60 @@ public class NavigationMenuItemSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "availableLanguages")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name_i18n")) {
+				return true;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "navigationMenuItems")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "parentNavigationMenuId")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "typeSettings")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "useCustomName")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			NavigationMenuItem navigationMenuItem, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -459,6 +489,26 @@ public class NavigationMenuItemSerDes {
 						CreatorSerDes.toDTO((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					com.liferay.headless.delivery.client.custom.field.
+						CustomField[] customFieldsArray = new
+						com.liferay.headless.delivery.client.custom.field.
+							CustomField[jsonParserFieldValues.length];
+
+					for (int i = 0; i < customFieldsArray.length; i++) {
+						customFieldsArray[i] =
+							com.liferay.headless.delivery.client.custom.field.
+								CustomField.toDTO(
+									(String)jsonParserFieldValues[i]);
+					}
+
+					navigationMenuItem.setCustomFields(customFieldsArray);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
 				if (jsonParserFieldValue != null) {
 					navigationMenuItem.setDateCreated(
@@ -471,22 +521,18 @@ public class NavigationMenuItemSerDes {
 						toDate((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					navigationMenuItem.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
 				if (jsonParserFieldValue != null) {
 					navigationMenuItem.setId(
 						Long.valueOf((String)jsonParserFieldValue));
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "link")) {
-				if (jsonParserFieldValue != null) {
-					navigationMenuItem.setLink((String)jsonParserFieldValue);
-				}
-			}
-			else if (Objects.equals(jsonParserFieldName, "link_i18n")) {
-				if (jsonParserFieldValue != null) {
-					navigationMenuItem.setLink_i18n(
-						(Map)NavigationMenuItemSerDes.toMap(
-							(String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "name")) {
@@ -497,23 +543,27 @@ public class NavigationMenuItemSerDes {
 			else if (Objects.equals(jsonParserFieldName, "name_i18n")) {
 				if (jsonParserFieldValue != null) {
 					navigationMenuItem.setName_i18n(
-						(Map)NavigationMenuItemSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
 						jsonParserFieldName, "navigationMenuItems")) {
 
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					NavigationMenuItem[] navigationMenuItemsArray =
+						new NavigationMenuItem[jsonParserFieldValues.length];
+
+					for (int i = 0; i < navigationMenuItemsArray.length; i++) {
+						navigationMenuItemsArray[i] =
+							NavigationMenuItemSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					navigationMenuItem.setNavigationMenuItems(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> NavigationMenuItemSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new NavigationMenuItem[size]
-						));
+						navigationMenuItemsArray);
 				}
 			}
 			else if (Objects.equals(
@@ -524,20 +574,15 @@ public class NavigationMenuItemSerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "sitePageURL")) {
-				if (jsonParserFieldValue != null) {
-					navigationMenuItem.setSitePageURL(
-						(String)jsonParserFieldValue);
-				}
-			}
 			else if (Objects.equals(jsonParserFieldName, "type")) {
 				if (jsonParserFieldValue != null) {
 					navigationMenuItem.setType((String)jsonParserFieldValue);
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "url")) {
+			else if (Objects.equals(jsonParserFieldName, "typeSettings")) {
 				if (jsonParserFieldValue != null) {
-					navigationMenuItem.setUrl((String)jsonParserFieldValue);
+					navigationMenuItem.setTypeSettings(
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "useCustomName")) {
@@ -578,36 +623,7 @@ public class NavigationMenuItemSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -617,6 +633,42 @@ public class NavigationMenuItemSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

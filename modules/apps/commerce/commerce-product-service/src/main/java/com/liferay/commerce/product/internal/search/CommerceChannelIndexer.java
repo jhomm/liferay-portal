@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.search;
@@ -35,10 +26,10 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alec Sloan
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 
 	public static final String CLASS_NAME = CommerceChannel.class.getName();
@@ -115,16 +106,22 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 
 		Document document = getBaseModelDocument(CLASS_NAME, commerceChannel);
 
-		document.addKeyword(Field.NAME, commerceChannel.getName());
-
 		Group group = _commerceChannelLocalService.getCommerceChannelGroup(
 			commerceChannel.getCommerceChannelId());
 
 		document.addKeyword(
 			CPField.COMMERCE_CHANNEL_GROUP_ID, group.getGroupId());
 
+		document.addKeyword(Field.NAME, commerceChannel.getName(), true);
+		document.addKeyword(
+			Field.SCOPE_GROUP_ID, commerceChannel.getSiteGroupId());
+		document.addKeyword(
+			"accountEntryId", commerceChannel.getAccountEntryId());
+
 		if (_log.isDebugEnabled()) {
-			_log.debug("Document " + commerceChannel + " indexed successfully");
+			_log.debug(
+				"Commerce channel " + commerceChannel +
+					" indexed successfully");
 		}
 
 		return document;
@@ -146,8 +143,7 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 	@Override
 	protected void doReindex(CommerceChannel commerceChannel) throws Exception {
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), commerceChannel.getCompanyId(),
-			getDocument(commerceChannel), isCommitImmediately());
+			commerceChannel.getCompanyId(), getDocument(commerceChannel));
 	}
 
 	@Override
@@ -159,12 +155,25 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCommerceChannels(companyId);
+		_reindexCommerceChannels(companyId);
 	}
 
-	protected void reindexCommerceChannels(long companyId)
-		throws PortalException {
+	@Override
+	protected boolean isUseSearchResultPermissionFilter(
+		SearchContext searchContext) {
 
+		Boolean useSearchResultPermissionFilter =
+			(Boolean)searchContext.getAttribute(
+				"useSearchResultPermissionFilter");
+
+		if (useSearchResultPermissionFilter != null) {
+			return useSearchResultPermissionFilter;
+		}
+
+		return super.isUseSearchResultPermissionFilter(searchContext);
+	}
+
+	private void _reindexCommerceChannels(long companyId) throws Exception {
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_commerceChannelLocalService.getIndexableActionableDynamicQuery();
 
@@ -179,12 +188,11 @@ public class CommerceChannelIndexer extends BaseIndexer<CommerceChannel> {
 					if (_log.isWarnEnabled()) {
 						_log.warn(
 							"Unable to index commerce channel " +
-								commerceChannel.getCommerceChannelId(),
+								commerceChannel,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}

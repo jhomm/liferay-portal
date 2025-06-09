@@ -1,35 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.service.impl;
 
 import com.liferay.document.library.kernel.exception.NoSuchFileException;
-import com.liferay.document.library.kernel.store.DLStoreRequest;
-import com.liferay.document.library.kernel.store.DLStoreUtil;
+import com.liferay.document.library.kernel.store.Store;
 import com.liferay.marketplace.exception.AppPropertiesException;
 import com.liferay.marketplace.exception.AppTitleException;
 import com.liferay.marketplace.exception.AppVersionException;
-import com.liferay.marketplace.internal.bundle.BundleManagerUtil;
 import com.liferay.marketplace.model.App;
 import com.liferay.marketplace.model.Module;
 import com.liferay.marketplace.service.ModuleLocalService;
 import com.liferay.marketplace.service.base.AppLocalServiceBaseImpl;
+import com.liferay.marketplace.service.persistence.ModulePersistence;
+import com.liferay.marketplace.util.BundleManagerUtil;
 import com.liferay.marketplace.util.comparator.AppTitleComparator;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
-import com.liferay.portal.kernel.deploy.DeployManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -37,6 +28,7 @@ import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.plugin.PluginPackage;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -47,12 +39,12 @@ import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.plugin.PluginPackageUtil;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import java.nio.file.Files;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -97,7 +89,7 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 
 		// Module
 
-		List<Module> modules = modulePersistence.findByAppId(app.getAppId());
+		List<Module> modules = _modulePersistence.findByAppId(app.getAppId());
 
 		for (Module module : modules) {
 			_moduleLocalService.deleteModule(module);
@@ -106,12 +98,12 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 		// File
 
 		try {
-			DLStoreUtil.deleteFile(
+			_store.deleteDirectory(
 				app.getCompanyId(), CompanyConstants.SYSTEM, app.getFilePath());
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -157,11 +149,10 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 
 		// Deployed apps
 
-		List<PluginPackage> pluginPackages =
-			DeployManagerUtil.getInstalledPluginPackages();
+		for (PluginPackage pluginPackage :
+				PluginPackageUtil.getInstalledPluginPackages()) {
 
-		for (PluginPackage pluginPackage : pluginPackages) {
-			List<Module> modules = modulePersistence.findByContextName(
+			List<Module> modules = _modulePersistence.findByContextName(
 				pluginPackage.getContext());
 
 			boolean installedApp = false;
@@ -202,7 +193,8 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 			}
 		}
 
-		installedApps = ListUtil.sort(installedApps, new AppTitleComparator());
+		installedApps = ListUtil.sort(
+			installedApps, AppTitleComparator.getInstance(true));
 
 		_installedApps = installedApps;
 
@@ -213,15 +205,15 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 	public List<App> getInstalledApps(String category) {
 		List<App> apps = appPersistence.findByCategory(category);
 
-		List<App> installedApps = new ArrayList<>(apps.size());
+		return TransformUtil.transform(
+			apps,
+			app -> {
+				if (app.isInstalled()) {
+					return app;
+				}
 
-		for (App app : apps) {
-			if (app.isInstalled()) {
-				installedApps.add(app);
-			}
-		}
-
-		return installedApps;
+				return null;
+			});
 	}
 
 	@Override
@@ -258,16 +250,16 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 	public void installApp(long remoteAppId) throws PortalException {
 		App app = appPersistence.findByRemoteAppId(remoteAppId);
 
-		if (!DLStoreUtil.hasFile(
-				app.getCompanyId(), CompanyConstants.SYSTEM,
-				app.getFilePath())) {
+		if (!_store.hasFile(
+				app.getCompanyId(), CompanyConstants.SYSTEM, app.getFilePath(),
+				Store.VERSION_DEFAULT)) {
 
 			throw new NoSuchFileException();
 		}
 
-		try (InputStream inputStream = DLStoreUtil.getFileAsStream(
-				app.getCompanyId(), CompanyConstants.SYSTEM,
-				app.getFilePath())) {
+		try (InputStream inputStream = _store.getFileAsStream(
+				app.getCompanyId(), CompanyConstants.SYSTEM, app.getFilePath(),
+				StringPool.BLANK)) {
 
 			if (inputStream == null) {
 				throw new IOException(
@@ -277,7 +269,7 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 			File file = new File(
 				StringBundler.concat(
 					SystemProperties.get(SystemProperties.TMP_DIR),
-					StringPool.SLASH, encodeSafeFileName(app.getTitle()),
+					StringPool.SLASH, _encodeSafeFileName(app.getTitle()),
 					StringPool.PERIOD,
 					FileUtil.getExtension(app.getFileName())));
 
@@ -289,11 +281,18 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 			throw new PortalException(ioException);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 		finally {
 			clearInstalledAppsCache();
 		}
+	}
+
+	@Override
+	public boolean isDownloaded(App app) {
+		return _store.hasFile(
+			app.getCompanyId(), CompanyConstants.SYSTEM, app.getFilePath(),
+			Store.VERSION_DEFAULT);
 	}
 
 	@Override
@@ -302,7 +301,7 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 
 		App app = appPersistence.findByRemoteAppId(remoteAppId);
 
-		List<Module> modules = modulePersistence.findByAppId(app.getAppId());
+		List<Module> modules = _modulePersistence.findByAppId(app.getAppId());
 
 		for (Module module : modules) {
 			_moduleLocalService.deleteModule(module.getModuleId());
@@ -310,26 +309,13 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 			if (module.isBundle()) {
 				BundleManagerUtil.uninstallBundle(
 					module.getBundleSymbolicName(), module.getBundleVersion());
-
-				continue;
-			}
-
-			if (hasDependentApp(module)) {
-				continue;
-			}
-
-			try {
-				DeployManagerUtil.undeploy(module.getContextName());
-			}
-			catch (Exception exception) {
-				_log.error(exception, exception);
 			}
 		}
 	}
 
 	@Override
 	public App updateApp(long userId, File file) throws PortalException {
-		Properties properties = getMarketplaceProperties(file);
+		Properties properties = _getMarketplaceProperties(file);
 
 		if (properties == null) {
 			throw new AppPropertiesException(
@@ -360,10 +346,10 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 
 		// App
 
-		User user = userLocalService.fetchUser(userId);
+		User user = _userLocalService.fetchUser(userId);
 		Date date = new Date();
 
-		validate(title, version);
+		_validate(title, version);
 
 		App app = appPersistence.fetchByRemoteAppId(remoteAppId);
 
@@ -394,25 +380,18 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 		// File
 
 		if (file != null) {
-			try {
-				DLStoreUtil.deleteFile(
+			try (InputStream inputStream = new FileInputStream(file)) {
+				_store.deleteDirectory(
 					app.getCompanyId(), CompanyConstants.SYSTEM,
 					app.getFilePath());
 
-				DLStoreUtil.addFile(
-					DLStoreRequest.builder(
-						app.getCompanyId(), CompanyConstants.SYSTEM,
-						app.getFilePath()
-					).className(
-						this
-					).size(
-						Files.size(file.toPath())
-					).build(),
-					file);
+				_store.addFile(
+					app.getCompanyId(), CompanyConstants.SYSTEM,
+					app.getFilePath(), Store.VERSION_DEFAULT, inputStream);
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -422,7 +401,7 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 		return app;
 	}
 
-	protected String encodeSafeFileName(String fileName) {
+	private String _encodeSafeFileName(String fileName) {
 		if (fileName == null) {
 			return StringPool.BLANK;
 		}
@@ -433,7 +412,7 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 			fileName, _SAFE_FILE_NAME_1, _SAFE_FILE_NAME_2);
 	}
 
-	protected Properties getMarketplaceProperties(File liferayPackageFile) {
+	private Properties _getMarketplaceProperties(File liferayPackageFile) {
 		try (ZipFile zipFile = new ZipFile(liferayPackageFile)) {
 			ZipEntry zipEntry = zipFile.getEntry(
 				"liferay-marketplace.properties");
@@ -443,22 +422,24 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 
 				ZipEntry subsystemZipEntry = enumeration.nextElement();
 
-				if (StringUtil.endsWith(subsystemZipEntry.getName(), ".lpkg")) {
-					File file = null;
+				if (!StringUtil.endsWith(
+						subsystemZipEntry.getName(), ".lpkg")) {
 
-					try (InputStream subsystemInputStream =
-							zipFile.getInputStream(subsystemZipEntry)) {
-
-						file = FileUtil.createTempFile(subsystemInputStream);
-
-						return getMarketplaceProperties(file);
-					}
-					finally {
-						FileUtil.delete(file);
-					}
+					return null;
 				}
 
-				return null;
+				File file = null;
+
+				try (InputStream subsystemInputStream = zipFile.getInputStream(
+						subsystemZipEntry)) {
+
+					file = FileUtil.createTempFile(subsystemInputStream);
+
+					return _getMarketplaceProperties(file);
+				}
+				finally {
+					FileUtil.delete(file);
+				}
 			}
 
 			try (InputStream inputStream = zipFile.getInputStream(zipEntry)) {
@@ -469,33 +450,14 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 		}
 		catch (IOException ioException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 
 			return null;
 		}
 	}
 
-	protected boolean hasDependentApp(Module module) throws PortalException {
-		List<Module> modules = modulePersistence.findByContextName(
-			module.getContextName());
-
-		for (Module curModule : modules) {
-			if (curModule.getAppId() == module.getAppId()) {
-				continue;
-			}
-
-			App app = appPersistence.findByPrimaryKey(curModule.getAppId());
-
-			if (app.isInstalled()) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	protected void validate(String title, String version)
+	private void _validate(String title, String version)
 		throws PortalException {
 
 		if (Validator.isNull(title)) {
@@ -533,8 +495,17 @@ public class AppLocalServiceImpl extends AppLocalServiceBaseImpl {
 	private ModuleLocalService _moduleLocalService;
 
 	@Reference
+	private ModulePersistence _modulePersistence;
+
+	@Reference
 	private Portal _portal;
 
 	private Map<String, String> _prepackagedApps;
+
+	@Reference(target = "(default=true)")
+	private Store _store;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.resource.v2_0.test;
@@ -22,12 +13,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.TierPrice;
 import com.liferay.headless.commerce.admin.pricing.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Page;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.TierPriceResource;
 import com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0.TierPriceSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -35,40 +30,60 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Method;
+
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -77,6 +92,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Zoltán Takács
@@ -87,12 +105,14 @@ public abstract class BaseTierPriceResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -106,10 +126,25 @@ public abstract class BaseTierPriceResourceTestCase {
 
 		_tierPriceResource.setContextCompany(testCompany);
 
-		TierPriceResource.Builder builder = TierPriceResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		tierPriceResource = builder.authentication(
-			"test@liferay.com", "test"
+		tierPriceResource = TierPriceResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -123,7 +158,32 @@ public abstract class BaseTierPriceResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		TierPrice tierPrice1 = randomTierPrice();
+
+		String json = objectMapper.writeValueAsString(tierPrice1);
+
+		TierPrice tierPrice2 = TierPriceSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(tierPrice1, tierPrice2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		TierPrice tierPrice = randomTierPrice();
+
+		String json1 = objectMapper.writeValueAsString(tierPrice);
+		String json2 = TierPriceSerDes.toJSON(tierPrice);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -138,40 +198,6 @@ public abstract class BaseTierPriceResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		TierPrice tierPrice1 = randomTierPrice();
-
-		String json = objectMapper.writeValueAsString(tierPrice1);
-
-		TierPrice tierPrice2 = TierPriceSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(tierPrice1, tierPrice2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		TierPrice tierPrice = randomTierPrice();
-
-		String json1 = objectMapper.writeValueAsString(tierPrice);
-		String json2 = TierPriceSerDes.toJSON(tierPrice);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -183,6 +209,7 @@ public abstract class BaseTierPriceResourceTestCase {
 		tierPrice.setExternalReferenceCode(regex);
 		tierPrice.setPriceEntryExternalReferenceCode(regex);
 		tierPrice.setPriceFormatted(regex);
+		tierPrice.setUnitOfMeasureKey(regex);
 
 		String json = TierPriceSerDes.toJSON(tierPrice);
 
@@ -194,6 +221,203 @@ public abstract class BaseTierPriceResourceTestCase {
 		Assert.assertEquals(
 			regex, tierPrice.getPriceEntryExternalReferenceCode());
 		Assert.assertEquals(regex, tierPrice.getPriceFormatted());
+		Assert.assertEquals(regex, tierPrice.getUnitOfMeasureKey());
+	}
+
+	@Test
+	public void testDeleteTierPrice() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		TierPrice tierPrice = testDeleteTierPrice_addTierPrice();
+
+		assertHttpResponseStatusCode(
+			204,
+			tierPriceResource.deleteTierPriceHttpResponse(tierPrice.getId()));
+
+		assertHttpResponseStatusCode(
+			404, tierPriceResource.getTierPriceHttpResponse(tierPrice.getId()));
+		assertHttpResponseStatusCode(
+			404, tierPriceResource.getTierPriceHttpResponse(0L));
+	}
+
+	protected TierPrice testDeleteTierPrice_addTierPrice() throws Exception {
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testGraphQLDeleteTierPrice() throws Exception {
+
+		// No namespace
+
+		TierPrice tierPrice1 = testGraphQLDeleteTierPrice_addTierPrice();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"deleteTierPrice",
+						new HashMap<String, Object>() {
+							{
+								put("id", tierPrice1.getId());
+							}
+						})),
+				"JSONObject/data", "Object/deleteTierPrice"));
+
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"tierPrice",
+					new HashMap<String, Object>() {
+						{
+							put("id", tierPrice1.getId());
+						}
+					},
+					new GraphQLField("id"))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		TierPrice tierPrice2 = testGraphQLDeleteTierPrice_addTierPrice();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v2_0",
+						new GraphQLField(
+							"deleteTierPrice",
+							new HashMap<String, Object>() {
+								{
+									put("id", tierPrice2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminPricing_v2_0",
+				"Object/deleteTierPrice"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessCommerceAdminPricing_v2_0",
+					new GraphQLField(
+						"tierPrice",
+						new HashMap<String, Object>() {
+							{
+								put("id", tierPrice2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected TierPrice testGraphQLDeleteTierPrice_addTierPrice()
+		throws Exception {
+
+		return testGraphQLTierPrice_addTierPrice();
+	}
+
+	@Test
+	public void testDeleteTierPriceBatch() throws Exception {
+		TierPrice tierPrice1 = testDeleteTierPriceBatch_addTierPrice();
+
+		testDeleteTierPriceBatch_deleteTierPrice(
+			"COMPLETED", null, tierPrice1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			tierPriceResource.getTierPriceHttpResponse(tierPrice1.getId()));
+
+		TierPrice tierPrice2 = testDeleteTierPriceBatch_addTierPrice();
+
+		testDeleteTierPriceBatch_deleteTierPrice(
+			"COMPLETED", tierPrice2.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404,
+			tierPriceResource.getTierPriceHttpResponse(tierPrice2.getId()));
+
+		tierPrice1 = testDeleteTierPriceBatch_addTierPrice();
+		tierPrice2 = testDeleteTierPriceBatch_addTierPrice();
+
+		testDeleteTierPriceBatch_deleteTierPrice(
+			"COMPLETED", tierPrice2.getExternalReferenceCode(),
+			tierPrice1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			tierPriceResource.getTierPriceHttpResponse(tierPrice1.getId()));
+		assertHttpResponseStatusCode(
+			200,
+			tierPriceResource.getTierPriceHttpResponse(tierPrice2.getId()));
+
+		testDeleteTierPriceBatch_deleteTierPrice(
+			"COMPLETED", tierPrice2.getExternalReferenceCode(),
+			tierPrice1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			tierPriceResource.getTierPriceHttpResponse(tierPrice2.getId()));
+	}
+
+	protected TierPrice testDeleteTierPriceBatch_addTierPrice()
+		throws Exception {
+
+		return testDeleteTierPrice_addTierPrice();
+	}
+
+	protected void testDeleteTierPriceBatch_deleteTierPrice(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			tierPriceResource.deleteTierPriceBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteTierPriceByExternalReferenceCode() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		TierPrice tierPrice =
+			testDeleteTierPriceByExternalReferenceCode_addTierPrice();
+
+		assertHttpResponseStatusCode(
+			204,
+			tierPriceResource.
+				deleteTierPriceByExternalReferenceCodeHttpResponse(
+					tierPrice.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			tierPriceResource.getTierPriceByExternalReferenceCodeHttpResponse(
+				tierPrice.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			tierPriceResource.getTierPriceByExternalReferenceCodeHttpResponse(
+				"-"));
+	}
+
+	protected TierPrice
+			testDeleteTierPriceByExternalReferenceCode_addTierPrice()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -210,7 +434,7 @@ public abstract class BaseTierPriceResourceTestCase {
 				getPriceEntryByExternalReferenceCodeTierPricesPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			TierPrice irrelevantTierPrice =
@@ -221,14 +445,17 @@ public abstract class BaseTierPriceResourceTestCase {
 			page =
 				tierPriceResource.
 					getPriceEntryByExternalReferenceCodeTierPricesPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantTierPrice),
-				(List<TierPrice>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantTierPrice, (List<TierPrice>)page.getItems());
+			assertValid(
+				page,
+				testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		TierPrice tierPrice1 =
@@ -244,16 +471,28 @@ public abstract class BaseTierPriceResourceTestCase {
 				getPriceEntryByExternalReferenceCodeTierPricesPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(tierPrice1, tierPrice2),
-			(List<TierPrice>)page.getItems());
-		assertValid(page);
+		assertContains(tierPrice1, (List<TierPrice>)page.getItems());
+		assertContains(tierPrice2, (List<TierPrice>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExpectedActions(
+				externalReferenceCode));
 
 		tierPriceResource.deleteTierPrice(tierPrice1.getId());
 
 		tierPriceResource.deleteTierPrice(tierPrice2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -262,6 +501,13 @@ public abstract class BaseTierPriceResourceTestCase {
 
 		String externalReferenceCode =
 			testGetPriceEntryByExternalReferenceCodeTierPricesPage_getExternalReferenceCode();
+
+		Page<TierPrice> tierPricesPage =
+			tierPriceResource.
+				getPriceEntryByExternalReferenceCodeTierPricesPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(tierPricesPage.getTotalCount());
 
 		TierPrice tierPrice1 =
 			testGetPriceEntryByExternalReferenceCodeTierPricesPage_addTierPrice(
@@ -275,34 +521,77 @@ public abstract class BaseTierPriceResourceTestCase {
 			testGetPriceEntryByExternalReferenceCodeTierPricesPage_addTierPrice(
 				externalReferenceCode, randomTierPrice());
 
-		Page<TierPrice> page1 =
-			tierPriceResource.
-				getPriceEntryByExternalReferenceCodeTierPricesPage(
-					externalReferenceCode, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<TierPrice> tierPrices1 = (List<TierPrice>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(tierPrices1.toString(), 2, tierPrices1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<TierPrice> page1 =
+				tierPriceResource.
+					getPriceEntryByExternalReferenceCodeTierPricesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<TierPrice> page2 =
-			tierPriceResource.
-				getPriceEntryByExternalReferenceCodeTierPricesPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(tierPrice1, (List<TierPrice>)page1.getItems());
 
-		List<TierPrice> tierPrices2 = (List<TierPrice>)page2.getItems();
+			Page<TierPrice> page2 =
+				tierPriceResource.
+					getPriceEntryByExternalReferenceCodeTierPricesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(tierPrices2.toString(), 1, tierPrices2.size());
+			assertContains(tierPrice2, (List<TierPrice>)page2.getItems());
 
-		Page<TierPrice> page3 =
-			tierPriceResource.
-				getPriceEntryByExternalReferenceCodeTierPricesPage(
-					externalReferenceCode, Pagination.of(1, 3));
+			Page<TierPrice> page3 =
+				tierPriceResource.
+					getPriceEntryByExternalReferenceCodeTierPricesPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(tierPrice1, tierPrice2, tierPrice3),
-			(List<TierPrice>)page3.getItems());
+			assertContains(tierPrice3, (List<TierPrice>)page3.getItems());
+		}
+		else {
+			Page<TierPrice> page1 =
+				tierPriceResource.
+					getPriceEntryByExternalReferenceCodeTierPricesPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<TierPrice> tierPrices1 = (List<TierPrice>)page1.getItems();
+
+			Assert.assertEquals(
+				tierPrices1.toString(), totalCount + 2, tierPrices1.size());
+
+			Page<TierPrice> page2 =
+				tierPriceResource.
+					getPriceEntryByExternalReferenceCodeTierPricesPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<TierPrice> tierPrices2 = (List<TierPrice>)page2.getItems();
+
+			Assert.assertEquals(tierPrices2.toString(), 1, tierPrices2.size());
+
+			Page<TierPrice> page3 =
+				tierPriceResource.
+					getPriceEntryByExternalReferenceCodeTierPricesPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(tierPrice1, (List<TierPrice>)page3.getItems());
+			assertContains(tierPrice2, (List<TierPrice>)page3.getItems());
+			assertContains(tierPrice3, (List<TierPrice>)page3.getItems());
+		}
 	}
 
 	protected TierPrice
@@ -330,29 +619,6 @@ public abstract class BaseTierPriceResourceTestCase {
 	}
 
 	@Test
-	public void testPostPriceEntryByExternalReferenceCodeTierPrice()
-		throws Exception {
-
-		TierPrice randomTierPrice = randomTierPrice();
-
-		TierPrice postTierPrice =
-			testPostPriceEntryByExternalReferenceCodeTierPrice_addTierPrice(
-				randomTierPrice);
-
-		assertEquals(randomTierPrice, postTierPrice);
-		assertValid(postTierPrice);
-	}
-
-	protected TierPrice
-			testPostPriceEntryByExternalReferenceCodeTierPrice_addTierPrice(
-				TierPrice tierPrice)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetPriceEntryIdTierPricesPage() throws Exception {
 		Long priceEntryId = testGetPriceEntryIdTierPricesPage_getPriceEntryId();
 		Long irrelevantPriceEntryId =
@@ -361,7 +627,7 @@ public abstract class BaseTierPriceResourceTestCase {
 		Page<TierPrice> page = tierPriceResource.getPriceEntryIdTierPricesPage(
 			priceEntryId, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantPriceEntryId != null) {
 			TierPrice irrelevantTierPrice =
@@ -369,14 +635,16 @@ public abstract class BaseTierPriceResourceTestCase {
 					irrelevantPriceEntryId, randomIrrelevantTierPrice());
 
 			page = tierPriceResource.getPriceEntryIdTierPricesPage(
-				irrelevantPriceEntryId, Pagination.of(1, 2));
+				irrelevantPriceEntryId, Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantTierPrice),
-				(List<TierPrice>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantTierPrice, (List<TierPrice>)page.getItems());
+			assertValid(
+				page,
+				testGetPriceEntryIdTierPricesPage_getExpectedActions(
+					irrelevantPriceEntryId));
 		}
 
 		TierPrice tierPrice1 = testGetPriceEntryIdTierPricesPage_addTierPrice(
@@ -388,16 +656,36 @@ public abstract class BaseTierPriceResourceTestCase {
 		page = tierPriceResource.getPriceEntryIdTierPricesPage(
 			priceEntryId, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(tierPrice1, tierPrice2),
-			(List<TierPrice>)page.getItems());
-		assertValid(page);
+		assertContains(tierPrice1, (List<TierPrice>)page.getItems());
+		assertContains(tierPrice2, (List<TierPrice>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceEntryIdTierPricesPage_getExpectedActions(priceEntryId));
 
 		tierPriceResource.deleteTierPrice(tierPrice1.getId());
 
 		tierPriceResource.deleteTierPrice(tierPrice2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPriceEntryIdTierPricesPage_getExpectedActions(
+				Long priceEntryId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-commerce-admin-pricing/v2.0/price-entries/{priceEntryId}/tier-prices/batch".
+				replace("{priceEntryId}", String.valueOf(priceEntryId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -405,6 +693,11 @@ public abstract class BaseTierPriceResourceTestCase {
 		throws Exception {
 
 		Long priceEntryId = testGetPriceEntryIdTierPricesPage_getPriceEntryId();
+
+		Page<TierPrice> tierPricesPage =
+			tierPriceResource.getPriceEntryIdTierPricesPage(priceEntryId, null);
+
+		int totalCount = GetterUtil.getInteger(tierPricesPage.getTotalCount());
 
 		TierPrice tierPrice1 = testGetPriceEntryIdTierPricesPage_addTierPrice(
 			priceEntryId, randomTierPrice());
@@ -415,28 +708,68 @@ public abstract class BaseTierPriceResourceTestCase {
 		TierPrice tierPrice3 = testGetPriceEntryIdTierPricesPage_addTierPrice(
 			priceEntryId, randomTierPrice());
 
-		Page<TierPrice> page1 = tierPriceResource.getPriceEntryIdTierPricesPage(
-			priceEntryId, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<TierPrice> tierPrices1 = (List<TierPrice>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(tierPrices1.toString(), 2, tierPrices1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<TierPrice> page1 =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntryId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<TierPrice> page2 = tierPriceResource.getPriceEntryIdTierPricesPage(
-			priceEntryId, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(tierPrice1, (List<TierPrice>)page1.getItems());
 
-		List<TierPrice> tierPrices2 = (List<TierPrice>)page2.getItems();
+			Page<TierPrice> page2 =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntryId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(tierPrices2.toString(), 1, tierPrices2.size());
+			assertContains(tierPrice2, (List<TierPrice>)page2.getItems());
 
-		Page<TierPrice> page3 = tierPriceResource.getPriceEntryIdTierPricesPage(
-			priceEntryId, Pagination.of(1, 3));
+			Page<TierPrice> page3 =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntryId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(tierPrice1, tierPrice2, tierPrice3),
-			(List<TierPrice>)page3.getItems());
+			assertContains(tierPrice3, (List<TierPrice>)page3.getItems());
+		}
+		else {
+			Page<TierPrice> page1 =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntryId, Pagination.of(1, totalCount + 2));
+
+			List<TierPrice> tierPrices1 = (List<TierPrice>)page1.getItems();
+
+			Assert.assertEquals(
+				tierPrices1.toString(), totalCount + 2, tierPrices1.size());
+
+			Page<TierPrice> page2 =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntryId, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<TierPrice> tierPrices2 = (List<TierPrice>)page2.getItems();
+
+			Assert.assertEquals(tierPrices2.toString(), 1, tierPrices2.size());
+
+			Page<TierPrice> page3 =
+				tierPriceResource.getPriceEntryIdTierPricesPage(
+					priceEntryId, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(tierPrice1, (List<TierPrice>)page3.getItems());
+			assertContains(tierPrice2, (List<TierPrice>)page3.getItems());
+			assertContains(tierPrice3, (List<TierPrice>)page3.getItems());
+		}
 	}
 
 	protected TierPrice testGetPriceEntryIdTierPricesPage_addTierPrice(
@@ -461,53 +794,299 @@ public abstract class BaseTierPriceResourceTestCase {
 	}
 
 	@Test
-	public void testPostPriceEntryIdTierPrice() throws Exception {
-		TierPrice randomTierPrice = randomTierPrice();
+	public void testGetTierPrice() throws Exception {
+		TierPrice postTierPrice = testGetTierPrice_addTierPrice();
 
-		TierPrice postTierPrice = testPostPriceEntryIdTierPrice_addTierPrice(
-			randomTierPrice);
+		TierPrice getTierPrice = tierPriceResource.getTierPrice(
+			postTierPrice.getId());
 
-		assertEquals(randomTierPrice, postTierPrice);
-		assertValid(postTierPrice);
+		assertEquals(postTierPrice, getTierPrice);
+		assertValid(getTierPrice);
 	}
 
-	protected TierPrice testPostPriceEntryIdTierPrice_addTierPrice(
-			TierPrice tierPrice)
-		throws Exception {
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		TierPrice postTierPrice = testGetTierPrice_addTierPrice();
 
+		TierPrice getTierPrice = tierPriceResource.getTierPrice(
+			postTierPrice.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.commerce.admin.pricing.dto.v2_0.TierPrice"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postTierPrice.getId());
+
+		assertEquals(getTierPrice, TierPriceSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
+	protected TierPrice testGetTierPrice_addTierPrice() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
 
 	@Test
-	public void testDeleteTierPriceByExternalReferenceCode() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		TierPrice tierPrice =
-			testDeleteTierPriceByExternalReferenceCode_addTierPrice();
+	public void testGraphQLGetTierPrice() throws Exception {
+		TierPrice tierPrice = testGraphQLGetTierPrice_addTierPrice();
 
-		assertHttpResponseStatusCode(
-			204,
-			tierPriceResource.
-				deleteTierPriceByExternalReferenceCodeHttpResponse(
-					tierPrice.getExternalReferenceCode()));
+		// No namespace
 
-		assertHttpResponseStatusCode(
-			404,
-			tierPriceResource.getTierPriceByExternalReferenceCodeHttpResponse(
-				tierPrice.getExternalReferenceCode()));
+		Assert.assertTrue(
+			equals(
+				tierPrice,
+				TierPriceSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"tierPrice",
+								new HashMap<String, Object>() {
+									{
+										put("id", tierPrice.getId());
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data", "Object/tierPrice"))));
 
-		assertHttpResponseStatusCode(
-			404,
-			tierPriceResource.getTierPriceByExternalReferenceCodeHttpResponse(
-				tierPrice.getExternalReferenceCode()));
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertTrue(
+			equals(
+				tierPrice,
+				TierPriceSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminPricing_v2_0",
+								new GraphQLField(
+									"tierPrice",
+									new HashMap<String, Object>() {
+										{
+											put("id", tierPrice.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminPricing_v2_0",
+						"Object/tierPrice"))));
 	}
 
-	protected TierPrice
-			testDeleteTierPriceByExternalReferenceCode_addTierPrice()
+	@Test
+	public void testGraphQLGetTierPriceNotFound() throws Exception {
+		Long irrelevantId = RandomTestUtil.randomLong();
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"tierPrice",
+						new HashMap<String, Object>() {
+							{
+								put("id", irrelevantId);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v2_0",
+						new GraphQLField(
+							"tierPrice",
+							new HashMap<String, Object>() {
+								{
+									put("id", irrelevantId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected TierPrice testGraphQLGetTierPrice_addTierPrice()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
+		return testGraphQLTierPrice_addTierPrice();
 	}
 
 	@Test
@@ -534,7 +1113,10 @@ public abstract class BaseTierPriceResourceTestCase {
 	public void testGraphQLGetTierPriceByExternalReferenceCode()
 		throws Exception {
 
-		TierPrice tierPrice = testGraphQLTierPrice_addTierPrice();
+		TierPrice tierPrice =
+			testGraphQLGetTierPriceByExternalReferenceCode_addTierPrice();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -557,6 +1139,33 @@ public abstract class BaseTierPriceResourceTestCase {
 								getGraphQLFields())),
 						"JSONObject/data",
 						"Object/tierPriceByExternalReferenceCode"))));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertTrue(
+			equals(
+				tierPrice,
+				TierPriceSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessCommerceAdminPricing_v2_0",
+								new GraphQLField(
+									"tierPriceByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"externalReferenceCode",
+												"\"" +
+													tierPrice.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data",
+						"JSONObject/headlessCommerceAdminPricing_v2_0",
+						"Object/tierPriceByExternalReferenceCode"))));
 	}
 
 	@Test
@@ -565,6 +1174,8 @@ public abstract class BaseTierPriceResourceTestCase {
 
 		String irrelevantExternalReferenceCode =
 			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -582,6 +1193,39 @@ public abstract class BaseTierPriceResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessCommerceAdminPricing_v2_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v2_0",
+						new GraphQLField(
+							"tierPriceByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected TierPrice
+			testGraphQLGetTierPriceByExternalReferenceCode_addTierPrice()
+		throws Exception {
+
+		return testGraphQLTierPrice_addTierPrice();
+	}
+
+	@Test
+	public void testPatchTierPrice() throws Exception {
+		Assert.assertTrue(false);
 	}
 
 	@Test
@@ -590,117 +1234,45 @@ public abstract class BaseTierPriceResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteTierPrice() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		TierPrice tierPrice = testDeleteTierPrice_addTierPrice();
+	public void testPostPriceEntryByExternalReferenceCodeTierPrice()
+		throws Exception {
 
-		assertHttpResponseStatusCode(
-			204,
-			tierPriceResource.deleteTierPriceHttpResponse(tierPrice.getId()));
+		TierPrice randomTierPrice = randomTierPrice();
 
-		assertHttpResponseStatusCode(
-			404, tierPriceResource.getTierPriceHttpResponse(tierPrice.getId()));
+		TierPrice postTierPrice =
+			testPostPriceEntryByExternalReferenceCodeTierPrice_addTierPrice(
+				randomTierPrice);
 
-		assertHttpResponseStatusCode(
-			404, tierPriceResource.getTierPriceHttpResponse(tierPrice.getId()));
+		assertEquals(randomTierPrice, postTierPrice);
+		assertValid(postTierPrice);
 	}
 
-	protected TierPrice testDeleteTierPrice_addTierPrice() throws Exception {
+	protected TierPrice
+			testPostPriceEntryByExternalReferenceCodeTierPrice_addTierPrice(
+				TierPrice tierPrice)
+		throws Exception {
+
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
 
 	@Test
-	public void testGraphQLDeleteTierPrice() throws Exception {
-		TierPrice tierPrice = testGraphQLTierPrice_addTierPrice();
+	public void testPostPriceEntryIdTierPrice() throws Exception {
+		TierPrice randomTierPrice = randomTierPrice();
 
-		Assert.assertTrue(
-			JSONUtil.getValueAsBoolean(
-				invokeGraphQLMutation(
-					new GraphQLField(
-						"deleteTierPrice",
-						new HashMap<String, Object>() {
-							{
-								put("id", tierPrice.getId());
-							}
-						})),
-				"JSONObject/data", "Object/deleteTierPrice"));
+		TierPrice postTierPrice = testPostPriceEntryIdTierPrice_addTierPrice(
+			randomTierPrice);
 
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
-			invokeGraphQLQuery(
-				new GraphQLField(
-					"tierPrice",
-					new HashMap<String, Object>() {
-						{
-							put("id", tierPrice.getId());
-						}
-					},
-					new GraphQLField("id"))),
-			"JSONArray/errors");
-
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		assertEquals(randomTierPrice, postTierPrice);
+		assertValid(postTierPrice);
 	}
 
-	@Test
-	public void testGetTierPrice() throws Exception {
-		TierPrice postTierPrice = testGetTierPrice_addTierPrice();
+	protected TierPrice testPostPriceEntryIdTierPrice_addTierPrice(
+			TierPrice tierPrice)
+		throws Exception {
 
-		TierPrice getTierPrice = tierPriceResource.getTierPrice(
-			postTierPrice.getId());
-
-		assertEquals(postTierPrice, getTierPrice);
-		assertValid(getTierPrice);
-	}
-
-	protected TierPrice testGetTierPrice_addTierPrice() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
-	}
-
-	@Test
-	public void testGraphQLGetTierPrice() throws Exception {
-		TierPrice tierPrice = testGraphQLTierPrice_addTierPrice();
-
-		Assert.assertTrue(
-			equals(
-				tierPrice,
-				TierPriceSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"tierPrice",
-								new HashMap<String, Object>() {
-									{
-										put("id", tierPrice.getId());
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data", "Object/tierPrice"))));
-	}
-
-	@Test
-	public void testGraphQLGetTierPriceNotFound() throws Exception {
-		Long irrelevantId = RandomTestUtil.randomLong();
-
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"tierPrice",
-						new HashMap<String, Object>() {
-							{
-								put("id", irrelevantId);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
-	}
-
-	@Test
-	public void testPatchTierPrice() throws Exception {
-		Assert.assertTrue(false);
 	}
 
 	protected TierPrice testGraphQLTierPrice_addTierPrice() throws Exception {
@@ -926,6 +1498,14 @@ public abstract class BaseTierPriceResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (tierPrice.getUnitOfMeasureKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -935,6 +1515,13 @@ public abstract class BaseTierPriceResourceTestCase {
 	}
 
 	protected void assertValid(Page<TierPrice> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<TierPrice> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<TierPrice> tierPrices = page.getItems();
@@ -949,6 +1536,25 @@ public abstract class BaseTierPriceResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1219,6 +1825,17 @@ public abstract class BaseTierPriceResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						tierPrice1.getUnitOfMeasureKey(),
+						tierPrice2.getUnitOfMeasureKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -1256,14 +1873,20 @@ public abstract class BaseTierPriceResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1280,6 +1903,10 @@ public abstract class BaseTierPriceResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1289,18 +1916,18 @@ public abstract class BaseTierPriceResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1358,20 +1985,18 @@ public abstract class BaseTierPriceResourceTestCase {
 
 		if (entityFieldName.equals("displayDate")) {
 			if (operator.equals("between")) {
+				Date date = tierPrice.getDisplayDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(tierPrice.getDisplayDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(tierPrice.getDisplayDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1381,7 +2006,7 @@ public abstract class BaseTierPriceResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(tierPrice.getDisplayDate()));
+				sb.append(_format.format(tierPrice.getDisplayDate()));
 			}
 
 			return sb.toString();
@@ -1389,22 +2014,18 @@ public abstract class BaseTierPriceResourceTestCase {
 
 		if (entityFieldName.equals("expirationDate")) {
 			if (operator.equals("between")) {
+				Date date = tierPrice.getExpirationDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							tierPrice.getExpirationDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							tierPrice.getExpirationDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1414,16 +2035,54 @@ public abstract class BaseTierPriceResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(tierPrice.getExpirationDate()));
+				sb.append(_format.format(tierPrice.getExpirationDate()));
 			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(tierPrice.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = tierPrice.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1444,15 +2103,53 @@ public abstract class BaseTierPriceResourceTestCase {
 		}
 
 		if (entityFieldName.equals("price")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(tierPrice.getPrice()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("priceEntryExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(tierPrice.getPriceEntryExternalReferenceCode()));
-			sb.append("'");
+			Object object = tierPrice.getPriceEntryExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1463,9 +2160,93 @@ public abstract class BaseTierPriceResourceTestCase {
 		}
 
 		if (entityFieldName.equals("priceFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(tierPrice.getPriceFormatted()));
-			sb.append("'");
+			Object object = tierPrice.getPriceFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
+		}
+
+		if (entityFieldName.equals("unitOfMeasureKey")) {
+			Object object = tierPrice.getUnitOfMeasureKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1484,7 +2265,8 @@ public abstract class BaseTierPriceResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1521,13 +2303,14 @@ public abstract class BaseTierPriceResourceTestCase {
 				externalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				id = RandomTestUtil.randomLong();
-				minimumQuantity = RandomTestUtil.randomInt();
 				neverExpire = RandomTestUtil.randomBoolean();
 				price = RandomTestUtil.randomDouble();
 				priceEntryExternalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				priceEntryId = RandomTestUtil.randomLong();
 				priceFormatted = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
+				unitOfMeasureKey = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 			}
 		};
@@ -1543,10 +2326,155 @@ public abstract class BaseTierPriceResourceTestCase {
 		return randomTierPrice();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected TierPriceResource tierPriceResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1622,23 +2550,35 @@ public abstract class BaseTierPriceResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseTierPriceResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private
 		com.liferay.headless.commerce.admin.pricing.resource.v2_0.
 			TierPriceResource _tierPriceResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.taglib.servlet.taglib;
@@ -20,9 +11,13 @@ import com.liferay.commerce.service.CPDefinitionInventoryLocalServiceUtil;
 import com.liferay.commerce.taglib.servlet.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
+import java.math.BigDecimal;
+
+import java.util.Objects;
 
 /**
  * @author Marco Leo
@@ -32,7 +27,7 @@ public class QuantityInputTag extends IncludeTag {
 
 	@Override
 	public int doStartTag() throws JspException {
-		_allowedOrderQuantities = new int[0];
+		_allowedOrderQuantities = new BigDecimal[0];
 		_maxOrderQuantity =
 			CPDefinitionInventoryConstants.DEFAULT_MAX_ORDER_QUANTITY;
 		_minOrderQuantity =
@@ -47,13 +42,16 @@ public class QuantityInputTag extends IncludeTag {
 		if (cpDefinitionInventory != null) {
 			_allowedOrderQuantities =
 				cpDefinitionInventory.getAllowedOrderQuantitiesArray();
+
 			_maxOrderQuantity = cpDefinitionInventory.getMaxOrderQuantity();
+
 			_minOrderQuantity = cpDefinitionInventory.getMinOrderQuantity();
+
 			_multipleOrderQuantity =
 				cpDefinitionInventory.getMultipleOrderQuantity();
 		}
 
-		if (_value == 0) {
+		if (Objects.equals(_value, BigDecimal.ZERO)) {
 			_value = _minOrderQuantity;
 		}
 
@@ -68,7 +66,7 @@ public class QuantityInputTag extends IncludeTag {
 		return _name;
 	}
 
-	public int getValue() {
+	public BigDecimal getValue() {
 		return _value;
 	}
 
@@ -103,7 +101,7 @@ public class QuantityInputTag extends IncludeTag {
 		_useSelect = useSelect;
 	}
 
-	public void setValue(int value) {
+	public void setValue(BigDecimal value) {
 		_value = value;
 	}
 
@@ -113,13 +111,13 @@ public class QuantityInputTag extends IncludeTag {
 
 		_allowedOrderQuantities = null;
 		_cpDefinitionId = 0;
-		_maxOrderQuantity = 0;
-		_minOrderQuantity = 0;
-		_multipleOrderQuantity = 0;
+		_maxOrderQuantity = BigDecimal.ZERO;
+		_minOrderQuantity = BigDecimal.ZERO;
+		_multipleOrderQuantity = BigDecimal.ZERO;
 		_name = null;
 		_showLabel = true;
 		_useSelect = true;
-		_value = 0;
+		_value = BigDecimal.ZERO;
 	}
 
 	@Override
@@ -157,14 +155,14 @@ public class QuantityInputTag extends IncludeTag {
 
 	private static final String _PAGE = "/quantity_input/page.jsp";
 
-	private int[] _allowedOrderQuantities;
+	private BigDecimal[] _allowedOrderQuantities;
 	private long _cpDefinitionId;
-	private int _maxOrderQuantity;
-	private int _minOrderQuantity;
-	private int _multipleOrderQuantity;
+	private BigDecimal _maxOrderQuantity = BigDecimal.ZERO;
+	private BigDecimal _minOrderQuantity = BigDecimal.ZERO;
+	private BigDecimal _multipleOrderQuantity = BigDecimal.ZERO;
 	private String _name;
 	private boolean _showLabel = true;
 	private boolean _useSelect = true;
-	private int _value;
+	private BigDecimal _value = BigDecimal.ZERO;
 
 }

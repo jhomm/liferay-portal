@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.segments.model.SegmentsEntry;
 
@@ -43,25 +35,25 @@ public class SegmentsEntryServiceUtil {
 	public static SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria, String type,
+			String criteria,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSegmentsEntry(
-			segmentsEntryKey, nameMap, descriptionMap, active, criteria, type,
+			segmentsEntryKey, nameMap, descriptionMap, active, criteria,
 			serviceContext);
 	}
 
 	public static SegmentsEntry addSegmentsEntry(
 			String segmentsEntryKey, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, boolean active,
-			String criteria, String source, String type,
+			String criteria, String source,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSegmentsEntry(
 			segmentsEntryKey, nameMap, descriptionMap, active, criteria, source,
-			type, serviceContext);
+			serviceContext);
 	}
 
 	public static void addSegmentsEntryClassPKs(
@@ -95,27 +87,20 @@ public class SegmentsEntryServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries) {
-
-		return getService().getSegmentsEntries(
-			groupId, includeAncestorSegmentsEntries);
+	public static List<SegmentsEntry> getSegmentsEntries(long groupId) {
+		return getService().getSegmentsEntries(groupId);
 	}
 
 	public static List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries, int start,
-		int end, OrderByComparator<SegmentsEntry> orderByComparator) {
+		long groupId, int start, int end,
+		OrderByComparator<SegmentsEntry> orderByComparator) {
 
 		return getService().getSegmentsEntries(
-			groupId, includeAncestorSegmentsEntries, start, end,
-			orderByComparator);
+			groupId, start, end, orderByComparator);
 	}
 
-	public static int getSegmentsEntriesCount(
-		long groupId, boolean includeAncestorSegmentsEntries) {
-
-		return getService().getSegmentsEntriesCount(
-			groupId, includeAncestorSegmentsEntries);
+	public static int getSegmentsEntriesCount(long groupId) {
+		return getService().getSegmentsEntriesCount(groupId);
 	}
 
 	public static SegmentsEntry getSegmentsEntry(long segmentsEntryId)
@@ -126,14 +111,12 @@ public class SegmentsEntryServiceUtil {
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<SegmentsEntry> searchSegmentsEntries(
-				long companyId, long groupId, String keywords,
-				boolean includeAncestorSegmentsEntries, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
+				long companyId, long groupId, String keywords, int start,
+				int end, com.liferay.portal.kernel.search.Sort sort)
 			throws PortalException {
 
 		return getService().searchSegmentsEntries(
-			companyId, groupId, keywords, includeAncestorSegmentsEntries, start,
-			end, sort);
+			companyId, groupId, keywords, start, end, sort);
 	}
 
 	public static SegmentsEntry updateSegmentsEntry(
@@ -150,9 +133,11 @@ public class SegmentsEntryServiceUtil {
 	}
 
 	public static SegmentsEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile SegmentsEntryService _service;
+	private static final Snapshot<SegmentsEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			SegmentsEntryServiceUtil.class, SegmentsEntryService.class);
 
 }

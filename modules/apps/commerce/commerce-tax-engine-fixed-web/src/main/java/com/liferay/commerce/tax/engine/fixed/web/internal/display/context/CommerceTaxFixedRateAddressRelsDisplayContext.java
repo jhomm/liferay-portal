@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.engine.fixed.web.internal.display.context;
 
 import com.liferay.commerce.constants.CommercePortletKeys;
+import com.liferay.commerce.constants.CommerceTaxScreenNavigationConstants;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.percentage.PercentageFormatter;
 import com.liferay.commerce.product.model.CommerceChannel;
@@ -23,18 +15,17 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.tax.engine.fixed.configuration.CommerceTaxByAddressTypeConfiguration;
 import com.liferay.commerce.tax.engine.fixed.model.CommerceTaxFixedRateAddressRel;
 import com.liferay.commerce.tax.engine.fixed.service.CommerceTaxFixedRateAddressRelService;
-import com.liferay.commerce.tax.engine.fixed.web.internal.frontend.constants.CommerceTaxRateSettingDataSetConstants;
-import com.liferay.commerce.tax.engine.fixed.web.internal.frontend.taglib.servlet.taglib.CommerceTaxMethodAddressRateRelsScreenNavigationCategory;
+import com.liferay.commerce.tax.engine.fixed.web.internal.constants.CommerceTaxRateSettingFDSNames;
 import com.liferay.commerce.tax.model.CommerceTaxMethod;
 import com.liferay.commerce.tax.service.CommerceTaxMethodService;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Region;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionService;
@@ -42,10 +33,10 @@ import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
+import java.util.List;
 
 /**
  * @author Marco Leo
@@ -140,16 +131,14 @@ public class CommerceTaxFixedRateAddressRelsDisplayContext
 		return creationMenu;
 	}
 
-	public String getDatasetView() throws PortalException {
+	public String getFDSName() throws PortalException {
 		CommerceTaxMethod commerceTaxMethod = getCommerceTaxMethod();
 
 		if (commerceTaxMethod.isPercentage()) {
-			return CommerceTaxRateSettingDataSetConstants.
-				COMMERCE_DATA_SET_KEY_PERCENTAGE_TAX_RATE_SETTING;
+			return CommerceTaxRateSettingFDSNames.PERCENTAGE_TAX_RATE_SETTING;
 		}
 
-		return CommerceTaxRateSettingDataSetConstants.
-			COMMERCE_DATA_SET_KEY_TAX_RATE_SETTING;
+		return CommerceTaxRateSettingFDSNames.TAX_RATE_SETTING;
 	}
 
 	public long getRegionId() throws PortalException {
@@ -171,8 +160,8 @@ public class CommerceTaxFixedRateAddressRelsDisplayContext
 
 	@Override
 	public String getScreenNavigationCategoryKey() {
-		return CommerceTaxMethodAddressRateRelsScreenNavigationCategory.
-			CATEGORY_KEY;
+		return CommerceTaxScreenNavigationConstants.
+			CATEGORY_KEY_COMMERCE_TAX_RATING_SETTINGS;
 	}
 
 	public boolean isTaxAppliedToShippingAddress() throws PortalException {

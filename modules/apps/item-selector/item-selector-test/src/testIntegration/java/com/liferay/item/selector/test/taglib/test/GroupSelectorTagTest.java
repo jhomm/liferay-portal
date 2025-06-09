@@ -1,37 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.item.selector.test.taglib.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.service.DepotEntryGroupRelLocalService;
+import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.item.selector.taglib.servlet.taglib.GroupSelectorTag;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -44,6 +45,7 @@ import org.springframework.mock.web.MockPageContext;
 
 /**
  * @author Cristina González
+ * @author Roberto Díaz
  */
 @RunWith(Arquillian.class)
 public class GroupSelectorTagTest {
@@ -54,6 +56,64 @@ public class GroupSelectorTagTest {
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
 			PermissionCheckerMethodTestRule.INSTANCE);
+
+	@Test
+	public void testGetDepotGroupsWithDepotGroupTypeWithPagination()
+		throws Exception {
+
+		_addDepotEntries(PropsValues.SEARCH_CONTAINER_PAGE_DEFAULT_DELTA + 1);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, getThemeDisplay());
+		mockHttpServletRequest.addParameter("groupType", "depot");
+
+		GroupSelectorTag groupSelectorTag = _getGroupSelectorTag(
+			mockHttpServletRequest);
+
+		groupSelectorTag.doEndTag();
+
+		List<Group> groups = (List<Group>)mockHttpServletRequest.getAttribute(
+			"liferay-item-selector:group-selector:groups");
+
+		Assert.assertEquals(
+			groups.toString(), PropsValues.SEARCH_CONTAINER_PAGE_DEFAULT_DELTA,
+			groups.size());
+
+		Assert.assertEquals(
+			PropsValues.SEARCH_CONTAINER_PAGE_DEFAULT_DELTA + 1,
+			mockHttpServletRequest.getAttribute(
+				"liferay-item-selector:group-selector:groupsCount"));
+	}
+
+	@Test
+	public void testGetGroupsCountWithDepotGroupType() throws Exception {
+		_addDepotEntries(3);
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, getThemeDisplay());
+		mockHttpServletRequest.addParameter("groupType", "depot");
+
+		GroupSelectorTag groupSelectorTag = _getGroupSelectorTag(
+			mockHttpServletRequest);
+
+		groupSelectorTag.doEndTag();
+
+		List<Group> groups = (List<Group>)mockHttpServletRequest.getAttribute(
+			"liferay-item-selector:group-selector:groups");
+
+		Assert.assertEquals(groups.toString(), 3, groups.size());
+
+		Assert.assertEquals(
+			groups.size(),
+			mockHttpServletRequest.getAttribute(
+				"liferay-item-selector:group-selector:groupsCount"));
+	}
 
 	@Test
 	public void testGetGroupsCountWithoutGroupType() throws Exception {
@@ -180,20 +240,13 @@ public class GroupSelectorTagTest {
 		try {
 			groupSelectorTag.doEndTag();
 
-			List<Group> groups =
-				(List<Group>)mockHttpServletRequest.getAttribute(
-					"liferay-item-selector:group-selector:groups");
-
-			Stream<Group> stream = groups.stream();
-
-			stream.filter(
-				currentGroup -> Objects.equals(
-					currentGroup.getGroupId(), group.getGroupId())
-			).findAny(
-			).orElseThrow(
-				() -> new AssertionError(
-					"Group " + group.getGroupId() + " was not found")
-			);
+			Assert.assertTrue(
+				"Group " + group.getGroupId() + " was not found",
+				ListUtil.exists(
+					(List<Group>)mockHttpServletRequest.getAttribute(
+						"liferay-item-selector:group-selector:groups"),
+					currentGroup -> Objects.equals(
+						group.getGroupId(), currentGroup.getGroupId())));
 		}
 		finally {
 			GroupTestUtil.deleteGroup(group);
@@ -210,6 +263,22 @@ public class GroupSelectorTagTest {
 		return themeDisplay;
 	}
 
+	private void _addDepotEntries(int count) throws Exception {
+		for (int i = 0; i < count; i++) {
+			DepotEntry depotEntry = _depotEntryLocalService.addDepotEntry(
+				Collections.singletonMap(
+					LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+				Collections.singletonMap(
+					LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+				ServiceContextTestUtil.getServiceContext());
+
+			_depotEntries.add(depotEntry);
+
+			_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+				depotEntry.getDepotEntryId(), TestPropsValues.getGroupId());
+		}
+	}
+
 	private GroupSelectorTag _getGroupSelectorTag(
 		HttpServletRequest httpServletRequest) {
 
@@ -223,5 +292,14 @@ public class GroupSelectorTagTest {
 
 	@Inject
 	private CompanyLocalService _companyLocalService;
+
+	@DeleteAfterTestRun
+	private final List<DepotEntry> _depotEntries = new ArrayList<>();
+
+	@Inject
+	private DepotEntryGroupRelLocalService _depotEntryGroupRelLocalService;
+
+	@Inject
+	private DepotEntryLocalService _depotEntryLocalService;
 
 }

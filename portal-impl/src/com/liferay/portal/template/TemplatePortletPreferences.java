@@ -1,33 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portlet.PortletPreferencesImpl;
+import com.liferay.portlet.PreferencesValueUtil;
+
+import jakarta.portlet.ReadOnlyException;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-
-import javax.portlet.ReadOnlyException;
 
 /**
  * @author Brian Wing Shun Chan
@@ -53,20 +44,22 @@ public class TemplatePortletPreferences {
 				for (Object value : (Collection)valueObject) {
 					if (value instanceof String) {
 						sb.append("<value>");
-						sb.append(XMLUtil.toCompactSafe((String)value));
+						sb.append(
+							PreferencesValueUtil.toCompactSafe((String)value));
 						sb.append("</value>");
 					}
 				}
 			}
 			else if (valueObject instanceof String) {
 				sb.append("<value>");
-				sb.append(XMLUtil.toCompactSafe((String)valueObject));
+				sb.append(
+					PreferencesValueUtil.toCompactSafe((String)valueObject));
 				sb.append("</value>");
 			}
 			else if (valueObject instanceof String[]) {
 				for (String value : (String[])valueObject) {
 					sb.append("<value>");
-					sb.append(XMLUtil.toCompactSafe(value));
+					sb.append(PreferencesValueUtil.toCompactSafe(value));
 					sb.append("</value>");
 				}
 			}
@@ -99,7 +92,7 @@ public class TemplatePortletPreferences {
 			return PortletPreferencesFactoryUtil.toXML(portletPreferencesImpl);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return PortletConstants.DEFAULT_PREFERENCES;
 		}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -77,12 +68,16 @@ public class EmailAddressCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(27);
+		StringBundler sb = new StringBundler(31);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", emailAddressId=");
 		sb.append(emailAddressId);
 		sb.append(", companyId=");
@@ -101,8 +96,8 @@ public class EmailAddressCacheModel
 		sb.append(classPK);
 		sb.append(", address=");
 		sb.append(address);
-		sb.append(", typeId=");
-		sb.append(typeId);
+		sb.append(", listTypeId=");
+		sb.append(listTypeId);
 		sb.append(", primary=");
 		sb.append(primary);
 		sb.append("}");
@@ -115,12 +110,20 @@ public class EmailAddressCacheModel
 		EmailAddressImpl emailAddressImpl = new EmailAddressImpl();
 
 		emailAddressImpl.setMvccVersion(mvccVersion);
+		emailAddressImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			emailAddressImpl.setUuid("");
 		}
 		else {
 			emailAddressImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			emailAddressImpl.setExternalReferenceCode("");
+		}
+		else {
+			emailAddressImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		emailAddressImpl.setEmailAddressId(emailAddressId);
@@ -158,7 +161,7 @@ public class EmailAddressCacheModel
 			emailAddressImpl.setAddress(address);
 		}
 
-		emailAddressImpl.setTypeId(typeId);
+		emailAddressImpl.setListTypeId(listTypeId);
 		emailAddressImpl.setPrimary(primary);
 
 		emailAddressImpl.resetOriginalValues();
@@ -169,7 +172,10 @@ public class EmailAddressCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		emailAddressId = objectInput.readLong();
 
@@ -185,7 +191,7 @@ public class EmailAddressCacheModel
 		classPK = objectInput.readLong();
 		address = objectInput.readUTF();
 
-		typeId = objectInput.readLong();
+		listTypeId = objectInput.readLong();
 
 		primary = objectInput.readBoolean();
 	}
@@ -194,11 +200,20 @@ public class EmailAddressCacheModel
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
+		objectOutput.writeLong(ctCollectionId);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(emailAddressId);
@@ -228,13 +243,15 @@ public class EmailAddressCacheModel
 			objectOutput.writeUTF(address);
 		}
 
-		objectOutput.writeLong(typeId);
+		objectOutput.writeLong(listTypeId);
 
 		objectOutput.writeBoolean(primary);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long emailAddressId;
 	public long companyId;
 	public long userId;
@@ -244,7 +261,7 @@ public class EmailAddressCacheModel
 	public long classNameId;
 	public long classPK;
 	public String address;
-	public long typeId;
+	public long listTypeId;
 	public boolean primary;
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.data.handler;
 
 import com.liferay.exportimport.kernel.lar.BasePortletDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
+import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerBoolean;
@@ -24,17 +16,23 @@ import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.exportimport.portlet.data.handler.helper.PortletDataHandlerHelper;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
+import com.liferay.fragment.configuration.FragmentServiceConfiguration;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.layout.util.LayoutServiceContextHelper;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.staging.StagingGroupHelper;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -44,8 +42,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+	property = "jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 	service = PortletDataHandler.class
 )
 public class FragmentPortletDataHandler extends BasePortletDataHandler {
@@ -171,9 +168,38 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 
 		List<Element> fragmentEntryElements = fragmentEntriesElement.elements();
 
-		for (Element fragmentEntryElement : fragmentEntryElements) {
-			StagedModelDataHandlerUtil.importStagedModel(
-				portletDataContext, fragmentEntryElement);
+		if (ListUtil.isEmpty(fragmentEntryElements)) {
+			return null;
+		}
+
+		FragmentServiceConfiguration fragmentServiceConfiguration =
+			_configurationProvider.getCompanyConfiguration(
+				FragmentServiceConfiguration.class,
+				portletDataContext.getCompanyId());
+
+		if (!fragmentServiceConfiguration.propagateChanges() ||
+			(ExportImportThreadLocal.isStagingInProcess() &&
+			 _stagingGroupHelper.isStagedPortlet(
+				 portletDataContext.getGroupId(),
+				 FragmentPortletKeys.FRAGMENT))) {
+
+			for (Element fragmentEntryElement : fragmentEntryElements) {
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, fragmentEntryElement);
+			}
+
+			return null;
+		}
+
+		try (AutoCloseable autoCloseable =
+				_layoutServiceContextHelper.getServiceContextAutoCloseable(
+					_companyLocalService.getCompany(
+						portletDataContext.getCompanyId()))) {
+
+			for (Element fragmentEntryElement : fragmentEntryElements) {
+				StagedModelDataHandlerUtil.importStagedModel(
+					portletDataContext, fragmentEntryElement);
+			}
 		}
 
 		return null;
@@ -211,10 +237,11 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 		fragmentEntryExportActionableDynamicQuery.performCount();
 	}
 
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
-	}
+	@Reference
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.fragment.model.FragmentCollection)",
@@ -231,9 +258,18 @@ public class FragmentPortletDataHandler extends BasePortletDataHandler {
 		_fragmentEntryStagedModelRepository;
 
 	@Reference
+	private LayoutServiceContextHelper _layoutServiceContextHelper;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
+
+	@Reference
 	private PortletDataHandlerHelper _portletDataHandlerHelper;
 
 	@Reference
 	private Staging _staging;
+
+	@Reference
+	private StagingGroupHelper _stagingGroupHelper;
 
 }

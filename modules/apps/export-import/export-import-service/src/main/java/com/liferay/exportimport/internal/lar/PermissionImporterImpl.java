@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.lar;
@@ -19,6 +10,7 @@ import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.lar.PermissionImporter;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.exception.NoSuchTeamException;
 import com.liferay.portal.kernel.log.Log;
@@ -36,7 +28,7 @@ import com.liferay.portal.kernel.service.TeamLocalService;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
@@ -63,7 +55,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Zsigmond Rab
  * @author Douglas Wong
  */
-@Component(enabled = true, immediate = true, service = PermissionImporter.class)
+@Component(enabled = true, service = PermissionImporter.class)
 public class PermissionImporterImpl implements PermissionImporter {
 
 	@Override
@@ -135,7 +127,7 @@ public class PermissionImporterImpl implements PermissionImporter {
 			long resourcePK = GetterUtil.getLong(
 				portletDataElement.attributeValue("resource-pk"));
 
-			List<KeyValuePair> permissions = new ArrayList<>();
+			List<KeyValuePair> permissionKeyValuePairs = new ArrayList<>();
 
 			List<Element> permissionsElements = portletDataElement.elements(
 				"permissions");
@@ -147,11 +139,11 @@ public class PermissionImporterImpl implements PermissionImporter {
 
 				KeyValuePair permission = new KeyValuePair(roleName, actions);
 
-				permissions.add(permission);
+				permissionKeyValuePairs.add(permission);
 			}
 
 			portletDataContext.addPermissions(
-				resourceName, resourcePK, permissions);
+				resourceName, resourcePK, permissionKeyValuePairs);
 		}
 	}
 
@@ -184,7 +176,7 @@ public class PermissionImporterImpl implements PermissionImporter {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchTeamException, noSuchTeamException);
+					_log.debug(noSuchTeamException);
 				}
 
 				team = _teamLocalService.addTeam(
@@ -210,13 +202,12 @@ public class PermissionImporterImpl implements PermissionImporter {
 
 		String title = roleElement.attributeValue("title");
 
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
-			title);
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(title);
 
 		String description = roleElement.attributeValue("description");
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(description);
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			description);
 
 		int type = GetterUtil.getInteger(roleElement.attributeValue("type"));
 		String subtype = roleElement.attributeValue("subtype");
@@ -226,20 +217,14 @@ public class PermissionImporterImpl implements PermissionImporter {
 		serviceContext.setUuid(uuid);
 
 		return _roleLocalService.addRole(
-			userId, null, 0, name, titleMap, descriptionMap, type, subtype,
-			serviceContext);
+			null, userId, null, 0, name, titleMap, descriptionMap, type,
+			subtype, serviceContext);
 	}
 
 	private List<String> _getActions(Element element) {
-		List<String> actions = new ArrayList<>();
-
-		List<Element> actionKeyElements = element.elements("action-key");
-
-		for (Element actionKeyElement : actionKeyElements) {
-			actions.add(actionKeyElement.getText());
-		}
-
-		return actions;
+		return TransformUtil.transform(
+			element.elements("action-key"),
+			actionKeyElement -> actionKeyElement.getText());
 	}
 
 	private void _importPermissions(
@@ -298,6 +283,9 @@ public class PermissionImporterImpl implements PermissionImporter {
 	private GroupLocalService _groupLocalService;
 
 	private CentralizedThreadLocal<LayoutCache> _layoutCacheThreadLocal;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

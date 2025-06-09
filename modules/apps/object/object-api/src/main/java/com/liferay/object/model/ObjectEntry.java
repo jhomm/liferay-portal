@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
 
 import com.liferay.portal.kernel.annotation.ImplementationClassName;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.TreeModel;
 import com.liferay.portal.kernel.util.Accessor;
 
 import org.osgi.annotation.versioning.ProviderType;
@@ -29,7 +21,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ImplementationClassName("com.liferay.object.model.impl.ObjectEntryImpl")
 @ProviderType
-public interface ObjectEntry extends ObjectEntryModel, PersistedModel {
+public interface ObjectEntry
+	extends ObjectEntryModel, PersistedModel, TreeModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -56,13 +49,30 @@ public interface ObjectEntry extends ObjectEntryModel, PersistedModel {
 
 		};
 
+	@Override
+	public String buildTreePath()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	public String getModelClassName();
 
 	public long getNonzeroGroupId()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public java.util.Map<java.util.Locale, String> getTitleMap()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	public String getTitleValue()
 		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public String getTitleValue(String languageId)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public String getTitleValue(String languageId, boolean useDefault)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public String getURLTitle(java.util.Locale locale);
+
+	public java.util.Map<String, String> getURLTitleMap();
 
 	public java.util.Map<String, java.io.Serializable> getValues();
 

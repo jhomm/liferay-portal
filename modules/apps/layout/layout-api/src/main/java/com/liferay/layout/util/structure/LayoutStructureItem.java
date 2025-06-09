@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.util.structure;
@@ -18,6 +9,7 @@ import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.util.ArrayList;
@@ -27,7 +19,7 @@ import java.util.Objects;
 /**
  * @author Víctor Galán
  */
-public abstract class LayoutStructureItem {
+public abstract class LayoutStructureItem implements Cloneable {
 
 	public static LayoutStructureItem of(JSONObject jsonObject) {
 		String parentId = jsonObject.getString("parentId");
@@ -61,18 +53,40 @@ public abstract class LayoutStructureItem {
 	}
 
 	public LayoutStructureItem(String parentItemId) {
+		this(null, parentItemId);
+	}
+
+	public LayoutStructureItem(String itemId, String parentItemId) {
+		if (Validator.isNotNull(itemId)) {
+			_itemId = itemId;
+		}
+
 		_parentItemId = parentItemId;
 
-		_itemId = PortalUUIDUtil.generate();
 		_childrenItemIds = new ArrayList<>();
 	}
 
 	public void addChildrenItem(int position, String itemId) {
-		_childrenItemIds.add(position, itemId);
+		if ((position >= 0) && (position <= _childrenItemIds.size())) {
+			_childrenItemIds.add(position, itemId);
+		}
+		else {
+			_childrenItemIds.add(itemId);
+		}
 	}
 
 	public void addChildrenItem(String itemId) {
 		_childrenItemIds.add(itemId);
+	}
+
+	@Override
+	public LayoutStructureItem clone() {
+		try {
+			return (LayoutStructureItem)super.clone();
+		}
+		catch (CloneNotSupportedException cloneNotSupportedException) {
+			throw new RuntimeException(cloneNotSupportedException);
+		}
 	}
 
 	public void deleteChildrenItem(String itemId) {
@@ -93,13 +107,17 @@ public abstract class LayoutStructureItem {
 
 		if (Objects.equals(
 				_childrenItemIds, layoutStructureItem._childrenItemIds) &&
-			Objects.equals(_itemId, layoutStructureItem._itemId) &&
+			Objects.equals(getItemId(), layoutStructureItem.getItemId()) &&
 			Objects.equals(_parentItemId, layoutStructureItem._parentItemId)) {
 
 			return true;
 		}
 
 		return false;
+	}
+
+	public String getChildrenItemId(int index) {
+		return _childrenItemIds.get(index);
 	}
 
 	public List<String> getChildrenItemIds() {
@@ -109,6 +127,10 @@ public abstract class LayoutStructureItem {
 	public abstract JSONObject getItemConfigJSONObject();
 
 	public String getItemId() {
+		if (_itemId == null) {
+			_itemId = PortalUUIDUtil.generate();
+		}
+
 		return _itemId;
 	}
 
@@ -153,7 +175,7 @@ public abstract class LayoutStructureItem {
 	public String toString() {
 		JSONObject jsonObject = toJSONObject();
 
-		return jsonObject.toJSONString();
+		return jsonObject.toString();
 	}
 
 	public abstract void updateItemConfig(JSONObject itemConfigJSONObject);

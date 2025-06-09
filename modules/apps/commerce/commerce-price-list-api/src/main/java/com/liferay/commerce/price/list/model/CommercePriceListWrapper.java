@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -43,6 +36,8 @@ public class CommercePriceListWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("commercePriceListId", getCommercePriceListId());
@@ -52,7 +47,7 @@ public class CommercePriceListWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
-		attributes.put("commerceCurrencyId", getCommerceCurrencyId());
+		attributes.put("commerceCurrencyCode", getCommerceCurrencyCode());
 		attributes.put(
 			"parentCommercePriceListId", getParentCommercePriceListId());
 		attributes.put("catalogBasePriceList", isCatalogBasePriceList());
@@ -73,6 +68,18 @@ public class CommercePriceListWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
@@ -128,10 +135,11 @@ public class CommercePriceListWrapper
 			setModifiedDate(modifiedDate);
 		}
 
-		Long commerceCurrencyId = (Long)attributes.get("commerceCurrencyId");
+		String commerceCurrencyCode = (String)attributes.get(
+			"commerceCurrencyCode");
 
-		if (commerceCurrencyId != null) {
-			setCommerceCurrencyId(commerceCurrencyId);
+		if (commerceCurrencyCode != null) {
+			setCommerceCurrencyCode(commerceCurrencyCode);
 		}
 
 		Long parentCommercePriceListId = (Long)attributes.get(
@@ -244,13 +252,13 @@ public class CommercePriceListWrapper
 	}
 
 	/**
-	 * Returns the commerce currency ID of this commerce price list.
+	 * Returns the commerce currency code of this commerce price list.
 	 *
-	 * @return the commerce currency ID of this commerce price list
+	 * @return the commerce currency code of this commerce price list
 	 */
 	@Override
-	public long getCommerceCurrencyId() {
-		return model.getCommerceCurrencyId();
+	public String getCommerceCurrencyCode() {
+		return model.getCommerceCurrencyCode();
 	}
 
 	/**
@@ -281,6 +289,16 @@ public class CommercePriceListWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this commerce price list.
+	 *
+	 * @return the ct collection ID of this commerce price list
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -341,6 +359,16 @@ public class CommercePriceListWrapper
 	@Override
 	public Date getModifiedDate() {
 		return model.getModifiedDate();
+	}
+
+	/**
+	 * Returns the mvcc version of this commerce price list.
+	 *
+	 * @return the mvcc version of this commerce price list
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
 	}
 
 	/**
@@ -609,13 +637,13 @@ public class CommercePriceListWrapper
 	}
 
 	/**
-	 * Sets the commerce currency ID of this commerce price list.
+	 * Sets the commerce currency code of this commerce price list.
 	 *
-	 * @param commerceCurrencyId the commerce currency ID of this commerce price list
+	 * @param commerceCurrencyCode the commerce currency code of this commerce price list
 	 */
 	@Override
-	public void setCommerceCurrencyId(long commerceCurrencyId) {
-		model.setCommerceCurrencyId(commerceCurrencyId);
+	public void setCommerceCurrencyCode(String commerceCurrencyCode) {
+		model.setCommerceCurrencyCode(commerceCurrencyCode);
 	}
 
 	/**
@@ -646,6 +674,16 @@ public class CommercePriceListWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this commerce price list.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce price list
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -706,6 +744,16 @@ public class CommercePriceListWrapper
 	@Override
 	public void setModifiedDate(Date modifiedDate) {
 		model.setModifiedDate(modifiedDate);
+	}
+
+	/**
+	 * Sets the mvcc version of this commerce price list.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce price list
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
 	}
 
 	/**
@@ -856,6 +904,25 @@ public class CommercePriceListWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CommercePriceList, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CommercePriceList, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -28,62 +20,32 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class RoleLocalServiceWrapper
 	implements RoleLocalService, ServiceWrapper<RoleLocalService> {
 
+	public RoleLocalServiceWrapper() {
+		this(null);
+	}
+
 	public RoleLocalServiceWrapper(RoleLocalService roleLocalService) {
 		_roleLocalService = roleLocalService;
 	}
 
 	@Override
-	public void addGroupRole(long groupId, long roleId) {
-		_roleLocalService.addGroupRole(groupId, roleId);
+	public boolean addGroupRole(long groupId, long roleId) {
+		return _roleLocalService.addGroupRole(groupId, roleId);
 	}
 
 	@Override
-	public void addGroupRole(long groupId, Role role) {
-		_roleLocalService.addGroupRole(groupId, role);
+	public boolean addGroupRole(long groupId, Role role) {
+		return _roleLocalService.addGroupRole(groupId, role);
 	}
 
 	@Override
-	public void addGroupRoles(long groupId, java.util.List<Role> roles) {
-		_roleLocalService.addGroupRoles(groupId, roles);
+	public boolean addGroupRoles(long groupId, java.util.List<Role> roles) {
+		return _roleLocalService.addGroupRoles(groupId, roles);
 	}
 
 	@Override
-	public void addGroupRoles(long groupId, long[] roleIds) {
-		_roleLocalService.addGroupRoles(groupId, roleIds);
-	}
-
-	/**
-	 * Adds a role with additional parameters. The user is reindexed after role
-	 * is added.
-	 *
-	 * @param userId the primary key of the user
-	 * @param className the name of the class for which the role is created
-	 (optionally <code>null</code>)
-	 * @param classPK the primary key of the class for which the role is
-	 created (optionally <code>0</code>)
-	 * @param name the role's name
-	 * @param titleMap the role's localized titles (optionally
-	 <code>null</code>)
-	 * @param descriptionMap the role's localized descriptions (optionally
-	 <code>null</code>)
-	 * @param type the role's type (optionally <code>0</code>)
-	 * @param subtype the role's subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 role.
-	 * @return the role
-	 */
-	@Override
-	public Role addRole(
-			long userId, String className, long classPK, String name,
-			java.util.Map<java.util.Locale, String> titleMap,
-			java.util.Map<java.util.Locale, String> descriptionMap, int type,
-			String subtype, ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _roleLocalService.addRole(
-			userId, className, classPK, name, titleMap, descriptionMap, type,
-			subtype, serviceContext);
+	public boolean addGroupRoles(long groupId, long[] roleIds) {
+		return _roleLocalService.addGroupRoles(groupId, roleIds);
 	}
 
 	/**
@@ -101,44 +63,58 @@ public class RoleLocalServiceWrapper
 		return _roleLocalService.addRole(role);
 	}
 
-	/**
-	 * @throws PortalException
-	 */
 	@Override
-	public void addUserRole(long userId, long roleId)
+	public Role addRole(
+			String externalReferenceCode, long userId, String className,
+			long classPK, String name,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap, int type,
+			String subtype, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_roleLocalService.addUserRole(userId, roleId);
+		return _roleLocalService.addRole(
+			externalReferenceCode, userId, className, classPK, name, titleMap,
+			descriptionMap, type, subtype, serviceContext);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
 	@Override
-	public void addUserRole(long userId, Role role)
+	public boolean addUserRole(long userId, long roleId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_roleLocalService.addUserRole(userId, role);
+		return _roleLocalService.addUserRole(userId, roleId);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
 	@Override
-	public void addUserRoles(long userId, java.util.List<Role> roles)
+	public boolean addUserRole(long userId, Role role)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_roleLocalService.addUserRoles(userId, roles);
+		return _roleLocalService.addUserRole(userId, role);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
 	@Override
-	public void addUserRoles(long userId, long[] roleIds)
+	public boolean addUserRoles(long userId, java.util.List<Role> roles)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_roleLocalService.addUserRoles(userId, roleIds);
+		return _roleLocalService.addUserRoles(userId, roles);
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	@Override
+	public boolean addUserRoles(long userId, long[] roleIds)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _roleLocalService.addUserRoles(userId, roleIds);
 	}
 
 	/**
@@ -433,6 +409,14 @@ public class RoleLocalServiceWrapper
 		return _roleLocalService.fetchRole(companyId, name);
 	}
 
+	@Override
+	public Role fetchRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return _roleLocalService.fetchRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the role with the matching UUID and company.
 	 *
@@ -533,23 +517,24 @@ public class RoleLocalServiceWrapper
 
 	@Override
 	public java.util.List<Role> getGroupRolesAndTeamRoles(
-		long companyId, String keywords, java.util.List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId, int start,
-		int end) {
+		long companyId, String name, java.util.List<String> excludedNames,
+		String title, String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId, int start, int end) {
 
 		return _roleLocalService.getGroupRolesAndTeamRoles(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId, start, end);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId, start, end);
 	}
 
 	@Override
 	public int getGroupRolesAndTeamRolesCount(
-		long companyId, String keywords, java.util.List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId) {
+		long companyId, String name, java.util.List<String> excludedNames,
+		String title, String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId) {
 
 		return _roleLocalService.getGroupRolesAndTeamRolesCount(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId);
 	}
 
 	@Override
@@ -562,6 +547,17 @@ public class RoleLocalServiceWrapper
 		getIndexableActionableDynamicQuery() {
 
 		return _roleLocalService.getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public Role getOrAddIncompleteRole(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK, String name, int type)
+		throws Exception {
+
+		return _roleLocalService.getOrAddIncompleteRole(
+			externalReferenceCode, companyId, userId, className, classPK, name,
+			type);
 	}
 
 	/**
@@ -654,6 +650,15 @@ public class RoleLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _roleLocalService.getRole(companyId, name);
+	}
+
+	@Override
+	public Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _roleLocalService.getRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -933,7 +938,9 @@ public class RoleLocalServiceWrapper
 	}
 
 	/**
-	 * Returns the union of all the user's roles within the groups.
+	 * Returns the union of all the user's roles within the groups. If no
+	 * groups are provided, only the user's directly assigned roles are
+	 * returned.
 	 *
 	 * @param userId the primary key of the user
 	 * @param groups the groups (optionally <code>null</code>)
@@ -960,7 +967,9 @@ public class RoleLocalServiceWrapper
 	}
 
 	/**
-	 * Returns the union of all the user's roles within the groups.
+	 * Returns the union of all the user's roles within the groups. If no
+	 * groupIds are provided, only the user's directly assigned roles are
+	 * returned.
 	 *
 	 * @param userId the primary key of the user
 	 * @param groupIds the primary keys of the groups
@@ -1063,39 +1072,6 @@ public class RoleLocalServiceWrapper
 
 		return _roleLocalService.hasUserRoles(
 			userId, companyId, names, inherited);
-	}
-
-	/**
-	 * Returns a role with the name in the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param name the role's name (optionally <code>null</code>)
-	 * @return the role with the name, or <code>null</code> if a role with the
-	 name could not be found in the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #fetchRole(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public Role loadFetchRole(long companyId, String name) {
-		return _roleLocalService.loadFetchRole(companyId, name);
-	}
-
-	/**
-	 * Returns a role with the name in the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param name the role's name
-	 * @return the role with the name in the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getRole(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public Role loadGetRole(long companyId, String name)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _roleLocalService.loadGetRole(companyId, name);
 	}
 
 	/**
@@ -1358,31 +1334,22 @@ public class RoleLocalServiceWrapper
 		_roleLocalService.unsetUserRoles(userId, roleIds);
 	}
 
-	/**
-	 * Updates the role with the primary key.
-	 *
-	 * @param roleId the primary key of the role
-	 * @param name the role's new name
-	 * @param titleMap the new localized titles (optionally <code>null</code>)
-	 to replace those existing for the role
-	 * @param descriptionMap the new localized descriptions (optionally
-	 <code>null</code>) to replace those existing for the role
-	 * @param subtype the role's new subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 role.
-	 * @return the role with the primary key
-	 */
 	@Override
-	public Role updateRole(
-			long roleId, String name,
-			java.util.Map<java.util.Locale, String> titleMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
-			String subtype, ServiceContext serviceContext)
+	public Role updateExternalReferenceCode(
+			long roleId, String externalReferenceCode)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _roleLocalService.updateRole(
-			roleId, name, titleMap, descriptionMap, subtype, serviceContext);
+		return _roleLocalService.updateExternalReferenceCode(
+			roleId, externalReferenceCode);
+	}
+
+	@Override
+	public Role updateExternalReferenceCode(
+			Role role, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _roleLocalService.updateExternalReferenceCode(
+			role, externalReferenceCode);
 	}
 
 	/**
@@ -1400,11 +1367,44 @@ public class RoleLocalServiceWrapper
 		return _roleLocalService.updateRole(role);
 	}
 
+	/**
+	 * Updates the role with the primary key.
+	 *
+	 * @param roleId the primary key of the role
+	 * @param name the role's new name
+	 * @param titleMap the new localized titles (optionally <code>null</code>)
+	 to replace those existing for the role
+	 * @param descriptionMap the new localized descriptions (optionally
+	 <code>null</code>) to replace those existing for the role
+	 * @param subtype the role's new subtype (optionally <code>null</code>)
+	 * @param serviceContext the service context to be applied (optionally
+	 <code>null</code>). Can set expando bridge attributes for the
+	 role.
+	 * @return the role with the primary key
+	 */
+	@Override
+	public Role updateRole(
+			String externalReferenceCode, long roleId, String name,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap,
+			String subtype, ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _roleLocalService.updateRole(
+			externalReferenceCode, roleId, name, titleMap, descriptionMap,
+			subtype, serviceContext);
+	}
+
 	@Override
 	public void validateName(String name)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_roleLocalService.validateName(name);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _roleLocalService.getBasePersistence();
 	}
 
 	@Override

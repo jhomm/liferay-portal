@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.engine.creole.internal;
 
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -32,25 +24,29 @@ import com.liferay.wiki.exception.PageContentException;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalService;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletContext;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
 
 import org.antlr.runtime.ANTLRStringStream;
 import org.antlr.runtime.CommonTokenStream;
 import org.antlr.runtime.RecognitionException;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Miguel Pastor
  */
-@Component(service = WikiEngine.class)
+@Component(
+	configurationPid = "com.liferay.wiki.configuration.WikiGroupServiceConfiguration",
+	service = WikiEngine.class
+)
 public class CreoleWikiEngine extends BaseWikiEngine {
 
 	@Override
@@ -62,7 +58,7 @@ public class CreoleWikiEngine extends BaseWikiEngine {
 
 		return xhtmlTranslator.translate(
 			page, viewPageURL, editPageURL, attachmentURLPrefix,
-			parse(page.getContent()));
+			_parse(page.getContent()));
 	}
 
 	@Override
@@ -90,7 +86,7 @@ public class CreoleWikiEngine extends BaseWikiEngine {
 			new LinkNodeCollectorVisitor();
 
 		List<ASTNode> astNodes = linkNodeCollectorVisitor.collect(
-			parse(page.getContent()));
+			_parse(page.getContent()));
 
 		try {
 			for (ASTNode astNode : astNodes) {
@@ -121,15 +117,10 @@ public class CreoleWikiEngine extends BaseWikiEngine {
 		return outgoingLinks;
 	}
 
-	protected Creole10Parser build(String creoleCode) {
-		ANTLRStringStream antlrStringStream = new ANTLRStringStream(creoleCode);
-
-		Creole10Lexer creole10Lexer = new Creole10Lexer(antlrStringStream);
-
-		CommonTokenStream commonTokenStream = new CommonTokenStream(
-			creole10Lexer);
-
-		return new Creole10Parser(commonTokenStream);
+	@Activate
+	protected void activate(Map<String, Object> properties) {
+		_wikiGroupServiceConfiguration = ConfigurableUtil.createConfigurable(
+			WikiGroupServiceConfiguration.class, properties);
 	}
 
 	@Override
@@ -142,8 +133,19 @@ public class CreoleWikiEngine extends BaseWikiEngine {
 		return _servletContext;
 	}
 
-	protected WikiPageNode parse(String creoleCode) {
-		Creole10Parser creole10Parser = build(creoleCode);
+	private Creole10Parser _build(String creoleCode) {
+		ANTLRStringStream antlrStringStream = new ANTLRStringStream(creoleCode);
+
+		Creole10Lexer creole10Lexer = new Creole10Lexer(antlrStringStream);
+
+		CommonTokenStream commonTokenStream = new CommonTokenStream(
+			creole10Lexer);
+
+		return new Creole10Parser(commonTokenStream);
+	}
+
+	private WikiPageNode _parse(String creoleCode) {
+		Creole10Parser creole10Parser = _build(creoleCode);
 
 		try {
 			creole10Parser.wikipage();
@@ -175,7 +177,6 @@ public class CreoleWikiEngine extends BaseWikiEngine {
 	)
 	private ServletContext _wikiEngineInputEditorServletContext;
 
-	@Reference
 	private WikiGroupServiceConfiguration _wikiGroupServiceConfiguration;
 
 	@Reference

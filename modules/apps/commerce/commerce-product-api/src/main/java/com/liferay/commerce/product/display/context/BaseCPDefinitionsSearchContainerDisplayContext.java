@@ -1,40 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.display.context;
 
 import com.liferay.commerce.product.portlet.action.ActionHelper;
-import com.liferay.frontend.taglib.servlet.taglib.ManagementBarFilterItem;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletURLUtil;
-import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -74,66 +59,25 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 		return _keywords;
 	}
 
-	public List<ManagementBarFilterItem> getManagementBarStatusFilterItems()
-		throws PortalException, PortletException {
-
-		return ListUtil.fromArray(
-			getManagementBarFilterItem(WorkflowConstants.STATUS_ANY),
-			getManagementBarFilterItem(WorkflowConstants.STATUS_DRAFT),
-			getManagementBarFilterItem(WorkflowConstants.STATUS_SCHEDULED),
-			getManagementBarFilterItem(WorkflowConstants.STATUS_APPROVED),
-			getManagementBarFilterItem(WorkflowConstants.STATUS_EXPIRED));
-	}
-
-	public String getManagementBarStatusFilterValue() {
-		return WorkflowConstants.getStatusLabel(getStatus());
-	}
-
 	public String getOrderByCol() {
-		if (_orderByCol != null) {
+		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(httpServletRequest, "orderByCol");
-
-		if (Validator.isNull(_orderByCol)) {
-			_orderByCol = portalPreferences.getValue(
-				_portalPreferenceNamespace, "order-by-col", _defaultOrderByCol);
-		}
-		else {
-			boolean saveOrderBy = ParamUtil.getBoolean(
-				httpServletRequest, "saveOrderBy");
-
-			if (saveOrderBy) {
-				portalPreferences.setValue(
-					_portalPreferenceNamespace, "order-by-col", _orderByCol);
-			}
-		}
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			httpServletRequest, _portalPreferenceNamespace, _defaultOrderByCol);
 
 		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		if (_orderByType != null) {
+		if (Validator.isNotNull(_orderByType)) {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(httpServletRequest, "orderByType");
-
-		if (Validator.isNull(_orderByType)) {
-			_orderByType = portalPreferences.getValue(
-				_portalPreferenceNamespace, "order-by-type",
-				_defaultOrderByType);
-		}
-		else {
-			boolean saveOrderBy = ParamUtil.getBoolean(
-				httpServletRequest, "saveOrderBy");
-
-			if (saveOrderBy) {
-				portalPreferences.setValue(
-					_portalPreferenceNamespace, "order-by-type", _orderByType);
-			}
-		}
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			httpServletRequest, _portalPreferenceNamespace,
+			_defaultOrderByType);
 
 		return _orderByType;
 	}
@@ -206,14 +150,10 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 	}
 
 	public boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
+		if (Validator.isNotNull(getKeywords()) ||
+			Validator.isNotNull(
+				ParamUtil.getString(httpServletRequest, "filterFields"))) {
 
-		String filterFields = ParamUtil.getString(
-			httpServletRequest, "filterFields");
-
-		if (Validator.isNotNull(filterFields)) {
 			return true;
 		}
 
@@ -221,11 +161,7 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 	}
 
 	public boolean isShowInfoPanel() {
-		if (isSearch()) {
-			return false;
-		}
-
-		return true;
+		return !isSearch();
 	}
 
 	public void setDefaultOrderByCol(String defaultOrderByCol) {
@@ -240,40 +176,8 @@ public abstract class BaseCPDefinitionsSearchContainerDisplayContext<T>
 		HttpServletRequest httpServletRequest,
 		PortalPreferences portalPreferences) {
 
-		String displayStyle = ParamUtil.getString(
-			httpServletRequest, "displayStyle");
-
-		if (Validator.isNull(displayStyle)) {
-			displayStyle = portalPreferences.getValue(
-				_portalPreferenceNamespace, "display-style", "list");
-		}
-		else {
-			portalPreferences.setValue(
-				_portalPreferenceNamespace, "display-style", displayStyle);
-
-			httpServletRequest.setAttribute(
-				WebKeys.SINGLE_PAGE_APPLICATION_CLEAR_CACHE, Boolean.TRUE);
-		}
-
-		return displayStyle;
-	}
-
-	protected ManagementBarFilterItem getManagementBarFilterItem(int status)
-		throws PortalException, PortletException {
-
-		boolean active = false;
-
-		if (status == getStatus()) {
-			active = true;
-		}
-
-		return new ManagementBarFilterItem(
-			active, WorkflowConstants.getStatusLabel(status),
-			PortletURLBuilder.create(
-				PortletURLUtil.clone(getPortletURL(), liferayPortletResponse)
-			).setParameter(
-				"status", status
-			).buildString());
+		return SearchDisplayStyleUtil.getDisplayStyle(
+			httpServletRequest, _portalPreferenceNamespace, "list", true);
 	}
 
 	protected SearchContainer<T> searchContainer;

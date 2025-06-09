@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.numeric;
@@ -65,6 +56,9 @@ import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 				"setPropertyValue('predefinedValue', 'inputMask', getValue('inputMask'))",
 				"setPropertyValue('predefinedValue', 'inputMaskFormat', getLocalizedValue('inputMaskFormat'))",
 				"setPropertyValue('predefinedValue', 'numericInputMask', getLocalizedValue('numericInputMask'))",
+				"setPropertyValue('validation', 'inputMask', getValue('inputMask'))",
+				"setPropertyValue('validation', 'inputMaskFormat', getLocalizedValue('inputMaskFormat'))",
+				"setPropertyValue('validation', 'numericInputMask', getLocalizedValue('numericInputMask'))",
 				"setValidationDataType('validation', getValue('dataType'))",
 				"setValidationFieldName('validation', getValue('name'))",
 				"setVisible('characterOptions', equals(getValue('dataType'), 'integer') and equals(getValue('inputMask'), TRUE))",
@@ -107,7 +101,8 @@ import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 						@DDMFormLayoutColumn(
 							size = 12,
 							value = {
-								"name", "fieldReference", "predefinedValue",
+								"fieldReference", "name",
+								"htmlAutocompleteAttribute", "predefinedValue",
 								"objectFieldName", "visibilityExpression",
 								"fieldNamespace", "indexType",
 								"labelAtStructureLevel", "localizable",
@@ -169,6 +164,16 @@ public interface NumericDDMFormFieldTypeSettings
 		}
 	)
 	public boolean hideField();
+
+	@DDMFormField(
+		dataType = "string", label = "%html-autocomplete-attribute",
+		properties = {
+			"invalidCharacters=[^a-z0-9-]|-{2,}", "maxLength=20",
+			"visualProperty=true"
+		},
+		type = "text"
+	)
+	public String htmlAutocompleteAttribute();
 
 	@DDMFormField(label = "%input-mask", properties = "showAsSwitcher=true")
 	public boolean inputMask();

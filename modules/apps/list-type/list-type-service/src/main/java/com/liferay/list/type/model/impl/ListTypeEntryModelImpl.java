@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.model.ListTypeEntryModel;
-import com.liferay.list.type.model.ListTypeEntrySoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.LocaleException;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -85,11 +72,13 @@ public class ListTypeEntryModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
+		{"externalReferenceCode", Types.VARCHAR},
 		{"listTypeEntryId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"listTypeDefinitionId", Types.BIGINT}, {"key_", Types.VARCHAR},
-		{"name", Types.VARCHAR}, {"type_", Types.VARCHAR}
+		{"name", Types.VARCHAR}, {"system_", Types.BOOLEAN},
+		{"type_", Types.VARCHAR}, {"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -98,6 +87,7 @@ public class ListTypeEntryModelImpl
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("listTypeEntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -107,11 +97,13 @@ public class ListTypeEntryModelImpl
 		TABLE_COLUMNS_MAP.put("listTypeDefinitionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("key_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("system_", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ListTypeEntry (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,listTypeEntryId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,listTypeDefinitionId LONG,key_ VARCHAR(75) null,name STRING null,type_ VARCHAR(75) null)";
+		"create table ListTypeEntry (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,listTypeEntryId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,listTypeDefinitionId LONG,key_ VARCHAR(75) null,name STRING null,system_ BOOLEAN,type_ VARCHAR(75) null,status INTEGER)";
 
 	public static final String TABLE_SQL_DROP = "drop table ListTypeEntry";
 
@@ -137,26 +129,37 @@ public class ListTypeEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KEY_COLUMN_BITMASK = 2L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LISTTYPEDEFINITIONID_COLUMN_BITMASK = 4L;
+	public static final long KEY_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 8L;
+	public static final long LISTTYPEDEFINITIONID_COLUMN_BITMASK = 8L;
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *		#getColumnBitmask(String)}
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
 	public static final long LISTTYPEENTRYID_COLUMN_BITMASK = 16L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long USERID_COLUMN_BITMASK = 32L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -170,60 +173,6 @@ public class ListTypeEntryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static ListTypeEntry toModel(ListTypeEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		ListTypeEntry model = new ListTypeEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setListTypeEntryId(soapModel.getListTypeEntryId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setListTypeDefinitionId(soapModel.getListTypeDefinitionId());
-		model.setKey(soapModel.getKey());
-		model.setName(soapModel.getName());
-		model.setType(soapModel.getType());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<ListTypeEntry> toModels(ListTypeEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<ListTypeEntry> models = new ArrayList<ListTypeEntry>(
-			soapModels.length);
-
-		for (ListTypeEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public ListTypeEntryModelImpl() {
@@ -302,109 +251,121 @@ public class ListTypeEntryModelImpl
 	public Map<String, Function<ListTypeEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ListTypeEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ListTypeEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ListTypeEntry.class.getClassLoader(), ListTypeEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ListTypeEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ListTypeEntry> constructor =
-				(Constructor<ListTypeEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ListTypeEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ListTypeEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ListTypeEntry::getMvccVersion);
+			attributeGetterFunctions.put("uuid", ListTypeEntry::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				ListTypeEntry::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"listTypeEntryId", ListTypeEntry::getListTypeEntryId);
+			attributeGetterFunctions.put(
+				"companyId", ListTypeEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", ListTypeEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", ListTypeEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", ListTypeEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ListTypeEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"listTypeDefinitionId", ListTypeEntry::getListTypeDefinitionId);
+			attributeGetterFunctions.put("key", ListTypeEntry::getKey);
+			attributeGetterFunctions.put("name", ListTypeEntry::getName);
+			attributeGetterFunctions.put("system", ListTypeEntry::getSystem);
+			attributeGetterFunctions.put("type", ListTypeEntry::getType);
+			attributeGetterFunctions.put("status", ListTypeEntry::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ListTypeEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ListTypeEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ListTypeEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<ListTypeEntry, Object>>();
-		Map<String, BiConsumer<ListTypeEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<ListTypeEntry, ?>>();
+		private static final Map<String, BiConsumer<ListTypeEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ListTypeEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setMvccVersion);
-		attributeGetterFunctions.put("uuid", ListTypeEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<ListTypeEntry, String>)ListTypeEntry::setUuid);
-		attributeGetterFunctions.put(
-			"listTypeEntryId", ListTypeEntry::getListTypeEntryId);
-		attributeSetterBiConsumers.put(
-			"listTypeEntryId",
-			(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setListTypeEntryId);
-		attributeGetterFunctions.put("companyId", ListTypeEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", ListTypeEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setUserId);
-		attributeGetterFunctions.put("userName", ListTypeEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<ListTypeEntry, String>)ListTypeEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", ListTypeEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ListTypeEntry, Date>)ListTypeEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ListTypeEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ListTypeEntry, Date>)ListTypeEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"listTypeDefinitionId", ListTypeEntry::getListTypeDefinitionId);
-		attributeSetterBiConsumers.put(
-			"listTypeDefinitionId",
-			(BiConsumer<ListTypeEntry, Long>)
-				ListTypeEntry::setListTypeDefinitionId);
-		attributeGetterFunctions.put("key", ListTypeEntry::getKey);
-		attributeSetterBiConsumers.put(
-			"key", (BiConsumer<ListTypeEntry, String>)ListTypeEntry::setKey);
-		attributeGetterFunctions.put("name", ListTypeEntry::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<ListTypeEntry, String>)ListTypeEntry::setName);
-		attributeGetterFunctions.put("type", ListTypeEntry::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<ListTypeEntry, String>)ListTypeEntry::setType);
+		static {
+			Map<String, BiConsumer<ListTypeEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<ListTypeEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<ListTypeEntry, String>)ListTypeEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<ListTypeEntry, String>)
+					ListTypeEntry::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"listTypeEntryId",
+				(BiConsumer<ListTypeEntry, Long>)
+					ListTypeEntry::setListTypeEntryId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<ListTypeEntry, Long>)ListTypeEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<ListTypeEntry, String>)ListTypeEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ListTypeEntry, Date>)ListTypeEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ListTypeEntry, Date>)
+					ListTypeEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"listTypeDefinitionId",
+				(BiConsumer<ListTypeEntry, Long>)
+					ListTypeEntry::setListTypeDefinitionId);
+			attributeSetterBiConsumers.put(
+				"key",
+				(BiConsumer<ListTypeEntry, String>)ListTypeEntry::setKey);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<ListTypeEntry, String>)ListTypeEntry::setName);
+			attributeSetterBiConsumers.put(
+				"system",
+				(BiConsumer<ListTypeEntry, Boolean>)ListTypeEntry::setSystem);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<ListTypeEntry, String>)ListTypeEntry::setType);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<ListTypeEntry, Integer>)ListTypeEntry::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -453,6 +414,35 @@ public class ListTypeEntryModelImpl
 
 	@JSON
 	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
+	}
+
+	@JSON
+	@Override
 	public long getListTypeEntryId() {
 		return _listTypeEntryId;
 	}
@@ -464,6 +454,16 @@ public class ListTypeEntryModelImpl
 		}
 
 		_listTypeEntryId = listTypeEntryId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalListTypeEntryId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("listTypeEntryId"));
 	}
 
 	@JSON
@@ -520,6 +520,15 @@ public class ListTypeEntryModelImpl
 
 	@Override
 	public void setUserUuid(String userUuid) {
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalUserId() {
+		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
 	@JSON
@@ -741,6 +750,27 @@ public class ListTypeEntryModelImpl
 
 	@JSON
 	@Override
+	public boolean getSystem() {
+		return _system;
+	}
+
+	@JSON
+	@Override
+	public boolean isSystem() {
+		return _system;
+	}
+
+	@Override
+	public void setSystem(boolean system) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_system = system;
+	}
+
+	@JSON
+	@Override
 	public String getType() {
 		if (_type == null) {
 			return "";
@@ -757,6 +787,21 @@ public class ListTypeEntryModelImpl
 		}
 
 		_type = type;
+	}
+
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
 	}
 
 	@Override
@@ -889,6 +934,7 @@ public class ListTypeEntryModelImpl
 
 		listTypeEntryImpl.setMvccVersion(getMvccVersion());
 		listTypeEntryImpl.setUuid(getUuid());
+		listTypeEntryImpl.setExternalReferenceCode(getExternalReferenceCode());
 		listTypeEntryImpl.setListTypeEntryId(getListTypeEntryId());
 		listTypeEntryImpl.setCompanyId(getCompanyId());
 		listTypeEntryImpl.setUserId(getUserId());
@@ -898,7 +944,9 @@ public class ListTypeEntryModelImpl
 		listTypeEntryImpl.setListTypeDefinitionId(getListTypeDefinitionId());
 		listTypeEntryImpl.setKey(getKey());
 		listTypeEntryImpl.setName(getName());
+		listTypeEntryImpl.setSystem(isSystem());
 		listTypeEntryImpl.setType(getType());
+		listTypeEntryImpl.setStatus(getStatus());
 
 		listTypeEntryImpl.resetOriginalValues();
 
@@ -912,6 +960,8 @@ public class ListTypeEntryModelImpl
 		listTypeEntryImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
 		listTypeEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		listTypeEntryImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		listTypeEntryImpl.setListTypeEntryId(
 			this.<Long>getColumnOriginalValue("listTypeEntryId"));
 		listTypeEntryImpl.setCompanyId(
@@ -928,7 +978,11 @@ public class ListTypeEntryModelImpl
 			this.<Long>getColumnOriginalValue("listTypeDefinitionId"));
 		listTypeEntryImpl.setKey(this.<String>getColumnOriginalValue("key_"));
 		listTypeEntryImpl.setName(this.<String>getColumnOriginalValue("name"));
+		listTypeEntryImpl.setSystem(
+			this.<Boolean>getColumnOriginalValue("system_"));
 		listTypeEntryImpl.setType(this.<String>getColumnOriginalValue("type_"));
+		listTypeEntryImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return listTypeEntryImpl;
 	}
@@ -1017,6 +1071,18 @@ public class ListTypeEntryModelImpl
 			listTypeEntryCacheModel.uuid = null;
 		}
 
+		listTypeEntryCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			listTypeEntryCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			listTypeEntryCacheModel.externalReferenceCode = null;
+		}
+
 		listTypeEntryCacheModel.listTypeEntryId = getListTypeEntryId();
 
 		listTypeEntryCacheModel.companyId = getCompanyId();
@@ -1068,6 +1134,8 @@ public class ListTypeEntryModelImpl
 			listTypeEntryCacheModel.name = null;
 		}
 
+		listTypeEntryCacheModel.system = isSystem();
+
 		listTypeEntryCacheModel.type = getType();
 
 		String type = listTypeEntryCacheModel.type;
@@ -1075,6 +1143,8 @@ public class ListTypeEntryModelImpl
 		if ((type != null) && (type.length() == 0)) {
 			listTypeEntryCacheModel.type = null;
 		}
+
+		listTypeEntryCacheModel.status = getStatus();
 
 		return listTypeEntryCacheModel;
 	}
@@ -1128,46 +1198,18 @@ public class ListTypeEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ListTypeEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ListTypeEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ListTypeEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ListTypeEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ListTypeEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ListTypeEntry.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _listTypeEntryId;
 	private long _companyId;
 	private long _userId;
@@ -1179,13 +1221,16 @@ public class ListTypeEntryModelImpl
 	private String _key;
 	private String _name;
 	private String _nameCurrentLanguageId;
+	private boolean _system;
 	private String _type;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ListTypeEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1212,6 +1257,8 @@ public class ListTypeEntryModelImpl
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("listTypeEntryId", _listTypeEntryId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -1222,7 +1269,9 @@ public class ListTypeEntryModelImpl
 			"listTypeDefinitionId", _listTypeDefinitionId);
 		_columnOriginalValues.put("key_", _key);
 		_columnOriginalValues.put("name", _name);
+		_columnOriginalValues.put("system_", _system);
 		_columnOriginalValues.put("type_", _type);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1232,6 +1281,7 @@ public class ListTypeEntryModelImpl
 
 		attributeNames.put("uuid_", "uuid");
 		attributeNames.put("key_", "key");
+		attributeNames.put("system_", "system");
 		attributeNames.put("type_", "type");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
@@ -1252,25 +1302,31 @@ public class ListTypeEntryModelImpl
 
 		columnBitmasks.put("uuid_", 2L);
 
-		columnBitmasks.put("listTypeEntryId", 4L);
+		columnBitmasks.put("externalReferenceCode", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("listTypeEntryId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("listTypeDefinitionId", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("key_", 512L);
+		columnBitmasks.put("listTypeDefinitionId", 512L);
 
-		columnBitmasks.put("name", 1024L);
+		columnBitmasks.put("key_", 1024L);
 
-		columnBitmasks.put("type_", 2048L);
+		columnBitmasks.put("name", 2048L);
+
+		columnBitmasks.put("system_", 4096L);
+
+		columnBitmasks.put("type_", 8192L);
+
+		columnBitmasks.put("status", 16384L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

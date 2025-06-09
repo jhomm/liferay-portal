@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.web.internal.portlet.action;
@@ -19,7 +10,6 @@ import com.liferay.commerce.notification.exception.CommerceNotificationTemplateN
 import com.liferay.commerce.notification.exception.CommerceNotificationTemplateTypeException;
 import com.liferay.commerce.notification.exception.NoSuchNotificationTemplateException;
 import com.liferay.commerce.notification.model.CommerceNotificationTemplate;
-import com.liferay.commerce.notification.service.CommerceNotificationTemplateCommerceAccountGroupRelService;
 import com.liferay.commerce.notification.service.CommerceNotificationTemplateService;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.model.CommerceChannel;
@@ -32,16 +22,15 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,45 +39,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
 		"mvc.command.name=/commerce_channels/edit_commerce_notification_template"
 	},
 	service = MVCActionCommand.class
 )
 public class EditCommerceNotificationTemplateMVCActionCommand
 	extends BaseMVCActionCommand {
-
-	protected void deleteCommerceNotificationTemplates(
-			ActionRequest actionRequest)
-		throws PortalException {
-
-		long[] deleteCommerceNotificationTemplateIds = null;
-
-		long commerceNotificationTemplateId = ParamUtil.getLong(
-			actionRequest, "commerceNotificationTemplateId");
-
-		if (commerceNotificationTemplateId > 0) {
-			deleteCommerceNotificationTemplateIds = new long[] {
-				commerceNotificationTemplateId
-			};
-		}
-		else {
-			deleteCommerceNotificationTemplateIds = StringUtil.split(
-				ParamUtil.getString(
-					actionRequest, "deleteCommerceNotificationTemplateIds"),
-				0L);
-		}
-
-		for (long deleteCommerceNotificationTemplateId :
-				deleteCommerceNotificationTemplateIds) {
-
-			_commerceNotificationTemplateService.
-				deleteCommerceNotificationTemplate(
-					deleteCommerceNotificationTemplateId);
-		}
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -99,12 +57,12 @@ public class EditCommerceNotificationTemplateMVCActionCommand
 
 		try {
 			if (cmd.equals(Constants.DELETE)) {
-				deleteCommerceNotificationTemplates(actionRequest);
+				_deleteCommerceNotificationTemplates(actionRequest);
 			}
 			else if (cmd.equals(Constants.ADD) ||
 					 cmd.equals(Constants.UPDATE)) {
 
-				updateCommerceNotificationTemplate(actionRequest);
+				_updateCommerceNotificationTemplate(actionRequest);
 			}
 		}
 		catch (Exception exception) {
@@ -137,7 +95,37 @@ public class EditCommerceNotificationTemplateMVCActionCommand
 		}
 	}
 
-	protected CommerceNotificationTemplate updateCommerceNotificationTemplate(
+	private void _deleteCommerceNotificationTemplates(
+			ActionRequest actionRequest)
+		throws PortalException {
+
+		long[] deleteCommerceNotificationTemplateIds = null;
+
+		long commerceNotificationTemplateId = ParamUtil.getLong(
+			actionRequest, "commerceNotificationTemplateId");
+
+		if (commerceNotificationTemplateId > 0) {
+			deleteCommerceNotificationTemplateIds = new long[] {
+				commerceNotificationTemplateId
+			};
+		}
+		else {
+			deleteCommerceNotificationTemplateIds = StringUtil.split(
+				ParamUtil.getString(
+					actionRequest, "deleteCommerceNotificationTemplateIds"),
+				0L);
+		}
+
+		for (long deleteCommerceNotificationTemplateId :
+				deleteCommerceNotificationTemplateIds) {
+
+			_commerceNotificationTemplateService.
+				deleteCommerceNotificationTemplate(
+					deleteCommerceNotificationTemplateId);
+		}
+	}
+
+	private CommerceNotificationTemplate _updateCommerceNotificationTemplate(
 			ActionRequest actionRequest)
 		throws PortalException {
 
@@ -148,15 +136,15 @@ public class EditCommerceNotificationTemplateMVCActionCommand
 		String description = ParamUtil.getString(actionRequest, "description");
 		String to = ParamUtil.getString(actionRequest, "to");
 		String from = ParamUtil.getString(actionRequest, "from");
-		Map<Locale, String> fromNameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> fromNameMap = _localization.getLocalizationMap(
 			actionRequest, "fromName");
 		String cc = ParamUtil.getString(actionRequest, "cc");
 		String bcc = ParamUtil.getString(actionRequest, "bcc");
 		String type = ParamUtil.getString(actionRequest, "type");
 		boolean enabled = ParamUtil.getBoolean(actionRequest, "enabled");
-		Map<Locale, String> subjectMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> subjectMap = _localization.getLocalizationMap(
 			actionRequest, "subject");
-		Map<Locale, String> bodyMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> bodyMap = _localization.getLocalizationMap(
 			actionRequest, "body");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
@@ -194,14 +182,10 @@ public class EditCommerceNotificationTemplateMVCActionCommand
 	private CommerceChannelService _commerceChannelService;
 
 	@Reference
-	private CommerceNotificationTemplateCommerceAccountGroupRelService
-		_commerceNotificationTemplateCommerceAccountGroupRelService;
-
-	@Reference
 	private CommerceNotificationTemplateService
 		_commerceNotificationTemplateService;
 
 	@Reference
-	private Portal _portal;
+	private Localization _localization;
 
 }

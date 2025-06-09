@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service;
 
 import com.liferay.commerce.wish.list.model.CommerceWishListItem;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,20 +32,35 @@ public class CommerceWishListItemServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.commerce.wish.list.service.impl.CommerceWishListItemServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CommerceWishListItem addCommerceWishListItem(
-			long commerceAccountId, long commerceWishListId, long cProductId,
-			String cpInstanceUuid, String json,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+			long commerceAccountId, long commerceWishListId,
+			String cpInstanceUuid, long cProductId, String json)
 		throws PortalException {
 
 		return getService().addCommerceWishListItem(
-			commerceAccountId, commerceWishListId, cProductId, cpInstanceUuid,
-			json, serviceContext);
+			commerceAccountId, commerceWishListId, cpInstanceUuid, cProductId,
+			json);
+	}
+
+	public static CommerceWishListItem addOrUpdateCommerceWishListItem(
+			long commerceAccountId, long commerceWishListId,
+			String cpInstanceUuid, long cProductId, String json)
+		throws PortalException {
+
+		return getService().addOrUpdateCommerceWishListItem(
+			commerceAccountId, commerceWishListId, cpInstanceUuid, cProductId,
+			json);
 	}
 
 	public static void deleteCommerceWishListItem(long commerceWishListItemId)
 		throws PortalException {
 
 		getService().deleteCommerceWishListItem(commerceWishListItemId);
+	}
+
+	public static void deleteCommerceWishListItems(long commerceWishListId)
+		throws PortalException {
+
+		getService().deleteCommerceWishListItems(commerceWishListId);
 	}
 
 	public static CommerceWishListItem getCommerceWishListItem(
@@ -111,10 +118,23 @@ public class CommerceWishListItemServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	public static CommerceWishListItemService getService() {
-		return _service;
+	public static CommerceWishListItem updateCommerceWishListItem(
+			long commerceAccountId, long commerceWishListId,
+			String cpInstanceUuid, long cProductId, String json)
+		throws PortalException {
+
+		return getService().updateCommerceWishListItem(
+			commerceAccountId, commerceWishListId, cpInstanceUuid, cProductId,
+			json);
 	}
 
-	private static volatile CommerceWishListItemService _service;
+	public static CommerceWishListItemService getService() {
+		return _serviceSnapshot.get();
+	}
+
+	private static final Snapshot<CommerceWishListItemService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceWishListItemServiceUtil.class,
+			CommerceWishListItemService.class);
 
 }

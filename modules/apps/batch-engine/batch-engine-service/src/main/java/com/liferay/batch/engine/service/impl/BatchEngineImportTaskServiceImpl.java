@@ -1,30 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.service.impl;
 
+import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.model.BatchEngineImportTask;
+import com.liferay.batch.engine.service.BatchEngineImportTaskErrorLocalService;
 import com.liferay.batch.engine.service.base.BatchEngineImportTaskServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
+import java.io.InputStream;
+import java.io.Serializable;
+
 import java.util.List;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Shuyang Zhou
@@ -40,43 +40,135 @@ public class BatchEngineImportTaskServiceImpl
 	extends BatchEngineImportTaskServiceBaseImpl {
 
 	@Override
+	public BatchEngineImportTask addBatchEngineImportTask(
+			String externalReferenceCode, long companyId, long userId,
+			long batchSize, String callbackURL, String className,
+			byte[] content, String contentType, String executeStatus,
+			Map<String, String> fieldNameMappingMap, int importStrategy,
+			String operation, Map<String, Serializable> parameters,
+			String taskItemDelegateName)
+		throws PortalException {
+
+		_checkPermission(companyId);
+
+		return batchEngineImportTaskLocalService.addBatchEngineImportTask(
+			externalReferenceCode, companyId, userId, batchSize, callbackURL,
+			className, content, contentType, executeStatus, fieldNameMappingMap,
+			importStrategy, operation, parameters, taskItemDelegateName);
+	}
+
+	@Override
+	public BatchEngineImportTask addBatchEngineImportTask(
+			String externalReferenceCode, long companyId, long userId,
+			long batchSize, String callbackURL, String className,
+			byte[] content, String contentType, String executeStatus,
+			Map<String, String> fieldNameMappingMap, int importStrategy,
+			String operation, Map<String, Serializable> parameters,
+			String taskItemDelegateName,
+			BatchEngineTaskItemDelegate<?> batchEngineTaskItemDelegate)
+		throws PortalException {
+
+		_checkPermission(companyId);
+
+		return batchEngineImportTaskLocalService.addBatchEngineImportTask(
+			externalReferenceCode, companyId, userId, batchSize, callbackURL,
+			className, content, contentType, executeStatus, fieldNameMappingMap,
+			importStrategy, operation, parameters, taskItemDelegateName,
+			batchEngineTaskItemDelegate);
+	}
+
+	@Override
+	public BatchEngineImportTask getBatchEngineImportTask(
+			long batchEngineImportTaskId)
+		throws PortalException {
+
+		BatchEngineImportTask batchEngineImportTask =
+			batchEngineImportTaskLocalService.getBatchEngineImportTask(
+				batchEngineImportTaskId);
+
+		_checkPermission(batchEngineImportTask);
+
+		return batchEngineImportTask;
+	}
+
+	@Override
+	public BatchEngineImportTask
+			getBatchEngineImportTaskByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		_checkPermission(companyId);
+
+		BatchEngineImportTask batchEngineImportTask =
+			batchEngineImportTaskLocalService.
+				getBatchEngineImportTaskByExternalReferenceCode(
+					externalReferenceCode, companyId);
+
+		_checkPermission(batchEngineImportTask);
+
+		return batchEngineImportTask;
+	}
+
+	@Override
 	public List<BatchEngineImportTask> getBatchEngineImportTasks(
 			long companyId, int start, int end)
 		throws PortalException {
 
-		PermissionChecker permissionChecker = getPermissionChecker();
+		_checkPermission(companyId);
 
-		if ((companyId != permissionChecker.getCompanyId()) &&
-			!permissionChecker.isOmniadmin()) {
-
-			throw new PrincipalException();
-		}
-
-		return batchEngineImportTaskLocalService.getBatchEngineImportTasks(
-			companyId, start, end);
+		return _filterBatchEngineImportTasks(
+			batchEngineImportTaskLocalService.getBatchEngineImportTasks(
+				companyId, start, end));
 	}
 
+	@Override
 	public List<BatchEngineImportTask> getBatchEngineImportTasks(
 			long companyId, int start, int end,
 			OrderByComparator<BatchEngineImportTask> orderByComparator)
 		throws PortalException {
 
-		PermissionChecker permissionChecker = getPermissionChecker();
+		_checkPermission(companyId);
 
-		if ((companyId != permissionChecker.getCompanyId()) &&
-			!permissionChecker.isOmniadmin()) {
-
-			throw new PrincipalException();
-		}
-
-		return batchEngineImportTaskLocalService.getBatchEngineImportTasks(
-			companyId, start, end, orderByComparator);
+		return _filterBatchEngineImportTasks(
+			batchEngineImportTaskLocalService.getBatchEngineImportTasks(
+				companyId, start, end, orderByComparator));
 	}
 
 	@Override
 	public int getBatchEngineImportTasksCount(long companyId)
 		throws PortalException {
 
+		_checkPermission(companyId);
+
+		List<BatchEngineImportTask> filteredBatchEngineImportTasks =
+			_filterBatchEngineImportTasks(
+				batchEngineImportTaskLocalService.getBatchEngineImportTasks(
+					companyId, QueryUtil.ALL_POS, QueryUtil.ALL_POS));
+
+		return filteredBatchEngineImportTasks.size();
+	}
+
+	@Override
+	public InputStream openContentInputStream(long batchEngineImportTaskId)
+		throws PortalException {
+
+		_checkPermission(
+			batchEngineImportTaskLocalService.getBatchEngineImportTask(
+				batchEngineImportTaskId));
+
+		return batchEngineImportTaskLocalService.openContentInputStream(
+			batchEngineImportTaskId);
+	}
+
+	private void _checkPermission(BatchEngineImportTask batchEngineImportTask)
+		throws PrincipalException {
+
+		if (!_hasPermission(batchEngineImportTask, getPermissionChecker())) {
+			throw new PrincipalException();
+		}
+	}
+
+	private void _checkPermission(long companyId) throws PrincipalException {
 		PermissionChecker permissionChecker = getPermissionChecker();
 
 		if ((companyId != permissionChecker.getCompanyId()) &&
@@ -84,9 +176,42 @@ public class BatchEngineImportTaskServiceImpl
 
 			throw new PrincipalException();
 		}
-
-		return batchEngineImportTaskLocalService.getBatchEngineImportTasksCount(
-			companyId);
 	}
+
+	private List<BatchEngineImportTask> _filterBatchEngineImportTasks(
+			List<BatchEngineImportTask> batchEngineImportTasks)
+		throws PrincipalException {
+
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		return TransformUtil.transform(
+			batchEngineImportTasks,
+			batchEngineImportTask -> {
+				if (_hasPermission(batchEngineImportTask, permissionChecker)) {
+					return batchEngineImportTask;
+				}
+
+				return null;
+			});
+	}
+
+	private boolean _hasPermission(
+		BatchEngineImportTask batchEngineImportTask,
+		PermissionChecker permissionChecker) {
+
+		if (permissionChecker.isCompanyAdmin(
+				batchEngineImportTask.getCompanyId()) ||
+			(batchEngineImportTask.getUserId() ==
+				permissionChecker.getUserId())) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	@Reference
+	private BatchEngineImportTaskErrorLocalService
+		_batchEngineImportTaskErrorLocalService;
 
 }

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service;
 
+import com.liferay.commerce.price.list.model.CommercePriceListChannelRel;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -27,6 +19,10 @@ public class CommercePriceListChannelRelServiceWrapper
 	implements CommercePriceListChannelRelService,
 			   ServiceWrapper<CommercePriceListChannelRelService> {
 
+	public CommercePriceListChannelRelServiceWrapper() {
+		this(null);
+	}
+
 	public CommercePriceListChannelRelServiceWrapper(
 		CommercePriceListChannelRelService commercePriceListChannelRelService) {
 
@@ -35,10 +31,9 @@ public class CommercePriceListChannelRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListChannelRel
-			addCommercePriceListChannelRel(
-				long commercePriceListId, long commerceChannelId, int order,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommercePriceListChannelRel addCommercePriceListChannelRel(
+			long commercePriceListId, long commerceChannelId, int order,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListChannelRelService.
@@ -66,9 +61,8 @@ public class CommercePriceListChannelRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListChannelRel
-			fetchCommercePriceListChannelRel(
-				long commerceChannelId, long commercePriceListId)
+	public CommercePriceListChannelRel fetchCommercePriceListChannelRel(
+			long commerceChannelId, long commercePriceListId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListChannelRelService.
@@ -77,8 +71,8 @@ public class CommercePriceListChannelRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListChannelRel
-			getCommercePriceListChannelRel(long commercePriceListChannelRelId)
+	public CommercePriceListChannelRel getCommercePriceListChannelRel(
+			long commercePriceListChannelRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListChannelRelService.
@@ -86,24 +80,21 @@ public class CommercePriceListChannelRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListChannelRel>
-				getCommercePriceListChannelRels(long commercePriceListId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePriceListChannelRel>
+			getCommercePriceListChannelRels(long commercePriceListId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListChannelRelService.
 			getCommercePriceListChannelRels(commercePriceListId);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListChannelRel>
-				getCommercePriceListChannelRels(
-					long commercePriceListId, int start, int end,
-					com.liferay.portal.kernel.util.OrderByComparator
-						<com.liferay.commerce.price.list.model.
-							CommercePriceListChannelRel> orderByComparator)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePriceListChannelRel>
+			getCommercePriceListChannelRels(
+				long commercePriceListId, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<CommercePriceListChannelRel> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListChannelRelService.
 			getCommercePriceListChannelRels(
@@ -111,10 +102,9 @@ public class CommercePriceListChannelRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListChannelRel>
-			getCommercePriceListChannelRels(
-				long commercePriceListId, String name, int start, int end) {
+	public java.util.List<CommercePriceListChannelRel>
+		getCommercePriceListChannelRels(
+			long commercePriceListId, String name, int start, int end) {
 
 		return _commercePriceListChannelRelService.
 			getCommercePriceListChannelRels(

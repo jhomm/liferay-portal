@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.model.ObjectRelationshipModel;
-import com.liferay.object.model.ObjectRelationshipSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.LocaleException;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -86,14 +73,17 @@ public class ObjectRelationshipModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
+		{"externalReferenceCode", Types.VARCHAR},
 		{"objectRelationshipId", Types.BIGINT}, {"companyId", Types.BIGINT},
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"objectDefinitionId1", Types.BIGINT},
 		{"objectDefinitionId2", Types.BIGINT}, {"objectFieldId2", Types.BIGINT},
+		{"parameterObjectFieldId", Types.BIGINT},
 		{"deletionType", Types.VARCHAR}, {"dbTableName", Types.VARCHAR},
-		{"label", Types.VARCHAR}, {"name", Types.VARCHAR},
-		{"reverse", Types.BOOLEAN}, {"type_", Types.VARCHAR}
+		{"edge", Types.BOOLEAN}, {"label", Types.VARCHAR},
+		{"name", Types.VARCHAR}, {"reverse", Types.BOOLEAN},
+		{"system_", Types.BOOLEAN}, {"type_", Types.VARCHAR}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -102,6 +92,7 @@ public class ObjectRelationshipModelImpl
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("objectRelationshipId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -111,16 +102,19 @@ public class ObjectRelationshipModelImpl
 		TABLE_COLUMNS_MAP.put("objectDefinitionId1", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("objectDefinitionId2", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("objectFieldId2", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("parameterObjectFieldId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("deletionType", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("dbTableName", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("edge", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("label", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("reverse", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("system_", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ObjectRelationship (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,objectRelationshipId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectDefinitionId1 LONG,objectDefinitionId2 LONG,objectFieldId2 LONG,deletionType VARCHAR(75) null,dbTableName VARCHAR(75) null,label STRING null,name VARCHAR(75) null,reverse BOOLEAN,type_ VARCHAR(75) null)";
+		"create table ObjectRelationship (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,objectRelationshipId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectDefinitionId1 LONG,objectDefinitionId2 LONG,objectFieldId2 LONG,parameterObjectFieldId LONG,deletionType VARCHAR(75) null,dbTableName VARCHAR(75) null,edge BOOLEAN,label STRING null,name VARCHAR(75) null,reverse BOOLEAN,system_ BOOLEAN,type_ VARCHAR(75) null)";
 
 	public static final String TABLE_SQL_DROP = "drop table ObjectRelationship";
 
@@ -146,50 +140,86 @@ public class ObjectRelationshipModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 2L;
+	public static final long DBTABLENAME_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTDEFINITIONID1_COLUMN_BITMASK = 4L;
+	public static final long DELETIONTYPE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTDEFINITIONID2_COLUMN_BITMASK = 8L;
+	public static final long EDGE_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTFIELDID2_COLUMN_BITMASK = 16L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long REVERSE_COLUMN_BITMASK = 32L;
+	public static final long NAME_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 64L;
+	public static final long OBJECTDEFINITIONID1_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 128L;
+	public static final long OBJECTDEFINITIONID2_COLUMN_BITMASK = 128L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long OBJECTFIELDID2_COLUMN_BITMASK = 256L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long PARAMETEROBJECTFIELDID_COLUMN_BITMASK = 512L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long REVERSE_COLUMN_BITMASK = 1024L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long TYPE_COLUMN_BITMASK = 2048L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long USERID_COLUMN_BITMASK = 4096L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 8192L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long OBJECTRELATIONSHIPID_COLUMN_BITMASK = 256L;
+	public static final long OBJECTRELATIONSHIPID_COLUMN_BITMASK = 16384L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -203,67 +233,6 @@ public class ObjectRelationshipModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static ObjectRelationship toModel(ObjectRelationshipSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		ObjectRelationship model = new ObjectRelationshipImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setObjectRelationshipId(soapModel.getObjectRelationshipId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setObjectDefinitionId1(soapModel.getObjectDefinitionId1());
-		model.setObjectDefinitionId2(soapModel.getObjectDefinitionId2());
-		model.setObjectFieldId2(soapModel.getObjectFieldId2());
-		model.setDeletionType(soapModel.getDeletionType());
-		model.setDBTableName(soapModel.getDBTableName());
-		model.setLabel(soapModel.getLabel());
-		model.setName(soapModel.getName());
-		model.setReverse(soapModel.isReverse());
-		model.setType(soapModel.getType());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<ObjectRelationship> toModels(
-		ObjectRelationshipSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<ObjectRelationship> models = new ArrayList<ObjectRelationship>(
-			soapModels.length);
-
-		for (ObjectRelationshipSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public ObjectRelationshipModelImpl() {
@@ -342,159 +311,175 @@ public class ObjectRelationshipModelImpl
 	public Map<String, Function<ObjectRelationship, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ObjectRelationship, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ObjectRelationship>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ObjectRelationship.class.getClassLoader(), ObjectRelationship.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ObjectRelationship, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ObjectRelationship> constructor =
-				(Constructor<ObjectRelationship>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ObjectRelationship, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ObjectRelationship, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ObjectRelationship::getMvccVersion);
+			attributeGetterFunctions.put("uuid", ObjectRelationship::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				ObjectRelationship::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"objectRelationshipId",
+				ObjectRelationship::getObjectRelationshipId);
+			attributeGetterFunctions.put(
+				"companyId", ObjectRelationship::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", ObjectRelationship::getUserId);
+			attributeGetterFunctions.put(
+				"userName", ObjectRelationship::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", ObjectRelationship::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ObjectRelationship::getModifiedDate);
+			attributeGetterFunctions.put(
+				"objectDefinitionId1",
+				ObjectRelationship::getObjectDefinitionId1);
+			attributeGetterFunctions.put(
+				"objectDefinitionId2",
+				ObjectRelationship::getObjectDefinitionId2);
+			attributeGetterFunctions.put(
+				"objectFieldId2", ObjectRelationship::getObjectFieldId2);
+			attributeGetterFunctions.put(
+				"parameterObjectFieldId",
+				ObjectRelationship::getParameterObjectFieldId);
+			attributeGetterFunctions.put(
+				"deletionType", ObjectRelationship::getDeletionType);
+			attributeGetterFunctions.put(
+				"dbTableName", ObjectRelationship::getDBTableName);
+			attributeGetterFunctions.put("edge", ObjectRelationship::getEdge);
+			attributeGetterFunctions.put("label", ObjectRelationship::getLabel);
+			attributeGetterFunctions.put("name", ObjectRelationship::getName);
+			attributeGetterFunctions.put(
+				"reverse", ObjectRelationship::getReverse);
+			attributeGetterFunctions.put(
+				"system", ObjectRelationship::getSystem);
+			attributeGetterFunctions.put("type", ObjectRelationship::getType);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ObjectRelationship, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ObjectRelationship, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ObjectRelationship, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<ObjectRelationship, Object>>();
-		Map<String, BiConsumer<ObjectRelationship, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<ObjectRelationship, ?>>();
+		private static final Map<String, BiConsumer<ObjectRelationship, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ObjectRelationship::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setMvccVersion);
-		attributeGetterFunctions.put("uuid", ObjectRelationship::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setUuid);
-		attributeGetterFunctions.put(
-			"objectRelationshipId",
-			ObjectRelationship::getObjectRelationshipId);
-		attributeSetterBiConsumers.put(
-			"objectRelationshipId",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setObjectRelationshipId);
-		attributeGetterFunctions.put(
-			"companyId", ObjectRelationship::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setCompanyId);
-		attributeGetterFunctions.put("userId", ObjectRelationship::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setUserId);
-		attributeGetterFunctions.put(
-			"userName", ObjectRelationship::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", ObjectRelationship::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ObjectRelationship, Date>)
-				ObjectRelationship::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ObjectRelationship::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ObjectRelationship, Date>)
-				ObjectRelationship::setModifiedDate);
-		attributeGetterFunctions.put(
-			"objectDefinitionId1", ObjectRelationship::getObjectDefinitionId1);
-		attributeSetterBiConsumers.put(
-			"objectDefinitionId1",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setObjectDefinitionId1);
-		attributeGetterFunctions.put(
-			"objectDefinitionId2", ObjectRelationship::getObjectDefinitionId2);
-		attributeSetterBiConsumers.put(
-			"objectDefinitionId2",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setObjectDefinitionId2);
-		attributeGetterFunctions.put(
-			"objectFieldId2", ObjectRelationship::getObjectFieldId2);
-		attributeSetterBiConsumers.put(
-			"objectFieldId2",
-			(BiConsumer<ObjectRelationship, Long>)
-				ObjectRelationship::setObjectFieldId2);
-		attributeGetterFunctions.put(
-			"deletionType", ObjectRelationship::getDeletionType);
-		attributeSetterBiConsumers.put(
-			"deletionType",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setDeletionType);
-		attributeGetterFunctions.put(
-			"dbTableName", ObjectRelationship::getDBTableName);
-		attributeSetterBiConsumers.put(
-			"dbTableName",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setDBTableName);
-		attributeGetterFunctions.put("label", ObjectRelationship::getLabel);
-		attributeSetterBiConsumers.put(
-			"label",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setLabel);
-		attributeGetterFunctions.put("name", ObjectRelationship::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setName);
-		attributeGetterFunctions.put("reverse", ObjectRelationship::getReverse);
-		attributeSetterBiConsumers.put(
-			"reverse",
-			(BiConsumer<ObjectRelationship, Boolean>)
-				ObjectRelationship::setReverse);
-		attributeGetterFunctions.put("type", ObjectRelationship::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<ObjectRelationship, String>)
-				ObjectRelationship::setType);
+		static {
+			Map<String, BiConsumer<ObjectRelationship, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<ObjectRelationship, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"objectRelationshipId",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setObjectRelationshipId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ObjectRelationship, Date>)
+					ObjectRelationship::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ObjectRelationship, Date>)
+					ObjectRelationship::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"objectDefinitionId1",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setObjectDefinitionId1);
+			attributeSetterBiConsumers.put(
+				"objectDefinitionId2",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setObjectDefinitionId2);
+			attributeSetterBiConsumers.put(
+				"objectFieldId2",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setObjectFieldId2);
+			attributeSetterBiConsumers.put(
+				"parameterObjectFieldId",
+				(BiConsumer<ObjectRelationship, Long>)
+					ObjectRelationship::setParameterObjectFieldId);
+			attributeSetterBiConsumers.put(
+				"deletionType",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setDeletionType);
+			attributeSetterBiConsumers.put(
+				"dbTableName",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setDBTableName);
+			attributeSetterBiConsumers.put(
+				"edge",
+				(BiConsumer<ObjectRelationship, Boolean>)
+					ObjectRelationship::setEdge);
+			attributeSetterBiConsumers.put(
+				"label",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setLabel);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setName);
+			attributeSetterBiConsumers.put(
+				"reverse",
+				(BiConsumer<ObjectRelationship, Boolean>)
+					ObjectRelationship::setReverse);
+			attributeSetterBiConsumers.put(
+				"system",
+				(BiConsumer<ObjectRelationship, Boolean>)
+					ObjectRelationship::setSystem);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<ObjectRelationship, String>)
+					ObjectRelationship::setType);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -539,6 +524,35 @@ public class ObjectRelationshipModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -610,6 +624,15 @@ public class ObjectRelationshipModelImpl
 
 	@Override
 	public void setUserUuid(String userUuid) {
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalUserId() {
+		return GetterUtil.getLong(this.<Long>getColumnOriginalValue("userId"));
 	}
 
 	@JSON
@@ -745,6 +768,31 @@ public class ObjectRelationshipModelImpl
 
 	@JSON
 	@Override
+	public long getParameterObjectFieldId() {
+		return _parameterObjectFieldId;
+	}
+
+	@Override
+	public void setParameterObjectFieldId(long parameterObjectFieldId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_parameterObjectFieldId = parameterObjectFieldId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalParameterObjectFieldId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("parameterObjectFieldId"));
+	}
+
+	@JSON
+	@Override
 	public String getDeletionType() {
 		if (_deletionType == null) {
 			return "";
@@ -761,6 +809,15 @@ public class ObjectRelationshipModelImpl
 		}
 
 		_deletionType = deletionType;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalDeletionType() {
+		return getColumnOriginalValue("deletionType");
 	}
 
 	@JSON
@@ -781,6 +838,46 @@ public class ObjectRelationshipModelImpl
 		}
 
 		_dbTableName = dbTableName;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalDBTableName() {
+		return getColumnOriginalValue("dbTableName");
+	}
+
+	@JSON
+	@Override
+	public boolean getEdge() {
+		return _edge;
+	}
+
+	@JSON
+	@Override
+	public boolean isEdge() {
+		return _edge;
+	}
+
+	@Override
+	public void setEdge(boolean edge) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_edge = edge;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public boolean getOriginalEdge() {
+		return GetterUtil.getBoolean(
+			this.<Boolean>getColumnOriginalValue("edge"));
 	}
 
 	@JSON
@@ -954,6 +1051,27 @@ public class ObjectRelationshipModelImpl
 
 	@JSON
 	@Override
+	public boolean getSystem() {
+		return _system;
+	}
+
+	@JSON
+	@Override
+	public boolean isSystem() {
+		return _system;
+	}
+
+	@Override
+	public void setSystem(boolean system) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_system = system;
+	}
+
+	@JSON
+	@Override
 	public String getType() {
 		if (_type == null) {
 			return "";
@@ -1113,6 +1231,8 @@ public class ObjectRelationshipModelImpl
 
 		objectRelationshipImpl.setMvccVersion(getMvccVersion());
 		objectRelationshipImpl.setUuid(getUuid());
+		objectRelationshipImpl.setExternalReferenceCode(
+			getExternalReferenceCode());
 		objectRelationshipImpl.setObjectRelationshipId(
 			getObjectRelationshipId());
 		objectRelationshipImpl.setCompanyId(getCompanyId());
@@ -1123,11 +1243,15 @@ public class ObjectRelationshipModelImpl
 		objectRelationshipImpl.setObjectDefinitionId1(getObjectDefinitionId1());
 		objectRelationshipImpl.setObjectDefinitionId2(getObjectDefinitionId2());
 		objectRelationshipImpl.setObjectFieldId2(getObjectFieldId2());
+		objectRelationshipImpl.setParameterObjectFieldId(
+			getParameterObjectFieldId());
 		objectRelationshipImpl.setDeletionType(getDeletionType());
 		objectRelationshipImpl.setDBTableName(getDBTableName());
+		objectRelationshipImpl.setEdge(isEdge());
 		objectRelationshipImpl.setLabel(getLabel());
 		objectRelationshipImpl.setName(getName());
 		objectRelationshipImpl.setReverse(isReverse());
+		objectRelationshipImpl.setSystem(isSystem());
 		objectRelationshipImpl.setType(getType());
 
 		objectRelationshipImpl.resetOriginalValues();
@@ -1144,6 +1268,8 @@ public class ObjectRelationshipModelImpl
 			this.<Long>getColumnOriginalValue("mvccVersion"));
 		objectRelationshipImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
+		objectRelationshipImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		objectRelationshipImpl.setObjectRelationshipId(
 			this.<Long>getColumnOriginalValue("objectRelationshipId"));
 		objectRelationshipImpl.setCompanyId(
@@ -1162,16 +1288,22 @@ public class ObjectRelationshipModelImpl
 			this.<Long>getColumnOriginalValue("objectDefinitionId2"));
 		objectRelationshipImpl.setObjectFieldId2(
 			this.<Long>getColumnOriginalValue("objectFieldId2"));
+		objectRelationshipImpl.setParameterObjectFieldId(
+			this.<Long>getColumnOriginalValue("parameterObjectFieldId"));
 		objectRelationshipImpl.setDeletionType(
 			this.<String>getColumnOriginalValue("deletionType"));
 		objectRelationshipImpl.setDBTableName(
 			this.<String>getColumnOriginalValue("dbTableName"));
+		objectRelationshipImpl.setEdge(
+			this.<Boolean>getColumnOriginalValue("edge"));
 		objectRelationshipImpl.setLabel(
 			this.<String>getColumnOriginalValue("label"));
 		objectRelationshipImpl.setName(
 			this.<String>getColumnOriginalValue("name"));
 		objectRelationshipImpl.setReverse(
 			this.<Boolean>getColumnOriginalValue("reverse"));
+		objectRelationshipImpl.setSystem(
+			this.<Boolean>getColumnOriginalValue("system_"));
 		objectRelationshipImpl.setType(
 			this.<String>getColumnOriginalValue("type_"));
 
@@ -1262,6 +1394,18 @@ public class ObjectRelationshipModelImpl
 			objectRelationshipCacheModel.uuid = null;
 		}
 
+		objectRelationshipCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			objectRelationshipCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			objectRelationshipCacheModel.externalReferenceCode = null;
+		}
+
 		objectRelationshipCacheModel.objectRelationshipId =
 			getObjectRelationshipId();
 
@@ -1303,6 +1447,9 @@ public class ObjectRelationshipModelImpl
 
 		objectRelationshipCacheModel.objectFieldId2 = getObjectFieldId2();
 
+		objectRelationshipCacheModel.parameterObjectFieldId =
+			getParameterObjectFieldId();
+
 		objectRelationshipCacheModel.deletionType = getDeletionType();
 
 		String deletionType = objectRelationshipCacheModel.deletionType;
@@ -1318,6 +1465,8 @@ public class ObjectRelationshipModelImpl
 		if ((dbTableName != null) && (dbTableName.length() == 0)) {
 			objectRelationshipCacheModel.dbTableName = null;
 		}
+
+		objectRelationshipCacheModel.edge = isEdge();
 
 		objectRelationshipCacheModel.label = getLabel();
 
@@ -1336,6 +1485,8 @@ public class ObjectRelationshipModelImpl
 		}
 
 		objectRelationshipCacheModel.reverse = isReverse();
+
+		objectRelationshipCacheModel.system = isSystem();
 
 		objectRelationshipCacheModel.type = getType();
 
@@ -1398,46 +1549,18 @@ public class ObjectRelationshipModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ObjectRelationship, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ObjectRelationship, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ObjectRelationship, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ObjectRelationship)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ObjectRelationship>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ObjectRelationship.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _objectRelationshipId;
 	private long _companyId;
 	private long _userId;
@@ -1448,19 +1571,23 @@ public class ObjectRelationshipModelImpl
 	private long _objectDefinitionId1;
 	private long _objectDefinitionId2;
 	private long _objectFieldId2;
+	private long _parameterObjectFieldId;
 	private String _deletionType;
 	private String _dbTableName;
+	private boolean _edge;
 	private String _label;
 	private String _labelCurrentLanguageId;
 	private String _name;
 	private boolean _reverse;
+	private boolean _system;
 	private String _type;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ObjectRelationship, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1488,6 +1615,8 @@ public class ObjectRelationshipModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
+		_columnOriginalValues.put(
 			"objectRelationshipId", _objectRelationshipId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -1497,11 +1626,15 @@ public class ObjectRelationshipModelImpl
 		_columnOriginalValues.put("objectDefinitionId1", _objectDefinitionId1);
 		_columnOriginalValues.put("objectDefinitionId2", _objectDefinitionId2);
 		_columnOriginalValues.put("objectFieldId2", _objectFieldId2);
+		_columnOriginalValues.put(
+			"parameterObjectFieldId", _parameterObjectFieldId);
 		_columnOriginalValues.put("deletionType", _deletionType);
 		_columnOriginalValues.put("dbTableName", _dbTableName);
+		_columnOriginalValues.put("edge", _edge);
 		_columnOriginalValues.put("label", _label);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("reverse", _reverse);
+		_columnOriginalValues.put("system_", _system);
 		_columnOriginalValues.put("type_", _type);
 	}
 
@@ -1511,6 +1644,7 @@ public class ObjectRelationshipModelImpl
 		Map<String, String> attributeNames = new HashMap<>();
 
 		attributeNames.put("uuid_", "uuid");
+		attributeNames.put("system_", "system");
 		attributeNames.put("type_", "type");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
@@ -1531,35 +1665,43 @@ public class ObjectRelationshipModelImpl
 
 		columnBitmasks.put("uuid_", 2L);
 
-		columnBitmasks.put("objectRelationshipId", 4L);
+		columnBitmasks.put("externalReferenceCode", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("objectRelationshipId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("objectDefinitionId1", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("objectDefinitionId2", 512L);
+		columnBitmasks.put("objectDefinitionId1", 512L);
 
-		columnBitmasks.put("objectFieldId2", 1024L);
+		columnBitmasks.put("objectDefinitionId2", 1024L);
 
-		columnBitmasks.put("deletionType", 2048L);
+		columnBitmasks.put("objectFieldId2", 2048L);
 
-		columnBitmasks.put("dbTableName", 4096L);
+		columnBitmasks.put("parameterObjectFieldId", 4096L);
 
-		columnBitmasks.put("label", 8192L);
+		columnBitmasks.put("deletionType", 8192L);
 
-		columnBitmasks.put("name", 16384L);
+		columnBitmasks.put("dbTableName", 16384L);
 
-		columnBitmasks.put("reverse", 32768L);
+		columnBitmasks.put("edge", 32768L);
 
-		columnBitmasks.put("type_", 65536L);
+		columnBitmasks.put("label", 65536L);
+
+		columnBitmasks.put("name", 131072L);
+
+		columnBitmasks.put("reverse", 262144L);
+
+		columnBitmasks.put("system_", 524288L);
+
+		columnBitmasks.put("type_", 1048576L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

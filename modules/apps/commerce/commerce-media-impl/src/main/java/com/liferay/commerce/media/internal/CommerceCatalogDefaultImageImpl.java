@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.media.internal;
@@ -24,10 +15,10 @@ import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil
 import com.liferay.portal.kernel.repository.capabilities.TemporaryFileEntriesCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 
@@ -37,10 +28,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alec Sloan
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CommerceCatalogDefaultImage.class
-)
+@Component(service = CommerceCatalogDefaultImage.class)
 public class CommerceCatalogDefaultImageImpl
 	implements CommerceCatalogDefaultImage {
 
@@ -48,7 +36,7 @@ public class CommerceCatalogDefaultImageImpl
 	public long getDefaultCatalogFileEntryId(long groupId)
 		throws PortalException {
 
-		Settings settings = _settingsFactory.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
 				groupId, CommerceMediaConstants.SERVICE_NAME));
 
@@ -71,7 +59,7 @@ public class CommerceCatalogDefaultImageImpl
 
 			FileEntry newFileEntry =
 				PortletFileRepositoryUtil.addPortletFileEntry(
-					groupId, PrincipalThreadLocal.getUserId(),
+					null, groupId, PrincipalThreadLocal.getUserId(),
 					CommerceCatalogDefaultImageImpl.class.getName(), 0,
 					CPConstants.SERVICE_NAME_PRODUCT,
 					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
@@ -83,7 +71,7 @@ public class CommerceCatalogDefaultImageImpl
 			TempFileEntryUtil.deleteTempFileEntry(fileEntry.getFileEntryId());
 		}
 
-		Settings settings = _settingsFactory.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
 				groupId, CommerceMediaConstants.SERVICE_NAME));
 
@@ -98,8 +86,5 @@ public class CommerceCatalogDefaultImageImpl
 
 	@Reference
 	private DLAppLocalService _dlAppLocalService;
-
-	@Reference
-	private SettingsFactory _settingsFactory;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.portlet.action;
@@ -23,12 +14,10 @@ import com.liferay.configuration.admin.web.internal.display.ConfigurationScreenC
 import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContext;
 import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContextFactory;
 import com.liferay.configuration.admin.web.internal.model.ConfigurationModel;
-import com.liferay.configuration.admin.web.internal.search.ClusterConfigurationModelIndexer;
 import com.liferay.configuration.admin.web.internal.search.FieldNames;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationEntryIterator;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationEntryRetriever;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationModelRetriever;
-import com.liferay.configuration.admin.web.internal.util.ResourceBundleLoaderProvider;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
@@ -41,13 +30,14 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,11 +46,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/configuration_admin/search_results"
 	},
 	service = MVCRenderCommand.class
@@ -71,8 +60,6 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 	public String render(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws PortletException {
-
-		_clusterConfigurationModelIndexer.initialize();
 
 		Indexer<ConfigurationModel> indexer =
 			_indexerRegistry.nullSafeGetIndexer(ConfigurationModel.class);
@@ -108,7 +95,7 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 					configurationScopeDisplayContext.getScope(),
 					configurationScopeDisplayContext.getScopePK());
 
-			List<ConfigurationEntry> searchResults = new ArrayList<>(
+			List<ConfigurationEntry> configurationEntries = new ArrayList<>(
 				documents.length);
 
 			for (Document document : documents) {
@@ -129,10 +116,9 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 				if ((configurationModel != null) &&
 					configurationModel.isGenerateUI()) {
 
-					searchResults.add(
+					configurationEntries.add(
 						new ConfigurationModelConfigurationEntry(
-							configurationModel, renderRequest.getLocale(),
-							_resourceBundleLoaderProvider));
+							configurationModel, renderRequest.getLocale()));
 				}
 			}
 
@@ -142,7 +128,9 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 			for (ConfigurationScreen configurationScreen :
 					_configurationEntryRetriever.getAllConfigurationScreens()) {
 
-				if (!scope.equals(configurationScreen.getScope())) {
+				if (!Objects.equals(scope, configurationScreen.getScope()) ||
+					!configurationScreen.isVisible()) {
+
 					continue;
 				}
 
@@ -159,7 +147,7 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 					configurationScreenKey.contains(searchReadyKeywords) ||
 					configurationScreenName.contains(searchReadyKeywords)) {
 
-					searchResults.add(
+					configurationEntries.add(
 						new ConfigurationScreenConfigurationEntry(
 							configurationScreen, renderRequest.getLocale()));
 				}
@@ -167,13 +155,10 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 
 			renderRequest.setAttribute(
 				ConfigurationAdminWebKeys.CONFIGURATION_ENTRY_ITERATOR,
-				new ConfigurationEntryIterator(searchResults));
+				new ConfigurationEntryIterator(configurationEntries));
 			renderRequest.setAttribute(
 				ConfigurationAdminWebKeys.CONFIGURATION_ENTRY_RETRIEVER,
 				_configurationEntryRetriever);
-			renderRequest.setAttribute(
-				ConfigurationAdminWebKeys.RESOURCE_BUNDLE_LOADER_PROVIDER,
-				_resourceBundleLoaderProvider);
 		}
 		catch (Exception exception) {
 			throw new PortletException(exception);
@@ -183,9 +168,6 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 	}
 
 	@Reference
-	private ClusterConfigurationModelIndexer _clusterConfigurationModelIndexer;
-
-	@Reference
 	private ConfigurationEntryRetriever _configurationEntryRetriever;
 
 	@Reference(target = "(filter.visibility=*)")
@@ -193,8 +175,5 @@ public class SearchResultsMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private IndexerRegistry _indexerRegistry;
-
-	@Reference
-	private ResourceBundleLoaderProvider _resourceBundleLoaderProvider;
 
 }

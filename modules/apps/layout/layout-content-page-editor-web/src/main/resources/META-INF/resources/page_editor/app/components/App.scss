@@ -5,47 +5,63 @@
 @import 'AllowedFragments';
 @import 'DisabledArea';
 @import 'DisplayPagePreviewItemSelector';
-@import 'DragPreview';
 @import 'DropZone';
-@import 'EditModeSelector';
+@import 'FormValidationModal';
+@import 'HTMLEditorModal';
 @import 'Layout';
+@import 'LayoutBreadcrumbs';
 @import 'LayoutViewport';
 @import 'NetworkstatusBar';
-@import 'PreviewModal';
 @import 'SaveFragmentCompositionModal';
+@import 'ShortcutModal';
 @import 'Sidebar';
-@import 'ThemeAdapter';
 @import 'Toolbar';
-@import 'Topper';
 @import 'Translation';
 @import 'ViewportSizeSelector';
 
-@import 'fragment-configuration-fields/TargetCollectionsField';
+@import 'fragment_configuration_fields/AdvancedSelectField';
+@import 'fragment_configuration_fields/CSSClassSelectorField';
+@import 'fragment_configuration_fields/CustomCSSField';
+@import 'fragment_configuration_fields/HideFromSearchField';
+@import 'fragment_configuration_fields/TargetCollectionsField';
 
-@import 'fragment-content/FragmentContent';
+@import 'fragment_content/FragmentContent';
 
-@import 'layout-data-items/CollectionPagination';
-@import 'layout-data-items/RowWithControls';
+@import 'keyboard_movement/KeyboardMovementPreview';
+
+@import 'layout_data_items/CollectionPagination';
+@import 'layout_data_items/FormWithControls';
+@import 'layout_data_items/RowWithControls';
+
+@import 'topper/Topper';
 
 @import 'undo/UndoHistory';
 
 @import '../contexts/GlobalContext';
 
 @import '../../common/components/Button';
-@import '../../common/components/Collapse';
 @import '../../common/components/ColorPalette';
-@import '../../common/components/ColorPicker';
 @import '../../common/components/Editor';
 @import '../../common/components/InlineConfirm';
 @import '../../common/components/ItemSelector';
 @import '../../common/components/SearchForm';
 @import '../../common/components/SidebarPanelHeader';
+@import '../../common/components/SpacingBox';
 @import '../../common/components/Textarea';
+@import '../../common/components/Tooltip';
 
 // Plug-in CSS: later on plug-ins themselves will load this using bundler
 // loaders.
 @import '../../plugins/browser/components/Plugin';
 @import '../../plugins/comments/components/Plugin';
 @import '../../plugins/experience/components/Plugin';
-@import '../../plugins/fragments-widgets/components/Plugin';
-@import '../../plugins/page-design-options/components/Plugin';
+@import '../../plugins/fragments_and_widgets/components/Plugin';
+@import '../../plugins/page_content/components/Plugin';
+@import '../../plugins/page_design_options/components/Plugin';
+@import '../../plugins/page_rules/components/Plugin';
+
+html#{$cadmin-selector}
+	.page-editor__small-resolution
+	.cadmin.control-menu-container {
+	position: static;
+}

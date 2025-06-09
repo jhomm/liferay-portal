@@ -1,49 +1,43 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.velocity.internal;
 
 import com.liferay.petra.lang.ClassLoaderPool;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.cache.SingleVMPool;
 import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateException;
 import com.liferay.portal.kernel.template.TemplateManager;
 import com.liferay.portal.kernel.template.TemplateResource;
+import com.liferay.portal.kernel.template.TemplateResourceCache;
 import com.liferay.portal.kernel.template.TemplateResourceLoader;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.JavaDetector;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.template.BaseTemplateManager;
-import com.liferay.portal.template.TemplateContextHelper;
+import com.liferay.portal.template.BaseTemplateResourceCache;
+import com.liferay.portal.template.BaseTemplateResourceLoader;
+import com.liferay.portal.template.engine.BaseTemplateManager;
+import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.portal.template.velocity.configuration.VelocityEngineConfiguration;
-import com.liferay.taglib.util.VelocityTaglib;
-import com.liferay.taglib.util.VelocityTaglibImpl;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.collections.ExtendedProperties;
 import org.apache.velocity.app.VelocityEngine;
 import org.apache.velocity.runtime.RuntimeConstants;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -53,48 +47,10 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.template.velocity.configuration.VelocityEngineConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
 	property = "language.type=" + TemplateConstants.LANG_TYPE_VM,
 	service = TemplateManager.class
 )
 public class VelocityManager extends BaseTemplateManager {
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void addTaglibSupport(
-		Map<String, Object> contextObjects,
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse) {
-
-		VelocityTaglib velocityTaglib = new VelocityTaglibImpl(
-			httpServletRequest.getServletContext(), httpServletRequest,
-			httpServletResponse, contextObjects);
-
-		contextObjects.put("taglibLiferay", velocityTaglib);
-
-		// Legacy support
-
-		contextObjects.put("theme", velocityTaglib);
-	}
-
-	@Override
-	public void destroy() {
-		if (_velocityEngine == null) {
-			return;
-		}
-
-		_velocityEngine = null;
-
-		templateContextHelper.removeAllHelperUtilities();
-	}
-
-	@Override
-	public void destroy(ClassLoader classLoader) {
-		templateContextHelper.removeHelperUtilities(classLoader);
-	}
 
 	@Override
 	public String getName() {
@@ -106,155 +62,74 @@ public class VelocityManager extends BaseTemplateManager {
 		return _velocityEngineConfiguration.restrictedVariables();
 	}
 
-	@Override
-	public void init() throws TemplateException {
-		if (_velocityEngine != null) {
-			return;
-		}
+	public class VelocityTemplateResourceCache
+		extends BaseTemplateResourceCache {
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		Class<?> clazz = getClass();
-
-		currentThread.setContextClassLoader(clazz.getClassLoader());
-
-		try {
-			_velocityEngine = new VelocityEngine();
-
-			ExtendedProperties extendedProperties =
-				new FastExtendedProperties();
-
-			extendedProperties.setProperty(
-				VelocityEngine.DIRECTIVE_IF_TOSTRING_NULLCHECK,
-				String.valueOf(
-					_velocityEngineConfiguration.
-						directiveIfToStringNullCheck()));
-
-			extendedProperties.setProperty(
-				VelocityEngine.EVENTHANDLER_METHODEXCEPTION,
-				LiferayMethodExceptionEventHandler.class.getName());
-
-			extendedProperties.setProperty(
-				RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,
-				StringUtil.merge(
-					_velocityEngineConfiguration.restrictedClasses()));
-
-			extendedProperties.setProperty(
-				"liferay." + RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES +
-					".methods",
-				_velocityEngineConfiguration.restrictedMethods());
-
-			extendedProperties.setProperty(
-				RuntimeConstants.INTROSPECTOR_RESTRICT_PACKAGES,
-				StringUtil.merge(
-					_velocityEngineConfiguration.restrictedPackages()));
-
-			extendedProperties.setProperty(
-				RuntimeConstants.PARSER_POOL_CLASS,
-				VelocityParserPool.class.getName());
-
-			extendedProperties.setProperty(
-				VelocityEngine.RESOURCE_LOADER, "liferay");
-
-			extendedProperties.setProperty(
+		public VelocityTemplateResourceCache() {
+			init(
+				Long.MIN_VALUE, _portalCacheName,
 				StringBundler.concat(
-					"liferay.", VelocityEngine.RESOURCE_LOADER, ".",
-					VelocityTemplateResourceLoader.class.getName()),
-				templateResourceLoader);
-
-			boolean cacheEnabled = false;
-
-			if (_velocityTemplateResourceCache.isEnabled()) {
-				cacheEnabled = true;
-			}
-
-			extendedProperties.setProperty(
-				"liferay." + VelocityEngine.RESOURCE_LOADER + ".cache",
-				String.valueOf(cacheEnabled));
-
-			extendedProperties.setProperty(
-				"liferay." + VelocityEngine.RESOURCE_LOADER + ".class",
-				LiferayResourceLoader.class.getName());
-
-			extendedProperties.setProperty(
-				"liferay." + VelocityEngine.RESOURCE_LOADER + "portal.cache",
-				_velocityTemplateResourceCache.getSecondLevelPortalCache());
-
-			extendedProperties.setProperty(
-				VelocityEngine.RESOURCE_MANAGER_CLASS,
-				LiferayResourceManager.class.getName());
-
-			int resourceModificationCheckInterval =
-				_velocityEngineConfiguration.
-					resourceModificationCheckInterval();
-
-			extendedProperties.setProperty(
-				"liferay." + VelocityEngine.RESOURCE_MANAGER_CLASS +
-					".resourceModificationCheckInterval",
-				resourceModificationCheckInterval + "");
-
-			extendedProperties.setProperty(
-				VelocityTemplateResourceLoader.class.getName(),
-				templateResourceLoader);
-
-			extendedProperties.setProperty(
-				VelocityEngine.RUNTIME_LOG_LOGSYSTEM_CLASS,
-				_velocityEngineConfiguration.logger());
-
-			extendedProperties.setProperty(
-				VelocityEngine.RUNTIME_LOG_LOGSYSTEM + ".log4j.category",
-				_velocityEngineConfiguration.loggerCategory());
-
-			extendedProperties.setProperty(
-				RuntimeConstants.UBERSPECT_CLASSNAME,
-				LiferaySecureUberspector.class.getName());
-
-			extendedProperties.setProperty(
-				VelocityEngine.VM_LIBRARY, _getVelocimacroLibrary(clazz));
-
-			extendedProperties.setProperty(
-				VelocityEngine.VM_LIBRARY_AUTORELOAD,
-				String.valueOf(!cacheEnabled));
-
-			extendedProperties.setProperty(
-				VelocityEngine.VM_PERM_ALLOW_INLINE_REPLACE_GLOBAL,
-				String.valueOf(!cacheEnabled));
-
-			_velocityEngine.setExtendedProperties(extendedProperties);
-
-			_velocityEngine.init();
+					TemplateResource.class.getName(), StringPool.POUND,
+					TemplateConstants.LANG_TYPE_VM));
 		}
-		catch (Exception exception) {
-			throw new TemplateException(exception);
+
+		public void destroy() {
+			super.destroy();
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
+
+		private final String _portalCacheName =
+			VelocityManager.VelocityTemplateResourceCache.class.getName();
+
 	}
 
-	@Override
-	@Reference(service = VelocityTemplateContextHelper.class, unbind = "-")
-	public void setTemplateContextHelper(
-		TemplateContextHelper templateContextHelper) {
+	public class VelocityTemplateResourceLoader
+		extends BaseTemplateResourceLoader {
 
-		super.setTemplateContextHelper(templateContextHelper);
-	}
+		public VelocityTemplateResourceLoader(
+			BundleContext bundleContext,
+			TemplateResourceCache templateResourceCache) {
 
-	@Override
-	@Reference(service = VelocityTemplateResourceLoader.class, unbind = "-")
-	public void setTemplateResourceLoader(
-		TemplateResourceLoader templateResourceLoader) {
+			init(
+				bundleContext, TemplateConstants.LANG_TYPE_VM,
+				templateResourceCache);
+		}
 
-		super.setTemplateResourceLoader(templateResourceLoader);
+		public void destroy() {
+			super.destroy();
+		}
+
 	}
 
 	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
+	protected void activate(
+			BundleContext bundleContext, Map<String, Object> properties)
+		throws TemplateException {
+
 		_velocityEngineConfiguration = ConfigurableUtil.createConfigurable(
 			VelocityEngineConfiguration.class, properties);
+
+		_velocityTemplateResourceCache = new VelocityTemplateResourceCache();
+
+		_velocityTemplateResourceLoader = new VelocityTemplateResourceLoader(
+			bundleContext, _velocityTemplateResourceCache);
+
+		_templateResourceLoaderServiceRegistration =
+			bundleContext.registerService(
+				TemplateResourceLoader.class, _velocityTemplateResourceLoader,
+				null);
+
+		_init();
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_destroy();
+
+		_templateResourceLoaderServiceRegistration.unregister();
+
+		_velocityTemplateResourceCache.destroy();
+
+		_velocityTemplateResourceLoader.destroy();
 	}
 
 	@Override
@@ -264,7 +139,47 @@ public class VelocityManager extends BaseTemplateManager {
 
 		return new VelocityTemplate(
 			templateResource, helperUtilities, _velocityEngine,
-			templateContextHelper, _velocityTemplateResourceCache, restricted);
+			_templateContextHelper, _velocityTemplateResourceCache, restricted);
+	}
+
+	@Override
+	protected TemplateContextHelper getTemplateContextHelper() {
+		return _templateContextHelper;
+	}
+
+	@Modified
+	protected void modified(Map<String, Object> properties)
+		throws TemplateException {
+
+		_velocityEngineConfiguration = ConfigurableUtil.createConfigurable(
+			VelocityEngineConfiguration.class, properties);
+
+		_destroy();
+
+		_init();
+	}
+
+	private void _destroy() {
+		if (_velocityEngine == null) {
+			return;
+		}
+
+		_velocityEngine = null;
+
+		_templateContextHelper.removeAllHelperUtilities();
+	}
+
+	private String[] _filterRestrictedClasses(String[] restrictedClasses) {
+		if (JavaDetector.isJDK21()) {
+
+			// TODO Remove java.lang.Compiler from
+			// VelocityEngineConfiguration#restrictedClasses and this method
+			// once we fully upgrade to JDK 21
+
+			return ArrayUtil.remove(restrictedClasses, "java.lang.Compiler");
+		}
+
+		return restrictedClasses;
 	}
 
 	private String _getVelocimacroLibrary(Class<?> clazz) {
@@ -292,15 +207,107 @@ public class VelocityManager extends BaseTemplateManager {
 		return sb.toString();
 	}
 
+	private void _init() throws TemplateException {
+		if (_velocityEngine != null) {
+			return;
+		}
+
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				VelocityManager.class.getClassLoader())) {
+
+			_velocityEngine = new VelocityEngine();
+
+			ExtendedProperties extendedProperties =
+				new FastExtendedProperties();
+
+			extendedProperties.setProperty(
+				RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,
+				StringUtil.merge(
+					_filterRestrictedClasses(
+						_velocityEngineConfiguration.restrictedClasses())));
+			extendedProperties.setProperty(
+				RuntimeConstants.INTROSPECTOR_RESTRICT_PACKAGES,
+				StringUtil.merge(
+					_velocityEngineConfiguration.restrictedPackages()));
+			extendedProperties.setProperty(
+				RuntimeConstants.PARSER_POOL_CLASS,
+				VelocityParserPool.class.getName());
+			extendedProperties.setProperty(
+				RuntimeConstants.UBERSPECT_CLASSNAME,
+				LiferaySecureUberspector.class.getName());
+			extendedProperties.setProperty(
+				VelocityEngine.DIRECTIVE_IF_TOSTRING_NULLCHECK,
+				String.valueOf(
+					_velocityEngineConfiguration.
+						directiveIfToStringNullCheck()));
+			extendedProperties.setProperty(
+				VelocityEngine.EVENTHANDLER_METHODEXCEPTION,
+				LiferayMethodExceptionEventHandler.class.getName());
+			extendedProperties.setProperty(
+				VelocityEngine.RESOURCE_LOADER, "liferay");
+			extendedProperties.setProperty(
+				VelocityEngine.RESOURCE_MANAGER_CLASS,
+				LiferayResourceManager.class.getName());
+			extendedProperties.setProperty(
+				VelocityEngine.RUNTIME_LOG_LOGSYSTEM + ".log4j.category",
+				_velocityEngineConfiguration.loggerCategory());
+			extendedProperties.setProperty(
+				VelocityEngine.RUNTIME_LOG_LOGSYSTEM_CLASS,
+				_velocityEngineConfiguration.logger());
+			extendedProperties.setProperty(
+				VelocityEngine.VM_LIBRARY,
+				_getVelocimacroLibrary(VelocityManager.class));
+			extendedProperties.setProperty(
+				VelocityEngine.VM_LIBRARY_AUTORELOAD,
+				String.valueOf(!_velocityTemplateResourceCache.isEnabled()));
+			extendedProperties.setProperty(
+				VelocityEngine.VM_PERM_ALLOW_INLINE_REPLACE_GLOBAL,
+				String.valueOf(!_velocityTemplateResourceCache.isEnabled()));
+			extendedProperties.setProperty(
+				VelocityManager.VelocityTemplateResourceLoader.class.getName(),
+				_velocityTemplateResourceLoader);
+			extendedProperties.setProperty(
+				"liferay." + RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES +
+					".methods",
+				_velocityEngineConfiguration.restrictedMethods());
+			extendedProperties.setProperty(
+				StringBundler.concat(
+					"liferay.", VelocityEngine.RESOURCE_LOADER, ".",
+					VelocityManager.VelocityTemplateResourceLoader.class.
+						getName()),
+				_velocityTemplateResourceLoader);
+			extendedProperties.setProperty(
+				"liferay." + VelocityEngine.RESOURCE_LOADER + ".cache",
+				String.valueOf(_velocityTemplateResourceCache.isEnabled()));
+			extendedProperties.setProperty(
+				"liferay." + VelocityEngine.RESOURCE_LOADER + ".class",
+				LiferayResourceLoader.class.getName());
+			extendedProperties.setProperty(
+				"liferay." + VelocityEngine.RESOURCE_LOADER + "portal.cache",
+				_velocityTemplateResourceCache.getSecondLevelPortalCache());
+
+			_velocityEngine.setExtendedProperties(extendedProperties);
+
+			_velocityEngine.init();
+		}
+		catch (Exception exception) {
+			throw new TemplateException(exception);
+		}
+	}
+
 	private static volatile VelocityEngineConfiguration
 		_velocityEngineConfiguration;
 
-	@Reference
-	private SingleVMPool _singleVMPool;
+	@Reference(
+		target = "(component.name=com.liferay.portal.template.velocity.internal.helper.VelocityTemplateContextHelper)"
+	)
+	private TemplateContextHelper _templateContextHelper;
 
+	private ServiceRegistration<TemplateResourceLoader>
+		_templateResourceLoaderServiceRegistration;
 	private VelocityEngine _velocityEngine;
-
-	@Reference
 	private VelocityTemplateResourceCache _velocityTemplateResourceCache;
+	private volatile VelocityTemplateResourceLoader
+		_velocityTemplateResourceLoader;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.resource.v1_0.test.util;
@@ -19,6 +10,7 @@ import com.liferay.headless.admin.workflow.client.resource.v1_0.WorkflowDefiniti
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.util.PropsValues;
 
 /**
  * @author Rafael Praxedes
@@ -26,12 +18,19 @@ import com.liferay.portal.kernel.util.StringUtil;
 public class WorkflowDefinitionTestUtil {
 
 	public static WorkflowDefinition addWorkflowDefinition() throws Exception {
+		return addWorkflowDefinition("workflow-definition.xml");
+	}
+
+	public static WorkflowDefinition addWorkflowDefinition(
+			String workflowDefinitionFileName)
+		throws Exception {
+
 		WorkflowDefinitionResource.Builder builder =
 			WorkflowDefinitionResource.builder();
 
 		WorkflowDefinitionResource workflowDefinitionResource =
 			builder.authentication(
-				"test@liferay.com", "test"
+				"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
 			).locale(
 				LocaleUtil.getDefault()
 			).build();
@@ -44,7 +43,8 @@ public class WorkflowDefinitionTestUtil {
 				{
 					active = true;
 					content = WorkflowDefinitionTestUtil.getContent(
-						RandomTestUtil.randomString(), workflowDefinitionName);
+						RandomTestUtil.randomString(),
+						workflowDefinitionFileName, workflowDefinitionName);
 					dateCreated = RandomTestUtil.nextDate();
 					dateModified = RandomTestUtil.nextDate();
 					description = StringUtil.toLowerCase(
@@ -59,12 +59,13 @@ public class WorkflowDefinitionTestUtil {
 	}
 
 	public static String getContent(
-		String workflowDefinitionDescription, String workflowDefinitionName) {
+		String workflowDefinitionDescription, String workflowDefinitionFileName,
+		String workflowDefinitionName) {
 
 		return StringUtil.replace(
 			StringUtil.read(
 				WorkflowDefinitionTestUtil.class,
-				"dependencies/workflow-definition.xml"),
+				"dependencies/" + workflowDefinitionFileName),
 			new String[] {
 				"[$WORKFLOW-DEFINITION-DESCRIPTION$]",
 				"[$WORKFLOW-DEFINITION-NAME$]"

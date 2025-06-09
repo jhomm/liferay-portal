@@ -1,34 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.web.internal.portlet.action;
 
-import com.liferay.portal.kernel.portlet.LiferayPortletURL;
-import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.exception.NestableRuntimeException;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.segments.constants.SegmentsPortletKeys;
 import com.liferay.segments.criteria.Criteria;
@@ -41,13 +37,11 @@ import com.liferay.segments.exception.SegmentsEntryNameException;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,9 +50,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
+		"jakarta.portlet.name=" + SegmentsPortletKeys.SEGMENTS,
 		"mvc.command.name=/segments/update_segments_entry"
 	},
 	service = MVCActionCommand.class
@@ -73,16 +66,15 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 		long segmentsEntryId = ParamUtil.getLong(
 			actionRequest, "segmentsEntryId");
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 
 		String segmentsEntryKey = ParamUtil.getString(
 			actionRequest, "segmentsEntryKey");
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 		boolean active = ParamUtil.getBoolean(actionRequest, "active", true);
-		String type = ParamUtil.getString(actionRequest, "type");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			SegmentsEntry.class.getName(), actionRequest);
@@ -93,24 +85,20 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 			Criteria criteria = ActionUtil.getCriteria(
 				actionRequest,
 				_segmentsCriteriaContributorRegistry.
-					getSegmentsCriteriaContributors(type));
+					getSegmentsCriteriaContributors());
 
 			boolean dynamic = ParamUtil.getBoolean(
 				actionRequest, "dynamic", true);
 
-			validateCriteria(criteria, dynamic);
+			_validateCriteria(criteria, dynamic);
 
 			if (segmentsEntryId <= 0) {
-				long groupId = ParamUtil.getLong(actionRequest, "groupId");
-
-				if (groupId > 0) {
-					serviceContext.setScopeGroupId(groupId);
-				}
+				serviceContext.setScopeGroupId(
+					_getGroupId(actionRequest, serviceContext));
 
 				segmentsEntry = _segmentsEntryService.addSegmentsEntry(
 					segmentsEntryKey, nameMap, descriptionMap, active,
-					CriteriaSerializer.serialize(criteria), type,
-					serviceContext);
+					CriteriaSerializer.serialize(criteria), serviceContext);
 			}
 			else {
 				segmentsEntry = _segmentsEntryService.updateSegmentsEntry(
@@ -122,7 +110,7 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 			String redirect = ParamUtil.getString(actionRequest, "redirect");
 
 			if (Validator.isNotNull(redirect)) {
-				redirect = _http.setParameter(
+				redirect = HttpComponentsUtil.setParameter(
 					redirect, "segmentsEntryId",
 					segmentsEntry.getSegmentsEntryId());
 			}
@@ -131,7 +119,7 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 				actionRequest, "saveAndContinue", false);
 
 			if (saveAndContinue) {
-				redirect = getSaveAndContinueRedirect(
+				redirect = _getSaveAndContinueRedirect(
 					actionRequest, segmentsEntry, redirect);
 			}
 
@@ -145,7 +133,8 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 
 				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
-			else if (exception instanceof SegmentsEntryCriteriaException ||
+			else if (exception instanceof NestableRuntimeException ||
+					 exception instanceof SegmentsEntryCriteriaException ||
 					 exception instanceof SegmentsEntryKeyException ||
 					 exception instanceof SegmentsEntryNameException) {
 
@@ -161,33 +150,54 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected String getSaveAndContinueRedirect(
-			ActionRequest actionRequest, SegmentsEntry segmentsEntry,
-			String redirect)
-		throws Exception {
+	private long _getGroupId(
+			ActionRequest actionRequest, ServiceContext serviceContext)
+		throws PortalException {
 
-		PortletConfig portletConfig = (PortletConfig)actionRequest.getAttribute(
-			JavaConstants.JAVAX_PORTLET_CONFIG);
+		long groupId = ParamUtil.getLong(actionRequest, "groupId");
 
-		LiferayPortletURL portletURL = PortletURLFactoryUtil.create(
-			actionRequest, portletConfig.getPortletName(),
-			PortletRequest.RENDER_PHASE);
+		if (groupId == 0) {
+			groupId = serviceContext.getScopeGroupId();
+		}
 
-		portletURL.setParameter(
-			"mvcRenderCommandName", "/segments/edit_segments_entry");
-		portletURL.setParameter(Constants.CMD, Constants.UPDATE, false);
-		portletURL.setParameter("redirect", redirect, false);
-		portletURL.setParameter(
-			"groupId", String.valueOf(segmentsEntry.getGroupId()), false);
-		portletURL.setParameter(
-			"segmentsEntryId",
-			String.valueOf(segmentsEntry.getSegmentsEntryId()), false);
-		portletURL.setWindowState(actionRequest.getWindowState());
+		Group group = _groupLocalService.fetchGroup(groupId);
 
-		return portletURL.toString();
+		if (group.isControlPanel()) {
+			Company company = _companyLocalService.getCompany(
+				group.getCompanyId());
+
+			return company.getGroupId();
+		}
+
+		return groupId;
 	}
 
-	protected void validateCriteria(Criteria criteria, boolean dynamic)
+	private String _getSaveAndContinueRedirect(
+		ActionRequest actionRequest, SegmentsEntry segmentsEntry,
+		String redirect) {
+
+		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+			RequestBackedPortletURLFactoryUtil.create(actionRequest);
+
+		return PortletURLBuilder.create(
+			requestBackedPortletURLFactory.createRenderURL(
+				SegmentsPortletKeys.SEGMENTS)
+		).setMVCRenderCommandName(
+			"/segments/edit_segments_entry"
+		).setCMD(
+			Constants.UPDATE
+		).setRedirect(
+			redirect
+		).setParameter(
+			"groupId", segmentsEntry.getGroupId()
+		).setParameter(
+			"segmentsEntryId", segmentsEntry.getSegmentsEntryId()
+		).setWindowState(
+			actionRequest.getWindowState()
+		).buildString();
+	}
+
+	private void _validateCriteria(Criteria criteria, boolean dynamic)
 		throws SegmentsEntryCriteriaException {
 
 		if (dynamic && MapUtil.isEmpty(criteria.getCriteria())) {
@@ -196,10 +206,13 @@ public class UpdateSegmentsEntryMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
-	private Http _http;
+	private CompanyLocalService _companyLocalService;
 
 	@Reference
-	private Portal _portal;
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private SegmentsCriteriaContributorRegistry

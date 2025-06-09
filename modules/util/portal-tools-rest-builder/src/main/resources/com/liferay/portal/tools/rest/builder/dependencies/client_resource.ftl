@@ -29,21 +29,23 @@ import ${configYAML.apiPackagePath}.client.problem.Problem;
 	import ${configYAML.apiPackagePath}.client.serdes.${escapedVersion}.${schemaName}SerDes;
 </#list>
 
+import ${configYAML.javaEEPackage}.annotation.Generated;
+
 import java.io.File;
+
+import java.net.URL;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author ${configYAML.author}
@@ -61,7 +63,7 @@ public interface ${schemaName}Resource {
 			parameters = freeMarkerTool.getClientParameters(javaMethodSignature.javaMethodParameters, schemaName, schemaVarName)
 		/>
 
-		public ${javaMethodSignature.returnType?replace(".constant.", ".client.constant.")?replace(".dto.", ".client.dto.")?replace("com.liferay.portal.vulcan.aggregation.", "")?replace("com.liferay.portal.vulcan.pagination.", "")?replace("com.liferay.portal.vulcan.permission.", "")?replace("javax.ws.rs.core.Response", "void")} ${javaMethodSignature.methodName}(${parameters}) throws Exception;
+		public ${javaMethodSignature.returnType?replace(".constant.", ".client.constant.")?replace(".dto.", ".client.dto.")?replace("com.liferay.portal.vulcan.aggregation.", "")?replace("com.liferay.portal.vulcan.pagination.", "")?replace("com.liferay.portal.vulcan.permission.", "")?replace(configYAML.javaEEPackage + ".ws.rs.core.Response", "void")} ${javaMethodSignature.methodName}(${parameters}) throws Exception;
 
 		public HttpInvoker.HttpResponse ${javaMethodSignature.methodName}HttpResponse(${parameters}) throws Exception;
 	</#list>
@@ -75,8 +77,39 @@ public interface ${schemaName}Resource {
 			return this;
 		}
 
+		public Builder bearerToken(String token) {
+			return header("Authorization", "Bearer " + token);
+		}
+
 		public ${schemaName}Resource build() {
 			return new ${schemaName}ResourceImpl(this);
+		}
+
+		public Builder contextPath(String contextPath) {
+			_contextPath = contextPath;
+
+			return this;
+		}
+
+		public Builder endpoint(String address, String scheme) {
+			String[] addressParts = address.split(":");
+
+			String host = addressParts[0];
+
+			int port = 443;
+
+			if (addressParts.length > 1) {
+				String portString = addressParts[1];
+
+				try {
+					port = Integer.parseInt(portString);
+				}
+				catch (NumberFormatException numberFormatException) {
+					throw new IllegalArgumentException("Unable to parse port from " + portString);
+				}
+			}
+
+			return endpoint(host, port, scheme);
 		}
 
 		public Builder endpoint(String host, int port, String scheme) {
@@ -85,6 +118,10 @@ public interface ${schemaName}Resource {
 			_scheme = scheme;
 
 			return this;
+		}
+
+		public Builder endpoint(URL url) {
+			return endpoint(url.getHost(), url.getPort(), url.getProtocol());
 		}
 
 		public Builder header(String key, String value) {
@@ -124,11 +161,12 @@ public interface ${schemaName}Resource {
 		private Builder() {
 		}
 
+		private String _contextPath = "";
 		private Map<String, String> _headers = new LinkedHashMap<>();
 		private String _host = "localhost";
 		private Locale _locale;
-		private String _login = "";
-		private String _password = "";
+		private String _login;
+		private String _password;
 		private Map<String, String> _parameters = new LinkedHashMap<>();
 		private int _port = 8080;
 		private String _scheme = "http";
@@ -143,7 +181,7 @@ public interface ${schemaName}Resource {
 				parameters = freeMarkerTool.getClientParameters(javaMethodSignature.javaMethodParameters, schemaName, schemaVarName)
 			/>
 
-			public ${javaMethodSignature.returnType?replace(".constant.", ".client.constant.")?replace(".dto.", ".client.dto.")?replace("com.liferay.portal.vulcan.aggregation.", "")?replace("com.liferay.portal.vulcan.pagination.", "")?replace("com.liferay.portal.vulcan.permission.", "")?replace("javax.ws.rs.core.Response", "void")} ${javaMethodSignature.methodName}(${parameters}) throws Exception {
+			public ${javaMethodSignature.returnType?replace(".constant.", ".client.constant.")?replace(".dto.", ".client.dto.")?replace("com.liferay.portal.vulcan.aggregation.", "")?replace("com.liferay.portal.vulcan.pagination.", "")?replace("com.liferay.portal.vulcan.permission.", "")?replace(configYAML.javaEEPackage + ".ws.rs.core.Response", "void")} ${javaMethodSignature.methodName}(${parameters}) throws Exception {
 				HttpInvoker.HttpResponse httpResponse = ${javaMethodSignature.methodName}HttpResponse(${arguments});
 
 				String content = httpResponse.getContent();
@@ -153,7 +191,22 @@ public interface ${schemaName}Resource {
 					_logger.log(Level.WARNING, "HTTP response message: " + httpResponse.getMessage());
 					_logger.log(Level.WARNING, "HTTP response status code: " + httpResponse.getStatusCode());
 
-					throw new Problem.ProblemException(Problem.toDTO(content));
+					Problem.ProblemException problemException = null;
+
+					if (Objects.equals(httpResponse.getContentType(), "application/json")) {
+						problemException = new Problem.ProblemException(Problem.toDTO(content));
+					}
+					else {
+						_logger.log(Level.WARNING, "Unable to process content type: " + httpResponse.getContentType());
+
+						Problem problem = new Problem();
+
+						problem.setStatus(String.valueOf(httpResponse.getStatusCode()));
+
+						problemException = new Problem.ProblemException(problem);
+					}
+
+					throw problemException;
 				}
 				else {
 					_logger.fine("HTTP response content: " + content);
@@ -161,7 +214,7 @@ public interface ${schemaName}Resource {
 					_logger.fine("HTTP response status code: " + httpResponse.getStatusCode());
 				}
 
-				<#if !javaMethodSignature.returnType?contains("javax.ws.rs.core.Response")>
+				<#if !javaMethodSignature.returnType?contains(configYAML.javaEEPackage + ".ws.rs.core.Response")>
 					try {
 						<#if javaMethodSignature.returnType?contains("Page<com.liferay.portal.vulcan.permission.Permission>")>
 							return Page.of(content, Permission::toDTO);
@@ -202,7 +255,7 @@ public interface ${schemaName}Resource {
 				HttpInvoker httpInvoker = HttpInvoker.newHttpInvoker();
 
 				<#if freeMarkerTool.hasHTTPMethod(javaMethodSignature, "delete", "patch", "post", "put")>
-					<#if freeMarkerTool.hasRequestBodyMediaType(javaMethodSignature, "multipart/form-data")>
+					<#if freeMarkerTool.hasRequestBodyMediaType(javaMethodSignature, "multipart/form-data") && freeMarkerTool.hasParameter(javaMethodSignature, "multipartBody")>
 						httpInvoker.multipart();
 
 						httpInvoker.part("${schemaVarName}", ${schemaName}SerDes.toJSON(${schemaVarName}));
@@ -213,33 +266,41 @@ public interface ${schemaName}Resource {
 					<#else>
 						<#assign
 							bodyJavaMethodParameters = freeMarkerTool.getBodyJavaMethodParameters(javaMethodSignature)
+							requestBodyMediaTypes = javaMethodSignature.getRequestBodyMediaTypes()
 						/>
 
+						<#if requestBodyMediaTypes?has_content>
+							<#assign requestBodyMediaType = requestBodyMediaTypes[0] />
+						<#else>
+							<#assign requestBodyMediaType = "application/json" />
+						</#if>
+
 						<#if bodyJavaMethodParameters?has_content>
-							httpInvoker.body(
 								<#list bodyJavaMethodParameters as javaMethodParameter>
 									<#if javaMethodParameter?is_last>
 										<#if javaMethodParameter.parameterType?starts_with("[L")>
-											Stream.of(
-												${javaMethodParameter.parameterName}
-											).map(
-												value ->
+											List<String> values = new ArrayList<>();
+
+											for (${javaMethodParameter.parameterType?keep_after_last(".")?keep_before(";")} ${javaMethodParameter.parameterName?remove_ending("s")}Value : ${javaMethodParameter.parameterName}) {
+												values.add(
 
 												<#if javaMethodParameter.parameterType?contains("String")>
-													"\"" + String.valueOf(value) + "\""
+													"\"" + String.valueOf(${javaMethodParameter.parameterName?remove_ending("s")}Value) + "\""
 												<#else>
-													String.valueOf(value)
+													String.valueOf(${javaMethodParameter.parameterName?remove_ending("s")}Value)
 												</#if>
-											).collect(
-												Collectors.toList()
-											).toString()
+
+												);
+											}
+
+											httpInvoker.body(values.toString(), "${requestBodyMediaType}");
 										<#else>
-											${javaMethodParameter.parameterName}.toString()
+											httpInvoker.body(${javaMethodParameter.parameterName}.toString(), "${requestBodyMediaType}");
 										</#if>
 									</#if>
 								</#list>
-
-								, "application/json");
+						<#elseif freeMarkerTool.hasHTTPMethod(javaMethodSignature, "patch", "post", "put")>
+							httpInvoker.body("[]", "${requestBodyMediaType}");
 						</#if>
 					</#if>
 				</#if>
@@ -260,7 +321,7 @@ public interface ${schemaName}Resource {
 
 				<#list javaMethodSignature.javaMethodParameters as javaMethodParameter>
 					<#if stringUtil.equals(javaMethodParameter.parameterType, "java.util.Date")>
-						DateFormat liferayToJSONDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+						DateFormat liferayToJSONDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXX");
 
 						<#break>
 					</#if>
@@ -305,13 +366,15 @@ public interface ${schemaName}Resource {
 					</#if>
 				</#list>
 
-				httpInvoker.path(_builder._scheme + "://" + _builder._host + ":" + _builder._port + "/o${configYAML.application.baseURI}/${openAPIYAML.info.version}${javaMethodSignature.path}");
+				httpInvoker.path(_builder._scheme + "://" + _builder._host + ":" + _builder._port + _builder._contextPath + "/o${configYAML.application.baseURI}/${openAPIYAML.info.version}${javaMethodSignature.path}");
 
 				<#list javaMethodSignature.pathJavaMethodParameters as javaMethodParameter>
 					httpInvoker.path("${javaMethodParameter.parameterName}", ${javaMethodParameter.parameterName});
 				</#list>
 
-				httpInvoker.userNameAndPassword(_builder._login + ":" + _builder._password);
+				if ((_builder._login != null) && (_builder._password != null)) {
+					httpInvoker.userNameAndPassword(_builder._login + ":" + _builder._password);
+				}
 
 				return httpInvoker.invoke();
 			}

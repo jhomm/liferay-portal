@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.internal.forecast;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.search.engine.adapter.search.CountSearchRequest;
 
 import java.util.Date;
 import java.util.List;
@@ -40,10 +30,7 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Riccardo Ferrari
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CommerceAccountCommerceMLForecastManager.class
-)
+@Component(service = CommerceAccountCommerceMLForecastManager.class)
 public class CommerceAccountCommerceMLForecastManagerImpl
 	extends BaseCommerceMLForecastServiceImpl<CommerceAccountCommerceMLForecast>
 	implements CommerceAccountCommerceMLForecastManager {
@@ -102,7 +89,7 @@ public class CommerceAccountCommerceMLForecastManagerImpl
 
 		return getSearchResults(
 			getSearchSearchRequest(
-				commerceMLIndexer.getIndexName(companyId),
+				getIndexName(companyId),
 				_getMonthlyRevenueQuery(
 					commerceAccountIds, actualDate, historyLength,
 					forecastLength),
@@ -115,12 +102,12 @@ public class CommerceAccountCommerceMLForecastManagerImpl
 			int historyLength, int forecastLength)
 		throws PortalException {
 
-		CountSearchRequest countSearchRequest = getCountSearchRequest(
-			commerceMLIndexer.getIndexName(companyId),
-			_getMonthlyRevenueQuery(
-				commerceAccountIds, actualDate, historyLength, forecastLength));
-
-		return getCountResult(countSearchRequest);
+		return getCountResult(
+			getCountSearchRequest(
+				getIndexName(companyId),
+				_getMonthlyRevenueQuery(
+					commerceAccountIds, actualDate, historyLength,
+					forecastLength)));
 	}
 
 	@Override

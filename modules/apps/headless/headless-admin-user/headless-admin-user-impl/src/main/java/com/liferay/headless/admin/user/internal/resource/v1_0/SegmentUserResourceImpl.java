@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.internal.resource.v1_0;
@@ -46,14 +37,14 @@ public class SegmentUserResourceImpl extends BaseSegmentUserResourceImpl {
 		SegmentsEntry segmentsEntry =
 			_segmentsEntryLocalService.getSegmentsEntry(segmentId);
 
-		long[] segmentsEntryClassPKs =
-			_segmentsEntryProviderRegistry.getSegmentsEntryClassPKs(
-				segmentsEntry.getSegmentsEntryId(),
-				pagination.getStartPosition(), pagination.getEndPosition());
-
 		return Page.of(
 			transformToList(
-				ArrayUtil.toArray(segmentsEntryClassPKs), this::_toSegmentUser),
+				ArrayUtil.toArray(
+					_segmentsEntryProviderRegistry.getSegmentsEntryClassPKs(
+						segmentsEntry.getSegmentsEntryId(),
+						pagination.getStartPosition(),
+						pagination.getEndPosition())),
+				this::_toSegmentUser),
 			pagination,
 			_segmentsEntryProviderRegistry.getSegmentsEntryClassPKsCount(
 				segmentsEntry.getSegmentsEntryId()));
@@ -66,9 +57,9 @@ public class SegmentUserResourceImpl extends BaseSegmentUserResourceImpl {
 
 		return new SegmentUser() {
 			{
-				emailAddress = user.getEmailAddress();
-				id = user.getUserId();
-				name = user.getFullName();
+				setEmailAddress(user::getEmailAddress);
+				setId(user::getUserId);
+				setName(user::getFullName);
 			}
 		};
 	}

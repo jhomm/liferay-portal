@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.model;
@@ -105,6 +96,34 @@ public interface OpenIdConnectSessionModel
 	public void setCompanyId(long companyId);
 
 	/**
+	 * Returns the user ID of this open ID connect session.
+	 *
+	 * @return the user ID of this open ID connect session
+	 */
+	public long getUserId();
+
+	/**
+	 * Sets the user ID of this open ID connect session.
+	 *
+	 * @param userId the user ID of this open ID connect session
+	 */
+	public void setUserId(long userId);
+
+	/**
+	 * Returns the user uuid of this open ID connect session.
+	 *
+	 * @return the user uuid of this open ID connect session
+	 */
+	public String getUserUuid();
+
+	/**
+	 * Sets the user uuid of this open ID connect session.
+	 *
+	 * @param userUuid the user uuid of this open ID connect session
+	 */
+	public void setUserUuid(String userUuid);
+
+	/**
 	 * Returns the modified date of this open ID connect session.
 	 *
 	 * @return the modified date of this open ID connect session
@@ -134,6 +153,50 @@ public interface OpenIdConnectSessionModel
 	public void setAccessToken(String accessToken);
 
 	/**
+	 * Returns the access token expiration date of this open ID connect session.
+	 *
+	 * @return the access token expiration date of this open ID connect session
+	 */
+	public Date getAccessTokenExpirationDate();
+
+	/**
+	 * Sets the access token expiration date of this open ID connect session.
+	 *
+	 * @param accessTokenExpirationDate the access token expiration date of this open ID connect session
+	 */
+	public void setAccessTokenExpirationDate(Date accessTokenExpirationDate);
+
+	/**
+	 * Returns the auth server well known uri of this open ID connect session.
+	 *
+	 * @return the auth server well known uri of this open ID connect session
+	 */
+	@AutoEscape
+	public String getAuthServerWellKnownURI();
+
+	/**
+	 * Sets the auth server well known uri of this open ID connect session.
+	 *
+	 * @param authServerWellKnownURI the auth server well known uri of this open ID connect session
+	 */
+	public void setAuthServerWellKnownURI(String authServerWellKnownURI);
+
+	/**
+	 * Returns the client ID of this open ID connect session.
+	 *
+	 * @return the client ID of this open ID connect session
+	 */
+	@AutoEscape
+	public String getClientId();
+
+	/**
+	 * Sets the client ID of this open ID connect session.
+	 *
+	 * @param clientId the client ID of this open ID connect session
+	 */
+	public void setClientId(String clientId);
+
+	/**
 	 * Returns the id token of this open ID connect session.
 	 *
 	 * @return the id token of this open ID connect session
@@ -147,21 +210,6 @@ public interface OpenIdConnectSessionModel
 	 * @param idToken the id token of this open ID connect session
 	 */
 	public void setIdToken(String idToken);
-
-	/**
-	 * Returns the provider name of this open ID connect session.
-	 *
-	 * @return the provider name of this open ID connect session
-	 */
-	@AutoEscape
-	public String getProviderName();
-
-	/**
-	 * Sets the provider name of this open ID connect session.
-	 *
-	 * @param providerName the provider name of this open ID connect session
-	 */
-	public void setProviderName(String providerName);
 
 	/**
 	 * Returns the refresh token of this open ID connect session.
@@ -180,5 +228,9 @@ public interface OpenIdConnectSessionModel
 
 	@Override
 	public OpenIdConnectSession cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

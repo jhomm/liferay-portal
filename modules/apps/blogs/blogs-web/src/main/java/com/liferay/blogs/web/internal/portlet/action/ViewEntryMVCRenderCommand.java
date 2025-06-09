@@ -1,30 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.web.internal.portlet.action;
 
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
+import com.liferay.asset.kernel.service.AssetEntryService;
 import com.liferay.blogs.constants.BlogsPortletKeys;
 import com.liferay.blogs.exception.NoSuchEntryException;
 import com.liferay.blogs.model.BlogsEntry;
+import com.liferay.blogs.web.internal.util.BlogsEntryAssetEntryUtil;
+import com.liferay.change.tracking.spi.history.util.CTTimelineUtil;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.constants.MVCRenderConstants;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -32,12 +29,14 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,11 +45,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS,
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN,
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS_AGGREGATOR,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_AGGREGATOR,
 		"mvc.command.name=/blogs/view_entry"
 	},
 	service = MVCRenderCommand.class
@@ -70,14 +68,33 @@ public class ViewEntryMVCRenderCommand implements MVCRenderCommand {
 		}
 
 		try {
+			HttpServletRequest httpServletRequest =
+				_portal.getHttpServletRequest(renderRequest);
+
 			BlogsEntry entry = ActionUtil.getEntry(renderRequest);
+
+			CTTimelineUtil.setCTTimelineKeys(
+				renderRequest, BlogsEntry.class, entry.getPrimaryKey());
 
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
+			PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+
+			if (!Objects.equals(
+					portletDisplay.getPortletName(),
+					BlogsPortletKeys.BLOGS_ADMIN)) {
+
+				_assetEntryService.incrementViewCounter(
+					BlogsEntryAssetEntryUtil.getAssetEntry(
+						httpServletRequest, entry));
+			}
+
 			String assetDisplayPageFriendlyURL =
 				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					BlogsEntry.class.getName(), entry.getEntryId(),
+					new InfoItemReference(
+						BlogsEntry.class.getName(),
+						new ClassPKInfoItemIdentifier(entry.getEntryId())),
 					themeDisplay);
 
 			if (assetDisplayPageFriendlyURL != null) {
@@ -115,9 +132,6 @@ public class ViewEntryMVCRenderCommand implements MVCRenderCommand {
 				return MVCRenderConstants.MVC_PATH_VALUE_SKIP_DISPATCH;
 			}
 
-			HttpServletRequest httpServletRequest =
-				_portal.getHttpServletRequest(renderRequest);
-
 			httpServletRequest.setAttribute(WebKeys.BLOGS_ENTRY, entry);
 
 			if (PropsValues.BLOGS_PINGBACK_ENABLED && (entry != null) &&
@@ -149,6 +163,9 @@ public class ViewEntryMVCRenderCommand implements MVCRenderCommand {
 	@Reference
 	private AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
+
+	@Reference
+	private AssetEntryService _assetEntryService;
 
 	@Reference
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;

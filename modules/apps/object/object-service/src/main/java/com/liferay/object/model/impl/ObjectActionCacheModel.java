@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -77,12 +68,14 @@ public class ObjectActionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(43);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", objectActionId=");
 		sb.append(objectActionId);
 		sb.append(", companyId=");
@@ -99,6 +92,14 @@ public class ObjectActionCacheModel
 		sb.append(objectDefinitionId);
 		sb.append(", active=");
 		sb.append(active);
+		sb.append(", conditionExpression=");
+		sb.append(conditionExpression);
+		sb.append(", description=");
+		sb.append(description);
+		sb.append(", errorMessage=");
+		sb.append(errorMessage);
+		sb.append(", label=");
+		sb.append(label);
 		sb.append(", name=");
 		sb.append(name);
 		sb.append(", objectActionExecutorKey=");
@@ -107,6 +108,10 @@ public class ObjectActionCacheModel
 		sb.append(objectActionTriggerKey);
 		sb.append(", parameters=");
 		sb.append(parameters);
+		sb.append(", system=");
+		sb.append(system);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -123,6 +128,13 @@ public class ObjectActionCacheModel
 		}
 		else {
 			objectActionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectActionImpl.setExternalReferenceCode("");
+		}
+		else {
+			objectActionImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		objectActionImpl.setObjectActionId(objectActionId);
@@ -153,6 +165,34 @@ public class ObjectActionCacheModel
 		objectActionImpl.setObjectDefinitionId(objectDefinitionId);
 		objectActionImpl.setActive(active);
 
+		if (conditionExpression == null) {
+			objectActionImpl.setConditionExpression("");
+		}
+		else {
+			objectActionImpl.setConditionExpression(conditionExpression);
+		}
+
+		if (description == null) {
+			objectActionImpl.setDescription("");
+		}
+		else {
+			objectActionImpl.setDescription(description);
+		}
+
+		if (errorMessage == null) {
+			objectActionImpl.setErrorMessage("");
+		}
+		else {
+			objectActionImpl.setErrorMessage(errorMessage);
+		}
+
+		if (label == null) {
+			objectActionImpl.setLabel("");
+		}
+		else {
+			objectActionImpl.setLabel(label);
+		}
+
 		if (name == null) {
 			objectActionImpl.setName("");
 		}
@@ -182,6 +222,9 @@ public class ObjectActionCacheModel
 			objectActionImpl.setParameters(parameters);
 		}
 
+		objectActionImpl.setSystem(system);
+		objectActionImpl.setStatus(status);
+
 		objectActionImpl.resetOriginalValues();
 
 		return objectActionImpl;
@@ -193,6 +236,7 @@ public class ObjectActionCacheModel
 
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		objectActionId = objectInput.readLong();
 
@@ -206,10 +250,18 @@ public class ObjectActionCacheModel
 		objectDefinitionId = objectInput.readLong();
 
 		active = objectInput.readBoolean();
+		conditionExpression = (String)objectInput.readObject();
+		description = objectInput.readUTF();
+		errorMessage = objectInput.readUTF();
+		label = objectInput.readUTF();
 		name = objectInput.readUTF();
 		objectActionExecutorKey = objectInput.readUTF();
 		objectActionTriggerKey = objectInput.readUTF();
 		parameters = (String)objectInput.readObject();
+
+		system = objectInput.readBoolean();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -221,6 +273,13 @@ public class ObjectActionCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(objectActionId);
@@ -242,6 +301,34 @@ public class ObjectActionCacheModel
 		objectOutput.writeLong(objectDefinitionId);
 
 		objectOutput.writeBoolean(active);
+
+		if (conditionExpression == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(conditionExpression);
+		}
+
+		if (description == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(description);
+		}
+
+		if (errorMessage == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(errorMessage);
+		}
+
+		if (label == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(label);
+		}
 
 		if (name == null) {
 			objectOutput.writeUTF("");
@@ -270,10 +357,15 @@ public class ObjectActionCacheModel
 		else {
 			objectOutput.writeObject(parameters);
 		}
+
+		objectOutput.writeBoolean(system);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
 	public String uuid;
+	public String externalReferenceCode;
 	public long objectActionId;
 	public long companyId;
 	public long userId;
@@ -282,9 +374,15 @@ public class ObjectActionCacheModel
 	public long modifiedDate;
 	public long objectDefinitionId;
 	public boolean active;
+	public String conditionExpression;
+	public String description;
+	public String errorMessage;
+	public String label;
 	public String name;
 	public String objectActionExecutorKey;
 	public String objectActionTriggerKey;
 	public String parameters;
+	public boolean system;
+	public int status;
 
 }

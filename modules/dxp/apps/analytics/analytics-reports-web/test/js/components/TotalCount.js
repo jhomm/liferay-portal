@@ -1,24 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {cleanup, fireEvent, render, wait} from '@testing-library/react';
+import {fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
 import TotalCount from '../../../src/main/resources/META-INF/resources/js/components/TotalCount';
+import {StoreContextProvider} from '../../../src/main/resources/META-INF/resources/js/context/StoreContext';
 
 import '@testing-library/jest-dom/extend-expect';
 
-describe('TotalCount', () => {
-	afterEach(cleanup);
+const mockLanguageTag = 'en-US';
 
+describe('TotalCount', () => {
 	it('renders text, help text and total count number', async () => {
 		const mockDataProvider = jest.fn(() => {
 			return Promise.resolve(9999);
@@ -33,17 +28,20 @@ describe('TotalCount', () => {
 		};
 
 		const {getByRole, getByText} = render(
-			<TotalCount
-				dataProvider={testProps.dataProvider}
-				label={testProps.label}
-				popoverHeader={testProps.popoverHeader}
-				popoverMessage={testProps.popoverMessage}
-			/>
+			<StoreContextProvider value={{languageTag: mockLanguageTag}}>
+				<TotalCount
+					dataProvider={testProps.dataProvider}
+					label={testProps.label}
+					popoverHeader={testProps.popoverHeader}
+					popoverMessage={testProps.popoverMessage}
+				/>
+			</StoreContextProvider>
 		);
 
-		await wait(() => expect(mockDataProvider).toHaveBeenCalled());
+		await waitFor(() => expect(mockDataProvider).toHaveBeenCalled());
 
-		expect(getByText('9,999')).toBeInTheDocument();
+		const formatter = new Intl.NumberFormat(mockLanguageTag);
+		expect(getByText(formatter.format(9999))).toBeInTheDocument();
 
 		const label = getByText(testProps.label);
 		expect(label).toBeInTheDocument();
@@ -83,7 +81,7 @@ describe('TotalCount', () => {
 			/>
 		);
 
-		await wait(() => expect(mockDataProvider).toHaveBeenCalled());
+		await waitFor(() => expect(mockDataProvider).toHaveBeenCalled());
 
 		expect(getByText('-')).toBeInTheDocument();
 

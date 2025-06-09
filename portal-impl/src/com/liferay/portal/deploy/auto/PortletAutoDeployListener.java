@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.auto;
@@ -33,24 +24,10 @@ public class PortletAutoDeployListener extends BaseAutoDeployListener {
 
 	@Override
 	protected AutoDeployer buildAutoDeployer() throws AutoDeployException {
-		AutoDeployer autoDeployer = null;
+		AutoDeployer autoDeployer = new PortletAutoDeployer();
 
-		if (_portletDeployer) {
-			autoDeployer = new PortletAutoDeployer();
-		}
-		else if (_mvcDeployer) {
+		if (_mvcDeployer) {
 			autoDeployer = new MVCPortletAutoDeployer();
-		}
-		else if (_waiDeployer) {
-			if (_log.isInfoEnabled()) {
-				_log.info("Deploying package as a web application");
-			}
-
-			autoDeployer = new WAIAutoDeployer();
-		}
-
-		if (autoDeployer == null) {
-			throw new AutoDeployException("Unable to find an auto deployer");
 		}
 
 		if (_log.isDebugEnabled()) {
@@ -59,7 +36,7 @@ public class PortletAutoDeployListener extends BaseAutoDeployListener {
 			_log.debug("Using deployer " + clazz.getName());
 		}
 
-		return new ThreadSafeAutoDeployer(autoDeployer);
+		return autoDeployer;
 	}
 
 	@Override
@@ -78,8 +55,6 @@ public class PortletAutoDeployListener extends BaseAutoDeployListener {
 			new PluginAutoDeployListenerHelper(file);
 
 		if (pluginAutoDeployListenerHelper.isPortletPlugin()) {
-			_portletDeployer = true;
-
 			return true;
 		}
 
@@ -98,8 +73,6 @@ public class PortletAutoDeployListener extends BaseAutoDeployListener {
 			!pluginAutoDeployListenerHelper.isWebPlugin() &&
 			fileName.endsWith(".war")) {
 
-			_waiDeployer = true;
-
 			return true;
 		}
 
@@ -110,7 +83,5 @@ public class PortletAutoDeployListener extends BaseAutoDeployListener {
 		PortletAutoDeployListener.class);
 
 	private boolean _mvcDeployer;
-	private boolean _portletDeployer;
-	private boolean _waiDeployer;
 
 }

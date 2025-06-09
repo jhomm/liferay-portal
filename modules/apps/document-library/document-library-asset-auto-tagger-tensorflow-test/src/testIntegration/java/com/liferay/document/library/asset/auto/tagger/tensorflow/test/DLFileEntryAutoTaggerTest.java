@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.asset.auto.tagger.tensorflow.test;
@@ -79,9 +70,10 @@ public class DLFileEntryAutoTaggerTest {
 					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 					"indigobunting.bmp", ContentTypes.IMAGE_BMP,
 					"indigobunting", StringUtil.randomString(),
-					StringUtil.randomString(),
-					FileUtil.getBytes(getClass(), "indigobunting.bmp"), null,
-					null, _serviceContext);
+					StringUtil.randomString(), StringUtil.randomString(),
+					FileUtil.getBytes(
+						getClass(), "dependencies/indigobunting.bmp"),
+					null, null, null, _serviceContext);
 
 				AssetEntry assetEntry = _assetEntryLocalService.getEntry(
 					DLFileEntryConstants.getClassName(),
@@ -100,8 +92,9 @@ public class DLFileEntryAutoTaggerTest {
 					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, "goldfinch.jpg",
 					ContentTypes.IMAGE_JPEG, "goldfinch",
 					StringUtil.randomString(), StringUtil.randomString(),
-					FileUtil.getBytes(getClass(), "goldfinch.jpg"), null, null,
-					_serviceContext);
+					StringUtil.randomString(),
+					FileUtil.getBytes(getClass(), "dependencies/goldfinch.jpg"),
+					null, null, null, _serviceContext);
 
 				AssetEntry assetEntry = _assetEntryLocalService.getEntry(
 					DLFileEntryConstants.getClassName(),
@@ -120,8 +113,10 @@ public class DLFileEntryAutoTaggerTest {
 					DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 					"hummingbird.png", ContentTypes.IMAGE_PNG, "hummingbird",
 					StringUtil.randomString(), StringUtil.randomString(),
-					FileUtil.getBytes(getClass(), "hummingbird.png"), null,
-					null, _serviceContext);
+					StringUtil.randomString(),
+					FileUtil.getBytes(
+						getClass(), "dependencies/hummingbird.png"),
+					null, null, null, _serviceContext);
 
 				AssetEntry assetEntry = _assetEntryLocalService.getEntry(
 					DLFileEntryConstants.getClassName(),

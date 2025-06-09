@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.display.context;
@@ -24,20 +15,18 @@ import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLinkLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateService;
-import com.liferay.dynamic.data.mapping.storage.StorageAdapterRegistry;
 import com.liferay.dynamic.data.mapping.util.DDMDisplay;
-import com.liferay.dynamic.data.mapping.util.DDMDisplayRegistry;
+import com.liferay.dynamic.data.mapping.util.DDMDisplayRegistryUtil;
 import com.liferay.dynamic.data.mapping.util.DDMDisplayTabItem;
 import com.liferay.dynamic.data.mapping.util.DDMTemplateHelper;
 import com.liferay.dynamic.data.mapping.util.DDMUtil;
-import com.liferay.dynamic.data.mapping.web.internal.context.util.DDMWebRequestHelper;
+import com.liferay.dynamic.data.mapping.web.internal.context.helper.DDMWebRequestHelper;
 import com.liferay.dynamic.data.mapping.web.internal.search.StructureSearch;
 import com.liferay.dynamic.data.mapping.web.internal.search.StructureSearchTerms;
 import com.liferay.dynamic.data.mapping.web.internal.search.TemplateSearch;
 import com.liferay.dynamic.data.mapping.web.internal.search.TemplateSearchTerms;
 import com.liferay.dynamic.data.mapping.web.internal.security.permission.resource.DDMStructurePermission;
 import com.liferay.dynamic.data.mapping.web.internal.security.permission.resource.DDMTemplatePermission;
-import com.liferay.dynamic.data.mapping.web.internal.util.PortletDisplayTemplateUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
@@ -46,18 +35,18 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.template.TemplateHandler;
@@ -67,25 +56,23 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Rafael Praxedes
@@ -94,23 +81,19 @@ public class DDMDisplayContext {
 
 	public DDMDisplayContext(
 		RenderRequest renderRequest, RenderResponse renderResponse,
-		DDMDisplayRegistry ddmDisplayRegistry,
 		DDMStructureLinkLocalService ddmStructureLinkLocalService,
 		DDMStructureService ddmStructureService,
 		DDMTemplateHelper ddmTemplateHelper,
 		DDMTemplateService ddmTemplateService,
-		DDMWebConfiguration ddmWebConfiguration,
-		StorageAdapterRegistry storageAdapterRegistry) {
+		DDMWebConfiguration ddmWebConfiguration) {
 
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
-		_ddmDisplayRegistry = ddmDisplayRegistry;
 		_ddmStructureLinkLocalService = ddmStructureLinkLocalService;
 		_ddmStructureService = ddmStructureService;
 		_ddmTemplateHelper = ddmTemplateHelper;
 		_ddmTemplateService = ddmTemplateService;
 		_ddmWebConfiguration = ddmWebConfiguration;
-		_storageAdapterRegistry = storageAdapterRegistry;
 
 		_ddmWebRequestHelper = new DDMWebRequestHelper(
 			PortalUtil.getHttpServletRequest(renderRequest));
@@ -133,15 +116,12 @@ public class DDMDisplayContext {
 
 		DDMDisplay ddmDisplay = getDDMDisplay();
 
-		String expectedTemplateTypeValue = getTemplateTypeValue();
-
-		long scopeClassNameId = PortalUtil.getClassNameId(
-			ddmDisplay.getStructureType());
+		String expectedTemplateTypeValue = _getTemplateTypeValue();
 
 		if (DDMTemplatePermission.containsAddTemplatePermission(
 				_ddmWebRequestHelper.getPermissionChecker(),
-				_ddmWebRequestHelper.getScopeGroupId(), getClassNameId(),
-				scopeClassNameId) &&
+				_ddmWebRequestHelper.getScopeGroupId(), _getClassNameId(),
+				PortalUtil.getClassNameId(ddmDisplay.getStructureType())) &&
 			(Validator.isNull(expectedTemplateTypeValue) ||
 			 expectedTemplateTypeValue.equals(actualTemplateTypeValue))) {
 
@@ -178,34 +158,141 @@ public class DDMDisplayContext {
 
 	public String getClearResultsURL() throws PortletException {
 		return PortletURLBuilder.create(
-			PortletURLUtil.clone(getPortletURL(), _renderResponse)
+			PortletURLUtil.clone(_getPortletURL(), _renderResponse)
 		).setKeywords(
 			StringPool.BLANK
 		).buildString();
 	}
 
 	public DDMDisplay getDDMDisplay() {
-		return _ddmDisplayRegistry.getDDMDisplay(getRefererPortletName());
+		return DDMDisplayRegistryUtil.getDDMDisplay(getRefererPortletName());
 	}
 
-	public List<DropdownItem> getFilterItemsDropdownItems() {
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_ddmWebRequestHelper.getRequest(),
-						"filter-by-navigation"));
+	public SearchContainer<DDMStructure> getDDMStructureSearchContainer()
+		throws Exception {
+
+		StructureSearch structureSearch = new StructureSearch(
+			_renderRequest, _getPortletURL());
+
+		if (structureSearch.isSearch()) {
+			structureSearch.setEmptyResultsMessage(
+				LanguageUtil.format(
+					_ddmWebRequestHelper.getRequest(), "no-x-were-found",
+					getScopedStructureLabel(), false));
+		}
+		else {
+			structureSearch.setEmptyResultsMessage(
+				LanguageUtil.format(
+					_ddmWebRequestHelper.getRequest(), "there-are-no-x",
+					getScopedStructureLabel(), false));
+		}
+
+		structureSearch.setOrderByCol(getOrderByCol());
+		structureSearch.setOrderByComparator(
+			DDMUtil.getStructureOrderByComparator(
+				getOrderByCol(), getOrderByType()));
+		structureSearch.setOrderByType(getOrderByType());
+
+		StructureSearchTerms searchTerms =
+			(StructureSearchTerms)structureSearch.getSearchTerms();
+
+		if (searchTerms.isSearchRestriction()) {
+			structureSearch.setResultsAndTotal(
+				() -> _ddmStructureLinkLocalService.getStructureLinkStructures(
+					_getSearchRestrictionClassNameId(),
+					_getSearchRestrictionClassPK(), structureSearch.getStart(),
+					structureSearch.getEnd()),
+				_ddmStructureLinkLocalService.getStructureLinksCount(
+					_getSearchRestrictionClassNameId(),
+					_getSearchRestrictionClassPK()));
+		}
+		else {
+			long[] groupIds = {
+				PortalUtil.getScopeGroupId(
+					_ddmWebRequestHelper.getRequest(), getRefererPortletName(),
+					true)
+			};
+
+			if (_showAncestorScopes()) {
+				groupIds = PortalUtil.getCurrentAndAncestorSiteGroupIds(
+					groupIds);
 			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_ddmWebRequestHelper.getRequest(), "order-by"));
+
+			Group group = null;
+
+			Layout layout = _ddmWebRequestHelper.getLayout();
+
+			if (layout != null) {
+				group = layout.getGroup();
 			}
-		).build();
+
+			if ((group != null) && !group.isStagingGroup()) {
+				groupIds = ArrayUtil.append(groupIds, group.getGroupId());
+			}
+
+			long[] allGroupIds = groupIds;
+
+			structureSearch.setResultsAndTotal(
+				() -> _ddmStructureService.getStructures(
+					_ddmWebRequestHelper.getCompanyId(), allGroupIds,
+					_getStructureClassNameId(), searchTerms.getKeywords(),
+					searchTerms.getStatus(), structureSearch.getStart(),
+					structureSearch.getEnd(),
+					structureSearch.getOrderByComparator()),
+				_ddmStructureService.getStructuresCount(
+					_ddmWebRequestHelper.getCompanyId(), allGroupIds,
+					_getStructureClassNameId(), searchTerms.getKeywords(),
+					searchTerms.getStatus()));
+		}
+
+		return structureSearch;
+	}
+
+	public SearchContainer<DDMTemplate> getDDMTemplateSearchContainer()
+		throws Exception {
+
+		TemplateSearch templateSearch = new TemplateSearch(
+			_renderRequest, _getPortletURL());
+
+		if (templateSearch.isSearch()) {
+			templateSearch.setEmptyResultsMessage("no-templates-were-found");
+		}
+		else {
+			templateSearch.setEmptyResultsMessage("there-are-no-templates");
+		}
+
+		templateSearch.setOrderByCol(getOrderByCol());
+		templateSearch.setOrderByComparator(
+			DDMUtil.getTemplateOrderByComparator(
+				getOrderByCol(), getOrderByType()));
+		templateSearch.setOrderByType(getOrderByType());
+
+		TemplateSearchTerms searchTerms =
+			(TemplateSearchTerms)templateSearch.getSearchTerms();
+		DDMDisplay ddmDisplay = getDDMDisplay();
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		long[] groupIds = ddmDisplay.getTemplateGroupIds(
+			themeDisplay, _showAncestorScopes());
+
+		templateSearch.setResultsAndTotal(
+			() -> _ddmTemplateService.search(
+				_ddmWebRequestHelper.getCompanyId(), groupIds,
+				_getTemplateClassNameIds(), _getDDMTemplateClassPKs(),
+				_getResourceClassNameId(), searchTerms.getKeywords(),
+				searchTerms.getType(), _getTemplateMode(),
+				searchTerms.getStatus(), templateSearch.getStart(),
+				templateSearch.getEnd(), templateSearch.getOrderByComparator()),
+			_ddmTemplateService.searchCount(
+				_ddmWebRequestHelper.getCompanyId(), groupIds,
+				_getTemplateClassNameIds(), _getDDMTemplateClassPKs(),
+				_getResourceClassNameId(), searchTerms.getKeywords(),
+				searchTerms.getType(), _getTemplateMode(),
+				searchTerms.getStatus()));
+
+		return templateSearch;
 	}
 
 	public List<NavigationItem> getNavigationItem() {
@@ -263,43 +350,35 @@ public class DDMDisplayContext {
 	}
 
 	public String getOrderByCol() {
-		PortalPreferences portalPreferences =
-			PortletPreferencesFactoryUtil.getPortalPreferences(_renderRequest);
-
-		String orderByCol = ParamUtil.getString(_renderRequest, "orderByCol");
-
-		if (Validator.isNull(orderByCol)) {
-			orderByCol = portalPreferences.getValue(
-				DDMPortletKeys.DYNAMIC_DATA_MAPPING, "entries-order-by-col",
-				"modified-date");
-		}
-		else {
-			portalPreferences.setValue(
-				DDMPortletKeys.DYNAMIC_DATA_MAPPING, "entries-order-by-col",
-				orderByCol);
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
 		}
 
-		return orderByCol;
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_renderRequest, DDMPortletKeys.DYNAMIC_DATA_MAPPING,
+			"entries-order-by-col", "modified-date");
+
+		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		PortalPreferences portalPreferences =
-			PortletPreferencesFactoryUtil.getPortalPreferences(_renderRequest);
-
-		String orderByType = ParamUtil.getString(_renderRequest, "orderByType");
-
-		if (Validator.isNull(orderByType)) {
-			orderByType = portalPreferences.getValue(
-				DDMPortletKeys.DYNAMIC_DATA_MAPPING, "entries-order-by-type",
-				"asc");
-		}
-		else {
-			portalPreferences.setValue(
-				DDMPortletKeys.DYNAMIC_DATA_MAPPING, "entries-order-by-type",
-				orderByType);
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
 		}
 
-		return orderByType;
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_renderRequest, DDMPortletKeys.DYNAMIC_DATA_MAPPING,
+			"entries-order-by-type", "asc");
+
+		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			_getOrderByDropdownItem("modified-date")
+		).add(
+			_getOrderByDropdownItem("id")
+		).build();
 	}
 
 	public String getRefererPortletName() {
@@ -328,7 +407,7 @@ public class DDMDisplayContext {
 				).setMVCPath(
 					"/select_structure.jsp"
 				).setParameter(
-					"classPK", getClassPK()
+					"classPK", _getClassPK()
 				).setParameter(
 					"eventName",
 					ParamUtil.getString(
@@ -365,14 +444,14 @@ public class DDMDisplayContext {
 		).setMVCPath(
 			"/select_template.jsp"
 		).setParameter(
-			"classNameId", getClassNameId()
+			"classNameId", _getClassNameId()
 		).setParameter(
 			"classPK", ParamUtil.getLong(_renderRequest, "classPK")
 		).setParameter(
 			"eventName",
 			ParamUtil.getString(_renderRequest, "eventName", "selectTemplate")
 		).setParameter(
-			"resourceClassNameId", getResourceClassNameId()
+			"resourceClassNameId", _getResourceClassNameId()
 		).setParameter(
 			"templateId", ParamUtil.getLong(_renderRequest, "templateId")
 		).buildString();
@@ -380,7 +459,7 @@ public class DDMDisplayContext {
 
 	public String getSortingURL() throws Exception {
 		return PortletURLBuilder.create(
-			PortletURLUtil.clone(getPortletURL(), _renderResponse)
+			PortletURLUtil.clone(_getPortletURL(), _renderResponse)
 		).setParameter(
 			"orderByType",
 			() -> {
@@ -394,10 +473,6 @@ public class DDMDisplayContext {
 				return "asc";
 			}
 		).buildString();
-	}
-
-	public Set<String> getStorageTypes() {
-		return _storageAdapterRegistry.getStorageTypes();
 	}
 
 	public CreationMenu getStructureCreationMenu() throws PortalException {
@@ -414,7 +489,7 @@ public class DDMDisplayContext {
 		).buildPortletURL();
 
 		return CreationMenuBuilder.addPrimaryDropdownItem(
-			getCreationMenuDropdownItem(
+			_getCreationMenuDropdownItem(
 				PortletURLBuilder.createRenderURL(
 					_renderResponse
 				).setMVCPath(
@@ -426,40 +501,6 @@ public class DDMDisplayContext {
 				).buildPortletURL(),
 				"add")
 		).build();
-	}
-
-	public SearchContainer<DDMStructure> getStructureSearch() throws Exception {
-		StructureSearch structureSearch = new StructureSearch(
-			_renderRequest, getPortletURL());
-
-		String orderByCol = getOrderByCol();
-		String orderByType = getOrderByType();
-
-		OrderByComparator<DDMStructure> orderByComparator =
-			DDMUtil.getStructureOrderByComparator(
-				getOrderByCol(), getOrderByType());
-
-		structureSearch.setOrderByCol(orderByCol);
-		structureSearch.setOrderByComparator(orderByComparator);
-		structureSearch.setOrderByType(orderByType);
-
-		if (structureSearch.isSearch()) {
-			structureSearch.setEmptyResultsMessage(
-				LanguageUtil.format(
-					_ddmWebRequestHelper.getRequest(), "no-x-were-found",
-					getScopedStructureLabel(), false));
-		}
-		else {
-			structureSearch.setEmptyResultsMessage(
-				LanguageUtil.format(
-					_ddmWebRequestHelper.getRequest(), "there-are-no-x",
-					getScopedStructureLabel(), false));
-		}
-
-		setDDMStructureSearchResults(structureSearch);
-		setDDMStructureSearchTotal(structureSearch);
-
-		return structureSearch;
 	}
 
 	public String getStructureSearchActionURL() {
@@ -485,7 +526,7 @@ public class DDMDisplayContext {
 
 		return new CreationMenu() {
 			{
-				if (getClassNameId() == PortalUtil.getClassNameId(
+				if (_getClassNameId() == PortalUtil.getClassNameId(
 						DDMStructure.class)) {
 
 					PortletURL addTemplateURL =
@@ -494,15 +535,15 @@ public class DDMDisplayContext {
 						).setMVCPath(
 							"/edit_template.jsp"
 						).setParameter(
-							"classNameId", getClassNameId()
+							"classNameId", _getClassNameId()
 						).setParameter(
-							"classPK", getClassPK()
+							"classPK", _getClassPK()
 						).setParameter(
 							"groupId", _ddmWebRequestHelper.getScopeGroupId()
 						).setParameter(
-							"mode", getTemplateMode()
+							"mode", _getTemplateMode()
 						).setParameter(
-							"resourceClassNameId", getResourceClassNameId()
+							"resourceClassNameId", _getResourceClassNameId()
 						).buildPortletURL();
 
 					String message = "add";
@@ -515,12 +556,12 @@ public class DDMDisplayContext {
 							_renderResponse.getNamespace() +
 								"getAvailableFields");
 
-						if (Validator.isNull(getTemplateTypeValue())) {
+						if (Validator.isNull(_getTemplateTypeValue())) {
 							message = "add-form-template";
 						}
 
 						addPrimaryDropdownItem(
-							getCreationMenuDropdownItem(
+							_getCreationMenuDropdownItem(
 								addTemplateURL, message));
 					}
 
@@ -530,18 +571,18 @@ public class DDMDisplayContext {
 						addTemplateURL.setParameter(
 							"type", DDMTemplateConstants.TEMPLATE_TYPE_DISPLAY);
 
-						if (Validator.isNull(getTemplateTypeValue())) {
+						if (Validator.isNull(_getTemplateTypeValue())) {
 							message = "add-display-template";
 						}
 
 						addPrimaryDropdownItem(
-							getCreationMenuDropdownItem(
+							_getCreationMenuDropdownItem(
 								addTemplateURL, message));
 					}
 				}
 				else {
 					List<TemplateHandler> templateHandlers =
-						getTemplateHandlers();
+						_getTemplateHandlers();
 
 					if (!templateHandlers.isEmpty()) {
 						PortletURL addPortletDisplayTemplateURL =
@@ -569,10 +610,10 @@ public class DDMDisplayContext {
 								"classPK", String.valueOf(0));
 							addPortletDisplayTemplateURL.setParameter(
 								"resourceClassNameId",
-								String.valueOf(getResourceClassNameId()));
+								String.valueOf(_getResourceClassNameId()));
 
 							addPrimaryDropdownItem(
-								getCreationMenuDropdownItem(
+								_getCreationMenuDropdownItem(
 									addPortletDisplayTemplateURL,
 									templateHandler.getName(
 										_ddmWebRequestHelper.getLocale())));
@@ -583,34 +624,6 @@ public class DDMDisplayContext {
 		};
 	}
 
-	public SearchContainer<DDMTemplate> getTemplateSearch() throws Exception {
-		TemplateSearch templateSearch = new TemplateSearch(
-			_renderRequest, getPortletURL());
-
-		String orderByCol = getOrderByCol();
-		String orderByType = getOrderByType();
-
-		OrderByComparator<DDMTemplate> orderByComparator =
-			DDMUtil.getTemplateOrderByComparator(
-				getOrderByCol(), getOrderByType());
-
-		templateSearch.setOrderByCol(orderByCol);
-		templateSearch.setOrderByComparator(orderByComparator);
-		templateSearch.setOrderByType(orderByType);
-
-		if (templateSearch.isSearch()) {
-			templateSearch.setEmptyResultsMessage("no-templates-were-found");
-		}
-		else {
-			templateSearch.setEmptyResultsMessage("there-are-no-templates");
-		}
-
-		setDDMTemplateInstanceSearchResults(templateSearch);
-		setDDMTemplateInstanceSearchTotal(templateSearch);
-
-		return templateSearch;
-	}
-
 	public String getTemplateSearchActionURL() {
 		return PortletURLBuilder.createRenderURL(
 			_renderResponse
@@ -619,16 +632,16 @@ public class DDMDisplayContext {
 		).setTabs1(
 			ParamUtil.getString(_renderRequest, "tabs1", "templates")
 		).setParameter(
-			"classNameId", getClassNameId()
+			"classNameId", _getClassNameId()
 		).setParameter(
-			"classPK", getClassPK()
+			"classPK", _getClassPK()
 		).setParameter(
 			"eventName",
 			ParamUtil.getString(_renderRequest, "eventName", "selectTemplate")
 		).setParameter(
 			"groupId", _ddmWebRequestHelper.getScopeGroupId()
 		).setParameter(
-			"resourceClassNameId", getResourceClassNameId()
+			"resourceClassNameId", _getResourceClassNameId()
 		).setParameter(
 			"templateId", ParamUtil.getLong(_renderRequest, "templateId")
 		).buildString();
@@ -644,10 +657,10 @@ public class DDMDisplayContext {
 		if (Objects.equals(
 				context, DDMWebKeys.DYNAMIC_DATA_MAPPING_STRUCTURE)) {
 
-			searchContainer = getStructureSearch();
+			searchContainer = getDDMStructureSearchContainer();
 		}
 		else {
-			searchContainer = getTemplateSearch();
+			searchContainer = getDDMTemplateSearchContainer();
 		}
 
 		return searchContainer.getTotal();
@@ -658,7 +671,7 @@ public class DDMDisplayContext {
 	}
 
 	public boolean isDisabledManagementBar(String context) throws Exception {
-		if (hasResults(context) || isSearch()) {
+		if (_hasResults(context) || isSearch()) {
 			return false;
 		}
 
@@ -666,11 +679,7 @@ public class DDMDisplayContext {
 	}
 
 	public boolean isSearch() {
-		if (Validator.isNotNull(getKeywords())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	public boolean isShowAddStructureButton() throws PortalException {
@@ -683,7 +692,7 @@ public class DDMDisplayContext {
 			DDMStructurePermission.containsAddStructurePermission(
 				_ddmWebRequestHelper.getPermissionChecker(),
 				_ddmWebRequestHelper.getScopeGroupId(),
-				getStructureClassNameId())) {
+				_getStructureClassNameId())) {
 
 			return true;
 		}
@@ -699,7 +708,7 @@ public class DDMDisplayContext {
 		if (_ddmWebConfiguration.enableTemplateCreation() &&
 			ddmDisplay.isShowAddButton(themeDisplay.getScopeGroup())) {
 
-			long classNameId = getClassNameId();
+			long classNameId = _getClassNameId();
 			long resourceClassNameId = PortalUtil.getClassNameId(
 				ddmDisplay.getStructureType());
 
@@ -730,11 +739,11 @@ public class DDMDisplayContext {
 		return ddmGroupServiceConfiguration.smallImageMaxSize();
 	}
 
-	protected boolean containsAddPortletDisplayTemplatePermission(
+	private boolean _containsAddPortletDisplayTemplatePermission(
 			String resourceName)
 		throws PortalException {
 
-		if (getClassNameId() > 0) {
+		if (_getClassNameId() > 0) {
 			return PortletPermissionUtil.contains(
 				_ddmWebRequestHelper.getPermissionChecker(),
 				_ddmWebRequestHelper.getLayout(), resourceName,
@@ -748,16 +757,16 @@ public class DDMDisplayContext {
 			ActionKeys.ADD_PORTLET_DISPLAY_TEMPLATE, false, false);
 	}
 
-	protected long getClassNameId() {
+	private long _getClassNameId() {
 		return ParamUtil.getLong(_renderRequest, "classNameId");
 	}
 
-	protected long getClassPK() {
+	private long _getClassPK() {
 		return ParamUtil.getLong(_renderRequest, "classPK");
 	}
 
-	protected UnsafeConsumer<DropdownItem, Exception>
-		getCreationMenuDropdownItem(PortletURL url, String label) {
+	private UnsafeConsumer<DropdownItem, Exception>
+		_getCreationMenuDropdownItem(PortletURL url, String label) {
 
 		return dropdownItem -> {
 			dropdownItem.setHref(url);
@@ -766,42 +775,31 @@ public class DDMDisplayContext {
 		};
 	}
 
-	protected List<DropdownItem> getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(getPortletURL(), "navigation", "all");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_ddmWebRequestHelper.getRequest(), "all"));
-			}
-		).build();
+	private long[] _getDDMTemplateClassPKs() {
+		if (_getClassPK() > 0) {
+			return new long[] {_getClassPK()};
+		}
+
+		return null;
 	}
 
-	protected String getKeywords() {
+	private String _getKeywords() {
 		return ParamUtil.getString(_renderRequest, "keywords");
 	}
 
-	protected UnsafeConsumer<DropdownItem, Exception> getOrderByDropdownItem(
+	private UnsafeConsumer<DropdownItem, Exception> _getOrderByDropdownItem(
 		String orderByCol) {
 
 		return dropdownItem -> {
 			dropdownItem.setActive(orderByCol.equals(getOrderByCol()));
-			dropdownItem.setHref(getPortletURL(), "orderByCol", orderByCol);
+			dropdownItem.setHref(_getPortletURL(), "orderByCol", orderByCol);
 			dropdownItem.setLabel(
 				LanguageUtil.get(
 					_ddmWebRequestHelper.getRequest(), orderByCol));
 		};
 	}
 
-	protected List<DropdownItem> getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			getOrderByDropdownItem("modified-date")
-		).add(
-			getOrderByDropdownItem("id")
-		).build();
-	}
-
-	protected PortletURL getPortletURL() {
+	private PortletURL _getPortletURL() {
 		PortletURL portletURL = _renderResponse.createRenderURL();
 
 		String mvcPath = ParamUtil.getString(_renderRequest, "mvcPath");
@@ -822,19 +820,19 @@ public class DDMDisplayContext {
 			portletURL.setParameter("templateId", String.valueOf(templateId));
 		}
 
-		long classNameId = getClassNameId();
+		long classNameId = _getClassNameId();
 
 		if (classNameId != 0) {
 			portletURL.setParameter("classNameId", String.valueOf(classNameId));
 		}
 
-		long classPK = getClassPK();
+		long classPK = _getClassPK();
 
 		if (classPK != 0) {
 			portletURL.setParameter("classPK", String.valueOf(classPK));
 		}
 
-		long resourceClassNameId = getResourceClassNameId();
+		long resourceClassNameId = _getResourceClassNameId();
 
 		if (resourceClassNameId != 0) {
 			portletURL.setParameter(
@@ -859,7 +857,7 @@ public class DDMDisplayContext {
 			portletURL.setParameter("eventName", eventName);
 		}
 
-		String keywords = getKeywords();
+		String keywords = _getKeywords();
 
 		if (Validator.isNotNull(keywords)) {
 			portletURL.setParameter("keywords", keywords);
@@ -877,7 +875,7 @@ public class DDMDisplayContext {
 			portletURL.setParameter("orderByType", orderByType);
 		}
 
-		boolean showAncestorScopes = showAncestorScopes();
+		boolean showAncestorScopes = _showAncestorScopes();
 
 		if (showAncestorScopes) {
 			portletURL.setParameter(
@@ -887,7 +885,7 @@ public class DDMDisplayContext {
 		return portletURL;
 	}
 
-	protected long getResourceClassNameId() {
+	private long _getResourceClassNameId() {
 		long resourceClassNameId = ParamUtil.getLong(
 			_renderRequest, "resourceClassNameId");
 
@@ -899,54 +897,57 @@ public class DDMDisplayContext {
 		return resourceClassNameId;
 	}
 
-	protected long getSearchRestrictionClassNameId() {
+	private long _getSearchRestrictionClassNameId() {
 		return ParamUtil.getLong(
 			_ddmWebRequestHelper.getRequest(), "searchRestrictionClassNameId");
 	}
 
-	protected long getSearchRestrictionClassPK() {
+	private long _getSearchRestrictionClassPK() {
 		return ParamUtil.getLong(
 			_ddmWebRequestHelper.getRequest(), "searchRestrictionClassPK");
 	}
 
-	protected long getStructureClassNameId() {
+	private long _getStructureClassNameId() {
 		DDMDisplay ddmDisplay = getDDMDisplay();
 
 		return PortalUtil.getClassNameId(ddmDisplay.getStructureType());
 	}
 
-	protected long[] getTemplateClassNameIds() {
+	private long[] _getTemplateClassNameIds() {
 		DDMDisplay ddmDisplay = getDDMDisplay();
 
-		return ddmDisplay.getTemplateClassNameIds(getClassNameId());
+		return ddmDisplay.getTemplateClassNameIds(_getClassNameId());
 	}
 
-	protected List<TemplateHandler> getTemplateHandlers()
+	private List<TemplateHandler> _getTemplateHandlers()
 		throws PortalException {
 
 		List<TemplateHandler> templateHandlers = new ArrayList<>();
 
-		if (getClassNameId() > 0) {
+		if (_getClassNameId() > 0) {
 			TemplateHandler templateHandler =
 				TemplateHandlerRegistryUtil.getTemplateHandler(
-					getClassNameId());
+					_getClassNameId());
 
-			if (containsAddPortletDisplayTemplatePermission(
+			if (_containsAddPortletDisplayTemplatePermission(
 					templateHandler.getResourceName())) {
 
 				templateHandlers.add(templateHandler);
 			}
 		}
 		else {
+			PortletDisplayTemplate portletDisplayTemplate =
+				_portletDisplayTemplateSnapshot.get();
+
 			templateHandlers =
-				PortletDisplayTemplateUtil.getPortletDisplayTemplateHandlers();
+				portletDisplayTemplate.getPortletDisplayTemplateHandlers();
 
 			Iterator<TemplateHandler> iterator = templateHandlers.iterator();
 
 			while (iterator.hasNext()) {
 				TemplateHandler templateHandler = iterator.next();
 
-				if (!containsAddPortletDisplayTemplatePermission(
+				if (!_containsAddPortletDisplayTemplatePermission(
 						templateHandler.getResourceName())) {
 
 					iterator.remove();
@@ -961,14 +962,14 @@ public class DDMDisplayContext {
 		return templateHandlers;
 	}
 
-	protected String getTemplateMode() {
+	private String _getTemplateMode() {
 		DDMDisplay ddmDisplay = getDDMDisplay();
 
 		return ParamUtil.getString(
 			_renderRequest, "mode", ddmDisplay.getTemplateMode());
 	}
 
-	protected String getTemplateTypeValue() {
+	private String _getTemplateTypeValue() {
 		DDMDisplay ddmDisplay = getDDMDisplay();
 
 		String scopeTemplateType = ddmDisplay.getTemplateType();
@@ -989,7 +990,7 @@ public class DDMDisplayContext {
 		return templateTypeValue;
 	}
 
-	protected boolean hasResults(String context) throws Exception {
+	private boolean _hasResults(String context) throws Exception {
 		if (getTotalItems(context) > 0) {
 			return true;
 		}
@@ -997,156 +998,23 @@ public class DDMDisplayContext {
 		return false;
 	}
 
-	protected void setDDMStructureSearchResults(StructureSearch structureSearch)
-		throws Exception {
-
-		StructureSearchTerms searchTerms =
-			(StructureSearchTerms)structureSearch.getSearchTerms();
-
-		long[] groupIds = {
-			PortalUtil.getScopeGroupId(
-				_ddmWebRequestHelper.getRequest(), getRefererPortletName(),
-				true)
-		};
-
-		if (showAncestorScopes()) {
-			groupIds = PortalUtil.getCurrentAndAncestorSiteGroupIds(groupIds);
-		}
-
-		Group group = null;
-
-		Layout layout = _ddmWebRequestHelper.getLayout();
-
-		if (layout != null) {
-			group = layout.getGroup();
-		}
-
-		if ((group != null) && !group.isStagingGroup()) {
-			groupIds = ArrayUtil.append(groupIds, group.getGroupId());
-		}
-
-		List<DDMStructure> results = null;
-
-		if (searchTerms.isSearchRestriction()) {
-			results = _ddmStructureLinkLocalService.getStructureLinkStructures(
-				getSearchRestrictionClassNameId(),
-				getSearchRestrictionClassPK(), structureSearch.getStart(),
-				structureSearch.getEnd());
-		}
-		else {
-			results = _ddmStructureService.getStructures(
-				_ddmWebRequestHelper.getCompanyId(), groupIds,
-				getStructureClassNameId(), searchTerms.getKeywords(),
-				searchTerms.getStatus(), structureSearch.getStart(),
-				structureSearch.getEnd(),
-				structureSearch.getOrderByComparator());
-		}
-
-		structureSearch.setResults(results);
-	}
-
-	protected void setDDMStructureSearchTotal(StructureSearch structureSearch)
-		throws Exception {
-
-		StructureSearchTerms searchTerms =
-			(StructureSearchTerms)structureSearch.getSearchTerms();
-
-		long[] groupIds = {
-			PortalUtil.getScopeGroupId(
-				_ddmWebRequestHelper.getRequest(), getRefererPortletName(),
-				true)
-		};
-
-		if (showAncestorScopes()) {
-			groupIds = PortalUtil.getCurrentAndAncestorSiteGroupIds(groupIds);
-		}
-
-		int total = 0;
-
-		if (searchTerms.isSearchRestriction()) {
-			total = _ddmStructureLinkLocalService.getStructureLinksCount(
-				getSearchRestrictionClassNameId(),
-				getSearchRestrictionClassPK());
-		}
-		else {
-			total = _ddmStructureService.getStructuresCount(
-				_ddmWebRequestHelper.getCompanyId(), groupIds,
-				getStructureClassNameId(), searchTerms.getKeywords(),
-				searchTerms.getStatus());
-		}
-
-		structureSearch.setTotal(total);
-	}
-
-	protected void setDDMTemplateInstanceSearchResults(
-			TemplateSearch templateSearch)
-		throws Exception {
-
-		TemplateSearchTerms searchTerms =
-			(TemplateSearchTerms)templateSearch.getSearchTerms();
-		DDMDisplay ddmDisplay = getDDMDisplay();
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		long[] groupIds = ddmDisplay.getTemplateGroupIds(
-			themeDisplay, showAncestorScopes());
-
-		List<DDMTemplate> results = _ddmTemplateService.search(
-			_ddmWebRequestHelper.getCompanyId(), groupIds,
-			getTemplateClassNameIds(), _getDDMTemplateClassPKs(),
-			getResourceClassNameId(), searchTerms.getKeywords(),
-			searchTerms.getType(), getTemplateMode(), searchTerms.getStatus(),
-			templateSearch.getStart(), templateSearch.getEnd(),
-			templateSearch.getOrderByComparator());
-
-		templateSearch.setResults(results);
-	}
-
-	protected void setDDMTemplateInstanceSearchTotal(
-			TemplateSearch templateSearch)
-		throws Exception {
-
-		TemplateSearchTerms searchTerms =
-			(TemplateSearchTerms)templateSearch.getSearchTerms();
-		DDMDisplay ddmDisplay = getDDMDisplay();
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		long[] groupIds = ddmDisplay.getTemplateGroupIds(
-			themeDisplay, showAncestorScopes());
-
-		int total = _ddmTemplateService.searchCount(
-			_ddmWebRequestHelper.getCompanyId(), groupIds,
-			getTemplateClassNameIds(), _getDDMTemplateClassPKs(),
-			getResourceClassNameId(), searchTerms.getKeywords(),
-			searchTerms.getType(), getTemplateMode(), searchTerms.getStatus());
-
-		templateSearch.setTotal(total);
-	}
-
-	protected boolean showAncestorScopes() {
+	private boolean _showAncestorScopes() {
 		return ParamUtil.getBoolean(_renderRequest, "showAncestorScopes");
 	}
 
-	private long[] _getDDMTemplateClassPKs() {
-		if (getClassPK() > 0) {
-			return new long[] {getClassPK()};
-		}
+	private static final Snapshot<PortletDisplayTemplate>
+		_portletDisplayTemplateSnapshot = new Snapshot<>(
+			DDMDisplayContext.class, PortletDisplayTemplate.class);
 
-		return null;
-	}
-
-	private final DDMDisplayRegistry _ddmDisplayRegistry;
 	private final DDMStructureLinkLocalService _ddmStructureLinkLocalService;
 	private final DDMStructureService _ddmStructureService;
 	private final DDMTemplateHelper _ddmTemplateHelper;
 	private final DDMTemplateService _ddmTemplateService;
 	private final DDMWebConfiguration _ddmWebConfiguration;
 	private final DDMWebRequestHelper _ddmWebRequestHelper;
+	private String _orderByCol;
+	private String _orderByType;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
-	private final StorageAdapterRegistry _storageAdapterRegistry;
 
 }

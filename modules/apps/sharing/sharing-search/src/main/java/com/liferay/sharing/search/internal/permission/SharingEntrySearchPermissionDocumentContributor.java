@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.search.internal.permission;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFieldContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFieldContributor;
 import com.liferay.sharing.model.SharingEntry;
 import com.liferay.sharing.service.SharingEntryLocalService;
 
@@ -39,12 +33,19 @@ import org.osgi.service.component.annotations.Reference;
  *
  * @author Sergio González
  */
-@Component(immediate = true, service = SearchPermissionFieldContributor.class)
+@Component(service = SearchPermissionFieldContributor.class)
 public class SharingEntrySearchPermissionDocumentContributor
 	implements SearchPermissionFieldContributor {
 
 	@Override
 	public void contribute(Document document, String className, long classPK) {
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if ((serviceContext != null) && serviceContext.isStrictAdd()) {
+			return;
+		}
+
 		List<SharingEntry> sharingEntries =
 			_sharingEntryLocalService.getSharingEntries(
 				_portal.getClassNameId(className), classPK);
@@ -53,15 +54,28 @@ public class SharingEntrySearchPermissionDocumentContributor
 			return;
 		}
 
-		long[] userIds = new long[sharingEntries.size()];
+		document.addKeyword(
+			"sharedToUserGroupId",
+			TransformUtil.transformToLongArray(
+				sharingEntries,
+				sharingEntry -> {
+					if (sharingEntry.getToUserGroupId() == 0) {
+						return null;
+					}
 
-		for (int i = 0; i < userIds.length; i++) {
-			SharingEntry sharingEntry = sharingEntries.get(i);
+					return sharingEntry.getToUserGroupId();
+				}));
+		document.addKeyword(
+			"sharedToUserId",
+			TransformUtil.transformToLongArray(
+				sharingEntries,
+				sharingEntry -> {
+					if (sharingEntry.getToUserId() == 0) {
+						return null;
+					}
 
-			userIds[i] = sharingEntry.getToUserId();
-		}
-
-		document.addKeyword("sharedToUserId", userIds);
+					return sharingEntry.getToUserId();
+				}));
 	}
 
 	@Reference

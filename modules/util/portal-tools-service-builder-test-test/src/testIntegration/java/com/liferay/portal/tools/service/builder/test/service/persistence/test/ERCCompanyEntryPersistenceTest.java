@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.test;
@@ -32,6 +23,7 @@ import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.portal.tools.service.builder.test.exception.DuplicateERCCompanyEntryExternalReferenceCodeException;
 import com.liferay.portal.tools.service.builder.test.exception.NoSuchERCCompanyEntryException;
 import com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry;
 import com.liferay.portal.tools.service.builder.test.service.ERCCompanyEntryLocalServiceUtil;
@@ -124,16 +116,26 @@ public class ERCCompanyEntryPersistenceTest {
 
 		ERCCompanyEntry newERCCompanyEntry = _persistence.create(pk);
 
+		newERCCompanyEntry.setUuid(RandomTestUtil.randomString());
+
 		newERCCompanyEntry.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
 		newERCCompanyEntry.setCompanyId(RandomTestUtil.nextLong());
+
+		newERCCompanyEntry.setUserId(RandomTestUtil.nextLong());
+
+		newERCCompanyEntry.setUserName(RandomTestUtil.randomString());
+
+		newERCCompanyEntry.setColumn1(RandomTestUtil.nextInt());
 
 		_ercCompanyEntries.add(_persistence.update(newERCCompanyEntry));
 
 		ERCCompanyEntry existingERCCompanyEntry = _persistence.findByPrimaryKey(
 			newERCCompanyEntry.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingERCCompanyEntry.getUuid(), newERCCompanyEntry.getUuid());
 		Assert.assertEquals(
 			existingERCCompanyEntry.getExternalReferenceCode(),
 			newERCCompanyEntry.getExternalReferenceCode());
@@ -143,15 +145,64 @@ public class ERCCompanyEntryPersistenceTest {
 		Assert.assertEquals(
 			existingERCCompanyEntry.getCompanyId(),
 			newERCCompanyEntry.getCompanyId());
+		Assert.assertEquals(
+			existingERCCompanyEntry.getUserId(),
+			newERCCompanyEntry.getUserId());
+		Assert.assertEquals(
+			existingERCCompanyEntry.getUserName(),
+			newERCCompanyEntry.getUserName());
+		Assert.assertEquals(
+			existingERCCompanyEntry.getColumn1(),
+			newERCCompanyEntry.getColumn1());
+	}
+
+	@Test(
+		expected = DuplicateERCCompanyEntryExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		ERCCompanyEntry ercCompanyEntry = addERCCompanyEntry();
+
+		ERCCompanyEntry newERCCompanyEntry = addERCCompanyEntry();
+
+		newERCCompanyEntry.setCompanyId(ercCompanyEntry.getCompanyId());
+
+		newERCCompanyEntry = _persistence.update(newERCCompanyEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newERCCompanyEntry);
+
+		newERCCompanyEntry.setExternalReferenceCode(
+			ercCompanyEntry.getExternalReferenceCode());
+
+		_persistence.update(newERCCompanyEntry);
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByUuid("null");
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -179,8 +230,9 @@ public class ERCCompanyEntryPersistenceTest {
 
 	protected OrderByComparator<ERCCompanyEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"ERCCompanyEntry", "externalReferenceCode", true,
-			"ercCompanyEntryId", true, "companyId", true);
+			"ERCCompanyEntry", "uuid", true, "externalReferenceCode", true,
+			"ercCompanyEntryId", true, "companyId", true, "userId", true,
+			"userName", true, "column1", true);
 	}
 
 	@Test
@@ -451,15 +503,15 @@ public class ERCCompanyEntryPersistenceTest {
 
 	private void _assertOriginalValues(ERCCompanyEntry ercCompanyEntry) {
 		Assert.assertEquals(
-			Long.valueOf(ercCompanyEntry.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				ercCompanyEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			ercCompanyEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				ercCompanyEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(ercCompanyEntry.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				ercCompanyEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected ERCCompanyEntry addERCCompanyEntry() throws Exception {
@@ -467,9 +519,17 @@ public class ERCCompanyEntryPersistenceTest {
 
 		ERCCompanyEntry ercCompanyEntry = _persistence.create(pk);
 
+		ercCompanyEntry.setUuid(RandomTestUtil.randomString());
+
 		ercCompanyEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		ercCompanyEntry.setCompanyId(RandomTestUtil.nextLong());
+
+		ercCompanyEntry.setUserId(RandomTestUtil.nextLong());
+
+		ercCompanyEntry.setUserName(RandomTestUtil.randomString());
+
+		ercCompanyEntry.setColumn1(RandomTestUtil.nextInt());
 
 		_ercCompanyEntries.add(_persistence.update(ercCompanyEntry));
 

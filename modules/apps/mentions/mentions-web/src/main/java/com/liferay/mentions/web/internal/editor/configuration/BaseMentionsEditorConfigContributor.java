@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.web.internal.editor.configuration;
@@ -20,14 +11,17 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.editor.configuration.BaseEditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Map;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletURL;
+import java.util.Map;
 
 /**
  * @author Sergio González
@@ -63,11 +57,15 @@ public class BaseMentionsEditorConfigContributor
 					).put(
 						"source",
 						() -> {
-							PortletURL portletURL = getPortletURL(
-								themeDisplay, requestBackedPortletURLFactory);
+							LiferayPortletURL portletURL =
+								(LiferayPortletURL)getPortletURL(
+									themeDisplay,
+									requestBackedPortletURLFactory);
+
+							portletURL.setAnchor(false);
 
 							return StringBundler.concat(
-								portletURL.toString(), "&",
+								portletURL, "&",
 								PortalUtil.getPortletNamespace(
 									MentionsPortletKeys.MENTIONS));
 						}
@@ -78,6 +76,10 @@ public class BaseMentionsEditorConfigContributor
 					).put(
 						"tplResults",
 						StringBundler.concat(
+							"<div id=\"",
+							PortalUtil.getPortletNamespace(
+								MentionsPortletKeys.MENTIONS),
+							"mentionsResult\">",
 							"<div class=\"p-1 autofit-row ",
 							"autofit-row-center\"><div class=\"autofit-col ",
 							"inline-item-before\">{portraitHTML}</div><div ",
@@ -85,7 +87,7 @@ public class BaseMentionsEditorConfigContributor
 							"<strong class=\"text-truncate\">{fullName}",
 							"</strong><div class=\"autofit-col-expand\">",
 							"<small class=\"text-truncate\">@{screenName}",
-							"</small></div></div></div>")
+							"</small></div></div></div></div>")
 					))
 			));
 
@@ -106,8 +108,20 @@ public class BaseMentionsEditorConfigContributor
 		ThemeDisplay themeDisplay,
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory) {
 
-		return requestBackedPortletURLFactory.createResourceURL(
-			MentionsPortletKeys.MENTIONS);
+		String discussionPortletId = themeDisplay.getPpid();
+
+		if (Validator.isBlank(discussionPortletId)) {
+			PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+
+			discussionPortletId = portletDisplay.getId();
+		}
+
+		return PortletURLBuilder.create(
+			requestBackedPortletURLFactory.createResourceURL(
+				MentionsPortletKeys.MENTIONS)
+		).setParameter(
+			"discussionPortletId", discussionPortletId
+		).buildPortletURL();
 	}
 
 }

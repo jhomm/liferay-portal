@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,22 +10,27 @@
 <%
 JournalArticle article = journalDisplayContext.getArticle();
 
-JournalEditArticleDisplayContext journalEditArticleDisplayContext = new JournalEditArticleDisplayContext(request, liferayPortletResponse, article);
+JournalEditArticleDisplayContext journalEditArticleDisplayContext = (JournalEditArticleDisplayContext)request.getAttribute(JournalEditArticleDisplayContext.class.getName());
 %>
 
-<p class="text-secondary"><liferay-ui:message key="changing-the-friendly-url-will-affect-all-web-content-article-versions-even-when-saving-it-as-a-draft" /></p>
+<c:if test="<%= Validator.isNotNull(journalEditArticleDisplayContext.getFriendlyURLDuplicatedWarningMessage()) %>">
+	<clay:alert
+		dismissible="<%= true %>"
+		displayType="warning"
+		message="<%= journalEditArticleDisplayContext.getFriendlyURLDuplicatedWarningMessage() %>"
+	/>
+</c:if>
+
+<p class="text-secondary"><liferay-ui:message key="changing-the-friendly-url-will-affect-all-web-content-article-versions-even-when-autosaving" /></p>
 
 <p class="text-secondary"><liferay-ui:message key="the-friendly-url-may-be-modified-to-ensure-uniqueness" /></p>
 
-<p class="mb-2 text-secondary">
-	<%= journalEditArticleDisplayContext.getFriendlyURLBase() %>
-</p>
-
-<liferay-ui:input-localized
-	availableLocales="<%= journalEditArticleDisplayContext.getAvailableLocales() %>"
+<liferay-friendly-url:input
+	className="<%= JournalArticle.class.getName() %>"
+	classPK="<%= (article == null) || (article.getPrimaryKey() == 0) ? 0 : article.getResourcePrimKey() %>"
 	defaultLanguageId="<%= journalEditArticleDisplayContext.getDefaultArticleLanguageId() %>"
-	maxLength='<%= String.valueOf(ModelHintsUtil.getMaxLength(JournalArticle.class.getName(), "urlTitle")) %>'
+	inputAddon="<%= journalEditArticleDisplayContext.getFriendlyURLBase() %>"
 	name="friendlyURL"
-	selectedLanguageId="<%= journalEditArticleDisplayContext.getSelectedLanguageId() %>"
-	xml="<%= (article != null) ? HttpUtil.decodeURL(article.getFriendlyURLsXML()) : StringPool.BLANK %>"
+	showHistory="<%= false %>"
+	showLabel="<%= false %>"
 />

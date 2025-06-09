@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.search.ResultRowSplitter;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -91,16 +83,16 @@ public class SearchIteratorTag<R> extends SearchPaginatorTag<R> {
 
 	@Override
 	protected String getPage() {
+		if (Validator.isNull(_markupView) ||
+			Objects.equals(_markupView, "deprecated")) {
+
+			return "/html/taglib/ui/search_iterator/deprecated/list.jsp";
+		}
+
 		String displayStyle = _displayStyle;
 
 		if (Validator.isNull(displayStyle)) {
 			displayStyle = DEFAULT_DISPLAY_STYLE;
-		}
-
-		if (Validator.isNotNull(_markupView)) {
-			return StringBundler.concat(
-				"/html/taglib/ui/search_iterator/", _markupView, "/",
-				displayStyle, ".jsp");
 		}
 
 		return "/html/taglib/ui/search_iterator/" + displayStyle + ".jsp";

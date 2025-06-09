@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 /*
@@ -40,9 +31,8 @@
  */
 
 (function () {
-	if (!window.Parse) {
-		var Parse = (window.parse = {});
-	}
+	const Parse = window.Parse || {};
+
 	if (!Parse.Simple) {
 		Parse.Simple = {};
 	}
@@ -63,8 +53,8 @@
 
 		parse(node, data, options) {
 			if (options) {
-				for (var i in this.options) {
-					if (typeof options[i] == 'undefined') {
+				for (const i in this.options) {
+					if (typeof options[i] === 'undefined') {
 						options[i] = this.options[i];
 					}
 				}
@@ -89,7 +79,7 @@
 			return;
 		}
 
-		for (var p in params) {
+		for (const p in params) {
 			this[p] = params[p];
 		}
 		if (!this.children) {
@@ -101,18 +91,18 @@
 
 	Parse.Simple.Base.Rule.prototype = {
 		apply(node, data, options) {
-			var tail = '' + data;
-			var matches = [];
+			let tail = '' + data;
+			const matches = [];
 
 			if (!this.fallback.apply) {
 				this.fallback = new this.constructor(this.fallback);
 			}
 
 			while (true) {
-				var best = false;
-				var rule = false;
+				let best = false;
+				let rule = false;
 				for (let i = 0; i < this.children.length; i++) {
-					if (typeof matches[i] == 'undefined') {
+					if (typeof matches[i] === 'undefined') {
 						if (!this.children[i].match) {
 							this.children[i] = new this.constructor(
 								this.children[i]
@@ -126,13 +116,13 @@
 					) {
 						best = matches[i];
 						rule = this.children[i];
-						if (best.index == 0) {
+						if (best.index === 0) {
 							break;
 						}
 					}
 				}
 
-				var pos = best ? best.index : tail.length;
+				const pos = best ? best.index : tail.length;
 				if (pos > 0) {
 					this.fallback.apply(node, tail.substring(0, pos), options);
 				}
@@ -146,7 +136,7 @@
 				}
 				rule.build(node, best, options);
 
-				var chopped = best.index + best[0].length;
+				const chopped = best.index + best[0].length;
 				tail = tail.substring(chopped);
 				for (let i = 0; i < this.children.length; i++) {
 					if (matches[i]) {
@@ -166,12 +156,12 @@
 		attrs: null,
 
 		build(node, r, options) {
-			var data;
+			let data;
 			if (this.capture !== null) {
 				data = r[this.capture];
 			}
 
-			var target;
+			let target;
 			if (this.tag) {
 				target = document.createElement(this.tag);
 				node.appendChild(target);
@@ -188,9 +178,9 @@
 			}
 
 			if (this.attrs) {
-				for (var i in this.attrs) {
+				for (const i in this.attrs) {
 					target.setAttribute(i, this.attrs[i]);
-					if (options && options.forIE && i == 'class') {
+					if (options && options.forIE && i === 'class') {
 						target.className = this.attrs[i];
 					}
 				}
@@ -227,7 +217,7 @@
 	Parse.Simple.Base.Rule.prototype.constructor = Parse.Simple.Base.Rule;
 
 	Parse.Simple.Creole = function (options) {
-		var rx = {};
+		const rx = {};
 		rx.link = '[^\\]|~\\n]*(?:(?:\\](?!\\])|~.)[^\\]|~\\n]*)*';
 		rx.linkText = '[^\\]~\\n]*(?:(?:\\](?!\\])|~.)[^\\]~\\n]*)*';
 		rx.uriPrefix = '\\b(?:(?:https?|ftp)://|mailto:)';
@@ -242,20 +232,20 @@
 			(options && options.strict ? '' : ')?') +
 			'}}';
 
-		var formatLink = function (link, format) {
+		const formatLink = function (link, format) {
 			if (format instanceof Function) {
 				return format(link);
 			}
 
 			format = Array.isArray(format) ? format : [format];
-			if (typeof format[1] == 'undefined') {
+			if (typeof format[1] === 'undefined') {
 				format[1] = '';
 			}
 
 			return format[0] + link + format[1];
 		};
 
-		var g = {
+		const g = {
 			br: {regex: /\\\\/, tag: 'br'},
 
 			em: {
@@ -288,19 +278,22 @@
 			},
 
 			hr: {regex: /(^|\n)\s*----\s*(\n|$)/, tag: 'hr'},
+
 			// eslint-disable-next-line @liferay/no-abbreviations
 			img: {
 				build(node, r, options) {
-					var imagePath = r[1];
-					var imagePathPrefix = options ? options.imagePrefix : '';
+					let imagePath = r[1];
+					const imagePathPrefix = options ? options.imagePrefix : '';
 
-					if (imagePathPrefix) {
-						if (!/^https?:\/\//gi.test(imagePath)) {
-							imagePath = imagePathPrefix + imagePath;
-						}
+					if (
+						imagePathPrefix &&
+						!imagePath.startsWith('data:image/') &&
+						!/^https?:\/\//gi.test(imagePath)
+					) {
+						imagePath = imagePathPrefix + imagePath;
 					}
 
-					var image = document.createElement('img');
+					const image = document.createElement('img');
 					image.src = imagePath;
 					if (r[2]) {
 						image.alt = r[2].replace(/~(.)/g, '$1');
@@ -323,14 +316,14 @@
 
 			namedLink: {
 				build(node, r, options) {
-					var link = document.createElement('a');
+					const link = document.createElement('a');
 
 					link.href =
 						options && options.linkFormat
 							? formatLink(
 									r[1].replace(/~(.)/g, '$1'),
 									options.linkFormat
-							  )
+								)
 							: r[1].replace(/~(.)/g, '$1');
 					link.setAttribute('data-cke-saved-href', link.href);
 
@@ -343,7 +336,7 @@
 
 			namedUri: {
 				build(node, r, options) {
-					var link = document.createElement('a');
+					const link = document.createElement('a');
 					link.href = r[1];
 					if (options && options.isPlainUri) {
 						link.appendChild(document.createTextNode(r[2]));
@@ -453,15 +446,16 @@
 		};
 		g.namedInterwikiLink = {
 			build(node, r, options) {
-				var link = document.createElement('a');
+				const link = document.createElement('a');
 
-				var m, f;
+				let m;
+				let f;
 				if (options && options.interwiki) {
 					m = r[1].match(/(.*?):(.*)/);
 					f = options.interwiki[m[1]];
 				}
 
-				if (typeof f == 'undefined') {
+				if (typeof f === 'undefined') {
 					if (!g.namedLink.apply) {
 						g.namedLink = new this.constructor(g.namedLink);
 					}
@@ -495,12 +489,16 @@
 				options
 			);
 		};
-		g.namedUri.children = g.unnamedUri.children = g.rawUri.children = g.namedLink.children = g.unnamedLink.children = g.namedInterwikiLink.children = g.unnamedInterwikiLink.children = [
-			g.escapedSymbol,
-			g.img,
-		];
+		g.namedUri.children =
+			g.unnamedUri.children =
+			g.rawUri.children =
+			g.namedLink.children =
+			g.unnamedLink.children =
+			g.namedInterwikiLink.children =
+			g.unnamedInterwikiLink.children =
+				[g.escapedSymbol, g.img];
 
-		for (var i = 1; i <= 6; i++) {
+		for (let i = 1; i <= 6; i++) {
 			g['h' + i] = {
 				capture: 2,
 				regex:
@@ -521,35 +519,46 @@
 		g.td.children = [g.singleLine];
 		g.th.children = [g.singleLine];
 
-		g.h1.children = g.h2.children = g.h3.children = g.h4.children = g.h5.children = g.h6.children = [
-			g.escapedSequence,
-			g.br,
-			g.rawUri,
-			g.namedUri,
-			g.namedInterwikiLink,
-			g.namedLink,
-			g.unnamedUri,
-			g.unnamedInterwikiLink,
-			g.unnamedLink,
-			g.tt,
-			g.img,
-		];
+		g.h1.children =
+			g.h2.children =
+			g.h3.children =
+			g.h4.children =
+			g.h5.children =
+			g.h6.children =
+				[
+					g.escapedSequence,
+					g.br,
+					g.rawUri,
+					g.namedUri,
+					g.namedInterwikiLink,
+					g.namedLink,
+					g.unnamedUri,
+					g.unnamedInterwikiLink,
+					g.unnamedLink,
+					g.tt,
+					g.img,
+				];
 
-		g.singleLine.children = g.paragraph.children = g.text.children = g.strong.children = g.em.children = [
-			g.escapedSequence,
-			g.strong,
-			g.em,
-			g.br,
-			g.rawUri,
-			g.namedUri,
-			g.namedInterwikiLink,
-			g.namedLink,
-			g.unnamedUri,
-			g.unnamedInterwikiLink,
-			g.unnamedLink,
-			g.tt,
-			g.img,
-		];
+		g.singleLine.children =
+			g.paragraph.children =
+			g.text.children =
+			g.strong.children =
+			g.em.children =
+				[
+					g.escapedSequence,
+					g.strong,
+					g.em,
+					g.br,
+					g.rawUri,
+					g.namedUri,
+					g.namedInterwikiLink,
+					g.namedLink,
+					g.unnamedUri,
+					g.unnamedInterwikiLink,
+					g.unnamedLink,
+					g.tt,
+					g.img,
+				];
 
 		g.root = {
 			children: [

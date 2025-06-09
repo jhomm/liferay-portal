@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal;
 
+import jakarta.el.ELContext;
+import jakarta.el.ELResolver;
+
+import jakarta.portlet.PortletRequest;
+
 import java.beans.FeatureDescriptor;
 
 import java.util.Iterator;
-
-import javax.el.ELContext;
-import javax.el.ELResolver;
-
-import javax.portlet.PortletRequest;
 
 import org.springframework.beans.factory.BeanFactory;
 
@@ -39,7 +30,6 @@ public class SpringBeanELResolver extends ELResolver {
 		return null;
 	}
 
-	@Override
 	public Iterator<FeatureDescriptor> getFeatureDescriptors(
 		ELContext elContext, Object base) {
 
@@ -53,28 +43,32 @@ public class SpringBeanELResolver extends ELResolver {
 
 	@Override
 	public Object getValue(ELContext elContext, Object base, Object property) {
-		if ((base == null) && (property != null)) {
-			String beanName = property.toString();
-
-			if (_beanFactory.containsBean(beanName)) {
-				PortletRequest portletRequest = _beanFactory.getBean(
-					"portletRequest", PortletRequest.class);
-
-				Object bean = portletRequest.getAttribute(beanName);
-
-				if (bean == null) {
-					bean = _beanFactory.getBean(beanName);
-				}
-
-				if (bean != null) {
-					elContext.setPropertyResolved(true);
-
-					return bean;
-				}
-			}
+		if ((base != null) || (property == null)) {
+			return null;
 		}
 
-		return null;
+		String beanName = property.toString();
+
+		if (!_beanFactory.containsBean(beanName)) {
+			return null;
+		}
+
+		PortletRequest portletRequest = _beanFactory.getBean(
+			"portletRequest", PortletRequest.class);
+
+		Object bean = portletRequest.getAttribute(beanName);
+
+		if (bean == null) {
+			bean = _beanFactory.getBean(beanName);
+		}
+
+		if (bean == null) {
+			return null;
+		}
+
+		elContext.setPropertyResolved(true);
+
+		return bean;
 	}
 
 	@Override

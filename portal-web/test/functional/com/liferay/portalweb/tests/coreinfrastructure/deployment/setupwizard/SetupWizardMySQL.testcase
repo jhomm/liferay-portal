@@ -1,15 +1,88 @@
-@component-name = "portal-deployment-mysql"
+@component-name = "portal-core-infra"
 definition {
 
+	property ci.retries.disabled = "true";
 	property database.types = "mysql";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property setup.wizard.enabled = "true";
+	property test.assert.warning.exceptions = "true";
 	property testray.main.component.name = "Setup Wizard";
 
-	@priority = "4"
+	@priority = 3
+	test MySQLtoEmptyMySQL {
+		property databases.size = "1";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		SetupWizard.configurePG(
+			administratorEmail = "test@liferay.com",
+			administratorFirstName = "Test",
+			administratorLastName = "Test",
+			databaseName = "lportal1",
+			databasePassword = PropsUtil.get("database.mysql.password"),
+			databaseType = "MySQL",
+			databaseUserName = PropsUtil.get("database.mysql.username"),
+			jdbcDriverClassName = PropsUtil.get("database.mysql.driver"),
+			jdbcURL = PropsUtil.get("database.mysql.url"));
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+	@priority = 3
+	test MySQLtoHSQL {
+		property database.types = "hypersonic";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		SetupWizard.configurePG(
+			administratorEmail = "test@liferay.com",
+			administratorFirstName = "Test",
+			administratorLastName = "Test",
+			databasePassword = PropsUtil.get("database.hypersonic.password"),
+			databaseType = "Hypersonic",
+			databaseUserName = PropsUtil.get("database.hypersonic.username"),
+			jdbcDriverClassName = PropsUtil.get("database.hypersonic.driver"),
+			jdbcURL = PropsUtil.get("database.hypersonic.url"));
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+	@priority = 3
+	test MySQLtoHSQLDeleteLiferayHome {
+		property database.types = "hypersonic";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Portlet.shutdownServer();
+
+		Portlet.startServer(
+			base_branch = ${base_branch},
+			deleteLiferayHome = "true");
+
+		SetupWizard.configurePG(
+			administratorEmail = "test@liferay.com",
+			administratorFirstName = "Test",
+			administratorLastName = "Test",
+			databasePassword = PropsUtil.get("database.hypersonic.password"),
+			databaseType = "Hypersonic",
+			databaseUserName = PropsUtil.get("database.hypersonic.username"),
+			jdbcDriverClassName = PropsUtil.get("database.hypersonic.driver"),
+			jdbcURL = PropsUtil.get("database.hypersonic.url"));
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+	}
+
+	@priority = 4
 	test MySQLtoMySQLEditedAdministratorUser {
-		property test.name.skip.portal.instance = "SetupWizardMySQL#MySQLtoMySQLEditAdministratorUser";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		SetupWizard.viewDefaultPortalNamePG();
 
@@ -33,13 +106,13 @@ definition {
 		Portlet.shutdownServer();
 
 		Portlet.startServer(
-			base_branch = "${base_branch}",
+			base_branch = ${base_branch},
 			deleteLiferayHome = "false");
 
-		SetupWizard.viewConfiguredDatabaseInConsole(databaseType = "${databaseType}");
+		SetupWizard.viewConfiguredDatabaseInConsole(databaseType = ${databaseType});
 
 		if (isSet(virtualHostsURL)) {
-			Navigator.openSpecificURL(url = "${virtualHostsURL}");
+			Navigator.openSpecificURL(url = ${virtualHostsURL});
 		}
 		else {
 			Navigator.openURL();
@@ -47,10 +120,7 @@ definition {
 
 		User.acceptEndUserLicenseAgreement();
 
-		User.resetPassword(
-			resetPassword = "${resetPassword}",
-			setupWizardEnabled = "${setupWizardEnabled}",
-			syntaxCheckingEnabled = "${syntaxCheckingEnabled}");
+		User.resetPassword();
 
 		User.answerPasswordReminder();
 

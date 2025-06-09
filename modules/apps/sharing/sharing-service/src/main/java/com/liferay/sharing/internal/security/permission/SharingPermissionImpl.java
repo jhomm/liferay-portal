@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.internal.security.permission;
@@ -18,9 +9,11 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -34,7 +27,6 @@ import com.liferay.sharing.service.SharingEntryLocalService;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.stream.Stream;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -45,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Adolfo Pérez
  */
-@Component(immediate = true, service = SharingPermission.class)
+@Component(service = SharingPermission.class)
 public class SharingPermissionImpl implements SharingPermission {
 
 	@Override
@@ -67,16 +59,11 @@ public class SharingPermissionImpl implements SharingPermission {
 				resourceName = className.getClassName();
 			}
 
-			Stream<SharingEntryAction> sharingEntryActionsStream =
-				sharingEntryActions.stream();
-
 			throw new PrincipalException.MustHavePermission(
 				permissionChecker.getUserId(), resourceName, classPK,
-				sharingEntryActionsStream.map(
-					SharingEntryAction::getActionId
-				).toArray(
-					String[]::new
-				));
+				TransformUtil.transformToArray(
+					sharingEntryActions, SharingEntryAction::getActionId,
+					String.class));
 		}
 	}
 
@@ -121,12 +108,28 @@ public class SharingPermissionImpl implements SharingPermission {
 			long groupId, Collection<SharingEntryAction> sharingEntryActions)
 		throws PortalException {
 
-		SharingPermissionChecker sharingPermissionChecker =
-			_serviceTrackerMap.getService(classNameId);
+		SharingPermissionChecker sharingPermissionChecker = null;
+
+		try {
+			ClassName className = _classNameLocalService.fetchByClassNameId(
+				classNameId);
+
+			if (className == null) {
+				throw new PrincipalException(
+					"Sharing permission checker is null for class name ID " +
+						classNameId);
+			}
+
+			sharingPermissionChecker = _serviceTrackerMap.getService(
+				className.getValue());
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
 
 		if (sharingPermissionChecker == null) {
 			throw new PrincipalException(
-				"sharing permission checker is null for class name ID " +
+				"Sharing permission checker is null for class name ID " +
 					classNameId);
 		}
 
@@ -136,19 +139,16 @@ public class SharingPermissionImpl implements SharingPermission {
 			return true;
 		}
 
-		Stream<SharingEntryAction> sharingEntryActionsStream =
-			sharingEntryActions.stream();
+		for (SharingEntryAction sharingEntryAction : sharingEntryActions) {
+			if (!_sharingEntryLocalService.hasShareableSharingPermission(
+					permissionChecker.getUserId(), classNameId, classPK,
+					sharingEntryAction)) {
 
-		if (sharingEntryActionsStream.allMatch(
-				sharingEntryAction ->
-					_sharingEntryLocalService.hasShareableSharingPermission(
-						permissionChecker.getUserId(), classNameId, classPK,
-						sharingEntryAction))) {
-
-			return true;
+				return false;
+			}
 		}
 
-		return false;
+		return true;
 	}
 
 	@Override
@@ -225,8 +225,7 @@ public class SharingPermissionImpl implements SharingPermission {
 			bundleContext, SharingPermissionChecker.class,
 			"(model.class.name=*)",
 			(serviceReference, emitter) -> emitter.emit(
-				_classNameLocalService.getClassNameId(
-					(String)serviceReference.getProperty("model.class.name"))));
+				(String)serviceReference.getProperty("model.class.name")));
 	}
 
 	@Deactivate
@@ -240,7 +239,7 @@ public class SharingPermissionImpl implements SharingPermission {
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
 
-	private ServiceTrackerMap<Long, SharingPermissionChecker>
+	private ServiceTrackerMap<String, SharingPermissionChecker>
 		_serviceTrackerMap;
 
 	@Reference

@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.options.web.internal.display.context;
 
 import com.liferay.commerce.product.model.CPOptionCategory;
-import com.liferay.commerce.product.options.web.internal.portlet.action.ActionHelper;
+import com.liferay.commerce.product.options.web.internal.portlet.action.helper.ActionHelper;
 import com.liferay.commerce.product.options.web.internal.util.CPOptionsPortletUtil;
 import com.liferay.commerce.product.service.CPOptionCategoryService;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.search.BaseModelSearchResult;
-import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.util.OrderByComparator;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -43,9 +34,18 @@ public class CPOptionCategoryDisplayContext
 			actionHelper, httpServletRequest,
 			CPOptionCategory.class.getSimpleName(), portletResourcePermission);
 
-		setDefaultOrderByCol("priority");
-
 		_cpOptionCategoryService = cpOptionCategoryService;
+
+		setDefaultOrderByCol("priority");
+	}
+
+	@Override
+	public PortletURL getPortletURL() throws PortalException {
+		return PortletURLBuilder.create(
+			super.getPortletURL()
+		).setMVCRenderCommandName(
+			"/cp_specification_options/view_cp_option_categories"
+		).buildPortletURL();
 	}
 
 	@Override
@@ -57,33 +57,21 @@ public class CPOptionCategoryDisplayContext
 		}
 
 		searchContainer = new SearchContainer<>(
-			liferayPortletRequest, getPortletURL(), null, null);
-
-		searchContainer.setEmptyResultsMessage(
+			liferayPortletRequest, getPortletURL(), null,
 			"no-specification-groups-were-found");
 
-		OrderByComparator<CPOptionCategory> orderByComparator =
-			CPOptionsPortletUtil.getCPOptionCategoryOrderByComparator(
-				getOrderByCol(), getOrderByType());
-
-		Sort sort = CPOptionsPortletUtil.getCPOptionCategorySort(
-			getOrderByCol(), getOrderByType());
-
 		searchContainer.setOrderByCol(getOrderByCol());
-		searchContainer.setOrderByComparator(orderByComparator);
+		searchContainer.setOrderByComparator(
+			CPOptionsPortletUtil.getCPOptionCategoryOrderByComparator(
+				getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
+		searchContainer.setResultsAndTotal(
+			_cpOptionCategoryService.searchCPOptionCategories(
+				cpRequestHelper.getCompanyId(), getKeywords(),
+				searchContainer.getStart(), searchContainer.getEnd(),
+				CPOptionsPortletUtil.getCPOptionCategorySort(
+					getOrderByCol(), getOrderByType())));
 		searchContainer.setRowChecker(getRowChecker());
-
-		BaseModelSearchResult<CPOptionCategory>
-			cpOptionCategoryBaseModelSearchResult =
-				_cpOptionCategoryService.searchCPOptionCategories(
-					cpRequestHelper.getCompanyId(), getKeywords(),
-					searchContainer.getStart(), searchContainer.getEnd(), sort);
-
-		searchContainer.setResults(
-			cpOptionCategoryBaseModelSearchResult.getBaseModels());
-		searchContainer.setTotal(
-			cpOptionCategoryBaseModelSearchResult.getLength());
 
 		return searchContainer;
 	}

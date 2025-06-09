@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.data.handler;
@@ -41,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class FragmentEntryStagedModelDataHandler
 	extends BaseStagedModelDataHandler<FragmentEntry> {
 
@@ -97,12 +88,23 @@ public class FragmentEntryStagedModelDataHandler
 			PortletDataContext.REFERENCE_TYPE_PARENT);
 
 		if (fragmentEntry.getPreviewFileEntryId() > 0) {
-			FileEntry fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-				fragmentEntry.getPreviewFileEntryId());
+			try {
+				FileEntry fileEntry =
+					PortletFileRepositoryUtil.getPortletFileEntry(
+						fragmentEntry.getPreviewFileEntryId());
 
-			StagedModelDataHandlerUtil.exportReferenceStagedModel(
-				portletDataContext, fragmentEntry, fileEntry,
-				PortletDataContext.REFERENCE_TYPE_WEAK);
+				StagedModelDataHandlerUtil.exportReferenceStagedModel(
+					portletDataContext, fragmentEntry, fileEntry,
+					PortletDataContext.REFERENCE_TYPE_WEAK);
+			}
+			catch (PortalException portalException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Unable to export file entry " +
+							fragmentEntry.getPreviewFileEntryId(),
+						portalException);
+				}
+			}
 		}
 
 		String html =
@@ -160,13 +162,11 @@ public class FragmentEntryStagedModelDataHandler
 
 		importedFragmentEntry.setGroupId(portletDataContext.getScopeGroupId());
 		importedFragmentEntry.setFragmentCollectionId(fragmentCollectionId);
-
-		String html =
+		importedFragmentEntry.setHtml(
 			_dlReferencesExportImportContentProcessor.
 				replaceImportContentReferences(
-					portletDataContext, fragmentEntry, fragmentEntry.getHtml());
-
-		importedFragmentEntry.setHtml(html);
+					portletDataContext, fragmentEntry,
+					fragmentEntry.getHtml()));
 
 		FragmentEntry existingFragmentEntry =
 			_stagedModelRepository.fetchStagedModelByUuidAndGroupId(
@@ -188,7 +188,17 @@ public class FragmentEntryStagedModelDataHandler
 				portletDataContext, importedFragmentEntry);
 		}
 
-		if (fragmentEntry.getPreviewFileEntryId() > 0) {
+		if ((fragmentEntry.getPreviewFileEntryId() == 0) &&
+			(importedFragmentEntry.getPreviewFileEntryId() > 0)) {
+
+			PortletFileRepositoryUtil.deletePortletFileEntry(
+				importedFragmentEntry.getPreviewFileEntryId());
+
+			importedFragmentEntry =
+				_fragmentEntryLocalService.updateFragmentEntry(
+					importedFragmentEntry.getFragmentEntryId(), 0);
+		}
+		else if (fragmentEntry.getPreviewFileEntryId() > 0) {
 			Map<Long, Long> fileEntryIds =
 				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 					FileEntry.class);

@@ -1,0 +1,10 @@
+{
+	"main": "js/index.ts",
+	"name": "@liferay/frontend-icons-web",
+	"scripts": {
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format"
+	},
+	"version": "1.0.38"
+}

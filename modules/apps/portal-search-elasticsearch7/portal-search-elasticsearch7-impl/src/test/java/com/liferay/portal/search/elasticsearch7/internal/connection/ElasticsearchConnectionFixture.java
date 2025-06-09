@@ -1,47 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.connection;
 
 import com.liferay.petra.process.local.LocalProcessExecutor;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.cluster.ClusterExecutor;
-import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.JavaDetector;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
 import com.liferay.portal.search.elasticsearch7.internal.connection.constants.ConnectionConstants;
-import com.liferay.portal.search.elasticsearch7.internal.settings.BaseSettingsContributor;
+import com.liferay.portal.search.elasticsearch7.internal.sidecar.ElasticsearchInstancePaths;
+import com.liferay.portal.search.elasticsearch7.internal.sidecar.HttpPortRange;
 import com.liferay.portal.search.elasticsearch7.internal.sidecar.PathUtil;
 import com.liferay.portal.search.elasticsearch7.internal.sidecar.Sidecar;
 import com.liferay.portal.search.elasticsearch7.internal.sidecar.SidecarManager;
-import com.liferay.portal.search.elasticsearch7.settings.ClientSettingsHelper;
-import com.liferay.portal.search.elasticsearch7.settings.SettingsContributor;
 import com.liferay.portal.util.PropsImpl;
 
+import java.io.IOException;
+
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
+import org.elasticsearch.action.ingest.PutPipelineRequest;
+import org.elasticsearch.client.IngestClient;
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.bytes.BytesArray;
+import org.elasticsearch.xcontent.XContentType;
 
 import org.mockito.Mockito;
 
@@ -58,6 +53,10 @@ public class ElasticsearchConnectionFixture
 	public ElasticsearchConnection createElasticsearchConnection() {
 		PropsUtil.setProps(new PropsImpl());
 
+		com.liferay.portal.util.PropsUtil.set(
+			PropsKeys.LIFERAY_SHIELDED_CONTAINER_LIB_PORTAL_DIR,
+			String.valueOf(_TMP_PATH.resolve("lib-process-executor")));
+
 		ElasticsearchConfigurationWrapper elasticsearchConfigurationWrapper =
 			new ElasticsearchConfigurationWrapper() {
 				{
@@ -69,11 +68,9 @@ public class ElasticsearchConnectionFixture
 			};
 
 		Sidecar sidecar = new Sidecar(
-			Mockito.mock(ClusterExecutor.class),
 			elasticsearchConfigurationWrapper,
-			createElasticsearchInstancePaths(), new LocalProcessExecutor(),
-			() -> _TMP_PATH.resolve("lib-process-executor"),
-			getSettingsContributors(), Mockito.mock(SidecarManager.class));
+			_createElasticsearchInstancePaths(), new LocalProcessExecutor(),
+			Mockito.mock(SidecarManager.class));
 
 		ElasticsearchConnectionBuilder elasticsearchConnectionBuilder =
 			new ElasticsearchConnectionBuilder();
@@ -86,7 +83,7 @@ public class ElasticsearchConnectionFixture
 			sidecar::stop
 		).preConnectElasticsearchConnectionConsumer(
 			elasticsearchConnection -> {
-				deleteTmpDir();
+				_deleteTmpDir();
 
 				sidecar.start();
 
@@ -104,6 +101,8 @@ public class ElasticsearchConnectionFixture
 		createElasticsearchConnection();
 
 		_elasticsearchConnection.connect();
+
+		_putTimestampPipeline(getRestHighLevelClient());
 	}
 
 	public void destroyNode() {
@@ -111,7 +110,7 @@ public class ElasticsearchConnectionFixture
 			_elasticsearchConnection.close();
 		}
 
-		deleteTmpDir();
+		_deleteTmpDir();
 	}
 
 	public Map<String, Object> getElasticsearchConfigurationProperties() {
@@ -145,8 +144,6 @@ public class ElasticsearchConnectionFixture
 			ElasticsearchConnectionFixture elasticsearchConnectionFixture =
 				new ElasticsearchConnectionFixture();
 
-			elasticsearchConnectionFixture._discoveryTypeZen =
-				_discoveryTypeZen;
 			elasticsearchConnectionFixture.
 				_elasticsearchConfigurationProperties =
 					createElasticsearchConfigurationProperties(
@@ -161,12 +158,6 @@ public class ElasticsearchConnectionFixture
 			String clusterName) {
 
 			_clusterName = clusterName;
-
-			return this;
-		}
-
-		public Builder discoveryTypeZen(boolean discoveryTypeZen) {
-			_discoveryTypeZen = discoveryTypeZen;
 
 			return this;
 		}
@@ -190,6 +181,14 @@ public class ElasticsearchConnectionFixture
 				Map<String, Object> elasticsearchConfigurationProperties,
 				String clusterName) {
 
+			String sidecarJVMOptions = "-Xmx256m";
+
+			if (!JavaDetector.isJDK8()) {
+				sidecarJVMOptions =
+					"-Xmx256m|--add-opens=java.base/java.lang=ALL-UNNAMED|--" +
+						"add-opens=java.base/java.lang.invoke=ALL-UNNAMED";
+			}
+
 			return HashMapBuilder.<String, Object>put(
 				"clusterName", clusterName
 			).put(
@@ -201,20 +200,19 @@ public class ElasticsearchConnectionFixture
 			).put(
 				"sidecarHttpPort", HttpPortRange.AUTO
 			).put(
-				"sidecarJVMOptions", "-Xmx256m"
+				"sidecarJVMOptions", sidecarJVMOptions
 			).putAll(
 				elasticsearchConfigurationProperties
 			).build();
 		}
 
 		private String _clusterName;
-		private Boolean _discoveryTypeZen;
 		private Map<String, Object> _elasticsearchConfigurationProperties =
 			Collections.<String, Object>emptyMap();
 
 	}
 
-	protected ElasticsearchInstancePaths createElasticsearchInstancePaths() {
+	private ElasticsearchInstancePaths _createElasticsearchInstancePaths() {
 		ElasticsearchInstancePaths elasticsearchInstancePaths = Mockito.mock(
 			ElasticsearchInstancePaths.class);
 
@@ -233,77 +231,44 @@ public class ElasticsearchConnectionFixture
 		return elasticsearchInstancePaths;
 	}
 
-	protected void deleteTmpDir() {
+	private void _deleteTmpDir() {
 		PathUtil.deleteDir(_workPath);
 	}
 
-	protected SettingsContributor
-		getClusterLoggingThresholdSettingsContributor() {
+	private void _putTimestampPipeline(
+		RestHighLevelClient restHighLevelClient) {
 
-		return new BaseSettingsContributor(0) {
+		IngestClient ingestClient = restHighLevelClient.ingest();
 
-			@Override
-			public void populate(ClientSettingsHelper clientSettingsHelper) {
-				clientSettingsHelper.put(
-					"cluster.service.slow_task_logging_threshold", "600s");
-			}
+		String json = JSONUtil.put(
+			"description", "Adds timestamp to documents"
+		).put(
+			"processors",
+			JSONUtil.put(
+				JSONUtil.put(
+					"set",
+					JSONUtil.put(
+						"field", "_source.timestamp"
+					).put(
+						"value", "{{{_ingest.timestamp}}}"
+					)))
+		).toString();
 
-		};
-	}
+		PutPipelineRequest putPipelineRequest = new PutPipelineRequest(
+			"timestamp", new BytesArray(json.getBytes(StandardCharsets.UTF_8)),
+			XContentType.JSON);
 
-	protected SettingsContributor getDiscoveryTypeZenContributor() {
-		if (!GetterUtil.getBoolean(_discoveryTypeZen)) {
-			return null;
+		try {
+			ingestClient.putPipeline(
+				putPipelineRequest, RequestOptions.DEFAULT);
 		}
-
-		return new SettingsContributor() {
-
-			@Override
-			public int compareTo(SettingsContributor o) {
-				return 0;
-			}
-
-			@Override
-			public int getPriority() {
-				return 0;
-			}
-
-			@Override
-			public void populate(ClientSettingsHelper clientSettingsHelper) {
-				clientSettingsHelper.put("discovery.type", "zen");
-			}
-
-		};
-	}
-
-	protected SettingsContributor getDiskThresholdSettingsContributor() {
-		return new BaseSettingsContributor(0) {
-
-			@Override
-			public void populate(ClientSettingsHelper clientSettingsHelper) {
-				clientSettingsHelper.put(
-					"cluster.routing.allocation.disk.threshold_enabled",
-					"false");
-			}
-
-		};
-	}
-
-	protected List<SettingsContributor> getSettingsContributors() {
-		return Stream.of(
-			getClusterLoggingThresholdSettingsContributor(),
-			getDiskThresholdSettingsContributor(),
-			getDiscoveryTypeZenContributor()
-		).filter(
-			Objects::nonNull
-		).collect(
-			Collectors.toList()
-		);
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
 	}
 
 	private static final Path _TMP_PATH = Paths.get("tmp");
 
-	private Boolean _discoveryTypeZen;
 	private Map<String, Object> _elasticsearchConfigurationProperties =
 		Collections.<String, Object>emptyMap();
 	private ElasticsearchConnection _elasticsearchConnection;

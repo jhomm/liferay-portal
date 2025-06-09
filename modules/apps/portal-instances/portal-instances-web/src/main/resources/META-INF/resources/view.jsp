@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,19 +18,9 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 %>
 
 <clay:management-toolbar
-	creationMenu='<%=
-		new JSPCreationMenu(pageContext) {
-			{
-				addDropdownItem(
-					dropdownItem -> {
-						dropdownItem.setHref(renderResponse.createRenderURL(), "mvcRenderCommandName", "/portal_instances/edit_instance", "redirect", PortalUtil.getCurrentURL(httpServletRequest));
-						dropdownItem.setLabel(LanguageUtil.get(httpServletRequest, "add"));
-					});
-			}
-		}
-	%>'
-	selectable="<%= false %>"
-	showSearch="<%= false %>"
+	managementToolbarDisplayContext="<%= new PortalInstancesManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse) %>"
+	propsTransformer="{PortalInstancesManagementToolbarPropsTransformer} from portal-instances-web"
+	propsTransformerServletContext="<%= application %>"
 />
 
 <portlet:renderURL var="redirectURL">
@@ -47,8 +28,7 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 	<portlet:param name="cur" value="<%= String.valueOf(cur) %>" />
 </portlet:renderURL>
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
-	<aui:input name="<%= Constants.CMD %>" type="hidden" />
+<aui:form action="<%= portletURL %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= redirectURL %>" />
 	<aui:input name="className" type="hidden" />
 

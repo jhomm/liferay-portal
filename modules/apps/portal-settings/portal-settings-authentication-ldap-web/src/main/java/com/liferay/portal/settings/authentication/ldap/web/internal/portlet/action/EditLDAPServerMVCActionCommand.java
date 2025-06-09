@@ -1,27 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.settings.authentication.ldap.web.internal.portlet.action;
 
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.counter.kernel.service.CounterLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.portlet.PortletContextFactory;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -42,19 +31,15 @@ import com.liferay.portal.security.ldap.constants.LDAPConstants;
 import com.liferay.portal.security.ldap.validator.LDAPFilterException;
 import com.liferay.portal.security.ldap.validator.LDAPFilterValidator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.util.Dictionary;
 import java.util.List;
 import java.util.Map;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -64,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/portal_settings_authentication_ldap/edit_ldap_server"
 	},
 	service = MVCActionCommand.class
@@ -80,10 +65,10 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 
 		try {
 			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateLDAPServer(actionRequest);
+				_updateLDAPServer(actionRequest);
 			}
 			else if (cmd.equals(Constants.DELETE)) {
-				deleteLDAPServer(actionRequest);
+				_deleteLDAPServer(actionRequest);
 			}
 
 			sendRedirect(actionRequest, actionResponse);
@@ -127,13 +112,7 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	@Activate
-	protected void activate() {
-		_portletContext = _portletContextFactory.createUntrackedInstance(
-			_portlet, _servletContext);
-	}
-
-	protected void deleteLDAPServer(ActionRequest actionRequest)
+	private void _deleteLDAPServer(ActionRequest actionRequest)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -145,53 +124,23 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 			themeDisplay.getCompanyId(), ldapServerId);
 	}
 
-	@Reference(unbind = "-")
-	protected void setCounterLocalService(
-		CounterLocalService counterLocalService) {
+	private void _splitStringArrays(
+		Dictionary<String, Object> dictionary, String property) {
 
-		_counterLocalService = counterLocalService;
+		Object propertyValue = dictionary.get(property);
+
+		if (propertyValue == null) {
+			return;
+		}
+
+		if (propertyValue instanceof String) {
+			String[] propertyValues = StringUtil.split((String)propertyValue);
+
+			dictionary.put(property, propertyValues);
+		}
 	}
 
-	@Reference(
-		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration)",
-		unbind = "-"
-	)
-	protected void setLDAPServerConfigurationProvider(
-		ConfigurationProvider<LDAPServerConfiguration>
-			ldapServerConfigurationProvider) {
-
-		_ldapServerConfigurationProvider = ldapServerConfigurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortal(Portal portal) {
-		_portal = portal;
-	}
-
-	@Reference(
-		target = "(javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS + ")",
-		unbind = "-"
-	)
-	protected void setPortlet(Portlet portlet) {
-		_portlet = portlet;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletContextFactory(
-		PortletContextFactory portletContextFactory) {
-
-		_portletContextFactory = portletContextFactory;
-	}
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.portal.settings.authentication.ldap.web)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
-	}
-
-	protected void updateLDAPServer(ActionRequest actionRequest)
+	private void _updateLDAPServer(ActionRequest actionRequest)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -203,10 +152,10 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 		UnicodeProperties unicodeProperties = PropertiesParamUtil.getProperties(
 			actionRequest, "ldap--");
 
-		validateLDAPServerName(
+		_validateLDAPServerName(
 			ldapServerId, themeDisplay.getCompanyId(), unicodeProperties);
 
-		validateSearchFilters(actionRequest);
+		_validateSearchFilters(actionRequest);
 
 		Dictionary<String, Object> dictionary = null;
 
@@ -244,7 +193,7 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 			themeDisplay.getCompanyId(), ldapServerId, dictionary);
 	}
 
-	protected void validateLDAPServerName(
+	private void _validateLDAPServerName(
 			long ldapServerId, long companyId,
 			UnicodeProperties unicodeProperties)
 		throws Exception {
@@ -272,7 +221,7 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void validateSearchFilters(ActionRequest actionRequest)
+	private void _validateSearchFilters(ActionRequest actionRequest)
 		throws Exception {
 
 		String userFilter = ParamUtil.getString(
@@ -286,34 +235,16 @@ public class EditLDAPServerMVCActionCommand extends BaseMVCActionCommand {
 		_ldapFilterValidator.validate(groupFilter, "importGroupSearchFilter");
 	}
 
-	private void _splitStringArrays(
-		Dictionary<String, Object> dictionary, String property) {
-
-		Object propertyValue = dictionary.get(property);
-
-		if (propertyValue == null) {
-			return;
-		}
-
-		if (propertyValue instanceof String) {
-			String[] propertyValues = StringUtil.split((String)propertyValue);
-
-			dictionary.put(property, propertyValues);
-		}
-	}
-
-	private static ConfigurationProvider<LDAPServerConfiguration>
-		_ldapServerConfigurationProvider;
-
+	@Reference
 	private CounterLocalService _counterLocalService;
 
 	@Reference
 	private LDAPFilterValidator _ldapFilterValidator;
 
-	private Portal _portal;
-	private Portlet _portlet;
-	private PortletContext _portletContext;
-	private PortletContextFactory _portletContextFactory;
-	private ServletContext _servletContext;
+	@Reference(
+		target = "(factoryPid=com.liferay.portal.security.ldap.configuration.LDAPServerConfiguration)"
+	)
+	private ConfigurationProvider<LDAPServerConfiguration>
+		_ldapServerConfigurationProvider;
 
 }

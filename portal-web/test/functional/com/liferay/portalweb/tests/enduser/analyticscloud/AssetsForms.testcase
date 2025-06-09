@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -21,30 +23,26 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
 		}
 
-		JSONUser.tearDownNonAdminUsers();
-
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8433 | Test Summary: Form appears on card shows the pages that the form appears on"
-	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test AssertAppearsOnListShowsPagesFormsExists {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: It is not possible to perform the assert because this test presents timing problems.
-		// AC Refactor ticket: LRAC-9467
+		task ("Connect DXP to AC") {
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+		}
 
 		task ("Submit the form") {
 			ACUtils.navigateToSitePage(
@@ -61,7 +59,7 @@ definition {
 		task ("Switch to new property in AC and go to forms tab") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 			ACNavigation.goToAssets();
 
@@ -77,52 +75,62 @@ definition {
 		}
 
 		task ("Assert appears on metric") {
-
-			// This data takes too long to appear
-
 			var portalURL = PropsUtil.get("portal.url");
-			var siteName = TestCase.getSiteName(siteName = "${siteName}");
+			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
 
 			ACAssets.viewAssetAppearsOnMetric(
 				canonicalURL = "${portalURL}/web/site-name",
 				cardTitle = "Asset Appears On",
-				pageNmae = "AC Page - Site Name - ${siteName}");
+				metricTitle = "Submissions",
+				pageName = "AC Page - Site Name - ${dataSourceName}");
+
+			ACAssets.viewAssetAppearsOnMetric(
+				canonicalURL = "${portalURL}/web/site-name",
+				cardTitle = "Asset Appears On",
+				index = 2,
+				metricTitle = "Views",
+				pageName = "AC Page - Site Name - ${dataSourceName}");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8423 | Test Summary: Forms audience card shows expected amount of known and anonymous individuals"
-	@priority = "5"
+	@priority = 5
 	test AudienceCardShowsExpectedAmountKnowAndAnonymousIndividualsInForms {
 		var usernameList = "ac,ac2";
-
 		var emailList = "ac@liferay.com,ac2@liferay.com";
 
 		task ("Create users and connect to AC") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 			}
 
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Go to form and submit") {
 			ACUtils.navigateToSitePageWithUser(
 				actionType = "Submit Form",
-				emailList = "${emailList}",
+				documentTitleList = "1,2,3,4",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name",
 				submitText = "Test Assets");
+
+			ACUtils.closeAllSessionsAndWait();
 		}
 
 		task ("Download the document with anonymous user") {
 			User.logoutPG();
 
+			ACUtils.clearLocalStorage();
+
 			ACUtils.navigateToSitePage(
 				actionType = "Submit Form",
+				documentTitleList = "1,2,3,4",
 				pageName = "AC Page",
 				siteName = "Site Name",
 				submitText = "Test Assets");
@@ -135,7 +143,7 @@ definition {
 		}
 
 		task ("Change to the right property and go to assets form tab") {
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 			ACNavigation.goToAssets();
 
@@ -152,34 +160,34 @@ definition {
 
 		task ("Assert the correct persentage") {
 			ACUtils.assertAudienceCard(
-				index = "1",
+				index = 1,
 				percentageList = "66.67%,33.33%");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8424 | Test Summary: Forms audience card shows expected amount of segmented and unsegmented individuals"
-	@priority = "5"
+	@priority = 5
 	test AudienceCardShowsExpectedAmountSegmentedAndUnsegmentedInForms {
-		var usernameList = "ac,ac2";
-
-		var emailList = "ac@liferay.com,ac2@liferay.com";
+		var usernameList = "ac,ac2,ac3";
+		var emailList = "ac@liferay.com,ac2@liferay.com,ac3@liferay.com";
 
 		task ("Create users and connect to AC") {
-			for (var name : list "${usernameList}") {
+			for (var name : list ${usernameList}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 			}
 
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 		}
 
 		task ("Go to form and submit") {
 			ACUtils.navigateToSitePageWithUser(
 				actionType = "Submit Form",
-				emailList = "${emailList}",
+				documentTitleList = "1,2,3,4",
+				emailList = ${emailList},
 				pageName = "AC Page",
 				siteName = "Site Name",
 				submitText = "Test Assets");
@@ -192,47 +200,20 @@ definition {
 		task ("Go to AC and create segment for the user") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 			ACNavigation.goToSegments();
 
 			ACSegments.createStaticSegment();
 
-			ACSegments.nameSegment(segmentName = "Static Segment Test");
+			ACUtils.setItemName(itemName = "Static Segment Test");
 
 			ACSegments.addStaticMember(tableMember = "ac ac");
 
 			ACSegments.saveSegment();
 		}
 
-		task ("Go to form and submit to get data for segmented individuals") {
-			ACUtils.launchDXP();
-
-			ACUtils.navigateToSitePageWithUser(
-				actionType = "Submit Form",
-				emailList = "ac@liferay.com",
-				pageName = "AC Page",
-				siteName = "Site Name",
-				submitText = "Test Assets");
-		}
-
-		task ("Download the document with anonymous user") {
-			User.logoutPG();
-
-			ACUtils.navigateToSitePage(
-				actionType = "Submit Form",
-				pageName = "AC Page",
-				siteName = "Site Name",
-				submitText = "Test Assets");
-		}
-
-		task ("Close all sessions and go to AC") {
-			ACUtils.closeAllSessionsAndWait();
-
-			ACUtils.launchAC();
-		}
-
-		task ("Go to created form") {
+		task ("Go to Assets > Go to Forms") {
 			ACNavigation.goToAssets();
 
 			ACNavigation.switchTab(tabName = "Forms");
@@ -244,22 +225,30 @@ definition {
 			ACNavigation.openItem(itemName = "Created Form Name");
 		}
 
-		task ("Assert the correct percentage") {
+		task ("Assert submitted number of segmented and unsegmented users") {
 			ACUtils.assertAudienceCard(
-				index = "2",
+				index = 2,
 				percentageList = "66.67%,33.33%");
+
+			ACUtils.assertViewerSegmentsCard(segmentNameList = "Static Segment Test");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8417 | Test Summary: Forms list is searchable"
-	@priority = "5"
+	@ignore = "true"
+	@priority = 5
 	test CanFormsListSearchable {
+		property portal.upstream = "quarantine";
+
+		// AC Quarantine Reason: Empty state no form changed
+		// LRAC-10599 is a dependency of this fix
+
 		var formNameList = "Created Form Name,Created Form Name 1";
 
 		ACUtils.addPage(layoutName = "AC Page 1");
 
 		ACUtils.createFormAndAddToPage(
-			formACTitle = "Created Form Name 1",
+			formAcTitle = "Created Form Name 1",
 			layoutName = "AC Page 1");
 
 		Refresh();
@@ -269,7 +258,7 @@ definition {
 		for (var pageName : list "AC Page,AC Page 1") {
 			ACUtils.navigateToSitePage(
 				actionType = "Submit Form",
-				pageName = "${pageName}",
+				pageName = ${pageName},
 				siteName = "Site Name",
 				submitText = "Test Assets");
 		}
@@ -278,7 +267,7 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${propertyName});
 
 		ACNavigation.goToAssets();
 
@@ -288,10 +277,10 @@ definition {
 
 		ACTimeFilter.setLast24Hours();
 
-		for (var formName : list "${formNameList}") {
-			ACUtils.searchBar(searchItem = "${formName}");
+		for (var formName : list ${formNameList}) {
+			ACUtils.searchBar(searchItem = ${formName});
 
-			ACUtils.viewNameList(nameList = "${formName}");
+			ACUtils.viewNameList(nameList = ${formName});
 		}
 
 		ACUtils.searchBar(searchItem = "Should not be here");
@@ -300,7 +289,7 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8121 | Test Summary: Assert clicking a form in the forms list navigates to the form overview page"
-	@priority = "5"
+	@priority = 5
 	test CanNavigatesToFormsOverviewPage {
 		Navigator.openURL();
 
@@ -330,7 +319,7 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${propertyName});
 
 		ACNavigation.goToAssets();
 
@@ -346,22 +335,21 @@ definition {
 
 		ACNavigation.viewActiveSwitchTab(tabName = "Overview");
 
-		for (var cardTitle : list "Visitors Behavior,Audience,Submissions by Location,Submissions by Technology,Form Abandonment,Asset Appears On") {
-			ACCards.viewCards(cardTitle = "${cardTitle}");
+		for (var cardTitle : list "Visitors Behavior,Audience,Submissions by Location,Submissions by Technology,Asset Appears On") {
+			ACCards.viewCards(cardTitle = ${cardTitle});
 		}
 
 		for (var metric : list "Submissions,Views") {
 			ACAssets.viewVisitorsBehaviorMetric(
-				metricTitle = "${metric}",
-				metricValue = "3");
+				metricTitle = ${metric},
+				metricValue = 3);
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8421 | Test Summary: Assert Assets Forms Custom Range Time Filter in Behaviour Report	"
 	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test CanTimeFilterUseCustomRangeInFormsBehaviourReport {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: Timing issues may happen on this test case
 		// AC Refactor ticket: LRAC-8813
@@ -386,7 +374,7 @@ definition {
 		task ("Enter in forms asset page") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 
 			ACNavigation.goToAssets();
 
@@ -406,12 +394,12 @@ definition {
 			ACTimeFilter.clickTimeFilterButton();
 
 			ACTimeFilter.setCustomRange(
-				endDay = "8",
+				endDay = 8,
 				endMonth = "August",
-				endYear = "2020",
-				startDay = "1",
+				endYear = 2020,
+				startDay = 1,
 				startMonth = "August",
-				startYear = "2020");
+				startYear = 2020);
 
 			ACTimeFilter.assertCurrentTimeFilterRange(timeFilterRange = "Aug 1, 2020 - Aug 8, 2020");
 
@@ -419,119 +407,19 @@ definition {
 			var curr_metricValue = "";
 
 			for (var current : list "Abandonment-${expectedValue1},Submissions-${expectedValue2},Views-${expectedValue3},Completion Time-${expectedValue4}") {
-				curr_metricName = StringUtil.extractFirst("${current}","-");
-				curr_metricValue = StringUtil.extractLast("${current}","-");
+				var curr_metricName = StringUtil.extractFirst(${current}, "-");
+				var curr_metricValue = StringUtil.extractLast(${current}, "-");
 
 				ACCards.viewMetricValue(
 					cardTitle = "Visitors Behavior",
-					metricName = "${curr_metricName}",
-					metricValue = "${curr_metricValue}");
+					metricName = ${curr_metricName},
+					metricValue = ${curr_metricValue});
 			}
 		}
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8431 | Test Summary: Form abandonment card shows the expected amount of form abandonment based on how many times the form was started but not completed"
-	@priority = "5"
-	test FormAbandonmentCardShowsExpectedAmountFormAbandonment {
-		Navigator.openURL();
-
-		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-
-		ACUtils.navigateToSitePage(
-			actionType = "View Form",
-			documentTitleList = "1,2",
-			pageName = "AC Page",
-			siteName = "Site Name");
-
-		ACUtils.navigateToSitePage(
-			actionType = "Submit Form",
-			pageName = "AC Page",
-			siteName = "Site Name",
-			submitText = "Test Assets");
-
-		ACUtils.closeAllSessionsAndWait();
-
-		ACUtils.launchAC();
-
-		ACProperties.switchProperty(propertyName = "${propertyName}");
-
-		ACNavigation.goToAssets();
-
-		ACNavigation.switchTab(tabName = "Forms");
-
-		ACTimeFilter.clickTimeFilterButton();
-
-		ACTimeFilter.setLast24Hours();
-
-		ACNavigation.openItem(itemName = "Created Form Name");
-
-		ACIndividualsDashboard.goToOverviewTab();
-
-		ACNavigation.viewActiveSwitchTab(tabName = "Overview");
-
-		ACCards.viewMetricValue(
-			cardTitle = "Visitors Behavior",
-			metricName = "Abandonment",
-			metricValue = "66.7");
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8426 | Test Summary: Forms submissions by location card shows expected views by location"
-	@ignore = "true"
-	@priority = "5"
-	test FormsLocationCardShowsViewsByExpectedLocation {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: Location data issues happen in this ticket
-		// AC Refactor ticket: LRAC-8750
-
-		task ("Connect to AC") {
-			Navigator.openURL();
-
-			var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
-		}
-
-		task ("Submit forms with diferent locations data") {
-
-			// Use a macro to submit forms using diferent locations data
-			// Create a locations list that you can use later
-
-			ACUtils.navigateToSitePage(
-				actionType = "Submit Form",
-				pageName = "AC Page",
-				siteName = "Site Name",
-				submitText = "Test Assets");
-		}
-
-		task ("Close all sessions") {
-			ACUtils.closeAllSessionsAndWait();
-		}
-
-		task ("Enter in form assets page in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-
-			ACNavigation.goToAssets();
-
-			ACNavigation.switchTab(tabName = "Forms");
-
-			ACTimeFilter.clickTimeFilterButton();
-
-			ACTimeFilter.setLast24Hours();
-
-			ACNavigation.openItem(itemName = "Created Form Name");
-		}
-
-		task ("Assert locations appear propperly in the card") {
-
-			// Assert the entries using the locations list declared before
-
-			ACSites.viewGeomapAnalyticsLocationNames(locationList = "${locationList}");
-		}
-	}
-
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8429 | Test Summary: Form submissions by technology card shows views by expected browser"
-	@priority = "5"
+	@priority = 5
 	test FormsTechnologyCardShowsViewsByExpectedBrowser {
 		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 
@@ -550,7 +438,7 @@ definition {
 		task ("Enter in forms asset page") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 
 			ACNavigation.goToAssets();
 
@@ -577,7 +465,7 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8428 | Test Summary: Form submissions by technology card shows views by expected device"
-	@priority = "5"
+	@priority = 5
 	test FormsTechnologyCardShowsViewsByExpectedDevice {
 		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 
@@ -596,7 +484,7 @@ definition {
 		task ("Switch to new property in AC and go to forms tab") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${propertyName});
 
 			ACNavigation.goToAssets();
 
@@ -621,29 +509,29 @@ definition {
 	}
 
 	@description = "Form known individuals shows which individuals interact with the form"
-	@priority = "5"
+	@priority = 5
 	test KnownIndividualsShowsWhichIndividualsInteractWithForm {
+		property test.run.type = "single";
+
 		var nameList = "ac ac,liferay liferay,dxp dxp";
-
 		var usernameList = "ac,liferay,dxp";
-
 		var emailList = "ac@liferay.com,liferay@liferay.com,dxp@liferay.com";
-
 		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 
-		for (var name : list "${usernameList}") {
+		for (var name : list ${usernameList}) {
 			JSONUser.addUser(
 				userEmailAddress = "${name}@liferay.com",
-				userFirstName = "${name}",
-				userLastName = "${name}",
-				userScreenName = "${name}");
+				userFirstName = ${name},
+				userLastName = ${name},
+				userScreenName = ${name});
 		}
 
 		ACDXPSettings.syncNewContactData();
 
 		ACUtils.navigateToSitePageWithUser(
 			actionType = "Submit Form",
-			emailList = "${emailList}",
+			documentTitleList = "1,2,3,4",
+			emailList = ${emailList},
 			pageName = "AC Page",
 			siteName = "Site Name",
 			submitText = "Test Assets");
@@ -652,7 +540,7 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${propertyName});
 
 		ACNavigation.goToAssets();
 
@@ -670,12 +558,14 @@ definition {
 
 		ACTimeFilter.setLast24Hours();
 
-		ACUtils.viewNameList(nameList = "${nameList}");
+		ACUtils.viewNameList(nameList = ${nameList});
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8120 | Test Summary: Assert forms list shows all of the forms in a list"
-	@priority = "5"
+	@priority = 5
 	test ViewAllFormsShownInAssetList {
+		property test.run.type = "single";
+
 		var formNameList = "Created Form Name,Created Form Name 1,Created Form Name 2,Created Form Name 3";
 
 		for (var n : list "1,2,3") {
@@ -684,7 +574,7 @@ definition {
 
 		for (var n : list "1,2,3") {
 			ACUtils.createFormAndAddToPage(
-				formACTitle = "Created Form Name ${n}",
+				formAcTitle = "Created Form Name ${n}",
 				layoutName = "AC Page ${n}");
 		}
 
@@ -695,7 +585,7 @@ definition {
 		for (var pageName : list "AC Page,AC Page 1,AC Page 2,AC Page 3") {
 			ACUtils.navigateToSitePage(
 				actionType = "Submit Form",
-				pageName = "${pageName}",
+				pageName = ${pageName},
 				siteName = "Site Name",
 				submitText = "Test Assets");
 		}
@@ -704,7 +594,7 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${propertyName});
 
 		ACNavigation.goToAssets();
 
@@ -714,12 +604,17 @@ definition {
 
 		ACTimeFilter.setLast24Hours();
 
-		ACUtils.viewNameList(nameList = "${formNameList}");
+		ACUtils.viewNameList(nameList = ${formNameList});
 	}
 
 	@description = "Forms visitor behavior card shows expected amount of views"
-	@priority = "5"
+	@priority = 5
 	test VisitorBehaviorCardShowsExpectedAmountOfViews {
+		property analytics.cloud.acceptance = "true";
+		property portal.acceptance = "true";
+		property portal.release = "true";
+		property test.run.type = "single";
+
 		var propertyName = ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
 
 		ACUtils.navigateToSitePage(
@@ -732,7 +627,7 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${propertyName});
 
 		ACNavigation.goToAssets();
 
@@ -746,7 +641,7 @@ definition {
 
 		ACAssets.viewVisitorsBehaviorMetric(
 			metricTitle = "Views",
-			metricValue = "4");
+			metricValue = 4);
 	}
 
 }

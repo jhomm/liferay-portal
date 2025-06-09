@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.struts.test;
@@ -20,6 +11,8 @@ import com.liferay.fragment.service.FragmentCollectionLocalService;
 import com.liferay.fragment.service.FragmentCompositionService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.petra.memory.DeleteFileFinalizeAction;
+import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -37,28 +30,30 @@ import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ProgressTracker;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.zip.ZipWriter;
-import com.liferay.portal.kernel.zip.ZipWriterFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.upload.LiferayFileItem;
-import com.liferay.portal.upload.LiferayFileItemFactory;
-import com.liferay.portal.upload.UploadPortletRequestImpl;
-import com.liferay.portal.upload.UploadServletRequestImpl;
+import com.liferay.portal.upload.test.util.UploadTestUtil;
 import com.liferay.portal.util.PropsValues;
 
-import java.io.OutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.io.File;
+import java.io.InputStream;
 
 import java.net.URL;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -103,7 +98,7 @@ public class ImportFragmentEntriesStrutsActionTest {
 
 	@Test
 	public void testImportZipFile() throws Exception {
-		_user = UserTestUtil.addOmniAdminUser();
+		_user = UserTestUtil.addOmniadminUser();
 
 		UserTestUtil.setUser(_user);
 
@@ -116,8 +111,8 @@ public class ImportFragmentEntriesStrutsActionTest {
 			bytes, "file");
 
 		UploadPortletRequest uploadPortletRequest =
-			new UploadPortletRequestImpl(
-				new UploadServletRequestImpl(
+			UploadTestUtil.createUploadPortletRequest(
+				UploadTestUtil.createUploadServletRequest(
 					httpServletRequest, fileParameters,
 					HashMapBuilder.put(
 						"groupId",
@@ -144,7 +139,7 @@ public class ImportFragmentEntriesStrutsActionTest {
 		FragmentCollection fragmentCollection = fragmentCollections.get(0);
 
 		Assert.assertEquals(
-			3,
+			5,
 			_fragmentEntryLocalService.getFragmentEntriesCount(
 				fragmentCollection.getFragmentCollectionId()));
 
@@ -162,11 +157,50 @@ public class ImportFragmentEntriesStrutsActionTest {
 				_group.getGroupId(), "page-template"));
 	}
 
+	private FileItem _createFileItem(byte[] bytes) throws Exception {
+		Path tempFilePath = Files.createTempFile(null, null);
+
+		Files.write(tempFilePath, bytes);
+
+		File tempFile = tempFilePath.toFile();
+
+		FinalizeManager.register(
+			tempFile, new DeleteFileFinalizeAction(tempFile.getAbsolutePath()),
+			FinalizeManager.PHANTOM_REFERENCE_FACTORY);
+
+		return ProxyUtil.newDelegateProxyInstance(
+			FileItem.class.getClassLoader(), FileItem.class,
+			new Object() {
+
+				public String getFileName() {
+					return tempFile.getName();
+				}
+
+				public long getSize() {
+					return bytes.length;
+				}
+
+				public int getSizeThreshold() {
+					return 1024;
+				}
+
+				public File getStoreLocation() {
+					return tempFile;
+				}
+
+				public boolean isInMemory() {
+					return false;
+				}
+
+			},
+			null);
+	}
+
 	private byte[] _getFileBytes() throws Exception {
 		Enumeration<URL> enumeration = _bundle.findEntries(
 			_RESOURCES_PATH, "*", true);
 
-		ZipWriter zipWriter = ZipWriterFactoryUtil.getZipWriter();
+		ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
 		while (enumeration.hasMoreElements()) {
 			URL url = enumeration.nextElement();
@@ -174,9 +208,12 @@ public class ImportFragmentEntriesStrutsActionTest {
 			String path = url.getPath();
 
 			if (!path.endsWith(StringPool.SLASH)) {
-				zipWriter.addEntry(
-					StringUtil.removeSubstring(url.getPath(), _RESOURCES_PATH),
-					url.openStream());
+				try (InputStream inputStream = url.openStream()) {
+					zipWriter.addEntry(
+						StringUtil.removeSubstring(
+							url.getPath(), _RESOURCES_PATH),
+						inputStream);
+				}
 			}
 		}
 
@@ -188,25 +225,7 @@ public class ImportFragmentEntriesStrutsActionTest {
 		throws Exception {
 
 		return HashMapBuilder.<String, FileItem[]>put(
-			namespace,
-			() -> {
-				LiferayFileItemFactory fileItemFactory =
-					new LiferayFileItemFactory(
-						UploadServletRequestImpl.getTempDir());
-
-				LiferayFileItem liferayFileItem = fileItemFactory.createItem(
-					RandomTestUtil.randomString(),
-					RandomTestUtil.randomString(), true,
-					RandomTestUtil.randomString());
-
-				try (OutputStream outputStream =
-						liferayFileItem.getOutputStream()) {
-
-					outputStream.write(bytes);
-				}
-
-				return new FileItem[] {liferayFileItem};
-			}
+			namespace, new FileItem[] {_createFileItem(bytes)}
 		).build();
 	}
 
@@ -239,7 +258,6 @@ public class ImportFragmentEntriesStrutsActionTest {
 
 		mockHttpServletRequest.setAttribute(
 			WebKeys.CURRENT_URL, "/portal/fragment/import_fragment_entries");
-
 		mockHttpServletRequest.setAttribute(WebKeys.USER, user);
 
 		EventsProcessorUtil.process(
@@ -264,7 +282,9 @@ public class ImportFragmentEntriesStrutsActionTest {
 
 	private Group _group;
 
-	@Inject(filter = "component.name=*.ImportFragmentEntriesStrutsAction")
+	@Inject(
+		filter = "component.name=com.liferay.fragment.web.internal.struts.ImportFragmentEntriesStrutsAction"
+	)
 	private StrutsAction _importFragmentEntriesStrutsAction;
 
 	@Inject
@@ -275,5 +295,8 @@ public class ImportFragmentEntriesStrutsActionTest {
 
 	@Inject
 	private UserLocalService _userLocalService;
+
+	@Inject
+	private ZipWriterFactory _zipWriterFactory;
 
 }

@@ -21,17 +21,17 @@
 <div class="d-flex flex-column min-vh-100">
 	<@liferay.control_menu />
 
-	<div class="d-flex flex-column flex-fill" id="wrapper">
+	<div class="d-flex flex-column flex-fill position-relative" id="wrapper">
 		<#if show_header>
 			<header id="banner">
 				<div class="navbar navbar-classic navbar-top py-3">
 					<div class="container-fluid container-fluid-max-xl user-personal-bar">
 						<div class="align-items-center autofit-row">
-							<a class="${logo_css_class} align-items-center d-md-inline-flex d-sm-none d-none logo-md" href="${site_default_url}" title="<@liferay.language_format arguments="" key="go-to-x" />">
+							<a class="${logo_css_class} align-items-center d-md-inline-flex d-sm-none d-none logo-md" href="${site_default_url}" title="<@liferay.language_format arguments="${site_name}" key="go-to-x" />">
 								<img alt="${logo_description}" class="mr-2" height="56" src="${site_logo}" />
 
 								<#if show_site_name>
-									<h2 class="font-weight-bold h2 mb-0 text-dark" role="heading" aria-level="1">${site_name}</h2>
+									<h1 <#if show_control_menu>aria-hidden="true"</#if> class="font-weight-bold h2 mb-0 text-dark">${site_name}</h1>
 								</#if>
 							</a>
 
@@ -58,7 +58,7 @@
 							<img alt="${logo_description}" class="mr-2" height="56" src="${site_logo}" />
 
 							<#if show_site_name>
-								<h2 class="font-weight-bold h2 mb-0 text-dark">${site_name}</h2>
+								<h2 <#if show_control_menu>aria-hidden="true"</#if> class="font-weight-bold h2 mb-0 text-dark">${site_name}</h2>
 							</#if>
 						</a>
 
@@ -68,9 +68,7 @@
 			</header>
 		</#if>
 
-		<section class="${portal_content_css_class} flex-fill" id="content">
-			<h2 class="sr-only" role="heading" aria-level="1">${the_title}</h2>
-
+		<div class="${portal_content_css_class} flex-fill" id="content">
 			<#if selectable>
 				<@liferay_util["include"] page=content_include />
 			<#else>
@@ -82,15 +80,15 @@
 					<@liferay_util["include"] page=content_include />
 				</@>
 			</#if>
-		</section>
+		</div>
 
 		<#if show_footer>
-			<footer id="footer" role="contentinfo">
+			<footer id="footer">
 				<div class="container">
 					<div class="row">
 						<div class="col-md-12 text-center text-md-left">
 							<@liferay.language_format
-								arguments='<a class="text-white" href="http://www.liferay.com" rel="external">Liferay</a>'
+								arguments='<a class="text-decoration-underline text-white" href="http://www.liferay.com" rel="external">Liferay</a>'
 								key="powered-by-x"
 							/>
 						</div>

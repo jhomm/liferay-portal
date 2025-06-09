@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
+
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link OrgLaborLocalService}.
@@ -24,6 +17,10 @@ package com.liferay.portal.kernel.service;
 public class OrgLaborLocalServiceWrapper
 	implements OrgLaborLocalService, ServiceWrapper<OrgLaborLocalService> {
 
+	public OrgLaborLocalServiceWrapper() {
+		this(null);
+	}
+
 	public OrgLaborLocalServiceWrapper(
 		OrgLaborLocalService orgLaborLocalService) {
 
@@ -32,14 +29,14 @@ public class OrgLaborLocalServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.OrgLabor addOrgLabor(
-			long organizationId, long typeId, int sunOpen, int sunClose,
+			long organizationId, long listTypeId, int sunOpen, int sunClose,
 			int monOpen, int monClose, int tueOpen, int tueClose, int wedOpen,
 			int wedClose, int thuOpen, int thuClose, int friOpen, int friClose,
 			int satOpen, int satClose)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _orgLaborLocalService.addOrgLabor(
-			organizationId, typeId, sunOpen, sunClose, monOpen, monClose,
+			organizationId, listTypeId, sunOpen, sunClose, monOpen, monClose,
 			tueOpen, tueClose, wedOpen, wedClose, thuOpen, thuClose, friOpen,
 			friClose, satOpen, satClose);
 	}
@@ -310,7 +307,7 @@ public class OrgLaborLocalServiceWrapper
 	 * @return the OSGi service identifier
 	 */
 	@Override
-	public java.lang.String getOSGiServiceIdentifier() {
+	public String getOSGiServiceIdentifier() {
 		return _orgLaborLocalService.getOSGiServiceIdentifier();
 	}
 
@@ -327,16 +324,16 @@ public class OrgLaborLocalServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.OrgLabor updateOrgLabor(
-			long orgLaborId, long typeId, int sunOpen, int sunClose,
+			long orgLaborId, long listTypeId, int sunOpen, int sunClose,
 			int monOpen, int monClose, int tueOpen, int tueClose, int wedOpen,
 			int wedClose, int thuOpen, int thuClose, int friOpen, int friClose,
 			int satOpen, int satClose)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _orgLaborLocalService.updateOrgLabor(
-			orgLaborId, typeId, sunOpen, sunClose, monOpen, monClose, tueOpen,
-			tueClose, wedOpen, wedClose, thuOpen, thuClose, friOpen, friClose,
-			satOpen, satClose);
+			orgLaborId, listTypeId, sunOpen, sunClose, monOpen, monClose,
+			tueOpen, tueClose, wedOpen, wedClose, thuOpen, thuClose, friOpen,
+			friClose, satOpen, satClose);
 	}
 
 	/**
@@ -354,6 +351,11 @@ public class OrgLaborLocalServiceWrapper
 		com.liferay.portal.kernel.model.OrgLabor orgLabor) {
 
 		return _orgLaborLocalService.updateOrgLabor(orgLabor);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _orgLaborLocalService.getBasePersistence();
 	}
 
 	@Override

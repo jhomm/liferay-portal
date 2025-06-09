@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -36,6 +27,7 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -60,6 +52,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Organization"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -74,14 +69,15 @@ public interface OrganizationLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.portal.service.impl.OrganizationLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the organization local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link OrganizationLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	public void addGroupOrganization(long groupId, long organizationId);
+	public boolean addGroupOrganization(long groupId, long organizationId);
 
-	public void addGroupOrganization(long groupId, Organization organization);
+	public boolean addGroupOrganization(
+		long groupId, Organization organization);
 
-	public void addGroupOrganizations(
+	public boolean addGroupOrganizations(
 		long groupId, List<Organization> organizations);
 
-	public void addGroupOrganizations(long groupId, long[] organizationIds);
+	public boolean addGroupOrganizations(long groupId, long[] organizationIds);
 
 	/**
 	 * Adds an organization.
@@ -106,6 +102,19 @@ public interface OrganizationLocalService
 		throws PortalException;
 
 	/**
+	 * Adds the organization to the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect OrganizationLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
+	 * @param organization the organization
+	 * @return the organization that was added
+	 */
+	@Indexable(type = IndexableType.REINDEX)
+	public Organization addOrganization(Organization organization);
+
+	/**
 	 * Adds an organization.
 	 *
 	 * <p>
@@ -122,7 +131,7 @@ public interface OrganizationLocalService
 	 * @param type the organization's type
 	 * @param regionId the primary key of the organization's region
 	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
+	 * @param statusListTypeId the organization's workflow status
 	 * @param comments the comments about the organization
 	 * @param site whether the organization is to be associated with a main
 	 site
@@ -132,23 +141,11 @@ public interface OrganizationLocalService
 	 * @return the organization
 	 */
 	public Organization addOrganization(
-			long userId, long parentOrganizationId, String name, String type,
-			long regionId, long countryId, long statusId, String comments,
+			String externalReferenceCode, long userId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
 			boolean site, ServiceContext serviceContext)
 		throws PortalException;
-
-	/**
-	 * Adds the organization to the database. Also notifies the appropriate model listeners.
-	 *
-	 * <p>
-	 * <strong>Important:</strong> Inspect OrganizationLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
-	 * </p>
-	 *
-	 * @param organization the organization
-	 * @return the organization that was added
-	 */
-	@Indexable(type = IndexableType.REINDEX)
-	public Organization addOrganization(Organization organization);
 
 	/**
 	 * Adds a resource for each type of permission available on the
@@ -165,6 +162,14 @@ public interface OrganizationLocalService
 			ServiceContext serviceContext)
 		throws PortalException;
 
+	public Organization addOrUpdateOrganization(
+			String externalReferenceCode, long userId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean hasLogo, byte[] logoBytes, boolean site,
+			ServiceContext serviceContext)
+		throws PortalException;
+
 	/**
 	 * Assigns the password policy to the organizations, removing any other
 	 * currently assigned password policies.
@@ -175,18 +180,18 @@ public interface OrganizationLocalService
 	public void addPasswordPolicyOrganizations(
 		long passwordPolicyId, long[] organizationIds);
 
-	public void addUserOrganization(long userId, long organizationId);
+	public boolean addUserOrganization(long userId, long organizationId);
 
-	public void addUserOrganization(long userId, Organization organization);
+	public boolean addUserOrganization(long userId, Organization organization);
 
 	public void addUserOrganizationByEmailAddress(
 			String emailAddress, long organizationId)
 		throws PortalException;
 
-	public void addUserOrganizations(
+	public boolean addUserOrganizations(
 		long userId, List<Organization> organizations);
 
-	public void addUserOrganizations(long userId, long[] organizationIds);
+	public boolean addUserOrganizations(long userId, long[] organizationIds);
 
 	public void clearGroupOrganizations(long groupId);
 
@@ -361,24 +366,9 @@ public interface OrganizationLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Organization fetchOrganization(long companyId, String name);
 
-	/**
-	 * Returns the organization with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the organization's external reference code
-	 * @return the matching organization, or <code>null</code> if a matching organization could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Organization fetchOrganizationByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchOrganizationByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Organization fetchOrganizationByReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the organization with the matching UUID and company.
@@ -436,6 +426,12 @@ public interface OrganizationLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Organization> getNoAssetOrganizations();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Organization getOrAddIncompleteOrganization(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws Exception;
+
 	/**
 	 * Returns the organization with the primary key.
 	 *
@@ -458,17 +454,9 @@ public interface OrganizationLocalService
 	public Organization getOrganization(long companyId, String name)
 		throws PortalException;
 
-	/**
-	 * Returns the organization with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the organization's external reference code
-	 * @return the matching organization
-	 * @throws PortalException if a matching organization could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -562,6 +550,11 @@ public interface OrganizationLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Organization> getOrganizations(long companyId, String treePath);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Organization> getOrganizations(
+		long companyId, String name, int start, int end,
+		OrderByComparator<Organization> orderByComparator);
+
 	/**
 	 * Returns the organizations with the primary keys.
 	 *
@@ -630,6 +623,9 @@ public interface OrganizationLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getOrganizationsCount(
 		long companyId, long parentOrganizationId, String name);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getOrganizationsCount(long companyId, String name);
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -1297,34 +1293,7 @@ public interface OrganizationLocalService
 			String[] assetTagNames)
 		throws PortalException;
 
-	/**
-	 * Updates the organization.
-	 *
-	 * @param companyId the primary key of the organization's company
-	 * @param organizationId the primary key of the organization
-	 * @param parentOrganizationId the primary key of organization's parent
-	 organization
-	 * @param name the organization's name
-	 * @param type the organization's type
-	 * @param regionId the primary key of the organization's region
-	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
-	 * @param comments the comments about the organization
-	 * @param hasLogo if the organization has a custom logo
-	 * @param logoBytes the new logo image data
-	 * @param site whether the organization is to be associated with a main
-	 site
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set asset category IDs and asset tag
-	 names for the organization, and merge expando bridge attributes
-	 for the organization.
-	 * @return the organization
-	 */
-	public Organization updateOrganization(
-			long companyId, long organizationId, long parentOrganizationId,
-			String name, String type, long regionId, long countryId,
-			long statusId, String comments, boolean hasLogo, byte[] logoBytes,
-			boolean site, ServiceContext serviceContext)
+	public Organization updateLogo(long organizationId, byte[] logoBytes)
 		throws PortalException;
 
 	/**
@@ -1339,6 +1308,37 @@ public interface OrganizationLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public Organization updateOrganization(Organization organization);
+
+	/**
+	 * Updates the organization.
+	 *
+	 * @param companyId the primary key of the organization's company
+	 * @param organizationId the primary key of the organization
+	 * @param parentOrganizationId the primary key of organization's parent
+	 organization
+	 * @param name the organization's name
+	 * @param type the organization's type
+	 * @param regionId the primary key of the organization's region
+	 * @param countryId the primary key of the organization's country
+	 * @param statusListTypeId the organization's workflow status
+	 * @param comments the comments about the organization
+	 * @param hasLogo if the organization has a custom logo
+	 * @param logoBytes the new logo image data
+	 * @param site whether the organization is to be associated with a main
+	 site
+	 * @param serviceContext the service context to be applied (optionally
+	 <code>null</code>). Can set asset category IDs and asset tag
+	 names for the organization, and merge expando bridge attributes
+	 for the organization.
+	 * @return the organization
+	 */
+	public Organization updateOrganization(
+			String externalReferenceCode, long companyId, long organizationId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean hasLogo, byte[] logoBytes, boolean site,
+			ServiceContext serviceContext)
+		throws PortalException;
 
 	@Override
 	@Transactional(enabled = false)

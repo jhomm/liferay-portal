@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.subscription.web.internal.display.context;
@@ -20,34 +11,34 @@ import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceSubscriptionEntry;
 import com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel;
 import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelLocalService;
-import com.liferay.commerce.product.display.context.util.CPRequestHelper;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPInstance;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
-import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.commerce.service.CommerceSubscriptionEntryService;
-import com.liferay.commerce.subscription.web.internal.display.context.util.CommerceSubscriptionDisplayContextHelper;
+import com.liferay.commerce.subscription.web.internal.display.context.helper.CommerceSubscriptionDisplayContextHelper;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.commerce.util.comparator.CommerceSubscriptionEntryCreateDateComparator;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.KeyValuePair;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -92,7 +83,12 @@ public class CommerceSubscriptionContentDisplayContext {
 			CommerceSubscriptionEntry commerceSubscriptionEntry)
 		throws Exception {
 
+		HttpServletRequest httpServletRequest = _cpRequestHelper.getRequest();
+
 		return _cpInstanceHelper.getCPInstanceThumbnailSrc(
+			CommerceUtil.getCommerceAccountId(
+				(CommerceContext)httpServletRequest.getAttribute(
+					CommerceWebKeys.COMMERCE_CONTEXT)),
 			commerceSubscriptionEntry.getCPInstanceId());
 	}
 
@@ -164,26 +160,21 @@ public class CommerceSubscriptionContentDisplayContext {
 			_cpRequestHelper.getLiferayPortletRequest(), getPortletURL(), null,
 			"there-are-no-subscriptions");
 
-		OrderByComparator<CommerceSubscriptionEntry> orderByComparator =
-			new CommerceSubscriptionEntryCreateDateComparator();
-
-		List<CommerceSubscriptionEntry> subscriptionEntries =
-			_commerceSubscriptionEntryService.getCommerceSubscriptionEntries(
-				_cpRequestHelper.getCompanyId(),
-				_cpRequestHelper.getCommerceChannelGroupId(),
-				_cpRequestHelper.getUserId(), _searchContainer.getStart(),
-				_searchContainer.getEnd(), orderByComparator);
-
-		_searchContainer.setResults(subscriptionEntries);
-
-		int subscriptionEntriesCount =
+		_searchContainer.setResultsAndTotal(
+			() ->
+				_commerceSubscriptionEntryService.
+					getCommerceSubscriptionEntries(
+						_cpRequestHelper.getCompanyId(),
+						_cpRequestHelper.getCommerceChannelGroupId(),
+						_cpRequestHelper.getUserId(),
+						_searchContainer.getStart(), _searchContainer.getEnd(),
+						CommerceSubscriptionEntryCreateDateComparator.
+							getInstance(false)),
 			_commerceSubscriptionEntryService.
 				getCommerceSubscriptionEntriesCount(
 					_cpRequestHelper.getCompanyId(),
 					_cpRequestHelper.getCommerceChannelGroupId(),
-					_cpRequestHelper.getUserId());
-
-		_searchContainer.setTotal(subscriptionEntriesCount);
+					_cpRequestHelper.getUserId()));
 
 		return _searchContainer;
 	}
@@ -194,6 +185,10 @@ public class CommerceSubscriptionContentDisplayContext {
 		CommerceContext commerceContext =
 			(CommerceContext)httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
+
+		if (commerceContext == null) {
+			return false;
+		}
 
 		long commerceChannelId = commerceContext.getCommerceChannelId();
 
@@ -219,7 +214,7 @@ public class CommerceSubscriptionContentDisplayContext {
 			return commercePaymentMethodGroupRel.isActive();
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException.getMessage(), portalException);
+			_log.error(portalException);
 		}
 
 		return false;

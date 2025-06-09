@@ -1,27 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
 
-import com.liferay.document.library.web.internal.display.context.util.DLRequestHelper;
+import com.liferay.document.library.web.internal.display.context.helper.DLRequestHelper;
 import com.liferay.document.library.web.internal.security.permission.resource.DDMStructurePermission;
 import com.liferay.frontend.taglib.clay.servlet.taglib.display.context.SearchContainerManagementToolbarDisplayContext;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -30,12 +20,13 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author Cristina González
@@ -44,11 +35,11 @@ public class DLViewFileEntryMetadataSetsManagementToolbarDisplayContext
 	extends SearchContainerManagementToolbarDisplayContext {
 
 	public DLViewFileEntryMetadataSetsManagementToolbarDisplayContext(
+			DLViewFileEntryMetadataSetsDisplayContext
+				dlViewFileEntryMetadataSetsDisplayContext,
 			HttpServletRequest httpServletRequest,
 			LiferayPortletRequest liferayPortletRequest,
-			LiferayPortletResponse liferayPortletResponse,
-			DLViewFileEntryMetadataSetsDisplayContext
-				dlViewFileEntryMetadataSetsDisplayContext)
+			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
 		super(
@@ -66,7 +57,7 @@ public class DLViewFileEntryMetadataSetsManagementToolbarDisplayContext
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteMetadataSets");
-				dropdownItem.setIcon("times-circle");
+				dropdownItem.setIcon("trash");
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "delete"));
 				dropdownItem.setQuickAction(true);
@@ -99,7 +90,9 @@ public class DLViewFileEntryMetadataSetsManagementToolbarDisplayContext
 					String.valueOf(_dlRequestHelper.getScopeGroupId()));
 
 				dropdownItem.setLabel(
-					LanguageUtil.get(_dlRequestHelper.getRequest(), "new"));
+					LanguageUtil.format(
+						_dlRequestHelper.getRequest(), "new-x",
+						"metadata-set"));
 			}
 		).build();
 	}
@@ -137,11 +130,6 @@ public class DLViewFileEntryMetadataSetsManagementToolbarDisplayContext
 
 			return false;
 		}
-	}
-
-	@Override
-	protected String[] getNavigationKeys() {
-		return new String[] {"all"};
 	}
 
 	@Override

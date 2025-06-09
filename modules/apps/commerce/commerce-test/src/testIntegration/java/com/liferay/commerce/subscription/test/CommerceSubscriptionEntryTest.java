@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.subscription.test;
@@ -24,6 +15,7 @@ import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
 import com.liferay.commerce.price.list.test.util.CommercePriceEntryTestUtil;
 import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.model.CPSubscriptionInfo;
@@ -31,6 +23,7 @@ import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPDefinitionLocalServiceUtil;
+import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalServiceUtil;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalServiceUtil;
@@ -60,6 +53,7 @@ import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.math.BigDecimal;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.frutilla.FrutillaRule;
@@ -99,6 +93,13 @@ public class CommerceSubscriptionEntryTest {
 
 	@After
 	public void tearDown() throws Exception {
+		for (CPDefinitionOptionRel cpDefinitionOptionRel :
+				_cpDefinitionOptionRels) {
+
+			_cpDefinitionOptionRelLocalService.deleteCPDefinitionOptionRel(
+				cpDefinitionOptionRel);
+		}
+
 		_cpOptionLocalService.deleteCPOptions(_group.getCompanyId());
 	}
 
@@ -123,12 +124,11 @@ public class CommerceSubscriptionEntryTest {
 			_commerceCurrency.getCommerceCurrencyId(),
 			_commerceSubscriptionEntryHelper);
 
-		int commerceSubscriptionEntriesCount =
+		Assert.assertEquals(
+			1,
 			_commerceSubscriptionEntryLocalService.
 				getCommerceSubscriptionEntriesCount(
-					_user.getCompanyId(), _user.getUserId());
-
-		Assert.assertEquals(1, commerceSubscriptionEntriesCount);
+					_user.getCompanyId(), _user.getUserId()));
 	}
 
 	@Test
@@ -232,15 +232,21 @@ public class CommerceSubscriptionEntryTest {
 		CPTestUtil.addCPOptionValue(cpOption);
 		CPTestUtil.addCPOptionValue(cpOption);
 
-		CPDefinitionOptionRelLocalServiceUtil.addCPDefinitionOptionRel(
-			cpDefinition.getCPDefinitionId(), cpOption.getCPOptionId(), true,
-			ServiceContextTestUtil.getServiceContext(groupId));
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			CPDefinitionOptionRelLocalServiceUtil.addCPDefinitionOptionRel(
+				cpDefinition.getCPDefinitionId(), cpOption.getCPOptionId(),
+				true, ServiceContextTestUtil.getServiceContext(groupId));
+
+		_cpDefinitionOptionRels.add(cpDefinitionOptionRel);
 
 		int cpDefinitionSubscriptionLength = RandomTestUtil.randomInt(1, 100);
 		String cpDefinitionSubscriptionType = "daily";
 		long cpDefinitionMaxSubscriptionCycles = RandomTestUtil.randomLong();
 
 		if (cpDefinitionSubscriptionEnabled) {
+			cpDefinition = _cpDefinitionLocalService.getCPDefinition(
+				cpDefinition.getCPDefinitionId());
+
 			cpDefinition.setSubscriptionEnabled(true);
 			cpDefinition.setSubscriptionLength(cpDefinitionSubscriptionLength);
 			cpDefinition.setSubscriptionType(cpDefinitionSubscriptionType);
@@ -302,7 +308,7 @@ public class CommerceSubscriptionEntryTest {
 			if (cpSubscriptionInfo != null) {
 				CommerceTestUtil.addCommerceOrderItem(
 					commerceOrder.getCommerceOrderId(),
-					cpInstance.getCPInstanceId(), 1);
+					cpInstance.getCPInstanceId(), BigDecimal.ONE);
 			}
 		}
 
@@ -314,7 +320,8 @@ public class CommerceSubscriptionEntryTest {
 				getCommerceSubscriptionEntries(
 					_group.getCompanyId(), _user.getUserId(), QueryUtil.ALL_POS,
 					QueryUtil.ALL_POS,
-					new CommerceSubscriptionEntryCreateDateComparator());
+					CommerceSubscriptionEntryCreateDateComparator.getInstance(
+						false));
 
 		if (cpDefinitionSubscriptionEnabled && cpInstanceSubscriptionEnabled) {
 			Assert.assertEquals(
@@ -406,6 +413,13 @@ public class CommerceSubscriptionEntryTest {
 
 	@Inject
 	private CPDefinitionLocalService _cpDefinitionLocalService;
+
+	@Inject
+	private CPDefinitionOptionRelLocalService
+		_cpDefinitionOptionRelLocalService;
+
+	private final List<CPDefinitionOptionRel> _cpDefinitionOptionRels =
+		new ArrayList<>();
 
 	@Inject
 	private CPInstanceLocalService _cpInstanceLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.model;
@@ -42,6 +33,7 @@ public class AccountRoleWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("accountRoleId", getAccountRoleId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("accountEntryId", getAccountEntryId());
@@ -56,6 +48,13 @@ public class AccountRoleWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long accountRoleId = (Long)attributes.get("accountRoleId");
@@ -116,6 +115,16 @@ public class AccountRoleWrapper
 	@Override
 	public long getCompanyId() {
 		return model.getCompanyId();
+	}
+
+	/**
+	 * Returns the external reference code of this account role.
+	 *
+	 * @return the external reference code of this account role
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -198,6 +207,16 @@ public class AccountRoleWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this account role.
+	 *
+	 * @param externalReferenceCode the external reference code of this account role
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the mvcc version of this account role.
 	 *
 	 * @param mvccVersion the mvcc version of this account role
@@ -225,6 +244,11 @@ public class AccountRoleWrapper
 	@Override
 	public void setRoleId(long roleId) {
 		model.setRoleId(roleId);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

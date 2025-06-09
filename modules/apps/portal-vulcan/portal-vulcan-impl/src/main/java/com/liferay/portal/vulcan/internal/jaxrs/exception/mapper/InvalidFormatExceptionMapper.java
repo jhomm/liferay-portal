@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.jaxrs.exception.mapper;
@@ -18,16 +9,12 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.BaseExceptionMapper;
 import com.liferay.portal.vulcan.jaxrs.exception.mapper.Problem;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.core.Response;
+import java.util.List;
 
 /**
  * Converts any {@code InvalidFormatException} to a {@code 400} error.
@@ -42,34 +29,28 @@ public class InvalidFormatExceptionMapper
 	protected Problem getProblem(
 		InvalidFormatException invalidFormatException) {
 
-		if (_log.isDebugEnabled()) {
-			_log.debug(invalidFormatException, invalidFormatException);
-		}
-
 		List<JsonMappingException.Reference> references =
 			invalidFormatException.getPath();
 
-		Stream<JsonMappingException.Reference> stream = references.stream();
+		StringBundler sb = new StringBundler(references.size() * 2);
 
-		String path = stream.map(
-			JsonMappingException.Reference::getFieldName
-		).collect(
-			Collectors.joining(".")
-		);
+		for (JsonMappingException.Reference reference : references) {
+			sb.append(reference.getFieldName());
+			sb.append(".");
+		}
+
+		sb.setIndex(sb.index() - 1);
 
 		Class<?> clazz = invalidFormatException.getTargetType();
 
-		String message = StringBundler.concat(
-			"Unable to map JSON path \"", path, "\" with value \"",
-			invalidFormatException.getValue(), "\" to class \"",
-			clazz.getSimpleName(), "\"");
-
 		return new Problem(
 			invalidFormatException.getLocalizedMessage(),
-			Response.Status.BAD_REQUEST, message, "InvalidFormatException");
+			Response.Status.BAD_REQUEST,
+			StringBundler.concat(
+				"Unable to map JSON path \"", sb, "\" with value \"",
+				invalidFormatException.getValue(), "\" to class \"",
+				clazz.getSimpleName(), "\""),
+			InvalidFormatException.class.getName());
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		InvalidFormatExceptionMapper.class);
 
 }

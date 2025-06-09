@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.js.module.config.generator;
 
 import com.liferay.gradle.plugins.node.NodePlugin;
-import com.liferay.gradle.plugins.node.tasks.DownloadNodeModuleTask;
+import com.liferay.gradle.plugins.node.task.DownloadNodeModuleTask;
+import com.liferay.gradle.plugins.workspace.LiferayWorkspaceNodePlugin;
 import com.liferay.gradle.util.GradleUtil;
 
 import java.io.File;
@@ -28,6 +20,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.PluginContainer;
 import org.gradle.api.tasks.SourceSet;
@@ -51,7 +44,7 @@ public class JSModuleConfigGeneratorPlugin implements Plugin<Project> {
 
 	@Override
 	public void apply(Project project) {
-		GradleUtil.applyPlugin(project, NodePlugin.class);
+		LiferayWorkspaceNodePlugin.INSTANCE.apply(project);
 
 		final Task npmInstallTask = GradleUtil.getTask(
 			project, NodePlugin.NPM_INSTALL_TASK_NAME);
@@ -105,12 +98,12 @@ public class JSModuleConfigGeneratorPlugin implements Plugin<Project> {
 		PluginContainer pluginContainer = project.getPlugins();
 
 		pluginContainer.withType(
-			JavaPlugin.class,
-			new Action<JavaPlugin>() {
+			JavaLibraryPlugin.class,
+			new Action<JavaLibraryPlugin>() {
 
 				@Override
-				public void execute(JavaPlugin javaPlugin) {
-					_configureTaskConfigJSModulesForJavaPlugin(
+				public void execute(JavaLibraryPlugin javaLibraryPlugin) {
+					_configureTaskConfigJSModulesForJavaLibraryPlugin(
 						configJSModulesTask);
 				}
 
@@ -177,7 +170,7 @@ public class JSModuleConfigGeneratorPlugin implements Plugin<Project> {
 			});
 	}
 
-	private void _configureTaskConfigJSModulesForJavaPlugin(
+	private void _configureTaskConfigJSModulesForJavaLibraryPlugin(
 		ConfigJSModulesTask configJSModulesTask) {
 
 		configJSModulesTask.mustRunAfter(

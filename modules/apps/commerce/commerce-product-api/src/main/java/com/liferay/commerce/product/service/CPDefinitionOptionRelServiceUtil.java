@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -44,31 +36,33 @@ public class CPDefinitionOptionRelServiceUtil {
 			long cpDefinitionId, long cpOptionId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, double priority, boolean facetable,
 			boolean required, boolean skuContributor, boolean importOptionValue,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionRel(
 			cpDefinitionId, cpOptionId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, priority, facetable, required, skuContributor,
-			importOptionValue, serviceContext);
+			commerceOptionTypeKey, priority, facetable, required,
+			skuContributor, importOptionValue, serviceContext);
 	}
 
 	public static CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, String infoItemServiceKey,
+			double priority, boolean definedExternally, boolean facetable,
 			boolean required, boolean skuContributor, boolean importOptionValue,
-			String priceType,
+			String priceType, String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionRel(
 			cpDefinitionId, cpOptionId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, priority, facetable, required, skuContributor,
-			importOptionValue, priceType, serviceContext);
+			commerceOptionTypeKey, infoItemServiceKey, priority,
+			definedExternally, facetable, required, skuContributor,
+			importOptionValue, priceType, typeSettings, serviceContext);
 	}
 
 	public static CPDefinitionOptionRel addCPDefinitionOptionRel(
@@ -176,32 +170,6 @@ public class CPDefinitionOptionRelServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	/**
-	 * @param companyId
-	 * @param groupId
-	 * @param cpDefinitionId
-	 * @param keywords
-	 * @param start
-	 * @param end
-	 * @param sort
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchCPDefinitionOptionRels(long, long, long, String, int,
-	 int, Sort[])}
-	 */
-	@Deprecated
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<CPDefinitionOptionRel> searchCPDefinitionOptionRels(
-				long companyId, long groupId, long cpDefinitionId,
-				String keywords, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
-			throws PortalException {
-
-		return getService().searchCPDefinitionOptionRels(
-			companyId, groupId, cpDefinitionId, keywords, start, end, sort);
-	}
-
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<CPDefinitionOptionRel> searchCPDefinitionOptionRels(
 				long companyId, long groupId, long cpDefinitionId,
@@ -225,36 +193,42 @@ public class CPDefinitionOptionRelServiceUtil {
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, double priority, boolean facetable,
 			boolean required, boolean skuContributor,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPDefinitionOptionRel(
 			cpDefinitionOptionRelId, cpOptionId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, priority, facetable, required, skuContributor,
-			serviceContext);
+			commerceOptionTypeKey, priority, facetable, required,
+			skuContributor, serviceContext);
 	}
 
 	public static CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, String infoItemServiceKey,
+			double priority, boolean definedExternally, boolean facetable,
 			boolean required, boolean skuContributor, String priceType,
+			String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPDefinitionOptionRel(
 			cpDefinitionOptionRelId, cpOptionId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, priority, facetable, required, skuContributor,
-			priceType, serviceContext);
+			commerceOptionTypeKey, infoItemServiceKey, priority,
+			definedExternally, facetable, required, skuContributor, priceType,
+			typeSettings, serviceContext);
 	}
 
 	public static CPDefinitionOptionRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPDefinitionOptionRelService _service;
+	private static final Snapshot<CPDefinitionOptionRelService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionOptionRelServiceUtil.class,
+			CPDefinitionOptionRelService.class);
 
 }

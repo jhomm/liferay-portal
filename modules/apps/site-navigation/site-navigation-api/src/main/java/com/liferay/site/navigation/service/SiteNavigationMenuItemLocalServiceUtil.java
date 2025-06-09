@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 
@@ -44,28 +36,15 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.site.navigation.service.impl.SiteNavigationMenuItemLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type, int order,
-			String typeSettings,
+	public static SiteNavigationMenuItem addOrUpdateSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
+		throws Exception {
 
-		return getService().addSiteNavigationMenuItem(
-			userId, groupId, siteNavigationMenuId,
-			parentSiteNavigationMenuItemId, type, order, typeSettings,
-			serviceContext);
-	}
-
-	public static SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type,
-			String typeSettings,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addSiteNavigationMenuItem(
-			userId, groupId, siteNavigationMenuId,
+		return getService().addOrUpdateSiteNavigationMenuItem(
+			externalReferenceCode, userId, groupId, siteNavigationMenuId,
 			parentSiteNavigationMenuItemId, type, typeSettings, serviceContext);
 	}
 
@@ -83,6 +62,31 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 		SiteNavigationMenuItem siteNavigationMenuItem) {
 
 		return getService().addSiteNavigationMenuItem(siteNavigationMenuItem);
+	}
+
+	public static SiteNavigationMenuItem addSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, int order, String typeSettings,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addSiteNavigationMenuItem(
+			externalReferenceCode, userId, groupId, siteNavigationMenuId,
+			parentSiteNavigationMenuItemId, type, order, typeSettings,
+			serviceContext);
+	}
+
+	public static SiteNavigationMenuItem addSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addSiteNavigationMenuItem(
+			externalReferenceCode, userId, groupId, siteNavigationMenuId,
+			parentSiteNavigationMenuItemId, type, typeSettings, serviceContext);
 	}
 
 	/**
@@ -137,6 +141,14 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 			siteNavigationMenuItemId);
 	}
 
+	public static SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			long siteNavigationMenuItemId, boolean deleteChildren)
+		throws PortalException {
+
+		return getService().deleteSiteNavigationMenuItem(
+			siteNavigationMenuItemId, deleteChildren);
+	}
+
 	/**
 	 * Deletes the site navigation menu item from the database. Also notifies the appropriate model listeners.
 	 *
@@ -152,6 +164,14 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 
 		return getService().deleteSiteNavigationMenuItem(
 			siteNavigationMenuItem);
+	}
+
+	public static SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteSiteNavigationMenuItem(
+			externalReferenceCode, groupId);
 	}
 
 	public static void deleteSiteNavigationMenuItems(
@@ -256,6 +276,14 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 			siteNavigationMenuItemId);
 	}
 
+	public static SiteNavigationMenuItem
+		fetchSiteNavigationMenuItemByExternalReferenceCode(
+			String externalReferenceCode, long groupId) {
+
+		return getService().fetchSiteNavigationMenuItemByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the site navigation menu item matching the UUID and group.
 	 *
@@ -330,6 +358,15 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 		return getService().getSiteNavigationMenuItem(siteNavigationMenuItemId);
 	}
 
+	public static SiteNavigationMenuItem
+			getSiteNavigationMenuItemByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getSiteNavigationMenuItemByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the site navigation menu item matching the UUID and group.
 	 *
@@ -374,6 +411,14 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 
 		return getService().getSiteNavigationMenuItems(
 			siteNavigationMenuId, parentSiteNavigationMenuItemId);
+	}
+
+	public static List<SiteNavigationMenuItem> getSiteNavigationMenuItems(
+		long siteNavigationMenuId,
+		OrderByComparator<SiteNavigationMenuItem> orderByComparator) {
+
+		return getService().getSiteNavigationMenuItems(
+			siteNavigationMenuId, orderByComparator);
 	}
 
 	/**
@@ -473,9 +518,12 @@ public class SiteNavigationMenuItemLocalServiceUtil {
 	}
 
 	public static SiteNavigationMenuItemLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile SiteNavigationMenuItemLocalService _service;
+	private static final Snapshot<SiteNavigationMenuItemLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			SiteNavigationMenuItemLocalServiceUtil.class,
+			SiteNavigationMenuItemLocalService.class);
 
 }

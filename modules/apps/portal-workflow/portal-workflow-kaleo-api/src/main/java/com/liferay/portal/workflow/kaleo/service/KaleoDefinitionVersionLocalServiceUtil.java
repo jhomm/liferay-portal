@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 
@@ -404,19 +396,12 @@ public class KaleoDefinitionVersionLocalServiceUtil {
 	}
 
 	public static List<KaleoDefinitionVersion> getLatestKaleoDefinitionVersions(
-		long companyId, int start, int end,
+		long companyId, String keywords, int status, java.util.Locale locale,
+		int start, int end,
 		OrderByComparator<KaleoDefinitionVersion> orderByComparator) {
 
 		return getService().getLatestKaleoDefinitionVersions(
-			companyId, start, end, orderByComparator);
-	}
-
-	public static List<KaleoDefinitionVersion> getLatestKaleoDefinitionVersions(
-		long companyId, String keywords, int status, int start, int end,
-		OrderByComparator<KaleoDefinitionVersion> orderByComparator) {
-
-		return getService().getLatestKaleoDefinitionVersions(
-			companyId, keywords, status, start, end, orderByComparator);
+			companyId, keywords, status, locale, start, end, orderByComparator);
 	}
 
 	public static int getLatestKaleoDefinitionVersionsCount(
@@ -462,9 +447,12 @@ public class KaleoDefinitionVersionLocalServiceUtil {
 	}
 
 	public static KaleoDefinitionVersionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile KaleoDefinitionVersionLocalService _service;
+	private static final Snapshot<KaleoDefinitionVersionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			KaleoDefinitionVersionLocalServiceUtil.class,
+			KaleoDefinitionVersionLocalService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.adaptive.media.test;
@@ -19,13 +10,15 @@ import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.responsive.ViewportSize;
 import com.liferay.layout.taglib.servlet.taglib.RenderFragmentLayoutTag;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.petra.string.StringBundler;
@@ -36,7 +29,6 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
@@ -49,7 +41,6 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -60,7 +51,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -123,22 +114,22 @@ public class LayoutAdaptiveMediaProcessorTest {
 		RenderFragmentLayoutTag renderFragmentLayoutTag =
 			new RenderFragmentLayoutTag();
 
-		renderFragmentLayoutTag.setGroupId(_group.getGroupId());
-		renderFragmentLayoutTag.setPlid(_layout.getPlid());
-
-		MockHttpServletRequest httpServletRequest =
+		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		httpServletRequest.setAttribute(
-			WebKeys.CTX, httpServletRequest.getServletContext());
-		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, _themeDisplay);
-		httpServletRequest.setMethod(HttpMethods.GET);
+		mockHttpServletRequest.setAttribute(
+			WebKeys.CTX, mockHttpServletRequest.getServletContext());
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, _themeDisplay);
+		mockHttpServletRequest.setMethod(HttpMethods.GET);
+
+		_themeDisplay.setRequest(mockHttpServletRequest);
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
 		renderFragmentLayoutTag.doTag(
-			httpServletRequest, mockHttpServletResponse);
+			mockHttpServletRequest, mockHttpServletResponse);
 
 		String content = mockHttpServletResponse.getContentAsString();
 
@@ -169,8 +160,8 @@ public class LayoutAdaptiveMediaProcessorTest {
 			_fragmentEntryLink.getEditableValues());
 
 		JSONObject processorJSONObject = editableValuesJSONObject.getJSONObject(
-			"com.liferay.fragment.entry.processor.editable." +
-				"EditableFragmentEntryProcessor");
+			FragmentEntryProcessorConstants.
+				KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR);
 
 		JSONObject imageJSONObject = processorJSONObject.getJSONObject(
 			"image-square");
@@ -188,22 +179,22 @@ public class LayoutAdaptiveMediaProcessorTest {
 		RenderFragmentLayoutTag renderFragmentLayoutTag =
 			new RenderFragmentLayoutTag();
 
-		renderFragmentLayoutTag.setGroupId(_group.getGroupId());
-		renderFragmentLayoutTag.setPlid(_layout.getPlid());
-
-		MockHttpServletRequest httpServletRequest =
+		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		httpServletRequest.setAttribute(
-			WebKeys.CTX, httpServletRequest.getServletContext());
-		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, _themeDisplay);
-		httpServletRequest.setMethod(HttpMethods.GET);
+		mockHttpServletRequest.setAttribute(
+			WebKeys.CTX, mockHttpServletRequest.getServletContext());
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, _themeDisplay);
+		mockHttpServletRequest.setMethod(HttpMethods.GET);
+
+		_themeDisplay.setRequest(mockHttpServletRequest);
 
 		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
 		renderFragmentLayoutTag.doTag(
-			httpServletRequest, mockHttpServletResponse);
+			mockHttpServletRequest, mockHttpServletResponse);
 
 		String content = mockHttpServletResponse.getContentAsString();
 
@@ -225,27 +216,26 @@ public class LayoutAdaptiveMediaProcessorTest {
 	}
 
 	private void _addLayout() throws Exception {
-		_layout = _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			StringPool.BLANK, LayoutConstants.TYPE_CONTENT, false, false,
-			StringPool.BLANK, _serviceContext);
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		FragmentEntry fragmentEntry =
-			_fragmentCollectionContributorTracker.getFragmentEntry(
+			_fragmentCollectionContributorRegistry.getFragmentEntry(
 				"BASIC_COMPONENT-image");
+
+		long defaultSegmentsExperienceId =
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				layout.getPlid());
 
 		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.IMAGE_JPEG,
 			FileUtil.getBytes(getClass(), "dependencies/image.jpg"), null, null,
-			_serviceContext);
+			null, _serviceContext);
 
 		JSONObject editableValuesJSONObject = JSONUtil.put(
-			"com.liferay.fragment.entry.processor.editable." +
-				"EditableFragmentEntryProcessor",
+			FragmentEntryProcessorConstants.
+				KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
 			JSONUtil.put(
 				"image-square",
 				JSONUtil.put(
@@ -257,12 +247,12 @@ public class LayoutAdaptiveMediaProcessorTest {
 					))));
 
 		_fragmentEntryLink = _fragmentEntryLinkService.addFragmentEntryLink(
-			_group.getGroupId(), 0, fragmentEntry.getFragmentEntryId(),
-			SegmentsExperienceConstants.ID_DEFAULT, _layout.getPlid(),
+			null, _group.getGroupId(), 0, fragmentEntry.getFragmentEntryId(),
+			defaultSegmentsExperienceId, layout.getPlid(),
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.getConfiguration(),
 			editableValuesJSONObject.toString(), StringPool.BLANK, 0, null,
-			_serviceContext);
+			fragmentEntry.getType(), _serviceContext);
 
 		LayoutStructure layoutStructure = new LayoutStructure();
 
@@ -279,17 +269,18 @@ public class LayoutAdaptiveMediaProcessorTest {
 			_fragmentEntryLink.getFragmentEntryLinkId(),
 			containerStyledLayoutStructureItem.getItemId(), 0);
 
-		_layoutPageTemplateStructureLocalService.addLayoutPageTemplateStructure(
-			TestPropsValues.getUserId(), _group.getGroupId(), _layout.getPlid(),
-			layoutStructure.toString(), _serviceContext);
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				_group.getGroupId(), layout.getPlid(),
+				defaultSegmentsExperienceId, layoutStructure.toString());
 
-		_themeDisplay.setLayout(_layout);
+		_themeDisplay.setLayout(layout);
+		_themeDisplay.setLayoutSet(layout.getLayoutSet());
 		_themeDisplay.setLayoutTypePortlet(
-			(LayoutTypePortlet)_layout.getLayoutType());
-		_themeDisplay.setLayoutSet(_layout.getLayoutSet());
+			(LayoutTypePortlet)layout.getLayoutType());
 		_themeDisplay.setLookAndFeel(
-			_layout.getTheme(), _layout.getColorScheme());
-		_themeDisplay.setPlid(_layout.getPlid());
+			layout.getTheme(), layout.getColorScheme());
+		_themeDisplay.setPlid(layout.getPlid());
 	}
 
 	@Inject
@@ -302,8 +293,8 @@ public class LayoutAdaptiveMediaProcessorTest {
 	private DLAppLocalService _dlAppLocalService;
 
 	@Inject
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
 
 	private FragmentEntryLink _fragmentEntryLink;
 
@@ -313,14 +304,15 @@ public class LayoutAdaptiveMediaProcessorTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
-	private Layout _layout;
-
 	@Inject
 	private LayoutLocalService _layoutLocalService;
 
 	@Inject
 	private LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	private ServiceContext _serviceContext;
 	private ThemeDisplay _themeDisplay;

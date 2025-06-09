@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.web.internal.configuration;
@@ -32,13 +23,35 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 )
 public interface SiteNavigationMenuPortletInstanceConfiguration {
 
-	@Meta.AD(name = "site-navigation-menu-id", required = false)
+	@Meta.AD(
+		name = "site-navigation-menu-external-reference-code", required = false
+	)
+	public String siteNavigationMenuExternalReferenceCode();
+
+	@Meta.AD(
+		name = "site-navigation-menu-group-external-reference-code",
+		required = false
+	)
+	public String siteNavigationMenuGroupExternalReferenceCode();
+
+	@Meta.AD(
+		description = "site-navigation-menu-id-description",
+		name = "site-navigation-menu-id", required = false
+	)
 	public long siteNavigationMenuId();
 
 	@Meta.AD(name = "site-navigation-menu-name", required = false)
 	public String siteNavigationMenuName();
 
-	@Meta.AD(deflt = "0", name = "display-style-group-id", required = false)
+	@Meta.AD(
+		name = "display-style-group-external-reference-code", required = false
+	)
+	public String displayStyleGroupExternalReferenceCode();
+
+	@Meta.AD(
+		deflt = "0", description = "display-style-group-id-description",
+		name = "display-style-group-id", required = false
+	)
 	public long displayStyleGroupId();
 
 	@Meta.AD(name = "display-style", required = false)
@@ -50,7 +63,13 @@ public interface SiteNavigationMenuPortletInstanceConfiguration {
 	@Meta.AD(deflt = "0", name = "root-menu-item-level", required = false)
 	public int rootMenuItemLevel();
 
-	@Meta.AD(name = "root-menu-item-id", required = false)
+	@Meta.AD(name = "root-menu-item-external-reference-code", required = false)
+	public String rootMenuItemExternalReferenceCode();
+
+	@Meta.AD(
+		description = "root-menu-item-id-description",
+		name = "root-menu-item-id", required = false
+	)
 	public String rootMenuItemId();
 
 	@Meta.AD(deflt = "-1", name = "site-navigation-menu-type", required = false)

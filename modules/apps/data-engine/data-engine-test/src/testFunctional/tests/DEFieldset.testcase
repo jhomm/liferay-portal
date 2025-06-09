@@ -1,4 +1,4 @@
-@component-name = "data-engine"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -10,15 +10,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,7 +27,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is possible to add a Fieldset in the builder."
-	@priority = "5"
+	@priority = 5
 	test CanAddFieldsetInBuilder {
 		NavItem.gotoStructures();
 
@@ -49,7 +49,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is possible to add multiple options for a field with options on the Fieldset modal."
-	@priority = "5"
+	@priority = 5
 	test CanAddMultipleOptions {
 		NavItem.gotoStructures();
 
@@ -76,8 +76,49 @@ definition {
 			optionLabelList = "Option 1,Option 2,Option 3");
 	}
 
+	@description = "LPS-165487 - Verify if the user can create structures with different Global language."
+	@priority = 3
+	test CanBeCreatedWithDifferentGlobalLanguage {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Structure A");
+
+		DEBuilder.addField(
+			fieldLabel = "Select from List",
+			fieldName = "Select from List");
+
+		WebContentStructures.saveCP();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Site Settings");
+
+		Site.configureCurrentLanguagesCP(
+			defaultSiteLanguage = "Portuguese (Brazil)",
+			displaySettings = "Display Settings");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Structure B");
+
+		DataEngine.addFieldsetToBuilder(fieldsetName = "Structure A");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "Structure B");
+
+		AssertElementPresent(
+			key_fieldsetLabel = "Structure A",
+			locator1 = "DDMEditStructure#FORM_FIELD_SETS_CONTAINER_LABEL");
+	}
+
 	@description = "This is a test for LRQA-68940. This test verifies that is possible to create Fields Group on the Fieldset modal."
-	@priority = "5"
+	@priority = 5
 	test CanCreateFieldsGroup {
 		NavItem.gotoStructures();
 
@@ -101,13 +142,13 @@ definition {
 		DataEngine.gotoEditFieldset(fieldsetName = "New Fieldset");
 
 		DEBuilder.assertFieldsGroup(
-			fieldGroupDepth = "1",
+			fieldGroupDepth = 1,
 			fieldGroupLabel = "Fields Group",
 			fieldsLabelList = "Text,Numeric");
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is possible to delete a Fieldset that is not being used on any Structures."
-	@priority = "5"
+	@priority = 5
 	test CanDeleteUnusedFieldset {
 		NavItem.gotoStructures();
 
@@ -125,7 +166,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that Fieldset Label can be edited."
-	@priority = "5"
+	@priority = 5
 	test CanEditFieldsetLabel {
 		NavItem.gotoStructures();
 
@@ -157,7 +198,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is possible to edit Label, Placeholder and Help text of fields on the Fieldset modal."
-	@priority = "5"
+	@priority = 5
 	test CanEditLabelPlaceholderAndHelpTextOfFields {
 		NavItem.gotoStructures();
 
@@ -203,7 +244,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is not possible to drag and drop fields from the sidebar into a Fieldset on the builder."
-	@priority = "4"
+	@priority = 4
 	test CanNotAddFieldsIntoFieldsetFromBuilder {
 		NavItem.gotoStructures();
 
@@ -240,7 +281,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is not possible to delete a Fieldset that is being used on a Structure."
-	@priority = "4"
+	@priority = 4
 	test CanNotDeleteUsedFieldset {
 		NavItem.gotoStructures();
 
@@ -270,7 +311,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is not possible to edit fields inside a Fieldset from the builder."
-	@priority = "4"
+	@priority = 4
 	test CanNotEditFieldsetFieldsFromBuilder {
 		NavItem.gotoStructures();
 
@@ -298,7 +339,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is not possible remove fields from the Fieldset from the builder."
-	@priority = "4"
+	@priority = 4
 	test CanNotRemoveFieldsetFieldsFromBuilder {
 		NavItem.gotoStructures();
 
@@ -326,7 +367,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is not possible to remove fields from the Fieldset if the Fieldset is inside a Fields Group on the builder."
-	@priority = "3"
+	@priority = 3
 	test CanNotRemoveFieldsInsideFieldsetInFieldsGroupFromBuilder {
 		NavItem.gotoStructures();
 
@@ -360,7 +401,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is not possible to remove fields that are inside a Fields Group on the Fieldset from the builder."
-	@priority = "3"
+	@priority = 3
 	test CanNotRemoveFieldsInsideFieldsGroupFromBuilder {
 		NavItem.gotoStructures();
 
@@ -397,7 +438,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that is possible to remove a Fieldset from the builder."
-	@priority = "5"
+	@priority = 5
 	test CanRemoveFieldsetFromBuilder {
 		NavItem.gotoStructures();
 
@@ -427,7 +468,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that Fieldset Label can be shown or hidden."
-	@priority = "5"
+	@priority = 5
 	test CanSetLabelToShownOrHidden {
 		NavItem.gotoStructures();
 
@@ -459,7 +500,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68940. This test verifies that upon editing a Fieldset that is already on the builder a dialog to confirm propagation is displayed."
-	@priority = "4"
+	@priority = 4
 	test CanShowPropagateChangesDialog {
 		NavItem.gotoStructures();
 

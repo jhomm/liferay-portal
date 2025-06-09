@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.model.impl;
@@ -80,12 +71,14 @@ public class BatchEngineImportTaskCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(43);
+		StringBundler sb = new StringBundler(47);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", batchEngineImportTaskId=");
 		sb.append(batchEngineImportTaskId);
 		sb.append(", companyId=");
@@ -112,6 +105,8 @@ public class BatchEngineImportTaskCacheModel
 		sb.append(executeStatus);
 		sb.append(", fieldNameMapping=");
 		sb.append(fieldNameMapping);
+		sb.append(", importStrategy=");
+		sb.append(importStrategy);
 		sb.append(", operation=");
 		sb.append(operation);
 		sb.append(", parameters=");
@@ -141,6 +136,14 @@ public class BatchEngineImportTaskCacheModel
 		}
 		else {
 			batchEngineImportTaskImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			batchEngineImportTaskImpl.setExternalReferenceCode("");
+		}
+		else {
+			batchEngineImportTaskImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		batchEngineImportTaskImpl.setBatchEngineImportTaskId(
@@ -207,6 +210,7 @@ public class BatchEngineImportTaskCacheModel
 		}
 
 		batchEngineImportTaskImpl.setFieldNameMapping(fieldNameMapping);
+		batchEngineImportTaskImpl.setImportStrategy(importStrategy);
 
 		if (operation == null) {
 			batchEngineImportTaskImpl.setOperation("");
@@ -246,6 +250,7 @@ public class BatchEngineImportTaskCacheModel
 
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		batchEngineImportTaskId = objectInput.readLong();
 
@@ -263,6 +268,8 @@ public class BatchEngineImportTaskCacheModel
 		errorMessage = (String)objectInput.readObject();
 		executeStatus = objectInput.readUTF();
 		fieldNameMapping = (Map<String, Serializable>)objectInput.readObject();
+
+		importStrategy = objectInput.readInt();
 		operation = objectInput.readUTF();
 		parameters = (Map<String, Serializable>)objectInput.readObject();
 
@@ -282,6 +289,13 @@ public class BatchEngineImportTaskCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(batchEngineImportTaskId);
@@ -333,6 +347,8 @@ public class BatchEngineImportTaskCacheModel
 
 		objectOutput.writeObject(fieldNameMapping);
 
+		objectOutput.writeInt(importStrategy);
+
 		if (operation == null) {
 			objectOutput.writeUTF("");
 		}
@@ -357,6 +373,7 @@ public class BatchEngineImportTaskCacheModel
 
 	public long mvccVersion;
 	public String uuid;
+	public String externalReferenceCode;
 	public long batchEngineImportTaskId;
 	public long companyId;
 	public long userId;
@@ -370,6 +387,7 @@ public class BatchEngineImportTaskCacheModel
 	public String errorMessage;
 	public String executeStatus;
 	public Map<String, Serializable> fieldNameMapping;
+	public int importStrategy;
 	public String operation;
 	public Map<String, Serializable> parameters;
 	public int processedItemsCount;

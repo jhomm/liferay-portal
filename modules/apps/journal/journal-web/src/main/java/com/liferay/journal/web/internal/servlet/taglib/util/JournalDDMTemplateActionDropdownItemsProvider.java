@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.servlet.taglib.util;
@@ -19,23 +10,23 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.journal.web.internal.security.permission.resource.DDMTemplatePermission;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -55,39 +46,65 @@ public class JournalDDMTemplateActionDropdownItemsProvider {
 	}
 
 	public List<DropdownItem> getActionDropdownItems() throws Exception {
-		return DropdownItemListBuilder.add(
-			() -> DDMTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(), _ddmTemplate,
-				ActionKeys.UPDATE),
-			_getEditDDMTemplateActionUnsafeConsumer()
-		).add(
-			() -> DDMTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(), _ddmTemplate,
-				ActionKeys.PERMISSIONS),
-			_getPermissionsDDMTemplateActionUnsafeConsumer()
-		).add(
-			() -> {
-				Group scopeGroup = _themeDisplay.getScopeGroup();
+		return DropdownItemListBuilder.addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						() -> DDMTemplatePermission.contains(
+							_themeDisplay.getPermissionChecker(), _ddmTemplate,
+							ActionKeys.UPDATE),
+						_getEditDDMTemplateActionUnsafeConsumer()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						() -> {
+							Group scopeGroup = _themeDisplay.getScopeGroup();
 
-				if ((!scopeGroup.hasLocalOrRemoteStagingGroup() ||
-					 scopeGroup.isStagingGroup()) &&
-					DDMTemplatePermission.containsAddTemplatePermission(
-						_themeDisplay.getPermissionChecker(),
-						_themeDisplay.getScopeGroupId(),
-						_ddmTemplate.getClassNameId(),
-						_ddmTemplate.getResourceClassNameId())) {
+							if ((!scopeGroup.hasLocalOrRemoteStagingGroup() ||
+								 scopeGroup.isStagingGroup()) &&
+								DDMTemplatePermission.
+									containsAddTemplatePermission(
+										_themeDisplay.getPermissionChecker(),
+										_themeDisplay.getScopeGroupId(),
+										_ddmTemplate.getClassNameId(),
+										_ddmTemplate.
+											getResourceClassNameId())) {
 
-					return true;
-				}
+								return true;
+							}
 
-				return false;
-			},
-			_getCopyDDMTemplateActionUnsafeConsumer()
-		).add(
-			() -> DDMTemplatePermission.contains(
-				_themeDisplay.getPermissionChecker(), _ddmTemplate,
-				ActionKeys.DELETE),
-			_getDeleteDDMTemplateActionUnsafeConsumer()
+							return false;
+						},
+						_getCopyDDMTemplateActionUnsafeConsumer()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						() -> DDMTemplatePermission.contains(
+							_themeDisplay.getPermissionChecker(), _ddmTemplate,
+							ActionKeys.PERMISSIONS),
+						_getPermissionsDDMTemplateActionUnsafeConsumer()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
+		).addGroup(
+			dropdownGroupItem -> {
+				dropdownGroupItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						() -> DDMTemplatePermission.contains(
+							_themeDisplay.getPermissionChecker(), _ddmTemplate,
+							ActionKeys.DELETE),
+						_getDeleteDDMTemplateActionUnsafeConsumer()
+					).build());
+				dropdownGroupItem.setSeparator(true);
+			}
 		).build();
 	}
 
@@ -100,8 +117,9 @@ public class JournalDDMTemplateActionDropdownItemsProvider {
 				"/copy_ddm_template.jsp", "redirect",
 				_themeDisplay.getURLCurrent(), "ddmTemplateId",
 				_ddmTemplate.getTemplateId());
+			dropdownItem.setIcon("copy");
 			dropdownItem.setLabel(
-				LanguageUtil.get(_httpServletRequest, "copy"));
+				LanguageUtil.get(_httpServletRequest, "make-a-copy"));
 		};
 	}
 
@@ -123,6 +141,7 @@ public class JournalDDMTemplateActionDropdownItemsProvider {
 				).setParameter(
 					"ddmTemplateId", _ddmTemplate.getTemplateId()
 				).buildString());
+			dropdownItem.setIcon("trash");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "delete"));
 		};
@@ -137,6 +156,7 @@ public class JournalDDMTemplateActionDropdownItemsProvider {
 				"/edit_ddm_template.jsp", "redirect",
 				_themeDisplay.getURLCurrent(), "ddmTemplateId",
 				_ddmTemplate.getTemplateId());
+			dropdownItem.setIcon("pencil");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "edit"));
 		};
@@ -158,6 +178,7 @@ public class JournalDDMTemplateActionDropdownItemsProvider {
 			dropdownItem.putData("action", "permissionsDDMTemplate");
 			dropdownItem.putData(
 				"permissionsDDMTemplateURL", permissionsDDMTemplateURL);
+			dropdownItem.setIcon("password-policies");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "permissions"));
 		};

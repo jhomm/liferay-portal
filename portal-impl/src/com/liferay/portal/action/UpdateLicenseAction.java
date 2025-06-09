@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.action;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -22,22 +14,25 @@ import com.liferay.portal.kernel.license.util.LicenseManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
+import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 import com.liferay.portal.util.LicenseUtil;
 import com.liferay.portlet.admin.util.OmniadminUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Amos Fong
@@ -59,38 +54,51 @@ public class UpdateLicenseAction implements Action {
 		// PLACEHOLDER 07
 		// PLACEHOLDER 08
 
-		if (_isValidRequest(httpServletRequest)) {
-			String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
+		if (!_isOmniAdmin(httpServletRequest)) {
+			httpServletResponse.sendRedirect(
+				PortalUtil.getPathContext() + "/c/portal/layout");
 
-			String clusterNodeId = ParamUtil.getString(
-				httpServletRequest, "clusterNodeId");
+			return null;
+		}
 
-			if (cmd.equals("licenseProperties")) {
-				httpServletResponse.setContentType(
-					ContentTypes.APPLICATION_JSON);
-
-				ServletResponseUtil.write(
-					httpServletResponse, _getLicenseProperties(clusterNodeId));
-
-				return null;
-			}
-			else if (cmd.equals("serverInfo")) {
-				httpServletResponse.setContentType(
-					ContentTypes.APPLICATION_JSON);
-
-				ServletResponseUtil.write(
-					httpServletResponse, _getServerInfo(clusterNodeId));
-
-				return null;
-			}
+		if (StringUtil.equalsIgnoreCase(
+				httpServletRequest.getMethod(), HttpMethods.GET)) {
 
 			return actionMapping.getActionForward("portal.license");
 		}
 
-		httpServletResponse.sendRedirect(
-			PortalUtil.getPathContext() + "/c/portal/layout");
+		if (!_isCSRFTokenValid(httpServletRequest, httpServletResponse)) {
+			httpServletResponse.sendRedirect(
+				PortalUtil.getPathContext() + "/c/portal/layout");
 
-		return null;
+			return null;
+		}
+
+		LicenseUtil.registerOrder(httpServletRequest);
+
+		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
+
+		String clusterNodeId = ParamUtil.getString(
+			httpServletRequest, "clusterNodeId");
+
+		if (cmd.equals("licenseProperties")) {
+			httpServletResponse.setContentType(ContentTypes.APPLICATION_JSON);
+
+			ServletResponseUtil.write(
+				httpServletResponse, _getLicenseProperties(clusterNodeId));
+
+			return null;
+		}
+		else if (cmd.equals("serverInfo")) {
+			httpServletResponse.setContentType(ContentTypes.APPLICATION_JSON);
+
+			ServletResponseUtil.write(
+				httpServletResponse, _getServerInfo(clusterNodeId));
+
+			return null;
+		}
+
+		return actionMapping.getActionForward("portal.license");
 	}
 
 	private String _getLicenseProperties(String clusterNodeId) {
@@ -131,26 +139,30 @@ public class UpdateLicenseAction implements Action {
 		return jsonObject.toString();
 	}
 
-	private boolean _isOmniAdmin(HttpServletRequest httpServletRequest) {
-		User user = null;
+	private boolean _isCSRFTokenValid(
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse)
+		throws Exception {
 
 		try {
-			user = PortalUtil.getUser(httpServletRequest);
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-		}
+			AuthTokenUtil.checkCSRFToken(
+				httpServletRequest, LicenseUtil.class.getName());
 
-		if ((user != null) && OmniadminUtil.isOmniadmin(user)) {
 			return true;
+		}
+		catch (PortalException portalException) {
+			_log.error(
+				"Invalid authentication token received", portalException);
+
+			PortalUtil.sendError(
+				HttpServletResponse.SC_UNAUTHORIZED, portalException,
+				httpServletRequest, httpServletResponse);
 		}
 
 		return false;
 	}
 
-	private boolean _isValidRequest(HttpServletRequest httpServletRequest) {
+	private boolean _isOmniAdmin(HttpServletRequest httpServletRequest) {
 
 		// PLACEHOLDER 09
 		// PLACEHOLDER 10
@@ -167,9 +179,18 @@ public class UpdateLicenseAction implements Action {
 		// PLACEHOLDER 21
 		// PLACEHOLDER 22
 
-		if (_isOmniAdmin(httpServletRequest)) {
-			LicenseUtil.registerOrder(httpServletRequest);
+		User user = null;
 
+		try {
+			user = PortalUtil.getUser(httpServletRequest);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		if ((user != null) && OmniadminUtil.isOmniadmin(user)) {
 			return true;
 		}
 

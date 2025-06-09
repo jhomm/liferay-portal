@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.aggregate;
@@ -25,7 +16,7 @@ import com.liferay.portal.internal.minifier.MinifierThreadLocal;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.servlet.BrowserSniffer;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.PortalWebResourceConstants;
@@ -41,11 +32,11 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.minifier.MinifierUtil;
+import com.liferay.portal.servlet.BrowserSnifferUtil;
 import com.liferay.portal.servlet.filters.IgnoreModuleRequestFilter;
 import com.liferay.portal.servlet.filters.dynamiccss.DynamicCSSUtil;
 import com.liferay.portal.servlet.filters.util.CacheFileNameGenerator;
@@ -53,6 +44,12 @@ import com.liferay.portal.util.AggregateUtil;
 import com.liferay.portal.util.JavaScriptBundleUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.Closeable;
 import java.io.File;
@@ -67,12 +64,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -259,8 +250,7 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 			sb.append(StringPool.NEW_LINE);
 		}
 
-		return getJavaScriptContent(
-			StringUtil.merge(fileNames, "+"), sb.toString());
+		return sb.toString();
 	}
 
 	@Override
@@ -275,12 +265,6 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 		_tempDir = new File(tempDir, _TEMP_DIR);
 
 		_tempDir.mkdirs();
-	}
-
-	protected static String getJavaScriptContent(
-		String resourceName, String content) {
-
-		return MinifierUtil.minifyJavaScript(resourceName, content);
 	}
 
 	protected Object getBundleContent(
@@ -478,9 +462,8 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 					_log.info("Minifying JavaScript " + resourcePath);
 				}
 
-				content = getJavaScriptContent(
-					httpServletRequest, httpServletResponse, resourcePath,
-					resourceURL);
+				content = _readResource(
+					httpServletRequest, httpServletResponse, resourcePath);
 
 				httpServletResponse.setContentType(
 					ContentTypes.TEXT_JAVASCRIPT);
@@ -507,9 +490,6 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 						httpServletRequest, httpServletResponse, resourcePath,
 						content);
 				}
-				else if (minifierType.equals("js")) {
-					content = getJavaScriptContent(resourcePath, content);
-				}
 
 				FileUtil.write(
 					cacheContentTypeFile,
@@ -533,28 +513,25 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 				HttpHeaders.CACHE_CONTROL, HttpHeaders.PRAGMA_NO_CACHE_VALUE);
 
 			String finalContent = content;
-			String finalResourcePath = resourcePath;
 
 			NoticeableFuture<String> noticeableFuture =
 				_noticeableFutures.computeIfAbsent(
 					cacheCommonFileName,
 					key -> {
+						PortalExecutorManager portalExecutorManager =
+							_portalExecutorManagerSnapshot.get();
+
 						NoticeableExecutorService noticeableExecutorService =
-							_portalExecutorManager.getPortalExecutor(
+							portalExecutorManager.getPortalExecutor(
 								AggregateFilter.class.getName());
 
 						return noticeableExecutorService.submit(
 							() -> {
-								String minifiedContent = null;
+								String minifiedContent = finalContent;
 
 								if (minifierType.equals("css")) {
 									minifiedContent = MinifierUtil.minifyCss(
 										finalContent);
-								}
-								else {
-									minifiedContent =
-										MinifierUtil.minifyJavaScript(
-											finalResourcePath, finalContent);
 								}
 
 								minifiedContent = StringBundler.concat(
@@ -604,7 +581,7 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 
 		String browserId = ParamUtil.getString(httpServletRequest, "browserId");
 
-		if (!browserId.equals(BrowserSniffer.BROWSER_ID_IE)) {
+		if (!browserId.equals(BrowserSnifferUtil.BROWSER_ID_IE)) {
 			Matcher matcher = _pattern.matcher(content);
 
 			content = matcher.replaceAll(StringPool.BLANK);
@@ -681,18 +658,6 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 		}
 	}
 
-	protected String getJavaScriptContent(
-			HttpServletRequest httpServletRequest,
-			HttpServletResponse httpServletResponse, String resourcePath,
-			URL resourceURL)
-		throws Exception {
-
-		String content = _readResource(
-			httpServletRequest, httpServletResponse, resourcePath);
-
-		return getJavaScriptContent(resourceURL.toString(), content);
-	}
-
 	@Override
 	protected boolean isModuleRequest(HttpServletRequest httpServletRequest) {
 		if (PortalWebResourcesUtil.hasContextPath(
@@ -744,9 +709,10 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 
 		if (url == null) {
 			ObjectValuePair<String, Long> objectValuePair =
-				RequestDispatcherUtil.getContentAndLastModifiedTime(
-					httpServletRequest.getRequestDispatcher(resourcePath),
-					httpServletRequest, httpServletResponse);
+				RequestDispatcherUtil.
+					getContentAndLastModifiedTimeObjectValuePair(
+						httpServletRequest.getRequestDispatcher(resourcePath),
+						httpServletRequest, httpServletResponse);
 
 			return objectValuePair.getKey();
 		}
@@ -781,10 +747,9 @@ public class AggregateFilter extends IgnoreModuleRequestFilter {
 
 	private static final Pattern _pattern = Pattern.compile(
 		"^(\\.ie|\\.js\\.ie)([^}]*)}", Pattern.MULTILINE);
-	private static volatile PortalExecutorManager _portalExecutorManager =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			PortalExecutorManager.class, AggregateFilter.class,
-			"_portalExecutorManager", true);
+	private static final Snapshot<PortalExecutorManager>
+		_portalExecutorManagerSnapshot = new Snapshot<>(
+			AggregateFilter.class, PortalExecutorManager.class);
 
 	private final Map<String, NoticeableFuture<String>> _noticeableFutures =
 		new ConcurrentHashMap<>();

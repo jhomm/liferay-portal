@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.test;
@@ -17,10 +8,13 @@ package com.liferay.portal.kernel.test;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 
 import java.util.Arrays;
 
@@ -37,12 +31,12 @@ public class ReflectionTestUtil {
 		try {
 			T t = (T)field.get(null);
 
-			field.set(null, newValue);
+			setFieldValue(field, (Object)null, newValue);
 
 			return t;
 		}
-		catch (Exception exception) {
-			return ReflectionUtil.throwException(exception);
+		catch (Throwable throwable) {
+			return ReflectionUtil.throwException(throwable);
 		}
 	}
 
@@ -54,12 +48,12 @@ public class ReflectionTestUtil {
 		try {
 			T t = (T)field.get(instance);
 
-			field.set(instance, newValue);
+			setFieldValue(field, instance, newValue);
 
 			return t;
 		}
-		catch (Exception exception) {
-			return ReflectionUtil.throwException(exception);
+		catch (Throwable throwable) {
+			return ReflectionUtil.throwException(throwable);
 		}
 	}
 
@@ -102,8 +96,6 @@ public class ReflectionTestUtil {
 
 			field.setAccessible(true);
 
-			ReflectionUtil.unfinalField(field);
-
 			return field;
 		}
 		catch (NoSuchFieldException noSuchFieldException) {
@@ -117,8 +109,6 @@ public class ReflectionTestUtil {
 				Field field = clazz.getDeclaredField(fieldName);
 
 				field.setAccessible(true);
-
-				ReflectionUtil.unfinalField(field);
 
 				return field;
 			}
@@ -330,26 +320,69 @@ public class ReflectionTestUtil {
 	public static void setFieldValue(
 		Class<?> clazz, String fieldName, Object value) {
 
-		Field field = getField(clazz, fieldName);
+		setFieldValue(getField(clazz, fieldName), (Object)null, value);
+	}
+
+	public static void setFieldValue(
+		Field field, Object instance, Object value) {
 
 		try {
-			field.set(null, value);
+			int modifiers = field.getModifiers();
+
+			if (!Modifier.isFinal(modifiers) || !Modifier.isStatic(modifiers)) {
+				field.set(instance, value);
+
+				return;
+			}
+
+			MethodHandle methodHandle = _lookup.findStaticSetter(
+				field.getDeclaringClass(), field.getName(), field.getType());
+
+			methodHandle.invoke(value);
 		}
-		catch (Exception exception) {
-			ReflectionUtil.throwException(exception);
+		catch (Throwable throwable) {
+			ReflectionUtil.throwException(throwable);
 		}
 	}
 
 	public static void setFieldValue(
 		Object instance, String fieldName, Object value) {
 
+		setFieldValue(
+			getField(instance.getClass(), fieldName), instance, value);
+	}
+
+	public static AutoCloseable setFieldValueWithAutoCloseable(
+		Class<?> clazz, String fieldName, Object newValue) {
+
+		Field field = getField(clazz, fieldName);
+
+		try {
+			Object value = field.get(null);
+
+			setFieldValue(field, (Object)null, newValue);
+
+			return () -> setFieldValue(field, (Object)null, value);
+		}
+		catch (Throwable throwable) {
+			return ReflectionUtil.throwException(throwable);
+		}
+	}
+
+	public static AutoCloseable setFieldValueWithAutoCloseable(
+		Object instance, String fieldName, Object newValue) {
+
 		Field field = getField(instance.getClass(), fieldName);
 
 		try {
-			field.set(instance, value);
+			Object value = field.get(instance);
+
+			setFieldValue(field, instance, newValue);
+
+			return () -> setFieldValue(field, instance, value);
 		}
-		catch (Exception exception) {
-			ReflectionUtil.throwException(exception);
+		catch (Throwable throwable) {
+			return ReflectionUtil.throwException(throwable);
 		}
 	}
 
@@ -386,6 +419,22 @@ public class ReflectionTestUtil {
 		}
 
 		return null;
+	}
+
+	private static final MethodHandles.Lookup _lookup;
+
+	static {
+		try {
+			Field field = MethodHandles.Lookup.class.getDeclaredField(
+				"IMPL_LOOKUP");
+
+			field.setAccessible(true);
+
+			_lookup = (MethodHandles.Lookup)field.get(null);
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
 	}
 
 }

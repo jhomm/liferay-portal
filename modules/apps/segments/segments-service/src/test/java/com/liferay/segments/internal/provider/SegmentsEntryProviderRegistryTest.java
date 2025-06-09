@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal.provider;
@@ -37,17 +28,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 
 /**
  * @author David Arques
  */
-@RunWith(MockitoJUnitRunner.class)
 public class SegmentsEntryProviderRegistryTest {
 
 	@ClassRule
@@ -74,7 +60,7 @@ public class SegmentsEntryProviderRegistryTest {
 		).when(
 			_segmentsEntryLocalService
 		).getSegmentsEntry(
-			Matchers.anyLong()
+			Mockito.anyLong()
 		);
 	}
 
@@ -200,7 +186,7 @@ public class SegmentsEntryProviderRegistryTest {
 
 		long[] actualSegmentsEntryIds =
 			_segmentsEntryProviderRegistry.getSegmentsEntryIds(
-				groupId, className, classPK, context);
+				groupId, className, classPK, context, new long[0]);
 
 		Arrays.sort(actualSegmentsEntryIds);
 
@@ -210,24 +196,6 @@ public class SegmentsEntryProviderRegistryTest {
 		Arrays.sort(segmentsEntryIds);
 
 		Assert.assertArrayEquals(segmentsEntryIds, actualSegmentsEntryIds);
-
-		Mockito.verify(
-			_serviceTrackerList, Mockito.times(1)
-		).iterator();
-
-		Mockito.verify(
-			segmentsEntryProvider1, Mockito.times(1)
-		).getSegmentsEntryIds(
-			Mockito.anyLong(), Mockito.anyString(), Mockito.anyLong(),
-			Mockito.any(Context.class), Mockito.any(long[].class)
-		);
-
-		Mockito.verify(
-			segmentsEntryProvider2, Mockito.times(1)
-		).getSegmentsEntryIds(
-			Mockito.anyLong(), Mockito.anyString(), Mockito.anyLong(),
-			Mockito.any(Context.class), Mockito.any(long[].class)
-		);
 	}
 
 	private SegmentsEntry _createSegmentsEntry(
@@ -299,22 +267,20 @@ public class SegmentsEntryProviderRegistryTest {
 			segmentsEntryProvider
 		).getSegmentsEntryIds(
 			Mockito.anyLong(), Mockito.anyString(), Mockito.anyLong(),
-			Mockito.any(Context.class), Mockito.any(long[].class)
+			Mockito.any(Context.class), Mockito.any(long[].class),
+			Mockito.any(long[].class)
 		);
 
 		return segmentsEntryProvider;
 	}
 
-	@Mock
-	private SegmentsEntryLocalService _segmentsEntryLocalService;
-
+	private final SegmentsEntryLocalService _segmentsEntryLocalService =
+		Mockito.mock(SegmentsEntryLocalService.class);
 	private final SegmentsEntryProviderRegistry _segmentsEntryProviderRegistry =
 		new SegmentsEntryProviderRegistryImpl();
-
-	@Mock
-	private ServiceTrackerList<SegmentsEntryProvider> _serviceTrackerList;
-
-	@Mock
-	private ServiceTrackerMap<String, SegmentsEntryProvider> _serviceTrackerMap;
+	private final ServiceTrackerList<SegmentsEntryProvider>
+		_serviceTrackerList = Mockito.mock(ServiceTrackerList.class);
+	private final ServiceTrackerMap<String, SegmentsEntryProvider>
+		_serviceTrackerMap = Mockito.mock(ServiceTrackerMap.class);
 
 }

@@ -1,40 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.cdi.extension.internal.mvc;
 
+import jakarta.annotation.PostConstruct;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Produces;
+import jakarta.enterprise.inject.spi.BeanManager;
+
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+
+import jakarta.mvc.MvcContext;
+import jakarta.mvc.locale.LocaleResolver;
+import jakarta.mvc.security.Encoders;
+
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.annotations.PortletRequestScoped;
+
+import jakarta.ws.rs.core.Configuration;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.annotation.PostConstruct;
-
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.inject.Produces;
-import javax.enterprise.inject.spi.BeanManager;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-
-import javax.mvc.MvcContext;
-import javax.mvc.locale.LocaleResolver;
-import javax.mvc.security.Encoders;
-
-import javax.portlet.PortletContext;
-import javax.portlet.PortletRequest;
-import javax.portlet.annotations.PortletRequestScoped;
-
-import javax.ws.rs.core.Configuration;
 
 /**
  * @author Neil Griffin
@@ -75,7 +66,7 @@ public class MVCContextProducer {
 
 		private LocaleResolverPriorityComparator() {
 
-			// The Javadoc for javax.mvc.locale.LocaleResolver states "If no
+			// The Javadoc for jakarta.mvc.locale.LocaleResolver states "If no
 			// priority is explicitly defined, the priority is assumed to be
 			// 1000."
 

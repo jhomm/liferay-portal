@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.linkback;
@@ -28,9 +19,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author André de Oliveira
@@ -44,13 +33,10 @@ public class LinkbackConsumerTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-
 		_linkbackConsumer = new LinkbackConsumerImpl();
 
 		ReflectionTestUtil.setFieldValue(
 			_linkbackConsumer, "_commentManager", _commentManager);
-
 		ReflectionTestUtil.setFieldValue(_linkbackConsumer, "_http", _http);
 	}
 
@@ -135,7 +121,7 @@ public class LinkbackConsumerTest {
 
 		_linkbackConsumer.verifyNewTrackbacks();
 
-		Mockito.verifyZeroInteractions(_commentManager);
+		Mockito.verifyNoInteractions(_commentManager);
 
 		Mockito.verify(
 			_http
@@ -144,12 +130,9 @@ public class LinkbackConsumerTest {
 		);
 	}
 
-	@Mock
-	private CommentManager _commentManager;
-
-	@Mock
-	private Http _http;
-
+	private final CommentManager _commentManager = Mockito.mock(
+		CommentManager.class);
+	private final Http _http = Mockito.mock(Http.class);
 	private LinkbackConsumer _linkbackConsumer;
 
 }

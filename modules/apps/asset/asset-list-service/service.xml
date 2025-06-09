@@ -3,7 +3,7 @@
 
 <service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.asset.list">
 	<namespace>AssetList</namespace>
-	<entity local-service="true" name="AssetListEntry" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="AssetListEntry" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -109,6 +109,9 @@
 		<finder name="AssetListEntryId" return-type="Collection">
 			<finder-column name="assetListEntryId" />
 		</finder>
+		<finder name="AssetEntryId" return-type="Collection">
+			<finder-column name="assetEntryId" />
+		</finder>
 		<finder name="A_S" return-type="Collection">
 			<finder-column name="assetListEntryId" />
 			<finder-column arrayable-operator="OR" name="segmentsEntryId" />
@@ -145,6 +148,7 @@
 		<!-- Other fields -->
 
 		<column name="assetListEntryId" type="long" />
+		<column name="priority" type="int" />
 		<column name="segmentsEntryId" type="long" />
 		<column name="typeSettings" type="String" />
 		<column name="lastPublishDate" type="Date" />
@@ -160,6 +164,10 @@
 		<finder name="A_S" return-type="AssetListSegmentRel" unique="true">
 			<finder-column name="assetListEntryId" />
 			<finder-column name="segmentsEntryId" />
+		</finder>
+		<finder name="A_S_C" return-type="Collection">
+			<finder-column name="assetListEntryId" />
+			<finder-column arrayable-operator="OR" name="segmentsEntryId" />
 		</finder>
 	</entity>
 	<entity local-service="true" name="AssetListEntryUsage" remote-service="false" uuid="true">
@@ -182,31 +190,30 @@
 
 		<!-- Other fields -->
 
-		<column name="assetListEntryId" type="long" />
 		<column name="classNameId" type="long" />
-		<column name="classPK" type="long" />
 		<column name="containerKey" type="String" />
 		<column name="containerType" type="long" />
 		<column name="key" type="String" />
 		<column name="plid" type="long" />
-		<column name="portletId" type="String" />
 		<column name="type" type="int" />
 		<column name="lastPublishDate" type="Date" />
 
 		<!-- Finder methods -->
 
-		<finder name="AssetListEntryId" return-type="Collection">
-			<finder-column name="assetListEntryId" />
-		</finder>
 		<finder name="Plid" return-type="Collection">
 			<finder-column name="plid" />
 		</finder>
-		<finder name="A_C" return-type="Collection">
-			<finder-column name="assetListEntryId" />
-			<finder-column name="classNameId" />
+		<finder name="CT_P" return-type="Collection">
+			<finder-column name="containerType" />
+			<finder-column name="plid" />
 		</finder>
 		<finder name="G_C_K" return-type="Collection">
 			<finder-column name="groupId" />
+			<finder-column name="classNameId" />
+			<finder-column name="key" />
+		</finder>
+		<finder name="C_C_K" return-type="Collection">
+			<finder-column name="companyId" />
 			<finder-column name="classNameId" />
 			<finder-column name="key" />
 		</finder>
@@ -234,5 +241,6 @@
 		<exception>AssetListEntryAssetEntryRelPostion</exception>
 		<exception>AssetListEntryTitle</exception>
 		<exception>DuplicateAssetListEntryTitle</exception>
+		<exception>RequiredAssetListEntry</exception>
 	</exceptions>
 </service-builder>

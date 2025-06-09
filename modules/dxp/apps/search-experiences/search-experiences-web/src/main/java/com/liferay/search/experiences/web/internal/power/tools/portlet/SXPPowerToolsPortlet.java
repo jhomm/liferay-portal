@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.web.internal.power.tools.portlet;
@@ -17,7 +8,7 @@ package com.liferay.search.experiences.web.internal.power.tools.portlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.search.experiences.constants.SXPPortletKeys;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.Portlet;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -27,17 +18,21 @@ import org.osgi.service.component.annotations.Component;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	enabled = false, immediate = true,
+	enabled = false,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-sxp-power-toys",
-		"com.liferay.portlet.display-category=category.search",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/sxp_blueprint_admin/view.jsp",
-		"javax.portlet.name=" + SXPPortletKeys.SXP_POWER_TOOLS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"com.liferay.portlet.display-category=category.hidden",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/sxp_blueprint_admin/view.jsp",
+		"jakarta.portlet.name=" + SXPPortletKeys.SXP_POWER_TOOLS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
 public class SXPPowerToolsPortlet extends MVCPortlet {
+
+	// TODO Add feature flag
+
 }

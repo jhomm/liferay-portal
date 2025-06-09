@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.entry.rel.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -147,6 +139,12 @@ public class AssetEntryAssetCategoryRelLocalServiceUtil {
 
 		getService().deleteAssetEntryAssetCategoryRelByAssetCategoryId(
 			assetCategoryId);
+	}
+
+	public static void deleteAssetEntryAssetCategoryRelByAssetEntry(
+		com.liferay.asset.kernel.model.AssetEntry assetEntry) {
+
+		getService().deleteAssetEntryAssetCategoryRelByAssetEntry(assetEntry);
 	}
 
 	public static void deleteAssetEntryAssetCategoryRelByAssetEntryId(
@@ -376,6 +374,13 @@ public class AssetEntryAssetCategoryRelLocalServiceUtil {
 				assetCategoryId);
 	}
 
+	public static int getAssetEntryAssetCategoryRelsCountByClassNameId(
+		long assetCategoryId, long classNameId) {
+
+		return getService().getAssetEntryAssetCategoryRelsCountByClassNameId(
+			assetCategoryId, classNameId);
+	}
+
 	public static long[] getAssetEntryPrimaryKeys(long assetCategoryId) {
 		return getService().getAssetEntryPrimaryKeys(assetCategoryId);
 	}
@@ -423,9 +428,12 @@ public class AssetEntryAssetCategoryRelLocalServiceUtil {
 	}
 
 	public static AssetEntryAssetCategoryRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile AssetEntryAssetCategoryRelLocalService _service;
+	private static final Snapshot<AssetEntryAssetCategoryRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			AssetEntryAssetCategoryRelLocalServiceUtil.class,
+			AssetEntryAssetCategoryRelLocalService.class);
 
 }

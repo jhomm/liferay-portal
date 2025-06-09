@@ -1,21 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLocalService;
+import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
@@ -43,7 +39,6 @@ import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -126,8 +121,9 @@ public class SegmentsExperimentRelLocalServiceTest {
 
 		segmentsExperience.setActive(false);
 
-		_segmentsExperienceLocalService.updateSegmentsExperience(
-			segmentsExperience);
+		segmentsExperience =
+			_segmentsExperienceLocalService.updateSegmentsExperience(
+				segmentsExperience);
 
 		SegmentsExperimentRel segmentsExperimentRel =
 			_segmentsExperimentRelLocalService.addSegmentsExperimentRel(
@@ -222,11 +218,9 @@ public class SegmentsExperimentRelLocalServiceTest {
 			segmentsExperimentRels.toString(), 3,
 			segmentsExperimentRels.size());
 
-		Stream<SegmentsExperimentRel> stream = segmentsExperimentRels.stream();
-
-		long[] segmentsExperienceIds = stream.mapToLong(
-			SegmentsExperimentRelModel::getSegmentsExperienceId
-		).toArray();
+		long[] segmentsExperienceIds = TransformUtil.transformToLongArray(
+			segmentsExperimentRels,
+			SegmentsExperimentRelModel::getSegmentsExperienceId);
 
 		Assert.assertTrue(
 			ArrayUtil.containsAll(
@@ -245,7 +239,7 @@ public class SegmentsExperimentRelLocalServiceTest {
 		SegmentsExperimentRel segmentsExperimentRel =
 			_segmentsExperimentRelLocalService.getSegmentsExperimentRel(
 				segmentsExperiment.getSegmentsExperimentId(),
-				segmentsExperiment.getSegmentsExperienceId());
+				segmentsExperiment.getSegmentsExperienceKey());
 
 		_segmentsExperimentRelLocalService.updateSegmentsExperimentRel(
 			segmentsExperimentRel.getSegmentsExperimentRelId(),
@@ -290,7 +284,7 @@ public class SegmentsExperimentRelLocalServiceTest {
 		SegmentsExperimentRel segmentsExperimentRel =
 			_segmentsExperimentRelLocalService.getSegmentsExperimentRel(
 				segmentsExperiment.getSegmentsExperimentId(),
-				segmentsExperiment.getSegmentsExperienceId());
+				segmentsExperiment.getSegmentsExperienceKey());
 
 		_segmentsExperimentRelLocalService.updateSegmentsExperimentRel(
 			segmentsExperimentRel.getSegmentsExperimentRelId(),
@@ -299,12 +293,33 @@ public class SegmentsExperimentRelLocalServiceTest {
 	}
 
 	private SegmentsExperience _addSegmentsExperience() throws Exception {
-		long classNameId = _classNameLocalService.getClassNameId(
-			Layout.class.getName());
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
-		return SegmentsTestUtil.addSegmentsExperience(
-			_group.getGroupId(), classNameId, layout.getPlid());
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		SegmentsExperience segmentsExperience =
+			SegmentsTestUtil.addSegmentsExperience(
+				_group.getGroupId(), draftLayout.getPlid());
+
+		LayoutPageTemplateStructure layoutPageTemplateStructure =
+			_layoutPageTemplateStructureLocalService.
+				fetchLayoutPageTemplateStructure(
+					_group.getGroupId(), draftLayout.getPlid());
+
+		_layoutPageTemplateStructureRelLocalService.
+			addLayoutPageTemplateStructureRel(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				layoutPageTemplateStructure.getLayoutPageTemplateStructureId(),
+				segmentsExperience.getSegmentsExperienceId(),
+				layoutPageTemplateStructure.getDefaultSegmentsExperienceData(),
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
+
+		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
+
+		return _segmentsExperienceLocalService.fetchSegmentsExperience(
+			_group.getGroupId(), segmentsExperience.getSegmentsExperienceKey(),
+			layout.getPlid());
 	}
 
 	private SegmentsExperiment _addSegmentsExperiment() throws Exception {
@@ -319,8 +334,7 @@ public class SegmentsExperimentRelLocalServiceTest {
 
 		return SegmentsTestUtil.addSegmentsExperiment(
 			_group.getGroupId(), segmentsExperience.getSegmentsExperienceId(),
-			segmentsExperience.getClassNameId(),
-			segmentsExperience.getClassPK());
+			segmentsExperience.getPlid());
 	}
 
 	@Inject
@@ -328,6 +342,14 @@ public class SegmentsExperimentRelLocalServiceTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private LayoutPageTemplateStructureLocalService
+		_layoutPageTemplateStructureLocalService;
+
+	@Inject
+	private LayoutPageTemplateStructureRelLocalService
+		_layoutPageTemplateStructureRelLocalService;
 
 	@Inject
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;

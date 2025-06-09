@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.model.impl;
@@ -78,7 +69,7 @@ public class BatchPlannerPlanCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(31);
+		StringBundler sb = new StringBundler(37);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -106,10 +97,16 @@ public class BatchPlannerPlanCacheModel
 		sb.append(internalClassName);
 		sb.append(", name=");
 		sb.append(name);
+		sb.append(", size=");
+		sb.append(size);
 		sb.append(", taskItemDelegateName=");
 		sb.append(taskItemDelegateName);
+		sb.append(", total=");
+		sb.append(total);
 		sb.append(", template=");
 		sb.append(template);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -176,6 +173,8 @@ public class BatchPlannerPlanCacheModel
 			batchPlannerPlanImpl.setName(name);
 		}
 
+		batchPlannerPlanImpl.setSize(size);
+
 		if (taskItemDelegateName == null) {
 			batchPlannerPlanImpl.setTaskItemDelegateName("");
 		}
@@ -183,7 +182,9 @@ public class BatchPlannerPlanCacheModel
 			batchPlannerPlanImpl.setTaskItemDelegateName(taskItemDelegateName);
 		}
 
+		batchPlannerPlanImpl.setTotal(total);
 		batchPlannerPlanImpl.setTemplate(template);
+		batchPlannerPlanImpl.setStatus(status);
 
 		batchPlannerPlanImpl.resetOriginalValues();
 
@@ -210,9 +211,15 @@ public class BatchPlannerPlanCacheModel
 		externalURL = objectInput.readUTF();
 		internalClassName = objectInput.readUTF();
 		name = objectInput.readUTF();
+
+		size = objectInput.readInt();
 		taskItemDelegateName = objectInput.readUTF();
 
+		total = objectInput.readInt();
+
 		template = objectInput.readBoolean();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -267,6 +274,8 @@ public class BatchPlannerPlanCacheModel
 			objectOutput.writeUTF(name);
 		}
 
+		objectOutput.writeInt(size);
+
 		if (taskItemDelegateName == null) {
 			objectOutput.writeUTF("");
 		}
@@ -274,7 +283,11 @@ public class BatchPlannerPlanCacheModel
 			objectOutput.writeUTF(taskItemDelegateName);
 		}
 
+		objectOutput.writeInt(total);
+
 		objectOutput.writeBoolean(template);
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
@@ -290,7 +303,10 @@ public class BatchPlannerPlanCacheModel
 	public String externalURL;
 	public String internalClassName;
 	public String name;
+	public int size;
 	public String taskItemDelegateName;
+	public int total;
 	public boolean template;
+	public int status;
 
 }

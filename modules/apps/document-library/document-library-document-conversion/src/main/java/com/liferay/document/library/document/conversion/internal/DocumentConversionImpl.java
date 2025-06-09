@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.document.conversion.internal;
@@ -22,37 +13,55 @@ import com.artofsolving.jodconverter.openoffice.connection.SocketOpenOfficeConne
 import com.artofsolving.jodconverter.openoffice.converter.OpenOfficeDocumentConverter;
 import com.artofsolving.jodconverter.openoffice.converter.StreamOpenOfficeDocumentConverter;
 
+import com.liferay.document.library.document.conversion.internal.background.task.OpenOfficeConversionPreviewBackgroundTaskExecutor;
 import com.liferay.document.library.document.conversion.internal.configuration.OpenOfficeConfiguration;
 import com.liferay.document.library.kernel.document.conversion.DocumentConversion;
+import com.liferay.petra.executor.PortalExecutorManager;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.configuration.Filter;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
+import com.liferay.portal.kernel.model.UserConstants;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.SortedArrayList;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Bruno Farache
@@ -126,55 +135,74 @@ public class DocumentConversionImpl implements DocumentConversion {
 			inputStream = documentHTMLProcessor.process(inputStream);
 		}
 
-		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
-			new UnsyncByteArrayOutputStream();
+		try {
+			_convert(
+				inputDocumentFormat, inputStream, file, outputDocumentFormat);
+		}
+		catch (TimeoutException timeoutException) {
+			throw new IOException(timeoutException);
+		}
+		catch (Exception exception) {
+			_log.error(exception);
 
-		DocumentConverter documentConverter = _getDocumentConverter();
-
-		documentConverter.convert(
-			inputStream, inputDocumentFormat, unsyncByteArrayOutputStream,
-			outputDocumentFormat);
-
-		FileUtil.write(
-			file, unsyncByteArrayOutputStream.unsafeGetByteArray(), 0,
-			unsyncByteArrayOutputStream.size());
-
-		inputStream.close();
+			throw new IOException(exception);
+		}
 
 		return file;
 	}
 
 	@Override
-	public void disconnect() {
-		if (_openOfficeConnection != null) {
-			_openOfficeConnection.disconnect();
-		}
+	public void generatePreviews() {
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				try {
+					String jobName = "generatePreviews-".concat(
+						PortalUUIDUtil.generate());
+
+					_backgroundTaskManager.addBackgroundTask(
+						UserConstants.USER_ID_DEFAULT, CompanyConstants.SYSTEM,
+						jobName,
+						OpenOfficeConversionPreviewBackgroundTaskExecutor.class.
+							getName(),
+						HashMapBuilder.<String, Serializable>put(
+							BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS,
+							true
+						).build(),
+						new ServiceContext());
+				}
+				catch (PortalException portalException) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(portalException);
+					}
+				}
+			});
 	}
 
 	@Override
 	public String[] getConversions(String extension) {
 		extension = _fixExtension(extension);
 
-		String[] conversions = ConversionsHolder.getConversions(extension);
+		String[] conversions1 = ConversionsHolder.getConversions(extension);
 
-		if (conversions == null) {
-			conversions = _DEFAULT_CONVERSIONS;
+		if (conversions1 == null) {
+			return _DEFAULT_CONVERSIONS;
 		}
-		else {
-			if (ArrayUtil.contains(conversions, extension)) {
-				List<String> conversionsList = new ArrayList<>();
 
-				for (String conversion : conversions) {
-					if (!conversion.equals(extension)) {
-						conversionsList.add(conversion);
-					}
-				}
+		if (!ArrayUtil.contains(conversions1, extension)) {
+			return conversions1;
+		}
 
-				conversions = conversionsList.toArray(new String[0]);
+		List<String> conversions2 = new ArrayList<>();
+
+		for (String conversion : conversions1) {
+			if (conversion.equals(extension)) {
+				continue;
 			}
+
+			conversions2.add(conversion);
 		}
 
-		return conversions;
+		return conversions2.toArray(new String[0]);
 	}
 
 	@Override
@@ -218,7 +246,7 @@ public class DocumentConversionImpl implements DocumentConversion {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return false;
@@ -247,8 +275,91 @@ public class DocumentConversionImpl implements DocumentConversion {
 	@Activate
 	@Modified
 	protected void activate(Map<String, Object> properties) {
+		_executorService = _portalExecutorManager.getPortalExecutor(
+			DocumentConversionImpl.class.getName());
+
 		_openOfficeConfiguration = ConfigurableUtil.createConfigurable(
 			OpenOfficeConfiguration.class, properties);
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		if (_executorService != null) {
+			_executorService.shutdownNow();
+		}
+
+		if ((_openOfficeConnection != null) &&
+			_openOfficeConnection.isConnected()) {
+
+			_openOfficeConnection.disconnect();
+		}
+	}
+
+	private void _convert(
+			DocumentFormat inputDocumentFormat, InputStream inputStream,
+			File file, DocumentFormat outputDocumentFormat)
+		throws Exception {
+
+		long start = System.currentTimeMillis();
+
+		Future<?> future = _executorService.submit(
+			() -> {
+				try (UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
+						new UnsyncByteArrayOutputStream()) {
+
+					DocumentConverter documentConverter =
+						_getDocumentConverter();
+
+					documentConverter.convert(
+						inputStream, inputDocumentFormat,
+						unsyncByteArrayOutputStream, outputDocumentFormat);
+
+					FileUtil.write(
+						file, unsyncByteArrayOutputStream.unsafeGetByteArray(),
+						0, unsyncByteArrayOutputStream.size());
+
+					if (_log.isInfoEnabled()) {
+						_log.info(
+							StringBundler.concat(
+								"Converted from ",
+								inputDocumentFormat.getName(), " to ",
+								outputDocumentFormat.getName(), " in ",
+								System.currentTimeMillis() - start, " ms"));
+					}
+				}
+				catch (IOException ioException) {
+					throw new RuntimeException(ioException);
+				}
+				finally {
+					try {
+						inputStream.close();
+					}
+					catch (IOException ioException) {
+						_log.error("Unable to close input stream", ioException);
+					}
+				}
+			});
+
+		try {
+			long timeout = Math.max(
+				PropsValues.
+					DL_FILE_ENTRY_PREVIEW_GENERATION_TIMEOUT_GHOSTSCRIPT,
+				PropsValues.DL_FILE_ENTRY_PREVIEW_GENERATION_TIMEOUT_PDFBOX);
+
+			future.get(timeout, TimeUnit.SECONDS);
+		}
+		catch (TimeoutException timeoutException) {
+			String errorMessage =
+				"Timeout when converting for " + file.getPath();
+
+			if (future.cancel(true)) {
+				errorMessage += " resulted in a canceled timeout for " + future;
+			}
+
+			_log.error(errorMessage);
+
+			throw timeoutException;
+		}
 	}
 
 	private String _fixExtension(String extension) {
@@ -315,9 +426,19 @@ public class DocumentConversionImpl implements DocumentConversion {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DocumentConversionImpl.class);
 
+	@Reference
+	private BackgroundTaskManager _backgroundTaskManager;
+
+	@Reference
+	private CompanyLocalService _companyLocalService;
+
 	private DocumentConverter _documentConverter;
+	private volatile ExecutorService _executorService;
 	private volatile OpenOfficeConfiguration _openOfficeConfiguration;
 	private OpenOfficeConnection _openOfficeConnection;
+
+	@Reference
+	private PortalExecutorManager _portalExecutorManager;
 
 	private static class ConversionsHolder {
 

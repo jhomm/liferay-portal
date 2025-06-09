@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.model.impl;
 
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.commerce.wish.list.model.CommerceWishListModel;
-import com.liferay.commerce.wish.list.model.CommerceWishListSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -77,17 +64,19 @@ public class CommerceWishListModelImpl
 	public static final String TABLE_NAME = "CommerceWishList";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"uuid_", Types.VARCHAR}, {"commerceWishListId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"name", Types.VARCHAR}, {"defaultWishList", Types.BOOLEAN}
+		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
+		{"commerceWishListId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"name", Types.VARCHAR},
+		{"defaultWishList", Types.BOOLEAN}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("commerceWishListId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
@@ -101,7 +90,7 @@ public class CommerceWishListModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommerceWishList (uuid_ VARCHAR(75) null,commerceWishListId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name VARCHAR(75) null,defaultWishList BOOLEAN)";
+		"create table CommerceWishList (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,commerceWishListId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name VARCHAR(75) null,defaultWishList BOOLEAN)";
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceWishList";
 
@@ -116,24 +105,6 @@ public class CommerceWishListModelImpl
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
 
 	public static final String TX_MANAGER = "liferayTransactionManager";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -179,62 +150,18 @@ public class CommerceWishListModelImpl
 	public static final long NAME_COLUMN_BITMASK = 64L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceWishList toModel(CommerceWishListSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceWishList model = new CommerceWishListImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setCommerceWishListId(soapModel.getCommerceWishListId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setDefaultWishList(soapModel.isDefaultWishList());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceWishList> toModels(
-		CommerceWishListSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceWishList> models = new ArrayList<CommerceWishList>(
-			soapModels.length);
-
-		for (CommerceWishListSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.wish.list.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.wish.list.model.CommerceWishList"));
 
 	public CommerceWishListModelImpl() {
 	}
@@ -312,111 +239,127 @@ public class CommerceWishListModelImpl
 	public Map<String, Function<CommerceWishList, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceWishList, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceWishList>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceWishList.class.getClassLoader(), CommerceWishList.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CommerceWishList, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceWishList> constructor =
-				(Constructor<CommerceWishList>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceWishList, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CommerceWishList, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceWishList::getMvccVersion);
+			attributeGetterFunctions.put("uuid", CommerceWishList::getUuid);
+			attributeGetterFunctions.put(
+				"commerceWishListId", CommerceWishList::getCommerceWishListId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceWishList::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceWishList::getCompanyId);
+			attributeGetterFunctions.put("userId", CommerceWishList::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceWishList::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceWishList::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommerceWishList::getModifiedDate);
+			attributeGetterFunctions.put("name", CommerceWishList::getName);
+			attributeGetterFunctions.put(
+				"defaultWishList", CommerceWishList::getDefaultWishList);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CommerceWishList, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CommerceWishList, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceWishList, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<CommerceWishList, Object>>();
-		Map<String, BiConsumer<CommerceWishList, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<CommerceWishList, ?>>();
+		private static final Map<String, BiConsumer<CommerceWishList, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", CommerceWishList::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CommerceWishList, String>)CommerceWishList::setUuid);
-		attributeGetterFunctions.put(
-			"commerceWishListId", CommerceWishList::getCommerceWishListId);
-		attributeSetterBiConsumers.put(
-			"commerceWishListId",
-			(BiConsumer<CommerceWishList, Long>)
-				CommerceWishList::setCommerceWishListId);
-		attributeGetterFunctions.put("groupId", CommerceWishList::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceWishList, Long>)CommerceWishList::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceWishList::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceWishList, Long>)CommerceWishList::setCompanyId);
-		attributeGetterFunctions.put("userId", CommerceWishList::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceWishList, Long>)CommerceWishList::setUserId);
-		attributeGetterFunctions.put("userName", CommerceWishList::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceWishList, String>)
-				CommerceWishList::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceWishList::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceWishList, Date>)
-				CommerceWishList::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceWishList::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceWishList, Date>)
-				CommerceWishList::setModifiedDate);
-		attributeGetterFunctions.put("name", CommerceWishList::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<CommerceWishList, String>)CommerceWishList::setName);
-		attributeGetterFunctions.put(
-			"defaultWishList", CommerceWishList::getDefaultWishList);
-		attributeSetterBiConsumers.put(
-			"defaultWishList",
-			(BiConsumer<CommerceWishList, Boolean>)
-				CommerceWishList::setDefaultWishList);
+		static {
+			Map<String, BiConsumer<CommerceWishList, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CommerceWishList, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceWishList, Long>)
+					CommerceWishList::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CommerceWishList, String>)
+					CommerceWishList::setUuid);
+			attributeSetterBiConsumers.put(
+				"commerceWishListId",
+				(BiConsumer<CommerceWishList, Long>)
+					CommerceWishList::setCommerceWishListId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceWishList, Long>)
+					CommerceWishList::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceWishList, Long>)
+					CommerceWishList::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceWishList, Long>)
+					CommerceWishList::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceWishList, String>)
+					CommerceWishList::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceWishList, Date>)
+					CommerceWishList::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceWishList, Date>)
+					CommerceWishList::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CommerceWishList, String>)
+					CommerceWishList::setName);
+			attributeSetterBiConsumers.put(
+				"defaultWishList",
+				(BiConsumer<CommerceWishList, Boolean>)
+					CommerceWishList::setDefaultWishList);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
 	}
 
 	@JSON
@@ -730,6 +673,7 @@ public class CommerceWishListModelImpl
 	public Object clone() {
 		CommerceWishListImpl commerceWishListImpl = new CommerceWishListImpl();
 
+		commerceWishListImpl.setMvccVersion(getMvccVersion());
 		commerceWishListImpl.setUuid(getUuid());
 		commerceWishListImpl.setCommerceWishListId(getCommerceWishListId());
 		commerceWishListImpl.setGroupId(getGroupId());
@@ -750,6 +694,8 @@ public class CommerceWishListModelImpl
 	public CommerceWishList cloneWithOriginalValues() {
 		CommerceWishListImpl commerceWishListImpl = new CommerceWishListImpl();
 
+		commerceWishListImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
 		commerceWishListImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
 		commerceWishListImpl.setCommerceWishListId(
@@ -820,7 +766,7 @@ public class CommerceWishListModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -829,7 +775,7 @@ public class CommerceWishListModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -845,6 +791,8 @@ public class CommerceWishListModelImpl
 	public CacheModel<CommerceWishList> toCacheModel() {
 		CommerceWishListCacheModel commerceWishListCacheModel =
 			new CommerceWishListCacheModel();
+
+		commerceWishListCacheModel.mvccVersion = getMvccVersion();
 
 		commerceWishListCacheModel.uuid = getUuid();
 
@@ -951,44 +899,16 @@ public class CommerceWishListModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceWishList, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceWishList, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceWishList, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CommerceWishList)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CommerceWishList>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CommerceWishList.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
 	private String _uuid;
 	private long _commerceWishListId;
 	private long _groupId;
@@ -1005,7 +925,8 @@ public class CommerceWishListModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommerceWishList, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1030,6 +951,7 @@ public class CommerceWishListModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("commerceWishListId", _commerceWishListId);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -1063,25 +985,27 @@ public class CommerceWishListModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("commerceWishListId", 2L);
+		columnBitmasks.put("uuid_", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("commerceWishListId", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("groupId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("name", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("defaultWishList", 512L);
+		columnBitmasks.put("name", 512L);
+
+		columnBitmasks.put("defaultWishList", 1024L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

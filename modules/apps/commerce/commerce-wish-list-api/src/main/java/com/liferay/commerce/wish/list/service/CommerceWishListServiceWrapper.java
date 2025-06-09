@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service;
@@ -27,6 +18,10 @@ public class CommerceWishListServiceWrapper
 	implements CommerceWishListService,
 			   ServiceWrapper<CommerceWishListService> {
 
+	public CommerceWishListServiceWrapper() {
+		this(null);
+	}
+
 	public CommerceWishListServiceWrapper(
 		CommerceWishListService commerceWishListService) {
 
@@ -36,12 +31,11 @@ public class CommerceWishListServiceWrapper
 	@Override
 	public com.liferay.commerce.wish.list.model.CommerceWishList
 			addCommerceWishList(
-				String name, boolean defaultWishList,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+				long groupId, String name, boolean defaultWishList)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceWishListService.addCommerceWishList(
-			name, defaultWishList, serviceContext);
+			groupId, name, defaultWishList);
 	}
 
 	@Override
@@ -54,14 +48,14 @@ public class CommerceWishListServiceWrapper
 	@Override
 	public com.liferay.commerce.wish.list.model.CommerceWishList
 			fetchCommerceWishList(
-				long groupId, long userId, boolean defaultWishList,
+				long groupId, boolean defaultWishList,
 				com.liferay.portal.kernel.util.OrderByComparator
 					<com.liferay.commerce.wish.list.model.CommerceWishList>
 						orderByComparator)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceWishListService.fetchCommerceWishList(
-			groupId, userId, defaultWishList, orderByComparator);
+			groupId, defaultWishList, orderByComparator);
 	}
 
 	@Override
@@ -86,19 +80,6 @@ public class CommerceWishListServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.commerce.wish.list.model.CommerceWishList>
-			getCommerceWishLists(
-				long groupId, long userId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.wish.list.model.CommerceWishList>
-						orderByComparator)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceWishListService.getCommerceWishLists(
-			groupId, userId, start, end, orderByComparator);
-	}
-
-	@Override
 	public int getCommerceWishListsCount(long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -106,20 +87,11 @@ public class CommerceWishListServiceWrapper
 	}
 
 	@Override
-	public int getCommerceWishListsCount(long groupId, long userId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceWishListService.getCommerceWishListsCount(
-			groupId, userId);
-	}
-
-	@Override
 	public com.liferay.commerce.wish.list.model.CommerceWishList
-			getDefaultCommerceWishList(long groupId, long userId)
+			getDefaultCommerceWishList(long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _commerceWishListService.getDefaultCommerceWishList(
-			groupId, userId);
+		return _commerceWishListService.getDefaultCommerceWishList(groupId);
 	}
 
 	/**

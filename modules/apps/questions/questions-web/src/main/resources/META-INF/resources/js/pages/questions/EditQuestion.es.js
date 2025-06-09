@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -35,7 +26,7 @@ export default withRouter(
 	}) => {
 		const context = useContext(AppContext);
 
-		const editor = useRef('');
+		const editorRef = useRef('');
 		const [hasEnoughContent, setHasEnoughContent] = useState(false);
 
 		const [headline, setHeadline] = useState('');
@@ -44,6 +35,7 @@ export default withRouter(
 		const [tagsLoaded, setTagsLoaded] = useState(true);
 
 		const {data = {}} = useQuery(getThreadContentQuery, {
+			useCache: false,
 			variables: {
 				friendlyUrlPath: questionId,
 				siteKey: context.siteKey,
@@ -52,7 +44,7 @@ export default withRouter(
 
 		useEffect(() => {
 			if (data.messageBoardThreadByFriendlyUrlPath) {
-				editor.current.setContent(
+				editorRef.current.setContent(
 					data.messageBoardThreadByFriendlyUrlPath.articleBody
 				);
 				setHeadline(data.messageBoardThreadByFriendlyUrlPath.headline);
@@ -76,7 +68,13 @@ export default withRouter(
 			<section className="c-mt-5 questions-section questions-section-edit">
 				<div className="questions-container row">
 					<div className="c-mx-auto col-xl-10">
-						<h1>{Liferay.Language.get('edit-question')}</h1>
+						<h1>
+							{Liferay.FeatureFlags['LPS-185892']
+								? context.editQuestionPageTitle !== ''
+									? context.editQuestionPageTitle
+									: Liferay.Language.get('edit-question')
+								: Liferay.Language.get('edit-question')}
+						</h1>
 
 						<ClayForm>
 							<ClayForm.Group className="c-mt-4">
@@ -117,7 +115,7 @@ export default withRouter(
 								)}
 								label={Liferay.Language.get('body')}
 								onContentLengthValid={setHasEnoughContent}
-								ref={editor}
+								ref={editorRef}
 							/>
 
 							<ClayForm.Group className="c-mt-4">
@@ -131,6 +129,22 @@ export default withRouter(
 
 						<div className="c-mt-4 d-flex flex-column-reverse flex-sm-row">
 							<ClayButton
+								aria-label={
+									context.trustedUser
+										? Liferay.FeatureFlags['LPS-185892']
+											? context.updateYourQuestionButtonText !==
+												''
+												? context.updateYourQuestionButtonText
+												: Liferay.Language.get(
+														'update-your-question'
+													)
+											: Liferay.Language.get(
+													'update-your-question'
+												)
+										: Liferay.Language.get(
+												'submit-for-publication'
+											)
+								}
 								className="c-mt-4 c-mt-sm-0"
 								disabled={
 									hasEnoughContent || !headline || !tagsLoaded
@@ -140,7 +154,8 @@ export default withRouter(
 									updateThread(
 										{
 											variables: {
-												articleBody: editor.current.getContent(),
+												articleBody:
+													editorRef.current.getContent(),
 												headline,
 												keywords: tags.map(
 													(tag) => tag.value
@@ -149,20 +164,28 @@ export default withRouter(
 											},
 										},
 										{
-											fetchOptionsOverrides: getContextLink(
-												`${sectionTitle}/${questionId}`
-											),
+											fetchOptionsOverrides:
+												getContextLink(
+													`${sectionTitle}/${questionId}`
+												),
 										}
 									).then(() => history.goBack());
 								}}
 							>
 								{context.trustedUser
-									? Liferay.Language.get(
-											'update-your-question'
-									  )
+									? Liferay.FeatureFlags['LPS-185892']
+										? context.updateYourQuestionButtonText !==
+											''
+											? context.updateYourQuestionButtonText
+											: Liferay.Language.get(
+													'update-your-question'
+												)
+										: Liferay.Language.get(
+												'update-your-question'
+											)
 									: Liferay.Language.get(
 											'submit-for-publication'
-									  )}
+										)}
 							</ClayButton>
 
 							<Link

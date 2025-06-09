@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.internal.engine;
 
+import com.liferay.diff.DiffHtml;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapListener;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.PortalCache;
-import com.liferay.portal.kernel.diff.DiffHtmlUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -33,12 +24,12 @@ import com.liferay.wiki.exception.WikiFormatException;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 
+import jakarta.portlet.PortletURL;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.PortletURL;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -50,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @author Jorge Ferrer
  */
-@Component(immediate = true, service = WikiEngineRenderer.class)
+@Component(service = WikiEngineRenderer.class)
 public class WikiEngineRendererImpl implements WikiEngineRenderer {
 
 	@Override
@@ -126,7 +117,7 @@ public class WikiEngineRendererImpl implements WikiEngineRenderer {
 				targetPage, viewPageURL, editPageURL, attachmentURLPrefix);
 		}
 
-		return DiffHtmlUtil.diff(
+		return _diffHtml.diff(
 			new UnsyncStringReader(sourceContent),
 			new UnsyncStringReader(targetContent));
 	}
@@ -174,7 +165,8 @@ public class WikiEngineRendererImpl implements WikiEngineRenderer {
 				public void keyEmitted(
 					ServiceTrackerMap<String, List<WikiEngine>>
 						serviceTrackerMap,
-					String key, WikiEngine service, List<WikiEngine> content) {
+					String key, WikiEngine serviceWikiEngine,
+					List<WikiEngine> contentWikiEngines) {
 
 					_portalCache.removeAll();
 				}
@@ -183,7 +175,8 @@ public class WikiEngineRendererImpl implements WikiEngineRenderer {
 				public void keyRemoved(
 					ServiceTrackerMap<String, List<WikiEngine>>
 						serviceTrackerMap,
-					String key, WikiEngine service, List<WikiEngine> content) {
+					String key, WikiEngine serviceWikiEngine,
+					List<WikiEngine> contentWikiEngines) {
 
 					_portalCache.removeAll();
 				}
@@ -238,6 +231,9 @@ public class WikiEngineRendererImpl implements WikiEngineRenderer {
 		"\\[\\$BEGIN_PAGE_TITLE\\$\\](.*?)\\[\\$END_PAGE_TITLE\\$\\]");
 
 	private BundleContext _bundleContext;
+
+	@Reference
+	private DiffHtml _diffHtml;
 
 	@Reference
 	private MultiVMPool _multiVMPool;

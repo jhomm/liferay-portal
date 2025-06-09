@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.reading.time.service.persistence.test;
@@ -124,6 +115,10 @@ public class ReadingTimeEntryPersistenceTest {
 
 		ReadingTimeEntry newReadingTimeEntry = _persistence.create(pk);
 
+		newReadingTimeEntry.setMvccVersion(RandomTestUtil.nextLong());
+
+		newReadingTimeEntry.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newReadingTimeEntry.setUuid(RandomTestUtil.randomString());
 
 		newReadingTimeEntry.setGroupId(RandomTestUtil.nextLong());
@@ -145,6 +140,12 @@ public class ReadingTimeEntryPersistenceTest {
 		ReadingTimeEntry existingReadingTimeEntry =
 			_persistence.findByPrimaryKey(newReadingTimeEntry.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingReadingTimeEntry.getMvccVersion(),
+			newReadingTimeEntry.getMvccVersion());
+		Assert.assertEquals(
+			existingReadingTimeEntry.getCtCollectionId(),
+			newReadingTimeEntry.getCtCollectionId());
 		Assert.assertEquals(
 			existingReadingTimeEntry.getUuid(), newReadingTimeEntry.getUuid());
 		Assert.assertEquals(
@@ -234,10 +235,10 @@ public class ReadingTimeEntryPersistenceTest {
 
 	protected OrderByComparator<ReadingTimeEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"ReadingTimeEntry", "uuid", true, "readingTimeEntryId", true,
-			"groupId", true, "companyId", true, "createDate", true,
-			"modifiedDate", true, "classNameId", true, "classPK", true,
-			"readingTime", true);
+			"ReadingTimeEntry", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "readingTimeEntryId", true, "groupId", true,
+			"companyId", true, "createDate", true, "modifiedDate", true,
+			"classNameId", true, "classPK", true, "readingTime", true);
 	}
 
 	@Test
@@ -541,6 +542,10 @@ public class ReadingTimeEntryPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		ReadingTimeEntry readingTimeEntry = _persistence.create(pk);
+
+		readingTimeEntry.setMvccVersion(RandomTestUtil.nextLong());
+
+		readingTimeEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		readingTimeEntry.setUuid(RandomTestUtil.randomString());
 

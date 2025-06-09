@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.exportimport.data.handler;
@@ -20,13 +11,13 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructureRel;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureRelLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.xml.Element;
 
 import java.util.List;
@@ -38,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class LayoutPageTemplateStructureStagedModelDataHandler
 	extends BaseStagedModelDataHandler<LayoutPageTemplateStructure> {
 
@@ -87,9 +78,7 @@ public class LayoutPageTemplateStructureStagedModelDataHandler
 		Element element = portletDataContext.getImportDataElement(
 			importedLayoutPageTemplateStructure);
 
-		importedLayoutPageTemplateStructure.setClassNameId(
-			_portal.getClassNameId(element.attributeValue("className")));
-		importedLayoutPageTemplateStructure.setClassPK(
+		importedLayoutPageTemplateStructure.setPlid(
 			GetterUtil.getLong(element.attributeValue("classPK")));
 
 		LayoutPageTemplateStructure existingLayoutPageTemplateStructure =
@@ -102,12 +91,10 @@ public class LayoutPageTemplateStructureStagedModelDataHandler
 				_layoutPageTemplateStructureLocalService.
 					fetchLayoutPageTemplateStructure(
 						portletDataContext.getScopeGroupId(),
-						importedLayoutPageTemplateStructure.getClassPK());
+						importedLayoutPageTemplateStructure.getPlid());
 		}
 
-		if ((existingLayoutPageTemplateStructure == null) ||
-			!portletDataContext.isDataStrategyMirror()) {
-
+		if (existingLayoutPageTemplateStructure == null) {
 			importedLayoutPageTemplateStructure =
 				_stagedModelRepository.addStagedModel(
 					portletDataContext, importedLayoutPageTemplateStructure);
@@ -183,6 +170,15 @@ public class LayoutPageTemplateStructureStagedModelDataHandler
 			deleteLayoutPageTemplateStructureRels(
 				layoutPageTemplateStructureId);
 
+		LayoutPageTemplateStructure referrerLayoutPageTemplateStructure =
+			_layoutPageTemplateStructureLocalService.
+				fetchLayoutPageTemplateStructure(layoutPageTemplateStructureId);
+
+		_fragmentEntryLinkLocalService.
+			deleteLayoutPageTemplateEntryFragmentEntryLinks(
+				portletDataContext.getScopeGroupId(),
+				referrerLayoutPageTemplateStructure.getPlid());
+
 		List<Element> layoutPageTemplateStructureRelElements =
 			portletDataContext.getReferenceDataElements(
 				layoutPageTemplateStructure,
@@ -198,15 +194,15 @@ public class LayoutPageTemplateStructureStagedModelDataHandler
 	}
 
 	@Reference
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
+	@Reference
 	private LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
 
 	@Reference
 	private LayoutPageTemplateStructureRelLocalService
 		_layoutPageTemplateStructureRelLocalService;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.layout.page.template.model.LayoutPageTemplateStructure)",

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.web.internal.portlet;
@@ -17,7 +8,7 @@ package com.liferay.calendar.web.internal.portlet;
 import com.liferay.calendar.constants.CalendarPortletKeys;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.Portlet;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -25,7 +16,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Arthur Chan
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=calendar-portlet",
@@ -35,11 +25,12 @@ import org.osgi.service.component.annotations.Component;
 		"com.liferay.portlet.icon=/icons/calendar.png",
 		"com.liferay.portlet.preferences-owned-by-group=true",
 		"com.liferay.portlet.preferences-unique-per-layout=false",
-		"javax.portlet.display-name=Calendar Admin",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Calendar Admin",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )

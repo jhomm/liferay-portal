@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cache.test.util;
 
 import com.liferay.portal.cache.BasePortalCache;
-import com.liferay.portal.kernel.cache.PortalCacheManager;
 
 import java.io.Serializable;
 
@@ -30,33 +20,17 @@ import java.util.concurrent.ConcurrentMap;
 public class TestPortalCache<K extends Serializable, V>
 	extends BasePortalCache<K, V> {
 
-	public TestPortalCache(
-		PortalCacheManager<K, V> portalCacheManager, String portalCacheName) {
-
-		super(portalCacheManager);
-
-		_portalCacheName = portalCacheName;
-
-		_concurrentMap = new ConcurrentHashMap<>();
-	}
-
 	public TestPortalCache(String portalCacheName) {
 		super(null);
 
 		_portalCacheName = portalCacheName;
-
-		_concurrentMap = new ConcurrentHashMap<>();
 	}
 
 	@Override
 	public List<K> getKeys() {
-		List<K> keys = new ArrayList<>();
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
 
-		for (K key : _concurrentMap.keySet()) {
-			keys.add(key);
-		}
-
-		return keys;
+		return new ArrayList<>(concurrentMap.keySet());
 	}
 
 	@Override
@@ -66,19 +40,25 @@ public class TestPortalCache<K extends Serializable, V>
 
 	@Override
 	public void removeAll() {
-		_concurrentMap.clear();
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		concurrentMap.clear();
 
 		aggregatedPortalCacheListener.notifyRemoveAll(this);
 	}
 
 	@Override
 	protected V doGet(K key) {
-		return _concurrentMap.get(key);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		return concurrentMap.get(key);
 	}
 
 	@Override
 	protected void doPut(K key, V value, int timeToLive) {
-		V oldValue = _concurrentMap.put(key, value);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		V oldValue = concurrentMap.put(key, value);
 
 		if (oldValue != null) {
 			aggregatedPortalCacheListener.notifyEntryUpdated(
@@ -92,7 +72,9 @@ public class TestPortalCache<K extends Serializable, V>
 
 	@Override
 	protected V doPutIfAbsent(K key, V value, int timeToLive) {
-		V oldValue = _concurrentMap.putIfAbsent(key, value);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		V oldValue = concurrentMap.putIfAbsent(key, value);
 
 		if (oldValue == null) {
 			aggregatedPortalCacheListener.notifyEntryPut(
@@ -104,7 +86,9 @@ public class TestPortalCache<K extends Serializable, V>
 
 	@Override
 	protected void doRemove(K key) {
-		V value = _concurrentMap.remove(key);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		V value = concurrentMap.remove(key);
 
 		aggregatedPortalCacheListener.notifyEntryRemoved(
 			this, key, value, DEFAULT_TIME_TO_LIVE);
@@ -112,7 +96,9 @@ public class TestPortalCache<K extends Serializable, V>
 
 	@Override
 	protected boolean doRemove(K key, V value) {
-		boolean removed = _concurrentMap.remove(key, value);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		boolean removed = concurrentMap.remove(key, value);
 
 		aggregatedPortalCacheListener.notifyEntryRemoved(
 			this, key, value, DEFAULT_TIME_TO_LIVE);
@@ -122,7 +108,9 @@ public class TestPortalCache<K extends Serializable, V>
 
 	@Override
 	protected V doReplace(K key, V value, int timeToLive) {
-		V oldValue = _concurrentMap.replace(key, value);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		V oldValue = concurrentMap.replace(key, value);
 
 		if (oldValue != null) {
 			aggregatedPortalCacheListener.notifyEntryUpdated(
@@ -134,7 +122,9 @@ public class TestPortalCache<K extends Serializable, V>
 
 	@Override
 	protected boolean doReplace(K key, V oldValue, V newValue, int timeToLive) {
-		boolean replaced = _concurrentMap.replace(key, oldValue, newValue);
+		ConcurrentMap<K, V> concurrentMap = getConcurrentMap();
+
+		boolean replaced = concurrentMap.replace(key, oldValue, newValue);
 
 		if (replaced) {
 			aggregatedPortalCacheListener.notifyEntryUpdated(
@@ -144,7 +134,12 @@ public class TestPortalCache<K extends Serializable, V>
 		return replaced;
 	}
 
-	private final ConcurrentMap<K, V> _concurrentMap;
+	protected ConcurrentMap<K, V> getConcurrentMap() {
+		return _concurrentMap;
+	}
+
+	private final ConcurrentMap<K, V> _concurrentMap =
+		new ConcurrentHashMap<>();
 	private final String _portalCacheName;
 
 }

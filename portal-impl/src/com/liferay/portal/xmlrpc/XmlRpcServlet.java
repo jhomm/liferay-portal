@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.xmlrpc;
@@ -19,7 +10,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Tuple;
@@ -27,15 +18,14 @@ import com.liferay.portal.kernel.xmlrpc.Method;
 import com.liferay.portal.kernel.xmlrpc.Response;
 import com.liferay.portal.kernel.xmlrpc.XmlRpcConstants;
 import com.liferay.portal.kernel.xmlrpc.XmlRpcException;
-import com.liferay.portal.kernel.xmlrpc.XmlRpcUtil;
 import com.liferay.portal.util.PortalInstances;
 
-import java.io.IOException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 /**
  * @author Alexander Chow
@@ -67,7 +57,7 @@ public class XmlRpcServlet extends HttpServlet {
 
 			String xml = StringUtil.read(httpServletRequest.getInputStream());
 
-			Tuple methodTuple = XmlRpcParser.parseMethod(xml);
+			Tuple methodTuple = XmlRpcUtil.parseMethod(xml);
 
 			String methodName = (String)methodTuple.getObject(0);
 			Object[] args = (Object[])methodTuple.getObject(1);
@@ -80,11 +70,11 @@ public class XmlRpcServlet extends HttpServlet {
 				XmlRpcConstants.NOT_WELL_FORMED, "XML is not well formed");
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 		}
 		catch (XmlRpcException xmlRpcException) {
-			_log.error(xmlRpcException, xmlRpcException);
+			_log.error(xmlRpcException);
 		}
 
 		if (xmlRpcResponse == null) {
@@ -102,7 +92,7 @@ public class XmlRpcServlet extends HttpServlet {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			httpServletResponse.setStatus(
@@ -113,7 +103,7 @@ public class XmlRpcServlet extends HttpServlet {
 	protected String getToken(HttpServletRequest httpServletRequest) {
 		String token = httpServletRequest.getPathInfo();
 
-		return HttpUtil.fixPath(token);
+		return HttpComponentsUtil.fixPath(token);
 	}
 
 	protected Response invokeMethod(

@@ -1,20 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jaxws.osgi.bridge;
 
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+
+import jakarta.xml.ws.Endpoint;
+import jakarta.xml.ws.EndpointReference;
+import jakarta.xml.ws.Service;
+import jakarta.xml.ws.WebServiceFeature;
+import jakarta.xml.ws.spi.Invoker;
+import jakarta.xml.ws.spi.ServiceDelegate;
+import jakarta.xml.ws.wsaddressing.W3CEndpointReference;
 
 import java.net.URL;
 
@@ -23,13 +22,6 @@ import java.util.Map;
 
 import javax.xml.namespace.QName;
 import javax.xml.transform.Source;
-import javax.xml.ws.Endpoint;
-import javax.xml.ws.EndpointReference;
-import javax.xml.ws.Service;
-import javax.xml.ws.WebServiceFeature;
-import javax.xml.ws.spi.Invoker;
-import javax.xml.ws.spi.ServiceDelegate;
-import javax.xml.ws.wsaddressing.W3CEndpointReference;
 
 import org.osgi.util.tracker.ServiceTracker;
 
@@ -38,12 +30,12 @@ import org.w3c.dom.Element;
 /**
  * @author Carlos Sierra Andrés
  */
-public class Provider extends javax.xml.ws.spi.Provider {
+public class Provider extends jakarta.xml.ws.spi.Provider {
 
 	public Provider() {
 		_serviceTracker = new ServiceTracker<>(
 			SystemBundleUtil.getBundleContext(),
-			javax.xml.ws.spi.Provider.class, null);
+			jakarta.xml.ws.spi.Provider.class, null);
 
 		_serviceTracker.open();
 	}
@@ -52,7 +44,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 	public Endpoint createAndPublishEndpoint(
 		String address, Object implementor) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createAndPublishEndpoint(address, implementor);
 	}
@@ -62,7 +54,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		String address, Object implementor,
 		WebServiceFeature... webServiceFeatures) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createAndPublishEndpoint(
 			address, implementor, webServiceFeatures);
@@ -73,7 +65,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		String bindingId, Class<?> implementorClass, Invoker invoker,
 		WebServiceFeature... webServiceFeatures) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createEndpoint(
 			bindingId, implementorClass, invoker, webServiceFeatures);
@@ -81,7 +73,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 
 	@Override
 	public Endpoint createEndpoint(String bindingId, Object implementor) {
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createEndpoint(bindingId, implementor);
 	}
@@ -91,7 +83,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		String bindingId, Object implementor,
 		WebServiceFeature... webServiceFeatures) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createEndpoint(
 			bindingId, implementor, webServiceFeatures);
@@ -102,7 +94,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		URL wsdlURL, QName serviceQName,
 		Class<? extends Service> serviceClass) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createServiceDelegate(
 			wsdlURL, serviceQName, serviceClass);
@@ -123,7 +115,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		List<Element> metadataElements, String wsdlURL,
 		List<Element> referenceParameterElements) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createW3CEndpointReference(
 			address, serviceQName, portQName, metadataElements, wsdlURL,
@@ -137,7 +129,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		List<Element> referenceParameters, List<Element> elements,
 		Map<QName, String> attributes) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.createW3CEndpointReference(
 			address, interfaceQName, serviceQName, portQName, metadata, wsdlURL,
@@ -149,7 +141,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 		EndpointReference endpointReference, Class<T> serviceEndpointInterface,
 		WebServiceFeature... webServiceFeatures) {
 
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.getPort(
 			endpointReference, serviceEndpointInterface, webServiceFeatures);
@@ -157,15 +149,15 @@ public class Provider extends javax.xml.ws.spi.Provider {
 
 	@Override
 	public EndpointReference readEndpointReference(Source source) {
-		javax.xml.ws.spi.Provider provider = getProvider();
+		jakarta.xml.ws.spi.Provider provider = getProvider();
 
 		return provider.readEndpointReference(source);
 	}
 
-	protected javax.xml.ws.spi.Provider getProvider() {
+	protected jakarta.xml.ws.spi.Provider getProvider() {
 		try {
-			javax.xml.ws.spi.Provider provider = _serviceTracker.waitForService(
-				10_000L);
+			jakarta.xml.ws.spi.Provider provider =
+				_serviceTracker.waitForService(10_000L);
 
 			if (provider == null) {
 				throw new IllegalStateException(
@@ -181,6 +173,7 @@ public class Provider extends javax.xml.ws.spi.Provider {
 	}
 
 	private final ServiceTracker
-		<javax.xml.ws.spi.Provider, javax.xml.ws.spi.Provider> _serviceTracker;
+		<jakarta.xml.ws.spi.Provider, jakarta.xml.ws.spi.Provider>
+			_serviceTracker;
 
 }

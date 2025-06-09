@@ -1,51 +1,19 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String redirect = (String)request.getAttribute("edit_roles.jsp-redirect");
-
-String className = (String)request.getAttribute("edit_roles.jsp-className");
-Group group = (Group)request.getAttribute("edit_roles.jsp-group");
-int roleType = (Integer)request.getAttribute("edit_roles.jsp-roleType");
-
-PortletURL portletURL = (PortletURL)request.getAttribute("edit_roles.jsp-portletURL");
+EditRolesDisplayContext editRolesDisplayContext = new EditRolesDisplayContext(request, renderRequest);
 %>
 
 <liferay-ui:search-container
-	searchContainer="<%= new RoleSearch(renderRequest, portletURL) %>"
+	searchContainer="<%= editRolesDisplayContext.getSearchContainer() %>"
 >
-
-	<%
-	RoleSearchTerms searchTerms = (RoleSearchTerms)searchContainer.getSearchTerms();
-
-	List<Role> roles = RoleLocalServiceUtil.search(company.getCompanyId(), searchTerms.getKeywords(), new Integer[] {roleType}, QueryUtil.ALL_POS, QueryUtil.ALL_POS, searchContainer.getOrderByComparator());
-
-	roles = UsersAdminUtil.filterGroupRoles(permissionChecker, group.getGroupId(), roles);
-
-	total = roles.size();
-
-	searchContainer.setTotal(total);
-	%>
-
-	<liferay-ui:search-container-results
-		results="<%= ListUtil.subList(roles, searchContainer.getStart(), searchContainer.getEnd()) %>"
-	/>
-
 	<liferay-ui:search-container-row
 		className="com.liferay.portal.kernel.model.Role"
 		escapedModel="<%= true %>"
@@ -53,9 +21,9 @@ PortletURL portletURL = (PortletURL)request.getAttribute("edit_roles.jsp-portlet
 		modelVar="role"
 	>
 		<portlet:renderURL var="rowURL">
-			<portlet:param name="redirect" value="<%= redirect %>" />
-			<portlet:param name="className" value="<%= className %>" />
-			<portlet:param name="groupId" value="<%= String.valueOf(group.getGroupId()) %>" />
+			<portlet:param name="redirect" value='<%= String.valueOf(request.getAttribute("edit_roles.jsp-redirect")) %>' />
+			<portlet:param name="className" value='<%= String.valueOf(request.getAttribute("edit_roles.jsp-className")) %>' />
+			<portlet:param name="groupId" value="<%= String.valueOf(editRolesDisplayContext.getGroupId()) %>" />
 			<portlet:param name="roleId" value="<%= String.valueOf(role.getRoleId()) %>" />
 		</portlet:renderURL>
 

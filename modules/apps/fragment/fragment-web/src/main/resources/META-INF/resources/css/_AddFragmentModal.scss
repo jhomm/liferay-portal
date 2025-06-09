@@ -1,0 +1,29 @@
+.add-fragment-modal {
+	.modal-content {
+		max-height: 80vh;
+	}
+
+	.fragment-type-cards {
+		gap: 12px;
+
+		.fragment-type-card {
+			flex: 1;
+
+			&-basic .card-item-first {
+				background-color: $teal;
+			}
+
+			&-form .card-item-first {
+				background-color: $orange;
+			}
+
+			.custom-control-label {
+				opacity: 0;
+			}
+
+			.lexicon-icon {
+				fill: $white;
+			}
+		}
+	}
+}

@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.model.impl;
 
 import com.liferay.commerce.tax.model.CommerceTaxMethod;
 import com.liferay.commerce.tax.model.CommerceTaxMethodModel;
-import com.liferay.commerce.tax.model.CommerceTaxMethodSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -40,18 +30,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -83,18 +70,20 @@ public class CommerceTaxMethodModelImpl
 	public static final String TABLE_NAME = "CommerceTaxMethod";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"commerceTaxMethodId", Types.BIGINT}, {"groupId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
-		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
-		{"modifiedDate", Types.TIMESTAMP}, {"name", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"engineKey", Types.VARCHAR},
-		{"percentage", Types.BOOLEAN}, {"active_", Types.BOOLEAN}
+		{"mvccVersion", Types.BIGINT}, {"commerceTaxMethodId", Types.BIGINT},
+		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
+		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
+		{"name", Types.VARCHAR}, {"description", Types.VARCHAR},
+		{"engineKey", Types.VARCHAR}, {"percentage", Types.BOOLEAN},
+		{"active_", Types.BOOLEAN}, {"typeSettings", Types.CLOB}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("commerceTaxMethodId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -107,10 +96,11 @@ public class CommerceTaxMethodModelImpl
 		TABLE_COLUMNS_MAP.put("engineKey", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("percentage", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("active_", Types.BOOLEAN);
+		TABLE_COLUMNS_MAP.put("typeSettings", Types.CLOB);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommerceTaxMethod (commerceTaxMethodId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,description STRING null,engineKey VARCHAR(75) null,percentage BOOLEAN,active_ BOOLEAN)";
+		"create table CommerceTaxMethod (mvccVersion LONG default 0 not null,commerceTaxMethodId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,description STRING null,engineKey VARCHAR(75) null,percentage BOOLEAN,active_ BOOLEAN,typeSettings TEXT null)";
 
 	public static final String TABLE_SQL_DROP = "drop table CommerceTaxMethod";
 
@@ -125,24 +115,6 @@ public class CommerceTaxMethodModelImpl
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
 
 	public static final String TX_MANAGER = "liferayTransactionManager";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -170,64 +142,18 @@ public class CommerceTaxMethodModelImpl
 	public static final long CREATEDATE_COLUMN_BITMASK = 8L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceTaxMethod toModel(CommerceTaxMethodSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceTaxMethod model = new CommerceTaxMethodImpl();
-
-		model.setCommerceTaxMethodId(soapModel.getCommerceTaxMethodId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setEngineKey(soapModel.getEngineKey());
-		model.setPercentage(soapModel.isPercentage());
-		model.setActive(soapModel.isActive());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceTaxMethod> toModels(
-		CommerceTaxMethodSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceTaxMethod> models = new ArrayList<CommerceTaxMethod>(
-			soapModels.length);
-
-		for (CommerceTaxMethodSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.tax.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.tax.model.CommerceTaxMethod"));
 
 	public CommerceTaxMethodModelImpl() {
 	}
@@ -305,127 +231,148 @@ public class CommerceTaxMethodModelImpl
 	public Map<String, Function<CommerceTaxMethod, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceTaxMethod, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceTaxMethod>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceTaxMethod.class.getClassLoader(), CommerceTaxMethod.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CommerceTaxMethod, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceTaxMethod> constructor =
-				(Constructor<CommerceTaxMethod>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceTaxMethod, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CommerceTaxMethod, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceTaxMethod::getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceTaxMethodId",
+				CommerceTaxMethod::getCommerceTaxMethodId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceTaxMethod::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceTaxMethod::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceTaxMethod::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceTaxMethod::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceTaxMethod::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommerceTaxMethod::getModifiedDate);
+			attributeGetterFunctions.put("name", CommerceTaxMethod::getName);
+			attributeGetterFunctions.put(
+				"description", CommerceTaxMethod::getDescription);
+			attributeGetterFunctions.put(
+				"engineKey", CommerceTaxMethod::getEngineKey);
+			attributeGetterFunctions.put(
+				"percentage", CommerceTaxMethod::getPercentage);
+			attributeGetterFunctions.put(
+				"active", CommerceTaxMethod::getActive);
+			attributeGetterFunctions.put(
+				"typeSettings", CommerceTaxMethod::getTypeSettings);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CommerceTaxMethod, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CommerceTaxMethod, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceTaxMethod, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CommerceTaxMethod, Object>>();
-		Map<String, BiConsumer<CommerceTaxMethod, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<CommerceTaxMethod, ?>>();
+		private static final Map<String, BiConsumer<CommerceTaxMethod, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"commerceTaxMethodId", CommerceTaxMethod::getCommerceTaxMethodId);
-		attributeSetterBiConsumers.put(
-			"commerceTaxMethodId",
-			(BiConsumer<CommerceTaxMethod, Long>)
-				CommerceTaxMethod::setCommerceTaxMethodId);
-		attributeGetterFunctions.put("groupId", CommerceTaxMethod::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceTaxMethod, Long>)CommerceTaxMethod::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceTaxMethod::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceTaxMethod, Long>)
-				CommerceTaxMethod::setCompanyId);
-		attributeGetterFunctions.put("userId", CommerceTaxMethod::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceTaxMethod, Long>)CommerceTaxMethod::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceTaxMethod::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceTaxMethod, String>)
-				CommerceTaxMethod::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceTaxMethod::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceTaxMethod, Date>)
-				CommerceTaxMethod::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceTaxMethod::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceTaxMethod, Date>)
-				CommerceTaxMethod::setModifiedDate);
-		attributeGetterFunctions.put("name", CommerceTaxMethod::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<CommerceTaxMethod, String>)CommerceTaxMethod::setName);
-		attributeGetterFunctions.put(
-			"description", CommerceTaxMethod::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<CommerceTaxMethod, String>)
-				CommerceTaxMethod::setDescription);
-		attributeGetterFunctions.put(
-			"engineKey", CommerceTaxMethod::getEngineKey);
-		attributeSetterBiConsumers.put(
-			"engineKey",
-			(BiConsumer<CommerceTaxMethod, String>)
-				CommerceTaxMethod::setEngineKey);
-		attributeGetterFunctions.put(
-			"percentage", CommerceTaxMethod::getPercentage);
-		attributeSetterBiConsumers.put(
-			"percentage",
-			(BiConsumer<CommerceTaxMethod, Boolean>)
-				CommerceTaxMethod::setPercentage);
-		attributeGetterFunctions.put("active", CommerceTaxMethod::getActive);
-		attributeSetterBiConsumers.put(
-			"active",
-			(BiConsumer<CommerceTaxMethod, Boolean>)
-				CommerceTaxMethod::setActive);
+		static {
+			Map<String, BiConsumer<CommerceTaxMethod, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CommerceTaxMethod, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceTaxMethod, Long>)
+					CommerceTaxMethod::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceTaxMethodId",
+				(BiConsumer<CommerceTaxMethod, Long>)
+					CommerceTaxMethod::setCommerceTaxMethodId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceTaxMethod, Long>)
+					CommerceTaxMethod::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceTaxMethod, Long>)
+					CommerceTaxMethod::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceTaxMethod, Long>)
+					CommerceTaxMethod::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceTaxMethod, String>)
+					CommerceTaxMethod::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceTaxMethod, Date>)
+					CommerceTaxMethod::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceTaxMethod, Date>)
+					CommerceTaxMethod::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CommerceTaxMethod, String>)
+					CommerceTaxMethod::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<CommerceTaxMethod, String>)
+					CommerceTaxMethod::setDescription);
+			attributeSetterBiConsumers.put(
+				"engineKey",
+				(BiConsumer<CommerceTaxMethod, String>)
+					CommerceTaxMethod::setEngineKey);
+			attributeSetterBiConsumers.put(
+				"percentage",
+				(BiConsumer<CommerceTaxMethod, Boolean>)
+					CommerceTaxMethod::setPercentage);
+			attributeSetterBiConsumers.put(
+				"active",
+				(BiConsumer<CommerceTaxMethod, Boolean>)
+					CommerceTaxMethod::setActive);
+			attributeSetterBiConsumers.put(
+				"typeSettings",
+				(BiConsumer<CommerceTaxMethod, String>)
+					CommerceTaxMethod::setTypeSettings);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
 	}
 
 	@JSON
@@ -869,6 +816,26 @@ public class CommerceTaxMethodModelImpl
 			this.<Boolean>getColumnOriginalValue("active_"));
 	}
 
+	@JSON
+	@Override
+	public String getTypeSettings() {
+		if (_typeSettings == null) {
+			return "";
+		}
+		else {
+			return _typeSettings;
+		}
+	}
+
+	@Override
+	public void setTypeSettings(String typeSettings) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_typeSettings = typeSettings;
+	}
+
 	public long getColumnBitmask() {
 		if (_columnBitmask > 0) {
 			return _columnBitmask;
@@ -1014,6 +981,7 @@ public class CommerceTaxMethodModelImpl
 		CommerceTaxMethodImpl commerceTaxMethodImpl =
 			new CommerceTaxMethodImpl();
 
+		commerceTaxMethodImpl.setMvccVersion(getMvccVersion());
 		commerceTaxMethodImpl.setCommerceTaxMethodId(getCommerceTaxMethodId());
 		commerceTaxMethodImpl.setGroupId(getGroupId());
 		commerceTaxMethodImpl.setCompanyId(getCompanyId());
@@ -1026,6 +994,7 @@ public class CommerceTaxMethodModelImpl
 		commerceTaxMethodImpl.setEngineKey(getEngineKey());
 		commerceTaxMethodImpl.setPercentage(isPercentage());
 		commerceTaxMethodImpl.setActive(isActive());
+		commerceTaxMethodImpl.setTypeSettings(getTypeSettings());
 
 		commerceTaxMethodImpl.resetOriginalValues();
 
@@ -1037,6 +1006,8 @@ public class CommerceTaxMethodModelImpl
 		CommerceTaxMethodImpl commerceTaxMethodImpl =
 			new CommerceTaxMethodImpl();
 
+		commerceTaxMethodImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
 		commerceTaxMethodImpl.setCommerceTaxMethodId(
 			this.<Long>getColumnOriginalValue("commerceTaxMethodId"));
 		commerceTaxMethodImpl.setGroupId(
@@ -1061,6 +1032,8 @@ public class CommerceTaxMethodModelImpl
 			this.<Boolean>getColumnOriginalValue("percentage"));
 		commerceTaxMethodImpl.setActive(
 			this.<Boolean>getColumnOriginalValue("active_"));
+		commerceTaxMethodImpl.setTypeSettings(
+			this.<String>getColumnOriginalValue("typeSettings"));
 
 		return commerceTaxMethodImpl;
 	}
@@ -1114,7 +1087,7 @@ public class CommerceTaxMethodModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -1123,7 +1096,7 @@ public class CommerceTaxMethodModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1139,6 +1112,8 @@ public class CommerceTaxMethodModelImpl
 	public CacheModel<CommerceTaxMethod> toCacheModel() {
 		CommerceTaxMethodCacheModel commerceTaxMethodCacheModel =
 			new CommerceTaxMethodCacheModel();
+
+		commerceTaxMethodCacheModel.mvccVersion = getMvccVersion();
 
 		commerceTaxMethodCacheModel.commerceTaxMethodId =
 			getCommerceTaxMethodId();
@@ -1203,6 +1178,14 @@ public class CommerceTaxMethodModelImpl
 
 		commerceTaxMethodCacheModel.active = isActive();
 
+		commerceTaxMethodCacheModel.typeSettings = getTypeSettings();
+
+		String typeSettings = commerceTaxMethodCacheModel.typeSettings;
+
+		if ((typeSettings != null) && (typeSettings.length() == 0)) {
+			commerceTaxMethodCacheModel.typeSettings = null;
+		}
+
 		return commerceTaxMethodCacheModel;
 	}
 
@@ -1256,44 +1239,16 @@ public class CommerceTaxMethodModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceTaxMethod, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceTaxMethod, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceTaxMethod, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CommerceTaxMethod)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CommerceTaxMethod>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CommerceTaxMethod.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
 	private long _commerceTaxMethodId;
 	private long _groupId;
 	private long _companyId;
@@ -1309,12 +1264,14 @@ public class CommerceTaxMethodModelImpl
 	private String _engineKey;
 	private boolean _percentage;
 	private boolean _active;
+	private String _typeSettings;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommerceTaxMethod, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1339,6 +1296,7 @@ public class CommerceTaxMethodModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("commerceTaxMethodId", _commerceTaxMethodId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1351,6 +1309,7 @@ public class CommerceTaxMethodModelImpl
 		_columnOriginalValues.put("engineKey", _engineKey);
 		_columnOriginalValues.put("percentage", _percentage);
 		_columnOriginalValues.put("active_", _active);
+		_columnOriginalValues.put("typeSettings", _typeSettings);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1374,29 +1333,33 @@ public class CommerceTaxMethodModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("commerceTaxMethodId", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("groupId", 2L);
+		columnBitmasks.put("commerceTaxMethodId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("groupId", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("userName", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("createDate", 32L);
+		columnBitmasks.put("userName", 32L);
 
-		columnBitmasks.put("modifiedDate", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("name", 128L);
+		columnBitmasks.put("modifiedDate", 128L);
 
-		columnBitmasks.put("description", 256L);
+		columnBitmasks.put("name", 256L);
 
-		columnBitmasks.put("engineKey", 512L);
+		columnBitmasks.put("description", 512L);
 
-		columnBitmasks.put("percentage", 1024L);
+		columnBitmasks.put("engineKey", 1024L);
 
-		columnBitmasks.put("active_", 2048L);
+		columnBitmasks.put("percentage", 2048L);
+
+		columnBitmasks.put("active_", 4096L);
+
+		columnBitmasks.put("typeSettings", 8192L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

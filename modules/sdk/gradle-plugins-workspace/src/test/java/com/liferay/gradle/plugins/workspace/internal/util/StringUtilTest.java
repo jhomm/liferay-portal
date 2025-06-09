@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.workspace.internal.util;
@@ -41,6 +32,36 @@ public class StringUtilTest {
 			"test-test-test", StringUtil.getDockerSafeName("TestTestTest"));
 		Assert.assertEquals(
 			"tt-tes-ttt", StringUtil.getDockerSafeName("TTTesTTT"));
+	}
+
+	@Test
+	public void testIsURL() {
+		Assert.assertFalse(StringUtil.isUrl("http://example.com:-80"));
+		Assert.assertFalse(StringUtil.isUrl("https://example.com:port"));
+		Assert.assertTrue(StringUtil.isUrl("http://localhost:3000"));
+		Assert.assertTrue(
+			StringUtil.isUrl("https://en.wikipedia.org/wiki/Baseball"));
+		Assert.assertTrue(StringUtil.isUrl("https://www.example.com"));
+		Assert.assertTrue(
+			StringUtil.isUrl("https://www.example.com/something-*-else"));
+	}
+
+	@Test
+	public void testSuffix() {
+		Assert.assertEquals("foo", StringUtil.suffixIfNotBlank("foo", ""));
+		Assert.assertEquals(
+			"foo",
+			StringUtil.suffixIfNotBlank("foo", StringUtil.FORWARD_SLASH, ""));
+		Assert.assertEquals(
+			"foo",
+			StringUtil.suffixIfNotBlank("foo", StringUtil.FORWARD_SLASH, null));
+		Assert.assertEquals("foo", StringUtil.suffixIfNotBlank("foo", null));
+		Assert.assertEquals(
+			"foo/bar",
+			StringUtil.suffixIfNotBlank(
+				"foo", StringUtil.FORWARD_SLASH, "bar"));
+		Assert.assertEquals(
+			"foo_bar", StringUtil.suffixIfNotBlank("foo", "bar"));
 	}
 
 }

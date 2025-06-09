@@ -1,25 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.service.impl;
 
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
@@ -35,6 +32,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -55,10 +53,10 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 
 		// Source
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 		Date date = new Date();
 
-		validate(driverClassName, driverUrl, driverUserName, driverPassword);
+		_validate(driverClassName, driverUrl, driverUserName, driverPassword);
 
 		long sourceId = counterLocalService.increment();
 
@@ -81,7 +79,7 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 
 		// Resources
 
-		resourceLocalService.addModelResources(source, serviceContext);
+		_resourceLocalService.addModelResources(source, serviceContext);
 
 		return source;
 	}
@@ -103,7 +101,7 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 
 		// Resources
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			source.getCompanyId(), Source.class.getName(),
 			ResourceConstants.SCOPE_INDIVIDUAL, source.getSourceId());
 
@@ -117,6 +115,13 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 		for (Source source : sources) {
 			sourceLocalService.deleteSource(source);
 		}
+	}
+
+	@Override
+	public String[] getAttachmentsFileNames(Source source) {
+		return _store.getFileNames(
+			source.getCompanyId(), CompanyConstants.SYSTEM,
+			source.getAttachmentsDir());
 	}
 
 	@Override
@@ -155,7 +160,7 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 			driverPassword = source.getDriverPassword();
 		}
 
-		validate(driverClassName, driverUrl, driverUserName, driverPassword);
+		_validate(driverClassName, driverUrl, driverUserName, driverPassword);
 
 		source.setModifiedDate(serviceContext.getModifiedDate(null));
 		source.setNameMap(nameMap);
@@ -167,7 +172,7 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 		return sourcePersistence.update(source);
 	}
 
-	protected void validate(
+	private void _validate(
 			String driverClassName, String driverUrl, String driverUserName,
 			String driverPassword)
 		throws PortalException {
@@ -181,19 +186,21 @@ public class SourceLocalServiceImpl extends SourceLocalServiceBaseImpl {
 			throw new SourceDriverClassNameException(classNotFoundException);
 		}
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				portalClassLoader)) {
 
-		ClassLoader classLoader = currentThread.getContextClassLoader();
-
-		currentThread.setContextClassLoader(portalClassLoader);
-
-		try {
 			ReportsEngineConsoleUtil.validateJDBCConnection(
 				driverClassName, driverUrl, driverUserName, driverPassword);
 		}
-		finally {
-			currentThread.setContextClassLoader(classLoader);
-		}
 	}
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference(target = "(default=true)")
+	private Store _store;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

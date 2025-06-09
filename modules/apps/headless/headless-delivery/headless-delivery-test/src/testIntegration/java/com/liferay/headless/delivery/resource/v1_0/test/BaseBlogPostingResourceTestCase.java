@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.resource.v1_0.test;
@@ -22,7 +13,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.delivery.client.dto.v1_0.BlogPosting;
+import com.liferay.headless.delivery.client.dto.v1_0.Field;
 import com.liferay.headless.delivery.client.dto.v1_0.Rating;
 import com.liferay.headless.delivery.client.http.HttpInvoker;
 import com.liferay.headless.delivery.client.pagination.Page;
@@ -30,7 +24,9 @@ import com.liferay.headless.delivery.client.pagination.Pagination;
 import com.liferay.headless.delivery.client.permission.Permission;
 import com.liferay.headless.delivery.client.resource.v1_0.BlogPostingResource;
 import com.liferay.headless.delivery.client.serdes.v1_0.BlogPostingSerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -39,46 +35,63 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegate;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.PathSegment;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Method;
+
+import java.net.URI;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -87,6 +100,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Javier Gamarra
@@ -97,12 +113,14 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -116,10 +134,25 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		_blogPostingResource.setContextCompany(testCompany);
 
-		BlogPostingResource.Builder builder = BlogPostingResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		blogPostingResource = builder.authentication(
-			"test@liferay.com", "test"
+		blogPostingResource = BlogPostingResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -133,7 +166,32 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		BlogPosting blogPosting1 = randomBlogPosting();
+
+		String json = objectMapper.writeValueAsString(blogPosting1);
+
+		BlogPosting blogPosting2 = BlogPostingSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(blogPosting1, blogPosting2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		BlogPosting blogPosting = randomBlogPosting();
+
+		String json1 = objectMapper.writeValueAsString(blogPosting);
+		String json2 = BlogPostingSerDes.toJSON(blogPosting);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -148,40 +206,6 @@ public abstract class BaseBlogPostingResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		BlogPosting blogPosting1 = randomBlogPosting();
-
-		String json = objectMapper.writeValueAsString(blogPosting1);
-
-		BlogPosting blogPosting2 = BlogPostingSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(blogPosting1, blogPosting2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		BlogPosting blogPosting = randomBlogPosting();
-
-		String json1 = objectMapper.writeValueAsString(blogPosting);
-		String json2 = BlogPostingSerDes.toJSON(blogPosting);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -227,7 +251,6 @@ public abstract class BaseBlogPostingResourceTestCase {
 			404,
 			blogPostingResource.getBlogPostingHttpResponse(
 				blogPosting.getId()));
-
 		assertHttpResponseStatusCode(
 			404, blogPostingResource.getBlogPostingHttpResponse(0L));
 	}
@@ -241,7 +264,11 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 	@Test
 	public void testGraphQLDeleteBlogPosting() throws Exception {
-		BlogPosting blogPosting = testGraphQLBlogPosting_addBlogPosting();
+
+		// No namespace
+
+		BlogPosting blogPosting1 =
+			testGraphQLDeleteBlogPosting_addBlogPosting();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -250,24 +277,179 @@ public abstract class BaseBlogPostingResourceTestCase {
 						"deleteBlogPosting",
 						new HashMap<String, Object>() {
 							{
-								put("blogPostingId", blogPosting.getId());
+								put("blogPostingId", blogPosting1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deleteBlogPosting"));
 
-		JSONArray errorsJSONArray = JSONUtil.getValueAsJSONArray(
+		JSONArray errorsJSONArray1 = JSONUtil.getValueAsJSONArray(
 			invokeGraphQLQuery(
 				new GraphQLField(
 					"blogPosting",
 					new HashMap<String, Object>() {
 						{
-							put("blogPostingId", blogPosting.getId());
+							put("blogPostingId", blogPosting1.getId());
 						}
 					},
 					new GraphQLField("id"))),
 			"JSONArray/errors");
 
-		Assert.assertTrue(errorsJSONArray.length() > 0);
+		Assert.assertTrue(errorsJSONArray1.length() > 0);
+
+		// Using the namespace headlessDelivery_v1_0
+
+		BlogPosting blogPosting2 =
+			testGraphQLDeleteBlogPosting_addBlogPosting();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"deleteBlogPosting",
+							new HashMap<String, Object>() {
+								{
+									put("blogPostingId", blogPosting2.getId());
+								}
+							}))),
+				"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+				"Object/deleteBlogPosting"));
+
+		JSONArray errorsJSONArray2 = JSONUtil.getValueAsJSONArray(
+			invokeGraphQLQuery(
+				new GraphQLField(
+					"headlessDelivery_v1_0",
+					new GraphQLField(
+						"blogPosting",
+						new HashMap<String, Object>() {
+							{
+								put("blogPostingId", blogPosting2.getId());
+							}
+						},
+						new GraphQLField("id")))),
+			"JSONArray/errors");
+
+		Assert.assertTrue(errorsJSONArray2.length() > 0);
+	}
+
+	protected BlogPosting testGraphQLDeleteBlogPosting_addBlogPosting()
+		throws Exception {
+
+		return testGraphQLBlogPosting_addBlogPosting();
+	}
+
+	@Test
+	public void testDeleteBlogPostingBatch() throws Exception {
+		BlogPosting blogPosting1 = testDeleteBlogPostingBatch_addBlogPosting();
+
+		testDeleteBlogPostingBatch_deleteBlogPosting(
+			"COMPLETED", null, blogPosting1.getId());
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingResource.getBlogPostingHttpResponse(
+				blogPosting1.getId()));
+	}
+
+	protected BlogPosting testDeleteBlogPostingBatch_addBlogPosting()
+		throws Exception {
+
+		return testDeleteBlogPosting_addBlogPosting();
+	}
+
+	protected void testDeleteBlogPostingBatch_deleteBlogPosting(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			blogPostingResource.deleteBlogPostingBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"id", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
+	public void testDeleteBlogPostingMyRating() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		BlogPosting blogPosting =
+			testDeleteBlogPostingMyRating_addBlogPosting();
+
+		assertHttpResponseStatusCode(
+			204,
+			blogPostingResource.deleteBlogPostingMyRatingHttpResponse(
+				blogPosting.getId()));
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingResource.getBlogPostingMyRatingHttpResponse(
+				blogPosting.getId()));
+		assertHttpResponseStatusCode(
+			404, blogPostingResource.getBlogPostingMyRatingHttpResponse(0L));
+	}
+
+	protected BlogPosting testDeleteBlogPostingMyRating_addBlogPosting()
+		throws Exception {
+
+		return blogPostingResource.postSiteBlogPosting(
+			testGroup.getGroupId(), randomBlogPosting());
+	}
+
+	@Test
+	public void testDeleteSiteBlogPostingByExternalReferenceCode()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		BlogPosting blogPosting =
+			testDeleteSiteBlogPostingByExternalReferenceCode_addBlogPosting();
+
+		assertHttpResponseStatusCode(
+			204,
+			blogPostingResource.
+				deleteSiteBlogPostingByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+						blogPosting),
+					blogPosting.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingResource.
+				getSiteBlogPostingByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+						blogPosting),
+					blogPosting.getExternalReferenceCode()));
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingResource.
+				getSiteBlogPostingByExternalReferenceCodeHttpResponse(
+					testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+						blogPosting),
+					"-"));
+	}
+
+	protected Long testDeleteSiteBlogPostingByExternalReferenceCode_getSiteId(
+			BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
+	}
+
+	protected BlogPosting
+			testDeleteSiteBlogPostingByExternalReferenceCode_addBlogPosting()
+		throws Exception {
+
+		return blogPostingResource.postSiteBlogPosting(
+			testGroup.getGroupId(), randomBlogPosting());
 	}
 
 	@Test
@@ -281,6 +463,194 @@ public abstract class BaseBlogPostingResourceTestCase {
 		assertValid(getBlogPosting);
 	}
 
+	@Test
+	public void testVulcanCRUDItemDelegateGetItem() throws Exception {
+		BlogPosting postBlogPosting = testGetBlogPosting_addBlogPosting();
+
+		BlogPosting getBlogPosting = blogPostingResource.getBlogPosting(
+			postBlogPosting.getId());
+
+		VulcanCRUDItemDelegate vulcanCRUDItemDelegate =
+			_vulcanCRUDItemDelegateBuilderRegistry.builder(
+				testCompany,
+				"com.liferay.headless.delivery.dto.v1_0.BlogPosting"
+			).acceptLanguage(
+				new AcceptLanguage() {
+
+					@Override
+					public List<Locale> getLocales() {
+						return Arrays.asList(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public String getPreferredLanguageId() {
+						return LocaleUtil.toLanguageId(LocaleUtil.getDefault());
+					}
+
+					@Override
+					public Locale getPreferredLocale() {
+						return LocaleUtil.getDefault();
+					}
+
+				}
+			).groupLocalService(
+				_groupLocalService
+			).httpServletRequest(
+				testVulcanCRUDItemDelegate_getHttpServletRequest()
+			).httpServletResponse(
+				new MockHttpServletResponse()
+			).resourceActionLocalService(
+				_resourceActionLocalService
+			).resourcePermissionLocalService(
+				_resourcePermissionLocalService
+			).roleLocalService(
+				_roleLocalService
+			).scopeChecker(
+				_scopeChecker
+			).uriInfo(
+				testVulcanCRUDItemDelegate_getUriInfo()
+			).user(
+				testVulcanCRUDItemDelegate_getUser()
+			).build();
+
+		Object item = vulcanCRUDItemDelegate.getItem(postBlogPosting.getId());
+
+		assertEquals(getBlogPosting, BlogPostingSerDes.toDTO(item.toString()));
+	}
+
+	protected HttpServletRequest
+		testVulcanCRUDItemDelegate_getHttpServletRequest() {
+
+		return new MockHttpServletRequest() {
+
+			@Override
+			public StringBuffer getRequestURL() {
+				return new StringBuffer(
+					StringBundler.concat(
+						"http://localhost:8080/o/v1.0/",
+						RandomTestUtil.randomString(), "/",
+						RandomTestUtil.randomString()));
+			}
+
+		};
+	}
+
+	protected UriInfo testVulcanCRUDItemDelegate_getUriInfo() {
+		String applicationPath = RandomTestUtil.randomString() + "/";
+		String resourcePath = RandomTestUtil.randomString();
+
+		return new UriInfo() {
+
+			@Override
+			public String getPath() {
+				return resourcePath;
+			}
+
+			@Override
+			public String getPath(boolean decode) {
+				return getPath();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<PathSegment> getPathSegments(boolean decode) {
+				return getPathSegments();
+			}
+
+			@Override
+			public URI getRequestUri() {
+				return URI.create(
+					"http://localhost:8080/o/" + applicationPath +
+						resourcePath);
+			}
+
+			@Override
+			public UriBuilder getRequestUriBuilder() {
+				return UriBuilder.fromUri(getRequestUri());
+			}
+
+			@Override
+			public URI getAbsolutePath() {
+				return getRequestUri();
+			}
+
+			@Override
+			public UriBuilder getAbsolutePathBuilder() {
+				return getRequestUriBuilder();
+			}
+
+			@Override
+			public URI getBaseUri() {
+				return URI.create("http://localhost:8080/o/" + applicationPath);
+			}
+
+			@Override
+			public UriBuilder getBaseUriBuilder() {
+				return UriBuilder.fromUri(getBaseUri());
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getPathParameters(
+				boolean decode) {
+
+				return getPathParameters();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters() {
+				return new MultivaluedHashMap<>();
+			}
+
+			@Override
+			public MultivaluedMap<String, String> getQueryParameters(
+				boolean decode) {
+
+				return getQueryParameters();
+			}
+
+			@Override
+			public List<String> getMatchedURIs() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public List<String> getMatchedURIs(boolean decode) {
+				return getMatchedURIs();
+			}
+
+			@Override
+			public List<Object> getMatchedResources() {
+				return Collections.emptyList();
+			}
+
+			@Override
+			public URI resolve(URI requestUri) {
+				return getBaseUri().resolve(requestUri);
+			}
+
+			@Override
+			public URI relativize(URI uri) {
+				return getBaseUri().relativize(uri);
+			}
+
+		};
+	}
+
+	protected com.liferay.portal.kernel.model.User
+		testVulcanCRUDItemDelegate_getUser() {
+
+		return _testCompanyAdminUser;
+	}
+
 	protected BlogPosting testGetBlogPosting_addBlogPosting() throws Exception {
 		return blogPostingResource.postSiteBlogPosting(
 			testGroup.getGroupId(), randomBlogPosting());
@@ -288,7 +658,9 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 	@Test
 	public void testGraphQLGetBlogPosting() throws Exception {
-		BlogPosting blogPosting = testGraphQLBlogPosting_addBlogPosting();
+		BlogPosting blogPosting = testGraphQLGetBlogPosting_addBlogPosting();
+
+		// No namespace
 
 		Assert.assertTrue(
 			equals(
@@ -307,11 +679,36 @@ public abstract class BaseBlogPostingResourceTestCase {
 								},
 								getGraphQLFields())),
 						"JSONObject/data", "Object/blogPosting"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				blogPosting,
+				BlogPostingSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"blogPosting",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"blogPostingId",
+												blogPosting.getId());
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/blogPosting"))));
 	}
 
 	@Test
 	public void testGraphQLGetBlogPostingNotFound() throws Exception {
 		Long irrelevantBlogPostingId = RandomTestUtil.randomLong();
+
+		// No namespace
 
 		Assert.assertEquals(
 			"Not Found",
@@ -327,86 +724,33 @@ public abstract class BaseBlogPostingResourceTestCase {
 						getGraphQLFields())),
 				"JSONArray/errors", "Object/0", "JSONObject/extensions",
 				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"blogPosting",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"blogPostingId",
+										irrelevantBlogPostingId);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
 	}
 
-	@Test
-	public void testPatchBlogPosting() throws Exception {
-		BlogPosting postBlogPosting = testPatchBlogPosting_addBlogPosting();
-
-		BlogPosting randomPatchBlogPosting = randomPatchBlogPosting();
-
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		BlogPosting patchBlogPosting = blogPostingResource.patchBlogPosting(
-			postBlogPosting.getId(), randomPatchBlogPosting);
-
-		BlogPosting expectedPatchBlogPosting = postBlogPosting.clone();
-
-		_beanUtilsBean.copyProperties(
-			expectedPatchBlogPosting, randomPatchBlogPosting);
-
-		BlogPosting getBlogPosting = blogPostingResource.getBlogPosting(
-			patchBlogPosting.getId());
-
-		assertEquals(expectedPatchBlogPosting, getBlogPosting);
-		assertValid(getBlogPosting);
-	}
-
-	protected BlogPosting testPatchBlogPosting_addBlogPosting()
+	protected BlogPosting testGraphQLGetBlogPosting_addBlogPosting()
 		throws Exception {
 
-		return blogPostingResource.postSiteBlogPosting(
-			testGroup.getGroupId(), randomBlogPosting());
-	}
-
-	@Test
-	public void testPutBlogPosting() throws Exception {
-		BlogPosting postBlogPosting = testPutBlogPosting_addBlogPosting();
-
-		BlogPosting randomBlogPosting = randomBlogPosting();
-
-		BlogPosting putBlogPosting = blogPostingResource.putBlogPosting(
-			postBlogPosting.getId(), randomBlogPosting);
-
-		assertEquals(randomBlogPosting, putBlogPosting);
-		assertValid(putBlogPosting);
-
-		BlogPosting getBlogPosting = blogPostingResource.getBlogPosting(
-			putBlogPosting.getId());
-
-		assertEquals(randomBlogPosting, getBlogPosting);
-		assertValid(getBlogPosting);
-	}
-
-	protected BlogPosting testPutBlogPosting_addBlogPosting() throws Exception {
-		return blogPostingResource.postSiteBlogPosting(
-			testGroup.getGroupId(), randomBlogPosting());
-	}
-
-	@Test
-	public void testDeleteBlogPostingMyRating() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		BlogPosting blogPosting =
-			testDeleteBlogPostingMyRating_addBlogPosting();
-
-		assertHttpResponseStatusCode(
-			204,
-			blogPostingResource.deleteBlogPostingMyRatingHttpResponse(
-				blogPosting.getId()));
-
-		assertHttpResponseStatusCode(
-			404,
-			blogPostingResource.getBlogPostingMyRatingHttpResponse(
-				blogPosting.getId()));
-
-		assertHttpResponseStatusCode(
-			404, blogPostingResource.getBlogPostingMyRatingHttpResponse(0L));
-	}
-
-	protected BlogPosting testDeleteBlogPostingMyRating_addBlogPosting()
-		throws Exception {
-
-		return blogPostingResource.postSiteBlogPosting(
-			testGroup.getGroupId(), randomBlogPosting());
+		return testGraphQLBlogPosting_addBlogPosting();
 	}
 
 	@Test
@@ -428,42 +772,38 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	@Test
-	public void testPutBlogPostingPermission() throws Exception {
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		BlogPosting blogPosting = testPutBlogPostingPermission_addBlogPosting();
+	public void testGetBlogPostingRenderedContentByDisplayPageDisplayPageKey()
+		throws Exception {
 
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		com.liferay.portal.kernel.model.Role role = RoleTestUtil.addRole(
-			RoleConstants.TYPE_REGULAR);
-
-		assertHttpResponseStatusCode(
-			200,
-			blogPostingResource.putBlogPostingPermissionHttpResponse(
-				blogPosting.getId(),
-				new Permission[] {
-					new Permission() {
-						{
-							setActionIds(new String[] {"VIEW"});
-							setRoleName(role.getName());
-						}
-					}
-				}));
-
-		assertHttpResponseStatusCode(
-			404,
-			blogPostingResource.putBlogPostingPermissionHttpResponse(
-				0L,
-				new Permission[] {
-					new Permission() {
-						{
-							setActionIds(new String[] {"-"});
-							setRoleName("-");
-						}
-					}
-				}));
+		Assert.assertTrue(false);
 	}
 
-	protected BlogPosting testPutBlogPostingPermission_addBlogPosting()
+	@Test
+	public void testGetSiteBlogPostingByExternalReferenceCode()
+		throws Exception {
+
+		BlogPosting postBlogPosting =
+			testGetSiteBlogPostingByExternalReferenceCode_addBlogPosting();
+
+		BlogPosting getBlogPosting =
+			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
+				testGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+					postBlogPosting),
+				postBlogPosting.getExternalReferenceCode());
+
+		assertEquals(postBlogPosting, getBlogPosting);
+		assertValid(getBlogPosting);
+	}
+
+	protected Long testGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+			BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
+	}
+
+	protected BlogPosting
+			testGetSiteBlogPostingByExternalReferenceCode_addBlogPosting()
 		throws Exception {
 
 		return blogPostingResource.postSiteBlogPosting(
@@ -471,10 +811,158 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	@Test
-	public void testGetBlogPostingRenderedContentByDisplayPageDisplayPageKey()
+	public void testGraphQLGetSiteBlogPostingByExternalReferenceCode()
 		throws Exception {
 
-		Assert.assertTrue(false);
+		BlogPosting blogPosting =
+			testGraphQLGetSiteBlogPostingByExternalReferenceCode_addBlogPosting();
+
+		// No namespace
+
+		Assert.assertTrue(
+			equals(
+				blogPosting,
+				BlogPostingSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"blogPostingByExternalReferenceCode",
+								new HashMap<String, Object>() {
+									{
+										put(
+											"siteKey",
+											"\"" +
+												testGraphQLGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+													blogPosting) + "\"");
+
+										put(
+											"externalReferenceCode",
+											"\"" +
+												blogPosting.
+													getExternalReferenceCode() +
+														"\"");
+									}
+								},
+								getGraphQLFields())),
+						"JSONObject/data",
+						"Object/blogPostingByExternalReferenceCode"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertTrue(
+			equals(
+				blogPosting,
+				BlogPostingSerDes.toDTO(
+					JSONUtil.getValueAsString(
+						invokeGraphQLQuery(
+							new GraphQLField(
+								"headlessDelivery_v1_0",
+								new GraphQLField(
+									"blogPostingByExternalReferenceCode",
+									new HashMap<String, Object>() {
+										{
+											put(
+												"siteKey",
+												"\"" +
+													testGraphQLGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+														blogPosting) + "\"");
+
+											put(
+												"externalReferenceCode",
+												"\"" +
+													blogPosting.
+														getExternalReferenceCode() +
+															"\"");
+										}
+									},
+									getGraphQLFields()))),
+						"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+						"Object/blogPostingByExternalReferenceCode"))));
+	}
+
+	protected Long
+			testGraphQLGetSiteBlogPostingByExternalReferenceCode_getSiteId(
+				BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
+	}
+
+	@Test
+	public void testGraphQLGetSiteBlogPostingByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		String irrelevantExternalReferenceCode =
+			"\"" + RandomTestUtil.randomString() + "\"";
+
+		// No namespace
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"blogPostingByExternalReferenceCode",
+						new HashMap<String, Object>() {
+							{
+								put(
+									"siteKey",
+									"\"" + irrelevantGroup.getGroupId() + "\"");
+								put(
+									"externalReferenceCode",
+									irrelevantExternalReferenceCode);
+							}
+						},
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"headlessDelivery_v1_0",
+						new GraphQLField(
+							"blogPostingByExternalReferenceCode",
+							new HashMap<String, Object>() {
+								{
+									put(
+										"siteKey",
+										"\"" + irrelevantGroup.getGroupId() +
+											"\"");
+									put(
+										"externalReferenceCode",
+										irrelevantExternalReferenceCode);
+								}
+							},
+							getGraphQLFields()))),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	protected BlogPosting
+			testGraphQLGetSiteBlogPostingByExternalReferenceCode_addBlogPosting()
+		throws Exception {
+
+		return testGraphQLBlogPosting_addBlogPosting();
+	}
+
+	@Test
+	public void testGetSiteBlogPostingPermissionsPage() throws Exception {
+		Page<Permission> page =
+			blogPostingResource.getSiteBlogPostingPermissionsPage(
+				testGroup.getGroupId(), RoleConstants.GUEST);
+
+		Assert.assertNotNull(page);
+	}
+
+	protected BlogPosting testGetSiteBlogPostingPermissionsPage_addBlogPosting()
+		throws Exception {
+
+		return testPostSiteBlogPosting_addBlogPosting(randomBlogPosting());
 	}
 
 	@Test
@@ -486,7 +974,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 		Page<BlogPosting> page = blogPostingResource.getSiteBlogPostingsPage(
 			siteId, null, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantSiteId != null) {
 			BlogPosting irrelevantBlogPosting =
@@ -494,14 +982,17 @@ public abstract class BaseBlogPostingResourceTestCase {
 					irrelevantSiteId, randomIrrelevantBlogPosting());
 
 			page = blogPostingResource.getSiteBlogPostingsPage(
-				irrelevantSiteId, null, null, null, Pagination.of(1, 2), null);
+				irrelevantSiteId, null, null, null,
+				Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantBlogPosting),
-				(List<BlogPosting>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantBlogPosting, (List<BlogPosting>)page.getItems());
+			assertValid(
+				page,
+				testGetSiteBlogPostingsPage_getExpectedActions(
+					irrelevantSiteId));
 		}
 
 		BlogPosting blogPosting1 = testGetSiteBlogPostingsPage_addBlogPosting(
@@ -513,16 +1004,34 @@ public abstract class BaseBlogPostingResourceTestCase {
 		page = blogPostingResource.getSiteBlogPostingsPage(
 			siteId, null, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(blogPosting1, blogPosting2),
-			(List<BlogPosting>)page.getItems());
-		assertValid(page);
+		assertContains(blogPosting1, (List<BlogPosting>)page.getItems());
+		assertContains(blogPosting2, (List<BlogPosting>)page.getItems());
+		assertValid(
+			page, testGetSiteBlogPostingsPage_getExpectedActions(siteId));
 
 		blogPostingResource.deleteBlogPosting(blogPosting1.getId());
 
 		blogPostingResource.deleteBlogPosting(blogPosting2.getId());
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetSiteBlogPostingsPage_getExpectedActions(Long siteId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		Map createBatchAction = new HashMap<>();
+		createBatchAction.put("method", "POST");
+		createBatchAction.put(
+			"href",
+			"http://localhost:8080/o/headless-delivery/v1.0/sites/{siteId}/blog-postings/batch".
+				replace("{siteId}", String.valueOf(siteId)));
+
+		expectedActions.put("createBatch", createBatchAction);
+
+		return expectedActions;
 	}
 
 	@Test
@@ -557,11 +1066,40 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	@Test
+	public void testGetSiteBlogPostingsPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetSiteBlogPostingsPageWithFilter("eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetSiteBlogPostingsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetSiteBlogPostingsPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetSiteBlogPostingsPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetSiteBlogPostingsPageWithFilter("eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetSiteBlogPostingsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetSiteBlogPostingsPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetSiteBlogPostingsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -580,7 +1118,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 			Page<BlogPosting> page =
 				blogPostingResource.getSiteBlogPostingsPage(
 					siteId, null, null,
-					getFilterString(entityField, "eq", blogPosting1),
+					getFilterString(entityField, operator, blogPosting1),
 					Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -593,6 +1131,13 @@ public abstract class BaseBlogPostingResourceTestCase {
 	public void testGetSiteBlogPostingsPageWithPagination() throws Exception {
 		Long siteId = testGetSiteBlogPostingsPage_getSiteId();
 
+		Page<BlogPosting> blogPostingsPage =
+			blogPostingResource.getSiteBlogPostingsPage(
+				siteId, null, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			blogPostingsPage.getTotalCount());
+
 		BlogPosting blogPosting1 = testGetSiteBlogPostingsPage_addBlogPosting(
 			siteId, randomBlogPosting());
 
@@ -602,28 +1147,77 @@ public abstract class BaseBlogPostingResourceTestCase {
 		BlogPosting blogPosting3 = testGetSiteBlogPostingsPage_addBlogPosting(
 			siteId, randomBlogPosting());
 
-		Page<BlogPosting> page1 = blogPostingResource.getSiteBlogPostingsPage(
-			siteId, null, null, null, Pagination.of(1, 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<BlogPosting> blogPostings1 = (List<BlogPosting>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(blogPostings1.toString(), 2, blogPostings1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<BlogPosting> page1 =
+				blogPostingResource.getSiteBlogPostingsPage(
+					siteId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<BlogPosting> page2 = blogPostingResource.getSiteBlogPostingsPage(
-			siteId, null, null, null, Pagination.of(2, 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(blogPosting1, (List<BlogPosting>)page1.getItems());
 
-		List<BlogPosting> blogPostings2 = (List<BlogPosting>)page2.getItems();
+			Page<BlogPosting> page2 =
+				blogPostingResource.getSiteBlogPostingsPage(
+					siteId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(blogPostings2.toString(), 1, blogPostings2.size());
+			assertContains(blogPosting2, (List<BlogPosting>)page2.getItems());
 
-		Page<BlogPosting> page3 = blogPostingResource.getSiteBlogPostingsPage(
-			siteId, null, null, null, Pagination.of(1, 3), null);
+			Page<BlogPosting> page3 =
+				blogPostingResource.getSiteBlogPostingsPage(
+					siteId, null, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(blogPosting1, blogPosting2, blogPosting3),
-			(List<BlogPosting>)page3.getItems());
+			assertContains(blogPosting3, (List<BlogPosting>)page3.getItems());
+		}
+		else {
+			Page<BlogPosting> page1 =
+				blogPostingResource.getSiteBlogPostingsPage(
+					siteId, null, null, null, Pagination.of(1, totalCount + 2),
+					null);
+
+			List<BlogPosting> blogPostings1 =
+				(List<BlogPosting>)page1.getItems();
+
+			Assert.assertEquals(
+				blogPostings1.toString(), totalCount + 2, blogPostings1.size());
+
+			Page<BlogPosting> page2 =
+				blogPostingResource.getSiteBlogPostingsPage(
+					siteId, null, null, null, Pagination.of(2, totalCount + 2),
+					null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<BlogPosting> blogPostings2 =
+				(List<BlogPosting>)page2.getItems();
+
+			Assert.assertEquals(
+				blogPostings2.toString(), 1, blogPostings2.size());
+
+			Page<BlogPosting> page3 =
+				blogPostingResource.getSiteBlogPostingsPage(
+					siteId, null, null, null,
+					Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(blogPosting1, (List<BlogPosting>)page3.getItems());
+			assertContains(blogPosting2, (List<BlogPosting>)page3.getItems());
+			assertContains(blogPosting3, (List<BlogPosting>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -631,9 +1225,21 @@ public abstract class BaseBlogPostingResourceTestCase {
 		testGetSiteBlogPostingsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, blogPosting1, blogPosting2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					blogPosting1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetSiteBlogPostingsPageWithSortDouble() throws Exception {
+		testGetSiteBlogPostingsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, blogPosting1, blogPosting2) -> {
+				BeanTestUtil.setProperty(
+					blogPosting1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					blogPosting2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -642,8 +1248,10 @@ public abstract class BaseBlogPostingResourceTestCase {
 		testGetSiteBlogPostingsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, blogPosting1, blogPosting2) -> {
-				BeanUtils.setProperty(blogPosting1, entityField.getName(), 0);
-				BeanUtils.setProperty(blogPosting2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(
+					blogPosting1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(
+					blogPosting2, entityField.getName(), 1);
 			});
 	}
 
@@ -656,27 +1264,27 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						blogPosting1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						blogPosting2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						blogPosting1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						blogPosting2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -684,12 +1292,12 @@ public abstract class BaseBlogPostingResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						blogPosting1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						blogPosting2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -725,24 +1333,29 @@ public abstract class BaseBlogPostingResourceTestCase {
 		blogPosting2 = testGetSiteBlogPostingsPage_addBlogPosting(
 			siteId, blogPosting2);
 
+		Page<BlogPosting> page = blogPostingResource.getSiteBlogPostingsPage(
+			siteId, null, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<BlogPosting> ascPage =
 				blogPostingResource.getSiteBlogPostingsPage(
-					siteId, null, null, null, Pagination.of(1, 2),
+					siteId, null, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(blogPosting1, blogPosting2),
-				(List<BlogPosting>)ascPage.getItems());
+			assertContains(blogPosting1, (List<BlogPosting>)ascPage.getItems());
+			assertContains(blogPosting2, (List<BlogPosting>)ascPage.getItems());
 
 			Page<BlogPosting> descPage =
 				blogPostingResource.getSiteBlogPostingsPage(
-					siteId, null, null, null, Pagination.of(1, 2),
+					siteId, null, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(blogPosting2, blogPosting1),
-				(List<BlogPosting>)descPage.getItems());
+			assertContains(
+				blogPosting2, (List<BlogPosting>)descPage.getItems());
+			assertContains(
+				blogPosting1, (List<BlogPosting>)descPage.getItems());
 		}
 	}
 
@@ -780,26 +1393,93 @@ public abstract class BaseBlogPostingResourceTestCase {
 			new GraphQLField("items", getGraphQLFields()),
 			new GraphQLField("page"), new GraphQLField("totalCount"));
 
+		// No namespace
+
 		JSONObject blogPostingsJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
 			"JSONObject/blogPostings");
 
-		Assert.assertEquals(0, blogPostingsJSONObject.get("totalCount"));
+		long totalCount = blogPostingsJSONObject.getLong("totalCount");
 
-		BlogPosting blogPosting1 = testGraphQLBlogPosting_addBlogPosting();
-		BlogPosting blogPosting2 = testGraphQLBlogPosting_addBlogPosting();
+		BlogPosting blogPosting1 =
+			testGraphQLGetSiteBlogPostingsPage_addBlogPosting();
+		BlogPosting blogPosting2 =
+			testGraphQLGetSiteBlogPostingsPage_addBlogPosting();
 
 		blogPostingsJSONObject = JSONUtil.getValueAsJSONObject(
 			invokeGraphQLQuery(graphQLField), "JSONObject/data",
 			"JSONObject/blogPostings");
 
-		Assert.assertEquals(2, blogPostingsJSONObject.getLong("totalCount"));
+		Assert.assertEquals(
+			totalCount + 2, blogPostingsJSONObject.getLong("totalCount"));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(blogPosting1, blogPosting2),
+		assertContains(
+			blogPosting1,
 			Arrays.asList(
 				BlogPostingSerDes.toDTOs(
 					blogPostingsJSONObject.getString("items"))));
+		assertContains(
+			blogPosting2,
+			Arrays.asList(
+				BlogPostingSerDes.toDTOs(
+					blogPostingsJSONObject.getString("items"))));
+
+		// Using the namespace headlessDelivery_v1_0
+
+		blogPostingsJSONObject = JSONUtil.getValueAsJSONObject(
+			invokeGraphQLQuery(
+				new GraphQLField("headlessDelivery_v1_0", graphQLField)),
+			"JSONObject/data", "JSONObject/headlessDelivery_v1_0",
+			"JSONObject/blogPostings");
+
+		Assert.assertEquals(
+			totalCount + 2, blogPostingsJSONObject.getLong("totalCount"));
+
+		assertContains(
+			blogPosting1,
+			Arrays.asList(
+				BlogPostingSerDes.toDTOs(
+					blogPostingsJSONObject.getString("items"))));
+		assertContains(
+			blogPosting2,
+			Arrays.asList(
+				BlogPostingSerDes.toDTOs(
+					blogPostingsJSONObject.getString("items"))));
+	}
+
+	protected BlogPosting testGraphQLGetSiteBlogPostingsPage_addBlogPosting()
+		throws Exception {
+
+		return testGraphQLBlogPosting_addBlogPosting();
+	}
+
+	@Test
+	public void testPatchBlogPosting() throws Exception {
+		BlogPosting postBlogPosting = testPatchBlogPosting_addBlogPosting();
+
+		BlogPosting randomPatchBlogPosting = randomPatchBlogPosting();
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		BlogPosting patchBlogPosting = blogPostingResource.patchBlogPosting(
+			postBlogPosting.getId(), randomPatchBlogPosting);
+
+		BlogPosting expectedPatchBlogPosting = postBlogPosting.clone();
+
+		BeanTestUtil.copyProperties(
+			randomPatchBlogPosting, expectedPatchBlogPosting);
+
+		BlogPosting getBlogPosting = blogPostingResource.getBlogPosting(
+			patchBlogPosting.getId());
+
+		assertEquals(expectedPatchBlogPosting, getBlogPosting);
+		assertValid(getBlogPosting);
+	}
+
+	protected BlogPosting testPatchBlogPosting_addBlogPosting()
+		throws Exception {
+
+		return blogPostingResource.postSiteBlogPosting(
+			testGroup.getGroupId(), randomBlogPosting());
 	}
 
 	@Test
@@ -832,126 +1512,71 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteSiteBlogPostingByExternalReferenceCode()
-		throws Exception {
+	public void testPutBlogPosting() throws Exception {
+		BlogPosting postBlogPosting = testPutBlogPosting_addBlogPosting();
 
-		@SuppressWarnings("PMD.UnusedLocalVariable")
-		BlogPosting blogPosting =
-			testDeleteSiteBlogPostingByExternalReferenceCode_addBlogPosting();
+		BlogPosting randomBlogPosting = randomBlogPosting();
 
-		assertHttpResponseStatusCode(
-			204,
-			blogPostingResource.
-				deleteSiteBlogPostingByExternalReferenceCodeHttpResponse(
-					blogPosting.getSiteId(),
-					blogPosting.getExternalReferenceCode()));
+		BlogPosting putBlogPosting = blogPostingResource.putBlogPosting(
+			postBlogPosting.getId(), randomBlogPosting);
 
-		assertHttpResponseStatusCode(
-			404,
-			blogPostingResource.
-				getSiteBlogPostingByExternalReferenceCodeHttpResponse(
-					blogPosting.getSiteId(),
-					blogPosting.getExternalReferenceCode()));
+		assertEquals(randomBlogPosting, putBlogPosting);
+		assertValid(putBlogPosting);
 
-		assertHttpResponseStatusCode(
-			404,
-			blogPostingResource.
-				getSiteBlogPostingByExternalReferenceCodeHttpResponse(
-					blogPosting.getSiteId(),
-					blogPosting.getExternalReferenceCode()));
-	}
+		BlogPosting getBlogPosting = blogPostingResource.getBlogPosting(
+			putBlogPosting.getId());
 
-	protected BlogPosting
-			testDeleteSiteBlogPostingByExternalReferenceCode_addBlogPosting()
-		throws Exception {
-
-		return blogPostingResource.postSiteBlogPosting(
-			testGroup.getGroupId(), randomBlogPosting());
-	}
-
-	@Test
-	public void testGetSiteBlogPostingByExternalReferenceCode()
-		throws Exception {
-
-		BlogPosting postBlogPosting =
-			testGetSiteBlogPostingByExternalReferenceCode_addBlogPosting();
-
-		BlogPosting getBlogPosting =
-			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
-				postBlogPosting.getSiteId(),
-				postBlogPosting.getExternalReferenceCode());
-
-		assertEquals(postBlogPosting, getBlogPosting);
+		assertEquals(randomBlogPosting, getBlogPosting);
 		assertValid(getBlogPosting);
 	}
 
-	protected BlogPosting
-			testGetSiteBlogPostingByExternalReferenceCode_addBlogPosting()
-		throws Exception {
-
+	protected BlogPosting testPutBlogPosting_addBlogPosting() throws Exception {
 		return blogPostingResource.postSiteBlogPosting(
 			testGroup.getGroupId(), randomBlogPosting());
 	}
 
 	@Test
-	public void testGraphQLGetSiteBlogPostingByExternalReferenceCode()
-		throws Exception {
+	public void testPutBlogPostingPermissionsPage() throws Exception {
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		BlogPosting blogPosting =
+			testPutBlogPostingPermissionsPage_addBlogPosting();
 
-		BlogPosting blogPosting = testGraphQLBlogPosting_addBlogPosting();
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		com.liferay.portal.kernel.model.Role role = RoleTestUtil.addRole(
+			RoleConstants.TYPE_REGULAR);
 
-		Assert.assertTrue(
-			equals(
-				blogPosting,
-				BlogPostingSerDes.toDTO(
-					JSONUtil.getValueAsString(
-						invokeGraphQLQuery(
-							new GraphQLField(
-								"blogPostingByExternalReferenceCode",
-								new HashMap<String, Object>() {
-									{
-										put(
-											"siteKey",
-											"\"" + blogPosting.getSiteId() +
-												"\"");
-										put(
-											"externalReferenceCode",
-											"\"" +
-												blogPosting.
-													getExternalReferenceCode() +
-														"\"");
-									}
-								},
-								getGraphQLFields())),
-						"JSONObject/data",
-						"Object/blogPostingByExternalReferenceCode"))));
+		assertHttpResponseStatusCode(
+			200,
+			blogPostingResource.putBlogPostingPermissionsPageHttpResponse(
+				blogPosting.getId(),
+				new Permission[] {
+					new Permission() {
+						{
+							setActionIds(new String[] {"VIEW"});
+							setRoleName(role.getName());
+						}
+					}
+				}));
+
+		assertHttpResponseStatusCode(
+			404,
+			blogPostingResource.putBlogPostingPermissionsPageHttpResponse(
+				0L,
+				new Permission[] {
+					new Permission() {
+						{
+							setActionIds(new String[] {"-"});
+							setRoleName("-");
+						}
+					}
+				}));
 	}
 
-	@Test
-	public void testGraphQLGetSiteBlogPostingByExternalReferenceCodeNotFound()
+	protected BlogPosting testPutBlogPostingPermissionsPage_addBlogPosting()
 		throws Exception {
 
-		String irrelevantExternalReferenceCode =
-			"\"" + RandomTestUtil.randomString() + "\"";
-
-		Assert.assertEquals(
-			"Not Found",
-			JSONUtil.getValueAsString(
-				invokeGraphQLQuery(
-					new GraphQLField(
-						"blogPostingByExternalReferenceCode",
-						new HashMap<String, Object>() {
-							{
-								put(
-									"siteKey",
-									"\"" + irrelevantGroup.getGroupId() + "\"");
-								put(
-									"externalReferenceCode",
-									irrelevantExternalReferenceCode);
-							}
-						},
-						getGraphQLFields())),
-				"JSONArray/errors", "Object/0", "JSONObject/extensions",
-				"Object/code"));
+		return blogPostingResource.postSiteBlogPosting(
+			testGroup.getGroupId(), randomBlogPosting());
 	}
 
 	@Test
@@ -965,7 +1590,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		BlogPosting putBlogPosting =
 			blogPostingResource.putSiteBlogPostingByExternalReferenceCode(
-				postBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					postBlogPosting),
 				postBlogPosting.getExternalReferenceCode(), randomBlogPosting);
 
 		assertEquals(randomBlogPosting, putBlogPosting);
@@ -973,7 +1599,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		BlogPosting getBlogPosting =
 			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
-				putBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					putBlogPosting),
 				putBlogPosting.getExternalReferenceCode());
 
 		assertEquals(randomBlogPosting, getBlogPosting);
@@ -984,7 +1611,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		putBlogPosting =
 			blogPostingResource.putSiteBlogPostingByExternalReferenceCode(
-				newBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					newBlogPosting),
 				newBlogPosting.getExternalReferenceCode(), newBlogPosting);
 
 		assertEquals(newBlogPosting, putBlogPosting);
@@ -992,7 +1620,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		getBlogPosting =
 			blogPostingResource.getSiteBlogPostingByExternalReferenceCode(
-				putBlogPosting.getSiteId(),
+				testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+					putBlogPosting),
 				putBlogPosting.getExternalReferenceCode());
 
 		assertEquals(newBlogPosting, getBlogPosting);
@@ -1000,6 +1629,13 @@ public abstract class BaseBlogPostingResourceTestCase {
 		Assert.assertEquals(
 			newBlogPosting.getExternalReferenceCode(),
 			putBlogPosting.getExternalReferenceCode());
+	}
+
+	protected Long testPutSiteBlogPostingByExternalReferenceCode_getSiteId(
+			BlogPosting blogPosting)
+		throws Exception {
+
+		return blogPosting.getSiteId();
 	}
 
 	protected BlogPosting
@@ -1018,25 +1654,10 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	@Test
-	public void testGetSiteBlogPostingPermissionsPage() throws Exception {
-		Page<Permission> page =
-			blogPostingResource.getSiteBlogPostingPermissionsPage(
-				testGroup.getGroupId(), RoleConstants.GUEST);
-
-		Assert.assertNotNull(page);
-	}
-
-	protected BlogPosting testGetSiteBlogPostingPermissionsPage_addBlogPosting()
-		throws Exception {
-
-		return testPostSiteBlogPosting_addBlogPosting(randomBlogPosting());
-	}
-
-	@Test
-	public void testPutSiteBlogPostingPermission() throws Exception {
+	public void testPutSiteBlogPostingPermissionsPage() throws Exception {
 		@SuppressWarnings("PMD.UnusedLocalVariable")
 		BlogPosting blogPosting =
-			testPutSiteBlogPostingPermission_addBlogPosting();
+			testPutSiteBlogPostingPermissionsPage_addBlogPosting();
 
 		@SuppressWarnings("PMD.UnusedLocalVariable")
 		com.liferay.portal.kernel.model.Role role = RoleTestUtil.addRole(
@@ -1044,7 +1665,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		assertHttpResponseStatusCode(
 			200,
-			blogPostingResource.putSiteBlogPostingPermissionHttpResponse(
+			blogPostingResource.putSiteBlogPostingPermissionsPageHttpResponse(
 				blogPosting.getSiteId(),
 				new Permission[] {
 					new Permission() {
@@ -1057,7 +1678,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		assertHttpResponseStatusCode(
 			404,
-			blogPostingResource.putSiteBlogPostingPermissionHttpResponse(
+			blogPostingResource.putSiteBlogPostingPermissionsPageHttpResponse(
 				blogPosting.getSiteId(),
 				new Permission[] {
 					new Permission() {
@@ -1069,7 +1690,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 				}));
 	}
 
-	protected BlogPosting testPutSiteBlogPostingPermission_addBlogPosting()
+	protected BlogPosting testPutSiteBlogPostingPermissionsPage_addBlogPosting()
 		throws Exception {
 
 		return blogPostingResource.postSiteBlogPosting(
@@ -1554,6 +2175,13 @@ public abstract class BaseBlogPostingResourceTestCase {
 	}
 
 	protected void assertValid(Page<BlogPosting> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<BlogPosting> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<BlogPosting> blogPostings = page.getItems();
@@ -1568,6 +2196,25 @@ public abstract class BaseBlogPostingResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected void assertValid(Rating rating) {
@@ -2104,14 +2751,20 @@ public abstract class BaseBlogPostingResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -2128,6 +2781,10 @@ public abstract class BaseBlogPostingResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -2137,18 +2794,18 @@ public abstract class BaseBlogPostingResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -2175,17 +2832,93 @@ public abstract class BaseBlogPostingResourceTestCase {
 		}
 
 		if (entityFieldName.equals("alternativeHeadline")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getAlternativeHeadline()));
-			sb.append("'");
+			Object object = blogPosting.getAlternativeHeadline();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("articleBody")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getArticleBody()));
-			sb.append("'");
+			Object object = blogPosting.getArticleBody();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -2202,21 +2935,18 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		if (entityFieldName.equals("dateCreated")) {
 			if (operator.equals("between")) {
+				Date date = blogPosting.getDateCreated();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							blogPosting.getDateCreated(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(blogPosting.getDateCreated(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -2226,7 +2956,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(blogPosting.getDateCreated()));
+				sb.append(_format.format(blogPosting.getDateCreated()));
 			}
 
 			return sb.toString();
@@ -2234,22 +2964,18 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		if (entityFieldName.equals("dateModified")) {
 			if (operator.equals("between")) {
+				Date date = blogPosting.getDateModified();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							blogPosting.getDateModified(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							blogPosting.getDateModified(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -2259,7 +2985,7 @@ public abstract class BaseBlogPostingResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(blogPosting.getDateModified()));
+				sb.append(_format.format(blogPosting.getDateModified()));
 			}
 
 			return sb.toString();
@@ -2267,22 +2993,18 @@ public abstract class BaseBlogPostingResourceTestCase {
 
 		if (entityFieldName.equals("datePublished")) {
 			if (operator.equals("between")) {
+				Date date = blogPosting.getDatePublished();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							blogPosting.getDatePublished(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							blogPosting.getDatePublished(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -2292,48 +3014,238 @@ public abstract class BaseBlogPostingResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(blogPosting.getDatePublished()));
+				sb.append(_format.format(blogPosting.getDatePublished()));
 			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("description")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getDescription()));
-			sb.append("'");
+			Object object = blogPosting.getDescription();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("encodingFormat")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getEncodingFormat()));
-			sb.append("'");
+			Object object = blogPosting.getEncodingFormat();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = blogPosting.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("friendlyUrlPath")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getFriendlyUrlPath()));
-			sb.append("'");
+			Object object = blogPosting.getFriendlyUrlPath();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("headline")) {
-			sb.append("'");
-			sb.append(String.valueOf(blogPosting.getHeadline()));
-			sb.append("'");
+			Object object = blogPosting.getHeadline();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -2354,8 +3266,9 @@ public abstract class BaseBlogPostingResourceTestCase {
 		}
 
 		if (entityFieldName.equals("numberOfComments")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(blogPosting.getNumberOfComments()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("relatedContents")) {
@@ -2402,7 +3315,8 @@ public abstract class BaseBlogPostingResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -2481,10 +3395,155 @@ public abstract class BaseBlogPostingResourceTestCase {
 		};
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected BlogPostingResource blogPostingResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -2560,22 +3619,34 @@ public abstract class BaseBlogPostingResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseBlogPostingResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.delivery.resource.v1_0.BlogPostingResource
 		_blogPostingResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

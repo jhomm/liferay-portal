@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.editor.ckeditor.web.internal.editor.configuration;
@@ -20,7 +11,7 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
@@ -35,6 +26,7 @@ import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Chema Balsas
@@ -52,7 +44,7 @@ public class CKEditorEmbedConfigContributor
 		ThemeDisplay themeDisplay,
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory) {
 
-		jsonObject.put("embedProviders", getEditorEmbedProvidersJSONArray());
+		jsonObject.put("embedProviders", _getEditorEmbedProvidersJSONArray());
 	}
 
 	@Activate
@@ -75,7 +67,7 @@ public class CKEditorEmbedConfigContributor
 		_serviceTrackerMap.close();
 	}
 
-	protected JSONObject getEditorEmbedProviderJSONObject(
+	private JSONObject _getEditorEmbedProviderJSONObject(
 		String editorEmbedProviderType,
 		EditorEmbedProvider editorEmbedProvider) {
 
@@ -88,8 +80,7 @@ public class CKEditorEmbedConfigContributor
 		).put(
 			"urlSchemes",
 			() -> {
-				JSONArray urlSchemesJSONArray =
-					JSONFactoryUtil.createJSONArray();
+				JSONArray urlSchemesJSONArray = _jsonFactory.createJSONArray();
 
 				String[] urlSchemes = editorEmbedProvider.getURLSchemes();
 
@@ -102,8 +93,8 @@ public class CKEditorEmbedConfigContributor
 		);
 	}
 
-	protected JSONArray getEditorEmbedProvidersJSONArray() {
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+	private JSONArray _getEditorEmbedProvidersJSONArray() {
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		Set<String> editorEmbedProviderTypes = _serviceTrackerMap.keySet();
 
@@ -114,12 +105,15 @@ public class CKEditorEmbedConfigContributor
 
 				editorEmbedProviders.forEach(
 					editorEmbedProvider -> jsonArray.put(
-						getEditorEmbedProviderJSONObject(
+						_getEditorEmbedProviderJSONObject(
 							editorEmbedProviderType, editorEmbedProvider)));
 			});
 
 		return jsonArray;
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	private ServiceTrackerMap<String, List<EditorEmbedProvider>>
 		_serviceTrackerMap;

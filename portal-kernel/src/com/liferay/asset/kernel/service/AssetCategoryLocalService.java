@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -40,6 +31,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -65,6 +57,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.asset.kernel.model.AssetCategory"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -92,18 +87,6 @@ public interface AssetCategoryLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public AssetCategory addAssetCategory(AssetCategory assetCategory);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addCategory(String, long, long, long, Map, Map, long, String[], ServiceContext)}
-	 */
-	@Deprecated
-	public AssetCategory addCategory(
-			long userId, long groupId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
-		throws PortalException;
 
 	public AssetCategory addCategory(
 			long userId, long groupId, String title, long vocabularyId,
@@ -271,24 +254,9 @@ public interface AssetCategoryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetCategory fetchAssetCategory(long categoryId);
 
-	/**
-	 * Returns the asset category with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset category's external reference code
-	 * @return the matching asset category, or <code>null</code> if a matching asset category could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetCategory fetchAssetCategoryByExternalReferenceCode(
-		long groupId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAssetCategoryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public AssetCategory fetchAssetCategoryByReferenceCode(
-		long groupId, String externalReferenceCode);
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the asset category matching the UUID and group.
@@ -370,17 +338,9 @@ public interface AssetCategoryLocalService
 	public AssetCategory getAssetCategory(long categoryId)
 		throws PortalException;
 
-	/**
-	 * Returns the asset category with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset category's external reference code
-	 * @return the matching asset category
-	 * @throws PortalException if a matching asset category could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetCategory getAssetCategoryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -407,7 +367,14 @@ public interface AssetCategoryLocalService
 	public List<AssetCategory> getCategories(long classNameId, long classPK);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<AssetCategory> getCategories(
+		long classNameId, long classPK, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetCategory> getCategories(String className, long classPK);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCategoriesCount(long classNameId, long classPK);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetCategory getCategory(long categoryId) throws PortalException;
@@ -451,6 +418,11 @@ public interface AssetCategoryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetCategory getOrAddIncompleteCategory(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.

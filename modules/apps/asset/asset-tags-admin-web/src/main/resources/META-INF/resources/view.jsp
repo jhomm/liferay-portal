@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,16 +9,16 @@
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= new AssetTagsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, assetTagsDisplayContext) %>"
-	propsTransformer="js/ManagementToolbarPropsTransformer"
+	propsTransformer="{ManagementToolbarPropsTransformer} from asset-tags-admin-web"
 />
 
 <portlet:actionURL name="deleteTag" var="deleteTagURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteTagURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
-	<liferay-ui:breadcrumb
-		showLayout="<%= false %>"
+<aui:form action="<%= deleteTagURL %>" cssClass="container-fluid container-fluid-max-xxxl" name="fm">
+	<liferay-site-navigation:breadcrumb
+		breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, true, false, false, true, true) %>"
 	/>
 
 	<liferay-ui:search-container
@@ -65,8 +56,9 @@
 
 					<liferay-ui:search-container-column-text>
 						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= assetTagsDisplayContext.getAssetTagActionDropdownItems(tag) %>"
-							propsTransformer="js/AssetTagActionDropdownPropsTransformer"
+							propsTransformer="{AssetTagActionDropdownPropsTransformer} from asset-tags-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
@@ -85,8 +77,9 @@
 
 					<liferay-ui:search-container-column-text>
 						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= assetTagsDisplayContext.getAssetTagActionDropdownItems(tag) %>"
-							propsTransformer="js/AssetTagActionDropdownPropsTransformer"
+							propsTransformer="{AssetTagActionDropdownPropsTransformer} from asset-tags-admin-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>

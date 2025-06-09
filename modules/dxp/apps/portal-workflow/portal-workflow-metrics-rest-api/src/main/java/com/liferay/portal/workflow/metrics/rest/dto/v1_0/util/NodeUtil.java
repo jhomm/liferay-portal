@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.dto.v1_0.util;
@@ -36,15 +27,20 @@ public class NodeUtil {
 
 		return new Node() {
 			{
-				dateCreated = _parseDate(document.getDate("createDate"));
-				dateModified = _parseDate(document.getDate("modifiedDate"));
-				id = document.getLong("nodeId");
-				initial = GetterUtil.getBoolean(document.getValue("initial"));
-				label = language.get(
-					resourceBundle, document.getString("name"));
-				name = document.getString("name");
-				terminal = GetterUtil.getBoolean(document.getValue("terminal"));
-				type = document.getString("type");
+				setDateCreated(
+					() -> _parseDate(document.getDate("createDate")));
+				setDateModified(
+					() -> _parseDate(document.getDate("modifiedDate")));
+				setId(() -> document.getLong("nodeId"));
+				setInitial(
+					() -> GetterUtil.getBoolean(document.getValue("initial")));
+				setLabel(
+					() -> language.get(
+						resourceBundle, document.getString("name")));
+				setName(() -> document.getString("name"));
+				setTerminal(
+					() -> GetterUtil.getBoolean(document.getValue("terminal")));
+				setType(() -> document.getString("type"));
 			}
 		};
 	}
@@ -56,7 +52,7 @@ public class NodeUtil {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return null;

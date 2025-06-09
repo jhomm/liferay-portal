@@ -1,39 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet;
 
+import com.liferay.petra.io.unsync.UnsyncPrintWriter;
+import com.liferay.portal.kernel.io.OutputStreamWriter;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.servlet.ServletOutputStreamAdapter;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
 import com.liferay.util.servlet.NullServletOutputStream;
+
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Locale;
-
-import javax.portlet.ActionResponse;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
 
 /**
  * @author Brian Wing Shun Chan
@@ -94,7 +86,6 @@ public class PortletServletResponse extends HttpServletResponseWrapper {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public String encodeRedirectUrl(String url) {
 		return null;
 	}
@@ -108,7 +99,6 @@ public class PortletServletResponse extends HttpServletResponseWrapper {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public String encodeUrl(String url) {
 		return _portletResponse.encodeURL(url);
 	}
@@ -212,8 +202,9 @@ public class PortletServletResponse extends HttpServletResponseWrapper {
 			return mimeResponse.getWriter();
 		}
 
-		return UnsyncPrintWriterPool.borrow(
-			new NullServletOutputStream(), getCharacterEncoding());
+		return new UnsyncPrintWriter(
+			new OutputStreamWriter(
+				new NullServletOutputStream(), getCharacterEncoding(), true));
 	}
 
 	@Override
@@ -368,7 +359,6 @@ public class PortletServletResponse extends HttpServletResponseWrapper {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public void setStatus(int status, String message) {
 		setStatus(status);
 	}

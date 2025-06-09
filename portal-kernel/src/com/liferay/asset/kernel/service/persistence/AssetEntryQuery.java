@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service.persistence;
@@ -28,6 +19,8 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
@@ -35,8 +28,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -47,7 +38,7 @@ public class AssetEntryQuery {
 
 	public static final String[] ORDER_BY_COLUMNS = {
 		"title", "createDate", "modifiedDate", "publishDate", "expirationDate",
-		"priority", "viewCount", "ratings"
+		"priority", "viewCount", "ratings", "ratingsTotalScore"
 	};
 
 	public static String checkOrderByCol(String orderByCol) {
@@ -98,7 +89,7 @@ public class AssetEntryQuery {
 		setGroupIds(assetEntryQuery.getGroupIds());
 		setKeywords(assetEntryQuery.getKeywords());
 		setLayout(assetEntryQuery.getLayout());
-		setLinkedAssetEntryId(assetEntryQuery.getLinkedAssetEntryId());
+		setLinkedAssetEntryIds(assetEntryQuery.getLinkedAssetEntryIds());
 		setListable(assetEntryQuery.isListable());
 		setNotAllCategoryIds(assetEntryQuery.getNotAllCategoryIds());
 		setNotAllKeywords(assetEntryQuery.getNotAllKeywords());
@@ -261,8 +252,8 @@ public class AssetEntryQuery {
 		return _layout;
 	}
 
-	public long getLinkedAssetEntryId() {
-		return _linkedAssetEntryId;
+	public long[] getLinkedAssetEntryIds() {
+		return _linkedAssetEntryIds;
 	}
 
 	public long[] getNotAllCategoryIds() {
@@ -477,8 +468,8 @@ public class AssetEntryQuery {
 		_toString = null;
 	}
 
-	public void setLinkedAssetEntryId(long linkedAssetEntryId) {
-		_linkedAssetEntryId = linkedAssetEntryId;
+	public void setLinkedAssetEntryIds(long[] linkedAssetEntryIds) {
+		_linkedAssetEntryIds = linkedAssetEntryIds;
 
 		_toString = null;
 	}
@@ -633,8 +624,8 @@ public class AssetEntryQuery {
 		sb.append(StringUtil.merge(_groupIds));
 		sb.append(", keywords=");
 		sb.append(_keywords);
-		sb.append(", linkedAssetEntryId=");
-		sb.append(_linkedAssetEntryId);
+		sb.append(", linkedAssetEntryIds=");
+		sb.append(_linkedAssetEntryIds);
 		sb.append(", listable=");
 		sb.append(_listable);
 		sb.append(", notAllCategoryIds=");
@@ -717,7 +708,7 @@ public class AssetEntryQuery {
 	private long[] _groupIds = new long[0];
 	private String _keywords;
 	private Layout _layout;
-	private long _linkedAssetEntryId;
+	private long[] _linkedAssetEntryIds;
 	private Boolean _listable = true;
 	private long[] _notAllCategoryIds = new long[0];
 	private String[] _notAllKeywords = new String[0];

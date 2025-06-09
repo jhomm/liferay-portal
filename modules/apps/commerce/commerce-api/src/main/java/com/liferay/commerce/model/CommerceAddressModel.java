@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -17,6 +8,7 @@ package com.liferay.commerce.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.AttachedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -34,12 +26,14 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceAddress
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ProviderType
 public interface CommerceAddressModel
-	extends AttachedModel, BaseModel<CommerceAddress>, GroupedModel, MVCCModel,
-			ShardedModel {
+	extends AttachedModel, BaseModel<CommerceAddress>,
+			ExternalReferenceCodeModel, GroupedModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -83,6 +77,7 @@ public interface CommerceAddressModel
 	 * @return the external reference code of this commerce address
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -90,6 +85,7 @@ public interface CommerceAddressModel
 	 *
 	 * @param externalReferenceCode the external reference code of this commerce address
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -262,19 +258,89 @@ public interface CommerceAddressModel
 	public void setClassPK(long classPK);
 
 	/**
-	 * Returns the name of this commerce address.
+	 * Returns the country ID of this commerce address.
 	 *
-	 * @return the name of this commerce address
+	 * @return the country ID of this commerce address
 	 */
-	@AutoEscape
-	public String getName();
+	public long getCountryId();
 
 	/**
-	 * Sets the name of this commerce address.
+	 * Sets the country ID of this commerce address.
 	 *
-	 * @param name the name of this commerce address
+	 * @param countryId the country ID of this commerce address
 	 */
-	public void setName(String name);
+	public void setCountryId(long countryId);
+
+	/**
+	 * Returns the region ID of this commerce address.
+	 *
+	 * @return the region ID of this commerce address
+	 */
+	public long getRegionId();
+
+	/**
+	 * Sets the region ID of this commerce address.
+	 *
+	 * @param regionId the region ID of this commerce address
+	 */
+	public void setRegionId(long regionId);
+
+	/**
+	 * Returns the city of this commerce address.
+	 *
+	 * @return the city of this commerce address
+	 */
+	@AutoEscape
+	public String getCity();
+
+	/**
+	 * Sets the city of this commerce address.
+	 *
+	 * @param city the city of this commerce address
+	 */
+	public void setCity(String city);
+
+	/**
+	 * Returns the default billing of this commerce address.
+	 *
+	 * @return the default billing of this commerce address
+	 */
+	public boolean getDefaultBilling();
+
+	/**
+	 * Returns <code>true</code> if this commerce address is default billing.
+	 *
+	 * @return <code>true</code> if this commerce address is default billing; <code>false</code> otherwise
+	 */
+	public boolean isDefaultBilling();
+
+	/**
+	 * Sets whether this commerce address is default billing.
+	 *
+	 * @param defaultBilling the default billing of this commerce address
+	 */
+	public void setDefaultBilling(boolean defaultBilling);
+
+	/**
+	 * Returns the default shipping of this commerce address.
+	 *
+	 * @return the default shipping of this commerce address
+	 */
+	public boolean getDefaultShipping();
+
+	/**
+	 * Returns <code>true</code> if this commerce address is default shipping.
+	 *
+	 * @return <code>true</code> if this commerce address is default shipping; <code>false</code> otherwise
+	 */
+	public boolean isDefaultShipping();
+
+	/**
+	 * Sets whether this commerce address is default shipping.
+	 *
+	 * @param defaultShipping the default shipping of this commerce address
+	 */
+	public void setDefaultShipping(boolean defaultShipping);
 
 	/**
 	 * Returns the description of this commerce address.
@@ -290,6 +356,64 @@ public interface CommerceAddressModel
 	 * @param description the description of this commerce address
 	 */
 	public void setDescription(String description);
+
+	/**
+	 * Returns the latitude of this commerce address.
+	 *
+	 * @return the latitude of this commerce address
+	 */
+	public double getLatitude();
+
+	/**
+	 * Sets the latitude of this commerce address.
+	 *
+	 * @param latitude the latitude of this commerce address
+	 */
+	public void setLatitude(double latitude);
+
+	/**
+	 * Returns the longitude of this commerce address.
+	 *
+	 * @return the longitude of this commerce address
+	 */
+	public double getLongitude();
+
+	/**
+	 * Sets the longitude of this commerce address.
+	 *
+	 * @param longitude the longitude of this commerce address
+	 */
+	public void setLongitude(double longitude);
+
+	/**
+	 * Returns the name of this commerce address.
+	 *
+	 * @return the name of this commerce address
+	 */
+	@AutoEscape
+	public String getName();
+
+	/**
+	 * Sets the name of this commerce address.
+	 *
+	 * @param name the name of this commerce address
+	 */
+	public void setName(String name);
+
+	/**
+	 * Returns the phone number of this commerce address.
+	 *
+	 * @return the phone number of this commerce address
+	 */
+	@AutoEscape
+	public String getPhoneNumber();
+
+	/**
+	 * Sets the phone number of this commerce address.
+	 *
+	 * @param phoneNumber the phone number of this commerce address
+	 */
+	public void setPhoneNumber(String phoneNumber);
 
 	/**
 	 * Returns the street1 of this commerce address.
@@ -337,19 +461,33 @@ public interface CommerceAddressModel
 	public void setStreet3(String street3);
 
 	/**
-	 * Returns the city of this commerce address.
+	 * Returns the subtype of this commerce address.
 	 *
-	 * @return the city of this commerce address
+	 * @return the subtype of this commerce address
 	 */
 	@AutoEscape
-	public String getCity();
+	public String getSubtype();
 
 	/**
-	 * Sets the city of this commerce address.
+	 * Sets the subtype of this commerce address.
 	 *
-	 * @param city the city of this commerce address
+	 * @param subtype the subtype of this commerce address
 	 */
-	public void setCity(String city);
+	public void setSubtype(String subtype);
+
+	/**
+	 * Returns the type of this commerce address.
+	 *
+	 * @return the type of this commerce address
+	 */
+	public int getType();
+
+	/**
+	 * Sets the type of this commerce address.
+	 *
+	 * @param type the type of this commerce address
+	 */
+	public void setType(int type);
 
 	/**
 	 * Returns the zip of this commerce address.
@@ -366,134 +504,11 @@ public interface CommerceAddressModel
 	 */
 	public void setZip(String zip);
 
-	/**
-	 * Returns the region ID of this commerce address.
-	 *
-	 * @return the region ID of this commerce address
-	 */
-	public long getRegionId();
-
-	/**
-	 * Sets the region ID of this commerce address.
-	 *
-	 * @param regionId the region ID of this commerce address
-	 */
-	public void setRegionId(long regionId);
-
-	/**
-	 * Returns the country ID of this commerce address.
-	 *
-	 * @return the country ID of this commerce address
-	 */
-	public long getCountryId();
-
-	/**
-	 * Sets the country ID of this commerce address.
-	 *
-	 * @param countryId the country ID of this commerce address
-	 */
-	public void setCountryId(long countryId);
-
-	/**
-	 * Returns the latitude of this commerce address.
-	 *
-	 * @return the latitude of this commerce address
-	 */
-	public double getLatitude();
-
-	/**
-	 * Sets the latitude of this commerce address.
-	 *
-	 * @param latitude the latitude of this commerce address
-	 */
-	public void setLatitude(double latitude);
-
-	/**
-	 * Returns the longitude of this commerce address.
-	 *
-	 * @return the longitude of this commerce address
-	 */
-	public double getLongitude();
-
-	/**
-	 * Sets the longitude of this commerce address.
-	 *
-	 * @param longitude the longitude of this commerce address
-	 */
-	public void setLongitude(double longitude);
-
-	/**
-	 * Returns the phone number of this commerce address.
-	 *
-	 * @return the phone number of this commerce address
-	 */
-	@AutoEscape
-	public String getPhoneNumber();
-
-	/**
-	 * Sets the phone number of this commerce address.
-	 *
-	 * @param phoneNumber the phone number of this commerce address
-	 */
-	public void setPhoneNumber(String phoneNumber);
-
-	/**
-	 * Returns the default billing of this commerce address.
-	 *
-	 * @return the default billing of this commerce address
-	 */
-	public boolean getDefaultBilling();
-
-	/**
-	 * Returns <code>true</code> if this commerce address is default billing.
-	 *
-	 * @return <code>true</code> if this commerce address is default billing; <code>false</code> otherwise
-	 */
-	public boolean isDefaultBilling();
-
-	/**
-	 * Sets whether this commerce address is default billing.
-	 *
-	 * @param defaultBilling the default billing of this commerce address
-	 */
-	public void setDefaultBilling(boolean defaultBilling);
-
-	/**
-	 * Returns the default shipping of this commerce address.
-	 *
-	 * @return the default shipping of this commerce address
-	 */
-	public boolean getDefaultShipping();
-
-	/**
-	 * Returns <code>true</code> if this commerce address is default shipping.
-	 *
-	 * @return <code>true</code> if this commerce address is default shipping; <code>false</code> otherwise
-	 */
-	public boolean isDefaultShipping();
-
-	/**
-	 * Sets whether this commerce address is default shipping.
-	 *
-	 * @param defaultShipping the default shipping of this commerce address
-	 */
-	public void setDefaultShipping(boolean defaultShipping);
-
-	/**
-	 * Returns the type of this commerce address.
-	 *
-	 * @return the type of this commerce address
-	 */
-	public int getType();
-
-	/**
-	 * Sets the type of this commerce address.
-	 *
-	 * @param type the type of this commerce address
-	 */
-	public void setType(int type);
-
 	@Override
 	public CommerceAddress cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

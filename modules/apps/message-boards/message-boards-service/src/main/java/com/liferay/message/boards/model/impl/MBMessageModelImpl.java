@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model.impl;
@@ -19,16 +10,12 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBMessageModel;
-import com.liferay.message.boards.model.MBMessageSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
-import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
-import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -43,18 +30,15 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -139,7 +123,7 @@ public class MBMessageModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table MBMessage (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,messageId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,categoryId LONG,threadId LONG,rootMessageId LONG,parentMessageId LONG,treePath STRING null,subject VARCHAR(75) null,urlSubject VARCHAR(255) null,body TEXT null,format VARCHAR(75) null,anonymous BOOLEAN,priority DOUBLE,allowPingbacks BOOLEAN,answer BOOLEAN,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (messageId, ctCollectionId))";
+		"create table MBMessage (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,messageId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,classNameId LONG,classPK LONG,categoryId LONG,threadId LONG,rootMessageId LONG,parentMessageId LONG,treePath STRING null,subject VARCHAR(255) null,urlSubject VARCHAR(255) null,body TEXT null,format VARCHAR(75) null,anonymous BOOLEAN,priority DOUBLE,allowPingbacks BOOLEAN,answer BOOLEAN,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (messageId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table MBMessage";
 
@@ -148,6 +132,9 @@ public class MBMessageModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY MBMessage.createDate ASC, MBMessage.messageId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY mbMessage.createDate ASC, mbMessage.messageId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -261,78 +248,6 @@ public class MBMessageModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static MBMessage toModel(MBMessageSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		MBMessage model = new MBMessageImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setExternalReferenceCode(soapModel.getExternalReferenceCode());
-		model.setMessageId(soapModel.getMessageId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setCategoryId(soapModel.getCategoryId());
-		model.setThreadId(soapModel.getThreadId());
-		model.setRootMessageId(soapModel.getRootMessageId());
-		model.setParentMessageId(soapModel.getParentMessageId());
-		model.setTreePath(soapModel.getTreePath());
-		model.setSubject(soapModel.getSubject());
-		model.setUrlSubject(soapModel.getUrlSubject());
-		model.setBody(soapModel.getBody());
-		model.setFormat(soapModel.getFormat());
-		model.setAnonymous(soapModel.isAnonymous());
-		model.setPriority(soapModel.getPriority());
-		model.setAllowPingbacks(soapModel.isAllowPingbacks());
-		model.setAnswer(soapModel.isAnswer());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<MBMessage> toModels(MBMessageSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<MBMessage> models = new ArrayList<MBMessage>(soapModels.length);
-
-		for (MBMessageSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public MBMessageModelImpl() {
 	}
 
@@ -408,177 +323,177 @@ public class MBMessageModelImpl
 	public Map<String, Function<MBMessage, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<MBMessage, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, MBMessage>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			MBMessage.class.getClassLoader(), MBMessage.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<MBMessage, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<MBMessage> constructor =
-				(Constructor<MBMessage>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<MBMessage, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<MBMessage, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", MBMessage::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", MBMessage::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", MBMessage::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", MBMessage::getExternalReferenceCode);
+			attributeGetterFunctions.put("messageId", MBMessage::getMessageId);
+			attributeGetterFunctions.put("groupId", MBMessage::getGroupId);
+			attributeGetterFunctions.put("companyId", MBMessage::getCompanyId);
+			attributeGetterFunctions.put("userId", MBMessage::getUserId);
+			attributeGetterFunctions.put("userName", MBMessage::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", MBMessage::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", MBMessage::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", MBMessage::getClassNameId);
+			attributeGetterFunctions.put("classPK", MBMessage::getClassPK);
+			attributeGetterFunctions.put(
+				"categoryId", MBMessage::getCategoryId);
+			attributeGetterFunctions.put("threadId", MBMessage::getThreadId);
+			attributeGetterFunctions.put(
+				"rootMessageId", MBMessage::getRootMessageId);
+			attributeGetterFunctions.put(
+				"parentMessageId", MBMessage::getParentMessageId);
+			attributeGetterFunctions.put("treePath", MBMessage::getTreePath);
+			attributeGetterFunctions.put("subject", MBMessage::getSubject);
+			attributeGetterFunctions.put(
+				"urlSubject", MBMessage::getUrlSubject);
+			attributeGetterFunctions.put("body", MBMessage::getBody);
+			attributeGetterFunctions.put("format", MBMessage::getFormat);
+			attributeGetterFunctions.put("anonymous", MBMessage::getAnonymous);
+			attributeGetterFunctions.put("priority", MBMessage::getPriority);
+			attributeGetterFunctions.put(
+				"allowPingbacks", MBMessage::getAllowPingbacks);
+			attributeGetterFunctions.put("answer", MBMessage::getAnswer);
+			attributeGetterFunctions.put(
+				"lastPublishDate", MBMessage::getLastPublishDate);
+			attributeGetterFunctions.put("status", MBMessage::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", MBMessage::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", MBMessage::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", MBMessage::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<MBMessage, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<MBMessage, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<MBMessage, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<MBMessage, Object>>();
-		Map<String, BiConsumer<MBMessage, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<MBMessage, ?>>();
+		private static final Map<String, BiConsumer<MBMessage, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", MBMessage::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<MBMessage, Long>)MBMessage::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", MBMessage::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<MBMessage, Long>)MBMessage::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", MBMessage::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<MBMessage, String>)MBMessage::setUuid);
-		attributeGetterFunctions.put(
-			"externalReferenceCode", MBMessage::getExternalReferenceCode);
-		attributeSetterBiConsumers.put(
-			"externalReferenceCode",
-			(BiConsumer<MBMessage, String>)MBMessage::setExternalReferenceCode);
-		attributeGetterFunctions.put("messageId", MBMessage::getMessageId);
-		attributeSetterBiConsumers.put(
-			"messageId", (BiConsumer<MBMessage, Long>)MBMessage::setMessageId);
-		attributeGetterFunctions.put("groupId", MBMessage::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<MBMessage, Long>)MBMessage::setGroupId);
-		attributeGetterFunctions.put("companyId", MBMessage::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<MBMessage, Long>)MBMessage::setCompanyId);
-		attributeGetterFunctions.put("userId", MBMessage::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<MBMessage, Long>)MBMessage::setUserId);
-		attributeGetterFunctions.put("userName", MBMessage::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<MBMessage, String>)MBMessage::setUserName);
-		attributeGetterFunctions.put("createDate", MBMessage::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<MBMessage, Date>)MBMessage::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", MBMessage::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<MBMessage, Date>)MBMessage::setModifiedDate);
-		attributeGetterFunctions.put("classNameId", MBMessage::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<MBMessage, Long>)MBMessage::setClassNameId);
-		attributeGetterFunctions.put("classPK", MBMessage::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK", (BiConsumer<MBMessage, Long>)MBMessage::setClassPK);
-		attributeGetterFunctions.put("categoryId", MBMessage::getCategoryId);
-		attributeSetterBiConsumers.put(
-			"categoryId",
-			(BiConsumer<MBMessage, Long>)MBMessage::setCategoryId);
-		attributeGetterFunctions.put("threadId", MBMessage::getThreadId);
-		attributeSetterBiConsumers.put(
-			"threadId", (BiConsumer<MBMessage, Long>)MBMessage::setThreadId);
-		attributeGetterFunctions.put(
-			"rootMessageId", MBMessage::getRootMessageId);
-		attributeSetterBiConsumers.put(
-			"rootMessageId",
-			(BiConsumer<MBMessage, Long>)MBMessage::setRootMessageId);
-		attributeGetterFunctions.put(
-			"parentMessageId", MBMessage::getParentMessageId);
-		attributeSetterBiConsumers.put(
-			"parentMessageId",
-			(BiConsumer<MBMessage, Long>)MBMessage::setParentMessageId);
-		attributeGetterFunctions.put("treePath", MBMessage::getTreePath);
-		attributeSetterBiConsumers.put(
-			"treePath", (BiConsumer<MBMessage, String>)MBMessage::setTreePath);
-		attributeGetterFunctions.put("subject", MBMessage::getSubject);
-		attributeSetterBiConsumers.put(
-			"subject", (BiConsumer<MBMessage, String>)MBMessage::setSubject);
-		attributeGetterFunctions.put("urlSubject", MBMessage::getUrlSubject);
-		attributeSetterBiConsumers.put(
-			"urlSubject",
-			(BiConsumer<MBMessage, String>)MBMessage::setUrlSubject);
-		attributeGetterFunctions.put("body", MBMessage::getBody);
-		attributeSetterBiConsumers.put(
-			"body", (BiConsumer<MBMessage, String>)MBMessage::setBody);
-		attributeGetterFunctions.put("format", MBMessage::getFormat);
-		attributeSetterBiConsumers.put(
-			"format", (BiConsumer<MBMessage, String>)MBMessage::setFormat);
-		attributeGetterFunctions.put("anonymous", MBMessage::getAnonymous);
-		attributeSetterBiConsumers.put(
-			"anonymous",
-			(BiConsumer<MBMessage, Boolean>)MBMessage::setAnonymous);
-		attributeGetterFunctions.put("priority", MBMessage::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority", (BiConsumer<MBMessage, Double>)MBMessage::setPriority);
-		attributeGetterFunctions.put(
-			"allowPingbacks", MBMessage::getAllowPingbacks);
-		attributeSetterBiConsumers.put(
-			"allowPingbacks",
-			(BiConsumer<MBMessage, Boolean>)MBMessage::setAllowPingbacks);
-		attributeGetterFunctions.put("answer", MBMessage::getAnswer);
-		attributeSetterBiConsumers.put(
-			"answer", (BiConsumer<MBMessage, Boolean>)MBMessage::setAnswer);
-		attributeGetterFunctions.put(
-			"lastPublishDate", MBMessage::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<MBMessage, Date>)MBMessage::setLastPublishDate);
-		attributeGetterFunctions.put("status", MBMessage::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<MBMessage, Integer>)MBMessage::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", MBMessage::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<MBMessage, Long>)MBMessage::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", MBMessage::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<MBMessage, String>)MBMessage::setStatusByUserName);
-		attributeGetterFunctions.put("statusDate", MBMessage::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<MBMessage, Date>)MBMessage::setStatusDate);
+		static {
+			Map<String, BiConsumer<MBMessage, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<MBMessage, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<MBMessage, Long>)MBMessage::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<MBMessage, String>)MBMessage::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<MBMessage, String>)
+					MBMessage::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"messageId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setMessageId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<MBMessage, Long>)MBMessage::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<MBMessage, Long>)MBMessage::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<MBMessage, String>)MBMessage::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<MBMessage, Date>)MBMessage::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<MBMessage, Date>)MBMessage::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK", (BiConsumer<MBMessage, Long>)MBMessage::setClassPK);
+			attributeSetterBiConsumers.put(
+				"categoryId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setCategoryId);
+			attributeSetterBiConsumers.put(
+				"threadId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setThreadId);
+			attributeSetterBiConsumers.put(
+				"rootMessageId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setRootMessageId);
+			attributeSetterBiConsumers.put(
+				"parentMessageId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setParentMessageId);
+			attributeSetterBiConsumers.put(
+				"treePath",
+				(BiConsumer<MBMessage, String>)MBMessage::setTreePath);
+			attributeSetterBiConsumers.put(
+				"subject",
+				(BiConsumer<MBMessage, String>)MBMessage::setSubject);
+			attributeSetterBiConsumers.put(
+				"urlSubject",
+				(BiConsumer<MBMessage, String>)MBMessage::setUrlSubject);
+			attributeSetterBiConsumers.put(
+				"body", (BiConsumer<MBMessage, String>)MBMessage::setBody);
+			attributeSetterBiConsumers.put(
+				"format", (BiConsumer<MBMessage, String>)MBMessage::setFormat);
+			attributeSetterBiConsumers.put(
+				"anonymous",
+				(BiConsumer<MBMessage, Boolean>)MBMessage::setAnonymous);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<MBMessage, Double>)MBMessage::setPriority);
+			attributeSetterBiConsumers.put(
+				"allowPingbacks",
+				(BiConsumer<MBMessage, Boolean>)MBMessage::setAllowPingbacks);
+			attributeSetterBiConsumers.put(
+				"answer", (BiConsumer<MBMessage, Boolean>)MBMessage::setAnswer);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<MBMessage, Date>)MBMessage::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status", (BiConsumer<MBMessage, Integer>)MBMessage::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<MBMessage, Long>)MBMessage::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<MBMessage, String>)MBMessage::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<MBMessage, Date>)MBMessage::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1299,74 +1214,8 @@ public class MBMessageModelImpl
 	}
 
 	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException {
-
-		if (!isInTrash()) {
-			return null;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return trashEntry;
-		}
-
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if (Validator.isNotNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			ContainerModel containerModel = null;
-
-			try {
-				containerModel = trashHandler.getParentContainerModel(this);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-				return null;
-			}
-
-			while (containerModel != null) {
-				if (containerModel instanceof TrashedModel) {
-					TrashedModel trashedModel = (TrashedModel)containerModel;
-
-					return trashedModel.getTrashEntry();
-				}
-
-				trashHandler =
-					com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-						getTrashHandler(
-							trashHandler.getContainerModelClassName(
-								containerModel.getContainerModelId()));
-
-				if (trashHandler == null) {
-					return null;
-				}
-
-				containerModel = trashHandler.getContainerModel(
-					containerModel.getParentContainerModelId());
-			}
-		}
-
-		return null;
-	}
-
-	@Override
 	public long getTrashEntryClassPK() {
 		return getPrimaryKey();
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-			getTrashHandler(getModelClassName());
 	}
 
 	@Override
@@ -1377,70 +1226,6 @@ public class MBMessageModelImpl
 		else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean isInTrashContainer() {
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if ((trashHandler == null) ||
-			Validator.isNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			return false;
-		}
-
-		try {
-			ContainerModel containerModel =
-				trashHandler.getParentContainerModel(this);
-
-			if (containerModel == null) {
-				return false;
-			}
-
-			if (containerModel instanceof TrashedModel) {
-				return ((TrashedModel)containerModel).isInTrash();
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override
@@ -1962,41 +1747,12 @@ public class MBMessageModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<MBMessage, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<MBMessage, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<MBMessage, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((MBMessage)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, MBMessage>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					MBMessage.class, ModelWrapper.class);
 
 	}
 
@@ -2036,8 +1792,9 @@ public class MBMessageModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<MBMessage, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<MBMessage, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

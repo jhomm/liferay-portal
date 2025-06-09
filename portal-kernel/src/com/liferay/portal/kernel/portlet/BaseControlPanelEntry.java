@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.portlet;
@@ -100,6 +91,18 @@ public abstract class BaseControlPanelEntry implements ControlPanelEntry {
 			category = StringPool.BLANK;
 		}
 
+		if (category.equals(StringPool.BLANK)) {
+			Portlet rootPortlet = portlet.getRootPortlet();
+
+			if (rootPortlet != null) {
+				category = rootPortlet.getControlPanelEntryCategory();
+
+				if (category == null) {
+					category = StringPool.BLANK;
+				}
+			}
+		}
+
 		if (category.startsWith(PortletCategoryKeys.SITE_ADMINISTRATION) &&
 			permissionChecker.isGroupAdmin(group.getGroupId()) &&
 			!group.isUser()) {
@@ -107,16 +110,10 @@ public abstract class BaseControlPanelEntry implements ControlPanelEntry {
 			return true;
 		}
 
-		long groupId = group.getGroupId();
+		long groupId = 0L;
 
-		if (category.equals(PortletCategoryKeys.CONTROL_PANEL_APPS) ||
-			category.equals(PortletCategoryKeys.CONTROL_PANEL_CONFIGURATION) ||
-			category.equals(PortletCategoryKeys.CONTROL_PANEL_SITES) ||
-			category.equals(PortletCategoryKeys.CONTROL_PANEL_SYSTEM) ||
-			category.equals(PortletCategoryKeys.CONTROL_PANEL_USERS) ||
-			category.equals(PortletCategoryKeys.CONTROL_PANEL_WORKFLOW)) {
-
-			groupId = 0;
+		if (category.startsWith(PortletCategoryKeys.SITE_ADMINISTRATION)) {
+			groupId = group.getGroupId();
 		}
 
 		List<String> resourceActions = ResourceActionsUtil.getResourceActions(

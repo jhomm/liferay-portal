@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,7 +22,7 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountRolesManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/AccountRolesManagementToolbarPropsTransformer"
+	propsTransformer="{AccountRolesManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -44,34 +35,48 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 			<liferay-ui:search-container-row
 				className="com.liferay.account.admin.web.internal.display.AccountRoleDisplay"
 				keyProperty="accountRoleId"
-				modelVar="accountRole"
+				modelVar="accountRoleDisplay"
 			>
+
+				<%
+				row.setData(
+					HashMapBuilder.<String, Object>put(
+						"actions", StringUtil.merge(viewAccountRolesManagementToolbarDisplayContext.getAvailableActions(accountRoleDisplay))
+					).build());
+				%>
+
 				<portlet:renderURL var="rowURL">
 					<portlet:param name="mvcPath" value="/account_entries_admin/edit_account_role.jsp" />
 					<portlet:param name="backURL" value="<%= currentURL %>" />
 					<portlet:param name="accountEntryId" value="<%= String.valueOf(accountEntryDisplay.getAccountEntryId()) %>" />
-					<portlet:param name="accountRoleId" value="<%= String.valueOf(accountRole.getAccountRoleId()) %>" />
+					<portlet:param name="accountRoleId" value="<%= String.valueOf(accountRoleDisplay.getAccountRoleId()) %>" />
 				</portlet:renderURL>
+
+				<%
+				if (!accountRoleDisplay.isShowRowURL(permissionChecker)) {
+					rowURL = null;
+				}
+				%>
 
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					href="<%= rowURL %>"
 					name="name"
-					value="<%= accountRole.getName(locale) %>"
+					value="<%= HtmlUtil.escape(accountRoleDisplay.getName(locale)) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					href="<%= rowURL %>"
 					name="description"
-					value="<%= accountRole.getDescription(locale) %>"
+					value="<%= HtmlUtil.escape(accountRoleDisplay.getDescription(locale)) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					href="<%= rowURL %>"
 					name="type"
-					value="<%= accountRole.getTypeLabel(locale) %>"
+					value="<%= accountRoleDisplay.getTypeLabel(locale) %>"
 				/>
 
 				<liferay-ui:search-container-column-jsp

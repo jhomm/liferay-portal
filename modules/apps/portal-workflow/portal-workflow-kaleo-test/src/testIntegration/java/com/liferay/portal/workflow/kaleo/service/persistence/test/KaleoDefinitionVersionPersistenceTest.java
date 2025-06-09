@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -131,6 +122,8 @@ public class KaleoDefinitionVersionPersistenceTest {
 
 		newKaleoDefinitionVersion.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoDefinitionVersion.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoDefinitionVersion.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoDefinitionVersion.setCompanyId(RandomTestUtil.nextLong());
@@ -138,13 +131,6 @@ public class KaleoDefinitionVersionPersistenceTest {
 		newKaleoDefinitionVersion.setUserId(RandomTestUtil.nextLong());
 
 		newKaleoDefinitionVersion.setUserName(RandomTestUtil.randomString());
-
-		newKaleoDefinitionVersion.setStatusByUserId(RandomTestUtil.nextLong());
-
-		newKaleoDefinitionVersion.setStatusByUserName(
-			RandomTestUtil.randomString());
-
-		newKaleoDefinitionVersion.setStatusDate(RandomTestUtil.nextDate());
 
 		newKaleoDefinitionVersion.setCreateDate(RandomTestUtil.nextDate());
 
@@ -168,6 +154,13 @@ public class KaleoDefinitionVersionPersistenceTest {
 
 		newKaleoDefinitionVersion.setStatus(RandomTestUtil.nextInt());
 
+		newKaleoDefinitionVersion.setStatusByUserId(RandomTestUtil.nextLong());
+
+		newKaleoDefinitionVersion.setStatusByUserName(
+			RandomTestUtil.randomString());
+
+		newKaleoDefinitionVersion.setStatusDate(RandomTestUtil.nextDate());
+
 		_kaleoDefinitionVersions.add(
 			_persistence.update(newKaleoDefinitionVersion));
 
@@ -178,6 +171,9 @@ public class KaleoDefinitionVersionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoDefinitionVersion.getMvccVersion(),
 			newKaleoDefinitionVersion.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoDefinitionVersion.getCtCollectionId(),
+			newKaleoDefinitionVersion.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoDefinitionVersion.getKaleoDefinitionVersionId(),
 			newKaleoDefinitionVersion.getKaleoDefinitionVersionId());
@@ -193,16 +189,6 @@ public class KaleoDefinitionVersionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoDefinitionVersion.getUserName(),
 			newKaleoDefinitionVersion.getUserName());
-		Assert.assertEquals(
-			existingKaleoDefinitionVersion.getStatusByUserId(),
-			newKaleoDefinitionVersion.getStatusByUserId());
-		Assert.assertEquals(
-			existingKaleoDefinitionVersion.getStatusByUserName(),
-			newKaleoDefinitionVersion.getStatusByUserName());
-		Assert.assertEquals(
-			Time.getShortTimestamp(
-				existingKaleoDefinitionVersion.getStatusDate()),
-			Time.getShortTimestamp(newKaleoDefinitionVersion.getStatusDate()));
 		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingKaleoDefinitionVersion.getCreateDate()),
@@ -236,6 +222,16 @@ public class KaleoDefinitionVersionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoDefinitionVersion.getStatus(),
 			newKaleoDefinitionVersion.getStatus());
+		Assert.assertEquals(
+			existingKaleoDefinitionVersion.getStatusByUserId(),
+			newKaleoDefinitionVersion.getStatusByUserId());
+		Assert.assertEquals(
+			existingKaleoDefinitionVersion.getStatusByUserName(),
+			newKaleoDefinitionVersion.getStatusByUserName());
+		Assert.assertEquals(
+			Time.getShortTimestamp(
+				existingKaleoDefinitionVersion.getStatusDate()),
+			Time.getShortTimestamp(newKaleoDefinitionVersion.getStatusDate()));
 	}
 
 	@Test
@@ -291,13 +287,13 @@ public class KaleoDefinitionVersionPersistenceTest {
 
 	protected OrderByComparator<KaleoDefinitionVersion> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoDefinitionVersion", "mvccVersion", true,
-			"kaleoDefinitionVersionId", true, "groupId", true, "companyId",
-			true, "userId", true, "userName", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true, "createDate", true,
-			"modifiedDate", true, "kaleoDefinitionId", true, "name", true,
+			"KaleoDefinitionVersion", "mvccVersion", true, "ctCollectionId",
+			true, "kaleoDefinitionVersionId", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "kaleoDefinitionId", true, "name", true,
 			"title", true, "description", true, "version", true,
-			"startKaleoNodeId", true, "status", true);
+			"startKaleoNodeId", true, "status", true, "statusByUserId", true,
+			"statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -619,6 +615,8 @@ public class KaleoDefinitionVersionPersistenceTest {
 
 		kaleoDefinitionVersion.setMvccVersion(RandomTestUtil.nextLong());
 
+		kaleoDefinitionVersion.setCtCollectionId(RandomTestUtil.nextLong());
+
 		kaleoDefinitionVersion.setGroupId(RandomTestUtil.nextLong());
 
 		kaleoDefinitionVersion.setCompanyId(RandomTestUtil.nextLong());
@@ -626,13 +624,6 @@ public class KaleoDefinitionVersionPersistenceTest {
 		kaleoDefinitionVersion.setUserId(RandomTestUtil.nextLong());
 
 		kaleoDefinitionVersion.setUserName(RandomTestUtil.randomString());
-
-		kaleoDefinitionVersion.setStatusByUserId(RandomTestUtil.nextLong());
-
-		kaleoDefinitionVersion.setStatusByUserName(
-			RandomTestUtil.randomString());
-
-		kaleoDefinitionVersion.setStatusDate(RandomTestUtil.nextDate());
 
 		kaleoDefinitionVersion.setCreateDate(RandomTestUtil.nextDate());
 
@@ -653,6 +644,13 @@ public class KaleoDefinitionVersionPersistenceTest {
 		kaleoDefinitionVersion.setStartKaleoNodeId(RandomTestUtil.nextLong());
 
 		kaleoDefinitionVersion.setStatus(RandomTestUtil.nextInt());
+
+		kaleoDefinitionVersion.setStatusByUserId(RandomTestUtil.nextLong());
+
+		kaleoDefinitionVersion.setStatusByUserName(
+			RandomTestUtil.randomString());
+
+		kaleoDefinitionVersion.setStatusDate(RandomTestUtil.nextDate());
 
 		_kaleoDefinitionVersions.add(
 			_persistence.update(kaleoDefinitionVersion));

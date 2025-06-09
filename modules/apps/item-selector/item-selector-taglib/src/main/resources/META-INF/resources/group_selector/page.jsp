@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -55,25 +46,9 @@ Set<String> groupTypes = groupSelectorDisplayContext.getGroupTypes();
 			<liferay-ui:search-container-column-text
 				colspan="<%= 3 %>"
 			>
-				<liferay-frontend:horizontal-card
-					text="<%= curGroup.getDescriptiveName(locale) %>"
-					url="<%= groupSelectorDisplayContext.getViewGroupURL(curGroup) %>"
-				>
-					<liferay-frontend:horizontal-card-col>
-						<c:choose>
-							<c:when test="<%= Validator.isNotNull(curGroup.getLogoURL(themeDisplay, false)) %>">
-								<clay:sticker>
-									<img alt="" class="sticker-img" src="<%= curGroup.getLogoURL(themeDisplay, false) %>" />
-								</clay:sticker>
-							</c:when>
-							<c:otherwise>
-								<liferay-frontend:horizontal-card-icon
-									icon="<%= groupSelectorDisplayContext.getGroupItemSelectorIcon() %>"
-								/>
-							</c:otherwise>
-						</c:choose>
-					</liferay-frontend:horizontal-card-col>
-				</liferay-frontend:horizontal-card>
+				<clay:navigation-card
+					navigationCard="<%= new GroupNavigationCard(curGroup, groupSelectorDisplayContext, request) %>"
+				/>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>
 

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,52 +21,60 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 
 <aui:script>
 	window['<portlet:namespace />deleteMBMessages'] = function (dicussion) {
-		var deleteMBMessageIds = Liferay.Util.listCheckedExcept(
+		var deleteMBMessageIds = Liferay.Util.getCheckedCheckboxes(
 			document.<portlet:namespace />fm,
 			'<portlet:namespace />allRowIds'
 		);
 
-		if (
-			deleteMBMessageIds &&
-			confirm(
-				'<%= UnicodeLanguageUtil.get(portletConfig.getResourceBundle(locale), "are-you-sure-you-want-to-delete-the-selected-messages") %>'
-			)
-		) {
-			document.<portlet:namespace />fm.<portlet:namespace />deleteMBMessageIds.value = deleteMBMessageIds;
+		if (deleteMBMessageIds) {
+			Liferay.Util.openConfirmModal({
+				message:
+					'<%= UnicodeLanguageUtil.get(portletConfig.getResourceBundle(locale), "are-you-sure-you-want-to-delete-the-selected-messages") %>',
+				onConfirm: (isConfirmed) => {
+					if (isConfirmed) {
+						document.<portlet:namespace />fm.<portlet:namespace />deleteMBMessageIds.value =
+							deleteMBMessageIds;
 
-			if (dicussion) {
-				submitForm(
-					document.<portlet:namespace />fm,
-					'<portlet:actionURL name="deleteDiscussionMBMessages"><portlet:param name="redirect" value="<%= portletURL.toString() %>" /></portlet:actionURL>'
-				);
-			}
-			else {
-				submitForm(
-					document.<portlet:namespace />fm,
-					'<portlet:actionURL name="deleteMBMessages"><portlet:param name="redirect" value="<%= portletURL.toString() %>" /></portlet:actionURL>'
-				);
-			}
+						if (dicussion) {
+							submitForm(
+								document.<portlet:namespace />fm,
+								'<portlet:actionURL name="deleteDiscussionMBMessages"><portlet:param name="redirect" value="<%= portletURL.toString() %>" /></portlet:actionURL>'
+							);
+						}
+						else {
+							submitForm(
+								document.<portlet:namespace />fm,
+								'<portlet:actionURL name="deleteMBMessages"><portlet:param name="redirect" value="<%= portletURL.toString() %>" /></portlet:actionURL>'
+							);
+						}
+					}
+				},
+			});
 		}
 	};
 
 	window['<portlet:namespace />notSpamMBMessages'] = function () {
-		var notSpamMBMessageIds = Liferay.Util.listCheckedExcept(
+		var notSpamMBMessageIds = Liferay.Util.getCheckedCheckboxes(
 			document.<portlet:namespace />fm,
 			'<portlet:namespace />allRowIds'
 		);
 
-		if (
-			notSpamMBMessageIds &&
-			confirm(
-				'<%= UnicodeLanguageUtil.get(portletConfig.getResourceBundle(locale), "are-you-sure-you-want-to-mark-the-selected-messages-as-not-spam") %>'
-			)
-		) {
-			document.<portlet:namespace />fm.<portlet:namespace />notSpamMBMessageIds.value = notSpamMBMessageIds;
+		if (notSpamMBMessageIds) {
+			Liferay.Util.openConfirmModal({
+				message:
+					'<%= UnicodeLanguageUtil.get(portletConfig.getResourceBundle(locale), "are-you-sure-you-want-to-mark-the-selected-messages-as-not-spam") %>',
+				onConfirm: (isConfirmed) => {
+					if (isConfirmed) {
+						document.<portlet:namespace />fm.<portlet:namespace />notSpamMBMessageIds.value =
+							notSpamMBMessageIds;
 
-			submitForm(
-				document.<portlet:namespace />fm,
-				'<portlet:actionURL name="markNotSpamMBMessages"><portlet:param name="redirect" value="<%= portletURL.toString() %>" /></portlet:actionURL>'
-			);
+						submitForm(
+							document.<portlet:namespace />fm,
+							'<portlet:actionURL name="markNotSpamMBMessages"><portlet:param name="redirect" value="<%= portletURL.toString() %>" /></portlet:actionURL>'
+						);
+					}
+				},
+			});
 		}
 	};
 </aui:script>

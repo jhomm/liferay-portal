@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
@@ -26,31 +17,28 @@ import com.liferay.document.library.kernel.versioning.VersioningStrategy;
 import com.liferay.document.library.preview.DLPreviewRendererProvider;
 import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.document.library.web.internal.helper.DLTrashHelper;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
-import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 import org.osgi.service.component.annotations.ReferencePolicyOption;
 
@@ -68,8 +56,9 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 
 		DLEditFileEntryDisplayContext dlEditFileEntryDisplayContext =
 			new DefaultDLEditFileEntryDisplayContext(
-				httpServletRequest, httpServletResponse, dlFileEntryType,
-				_dlValidator, _storageEngine);
+				_configurationProvider, _ddmFormValuesFactory,
+				_ddmStorageEngineManager, dlFileEntryType, _dlValidator,
+				httpServletRequest);
 
 		for (DLDisplayContextFactory dlDisplayContextFactory :
 				_dlDisplayContextFactories) {
@@ -90,8 +79,9 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 
 		DLEditFileEntryDisplayContext dlEditFileEntryDisplayContext =
 			new DefaultDLEditFileEntryDisplayContext(
-				httpServletRequest, httpServletResponse, _dlValidator,
-				fileEntry, _storageEngine);
+				_configurationProvider, _ddmFormValuesFactory,
+				_ddmStorageEngineManager, _dlValidator, fileEntry,
+				httpServletRequest);
 
 		for (DLDisplayContextFactory dlDisplayContextFactory :
 				_dlDisplayContextFactories) {
@@ -111,18 +101,11 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, FileVersion fileVersion) {
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			themeDisplay.getLocale(), getClass());
-
 		DLViewFileEntryHistoryDisplayContext
 			dlViewFileEntryHistoryDisplayContext =
 				new DefaultDLViewFileEntryHistoryDisplayContext(
-					httpServletRequest, fileVersion, resourceBundle,
-					_dlTrashHelper, _versioningStrategy, _dlURLHelper);
+					_dlTrashHelper, _dlURLHelper, fileVersion,
+					httpServletRequest, _versioningStrategy);
 
 		if (fileVersion == null) {
 			return dlViewFileEntryHistoryDisplayContext;
@@ -146,25 +129,19 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 		HttpServletResponse httpServletResponse, FileShortcut fileShortcut) {
 
 		try {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-				themeDisplay.getLocale(), getClass());
+			DLMimeTypeDisplayContext dlMimeTypeDisplayContext =
+				_dlMimeTypeDisplayContextSnapshot.get();
 
 			FileVersion fileVersion = fileShortcut.getFileVersion();
 
 			DLPreviewRendererProvider dlPreviewRendererProvider =
-				_dlPreviewRendererProviders.getService(
-					fileVersion.getMimeType());
+				_serviceTrackerMap.getService(fileVersion.getMimeType());
 
 			DLViewFileVersionDisplayContext dlViewFileVersionDisplayContext =
 				new DefaultDLViewFileVersionDisplayContext(
-					httpServletRequest, httpServletResponse, fileShortcut,
-					_dlMimeTypeDisplayContext, resourceBundle, _storageEngine,
-					_dlTrashHelper, dlPreviewRendererProvider,
-					_versioningStrategy, _dlURLHelper);
+					_ddmStorageEngineManager, dlMimeTypeDisplayContext,
+					dlPreviewRendererProvider, _dlTrashHelper, _dlURLHelper,
+					fileShortcut, httpServletRequest, _versioningStrategy);
 
 			for (DLDisplayContextFactory dlDisplayContextFactory :
 					_dlDisplayContextFactories) {
@@ -187,22 +164,17 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse, FileVersion fileVersion) {
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			themeDisplay.getLocale(), getClass());
+		DLMimeTypeDisplayContext dlMimeTypeDisplayContext =
+			_dlMimeTypeDisplayContextSnapshot.get();
 
 		DLPreviewRendererProvider dlPreviewRendererProvider =
-			_dlPreviewRendererProviders.getService(fileVersion.getMimeType());
+			_serviceTrackerMap.getService(fileVersion.getMimeType());
 
 		DLViewFileVersionDisplayContext dlViewFileVersionDisplayContext =
 			new DefaultDLViewFileVersionDisplayContext(
-				httpServletRequest, httpServletResponse, fileVersion,
-				_dlMimeTypeDisplayContext, resourceBundle, _storageEngine,
-				_dlTrashHelper, dlPreviewRendererProvider, _versioningStrategy,
-				_dlURLHelper);
+				_ddmStorageEngineManager, dlMimeTypeDisplayContext,
+				dlPreviewRendererProvider, _dlTrashHelper, _dlURLHelper,
+				fileVersion, httpServletRequest, _versioningStrategy);
 
 		for (DLDisplayContextFactory dlDisplayContextFactory :
 				_dlDisplayContextFactories) {
@@ -221,41 +193,44 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 		_dlDisplayContextFactories = ServiceTrackerListFactory.open(
 			bundleContext, DLDisplayContextFactory.class);
 
-		_dlPreviewRendererProviders =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, DLPreviewRendererProvider.class, null,
-				(serviceReference, emitter) -> {
-					DLPreviewRendererProvider dlPreviewRendererProvider =
-						bundleContext.getService(serviceReference);
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, DLPreviewRendererProvider.class, null,
+			(serviceReference, emitter) -> {
+				DLPreviewRendererProvider dlPreviewRendererProvider =
+					bundleContext.getService(serviceReference);
 
-					for (String mimeType :
-							dlPreviewRendererProvider.getMimeTypes()) {
+				for (String mimeType :
+						dlPreviewRendererProvider.getMimeTypes()) {
 
-						emitter.emit(mimeType);
-					}
+					emitter.emit(mimeType);
+				}
 
-					bundleContext.ungetService(serviceReference);
-				});
+				bundleContext.ungetService(serviceReference);
+			});
 	}
 
 	@Deactivate
 	protected void deactivate() {
 		_dlDisplayContextFactories.close();
-		_dlPreviewRendererProviders.close();
+		_serviceTrackerMap.close();
 	}
+
+	private static final Snapshot<DLMimeTypeDisplayContext>
+		_dlMimeTypeDisplayContextSnapshot = new Snapshot<>(
+			DLDisplayContextProviderImpl.class, DLMimeTypeDisplayContext.class,
+			null, true);
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private DDMFormValuesFactory _ddmFormValuesFactory;
+
+	@Reference
+	private DDMStorageEngineManager _ddmStorageEngineManager;
 
 	private ServiceTrackerList<DLDisplayContextFactory>
 		_dlDisplayContextFactories;
-
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	private volatile DLMimeTypeDisplayContext _dlMimeTypeDisplayContext;
-
-	private ServiceTrackerMap<String, DLPreviewRendererProvider>
-		_dlPreviewRendererProviders;
 
 	@Reference
 	private DLTrashHelper _dlTrashHelper;
@@ -266,8 +241,8 @@ public class DLDisplayContextProviderImpl implements DLDisplayContextProvider {
 	@Reference
 	private DLValidator _dlValidator;
 
-	@Reference
-	private StorageEngine _storageEngine;
+	private ServiceTrackerMap<String, DLPreviewRendererProvider>
+		_serviceTrackerMap;
 
 	@Reference(
 		policy = ReferencePolicy.DYNAMIC,

@@ -1,0 +1,103 @@
+@component-name = "portal-search"
+definition {
+
+	property app.server.types = "tomcat";
+	property ci.retries.disabled = "true";
+	property database.bare.enabled = "true";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
+	property minimum.slave.ram = "24";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property skip.start.app.server = "true";
+	property test.assert.warning.exceptions = "false";
+	property test.liferay.virtual.instance = "false";
+	property test.run.type = "single";
+	property testcase.url = "file:///opt/dev/projects/github/liferay-portal/";
+	property testray.main.component.name = "Upgrades Search";
+
+	setUp {
+		Upgrade.startReleasedBundle();
+	}
+
+	@priority = 5
+	test ViewSearchPortletsConfiguration {
+		property portal.suite.search.engine = "elasticsearch7,solr";
+
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://localhost:8080",
+			userEmailAddress = "test@liferay.com");
+
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
+			portlet = "Web Content");
+
+		for (var count : list "1,2,3") {
+			WebContentNavigator.gotoAddCP();
+
+			WebContent.addCP(webContentTitle = "WC Title ${count}");
+
+			WebContent.publishWithPermissions();
+		}
+
+		Navigator.openSpecificURL(url = "http://localhost:8080");
+
+		SearchPage.searchEmbedded(searchTerm = "WC Title");
+
+		SearchResults.configureSearchResults(paginationDelta = 2);
+
+		SearchPage.configureSearchOptions(allowEmptySearches = "true");
+
+		SearchFacets.updateFacetConfiguration(
+			displayFrequencies = "disable",
+			portletName = "Type Facet");
+
+		Upgrade.restoreOriginalBundleAndUpgrade();
+
+		TestUtils.hardRefresh();
+
+		SearchPage.searchEmbedded(searchTerm = "WC Title");
+
+		Portlet.gotoPortletOptions(
+			portletName = "Search Result",
+			portletOption = "Configuration");
+
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		FormFields.viewTextValue(
+			fieldName = "paginationDelta",
+			fieldValue = 2);
+
+		IFrame.closeFrame();
+
+		Portlet.gotoPortletOptions(
+			portletName = "Search Options",
+			portletOption = "Configuration");
+
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		FormFields.viewCheckboxChecked(fieldName = "allowEmptySearches");
+
+		IFrame.closeFrame();
+
+		Portlet.gotoPortletOptions(
+			portletName = "Type Facet",
+			portletOption = "Configuration");
+
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		FormFields.viewCheckboxNotChecked(fieldName = "frequenciesVisible");
+
+		IFrame.closeFrame();
+
+		SearchPage.searchEmbedded(searchTerm = "WC Title");
+
+		Pagination.viewResults(results = "Showing 1 to 2 of 3 entries.");
+
+		AssertElementNotPresent(
+			key_facetType = "Type Facet",
+			key_termValue = "",
+			locator1 = "Search#FACET_TERM_FREQUENCIES");
+	}
+
+}

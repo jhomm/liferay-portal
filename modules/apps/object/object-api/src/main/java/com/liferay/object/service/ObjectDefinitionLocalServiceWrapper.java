@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ObjectDefinitionLocalService}.
@@ -27,6 +19,10 @@ public class ObjectDefinitionLocalServiceWrapper
 	implements ObjectDefinitionLocalService,
 			   ServiceWrapper<ObjectDefinitionLocalService> {
 
+	public ObjectDefinitionLocalServiceWrapper() {
+		this(null);
+	}
+
 	public ObjectDefinitionLocalServiceWrapper(
 		ObjectDefinitionLocalService objectDefinitionLocalService) {
 
@@ -35,16 +31,27 @@ public class ObjectDefinitionLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectDefinition addCustomObjectDefinition(
-			long userId, java.util.Map<java.util.Locale, String> labelMap,
-			String name, String panelAppOrder, String panelCategoryKey,
+			long userId, long objectFolderId, String className,
+			boolean enableComments, boolean enableFriendlyURLCustomization,
+			boolean enableIndexSearch, boolean enableLocalization,
+			boolean enableObjectEntryDraft, boolean enableObjectEntryVersioning,
+			String friendlyURLSeparator,
+			java.util.Map<java.util.Locale, String> labelMap, String name,
+			String panelAppOrder, String panelCategoryKey,
 			java.util.Map<java.util.Locale, String> pluralLabelMap,
-			String scope,
+			boolean portlet, String scope, String storageType,
+			java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings,
 			java.util.List<com.liferay.object.model.ObjectField> objectFields)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionLocalService.addCustomObjectDefinition(
-			userId, labelMap, name, panelAppOrder, panelCategoryKey,
-			pluralLabelMap, scope, objectFields);
+			userId, objectFolderId, className, enableComments,
+			enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap, name,
+			panelAppOrder, panelCategoryKey, pluralLabelMap, portlet, scope,
+			storageType, objectDefinitionSettings, objectFields);
 	}
 
 	/**
@@ -66,31 +73,56 @@ public class ObjectDefinitionLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectDefinition addObjectDefinition(
+			String externalReferenceCode, long userId, long objectFolderId,
+			boolean modifiable, String scope, boolean system)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.addObjectDefinition(
+			externalReferenceCode, userId, objectFolderId, modifiable, scope,
+			system);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectDefinition
 			addOrUpdateSystemObjectDefinition(
-				long companyId,
-				com.liferay.object.system.SystemObjectDefinitionMetadata
-					systemObjectDefinitionMetadata)
+				long companyId, long objectFolderId,
+				com.liferay.object.system.SystemObjectDefinitionManager
+					systemObjectDefinitionManager)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionLocalService.addOrUpdateSystemObjectDefinition(
-			companyId, systemObjectDefinitionMetadata);
+			companyId, objectFolderId, systemObjectDefinitionManager);
 	}
 
 	@Override
 	public com.liferay.object.model.ObjectDefinition addSystemObjectDefinition(
-			long userId, String className, String dbTableName,
-			java.util.Map<java.util.Locale, String> labelMap, String name,
-			String pkObjectFieldDBColumnName, String pkObjectFieldName,
+			String externalReferenceCode, long userId, long objectFolderId,
+			String className, String dbTableName, boolean enableComments,
+			boolean enableFriendlyURLCustomization, boolean enableIndexSearch,
+			boolean enableLocalization, boolean enableObjectEntryDraft,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
+			java.util.Map<java.util.Locale, String> labelMap,
+			boolean modifiable, String name, String panelAppOrder,
+			String panelCategoryKey, String pkObjectFieldDBColumnName,
+			String pkObjectFieldName,
 			java.util.Map<java.util.Locale, String> pluralLabelMap,
-			String scope, int version,
+			boolean portlet, String scope, String titleObjectFieldName,
+			int version, int status,
+			java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings,
 			java.util.List<com.liferay.object.model.ObjectField> objectFields)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionLocalService.addSystemObjectDefinition(
-			userId, className, dbTableName, labelMap, name,
-			pkObjectFieldDBColumnName, pkObjectFieldName, pluralLabelMap, scope,
-			version, objectFields);
+			externalReferenceCode, userId, objectFolderId, className,
+			dbTableName, enableComments, enableFriendlyURLCustomization,
+			enableIndexSearch, enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap,
+			modifiable, name, panelAppOrder, panelCategoryKey,
+			pkObjectFieldDBColumnName, pkObjectFieldName, pluralLabelMap,
+			portlet, scope, titleObjectFieldName, version, status,
+			objectDefinitionSettings, objectFields);
 	}
 
 	/**
@@ -176,6 +208,14 @@ public class ObjectDefinitionLocalServiceWrapper
 
 		return _objectDefinitionLocalService.deletePersistedModel(
 			persistedModel);
+	}
+
+	@Override
+	public void deployInactiveObjectDefinition(
+		com.liferay.object.model.ObjectDefinition objectDefinition) {
+
+		_objectDefinitionLocalService.deployInactiveObjectDefinition(
+			objectDefinition);
 	}
 
 	@Override
@@ -289,6 +329,26 @@ public class ObjectDefinitionLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectDefinition
+			enableAccountEntryRestricted(
+				com.liferay.object.model.ObjectRelationship objectRelationship)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.enableAccountEntryRestricted(
+			objectRelationship);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			enableAccountEntryRestrictedForNondefaultStorageType(
+				com.liferay.object.model.ObjectField objectField)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.
+			enableAccountEntryRestrictedForNondefaultStorageType(objectField);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectDefinition fetchObjectDefinition(
 		long objectDefinitionId) {
 
@@ -306,11 +366,20 @@ public class ObjectDefinitionLocalServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectDefinition
-			fetchObjectDefinitionByClassName(long companyId, String className)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		fetchObjectDefinitionByClassName(long companyId, String className) {
 
 		return _objectDefinitionLocalService.fetchObjectDefinitionByClassName(
 			companyId, className);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+		fetchObjectDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _objectDefinitionLocalService.
+			fetchObjectDefinitionByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -326,6 +395,14 @@ public class ObjectDefinitionLocalServiceWrapper
 
 		return _objectDefinitionLocalService.
 			fetchObjectDefinitionByUuidAndCompanyId(uuid, companyId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+		fetchSystemObjectDefinition(long companyId, String name) {
+
+		return _objectDefinitionLocalService.fetchSystemObjectDefinition(
+			companyId, name);
 	}
 
 	@Override
@@ -376,6 +453,26 @@ public class ObjectDefinitionLocalServiceWrapper
 			objectDefinitionId);
 	}
 
+	@Override
+	public com.liferay.object.model.ObjectDefinition getObjectDefinition(
+			long companyId, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.getObjectDefinition(
+			companyId, name);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			getObjectDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.
+			getObjectDefinitionByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the object definition with the matching UUID and company.
 	 *
@@ -391,6 +488,14 @@ public class ObjectDefinitionLocalServiceWrapper
 
 		return _objectDefinitionLocalService.
 			getObjectDefinitionByUuidAndCompanyId(uuid, companyId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectDefinition>
+		getObjectDefinitions(boolean accountEntryRestricted) {
+
+		return _objectDefinitionLocalService.getObjectDefinitions(
+			accountEntryRestricted);
 	}
 
 	/**
@@ -420,6 +525,22 @@ public class ObjectDefinitionLocalServiceWrapper
 			companyId, active, system, status);
 	}
 
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectDefinition>
+		getObjectDefinitions(long companyId, boolean active, int status) {
+
+		return _objectDefinitionLocalService.getObjectDefinitions(
+			companyId, active, status);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectDefinition>
+		getObjectDefinitions(long companyId, int status) {
+
+		return _objectDefinitionLocalService.getObjectDefinitions(
+			companyId, status);
+	}
+
 	/**
 	 * Returns the number of object definitions.
 	 *
@@ -436,6 +557,22 @@ public class ObjectDefinitionLocalServiceWrapper
 
 		return _objectDefinitionLocalService.getObjectDefinitionsCount(
 			companyId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectDefinition>
+		getObjectFolderObjectDefinitions(long objectFolderId) {
+
+		return _objectDefinitionLocalService.getObjectFolderObjectDefinitions(
+			objectFolderId);
+	}
+
+	@Override
+	public int getObjectFolderObjectDefinitionsCount(long objectFolderId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.
+			getObjectFolderObjectDefinitionsCount(objectFolderId);
 	}
 
 	/**
@@ -467,11 +604,34 @@ public class ObjectDefinitionLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<com.liferay.object.model.ObjectDefinition>
+		getUnmodifiableSystemObjectDefinitions(long companyId) {
+
+		return _objectDefinitionLocalService.
+			getUnmodifiableSystemObjectDefinitions(companyId);
+	}
+
+	@Override
+	public boolean hasObjectRelationship(long objectDefinitionId) {
+		return _objectDefinitionLocalService.hasObjectRelationship(
+			objectDefinitionId);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectDefinition
 			publishCustomObjectDefinition(long userId, long objectDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionLocalService.publishCustomObjectDefinition(
+			userId, objectDefinitionId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			publishSystemObjectDefinition(long userId, long objectDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.publishSystemObjectDefinition(
 			userId, objectDefinitionId);
 	}
 
@@ -486,18 +646,46 @@ public class ObjectDefinitionLocalServiceWrapper
 	@Override
 	public com.liferay.object.model.ObjectDefinition
 			updateCustomObjectDefinition(
-				Long objectDefinitionId, long descriptionObjectFieldId,
-				long titleObjectFieldId, boolean active,
+				String externalReferenceCode, long objectDefinitionId,
+				long accountEntryRestrictedObjectFieldId,
+				long descriptionObjectFieldId, long objectFolderId,
+				long titleObjectFieldId, boolean accountEntryRestricted,
+				boolean active, String className, boolean enableCategorization,
+				boolean enableComments, boolean enableFriendlyURLCustomization,
+				boolean enableIndexSearch, boolean enableLocalization,
+				boolean enableObjectEntryDraft,
+				boolean enableObjectEntryHistory,
+				boolean enableObjectEntryVersioning,
+				String friendlyURLSeparator,
 				java.util.Map<java.util.Locale, String> labelMap, String name,
-				String panelAppOrder, String panelCategoryKey,
+				String panelAppOrder, String panelCategoryKey, boolean portlet,
 				java.util.Map<java.util.Locale, String> pluralLabelMap,
-				String scope)
+				String scope, int status,
+				java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+					objectDefinitionSettings)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionLocalService.updateCustomObjectDefinition(
-			objectDefinitionId, descriptionObjectFieldId, titleObjectFieldId,
-			active, labelMap, name, panelAppOrder, panelCategoryKey,
-			pluralLabelMap, scope);
+			externalReferenceCode, objectDefinitionId,
+			accountEntryRestrictedObjectFieldId, descriptionObjectFieldId,
+			objectFolderId, titleObjectFieldId, accountEntryRestricted, active,
+			className, enableCategorization, enableComments,
+			enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryHistory, enableObjectEntryVersioning,
+			friendlyURLSeparator, labelMap, name, panelAppOrder,
+			panelCategoryKey, portlet, pluralLabelMap, scope, status,
+			objectDefinitionSettings);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			updateExternalReferenceCode(
+				long objectDefinitionId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.updateExternalReferenceCode(
+			objectDefinitionId, externalReferenceCode);
 	}
 
 	/**
@@ -516,6 +704,70 @@ public class ObjectDefinitionLocalServiceWrapper
 
 		return _objectDefinitionLocalService.updateObjectDefinition(
 			objectDefinition);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition updateObjectFolderId(
+			long objectDefinitionId, long objectFolderId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.updateObjectFolderId(
+			objectDefinitionId, objectFolderId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition updatePortlet(
+			long objectDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.updatePortlet(objectDefinitionId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+		updateRootDescendantNodeObjectDefinition(
+			com.liferay.object.model.ObjectDefinition objectDefinition,
+			long rootObjectDefinitionId) {
+
+		return _objectDefinitionLocalService.
+			updateRootDescendantNodeObjectDefinition(
+				objectDefinition, rootObjectDefinitionId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			updateSystemObjectDefinition(
+				String externalReferenceCode, long objectDefinitionId,
+				long objectFolderId, long titleObjectFieldId,
+				java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+					objectDefinitionSettings)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.updateSystemObjectDefinition(
+			externalReferenceCode, objectDefinitionId, objectFolderId,
+			titleObjectFieldId, objectDefinitionSettings);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition updateTitleObjectFieldId(
+			long objectDefinitionId, long titleObjectFieldId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionLocalService.updateTitleObjectFieldId(
+			objectDefinitionId, titleObjectFieldId);
+	}
+
+	@Override
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectDefinitionLocalService.updateUserId(
+			companyId, oldUserId, newUserId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _objectDefinitionLocalService.getBasePersistence();
 	}
 
 	@Override

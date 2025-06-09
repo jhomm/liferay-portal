@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
 
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
+
+import java.math.BigDecimal;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -45,6 +39,8 @@ public class CommerceShipmentItemWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("commerceShipmentItemId", getCommerceShipmentItemId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -57,6 +53,7 @@ public class CommerceShipmentItemWrapper
 		attributes.put(
 			"commerceInventoryWarehouseId", getCommerceInventoryWarehouseId());
 		attributes.put("quantity", getQuantity());
+		attributes.put("unitOfMeasureKey", getUnitOfMeasureKey());
 
 		return attributes;
 	}
@@ -67,6 +64,19 @@ public class CommerceShipmentItemWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long commerceShipmentItemId = (Long)attributes.get(
@@ -131,10 +141,16 @@ public class CommerceShipmentItemWrapper
 			setCommerceInventoryWarehouseId(commerceInventoryWarehouseId);
 		}
 
-		Integer quantity = (Integer)attributes.get("quantity");
+		BigDecimal quantity = (BigDecimal)attributes.get("quantity");
 
 		if (quantity != null) {
 			setQuantity(quantity);
+		}
+
+		String unitOfMeasureKey = (String)attributes.get("unitOfMeasureKey");
+
+		if (unitOfMeasureKey != null) {
+			setUnitOfMeasureKey(unitOfMeasureKey);
 		}
 	}
 
@@ -216,6 +232,16 @@ public class CommerceShipmentItemWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this commerce shipment item.
+	 *
+	 * @return the external reference code of this commerce shipment item
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the group ID of this commerce shipment item.
 	 *
 	 * @return the group ID of this commerce shipment item
@@ -261,8 +287,18 @@ public class CommerceShipmentItemWrapper
 	 * @return the quantity of this commerce shipment item
 	 */
 	@Override
-	public int getQuantity() {
+	public BigDecimal getQuantity() {
 		return model.getQuantity();
+	}
+
+	/**
+	 * Returns the unit of measure key of this commerce shipment item.
+	 *
+	 * @return the unit of measure key of this commerce shipment item
+	 */
+	@Override
+	public String getUnitOfMeasureKey() {
+		return model.getUnitOfMeasureKey();
 	}
 
 	/**
@@ -293,6 +329,16 @@ public class CommerceShipmentItemWrapper
 	@Override
 	public String getUserUuid() {
 		return model.getUserUuid();
+	}
+
+	/**
+	 * Returns the uuid of this commerce shipment item.
+	 *
+	 * @return the uuid of this commerce shipment item
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
 	}
 
 	@Override
@@ -363,6 +409,16 @@ public class CommerceShipmentItemWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this commerce shipment item.
+	 *
+	 * @param externalReferenceCode the external reference code of this commerce shipment item
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this commerce shipment item.
 	 *
 	 * @param groupId the group ID of this commerce shipment item
@@ -408,8 +464,18 @@ public class CommerceShipmentItemWrapper
 	 * @param quantity the quantity of this commerce shipment item
 	 */
 	@Override
-	public void setQuantity(int quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		model.setQuantity(quantity);
+	}
+
+	/**
+	 * Sets the unit of measure key of this commerce shipment item.
+	 *
+	 * @param unitOfMeasureKey the unit of measure key of this commerce shipment item
+	 */
+	@Override
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		model.setUnitOfMeasureKey(unitOfMeasureKey);
 	}
 
 	/**
@@ -440,6 +506,26 @@ public class CommerceShipmentItemWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this commerce shipment item.
+	 *
+	 * @param uuid the uuid of this commerce shipment item
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public StagedModelType getStagedModelType() {
+		return model.getStagedModelType();
 	}
 
 	@Override

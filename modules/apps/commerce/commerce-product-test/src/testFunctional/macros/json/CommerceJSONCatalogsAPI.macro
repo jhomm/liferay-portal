@@ -1,23 +1,59 @@
 definition {
 
-	macro _deleteAllNoSystemCommerceCatalogs {
-		var baseURL = "${baseURL}";
+	@summary = "Default summary"
+	macro _addCatalog(catalogName = null) {
+		Variables.assertDefined(parameterList = ${catalogName});
 
-		if (contains("${baseURL}", "{baseURL}")) {
-			var baseURL = PropsUtil.get("portal.url");
+		var portalURL = JSONCompany.getPortalURL();
+
+		if (!(isSet(accountEntryId))) {
+			var accountEntryId = 0;
+		}
+
+		if (!(isSet(catalogCurrency))) {
+			var catalogCurrency = "USD";
+		}
+
+		if (!(isSet(catalogLanguage))) {
+			var catalogLanguage = "en_US";
+		}
+
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/api/jsonws/commerce.commercecatalog/add-commerce-catalog \
+				-u ${userLoginInfo} \
+				-d externalReferenceCode='' \
+				-d accountEntryId=${accountEntryId} \
+				-d name=${catalogName} \
+				-d commerceCurrencyCode=${catalogCurrency} \
+				-d catalogDefaultLanguageId=${catalogLanguage}
+		''';
+
+		JSONCurlUtil.post(${curl});
+	}
+
+	@summary = "Default summary"
+	macro _deleteAllNoSystemCommerceCatalogs() {
+		var baseURL = ${baseURL};
+
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
 		}
 
 		var catalogIds = CommerceJSONCatalogsAPI._getCommerceNoSystemCatalogIds();
 
-		if ("${catalogIds}" != "") {
-			for (var catalogId : list "${catalogIds}") {
+		if (${catalogIds} != "") {
+			for (var catalogId : list ${catalogIds}) {
+				var userLoginInfo = JSONUtil2.formatJSONUser();
+
 				var curl = '''
 					${baseURL}/o/headless-commerce-admin-catalog/v1.0/catalog/${catalogId} \
-					-u test@liferay.com:test \
-					-H 'accept: application/json' \
+						-u ${userLoginInfo} \
+						-H 'accept: application/json' \
 				''';
 
-				JSONCurlUtil.delete("${curl}");
+				JSONCurlUtil.delete(${curl});
 			}
 		}
 		else {
@@ -25,30 +61,157 @@ definition {
 		}
 	}
 
-	macro _getCommerceNoSystemCatalogIds {
-		var baseURL = "${baseURL}";
+	@summary = "Default summary"
+	macro _getCommerceAccountIdByCatalogId(catalogName = null) {
+		var baseURL = ${baseURL};
+
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		var catalogId = CommerceJSONCatalogsAPI._getCommerceCatalogIdByName(catalogName = ${catalogName});
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${baseURL}/o/headless-commerce-admin-catalog/v1.0/catalog/${catalogId} \
+				-u ${userLoginInfo} \
+				-H 'accept: application/json' \
+		''';
+
+		var accountId = JSONCurlUtil.get(${curl}, "$..['accountId']");
+
+		return ${accountId};
+	}
+
+	@summary = "Default summary"
+	macro _getCommerceCatalogIdByName(catalogName = null, catalogCount = null) {
+		Variables.assertDefined(parameterList = ${catalogName});
+
+		var baseURL = ${baseURL};
 		var masterCatalogName = "Master";
 
-		if (contains("${baseURL}", "{baseURL}")) {
-			var baseURL = PropsUtil.get("portal.url");
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		if (!(isSet(userEmailAddress))) {
+			var userEmailAddress = JSONUtil2.getDefaultUserEmail();
+		}
+
+		if (!(isSet(userPassword))) {
+			var userPassword = JSONUtil2.getDefaultUserPassword();
 		}
 
 		if (isSet(catalogCount)) {
-			var catalogsCount = "${catalogCount}";
+			var catalogsCount = ${catalogCount};
 		}
 		else {
-			var catalogsCount = "100";
+			var catalogsCount = 100;
 		}
 
 		var curl = '''
 			${baseURL}/o/headless-commerce-admin-catalog/v1.0/catalogs?pageSize=${catalogsCount} \
-			-u test@liferay.com:test \
-			-H 'accept: application/json' \
+				-u ${userEmailAddress}:${userPassword} \
+				-H 'accept: application/json' \
 		''';
 
-		var catalogIds = JSONCurlUtil.get("${curl}", "$.items[?(@['system'] == false)].['id']");
+		if (isSet(catalogName)) {
+			var catalogIds = JSONCurlUtil.get(${curl}, "$.items[?(@['name'] == '${catalogName}')].['id']");
+		}
 
-		return "${catalogIds}";
+		return ${catalogIds};
+	}
+
+	@summary = "Default summary"
+	macro _getCommerceNoSystemCatalogIds(catalogCount = null) {
+		var baseURL = ${baseURL};
+		var masterCatalogName = "Master";
+
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		if (isSet(catalogCount)) {
+			var catalogsCount = ${catalogCount};
+		}
+		else {
+			var catalogsCount = 100;
+		}
+
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${baseURL}/o/headless-commerce-admin-catalog/v1.0/catalogs?pageSize=${catalogsCount} \
+				-u ${userLoginInfo} \
+				-H 'accept: application/json' \
+		''';
+
+		var catalogIds = JSONCurlUtil.get(${curl}, "$.items[?(@['system'] == false)].['id']");
+
+		return ${catalogIds};
+	}
+
+	@summary = "Default summary"
+	macro _patchCommerceCatalog(accountIdByName = null, catalogName = null, newCatalogName = null) {
+		Variables.assertDefined(parameterList = ${catalogName});
+
+		var baseURL = ${baseURL};
+		var fieldsList = ListUtil.newList();
+		var catalogId = CommerceJSONCatalogsAPI._getCommerceCatalogIdByName(catalogName = ${catalogName});
+
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		if (isSet(accountId)) {
+			var accountId = '''"accountId": ${accountId}''';
+
+			ListUtil.add(${fieldsList}, ${accountId});
+		}
+		else {
+			if (isSet(accountIdByName)) {
+				var accountId = JSONAccountEntryAPI._getAccountEntryId(accountEntryName = ${accountIdByName});
+
+				var accountId = '''"accountId": ${accountId}''';
+
+				echo("accountId for catalog: ${accountId}");
+
+				ListUtil.add(${fieldsList}, ${accountId});
+			}
+		}
+
+		if (isSet(currencyCode)) {
+			var currencyCode = '''"currencyCode": "${currencyCode}"''';
+
+			ListUtil.add(${fieldsList}, ${currencyCode});
+		}
+
+		if (isSet(defaultLanguageId)) {
+			var defaultLanguageId = '''"defaultLanguageId": "${defaultLanguageId}"''';
+
+			ListUtil.add(${fieldsList}, ${defaultLanguageId});
+		}
+
+		if (isSet(newCatalogName)) {
+			var name = '''"name": "${newCatalogName}"''';
+
+			ListUtil.add(${fieldsList}, ${name});
+		}
+
+		var fieldsList = ListUtil.toString(${fieldsList});
+
+		var payload = CommerceUtilities.getPayloadFromFieldsList(fieldsList = ${fieldsList});
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${baseURL}/o/headless-commerce-admin-catalog/v1.0/catalog/${catalogId} \
+				-u ${userLoginInfo} \
+				-H 'accept: application/json' \
+				-H 'Content-Type: application/json' \
+				-d '{${payload}}'
+		''';
+
+		JSONCurlUtil.patch(${curl});
 	}
 
 }

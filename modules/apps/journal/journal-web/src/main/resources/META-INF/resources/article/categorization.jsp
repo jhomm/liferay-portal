@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,7 +10,7 @@
 <%
 JournalArticle article = journalDisplayContext.getArticle();
 
-JournalEditArticleDisplayContext journalEditArticleDisplayContext = new JournalEditArticleDisplayContext(request, liferayPortletResponse, article);
+JournalEditArticleDisplayContext journalEditArticleDisplayContext = (JournalEditArticleDisplayContext)request.getAttribute(JournalEditArticleDisplayContext.class.getName());
 %>
 
 <liferay-ui:error-marker
@@ -68,15 +59,31 @@ DDMStructure ddmStructure = journalEditArticleDisplayContext.getDDMStructure();
 	visibilityTypes="<%= AssetVocabularyConstants.VISIBILITY_TYPES %>"
 />
 
-<div class="border-0 mb-0 sheet-subtitle text-uppercase">
-	<liferay-ui:message key="other-metadata" />
-</div>
-
 <liferay-asset:asset-tags-selector
 	className="<%= JournalArticle.class.getName() %>"
 	classPK="<%= classPK %>"
 	ignoreRequestValue="<%= journalEditArticleDisplayContext.isChangeStructure() %>"
 />
+
+<c:if test="<%= article != null %>">
+
+	<%
+	AssetAutoTaggerConfiguration assetAutoTaggerConfiguration = (AssetAutoTaggerConfiguration)request.getAttribute(AssetAutoTaggerConfiguration.class.getName());
+	%>
+
+	<clay:checkbox
+		checked="<%= assetAutoTaggerConfiguration.isUpdateAutoTags() %>"
+		id='<%= liferayPortletResponse.getNamespace() + "updateAutoTags" %>'
+		label="update-auto-tags"
+		name='<%= liferayPortletResponse.getNamespace() + "updateAutoTags" %>'
+	/>
+
+	<div class="ml-4">
+		<small class="text-secondary">
+			<liferay-ui:message key="update-auto-tags-help" />
+		</small>
+	</div>
+</c:if>
 
 <aui:input cssClass="form-control-sm" label="priority" name="assetPriority" type="text" value="<%= priority %>" wrapperCssClass="mb-3">
 	<aui:validator name="number" />

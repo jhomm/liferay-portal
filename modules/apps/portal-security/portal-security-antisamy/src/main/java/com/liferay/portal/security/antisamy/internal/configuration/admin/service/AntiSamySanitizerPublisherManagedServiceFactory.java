@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.antisamy.internal.configuration.admin.service;
 
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.security.antisamy.configuration.AntiSamyClassNameConfiguration;
 import com.liferay.portal.security.antisamy.configuration.AntiSamyConfiguration;
 import com.liferay.portal.security.antisamy.internal.AntiSamySanitizerImpl;
@@ -31,19 +23,16 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
 
 /**
  * @author Tomas Polesovsky
  */
 @Component(
 	configurationPid = "com.liferay.portal.security.antisamy.configuration.AntiSamyConfiguration",
-	immediate = true,
 	property = Constants.SERVICE_PID + "=com.liferay.portal.security.antisamy.configuration.AntiSamyClassNameConfiguration",
 	service = ManagedServiceFactory.class
 )
@@ -52,6 +41,10 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 
 	@Override
 	public void deleted(String pid) {
+		if (_sanitizerServiceRegistration == null) {
+			return;
+		}
+
 		String className = _classNames.get(pid);
 
 		_antiSamySanitizerImpl.removePolicy(className);
@@ -63,8 +56,10 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 	}
 
 	@Override
-	public void updated(String pid, Dictionary<String, ?> properties)
-		throws ConfigurationException {
+	public void updated(String pid, Dictionary<String, ?> properties) {
+		if (_sanitizerServiceRegistration == null) {
+			return;
+		}
 
 		AntiSamyClassNameConfiguration antiSamyClassNameConfiguration =
 			ConfigurableUtil.createConfigurable(
@@ -116,7 +111,10 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 			antiSamyConfiguration.whitelist());
 
 		_sanitizerServiceRegistration = bundleContext.registerService(
-			Sanitizer.class, _antiSamySanitizerImpl, null);
+			Sanitizer.class, _antiSamySanitizerImpl,
+			MapUtil.singletonDictionary(
+				"component.name",
+				AntiSamySanitizerImpl.class.getCanonicalName()));
 	}
 
 	@Deactivate
@@ -126,15 +124,6 @@ public class AntiSamySanitizerPublisherManagedServiceFactory
 
 			_sanitizerServiceRegistration = null;
 		}
-	}
-
-	@Modified
-	protected void modified(
-		BundleContext bundleContext, Map<String, Object> properties) {
-
-		deactivate();
-
-		activate(bundleContext, properties);
 	}
 
 	private AntiSamySanitizerImpl _antiSamySanitizerImpl;

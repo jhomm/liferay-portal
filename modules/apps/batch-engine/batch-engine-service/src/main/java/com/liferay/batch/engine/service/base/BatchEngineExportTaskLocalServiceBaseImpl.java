@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.service.base;
@@ -17,7 +8,6 @@ package com.liferay.batch.engine.service.base;
 import com.liferay.batch.engine.model.BatchEngineExportTask;
 import com.liferay.batch.engine.model.BatchEngineExportTaskContentBlobModel;
 import com.liferay.batch.engine.service.BatchEngineExportTaskLocalService;
-import com.liferay.batch.engine.service.BatchEngineExportTaskLocalServiceUtil;
 import com.liferay.batch.engine.service.persistence.BatchEngineExportTaskPersistence;
 import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
@@ -30,8 +20,7 @@ import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -43,6 +32,8 @@ import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -58,9 +49,8 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import java.io.InputStream;
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
-
 import java.sql.Blob;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -89,7 +79,7 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>BatchEngineExportTaskLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>BatchEngineExportTaskLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>BatchEngineExportTaskLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.batch.engine.service.BatchEngineExportTaskLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -288,6 +278,25 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 			uuid, companyId, null);
 	}
 
+	@Override
+	public BatchEngineExportTask
+		fetchBatchEngineExportTaskByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return batchEngineExportTaskPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public BatchEngineExportTask
+			getBatchEngineExportTaskByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return batchEngineExportTaskPersistence.findByERC_C(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the batch engine export task with the primary key.
 	 *
@@ -438,6 +447,11 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement BatchEngineExportTaskLocalServiceImpl#deleteBatchEngineExportTask(BatchEngineExportTask) to avoid orphaned data");
+		}
+
 		return batchEngineExportTaskLocalService.deleteBatchEngineExportTask(
 			(BatchEngineExportTask)persistedModel);
 	}
@@ -574,8 +588,7 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 
 		if ((db.getDBType() != DBType.DB2) &&
 			(db.getDBType() != DBType.MYSQL) &&
-			(db.getDBType() != DBType.MARIADB) &&
-			(db.getDBType() != DBType.SYBASE)) {
+			(db.getDBType() != DBType.MARIADB)) {
 
 			_useTempFile = true;
 		}
@@ -583,7 +596,6 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
 	}
 
 	@Override
@@ -598,8 +610,6 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		batchEngineExportTaskLocalService =
 			(BatchEngineExportTaskLocalService)aopProxy;
-
-		_setLocalServiceUtilService(batchEngineExportTaskLocalService);
 	}
 
 	/**
@@ -626,39 +636,27 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource =
+			batchEngineExportTaskPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource =
-				batchEngineExportTaskPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		BatchEngineExportTaskLocalService batchEngineExportTaskLocalService) {
-
-		try {
-			Field field =
-				BatchEngineExportTaskLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, batchEngineExportTaskLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -671,6 +669,9 @@ public abstract class BatchEngineExportTaskLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		BatchEngineExportTaskLocalServiceBaseImpl.class);
 
 	@Reference
 	protected File _file;

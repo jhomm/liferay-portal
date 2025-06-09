@@ -1,23 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
 
-import com.liferay.headless.common.spi.service.context.ServiceContextRequestUtil;
+import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.headless.delivery.dto.v1_0.KnowledgeBaseFolder;
 import com.liferay.headless.delivery.dto.v1_0.util.CreatorUtil;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.ParentKnowledgeBaseFolderUtil;
 import com.liferay.headless.delivery.resource.v1_0.KnowledgeBaseFolderResource;
 import com.liferay.knowledge.base.constants.KBActionKeys;
@@ -28,17 +18,14 @@ import com.liferay.knowledge.base.service.KBArticleService;
 import com.liferay.knowledge.base.service.KBFolderLocalService;
 import com.liferay.knowledge.base.service.KBFolderService;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
+import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.permission.PermissionUtil;
-
-import java.io.Serializable;
-
-import java.util.Map;
-import java.util.Optional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -68,7 +55,7 @@ public class KnowledgeBaseFolderResourceImpl
 
 		KBFolder kbFolder =
 			_kbFolderLocalService.getKBFolderByExternalReferenceCode(
-				siteId, externalReferenceCode);
+				externalReferenceCode, siteId);
 
 		_kbFolderService.deleteKBFolder(kbFolder.getKbFolderId());
 	}
@@ -121,20 +108,9 @@ public class KnowledgeBaseFolderResourceImpl
 				Long siteId, String externalReferenceCode)
 		throws Exception {
 
-		KBFolder kbFolder =
-			_kbFolderLocalService.getKBFolderByExternalReferenceCode(
-				siteId, externalReferenceCode);
-
-		String resourceName = getPermissionCheckerResourceName(
-			kbFolder.getKbFolderId());
-		Long resourceId = getPermissionCheckerResourceId(
-			kbFolder.getKbFolderId());
-
-		PermissionUtil.checkPermission(
-			ActionKeys.VIEW, groupLocalService, resourceName, resourceId,
-			getPermissionCheckerGroupId(kbFolder.getKbFolderId()));
-
-		return _toKnowledgeBaseFolder(kbFolder);
+		return _toKnowledgeBaseFolder(
+			_kbFolderService.getKBFolderByExternalReferenceCode(
+				siteId, externalReferenceCode));
 	}
 
 	@Override
@@ -149,10 +125,26 @@ public class KnowledgeBaseFolderResourceImpl
 					KBActionKeys.ADD_KB_FOLDER, "postSiteKnowledgeBaseFolder",
 					KBConstants.RESOURCE_NAME_ADMIN, siteId)
 			).put(
+				"createBatch",
+				addAction(
+					KBActionKeys.ADD_KB_FOLDER,
+					"postSiteKnowledgeBaseFolderBatch",
+					KBConstants.RESOURCE_NAME_ADMIN, siteId)
+			).put(
+				"deleteBatch",
+				addAction(
+					KBActionKeys.DELETE, "deleteKnowledgeBaseFolderBatch",
+					KBConstants.RESOURCE_NAME_ADMIN, null)
+			).put(
 				"get",
 				addAction(
 					ActionKeys.VIEW, "getSiteKnowledgeBaseFoldersPage",
 					KBConstants.RESOURCE_NAME_ADMIN, siteId)
+			).put(
+				"updateBatch",
+				addAction(
+					KBActionKeys.UPDATE, "putKnowledgeBaseFolderBatch",
+					KBConstants.RESOURCE_NAME_ADMIN, null)
 			).build(),
 			transform(
 				_kbFolderService.getKBFolders(
@@ -192,10 +184,9 @@ public class KnowledgeBaseFolderResourceImpl
 			Long knowledgeBaseFolderId, KnowledgeBaseFolder knowledgeBaseFolder)
 		throws Exception {
 
-		KBFolder kbFolder = _kbFolderLocalService.getKBFolder(
-			knowledgeBaseFolderId);
-
-		return _updateKnowledgeBaseFolder(kbFolder, knowledgeBaseFolder);
+		return _updateKnowledgeBaseFolder(
+			_kbFolderLocalService.getKBFolder(knowledgeBaseFolderId),
+			knowledgeBaseFolder);
 	}
 
 	@Override
@@ -207,7 +198,7 @@ public class KnowledgeBaseFolderResourceImpl
 
 		KBFolder kbFolder =
 			_kbFolderLocalService.fetchKBFolderByExternalReferenceCode(
-				siteId, externalReferenceCode);
+				externalReferenceCode, siteId);
 
 		if (kbFolder != null) {
 			return _updateKnowledgeBaseFolder(kbFolder, knowledgeBaseFolder);
@@ -250,23 +241,27 @@ public class KnowledgeBaseFolderResourceImpl
 				externalReferenceCode, groupId, _getClassNameId(),
 				parentResourcePrimKey, knowledgeBaseFolder.getName(),
 				knowledgeBaseFolder.getDescription(),
-				ServiceContextRequestUtil.createServiceContext(
-					_getExpandoBridgeAttributes(knowledgeBaseFolder), groupId,
-					contextHttpServletRequest,
+				_createServiceContext(
+					groupId, knowledgeBaseFolder,
 					knowledgeBaseFolder.getViewableByAsString())));
+	}
+
+	private ServiceContext _createServiceContext(
+		long groupId, KnowledgeBaseFolder knowledgeBaseFolder,
+		String viewableBy) {
+
+		return ServiceContextBuilder.create(
+			groupId, contextHttpServletRequest, viewableBy
+		).expandoBridgeAttributes(
+			CustomFieldsUtil.toMap(
+				KBFolder.class.getName(), contextCompany.getCompanyId(),
+				knowledgeBaseFolder.getCustomFields(),
+				contextAcceptLanguage.getPreferredLocale())
+		).build();
 	}
 
 	private long _getClassNameId() {
 		return _portal.getClassNameId(KBFolder.class.getName());
-	}
-
-	private Map<String, Serializable> _getExpandoBridgeAttributes(
-		KnowledgeBaseFolder knowledgeBaseFolder) {
-
-		return CustomFieldsUtil.toMap(
-			KBFolder.class.getName(), contextCompany.getCompanyId(),
-			knowledgeBaseFolder.getCustomFields(),
-			contextAcceptLanguage.getPreferredLocale());
 	}
 
 	private KnowledgeBaseFolder _toKnowledgeBaseFolder(KBFolder kbFolder)
@@ -278,44 +273,52 @@ public class KnowledgeBaseFolderResourceImpl
 
 		return new KnowledgeBaseFolder() {
 			{
-				actions = HashMapBuilder.put(
-					"delete",
-					addAction(
-						ActionKeys.DELETE, kbFolder,
-						"deleteKnowledgeBaseFolder")
-				).put(
-					"get",
-					addAction(
-						ActionKeys.VIEW, kbFolder, "getKnowledgeBaseFolder")
-				).put(
-					"replace",
-					addAction(
-						ActionKeys.UPDATE, kbFolder, "putKnowledgeBaseFolder")
-				).build();
-				creator = CreatorUtil.toCreator(
-					_portal, Optional.of(contextUriInfo),
-					_userLocalService.fetchUser(kbFolder.getUserId()));
-				customFields = CustomFieldsUtil.toCustomFields(
-					contextAcceptLanguage.isAcceptAllLanguages(),
-					KBFolder.class.getName(), kbFolder.getKbFolderId(),
-					kbFolder.getCompanyId(),
-					contextAcceptLanguage.getPreferredLocale());
-				dateCreated = kbFolder.getCreateDate();
-				dateModified = kbFolder.getModifiedDate();
-				description = kbFolder.getDescription();
-				externalReferenceCode = kbFolder.getExternalReferenceCode();
-				id = kbFolder.getKbFolderId();
-				name = kbFolder.getName();
-				numberOfKnowledgeBaseArticles =
-					_kbArticleService.getKBArticlesCount(
-						kbFolder.getGroupId(), kbFolder.getKbFolderId(), 0);
-				numberOfKnowledgeBaseFolders =
-					_kbFolderService.getKBFoldersCount(
-						kbFolder.getGroupId(), kbFolder.getKbFolderId());
-				parentKnowledgeBaseFolder =
-					ParentKnowledgeBaseFolderUtil.toParentKnowledgeBaseFolder(
-						kbFolder.getParentKBFolder());
-				siteId = kbFolder.getGroupId();
+				setActions(
+					() -> HashMapBuilder.put(
+						"delete",
+						addAction(
+							ActionKeys.DELETE, kbFolder,
+							"deleteKnowledgeBaseFolder")
+					).put(
+						"get",
+						addAction(
+							ActionKeys.VIEW, kbFolder, "getKnowledgeBaseFolder")
+					).put(
+						"replace",
+						addAction(
+							ActionKeys.UPDATE, kbFolder,
+							"putKnowledgeBaseFolder")
+					).build());
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						new DefaultDTOConverterContext(
+							null, null, null, contextUriInfo, null),
+						_portal,
+						_userLocalService.fetchUser(kbFolder.getUserId())));
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						contextAcceptLanguage.isAcceptAllLanguages(),
+						KBFolder.class.getName(), kbFolder.getKbFolderId(),
+						kbFolder.getCompanyId(),
+						contextAcceptLanguage.getPreferredLocale()));
+				setDateCreated(kbFolder::getCreateDate);
+				setDateModified(kbFolder::getModifiedDate);
+				setDescription(kbFolder::getDescription);
+				setExternalReferenceCode(kbFolder::getExternalReferenceCode);
+				setId(kbFolder::getKbFolderId);
+				setName(kbFolder::getName);
+				setNumberOfKnowledgeBaseArticles(
+					() -> _kbArticleService.getKBArticlesCount(
+						kbFolder.getGroupId(), kbFolder.getKbFolderId(), 0));
+				setNumberOfKnowledgeBaseFolders(
+					() -> _kbFolderService.getKBFoldersCount(
+						kbFolder.getGroupId(), kbFolder.getKbFolderId()));
+				setParentKnowledgeBaseFolder(
+					() ->
+						ParentKnowledgeBaseFolderUtil.
+							toParentKnowledgeBaseFolder(
+								kbFolder.getParentKBFolder()));
+				setSiteId(kbFolder::getGroupId);
 			}
 		};
 	}
@@ -329,9 +332,7 @@ public class KnowledgeBaseFolderResourceImpl
 				_getClassNameId(), kbFolder.getParentKBFolderId(),
 				kbFolder.getKbFolderId(), knowledgeBaseFolder.getName(),
 				knowledgeBaseFolder.getDescription(),
-				ServiceContextRequestUtil.createServiceContext(
-					_getExpandoBridgeAttributes(knowledgeBaseFolder), 0,
-					contextHttpServletRequest, null)));
+				_createServiceContext(0, knowledgeBaseFolder, null)));
 	}
 
 	@Reference

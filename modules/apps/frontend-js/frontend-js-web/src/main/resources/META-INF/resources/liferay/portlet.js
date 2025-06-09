@@ -1,34 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+/* eslint-disable @liferay/aui/no-node */
+
+/* eslint-disable @liferay/aui/no-one */
+
 (function (A) {
-	var Lang = A.Lang;
+	const Lang = A.Lang;
 
-	var Util = Liferay.Util;
+	const Util = Liferay.Util;
 
-	var STR_HEAD = 'head';
+	const STR_HEAD = 'head';
 
-	var TPL_NOT_AJAXABLE = '<div class="alert alert-info">{0}</div>';
+	const TPL_NOT_AJAXABLE = '<div class="alert alert-info">{0}</div>';
 
-	var Portlet = {
+	const buildFragment = (htmlString) => {
+		const div = document.createElement('div');
+
+		div.innerHTML = `<br>${htmlString}`;
+
+		div.removeChild(div.firstChild);
+
+		const fragment = document.createDocumentFragment();
+
+		while (div.firstChild) {
+			fragment.appendChild(div.firstChild);
+		}
+
+		return fragment;
+	};
+
+	const Portlet = {
 		...Liferay.Portlet,
 
 		_defCloseFn(event) {
 			event.portlet.remove(true);
 
 			if (!event.nestedPortlet) {
-				var formData = Liferay.Util.objectToFormData({
+				const formData = Liferay.Util.objectToFormData({
 					cmd: 'delete',
 					doAsUserId: event.doAsUserId,
 					p_auth: Liferay.authToken,
@@ -52,14 +63,14 @@
 		},
 
 		_loadMarkupHeadElements(response) {
-			var markupHeadElements = response.markupHeadElements;
+			const markupHeadElements = response.markupHeadElements;
 
 			if (markupHeadElements && markupHeadElements.length) {
-				var head = A.one(STR_HEAD);
+				const head = A.one(STR_HEAD);
 
 				head.append(markupHeadElements);
 
-				var container = A.Node.create('<div />');
+				const container = A.Node.create('<div />');
 
 				container.plug(A.Plugin.ParseContent);
 
@@ -67,17 +78,53 @@
 			}
 		},
 
-		_loadPortletFiles(response, loadHTML) {
-			var footerCssPaths = response.footerCssPaths || [];
-			var headerCssPaths = response.headerCssPaths || [];
+		_loadModules(moduleJavascriptPaths) {
+			return Promise.all(
+				moduleJavascriptPaths.map(
+					(path) =>
+						new Promise((resolve) => {
+							const script = document.createElement('script');
 
-			var javascriptPaths = response.headerJavaScriptPaths || [];
+							script.src = path;
+							script.type = 'module';
 
-			javascriptPaths = javascriptPaths.concat(
-				response.footerJavaScriptPaths || []
+							script.onload = script.onreadystatechange = () => {
+								if (
+									this.readyState &&
+									this.readyState !== 'complete' &&
+									this.readyState !== 'load'
+								) {
+									return;
+								}
+
+								script.onload = script.onreadystatechange =
+									null;
+								script.onerror = null;
+
+								resolve();
+							};
+
+							script.onerror = () => {
+								script.onload = script.onreadystatechange =
+									null;
+								script.onerror = null;
+
+								console.error('Unable to load', path);
+
+								resolve();
+							};
+
+							document.head.appendChild(script);
+						})
+				)
 			);
+		},
 
-			var head = A.one(STR_HEAD);
+		_loadPortletFiles(response, loadHTML) {
+			const footerCssPaths = response.footerCssPaths || [];
+			const headerCssPaths = response.headerCssPaths || [];
+
+			const head = A.one(STR_HEAD);
 
 			if (headerCssPaths.length) {
 				A.Get.css(headerCssPaths, {
@@ -85,7 +132,7 @@
 				});
 			}
 
-			var lastChild = document.body.lastChild;
+			const lastChild = document.body.lastChild;
 
 			if (footerCssPaths.length) {
 				A.Get.css(footerCssPaths, {
@@ -93,13 +140,29 @@
 				});
 			}
 
-			var responseHTML = response.portletHTML;
+			const responseHTML = response.portletHTML;
+
+			let javascriptPaths = response.headerJavaScriptPaths || [];
+
+			javascriptPaths = javascriptPaths.concat(
+				response.footerJavaScriptPaths || []
+			);
 
 			if (javascriptPaths.length) {
-				A.Get.script(javascriptPaths, {
-					onEnd() {
-						loadHTML(responseHTML);
-					},
+				const moduleJavascriptPaths = javascriptPaths
+					.filter((path) => path.startsWith('module:'))
+					.map((path) => path.substring(7));
+
+				javascriptPaths = javascriptPaths.filter(
+					(path) => !path.startsWith('module:')
+				);
+
+				Portlet._loadModules(moduleJavascriptPaths).then(() => {
+					A.Get.script(javascriptPaths, {
+						onEnd() {
+							loadHTML(responseHTML);
+						},
+					});
 				});
 			}
 			else {
@@ -128,9 +191,9 @@
 		},
 
 		isStatic(portletId) {
-			var instance = this;
+			const instance = this;
 
-			var id = Util.getPortletId(portletId.id || portletId);
+			const id = Util.getPortletId(portletId.id || portletId);
 
 			return id in instance._staticPortlets;
 		},
@@ -142,7 +205,7 @@
 		refreshLayout(_portletBoundary) {},
 
 		register(portletId) {
-			var instance = this;
+			const instance = this;
 
 			if (instance.list.indexOf(portletId) < 0) {
 				instance.list.push(portletId);
@@ -154,18 +217,18 @@
 		Portlet,
 		'add',
 		function (options) {
-			var instance = this;
+			const instance = this;
 
 			Liferay.fire('initLayout');
 
-			var doAsUserId =
+			const doAsUserId =
 				options.doAsUserId || themeDisplay.getDoAsUserIdEncoded();
-			var plid = options.plid || themeDisplay.getPlid();
-			var portletData = options.portletData;
-			var portletId = options.portletId;
-			var portletItemId = options.portletItemId;
+			const plid = options.plid || themeDisplay.getPlid();
+			const portletData = options.portletData;
+			const portletId = options.portletId;
+			const portletItemId = options.portletItemId;
 
-			var placeHolder = options.placeHolder;
+			let placeHolder = options.placeHolder;
 
 			if (!placeHolder) {
 				placeHolder = A.Node.create(
@@ -176,10 +239,10 @@
 				placeHolder = A.one(placeHolder);
 			}
 
-			var beforePortletLoaded = options.beforePortletLoaded;
-			var onCompleteFn = options.onComplete;
+			const beforePortletLoaded = options.beforePortletLoaded;
+			const onCompleteFn = options.onComplete;
 
-			var onComplete = function (portlet, portletId) {
+			const onComplete = function (portlet, portletId) {
 				if (onCompleteFn) {
 					onCompleteFn(portlet, portletId);
 				}
@@ -195,7 +258,7 @@
 				});
 			};
 
-			var container = null;
+			let container = null;
 
 			if (Liferay.Layout && Liferay.Layout.INITIALIZED) {
 				container = Liferay.Layout.getActiveDropContainer();
@@ -205,12 +268,14 @@
 				return;
 			}
 
-			var currentColumnId = Util.getColumnId(container.attr('id'));
+			const containerId = container.attr('id');
 
-			var portletPosition = 0;
+			let currentColumnId = containerId.replace(/layout-column_/, '');
+
+			let portletPosition = 0;
 
 			if (options.placeHolder) {
-				var column = placeHolder.get('parentNode');
+				const column = placeHolder.get('parentNode');
 
 				if (!column) {
 					return;
@@ -218,17 +283,16 @@
 
 				placeHolder.addClass('portlet-boundary');
 
-				var columnPortlets = column.all('.portlet-boundary');
-				var nestedPortlets = column.all('.portlet-nested-portlets');
+				const columnPortlets = column.all('.portlet-boundary');
+				const nestedPortlets = column.all('.portlet-nested-portlets');
 
 				portletPosition = columnPortlets.indexOf(placeHolder);
 
-				var nestedPortletOffset = 0;
+				let nestedPortletOffset = 0;
 
 				nestedPortlets.some((nestedPortlet) => {
-					var nestedPortletIndex = columnPortlets.indexOf(
-						nestedPortlet
-					);
+					const nestedPortletIndex =
+						columnPortlets.indexOf(nestedPortlet);
 
 					if (
 						nestedPortletIndex !== -1 &&
@@ -245,12 +309,14 @@
 
 				portletPosition -= nestedPortletOffset;
 
-				currentColumnId = Util.getColumnId(column.attr('id'));
+				currentColumnId = column
+					.attr('id')
+					.replace(/layout-column_/, '');
 			}
 
-			var url = themeDisplay.getPathMain() + '/portal/update_layout';
+			const url = themeDisplay.getPathMain() + '/portal/update_layout';
 
-			var data = {
+			const data = {
 				cmd: 'add',
 				dataType: 'JSON',
 				doAsUserId,
@@ -265,8 +331,8 @@
 				portletData,
 			};
 
-			var firstPortlet = container.one('.portlet-boundary');
-			var hasStaticPortlet = firstPortlet && firstPortlet.isStatic;
+			const firstPortlet = container.one('.portlet-boundary');
+			const hasStaticPortlet = firstPortlet && firstPortlet.isStatic;
 
 			if (!options.placeHolder && !options.plid) {
 				if (!hasStaticPortlet) {
@@ -294,16 +360,16 @@
 		Portlet,
 		'addHTML',
 		function (options) {
-			var instance = this;
+			const instance = this;
 
-			var portletBoundary = null;
+			let portletBoundary = null;
 
-			var beforePortletLoaded = options.beforePortletLoaded;
-			var data = options.data;
-			var dataType = 'HTML';
-			var onComplete = options.onComplete;
-			var placeHolder = options.placeHolder;
-			var url = options.url;
+			const beforePortletLoaded = options.beforePortletLoaded;
+			const data = options.data;
+			let dataType = 'HTML';
+			const onComplete = options.onComplete;
+			const placeHolder = options.placeHolder;
+			const url = options.url;
 
 			if (data && Lang.isString(data.dataType)) {
 				dataType = data.dataType;
@@ -311,10 +377,10 @@
 
 			dataType = dataType.toUpperCase();
 
-			var addPortletReturn = function (html) {
-				var container = placeHolder.get('parentNode');
+			const addPortletReturn = function (html) {
+				const container = placeHolder.get('parentNode');
 
-				var portletBound = A.Node.create('<div></div>');
+				let portletBound = A.Node.create('<div></div>');
 
 				portletBound.plug(A.Plugin.ParseContent);
 
@@ -322,10 +388,10 @@
 
 				portletBound = portletBound.one('> *');
 
-				var portletId;
+				let portletId;
 
 				if (portletBound) {
-					var id = portletBound.attr('id');
+					const id = portletBound.attr('id');
 
 					portletId = Util.getPortletId(id);
 
@@ -339,12 +405,12 @@
 					instance.refreshLayout(portletBound);
 
 					if (window.location.hash) {
-						window.location.href = window.location.hash;
+						window.location.href = encodeURI(window.location.hash);
 					}
 
 					portletBoundary = portletBound;
 
-					var Layout = Liferay.Layout;
+					const Layout = Liferay.Layout;
 
 					if (Layout && Layout.INITIALIZED) {
 						Layout.updateCurrentPortletInfo(portletBoundary);
@@ -401,12 +467,12 @@
 					}
 				})
 				.catch((error) => {
-					var message =
+					const message =
 						typeof error === 'string'
 							? error
 							: Liferay.Language.get(
 									'there-was-an-unexpected-error.-please-refresh-the-current-page'
-							  );
+								);
 
 					Liferay.Util.openToast({
 						message,
@@ -421,22 +487,12 @@
 		Portlet,
 		'close',
 		function (portlet, skipConfirm, options) {
-			var instance = this;
+			const instance = this;
 
-			portlet = A.one(portlet);
+			const _removeComponent = () => {
+				const portletId = portlet.portletId;
 
-			if (
-				portlet &&
-				(skipConfirm ||
-					confirm(
-						Liferay.Language.get(
-							'are-you-sure-you-want-to-remove-this-component'
-						)
-					))
-			) {
-				var portletId = portlet.portletId;
-
-				var portletIndex = instance.list.indexOf(portletId);
+				const portletIndex = instance.list.indexOf(portletId);
 
 				if (portletIndex >= 0) {
 					instance.list.splice(portletIndex, 1);
@@ -449,6 +505,26 @@
 				Liferay.fire('destroyPortlet', options);
 
 				Liferay.fire('closePortlet', options);
+			};
+
+			portlet = A.one(portlet);
+
+			if (portlet) {
+				if (!skipConfirm) {
+					Liferay.Util.openConfirmModal({
+						message: Liferay.Language.get(
+							'are-you-sure-you-want-to-remove-this-component'
+						),
+						onConfirm: (isConfirmed) => {
+							if (isConfirmed) {
+								_removeComponent();
+							}
+						},
+					});
+				}
+				else {
+					_removeComponent();
+				}
 			}
 			else {
 				A.config.win.focus();
@@ -464,7 +540,7 @@
 			portlet = A.one(portlet);
 
 			if (portlet) {
-				var portletId =
+				const portletId =
 					portlet.portletId || Util.getPortletId(portlet.attr('id'));
 
 				Portlet.destroyComponents(portletId);
@@ -482,21 +558,22 @@
 		Portlet,
 		'onLoad',
 		function (options) {
-			var instance = this;
+			const instance = this;
 
-			var canEditTitle = options.canEditTitle;
-			var columnPos = options.columnPos;
-			var isStatic = options.isStatic == 'no' ? null : options.isStatic;
-			var namespacedId = options.namespacedId;
-			var portletId = options.portletId;
-			var refreshURL = options.refreshURL;
-			var refreshURLData = options.refreshURLData;
+			const canEditTitle = options.canEditTitle;
+			const columnPos = options.columnPos;
+			const isStatic =
+				options.isStatic === 'no' ? null : options.isStatic;
+			const namespacedId = options.namespacedId;
+			const portletId = options.portletId;
+			const refreshURL = options.refreshURL;
+			const refreshURLData = options.refreshURLData;
 
 			if (isStatic) {
 				instance.registerStatic(portletId);
 			}
 
-			var portlet = A.one('#' + namespacedId);
+			const portlet = A.one('#' + namespacedId);
 
 			if (portlet && !portlet.portletProcessed) {
 				portlet.portletProcessed = true;
@@ -512,20 +589,160 @@
 
 					// https://github.com/yui/yui3/issues/1808
 
-					var events = 'focus';
+					let events = 'focus';
 
 					if (!A.UA.touchEnabled) {
 						events = ['focus', 'mousemove'];
 					}
 
-					var handle = portlet.on(events, () => {
-						Util.portletTitleEdit({
-							doAsUserId: themeDisplay.getDoAsUserIdEncoded(),
-							// eslint-disable-next-line @liferay/no-abbreviations
-							obj: portlet,
-							plid: themeDisplay.getPlid(),
-							portletId,
-						});
+					const handle = portlet.on(events, () => {
+						A.Event.defineOutside('mouseup');
+
+						if (portlet) {
+							const title = portlet.one('.portlet-title-text');
+
+							if (title && !title.hasClass('not-editable')) {
+								title.addClass('portlet-title-editable');
+								title.setAttribute(
+									'contenteditable',
+									'plaintext-only'
+								);
+
+								const buttonGroupFragment = buildFragment(`
+									<div class="btn-group hide" id="${portletId}_button-group-title-edit">
+									<button class="btn-toolbar-button  btn btn-default" id="${portletId}_cancel-edit-title">
+									<svg aria-hidden="true" class="lexicon-icon lexicon-icon-times" focusable="false" role="presentation"><use href="${Liferay.Icons.spritemap}#times"></use></svg>
+									</button>
+									<button class="btn-toolbar-button btn btn-default" id="${portletId}_confirm-edit-title">
+									<svg aria-hidden="true" class="lexicon-icon lexicon-icon-check " focusable="false" role="presentation"><use href="${Liferay.Icons.spritemap}#check"></use></svg>
+									</button>
+									</div>
+								`);
+
+								const titleNode = document.querySelector(
+									'.portlet-title-text'
+								);
+
+								let originalValue = '' + titleNode.innerText;
+
+								titleNode.parentNode.appendChild(
+									buttonGroupFragment
+								);
+
+								const buttonGroupNode = document.getElementById(
+									`${portletId}_button-group-title-edit`
+								);
+
+								const updateTitle = (titleNode) => {
+									const data = {
+										doAsUserId:
+											themeDisplay.getDoAsUserIdEncoded(),
+										p_auth: Liferay.authToken,
+										p_l_id: themeDisplay.getPlid(),
+										portletId: portlet.portletId || 0,
+										title: titleNode.innerText || '',
+									};
+
+									originalValue = '' + titleNode.innerText;
+
+									Liferay.Util.fetch(
+										themeDisplay.getPathMain() +
+											'/portal/update_portlet_title',
+										{
+											body: Liferay.Util.objectToFormData(
+												data
+											),
+											method: 'POST',
+										}
+									);
+
+									buttonGroupNode.classList.add('hide');
+									titleNode.style.textTransform = '';
+								};
+
+								const cancelEditTitleButton =
+									document.getElementById(
+										`${portletId}_cancel-edit-title`
+									);
+
+								const confirmEditTitleButton =
+									document.getElementById(
+										`${portletId}_confirm-edit-title`
+									);
+
+								const cancelEditFn = () => {
+									titleNode.innerText = originalValue;
+
+									buttonGroupNode.classList.add('hide');
+									titleNode.style.textTransform = '';
+								};
+
+								const confirmEditFn = () =>
+									updateTitle(titleNode);
+
+								const keyUpFn = (event) => {
+									if (event.key === 'Enter') {
+										updateTitle(titleNode);
+									}
+									else if (event.key === 'Escape') {
+										cancelEditFn();
+									}
+								};
+
+								titleNode.addEventListener('click', () => {
+									buttonGroupNode.classList.remove('hide');
+									titleNode.style.textTransform = 'initial';
+
+									titleNode.addEventListener(
+										'keyup',
+										keyUpFn
+									);
+									confirmEditTitleButton.addEventListener(
+										'click',
+										confirmEditFn
+									);
+									cancelEditTitleButton.addEventListener(
+										'click',
+										cancelEditFn
+									);
+
+									const onClickOutside = (event) => {
+										if (
+											!titleNode.parentNode.contains(
+												event.target
+											)
+										) {
+											confirmEditFn();
+
+											document.removeEventListener(
+												'click',
+												onClickOutside
+											);
+										}
+									};
+
+									document.addEventListener(
+										'click',
+										onClickOutside
+									);
+
+									titleNode.addEventListener('blur', () => {
+										titleNode.removeEventListener(
+											'keyup',
+											keyUpFn
+										);
+										confirmEditTitleButton.removeEventListener(
+											'click',
+											confirmEditFn
+										);
+										cancelEditTitleButton.removeEventListener(
+											'click',
+											cancelEditFn
+										);
+									});
+								});
+							}
+						}
 
 						handle.detach();
 					});
@@ -545,20 +762,23 @@
 				});
 			}
 		},
-		['aui-base', 'aui-timer', 'event-move']
+		['aui-base', 'aui-timer', 'event-move', 'event-outside']
 	);
 
 	Liferay.provide(
 		Portlet,
 		'refresh',
 		function (portlet, data, mergeWithRefreshURLData) {
-			var instance = this;
+			const instance = this;
 
 			portlet = A.one(portlet);
 
 			if (portlet) {
 				if (mergeWithRefreshURLData) {
-					data = A.merge(portlet.refreshURLData || {}, data || {});
+					data = {
+						...(portlet.refreshURLData || {}),
+						...(data || {}),
+					};
 				}
 				else {
 					data = data || portlet.refreshURLData || {};
@@ -573,11 +793,11 @@
 					data.portletAjaxable = true;
 				}
 
-				var id = portlet.attr('portlet');
+				const id = portlet.attr('portlet');
 
-				var url = portlet.refreshURL;
+				let url = portlet.refreshURL;
 
-				var placeHolder = A.Node.create(
+				const placeHolder = A.Node.create(
 					'<div class="loading-animation" id="p_p_id' + id + '" />'
 				);
 
@@ -588,9 +808,9 @@
 
 					Portlet.destroyComponents(portlet.portletId);
 
-					var params = {};
+					let params = {};
 
-					var urlPieces = url.split('?');
+					const urlPieces = url.split('?');
 
 					if (urlPieces.length > 1) {
 						params = A.QueryString.parse(urlPieces[1]);
@@ -602,17 +822,17 @@
 
 					instance.addHTML({
 						data: A.mix(params, data, true),
-						onComplete(portlet, portletId) {
-							portlet.refreshURL = url;
+						onComplete(newPortlet, portletId) {
+							newPortlet.refreshURL = portlet.refreshURL;
 
-							if (portlet) {
-								portlet.attr('data-qa-id', 'app-refreshed');
+							if (newPortlet) {
+								newPortlet.attr('data-qa-id', 'app-refreshed');
 							}
 
 							Liferay.fire(
-								portlet.portletId + ':portletRefreshed',
+								newPortlet.portletId + ':portletRefreshed',
 								{
-									portlet,
+									portlet: newPortlet,
 									portletId,
 								}
 							);
@@ -624,18 +844,23 @@
 				else if (!portlet.getData('pendingRefresh')) {
 					portlet.setData('pendingRefresh', true);
 
-					var nonAjaxableContentMessage = Lang.sub(TPL_NOT_AJAXABLE, [
-						Liferay.Language.get(
-							'this-change-will-only-be-shown-after-you-refresh-the-page'
-						),
-					]);
+					const nonAjaxableContentMessage = Lang.sub(
+						TPL_NOT_AJAXABLE,
+						[
+							Liferay.Language.get(
+								'this-change-will-only-be-shown-after-you-refresh-the-page'
+							),
+						]
+					);
 
-					var portletBody = portlet.one('.portlet-body');
+					const portletBody = portlet.one('.portlet-body');
 
 					portletBody.placeBefore(nonAjaxableContentMessage);
 
 					portletBody.hide();
 				}
+
+				Liferay.fire('refreshPortlet', {portletId: portlet.portletId});
 			}
 		},
 		['aui-base', 'querystring-parse']
@@ -645,9 +870,9 @@
 		Portlet,
 		'registerStatic',
 		function (portletId) {
-			var instance = this;
+			const instance = this;
 
-			var Node = A.Node;
+			const Node = A.Node;
 
 			if (Node && portletId instanceof Node) {
 				portletId = portletId.attr('id');
@@ -656,7 +881,7 @@
 				portletId = portletId.id;
 			}
 
-			var id = Util.getPortletId(portletId);
+			const id = Util.getPortletId(portletId);
 
 			instance._staticPortlets[id] = true;
 		},

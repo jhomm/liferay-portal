@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -29,6 +20,7 @@ import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
+import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
@@ -82,7 +74,7 @@ public interface OrganizationService extends BaseService {
 	 * @param type the organization's type
 	 * @param regionId the primary key of the organization's region
 	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
+	 * @param statusListTypeId the organization's workflow status
 	 * @param comments the comments about the organization
 	 * @param site whether the organization is to be associated with a main
 	 site
@@ -97,8 +89,9 @@ public interface OrganizationService extends BaseService {
 	 * @return the organization
 	 */
 	public Organization addOrganization(
-			long parentOrganizationId, String name, String type, long regionId,
-			long countryId, long statusId, String comments, boolean site,
+			String externalReferenceCode, long parentOrganizationId,
+			String name, String type, long regionId, long countryId,
+			long statusListTypeId, String comments, boolean site,
 			List<Address> addresses, List<EmailAddress> emailAddresses,
 			List<OrgLabor> orgLabors, List<Phone> phones,
 			List<Website> websites, ServiceContext serviceContext)
@@ -118,7 +111,7 @@ public interface OrganizationService extends BaseService {
 	 * @param type the organization's type
 	 * @param regionId the primary key of the organization's region
 	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
+	 * @param statusListTypeId the organization's workflow status
 	 * @param comments the comments about the organization
 	 * @param site whether the organization is to be associated with a main
 	 site
@@ -128,13 +121,24 @@ public interface OrganizationService extends BaseService {
 	 * @return the organization
 	 */
 	public Organization addOrganization(
-			long parentOrganizationId, String name, String type, long regionId,
-			long countryId, long statusId, String comments, boolean site,
+			String externalReferenceCode, long parentOrganizationId,
+			String name, String type, long regionId, long countryId,
+			long statusListTypeId, String comments, boolean site,
 			ServiceContext serviceContext)
 		throws PortalException;
 
 	public User addOrganizationUserByEmailAddress(
 			String emailAddress, long organizationId,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public Organization addOrUpdateOrganization(
+			String externalReferenceCode, long parentOrganizationId,
+			String name, String type, long regionId, long countryId,
+			long statusListTypeId, String comments, boolean hasLogo,
+			byte[] logoBytes, boolean site, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<OrgLabor> orgLabors,
+			List<Phone> phones, List<Website> websites,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -185,9 +189,19 @@ public interface OrganizationService extends BaseService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Organization fetchOrganizationByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Organization> getGtOrganizations(
 		long gtOrganizationId, long companyId, long parentOrganizationId,
 		int size);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Organization getOrAddIncompleteOrganization(
+			String externalReferenceCode, String name)
+		throws Exception;
 
 	/**
 	 * Returns the organization with the primary key.
@@ -197,6 +211,11 @@ public interface OrganizationService extends BaseService {
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Organization getOrganization(long organizationId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Organization getOrganizationByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -251,8 +270,18 @@ public interface OrganizationService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Organization> getOrganizations(
+		long companyId, long parentOrganizationId, int start, int end,
+		OrderByComparator<Organization> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Organization> getOrganizations(
 		long companyId, long parentOrganizationId, String name, int start,
 		int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Organization> getOrganizations(
+		long companyId, long parentOrganizationId, String name, int start,
+		int end, OrderByComparator<Organization> orderByComparator);
 
 	/**
 	 * Returns the number of organizations belonging to the parent organization.
@@ -323,6 +352,9 @@ public interface OrganizationService extends BaseService {
 			long passwordPolicyId, long[] organizationIds)
 		throws PortalException;
 
+	public Organization updateLogo(long organizationId, byte[] logoBytes)
+		throws PortalException;
+
 	/**
 	 * Updates the organization with additional parameters.
 	 *
@@ -333,7 +365,7 @@ public interface OrganizationService extends BaseService {
 	 * @param type the organization's type
 	 * @param regionId the primary key of the organization's region
 	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
+	 * @param statusListTypeId the organization's workflow status
 	 * @param comments the comments about the organization
 	 * @param hasLogo if the organization has a custom logo
 	 * @param logoBytes the new logo image data
@@ -351,9 +383,10 @@ public interface OrganizationService extends BaseService {
 	 * @return the organization
 	 */
 	public Organization updateOrganization(
-			long organizationId, long parentOrganizationId, String name,
-			String type, long regionId, long countryId, long statusId,
-			String comments, boolean hasLogo, byte[] logoBytes, boolean site,
+			String externalReferenceCode, long organizationId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean hasLogo, byte[] logoBytes, boolean site,
 			List<Address> addresses, List<EmailAddress> emailAddresses,
 			List<OrgLabor> orgLabors, List<Phone> phones,
 			List<Website> websites, ServiceContext serviceContext)
@@ -369,7 +402,7 @@ public interface OrganizationService extends BaseService {
 	 * @param type the organization's type
 	 * @param regionId the primary key of the organization's region
 	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
+	 * @param statusListTypeId the organization's workflow status
 	 * @param comments the comments about the organization
 	 * @param site whether the organization is to be associated with a main
 	 site
@@ -380,9 +413,10 @@ public interface OrganizationService extends BaseService {
 	 * @return the organization
 	 */
 	public Organization updateOrganization(
-			long organizationId, long parentOrganizationId, String name,
-			String type, long regionId, long countryId, long statusId,
-			String comments, boolean site, ServiceContext serviceContext)
+			String externalReferenceCode, long organizationId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean site, ServiceContext serviceContext)
 		throws PortalException;
 
 }

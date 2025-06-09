@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action.test;
@@ -17,39 +8,40 @@ package com.liferay.layout.content.page.editor.web.internal.portlet.action.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalService;
+import com.liferay.layout.page.template.service.LayoutPageTemplateStructureLocalServiceUtil;
+import com.liferay.layout.responsive.ViewportSize;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.layout.util.constants.LayoutDataItemTypeConstants;
+import com.liferay.layout.util.structure.CollectionStyledLayoutStructureItem;
+import com.liferay.layout.util.structure.ColumnLayoutStructureItem;
 import com.liferay.layout.util.structure.ContainerStyledLayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
-import com.liferay.petra.string.StringPool;
+import com.liferay.layout.util.structure.RowStyledLayoutStructureItem;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
-import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+
+import jakarta.portlet.ActionRequest;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -78,19 +70,15 @@ public class AddItemMVCActionCommandTest {
 
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
 
-		_layout = _addLayout();
+		_layout = LayoutTestUtil.addTypeContentLayout(_group);
 
-		_layoutStructure = new LayoutStructure();
+		LayoutPageTemplateStructure layoutPageTemplateStructure =
+			LayoutPageTemplateStructureLocalServiceUtil.
+				fetchLayoutPageTemplateStructure(
+					_group.getGroupId(), _layout.getPlid());
 
-		_layoutStructure.addRootLayoutStructureItem();
-
-		_layoutPageTemplateStructure =
-			_layoutPageTemplateStructureLocalService.
-				addLayoutPageTemplateStructure(
-					TestPropsValues.getUserId(), _group.getGroupId(),
-					_layout.getPlid(), _layoutStructure.toString(),
-					ServiceContextTestUtil.getServiceContext(
-						_group, TestPropsValues.getUserId()));
+		_layoutStructure = LayoutStructure.of(
+			layoutPageTemplateStructure.getDefaultSegmentsExperienceData());
 	}
 
 	@Test
@@ -105,7 +93,7 @@ public class AddItemMVCActionCommandTest {
 		mockLiferayPortletActionRequest.addParameter("position", "0");
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcActionCommand, "addItemToLayoutData",
+			_mvcActionCommand, "_addItemToLayoutData",
 			new Class<?>[] {ActionRequest.class},
 			mockLiferayPortletActionRequest);
 
@@ -119,13 +107,9 @@ public class AddItemMVCActionCommandTest {
 			layoutStructure.getLayoutStructureItem(
 				layoutStructure.getMainItemId());
 
-		List<String> childrenItemIds =
-			rootLayoutStructureItem.getChildrenItemIds();
-
-		String itemId = childrenItemIds.get(0);
-
 		LayoutStructureItem layoutStructureItem =
-			layoutStructure.getLayoutStructureItem(itemId);
+			layoutStructure.getLayoutStructureItem(
+				rootLayoutStructureItem.getChildrenItemId(0));
 
 		Assert.assertEquals(
 			_layoutStructure.getMainItemId(),
@@ -157,7 +141,7 @@ public class AddItemMVCActionCommandTest {
 		mockLiferayPortletActionRequest.addParameter("position", "1");
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
-			_mvcActionCommand, "addItemToLayoutData",
+			_mvcActionCommand, "_addItemToLayoutData",
 			new Class<?>[] {ActionRequest.class},
 			mockLiferayPortletActionRequest);
 
@@ -171,13 +155,9 @@ public class AddItemMVCActionCommandTest {
 			layoutStructure.getLayoutStructureItem(
 				layoutStructure.getMainItemId());
 
-		List<String> childrenItemIds =
-			rootLayoutStructureItem.getChildrenItemIds();
-
-		String itemId = childrenItemIds.get(1);
-
 		LayoutStructureItem layoutStructureItem =
-			layoutStructure.getLayoutStructureItem(itemId);
+			layoutStructure.getLayoutStructureItem(
+				rootLayoutStructureItem.getChildrenItemId(1));
 
 		Assert.assertEquals(
 			_layoutStructure.getMainItemId(),
@@ -189,17 +169,188 @@ public class AddItemMVCActionCommandTest {
 			layoutStructureItem instanceof ContainerStyledLayoutStructureItem);
 	}
 
-	private Layout _addLayout() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId(), TestPropsValues.getUserId());
+	@Test
+	public void testAddItemToLayoutDataItemTypeCollectionMobileLandscapeConfig()
+		throws Exception {
 
-		return _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			StringPool.BLANK, LayoutConstants.TYPE_CONTENT, false,
-			StringPool.BLANK, serviceContext);
+		JSONObject itemConfigJSONObject = _getCollectionItemConfigJSONObject();
+
+		JSONObject mobileLandscapeConfigJSONObject =
+			itemConfigJSONObject.getJSONObject(
+				ViewportSize.MOBILE_LANDSCAPE.getViewportSizeId());
+
+		Assert.assertNotNull(mobileLandscapeConfigJSONObject);
+		Assert.assertEquals(
+			1, mobileLandscapeConfigJSONObject.get("numberOfColumns"));
+
+		JSONObject portraitMobileConfigJSONObject =
+			itemConfigJSONObject.getJSONObject(
+				ViewportSize.PORTRAIT_MOBILE.getViewportSizeId());
+
+		Assert.assertNotNull(portraitMobileConfigJSONObject);
+		Assert.assertEquals(
+			1, portraitMobileConfigJSONObject.get("numberOfColumns"));
+
+		JSONObject tabletConfigJSONObject = itemConfigJSONObject.getJSONObject(
+			ViewportSize.TABLET.getViewportSizeId());
+
+		Assert.assertNotNull(tabletConfigJSONObject);
+		Assert.assertEquals(1, tabletConfigJSONObject.get("numberOfColumns"));
+	}
+
+	@Test
+	public void testAddItemToLayoutDataItemTypeCollectionPortraitMobileConfig()
+		throws Exception {
+
+		JSONObject itemConfigJSONObject = _getCollectionItemConfigJSONObject();
+
+		JSONObject portraitMobileConfigJSONObject =
+			itemConfigJSONObject.getJSONObject(
+				ViewportSize.PORTRAIT_MOBILE.getViewportSizeId());
+
+		Assert.assertNotNull(portraitMobileConfigJSONObject);
+		Assert.assertEquals(
+			1, portraitMobileConfigJSONObject.get("numberOfColumns"));
+	}
+
+	@Test
+	public void testAddItemToLayoutDataItemTypeCollectionTabletConfig()
+		throws Exception {
+
+		JSONObject itemConfigJSONObject = _getCollectionItemConfigJSONObject();
+
+		JSONObject tabletConfigJSONObject = itemConfigJSONObject.getJSONObject(
+			ViewportSize.TABLET.getViewportSizeId());
+
+		Assert.assertNotNull(tabletConfigJSONObject);
+		Assert.assertEquals(1, tabletConfigJSONObject.get("numberOfColumns"));
+	}
+
+	@Test
+	public void testAddItemToLayoutDataItemTypeRowMobileLandscapeConfig()
+		throws Exception {
+
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
+			_getMockLiferayPortletActionRequest();
+
+		mockLiferayPortletActionRequest.addParameter(
+			"itemType", LayoutDataItemTypeConstants.TYPE_ROW);
+		mockLiferayPortletActionRequest.addParameter(
+			"parentItemId", _layoutStructure.getMainItemId());
+		mockLiferayPortletActionRequest.addParameter("position", "0");
+
+		JSONObject jsonObject = ReflectionTestUtil.invoke(
+			_mvcActionCommand, "_addItemToLayoutData",
+			new Class<?>[] {ActionRequest.class},
+			mockLiferayPortletActionRequest);
+
+		JSONObject layoutDataJSONObject = jsonObject.getJSONObject(
+			"layoutData");
+
+		LayoutStructure layoutStructure = LayoutStructure.of(
+			layoutDataJSONObject.toString());
+
+		LayoutStructureItem rootLayoutStructureItem =
+			layoutStructure.getLayoutStructureItem(
+				layoutStructure.getMainItemId());
+
+		LayoutStructureItem layoutStructureItem =
+			layoutStructure.getLayoutStructureItem(
+				rootLayoutStructureItem.getChildrenItemId(0));
+
+		Assert.assertEquals(
+			_layoutStructure.getMainItemId(),
+			layoutStructureItem.getParentItemId());
+		Assert.assertEquals(
+			LayoutDataItemTypeConstants.TYPE_ROW,
+			layoutStructureItem.getItemType());
+		Assert.assertTrue(
+			layoutStructureItem instanceof RowStyledLayoutStructureItem);
+
+		RowStyledLayoutStructureItem rowStyledLayoutStructureItem =
+			(RowStyledLayoutStructureItem)layoutStructureItem;
+
+		JSONObject itemConfigJSONObject =
+			rowStyledLayoutStructureItem.getItemConfigJSONObject();
+
+		JSONObject mobileLandscapeConfigJSONObject =
+			itemConfigJSONObject.getJSONObject(
+				ViewportSize.MOBILE_LANDSCAPE.getViewportSizeId());
+
+		Assert.assertNotNull(mobileLandscapeConfigJSONObject);
+		Assert.assertEquals(
+			1, mobileLandscapeConfigJSONObject.get("modulesPerRow"));
+
+		List<String> columnsItemIds =
+			rowStyledLayoutStructureItem.getChildrenItemIds();
+
+		Assert.assertEquals(
+			columnsItemIds.toString(), _DEFAULT_ROW_COLUMNS,
+			columnsItemIds.size());
+
+		for (int i = 0; i < _DEFAULT_ROW_COLUMNS; i++) {
+			String columnItemId = columnsItemIds.get(i);
+
+			ColumnLayoutStructureItem columnLayoutStructureItem =
+				(ColumnLayoutStructureItem)
+					layoutStructure.getLayoutStructureItem(columnItemId);
+
+			itemConfigJSONObject =
+				columnLayoutStructureItem.getItemConfigJSONObject();
+
+			mobileLandscapeConfigJSONObject =
+				itemConfigJSONObject.getJSONObject(
+					ViewportSize.MOBILE_LANDSCAPE.getViewportSizeId());
+
+			Assert.assertNotNull(mobileLandscapeConfigJSONObject);
+			Assert.assertEquals(
+				12, mobileLandscapeConfigJSONObject.get("size"));
+		}
+	}
+
+	private JSONObject _getCollectionItemConfigJSONObject() throws Exception {
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
+			_getMockLiferayPortletActionRequest();
+
+		mockLiferayPortletActionRequest.addParameter(
+			"itemType", LayoutDataItemTypeConstants.TYPE_COLLECTION);
+		mockLiferayPortletActionRequest.addParameter(
+			"parentItemId", _layoutStructure.getMainItemId());
+		mockLiferayPortletActionRequest.addParameter("position", "0");
+
+		JSONObject jsonObject = ReflectionTestUtil.invoke(
+			_mvcActionCommand, "_addItemToLayoutData",
+			new Class<?>[] {ActionRequest.class},
+			mockLiferayPortletActionRequest);
+
+		JSONObject layoutDataJSONObject = jsonObject.getJSONObject(
+			"layoutData");
+
+		LayoutStructure layoutStructure = LayoutStructure.of(
+			layoutDataJSONObject.toString());
+
+		LayoutStructureItem rootLayoutStructureItem =
+			layoutStructure.getLayoutStructureItem(
+				layoutStructure.getMainItemId());
+
+		LayoutStructureItem layoutStructureItem =
+			layoutStructure.getLayoutStructureItem(
+				rootLayoutStructureItem.getChildrenItemId(0));
+
+		Assert.assertEquals(
+			_layoutStructure.getMainItemId(),
+			layoutStructureItem.getParentItemId());
+		Assert.assertEquals(
+			LayoutDataItemTypeConstants.TYPE_COLLECTION,
+			layoutStructureItem.getItemType());
+		Assert.assertTrue(
+			layoutStructureItem instanceof CollectionStyledLayoutStructureItem);
+
+		CollectionStyledLayoutStructureItem
+			collectionStyledLayoutStructureItem =
+				(CollectionStyledLayoutStructureItem)layoutStructureItem;
+
+		return collectionStyledLayoutStructureItem.getItemConfigJSONObject();
 	}
 
 	private MockLiferayPortletActionRequest
@@ -214,6 +365,11 @@ public class AddItemMVCActionCommandTest {
 
 		mockLiferayPortletActionRequest.addParameter(
 			"groupId", String.valueOf(_group.getGroupId()));
+		mockLiferayPortletActionRequest.addParameter(
+			"segmentsExperienceId",
+			String.valueOf(
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(_layout.getPlid())));
 
 		return mockLiferayPortletActionRequest;
 	}
@@ -234,6 +390,8 @@ public class AddItemMVCActionCommandTest {
 		return themeDisplay;
 	}
 
+	private static final int _DEFAULT_ROW_COLUMNS = 3;
+
 	private Company _company;
 
 	@Inject
@@ -245,12 +403,6 @@ public class AddItemMVCActionCommandTest {
 	private Layout _layout;
 
 	@Inject
-	private LayoutLocalService _layoutLocalService;
-
-	@DeleteAfterTestRun
-	private LayoutPageTemplateStructure _layoutPageTemplateStructure;
-
-	@Inject
 	private LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
 
@@ -258,5 +410,8 @@ public class AddItemMVCActionCommandTest {
 
 	@Inject(filter = "mvc.command.name=/layout_content_page_editor/add_item")
 	private MVCActionCommand _mvcActionCommand;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

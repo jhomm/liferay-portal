@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.security.permission.resource.test;
@@ -73,8 +64,8 @@ public class DDMFormInstanceRecordModelResourcePermissionTest
 
 		_siteUser = UserTestUtil.addUser(group.getGroupId());
 
-		setUpPermissionThreadLocal();
-		setUpPrincipalThreadLocal();
+		_setUpPermissionThreadLocal();
+		_setUpPrincipalThreadLocal();
 	}
 
 	@After
@@ -88,7 +79,7 @@ public class DDMFormInstanceRecordModelResourcePermissionTest
 	public void testUpdateApprovedFormInstanceRecordByOwnerShouldBeFalse()
 		throws Exception {
 
-		DDMFormInstance formInstance = createFormInstance();
+		DDMFormInstance formInstance = _createFormInstance();
 
 		DDMStructure structure = formInstance.getStructure();
 
@@ -115,7 +106,7 @@ public class DDMFormInstanceRecordModelResourcePermissionTest
 	public void testUpdateDraftFormInstanceRecordByOwnerShouldBeTrue()
 		throws Exception {
 
-		DDMFormInstance formInstance = createFormInstance();
+		DDMFormInstance formInstance = _createFormInstance();
 
 		DDMStructure structure = formInstance.getStructure();
 
@@ -142,22 +133,19 @@ public class DDMFormInstanceRecordModelResourcePermissionTest
 				formInstanceRecord, ActionKeys.UPDATE));
 	}
 
-	protected DDMFormInstance createFormInstance() throws Exception {
+	private DDMFormInstance _createFormInstance() throws Exception {
 		DDMStructure structure = addStructure(_classNameId, "Test Structure");
-
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group, TestPropsValues.getUserId());
 
 		return DDMFormInstanceLocalServiceUtil.addFormInstance(
 			structure.getUserId(), structure.getGroupId(),
 			structure.getStructureId(), structure.getNameMap(),
 			structure.getNameMap(),
 			DDMFormInstanceTestUtil.createSettingsDDMFormValues(),
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				group, TestPropsValues.getUserId()));
 	}
 
-	protected void setUpPermissionThreadLocal() throws Exception {
+	private void _setUpPermissionThreadLocal() throws Exception {
 		_originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 
@@ -165,7 +153,7 @@ public class DDMFormInstanceRecordModelResourcePermissionTest
 			PermissionCheckerFactoryUtil.create(_siteUser));
 	}
 
-	protected void setUpPrincipalThreadLocal() throws Exception {
+	private void _setUpPrincipalThreadLocal() throws Exception {
 		_originalName = PrincipalThreadLocal.getName();
 
 		PrincipalThreadLocal.setName(_siteUser.getUserId());

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.external.reference.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 
@@ -42,8 +34,8 @@ public class ERUserLocalServiceUtil {
 			boolean autoPassword, String password1, String password2,
 			boolean autoScreenName, String screenName, String emailAddress,
 			java.util.Locale locale, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String lastName, long prefixListTypeId, long suffixListTypeId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
 			String jobTitle, long[] groupIds, long[] organizationIds,
 			long[] roleIds,
 			List<com.liferay.portal.kernel.model.UserGroupRole> userGroupRoles,
@@ -54,10 +46,10 @@ public class ERUserLocalServiceUtil {
 		return getService().addOrUpdateUser(
 			externalReferenceCode, creatorUserId, companyId, autoPassword,
 			password1, password2, autoScreenName, screenName, emailAddress,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
-			organizationIds, roleIds, userGroupRoles, userGroupIds, sendEmail,
-			serviceContext);
+			locale, firstName, middleName, lastName, prefixListTypeId,
+			suffixListTypeId, male, birthdayMonth, birthdayDay, birthdayYear,
+			jobTitle, groupIds, organizationIds, roleIds, userGroupRoles,
+			userGroupIds, sendEmail, serviceContext);
 	}
 
 	/**
@@ -70,9 +62,10 @@ public class ERUserLocalServiceUtil {
 	}
 
 	public static ERUserLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile ERUserLocalService _service;
+	private static final Snapshot<ERUserLocalService> _serviceSnapshot =
+		new Snapshot<>(ERUserLocalServiceUtil.class, ERUserLocalService.class);
 
 }

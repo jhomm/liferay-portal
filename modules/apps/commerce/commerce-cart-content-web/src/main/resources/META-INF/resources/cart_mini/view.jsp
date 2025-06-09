@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -70,9 +61,9 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 	<ul class="commerce-order-items-header">
 		<li class="autofit-row">
 			<div class="autofit-col autofit-col-expand">
-				<h4 class="commerce-title">
+				<div class="commerce-title h4">
 					<liferay-ui:message arguments="<%= commerceCartContentMiniDisplayContext.getCommerceOrderItemsQuantity() %>" key="items-x" translateArguments="<%= false %>" />
-				</h4>
+				</div>
 			</div>
 
 			<div class="autofit-col">
@@ -105,6 +96,8 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 
 				<%
 				CPDefinition cpDefinition = commerceOrderItem.getCPDefinition();
+
+				String cpInstanceCDNURL = commerceCartContentMiniDisplayContext.getCPInstanceCDNURL(commerceOrderItem);
 				%>
 
 				<liferay-ui:search-container-column-text
@@ -112,10 +105,18 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 				>
 					<span class="sticker sticker-xl">
 						<span class="sticker-overlay">
-							<liferay-adaptive-media:img
-								class="sticker-img"
-								fileVersion="<%= commerceCartContentMiniDisplayContext.getCPInstanceImageFileVersion(commerceOrderItem) %>"
-							/>
+							<c:choose>
+								<c:when test="<%= Validator.isNotNull(cpInstanceCDNURL) %>">
+									<img alt="thumbnail" class="sticker-img" src="<%= cpInstanceCDNURL %>" />
+								</c:when>
+								<c:otherwise>
+									<liferay-adaptive-media:img
+										alt="thumbnail"
+										class="sticker-img"
+										fileVersion="<%= commerceCartContentMiniDisplayContext.getCPInstanceImageFileVersion(commerceOrderItem) %>"
+									/>
+								</c:otherwise>
+							</c:choose>
 						</span>
 					</span>
 				</liferay-ui:search-container-column-text>
@@ -174,10 +175,24 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 
 						<c:choose>
 							<c:when test="<%= commerceCartContentMiniDisplayContext.isUnitPromoPriceActive(commerceOrderItem) %>">
-								<%= HtmlUtil.escape(unitPromoPriceCommerceMoney.format(locale)) %>
+								<c:choose>
+									<c:when test="<%= unitPromoPriceCommerceMoney.isPriceOnApplication() %>">
+										<liferay-ui:message key="<%= CommercePriceConstants.PRICE_VALUE_PRICE_ON_APPLICATION %>" />
+									</c:when>
+									<c:otherwise>
+										<%= HtmlUtil.escape(unitPromoPriceCommerceMoney.format(locale)) %>
+									</c:otherwise>
+								</c:choose>
 							</c:when>
 							<c:otherwise>
-								<%= HtmlUtil.escape(unitPriceCommerceMoney.format(locale)) %>
+								<c:choose>
+									<c:when test="<%= unitPriceCommerceMoney.isPriceOnApplication() %>">
+										<liferay-ui:message key="<%= CommercePriceConstants.PRICE_VALUE_PRICE_ON_APPLICATION %>" />
+									</c:when>
+									<c:otherwise>
+										<%= HtmlUtil.escape(unitPriceCommerceMoney.format(locale)) %>
+									</c:otherwise>
+								</c:choose>
 							</c:otherwise>
 						</c:choose>
 					</c:if>
@@ -277,25 +292,9 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 		</li>
 	</ul>
 
-	<%@ include file="/cart_mini/transition.jspf" %>
-
-	<aui:script use="aui-base">
-		var orderTransition = A.one('#<portlet:namespace />orderTransition');
-
-		if (orderTransition) {
-			orderTransition.delegate(
-				'click',
-				(event) => {
-					<portlet:namespace />transition(event);
-				},
-				'.transition-link'
-			);
-		}
-	</aui:script>
-
-	<aui:script>
-		Liferay.after('current-order-updated', (event) => {
-			Liferay.Portlet.refresh('#p_p_id<portlet:namespace />');
-		});
-	</aui:script>
+	<%@ include file="/common/transition.jspf" %>
 </liferay-ddm:template-renderer>
+
+<liferay-frontend:component
+	module="{cartMiniView} from commerce-cart-content-web"
+/>

@@ -1,26 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.hibernate.event;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.cache.PortalCache;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
-import org.hibernate.event.PostUpdateEvent;
-import org.hibernate.event.PostUpdateEventListener;
+import java.io.Serializable;
+
+import org.hibernate.event.spi.PostUpdateEvent;
+import org.hibernate.event.spi.PostUpdateEventListener;
+import org.hibernate.persister.entity.EntityPersister;
 
 /**
  * @author Shuyang Zhou
@@ -36,29 +33,63 @@ public class MVCCSynchronizerPostUpdateEventListener
 		Object entity = postUpdateEvent.getEntity();
 
 		if (entity instanceof MVCCModel) {
-			if (entity instanceof CTModel) {
+			long ctCollectionId =
+				CTCollectionThreadLocal.CT_COLLECTION_ID_PRODUCTION;
+
+			if (entity instanceof CTModel<?>) {
 				CTModel<?> ctModel = (CTModel<?>)entity;
 
-				if (ctModel.getCtCollectionId() != 0) {
-					return;
-				}
+				ctCollectionId = ctModel.getCtCollectionId();
 			}
 
-			BaseModel<?> baseModel = (BaseModel<?>)entity;
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						ctCollectionId)) {
 
-			MVCCModel cachedMVCCModel = (MVCCModel)EntityCacheUtil.getResult(
-				baseModel.getClass(), baseModel.getPrimaryKeyObj());
-
-			if (cachedMVCCModel != null) {
 				MVCCModel mvccModel = (MVCCModel)entity;
 
-				cachedMVCCModel.setMvccVersion(mvccModel.getMvccVersion());
+				long mvccVersion = mvccModel.getMvccVersion();
 
-				EntityCacheUtil.putResult(
-					entity.getClass(), (BaseModel<?>)cachedMVCCModel, false,
-					false);
+				Class<?> modelClass = entity.getClass();
+
+				BaseModel<?> baseModel = (BaseModel<?>)entity;
+
+				Serializable primaryKeyObj = baseModel.getPrimaryKeyObj();
+
+				Serializable localCacheResult =
+					EntityCacheUtil.getLocalCacheResult(
+						modelClass, primaryKeyObj);
+
+				if (localCacheResult instanceof MVCCModel) {
+					MVCCModel localCacheMVCCModel = (MVCCModel)localCacheResult;
+
+					localCacheMVCCModel.setMvccVersion(mvccVersion);
+				}
+
+				PortalCache<Serializable, Serializable> portalCache =
+					EntityCacheUtil.getPortalCache(modelClass);
+
+				if (portalCache == null) {
+					return;
+				}
+
+				Serializable entityCacheResult = portalCache.get(primaryKeyObj);
+
+				if (entityCacheResult instanceof MVCCModel) {
+					MVCCModel entityCacheMVCCModel =
+						(MVCCModel)entityCacheResult;
+
+					entityCacheMVCCModel.setMvccVersion(mvccVersion);
+				}
 			}
 		}
+	}
+
+	/** @deprecated */
+	@Deprecated
+	@Override
+	public boolean requiresPostCommitHanding(EntityPersister entityPersister) {
+		throw new UnsupportedOperationException();
 	}
 
 }

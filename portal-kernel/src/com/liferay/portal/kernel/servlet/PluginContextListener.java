@@ -1,36 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.deploy.hot.HotDeployEvent;
 import com.liferay.portal.kernel.deploy.hot.HotDeployUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.BasePortalLifecycle;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextAttributeEvent;
-import javax.servlet.ServletContextAttributeListener;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextAttributeEvent;
+import jakarta.servlet.ServletContextAttributeListener;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class PluginContextListener
-	extends BasePortalLifecycle
 	implements ServletContextAttributeListener, ServletContextListener {
 
 	public static final String PLUGIN_CLASS_LOADER = "PLUGIN_CLASS_LOADER";
@@ -107,7 +98,16 @@ public class PluginContextListener
 
 	@Override
 	public void contextDestroyed(ServletContextEvent servletContextEvent) {
-		portalDestroy();
+		PluginContextLifecycleThreadLocal.setDestroying(true);
+
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				pluginClassLoader)) {
+
+			fireUndeployEvent();
+		}
+		finally {
+			PluginContextLifecycleThreadLocal.setDestroying(false);
+		}
 
 		if (_classLoaderRegistered) {
 			ServletContextClassLoaderPool.unregister(
@@ -138,50 +138,15 @@ public class PluginContextListener
 
 		ServletContextPool.put(servletContextName, servletContext);
 
-		registerPortalLifecycle();
-	}
-
-	@Override
-	protected void doPortalDestroy() throws Exception {
-		PluginContextLifecycleThreadLocal.setDestroying(true);
-
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		if (contextClassLoader != pluginClassLoader) {
-			currentThread.setContextClassLoader(pluginClassLoader);
-		}
-
-		try {
-			fireUndeployEvent();
-		}
-		finally {
-			PluginContextLifecycleThreadLocal.setDestroying(false);
-
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
-	}
-
-	@Override
-	protected void doPortalInit() throws Exception {
 		PluginContextLifecycleThreadLocal.setInitializing(true);
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				pluginClassLoader)) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		if (contextClassLoader != pluginClassLoader) {
-			currentThread.setContextClassLoader(pluginClassLoader);
-		}
-
-		try {
 			fireDeployEvent();
 		}
 		finally {
 			PluginContextLifecycleThreadLocal.setInitializing(false);
-
-			currentThread.setContextClassLoader(contextClassLoader);
 		}
 	}
 

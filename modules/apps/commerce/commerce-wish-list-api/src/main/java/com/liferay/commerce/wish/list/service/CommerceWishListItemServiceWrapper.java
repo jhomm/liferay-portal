@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service;
@@ -27,6 +18,10 @@ public class CommerceWishListItemServiceWrapper
 	implements CommerceWishListItemService,
 			   ServiceWrapper<CommerceWishListItemService> {
 
+	public CommerceWishListItemServiceWrapper() {
+		this(null);
+	}
+
 	public CommerceWishListItemServiceWrapper(
 		CommerceWishListItemService commerceWishListItemService) {
 
@@ -37,13 +32,24 @@ public class CommerceWishListItemServiceWrapper
 	public com.liferay.commerce.wish.list.model.CommerceWishListItem
 			addCommerceWishListItem(
 				long commerceAccountId, long commerceWishListId,
-				long cProductId, String cpInstanceUuid, String json,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+				String cpInstanceUuid, long cProductId, String json)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceWishListItemService.addCommerceWishListItem(
-			commerceAccountId, commerceWishListId, cProductId, cpInstanceUuid,
-			json, serviceContext);
+			commerceAccountId, commerceWishListId, cpInstanceUuid, cProductId,
+			json);
+	}
+
+	@Override
+	public com.liferay.commerce.wish.list.model.CommerceWishListItem
+			addOrUpdateCommerceWishListItem(
+				long commerceAccountId, long commerceWishListId,
+				String cpInstanceUuid, long cProductId, String json)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceWishListItemService.addOrUpdateCommerceWishListItem(
+			commerceAccountId, commerceWishListId, cpInstanceUuid, cProductId,
+			json);
 	}
 
 	@Override
@@ -52,6 +58,14 @@ public class CommerceWishListItemServiceWrapper
 
 		_commerceWishListItemService.deleteCommerceWishListItem(
 			commerceWishListItemId);
+	}
+
+	@Override
+	public void deleteCommerceWishListItems(long commerceWishListId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_commerceWishListItemService.deleteCommerceWishListItems(
+			commerceWishListId);
 	}
 
 	@Override
@@ -123,6 +137,18 @@ public class CommerceWishListItemServiceWrapper
 	@Override
 	public String getOSGiServiceIdentifier() {
 		return _commerceWishListItemService.getOSGiServiceIdentifier();
+	}
+
+	@Override
+	public com.liferay.commerce.wish.list.model.CommerceWishListItem
+			updateCommerceWishListItem(
+				long commerceAccountId, long commerceWishListId,
+				String cpInstanceUuid, long cProductId, String json)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceWishListItemService.updateCommerceWishListItem(
+			commerceAccountId, commerceWishListId, cpInstanceUuid, cProductId,
+			json);
 	}
 
 	@Override

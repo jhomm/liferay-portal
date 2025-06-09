@@ -1,25 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.layout.display.page;
 
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.layout.display.page.BaseLayoutDisplayPageProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
-import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 
@@ -29,9 +23,9 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = LayoutDisplayPageProvider.class)
+@Component(service = LayoutDisplayPageProvider.class)
 public class AssetCategoryLayoutDisplayPageProvider
-	implements LayoutDisplayPageProvider<AssetCategory> {
+	extends BaseLayoutDisplayPageProvider<AssetCategory> {
 
 	@Override
 	public String getClassName() {
@@ -39,25 +33,40 @@ public class AssetCategoryLayoutDisplayPageProvider
 	}
 
 	@Override
+	public String getDefaultURLSeparator() {
+		return FriendlyURLResolverConstants.URL_SEPARATOR_ASSET_CATEGORY;
+	}
+
+	@Override
+	public LayoutDisplayPageObjectProvider<AssetCategory>
+		getLayoutDisplayPageObjectProvider(AssetCategory assetCategory) {
+
+		return new AssetCategoryLayoutDisplayPageObjectProvider(
+			assetCategory, _portal);
+	}
+
+	@Override
 	public LayoutDisplayPageObjectProvider<AssetCategory>
 		getLayoutDisplayPageObjectProvider(
 			InfoItemReference infoItemReference) {
 
+		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+			_getClassPKInfoItemIdentifier(infoItemReference);
+
+		if (classPKInfoItemIdentifier == null) {
+			return null;
+		}
+
 		AssetCategory assetCategory =
 			_assetCategoryLocalService.fetchAssetCategory(
-				infoItemReference.getClassPK());
+				classPKInfoItemIdentifier.getClassPK());
 
 		if (assetCategory == null) {
 			return null;
 		}
 
-		try {
-			return new AssetCategoryLayoutDisplayPageObjectProvider(
-				assetCategory, _portal);
-		}
-		catch (PortalException portalException) {
-			throw new RuntimeException(portalException);
-		}
+		return new AssetCategoryLayoutDisplayPageObjectProvider(
+			assetCategory, _portal);
 	}
 
 	@Override
@@ -72,13 +81,8 @@ public class AssetCategoryLayoutDisplayPageProvider
 			return null;
 		}
 
-		try {
-			return new AssetCategoryLayoutDisplayPageObjectProvider(
-				assetCategory, _portal);
-		}
-		catch (PortalException portalException) {
-			throw new RuntimeException(portalException);
-		}
+		return new AssetCategoryLayoutDisplayPageObjectProvider(
+			assetCategory, _portal);
 	}
 
 	@Override
@@ -86,9 +90,16 @@ public class AssetCategoryLayoutDisplayPageProvider
 		getParentLayoutDisplayPageObjectProvider(
 			InfoItemReference infoItemReference) {
 
+		ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+			_getClassPKInfoItemIdentifier(infoItemReference);
+
+		if (classPKInfoItemIdentifier == null) {
+			return null;
+		}
+
 		AssetCategory assetCategory =
 			_assetCategoryLocalService.fetchAssetCategory(
-				infoItemReference.getClassPK());
+				classPKInfoItemIdentifier.getClassPK());
 
 		if (assetCategory == null) {
 			return null;
@@ -100,23 +111,27 @@ public class AssetCategoryLayoutDisplayPageProvider
 			return null;
 		}
 
-		try {
-			return new AssetCategoryLayoutDisplayPageObjectProvider(
-				parentCategory, _portal);
-		}
-		catch (PortalException portalException) {
-			throw new RuntimeException(portalException);
-		}
-	}
-
-	@Override
-	public String getURLSeparator() {
-		return "/v/";
+		return new AssetCategoryLayoutDisplayPageObjectProvider(
+			parentCategory, _portal);
 	}
 
 	@Override
 	public boolean inheritable() {
 		return true;
+	}
+
+	private ClassPKInfoItemIdentifier _getClassPKInfoItemIdentifier(
+		InfoItemReference infoItemReference) {
+
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		if (!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
+			return null;
+		}
+
+		return (ClassPKInfoItemIdentifier)
+			infoItemReference.getInfoItemIdentifier();
 	}
 
 	@Reference

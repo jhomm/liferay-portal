@@ -42,7 +42,7 @@
 </tr>
 <tr>
 	<td>MODAL_TITLE</td>
-	<td>//div[contains(@class,'modal-header')]//h3[contains(@class,'modal-title')]</td>
+	<td>//div[contains(@class,'modal-header')]//h1[contains(@class,'modal-title')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -65,7 +65,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--DATE-->
+
 <tr>
 	<td>DATE_SCHEDULE_RADIO</td>
 	<td>//span[contains(@class,'custom-control-label-text') and contains(.,'Schedule')]</td>
@@ -111,30 +113,32 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PAGES-->
+
 <tr>
 	<td>PAGES_CHOOSE_PAGE_DELETION_CHECKBOX</td>
-	<td>//span[contains(.,'Publish Page Deletions')]//span[contains(@class,'deletions')]/../../input</td>
+	<td>//input[contains(@data-qa-id,'DELETE_LAYOUTS')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PAGES_TO_PUBLISH_CHECKBOX_CHECKED</td>
-	<td>//div[@class='pages-selector']//div[normalize-space()='${key_entryName}' and contains(@class,'checked')]//span[contains(@class,'icon-check')]</td>
+	<td>//div[contains(@class,'layout-selector')]//div[contains(@class,'treeview-link')][*//div[normalize-space()='${key_entryName}']]//input[@type='checkbox'][@checked]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PAGES_TO_PUBLISH_CHECKBOX_UNCHECKED</td>
-	<td>//div[@class='pages-selector']//div[normalize-space()='${key_entryName}' and not(contains(@class,'checked'))]//span[contains(@class,'icon-check')]</td>
+	<td>//div[contains(@class,'layout-selector')]//div[contains(@class,'treeview-link')][*//div[normalize-space()='${key_entryName}']]//input[@type='checkbox'][not(@checked)]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PAGES_TO_PUBLISH_PAGE_NAME</td>
-	<td>//span[contains(@class,'tree-label') and contains(.,'${key_pageName}')]</td>
+	<td>//div[contains(@class,'autofit-col')]//span[contains(.,'${key_pageName}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PAGES_TO_PUBLISH_PAGE_NAME_SPAN_TITLE</td>
-	<td>//span[contains(@class,'tree-label') and contains(.,'${key_pageName}')]//span[contains(@title,'${key_title}')]</td>
+	<td>//span[contains(@data-restore-title,'${key_title}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -142,7 +146,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--CONTENT-->
+
 <tr>
 	<td>CONTENT_CHOOSE_CONTENT_DELETION_CHECKBOX</td>
 	<td>//input[contains(@name,'DELETIONS')]//following-sibling::span</td>
@@ -163,10 +169,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--DELETIONS-->
+
 <tr>
-	<td>DELETIONS_REPLICATE_INDIVIDUAL_DELETIONS_CHECKBOX</td>
-	<td>//input[contains(@id,'StagingProcessesPortlet_DELETIONS')]</td>
+	<td>DELETE_APPLICATION_DATA_BEFORE_IMPORTING_CHECKBOX</td>
+	<td>//input[contains(@name,'DELETE_PORTLET_DATA')]//following-sibling::span</td>
 	<td></td>
 </tr>
 <tr>
@@ -174,7 +182,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SCHEDULED_TABLE-->
+
 <tr>
 	<td>SCHEDULED_TABLE_TITLE</td>
 	<td>//tr[contains(.,'${key_scheduleTitleName}')]/td[2]</td>
@@ -190,7 +200,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PUBLISH_TEMPLATES_TABLE-->
+
 <tr>
 	<td>PUBLISH_TEMPLATES_TABLE_NAME</td>
 	<td>//div[contains(@id,'Configurations')]//tr[contains(.,'${key_publishTemplateName}')]/td[2]//a</td>
@@ -219,6 +231,11 @@
 <tr>
 	<td>PUBLICATION_TITLE</td>
 	<td>//input[contains(@id,'StagingProcessesPortlet_name')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>WARNING_SPECIFIC</td>
+	<td>//ul[not(contains(@class,'hide'))]/div[contains(@class,'alert') and (contains(@class,'alert-warning'))][contains(.,'${key_warningMessage}')]</td>
 	<td></td>
 </tr>
 </tbody>

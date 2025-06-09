@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -28,6 +22,7 @@ import {
 	DELTAS,
 	FETCH_OPTIONS,
 	KEY_CODES,
+	PORTAL_TOOLTIP_TRIGGER_CLASS,
 } from '../../utils/constants.es';
 import {getPluralMessage} from '../../utils/language.es';
 import {buildUrl, resultsDataToMap, toggleListItem} from '../../utils/util.es';
@@ -39,7 +34,7 @@ import AddResultSearchBar from './AddResultSearchBar.es';
  * A button that opens a modal to be able to search, select, and add results.
  */
 function AddResultModal({
-	fetchDocumentsSearchUrl,
+	fetchDocumentsSearchURL,
 	observer,
 	onAddResultSubmit,
 	onClose,
@@ -75,7 +70,7 @@ function AddResultModal({
 
 	const {refetch, resource} = useResource({
 		fetchOptions: FETCH_OPTIONS,
-		link: buildUrl(fetchDocumentsSearchUrl, {
+		link: buildUrl(fetchDocumentsSearchURL, {
 			[`${namespace}companyId`]: companyId,
 			[`${namespace}from`]: page * delta - delta,
 			[`${namespace}keywords`]: searchQuery,
@@ -143,7 +138,7 @@ function AddResultModal({
 	 * deselected. Otherwise, select all items.
 	 */
 	function _handleAllCheckbox() {
-		if (_getCurrentResultSelectedIds().length > 0) {
+		if (_getCurrentResultSelectedIds().length) {
 			_deselectAll();
 		}
 		else {
@@ -307,27 +302,26 @@ function AddResultModal({
 	function _renderSearchResults() {
 		const classManagementBar = getCN(
 			'management-bar',
-			selectedIds.length > 0
+			selectedIds.length
 				? 'management-bar-primary'
 				: 'management-bar-light',
 			'navbar',
 			'navbar-expand-md'
 		);
 
-		const selectItemsLabel =
-			selectedIds.length > 0
-				? getPluralMessage(
-						Liferay.Language.get('x-item-selected'),
-						Liferay.Language.get('x-items-selected'),
-						selectedIds.length
-				  )
-				: Liferay.Language.get('select-items');
+		const selectItemsLabel = selectedIds.length
+			? getPluralMessage(
+					Liferay.Language.get('x-item-selected'),
+					Liferay.Language.get('x-items-selected'),
+					selectedIds.length
+				)
+			: Liferay.Language.get('select-items');
 
 		const checked =
 			_getCurrentResultSelectedIds().length === resource.documents.length;
 
 		const indeterminate =
-			selectedIds.length > 0 &&
+			!!selectedIds.length &&
 			_getCurrentResultSelectedIds().length !== resource.documents.length;
 
 		return (
@@ -353,9 +347,12 @@ function AddResultModal({
 									</span>
 								</li>
 
-								{selectedIds.length > 0 && (
+								{!!selectedIds.length && (
 									<li className="nav-item nav-item-shrink">
 										<ClayButton
+											aria-label={Liferay.Language.get(
+												'clear-all-selected'
+											)}
 											className="btn-outline-borderless"
 											displayType="secondary"
 											onClick={_handleClearAllSelected}
@@ -433,13 +430,12 @@ function AddResultModal({
 						className={getCN(
 							'inline-item',
 							'inline-item-after',
-							'modal-title-help-icon'
+							'modal-title-help-icon',
+							PORTAL_TOOLTIP_TRIGGER_CLASS
 						)}
+						data-title={Liferay.Language.get('add-results-help')}
 					>
-						<ClayIcon
-							symbol="question-circle-full"
-							title={Liferay.Language.get('add-results-help')}
-						/>
+						<ClayIcon symbol="question-circle-full" />
 					</span>
 				</ClayModal.Header>
 
@@ -481,7 +477,7 @@ function AddResultModal({
 							</ClayButton>
 
 							<ClayButton
-								disabled={selectedIds.length === 0}
+								disabled={!selectedIds.length}
 								onClick={_handleSubmit}
 							>
 								{Liferay.Language.get('add')}
@@ -495,7 +491,7 @@ function AddResultModal({
 }
 
 AddResultModal.propTypes = {
-	fetchDocumentsSearchUrl: PropTypes.string.isRequired,
+	fetchDocumentsSearchURL: PropTypes.string.isRequired,
 	onAddResultSubmit: PropTypes.func.isRequired,
 	onClose: PropTypes.func.isRequired,
 };

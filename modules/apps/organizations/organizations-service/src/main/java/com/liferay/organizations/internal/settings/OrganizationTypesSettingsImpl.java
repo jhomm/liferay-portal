@@ -1,38 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.organizations.internal.settings;
 
 import com.liferay.organizations.internal.configuration.OrganizationTypeConfigurationWrapper;
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.users.admin.kernel.organization.types.OrganizationTypesSettings;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Marco Leo
  */
-@Component(immediate = true, service = OrganizationTypesSettings.class)
+@Component(service = OrganizationTypesSettings.class)
 public class OrganizationTypesSettingsImpl
 	implements OrganizationTypesSettings {
 
@@ -40,7 +30,7 @@ public class OrganizationTypesSettingsImpl
 	public String[] getChildrenTypes(String type) {
 		OrganizationTypeConfigurationWrapper
 			organizationTypeConfigurationWrapper =
-				getOrganizationTypeConfigurationWrapper(type);
+				_getOrganizationTypeConfigurationWrapper(type);
 
 		if (organizationTypeConfigurationWrapper == null) {
 			return new String[0];
@@ -51,15 +41,14 @@ public class OrganizationTypesSettingsImpl
 
 	@Override
 	public String[] getTypes() {
-		return ArrayUtil.toStringArray(
-			_organizationTypeConfigurationWrappers.keySet());
+		return ArrayUtil.toStringArray(_serviceTrackerMap.keySet());
 	}
 
 	@Override
 	public boolean isCountryEnabled(String type) {
 		OrganizationTypeConfigurationWrapper
 			organizationTypeConfigurationWrapper =
-				getOrganizationTypeConfigurationWrapper(type);
+				_getOrganizationTypeConfigurationWrapper(type);
 
 		if (organizationTypeConfigurationWrapper == null) {
 			return false;
@@ -72,7 +61,7 @@ public class OrganizationTypesSettingsImpl
 	public boolean isCountryRequired(String type) {
 		OrganizationTypeConfigurationWrapper
 			organizationTypeConfigurationWrapper =
-				getOrganizationTypeConfigurationWrapper(type);
+				_getOrganizationTypeConfigurationWrapper(type);
 
 		if (organizationTypeConfigurationWrapper == null) {
 			return false;
@@ -85,7 +74,7 @@ public class OrganizationTypesSettingsImpl
 	public boolean isRootable(String type) {
 		OrganizationTypeConfigurationWrapper
 			organizationTypeConfigurationWrapper =
-				getOrganizationTypeConfigurationWrapper(type);
+				_getOrganizationTypeConfigurationWrapper(type);
 
 		if (organizationTypeConfigurationWrapper == null) {
 			return false;
@@ -94,26 +83,27 @@ public class OrganizationTypesSettingsImpl
 		return organizationTypeConfigurationWrapper.isRootable();
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void addOrganizationTypeConfigurationWrapper(
-		OrganizationTypeConfigurationWrapper
-			organizationTypeConfigurationWrapper) {
-
-		_organizationTypeConfigurationWrappers.put(
-			organizationTypeConfigurationWrapper.getName(),
-			organizationTypeConfigurationWrapper);
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, OrganizationTypeConfigurationWrapper.class, null,
+			ServiceReferenceMapperFactory.create(
+				bundleContext,
+				(organizationTypeConfigurationWrapper, emitter) -> emitter.emit(
+					organizationTypeConfigurationWrapper.getName())));
 	}
 
-	protected OrganizationTypeConfigurationWrapper
-		getOrganizationTypeConfigurationWrapper(String type) {
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
+	}
+
+	private OrganizationTypeConfigurationWrapper
+		_getOrganizationTypeConfigurationWrapper(String type) {
 
 		OrganizationTypeConfigurationWrapper
 			organizationTypeConfigurationWrapper =
-				_organizationTypeConfigurationWrappers.get(type);
+				_serviceTrackerMap.getService(type);
 
 		if (organizationTypeConfigurationWrapper == null) {
 			_log.error("Unable to get organization type: " + type);
@@ -122,18 +112,10 @@ public class OrganizationTypesSettingsImpl
 		return organizationTypeConfigurationWrapper;
 	}
 
-	protected void removeOrganizationTypeConfigurationWrapper(
-		OrganizationTypeConfigurationWrapper
-			organizationTypeConfigurationWrapper) {
-
-		_organizationTypeConfigurationWrappers.remove(
-			organizationTypeConfigurationWrapper.getName());
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		OrganizationTypesSettingsImpl.class);
 
-	private final Map<String, OrganizationTypeConfigurationWrapper>
-		_organizationTypeConfigurationWrappers = new ConcurrentHashMap<>();
+	private ServiceTrackerMap<String, OrganizationTypeConfigurationWrapper>
+		_serviceTrackerMap;
 
 }

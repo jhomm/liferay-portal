@@ -1,31 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine;
 
+import com.liferay.batch.engine.strategy.BatchEngineImportStrategy;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.odata.entity.EntityModel;
+
+import jakarta.ws.rs.core.UriInfo;
 
 import java.io.Serializable;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Ivica Cardic
+ * @author Igor Beslic
  */
 public abstract class BaseBatchEngineTaskItemDelegate<T>
 	implements BatchEngineTaskItemDelegate<T> {
@@ -35,13 +33,14 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 			Collection<T> items, Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (T item : items) {
-			createItem(item, parameters);
-		}
+		batchEngineImportStrategy.apply(
+			this, items, item -> createItem(item, parameters));
 	}
 
-	public void createItem(T item, Map<String, Serializable> parameters)
+	public T createItem(T item, Map<String, Serializable> parameters)
 		throws Exception {
+
+		return null;
 	}
 
 	@Override
@@ -49,13 +48,27 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 			Collection<T> items, Map<String, Serializable> parameters)
 		throws Exception {
 
-		for (T item : items) {
-			deleteItem(item, parameters);
-		}
+		batchEngineImportStrategy.apply(
+			this, items,
+			item -> {
+				deleteItem(item, parameters);
+
+				return item;
+			});
 	}
 
 	public void deleteItem(T item, Map<String, Serializable> parameters)
 		throws Exception {
+	}
+
+	@Override
+	public Set<String> getAvailableCreateStrategies() {
+		return _availableCreateStrategies;
+	}
+
+	@Override
+	public Set<String> getAvailableUpdateStrategies() {
+		return _availableUpdateStrategies;
 	}
 
 	@Override
@@ -66,8 +79,30 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 	}
 
 	@Override
+	public boolean hasCreateStrategy(String createStrategy) {
+		return _availableCreateStrategies.contains(createStrategy);
+	}
+
+	@Override
+	public boolean hasUpdateStrategy(String updateStrategy) {
+		return _availableUpdateStrategies.contains(updateStrategy);
+	}
+
+	@Override
+	public void setBatchEngineImportStrategy(
+		BatchEngineImportStrategy batchEngineImportStrategy) {
+
+		this.batchEngineImportStrategy = batchEngineImportStrategy;
+	}
+
+	@Override
 	public void setContextCompany(Company contextCompany) {
 		this.contextCompany = contextCompany;
+	}
+
+	@Override
+	public void setContextUriInfo(UriInfo uriInfo) {
+		this.uriInfo = uriInfo;
 	}
 
 	@Override
@@ -94,8 +129,15 @@ public abstract class BaseBatchEngineTaskItemDelegate<T>
 		throws Exception {
 	}
 
+	protected BatchEngineImportStrategy batchEngineImportStrategy;
 	protected Company contextCompany;
 	protected User contextUser;
 	protected String languageId;
+	protected UriInfo uriInfo;
+
+	private final Set<String> _availableCreateStrategies =
+		Collections.unmodifiableSet(SetUtil.fromArray("INSERT"));
+	private final Set<String> _availableUpdateStrategies =
+		Collections.unmodifiableSet(SetUtil.fromArray("UPDATE"));
 
 }

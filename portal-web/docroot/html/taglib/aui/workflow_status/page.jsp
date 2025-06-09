@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,6 +11,7 @@
 	<c:if test="<%= Validator.isNotNull(id) %>">
 		<span class="mr-2 workflow-id">
 			<span class="workflow-label"><liferay-ui:message key="id" />:</span>
+
 			<span class="workflow-value"><%= HtmlUtil.escape(id) %></span>
 		</span>
 	</c:if>
@@ -28,18 +20,18 @@
 		<span class="mr-2 workflow-version">
 			<span class="workflow-label"><liferay-ui:message key="version" />:</span>
 
-			<strong class="workflow-value"><%= version %></strong>
+			<span class="workflow-value"><%= version %></span>
 		</span>
 	</c:if>
 
-	<span class="<%= showIcon ? "icon-file-alt workflow-status" : "workflow-status" %>">
+	<span class="workflow-status">
 		<c:if test="<%= showLabel %>">
 			<span class="workflow-label"><liferay-ui:message key="status" />:</span>
 		</c:if>
 
-		<strong class="label label-<%= WorkflowConstants.getStatusStyle(status) %> status text-uppercase workflow-status-<%= WorkflowConstants.getStatusLabel(status) %> <%= WorkflowConstants.getStatusCssClass(status) %> workflow-value">
+		<span class="label label-<%= WorkflowConstants.getStatusStyle(status) %> status workflow-status-<%= WorkflowConstants.getStatusLabel(status) %> <%= WorkflowConstants.getStatusCssClass(status) %> workflow-value">
 			<liferay-ui:message key="<%= statusMessage %>" /><%= additionalText %>
-		</strong>
+		</span>
 	</span>
 
 	<c:if test="<%= showHelpMessage && Validator.isNotNull(helpMessage) %>">

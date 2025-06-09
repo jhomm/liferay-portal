@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.test;
@@ -57,8 +48,7 @@ public class AccountEntryOrganizationRelLocalServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_organization = OrganizationTestUtil.addOrganization();
 	}
@@ -98,13 +88,10 @@ public class AccountEntryOrganizationRelLocalServiceTest {
 				getAccountEntryOrganizationRelsCount(
 					_accountEntry.getAccountEntryId()));
 
-		List<AccountEntryOrganizationRel> accountEntryOrganizationRels =
+		long[] accountEntryOrganizationIds = ListUtil.toLongArray(
 			_accountEntryOrganizationRelLocalService.
 				getAccountEntryOrganizationRels(
-					_accountEntry.getAccountEntryId());
-
-		long[] accountEntryOrganizationIds = ListUtil.toLongArray(
-			accountEntryOrganizationRels,
+					_accountEntry.getAccountEntryId()),
 			AccountEntryOrganizationRelModel::getOrganizationId);
 
 		Assert.assertTrue(
@@ -213,10 +200,8 @@ public class AccountEntryOrganizationRelLocalServiceTest {
 	public void testGetAccountEntryOrganizationRelsByOrganizationId()
 		throws Exception {
 
-		_accountEntries.add(
-			AccountEntryTestUtil.addAccountEntry(_accountEntryLocalService));
-		_accountEntries.add(
-			AccountEntryTestUtil.addAccountEntry(_accountEntryLocalService));
+		_accountEntries.add(AccountEntryTestUtil.addAccountEntry());
+		_accountEntries.add(AccountEntryTestUtil.addAccountEntry());
 
 		long[] expectedAccountEntryIds = ListUtil.toLongArray(
 			_accountEntries, AccountEntry.ACCOUNT_ENTRY_ID_ACCESSOR);
@@ -263,21 +248,20 @@ public class AccountEntryOrganizationRelLocalServiceTest {
 				ListUtil.toLongArray(
 					organizations, Organization.ORGANIZATION_ID_ACCESSOR));
 
-		List<Long> expectedOrganizationIdsList = ListUtil.toList(
+		List<Long> expectedOrganizationIds = ListUtil.toList(
 			organizations, Organization.ORGANIZATION_ID_ACCESSOR);
-		List<Long> actualOrganizationIdsList = ListUtil.toList(
+		List<Long> actualOrganizationIds = ListUtil.toList(
 			_accountEntryOrganizationRelLocalService.
 				getAccountEntryOrganizationRels(
 					_accountEntry.getAccountEntryId()),
 			AccountEntryOrganizationRel::getOrganizationId);
 
 		Assert.assertEquals(
-			actualOrganizationIdsList.toString(),
-			expectedOrganizationIdsList.size(),
-			actualOrganizationIdsList.size());
+			actualOrganizationIds.toString(), expectedOrganizationIds.size(),
+			actualOrganizationIds.size());
 
 		Assert.assertTrue(
-			expectedOrganizationIdsList.containsAll(actualOrganizationIdsList));
+			expectedOrganizationIds.containsAll(actualOrganizationIds));
 	}
 
 	@DeleteAfterTestRun

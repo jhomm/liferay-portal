@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.model.impl;
 
 import com.liferay.dynamic.data.lists.model.DDLRecord;
 import com.liferay.dynamic.data.lists.model.DDLRecordModel;
-import com.liferay.dynamic.data.lists.model.DDLRecordSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -201,67 +188,6 @@ public class DDLRecordModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static DDLRecord toModel(DDLRecordSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		DDLRecord model = new DDLRecordImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setRecordId(soapModel.getRecordId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setVersionUserId(soapModel.getVersionUserId());
-		model.setVersionUserName(soapModel.getVersionUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setDDMStorageId(soapModel.getDDMStorageId());
-		model.setRecordSetId(soapModel.getRecordSetId());
-		model.setRecordSetVersion(soapModel.getRecordSetVersion());
-		model.setClassName(soapModel.getClassName());
-		model.setClassPK(soapModel.getClassPK());
-		model.setVersion(soapModel.getVersion());
-		model.setDisplayIndex(soapModel.getDisplayIndex());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DDLRecord> toModels(DDLRecordSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<DDLRecord> models = new ArrayList<DDLRecord>(soapModels.length);
-
-		for (DDLRecordSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public DDLRecordModelImpl() {
 	}
 
@@ -337,139 +263,132 @@ public class DDLRecordModelImpl
 	public Map<String, Function<DDLRecord, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DDLRecord, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DDLRecord>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DDLRecord.class.getClassLoader(), DDLRecord.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DDLRecord, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DDLRecord> constructor =
-				(Constructor<DDLRecord>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DDLRecord, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<DDLRecord, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DDLRecord::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DDLRecord::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DDLRecord::getUuid);
+			attributeGetterFunctions.put("recordId", DDLRecord::getRecordId);
+			attributeGetterFunctions.put("groupId", DDLRecord::getGroupId);
+			attributeGetterFunctions.put("companyId", DDLRecord::getCompanyId);
+			attributeGetterFunctions.put("userId", DDLRecord::getUserId);
+			attributeGetterFunctions.put("userName", DDLRecord::getUserName);
+			attributeGetterFunctions.put(
+				"versionUserId", DDLRecord::getVersionUserId);
+			attributeGetterFunctions.put(
+				"versionUserName", DDLRecord::getVersionUserName);
+			attributeGetterFunctions.put(
+				"createDate", DDLRecord::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DDLRecord::getModifiedDate);
+			attributeGetterFunctions.put(
+				"DDMStorageId", DDLRecord::getDDMStorageId);
+			attributeGetterFunctions.put(
+				"recordSetId", DDLRecord::getRecordSetId);
+			attributeGetterFunctions.put(
+				"recordSetVersion", DDLRecord::getRecordSetVersion);
+			attributeGetterFunctions.put("className", DDLRecord::getClassName);
+			attributeGetterFunctions.put("classPK", DDLRecord::getClassPK);
+			attributeGetterFunctions.put("version", DDLRecord::getVersion);
+			attributeGetterFunctions.put(
+				"displayIndex", DDLRecord::getDisplayIndex);
+			attributeGetterFunctions.put(
+				"lastPublishDate", DDLRecord::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DDLRecord, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DDLRecord, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DDLRecord, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<DDLRecord, Object>>();
-		Map<String, BiConsumer<DDLRecord, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DDLRecord, ?>>();
+		private static final Map<String, BiConsumer<DDLRecord, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", DDLRecord::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DDLRecord, Long>)DDLRecord::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DDLRecord::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DDLRecord, Long>)DDLRecord::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", DDLRecord::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<DDLRecord, String>)DDLRecord::setUuid);
-		attributeGetterFunctions.put("recordId", DDLRecord::getRecordId);
-		attributeSetterBiConsumers.put(
-			"recordId", (BiConsumer<DDLRecord, Long>)DDLRecord::setRecordId);
-		attributeGetterFunctions.put("groupId", DDLRecord::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<DDLRecord, Long>)DDLRecord::setGroupId);
-		attributeGetterFunctions.put("companyId", DDLRecord::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<DDLRecord, Long>)DDLRecord::setCompanyId);
-		attributeGetterFunctions.put("userId", DDLRecord::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<DDLRecord, Long>)DDLRecord::setUserId);
-		attributeGetterFunctions.put("userName", DDLRecord::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<DDLRecord, String>)DDLRecord::setUserName);
-		attributeGetterFunctions.put(
-			"versionUserId", DDLRecord::getVersionUserId);
-		attributeSetterBiConsumers.put(
-			"versionUserId",
-			(BiConsumer<DDLRecord, Long>)DDLRecord::setVersionUserId);
-		attributeGetterFunctions.put(
-			"versionUserName", DDLRecord::getVersionUserName);
-		attributeSetterBiConsumers.put(
-			"versionUserName",
-			(BiConsumer<DDLRecord, String>)DDLRecord::setVersionUserName);
-		attributeGetterFunctions.put("createDate", DDLRecord::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DDLRecord, Date>)DDLRecord::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DDLRecord::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DDLRecord, Date>)DDLRecord::setModifiedDate);
-		attributeGetterFunctions.put(
-			"DDMStorageId", DDLRecord::getDDMStorageId);
-		attributeSetterBiConsumers.put(
-			"DDMStorageId",
-			(BiConsumer<DDLRecord, Long>)DDLRecord::setDDMStorageId);
-		attributeGetterFunctions.put("recordSetId", DDLRecord::getRecordSetId);
-		attributeSetterBiConsumers.put(
-			"recordSetId",
-			(BiConsumer<DDLRecord, Long>)DDLRecord::setRecordSetId);
-		attributeGetterFunctions.put(
-			"recordSetVersion", DDLRecord::getRecordSetVersion);
-		attributeSetterBiConsumers.put(
-			"recordSetVersion",
-			(BiConsumer<DDLRecord, String>)DDLRecord::setRecordSetVersion);
-		attributeGetterFunctions.put("className", DDLRecord::getClassName);
-		attributeSetterBiConsumers.put(
-			"className",
-			(BiConsumer<DDLRecord, String>)DDLRecord::setClassName);
-		attributeGetterFunctions.put("classPK", DDLRecord::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK", (BiConsumer<DDLRecord, Long>)DDLRecord::setClassPK);
-		attributeGetterFunctions.put("version", DDLRecord::getVersion);
-		attributeSetterBiConsumers.put(
-			"version", (BiConsumer<DDLRecord, String>)DDLRecord::setVersion);
-		attributeGetterFunctions.put(
-			"displayIndex", DDLRecord::getDisplayIndex);
-		attributeSetterBiConsumers.put(
-			"displayIndex",
-			(BiConsumer<DDLRecord, Integer>)DDLRecord::setDisplayIndex);
-		attributeGetterFunctions.put(
-			"lastPublishDate", DDLRecord::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<DDLRecord, Date>)DDLRecord::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<DDLRecord, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<DDLRecord, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<DDLRecord, String>)DDLRecord::setUuid);
+			attributeSetterBiConsumers.put(
+				"recordId",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setRecordId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<DDLRecord, Long>)DDLRecord::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<DDLRecord, Long>)DDLRecord::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DDLRecord, String>)DDLRecord::setUserName);
+			attributeSetterBiConsumers.put(
+				"versionUserId",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setVersionUserId);
+			attributeSetterBiConsumers.put(
+				"versionUserName",
+				(BiConsumer<DDLRecord, String>)DDLRecord::setVersionUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DDLRecord, Date>)DDLRecord::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DDLRecord, Date>)DDLRecord::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"DDMStorageId",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setDDMStorageId);
+			attributeSetterBiConsumers.put(
+				"recordSetId",
+				(BiConsumer<DDLRecord, Long>)DDLRecord::setRecordSetId);
+			attributeSetterBiConsumers.put(
+				"recordSetVersion",
+				(BiConsumer<DDLRecord, String>)DDLRecord::setRecordSetVersion);
+			attributeSetterBiConsumers.put(
+				"className",
+				(BiConsumer<DDLRecord, String>)DDLRecord::setClassName);
+			attributeSetterBiConsumers.put(
+				"classPK", (BiConsumer<DDLRecord, Long>)DDLRecord::setClassPK);
+			attributeSetterBiConsumers.put(
+				"version",
+				(BiConsumer<DDLRecord, String>)DDLRecord::setVersion);
+			attributeSetterBiConsumers.put(
+				"displayIndex",
+				(BiConsumer<DDLRecord, Integer>)DDLRecord::setDisplayIndex);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<DDLRecord, Date>)DDLRecord::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1268,41 +1187,12 @@ public class DDLRecordModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DDLRecord, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DDLRecord, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DDLRecord, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DDLRecord)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DDLRecord>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DDLRecord.class, ModelWrapper.class);
 
 	}
 
@@ -1331,8 +1221,9 @@ public class DDLRecordModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<DDLRecord, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<DDLRecord, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

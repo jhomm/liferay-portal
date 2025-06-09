@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.client.serdes.v2_0;
 
 import com.liferay.data.engine.rest.client.dto.v2_0.DataListView;
 import com.liferay.data.engine.rest.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -25,8 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Jeyvison Nascimento
@@ -59,7 +50,7 @@ public class DataListViewSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (dataListView.getAppliedFilters() != null) {
 			if (sb.length() > 1) {
@@ -121,11 +112,7 @@ public class DataListViewSerDes {
 			sb.append("[");
 
 			for (int i = 0; i < dataListView.getFieldNames().length; i++) {
-				sb.append("\"");
-
-				sb.append(_escape(dataListView.getFieldNames()[i]));
-
-				sb.append("\"");
+				sb.append(_toJSON(dataListView.getFieldNames()[i]));
 
 				if ((i + 1) < dataListView.getFieldNames().length) {
 					sb.append(", ");
@@ -209,7 +196,7 @@ public class DataListViewSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (dataListView.getAppliedFilters() == null) {
 			map.put("appliedFilters", null);
@@ -306,6 +293,42 @@ public class DataListViewSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "appliedFilters")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dataDefinitionId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fieldNames")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "siteId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sortField")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "userId")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			DataListView dataListView, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -313,8 +336,7 @@ public class DataListViewSerDes {
 			if (Objects.equals(jsonParserFieldName, "appliedFilters")) {
 				if (jsonParserFieldValue != null) {
 					dataListView.setAppliedFilters(
-						(Map)DataListViewSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Object>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "dataDefinitionId")) {
@@ -350,8 +372,7 @@ public class DataListViewSerDes {
 			else if (Objects.equals(jsonParserFieldName, "name")) {
 				if (jsonParserFieldValue != null) {
 					dataListView.setName(
-						(Map)DataListViewSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Object>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "siteId")) {
@@ -403,36 +424,7 @@ public class DataListViewSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -442,6 +434,42 @@ public class DataListViewSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

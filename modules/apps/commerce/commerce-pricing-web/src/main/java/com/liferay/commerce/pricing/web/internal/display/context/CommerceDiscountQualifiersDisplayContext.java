@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.display.context;
 
 import com.liferay.account.constants.AccountPortletKeys;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.rule.type.CommerceDiscountRuleTypeRegistry;
 import com.liferay.commerce.discount.service.CommerceDiscountAccountRelService;
@@ -28,22 +20,22 @@ import com.liferay.commerce.model.CommerceOrderType;
 import com.liferay.commerce.percentage.PercentageFormatter;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelRelService;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -64,6 +56,7 @@ public class CommerceDiscountQualifiersDisplayContext
 		CommerceDiscountRuleService commerceDiscountRuleService,
 		CommerceDiscountRuleTypeRegistry commerceDiscountRuleTypeRegistry,
 		CommerceDiscountTargetRegistry commerceDiscountTargetRegistry,
+		CommercePriceFormatter commercePriceFormatter,
 		PercentageFormatter percentageFormatter,
 		HttpServletRequest httpServletRequest, Portal portal) {
 
@@ -71,8 +64,8 @@ public class CommerceDiscountQualifiersDisplayContext
 			commerceCurrencyLocalService,
 			commerceDiscountModelResourcePermission, commerceDiscountService,
 			commerceDiscountRuleService, commerceDiscountRuleTypeRegistry,
-			commerceDiscountTargetRegistry, percentageFormatter,
-			httpServletRequest, portal);
+			commerceDiscountTargetRegistry, commercePriceFormatter,
+			percentageFormatter, httpServletRequest, portal);
 
 		_commerceChannelRelService = commerceChannelRelService;
 		_commerceDiscountAccountRelService = commerceDiscountAccountRelService;
@@ -82,11 +75,10 @@ public class CommerceDiscountQualifiersDisplayContext
 			commerceDiscountOrderTypeRelService;
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getAccountClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem> getAccountFDSActionDropdownItems()
 		throws PortalException {
 
-		return getClayDataSetActionTemplates(
+		return getFDSActionTemplates(
 			PortletURLBuilder.create(
 				portal.getControlPanelPortletURL(
 					httpServletRequest,
@@ -102,12 +94,11 @@ public class CommerceDiscountQualifiersDisplayContext
 			false);
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getAccountGroupClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem> getAccountGroupFDSActionDropdownItems()
 		throws PortalException {
 
 		return ListUtil.fromArray(
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				null, "trash", "remove",
 				LanguageUtil.get(httpServletRequest, "remove"), "delete",
 				"delete", "headless"));
@@ -172,11 +163,11 @@ public class CommerceDiscountQualifiersDisplayContext
 			getCommerceDiscountId() + "/discount-accounts?nestedFields=account";
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getDiscountChannelClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem>
+			getDiscountChannelFDSActionDropdownItems()
 		throws PortalException {
 
-		return getClayDataSetActionTemplates(
+		return getFDSActionTemplates(
 			PortletURLBuilder.create(
 				PortletProviderUtil.getPortletURL(
 					httpServletRequest, CommerceChannel.class.getName(),
@@ -196,11 +187,11 @@ public class CommerceDiscountQualifiersDisplayContext
 			getCommerceDiscountId() + "/discount-channels?nestedFields=channel";
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getDiscountOrderTypeClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem>
+			getDiscountOrderTypeFDSActionDropdownItems()
 		throws PortalException {
 
-		return getClayDataSetActionTemplates(
+		return getFDSActionTemplates(
 			PortletURLBuilder.create(
 				PortletProviderUtil.getPortletURL(
 					httpServletRequest, CommerceOrderType.class.getName(),

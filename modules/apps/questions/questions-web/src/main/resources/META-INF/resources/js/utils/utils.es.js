@@ -1,27 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {openToast} from 'frontend-js-components-web';
 import {cancelDebounce, debounce} from 'frontend-js-web';
 import {useRef} from 'react';
 
 import {client} from './client.es';
 import lang from './lang.es';
 
-export function dateToInternationalHuman(
-	ISOString,
-	localeKey = navigator.language
-) {
+export function dateToInternationalHuman(ISOString, language) {
 	const date = new Date(ISOString);
 
 	const options = {
@@ -29,13 +18,10 @@ export function dateToInternationalHuman(
 		hour: '2-digit',
 		minute: '2-digit',
 		month: 'short',
+		year: 'numeric',
 	};
 
-	if (date.getFullYear() !== new Date().getFullYear()) {
-		options.year = 'numeric';
-	}
-
-	const intl = new Intl.DateTimeFormat(localeKey, options);
+	const intl = new Intl.DateTimeFormat(language, options);
 
 	return intl.format(date);
 }
@@ -131,7 +117,7 @@ export function getErrorObject(statusCode, message, title) {
 		: {
 				code: statusCode,
 				message: Liferay.Language.get('error'),
-		  };
+			};
 }
 
 export function useDebounceCallback(callback, milliseconds) {
@@ -250,4 +236,39 @@ export function getContextLink(url) {
 	return {
 		headers: {Link: encodeURI(link)},
 	};
+}
+
+/**
+ * Assign the properties for error, used by graphql-hooks/APIError.
+ * @param {Object} error
+ * @param {Object} error.fetchError
+ * @param {string?} error.fetchError.message
+ * @param {Object[]} error.graphQLErrors
+ * @param {string} error.graphQLErrors[].message
+ * @param {Object} error.httpError
+ */
+
+export function processGraphQLError(error) {
+	const _error = {
+		message: error.message ?? '',
+		type: 'danger',
+	};
+
+	if (error.fetchError) {
+		_error.message = error.fetchError.message;
+	}
+
+	if (error.graphQLErrors) {
+		for (const graphQLError of error.graphQLErrors) {
+			_error.message += `${graphQLError.message} -`;
+		}
+	}
+
+	if (error.httpError) {
+		console.error('Forbidden ', error.httpError);
+
+		_error.message = Liferay.Language.get('an-unexpected-error-occurred');
+	}
+
+	openToast(_error);
 }

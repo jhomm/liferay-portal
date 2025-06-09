@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.util;
@@ -21,8 +12,8 @@ import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
-
-import java.lang.reflect.Field;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -46,15 +37,28 @@ public abstract class BaseUpgradeResourceBlock extends UpgradeProcess {
 		_upgradeIndividualScopePermissions(className);
 
 		_removeResourceBlocks(className);
-
-		alter(getTableClass(), new AlterTableDropColumn("resourceBlockId"));
 	}
 
 	protected abstract String getClassName();
 
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.dropColumns(getTableName(), "resourceBlockId")
+		};
+	}
+
 	protected abstract String getPrimaryKeyName();
 
-	protected abstract Class<?> getTableClass();
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #getTableName()}
+	 */
+	@Deprecated
+	protected Class<?> getTableClass() {
+		return null;
+	}
+
+	protected abstract String getTableName();
 
 	protected abstract boolean hasUserId();
 
@@ -241,18 +245,18 @@ public abstract class BaseUpgradeResourceBlock extends UpgradeProcess {
 
 		StringBundler sb = new StringBundler(16);
 
-		Class<?> tableClass = getTableClass();
+		sb.append("select ResourceBlock.companyId, ");
 
-		Field tableNameField = tableClass.getField("TABLE_NAME");
+		String tableName = getTableName();
 
-		String tableName = (String)tableNameField.get(null);
+		sb.append(tableName);
+
+		sb.append(".");
 
 		String primaryKeyName = getPrimaryKeyName();
 
-		sb.append("select ResourceBlock.companyId, ");
-		sb.append(tableName);
-		sb.append(".");
 		sb.append(primaryKeyName);
+
 		sb.append(", ResourceBlockPermission.roleId, ");
 
 		if (hasUserId()) {

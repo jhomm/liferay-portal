@@ -1,9 +1,10 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-bpm"
 definition {
 
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sybase";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql";
 	property portal.release = "true";
-	property testray.component.names = "Calendar";
+	property test.liferay.virtual.instance = "false";
+	property test.run.type = "single";
 	property testray.main.component.name = "Upgrades Calendar";
 
 	setUp {
@@ -12,32 +13,32 @@ definition {
 		SearchAdministration.executeReindex();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewCalendarArchive625 {
 		property data.archive.type = "data-archive-calendar";
 		property database.types = "mariadb,mysql,postgresql";
 		property portal.upstream = "true";
 		property portal.version = "6.2.5";
 
-		Upgrade.viewCalendar();
+		ValidateCalendarUpgrade.viewCalendar();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewCalendarArchive621015 {
 		property data.archive.type = "data-archive-calendar";
 		property portal.upstream = "true";
 		property portal.version = "6.2.10.15";
 
-		Upgrade.viewCalendar();
+		ValidateCalendarUpgrade.viewCalendar();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewCalendarArchive621021 {
 		property data.archive.type = "data-archive-calendar";
 		property portal.upstream = "true";
 		property portal.version = "6.2.10.21";
 
-		Upgrade.viewCalendar();
+		ValidateCalendarUpgrade.viewCalendar();
 	}
 
 }

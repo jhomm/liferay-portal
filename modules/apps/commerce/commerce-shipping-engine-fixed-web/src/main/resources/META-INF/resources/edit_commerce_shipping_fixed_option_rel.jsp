@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -43,6 +34,8 @@ if (commerceShippingFixedOptionRel != null) {
 		<aui:input name="commerceShippingFixedOptionRelId" type="hidden" value="<%= commerceShippingFixedOptionRelId %>" />
 		<aui:input name="commerceShippingMethodId" type="hidden" value="<%= commerceShippingMethodId %>" />
 
+		<liferay-ui:error exception="<%= CommerceShippingFixedOptionRelPriceException.class %>" message="please-enter-a-valid-price" />
+
 		<div class="alert alert-info">
 			<liferay-ui:message key="commerce-shipping-fixed-option-rel-info" />
 		</div>
@@ -51,7 +44,7 @@ if (commerceShippingFixedOptionRel != null) {
 			title='<%= LanguageUtil.get(request, "details") %>'
 		>
 			<div class="row">
-				<div class="col-md-6">
+				<div class="col-md-12">
 					<aui:select bean="<%= commerceShippingFixedOptionRel %>" label="shipping-option" model="<%= CommerceShippingFixedOptionRel.class %>" name="commerceShippingFixedOptionId" required="<%= true %>">
 
 						<%
@@ -59,22 +52,6 @@ if (commerceShippingFixedOptionRel != null) {
 						%>
 
 							<aui:option label="<%= commerceShippingFixedOption.getName(languageId) %>" value="<%= commerceShippingFixedOption.getCommerceShippingFixedOptionId() %>" />
-
-						<%
-						}
-						%>
-
-					</aui:select>
-				</div>
-
-				<div class="col-md-6">
-					<aui:select bean="<%= commerceShippingFixedOptionRel %>" label="warehouse" model="<%= CommerceShippingFixedOptionRel.class %>" name="commerceInventoryWarehouseId" showEmptyOption="<%= true %>">
-
-						<%
-						for (CommerceInventoryWarehouse commerceInventoryWarehouse : commerceShippingFixedOptionRelsDisplayContext.getCommerceInventoryWarehouses()) {
-						%>
-
-							<aui:option label="<%= commerceInventoryWarehouse.getName() %>" value="<%= commerceInventoryWarehouse.getCommerceInventoryWarehouseId() %>" />
 
 						<%
 						}
@@ -153,7 +130,7 @@ if (commerceShippingFixedOptionRel != null) {
 	</aui:form>
 </liferay-frontend:side-panel-content>
 
-<aui:script use="aui-base,liferay-dynamic-select">
+<aui:script use="aui-base">
 	new Liferay.DynamicSelect([
 		{
 			select: '<portlet:namespace />countryId',
@@ -162,7 +139,7 @@ if (commerceShippingFixedOptionRel != null) {
 					'/country/get-company-countries',
 					{
 						active: true,
-						companyId: <%= company.getCompanyId() %>,
+						companyId: '<%= company.getCompanyId() %>',
 					},
 					callback
 				);

@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service;
 
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken;
 
 /**
  * Provides a wrapper for {@link KaleoInstanceTokenLocalService}.
@@ -26,6 +21,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class KaleoInstanceTokenLocalServiceWrapper
 	implements KaleoInstanceTokenLocalService,
 			   ServiceWrapper<KaleoInstanceTokenLocalService> {
+
+	public KaleoInstanceTokenLocalServiceWrapper() {
+		this(null);
+	}
 
 	public KaleoInstanceTokenLocalServiceWrapper(
 		KaleoInstanceTokenLocalService kaleoInstanceTokenLocalService) {
@@ -44,23 +43,20 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @return the kaleo instance token that was added
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-		addKaleoInstanceToken(
-			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-				kaleoInstanceToken) {
+	public KaleoInstanceToken addKaleoInstanceToken(
+		KaleoInstanceToken kaleoInstanceToken) {
 
 		return _kaleoInstanceTokenLocalService.addKaleoInstanceToken(
 			kaleoInstanceToken);
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			addKaleoInstanceToken(
-				long currentKaleoNodeId, long kaleoDefinitionId,
-				long kaleoDefinitionVersionId, long kaleoInstanceId,
-				long parentKaleoInstanceTokenId,
-				java.util.Map<String, java.io.Serializable> workflowContext,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public KaleoInstanceToken addKaleoInstanceToken(
+			long currentKaleoNodeId, long kaleoDefinitionId,
+			long kaleoDefinitionVersionId, long kaleoInstanceId,
+			long parentKaleoInstanceTokenId,
+			java.util.Map<String, java.io.Serializable> workflowContext,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.addKaleoInstanceToken(
@@ -70,11 +66,10 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			addKaleoInstanceToken(
-				long parentKaleoInstanceTokenId,
-				java.util.Map<String, java.io.Serializable> workflowContext,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public KaleoInstanceToken addKaleoInstanceToken(
+			long parentKaleoInstanceTokenId,
+			java.util.Map<String, java.io.Serializable> workflowContext,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.addKaleoInstanceToken(
@@ -82,8 +77,8 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			completeKaleoInstanceToken(long kaleoInstanceTokenId)
+	public KaleoInstanceToken completeKaleoInstanceToken(
+			long kaleoInstanceTokenId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.completeKaleoInstanceToken(
@@ -97,8 +92,8 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @return the new kaleo instance token
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-		createKaleoInstanceToken(long kaleoInstanceTokenId) {
+	public KaleoInstanceToken createKaleoInstanceToken(
+		long kaleoInstanceTokenId) {
 
 		return _kaleoInstanceTokenLocalService.createKaleoInstanceToken(
 			kaleoInstanceTokenId);
@@ -148,10 +143,8 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @return the kaleo instance token that was removed
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-		deleteKaleoInstanceToken(
-			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-				kaleoInstanceToken) {
+	public KaleoInstanceToken deleteKaleoInstanceToken(
+		KaleoInstanceToken kaleoInstanceToken) {
 
 		return _kaleoInstanceTokenLocalService.deleteKaleoInstanceToken(
 			kaleoInstanceToken);
@@ -169,8 +162,8 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @throws PortalException if a kaleo instance token with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			deleteKaleoInstanceToken(long kaleoInstanceTokenId)
+	public KaleoInstanceToken deleteKaleoInstanceToken(
+			long kaleoInstanceTokenId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.deleteKaleoInstanceToken(
@@ -293,8 +286,8 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-		fetchKaleoInstanceToken(long kaleoInstanceTokenId) {
+	public KaleoInstanceToken fetchKaleoInstanceToken(
+		long kaleoInstanceTokenId) {
 
 		return _kaleoInstanceTokenLocalService.fetchKaleoInstanceToken(
 			kaleoInstanceTokenId);
@@ -323,8 +316,7 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @throws PortalException if a kaleo instance token with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			getKaleoInstanceToken(long kaleoInstanceTokenId)
+	public KaleoInstanceToken getKaleoInstanceToken(long kaleoInstanceTokenId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.getKaleoInstanceToken(
@@ -343,42 +335,34 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @return the range of kaleo instance tokens
 	 */
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken>
-			getKaleoInstanceTokens(int start, int end) {
+	public java.util.List<KaleoInstanceToken> getKaleoInstanceTokens(
+		int start, int end) {
 
 		return _kaleoInstanceTokenLocalService.getKaleoInstanceTokens(
 			start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken>
-			getKaleoInstanceTokens(long kaleoInstanceId) {
+	public java.util.List<KaleoInstanceToken> getKaleoInstanceTokens(
+		long kaleoInstanceId) {
 
 		return _kaleoInstanceTokenLocalService.getKaleoInstanceTokens(
 			kaleoInstanceId);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken>
-			getKaleoInstanceTokens(
-				long parentKaleoInstanceTokenId, java.util.Date completionDate,
-				com.liferay.portal.kernel.service.ServiceContext
-					serviceContext) {
+	public java.util.List<KaleoInstanceToken> getKaleoInstanceTokens(
+		long parentKaleoInstanceTokenId, java.util.Date completionDate,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoInstanceTokenLocalService.getKaleoInstanceTokens(
 			parentKaleoInstanceTokenId, completionDate, serviceContext);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken>
-			getKaleoInstanceTokens(
-				long parentKaleoInstanceTokenId,
-				com.liferay.portal.kernel.service.ServiceContext
-					serviceContext) {
+	public java.util.List<KaleoInstanceToken> getKaleoInstanceTokens(
+		long parentKaleoInstanceTokenId,
+		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return _kaleoInstanceTokenLocalService.getKaleoInstanceTokens(
 			parentKaleoInstanceTokenId, serviceContext);
@@ -434,11 +418,10 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			getRootKaleoInstanceToken(
-				long kaleoInstanceId,
-				java.util.Map<String, java.io.Serializable> workflowContext,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public KaleoInstanceToken getRootKaleoInstanceToken(
+			long kaleoInstanceId,
+			java.util.Map<String, java.io.Serializable> workflowContext,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.getRootKaleoInstanceToken(
@@ -485,23 +468,45 @@ public class KaleoInstanceTokenLocalServiceWrapper
 	 * @return the kaleo instance token that was updated
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-		updateKaleoInstanceToken(
-			com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-				kaleoInstanceToken) {
+	public KaleoInstanceToken updateKaleoInstanceToken(
+		KaleoInstanceToken kaleoInstanceToken) {
 
 		return _kaleoInstanceTokenLocalService.updateKaleoInstanceToken(
 			kaleoInstanceToken);
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken
-			updateKaleoInstanceToken(
-				long kaleoInstanceTokenId, long currentKaleoNodeId)
+	public KaleoInstanceToken updateKaleoInstanceToken(
+			long kaleoInstanceTokenId, long currentKaleoNodeId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoInstanceTokenLocalService.updateKaleoInstanceToken(
 			kaleoInstanceTokenId, currentKaleoNodeId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _kaleoInstanceTokenLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<KaleoInstanceToken> getCTPersistence() {
+		return _kaleoInstanceTokenLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<KaleoInstanceToken> getModelClass() {
+		return _kaleoInstanceTokenLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<KaleoInstanceToken>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _kaleoInstanceTokenLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

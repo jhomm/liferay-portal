@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model.impl;
@@ -19,16 +10,12 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.model.MBThreadModel;
-import com.liferay.message.boards.model.MBThreadSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
-import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
-import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -38,23 +25,19 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -127,7 +110,7 @@ public class MBThreadModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table MBThread (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,threadId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,categoryId LONG,rootMessageId LONG,rootMessageUserId LONG,title VARCHAR(75) null,lastPostByUserId LONG,lastPostDate DATE null,priority DOUBLE,question BOOLEAN,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (threadId, ctCollectionId))";
+		"create table MBThread (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,threadId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,categoryId LONG,rootMessageId LONG,rootMessageUserId LONG,title VARCHAR(255) null,lastPostByUserId LONG,lastPostDate DATE null,priority DOUBLE,question BOOLEAN,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (threadId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table MBThread";
 
@@ -136,6 +119,9 @@ public class MBThreadModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY MBThread.priority DESC, MBThread.lastPostDate DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY mbThread.priority DESC, mbThread.lastPostDate DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -203,70 +189,6 @@ public class MBThreadModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static MBThread toModel(MBThreadSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		MBThread model = new MBThreadImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setThreadId(soapModel.getThreadId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCategoryId(soapModel.getCategoryId());
-		model.setRootMessageId(soapModel.getRootMessageId());
-		model.setRootMessageUserId(soapModel.getRootMessageUserId());
-		model.setTitle(soapModel.getTitle());
-		model.setLastPostByUserId(soapModel.getLastPostByUserId());
-		model.setLastPostDate(soapModel.getLastPostDate());
-		model.setPriority(soapModel.getPriority());
-		model.setQuestion(soapModel.isQuestion());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<MBThread> toModels(MBThreadSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<MBThread> models = new ArrayList<MBThread>(soapModels.length);
-
-		for (MBThreadSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public MBThreadModelImpl() {
@@ -344,145 +266,141 @@ public class MBThreadModelImpl
 	public Map<String, Function<MBThread, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<MBThread, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, MBThread>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			MBThread.class.getClassLoader(), MBThread.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<MBThread, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<MBThread> constructor =
-				(Constructor<MBThread>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<MBThread, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<MBThread, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", MBThread::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", MBThread::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", MBThread::getUuid);
+			attributeGetterFunctions.put("threadId", MBThread::getThreadId);
+			attributeGetterFunctions.put("groupId", MBThread::getGroupId);
+			attributeGetterFunctions.put("companyId", MBThread::getCompanyId);
+			attributeGetterFunctions.put("userId", MBThread::getUserId);
+			attributeGetterFunctions.put("userName", MBThread::getUserName);
+			attributeGetterFunctions.put("createDate", MBThread::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", MBThread::getModifiedDate);
+			attributeGetterFunctions.put("categoryId", MBThread::getCategoryId);
+			attributeGetterFunctions.put(
+				"rootMessageId", MBThread::getRootMessageId);
+			attributeGetterFunctions.put(
+				"rootMessageUserId", MBThread::getRootMessageUserId);
+			attributeGetterFunctions.put("title", MBThread::getTitle);
+			attributeGetterFunctions.put(
+				"lastPostByUserId", MBThread::getLastPostByUserId);
+			attributeGetterFunctions.put(
+				"lastPostDate", MBThread::getLastPostDate);
+			attributeGetterFunctions.put("priority", MBThread::getPriority);
+			attributeGetterFunctions.put("question", MBThread::getQuestion);
+			attributeGetterFunctions.put(
+				"lastPublishDate", MBThread::getLastPublishDate);
+			attributeGetterFunctions.put("status", MBThread::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", MBThread::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", MBThread::getStatusByUserName);
+			attributeGetterFunctions.put("statusDate", MBThread::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<MBThread, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<MBThread, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<MBThread, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<MBThread, Object>>();
-		Map<String, BiConsumer<MBThread, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<MBThread, ?>>();
+		private static final Map<String, BiConsumer<MBThread, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", MBThread::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<MBThread, Long>)MBThread::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", MBThread::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<MBThread, Long>)MBThread::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", MBThread::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<MBThread, String>)MBThread::setUuid);
-		attributeGetterFunctions.put("threadId", MBThread::getThreadId);
-		attributeSetterBiConsumers.put(
-			"threadId", (BiConsumer<MBThread, Long>)MBThread::setThreadId);
-		attributeGetterFunctions.put("groupId", MBThread::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<MBThread, Long>)MBThread::setGroupId);
-		attributeGetterFunctions.put("companyId", MBThread::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<MBThread, Long>)MBThread::setCompanyId);
-		attributeGetterFunctions.put("userId", MBThread::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<MBThread, Long>)MBThread::setUserId);
-		attributeGetterFunctions.put("userName", MBThread::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<MBThread, String>)MBThread::setUserName);
-		attributeGetterFunctions.put("createDate", MBThread::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<MBThread, Date>)MBThread::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", MBThread::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<MBThread, Date>)MBThread::setModifiedDate);
-		attributeGetterFunctions.put("categoryId", MBThread::getCategoryId);
-		attributeSetterBiConsumers.put(
-			"categoryId", (BiConsumer<MBThread, Long>)MBThread::setCategoryId);
-		attributeGetterFunctions.put(
-			"rootMessageId", MBThread::getRootMessageId);
-		attributeSetterBiConsumers.put(
-			"rootMessageId",
-			(BiConsumer<MBThread, Long>)MBThread::setRootMessageId);
-		attributeGetterFunctions.put(
-			"rootMessageUserId", MBThread::getRootMessageUserId);
-		attributeSetterBiConsumers.put(
-			"rootMessageUserId",
-			(BiConsumer<MBThread, Long>)MBThread::setRootMessageUserId);
-		attributeGetterFunctions.put("title", MBThread::getTitle);
-		attributeSetterBiConsumers.put(
-			"title", (BiConsumer<MBThread, String>)MBThread::setTitle);
-		attributeGetterFunctions.put(
-			"lastPostByUserId", MBThread::getLastPostByUserId);
-		attributeSetterBiConsumers.put(
-			"lastPostByUserId",
-			(BiConsumer<MBThread, Long>)MBThread::setLastPostByUserId);
-		attributeGetterFunctions.put("lastPostDate", MBThread::getLastPostDate);
-		attributeSetterBiConsumers.put(
-			"lastPostDate",
-			(BiConsumer<MBThread, Date>)MBThread::setLastPostDate);
-		attributeGetterFunctions.put("priority", MBThread::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority", (BiConsumer<MBThread, Double>)MBThread::setPriority);
-		attributeGetterFunctions.put("question", MBThread::getQuestion);
-		attributeSetterBiConsumers.put(
-			"question", (BiConsumer<MBThread, Boolean>)MBThread::setQuestion);
-		attributeGetterFunctions.put(
-			"lastPublishDate", MBThread::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<MBThread, Date>)MBThread::setLastPublishDate);
-		attributeGetterFunctions.put("status", MBThread::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<MBThread, Integer>)MBThread::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", MBThread::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<MBThread, Long>)MBThread::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", MBThread::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<MBThread, String>)MBThread::setStatusByUserName);
-		attributeGetterFunctions.put("statusDate", MBThread::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate", (BiConsumer<MBThread, Date>)MBThread::setStatusDate);
+		static {
+			Map<String, BiConsumer<MBThread, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<MBThread, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<MBThread, Long>)MBThread::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<MBThread, Long>)MBThread::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<MBThread, String>)MBThread::setUuid);
+			attributeSetterBiConsumers.put(
+				"threadId", (BiConsumer<MBThread, Long>)MBThread::setThreadId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<MBThread, Long>)MBThread::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<MBThread, Long>)MBThread::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<MBThread, Long>)MBThread::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<MBThread, String>)MBThread::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<MBThread, Date>)MBThread::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<MBThread, Date>)MBThread::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"categoryId",
+				(BiConsumer<MBThread, Long>)MBThread::setCategoryId);
+			attributeSetterBiConsumers.put(
+				"rootMessageId",
+				(BiConsumer<MBThread, Long>)MBThread::setRootMessageId);
+			attributeSetterBiConsumers.put(
+				"rootMessageUserId",
+				(BiConsumer<MBThread, Long>)MBThread::setRootMessageUserId);
+			attributeSetterBiConsumers.put(
+				"title", (BiConsumer<MBThread, String>)MBThread::setTitle);
+			attributeSetterBiConsumers.put(
+				"lastPostByUserId",
+				(BiConsumer<MBThread, Long>)MBThread::setLastPostByUserId);
+			attributeSetterBiConsumers.put(
+				"lastPostDate",
+				(BiConsumer<MBThread, Date>)MBThread::setLastPostDate);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<MBThread, Double>)MBThread::setPriority);
+			attributeSetterBiConsumers.put(
+				"question",
+				(BiConsumer<MBThread, Boolean>)MBThread::setQuestion);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<MBThread, Date>)MBThread::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status", (BiConsumer<MBThread, Integer>)MBThread::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<MBThread, Long>)MBThread::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<MBThread, String>)MBThread::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<MBThread, Date>)MBThread::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1036,74 +954,8 @@ public class MBThreadModelImpl
 	}
 
 	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException {
-
-		if (!isInTrash()) {
-			return null;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return trashEntry;
-		}
-
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if (Validator.isNotNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			ContainerModel containerModel = null;
-
-			try {
-				containerModel = trashHandler.getParentContainerModel(this);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-				return null;
-			}
-
-			while (containerModel != null) {
-				if (containerModel instanceof TrashedModel) {
-					TrashedModel trashedModel = (TrashedModel)containerModel;
-
-					return trashedModel.getTrashEntry();
-				}
-
-				trashHandler =
-					com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-						getTrashHandler(
-							trashHandler.getContainerModelClassName(
-								containerModel.getContainerModelId()));
-
-				if (trashHandler == null) {
-					return null;
-				}
-
-				containerModel = trashHandler.getContainerModel(
-					containerModel.getParentContainerModelId());
-			}
-		}
-
-		return null;
-	}
-
-	@Override
 	public long getTrashEntryClassPK() {
 		return getPrimaryKey();
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-			getTrashHandler(getModelClassName());
 	}
 
 	@Override
@@ -1114,70 +966,6 @@ public class MBThreadModelImpl
 		else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean isInTrashContainer() {
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if ((trashHandler == null) ||
-			Validator.isNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			return false;
-		}
-
-		try {
-			ContainerModel containerModel =
-				trashHandler.getParentContainerModel(this);
-
-			if (containerModel == null) {
-				return false;
-			}
-
-			if (containerModel instanceof TrashedModel) {
-				return ((TrashedModel)containerModel).isInTrash();
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override
@@ -1640,41 +1428,12 @@ public class MBThreadModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<MBThread, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<MBThread, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<MBThread, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((MBThread)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, MBThread>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					MBThread.class, ModelWrapper.class);
 
 	}
 
@@ -1706,8 +1465,9 @@ public class MBThreadModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<MBThread, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<MBThread, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

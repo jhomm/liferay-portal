@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.constants;
@@ -21,6 +12,10 @@ public class CPField {
 
 	public static final String ACCOUNT_GROUP_FILTER_ENABLED =
 		"accountGroupFilterEnabled";
+
+	public static final String ACTIVE = "active";
+
+	public static final String ASSET_CATEGORY_NAMES = "assetCategoryNames";
 
 	public static final String BASE_PRICE = "basePrice";
 
@@ -37,6 +32,8 @@ public class CPField {
 
 	public static final String CHANNEL_NAMES = "channelNames";
 
+	public static final String CODE = "code";
+
 	public static final String COMMERCE_CATALOG_GROUP_ID =
 		"commerceCatalogGroupId";
 
@@ -45,6 +42,15 @@ public class CPField {
 
 	public static final String COMMERCE_CHANNEL_GROUP_IDS =
 		"commerceChannelGroupIds";
+
+	public static final String COMMERCE_OPTION_TYPE_KEY =
+		"commerceOptionTypeKey";
+
+	public static final String CP_CONFIGURATION_LIST_ID =
+		"CPConfigurationListId";
+
+	public static final String CP_CONFIGURATION_LIST_IDS =
+		"CPConfigurationListIds";
 
 	public static final String CP_DEFINITION_ID = "CPDefinitionId";
 
@@ -59,9 +65,6 @@ public class CPField {
 		"cpOptionCategoryTitle";
 
 	public static final String CP_OPTION_ID = "CPOptionId";
-
-	public static final String DDM_FORM_FIELD_TYPE_NAME =
-		"DDMFormFieldTypeName";
 
 	public static final String DEFAULT_IMAGE_FILE_ENTRY_ID =
 		"defaultImageFileEntryId";
@@ -82,6 +85,12 @@ public class CPField {
 
 	public static final String FILE_ENTRY_ID = "fileEntryId";
 
+	public static final String GALLERY_ENABLED = "galleryEnabled";
+
+	public static final String GTIN = "gtin";
+
+	public static final String GTINS = "gtins";
+
 	public static final String HAS_CHILD_CP_DEFINITIONS =
 		"hasChildCPDefinitions";
 
@@ -92,11 +101,18 @@ public class CPField {
 
 	public static final String KEY = "key";
 
+	public static final String MAXIMUM_ORDER_QUANTITY = "maximumOrderQuantity";
+
 	public static final String META_DESCRIPTION = "metaDescription";
 
 	public static final String META_KEYWORDS = "metaKeywords";
 
 	public static final String META_TITLE = "metaTitle";
+
+	public static final String MINIMUM_ORDER_QUANTITY = "minimumOrderQuantity";
+
+	public static final String MULTIPLE_ORDER_QUANTITY =
+		"multipleOrderQuantity";
 
 	public static final String OPTION_IDS = "optionsIds";
 
@@ -117,6 +133,14 @@ public class CPField {
 
 	public static final String RELATED_ENTITY_CLASS_PK = "relatedEntityClassPK";
 
+	public static final String REPLACEMENT_CP_INSTANCE_UUID =
+		"replacementCPInstanceUuid";
+
+	public static final String REPLACEMENT_CPRODUCT_ID =
+		"replacementCProductId";
+
+	public static final String SHIPPABLE = "shippable";
+
 	public static final String SHORT_DESCRIPTION = "shortDescription";
 
 	public static final String SKU = "sku";
@@ -134,5 +158,7 @@ public class CPField {
 	public static final String SUBSCRIPTION_ENABLED = "subscriptionEnabled";
 
 	public static final String UNSPSC = "unspsc";
+
+	public static final String VISIBLE = "visible";
 
 }

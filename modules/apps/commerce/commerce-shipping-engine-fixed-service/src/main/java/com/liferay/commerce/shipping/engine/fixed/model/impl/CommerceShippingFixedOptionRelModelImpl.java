@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.model.impl;
 
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionRel;
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionRelModel;
-import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionRelSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -35,7 +25,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.math.BigDecimal;
@@ -43,12 +32,10 @@ import java.math.BigDecimal;
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -78,6 +65,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 	public static final String TABLE_NAME = "CShippingFixedOptionRel";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT},
 		{"CShippingFixedOptionRelId", Types.BIGINT}, {"groupId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
 		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
@@ -95,6 +83,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("CShippingFixedOptionRelId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -116,7 +105,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CShippingFixedOptionRel (CShippingFixedOptionRelId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,commerceShippingMethodId LONG,commerceShippingFixedOptionId LONG,commerceInventoryWarehouseId LONG,countryId LONG,regionId LONG,zip VARCHAR(75) null,weightFrom DOUBLE,weightTo DOUBLE,fixedPrice DECIMAL(30, 16) null,rateUnitWeightPrice DECIMAL(30, 16) null,ratePercentage DOUBLE)";
+		"create table CShippingFixedOptionRel (mvccVersion LONG default 0 not null,CShippingFixedOptionRelId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,commerceShippingMethodId LONG,commerceShippingFixedOptionId LONG,commerceInventoryWarehouseId LONG,countryId LONG,regionId LONG,zip VARCHAR(75) null,weightFrom DOUBLE,weightTo DOUBLE,fixedPrice BIGDECIMAL null,rateUnitWeightPrice BIGDECIMAL null,ratePercentage DOUBLE)";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CShippingFixedOptionRel";
@@ -132,24 +121,6 @@ public class CommerceShippingFixedOptionRelModelImpl
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
 
 	public static final String TX_MANAGER = "liferayTransactionManager";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -171,78 +142,18 @@ public class CommerceShippingFixedOptionRelModelImpl
 	public static final long COUNTRYID_COLUMN_BITMASK = 4L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceShippingFixedOptionRel toModel(
-		CommerceShippingFixedOptionRelSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceShippingFixedOptionRel model =
-			new CommerceShippingFixedOptionRelImpl();
-
-		model.setCommerceShippingFixedOptionRelId(
-			soapModel.getCommerceShippingFixedOptionRelId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCommerceShippingMethodId(
-			soapModel.getCommerceShippingMethodId());
-		model.setCommerceShippingFixedOptionId(
-			soapModel.getCommerceShippingFixedOptionId());
-		model.setCommerceInventoryWarehouseId(
-			soapModel.getCommerceInventoryWarehouseId());
-		model.setCountryId(soapModel.getCountryId());
-		model.setRegionId(soapModel.getRegionId());
-		model.setZip(soapModel.getZip());
-		model.setWeightFrom(soapModel.getWeightFrom());
-		model.setWeightTo(soapModel.getWeightTo());
-		model.setFixedPrice(soapModel.getFixedPrice());
-		model.setRateUnitWeightPrice(soapModel.getRateUnitWeightPrice());
-		model.setRatePercentage(soapModel.getRatePercentage());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceShippingFixedOptionRel> toModels(
-		CommerceShippingFixedOptionRelSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceShippingFixedOptionRel> models =
-			new ArrayList<CommerceShippingFixedOptionRel>(soapModels.length);
-
-		for (CommerceShippingFixedOptionRelSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.shipping.engine.fixed.service.util.ServiceProps.
-			get(
-				"lock.expiration.time.com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionRel"));
 
 	public CommerceShippingFixedOptionRelModelImpl() {
 	}
@@ -322,184 +233,196 @@ public class CommerceShippingFixedOptionRelModelImpl
 	public Map<String, Function<CommerceShippingFixedOptionRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceShippingFixedOptionRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceShippingFixedOptionRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceShippingFixedOptionRel.class.getClassLoader(),
-			CommerceShippingFixedOptionRel.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CommerceShippingFixedOptionRel, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceShippingFixedOptionRel> constructor =
-				(Constructor<CommerceShippingFixedOptionRel>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceShippingFixedOptionRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<CommerceShippingFixedOptionRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceShippingFixedOptionRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceShippingFixedOptionRelId",
+				CommerceShippingFixedOptionRel::
+					getCommerceShippingFixedOptionRelId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceShippingFixedOptionRel::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceShippingFixedOptionRel::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceShippingFixedOptionRel::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceShippingFixedOptionRel::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceShippingFixedOptionRel::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate",
+				CommerceShippingFixedOptionRel::getModifiedDate);
+			attributeGetterFunctions.put(
+				"commerceShippingMethodId",
+				CommerceShippingFixedOptionRel::getCommerceShippingMethodId);
+			attributeGetterFunctions.put(
+				"commerceShippingFixedOptionId",
+				CommerceShippingFixedOptionRel::
+					getCommerceShippingFixedOptionId);
+			attributeGetterFunctions.put(
+				"commerceInventoryWarehouseId",
+				CommerceShippingFixedOptionRel::
+					getCommerceInventoryWarehouseId);
+			attributeGetterFunctions.put(
+				"countryId", CommerceShippingFixedOptionRel::getCountryId);
+			attributeGetterFunctions.put(
+				"regionId", CommerceShippingFixedOptionRel::getRegionId);
+			attributeGetterFunctions.put(
+				"zip", CommerceShippingFixedOptionRel::getZip);
+			attributeGetterFunctions.put(
+				"weightFrom", CommerceShippingFixedOptionRel::getWeightFrom);
+			attributeGetterFunctions.put(
+				"weightTo", CommerceShippingFixedOptionRel::getWeightTo);
+			attributeGetterFunctions.put(
+				"fixedPrice", CommerceShippingFixedOptionRel::getFixedPrice);
+			attributeGetterFunctions.put(
+				"rateUnitWeightPrice",
+				CommerceShippingFixedOptionRel::getRateUnitWeightPrice);
+			attributeGetterFunctions.put(
+				"ratePercentage",
+				CommerceShippingFixedOptionRel::getRatePercentage);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map
-		<String, Function<CommerceShippingFixedOptionRel, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CommerceShippingFixedOptionRel, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceShippingFixedOptionRel, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String,
-					 Function<CommerceShippingFixedOptionRel, Object>>();
-		Map<String, BiConsumer<CommerceShippingFixedOptionRel, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommerceShippingFixedOptionRel, ?>>();
+		private static final Map
+			<String, BiConsumer<CommerceShippingFixedOptionRel, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"commerceShippingFixedOptionRelId",
-			CommerceShippingFixedOptionRel::
-				getCommerceShippingFixedOptionRelId);
-		attributeSetterBiConsumers.put(
-			"commerceShippingFixedOptionRelId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::
-					setCommerceShippingFixedOptionRelId);
-		attributeGetterFunctions.put(
-			"groupId", CommerceShippingFixedOptionRel::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceShippingFixedOptionRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CommerceShippingFixedOptionRel::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceShippingFixedOptionRel::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceShippingFixedOptionRel, String>)
-				CommerceShippingFixedOptionRel::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceShippingFixedOptionRel::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceShippingFixedOptionRel, Date>)
-				CommerceShippingFixedOptionRel::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceShippingFixedOptionRel::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceShippingFixedOptionRel, Date>)
-				CommerceShippingFixedOptionRel::setModifiedDate);
-		attributeGetterFunctions.put(
-			"commerceShippingMethodId",
-			CommerceShippingFixedOptionRel::getCommerceShippingMethodId);
-		attributeSetterBiConsumers.put(
-			"commerceShippingMethodId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::setCommerceShippingMethodId);
-		attributeGetterFunctions.put(
-			"commerceShippingFixedOptionId",
-			CommerceShippingFixedOptionRel::getCommerceShippingFixedOptionId);
-		attributeSetterBiConsumers.put(
-			"commerceShippingFixedOptionId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::
-					setCommerceShippingFixedOptionId);
-		attributeGetterFunctions.put(
-			"commerceInventoryWarehouseId",
-			CommerceShippingFixedOptionRel::getCommerceInventoryWarehouseId);
-		attributeSetterBiConsumers.put(
-			"commerceInventoryWarehouseId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::
-					setCommerceInventoryWarehouseId);
-		attributeGetterFunctions.put(
-			"countryId", CommerceShippingFixedOptionRel::getCountryId);
-		attributeSetterBiConsumers.put(
-			"countryId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::setCountryId);
-		attributeGetterFunctions.put(
-			"regionId", CommerceShippingFixedOptionRel::getRegionId);
-		attributeSetterBiConsumers.put(
-			"regionId",
-			(BiConsumer<CommerceShippingFixedOptionRel, Long>)
-				CommerceShippingFixedOptionRel::setRegionId);
-		attributeGetterFunctions.put(
-			"zip", CommerceShippingFixedOptionRel::getZip);
-		attributeSetterBiConsumers.put(
-			"zip",
-			(BiConsumer<CommerceShippingFixedOptionRel, String>)
-				CommerceShippingFixedOptionRel::setZip);
-		attributeGetterFunctions.put(
-			"weightFrom", CommerceShippingFixedOptionRel::getWeightFrom);
-		attributeSetterBiConsumers.put(
-			"weightFrom",
-			(BiConsumer<CommerceShippingFixedOptionRel, Double>)
-				CommerceShippingFixedOptionRel::setWeightFrom);
-		attributeGetterFunctions.put(
-			"weightTo", CommerceShippingFixedOptionRel::getWeightTo);
-		attributeSetterBiConsumers.put(
-			"weightTo",
-			(BiConsumer<CommerceShippingFixedOptionRel, Double>)
-				CommerceShippingFixedOptionRel::setWeightTo);
-		attributeGetterFunctions.put(
-			"fixedPrice", CommerceShippingFixedOptionRel::getFixedPrice);
-		attributeSetterBiConsumers.put(
-			"fixedPrice",
-			(BiConsumer<CommerceShippingFixedOptionRel, BigDecimal>)
-				CommerceShippingFixedOptionRel::setFixedPrice);
-		attributeGetterFunctions.put(
-			"rateUnitWeightPrice",
-			CommerceShippingFixedOptionRel::getRateUnitWeightPrice);
-		attributeSetterBiConsumers.put(
-			"rateUnitWeightPrice",
-			(BiConsumer<CommerceShippingFixedOptionRel, BigDecimal>)
-				CommerceShippingFixedOptionRel::setRateUnitWeightPrice);
-		attributeGetterFunctions.put(
-			"ratePercentage",
-			CommerceShippingFixedOptionRel::getRatePercentage);
-		attributeSetterBiConsumers.put(
-			"ratePercentage",
-			(BiConsumer<CommerceShippingFixedOptionRel, Double>)
-				CommerceShippingFixedOptionRel::setRatePercentage);
+		static {
+			Map<String, BiConsumer<CommerceShippingFixedOptionRel, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String,
+						 BiConsumer<CommerceShippingFixedOptionRel, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceShippingFixedOptionRelId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::
+						setCommerceShippingFixedOptionRelId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceShippingFixedOptionRel, String>)
+					CommerceShippingFixedOptionRel::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceShippingFixedOptionRel, Date>)
+					CommerceShippingFixedOptionRel::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceShippingFixedOptionRel, Date>)
+					CommerceShippingFixedOptionRel::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"commerceShippingMethodId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::
+						setCommerceShippingMethodId);
+			attributeSetterBiConsumers.put(
+				"commerceShippingFixedOptionId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::
+						setCommerceShippingFixedOptionId);
+			attributeSetterBiConsumers.put(
+				"commerceInventoryWarehouseId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::
+						setCommerceInventoryWarehouseId);
+			attributeSetterBiConsumers.put(
+				"countryId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::setCountryId);
+			attributeSetterBiConsumers.put(
+				"regionId",
+				(BiConsumer<CommerceShippingFixedOptionRel, Long>)
+					CommerceShippingFixedOptionRel::setRegionId);
+			attributeSetterBiConsumers.put(
+				"zip",
+				(BiConsumer<CommerceShippingFixedOptionRel, String>)
+					CommerceShippingFixedOptionRel::setZip);
+			attributeSetterBiConsumers.put(
+				"weightFrom",
+				(BiConsumer<CommerceShippingFixedOptionRel, Double>)
+					CommerceShippingFixedOptionRel::setWeightFrom);
+			attributeSetterBiConsumers.put(
+				"weightTo",
+				(BiConsumer<CommerceShippingFixedOptionRel, Double>)
+					CommerceShippingFixedOptionRel::setWeightTo);
+			attributeSetterBiConsumers.put(
+				"fixedPrice",
+				(BiConsumer<CommerceShippingFixedOptionRel, BigDecimal>)
+					CommerceShippingFixedOptionRel::setFixedPrice);
+			attributeSetterBiConsumers.put(
+				"rateUnitWeightPrice",
+				(BiConsumer<CommerceShippingFixedOptionRel, BigDecimal>)
+					CommerceShippingFixedOptionRel::setRateUnitWeightPrice);
+			attributeSetterBiConsumers.put(
+				"ratePercentage",
+				(BiConsumer<CommerceShippingFixedOptionRel, Double>)
+					CommerceShippingFixedOptionRel::setRatePercentage);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
 	}
 
 	@JSON
@@ -888,6 +811,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 		CommerceShippingFixedOptionRelImpl commerceShippingFixedOptionRelImpl =
 			new CommerceShippingFixedOptionRelImpl();
 
+		commerceShippingFixedOptionRelImpl.setMvccVersion(getMvccVersion());
 		commerceShippingFixedOptionRelImpl.setCommerceShippingFixedOptionRelId(
 			getCommerceShippingFixedOptionRelId());
 		commerceShippingFixedOptionRelImpl.setGroupId(getGroupId());
@@ -923,6 +847,8 @@ public class CommerceShippingFixedOptionRelModelImpl
 		CommerceShippingFixedOptionRelImpl commerceShippingFixedOptionRelImpl =
 			new CommerceShippingFixedOptionRelImpl();
 
+		commerceShippingFixedOptionRelImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
 		commerceShippingFixedOptionRelImpl.setCommerceShippingFixedOptionRelId(
 			this.<Long>getColumnOriginalValue("CShippingFixedOptionRelId"));
 		commerceShippingFixedOptionRelImpl.setGroupId(
@@ -1022,7 +948,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -1031,7 +957,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1048,6 +974,8 @@ public class CommerceShippingFixedOptionRelModelImpl
 		CommerceShippingFixedOptionRelCacheModel
 			commerceShippingFixedOptionRelCacheModel =
 				new CommerceShippingFixedOptionRelCacheModel();
+
+		commerceShippingFixedOptionRelCacheModel.mvccVersion = getMvccVersion();
 
 		commerceShippingFixedOptionRelCacheModel.
 			commerceShippingFixedOptionRelId =
@@ -1175,48 +1103,18 @@ public class CommerceShippingFixedOptionRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceShippingFixedOptionRel, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceShippingFixedOptionRel, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceShippingFixedOptionRel, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommerceShippingFixedOptionRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CommerceShippingFixedOptionRel>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommerceShippingFixedOptionRel.class,
+						ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
 	private long _commerceShippingFixedOptionRelId;
 	private long _groupId;
 	private long _companyId;
@@ -1241,7 +1139,8 @@ public class CommerceShippingFixedOptionRelModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommerceShippingFixedOptionRel, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1266,6 +1165,7 @@ public class CommerceShippingFixedOptionRelModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put(
 			"CShippingFixedOptionRelId", _commerceShippingFixedOptionRelId);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -1312,41 +1212,43 @@ public class CommerceShippingFixedOptionRelModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("CShippingFixedOptionRelId", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("groupId", 2L);
+		columnBitmasks.put("CShippingFixedOptionRelId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("groupId", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("userName", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("createDate", 32L);
+		columnBitmasks.put("userName", 32L);
 
-		columnBitmasks.put("modifiedDate", 64L);
+		columnBitmasks.put("createDate", 64L);
 
-		columnBitmasks.put("commerceShippingMethodId", 128L);
+		columnBitmasks.put("modifiedDate", 128L);
 
-		columnBitmasks.put("commerceShippingFixedOptionId", 256L);
+		columnBitmasks.put("commerceShippingMethodId", 256L);
 
-		columnBitmasks.put("commerceInventoryWarehouseId", 512L);
+		columnBitmasks.put("commerceShippingFixedOptionId", 512L);
 
-		columnBitmasks.put("countryId", 1024L);
+		columnBitmasks.put("commerceInventoryWarehouseId", 1024L);
 
-		columnBitmasks.put("regionId", 2048L);
+		columnBitmasks.put("countryId", 2048L);
 
-		columnBitmasks.put("zip", 4096L);
+		columnBitmasks.put("regionId", 4096L);
 
-		columnBitmasks.put("weightFrom", 8192L);
+		columnBitmasks.put("zip", 8192L);
 
-		columnBitmasks.put("weightTo", 16384L);
+		columnBitmasks.put("weightFrom", 16384L);
 
-		columnBitmasks.put("fixedPrice", 32768L);
+		columnBitmasks.put("weightTo", 32768L);
 
-		columnBitmasks.put("rateUnitWeightPrice", 65536L);
+		columnBitmasks.put("fixedPrice", 65536L);
 
-		columnBitmasks.put("ratePercentage", 131072L);
+		columnBitmasks.put("rateUnitWeightPrice", 131072L);
+
+		columnBitmasks.put("ratePercentage", 262144L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

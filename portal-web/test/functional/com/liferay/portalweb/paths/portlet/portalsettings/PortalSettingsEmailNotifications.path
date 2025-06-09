@@ -20,7 +20,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--EMAIL_NOTIFICATIONS_SENDER-->
+
 <tr>
 	<td>EMAIL_NOTIFICATIONS_SENDER_NAME_HEADER</td>
 	<td>//label[contains(@for,'admin-email-from-name')]</td>
@@ -46,7 +48,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--EMAIL_NOTIFICATIONS_ACCOUNT_CREATED_NOTIFICATION-->
+
 <tr>
 	<td>EMAIL_NOTIFICATIONS_ACCOUNT_CREATED_NOTIFICATION_ENABLED_CHECKBOX</td>
 	<td>//input[contains(@id,'admin-email-user-added-enabled')]</td>
@@ -64,7 +68,7 @@
 </tr>
 <tr>
 	<td>EMAIL_NOTIFICATIONS_ACCOUNT_CREATED_NOTIFICATION_BODY_WITH_PASSWORD_LINK_HEADER</td>
-	<td>//span[contains(.,'Body with Password Link')]</td>
+	<td>//span[contains(@class,'control-label') and contains(.,'Body With Password Link')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -74,7 +78,7 @@
 </tr>
 <tr>
 	<td>EMAIL_NOTIFICATIONS_ACCOUNT_CREATED_NOTIFICATION_BODY_WITHOUT_PASSWORD_HEADER</td>
-	<td>//span[contains(.,'Body without Password')]</td>
+	<td>//span[contains(@class,'control-label') and contains(.,'Body Without Password')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -87,7 +91,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--EMAIL_NOTIFICATIONS_PASSWORD_CHANGED_NOTIFICATION-->
+
 <tr>
 	<td>EMAIL_NOTIFICATIONS_PASSWORD_CHANGED_NOTIFICATION_SUBJECT_HEADER</td>
 	<td>//input[contains(@id,'adminEmailPasswordChangedSubject')]/ancestor::div/preceding-sibling::span[contains(.,'Subject')]</td>

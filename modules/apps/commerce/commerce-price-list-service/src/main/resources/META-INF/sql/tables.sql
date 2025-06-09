@@ -1,6 +1,8 @@
 create table CPLCommerceGroupAccountRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPLCommerceAccountGroupRelId LONG not null primary key,
+	CPLCommerceAccountGroupRelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -9,13 +11,16 @@ create table CPLCommerceGroupAccountRel (
 	commercePriceListId LONG,
 	commerceAccountGroupId LONG,
 	order_ INTEGER,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPLCommerceAccountGroupRelId, ctCollectionId)
 );
 
 create table CommercePriceEntry (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	commercePriceEntryId LONG not null primary key,
+	commercePriceEntryId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -24,35 +29,42 @@ create table CommercePriceEntry (
 	commercePriceListId LONG,
 	CPInstanceUuid VARCHAR(75) null,
 	CProductId LONG,
-	price DECIMAL(30, 16) null,
-	promoPrice DECIMAL(30, 16) null,
-	discountDiscovery BOOLEAN,
-	discountLevel1 DECIMAL(30, 16) null,
-	discountLevel2 DECIMAL(30, 16) null,
-	discountLevel3 DECIMAL(30, 16) null,
-	discountLevel4 DECIMAL(30, 16) null,
-	hasTierPrice BOOLEAN,
 	bulkPricing BOOLEAN,
+	discountDiscovery BOOLEAN,
+	discountLevel1 BIGDECIMAL null,
+	discountLevel2 BIGDECIMAL null,
+	discountLevel3 BIGDECIMAL null,
+	discountLevel4 BIGDECIMAL null,
 	displayDate DATE null,
 	expirationDate DATE null,
+	hasTierPrice BOOLEAN,
+	price BIGDECIMAL null,
+	priceOnApplication BOOLEAN,
+	pricingQuantity BIGDECIMAL null,
+	promoPrice BIGDECIMAL null,
+	quantity BIGDECIMAL null,
+	unitOfMeasureKey VARCHAR(75) null,
 	lastPublishDate DATE null,
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
-	statusDate DATE null
+	statusDate DATE null,
+	primary key (commercePriceEntryId, ctCollectionId)
 );
 
 create table CommercePriceList (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	commercePriceListId LONG not null primary key,
+	commercePriceListId LONG not null,
 	groupId LONG,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
-	commerceCurrencyId LONG,
+	commerceCurrencyCode VARCHAR(75) null,
 	parentCommercePriceListId LONG,
 	catalogBasePriceList BOOLEAN,
 	netPrice BOOLEAN,
@@ -65,12 +77,15 @@ create table CommercePriceList (
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
-	statusDate DATE null
+	statusDate DATE null,
+	primary key (commercePriceListId, ctCollectionId)
 );
 
 create table CommercePriceListAccountRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	commercePriceListAccountRelId LONG not null primary key,
+	commercePriceListAccountRelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -79,12 +94,15 @@ create table CommercePriceListAccountRel (
 	commerceAccountId LONG,
 	commercePriceListId LONG,
 	order_ INTEGER,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (commercePriceListAccountRelId, ctCollectionId)
 );
 
 create table CommercePriceListChannelRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CommercePriceListChannelRelId LONG not null primary key,
+	CommercePriceListChannelRelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -93,12 +111,15 @@ create table CommercePriceListChannelRel (
 	commerceChannelId LONG,
 	commercePriceListId LONG,
 	order_ INTEGER,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CommercePriceListChannelRelId, ctCollectionId)
 );
 
 create table CommercePriceListDiscountRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	commercePriceListDiscountRelId LONG not null primary key,
+	commercePriceListDiscountRelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -107,12 +128,15 @@ create table CommercePriceListDiscountRel (
 	commerceDiscountId LONG,
 	commercePriceListId LONG,
 	order_ INTEGER,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (commercePriceListDiscountRelId, ctCollectionId)
 );
 
 create table CommercePriceListOrderTypeRel (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
-	CPriceListOrderTypeRelId LONG not null primary key,
+	CPriceListOrderTypeRelId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
@@ -121,32 +145,36 @@ create table CommercePriceListOrderTypeRel (
 	commercePriceListId LONG,
 	commerceOrderTypeId LONG,
 	priority INTEGER,
-	lastPublishDate DATE null
+	lastPublishDate DATE null,
+	primary key (CPriceListOrderTypeRelId, ctCollectionId)
 );
 
 create table CommerceTierPriceEntry (
+	mvccVersion LONG default 0 not null,
+	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
-	commerceTierPriceEntryId LONG not null primary key,
+	commerceTierPriceEntryId LONG not null,
 	companyId LONG,
 	userId LONG,
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
 	commercePriceEntryId LONG,
-	price DECIMAL(30, 16) null,
-	promoPrice DECIMAL(30, 16) null,
+	price BIGDECIMAL null,
+	promoPrice BIGDECIMAL null,
 	discountDiscovery BOOLEAN,
-	discountLevel1 DECIMAL(30, 16) null,
-	discountLevel2 DECIMAL(30, 16) null,
-	discountLevel3 DECIMAL(30, 16) null,
-	discountLevel4 DECIMAL(30, 16) null,
-	minQuantity INTEGER,
+	discountLevel1 BIGDECIMAL null,
+	discountLevel2 BIGDECIMAL null,
+	discountLevel3 BIGDECIMAL null,
+	discountLevel4 BIGDECIMAL null,
+	minQuantity BIGDECIMAL null,
 	displayDate DATE null,
 	expirationDate DATE null,
 	lastPublishDate DATE null,
 	status INTEGER,
 	statusByUserId LONG,
 	statusByUserName VARCHAR(75) null,
-	statusDate DATE null
+	statusDate DATE null,
+	primary key (commerceTierPriceEntryId, ctCollectionId)
 );

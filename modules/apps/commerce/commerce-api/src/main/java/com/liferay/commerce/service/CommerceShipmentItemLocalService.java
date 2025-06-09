@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.commerce.model.CommerceShipmentItem;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -36,6 +29,8 @@ import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -81,15 +76,23 @@ public interface CommerceShipmentItemLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipmentItem addCommerceShipmentItem(
-			long commerceShipmentId, long commerceOrderItemId,
-			long commerceInventoryWarehouseId, int quantity,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long commerceShipmentId,
+			long commerceOrderItemId, long commerceInventoryWarehouseId,
+			BigDecimal quantity, String unitOfMeasureKey,
+			boolean validateInventory, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipmentItem addDeliverySubscriptionCommerceShipmentItem(
 			long groupId, long userId, long commerceShipmentId,
 			long commerceOrderItemId)
+		throws PortalException;
+
+	public CommerceShipmentItem addOrUpdateCommerceShipmentItem(
+			String externalReferenceCode, long commerceShipmentId,
+			long commerceOrderItemId, long commerceInventoryWarehouseId,
+			BigDecimal quantity, String unitOfMeasureKey,
+			boolean validateInventory, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -242,6 +245,22 @@ public interface CommerceShipmentItemLocalService
 		long commerceInventoryWarehouseId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipmentItem
+		fetchCommerceShipmentItemByExternalReferenceCode(
+			String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the commerce shipment item matching the UUID and group.
+	 *
+	 * @param uuid the commerce shipment item's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce shipment item, or <code>null</code> if a matching commerce shipment item could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipmentItem fetchCommerceShipmentItemByUuidAndGroupId(
+		String uuid, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	/**
@@ -254,6 +273,24 @@ public interface CommerceShipmentItemLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceShipmentItem getCommerceShipmentItem(
 			long commerceShipmentItemId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipmentItem getCommerceShipmentItemByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	/**
+	 * Returns the commerce shipment item matching the UUID and group.
+	 *
+	 * @param uuid the commerce shipment item's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce shipment item
+	 * @throws PortalException if a matching commerce shipment item could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipmentItem getCommerceShipmentItemByUuidAndGroupId(
+			String uuid, long groupId)
 		throws PortalException;
 
 	/**
@@ -294,6 +331,33 @@ public interface CommerceShipmentItemLocalService
 		getCommerceShipmentItemsByCommerceOrderItemId(long commerceOrderItemId);
 
 	/**
+	 * Returns all the commerce shipment items matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce shipment items
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce shipment items, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceShipmentItem>
+		getCommerceShipmentItemsByUuidAndCompanyId(String uuid, long companyId);
+
+	/**
+	 * Returns a range of commerce shipment items matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce shipment items
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of commerce shipment items
+	 * @param end the upper bound of the range of commerce shipment items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching commerce shipment items, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceShipmentItem>
+		getCommerceShipmentItemsByUuidAndCompanyId(
+			String uuid, long companyId, int start, int end,
+			OrderByComparator<CommerceShipmentItem> orderByComparator);
+
+	/**
 	 * Returns the number of commerce shipment items.
 	 *
 	 * @return the number of commerce shipment items
@@ -309,8 +373,12 @@ public interface CommerceShipmentItemLocalService
 		long commerceOrderItemId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceShipmentOrderItemsQuantity(
+	public BigDecimal getCommerceShipmentOrderItemsQuantity(
 		long commerceShipmentId, long commerceOrderItemId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -344,14 +412,15 @@ public interface CommerceShipmentItemLocalService
 	public CommerceShipmentItem updateCommerceShipmentItem(
 		CommerceShipmentItem commerceShipmentItem);
 
-	public CommerceShipmentItem updateCommerceShipmentItem(
-			long commerceShipmentItemId, int quantity)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipmentItem updateCommerceShipmentItem(
 			long commerceShipmentItemId, long commerceInventoryWarehouseId,
-			int quantity)
+			BigDecimal quantity, boolean validateInventory)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CommerceShipmentItem updateExternalReferenceCode(
+			long commerceShipmentItemId, String externalReferenceCode)
 		throws PortalException;
 
 }

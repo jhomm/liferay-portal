@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.extensions.util;
@@ -25,16 +16,30 @@ import java.util.stream.IntStream;
 public class VersionUtil {
 
 	public static int getMajorVersion(String liferayVersion) {
+		Matcher quarterlyVersionMatcher =
+			_liferayQuarterlyVersionPattern.matcher(liferayVersion);
+
+		if (quarterlyVersionMatcher.matches()) {
+			return _parseInt(quarterlyVersionMatcher.group("major"));
+		}
+
 		Matcher matcher = _liferayVersionPattern.matcher(liferayVersion);
 
 		if (matcher.matches()) {
-			return Integer.parseInt(matcher.group(1));
+			return _parseInt(matcher.group(1));
 		}
 
 		return 0;
 	}
 
 	public static int getMicroVersion(String liferayVersion) throws Exception {
+		Matcher quarterlyVersionMatcher =
+			_liferayQuarterlyVersionPattern.matcher(liferayVersion);
+
+		if (quarterlyVersionMatcher.matches()) {
+			return _parseInt(quarterlyVersionMatcher.group("micro"));
+		}
+
 		String normalizedLiferayVersionString = normalizeLiferayVersion(
 			liferayVersion);
 
@@ -42,23 +47,57 @@ public class VersionUtil {
 			normalizedLiferayVersionString);
 
 		if (matcher.matches()) {
-			return Integer.parseInt(matcher.group(5));
+			return _parseInt(matcher.group(5));
 		}
 
 		return 0;
 	}
 
 	public static int getMinorVersion(String liferayVersion) {
+		Matcher quarterlyVersionMatcher =
+			_liferayQuarterlyVersionPattern.matcher(liferayVersion);
+
+		if (quarterlyVersionMatcher.matches()) {
+			return _parseInt(quarterlyVersionMatcher.group("minor"));
+		}
+
 		Matcher matcher = _liferayVersionPattern.matcher(liferayVersion);
 
 		if (matcher.matches()) {
-			return Integer.parseInt(matcher.group(2));
+			return _parseInt(matcher.group(2));
 		}
 
 		return 0;
 	}
 
+	public static boolean isJakartaCompatibleVersion(String liferayVersion) {
+		if (!isLiferayQuarterlyVersion(liferayVersion)) {
+			return false;
+		}
+
+		int majorVersion = getMajorVersion(liferayVersion);
+
+		if ((majorVersion < 2025) ||
+			((majorVersion == 2025) && (getMinorVersion(liferayVersion) < 3))) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	public static boolean isLiferayQuarterlyVersion(String liferayVersion) {
+		Matcher quarterlyVersionMatcher =
+			_liferayQuarterlyVersionPattern.matcher(liferayVersion);
+
+		return quarterlyVersionMatcher.matches();
+	}
+
 	public static boolean isLiferayVersion(String liferayVersion) {
+		if (isLiferayQuarterlyVersion(liferayVersion)) {
+			return true;
+		}
+
 		Matcher matcher = _liferayVersionPattern.matcher(liferayVersion);
 
 		return matcher.matches();
@@ -83,8 +122,20 @@ public class VersionUtil {
 		return normalizedVersion;
 	}
 
+	private static int _parseInt(String s) {
+		try {
+			return Integer.parseInt(s);
+		}
+		catch (NumberFormatException numberFormatException) {
+			return 0;
+		}
+	}
+
+	private static final Pattern _liferayQuarterlyVersionPattern =
+		Pattern.compile(
+			"^(?<major>2\\d{3})\\.q(?<minor>[1234])\\.(?<micro>\\d+)(-.*)?$");
 	private static final Pattern _liferayVersionPattern = Pattern.compile(
 		"^([7-9]|[1-9]\\d{1}|[1-9]\\d{2})\\.(\\d+)((\\.)(\\d+|\\d+-[1-9])" +
-			"(-\\d+|(\\.((e|f)p)?[0-9]+(-[0-9]+)?))?)?$");
+			"(-\\d+|(\\.(((e|f)p)|u)?[0-9]+(-[0-9]+)?))?)?$");
 
 }

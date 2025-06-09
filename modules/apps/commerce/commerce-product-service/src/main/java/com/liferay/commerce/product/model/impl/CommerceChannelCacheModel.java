@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CommerceChannelCacheModel
-	implements CacheModel<CommerceChannel>, Externalizable {
+	implements CacheModel<CommerceChannel>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,7 +40,10 @@ public class CommerceChannelCacheModel
 		CommerceChannelCacheModel commerceChannelCacheModel =
 			(CommerceChannelCacheModel)object;
 
-		if (commerceChannelId == commerceChannelCacheModel.commerceChannelId) {
+		if ((commerceChannelId ==
+				commerceChannelCacheModel.commerceChannelId) &&
+			(mvccVersion == commerceChannelCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -57,14 +52,32 @@ public class CommerceChannelCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceChannelId);
+		int hashCode = HashUtil.hash(0, commerceChannelId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(37);
 
-		sb.append("{externalReferenceCode=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", uuid=");
+		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
 		sb.append(", commerceChannelId=");
 		sb.append(commerceChannelId);
@@ -78,6 +91,8 @@ public class CommerceChannelCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", accountEntryId=");
+		sb.append(accountEntryId);
 		sb.append(", siteGroupId=");
 		sb.append(siteGroupId);
 		sb.append(", name=");
@@ -100,6 +115,16 @@ public class CommerceChannelCacheModel
 	@Override
 	public CommerceChannel toEntityModel() {
 		CommerceChannelImpl commerceChannelImpl = new CommerceChannelImpl();
+
+		commerceChannelImpl.setMvccVersion(mvccVersion);
+		commerceChannelImpl.setCtCollectionId(ctCollectionId);
+
+		if (uuid == null) {
+			commerceChannelImpl.setUuid("");
+		}
+		else {
+			commerceChannelImpl.setUuid(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			commerceChannelImpl.setExternalReferenceCode("");
@@ -133,6 +158,7 @@ public class CommerceChannelCacheModel
 			commerceChannelImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		commerceChannelImpl.setAccountEntryId(accountEntryId);
 		commerceChannelImpl.setSiteGroupId(siteGroupId);
 
 		if (name == null) {
@@ -179,6 +205,10 @@ public class CommerceChannelCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
 		commerceChannelId = objectInput.readLong();
@@ -189,6 +219,8 @@ public class CommerceChannelCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
+		accountEntryId = objectInput.readLong();
 
 		siteGroupId = objectInput.readLong();
 		name = objectInput.readUTF();
@@ -202,6 +234,17 @@ public class CommerceChannelCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
 		if (externalReferenceCode == null) {
 			objectOutput.writeUTF("");
 		}
@@ -224,6 +267,8 @@ public class CommerceChannelCacheModel
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
+		objectOutput.writeLong(accountEntryId);
 
 		objectOutput.writeLong(siteGroupId);
 
@@ -265,6 +310,9 @@ public class CommerceChannelCacheModel
 		objectOutput.writeBoolean(discountsTargetNetPrice);
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
+	public String uuid;
 	public String externalReferenceCode;
 	public long commerceChannelId;
 	public long companyId;
@@ -272,6 +320,7 @@ public class CommerceChannelCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public long accountEntryId;
 	public long siteGroupId;
 	public String name;
 	public String type;

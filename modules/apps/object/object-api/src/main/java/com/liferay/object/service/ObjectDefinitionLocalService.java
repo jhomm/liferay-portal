@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.model.ObjectDefinitionSetting;
 import com.liferay.object.model.ObjectField;
-import com.liferay.object.system.SystemObjectDefinitionMetadata;
+import com.liferay.object.model.ObjectRelationship;
+import com.liferay.object.system.SystemObjectDefinitionManager;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -71,9 +64,15 @@ public interface ObjectDefinitionLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectDefinition addCustomObjectDefinition(
-			long userId, Map<Locale, String> labelMap, String name,
-			String panelAppOrder, String panelCategoryKey,
-			Map<Locale, String> pluralLabelMap, String scope,
+			long userId, long objectFolderId, String className,
+			boolean enableComments, boolean enableFriendlyURLCustomization,
+			boolean enableIndexSearch, boolean enableLocalization,
+			boolean enableObjectEntryDraft, boolean enableObjectEntryVersioning,
+			String friendlyURLSeparator, Map<Locale, String> labelMap,
+			String name, String panelAppOrder, String panelCategoryKey,
+			Map<Locale, String> pluralLabelMap, boolean portlet, String scope,
+			String storageType,
+			List<ObjectDefinitionSetting> objectDefinitionSettings,
 			List<ObjectField> objectFields)
 		throws PortalException;
 
@@ -92,17 +91,30 @@ public interface ObjectDefinitionLocalService
 		ObjectDefinition objectDefinition);
 
 	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition addObjectDefinition(
+			String externalReferenceCode, long userId, long objectFolderId,
+			boolean modifiable, String scope, boolean system)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
 	public ObjectDefinition addOrUpdateSystemObjectDefinition(
-			long companyId,
-			SystemObjectDefinitionMetadata systemObjectDefinitionMetadata)
+			long companyId, long objectFolderId,
+			SystemObjectDefinitionManager systemObjectDefinitionManager)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectDefinition addSystemObjectDefinition(
-			long userId, String className, String dbTableName,
-			Map<Locale, String> labelMap, String name,
+			String externalReferenceCode, long userId, long objectFolderId,
+			String className, String dbTableName, boolean enableComments,
+			boolean enableFriendlyURLCustomization, boolean enableIndexSearch,
+			boolean enableLocalization, boolean enableObjectEntryDraft,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
+			Map<Locale, String> labelMap, boolean modifiable, String name,
+			String panelAppOrder, String panelCategoryKey,
 			String pkObjectFieldDBColumnName, String pkObjectFieldName,
-			Map<Locale, String> pluralLabelMap, String scope, int version,
+			Map<Locale, String> pluralLabelMap, boolean portlet, String scope,
+			String titleObjectFieldName, int version, int status,
+			List<ObjectDefinitionSetting> objectDefinitionSettings,
 			List<ObjectField> objectFields)
 		throws PortalException;
 
@@ -162,6 +174,9 @@ public interface ObjectDefinitionLocalService
 	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException;
+
+	public void deployInactiveObjectDefinition(
+		ObjectDefinition objectDefinition);
 
 	public void deployObjectDefinition(ObjectDefinition objectDefinition);
 
@@ -237,6 +252,15 @@ public interface ObjectDefinitionLocalService
 	public long dynamicQueryCount(
 		DynamicQuery dynamicQuery, Projection projection);
 
+	public ObjectDefinition enableAccountEntryRestricted(
+			ObjectRelationship objectRelationship)
+		throws PortalException;
+
+	public ObjectDefinition
+			enableAccountEntryRestrictedForNondefaultStorageType(
+				ObjectField objectField)
+		throws PortalException;
+
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectDefinition fetchObjectDefinition(long objectDefinitionId);
 
@@ -245,8 +269,11 @@ public interface ObjectDefinitionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectDefinition fetchObjectDefinitionByClassName(
-			long companyId, String className)
-		throws PortalException;
+		long companyId, String className);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectDefinition fetchObjectDefinitionByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the object definition with the matching UUID and company.
@@ -258,6 +285,10 @@ public interface ObjectDefinitionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ObjectDefinition fetchObjectDefinitionByUuidAndCompanyId(
 		String uuid, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectDefinition fetchSystemObjectDefinition(
+		long companyId, String name);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -283,6 +314,15 @@ public interface ObjectDefinitionLocalService
 	public ObjectDefinition getObjectDefinition(long objectDefinitionId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectDefinition getObjectDefinition(long companyId, String name)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ObjectDefinition getObjectDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
 	 * Returns the object definition with the matching UUID and company.
 	 *
@@ -295,6 +335,10 @@ public interface ObjectDefinitionLocalService
 	public ObjectDefinition getObjectDefinitionByUuidAndCompanyId(
 			String uuid, long companyId)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectDefinition> getObjectDefinitions(
+		boolean accountEntryRestricted);
 
 	/**
 	 * Returns a range of all the object definitions.
@@ -314,6 +358,14 @@ public interface ObjectDefinitionLocalService
 	public List<ObjectDefinition> getObjectDefinitions(
 		long companyId, boolean active, boolean system, int status);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectDefinition> getObjectDefinitions(
+		long companyId, boolean active, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectDefinition> getObjectDefinitions(
+		long companyId, int status);
+
 	/**
 	 * Returns the number of object definitions.
 	 *
@@ -324,6 +376,14 @@ public interface ObjectDefinitionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getObjectDefinitionsCount(long companyId) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectDefinition> getObjectFolderObjectDefinitions(
+		long objectFolderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getObjectFolderObjectDefinitionsCount(long objectFolderId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -343,7 +403,20 @@ public interface ObjectDefinitionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ObjectDefinition> getSystemObjectDefinitions();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ObjectDefinition> getUnmodifiableSystemObjectDefinitions(
+		long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public boolean hasObjectRelationship(long objectDefinitionId);
+
+	@Indexable(type = IndexableType.REINDEX)
 	public ObjectDefinition publishCustomObjectDefinition(
+			long userId, long objectDefinitionId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition publishSystemObjectDefinition(
 			long userId, long objectDefinitionId)
 		throws PortalException;
 
@@ -351,11 +424,24 @@ public interface ObjectDefinitionLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectDefinition updateCustomObjectDefinition(
-			Long objectDefinitionId, long descriptionObjectFieldId,
-			long titleObjectFieldId, boolean active,
+			String externalReferenceCode, long objectDefinitionId,
+			long accountEntryRestrictedObjectFieldId,
+			long descriptionObjectFieldId, long objectFolderId,
+			long titleObjectFieldId, boolean accountEntryRestricted,
+			boolean active, String className, boolean enableCategorization,
+			boolean enableComments, boolean enableFriendlyURLCustomization,
+			boolean enableIndexSearch, boolean enableLocalization,
+			boolean enableObjectEntryDraft, boolean enableObjectEntryHistory,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
 			Map<Locale, String> labelMap, String name, String panelAppOrder,
-			String panelCategoryKey, Map<Locale, String> pluralLabelMap,
-			String scope)
+			String panelCategoryKey, boolean portlet,
+			Map<Locale, String> pluralLabelMap, String scope, int status,
+			List<ObjectDefinitionSetting> objectDefinitionSettings)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition updateExternalReferenceCode(
+			long objectDefinitionId, String externalReferenceCode)
 		throws PortalException;
 
 	/**
@@ -371,5 +457,33 @@ public interface ObjectDefinitionLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public ObjectDefinition updateObjectDefinition(
 		ObjectDefinition objectDefinition);
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition updateObjectFolderId(
+			long objectDefinitionId, long objectFolderId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition updatePortlet(long objectDefinitionId)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition updateRootDescendantNodeObjectDefinition(
+		ObjectDefinition objectDefinition, long rootObjectDefinitionId);
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition updateSystemObjectDefinition(
+			String externalReferenceCode, long objectDefinitionId,
+			long objectFolderId, long titleObjectFieldId,
+			List<ObjectDefinitionSetting> objectDefinitionSettings)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ObjectDefinition updateTitleObjectFieldId(
+			long objectDefinitionId, long titleObjectFieldId)
+		throws PortalException;
+
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
+		throws PortalException;
 
 }

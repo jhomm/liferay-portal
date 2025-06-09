@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.internal.util;
@@ -23,11 +14,13 @@ import com.liferay.commerce.notification.type.CommerceNotificationTypeRegistry;
 import com.liferay.commerce.notification.util.CommerceNotificationHelper;
 import com.liferay.commerce.order.CommerceDefinitionTermContributor;
 import com.liferay.commerce.order.CommerceDefinitionTermContributorRegistry;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.EmailAddressValidator;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -36,6 +29,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -49,10 +43,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CommerceNotificationHelper.class
-)
+@Component(service = CommerceNotificationHelper.class)
 public class CommerceNotificationHelperImpl
 	implements CommerceNotificationHelper {
 
@@ -80,15 +71,55 @@ public class CommerceNotificationHelperImpl
 		for (CommerceNotificationTemplate commerceNotificationTemplate :
 				commerceNotificationTemplates) {
 
-			sendNotification(
+			_sendNotification(
 				userId, commerceNotificationTemplate, commerceNotificationType,
 				object);
 		}
 	}
 
-	protected String formatString(
-			CommerceNotificationType commerceNotificationType, int fieldType,
-			String content, Object object, Locale locale)
+	private void _addNotificationQueueEntry(
+			long groupId, CommerceNotificationType commerceNotificationType,
+			CommerceNotificationTemplate commerceNotificationTemplate,
+			String fromName, String toEmailAddress, String toFullName,
+			String cc, String bcc, String subject, String body, Object object)
+		throws PortalException {
+
+		User user = _userLocalService.getGuestUser(
+			CompanyThreadLocal.getCompanyId());
+
+		_commerceNotificationQueueEntryLocalService.
+			addCommerceNotificationQueueEntry(
+				user.getUserId(), groupId,
+				commerceNotificationType.getClassName(object),
+				commerceNotificationType.getClassPK(object),
+				commerceNotificationTemplate.
+					getCommerceNotificationTemplateId(),
+				commerceNotificationTemplate.getFrom(), fromName,
+				toEmailAddress, toFullName, cc, bcc, subject, body, 0);
+	}
+
+	private void _addNotificationQueueEntry(
+			long groupId, CommerceNotificationType commerceNotificationType,
+			CommerceNotificationTemplate commerceNotificationTemplate,
+			String fromName, User toUser, String cc, String bcc, String subject,
+			String body, Object object)
+		throws PortalException {
+
+		_commerceNotificationQueueEntryLocalService.
+			addCommerceNotificationQueueEntry(
+				toUser.getUserId(), groupId,
+				commerceNotificationType.getClassName(object),
+				commerceNotificationType.getClassPK(object),
+				commerceNotificationTemplate.
+					getCommerceNotificationTemplateId(),
+				commerceNotificationTemplate.getFrom(), fromName,
+				toUser.getEmailAddress(), toUser.getFullName(), cc, bcc,
+				subject, body, 0);
+	}
+
+	private String _formatString(
+			long companyId, CommerceNotificationType commerceNotificationType,
+			int fieldType, String content, Object object, Locale locale)
 		throws PortalException {
 
 		if (Validator.isNull(content)) {
@@ -103,21 +134,39 @@ public class CommerceNotificationHelperImpl
 			placeholders.add(matcher.group());
 		}
 
-		List<CommerceDefinitionTermContributor> definitionTermContributors;
+		List<CommerceDefinitionTermContributor> definitionTermContributors =
+			new ArrayList<>();
 
-		if (fieldType == _TOFIELD) {
-			definitionTermContributors =
+		if ((fieldType == _FIELD_BCC) || (fieldType == _FIELD_CC) ||
+			(fieldType == _FIELD_TO)) {
+
+			definitionTermContributors.addAll(
 				_commerceDefinitionTermContributorRegistry.
 					getDefinitionTermContributorsByContributorKey(
 						CommerceDefinitionTermConstants.
-							RECIPIENT_DEFINITION_TERMS_CONTRIBUTOR);
+							RECIPIENT_DEFINITION_TERMS_CONTRIBUTOR));
+
+			EmailAddressValidator emailAddressValidator =
+				EmailAddressValidatorFactory.getInstance();
+
+			content = StringUtil.merge(
+				TransformUtil.transformToList(
+					StringUtil.split(content),
+					term -> {
+						if (emailAddressValidator.validate(companyId, term) ||
+							placeholders.contains(term)) {
+
+							return term;
+						}
+
+						return null;
+					}));
 		}
-		else {
-			definitionTermContributors =
-				_commerceDefinitionTermContributorRegistry.
-					getDefinitionTermContributorsByNotificationTypeKey(
-						commerceNotificationType.getKey());
-		}
+
+		definitionTermContributors.addAll(
+			_commerceDefinitionTermContributorRegistry.
+				getDefinitionTermContributorsByNotificationTypeKey(
+					commerceNotificationType.getKey()));
 
 		for (CommerceDefinitionTermContributor definitionTermContributor :
 				definitionTermContributors) {
@@ -133,110 +182,149 @@ public class CommerceNotificationHelperImpl
 		return content;
 	}
 
-	protected void sendNotification(
+	private void _sendNotification(
 			long userId,
 			CommerceNotificationTemplate commerceNotificationTemplate,
 			CommerceNotificationType commerceNotificationType, Object object)
 		throws PortalException {
 
-		long groupId = commerceNotificationTemplate.getGroupId();
-
 		User user = _userLocalService.getUser(userId);
-
-		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(groupId);
-		Locale userLocale = user.getLocale();
 
 		String fromName = commerceNotificationTemplate.getFromName(
 			user.getLanguageId());
 
-		String subject = formatString(
-			commerceNotificationType, _SUBJECTFIELD,
-			commerceNotificationTemplate.getSubject(userLocale), object,
-			userLocale);
-		String body = formatString(
-			commerceNotificationType, _BODYFIELD,
-			commerceNotificationTemplate.getBody(userLocale), object,
-			userLocale);
+		Locale userLocale = user.getLocale();
+
+		String to = _toEmailAddresses(
+			commerceNotificationTemplate.getCompanyId(),
+			_formatString(
+				commerceNotificationTemplate.getCompanyId(),
+				commerceNotificationType, _FIELD_TO,
+				commerceNotificationTemplate.getTo(), object, userLocale));
+		String cc = _toEmailAddresses(
+			commerceNotificationTemplate.getCompanyId(),
+			_formatString(
+				commerceNotificationTemplate.getCompanyId(),
+				commerceNotificationType, _FIELD_CC,
+				commerceNotificationTemplate.getCc(), object, userLocale));
+		String bcc = _toEmailAddresses(
+			commerceNotificationTemplate.getCompanyId(),
+			_formatString(
+				commerceNotificationTemplate.getCompanyId(),
+				commerceNotificationType, _FIELD_BCC,
+				commerceNotificationTemplate.getBcc(), object, userLocale));
 
 		if (Validator.isNull(fromName)) {
 			fromName = commerceNotificationTemplate.getFromName(
-				_portal.getSiteDefaultLocale(groupId));
+				_portal.getSiteDefaultLocale(
+					commerceNotificationTemplate.getGroupId()));
 		}
 
+		String subject = _formatString(
+			commerceNotificationTemplate.getCompanyId(),
+			commerceNotificationType, _FIELD_SUBJECT,
+			commerceNotificationTemplate.getSubject(userLocale), object,
+			userLocale);
+
+		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(
+			commerceNotificationTemplate.getGroupId());
+
 		if (Validator.isNull(subject)) {
-			subject = formatString(
-				commerceNotificationType, _SUBJECTFIELD,
+			subject = _formatString(
+				commerceNotificationTemplate.getCompanyId(),
+				commerceNotificationType, _FIELD_SUBJECT,
 				commerceNotificationTemplate.getSubject(siteDefaultLocale),
 				object, siteDefaultLocale);
 		}
 
+		String body = _formatString(
+			commerceNotificationTemplate.getCompanyId(),
+			commerceNotificationType, _FIELD_BODY,
+			commerceNotificationTemplate.getBody(userLocale), object,
+			userLocale);
+
 		if (Validator.isNull(body)) {
-			formatString(
-				commerceNotificationType, _BODYFIELD,
+			body = _formatString(
+				commerceNotificationTemplate.getCompanyId(),
+				commerceNotificationType, _FIELD_BODY,
 				commerceNotificationTemplate.getBody(siteDefaultLocale), object,
 				siteDefaultLocale);
 		}
 
-		String to = formatString(
-			commerceNotificationType, _TOFIELD,
-			commerceNotificationTemplate.getTo(), object, userLocale);
+		for (String emailAddress : StringUtil.split(to)) {
+			User toUser = _userLocalService.fetchUserByEmailAddress(
+				user.getCompanyId(), emailAddress);
+
+			if (toUser == null) {
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						"No user found with email address " + emailAddress);
+				}
+
+				_addNotificationQueueEntry(
+					commerceNotificationTemplate.getGroupId(),
+					commerceNotificationType, commerceNotificationTemplate,
+					fromName, emailAddress, emailAddress, cc, bcc, subject,
+					body, object);
+			}
+			else {
+				_addNotificationQueueEntry(
+					commerceNotificationTemplate.getGroupId(),
+					commerceNotificationType, commerceNotificationTemplate,
+					fromName, toUser, cc, bcc, subject, body, object);
+			}
+		}
+	}
+
+	private String _toEmailAddresses(long companyId, String value) {
+		if (Validator.isNull(value)) {
+			return StringPool.BLANK;
+		}
 
 		EmailAddressValidator emailAddressValidator =
 			EmailAddressValidatorFactory.getInstance();
 
-		String[] toUserStrings = StringUtil.split(to);
+		return StringUtil.merge(
+			TransformUtil.transformToList(
+				StringUtil.split(value),
+				currentValue -> {
+					User user = _userLocalService.fetchUser(
+						GetterUtil.getLong(currentValue));
 
-		for (String toUserString : toUserStrings) {
-			User toUser = _userLocalService.fetchUser(
-				GetterUtil.getLong(toUserString));
+					if (user != null) {
+						return user.getEmailAddress();
+					}
 
-			if ((toUser == null) &&
-				emailAddressValidator.validate(
-					user.getCompanyId(), toUserString)) {
+					user = _userLocalService.fetchUserByEmailAddress(
+						companyId, currentValue);
 
-				toUser = _userLocalService.fetchUserByEmailAddress(
-					user.getCompanyId(), toUserString);
-			}
+					if (user != null) {
+						return user.getEmailAddress();
+					}
 
-			if (toUser == null) {
-				if (_log.isInfoEnabled()) {
-					_log.info("No User found with key: " + toUserString);
-				}
+					if (emailAddressValidator.validate(
+							companyId, currentValue)) {
 
-				continue;
-			}
+						return currentValue;
+					}
 
-			_addNotificationQueueEntry(
-				groupId, commerceNotificationType, commerceNotificationTemplate,
-				fromName, toUser, subject, body, object);
-		}
+					if (_log.isInfoEnabled()) {
+						_log.info("Invalid email address " + currentValue);
+					}
+
+					return null;
+				}));
 	}
 
-	private void _addNotificationQueueEntry(
-			long groupId, CommerceNotificationType commerceNotificationType,
-			CommerceNotificationTemplate commerceNotificationTemplate,
-			String fromName, User toUser, String subject, String body,
-			Object object)
-		throws PortalException {
+	private static final int _FIELD_BCC = 5;
 
-		_commerceNotificationQueueEntryLocalService.
-			addCommerceNotificationQueueEntry(
-				toUser.getUserId(), groupId,
-				commerceNotificationType.getClassName(object),
-				commerceNotificationType.getClassPK(object),
-				commerceNotificationTemplate.
-					getCommerceNotificationTemplateId(),
-				commerceNotificationTemplate.getFrom(), fromName,
-				toUser.getEmailAddress(), toUser.getFullName(),
-				commerceNotificationTemplate.getCc(),
-				commerceNotificationTemplate.getBcc(), subject, body, 0);
-	}
+	private static final int _FIELD_BODY = 2;
 
-	private static final int _BODYFIELD = 2;
+	private static final int _FIELD_CC = 4;
 
-	private static final int _SUBJECTFIELD = 1;
+	private static final int _FIELD_SUBJECT = 1;
 
-	private static final int _TOFIELD = 3;
+	private static final int _FIELD_TO = 3;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceNotificationHelperImpl.class);

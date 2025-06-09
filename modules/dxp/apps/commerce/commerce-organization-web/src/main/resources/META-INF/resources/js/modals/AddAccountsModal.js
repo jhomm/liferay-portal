@@ -1,31 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
+import {useResource} from '@clayui/data-provider';
 import ClayForm, {ClayInput, ClayRadio, ClayRadioGroup} from '@clayui/form';
 import ClayModal from '@clayui/modal';
 import ClayMultiSelect from '@clayui/multi-select';
 import classNames from 'classnames';
-import {openToast} from 'frontend-js-web';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, sub} from 'frontend-js-web';
+import React, {useContext, useMemo, useState} from 'react';
 
 import ChartContext from '../ChartContext';
-import {createAccount, getAccounts, updateAccount} from '../data/accounts';
+import {createAccount, updateAccount} from '../data/accounts';
+import {MODEL_TYPE_MAP} from '../utils/constants';
 
 function showNotFoundError(name) {
 	openToast({
-		message: Liferay.Util.sub(Liferay.Language.get('x-not-found'), name),
+		message: sub(Liferay.Language.get('x-not-found'), name),
 		type: 'danger',
 	});
 }
+
+const ACCOUNTS_ROOT_ENDPOINT = '/o/headless-admin-user/v1.0/accounts';
 
 export default function AddOrganizationModal({
 	closeModal,
@@ -36,28 +35,34 @@ export default function AddOrganizationModal({
 
 	const [accountsQuery, setAccountsQuery] = useState('');
 	const [newAccountName, setNewAccountName] = useState('');
-	const [fetchedAccounts, setFetchedAccounts] = useState([]);
 	const [selectedAccounts, setSelectedAccounts] = useState([]);
 	const [errors, setErrors] = useState([]);
-	const [newAccountMode, updateNewAccountMode] = useState(false);
+	const [newAccountMode, setNewAccountMode] = useState(false);
 
-	useEffect(() => {
-		if (accountsQuery) {
-			getAccounts(accountsQuery).then((response) => {
-				setFetchedAccounts(response.items);
-			});
-		}
-		else {
-			setFetchedAccounts([]);
-		}
-	}, [accountsQuery]);
+	const [networkStatus, setNetworkStatus] = useState(4);
+	const {resource = {}} = useResource({
+		fetch,
+		fetchPolicy: 'cache-first',
+		link: new URL(
+			`${themeDisplay.getPathContext()}${ACCOUNTS_ROOT_ENDPOINT}`,
+			themeDisplay.getPortalURL()
+		).toString(),
+		onNetworkStatusChange: setNetworkStatus,
+		variables: {
+			search: accountsQuery,
+		},
+	});
 
 	const accountOptions = useMemo(() => {
 		const selectedAccountIds = new Set(
 			selectedAccounts.map((account) => account.id)
 		);
 
-		return fetchedAccounts.filter((account) => {
+		if (!resource) {
+			return [];
+		}
+
+		return resource.items.filter((account) => {
 			const alreadySelected = selectedAccountIds.has(account.id);
 			const alreadyDefinedAsChild = account.organizationIds.some(
 				(organizationId) =>
@@ -66,14 +71,14 @@ export default function AddOrganizationModal({
 
 			return !alreadySelected && !alreadyDefinedAsChild;
 		});
-	}, [parentData, selectedAccounts, fetchedAccounts]);
+	}, [parentData, selectedAccounts, resource]);
 
 	function handleSave() {
 		if (newAccountMode) {
 			createAccount(newAccountName, [parentData.id])
 				.then((accountData) => {
 					openToast({
-						message: Liferay.Util.sub(
+						message: sub(
 							Liferay.Language.get('1-account-was-added-to-x'),
 							parentData.name
 						),
@@ -82,7 +87,7 @@ export default function AddOrganizationModal({
 
 					chartInstanceRef.current.addNodes(
 						[accountData],
-						'account',
+						MODEL_TYPE_MAP.account,
 						parentData
 					);
 
@@ -133,19 +138,19 @@ export default function AddOrganizationModal({
 
 					const message =
 						nodeChildren.length === 1
-							? Liferay.Util.sub(
+							? sub(
 									Liferay.Language.get(
 										'1-account-was-added-to-x'
 									),
 									parentData.name
-							  )
-							: Liferay.Util.sub(
+								)
+							: sub(
 									Liferay.Language.get(
 										'x-accounts-were-added-to-x'
 									),
 									nodeChildren.length,
 									parentData.name
-							  );
+								);
 
 					openToast({
 						message,
@@ -154,7 +159,7 @@ export default function AddOrganizationModal({
 
 					chartInstanceRef.current.addNodes(
 						nodeChildren,
-						'account',
+						MODEL_TYPE_MAP.account,
 						parentData
 					);
 
@@ -191,6 +196,7 @@ export default function AddOrganizationModal({
 			{errors.map((error, i) => (
 				<ClayForm.FeedbackItem key={i}>
 					<ClayForm.FeedbackIndicator symbol="info-circle" />
+
 					{error}
 				</ClayForm.FeedbackItem>
 			))}
@@ -206,8 +212,8 @@ export default function AddOrganizationModal({
 			<ClayModal.Body>
 				<ClayRadioGroup
 					className="mb-4"
-					onSelectedValueChange={updateNewAccountMode}
-					selectedValue={newAccountMode}
+					onChange={setNewAccountMode}
+					value={newAccountMode}
 				>
 					<ClayRadio
 						label={Liferay.Language.get('select-accounts')}
@@ -248,12 +254,13 @@ export default function AddOrganizationModal({
 
 						<ClayMultiSelect
 							id="searchAccountInput"
-							inputValue={accountsQuery}
 							items={selectedAccounts}
+							loadingState={networkStatus}
 							locator={{label: 'name', value: 'id'}}
 							onChange={setAccountsQuery}
 							onItemsChange={handleItemsChange}
 							sourceItems={accountOptions}
+							value={accountsQuery}
 						/>
 
 						{errorsContainer}

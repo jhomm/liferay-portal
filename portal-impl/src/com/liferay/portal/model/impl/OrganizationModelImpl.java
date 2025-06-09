@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -25,7 +16,6 @@ import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationModel;
-import com.liferay.portal.kernel.model.OrganizationSoap;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -85,8 +72,9 @@ public class OrganizationModelImpl
 		{"parentOrganizationId", Types.BIGINT}, {"treePath", Types.VARCHAR},
 		{"name", Types.VARCHAR}, {"type_", Types.VARCHAR},
 		{"recursable", Types.BOOLEAN}, {"regionId", Types.BIGINT},
-		{"countryId", Types.BIGINT}, {"statusId", Types.BIGINT},
-		{"comments", Types.VARCHAR}, {"logoId", Types.BIGINT}
+		{"countryId", Types.BIGINT}, {"statusListTypeId", Types.BIGINT},
+		{"comments", Types.VARCHAR}, {"logoId", Types.BIGINT},
+		{"status", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -110,13 +98,14 @@ public class OrganizationModelImpl
 		TABLE_COLUMNS_MAP.put("recursable", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("regionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("countryId", Types.BIGINT);
-		TABLE_COLUMNS_MAP.put("statusId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("statusListTypeId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("comments", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("logoId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table Organization_ (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,organizationId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentOrganizationId LONG,treePath STRING null,name VARCHAR(100) null,type_ VARCHAR(75) null,recursable BOOLEAN,regionId LONG,countryId LONG,statusId LONG,comments STRING null,logoId LONG,primary key (organizationId, ctCollectionId))";
+		"create table Organization_ (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,organizationId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentOrganizationId LONG,treePath STRING null,name VARCHAR(100) null,type_ VARCHAR(75) null,recursable BOOLEAN,regionId LONG,countryId LONG,statusListTypeId LONG,comments STRING null,logoId LONG,status INTEGER,primary key (organizationId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table Organization_";
 
@@ -125,6 +114,9 @@ public class OrganizationModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY Organization_.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY organization.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -191,68 +183,6 @@ public class OrganizationModelImpl
 	 */
 	@Deprecated
 	public static final long UUID_COLUMN_BITMASK = 64L;
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static Organization toModel(OrganizationSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		Organization model = new OrganizationImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setExternalReferenceCode(soapModel.getExternalReferenceCode());
-		model.setOrganizationId(soapModel.getOrganizationId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setParentOrganizationId(soapModel.getParentOrganizationId());
-		model.setTreePath(soapModel.getTreePath());
-		model.setName(soapModel.getName());
-		model.setType(soapModel.getType());
-		model.setRecursable(soapModel.isRecursable());
-		model.setRegionId(soapModel.getRegionId());
-		model.setCountryId(soapModel.getCountryId());
-		model.setStatusId(soapModel.getStatusId());
-		model.setComments(soapModel.getComments());
-		model.setLogoId(soapModel.getLogoId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<Organization> toModels(OrganizationSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<Organization> models = new ArrayList<Organization>(
-			soapModels.length);
-
-		for (OrganizationSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
 
 	public static final String MAPPING_TABLE_GROUPS_ORGS_NAME = "Groups_Orgs";
 
@@ -366,142 +296,148 @@ public class OrganizationModelImpl
 	public Map<String, Function<Organization, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Organization, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Organization>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Organization.class.getClassLoader(), Organization.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<Organization, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Organization> constructor =
-				(Constructor<Organization>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Organization, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<Organization, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", Organization::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", Organization::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", Organization::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				Organization::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"organizationId", Organization::getOrganizationId);
+			attributeGetterFunctions.put(
+				"companyId", Organization::getCompanyId);
+			attributeGetterFunctions.put("userId", Organization::getUserId);
+			attributeGetterFunctions.put("userName", Organization::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", Organization::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", Organization::getModifiedDate);
+			attributeGetterFunctions.put(
+				"parentOrganizationId", Organization::getParentOrganizationId);
+			attributeGetterFunctions.put("treePath", Organization::getTreePath);
+			attributeGetterFunctions.put("name", Organization::getName);
+			attributeGetterFunctions.put("type", Organization::getType);
+			attributeGetterFunctions.put(
+				"recursable", Organization::getRecursable);
+			attributeGetterFunctions.put("regionId", Organization::getRegionId);
+			attributeGetterFunctions.put(
+				"countryId", Organization::getCountryId);
+			attributeGetterFunctions.put(
+				"statusListTypeId", Organization::getStatusListTypeId);
+			attributeGetterFunctions.put("comments", Organization::getComments);
+			attributeGetterFunctions.put("logoId", Organization::getLogoId);
+			attributeGetterFunctions.put("status", Organization::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Organization, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Organization, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Organization, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Organization, Object>>();
-		Map<String, BiConsumer<Organization, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Organization, ?>>();
+		private static final Map<String, BiConsumer<Organization, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", Organization::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<Organization, Long>)Organization::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", Organization::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<Organization, Long>)Organization::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", Organization::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<Organization, String>)Organization::setUuid);
-		attributeGetterFunctions.put(
-			"externalReferenceCode", Organization::getExternalReferenceCode);
-		attributeSetterBiConsumers.put(
-			"externalReferenceCode",
-			(BiConsumer<Organization, String>)
-				Organization::setExternalReferenceCode);
-		attributeGetterFunctions.put(
-			"organizationId", Organization::getOrganizationId);
-		attributeSetterBiConsumers.put(
-			"organizationId",
-			(BiConsumer<Organization, Long>)Organization::setOrganizationId);
-		attributeGetterFunctions.put("companyId", Organization::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<Organization, Long>)Organization::setCompanyId);
-		attributeGetterFunctions.put("userId", Organization::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<Organization, Long>)Organization::setUserId);
-		attributeGetterFunctions.put("userName", Organization::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<Organization, String>)Organization::setUserName);
-		attributeGetterFunctions.put("createDate", Organization::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<Organization, Date>)Organization::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", Organization::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<Organization, Date>)Organization::setModifiedDate);
-		attributeGetterFunctions.put(
-			"parentOrganizationId", Organization::getParentOrganizationId);
-		attributeSetterBiConsumers.put(
-			"parentOrganizationId",
-			(BiConsumer<Organization, Long>)
-				Organization::setParentOrganizationId);
-		attributeGetterFunctions.put("treePath", Organization::getTreePath);
-		attributeSetterBiConsumers.put(
-			"treePath",
-			(BiConsumer<Organization, String>)Organization::setTreePath);
-		attributeGetterFunctions.put("name", Organization::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<Organization, String>)Organization::setName);
-		attributeGetterFunctions.put("type", Organization::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<Organization, String>)Organization::setType);
-		attributeGetterFunctions.put("recursable", Organization::getRecursable);
-		attributeSetterBiConsumers.put(
-			"recursable",
-			(BiConsumer<Organization, Boolean>)Organization::setRecursable);
-		attributeGetterFunctions.put("regionId", Organization::getRegionId);
-		attributeSetterBiConsumers.put(
-			"regionId",
-			(BiConsumer<Organization, Long>)Organization::setRegionId);
-		attributeGetterFunctions.put("countryId", Organization::getCountryId);
-		attributeSetterBiConsumers.put(
-			"countryId",
-			(BiConsumer<Organization, Long>)Organization::setCountryId);
-		attributeGetterFunctions.put("statusId", Organization::getStatusId);
-		attributeSetterBiConsumers.put(
-			"statusId",
-			(BiConsumer<Organization, Long>)Organization::setStatusId);
-		attributeGetterFunctions.put("comments", Organization::getComments);
-		attributeSetterBiConsumers.put(
-			"comments",
-			(BiConsumer<Organization, String>)Organization::setComments);
-		attributeGetterFunctions.put("logoId", Organization::getLogoId);
-		attributeSetterBiConsumers.put(
-			"logoId", (BiConsumer<Organization, Long>)Organization::setLogoId);
+		static {
+			Map<String, BiConsumer<Organization, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<Organization, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<Organization, Long>)Organization::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<Organization, Long>)
+					Organization::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<Organization, String>)Organization::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<Organization, String>)
+					Organization::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"organizationId",
+				(BiConsumer<Organization, Long>)
+					Organization::setOrganizationId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<Organization, Long>)Organization::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<Organization, Long>)Organization::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<Organization, String>)Organization::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<Organization, Date>)Organization::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Organization, Date>)Organization::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"parentOrganizationId",
+				(BiConsumer<Organization, Long>)
+					Organization::setParentOrganizationId);
+			attributeSetterBiConsumers.put(
+				"treePath",
+				(BiConsumer<Organization, String>)Organization::setTreePath);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<Organization, String>)Organization::setName);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<Organization, String>)Organization::setType);
+			attributeSetterBiConsumers.put(
+				"recursable",
+				(BiConsumer<Organization, Boolean>)Organization::setRecursable);
+			attributeSetterBiConsumers.put(
+				"regionId",
+				(BiConsumer<Organization, Long>)Organization::setRegionId);
+			attributeSetterBiConsumers.put(
+				"countryId",
+				(BiConsumer<Organization, Long>)Organization::setCountryId);
+			attributeSetterBiConsumers.put(
+				"statusListTypeId",
+				(BiConsumer<Organization, Long>)
+					Organization::setStatusListTypeId);
+			attributeSetterBiConsumers.put(
+				"comments",
+				(BiConsumer<Organization, String>)Organization::setComments);
+			attributeSetterBiConsumers.put(
+				"logoId",
+				(BiConsumer<Organization, Long>)Organization::setLogoId);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<Organization, Integer>)Organization::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -885,17 +821,17 @@ public class OrganizationModelImpl
 
 	@JSON
 	@Override
-	public long getStatusId() {
-		return _statusId;
+	public long getStatusListTypeId() {
+		return _statusListTypeId;
 	}
 
 	@Override
-	public void setStatusId(long statusId) {
+	public void setStatusListTypeId(long statusListTypeId) {
 		if (_columnOriginalValues == Collections.EMPTY_MAP) {
 			_setColumnOriginalValues();
 		}
 
-		_statusId = statusId;
+		_statusListTypeId = statusListTypeId;
 	}
 
 	@JSON
@@ -931,6 +867,21 @@ public class OrganizationModelImpl
 		}
 
 		_logoId = logoId;
+	}
+
+	@JSON
+	@Override
+	public int getStatus() {
+		return _status;
+	}
+
+	@Override
+	public void setStatus(int status) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_status = status;
 	}
 
 	@Override
@@ -1012,9 +963,10 @@ public class OrganizationModelImpl
 		organizationImpl.setRecursable(isRecursable());
 		organizationImpl.setRegionId(getRegionId());
 		organizationImpl.setCountryId(getCountryId());
-		organizationImpl.setStatusId(getStatusId());
+		organizationImpl.setStatusListTypeId(getStatusListTypeId());
 		organizationImpl.setComments(getComments());
 		organizationImpl.setLogoId(getLogoId());
+		organizationImpl.setStatus(getStatus());
 
 		organizationImpl.resetOriginalValues();
 
@@ -1055,11 +1007,13 @@ public class OrganizationModelImpl
 			this.<Long>getColumnOriginalValue("regionId"));
 		organizationImpl.setCountryId(
 			this.<Long>getColumnOriginalValue("countryId"));
-		organizationImpl.setStatusId(
-			this.<Long>getColumnOriginalValue("statusId"));
+		organizationImpl.setStatusListTypeId(
+			this.<Long>getColumnOriginalValue("statusListTypeId"));
 		organizationImpl.setComments(
 			this.<String>getColumnOriginalValue("comments"));
 		organizationImpl.setLogoId(this.<Long>getColumnOriginalValue("logoId"));
+		organizationImpl.setStatus(
+			this.<Integer>getColumnOriginalValue("status"));
 
 		return organizationImpl;
 	}
@@ -1224,7 +1178,7 @@ public class OrganizationModelImpl
 
 		organizationCacheModel.countryId = getCountryId();
 
-		organizationCacheModel.statusId = getStatusId();
+		organizationCacheModel.statusListTypeId = getStatusListTypeId();
 
 		organizationCacheModel.comments = getComments();
 
@@ -1235,6 +1189,8 @@ public class OrganizationModelImpl
 		}
 
 		organizationCacheModel.logoId = getLogoId();
+
+		organizationCacheModel.status = getStatus();
 
 		return organizationCacheModel;
 	}
@@ -1288,41 +1244,12 @@ public class OrganizationModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Organization, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Organization, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Organization, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Organization)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Organization>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Organization.class, ModelWrapper.class);
 
 	}
 
@@ -1344,15 +1271,17 @@ public class OrganizationModelImpl
 	private boolean _recursable;
 	private long _regionId;
 	private long _countryId;
-	private long _statusId;
+	private long _statusListTypeId;
 	private String _comments;
 	private long _logoId;
+	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<Organization, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Organization, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1396,9 +1325,10 @@ public class OrganizationModelImpl
 		_columnOriginalValues.put("recursable", _recursable);
 		_columnOriginalValues.put("regionId", _regionId);
 		_columnOriginalValues.put("countryId", _countryId);
-		_columnOriginalValues.put("statusId", _statusId);
+		_columnOriginalValues.put("statusListTypeId", _statusListTypeId);
 		_columnOriginalValues.put("comments", _comments);
 		_columnOriginalValues.put("logoId", _logoId);
+		_columnOriginalValues.put("status", _status);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1458,11 +1388,13 @@ public class OrganizationModelImpl
 
 		columnBitmasks.put("countryId", 65536L);
 
-		columnBitmasks.put("statusId", 131072L);
+		columnBitmasks.put("statusListTypeId", 131072L);
 
 		columnBitmasks.put("comments", 262144L);
 
 		columnBitmasks.put("logoId", 524288L);
+
+		columnBitmasks.put("status", 1048576L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

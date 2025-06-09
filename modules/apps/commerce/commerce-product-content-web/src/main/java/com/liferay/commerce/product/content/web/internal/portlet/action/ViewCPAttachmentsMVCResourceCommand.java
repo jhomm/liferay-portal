@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.portlet.action;
 
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.media.CommerceMediaResolver;
 import com.liferay.commerce.product.constants.CPAttachmentFileEntryConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -34,11 +25,11 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.util.List;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
-import javax.portlet.PortletException;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,9 +38,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_CONTENT_WEB,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_CONTENT_WEB,
 		"mvc.command.name=/cp_content_web/view_cp_attachments"
 	},
 	service = MVCResourceCommand.class
@@ -67,8 +57,7 @@ public class ViewCPAttachmentsMVCResourceCommand
 		int type = ParamUtil.getInteger(
 			resourceRequest, "type", CPAttachmentFileEntryConstants.TYPE_IMAGE);
 
-		String ddmFormValues = ParamUtil.getString(
-			resourceRequest, "ddmFormValues");
+		String skuOptions = ParamUtil.getString(resourceRequest, "skuOptions");
 
 		long cpDefinitionId = ParamUtil.getLong(
 			resourceRequest, "cpDefinitionId");
@@ -78,20 +67,14 @@ public class ViewCPAttachmentsMVCResourceCommand
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
 		try {
-			CommerceAccount commerceAccount =
-				commerceContext.getCommerceAccount();
-
-			long commerceAccountId = 0;
-
-			if (commerceAccount != null) {
-				commerceAccountId = commerceAccount.getCommerceAccountId();
-			}
+			long commerceAccountId = CommerceUtil.getCommerceAccountId(
+				commerceContext);
 
 			List<CPAttachmentFileEntry> cpAttachmentFileEntries =
 				_cpInstanceHelper.getCPAttachmentFileEntries(
 					commerceAccountId,
 					commerceContext.getCommerceChannelGroupId(), cpDefinitionId,
-					ddmFormValues, type);
+					skuOptions, type);
 
 			for (CPAttachmentFileEntry cpAttachmentFileEntry :
 					cpAttachmentFileEntries) {
@@ -102,7 +85,7 @@ public class ViewCPAttachmentsMVCResourceCommand
 					"cpAttachmentFileEntryId",
 					cpAttachmentFileEntry.getCPAttachmentFileEntryId());
 
-				String attachmentURL = _commerceMediaResolver.getDownloadURL(
+				String attachmentURL = _commerceMediaResolver.getURL(
 					commerceAccountId,
 					cpAttachmentFileEntry.getCPAttachmentFileEntryId());
 
@@ -128,7 +111,7 @@ public class ViewCPAttachmentsMVCResourceCommand
 				resourceRequest, resourceResponse, jsonArray);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 

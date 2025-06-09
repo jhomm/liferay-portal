@@ -1,28 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.impl;
 
-import com.liferay.dynamic.data.mapping.internal.search.util.DDMSearchHelper;
+import com.liferay.dynamic.data.mapping.internal.search.util.DDMSearchUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMStructureTable;
 import com.liferay.dynamic.data.mapping.security.permission.DDMPermissionSupport;
 import com.liferay.dynamic.data.mapping.service.base.DDMStructureServiceBaseImpl;
-import com.liferay.dynamic.data.mapping.service.persistence.DDMStructureFinder;
+import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.Table;
+import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -30,8 +26,8 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelper;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -75,9 +71,9 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 			getPermissionChecker(), groupId, classNameId);
 
 		return ddmStructureLocalService.addStructure(
-			getUserId(), groupId, parentStructureId, classNameId, structureKey,
-			nameMap, descriptionMap, ddmForm, ddmFormLayout, storageType, type,
-			serviceContext);
+			null, getUserId(), groupId, parentStructureId, classNameId,
+			structureKey, nameMap, descriptionMap, ddmForm, ddmFormLayout,
+			storageType, type, serviceContext);
 	}
 
 	@Override
@@ -119,7 +115,7 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 	 * extracted from the original one. The new structure supports a new name
 	 * and description.
 	 *
-	 * @param  structureId the primary key of the structure to be copied
+	 * @param  sourceStructureId the primary key of the structure to be copied
 	 * @param  nameMap the new structure's locales and localized names
 	 * @param  descriptionMap the new structure's locales and localized
 	 *         descriptions
@@ -130,41 +126,42 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 	 */
 	@Override
 	public DDMStructure copyStructure(
-			long structureId, Map<Locale, String> nameMap,
+			long sourceStructureId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, ServiceContext serviceContext)
 		throws PortalException {
 
-		DDMStructure structure = ddmStructurePersistence.findByPrimaryKey(
-			structureId);
+		DDMStructure sourceStructure = ddmStructurePersistence.findByPrimaryKey(
+			sourceStructureId);
 
 		_ddmStructureModelResourcePermission.check(
-			getPermissionChecker(), structure, ActionKeys.VIEW);
+			getPermissionChecker(), sourceStructure, ActionKeys.VIEW);
 
 		_ddmPermissionSupport.checkAddStructurePermission(
 			getPermissionChecker(), serviceContext.getScopeGroupId(),
-			structure.getClassNameId());
+			sourceStructure.getClassNameId());
 
 		return ddmStructureLocalService.copyStructure(
-			getUserId(), structureId, nameMap, descriptionMap, serviceContext);
+			getUserId(), sourceStructureId, nameMap, descriptionMap,
+			serviceContext);
 	}
 
 	@Override
 	public DDMStructure copyStructure(
-			long structureId, ServiceContext serviceContext)
+			long sourceStructureId, ServiceContext serviceContext)
 		throws PortalException {
 
-		DDMStructure structure = ddmStructurePersistence.findByPrimaryKey(
-			structureId);
+		DDMStructure sourceStructure = ddmStructurePersistence.findByPrimaryKey(
+			sourceStructureId);
 
 		_ddmStructureModelResourcePermission.check(
-			getPermissionChecker(), structure, ActionKeys.VIEW);
+			getPermissionChecker(), sourceStructure, ActionKeys.VIEW);
 
 		_ddmPermissionSupport.checkAddStructurePermission(
 			getPermissionChecker(), serviceContext.getScopeGroupId(),
-			structure.getClassNameId());
+			sourceStructure.getClassNameId());
 
 		return ddmStructureLocalService.copyStructure(
-			getUserId(), structureId, serviceContext);
+			getUserId(), sourceStructureId, serviceContext);
 	}
 
 	/**
@@ -220,6 +217,23 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		DDMStructure ddmStructure = ddmStructureLocalService.fetchStructure(
 			groupId, classNameId, structureKey, includeAncestorStructures);
+
+		if (ddmStructure != null) {
+			_ddmStructureModelResourcePermission.check(
+				getPermissionChecker(), ddmStructure, ActionKeys.VIEW);
+		}
+
+		return ddmStructure;
+	}
+
+	@Override
+	public DDMStructure fetchStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException {
+
+		DDMStructure ddmStructure =
+			ddmStructureLocalService.fetchStructureByExternalReferenceCode(
+				externalReferenceCode, groupId, classNameId);
 
 		if (ddmStructure != null) {
 			_ddmStructureModelResourcePermission.check(
@@ -304,23 +318,39 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 	}
 
 	@Override
+	public DDMStructure getStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException {
+
+		DDMStructure structure =
+			ddmStructureLocalService.getStructureByExternalReferenceCode(
+				externalReferenceCode, groupId, classNameId);
+
+		_ddmStructureModelResourcePermission.check(
+			getPermissionChecker(), structure, ActionKeys.VIEW);
+
+		return structure;
+	}
+
+	@Override
 	public List<DDMStructure> getStructures(
 		long companyId, long[] groupIds, long classNameId, int status) {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null,
-					StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, null,
-					status, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, StringPool.BLANK, StringPool.BLANK,
+					StringPool.BLANK, null, status, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null);
 
-			return _ddmSearchHelper.doSearch(
+			return DDMSearchUtil.doSearch(
 				searchContext, DDMStructure.class,
 				ddmStructurePersistence::findByPrimaryKey);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -334,18 +364,19 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null,
-					StringPool.BLANK, StringPool.BLANK, StringPool.BLANK, null,
-					status, start, end, orderByComparator);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, StringPool.BLANK, StringPool.BLANK,
+					StringPool.BLANK, null, status, start, end,
+					orderByComparator);
 
-			return _ddmSearchHelper.doSearch(
+			return DDMSearchUtil.doSearch(
 				searchContext, DDMStructure.class,
 				ddmStructurePersistence::findByPrimaryKey);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -357,9 +388,9 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 		long companyId, long[] groupIds, long classNameId, int start, int end,
 		OrderByComparator<DDMStructure> orderByComparator) {
 
-		return ddmStructureFinder.filterFindByC_G_C_S(
-			companyId, groupIds, classNameId, WorkflowConstants.STATUS_ANY,
-			start, end, orderByComparator);
+		return getStructures(
+			companyId, groupIds, classNameId, StringPool.BLANK,
+			WorkflowConstants.STATUS_ANY, start, end, orderByComparator);
 	}
 
 	@Override
@@ -368,17 +399,39 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 		int status, int start, int end,
 		OrderByComparator<DDMStructure> orderByComparator) {
 
-		return ddmStructureLocalService.getStructures(
-			companyId, groupIds, classNameId, keywords, status, start, end,
-			orderByComparator);
+		Table<?> tempDDMStructureTable = DSLQueryFactoryUtil.selectDistinct(
+			DDMStructureTable.INSTANCE.structureId
+		).from(
+			DDMStructureTable.INSTANCE
+		).where(
+			_getPredicate(companyId, groupIds, classNameId, keywords)
+		).as(
+			"tempDDMStructure", DDMStructureTable.INSTANCE
+		);
+
+		return ddmStructurePersistence.dslQuery(
+			DSLQueryFactoryUtil.select(
+				DDMStructureTable.INSTANCE
+			).from(
+				tempDDMStructureTable
+			).innerJoinON(
+				DDMStructureTable.INSTANCE,
+				DDMStructureTable.INSTANCE.structureId.eq(
+					tempDDMStructureTable.getColumn("structureId", Long.class))
+			).orderBy(
+				DDMStructureTable.INSTANCE, orderByComparator
+			).limit(
+				start, end
+			));
 	}
 
 	@Override
 	public int getStructuresCount(
 		long companyId, long[] groupIds, long classNameId) {
 
-		return _ddmStructureFinder.filterCountByC_G_C_S(
-			companyId, groupIds, classNameId, WorkflowConstants.STATUS_ANY);
+		return getStructuresCount(
+			companyId, groupIds, classNameId, StringPool.BLANK,
+			WorkflowConstants.STATUS_ANY);
 	}
 
 	@Override
@@ -386,8 +439,14 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 		long companyId, long[] groupIds, long classNameId, String keywords,
 		int status) {
 
-		return ddmStructureLocalService.getStructuresCount(
-			companyId, groupIds, classNameId, keywords, status);
+		return ddmStructurePersistence.dslQueryCount(
+			DSLQueryFactoryUtil.countDistinct(
+				DDMStructureTable.INSTANCE.structureId
+			).from(
+				DDMStructureTable.INSTANCE
+			).where(
+				_getPredicate(companyId, groupIds, classNameId, keywords)
+			));
 	}
 
 	@Override
@@ -400,6 +459,33 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		ddmStructureLocalService.revertStructure(
 			getUserId(), structureId, version, serviceContext);
+	}
+
+	@Override
+	public List<DDMStructure> search(
+			long companyId, long[] groupIds, long classNameId, long classPK,
+			String keywords, int status, int start, int end,
+			OrderByComparator<DDMStructure> orderByComparator)
+		throws PortalException {
+
+		try {
+			SearchContext searchContext =
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, classPK, keywords, keywords, StringPool.BLANK,
+					null, status, start, end, orderByComparator);
+
+			return DDMSearchUtil.doSearch(
+				searchContext, DDMStructure.class,
+				ddmStructureLocalService::fetchStructure);
+		}
+		catch (PrincipalException principalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(principalException);
+			}
+		}
+
+		return Collections.emptyList();
 	}
 
 	/**
@@ -440,18 +526,18 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null,
-					keywords, keywords, StringPool.BLANK, type, status, start,
-					end, orderByComparator);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, keywords, keywords, StringPool.BLANK,
+					type, status, start, end, orderByComparator);
 
-			return _ddmSearchHelper.doSearch(
+			return DDMSearchUtil.doSearch(
 				searchContext, DDMStructure.class,
 				ddmStructurePersistence::findByPrimaryKey);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -494,18 +580,18 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null,
-					keywords, keywords, StringPool.BLANK, null, status, start,
-					end, orderByComparator);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, keywords, keywords, StringPool.BLANK,
+					null, status, start, end, orderByComparator);
 
-			return _ddmSearchHelper.doSearch(
+			return DDMSearchUtil.doSearch(
 				searchContext, DDMStructure.class,
 				ddmStructureLocalService::fetchStructure);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -555,22 +641,47 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null, name,
-					description, storageType, type, status, start, end,
-					orderByComparator);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, name, description, storageType, type,
+					status, start, end, orderByComparator);
 
-			return _ddmSearchHelper.doSearch(
+			return DDMSearchUtil.doSearch(
 				searchContext, DDMStructure.class,
 				ddmStructurePersistence::findByPrimaryKey);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
 		return Collections.emptyList();
+	}
+
+	@Override
+	public int searchCount(
+			long companyId, long[] groupIds, long classNameId, long classPK,
+			String keywords, int status)
+		throws PortalException {
+
+		try {
+			SearchContext searchContext =
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, classPK, keywords, keywords, StringPool.BLANK,
+					null, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+			return DDMSearchUtil.doSearchCount(
+				searchContext, DDMStructure.class);
+		}
+		catch (PrincipalException principalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(principalException);
+			}
+		}
+
+		return 0;
 	}
 
 	/**
@@ -593,17 +704,17 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null,
-					keywords, keywords, StringPool.BLANK, null, status,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, keywords, keywords, StringPool.BLANK,
+					null, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-			return _ddmSearchHelper.doSearchCount(
+			return DDMSearchUtil.doSearchCount(
 				searchContext, DDMStructure.class);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -632,17 +743,17 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null,
-					keywords, keywords, StringPool.BLANK, type, status,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, keywords, keywords, StringPool.BLANK,
+					type, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-			return _ddmSearchHelper.doSearchCount(
+			return DDMSearchUtil.doSearchCount(
 				searchContext, DDMStructure.class);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -676,17 +787,17 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 
 		try {
 			SearchContext searchContext =
-				_ddmSearchHelper.buildStructureSearchContext(
-					companyId, groupIds, getUserId(), classNameId, null, name,
-					description, storageType, type, status, QueryUtil.ALL_POS,
-					QueryUtil.ALL_POS, null);
+				DDMSearchUtil.buildStructureSearchContext(
+					_ddmPermissionSupport, companyId, groupIds, getUserId(),
+					classNameId, null, name, description, storageType, type,
+					status, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-			return _ddmSearchHelper.doSearchCount(
+			return DDMSearchUtil.doSearchCount(
 				searchContext, DDMStructure.class);
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 		}
 
@@ -728,22 +839,91 @@ public class DDMStructureServiceImpl extends DDMStructureServiceBaseImpl {
 			descriptionMap, ddmForm, ddmFormLayout, serviceContext);
 	}
 
+	private Predicate _getPredicate(
+		long companyId, long[] groupIds, long classNameId, String keywords) {
+
+		Predicate predicate = DDMStructureTable.INSTANCE.companyId.eq(
+			companyId
+		).and(
+			DDMStructureTable.INSTANCE.classNameId.eq(classNameId)
+		).and(
+			DDMStructureTable.INSTANCE.type.eq(0)
+		).and(
+			_inlineSQLHelper.getPermissionWherePredicate(
+				_ddmPermissionSupport.getStructureModelResourceName(
+					classNameId),
+				DDMStructureTable.INSTANCE.structureId, groupIds)
+		);
+
+		Predicate groupIdsPredicate = null;
+
+		for (long groupId : groupIds) {
+			Predicate groupIdPredicate = DDMStructureTable.INSTANCE.groupId.eq(
+				groupId);
+
+			if (groupIdsPredicate == null) {
+				groupIdsPredicate = groupIdPredicate;
+			}
+			else {
+				groupIdsPredicate = groupIdsPredicate.or(groupIdPredicate);
+			}
+		}
+
+		if (groupIdsPredicate != null) {
+			predicate = predicate.and(groupIdsPredicate.withParentheses());
+		}
+
+		Predicate keywordsPredicate = null;
+
+		for (String keyword : _customSQL.keywords(keywords, true)) {
+			if (keyword == null) {
+				continue;
+			}
+
+			Predicate keywordPredicate = DSLFunctionFactoryUtil.lower(
+				DSLFunctionFactoryUtil.castText(DDMStructureTable.INSTANCE.name)
+			).like(
+				keyword
+			).or(
+				DSLFunctionFactoryUtil.lower(
+					DSLFunctionFactoryUtil.castClobText(
+						DDMStructureTable.INSTANCE.description)
+				).like(
+					keyword
+				)
+			);
+
+			if (keywordsPredicate == null) {
+				keywordsPredicate = keywordPredicate;
+			}
+			else {
+				keywordsPredicate = keywordsPredicate.or(keywordPredicate);
+			}
+		}
+
+		if (keywordsPredicate != null) {
+			predicate = predicate.and(keywordsPredicate.withParentheses());
+		}
+
+		return predicate;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMStructureServiceImpl.class);
 
-	private static volatile ModelResourcePermission<DDMStructure>
-		_ddmStructureModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				DDMStructureServiceImpl.class,
-				"_ddmStructureModelResourcePermission", DDMStructure.class);
+	@Reference
+	private CustomSQL _customSQL;
 
 	@Reference
 	private DDMPermissionSupport _ddmPermissionSupport;
 
-	@Reference
-	private DDMSearchHelper _ddmSearchHelper;
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMStructure)"
+	)
+	private ModelResourcePermission<DDMStructure>
+		_ddmStructureModelResourcePermission;
 
 	@Reference
-	private DDMStructureFinder _ddmStructureFinder;
+	private InlineSQLHelper _inlineSQLHelper;
 
 }

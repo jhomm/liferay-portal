@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -33,8 +24,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface WebsiteModel
-	extends AttachedModel, BaseModel<Website>, MVCCModel, ShardedModel,
-			StagedAuditedModel {
+	extends AttachedModel, BaseModel<Website>, ExternalReferenceCodeModel,
+			MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -88,6 +79,23 @@ public interface WebsiteModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this website.
+	 *
+	 * @return the external reference code of this website
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this website.
+	 *
+	 * @param externalReferenceCode the external reference code of this website
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the website ID of this website.
@@ -258,18 +266,18 @@ public interface WebsiteModel
 	public void setUrl(String url);
 
 	/**
-	 * Returns the type ID of this website.
+	 * Returns the list type ID of this website.
 	 *
-	 * @return the type ID of this website
+	 * @return the list type ID of this website
 	 */
-	public long getTypeId();
+	public long getListTypeId();
 
 	/**
-	 * Sets the type ID of this website.
+	 * Sets the list type ID of this website.
 	 *
-	 * @param typeId the type ID of this website
+	 * @param listTypeId the list type ID of this website
 	 */
-	public void setTypeId(long typeId);
+	public void setListTypeId(long listTypeId);
 
 	/**
 	 * Returns the primary of this website.
@@ -308,5 +316,9 @@ public interface WebsiteModel
 
 	@Override
 	public Website cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

@@ -1,27 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.info.collection.provider.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetLinkConstants;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.asset.kernel.service.AssetLinkLocalService;
+import com.liferay.asset.link.constants.AssetLinkConstants;
+import com.liferay.asset.link.service.AssetLinkLocalService;
+import com.liferay.asset.util.LinkedAssetEntryIdsUtil;
 import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.pagination.InfoPage;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
@@ -42,15 +34,15 @@ import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
 
-import java.util.List;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -111,10 +103,10 @@ public class AssetInfoCollectionProviderTest {
 
 		_ratingsEntryLocalService.updateEntry(
 			TestPropsValues.getUserId(), JournalArticle.class.getName(),
-			article2.getResourcePrimKey(), 1, serviceContext);
+			article2.getResourcePrimKey(), 0.5, serviceContext);
 
 		InfoCollectionProvider<AssetEntry> infoCollectionProvider =
-			_infoItemServiceTracker.getInfoItemService(
+			_infoItemServiceRegistry.getInfoItemService(
 				InfoCollectionProvider.class,
 				"com.liferay.asset.internal.info.collection.provider." +
 					"HighestRatedAssetsInfoCollectionProvider");
@@ -134,10 +126,6 @@ public class AssetInfoCollectionProviderTest {
 		Assert.assertEquals(
 			Long.valueOf(article1.getResourcePrimKey()),
 			_CLASS_PK_ACCESSOR.get(assetEntries.get(1)));
-
-		_ratingsEntryLocalService.deleteEntry(
-			TestPropsValues.getUserId(), JournalArticle.class.getName(),
-			article2.getResourcePrimKey());
 
 		_ratingsEntryLocalService.updateEntry(
 			TestPropsValues.getUserId(), JournalArticle.class.getName(),
@@ -171,7 +159,7 @@ public class AssetInfoCollectionProviderTest {
 			JournalArticle.class.getName(), article2.getResourcePrimKey());
 
 		InfoCollectionProvider<AssetEntry> infoCollectionProvider =
-			_infoItemServiceTracker.getInfoItemService(
+			_infoItemServiceRegistry.getInfoItemService(
 				InfoCollectionProvider.class,
 				"com.liferay.asset.internal.info.collection.provider." +
 					"MostViewedAssetsInfoCollectionProvider");
@@ -218,7 +206,7 @@ public class AssetInfoCollectionProviderTest {
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 		InfoCollectionProvider<AssetEntry> infoCollectionProvider =
-			_infoItemServiceTracker.getInfoItemService(
+			_infoItemServiceRegistry.getInfoItemService(
 				InfoCollectionProvider.class,
 				"com.liferay.asset.internal.info.collection.provider." +
 					"RecentContentInfoCollectionProvider");
@@ -280,8 +268,11 @@ public class AssetInfoCollectionProviderTest {
 		_httpServletRequest.setAttribute(
 			WebKeys.LAYOUT_ASSET_ENTRY, assetEntry1);
 
+		LinkedAssetEntryIdsUtil.addLinkedAssetEntryId(
+			_httpServletRequest, assetEntry1.getEntryId());
+
 		InfoCollectionProvider<AssetEntry> infoCollectionProvider =
-			_infoItemServiceTracker.getInfoItemService(
+			_infoItemServiceRegistry.getInfoItemService(
 				InfoCollectionProvider.class,
 				"com.liferay.asset.publisher.web.internal.info.collection." +
 					"provider.RelatedAssetsInfoCollectionProvider");
@@ -299,6 +290,9 @@ public class AssetInfoCollectionProviderTest {
 		_httpServletRequest.setAttribute(
 			WebKeys.LAYOUT_ASSET_ENTRY, assetEntry2);
 
+		LinkedAssetEntryIdsUtil.addLinkedAssetEntryId(
+			_httpServletRequest, assetEntry2.getEntryId());
+
 		assetEntriesInfoPage = infoCollectionProvider.getCollectionInfoPage(
 			new CollectionQuery());
 
@@ -315,26 +309,27 @@ public class AssetInfoCollectionProviderTest {
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
 	private HttpServletRequest _getHttpServletRequest() throws Exception {
-		MockHttpServletRequest httpServletRequest =
+		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		httpServletRequest.setAttribute(
+		mockHttpServletRequest.setAttribute(
 			JavaConstants.JAVAX_PORTLET_RESPONSE,
 			new MockLiferayPortletRenderResponse());
 
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setRealUser(TestPropsValues.getUser());
-		themeDisplay.setRequest(httpServletRequest);
+		themeDisplay.setRequest(mockHttpServletRequest);
 		themeDisplay.setResponse(new MockHttpServletResponse());
-		themeDisplay.setUser(TestPropsValues.getUser());
 		themeDisplay.setScopeGroupId(_group.getGroupId());
+		themeDisplay.setUser(TestPropsValues.getUser());
 
-		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, themeDisplay);
 
-		httpServletRequest.setMethod(HttpMethods.GET);
+		mockHttpServletRequest.setMethod(HttpMethods.GET);
 
-		return httpServletRequest;
+		return mockHttpServletRequest;
 	}
 
 	private static final Accessor<AssetEntry, Long> _CLASS_PK_ACCESSOR =
@@ -369,7 +364,7 @@ public class AssetInfoCollectionProviderTest {
 	private HttpServletRequest _httpServletRequest;
 
 	@Inject
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Inject
 	private RatingsEntryLocalService _ratingsEntryLocalService;

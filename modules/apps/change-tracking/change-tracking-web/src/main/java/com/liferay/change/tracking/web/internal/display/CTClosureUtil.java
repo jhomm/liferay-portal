@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.display;
@@ -17,7 +8,9 @@ package com.liferay.change.tracking.web.internal.display;
 import com.liferay.change.tracking.closure.CTClosure;
 
 import java.util.AbstractMap;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -41,6 +34,33 @@ public class CTClosureUtil {
 		return classNameIds;
 	}
 
+	public static Map<Long, List<Long>> getFamilyPKsMap(
+		CTClosure ctClosure, long classNameId, long classPK) {
+
+		Map<Long, List<Long>> familyPKsMap = new HashMap<>();
+
+		_navigateCTClosure(
+			ctClosure,
+			(entry, childEntry) -> {
+				List<Long> primaryKeys = childEntry.getValue();
+
+				if ((childEntry.getKey() == classNameId) &&
+					primaryKeys.contains(classPK)) {
+
+					familyPKsMap.put(entry.getKey(), entry.getValue());
+				}
+			});
+
+		familyPKsMap.putAll(ctClosure.getChildPKsMap(classNameId, classPK));
+
+		List<Long> primaryKeys = familyPKsMap.computeIfAbsent(
+			classNameId, key -> new ArrayList<>());
+
+		primaryKeys.add(classPK);
+
+		return familyPKsMap;
+	}
+
 	public static Set<Long> getParentClassNameIds(
 		CTClosure ctClosure, long classNameId) {
 
@@ -48,9 +68,9 @@ public class CTClosureUtil {
 
 		_navigateCTClosure(
 			ctClosure,
-			(parentClassNameId, entry) -> {
-				if (entry.getKey() == classNameId) {
-					parentClassNameIds.add(parentClassNameId);
+			(entry, childEntry) -> {
+				if (childEntry.getKey() == classNameId) {
+					parentClassNameIds.add(childEntry.getKey());
 				}
 			});
 
@@ -62,9 +82,9 @@ public class CTClosureUtil {
 
 		_navigateCTClosure(
 			ctClosure,
-			(parentClassNameId, entry) -> {
-				if (entry.getKey() == classNameId) {
-					primaryKeys.addAll(entry.getValue());
+			(entry, childEntry) -> {
+				if (childEntry.getKey() == classNameId) {
+					primaryKeys.addAll(childEntry.getValue());
 				}
 			});
 
@@ -73,7 +93,8 @@ public class CTClosureUtil {
 
 	private static void _navigateCTClosure(
 		CTClosure ctClosure,
-		BiConsumer<Long, Map.Entry<Long, List<Long>>> biConsumer) {
+		BiConsumer<Map.Entry<Long, List<Long>>, Map.Entry<Long, List<Long>>>
+			biConsumer) {
 
 		Queue<Map.Entry<Long, List<Long>>> queue = new LinkedList<>();
 
@@ -93,7 +114,7 @@ public class CTClosureUtil {
 				for (Map.Entry<Long, List<Long>> childEntry :
 						childPKsMap.entrySet()) {
 
-					biConsumer.accept(parentClassNameId, childEntry);
+					biConsumer.accept(entry, childEntry);
 
 					queue.add(childEntry);
 				}

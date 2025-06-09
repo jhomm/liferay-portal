@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.model.impl;
@@ -31,7 +22,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -218,118 +208,105 @@ public class AssetAutoTaggerEntryModelImpl
 	public Map<String, Function<AssetAutoTaggerEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AssetAutoTaggerEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AssetAutoTaggerEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AssetAutoTaggerEntry.class.getClassLoader(),
-			AssetAutoTaggerEntry.class, ModelWrapper.class);
+		private static final Map<String, Function<AssetAutoTaggerEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AssetAutoTaggerEntry> constructor =
-				(Constructor<AssetAutoTaggerEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AssetAutoTaggerEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<AssetAutoTaggerEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AssetAutoTaggerEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", AssetAutoTaggerEntry::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"assetAutoTaggerEntryId",
+				AssetAutoTaggerEntry::getAssetAutoTaggerEntryId);
+			attributeGetterFunctions.put(
+				"groupId", AssetAutoTaggerEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", AssetAutoTaggerEntry::getCompanyId);
+			attributeGetterFunctions.put(
+				"createDate", AssetAutoTaggerEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", AssetAutoTaggerEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"assetEntryId", AssetAutoTaggerEntry::getAssetEntryId);
+			attributeGetterFunctions.put(
+				"assetTagId", AssetAutoTaggerEntry::getAssetTagId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AssetAutoTaggerEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AssetAutoTaggerEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AssetAutoTaggerEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<AssetAutoTaggerEntry, Object>>();
-		Map<String, BiConsumer<AssetAutoTaggerEntry, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<AssetAutoTaggerEntry, ?>>();
+		private static final Map
+			<String, BiConsumer<AssetAutoTaggerEntry, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AssetAutoTaggerEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", AssetAutoTaggerEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"assetAutoTaggerEntryId",
-			AssetAutoTaggerEntry::getAssetAutoTaggerEntryId);
-		attributeSetterBiConsumers.put(
-			"assetAutoTaggerEntryId",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setAssetAutoTaggerEntryId);
-		attributeGetterFunctions.put(
-			"groupId", AssetAutoTaggerEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", AssetAutoTaggerEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setCompanyId);
-		attributeGetterFunctions.put(
-			"createDate", AssetAutoTaggerEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<AssetAutoTaggerEntry, Date>)
-				AssetAutoTaggerEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", AssetAutoTaggerEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<AssetAutoTaggerEntry, Date>)
-				AssetAutoTaggerEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"assetEntryId", AssetAutoTaggerEntry::getAssetEntryId);
-		attributeSetterBiConsumers.put(
-			"assetEntryId",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setAssetEntryId);
-		attributeGetterFunctions.put(
-			"assetTagId", AssetAutoTaggerEntry::getAssetTagId);
-		attributeSetterBiConsumers.put(
-			"assetTagId",
-			(BiConsumer<AssetAutoTaggerEntry, Long>)
-				AssetAutoTaggerEntry::setAssetTagId);
+		static {
+			Map<String, BiConsumer<AssetAutoTaggerEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<AssetAutoTaggerEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"assetAutoTaggerEntryId",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setAssetAutoTaggerEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<AssetAutoTaggerEntry, Date>)
+					AssetAutoTaggerEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<AssetAutoTaggerEntry, Date>)
+					AssetAutoTaggerEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"assetEntryId",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setAssetEntryId);
+			attributeSetterBiConsumers.put(
+				"assetTagId",
+				(BiConsumer<AssetAutoTaggerEntry, Long>)
+					AssetAutoTaggerEntry::setAssetTagId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -748,42 +725,12 @@ public class AssetAutoTaggerEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AssetAutoTaggerEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AssetAutoTaggerEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AssetAutoTaggerEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((AssetAutoTaggerEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AssetAutoTaggerEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AssetAutoTaggerEntry.class, ModelWrapper.class);
 
 	}
 
@@ -800,7 +747,8 @@ public class AssetAutoTaggerEntryModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<AssetAutoTaggerEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

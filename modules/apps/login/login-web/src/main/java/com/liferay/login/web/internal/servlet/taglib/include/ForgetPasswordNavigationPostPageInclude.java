@@ -1,41 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.login.web.internal.servlet.taglib.include;
 
+import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
+import com.liferay.layout.utility.page.kernel.provider.LayoutUtilityPageEntryLayoutProvider;
+import com.liferay.login.web.constants.LoginPortletKeys;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.include.PageInclude;
 import com.liferay.taglib.portlet.RenderURLTag;
 import com.liferay.taglib.ui.IconTag;
 
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.Objects;
 
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Shuyang Zhou
  */
 @Component(
-	immediate = true,
 	property = {
 		"login.web.navigation.position=post", "service.ranking:Integer=100"
 	},
@@ -51,6 +51,20 @@ public class ForgetPasswordNavigationPostPageInclude implements PageInclude {
 		String mvcRenderCommandName = httpServletRequest.getParameter(
 			"mvcRenderCommandName");
 
+		if (FeatureFlagManagerUtil.isEnabled("LPD-6378")) {
+			PortletConfig portletConfig =
+				(PortletConfig)httpServletRequest.getAttribute(
+					JavaConstants.JAVAX_PORTLET_CONFIG);
+
+			String portletName = portletConfig.getPortletName();
+
+			if (portletName.equals(LoginPortletKeys.FORGOT_PASSWORD) &&
+				Validator.isNull(mvcRenderCommandName)) {
+
+				return;
+			}
+		}
+
 		if (Objects.equals(mvcRenderCommandName, "/login/forgot_password")) {
 			return;
 		}
@@ -65,26 +79,53 @@ public class ForgetPasswordNavigationPostPageInclude implements PageInclude {
 			return;
 		}
 
-		RenderURLTag renderURLTag = new RenderURLTag();
+		try {
+			Layout layout =
+				_layoutUtilityPageEntryLayoutProvider.
+					getDefaultLayoutUtilityPageEntryLayout(
+						themeDisplay.getScopeGroupId(),
+						LayoutUtilityPageEntryConstants.TYPE_FORGOT_PASSWORD);
 
-		renderURLTag.setPageContext(pageContext);
+			String forgetPasswordURL = null;
 
-		renderURLTag.addParam("saveLastPath", Boolean.FALSE.toString());
-		renderURLTag.addParam("mvcRenderCommandName", "/login/forgot_password");
-		renderURLTag.setVar("forgotPasswordURL");
-		renderURLTag.setWindowState(WindowState.MAXIMIZED.toString());
+			if (layout != null) {
+				forgetPasswordURL = _portal.getLayoutURL(layout, themeDisplay);
+			}
+			else {
+				RenderURLTag renderURLTag = new RenderURLTag();
 
-		renderURLTag.doTag(pageContext);
+				renderURLTag.setPageContext(pageContext);
 
-		String forgetPasswordURL = (String)pageContext.getAttribute(
-			"forgotPasswordURL");
+				renderURLTag.addParam("saveLastPath", Boolean.FALSE.toString());
+				renderURLTag.addParam(
+					"mvcRenderCommandName", "/login/forgot_password");
+				renderURLTag.setVar("forgotPasswordURL");
+				renderURLTag.setWindowState(WindowState.MAXIMIZED.toString());
 
-		IconTag iconTag = new IconTag();
+				renderURLTag.doTag(pageContext);
 
-		iconTag.setMessage("forgot-password");
-		iconTag.setUrl(forgetPasswordURL);
+				forgetPasswordURL = (String)pageContext.getAttribute(
+					"forgotPasswordURL");
+			}
 
-		iconTag.doTag(pageContext);
+			IconTag iconTag = new IconTag();
+
+			iconTag.setCssClass("text-4");
+			iconTag.setMessage("forgot-password");
+			iconTag.setUrl(forgetPasswordURL);
+
+			iconTag.doTag(pageContext);
+		}
+		catch (Exception exception) {
+			throw new JspException(exception);
+		}
 	}
+
+	@Reference
+	private LayoutUtilityPageEntryLayoutProvider
+		_layoutUtilityPageEntryLayoutProvider;
+
+	@Reference
+	private Portal _portal;
 
 }

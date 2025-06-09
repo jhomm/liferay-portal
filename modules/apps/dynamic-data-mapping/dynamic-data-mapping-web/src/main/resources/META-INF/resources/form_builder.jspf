@@ -1,27 +1,26 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%
-String defaultLanguageId = LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault());
-
 Locale[] availableLocales = {LocaleUtil.getSiteDefault()};
+String defaultLanguageId = LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault());
+boolean hasDDMDocumentLibraryDataType = false;
 
 if (Validator.isNotNull(script)) {
 	try {
 		DDMForm ddmForm = DDMUtil.getDDMForm(script);
+
+		for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
+			if (StringUtil.equals(ddmFormField.getType(), "ddm-documentlibrary")) {
+				hasDDMDocumentLibraryDataType = true;
+
+				break;
+			}
+		}
 
 		String ddmFormDefaultLanguageId = LocaleUtil.toLanguageId(ddmForm.getDefaultLocale());
 
@@ -40,7 +39,7 @@ if (Validator.isNotNull(script)) {
 }
 %>
 
-<div class="separator"><!-- --></div>
+<hr class="separator" />
 
 <div class="alert alert-danger hide lfr-message-response" id="<portlet:namespace />messageContainer"></div>
 
@@ -48,22 +47,122 @@ if (Validator.isNotNull(script)) {
 	names='<%= LanguageUtil.get(request, "view[action]") + "," + LanguageUtil.get(request, "source") %>'
 	refresh="<%= false %>"
 >
+	<div class="alert alert-info ddm-documents-and-media-field lfr-message-response <%= hasDDMDocumentLibraryDataType ? StringPool.BLANK : "hide" %>">
+		<liferay-ui:message key="document-permissions-are-not-inherited-from-the-dynamic-data-list-record" />
+	</div>
+
 	<liferay-ui:section>
 		<div id="<portlet:namespace />formBuilderTab">
-			<aui:translation-manager availableLocales="<%= availableLocales %>" changeableDefaultLanguage="<%= changeableDefaultLanguage %>" defaultLanguageId="<%= defaultLanguageId %>" id="translationManager" initialize="<%= false %>" readOnly="<%= false %>" />
+			<div class="lfr-translation-manager" id="<portlet:namespace />translationManager">
+				<div class="lfr-translation-manager-content">
+					<label class="lfr-translation-manager-default-locale-label" for="<portlet:namespace />defaultLanguageId"><liferay-ui:message key="default-language" />:</label>
+
+					<span class="label label-default label-lg lfr-translation-manager-default-locale-text lfr-translation-manager-translation lfr-translation-manager-translation-editing">
+
+						<%
+						Locale defaultLocale = LocaleUtil.fromLanguageId(defaultLanguageId);
+						%>
+
+						<img alt="<%= HtmlUtil.escapeAttribute(defaultLocale.getDisplayName(locale)) %>" src="<%= HtmlUtil.escapeAttribute(themeDisplay.getPathThemeImages() + "/language/" + defaultLanguageId + ".png") %>" />
+
+						<%= defaultLocale.getDisplayName(locale) %>
+					</span>
+
+					<select class="form-control hide lfr-translation-manager-default-locale">
+
+						<%
+						Set<Locale> locales = LanguageUtil.getAvailableLocales(themeDisplay.getSiteGroupId());
+
+						for (Locale curLocale : locales) {
+						%>
+
+							<aui:option label="<%= curLocale.getDisplayName(locale) %>" selected="<%= defaultLanguageId.equals(LocaleUtil.toLanguageId(curLocale)) %>" value="<%= LocaleUtil.toLanguageId(curLocale) %>" />
+
+						<%
+						}
+						%>
+
+					</select>
+
+					<c:if test="<%= changeableDefaultLanguage %>">
+						<a class="label label-default label-lg lfr-translation-manager-change-default-locale" href="javascript:void(0);"><liferay-ui:message key="change" /></a>
+					</c:if>
+
+					<liferay-ui:icon-menu
+						cssClass="lfr-translation-manager-icon-menu"
+						direction="down"
+						icon="../aui/plus"
+						message='<%= LanguageUtil.get(resourceBundle, "add-translation") %>'
+						showArrow="<%= true %>"
+						showWhenSingleIcon="<%= true %>"
+					>
+
+						<%
+						for (Locale curLocale : locales) {
+						%>
+
+							<liferay-ui:icon
+								cssClass="lfr-translation-manager-translation-item"
+								id="<%= LocaleUtil.toLanguageId(curLocale) %>"
+								image='<%= "../language/" + LocaleUtil.toLanguageId(curLocale) %>'
+								lang="<%= LocaleUtil.toLanguageId(curLocale) %>"
+								message="<%= curLocale.getDisplayName(locale) %>"
+								url="javascript:void(0);"
+							/>
+
+						<%
+						}
+						%>
+
+					</liferay-ui:icon-menu>
+
+					<div class="alert alert-info hide lfr-translation-manager-translations-message" id="<portlet:namespace />translationsMessage">
+						<liferay-ui:message key="the-changes-in-your-translations-will-be-available-once-the-content-is-published" />
+					</div>
+
+					<c:if test="<%= availableLocales.length > 1 %>">
+						<div class="lfr-translation-manager-available-translations">
+							<label><liferay-ui:message key="available-translations" /></label>
+
+							<span class="lfr-translation-manager-available-translations-links">
+
+								<%
+								for (int i = 0; i < availableLocales.length; i++) {
+									if (defaultLanguageId.equals(LocaleUtil.toLanguageId(availableLocales[i]))) {
+										continue;
+									}
+								%>
+
+									<span class="label label-default label-lg lfr-translation-manager-translation" locale="<%= availableLocales[i] %>">
+										<img alt="<%= HtmlUtil.escapeAttribute(availableLocales[i].getDisplayName(locale)) %>" src="<%= themeDisplay.getPathThemeImages() %>/language/<%= LocaleUtil.toLanguageId(availableLocales[i]) %>.png" />
+
+										<%= availableLocales[i].getDisplayName(locale) %>
+
+										<aui:icon cssClass="lfr-translation-manager-delete-translation" image="remove" />
+									</span>
+
+								<%
+								}
+								%>
+
+							</span>
+						</div>
+					</c:if>
+				</div>
+			</div>
 
 			<div class="diagram-builder form-builder" id="<portlet:namespace />formBuilder">
 				<div class="diagram-builder-content" id="<portlet:namespace />formBuilderContent">
 					<div class="tabbable">
 						<div class="tabbable-content">
-							<ul class="lfr-nav nav nav-underline">
+							<ul class="lfr-nav nav nav-tabs">
 								<li class="nav-item">
-									<a class="active nav-link" href="javascript:;">
+									<a class="nav-link" href="javascript:void(0);">
 										<liferay-ui:message key="fields" />
 									</a>
 								</li>
 								<li class="nav-item">
-									<a class="disabled nav-link" href="javascript:;">
+									<a class="nav-link" href="javascript:void(0);">
 										<liferay-ui:message key="settings" />
 									</a>
 								</li>
@@ -107,7 +206,7 @@ for (Locale availableLocale : LanguageUtil.getAvailableLocales(themeDisplay.getS
 }
 %>
 
-<aui:script use="aui-ace-editor,aui-datepicker-deprecated,aui-tabview,event-custom-base,json,liferay-portlet-dynamic-data-lists,liferay-portlet-dynamic-data-mapping,liferay-portlet-dynamic-data-mapping-custom-fields,liferay-xml-formatter">
+<aui:script use="aui-ace-editor,aui-datepicker-deprecated,aui-tabview,event-custom-base,json,liferay-portlet-dynamic-data-lists,liferay-portlet-dynamic-data-mapping,liferay-portlet-dynamic-data-mapping-custom-fields">
 	var Lang = A.Lang;
 
 	var STR_VALUE = 'value';
@@ -245,7 +344,8 @@ for (Locale availableLocale : LanguageUtil.getAvailableLocales(themeDisplay.getS
 		availableFields: availableFields,
 		boundingBox: '#<portlet:namespace />formBuilder',
 		enableEditing: false,
-		fieldNameEditionDisabled: <%= (structure != null) && (DDMStorageLinkLocalServiceUtil.getStructureStorageLinksCount(structure.getStructureId()) > 0) %>,
+		fieldNameEditionDisabled:
+			<%= (structure != null) && (DDMStorageLinkLocalServiceUtil.getStructureStorageLinksCount(structure.getStructureId()) > 0) %>,
 
 		<c:if test="<%= Validator.isNotNull(fieldsJSONArrayString) %>">
 			fields: <%= fieldsJSONArrayString %>,
@@ -311,13 +411,11 @@ for (Locale availableLocale : LanguageUtil.getAvailableLocales(themeDisplay.getS
 
 	Liferay.on('destroyPortlet', onDestroyPortlet);
 
-	window[
-		'<%= HtmlUtil.escapeJS(portletResourceNamespace) %>formBuilder'
-	] = formBuilder;
+	window['<%= HtmlUtil.escapeJS(portletResourceNamespace) %>formBuilder'] =
+		formBuilder;
 
-	window[
-		'<%= HtmlUtil.escapeJS(portletResourceNamespace) %>getContentValue'
-	] = getContentValue;
+	window['<%= HtmlUtil.escapeJS(portletResourceNamespace) %>getContentValue'] =
+		getContentValue;
 
 	Liferay.on('<portlet:namespace />saveTemplate', (event) => {
 		A.one('#<portlet:namespace />scriptContent').val(getContentValue());

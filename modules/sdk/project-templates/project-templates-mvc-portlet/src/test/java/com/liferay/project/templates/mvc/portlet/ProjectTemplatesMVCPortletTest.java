@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.mvc.portlet;
@@ -17,7 +8,6 @@ package com.liferay.project.templates.mvc.portlet;
 import com.liferay.maven.executor.MavenExecutor;
 import com.liferay.project.templates.BaseProjectTemplatesTestCase;
 import com.liferay.project.templates.extensions.util.Validator;
-import com.liferay.project.templates.extensions.util.VersionUtil;
 import com.liferay.project.templates.util.FileTestUtil;
 
 import java.io.File;
@@ -46,11 +36,13 @@ public class ProjectTemplatesMVCPortletTest
 	@ClassRule
 	public static final MavenExecutor mavenExecutor = new MavenExecutor();
 
-	@Parameterized.Parameters(name = "Testcase-{index}: testing {0}")
+	@Parameterized.Parameters(name = "Testcase-{index}: testing {1} {0}")
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(
 			new Object[][] {
-				{"7.0.6-2"}, {"7.1.3-1"}, {"7.2.1-1"}, {"7.3.7"}, {"7.4.1-1"}
+				{"dxp", "7.0.10.17"}, {"dxp", "7.1.10.7"}, {"dxp", "7.2.10.7"},
+				{"portal", "7.3.7"}, {"portal", "7.4.3.56"},
+				{"dxp", "2024.q1.1"}
 			});
 	}
 
@@ -70,24 +62,21 @@ public class ProjectTemplatesMVCPortletTest
 		_gradleDistribution = URI.create(gradleDistribution);
 	}
 
-	public ProjectTemplatesMVCPortletTest(String liferayVersion) {
+	public ProjectTemplatesMVCPortletTest(
+		String liferayProduct, String liferayVersion) {
+
+		_liferayProduct = liferayProduct;
 		_liferayVersion = liferayVersion;
 	}
 
 	@Test
 	public void testBuildTemplateMVCPortlet() throws Exception {
 		File gradleProjectDir = testBuildTemplatePortlet(
-			temporaryFolder, "mvc-portlet", "foo", "foo", _liferayVersion,
-			mavenExecutor, _gradleDistribution);
+			temporaryFolder, "mvc-portlet", "foo", "foo", _liferayProduct,
+			_liferayVersion, mavenExecutor, _gradleDistribution);
 
 		testContains(
 			gradleProjectDir, "bnd.bnd", "Export-Package: foo.constants");
-
-		if (VersionUtil.getMinorVersion(_liferayVersion) < 3) {
-			testContains(
-				gradleProjectDir, "build.gradle", DEPENDENCY_JAVAX_PORTLET_API,
-				DEPENDENCY_JAVAX_SERVLET_API, DEPENDENCY_ORG_OSGI_ANNOTATIONS);
-		}
 
 		testContains(
 			gradleProjectDir, "src/main/java/foo/constants/FooPortletKeys.java",
@@ -108,6 +97,7 @@ public class ProjectTemplatesMVCPortletTest
 
 	private static URI _gradleDistribution;
 
+	private final String _liferayProduct;
 	private final String _liferayVersion;
 
 }

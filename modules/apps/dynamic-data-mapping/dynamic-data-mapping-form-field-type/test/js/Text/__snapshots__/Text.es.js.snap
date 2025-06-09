@@ -6,31 +6,42 @@ exports[`Field Text has a helptext 1`] = `
     aria-labelledby="textField_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-describedby="textField_fieldFeedback"
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    <span
-      aria-hidden="true"
-      class="form-text"
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
     >
-      Type something
-    </span>
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+      <div>
+        Type something
+      </div>
+    </div>
     <span
       class="sr-only"
       id="textField_fieldDetails"
     >
       Type something
-      <br />
     </span>
   </div>
 </div>
@@ -43,24 +54,43 @@ exports[`Field Text has a label 1`] = `
     data-field-name="textField"
   >
     <label
+      aria-labelledby="textField_fieldDetails"
       class="ddm-label"
-      for="textField"
-      tabindex="0"
     >
       label
     </label>
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
+    <span
+      class="sr-only"
+      id="textField_fieldDetails"
+    >
+      label
+    </span>
   </div>
 </div>
 `;
@@ -68,24 +98,37 @@ exports[`Field Text has a label 1`] = `
 exports[`Field Text has a placeholder 1`] = `
 <div>
   <div
-    aria-labelledby="textField_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      placeholder="Placeholder"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+      title="Placeholder"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        placeholder="Placeholder"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -93,23 +136,36 @@ exports[`Field Text has a placeholder 1`] = `
 exports[`Field Text has a value 1`] = `
 <div>
   <div
-    aria-labelledby="textField_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      type="text"
-      value="value"
-    />
+    <div
+      data-tooltip-align="top"
+      title="value"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        type="text"
+        value="value"
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -117,24 +173,35 @@ exports[`Field Text has a value 1`] = `
 exports[`Field Text has an id 1`] = `
 <div>
   <div
-    aria-labelledby="Id_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      id="Id"
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="Id"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="Id_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -142,23 +209,35 @@ exports[`Field Text has an id 1`] = `
 exports[`Field Text is not readOnly 1`] = `
 <div>
   <div
-    aria-labelledby="textField_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -166,23 +245,36 @@ exports[`Field Text is not readOnly 1`] = `
 exports[`Field Text is not required 1`] = `
 <div>
   <div
-    aria-labelledby="textField_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-invalid="true"
+        aria-required="false"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -190,24 +282,36 @@ exports[`Field Text is not required 1`] = `
 exports[`Field Text is readOnly 1`] = `
 <div>
   <div
-    aria-labelledby="textField_fieldDetails"
     class="form-group hide"
     data-field-name="textField"
-    tabindex="0"
   >
-    <input
-      class="form-control ddm-field-text"
-      disabled=""
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        disabled=""
+        id="textField"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -219,24 +323,43 @@ exports[`Field Text renders Label if showLabel is true 1`] = `
     data-field-name="textField"
   >
     <label
+      aria-labelledby="textField_fieldDetails"
       class="ddm-label"
-      for="textField"
-      tabindex="0"
     >
       text
     </label>
-    <input
-      class="form-control ddm-field-text"
-      name="textField"
-      type="text"
-      value=""
-    />
+    <div
+      data-tooltip-align="top"
+    >
+      <input
+        aria-invalid="true"
+        class="form-control ddm-field-text"
+        id="textField"
+        name="textField"
+        type="text"
+        value=""
+      />
+    </div>
     <input
       name="textField_edited"
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="textField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
+    <span
+      class="sr-only"
+      id="textField_fieldDetails"
+    >
+      text
+    </span>
   </div>
 </div>
 `;

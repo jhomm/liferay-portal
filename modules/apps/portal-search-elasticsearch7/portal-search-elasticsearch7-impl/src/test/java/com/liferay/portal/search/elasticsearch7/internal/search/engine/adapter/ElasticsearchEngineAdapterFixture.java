@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
 
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch7.internal.document.DefaultElasticsearchDocumentFactory;
 import com.liferay.portal.search.elasticsearch7.internal.document.ElasticsearchDocumentFactory;
@@ -38,8 +30,12 @@ public class ElasticsearchEngineAdapterFixture {
 
 	public void setUp() {
 		_searchEngineAdapter = createSearchEngineAdapter(
-			_elasticsearchClientResolver, getElasticsearchDocumentFactory(),
+			_elasticsearchClientResolver, _getElasticsearchDocumentFactory(),
 			_facetProcessor);
+	}
+
+	public void tearDown() {
+		_searchRequestExecutorFixture.tearDown();
 	}
 
 	protected static SearchEngineAdapter createSearchEngineAdapter(
@@ -70,13 +66,12 @@ public class ElasticsearchEngineAdapterFixture {
 				}
 			};
 
-		SearchRequestExecutorFixture searchRequestExecutorFixture =
-			new SearchRequestExecutorFixture() {
-				{
-					setElasticsearchClientResolver(elasticsearchClientResolver);
-					setFacetProcessor(facetProcessor);
-				}
-			};
+		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
+			{
+				setElasticsearchClientResolver(elasticsearchClientResolver);
+				setFacetProcessor(facetProcessor);
+			}
+		};
 
 		SnapshotRequestExecutorFixture snapshotRequestExecutorFixture =
 			new SnapshotRequestExecutorFixture() {
@@ -88,34 +83,33 @@ public class ElasticsearchEngineAdapterFixture {
 		clusterRequestExecutorFixture.setUp();
 		documentRequestExecutorFixture.setUp();
 		indexRequestExecutorFixture.setUp();
-		searchRequestExecutorFixture.setUp();
+		_searchRequestExecutorFixture.setUp();
 		snapshotRequestExecutorFixture.setUp();
 
-		return new ElasticsearchSearchEngineAdapterImpl() {
-			{
-				setClusterRequestExecutor(
-					clusterRequestExecutorFixture.getClusterRequestExecutor());
-				setDocumentRequestExecutor(
-					documentRequestExecutorFixture.
-						getDocumentRequestExecutor());
-				setIndexRequestExecutor(
-					indexRequestExecutorFixture.getIndexRequestExecutor());
-				setSearchRequestExecutor(
-					searchRequestExecutorFixture.getSearchRequestExecutor());
-				setSnapshotRequestExecutor(
-					snapshotRequestExecutorFixture.
-						getSnapshotRequestExecutor());
-				setThrowOriginalExceptions(true);
-			}
-		};
-	}
+		SearchEngineAdapter searchEngineAdapter =
+			new ElasticsearchSearchEngineAdapterImpl() {
+				{
+					setThrowOriginalExceptions(true);
+				}
+			};
 
-	protected ElasticsearchDocumentFactory getElasticsearchDocumentFactory() {
-		if (_elasticsearchDocumentFactory != null) {
-			return _elasticsearchDocumentFactory;
-		}
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_clusterRequestExecutor",
+			clusterRequestExecutorFixture.getClusterRequestExecutor());
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_documentRequestExecutor",
+			documentRequestExecutorFixture.getDocumentRequestExecutor());
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_indexRequestExecutor",
+			indexRequestExecutorFixture.getIndexRequestExecutor());
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_searchRequestExecutor",
+			_searchRequestExecutorFixture.getSearchRequestExecutor());
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_snapshotRequestExecutor",
+			snapshotRequestExecutorFixture.getSnapshotRequestExecutor());
 
-		return new DefaultElasticsearchDocumentFactory();
+		return searchEngineAdapter;
 	}
 
 	protected void setElasticsearchClientResolver(
@@ -135,6 +129,16 @@ public class ElasticsearchEngineAdapterFixture {
 
 		_facetProcessor = facetProcessor;
 	}
+
+	private ElasticsearchDocumentFactory _getElasticsearchDocumentFactory() {
+		if (_elasticsearchDocumentFactory != null) {
+			return _elasticsearchDocumentFactory;
+		}
+
+		return new DefaultElasticsearchDocumentFactory();
+	}
+
+	private static SearchRequestExecutorFixture _searchRequestExecutorFixture;
 
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 	private ElasticsearchDocumentFactory _elasticsearchDocumentFactory;

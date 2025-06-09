@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.cluster;
@@ -48,16 +39,6 @@ public class ReplicasClusterListener
 		}
 	}
 
-	protected int getNumberOfReplicas() {
-		int liferayClusterSize = _replicasClusterContext.getClusterSize();
-
-		if (liferayClusterSize > 0) {
-			return liferayClusterSize - 1;
-		}
-
-		return 0;
-	}
-
 	protected synchronized void updateNumberOfReplicas() {
 		if (!_replicasClusterContext.isEmbeddedOperationMode()) {
 			return;
@@ -68,7 +49,7 @@ public class ReplicasClusterListener
 				_replicasClusterContext.getReplicasManager();
 
 			replicasManager.updateNumberOfReplicas(
-				getNumberOfReplicas(),
+				_getNumberOfReplicas(),
 				_replicasClusterContext.getTargetIndexNames());
 		}
 		catch (Exception exception) {
@@ -76,6 +57,16 @@ public class ReplicasClusterListener
 				_log.warn("Unable to update number of replicas", exception);
 			}
 		}
+	}
+
+	private int _getNumberOfReplicas() {
+		int liferayClusterSize = _replicasClusterContext.getClusterSize();
+
+		if (liferayClusterSize > 0) {
+			return liferayClusterSize - 1;
+		}
+
+		return 0;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

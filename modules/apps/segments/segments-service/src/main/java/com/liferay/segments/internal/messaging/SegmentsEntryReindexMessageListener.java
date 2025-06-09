@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal.messaging;
 
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -21,19 +13,22 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageListener;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
-import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.search.spi.reindexer.BulkReindexer;
 import com.liferay.segments.internal.constants.SegmentsDestinationNames;
 import com.liferay.segments.model.SegmentsEntry;
+import com.liferay.segments.model.SegmentsEntryRelTable;
 import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
 import com.liferay.segments.service.SegmentsEntryLocalService;
 import com.liferay.segments.service.SegmentsEntryRelLocalService;
@@ -49,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Preston Crary
  */
 @Component(
-	immediate = true,
 	property = "destination.name=" + SegmentsDestinationNames.SEGMENTS_ENTRY_REINDEX,
 	service = MessageListener.class
 )
@@ -57,30 +51,19 @@ public class SegmentsEntryReindexMessageListener extends BaseMessageListener {
 
 	@Override
 	protected void doReceive(Message message) {
-		String type = message.getString("type");
-
-		Indexer<Object> indexer = _indexerRegistry.getIndexer(type);
-
-		if (indexer == null) {
-			return;
-		}
-
 		long segmentsEntryId = message.getLong("segmentsEntryId");
 
 		if (segmentsEntryId == 0) {
 			return;
 		}
 
-		long companyId = message.getLong("companyId");
-
 		try {
-			Set<Long> classPKs = SetUtil.symmetricDifference(
-				_getOldClassPKs(companyId, segmentsEntryId, indexer),
-				_getNewClassPKs(segmentsEntryId));
+			Set<Long> newClassPKs = _getNewClassPKs(segmentsEntryId);
 
-			for (long classPK : classPKs) {
-				indexer.reindex(type, classPK);
-			}
+			_updateDatabase(segmentsEntryId, newClassPKs);
+
+			_updateIndex(
+				message.getLong("companyId"), segmentsEntryId, newClassPKs);
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
@@ -96,31 +79,24 @@ public class SegmentsEntryReindexMessageListener extends BaseMessageListener {
 			_segmentsEntryProviderRegistry.getSegmentsEntryClassPKs(
 				segmentsEntryId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
-		SegmentsEntry segmentsEntry =
-			_segmentsEntryLocalService.fetchSegmentsEntry(segmentsEntryId);
-
-		if ((segmentsEntry != null) &&
-			(segmentsEntry.getCriteriaObj() != null)) {
-
-			_segmentsEntryRelLocalService.deleteSegmentsEntryRels(
-				segmentsEntryId);
-
-			ServiceContext serviceContext = new ServiceContext();
-
-			serviceContext.setScopeGroupId(segmentsEntry.getGroupId());
-			serviceContext.setUserId(segmentsEntry.getUserId());
-
-			_segmentsEntryRelLocalService.addSegmentsEntryRels(
-				segmentsEntryId,
-				_portal.getClassNameId(segmentsEntry.getType()), classPKs,
-				serviceContext);
-		}
-
 		return SetUtil.fromArray(classPKs);
 	}
 
-	private Set<Long> _getOldClassPKs(
-			long companyId, long segmentsEntryId, Indexer<Object> indexer)
+	private Set<Long> _getOldDatabaseClassPKs(long segmentsEntryId) {
+		Iterable<Long> iterable = _segmentsEntryLocalService.dslQuery(
+			DSLQueryFactoryUtil.select(
+				SegmentsEntryRelTable.INSTANCE.classPK
+			).from(
+				SegmentsEntryRelTable.INSTANCE
+			).where(
+				SegmentsEntryRelTable.INSTANCE.segmentsEntryId.eq(
+					segmentsEntryId)
+			));
+
+		return SetUtil.fromIterator(iterable.iterator());
+	}
+
+	private Set<Long> _getOldIndexClassPKs(long companyId, long segmentsEntryId)
 		throws SearchException {
 
 		SearchContext searchContext = new SearchContext();
@@ -129,7 +105,7 @@ public class SegmentsEntryReindexMessageListener extends BaseMessageListener {
 			"segmentsEntryIds", new long[] {segmentsEntryId});
 		searchContext.setCompanyId(companyId);
 
-		Hits hits = indexer.search(searchContext);
+		Hits hits = _indexer.search(searchContext);
 
 		Set<Long> classPKsSet = new HashSet<>();
 
@@ -141,11 +117,67 @@ public class SegmentsEntryReindexMessageListener extends BaseMessageListener {
 		return classPKsSet;
 	}
 
+	private void _updateDatabase(long segmentsEntryId, Set<Long> newClassPKs)
+		throws PortalException {
+
+		SegmentsEntry segmentsEntry =
+			_segmentsEntryLocalService.fetchSegmentsEntry(segmentsEntryId);
+
+		if ((segmentsEntry == null) ||
+			(segmentsEntry.getCriteriaObj() == null)) {
+
+			return;
+		}
+
+		Set<Long> oldClassPKs = _getOldDatabaseClassPKs(segmentsEntryId);
+
+		Set<Long> addClassPKs = new HashSet<>(newClassPKs);
+		Set<Long> deleteClassPKs = new HashSet<>();
+
+		for (Long oldClassPK : oldClassPKs) {
+			if (!addClassPKs.remove(oldClassPK)) {
+				deleteClassPKs.add(oldClassPK);
+			}
+		}
+
+		long classNameId = _portal.getClassNameId(User.class);
+
+		_segmentsEntryRelLocalService.deleteSegmentsEntryRels(
+			segmentsEntryId, classNameId,
+			ArrayUtil.toLongArray(deleteClassPKs));
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setScopeGroupId(segmentsEntry.getGroupId());
+		serviceContext.setUserId(segmentsEntry.getUserId());
+
+		_segmentsEntryRelLocalService.addSegmentsEntryRels(
+			segmentsEntryId, classNameId, ArrayUtil.toLongArray(addClassPKs),
+			serviceContext);
+	}
+
+	private void _updateIndex(
+			long companyId, long segmentsEntryId, Set<Long> newClassPKs)
+		throws PortalException {
+
+		_bulkReindexer.reindex(
+			companyId,
+			SetUtil.symmetricDifference(
+				_getOldIndexClassPKs(companyId, segmentsEntryId), newClassPKs));
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		SegmentsEntryReindexMessageListener.class);
 
-	@Reference
-	private IndexerRegistry _indexerRegistry;
+	@Reference(
+		target = "(indexer.class.name=com.liferay.portal.kernel.model.User)"
+	)
+	private BulkReindexer _bulkReindexer;
+
+	@Reference(
+		target = "(indexer.class.name=com.liferay.portal.kernel.model.User)"
+	)
+	private Indexer<User> _indexer;
 
 	@Reference
 	private Portal _portal;

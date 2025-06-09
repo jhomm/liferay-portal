@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.rss.util;
@@ -17,13 +8,13 @@ package com.liferay.rss.util;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.portlet.ResourceURL;
+import jakarta.portlet.ResourceURL;
 
 /**
  * @author Brian Wing Shun Chan
@@ -128,15 +119,11 @@ public class RSSUtil {
 			return VERSION_DEFAULT;
 		}
 
-		int x = format.indexOf("10");
-
-		if (x >= 0) {
+		if (format.contains("10") || format.contains("1.0")) {
 			return 1.0;
 		}
 
-		int y = format.indexOf("20");
-
-		if (y >= 0) {
+		if (format.contains("20") || format.contains("2.0")) {
 			return 2.0;
 		}
 
@@ -177,26 +164,27 @@ public class RSSUtil {
 		String name) {
 
 		if ((delta > 0) && (delta != SearchContainer.DEFAULT_DELTA)) {
-			url = HttpUtil.addParameter(url, "max", delta);
+			url = HttpComponentsUtil.addParameter(url, "max", delta);
 		}
 
 		if (Validator.isNotNull(displayStyle) &&
 			!displayStyle.equals(RSSUtil.DISPLAY_STYLE_DEFAULT)) {
 
-			url = HttpUtil.addParameter(url, "displayStyle", displayStyle);
+			url = HttpComponentsUtil.addParameter(
+				url, "displayStyle", displayStyle);
 		}
 
 		if (Validator.isNotNull(feedType) &&
 			!feedType.equals(RSSUtil.FEED_TYPE_DEFAULT)) {
 
-			url = HttpUtil.addParameter(
+			url = HttpComponentsUtil.addParameter(
 				url, "type", getFeedTypeFormat(feedType));
-			url = HttpUtil.addParameter(
+			url = HttpComponentsUtil.addParameter(
 				url, "version", String.valueOf(getFeedTypeVersion(feedType)));
 		}
 
 		if (Validator.isNotNull(name)) {
-			url = HttpUtil.addParameter(url, "feedTitle", name);
+			url = HttpComponentsUtil.addParameter(url, "feedTitle", name);
 		}
 
 		return url;

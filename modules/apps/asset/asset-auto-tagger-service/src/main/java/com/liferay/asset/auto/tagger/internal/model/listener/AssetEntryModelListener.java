@@ -1,27 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.internal.model.listener;
 
-import com.liferay.asset.auto.tagger.internal.AssetAutoTaggerHelper;
+import com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfiguration;
+import com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfigurationFactory;
 import com.liferay.asset.auto.tagger.internal.constants.AssetAutoTaggerDestinationNames;
+import com.liferay.asset.auto.tagger.internal.util.AssetAutoTaggerUtil;
 import com.liferay.asset.auto.tagger.model.AssetAutoTaggerEntry;
 import com.liferay.asset.auto.tagger.service.AssetAutoTaggerEntryLocalService;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.DestinationConfiguration;
 import com.liferay.portal.kernel.messaging.DestinationFactory;
@@ -29,7 +23,13 @@ import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 
@@ -45,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alejandro Tardín
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class AssetEntryModelListener extends BaseModelListener<AssetEntry> {
 
 	@Override
@@ -71,22 +71,34 @@ public class AssetEntryModelListener extends BaseModelListener<AssetEntry> {
 			AssetEntry originalAssetEntry, AssetEntry assetEntry)
 		throws ModelListenerException {
 
+		boolean updateAutoTags = _isUpdateAutoTags();
+
 		AssetEntry assetEntryFromDatabase =
 			_assetEntryLocalService.fetchAssetEntry(assetEntry.getEntryId());
 
-		if (assetEntryFromDatabase.getPublishDate() == null) {
+		if (updateAutoTags ||
+			(assetEntryFromDatabase.getPublishDate() == null)) {
+
 			TransactionCommitCallbackUtil.registerCallback(
 				(Callable<Void>)() -> {
-					if ((assetEntry.getPublishDate() == null) ||
-						!ListUtil.isEmpty(assetEntry.getTags()) ||
-						!_assetAutoTaggerHelper.isAutoTaggable(assetEntry)) {
+					if (!updateAutoTags &&
+						((assetEntry.getPublishDate() == null) ||
+						 ListUtil.isNotEmpty(assetEntry.getTags()) ||
+						 !AssetAutoTaggerUtil.isAutoTaggable(
+							 _getAssetAutoTaggerConfiguration(assetEntry),
+							 assetEntry))) {
 
 						return null;
 					}
 
 					Message message = new Message();
 
-					message.setPayload(assetEntry);
+					message.setValues(
+						HashMapBuilder.<String, Object>put(
+							"assetEntry", assetEntry
+						).put(
+							"groupId", _getGroupId(assetEntry)
+						).build());
 
 					_messageBus.sendMessage(
 						AssetAutoTaggerDestinationNames.ASSET_AUTO_TAGGER,
@@ -118,11 +130,50 @@ public class AssetEntryModelListener extends BaseModelListener<AssetEntry> {
 		_destinationServiceRegistration.unregister();
 	}
 
-	@Reference
-	private AssetAutoTaggerEntryLocalService _assetAutoTaggerEntryLocalService;
+	private AssetAutoTaggerConfiguration _getAssetAutoTaggerConfiguration(
+			AssetEntry assetEntry)
+		throws PortalException {
+
+		return _assetAutoTaggerConfigurationFactory.
+			getGroupAssetAutoTaggerConfiguration(
+				_groupLocalService.getGroup(assetEntry.getGroupId()));
+	}
+
+	private long _getGroupId(AssetEntry assetEntry) {
+		Long groupId = GroupThreadLocal.getGroupId();
+
+		if ((groupId != null) && (groupId != 0)) {
+			return groupId;
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext != null) {
+			return serviceContext.getScopeGroupId();
+		}
+
+		return assetEntry.getGroupId();
+	}
+
+	private boolean _isUpdateAutoTags() {
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return false;
+		}
+
+		return GetterUtil.getBoolean(
+			serviceContext.getAttribute("updateAutoTags"));
+	}
 
 	@Reference
-	private AssetAutoTaggerHelper _assetAutoTaggerHelper;
+	private AssetAutoTaggerConfigurationFactory
+		_assetAutoTaggerConfigurationFactory;
+
+	@Reference
+	private AssetAutoTaggerEntryLocalService _assetAutoTaggerEntryLocalService;
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
@@ -131,6 +182,9 @@ public class AssetEntryModelListener extends BaseModelListener<AssetEntry> {
 	private DestinationFactory _destinationFactory;
 
 	private ServiceRegistration<Destination> _destinationServiceRegistration;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private MessageBus _messageBus;

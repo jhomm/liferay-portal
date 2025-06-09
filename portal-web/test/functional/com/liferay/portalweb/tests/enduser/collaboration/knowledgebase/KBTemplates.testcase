@@ -1,0 +1,377 @@
+@component-name = "portal-content-management"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Knowledge Base";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		Refresh();
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			KBTemplate.tearDownCP();
+
+			KBArticle.tearDownCP();
+		}
+	}
+
+	@e2etest
+	@priority = 4
+	@refactordone
+	test CanAddArticleWithTemplate {
+		property portal.acceptance = "true";
+
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.addCP(
+			kbArticleAddViaTemplate = "true",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.viewCP(
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+	}
+
+	@e2etest
+	@priority = 4
+	@refactordone
+	test CanAddTemplate {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBTemplate.addCP(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBTemplate.viewCPViaAddTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+	}
+
+	@description = "This test ensures that the template can be added by center new button."
+	@e2etest
+	@priority = 4
+	test CanAddTemplateThroughCenterNewButton {
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.addCP(
+			addByCenterButton = "true",
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.viewTemplatesThroughPageTreePanel(kbTemplatesList = "Knowledge Base Template Title");
+	}
+
+	@description = "This test ensures that users can delete the kb template from the center pane."
+	@priority = 5
+	test CanDeleteTemplateEntryViaCenterPane {
+		property portal.acceptance = "true";
+
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.deleteTemplate(kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.viewNoTemplates();
+	}
+
+	@description = "This test ensures that users can delete the kb template from the navigation pane."
+	@priority = 5
+	test CanDeleteTemplateEntryViaNavigationPane {
+		property portal.acceptance = "true";
+
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.deleteTemplate(
+			kbTemplateTitle = "Knowledge Base Template Title",
+			pageTreePanel = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.viewNoTemplates();
+	}
+
+	@description = "This test ensures that users can edit the kb template from the navigation pane."
+	@priority = 4
+	test CanEditTemplateEntryViaNavigationPane {
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.editTemplate(
+			kbTemplateTitle = "Knowledge Base Template Title",
+			kbTemplateTitleEdit = "Knowledge Base Template Title Edit",
+			pageTreePanel = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Template Title Edit");
+
+		KBTemplate.viewTemplatesThroughPageTreePanel(kbTemplatesList = "Knowledge Base Template Title Edit");
+	}
+
+	@description = "This test ensures that users can edit the kb template permissions from the center pane."
+	@priority = 4
+	test CanEditTemplatePermissionsViaCenterPane {
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Permissions",
+			rowEntry = "Knowledge Base Template Title");
+
+		PermissionsInline.addOrRemoveAnyPermissionsFromSpecificRole(
+			addOrRemoveViewPermission = "Add",
+			permissionsKeyList = "INLINE_PERMISSIONS_VIEW_CHECKBOX",
+			roleTitle = "site member");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.gotoTemplateMenuItemThroughPageTreePanel(
+			kbTemplateTitle = "Knowledge Base Template Title",
+			menuItem = "Permissions");
+
+		IFrame.selectPermissionsFrame();
+
+		PermissionsInline.viewPermissionsChecked(
+			permissionDefinitionKey = "INLINE_PERMISSIONS_VIEW_CHECKBOX",
+			roleTitle = "site member");
+	}
+
+	@description = "This test ensures that users can edit the kb template permissions from the navigation pane."
+	@priority = 4
+	test CanEditTemplatePermissionsViaNavigationPane {
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.gotoTemplateMenuItemThroughPageTreePanel(
+			kbTemplateTitle = "Knowledge Base Template Title",
+			menuItem = "Permissions");
+
+		PermissionsInline.addOrRemoveAnyPermissionsFromSpecificRole(
+			addOrRemoveViewPermission = "Add",
+			permissionsKeyList = "INLINE_PERMISSIONS_VIEW_CHECKBOX",
+			roleTitle = "site member");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Permissions",
+			rowEntry = "Knowledge Base Template Title");
+
+		IFrame.selectPermissionsFrame();
+
+		PermissionsInline.viewPermissionsChecked(
+			permissionDefinitionKey = "INLINE_PERMISSIONS_VIEW_CHECKBOX",
+			roleTitle = "site member");
+	}
+
+	@description = "This test ensures that users can edit the kb template from the center pane."
+	@priority = 4
+	test CanEditTemplateViaCenterPane {
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.editTemplate(
+			kbTemplateTitle = "Knowledge Base Template Title",
+			kbTemplateTitleEdit = "Knowledge Base Template Title Edit");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Template Title Edit");
+
+		KBTemplate.viewTemplatesThroughPageTreePanel(kbTemplatesList = "Knowledge Base Template Title Edit");
+	}
+
+	@description = "This test checks checks that the correct actions appear in the management toolbar for a KB template and that it is editable."
+	@priority = 4
+	test CanEditTemplateViaToolbar {
+		property custom.properties = "feature.flag.LPS-166643=true";
+
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBTemplates(siteURLKey = "guest");
+
+		KBTemplate.viewActionsDetailsToolbar(
+			kbTemplateTitle = "Knowledge Base Template Title",
+			moreActions = "true");
+
+		KBAdmin.openKBTemplates(siteURLKey = "guest");
+
+		KBTemplate.editTemplate(
+			editActionToolbar = "true",
+			kbTemplateContentEdit = "Knowledge Base Template Content Edit",
+			kbTemplateTitle = "Knowledge Base Template Title",
+			kbTemplateTitleEdit = "Knowledge Base Template Title Edit");
+
+		KBAdmin.openKBTemplates(siteURLKey = "guest");
+
+		KBTemplate.previewTemplate(
+			kbTemplateContent = "Knowledge Base Template Content Edit",
+			kbTemplateTitle = "Knowledge Base Template Title Edit");
+	}
+
+	@description = "This test ensures that users can preview the kb template from the center pane."
+	@priority = 4
+	test CanPreviewTemplateViaCenterPane {
+		property portal.acceptance = "true";
+
+		KBTemplate.addCP(
+			embedImage = "true",
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title",
+			siteURLKey = "guest",
+			uploadFileName = "Document_1.jpg");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.previewTemplate(
+			embedImage = "true",
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title",
+			viewNoCommentsPanel = "true");
+	}
+
+	@description = "This test ensures that the empty message can be displayed in the pane."
+	@priority = 3
+	test CanViewEmptyMessage {
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		KBTemplate.viewNoTemplates();
+	}
+
+	@description = "This test ensures that the article templates list can be displayed in the pane."
+	@priority = 3
+	test CanViewTemplatesInPane {
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content1",
+			kbTemplateTitle = "Knowledge Base Template Title1");
+
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content2",
+			kbTemplateTitle = "Knowledge Base Template Title2");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Templates");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Template Title1");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Template Title2");
+
+		KBTemplate.viewTemplatesThroughPageTreePanel(kbTemplatesList = "Knowledge Base Template Title1,Knowledge Base Template Title2");
+	}
+
+	@description = "This test checks that the checkbox, Filter & Order button, Order By button, and the search bar options appear in KB templates management toolbar."
+	@priority = 5
+	test CorrectActionsAppearInToolbar {
+		KBAdmin.openKBTemplates(siteURLKey = "guest");
+
+		KBTemplate.viewNoTemplates(disabledActionToolbar = "true");
+
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = "Knowledge Base Template Title");
+
+		KBAdmin.openKBTemplates(siteURLKey = "guest");
+
+		KBTemplate.viewActiveActionsManagementToolbar();
+	}
+
+	@description = "This test covers LPS-120917. It checks that XSS cannot be executed from the KB template name."
+	@priority = 3
+	test TemplateNameDoesNotExecuteXSS {
+		JSONKnowledgeBase.addkBTemplate(
+			kbTemplateContent = "Knowledge Base Template Content",
+			kbTemplateTitle = '''<script>alert(123)</script>''');
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		LexiconEntry.viewAddMenuItem(menuItem = '''<script>alert(123)</script>''');
+
+		AssertAlertNotPresent();
+	}
+
+}

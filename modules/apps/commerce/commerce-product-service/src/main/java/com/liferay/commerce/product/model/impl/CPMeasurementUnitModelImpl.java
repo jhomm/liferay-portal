@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
 
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.model.CPMeasurementUnitModel;
-import com.liferay.commerce.product.model.CPMeasurementUnitSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -84,21 +71,25 @@ public class CPMeasurementUnitModelImpl
 	public static final String TABLE_NAME = "CPMeasurementUnit";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"uuid_", Types.VARCHAR}, {"CPMeasurementUnitId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"name", Types.VARCHAR}, {"key_", Types.VARCHAR},
-		{"rate", Types.DOUBLE}, {"primary_", Types.BOOLEAN},
-		{"priority", Types.DOUBLE}, {"type_", Types.INTEGER},
-		{"lastPublishDate", Types.TIMESTAMP}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"CPMeasurementUnitId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"name", Types.VARCHAR},
+		{"key_", Types.VARCHAR}, {"rate", Types.DOUBLE},
+		{"primary_", Types.BOOLEAN}, {"priority", Types.DOUBLE},
+		{"type_", Types.INTEGER}, {"lastPublishDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("CPMeasurementUnitId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -116,7 +107,7 @@ public class CPMeasurementUnitModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CPMeasurementUnit (uuid_ VARCHAR(75) null,CPMeasurementUnitId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,key_ VARCHAR(75) null,rate DOUBLE,primary_ BOOLEAN,priority DOUBLE,type_ INTEGER,lastPublishDate DATE null)";
+		"create table CPMeasurementUnit (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,CPMeasurementUnitId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name STRING null,key_ VARCHAR(75) null,rate DOUBLE,primary_ BOOLEAN,priority DOUBLE,type_ INTEGER,lastPublishDate DATE null,primary key (CPMeasurementUnitId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CPMeasurementUnit";
 
@@ -133,24 +124,6 @@ public class CPMeasurementUnitModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -160,101 +133,58 @@ public class CPMeasurementUnitModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 2L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long KEY_COLUMN_BITMASK = 4L;
+	public static final long GROUPID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIMARY_COLUMN_BITMASK = 8L;
+	public static final long KEY_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 16L;
+	public static final long PRIMARY_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 32L;
+	public static final long TYPE_COLUMN_BITMASK = 32L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 64L;
+	public static final long PRIORITY_COLUMN_BITMASK = 128L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CPMeasurementUnit toModel(CPMeasurementUnitSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		CPMeasurementUnit model = new CPMeasurementUnitImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setCPMeasurementUnitId(soapModel.getCPMeasurementUnitId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setKey(soapModel.getKey());
-		model.setRate(soapModel.getRate());
-		model.setPrimary(soapModel.isPrimary());
-		model.setPriority(soapModel.getPriority());
-		model.setType(soapModel.getType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CPMeasurementUnit> toModels(
-		CPMeasurementUnitSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CPMeasurementUnit> models = new ArrayList<CPMeasurementUnit>(
-			soapModels.length);
-
-		for (CPMeasurementUnitSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.product.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.product.model.CPMeasurementUnit"));
 
 	public CPMeasurementUnitModelImpl() {
 	}
@@ -332,137 +262,184 @@ public class CPMeasurementUnitModelImpl
 	public Map<String, Function<CPMeasurementUnit, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CPMeasurementUnit, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CPMeasurementUnit>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CPMeasurementUnit.class.getClassLoader(), CPMeasurementUnit.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CPMeasurementUnit, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CPMeasurementUnit> constructor =
-				(Constructor<CPMeasurementUnit>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CPMeasurementUnit, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CPMeasurementUnit, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CPMeasurementUnit::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CPMeasurementUnit::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", CPMeasurementUnit::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				CPMeasurementUnit::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"CPMeasurementUnitId",
+				CPMeasurementUnit::getCPMeasurementUnitId);
+			attributeGetterFunctions.put(
+				"groupId", CPMeasurementUnit::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CPMeasurementUnit::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CPMeasurementUnit::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CPMeasurementUnit::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CPMeasurementUnit::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CPMeasurementUnit::getModifiedDate);
+			attributeGetterFunctions.put("name", CPMeasurementUnit::getName);
+			attributeGetterFunctions.put("key", CPMeasurementUnit::getKey);
+			attributeGetterFunctions.put("rate", CPMeasurementUnit::getRate);
+			attributeGetterFunctions.put(
+				"primary", CPMeasurementUnit::getPrimary);
+			attributeGetterFunctions.put(
+				"priority", CPMeasurementUnit::getPriority);
+			attributeGetterFunctions.put("type", CPMeasurementUnit::getType);
+			attributeGetterFunctions.put(
+				"lastPublishDate", CPMeasurementUnit::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CPMeasurementUnit, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CPMeasurementUnit, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CPMeasurementUnit, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CPMeasurementUnit, Object>>();
-		Map<String, BiConsumer<CPMeasurementUnit, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<CPMeasurementUnit, ?>>();
+		private static final Map<String, BiConsumer<CPMeasurementUnit, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", CPMeasurementUnit::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CPMeasurementUnit, String>)CPMeasurementUnit::setUuid);
-		attributeGetterFunctions.put(
-			"CPMeasurementUnitId", CPMeasurementUnit::getCPMeasurementUnitId);
-		attributeSetterBiConsumers.put(
-			"CPMeasurementUnitId",
-			(BiConsumer<CPMeasurementUnit, Long>)
-				CPMeasurementUnit::setCPMeasurementUnitId);
-		attributeGetterFunctions.put("groupId", CPMeasurementUnit::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CPMeasurementUnit, Long>)CPMeasurementUnit::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CPMeasurementUnit::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CPMeasurementUnit, Long>)
-				CPMeasurementUnit::setCompanyId);
-		attributeGetterFunctions.put("userId", CPMeasurementUnit::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CPMeasurementUnit, Long>)CPMeasurementUnit::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CPMeasurementUnit::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CPMeasurementUnit, String>)
-				CPMeasurementUnit::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CPMeasurementUnit::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CPMeasurementUnit, Date>)
-				CPMeasurementUnit::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CPMeasurementUnit::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CPMeasurementUnit, Date>)
-				CPMeasurementUnit::setModifiedDate);
-		attributeGetterFunctions.put("name", CPMeasurementUnit::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<CPMeasurementUnit, String>)CPMeasurementUnit::setName);
-		attributeGetterFunctions.put("key", CPMeasurementUnit::getKey);
-		attributeSetterBiConsumers.put(
-			"key",
-			(BiConsumer<CPMeasurementUnit, String>)CPMeasurementUnit::setKey);
-		attributeGetterFunctions.put("rate", CPMeasurementUnit::getRate);
-		attributeSetterBiConsumers.put(
-			"rate",
-			(BiConsumer<CPMeasurementUnit, Double>)CPMeasurementUnit::setRate);
-		attributeGetterFunctions.put("primary", CPMeasurementUnit::getPrimary);
-		attributeSetterBiConsumers.put(
-			"primary",
-			(BiConsumer<CPMeasurementUnit, Boolean>)
-				CPMeasurementUnit::setPrimary);
-		attributeGetterFunctions.put(
-			"priority", CPMeasurementUnit::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<CPMeasurementUnit, Double>)
-				CPMeasurementUnit::setPriority);
-		attributeGetterFunctions.put("type", CPMeasurementUnit::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<CPMeasurementUnit, Integer>)CPMeasurementUnit::setType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", CPMeasurementUnit::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<CPMeasurementUnit, Date>)
-				CPMeasurementUnit::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<CPMeasurementUnit, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CPMeasurementUnit, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CPMeasurementUnit, Long>)
+					CPMeasurementUnit::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CPMeasurementUnit, Long>)
+					CPMeasurementUnit::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CPMeasurementUnit, String>)
+					CPMeasurementUnit::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<CPMeasurementUnit, String>)
+					CPMeasurementUnit::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"CPMeasurementUnitId",
+				(BiConsumer<CPMeasurementUnit, Long>)
+					CPMeasurementUnit::setCPMeasurementUnitId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CPMeasurementUnit, Long>)
+					CPMeasurementUnit::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CPMeasurementUnit, Long>)
+					CPMeasurementUnit::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CPMeasurementUnit, Long>)
+					CPMeasurementUnit::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CPMeasurementUnit, String>)
+					CPMeasurementUnit::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CPMeasurementUnit, Date>)
+					CPMeasurementUnit::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CPMeasurementUnit, Date>)
+					CPMeasurementUnit::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CPMeasurementUnit, String>)
+					CPMeasurementUnit::setName);
+			attributeSetterBiConsumers.put(
+				"key",
+				(BiConsumer<CPMeasurementUnit, String>)
+					CPMeasurementUnit::setKey);
+			attributeSetterBiConsumers.put(
+				"rate",
+				(BiConsumer<CPMeasurementUnit, Double>)
+					CPMeasurementUnit::setRate);
+			attributeSetterBiConsumers.put(
+				"primary",
+				(BiConsumer<CPMeasurementUnit, Boolean>)
+					CPMeasurementUnit::setPrimary);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<CPMeasurementUnit, Double>)
+					CPMeasurementUnit::setPriority);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<CPMeasurementUnit, Integer>)
+					CPMeasurementUnit::setType);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CPMeasurementUnit, Date>)
+					CPMeasurementUnit::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -492,6 +469,35 @@ public class CPMeasurementUnitModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -1011,7 +1017,11 @@ public class CPMeasurementUnitModelImpl
 		CPMeasurementUnitImpl cpMeasurementUnitImpl =
 			new CPMeasurementUnitImpl();
 
+		cpMeasurementUnitImpl.setMvccVersion(getMvccVersion());
+		cpMeasurementUnitImpl.setCtCollectionId(getCtCollectionId());
 		cpMeasurementUnitImpl.setUuid(getUuid());
+		cpMeasurementUnitImpl.setExternalReferenceCode(
+			getExternalReferenceCode());
 		cpMeasurementUnitImpl.setCPMeasurementUnitId(getCPMeasurementUnitId());
 		cpMeasurementUnitImpl.setGroupId(getGroupId());
 		cpMeasurementUnitImpl.setCompanyId(getCompanyId());
@@ -1037,8 +1047,14 @@ public class CPMeasurementUnitModelImpl
 		CPMeasurementUnitImpl cpMeasurementUnitImpl =
 			new CPMeasurementUnitImpl();
 
+		cpMeasurementUnitImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		cpMeasurementUnitImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		cpMeasurementUnitImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
+		cpMeasurementUnitImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		cpMeasurementUnitImpl.setCPMeasurementUnitId(
 			this.<Long>getColumnOriginalValue("CPMeasurementUnitId"));
 		cpMeasurementUnitImpl.setGroupId(
@@ -1125,7 +1141,7 @@ public class CPMeasurementUnitModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -1134,7 +1150,7 @@ public class CPMeasurementUnitModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1151,12 +1167,28 @@ public class CPMeasurementUnitModelImpl
 		CPMeasurementUnitCacheModel cpMeasurementUnitCacheModel =
 			new CPMeasurementUnitCacheModel();
 
+		cpMeasurementUnitCacheModel.mvccVersion = getMvccVersion();
+
+		cpMeasurementUnitCacheModel.ctCollectionId = getCtCollectionId();
+
 		cpMeasurementUnitCacheModel.uuid = getUuid();
 
 		String uuid = cpMeasurementUnitCacheModel.uuid;
 
 		if ((uuid != null) && (uuid.length() == 0)) {
 			cpMeasurementUnitCacheModel.uuid = null;
+		}
+
+		cpMeasurementUnitCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			cpMeasurementUnitCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			cpMeasurementUnitCacheModel.externalReferenceCode = null;
 		}
 
 		cpMeasurementUnitCacheModel.CPMeasurementUnitId =
@@ -1281,45 +1313,19 @@ public class CPMeasurementUnitModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CPMeasurementUnit, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CPMeasurementUnit, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CPMeasurementUnit, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CPMeasurementUnit)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CPMeasurementUnit>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CPMeasurementUnit.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _CPMeasurementUnitId;
 	private long _groupId;
 	private long _companyId;
@@ -1341,7 +1347,8 @@ public class CPMeasurementUnitModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CPMeasurementUnit, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1366,7 +1373,11 @@ public class CPMeasurementUnitModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("CPMeasurementUnitId", _CPMeasurementUnitId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1407,35 +1418,41 @@ public class CPMeasurementUnitModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("CPMeasurementUnitId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("groupId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("CPMeasurementUnitId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("name", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("key_", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("rate", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("primary_", 2048L);
+		columnBitmasks.put("name", 2048L);
 
-		columnBitmasks.put("priority", 4096L);
+		columnBitmasks.put("key_", 4096L);
 
-		columnBitmasks.put("type_", 8192L);
+		columnBitmasks.put("rate", 8192L);
 
-		columnBitmasks.put("lastPublishDate", 16384L);
+		columnBitmasks.put("primary_", 16384L);
+
+		columnBitmasks.put("priority", 32768L);
+
+		columnBitmasks.put("type_", 65536L);
+
+		columnBitmasks.put("lastPublishDate", 131072L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

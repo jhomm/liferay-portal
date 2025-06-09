@@ -1,58 +1,135 @@
 definition {
 
-	macro changeWebContent {
-		Portlet.gotoPortletOptions(
-			portletName = "Web Content Display",
-			portletOption = "Configuration");
+	@summary = "Default summary"
+	macro add(embedImage = null, portletNameScoped = null, siteName = null, fieldLabelList = null, source = null, webContentTextSingleLine = null, webContentTextMultipleLines = null, webContentTitle = null, templateName = null, imageFileName = null, webContentContent = null) {
+		WebContentDisplayPortletNavigator.gotoAdd(
+			portletNameScoped = ${portletNameScoped},
+			structureName = ${structureName});
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		Pause(locator1 = "3000");
-
-		Click(locator1 = "Button#CHANGE");
-
-		WaitForElementPresent(locator1 = "IFrame#MODAL_BODY");
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_BODY");
-
-		if (isSet(depotName)) {
-			var key_rowEntry = "${webContentTitle}";
-
-			AssertClick(
-				key_breadcrumbName = "Sites and Libraries",
-				locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
-				value1 = "Sites and Libraries");
-
-			AssertClick(
-				key_groupTab = "Asset Library",
-				locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
-				value1 = "Asset Library");
-
-			Click(
-				key_card = "${depotName}",
-				locator1 = "Card#CARD_TITLE");
-
-			Click(locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME");
-
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-			AssertTextEquals(
-				key_card = "${webContentTitle} (${depotName})",
-				locator1 = "Card#CARD_TITLE",
-				value1 = "${webContentTitle} (${depotName})");
+		if (isSet(structureName)) {
+			for (var fieldLabel : list ${fieldLabelList}) {
+				if (${fieldLabel} == "Text Box") {
+					WebContent.addWithStructureCP(
+						fieldType = "Multiple Lines",
+						webContentText = ${webContentTextMultipleLines},
+						webContentTextFieldLabel = "Text Box");
+				}
+				else {
+					WebContent.addWithStructureCP(webContentText = ${webContentTextSingleLine});
+				}
+			}
+		}
+		else {
+			var structureName = "Basic Web Content";
 		}
 
-		PortletEntry.save();
+		if (isSet(templateName)) {
+			if (IsTextNotEqual(inputFieldId = "ddmTemplateName", locator1 = "TextInput#INPUT_ID", value1 = ${templateName})) {
+				WebContent.selectTemplateCP(
+					structureName = ${structureName},
+					templateName = ${templateName});
+			}
+		}
+
+		WebContent.addCP(
+			embedImage = ${embedImage},
+			imageFileName = ${imageFileName},
+			siteName = ${siteName},
+			source = ${source},
+			webContentContent = ${webContentContent},
+			webContentTitle = ${webContentTitle});
+
+		WebContent.publishWithPermissions();
 	}
 
-	macro configureScopePG {
+	@summary = "Default summary"
+	macro addDraft(webContentTitle = null, webContentContent = null) {
+		WebContentDisplayPortletNavigator.gotoAdd();
+
+		WebContent.addDraft(
+			webContentContent = ${webContentContent},
+			webContentTitle = ${webContentTitle});
+	}
+
+	@summary = "Default summary"
+	macro addLocalized(localizedBasicWebContent = null, portletNameTranslation = null, publish = null, publishWithPermissions = null,  webContentContent = null, webContentTitle = null) {
+		WebContentDisplayPortletNavigator.gotoAdd(
+			portletNameTranslation = ${portletNameTranslation},
+			structureName = ${localizedBasicWebContent});
+
+		WebContent.addCP(
+			webContentContent = ${webContentContent},
+			webContentTitle = ${webContentTitle});
+
+		WebContent.publishWithPermissionsLocalized(
+			publish = ${publish},
+			publishWithPermissions = ${publishWithPermissions});
+
+		SelectFrame(value1 = "relative=top");
+	}
+
+	@summary = "Default summary"
+	macro addTag(tagNameList = null, edit = null) {
+		Panel.expandPanel(panel = "Categorization");
+
+		for (var tagName : list ${tagNameList}) {
+			Type.typeNotVisibleNoMouseOverNoError(
+				locator1 = "AssetCategorization#TAGS_FIELD",
+				value1 = ${tagName});
+
+			if (IsElementPresent(key_tagName = ${tagName}, locator1 = "AssetCategorization#TAG_AUTOCOMPLETE_SPECIFIC")) {
+				Click.mouseDownMouseUp(
+					key_tagName = ${tagName},
+					locator1 = "AssetCategorization#TAG_AUTOCOMPLETE_SPECIFIC");
+			}
+			else {
+				KeyPress(
+					locator1 = "AssetCategorization#TAGS_FIELD",
+					value1 = ",");
+			}
+
+			AssertTextEquals(
+				key_tagName = ${tagName},
+				locator1 = "AssetCategorization#TAG",
+				value1 = ${tagName});
+		}
+
+		if (${edit} == "true") {
+			WebContent.publishExistingWCArticleWithPermissions();
+		}
+		else {
+			WebContent.publishWithPermissions();
+		}
+
+		SelectFrame(value1 = "relative=top");
+	}
+
+	@summary = "Default summary"
+	macro addWithWorkflow(webContentTitle = null, webContentContent = null, selectStructureName = null) {
+		WebContentDisplayPortletNavigator.gotoAdd(structureName = ${selectStructureName});
+
+		WebContent.addCP(
+			webContentContent = ${webContentContent},
+			webContentTitle = ${webContentTitle});
+
+		WebContent.submitForWorkflowWithPermission();
+
+		WaitForElementPresent(locator1 = "Message#ERROR_3");
+
+		AssertTextEquals(
+			locator1 = "Message#ERROR_3",
+			value1 = "${webContentTitle} is not approved.");
+	}
+
+	@summary = "Default summary"
+	macro configureScope(scopeSelection = null, portletName = null) {
 		Portlet.gotoPortletOptions(
-			portletName = "${portletName}",
+			portletName = ${portletName},
 			portletOption = "Configuration");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		Navigator.gotoNavItem(navItem = "Scope");
+		Click(locator1 = "Configuration#NAVIGATION_SCOPE");
 
 		Select(
 			locator1 = "Select#SCOPE",
@@ -61,52 +138,73 @@ definition {
 		PortletEntry.save();
 	}
 
-	macro configureSetupPG {
-		Pause(locator1 = "3000");
-
+	@summary = "Default summary"
+	macro configureSetup(userToolNameList = null, metadataNameList = null, enableViewCountIncrement = null) {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		if (isSet(userToolNameList)) {
-			for (var userToolName : list "${userToolNameList}") {
-				Pause(locator1 = "3000");
-
+			for (var userToolName : list ${userToolNameList}) {
 				Check.checkToggleSwitch(
-					key_fieldName = "${userToolName}",
+					key_fieldName = ${userToolName},
 					locator1 = "Portlet#CONFIGURATION_CHECKBOX");
 			}
 		}
 
 		if (isSet(metadataNameList)) {
-			for (var metadataName : list "${metadataNameList}") {
-				Pause(locator1 = "3000");
-
+			for (var metadataName : list ${metadataNameList}) {
 				Check.checkToggleSwitch(
-					key_fieldName = "${metadataName}",
+					key_fieldName = ${metadataName},
 					locator1 = "Portlet#CONFIGURATION_CHECKBOX");
 			}
 		}
 
-		if ("${enableViewCountIncrement}" == "true") {
-			Check.checkToggleSwitch(locator1 = "WCDConfiguration#ENABLE_VIEW_COUNT_INCREMENT_CHECKBOX");
+		if (${enableViewCountIncrement} == "true") {
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "View Count Increment",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 		}
+
+		PortletEntry.save();
 
 		SelectFrame(value1 = "relative=top");
 	}
 
-	macro editTemplate {
-		if ("${editTemplateButton}" == "true") {
-			WebContentDisplayPortlet.gotoEditTemplate(webContentTitle = "${webContentTitle}");
+	@summary = "Default summary"
+	macro edit(webContentContentEdit = null, webContentTitleEdit = null, webContentTextSingleLine = null) {
+		WebContent.addCP(webContentTitle = ${webContentTitleEdit});
+
+		if (isSet(webContentTextSingleLine)) {
+			Type(
+				key_fieldFieldLabel = "Text",
+				locator1 = "WCEditWebContent#TEXT_INPUT",
+				value1 = ${webContentTextSingleLine});
+		}
+		else {
+			CKEditor.addContentInWebContent(
+				content = ${webContentContentEdit},
+				fieldLabel = "Content");
+		}
+
+		WebContent.publishExistingWCArticleWithPermissions();
+
+		SelectFrame(value1 = "relative=top");
+	}
+
+	@summary = "Default summary"
+	macro editTemplate(templateScript = null, webContentTitle = null, templateName = null, editTemplateButton = null, structureName = null, webContentContent = null, menuItem = null) {
+		if (${editTemplateButton} == "true") {
+			WebContentDisplayPortlet.gotoEditTemplate(webContentTitle = ${webContentTitle});
 		}
 		else {
 			WebContentDisplayPortletNavigator.gotoEdit(
-				menuItem = "${menuItem}",
-				webContentTitle = "${webContentTitle}");
+				menuItem = ${menuItem},
+				webContentTitle = ${webContentTitle});
 
 			Panel.expandPanel(panel = "Default Template");
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "WCEditWebContent#SELECTED_STRUCTURE",
-				value1 = "${structureName}");
+				value1 = ${structureName});
 
 			ClickNoError(locator1 = "WCEditWebContent#EDIT_TEMPLATE");
 
@@ -120,17 +218,15 @@ definition {
 			value1 = "Template Edit");
 
 		if (isSet(templateScript)) {
-			WebContentTemplates.inputScript(templateScript = "${templateScript}");
+			WebContentTemplates.inputScript(templateScript = ${templateScript});
 		}
 
 		Button.clickSave();
 
-		if ("${editTemplateButton}" == "true") {
+		if (${editTemplateButton} == "true") {
 			SelectFrame(value1 = "relative=top");
 		}
 		else {
-			Pause(locator1 = "2000");
-
 			Click(locator1 = "Button#CLOSE_IFRAME");
 
 			SelectFrame(value1 = "relative=top");
@@ -142,9 +238,13 @@ definition {
 			AssertTextEquals(
 				inputFieldId = "ddmTemplateName",
 				locator1 = "TextInput#INPUT_ID",
-				value1 = "${templateName}");
+				value1 = ${templateName});
 
-			AssertClick.pauseAssertTextClickAt(
+			WaitForElementPresent(
+				key_text = "Publish",
+				locator1 = "Button#ANY_ENABLED");
+
+			AssertClick(
 				locator1 = "Button#PUBLISH",
 				value1 = "Publish");
 
@@ -153,63 +253,81 @@ definition {
 
 		if (isSet(templateScript)) {
 			AssertTextEquals(
+				index = 1,
 				locator1 = "WCD#WEB_CONTENT_CONTENT",
-				value1 = "${templateScript}");
+				value1 = ${templateScript});
 		}
 		else {
 			AssertTextEquals(
+				index = 1,
 				locator1 = "WCD#WEB_CONTENT_CONTENT",
-				value1 = "${webContentContent}");
+				value1 = ${webContentContent});
 		}
 	}
 
-	macro gotoEditTemplate {
-		WebContentDisplayPortletNavigator.gotoArticleEllipsisMenu(webContentTitle = "${webContentTitle}");
+	@summary = "Default summary"
+	macro gotoEditTemplate(webContentTitle = null) {
+		WebContentDisplayPortletNavigator.gotoArticleEllipsisMenu(webContentTitle = ${webContentTitle});
 
 		MenuItem.click(menuItem = "Edit Template");
 	}
 
-	macro gotoPermissions {
-		WebContentDisplayPortletNavigator.gotoArticleEllipsisMenu(webContentTitle = "${webContentTitle}");
+	@summary = "Default summary"
+	macro gotoPermissions(webContentTitle = null) {
+		WebContentDisplayPortletNavigator.gotoArticleEllipsisMenu(webContentTitle = ${webContentTitle});
 
 		MenuItem.click(menuItem = "Permissions");
 	}
 
-	macro gotoSelectWebContent {
+	@summary = "Default summary"
+	macro gotoSelectWebContent(depotName = null, portletIndex = null) {
+		if (!(isSet(portletName))) {
+			var portletName = "Web Content Display";
+		}
+
 		Portlet.gotoPortletOptions(
-			portletName = "Web Content Display",
+			portletIndex = ${portletIndex},
+			portletName = ${portletName},
 			portletOption = "Configuration");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		AssertClick.assertTextClickAtAndPause(
-			locator1 = "WCDConfiguration#SELECT_WEB_CONTENT_BUTTON",
-			value1 = "Select");
+		if (IsElementPresent(key_text = "Change", locator1 = "Button#ANY")) {
+			Click(
+				key_text = "Change",
+				locator1 = "Button#ANY");
+		}
+		else {
+			Click(
+				key_text = "Select",
+				locator1 = "Button#ANY");
+		}
+
+		WaitForElementPresent(
+			key_title = "Select Web Content",
+			locator1 = "IFrame#MODAL_ANY");
 
 		SelectFrame.selectSecondFrame(locator1 = "IFrame#MODAL_BODY");
 
 		if (isSet(depotName)) {
-			var key_rowEntry = "${webContentTitle}";
-
-			AssertClick(
+			Click(
 				key_breadcrumbName = "Sites and Libraries",
-				locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
-				value1 = "Sites and Libraries");
-
-			AssertClick(
-				key_groupTab = "Asset Library",
-				locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
-				value1 = "Asset Library");
+				locator1 = "Breadcrumb#BREADCRUMB_ENTRY");
 
 			Click(
-				key_card = "${depotName}",
+				key_groupTab = "Asset Library",
+				locator1 = "ItemSelector#NAVIGATION_GROUP_TAB");
+
+			Click(
+				key_card = ${depotName},
 				locator1 = "Card#CARD_TITLE");
 		}
 	}
 
-	macro removeWebContent {
+	@summary = "Default summary"
+	macro removeWebContent(portletName = null) {
 		Portlet.gotoPortletOptions(
-			portletName = "${portletName}",
+			portletName = ${portletName},
 			portletOption = "Configuration");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
@@ -223,7 +341,8 @@ definition {
 		PortletEntry.save();
 	}
 
-	macro saveConfiguration {
+	@summary = "Default summary"
+	macro saveConfiguration() {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		PortletEntry.save();
@@ -231,218 +350,131 @@ definition {
 		SelectFrame(value1 = "relative=top");
 	}
 
-	macro searchForNoWebContent {
-		Portlet.gotoPortletOptions(
-			portletName = "${portletName}",
-			portletOption = "Configuration");
+	@summary = "Default summary"
+	macro searchWebContent(depotName = null, searchTerm = null, errorMessage = null, webContentTitleList = null, webContentTitleNotPresentList = null, portletName = null) {
+		WebContentDisplayPortlet.gotoSelectWebContent(
+			depotName = ${depotName},
+			portletName = ${portletName});
 
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		if (isSet(webContentTitleNotPresentList)) {
+			if (isSet(depotName)) {
+				for (var webContentTitleNotPresent : list ${webContentTitleNotPresentList}) {
+					AssertElementNotPresent(
+						key_contentName = ${webContentTitleNotPresent},
+						locator1 = "ItemSelector#SELECT_FILE_WEB_CONTENT");
+				}
 
-		AssertClick(
-			locator1 = "WCDConfiguration#SELECT_WEB_CONTENT_BUTTON",
-			value1 = "Select");
+				AssertTextEquals.assertPartialText(
+					locator1 = "Message#INFO",
+					value1 = ${errorMessage});
+			}
+			else {
+				Search.searchCP(searchTerm = ${searchTerm});
 
-		SelectFrame.selectSecondFrame(locator1 = "IFrame#MODAL_BODY");
+				LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
-		if (isSet(depotName)) {
-			var key_rowEntry = "${webContentTitle}";
-
-			AssertClick(
-				key_breadcrumbName = "Sites and Libraries",
-				locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
-				value1 = "Sites and Libraries");
-
-			AssertClick(
-				key_groupTab = "Asset Library",
-				locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
-				value1 = "Asset Library");
-
-			Click(
-				key_card = "${depotName}",
-				locator1 = "Card#CARD_TITLE");
-
-			AssertElementNotPresent(
-				key_contentName = "${webContentTitle}",
-				locator1 = "ItemSelector#SELECT_FILE_WEB_CONTENT");
-
-			AssertTextEquals.assertPartialText(
-				locator1 = "Message#INFO",
-				value1 = "Info:Web Content is disabled for this scope.");
+				for (var webContentTitleNotPresent : list ${webContentTitleNotPresentList}) {
+					AssertElementNotPresent(
+						key_listEntry = ${webContentTitleNotPresent},
+						locator1 = "LexiconList#LIST_ENTRY_TITLE");
+				}
+			}
 		}
 		else {
-			Search.searchCP(searchTerm = "${webContentTitle}");
+			Search.searchCP(searchTerm = ${searchTerm});
 
 			LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
-			var key_webContentTitle = "${webContentTitle}";
-
-			AssertElementNotPresent(
-				key_listEntry = "${webContentTitle}",
-				locator1 = "LexiconList#LIST_ENTRY_TITLE");
+			for (var webContentTitle : list ${webContentTitleList}) {
+				AssertVisible(
+					key_listEntry = ${webContentTitle},
+					locator1 = "LexiconList#LIST_ENTRY_TITLE");
+			}
 		}
-
-		SelectFrame(value1 = "relative=top");
 	}
 
-	macro searchWebContent {
-		Portlet.gotoPortletOptions(
-			portletName = "${portletName}",
-			portletOption = "Configuration");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		AssertClick(
-			locator1 = "WCDConfiguration#SELECT_WEB_CONTENT_BUTTON",
-			value1 = "Select");
-
-		SelectFrame.selectSecondFrame(locator1 = "IFrame#MODAL_BODY");
-
-		var searchTerm = "${webContentTitle}";
-
-		if (isSet(webContentSearchValue)) {
-			var searchTerm = "${webContentSearchValue}";
-		}
-
-		Search.searchCP(searchTerm = "${searchTerm}");
-
-		LexiconEntry.changeDisplayStyle(displayStyle = "list");
-
-		var key_webContentTitle = "${webContentTitle}";
-
-		AssertTextEquals(
-			key_listEntry = "${webContentTitle}",
-			locator1 = "LexiconList#LIST_ENTRY_TITLE",
-			value1 = "${webContentTitle}");
-
-		if ("${addSearchedContent}" == "true") {
-			AssertClick(
-				locator1 = "Button#WEB_CONTENT_CHOOSE",
-				value1 = "Choose");
-
-			SelectFrame(value1 = "relative=top");
-
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-			AssertTextEquals(
-				locator1 = "Message#INFO_ARTICLE",
-				value1 = "${webContentTitle} (Modified)");
-
-			PortletEntry.save();
-		}
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	macro selectWebContent {
-		Portlet.gotoPortletOptions(
-			portletName = "Web Content Display",
-			portletOption = "Configuration");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		Pause(locator1 = "3000");
-
-		AssertClick(
-			locator1 = "WCDConfiguration#SELECT_WEB_CONTENT_BUTTON",
-			value1 = "Select");
-
-		Pause(locator1 = "5000");
-
-		SelectFrame.selectSecondFrame(locator1 = "IFrame#MODAL_BODY");
+	@summary = "Default summary"
+	macro selectWebContent(depotName = null, searchTerm = null, webContentTitle = null, portletIndex = null, portletName = null) {
+		WebContentDisplayPortlet.gotoSelectWebContent(
+			depotName = ${depotName},
+			portletIndex = ${portletIndex},
+			portletName = ${portletName});
 
 		if (isSet(depotName)) {
-			var key_rowEntry = "${webContentTitle}";
-
-			AssertClick(
-				key_breadcrumbName = "Sites and Libraries",
-				locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
-				value1 = "Sites and Libraries");
-
-			AssertClick(
-				key_groupTab = "Asset Library",
-				locator1 = "ItemSelector#NAVIGATION_GROUP_TAB",
-				value1 = "Asset Library");
-
 			Click(
-				key_card = "${depotName}",
-				locator1 = "Card#CARD_TITLE");
-
-			Click(locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME");
+				key_rowEntry = ${webContentTitle},
+				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME");
 
 			SelectFrame(value1 = "relative=top");
 
 			SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-			AssertTextEquals(
+			AssertVisible(
 				key_card = "${webContentTitle} (${depotName})",
-				locator1 = "Card#CARD_TITLE",
-				value1 = "${webContentTitle} (${depotName})");
+				locator1 = "Card#CARD_TITLE");
 		}
-
 		else {
-			var key_listEntry = "${webContentTitle}";
-			var key_webContentTitle = "${webContentTitle}";
-
-			LexiconEntry.changeDisplayStyle(displayStyle = "list");
-
-			if (IsElementPresent.pauseIsElementPresent(locator1 = "LexiconList#LIST_ENTRY_TITLE_LINK")) {
-				AssertClick(
-					locator1 = "LexiconList#LIST_ENTRY_TITLE_LINK",
-					value1 = "${webContentTitle}");
+			if (isSet(searchTerm)) {
+				Search.searchCP(searchTerm = ${searchTerm});
 			}
 
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+			Click(
+				key_listEntry = ${webContentTitle},
+				locator1 = "LexiconList#LIST_ENTRY_TITLE");
+
 			SelectFrame(value1 = "relative=top");
 
 			SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-			AssertTextEquals(
-				key_card = "${webContentTitle}",
-				locator1 = "Card#CARD_TITLE",
-				value1 = "${webContentTitle}");
+			AssertVisible(
+				key_card = ${webContentTitle},
+				locator1 = "Card#CARD_TITLE");
 		}
 
 		PortletEntry.save();
 
 		SelectFrame(value1 = "relative=top");
-
-		if ("${contentPage}" == "true") {
-			Click(locator1 = "Icon#CLOSE");
-		}
 	}
 
-	macro undoMoveToRecycleBin {
+	@summary = "Default summary"
+	macro undoMoveToRecycleBin() {
 		AssertClick(
 			locator1 = "Link#UNDO",
 			value1 = "Undo");
 	}
 
-	macro viewAllSettingsEnabledPG {
+	@summary = "Default summary"
+	macro viewAllSettingsEnabled(webContentContentLocalized = null, webContentTitleLocalized = null, relatedAssetTitle = null, locale = null) {
 		Click(locator1 = "WCD#WEB_CONTENT_TRANSLATION_DROPDOWN");
 
 		Click(
-			key_locale = "${locale}",
+			key_locale = ${locale},
 			locator1 = "WCD#WEB_CONTENT_TRANSLATION_DROPDOWN_MENU_ITEM");
 
 		AssertTextEquals(
+			index = 1,
 			locator1 = "WCD#WEB_CONTENT_TITLE",
-			value1 = "${webContentTitleLocalized}");
+			value1 = ${webContentTitleLocalized});
 
 		AssertTextEquals.assertPartialText(
+			index = 1,
 			locator1 = "WCD#WEB_CONTENT_CONTENT",
-			value1 = "${webContentContentLocalized}");
+			value1 = ${webContentContentLocalized});
 
-		AssertTextEquals.assertPartialText(
-			locator1 = "Icon#PRINT",
-			value1 = "Print");
+		AssertElementPresent(
+			key_text = "print",
+			locator1 = "Icon#ANY");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Button#SUBSCRIBE",
 			value1 = "Subscribe");
 
 		AssertTextEquals(
-			key_relatedAssetTitle = "${relatedAssetTitle}",
+			key_relatedAssetTitle = ${relatedAssetTitle},
 			locator1 = "AssetRelatedAssets#ASSET_TITLE",
-			value1 = "${relatedAssetTitle}");
+			value1 = ${relatedAssetTitle});
 
 		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME");
 
@@ -465,94 +497,217 @@ definition {
 			locator1 = "Ratings#THUMB");
 	}
 
-	macro viewConfigureScopePG {
-		var key_portletName = "Web Content Display";
+	@summary = "Default summary"
+	macro viewCannotEditWC(webContentTitle = null) {
+		if (IsElementPresent(key_webContentTitle = ${webContentTitle}, locator1 = "WCD#ARTICLE_ELLIPSIS_ICON")) {
+			WebContentDisplayPortletNavigator.gotoArticleEllipsisMenu(webContentTitle = ${webContentTitle});
 
-		if ("${scopeSelectionDefault}" == "true") {
-			AssertTextEquals(
-				locator1 = "Portlet#TITLE",
-				value1 = "Web Content Display");
+			MenuItem.viewNotPresent(menuItem = "Edit Web Content");
 		}
 		else {
-			AssertTextEquals(
-				locator1 = "Portlet#TITLE",
-				value1 = "Web Content Display (${scopeSelection})");
+			AssertElementNotPresent(
+				key_webContentTitle = ${webContentTitle},
+				locator1 = "WCD#ARTICLE_ELLIPSIS_ICON");
 		}
+	}
+
+	@summary = "Default summary"
+	macro viewConfigureScope(scopeSelection = null) {
+		AssertElementPresent(
+			key_portletName = "Web Content Display (${scopeSelection})",
+			locator1 = "Portlet#TITLE");
 
 		Portlet.gotoPortletOptions(
-			portletName = "${portletName}",
+			portletName = "Web Content Display (${scopeSelection})",
 			portletOption = "Configuration");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		Navigator.gotoNavItem(navItem = "Scope");
+		Click(locator1 = "Configuration#NAVIGATION_SCOPE");
 
 		AssertSelectedLabel(
 			locator1 = "Select#SCOPE",
-			value1 = "${scopeSelection}");
+			value1 = ${scopeSelection});
 	}
 
-	macro viewContentPageBreak {
-		AssertClick(
-			locator1 = "Pagination#PAGE_2",
-			value1 = "2");
+	@summary = "Default summary"
+	macro viewContent(videoShortcutTitle = null, displayText = null, webContentTitle = null, imageFileName = null, webContentContent = null, audioFileName = null, pageName = null, url = null) {
+		if (isSet(audioFileName)) {
+			AssertElementPresent(
+				key_audioFileName = ${audioFileName},
+				key_webContentTitle = ${webContentTitle},
+				locator1 = "WCD#WEB_CONTENT_AUDIO");
+		}
+		else if (isSet(imageFileName)) {
+			AssertElementPresent(
+				key_imageFileName = ${imageFileName},
+				key_webContentTitle = ${webContentTitle},
+				locator1 = "WCD#WEB_CONTENT_IMAGE");
+		}
+		else if (isSet(videoShortcutTitle)) {
+			AssertTextEquals(
+				index = 1,
+				locator1 = "WCD#WEB_CONTENT_TITLE",
+				value1 = ${webContentTitle});
 
-		AssertTextEquals(
-			locator1 = "WCD#WEB_CONTENT_CONTENT",
-			value1 = "${webContentContent}");
+			WaitForElementPresent(locator1 = "YoutubePortlet#VIDEO_IFRAME");
 
-		AssertClick(
-			locator1 = "Pagination#PREVIOUS_LINK",
-			value1 = "Previous");
-	}
+			SelectFrame(locator1 = "IFrame#IFRAME");
 
-	macro viewDefaultMessage {
-		Alert.viewInfoMessageSpecific(infoMessage = "This application is not visible to users yet");
+			AssertElementPresent(
+				key_videoShortcutTitle = ${videoShortcutTitle},
+				locator1 = "WCD#WEB_CONTENT_VIDEO");
 
-		Alert.viewInfoMessageSpecific(infoMessage = "Select web content to make it visible");
-	}
+			SelectFrame(value1 = "relative=top");
+		}
+		else if (isSet(displayText)) {
+			WaitForElementPresent(
+				key_displayText = ${displayText},
+				key_webContentTitle = ${webContentTitle},
+				locator1 = "WCD#WEB_CONTENT_LINK");
 
-	macro viewDeletedArticle {
-		Alert.viewWarningSpecific(warningMessage = "The selected web content no longer exists.");
+			Click.clickNoMouseOverNoWaitForVisible(
+				key_displayText = ${displayText},
+				key_webContentTitle = ${webContentTitle},
+				locator1 = "WCD#WEB_CONTENT_LINK");
 
-		Alert.viewWarningSpecific(warningMessage = "Do you want to Select Another web content?");
-	}
+			if (isSet(pageName)) {
+				ControlMenu.viewHeaderTitle(headerTitle = ${pageName});
+			}
+			else {
+				AssertLocation.assertPartialLocation(value1 = ${url});
+			}
+		}
+		else {
+			if (!(isSet(index))) {
+				var index = 1;
+			}
 
-	macro viewEnabledFileTypesPGViaWCD {
-		for (var fileType : list "${fileTypes}") {
-			var key_fileType = "${fileType}";
+			if (isSet(webContentTitle)) {
+				AssertTextEquals(
+					index = ${index},
+					locator1 = "WCD#WEB_CONTENT_TITLE",
+					value1 = ${webContentTitle});
+			}
 
 			AssertTextEquals.assertPartialText(
-				locator1 = "WCD#DOCUMENT_CONVERSION_TYPE",
-				value1 = "${fileType}");
+				index = ${index},
+				locator1 = "WCD#WEB_CONTENT_CONTENT",
+				value1 = ${webContentContent});
 		}
 	}
 
-	macro viewImageFieldViaWCD {
-		AssertElementPresent(locator1 = "WCD#WEB_CONTENT_IMAGE_PNG");
+	@summary = "Default summary"
+	macro viewContentNotVisibleToGuest() {
+		AssertTextNotPresent(
+			locator1 = "Message#ERROR",
+			value1 = "The selected web content no longer exists.");
+
+		AssertElementNotPresent(
+			key_portletName = "Web Content Display",
+			locator1 = "Portlet#BODY");
 	}
 
-	macro viewLinkToPageFieldViaWCD {
-		var key_contentText = "${linkName}";
-		var key_pageName = "${linkedPageName}";
+	@summary = "Default summary"
+	macro viewContentPageBreak(webContentContent = null) {
+		Click(
+			key_pageNumber = 2,
+			locator1 = "Pagination#ANY_PAGE");
 
 		AssertTextEquals.assertPartialText(
-			locator1 = "WCD#WEB_CONTENT_TEXT_LINK_URL",
-			value1 = "${linkName}");
+			index = 1,
+			locator1 = "WCD#WEB_CONTENT_CONTENT",
+			value1 = ${webContentContent});
+
+		Click(locator1 = "Pagination#PREVIOUS_LINK");
+	}
+
+	@summary = "Default summary"
+	macro viewEnabledFileTypes(fileTypeList = null) {
+		for (var fileType : list ${fileTypeList}) {
+			AssertTextEquals.assertPartialText(
+				key_fileType = ${fileType},
+				locator1 = "WCD#DOCUMENT_CONVERSION_TYPE",
+				value1 = ${fileType});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewMenuItem(webContentTitle = null, menuItemList = null) {
+		WebContentDisplayPortletNavigator.gotoArticleEllipsisMenu(webContentTitle = ${webContentTitle});
+
+		for (var menuItem : list ${menuItemList}) {
+			MenuItem.viewPresent(menuItem = ${menuItem});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewMessage(recycleBinWebContentTitle = null, expiredWebContentTitle = null, draftWebContentTitle = null) {
+		if (isSet(recycleBinWebContentTitle)) {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_3",
+				value1 = "The web content article ${recycleBinWebContentTitle} was moved to the Recycle Bin");
+		}
+		else if (isSet(draftWebContentTitle)) {
+			AssertTextEquals(
+				locator1 = "Message#ERROR_3",
+				value1 = "${draftWebContentTitle} is not approved.");
+		}
+		else if (isSet(expiredWebContentTitle)) {
+			AssertTextEquals(
+				locator1 = "Message#ERROR_3",
+				value1 = "${expiredWebContentTitle} is expired.");
+		}
+		else if (isSet(deletedWebContentTitle)) {
+			Alert.viewWarningSpecific(warningMessage = "The selected web content no longer exists.");
+
+			Alert.viewWarningSpecific(warningMessage = "Do you want to Select Another web content?");
+		}
+		else {
+			Alert.viewInfoMessageSpecific(infoMessage = "This application is not visible to users yet");
+
+			Alert.viewInfoMessageSpecific(infoMessage = "Select web content to make it visible");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewRelatedAssets(relatedAssetTitleList = null) {
+		for (var relatedAssetTitle : list ${relatedAssetTitleList}) {
+			AssertTextEquals(
+				key_relatedAssetTitle = ${relatedAssetTitle},
+				locator1 = "AssetRelatedAssets#ASSET_TITLE",
+				value1 = ${relatedAssetTitle});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewWorkflow(webContentTitle = null, webContentContent = null) {
+		AssertTextEquals(
+			locator1 = "Message#ERROR_3",
+			value1 = "${webContentTitle} is not approved.");
 
 		AssertClick(
-			locator1 = "WCD#WEB_CONTENT_TEXT_LINK_URL",
-			value1 = "${linkName}");
+			locator1 = "Message#WARNING_SPECIFIC_LINK_1",
+			value1 = "${webContentTitle} is not approved.");
 
-		AssertVisible(locator1 = "Home#PAGE_ACTIVE");
-	}
+		AssertTextEquals(
+			key_status = "Pending",
+			locator1 = "WCEditWebContent#WORKFLOW_STATUS",
+			value1 = "Pending");
 
-	macro viewRecycleBinMessage {
-		var key_webContentTitle = "${webContentTitle}";
+		AssertTextEquals(
+			locator1 = "TextInput#TITLE",
+			value1 = ${webContentTitle});
 
-		AssertTextEquals.assertPartialText(
-			locator1 = "Message#ERROR_3",
-			value1 = "The web content article ${webContentTitle} was moved to the Recycle Bin");
+		SelectFrame.selectFrameNoLoading(
+			key_fieldLabel = "Content",
+			locator1 = "CKEditor#BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
+
+		AssertTextEquals(
+			locator1 = "CKEditor#BODY",
+			value1 = ${webContentContent});
+
+		SelectFrameTop();
 	}
 
 }

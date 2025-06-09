@@ -1,38 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.custom.filter.portlet;
 
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.internal.custom.filter.constants.CustomFilterPortletKeys;
-import com.liferay.portal.search.web.internal.custom.filter.display.context.CustomFilterDisplayBuilder;
 import com.liferay.portal.search.web.internal.custom.filter.display.context.CustomFilterDisplayContext;
+import com.liferay.portal.search.web.internal.custom.filter.display.context.builder.CustomFilterDisplayContextBuilder;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +32,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luan Maoski
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-custom-filter",
@@ -55,13 +44,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Custom Filter",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/custom/filter/view.jsp",
-		"javax.portlet.name=" + CustomFilterPortletKeys.CUSTOM_FILTER,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"jakarta.portlet.display-name=Custom Filter",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/custom/filter/view.jsp",
+		"jakarta.portlet.name=" + CustomFilterPortletKeys.CUSTOM_FILTER,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -81,7 +71,7 @@ public class CustomFilterPortlet extends MVCPortlet {
 					renderRequest));
 
 		CustomFilterDisplayContext customFilterDisplayContext =
-			createCustomFilterDisplayContext(
+			_createCustomFilterDisplayContext(
 				customFilterPortletPreferences, portletSharedSearchResponse,
 				renderRequest);
 
@@ -99,7 +89,13 @@ public class CustomFilterPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected CustomFilterDisplayContext buildDisplayContext(
+	@Reference
+	protected Portal portal;
+
+	@Reference
+	protected PortletSharedSearchRequest portletSharedSearchRequest;
+
+	private CustomFilterDisplayContext _buildDisplayContext(
 			CustomFilterPortletPreferences customFilterPortletPreferences,
 			PortletSharedSearchResponse portletSharedSearchResponse,
 			RenderRequest renderRequest)
@@ -108,45 +104,43 @@ public class CustomFilterPortlet extends MVCPortlet {
 		String parameterName = CustomFilterPortletUtil.getParameterName(
 			customFilterPortletPreferences);
 
-		SearchResponse searchResponse = getSearchResponse(
+		SearchResponse searchResponse = _getSearchResponse(
 			portletSharedSearchResponse, customFilterPortletPreferences);
 
 		SearchRequest searchRequest = searchResponse.getRequest();
 
-		return CustomFilterDisplayBuilder.builder(
-		).customHeadingOptional(
-			customFilterPortletPreferences.getCustomHeadingOptional()
+		return CustomFilterDisplayContextBuilder.builder(
+		).customHeading(
+			customFilterPortletPreferences.getCustomHeading()
 		).disabled(
 			customFilterPortletPreferences.isDisabled()
-		).filterFieldOptional(
-			customFilterPortletPreferences.getFilterFieldOptional()
-		).http(
-			http
+		).filterField(
+			customFilterPortletPreferences.getFilterField()
 		).immutable(
 			customFilterPortletPreferences.isImmutable()
-		).filterValueOptional(
-			customFilterPortletPreferences.getFilterValueOptional()
+		).filterValue(
+			customFilterPortletPreferences.getFilterValue()
 		).parameterName(
 			parameterName
-		).parameterValueOptional(
+		).parameterValue(
 			portletSharedSearchResponse.getParameter(
 				parameterName, renderRequest)
-		).queryNameOptional(
-			customFilterPortletPreferences.getQueryNameOptional()
+		).queryName(
+			customFilterPortletPreferences.getQueryName()
 		).renderNothing(
-			isRenderNothing(searchRequest)
+			_isRenderNothing(searchRequest)
 		).themeDisplay(
 			portletSharedSearchResponse.getThemeDisplay(renderRequest)
 		).build();
 	}
 
-	protected CustomFilterDisplayContext createCustomFilterDisplayContext(
+	private CustomFilterDisplayContext _createCustomFilterDisplayContext(
 		CustomFilterPortletPreferences customFilterPortletPreferences,
 		PortletSharedSearchResponse portletSharedSearchResponse,
 		RenderRequest renderRequest) {
 
 		try {
-			return buildDisplayContext(
+			return _buildDisplayContext(
 				customFilterPortletPreferences, portletSharedSearchResponse,
 				renderRequest);
 		}
@@ -155,19 +149,15 @@ public class CustomFilterPortlet extends MVCPortlet {
 		}
 	}
 
-	protected String getPortletId(RenderRequest renderRequest) {
-		return portal.getPortletId(renderRequest);
-	}
-
-	protected SearchResponse getSearchResponse(
+	private SearchResponse _getSearchResponse(
 		PortletSharedSearchResponse portletSharedSearchResponse,
 		CustomFilterPortletPreferences customFilterPortletPreferences) {
 
 		return portletSharedSearchResponse.getFederatedSearchResponse(
-			customFilterPortletPreferences.getFederatedSearchKeyOptional());
+			customFilterPortletPreferences.getFederatedSearchKey());
 	}
 
-	protected boolean isRenderNothing(SearchRequest searchRequest) {
+	private boolean _isRenderNothing(SearchRequest searchRequest) {
 		if ((searchRequest.getQueryString() == null) &&
 			!searchRequest.isEmptySearchEnabled()) {
 
@@ -176,14 +166,5 @@ public class CustomFilterPortlet extends MVCPortlet {
 
 		return false;
 	}
-
-	@Reference
-	protected Http http;
-
-	@Reference
-	protected Portal portal;
-
-	@Reference
-	protected PortletSharedSearchRequest portletSharedSearchRequest;
 
 }

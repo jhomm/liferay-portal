@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -36,6 +27,7 @@ import com.liferay.portal.kernel.settings.PortletInstanceSettingsLocator;
 import com.liferay.portal.kernel.settings.Settings;
 import com.liferay.portal.kernel.spring.aop.Property;
 import com.liferay.portal.kernel.spring.aop.Retry;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -59,6 +51,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.portal.kernel.model.PortletPreferences"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -236,19 +233,19 @@ public interface PortletPreferencesLocalService
 		long ownerId, int ownerType, long plid, String portletId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences fetchPreferences(
+	public jakarta.portlet.PortletPreferences fetchPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences fetchPreferences(
+	public jakarta.portlet.PortletPreferences fetchPreferences(
 		PortletPreferencesIds portletPreferencesIds);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(enabled = false)
-	public javax.portlet.PortletPreferences getDefaultPreferences(
+	public jakarta.portlet.PortletPreferences getDefaultPreferences(
 		long companyId, String portletId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -324,6 +321,10 @@ public interface PortletPreferencesLocalService
 	public List<PortletPreferences> getPortletPreferencesByPlid(long plid);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<PortletPreferences> getPortletPreferencesByPortletId(
+		String portletId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long getPortletPreferencesCount(
 		int ownerType, long plid, String portletId);
 
@@ -339,6 +340,10 @@ public interface PortletPreferencesLocalService
 	public long getPortletPreferencesCount(
 		long ownerId, int ownerType, String portletId,
 		boolean excludeDefaultPreferences);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getPortletPreferencesCount(
+		long companyId, long ownerId, int ownerType, String portletId);
 
 	/**
 	 * Returns a range of all the portlet preferenceses.
@@ -372,7 +377,7 @@ public interface PortletPreferencesLocalService
 		}
 	)
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId);
 
@@ -386,7 +391,7 @@ public interface PortletPreferencesLocalService
 		}
 	)
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId, String defaultPreferences);
 
@@ -400,20 +405,20 @@ public interface PortletPreferencesLocalService
 		}
 	)
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		PortletPreferencesIds portletPreferencesIds);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Map<String, javax.portlet.PortletPreferences> getStrictPreferences(
+	public Map<String, jakarta.portlet.PortletPreferences> getStrictPreferences(
 		Layout layout, List<Portlet> portlets);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences getStrictPreferences(
+	public jakarta.portlet.PortletPreferences getStrictPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public javax.portlet.PortletPreferences getStrictPreferences(
+	public jakarta.portlet.PortletPreferences getStrictPreferences(
 		PortletPreferencesIds portletPreferencesIds);
 
 	/**
@@ -432,7 +437,7 @@ public interface PortletPreferencesLocalService
 
 	public PortletPreferences updatePreferences(
 		long ownerId, int ownerType, long plid, String portletId,
-		javax.portlet.PortletPreferences portletPreferences);
+		jakarta.portlet.PortletPreferences portletPreferences);
 
 	public PortletPreferences updatePreferences(
 		long ownerId, int ownerType, long plid, String portletId, String xml);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.storage;
@@ -19,6 +10,7 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetIndexWriter;
+import com.liferay.portal.search.tuning.synonyms.web.internal.storage.helper.SynonymSetJSONStorageHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Assert;
@@ -27,9 +19,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Wade Cao
@@ -43,12 +33,10 @@ public class SynonymSetStorageAdapterTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-
 		_synonymSetStorageAdapter = new SynonymSetStorageAdapter();
 
 		ReflectionTestUtil.setFieldValue(
-			_synonymSetStorageAdapter, "synonymSetIndexWriter",
+			_synonymSetStorageAdapter, "_synonymSetIndexWriter",
 			_synonymSetIndexWriter);
 		ReflectionTestUtil.setFieldValue(
 			_synonymSetStorageAdapter, "synonymSetJSONStorageHelper",
@@ -62,7 +50,7 @@ public class SynonymSetStorageAdapterTest {
 		).when(
 			_synonymSetJSONStorageHelper
 		).addJSONStorageEntry(
-			Mockito.anyString(), Mockito.anyString()
+			Mockito.nullable(String.class), Mockito.nullable(String.class)
 		);
 
 		Assert.assertEquals(
@@ -74,7 +62,7 @@ public class SynonymSetStorageAdapterTest {
 		Mockito.verify(
 			_synonymSetIndexWriter, Mockito.times(1)
 		).create(
-			Mockito.anyObject(), Mockito.anyObject()
+			Mockito.any(), Mockito.any()
 		);
 	}
 
@@ -87,7 +75,7 @@ public class SynonymSetStorageAdapterTest {
 		Mockito.verify(
 			_synonymSetIndexWriter, Mockito.times(1)
 		).remove(
-			Mockito.anyObject(), Mockito.anyString()
+			Mockito.any(), Mockito.anyString()
 		);
 	}
 
@@ -114,7 +102,7 @@ public class SynonymSetStorageAdapterTest {
 		Mockito.verify(
 			_synonymSetIndexWriter, Mockito.times(1)
 		).update(
-			Mockito.anyObject(), Mockito.anyObject()
+			Mockito.any(), Mockito.any()
 		);
 	}
 
@@ -132,12 +120,10 @@ public class SynonymSetStorageAdapterTest {
 			Mockito.mock(SynonymSetIndexName.class), synonymSet);
 	}
 
-	@Mock
-	private SynonymSetIndexWriter _synonymSetIndexWriter;
-
-	@Mock
-	private SynonymSetJSONStorageHelper _synonymSetJSONStorageHelper;
-
+	private final SynonymSetIndexWriter _synonymSetIndexWriter = Mockito.mock(
+		SynonymSetIndexWriter.class);
+	private final SynonymSetJSONStorageHelper _synonymSetJSONStorageHelper =
+		Mockito.mock(SynonymSetJSONStorageHelper.class);
 	private SynonymSetStorageAdapter _synonymSetStorageAdapter;
 
 }

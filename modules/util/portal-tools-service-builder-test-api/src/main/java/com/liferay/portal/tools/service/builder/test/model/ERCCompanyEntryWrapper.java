@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model;
@@ -41,15 +32,25 @@ public class ERCCompanyEntryWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("ercCompanyEntryId", getErcCompanyEntryId());
 		attributes.put("companyId", getCompanyId());
+		attributes.put("userId", getUserId());
+		attributes.put("userName", getUserName());
+		attributes.put("column1", getColumn1());
 
 		return attributes;
 	}
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
+		}
+
 		String externalReferenceCode = (String)attributes.get(
 			"externalReferenceCode");
 
@@ -68,11 +69,39 @@ public class ERCCompanyEntryWrapper
 		if (companyId != null) {
 			setCompanyId(companyId);
 		}
+
+		Long userId = (Long)attributes.get("userId");
+
+		if (userId != null) {
+			setUserId(userId);
+		}
+
+		String userName = (String)attributes.get("userName");
+
+		if (userName != null) {
+			setUserName(userName);
+		}
+
+		Integer column1 = (Integer)attributes.get("column1");
+
+		if (column1 != null) {
+			setColumn1(column1);
+		}
 	}
 
 	@Override
 	public ERCCompanyEntry cloneWithOriginalValues() {
 		return wrap(model.cloneWithOriginalValues());
+	}
+
+	/**
+	 * Returns the column1 of this erc company entry.
+	 *
+	 * @return the column1 of this erc company entry
+	 */
+	@Override
+	public int getColumn1() {
+		return model.getColumn1();
 	}
 
 	/**
@@ -115,9 +144,59 @@ public class ERCCompanyEntryWrapper
 		return model.getPrimaryKey();
 	}
 
+	/**
+	 * Returns the user ID of this erc company entry.
+	 *
+	 * @return the user ID of this erc company entry
+	 */
+	@Override
+	public long getUserId() {
+		return model.getUserId();
+	}
+
+	/**
+	 * Returns the user name of this erc company entry.
+	 *
+	 * @return the user name of this erc company entry
+	 */
+	@Override
+	public String getUserName() {
+		return model.getUserName();
+	}
+
+	/**
+	 * Returns the user uuid of this erc company entry.
+	 *
+	 * @return the user uuid of this erc company entry
+	 */
+	@Override
+	public String getUserUuid() {
+		return model.getUserUuid();
+	}
+
+	/**
+	 * Returns the uuid of this erc company entry.
+	 *
+	 * @return the uuid of this erc company entry
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
+	}
+
 	@Override
 	public void persist() {
 		model.persist();
+	}
+
+	/**
+	 * Sets the column1 of this erc company entry.
+	 *
+	 * @param column1 the column1 of this erc company entry
+	 */
+	@Override
+	public void setColumn1(int column1) {
+		model.setColumn1(column1);
 	}
 
 	/**
@@ -158,6 +237,51 @@ public class ERCCompanyEntryWrapper
 	@Override
 	public void setPrimaryKey(long primaryKey) {
 		model.setPrimaryKey(primaryKey);
+	}
+
+	/**
+	 * Sets the user ID of this erc company entry.
+	 *
+	 * @param userId the user ID of this erc company entry
+	 */
+	@Override
+	public void setUserId(long userId) {
+		model.setUserId(userId);
+	}
+
+	/**
+	 * Sets the user name of this erc company entry.
+	 *
+	 * @param userName the user name of this erc company entry
+	 */
+	@Override
+	public void setUserName(String userName) {
+		model.setUserName(userName);
+	}
+
+	/**
+	 * Sets the user uuid of this erc company entry.
+	 *
+	 * @param userUuid the user uuid of this erc company entry
+	 */
+	@Override
+	public void setUserUuid(String userUuid) {
+		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this erc company entry.
+	 *
+	 * @param uuid the uuid of this erc company entry
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

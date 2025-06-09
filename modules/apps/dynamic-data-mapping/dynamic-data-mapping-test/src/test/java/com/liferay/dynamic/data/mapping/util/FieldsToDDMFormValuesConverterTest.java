@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.util;
@@ -20,40 +11,30 @@ import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.Value;
-import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.core.classloader.annotations.SuppressStaticInitializationFor;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Marcellus Tavares
  */
-@PrepareForTest(
-	{DDMStructureLocalServiceUtil.class, LocaleUtil.class, PropsValues.class}
-)
-@RunWith(PowerMockRunner.class)
-@SuppressStaticInitializationFor(
-	{
-		"com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil",
-		"com.liferay.portal.kernel.xml.SAXReaderUtil",
-		"com.liferay.portal.util.PropsValues"
-	}
-)
 public class FieldsToDDMFormValuesConverterTest extends BaseDDMTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	@Override
@@ -66,8 +47,6 @@ public class FieldsToDDMFormValuesConverterTest extends BaseDDMTestCase {
 		setUpDDMStructureLocalServiceUtil();
 		setUpJSONFactoryUtil();
 		setUpLanguageUtil();
-		setUpLocaleUtil();
-		setUpPropsValues();
 		setUpSAXReaderUtil();
 	}
 
@@ -118,7 +97,7 @@ public class FieldsToDDMFormValuesConverterTest extends BaseDDMTestCase {
 
 		Field nameField = createField(
 			ddmStructure.getStructureId(), "Name",
-			createValuesList("Paul", "Joe"), createValuesList("Paulo", "Joao"));
+			createValuesList("Paul", "Joe"), createValuesList("Paulo", "João"));
 
 		Field phoneField = createField(
 			ddmStructure.getStructureId(), "Phone",
@@ -127,8 +106,8 @@ public class FieldsToDDMFormValuesConverterTest extends BaseDDMTestCase {
 				"Joe's Phone 2", "Joe's Phone 3"),
 			createValuesList(
 				"Telefone de Paulo 1", "Telefone de Paulo 2",
-				"Telefone de Joao 1", "Telefone de Joao 2",
-				"Telefone de Joao 3"));
+				"Telefone de João 1", "Telefone de João 2",
+				"Telefone de João 3"));
 
 		Field fieldsDisplayField = createFieldsDisplayField(
 			ddmStructure.getStructureId(),
@@ -168,7 +147,7 @@ public class FieldsToDDMFormValuesConverterTest extends BaseDDMTestCase {
 
 		DDMFormFieldValue joeDDMFormFieldValue = ddmFormFieldValues.get(1);
 
-		testDDMFormFieldValue("rght", "Joe", "Joao", joeDDMFormFieldValue);
+		testDDMFormFieldValue("rght", "Joe", "João", joeDDMFormFieldValue);
 
 		List<DDMFormFieldValue> joeNestedDDMFormFieldValues =
 			joeDDMFormFieldValue.getNestedDDMFormFieldValues();
@@ -178,13 +157,13 @@ public class FieldsToDDMFormValuesConverterTest extends BaseDDMTestCase {
 			joeNestedDDMFormFieldValues.size());
 
 		testDDMFormFieldValue(
-			"latb", "Joe's Phone 1", "Telefone de Joao 1",
+			"latb", "Joe's Phone 1", "Telefone de João 1",
 			joeNestedDDMFormFieldValues.get(0));
 		testDDMFormFieldValue(
-			"jewp", "Joe's Phone 2", "Telefone de Joao 2",
+			"jewp", "Joe's Phone 2", "Telefone de João 2",
 			joeNestedDDMFormFieldValues.get(1));
 		testDDMFormFieldValue(
-			"mkar", "Joe's Phone 3", "Telefone de Joao 3",
+			"mkar", "Joe's Phone 3", "Telefone de João 3",
 			joeNestedDDMFormFieldValues.get(2));
 	}
 

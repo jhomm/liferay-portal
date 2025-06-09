@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence;
@@ -17,6 +8,7 @@ package com.liferay.commerce.product.service.persistence;
 import com.liferay.commerce.product.exception.NoSuchCPSpecificationOptionException;
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -33,7 +25,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CPSpecificationOptionPersistence
-	extends BasePersistence<CPSpecificationOption> {
+	extends BasePersistence<CPSpecificationOption>,
+			CTPersistence<CPSpecificationOption> {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -940,6 +933,59 @@ public interface CPSpecificationOptionPersistence
 	 * @return the number of matching cp specification options
 	 */
 	public int countByC_K(long companyId, String key);
+
+	/**
+	 * Returns the cp specification option where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchCPSpecificationOptionException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching cp specification option
+	 * @throws NoSuchCPSpecificationOptionException if a matching cp specification option could not be found
+	 */
+	public CPSpecificationOption findByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchCPSpecificationOptionException;
+
+	/**
+	 * Returns the cp specification option where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching cp specification option, or <code>null</code> if a matching cp specification option could not be found
+	 */
+	public CPSpecificationOption fetchByERC_C(
+		String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the cp specification option where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching cp specification option, or <code>null</code> if a matching cp specification option could not be found
+	 */
+	public CPSpecificationOption fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache);
+
+	/**
+	 * Removes the cp specification option where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the cp specification option that was removed
+	 */
+	public CPSpecificationOption removeByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchCPSpecificationOptionException;
+
+	/**
+	 * Returns the number of cp specification options where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching cp specification options
+	 */
+	public int countByERC_C(String externalReferenceCode, long companyId);
 
 	/**
 	 * Caches the cp specification option in the entity cache if it is enabled.

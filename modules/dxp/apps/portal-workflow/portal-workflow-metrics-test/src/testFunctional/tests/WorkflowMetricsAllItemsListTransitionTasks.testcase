@@ -1,4 +1,4 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -9,33 +9,27 @@ definition {
 	setUp {
 		TestCase.setUpPortalInstance();
 
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		User.firstLoginPG();
 
 		Navigator.openURL();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 	}
 
 	@description = "LPS-105495 - Verify that the user can transition tasks adding a comment to it"
-	@priority = "4"
+	@priority = 4
 	test CanAddCommentToATransitionTask {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -56,7 +50,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
-		WorkflowMetrics.goToBulkTransitionSelectTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		WorkflowMetrics.selectAllTransitionTasks();
 
@@ -73,12 +67,9 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that users can bulk-transition pending tasks assigned to themselves from more than 1 instance via Workflow Metrics"
-	@priority = "4"
+	@priority = 4
 	test CanBulkTransitionPendingTasksFromMultipleInstances {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -108,7 +99,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
-		WorkflowMetrics.goToBulkTransitionSelectTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		WorkflowMetrics.selectAllTransitionTasks();
 
@@ -122,9 +113,9 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that tasks that are not assigned to the current users can't be transitioned via bulk transition action"
-	@priority = "4"
+	@priority = 4
 	test CanNotBulkTransitionTasksNotAssignedToCurrentUser {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		JSONUser.addUser(
 			userEmailAddress = "usertest@liferay.com",
@@ -143,7 +134,7 @@ definition {
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -174,13 +165,13 @@ definition {
 			key_orderBy = "Creation Date",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ORDER_BY");
 
-		WorkflowMetrics.selectTransitionTask(task = "1");
+		WorkflowMetrics.goToReassignTask(itemSubject = "Blogs Entry: Blog Entry 1");
 
 		WorkflowMetrics.selectNewAssignee(
 			nameOfAssignee = "User Test",
 			taskList = "Blogs Entry: Blog Entry 1");
 
-		WorkflowMetrics.selectTransitionTask(task = "2");
+		WorkflowMetrics.goToReassignTask(itemSubject = "Blogs Entry: Blog Entry 2");
 
 		WorkflowMetrics.selectNewAssignee(
 			nameOfAssignee = "Test Test",
@@ -196,11 +187,12 @@ definition {
 
 		Click(
 			locator1 = "WorkflowAllItems#KEBAB_DROPDOWN",
-			task = "1");
+			task = 1);
+
 		MenuItem.clickNoError(menuItem = "Transition");
 
 		Click(
-			key_task = "1",
+			key_task = 1,
 			locator1 = "WorkflowTransitionModal#TRANSITION_MODAL_CHECKBOX_ITEM");
 
 		Click(locator1 = "Button#NEXT");
@@ -228,12 +220,11 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that the message -The selected steps have transitioned successfully- is displayed when several steps are transitioned at once"
-	@priority = "3"
+	@priority = 3
 	test MessageIsDisplayedWhenSeveralStepsAreTransitionedAtOnce {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		WorkflowMetrics.executeIndexActions(actionDescription = "Workflow Indexes");
+
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -244,16 +235,16 @@ definition {
 		for (var blogNumber : list "1,2") {
 			JSONBlog.addEntry(
 				entryContent = "Blogs Entry ${blogNumber} Content",
-				entryTitle = "Blogs Entry Title ${blogNumber}");
+				entryTitle = ${blogNumber});
 		}
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		for (var InstanceNameNumber : list "1,2") {
+		for (var instanceNameNumber : list "1,2") {
 			Workflow.assignTaskToUser(
-				assetTitle = "Blogs Entry Title ${InstanceNameNumber}",
+				assetTitle = ${instanceNameNumber},
 				assetType = "Blogs Entry",
 				assigneeName = "test (Test Test)",
 				workflowTask = "Review");
@@ -267,7 +258,7 @@ definition {
 
 		Click(
 			locator1 = "WorkflowAllItems#REASSIGN_ICON",
-			task = "1");
+			task = 1);
 
 		WorkflowMetrics.selectAllTransitionTasks();
 
@@ -281,16 +272,21 @@ definition {
 
 		Button.clickDone();
 
-		Alert.viewSuccessMessageText(successMessage = "The selected steps have transitioned successfully");
+		WorkflowMetrics.goToWorkflowProcessMetricsAndTotalCompleted(workflowProcessName = "Single Approver");
+
+		AssertElementPresent(
+			key_workflowInstanceName = "Blogs Entry: 1",
+			locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_NAME");
+
+		AssertElementPresent(
+			key_workflowInstanceName = "Blogs Entry: 2",
+			locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_NAME");
 	}
 
 	@description = "LPS-108138 - Verify that the message -Select a transition- and -All steps require a transition to be selected to complete this action.- are displayed when the user clicks on Done without selecting all transitions"
-	@priority = "3"
+	@priority = 3
 	test MessageIsDisplayedWhenSomeTransitionIsNotSelected {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -320,7 +316,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
-		WorkflowMetrics.goToBulkTransitionSelectTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		WorkflowMetrics.selectAllTransitionTasks();
 
@@ -332,12 +328,9 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that, in -Choose Transition Per Step- modal, the user can add comments when transitioning tasks"
-	@priority = "4"
+	@priority = 4
 	test OnChooseTransitionPerStepCanAddCommentToATransitionTask {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -367,7 +360,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
-		WorkflowMetrics.goToBulkTransitionSelectTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		WorkflowMetrics.selectAllTransitionTasks();
 
@@ -390,12 +383,9 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that users can filter the tasks to be transitioned by steps"
-	@priority = "3"
+	@priority = 3
 	test OnChooseTransitionPerStepCanFilterByStep {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -429,10 +419,7 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
@@ -443,7 +430,7 @@ definition {
 			workflowMetricsTab = "DASHBOARD",
 			workflowProcess = "Single Approver");
 
-		WorkflowMetrics.goToBulkTransitionSelectTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		Click(locator1 = "WorkflowReassignModal#PROCESS_STEP_DROPDOWN");
 
@@ -481,12 +468,9 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that only the tasks selected on -Select Steps to Transition- are being considered to be transitioned in the -Choose Transition Per Step- step"
-	@priority = "4"
+	@priority = 4
 	test OnlySelectedTasksAreConsideredToBeTransitioned {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -519,10 +503,10 @@ definition {
 			workflowMetricsTab = "DASHBOARD",
 			workflowProcess = "Single Approver");
 
-		WorkflowMetrics.goToTransitionTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		Click(
-			key_task = "1",
+			key_task = 1,
 			locator1 = "WorkflowTransitionModal#TRANSITION_MODAL_CHECKBOX_ITEM");
 
 		Click(locator1 = "Button#NEXT");
@@ -537,12 +521,9 @@ definition {
 	}
 
 	@description = "LPS-108138 - Verify that when there are 11 or more instances to be transitioned with the same step, only the first 10 instances are displayed with the -Show All/Show Less- buttons available to be selected"
-	@priority = "3"
+	@priority = 3
 	test ShowAllLessButtonAvailable {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -550,24 +531,26 @@ definition {
 			workflowDefinition = "Single Approver",
 			workflowResourceValue = "Blogs Entry");
 
-		var count = "1";
+		var count = 1;
 
-		while ("${count}" != "12") {
+		while (${count} != 12) {
 			JSONBlog.addEntry(
 				entryContent = "Blogs Entry",
 				entryTitle = "Blogs Entry Title ${count}");
+
 			var count = ${count} + 1;
 		}
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
 
-		var count = "1";
+		var count = 1;
 
-		while ("${count}" != "12") {
+		while (${count} != 12) {
 			Workflow.assignToMeTaskByActions(
 				workflowAssetTitle = "Blogs Entry Title ${count}",
 				workflowAssetType = "Blogs Entry",
 				workflowTask = "Review");
+
 			var count = ${count} + 1;
 		}
 
@@ -575,7 +558,7 @@ definition {
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_VALUE");
 
-		WorkflowMetrics.goToBulkTransitionSelectTasks();
+		WorkflowMetrics.goToTransitionSteps();
 
 		Click(locator1 = "WorkflowMetricsAllItemsListTransitionTasks#SELECT_ALL_TRANSITION_TASKS");
 
@@ -585,47 +568,49 @@ definition {
 
 		AssertElementPresent(locator1 = "WorkflowMetricsAllItemsListTransitionTasks#WORKFLOW_ALL_ITEMS_SHOW_ALL_OR_LESS_BUTTON");
 
-		var count = "1";
+		var count = 1;
 
-		while ("${count}" != "11") {
+		while (${count} != 11) {
 			AssertVisible(
 				key_taskName = "Blogs Entry Title ${count}",
 				locator1 = "WorkflowTransitionModal#TRANSITION_TASK_NAME");
+
 			var count = ${count} + 1;
 		}
 
 		Click(locator1 = "WorkflowMetricsAllItemsListTransitionTasks#WORKFLOW_ALL_ITEMS_SHOW_ALL_OR_LESS_BUTTON");
 
-		var count = "1";
+		var count = 1;
 
-		while ("${count}" != "12") {
+		while (${count} != 12) {
 			AssertVisible(
 				key_taskName = "Blogs Entry Title ${count}",
 				locator1 = "WorkflowTransitionModal#TRANSITION_TASK_NAME");
+
 			var count = ${count} + 1;
 		}
 
 		Click(locator1 = "WorkflowMetricsAllItemsListTransitionTasks#WORKFLOW_ALL_ITEMS_SHOW_ALL_OR_LESS_BUTTON");
 
-		var count = "1";
+		var count = 1;
 
-		while ("${count}" != "11") {
+		while (${count} != 11) {
 			AssertVisible(
 				key_taskName = "Blogs Entry Title ${count}",
 				locator1 = "WorkflowTransitionModal#TRANSITION_TASK_NAME");
+
 			var count = ${count} + 1;
 		}
 	}
 
 	@description = "LPS-108138 - Verify that the tasks on -Choose Transition Per Step- are grouped by versioned tasks -when there are changes in the workflow process-"
-	@priority = "4"
+	@priority = 4
 	test TasksAreGroupedByVersionedTasks {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsListTransitionTasks#TasksAreGroupedByVersionedTasks";
+		property portal.upstream = "quarantine";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -634,74 +619,67 @@ definition {
 			workflowResourceValue = "Blogs Entry");
 
 		JSONBlog.addEntry(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title");
+			entryContent = "Blogs Entry Content 18432",
+			entryTitle = "Blogs Entry Title 18432");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Workflow.gotoEditWorkflowDefinition(workflowDefinitionTitle = "Single Approver");
 
-		KaleoDesigner.selectNode(nodeNodeLabel = "update");
+		ProcessBuilderKaleoDesignerReact.selectNode(nodeType = "task");
 
-		KaleoDesigner.deleteNode(nodeNodeLabel = "update");
+		ProcessBuilderKaleoDesignerReact.deleteNodeOrConnection(title = "task");
 
 		Button.click(button = "Update");
 
 		JSONBlog.addEntry(
-			entryContent = "Blogs Entry Content",
-			entryTitle = "Blogs Entry Title 2");
+			entryContent = "Blogs Entry Content 2 18432",
+			entryTitle = "Blogs Entry Title 2 18432");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
 
 		Workflow.assignToMeTaskByActions(
-			workflowAssetTitle = "Blogs Entry Title",
+			workflowAssetTitle = "Blogs Entry Title 18432",
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
 		Workflow.assignToMeTaskByActions(
-			workflowAssetTitle = "Blogs Entry Title 2",
+			workflowAssetTitle = "Blogs Entry Title 2 18432",
 			workflowAssetType = "Blogs Entry",
-			workflowTask = "Review");
+			workflowTask = "review");
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
-		if (IsNotChecked.isNotCheckedNotVisible(locator1 = "Checkbox#LEXICON_SELECT_ALL_INPUT")) {
-			Click(locator1 = "Checkbox#LEXICON_SELECT_ALL_CONTAINER");
-		}
-
-		Click(
-			locator1 = "WorkflowAllItems#KEBAB_DROPDOWN",
-			task = "1");
-
-		Click(locator1 = "WorkflowAllItems#TRANSITION_DROPDOWN");
+		WorkflowMetrics.goToTransitionSteps();
 
 		WorkflowMetrics.selectAllTransitionTasks();
 
 		AssertElementPresent(
-			key_taskName = "Blogs Entry Title",
+			key_taskName = "Blogs Entry Title 18432",
 			locator1 = "WorkflowTransitionModal#TRANSITION_MODAL_ASSERT_REVIEW_TASK_1");
 
 		AssertElementPresent(
-			key_taskName = "Blogs Entry Title 2",
+			key_taskName = "Blogs Entry Title 2 18432",
 			locator1 = "WorkflowTransitionModal#TRANSITION_MODAL_ASSERT_REVIEW_TASK_2");
 	}
 
 	@description = "LPS-105495 - Verify that tasks with more than 10 possible transitions have a scroll inside the dropdown field"
-	@priority = "3"
+	@priority = 3
 	test TasksWithMoreThan10PossibleTransitionsHasScroll {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsListTransitionTasks#TasksWithMoreThan10PossibleTransitionsHasScroll";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
-		Workflow.uploadDefinition(
-			workflowDefinitionFile = "10-transitions-workflow-definition.xml",
-			workflowDefinitionTitle = "Transitions Definition");
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Transitions Definition");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "10-transitions-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -727,7 +705,7 @@ definition {
 
 		Click(
 			locator1 = "WorkflowAllItems#KEBAB_DROPDOWN",
-			task = "1");
+			task = 1);
 
 		AssertElementPresent(locator1 = "WorkflowAllItems#TRANSITION_DROPDOWN_KEBAB");
 	}

@@ -65,7 +65,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ENTRY_CONTENT_ENTRY-->
+
 <tr>
 	<td>ENTRY_CONTENT_ENTRY_ANY</td>
 	<td>//*[@data-qa-id='row'][contains(.,'${key_rowEntry}')]//td[contains(.,'${key_rowAny}')]</td>
@@ -77,13 +79,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ENTRY_CONTENT_ENTRY_CHECKBOX_DISABLED</td>
+	<td>//*[@data-qa-id='row'][contains(@*,'${key_rowEntry}') or contains(.,'${key_rowEntry}')]//input[@title='Select' and @disabled]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ENTRY_CONTENT_ENTRY_CHOOSE</td>
 	<td>//*[@data-qa-id='row'][contains(.,'${key_rowEntry}')]//span[contains(.,'Choose')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ENTRY_CONTENT_ENTRY_NAME</td>
-	<td>//*[@data-qa-id='row']//*[normalize-space(text())='${key_rowEntry}']</td>
+	<td>//*[@data-qa-id='row']//*[normalize-space(text())='${key_rowEntry}'] | //*[@class="table-list-title" and contains (., '${key_rowEntry}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -114,23 +121,6 @@
 <tr>
 	<td>ENTRY_CONTENT_ENTRY_ELLIPSIS</td>
 	<td>//*[@data-qa-id='row'][contains(@*,'${key_rowEntry}') or contains(.,'${key_rowEntry}')]//a[span/*[name()='svg'][contains(@class,'icon-ellipsis')]]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
-<!--ENTRY_CONTENT_LIST-->
-<tr>
-	<td>ENTRY_CONTENT_LIST_COLUMN</td>
-	<td>//tr[@data-qa-id='row']/td[${key_columnNumber}]</td>
-	<td></td>
-</tr>
-<!--ENTRY_CONTENT_REDIRECT-->
-<tr>
-	<td>ENTRY_CONTENT_REDIRECT_DESTINATION_URL_COLUMN</td>
-	<td>//td[contains(@class,'lfr-destination-url-column')][contains(.,'${key_destinationURL}')]</td>
 	<td></td>
 </tr>
 <tr>

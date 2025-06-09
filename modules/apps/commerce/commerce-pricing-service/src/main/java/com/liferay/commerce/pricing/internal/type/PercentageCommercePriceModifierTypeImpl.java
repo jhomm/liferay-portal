@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.internal.type;
@@ -21,7 +12,7 @@ import com.liferay.commerce.pricing.constants.CommercePriceModifierConstants;
 import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.commerce.pricing.type.CommercePriceModifierType;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
 import java.math.BigDecimal;
@@ -38,7 +29,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.price.modifier.type.key=" + CommercePriceModifierConstants.MODIFIER_TYPE_PERCENTAGE,
 		"commerce.price.modifier.type.order:Integer=20"
@@ -67,10 +57,10 @@ public class PercentageCommercePriceModifierTypeImpl
 			commerceCurrency.getRoundingMode());
 
 		BigDecimal percentage = BigDecimal.ONE.add(
-			modifierAmount.divide(_ONE_HUNDRED));
+			modifierAmount.scaleByPowerOfTen(-2));
 
 		MathContext mathContext = new MathContext(
-			percentage.precision(), roundingMode);
+			originalPrice.precision(), roundingMode);
 
 		return originalPrice.multiply(percentage, mathContext);
 	}
@@ -85,12 +75,13 @@ public class PercentageCommercePriceModifierTypeImpl
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "percentage");
+		return _language.get(resourceBundle, "percentage");
 	}
-
-	private static final BigDecimal _ONE_HUNDRED = BigDecimal.valueOf(100);
 
 	@Reference
 	private CommercePriceListLocalService _commercePriceListLocalService;
+
+	@Reference
+	private Language _language;
 
 }

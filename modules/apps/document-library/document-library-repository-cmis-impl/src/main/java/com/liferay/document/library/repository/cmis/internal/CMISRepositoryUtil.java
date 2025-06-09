@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.cmis.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.exception.InvalidRepositoryException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -55,7 +48,7 @@ public class CMISRepositoryUtil {
 			Validator.isNull(
 				typeSettingsUnicodeProperties.getProperty(typeSettingsKey))) {
 
-			Repository cmisRepository = getCMISRepository(parameters);
+			Repository cmisRepository = _getCMISRepository(parameters);
 
 			typeSettingsUnicodeProperties.setProperty(
 				typeSettingsKey, cmisRepository.getId());
@@ -79,14 +72,9 @@ public class CMISRepositoryUtil {
 			createSession(Map<String, String> parameters)
 		throws PrincipalException, RepositoryException {
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				CMISRepositoryUtil.class.getClassLoader())) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		currentThread.setContextClassLoader(
-			CMISRepositoryUtil.class.getClassLoader());
-
-		try {
 			Session session = _sessionFactory.createSession(parameters);
 
 			session.setDefaultContext(_operationContext);
@@ -106,9 +94,6 @@ public class CMISRepositoryUtil {
 		catch (Exception exception) {
 			throw new RepositoryException(exception);
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
 	}
 
 	public static String getTypeSettingsValue(
@@ -127,24 +112,16 @@ public class CMISRepositoryUtil {
 		return value;
 	}
 
-	protected static Repository getCMISRepository(
+	private static Repository _getCMISRepository(
 		Map<String, String> parameters) {
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				CMISRepositoryUtil.class.getClassLoader())) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		currentThread.setContextClassLoader(
-			CMISRepositoryUtil.class.getClassLoader());
-
-		try {
 			List<Repository> repositories = _sessionFactory.getRepositories(
 				parameters);
 
 			return repositories.get(0);
-		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
 		}
 	}
 
@@ -153,39 +130,39 @@ public class CMISRepositoryUtil {
 		SessionFactoryImpl.newInstance();
 
 	static {
-		Set<String> defaultFilterSet = new HashSet<>();
+		Set<String> defaultFilters = new HashSet<>();
 
 		// Base
 
-		defaultFilterSet.add(PropertyIds.BASE_TYPE_ID);
-		defaultFilterSet.add(PropertyIds.CREATED_BY);
-		defaultFilterSet.add(PropertyIds.CREATION_DATE);
-		defaultFilterSet.add(PropertyIds.LAST_MODIFICATION_DATE);
-		defaultFilterSet.add(PropertyIds.LAST_MODIFIED_BY);
-		defaultFilterSet.add(PropertyIds.NAME);
-		defaultFilterSet.add(PropertyIds.OBJECT_ID);
-		defaultFilterSet.add(PropertyIds.OBJECT_TYPE_ID);
+		defaultFilters.add(PropertyIds.BASE_TYPE_ID);
+		defaultFilters.add(PropertyIds.CREATED_BY);
+		defaultFilters.add(PropertyIds.CREATION_DATE);
+		defaultFilters.add(PropertyIds.LAST_MODIFICATION_DATE);
+		defaultFilters.add(PropertyIds.LAST_MODIFIED_BY);
+		defaultFilters.add(PropertyIds.NAME);
+		defaultFilters.add(PropertyIds.OBJECT_ID);
+		defaultFilters.add(PropertyIds.OBJECT_TYPE_ID);
 
 		// Document
 
-		defaultFilterSet.add(PropertyIds.CONTENT_STREAM_LENGTH);
-		defaultFilterSet.add(PropertyIds.CONTENT_STREAM_MIME_TYPE);
-		defaultFilterSet.add(PropertyIds.IS_VERSION_SERIES_CHECKED_OUT);
-		defaultFilterSet.add(PropertyIds.VERSION_LABEL);
-		defaultFilterSet.add(PropertyIds.VERSION_SERIES_CHECKED_OUT_BY);
-		defaultFilterSet.add(PropertyIds.VERSION_SERIES_CHECKED_OUT_ID);
-		defaultFilterSet.add(PropertyIds.VERSION_SERIES_ID);
+		defaultFilters.add(PropertyIds.CONTENT_STREAM_LENGTH);
+		defaultFilters.add(PropertyIds.CONTENT_STREAM_MIME_TYPE);
+		defaultFilters.add(PropertyIds.IS_VERSION_SERIES_CHECKED_OUT);
+		defaultFilters.add(PropertyIds.VERSION_LABEL);
+		defaultFilters.add(PropertyIds.VERSION_SERIES_CHECKED_OUT_BY);
+		defaultFilters.add(PropertyIds.VERSION_SERIES_CHECKED_OUT_ID);
+		defaultFilters.add(PropertyIds.VERSION_SERIES_ID);
 
 		// Folder
 
-		defaultFilterSet.add(PropertyIds.PARENT_ID);
-		defaultFilterSet.add(PropertyIds.PATH);
+		defaultFilters.add(PropertyIds.PARENT_ID);
+		defaultFilters.add(PropertyIds.PATH);
 
 		// Operation context
 
 		_operationContext = new OperationContextImpl(
-			defaultFilterSet, false, true, false, IncludeRelationships.NONE,
-			null, false, "cmis:name ASC", true, 1000);
+			defaultFilters, false, true, false, IncludeRelationships.NONE, null,
+			false, "cmis:name ASC", true, 1000);
 	}
 
 }

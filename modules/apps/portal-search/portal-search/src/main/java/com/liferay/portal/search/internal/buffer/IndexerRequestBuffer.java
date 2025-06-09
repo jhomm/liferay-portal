@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.buffer;
@@ -29,7 +20,7 @@ public class IndexerRequestBuffer {
 
 	public static IndexerRequestBuffer create() {
 		List<IndexerRequestBuffer> indexerRequestBuffers =
-			_indexerRequestBuffersThreadLocal.get();
+			_indexerRequestBuffers.get();
 
 		IndexerRequestBuffer indexerRequestBuffer = new IndexerRequestBuffer();
 
@@ -40,7 +31,7 @@ public class IndexerRequestBuffer {
 
 	public static IndexerRequestBuffer get() {
 		List<IndexerRequestBuffer> indexerRequestBuffers =
-			_indexerRequestBuffersThreadLocal.get();
+			_indexerRequestBuffers.get();
 
 		if (indexerRequestBuffers.isEmpty()) {
 			return null;
@@ -51,7 +42,7 @@ public class IndexerRequestBuffer {
 
 	public static IndexerRequestBuffer remove() {
 		List<IndexerRequestBuffer> indexerRequestBuffers =
-			_indexerRequestBuffersThreadLocal.get();
+			_indexerRequestBuffers.get();
 
 		if (indexerRequestBuffers.isEmpty()) {
 			return null;
@@ -91,9 +82,22 @@ public class IndexerRequestBuffer {
 		return _indexerRequests.size();
 	}
 
+	public IndexerRequestBuffer transferCopy() {
+		IndexerRequestBuffer indexerRequestBuffer = new IndexerRequestBuffer();
+
+		LinkedHashMap<IndexerRequest, IndexerRequest> indexerRequests =
+			indexerRequestBuffer._indexerRequests;
+
+		indexerRequests.putAll(_indexerRequests);
+
+		_indexerRequests.clear();
+
+		return indexerRequestBuffer;
+	}
+
 	private static final ThreadLocal<List<IndexerRequestBuffer>>
-		_indexerRequestBuffersThreadLocal = new CentralizedThreadLocal<>(
-			IndexerRequestBuffer.class + "._indexerRequestBuffersThreadLocal",
+		_indexerRequestBuffers = new CentralizedThreadLocal<>(
+			IndexerRequestBuffer.class + "._indexerRequestBuffers",
 			ArrayList::new);
 
 	private final LinkedHashMap<IndexerRequest, IndexerRequest>

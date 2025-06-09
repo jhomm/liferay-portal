@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser;
@@ -79,7 +70,18 @@ public class JavaParser {
 			File file, String content, int maxLineLength, boolean writeFile)
 		throws CheckstyleException, IOException {
 
-		String newContent = _parse(file, content, maxLineLength, false);
+		return parse(
+			file, ToolsUtil.getPackagePath(file), content, maxLineLength,
+			writeFile);
+	}
+
+	public static String parse(
+			File file, String packagePath, String content, int maxLineLength,
+			boolean writeFile)
+		throws CheckstyleException, IOException {
+
+		String newContent = _parse(
+			file, packagePath, content, maxLineLength, false);
 
 		if (writeFile && !newContent.equals(content)) {
 			FileUtil.write(file, newContent);
@@ -127,13 +129,15 @@ public class JavaParser {
 					StringPool.SLASH, System.currentTimeMillis(),
 					PwdGenerator.getPassword(8, PwdGenerator.KEY2), ".java");
 
+				File file = new File(fileName);
+
 				newJavaContent = _parse(
-					new File(fileName), javaContent,
+					file, ToolsUtil.getPackagePath(file), javaContent,
 					JavaParserUtil.NO_MAX_LINE_LENGTH, true);
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 
 				failureCount++;
@@ -422,7 +426,9 @@ public class JavaParser {
 			javaTermContent.contains(
 				"\n" + JavaEnumConstantDefinition.NESTED_CODE_BLOCK + "\n") ||
 			javaTermContent.contains(
-				"\n" + JavaLambdaExpression.NESTED_CODE_BLOCK + "\n")) {
+				"\n" + JavaLambdaExpression.NESTED_CODE_BLOCK + "\n") ||
+			javaTermContent.contains(
+				"\n" + JavaSwitchExpression.NESTED_CODE_BLOCK + "\n")) {
 
 			return _addJavaTermWithNestedCodeBlocks(
 				parsedJavaClass, detailAST, javaTermContent, className,
@@ -484,6 +490,10 @@ public class JavaParser {
 				else if (line.equals(JavaLambdaExpression.NESTED_CODE_BLOCK)) {
 					followingNestedCodeBlockClassName =
 						JavaLambdaExpression.class.getName();
+				}
+				else if (line.equals(JavaSwitchExpression.NESTED_CODE_BLOCK)) {
+					followingNestedCodeBlockClassName =
+						JavaSwitchExpression.class.getName();
 				}
 				else {
 					sb.append(line);
@@ -685,13 +695,36 @@ public class JavaParser {
 		else if (detailAST.getType() == TokenTypes.LAMBDA) {
 			DetailAST lastChildDetailAST = detailAST.getLastChild();
 
-			if (lastChildDetailAST.getType() == TokenTypes.SLIST) {
+			if ((lastChildDetailAST != null) &&
+				(lastChildDetailAST.getType() == TokenTypes.SLIST)) {
+
 				curlyBracePositionList.add(
 					new Position(
 						lastChildDetailAST.getLineNo(),
 						lastChildDetailAST.getColumnNo() + 1));
 
 				lastChildDetailAST = lastChildDetailAST.getLastChild();
+
+				curlyBracePositionList.add(
+					new Position(
+						lastChildDetailAST.getLineNo(),
+						lastChildDetailAST.getColumnNo()));
+			}
+		}
+		else if (detailAST.getType() == TokenTypes.LITERAL_SWITCH) {
+			DetailAST switchRuleDetailAST = detailAST.findFirstToken(
+				TokenTypes.SWITCH_RULE);
+
+			if (switchRuleDetailAST != null) {
+				DetailAST previousSiblingDetailAST =
+					switchRuleDetailAST.getPreviousSibling();
+
+				curlyBracePositionList.add(
+					new Position(
+						previousSiblingDetailAST.getLineNo(),
+						previousSiblingDetailAST.getColumnNo() + 1));
+
+				DetailAST lastChildDetailAST = detailAST.getLastChild();
 
 				curlyBracePositionList.add(
 					new Position(
@@ -929,11 +962,7 @@ public class JavaParser {
 	}
 
 	private static boolean _isAtLineStart(String line, int x) {
-		if (Validator.isNull(StringUtil.trim(line.substring(0, x)))) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNull(StringUtil.trim(line.substring(0, x)));
 	}
 
 	private static boolean _isExcludedJavaTerm(ParsedJavaTerm parsedJavaTerm) {
@@ -959,7 +988,7 @@ public class JavaParser {
 	}
 
 	private static String _parse(
-			File file, String content, int maxLineLength,
+			File file, String packagePath, String content, int maxLineLength,
 			boolean abortOnNestedCommentToken)
 		throws CheckstyleException, IOException {
 
@@ -985,23 +1014,23 @@ public class JavaParser {
 			content, parsedJavaClass, fileContents);
 
 		if (!newContent.equals(content)) {
-			return _parse(file, newContent, maxLineLength, false);
+			return _parse(file, packagePath, newContent, maxLineLength, false);
 		}
 
 		newContent = _parseContent(parsedJavaClass, fileContents, lines);
 
 		if (!newContent.equals(content)) {
-			return _parse(file, newContent, maxLineLength, false);
+			return _parse(file, packagePath, newContent, maxLineLength, false);
 		}
 
 		ImportsFormatter importsFormatter = new JavaImportsFormatter();
 
 		newContent = importsFormatter.format(
-			_trimContent(newContent), ToolsUtil.getPackagePath(file),
+			_trimContent(newContent), packagePath,
 			StringUtil.replaceLast(file.getName(), ".java", StringPool.BLANK));
 
 		if (!newContent.equals(content)) {
-			return _parse(file, newContent, maxLineLength, false);
+			return _parse(file, packagePath, newContent, maxLineLength, false);
 		}
 
 		return newContent;
@@ -1152,6 +1181,16 @@ public class JavaParser {
 					parsedJavaClass, caseGroupDetailAST, fileContents,
 					maxLineLength);
 			}
+
+			List<DetailAST> switchRuleDetailASTList =
+				DetailASTUtil.getAllChildTokens(
+					detailAST, false, TokenTypes.SWITCH_RULE);
+
+			for (DetailAST switchRuleDetailAST : switchRuleDetailASTList) {
+				parsedJavaClass = _parseDetailAST(
+					parsedJavaClass, switchRuleDetailAST, fileContents,
+					maxLineLength);
+			}
 		}
 		else if (detailAST.getType() == TokenTypes.LITERAL_TRY) {
 			List<DetailAST> literalCatchDetailASTList =
@@ -1244,7 +1283,8 @@ public class JavaParser {
 		if (((detailAST.getType() == TokenTypes.ANNOTATION_DEF) ||
 			 (detailAST.getType() == TokenTypes.CLASS_DEF) ||
 			 (detailAST.getType() == TokenTypes.ENUM_DEF) ||
-			 (detailAST.getType() == TokenTypes.INTERFACE_DEF)) &&
+			 (detailAST.getType() == TokenTypes.INTERFACE_DEF) ||
+			 (detailAST.getType() == TokenTypes.RECORD_DEF)) &&
 			((parentDetailAST == null) ||
 			 (parentDetailAST.getType() != TokenTypes.OBJBLOCK))) {
 
@@ -1253,7 +1293,8 @@ public class JavaParser {
 		}
 		else if ((detailAST.getType() == TokenTypes.IMPORT) ||
 				 (detailAST.getType() == TokenTypes.PACKAGE_DEF) ||
-				 (detailAST.getType() == TokenTypes.STATIC_IMPORT)) {
+				 (detailAST.getType() == TokenTypes.STATIC_IMPORT) ||
+				 (detailAST.getType() == TokenTypes.SWITCH_RULE)) {
 
 			parsedJavaClass = _parseDetailAST(
 				parsedJavaClass, detailAST, fileContents, maxLineLength);

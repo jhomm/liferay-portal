@@ -1,50 +1,61 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.util.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.product.exception.CPDefinitionIgnoreSKUCombinationsException;
+import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
+import com.liferay.commerce.context.CommerceContextFactory;
+import com.liferay.commerce.context.CommerceContextThreadLocal;
+import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
+import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
+import com.liferay.commerce.product.constants.CommerceChannelConstants;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.product.service.CPOptionLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalServiceUtil;
+import com.liferay.commerce.product.service.CommerceChannelLocalServiceUtil;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.product.type.simple.constants.SimpleCPTypeConstants;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.test.util.price.list.CommercePriceListTestUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -85,10 +96,27 @@ public class CPInstanceHelperTest {
 
 	@Before
 	public void setUp() throws Exception {
+		_user = UserTestUtil.addUser();
+
+		_group = GroupTestUtil.addGroup(
+			_user.getCompanyId(), _user.getUserId(),
+			GroupConstants.DEFAULT_PARENT_GROUP_ID);
+
+		_serviceContext = ServiceContextTestUtil.getServiceContext(
+			_user.getCompanyId(), _group.getGroupId(), _user.getUserId());
+
 		_commerceCatalog = CommerceCatalogLocalServiceUtil.addCommerceCatalog(
 			null, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			LocaleUtil.US.getDisplayLanguage(),
-			ServiceContextTestUtil.getServiceContext(_company.getGroupId()));
+			LocaleUtil.US.getDisplayLanguage(), _serviceContext);
+
+		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+			_user.getCompanyId());
+
+		_commerceChannel = CommerceChannelLocalServiceUtil.addCommerceChannel(
+			null, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			_group.getGroupId(), "Test Channel",
+			CommerceChannelConstants.CHANNEL_TYPE_SITE, null,
+			_commerceCurrency.getCode(), _serviceContext);
 	}
 
 	@After
@@ -121,13 +149,13 @@ public class CPInstanceHelperTest {
 			"There is only CP instance A that represents SKU value " +
 				"combination Option_1_Value_2, Option_2_Value_1"
 		).and(
-			"serialized DDM form values contains combination " +
+			"serialized form field values contains combination " +
 				"Option_1_Value_2, Option_2_Value_1"
 		).then(
 			"CP instance A must be fetched"
 		).but(
 			StringBundler.concat(
-				"If serialized DDM form values contains combination other ",
+				"If serialized form field values contains combination other ",
 				"than Option_1_Value_2, Option_2_Value_1 nothing should be ",
 				"fetched")
 		);
@@ -156,7 +184,7 @@ public class CPInstanceHelperTest {
 
 		CPInstance cpInstanceA = cpDefinitionInstances.get(2);
 
-		List<String> deletedCPInstanceDDMFormSerializedValues =
+		List<String> deletedCPInstanceFormFieldSerializedValues =
 			new ArrayList<>();
 
 		for (CPInstance cpDefinitionInstance : cpDefinitionInstances) {
@@ -166,8 +194,8 @@ public class CPInstanceHelperTest {
 				continue;
 			}
 
-			deletedCPInstanceDDMFormSerializedValues.add(
-				_getSerializedDDMFormValues(cpDefinitionInstance));
+			deletedCPInstanceFormFieldSerializedValues.add(
+				_getSerializedFormFieldValues(cpDefinitionInstance));
 
 			_cpInstanceLocalService.deleteCPInstance(cpDefinitionInstance);
 		}
@@ -183,7 +211,7 @@ public class CPInstanceHelperTest {
 
 		CPInstance fetchCPInstance = _cpInstanceHelper.fetchCPInstance(
 			cpDefinition.getCPDefinitionId(),
-			_getSerializedDDMFormValues(cpInstanceA));
+			_getSerializedFormFieldValues(cpInstanceA));
 
 		Assert.assertNotNull("Fetched CP instance exist", fetchCPInstance);
 
@@ -191,13 +219,13 @@ public class CPInstanceHelperTest {
 			"Fetched CP instance equals CP instance A",
 			cpInstanceA.getCPInstanceId(), fetchCPInstance.getCPInstanceId());
 
-		for (String deletedCPInstanceDDMFormSerializedValue :
-				deletedCPInstanceDDMFormSerializedValues) {
+		for (String deletedCPInstanceFormFieldSerializedValue :
+				deletedCPInstanceFormFieldSerializedValues) {
 
 			Assert.assertNull(
 				_cpInstanceHelper.fetchCPInstance(
 					cpDefinition.getCPDefinitionId(),
-					deletedCPInstanceDDMFormSerializedValue));
+					deletedCPInstanceFormFieldSerializedValue));
 		}
 	}
 
@@ -241,7 +269,7 @@ public class CPInstanceHelperTest {
 		CPInstance expectedCPInstance = cpDefinitionInstances.get(0);
 
 		CPInstance fetchCPInstance = _cpInstanceHelper.fetchCPInstance(
-			cpDefinition.getCPDefinitionId(), null);
+			cpDefinition.getCPDefinitionId(), StringPool.BLANK);
 
 		Assert.assertEquals(
 			"Default CP instance cpInstanceId",
@@ -260,10 +288,45 @@ public class CPInstanceHelperTest {
 			"Product instance count", 0, cpDefinitionInstances.size());
 
 		fetchCPInstance = _cpInstanceHelper.fetchCPInstance(
-			cpDefinition.getCPDefinitionId(), null);
+			cpDefinition.getCPDefinitionId(), StringPool.BLANK);
 
 		Assert.assertNull(
 			"Fetched CP instance does not exist", fetchCPInstance);
+	}
+
+	@Test
+	public void testFetchCPInstanceUnitPrice() throws Exception {
+		frutillaRule.scenario(
+			"Fetch unit price for cpInstance"
+		).given(
+			"a price entry is added for the cpInstance"
+		).when(
+			"the unit price for cpInstance is fetched"
+		).then(
+			"price is returned"
+		);
+
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString() + "@liferay.com",
+				RandomTestUtil.randomString(), new long[] {_user.getUserId()},
+				null, _serviceContext);
+
+		CommerceContextThreadLocal.set(
+			_commerceContextFactory.create(
+				accountEntry.getAccountEntryId(), _commerceChannel.getGroupId(),
+				null, 0, _company.getCompanyId()));
+
+		CommercePriceListTestUtil.addCommercePriceList(
+			_commerceCatalog.getGroupId(), true,
+			CommercePriceListConstants.TYPE_PRICE_LIST, 1.0);
+
+		BigDecimal unitPrice = _cpInstanceHelper.fetchCPInstanceUnitPrice(
+			CPTestUtil.addCPInstanceFromCatalog(
+				_commerceCatalog.getGroupId(), BigDecimal.TEN));
+
+		Assert.assertEquals(unitPrice, BigDecimal.TEN);
 	}
 
 	@Test
@@ -307,7 +370,7 @@ public class CPInstanceHelperTest {
 			defaultCPInstance.getCPInstanceId());
 	}
 
-	@Test(expected = CPDefinitionIgnoreSKUCombinationsException.class)
+	@Test
 	public void testGetDefaultCPInstanceIfSKUContributorOptionPresent()
 		throws Exception {
 
@@ -367,8 +430,10 @@ public class CPInstanceHelperTest {
 			"Product approved instances count", 1,
 			approvedCPDefinitionInstances.size());
 
-		_cpInstanceHelper.getDefaultCPInstance(
-			cpDefinition.getCPDefinitionId());
+		Assert.assertEquals(
+			_cpInstanceHelper.getDefaultCPInstance(
+				cpDefinition.getCPDefinitionId()),
+			approvedCPDefinitionInstances.get(0));
 	}
 
 	@Test
@@ -393,8 +458,9 @@ public class CPInstanceHelperTest {
 
 		cpDefinitionOptionRel1.setPriority(2);
 
-		_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
-			cpDefinitionOptionRel1);
+		cpDefinitionOptionRel1 =
+			_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
+				cpDefinitionOptionRel1);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel2 =
 			CPTestUtil.addCPDefinitionOptionRel(
@@ -403,21 +469,22 @@ public class CPInstanceHelperTest {
 
 		cpDefinitionOptionRel2.setPriority(1);
 
-		_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
-			cpDefinitionOptionRel2);
+		cpDefinitionOptionRel2 =
+			_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
+				cpDefinitionOptionRel2);
 
 		Map<CPDefinitionOptionRel, List<CPDefinitionOptionValueRel>>
-			cpDefinitionOptionRelsMap =
-				_cpInstanceHelper.getCPDefinitionOptionRelsMap(
+			cpDefinitionOptionValueRelsMap =
+				_cpInstanceHelper.getCPDefinitionOptionValueRelsMap(
 					cpDefinition.getCPDefinitionId(), true, true);
 
-		Assert.assertNotNull(cpDefinitionOptionRelsMap);
+		Assert.assertNotNull(cpDefinitionOptionValueRelsMap);
 		Assert.assertEquals(
-			cpDefinitionOptionRelsMap.toString(), 2,
-			cpDefinitionOptionRelsMap.size());
+			cpDefinitionOptionValueRelsMap.toString(), 2,
+			cpDefinitionOptionValueRelsMap.size());
 
 		List<CPDefinitionOptionRel> keys = new ArrayList<>(
-			cpDefinitionOptionRelsMap.keySet());
+			cpDefinitionOptionValueRelsMap.keySet());
 
 		CPDefinitionOptionRel orderedCPDefinitionOptionRel1 = keys.get(0);
 		CPDefinitionOptionRel orderedCPDefinitionOptionRel2 = keys.get(1);
@@ -450,8 +517,9 @@ public class CPInstanceHelperTest {
 
 		cpDefinitionOptionRel1.setName("Size");
 
-		_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
-			cpDefinitionOptionRel1);
+		cpDefinitionOptionRel1 =
+			_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
+				cpDefinitionOptionRel1);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel2 =
 			CPTestUtil.addCPDefinitionOptionRel(
@@ -460,21 +528,22 @@ public class CPInstanceHelperTest {
 
 		cpDefinitionOptionRel2.setName("Color");
 
-		_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
-			cpDefinitionOptionRel2);
+		cpDefinitionOptionRel2 =
+			_cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
+				cpDefinitionOptionRel2);
 
 		Map<CPDefinitionOptionRel, List<CPDefinitionOptionValueRel>>
-			cpDefinitionOptionRelsMap =
-				_cpInstanceHelper.getCPDefinitionOptionRelsMap(
+			cpDefinitionOptionValueRelsMap =
+				_cpInstanceHelper.getCPDefinitionOptionValueRelsMap(
 					cpDefinition.getCPDefinitionId(), true, true);
 
-		Assert.assertNotNull(cpDefinitionOptionRelsMap);
+		Assert.assertNotNull(cpDefinitionOptionValueRelsMap);
 		Assert.assertEquals(
-			cpDefinitionOptionRelsMap.toString(), 2,
-			cpDefinitionOptionRelsMap.size());
+			cpDefinitionOptionValueRelsMap.toString(), 2,
+			cpDefinitionOptionValueRelsMap.size());
 
 		List<CPDefinitionOptionRel> keys = new ArrayList<>(
-			cpDefinitionOptionRelsMap.keySet());
+			cpDefinitionOptionValueRelsMap.keySet());
 
 		CPDefinitionOptionRel orderedCPDefinitionOptionRel1 = keys.get(0);
 		CPDefinitionOptionRel orderedCPDefinitionOptionRel2 = keys.get(1);
@@ -488,7 +557,7 @@ public class CPInstanceHelperTest {
 	@Rule
 	public final FrutillaRule frutillaRule = new FrutillaRule();
 
-	private String _getSerializedDDMFormValues(CPInstance cpInstance)
+	private String _getSerializedFormFieldValues(CPInstance cpInstance)
 		throws Exception {
 
 		Map<String, List<String>>
@@ -557,6 +626,15 @@ public class CPInstanceHelperTest {
 	@Inject
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
+	@DeleteAfterTestRun
+	private CommerceChannel _commerceChannel;
+
+	@Inject
+	private CommerceContextFactory _commerceContextFactory;
+
+	@DeleteAfterTestRun
+	private CommerceCurrency _commerceCurrency;
+
 	@Inject
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
@@ -572,5 +650,13 @@ public class CPInstanceHelperTest {
 
 	@Inject
 	private CPOptionLocalService _cpOptionLocalService;
+
+	@DeleteAfterTestRun
+	private Group _group;
+
+	private ServiceContext _serviceContext;
+
+	@DeleteAfterTestRun
+	private User _user;
 
 }

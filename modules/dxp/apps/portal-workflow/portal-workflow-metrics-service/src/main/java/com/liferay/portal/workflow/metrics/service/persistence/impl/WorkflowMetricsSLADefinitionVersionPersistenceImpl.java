@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.service.persistence.impl;
@@ -29,7 +20,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -51,7 +41,6 @@ import com.liferay.portal.workflow.metrics.service.persistence.impl.constants.Wo
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -79,12 +68,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {
-		WorkflowMetricsSLADefinitionVersionPersistence.class,
-		BasePersistence.class
-	}
-)
+@Component(service = WorkflowMetricsSLADefinitionVersionPersistence.class)
 public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 	extends BasePersistenceImpl<WorkflowMetricsSLADefinitionVersion>
 	implements WorkflowMetricsSLADefinitionVersionPersistence {
@@ -206,7 +190,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 		if (useFinderCache) {
 			list =
 				(List<WorkflowMetricsSLADefinitionVersion>)
-					finderCache.getResult(finderPath, finderArgs);
+					finderCache.getResult(finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowMetricsSLADefinitionVersion
@@ -619,7 +603,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -674,7 +658,6 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 		"(workflowMetricsSLADefinitionVersion.uuid IS NULL OR workflowMetricsSLADefinitionVersion.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the workflow metrics sla definition version where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchSLADefinitionVersionException</code> if it could not be found.
@@ -753,7 +736,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
 
 		if (result instanceof WorkflowMetricsSLADefinitionVersion) {
@@ -864,62 +847,14 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		WorkflowMetricsSLADefinitionVersion
+			workflowMetricsSLADefinitionVersion = fetchByUUID_G(uuid, groupId);
 
-		FinderPath finderPath = _finderPathCountByUUID_G;
-
-		Object[] finderArgs = new Object[] {uuid, groupId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_WORKFLOWMETRICSSLADEFINITIONVERSION_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (workflowMetricsSLADefinitionVersion == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -1041,7 +976,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 		if (useFinderCache) {
 			list =
 				(List<WorkflowMetricsSLADefinitionVersion>)
-					finderCache.getResult(finderPath, finderArgs);
+					finderCache.getResult(finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowMetricsSLADefinitionVersion
@@ -1480,7 +1415,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1656,7 +1591,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 		if (useFinderCache) {
 			list =
 				(List<WorkflowMetricsSLADefinitionVersion>)
-					finderCache.getResult(finderPath, finderArgs);
+					finderCache.getResult(finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (WorkflowMetricsSLADefinitionVersion
@@ -2066,7 +2001,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {workflowMetricsSLADefinitionId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2109,7 +2044,6 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 			"workflowMetricsSLADefinitionVersion.workflowMetricsSLADefinitionId = ?";
 
 	private FinderPath _finderPathFetchByV_WMSLAD;
-	private FinderPath _finderPathCountByV_WMSLAD;
 
 	/**
 	 * Returns the workflow metrics sla definition version where version = &#63; and workflowMetricsSLADefinitionId = &#63; or throws a <code>NoSuchSLADefinitionVersionException</code> if it could not be found.
@@ -2190,7 +2124,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByV_WMSLAD, finderArgs);
+				_finderPathFetchByV_WMSLAD, finderArgs, this);
 		}
 
 		if (result instanceof WorkflowMetricsSLADefinitionVersion) {
@@ -2324,64 +2258,15 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 	public int countByV_WMSLAD(
 		String version, long workflowMetricsSLADefinitionId) {
 
-		version = Objects.toString(version, "");
+		WorkflowMetricsSLADefinitionVersion
+			workflowMetricsSLADefinitionVersion = fetchByV_WMSLAD(
+				version, workflowMetricsSLADefinitionId);
 
-		FinderPath finderPath = _finderPathCountByV_WMSLAD;
-
-		Object[] finderArgs = new Object[] {
-			version, workflowMetricsSLADefinitionId
-		};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_WORKFLOWMETRICSSLADEFINITIONVERSION_WHERE);
-
-			boolean bindVersion = false;
-
-			if (version.isEmpty()) {
-				sb.append(_FINDER_COLUMN_V_WMSLAD_VERSION_3);
-			}
-			else {
-				bindVersion = true;
-
-				sb.append(_FINDER_COLUMN_V_WMSLAD_VERSION_2);
-			}
-
-			sb.append(_FINDER_COLUMN_V_WMSLAD_WORKFLOWMETRICSSLADEFINITIONID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindVersion) {
-					queryPos.add(version);
-				}
-
-				queryPos.add(workflowMetricsSLADefinitionId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (workflowMetricsSLADefinitionVersion == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_V_WMSLAD_VERSION_2 =
@@ -2547,7 +2432,6 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 			workflowMetricsSLADefinitionVersionModelImpl.getGroupId()
 		};
 
-		finderCache.putResult(_finderPathCountByUUID_G, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByUUID_G, args,
 			workflowMetricsSLADefinitionVersionModelImpl);
@@ -2558,8 +2442,6 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 				getWorkflowMetricsSLADefinitionId()
 		};
 
-		finderCache.putResult(
-			_finderPathCountByV_WMSLAD, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByV_WMSLAD, args,
 			workflowMetricsSLADefinitionVersionModelImpl);
@@ -2938,7 +2820,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 		if (useFinderCache) {
 			list =
 				(List<WorkflowMetricsSLADefinitionVersion>)
-					finderCache.getResult(finderPath, finderArgs);
+					finderCache.getResult(finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3012,7 +2894,7 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -3107,11 +2989,6 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
 
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
-
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
 			new String[] {
@@ -3159,38 +3036,15 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"version", "wmSLADefinitionId"}, true);
 
-		_finderPathCountByV_WMSLAD = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByV_WMSLAD",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"version", "wmSLADefinitionId"}, false);
-
-		_setWorkflowMetricsSLADefinitionVersionUtilPersistence(this);
+		WorkflowMetricsSLADefinitionVersionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setWorkflowMetricsSLADefinitionVersionUtilPersistence(null);
+		WorkflowMetricsSLADefinitionVersionUtil.setPersistence(null);
 
 		entityCache.removeCache(
 			WorkflowMetricsSLADefinitionVersionImpl.class.getName());
-	}
-
-	private void _setWorkflowMetricsSLADefinitionVersionUtilPersistence(
-		WorkflowMetricsSLADefinitionVersionPersistence
-			workflowMetricsSLADefinitionVersionPersistence) {
-
-		try {
-			Field field =
-				WorkflowMetricsSLADefinitionVersionUtil.class.getDeclaredField(
-					"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, workflowMetricsSLADefinitionVersionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3262,9 +3116,5 @@ public class WorkflowMetricsSLADefinitionVersionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private WorkflowMetricsSLADefinitionVersionModelArgumentsResolver
-		_workflowMetricsSLADefinitionVersionModelArgumentsResolver;
 
 }

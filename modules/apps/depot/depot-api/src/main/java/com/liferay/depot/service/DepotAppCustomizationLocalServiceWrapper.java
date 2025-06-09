@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service;
 
+import com.liferay.depot.model.DepotAppCustomization;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link DepotAppCustomizationLocalService}.
@@ -26,6 +21,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class DepotAppCustomizationLocalServiceWrapper
 	implements DepotAppCustomizationLocalService,
 			   ServiceWrapper<DepotAppCustomizationLocalService> {
+
+	public DepotAppCustomizationLocalServiceWrapper() {
+		this(null);
+	}
 
 	public DepotAppCustomizationLocalServiceWrapper(
 		DepotAppCustomizationLocalService depotAppCustomizationLocalService) {
@@ -44,10 +43,8 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @return the depot app customization that was added
 	 */
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-		addDepotAppCustomization(
-			com.liferay.depot.model.DepotAppCustomization
-				depotAppCustomization) {
+	public DepotAppCustomization addDepotAppCustomization(
+		DepotAppCustomization depotAppCustomization) {
 
 		return _depotAppCustomizationLocalService.addDepotAppCustomization(
 			depotAppCustomization);
@@ -60,8 +57,8 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @return the new depot app customization
 	 */
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-		createDepotAppCustomization(long depotAppCustomizationId) {
+	public DepotAppCustomization createDepotAppCustomization(
+		long depotAppCustomizationId) {
 
 		return _depotAppCustomizationLocalService.createDepotAppCustomization(
 			depotAppCustomizationId);
@@ -90,10 +87,8 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @return the depot app customization that was removed
 	 */
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-		deleteDepotAppCustomization(
-			com.liferay.depot.model.DepotAppCustomization
-				depotAppCustomization) {
+	public DepotAppCustomization deleteDepotAppCustomization(
+		DepotAppCustomization depotAppCustomization) {
 
 		return _depotAppCustomizationLocalService.deleteDepotAppCustomization(
 			depotAppCustomization);
@@ -111,8 +106,8 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @throws PortalException if a depot app customization with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-			deleteDepotAppCustomization(long depotAppCustomizationId)
+	public DepotAppCustomization deleteDepotAppCustomization(
+			long depotAppCustomizationId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotAppCustomizationLocalService.deleteDepotAppCustomization(
@@ -236,16 +231,16 @@ public class DepotAppCustomizationLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-		fetchDepotAppCustomization(long depotAppCustomizationId) {
+	public DepotAppCustomization fetchDepotAppCustomization(
+		long depotAppCustomizationId) {
 
 		return _depotAppCustomizationLocalService.fetchDepotAppCustomization(
 			depotAppCustomizationId);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-		fetchDepotAppCustomization(long depotEntryId, String portletId) {
+	public DepotAppCustomization fetchDepotAppCustomization(
+		long depotEntryId, String portletId) {
 
 		return _depotAppCustomizationLocalService.fetchDepotAppCustomization(
 			depotEntryId, portletId);
@@ -266,8 +261,8 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @throws PortalException if a depot app customization with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-			getDepotAppCustomization(long depotAppCustomizationId)
+	public DepotAppCustomization getDepotAppCustomization(
+			long depotAppCustomizationId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotAppCustomizationLocalService.getDepotAppCustomization(
@@ -286,11 +281,19 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @return the range of depot app customizations
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotAppCustomization>
-		getDepotAppCustomizations(int start, int end) {
+	public java.util.List<DepotAppCustomization> getDepotAppCustomizations(
+		int start, int end) {
 
 		return _depotAppCustomizationLocalService.getDepotAppCustomizations(
 			start, end);
+	}
+
+	@Override
+	public java.util.List<DepotAppCustomization> getDepotAppCustomizations(
+		long depotEntryId) {
+
+		return _depotAppCustomizationLocalService.getDepotAppCustomizations(
+			depotEntryId);
 	}
 
 	/**
@@ -353,23 +356,45 @@ public class DepotAppCustomizationLocalServiceWrapper
 	 * @return the depot app customization that was updated
 	 */
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-		updateDepotAppCustomization(
-			com.liferay.depot.model.DepotAppCustomization
-				depotAppCustomization) {
+	public DepotAppCustomization updateDepotAppCustomization(
+		DepotAppCustomization depotAppCustomization) {
 
 		return _depotAppCustomizationLocalService.updateDepotAppCustomization(
 			depotAppCustomization);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotAppCustomization
-			updateDepotAppCustomization(
-				long depotEntryId, boolean enabled, String portletId)
+	public DepotAppCustomization updateDepotAppCustomization(
+			long depotEntryId, boolean enabled, String portletId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotAppCustomizationLocalService.updateDepotAppCustomization(
 			depotEntryId, enabled, portletId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _depotAppCustomizationLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<DepotAppCustomization> getCTPersistence() {
+		return _depotAppCustomizationLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<DepotAppCustomization> getModelClass() {
+		return _depotAppCustomizationLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<DepotAppCustomization>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _depotAppCustomizationLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

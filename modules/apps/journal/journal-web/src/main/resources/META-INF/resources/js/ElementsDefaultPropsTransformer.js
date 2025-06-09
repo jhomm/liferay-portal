@@ -1,18 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {addParams, openModal, openSelectionModal} from 'frontend-js-web';
+import {
+	openConfirmModal,
+	openModal,
+	openSelectionModal,
+} from 'frontend-js-components-web';
+import {addParams} from 'frontend-js-web';
+
+import openDeleteArticleModal from './modals/openDeleteArticleModal';
 
 const ACTIONS = {
 	compareVersions({itemData, portletNamespace}) {
@@ -42,19 +40,17 @@ const ACTIONS = {
 	},
 
 	delete({itemData, trashEnabled}) {
-		let message = Liferay.Language.get(
-			'are-you-sure-you-want-to-delete-this'
-		);
-
 		if (trashEnabled) {
-			message = Liferay.Language.get(
-				'are-you-sure-you-want-to-move-this-to-the-recycle-bin'
-			);
+			this.send(itemData.deleteURL);
+
+			return;
 		}
 
-		if (confirm(message)) {
-			this.send(itemData.deleteURL);
-		}
+		openDeleteArticleModal({
+			onDelete: () => {
+				this.send(itemData.deleteURL);
+			},
+		});
 	},
 
 	deleteArticleTranslations({itemData, portletNamespace}) {
@@ -63,28 +59,40 @@ const ACTIONS = {
 			multiple: true,
 			onSelect: (selectedItems) => {
 				if (selectedItems?.length) {
-					if (
-						confirm(
-							Liferay.Language.get(
-								'are-you-sure-you-want-to-delete-the-selected-entries'
-							)
-						)
-					) {
-						const form = document.hrefFm;
+					openConfirmModal({
+						message: Liferay.Language.get(
+							'are-you-sure-you-want-to-delete-the-selected-entries'
+						),
+						onConfirm: (isConfirmed) => {
+							if (isConfirmed) {
+								const form = document.hrefFm;
 
-						if (!form) {
-							return;
-						}
+								if (!form) {
+									return;
+								}
 
-						const input = document.createElement('input');
+								const input = document.createElement('input');
 
-						input.name = `${portletNamespace}rowIds`;
-						input.value = selectedItems.map((item) => item.value);
+								input.name = `${portletNamespace}rowIds`;
 
-						form.appendChild(input);
+								const languageIds = selectedItems
+									.map(
+										(item) =>
+											JSON.parse(item.value).languageId
+									)
+									.join(',');
 
-						submitForm(form, itemData.deleteArticleTranslationsURL);
-					}
+								input.value = languageIds;
+
+								form.appendChild(input);
+
+								submitForm(
+									form,
+									itemData.deleteArticleTranslationsURL
+								);
+							}
+						},
+					});
 				}
 			},
 			title: Liferay.Language.get('delete-translations'),
@@ -116,27 +124,23 @@ const ACTIONS = {
 	},
 
 	publishArticleToLive({itemData}) {
-		if (
-			confirm(
-				Liferay.Language.get(
-					'are-you-sure-you-want-to-publish-the-selected-web-content'
-				)
-			)
-		) {
-			this.send(itemData.publishArticleURL);
-		}
+		openConfirmModal({
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-publish-the-selected-web-content'
+			),
+			onConfirm: (isConfirmed) =>
+				isConfirmed && this.send(itemData.publishArticleURL),
+		});
 	},
 
 	publishFolderToLive({itemData}) {
-		if (
-			confirm(
-				Liferay.Language.get(
-					'are-you-sure-you-want-to-publish-the-selected-folder'
-				)
-			)
-		) {
-			this.send(itemData.publishFolderURL);
-		}
+		openConfirmModal({
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-publish-the-selected-folder'
+			),
+			onConfirm: (isConfirmed) =>
+				isConfirmed && this.send(itemData.publishFolderURL),
+		});
 	},
 
 	send(url) {

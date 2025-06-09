@@ -1,117 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.internal.servlet;
 
-import com.liferay.frontend.taglib.clay.data.set.ClayDataSetDisplayViewSerializer;
-import com.liferay.frontend.taglib.clay.data.set.filter.ClayDataSetFilterSerializer;
-import com.liferay.frontend.taglib.clay.servlet.taglib.DataSetDisplayTag;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.theme.PortletDisplay;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import jakarta.servlet.ServletContext;
 
 /**
  * @author Chema Balsas
  */
-@Component(service = {})
 public class ServletContextUtil {
 
-	public static String getClayDataSetDisplaySettingsNamespace(
-		HttpServletRequest httpServletRequest, String id) {
-
-		StringBundler sb = new StringBundler(7);
-
-		sb.append(DataSetDisplayTag.class.getName());
-		sb.append(StringPool.POUND);
-
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
-		String portletNamespace = _portal.getPortletNamespace(
-			portletDisplay.getId());
-
-		sb.append(portletNamespace);
-
-		sb.append(StringPool.POUND);
-		sb.append(themeDisplay.getPlid());
-		sb.append(StringPool.POUND);
-		sb.append(id);
-
-		return sb.toString();
-	}
-
-	public static ClayDataSetDisplayViewSerializer
-		getClayDataSetDisplayViewSerializer() {
-
-		return _clayDataSetDisplayViewSerializer;
-	}
-
-	public static ClayDataSetFilterSerializer getClayDataSetFilterSerializer() {
-		return _clayDataSetFilterSerializer;
-	}
-
 	public static String getContextPath() {
-		return _servletContext.getContextPath();
+		ServletContext servletContext = getServletContext();
+
+		return servletContext.getContextPath();
 	}
 
 	public static ServletContext getServletContext() {
-		return _servletContext;
+		return _servletContextSnapshot.get();
 	}
 
-	@Reference(unbind = "-")
-	protected void setClayDataSetDisplayViewSerializer(
-		ClayDataSetDisplayViewSerializer clayDataSetDisplayViewSerializer) {
-
-		_clayDataSetDisplayViewSerializer = clayDataSetDisplayViewSerializer;
-	}
-
-	@Reference(unbind = "-")
-	protected void setClayDataSetFilterSerializer(
-		ClayDataSetFilterSerializer clayDataSetFilterSerializer) {
-
-		_clayDataSetFilterSerializer = clayDataSetFilterSerializer;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortal(Portal portal) {
-		_portal = portal;
-	}
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.frontend.taglib.clay)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
-	}
-
-	private static ClayDataSetDisplayViewSerializer
-		_clayDataSetDisplayViewSerializer;
-	private static ClayDataSetFilterSerializer _clayDataSetFilterSerializer;
-	private static Portal _portal;
-	private static ServletContext _servletContext;
+	private static final Snapshot<ServletContext> _servletContextSnapshot =
+		new Snapshot<>(
+			ServletContextUtil.class, ServletContext.class,
+			"(osgi.web.symbolicname=com.liferay.frontend.taglib.clay)");
 
 }

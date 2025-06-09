@@ -1,37 +1,34 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service.base;
 
+import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
+import com.liferay.exportimport.kernel.lar.ManifestSummary;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalService;
-import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalServiceUtil;
 import com.liferay.oauth2.provider.service.persistence.OAuth2ApplicationPersistence;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -45,7 +42,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -73,7 +70,7 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>OAuth2ApplicationLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>OAuth2ApplicationLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>OAuth2ApplicationLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.oauth2.provider.service.OAuth2ApplicationLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -136,11 +133,13 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	 *
 	 * @param oAuth2Application the o auth2 application
 	 * @return the o auth2 application that was removed
+	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	@Override
 	public OAuth2Application deleteOAuth2Application(
-		OAuth2Application oAuth2Application) {
+			OAuth2Application oAuth2Application)
+		throws PortalException {
 
 		return oAuth2ApplicationPersistence.remove(oAuth2Application);
 	}
@@ -251,6 +250,38 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	}
 
 	/**
+	 * Returns the o auth2 application with the matching UUID and company.
+	 *
+	 * @param uuid the o auth2 application's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching o auth2 application, or <code>null</code> if a matching o auth2 application could not be found
+	 */
+	@Override
+	public OAuth2Application fetchOAuth2ApplicationByUuidAndCompanyId(
+		String uuid, long companyId) {
+
+		return oAuth2ApplicationPersistence.fetchByUuid_C_First(
+			uuid, companyId, null);
+	}
+
+	@Override
+	public OAuth2Application fetchOAuth2ApplicationByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return oAuth2ApplicationPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
+	}
+
+	@Override
+	public OAuth2Application getOAuth2ApplicationByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return oAuth2ApplicationPersistence.findByERC_C(
+			externalReferenceCode, companyId);
+	}
+
+	/**
 	 * Returns the o auth2 application with the primary key.
 	 *
 	 * @param oAuth2ApplicationId the primary key of the o auth2 application
@@ -309,6 +340,73 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 		actionableDynamicQuery.setPrimaryKeyPropertyName("oAuth2ApplicationId");
 	}
 
+	@Override
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		final PortletDataContext portletDataContext) {
+
+		final ExportActionableDynamicQuery exportActionableDynamicQuery =
+			new ExportActionableDynamicQuery() {
+
+				@Override
+				public long performCount() throws PortalException {
+					ManifestSummary manifestSummary =
+						portletDataContext.getManifestSummary();
+
+					StagedModelType stagedModelType = getStagedModelType();
+
+					long modelAdditionCount = super.performCount();
+
+					manifestSummary.addModelAdditionCount(
+						stagedModelType, modelAdditionCount);
+
+					long modelDeletionCount =
+						ExportImportHelperUtil.getModelDeletionCount(
+							portletDataContext, stagedModelType);
+
+					manifestSummary.addModelDeletionCount(
+						stagedModelType, modelDeletionCount);
+
+					return modelAdditionCount;
+				}
+
+			};
+
+		initActionableDynamicQuery(exportActionableDynamicQuery);
+
+		exportActionableDynamicQuery.setAddCriteriaMethod(
+			new ActionableDynamicQuery.AddCriteriaMethod() {
+
+				@Override
+				public void addCriteria(DynamicQuery dynamicQuery) {
+					portletDataContext.addDateRangeCriteria(
+						dynamicQuery, "modifiedDate");
+				}
+
+			});
+
+		exportActionableDynamicQuery.setCompanyId(
+			portletDataContext.getCompanyId());
+
+		exportActionableDynamicQuery.setPerformActionMethod(
+			new ActionableDynamicQuery.PerformActionMethod
+				<OAuth2Application>() {
+
+				@Override
+				public void performAction(OAuth2Application oAuth2Application)
+					throws PortalException {
+
+					StagedModelDataHandlerUtil.exportStagedModel(
+						portletDataContext, oAuth2Application);
+				}
+
+			});
+		exportActionableDynamicQuery.setStagedModelType(
+			new StagedModelType(
+				PortalUtil.getClassNameId(OAuth2Application.class.getName())));
+
+		return exportActionableDynamicQuery;
+	}
+
 	/**
 	 * @throws PortalException
 	 */
@@ -327,6 +425,11 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement OAuth2ApplicationLocalServiceImpl#deleteOAuth2Application(OAuth2Application) to avoid orphaned data");
+		}
+
 		return oAuth2ApplicationLocalService.deleteOAuth2Application(
 			(OAuth2Application)persistedModel);
 	}
@@ -344,6 +447,23 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 		throws PortalException {
 
 		return oAuth2ApplicationPersistence.findByPrimaryKey(primaryKeyObj);
+	}
+
+	/**
+	 * Returns the o auth2 application with the matching UUID and company.
+	 *
+	 * @param uuid the o auth2 application's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching o auth2 application
+	 * @throws PortalException if a matching o auth2 application could not be found
+	 */
+	@Override
+	public OAuth2Application getOAuth2ApplicationByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return oAuth2ApplicationPersistence.findByUuid_C_First(
+			uuid, companyId, null);
 	}
 
 	/**
@@ -392,7 +512,6 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
 	}
 
 	@Override
@@ -406,8 +525,6 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		oAuth2ApplicationLocalService = (OAuth2ApplicationLocalService)aopProxy;
-
-		_setLocalServiceUtilService(oAuth2ApplicationLocalService);
 	}
 
 	/**
@@ -434,39 +551,26 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = oAuth2ApplicationPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource =
-				oAuth2ApplicationPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		OAuth2ApplicationLocalService oAuth2ApplicationLocalService) {
-
-		try {
-			Field field =
-				OAuth2ApplicationLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, oAuth2ApplicationLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -478,5 +582,8 @@ public abstract class OAuth2ApplicationLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OAuth2ApplicationLocalServiceBaseImpl.class);
 
 }

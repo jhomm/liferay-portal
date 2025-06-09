@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
@@ -17,6 +8,7 @@ package com.liferay.message.boards.service;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class MBCategoryLocalServiceWrapper
 	implements MBCategoryLocalService, ServiceWrapper<MBCategoryLocalService> {
 
+	public MBCategoryLocalServiceWrapper() {
+		this(null);
+	}
+
 	public MBCategoryLocalServiceWrapper(
 		MBCategoryLocalService mbCategoryLocalService) {
 
@@ -37,33 +33,35 @@ public class MBCategoryLocalServiceWrapper
 
 	@Override
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbCategoryLocalService.addCategory(
-			userId, parentCategoryId, name, description, serviceContext);
+			externalReferenceCode, userId, parentCategoryId, name, description,
+			serviceContext);
 	}
 
 	@Override
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
-			String displayStyle, String emailAddress, String inProtocol,
-			String inServerName, int inServerPort, boolean inUseSSL,
-			String inUserName, String inPassword, int inReadInterval,
-			String outEmailAddress, boolean outCustom, String outServerName,
-			int outServerPort, boolean outUseSSL, String outUserName,
-			String outPassword, boolean allowAnonymous,
-			boolean mailingListActive,
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description, String displayStyle,
+			String emailAddress, String inProtocol, String inServerName,
+			int inServerPort, boolean inUseSSL, String inUserName,
+			String inPassword, int inReadInterval, String outEmailAddress,
+			boolean outCustom, String outServerName, int outServerPort,
+			boolean outUseSSL, String outUserName, String outPassword,
+			boolean allowAnonymous, boolean mailingListActive,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbCategoryLocalService.addCategory(
-			userId, parentCategoryId, name, description, displayStyle,
-			emailAddress, inProtocol, inServerName, inServerPort, inUseSSL,
-			inUserName, inPassword, inReadInterval, outEmailAddress, outCustom,
-			outServerName, outServerPort, outUseSSL, outUserName, outPassword,
-			allowAnonymous, mailingListActive, serviceContext);
+			externalReferenceCode, userId, parentCategoryId, name, description,
+			displayStyle, emailAddress, inProtocol, inServerName, inServerPort,
+			inUseSSL, inUserName, inPassword, inReadInterval, outEmailAddress,
+			outCustom, outServerName, outServerPort, outUseSSL, outUserName,
+			outPassword, allowAnonymous, mailingListActive, serviceContext);
 	}
 
 	@Override
@@ -172,6 +170,15 @@ public class MBCategoryLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_mbCategoryLocalService.deleteCategory(category, includeTrashedEntries);
+	}
+
+	@Override
+	public void deleteCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_mbCategoryLocalService.deleteCategoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -323,6 +330,19 @@ public class MBCategoryLocalServiceWrapper
 	@Override
 	public MBCategory fetchMBCategory(long categoryId) {
 		return _mbCategoryLocalService.fetchMBCategory(categoryId);
+	}
+
+	@Override
+	public MBCategory fetchMBCategory(long groupId, String friendlyURL) {
+		return _mbCategoryLocalService.fetchMBCategory(groupId, friendlyURL);
+	}
+
+	@Override
+	public MBCategory fetchMBCategoryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return _mbCategoryLocalService.fetchMBCategoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -615,6 +635,22 @@ public class MBCategoryLocalServiceWrapper
 		return _mbCategoryLocalService.getMBCategory(categoryId);
 	}
 
+	@Override
+	public MBCategory getMBCategory(long groupId, String friendlyURL)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbCategoryLocalService.getMBCategory(groupId, friendlyURL);
+	}
+
+	@Override
+	public MBCategory getMBCategoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbCategoryLocalService.getMBCategoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the message boards category matching the UUID and group.
 	 *
@@ -771,6 +807,11 @@ public class MBCategoryLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbCategoryLocalService.updateStatus(userId, categoryId, status);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _mbCategoryLocalService.getBasePersistence();
 	}
 
 	@Override

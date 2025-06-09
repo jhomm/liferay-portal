@@ -1,48 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.action;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.layout.utility.page.kernel.constants.LayoutUtilityPageEntryConstants;
+import com.liferay.layout.utility.page.kernel.provider.util.LayoutUtilityPageEntryLayoutProviderUtil;
 import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.WindowStateFactory;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.AuthTokenUtil;
-import com.liferay.portal.kernel.security.auth.session.AuthenticatedSessionManagerUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.PortletKeys;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.auth.session.AuthenticatedSessionManagerUtil;
 import com.liferay.portal.security.sso.SSOUtil;
 import com.liferay.portal.struts.Action;
 import com.liferay.portal.struts.model.ActionForward;
 import com.liferay.portal.struts.model.ActionMapping;
 import com.liferay.portal.util.PropsValues;
 
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.WindowState;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.WindowState;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -64,18 +56,6 @@ public class LoginAction implements Action {
 			httpServletResponse.sendRedirect(
 				themeDisplay.getPathMain() +
 					PropsValues.AUTH_LOGIN_DISABLED_PATH);
-
-			return null;
-		}
-
-		if (PropsValues.COMPANY_SECURITY_AUTH_REQUIRES_HTTPS &&
-			!httpServletRequest.isSecure()) {
-
-			httpServletResponse.sendRedirect(
-				StringBundler.concat(
-					PortalUtil.getPortalURL(httpServletRequest, true),
-					httpServletRequest.getRequestURI(), StringPool.QUESTION,
-					httpServletRequest.getQueryString()));
 
 			return null;
 		}
@@ -130,17 +110,48 @@ public class LoginAction implements Action {
 			return null;
 		}
 
-		String redirect = PortalUtil.getSiteLoginURL(themeDisplay);
+		Layout layout =
+			LayoutUtilityPageEntryLayoutProviderUtil.
+				getDefaultLayoutUtilityPageEntryLayout(
+					themeDisplay.getScopeGroupId(),
+					LayoutUtilityPageEntryConstants.TYPE_LOGIN);
 
-		if (Validator.isNull(redirect)) {
-			redirect = PropsValues.AUTH_LOGIN_URL;
+		String loginRedirect = PortalUtil.escapeRedirect(
+			ParamUtil.getString(httpServletRequest, "redirect"));
+		String redirect = null;
+
+		if (layout == null) {
+			if (Validator.isNotNull(loginRedirect) &&
+				SSOUtil.isRedirectRequired(themeDisplay.getCompanyId())) {
+
+				redirect = loginRedirect;
+
+				loginRedirect = null;
+			}
+
+			if (Validator.isNull(redirect)) {
+				layout = themeDisplay.getLayout();
+
+				redirect = PortalUtil.getSiteLoginURL(themeDisplay);
+			}
+
+			if (Validator.isNull(redirect)) {
+				redirect = PropsValues.AUTH_LOGIN_URL;
+			}
+		}
+		else {
+			if (Validator.isNull(loginRedirect)) {
+				loginRedirect = GetterUtil.getString(
+					PortalUtil.getLayoutFullURL(
+						themeDisplay.getLayout(), themeDisplay));
+			}
 		}
 
 		if (Validator.isNull(redirect)) {
 			redirect = PortletURLBuilder.create(
 				PortletURLFactoryUtil.create(
-					httpServletRequest, PortletKeys.LOGIN,
-					PortletRequest.RENDER_PHASE)
+					httpServletRequest, PropsValues.AUTH_LOGIN_PORTLET_NAME,
+					layout, PortletRequest.RENDER_PHASE)
 			).setMVCRenderCommandName(
 				"/login/login"
 			).setParameter(
@@ -148,44 +159,21 @@ public class LoginAction implements Action {
 			).setPortletMode(
 				PortletMode.VIEW
 			).setWindowState(
-				getWindowState(httpServletRequest)
+				getWindowState(httpServletRequest, layout.isTypeUtility())
 			).buildString();
 		}
 
-		if (PropsValues.COMPANY_SECURITY_AUTH_REQUIRES_HTTPS) {
-			String portalURL = PortalUtil.getPortalURL(httpServletRequest);
-			String portalURLSecure = PortalUtil.getPortalURL(
-				httpServletRequest, true);
-
-			if (!portalURL.equals(portalURLSecure)) {
-				redirect = StringUtil.replaceFirst(
-					redirect, portalURL, portalURLSecure);
-			}
-		}
-
-		String loginRedirect = ParamUtil.getString(
-			httpServletRequest, "redirect");
-
-		loginRedirect = PortalUtil.escapeRedirect(loginRedirect);
-
 		if (Validator.isNotNull(loginRedirect)) {
-			if (SSOUtil.isRedirectRequired(themeDisplay.getCompanyId())) {
-				redirect = loginRedirect;
-			}
-			else {
-				String loginPortletNamespace = PortalUtil.getPortletNamespace(
-					PropsValues.AUTH_LOGIN_PORTLET_NAME);
+			redirect = HttpComponentsUtil.setParameter(
+				redirect, "p_p_id", PropsValues.AUTH_LOGIN_PORTLET_NAME);
+			redirect = HttpComponentsUtil.setParameter(
+				redirect, "p_p_lifecycle", "0");
 
-				String loginRedirectParameter =
-					loginPortletNamespace + "redirect";
+			String portletNamespace = PortalUtil.getPortletNamespace(
+				PropsValues.AUTH_LOGIN_PORTLET_NAME);
 
-				redirect = HttpUtil.setParameter(
-					redirect, "p_p_id", PropsValues.AUTH_LOGIN_PORTLET_NAME);
-				redirect = HttpUtil.setParameter(
-					redirect, "p_p_lifecycle", "0");
-				redirect = HttpUtil.setParameter(
-					redirect, loginRedirectParameter, loginRedirect);
-			}
+			redirect = HttpComponentsUtil.setParameter(
+				redirect, portletNamespace + "redirect", loginRedirect);
 		}
 
 		httpServletResponse.sendRedirect(redirect);
@@ -194,7 +182,7 @@ public class LoginAction implements Action {
 	}
 
 	protected WindowState getWindowState(
-		HttpServletRequest httpServletRequest) {
+		HttpServletRequest httpServletRequest, boolean utility) {
 
 		WindowState windowState = WindowState.MAXIMIZED;
 
@@ -203,6 +191,10 @@ public class LoginAction implements Action {
 
 		if (Validator.isNotNull(windowStateString)) {
 			windowState = WindowStateFactory.getWindowState(windowStateString);
+		}
+
+		if (utility && (windowState != LiferayWindowState.EXCLUSIVE)) {
+			windowState = WindowState.NORMAL;
 		}
 
 		return windowState;

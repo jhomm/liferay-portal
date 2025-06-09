@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -42,7 +35,9 @@ public class PhoneWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("phoneId", getPhoneId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -53,7 +48,7 @@ public class PhoneWrapper
 		attributes.put("classPK", getClassPK());
 		attributes.put("number", getNumber());
 		attributes.put("extension", getExtension());
-		attributes.put("typeId", getTypeId());
+		attributes.put("listTypeId", getListTypeId());
 		attributes.put("primary", isPrimary());
 
 		return attributes;
@@ -67,10 +62,23 @@ public class PhoneWrapper
 			setMvccVersion(mvccVersion);
 		}
 
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long phoneId = (Long)attributes.get("phoneId");
@@ -133,10 +141,10 @@ public class PhoneWrapper
 			setExtension(extension);
 		}
 
-		Long typeId = (Long)attributes.get("typeId");
+		Long listTypeId = (Long)attributes.get("listTypeId");
 
-		if (typeId != null) {
-			setTypeId(typeId);
+		if (listTypeId != null) {
+			setListTypeId(listTypeId);
 		}
 
 		Boolean primary = (Boolean)attributes.get("primary");
@@ -202,6 +210,16 @@ public class PhoneWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this phone.
+	 *
+	 * @return the ct collection ID of this phone
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the extension of this phone.
 	 *
 	 * @return the extension of this phone
@@ -209,6 +227,33 @@ public class PhoneWrapper
 	@Override
 	public String getExtension() {
 		return model.getExtension();
+	}
+
+	/**
+	 * Returns the external reference code of this phone.
+	 *
+	 * @return the external reference code of this phone
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	@Override
+	public ListType getListType()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListType();
+	}
+
+	/**
+	 * Returns the list type ID of this phone.
+	 *
+	 * @return the list type ID of this phone
+	 */
+	@Override
+	public long getListTypeId() {
+		return model.getListTypeId();
 	}
 
 	/**
@@ -269,23 +314,6 @@ public class PhoneWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
-	}
-
-	@Override
-	public ListType getType()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getType();
-	}
-
-	/**
-	 * Returns the type ID of this phone.
-	 *
-	 * @return the type ID of this phone
-	 */
-	@Override
-	public long getTypeId() {
-		return model.getTypeId();
 	}
 
 	/**
@@ -389,6 +417,16 @@ public class PhoneWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this phone.
+	 *
+	 * @param ctCollectionId the ct collection ID of this phone
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets the extension of this phone.
 	 *
 	 * @param extension the extension of this phone
@@ -396,6 +434,26 @@ public class PhoneWrapper
 	@Override
 	public void setExtension(String extension) {
 		model.setExtension(extension);
+	}
+
+	/**
+	 * Sets the external reference code of this phone.
+	 *
+	 * @param externalReferenceCode the external reference code of this phone
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the list type ID of this phone.
+	 *
+	 * @param listTypeId the list type ID of this phone
+	 */
+	@Override
+	public void setListTypeId(long listTypeId) {
+		model.setListTypeId(listTypeId);
 	}
 
 	/**
@@ -459,16 +517,6 @@ public class PhoneWrapper
 	}
 
 	/**
-	 * Sets the type ID of this phone.
-	 *
-	 * @param typeId the type ID of this phone
-	 */
-	@Override
-	public void setTypeId(long typeId) {
-		model.setTypeId(typeId);
-	}
-
-	/**
 	 * Sets the user ID of this phone.
 	 *
 	 * @param userId the user ID of this phone
@@ -506,6 +554,23 @@ public class PhoneWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<Phone, Object>> getAttributeGetterFunctions() {
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<Phone, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

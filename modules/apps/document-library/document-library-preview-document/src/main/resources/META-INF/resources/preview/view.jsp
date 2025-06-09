@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,7 +14,7 @@ FileVersion fileVersion = (FileVersion)request.getAttribute(WebKeys.DOCUMENT_LIB
 
 int previewFileCount = PDFProcessorUtil.getPreviewFileCount(fileVersion);
 
-String previewQueryString = "&previewFileIndex=";
+String previewQueryString = "&previewFileIndex=1";
 
 int status = ParamUtil.getInteger(request, "status", WorkflowConstants.STATUS_ANY);
 
@@ -39,16 +30,24 @@ String previewFileURL = previewFileURLs[0];
 %>
 
 <liferay-util:html-top
-	outputKey="document_library_preview_document_css"
+	outputKey="com.liferay.document.library.preview.document#/preview/view.jsp"
 >
-	<link href="<%= PortalUtil.getStaticResourceURL(request, application.getContextPath() + "/preview/css/main.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/preview/css/main.css") %>' rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
+
+<clay:stripe
+	dismissible="<%= true %>"
+	displayType="info"
+	message="the-document-preview-may-not-show-all-pages"
+/>
 
 <div id="<portlet:namespace /><%= randomNamespace %>previewDocument">
 	<react:component
-		module="preview/js/DocumentPreviewer.es"
+		module="{DocumentPreviewer} from document-library-preview-document"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
+				"alt", fileVersion.getDescription()
+			).put(
 				"baseImageURL", previewFileURL
 			).put(
 				"initialPage", 1

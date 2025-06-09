@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.asset.auto.tagger.google.cloud.vision.internal;
@@ -19,15 +10,15 @@ import com.liferay.document.library.asset.auto.tagger.google.cloud.vision.intern
 import com.liferay.document.library.asset.auto.tagger.google.cloud.vision.internal.util.GCloudVisionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.repository.capabilities.TemporaryFileEntriesCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.ContentTypes;
@@ -58,7 +49,8 @@ public class GCloudVisionImageAssetAutoTagProvider
 		try {
 			GCloudVisionAssetAutoTagProviderCompanyConfiguration
 				gCloudVisionAssetAutoTagProviderCompanyConfiguration =
-					_getConfiguration(fileEntry);
+					_getGCloudVisionAssetAutoTagProviderCompanyConfiguration(
+						fileEntry);
 
 			if (!gCloudVisionAssetAutoTagProviderCompanyConfiguration.
 					enabled() ||
@@ -90,7 +82,7 @@ public class GCloudVisionImageAssetAutoTagProvider
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -98,7 +90,8 @@ public class GCloudVisionImageAssetAutoTagProvider
 	}
 
 	private GCloudVisionAssetAutoTagProviderCompanyConfiguration
-			_getConfiguration(FileEntry fileEntry)
+			_getGCloudVisionAssetAutoTagProviderCompanyConfiguration(
+				FileEntry fileEntry)
 		throws ConfigurationException {
 
 		return _configurationProvider.getCompanyConfiguration(
@@ -139,7 +132,7 @@ public class GCloudVisionImageAssetAutoTagProvider
 					responseJSON));
 		}
 
-		return JSONFactoryUtil.createJSONObject(responseJSON);
+		return _jsonFactory.createJSONObject(responseJSON);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -154,5 +147,8 @@ public class GCloudVisionImageAssetAutoTagProvider
 
 	@Reference
 	private Http _http;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

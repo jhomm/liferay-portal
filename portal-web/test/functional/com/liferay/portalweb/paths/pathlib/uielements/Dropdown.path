@@ -12,7 +12,7 @@
 <tbody>
 <tr>
 	<td>ANY_DISABLED</td>
-	<td>//*[contains(@class, 'dropdown')]//*[contains(@class, 'disabled') and contains(text(), '${key_text}')]</td>
+	<td>//*[contains(@class, 'dropdown')]//*[contains(@class, 'disabled') and contains(normalize-space(), '${key_text}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -21,13 +21,43 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ANY_DROPDOWN_LABEL</td>
+	<td>//*[@class='form-group' and contains(.,'${dropdownLabel}')] //*[@class="dropdown"]</td>
+	<td></td>
+	</tr>
+<tr>
 	<td>CAPTION</td>
 	<td>//div[contains(@class,'caption') and normalize-space()='${key_caption}']</td>
 	<td></td>
 </tr>
 <tr>
+	<td>COMBOBOX_WITH_LABEL</td>
+	<td>//label[normalize-space()='${key_fieldLabel}']//following-sibling::div//button[@role='combobox']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DROPDOWN_SUBHEADER</td>
+	<td>//div[contains(@class,'dropdown-menu')]//li[contains(@class,'dropdown-subheader')][normalize-space() = '${subHeader}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DROPDOWN_SUBHEADER_BY_INDEX</td>
+	<td>xpath=(//div[contains(@class,'dropdown-menu')]//li[contains(@class,'dropdown-subheader')])[${index}][normalize-space() = '${subHeader}']</td>
+	<td></td>
+</tr>
+<tr>
 	<td>DROPDOWN_TOGGLE_BUTTON</td>
 	<td>//div[contains(@class,'btn-group')]//a[contains(.,'${key_toggleButtonName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DROPDOWN_TOGGLE_BUTTON_WITH_LABEL</td>
+	<td>//label[normalize-space()='${key_fieldLabel}']//following-sibling::div//button[contains(@class,'dropdown-toggle')] | //label[normalize-space()='${key_fieldLabel}']//following-sibling::button[contains(@class,'select')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SEARCH_FIELD</td>
+	<td>//div[contains(@class,'dropdown-menu show')]//input[contains(@placeholder,'Search')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -42,7 +72,7 @@
 </tr>
 <tr>
 	<td>ENTRIES_NUMBER</td>
-	<td>//div[@class='dropdown pagination-items-per-page']//a[@role='button' and contains(text(),'${key_numberEntries}')]</td>
+	<td>//div[@class='dropdown pagination-items-per-page']//button[contains(text(),'${key_numberEntries}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -56,13 +86,13 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SELECTED_VALUE</td>
-	<td>//div[@class='option-selected']</td>
-	<td></td>
-</tr>
-<tr>
 	<td>TRIGGER</td>
-	<td>//a[*[name()='svg'][contains(@class,'icon-caret-double')]]</td>
+	<td>//div[contains(@class,'ddm-row')]//button[@role='combobox']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TRIGGER_2</td>
+	<td>xpath=(//div[contains(@class,'ddm-row')])[2]//button[@role='combobox']</td>
 	<td></td>
 </tr>
 <tr>
@@ -70,10 +100,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--FILTER-->
+
 <tr>
-	<td>FILTER_AND_ORDER</td>
-	<td>//button[contains(.,'Filter and Order') or contains(@class,'Filter and Order')]</td>
+	<td>FILTER</td>
+	<td>//span[contains(text(), 'Filter')]</td>
 	<td></td>
 </tr>
 </tbody>

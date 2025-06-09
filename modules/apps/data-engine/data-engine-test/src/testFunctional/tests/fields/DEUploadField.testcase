@@ -1,4 +1,4 @@
-@component-name = "data-engine"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -10,15 +10,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,7 +27,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that is possible to delete the field"
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
 		NavItem.gotoStructures();
 
@@ -55,7 +55,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that is possible to duplicate the field"
-	@priority = "4"
+	@priority = 4
 	test CanBeDuplicated {
 		NavItem.gotoStructures();
 
@@ -81,7 +81,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69446. This test verifies that is possible to clear the uploaded file"
-	@priority = "5"
+	@priority = 5
 	test CanClearInput {
 		NavItem.gotoStructures();
 
@@ -106,7 +106,7 @@ definition {
 
 		SelectFrame.selectFrameTop();
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -114,7 +114,7 @@ definition {
 
 		DERenderer.clearDataOnField(fieldLabel = "Upload");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -122,7 +122,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that Label and Help text can be edited"
-	@priority = "5"
+	@priority = 5
 	test CanEditLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -159,7 +159,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69446. This test verifies that is possible to upload a file"
-	@priority = "5"
+	@priority = 5
 	test CanInputData {
 		NavItem.gotoStructures();
 
@@ -184,7 +184,7 @@ definition {
 
 		SelectFrame.selectFrameTop();
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -194,7 +194,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69446. This test verifies that upon duplicating a repeatable field, inputted data on both fields persists"
-	@priority = "5"
+	@priority = 5
 	test CanInputDataOnDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -219,32 +219,32 @@ definition {
 		DERenderer.inputDataInUploadField(
 			dmNavTab = "User Personal Folder",
 			fieldLabel = "Upload",
-			index = "1",
+			index = 1,
 			webContentUpload = "Document_1.jpg");
 
 		DERenderer.inputDataInUploadField(
 			dmNavTab = "User Personal Folder",
 			fieldLabel = "Upload",
-			index = "2",
+			index = 2,
 			webContentUpload = "Document_2.jpg");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.assertDataInUploadField(
 			fieldLabel = "Upload",
-			index = "1",
+			index = 1,
 			webContentUpload = "Document_1.jpg");
 
 		DERenderer.assertDataInUploadField(
 			fieldLabel = "Upload",
-			index = "2",
+			index = 2,
 			webContentUpload = "Document_2.jpg");
 	}
 
 	@description = "This is a test for LRQA-69446. This test verifies that is not possible to publish the Web Content with a required field blank"
-	@priority = "4"
+	@priority = 4
 	test CanNotPublishBlankRequiredField {
 		NavItem.gotoStructures();
 
@@ -264,13 +264,13 @@ definition {
 
 		PortletEntry.inputTitle(title = "Web Content Title");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		FormViewBuilder.validateObjectLabelOptionTextIsShown(text = "This field is required.");
 	}
 
 	@description = "This is a test for LRQA-69446. This test verifies that is possible to remove a duplicated field (repeatable)"
-	@priority = "4"
+	@priority = 4
 	test CanRemoveDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -292,25 +292,26 @@ definition {
 
 		DataEngine.addRepeatableField(fieldLabel = "Upload");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.removeRepeatableField(fieldLabel = "Upload");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DEBuilder.assertFieldNotPresent(
 			fieldLabel = "Upload",
-			index = "2");
+			index = 2);
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that Default Searchable property is Disable when System Setting is left unchecked"
-	@priority = "3"
+	@priority = 3
 	test CanSetDefaultSearchablePropertyToDisable {
-		property test.name.skip.portal.instance = "DEUploadField#CanSetDefaultSearchablePropertyToDisable";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -342,9 +343,10 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that Default Searchable property is Keyword when System Setting is left checked"
-	@priority = "3"
+	@priority = 3
 	test CanSetDefaultSearchablePropertyToKeyword {
-		property test.name.skip.portal.instance = "DEUploadField#CanSetDefaultSearchablePropertyToKeyword";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -376,7 +378,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that Label and Help text can be set"
-	@priority = "5"
+	@priority = 5
 	test CanSetLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -401,7 +403,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68656. This test verifies that Label can be shown or hidden"
-	@priority = "3"
+	@priority = 3
 	test CanSetLabelToShownOrHidden {
 		NavItem.gotoStructures();
 
@@ -428,6 +430,61 @@ definition {
 		DataEngine.viewField(
 			fieldFieldLabel = "Upload",
 			fieldName = "Upload");
+	}
+
+	@description = "Check if Upload Field details can be seen."
+	@priority = 4
+	test ViewUploadFieldDetails {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Upload Structure");
+
+		DEBuilder.addField(
+			fieldLabel = "Upload",
+			fieldName = "Upload");
+
+		DEBuilder.openField(
+			fieldLabel = "Upload",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Upload",
+			searchableType = "Keyword");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Upload");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Upload");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Upload");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "Upload Structure");
+
+		DEBuilder.openField(
+			fieldLabel = "Upload",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Upload",
+			searchableType = "Keyword");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Upload");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Upload");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Upload");
 	}
 
 }

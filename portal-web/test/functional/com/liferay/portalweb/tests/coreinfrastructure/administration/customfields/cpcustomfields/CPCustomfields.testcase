@@ -1,7 +1,9 @@
-@component-name = "portal-user-management-and-portal-configuration"
+@component-name = "portal-core-infra"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Custom Fields";
 
@@ -9,12 +11,14 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -24,7 +28,7 @@ definition {
 		}
 	}
 
-	@priority = "4"
+	@priority = 4
 	test AddCustomFieldsSmoke {
 		property osgi.app.includes = "bookmarks";
 		property portal.release = "false";
@@ -39,20 +43,14 @@ definition {
 			customFieldType = "Text Area",
 			resourceName = "Blogs Entry");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Date",
 			customFieldType = "Date",
 			resourceName = "Bookmarks Entry");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Number",
@@ -60,40 +58,28 @@ definition {
 			customInputDataType = "Integer",
 			resourceName = "Bookmarks Folder");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Dropdown",
 			customFieldType = "Dropdown",
 			resourceName = "Calendar Event");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Checkbox",
 			customFieldType = "Checkbox",
 			resourceName = "Document");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Geolocation",
 			customFieldType = "Geolocation",
 			resourceName = "Documents Folder");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -101,20 +87,14 @@ definition {
 			customInputDataType = "Text",
 			resourceName = "Knowledge Base Article");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Area",
 			customFieldType = "Text Area",
 			resourceName = "Knowledge Base Folder");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -122,10 +102,7 @@ definition {
 			customInputDataType = "Text",
 			resourceName = "Message Boards Category");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Number",
@@ -133,70 +110,49 @@ definition {
 			customInputDataType = "Integer",
 			resourceName = "Message Boards Message");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Dropdown",
 			customFieldType = "Dropdown",
 			resourceName = "Organization");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Checkbox",
 			customFieldType = "Checkbox",
 			resourceName = "Page");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Radio",
 			customFieldType = "Radio",
 			resourceName = "Role");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Geolocation",
 			customFieldType = "Geolocation",
 			resourceName = "Site");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Geolocation",
 			customFieldType = "Geolocation",
 			resourceName = "User");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Date",
 			customFieldType = "Date",
 			resourceName = "User Group");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -205,10 +161,7 @@ definition {
 			localization = "true",
 			resourceName = "Web Content Article");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Area",
@@ -216,10 +169,7 @@ definition {
 			localization = "true",
 			resourceName = "Web Content Folder");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Number",
@@ -228,12 +178,9 @@ definition {
 			resourceName = "Wiki Page");
 	}
 
-	@priority = "5"
+	@priority = 5
 	test AddCustomFieldUserTextField {
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Nickname",
@@ -248,12 +195,9 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		User.gotoEditCP(userScreenName = "usersn");
+		UserNavigator.gotoUser(userScreenName = "usersn");
 
 		User.viewUserCustomFieldsCP(
 			customFieldName = "Nickname",
@@ -261,17 +205,88 @@ definition {
 			startingValue = "Nickname");
 	}
 
-	@priority = "5"
+	@description = "This is a use case for LPS-146795. The user admin could add new user with space character in geolocation custom field name."
+	@priority = 4
+	test AddNewUserWithGeolocationCustomFields {
+		property portal.upstream = "quarantine";
+
+		CustomFields.openCustomFieldAdmin();
+
+		CustomFields.addCP(
+			customFieldName = "Test Field",
+			customFieldType = "Geolocation",
+			resourceName = "User");
+
+		User.openUsersAdmin();
+
+		User.addCP(
+			lat = "39.88446750779911",
+			lng = "116.37856166209812",
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		Alert.viewSuccessMessage();
+
+		User.openUsersAdmin();
+
+		User.viewCP(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+	}
+
+	@description = "This is a use case for LPS-180708."
+	@priority = 3
+	test CanUpdateInputFieldWithEmptyString {
+		CustomFields.openCustomFieldAdmin();
+
+		CustomFields.addCP(
+			customFieldName = "Text Field",
+			customFieldType = "Input Field",
+			customInputDataType = "Text",
+			resourceName = "Page",
+			startingValue = "Text Field");
+
+		PagesAdmin.openPagesAdmin(siteURLKey = "guest");
+
+		PagesAdmin.addPage(
+			pageName = "Widget Page Name",
+			sitePageType = "Widget Page");
+
+		Navigator.gotoNavTab(navTab = "Design");
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		Type(
+			key_fieldLabel = "Text Field",
+			locator1 = "CustomFields#CUSTOM_INPUT_FIELD",
+			value1 = "");
+
+		PortletEntry.save();
+
+		AssertTextEquals(
+			key_fieldLabel = "Text Field",
+			locator1 = "CustomFields#CUSTOM_INPUT_FIELD",
+			value1 = "");
+
+		AssertTextNotEquals(
+			key_fieldLabel = "Text Field",
+			locator1 = "CustomFields#CUSTOM_INPUT_FIELD",
+			value1 = "Text Field");
+	}
+
+	@priority = 5
 	test EditCustomFieldUserTextField {
-		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
-		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
 		property environment.acceptance = "true";
+		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -279,10 +294,7 @@ definition {
 			customInputDataType = "Text",
 			resourceName = "User");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.editCP(
 			customFieldName = "Text Field",
@@ -296,12 +308,9 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
-		User.gotoEditCP(userScreenName = "usersn");
+		UserNavigator.gotoUser(userScreenName = "usersn");
 
 		User.viewUserCustomFieldsCP(
 			customFieldName = "Text Field",
@@ -309,14 +318,11 @@ definition {
 			startingValue = "Nickname");
 	}
 
-	@priority = "4"
+	@priority = 4
 	test EditRevertCustomFieldWikiPage {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Text Field",
@@ -324,12 +330,9 @@ definition {
 			customInputDataType = "Text",
 			resourceName = "Wiki Page");
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages",
-			site = "${siteName}");
+		PagesAdmin.openPagesAdmin(siteURLKey = "guest");
 
-		SitePages.addPublicPage(pageName = "Wiki Test Page");
+		PagesAdmin.addPage(pageName = "Wiki Test Page");
 
 		Navigator.gotoPage(pageName = "Wiki Test Page");
 
@@ -375,21 +378,22 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-57830."
-	@priority = "4"
+	@priority = 4
 	test UpdateDocumentWithCustomField {
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
 			layoutName = "Documents and Media Page");
 
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Documents and Media Page",
+			widgetName = "Documents and Media");
+
 		Navigator.gotoSitePage(
 			pageName = "Documents and Media Page",
 			siteName = "Site Name");
-
-		Portlet.addPG(
-			pageName = "Documents and Media Page",
-			portletName = "Documents and Media");
 
 		DMDocument.enableActionsMenuOnPortlet();
 
@@ -417,19 +421,13 @@ definition {
 			roleTitle = "Update DM Role",
 			userEmailAddress = "userea@liferay.com");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.editPasswordCP(
 			userEmailAddress = "userea@liferay.com",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Custom Fields");
+		CustomFields.openCustomFieldAdmin();
 
 		CustomFields.addCP(
 			customFieldName = "Note",
@@ -439,9 +437,7 @@ definition {
 
 		Navigator.openSiteURL(siteName = "Site Name");
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Documents and Media");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
 
 		DMDocument.addCP(
 			customFieldText = "This is my favorate Document",
@@ -462,6 +458,7 @@ definition {
 		DMDocument.editPG(dmDocumentTitle = "DM Document Title");
 
 		AssertConsoleTextNotPresent(value1 = "PrincipalException$MustHavePermission");
+
 		AssertConsoleTextNotPresent(value1 = "must have UPDATE permission for com.liferay.portlet.expando.model.ExpandoColumn");
 	}
 

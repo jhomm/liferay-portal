@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
@@ -23,14 +14,14 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,9 +30,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICING_CLASSES,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICING_CLASSES,
 		"mvc.command.name=/commerce_pricing_classes/edit_commerce_pricing_class"
 	},
 	service = MVCActionCommand.class
@@ -74,11 +64,11 @@ public class EditCommercePricingClassMVCActionCommand
 
 		CommercePricingClass commercePricingClass = null;
 
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
 			actionRequest, "title");
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			CommercePricingClass.class.getName(), actionRequest);
@@ -103,5 +93,8 @@ public class EditCommercePricingClassMVCActionCommand
 
 	@Reference
 	private CommercePricingClassService _commercePricingClassService;
+
+	@Reference
+	private Localization _localization;
 
 }

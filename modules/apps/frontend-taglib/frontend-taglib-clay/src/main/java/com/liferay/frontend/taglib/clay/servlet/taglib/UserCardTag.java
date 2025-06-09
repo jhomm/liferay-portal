@@ -1,30 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
 
-import com.liferay.frontend.taglib.clay.servlet.taglib.soy.UserCard;
+import com.liferay.frontend.taglib.clay.internal.servlet.taglib.util.DropdownItemListUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Carlos Lancha
@@ -146,13 +137,13 @@ public class UserCardTag extends BaseCardTag {
 
 	@Override
 	protected String getHydratedModuleName() {
-		return "frontend-taglib-clay/cards/UserCard";
+		return "{UserCard} from frontend-taglib-clay";
 	}
 
 	@Override
 	protected Map<String, Object> prepareProps(Map<String, Object> props) {
 		props.put("description", getSubtitle());
-		props.put("name", getName());
+		props.put("name", HtmlUtil.unescape(getName()));
 		props.put("userDisplayType", getUserColorClass());
 		props.put("userImageAlt", getImageAlt());
 		props.put("userImageSrc", getImageSrc());
@@ -197,7 +188,7 @@ public class UserCardTag extends BaseCardTag {
 			jspWriter.write("<div class=\"custom-checkbox custom-control\">");
 			jspWriter.write("<label><input ");
 
-			jspWriter.write("class=\"custom-control-input\"");
+			jspWriter.write("class=\"custom-control-input\" ");
 
 			Boolean selected = isSelected();
 
@@ -294,7 +285,7 @@ public class UserCardTag extends BaseCardTag {
 
 		List<DropdownItem> actionDropdownItems = getActionDropdownItems();
 
-		if (!ListUtil.isEmpty(actionDropdownItems)) {
+		if (!DropdownItemListUtil.isEmpty(actionDropdownItems)) {
 			jspWriter.write("<div class=\"autofit-col\">");
 
 			DropdownActionsTag dropdownActionsTag = new DropdownActionsTag();

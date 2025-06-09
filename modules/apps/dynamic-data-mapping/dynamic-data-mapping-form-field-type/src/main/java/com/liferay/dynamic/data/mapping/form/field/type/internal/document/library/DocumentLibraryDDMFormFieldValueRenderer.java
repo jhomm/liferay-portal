@@ -1,26 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.document.library;
 
-import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueRenderer;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -35,7 +27,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pedro Queiroz
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DOCUMENT_LIBRARY,
 	service = DDMFormFieldValueRenderer.class
 )
@@ -56,29 +47,34 @@ public class DocumentLibraryDDMFormFieldValueRenderer
 		}
 
 		try {
-			FileEntry fileEntry = dlAppService.getFileEntryByUuidAndGroupId(
-				uuid, groupId);
+			FileEntry fileEntry =
+				dlAppLocalService.getFileEntryByUuidAndGroupId(uuid, groupId);
 
 			return fileEntry.getTitle();
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
-			return LanguageUtil.format(
+			return _language.format(
 				locale, "is-temporarily-unavailable", "content");
 		}
 	}
 
 	@Reference
-	protected DLAppService dlAppService;
+	protected DLAppLocalService dlAppLocalService;
 
-	@Reference
-	protected DocumentLibraryDDMFormFieldValueAccessor
+	@Reference(
+		target = "(ddm.form.field.type.name=" + DDMFormFieldTypeConstants.DOCUMENT_LIBRARY + ")"
+	)
+	protected DDMFormFieldValueAccessor<JSONObject>
 		documentLibraryDDMFormFieldValueAccessor;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DocumentLibraryDDMFormFieldValueRenderer.class);
+
+	@Reference
+	private Language _language;
 
 }

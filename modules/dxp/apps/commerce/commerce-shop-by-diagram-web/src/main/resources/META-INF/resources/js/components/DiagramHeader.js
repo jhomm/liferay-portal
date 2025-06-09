@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayDropDown from '@clayui/drop-down';
-import ClayManagementToolbar from '@clayui/management-toolbar';
 import ClaySlider from '@clayui/slider';
 import classNames from 'classnames';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import {debounce} from 'frontend-js-web';
 import React, {useEffect, useState} from 'react';
 
@@ -41,20 +35,20 @@ function DiagramHeader({
 	setDropdownActive,
 	updatePinsRadius,
 }) {
-	const [buttonLabel, updateButtonLabel] = useState(getLabel(pinsRadius));
+	const [buttonLabel, setButtonLabel] = useState(getLabel(pinsRadius));
 
 	const smallActive = pinsRadius === PINS_RADIUS.OPTIONS.small.value;
 	const mediumActive = pinsRadius === PINS_RADIUS.OPTIONS.medium.value;
 	const largeActive = pinsRadius === PINS_RADIUS.OPTIONS.large.value;
 
 	useEffect(() => {
-		debouncedUpdateLabel(pinsRadius, updateButtonLabel);
+		debouncedUpdateLabel(pinsRadius, setButtonLabel);
 	}, [pinsRadius]);
 
 	return (
-		<ClayManagementToolbar className="py-2">
-			<ClayManagementToolbar.ItemList>
-				<ClayManagementToolbar.Item>
+		<ManagementToolbar.Container className="py-2">
+			<ManagementToolbar.ItemList>
+				<ManagementToolbar.Item>
 					<label className="mr-3">
 						{Liferay.Language.get('pin-size')}
 					</label>
@@ -127,7 +121,7 @@ function DiagramHeader({
 												id="custom-radius-slider"
 												max={PINS_RADIUS.MAX}
 												min={PINS_RADIUS.MIN}
-												onValueChange={updatePinsRadius}
+												onChange={updatePinsRadius}
 												showTooltip={false}
 												step={PINS_RADIUS.STEP}
 												value={pinsRadius}
@@ -138,9 +132,9 @@ function DiagramHeader({
 							</ClayDropDown.Group>
 						</ClayDropDown.ItemList>
 					</ClayDropDown>
-				</ClayManagementToolbar.Item>
-			</ClayManagementToolbar.ItemList>
-		</ClayManagementToolbar>
+				</ManagementToolbar.Item>
+			</ManagementToolbar.ItemList>
+		</ManagementToolbar.Container>
 	);
 }
 

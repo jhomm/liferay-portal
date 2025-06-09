@@ -1,32 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.service;
 
+import com.liferay.asset.display.page.portlet.AssetDisplayPageEntryFormProcessor;
+import com.liferay.document.library.internal.util.DLSubscriptionSender;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.service.DLAppHelperLocalService;
 import com.liferay.document.library.kernel.service.DLAppHelperLocalServiceWrapper;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.kernel.util.DLAppHelperThreadLocal;
+import com.liferay.portal.json.jabsorb.serializer.LiferayJSONDeserializationWhitelist;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
@@ -38,8 +31,8 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.EscapableLocalizableFunction;
-import com.liferay.portal.kernel.util.GroupSubscriptionCheckSubscriptionSender;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -48,11 +41,15 @@ import com.liferay.portlet.documentlibrary.DLGroupServiceSettings;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -61,16 +58,6 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = ServiceWrapper.class)
 public class SubscriptionDLAppHelperLocalServiceWrapper
 	extends DLAppHelperLocalServiceWrapper {
-
-	public SubscriptionDLAppHelperLocalServiceWrapper() {
-		super(null);
-	}
-
-	public SubscriptionDLAppHelperLocalServiceWrapper(
-		DLAppHelperLocalService dlAppHelperLocalService) {
-
-		super(dlAppHelperLocalService);
-	}
 
 	@Override
 	public void deleteFileEntry(FileEntry fileEntry) throws PortalException {
@@ -113,25 +100,79 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 			userId, fileEntry, latestFileVersion, oldStatus, newStatus,
 			serviceContext, workflowContext);
 
+		// Asset display page
+
+		_assetDisplayPageEntryFormProcessor.process(
+			FileEntry.class.getName(), fileEntry.getFileEntryId(),
+			serviceContext);
+
 		if ((newStatus == WorkflowConstants.STATUS_APPROVED) &&
 			(oldStatus != WorkflowConstants.STATUS_IN_TRASH) &&
 			!fileEntry.isInTrash()) {
 
 			// Subscriptions
 
-			notifySubscribers(
+			_notifySubscribers(
 				userId, latestFileVersion,
 				(String)workflowContext.get(WorkflowConstants.CONTEXT_URL),
 				serviceContext);
 		}
 	}
 
-	protected void notifySubscribers(
+	@Activate
+	protected void activate() {
+		_closeable = _liferayJSONDeserializationWhitelist.register(
+			DLSubscriptionSender.class.getName());
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		try {
+			_closeable.close();
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+	}
+
+	private boolean _isEnabled(FileEntry fileEntry) {
+		if (!DLAppHelperThreadLocal.isEnabled() ||
+			RepositoryUtil.isExternalRepository(fileEntry.getRepositoryId())) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private boolean _isEnabled(Folder folder) {
+		if (!DLAppHelperThreadLocal.isEnabled() ||
+			(!folder.isMountPoint() &&
+			 RepositoryUtil.isExternalRepository(folder.getRepositoryId()))) {
+
+			return false;
+		}
+
+		return true;
+	}
+
+	private void _notifySubscribers(
 			long userId, FileVersion fileVersion, String entryURL,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		if (!fileVersion.isApproved() || Validator.isNull(entryURL)) {
+		if (!fileVersion.isApproved()) {
+			return;
+		}
+
+		String friendlyURL = GetterUtil.getString(
+			serviceContext.getAttribute("friendlyURL"));
+
+		if (Validator.isNotNull(friendlyURL)) {
+			entryURL = friendlyURL;
+		}
+
+		if (Validator.isNull(entryURL)) {
 			return;
 		}
 
@@ -187,9 +228,8 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 			folder = _dlAppLocalService.getFolder(folderId);
 		}
 
-		SubscriptionSender subscriptionSender =
-			new GroupSubscriptionCheckSubscriptionSender(
-				DLConstants.RESOURCE_NAME);
+		SubscriptionSender subscriptionSender = new DLSubscriptionSender(
+			DLConstants.RESOURCE_NAME, folderId);
 
 		DLFileEntry dlFileEntry = (DLFileEntry)fileEntry.getModel();
 
@@ -199,7 +239,6 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 
 		subscriptionSender.setClassPK(fileVersion.getFileEntryId());
 		subscriptionSender.setClassName(DLFileEntryConstants.getClassName());
-		subscriptionSender.setCompanyId(fileVersion.getCompanyId());
 
 		if (folder != null) {
 			subscriptionSender.setContextAttribute(
@@ -209,7 +248,7 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 			subscriptionSender.setLocalizedContextAttribute(
 				"[$FOLDER_NAME$]",
 				new EscapableLocalizableFunction(
-					locale -> LanguageUtil.get(locale, "home")));
+					locale -> _language.get(locale, "home")));
 		}
 
 		subscriptionSender.setContextAttributes(
@@ -224,13 +263,13 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 		subscriptionSender.setFrom(fromAddress, fromName);
 		subscriptionSender.setHtmlFormat(true);
 		subscriptionSender.setLocalizedBodyMap(
-			LocalizationUtil.getMap(bodyLocalizedValuesMap));
+			_localization.getMap(bodyLocalizedValuesMap));
 		subscriptionSender.setLocalizedContextAttribute(
 			"[$DOCUMENT_TYPE$]",
 			new EscapableLocalizableFunction(
 				locale -> dlFileEntryType.getName(locale)));
 		subscriptionSender.setLocalizedSubjectMap(
-			LocalizationUtil.getMap(subjectLocalizedValuesMap));
+			_localization.getMap(subjectLocalizedValuesMap));
 		subscriptionSender.setMailId(
 			"file_entry", fileVersion.getFileEntryId());
 
@@ -243,12 +282,9 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 		}
 
 		subscriptionSender.setNotificationType(notificationType);
-
-		String portletId = PortletProviderUtil.getPortletId(
-			FileEntry.class.getName(), PortletProvider.Action.VIEW);
-
-		subscriptionSender.setPortletId(portletId);
-
+		subscriptionSender.setPortletId(
+			PortletProviderUtil.getPortletId(
+				FileEntry.class.getName(), PortletProvider.Action.VIEW));
 		subscriptionSender.setReplyToAddress(fromAddress);
 		subscriptionSender.setScopeGroupId(fileVersion.getGroupId());
 		subscriptionSender.setServiceContext(serviceContext);
@@ -286,32 +322,27 @@ public class SubscriptionDLAppHelperLocalServiceWrapper
 		subscriptionSender.flushNotificationsAsync();
 	}
 
-	private boolean _isEnabled(FileEntry fileEntry) {
-		if (!DLAppHelperThreadLocal.isEnabled() ||
-			RepositoryUtil.isExternalRepository(fileEntry.getRepositoryId())) {
+	@Reference
+	private AssetDisplayPageEntryFormProcessor
+		_assetDisplayPageEntryFormProcessor;
 
-			return false;
-		}
-
-		return true;
-	}
-
-	private boolean _isEnabled(Folder folder) {
-		if (!DLAppHelperThreadLocal.isEnabled() ||
-			(!folder.isMountPoint() &&
-			 RepositoryUtil.isExternalRepository(folder.getRepositoryId()))) {
-
-			return false;
-		}
-
-		return true;
-	}
+	private Closeable _closeable;
 
 	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private LiferayJSONDeserializationWhitelist
+		_liferayJSONDeserializationWhitelist;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private SubscriptionLocalService _subscriptionLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.internal.group.provider;
@@ -66,8 +57,17 @@ public class SiteConnectedGroupGroupProviderImpl
 	public long[] getCurrentAndAncestorSiteAndDepotGroupIds(long groupId)
 		throws PortalException {
 
+		return getCurrentAndAncestorSiteAndDepotGroupIds(groupId, false);
+	}
+
+	@Override
+	public long[] getCurrentAndAncestorSiteAndDepotGroupIds(
+			long groupId, boolean checkContentSharingWithChildrenEnabled)
+		throws PortalException {
+
 		return ArrayUtil.append(
-			_portal.getCurrentAndAncestorSiteGroupIds(groupId),
+			_portal.getCurrentAndAncestorSiteGroupIds(
+				groupId, checkContentSharingWithChildrenEnabled),
 			ListUtil.toLongArray(
 				_depotEntryLocalService.getGroupConnectedDepotEntries(
 					groupId, QueryUtil.ALL_POS, QueryUtil.ALL_POS),
@@ -76,11 +76,13 @@ public class SiteConnectedGroupGroupProviderImpl
 
 	@Override
 	public long[] getCurrentAndAncestorSiteAndDepotGroupIds(
-			long groupId, boolean ddmStructuresAvailable)
+			long groupId, boolean checkContentSharingWithChildrenEnabled,
+			boolean ddmStructuresAvailable)
 		throws PortalException {
 
 		return ArrayUtil.append(
-			_portal.getCurrentAndAncestorSiteGroupIds(groupId),
+			_portal.getCurrentAndAncestorSiteGroupIds(
+				groupId, checkContentSharingWithChildrenEnabled),
 			ListUtil.toLongArray(
 				_depotEntryLocalService.getGroupConnectedDepotEntries(
 					groupId, ddmStructuresAvailable, QueryUtil.ALL_POS,
@@ -92,6 +94,14 @@ public class SiteConnectedGroupGroupProviderImpl
 	public long[] getCurrentAndAncestorSiteAndDepotGroupIds(long[] groupIds)
 		throws PortalException {
 
+		return getCurrentAndAncestorSiteAndDepotGroupIds(groupIds, false);
+	}
+
+	@Override
+	public long[] getCurrentAndAncestorSiteAndDepotGroupIds(
+			long[] groupIds, boolean checkContentSharingWithChildrenEnabled)
+		throws PortalException {
+
 		List<DepotEntry> depotEntries = new ArrayList<>();
 
 		for (long groupId : groupIds) {
@@ -101,7 +111,8 @@ public class SiteConnectedGroupGroupProviderImpl
 		}
 
 		return ArrayUtil.append(
-			_portal.getCurrentAndAncestorSiteGroupIds(groupIds),
+			_portal.getCurrentAndAncestorSiteGroupIds(
+				groupIds, checkContentSharingWithChildrenEnabled),
 			ListUtil.toLongArray(depotEntries, DepotEntry::getGroupId));
 	}
 

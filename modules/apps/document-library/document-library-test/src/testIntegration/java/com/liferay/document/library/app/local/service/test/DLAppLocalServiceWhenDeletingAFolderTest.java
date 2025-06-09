@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.app.local.service.test;
@@ -27,7 +18,6 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.service.SubscriptionLocalServiceUtil;
 
 import org.junit.Assert;
@@ -53,7 +43,7 @@ public class DLAppLocalServiceWhenDeletingAFolderTest {
 		_group = GroupTestUtil.addGroup();
 
 		_folder = DLAppLocalServiceUtil.addFolder(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -65,20 +55,17 @@ public class DLAppLocalServiceWhenDeletingAFolderTest {
 			TestPropsValues.getUserId(), _group.getGroupId(),
 			_folder.getFolderId());
 
-		Subscription subscription =
+		Assert.assertNotNull(
 			SubscriptionLocalServiceUtil.fetchSubscription(
 				_group.getCompanyId(), TestPropsValues.getUserId(),
-				DLFolderConstants.getClassName(), _folder.getFolderId());
-
-		Assert.assertNotNull(subscription);
+				DLFolderConstants.getClassName(), _folder.getFolderId()));
 
 		DLAppLocalServiceUtil.deleteFolder(_folder.getFolderId());
 
-		subscription = SubscriptionLocalServiceUtil.fetchSubscription(
-			_group.getCompanyId(), TestPropsValues.getUserId(),
-			DLFolderConstants.getClassName(), _folder.getFolderId());
-
-		Assert.assertNull(subscription);
+		Assert.assertNull(
+			SubscriptionLocalServiceUtil.fetchSubscription(
+				_group.getCompanyId(), TestPropsValues.getUserId(),
+				DLFolderConstants.getClassName(), _folder.getFolderId()));
 	}
 
 	private Folder _folder;

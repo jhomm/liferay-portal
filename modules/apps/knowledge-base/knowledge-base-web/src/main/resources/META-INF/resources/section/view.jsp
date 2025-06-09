@@ -1,23 +1,14 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/section/init.jsp" %>
 
 <%
-KBArticleURLHelper kbArticleURLHelper = new KBArticleURLHelper(renderRequest, renderResponse, templatePath);
+KBArticleURLHelper kbArticleURLHelper = new KBArticleURLHelper(renderRequest, renderResponse);
 
 String[] kbArticlesSections = kbSectionPortletInstanceConfiguration.kbArticlesSections();
 String kbArticleDisplayStyle = kbSectionPortletInstanceConfiguration.kbArticleDisplayStyle();
@@ -26,7 +17,7 @@ String kbArticleDisplayStyle = kbSectionPortletInstanceConfiguration.kbArticleDi
 <c:choose>
 	<c:when test="<%= ArrayUtil.isNotEmpty(kbSectionPortletInstanceConfiguration.adminKBArticleSections()) %>">
 		<liferay-portlet:renderURL varImpl="iteratorURL">
-			<portlet:param name="mvcPath" value="/section/view.jsp" />
+			<portlet:param name="mvcRenderCommandName" value="/knowledge_base/view" />
 		</liferay-portlet:renderURL>
 
 		<%
@@ -94,7 +85,7 @@ String kbArticleDisplayStyle = kbSectionPortletInstanceConfiguration.kbArticleDi
 									<%= HtmlUtil.escape(kbArticle.getDescription()) %>
 								</c:when>
 								<c:when test='<%= kbArticleDisplayStyle.equals("abstract") %>'>
-									<%= StringUtil.shorten(HtmlUtil.extractText(kbArticle.getContent()), 500) %>
+									<%= StringUtil.shorten(HtmlParserUtil.extractText(kbArticle.getContent()), 500) %>
 								</c:when>
 							</c:choose>
 						</div>
@@ -122,7 +113,7 @@ String kbArticleDisplayStyle = kbSectionPortletInstanceConfiguration.kbArticleDi
 		%>
 
 		<div class="alert alert-info">
-			<%= LanguageUtil.get(resourceBundle, "please-configure-the-list-of-available-sections-in-system-settings-knowledge-base-knowledge-base-section-to-enable-this-widget") %>
+			<liferay-ui:message key="please-configure-the-list-of-available-sections-in-system-settings-knowledge-base-knowledge-base-section-to-enable-this-widget" />
 		</div>
 	</c:otherwise>
 </c:choose>

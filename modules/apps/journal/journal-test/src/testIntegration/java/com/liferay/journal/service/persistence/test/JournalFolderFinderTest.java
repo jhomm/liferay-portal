@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service.persistence.test;
@@ -30,9 +21,11 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
 
 import java.util.List;
@@ -55,6 +48,7 @@ public class JournalFolderFinderTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE,
 			new TransactionalTestRule(
 				Propagation.SUPPORTS, "com.liferay.journal.service"));
 
@@ -77,44 +71,58 @@ public class JournalFolderFinderTest {
 
 		JournalArticleLocalServiceUtil.moveArticleToTrash(
 			TestPropsValues.getUserId(), article);
+
+		article = JournalTestUtil.addArticle(
+			_group.getGroupId(), _folder1.getFolderId(), "Article 3",
+			StringPool.BLANK);
+
+		JournalTestUtil.expireArticle(_group.getGroupId(), article);
 	}
 
 	@Test
-	public void testCountF_A_ByG_F() throws Exception {
+	public void testCountF_A_ByG_F_DDMSI() {
 		QueryDefinition<Object> queryDefinition = new QueryDefinition<>();
 
 		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
 
 		Assert.assertEquals(
-			3,
-			_journalFolderFinder.countF_A_ByG_F(
-				_group.getGroupId(), _folder1.getFolderId(), queryDefinition));
+			4,
+			_journalFolderFinder.countF_A_ByG_F_DDMSI(
+				_group.getGroupId(), _folder1.getFolderId(), 0,
+				queryDefinition));
 
 		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH);
 
 		Assert.assertEquals(
 			1,
-			_journalFolderFinder.countF_A_ByG_F(
-				_group.getGroupId(), _folder1.getFolderId(), queryDefinition));
+			_journalFolderFinder.countF_A_ByG_F_DDMSI(
+				_group.getGroupId(), _folder1.getFolderId(), 0,
+				queryDefinition));
 
 		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
 
 		Assert.assertEquals(
-			2,
-			_journalFolderFinder.countF_A_ByG_F(
-				_group.getGroupId(), _folder1.getFolderId(), queryDefinition));
+			3,
+			_journalFolderFinder.countF_A_ByG_F_DDMSI(
+				_group.getGroupId(), _folder1.getFolderId(), 0,
+				queryDefinition));
 	}
 
 	@Test
-	public void testFindF_A_ByG_F() throws Exception {
+	public void testFindF_A_ByG_F_DDMSI() {
 		QueryDefinition<Object> queryDefinition = new QueryDefinition<>();
 
 		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
 
-		List<Object> results = _journalFolderFinder.findF_A_ByG_F(
-			_group.getGroupId(), _folder1.getFolderId(), queryDefinition);
+		int count = _journalFolderFinder.countF_A_ByG_F_DDMSI(
+			_group.getGroupId(), _folder1.getFolderId(), 0, queryDefinition);
 
-		Assert.assertEquals(results.toString(), 3, results.size());
+		Assert.assertEquals(4, count);
+
+		List<Object> results = _journalFolderFinder.findF_A_ByG_F_DDMSI(
+			_group.getGroupId(), _folder1.getFolderId(), 0, queryDefinition);
+
+		Assert.assertEquals(results.toString(), 4, results.size());
 
 		for (Object result : results) {
 			if (result instanceof JournalFolder) {
@@ -129,14 +137,15 @@ public class JournalFolderFinderTest {
 
 				Assert.assertTrue(
 					title,
-					title.equals("Article 1") || title.equals("Article 2"));
+					title.equals("Article 1") || title.equals("Article 2") ||
+					title.equals("Article 3"));
 			}
 		}
 
 		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH);
 
-		results = _journalFolderFinder.findF_A_ByG_F(
-			_group.getGroupId(), _folder1.getFolderId(), queryDefinition);
+		results = _journalFolderFinder.findF_A_ByG_F_DDMSI(
+			_group.getGroupId(), _folder1.getFolderId(), 0, queryDefinition);
 
 		Assert.assertEquals(results.toString(), 1, results.size());
 
@@ -156,10 +165,10 @@ public class JournalFolderFinderTest {
 
 		queryDefinition.setStatus(WorkflowConstants.STATUS_IN_TRASH, true);
 
-		results = _journalFolderFinder.findF_A_ByG_F(
-			_group.getGroupId(), _folder1.getFolderId(), queryDefinition);
+		results = _journalFolderFinder.findF_A_ByG_F_DDMSI(
+			_group.getGroupId(), _folder1.getFolderId(), 0, queryDefinition);
 
-		Assert.assertEquals(results.toString(), 2, results.size());
+		Assert.assertEquals(results.toString(), 3, results.size());
 
 		for (Object result : results) {
 			if (result instanceof JournalFolder) {
@@ -170,8 +179,79 @@ public class JournalFolderFinderTest {
 			else if (result instanceof JournalArticle) {
 				JournalArticle article = (JournalArticle)result;
 
-				Assert.assertEquals(
-					"Article 1", article.getTitleCurrentValue());
+				String title = article.getTitleCurrentValue();
+
+				Assert.assertTrue(
+					title,
+					title.equals("Article 1") || title.equals("Article 3"));
+			}
+		}
+	}
+
+	@Test
+	public void testFindF_A_ByG_F_DDMSI_NotS() {
+		QueryDefinition<Object> queryDefinition = new QueryDefinition<>();
+
+		queryDefinition.setStatus(WorkflowConstants.STATUS_ANY);
+
+		int count = _journalFolderFinder.filterCountF_A_ByG_F_DDMSI_NotS(
+			_group.getGroupId(), _folder1.getFolderId(), 0, null,
+			queryDefinition);
+
+		Assert.assertEquals(4, count);
+
+		List<Object> results =
+			_journalFolderFinder.filterFindF_A_ByG_F_DDMSI_L_NotS(
+				_group.getGroupId(), _folder1.getFolderId(), 0,
+				LocaleUtil.getDefault(), null, queryDefinition);
+
+		Assert.assertEquals(results.toString(), 4, results.size());
+
+		for (Object result : results) {
+			if (result instanceof JournalFolder) {
+				JournalFolder folder = (JournalFolder)result;
+
+				Assert.assertEquals("Folder 2", folder.getName());
+			}
+			else if (result instanceof JournalArticle) {
+				JournalArticle article = (JournalArticle)result;
+
+				String title = article.getTitleCurrentValue();
+
+				Assert.assertTrue(
+					title,
+					title.equals("Article 1") || title.equals("Article 2") ||
+					title.equals("Article 3"));
+			}
+		}
+
+		results = _journalFolderFinder.filterFindF_A_ByG_F_DDMSI_L_NotS(
+			_group.getGroupId(), _folder1.getFolderId(), 0,
+			LocaleUtil.getDefault(),
+			new int[] {WorkflowConstants.STATUS_EXPIRED}, queryDefinition);
+
+		Assert.assertEquals(results.toString(), 3, results.size());
+
+		count = _journalFolderFinder.filterCountF_A_ByG_F_DDMSI_NotS(
+			_group.getGroupId(), _folder1.getFolderId(), 0,
+			new int[] {WorkflowConstants.STATUS_EXPIRED}, queryDefinition);
+
+		Assert.assertEquals(3, count);
+
+		for (Object result : results) {
+			if (result instanceof JournalFolder) {
+				JournalFolder folder = (JournalFolder)result;
+
+				Assert.assertEquals("Folder 2", folder.getName());
+			}
+			else if (result instanceof JournalArticle) {
+				JournalArticle article = (JournalArticle)result;
+
+				String title = article.getTitleCurrentValue();
+
+				Assert.assertTrue(
+					title,
+					title.equals("Article 1") || title.equals("Article 2"));
 			}
 		}
 	}

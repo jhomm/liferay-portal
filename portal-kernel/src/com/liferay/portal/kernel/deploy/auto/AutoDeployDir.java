@@ -1,27 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.deploy.auto;
 
-import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
-import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.deploy.auto.context.AutoDeploymentContext;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -33,10 +21,8 @@ import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -51,24 +37,8 @@ public class AutoDeployDir {
 
 	public static final String DEFAULT_NAME = "defaultAutoDeployDir";
 
-	public static void deploy(
-			AutoDeploymentContext autoDeploymentContext,
-			List<AutoDeployListener> autoDeployListeners)
+	public static void deploy(AutoDeploymentContext autoDeploymentContext)
 		throws AutoDeployException {
-
-		if (_serviceTrackerList != null) {
-			for (AutoDeployListener autoDeployListener : _serviceTrackerList) {
-				if (autoDeployListener.isDeployable(autoDeploymentContext)) {
-					autoDeployListener.deploy(autoDeploymentContext);
-
-					File file = autoDeploymentContext.getFile();
-
-					file.delete();
-
-					return;
-				}
-			}
-		}
 
 		String[] dirNames = PropsUtil.getArray(
 			PropsKeys.MODULE_FRAMEWORK_AUTO_DEPLOY_DIRS);
@@ -135,40 +105,22 @@ public class AutoDeployDir {
 		FileUtil.move(file, new File(dirName, fileName));
 	}
 
-	public AutoDeployDir(
-		String name, File deployDir, File destDir, long interval,
-		List<AutoDeployListener> autoDeployListeners) {
-
+	public AutoDeployDir(String name, File deployDir, long interval) {
 		_name = name;
 		_deployDir = deployDir;
-		_destDir = destDir;
 		_interval = interval;
-
-		_autoDeployListeners = new CopyOnWriteArrayList<>(autoDeployListeners);
 	}
 
 	public File getDeployDir() {
 		return _deployDir;
 	}
 
-	public File getDestDir() {
-		return _destDir;
-	}
-
 	public long getInterval() {
 		return _interval;
 	}
 
-	public List<AutoDeployListener> getListeners() {
-		return _autoDeployListeners;
-	}
-
 	public String getName() {
 		return _name;
-	}
-
-	public void registerListener(AutoDeployListener listener) {
-		_autoDeployListeners.add(listener);
 	}
 
 	public void start() {
@@ -201,7 +153,7 @@ public class AutoDeployDir {
 				}
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				stop();
 			}
@@ -217,12 +169,6 @@ public class AutoDeployDir {
 		if (_autoDeployScanner != null) {
 			_autoDeployScanner.pause();
 		}
-
-		_serviceTrackerList.close();
-	}
-
-	public void unregisterListener(AutoDeployListener autoDeployListener) {
-		_autoDeployListeners.remove(autoDeployListener);
 	}
 
 	protected AutoDeploymentContext buildAutoDeploymentContext(File file) {
@@ -270,12 +216,12 @@ public class AutoDeployDir {
 			AutoDeploymentContext autoDeploymentContext =
 				buildAutoDeploymentContext(file);
 
-			deploy(autoDeploymentContext, _autoDeployListeners);
+			deploy(autoDeploymentContext);
 
 			return;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		if (_log.isInfoEnabled()) {
@@ -369,16 +315,11 @@ public class AutoDeployDir {
 	private static final Log _log = LogFactoryUtil.getLog(AutoDeployDir.class);
 
 	private static AutoDeployScanner _autoDeployScanner;
-	private static final ServiceTrackerList<AutoDeployListener>
-		_serviceTrackerList = ServiceTrackerListFactory.open(
-			SystemBundleUtil.getBundleContext(), AutoDeployListener.class);
 	private static final Pattern _versionPattern = Pattern.compile(
 		"-[\\d]+((\\.[\\d]+)+(-.+)*)\\.war$");
 
-	private final List<AutoDeployListener> _autoDeployListeners;
 	private final Map<String, Long> _blacklistFileTimestamps = new HashMap<>();
 	private final File _deployDir;
-	private final File _destDir;
 	private final long _interval;
 	private final String _name;
 

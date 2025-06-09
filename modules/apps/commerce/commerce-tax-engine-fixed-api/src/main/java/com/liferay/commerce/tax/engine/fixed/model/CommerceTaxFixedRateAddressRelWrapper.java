@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.engine.fixed.model;
@@ -45,6 +36,7 @@ public class CommerceTaxFixedRateAddressRelWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put(
 			"commerceTaxFixedRateAddressRelId",
 			getCommerceTaxFixedRateAddressRelId());
@@ -66,6 +58,12 @@ public class CommerceTaxFixedRateAddressRelWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		Long commerceTaxFixedRateAddressRelId = (Long)attributes.get(
 			"commerceTaxFixedRateAddressRelId");
 
@@ -255,6 +253,16 @@ public class CommerceTaxFixedRateAddressRelWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this commerce tax fixed rate address rel.
+	 *
+	 * @return the mvcc version of this commerce tax fixed rate address rel
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the primary key of this commerce tax fixed rate address rel.
 	 *
 	 * @return the primary key of this commerce tax fixed rate address rel
@@ -420,6 +428,16 @@ public class CommerceTaxFixedRateAddressRelWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this commerce tax fixed rate address rel.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce tax fixed rate address rel
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the primary key of this commerce tax fixed rate address rel.
 	 *
 	 * @param primaryKey the primary key of this commerce tax fixed rate address rel
@@ -487,6 +505,11 @@ public class CommerceTaxFixedRateAddressRelWrapper
 	@Override
 	public void setZip(String zip) {
 		model.setZip(zip);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

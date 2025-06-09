@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.search;
 
 import com.liferay.commerce.product.constants.CPField;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryLocalService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -44,14 +35,14 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -59,7 +50,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Marco Leo
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CPAttachmentFileEntryIndexer
 	extends BaseIndexer<CPAttachmentFileEntry> {
 
@@ -85,23 +76,8 @@ public class CPAttachmentFileEntryIndexer
 			BooleanFilter contextBooleanFilter, SearchContext searchContext)
 		throws Exception {
 
-		int status = GetterUtil.getInteger(
-			searchContext.getAttribute(Field.STATUS),
-			WorkflowConstants.STATUS_APPROVED);
-
-		if (status != WorkflowConstants.STATUS_ANY) {
-			contextBooleanFilter.addRequiredTerm(Field.STATUS, status);
-		}
-
 		long classNameId = GetterUtil.getLong(
 			searchContext.getAttribute(CPField.RELATED_ENTITY_CLASS_NAME_ID));
-
-		int type = GetterUtil.getInteger(
-			searchContext.getAttribute(Field.TYPE), -1);
-
-		if (type >= 0) {
-			contextBooleanFilter.addRequiredTerm(Field.TYPE, type);
-		}
 
 		if (classNameId > 0) {
 			contextBooleanFilter.addRequiredTerm(
@@ -114,6 +90,29 @@ public class CPAttachmentFileEntryIndexer
 		if (classPK > 0) {
 			contextBooleanFilter.addRequiredTerm(
 				CPField.RELATED_ENTITY_CLASS_PK, classPK);
+		}
+
+		Boolean galleryEnabled = (Boolean)searchContext.getAttribute(
+			CPField.GALLERY_ENABLED);
+
+		if (galleryEnabled != null) {
+			contextBooleanFilter.addRequiredTerm(
+				CPField.GALLERY_ENABLED, galleryEnabled);
+		}
+
+		int status = GetterUtil.getInteger(
+			searchContext.getAttribute(Field.STATUS),
+			WorkflowConstants.STATUS_APPROVED);
+
+		if (status != WorkflowConstants.STATUS_ANY) {
+			contextBooleanFilter.addRequiredTerm(Field.STATUS, status);
+		}
+
+		int type = GetterUtil.getInteger(
+			searchContext.getAttribute(Field.TYPE), -1);
+
+		if (type >= 0) {
+			contextBooleanFilter.addRequiredTerm(Field.TYPE, type);
 		}
 
 		String[] fieldNames = (String[])searchContext.getAttribute("OPTIONS");
@@ -153,14 +152,14 @@ public class CPAttachmentFileEntryIndexer
 			SearchContext searchContext)
 		throws Exception {
 
-		addSearchLocalizedTerm(
-			searchQuery, searchContext, Field.CONTENT, false);
-		addSearchTerm(searchQuery, searchContext, Field.ENTRY_CLASS_PK, false);
 		addSearchTerm(
 			searchQuery, searchContext, CPField.RELATED_ENTITY_CLASS_NAME_ID,
 			false);
 		addSearchTerm(
 			searchQuery, searchContext, CPField.RELATED_ENTITY_CLASS_PK, false);
+		addSearchLocalizedTerm(
+			searchQuery, searchContext, Field.CONTENT, false);
+		addSearchTerm(searchQuery, searchContext, Field.ENTRY_CLASS_PK, false);
 		addSearchTerm(searchQuery, searchContext, Field.USER_NAME, false);
 
 		LinkedHashMap<String, Object> params =
@@ -191,7 +190,8 @@ public class CPAttachmentFileEntryIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Indexing attachment file entry " + cpAttachmentFileEntry);
+				"Indexing commerce product attachment file entry " +
+					cpAttachmentFileEntry);
 		}
 
 		Document document = getBaseModelDocument(
@@ -199,39 +199,41 @@ public class CPAttachmentFileEntryIndexer
 
 		document.addKeyword(CPField.CDN, cpAttachmentFileEntry.isCDNEnabled());
 		document.addText(CPField.CDN_URL, cpAttachmentFileEntry.getCDNURL());
-		document.addText(Field.CONTENT, StringPool.BLANK);
 		document.addDateSortable(
 			CPField.DISPLAY_DATE, cpAttachmentFileEntry.getDisplayDate());
 		document.addNumber(
 			CPField.FILE_ENTRY_ID, cpAttachmentFileEntry.getFileEntryId());
-		document.addNumber(Field.PRIORITY, cpAttachmentFileEntry.getPriority());
+		document.addKeyword(
+			CPField.GALLERY_ENABLED, cpAttachmentFileEntry.isGalleryEnabled());
 		document.addNumber(
 			CPField.RELATED_ENTITY_CLASS_NAME_ID,
 			cpAttachmentFileEntry.getClassNameId());
 		document.addNumber(
 			CPField.RELATED_ENTITY_CLASS_PK,
 			cpAttachmentFileEntry.getClassPK());
+		document.addText(Field.CONTENT, StringPool.BLANK);
+		document.addNumber(Field.PRIORITY, cpAttachmentFileEntry.getPriority());
 		document.addNumber(Field.TYPE, cpAttachmentFileEntry.getType());
 
 		Map<CPDefinitionOptionRel, List<CPDefinitionOptionValueRel>>
-			cpDefinitionOptionRelListMap =
-				_cpInstanceHelper.getCPDefinitionOptionRelsMap(
+			cpDefinitionOptionValueRelListMap =
+				_cpInstanceHelper.getCPDefinitionOptionValueRelsMap(
 					cpAttachmentFileEntry.getClassPK(),
 					cpAttachmentFileEntry.getJson());
 
 		for (Map.Entry<CPDefinitionOptionRel, List<CPDefinitionOptionValueRel>>
-				cpDefinitionOptionRelListMapEntry :
-					cpDefinitionOptionRelListMap.entrySet()) {
+				cpDefinitionOptionValueRelListMapEntry :
+					cpDefinitionOptionValueRelListMap.entrySet()) {
 
 			CPDefinitionOptionRel cpDefinitionOptionRel =
-				cpDefinitionOptionRelListMapEntry.getKey();
+				cpDefinitionOptionValueRelListMapEntry.getKey();
 
 			CPOption cpOption = cpDefinitionOptionRel.getCPOption();
 
 			List<String> optionValueIds = new ArrayList<>();
 
 			for (CPDefinitionOptionValueRel cpDefinitionOptionValueRel :
-					cpDefinitionOptionRelListMapEntry.getValue()) {
+					cpDefinitionOptionValueRelListMapEntry.getValue()) {
 
 				optionValueIds.add(cpDefinitionOptionValueRel.getKey());
 			}
@@ -243,7 +245,8 @@ public class CPAttachmentFileEntryIndexer
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + cpAttachmentFileEntry + " indexed successfully");
+				"Commerce product attachment file entry " +
+					cpAttachmentFileEntry + " indexed successfully");
 		}
 
 		return document;
@@ -268,8 +271,8 @@ public class CPAttachmentFileEntryIndexer
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), cpAttachmentFileEntry.getCompanyId(),
-			getDocument(cpAttachmentFileEntry), isCommitImmediately());
+			cpAttachmentFileEntry.getCompanyId(),
+			getDocument(cpAttachmentFileEntry));
 	}
 
 	@Override
@@ -283,11 +286,11 @@ public class CPAttachmentFileEntryIndexer
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCPAttachmentFileEntries(companyId);
+		_reindexCPAttachmentFileEntries(companyId);
 	}
 
-	protected void reindexCPAttachmentFileEntries(long companyId)
-		throws PortalException {
+	private void _reindexCPAttachmentFileEntries(long companyId)
+		throws Exception {
 
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_cpAttachmentFileEntryLocalService.
@@ -302,17 +305,13 @@ public class CPAttachmentFileEntryIndexer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						long cpAttachmentFileEntryId =
-							cpAttachmentFileEntry.getCPAttachmentFileEntryId();
-
 						_log.warn(
 							"Unable to index commerce product attachment " +
-								"file entry " + cpAttachmentFileEntryId,
+								"file entry " + cpAttachmentFileEntry,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}

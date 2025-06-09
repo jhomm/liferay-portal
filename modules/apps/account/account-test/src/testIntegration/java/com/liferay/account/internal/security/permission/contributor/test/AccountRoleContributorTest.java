@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.security.permission.contributor.test;
@@ -18,9 +9,8 @@ import com.liferay.account.constants.AccountRoleConstants;
 import com.liferay.account.manager.CurrentAccountEntryManager;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
-import com.liferay.account.service.AccountEntryLocalService;
-import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
+import com.liferay.account.service.test.util.AccountEntryArgs;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.test.util.BlogsTestUtil;
@@ -64,12 +54,10 @@ public class AccountRoleContributorTest {
 
 	@Test
 	public void testAccountMemberRoleAssignment() throws Exception {
-		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
 		User user = UserTestUtil.addUser();
 
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry.getAccountEntryId(), user.getUserId());
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withUsers(user));
 
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			user);
@@ -91,20 +79,23 @@ public class AccountRoleContributorTest {
 		PermissionChecker permissionChecker = _permissionCheckerFactory.create(
 			user);
 
-		long[] roleIds = permissionChecker.getRoleIds(
-			user.getUserId(), TestPropsValues.getGroupId());
-
-		Assert.assertNotSame(PermissionChecker.DEFAULT_ROLE_IDS, roleIds);
+		Assert.assertNotSame(
+			PermissionChecker.DEFAULT_ROLE_IDS,
+			permissionChecker.getRoleIds(
+				user.getUserId(), TestPropsValues.getGroupId()));
 	}
 
 	@Test
 	public void testSelectedAccountPermission() throws Exception {
+		User user = UserTestUtil.addUser();
+
 		AccountEntry accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+			AccountEntryArgs.withUsers(user));
 
 		AccountRole accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), accountEntry1.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			accountEntry1.getAccountEntryId(), RandomTestUtil.randomString(),
+			null, null);
 
 		Group group = GroupTestUtil.addGroup();
 
@@ -112,20 +103,12 @@ public class AccountRoleContributorTest {
 			TestPropsValues.getUserId(), RandomTestUtil.randomString(), true,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 
-		User user = UserTestUtil.addUser();
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry1.getAccountEntryId(), user.getUserId());
-
 		_accountRoleLocalService.associateUser(
 			accountEntry1.getAccountEntryId(), accountRole.getAccountRoleId(),
 			user.getUserId());
 
 		AccountEntry accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry2.getAccountEntryId(), user.getUserId());
+			AccountEntryArgs.withUsers(user));
 
 		_currentAccountEntryManager.setCurrentAccountEntry(
 			accountEntry1.getAccountEntryId(), group.getGroupId(),
@@ -188,12 +171,6 @@ public class AccountRoleContributorTest {
 				groupedModel.getGroupId(), groupedModel.getModelClassName(),
 				String.valueOf(groupedModel.getPrimaryKeyObj()), actionKey));
 	}
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
-
-	@Inject
-	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@Inject
 	private AccountRoleLocalService _accountRoleLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.portlet.action;
@@ -38,10 +29,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.sites.kernel.util.Sites;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import java.util.List;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,10 +41,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/update_organization_organization_site"
 	},
 	service = MVCActionCommand.class
@@ -67,7 +57,7 @@ public class UpdateOrganizationOrganizationSiteMVCActionCommand
 		throws Exception {
 
 		try {
-			updateOrganizationSite(actionRequest);
+			_updateOrganizationSite(actionRequest);
 		}
 		catch (Exception exception) {
 			if (exception instanceof NoSuchOrganizationException ||
@@ -83,7 +73,7 @@ public class UpdateOrganizationOrganizationSiteMVCActionCommand
 		}
 	}
 
-	protected void updateOrganizationSite(ActionRequest actionRequest)
+	private void _updateOrganizationSite(ActionRequest actionRequest)
 		throws Exception {
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
@@ -108,12 +98,13 @@ public class UpdateOrganizationOrganizationSiteMVCActionCommand
 			Organization.class.getName(), organizationId);
 
 		organization = _organizationService.updateOrganization(
-			organizationId, organization.getParentOrganizationId(),
-			organization.getName(), organization.getType(),
-			organization.getRegionId(), organization.getCountryId(),
-			organization.getStatusId(), organization.getComments(), true, null,
-			site, organization.getAddresses(), emailAddresses, orgLabors,
-			phones, websites, null);
+			organization.getExternalReferenceCode(), organizationId,
+			organization.getParentOrganizationId(), organization.getName(),
+			organization.getType(), organization.getRegionId(),
+			organization.getCountryId(), organization.getStatusListTypeId(),
+			organization.getComments(), true, null, site,
+			organization.getAddresses(), emailAddresses, orgLabors, phones,
+			websites, null);
 
 		Group organizationGroup = organization.getGroup();
 

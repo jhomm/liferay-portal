@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.language.web.internal.display.context;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
@@ -25,17 +19,18 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 import com.liferay.site.navigation.language.web.internal.configuration.SiteNavigationLanguagePortletInstanceConfiguration;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -53,11 +48,10 @@ public class SiteNavigationLanguageDisplayContext {
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
-
 		_siteNavigationLanguagePortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				SiteNavigationLanguagePortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				SiteNavigationLanguagePortletInstanceConfiguration.class,
+				_themeDisplay);
 	}
 
 	public List<KeyValuePair> getAvailableLanguageIdKVPs() {
@@ -129,20 +123,31 @@ public class SiteNavigationLanguageDisplayContext {
 		return _ddmTemplateKey;
 	}
 
-	public long getDisplayStyleGroupId() {
-		if (_displayStyleGroupId != 0) {
-			return _displayStyleGroupId;
+	public String getDisplayStyleGroupKey() {
+		if (_displayStyleGroupKey != null) {
+			return _displayStyleGroupKey;
 		}
 
-		_displayStyleGroupId =
+		String displayStyleGroupExternalReferenceCode =
 			_siteNavigationLanguagePortletInstanceConfiguration.
-				displayStyleGroupId();
+				displayStyleGroupExternalReferenceCode();
 
-		if (_displayStyleGroupId <= 0) {
-			_displayStyleGroupId = _themeDisplay.getSiteGroupId();
+		Group group = _themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = GroupLocalServiceUtil.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
 		}
 
-		return _displayStyleGroupId;
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
 	}
 
 	public String[] getLanguageIds() {
@@ -179,7 +184,7 @@ public class SiteNavigationLanguageDisplayContext {
 
 	private String[] _availableLanguageIds;
 	private String _ddmTemplateKey;
-	private long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
 	private String[] _languageIds;
 	private final PortletDisplayTemplate _portletDisplayTemplate;
 	private final SiteNavigationLanguagePortletInstanceConfiguration

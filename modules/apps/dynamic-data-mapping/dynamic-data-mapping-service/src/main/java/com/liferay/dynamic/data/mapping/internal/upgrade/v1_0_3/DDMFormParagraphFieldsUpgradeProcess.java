@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v1_0_3;
@@ -63,7 +54,7 @@ public class DDMFormParagraphFieldsUpgradeProcess extends UpgradeProcess {
 					String definition = resultSet.getString("definition");
 
 					preparedStatement2.setString(
-						1, makeFieldsLocalizable(definition));
+						1, _makeFieldsLocalizable(definition));
 
 					long structureId = resultSet.getLong("structureId");
 
@@ -80,7 +71,7 @@ public class DDMFormParagraphFieldsUpgradeProcess extends UpgradeProcess {
 							definition = resultSet2.getString("definition");
 
 							preparedStatement4.setString(
-								1, makeFieldsLocalizable(definition));
+								1, _makeFieldsLocalizable(definition));
 
 							long structureVersionId = resultSet2.getLong(
 								"structureVersionId");
@@ -104,7 +95,25 @@ public class DDMFormParagraphFieldsUpgradeProcess extends UpgradeProcess {
 			"com.liferay.dynamic.data.lists.model.DDLRecordSet");
 	}
 
-	protected void makeFieldsLocalizable(
+	private boolean _isValueLocalizable(
+		JSONObject fieldJSONObject, JSONArray availableLanguageIdsJSONArray) {
+
+		JSONObject jsonObject = fieldJSONObject.getJSONObject("text");
+
+		if (jsonObject == null) {
+			return false;
+		}
+
+		for (int i = 0; i < availableLanguageIdsJSONArray.length(); i++) {
+			if (!jsonObject.has(availableLanguageIdsJSONArray.getString(i))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private void _makeFieldsLocalizable(
 		JSONArray fieldsJSONArray, JSONArray availableLanguageIdsJSONArray) {
 
 		for (int i = 0; i < fieldsJSONArray.length(); i++) {
@@ -134,14 +143,14 @@ public class DDMFormParagraphFieldsUpgradeProcess extends UpgradeProcess {
 					"nestedFields");
 
 				if (nestedFieldsJSONArray != null) {
-					makeFieldsLocalizable(
+					_makeFieldsLocalizable(
 						nestedFieldsJSONArray, availableLanguageIdsJSONArray);
 				}
 			}
 		}
 	}
 
-	protected String makeFieldsLocalizable(String definition)
+	private String _makeFieldsLocalizable(String definition)
 		throws PortalException {
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject(definition);
@@ -151,27 +160,9 @@ public class DDMFormParagraphFieldsUpgradeProcess extends UpgradeProcess {
 
 		JSONArray fieldsJSONArray = jsonObject.getJSONArray("fields");
 
-		makeFieldsLocalizable(fieldsJSONArray, availableLanguageIdsJSONArray);
+		_makeFieldsLocalizable(fieldsJSONArray, availableLanguageIdsJSONArray);
 
-		return jsonObject.toJSONString();
-	}
-
-	private boolean _isValueLocalizable(
-		JSONObject fieldJSONObject, JSONArray availableLanguageIdsJSONArray) {
-
-		JSONObject jsonObject = fieldJSONObject.getJSONObject("text");
-
-		if (jsonObject == null) {
-			return false;
-		}
-
-		for (int i = 0; i < availableLanguageIdsJSONArray.length(); i++) {
-			if (!jsonObject.has(availableLanguageIdsJSONArray.getString(i))) {
-				return false;
-			}
-		}
-
-		return true;
+		return jsonObject.toString();
 	}
 
 	private final JSONFactory _jsonFactory;

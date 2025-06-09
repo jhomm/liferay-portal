@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal.conflict;
@@ -23,8 +14,11 @@ import java.util.ResourceBundle;
  */
 public class ModificationDeletionConflictInfo extends BaseConflictInfo {
 
-	public ModificationDeletionConflictInfo(long modelClassPK) {
+	public ModificationDeletionConflictInfo(
+		long modelClassPK, boolean publicationConflict) {
+
 		_modelClassPK = modelClassPK;
+		_publicationConflict = publicationConflict;
 	}
 
 	@Override
@@ -35,8 +29,14 @@ public class ModificationDeletionConflictInfo extends BaseConflictInfo {
 
 	@Override
 	public String getResolutionDescription(ResourceBundle resourceBundle) {
-		return LanguageUtil.get(
-			resourceBundle, "deletion-conflicts-with-a-modification");
+		String message = "deletion-conflicts-with-a-modification";
+
+		if (_publicationConflict) {
+			message =
+				"deletion-conflicts-with-modifications-in-another-publication";
+		}
+
+		return LanguageUtil.get(resourceBundle, message);
 	}
 
 	@Override
@@ -50,5 +50,6 @@ public class ModificationDeletionConflictInfo extends BaseConflictInfo {
 	}
 
 	private final long _modelClassPK;
+	private final boolean _publicationConflict;
 
 }

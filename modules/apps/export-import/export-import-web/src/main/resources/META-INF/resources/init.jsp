@@ -1,20 +1,11 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -22,16 +13,17 @@
 taglib uri="http://liferay.com/tld/clay" prefix="clay" %><%@
 taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
 taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %><%@
+taglib uri="http://liferay.com/tld/react" prefix="react" %><%@
+taglib uri="http://liferay.com/tld/site-navigation" prefix="liferay-site-navigation" %><%@
 taglib uri="http://liferay.com/tld/staging" prefix="liferay-staging" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/trash" prefix="liferay-trash" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
+taglib uri="http://liferay.com/tld/user" prefix="liferay-user" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
-<%@ page import="com.liferay.background.task.kernel.util.comparator.BackgroundTaskComparatorFactoryUtil" %><%@
-page import="com.liferay.document.library.configuration.DLConfiguration" %><%@
+<%@ page import="com.liferay.document.library.configuration.DLConfiguration" %><%@
 page import="com.liferay.dynamic.data.mapping.exception.StructureDuplicateStructureKeyException" %><%@
-page import="com.liferay.exportimport.constants.ExportImportPortletKeys" %><%@
 page import="com.liferay.exportimport.kernel.background.task.BackgroundTaskExecutorNames" %><%@
 page import="com.liferay.exportimport.kernel.configuration.ExportImportConfigurationUtil" %><%@
 page import="com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants" %><%@
@@ -58,16 +50,19 @@ page import="com.liferay.exportimport.kernel.lar.UserIdStrategy" %><%@
 page import="com.liferay.exportimport.kernel.model.ExportImportConfiguration" %><%@
 page import="com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalServiceUtil" %><%@
 page import="com.liferay.exportimport.kernel.staging.StagingUtil" %><%@
-page import="com.liferay.exportimport.util.comparator.ExportImportConfigurationNameComparator" %><%@
 page import="com.liferay.exportimport.web.internal.constants.ExportImportWebKeys" %><%@
 page import="com.liferay.exportimport.web.internal.dao.search.ExportImportResultRowSplitter" %><%@
+page import="com.liferay.exportimport.web.internal.display.context.ExportImportProcessDisplayContext" %><%@
+page import="com.liferay.exportimport.web.internal.display.context.ExportImportPublishTemplatesDisplayContext" %><%@
 page import="com.liferay.exportimport.web.internal.display.context.ExportImportToolbarDisplayContext" %><%@
+page import="com.liferay.exportimport.web.internal.display.context.ExportLayoutsProcessesDisplayContext" %><%@
 page import="com.liferay.exportimport.web.internal.display.context.ExportTemplatesToolbarDisplayContext" %><%@
 page import="com.liferay.exportimport.web.internal.portlet.action.ExportImportMVCActionCommand" %><%@
 page import="com.liferay.frontend.taglib.clay.servlet.taglib.util.JSPNavigationItemList" %><%@
-page import="com.liferay.petra.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.petra.string.StringBundler" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
+page import="com.liferay.portal.background.task.util.comparator.BackgroundTaskComparatorFactoryUtil" %><%@
+page import="com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.backgroundtask.BackgroundTask" %><%@
 page import="com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil" %><%@
 page import="com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatus" %><%@
@@ -75,7 +70,6 @@ page import="com.liferay.portal.kernel.backgroundtask.BackgroundTaskStatusRegist
 page import="com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants" %><%@
 page import="com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplay" %><%@
 page import="com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplayFactoryUtil" %><%@
-page import="com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker" %><%@
 page import="com.liferay.portal.kernel.dao.search.SearchContainer" %><%@
 page import="com.liferay.portal.kernel.exception.LayoutPrototypeException" %><%@
 page import="com.liferay.portal.kernel.exception.LocaleException" %><%@
@@ -105,12 +99,12 @@ page import="com.liferay.portal.kernel.model.Portlet" %><%@
 page import="com.liferay.portal.kernel.model.Ticket" %><%@
 page import="com.liferay.portal.kernel.model.TicketConstants" %><%@
 page import="com.liferay.portal.kernel.model.User" %><%@
-page import="com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.PortalPreferences" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletBag" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletBagPool" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletURLUtil" %><%@
+page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil" %><%@
 page import="com.liferay.portal.kernel.repository.model.FileEntry" %><%@
 page import="com.liferay.portal.kernel.security.auth.AuthException" %><%@
@@ -127,8 +121,9 @@ page import="com.liferay.portal.kernel.service.ServiceContext" %><%@
 page import="com.liferay.portal.kernel.service.TicketLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.UserLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.permission.GroupPermissionUtil" %><%@
+page import="com.liferay.portal.kernel.service.permission.PortletPermissionUtil" %><%@
 page import="com.liferay.portal.kernel.servlet.SessionMessages" %><%@
-page import="com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil" %><%@
+page import="com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.util.AggregateResourceBundle" %><%@
 page import="com.liferay.portal.kernel.util.ArrayUtil" %><%@
 page import="com.liferay.portal.kernel.util.CalendarFactoryUtil" %><%@
@@ -152,8 +147,14 @@ page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.kernel.util.comparator.PortletTitleComparator" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
 page import="com.liferay.portal.util.PropsValues" %><%@
-page import="com.liferay.portlet.layoutsadmin.display.context.GroupDisplayContextHelper" %><%@
+page import="com.liferay.site.display.context.GroupDisplayContextHelper" %><%@
+page import="com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntriesUtil" %><%@
+page import="com.liferay.staging.StagingGroupHelper" %><%@
+page import="com.liferay.staging.StagingGroupHelperUtil" %><%@
 page import="com.liferay.taglib.search.ResultRow" %>
+
+<%@ page import="jakarta.portlet.PortletRequest" %><%@
+page import="jakarta.portlet.PortletURL" %>
 
 <%@ page import="java.io.Serializable" %>
 
@@ -172,9 +173,6 @@ page import="java.util.Map" %><%@
 page import="java.util.Objects" %><%@
 page import="java.util.ResourceBundle" %><%@
 page import="java.util.Set" %>
-
-<%@ page import="javax.portlet.PortletRequest" %><%@
-page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 
@@ -195,7 +193,9 @@ Calendar calendar = CalendarFactoryUtil.getCalendar(timeZone, locale);
 
 int timeZoneOffset = timeZone.getOffset(calendar.getTimeInMillis());
 
-Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
+Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
+
+StagingGroupHelper stagingGroupHelper = StagingGroupHelperUtil.getStagingGroupHelper();
 %>
 
 <%@ include file="/init-ext.jsp" %>

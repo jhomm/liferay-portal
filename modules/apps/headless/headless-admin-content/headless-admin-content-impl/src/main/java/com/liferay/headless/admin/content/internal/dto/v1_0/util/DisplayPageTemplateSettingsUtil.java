@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.content.internal.dto.v1_0.util;
@@ -19,7 +10,7 @@ import com.liferay.headless.admin.content.dto.v1_0.DisplayPageTemplateSettings;
 import com.liferay.headless.admin.content.dto.v1_0.OpenGraphSettingsMapping;
 import com.liferay.headless.admin.content.dto.v1_0.SEOSettingsMapping;
 import com.liferay.info.item.InfoItemFormVariation;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormVariationsProvider;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.portal.kernel.model.Layout;
@@ -37,46 +28,50 @@ public class DisplayPageTemplateSettingsUtil {
 
 	public static DisplayPageTemplateSettings getDisplayPageTemplateSettings(
 		DTOConverterContext dtoConverterContext,
-		InfoItemServiceTracker infoItemServiceTracker, Layout layout,
+		InfoItemServiceRegistry infoItemServiceRegistry, Layout layout,
 		LayoutPageTemplateEntry layoutPageTemplateEntry, Portal portal) {
 
 		return new DisplayPageTemplateSettings() {
 			{
-				contentAssociation = _getContentAssociation(
-					dtoConverterContext, infoItemServiceTracker,
-					layoutPageTemplateEntry, portal);
-				openGraphSettingsMapping = _getOpenGraphSettingsMapping(layout);
-				seoSettingsMapping = _getSEOSettingsMapping(
-					dtoConverterContext, layout);
+				setContentAssociation(
+					() -> _getContentAssociation(
+						dtoConverterContext, infoItemServiceRegistry,
+						layoutPageTemplateEntry, portal));
+				setOpenGraphSettingsMapping(
+					() -> _getOpenGraphSettingsMapping(layout));
+				setSeoSettingsMapping(
+					() -> _getSEOSettingsMapping(dtoConverterContext, layout));
 			}
 		};
 	}
 
 	private static ContentAssociation _getContentAssociation(
 		DTOConverterContext dtoConverterContext,
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoItemServiceRegistry infoItemServiceRegistry,
 		LayoutPageTemplateEntry layoutPageTemplateEntry, Portal portal) {
 
-		String className = portal.getClassName(
+		String className = portal.fetchClassName(
 			layoutPageTemplateEntry.getClassNameId());
 
 		return new ContentAssociation() {
 			{
-				contentSubtype = _getContentSubtype(
-					dtoConverterContext, infoItemServiceTracker,
-					layoutPageTemplateEntry);
-				contentType = _contentTypes.getOrDefault(className, className);
+				setContentSubtype(
+					() -> _getContentSubtype(
+						dtoConverterContext, infoItemServiceRegistry,
+						layoutPageTemplateEntry));
+				setContentType(
+					() -> _contentTypes.getOrDefault(className, className));
 			}
 		};
 	}
 
 	private static String _getContentSubtype(
 		DTOConverterContext dtoConverterContext,
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoItemServiceRegistry infoItemServiceRegistry,
 		LayoutPageTemplateEntry layoutPageTemplateEntry) {
 
 		InfoItemFormVariationsProvider<?> infoItemFormVariationsProvider =
-			infoItemServiceTracker.getFirstInfoItemService(
+			infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFormVariationsProvider.class,
 				layoutPageTemplateEntry.getClassName());
 
@@ -89,12 +84,11 @@ public class DisplayPageTemplateSettingsUtil {
 				layoutPageTemplateEntry.getGroupId(),
 				String.valueOf(layoutPageTemplateEntry.getClassTypeId()));
 
-		if (infoItemFormVariation != null) {
-			return infoItemFormVariation.getLabel(
-				dtoConverterContext.getLocale());
+		if (infoItemFormVariation == null) {
+			return null;
 		}
 
-		return null;
+		return infoItemFormVariation.getLabel(dtoConverterContext.getLocale());
 	}
 
 	private static OpenGraphSettingsMapping _getOpenGraphSettingsMapping(
@@ -102,14 +96,18 @@ public class DisplayPageTemplateSettingsUtil {
 
 		return new OpenGraphSettingsMapping() {
 			{
-				descriptionMappingFieldKey = layout.getTypeSettingsProperty(
-					"mapped-openGraphDescription", "description");
-				imageAltMappingFieldKey = layout.getTypeSettingsProperty(
-					"mapped-openGraphImageAlt", null);
-				imageMappingFieldKey = layout.getTypeSettingsProperty(
-					"mapped-openGraphImage", null);
-				titleMappingFieldKey = layout.getTypeSettingsProperty(
-					"mapped-openGraphTitle", "title");
+				setDescriptionMappingFieldKey(
+					() -> layout.getTypeSettingsProperty(
+						"mapped-openGraphDescription", "description"));
+				setImageAltMappingFieldKey(
+					() -> layout.getTypeSettingsProperty(
+						"mapped-openGraphImageAlt", null));
+				setImageMappingFieldKey(
+					() -> layout.getTypeSettingsProperty(
+						"mapped-openGraphImage", null));
+				setTitleMappingFieldKey(
+					() -> layout.getTypeSettingsProperty(
+						"mapped-openGraphTitle", "title"));
 			}
 		};
 	}
@@ -119,14 +117,18 @@ public class DisplayPageTemplateSettingsUtil {
 
 		return new SEOSettingsMapping() {
 			{
-				descriptionMappingFieldKey = layout.getTypeSettingsProperty(
-					"mapped-description", "description");
-				htmlTitleMappingFieldKey = layout.getTypeSettingsProperty(
-					"mapped-title", "title");
-				robots = layout.getRobots(dtoConverterContext.getLocale());
-				robots_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					layout.getRobotsMap());
+				setDescriptionMappingFieldKey(
+					() -> layout.getTypeSettingsProperty(
+						"mapped-description", "description"));
+				setHtmlTitleMappingFieldKey(
+					() -> layout.getTypeSettingsProperty(
+						"mapped-title", "title"));
+				setRobots(
+					() -> layout.getRobots(dtoConverterContext.getLocale()));
+				setRobots_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						layout.getRobotsMap()));
 			}
 		};
 	}

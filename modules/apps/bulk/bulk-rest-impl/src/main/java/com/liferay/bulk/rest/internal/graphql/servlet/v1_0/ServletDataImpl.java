@@ -1,29 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bulk.rest.internal.graphql.servlet.v1_0;
 
 import com.liferay.bulk.rest.internal.graphql.mutation.v1_0.Mutation;
 import com.liferay.bulk.rest.internal.graphql.query.v1_0.Query;
+import com.liferay.bulk.rest.internal.resource.v1_0.KeywordResourceImpl;
+import com.liferay.bulk.rest.internal.resource.v1_0.SelectionResourceImpl;
+import com.liferay.bulk.rest.internal.resource.v1_0.StatusResourceImpl;
+import com.liferay.bulk.rest.internal.resource.v1_0.TaxonomyCategoryResourceImpl;
+import com.liferay.bulk.rest.internal.resource.v1_0.TaxonomyVocabularyResourceImpl;
 import com.liferay.bulk.rest.resource.v1_0.KeywordResource;
 import com.liferay.bulk.rest.resource.v1_0.SelectionResource;
 import com.liferay.bulk.rest.resource.v1_0.StatusResource;
 import com.liferay.bulk.rest.resource.v1_0.TaxonomyCategoryResource;
 import com.liferay.bulk.rest.resource.v1_0.TaxonomyVocabularyResource;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.vulcan.graphql.servlet.ServletData;
 
-import javax.annotation.Generated;
+import jakarta.annotation.Generated;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentServiceObjects;
@@ -36,7 +36,7 @@ import org.osgi.service.component.annotations.ReferenceScope;
  * @author Alejandro Tardín
  * @generated
  */
-@Component(immediate = true, service = ServletData.class)
+@Component(service = ServletData.class)
 @Generated("")
 public class ServletDataImpl implements ServletData {
 
@@ -55,6 +55,10 @@ public class ServletDataImpl implements ServletData {
 			_statusResourceComponentServiceObjects);
 	}
 
+	public String getApplicationName() {
+		return "Liferay.Bulk.REST";
+	}
+
 	@Override
 	public Mutation getMutation() {
 		return new Mutation();
@@ -69,6 +73,61 @@ public class ServletDataImpl implements ServletData {
 	public Query getQuery() {
 		return new Query();
 	}
+
+	public ObjectValuePair<Class<?>, String> getResourceMethodObjectValuePair(
+		String methodName, boolean mutation) {
+
+		if (mutation) {
+			return _resourceMethodObjectValuePairs.get(
+				"mutation#" + methodName);
+		}
+
+		return _resourceMethodObjectValuePairs.get("query#" + methodName);
+	}
+
+	private static final Map<String, ObjectValuePair<Class<?>, String>>
+		_resourceMethodObjectValuePairs =
+			new HashMap<String, ObjectValuePair<Class<?>, String>>() {
+				{
+					put(
+						"mutation#patchKeywordBatch",
+						new ObjectValuePair<>(
+							KeywordResourceImpl.class, "patchKeywordBatch"));
+					put(
+						"mutation#createKeywordsCommonPage",
+						new ObjectValuePair<>(
+							KeywordResourceImpl.class,
+							"postKeywordsCommonPage"));
+					put(
+						"mutation#updateKeywordBatch",
+						new ObjectValuePair<>(
+							KeywordResourceImpl.class, "putKeywordBatch"));
+					put(
+						"mutation#createBulkSelection",
+						new ObjectValuePair<>(
+							SelectionResourceImpl.class, "postBulkSelection"));
+					put(
+						"mutation#patchTaxonomyCategoryBatch",
+						new ObjectValuePair<>(
+							TaxonomyCategoryResourceImpl.class,
+							"patchTaxonomyCategoryBatch"));
+					put(
+						"mutation#updateTaxonomyCategoryBatch",
+						new ObjectValuePair<>(
+							TaxonomyCategoryResourceImpl.class,
+							"putTaxonomyCategoryBatch"));
+					put(
+						"mutation#createSiteTaxonomyVocabulariesCommonPage",
+						new ObjectValuePair<>(
+							TaxonomyVocabularyResourceImpl.class,
+							"postSiteTaxonomyVocabulariesCommonPage"));
+
+					put(
+						"query#status",
+						new ObjectValuePair<>(
+							StatusResourceImpl.class, "getStatus"));
+				}
+			};
 
 	@Reference(scope = ReferenceScope.PROTOTYPE_REQUIRED)
 	private ComponentServiceObjects<KeywordResource>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.ratings.model.impl;
@@ -34,22 +25,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.ratings.kernel.model.RatingsEntry;
 import com.liferay.ratings.kernel.model.RatingsEntryModel;
-import com.liferay.ratings.kernel.model.RatingsEntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -182,60 +169,6 @@ public class RatingsEntryModelImpl
 	@Deprecated
 	public static final long ENTRYID_COLUMN_BITMASK = 64L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static RatingsEntry toModel(RatingsEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		RatingsEntry model = new RatingsEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setEntryId(soapModel.getEntryId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setScore(soapModel.getScore());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<RatingsEntry> toModels(RatingsEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<RatingsEntry> models = new ArrayList<RatingsEntry>(
-			soapModels.length);
-
-		for (RatingsEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.ratings.kernel.model.RatingsEntry"));
@@ -316,108 +249,102 @@ public class RatingsEntryModelImpl
 	public Map<String, Function<RatingsEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<RatingsEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, RatingsEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			RatingsEntry.class.getClassLoader(), RatingsEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<RatingsEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<RatingsEntry> constructor =
-				(Constructor<RatingsEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<RatingsEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<RatingsEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", RatingsEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", RatingsEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", RatingsEntry::getUuid);
+			attributeGetterFunctions.put("entryId", RatingsEntry::getEntryId);
+			attributeGetterFunctions.put(
+				"companyId", RatingsEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", RatingsEntry::getUserId);
+			attributeGetterFunctions.put("userName", RatingsEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", RatingsEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", RatingsEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", RatingsEntry::getClassNameId);
+			attributeGetterFunctions.put("classPK", RatingsEntry::getClassPK);
+			attributeGetterFunctions.put("score", RatingsEntry::getScore);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<RatingsEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<RatingsEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<RatingsEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<RatingsEntry, Object>>();
-		Map<String, BiConsumer<RatingsEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<RatingsEntry, ?>>();
+		private static final Map<String, BiConsumer<RatingsEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", RatingsEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<RatingsEntry, Long>)RatingsEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", RatingsEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<RatingsEntry, Long>)RatingsEntry::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", RatingsEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<RatingsEntry, String>)RatingsEntry::setUuid);
-		attributeGetterFunctions.put("entryId", RatingsEntry::getEntryId);
-		attributeSetterBiConsumers.put(
-			"entryId",
-			(BiConsumer<RatingsEntry, Long>)RatingsEntry::setEntryId);
-		attributeGetterFunctions.put("companyId", RatingsEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<RatingsEntry, Long>)RatingsEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", RatingsEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<RatingsEntry, Long>)RatingsEntry::setUserId);
-		attributeGetterFunctions.put("userName", RatingsEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<RatingsEntry, String>)RatingsEntry::setUserName);
-		attributeGetterFunctions.put("createDate", RatingsEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<RatingsEntry, Date>)RatingsEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", RatingsEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<RatingsEntry, Date>)RatingsEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", RatingsEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<RatingsEntry, Long>)RatingsEntry::setClassNameId);
-		attributeGetterFunctions.put("classPK", RatingsEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<RatingsEntry, Long>)RatingsEntry::setClassPK);
-		attributeGetterFunctions.put("score", RatingsEntry::getScore);
-		attributeSetterBiConsumers.put(
-			"score", (BiConsumer<RatingsEntry, Double>)RatingsEntry::setScore);
+		static {
+			Map<String, BiConsumer<RatingsEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<RatingsEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<RatingsEntry, Long>)RatingsEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<RatingsEntry, Long>)
+					RatingsEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<RatingsEntry, String>)RatingsEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"entryId",
+				(BiConsumer<RatingsEntry, Long>)RatingsEntry::setEntryId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<RatingsEntry, Long>)RatingsEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<RatingsEntry, Long>)RatingsEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<RatingsEntry, String>)RatingsEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<RatingsEntry, Date>)RatingsEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<RatingsEntry, Date>)RatingsEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<RatingsEntry, Long>)RatingsEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<RatingsEntry, Long>)RatingsEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"score",
+				(BiConsumer<RatingsEntry, Double>)RatingsEntry::setScore);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -995,41 +922,12 @@ public class RatingsEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<RatingsEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<RatingsEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<RatingsEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((RatingsEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, RatingsEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					RatingsEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1050,8 +948,9 @@ public class RatingsEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<RatingsEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<RatingsEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

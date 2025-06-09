@@ -1,24 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service.impl;
 
-import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.list.constants.AssetListEntryUsageConstants;
-import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.model.AssetListEntryUsage;
-import com.liferay.asset.list.service.AssetListEntryLocalService;
 import com.liferay.asset.list.service.base.AssetListEntryUsageLocalServiceBaseImpl;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
@@ -26,17 +14,14 @@ import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServ
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.Portal;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,24 +35,6 @@ import org.osgi.service.component.annotations.Reference;
 )
 public class AssetListEntryUsageLocalServiceImpl
 	extends AssetListEntryUsageLocalServiceBaseImpl {
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #addAssetListEntryUsage(long, long, long, long, long, String,
-	 *             ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public AssetListEntryUsage addAssetListEntryUsage(
-			long userId, long groupId, long assetListEntryId, long classNameId,
-			long classPK, String portletId, ServiceContext serviceContext)
-		throws PortalException {
-
-		return addAssetListEntryUsage(
-			userId, groupId, _portal.getClassNameId(AssetListEntry.class),
-			portletId, _portal.getClassNameId(Portlet.class),
-			String.valueOf(assetListEntryId), classPK, serviceContext);
-	}
 
 	@Override
 	public AssetListEntryUsage addAssetListEntryUsage(
@@ -103,31 +70,16 @@ public class AssetListEntryUsageLocalServiceImpl
 	}
 
 	@Override
+	public void deleteAssetListEntryUsages(long containerType, long plid) {
+		assetListEntryUsagePersistence.removeByCT_P(containerType, plid);
+	}
+
+	@Override
 	public void deleteAssetListEntryUsages(
 		String containerKey, long containerType, long plid) {
 
 		assetListEntryUsagePersistence.removeByCK_CT_P(
 			containerKey, containerType, plid);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsages(String, long, long)}
-	 */
-	@Deprecated
-	@Override
-	public AssetListEntryUsage fetchAssetListEntryUsage(
-		long classNameId, long classPK, String portletId) {
-
-		List<AssetListEntryUsage> assetListEntryUsages =
-			getAssetListEntryUsages(
-				portletId, _portal.getClassNameId(Portlet.class), classPK);
-
-		if (!assetListEntryUsages.isEmpty()) {
-			return assetListEntryUsages.get(0);
-		}
-
-		return null;
 	}
 
 	@Override
@@ -140,73 +92,15 @@ public class AssetListEntryUsageLocalServiceImpl
 	}
 
 	@Override
+	public List<AssetListEntryUsage> getAssetEntryListUsages(
+		long containerType, long plid) {
+
+		return assetListEntryUsagePersistence.findByCT_P(containerType, plid);
+	}
+
+	@Override
 	public List<AssetListEntryUsage> getAssetEntryListUsagesByPlid(long plid) {
 		return assetListEntryUsagePersistence.findByPlid(plid);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsages(long, long, String)}
-	 */
-	@Deprecated
-	@Override
-	public List<AssetListEntryUsage> getAssetListEntryUsages(
-		long assetListEntryId) {
-
-		return getAssetListEntryUsages(
-			_getGroupId(assetListEntryId),
-			_portal.getClassNameId(AssetListEntry.class),
-			String.valueOf(assetListEntryId));
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsages(long, long, String, int, int,
-	 *             OrderByComparator)}
-	 */
-	@Deprecated
-	@Override
-	public List<AssetListEntryUsage> getAssetListEntryUsages(
-		long assetListEntryId, int start, int end,
-		OrderByComparator<AssetListEntryUsage> orderByComparator) {
-
-		return getAssetListEntryUsages(
-			_getGroupId(assetListEntryId),
-			_portal.getClassNameId(AssetListEntry.class),
-			String.valueOf(assetListEntryId), start, end, orderByComparator);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsages(long, long, String, int)}
-	 */
-	@Deprecated
-	@Override
-	public List<AssetListEntryUsage> getAssetListEntryUsages(
-		long assetListEntryId, long classNameId) {
-
-		return getAssetListEntryUsages(
-			_getGroupId(assetListEntryId),
-			_portal.getClassNameId(AssetListEntry.class),
-			String.valueOf(assetListEntryId), _toType(classNameId));
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsages(long, long, String, int, int, int,
-	 *             OrderByComparator)}
-	 */
-	@Deprecated
-	@Override
-	public List<AssetListEntryUsage> getAssetListEntryUsages(
-		long assetListEntryId, long classNameId, int start, int end,
-		OrderByComparator<AssetListEntryUsage> orderByComparator) {
-
-		return getAssetListEntryUsages(
-			_getGroupId(assetListEntryId),
-			_portal.getClassNameId(AssetListEntry.class),
-			String.valueOf(assetListEntryId), _toType(classNameId), start, end,
-			orderByComparator);
 	}
 
 	@Override
@@ -251,34 +145,6 @@ public class AssetListEntryUsageLocalServiceImpl
 			containerKey, containerType, plid);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsagesCount(long, long, String)}
-	 */
-	@Deprecated
-	@Override
-	public int getAssetListEntryUsagesCount(long assetListEntryId) {
-		return getAssetListEntryUsagesCount(
-			_getGroupId(assetListEntryId),
-			_portal.getClassNameId(AssetListEntry.class),
-			String.valueOf(assetListEntryId));
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #getAssetListEntryUsagesCount(long, long, String, int)}
-	 */
-	@Deprecated
-	@Override
-	public int getAssetListEntryUsagesCount(
-		long assetListEntryId, long classNameId) {
-
-		return getAssetListEntryUsagesCount(
-			_getGroupId(assetListEntryId),
-			_portal.getClassNameId(AssetListEntry.class),
-			String.valueOf(assetListEntryId), _toType(classNameId));
-	}
-
 	@Override
 	public int getAssetListEntryUsagesCount(
 		long groupId, long classNameId, String key) {
@@ -295,15 +161,12 @@ public class AssetListEntryUsageLocalServiceImpl
 			groupId, classNameId, key, type);
 	}
 
-	private long _getGroupId(long assetListEntryId) {
-		AssetListEntry assetListEntry =
-			_assetListEntryLocalService.fetchAssetListEntry(assetListEntryId);
+	@Override
+	public int getCompanyAssetListEntryUsagesCount(
+		long companyId, long classNameId, String key) {
 
-		if (assetListEntry != null) {
-			return assetListEntry.getGroupId();
-		}
-
-		return 0;
+		return assetListEntryUsagePersistence.countByC_C_K(
+			companyId, classNameId, key);
 	}
 
 	private int _getType(long plid) {
@@ -330,7 +193,7 @@ public class AssetListEntryUsageLocalServiceImpl
 		}
 
 		if (layoutPageTemplateEntry.getType() ==
-				LayoutPageTemplateEntryTypeConstants.TYPE_DISPLAY_PAGE) {
+				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE) {
 
 			return AssetListEntryUsageConstants.TYPE_DISPLAY_PAGE_TEMPLATE;
 		}
@@ -338,40 +201,12 @@ public class AssetListEntryUsageLocalServiceImpl
 		return AssetListEntryUsageConstants.TYPE_PAGE_TEMPLATE;
 	}
 
-	private int _toType(long classNameId) {
-		if (Objects.equals(classNameId, _portal.getClassNameId(Layout.class))) {
-			return AssetListEntryUsageConstants.TYPE_LAYOUT;
-		}
-
-		if (Objects.equals(
-				classNameId,
-				_portal.getClassNameId(LayoutPageTemplateEntry.class))) {
-
-			return AssetListEntryUsageConstants.TYPE_PAGE_TEMPLATE;
-		}
-
-		if (Objects.equals(
-				classNameId,
-				_portal.getClassNameId(AssetDisplayPageEntry.class))) {
-
-			return AssetListEntryUsageConstants.TYPE_DISPLAY_PAGE_TEMPLATE;
-		}
-
-		return AssetListEntryUsageConstants.TYPE_DEFAULT;
-	}
-
-	@Reference
-	private AssetListEntryLocalService _assetListEntryLocalService;
-
 	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 	@Reference
 	private LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
-
-	@Reference
-	private Portal _portal;
 
 	@Reference
 	private UserLocalService _userLocalService;

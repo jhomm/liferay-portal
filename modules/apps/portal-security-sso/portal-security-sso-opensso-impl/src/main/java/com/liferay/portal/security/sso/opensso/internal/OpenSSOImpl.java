@@ -1,32 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.opensso.internal;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.security.sso.OpenSSO;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -35,6 +26,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.sso.opensso.configuration.OpenSSOConfiguration;
 import com.liferay.portal.security.sso.opensso.constants.OpenSSOConfigurationKeys;
 import com.liferay.portal.security.sso.opensso.constants.OpenSSOConstants;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,8 +44,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -60,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  * @author Marta Medio
  */
-@Component(immediate = true, service = OpenSSO.class)
+@Component(service = OpenSSO.class)
 public class OpenSSOImpl implements OpenSSO {
 
 	@Override
@@ -126,17 +117,17 @@ public class OpenSSOImpl implements OpenSSO {
 			}
 		}
 		catch (MalformedURLException malformedURLException) {
-			_log.error(malformedURLException.getMessage());
+			_log.error(malformedURLException);
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(malformedURLException, malformedURLException);
+				_log.debug(malformedURLException);
 			}
 		}
 		catch (IOException ioException) {
-			_log.error(ioException.getMessage());
+			_log.error(ioException);
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 		}
 
@@ -224,7 +215,7 @@ public class OpenSSOImpl implements OpenSSO {
 		}
 		catch (IOException ioException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(ioException, ioException);
+				_log.warn(ioException);
 			}
 		}
 
@@ -243,7 +234,8 @@ public class OpenSSOImpl implements OpenSSO {
 
 		String cookieName = getCookieNames(serviceURL)[0];
 
-		return CookieKeys.getCookie(httpServletRequest, cookieName);
+		return CookiesManagerUtil.getCookieValue(
+			cookieName, httpServletRequest);
 	}
 
 	@Override
@@ -271,7 +263,7 @@ public class OpenSSOImpl implements OpenSSO {
 		}
 		catch (ConfigurationException configurationException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(configurationException, configurationException);
+				_log.warn(configurationException);
 			}
 		}
 
@@ -287,8 +279,7 @@ public class OpenSSOImpl implements OpenSSO {
 				String json = _http.URLtoString(url, true);
 
 				try {
-					JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-						json);
+					JSONObject jsonObject = _jsonFactory.createJSONObject(json);
 
 					String realm = jsonObject.getString("realm");
 					String uid = jsonObject.getString("uid");
@@ -399,7 +390,7 @@ public class OpenSSOImpl implements OpenSSO {
 		}
 		catch (IOException ioException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(ioException, ioException);
+				_log.warn(ioException);
 			}
 
 			return false;
@@ -430,8 +421,8 @@ public class OpenSSOImpl implements OpenSSO {
 		StringBundler sb = new StringBundler(cookieNames.length * 6);
 
 		for (String cookieName : cookieNames) {
-			String cookieValue = CookieKeys.getCookie(
-				httpServletRequest, cookieName);
+			String cookieValue = CookiesManagerUtil.getCookieValue(
+				cookieName, httpServletRequest);
 
 			sb.append(cookieName);
 			sb.append(StringPool.EQUAL);
@@ -448,7 +439,10 @@ public class OpenSSOImpl implements OpenSSO {
 		HttpServletRequest httpServletRequest, String[] cookieNames) {
 
 		for (String cookieName : cookieNames) {
-			if (CookieKeys.getCookie(httpServletRequest, cookieName) != null) {
+			String cookieValue = CookiesManagerUtil.getCookieValue(
+				cookieName, httpServletRequest);
+
+			if (cookieValue != null) {
 				return true;
 			}
 		}
@@ -484,6 +478,9 @@ public class OpenSSOImpl implements OpenSSO {
 
 	@Reference
 	private Http _http;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Portal _portal;

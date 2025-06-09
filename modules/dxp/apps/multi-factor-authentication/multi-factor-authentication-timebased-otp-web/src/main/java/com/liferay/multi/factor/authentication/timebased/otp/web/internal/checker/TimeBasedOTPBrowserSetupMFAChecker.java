@@ -1,42 +1,55 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.timebased.otp.web.internal.checker;
 
+import com.liferay.mail.kernel.model.MailMessage;
+import com.liferay.mail.kernel.service.MailService;
+import com.liferay.mail.kernel.template.MailTemplate;
+import com.liferay.mail.kernel.template.MailTemplateContext;
+import com.liferay.mail.kernel.template.MailTemplateContextBuilder;
+import com.liferay.mail.kernel.template.MailTemplateFactoryUtil;
 import com.liferay.multi.factor.authentication.spi.checker.browser.BrowserMFAChecker;
 import com.liferay.multi.factor.authentication.spi.checker.setup.SetupMFAChecker;
 import com.liferay.multi.factor.authentication.timebased.otp.model.MFATimeBasedOTPEntry;
 import com.liferay.multi.factor.authentication.timebased.otp.service.MFATimeBasedOTPEntryLocalService;
-import com.liferay.multi.factor.authentication.timebased.otp.web.internal.audit.MFATimeBasedOTPAuditMessageBuilder;
 import com.liferay.multi.factor.authentication.timebased.otp.web.internal.configuration.MFATimeBasedOTPConfiguration;
+import com.liferay.multi.factor.authentication.timebased.otp.web.internal.constants.MFATimeBasedOTPEventTypes;
 import com.liferay.multi.factor.authentication.timebased.otp.web.internal.constants.MFATimeBasedOTPWebKeys;
+import com.liferay.multi.factor.authentication.timebased.otp.web.internal.display.context.MFATimeBasedOTPCheckerDisplayContext;
 import com.liferay.multi.factor.authentication.timebased.otp.web.internal.util.MFATimeBasedOTPUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.audit.AuditException;
 import com.liferay.portal.kernel.audit.AuditMessage;
+import com.liferay.portal.kernel.audit.AuditRouterUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.util.EscapableObject;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.mail.internet.InternetAddress;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
@@ -46,13 +59,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
@@ -60,7 +66,6 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
 
 /**
  * @author Tomas Polesovsky
@@ -68,8 +73,7 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
  */
 @Component(
 	configurationPid = "com.liferay.multi.factor.authentication.timebased.otp.web.internal.configuration.MFATimeBasedOTPConfiguration.scoped",
-	configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true,
-	service = {}
+	configurationPolicy = ConfigurationPolicy.REQUIRE, service = {}
 )
 public class TimeBasedOTPBrowserSetupMFAChecker
 	implements BrowserMFAChecker, SetupMFAChecker {
@@ -111,8 +115,11 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 					_mfaTimeBasedOTPConfiguration.algorithmKeySize());
 
 			httpServletRequest.setAttribute(
-				MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_ALGORITHM,
-				MFATimeBasedOTPUtil.MFA_TIMEBASED_OTP_ALGORITHM);
+				MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_ALGORITHM, "SHA1");
+			httpServletRequest.setAttribute(
+				MFATimeBasedOTPWebKeys.
+					MFA_TIME_BASED_OTP_CHECKER_DISPLAY_CONTEXT,
+				new MFATimeBasedOTPCheckerDisplayContext(httpServletRequest));
 			httpServletRequest.setAttribute(
 				MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_COMPANY_NAME,
 				company.getName());
@@ -165,11 +172,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 
 		HttpSession httpSession = originalHttpServletRequest.getSession(false);
 
-		if (isVerified(httpSession, userId)) {
-			return true;
-		}
-
-		return false;
+		return _isVerified(httpSession, userId);
 	}
 
 	@Override
@@ -237,7 +240,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 						"nonexistent user " + userId);
 			}
 
-			_routeAuditMessage(
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildNonexistentUserVerificationFailureAuditMessage(
 						CompanyThreadLocal.getCompanyId(), userId,
@@ -253,7 +256,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 						" with incomplete configuration");
 			}
 
-			_routeAuditMessage(
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildUnconfiguredUserVerificationFailureAuditMessage(
 						CompanyThreadLocal.getCompanyId(), user,
@@ -274,7 +277,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 
 		String remoteAddress = originalHttpServletRequest.getRemoteAddr();
 
-		if (_verify(mfaTimeBasedOTP, user.getUserId())) {
+		if (_verify(mfaTimeBasedOTP, user, httpServletRequest)) {
 			HttpSession httpSession = originalHttpServletRequest.getSession();
 
 			httpSession.setAttribute(
@@ -287,7 +290,10 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 			_mfaTimeBasedOTPEntryLocalService.updateAttempts(
 				userId, remoteAddress, true);
 
-			_routeAuditMessage(
+			_mfaTimeBasedOTPEntryLocalService.updateLastTOTP(
+				userId, mfaTimeBasedOTP);
+
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildVerificationSuccessAuditMessage(
 						user, _getClassName()));
@@ -298,7 +304,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 		_mfaTimeBasedOTPEntryLocalService.updateAttempts(
 			user.getUserId(), remoteAddress, false);
 
-		_routeAuditMessage(
+		_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 			_mfaTimeBasedOTPAuditMessageBuilder.
 				buildVerificationFailureAuditMessage(
 					user, _getClassName(),
@@ -363,7 +369,13 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 		}
 	}
 
-	protected boolean isVerified(HttpSession httpSession, long userId) {
+	private String _getClassName() {
+		Class<?> clazz = getClass();
+
+		return clazz.getName();
+	}
+
+	private boolean _isVerified(HttpSession httpSession, long userId) {
 		User user = _userLocalService.fetchUser(userId);
 
 		if (user == null) {
@@ -373,7 +385,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 						"nonexistent user " + userId);
 			}
 
-			_routeAuditMessage(
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildNonexistentUserVerificationFailureAuditMessage(
 						CompanyThreadLocal.getCompanyId(), userId,
@@ -383,7 +395,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 		}
 
 		if (httpSession == null) {
-			_routeAuditMessage(
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildNotVerifiedAuditMessage(
 						user, _getClassName(), "Empty session"));
@@ -395,7 +407,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 			MFATimeBasedOTPWebKeys.MFA_TIME_BASED_OTP_VALIDATED_USER_ID);
 
 		if (mfaTimeBasedOTPValidatedUserId == null) {
-			_routeAuditMessage(
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildNotVerifiedAuditMessage(
 						user, _getClassName(), "Not verified yet"));
@@ -404,7 +416,7 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 		}
 
 		if (!Objects.equals(mfaTimeBasedOTPValidatedUserId, userId)) {
-			_routeAuditMessage(
+			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(
 				_mfaTimeBasedOTPAuditMessageBuilder.
 					buildNotVerifiedAuditMessage(
 						user, _getClassName(), "Not the same user"));
@@ -415,28 +427,89 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 		return true;
 	}
 
-	private String _getClassName() {
-		Class<?> clazz = getClass();
+	private void _sendEmail(
+			User user, String emailAddress,
+			HttpServletRequest httpServletRequest)
+		throws Exception {
 
-		return clazz.getName();
+		MFATimeBasedOTPConfiguration mfaTimeBasedOTPConfiguration =
+			_configurationProvider.getCompanyConfiguration(
+				MFATimeBasedOTPConfiguration.class, user.getCompanyId());
+
+		String fromAddress =
+			mfaTimeBasedOTPConfiguration.
+				emailTOTPReuseAttemptWarningFromAddress();
+		String fromName =
+			mfaTimeBasedOTPConfiguration.emailTOTPReuseAttemptWarningFromName();
+
+		LocalizedValuesMap subjectLocalizedValuesMap =
+			mfaTimeBasedOTPConfiguration.emailTOTPReuseAttemptWarningSubject();
+
+		String subject = subjectLocalizedValuesMap.get(user.getLocale());
+
+		MailTemplate subjectMailTemplate =
+			MailTemplateFactoryUtil.createMailTemplate(subject, false);
+
+		LocalizedValuesMap bodyLocalizedValuesMap =
+			mfaTimeBasedOTPConfiguration.emailTOTPReuseAttemptWarningBody();
+
+		String body = bodyLocalizedValuesMap.get(user.getLocale());
+
+		MailTemplate bodyMailTemplate =
+			MailTemplateFactoryUtil.createMailTemplate(body, true);
+
+		MailTemplateContextBuilder mailTemplateContextBuilder =
+			MailTemplateFactoryUtil.createMailTemplateContextBuilder();
+
+		mailTemplateContextBuilder.put("[$FROM_ADDRESS$]", fromAddress);
+		mailTemplateContextBuilder.put("[$FROM_NAME$]", fromName);
+		mailTemplateContextBuilder.put(
+			"[$PORTAL_URL$]", _portal.getPortalURL(httpServletRequest));
+		mailTemplateContextBuilder.put(
+			"[$REMOTE_ADDRESS$]", httpServletRequest.getRemoteAddr());
+		mailTemplateContextBuilder.put(
+			"[$REMOTE_HOST$]",
+			new EscapableObject<>(httpServletRequest.getRemoteHost()));
+		mailTemplateContextBuilder.put(
+			"[$TO_NAME$]", new EscapableObject<>(user.getFullName()));
+
+		MailTemplateContext mailTemplateContext =
+			mailTemplateContextBuilder.build();
+
+		MailMessage mailMessage = new MailMessage(
+			new InternetAddress(fromAddress, fromName),
+			new InternetAddress(emailAddress, user.getFullName()),
+			subjectMailTemplate.renderAsString(
+				user.getLocale(), mailTemplateContext),
+			bodyMailTemplate.renderAsString(
+				user.getLocale(), mailTemplateContext),
+			true);
+
+		_mailService.sendEmail(mailMessage);
 	}
 
-	private void _routeAuditMessage(AuditMessage auditMessage) {
-		if (_mfaTimeBasedOTPAuditMessageBuilder != null) {
-			_mfaTimeBasedOTPAuditMessageBuilder.routeAuditMessage(auditMessage);
-		}
-	}
+	private boolean _verify(
+			String mfaTimeBasedOTP, User user,
+			HttpServletRequest httpServletRequest)
+		throws Exception {
 
-	private boolean _verify(String timeBasedOtpValue, long userId) {
 		MFATimeBasedOTPEntry mfaTimeBasedOTPEntry =
 			_mfaTimeBasedOTPEntryLocalService.fetchMFATimeBasedOTPEntryByUserId(
-				userId);
+				user.getUserId());
 
-		if (mfaTimeBasedOTPEntry != null) {
+		if (mfaTimeBasedOTPEntry == null) {
+			return false;
+		}
+
+		if (!Objects.equals(
+				mfaTimeBasedOTP, mfaTimeBasedOTPEntry.getLastValidTOTP())) {
+
 			return MFATimeBasedOTPUtil.verifyTimeBasedOTP(
 				_mfaTimeBasedOTPConfiguration.clockSkew(),
-				mfaTimeBasedOTPEntry.getSharedSecret(), timeBasedOtpValue);
+				mfaTimeBasedOTPEntry.getSharedSecret(), mfaTimeBasedOTP);
 		}
+
+		_sendEmail(user, user.getEmailAddress(), httpServletRequest);
 
 		return false;
 	}
@@ -444,10 +517,15 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 	private static final Log _log = LogFactoryUtil.getLog(
 		TimeBasedOTPBrowserSetupMFAChecker.class);
 
-	@Reference(cardinality = ReferenceCardinality.OPTIONAL)
-	private MFATimeBasedOTPAuditMessageBuilder
-		_mfaTimeBasedOTPAuditMessageBuilder;
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
+	@Reference
+	private MailService _mailService;
+
+	private final MFATimeBasedOTPAuditMessageBuilder
+		_mfaTimeBasedOTPAuditMessageBuilder =
+			new MFATimeBasedOTPAuditMessageBuilder();
 	private MFATimeBasedOTPConfiguration _mfaTimeBasedOTPConfiguration;
 
 	@Reference
@@ -465,5 +543,92 @@ public class TimeBasedOTPBrowserSetupMFAChecker
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	private class MFATimeBasedOTPAuditMessageBuilder {
+
+		public AuditMessage buildNonexistentUserVerificationFailureAuditMessage(
+			long companyId, long userId, String checkerClassName) {
+
+			return new AuditMessage(
+				MFATimeBasedOTPEventTypes.
+					MFA_TIMEBASED_OTP_VERIFICATION_FAILURE,
+				companyId, userId, "Nonexistent", checkerClassName,
+				String.valueOf(userId), null,
+				JSONUtil.put("reason", "Nonexistent User"));
+		}
+
+		public AuditMessage buildNotVerifiedAuditMessage(
+			User user, String checkerClassName, String reason) {
+
+			return new AuditMessage(
+				MFATimeBasedOTPEventTypes.MFA_TIMEBASED_OTP_NOT_VERIFIED,
+				user.getCompanyId(), user.getUserId(), user.getFullName(),
+				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
+				JSONUtil.put("reason", reason));
+		}
+
+		public AuditMessage
+			buildUnconfiguredUserVerificationFailureAuditMessage(
+				long companyId, User user, String checkerClassName) {
+
+			return new AuditMessage(
+				MFATimeBasedOTPEventTypes.
+					MFA_TIMEBASED_OTP_VERIFICATION_FAILURE,
+				companyId, user.getUserId(), "Unconfigured", checkerClassName,
+				null, null, JSONUtil.put("reason", "Unconfigured for User"));
+		}
+
+		public AuditMessage buildVerificationFailureAuditMessage(
+			User user, String checkerClassName, String reason) {
+
+			return new AuditMessage(
+				MFATimeBasedOTPEventTypes.
+					MFA_TIMEBASED_OTP_VERIFICATION_FAILURE,
+				user.getCompanyId(), user.getUserId(), user.getFullName(),
+				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
+				JSONUtil.put("reason", reason));
+		}
+
+		public AuditMessage buildVerificationSuccessAuditMessage(
+			User user, String checkerClassName) {
+
+			return new AuditMessage(
+				MFATimeBasedOTPEventTypes.
+					MFA_TIMEBASED_OTP_VERIFICATION_SUCCESS,
+				user.getCompanyId(), user.getUserId(), user.getFullName(),
+				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
+				null);
+		}
+
+		public AuditMessage buildVerifiedAuditMessage(
+			User user, String checkerClassName) {
+
+			return new AuditMessage(
+				MFATimeBasedOTPEventTypes.MFA_TIMEBASED_OTP_VERIFIED,
+				user.getCompanyId(), user.getUserId(), user.getFullName(),
+				checkerClassName, String.valueOf(user.getPrimaryKey()), null,
+				null);
+		}
+
+		public void routeAuditMessage(AuditMessage auditMessage) {
+			try {
+				AuditRouterUtil.route(auditMessage);
+			}
+			catch (AuditException auditException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn("Unable to route audit message", auditException);
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+			}
+		}
+
+		private final Log _log = LogFactoryUtil.getLog(
+			MFATimeBasedOTPAuditMessageBuilder.class);
+
+	}
 
 }

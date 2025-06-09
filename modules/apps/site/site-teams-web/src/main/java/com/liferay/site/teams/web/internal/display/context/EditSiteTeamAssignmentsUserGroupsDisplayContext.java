@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.teams.web.internal.display.context;
@@ -18,27 +9,24 @@ import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.service.persistence.constants.UserGroupFinderConstants;
-import com.liferay.portlet.usergroupsadmin.search.UserGroupDisplayTerms;
-import com.liferay.portlet.usergroupsadmin.search.UserGroupSearch;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.site.teams.web.internal.constants.SiteTeamsPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -105,8 +93,9 @@ public class EditSiteTeamAssignmentsUserGroupsDisplayContext
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			httpServletRequest, "orderByCol", "name");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			httpServletRequest, SiteTeamsPortletKeys.SITE_TEAMS,
+			"usergroup-order-by-col", "name");
 
 		return _orderByCol;
 	}
@@ -116,8 +105,9 @@ public class EditSiteTeamAssignmentsUserGroupsDisplayContext
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			httpServletRequest, SiteTeamsPortletKeys.SITE_TEAMS,
+			"usergroup-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -132,21 +122,15 @@ public class EditSiteTeamAssignmentsUserGroupsDisplayContext
 				WebKeys.THEME_DISPLAY);
 
 		SearchContainer<UserGroup> userGroupSearchContainer =
-			new UserGroupSearch(renderRequest, getEditTeamAssignmentsURL());
-
-		OrderByComparator<UserGroup> orderByComparator =
-			UsersAdminUtil.getUserGroupOrderByComparator(
-				getOrderByCol(), getOrderByType());
+			new SearchContainer<>(
+				renderRequest, getEditTeamAssignmentsURL(), null,
+				"no-user-groups-were-found");
 
 		userGroupSearchContainer.setOrderByCol(getOrderByCol());
-		userGroupSearchContainer.setOrderByComparator(orderByComparator);
+		userGroupSearchContainer.setOrderByComparator(
+			UsersAdminUtil.getUserGroupOrderByComparator(
+				getOrderByCol(), getOrderByType()));
 		userGroupSearchContainer.setOrderByType(getOrderByType());
-
-		userGroupSearchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(renderResponse));
-
-		UserGroupDisplayTerms searchTerms =
-			(UserGroupDisplayTerms)userGroupSearchContainer.getSearchTerms();
 
 		LinkedHashMap<String, Object> userGroupParams =
 			LinkedHashMapBuilder.<String, Object>put(
@@ -154,19 +138,17 @@ public class EditSiteTeamAssignmentsUserGroupsDisplayContext
 				getTeamId()
 			).build();
 
-		int userGroupsCount = UserGroupLocalServiceUtil.searchCount(
-			themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-			userGroupParams);
+		userGroupSearchContainer.setResultsAndTotal(
+			() -> UserGroupLocalServiceUtil.search(
+				themeDisplay.getCompanyId(), getKeywords(), userGroupParams,
+				userGroupSearchContainer.getStart(),
+				userGroupSearchContainer.getEnd(),
+				userGroupSearchContainer.getOrderByComparator()),
+			UserGroupLocalServiceUtil.searchCount(
+				themeDisplay.getCompanyId(), getKeywords(), userGroupParams));
 
-		userGroupSearchContainer.setTotal(userGroupsCount);
-
-		List<UserGroup> userGroups = UserGroupLocalServiceUtil.search(
-			themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-			userGroupParams, userGroupSearchContainer.getStart(),
-			userGroupSearchContainer.getEnd(),
-			userGroupSearchContainer.getOrderByComparator());
-
-		userGroupSearchContainer.setResults(userGroups);
+		userGroupSearchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(renderResponse));
 
 		_userGroupSearchContainer = userGroupSearchContainer;
 

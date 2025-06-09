@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.grouped.web.internal.portlet.action;
@@ -25,8 +16,8 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,9 +26,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_definition_grouped_entry"
 	},
 	service = MVCActionCommand.class
@@ -45,7 +35,25 @@ import org.osgi.service.component.annotations.Reference;
 public class EditCPDefinitionGroupedEntryMVCActionCommand
 	extends BaseMVCActionCommand {
 
-	protected void addCPDefinitionGroupedEntries(ActionRequest actionRequest)
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		if (cmd.equals(Constants.ADD)) {
+			_addCPDefinitionGroupedEntries(actionRequest);
+		}
+		else if (cmd.equals(Constants.DELETE)) {
+			_deleteCPDefinitionGroupedEntries(actionRequest);
+		}
+		else if (cmd.equals(Constants.UPDATE)) {
+			_updateCPDefinitionGroupedEntry(actionRequest);
+		}
+	}
+
+	private void _addCPDefinitionGroupedEntries(ActionRequest actionRequest)
 		throws Exception {
 
 		long cpDefinitionId = ParamUtil.getLong(
@@ -60,7 +68,7 @@ public class EditCPDefinitionGroupedEntryMVCActionCommand
 			cpDefinitionId, entryCPDefinitionIds, serviceContext);
 	}
 
-	protected void deleteCPDefinitionGroupedEntries(ActionRequest actionRequest)
+	private void _deleteCPDefinitionGroupedEntries(ActionRequest actionRequest)
 		throws Exception {
 
 		long[] deleteCPDefinitionGroupedEntryIds = null;
@@ -74,10 +82,8 @@ public class EditCPDefinitionGroupedEntryMVCActionCommand
 			};
 		}
 		else {
-			deleteCPDefinitionGroupedEntryIds = StringUtil.split(
-				ParamUtil.getString(
-					actionRequest, "deleteCPDefinitionGroupedEntryIds"),
-				0L);
+			deleteCPDefinitionGroupedEntryIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
 		}
 
 		for (long deleteCPDefinitionGroupedEntryId :
@@ -88,25 +94,7 @@ public class EditCPDefinitionGroupedEntryMVCActionCommand
 		}
 	}
 
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		if (cmd.equals(Constants.ADD)) {
-			addCPDefinitionGroupedEntries(actionRequest);
-		}
-		else if (cmd.equals(Constants.DELETE)) {
-			deleteCPDefinitionGroupedEntries(actionRequest);
-		}
-		else if (cmd.equals(Constants.UPDATE)) {
-			updateCPDefinitionGroupedEntry(actionRequest);
-		}
-	}
-
-	protected CPDefinitionGroupedEntry updateCPDefinitionGroupedEntry(
+	private CPDefinitionGroupedEntry _updateCPDefinitionGroupedEntry(
 			ActionRequest actionRequest)
 		throws Exception {
 

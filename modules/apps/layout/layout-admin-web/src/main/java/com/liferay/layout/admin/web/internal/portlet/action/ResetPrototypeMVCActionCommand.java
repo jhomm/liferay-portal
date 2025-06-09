@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.portlet.action;
 
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
+import com.liferay.layout.configuration.LayoutExportImportConfiguration;
+import com.liferay.layout.set.prototype.helper.LayoutSetPrototypeHelper;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
@@ -22,11 +16,13 @@ import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.sites.kernel.util.SitesUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
+import java.util.Map;
+
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -34,14 +30,20 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
+	configurationPid = "com.liferay.layout.configuration.LayoutExportImportConfiguration",
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/reset_prototype"
 	},
 	service = MVCActionCommand.class
 )
 public class ResetPrototypeMVCActionCommand extends BaseMVCActionCommand {
+
+	@Activate
+	protected void activate(Map<String, Object> properties) {
+		_layoutExportImportConfiguration = ConfigurableUtil.createConfigurable(
+			LayoutExportImportConfiguration.class, properties);
+	}
 
 	@Override
 	protected void doProcessAction(
@@ -53,18 +55,26 @@ public class ResetPrototypeMVCActionCommand extends BaseMVCActionCommand {
 
 		Layout layout = themeDisplay.getLayout();
 
-		SitesUtil.resetPrototype(layout);
+		_layoutSetPrototypeHelper.resetPrototype(layout);
 
 		Layout draftLayout = layout.fetchDraftLayout();
 
-		if (draftLayout != null) {
-			SitesUtil.resetPrototype(draftLayout);
+		if ((draftLayout != null) &&
+			_layoutExportImportConfiguration.exportDraftLayout()) {
+
+			_layoutSetPrototypeHelper.resetPrototype(draftLayout);
 		}
 
 		MultiSessionMessages.add(
 			actionRequest,
 			_portal.getPortletId(actionRequest) + "requestProcessed");
 	}
+
+	private volatile LayoutExportImportConfiguration
+		_layoutExportImportConfiguration;
+
+	@Reference
+	private LayoutSetPrototypeHelper _layoutSetPrototypeHelper;
 
 	@Reference
 	private Portal _portal;

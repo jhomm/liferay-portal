@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -27,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class DLFileShortcutServiceWrapper
 	implements DLFileShortcutService, ServiceWrapper<DLFileShortcutService> {
 
+	public DLFileShortcutServiceWrapper() {
+		this(null);
+	}
+
 	public DLFileShortcutServiceWrapper(
 		DLFileShortcutService dlFileShortcutService) {
 
@@ -35,12 +30,14 @@ public class DLFileShortcutServiceWrapper
 
 	@Override
 	public DLFileShortcut addFileShortcut(
-			long groupId, long repositoryId, long folderId, long toFileEntryId,
+			String externalReferenceCode, long groupId, long repositoryId,
+			long folderId, long toFileEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlFileShortcutService.addFileShortcut(
-			groupId, repositoryId, folderId, toFileEntryId, serviceContext);
+			externalReferenceCode, groupId, repositoryId, folderId,
+			toFileEntryId, serviceContext);
 	}
 
 	@Override
@@ -51,10 +48,45 @@ public class DLFileShortcutServiceWrapper
 	}
 
 	@Override
+	public void deleteFileShortcut(String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_dlFileShortcutService.deleteFileShortcut(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
+	public DLFileShortcut getDLFileShortcutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dlFileShortcutService.getDLFileShortcutByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public DLFileShortcut getFileShortcut(long fileShortcutId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dlFileShortcutService.getFileShortcut(fileShortcutId);
+	}
+
+	@Override
+	public java.util.List<DLFileShortcut> getGroupFileShortcuts(long groupId) {
+		return _dlFileShortcutService.getGroupFileShortcuts(groupId);
+	}
+
+	@Override
+	public java.util.List<DLFileShortcut> getGroupFileShortcuts(
+		long groupId, int start, int end) {
+
+		return _dlFileShortcutService.getGroupFileShortcuts(
+			groupId, start, end);
+	}
+
+	@Override
+	public long getGroupFileShortcutsCount(long groupId) {
+		return _dlFileShortcutService.getGroupFileShortcutsCount(groupId);
 	}
 
 	/**

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,23 +14,6 @@ PortletURL configurationRenderURL = (PortletURL)request.getAttribute("configurat
 List<CPCatalogEntry> catalogEntries = cpPublisherConfigurationDisplayContext.getCPCatalogEntries();
 %>
 
-<liferay-frontend:management-bar
-	includeCheckBox="<%= false %>"
-	searchContainerId="catalogEntries"
->
-	<liferay-frontend:management-bar-buttons>
-		<liferay-frontend:add-menu
-			inline="<%= true %>"
-		>
-			<liferay-frontend:add-menu-item
-				id="addCommerceProductDefinition"
-				title="add"
-				url="javascript:;"
-			/>
-		</liferay-frontend:add-menu>
-	</liferay-frontend:management-bar-buttons>
-</liferay-frontend:management-bar>
-
 <liferay-ui:search-container
 	compactEmptyResultsMessage="<%= true %>"
 	emptyResultsMessage="none"
@@ -47,7 +21,8 @@ List<CPCatalogEntry> catalogEntries = cpPublisherConfigurationDisplayContext.get
 	total="<%= catalogEntries.size() %>"
 >
 	<liferay-ui:search-container-results
-		results="<%= catalogEntries.subList(searchContainer.getStart(), searchContainer.getResultEnd()) %>"
+		calculateStartAndEnd="<%= true %>"
+		results="<%= catalogEntries %>"
 	/>
 
 	<liferay-ui:search-container-row
@@ -58,14 +33,14 @@ List<CPCatalogEntry> catalogEntries = cpPublisherConfigurationDisplayContext.get
 	>
 
 		<%
-		String thumbnailSrc = cpCatalogEntry.getDefaultImageFileUrl();
+		String defaultImageFileURL = cpPublisherConfigurationDisplayContext.getDefaultImageFileURL(cpCatalogEntry);
 		%>
 
 		<c:choose>
-			<c:when test="<%= Validator.isNotNull(thumbnailSrc) %>">
+			<c:when test="<%= Validator.isNotNull(defaultImageFileURL) %>">
 				<liferay-ui:search-container-column-image
 					name="image"
-					src="<%= thumbnailSrc %>"
+					src="<%= defaultImageFileURL %>"
 				/>
 			</c:when>
 			<c:otherwise>
@@ -77,7 +52,7 @@ List<CPCatalogEntry> catalogEntries = cpPublisherConfigurationDisplayContext.get
 		</c:choose>
 
 		<liferay-ui:search-container-column-text
-			cssClass="important table-cell-expand"
+			cssClass="font-weight-bold important table-cell-expand"
 			name="name"
 			value="<%= HtmlUtil.escape(cpCatalogEntry.getName()) %>"
 		/>
@@ -108,11 +83,13 @@ List<CPCatalogEntry> catalogEntries = cpPublisherConfigurationDisplayContext.get
 	/>
 </liferay-ui:search-container>
 
-<div class="select-asset-selector">
-	<div class="c-mt-3 edit-controls">
-
-	</div>
-</div>
+<liferay-ui:icon
+	id="addCommerceProductDefinition"
+	label="<%= true %>"
+	linkCssClass="btn btn-secondary"
+	message="select"
+	url="javascript:void(0);"
+/>
 
 <aui:script>
 	function <portlet:namespace />moveSelectionDown(productEntryOrder) {
@@ -175,8 +152,7 @@ List<CPCatalogEntry> catalogEntries = cpPublisherConfigurationDisplayContext.get
 					submitForm(form);
 				},
 				title: 'add-new-product-to-x',
-				url:
-					'<%= cpPublisherConfigurationDisplayContext.getItemSelectorUrl() %>',
+				url: '<%= cpPublisherConfigurationDisplayContext.getItemSelectorUrl() %>',
 			});
 		});
 	}

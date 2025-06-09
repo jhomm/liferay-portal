@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.web.internal.portlet.action;
@@ -45,16 +36,16 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.trash.service.TrashEntryService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,9 +54,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Kocsis
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ExportImportPortletKeys.EXPORT,
+		"jakarta.portlet.name=" + ExportImportPortletKeys.COMPANY_EXPORT,
+		"jakarta.portlet.name=" + ExportImportPortletKeys.EXPORT,
 		"mvc.command.name=/export_import/edit_export_configuration"
 	},
 	service = MVCActionCommand.class
@@ -130,14 +121,14 @@ public class EditExportConfigurationMVCActionCommand
 
 			if (moveToTrash) {
 				ExportImportConfiguration exportImportConfiguration =
-					_exportImportConfigurationService.
+					exportImportConfigurationService.
 						moveExportImportConfigurationToTrash(
 							deleteExportImportConfigurationId);
 
 				trashedModels.add(exportImportConfiguration);
 			}
 			else {
-				_exportImportConfigurationService.
+				exportImportConfigurationService.
 					deleteExportImportConfiguration(
 						deleteExportImportConfigurationId);
 			}
@@ -165,7 +156,7 @@ public class EditExportConfigurationMVCActionCommand
 			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
 				setLayoutIdMap(actionRequest);
 
-				updateExportConfiguration(actionRequest);
+				_updateExportConfiguration(actionRequest);
 			}
 			else if (cmd.equals(Constants.DELETE)) {
 				deleteExportImportConfiguration(actionRequest, false);
@@ -174,10 +165,10 @@ public class EditExportConfigurationMVCActionCommand
 				deleteExportImportConfiguration(actionRequest, true);
 			}
 			else if (cmd.equals(Constants.RESTORE)) {
-				restoreTrashEntries(actionRequest);
+				_restoreTrashEntries(actionRequest);
 			}
 			else if (cmd.equals(Constants.RELAUNCH)) {
-				relaunchExportLayoutConfiguration(actionRequest);
+				_relaunchExportLayoutConfiguration(actionRequest);
 			}
 			else if (Validator.isNull(cmd)) {
 				addSessionMessages(actionRequest);
@@ -188,14 +179,57 @@ public class EditExportConfigurationMVCActionCommand
 			sendRedirect(actionRequest, actionResponse, redirect);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			SessionErrors.add(actionRequest, exception.getClass());
 		}
 	}
 
-	protected void relaunchExportLayoutConfiguration(
-			ActionRequest actionRequest)
+	protected void setLayoutIdMap(ActionRequest actionRequest) {
+		HttpServletRequest httpServletRequest = portal.getHttpServletRequest(
+			actionRequest);
+
+		long groupId = ParamUtil.getLong(actionRequest, "groupId");
+		boolean privateLayout = ParamUtil.getBoolean(
+			actionRequest, "privateLayout");
+
+		String treeId = ParamUtil.getString(actionRequest, "treeId");
+
+		actionRequest.setAttribute(
+			"layoutIdMap",
+			exportImportHelper.getSelectedLayoutsJSON(
+				groupId, privateLayout,
+				SessionTreeJSClicks.getOpenNodes(
+					httpServletRequest, treeId + "SelectedNode")));
+	}
+
+	@Reference
+	protected BackgroundTaskManager backgroundTaskManager;
+
+	@Reference
+	protected ExportImportConfigurationLocalService
+		exportImportConfigurationLocalService;
+
+	@Reference
+	protected ExportImportConfigurationService exportImportConfigurationService;
+
+	@Reference
+	protected ExportImportConfigurationSettingsMapFactory
+		exportImportConfigurationSettingsMapFactory;
+
+	@Reference
+	protected ExportImportHelper exportImportHelper;
+
+	@Reference
+	protected ExportImportService exportImportService;
+
+	@Reference
+	protected Portal portal;
+
+	@Reference
+	protected TrashEntryService trashEntryService;
+
+	private void _relaunchExportLayoutConfiguration(ActionRequest actionRequest)
 		throws Exception {
 
 		long backgroundTaskId = ParamUtil.getLong(
@@ -214,69 +248,22 @@ public class EditExportConfigurationMVCActionCommand
 			ExportImportConfigurationFactory.cloneExportImportConfiguration(
 				exportImportConfiguration);
 
-		_exportImportService.exportLayoutsAsFileInBackground(
+		exportImportService.exportLayoutsAsFileInBackground(
 			exportImportConfiguration);
 	}
 
-	protected void restoreTrashEntries(ActionRequest actionRequest)
+	private void _restoreTrashEntries(ActionRequest actionRequest)
 		throws Exception {
 
 		long[] restoreTrashEntryIds = StringUtil.split(
 			ParamUtil.getString(actionRequest, "restoreTrashEntryIds"), 0L);
 
 		for (long restoreTrashEntryId : restoreTrashEntryIds) {
-			_trashEntryService.restoreEntry(restoreTrashEntryId);
+			trashEntryService.restoreEntry(restoreTrashEntryId);
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setExportImportConfigurationLocalService(
-		ExportImportConfigurationLocalService
-			exportImportConfigurationLocalService) {
-
-		this.exportImportConfigurationLocalService =
-			exportImportConfigurationLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportConfigurationService(
-		ExportImportConfigurationService exportImportConfigurationService) {
-
-		_exportImportConfigurationService = exportImportConfigurationService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setExportImportService(
-		ExportImportService exportImportService) {
-
-		_exportImportService = exportImportService;
-	}
-
-	protected void setLayoutIdMap(ActionRequest actionRequest) {
-		HttpServletRequest httpServletRequest = portal.getHttpServletRequest(
-			actionRequest);
-
-		long groupId = ParamUtil.getLong(actionRequest, "groupId");
-		boolean privateLayout = ParamUtil.getBoolean(
-			actionRequest, "privateLayout");
-
-		String treeId = ParamUtil.getString(actionRequest, "treeId");
-
-		String openNodes = SessionTreeJSClicks.getOpenNodes(
-			httpServletRequest, treeId + "SelectedNode");
-
-		String selectedLayoutsJSON = exportImportHelper.getSelectedLayoutsJSON(
-			groupId, privateLayout, openNodes);
-
-		actionRequest.setAttribute("layoutIdMap", selectedLayoutsJSON);
-	}
-
-	@Reference(unbind = "-")
-	protected void setTrashEntryService(TrashEntryService trashEntryService) {
-		_trashEntryService = trashEntryService;
-	}
-
-	protected ExportImportConfiguration updateExportConfiguration(
+	private ExportImportConfiguration _updateExportConfiguration(
 			ActionRequest actionRequest)
 		throws Exception {
 
@@ -292,27 +279,7 @@ public class EditExportConfigurationMVCActionCommand
 			addExportLayoutExportImportConfiguration(actionRequest);
 	}
 
-	@Reference
-	protected BackgroundTaskManager backgroundTaskManager;
-
-	protected ExportImportConfigurationLocalService
-		exportImportConfigurationLocalService;
-
-	@Reference
-	protected ExportImportConfigurationSettingsMapFactory
-		exportImportConfigurationSettingsMapFactory;
-
-	@Reference
-	protected ExportImportHelper exportImportHelper;
-
-	@Reference
-	protected Portal portal;
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditExportConfigurationMVCActionCommand.class);
-
-	private ExportImportConfigurationService _exportImportConfigurationService;
-	private ExportImportService _exportImportService;
-	private TrashEntryService _trashEntryService;
 
 }

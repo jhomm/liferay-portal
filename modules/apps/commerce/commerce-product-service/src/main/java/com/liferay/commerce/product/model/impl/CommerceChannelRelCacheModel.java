@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.model.CommerceChannelRel;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CommerceChannelRelCacheModel
-	implements CacheModel<CommerceChannelRel>, Externalizable {
+	implements CacheModel<CommerceChannelRel>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,8 +40,9 @@ public class CommerceChannelRelCacheModel
 		CommerceChannelRelCacheModel commerceChannelRelCacheModel =
 			(CommerceChannelRelCacheModel)object;
 
-		if (commerceChannelRelId ==
-				commerceChannelRelCacheModel.commerceChannelRelId) {
+		if ((commerceChannelRelId ==
+				commerceChannelRelCacheModel.commerceChannelRelId) &&
+			(mvccVersion == commerceChannelRelCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -59,14 +52,30 @@ public class CommerceChannelRelCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceChannelRelId);
+		int hashCode = HashUtil.hash(0, commerceChannelRelId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(23);
 
-		sb.append("{commerceChannelRelId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", commerceChannelRelId=");
 		sb.append(commerceChannelRelId);
 		sb.append(", companyId=");
 		sb.append(companyId);
@@ -94,6 +103,8 @@ public class CommerceChannelRelCacheModel
 		CommerceChannelRelImpl commerceChannelRelImpl =
 			new CommerceChannelRelImpl();
 
+		commerceChannelRelImpl.setMvccVersion(mvccVersion);
+		commerceChannelRelImpl.setCtCollectionId(ctCollectionId);
 		commerceChannelRelImpl.setCommerceChannelRelId(commerceChannelRelId);
 		commerceChannelRelImpl.setCompanyId(companyId);
 		commerceChannelRelImpl.setUserId(userId);
@@ -130,6 +141,10 @@ public class CommerceChannelRelCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+
 		commerceChannelRelId = objectInput.readLong();
 
 		companyId = objectInput.readLong();
@@ -148,6 +163,10 @@ public class CommerceChannelRelCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		objectOutput.writeLong(commerceChannelRelId);
 
 		objectOutput.writeLong(companyId);
@@ -171,6 +190,8 @@ public class CommerceChannelRelCacheModel
 		objectOutput.writeLong(commerceChannelId);
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public long commerceChannelRelId;
 	public long companyId;
 	public long userId;

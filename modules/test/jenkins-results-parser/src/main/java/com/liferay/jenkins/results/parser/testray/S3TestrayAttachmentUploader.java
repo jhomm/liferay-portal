@@ -1,28 +1,43 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.testray;
 
 import com.liferay.jenkins.results.parser.Build;
+import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+import com.liferay.jenkins.results.parser.TopLevelBuildReport;
+
+import java.io.File;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * @author Michael Hashimoto
  */
 public class S3TestrayAttachmentUploader extends BaseTestrayAttachmentUploader {
 
-	public S3TestrayAttachmentUploader(Build build) {
-		super(build);
+	@Override
+	public File getPreparedFilesBaseDir() {
+		String workspace = System.getenv("WORKSPACE");
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(workspace)) {
+			throw new RuntimeException("Please set WORKSPACE");
+		}
+
+		return new File(workspace, "testray/prepared_s3_logs");
+	}
+
+	@Override
+	public URL getTestrayServerLogsURL() {
+		try {
+			return new URL("https://storage.cloud.google.com/testray-results");
+		}
+		catch (MalformedURLException malformedURLException) {
+			throw new RuntimeException(malformedURLException);
+		}
 	}
 
 	@Override
@@ -31,17 +46,34 @@ public class S3TestrayAttachmentUploader extends BaseTestrayAttachmentUploader {
 			return;
 		}
 
-		TestrayAttachmentRecorder testrayAttachmentRecorder =
-			getTestrayAttachmentRecorder();
+		prepareFiles();
 
-		testrayAttachmentRecorder.record();
+		TopLevelBuildReport topLevelBuildReport = getTopLevelBuildReport();
+
+		File preparedFilesBaseDir = getPreparedFilesBaseDir();
 
 		TestrayS3Bucket testrayS3Bucket = TestrayS3Bucket.getInstance();
 
-		testrayS3Bucket.createTestrayS3Objects(
-			testrayAttachmentRecorder.getTestrayLogsDir());
+		for (File preparedFile : getPreparedFiles()) {
+			TestrayS3Object testrayS3Object =
+				testrayS3Bucket.createTestrayS3Object(
+					JenkinsResultsParserUtil.getPathRelativeTo(
+						preparedFile, preparedFilesBaseDir),
+					preparedFile);
+
+			if (topLevelBuildReport != null) {
+				topLevelBuildReport.addTestrayAttachmentURL(
+					testrayS3Object.getURL());
+			}
+		}
+
+		uploadBuildReportTestrayAttachment();
 
 		_uploaded = true;
+	}
+
+	protected S3TestrayAttachmentUploader(Build build, URL testrayServerURL) {
+		super(build, testrayServerURL);
 	}
 
 	private boolean _uploaded;

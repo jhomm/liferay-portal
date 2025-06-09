@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -78,43 +69,65 @@ CommerceVirtualOrderItemContentDisplayContext commerceVirtualOrderItemContentDis
 							>
 								<%= HtmlUtil.escape(commerceOrderItem.getName(languageId)) %>
 
-								<h6 class="text-default">
+								<div class="h6 text-default">
 									<%= HtmlUtil.escape(stringJoiner.toString()) %>
-								</h6>
+								</div>
 							</liferay-ui:search-container-column-text>
 
 							<liferay-ui:search-container-column-text
-								cssClass="entry-action-column important"
+								cssClass="entry-action-column font-weight-bold important"
 							>
 
 								<%
-								String downloadURL = commerceVirtualOrderItemContentDisplayContext.getDownloadURL(commerceVirtualOrderItem);
-
 								CPDefinitionVirtualSetting cpDefinitionVirtualSetting = commerceVirtualOrderItemContentDisplayContext.getCPDefinitionVirtualSetting(commerceOrderItem);
 
-								Map<String, Object> data = new HashMap<>();
-								boolean useDialog = false;
+								for (CommerceVirtualOrderItemFileEntry commerceVirtualOrderItemFileEntry : commerceVirtualOrderItem.getCommerceVirtualOrderItemFileEntries()) {
+									String downloadURL = commerceVirtualOrderItemContentDisplayContext.getDownloadURL(commerceVirtualOrderItem, commerceVirtualOrderItemFileEntry.getCommerceVirtualOrderItemFileEntryId());
+								%>
 
-								if ((cpDefinitionVirtualSetting != null) && cpDefinitionVirtualSetting.isTermsOfUseRequired()) {
-									data.put("destroyOnHide", true);
-									data.put("id", HtmlUtil.escape(portletDisplay.getNamespace()) + "viewTermsOfUseDialog");
-									data.put("title", HtmlUtil.escape(LanguageUtil.get(request, "terms-of-use")));
+									<c:if test="<%= commerceVirtualOrderItemContentDisplayContext.hasPermission(permissionChecker, commerceVirtualOrderItemFileEntry, CommerceVirtualOrderActionKeys.DOWNLOAD_COMMERCE_VIRTUAL_ORDER_ITEM) && (cpDefinitionVirtualSetting != null) %>">
+										<c:choose>
+											<c:when test="<%= (cpDefinitionVirtualSetting != null) && cpDefinitionVirtualSetting.isTermsOfUseRequired() %>">
+												<aui:form action="<%= String.valueOf(commerceVirtualOrderItemContentDisplayContext.getDownloadResourceURL(commerceVirtualOrderItem.getCommerceVirtualOrderItemId(), commerceVirtualOrderItemFileEntry.getCommerceVirtualOrderItemFileEntryId())) %>" method="post" name='<%= commerceVirtualOrderItem.getCommerceVirtualOrderItemId() + "-" + commerceVirtualOrderItemFileEntry.getCommerceVirtualOrderItemFileEntryId() + "Fm" %>' />
 
-									useDialog = true;
+												<clay:button
+													additionalProps='<%=
+														HashMapBuilder.<String, Object>put(
+															"commerceVirtualOrderItemFileEntryId", commerceVirtualOrderItemFileEntry.getCommerceVirtualOrderItemFileEntryId()
+														).put(
+															"commerceVirtualOrderItemId", commerceVirtualOrderItemFileEntry.getCommerceVirtualOrderItemId()
+														).put(
+															"dialogId", HtmlUtil.escape(portletDisplay.getNamespace()) + "viewTermsOfUseDialog"
+														).put(
+															"downloadURL", downloadURL
+														).put(
+															"title", HtmlUtil.escape(LanguageUtil.get(request, "terms-of-use"))
+														).build()
+													%>'
+													borderless="<%= true %>"
+													displayType="secondary"
+													icon="download"
+													label='<%= LanguageUtil.format(request, "download-x", commerceVirtualOrderItemFileEntry.getVersion(), false) %>'
+													propsTransformer="{OpenTermsOfUseModalPropsTransformer} from commerce-product-type-virtual-order-content-web"
+												/>
+											</c:when>
+											<c:otherwise>
+												<div class="lfr-tooltip-scope">
+													<clay:link
+														cssClass="btn btn-outline-borderless btn-outline-secondary"
+														href="<%= downloadURL %>"
+														icon="download"
+														label='<%= LanguageUtil.format(request, "download-x", commerceVirtualOrderItemFileEntry.getVersion(), false) %>'
+													/>
+												</div>
+											</c:otherwise>
+										</c:choose>
+									</c:if>
+
+								<%
 								}
 								%>
 
-								<c:if test="<%= CommerceVirtualOrderItemPermission.contains(permissionChecker, commerceVirtualOrderItem, CommerceVirtualOrderActionKeys.DOWNLOAD_COMMERCE_VIRTUAL_ORDER_ITEM) %>">
-									<aui:form action="<%= String.valueOf(commerceVirtualOrderItemContentDisplayContext.getDownloadResourceURL(commerceVirtualOrderItem.getCommerceVirtualOrderItemId())) %>" method="post" name='<%= commerceVirtualOrderItem.getCommerceVirtualOrderItemId() + "Fm" %>' />
-
-									<liferay-ui:icon
-										data="<%= data %>"
-										label="<%= true %>"
-										message="download"
-										url="<%= downloadURL %>"
-										useDialog="<%= useDialog %>"
-									/>
-								</c:if>
 							</liferay-ui:search-container-column-text>
 						</liferay-ui:search-container-row>
 
@@ -125,35 +138,6 @@ CommerceVirtualOrderItemContentDisplayContext commerceVirtualOrderItemContentDis
 					</liferay-ui:search-container>
 				</div>
 			</div>
-
-			<aui:script>
-				Liferay.provide(
-					window,
-					'<portlet:namespace />closePopup',
-					(dialogId) => {
-						var dialog = Liferay.Util.Window.getById(dialogId);
-
-						dialog.destroy();
-					},
-					['liferay-util-window']
-				);
-
-				Liferay.provide(
-					window,
-					'<portlet:namespace />downloadCommerceVirtualOrderItem',
-					(dialogId, commerceVirtualOrderItemId) => {
-						<portlet:namespace />closePopup(dialogId);
-
-						var formName =
-							'#<portlet:namespace />' + commerceVirtualOrderItemId + 'Fm';
-
-						var form = window.document.querySelector(formName);
-
-						submitForm(form);
-					},
-					['aui-base']
-				);
-			</aui:script>
 		</liferay-ddm:template-renderer>
 	</c:otherwise>
 </c:choose>

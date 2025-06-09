@@ -1,22 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useModal} from '@clayui/modal';
-import {
-	act,
-	cleanup,
-	render,
-	wait,
-	waitForElement,
-} from '@testing-library/react';
+import {act, render, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
@@ -136,21 +124,22 @@ const getEstimatedTimeMockFactory = (days) => () => {
 };
 
 describe('ReviewExperimentModal', () => {
-	afterEach(cleanup);
+	beforeAll(() => {
+		window.Liferay = {
+			...Liferay,
+			FeatureFlags: {
+				'LRAC-15017': true,
+			},
+		};
+	});
 
 	describe('Estimated days', () => {
 		afterEach(() => {
 			jest.clearAllTimers();
-
-			cleanup();
 		});
 
 		beforeAll(() => {
 			jest.useFakeTimers();
-		});
-
-		afterEach(() => {
-			cleanup();
 		});
 
 		it('Triggers on first render', async () => {
@@ -164,7 +153,7 @@ describe('ReviewExperimentModal', () => {
 
 			act(() => jest.runAllTimers());
 
-			await wait(() =>
+			await waitFor(() =>
 				expect(getEstimatedTimeMock).toHaveBeenCalledTimes(1)
 			);
 
@@ -179,13 +168,14 @@ describe('ReviewExperimentModal', () => {
 			const getEstimatedTimeMock = jest.fn(
 				getEstimatedTimeMockFactory(10)
 			);
-			const {getByDisplayValue} = renderReviewExperimentModal({
-				getEstimatedTimeMock,
-			});
+			const {findByDisplayValue, getByDisplayValue} =
+				renderReviewExperimentModal({
+					getEstimatedTimeMock,
+				});
 
 			act(() => jest.runAllTimers());
 
-			await waitForElement(() => getByDisplayValue('95'));
+			await findByDisplayValue('95');
 
 			expect(getEstimatedTimeMock).toHaveBeenCalledTimes(1);
 
@@ -193,7 +183,7 @@ describe('ReviewExperimentModal', () => {
 
 			act(() => jest.runAllTimers());
 
-			await wait(() =>
+			await waitFor(() =>
 				expect(getEstimatedTimeMock).toHaveBeenCalledTimes(2)
 			);
 
@@ -220,7 +210,7 @@ describe('ReviewExperimentModal', () => {
 
 			act(() => jest.runAllTimers());
 
-			await wait(() =>
+			await waitFor(() =>
 				expect(getEstimatedTimeMock).toHaveBeenCalledTimes(2)
 			);
 
@@ -228,7 +218,7 @@ describe('ReviewExperimentModal', () => {
 
 			act(() => jest.runAllTimers());
 
-			await wait(() =>
+			await waitFor(() =>
 				expect(getEstimatedTimeMock).toHaveBeenCalledTimes(3)
 			);
 		});
@@ -236,17 +226,17 @@ describe('ReviewExperimentModal', () => {
 		it('Informs user about an error', async () => {
 			const getEstimatedTimeMock = jest.fn(() => Promise.reject());
 
-			const {getByText} = renderReviewExperimentModal({
+			const {findByText} = renderReviewExperimentModal({
 				getEstimatedTimeMock,
 			});
 
 			act(() => jest.runAllTimers());
 
-			await wait(() =>
+			await waitFor(() =>
 				expect(getEstimatedTimeMock).toHaveBeenCalledTimes(1)
 			);
 
-			await waitForElement(() => getByText('not-available'));
+			await findByText('not-available');
 		});
 
 		it('Informs user about estimation', async () => {
@@ -254,17 +244,17 @@ describe('ReviewExperimentModal', () => {
 				getEstimatedTimeMockFactory(20)
 			);
 
-			const {getByText} = renderReviewExperimentModal({
+			const {findByText} = renderReviewExperimentModal({
 				getEstimatedTimeMock,
 			});
 
 			act(() => jest.runAllTimers());
 
-			await wait(() =>
+			await waitFor(() =>
 				expect(getEstimatedTimeMock).toHaveBeenCalledTimes(1)
 			);
 
-			await waitForElement(() => getByText('20-days'));
+			await findByText('20-days');
 		});
 	});
 });

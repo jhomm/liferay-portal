@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.editor.configuration.internal;
@@ -33,8 +24,8 @@ import org.osgi.service.component.annotations.Component;
 @Component(
 	property = {
 		"editor.config.key=coverImageCaptionEditor", "editor.name=alloyeditor",
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS,
-		"javax.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS,
+		"jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_ADMIN
 	},
 	service = EditorConfigContributor.class
 )
@@ -50,29 +41,29 @@ public class BlogsCoverImageCaptionAlloyEditorConfigContributor
 		jsonObject.put(
 			"extraPlugins", "ae_placeholder,ae_selectionregion,ae_uicore"
 		).put(
-			"toolbars", getToolbarsJSONObject()
+			"toolbars", _getToolbarsJSONObject()
 		);
 	}
 
-	protected JSONObject getToolbarsJSONObject() {
-		return JSONUtil.put("styles", getToolbarsStylesJSONObject());
+	private JSONObject _getToolbarsJSONObject() {
+		return JSONUtil.put("styles", _getToolbarsStylesJSONObject());
 	}
 
-	protected JSONObject getToolbarsStylesJSONObject() {
+	private JSONObject _getToolbarsStylesJSONObject() {
 		return JSONUtil.put(
-			"selections", getToolbarStylesSelectionsJSONArray()
+			"selections", _getToolbarStylesSelectionsJSONArray()
 		).put(
 			"tabIndex", 1
 		);
 	}
 
-	protected JSONArray getToolbarStylesSelectionsJSONArray() {
+	private JSONArray _getToolbarStylesSelectionsJSONArray() {
 		return JSONUtil.putAll(
-			getToolbarStylesSelectionsLinkJSONObject(),
-			getToolbarStylesSelectionsTextJSONObject());
+			_getToolbarStylesSelectionsLinkJSONObject(),
+			_getToolbarStylesSelectionsTextJSONObject());
 	}
 
-	protected JSONObject getToolbarStylesSelectionsLinkJSONObject() {
+	private JSONObject _getToolbarStylesSelectionsLinkJSONObject() {
 		return JSONUtil.put(
 			"buttons", toJSONArray("['linkEdit']")
 		).put(
@@ -82,7 +73,7 @@ public class BlogsCoverImageCaptionAlloyEditorConfigContributor
 		);
 	}
 
-	protected JSONObject getToolbarStylesSelectionsTextJSONObject() {
+	private JSONObject _getToolbarStylesSelectionsTextJSONObject() {
 		return JSONUtil.put(
 			"buttons", toJSONArray("['link']")
 		).put(

@@ -1,48 +1,44 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.audit.wiring.internal.servlet.filter;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.audit.AuditRequestThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogContext;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.servlet.BaseFilter;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.servlet.TryFilter;
-import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.security.audit.wiring.internal.configuration.AuditLogContextConfiguration;
 
+import jakarta.servlet.Filter;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.Filter;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -55,10 +51,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  * @author Brian Wing Shun Chan
  * @author Arthur Chan
+ * @author Stian Sigvartsen
  */
 @Component(
 	configurationPid = "com.liferay.portal.security.audit.wiring.internal.configuration.AuditLogContextConfiguration",
-	enabled = false, immediate = true,
+	enabled = false,
 	property = {
 		"after-filter=Session Max Allowed Filter", "servlet-context-name=",
 		"servlet-filter-name=Audit Filter", "url-pattern=/*",
@@ -80,19 +77,41 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		auditRequestThreadLocal.setClientHost(
 			httpServletRequest.getRemoteHost());
 
-		String remoteAddr = getRemoteAddr(httpServletRequest);
+		String remoteAddr = httpServletRequest.getRemoteAddr();
 
 		auditRequestThreadLocal.setClientIP(remoteAddr);
 
 		auditRequestThreadLocal.setQueryString(
 			httpServletRequest.getQueryString());
 
+		String userEmailAddress = StringPool.BLANK;
+
 		HttpSession httpSession = httpServletRequest.getSession();
 
 		Long userId = (Long)httpSession.getAttribute(WebKeys.USER_ID);
 
+		String userLogin = StringPool.BLANK;
+
 		if (userId != null) {
-			auditRequestThreadLocal.setRealUserId(userId.longValue());
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						_portal.getCompanyId(httpServletRequest))) {
+
+				User user = _userLocalService.fetchUser(userId);
+
+				if (user != null) {
+					userEmailAddress = user.getEmailAddress();
+
+					auditRequestThreadLocal.setRealUserEmailAddress(
+						userEmailAddress);
+
+					auditRequestThreadLocal.setRealUserId(userId);
+
+					userLogin = _getUserLogin(user);
+
+					auditRequestThreadLocal.setRealUserLogin(userLogin);
+				}
+			}
 		}
 
 		StringBuffer sb = httpServletRequest.getRequestURL();
@@ -115,7 +134,7 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 			xRequestId = httpServletRequest.getHeader(HttpHeaders.X_REQUEST_ID);
 		}
 
-		if (!isValidXRequestId(xRequestId)) {
+		if (!_isValidXRequestId(xRequestId)) {
 			xRequestId = PortalUUIDUtil.generate();
 		}
 
@@ -123,8 +142,8 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 
 		_auditLogContext.setContext(
 			remoteAddr, _portal.getCompanyId(httpServletRequest),
-			httpSession.getId(), httpServletRequest.getServerName(), userId,
-			xRequestId);
+			httpServletRequest.getServerName(), userEmailAddress, userId,
+			userLogin, xRequestId);
 
 		return null;
 	}
@@ -154,18 +173,25 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		return _log;
 	}
 
-	protected String getRemoteAddr(HttpServletRequest httpServletRequest) {
-		String remoteAddr = httpServletRequest.getHeader(
-			HttpHeaders.X_FORWARDED_FOR);
+	private String _getUserLogin(User user) {
+		String authType = PrefsPropsUtil.getString(
+			user.getCompanyId(), PropsKeys.COMPANY_SECURITY_AUTH_TYPE,
+			StringPool.BLANK);
 
-		if (remoteAddr != null) {
-			return remoteAddr;
+		if (authType.equals(CompanyConstants.AUTH_TYPE_EA)) {
+			return user.getEmailAddress();
+		}
+		else if (authType.equals(CompanyConstants.AUTH_TYPE_ID)) {
+			return String.valueOf(user.getUserId());
+		}
+		else if (authType.equals(CompanyConstants.AUTH_TYPE_SN)) {
+			return user.getScreenName();
 		}
 
-		return httpServletRequest.getRemoteAddr();
+		return StringPool.BLANK;
 	}
 
-	protected boolean isValidXRequestId(String xRequestId) {
+	private boolean _isValidXRequestId(String xRequestId) {
 		if (Validator.isBlank(xRequestId)) {
 			if (_log.isDebugEnabled()) {
 				_log.debug("Incoming X-Request-Id is empty");
@@ -198,8 +224,6 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		return true;
 	}
 
-	private static final String _MESSAGE_DIGEST_ALGORITHM = "SHA-256";
-
 	private static final Log _log = LogFactoryUtil.getLog(AuditFilter.class);
 
 	private AuditLogContext _auditLogContext;
@@ -225,7 +249,7 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		}
 
 		@Override
-		public Map<String, String> getContext() {
+		public Map<String, String> getContext(String logName) {
 			return _contexts.get();
 		}
 
@@ -235,8 +259,9 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 		}
 
 		public void setContext(
-			String clientIP, long companyId, String sessionId,
-			String serverName, Long userId, String xRequestId) {
+			String clientIP, long companyId, String serverName,
+			String userEmailAddress, Long userId, String userLogin,
+			String xRequestId) {
 
 			_contexts.set(
 				HashMapBuilder.put(
@@ -244,27 +269,13 @@ public class AuditFilter extends BaseFilter implements TryFilter {
 				).put(
 					"companyId", String.valueOf(companyId)
 				).put(
-					"emailAddress",
-					() -> {
-						if (userId != null) {
-							User user = _userLocalService.fetchUser(userId);
-
-							if (user != null) {
-								return DigesterUtil.digest(
-									_MESSAGE_DIGEST_ALGORITHM,
-									user.getEmailAddress());
-							}
-						}
-
-						return "";
-					}
-				).put(
 					"serverName", serverName
 				).put(
-					"sessionId",
-					DigesterUtil.digest(_MESSAGE_DIGEST_ALGORITHM, sessionId)
+					"userEmailAddress", userEmailAddress
 				).put(
 					"userId", (userId != null) ? String.valueOf(userId) : ""
+				).put(
+					"userLogin", userLogin
 				).put(
 					"virtualHostName",
 					() -> {

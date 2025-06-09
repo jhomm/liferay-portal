@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.trash.test;
@@ -28,7 +19,9 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.trash.TrashHelper;
 import com.liferay.trash.service.TrashEntryLocalServiceUtil;
 import com.liferay.trash.service.TrashVersionLocalServiceUtil;
 import com.liferay.wiki.model.WikiNode;
@@ -107,9 +100,9 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage redirectorPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getRedirectorPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
@@ -128,16 +121,18 @@ public class WikiPageDependentsTrashHandlerTest {
 		movePageToTrash(relatedPages.getChildPage());
 		movePageToTrash(relatedPages.getPage());
 
-		WikiPage page = WikiPageLocalServiceUtil.getPage(
-			relatedPages.getPageResourcePrimKey());
 		WikiPage childPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getChildPageResourcePrimKey());
 		WikiPage grandchildPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getGrandchildPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
-		Assert.assertTrue(grandchildPage.isInTrashImplicitly());
+		Assert.assertTrue(
+			_trashHelper.isInTrashExplicitly(
+				WikiPageLocalServiceUtil.getPage(
+					relatedPages.getPageResourcePrimKey())));
+
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(grandchildPage));
 		Assert.assertEquals(
 			childPage.getTitle(), grandchildPage.getParentTitle());
 		Assert.assertEquals(
@@ -169,8 +164,8 @@ public class WikiPageDependentsTrashHandlerTest {
 			relatedPages.getGrandchildPageResourcePrimKey());
 
 		Assert.assertFalse(page.isInTrash());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
-		Assert.assertTrue(grandchildPage.isInTrashImplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(grandchildPage));
 		Assert.assertEquals(
 			childPage.getTitle(), grandchildPage.getParentTitle());
 		Assert.assertEquals(
@@ -195,8 +190,8 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage redirectorPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getRedirectorPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
 
@@ -216,9 +211,9 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage redirectorPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getRedirectorPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashImplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
@@ -243,9 +238,9 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage grandchildPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getGrandchildPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashImplicitly());
-		Assert.assertTrue(grandchildPage.isInTrashImplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(grandchildPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(
 			childPage.getTitle(), grandchildPage.getParentTitle());
@@ -271,8 +266,8 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage childPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getChildPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 	}
 
@@ -292,9 +287,9 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage redirectorPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getRedirectorPageResourcePrimKey());
 
-		Assert.assertTrue(childPage.isInTrashImplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
-		Assert.assertTrue(page.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
@@ -331,7 +326,7 @@ public class WikiPageDependentsTrashHandlerTest {
 
 		Assert.assertFalse(page.isInTrash());
 		Assert.assertFalse(newParentPage.isInTrash());
-		Assert.assertTrue(parentPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(parentPage));
 		Assert.assertEquals(page.getParentTitle(), newParentPage.getTitle());
 		Assert.assertEquals(newParentPage.getTitle(), page.getParentTitle());
 		Assert.assertEquals(
@@ -353,8 +348,8 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage redirectorPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getRedirectorPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashImplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
 
@@ -369,8 +364,8 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage childPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getChildPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashImplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(childPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 	}
 
@@ -389,10 +384,11 @@ public class WikiPageDependentsTrashHandlerTest {
 		WikiPage childRedirectorPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getChildRedirectorPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
-		Assert.assertTrue(childPage.isInTrashImplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashImplicitly());
-		Assert.assertTrue(childRedirectorPage.isInTrashImplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(page));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashImplicitly(redirectorPage));
+		Assert.assertTrue(
+			_trashHelper.isInTrashImplicitly(childRedirectorPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(
@@ -424,7 +420,7 @@ public class WikiPageDependentsTrashHandlerTest {
 		Assert.assertFalse(childPage.isInTrash());
 		Assert.assertFalse(page.isInTrash());
 		Assert.assertFalse(grandchildPage.isInTrash());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(
 			childPage.getTitle(), grandchildPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
@@ -510,14 +506,16 @@ public class WikiPageDependentsTrashHandlerTest {
 
 		restoreFromTrash(relatedPages.getChildPage());
 
-		WikiPage page = WikiPageLocalServiceUtil.getPage(
-			relatedPages.getPageResourcePrimKey());
 		WikiPage childPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getChildPageResourcePrimKey());
 		WikiPage grandchildPage = WikiPageLocalServiceUtil.getPage(
 			relatedPages.getGrandchildPageResourcePrimKey());
 
-		Assert.assertTrue(page.isInTrashExplicitly());
+		Assert.assertTrue(
+			_trashHelper.isInTrashExplicitly(
+				WikiPageLocalServiceUtil.getPage(
+					relatedPages.getPageResourcePrimKey())));
+
 		Assert.assertFalse(childPage.isInTrash());
 		Assert.assertFalse(grandchildPage.isInTrash());
 		Assert.assertEquals(StringPool.BLANK, childPage.getParentTitle());
@@ -548,7 +546,7 @@ public class WikiPageDependentsTrashHandlerTest {
 			relatedPages.getRedirectorPageResourcePrimKey());
 
 		Assert.assertFalse(page.isInTrash());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
 
@@ -659,7 +657,7 @@ public class WikiPageDependentsTrashHandlerTest {
 			relatedPages.getChildPageResourcePrimKey());
 
 		Assert.assertFalse(page.isInTrash());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 	}
 
@@ -719,7 +717,7 @@ public class WikiPageDependentsTrashHandlerTest {
 
 		Assert.assertFalse(page.isInTrash());
 		Assert.assertFalse(childPage.isInTrash());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 
@@ -752,8 +750,8 @@ public class WikiPageDependentsTrashHandlerTest {
 			relatedPages.getRedirectorPageResourcePrimKey());
 
 		Assert.assertFalse(page.isInTrash());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
-		Assert.assertTrue(redirectorPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
 	}
@@ -889,7 +887,7 @@ public class WikiPageDependentsTrashHandlerTest {
 			relatedPages.getRedirectorPageResourcePrimKey());
 
 		Assert.assertFalse(page.isInTrash());
-		Assert.assertTrue(childPage.isInTrashExplicitly());
+		Assert.assertTrue(_trashHelper.isInTrashExplicitly(childPage));
 		Assert.assertFalse(redirectorPage.isInTrash());
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(page.getTitle(), redirectorPage.getRedirectTitle());
@@ -922,7 +920,7 @@ public class WikiPageDependentsTrashHandlerTest {
 		Assert.assertFalse(page.isInTrash());
 		Assert.assertFalse(childPage.isInTrash());
 		Assert.assertFalse(grandchildPage.isInTrash());
-		Assert.assertFalse(redirectorPage.isInTrashExplicitly());
+		Assert.assertFalse(_trashHelper.isInTrashExplicitly(redirectorPage));
 		Assert.assertEquals(page.getTitle(), childPage.getParentTitle());
 		Assert.assertEquals(
 			childPage.getTitle(), grandchildPage.getParentTitle());
@@ -1073,6 +1071,9 @@ public class WikiPageDependentsTrashHandlerTest {
 	private Group _group;
 
 	private WikiNode _node;
+
+	@Inject
+	private TrashHelper _trashHelper;
 
 	private static class RelatedPages {
 

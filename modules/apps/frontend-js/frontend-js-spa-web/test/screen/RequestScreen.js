@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import RequestScreen from '../../src/main/resources/META-INF/resources/screen/RequestScreen';
@@ -20,12 +11,12 @@ describe('RequestScreen', () => {
 	});
 
 	it('is cacheable', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		expect(screen.isCacheable()).toBe(true);
 	});
 
 	it('sets HTTP method', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		expect(screen.getHttpMethod()).toBe(RequestScreen.GET);
 
 		screen.setHttpMethod(RequestScreen.POST);
@@ -33,7 +24,7 @@ describe('RequestScreen', () => {
 	});
 
 	it('sets HTTP headers', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 
 		expect(screen.getHttpHeaders()).toHaveProperty('X-PJAX', 'true');
 		expect(screen.getHttpHeaders()).toHaveProperty(
@@ -47,14 +38,14 @@ describe('RequestScreen', () => {
 	});
 
 	it('sets timeout', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		expect(screen.getTimeout()).toBe(30000);
 		screen.setTimeout(0);
 		expect(screen.getTimeout()).toBe(0);
 	});
 
 	it('returns request path if response.url not present on screen beforeUpdateHistoryPath', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		jest.spyOn(screen, 'getRequest').mockImplementation(() => {
 			return {
 				url: '/path',
@@ -65,7 +56,7 @@ describe('RequestScreen', () => {
 	});
 
 	it('returns responseURL if present on screen beforeUpdateHistoryPath', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 
 		jest.spyOn(screen, 'getResponse').mockImplementation(() => {
 			return {
@@ -84,7 +75,7 @@ describe('RequestScreen', () => {
 	});
 
 	it('returns null if form navigate to post-without-redirect-get on screen beforeUpdateHistoryState', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		expect(
 			screen.beforeUpdateHistoryState({
 				form: true,
@@ -96,14 +87,14 @@ describe('RequestScreen', () => {
 	});
 
 	it('returns null if no requests were made', () => {
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		expect(screen.getRequestPath()).toBeNull();
 	});
 
 	it('sends request to an url', (done) => {
 		fetch.mockResponse('');
 
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		screen.load('/url').then(() => {
 			expect(screen.getRequest().url).toBe(
 				window.location.origin + '/url'
@@ -123,8 +114,8 @@ describe('RequestScreen', () => {
 	it('loads response content from cache', (done) => {
 		fetch.mockResponse('');
 
-		var screen = new RequestScreen();
-		var cache = {};
+		const screen = new RequestScreen();
+		const cache = {};
 		screen.addCache(cache);
 		screen.load('/url').then((cachedContent) => {
 			expect(cachedContent).toBe(cache);
@@ -135,8 +126,8 @@ describe('RequestScreen', () => {
 	it('does not load response content from cache for post requests', (done) => {
 		fetch.mockResponse('');
 
-		var screen = new RequestScreen();
-		var cache = {};
+		const screen = new RequestScreen();
+		const cache = {};
 		screen.setHttpMethod(RequestScreen.POST);
 		screen.load('/url').then(() => {
 			screen.load('/url').then((cachedContent) => {
@@ -149,7 +140,7 @@ describe('RequestScreen', () => {
 	it.skip('cancels load request to an url', (done) => {
 		fetch.mockResponse('');
 
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		screen
 			.load('/url')
 			.then(() => done.fail())
@@ -170,7 +161,7 @@ describe('RequestScreen', () => {
 				})
 		);
 
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		screen.setTimeout(0);
 
 		screen.load('/url').catch((reason) => {
@@ -219,7 +210,7 @@ describe('RequestScreen', () => {
 		fetch.mockResponse('');
 
 		Liferay.SPA.__capturedFormElement__ = document.createElement('form');
-		var screen = new RequestScreen();
+		const screen = new RequestScreen();
 		screen.load('/url').then(() => {
 			expect(screen.getRequest().method).toBe(RequestScreen.POST);
 			expect(screen.getRequest().requestBody).toBeInstanceOf(FormData);
@@ -238,8 +229,8 @@ describe('RequestScreen', () => {
 		submitButton.value = 'Send';
 		Liferay.SPA.__capturedFormElement__.appendChild(submitButton);
 		Liferay.SPA.__capturedFormButtonElement__ = submitButton;
-		var screen = new RequestScreen();
-		var spy = jest.spyOn(FormData.prototype, 'append');
+		const screen = new RequestScreen();
+		const spy = jest.spyOn(FormData.prototype, 'append');
 		screen.load('/url').then(() => {
 			expect(spy).toHaveBeenCalledWith(
 				submitButton.name,
@@ -254,10 +245,10 @@ describe('RequestScreen', () => {
 	it('navigates over same protocol the page was viewed on', (done) => {
 		fetch.mockResponse('');
 
-		var screen = new RequestScreen();
-		var wrongProtocol = window.location.origin.replace('http', 'https');
+		const screen = new RequestScreen();
+		const wrongProtocol = window.location.origin.replace('http', 'https');
 		screen.load(wrongProtocol + '/url').then(() => {
-			var url = screen.getRequest().url;
+			const url = screen.getRequest().url;
 			expect(url.indexOf('http:')).toBe(0);
 			done();
 		});

@@ -1,29 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.search.index;
 
-import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.script.ScriptBuilder;
 import com.liferay.portal.search.script.ScriptType;
+import com.liferay.portal.workflow.metrics.internal.search.constants.WorkflowMetricsIndexTypeConstants;
 import com.liferay.portal.workflow.metrics.internal.sla.processor.WorkflowMetricsSLAInstanceResult;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 
 import org.osgi.service.component.annotations.Component;
@@ -32,11 +26,28 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(
-	immediate = true, service = SLAInstanceResultWorkflowMetricsIndexer.class
-)
+@Component(service = SLAInstanceResultWorkflowMetricsIndexer.class)
 public class SLAInstanceResultWorkflowMetricsIndexer
 	extends BaseSLAWorkflowMetricsIndexer {
+
+	public void blockDocuments(
+		long companyId, long processId, long slaDefinitionId) {
+
+		BooleanQuery booleanQuery = queries.booleanQuery();
+
+		booleanQuery.addMustNotQueryClauses(
+			queries.term("instanceCompleted", Boolean.TRUE));
+
+		updateDocuments(
+			companyId,
+			HashMapBuilder.<String, Object>put(
+				"blocked", Boolean.TRUE
+			).build(),
+			booleanQuery.addMustQueryClauses(
+				queries.term("companyId", companyId),
+				queries.term("processId", processId),
+				queries.term("slaDefinitionId", slaDefinitionId)));
+	}
 
 	public Document creatDefaultDocument(long companyId, long processId) {
 		WorkflowMetricsSLAInstanceResult workflowMetricsSLAInstanceResult =
@@ -53,8 +64,13 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 
 		DocumentBuilder documentBuilder = documentBuilderFactory.builder();
 
-		documentBuilder.setLong(
-			"companyId", workflowMetricsSLAInstanceResult.getCompanyId());
+		documentBuilder.setValue(
+			"active", true
+		).setValue(
+			"blocked", false
+		).setLong(
+			"companyId", workflowMetricsSLAInstanceResult.getCompanyId()
+		);
 
 		if (workflowMetricsSLAInstanceResult.getCompletionLocalDateTime() !=
 				null) {
@@ -133,6 +149,10 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 	public void deleteDocuments(
 		long companyId, long processId, long slaDefinitionId) {
 
+		if (!searchCapabilities.isWorkflowMetricsSupported()) {
+			return;
+		}
+
 		super.deleteDocuments(companyId, processId, slaDefinitionId);
 
 		BooleanQuery booleanQuery = queries.booleanQuery();
@@ -168,7 +188,10 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 				).scriptType(
 					ScriptType.INLINE
 				).build(),
-				_instanceWorkflowMetricsIndex.getIndexName(companyId));
+				WorkflowMetricsIndex.getIndexName(
+					_indexNameBuilder,
+					WorkflowMetricsIndexNameConstants.SUFFIX_INSTANCE,
+					companyId));
 
 		if (PortalRunMode.isTestMode()) {
 			updateByQueryDocumentRequest.setRefresh(true);
@@ -179,23 +202,18 @@ public class SLAInstanceResultWorkflowMetricsIndexer
 
 	@Override
 	public String getIndexName(long companyId) {
-		return _slaInstanceResultWorkflowMetricsIndex.getIndexName(companyId);
+		return WorkflowMetricsIndex.getIndexName(
+			_indexNameBuilder,
+			WorkflowMetricsIndexNameConstants.SUFFIX_SLA_INSTANCE_RESULT,
+			companyId);
 	}
 
 	@Override
 	public String getIndexType() {
-		return _slaInstanceResultWorkflowMetricsIndex.getIndexType();
+		return WorkflowMetricsIndexTypeConstants.SLA_INSTANCE_RESULT_TYPE;
 	}
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
-
 	@Reference
-	private JSONFactory _jsonFactory;
-
-	@Reference(
-		target = "(workflow.metrics.index.entity.name=sla-instance-result)"
-	)
-	private WorkflowMetricsIndex _slaInstanceResultWorkflowMetricsIndex;
+	private IndexNameBuilder _indexNameBuilder;
 
 }

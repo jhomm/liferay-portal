@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
-import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.Company;
@@ -24,7 +14,6 @@ import com.liferay.portal.kernel.model.LayoutQueryStringComposite;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.ResourcePermission;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LayoutFriendlyURLSeparatorComposite;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
@@ -34,10 +23,25 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.upload.UploadServletRequest;
 
-import java.io.IOException;
-import java.io.Serializable;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.PreferencesValidator;
+import jakarta.portlet.WindowState;
 
-import java.net.InetAddress;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
+import java.io.IOException;
 
 import java.util.Date;
 import java.util.List;
@@ -48,26 +52,6 @@ import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeMap;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.PreferencesValidator;
-import javax.portlet.RenderRequest;
-import javax.portlet.ValidatorException;
-import javax.portlet.WindowState;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -138,10 +122,6 @@ public interface Portal {
 	 */
 	public void addPageTitle(
 		String title, HttpServletRequest httpServletRequest);
-
-	public boolean addPortalInetSocketAddressEventListener(
-		PortalInetSocketAddressEventListener
-			portalInetSocketAddressEventListener);
 
 	/**
 	 * Adds an entry to the portlet breadcrumbs for the page.
@@ -229,21 +209,6 @@ public interface Portal {
 		boolean doAsUser);
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void addUserLocaleOptionsMessage(
-		HttpServletRequest httpServletRequest);
-
-	/**
-	 * Clears the render parameters in the request if the portlet is in the
-	 * action phase.
-	 *
-	 * @param renderRequest the render request
-	 */
-	public void clearRequestParameters(RenderRequest renderRequest);
-
-	/**
 	 * Copies the request parameters to the render parameters, unless a
 	 * parameter with that name already exists in the render parameters.
 	 *
@@ -262,6 +227,8 @@ public interface Portal {
 	 *         allowed for redirects
 	 */
 	public String escapeRedirect(String url);
+
+	public String fetchClassName(long classNameId);
 
 	/**
 	 * Generates a random key to identify the request based on the input string.
@@ -315,35 +282,12 @@ public interface Portal {
 			String canonicalURL, ThemeDisplay themeDisplay, Layout layout)
 		throws PortalException;
 
+	public Map<Locale, String> getAlternateURLs(
+			String canonicalURL, ThemeDisplay themeDisplay, Layout layout,
+			Set<Locale> availableLocales)
+		throws PortalException;
+
 	public long[] getAncestorSiteGroupIds(long groupId);
-
-	/**
-	 * Returns the base model instance for the resource permission.
-	 *
-	 * @param  resourcePermission the resource permission
-	 * @return the base model instance, or <code>null</code> if the resource
-	 *         permission does not have a base model instance (such as if its a
-	 *         portlet)
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public BaseModel<?> getBaseModel(ResourcePermission resourcePermission)
-		throws PortalException;
-
-	/**
-	 * Returns the base model instance for the model name and primary key.
-	 *
-	 * @param  modelName the fully qualified class name of the model
-	 * @param  primKey the primary key of the model instance to get
-	 * @return the base model instance, or <code>null</code> if the model does
-	 *         not have a base model instance (such as if its a portlet)
-	 * @throws PortalException if a portal exception occurred
-	 */
-	public BaseModel<?> getBaseModel(String modelName, String primKey)
-		throws PortalException;
-
-	public List<Group> getBrowsableScopeGroups(
-			long userId, long companyId, long groupId, String portletId)
-		throws PortalException;
 
 	/**
 	 * Returns the canonical URL of the page, to distinguish it among its
@@ -506,33 +450,21 @@ public interface Portal {
 			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay)
 		throws Exception;
 
-	public long[] getCurrentAndAncestorSiteGroupIds(long groupId)
-		throws PortalException;
+	public long[] getCurrentAndAncestorSiteGroupIds(long groupId);
 
 	public long[] getCurrentAndAncestorSiteGroupIds(
-			long groupId, boolean checkContentSharingWithChildrenEnabled)
-		throws PortalException;
+		long groupId, boolean checkContentSharingWithChildrenEnabled);
 
-	public long[] getCurrentAndAncestorSiteGroupIds(long[] groupIds)
-		throws PortalException;
+	public long[] getCurrentAndAncestorSiteGroupIds(long[] groupIds);
 
 	public long[] getCurrentAndAncestorSiteGroupIds(
-			long[] groupIds, boolean checkContentSharingWithChildrenEnabled)
-		throws PortalException;
-
-	public List<Group> getCurrentAndAncestorSiteGroups(long groupId)
-		throws PortalException;
+		long[] groupIds, boolean checkContentSharingWithChildrenEnabled);
 
 	public List<Group> getCurrentAndAncestorSiteGroups(
-			long groupId, boolean checkContentSharingWithChildrenEnabled)
-		throws PortalException;
-
-	public List<Group> getCurrentAndAncestorSiteGroups(long[] groupIds)
-		throws PortalException;
+		long groupId, boolean checkContentSharingWithChildrenEnabled);
 
 	public List<Group> getCurrentAndAncestorSiteGroups(
-			long[] groupIds, boolean checkContentSharingWithChildrenEnabled)
-		throws PortalException;
+		long[] groupIds, boolean checkContentSharingWithChildrenEnabled);
 
 	public String getCurrentCompleteURL(HttpServletRequest httpServletRequest);
 
@@ -640,41 +572,12 @@ public interface Portal {
 	public long getDefaultCompanyId();
 
 	public String getEmailFromAddress(
-		PortletPreferences preferences, long companyId, String defaultValue);
+		PortletPreferences portletPreferences, long companyId,
+		String defaultValue);
 
 	public String getEmailFromName(
-		PortletPreferences preferences, long companyId, String defaultValue);
-
-	public Map<String, Serializable> getExpandoBridgeAttributes(
-			ExpandoBridge expandoBridge, HttpServletRequest httpServletRequest)
-		throws PortalException;
-
-	public Map<String, Serializable> getExpandoBridgeAttributes(
-			ExpandoBridge expandoBridge, PortletRequest portletRequest)
-		throws PortalException;
-
-	public Map<String, Serializable> getExpandoBridgeAttributes(
-			ExpandoBridge expandoBridge,
-			UploadPortletRequest uploadPortletRequest)
-		throws PortalException;
-
-	public Serializable getExpandoValue(
-			HttpServletRequest httpServletRequest, String name, int type,
-			String displayType)
-		throws PortalException;
-
-	public Serializable getExpandoValue(
-			PortletRequest portletRequest, String name, int type,
-			String displayType)
-		throws PortalException;
-
-	public Serializable getExpandoValue(
-			UploadPortletRequest uploadPortletRequest, String name, int type,
-			String displayType)
-		throws PortalException;
-
-	public String getFirstPageLayoutTypes(
-		HttpServletRequest httpServletRequest);
+		PortletPreferences portletPreferences, long companyId,
+		String defaultValue);
 
 	public String getForwardedHost(HttpServletRequest httpServletRequest);
 
@@ -683,18 +586,7 @@ public interface Portal {
 	public String getFullName(
 		String firstName, String middleName, String lastName);
 
-	public String getGlobalLibDir();
-
 	public String getGoogleGadgetURL(Portlet portlet, ThemeDisplay themeDisplay)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * #getGroupFriendlyURL(LayoutSet, ThemeDisplay, boolean, boolean)}
-	 */
-	@Deprecated
-	public String getGroupFriendlyURL(
-			LayoutSet layoutSet, ThemeDisplay themeDisplay)
 		throws PortalException;
 
 	public String getGroupFriendlyURL(
@@ -729,11 +621,6 @@ public interface Portal {
 	public String getLayoutActualURL(Layout layout);
 
 	public String getLayoutActualURL(Layout layout, String mainPath);
-
-	public String getLayoutActualURL(
-			long groupId, boolean privateLayout, String mainPath,
-			String friendlyURL)
-		throws PortalException;
 
 	public String getLayoutActualURL(
 			long groupId, boolean privateLayout, String mainPath,
@@ -820,10 +707,6 @@ public interface Portal {
 
 	public Locale getLocale(PortletRequest portletRequest);
 
-	public String getLocalizedFriendlyURL(
-		HttpServletRequest httpServletRequest, Layout layout, Locale locale,
-		Locale originalLocale);
-
 	public String getMailId(String mx, String popPortletPrefix, Object... ids);
 
 	public String getNetvibesURL(Portlet portlet, ThemeDisplay themeDisplay)
@@ -866,18 +749,9 @@ public interface Portal {
 	public long getPlidFromPortletId(long groupId, String portletId)
 		throws PortalException;
 
-	public PortalInetSocketAddressEventListener[]
-		getPortalInetSocketAddressEventListeners();
-
-	public String getPortalLibDir();
-
-	public InetAddress getPortalLocalInetAddress(boolean secure);
-
 	public int getPortalLocalPort(boolean secure);
 
 	public Properties getPortalProperties();
-
-	public InetAddress getPortalServerInetAddress(boolean secure);
 
 	public int getPortalServerPort(boolean secure);
 
@@ -901,8 +775,6 @@ public interface Portal {
 	public String getPortalURL(ThemeDisplay themeDisplay)
 		throws PortalException;
 
-	public String getPortalWebDir();
-
 	public PortletConfig getPortletConfig(
 			long companyId, String portletId, ServletContext servletContext)
 		throws PortletException;
@@ -918,24 +790,19 @@ public interface Portal {
 
 	public String getPortletDescription(String portletId, User user);
 
+	public LayoutQueryStringComposite
+		getPortletFriendlyURLMapperLayoutQueryStringComposite(
+			String url, Map<String, String[]> params,
+			Map<String, Object> requestContext);
+
 	public String getPortletId(HttpServletRequest httpServletRequest);
 
 	public String getPortletId(PortletRequest portletRequest);
 
-	public String getPortletLongTitle(Portlet portlet, Locale locale);
-
 	public String getPortletLongTitle(
 		Portlet portlet, ServletContext servletContext, Locale locale);
 
-	public String getPortletLongTitle(Portlet portlet, String languageId);
-
-	public String getPortletLongTitle(Portlet portlet, User user);
-
 	public String getPortletLongTitle(String portletId, Locale locale);
-
-	public String getPortletLongTitle(String portletId, String languageId);
-
-	public String getPortletLongTitle(String portletId, User user);
 
 	public String getPortletNamespace(String portletId);
 
@@ -960,8 +827,6 @@ public interface Portal {
 	public String getPortletTitle(String portletId, String languageId);
 
 	public String getPortletTitle(String portletId, User user);
-
-	public String getPortletXmlFileName();
 
 	public PortletPreferences getPreferences(
 		HttpServletRequest httpServletRequest);
@@ -1079,7 +944,7 @@ public interface Portal {
 
 	public UploadServletRequest getUploadServletRequest(
 		HttpServletRequest httpServletRequest, int fileSizeThreshold,
-		String location, long maxRequestSize, long maxFileSize);
+		String location);
 
 	public Date getUptime();
 
@@ -1122,19 +987,10 @@ public interface Portal {
 	public long getValidUserId(long companyId, long userId)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #getVirtualHostnames(LayoutSet)}
-	 */
-	@Deprecated
-	public String getVirtualHostname(LayoutSet layoutSet);
-
 	public TreeMap<String, String> getVirtualHostnames(LayoutSet layoutSet);
 
 	public String getWidgetURL(Portlet portlet, ThemeDisplay themeDisplay)
 		throws PortalException;
-
-	public void initCustomSQL();
 
 	public User initUser(HttpServletRequest httpServletRequest)
 		throws Exception;
@@ -1147,25 +1003,13 @@ public interface Portal {
 
 	public boolean isCompanyAdmin(User user) throws Exception;
 
-	public boolean isCompanyControlPanelPortlet(
-			String portletId, String category, ThemeDisplay themeDisplay)
-		throws PortalException;
-
-	public boolean isCompanyControlPanelPortlet(
-			String portletId, ThemeDisplay themeDisplay)
-		throws PortalException;
-
-	public boolean isControlPanelPortlet(
-		String portletId, String category, ThemeDisplay themeDisplay);
-
-	public boolean isControlPanelPortlet(
-		String portletId, ThemeDisplay themeDisplay);
-
 	public boolean isCustomPortletMode(PortletMode portletMode);
 
 	public boolean isForwardedSecure(HttpServletRequest httpServletRequest);
 
 	public boolean isGroupAdmin(User user, long groupId) throws Exception;
+
+	public boolean isGroupControlPanelPath(String path);
 
 	public boolean isGroupFriendlyURL(
 		String fullURL, String groupFriendlyURL, String layoutFriendlyURL);
@@ -1179,10 +1023,6 @@ public interface Portal {
 
 	public boolean isLoginRedirectRequired(
 		HttpServletRequest httpServletRequest);
-
-	public boolean isMethodGet(PortletRequest portletRequest);
-
-	public boolean isMethodPost(PortletRequest portletRequest);
 
 	public boolean isMultipartRequest(HttpServletRequest httpServletRequest);
 
@@ -1206,17 +1046,11 @@ public interface Portal {
 
 	public boolean isSystemRole(String roleName);
 
-	public boolean isUpdateAvailable();
+	public boolean isValidPortalDomain(long companyId, String domain);
 
 	public boolean isValidResourceId(String resourceId);
 
-	public boolean removePortalInetSocketAddressEventListener(
-		PortalInetSocketAddressEventListener
-			portalInetSocketAddressEventListener);
-
 	public void resetCDNHosts();
-
-	public String resetPortletParameters(String url, String portletId);
 
 	public void sendError(
 			Exception exception, ActionRequest actionRequest,
@@ -1276,9 +1110,6 @@ public interface Portal {
 
 	public void setPortalInetSocketAddresses(
 		HttpServletRequest httpServletRequest);
-
-	public void storePreferences(PortletPreferences portletPreferences)
-		throws IOException, ValidatorException;
 
 	public String[] stripURLAnchor(String url, String separator);
 

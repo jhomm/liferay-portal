@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service.persistence;
 
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.wiki.exception.NoSuchNodeException;
 import com.liferay.wiki.model.WikiNode;
 
@@ -32,7 +24,8 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @ProviderType
-public interface WikiNodePersistence extends BasePersistence<WikiNode> {
+public interface WikiNodePersistence
+	extends BasePersistence<WikiNode>, CTPersistence<WikiNode> {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -1164,54 +1157,54 @@ public interface WikiNodePersistence extends BasePersistence<WikiNode> {
 	public int countByC_S(long companyId, int status);
 
 	/**
-	 * Returns the wiki node where groupId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchNodeException</code> if it could not be found.
+	 * Returns the wiki node where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchNodeException</code> if it could not be found.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the matching wiki node
 	 * @throws NoSuchNodeException if a matching wiki node could not be found
 	 */
-	public WikiNode findByG_ERC(long groupId, String externalReferenceCode)
+	public WikiNode findByERC_G(String externalReferenceCode, long groupId)
 		throws NoSuchNodeException;
 
 	/**
-	 * Returns the wiki node where groupId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the wiki node where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the matching wiki node, or <code>null</code> if a matching wiki node could not be found
 	 */
-	public WikiNode fetchByG_ERC(long groupId, String externalReferenceCode);
+	public WikiNode fetchByERC_G(String externalReferenceCode, long groupId);
 
 	/**
-	 * Returns the wiki node where groupId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the wiki node where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching wiki node, or <code>null</code> if a matching wiki node could not be found
 	 */
-	public WikiNode fetchByG_ERC(
-		long groupId, String externalReferenceCode, boolean useFinderCache);
+	public WikiNode fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache);
 
 	/**
-	 * Removes the wiki node where groupId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the wiki node where externalReferenceCode = &#63; and groupId = &#63; from the database.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the wiki node that was removed
 	 */
-	public WikiNode removeByG_ERC(long groupId, String externalReferenceCode)
+	public WikiNode removeByERC_G(String externalReferenceCode, long groupId)
 		throws NoSuchNodeException;
 
 	/**
-	 * Returns the number of wiki nodes where groupId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of wiki nodes where externalReferenceCode = &#63; and groupId = &#63;.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the number of matching wiki nodes
 	 */
-	public int countByG_ERC(long groupId, String externalReferenceCode);
+	public int countByERC_G(String externalReferenceCode, long groupId);
 
 	/**
 	 * Caches the wiki node in the entity cache if it is enabled.

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.util.structure;
@@ -32,6 +23,10 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 
 	public ColumnLayoutStructureItem(String parentItemId) {
 		super(parentItemId);
+	}
+
+	public ColumnLayoutStructureItem(String itemId, String parentItemId) {
+		super(itemId, parentItemId);
 	}
 
 	@Override
@@ -58,7 +53,7 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 	public JSONObject getItemConfigJSONObject() {
 		JSONObject jsonObject = JSONUtil.put("size", _size);
 
-		for (ViewportSize viewportSize : ViewportSize.values()) {
+		for (ViewportSize viewportSize : _viewportSizes) {
 			if (viewportSize.equals(ViewportSize.DESKTOP)) {
 				continue;
 			}
@@ -69,7 +64,7 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 					"size",
 					() -> {
 						JSONObject viewportConfigurationJSONObject =
-							_viewportConfigurations.getOrDefault(
+							_viewportConfigurationJSONObjects.getOrDefault(
 								viewportSize.getViewportSizeId(),
 								JSONFactoryUtil.createJSONObject());
 
@@ -89,17 +84,8 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 		return _size;
 	}
 
-	public Map<String, JSONObject> getViewportConfigurations() {
-		return _viewportConfigurations;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getViewportConfigurations()}
-	 */
-	@Deprecated
-	public Map<String, JSONObject> getViewportSizeConfigurations() {
-		return getViewportConfigurations();
+	public Map<String, JSONObject> getViewportConfigurationJSONObjects() {
+		return _viewportConfigurationJSONObjects;
 	}
 
 	@Override
@@ -114,9 +100,9 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 	public void setViewportConfiguration(
 		String viewportSizeId, JSONObject configurationJSONObject) {
 
-		_viewportConfigurations.put(
+		_viewportConfigurationJSONObjects.put(
 			viewportSizeId,
-			_viewportConfigurations.getOrDefault(
+			_viewportConfigurationJSONObjects.getOrDefault(
 				viewportSizeId, JSONFactoryUtil.createJSONObject()
 			).put(
 				"size",
@@ -130,24 +116,13 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 			));
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #setViewportConfiguration(String, JSONObject)}
-	 */
-	@Deprecated
-	public void setViewportSizeConfiguration(
-		String viewportSizeId, JSONObject configurationJSONObject) {
-
-		setViewportConfiguration(viewportSizeId, configurationJSONObject);
-	}
-
 	@Override
 	public void updateItemConfig(JSONObject itemConfigJSONObject) {
 		if (itemConfigJSONObject.has("size")) {
 			setSize(itemConfigJSONObject.getInt("size"));
 		}
 
-		for (ViewportSize viewportSize : ViewportSize.values()) {
+		for (ViewportSize viewportSize : _viewportSizes) {
 			if (viewportSize.equals(ViewportSize.DESKTOP)) {
 				continue;
 			}
@@ -161,8 +136,10 @@ public class ColumnLayoutStructureItem extends LayoutStructureItem {
 		}
 	}
 
+	private static final ViewportSize[] _viewportSizes = ViewportSize.values();
+
 	private int _size;
-	private final Map<String, JSONObject> _viewportConfigurations =
+	private final Map<String, JSONObject> _viewportConfigurationJSONObjects =
 		new HashMap<>();
 
 }

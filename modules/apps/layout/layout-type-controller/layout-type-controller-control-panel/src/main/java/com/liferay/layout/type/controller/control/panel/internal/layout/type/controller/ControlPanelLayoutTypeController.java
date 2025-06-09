@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.control.panel.internal.layout.type.controller;
 
 import com.liferay.application.list.PanelAppRegistry;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
 import com.liferay.layout.type.controller.BaseLayoutTypeControllerImpl;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
@@ -25,10 +15,10 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,7 +27,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = "layout.type=" + LayoutConstants.TYPE_CONTROL_PANEL,
 	service = LayoutTypeController.class
 )
@@ -54,11 +43,7 @@ public class ControlPanelLayoutTypeController
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 
-		if (!permissionChecker.isSignedIn()) {
-			return true;
-		}
-
-		return false;
+		return !permissionChecker.isSignedIn();
 	}
 
 	@Override
@@ -90,25 +75,6 @@ public class ControlPanelLayoutTypeController
 	protected void addAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.setAttribute(
 			ApplicationListWebKeys.PANEL_APP_REGISTRY, _panelAppRegistry);
-		httpServletRequest.setAttribute(
-			ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY,
-			_panelCategoryRegistry);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #createServletResponse(HttpServletResponse,
-	 *             UnsyncStringWriter)}
-	 */
-	@Deprecated
-	@Override
-	protected ServletResponse createServletResponse(
-		HttpServletResponse httpServletResponse,
-		com.liferay.portal.kernel.io.unsync.UnsyncStringWriter
-			unsyncStringWriter) {
-
-		return new PipingServletResponse(
-			httpServletResponse, unsyncStringWriter);
 	}
 
 	@Override
@@ -126,6 +92,11 @@ public class ControlPanelLayoutTypeController
 	}
 
 	@Override
+	protected ServletContext getServletContext() {
+		return _servletContext;
+	}
+
+	@Override
 	protected String getViewPage() {
 		return _VIEW_PAGE;
 	}
@@ -134,28 +105,6 @@ public class ControlPanelLayoutTypeController
 	protected void removeAttributes(HttpServletRequest httpServletRequest) {
 		httpServletRequest.removeAttribute(
 			ApplicationListWebKeys.PANEL_APP_REGISTRY);
-		httpServletRequest.removeAttribute(
-			ApplicationListWebKeys.PANEL_CATEGORY_REGISTRY);
-	}
-
-	@Reference(unbind = "-")
-	protected void setPanelAppRegistry(PanelAppRegistry panelAppRegistry) {
-		_panelAppRegistry = panelAppRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPanelCategoryRegistry(
-		PanelCategoryRegistry panelCategoryRegistry) {
-
-		_panelCategoryRegistry = panelCategoryRegistry;
-	}
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.control.panel)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext;
 	}
 
 	private static final String _EDIT_PAGE = "/layout/edit/control_panel.jsp";
@@ -166,7 +115,12 @@ public class ControlPanelLayoutTypeController
 
 	private static final String _VIEW_PAGE = "/layout/view/control_panel.jsp";
 
+	@Reference
 	private PanelAppRegistry _panelAppRegistry;
-	private PanelCategoryRegistry _panelCategoryRegistry;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.control.panel)"
+	)
+	private ServletContext _servletContext;
 
 }

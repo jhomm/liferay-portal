@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v4_3_2;
@@ -36,12 +27,13 @@ public class DDMTemplateUpgradeProcess extends UpgradeProcess {
 
 	private void _upgradeDDMTemplate() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select templateId, script FROM DDMTemplate where " +
-					"classNameId = ?");
+				"select ctCollectionId, templateId, script FROM DDMTemplate " +
+					"where classNameId = ?");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
-					"update DDMTemplate set script = ? where templateId = ?")) {
+					"update DDMTemplate set script = ? where ctCollectionId " +
+						"= ? and templateId = ?")) {
 
 			preparedStatement1.setLong(
 				1, PortalUtil.getClassNameId(DDMStructure.class));
@@ -54,7 +46,9 @@ public class DDMTemplateUpgradeProcess extends UpgradeProcess {
 							resultSet.getString("script"), "randomizer.",
 							"random."));
 					preparedStatement2.setLong(
-						2, resultSet.getLong("templateId"));
+						2, resultSet.getLong("ctCollectionId"));
+					preparedStatement2.setLong(
+						3, resultSet.getLong("templateId"));
 
 					preparedStatement2.addBatch();
 				}
@@ -66,13 +60,13 @@ public class DDMTemplateUpgradeProcess extends UpgradeProcess {
 
 	private void _upgradeDDMTemplateVersion() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select templateVersionId, script FROM DDMTemplateVersion " +
-					"where classNameId = ?");
+				"select ctCollectionId, templateVersionId, script FROM " +
+					"DDMTemplateVersion where classNameId = ?");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMTemplateVersion set script = ? where " +
-						"templateVersionId = ?")) {
+						"ctCollectionId = ? and templateVersionId = ?")) {
 
 			preparedStatement1.setLong(
 				1, PortalUtil.getClassNameId(DDMStructure.class));
@@ -85,7 +79,9 @@ public class DDMTemplateUpgradeProcess extends UpgradeProcess {
 							resultSet.getString("script"), "randomizer.",
 							"random."));
 					preparedStatement2.setLong(
-						2, resultSet.getLong("templateVersionId"));
+						2, resultSet.getLong("ctCollectionId"));
+					preparedStatement2.setLong(
+						3, resultSet.getLong("templateVersionId"));
 
 					preparedStatement2.addBatch();
 				}

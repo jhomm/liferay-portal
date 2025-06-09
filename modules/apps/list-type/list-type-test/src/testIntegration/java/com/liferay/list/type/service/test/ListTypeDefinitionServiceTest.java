@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.service.test;
@@ -28,6 +19,7 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -55,12 +47,11 @@ public class ListTypeDefinitionServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_defaultUser = _userLocalService.getDefaultUser(
-			TestPropsValues.getCompanyId());
+		_adminUser = TestPropsValues.getUser();
 		_originalName = PrincipalThreadLocal.getName();
 		_originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
-		_user = TestPropsValues.getUser();
+		_user = UserTestUtil.addUser();
 	}
 
 	@After
@@ -73,7 +64,7 @@ public class ListTypeDefinitionServiceTest {
 	@Test
 	public void testAddListTypeDefinition() throws Exception {
 		try {
-			_testAddListTypeDefinition(_defaultUser);
+			_testAddListTypeDefinition(_user);
 
 			Assert.fail();
 		}
@@ -82,17 +73,17 @@ public class ListTypeDefinitionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _user.getUserId() +
 						" must have ADD_LIST_TYPE_DEFINITION permission for"));
 		}
 
-		_testAddListTypeDefinition(_user);
+		_testAddListTypeDefinition(_adminUser);
 	}
 
 	@Test
 	public void testDeleteListTypeDefinition() throws Exception {
 		try {
-			_testDeleteListTypeDefinition(_user, _defaultUser);
+			_testDeleteListTypeDefinition(_adminUser, _user);
 
 			Assert.fail();
 		}
@@ -101,18 +92,18 @@ public class ListTypeDefinitionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _user.getUserId() +
 						" must have DELETE permission for"));
 		}
 
-		_testDeleteListTypeDefinition(_defaultUser, _defaultUser);
+		_testDeleteListTypeDefinition(_adminUser, _adminUser);
 		_testDeleteListTypeDefinition(_user, _user);
 	}
 
 	@Test
 	public void testGetListTypeDefinition() throws Exception {
 		try {
-			_testGetListTypeDefinition(_user, _defaultUser);
+			_testGetListTypeDefinition(_adminUser, _user);
 
 			Assert.fail();
 		}
@@ -121,18 +112,18 @@ public class ListTypeDefinitionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _user.getUserId() +
 						" must have VIEW permission for"));
 		}
 
-		_testGetListTypeDefinition(_defaultUser, _defaultUser);
+		_testGetListTypeDefinition(_adminUser, _adminUser);
 		_testGetListTypeDefinition(_user, _user);
 	}
 
 	@Test
 	public void testUpdateListTypeDefinition() throws Exception {
 		try {
-			_testUpdateListTypeDefinition(_user, _defaultUser);
+			_testUpdateListTypeDefinition(_adminUser, _user);
 
 			Assert.fail();
 		}
@@ -141,11 +132,11 @@ public class ListTypeDefinitionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _user.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
-		_testUpdateListTypeDefinition(_defaultUser, _defaultUser);
+		_testUpdateListTypeDefinition(_adminUser, _adminUser);
 		_testUpdateListTypeDefinition(_user, _user);
 	}
 
@@ -153,9 +144,10 @@ public class ListTypeDefinitionServiceTest {
 		throws Exception {
 
 		return _listTypeDefinitionLocalService.addListTypeDefinition(
-			user.getUserId(),
+			null, user.getUserId(),
 			Collections.singletonMap(
-				LocaleUtil.getDefault(), RandomTestUtil.randomString()));
+				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+			false, Collections.emptyList());
 	}
 
 	private void _setUser(User user) {
@@ -173,9 +165,10 @@ public class ListTypeDefinitionServiceTest {
 
 			listTypeDefinition =
 				_listTypeDefinitionService.addListTypeDefinition(
+					null,
 					Collections.singletonMap(
-						LocaleUtil.getDefault(),
-						RandomTestUtil.randomString()));
+						LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+					false, Collections.emptyList());
 		}
 		finally {
 			if (listTypeDefinition != null) {
@@ -241,10 +234,11 @@ public class ListTypeDefinitionServiceTest {
 
 			listTypeDefinition =
 				_listTypeDefinitionService.updateListTypeDefinition(
+					listTypeDefinition.getExternalReferenceCode(),
 					listTypeDefinition.getListTypeDefinitionId(),
 					Collections.singletonMap(
-						LocaleUtil.getDefault(),
-						RandomTestUtil.randomString()));
+						LocaleUtil.getDefault(), RandomTestUtil.randomString()),
+					Collections.emptyList());
 		}
 		finally {
 			if (listTypeDefinition != null) {
@@ -254,7 +248,7 @@ public class ListTypeDefinitionServiceTest {
 		}
 	}
 
-	private User _defaultUser;
+	private User _adminUser;
 
 	@Inject
 	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;

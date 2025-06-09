@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.commerce.model.CommerceOrderTypeRel;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -218,25 +211,21 @@ public interface CommerceOrderTypeRelLocalService
 	public CommerceOrderTypeRel fetchCommerceOrderTypeRel(
 		long commerceOrderTypeRelId);
 
-	/**
-	 * Returns the commerce order type rel with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order type rel's external reference code
-	 * @return the matching commerce order type rel, or <code>null</code> if a matching commerce order type rel could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceOrderTypeRel
 		fetchCommerceOrderTypeRelByExternalReferenceCode(
-			long companyId, String externalReferenceCode);
+			String externalReferenceCode, long companyId);
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceOrderTypeRelByExternalReferenceCode(long, String)}
+	 * Returns the commerce order type rel with the matching UUID and company.
+	 *
+	 * @param uuid the commerce order type rel's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce order type rel, or <code>null</code> if a matching commerce order type rel could not be found
 	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderTypeRel fetchCommerceOrderTypeRelByReferenceCode(
-		long companyId, String externalReferenceCode);
+	public CommerceOrderTypeRel fetchCommerceOrderTypeRelByUuidAndCompanyId(
+		String uuid, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -263,17 +252,22 @@ public interface CommerceOrderTypeRelLocalService
 			long commerceOrderTypeRelId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceOrderTypeRel getCommerceOrderTypeRelByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
-	 * Returns the commerce order type rel with the matching external reference code and company.
+	 * Returns the commerce order type rel with the matching UUID and company.
 	 *
+	 * @param uuid the commerce order type rel's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order type rel's external reference code
 	 * @return the matching commerce order type rel
 	 * @throws PortalException if a matching commerce order type rel could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderTypeRel getCommerceOrderTypeRelByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+	public CommerceOrderTypeRel getCommerceOrderTypeRelByUuidAndCompanyId(
+			String uuid, long companyId)
 		throws PortalException;
 
 	/**
@@ -306,6 +300,10 @@ public interface CommerceOrderTypeRelLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceOrderTypeRelsCount(String className, long classPK);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();

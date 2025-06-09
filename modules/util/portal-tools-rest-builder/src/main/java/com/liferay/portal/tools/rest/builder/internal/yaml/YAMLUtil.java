@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.rest.builder.internal.yaml;
@@ -23,6 +14,7 @@ import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.OpenAPIYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Parameter;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.PathItem;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Schema;
+import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.XML;
 
 import java.util.List;
 import java.util.Map;
@@ -70,13 +62,18 @@ public class YAMLUtil {
 	private static final Yaml _YAML_OPEN_API;
 
 	static {
-		Representer representer = new Representer();
+		Representer representer = new Representer(new DumperOptions());
 
 		PropertyUtils propertyUtils = representer.getPropertyUtils();
 
 		propertyUtils.setSkipMissingProperties(true);
 
-		Constructor configYAMLConstructor = new Constructor(ConfigYAML.class);
+		LoaderOptions loaderOptions = new LoaderOptions();
+
+		loaderOptions.setAllowDuplicateKeys(false);
+
+		Constructor configYAMLConstructor = new Constructor(
+			ConfigYAML.class, loaderOptions);
 
 		TypeDescription securityTypeDescription = new TypeDescription(
 			Security.class);
@@ -86,15 +83,12 @@ public class YAMLUtil {
 
 		configYAMLConstructor.addTypeDescription(securityTypeDescription);
 
-		LoaderOptions loaderOptions = new LoaderOptions();
-
-		loaderOptions.setAllowDuplicateKeys(false);
-
 		_YAML_CONFIG = new Yaml(
 			configYAMLConstructor, representer, new DumperOptions(),
 			loaderOptions);
 
-		Constructor openAPIYAMLConstructor = new Constructor(OpenAPIYAML.class);
+		Constructor openAPIYAMLConstructor = new Constructor(
+			OpenAPIYAML.class, loaderOptions);
 
 		TypeDescription itemsTypeDescription = new TypeDescription(Items.class);
 
@@ -177,7 +171,20 @@ public class YAMLUtil {
 		schemaTypeDescription.addPropertyParameters("required", String.class);
 
 		schemaTypeDescription.substituteProperty(
-			"x-json-map", boolean.class, "getJsonMap", "setJsonMap");
+			"x-json-map", boolean.class, "isJsonMap", "setJsonMap");
+
+		schemaTypeDescription.substituteProperty(
+			"x-json-string", boolean.class, "isJsonString", "setJsonString");
+
+		schemaTypeDescription.substituteProperty(
+			"x-merge-properties", boolean.class, "isMergeProperties",
+			"setMergeProperties");
+
+		schemaTypeDescription.substituteProperty(
+			"xml", XML.class, "getXML", "setXML");
+
+		schemaTypeDescription.addPropertyParameters(
+			"xml", String.class, XML.class);
 
 		openAPIYAMLConstructor.addTypeDescription(schemaTypeDescription);
 

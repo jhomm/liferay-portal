@@ -1,42 +1,189 @@
 definition {
 
-	macro assertEquals {
-		echo("${expected}");
+	@summary = "Default summary"
+	macro assertContain(actual = null, expected = null) {
+		echo(${expected});
 
-		echo("${actual}");
+		echo(${actual});
 
-		if ("${expected}" == "${actual}") {
+		if (contains(${actual}, ${expected})) {
 			echo("PASSED");
 		}
 		else {
-			TestUtils.fail(message = "FAILED: expected &apos;${expected}&apos;, actual was &apos;${actual}&apos;");
+			TestUtils.fail(message = "FAILED: '${actual}' doesn't contain expected text '${expected}'");
 		}
 	}
 
-	macro assertNotEquals {
-		echo("${expected}");
+	@summary = "Default summary"
+	macro assertElementNotFocused(element = null) {
+		var javascript = '''
+var e = document.evaluate("${element}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
 
-		echo("${actual}");
+var aE = document.activeElement;
 
-		if ("${expected}" != "${actual}") {
+return	aE.isEqualNode(e).toString();
+		''';
+
+		var focused = selenium.getEval(${javascript});
+
+		if (${focused} != "false") {
+			TestUtils.fail(message = "FAILED: Element is focused");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertEquals(actual = null, expected = null) {
+		echo(${expected});
+
+		echo(${actual});
+
+		if (${expected} == ${actual}) {
 			echo("PASSED");
 		}
 		else {
-			TestUtils.fail(message = "FAILED: &apos;${expected}&apos; equals &apos;${actual}&apos;");
+			TestUtils.fail(message = "FAILED: expected '${expected}', actual was '${actual}'");
 		}
 	}
 
-	macro fail {
+	@summary = "Default summary"
+	macro assertNotContain(actual = null, expected = null) {
+		echo(${expected});
+
+		echo(${actual});
+
+		if (!(contains(${actual}, ${expected}))) {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: '${actual}' contain expected text '${expected}'");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertNotEquals(actual = null, expected = null) {
+		echo(${expected});
+
+		echo(${actual});
+
+		if (${expected} != ${actual}) {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: '${expected}' equals '${actual}'");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertPartialAttributeValue(attribute = null, value = null, element = null) {
+		var attributeValue = selenium.getAttribute("${element}@${attribute}");
+
+		if (contains(${attributeValue}, ${value})) {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: Expected text '${value}' does not match actual text '${attributeValue}'");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertPartialEquals(actual = null, expected = null) {
+		echo(${expected});
+
+		echo(${actual});
+
+		if (contains(${actual}, ${expected})) {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: Expected text '${expected}' does not match actual text '${actual}'");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertTruncatedText() {
+		WaitForSPARefresh();
+
+		var javascript = '''
+var element = document.evaluate("${element}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+return (element.offsetWidth < element.scrollWidth).toString();
+
+		''';
+
+		var isTruncated = selenium.getEval(${javascript});
+
+		if (${isTruncated} != "true") {
+			TestUtils.fail(message = "FAILED: The text is not truncated");
+		}
+	}
+
+	@summary = "Default summary"
+	macro changeElementValueById(elementId = null, newValue = null) {
+		WaitForSPARefresh();
+
+		var javascript = '''
+document.getElementById('${elementId}').value = '${newValue}';
+		''';
+
+		var response = selenium.getEval(${javascript});
+	}
+
+	@summary = "Default summary"
+	macro checkElementAttributeIsNotNull(id = null, attribute = null) {
+		WaitForSPARefresh();
+
+		var javascript = '''
+			return document.getElementById("${id}").getAttribute("${attribute}").toString();
+		''';
+
+		var attributeValue = selenium.getEval(${javascript});
+
+		if (${attributeValue} != "null") {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: Element '${elementExpression}' does not exists");
+		}
+	}
+
+	@summary = "Default summary"
+	macro checkElementAttributeIsNull(id = null, attribute = null) {
+		WaitForSPARefresh();
+
+		var javascript = '''
+			let value = document.getElementById("${id}").getAttribute("${attribute}");
+			if(value === null){
+				return "null";
+			}else{
+				return value;
+			}
+		''';
+
+		var attributeValue = selenium.getEval(${javascript});
+
+		if (${attributeValue} == "null") {
+			echo("PASSED");
+		}
+		else {
+			TestUtils.fail(message = "FAILED: Element '${elementExpression}' does not exists");
+		}
+	}
+
+	@summary = "Default summary"
+	macro fail() {
 		if (!(isSet(message))) {
 			var message = "FAIL";
 		}
 
-		echo("${message}");
+		echo(${message});
 
-		fail("${message}");
+		takeScreenshot();
+
+		fail(${message});
 	}
 
-	macro getElementTextContent {
+	@summary = "Default summary"
+	macro getElementTextContent() {
 		WaitForSPARefresh();
 
 		var javascript = '''
@@ -45,71 +192,114 @@ var element = document.evaluate("${element}", document, null, XPathResult.FIRST_
 return element.textContent;
 		''';
 
-		var textContent = selenium.getEval("${javascript}");
+		var textContent = selenium.getEval(${javascript});
 
-		return "${textContent}";
+		return ${textContent};
 	}
 
-	macro hardRefresh {
+	@summary = "Default summary"
+	macro getElementWidth() {
+		var javascript = '''
+		let element = document.querySelector('.content-renderer-actionLink');
+
+		let width = element.offsetWidth;
+
+		let element_width = Math.round(width).toString();
+
+		return element_width;
+		''';
+
+		var element_width = selenium.getEval(${javascript});
+
+		return ${element_width};
+	}
+
+	@summary = "Default summary"
+	macro getScreenHeight() {
+		WaitForSPARefresh();
+
+		var screenHeight = selenium.getEval("return	screen.height.toString();");
+
+		return ${screenHeight};
+	}
+
+	@summary = "Default summary"
+	macro getScreenWidth() {
+		WaitForSPARefresh();
+
+		var screenWidth = selenium.getEval("return screen.width.toString();");
+
+		return ${screenWidth};
+	}
+
+	@summary = "Default summary"
+	macro hardRefresh() {
 		var mac = OSDetector.isApple();
 
-		if ("${mac}" == "true") {
-			RobotType.robotTypeShortcut(locator1 = "Shift + Command + r");
+		if (${mac} == "true") {
+			Type.sendKeys(
+				locator1 = "//body",
+				value1 = "Shift + Command + r");
 		}
-
 		else {
-			RobotType.robotTypeShortcut(locator1 = "Ctrl + Shift + r");
+			Type.sendKeys(
+				locator1 = "//body",
+				value1 = "Ctrl + Shift + r");
 		}
 
 		WaitForPageLoad();
 	}
 
-	macro isGreaterThan {
-		echo("${expected}");
+	@summary = "Default summary"
+	macro isGreaterThan(actual = null, expected = null) {
+		echo(${expected});
 
-		echo("${actual}");
+		echo(${actual});
 
-		var result = MathUtil.isGreaterThan("${actual}", "${expected}");
+		var result = MathUtil.isGreaterThan(${actual}, ${expected});
 
-		if ("${result}" == "true") {
+		if (${result} == "true") {
 			echo("PASSED");
 		}
 		else {
-			TestUtils.fail(message = "FAILED: actual &apos;${actual}&apos; is less than or equals to expected &apos;${expected}&apos;");
+			TestUtils.fail(message = "FAILED: actual '${actual}' is less than or equals to expected '${expected}'");
 		}
 	}
 
-	macro isLessThan {
-		echo("${expected}");
+	@summary = "Default summary"
+	macro isLessThan(actual = null, expected = null) {
+		echo(${expected});
 
-		echo("${actual}");
+		echo(${actual});
 
-		var result = MathUtil.isLessThan("${actual}", "${expected}");
+		var result = MathUtil.isLessThan(${actual}, ${expected});
 
-		if ("${result}" == "true") {
+		if (${result} == "true") {
 			echo("PASSED");
 		}
 		else {
-			TestUtils.fail(message = "FAILED: actual &apos;${actual}&apos; is greater than or equals to expected &apos;${expected}&apos;");
+			TestUtils.fail(message = "FAILED: actual '${actual}' is greater than or equals to expected '${expected}'");
 		}
 	}
 
-	macro pass {
+	@summary = "Default summary"
+	macro pass() {
 		if (!(isSet(message))) {
 			var message = "PASS";
 		}
 
-		echo("${message}");
+		echo(${message});
 	}
 
-	macro typeIntoField {
+	@summary = "Default summary"
+	macro typeIntoField() {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
 			portlet = "Pages");
 
-		SitePages.addPublicPage(pageName = "Test Page Name");
+		PagesAdmin.addPage(pageName = "Test Page Name");
 	}
 
 }

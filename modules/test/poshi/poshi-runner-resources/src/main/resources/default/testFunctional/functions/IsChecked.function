@@ -1,8 +1,10 @@
 @default = "isChecked"
 definition {
 
-	function isChecked {
-		selenium.isChecked();
+	function isChecked(locator1) {
+		selenium.waitForElementPresent(${locator1}, "true");
+
+		selenium.isChecked(${locator1});
 	}
 
 }

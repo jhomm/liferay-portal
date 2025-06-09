@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
@@ -29,9 +20,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.pricing.model.CommercePriceModifier",
-	service = {DTOConverter.class, PriceModifierDTOConverter.class}
+	service = DTOConverter.class
 )
 public class PriceModifierDTOConverter
 	implements DTOConverter<CommercePriceModifier, PriceModifier> {
@@ -55,21 +45,21 @@ public class PriceModifierDTOConverter
 
 		return new PriceModifier() {
 			{
-				actions = dtoConverterContext.getActions();
-				active = !commercePriceModifier.isInactive();
-				displayDate = commercePriceModifier.getDisplayDate();
-				expirationDate = commercePriceModifier.getExpirationDate();
-				externalReferenceCode =
-					commercePriceModifier.getExternalReferenceCode();
-				id = commercePriceModifier.getCommercePriceModifierId();
-				modifierAmount = commercePriceModifier.getModifierAmount();
-				modifierType = commercePriceModifier.getModifierType();
-				priceListExternalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				priceListId = commercePriceList.getCommercePriceListId();
-				priority = commercePriceModifier.getPriority();
-				target = commercePriceModifier.getTarget();
-				title = commercePriceModifier.getTitle();
+				setActions(dtoConverterContext::getActions);
+				setActive(() -> !commercePriceModifier.isInactive());
+				setDisplayDate(commercePriceModifier::getDisplayDate);
+				setExpirationDate(commercePriceModifier::getExpirationDate);
+				setExternalReferenceCode(
+					commercePriceModifier::getExternalReferenceCode);
+				setId(commercePriceModifier::getCommercePriceModifierId);
+				setModifierAmount(commercePriceModifier::getModifierAmount);
+				setModifierType(commercePriceModifier::getModifierType);
+				setPriceListExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setPriceListId(commercePriceList::getCommercePriceListId);
+				setPriority(commercePriceModifier::getPriority);
+				setTarget(commercePriceModifier::getTarget);
+				setTitle(commercePriceModifier::getTitle);
 			}
 		};
 	}

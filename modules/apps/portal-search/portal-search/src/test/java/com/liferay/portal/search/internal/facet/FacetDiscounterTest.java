@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.facet;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.facet.Facet;
@@ -26,8 +19,7 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.List;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -56,6 +48,36 @@ public class FacetDiscounterTest {
 		_discount(facetDiscounter, _createDocument(new String[] {"a", "c"}));
 
 		_assertFrequencies(facet, "[a=9, b=5, c=1]");
+	}
+
+	@Test
+	public void testNestedFacet() {
+		NestedFacetImpl nestedFacetImpl = new NestedFacetImpl(null, null);
+
+		nestedFacetImpl.setFilterField(_FIELD_NAME + ".fieldName");
+
+		String filterValue = RandomTestUtil.randomString();
+
+		nestedFacetImpl.setFilterValue(filterValue);
+
+		nestedFacetImpl.setPath(_FIELD_NAME);
+
+		_populate(
+			nestedFacetImpl, _toTerm("a", 10), _toTerm("b", 5),
+			_toTerm("c", 2));
+
+		FacetDiscounter facetDiscounter = new FacetDiscounter(nestedFacetImpl);
+
+		_discount(
+			facetDiscounter,
+			_createDocument(
+				new String[] {
+					_createFieldValue(filterValue, "a"),
+					_createFieldValue(RandomTestUtil.randomString(), "b"),
+					_createFieldValue(filterValue, "c")
+				}));
+
+		_assertFrequencies(nestedFacetImpl, "[a=9, b=5, c=1]");
 	}
 
 	@Test
@@ -101,13 +123,15 @@ public class FacetDiscounterTest {
 	public void testZeroedTermIsRemoved() {
 		SimpleFacet facet = new SimpleFacet(null);
 
-		_populate(facet, _toTerm("public", 1000), _toTerm("secret", 1));
+		_populate(
+			facet, _toTerm("public", 1000), _toTerm("none", 0),
+			_toTerm("secret", 1));
 
 		FacetDiscounter facetDiscounter = new FacetDiscounter(facet);
 
 		_discount(facetDiscounter, "secret");
 
-		_assertFrequencies(facet, "[public=1000]");
+		_assertFrequencies(facet, "[public=1000, none=0, secret=-1]");
 	}
 
 	private void _assertFrequencies(Facet facet, String expected) {
@@ -149,26 +173,32 @@ public class FacetDiscounterTest {
 			_FIELD_NAME, Arrays.asList(termCollectors));
 	}
 
+	private String _createFieldValue(String filterValue, String term) {
+		return StringBundler.concat(
+			"{fieldName=", filterValue, StringPool.COMMA_AND_SPACE, _FIELD_NAME,
+			"=", term, "}");
+	}
+
 	private void _discount(
 		FacetDiscounter facetDiscounter, Document... documents) {
 
-		_discount(facetDiscounter, Stream.of(documents));
+		_discount(facetDiscounter, Arrays.asList(documents));
 	}
 
 	private void _discount(
-		FacetDiscounter facetDiscounter, Stream<Document> documentsStream) {
+		FacetDiscounter facetDiscounter, List<Document> documents) {
 
-		facetDiscounter.discount(documentsStream.collect(Collectors.toList()));
+		facetDiscounter.discount(documents);
 	}
 
 	private void _discount(FacetDiscounter facetDiscounter, String... terms) {
-		Stream<Document> documentsStream = Stream.of(
-			terms
-		).map(
-			this::_createDocument
-		);
+		Document[] documents = new Document[terms.length];
 
-		_discount(facetDiscounter, documentsStream);
+		for (int i = 0; i < documents.length; i++) {
+			documents[i] = _createDocument(terms[i]);
+		}
+
+		_discount(facetDiscounter, documents);
 	}
 
 	private void _populate(Facet facet, TermCollector... termCollectors) {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.search.filter;
@@ -18,11 +9,15 @@ import com.liferay.dynamic.data.mapping.util.DDMIndexer;
 import com.liferay.headless.delivery.dynamic.data.mapping.DDMStructureField;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.QueryTerm;
+import com.liferay.portal.kernel.search.TermQuery;
+import com.liferay.portal.kernel.search.TermRangeQuery;
 import com.liferay.portal.kernel.search.WildcardQuery;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.DateRangeTermFilter;
@@ -60,6 +55,8 @@ public class FilterUtil {
 
 		return filter.accept(_ddmFilterVisitor);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(FilterUtil.class);
 
 	private static final FilterVisitor<Filter> _ddmFilterVisitor =
 		new DDMFilterVisitor();
@@ -127,7 +124,28 @@ public class FilterUtil {
 		public Filter visit(QueryFilter queryFilter) {
 			Query query = queryFilter.getQuery();
 
-			if (query instanceof WildcardQuery) {
+			if (query instanceof TermQuery) {
+				TermQuery termQuery = (TermQuery)query;
+
+				QueryTerm queryTerm = termQuery.getQueryTerm();
+
+				return _createNestedQueryFilter(
+					queryTerm.getField(), queryFilter,
+					nestedFieldName -> new TermQueryImpl(
+						nestedFieldName, queryTerm.getValue()));
+			}
+			else if (query instanceof TermRangeQuery) {
+				TermRangeQuery termRangeQuery = (TermRangeQuery)query;
+
+				return _createNestedQueryFilter(
+					termRangeQuery.getField(), queryFilter,
+					nestedFieldName -> new TermRangeQueryImpl(
+						nestedFieldName, termRangeQuery.getLowerTerm(),
+						termRangeQuery.getUpperTerm(),
+						termRangeQuery.includesLower(),
+						termRangeQuery.includesUpper()));
+			}
+			else if (query instanceof WildcardQuery) {
 				WildcardQuery wildcardQuery = (WildcardQuery)query;
 
 				QueryTerm queryTerm = wildcardQuery.getQueryTerm();
@@ -206,6 +224,10 @@ public class FilterUtil {
 					new NestedQuery(DDMIndexer.DDM_FIELD_ARRAY, booleanQuery));
 			}
 			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+
 				return originalQueryFilter;
 			}
 		}

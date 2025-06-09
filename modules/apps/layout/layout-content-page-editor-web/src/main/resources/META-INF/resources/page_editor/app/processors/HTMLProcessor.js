@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal, openToast} from 'frontend-js-web';
+import {render} from '@liferay/frontend-js-react-web';
+import {isNullOrUndefined} from '@liferay/layout-js-components-web';
 
-import isNullOrUndefined from '../utils/isNullOrUndefined';
+import HTMLEditorModal from '../components/HTMLEditorModal';
 
 /**
  * @param {HTMLElement} element HTMLElement where the editor
@@ -26,72 +18,25 @@ import isNullOrUndefined from '../utils/isNullOrUndefined';
  *  the editor is destroyed for any internal reason. This function does NOT need
  *  to be called if the editor is destroyed with destroyEditor function.
  */
-function createEditor(element, changeCallback, destroyCallback) {
-	let editor;
-
-	openModal({
-		bodyHTML: '<div class="editor-container" />',
-		buttons: [
-			{
-				displayType: 'secondary',
-				label: Liferay.Language.get('cancel'),
-				type: 'cancel',
+function createEditor(
+	_element,
+	changeCallback,
+	destroyCallback,
+	_clickPosition,
+	content
+) {
+	render(
+		HTMLEditorModal,
+		{
+			initialContent: content,
+			onClose: destroyCallback,
+			onSave: (content) => {
+				changeCallback(content);
+				destroyCallback();
 			},
-			{
-				label: Liferay.Language.get('save'),
-				onClick: () => {
-					const annotations = editor._editor
-						.getSession()
-						.getAnnotations();
-
-					const errorAnnotations = annotations.filter(
-						(annotation) => annotation.type === 'error'
-					);
-
-					if (errorAnnotations.length) {
-						const errorMessage = errorAnnotations
-							.map((annotation) => annotation.text)
-							.join('\n');
-
-						openToast({
-							message: errorMessage,
-							type: 'danger',
-						});
-					}
-					else {
-						changeCallback(editor.get('value'));
-
-						Liferay.fire('closeModal');
-					}
-				},
-			},
-		],
-		containerProps: {
-			className: '',
 		},
-		footerCssClass: 'cadmin',
-		headerCssClass: 'cadmin',
-		onClose: () => destroyCallback(),
-		onOpen: () => {
-			Liferay.Util.getTop()
-				.AUI()
-				.use('liferay-fullscreen-source-editor', (A) => {
-					const editorContainer = document.querySelector(
-						'.liferay-modal .editor-container'
-					);
-
-					if (editorContainer) {
-						editor = new A.LiferayFullScreenSourceEditor({
-							boundingBox: editorContainer,
-							previewCssClass: 'alloy-editor',
-							value: element.innerHTML,
-						}).render();
-					}
-				});
-		},
-		size: 'full-screen',
-		title: Liferay.Language.get('edit-content'),
-	});
+		document.createElement('div')
+	);
 }
 
 /**
@@ -103,7 +48,7 @@ function destroyEditor() {}
  *  given value.
  * @param {string} value Element content
  */
-function render(element, value) {
+function renderFn(element, value) {
 	if (!isNullOrUndefined(value)) {
 		element.innerHTML = value;
 	}
@@ -112,5 +57,5 @@ function render(element, value) {
 export default {
 	createEditor,
 	destroyEditor,
-	render,
+	render: renderFn,
 };

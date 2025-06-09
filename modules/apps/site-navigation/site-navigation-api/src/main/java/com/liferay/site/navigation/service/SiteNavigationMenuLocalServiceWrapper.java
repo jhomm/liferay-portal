@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 
@@ -30,40 +22,14 @@ public class SiteNavigationMenuLocalServiceWrapper
 	implements ServiceWrapper<SiteNavigationMenuLocalService>,
 			   SiteNavigationMenuLocalService {
 
+	public SiteNavigationMenuLocalServiceWrapper() {
+		this(null);
+	}
+
 	public SiteNavigationMenuLocalServiceWrapper(
 		SiteNavigationMenuLocalService siteNavigationMenuLocalService) {
 
 		_siteNavigationMenuLocalService = siteNavigationMenuLocalService;
-	}
-
-	@Override
-	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type, boolean auto,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
-			userId, groupId, name, type, auto, serviceContext);
-	}
-
-	@Override
-	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
-			userId, groupId, name, type, serviceContext);
-	}
-
-	@Override
-	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
-			userId, groupId, name, serviceContext);
 	}
 
 	/**
@@ -82,6 +48,40 @@ public class SiteNavigationMenuLocalServiceWrapper
 
 		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
 			siteNavigationMenu);
+	}
+
+	@Override
+	public SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, boolean auto,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
+			externalReferenceCode, userId, groupId, name, type, auto,
+			serviceContext);
+	}
+
+	@Override
+	public SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
+			externalReferenceCode, userId, groupId, name, type, serviceContext);
+	}
+
+	@Override
+	public SiteNavigationMenu addSiteNavigationMenu(
+			String externalReferenceCode, long userId, long groupId,
+			String name,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _siteNavigationMenuLocalService.addSiteNavigationMenu(
+			externalReferenceCode, userId, groupId, name, serviceContext);
 	}
 
 	/**
@@ -163,7 +163,18 @@ public class SiteNavigationMenuLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteSiteNavigationMenus(long groupId) {
+	public SiteNavigationMenu deleteSiteNavigationMenu(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _siteNavigationMenuLocalService.deleteSiteNavigationMenu(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
+	public void deleteSiteNavigationMenus(long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_siteNavigationMenuLocalService.deleteSiteNavigationMenus(groupId);
 	}
 
@@ -291,6 +302,15 @@ public class SiteNavigationMenuLocalServiceWrapper
 	}
 
 	@Override
+	public SiteNavigationMenu fetchSiteNavigationMenuByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return _siteNavigationMenuLocalService.
+			fetchSiteNavigationMenuByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
+	@Override
 	public SiteNavigationMenu fetchSiteNavigationMenuByName(
 		long groupId, String name) {
 
@@ -380,6 +400,16 @@ public class SiteNavigationMenuLocalServiceWrapper
 
 		return _siteNavigationMenuLocalService.getSiteNavigationMenu(
 			siteNavigationMenuId);
+	}
+
+	@Override
+	public SiteNavigationMenu getSiteNavigationMenuByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _siteNavigationMenuLocalService.
+			getSiteNavigationMenuByExternalReferenceCode(
+				externalReferenceCode, groupId);
 	}
 
 	/**
@@ -550,6 +580,11 @@ public class SiteNavigationMenuLocalServiceWrapper
 
 		return _siteNavigationMenuLocalService.updateSiteNavigationMenu(
 			siteNavigationMenu);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _siteNavigationMenuLocalService.getBasePersistence();
 	}
 
 	@Override

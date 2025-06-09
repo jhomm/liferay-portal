@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.scripting.internal;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFactory;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
@@ -22,6 +16,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.scripting.Scripting;
 import com.liferay.portal.kernel.scripting.ScriptingException;
 import com.liferay.portal.kernel.scripting.ScriptingExecutor;
+import com.liferay.portal.kernel.scripting.ScriptingValidator;
 import com.liferay.portal.kernel.scripting.UnsupportedLanguageException;
 
 import java.io.IOException;
@@ -29,27 +24,26 @@ import java.io.LineNumberReader;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.time.StopWatch;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
+import org.osgi.service.component.annotations.Deactivate;
 
 /**
  * @author Alberto Montero
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
  */
-@Component(immediate = true, service = Scripting.class)
+@Component(service = Scripting.class)
 public class ScriptingImpl implements Scripting {
 
 	@Override
 	public void clearCache(String language) throws ScriptingException {
-		ScriptingExecutor scriptingExecutor = _scriptingExecutors.get(language);
+		ScriptingExecutor scriptingExecutor =
+			_scriptingExecutorsServiceTrackerMap.getService(language);
 
 		if (scriptingExecutor == null) {
 			throw new UnsupportedLanguageException(language);
@@ -62,7 +56,8 @@ public class ScriptingImpl implements Scripting {
 	public ScriptingExecutor createScriptingExecutor(
 		String language, boolean executeInSeparateThread) {
 
-		ScriptingExecutor scriptingExecutor = _scriptingExecutors.get(language);
+		ScriptingExecutor scriptingExecutor =
+			_scriptingExecutorsServiceTrackerMap.getService(language);
 
 		return scriptingExecutor.newInstance(executeInSeparateThread);
 	}
@@ -73,7 +68,8 @@ public class ScriptingImpl implements Scripting {
 			Set<String> outputNames, String language, String script)
 		throws ScriptingException {
 
-		ScriptingExecutor scriptingExecutor = _scriptingExecutors.get(language);
+		ScriptingExecutor scriptingExecutor =
+			_scriptingExecutorsServiceTrackerMap.getService(language);
 
 		if (scriptingExecutor == null) {
 			throw new UnsupportedLanguageException(language);
@@ -89,7 +85,7 @@ public class ScriptingImpl implements Scripting {
 		}
 		catch (Exception exception) {
 			throw new ScriptingException(
-				getErrorMessage(script, exception), exception);
+				_getErrorMessage(script, exception), exception);
 		}
 		finally {
 			if (_log.isDebugEnabled()) {
@@ -110,10 +106,44 @@ public class ScriptingImpl implements Scripting {
 
 	@Override
 	public Set<String> getSupportedLanguages() {
-		return _scriptingExecutors.keySet();
+		return _scriptingExecutorsServiceTrackerMap.keySet();
 	}
 
-	protected String getErrorMessage(String script, Exception exception) {
+	@Override
+	public void validate(String language, String script)
+		throws ScriptingException {
+
+		ScriptingValidator scriptingValidator =
+			_scriptingValidatorsServiceTrackerMap.getService(language);
+
+		scriptingValidator.validate(script);
+	}
+
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_scriptingExecutorsServiceTrackerMap =
+			ServiceTrackerMapFactory.openSingleValueMap(
+				bundleContext, ScriptingExecutor.class, null,
+				ServiceReferenceMapperFactory.create(
+					bundleContext,
+					(scriptingExecutor, emitter) -> emitter.emit(
+						scriptingExecutor.getLanguage())));
+		_scriptingValidatorsServiceTrackerMap =
+			ServiceTrackerMapFactory.openSingleValueMap(
+				bundleContext, ScriptingValidator.class, null,
+				ServiceReferenceMapperFactory.create(
+					bundleContext,
+					(scriptingValidator, emitter) -> emitter.emit(
+						scriptingValidator.getLanguage())));
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_scriptingExecutorsServiceTrackerMap.close();
+		_scriptingValidatorsServiceTrackerMap.close();
+	}
+
+	private String _getErrorMessage(String script, Exception exception) {
 		StringBundler sb = new StringBundler();
 
 		sb.append(exception.getMessage());
@@ -139,7 +169,7 @@ public class ScriptingImpl implements Scripting {
 		}
 		catch (IOException ioException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 
 			sb.setIndex(0);
@@ -152,25 +182,11 @@ public class ScriptingImpl implements Scripting {
 		return sb.toString();
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void setScriptingExecutors(ScriptingExecutor scriptingExecutor) {
-		_scriptingExecutors.put(
-			scriptingExecutor.getLanguage(), scriptingExecutor);
-	}
-
-	protected void unsetScriptingExecutors(
-		ScriptingExecutor scriptingExecutor) {
-
-		_scriptingExecutors.remove(scriptingExecutor.getLanguage());
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(ScriptingImpl.class);
 
-	private final Map<String, ScriptingExecutor> _scriptingExecutors =
-		new ConcurrentHashMap<>();
+	private ServiceTrackerMap<String, ScriptingExecutor>
+		_scriptingExecutorsServiceTrackerMap;
+	private ServiceTrackerMap<String, ScriptingValidator>
+		_scriptingValidatorsServiceTrackerMap;
 
 }

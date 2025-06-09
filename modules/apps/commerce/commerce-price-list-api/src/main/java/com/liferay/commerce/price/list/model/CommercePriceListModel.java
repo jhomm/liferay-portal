@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
 import com.liferay.portal.kernel.model.WorkflowedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
 
@@ -37,8 +31,9 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CommercePriceListModel
-	extends BaseModel<CommercePriceList>, ShardedModel, StagedGroupedModel,
-			WorkflowedModel {
+	extends BaseModel<CommercePriceList>, CTModel<CommercePriceList>,
+			ExternalReferenceCodeModel, MVCCModel, ShardedModel,
+			StagedGroupedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -51,6 +46,7 @@ public interface CommercePriceListModel
 	 *
 	 * @return the primary key of this commerce price list
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -58,7 +54,40 @@ public interface CommercePriceListModel
 	 *
 	 * @param primaryKey the primary key of this commerce price list
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
+
+	/**
+	 * Returns the mvcc version of this commerce price list.
+	 *
+	 * @return the mvcc version of this commerce price list
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this commerce price list.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce price list
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this commerce price list.
+	 *
+	 * @return the ct collection ID of this commerce price list
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this commerce price list.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce price list
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the uuid of this commerce price list.
@@ -83,6 +112,7 @@ public interface CommercePriceListModel
 	 * @return the external reference code of this commerce price list
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -90,6 +120,7 @@ public interface CommercePriceListModel
 	 *
 	 * @param externalReferenceCode the external reference code of this commerce price list
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -220,18 +251,19 @@ public interface CommercePriceListModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
-	 * Returns the commerce currency ID of this commerce price list.
+	 * Returns the commerce currency code of this commerce price list.
 	 *
-	 * @return the commerce currency ID of this commerce price list
+	 * @return the commerce currency code of this commerce price list
 	 */
-	public long getCommerceCurrencyId();
+	@AutoEscape
+	public String getCommerceCurrencyCode();
 
 	/**
-	 * Sets the commerce currency ID of this commerce price list.
+	 * Sets the commerce currency code of this commerce price list.
 	 *
-	 * @param commerceCurrencyId the commerce currency ID of this commerce price list
+	 * @param commerceCurrencyCode the commerce currency code of this commerce price list
 	 */
-	public void setCommerceCurrencyId(long commerceCurrencyId);
+	public void setCommerceCurrencyCode(String commerceCurrencyCode);
 
 	/**
 	 * Returns the parent commerce price list ID of this commerce price list.
@@ -524,5 +556,9 @@ public interface CommercePriceListModel
 
 	@Override
 	public CommercePriceList cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

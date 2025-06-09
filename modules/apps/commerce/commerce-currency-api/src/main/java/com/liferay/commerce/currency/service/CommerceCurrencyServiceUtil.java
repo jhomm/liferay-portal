@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.currency.service;
 
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -41,7 +33,8 @@ public class CommerceCurrencyServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.commerce.currency.service.impl.CommerceCurrencyServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CommerceCurrency addCommerceCurrency(
-			String code, Map<java.util.Locale, String> nameMap, String symbol,
+			String externalReferenceCode, String code,
+			Map<java.util.Locale, String> nameMap, String symbol,
 			java.math.BigDecimal rate,
 			Map<java.util.Locale, String> formatPatternMap,
 			int maxFractionDigits, int minFractionDigits, String roundingMode,
@@ -49,14 +42,23 @@ public class CommerceCurrencyServiceUtil {
 		throws PortalException {
 
 		return getService().addCommerceCurrency(
-			code, nameMap, symbol, rate, formatPatternMap, maxFractionDigits,
-			minFractionDigits, roundingMode, primary, priority, active);
+			externalReferenceCode, code, nameMap, symbol, rate,
+			formatPatternMap, maxFractionDigits, minFractionDigits,
+			roundingMode, primary, priority, active);
 	}
 
 	public static void deleteCommerceCurrency(long commerceCurrencyId)
 		throws PortalException {
 
 		getService().deleteCommerceCurrency(commerceCurrencyId);
+	}
+
+	public static CommerceCurrency fetchCommerceCurrencyByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchCommerceCurrencyByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static CommerceCurrency fetchPrimaryCommerceCurrency(long companyId)
@@ -117,6 +119,17 @@ public class CommerceCurrencyServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
+	public static com.liferay.portal.kernel.search.BaseModelSearchResult
+		<CommerceCurrency> searchCommerceCurrencies(
+				long companyId, String keywords,
+				java.util.LinkedHashMap<String, Object> params, int start,
+				int end, com.liferay.portal.kernel.search.Sort sort)
+			throws PortalException {
+
+		return getService().searchCommerceCurrencies(
+			companyId, keywords, params, start, end, sort);
+	}
+
 	public static CommerceCurrency setActive(
 			long commerceCurrencyId, boolean active)
 		throws PortalException {
@@ -132,7 +145,7 @@ public class CommerceCurrencyServiceUtil {
 	}
 
 	public static CommerceCurrency updateCommerceCurrency(
-			long commerceCurrencyId, String code,
+			String externalReferenceCode, long commerceCurrencyId,
 			Map<java.util.Locale, String> nameMap, String symbol,
 			java.math.BigDecimal rate,
 			Map<java.util.Locale, String> formatPatternMap,
@@ -142,9 +155,9 @@ public class CommerceCurrencyServiceUtil {
 		throws PortalException {
 
 		return getService().updateCommerceCurrency(
-			commerceCurrencyId, code, nameMap, symbol, rate, formatPatternMap,
-			maxFractionDigits, minFractionDigits, roundingMode, primary,
-			priority, active, serviceContext);
+			externalReferenceCode, commerceCurrencyId, nameMap, symbol, rate,
+			formatPatternMap, maxFractionDigits, minFractionDigits,
+			roundingMode, primary, priority, active, serviceContext);
 	}
 
 	public static void updateExchangeRate(
@@ -160,9 +173,11 @@ public class CommerceCurrencyServiceUtil {
 	}
 
 	public static CommerceCurrencyService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceCurrencyService _service;
+	private static final Snapshot<CommerceCurrencyService> _serviceSnapshot =
+		new Snapshot<>(
+			CommerceCurrencyServiceUtil.class, CommerceCurrencyService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults;
@@ -17,9 +8,10 @@ package com.liferay.gradle.plugins.defaults;
 import com.liferay.gradle.plugins.NodeDefaultsPlugin;
 import com.liferay.gradle.plugins.defaults.internal.LiferayCIPatcherPlugin;
 import com.liferay.gradle.plugins.defaults.internal.LiferayCIPlugin;
+import com.liferay.gradle.plugins.defaults.internal.util.CIUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.node.YarnPlugin;
-import com.liferay.gradle.plugins.node.tasks.YarnInstallTask;
+import com.liferay.gradle.plugins.node.task.YarnInstallTask;
 import com.liferay.gradle.util.Validator;
 
 import org.gradle.StartParameter;
@@ -43,11 +35,11 @@ public class LiferayYarnDefaultsPlugin implements Plugin<Project> {
 		com.liferay.gradle.plugins.defaults.internal.NodeDefaultsPlugin.
 			INSTANCE.apply(project);
 
-		if (_isRunningInCIEnvironment()) {
+		if (CIUtil.isRunningInCIEnvironment()) {
 			LiferayCIPlugin.INSTANCE.apply(project);
 		}
 
-		if (_isRunningInCIPatcherEnvironment()) {
+		if (CIUtil.isRunningInCIPatcherEnvironment()) {
 			LiferayCIPatcherPlugin.INSTANCE.apply(project);
 		}
 
@@ -82,24 +74,6 @@ public class LiferayYarnDefaultsPlugin implements Plugin<Project> {
 				}
 
 			});
-	}
-
-	private boolean _isRunningInCIEnvironment() {
-		if (Validator.isNotNull(System.getenv("JENKINS_HOME"))) {
-			return true;
-		}
-
-		return false;
-	}
-
-	private boolean _isRunningInCIPatcherEnvironment() {
-		if (Validator.isNotNull(
-				System.getenv("FIX_PACKS_RELEASE_ENVIRONMENT"))) {
-
-			return true;
-		}
-
-		return false;
 	}
 
 }

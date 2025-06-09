@@ -1,90 +1,78 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import PropTypes from 'prop-types';
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 
-import ActiveFiltersBar from './components/ActiveFiltersBar';
-import BulkActions from './components/BulkActions';
-import NavBar from './components/NavBar';
-import FiltersContext from './components/filters/FiltersContext';
+import BulkActions from './controls/BulkActions';
+import NavBar from './controls/NavBar';
+import ActiveFiltersBar from './controls/filters/ActiveFiltersBar';
 
 function ManagementBar({
 	bulkActions,
 	creationMenu,
-	filters: propFilters,
+	deselectItems,
 	fluid,
-	onFiltersChange,
-	selectAllItems,
+	items,
+	onBulkActionsClear,
+	onSelectAll,
+	selectItems,
+	selectedItems,
 	selectedItemsKey,
 	selectedItemsValue,
 	selectionType,
 	showSearch,
+	showSelectAll,
 	total,
 }) {
-	const [filters, updateFilters] = useState(propFilters);
+	const pageSelectedItemsValue = selectedItemsValue.filter((id) =>
+		items.some((item) => item.id === id)
+	);
 
-	useEffect(() => {
-		onFiltersChange(filters);
-	}, [filters, onFiltersChange]);
+	function handleCheckboxClick() {
+		const itemKeys = items.map((item) => item[selectedItemsKey]);
 
-	const state = {
-		filters,
-		resetFiltersValue: () => {
-			updateFilters((filters) => {
-				return filters.map((element) => ({
-					...element,
-					additionalData: undefined,
-					odataFilterString: undefined,
-					resumeCustomLabel: undefined,
-					value: undefined,
-				}));
-			});
-		},
-		updateFilterState: (id, value, formattedValue, odataFilterString) => {
-			updateFilters((filters) => {
-				return filters.map((filter) => ({
-					...filter,
-					...(filter.id === id
-						? {
-								formattedValue,
-								odataFilterString,
-								value,
-						  }
-						: {}),
-				}));
-			});
-		},
-	};
+		if (pageSelectedItemsValue.length === items.length) {
+			return deselectItems(itemKeys);
+		}
+
+		return selectItems(itemKeys);
+	}
 
 	return (
-		<FiltersContext.Provider value={state}>
+		<>
 			{selectionType === 'multiple' && (
 				<BulkActions
 					bulkActions={bulkActions}
+					deselectItems={deselectItems}
 					fluid={fluid}
-					selectAllItems={selectAllItems}
+					handleCheckboxClick={handleCheckboxClick}
+					handleSelectAll={(value) => onSelectAll(value)}
+					items={items}
+					onClear={onBulkActionsClear}
+					pageSelectedItemsValue={pageSelectedItemsValue}
+					selectItems={selectItems}
+					selectedItems={selectedItems}
 					selectedItemsKey={selectedItemsKey}
 					selectedItemsValue={selectedItemsValue}
+					showSelectAll={showSelectAll}
 					total={total}
 				/>
 			)}
+
 			{(!selectedItemsValue.length || selectionType === 'single') && (
-				<NavBar creationMenu={creationMenu} showSearch={showSearch} />
+				<NavBar
+					creationMenu={creationMenu}
+					handleCheckboxClick={handleCheckboxClick}
+					items={items}
+					showSearch={showSearch}
+				/>
 			)}
+
 			<ActiveFiltersBar disabled={!!selectedItemsValue.length} />
-		</FiltersContext.Provider>
+		</>
 	);
 }
 
@@ -102,13 +90,19 @@ ManagementBar.propTypes = {
 		primaryItems: PropTypes.array,
 		secondaryItems: PropTypes.array,
 	}),
-	filters: PropTypes.array,
+	deselectItems: PropTypes.func.isRequired,
 	fluid: PropTypes.bool,
-	onFiltersChange: PropTypes.func.isRequired,
+	items: PropTypes.array.isRequired,
+	onBulkActionsClear: PropTypes.func.isRequired,
+	onSelectAll: PropTypes.func.isRequired,
+	pageSelectedItemsValue: PropTypes.array,
+	selectItems: PropTypes.func.isRequired,
+	selectedItems: PropTypes.array,
 	selectedItemsKey: PropTypes.string,
 	selectedItemsValue: PropTypes.array,
-	selectionType: PropTypes.oneOf(['single', 'multiple']).isRequired,
+	selectionType: PropTypes.oneOf(['single', 'multiple']),
 	showSearch: PropTypes.bool,
+	showSelectAll: PropTypes.bool,
 	total: PropTypes.number,
 };
 

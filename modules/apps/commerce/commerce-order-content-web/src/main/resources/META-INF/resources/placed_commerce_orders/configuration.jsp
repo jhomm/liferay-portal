@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,19 +17,30 @@
 
 	<div class="portlet-configuration-body-content">
 		<div class="container-fluid container-fluid-max-xl">
-			<aui:fieldset-group markupView="lexicon">
-				<aui:fieldset>
-					<div class="display-template">
-						<liferay-template:template-selector
-							className="<%= CommerceOrderContentPortlet.class.getName() %>"
-							displayStyle="<%= commerceOrderContentDisplayContext.getDisplayStyle(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
-							displayStyleGroupId="<%= commerceOrderContentDisplayContext.getDisplayStyleGroupId(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
-							refreshURL="<%= PortalUtil.getCurrentURL(request) %>"
-							showEmptyOption="<%= true %>"
-						/>
-					</div>
-				</aui:fieldset>
-			</aui:fieldset-group>
+			<div class="sheet">
+				<div class="panel-group panel-group-flush">
+					<aui:fieldset>
+						<div class="display-template">
+							<liferay-template:template-selector
+								className="<%= CommerceOrderContentPortlet.class.getName() %>"
+								displayStyle="<%= commerceOrderContentDisplayContext.getDisplayStyle(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
+								displayStyleGroupKey="<%= commerceOrderContentDisplayContext.getDisplayStyleGroupKey(CommercePortletKeys.COMMERCE_ORDER_CONTENT) %>"
+								refreshURL="<%= PortalUtil.getCurrentURL(request) %>"
+								showEmptyOption="<%= true %>"
+							/>
+						</div>
+					</aui:fieldset>
+
+					<aui:fieldset collapsible="<%= true %>" label="order-date-display">
+						<aui:input checked="<%= commerceOrderContentDisplayContext.isShowCommerceOrderCreateTime() %>" id="showCommerceOrderCreateTime" label="show-commerce-order-create-time" name="preferences--showCommerceOrderCreateTime--" type="toggle-switch" />
+					</aui:fieldset>
+
+					<aui:fieldset collapsible="<%= true %>" label="order-advanced-configuration">
+						<aui:input checked="<%= commerceOrderContentDisplayContext.isShowCommerceOrderFullAddress() %>" id="showCommerceOrderFullAddress" label="show-commerce-order-full-address" name="preferences--showCommerceOrderFullAddress--" type="toggle-switch" />
+						<aui:input checked="<%= commerceOrderContentDisplayContext.isShowCommerceOrderPhoneNumber() %>" id="showCommerceOrderPhoneNumber" label="show-commerce-order-phone-number" name="preferences--showCommerceOrderPhoneNumber--" type="toggle-switch" />
+					</aui:fieldset>
+				</div>
+			</div>
 		</div>
 	</div>
 

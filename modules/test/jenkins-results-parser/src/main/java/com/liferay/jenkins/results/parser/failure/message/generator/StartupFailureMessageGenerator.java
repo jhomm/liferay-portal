@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.failure.message.generator;
@@ -25,7 +16,7 @@ public class StartupFailureMessageGenerator
 	extends BaseFailureMessageGenerator {
 
 	@Override
-	public Element getMessageElement(String consoleText) {
+	public String getMessage(String consoleText) {
 		if (!consoleText.contains(_TOKEN_UNRESOLVED_REQUIREMENT)) {
 			return null;
 		}
@@ -34,11 +25,34 @@ public class StartupFailureMessageGenerator
 
 		start = consoleText.lastIndexOf(_TOKEN_COULD_NOT_RESOLVE_MODULE, start);
 
-		start = consoleText.lastIndexOf("\n", start);
+		int newLineIndex = consoleText.lastIndexOf("\n", start);
+
+		if (newLineIndex != -1) {
+			start = newLineIndex;
+		}
 
 		int end = consoleText.indexOf(_TOKEN_DELETING, start);
 
-		end = consoleText.lastIndexOf("\n", end);
+		if (end == -1) {
+			end = consoleText.length() - 1;
+		}
+
+		newLineIndex = consoleText.lastIndexOf("\n", end);
+
+		if (newLineIndex != -1) {
+			end = newLineIndex;
+		}
+
+		return getConsoleTextSnippet(consoleText, true, start, end);
+	}
+
+	@Override
+	public Element getMessageElement(String consoleText) {
+		Element messageElement = super.getMessageElement(consoleText);
+
+		if (messageElement == null) {
+			return null;
+		}
 
 		return Dom4JUtil.getNewElement(
 			"div", null,
@@ -46,7 +60,7 @@ public class StartupFailureMessageGenerator
 				"p", null, "Startup error: ",
 				Dom4JUtil.getNewElement(
 					"strong", null, "Unresolved Requirement(s)")),
-			getConsoleTextSnippetElement(consoleText, true, start, end));
+			messageElement);
 	}
 
 	private static final String _TOKEN_COULD_NOT_RESOLVE_MODULE =

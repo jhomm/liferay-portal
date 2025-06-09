@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.metrics.integration.internal.model.listener;
 
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.workflow.kaleo.definition.NodeType;
+import com.liferay.portal.workflow.kaleo.metrics.integration.internal.helper.IndexerHelper;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.model.KaleoNode;
+import com.liferay.portal.workflow.metrics.model.DeleteNodeRequest;
 import com.liferay.portal.workflow.metrics.search.index.NodeWorkflowMetricsIndexer;
 
 import java.util.Objects;
@@ -28,7 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Inácio Nery
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class KaleoNodeModelListener extends BaseKaleoModelListener<KaleoNode> {
 
 	@Override
@@ -45,12 +38,8 @@ public class KaleoNodeModelListener extends BaseKaleoModelListener<KaleoNode> {
 		}
 
 		_nodeWorkflowMetricsIndexer.addNode(
-			kaleoNode.getCompanyId(), kaleoNode.getCreateDate(),
-			kaleoNode.isInitial(), kaleoNode.getModifiedDate(),
-			kaleoNode.getName(), kaleoNode.getKaleoNodeId(),
-			kaleoNode.getKaleoDefinitionId(),
-			kaleoDefinitionVersion.getVersion(), kaleoNode.isTerminal(),
-			kaleoNode.getType());
+			_indexerHelper.createAddNodeRequest(
+				kaleoDefinitionVersion, kaleoNode));
 	}
 
 	@Override
@@ -59,9 +48,18 @@ public class KaleoNodeModelListener extends BaseKaleoModelListener<KaleoNode> {
 			return;
 		}
 
+		DeleteNodeRequest.Builder builder = new DeleteNodeRequest.Builder();
+
 		_nodeWorkflowMetricsIndexer.deleteNode(
-			kaleoNode.getCompanyId(), kaleoNode.getKaleoNodeId());
+			builder.companyId(
+				kaleoNode.getCompanyId()
+			).nodeId(
+				kaleoNode.getKaleoNodeId()
+			).build());
 	}
+
+	@Reference
+	private IndexerHelper _indexerHelper;
 
 	@Reference
 	private NodeWorkflowMetricsIndexer _nodeWorkflowMetricsIndexer;

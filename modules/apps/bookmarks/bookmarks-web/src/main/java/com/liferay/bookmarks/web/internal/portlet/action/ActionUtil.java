@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.web.internal.portlet.action;
@@ -28,12 +19,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -44,10 +35,10 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
+		List<BookmarksEntry> entries = new ArrayList<>();
+
 		long[] entryIds = ParamUtil.getLongValues(
 			httpServletRequest, "rowIdsBookmarksEntry");
-
-		List<BookmarksEntry> entries = new ArrayList<>();
 
 		for (long entryId : entryIds) {
 			entries.add(BookmarksEntryServiceUtil.getEntry(entryId));
@@ -65,9 +56,9 @@ public class ActionUtil {
 	public static BookmarksEntry getEntry(HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		long entryId = ParamUtil.getLong(httpServletRequest, "entryId");
-
 		BookmarksEntry entry = null;
+
+		long entryId = ParamUtil.getLong(httpServletRequest, "entryId");
 
 		if (entryId > 0) {
 			entry = BookmarksEntryServiceUtil.getEntry(entryId);
@@ -90,9 +81,9 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
-		long folderId = ParamUtil.getLong(httpServletRequest, "folderId");
-
 		BookmarksFolder folder = null;
+
+		long folderId = ParamUtil.getLong(httpServletRequest, "folderId");
 
 		if ((folderId > 0) &&
 			(folderId != BookmarksFolderConstants.DEFAULT_PARENT_FOLDER_ID)) {
@@ -126,10 +117,10 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws Exception {
 
+		List<BookmarksFolder> folders = new ArrayList<>();
+
 		long[] folderIds = ParamUtil.getLongValues(
 			httpServletRequest, "rowIdsBookmarksFolder");
-
-		List<BookmarksFolder> folders = new ArrayList<>();
 
 		for (long folderId : folderIds) {
 			if ((folderId > 0) &&

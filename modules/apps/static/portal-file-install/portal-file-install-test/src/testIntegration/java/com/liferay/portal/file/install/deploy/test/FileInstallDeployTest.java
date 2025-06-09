@@ -1,25 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.file.install.deploy.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
+import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
+import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.module.util.BundleUtil;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
@@ -33,11 +31,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import java.util.Dictionary;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -57,13 +52,9 @@ import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceRegistration;
 import org.osgi.framework.Version;
-import org.osgi.framework.wiring.BundleRequirement;
-import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
-import org.osgi.service.cm.ManagedService;
 
 /**
  * @author Matthew Tambara
@@ -77,101 +68,31 @@ public class FileInstallDeployTest {
 		new LiferayIntegrationTestRule();
 
 	@Before
-	public void setUp() {
+	public void setUp() throws Exception {
 		Bundle bundle = FrameworkUtil.getBundle(FileInstallDeployTest.class);
 
 		_bundleContext = bundle.getBundleContext();
+
+		_company = _companyLocalService.getCompany(
+			TestPropsValues.getCompanyId());
+		_group = GroupTestUtil.addGroup();
 	}
 
 	@Test
-	public void testConfiguration() throws Exception {
-		Path path = Paths.get(
-			PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR,
-			_CONFIGURATION_PID.concat(".config"));
-
-		try {
-			_updateConfiguration(
-				() -> {
-					String content = StringBundler.concat(
-						_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
-						_TEST_VALUE_1, StringPool.QUOTE);
-
-					Files.write(path, content.getBytes());
-				});
-
-			Configuration configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
-
-			Dictionary<String, Object> properties =
-				configuration.getProperties();
-
-			Assert.assertEquals(_TEST_VALUE_1, properties.get(_TEST_KEY));
-
-			_updateConfiguration(
-				() -> {
-					String content = StringBundler.concat(
-						_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
-						_TEST_VALUE_2, StringPool.QUOTE);
-
-					Files.write(path, content.getBytes());
-
-					File file = path.toFile();
-
-					file.setLastModified(file.lastModified() + 1000);
-				});
-
-			configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
-
-			properties = configuration.getProperties();
-
-			Assert.assertEquals(_TEST_VALUE_2, properties.get(_TEST_KEY));
-
-			_updateConfiguration(() -> Files.delete(path));
-
-			configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
-
-			Assert.assertNull(configuration.getProperties());
-		}
-		finally {
-			Files.deleteIfExists(path);
-		}
+	public void testCompanyScopedConfiguration() throws Exception {
+		_testScopedConfiguration(
+			ExtendedObjectClassDefinition.Scope.COMPANY.getPropertyKey(),
+			String.valueOf(_company.getCompanyId()));
 	}
 
 	@Test
-	public void testConfigurationSystem() throws Exception {
-		Path path = Paths.get(
-			PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR,
-			_CONFIGURATION_PID.concat(".config"));
-
-		String systemTestPropertyKey = StringBundler.concat(
-			_CONFIGURATION_PID, StringPool.PERIOD, _TEST_KEY);
-
-		System.setProperty(systemTestPropertyKey, _TEST_VALUE_1);
-
-		try {
-			_updateConfiguration(
-				() -> {
-					String content = StringBundler.concat(
-						_TEST_KEY, "=\"${", systemTestPropertyKey, "}\"");
-
-					Files.write(path, content.getBytes());
-				});
-
-			Configuration configuration = _configurationAdmin.getConfiguration(
-				_CONFIGURATION_PID, StringPool.QUESTION);
-
-			Dictionary<String, Object> properties =
-				configuration.getProperties();
-
-			Assert.assertEquals(_TEST_VALUE_1, properties.get(_TEST_KEY));
-		}
-		finally {
-			System.clearProperty(systemTestPropertyKey);
-
-			Files.deleteIfExists(path);
-		}
+	public void testCompanyScopedPortableKeyConfiguration() throws Exception {
+		_testScopedPortableKeyConfiguration(
+			ExtendedObjectClassDefinition.Scope.COMPANY.
+				getPortablePropertyKey(),
+			_company.getWebId(),
+			ExtendedObjectClassDefinition.Scope.COMPANY.getPropertyKey(),
+			String.valueOf(_company.getCompanyId()));
 	}
 
 	@Test
@@ -231,7 +152,8 @@ public class FileInstallDeployTest {
 
 			installCountDownLatch.await();
 
-			bundle = _getBundle(_TEST_JAR_SYMBOLIC_NAME);
+			bundle = BundleUtil.getBundle(
+				_bundleContext, _TEST_JAR_SYMBOLIC_NAME);
 
 			Assert.assertNotNull(bundle);
 
@@ -325,7 +247,8 @@ public class FileInstallDeployTest {
 
 			installCountDownLatch.await();
 
-			Bundle bundle = _getBundle(_TEST_JAR_SYMBOLIC_NAME);
+			Bundle bundle = BundleUtil.getBundle(
+				_bundleContext, _TEST_JAR_SYMBOLIC_NAME);
 
 			Assert.assertEquals(Bundle.ACTIVE, bundle.getState());
 
@@ -333,11 +256,14 @@ public class FileInstallDeployTest {
 
 			jarBuilder.setFragmentHost(
 				_TEST_JAR_SYMBOLIC_NAME
+			).setImport(
+				"jakarta.servlet"
 			).build();
 
 			fragmentInstallCountDownLatch.await();
 
-			Bundle fragmentBundle = _getBundle(testFragmentSymbolicName);
+			Bundle fragmentBundle = BundleUtil.getBundle(
+				_bundleContext, testFragmentSymbolicName);
 
 			Assert.assertEquals(Bundle.RESOLVED, fragmentBundle.getState());
 
@@ -363,129 +289,157 @@ public class FileInstallDeployTest {
 	}
 
 	@Test
-	public void testDeployOptionalDependency() throws Exception {
-		String testOptionalProviderSymbolicName =
-			_TEST_JAR_SYMBOLIC_NAME.concat(".optional.provider");
+	public void testGroupScopedConfiguration() throws Exception {
+		_testScopedConfiguration(
+			ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey(),
+			String.valueOf(_group.getGroupId()));
+	}
 
-		CountDownLatch installCountDownLatch = new CountDownLatch(1);
+	@Test
+	public void testGroupScopedPortableKeyConfiguration() throws Exception {
+		_testScopedPortableKeyConfiguration(
+			ExtendedObjectClassDefinition.Scope.GROUP.getPortablePropertyKey(),
+			_company.getWebId() + "--" + _group.getGroupKey(),
+			ExtendedObjectClassDefinition.Scope.GROUP.getPropertyKey(),
+			String.valueOf(_group.getGroupId()));
+	}
 
-		CountDownLatch optionalProviderInstallCountDownLatch =
-			new CountDownLatch(1);
+	@Test
+	public void testPortletInstanceScopedConfiguration() throws Exception {
+		_testScopedConfiguration(
+			ExtendedObjectClassDefinition.Scope.PORTLET_INSTANCE.
+				getPropertyKey(),
+			RandomTestUtil.randomString());
+	}
 
-		AtomicBoolean bundleRefreshed = new AtomicBoolean();
-
-		BundleListener bundleListener = new BundleListener() {
-
-			@Override
-			public void bundleChanged(BundleEvent bundleEvent) {
-				Bundle bundle = bundleEvent.getBundle();
-
-				int type = bundleEvent.getType();
-
-				if (Objects.equals(
-						bundle.getSymbolicName(),
-						testOptionalProviderSymbolicName) &&
-					(type == BundleEvent.STARTED)) {
-
-					optionalProviderInstallCountDownLatch.countDown();
-				}
-
-				if (Objects.equals(
-						bundle.getSymbolicName(), _TEST_JAR_SYMBOLIC_NAME) &&
-					(type == BundleEvent.STARTED)) {
-
-					if (installCountDownLatch.getCount() == 0) {
-						bundleRefreshed.set(true);
-					}
-
-					installCountDownLatch.countDown();
-				}
-			}
-
-		};
-
-		_bundleContext.addBundleListener(bundleListener);
-
+	@Test
+	public void testSystemConfiguration() throws Exception {
 		Path path = Paths.get(
-			PropsValues.MODULE_FRAMEWORK_MODULES_DIR, _TEST_JAR_NAME);
+			PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR,
+			_CONFIGURATION_PID.concat(".config"));
 
-		Path optionalProviderPath = Paths.get(
-			PropsValues.MODULE_FRAMEWORK_MODULES_DIR,
-			testOptionalProviderSymbolicName.concat(".jar"));
+		String systemTestPropertyKey = StringBundler.concat(
+			_CONFIGURATION_PID, StringPool.PERIOD, _TEST_KEY);
+
+		System.setProperty(systemTestPropertyKey, _TEST_VALUE_1);
 
 		try {
-			String optionalPackage = "com.liferay.test.optional.package";
+			Configuration configuration =
+				ConfigurationTestUtil.updateConfiguration(
+					_CONFIGURATION_PID,
+					() -> {
+						String content = StringBundler.concat(
+							_TEST_KEY, "=\"${", systemTestPropertyKey, "}\"");
 
-			JarBuilder jarBuilder = new JarBuilder(
-				path, _TEST_JAR_SYMBOLIC_NAME);
+						Files.write(path, content.getBytes());
+					});
 
-			jarBuilder.setImport(
-				optionalPackage + ";resolution:=optional"
-			).build();
+			Dictionary<String, Object> properties =
+				configuration.getProperties();
 
-			installCountDownLatch.await();
-
-			Bundle bundle = _getBundle(_TEST_JAR_SYMBOLIC_NAME);
-
-			Assert.assertEquals(Bundle.ACTIVE, bundle.getState());
-
-			BundleWiring bundleWiring = bundle.adapt(BundleWiring.class);
-
-			List<BundleRequirement> bundleRequirements =
-				bundleWiring.getRequirements(null);
-
-			Assert.assertTrue(
-				bundleRequirements.toString(), bundleRequirements.isEmpty());
-
-			jarBuilder = new JarBuilder(
-				optionalProviderPath, testOptionalProviderSymbolicName);
-
-			jarBuilder.setExport(
-				optionalPackage
-			).build();
-
-			optionalProviderInstallCountDownLatch.await();
-
-			Bundle optionalProviderBundle = _getBundle(
-				testOptionalProviderSymbolicName);
-
-			Assert.assertEquals(
-				Bundle.ACTIVE, optionalProviderBundle.getState());
-
-			bundleWiring = bundle.adapt(BundleWiring.class);
-
-			bundleRequirements = bundleWiring.getRequirements(null);
-
-			Assert.assertEquals(
-				bundleRequirements.toString(), 1, bundleRequirements.size());
-
-			BundleRequirement bundleRequirement = bundleRequirements.get(0);
-
-			Map<String, String> directives = bundleRequirement.getDirectives();
-
-			String filter = directives.get(Constants.FILTER_DIRECTIVE);
-
-			Assert.assertTrue(
-				filter + " does not contain " + optionalPackage,
-				filter.contains(optionalPackage));
+			Assert.assertEquals(_TEST_VALUE_1, properties.get(_TEST_KEY));
 		}
 		finally {
-			_bundleContext.removeBundleListener(bundleListener);
+			System.clearProperty(systemTestPropertyKey);
 
-			_uninstall(_TEST_JAR_SYMBOLIC_NAME, path);
-
-			_uninstall(testOptionalProviderSymbolicName, optionalProviderPath);
+			Files.deleteIfExists(path);
 		}
 	}
 
-	private Bundle _getBundle(String symbolicName) {
-		for (Bundle currentBundle : _bundleContext.getBundles()) {
-			if (Objects.equals(currentBundle.getSymbolicName(), symbolicName)) {
-				return currentBundle;
-			}
-		}
+	@Test
+	public void testSystemScopedConfiguration() throws Exception {
+		_testScopedConfiguration(
+			ExtendedObjectClassDefinition.Scope.SYSTEM.getPropertyKey(),
+			RandomTestUtil.randomString());
+	}
 
-		return null;
+	private void _testScopedConfiguration(
+			String dictionaryKey, String dictionaryValue)
+		throws Exception {
+
+		_testScopedPortableKeyConfiguration(
+			dictionaryKey, dictionaryValue, dictionaryKey, dictionaryValue);
+	}
+
+	private void _testScopedPortableKeyConfiguration(
+			String dictionaryKey, String dictionaryValue, String validationKey,
+			String validationValue)
+		throws Exception {
+
+		Path path = Paths.get(
+			PropsValues.MODULE_FRAMEWORK_CONFIGS_DIR,
+			_CONFIGURATION_FACTORY_PID.concat(".config"));
+
+		try {
+			Configuration configuration =
+				ConfigurationTestUtil.updateFactoryConfiguration(
+					_CONFIGURATION_FACTORY_PID,
+					() -> {
+						String content = StringBundler.concat(
+							_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
+							_TEST_VALUE_1, StringPool.QUOTE);
+
+						if (dictionaryKey != null) {
+							content = StringBundler.concat(
+								content, StringPool.RETURN_NEW_LINE,
+								dictionaryKey, StringPool.EQUAL,
+								StringPool.QUOTE, dictionaryValue,
+								StringPool.QUOTE);
+						}
+
+						Files.write(path, content.getBytes());
+					});
+
+			Dictionary<String, Object> properties =
+				configuration.getProperties();
+
+			Assert.assertEquals(_TEST_VALUE_1, properties.get(_TEST_KEY));
+
+			if (validationKey != null) {
+				Assert.assertEquals(
+					validationValue,
+					String.valueOf(properties.get(validationKey)));
+			}
+
+			configuration = ConfigurationTestUtil.updateFactoryConfiguration(
+				_CONFIGURATION_FACTORY_PID,
+				() -> {
+					String content = StringBundler.concat(
+						_TEST_KEY, StringPool.EQUAL, StringPool.QUOTE,
+						_TEST_VALUE_2, StringPool.QUOTE);
+
+					if (dictionaryKey != null) {
+						content = StringBundler.concat(
+							content, StringPool.RETURN_NEW_LINE, dictionaryKey,
+							StringPool.EQUAL, StringPool.QUOTE, dictionaryValue,
+							StringPool.QUOTE);
+					}
+
+					Files.write(path, content.getBytes());
+
+					File file = path.toFile();
+
+					file.setLastModified(file.lastModified() + 1000);
+				});
+
+			properties = configuration.getProperties();
+
+			Assert.assertEquals(_TEST_VALUE_2, properties.get(_TEST_KEY));
+
+			if (validationKey != null) {
+				Assert.assertEquals(
+					validationValue,
+					String.valueOf(properties.get(validationKey)));
+			}
+
+			configuration = ConfigurationTestUtil.updateFactoryConfiguration(
+				_CONFIGURATION_FACTORY_PID, () -> Files.delete(path));
+
+			Assert.assertNull(configuration);
+		}
+		finally {
+			Files.deleteIfExists(path);
+		}
 	}
 
 	private void _uninstall(String symbolicName, Path path) throws Exception {
@@ -526,27 +480,8 @@ public class FileInstallDeployTest {
 		}
 	}
 
-	private void _updateConfiguration(UnsafeRunnable<Exception> runnable)
-		throws Exception {
-
-		CountDownLatch countDownLatch = new CountDownLatch(2);
-
-		ServiceRegistration<ManagedService> serviceRegistration =
-			_bundleContext.registerService(
-				ManagedService.class, props -> countDownLatch.countDown(),
-				HashMapDictionaryBuilder.<String, Object>put(
-					Constants.SERVICE_PID, _CONFIGURATION_PID
-				).build());
-
-		try {
-			runnable.run();
-
-			countDownLatch.await();
-		}
-		finally {
-			serviceRegistration.unregister();
-		}
-	}
+	private static final String _CONFIGURATION_FACTORY_PID =
+		FileInstallDeployTest.class.getName() + "Configuration~foo";
 
 	private static final String _CONFIGURATION_PID =
 		FileInstallDeployTest.class.getName() + "Configuration";
@@ -573,6 +508,12 @@ public class FileInstallDeployTest {
 	}
 
 	private BundleContext _bundleContext;
+	private Company _company;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
+	private Group _group;
 
 	private class JarBuilder {
 

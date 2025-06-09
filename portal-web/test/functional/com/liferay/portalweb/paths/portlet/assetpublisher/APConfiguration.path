@@ -10,10 +10,17 @@
 </thead>
 
 <tbody>
+
 <!--ASSET_SELECTION-->
+
 <tr>
 	<td>ASSET_SELECTION_ASSET_LIST</td>
 	<td>//input[contains(@id,'selectionStyleAssetList')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ASSET_SELECTION_BASIC</td>
+	<td>//input[contains(@id,'basicInputText')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -31,13 +38,9 @@
 	<td></td>
 	<td></td>
 </tr>
-<!--SELECT COLLECTION-->
-<tr>
-	<td>ASSET_SELECTION_ASSET_LIST_TITLE</td>
-	<td>//div[contains(@id,'selectCollection')]//div[contains(@id,'title')]</td>
-	<td></td>
-</tr>
+
 <!--SUBSCRIPTIONS-->
+
 <tr>
 	<td>SUBSCRIPTIONS_ENABLE_RSS_SUBSCRIPTION_LABEL</td>
 	<td>//label[contains(@for,'enableRss')]</td>
@@ -53,10 +56,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--RULE_BUILDER-->
+
 <tr>
 	<td>RULE_BUILDER_ADD_CONDITION</td>
-	<td>//button[contains(@class,'form-builder-rule-add-condition')]</td>
+	<td>//button[contains(@class,'form-builder-rule-add-condition')] | //button[@aria-label='Add Condition']</td>
 	<td></td>
 </tr>
 <tr>
@@ -64,7 +69,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--USER_SEGMENTS_FILTER-->
+
 <tr>
 	<td>ENABLE_USER_SEGMENTS_FILTER_LABEL</td>
 	<td>//label[contains(@for,'UserSegments')]/span[contains(@class,'label')]</td>
@@ -80,7 +87,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SOURCE_SCOPE-->
+
 <tr>
 	<td>SOURCE_DROPDOWN</td>
 	<td>//div[contains(@class,'header') and contains(@class,'expanded') and contains(.,'Source')]</td>
@@ -103,7 +112,7 @@
 </tr>
 <tr>
 	<td>SOURCE_SCOPE_DELETE</td>
-	<td>//div[contains(@id,'groupsSearchContainer')]//tr[contains(.,'${key_siteName}')]/td[3]//span/a</td>
+	<td>//div[contains(@id,'groupsSearchContainer')]//tr[contains(.,'${key_siteName}')]/td[3]//a</td>
 	<td></td>
 </tr>
 <tr>
@@ -146,7 +155,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SELECT_MORE_THAN_ONE_ASSET_TYPE-->
+
 <tr>
 	<td>SELECT_MORE_THAN_ONE_ASSET_TYPE_CONTENT</td>
 	<td>//select/option[contains(.,'${key_contentName}')]</td>
@@ -154,12 +165,12 @@
 </tr>
 <tr>
 	<td>SELECT_MORE_THAN_ONE_ASSET_TYPE_MOVE_AVAILABLE</td>
-	<td>//button[contains(@class,'move-right') and contains(@title,'Move selected items from Selected to Available.')]</td>
+	<td>//button[contains(@class,'transfer-button-ltr') and contains(@aria-label,'Move selected items from Selected to Available.')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SELECT_MORE_THAN_ONE_ASSET_TYPE_MOVE_SELECTED</td>
-	<td>//button[contains(@class,'move-left') and contains(@title,'Move selected items from Available to Selected.')]</td>
+	<td>//button[contains(@class,'transfer-button-rtl') and contains(@aria-label,'Move selected items from Available to Selected.')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -167,15 +178,17 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SELECT_MORE_THAN_ONE_ASSET_SUBTYPE-->
+
 <tr>
 	<td>SELECT_MORE_THAN_ONE_ASSET_SUBTYPE_MOVE_AVAILABLE</td>
-	<td>xpath=(//button[contains(@class,'move-right') and contains(@title,'Move selected items from Selected to Available.')])[3]</td>
+	<td>xpath=(//button[contains(@class,'transfer-button-ltr') and contains(@aria-label,'Move selected items from Selected to Available.')])[3]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>SELECT_MORE_THAN_ONE_ASSET_SUBTYPE_MOVE_SELECTED</td>
-	<td>xpath=(//button[contains(@class,'move-left') and contains(@title,'Move selected items from Available to Selected.')])[3]</td>
+	<td>xpath=(//button[contains(@class,'transfer-button-rtl') and contains(@aria-label,'Move selected items from Available to Selected.')])[3]</td>
 	<td></td>
 </tr>
 <tr>
@@ -183,7 +196,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--FILTER-->
+
 <tr>
 	<td>FILTER_DROPDOWN</td>
 	<td>//div[contains(@class,'header') and contains(@class,'expanded') and contains(.,'Filter')]</td>
@@ -214,7 +229,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--CUSTOM_USER_ATTRIBUTES-->
+
 <tr>
 	<td>CUSTOM_USER_DROPDOWN</td>
 	<td>//div[contains(@class,'header') and contains(@class,'expanded') and contains(.,'Custom User Attributes')]</td>
@@ -230,7 +247,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ORDERING_AND_GROUPING-->
+
 <tr>
 	<td>ORDERING_AND_GROUPING_DROPDOWN</td>
 	<td>//div[contains(@class,'header') and contains(@class,'expanded') and contains(.,'Ordering and Grouping')]</td>
@@ -248,7 +267,7 @@
 </tr>
 <tr>
 	<td>ORDERING_AND_GROUPING_ORDER_DIRECTIONAL_ICON</td>
-	<td>//div[contains(@class,'order-by-type')]//a[contains(.,'${key_sortOrder}')][span//*[name()='svg'][contains(@class,'icon-order')]]</td>
+	<td>//div[normalize-space(text())='Order By']//following-sibling::div//button[@*='${key_sortOrder}'][..//*[name()='svg'][contains(@class,'icon-order')]]</td>
 	<td></td>
 </tr>
 <tr>
@@ -256,20 +275,17 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ASSET_SELECTION_MANUAL_ASSET_ENTRIES-->
+
 <tr>
 	<td>ASSET_SELECTION_MANUAL_ASSET_ENTRIES_SELECT_BUTTON</td>
-	<td>//fieldset[./*[normalize-space()='Asset Entries']]//a[normalize-space()='Select']</td>
+	<td>//fieldset[./*[normalize-space()='Asset Entries']]//button[normalize-space()='Select']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ASSET_SELECTION_MANUAL_ASSET_ENTRIES_SELECT_IN_DEPOT</td>
-	<td>//fieldset[./*[normalize-space()='Asset Entries']]//a[normalize-space()='Select in ${key_depotName}']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>ASSET_SELECTION_MANUAL_ASSET_ENTRIES_ASSET</td>
-	<td>//a[@data-title='Select ${key_assetType}']</td>
+	<td>//fieldset[./*[normalize-space()='Asset Entries']]//button[normalize-space()='Select in ${key_depotName}']</td>
 	<td></td>
 </tr>
 </tbody>

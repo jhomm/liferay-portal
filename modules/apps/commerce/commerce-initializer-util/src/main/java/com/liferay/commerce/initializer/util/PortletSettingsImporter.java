@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.initializer.util;
@@ -41,12 +32,13 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.template.TemplateConstants;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.io.File;
 import java.io.InputStream;
@@ -54,15 +46,13 @@ import java.io.InputStream;
 import java.util.Iterator;
 import java.util.List;
 
-import javax.portlet.PortletPreferences;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Andrea Di Giorgi
  */
-@Component(enabled = false, service = PortletSettingsImporter.class)
+@Component(service = PortletSettingsImporter.class)
 public class PortletSettingsImporter {
 
 	public void importPortletSettings(
@@ -133,7 +123,7 @@ public class PortletSettingsImporter {
 			InputStream inputStream = classLoader.getResourceAsStream(
 				displayTemplateDependenciesPath + fileName);
 
-			file = FileUtil.createTempFile(inputStream);
+			file = _file.createTempFile(inputStream);
 		}
 
 		DDMTemplate ddmTemplate = _cpFileImporter.getDDMTemplate(
@@ -176,17 +166,19 @@ public class PortletSettingsImporter {
 			}
 		}
 
-		PortletPreferences portletSetup = null;
+		PortletPreferences portletPreferences = null;
 
 		if (layout != null) {
-			portletSetup = PortletPreferencesFactoryUtil.getLayoutPortletSetup(
-				layout, portletId);
+			portletPreferences =
+				PortletPreferencesFactoryUtil.getLayoutPortletSetup(
+					layout, portletId);
 		}
 		else {
-			portletSetup = PortletPreferencesFactoryUtil.getLayoutPortletSetup(
-				serviceContext.getCompanyId(), groupId,
-				PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
-				LayoutConstants.DEFAULT_PLID, portletId, StringPool.BLANK);
+			portletPreferences =
+				PortletPreferencesFactoryUtil.getLayoutPortletSetup(
+					serviceContext.getCompanyId(), groupId,
+					PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+					LayoutConstants.DEFAULT_PLID, portletId, StringPool.BLANK);
 		}
 
 		Iterator<String> iterator = portletPreferencesJSONObject.keys();
@@ -291,10 +283,10 @@ public class PortletSettingsImporter {
 				value = portletPreferencesJSONObject.getString(key);
 			}
 
-			portletSetup.setValue(key, value);
+			portletPreferences.setValue(key, value);
 		}
 
-		portletSetup.store();
+		portletPreferences.store();
 	}
 
 	@Reference
@@ -308,6 +300,9 @@ public class PortletSettingsImporter {
 
 	@Reference
 	private DDMFormInstanceLocalService _ddmFormInstanceLocalService;
+
+	@Reference
+	private com.liferay.portal.kernel.util.File _file;
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;

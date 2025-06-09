@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.display.context;
@@ -18,6 +9,7 @@ import com.liferay.info.field.InfoField;
 import com.liferay.info.field.InfoFieldSet;
 import com.liferay.info.field.InfoFieldSetEntry;
 import com.liferay.info.field.InfoFieldValue;
+import com.liferay.info.field.type.HTMLInfoFieldType;
 import com.liferay.info.field.type.InfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
 import com.liferay.info.form.InfoForm;
@@ -32,13 +24,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.translation.info.field.TranslationInfoFieldChecker;
 import com.liferay.translation.snapshot.TranslationSnapshot;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -60,10 +52,7 @@ public class ViewTranslationDisplayContext {
 		InfoField infoField,
 		InfoFieldType.Attribute<TextInfoFieldType, Boolean> attribute) {
 
-		Optional<Boolean> attributeOptional = infoField.getAttributeOptional(
-			attribute);
-
-		return attributeOptional.orElse(false);
+		return GetterUtil.getBoolean(infoField.getAttribute(attribute));
 	}
 
 	public String getInfoFieldLabel(InfoField infoField) {
@@ -122,18 +111,21 @@ public class ViewTranslationDisplayContext {
 		return _translationSnapshot.getSourceLocale();
 	}
 
-	public String getStringValue(InfoField infoField, Locale locale) {
+	public List<String> getStringValues(InfoField infoField, Locale locale) {
+		List<String> stringValues = new ArrayList<>();
+
 		InfoItemFieldValues infoItemFieldValues =
 			_translationSnapshot.getInfoItemFieldValues();
 
-		InfoFieldValue<Object> infoFieldValue =
-			infoItemFieldValues.getInfoFieldValue(infoField.getName());
+		for (InfoFieldValue<Object> infoFieldValue :
+				infoItemFieldValues.getInfoFieldValues(
+					infoField.getUniqueId())) {
 
-		if (infoFieldValue != null) {
-			return GetterUtil.getString(infoFieldValue.getValue(locale));
+			stringValues.add(
+				GetterUtil.getString(infoFieldValue.getValue(locale)));
 		}
 
-		return null;
+		return stringValues;
 	}
 
 	public String getTargetLanguageId() {
@@ -142,6 +134,14 @@ public class ViewTranslationDisplayContext {
 
 	public Locale getTargetLocale() {
 		return _translationSnapshot.getTargetLocale();
+	}
+
+	public boolean isHTMLInfoFieldType(InfoField infoField) {
+		if (infoField.getInfoFieldType() instanceof HTMLInfoFieldType) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private final HttpServletRequest _httpServletRequest;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.persistence.test;
@@ -130,6 +121,12 @@ public class CommercePriceListChannelRelPersistenceTest {
 		CommercePriceListChannelRel newCommercePriceListChannelRel =
 			_persistence.create(pk);
 
+		newCommercePriceListChannelRel.setMvccVersion(
+			RandomTestUtil.nextLong());
+
+		newCommercePriceListChannelRel.setCtCollectionId(
+			RandomTestUtil.nextLong());
+
 		newCommercePriceListChannelRel.setUuid(RandomTestUtil.randomString());
 
 		newCommercePriceListChannelRel.setCompanyId(RandomTestUtil.nextLong());
@@ -162,6 +159,12 @@ public class CommercePriceListChannelRelPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommercePriceListChannelRel.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommercePriceListChannelRel.getMvccVersion(),
+			newCommercePriceListChannelRel.getMvccVersion());
+		Assert.assertEquals(
+			existingCommercePriceListChannelRel.getCtCollectionId(),
+			newCommercePriceListChannelRel.getCtCollectionId());
 		Assert.assertEquals(
 			existingCommercePriceListChannelRel.getUuid(),
 			newCommercePriceListChannelRel.getUuid());
@@ -268,7 +271,8 @@ public class CommercePriceListChannelRelPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CommercePriceListChannelRel", "uuid", true,
+			"CommercePriceListChannelRel", "mvccVersion", true,
+			"ctCollectionId", true, "uuid", true,
 			"CommercePriceListChannelRelId", true, "companyId", true, "userId",
 			true, "userName", true, "createDate", true, "modifiedDate", true,
 			"commerceChannelId", true, "commercePriceListId", true, "order",
@@ -599,6 +603,11 @@ public class CommercePriceListChannelRelPersistenceTest {
 
 		CommercePriceListChannelRel commercePriceListChannelRel =
 			_persistence.create(pk);
+
+		commercePriceListChannelRel.setMvccVersion(RandomTestUtil.nextLong());
+
+		commercePriceListChannelRel.setCtCollectionId(
+			RandomTestUtil.nextLong());
 
 		commercePriceListChannelRel.setUuid(RandomTestUtil.randomString());
 

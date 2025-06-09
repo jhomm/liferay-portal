@@ -1,26 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.renderer;
 
 import com.liferay.fragment.constants.FragmentEntryLinkConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.info.form.InfoForm;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
+import java.io.Serializable;
+
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 
 /**
  * @author Jorge Ferrer
@@ -29,21 +26,38 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 
 	public DefaultFragmentRendererContext(FragmentEntryLink fragmentEntryLink) {
 		_fragmentEntryLink = fragmentEntryLink;
+
+		_fragmentEntryElementId = "fragment-" + PortalUUIDUtil.generate();
 	}
 
 	@Override
-	public Optional<Object> getDisplayObjectOptional() {
-		return Optional.ofNullable(_displayObject);
+	public Serializable getAttribute(String name) {
+		return _attributes.get(name);
 	}
 
 	@Override
-	public Optional<Map<String, Object>> getFieldValuesOptional() {
-		return Optional.ofNullable(_fieldValues);
+	public Map<String, Serializable> getAttributes() {
+		return _attributes;
+	}
+
+	@Override
+	public InfoItemReference getContextInfoItemReference() {
+		return _infoItemReference;
+	}
+
+	@Override
+	public String getFragmentElementId() {
+		return _fragmentEntryElementId;
 	}
 
 	@Override
 	public FragmentEntryLink getFragmentEntryLink() {
 		return _fragmentEntryLink;
+	}
+
+	@Override
+	public InfoForm getInfoForm() {
+		return _infoForm;
 	}
 
 	@Override
@@ -77,8 +91,23 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 	}
 
 	@Override
-	public long[] getSegmentsExperienceIds() {
-		return _segmentsExperienceIds;
+	public long[] getSegmentsEntryIds() {
+		return _segmentsSegmentsEntryIds;
+	}
+
+	@Override
+	public boolean isEditMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.EDIT);
+	}
+
+	@Override
+	public boolean isIndexMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.INDEX);
+	}
+
+	@Override
+	public boolean isPreviewMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.PREVIEW);
 	}
 
 	@Override
@@ -86,12 +115,27 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 		return _useCachedContent;
 	}
 
-	public void setDisplayObject(Object object) {
-		_displayObject = object;
+	@Override
+	public boolean isViewMode() {
+		return Objects.equals(getMode(), FragmentEntryLinkConstants.VIEW);
 	}
 
-	public void setFieldValues(Map<String, Object> fieldValues) {
-		_fieldValues = fieldValues;
+	public void setAttribute(String name, Serializable value) {
+		_attributes.put(name, value);
+	}
+
+	public void setAttributes(Map<String, Serializable> attributes) {
+		_attributes = attributes;
+	}
+
+	public void setContextInfoItemReference(
+		InfoItemReference infoItemReference) {
+
+		_infoItemReference = infoItemReference;
+	}
+
+	public void setInfoForm(InfoForm infoForm) {
+		_infoForm = infoForm;
 	}
 
 	public void setLocale(Locale locale) {
@@ -118,24 +162,26 @@ public class DefaultFragmentRendererContext implements FragmentRendererContext {
 		_previewVersion = previewVersion;
 	}
 
-	public void setSegmentsExperienceIds(long[] segmentsExperienceIds) {
-		_segmentsExperienceIds = segmentsExperienceIds;
+	public void setSegmentsEntryIds(long[] segmentsSegmentsEntryIds) {
+		_segmentsSegmentsEntryIds = segmentsSegmentsEntryIds;
 	}
 
 	public void setUseCachedContent(boolean useCachedContent) {
 		_useCachedContent = useCachedContent;
 	}
 
-	private Object _displayObject;
-	private Map<String, Object> _fieldValues;
+	private Map<String, Serializable> _attributes = new LinkedHashMap<>();
+	private final String _fragmentEntryElementId;
 	private final FragmentEntryLink _fragmentEntryLink;
+	private InfoForm _infoForm;
+	private InfoItemReference _infoItemReference;
 	private Locale _locale = LocaleUtil.getMostRelevantLocale();
 	private String _mode = FragmentEntryLinkConstants.VIEW;
 	private long _previewClassNameId;
 	private long _previewClassPK;
 	private int _previewType;
 	private String _previewVersion;
-	private long[] _segmentsExperienceIds = new long[0];
+	private long[] _segmentsSegmentsEntryIds = new long[0];
 	private boolean _useCachedContent = true;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -68,31 +59,31 @@ public class JavaDetector {
 	public static boolean isJDK7() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_7)) {
-			return true;
-		}
-
-		return false;
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_7);
 	}
 
 	public static boolean isJDK8() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_8)) {
-			return true;
-		}
-
-		return false;
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_8);
 	}
 
 	public static boolean isJDK11() {
 		String javaVersion = getJavaVersion();
 
-		if (javaVersion.startsWith(_JAVA_VERSION_JDK_11)) {
-			return true;
-		}
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_11);
+	}
 
-		return false;
+	public static boolean isJDK17() {
+		String javaVersion = getJavaVersion();
+
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_17);
+	}
+
+	public static boolean isJDK21() {
+		String javaVersion = getJavaVersion();
+
+		return javaVersion.startsWith(_JAVA_VERSION_JDK_21);
 	}
 
 	public static boolean isOpenJDK() {
@@ -152,6 +143,10 @@ public class JavaDetector {
 	private static final String _JAVA_VERSION_JDK_8 = "1.8.";
 
 	private static final String _JAVA_VERSION_JDK_11 = "11";
+
+	private static final String _JAVA_VERSION_JDK_17 = "17";
+
+	private static final String _JAVA_VERSION_JDK_21 = "21";
 
 	private static final Log _log = LogFactoryUtil.getLog(JavaDetector.class);
 

@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.content.web.internal.model;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -22,28 +15,35 @@ import java.util.List;
 public class OrderItem {
 
 	public OrderItem(
-		long orderItemId, long orderId, String sku, String name, String options,
+		long cpInstanceId, String discount, String[] errorMessages,
+		String formattedQuantity, String formattedSubscriptionPeriod,
+		String name, String options, long orderId, long orderItemId,
 		List<OrderItem> orderItems, long parentOrderItemId, String price,
-		String promoPrice, String discount, int quantity, String total,
-		String thumbnail, int shippedQuantity, String[] errorMessages,
-		String formattedSubscriptionPeriod) {
+		String promoPrice, BigDecimal shippedQuantity, String sku,
+		String thumbnail, String total, String unitOfMeasureKey) {
 
-		_orderItemId = orderItemId;
-		_orderId = orderId;
-		_sku = sku;
+		_cpInstanceId = cpInstanceId;
+		_discount = discount;
+		_errorMessages = errorMessages;
+		_formattedQuantity = formattedQuantity;
+		_formattedSubscriptionPeriod = formattedSubscriptionPeriod;
 		_name = name;
 		_options = options;
+		_orderId = orderId;
+		_orderItemId = orderItemId;
 		_orderItems = orderItems;
 		_parentOrderItemId = parentOrderItemId;
 		_price = price;
 		_promoPrice = promoPrice;
-		_discount = discount;
-		_quantity = quantity;
-		_total = total;
-		_thumbnail = thumbnail;
 		_shippedQuantity = shippedQuantity;
-		_errorMessages = errorMessages;
-		_formattedSubscriptionPeriod = formattedSubscriptionPeriod;
+		_sku = sku;
+		_thumbnail = thumbnail;
+		_total = total;
+		_unitOfMeasureKey = unitOfMeasureKey;
+	}
+
+	public long getCPInstanceId() {
+		return _cpInstanceId;
 	}
 
 	public String getDiscount() {
@@ -52,6 +52,10 @@ public class OrderItem {
 
 	public String[] getErrorMessages() {
 		return _errorMessages;
+	}
+
+	public String getFormattedQuantity() {
+		return _formattedQuantity;
 	}
 
 	public String getFormattedSubscriptionPeriod() {
@@ -90,11 +94,7 @@ public class OrderItem {
 		return _promoPrice;
 	}
 
-	public int getQuantity() {
-		return _quantity;
-	}
-
-	public int getShippedQuantity() {
+	public BigDecimal getShippedQuantity() {
 		return _shippedQuantity;
 	}
 
@@ -110,8 +110,14 @@ public class OrderItem {
 		return _total;
 	}
 
+	public String getUnitOfMeasureKey() {
+		return _unitOfMeasureKey;
+	}
+
+	private final long _cpInstanceId;
 	private final String _discount;
 	private final String[] _errorMessages;
+	private final String _formattedQuantity;
 	private final String _formattedSubscriptionPeriod;
 	private final String _name;
 	private final String _options;
@@ -121,10 +127,10 @@ public class OrderItem {
 	private final long _parentOrderItemId;
 	private final String _price;
 	private final String _promoPrice;
-	private final int _quantity;
-	private final int _shippedQuantity;
+	private final BigDecimal _shippedQuantity;
 	private final String _sku;
 	private final String _thumbnail;
 	private final String _total;
+	private final String _unitOfMeasureKey;
 
 }

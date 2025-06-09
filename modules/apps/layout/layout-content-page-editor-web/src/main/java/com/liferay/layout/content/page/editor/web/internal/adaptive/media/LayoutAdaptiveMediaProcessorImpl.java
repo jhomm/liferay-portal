@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.adaptive.media;
 
 import com.liferay.adaptive.media.content.transformer.ContentTransformerHandler;
-import com.liferay.adaptive.media.content.transformer.constants.ContentTransformerContentTypes;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
 import com.liferay.adaptive.media.image.html.constants.AMImageHTMLConstants;
@@ -38,9 +28,9 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.net.URI;
 
-import java.util.Iterator;
+import java.util.EnumMap;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -55,37 +45,35 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = LayoutAdaptiveMediaProcessor.class)
+@Component(service = LayoutAdaptiveMediaProcessor.class)
 public class LayoutAdaptiveMediaProcessorImpl
 	implements LayoutAdaptiveMediaProcessor {
 
 	@Override
 	public String processAdaptiveMediaContent(String content) {
-		String processedContent = _contentTransformerHandler.transform(
-			ContentTransformerContentTypes.HTML, content);
+		String processedContent = _contentTransformerHandler.transform(content);
+
+		if (!_needParsing(processedContent)) {
+			return processedContent;
+		}
 
 		Document document = Jsoup.parse(processedContent);
 
 		try {
-			for (ViewportSize viewportSize : ViewportSize.values()) {
+			for (Map.Entry<ViewportSize, String> entry :
+					_viewportSizeEnumMap.entrySet()) {
+
 				Elements elements = document.getElementsByAttribute(
-					"data-" + viewportSize.getViewportSizeId() +
-						"-configuration");
+					entry.getValue());
 
-				Iterator<Element> iterator = elements.iterator();
-
-				while (iterator.hasNext()) {
-					Element element = iterator.next();
-
+				for (Element element : elements) {
 					if (!StringUtil.equalsIgnoreCase(
 							element.tagName(), "img")) {
 
 						continue;
 					}
 
-					String configuration = element.attr(
-						"data-" + viewportSize.getViewportSizeId() +
-							"-configuration");
+					String configuration = element.attr(entry.getValue());
 
 					long fileEntryId = GetterUtil.getLong(
 						element.attr(
@@ -98,23 +86,20 @@ public class LayoutAdaptiveMediaProcessorImpl
 					FileEntry fileEntry = _dlAppService.getFileEntry(
 						fileEntryId);
 
-					Optional<AMImageConfigurationEntry>
-						amImageConfigurationEntryOptional =
-							_amImageConfigurationHelper.
-								getAMImageConfigurationEntry(
-									fileEntry.getCompanyId(), configuration);
+					AMImageConfigurationEntry amImageConfigurationEntry =
+						_amImageConfigurationHelper.
+							getAMImageConfigurationEntry(
+								fileEntry.getCompanyId(), configuration);
 
-					if (!amImageConfigurationEntryOptional.isPresent()) {
+					if (amImageConfigurationEntry == null) {
 						continue;
 					}
-
-					AMImageConfigurationEntry amImageConfigurationEntry =
-						amImageConfigurationEntryOptional.get();
 
 					URI uri = _amImageURLFactory.createFileEntryURL(
 						fileEntry.getFileVersion(), amImageConfigurationEntry);
 
-					_appendSourceElement(document, element, uri, viewportSize);
+					_appendSourceElement(
+						document, element, uri, entry.getKey());
 				}
 			}
 
@@ -130,6 +115,19 @@ public class LayoutAdaptiveMediaProcessorImpl
 		Element bodyElement = document.body();
 
 		return bodyElement.html();
+	}
+
+	private static EnumMap<ViewportSize, String> _getViewportSizeMap() {
+		EnumMap<ViewportSize, String> viewportSizeMap = new EnumMap<>(
+			ViewportSize.class);
+
+		for (ViewportSize viewportSize : ViewportSize.values()) {
+			viewportSizeMap.put(
+				viewportSize,
+				"data-" + viewportSize.getViewportSizeId() + "-configuration");
+		}
+
+		return viewportSizeMap;
 	}
 
 	private void _appendSourceElement(
@@ -194,6 +192,16 @@ public class LayoutAdaptiveMediaProcessorImpl
 		return sb.toString();
 	}
 
+	private boolean _needParsing(String html) {
+		for (String viewportSizeConfiguration : _viewportSizeEnumMap.values()) {
+			if (html.contains(viewportSizeConfiguration)) {
+				return true;
+			}
+		}
+
+		return html.contains("--background-image-file-entry-id:");
+	}
+
 	private void _replaceCSSProperties(Document document)
 		throws PortalException {
 
@@ -237,6 +245,8 @@ public class LayoutAdaptiveMediaProcessorImpl
 
 	private static final Pattern _cssPropertyPattern = Pattern.compile(
 		"--background-image-file-entry-id:\\s*(\\d+);");
+	private static final EnumMap<ViewportSize, String> _viewportSizeEnumMap =
+		_getViewportSizeMap();
 
 	@Reference
 	private AMImageConfigurationHelper _amImageConfigurationHelper;

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.engine.html.internal;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -34,17 +26,18 @@ import com.liferay.wiki.exception.PageContentException;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiNodeLocalService;
 
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-
 import net.htmlparser.jericho.Source;
 import net.htmlparser.jericho.StartTag;
 
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -52,7 +45,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jorge Ferrer
  * @author Zsigmond Rab
  */
-@Component(service = WikiEngine.class)
+@Component(
+	configurationPid = "com.liferay.wiki.configuration.WikiGroupServiceConfiguration",
+	service = WikiEngine.class
+)
 public class HtmlEngine extends BaseWikiEngine {
 
 	@Override
@@ -92,6 +88,17 @@ public class HtmlEngine extends BaseWikiEngine {
 		return null;
 	}
 
+	@Activate
+	protected void activate(Map<String, Object> properties) {
+		_wikiGroupServiceConfiguration = ConfigurableUtil.createConfigurable(
+			WikiGroupServiceConfiguration.class, properties);
+
+		_friendlyURLMapping =
+			Portal.FRIENDLY_URL_SEPARATOR + _friendlyURLMapper.getMapping();
+
+		_router = _friendlyURLMapper.getRouter();
+	}
+
 	@Override
 	protected ServletContext getEditPageServletContext() {
 		return _servletContext;
@@ -105,37 +112,6 @@ public class HtmlEngine extends BaseWikiEngine {
 	@Override
 	protected ResourceBundleLoader getResourceBundleLoader() {
 		return ResourceBundleLoaderUtil.getPortalResourceBundleLoader();
-	}
-
-	@Reference(
-		target = "(javax.portlet.name=" + WikiPortletKeys.WIKI + ")",
-		unbind = "-"
-	)
-	protected void setFriendlyURLMapper(FriendlyURLMapper friendlyURLMapper) {
-		_friendlyURLMapping =
-			Portal.FRIENDLY_URL_SEPARATOR + friendlyURLMapper.getMapping();
-
-		_router = friendlyURLMapper.getRouter();
-	}
-
-	@Reference
-	protected void setWikiGroupServiceConfiguration(
-		WikiGroupServiceConfiguration wikiGroupServiceConfiguration) {
-
-		_wikiGroupServiceConfiguration = wikiGroupServiceConfiguration;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWikiNodeLocalService(
-		WikiNodeLocalService wikiNodeLocalService) {
-
-		_wikiNodeLocalService = wikiNodeLocalService;
-	}
-
-	protected void unsetWikiGroupServiceConfiguration(
-		WikiGroupServiceConfiguration wikiGroupServiceConfiguration) {
-
-		_wikiGroupServiceConfiguration = null;
 	}
 
 	private Map<String, Boolean> _getOutgoingLinks(WikiPage page)
@@ -197,7 +173,7 @@ public class HtmlEngine extends BaseWikiEngine {
 			}
 			catch (NoSuchNodeException noSuchNodeException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(noSuchNodeException.getMessage());
+					_log.warn(noSuchNodeException);
 				}
 			}
 		}
@@ -206,6 +182,9 @@ public class HtmlEngine extends BaseWikiEngine {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(HtmlEngine.class);
+
+	@Reference(target = "(jakarta.portlet.name=" + WikiPortletKeys.WIKI + ")")
+	private FriendlyURLMapper _friendlyURLMapper;
 
 	private String _friendlyURLMapping;
 	private Router _router;
@@ -216,6 +195,8 @@ public class HtmlEngine extends BaseWikiEngine {
 	private ServletContext _servletContext;
 
 	private WikiGroupServiceConfiguration _wikiGroupServiceConfiguration;
+
+	@Reference
 	private WikiNodeLocalService _wikiNodeLocalService;
 
 }

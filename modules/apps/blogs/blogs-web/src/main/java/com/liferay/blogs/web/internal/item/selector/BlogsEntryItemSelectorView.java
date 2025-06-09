@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.web.internal.item.selector;
 
+import com.liferay.blogs.constants.BlogsPortletKeys;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryService;
 import com.liferay.blogs.web.internal.util.BlogsEntryUtil;
@@ -30,16 +22,24 @@ import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.staging.StagingGroupHelper;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -48,14 +48,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -104,7 +96,8 @@ public class BlogsEntryItemSelectorView
 			servletRequest, servletResponse, infoItemItemSelectorCriterion,
 			portletURL, itemSelectedEventName, search,
 			new BlogsItemSelectorViewDescriptor(
-				(HttpServletRequest)servletRequest, portletURL));
+				(HttpServletRequest)servletRequest,
+				infoItemItemSelectorCriterion, portletURL));
 	}
 
 	private static final List<ItemSelectorReturnType>
@@ -123,6 +116,9 @@ public class BlogsEntryItemSelectorView
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private StagingGroupHelper _stagingGroupHelper;
 
 	private class BlogsEntryItemDescriptor
 		implements ItemSelectorViewDescriptor.ItemDescriptor {
@@ -202,8 +198,7 @@ public class BlogsEntryItemSelectorView
 			return _language.format(
 				locale, "x-ago-by-x",
 				new Object[] {
-					modifiedDateDescription,
-					HtmlUtil.escape(_blogsEntry.getUserName())
+					modifiedDateDescription, _blogsEntry.getStatusByUserName()
 				});
 		}
 
@@ -232,9 +227,12 @@ public class BlogsEntryItemSelectorView
 		implements ItemSelectorViewDescriptor<BlogsEntry> {
 
 		public BlogsItemSelectorViewDescriptor(
-			HttpServletRequest httpServletRequest, PortletURL portletURL) {
+			HttpServletRequest httpServletRequest,
+			InfoItemItemSelectorCriterion infoItemItemSelectorCriterion,
+			PortletURL portletURL) {
 
 			_httpServletRequest = httpServletRequest;
+			_infoItemItemSelectorCriterion = infoItemItemSelectorCriterion;
 			_portletURL = portletURL;
 		}
 
@@ -251,57 +249,88 @@ public class BlogsEntryItemSelectorView
 			return new InfoItemItemSelectorReturnType();
 		}
 
+		public String getOrderByCol() {
+			if (Validator.isNotNull(_orderByCol)) {
+				return _orderByCol;
+			}
+
+			_orderByCol = SearchOrderByUtil.getOrderByCol(
+				_httpServletRequest, BlogsPortletKeys.BLOGS_ADMIN,
+				"selector-order-by-type", "title");
+
+			return _orderByCol;
+		}
+
 		@Override
 		public String[] getOrderByKeys() {
 			return new String[] {"title", "display-date"};
 		}
 
+		public String getOrderByType() {
+			if (Validator.isNotNull(_orderByType)) {
+				return _orderByType;
+			}
+
+			_orderByType = SearchOrderByUtil.getOrderByType(
+				_httpServletRequest, BlogsPortletKeys.BLOGS_ADMIN,
+				"selector-order-by-type", "asc");
+
+			return _orderByType;
+		}
+
 		@Override
 		public SearchContainer<BlogsEntry> getSearchContainer() {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)_httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
 			SearchContainer<BlogsEntry> entriesSearchContainer =
 				new SearchContainer<>(
 					(PortletRequest)_httpServletRequest.getAttribute(
 						JavaConstants.JAVAX_PORTLET_REQUEST),
 					_portletURL, null, "no-entries-were-found");
 
-			String orderByCol = ParamUtil.getString(
-				_httpServletRequest, "orderByCol", "title");
-
-			entriesSearchContainer.setOrderByCol(orderByCol);
-
-			String orderByType = ParamUtil.getString(
-				_httpServletRequest, "orderByType", "asc");
-
-			entriesSearchContainer.setOrderByType(orderByType);
-
+			entriesSearchContainer.setOrderByCol(getOrderByCol());
 			entriesSearchContainer.setOrderByComparator(
 				BlogsUtil.getOrderByComparator(
-					entriesSearchContainer.getOrderByCol(),
-					entriesSearchContainer.getOrderByType()));
-
-			entriesSearchContainer.setTotal(
-				_blogsEntryService.getGroupEntriesCount(
-					themeDisplay.getScopeGroupId(),
-					WorkflowConstants.STATUS_APPROVED));
-
-			List<BlogsEntry> entriesResults =
-				_blogsEntryService.getGroupEntries(
-					themeDisplay.getScopeGroupId(),
+					getOrderByCol(), getOrderByType()));
+			entriesSearchContainer.setOrderByType(getOrderByType());
+			entriesSearchContainer.setResultsAndTotal(
+				() -> _blogsEntryService.getGroupEntries(
+					_getStagingAwareGroupId(),
 					WorkflowConstants.STATUS_APPROVED,
 					entriesSearchContainer.getStart(),
 					entriesSearchContainer.getEnd(),
-					entriesSearchContainer.getOrderByComparator());
-
-			entriesSearchContainer.setResults(entriesResults);
+					entriesSearchContainer.getOrderByComparator()),
+				_blogsEntryService.getGroupEntriesCount(
+					_getStagingAwareGroupId(),
+					WorkflowConstants.STATUS_APPROVED));
 
 			return entriesSearchContainer;
 		}
 
+		@Override
+		public boolean isMultipleSelection() {
+			return _infoItemItemSelectorCriterion.isMultiSelection();
+		}
+
+		private long _getStagingAwareGroupId() {
+			if (_groupId != null) {
+				return _groupId;
+			}
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)_httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			_groupId = _stagingGroupHelper.getStagedPortletGroupId(
+				themeDisplay.getScopeGroupId(), BlogsPortletKeys.BLOGS);
+
+			return _groupId;
+		}
+
+		private Long _groupId;
 		private HttpServletRequest _httpServletRequest;
+		private final InfoItemItemSelectorCriterion
+			_infoItemItemSelectorCriterion;
+		private String _orderByCol;
+		private String _orderByType;
 		private final PortletURL _portletURL;
 
 	}

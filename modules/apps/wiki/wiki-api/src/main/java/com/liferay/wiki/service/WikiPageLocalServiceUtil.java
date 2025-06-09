@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.wiki.model.WikiPage;
 
@@ -48,9 +40,9 @@ public class WikiPageLocalServiceUtil {
 	 */
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addPage(String, long, long, String, double, String, String, boolean,
-	 String, boolean, String, String, ServiceContext)}
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #addPage(String,
+	 long, long, String, double, String, String, boolean, String,
+	 boolean, String, String, ServiceContext)}
 	 */
 	@Deprecated
 	public static WikiPage addPage(
@@ -406,7 +398,7 @@ public class WikiPageLocalServiceUtil {
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 matching wiki page could be found
 	 */
@@ -429,6 +421,12 @@ public class WikiPageLocalServiceUtil {
 		long nodeId, String title, double version) {
 
 		return getService().fetchPage(nodeId, title, version);
+	}
+
+	public static PersistedModel fetchPersistedModel(
+		Serializable primaryKeyObj) {
+
+		return getService().fetchPersistedModel(primaryKeyObj);
 	}
 
 	public static WikiPage fetchWikiPage(long pageId) {
@@ -499,8 +497,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getDisplay(
-			long nodeId, String title, javax.portlet.PortletURL viewPageURL,
-			java.util.function.Supplier<javax.portlet.PortletURL>
+			long nodeId, String title, jakarta.portlet.PortletURL viewPageURL,
+			java.util.function.Supplier<jakarta.portlet.PortletURL>
 				editPageURLSupplier,
 			String attachmentURLPrefix)
 		throws PortalException {
@@ -567,7 +565,7 @@ public class WikiPageLocalServiceUtil {
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -641,8 +639,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			long nodeId, String title, javax.portlet.PortletURL viewPageURL,
-			javax.portlet.PortletURL editPageURL, String attachmentURLPrefix)
+			long nodeId, String title, jakarta.portlet.PortletURL viewPageURL,
+			jakarta.portlet.PortletURL editPageURL, String attachmentURLPrefix)
 		throws PortalException {
 
 		return getService().getPageDisplay(
@@ -650,8 +648,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			WikiPage page, javax.portlet.PortletURL viewPageURL,
-			javax.portlet.PortletURL editPageURL, String attachmentURLPrefix)
+			WikiPage page, jakarta.portlet.PortletURL viewPageURL,
+			jakarta.portlet.PortletURL editPageURL, String attachmentURLPrefix)
 		throws PortalException {
 
 		return getService().getPageDisplay(
@@ -659,8 +657,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			WikiPage page, javax.portlet.PortletURL viewPageURL,
-			javax.portlet.PortletURL editPageURL, String attachmentURLPrefix,
+			WikiPage page, jakarta.portlet.PortletURL viewPageURL,
+			jakarta.portlet.PortletURL editPageURL, String attachmentURLPrefix,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
@@ -670,8 +668,8 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static com.liferay.wiki.model.WikiPageDisplay getPageDisplay(
-			WikiPage page, javax.portlet.PortletURL viewPageURL,
-			java.util.function.Supplier<javax.portlet.PortletURL>
+			WikiPage page, jakarta.portlet.PortletURL viewPageURL,
+			java.util.function.Supplier<jakarta.portlet.PortletURL>
 				editPageURLSupplier,
 			String attachmentURLPrefix,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -731,6 +729,12 @@ public class WikiPageLocalServiceUtil {
 		long userId, long nodeId, int status, int start, int end) {
 
 		return getService().getPages(userId, nodeId, status, start, end);
+	}
+
+	public static List<WikiPage> getPages(
+		long groupId, long nodeId, int status, long statusByUserId) {
+
+		return getService().getPages(groupId, nodeId, status, statusByUserId);
 	}
 
 	public static List<WikiPage> getPages(
@@ -1093,9 +1097,11 @@ public class WikiPageLocalServiceUtil {
 	}
 
 	public static WikiPageLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile WikiPageLocalService _service;
+	private static final Snapshot<WikiPageLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			WikiPageLocalServiceUtil.class, WikiPageLocalService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.search.web.internal.portlet.action;
@@ -17,19 +8,19 @@ package com.liferay.commerce.product.content.search.web.internal.portlet.action;
 import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.content.search.web.internal.display.context.CPPriceRangeFacetsDisplayContext;
-import com.liferay.commerce.product.display.context.util.CPRequestHelper;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.ConfigurationAction;
-import com.liferay.portal.kernel.portlet.DefaultConfigurationAction;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
+import com.liferay.portlet.display.template.portlet.action.BaseConfigurationAction;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,12 +29,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	enabled = false, immediate = true,
-	property = "javax.portlet.name=" + CPPortletKeys.CP_PRICE_RANGE_FACETS,
+	property = "jakarta.portlet.name=" + CPPortletKeys.CP_PRICE_RANGE_FACETS,
 	service = ConfigurationAction.class
 )
 public class CPPriceRangeFacetsConfigurationAction
-	extends DefaultConfigurationAction {
+	extends BaseConfigurationAction {
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
@@ -57,9 +47,9 @@ public class CPPriceRangeFacetsConfigurationAction
 		try {
 			CPPriceRangeFacetsDisplayContext cpPriceRangeFacetsDisplayContext =
 				new CPPriceRangeFacetsDisplayContext(
-					_commercePriceFormatter, cpRequestHelper.getRenderRequest(),
-					null,
-					getPaginationStartParameterName(
+					_commercePriceFormatter, _configurationProvider,
+					cpRequestHelper.getRenderRequest(), null,
+					_getPaginationStartParameterName(
 						portletSharedSearchResponse),
 					portletSharedSearchResponse);
 
@@ -68,22 +58,13 @@ public class CPPriceRangeFacetsConfigurationAction
 				cpPriceRangeFacetsDisplayContext);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return "/price_range_facets/configuration.jsp";
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.commerce.product.content.search.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
-	protected String getPaginationStartParameterName(
+	private String _getPaginationStartParameterName(
 		PortletSharedSearchResponse portletSharedSearchResponse) {
 
 		SearchResponse searchResponse =
@@ -99,6 +80,9 @@ public class CPPriceRangeFacetsConfigurationAction
 
 	@Reference
 	private CommercePriceFormatter _commercePriceFormatter;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private PortletSharedSearchRequest _portletSharedSearchRequest;

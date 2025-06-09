@@ -1,15 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React from 'react';
 
 import filterConstants from '../../shared/components/filter/util/filterConstants.es';
@@ -19,10 +13,10 @@ import ProcessVersionFilter from '../filter/ProcessVersionFilter.es';
 import TimeRangeFilter from '../filter/TimeRangeFilter.es';
 
 const hasFilterToShow = (selectedFilters = [], hideFilters = []) =>
-	selectedFilters.filter(
+	!!selectedFilters.filter(
 		(selectedItem) =>
 			!hideFilters.find((hideItem) => selectedItem.key === hideItem)
-	).length > 0;
+	).length;
 
 export default function Header({
 	filterKeys,
@@ -36,13 +30,13 @@ export default function Header({
 
 	return (
 		<>
-			<ClayManagementToolbar className="mb-0">
-				<ClayManagementToolbar.ItemList>
-					<ClayManagementToolbar.Item>
+			<ManagementToolbar.Container className="mb-0">
+				<ManagementToolbar.ItemList>
+					<ManagementToolbar.Item>
 						<strong className="ml-0 mr-0 navbar-text">
 							{Liferay.Language.get('filter-by')}
 						</strong>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 
 					<ProcessVersionFilter
 						filterKey={filterConstants.processVersion.key}
@@ -53,17 +47,17 @@ export default function Header({
 						}}
 						processId={routeParams.processId}
 					/>
-				</ClayManagementToolbar.ItemList>
+				</ManagementToolbar.ItemList>
 
 				<SearchField
 					disabled={false}
 					placeholder={Liferay.Language.get('search-for-step-name')}
 				/>
 
-				<ClayManagementToolbar.ItemList>
+				<ManagementToolbar.ItemList>
 					<TimeRangeFilter />
-				</ClayManagementToolbar.ItemList>
-			</ClayManagementToolbar>
+				</ManagementToolbar.ItemList>
+			</ManagementToolbar.Container>
 
 			{showFiltersResult && (
 				<ResultsBar>

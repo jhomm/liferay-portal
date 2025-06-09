@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -42,18 +33,28 @@ if (portletTitleBasedNavigation) {
 %>
 
 <c:if test="<%= portletTitleBasedNavigation %>">
-	<liferay-frontend:info-bar>
-		<span class="text-secondary">
-			<liferay-ui:message arguments="<%= new String[] {entry.getUserName(), LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - entry.getModifiedDate().getTime(), true)} %>" key="x-modified-x-ago" translateArguments="<%= false %>" />
-		</span>
-	</liferay-frontend:info-bar>
+	<div class="management-bar management-bar-light navbar navbar-expand-md">
+		<clay:container-fluid>
+			<ul class="m-auto navbar-nav"></ul>
+
+			<ul class="middle navbar-nav">
+				<li class="nav-item">
+					<span class="text-secondary">
+						<liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - entry.getModifiedDate().getTime(), true) %>" key="modified-x-ago" translateArguments="<%= false %>" />
+					</span>
+				</li>
+			</ul>
+
+			<ul class="end m-auto navbar-nav"></ul>
+		</clay:container-fluid>
+	</div>
 </c:if>
 
 <div <%= portletTitleBasedNavigation ? "class=\"container-fluid container-fluid-max-xl\"" : StringPool.BLANK %>>
 	<div id="<portlet:namespace /><%= entry.getEntryId() %>">
 		<div class="autofit-padded autofit-row">
 			<div class="autofit-col">
-				<liferay-ui:user-portrait
+				<liferay-user:user-portrait
 					userId="<%= entry.getUserId() %>"
 				/>
 			</div>
@@ -61,7 +62,7 @@ if (portletTitleBasedNavigation) {
 			<div class="autofit-col autofit-col-expand">
 
 				<%
-				String userDisplayText = PortalUtil.getUserName(entry) + StringPool.COMMA_AND_SPACE + Time.getRelativeTimeDescription(entry.getDisplayDate(), locale, timeZone, announcementsDisplayContext.getDateFormatDate());
+				String userDisplayText = HtmlUtil.escape(PortalUtil.getUserName(entry) + StringPool.COMMA_AND_SPACE + Time.getRelativeTimeDescription(entry.getDisplayDate(), locale, timeZone, announcementsDisplayContext.getDateFormat()));
 				%>
 
 				<div class="autofit-row">

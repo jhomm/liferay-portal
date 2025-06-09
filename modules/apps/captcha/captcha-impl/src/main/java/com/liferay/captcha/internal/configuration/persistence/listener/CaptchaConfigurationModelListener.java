@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.captcha.internal.configuration.persistence.listener;
@@ -33,7 +24,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.captcha.configuration.CaptchaConfiguration",
 	service = ConfigurationModelListener.class
 )
@@ -50,7 +40,7 @@ public class CaptchaConfigurationModelListener
 			if (Validator.isNotNull(captchaEngine) &&
 				captchaEngine.equals(ReCaptchaImpl.class.getName())) {
 
-				validateReCaptchaKeys(properties);
+				_validateReCaptchaKeys(properties);
 			}
 		}
 		catch (CaptchaConfigurationException captchaConfigurationException) {
@@ -61,7 +51,7 @@ public class CaptchaConfigurationModelListener
 		}
 	}
 
-	protected ResourceBundle getResourceBundle() {
+	private ResourceBundle _getResourceBundle() {
 		if (_resourceBundle == null) {
 			Locale locale = LocaleThreadLocal.getThemeDisplayLocale();
 
@@ -72,8 +62,18 @@ public class CaptchaConfigurationModelListener
 		return _resourceBundle;
 	}
 
-	protected void validateReCaptchaKeys(Dictionary<String, Object> properties)
+	private void _validateReCaptchaKeys(Dictionary<String, Object> properties)
 		throws CaptchaConfigurationException {
+
+		String reCaptchaNoScriptURL = (String)properties.get(
+			"reCaptchaNoScriptURL");
+
+		if (!reCaptchaNoScriptURL.startsWith(_RECAPTCHA_URL)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-recaptcha-no-script-url-is-not-valid"));
+		}
 
 		String reCaptchaPublicKey = (String)properties.get(
 			"reCaptchaPublicKey");
@@ -81,7 +81,7 @@ public class CaptchaConfigurationModelListener
 		if (Validator.isNull(reCaptchaPublicKey)) {
 			throw new CaptchaConfigurationException(
 				ResourceBundleUtil.getString(
-					getResourceBundle(),
+					_getResourceBundle(),
 					"the-recaptcha-public-key-is-not-valid"));
 		}
 
@@ -91,10 +91,32 @@ public class CaptchaConfigurationModelListener
 		if (Validator.isNull(reCaptchaPrivateKey)) {
 			throw new CaptchaConfigurationException(
 				ResourceBundleUtil.getString(
-					getResourceBundle(),
+					_getResourceBundle(),
 					"the-recaptcha-private-key-is-not-valid"));
 		}
+
+		String reCaptchaScriptURL = (String)properties.get(
+			"reCaptchaScriptURL");
+
+		if (!reCaptchaScriptURL.startsWith(_RECAPTCHA_URL)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-recaptcha-script-url-is-not-valid"));
+		}
+
+		String reCaptchaVerifyURL = (String)properties.get(
+			"reCaptchaVerifyURL");
+
+		if (!reCaptchaVerifyURL.startsWith(_RECAPTCHA_URL)) {
+			throw new CaptchaConfigurationException(
+				ResourceBundleUtil.getString(
+					_getResourceBundle(),
+					"the-recaptcha-verify-url-is-not-valid"));
+		}
 	}
+
+	private static final String _RECAPTCHA_URL = "https://www.google.com";
 
 	private ResourceBundle _resourceBundle;
 

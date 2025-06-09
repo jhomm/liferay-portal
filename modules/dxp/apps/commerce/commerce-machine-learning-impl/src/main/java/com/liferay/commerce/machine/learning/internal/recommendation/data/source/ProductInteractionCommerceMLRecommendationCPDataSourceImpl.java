@@ -1,39 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.internal.recommendation.data.source;
 
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.machine.learning.recommendation.ProductInteractionCommerceMLRecommendation;
 import com.liferay.commerce.machine.learning.recommendation.ProductInteractionCommerceMLRecommendationManager;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.constants.CPWebKeys;
 import com.liferay.commerce.product.data.source.CPDataSource;
 import com.liferay.commerce.product.data.source.CPDataSourceResult;
+import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +34,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Ferrari
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "commerce.product.data.source.name=" + ProductInteractionCommerceMLRecommendationCPDataSourceImpl.NAME,
 	service = CPDataSource.class
 )
@@ -54,7 +45,7 @@ public class ProductInteractionCommerceMLRecommendationCPDataSourceImpl
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(
+		return _language.get(
 			getResourceBundle(locale),
 			"product-interaction-based-recommendations");
 	}
@@ -69,10 +60,15 @@ public class ProductInteractionCommerceMLRecommendationCPDataSourceImpl
 			HttpServletRequest httpServletRequest, int start, int end)
 		throws Exception {
 
-		CommerceAccount commerceAccount =
-			commerceAccountHelper.getCurrentCommerceAccount(httpServletRequest);
+		long groupId = portal.getScopeGroupId(httpServletRequest);
 
-		if (commerceAccount == null) {
+		AccountEntry accountEntry =
+			commerceAccountHelper.getCurrentAccountEntry(
+				_commerceChannelLocalService.
+					getCommerceChannelGroupIdBySiteGroupId(groupId),
+				httpServletRequest);
+
+		if (accountEntry == null) {
 			return new CPDataSourceResult(Collections.emptyList(), 0);
 		}
 
@@ -94,8 +90,6 @@ public class ProductInteractionCommerceMLRecommendationCPDataSourceImpl
 		if (productInteractionCommerceMLRecommendations.isEmpty()) {
 			return new CPDataSourceResult(Collections.emptyList(), 0);
 		}
-
-		long groupId = portal.getScopeGroupId(httpServletRequest);
 
 		List<CPCatalogEntry> cpCatalogEntries = new ArrayList<>();
 
@@ -124,7 +118,7 @@ public class ProductInteractionCommerceMLRecommendationCPDataSourceImpl
 			try {
 				CPCatalogEntry recommendedCPCatalogEntry =
 					cpDefinitionHelper.getCPCatalogEntry(
-						commerceAccount.getCommerceAccountId(), groupId,
+						accountEntry.getAccountEntryId(), groupId,
 						recommendedEntryClassPK,
 						portal.getLocale(httpServletRequest));
 
@@ -132,7 +126,7 @@ public class ProductInteractionCommerceMLRecommendationCPDataSourceImpl
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -144,6 +138,12 @@ public class ProductInteractionCommerceMLRecommendationCPDataSourceImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ProductInteractionCommerceMLRecommendationCPDataSourceImpl.class);
+
+	@Reference
+	private CommerceChannelLocalService _commerceChannelLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference(unbind = "-")
 	private ProductInteractionCommerceMLRecommendationManager

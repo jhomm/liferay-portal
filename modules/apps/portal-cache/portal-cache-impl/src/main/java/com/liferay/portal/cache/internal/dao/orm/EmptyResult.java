@@ -1,24 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cache.internal.dao.orm;
+
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 /**
@@ -30,10 +25,12 @@ public class EmptyResult implements Externalizable {
 	}
 
 	public EmptyResult(Object[] args) {
-		_args = args;
+		_args = _stripPagination(args);
 	}
 
 	public boolean matches(Object[] args) {
+		args = _stripPagination(args);
+
 		if (args.length != _args.length) {
 			return false;
 		}
@@ -57,6 +54,36 @@ public class EmptyResult implements Externalizable {
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeObject(_args);
+	}
+
+	private Object[] _stripPagination(Object[] args) {
+		if ((args.length >= 3) &&
+			(args[args.length - 1] instanceof OrderByComparator) &&
+			(args[args.length - 2] instanceof Integer) &&
+			(args[args.length - 3] instanceof Integer)) {
+
+			int start = (Integer)args[args.length - 3];
+			int end = (Integer)args[args.length - 2];
+
+			if (start == end) {
+				if (start == QueryUtil.ALL_POS) {
+					return Arrays.copyOf(args, args.length - 3);
+				}
+
+				// Account for a empty page
+
+				args = Arrays.copyOf(args, args.length - 1);
+
+				args[args.length - 1] = 0;
+				args[args.length - 2] = 0;
+
+				return args;
+			}
+
+			return Arrays.copyOf(args, args.length - 2);
+		}
+
+		return args;
 	}
 
 	private Object[] _args;

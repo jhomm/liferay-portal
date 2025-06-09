@@ -1,30 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.display.context;
 
-import com.liferay.change.tracking.model.CTPreferences;
-import com.liferay.change.tracking.service.CTPreferencesLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.language.Language;
+import com.liferay.change.tracking.configuration.CTSettingsConfiguration;
+import com.liferay.change.tracking.web.internal.configuration.helper.CTSettingsConfigurationHelper;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Máté Thurzó
@@ -33,29 +23,27 @@ import javax.servlet.http.HttpServletRequest;
 public class PublicationsConfigurationDisplayContext {
 
 	public PublicationsConfigurationDisplayContext(
-		CTPreferencesLocalService ctPreferencesLocalService,
-		HttpServletRequest httpServletRequest, Language language,
-		RenderResponse renderResponse) {
+		CTSettingsConfigurationHelper ctSettingsConfigurationHelper,
+		HttpServletRequest httpServletRequest, RenderResponse renderResponse) {
 
 		_httpServletRequest = httpServletRequest;
+		_renderResponse = renderResponse;
 
 		ThemeDisplay themeDisplay =
-			(ThemeDisplay)_httpServletRequest.getAttribute(
+			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		CTPreferences ctPreferences =
-			ctPreferencesLocalService.fetchCTPreferences(
-				themeDisplay.getCompanyId(), 0);
+		CTSettingsConfiguration ctSettingsConfiguration =
+			ctSettingsConfigurationHelper.getCTSettingsConfiguration(
+				themeDisplay.getCompanyId());
 
-		if (ctPreferences != null) {
-			_publicationsEnabled = true;
-		}
-		else {
-			_publicationsEnabled = false;
-		}
-
-		_language = language;
-		_renderResponse = renderResponse;
+		_publicationsEnabled = ctSettingsConfiguration.enabled();
+		_remoteClientId = ctSettingsConfiguration.remoteClientId();
+		_remoteClientSecret = ctSettingsConfiguration.remoteClientSecret();
+		_remoteEnabled = ctSettingsConfiguration.remoteEnabled();
+		_sandboxOnlyEnabled = ctSettingsConfiguration.sandboxEnabled();
+		_unapprovedChangesAllowed =
+			ctSettingsConfiguration.unapprovedChangesAllowed();
 	}
 
 	public String getActionURL() {
@@ -82,14 +70,38 @@ public class PublicationsConfigurationDisplayContext {
 		return _navigation;
 	}
 
+	public String getRemoteClientId() {
+		return _remoteClientId;
+	}
+
+	public String getRemoteClientSecret() {
+		return _remoteClientSecret;
+	}
+
 	public boolean isPublicationsEnabled() {
 		return _publicationsEnabled;
 	}
 
+	public boolean isRemoteEnabled() {
+		return _remoteEnabled;
+	}
+
+	public boolean isSandboxOnlyEnabled() {
+		return _sandboxOnlyEnabled;
+	}
+
+	public boolean isUnapprovedChangesAllowed() {
+		return _unapprovedChangesAllowed;
+	}
+
 	private final HttpServletRequest _httpServletRequest;
-	private final Language _language;
 	private String _navigation;
 	private final boolean _publicationsEnabled;
+	private final String _remoteClientId;
+	private final String _remoteClientSecret;
+	private final boolean _remoteEnabled;
 	private final RenderResponse _renderResponse;
+	private final boolean _sandboxOnlyEnabled;
+	private final boolean _unapprovedChangesAllowed;
 
 }

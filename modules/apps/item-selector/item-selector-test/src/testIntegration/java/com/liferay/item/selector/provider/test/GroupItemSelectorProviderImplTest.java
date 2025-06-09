@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.item.selector.provider.test;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -76,6 +68,47 @@ public class GroupItemSelectorProviderImplTest {
 
 			Assert.assertTrue(groups.contains(company.getGroup()));
 		}
+
+		List<Group> groups = _groupItemSelectorProvider.getGroups(
+			_group.getCompanyId(), _group.getGroupId(), null, 0, 20);
+
+		int originalGroupsSize = groups.size();
+
+		Assert.assertEquals(
+			groups.toString(), originalGroupsSize, groups.size());
+
+		Assert.assertEquals(
+			originalGroupsSize,
+			_groupItemSelectorProvider.getGroupsCount(
+				_group.getCompanyId(), _group.getGroupId(), null));
+
+		Group childGroup = GroupTestUtil.addGroup(_group.getGroupId());
+
+		groups = _groupItemSelectorProvider.getGroups(
+			_group.getCompanyId(), _group.getGroupId(), null, 0, 20);
+
+		Assert.assertEquals(
+			groups.toString(), originalGroupsSize + 1, groups.size());
+
+		Assert.assertEquals(
+			originalGroupsSize + 1,
+			_groupItemSelectorProvider.getGroupsCount(
+				_group.getCompanyId(), _group.getGroupId(), null));
+
+		childGroup.setActive(false);
+
+		_groupLocalService.updateGroup(childGroup);
+
+		groups = _groupItemSelectorProvider.getGroups(
+			_group.getCompanyId(), _group.getGroupId(), null, 0, 20);
+
+		Assert.assertEquals(
+			groups.toString(), originalGroupsSize, groups.size());
+
+		Assert.assertEquals(
+			originalGroupsSize,
+			_groupItemSelectorProvider.getGroupsCount(
+				_group.getCompanyId(), _group.getGroupId(), null));
 	}
 
 	@Test
@@ -92,8 +125,13 @@ public class GroupItemSelectorProviderImplTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
-	@Inject(filter = "component.name=*.GroupItemSelectorProviderImpl")
+	@Inject(
+		filter = "component.name=com.liferay.item.selector.internal.provider.GroupItemSelectorProviderImpl"
+	)
 	private GroupItemSelectorProvider _groupItemSelectorProvider;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
 
 	private User _user;
 

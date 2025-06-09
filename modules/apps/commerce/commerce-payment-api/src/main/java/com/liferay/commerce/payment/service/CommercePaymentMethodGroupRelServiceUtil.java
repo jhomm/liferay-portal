@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.service;
 
 import com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -66,14 +58,14 @@ public class CommercePaymentMethodGroupRelServiceUtil {
 	public static CommercePaymentMethodGroupRel
 			addCommercePaymentMethodGroupRel(
 				long groupId, Map<java.util.Locale, String> nameMap,
-				Map<java.util.Locale, String> descriptionMap,
-				java.io.File imageFile, String engineKey, double priority,
-				boolean active)
+				Map<java.util.Locale, String> descriptionMap, boolean active,
+				java.io.File imageFile, String paymentIntegrationKey,
+				double priority, String typeSettings)
 		throws PortalException {
 
 		return getService().addCommercePaymentMethodGroupRel(
-			groupId, nameMap, descriptionMap, imageFile, engineKey, priority,
-			active);
+			groupId, nameMap, descriptionMap, active, imageFile,
+			paymentIntegrationKey, priority, typeSettings);
 	}
 
 	public static void deleteCommerceAddressRestriction(
@@ -97,6 +89,15 @@ public class CommercePaymentMethodGroupRelServiceUtil {
 		throws PortalException {
 
 		getService().deleteCommercePaymentMethodGroupRel(
+			commercePaymentMethodGroupRelId);
+	}
+
+	public static CommercePaymentMethodGroupRel
+			fetchCommercePaymentMethodGroupRel(
+				long commercePaymentMethodGroupRelId)
+		throws PortalException {
+
+		return getService().fetchCommercePaymentMethodGroupRel(
 			commercePaymentMethodGroupRelId);
 	}
 
@@ -229,6 +230,15 @@ public class CommercePaymentMethodGroupRelServiceUtil {
 
 	public static CommercePaymentMethodGroupRel
 			updateCommercePaymentMethodGroupRel(
+				CommercePaymentMethodGroupRel commercePaymentMethodGroupRel)
+		throws PortalException {
+
+		return getService().updateCommercePaymentMethodGroupRel(
+			commercePaymentMethodGroupRel);
+	}
+
+	public static CommercePaymentMethodGroupRel
+			updateCommercePaymentMethodGroupRel(
 				long commercePaymentMethodGroupRelId,
 				Map<java.util.Locale, String> nameMap,
 				Map<java.util.Locale, String> descriptionMap,
@@ -241,9 +251,12 @@ public class CommercePaymentMethodGroupRelServiceUtil {
 	}
 
 	public static CommercePaymentMethodGroupRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommercePaymentMethodGroupRelService _service;
+	private static final Snapshot<CommercePaymentMethodGroupRelService>
+		_serviceSnapshot = new Snapshot<>(
+			CommercePaymentMethodGroupRelServiceUtil.class,
+			CommercePaymentMethodGroupRelService.class);
 
 }

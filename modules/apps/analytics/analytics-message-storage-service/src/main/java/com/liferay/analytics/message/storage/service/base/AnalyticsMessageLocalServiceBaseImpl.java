@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.message.storage.service.base;
@@ -17,16 +8,15 @@ package com.liferay.analytics.message.storage.service.base;
 import com.liferay.analytics.message.storage.model.AnalyticsMessage;
 import com.liferay.analytics.message.storage.model.AnalyticsMessageBodyBlobModel;
 import com.liferay.analytics.message.storage.service.AnalyticsMessageLocalService;
-import com.liferay.analytics.message.storage.service.AnalyticsMessageLocalServiceUtil;
 import com.liferay.analytics.message.storage.service.persistence.AnalyticsMessagePersistence;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.io.AutoDeleteFileInputStream;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -37,24 +27,26 @@ import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.File;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.InputStream;
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
-
 import java.sql.Blob;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -83,7 +75,7 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>AnalyticsMessageLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>AnalyticsMessageLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>AnalyticsMessageLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.analytics.message.storage.service.AnalyticsMessageLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -336,6 +328,11 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement AnalyticsMessageLocalServiceImpl#deleteAnalyticsMessage(AnalyticsMessage) to avoid orphaned data");
+		}
+
 		return analyticsMessageLocalService.deleteAnalyticsMessage(
 			(AnalyticsMessage)persistedModel);
 	}
@@ -452,8 +449,7 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 
 		if ((db.getDBType() != DBType.DB2) &&
 			(db.getDBType() != DBType.MYSQL) &&
-			(db.getDBType() != DBType.MARIADB) &&
-			(db.getDBType() != DBType.SYBASE)) {
+			(db.getDBType() != DBType.MARIADB)) {
 
 			_useTempFile = true;
 		}
@@ -461,22 +457,19 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
 	}
 
 	@Override
 	public Class<?>[] getAopInterfaces() {
 		return new Class<?>[] {
 			AnalyticsMessageLocalService.class, IdentifiableOSGiService.class,
-			PersistedModelLocalService.class
+			CTService.class, PersistedModelLocalService.class
 		};
 	}
 
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		analyticsMessageLocalService = (AnalyticsMessageLocalService)aopProxy;
-
-		_setLocalServiceUtilService(analyticsMessageLocalService);
 	}
 
 	/**
@@ -489,8 +482,23 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 		return AnalyticsMessageLocalService.class.getName();
 	}
 
-	protected Class<?> getModelClass() {
+	@Override
+	public CTPersistence<AnalyticsMessage> getCTPersistence() {
+		return analyticsMessagePersistence;
+	}
+
+	@Override
+	public Class<AnalyticsMessage> getModelClass() {
 		return AnalyticsMessage.class;
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<AnalyticsMessage>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return updateUnsafeFunction.apply(analyticsMessagePersistence);
 	}
 
 	protected String getModelClassName() {
@@ -503,38 +511,26 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = analyticsMessagePersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = analyticsMessagePersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		AnalyticsMessageLocalService analyticsMessageLocalService) {
-
-		try {
-			Field field =
-				AnalyticsMessageLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, analyticsMessageLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -546,6 +542,9 @@ public abstract class AnalyticsMessageLocalServiceBaseImpl
 	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AnalyticsMessageLocalServiceBaseImpl.class);
 
 	@Reference
 	protected File _file;

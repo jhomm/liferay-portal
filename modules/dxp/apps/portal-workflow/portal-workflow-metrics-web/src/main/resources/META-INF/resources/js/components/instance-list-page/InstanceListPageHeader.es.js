@@ -1,17 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLayout from '@clayui/layout';
-import ClayManagementToolbar from '@clayui/management-toolbar';
 import {usePrevious} from '@liferay/frontend-js-react-web';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React, {useCallback, useContext, useEffect, useMemo} from 'react';
 
 import filterConstants from '../../shared/components/filter/util/filterConstants.es';
@@ -46,12 +40,8 @@ export default function Header({
 	});
 
 	const {userId} = useContext(AppContext);
-	const {
-		selectAll,
-		selectedItems,
-		setSelectAll,
-		setSelectedItems,
-	} = useContext(InstanceListContext);
+	const {selectAll, selectedItems, setSelectAll, setSelectedItems} =
+		useContext(InstanceListContext);
 	const {openModal} = useContext(ModalContext);
 	const previousCount = usePrevious(totalCount);
 
@@ -78,7 +68,10 @@ export default function Header({
 		[openModal, selectedItems]
 	);
 
-	const compareId = (itemId) => ({id}) => id === itemId;
+	const compareId =
+		(itemId) =>
+		({id}) =>
+			id === itemId;
 
 	const kebabItems = [
 		{
@@ -105,32 +98,34 @@ export default function Header({
 	);
 
 	const allPageSelected =
-		items.length > 0 && items.length === selectedOnPage.length;
+		!!items.length && items.length === selectedOnPage.length;
 
 	const checkbox = {
 		checked: allPageSelected || selectAll,
 		indeterminate:
-			selectedOnPage.length > 0 && !allPageSelected && !selectAll,
+			!!selectedOnPage.length && !allPageSelected && !selectAll,
 	};
 
-	const isRemainingItem = (clear) => ({assignees = [], id, status}) => {
-		const assignedToUser = !!assignees.find(
-			({id}) => id === Number(userId)
-		);
-		const completed = status === processStatusConstants.completed;
-		const selected = clear && selectedItems.find(compareId(id));
-		const {reviewer} = assignees.find(({id}) => id === -1) || {};
+	const isRemainingItem =
+		(clear) =>
+		({assignees = [], id, status}) => {
+			const assignedToUser = !!assignees.find(
+				({id}) => id === Number(userId)
+			);
+			const completed = status === processStatusConstants.completed;
+			const selected = clear && selectedItems.find(compareId(id));
+			const {reviewer} = assignees.find(({id}) => id === -1) || {};
 
-		return (reviewer || assignedToUser) && !completed && !selected;
-	};
+			return (reviewer || assignedToUser) && !completed && !selected;
+		};
 
 	const remainingItems = items.filter(isRemainingItem(true));
-	const toolbarActive = selectedItems.length > 0;
+	const toolbarActive = !!selectedItems.length;
 
 	useEffect(() => {
 		if (
 			selectAll &&
-			remainingItems.length > 0 &&
+			!!remainingItems.length &&
 			previousCount === totalCount
 		) {
 			setSelectedItems([
@@ -198,18 +193,18 @@ export default function Header({
 				totalCount={totalCount}
 			>
 				{toolbarActive ? (
-					<ClayManagementToolbar.Item className="navbar-nav-last">
+					<ManagementToolbar.Item className="navbar-nav-last">
 						<ClayLayout.ContentCol>
 							<QuickActionKebab items={kebabItems} />
 						</ClayLayout.ContentCol>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 				) : (
 					<>
-						<ClayManagementToolbar.Item>
+						<ManagementToolbar.Item>
 							<strong className="ml-0 mr-0 navbar-text">
 								{Liferay.Language.get('filter-by')}
 							</strong>
-						</ClayManagementToolbar.Item>
+						</ManagementToolbar.Item>
 
 						<SLAStatusFilter
 							options={{
@@ -233,7 +228,7 @@ export default function Header({
 				)}
 			</ToolbarWithSelection>
 
-			{selectedFilterItems.length > 0 && (
+			{!!selectedFilterItems.length && (
 				<ResultsBar>
 					<ResultsBar.TotalCount
 						search={routeParams.search}

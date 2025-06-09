@@ -1,0 +1,16 @@
+@default = "setElementAttribute"
+definition {
+
+	function setElementAttribute(locator1, value1, attribute) {
+		selenium.waitForElementPresent(${locator1}, "true");
+
+		var javaScript = '''
+var element = document.evaluate("${locator1}", document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+
+element.setAttribute("${attribute}", "${value1}");
+		''';
+
+		selenium.executeJavaScript(${value1}, ${value2}, ${value3});
+	}
+
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.internal.role.type.contributor.provider;
@@ -30,43 +21,40 @@ import org.osgi.service.component.annotations.Deactivate;
 /**
  * @author Drew Brokke
  */
-@Component(immediate = true, service = RoleTypeContributorProvider.class)
+@Component(service = RoleTypeContributorProvider.class)
 public class RoleTypeContributorProviderImpl
 	implements RoleTypeContributorProvider {
 
 	@Override
 	public RoleTypeContributor getRoleTypeContributor(int type) {
-		return _roleTypeContributorServiceTrackerMap.getService(type);
+		return _serviceTrackerMap.getService(type);
 	}
 
 	@Override
 	public List<RoleTypeContributor> getRoleTypeContributors() {
-		return ListUtil.fromCollection(
-			_roleTypeContributorServiceTrackerMap.values());
+		return ListUtil.fromCollection(_serviceTrackerMap.values());
 	}
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
 		_bundleContext = bundleContext;
 
-		_roleTypeContributorServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				_bundleContext, RoleTypeContributor.class, null,
-				(serviceReference, emitter) -> {
-					RoleTypeContributor roleTypeContributor =
-						_bundleContext.getService(serviceReference);
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			_bundleContext, RoleTypeContributor.class, null,
+			(serviceReference, emitter) -> {
+				RoleTypeContributor roleTypeContributor =
+					_bundleContext.getService(serviceReference);
 
-					emitter.emit(roleTypeContributor.getType());
-				});
+				emitter.emit(roleTypeContributor.getType());
+			});
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_roleTypeContributorServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private BundleContext _bundleContext;
-	private ServiceTrackerMap<Integer, RoleTypeContributor>
-		_roleTypeContributorServiceTrackerMap;
+	private ServiceTrackerMap<Integer, RoleTypeContributor> _serviceTrackerMap;
 
 }

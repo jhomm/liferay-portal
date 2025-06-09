@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {USERS_PROPERTY_NAME_IN_ACCOUNT} from '../utils/constants';
@@ -17,7 +11,10 @@ const ACCOUNTS_MOVING_ENDPOINT =
 const ACCOUNTS_ROOT_ENDPOINT = '/o/headless-admin-user/v1.0/accounts';
 
 export function getAccounts(query, organizationIds = []) {
-	const url = new URL(ACCOUNTS_ROOT_ENDPOINT, themeDisplay.getPortalURL());
+	const url = new URL(
+		`${themeDisplay.getPathContext()}${ACCOUNTS_ROOT_ENDPOINT}`,
+		themeDisplay.getPortalURL()
+	);
 
 	if (query) {
 		url.searchParams.append('search', query);
@@ -36,56 +33,44 @@ export function getAccounts(query, organizationIds = []) {
 }
 
 export function deleteAccount(id) {
-	const url = new URL(
+	return fetchFromHeadless(
 		`${ACCOUNTS_ROOT_ENDPOINT}/${id}`,
-		themeDisplay.getPortalURL()
+		{method: 'DELETE'},
+		null,
+		true
 	);
-
-	return fetchFromHeadless(url, {method: 'DELETE'}, null, true);
 }
 
 export function changeOrganizationParent(accountId, source, target) {
-	const url = new URL(
+	return fetchFromHeadless(
 		`${ACCOUNTS_MOVING_ENDPOINT}/${source}/${target}`,
-		themeDisplay.getPortalURL()
+		{
+			body: JSON.stringify([accountId]),
+			method: 'PATCH',
+		}
 	);
-
-	return fetchFromHeadless(url, {
-		body: JSON.stringify([accountId]),
-		method: 'PATCH',
-	});
 }
 
 export function getAccount(id) {
-	const accountUrl = new URL(
-		`${ACCOUNTS_ROOT_ENDPOINT}/${id}`,
+	const url = new URL(
+		`${themeDisplay.getPathContext()}${ACCOUNTS_ROOT_ENDPOINT}/${id}`,
 		themeDisplay.getPortalURL()
 	);
 
-	accountUrl.searchParams.append(
-		'nestedFields',
-		USERS_PROPERTY_NAME_IN_ACCOUNT
-	);
+	url.searchParams.append('nestedFields', USERS_PROPERTY_NAME_IN_ACCOUNT);
 
-	return fetchFromHeadless(accountUrl);
+	return fetchFromHeadless(url);
 }
 
 export function updateAccount(id, details) {
-	const url = new URL(
-		`${ACCOUNTS_ROOT_ENDPOINT}/${id}`,
-		themeDisplay.getPortalURL()
-	);
-
-	return fetchFromHeadless(url, {
+	return fetchFromHeadless(`${ACCOUNTS_ROOT_ENDPOINT}/${id}`, {
 		body: JSON.stringify(details),
 		method: 'PATCH',
 	});
 }
 
 export function createAccount(name, organizationIds) {
-	const url = new URL(ACCOUNTS_ROOT_ENDPOINT, themeDisplay.getPortalURL());
-
-	return fetchFromHeadless(url, {
+	return fetchFromHeadless(ACCOUNTS_ROOT_ENDPOINT, {
 		body: JSON.stringify({
 			name,
 			organizationIds,

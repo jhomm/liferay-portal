@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!--ADMIN-->
+
 <tr>
 	<td>ADMIN_AUTHORIZATIONS_REVOKE_BUTTON</td>
 	<td>//tr[@data-qa-id='row' and contains(.,'${key_rowEntry}')]//button[contains(@onclick,'revokeOAuth2Authorization')]</td>
@@ -22,8 +24,13 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ADMIN_AUTHORIZATIONS_EXPIRATION</td>
+	<td>//td[@class=' lfr-expiration-column'][contains(.,'${key_expiration}')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ADMIN_CLIENT_CREDENTIALS_USER_SELECTED</td>
-	<td>//td[contains(@class,'lfr-screen-name-column')]/a[contains(.,'${key_clientCredentialsUser}')]</td>
+	<td>//tr[contains(@class,'entry entry-selector')]/td[contains(.,'${key_clientCredentialsUser}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -58,12 +65,12 @@
 </tr>
 <tr>
 	<td>ADMIN_INPUT_FORM_CLIENT_ID_EDIT_BUTTON</td>
-	<td>//button[contains(@onclick,'ClientIdModal')]</td>
+	<td>//div[contains(@class,'form-group') and contains(.,'Client ID')]//button[contains(text(),'Edit')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ADMIN_INPUT_FORM_CLIENT_ID_EDIT_FIELD</td>
-	<td>//input[contains(@id,'newClientId')]</td>
+	<td>//input[contains(@id,'clientIdmodal')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -73,12 +80,12 @@
 </tr>
 <tr>
 	<td>ADMIN_INPUT_FORM_CLIENT_SECRET_EDIT_BUTTON</td>
-	<td>//button[contains(@onclick,'ClientSecretModal')]</td>
+	<td>//div[contains(@class,'form-group') and contains(.,'Client Secret')]//button[contains(text(),'Edit')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>ADMIN_INPUT_FORM_CLIENT_SECRET_EDIT_FIELD</td>
-	<td>//input[contains(@id,'newClientSecret')]</td>
+	<td>//input[contains(@id,'clientSecretmodal')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -151,7 +158,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--AUTHORIZATION_REQUEST-->
+
 <tr>
 	<td>AUTHORIZATION_REQUEST_APPLICATION_NAME</td>
 	<td>//form[contains(@id,'OAuth2AuthorizePortlet')]//h1[contains(.,'${key_applicationName}')]</td>
@@ -167,30 +176,67 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--OAUTH2_TESTER-->
+
 <tr>
 	<td>OAUTH2_TESTER_PORTAL_URL</td>
-	<td>//input[contains(@id,'liferayUrl')]</td>
+	<td>//input[contains(@placeholder,'Liferay Authorize URL')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>OAUTH2_TESTER_CLIENT_ID</td>
-	<td>//input[contains(@id,'clientId')]</td>
+	<td>//input[contains(@placeholder,'Client ID')][1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_CLIENT_ID_2</td>
+	<td>//h2[contains(.,'Get Token')]/following-sibling::input[contains(@placeholder,'Client ID')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>OAUTH2_TESTER_CLIENT_SECRET</td>
-	<td>//input[contains(@id,'clientSecret')]</td>
+	<td>//input[contains(@placeholder,'Client Secret')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_TOKEN_URL</td>
+	<td>//input[contains(@placeholder,'Liferay Token URL')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_CODE_CHALLENGE</td>
+	<td>//input[contains(@id,'codeChallenge')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_BTN_AUTHORIZE</td>
+	<td>//button[contains(.,'Authorize')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_BTN_GET_TOKEN</td>
+	<td>//button[contains(.,'Get Token')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_BTN_GET_USER</td>
+	<td>//button[contains(.,'Get User')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>OAUTH2_TESTER_EXCHANGE_CODE</td>
+	<td>//input[contains(@id,'exchangeCode')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>OAUTH2_TESTER_REQUEST_URL</td>
-	<td>//input[contains(@id,'url')]</td>
+	<td>//input[contains(@placeholder,'Liferay Get User URL')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>OAUTH2_TESTER_REQUEST_RESULTS</td>
-	<td>//div[contains(@id,'result')]</td>
+	<td>//pre</td>
 	<td></td>
 </tr>
 <tr>
@@ -198,7 +244,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--USER-->
+
 <tr>
 	<td>USER_CONNECTED_APP_ACTIVITY</td>
 	<td>//span[contains(.,'${key_activity}')]</td>

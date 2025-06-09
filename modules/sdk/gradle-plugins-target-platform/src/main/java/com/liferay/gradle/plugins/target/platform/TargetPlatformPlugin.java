@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.target.platform;
@@ -17,8 +8,8 @@ package com.liferay.gradle.plugins.target.platform;
 import com.liferay.gradle.plugins.target.platform.extensions.TargetPlatformExtension;
 import com.liferay.gradle.plugins.target.platform.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.target.platform.internal.util.TargetPlatformPluginUtil;
-import com.liferay.gradle.plugins.target.platform.tasks.DependencyManagementTask;
-import com.liferay.gradle.plugins.target.platform.tasks.ResolveTask;
+import com.liferay.gradle.plugins.target.platform.task.DependencyManagementTask;
+import com.liferay.gradle.plugins.target.platform.task.ResolveTask;
 
 import groovy.lang.Closure;
 
@@ -34,6 +25,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
+import org.gradle.api.file.RegularFileProperty;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.HelpTasksPlugin;
@@ -250,7 +242,10 @@ public class TargetPlatformPlugin implements Plugin<Project> {
 
 		resolveTask.dependsOn(taskContainer.findByName("assemble"));
 
-		resolveTask.setBndrunFile(bndrunFile);
+		RegularFileProperty regularFileProperty = resolveTask.getBndrun();
+
+		regularFileProperty.set(bndrunFile);
+
 		resolveTask.setDescription(
 			"Resolve a project against the Liferay distro.");
 		resolveTask.setDistro(targetPlatformDistroConfiguration);
@@ -260,12 +255,10 @@ public class TargetPlatformPlugin implements Plugin<Project> {
 	}
 
 	private static final List<String> _configurationNames = Arrays.asList(
-		"compile", "compileClasspath", "compileInclude", "compileOnly",
-		"default", "implementation", "jsCompile", "originalModule",
-		"parentThemes", "portalCommonCSS", "providedModules", "runtime",
-		"runtimeClasspath", "runtimeImplementation", "runtimeOnly",
-		"testCompileClasspath", "testCompileOnly", "testImplementation",
-		"testIntegration", "testRuntime", "testRuntimeClasspath",
-		"testRuntimeOnly");
+		"compile", "compileInclude", "compileOnly", "implementation",
+		"jsCompile", "originalModule", "parentThemes", "portalCommonCSS",
+		"providedModules", "runtime", "runtimeImplementation", "runtimeOnly",
+		"testCompileOnly", "testImplementation", "testIntegration",
+		"testRuntime", "testRuntimeOnly");
 
 }

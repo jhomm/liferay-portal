@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.web.internal.display.context;
@@ -18,11 +9,10 @@ import com.liferay.commerce.constants.CommerceOrderActionKeys;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.frontend.model.HeaderActionModel;
 import com.liferay.commerce.model.CommerceOrderType;
-import com.liferay.commerce.order.web.internal.display.context.util.CommerceOrderRequestHelper;
+import com.liferay.commerce.order.web.internal.display.context.helper.CommerceOrderRequestHelper;
 import com.liferay.commerce.service.CommerceOrderTypeService;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -30,6 +20,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
@@ -40,14 +31,14 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.CustomAttributesUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Riccardo Alberti
@@ -92,12 +83,12 @@ public class CommerceOrderTypeDisplayContext {
 			commerceOrderTypeId);
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getCommerceOrderTypeClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem>
+			getCommerceOrderTypeFDSActionDropdownItems()
 		throws PortalException {
 
 		return ListUtil.fromArray(
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				PortletURLBuilder.create(
 					PortletProviderUtil.getPortletURL(
 						httpServletRequest, CommerceOrderType.class.getName(),
@@ -111,11 +102,11 @@ public class CommerceOrderTypeDisplayContext {
 				).buildString(),
 				"pencil", "edit", LanguageUtil.get(httpServletRequest, "edit"),
 				"get", null, null),
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				null, "trash", "delete",
 				LanguageUtil.get(httpServletRequest, "delete"), "delete",
 				"delete", "headless"),
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				_getManagePermissionsURL(), null, "permissions",
 				LanguageUtil.get(httpServletRequest, "permissions"), "get",
 				"permissions", "modal-permissions"));
@@ -218,7 +209,7 @@ public class CommerceOrderTypeDisplayContext {
 				commerceOrderRequestHelper.getScopeGroupId(),
 				CommerceOrderType.class.getName())) {
 
-			publishButtonLabel = "submit-for-publication";
+			publishButtonLabel = "submit-for-workflow";
 		}
 
 		String additionalClasses = "btn-primary";

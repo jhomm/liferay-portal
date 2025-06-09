@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.util;
@@ -21,6 +12,8 @@ import com.liferay.fragment.renderer.DefaultFragmentRendererContext;
 import com.liferay.fragment.renderer.FragmentRendererController;
 import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
 import com.liferay.info.field.InfoField;
+import com.liferay.info.field.type.HTMLInfoFieldType;
+import com.liferay.info.field.type.InfoFieldType;
 import com.liferay.info.field.type.TextInfoFieldType;
 import com.liferay.info.localized.InfoLocalizedValue;
 import com.liferay.petra.function.UnsafeSupplier;
@@ -35,14 +28,14 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -53,7 +46,7 @@ public class InfoFieldUtil {
 			FragmentRendererController fragmentRendererController,
 			Layout layout, long segmentsExperienceId,
 			UnsafeTriConsumer
-				<String, InfoField<TextInfoFieldType>,
+				<String, InfoField<?>,
 				 UnsafeSupplier<JSONObject, JSONException>, E> consumer)
 		throws E {
 
@@ -68,6 +61,10 @@ public class InfoFieldUtil {
 					layout.getPlid());
 
 		for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
+			if (fragmentEntryLink.isTypePortlet()) {
+				continue;
+			}
+
 			String defaultElementName =
 				"defaultElementName" + StringUtil.randomId();
 
@@ -109,8 +106,9 @@ public class InfoFieldUtil {
 		}
 
 		HttpServletRequest httpServletRequest = serviceContext.getRequest();
+		HttpServletResponse httpServletResponse = serviceContext.getResponse();
 
-		if (httpServletRequest == null) {
+		if ((httpServletRequest == null) || (httpServletResponse == null)) {
 			return _renderHtml(fragmentEntryLink, defaultElementName);
 		}
 
@@ -127,37 +125,35 @@ public class InfoFieldUtil {
 
 		defaultFragmentRendererContext.setLocale(themeDisplay.getLocale());
 		defaultFragmentRendererContext.setMode(FragmentEntryLinkConstants.EDIT);
-		defaultFragmentRendererContext.setSegmentsExperienceIds(
-			new long[] {SegmentsExperienceConstants.ID_DEFAULT});
 
 		return fragmentRendererController.render(
 			defaultFragmentRendererContext, httpServletRequest,
-			serviceContext.getResponse());
+			httpServletResponse);
 	}
 
-	private static InfoField<TextInfoFieldType> _getInfoField(
+	private static InfoField<?> _getInfoField(
 		long fragmentEntryLinkId, String name, String type) {
 
 		return InfoField.builder(
 		).infoFieldType(
-			TextInfoFieldType.INSTANCE
+			_getInfoFieldType(type)
+		).namespace(
+			FragmentEntryLink.class.getSimpleName()
 		).name(
 			fragmentEntryLinkId + StringPool.COLON + name
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.singleValue(name)
 		).localizable(
 			true
-		).attribute(
-			TextInfoFieldType.HTML, _isHtml(type)
 		).build();
 	}
 
-	private static boolean _isHtml(String type) {
+	private static InfoFieldType _getInfoFieldType(String type) {
 		if (type.equals("html") || type.equals("rich-text")) {
-			return true;
+			return HTMLInfoFieldType.INSTANCE;
 		}
 
-		return false;
+		return TextInfoFieldType.INSTANCE;
 	}
 
 	private static boolean _isTextFieldType(String type) {

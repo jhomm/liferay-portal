@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.spring.transaction.test;
@@ -24,10 +15,13 @@ import com.liferay.portal.kernel.service.persistence.ClassNamePersistence;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.model.impl.ClassNameImpl;
+import com.liferay.portal.spring.hibernate.PortalTransactionManager;
 import com.liferay.portal.spring.hibernate.PortletTransactionManager;
 import com.liferay.portal.spring.transaction.TransactionExecutor;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -35,7 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.springframework.orm.hibernate3.HibernateTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -53,7 +46,7 @@ public class TransactionInterceptorTest {
 		new LiferayIntegrationTestRule();
 
 	@Test
-	public void testFailOnCommit() {
+	public void testFailOnCommit() throws Exception {
 		CacheRegistryUtil.clear();
 
 		long classNameId = _counterLocalService.increment();
@@ -62,14 +55,13 @@ public class TransactionInterceptorTest {
 			(TransactionExecutor)PortalBeanLocatorUtil.locate(
 				"transactionExecutor");
 
-		PlatformTransactionManager platformTransactionManager =
-			ReflectionTestUtil.getAndSetFieldValue(
-				transactionExecutor, "_platformTransactionManager",
-				new MockPlatformTransactionManager(
-					(HibernateTransactionManager)
-						InfrastructureUtil.getTransactionManager()));
+		try (AutoCloseable autoCloseable =
+				ReflectionTestUtil.setFieldValueWithAutoCloseable(
+					transactionExecutor, "_platformTransactionManager",
+					new MockPlatformTransactionManager(
+						(PortalTransactionManager)
+							InfrastructureUtil.getTransactionManager()))) {
 
-		try {
 			_classNameLocalService.addClassName(
 				_classNamePersistence.create(classNameId));
 
@@ -79,11 +71,6 @@ public class TransactionInterceptorTest {
 			Assert.assertEquals(
 				"MockPlatformTransactionManager",
 				runtimeException.getMessage());
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				transactionExecutor, "_platformTransactionManager",
-				platformTransactionManager);
 		}
 
 		Assert.assertNull(
@@ -106,13 +93,14 @@ public class TransactionInterceptorTest {
 		extends PortletTransactionManager {
 
 		public MockPlatformTransactionManager(
-			HibernateTransactionManager hibernateTransactionManager) {
+			PortalTransactionManager portalTransactionManager) {
 
 			super(
-				hibernateTransactionManager,
-				hibernateTransactionManager.getSessionFactory());
+				portalTransactionManager,
+				(SessionFactoryImplementor)
+					portalTransactionManager.getSessionFactory());
 
-			_platformTransactionManager = hibernateTransactionManager;
+			_platformTransactionManager = portalTransactionManager;
 		}
 
 		@Override

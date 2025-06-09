@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.context;
@@ -29,11 +20,11 @@ import com.liferay.portal.json.JSONObjectImpl;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.ArrayList;
@@ -43,32 +34,40 @@ import java.util.Objects;
 import java.util.Set;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 /**
  * @author Rodrigo Paulino
  */
-@RunWith(MockitoJUnitRunner.class)
-public class DDMFormContextToDDMFormValuesTest extends PowerMockito {
+public class DDMFormContextToDDMFormValuesTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() throws Exception {
-		_setUpDDMFormContextToDDMFormValues();
-		_setUpLanguageUtil();
+	@BeforeClass
+	public static void setUpClass() {
+		_ddmFormContextToDDMFormValues = new DDMFormContextToDDMFormValues();
+
+		ReflectionTestUtil.setFieldValue(
+			_ddmFormContextToDDMFormValues, "jsonFactory",
+			new JSONFactoryImpl());
+
+		LanguageUtil languageUtil = new LanguageUtil();
+
+		languageUtil.setLanguage(Mockito.mock(Language.class));
+
+		Mockito.when(
+			LanguageUtil.isAvailableLocale(LocaleUtil.BRAZIL)
+		).thenReturn(
+			true
+		);
 	}
 
 	@Test
@@ -86,7 +85,7 @@ public class DDMFormContextToDDMFormValuesTest extends PowerMockito {
 
 		DDMFormContextDeserializerRequest ddmFormContextDeserializerRequest =
 			DDMFormContextDeserializerRequest.with(
-				ddmForm, read("ddm-form-values.json"));
+				ddmForm, _read("ddm-form-values.json"));
 
 		ddmFormContextDeserializerRequest.addProperty(
 			"currentLocale", LocaleUtil.BRAZIL);
@@ -144,7 +143,7 @@ public class DDMFormContextToDDMFormValuesTest extends PowerMockito {
 
 		List<DDMFormFieldValue> actualDDMFormFieldValues =
 			_ddmFormContextToDDMFormValues.getDDMFormFieldValues(
-				new JSONArrayImpl(read("ddm-form-values-pages-only.json")),
+				new JSONArrayImpl(_read("ddm-form-values-pages-only.json")),
 				ddmForm);
 
 		Assert.assertTrue(
@@ -174,15 +173,6 @@ public class DDMFormContextToDDMFormValuesTest extends PowerMockito {
 		Assert.assertTrue(Objects.equals(value1, value2));
 	}
 
-	protected String read(String fileName) throws IOException {
-		Class<?> clazz = getClass();
-
-		InputStream inputStream = clazz.getResourceAsStream(
-			"dependencies/" + fileName);
-
-		return StringUtil.read(inputStream);
-	}
-
 	private LocalizedValue _createLocalizedValue(Locale locale, String value) {
 		LocalizedValue localizedValue = new LocalizedValue();
 
@@ -191,31 +181,15 @@ public class DDMFormContextToDDMFormValuesTest extends PowerMockito {
 		return localizedValue;
 	}
 
-	private void _setUpDDMFormContextToDDMFormValues() throws Exception {
-		_ddmFormContextToDDMFormValues = new DDMFormContextToDDMFormValues();
+	private String _read(String fileName) throws Exception {
+		Class<?> clazz = getClass();
 
-		field(
-			DDMFormContextToDDMFormValues.class, "jsonFactory"
-		).set(
-			_ddmFormContextToDDMFormValues, new JSONFactoryImpl()
-		);
+		InputStream inputStream = clazz.getResourceAsStream(
+			"dependencies/" + fileName);
+
+		return StringUtil.read(inputStream);
 	}
 
-	private void _setUpLanguageUtil() {
-		LanguageUtil languageUtil = new LanguageUtil();
-
-		languageUtil.setLanguage(_language);
-
-		when(
-			_language.isAvailableLocale(LocaleUtil.BRAZIL)
-		).thenReturn(
-			true
-		);
-	}
-
-	private DDMFormContextToDDMFormValues _ddmFormContextToDDMFormValues;
-
-	@Mock
-	private Language _language;
+	private static DDMFormContextToDDMFormValues _ddmFormContextToDDMFormValues;
 
 }

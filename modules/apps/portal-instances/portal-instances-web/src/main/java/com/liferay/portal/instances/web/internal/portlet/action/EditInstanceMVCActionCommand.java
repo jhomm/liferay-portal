@@ -1,47 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.instances.web.internal.portlet.action;
 
-import com.liferay.petra.lang.SafeCloseable;
-import com.liferay.portal.instances.service.PortalInstancesLocalService;
 import com.liferay.portal.instances.web.internal.constants.PortalInstancesPortletKeys;
 import com.liferay.portal.kernel.exception.CompanyMxException;
 import com.liferay.portal.kernel.exception.CompanyVirtualHostException;
 import com.liferay.portal.kernel.exception.CompanyWebIdException;
 import com.liferay.portal.kernel.exception.NoSuchCompanyException;
 import com.liferay.portal.kernel.exception.RequiredCompanyException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.CompanyService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
-import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.ServletContext;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,39 +36,21 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + PortalInstancesPortletKeys.PORTAL_INSTANCES,
+		"jakarta.portlet.name=" + PortalInstancesPortletKeys.PORTAL_INSTANCES,
 		"mvc.command.name=/portal_instances/edit_instance"
 	},
 	service = MVCActionCommand.class
 )
 public class EditInstanceMVCActionCommand extends BaseMVCActionCommand {
 
-	protected void deleteInstance(ActionRequest actionRequest)
-		throws Exception {
-
-		long companyId = ParamUtil.getLong(actionRequest, "companyId");
-
-		_companyService.deleteCompany(companyId);
-
-		synchronizePortalInstances();
-	}
-
 	@Override
 	protected void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
 		try {
-			if (cmd.equals(Constants.DELETE)) {
-				deleteInstance(actionRequest);
-			}
-			else {
-				updateInstance(actionRequest);
-			}
+			_updateInstance(actionRequest);
 
 			sendRedirect(actionRequest, actionResponse);
 		}
@@ -90,7 +58,7 @@ public class EditInstanceMVCActionCommand extends BaseMVCActionCommand {
 			String mvcPath = "/error.jsp";
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			if (exception instanceof NoSuchCompanyException ||
@@ -124,7 +92,7 @@ public class EditInstanceMVCActionCommand extends BaseMVCActionCommand {
 				SessionErrors.add(actionRequest, exception.getClass());
 			}
 			else {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				throw exception;
 			}
@@ -133,58 +101,22 @@ public class EditInstanceMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void synchronizePortalInstances() {
-		_portalInstancesLocalService.synchronizePortalInstances();
-	}
-
-	protected void updateInstance(ActionRequest actionRequest)
-		throws Exception {
-
+	private void _updateInstance(ActionRequest actionRequest) throws Exception {
 		long companyId = ParamUtil.getLong(actionRequest, "companyId");
 
 		String virtualHostname = ParamUtil.getString(
 			actionRequest, "virtualHostname");
 		String mx = ParamUtil.getString(actionRequest, "mx");
 		int maxUsers = ParamUtil.getInteger(actionRequest, "maxUsers");
+
 		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 
-		if (companyId <= 0) {
-
-			// Add instance
-
-			String webId = ParamUtil.getString(actionRequest, "webId");
-
-			Company company = _companyService.addCompany(
-				webId, virtualHostname, mx, false, maxUsers, active);
-
-			String siteInitializerKey = ParamUtil.getString(
-				actionRequest, "siteInitializerKey");
-			ServletContext servletContext =
-				(ServletContext)actionRequest.getAttribute(WebKeys.CTX);
-
-			try (SafeCloseable safeCloseable =
-					CompanyThreadLocal.setWithSafeCloseable(
-						company.getCompanyId())) {
-
-				_portalInstancesLocalService.initializePortalInstance(
-					company.getCompanyId(), siteInitializerKey, servletContext);
-			}
-		}
-		else {
-
-			// Update instance
-
-			if (companyId ==
-					_portalInstancesLocalService.getDefaultCompanyId()) {
-
-				active = true;
-			}
-
-			_companyService.updateCompany(
-				companyId, virtualHostname, mx, maxUsers, active);
+		if (companyId == PortalInstancePool.getDefaultCompanyId()) {
+			active = true;
 		}
 
-		synchronizePortalInstances();
+		_companyService.updateCompany(
+			companyId, virtualHostname, mx, maxUsers, active);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -198,8 +130,5 @@ public class EditInstanceMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private PortalInstancesLocalService _portalInstancesLocalService;
 
 }

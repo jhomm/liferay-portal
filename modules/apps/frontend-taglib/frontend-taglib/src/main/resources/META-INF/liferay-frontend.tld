@@ -10,76 +10,6 @@
 	<short-name>liferay-frontend</short-name>
 	<uri>http://liferay.com/tld/frontend</uri>
 	<tag>
-		<description>Creates an add menu component that contains a list of menu items.</description>
-		<name>add-menu</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.AddMenuTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>A list of menu items.</description>
-			<name>addMenuItems</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description></description>
-			<name>inline</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>maxItems</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>viewMoreURL</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<description>Creates a menu item component.</description>
-		<name>add-menu-item</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.AddMenuItemTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>Miscellaneous data to be stored via a map. The map holds key value pairs of type <![CDATA[<code>&lt;String, Object&gt;</code>]]>. For example, a <![CDATA[<code>HashMap</code>]]> entry <![CDATA[<code>&lt;"class-name", foo&gt;</code>]]> renders as an HTML attribute <![CDATA[<code>data-class-name = foo;</code>]]>. Note that the prefix <![CDATA[<code>data-</code>]]> is added to the key's name automatically.</description>
-			<name>anchorData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the menu item's main container.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An ID for the component instance.</description>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A title for the menu item.</description>
-			<name>title</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A type for the menu item.</description>
-			<name>type</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A URL to navigate to when the menu item is clicked.</description>
-			<name>url</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
 		<name>component</name>
 		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ComponentTag</tag-class>
 		<body-content>empty</body-content>
@@ -254,6 +184,11 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
+			<name>title</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
 			<description>Whether to use the default portlet namespace to avoid name conflicts. The default value is <![CDATA[<code>true</code>]]>.</description>
 			<name>useNamespace</name>
 			<required>false</required>
@@ -267,6 +202,13 @@
 			<rtexprvalue>true</rtexprvalue>
 			<type>boolean</type>
 		</attribute>
+		<attribute>
+			<description>Whether to wrap the form content in a <![CDATA[<code>sheet</code>]]>. The default value is <![CDATA[<code>true</code>]]>.</description>
+			<name>wrappedFormContent</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
 		<dynamic-attributes>true</dynamic-attributes>
 	</tag>
 	<tag>
@@ -274,6 +216,37 @@
 		<name>edit-form-body</name>
 		<tag-class>com.liferay.frontend.taglib.servlet.taglib.EditFormBodyTag</tag-class>
 		<body-content>JSP</body-content>
+	</tag>
+	<tag>
+		<name>edit-form-buttons</name>
+		<tag-class>com.liferay.frontend.taglib.servlet.taglib.EditFormButtonsTag</tag-class>
+		<body-content>JSP</body-content>
+		<attribute>
+			<name>redirect</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>submitDisabled</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
+			<name>submitId</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>submitLabel</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>submitOnClick</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
 	</tag>
 	<tag>
 		<description>Creates an edit form footer that offers additional styling.</description>
@@ -417,6 +390,33 @@
 		</attribute>
 	</tag>
 	<tag>
+		<name>feature-indicator</name>
+		<tag-class>com.liferay.frontend.taglib.servlet.taglib.FeatureIndicatorTag</tag-class>
+		<body-content>JSP</body-content>
+		<attribute>
+			<name>dark</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
+			<name>interactive</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
+			<name>tooltipAlign</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>type</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+	<tag>
 		<description>Creates a <![CDATA[<code>&lt;div&gt;</code>]]> tag to group related form elements and offer additional styling.</description>
 		<name>fieldset</name>
 		<tag-class>com.liferay.frontend.taglib.servlet.taglib.FieldsetTag</tag-class>
@@ -445,6 +445,12 @@
 			<name>cssClass</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>deprecated</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
 		</attribute>
 		<attribute>
 			<name>disabled</name>
@@ -477,13 +483,6 @@
 			<rtexprvalue>true</rtexprvalue>
 			<type>boolean</type>
 		</attribute>
-		<dynamic-attributes>true</dynamic-attributes>
-	</tag>
-	<tag>
-		<description>Creates a <![CDATA[<code>&lt;div&gt;</code>]]> tag to group fieldset elements and offer additional styling.</description>
-		<name>fieldset-group</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.FieldsetGroupTag</tag-class>
-		<body-content>JSP</body-content>
 		<dynamic-attributes>true</dynamic-attributes>
 	</tag>
 	<tag>
@@ -522,9 +521,14 @@
 			<rtexprvalue>true</rtexprvalue>
 			<type>boolean</type>
 		</attribute>
+		<attribute>
+			<name>type</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
 	</tag>
 	<tag>
-		<description>Creates a navigable form for multiple section forms. The navigation is a side navigation box with links to each section that renders as a progressive step navigation positioned above the form.</description>
+		<description>Creates a navigable form for multiple section forms. Implements a side navigation box with links to each section that renders as progressive steps positioned above the form.</description>
 		<name>form-navigator-steps</name>
 		<tag-class>com.liferay.frontend.taglib.servlet.taglib.FormNavigatorStepsTag</tag-class>
 		<body-content>JSP</body-content>
@@ -573,382 +577,8 @@
 		</attribute>
 	</tag>
 	<tag>
-		<description>Creates a lexicon-based card component.</description>
-		<name>horizontal-card</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.HorizontalCardTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>The path to an action JSP. It is generally the JSP for the card dropdown menu.</description>
-			<name>actionJsp</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The service context of the action JSP.</description>
-			<name>actionJspServletContext</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's secondary container.</description>
-			<name>cardCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to select the card checkbox. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxChecked</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the checkbox input.</description>
-			<name>checkboxCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The data attributes to add to the checkbox input. This data is stored via a map.</description>
-			<name>checkboxData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to disable the checkbox input. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxDisabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An ID for the checkbox input.</description>
-			<name>checkboxId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A name for the checkbox input.</description>
-			<name>checkboxName</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A value for the checkbox input.</description>
-			<name>checkboxValue</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's main container.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Miscellaneous data to be stored via a map. This data is not shared with the browser. The map holds key value pairs of type <![CDATA[<code>&lt;String, Object&gt;</code>]]>.</description>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>linkData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>If you pass in a row checker value, a result row is mandatory. A result row is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.ResultRow</code>]]>.</description>
-			<name>resultRow</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>You can optionally pass in a row checker object to manage all the options related to the checkbox. All other checkbox options overwrite the row checker options. A row checker is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.RowChecker</code>]]>.</description>
-			<name>rowChecker</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether the entry is selectable. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>showCheckbox</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>text</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A URL to view the full content.</description>
-			<name>url</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>horizontal-card-col</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.HorizontalCardColTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>horizontal-card-icon</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.HorizontalCardIconTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>icon</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<description>Creates a lexicon-based card component with a custom HTML header.</description>
-		<name>html-vertical-card</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.HtmlVerticalCardTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>The path to an action JSP. It is generally the JSP for the card dropdown menu.</description>
-			<name>actionJsp</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The action JSP's service context.</description>
-			<name>actionJspServletContext</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's secondary container.</description>
-			<name>cardCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to select the card checkbox. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxChecked</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the checkbox input.</description>
-			<name>checkboxCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The data attributes to add to the checkbox input. This data is stored via a map.</description>
-			<name>checkboxData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to disable the checkbox input. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxDisabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An ID for the checkbox input.</description>
-			<name>checkboxId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A name for the checkbox input.</description>
-			<name>checkboxName</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A value for the checkbox input.</description>
-			<name>checkboxValue</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's main container.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The miscellaneous data to be stored via a map. This data is not shared with the browser. The map holds key value pairs of type <![CDATA[<code>&lt;String, Object&gt;</code>]]>.</description>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The custom HTML to use as the thumbnail.</description>
-			<name>html</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>onClick</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>If a row checker value is passed, a result row value is mandatory. A result row is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.ResultRow</code>]]>.</description>
-			<name>resultRow</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An optional row checker object that manages the checkbox options. Note that the <![CDATA[<code>checkbox*</code>]]> attributes take precedence over row checker options. A row checker is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.RowChecker</code>]]>.</description>
-			<name>rowChecker</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether the entry is selectable. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>showCheckbox</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The text to add as a subtitle in the text zone, if the card is vertical.</description>
-			<name>subtitle</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A title for the card.</description>
-			<name>title</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>url</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<description>Creates a lexicon-based card component.</description>
-		<name>icon-vertical-card</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.IconVerticalCardTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>The path to an action JSP. It is generally the JSP for the card dropdown menu.</description>
-			<name>actionJsp</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The service context of the action JSP.</description>
-			<name>actionJspServletContext</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's secondary container.</description>
-			<name>cardCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to select the card checkbox. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxChecked</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the checkbox input.</description>
-			<name>checkboxCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The data attributes to add to the checkbox input. This data is stored via a map.</description>
-			<name>checkboxData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to disable the checkbox input. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxDisabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An ID for the checkbox input.</description>
-			<name>checkboxId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A name for the checkbox input.</description>
-			<name>checkboxName</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A value for the checkbox input.</description>
-			<name>checkboxValue</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's main container.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Miscellaneous data to be stored via a map. This data is not shared with the browser. The map holds key value pairs of type <![CDATA[<code>&lt;String, Object&gt;</code>]]>.</description>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>icon</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>onClick</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>If you pass in a row checker value, a result row is mandatory. A result row is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.ResultRow</code>]]>.</description>
-			<name>resultRow</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>You can optionally pass in a row checker object to manage all the options related to the checkbox. All other checkbox options overwrite the row checker options. A row checker is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.RowChecker</code>]]>.</description>
-			<name>rowChecker</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether the entry is selectable. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>showCheckbox</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Text to add as a subtitle in the text zone, if the card is vertical.</description>
-			<name>subtitle</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A title for the card.</description>
-			<name>title</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>url</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>image-card</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ImageCardTag</tag-class>
+		<name>icon-options</name>
+		<tag-class>com.liferay.frontend.taglib.servlet.taglib.IconOptionsTag</tag-class>
 		<body-content>JSP</body-content>
 		<attribute>
 			<name>cssClass</name>
@@ -956,47 +586,33 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>imageCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>imageUrl</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>info-bar</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.InfoBarTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>fixed</name>
+			<name>monospaced</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 	</tag>
 	<tag>
-		<name>info-bar-button</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.InfoBarButtonTag</tag-class>
+		<name>logo-selector</name>
+		<tag-class>com.liferay.frontend.taglib.servlet.taglib.LogoSelectorTag</tag-class>
 		<body-content>JSP</body-content>
 		<attribute>
-			<name>active</name>
+			<name>aspectRatio</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>int</type>
+		</attribute>
+		<attribute>
+			<name>currentLogoURL</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>cssClass</name>
+			<name>defaultLogoURL</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>data</name>
+			<name>description</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
@@ -1006,388 +622,86 @@
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>href</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>icon</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>iconCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>label</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>info-bar-buttons</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.InfoBarButtonsTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>info-bar-sidenav-toggler-button</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.InfoBarSidenavTogglerButtonTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>href</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>icon</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>iconCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
 			<name>label</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>position</name>
+			<name>portletNamespace</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>preserveRatio</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
 		</attribute>
 		<attribute>
 			<name>type</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
-		<attribute>
-			<name>typeMobile</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>width</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
 	</tag>
 	<tag>
-		<name>management-bar</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarTag</tag-class>
+		<name>resource-selector</name>
+		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ResourceSelectorTag</tag-class>
 		<body-content>JSP</body-content>
 		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>includeCheckBox</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>searchContainerId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-action-buttons</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarActionButtonsTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>management-bar-button</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarButtonTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>active</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>href</name>
+			<name>inputLabel</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>icon</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>iconCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>label</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-buttons</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarButtonsTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>management-bar-display-buttons</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarDisplayButtonsTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>displayViews</name>
+			<name>inputName</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>portletURL</name>
+			<name>modalTitle</name>
+			<required>true</required>
+			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
+		</attribute>
+		<attribute>
+			<name>resourceName</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>selectedDisplayStyle</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-filter</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarFilterTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>disabled</name>
+			<name>resourceNameKey</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>label</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>managementBarFilterItems</name>
+			<name>resourceValue</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>value</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-filter-item</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarFilterItemTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>active</name>
+			<name>resourceValueKey</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>label</name>
+			<name>selectEventName</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>url</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-filters</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarFiltersTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>management-bar-navigation</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarNavigationTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>label</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>navigationKeys</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>navigationParam</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>portletURL</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-sidenav-toggler-button</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarSidenavTogglerButtonTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>href</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>icon</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>iconCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>id</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>label</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>position</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>sidenavId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>type</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>typeMobile</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>width</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>management-bar-sort</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.ManagementBarSortTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<name>disabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>orderByCol</name>
+			<name>selectResourceURL</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 		<attribute>
-			<name>orderByType</name>
+			<name>showRemoveButton</name>
 			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
+			<type>boolean</type>
 		</attribute>
 		<attribute>
-			<name>orderColumns</name>
+			<name>warningMessage</name>
 			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>portletURL</name>
-			<required>true</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
 	</tag>
@@ -1442,6 +756,11 @@
 		</attribute>
 		<attribute>
 			<name>modelBean</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>navBarCssClass</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
@@ -1509,6 +828,41 @@
 		</attribute>
 		<attribute>
 			<name>searchContainerId</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>title</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+	</tag>
+	<tag>
+		<name>sidebar-toggler-button</name>
+		<tag-class>com.liferay.frontend.taglib.servlet.taglib.SidebarTogglerButtonTag</tag-class>
+		<body-content>JSP</body-content>
+		<attribute>
+			<name>cssClass</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>icon</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>label</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>sidenavId</name>
+			<required>false</required>
+			<rtexprvalue>true</rtexprvalue>
+		</attribute>
+		<attribute>
+			<name>typeMobile</name>
 			<required>false</required>
 			<rtexprvalue>true</rtexprvalue>
 		</attribute>
@@ -1591,298 +945,5 @@
 			<rtexprvalue>true</rtexprvalue>
 			<type>boolean</type>
 		</attribute>
-	</tag>
-	<tag>
-		<description>Creates a lexicon-based card component.</description>
-		<name>user-vertical-card</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.UserVerticalCardTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>The path to an action JSP. It is generally the JSP for the card dropdown menu.</description>
-			<name>actionJsp</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The service context of the action JSP.</description>
-			<name>actionJspServletContext</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to display the image as a background image.</description>
-			<name>backgroundImage</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's secondary container.</description>
-			<name>cardCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to select the card checkbox. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxChecked</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the checkbox input.</description>
-			<name>checkboxCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The data attributes to add to the checkbox input. This data is stored via a map.</description>
-			<name>checkboxData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to disable the checkbox input. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxDisabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An ID for the checkbox input.</description>
-			<name>checkboxId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A name for the checkbox input.</description>
-			<name>checkboxName</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A value for the checkbox input.</description>
-			<name>checkboxValue</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's main container.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Miscellaneous data to be stored via a map. This data is not shared with the browser. The map holds key value pairs of type <![CDATA[<code>&lt;String, Object&gt;</code>]]>.</description>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>If you pass in a row checker value, a result row is mandatory. A result row is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.ResultRow</code>]]>.</description>
-			<name>resultRow</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>You can optionally pass in a row checker object to manage all the options related to the checkbox. All other checkbox options overwrite the row checker options. A row checker is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.RowChecker</code>]]>.</description>
-			<name>rowChecker</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether the entry is selectable. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>showCheckbox</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Text to add as a subtitle in the text zone, if the card is vertical.</description>
-			<name>subtitle</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A title for the card.</description>
-			<name>title</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>url</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>userId</name>
-			<required>true</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<description>Creates a lexicon-based card component.</description>
-		<name>vertical-card</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.VerticalCardTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>The path to an action JSP. It is generally the JSP for the card dropdown menu.</description>
-			<name>actionJsp</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The service context of the action JSP.</description>
-			<name>actionJspServletContext</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to display the image as a background image.</description>
-			<name>backgroundImage</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's secondary container.</description>
-			<name>cardCssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to select the card checkbox. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxChecked</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the checkbox input.</description>
-			<name>checkboxCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>The data attributes to add to the checkbox input. This data is stored via a map.</description>
-			<name>checkboxData</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether to disable the checkbox input. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>checkboxDisabled</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>An ID for the checkbox input.</description>
-			<name>checkboxId</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A name for the checkbox input.</description>
-			<name>checkboxName</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A value for the checkbox input.</description>
-			<name>checkboxValue</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card's main container.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Miscellaneous data to be stored via a map. This data is not shared with the browser. The map holds key value pairs of type <![CDATA[<code>&lt;String, Object&gt;</code>]]>.</description>
-			<name>data</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A CSS class for styling the card image.</description>
-			<name>imageCSSClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A URL for the card's image.</description>
-			<name>imageUrl</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<name>onClick</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>If you pass in a row checker value, a result row is mandatory. A result row is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.ResultRow</code>]]>.</description>
-			<name>resultRow</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>You can optionally pass in a row checker object to manage all the options related to the checkbox. All other checkbox options overwrite the row checker options. A row checker is of type <![CDATA[<code>com.liferay.portal.kernel.dao.search.RowChecker</code>]]>.</description>
-			<name>rowChecker</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Whether the entry is selectable. The default value is <![CDATA[<code>false</code>]]>.</description>
-			<name>showCheckbox</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>Text to add as a subtitle in the text zone, if the card is vertical.</description>
-			<name>subtitle</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A title for the card.</description>
-			<name>title</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A URL to view the full content.</description>
-			<name>url</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>vertical-card-footer</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.VerticalCardFooterTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>vertical-card-header</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.VerticalCardHeaderTag</tag-class>
-		<body-content>JSP</body-content>
-	</tag>
-	<tag>
-		<name>vertical-card-small-image</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.VerticalCardSmallImageTag</tag-class>
-		<body-content>JSP</body-content>
-		<attribute>
-			<description>A CSS class for styling the small image.</description>
-			<name>cssClass</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-		<attribute>
-			<description>A URL for the card's small image, if the card is vertical.</description>
-			<name>src</name>
-			<required>false</required>
-			<rtexprvalue>true</rtexprvalue>
-		</attribute>
-	</tag>
-	<tag>
-		<name>vertical-card-sticker-bottom</name>
-		<tag-class>com.liferay.frontend.taglib.servlet.taglib.VerticalCardStickerBottomTag</tag-class>
-		<body-content>JSP</body-content>
 	</tag>
 </taglib>

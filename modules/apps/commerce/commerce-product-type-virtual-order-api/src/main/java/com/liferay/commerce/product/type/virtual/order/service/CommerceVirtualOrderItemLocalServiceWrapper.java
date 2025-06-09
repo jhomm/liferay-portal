@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceVirtualOrderItemLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceVirtualOrderItemLocalServiceWrapper
 	implements CommerceVirtualOrderItemLocalService,
 			   ServiceWrapper<CommerceVirtualOrderItemLocalService> {
+
+	public CommerceVirtualOrderItemLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceVirtualOrderItemLocalServiceWrapper(
 		CommerceVirtualOrderItemLocalService
@@ -58,15 +54,19 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	@Override
 	public com.liferay.commerce.product.type.virtual.order.model.
 		CommerceVirtualOrderItem addCommerceVirtualOrderItem(
-				long commerceOrderItemId, long fileEntryId, String url,
-				int activationStatus, long duration, int usages, int maxUsages,
+				long commerceOrderItemId,
+				java.util.List
+					<com.liferay.commerce.product.type.virtual.model.
+						CPDVirtualSettingFileEntry>
+							cpdVirtualSettingFileEntries,
+				int activationStatus, long duration, int maxUsages,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceVirtualOrderItemLocalService.
 			addCommerceVirtualOrderItem(
-				commerceOrderItemId, fileEntryId, url, activationStatus,
-				duration, usages, maxUsages, serviceContext);
+				commerceOrderItemId, cpdVirtualSettingFileEntries,
+				activationStatus, duration, maxUsages, serviceContext);
 	}
 
 	@Override
@@ -300,6 +300,17 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 				commerceOrderItemId);
 	}
 
+	@Override
+	public com.liferay.commerce.product.type.virtual.order.model.
+		CommerceVirtualOrderItem
+			fetchCommerceVirtualOrderItemByCommerceOrderItemId(
+				long commerceOrderItemId, boolean useFinderCache) {
+
+		return _commerceVirtualOrderItemLocalService.
+			fetchCommerceVirtualOrderItemByCommerceOrderItemId(
+				commerceOrderItemId, useFinderCache);
+	}
+
 	/**
 	 * Returns the commerce virtual order item matching the UUID and group.
 	 *
@@ -467,11 +478,13 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	}
 
 	@Override
-	public java.io.File getFile(long commerceVirtualOrderItemId)
+	public java.io.File getFile(
+			long commerceVirtualOrderItemId,
+			long commerceVirtualOrderItemFileEntryId)
 		throws Exception {
 
 		return _commerceVirtualOrderItemLocalService.getFile(
-			commerceVirtualOrderItemId);
+			commerceVirtualOrderItemId, commerceVirtualOrderItemFileEntryId);
 	}
 
 	@Override
@@ -505,16 +518,6 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.type.virtual.order.model.
-		CommerceVirtualOrderItem incrementCommerceVirtualOrderItemUsages(
-				long commerceVirtualOrderItemId)
-			throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceVirtualOrderItemLocalService.
-			incrementCommerceVirtualOrderItemUsages(commerceVirtualOrderItemId);
-	}
-
-	@Override
 	public void setActive(long commerceVirtualOrderItemId, boolean active)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -545,15 +548,14 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 	@Override
 	public com.liferay.commerce.product.type.virtual.order.model.
 		CommerceVirtualOrderItem updateCommerceVirtualOrderItem(
-				long commerceVirtualOrderItemId, long fileEntryId, String url,
-				int activationStatus, long duration, int usages, int maxUsages,
-				boolean active)
+				long commerceVirtualOrderItemId, int activationStatus,
+				long duration, int maxUsages, boolean active)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceVirtualOrderItemLocalService.
 			updateCommerceVirtualOrderItem(
-				commerceVirtualOrderItemId, fileEntryId, url, activationStatus,
-				duration, usages, maxUsages, active);
+				commerceVirtualOrderItemId, activationStatus, duration,
+				maxUsages, active);
 	}
 
 	@Override
@@ -564,6 +566,11 @@ public class CommerceVirtualOrderItemLocalServiceWrapper
 
 		return _commerceVirtualOrderItemLocalService.
 			updateCommerceVirtualOrderItemDates(commerceVirtualOrderItemId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceVirtualOrderItemLocalService.getBasePersistence();
 	}
 
 	@Override

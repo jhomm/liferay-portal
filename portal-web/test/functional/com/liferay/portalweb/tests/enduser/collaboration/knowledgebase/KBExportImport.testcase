@@ -1,0 +1,209 @@
+@component-name = "portal-content-management"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Knowledge Base";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			KBArticle.tearDownCP();
+		}
+	}
+
+	@description = "This test ensures that users can import article via center pane button."
+	@e2etest
+	@priority = 5
+	test CanImportArticleViaCenterPaneButton {
+		property portal.acceptance = "true";
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Folders and Articles");
+
+		KBArticle.importCP(
+			centerPaneButton = "true",
+			kbZipFile = "KBArticlesWithMetadata.zip");
+
+		KBArticle.viewArticleThroughPageTreePanel(kbArticleTitle = "Knowledge Base Article Parent Title 1");
+
+		KBArticle.viewArticleThroughPageTreePanel(kbArticleTitle = "Knowledge Base Article Parent Title 2");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Article Parent Title 1");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Article Parent Title 2");
+	}
+
+	@description = "This test ensures that users can import content to a KB folder rom the navigation pane."
+	@priority = 4
+	test CanImportArticleViaNavigationPane {
+		JSONKnowledgeBase.addkBFolder(
+			groupName = "Guest",
+			kbFolderName = "KB Folder");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Folders and Articles");
+
+		KBArticle.importCP(
+			kbFolderName = "KB Folder",
+			kbZipFile = "KBArticlesWithMetadata.zip",
+			navigationPane = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBFolder.gotoCP(kbFolderName = "KB Folder");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Article Parent Title 1");
+
+		LexiconEntry.viewEntryName(rowEntry = "Knowledge Base Article Parent Title 2");
+	}
+
+	@priority = 5
+	test DeleteImportedArticles {
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page",
+			widgetName = "Knowledge Base Display");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.importCP(
+			applyNumericalPrefix = "true",
+			kbZipFile = "KBArticlesWithMetadata.zip");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
+
+		KBArticle.gotoKBArticleViaKBDisplayHierarchyNavigationPG(kbArticleTitle = "Knowledge Base Article Parent Title 1");
+
+		KBDisplayWidget.viewParentArticleHierarchyViaKBDisplayPG(kbArticleTitle = "Knowledge Base Article Parent Title");
+
+		KBDisplayWidget.viewChildArticleHierarchyViaKBDisplayPG(kbArticleTitle = "Knowledge Base Article Parent Title 1");
+
+		KBDisplayWidget.viewChildArticleHierarchyViaKBDisplayPG(kbArticleTitle = "Knowledge Base Article Parent Title 2");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.selectAllCP();
+
+		KBArticle.deleteCP(
+			itemsNumber = 2,
+			moveToRecycleBin = "multipleArticles");
+	}
+
+	@priority = 4
+	@refactorneeded
+	test ViewImportedKBArticleWithImagesAsKBAttachments {
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Knowledge Base Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Site Name",
+			layoutName = "Knowledge Base Display Page",
+			widgetName = "Knowledge Base Display");
+
+		KBAdmin.openKBAdmin(siteURLKey = "site-name");
+
+		KBArticle.importCP(
+			applyNumericalPrefix = "true",
+			kbFolderName = "Home",
+			kbZipFile = "KBArticlesWithMetadata.zip",
+			navigationPane = "true");
+
+		Navigator.openSitePage(
+			pageName = "Knowledge Base Display Page",
+			siteName = "Site Name");
+
+		KBArticle.gotoKBArticleViaKBDisplayHierarchyNavigationPG(kbArticleTitle = "Knowledge Base Article Parent Title 1");
+
+		KBArticle.gotoKBChildArticleViaKBDisplayHierarchyNavigationPG(
+			kbArticleTitle = "Knowledge Base Article Parent Title 2",
+			kbChildArticleTitle = "Knowledge Base Article Parent Title 2 Child 2");
+
+		KBArticle.viewImageViaContentCmd();
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
+
+		DMDocument.viewDefault();
+
+		KBAdmin.openKBAdmin(siteURLKey = "site-name");
+
+		KBArticle.gotoChildArticleDescriptiveDetails(kbArticleTitle = "Knowledge Base Article Parent Title 2");
+
+		KBArticle.viewAttachmentCP(kbArticleTitle = "Knowledge Base Article Parent Title 2 Child 2");
+	}
+
+	@priority = 4
+	@refactorneeded
+	test ViewImportedKBArticleWithSourceURLMetadata {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Knowledge Base Display Page",
+			widgetName = "Knowledge Base Display");
+
+		SystemSettings.openSystemSettingsAdmin();
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Knowledge Base",
+			configurationName = "Service",
+			configurationScope = "Site Scope");
+
+		FormFields.enableCheckbox(fieldName = "sourceURLEnabled");
+
+		SystemSettings.saveConfiguration();
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.importCP(
+			applyNumericalPrefix = "true",
+			kbZipFile = "KBArticlesWithMetadata.zip");
+
+		KBArticle.gotoViaKBAdminCP(
+			hasChildArticle = "true",
+			kbArticleTitle = "Knowledge Base Article Parent Title 2");
+
+		KBArticle.viewChildArticleCP(
+			kbChildArticleContent = "Using tabs is a good way to keep your portlet's UI clean and organized.",
+			kbChildArticleTitle = "Knowledge Base Article Parent Title 2 Child 2",
+			pageTreePanel = "true");
+
+		KBArticle.viewSourceURLCP(
+			kbArticleSourceURL = "https://github.com/liferay/liferay-docs/blob/master/develop/tutorials/articles/liferayui-taglibs/knowledge-base-article-parent-title-2-child-2.md",
+			kbChildArticleTitle = "Knowledge Base Article Parent Title 2 Child 2");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
+
+		KBArticle.viewSourceURLPG(
+			kbArticleSourceURL = "https://github.com/liferay/liferay-docs/blob/master/develop/tutorials/articles/adt/intro.md",
+			kbArticleTitle = "Knowledge Base Article Parent Title 1 Child 1");
+	}
+
+}

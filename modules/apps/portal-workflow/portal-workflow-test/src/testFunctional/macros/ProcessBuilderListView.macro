@@ -1,0 +1,81 @@
+definition {
+
+	@summary = "Default summary"
+	macro filterAndOrder(filterOption = null) {
+		ManagementBar.setFilterAndOrder(filterBy = ${filterOption});
+	}
+
+	@summary = "Default summary"
+	macro gotoPermissions(workflowDefinitionTitle = null) {
+		var key_workflowDefinitionTitle = ${workflowDefinitionTitle};
+
+		Click(locator1 = "WorkflowDefinition#DEFINITION_TABLE_SPECIFIC_DEFINITION_ELLIPSIS");
+
+		MenuItem.clickNoError(menuItem = "Permissions");
+
+		AssertElementPresent(locator1 = "ProcessBuilderListView#PERMISSIONS_MODAL");
+	}
+
+	@summary = "Default summary"
+	macro searchForWorkflow(workflowName = null) {
+		var key_workflowName = ${workflowName};
+
+		Click(locator1 = "ProcessBuilderListView#SEARCH_FIELD");
+
+		Type(
+			locator1 = "ProcessBuilderListView#SEARCH_FIELD",
+			value1 = ${workflowName});
+
+		KeyPress(
+			locator1 = "TextInput#SEARCH",
+			value1 = "\RETURN");
+	}
+
+	@summary = "Default summary"
+	macro validateIfSearchItem(numberResults = null, workflowName = null) {
+		if (isSet(singleResult)) {
+			AssertTextEquals(
+				locator1 = "ProcessBuilderListView#VALIDATE_SEARCH_RESULTS_BAR",
+				value1 = "${numberResults} Result Found for ${workflowName}");
+		}
+		else {
+			AssertTextEquals(
+				locator1 = "ProcessBuilderListView#VALIDATE_SEARCH_RESULTS_BAR",
+				value1 = "${numberResults} Results Found for ${workflowName}");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewDefinitionPublicationStatus(workflowDefinitionTitle = null) {
+		AssertElementPresent(
+			key_workflowDefinitionTitle = "Published",
+			locator1 = "WorkflowDefinition#DEFINITION_TABLE_TITLE");
+
+		if (isSet(published)) {
+			AssertElementPresent(
+				key_workflowDefinitionTitle = ${workflowDefinitionTitle},
+				locator1 = "WorkflowDefinition#DEFINITION_TABLE_TITLE_PUBLISHED");
+		}
+
+		if (isSet(notPublished)) {
+			AssertElementPresent(
+				key_workflowDefinitionTitle = ${workflowDefinitionTitle},
+				locator1 = "WorkflowDefinition#DEFINITION_TABLE_TITLE_UNPUBLISHED");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewWorkflowIsNotPresent(workflowDefinitionTitle = null) {
+		AssertElementNotPresent(
+			key_workflowDefinitionTitle = ${workflowDefinitionTitle},
+			locator1 = "WorkflowDefinition#DEFINITION_TABLE_TITLE_UNPUBLISHED");
+	}
+
+	@summary = "Default summary"
+	macro viewWorkflowIsPresent(workflowDefinitionTitle = null) {
+		AssertElementPresent(
+			key_workflowDefinitionTitle = ${workflowDefinitionTitle},
+			locator1 = "WorkflowDefinition#DEFINITION_TABLE_TITLE_PUBLISHED");
+	}
+
+}

@@ -1,6 +1,8 @@
 @component-name = "portal-publications"
 definition {
 
+	property osgi.module.configuration.file.names = "com.liferay.change.tracking.configuration.CTSettingsConfiguration.config";
+	property osgi.module.configurations = "enabled=B\"true\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Publications";
@@ -10,13 +12,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONPublications.enablePublications();
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -24,192 +28,111 @@ definition {
 		}
 	}
 
-	@description = "Assert modification conflict displays when modify the same document in two Publications"
-	@priority = "5"
-	test AssertModificationConflictDisplays {
-		property portal.acceptance = "true";
+	@description = "This is a use case for LPS-172496. Deleting a portlet with a modified configuration from a Publication incorrectly leads to a Deletion Modification Conflict"
+	@priority = 3
+	test CanDeletePortletModifiedConfigurationWithoutDeletionModificationConflict {
+		task ("Add a Widget Page with Asset Publisher") {
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Test Page");
 
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest",
-			mimeType = "text/plain",
-			sourceFileName = "Document_1.txt");
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Guest",
+				layoutName = "Test Page",
+				widgetName = "Asset Publisher");
+		}
 
-		JSONPublications.addPublication(publicationName = "Publication 1 Name");
+		JSONPublications.addPublication(publicationName = "Test Publication");
 
-		JSONPublications.selectPublication(publicationName = "Publication 1 Name");
+		JSONPublications.selectPublication(publicationName = "Test Publication");
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		task ("Go to the Widget Page and edit Asset Publisher") {
+			Navigator.gotoPage(pageName = "Test Page");
 
-		DMDocument.editCP(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentDescriptionEdit = "DM Document Description Edit 1",
-			dmDocumentTitle = "DM Document Title",
-			dmDocumentTitleEdit = "DM Document Title Edit 1");
+			AssetPublisherPortlet.gotoConfigurationPG();
 
-		JSONPublications.addPublication(publicationName = "Publication 2 Name");
+			Click(locator1 = "APConfiguration#ASSET_SELECTION_MANUAL");
 
-		JSONPublications.selectPublication(publicationName = "Publication 2 Name");
+			Alert.viewSuccessMessage();
+		}
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		task ("Remove Asset Publisher from the Page and publish the Publication") {
+			Navigator.gotoPage(pageName = "Test Page");
 
-		DMDocument.editCP(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentDescriptionEdit = "DM Document Description Edit 2",
-			dmDocumentTitle = "DM Document Title",
-			dmDocumentTitleEdit = "DM Document Title Edit 2");
+			Portlet.deletePG(portletName = "Asset Publisher");
 
-		JSONPublications.selectPublication(publicationName = "Publication 1 Name");
-
-		JSONPublications.publishPublication(publicationName = "Publication 1 Name");
-
-		Publications.viewPublicationPublished(publicationName = "Publication 1 Name");
-
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
-
-		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title Edit 1");
-
-		DMDocument.viewCP(dmDocumentTitle = "DM Document Title Edit 1");
-
-		JSONPublications.selectPublication(publicationName = "Publication 2 Name");
-
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
-
-		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title Edit 2");
-
-		DMDocument.viewCP(dmDocumentTitle = "DM Document Title Edit 2");
-
-		PublicationsNavigator.gotoReviewChanges(publicationName = "Publication 2 Name");
-
-		PublicationsNavigator.gotoPublish(publicationName = "Publication 2 Name");
-
-		Publications.viewNeedsManualResolution(
-			entryTitle = "DM Document Title Edit 2",
-			warningMessage = "Modification Conflict: The conflict cannot be automatically resolved.");
-
-		Publications.viewNeedsManualResolution(
-			entryTitle = "DM Document Title Edit 2",
-			warningMessage = "Duplicate Document Version: The document version was updated to latest.");
+			Publications.publishPublication(
+				gotoPublicationsAdmin = "true",
+				publicationName = "Test Publication");
+		}
 	}
 
-	@description = "Assert the conflict changes disply when modifying and deleting the same document in two Publications"
-	@priority = "4"
-	test AssertModificationDeletionConflictDisplays {
-		property portal.acceptance = "true";
+	@description = "This is a use case for LPS-187009 - Can not publish a publication when there is a duplicate mapping conflict in a mapping table."
+	@priority = 3
+	test CanPublishWithDuplicateMappingConflictInMappingTable {
+		task ("Create a Web Content and a Tag in Production mode") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content content",
+				groupName = "Guest",
+				title = "Web Content Title");
 
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest",
-			mimeType = "text/plain",
-			sourceFileName = "Document_1.txt");
+			JSONAssettag.addTag(
+				groupName = "Guest",
+				tagName = "test tag");
+		}
 
-		JSONPublications.addPublication(publicationName = "Publication Name 1");
+		task ("Create new Publication and edit web content adding the Tag created") {
+			JSONPublications.addPublication(publicationName = "Test Publication");
 
-		JSONPublications.selectPublication(publicationName = "Publication Name 1");
+			JSONPublications.selectPublication(publicationName = "Test Publication");
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
-		DMDocument.editCP(
-			dmDocumentTitle = "DM Document Title",
-			dmDocumentTitleEdit = "DM Document Title Edit");
+			WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
-		JSONPublications.addPublication(publicationName = "Publication Name 2");
+			Panel.expandPanel(panel = "Categorization");
 
-		JSONPublications.selectPublication(publicationName = "Publication Name 2");
+			AssetCategorization.addTag(tagName = "test tag");
 
-		JSONDocument.deleteFile(
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest");
+			WebContent.publishExistingWCArticleWithPermissions();
 
-		JSONPublications.selectPublication(publicationName = "Publication Name 1");
+			WaitForElementPresent.waitForElementPresentNoException(locator1 = "Message#ALERT_DISMISSIBLE");
+		}
 
-		JSONPublications.publishPublication(publicationName = "Publication Name 1");
+		task ("Switch to Production and edit web content adding the Tag created") {
+			Publications.workOnProduction();
 
-		Publications.viewPublicationPublished(publicationName = "Publication Name 1");
+			WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+			Panel.expandPanel(panel = "Categorization");
 
-		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title Edit");
+			AssetCategorization.addTag(tagName = "test tag");
 
-		DMDocument.viewCP(dmDocumentTitle = "DM Document Title Edit");
+			WebContent.publishExistingWCArticleWithPermissions();
 
-		JSONPublications.selectPublication(publicationName = "Publication Name 2");
+			WaitForElementPresent.waitForElementPresentNoException(locator1 = "Message#ALERT_DISMISSIBLE");
+		}
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		task ("Publish Publication and assert that the Tag show up in production") {
+			PublicationsNavigator.gotoPublish(
+				gotoPublicationsAdmin = "true",
+				publicationName = "Test Publication");
 
-		DMDocument.viewDefault();
+			Publications.publishPublication(publicationName = "Test Publication");
 
-		PublicationsNavigator.gotoPublish(publicationName = "Publication Name 2");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
-		Publications.viewNeedsManualResolution(
-			entryTitle = "Asset",
-			warningMessage = "Modification Deletion Conflict: Deletion conflicts with a modification.");
+			WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
-		Publications.viewNeedsManualResolution(
-			entryTitle = "Document Version",
-			warningMessage = "Modification Deletion Conflict: Deletion conflicts with a modification.");
+			Panel.expandPanel(panel = "Categorization");
 
-		Publications.viewNeedsManualResolution(
-			entryTitle = "Document",
-			warningMessage = "Modification Deletion Conflict: Deletion conflicts with a modification.");
+			AssertElementPresent(
+				key_tagName = "test tag",
+				locator1 = "AssetCategorization#TAG");
+		}
 	}
 
-	@description = "Assert there are no conflict changes when deleting the same document in two Publications"
-	@priority = "4"
-	test AssertNoConflictForDeletionsCombinationPublications {
-		property portal.acceptance = "true";
-
-		JSONDocument.addFileWithUploadedFile(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest",
-			mimeType = "application/msword",
-			sourceFileName = "Document_1.doc");
-
-		JSONPublications.addPublication(publicationName = "Publication Name 1");
-
-		JSONPublications.selectPublication(publicationName = "Publication Name 1");
-
-		JSONDocument.deleteFile(
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest");
-
-		JSONPublications.addPublication(publicationName = "Publication Name 2");
-
-		JSONPublications.selectPublication(publicationName = "Publication Name 2");
-
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
-
-		JSONDocument.deleteFile(
-			dmDocumentTitle = "DM Document Title",
-			groupName = "Guest");
-
-		JSONPublications.selectPublication(publicationName = "Publication Name 1");
-
-		JSONPublications.publishPublication(publicationName = "Publication Name 1");
-
-		Publications.viewPublicationPublished(publicationName = "Publication Name 1");
-
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
-
-		DMDocument.viewDefault();
-
-		JSONPublications.selectPublication(publicationName = "Publication Name 2");
-
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
-
-		DMDocument.viewDefault();
-
-		PublicationsNavigator.gotoPublish(publicationName = "Publication Name 2");
-
-		AssertElementNotPresent(locator1 = "Publications#NEEDS_MANUAL_RESOLUTION_TABLE");
-
-		JSONPublications.publishPublication(publicationName = "Publication Name 2");
-
-		Publications.viewPublicationPublished(publicationName = "Publication Name 2");
-	}
-
-	@priority = "5"
+	@priority = 5
 	test ConflictingPublicationsAutomaticallyResolved {
 		JSONWebcontent.addWebContent(
 			content = "WC WebContent Content",
@@ -249,9 +172,9 @@ definition {
 			changeTitle = "WC WebContent Title",
 			publicationName = "Publication Name");
 
-		JSONPublications.publishPublication(publicationName = "Publication 2 Name");
-
-		Publications.viewPublicationPublished(publicationName = "Publication 2 Name");
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication 2 Name");
 
 		PublicationsNavigator.gotoPublish(
 			gotoPublicationsAdmin = "true",
@@ -271,142 +194,124 @@ definition {
 			key_warningMessage = "The conflict cannot be automatically resolved.",
 			locator1 = "Message#WARNING_SPECIFIC");
 
-		JSONPublications.publishPublication(publicationName = "Publication Name");
-
-		Publications.viewPublicationPublished(publicationName = "Publication Name");
+		Publications.publishPublication(publicationName = "Publication Name");
 	}
 
-	@description = "Assert the conflict changes disply when modifying and deleting the same document in two Publications and discard the changes"
-	@priority = "5"
-	test ResolveDeletionModificationConflictPublicationsByDiscarding {
-		property portal.acceptance = "true";
-
-		JSONWebcontent.addWebContent(
-			content = "WC WebContent Content",
-			groupName = "Guest",
-			title = "WC WebContent Title");
+	@description = "Assert explanation of duplicate conflict displays"
+	@priority = 4
+	test ExplainDuplicationConflict {
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONPublications.addPublication(publicationName = "Publication 1 Name");
 
 		JSONPublications.selectPublication(publicationName = "Publication 1 Name");
 
-		JSONWebcontent.deleteWebContent(
-			groupName = "Guest",
-			title = "WC WebContent Title");
+		JSONWebcontent.addFolder(
+			folderName = "WC Folder Name",
+			groupName = "Site Name");
 
 		JSONPublications.addPublication(publicationName = "Publication 2 Name");
 
 		JSONPublications.selectPublication(publicationName = "Publication 2 Name");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
-
-		WebContent.editCP(
-			webContentContentEdit = "WC WebContent Content 2 Edit",
-			webContentTitle = "WC WebContent Title",
-			webContentTitleEdit = "WC WebContent Title 2 Edit");
+		JSONWebcontent.addFolder(
+			folderName = "WC Folder Name",
+			groupName = "Site Name");
 
 		PublicationsNavigator.gotoReviewChanges(
 			gotoPublicationsAdmin = "true",
 			publicationName = "Publication 1 Name");
 
-		PublicationsChanges.viewChangesViaChangesStyle(
-			changeCategory = "Web Content Article",
-			changeSite = "Guest",
-			changeTitle = "WC WebContent Title",
-			changeType = "Deleted",
-			changeUser = "Test Test");
-
-		PublicationsChanges.viewChangesViaContextStyle(
-			changeCategory = "Web Content Article",
-			changeDescription = "Test Test deleted a Web Content Article in Guest",
-			changeTitle = "WC WebContent Title");
-
-		JSONPublications.publishPublication(publicationName = "Publication 1 Name");
-
-		Publications.viewPublicationPublished(publicationName = "Publication 1 Name");
-
-		Navigator.gotoNavTab(navTab = "History");
-
-		PublicationsChanges.viewChangesViaChangesStyle(
-			changeCategory = "Web Content Article",
-			changeSite = "Guest",
-			changeTitle = "WC WebContent Title",
-			changeType = "Deleted",
-			changeUser = "Test Test",
-			publicationName = "Publication 1 Name",
-			publishedPublication = "true");
-
-		// Workaround LPS-134018
-
-		/*WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-		WebContent.viewNotPresentCP(webContentTitle = "WC WebContent Title");*/
-
-		JSONPublications.selectPublication(publicationName = "Publication 2 Name");
-
-		/*WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
-
-		WebContent.viewTitle(webContentTitle = "WC WebContent Title 2 Edit");*/
-
-		PublicationsNavigator.gotoReviewChanges(publicationName = "Publication 2 Name");
-
-		PublicationsChanges.viewChangesViaChangesStyle(
-			changeCategory = "Web Content Article",
-			changeSite = "Guest",
-			changeTitle = "WC WebContent Title 2 Edit",
+		PublicationsChanges.viewChanges(
+			changeCategory = "Web Content Folder",
+			changeSite = "Site Name",
+			changeTitle = "WC Folder Name",
 			changeType = "Added",
 			changeUser = "Test Test");
 
-		PublicationsChanges.viewChangesViaContextStyle(
-			changeCategory = "Web Content Article",
-			changeDescription = "Test Test added a Web Content Article in Guest",
-			changeTitle = "WC WebContent Title 2 Edit");
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication 1 Name");
+
+		PublicationsNavigator.gotoReviewChanges(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication 2 Name");
+
+		PublicationsChanges.viewChanges(
+			changeCategory = "Web Content Folder",
+			changeSite = "Site Name",
+			changeTitle = "WC Folder Name",
+			changeType = "Added",
+			changeUser = "Test Test");
 
 		PublicationsNavigator.gotoPublish(publicationName = "Publication 2 Name");
 
+		Publications.viewConflictingChangesWarning(warningMessage = "This publication contains conflicting changes that must be manually resolved before publishing.");
+
 		Publications.viewNeedsManualResolution(
-			entryTitle = "WC WebContent Title 2 Edit",
-			warningMessage = "Deletion Modification Conflict: Modification conflicts with a deletion.");
+			entryTitle = "WC Folder Name",
+			warningMessage = "Duplicate Folder Name");
+	}
 
-		PublicationsNavigator.gotoViewChangeDiffInConflictingPublications(entryTitle = "WC WebContent Title 2 Edit");
+	@description = "Assert explanation of missing requirements conflict displays"
+	@priority = 4
+	test ExplainMissingRequirementConflict {
+		HeadlessSite.addSite(siteName = "Site Name");
 
-		PublicationsChanges.viewChangeDiff(
-			columnName = "Title",
-			columnValueInPublication = "WC WebContent Title 2 Edit",
-			entryDeletedInProduction = "true",
-			publicationName = "Publication 2 Name");
+		JSONWebcontent.addFolder(
+			folderName = "WC Folder Name",
+			groupName = "Site Name");
 
-		IFrame.closeFrame();
+		JSONPublications.addPublication(publicationName = "Publication Name");
 
-		PublicationsChanges.discardChanges(
-			changeCategory = "Asset",
-			changeTitle = "WC WebContent Title 2 Edit",
-			conflictingChanges = "true",
-			entryTitle = "WC WebContent Title 2 Edit");
+		JSONPublications.selectPublication(publicationName = "Publication Name");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+		JSONWebcontent.addFolder(
+			folderDescription = "WC SubFolder Description",
+			folderName = "WC SubFolder Name",
+			groupName = "Site Name",
+			parentFolderName = "WC Folder Name");
 
-		WebContent.viewNotPresentCP(webContentTitle = "WC WebContent Title 2 Edit");
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 
-		WebContent.viewNotPresentCP(webContentTitle = "WC WebContent Title");
+		Publications.workOnProduction();
 
-		JSONPublications.publishPublication(publicationName = "Publication 2 Name");
+		WebContentFolder.moveToRecycleBinCP(
+			assetType = "Web Content Folder",
+			folderName = "WC Folder Name");
 
-		Publications.viewPublicationPublished(publicationName = "Publication 2 Name");
+		RecycleBin.openRecycleBinAdmin(siteURLKey = "site-name");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+		RecycleBin.emptyCP();
 
-		AssertTextEquals(
-			locator1 = "Message#EMPTY_INFO",
-			value1 = "No web content was found.");
+		JSONPublications.selectPublication(publicationName = "Publication Name");
+
+		PublicationsNavigator.gotoReviewChanges(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name");
+
+		PublicationsChanges.viewChanges(
+			changeCategory = "Web Content Folder",
+			changeSite = "Site Name",
+			changeTitle = "WC SubFolder Name",
+			changeType = "Added",
+			changeUser = "Test Test");
+
+		PublicationsNavigator.gotoPublish(publicationName = "Publication Name");
+
+		Publications.viewConflictingChangesWarning(warningMessage = "This publication contains conflicting changes that must be manually resolved before publishing.");
+
+		Publications.viewNeedsManualResolution(
+			entryTitle = "WC SubFolder Name",
+			warningMessage = "Missing Requirement Conflict");
 	}
 
 	@description = "Assert the conflict changes disply when adding the same folder Name in two Publications and resolve by editing"
-	@priority = "5"
-	test ResolveDuplicateNameConflictPublicationsByEdting {
+	@priority = 5
+	test ResolveDuplicateNameConflictPublicationsByEditing {
 		property portal.acceptance = "true";
+
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONPublications.addPublication(publicationName = "Publication Name 1");
 
@@ -415,7 +320,7 @@ definition {
 		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",
 			dmFolderName = "DM Folder Name ",
-			groupName = "Guest");
+			groupName = "Site Name");
 
 		JSONPublications.addPublication(publicationName = "Publication Name 2");
 
@@ -424,21 +329,21 @@ definition {
 		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",
 			dmFolderName = "DM Folder Name",
-			groupName = "Guest");
+			groupName = "Site Name");
 
 		JSONPublications.selectPublication(publicationName = "Publication Name 1");
 
-		JSONPublications.publishPublication(publicationName = "Publication Name 1");
+		Publications.publishPublication(
+			gotoPublicationsAdmin = "true",
+			publicationName = "Publication Name 1");
 
-		Publications.viewPublicationPublished(publicationName = "Publication Name 1");
-
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
 
 		DMFolder.viewCP(dmFolderName = "DM Folder Name");
 
 		JSONPublications.selectPublication(publicationName = "Publication Name 2");
 
-		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
 
 		DMFolder.viewCP(dmFolderName = "DM Folder Name");
 
@@ -446,21 +351,18 @@ definition {
 
 		Publications.viewNeedsManualResolution(
 			entryTitle = "DM Folder Name",
-			warningMessage = "Duplicate Folder Name: Rename the folder in the publication.");
+			warningMessage = "Duplicate Folder Name");
 
 		PublicationsChanges.gotoEditChanges(
-			conflictingChanges = "true",
-			entryTitle = "DM Folder Name");
+			changeCategory = "Documents Folder",
+			changeTitle = "DM Folder Name",
+			editInLocation = "Publication Name 2");
 
 		PortletEntry.inputName(name = "DM Folder Name Edit");
 
 		PortletEntry.inputDescription(description = "DM Folder Description Edit");
 
 		Button.clickSave();
-
-		AssertTextEquals.assertPartialText(
-			locator1 = "Message#SUCCESS",
-			value1 = "No unresolved conflicts, ready to publish.");
 
 		Publications.publishPublication(publicationName = "Publication Name 2");
 	}

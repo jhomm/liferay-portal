@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,34 +20,17 @@ List<DropdownItem> dropdownItems = assetEntryActionDropdownItemsProvider.getActi
 <c:if test="<%= ListUtil.isNotEmpty(dropdownItems) %>">
 	<c:choose>
 		<c:when test="<%= dropdownItems.size() > 1 %>">
-			<liferay-ui:icon-menu
-				cssClass="visible-interaction"
-				direction="left-side"
-				icon="<%= StringPool.BLANK %>"
-				markupView="lexicon"
-				message="<%= StringPool.BLANK %>"
-				showWhenSingleIcon="<%= true %>"
-				triggerCssClass="text-primary"
-			>
-
-				<%
-				for (DropdownItem dropdownItem : dropdownItems) {
-					Map<String, Object> data = (HashMap<String, Object>)dropdownItem.get("data");
-				%>
-
-					<liferay-ui:icon
-						data="<%= data %>"
-						message='<%= String.valueOf(dropdownItem.get("label")) %>'
-						method="get"
-						url='<%= String.valueOf(dropdownItem.get("href")) %>'
-						useDialog='<%= GetterUtil.getBoolean(data.get("useDialog")) %>'
-					/>
-
-				<%
-				}
-				%>
-
-			</liferay-ui:icon-menu>
+			<clay:dropdown-actions
+				aria-label='<%= LanguageUtil.format(locale, "actions-for-x", assetEntry.getTitle(locale)) %>'
+				borderless="<%= true %>"
+				cssClass="text-primary visible-interaction"
+				displayType="unstyled"
+				dropdownItems="<%= dropdownItems %>"
+				monospaced="<%= true %>"
+				propsTransformer="{AssetEntryActionDropdownPropsTransformer} from asset-publisher-web"
+				small="<%= true %>"
+				title='<%= LanguageUtil.format(locale, "actions-for-x", assetEntry.getTitle(locale)) %>'
+			/>
 		</c:when>
 		<c:otherwise>
 
@@ -66,16 +40,39 @@ List<DropdownItem> dropdownItems = assetEntryActionDropdownItemsProvider.getActi
 			Map<String, Object> data = (HashMap<String, Object>)dropdownItem.get("data");
 			%>
 
-			<liferay-ui:icon
-				cssClass="visible-interaction"
-				data='<%= (HashMap)dropdownItem.get("data") %>'
-				icon='<%= String.valueOf(dropdownItem.get("icon")) %>'
-				linkCssClass="text-primary"
-				markupView="lexicon"
-				method="get"
-				url='<%= String.valueOf(dropdownItem.get("href")) %>'
-				useDialog='<%= GetterUtil.getBoolean(data.get("useDialog")) %>'
-			/>
+			<c:choose>
+				<c:when test='<%= (data != null) && GetterUtil.getBoolean(data.get("useDialog")) %>'>
+					<clay:button
+						additionalProps='<%=
+							HashMapBuilder.<String, Object>put(
+								"url", String.valueOf(data.get("assetEntryActionURL"))
+							).build()
+						%>'
+						aria-label='<%= String.valueOf(dropdownItem.get("label")) %>'
+						borderless="<%= true %>"
+						cssClass="text-primary visible-interaction"
+						displayType="unstyled"
+						icon='<%= String.valueOf(dropdownItem.get("icon")) %>'
+						monospaced="<%= true %>"
+						propsTransformer="{AssetEntryActionButtonPropsTransformer} from asset-publisher-web"
+						small="<%= true %>"
+						title='<%= String.valueOf(dropdownItem.get("label")) %>'
+					/>
+				</c:when>
+				<c:otherwise>
+					<clay:link
+						aria-label='<%= String.valueOf(dropdownItem.get("label")) %>'
+						borderless="<%= true %>"
+						cssClass="lfr-portal-tooltip text-primary visible-interaction"
+						displayType="unstyled"
+						href='<%= String.valueOf(dropdownItem.get("href")) %>'
+						icon='<%= String.valueOf(dropdownItem.get("icon")) %>'
+						monospaced="<%= true %>"
+						small="<%= true %>"
+						title='<%= String.valueOf(dropdownItem.get("label")) %>'
+					/>
+				</c:otherwise>
+			</c:choose>
 		</c:otherwise>
 	</c:choose>
 </c:if>

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.test.util;
 
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.exception.LoggedExceptionInInitializerError;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Company;
@@ -42,9 +34,16 @@ public class TestPropsValues {
 		TestPropsUtil.get("assert.logs"));
 
 	public static final long CI_TEST_TIMEOUT_TIME = GetterUtil.getLong(
-		TestPropsUtil.get("ci.test.timeout.time"), 40 * Time.MINUTE);
+		TestPropsUtil.get("ci.test.timeout.time"), 3 * Time.MINUTE);
 
 	public static final String COMPANY_WEB_ID;
+
+	public static final boolean DATABASE_PARTITION_COPY = GetterUtil.getBoolean(
+		TestPropsUtil.get("database.partition.copy"));
+
+	public static final boolean DATABASE_PARTITION_EXPORT_AND_IMPORT =
+		GetterUtil.getBoolean(
+			TestPropsUtil.get("database.partition.export.and.import"));
 
 	public static final boolean DL_FILE_ENTRY_PROCESSORS_TRIGGER_SYNCHRONOUSLY =
 		GetterUtil.getBoolean(
@@ -63,12 +62,16 @@ public class TestPropsValues {
 		String companyWebId = TestPropsUtil.get("company.web.id");
 
 		try {
-			if (Validator.isNull(companyWebId)) {
+			if (DBPartition.isPartitionEnabled()) {
+				companyWebId = TestPropsUtil.get(
+					"database.partition.company.web.id");
+			}
+			else if (Validator.isNull(companyWebId)) {
 				companyWebId = GetterUtil.getString(
 					PropsUtil.get(PropsKeys.COMPANY_DEFAULT_WEB_ID));
-
-				TestPropsUtil.set("company.web.id", companyWebId);
 			}
+
+			TestPropsUtil.set("company.web.id", companyWebId);
 		}
 		catch (Exception exception) {
 			throw new LoggedExceptionInInitializerError(exception);

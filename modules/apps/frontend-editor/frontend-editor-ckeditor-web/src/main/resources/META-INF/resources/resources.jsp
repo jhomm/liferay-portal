@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,27 +14,27 @@ String inlineEditSaveURL = GetterUtil.getString((String)request.getAttribute(CKE
 %>
 
 <liferay-util:html-top
-	outputKey="js_editor_ckeditor_skip_editor_loading"
+	outputKey="com.liferay.frontend.editor.ckeditor.web#/resources.jsp"
 >
-	<style type="text/css">
+	<aui:style type="text/css">
 		table.cke_dialog {
 			position: absolute !important;
 		}
-	</style>
+	</aui:style>
 
 	<%
 	long javaScriptLastModified = PortalWebResourcesUtil.getLastModified(PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR);
 	%>
 
-	<script data-senna-track="temporary" src="<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getCDNHost() + PortalWebResourcesUtil.getContextPath(PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR) + "/ckeditor/ckeditor.js", javaScriptLastModified)) %>" type="text/javascript"></script>
+	<aui:script senna="temporary" src='<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getCDNHost() + PortalWebResourcesUtil.getContextPath(PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR) + "/ckeditor/ckeditor.js", javaScriptLastModified)) %>' type="text/javascript"></aui:script>
 
 	<c:if test="<%= inlineEdit && Validator.isNotNull(inlineEditSaveURL) %>">
-		<script data-senna-track="temporary" src="<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getCDNHost() + PortalWebResourcesUtil.getContextPath(PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR) + "/ckeditor/main.js", javaScriptLastModified)) %>" type="text/javascript"></script>
+		<aui:script senna="temporary" src='<%= HtmlUtil.escapeAttribute(PortalUtil.getStaticResourceURL(request, themeDisplay.getCDNHost() + PortalWebResourcesUtil.getContextPath(PortalWebResourceConstants.RESOURCE_TYPE_EDITOR_CKEDITOR) + "/js/legacy/main.js", javaScriptLastModified)) %>' type="text/javascript"></aui:script>
 	</c:if>
 
 	<liferay-util:dynamic-include key='<%= "com.liferay.frontend.editor.ckeditor.web#" + editorName + "#additionalResources" %>' />
 
-	<script data-senna-track="temporary" type="text/javascript">
+	<aui:script senna="temporary" type="text/javascript">
 		CKEDITOR.scriptLoader.loadScripts = function (scripts, success, failure) {
 			CKEDITOR.scriptLoader.load(scripts, success, failure);
 		};
@@ -91,5 +82,5 @@ String inlineEditSaveURL = GetterUtil.getString((String)request.getAttribute(CKE
 		};
 
 		Liferay.on('beforeScreenFlip', destroyGlobalCkEditor);
-	</script>
+	</aui:script>
 </liferay-util:html-top>

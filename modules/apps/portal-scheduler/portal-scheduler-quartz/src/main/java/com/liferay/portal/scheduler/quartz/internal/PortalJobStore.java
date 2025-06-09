@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.scheduler.quartz.internal;
 
-import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.log.Log;
@@ -28,7 +18,6 @@ import org.quartz.impl.jdbcjobstore.MSSQLDelegate;
 import org.quartz.impl.jdbcjobstore.NoSuchDelegateException;
 import org.quartz.impl.jdbcjobstore.PostgreSQLDelegate;
 import org.quartz.impl.jdbcjobstore.StdJDBCDelegate;
-import org.quartz.impl.jdbcjobstore.SybaseDelegate;
 
 /**
  * @author Brian Wing Shun Chan
@@ -44,9 +33,7 @@ public class PortalJobStore extends JobStoreTX {
 		try {
 			Class<?> driverDelegateClass = StdJDBCDelegate.class;
 
-			DB db = DBManagerUtil.getDB();
-
-			DBType dbType = db.getDBType();
+			DBType dbType = DBManagerUtil.getDBType();
 
 			if (dbType == DBType.DB2) {
 				driverDelegateClass = DB2v8Delegate.class;
@@ -59,9 +46,6 @@ public class PortalJobStore extends JobStoreTX {
 			}
 			else if (dbType == DBType.SQLSERVER) {
 				driverDelegateClass = MSSQLDelegate.class;
-			}
-			else if (dbType == DBType.SYBASE) {
-				driverDelegateClass = SybaseDelegate.class;
 			}
 
 			if (_log.isDebugEnabled()) {

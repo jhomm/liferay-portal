@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -27,14 +18,15 @@ const Trigger = React.forwardRef(
 			{...props}
 			className={classnames(
 				'btn-account-selector',
-				currentAccount && 'account-selected'
+				currentAccount?.id && 'account-selected'
 			)}
 			displayType="unstyled"
 			ref={ref}
 		>
-			{currentAccount ? (
+			{currentAccount?.id ? (
 				<>
-					<Sticker size="xl" {...currentAccount} />
+					<Sticker {...currentAccount} />
+
 					<div className="d-flex flex-column">
 						<div className="account-name">
 							<span className="text-truncate-inline">
@@ -43,7 +35,8 @@ const Trigger = React.forwardRef(
 								</span>
 							</span>
 						</div>
-						<div className="d-flex">
+
+						<div className="d-flex order-info">
 							{currentOrder?.id ? (
 								<>
 									<span className="order-id">
@@ -73,7 +66,11 @@ const Trigger = React.forwardRef(
 				<div className="no-account-selected-placeholder">
 					<span className="text-truncate-inline">
 						<span className="text-truncate">
-							{Liferay.Language.get('select-account-and-order')}
+							{currentOrder?.id
+								? Liferay.Language.get('select-an-account')
+								: Liferay.Language.get(
+										'select-account-and-order'
+									)}
 						</span>
 					</span>
 				</div>

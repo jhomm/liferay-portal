@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.util;
 
-import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
@@ -111,30 +101,22 @@ public abstract class BaseUpgradeTableImpl extends Table {
 
 			String[] indexesSQL = getIndexesSQL();
 
-			boolean dropIndexes = false;
-
 			for (String indexSQL : indexesSQL) {
 				if (!isAllowUniqueIndexes() &&
 					indexSQL.contains("create unique index")) {
 
 					indexSQL = StringUtil.replace(
 						indexSQL, "create unique index ", "create index ");
-
-					dropIndexes = true;
 				}
 
 				try {
-					db.runSQLTemplateString(targetConnection, indexSQL, false);
+					db.runSQLTemplate(targetConnection, indexSQL, false);
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
 						_log.warn(exception.getMessage() + ": " + indexSQL);
 					}
 				}
-			}
-
-			if (dropIndexes) {
-				StartupHelperUtil.setDropIndexes(true);
 			}
 		}
 		finally {

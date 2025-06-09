@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -28,32 +19,26 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.dom4j.Element;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
  * @author Kevin Yen
  */
-public class BatchBuild extends BaseBuild {
+public class BatchBuild extends BaseParentBuild {
 
 	@Override
-	public void addTimelineData(BaseBuild.TimelineData timelineData) {
+	public void addTimelineData(TimelineData timelineData) {
 		addDownstreamBuildsTimelineData(timelineData);
-	}
-
-	@Override
-	public String getAppServer() {
-		return getSpiraPropertyValue("app.server");
 	}
 
 	@Override
@@ -79,13 +64,14 @@ public class BatchBuild extends BaseBuild {
 	}
 
 	@Override
-	public String getBrowser() {
-		return getSpiraPropertyValue("browser");
-	}
+	public String getBuildName() {
+		String buildName = getJobVariant();
 
-	@Override
-	public String getDatabase() {
-		return getSpiraPropertyValue("database");
+		if (JenkinsResultsParserUtil.isNullOrEmpty(buildName)) {
+			buildName = getJobName();
+		}
+
+		return buildName;
 	}
 
 	public List<AxisBuild> getDownstreamAxisBuilds() {
@@ -109,59 +95,54 @@ public class BatchBuild extends BaseBuild {
 
 	@Override
 	public Element getGitHubMessageElement() {
-		Collections.sort(
-			downstreamBuilds, new BaseBuild.BuildDisplayNameComparator());
+		sortDownstreamBuilds();
 
 		Element messageElement = super.getGitHubMessageElement();
 
 		if (messageElement == null) {
-			return messageElement;
+			return null;
 		}
 
 		String result = getResult();
 
 		if (result.equals("ABORTED") && (getDownstreamBuildCount(null) == 0)) {
-			return messageElement;
+			_gitHubMessageElement = messageElement;
+
+			return _gitHubMessageElement;
 		}
 
-		Map<Build, Element> downstreamBuildFailureMessages =
-			getDownstreamBuildMessages(getFailedDownstreamBuilds());
+		List<Build> failedDownstreamBuilds = getFailedDownstreamBuilds();
+
+		List<Element> downstreamBuildMessageElements =
+			getDownstreamBuildMessageElements(failedDownstreamBuilds);
 
 		if (result.equals("FAILURE") &&
-			downstreamBuildFailureMessages.isEmpty()) {
+			downstreamBuildMessageElements.isEmpty()) {
 
-			return messageElement;
+			_gitHubMessageElement = messageElement;
+
+			return _gitHubMessageElement;
 		}
 
 		List<Element> failureElements = new ArrayList<>();
 		List<Element> upstreamJobFailureElements = new ArrayList<>();
 
-		for (Map.Entry<Build, Element> entry :
-				downstreamBuildFailureMessages.entrySet()) {
+		for (Build failedDownstreamBuild : failedDownstreamBuilds) {
+			Element gitHubMessageElement =
+				failedDownstreamBuild.getGitHubMessageElement();
 
-			Build failedDownstreamBuild = entry.getKey();
+			if (gitHubMessageElement != null) {
+				failureElements.add(gitHubMessageElement);
+			}
 
-			Element upstreamJobFailureElement =
+			Element gitHubMessageUpstreamJobFailureElement =
 				failedDownstreamBuild.
 					getGitHubMessageUpstreamJobFailureElement();
 
-			if (upstreamJobFailureElement != null) {
-				upstreamJobFailureElements.add(upstreamJobFailureElement);
+			if (gitHubMessageUpstreamJobFailureElement != null) {
+				upstreamJobFailureElements.add(
+					gitHubMessageUpstreamJobFailureElement);
 			}
-
-			Element failureElement = entry.getValue();
-
-			if (failureElement == null) {
-				continue;
-			}
-
-			if (isHighPriorityBuildFailureElement(failureElement)) {
-				failureElements.add(0, failureElement);
-
-				continue;
-			}
-
-			failureElements.add(failureElement);
 		}
 
 		if (!upstreamJobFailureElements.isEmpty()) {
@@ -186,7 +167,9 @@ public class BatchBuild extends BaseBuild {
 			return null;
 		}
 
-		return messageElement;
+		_gitHubMessageElement = messageElement;
+
+		return _gitHubMessageElement;
 	}
 
 	@Override
@@ -256,30 +239,12 @@ public class BatchBuild extends BaseBuild {
 	}
 
 	@Override
-	public String getJDK() {
-		return getSpiraPropertyValue("java.jdk");
-	}
-
-	@Override
 	public Map<String, String> getMetricLabels() {
 		Map<String, String> metricLabels = super.getMetricLabels();
 
 		metricLabels.put("job_type", batchName);
 
 		return metricLabels;
-	}
-
-	@Override
-	public String getOperatingSystem() {
-		return getSpiraPropertyValue("operating.system");
-	}
-
-	public String getSpiraPropertyValue(String propertyType) {
-		String propertyName = _getSpiraPropertyNameFromBatchName(propertyType);
-
-		return JenkinsResultsParserUtil.getProperty(
-			getJobProperties(), "test.batch.spira.property.value", propertyType,
-			propertyName);
 	}
 
 	@Override
@@ -324,51 +289,11 @@ public class BatchBuild extends BaseBuild {
 	}
 
 	@Override
-	public synchronized void update() {
-		super.update();
+	public void saveBuildURLInBuildDatabase() {
+		BuildDatabase buildDatabase = getBuildDatabase();
 
-		if (badBuildNumbers.size() >= REINVOCATIONS_SIZE_MAX) {
-			return;
-		}
-
-		String status = getStatus();
-		String result = getResult();
-
-		if ((status.equals("completed") && result.equals("SUCCESS")) ||
-			fromArchive) {
-
-			return;
-		}
-
-		boolean reinvoked = false;
-
-		List<Build> builds = new ArrayList<>();
-
-		builds.add(this);
-
-		builds.addAll(getDownstreamBuilds("completed"));
-
-		for (Build build : builds) {
-			if (reinvoked) {
-				break;
-			}
-
-			for (ReinvokeRule reinvokeRule : reinvokeRules) {
-				String buildResult = build.getResult();
-
-				if ((buildResult == null) || buildResult.equals("SUCCESS") ||
-					!reinvokeRule.matches(build)) {
-
-					continue;
-				}
-
-				reinvoke(reinvokeRule);
-
-				reinvoked = true;
-
-				break;
-			}
-		}
+		buildDatabase.putProperty(
+			BUILD_URLS_PROPERTIES_KEY, getBatchName(), getBuildURL(), false);
 	}
 
 	protected BatchBuild(String url) {
@@ -397,6 +322,37 @@ public class BatchBuild extends BaseBuild {
 		else {
 			batchName = null;
 		}
+	}
+
+	@Override
+	protected void findDownstreamBuilds() {
+		List<String> downstreamBuildURLs = new ArrayList<>();
+
+		JSONObject buildJSONObject = getBuildJSONObject("runs[number,url]");
+
+		if ((buildJSONObject != null) && buildJSONObject.has("runs")) {
+			JSONArray runsJSONArray = buildJSONObject.getJSONArray("runs");
+
+			if (runsJSONArray != null) {
+				for (int i = 0; i < runsJSONArray.length(); i++) {
+					JSONObject runJSONObject = runsJSONArray.getJSONObject(i);
+
+					if (runJSONObject.getInt("number") != getBuildNumber()) {
+						continue;
+					}
+
+					String url = runJSONObject.getString("url");
+
+					if (hasBuildURL(url) || downstreamBuildURLs.contains(url)) {
+						continue;
+					}
+
+					downstreamBuildURLs.add(url);
+				}
+			}
+		}
+
+		addDownstreamBuilds(downstreamBuildURLs.toArray(new String[0]));
 	}
 
 	protected AxisBuild getAxisBuild(String axisVariable) {
@@ -525,61 +481,6 @@ public class BatchBuild extends BaseBuild {
 	}
 
 	protected final String batchName;
-	protected final Pattern majorVersionPattern = Pattern.compile(
-		"((\\d+)\\.?(\\d+?)).*");
-
-	private String _getSpiraPropertyNameFromBatchName(String propertyType) {
-		String batchName = getBatchName();
-
-		if ((batchName == null) || batchName.isEmpty()) {
-			return null;
-		}
-
-		Properties jobProperties = getJobProperties();
-
-		String propertyNamePrefix = JenkinsResultsParserUtil.combine(
-			"test.batch.spira.property.name[", propertyType, "]");
-
-		Set<String> propertyNames = new HashSet<>();
-
-		for (Object jobPropertyNameObject : jobProperties.keySet()) {
-			if (!(jobPropertyNameObject instanceof String)) {
-				continue;
-			}
-
-			String jobPropertyNameRegex = JenkinsResultsParserUtil.combine(
-				Pattern.quote(propertyNamePrefix), "\\[([^\\]+)\\]");
-
-			String jobPropertyName = jobPropertyNameObject.toString();
-
-			if (!jobPropertyName.matches(jobPropertyNameRegex)) {
-				continue;
-			}
-
-			String propertyName = jobPropertyName.replaceAll(
-				jobPropertyNameRegex, "$1");
-
-			if (!batchName.contains(propertyName)) {
-				continue;
-			}
-
-			propertyNames.add(propertyName);
-		}
-
-		if (propertyNames.isEmpty()) {
-			return null;
-		}
-
-		String targetPropertyName = "";
-
-		for (String propertyName : propertyNames) {
-			if (propertyName.length() > targetPropertyName.length()) {
-				targetPropertyName = propertyName;
-			}
-		}
-
-		return targetPropertyName;
-	}
 
 	private static final FailureMessageGenerator[] _FAILURE_MESSAGE_GENERATORS =
 		{new ClosedChannelExceptionFailureMessageGenerator()};
@@ -588,5 +489,7 @@ public class BatchBuild extends BaseBuild {
 		JenkinsResultsParserUtil.getNewThreadPoolExecutor(10, true);
 	private static final Pattern _jobVariantPattern = Pattern.compile(
 		"(?<batchName>[^/]+)(/.*)?");
+
+	private Element _gitHubMessageElement;
 
 }

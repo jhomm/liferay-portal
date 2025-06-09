@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.websocket.whiteboard.internal;
@@ -18,18 +9,18 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import jakarta.servlet.ServletContext;
+
+import jakarta.websocket.Decoder;
+import jakarta.websocket.DeploymentException;
+import jakarta.websocket.Encoder;
+import jakarta.websocket.Endpoint;
+import jakarta.websocket.server.ServerContainer;
+import jakarta.websocket.server.ServerEndpointConfig;
+
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
-import javax.servlet.ServletContext;
-
-import javax.websocket.Decoder;
-import javax.websocket.DeploymentException;
-import javax.websocket.Encoder;
-import javax.websocket.Endpoint;
-import javax.websocket.server.ServerContainer;
-import javax.websocket.server.ServerEndpointConfig;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceObjects;
@@ -46,13 +37,13 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
  * @author Cristina González
  * @author Manuel de la Peña
  */
-@Component(immediate = true, service = {})
+@Component(service = {})
 public class WebSocketEndpointTracker {
 
 	@Activate
 	protected void activate(final BundleContext bundleContext) {
 		Object serverContainer = _servletContext.getAttribute(
-			"javax.websocket.server.ServerContainer");
+			"jakarta.websocket.server.ServerContainer");
 
 		if (serverContainer == null) {
 			if (_log.isInfoEnabled()) {

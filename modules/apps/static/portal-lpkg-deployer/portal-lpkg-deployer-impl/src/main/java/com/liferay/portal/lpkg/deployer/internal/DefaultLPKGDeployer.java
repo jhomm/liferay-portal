@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.lpkg.deployer.internal;
@@ -27,8 +18,8 @@ import com.liferay.portal.kernel.license.util.LicenseManagerUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.ThrowableCollector;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.ModuleFrameworkPropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -90,7 +81,7 @@ import org.osgi.util.tracker.BundleTracker;
 /**
  * @author Shuyang Zhou
  */
-@Component(immediate = true, service = LPKGDeployer.class)
+@Component(service = LPKGDeployer.class)
 public class DefaultLPKGDeployer implements LPKGDeployer {
 
 	@Override
@@ -170,7 +161,8 @@ public class DefaultLPKGDeployer implements LPKGDeployer {
 				BundleStartLevel.class);
 
 			bundleStartLevel.setStartLevel(
-				PropsValues.MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL);
+				ModuleFrameworkPropsValues.
+					MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL);
 
 			bundles.add(lpkgBundle);
 
@@ -287,7 +279,7 @@ public class DefaultLPKGDeployer implements LPKGDeployer {
 
 		Set<Bundle> removalPendingBundles = new HashSet<>();
 
-		_deploymentDirPath = _getDeploymentDirPath(bundleContext);
+		_deploymentDirPath = _getDeploymentDirPath();
 
 		Path overrideDirPath = _deploymentDirPath.resolve("override");
 
@@ -348,7 +340,7 @@ public class DefaultLPKGDeployer implements LPKGDeployer {
 			File lpkgFile = iterator.next();
 
 			List<File> innerLPKGFiles = ContainerLPKGUtil.deploy(
-				lpkgFile, bundleContext, null);
+				lpkgFile, null);
 
 			if (innerLPKGFiles != null) {
 				iterator.remove();
@@ -402,7 +394,7 @@ public class DefaultLPKGDeployer implements LPKGDeployer {
 				}
 				catch (Exception exception) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(exception, exception);
+						_log.debug(exception);
 					}
 				}
 			}
@@ -412,21 +404,15 @@ public class DefaultLPKGDeployer implements LPKGDeployer {
 		}
 	}
 
-	private Path _getDeploymentDirPath(BundleContext bundleContext)
-		throws Exception {
-
+	private Path _getDeploymentDirPath() throws Exception {
 		File deploymentDir = new File(
-			GetterUtil.getString(
-				bundleContext.getProperty("lpkg.deployer.dir"),
-				PropsValues.MODULE_FRAMEWORK_MARKETPLACE_DIR));
+			PropsValues.MODULE_FRAMEWORK_MARKETPLACE_DIR);
 
 		deploymentDir = deploymentDir.getCanonicalFile();
 
-		Path deploymentDirPath = deploymentDir.toPath();
+		deploymentDir.mkdirs();
 
-		Files.createDirectories(deploymentDirPath);
-
-		return deploymentDirPath;
+		return deploymentDir.toPath();
 	}
 
 	private void _installLPKGs(
@@ -471,7 +457,8 @@ public class DefaultLPKGDeployer implements LPKGDeployer {
 
 			BundleStartLevelUtil.setStartLevelAndStart(
 				jarBundle,
-				PropsValues.MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL,
+				ModuleFrameworkPropsValues.
+					MODULE_FRAMEWORK_DYNAMIC_INSTALL_START_LEVEL,
 				bundleContext);
 
 			if (_log.isInfoEnabled()) {

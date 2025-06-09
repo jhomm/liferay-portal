@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
@@ -20,8 +11,10 @@ import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPInstanceLocalServiceUtil;
+import com.liferay.commerce.product.service.CPMeasurementUnitLocalServiceUtil;
 import com.liferay.commerce.product.service.CProductLocalServiceUtil;
 import com.liferay.commerce.service.CommerceOrderItemLocalServiceUtil;
 import com.liferay.commerce.service.CommerceOrderLocalServiceUtil;
@@ -39,6 +32,12 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 	@Override
 	public CPInstance fetchCPInstance() {
 		return CPInstanceLocalServiceUtil.fetchCPInstance(getCPInstanceId());
+	}
+
+	@Override
+	public CPMeasurementUnit fetchCPMeasurementUnit() {
+		return CPMeasurementUnitLocalServiceUtil.fetchCPMeasurementUnit(
+			getCPMeasurementUnitId());
 	}
 
 	@Override
@@ -103,7 +102,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(), getDiscountAmount());
+			commerceOrder.getCommerceCurrency(), getDiscountAmount());
 	}
 
 	@Override
@@ -113,7 +112,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(), getDiscountWithTaxAmount());
+			commerceOrder.getCommerceCurrency(), getDiscountWithTaxAmount());
 	}
 
 	@Override
@@ -121,7 +120,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(), getFinalPrice());
+			commerceOrder.getCommerceCurrency(), getFinalPrice());
 	}
 
 	@Override
@@ -131,8 +130,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(),
-			getFinalPriceWithTaxAmount());
+			commerceOrder.getCommerceCurrency(), getFinalPriceWithTaxAmount());
 	}
 
 	@Override
@@ -157,7 +155,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(), getPromoPrice());
+			commerceOrder.getCommerceCurrency(), getPromoPrice());
 	}
 
 	@Override
@@ -167,8 +165,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(),
-			getPromoPriceWithTaxAmount());
+			commerceOrder.getCommerceCurrency(), getPromoPriceWithTaxAmount());
 	}
 
 	@Override
@@ -176,7 +173,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(), getUnitPrice());
+			commerceOrder.getCommerceCurrency(), getUnitPrice());
 	}
 
 	@Override
@@ -186,7 +183,7 @@ public class CommerceOrderItemImpl extends CommerceOrderItemBaseImpl {
 		CommerceOrder commerceOrder = getCommerceOrder();
 
 		return CommerceMoneyFactoryUtil.create(
-			commerceOrder.getCommerceCurrencyId(), getUnitPriceWithTaxAmount());
+			commerceOrder.getCommerceCurrency(), getUnitPriceWithTaxAmount());
 	}
 
 	@Override

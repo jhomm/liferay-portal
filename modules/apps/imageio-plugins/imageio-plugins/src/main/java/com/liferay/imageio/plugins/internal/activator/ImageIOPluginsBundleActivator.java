@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.imageio.plugins.internal.activator;
+
+import com.liferay.portal.kernel.util.ArrayUtil;
 
 import java.util.HashSet;
 import java.util.Iterator;
@@ -22,6 +15,8 @@ import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.spi.ServiceRegistry;
+
+import org.monte.media.jpeg.CMYKJPEGImageReaderSpi;
 
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
@@ -33,14 +28,49 @@ public class ImageIOPluginsBundleActivator implements BundleActivator {
 
 	@Override
 	public void start(BundleContext bundleContext) {
-		_register(ImageReaderSpi.class, _imageReaderSpiSet);
-		_register(ImageWriterSpi.class, _imageWriterSpiSet);
+		_register(ImageReaderSpi.class, _imageReaderSpis);
+		_register(ImageWriterSpi.class, _imageWriterSpis);
+
+		orderImageReaderSpis();
 	}
 
 	@Override
 	public void stop(BundleContext bundleContext) {
-		_unregister(_imageReaderSpiSet);
-		_unregister(_imageWriterSpiSet);
+		_unregister(_imageReaderSpis);
+		_unregister(_imageWriterSpis);
+	}
+
+	protected void orderImageReaderSpis() {
+		IIORegistry defaultIIORegistry = IIORegistry.getDefaultInstance();
+
+		ImageReaderSpi firstImageReaderSpi = null;
+		ImageReaderSpi secondImageReaderSpi = null;
+
+		Iterator<ImageReaderSpi> iterator =
+			defaultIIORegistry.getServiceProviders(ImageReaderSpi.class, true);
+
+		while (iterator.hasNext()) {
+			ImageReaderSpi imageReaderSpi = iterator.next();
+
+			if (imageReaderSpi instanceof CMYKJPEGImageReaderSpi) {
+				secondImageReaderSpi = imageReaderSpi;
+			}
+			else {
+				String[] formatNames = imageReaderSpi.getFormatNames();
+
+				if (ArrayUtil.contains(formatNames, "jpg", true) ||
+					ArrayUtil.contains(formatNames, "jpeg", true)) {
+
+					firstImageReaderSpi = imageReaderSpi;
+				}
+			}
+		}
+
+		if ((firstImageReaderSpi != null) && (secondImageReaderSpi != null)) {
+			defaultIIORegistry.setOrdering(
+				ImageReaderSpi.class, firstImageReaderSpi,
+				secondImageReaderSpi);
+		}
 	}
 
 	private <T> void _register(Class<T> clazz, Set<T> registeredProviders) {
@@ -66,7 +96,7 @@ public class ImageIOPluginsBundleActivator implements BundleActivator {
 		registeredProviders.clear();
 	}
 
-	private final Set<ImageReaderSpi> _imageReaderSpiSet = new HashSet<>();
-	private final Set<ImageWriterSpi> _imageWriterSpiSet = new HashSet<>();
+	private final Set<ImageReaderSpi> _imageReaderSpis = new HashSet<>();
+	private final Set<ImageWriterSpi> _imageWriterSpis = new HashSet<>();
 
 }

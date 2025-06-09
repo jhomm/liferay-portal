@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -27,6 +19,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
  */
 public class LayoutLocalServiceWrapper
 	implements LayoutLocalService, ServiceWrapper<LayoutLocalService> {
+
+	public LayoutLocalServiceWrapper() {
+		this(null);
+	}
 
 	public LayoutLocalServiceWrapper(LayoutLocalService layoutLocalService) {
 		_layoutLocalService = layoutLocalService;
@@ -57,6 +53,7 @@ public class LayoutLocalServiceWrapper
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param userId the primary key of the user
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
@@ -99,9 +96,9 @@ public class LayoutLocalServiceWrapper
 	 */
 	@Override
 	public Layout addLayout(
-			long userId, long groupId, boolean privateLayout,
-			long parentLayoutId, long classNameId, long classPK,
-			java.util.Map<java.util.Locale, String> nameMap,
+			String externalReferenceCode, long userId, long groupId,
+			boolean privateLayout, long parentLayoutId, long classNameId,
+			long classPK, java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
 			java.util.Map<java.util.Locale, String> keywordsMap,
@@ -112,10 +109,10 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, privateLayout, parentLayoutId, classNameId,
-			classPK, nameMap, titleMap, descriptionMap, keywordsMap, robotsMap,
-			type, typeSettings, hidden, system, friendlyURLMap,
-			masterLayoutPlid, serviceContext);
+			externalReferenceCode, userId, groupId, privateLayout,
+			parentLayoutId, classNameId, classPK, nameMap, titleMap,
+			descriptionMap, keywordsMap, robotsMap, type, typeSettings, hidden,
+			system, friendlyURLMap, masterLayoutPlid, serviceContext);
 	}
 
 	/**
@@ -128,6 +125,7 @@ public class LayoutLocalServiceWrapper
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param userId the primary key of the user
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
@@ -167,8 +165,8 @@ public class LayoutLocalServiceWrapper
 	 */
 	@Override
 	public Layout addLayout(
-			long userId, long groupId, boolean privateLayout,
-			long parentLayoutId,
+			String externalReferenceCode, long userId, long groupId,
+			boolean privateLayout, long parentLayoutId,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
@@ -180,9 +178,10 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, privateLayout, parentLayoutId, nameMap, titleMap,
-			descriptionMap, keywordsMap, robotsMap, type, typeSettings, hidden,
-			system, friendlyURLMap, serviceContext);
+			externalReferenceCode, userId, groupId, privateLayout,
+			parentLayoutId, nameMap, titleMap, descriptionMap, keywordsMap,
+			robotsMap, type, typeSettings, hidden, system, friendlyURLMap,
+			serviceContext);
 	}
 
 	/**
@@ -195,6 +194,7 @@ public class LayoutLocalServiceWrapper
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param userId the primary key of the user
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
@@ -233,8 +233,8 @@ public class LayoutLocalServiceWrapper
 	 */
 	@Override
 	public Layout addLayout(
-			long userId, long groupId, boolean privateLayout,
-			long parentLayoutId,
+			String externalReferenceCode, long userId, long groupId,
+			boolean privateLayout, long parentLayoutId,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> titleMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
@@ -246,9 +246,10 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, privateLayout, parentLayoutId, nameMap, titleMap,
-			descriptionMap, keywordsMap, robotsMap, type, typeSettings, hidden,
-			friendlyURLMap, serviceContext);
+			externalReferenceCode, userId, groupId, privateLayout,
+			parentLayoutId, nameMap, titleMap, descriptionMap, keywordsMap,
+			robotsMap, type, typeSettings, hidden, friendlyURLMap,
+			serviceContext);
 	}
 
 	/**
@@ -262,6 +263,7 @@ public class LayoutLocalServiceWrapper
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param userId the primary key of the user
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
@@ -301,15 +303,16 @@ public class LayoutLocalServiceWrapper
 	 */
 	@Override
 	public Layout addLayout(
-			long userId, long groupId, boolean privateLayout,
-			long parentLayoutId, String name, String title, String description,
-			String type, boolean hidden, boolean system, String friendlyURL,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			boolean privateLayout, long parentLayoutId, String name,
+			String title, String description, String type, boolean hidden,
+			boolean system, String friendlyURL, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, privateLayout, parentLayoutId, name, title,
-			description, type, hidden, system, friendlyURL, serviceContext);
+			externalReferenceCode, userId, groupId, privateLayout,
+			parentLayoutId, name, title, description, type, hidden, system,
+			friendlyURL, serviceContext);
 	}
 
 	/**
@@ -323,6 +326,7 @@ public class LayoutLocalServiceWrapper
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param userId the primary key of the user
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
@@ -361,15 +365,48 @@ public class LayoutLocalServiceWrapper
 	 */
 	@Override
 	public Layout addLayout(
-			long userId, long groupId, boolean privateLayout,
-			long parentLayoutId, String name, String title, String description,
-			String type, boolean hidden, String friendlyURL,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			boolean privateLayout, long parentLayoutId, String name,
+			String title, String description, String type, boolean hidden,
+			String friendlyURL, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.addLayout(
-			userId, groupId, privateLayout, parentLayoutId, name, title,
-			description, type, hidden, friendlyURL, serviceContext);
+			externalReferenceCode, userId, groupId, privateLayout,
+			parentLayoutId, name, title, description, type, hidden, friendlyURL,
+			serviceContext);
+	}
+
+	@Override
+	public Layout copyLayout(
+			long userId, long groupId, boolean privateLayout,
+			java.util.Map<java.util.Locale, String> nameMap, boolean hidden,
+			boolean system, boolean copyPermissions, long sourcePlid,
+			ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.copyLayout(
+			userId, groupId, privateLayout, nameMap, hidden, system,
+			copyPermissions, sourcePlid, serviceContext);
+	}
+
+	@Override
+	public Layout copyLayoutContent(Layout sourceLayout, Layout targetLayout)
+		throws Exception {
+
+		return _layoutLocalService.copyLayoutContent(
+			sourceLayout, targetLayout);
+	}
+
+	@Override
+	public Layout copyLayoutContent(
+			long sourceSegmentsExperienceId, Layout sourceLayout,
+			long targetSegmentsExperienceId, Layout targetLayout)
+		throws Exception {
+
+		return _layoutLocalService.copyLayoutContent(
+			sourceSegmentsExperienceId, sourceLayout,
+			targetSegmentsExperienceId, targetLayout);
 	}
 
 	/**
@@ -477,6 +514,13 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_layoutLocalService.deleteLayout(plid, serviceContext);
+	}
+
+	@Override
+	public void deleteLayout(String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_layoutLocalService.deleteLayout(externalReferenceCode, groupId);
 	}
 
 	/**
@@ -653,15 +697,18 @@ public class LayoutLocalServiceWrapper
 	}
 
 	@Override
-	public Layout fetchLayout(long classNameId, long classPK) {
-		return _layoutLocalService.fetchLayout(classNameId, classPK);
-	}
-
-	@Override
 	public Layout fetchLayout(
 		String uuid, long groupId, boolean privateLayout) {
 
 		return _layoutLocalService.fetchLayout(uuid, groupId, privateLayout);
+	}
+
+	@Override
+	public Layout fetchLayoutByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return _layoutLocalService.fetchLayoutByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -674,8 +721,7 @@ public class LayoutLocalServiceWrapper
 
 	@Override
 	public Layout fetchLayoutByIconImageId(
-			boolean privateLayout, long iconImageId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		boolean privateLayout, long iconImageId) {
 
 		return _layoutLocalService.fetchLayoutByIconImageId(
 			privateLayout, iconImageId);
@@ -720,6 +766,11 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.getAllLayouts(groupId, privateLayout, type);
+	}
+
+	@Override
+	public Layout getBrowsableLayout(Layout layout) {
+		return _layoutLocalService.getBrowsableLayout(layout);
 	}
 
 	/**
@@ -833,27 +884,21 @@ public class LayoutLocalServiceWrapper
 	}
 
 	@Override
+	public Layout getLayoutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.getLayoutByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public Layout getLayoutByFriendlyURL(
 			long groupId, boolean privateLayout, String friendlyURL)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.getLayoutByFriendlyURL(
 			groupId, privateLayout, friendlyURL);
-	}
-
-	/**
-	 * Returns the layout for the icon image; throws a {@link
-	 * NoSuchLayoutException} otherwise.
-	 *
-	 * @param iconImageId the primary key of the icon image
-	 * @return Returns the layout for the icon image
-	 * @throws PortalException if a portal exception occurred
-	 */
-	@Override
-	public Layout getLayoutByIconImageId(long iconImageId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _layoutLocalService.getLayoutByIconImageId(iconImageId);
 	}
 
 	/**
@@ -879,6 +924,13 @@ public class LayoutLocalServiceWrapper
 		java.util.List<Layout> parentLayouts) {
 
 		return _layoutLocalService.getLayoutChildLayouts(parentLayouts);
+	}
+
+	@Override
+	public java.util.List<Layout> getLayouts(
+		java.util.Collection<java.io.Serializable> primaryKeys) {
+
+		return _layoutLocalService.getLayouts(primaryKeys);
 	}
 
 	/**
@@ -1106,6 +1158,25 @@ public class LayoutLocalServiceWrapper
 	}
 
 	/**
+	 * Returns all the layouts that match the type and belong to the group.
+	 *
+	 * @param groupId the primary key of the group
+	 * @param privateLayout whether the layout is private to the group
+	 * @param types the layout's type (optionally {@link
+	 LayoutConstants#TYPE_PORTLET}). The possible types can be found
+	 in {@link LayoutConstants}.
+	 * @return the matching layouts, or <code>null</code> if no matches were
+	 found
+	 */
+	@Override
+	public java.util.List<Layout> getLayouts(
+			long groupId, boolean privateLayout, String[] types)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.getLayouts(groupId, privateLayout, types);
+	}
+
+	/**
 	 * Returns a range of all the layouts belonging to the group.
 	 *
 	 * @param groupId the primary key of the group
@@ -1152,20 +1223,6 @@ public class LayoutLocalServiceWrapper
 			orderByComparator);
 	}
 
-	/**
-	 * Returns a range of all the layouts belonging to the group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param userId the primary key of the user
-	 * @param privateLayout whether the layout is private to the group
-	 * @param keywords keywords
-	 * @param types layout types
-	 * @param start the lower bound of the range of layouts
-	 * @param end the upper bound of the range of layouts (not inclusive)
-	 * @param orderByComparator the comparator to order the layouts
-	 * @return the matching layouts, or <code>null</code> if no matches were
-	 found
-	 */
 	@Override
 	public java.util.List<Layout> getLayouts(
 			long groupId, long userId, boolean privateLayout, String keywords,
@@ -1364,6 +1421,14 @@ public class LayoutLocalServiceWrapper
 
 	@Override
 	public int getLayoutsCount(
+		long groupId, boolean privateLayout, long parentLayoutId) {
+
+		return _layoutLocalService.getLayoutsCount(
+			groupId, privateLayout, parentLayoutId);
+	}
+
+	@Override
+	public int getLayoutsCount(
 			long groupId, long userId, boolean privateLayout, String keywords,
 			String[] types)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -1467,6 +1532,21 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.getPersistedModel(primaryKeyObj);
+	}
+
+	@Override
+	public java.util.List<Layout> getPublishedLayouts(
+		long groupId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Layout>
+			orderByComparator) {
+
+		return _layoutLocalService.getPublishedLayouts(
+			groupId, start, end, orderByComparator);
+	}
+
+	@Override
+	public int getPublishedLayoutsCount(long groupId) {
+		return _layoutLocalService.getPublishedLayoutsCount(groupId);
 	}
 
 	@Override
@@ -1588,6 +1668,66 @@ public class LayoutLocalServiceWrapper
 
 		return _layoutLocalService.hasLayoutSetPrototypeLayout(
 			layoutSetPrototypeUuid, companyId, layoutUuid);
+	}
+
+	@Override
+	public java.util.List<Layout> search(
+			long groupId, boolean privateLayout, String keywords,
+			boolean searchOnlyByTitle, String[] types, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator<Layout>
+				orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.search(
+			groupId, privateLayout, keywords, searchOnlyByTitle, types, start,
+			end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<Layout> search(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			boolean searchOnlyByTitle, String[] types, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator<Layout>
+				orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.search(
+			groupId, userId, privateLayout, keywords, searchOnlyByTitle, types,
+			start, end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<Layout> search(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			boolean searchOnlyByTitle, String[] types, int[] statuses,
+			int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator<Layout>
+				orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.search(
+			groupId, userId, privateLayout, keywords, searchOnlyByTitle, types,
+			statuses, start, end, orderByComparator);
+	}
+
+	@Override
+	public int searchCount(
+			com.liferay.portal.kernel.model.Group group, boolean privateLayout,
+			String keywords, boolean searchOnlyByTitle, String[] types)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.searchCount(
+			group, privateLayout, keywords, searchOnlyByTitle, types);
+	}
+
+	@Override
+	public int searchCount(
+			long groupId, long userId, boolean privateLayout, String keywords,
+			boolean searchOnlyByTitle, String[] types)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.searchCount(
+			groupId, userId, privateLayout, keywords, searchOnlyByTitle, types);
 	}
 
 	/**
@@ -1729,8 +1869,9 @@ public class LayoutLocalServiceWrapper
 	 String)}.
 	 * @param hasIconImage whether the icon image will be updated
 	 * @param iconBytes the byte array of the layout's new icon image
-	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param styleBookEntryId the primary key of the style book entrys
+	 * @param faviconFileEntryId the file entry ID of the layout's new favicon
+	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param serviceContext the service context to be applied. Can set the
 	 modification date and expando bridge attributes for the layout.
 	 For layouts that are linked to a layout prototype, attributes
@@ -1754,15 +1895,16 @@ public class LayoutLocalServiceWrapper
 			java.util.Map<java.util.Locale, String> robotsMap, String type,
 			boolean hidden,
 			java.util.Map<java.util.Locale, String> friendlyURLMap,
-			boolean hasIconImage, byte[] iconBytes, long masterLayoutPlid,
-			long styleBookEntryId, ServiceContext serviceContext)
+			boolean hasIconImage, byte[] iconBytes, long styleBookEntryId,
+			long faviconFileEntryId, long masterLayoutPlid,
+			ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.updateLayout(
 			groupId, privateLayout, layoutId, parentLayoutId, nameMap, titleMap,
 			descriptionMap, keywordsMap, robotsMap, type, hidden,
-			friendlyURLMap, hasIconImage, iconBytes, masterLayoutPlid,
-			styleBookEntryId, serviceContext);
+			friendlyURLMap, hasIconImage, iconBytes, styleBookEntryId,
+			faviconFileEntryId, masterLayoutPlid, serviceContext);
 	}
 
 	/**
@@ -1784,6 +1926,29 @@ public class LayoutLocalServiceWrapper
 
 		return _layoutLocalService.updateLayout(
 			groupId, privateLayout, layoutId, typeSettings);
+	}
+
+	@Override
+	public Layout updateLayout(
+			long groupId, boolean privateLayout, long layoutId,
+			String typeSettings, byte[] iconBytes, String themeId,
+			String colorSchemeId, long styleBookEntryId, String css,
+			long faviconFileEntryId, long masterLayoutPlid)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutLocalService.updateLayout(
+			groupId, privateLayout, layoutId, typeSettings, iconBytes, themeId,
+			colorSchemeId, styleBookEntryId, css, faviconFileEntryId,
+			masterLayoutPlid);
+	}
+
+	@Override
+	public void updateLayoutContent(
+			String data, Layout layout, long segmentsExperienceId)
+		throws Exception {
+
+		_layoutLocalService.updateLayoutContent(
+			data, layout, segmentsExperienceId);
 	}
 
 	/**
@@ -2063,6 +2228,11 @@ public class LayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutLocalService.updateType(plid, type);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _layoutLocalService.getBasePersistence();
 	}
 
 	@Override

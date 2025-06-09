@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.asset.model;
@@ -17,23 +8,25 @@ package com.liferay.wiki.web.internal.asset.model;
 import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.model.BaseJSPAssetRenderer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletLayoutFinder;
 import com.liferay.portal.kernel.portlet.PortletLayoutFinderRegistryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.trash.TrashRenderer;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -49,15 +42,15 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 import com.liferay.wiki.web.internal.security.permission.resource.WikiPagePermission;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Julio Camarero
@@ -80,12 +73,13 @@ public class WikiPageAssetRenderer
 	}
 
 	public WikiPageAssetRenderer(
-		WikiPage page, WikiEngineRenderer wikiEngineRenderer,
-		TrashHelper trashHelper) {
+		HtmlParser htmlParser, TrashHelper trashHelper,
+		WikiEngineRenderer wikiEngineRenderer, WikiPage page) {
 
-		_page = page;
-		_wikiEngineRenderer = wikiEngineRenderer;
+		_htmlParser = htmlParser;
 		_trashHelper = trashHelper;
+		_wikiEngineRenderer = wikiEngineRenderer;
+		_page = page;
 	}
 
 	@Override
@@ -114,7 +108,7 @@ public class WikiPageAssetRenderer
 							_page.getGroupId(), WikiConstants.SERVICE_NAME));
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				return null;
 			}
@@ -160,11 +154,11 @@ public class WikiPageAssetRenderer
 		PortletRequest portletRequest, PortletResponse portletResponse) {
 
 		try {
-			return HtmlUtil.extractText(
+			return _htmlParser.extractText(
 				_wikiEngineRenderer.convert(_page, null, null, null));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return _page.getContent();
 		}
@@ -296,32 +290,39 @@ public class WikiPageAssetRenderer
 			LiferayPortletRequest liferayPortletRequest,
 			LiferayPortletResponse liferayPortletResponse,
 			String noSuchEntryRedirect)
-		throws Exception {
+		throws PortalException {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getURLViewInContext(
+			ThemeDisplay themeDisplay, String noSuchEntryRedirect)
+		throws PortalException {
 
 		if (_assetDisplayPageFriendlyURLProvider != null) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)liferayPortletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
 			String friendlyURL =
 				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					getClassName(), getClassPK(), themeDisplay);
+					new InfoItemReference(
+						getClassName(),
+						new ClassPKInfoItemIdentifier(getClassPK())),
+					themeDisplay);
 
 			if (Validator.isNotNull(friendlyURL)) {
 				return friendlyURL;
 			}
 		}
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)liferayPortletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
 		if (!_hasViewInContextGroupLayout(_page.getGroupId(), themeDisplay)) {
 			return null;
 		}
 
 		return getURLViewInContext(
-			liferayPortletRequest, noSuchEntryRedirect, "/wiki/find_page",
+			themeDisplay, noSuchEntryRedirect, "/wiki/find_page",
 			"pageResourcePrimKey", _page.getResourcePrimKey());
 	}
 
@@ -404,7 +405,7 @@ public class WikiPageAssetRenderer
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return false;
@@ -416,6 +417,7 @@ public class WikiPageAssetRenderer
 
 	private AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
+	private final HtmlParser _htmlParser;
 	private final WikiPage _page;
 	private final TrashHelper _trashHelper;
 	private final WikiEngineRenderer _wikiEngineRenderer;

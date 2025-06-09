@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.internal.export.builder;
@@ -27,20 +18,27 @@ import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.model.KaleoNode;
 import com.liferay.portal.workflow.kaleo.model.KaleoTransition;
+import com.liferay.portal.workflow.kaleo.service.KaleoConditionLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoNodeLocalService;
+import com.liferay.portal.workflow.kaleo.service.KaleoTaskFormLocalService;
+import com.liferay.portal.workflow.kaleo.service.KaleoTaskLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTransitionLocalService;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Michael C. Han
  */
-@Component(immediate = true, service = DefinitionBuilder.class)
+@Component(service = DefinitionBuilder.class)
 public class DefaultDefinitionBuilder implements DefinitionBuilder {
 
 	@Override
@@ -50,7 +48,7 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 		KaleoDefinition kaleoDefinition =
 			_kaleoDefinitionLocalService.getKaleoDefinition(kaleoDefinitionId);
 
-		return doBuildDefinition(
+		return _buildDefinition(
 			_kaleoDefinitionVersionLocalService.getKaleoDefinitionVersion(
 				kaleoDefinition.getCompanyId(), kaleoDefinition.getName(),
 				StringBundler.concat(
@@ -61,13 +59,30 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 	public Definition buildDefinition(long companyId, String name, int version)
 		throws PortalException {
 
-		return doBuildDefinition(
+		return _buildDefinition(
 			_kaleoDefinitionVersionLocalService.getKaleoDefinitionVersion(
 				companyId, name,
 				StringBundler.concat(version, CharPool.PERIOD, 0)));
 	}
 
-	protected Definition doBuildDefinition(
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_addNodeBuilder(new ConditionNodeBuilder(_kaleoConditionLocalService));
+		_addNodeBuilder(new ForkNodeBuilder());
+		_addNodeBuilder(new JoinNodeBuilder());
+		_addNodeBuilder(new StateNodeBuilder());
+		_addNodeBuilder(
+			new TaskNodeBuilder(
+				_kaleoTaskFormLocalService, _kaleoTaskLocalService));
+		_addNodeBuilder(new JoinXorNodeBuilder());
+	}
+
+	private void _addNodeBuilder(NodeBuilder<? extends Node> nodeBuilder) {
+		_nodeBuilders.put(
+			String.valueOf(nodeBuilder.getNodeType()), nodeBuilder);
+	}
+
+	private Definition _buildDefinition(
 			KaleoDefinitionVersion kaleoDefinitionVersion)
 		throws PortalException {
 
@@ -82,7 +97,7 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 				kaleoDefinitionVersion.getKaleoDefinitionVersionId());
 
 		for (KaleoNode kaleoNode : kaleoNodes) {
-			NodeBuilder nodeBuilder = _nodeBuilderRegistry.getNodeBuilder(
+			NodeBuilder<? extends Node> nodeBuilder = _nodeBuilders.get(
 				kaleoNode.getType());
 
 			Node node = nodeBuilder.buildNode(kaleoNode);
@@ -105,8 +120,9 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 			Node targetNode = definition.getNode(targetNodeName);
 
 			Transition transition = new Transition(
-				kaleoTransition.getName(), sourceNode, targetNode,
-				kaleoTransition.isDefaultTransition());
+				kaleoTransition.isDefaultTransition(),
+				kaleoTransition.getLabelMap(), kaleoTransition.getName(),
+				sourceNode, targetNode);
 
 			sourceNode.addOutgoingTransition(transition);
 
@@ -123,6 +139,9 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 	}
 
 	@Reference
+	private KaleoConditionLocalService _kaleoConditionLocalService;
+
+	@Reference
 	private KaleoDefinitionLocalService _kaleoDefinitionLocalService;
 
 	@Reference
@@ -133,9 +152,15 @@ public class DefaultDefinitionBuilder implements DefinitionBuilder {
 	private KaleoNodeLocalService _kaleoNodeLocalService;
 
 	@Reference
-	private KaleoTransitionLocalService _kaleoTransitionLocalService;
+	private KaleoTaskFormLocalService _kaleoTaskFormLocalService;
 
 	@Reference
-	private NodeBuilderRegistry _nodeBuilderRegistry;
+	private KaleoTaskLocalService _kaleoTaskLocalService;
+
+	@Reference
+	private KaleoTransitionLocalService _kaleoTransitionLocalService;
+
+	private final Map<String, NodeBuilder<? extends Node>> _nodeBuilders =
+		new HashMap<>();
 
 }

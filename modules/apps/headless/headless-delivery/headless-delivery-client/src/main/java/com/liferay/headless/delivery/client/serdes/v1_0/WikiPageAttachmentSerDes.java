@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.WikiPageAttachment;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -54,6 +45,16 @@ public class WikiPageAttachmentSerDes {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("{");
+
+		if (wikiPageAttachment.getActions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"actions\": ");
+
+			sb.append(_toJSON(wikiPageAttachment.getActions()));
+		}
 
 		if (wikiPageAttachment.getContentUrl() != null) {
 			if (sb.length() > 1) {
@@ -93,6 +94,20 @@ public class WikiPageAttachmentSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(wikiPageAttachment.getEncodingFormat()));
+
+			sb.append("\"");
+		}
+
+		if (wikiPageAttachment.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(wikiPageAttachment.getExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -166,6 +181,13 @@ public class WikiPageAttachmentSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		if (wikiPageAttachment.getActions() == null) {
+			map.put("actions", null);
+		}
+		else {
+			map.put("actions", String.valueOf(wikiPageAttachment.getActions()));
+		}
+
 		if (wikiPageAttachment.getContentUrl() == null) {
 			map.put("contentUrl", null);
 		}
@@ -191,6 +213,15 @@ public class WikiPageAttachmentSerDes {
 			map.put(
 				"encodingFormat",
 				String.valueOf(wikiPageAttachment.getEncodingFormat()));
+		}
+
+		if (wikiPageAttachment.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(wikiPageAttachment.getExternalReferenceCode()));
 		}
 
 		if (wikiPageAttachment.getFileExtension() == null) {
@@ -242,11 +273,52 @@ public class WikiPageAttachmentSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentUrl")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentValue")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "encodingFormat")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fileExtension")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sizeInBytes")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "title")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			WikiPageAttachment wikiPageAttachment, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "contentUrl")) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				if (jsonParserFieldValue != null) {
+					wikiPageAttachment.setActions(
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentUrl")) {
 				if (jsonParserFieldValue != null) {
 					wikiPageAttachment.setContentUrl(
 						(String)jsonParserFieldValue);
@@ -261,6 +333,14 @@ public class WikiPageAttachmentSerDes {
 			else if (Objects.equals(jsonParserFieldName, "encodingFormat")) {
 				if (jsonParserFieldValue != null) {
 					wikiPageAttachment.setEncodingFormat(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					wikiPageAttachment.setExternalReferenceCode(
 						(String)jsonParserFieldValue);
 				}
 			}
@@ -319,36 +399,7 @@ public class WikiPageAttachmentSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -358,6 +409,42 @@ public class WikiPageAttachmentSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
@@ -36,6 +27,10 @@ public class ObjectEntryTable extends BaseTable<ObjectEntryTable> {
 		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
 	public final Column<ObjectEntryTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<ObjectEntryTable, Long> objectEntryId = createColumn(
 		"objectEntryId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<ObjectEntryTable, Long> groupId = createColumn(
@@ -50,14 +45,31 @@ public class ObjectEntryTable extends BaseTable<ObjectEntryTable> {
 		"createDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
 	public final Column<ObjectEntryTable, Date> modifiedDate = createColumn(
 		"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
-	public final Column<ObjectEntryTable, String> externalReferenceCode =
-		createColumn(
-			"externalReferenceCode", String.class, Types.VARCHAR,
-			Column.FLAG_DEFAULT);
 	public final Column<ObjectEntryTable, Long> objectDefinitionId =
 		createColumn(
 			"objectDefinitionId", Long.class, Types.BIGINT,
 			Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, Long> objectEntryFolderId =
+		createColumn(
+			"objectEntryFolderId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, Long> rootObjectEntryId =
+		createColumn(
+			"rootObjectEntryId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, String> defaultLanguageId =
+		createColumn(
+			"defaultLanguageId", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, Date> displayDate = createColumn(
+		"displayDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, Date> expirationDate = createColumn(
+		"expirationDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, Date> reviewDate = createColumn(
+		"reviewDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, String> treePath = createColumn(
+		"treePath", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<ObjectEntryTable, Integer> version = createColumn(
+		"version", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<ObjectEntryTable, Date> lastPublishDate = createColumn(
 		"lastPublishDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
 	public final Column<ObjectEntryTable, Integer> status = createColumn(

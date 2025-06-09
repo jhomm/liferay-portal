@@ -1,24 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.contacts.web.internal.notifications;
 
 import com.liferay.contacts.web.internal.constants.ContactsPortletKeys;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -27,6 +17,7 @@ import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseUserNotificationHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
@@ -38,21 +29,22 @@ import com.liferay.social.kernel.model.SocialRequest;
 import com.liferay.social.kernel.model.SocialRequestConstants;
 import com.liferay.social.kernel.service.SocialRequestLocalService;
 
-import java.util.ResourceBundle;
+import jakarta.portlet.WindowState;
 
-import javax.portlet.WindowState;
+import java.util.ResourceBundle;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jonathan Lee
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + ContactsPortletKeys.CONTACTS_CENTER,
+	property = "jakarta.portlet.name=" + ContactsPortletKeys.CONTACTS_CENTER,
 	service = UserNotificationHandler.class
 )
+@Deprecated
 public class ContactsCenterUserNotificationHandler
 	extends BaseUserNotificationHandler {
 
@@ -67,7 +59,7 @@ public class ContactsCenterUserNotificationHandler
 			ServiceContext serviceContext)
 		throws Exception {
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			userNotificationEvent.getPayload());
 
 		long socialRequestId = jsonObject.getLong("classPK");
@@ -82,28 +74,7 @@ public class ContactsCenterUserNotificationHandler
 			return null;
 		}
 
-		String creatorUserName = getUserNameLink(
-			socialRequest.getUserId(), serviceContext);
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			serviceContext.getLocale(),
-			ContactsCenterUserNotificationHandler.class);
-
-		String title = StringPool.BLANK;
-
-		if (socialRequest.getType() ==
-				SocialRelationConstants.TYPE_BI_CONNECTION) {
-
-			title = ResourceBundleUtil.getString(
-				resourceBundle,
-				"request-social-networking-summary-add-connection",
-				new Object[] {creatorUserName});
-		}
-		else {
-			title = ResourceBundleUtil.getString(
-				resourceBundle, "x-sends-you-a-social-relationship-request",
-				new Object[] {creatorUserName});
-		}
+		String title = getTitle(userNotificationEvent, serviceContext);
 
 		if ((socialRequest.getStatus() !=
 				SocialRequestConstants.STATUS_PENDING) ||
@@ -172,7 +143,49 @@ public class ContactsCenterUserNotificationHandler
 		return StringPool.BLANK;
 	}
 
-	protected String getUserNameLink(
+	@Override
+	protected String getTitle(
+			UserNotificationEvent userNotificationEvent,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
+			userNotificationEvent.getPayload());
+
+		long socialRequestId = jsonObject.getLong("classPK");
+
+		SocialRequest socialRequest =
+			_socialRequestLocalService.fetchSocialRequest(socialRequestId);
+
+		if (socialRequest == null) {
+			_userNotificationEventLocalService.deleteUserNotificationEvent(
+				userNotificationEvent.getUserNotificationEventId());
+
+			return null;
+		}
+
+		String creatorUserName = _getUserNameLink(
+			socialRequest.getUserId(), serviceContext);
+
+		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+			serviceContext.getLocale(),
+			ContactsCenterUserNotificationHandler.class);
+
+		if (socialRequest.getType() ==
+				SocialRelationConstants.TYPE_BI_CONNECTION) {
+
+			return ResourceBundleUtil.getString(
+				resourceBundle,
+				"request-social-networking-summary-add-connection",
+				new Object[] {creatorUserName});
+		}
+
+		return ResourceBundleUtil.getString(
+			resourceBundle, "x-sends-you-a-social-relationship-request",
+			new Object[] {creatorUserName});
+	}
+
+	private String _getUserNameLink(
 		long userId, ServiceContext serviceContext) {
 
 		try {
@@ -193,7 +206,7 @@ public class ContactsCenterUserNotificationHandler
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
@@ -206,6 +219,9 @@ public class ContactsCenterUserNotificationHandler
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		ContactsCenterUserNotificationHandler.class);
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private SocialRequestLocalService _socialRequestLocalService;

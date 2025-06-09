@@ -1,5 +1,5 @@
-sourceCompatibility = "1.6"
-targetCompatibility = "1.6"
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
 
 clean {
 	ext {
@@ -8,7 +8,7 @@ clean {
 }
 
 dependencies {
-	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.11"
+	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.14"
 }
 
 liferay {
@@ -16,5 +16,5 @@ liferay {
 }
 
 updateFileVersions {
-	match(/\t\t<dependency name="com.liferay.ant.mirors.get" org="com.liferay" rev="(\d.+)" \/>/, "../../../tools/sdk/dependencies/com.liferay.ant.mirors.get/ivy.xml")
+	match(/\t\t<dependency name="com.liferay.ant.mirrors.get" org="com.liferay" rev="(\d.+)" \/>/, "../../../tools/sdk/dependencies/com.liferay.ant.mirrors.get/ivy.xml")
 }

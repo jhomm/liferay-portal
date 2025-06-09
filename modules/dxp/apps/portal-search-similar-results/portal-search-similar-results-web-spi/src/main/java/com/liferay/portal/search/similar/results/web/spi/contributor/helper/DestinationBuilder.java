@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.spi.contributor.helper;
@@ -19,9 +10,33 @@ package com.liferay.portal.search.similar.results.web.spi.contributor.helper;
  */
 public interface DestinationBuilder {
 
+	/**
+	 * Replaces all occurrences of a substring in the destination URL with a
+	 * new substring.
+	 *
+	 * @param  oldSub The substring to be replaced.
+	 * @param  newSub The replacement substring.
+	 * @return This {@link DestinationBuilder} instance.
+	 */
 	public DestinationBuilder replace(String oldSub, String newSub);
 
+	/**
+	 * Replaces the value of a specific parameter in the destination URL.
+	 *
+	 * @param  parameter The name of the parameter to replace.
+	 * @param  newValue The new value for the parameter.
+	 * @return This {@link DestinationBuilder} instance.
+	 */
 	public DestinationBuilder replaceParameter(
 		String parameter, String newValue);
+
+	/**
+	 * Replaces the entire destination URL string with a new URL string.
+	 *
+	 * @param  urlString The new URL string to replace the existing destination
+	 *         URL.
+	 * @return This {@link DestinationBuilder} instance.
+	 */
+	public DestinationBuilder replaceURLString(String urlString);
 
 }

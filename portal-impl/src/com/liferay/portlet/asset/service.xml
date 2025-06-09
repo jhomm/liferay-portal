@@ -30,6 +30,7 @@
 		<column localized="true" name="description" type="String" />
 		<column name="vocabularyId" type="long" />
 		<column name="lastPublishDate" type="Date" />
+		<column name="status" type="int" />
 
 		<!-- Order -->
 
@@ -87,49 +88,6 @@
 			<finder-column name="parentCategoryId" />
 			<finder-column name="name" />
 			<finder-column name="vocabularyId" />
-		</finder>
-	</entity>
-	<entity deprecated="true" local-service="true" name="AssetCategoryProperty" remote-service="true">
-
-		<!-- PK fields -->
-
-		<column name="categoryPropertyId" primary="true" type="long" />
-
-		<!-- Audit fields -->
-
-		<column name="companyId" type="long" />
-		<column name="userId" type="long" />
-		<column name="userName" type="String" />
-		<column name="createDate" type="Date" />
-		<column name="modifiedDate" type="Date" />
-
-		<!-- Other fields -->
-
-		<column name="categoryId" type="long" />
-		<column name="key" type="String" />
-		<column name="value" type="String" />
-
-		<!-- Order -->
-
-		<order by="asc">
-			<order-column name="key" />
-		</order>
-
-		<!-- Finder methods -->
-
-		<finder name="CompanyId" return-type="Collection">
-			<finder-column name="companyId" />
-		</finder>
-		<finder name="CategoryId" return-type="Collection">
-			<finder-column name="categoryId" />
-		</finder>
-		<finder name="C_K" return-type="Collection">
-			<finder-column name="companyId" />
-			<finder-column name="key" />
-		</finder>
-		<finder name="CA_K" return-type="AssetCategoryProperty" unique="true">
-			<finder-column name="categoryId" />
-			<finder-column name="key" />
 		</finder>
 	</entity>
 	<entity local-service="true" name="AssetEntry" remote-service="true">
@@ -200,6 +158,10 @@
 			<finder-column name="groupId" />
 			<finder-column name="classUuid" />
 		</finder>
+		<finder name="C_CN" return-type="Collection">
+			<finder-column name="companyId" />
+			<finder-column name="classNameId" />
+		</finder>
 		<finder name="C_C" return-type="AssetEntry" unique="true">
 			<finder-column name="classNameId" />
 			<finder-column name="classPK" />
@@ -216,59 +178,7 @@
 			<finder-column name="expirationDate" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="AssetLink" remote-service="false">
-
-		<!-- PK fields -->
-
-		<column accessor="true" name="linkId" primary="true" type="long" />
-
-		<!-- Audit fields -->
-
-		<column name="companyId" type="long" />
-		<column name="userId" type="long" />
-		<column name="userName" type="String" />
-		<column name="createDate" type="Date" />
-
-		<!-- Other fields -->
-
-		<column name="entryId1" type="long" />
-		<column accessor="true" name="entryId2" type="long" />
-		<column name="type" type="int" />
-		<column name="weight" type="int" />
-
-		<!-- Order -->
-
-		<order by="asc">
-			<order-column name="weight" />
-		</order>
-
-		<!-- Finder methods -->
-
-		<finder name="EntryId1" return-type="Collection">
-			<finder-column name="entryId1" />
-		</finder>
-		<finder name="EntryId2" return-type="Collection">
-			<finder-column name="entryId2" />
-		</finder>
-		<finder name="E_E" return-type="Collection">
-			<finder-column name="entryId1" />
-			<finder-column name="entryId2" />
-		</finder>
-		<finder name="E1_T" return-type="Collection">
-			<finder-column name="entryId1" />
-			<finder-column name="type" />
-		</finder>
-		<finder name="E2_T" return-type="Collection">
-			<finder-column name="entryId2" />
-			<finder-column name="type" />
-		</finder>
-		<finder name="E_E_T" return-type="AssetLink" unique="true">
-			<finder-column name="entryId1" />
-			<finder-column name="entryId2" />
-			<finder-column name="type" />
-		</finder>
-	</entity>
-	<entity local-service="true" name="AssetTag" remote-service="true" uuid="true">
+	<entity external-reference-code="group" local-service="true" name="AssetTag" remote-service="true" uuid="true">
 
 		<!-- PK fields -->
 
@@ -289,7 +199,7 @@
 		<!-- Other fields -->
 
 		<column accessor="true" name="name" type="String" />
-		<column change-tracking-resolution-type="merge" name="assetCount" type="int" />
+		<column name="assetCount" type="int" />
 		<column name="lastPublishDate" type="Date" />
 
 		<!-- Relationships -->
@@ -310,13 +220,44 @@
 		<finder name="Name" return-type="Collection">
 			<finder-column arrayable-operator="OR" case-sensitive="false" name="name" />
 		</finder>
-		<finder name="G_N" return-type="AssetTag" unique="true">
+		<finder name="G_N" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column case-sensitive="false" name="name" />
 		</finder>
 		<finder name="G_LikeN" return-type="Collection">
 			<finder-column arrayable-operator="OR" name="groupId" />
 			<finder-column case-sensitive="false" comparator="LIKE" name="name" />
+		</finder>
+	</entity>
+	<entity local-service="true" name="AssetTagGroupRel" remote-service="true" uuid="true">
+
+		<!-- PK fields -->
+
+		<column name="assetTagGroupRelId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="tagId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="GroupId" return-type="Collection">
+			<finder-column name="groupId" />
+		</finder>
+		<finder name="TagId" return-type="Collection">
+			<finder-column name="tagId" />
+		</finder>
+		<finder name="G_T" return-type="AssetTagGroupRel">
+			<finder-column name="groupId" />
+			<finder-column name="tagId" />
 		</finder>
 	</entity>
 	<entity external-reference-code="group" local-service="true" name="AssetVocabulary" remote-service="true" uuid="true">
@@ -345,6 +286,7 @@
 		<column name="settings" type="String" />
 		<column name="visibilityType" type="int" />
 		<column name="lastPublishDate" type="Date" />
+		<column name="status" type="int" />
 
 		<!-- Order -->
 
@@ -362,7 +304,7 @@
 		</finder>
 		<finder name="G_N" return-type="AssetVocabulary" unique="true">
 			<finder-column name="groupId" />
-			<finder-column name="name" />
+			<finder-column case-sensitive="false" name="name" />
 		</finder>
 		<finder name="G_LikeN" return-type="Collection">
 			<finder-column name="groupId" />
@@ -373,13 +315,45 @@
 			<finder-column arrayable-operator="OR" name="visibilityType" />
 		</finder>
 	</entity>
+	<entity local-service="true" name="AssetVocabularyGroupRel" remote-service="true" uuid="true">
+
+		<!-- PK fields -->
+
+		<column name="assetVocabularyGroupRelId" primary="true" type="long" />
+
+		<!-- Group instance -->
+
+		<column name="groupId" type="long" />
+
+		<!-- Audit fields -->
+
+		<column name="companyId" type="long" />
+
+		<!-- Other fields -->
+
+		<column name="vocabularyId" type="long" />
+
+		<!-- Finder methods -->
+
+		<finder name="GroupId" return-type="Collection">
+			<finder-column name="groupId" />
+		</finder>
+		<finder name="VocabularyId" return-type="Collection">
+			<finder-column name="vocabularyId" />
+		</finder>
+		<finder name="G_V" return-type="AssetVocabularyGroupRel">
+			<finder-column name="groupId" />
+			<finder-column name="vocabularyId" />
+		</finder>
+	</entity>
 	<exceptions>
 		<exception>AssetCategory</exception>
 		<exception>AssetCategoryLimit</exception>
 		<exception>AssetCategoryName</exception>
-		<exception>AssetLink</exception>
 		<exception>AssetTag</exception>
+		<exception>AssetTagGroupRelGroupId</exception>
 		<exception>AssetTagName</exception>
+		<exception>AssetVocabularyGroupRelGroupId</exception>
 		<exception>CategoryName</exception>
 		<exception>CategoryPropertyKey</exception>
 		<exception>CategoryPropertyValue</exception>

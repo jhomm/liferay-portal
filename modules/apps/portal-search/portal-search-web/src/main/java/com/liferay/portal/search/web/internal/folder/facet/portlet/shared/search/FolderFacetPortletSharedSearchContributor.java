@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.folder.facet.portlet.shared.search;
@@ -33,8 +24,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lino Alves
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + FolderFacetPortletKeys.FOLDER_FACET,
+	property = "jakarta.portlet.name=" + FolderFacetPortletKeys.FOLDER_FACET,
 	service = PortletSharedSearchContributor.class
 )
 public class FolderFacetPortletSharedSearchContributor
@@ -46,33 +36,33 @@ public class FolderFacetPortletSharedSearchContributor
 
 		FolderFacetPortletPreferences folderFacetPortletPreferences =
 			new FolderFacetPortletPreferencesImpl(
-				portletSharedSearchSettings.getPortletPreferencesOptional());
+				portletSharedSearchSettings.getPortletPreferences());
 
 		folderFacetSearchContributor.contribute(
 			portletSharedSearchSettings.getSearchRequestBuilder(),
-			siteFacetBuilder -> siteFacetBuilder.aggregationName(
+			folderFacetBuilder -> folderFacetBuilder.aggregationName(
 				portletSharedSearchSettings.getPortletId()
 			).frequencyThreshold(
 				folderFacetPortletPreferences.getFrequencyThreshold()
 			).maxTerms(
 				folderFacetPortletPreferences.getMaxTerms()
 			).selectedFolderIds(
-				toLongArray(
+				_toLongArray(
 					portletSharedSearchSettings.getParameterValues(
 						folderFacetPortletPreferences.getParameterName()))
 			));
 	}
 
-	protected static long[] toLongArray(String[] parameterValues) {
-		if (!ArrayUtil.isEmpty(parameterValues)) {
+	@Reference
+	protected FolderFacetSearchContributor folderFacetSearchContributor;
+
+	private long[] _toLongArray(String[] parameterValues) {
+		if (ArrayUtil.isNotEmpty(parameterValues)) {
 			return ListUtil.toLongArray(
 				Arrays.asList(parameterValues), GetterUtil::getLong);
 		}
 
 		return new long[0];
 	}
-
-	@Reference
-	protected FolderFacetSearchContributor folderFacetSearchContributor;
 
 }

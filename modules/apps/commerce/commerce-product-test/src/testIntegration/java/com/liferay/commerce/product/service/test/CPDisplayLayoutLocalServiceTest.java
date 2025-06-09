@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.test;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetVocabulary;
@@ -29,8 +21,10 @@ import com.liferay.commerce.product.service.CommerceCatalogLocalServiceUtil;
 import com.liferay.commerce.product.service.CommerceChannelLocalServiceUtil;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.product.type.simple.constants.SimpleCPTypeConstants;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -79,7 +73,8 @@ public class CPDisplayLayoutLocalServiceTest {
 			_group1.getCompanyId(), _user.getUserId(), 0);
 
 		_commerceChannel1 = CommerceChannelLocalServiceUtil.addCommerceChannel(
-			StringPool.BLANK, _group2.getGroupId(),
+			StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			_group2.getGroupId(),
 			_group2.getName(_serviceContext.getLanguageId()) + " Portal1",
 			CommerceChannelConstants.CHANNEL_TYPE_SITE, null, StringPool.BLANK,
 			_serviceContext);
@@ -88,7 +83,8 @@ public class CPDisplayLayoutLocalServiceTest {
 			_group1.getCompanyId(), _user.getUserId(), 0);
 
 		_commerceChannel2 = CommerceChannelLocalServiceUtil.addCommerceChannel(
-			StringPool.BLANK, _group3.getGroupId(),
+			StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			_group3.getGroupId(),
 			_group3.getName(_serviceContext.getLanguageId()) + " Portal2",
 			CommerceChannelConstants.CHANNEL_TYPE_SITE, null, StringPool.BLANK,
 			_serviceContext);
@@ -125,23 +121,29 @@ public class CPDisplayLayoutLocalServiceTest {
 			RandomTestUtil.randomString(), _assetVocabulary.getVocabularyId(),
 			_serviceContext);
 
-		_cpDisplayLayoutLocalService.addCPDisplayLayout(
-			_user.getUserId(), _commerceChannel1.getSiteGroupId(),
-			AssetCategory.class, assetCategory.getCategoryId(),
-			RandomTestUtil.randomString());
+		Layout layout1 = LayoutTestUtil.addTypePortletLayout(
+			_commerceChannel1.getSiteGroupId());
 
 		_cpDisplayLayoutLocalService.addCPDisplayLayout(
 			_user.getUserId(), _commerceChannel1.getSiteGroupId(),
-			CPDefinition.class, _cpDefinition.getCPDefinitionId(),
-			RandomTestUtil.randomString());
+			AssetCategory.class, assetCategory.getCategoryId(), null,
+			layout1.getUuid());
+		_cpDisplayLayoutLocalService.addCPDisplayLayout(
+			_user.getUserId(), _commerceChannel1.getSiteGroupId(),
+			CPDefinition.class, _cpDefinition.getCPDefinitionId(), null,
+			layout1.getUuid());
+
+		Layout layout2 = LayoutTestUtil.addTypePortletLayout(
+			_commerceChannel2.getSiteGroupId());
+
 		_cpDisplayLayoutLocalService.addCPDisplayLayout(
 			_user.getUserId(), _commerceChannel2.getSiteGroupId(),
-			AssetCategory.class, assetCategory.getCategoryId(),
-			RandomTestUtil.randomString());
+			AssetCategory.class, assetCategory.getCategoryId(), null,
+			layout2.getUuid());
 		_cpDisplayLayoutLocalService.addCPDisplayLayout(
 			_user.getUserId(), _commerceChannel2.getSiteGroupId(),
-			CPDefinition.class, _cpDefinition.getCPDefinitionId(),
-			RandomTestUtil.randomString());
+			CPDefinition.class, _cpDefinition.getCPDefinitionId(), null,
+			layout2.getUuid());
 
 		Assert.assertEquals(
 			4, _cpDisplayLayoutLocalService.getCPDisplayLayoutsCount());
@@ -157,7 +159,7 @@ public class CPDisplayLayoutLocalServiceTest {
 
 		Assert.assertEquals(
 			2, _cpDisplayLayoutLocalService.getCPDisplayLayoutsCount());
-		AssetCategoryLocalServiceUtil.deleteAssetCategory(assetCategory);
+		AssetCategoryLocalServiceUtil.deleteCategory(assetCategory);
 		Assert.assertEquals(
 			0, _cpDisplayLayoutLocalService.getCPDisplayLayoutsCount());
 	}

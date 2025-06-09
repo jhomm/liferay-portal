@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -63,8 +54,6 @@ if (filterManageableOrganizations) {
 userParams.put("usersUserGroups", Long.valueOf(userGroup.getUserGroupId()));
 
 SearchContainer<User> searchContainer = editUserGroupAssignmentsManagementToolbarDisplayContext.getSearchContainer(userParams);
-
-PortletURL portletURL = editUserGroupAssignmentsManagementToolbarDisplayContext.getPortletURL();
 %>
 
 <clay:management-toolbar
@@ -72,9 +61,9 @@ PortletURL portletURL = editUserGroupAssignmentsManagementToolbarDisplayContext.
 	additionalProps="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getAdditionalProps() %>"
 	clearResultsURL="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getClearResultsURL() %>"
 	creationMenu="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getCreationMenu() %>"
-	filterDropdownItems="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 	itemsTotal="<%= searchContainer.getTotal() %>"
-	propsTransformer="js/EditUserGroupAssignmentsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
+	propsTransformer="{EditUserGroupAssignmentsManagementToolbarPropsTransformer} from user-groups-admin-web"
 	searchActionURL="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getSearchActionURL() %>"
 	searchContainerId="users"
 	searchFormName="searchFm"
@@ -86,7 +75,7 @@ PortletURL portletURL = editUserGroupAssignmentsManagementToolbarDisplayContext.
 	viewTypeItems="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getViewTypeItems() %>"
 />
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+<aui:form action="<%= editUserGroupAssignmentsManagementToolbarDisplayContext.getPortletURL() %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 	<aui:input name="userGroupId" type="hidden" value="<%= userGroup.getUserGroupId() %>" />
 	<aui:input name="deleteUserGroupIds" type="hidden" />
@@ -94,11 +83,8 @@ PortletURL portletURL = editUserGroupAssignmentsManagementToolbarDisplayContext.
 	<aui:input name="removeUserIds" type="hidden" />
 
 	<div id="breadcrumb">
-		<liferay-ui:breadcrumb
-			showCurrentGroup="<%= false %>"
-			showGuestGroup="<%= false %>"
-			showLayout="<%= false %>"
-			showPortletBreadcrumb="<%= true %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 		/>
 	</div>
 
@@ -114,12 +100,54 @@ PortletURL portletURL = editUserGroupAssignmentsManagementToolbarDisplayContext.
 			modelVar="user2"
 			rowIdProperty="screenName"
 		>
+			<c:choose>
+				<c:when test='<%= displayStyle.equals("descriptive") %>'>
+					<liferay-ui:search-container-column-text>
+						<liferay-user:user-portrait
+							userId="<%= user2.getUserId() %>"
+						/>
+					</liferay-ui:search-container-column-text>
 
-			<%
-			boolean showActions = true;
-			%>
+					<liferay-ui:search-container-column-text
+						colspan="<%= 2 %>"
+					>
+						<div class="h5"><%= user2.getFullName() %></div>
 
-			<%@ include file="/user_search_columns.jspf" %>
+						<div class="h6 text-default">
+							<span><%= user2.getScreenName() %></span>
+						</div>
+					</liferay-ui:search-container-column-text>
+
+					<liferay-ui:search-container-column-jsp
+						path="/user_action.jsp"
+					/>
+				</c:when>
+				<c:when test='<%= displayStyle.equals("icon") %>'>
+					<liferay-ui:search-container-column-text>
+						<clay:user-card
+							propsTransformer="{UserDropdownDefaultPropsTransformer} from user-groups-admin-web"
+							userCard="<%= new UserVerticalCard(renderRequest, renderResponse, userSearchContainer.getRowChecker(), user2) %>"
+						/>
+					</liferay-ui:search-container-column-text>
+				</c:when>
+				<c:otherwise>
+					<liferay-ui:search-container-column-text
+						cssClass="table-cell-expand table-cell-minw-200 table-title"
+						name="name"
+						property="fullName"
+					/>
+
+					<liferay-ui:search-container-column-text
+						cssClass="table-cell-expand table-cell-minw-200"
+						name="screen-name"
+						property="screenName"
+					/>
+
+					<liferay-ui:search-container-column-jsp
+						path="/user_action.jsp"
+					/>
+				</c:otherwise>
+			</c:choose>
 		</liferay-ui:search-container-row>
 
 		<liferay-ui:search-iterator

@@ -1,5 +1,6 @@
 {
 	"pageElement": {
+		"id": "item1",
 		"pageElements": [
 			{
 				"definition": {
@@ -13,8 +14,6 @@
 							"id": "element-text",
 							"value": {
 								"fragmentLink": {
-									"value_i18n": {
-									}
 								},
 								"text": {
 									"value_i18n": {
@@ -42,6 +41,7 @@
 						}
 					]
 				},
+				"id": "item2",
 				"type": "Fragment"
 			}
 		],

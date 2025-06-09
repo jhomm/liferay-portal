@@ -1,43 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.remote.cors.client.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.util.CookieKeys;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.client.Client;
+import jakarta.ws.rs.client.ClientBuilder;
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.NewCookie;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Cookie;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.NewCookie;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriBuilder;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 import org.apache.cxf.jaxrs.client.spec.ClientBuilderImpl;
 import org.apache.cxf.jaxrs.impl.RuntimeDelegateImpl;
@@ -61,32 +53,57 @@ public class PortalConfigurationCORSClientTest extends BaseCORSClientTestCase {
 
 	@Test
 	public void testCORSUsingBasicWithDefaultConfig() throws Exception {
-		assertJsonWSUrl("/user/get-current-user", HttpMethod.OPTIONS, true);
 		assertJsonWSUrl("/user/get-current-user", HttpMethod.GET, false);
+		assertJsonWSUrl("/user/get-current-user", HttpMethod.GET, false, "::1");
+		assertJsonWSUrl(
+			"/user/get-current-user", HttpMethod.GET, false,
+			"http://127.0.0.1:8080");
+		assertJsonWSUrl(
+			"/user/get-current-user", HttpMethod.GET, false,
+			"http://localhost:8080");
+		assertJsonWSUrl("/user/get-current-user", HttpMethod.OPTIONS, false);
+		assertJsonWSUrl(
+			"/user/get-current-user", HttpMethod.OPTIONS, true, "::1");
+		assertJsonWSUrl(
+			"/user/get-current-user", HttpMethod.OPTIONS, true,
+			"http://127.0.0.1:8080");
+		assertJsonWSUrl(
+			"/user/get-current-user", HttpMethod.OPTIONS, true,
+			"http://localhost:8080");
 	}
 
 	@Test
 	public void testCORSUsingBasicWithDisableAuthorization() throws Exception {
-		boolean corsDisableAuthorizationContextCheck =
-			ReflectionTestUtil.getAndSetFieldValue(
-				PropsValues.class, "CORS_DISABLE_AUTHORIZATION_CONTEXT_CHECK",
-				true);
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"CORS_DISABLE_AUTHORIZATION_CONTEXT_CHECK", true)) {
 
-		try {
-			assertJsonWSUrl("/user/get-current-user", HttpMethod.OPTIONS, true);
-			assertJsonWSUrl("/user/get-current-user", HttpMethod.GET, true);
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PropsValues.class, "CORS_DISABLE_AUTHORIZATION_CONTEXT_CHECK",
-				corsDisableAuthorizationContextCheck);
+			assertJsonWSUrl("/user/get-current-user", HttpMethod.GET, false);
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.GET, true, "::1");
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.GET, true,
+				"http://127.0.0.1:8080");
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.GET, true,
+				"http://localhost:8080");
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.OPTIONS, false);
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.OPTIONS, true, "::1");
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.OPTIONS, true,
+				"http://127.0.0.1:8080");
+			assertJsonWSUrl(
+				"/user/get-current-user", HttpMethod.OPTIONS, true,
+				"http://localhost:8080");
 		}
 	}
 
 	@Test
 	public void testNoCORSUsingPortalSession() throws Exception {
 		Cookie authenticatedCookie = _getAuthenticatedCookie(
-			"test@liferay.com", "test");
+			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		Invocation.Builder invocationBuilder = _getWebTarget(
 			"web", "guest"
@@ -127,8 +144,9 @@ public class PortalConfigurationCORSClientTest extends BaseCORSClientTestCase {
 		Map<String, NewCookie> newCookies = response.getCookies();
 
 		NewCookie cookieSupportNewCookie = newCookies.get(
-			CookieKeys.COOKIE_SUPPORT);
-		NewCookie jSessionIdNewCookie = newCookies.get(CookieKeys.JSESSIONID);
+			CookiesConstants.NAME_COOKIE_SUPPORT);
+		NewCookie jSessionIdNewCookie = newCookies.get(
+			CookiesConstants.NAME_JSESSIONID);
 
 		invocationBuilder = _getWebTarget(
 			"c", "portal", "login"
@@ -147,7 +165,7 @@ public class PortalConfigurationCORSClientTest extends BaseCORSClientTestCase {
 
 		newCookies = response.getCookies();
 
-		jSessionIdNewCookie = newCookies.get(CookieKeys.JSESSIONID);
+		jSessionIdNewCookie = newCookies.get(CookiesConstants.NAME_JSESSIONID);
 
 		if (jSessionIdNewCookie == null) {
 			return null;
@@ -202,7 +220,7 @@ public class PortalConfigurationCORSClientTest extends BaseCORSClientTestCase {
 	}
 
 	private static final Pattern _pAuthTokenPattern = Pattern.compile(
-		"Liferay.authToken\\s*=\\s*(['\"])(((?!\\1).)*)\\1;");
+		"authToken:\\s*(['\"])(((?!\\1).)*)\\1,");
 
 	private String _pAuth;
 

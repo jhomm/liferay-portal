@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.aui.base;
@@ -17,8 +8,8 @@ package com.liferay.taglib.aui.base;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
 
 /**
  * @author Eduardo Lundgren
@@ -156,6 +147,10 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _languageId;
 	}
 
+	public java.lang.String getLanguagesDropdownDirection() {
+		return _languagesDropdownDirection;
+	}
+
 	public boolean getLast() {
 		return _last;
 	}
@@ -252,6 +247,10 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		return _adminMode;
 	}
 
+	public boolean isLanguagesDropdownVisible() {
+		return _languagesDropdownVisible;
+	}
+
 	public void setActiveLanguageIds(List<String> activeLanguageIds) {
 		_activeLanguageIds = activeLanguageIds;
 	}
@@ -340,6 +339,10 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		_helpTextCssClass = helpTextCssClass;
 	}
 
+	public void setLanguagesDropdownVisible(boolean languagesDropdownVisible) {
+		_languagesDropdownVisible = languagesDropdownVisible;
+	}
+
 	public void setIconOff(java.lang.String iconOff) {
 		_iconOff = iconOff;
 	}
@@ -374,6 +377,10 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 
 	public void setLanguageId(java.lang.String languageId) {
 		_languageId = languageId;
+	}
+
+	public void setLanguagesDropdownDirection(java.lang.String languagesDropdownDirection) {
+		_languagesDropdownDirection = languagesDropdownDirection;
 	}
 
 	public void setLast(boolean last) {
@@ -503,6 +510,8 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		_label = null;
 		_labelCssClass = null;
 		_languageId = null;
+		_languagesDropdownDirection = null;
+		_languagesDropdownVisible = true;
 		_last = false;
 		_localized = false;
 		_localizeLabel = true;
@@ -557,6 +566,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		setNamespacedAttribute(request, "formName", _formName);
 		setNamespacedAttribute(request, "helpMessage", _helpMessage);
 		setNamespacedAttribute(request, "helpTextCssClass", _helpTextCssClass);
+		setNamespacedAttribute(request, "languagesDropdownVisible", _languagesDropdownVisible);
 		setNamespacedAttribute(request, "iconOff", _iconOff);
 		setNamespacedAttribute(request, "iconOn", _iconOn);
 		setNamespacedAttribute(request, "id", _id);
@@ -566,6 +576,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 		setNamespacedAttribute(request, "label", _label);
 		setNamespacedAttribute(request, "labelCssClass", _labelCssClass);
 		setNamespacedAttribute(request, "languageId", _languageId);
+		setNamespacedAttribute(request, "languagesDropdownDirection", _languagesDropdownDirection);
 		setNamespacedAttribute(request, "last", _last);
 		setNamespacedAttribute(request, "localized", _localized);
 		setNamespacedAttribute(request, "localizeLabel", _localizeLabel);
@@ -618,6 +629,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 	private java.lang.String _formName = null;
 	private java.lang.String _helpMessage = null;
 	private java.lang.String _helpTextCssClass = "input-group-addon";
+	private boolean _languagesDropdownVisible = true;
 	private java.lang.String _iconOff = null;
 	private java.lang.String _iconOn = null;
 	private java.lang.String _id = null;
@@ -627,6 +639,7 @@ public abstract class BaseInputTag extends com.liferay.taglib.BaseValidatorTagSu
 	private java.lang.String _label = null;
 	private java.lang.String _labelCssClass = null;
 	private java.lang.String _languageId = null;
+	private java.lang.String _languagesDropdownDirection = null;
 	private boolean _last = false;
 	private boolean _localized = false;
 	private boolean _localizeLabel = true;

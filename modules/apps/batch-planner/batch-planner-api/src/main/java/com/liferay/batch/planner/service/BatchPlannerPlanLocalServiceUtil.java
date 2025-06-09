@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -63,13 +55,13 @@ public class BatchPlannerPlanLocalServiceUtil {
 
 	public static BatchPlannerPlan addBatchPlannerPlan(
 			long userId, boolean export, String externalType,
-			String externalURL, String internalClassName, String name,
+			String externalURL, String internalClassName, String name, int size,
 			String taskItemDelegateName, boolean template)
 		throws PortalException {
 
 		return getService().addBatchPlannerPlan(
 			userId, export, externalType, externalURL, internalClassName, name,
-			taskItemDelegateName, template);
+			size, taskItemDelegateName, template);
 	}
 
 	/**
@@ -94,6 +86,10 @@ public class BatchPlannerPlanLocalServiceUtil {
 		return getService().createPersistedModel(primaryKeyObj);
 	}
 
+	public static void deactivateBatchPlannerPlan(String batchEngineTaskERC) {
+		getService().deactivateBatchPlannerPlan(batchEngineTaskERC);
+	}
+
 	/**
 	 * Deletes the batch planner plan from the database. Also notifies the appropriate model listeners.
 	 *
@@ -103,9 +99,11 @@ public class BatchPlannerPlanLocalServiceUtil {
 	 *
 	 * @param batchPlannerPlan the batch planner plan
 	 * @return the batch planner plan that was removed
+	 * @throws PortalException
 	 */
 	public static BatchPlannerPlan deleteBatchPlannerPlan(
-		BatchPlannerPlan batchPlannerPlan) {
+			BatchPlannerPlan batchPlannerPlan)
+		throws PortalException {
 
 		return getService().deleteBatchPlannerPlan(batchPlannerPlan);
 	}
@@ -299,13 +297,6 @@ public class BatchPlannerPlanLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static BatchPlannerPlan updateActive(
-			long batchPlannerPlanId, boolean active)
-		throws PortalException {
-
-		return getService().updateActive(batchPlannerPlanId, active);
-	}
-
 	/**
 	 * Updates the batch planner plan in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -323,17 +314,28 @@ public class BatchPlannerPlanLocalServiceUtil {
 	}
 
 	public static BatchPlannerPlan updateBatchPlannerPlan(
-			long userId, long batchPlannerPlanId, String name)
+			long batchPlannerPlanId, String externalType,
+			String internalClassName, String name)
 		throws PortalException {
 
 		return getService().updateBatchPlannerPlan(
-			userId, batchPlannerPlanId, name);
+			batchPlannerPlanId, externalType, internalClassName, name);
+	}
+
+	public static BatchPlannerPlan updateStatus(
+			long batchPlannerPlanId, int status)
+		throws PortalException {
+
+		return getService().updateStatus(batchPlannerPlanId, status);
 	}
 
 	public static BatchPlannerPlanLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile BatchPlannerPlanLocalService _service;
+	private static final Snapshot<BatchPlannerPlanLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			BatchPlannerPlanLocalServiceUtil.class,
+			BatchPlannerPlanLocalService.class);
 
 }

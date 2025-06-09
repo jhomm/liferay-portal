@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -238,106 +228,95 @@ public class RecentLayoutSetBranchModelImpl
 	public Map<String, Function<RecentLayoutSetBranch, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<RecentLayoutSetBranch, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, RecentLayoutSetBranch>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			RecentLayoutSetBranch.class.getClassLoader(),
-			RecentLayoutSetBranch.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<RecentLayoutSetBranch, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<RecentLayoutSetBranch> constructor =
-				(Constructor<RecentLayoutSetBranch>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<RecentLayoutSetBranch, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<RecentLayoutSetBranch, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", RecentLayoutSetBranch::getMvccVersion);
+			attributeGetterFunctions.put(
+				"recentLayoutSetBranchId",
+				RecentLayoutSetBranch::getRecentLayoutSetBranchId);
+			attributeGetterFunctions.put(
+				"groupId", RecentLayoutSetBranch::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", RecentLayoutSetBranch::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", RecentLayoutSetBranch::getUserId);
+			attributeGetterFunctions.put(
+				"layoutSetBranchId",
+				RecentLayoutSetBranch::getLayoutSetBranchId);
+			attributeGetterFunctions.put(
+				"layoutSetId", RecentLayoutSetBranch::getLayoutSetId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<RecentLayoutSetBranch, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<RecentLayoutSetBranch, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<RecentLayoutSetBranch, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<RecentLayoutSetBranch, Object>>();
-		Map<String, BiConsumer<RecentLayoutSetBranch, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<RecentLayoutSetBranch, ?>>();
+		private static final Map
+			<String, BiConsumer<RecentLayoutSetBranch, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", RecentLayoutSetBranch::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setMvccVersion);
-		attributeGetterFunctions.put(
-			"recentLayoutSetBranchId",
-			RecentLayoutSetBranch::getRecentLayoutSetBranchId);
-		attributeSetterBiConsumers.put(
-			"recentLayoutSetBranchId",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setRecentLayoutSetBranchId);
-		attributeGetterFunctions.put(
-			"groupId", RecentLayoutSetBranch::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", RecentLayoutSetBranch::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", RecentLayoutSetBranch::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setUserId);
-		attributeGetterFunctions.put(
-			"layoutSetBranchId", RecentLayoutSetBranch::getLayoutSetBranchId);
-		attributeSetterBiConsumers.put(
-			"layoutSetBranchId",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setLayoutSetBranchId);
-		attributeGetterFunctions.put(
-			"layoutSetId", RecentLayoutSetBranch::getLayoutSetId);
-		attributeSetterBiConsumers.put(
-			"layoutSetId",
-			(BiConsumer<RecentLayoutSetBranch, Long>)
-				RecentLayoutSetBranch::setLayoutSetId);
+		static {
+			Map<String, BiConsumer<RecentLayoutSetBranch, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<RecentLayoutSetBranch, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"recentLayoutSetBranchId",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setRecentLayoutSetBranchId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setUserId);
+			attributeSetterBiConsumers.put(
+				"layoutSetBranchId",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setLayoutSetBranchId);
+			attributeSetterBiConsumers.put(
+				"layoutSetId",
+				(BiConsumer<RecentLayoutSetBranch, Long>)
+					RecentLayoutSetBranch::setLayoutSetId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -729,42 +708,12 @@ public class RecentLayoutSetBranchModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<RecentLayoutSetBranch, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<RecentLayoutSetBranch, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<RecentLayoutSetBranch, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((RecentLayoutSetBranch)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, RecentLayoutSetBranch>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					RecentLayoutSetBranch.class, ModelWrapper.class);
 
 	}
 
@@ -778,7 +727,8 @@ public class RecentLayoutSetBranchModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<RecentLayoutSetBranch, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

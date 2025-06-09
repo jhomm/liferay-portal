@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.trash;
@@ -25,10 +16,10 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.trash.kernel.model.TrashEntry;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -361,18 +352,6 @@ public interface TrashHandler {
 
 	public TrashedModel getTrashedModel(long classPK);
 
-	public default TrashEntry getTrashEntry(long classPK)
-		throws PortalException {
-
-		TrashedModel trashedModel = getTrashedModel(classPK);
-
-		if (trashedModel != null) {
-			return trashedModel.getTrashEntry();
-		}
-
-		return null;
-	}
-
 	public int getTrashModelsCount(long classPK) throws PortalException;
 
 	public default List<TrashedModel> getTrashModelTrashedModels(
@@ -426,17 +405,6 @@ public interface TrashHandler {
 	 * Returns <code>true</code> if the entity can be deleted from the Recycle
 	 * Bin.
 	 *
-	 * @return     <code>true</code> if the entity can be deleted from the
-	 *             Recycle Bin.
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link #isDeletable(long)}
-	 */
-	@Deprecated
-	public boolean isDeletable();
-
-	/**
-	 * Returns <code>true</code> if the entity can be deleted from the Recycle
-	 * Bin.
-	 *
 	 * @return <code>true</code> if the entity can be deleted from the Recycle
 	 *         Bin.
 	 */
@@ -459,38 +427,6 @@ public interface TrashHandler {
 
 		return false;
 	}
-
-	/**
-	 * Returns <code>true</code> if the model entity with the primary key is in
-	 * a container that is in the Recycle Bin.
-	 *
-	 * @param  classPK the primary key of the model entity
-	 * @return <code>true</code> if the model entity with the primary key is in
-	 *         a container that is in the Recycle Bin; <code>false</code>
-	 *         otherwise
-	 */
-	public default boolean isInTrashContainer(long classPK)
-		throws PortalException {
-
-		TrashedModel trashedModel = getTrashedModel(classPK);
-
-		if (trashedModel != null) {
-			return trashedModel.isInTrashContainer();
-		}
-
-		return false;
-	}
-
-	/**
-	 * Returns <code>true</code> if the entity can be moved from one container
-	 * model (such as a folder) to another.
-	 *
-	 * @return     <code>true</code> if the entity can be moved from one
-	 *             container model to another; <code>false</code> otherwise
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link #isMovable(long)}
-	 */
-	@Deprecated
-	public boolean isMovable();
 
 	/**
 	 * Returns <code>true</code> if the entity can be moved from one container

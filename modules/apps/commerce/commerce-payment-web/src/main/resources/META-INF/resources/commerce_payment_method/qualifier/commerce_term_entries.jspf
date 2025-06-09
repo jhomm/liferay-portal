@@ -1,0 +1,38 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<c:if test="<%= hasPermission %>">
+	<div id="item-finder-root-payment-terms"></div>
+
+	<liferay-frontend:component
+		context='<%=
+			HashMapBuilder.<String, Object>put(
+				"apiUrl", "/o/headless-commerce-admin-order/v1.0/terms?filter=type eq '" + CommerceTermEntryConstants.TYPE_PAYMENT_TERMS + "'"
+			).put(
+				"dataSetId", CommercePaymentMethodGroupRelFDSNames.TERM_ENTRIES
+			).put(
+				"paymentMethodGroupRelId", commercePaymentMethodGroupRelId
+			).put(
+				"rootPortletId", portletDisplay.getRootPortletId()
+			).build()
+		%>'
+		module="{commerceTermEntries} from commerce-payment-web"
+	/>
+
+	<commerce-ui:panel
+		bodyClasses="p-0"
+		title='<%= LanguageUtil.get(request, "payment-terms") %>'
+	>
+		<frontend-data-set:headless-display
+			apiURL="<%= commercePaymentMethodGroupRelQualifiersDisplayContext.getCommerceTermEntriesCommercePaymentMethodGroupRelsAPIURL() %>"
+			fdsActionDropdownItems="<%= commercePaymentMethodGroupRelQualifiersDisplayContext.getCommerceTermEntryFDSActionDropdownItems() %>"
+			formName="fm"
+			id="<%= CommercePaymentMethodGroupRelFDSNames.TERM_ENTRIES %>"
+			itemsPerPage="<%= 10 %>"
+		/>
+	</commerce-ui:panel>
+</c:if>

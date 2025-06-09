@@ -1,17 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {SearchForm} from '@liferay/layout-js-components-web';
 import {fetch, objectToFormData} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
@@ -19,7 +11,6 @@ import React, {useContext, useEffect, useMemo, useState} from 'react';
 import {AddPanelContext, normalizeContent} from './AddPanel';
 import Collection from './Collection';
 import ContentOptions from './ContentOptions';
-import SearchForm from './SearchForm';
 import SearchResultsPanel from './SearchResultPanel';
 
 const CONTENT_TAB_ID = 'content';
@@ -91,7 +82,7 @@ const TabsContent = ({tab, tabIndex}) => {
 								searchValue
 							),
 						},
-				  ]
+					]
 				: tab,
 		[searchValue, tab]
 	);
@@ -117,10 +108,9 @@ const TabsContent = ({tab, tabIndex}) => {
 						collections: items.contents.length
 							? tab.collections.map((collection) => ({
 									...collection,
-									children: items.contents.map(
-										normalizeContent
-									),
-							  }))
+									children:
+										items.contents.map(normalizeContent),
+								}))
 							: items.contents,
 					};
 
@@ -149,26 +139,24 @@ const TabsContent = ({tab, tabIndex}) => {
 						isContentTab
 							? Liferay.Language.get(
 									'there-is-no-content-on-this-page'
-							  )
+								)
 							: Liferay.Language.get(
 									'there-are-no-widgets-on-this-page'
-							  )
+								)
 					}
 					filteredTabs={
 						isContentTab ? [filteredContent] : filteredWidgets
 					}
 				/>
 			) : (
-				<ul className="list-unstyled">
-					{collections.map((collection, index) => (
-						<Collection
-							collection={collection}
-							isContentTab={isContentTab}
-							key={index}
-							open={index < INITIAL_EXPANDED_ITEM_COLLECTIONS}
-						/>
-					))}
-				</ul>
+				collections.map((collection, index) => (
+					<Collection
+						collection={collection}
+						isContentTab={isContentTab}
+						key={index}
+						open={index < INITIAL_EXPANDED_ITEM_COLLECTIONS}
+					/>
+				))
 			)}
 		</>
 	);

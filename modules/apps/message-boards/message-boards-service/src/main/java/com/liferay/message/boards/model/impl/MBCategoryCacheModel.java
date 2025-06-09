@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model.impl;
@@ -77,7 +68,7 @@ public class MBCategoryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(39);
+		StringBundler sb = new StringBundler(43);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -85,6 +76,8 @@ public class MBCategoryCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", categoryId=");
 		sb.append(categoryId);
 		sb.append(", groupId=");
@@ -107,6 +100,8 @@ public class MBCategoryCacheModel
 		sb.append(description);
 		sb.append(", displayStyle=");
 		sb.append(displayStyle);
+		sb.append(", friendlyURL=");
+		sb.append(friendlyURL);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append(", status=");
@@ -134,6 +129,13 @@ public class MBCategoryCacheModel
 		}
 		else {
 			mbCategoryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			mbCategoryImpl.setExternalReferenceCode("");
+		}
+		else {
+			mbCategoryImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		mbCategoryImpl.setCategoryId(categoryId);
@@ -185,6 +187,13 @@ public class MBCategoryCacheModel
 			mbCategoryImpl.setDisplayStyle(displayStyle);
 		}
 
+		if (friendlyURL == null) {
+			mbCategoryImpl.setFriendlyURL("");
+		}
+		else {
+			mbCategoryImpl.setFriendlyURL(friendlyURL);
+		}
+
 		if (lastPublishDate == Long.MIN_VALUE) {
 			mbCategoryImpl.setLastPublishDate(null);
 		}
@@ -220,6 +229,7 @@ public class MBCategoryCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		categoryId = objectInput.readLong();
 
@@ -236,6 +246,7 @@ public class MBCategoryCacheModel
 		name = objectInput.readUTF();
 		description = objectInput.readUTF();
 		displayStyle = objectInput.readUTF();
+		friendlyURL = objectInput.readUTF();
 		lastPublishDate = objectInput.readLong();
 
 		status = objectInput.readInt();
@@ -256,6 +267,13 @@ public class MBCategoryCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(categoryId);
@@ -299,6 +317,13 @@ public class MBCategoryCacheModel
 			objectOutput.writeUTF(displayStyle);
 		}
 
+		if (friendlyURL == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(friendlyURL);
+		}
+
 		objectOutput.writeLong(lastPublishDate);
 
 		objectOutput.writeInt(status);
@@ -318,6 +343,7 @@ public class MBCategoryCacheModel
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long categoryId;
 	public long groupId;
 	public long companyId;
@@ -329,6 +355,7 @@ public class MBCategoryCacheModel
 	public String name;
 	public String description;
 	public String displayStyle;
+	public String friendlyURL;
 	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;

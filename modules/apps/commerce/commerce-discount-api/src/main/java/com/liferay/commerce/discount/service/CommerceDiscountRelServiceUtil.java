@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service;
 
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -41,11 +33,14 @@ public class CommerceDiscountRelServiceUtil {
 	 */
 	public static CommerceDiscountRel addCommerceDiscountRel(
 			long commerceDiscountId, String className, long classPK,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				typeSettingsUnicodeProperties,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCommerceDiscountRel(
-			commerceDiscountId, className, classPK, serviceContext);
+			commerceDiscountId, className, classPK,
+			typeSettingsUnicodeProperties, serviceContext);
 	}
 
 	public static void deleteCommerceDiscountRel(long commerceDiscountRelId)
@@ -176,9 +171,12 @@ public class CommerceDiscountRelServiceUtil {
 	}
 
 	public static CommerceDiscountRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceDiscountRelService _service;
+	private static final Snapshot<CommerceDiscountRelService> _serviceSnapshot =
+		new Snapshot<>(
+			CommerceDiscountRelServiceUtil.class,
+			CommerceDiscountRelService.class);
 
 }

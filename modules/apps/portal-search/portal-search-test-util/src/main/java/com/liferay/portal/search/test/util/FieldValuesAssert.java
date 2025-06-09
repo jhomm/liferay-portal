@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.test.util;
@@ -19,6 +10,8 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.document.Field;
+import com.liferay.portal.search.hits.SearchHit;
+import com.liferay.portal.search.hits.SearchHits;
 import com.liferay.portal.search.searcher.SearchResponse;
 
 import java.util.ArrayList;
@@ -30,8 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author André de Oliveira
@@ -44,6 +35,16 @@ public class FieldValuesAssert {
 		assertFieldValues(
 			Collections.singletonMap(fieldName, fieldValue),
 			Predicate.isEqual(fieldName), searchResponse);
+	}
+
+	public static void assertFieldValues(
+		com.liferay.portal.kernel.search.Document document,
+		Map<String, ?> expected, Predicate<String> keysPredicate,
+		String message) {
+
+		AssertUtils.assertEquals(
+			message, _toStringValuesMap(expected),
+			_filterOnKey(_toLegacyFieldValuesMap(document), keysPredicate));
 	}
 
 	public static void assertFieldValues(
@@ -62,9 +63,7 @@ public class FieldValuesAssert {
 		Map<String, String> expectedFieldValuesMap = _toStringValuesMap(
 			expected);
 
-		Stream<Document> stream = searchResponse.getDocumentsStream();
-
-		List<Document> documents = stream.collect(Collectors.toList());
+		List<Document> documents = searchResponse.getDocuments();
 
 		if (documents.size() == 1) {
 			Map<String, String> actualFieldValuesMap = _toFieldValuesMap(
@@ -72,6 +71,15 @@ public class FieldValuesAssert {
 
 			Map<String, String> filteredFieldValuesMap = _filterOnKey(
 				actualFieldValuesMap, keysPredicate);
+
+			Map<String, Object> sourcesMap = _getSourcesMap(searchResponse);
+
+			for (String key : filteredFieldValuesMap.keySet()) {
+				if (key.endsWith("_sortable") && sourcesMap.containsKey(key)) {
+					filteredFieldValuesMap.put(
+						key, _toObjectString(sourcesMap.get(key)));
+				}
+			}
 
 			AssertUtils.assertEquals(
 				() -> StringBundler.concat(
@@ -151,20 +159,33 @@ public class FieldValuesAssert {
 	}
 
 	private static Map<String, String> _filterOnKey(
-		Map<String, String> map, Predicate<String> predicate) {
+		Map<String, String> map1, Predicate<String> predicate) {
 
 		if (predicate == null) {
-			return map;
+			return map1;
 		}
 
-		Stream<Map.Entry<String, String>> stream = SearchStreamUtil.stream(
-			map.entrySet());
+		Map<String, String> map2 = new HashMap<>();
 
-		return stream.filter(
-			entry -> predicate.test(entry.getKey())
-		).collect(
-			Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-		);
+		for (Map.Entry<String, String> entry : map1.entrySet()) {
+			if (predicate.test(entry.getKey())) {
+				map2.put(entry.getKey(), entry.getValue());
+			}
+		}
+
+		return map2;
+	}
+
+	private static Map<String, Object> _getSourcesMap(
+		SearchResponse searchResponse) {
+
+		SearchHits searchHits = searchResponse.getSearchHits();
+
+		List<SearchHit> searchHitsList = searchHits.getSearchHits();
+
+		SearchHit searchHit = searchHitsList.get(0);
+
+		return searchHit.getSourcesMap();
 	}
 
 	private static <E> List<E> _sort(List<E> list) {
@@ -244,13 +265,13 @@ public class FieldValuesAssert {
 	private static <T> Map<String, String> _toStringValuesMap(
 		Map<String, T> map, Function<T, String> function) {
 
-		Stream<Map.Entry<String, T>> stream = SearchStreamUtil.stream(
-			map.entrySet());
+		Map<String, String> stringValues = new HashMap<>();
 
-		return stream.collect(
-			Collectors.toMap(
-				entry -> entry.getKey(),
-				entry -> function.apply(entry.getValue())));
+		for (Map.Entry<String, T> entry : map.entrySet()) {
+			stringValues.put(entry.getKey(), function.apply(entry.getValue()));
+		}
+
+		return stringValues;
 	}
 
 }

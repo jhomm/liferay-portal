@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.converter.serializer;
@@ -17,31 +8,34 @@ package com.liferay.dynamic.data.mapping.form.builder.internal.converter.seriali
 import com.liferay.dynamic.data.mapping.form.builder.internal.converter.model.action.JumpToPageDDMFormRuleAction;
 import com.liferay.dynamic.data.mapping.spi.converter.serializer.SPIDDMFormRuleSerializerContext;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
  */
-@RunWith(PowerMockRunner.class)
-public class JumpToPageDDMFormRuleActionSerializerTest extends PowerMockito {
+public class JumpToPageDDMFormRuleActionSerializerTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testSerialize() {
-		when(
+		Mockito.when(
 			_jumpToPageDDMFormRuleAction.getSource()
 		).thenReturn(
 			"1"
 		);
 
-		when(
+		Mockito.when(
 			_jumpToPageDDMFormRuleAction.getTarget()
 		).thenReturn(
 			"3"
@@ -60,7 +54,7 @@ public class JumpToPageDDMFormRuleActionSerializerTest extends PowerMockito {
 
 	@Test
 	public void testSerializeWithEmptyTarget() {
-		when(
+		Mockito.when(
 			_jumpToPageDDMFormRuleAction.getTarget()
 		).thenReturn(
 			StringPool.BLANK
@@ -77,10 +71,10 @@ public class JumpToPageDDMFormRuleActionSerializerTest extends PowerMockito {
 		Assert.assertNull(result);
 	}
 
-	@Mock
-	private JumpToPageDDMFormRuleAction _jumpToPageDDMFormRuleAction;
-
-	@Mock
-	private SPIDDMFormRuleSerializerContext _spiDDMFormRuleSerializerContext;
+	private final JumpToPageDDMFormRuleAction _jumpToPageDDMFormRuleAction =
+		Mockito.mock(JumpToPageDDMFormRuleAction.class);
+	private final SPIDDMFormRuleSerializerContext
+		_spiDDMFormRuleSerializerContext = Mockito.mock(
+			SPIDDMFormRuleSerializerContext.class);
 
 }

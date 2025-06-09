@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0;
@@ -17,6 +8,8 @@ package com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceEntry;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.TierPrice;
 import com.liferay.headless.commerce.admin.pricing.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.math.BigDecimal;
 
@@ -28,9 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -61,7 +51,7 @@ public class PriceEntrySerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (priceEntry.getActions() != null) {
 			if (sb.length() > 1) {
@@ -289,6 +279,16 @@ public class PriceEntrySerDes {
 			sb.append(priceEntry.getPriceListId());
 		}
 
+		if (priceEntry.getPriceOnApplication() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"priceOnApplication\": ");
+
+			sb.append(priceEntry.getPriceOnApplication());
+		}
+
 		if (priceEntry.getProduct() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -297,6 +297,16 @@ public class PriceEntrySerDes {
 			sb.append("\"product\": ");
 
 			sb.append(String.valueOf(priceEntry.getProduct()));
+		}
+
+		if (priceEntry.getQuantity() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"quantity\": ");
+
+			sb.append(priceEntry.getQuantity());
 		}
 
 		if (priceEntry.getSku() != null) {
@@ -353,6 +363,20 @@ public class PriceEntrySerDes {
 			sb.append("]");
 		}
 
+		if (priceEntry.getUnitOfMeasureKey() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasureKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(priceEntry.getUnitOfMeasureKey()));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
@@ -372,7 +396,7 @@ public class PriceEntrySerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (priceEntry.getActions() == null) {
 			map.put("actions", null);
@@ -539,11 +563,27 @@ public class PriceEntrySerDes {
 			map.put("priceListId", String.valueOf(priceEntry.getPriceListId()));
 		}
 
+		if (priceEntry.getPriceOnApplication() == null) {
+			map.put("priceOnApplication", null);
+		}
+		else {
+			map.put(
+				"priceOnApplication",
+				String.valueOf(priceEntry.getPriceOnApplication()));
+		}
+
 		if (priceEntry.getProduct() == null) {
 			map.put("product", null);
 		}
 		else {
 			map.put("product", String.valueOf(priceEntry.getProduct()));
+		}
+
+		if (priceEntry.getQuantity() == null) {
+			map.put("quantity", null);
+		}
+		else {
+			map.put("quantity", String.valueOf(priceEntry.getQuantity()));
 		}
 
 		if (priceEntry.getSku() == null) {
@@ -576,6 +616,15 @@ public class PriceEntrySerDes {
 			map.put("tierPrices", String.valueOf(priceEntry.getTierPrices()));
 		}
 
+		if (priceEntry.getUnitOfMeasureKey() == null) {
+			map.put("unitOfMeasureKey", null);
+		}
+		else {
+			map.put(
+				"unitOfMeasureKey",
+				String.valueOf(priceEntry.getUnitOfMeasureKey()));
+		}
+
 		return map;
 	}
 
@@ -593,6 +642,107 @@ public class PriceEntrySerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "bulkPricing")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountDiscovery")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountLevel1")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountLevel2")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountLevel3")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "discountLevel4")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "discountLevelsFormatted")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expirationDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "hasTierPrice")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "neverExpire")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "price")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceEntryId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceFormatted")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"priceListExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceListId")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceOnApplication")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "product")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "quantity")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "sku")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "skuExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "skuId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "tierPrices")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "unitOfMeasureKey")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PriceEntry priceEntry, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -600,8 +750,7 @@ public class PriceEntrySerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					priceEntry.setActions(
-						(Map)PriceEntrySerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "active")) {
@@ -617,8 +766,7 @@ public class PriceEntrySerDes {
 			else if (Objects.equals(jsonParserFieldName, "customFields")) {
 				if (jsonParserFieldValue != null) {
 					priceEntry.setCustomFields(
-						(Map)PriceEntrySerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, ?>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "discountDiscovery")) {
@@ -721,10 +869,24 @@ public class PriceEntrySerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceOnApplication")) {
+
+				if (jsonParserFieldValue != null) {
+					priceEntry.setPriceOnApplication(
+						(Boolean)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "product")) {
 				if (jsonParserFieldValue != null) {
 					priceEntry.setProduct(
 						ProductSerDes.toDTO((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "quantity")) {
+				if (jsonParserFieldValue != null) {
+					priceEntry.setQuantity(
+						new BigDecimal((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "sku")) {
@@ -749,14 +911,24 @@ public class PriceEntrySerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "tierPrices")) {
 				if (jsonParserFieldValue != null) {
-					priceEntry.setTierPrices(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> TierPriceSerDes.toDTO((String)object)
-						).toArray(
-							size -> new TierPrice[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					TierPrice[] tierPricesArray =
+						new TierPrice[jsonParserFieldValues.length];
+
+					for (int i = 0; i < tierPricesArray.length; i++) {
+						tierPricesArray[i] = TierPriceSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					priceEntry.setTierPrices(tierPricesArray);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "unitOfMeasureKey")) {
+				if (jsonParserFieldValue != null) {
+					priceEntry.setUnitOfMeasureKey(
+						(String)jsonParserFieldValue);
 				}
 			}
 		}
@@ -791,36 +963,7 @@ public class PriceEntrySerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -830,6 +973,42 @@ public class PriceEntrySerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

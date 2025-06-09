@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.servlet.context.helper.internal.definition;
 
+import com.liferay.petra.io.StreamUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -32,6 +26,15 @@ import com.liferay.portal.osgi.web.servlet.context.helper.internal.JspServletWra
 import com.liferay.portal.osgi.web.servlet.context.helper.internal.order.OrderUtil;
 import com.liferay.portal.osgi.web.servlet.context.helper.order.Order;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.annotation.WebFilter;
+import jakarta.servlet.annotation.WebInitParam;
+import jakarta.servlet.annotation.WebListener;
+import jakarta.servlet.annotation.WebServlet;
+
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.net.URL;
@@ -47,14 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.Servlet;
-import javax.servlet.annotation.WebFilter;
-import javax.servlet.annotation.WebInitParam;
-import javax.servlet.annotation.WebListener;
-import javax.servlet.annotation.WebServlet;
+import java.util.function.BiFunction;
 
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
@@ -234,7 +230,6 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 			String jspFile = String.valueOf(_stack.pop());
 
 			_servletDefinition.setJSPFile(jspFile);
-
 			_servletDefinition.setServlet(
 				new JspServletWrapper(
 					_jspServletFactory.createJSPServlet(), jspFile));
@@ -501,7 +496,7 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 			return _webXMLDefinition;
 		}
 
-		try (InputStream inputStream = url.openStream()) {
+		try (InputStream inputStream = _toInputStream(url, url.openStream())) {
 			SAXParser saxParser = _saxParserFactory.newSAXParser();
 
 			XMLReader xmlReader = saxParser.getXMLReader();
@@ -559,10 +554,9 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 			_servletMapping = new ServletMapping();
 		}
 		else if (qName.equals("web-app")) {
-			boolean metadataComplete = GetterUtil.getBoolean(
-				attributes.getValue("metadata-complete"));
-
-			_webXMLDefinition.setMetadataComplete(metadataComplete);
+			_webXMLDefinition.setMetadataComplete(
+				GetterUtil.getBoolean(
+					attributes.getValue("metadata-complete")));
 		}
 		else if (qName.equals("web-resource-collection")) {
 			_webResourceCollection = new WebResourceCollection();
@@ -575,7 +569,7 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 	private void _addURLPatterns(
 		FilterDefinition filterDefinition, List<String> value) {
 
-		if (!ListUtil.isEmpty(value)) {
+		if (ListUtil.isNotEmpty(value)) {
 			_addURLPatterns(
 				filterDefinition, value.toArray(new String[0]), null);
 		}
@@ -585,13 +579,13 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 		FilterDefinition filterDefinition, String[] value,
 		String[] urlPatterns) {
 
-		if (!ArrayUtil.isEmpty(value)) {
+		if (ArrayUtil.isNotEmpty(value)) {
 			for (String urlPattern : value) {
 				filterDefinition.addURLPattern(urlPattern);
 			}
 		}
 
-		if (!ArrayUtil.isEmpty(urlPatterns)) {
+		if (ArrayUtil.isNotEmpty(urlPatterns)) {
 			if (ListUtil.isNotEmpty(filterDefinition.getURLPatterns())) {
 				throw new IllegalStateException(
 					"Both value and URL patterns are declared");
@@ -606,7 +600,7 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 	private void _addURLPatterns(
 		ServletDefinition servletDefinition, List<String> value) {
 
-		if (!ListUtil.isEmpty(value)) {
+		if (ListUtil.isNotEmpty(value)) {
 			_addURLPatterns(
 				servletDefinition, value.toArray(new String[0]), null);
 		}
@@ -616,13 +610,13 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 		ServletDefinition servletDefinition, String[] value,
 		String[] urlPatterns) {
 
-		if (!ArrayUtil.isEmpty(value)) {
+		if (ArrayUtil.isNotEmpty(value)) {
 			for (String urlPattern : value) {
 				servletDefinition.addURLPattern(urlPattern);
 			}
 		}
 
-		if (!ArrayUtil.isEmpty(urlPatterns)) {
+		if (ArrayUtil.isNotEmpty(urlPatterns)) {
 			if (ListUtil.isNotEmpty(servletDefinition.getURLPatterns())) {
 				throw new IllegalStateException(
 					"Both value and URL patterns are declared");
@@ -993,7 +987,7 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 
 			DispatcherType[] dispatcherTypes = webFilter.dispatcherTypes();
 
-			if (!ArrayUtil.isEmpty(dispatcherTypes)) {
+			if (ArrayUtil.isNotEmpty(dispatcherTypes)) {
 				for (DispatcherType dispatcherType : dispatcherTypes) {
 					filterDefinition.addDispatcher(dispatcherType.name());
 				}
@@ -1015,7 +1009,7 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 
 			String[] servletNames = webFilter.servletNames();
 
-			if (!ArrayUtil.isEmpty(servletNames)) {
+			if (ArrayUtil.isNotEmpty(servletNames)) {
 				for (String servletName : servletNames) {
 					filterDefinition.addServletName(servletName);
 				}
@@ -1119,7 +1113,7 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 	private void _setInitParameters(
 		WebInitParam[] webInitParams, Map<String, String> initParametersMap) {
 
-		if (!ArrayUtil.isEmpty(webInitParams)) {
+		if (ArrayUtil.isNotEmpty(webInitParams)) {
 			for (WebInitParam webInitParam : webInitParams) {
 				initParametersMap.put(
 					webInitParam.name(), webInitParam.value());
@@ -1133,6 +1127,21 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 		servletDefinition.setServlet(_getServletInstance(servletClassName));
 	}
 
+	private InputStream _toInputStream(URL url, InputStream inputStream)
+		throws IOException {
+
+		if (_textReplacerBiFunction == null) {
+			return inputStream;
+		}
+
+		String xmlContent = _textReplacerBiFunction.apply(
+			"WebXMLDefinitionLoader#" + url,
+			StreamUtil.toString(inputStream, StringPool.UTF8));
+
+		return new UnsyncByteArrayInputStream(
+			xmlContent.getBytes(StringPool.UTF8));
+	}
+
 	private static final String[] _LEAVES = {
 		"async-supported", "dispatcher", "error-code", "exception-type",
 		"filter-class", "filter-name", "http-method", "http-method-exception",
@@ -1143,6 +1152,33 @@ public class WebXMLDefinitionLoader extends DefaultHandler {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		WebXMLDefinitionLoader.class);
+
+	private static final BiFunction<String, String, String>
+		_textReplacerBiFunction;
+
+	static {
+		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+
+		Object instance = null;
+
+		try {
+			Class<?> clazz = classLoader.loadClass(
+				"com.liferay.portal.tools.jakarta.ee.transformer.function." +
+					"TextReplacerBiFunction");
+
+			instance = clazz.newInstance();
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			if (!(reflectiveOperationException instanceof
+					ClassNotFoundException)) {
+
+				throw new ExceptionInInitializerError(
+					reflectiveOperationException);
+			}
+		}
+
+		_textReplacerBiFunction = (BiFunction<String, String, String>)instance;
+	}
 
 	private List<String> _absoluteOrderingNames;
 	private boolean _after;

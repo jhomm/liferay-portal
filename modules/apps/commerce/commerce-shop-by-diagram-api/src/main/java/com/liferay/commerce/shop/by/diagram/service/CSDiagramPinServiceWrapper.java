@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shop.by.diagram.service;
 
+import com.liferay.commerce.shop.by.diagram.model.CSDiagramPin;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -26,15 +18,18 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CSDiagramPinServiceWrapper
 	implements CSDiagramPinService, ServiceWrapper<CSDiagramPinService> {
 
+	public CSDiagramPinServiceWrapper() {
+		this(null);
+	}
+
 	public CSDiagramPinServiceWrapper(CSDiagramPinService csDiagramPinService) {
 		_csDiagramPinService = csDiagramPinService;
 	}
 
 	@Override
-	public com.liferay.commerce.shop.by.diagram.model.CSDiagramPin
-			addCSDiagramPin(
-				long cpDefinitionId, double positionX, double positionY,
-				String sequence)
+	public CSDiagramPin addCSDiagramPin(
+			long cpDefinitionId, double positionX, double positionY,
+			String sequence)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _csDiagramPinService.addCSDiagramPin(
@@ -42,10 +37,10 @@ public class CSDiagramPinServiceWrapper
 	}
 
 	@Override
-	public void deleteCSDiagramPin(long csDiagramPinId)
+	public void deleteCSDiagramPin(CSDiagramPin csDiagramPin)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_csDiagramPinService.deleteCSDiagramPin(csDiagramPinId);
+		_csDiagramPinService.deleteCSDiagramPin(csDiagramPin);
 	}
 
 	@Override
@@ -56,25 +51,21 @@ public class CSDiagramPinServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.shop.by.diagram.model.CSDiagramPin
-		fetchCSDiagramPin(long csDiagramPinId) {
-
+	public CSDiagramPin fetchCSDiagramPin(long csDiagramPinId) {
 		return _csDiagramPinService.fetchCSDiagramPin(csDiagramPinId);
 	}
 
 	@Override
-	public com.liferay.commerce.shop.by.diagram.model.CSDiagramPin
-			getCSDiagramPin(long csDiagramPinId)
+	public CSDiagramPin getCSDiagramPin(long csDiagramPinId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _csDiagramPinService.getCSDiagramPin(csDiagramPinId);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.shop.by.diagram.model.CSDiagramPin>
-				getCSDiagramPins(long cpDefinitionId, int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CSDiagramPin> getCSDiagramPins(
+			long cpDefinitionId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _csDiagramPinService.getCSDiagramPins(
 			cpDefinitionId, start, end);
@@ -98,10 +89,9 @@ public class CSDiagramPinServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.shop.by.diagram.model.CSDiagramPin
-			updateCSDiagramPin(
-				long csDiagramPinId, double positionX, double positionY,
-				String sequence)
+	public CSDiagramPin updateCSDiagramPin(
+			long csDiagramPinId, double positionX, double positionY,
+			String sequence)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _csDiagramPinService.updateCSDiagramPin(

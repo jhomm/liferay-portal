@@ -1,58 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.web.internal.portlet.action;
 
 import com.liferay.analytics.reports.web.internal.constants.AnalyticsReportsPortletKeys;
 import com.liferay.analytics.reports.web.internal.data.provider.AnalyticsReportsDataProvider;
-import com.liferay.analytics.reports.web.internal.model.DirectTrafficChannelImpl;
-import com.liferay.analytics.reports.web.internal.model.OrganicTrafficChannelImpl;
-import com.liferay.analytics.reports.web.internal.model.PaidTrafficChannelImpl;
-import com.liferay.analytics.reports.web.internal.model.ReferralTrafficChannelImpl;
-import com.liferay.analytics.reports.web.internal.model.SocialTrafficChannelImpl;
 import com.liferay.analytics.reports.web.internal.model.TimeRange;
 import com.liferay.analytics.reports.web.internal.model.TimeSpan;
 import com.liferay.analytics.reports.web.internal.model.TrafficChannel;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-import java.util.stream.Stream;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,9 +48,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Cristina González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AnalyticsReportsPortletKeys.ANALYTICS_REPORTS,
+		"jakarta.portlet.name=" + AnalyticsReportsPortletKeys.ANALYTICS_REPORTS,
 		"mvc.command.name=/analytics_reports/get_traffic_sources"
 	},
 	service = MVCResourceCommand.class
@@ -84,7 +70,9 @@ public class GetTrafficSourcesMVCResourceCommand
 
 		try {
 			AnalyticsReportsDataProvider analyticsReportsDataProvider =
-				new AnalyticsReportsDataProvider(_http);
+				new AnalyticsReportsDataProvider(
+					_analyticsSettingsManager, _http);
+
 			String canonicalURL = ParamUtil.getString(
 				resourceRequest, "canonicalURL");
 
@@ -99,15 +87,17 @@ public class GetTrafficSourcesMVCResourceCommand
 			JSONObject jsonObject = JSONUtil.put(
 				"trafficSources",
 				_getTrafficSourcesJSONArray(
-					analyticsReportsDataProvider, themeDisplay.getCompanyId(),
-					timeSpan.toTimeRange(timeSpanOffset), canonicalURL,
-					themeDisplay.getLocale(), resourceBundle));
+					analyticsReportsDataProvider, canonicalURL,
+					themeDisplay.getCompanyId(),
+					_portal.getLiferayPortletRequest(resourceRequest),
+					_portal.getLiferayPortletResponse(resourceResponse),
+					timeSpan.toTimeRange(timeSpanOffset), resourceBundle));
 
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse, jsonObject);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse,
@@ -119,81 +109,108 @@ public class GetTrafficSourcesMVCResourceCommand
 	}
 
 	private List<TrafficChannel> _getTrafficChannels(
-		AnalyticsReportsDataProvider analyticsReportsDataProvider,
-		String canonicalURL, long companyId, TimeRange timeRange) {
+			AnalyticsReportsDataProvider analyticsReportsDataProvider,
+			String canonicalURL, long companyId, TimeRange timeRange)
+		throws Exception {
 
-		Map<String, TrafficChannel> emptyMap = HashMapBuilder.put(
-			"direct", (TrafficChannel)new DirectTrafficChannelImpl(false)
+		Map<TrafficChannel.Type, TrafficChannel> emptyMap = HashMapBuilder.put(
+			TrafficChannel.Type.DIRECT,
+			TrafficChannel.newInstance(0, 0.0, TrafficChannel.Type.DIRECT)
 		).put(
-			"organic", new OrganicTrafficChannelImpl(false)
+			TrafficChannel.Type.ORGANIC,
+			TrafficChannel.newInstance(0, 0.0, TrafficChannel.Type.ORGANIC)
 		).put(
-			"paid", new PaidTrafficChannelImpl(false)
+			TrafficChannel.Type.PAID,
+			TrafficChannel.newInstance(0, 0.0, TrafficChannel.Type.PAID)
 		).put(
-			"referral", new ReferralTrafficChannelImpl(false)
+			TrafficChannel.Type.REFERRAL,
+			TrafficChannel.newInstance(0, 0.0, TrafficChannel.Type.REFERRAL)
 		).put(
-			"social", new SocialTrafficChannelImpl(false)
+			TrafficChannel.Type.SOCIAL,
+			TrafficChannel.newInstance(0, 0.0, TrafficChannel.Type.SOCIAL)
 		).build();
 
 		if (!analyticsReportsDataProvider.isValidAnalyticsConnection(
 				companyId)) {
 
-			return new ArrayList<>(emptyMap.values());
+			PortalException portalException = new PortalException(
+				"Invalid Analytics Connection");
+
+			return Arrays.asList(
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.DIRECT),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.ORGANIC),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.PAID),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.REFERRAL),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.SOCIAL));
 		}
 
 		try {
-			Map<String, TrafficChannel> trafficChannels =
+			Map<TrafficChannel.Type, TrafficChannel> trafficChannels =
 				analyticsReportsDataProvider.getTrafficChannels(
 					companyId, timeRange, canonicalURL);
 
 			emptyMap.forEach(
-				(name, trafficChannel) -> trafficChannels.merge(
-					name, trafficChannel,
+				(type, trafficChannel) -> trafficChannels.merge(
+					type, trafficChannel,
 					(trafficChannel1, trafficChannel2) -> trafficChannel1));
 
 			return new ArrayList<>(trafficChannels.values());
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return Arrays.asList(
-				new DirectTrafficChannelImpl(true),
-				new OrganicTrafficChannelImpl(true),
-				new PaidTrafficChannelImpl(true),
-				new ReferralTrafficChannelImpl(true),
-				new SocialTrafficChannelImpl(true));
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.DIRECT),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.ORGANIC),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.PAID),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.REFERRAL),
+				TrafficChannel.newInstance(
+					portalException, TrafficChannel.Type.SOCIAL));
 		}
 	}
 
 	private JSONArray _getTrafficSourcesJSONArray(
-		AnalyticsReportsDataProvider analyticsReportsDataProvider,
-		long companyId, TimeRange timeRange, String canonicalURL, Locale locale,
-		ResourceBundle resourceBundle) {
+			AnalyticsReportsDataProvider analyticsReportsDataProvider,
+			String canonicalURL, long companyId,
+			LiferayPortletRequest liferayPortletRequest,
+			LiferayPortletResponse liferayPortletResponse, TimeRange timeRange,
+			ResourceBundle resourceBundle)
+		throws Exception {
 
 		List<TrafficChannel> trafficChannels = _getTrafficChannels(
 			analyticsReportsDataProvider, canonicalURL, companyId, timeRange);
 
-		Stream<TrafficChannel> stream = trafficChannels.stream();
-
 		Comparator<TrafficChannel> comparator = Comparator.comparing(
 			TrafficChannel::getTrafficShare);
 
-		return JSONUtil.putAll(
-			stream.sorted(
-				comparator.reversed()
-			).map(
-				trafficChannel -> trafficChannel.toJSONObject(
-					locale, resourceBundle)
-			).toArray());
+		trafficChannels = ListUtil.copy(trafficChannels);
+
+		trafficChannels.sort(comparator.reversed());
+
+		return JSONUtil.toJSONArray(
+			trafficChannels,
+			trafficChannel -> trafficChannel.toJSONObject(
+				liferayPortletRequest, liferayPortletResponse, resourceBundle),
+			_log);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		GetTrafficSourcesMVCResourceCommand.class);
 
 	@Reference
-	private Http _http;
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
-	private Language _language;
+	private Http _http;
 
 	@Reference
 	private Portal _portal;

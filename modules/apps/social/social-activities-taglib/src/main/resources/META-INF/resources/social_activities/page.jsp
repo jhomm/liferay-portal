@@ -1,20 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/social_activities/init.jsp" %>
+
+<liferay-util:html-top>
+	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>' rel="stylesheet" type="text/css" />
+</liferay-util:html-top>
 
 <div class="taglib-social-activities">
 
@@ -60,10 +55,10 @@
 								<liferay-ui:message key="yesterday" />
 							</c:when>
 							<c:when test="<%= DateUtil.getYear(activityDate) == DateUtil.getYear(date) %>">
-								<%= dateFormatDate.format(activityDescriptor.getCreateDate()) %>
+								<%= dateFormat.format(activityDescriptor.getCreateDate()) %>
 							</c:when>
 							<c:otherwise>
-								<%= yearDateFormatDate.format(activityDescriptor.getCreateDate()) %>
+								<%= yearDateFormat.format(activityDescriptor.getCreateDate()) %>
 							</c:otherwise>
 						</c:choose>
 					</div>
@@ -94,15 +89,15 @@
 				<div class="card-body">
 					<div class="autofit-padded-no-gutters card-row">
 						<div class="autofit-col">
-							<liferay-ui:user-portrait
+							<liferay-user:user-portrait
 								userId="<%= activityDescriptor.getUserId() %>"
 							/>
 						</div>
 
 						<div class="autofit-col autofit-col-expand">
-							<h5 class="component-subtitle">
-								<%= timeFormatDate.format(activityDescriptor.getCreateDate()) %>
-							</h5>
+							<div class="component-subtitle">
+								<%= timeFormat.format(activityDescriptor.getCreateDate()) %>
+							</div>
 
 							<div>
 								<%= activityFeedEntry.getTitle() %>

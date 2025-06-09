@@ -1,31 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
-
-import com.google.common.collect.Lists;
 
 import com.liferay.jenkins.results.parser.AntException;
 import com.liferay.jenkins.results.parser.AntUtil;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.PortalGitWorkingDirectory;
+import com.liferay.jenkins.results.parser.PortalHotfixReleaseJob;
 import com.liferay.jenkins.results.parser.PortalTestClassJob;
+import com.liferay.jenkins.results.parser.job.property.JobProperty;
+import com.liferay.jenkins.results.parser.test.batch.PoshiTestBatch;
+import com.liferay.jenkins.results.parser.test.batch.PoshiTestSelector;
+import com.liferay.jenkins.results.parser.test.clazz.FunctionalTestClassBalancedListSplitter;
+import com.liferay.jenkins.results.parser.test.clazz.TestClass;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
 import com.liferay.poshi.core.PoshiContext;
 import com.liferay.poshi.core.util.PropsUtil;
 
 import java.io.File;
-import java.io.IOException;
+
+import java.nio.file.Path;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,8 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.json.JSONObject;
 
 /**
  * @author Yi-Chen Tsai
@@ -45,12 +45,50 @@ public class FunctionalBatchTestClassGroup extends BatchTestClassGroup {
 
 	@Override
 	public int getAxisCount() {
+		if (ignore()) {
+			return 0;
+		}
+
 		return axisTestClassGroups.size();
 	}
 
+	@Override
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
+
+		jsonObject = super.getJSONObject();
+
+		StringBuilder sb = new StringBuilder();
+
+		sb.append("(");
+		sb.append(getTestBatchRunPropertyQuery());
+		sb.append(") AND (ignored == null)");
+
+		String testRunEnvironment = PropsUtil.get("test.run.environment");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(testRunEnvironment)) {
+			sb.append(" AND (test.run.environment == \"");
+			sb.append(testRunEnvironment);
+			sb.append("\" OR test.run.environment == null)");
+		}
+
+		jsonObject.put("pql_query", sb.toString());
+
+		jsonObject.put("target_duration", getTargetAxisDuration());
+		jsonObject.put(
+			"test_batch_run_property_queries", _testBatchRunPropertyQueries);
+
+		return jsonObject;
+	}
+
 	public List<File> getTestBaseDirs() {
-		PortalGitWorkingDirectory portalGitWorkingDirectory =
-			getPortalGitWorkingDirectory();
+		String testBaseDirPath = _getTestBaseDirPath();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(testBaseDirPath)) {
+			return Arrays.asList(new File(testBaseDirPath));
+		}
 
 		return Arrays.asList(
 			new File(
@@ -83,71 +121,54 @@ public class FunctionalBatchTestClassGroup extends BatchTestClassGroup {
 		return testClasses;
 	}
 
-	public static class FunctionalTestClass extends BaseTestClass {
+	public String getWorkspaceName() {
+		JobProperty jobProperty = getJobProperty(
+			"test.workspace.name", testSuiteName, batchName);
 
-		public Properties getPoshiProperties() {
-			return _poshiProperties;
+		if ((jobProperty == null) ||
+			JenkinsResultsParserUtil.isNullOrEmpty(jobProperty.getValue())) {
+
+			return null;
 		}
 
-		public String getTestClassMethodName() {
-			return _testClassMethodName;
+		recordJobProperty(jobProperty);
+
+		return jobProperty.getValue();
+	}
+
+	public boolean isUpgradeFile(File file) {
+		Matcher matcher = _upgradeFileNamePattern.matcher(file.toString());
+
+		return matcher.find();
+	}
+
+	protected FunctionalBatchTestClassGroup(
+		JSONObject jsonObject, PortalTestClassJob portalTestClassJob) {
+
+		super(jsonObject, portalTestClassJob);
+
+		JSONObject testBatchRunPropertyQueriesJSONObject =
+			jsonObject.optJSONObject("test_batch_run_property_queries");
+
+		if (testBatchRunPropertyQueriesJSONObject == null) {
+			return;
 		}
 
-		protected static FunctionalTestClass getInstance(
-			String testClassMethodName) {
-
-			return new FunctionalTestClass(testClassMethodName);
+		for (String key : testBatchRunPropertyQueriesJSONObject.keySet()) {
+			_testBatchRunPropertyQueries.put(
+				new File(key),
+				testBatchRunPropertyQueriesJSONObject.getString(key));
 		}
-
-		protected FunctionalTestClass(String testClassMethodName) {
-			super(_getTestClassFile(testClassMethodName));
-
-			addTestClassMethod(testClassMethodName);
-
-			_testClassMethodName = testClassMethodName;
-
-			_poshiProperties =
-				PoshiContext.getNamespacedClassCommandNameProperties(
-					getTestClassMethodName());
-		}
-
-		private static File _getTestClassFile(String testClassMethodName) {
-			Matcher matcher = _poshiTestCasePattern.matcher(
-				testClassMethodName);
-
-			if (!matcher.find()) {
-				throw new RuntimeException(
-					"Invalid test class method name " + testClassMethodName);
-			}
-
-			String className = matcher.group("className");
-			String namespace = matcher.group("namespace");
-
-			File testClassFile = null;
-
-			try {
-				testClassFile = new File(
-					PoshiContext.getFilePathFromFileName(
-						className + ".testcase", namespace));
-			}
-			catch (Exception exception) {
-				testClassFile = new File(
-					PoshiContext.getFilePathFromFileName(
-						className + ".prose", namespace));
-			}
-
-			return testClassFile;
-		}
-
-		private final Properties _poshiProperties;
-		private final String _testClassMethodName;
-
 	}
 
 	protected FunctionalBatchTestClassGroup(
 		String batchName, PortalTestClassJob portalTestClassJob) {
 
 		super(batchName, portalTestClassJob);
+
+		if (ignore()) {
+			return;
+		}
 
 		_setTestBatchRunPropertyQueries();
 
@@ -156,88 +177,194 @@ public class FunctionalBatchTestClassGroup extends BatchTestClassGroup {
 		setSegmentTestClassGroups();
 	}
 
+	protected FunctionalBatchTestClassGroup(
+		String batchName, PortalTestClassJob portalTestClassJob,
+		PoshiTestBatch poshiTestBatch) {
+
+		super(batchName, portalTestClassJob);
+
+		if (ignore()) {
+			return;
+		}
+
+		_setTestBatchRunPropertyQueries(poshiTestBatch.getTestSelector());
+
+		setAxisTestClassGroups();
+
+		setSegmentTestClassGroups();
+	}
+
+	@Override
+	protected int getAxisMaxSize() {
+		long targetAxisDuration = getTargetAxisDuration();
+
+		if (targetAxisDuration > 0) {
+			return AXES_SIZE_MAX_DEFAULT;
+		}
+
+		return super.getAxisMaxSize();
+	}
+
 	protected String getDefaultTestBatchRunPropertyQuery(
 		File testBaseDir, String testSuiteName) {
 
-		String propertyQuery = System.getenv("TEST_BATCH_RUN_PROPERTY_QUERY");
+		String query = System.getenv("TEST_BATCH_RUN_PROPERTY_QUERY");
 
-		if (JenkinsResultsParserUtil.isNullOrEmpty(propertyQuery)) {
-			propertyQuery = getBuildStartProperty(
-				"TEST_BATCH_RUN_PROPERTY_QUERY");
+		if (JenkinsResultsParserUtil.isNullOrEmpty(query)) {
+			query = getBuildStartProperty("TEST_BATCH_RUN_PROPERTY_QUERY");
 		}
 
-		if ((propertyQuery != null) && !propertyQuery.isEmpty()) {
-			return propertyQuery;
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(query)) {
+			return query;
 		}
 
-		return JenkinsResultsParserUtil.getProperty(
-			jobProperties, "test.batch.run.property.query", testSuiteName,
-			batchName, getJobName());
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.run.property.query", testSuiteName, batchName);
+
+		File testPropertiesFile = new File(
+			portalGitWorkingDirectory.getWorkingDirectory(), "test.properties");
+
+		JenkinsResultsParserUtil.validatePQL(
+			jobProperty.getValue(), testPropertiesFile);
+
+		recordJobProperty(jobProperty);
+
+		return jobProperty.getValue();
 	}
 
-	protected List<List<String>> getPoshiTestClassGroups(File testBaseDir) {
+	protected List<File> getModifiedFiles() {
+		synchronized (_poshiTestCasePattern) {
+			if (_modifiedFiles != null) {
+				return _modifiedFiles;
+			}
+
+			_modifiedFiles = new ArrayList<>();
+
+			if (portalTestClassJob instanceof PortalHotfixReleaseJob) {
+				PortalHotfixReleaseJob portalHotfixReleaseJob =
+					(PortalHotfixReleaseJob)portalTestClassJob;
+
+				_modifiedFiles = portalHotfixReleaseJob.getModifiedFiles();
+			}
+			else {
+				_modifiedFiles =
+					portalGitWorkingDirectory.getModifiedFilesList();
+			}
+
+			return _modifiedFiles;
+		}
+	}
+
+	protected List<List<TestClass>> getPoshiTestClassGroups(File testBaseDir) {
 		String query = getTestBatchRunPropertyQuery(testBaseDir);
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(query)) {
 			return new ArrayList<>();
 		}
 
-		synchronized (portalTestClassJob) {
-			PortalGitWorkingDirectory portalGitWorkingDirectory =
-				portalTestClassJob.getPortalGitWorkingDirectory();
+		synchronized (_poshiTestCasePattern) {
+			File cachedTestBaseDir = _testBaseDirAtomicReference.get();
 
-			File portalWorkingDirectory =
-				portalGitWorkingDirectory.getWorkingDirectory();
+			if ((cachedTestBaseDir == null) ||
+				!cachedTestBaseDir.equals(testBaseDir)) {
 
-			Map<String, String> parameters = new HashMap<>();
+				PortalGitWorkingDirectory portalGitWorkingDirectory =
+					portalTestClassJob.getPortalGitWorkingDirectory();
 
-			String testBaseDirPath = null;
+				File portalWorkingDirectory =
+					portalGitWorkingDirectory.getWorkingDirectory();
 
-			if ((testBaseDir != null) && testBaseDir.exists()) {
-				testBaseDirPath = JenkinsResultsParserUtil.getCanonicalPath(
-					testBaseDir);
+				Map<String, String> parameters = new HashMap<>();
 
-				parameters.put("test.base.dir.name", testBaseDirPath);
+				String testBaseDirPath = null;
+
+				if ((testBaseDir != null) && testBaseDir.exists()) {
+					testBaseDirPath = JenkinsResultsParserUtil.getCanonicalPath(
+						testBaseDir);
+
+					parameters.put("test.base.dir.name", testBaseDirPath);
+				}
+
+				try {
+					AntUtil.callTarget(
+						portalWorkingDirectory, "build-test.xml",
+						"prepare-poshi-runner-properties", parameters);
+				}
+				catch (AntException antException) {
+					throw new RuntimeException(antException);
+				}
+
+				Properties properties = JenkinsResultsParserUtil.getProperties(
+					new File(
+						portalWorkingDirectory, "portal-web/poshi.properties"),
+					new File(
+						portalWorkingDirectory,
+						"portal-web/poshi-ext.properties"));
+
+				File poshiPropertiesFile = new File(
+					testBaseDirPath, "poshi.properties");
+
+				if (poshiPropertiesFile.exists()) {
+					properties = JenkinsResultsParserUtil.getProperties(
+						poshiPropertiesFile,
+						new File(testBaseDirPath, "poshi-ext.properties"));
+				}
+
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(testBaseDirPath)) {
+					properties.setProperty(
+						"test.base.dir.name", testBaseDirPath);
+				}
+
+				properties.setProperty("poshi.file.read.thread.pool", "4");
+				properties.setProperty("poshi.file.read.timeout", "30");
+
+				PropsUtil.clear();
+
+				PropsUtil.setProperties(properties);
+
+				try {
+					PoshiContext.clear();
+
+					PoshiContext.readFiles();
+				}
+				catch (Exception exception) {
+					throw new RuntimeException(exception);
+				}
+
+				_testBaseDirAtomicReference.set(testBaseDir);
 			}
 
 			try {
-				AntUtil.callTarget(
-					portalWorkingDirectory, "build-test.xml",
-					"prepare-poshi-runner-properties", parameters);
-			}
-			catch (AntException antException) {
-				throw new RuntimeException(antException);
-			}
-
-			Properties properties = JenkinsResultsParserUtil.getProperties(
-				new File(
-					portalWorkingDirectory,
-					"portal-web/test/test-portal-web.properties"),
-				new File(
-					portalWorkingDirectory,
-					"portal-web/test/test-portal-web-ext.properties"));
-
-			properties.setProperty("ignore.errors.util.classes", "true");
-
-			if (!JenkinsResultsParserUtil.isNullOrEmpty(testBaseDirPath)) {
-				properties.setProperty("test.base.dir.name", testBaseDirPath);
-			}
-
-			PropsUtil.clear();
-
-			PropsUtil.setProperties(properties);
-
-			try {
-				PoshiContext.clear();
-
-				PoshiContext.readFiles();
-
-				return PoshiContext.getTestBatchGroups(query, getAxisMaxSize());
+				return getTestClassGroups(
+					PoshiContext.getTestBatchGroups(query, getAxisMaxSize()));
 			}
 			catch (Exception exception) {
 				throw new RuntimeException(exception);
 			}
 		}
+	}
+
+	protected List<List<TestClass>> getTestClassGroups(
+		List<List<String>> testBatchGroups) {
+
+		List<List<TestClass>> testClassGroups = new ArrayList<>();
+
+		if (testBatchGroups.isEmpty()) {
+			return testClassGroups;
+		}
+
+		for (List<String> testBatchGroup : testBatchGroups) {
+			List<TestClass> testClassGroup = new ArrayList<>();
+
+			for (String testClassMethodName : testBatchGroup) {
+				testClassGroup.add(
+					TestClassFactory.newTestClass(this, testClassMethodName));
+			}
+
+			testClassGroups.add(testClassGroup);
+		}
+
+		return testClassGroups;
 	}
 
 	@Override
@@ -253,203 +380,324 @@ public class FunctionalBatchTestClassGroup extends BatchTestClassGroup {
 				continue;
 			}
 
-			List<List<String>> poshiTestClassGroups = getPoshiTestClassGroups(
-				testBaseDir);
+			List<List<TestClass>> poshiTestClassGroups =
+				getPoshiTestClassGroups(testBaseDir);
 
-			for (List<String> poshiTestClassGroup : poshiTestClassGroups) {
+			long targetAxisDuration = getTargetAxisDuration();
+
+			for (List<TestClass> poshiTestClassGroup : poshiTestClassGroups) {
 				if (poshiTestClassGroup.isEmpty()) {
 					continue;
 				}
 
-				AxisTestClassGroup axisTestClassGroup =
-					TestClassGroupFactory.newAxisTestClassGroup(
-						this, testBaseDir);
+				if (targetAxisDuration > 0) {
+					FunctionalTestClassBalancedListSplitter
+						functionalTestClassBalancedListSplitter =
+							new FunctionalTestClassBalancedListSplitter(
+								targetAxisDuration);
 
-				for (String testClassMethodName : poshiTestClassGroup) {
-					Matcher matcher = _poshiTestCasePattern.matcher(
-						testClassMethodName);
+					List<List<TestClass>> testClassLists =
+						functionalTestClassBalancedListSplitter.split(
+							poshiTestClassGroup);
 
-					if (!matcher.find()) {
-						throw new RuntimeException(
-							"Invalid test class method name " +
-								testClassMethodName);
+					for (List<TestClass> testClassList : testClassLists) {
+						AxisTestClassGroup axisTestClassGroup =
+							TestClassGroupFactory.newAxisTestClassGroup(
+								this, testBaseDir);
+
+						axisTestClassGroup.addTestClasses(testClassList);
+
+						axisTestClassGroups.add(axisTestClassGroup);
+					}
+				}
+				else {
+					AxisTestClassGroup axisTestClassGroup =
+						TestClassGroupFactory.newAxisTestClassGroup(
+							this, testBaseDir);
+
+					for (TestClass testClass : poshiTestClassGroup) {
+						axisTestClassGroup.addTestClass(testClass);
 					}
 
-					axisTestClassGroup.addTestClass(
-						FunctionalTestClass.getInstance(testClassMethodName));
+					axisTestClassGroups.add(axisTestClassGroup);
 				}
-
-				axisTestClassGroups.add(axisTestClassGroup);
 			}
 		}
 	}
 
-	private String _getDefaultTestBatchRunPropertyGlobalQuery(
-		String testSuiteName) {
+	private String _concatPQL(
+		File file, String testSuiteName, String concatedPQL) {
 
-		return JenkinsResultsParserUtil.getProperty(
-			jobProperties, "test.batch.run.property.global.query",
-			testSuiteName, batchName, getJobName());
-	}
+		if (file == null) {
+			return null;
+		}
 
-	private List<File> _getFunctionalRequiredModuleDirs(List<File> moduleDirs) {
-		List<File> functionalRequiredModuleDirs = Lists.newArrayList(
-			moduleDirs);
+		if (JenkinsResultsParserUtil.isPoshiFile(file)) {
+			return "";
+		}
+
+		File canonicalFile = JenkinsResultsParserUtil.getCanonicalFile(file);
+
+		if (canonicalFile.equals(
+				portalGitWorkingDirectory.getWorkingDirectory())) {
+
+			return concatedPQL;
+		}
+
+		File parentFile = canonicalFile.getParentFile();
+
+		if ((parentFile == null) || !parentFile.exists()) {
+			return "";
+		}
 
 		File modulesBaseDir = new File(
 			portalGitWorkingDirectory.getWorkingDirectory(), "modules");
 
-		for (File moduleDir : moduleDirs) {
-			Properties moduleDirTestProperties =
-				JenkinsResultsParserUtil.getProperties(
-					new File(moduleDir, "test.properties"));
+		Path modulesBaseDirPath = modulesBaseDir.toPath();
 
-			String functionalRequiredModuleDirPaths =
-				moduleDirTestProperties.getProperty(
-					"modules.includes.required.functional[" + testSuiteName +
-						"]");
+		Path parentFilePath = parentFile.toPath();
 
-			if (functionalRequiredModuleDirPaths == null) {
-				continue;
+		File testPropertiesFile = new File(canonicalFile, "test.properties");
+
+		if (modulesBaseDirPath.equals(parentFilePath) &&
+			!testPropertiesFile.exists()) {
+
+			return concatedPQL;
+		}
+
+		if (!canonicalFile.isDirectory() || !testPropertiesFile.exists()) {
+			return _concatPQL(parentFile, testSuiteName, concatedPQL);
+		}
+
+		if ((_traversedPropertyFiles.contains(testPropertiesFile) &&
+			 testSuiteName.equals("relevant")) ||
+			_traversedUpgradeFiles.contains(testPropertiesFile)) {
+
+			return concatedPQL;
+		}
+
+		if (testSuiteName.equals("upgrades-relevant") &&
+			!_traversedUpgradeFiles.contains(testPropertiesFile)) {
+
+			_traversedUpgradeFiles.add(testPropertiesFile);
+		}
+
+		_traversedPropertyFiles.add(testPropertiesFile);
+
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.run.property.query", testSuiteName, batchName,
+			canonicalFile, JobProperty.Type.MODULE_TEST_DIR);
+
+		String testBatchPropertyQuery = jobProperty.getValue();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(testBatchPropertyQuery) &&
+			!testBatchPropertyQuery.equals("false") &&
+			!concatedPQL.contains(testBatchPropertyQuery)) {
+
+			JenkinsResultsParserUtil.validatePQL(
+				testBatchPropertyQuery, testPropertiesFile);
+
+			recordJobProperty(jobProperty);
+
+			if (!concatedPQL.isEmpty()) {
+				concatedPQL += JenkinsResultsParserUtil.combine(
+					" OR (", testBatchPropertyQuery, ")");
 			}
-
-			for (String functionalRequiredModuleDirPath :
-					functionalRequiredModuleDirPaths.split(",")) {
-
-				File functionalRequiredModuleDir = new File(
-					modulesBaseDir, functionalRequiredModuleDirPath);
-
-				if (!functionalRequiredModuleDir.exists() ||
-					functionalRequiredModuleDirs.contains(
-						functionalRequiredModuleDir)) {
-
-					continue;
-				}
-
-				functionalRequiredModuleDirs.add(functionalRequiredModuleDir);
+			else {
+				concatedPQL += testBatchPropertyQuery;
 			}
 		}
 
-		return Lists.newArrayList(functionalRequiredModuleDirs);
+		Properties testProperties = JenkinsResultsParserUtil.getProperties(
+			testPropertiesFile);
+
+		boolean ignoreParents = Boolean.valueOf(
+			JenkinsResultsParserUtil.getProperty(
+				testProperties, "ignoreParents", false, testSuiteName));
+
+		if (ignoreParents ||
+			parentFile.equals(
+				portalGitWorkingDirectory.getWorkingDirectory())) {
+
+			return concatedPQL;
+		}
+
+		if (!parentFilePath.equals(modulesBaseDirPath)) {
+			return _concatPQL(parentFile, testSuiteName, concatedPQL);
+		}
+
+		return concatedPQL;
+	}
+
+	private String _getTestBaseDirPath() {
+		JobProperty jobProperty = getJobProperty(
+			"test.base.dir", testSuiteName, batchName);
+
+		if ((jobProperty == null) ||
+			JenkinsResultsParserUtil.isNullOrEmpty(jobProperty.getValue())) {
+
+			String workspaceName = getWorkspaceName();
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(workspaceName)) {
+				return null;
+			}
+
+			File testBaseDir = new File(
+				portalGitWorkingDirectory.getWorkingDirectory(),
+				JenkinsResultsParserUtil.combine(
+					"workspaces/", workspaceName, "/poshi"));
+
+			if (!testBaseDir.exists()) {
+				return null;
+			}
+
+			return JenkinsResultsParserUtil.getCanonicalPath(testBaseDir);
+		}
+
+		File testBaseDir = new File(
+			portalGitWorkingDirectory.getWorkingDirectory(),
+			jobProperty.getValue());
+
+		if (!testBaseDir.exists()) {
+			return null;
+		}
+
+		recordJobProperty(jobProperty);
+
+		return JenkinsResultsParserUtil.getCanonicalPath(testBaseDir);
 	}
 
 	private String _getTestBatchRunPropertyQuery(File testBaseDir) {
-		if (!testRelevantChanges) {
-			return getDefaultTestBatchRunPropertyQuery(
+		if (!testRelevantChanges && !testHotfixChanges) {
+			String defaultPQL = getDefaultTestBatchRunPropertyQuery(
 				testBaseDir, testSuiteName);
+
+			JobProperty globalJobProperty = getJobProperty(
+				"test.batch.run.property.global.query", testSuiteName,
+				batchName);
+
+			String globalJobPropertyValue = globalJobProperty.getValue();
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(
+					globalJobPropertyValue)) {
+
+				JenkinsResultsParserUtil.validatePQL(
+					globalJobPropertyValue, testBaseDir);
+
+				recordJobProperty(globalJobProperty);
+
+				return JenkinsResultsParserUtil.combine(
+					"(", globalJobPropertyValue, ") AND (", defaultPQL, ")");
+			}
+
+			return defaultPQL;
 		}
 
-		Set<File> modifiedDirsList = new HashSet<>();
-
-		try {
-			modifiedDirsList.addAll(
-				portalGitWorkingDirectory.getModifiedModuleDirsList());
-		}
-		catch (IOException ioException) {
-			File workingDirectory =
-				portalGitWorkingDirectory.getWorkingDirectory();
-
-			throw new RuntimeException(
-				JenkinsResultsParserUtil.combine(
-					"Unable to get module directories in ",
-					workingDirectory.getPath()),
-				ioException);
-		}
-
-		File modulesDir = new File(
-			portalGitWorkingDirectory.getWorkingDirectory(), "modules");
-
-		modifiedDirsList.addAll(
-			portalGitWorkingDirectory.getModifiedDirsList(
-				false,
-				JenkinsResultsParserUtil.toPathMatchers(
-					null,
-					JenkinsResultsParserUtil.getCanonicalPath(modulesDir)),
-				null));
-
-		modifiedDirsList.addAll(
-			getRequiredModuleDirs(Lists.newArrayList(modifiedDirsList)));
-
-		modifiedDirsList.addAll(
-			_getFunctionalRequiredModuleDirs(
-				Lists.newArrayList(modifiedDirsList)));
+		File testPropertiesFile = new File(
+			portalGitWorkingDirectory.getWorkingDirectory(), "test.properties");
 
 		StringBuilder sb = new StringBuilder();
 
-		for (File modifiedDir : modifiedDirsList) {
-			File modifiedDirTestProperties = new File(
-				modifiedDir, "test.properties");
+		for (File modifiedFile : getModifiedFiles()) {
+			String testBatchPQL = _concatPQL(
+				modifiedFile, getTestSuiteName(), "");
 
-			if (!modifiedDirTestProperties.exists()) {
+			if (JenkinsResultsParserUtil.isNullOrEmpty(testBatchPQL) ||
+				testBatchPQL.equals("false")) {
+
 				continue;
 			}
 
-			Properties testProperties = JenkinsResultsParserUtil.getProperties(
-				modifiedDirTestProperties);
-
-			String testBatchRunPropertyQuery = null;
-
-			String firstMatchingPropertyName = getFirstMatchingPropertyName(
-				"test.batch.run.property.query", testProperties, testSuiteName);
-
-			if (firstMatchingPropertyName != null) {
-				testBatchRunPropertyQuery =
-					JenkinsResultsParserUtil.getProperty(
-						testProperties, firstMatchingPropertyName);
-			}
-
-			if (testBatchRunPropertyQuery == null) {
-				testBatchRunPropertyQuery =
-					JenkinsResultsParserUtil.getProperty(
-						testProperties,
-						JenkinsResultsParserUtil.combine(
-							"test.batch.run.property.query[", batchName, "][",
-							testSuiteName, "]"));
-			}
-
-			if (testBatchRunPropertyQuery != null) {
-				if (sb.length() > 0) {
-					sb.append(" OR (");
+			if (sb.indexOf(testBatchPQL) == -1) {
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(sb.toString())) {
+					sb.append(" OR ");
 				}
-				else {
+
+				sb.append("(");
+				sb.append(testBatchPQL);
+				sb.append(")");
+			}
+
+			if (isUpgradeFile(modifiedFile)) {
+				String upgradePQL = _concatPQL(
+					modifiedFile, "upgrades-relevant", "");
+
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(upgradePQL)) {
+					if (sb.length() > 0) {
+						sb.append(" OR ");
+					}
+
 					sb.append("(");
+					sb.append(upgradePQL);
+					sb.append(")");
+				}
+			}
+		}
+
+		String defaultPQL = getDefaultTestBatchRunPropertyQuery(
+			testBaseDir, testSuiteName);
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(defaultPQL) &&
+			(sb.indexOf(defaultPQL) == -1)) {
+
+			JenkinsResultsParserUtil.validatePQL(defaultPQL, testBaseDir);
+
+			if (sb.length() > 0) {
+				sb.append(" OR ");
+			}
+
+			sb.append("(");
+			sb.append(defaultPQL);
+			sb.append(")");
+		}
+
+		if (!NAME_STABLE_TEST_SUITE.equals(getTestSuiteName())) {
+			String batchName = getBatchName();
+
+			if (!batchName.endsWith("_stable")) {
+				batchName += "_stable";
+			}
+
+			JobProperty jobProperty = getJobProperty(
+				"test.batch.run.property.query", NAME_STABLE_TEST_SUITE,
+				batchName);
+
+			String jobPropertyValue = jobProperty.getValue();
+
+			if ((jobPropertyValue != null) && includeStableTestSuite &&
+				isStableTestSuiteBatch(batchName) &&
+				(sb.indexOf(jobPropertyValue) == -1)) {
+
+				JenkinsResultsParserUtil.validatePQL(
+					jobPropertyValue, testPropertiesFile);
+
+				recordJobProperty(jobProperty);
+
+				if (sb.length() > 0) {
+					sb.append(" OR ");
 				}
 
-				sb.append(testBatchRunPropertyQuery);
+				sb.append("(");
+				sb.append(jobPropertyValue);
 				sb.append(")");
 			}
 		}
 
-		if (sb.length() == 0) {
-			sb.append("(");
-
-			sb.append(
-				getDefaultTestBatchRunPropertyQuery(
-					testBaseDir, testSuiteName));
-
-			sb.append(")");
-		}
-
-		String stableTestBatchRunPropertyQuery =
-			getDefaultTestBatchRunPropertyQuery(
-				testBaseDir, NAME_STABLE_TEST_SUITE);
-
-		if ((stableTestBatchRunPropertyQuery != null) &&
-			includeStableTestSuite && isStableTestSuiteBatch()) {
-
-			sb.append(" OR (");
-			sb.append(stableTestBatchRunPropertyQuery);
-			sb.append(")");
-		}
-
 		String testBatchRunPropertyQuery = sb.toString();
 
-		String defaultGlobalQuery = _getDefaultTestBatchRunPropertyGlobalQuery(
-			testSuiteName);
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.run.property.global.query", testSuiteName, batchName);
 
-		if ((defaultGlobalQuery != null) && !defaultGlobalQuery.isEmpty()) {
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (jobPropertyValue != null) {
+			JenkinsResultsParserUtil.validatePQL(
+				jobPropertyValue, testPropertiesFile);
+
+			recordJobProperty(jobProperty);
+
 			testBatchRunPropertyQuery = JenkinsResultsParserUtil.combine(
-				"(", defaultGlobalQuery, ") AND (", testBatchRunPropertyQuery,
+				"(", jobPropertyValue, ") AND (", testBatchRunPropertyQuery,
 				")");
 		}
 
@@ -457,6 +705,33 @@ public class FunctionalBatchTestClassGroup extends BatchTestClassGroup {
 	}
 
 	private void _setTestBatchRunPropertyQueries() {
+		if (isRootCauseAnalysis()) {
+			String portalBatchTestSelector = System.getenv(
+				"PORTAL_BATCH_TEST_SELECTOR");
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(
+					portalBatchTestSelector)) {
+
+				portalBatchTestSelector = getBuildStartProperty(
+					"PORTAL_BATCH_TEST_SELECTOR");
+			}
+
+			if ((portalBatchTestSelector != null) &&
+				portalBatchTestSelector.startsWith("LocalFile.")) {
+
+				portalBatchTestSelector = portalBatchTestSelector.replace(
+					"LocalFile.", "");
+			}
+
+			_testBatchRunPropertyQueries.put(
+				new File(
+					portalGitWorkingDirectory.getWorkingDirectory(),
+					"portal-web/test/functional/portalweb"),
+				"test.class.method.name == " + portalBatchTestSelector);
+
+			return;
+		}
+
 		for (File testBaseDir : getTestBaseDirs()) {
 			String testBatchRunPropertyQuery = _getTestBatchRunPropertyQuery(
 				testBaseDir);
@@ -472,10 +747,32 @@ public class FunctionalBatchTestClassGroup extends BatchTestClassGroup {
 		}
 	}
 
+	private void _setTestBatchRunPropertyQueries(
+		PoshiTestSelector poshiTestSelector) {
+
+		recordJobProperties(poshiTestSelector.getPoshiJobProperties());
+
+		PortalGitWorkingDirectory portalGitWorkingDirectory =
+			portalTestClassJob.getPortalGitWorkingDirectory();
+
+		_testBatchRunPropertyQueries.put(
+			new File(
+				portalGitWorkingDirectory.getWorkingDirectory(),
+				"portal-web/test/functional/portalweb"),
+			poshiTestSelector.getPoshiQuery());
+	}
+
+	private static List<File> _modifiedFiles;
 	private static final Pattern _poshiTestCasePattern = Pattern.compile(
 		"(?<namespace>[^\\.]+)\\.(?<className>[^\\#]+)\\#(?<methodName>.*)");
+	private static final AtomicReference<File> _testBaseDirAtomicReference =
+		new AtomicReference<>();
+	private static final Pattern _upgradeFileNamePattern = Pattern.compile(
+		"(.*\\/verify\\/.*|.*\\/upgrade\\/.*|.*\\.sql)");
 
 	private final Map<File, String> _testBatchRunPropertyQueries =
 		new HashMap<>();
+	private final Set<File> _traversedPropertyFiles = new HashSet<>();
+	private final Set<File> _traversedUpgradeFiles = new HashSet<>();
 
 }

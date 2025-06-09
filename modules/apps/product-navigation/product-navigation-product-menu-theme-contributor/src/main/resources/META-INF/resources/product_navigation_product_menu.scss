@@ -11,12 +11,21 @@ html#{$cadmin-selector} {
 		#wrapper,
 		.cadmin.control-menu-container {
 			@include media-breakpoint-up(sm, $cadmin-grid-breakpoints) {
-				@include transition(padding 0.5s ease);
+				@media (prefers-reduced-motion: no-preference) {
+					transition: $cadmin-sidenav-transition;
+				}
+			}
+		}
+
+		&.c-prefers-reduced-motion {
+			#wrapper,
+			.cadmin.control-menu-container {
+				transition: none;
 			}
 		}
 	}
 
-	body.open {
+	body.product-menu-open {
 		#wrapper,
 		.cadmin.control-menu-container {
 			@include media-breakpoint-up(sm, $cadmin-grid-breakpoints) {
@@ -59,6 +68,10 @@ html#{$cadmin-selector} {
 				}
 			}
 
+			.loading-animation {
+				color: $cadmin-white;
+			}
+
 			.panel-header {
 				background-color: $product-menu-body-bg;
 			}
@@ -98,7 +111,7 @@ html#{$cadmin-selector} {
 		}
 
 		.product-menu {
-			a:not(.layout-tree),
+			a:not(.page-type-selector *),
 			button.list-group-heading.navigation-link {
 				color: $product-menu-nav-link-color;
 				outline: 0;
@@ -108,7 +121,7 @@ html#{$cadmin-selector} {
 					color: $product-menu-nav-link-color;
 				}
 
-				&:focus {
+				&:not(.treeview-item a):focus-visible {
 					box-shadow: none;
 
 					&:before {
@@ -426,6 +439,25 @@ html#{$cadmin-selector} {
 				&.panel-heading {
 					border-bottom-width: 0;
 				}
+
+				.panel-header-link,
+				.panel-toggler {
+					display: block;
+					margin: -12px -20px;
+					padding: 12px 20px;
+					text-decoration: none;
+
+					&:focus {
+						box-shadow: none;
+
+						&::before {
+							bottom: 8px;
+							left: 8px;
+							right: 8px;
+							top: 8px;
+						}
+					}
+				}
 			}
 
 			.panel-header-link:focus {
@@ -459,7 +491,7 @@ html#{$cadmin-selector} {
 				&.collapsible-icon {
 					position: absolute;
 					right: 46px;
-					top: 9px;
+					top: 11px;
 				}
 
 				z-index: 1;

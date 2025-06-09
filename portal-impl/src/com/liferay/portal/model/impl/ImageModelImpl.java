@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -22,7 +13,6 @@ import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.Image;
 import com.liferay.portal.kernel.model.ImageModel;
-import com.liferay.portal.kernel.model.ImageSoap;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -32,18 +22,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -139,56 +126,6 @@ public class ImageModelImpl extends BaseModelImpl<Image> implements ImageModel {
 	@Deprecated
 	public static final long IMAGEID_COLUMN_BITMASK = 2L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static Image toModel(ImageSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		Image model = new ImageImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setImageId(soapModel.getImageId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setType(soapModel.getType());
-		model.setHeight(soapModel.getHeight());
-		model.setWidth(soapModel.getWidth());
-		model.setSize(soapModel.getSize());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<Image> toModels(ImageSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<Image> models = new ArrayList<Image>(soapModels.length);
-
-		for (ImageSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.Image"));
@@ -264,87 +201,76 @@ public class ImageModelImpl extends BaseModelImpl<Image> implements ImageModel {
 	}
 
 	public Map<String, Function<Image, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Image, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Image>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Image.class.getClassLoader(), Image.class, ModelWrapper.class);
+		private static final Map<String, Function<Image, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Image> constructor =
-				(Constructor<Image>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Image, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Image, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("mvccVersion", Image::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", Image::getCtCollectionId);
+			attributeGetterFunctions.put("imageId", Image::getImageId);
+			attributeGetterFunctions.put("companyId", Image::getCompanyId);
+			attributeGetterFunctions.put(
+				"modifiedDate", Image::getModifiedDate);
+			attributeGetterFunctions.put("type", Image::getType);
+			attributeGetterFunctions.put("height", Image::getHeight);
+			attributeGetterFunctions.put("width", Image::getWidth);
+			attributeGetterFunctions.put("size", Image::getSize);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Image, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Image, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Image, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Image, Object>>();
-		Map<String, BiConsumer<Image, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Image, ?>>();
+		private static final Map<String, BiConsumer<Image, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", Image::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion", (BiConsumer<Image, Long>)Image::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", Image::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<Image, Long>)Image::setCtCollectionId);
-		attributeGetterFunctions.put("imageId", Image::getImageId);
-		attributeSetterBiConsumers.put(
-			"imageId", (BiConsumer<Image, Long>)Image::setImageId);
-		attributeGetterFunctions.put("companyId", Image::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<Image, Long>)Image::setCompanyId);
-		attributeGetterFunctions.put("modifiedDate", Image::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate", (BiConsumer<Image, Date>)Image::setModifiedDate);
-		attributeGetterFunctions.put("type", Image::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<Image, String>)Image::setType);
-		attributeGetterFunctions.put("height", Image::getHeight);
-		attributeSetterBiConsumers.put(
-			"height", (BiConsumer<Image, Integer>)Image::setHeight);
-		attributeGetterFunctions.put("width", Image::getWidth);
-		attributeSetterBiConsumers.put(
-			"width", (BiConsumer<Image, Integer>)Image::setWidth);
-		attributeGetterFunctions.put("size", Image::getSize);
-		attributeSetterBiConsumers.put(
-			"size", (BiConsumer<Image, Integer>)Image::setSize);
+		static {
+			Map<String, BiConsumer<Image, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Image, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion", (BiConsumer<Image, Long>)Image::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<Image, Long>)Image::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"imageId", (BiConsumer<Image, Long>)Image::setImageId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<Image, Long>)Image::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Image, Date>)Image::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"type", (BiConsumer<Image, String>)Image::setType);
+			attributeSetterBiConsumers.put(
+				"height", (BiConsumer<Image, Integer>)Image::setHeight);
+			attributeSetterBiConsumers.put(
+				"width", (BiConsumer<Image, Integer>)Image::setWidth);
+			attributeSetterBiConsumers.put(
+				"size", (BiConsumer<Image, Integer>)Image::setSize);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -755,40 +681,12 @@ public class ImageModelImpl extends BaseModelImpl<Image> implements ImageModel {
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Image, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Image, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Image, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Image)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Image>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Image.class, ModelWrapper.class);
 
 	}
 
@@ -806,8 +704,9 @@ public class ImageModelImpl extends BaseModelImpl<Image> implements ImageModel {
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<Image, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Image, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

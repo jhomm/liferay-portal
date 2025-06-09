@@ -1,61 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.data.provider.instance.internal;
 
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRequest;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderResponse;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterTracker;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterRegistry;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
  */
-@RunWith(MockitoJUnitRunner.class)
-public class DDMStorageTypesDataProviderTest extends PowerMockito {
+public class DDMStorageTypesDataProviderTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
+	@BeforeClass
+	public static void setUpClass() {
 		_ddmStorageTypesDataProvider = new DDMStorageTypesDataProvider();
 
-		_ddmStorageTypesDataProvider.ddmStorageAdapterTracker =
-			_ddmStorageAdapterTracker;
+		_ddmStorageTypesDataProvider.ddmStorageAdapterRegistry =
+			_ddmStorageAdapterRegistry;
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
@@ -64,8 +48,8 @@ public class DDMStorageTypesDataProviderTest extends PowerMockito {
 	}
 
 	@Test
-	public void testMultipleStorageAdapter() throws Exception {
-		Set<String> expectedSet = new TreeSet<String>() {
+	public void testMultipleStorageAdapter() {
+		Set<String> storageTypes = new TreeSet<String>() {
 			{
 				add("json");
 				add("txt");
@@ -73,38 +57,36 @@ public class DDMStorageTypesDataProviderTest extends PowerMockito {
 			}
 		};
 
-		_testStorageTypes(expectedSet);
+		_testStorageTypes(storageTypes);
 	}
 
 	@Test
-	public void testSingleStorageAdapter() throws Exception {
-		Set<String> expectedSet = new TreeSet<String>() {
+	public void testSingleStorageAdapter() {
+		Set<String> storageTypes = new TreeSet<String>() {
 			{
 				add("json");
 			}
 		};
 
-		_testStorageTypes(expectedSet);
+		_testStorageTypes(storageTypes);
 	}
 
-	private void _testStorageTypes(Set<String> expectedSet) throws Exception {
-		when(
-			_ddmStorageAdapterTracker.getDDMStorageAdapterTypes()
+	private void _testStorageTypes(Set<String> expectedStorageTypes) {
+		Mockito.when(
+			_ddmStorageAdapterRegistry.getDDMStorageAdapterTypes()
 		).thenReturn(
-			expectedSet
+			expectedStorageTypes
 		);
 
-		List<KeyValuePair> keyValuePairs = new ArrayList<>();
+		List<KeyValuePair> expectedKeyValuePairs = new ArrayList<>();
 
-		Stream<String> stream = expectedSet.stream();
+		for (String type : expectedStorageTypes) {
+			if (type.equals("json")) {
+				continue;
+			}
 
-		stream.filter(
-			type -> !type.equals("json")
-		).map(
-			type -> new KeyValuePair(type, type)
-		).forEach(
-			keyValuePairs::add
-		);
+			expectedKeyValuePairs.add(new KeyValuePair(type, type));
+		}
 
 		DDMDataProviderRequest.Builder builder =
 			DDMDataProviderRequest.Builder.newBuilder();
@@ -114,18 +96,15 @@ public class DDMStorageTypesDataProviderTest extends PowerMockito {
 
 		Assert.assertTrue(ddmDataProviderResponse.hasOutput("Default-Output"));
 
-		Optional<List<KeyValuePair>> optional =
-			ddmDataProviderResponse.getOutputOptional(
-				"Default-Output", List.class);
+		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
+			"Default-Output", List.class);
 
-		Assert.assertTrue(optional.isPresent());
-
-		Assert.assertEquals(keyValuePairs, optional.get());
+		Assert.assertNotNull(keyValuePairs);
+		Assert.assertEquals(expectedKeyValuePairs, keyValuePairs);
 	}
 
-	@Mock
-	private DDMStorageAdapterTracker _ddmStorageAdapterTracker;
-
-	private DDMStorageTypesDataProvider _ddmStorageTypesDataProvider;
+	private static final DDMStorageAdapterRegistry _ddmStorageAdapterRegistry =
+		Mockito.mock(DDMStorageAdapterRegistry.class);
+	private static DDMStorageTypesDataProvider _ddmStorageTypesDataProvider;
 
 }

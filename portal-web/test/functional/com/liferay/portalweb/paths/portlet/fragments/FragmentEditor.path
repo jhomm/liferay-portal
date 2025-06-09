@@ -16,8 +16,13 @@
 	<td></td>
 </tr>
 <tr>
-	<td>AUTOSAVE_MESSAGE</td>
-	<td>//span[contains(@class,'navbar-text')]</td>
+	<td>CHANGES_SAVED_MESSAGE</td>
+	<td>//span[contains(@class,'navbar-text')][normalize-space(text())='Changes Saved']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SAVING_CHANGES_MESSAGE</td>
+	<td>//span[contains(@class,'navbar-text')][normalize-space(text())='Saving Changes']</td>
 	<td></td>
 </tr>
 <tr>
@@ -66,23 +71,18 @@
 	<td></td>
 </tr>
 <tr>
-	<td>FRAGMENTS_EDITOR_FLOATING_TOOLBAR_FIELD_SELECT</td>
-	<td>//div[contains(@role,'tabpanel') and contains(@class,'active')]//select[contains(@class,'form-control')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>FRAGMENTS_EDITOR_FLOATING_TOOLBAR_INPUT</td>
-	<td>//div[contains(@role,'tabpanel') and contains(@class,'active')]//div[contains(@class,'floating-toolbar')]//input[contains(@value,'${key_contentName}')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>FRAGMENTS_EDITOR_FLOATING_TOOLBAR_PALETTE_SELECT</td>
-	<td>//div[contains(@role,'tabpanel') and contains(@class,'active')]//button[contains(@class,'${colorPalette}')]</td>
+	<td>//div[contains(@role,'tabpanel') and contains(@class,'active')]//button[@*='${colorPalette}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>READ_ONLY_VIEW</td>
 	<td>//span[contains(@class,'text-info')]//*[contains(.,'Read Only View')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SUPPORTED_FIELD_TYPE</td>
+	<td>//h2[contains(@class,'sheet-subtitle')][normalize-space(text())='Field Types']//following-sibling::p</td>
 	<td></td>
 </tr>
 </tbody>

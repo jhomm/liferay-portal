@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,10 +21,12 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 <aui:script use="liferay-calendar-container,liferay-calendar-remote-services,liferay-component">
 	Liferay.component('<portlet:namespace />calendarContainer', () => {
 		var calendarContainer = new Liferay.CalendarContainer({
-			groupCalendarResourceId: <%= groupCalendarResource.getCalendarResourceId() %>,
+			groupCalendarResourceId:
+				<%= groupCalendarResource.getCalendarResourceId() %>,
 
 			<c:if test="<%= userCalendarResource != null %>">
-				userCalendarResourceId: <%= userCalendarResource.getCalendarResourceId() %>,
+				userCalendarResourceId:
+					<%= userCalendarResource.getCalendarResourceId() %>,
 			</c:if>
 
 			namespace: '<portlet:namespace />',
@@ -103,7 +96,7 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 							</div>
 
 							<c:if test="<%= userCalendarResource != null %>">
-								<span aria-label="<liferay-ui:message key="manage-calendars" />" class="calendar-list-item-arrow calendar-resource-arrow" data-calendarResourceId="<%= userCalendarResource.getCalendarResourceId() %>" tabindex="0"><clay:icon symbol="caret-bottom" /></span>
+								<span aria-controls="<portlet:namespace />calendarsMenu" aria-expanded="false" aria-label="<liferay-ui:message arguments='<%= LanguageUtil.get(request, "my-calendars") %>' key="manage-calendar-x" />" class="calendar-list-item-arrow calendar-resource-arrow" data-calendarResourceId="<%= userCalendarResource.getCalendarResourceId() %>" role="button" tabindex="0"><clay:icon symbol="caret-bottom" /></span>
 							</c:if>
 						</c:if>
 
@@ -119,7 +112,7 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 							</div>
 
 							<c:if test="<%= CalendarResourcePermission.contains(permissionChecker, groupCalendarResource, CalendarActionKeys.ADD_CALENDAR) %>">
-								<span class="calendar-list-item-arrow calendar-resource-arrow" data-calendarResourceId="<%= groupCalendarResource.getCalendarResourceId() %>" tabindex="0"><clay:icon symbol="caret-bottom" /></span>
+								<span aria-expanded="false" aria-label="<liferay-ui:message arguments="<%= HtmlUtil.escape(groupCalendarResource.getName(locale)) %>" key="manage-calendar-x" />" class="calendar-list-item-arrow calendar-resource-arrow" data-calendarResourceId="<%= groupCalendarResource.getCalendarResourceId() %>" role="button" tabindex="0"><clay:icon symbol="caret-bottom" /></span>
 							</c:if>
 
 							<div class="calendar-portlet-calendar-list" id="<portlet:namespace />siteCalendarList"></div>
@@ -223,7 +216,8 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 </c:if>
 
 <aui:script use="liferay-calendar-list,liferay-calendar-util,liferay-scheduler">
-	Liferay.CalendarUtil.USER_CLASS_NAME_ID = <%= PortalUtil.getClassNameId(User.class) %>;
+	Liferay.CalendarUtil.USER_CLASS_NAME_ID =
+		<%= PortalUtil.getClassNameId(User.class) %>;
 
 	var calendarContainer = Liferay.component(
 		'<portlet:namespace />calendarContainer'
@@ -372,6 +366,15 @@ boolean columnOptionsVisible = GetterUtil.getBoolean(SessionClicks.get(request, 
 			.attr(
 				'title',
 				Liferay.Util.unescapeHTML(schedulerEvent.get('content'))
+			);
+
+		schedulerEvent
+			.get('node')
+			.attr(
+				'calendarResourceName',
+				Liferay.Util.unescapeHTML(
+					schedulerEvent.get('calendarResourceName')
+				)
 			);
 	};
 

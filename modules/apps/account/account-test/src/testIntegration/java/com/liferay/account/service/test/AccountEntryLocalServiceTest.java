@@ -1,53 +1,82 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.test;
 
+import com.liferay.account.configuration.AccountEntryEmailDomainsConfiguration;
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.exception.AccountEntryDomainsException;
+import com.liferay.account.exception.AccountEntryNameException;
+import com.liferay.account.exception.NoSuchEntryException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountGroup;
 import com.liferay.account.retriever.AccountUserRetriever;
 import com.liferay.account.service.AccountEntryLocalService;
-import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountGroupLocalService;
-import com.liferay.account.service.AccountGroupRelLocalService;
+import com.liferay.account.service.test.util.AccountEntryArgs;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.account.service.test.util.AccountGroupTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
-import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringUtil;
+import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.expando.kernel.model.ExpandoColumn;
+import com.liferay.expando.kernel.model.ExpandoColumnConstants;
+import com.liferay.expando.kernel.model.ExpandoTableConstants;
+import com.liferay.expando.test.util.ExpandoTestUtil;
+import com.liferay.object.action.executor.ObjectActionExecutorRegistry;
+import com.liferay.object.constants.ObjectActionExecutorConstants;
+import com.liferay.object.constants.ObjectActionTriggerConstants;
+import com.liferay.object.constants.ObjectValidationRuleConstants;
+import com.liferay.object.exception.ObjectValidationRuleEngineException;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.service.ObjectActionLocalService;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectValidationRuleLocalService;
+import com.liferay.object.validation.rule.ObjectValidationRuleResult;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
+import com.liferay.portal.kernel.model.Address;
+import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.ListTypeConstants;
+import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.SystemEvent;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.WorkflowInstanceLink;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.service.AddressLocalService;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.SystemEventLocalService;
+import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
+import com.liferay.portal.kernel.service.WorkflowInstanceLinkLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -56,26 +85,50 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
+import com.liferay.portal.security.script.management.test.rule.ScriptManagementConfigurationTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+
+import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
+
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Drew Brokke
@@ -86,44 +139,52 @@ public class AccountEntryLocalServiceTest {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE,
+			ScriptManagementConfigurationTestRule.INSTANCE);
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		Bundle bundle = FrameworkUtil.getBundle(
+			AccountEntryLocalServiceTest.class);
+
+		BundleContext bundleContext = bundle.getBundleContext();
+
+		_serviceRegistration = bundleContext.registerService(
+			ModelListener.class, _testAccountEntryModelListener, null);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_serviceRegistration.unregister();
+	}
 
 	@Test
 	public void testAccountEntryAssetTags() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext();
+		String[] assetTagNames = {"tag1", "tag2"};
 
-		serviceContext.setAssetTagNames(new String[] {"tag1", "tag2"});
-
-		AccountEntry accountEntry = _accountEntryLocalService.addAccountEntry(
-			TestPropsValues.getUserId(),
-			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(), null,
-			null, null, null, AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
-			WorkflowConstants.STATUS_APPROVED, serviceContext);
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			accountEntryArgs -> accountEntryArgs.assetTagNames = assetTagNames);
 
 		List<AssetTag> assetTags = _assetTagLocalService.getTags(
 			AccountEntry.class.getName(), accountEntry.getAccountEntryId());
 
 		Assert.assertArrayEquals(
-			serviceContext.getAssetTagNames(),
-			ListUtil.toArray(assetTags, AssetTag.NAME_ACCESSOR));
+			assetTagNames, ListUtil.toArray(assetTags, AssetTag.NAME_ACCESSOR));
 	}
 
 	@Test
 	public void testAccountEntryGroup() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		Group group = accountEntry.getAccountEntryGroup();
 
 		Assert.assertNotNull(group);
-
-		long classNameId = _classNameLocalService.getClassNameId(
-			AccountEntry.class);
-
-		Assert.assertEquals(classNameId, group.getClassNameId());
-
+		Assert.assertEquals(
+			_classNameLocalService.getClassNameId(AccountEntry.class),
+			group.getClassNameId());
 		Assert.assertEquals(
 			accountEntry.getAccountEntryId(), group.getClassPK());
 
@@ -140,25 +201,288 @@ public class AccountEntryLocalServiceTest {
 	}
 
 	@Test
-	public void testActivateAccountEntries() throws Exception {
-		long[] accountEntryIds = _addAccountEntries(
-			WorkflowConstants.STATUS_INACTIVE);
+	public void testAccountEntryName() throws Exception {
+		try {
+			AccountEntryTestUtil.addAccountEntry(AccountEntryArgs.withName(""));
 
-		for (long accountEntryId : accountEntryIds) {
-			_assertStatus(accountEntryId, WorkflowConstants.STATUS_INACTIVE);
+			Assert.fail();
+		}
+		catch (AccountEntryNameException accountEntryNameException) {
+			String message = accountEntryNameException.getMessage();
+
+			Assert.assertTrue(message.contains("Name is null"));
 		}
 
-		_accountEntryLocalService.activateAccountEntries(accountEntryIds);
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
-		for (long accountEntryId : accountEntryIds) {
-			_assertStatus(accountEntryId, WorkflowConstants.STATUS_APPROVED);
+		try {
+			_accountEntryLocalService.updateAccountEntry(
+				accountEntry.getExternalReferenceCode(),
+				accountEntry.getAccountEntryId(),
+				accountEntry.getParentAccountEntryId(), "", null, false, null,
+				null, null, null, accountEntry.getStatus(),
+				ServiceContextTestUtil.getServiceContext());
+
+			Assert.fail();
+		}
+		catch (AccountEntryNameException accountEntryNameException) {
+			String message = accountEntryNameException.getMessage();
+
+			Assert.assertTrue(message.contains("Name is null"));
+		}
+	}
+
+	@Test
+	public void testAccountEntryObjectActions() throws Exception {
+		Queue<Object[]> argumentsList = new LinkedList<>();
+
+		Http originalHttp = (Http)ReflectionTestUtil.getAndSetFieldValue(
+			_objectActionExecutorRegistry.getObjectActionExecutor(
+				0, ObjectActionExecutorConstants.KEY_WEBHOOK),
+			"_http",
+			ProxyUtil.newProxyInstance(
+				Http.class.getClassLoader(), new Class<?>[] {Http.class},
+				(proxy, method, arguments) -> {
+					argumentsList.add(arguments);
+
+					return null;
+				}));
+
+		try {
+			ObjectDefinition objectDefinition =
+				_objectDefinitionLocalService.fetchObjectDefinitionByClassName(
+					TestPropsValues.getCompanyId(),
+					AccountEntry.class.getName());
+
+			_objectActionLocalService.addObjectAction(
+				StringPool.BLANK, TestPropsValues.getUserId(),
+				objectDefinition.getObjectDefinitionId(), true,
+				StringPool.BLANK, RandomTestUtil.randomString(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				RandomTestUtil.randomString(),
+				ObjectActionExecutorConstants.KEY_WEBHOOK,
+				ObjectActionTriggerConstants.KEY_ON_AFTER_ADD,
+				UnicodePropertiesBuilder.put(
+					"url", RandomTestUtil.randomString()
+				).build(),
+				false);
+
+			String customFieldName = "A" + RandomTestUtil.randomString();
+			String customFieldValue = RandomTestUtil.randomString();
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext();
+
+			serviceContext.setExpandoBridgeAttributes(
+				HashMapBuilder.<String, Serializable>put(
+					() -> {
+						ExpandoColumn expandoColumn = ExpandoTestUtil.addColumn(
+							ExpandoTestUtil.addTable(
+								PortalUtil.getClassNameId(AccountEntry.class),
+								ExpandoTableConstants.DEFAULT_TABLE_NAME),
+							customFieldName, ExpandoColumnConstants.STRING);
+
+						return expandoColumn.getName();
+					},
+					customFieldValue
+				).build());
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.addAccountEntry(
+					StringPool.BLANK, TestPropsValues.getUserId(), 0,
+					RandomTestUtil.randomString(),
+					RandomTestUtil.randomString(), null,
+					RandomTestUtil.randomString() + "@liferay.com", null,
+					StringPool.BLANK,
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
+					WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+			Object[] arguments = argumentsList.poll();
+
+			Http.Options options = (Http.Options)arguments[0];
+
+			Http.Body body = options.getBody();
+
+			JSONObject payloadJSONObject = _jsonFactory.createJSONObject(
+				body.getContent());
+
+			Assert.assertEquals(
+				customFieldValue,
+				JSONUtil.getValue(
+					payloadJSONObject, "JSONObject/modelDTOAccount",
+					"Object/customFields/" + customFieldName, "Object/0",
+					"Object/customValue", "Object/data"));
+
+			argumentsList.clear();
+
+			_objectActionLocalService.addObjectAction(
+				StringPool.BLANK, TestPropsValues.getUserId(),
+				objectDefinition.getObjectDefinitionId(), true,
+				StringPool.BLANK, RandomTestUtil.randomString(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				RandomTestUtil.randomString(),
+				ObjectActionExecutorConstants.KEY_WEBHOOK,
+				ObjectActionTriggerConstants.KEY_ON_AFTER_UPDATE,
+				UnicodePropertiesBuilder.put(
+					"url", RandomTestUtil.randomString()
+				).build(),
+				false);
+
+			customFieldValue = RandomTestUtil.randomString();
+			serviceContext = ServiceContextTestUtil.getServiceContext();
+
+			serviceContext.setExpandoBridgeAttributes(
+				HashMapBuilder.<String, Serializable>put(
+					customFieldName, customFieldValue
+				).build());
+
+			_accountEntryLocalService.updateAccountEntry(
+				accountEntry.getExternalReferenceCode(),
+				accountEntry.getAccountEntryId(), 0, accountEntry.getName(),
+				accountEntry.getDescription(), false, null,
+				accountEntry.getEmailAddress(), null,
+				accountEntry.getTaxIdNumber(),
+				WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+			arguments = argumentsList.poll();
+
+			options = (Http.Options)arguments[0];
+
+			body = options.getBody();
+
+			payloadJSONObject = _jsonFactory.createJSONObject(
+				body.getContent());
+
+			Assert.assertEquals(
+				customFieldValue,
+				JSONUtil.getValue(
+					payloadJSONObject, "JSONObject/modelDTOAccount",
+					"Object/customFields/" + customFieldName, "Object/0",
+					"Object/customValue", "Object/data"));
+		}
+		finally {
+			ReflectionTestUtil.setFieldValue(
+				_objectActionExecutorRegistry.getObjectActionExecutor(
+					0, ObjectActionExecutorConstants.KEY_WEBHOOK),
+				"_http", originalHttp);
+		}
+	}
+
+	@Test
+	public void testAccountEntryObjectValidationRule() throws Exception {
+		ObjectDefinition objectDefinition =
+			_objectDefinitionLocalService.fetchObjectDefinitionByClassName(
+				TestPropsValues.getCompanyId(), AccountEntry.class.getName());
+
+		Class<?> clazz = getClass();
+
+		_objectValidationRuleLocalService.addObjectValidationRule(
+			StringPool.BLANK, TestPropsValues.getUserId(),
+			objectDefinition.getObjectDefinitionId(), true,
+			ObjectValidationRuleConstants.ENGINE_TYPE_GROOVY,
+			LocalizedMapUtil.getLocalizedMap("This name is invalid."),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			ObjectValidationRuleConstants.OUTPUT_TYPE_FULL_VALIDATION,
+			StringUtil.read(
+				clazz,
+				StringBundler.concat(
+					"dependencies/", clazz.getSimpleName(), StringPool.PERIOD,
+					testName.getMethodName(), ".groovy")),
+			false, Collections.emptyList());
+
+		try {
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withName("Invalid Name"));
+
+			Assert.fail();
+		}
+		catch (ModelListenerException modelListenerException) {
+			Assert.assertTrue(
+				modelListenerException.getCause() instanceof
+					ObjectValidationRuleEngineException);
+
+			ObjectValidationRuleEngineException
+				objectValidationRuleEngineException =
+					(ObjectValidationRuleEngineException)
+						modelListenerException.getCause();
+
+			List<ObjectValidationRuleResult> objectValidationRuleResults =
+				objectValidationRuleEngineException.
+					getObjectValidationRuleResults();
+
+			Assert.assertEquals(
+				objectValidationRuleResults.toString(), 1,
+				objectValidationRuleResults.size());
+
+			ObjectValidationRuleResult objectValidationRuleResult =
+				objectValidationRuleResults.get(0);
+
+			Assert.assertEquals(
+				"This name is invalid.",
+				objectValidationRuleResult.getErrorMessage());
+		}
+
+		try {
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withName("Invalid Name"));
+
+			Assert.fail();
+		}
+		catch (ModelListenerException modelListenerException) {
+			Assert.assertTrue(
+				modelListenerException.getCause() instanceof
+					ObjectValidationRuleEngineException);
+
+			ObjectValidationRuleEngineException
+				objectValidationRuleEngineException =
+					(ObjectValidationRuleEngineException)
+						modelListenerException.getCause();
+
+			List<ObjectValidationRuleResult> objectValidationRuleResults =
+				objectValidationRuleEngineException.
+					getObjectValidationRuleResults();
+
+			Assert.assertEquals(
+				objectValidationRuleResults.toString(), 1,
+				objectValidationRuleResults.size());
+
+			ObjectValidationRuleResult objectValidationRuleResult =
+				objectValidationRuleResults.get(0);
+
+			Assert.assertEquals(
+				"This name is invalid.",
+				objectValidationRuleResult.getErrorMessage());
+		}
+	}
+
+	@Test
+	public void testActivateAccountEntries() throws Exception {
+		List<AccountEntry> accountEntries =
+			AccountEntryTestUtil.addAccountEntries(
+				2, AccountEntryArgs.STATUS_INACTIVE);
+
+		for (AccountEntry accountEntry : accountEntries) {
+			_assertStatus(
+				accountEntry.getAccountEntryId(),
+				WorkflowConstants.STATUS_INACTIVE);
+		}
+
+		_accountEntryLocalService.activateAccountEntries(
+			ListUtil.toLongArray(
+				accountEntries, AccountEntry.ACCOUNT_ENTRY_ID_ACCESSOR));
+
+		for (AccountEntry accountEntry : accountEntries) {
+			_assertStatus(
+				accountEntry.getAccountEntryId(),
+				WorkflowConstants.STATUS_APPROVED);
 		}
 	}
 
 	@Test
 	public void testActivateAccountEntryByModel() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry(
-			WorkflowConstants.STATUS_INACTIVE);
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.STATUS_INACTIVE);
 
 		_assertStatus(
 			accountEntry.getAccountEntryId(),
@@ -173,8 +497,8 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testActivateAccountEntryByPrimaryKey() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry(
-			WorkflowConstants.STATUS_INACTIVE);
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.STATUS_INACTIVE);
 
 		_assertStatus(
 			accountEntry.getAccountEntryId(),
@@ -190,73 +514,121 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testAddAccountEntry() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		Assert.assertNotNull(
 			_accountEntryLocalService.fetchAccountEntry(
 				accountEntry.getAccountEntryId()));
-
-		int resourcePermissionsCount =
+		Assert.assertEquals(
+			1,
 			_resourcePermissionLocalService.getResourcePermissionsCount(
 				TestPropsValues.getCompanyId(), AccountEntry.class.getName(),
 				ResourceConstants.SCOPE_INDIVIDUAL,
-				String.valueOf(accountEntry.getAccountEntryId()));
+				String.valueOf(accountEntry.getAccountEntryId())));
+		Assert.assertTrue(accountEntry.isRestrictMembership());
 
-		Assert.assertEquals(1, resourcePermissionsCount);
+		_assertStatus(
+			accountEntry, WorkflowConstants.STATUS_APPROVED,
+			TestPropsValues.getUser());
+		Assert.assertFalse(_hasWorkflowInstance(accountEntry));
 	}
 
 	@Test
 	public void testAddAccountEntryWithDomains() throws Exception {
-		String[] domains = {"test1.com", "test.1.com", "test-1.com"};
+		String[] domains = {
+			"test1.com", "test.1.com", "test-1.com", "UPPER.COM", " trim.com "
+		};
+		String[] expectedDomains = {
+			"test1.com", "test.1.com", "test-1.com", "upper.com", "trim.com"
+		};
 
 		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService, domains);
+			AccountEntryArgs.withDomains(domains));
 
-		Assert.assertEquals(
-			StringUtil.merge(ArrayUtil.distinct(domains), ","),
-			accountEntry.getDomains());
+		Assert.assertArrayEquals(
+			ArrayUtil.sortedUnique(expectedDomains),
+			ArrayUtil.sortedUnique(accountEntry.getDomainsArray()));
+
+		accountEntry = AccountEntryTestUtil.addAccountEntry();
+
+		Assert.assertArrayEquals(new String[0], accountEntry.getDomainsArray());
 	}
 
 	@Test
 	public void testAddAccountEntryWithInvalidDomains() throws Exception {
+		String blockedEmailAddressDomain = "blocked.com";
+
 		String[] invalidDomains = {
 			"invalid", ".invalid", "-invalid", "invalid-", "_invalid",
 			"invalid_", "@invalid.com", "invalid#domain", "invalid&domain",
 			"invalid!.com", "invalid$domain.com", "invalid%.com", "*invalid",
-			"invalid*", "invalid.*.com", "invalid+domain", ">", "<"
+			"invalid*", "invalid.*.com", "invalid+domain", ">", "<",
+			"invalid@domain.com", blockedEmailAddressDomain
 		};
 
-		for (String domain : invalidDomains) {
-			try {
-				AccountEntryTestUtil.addAccountEntry(
-					_accountEntryLocalService, new String[] {domain});
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AccountEntryEmailDomainsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"blockedEmailDomains", blockedEmailAddressDomain
+						).build())) {
 
-				Assert.fail(
-					"Created an account entry with invalid domain " + domain);
-			}
-			catch (AccountEntryDomainsException accountEntryDomainsException) {
+			for (String domain : invalidDomains) {
+				try {
+					AccountEntryTestUtil.addAccountEntry(
+						AccountEntryArgs.withDomains(domain));
+
+					Assert.fail(
+						"Created an account entry with invalid domain " +
+							domain);
+				}
+				catch (AccountEntryDomainsException
+							accountEntryDomainsException) {
+				}
 			}
 		}
 	}
 
 	@Test
-	public void testDeactivateAccountEntries() throws Exception {
-		long[] accountEntryIds = _addAccountEntries();
+	public void testAddAccountEntryWithWorkflowEnabled() throws Exception {
+		_enableWorkflow();
 
-		for (long accountEntryId : accountEntryIds) {
-			_assertStatus(accountEntryId, WorkflowConstants.STATUS_APPROVED);
+		User user = UserTestUtil.addUser();
+
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOwner(user));
+
+		_assertStatus(accountEntry, WorkflowConstants.STATUS_PENDING, user);
+		Assert.assertTrue(_hasWorkflowInstance(accountEntry));
+	}
+
+	@Test
+	public void testDeactivateAccountEntries() throws Exception {
+		List<AccountEntry> accountEntries =
+			AccountEntryTestUtil.addAccountEntries(2);
+
+		for (AccountEntry accountEntry : accountEntries) {
+			_assertStatus(
+				accountEntry.getAccountEntryId(),
+				WorkflowConstants.STATUS_APPROVED);
 		}
 
-		_accountEntryLocalService.deactivateAccountEntries(accountEntryIds);
+		_accountEntryLocalService.deactivateAccountEntries(
+			ListUtil.toLongArray(
+				accountEntries, AccountEntry.ACCOUNT_ENTRY_ID_ACCESSOR));
 
-		for (long accountEntryId : accountEntryIds) {
-			_assertStatus(accountEntryId, WorkflowConstants.STATUS_INACTIVE);
+		for (AccountEntry accountEntry : accountEntries) {
+			_assertStatus(
+				accountEntry.getAccountEntryId(),
+				WorkflowConstants.STATUS_INACTIVE);
 		}
 	}
 
 	@Test
 	public void testDeactivateAccountEntryByModel() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_assertStatus(
 			accountEntry.getAccountEntryId(),
@@ -271,7 +643,7 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testDeactivateAccountEntryByPrimaryKey() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_assertStatus(
 			accountEntry.getAccountEntryId(),
@@ -287,32 +659,59 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testDeleteAccountEntries() throws Exception {
-		long[] accountEntryIds = _addAccountEntries();
+		List<AccountEntry> accountEntries =
+			AccountEntryTestUtil.addAccountEntries(2);
 
-		_accountEntryLocalService.deleteAccountEntries(accountEntryIds);
+		_accountEntryLocalService.deleteAccountEntries(
+			ListUtil.toLongArray(
+				accountEntries, AccountEntry.ACCOUNT_ENTRY_ID_ACCESSOR));
 
-		for (long accountEntryId : accountEntryIds) {
-			_assertDeleted(accountEntryId);
+		for (AccountEntry accountEntry : accountEntries) {
+			_assertDeleted(accountEntry);
 		}
 	}
 
 	@Test
 	public void testDeleteAccountEntryByModel() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
-		_accountEntryLocalService.deleteAccountEntry(accountEntry);
+		accountEntry = _accountEntryLocalService.deleteAccountEntry(
+			accountEntry);
 
-		_assertDeleted(accountEntry.getAccountEntryId());
+		_assertDeleted(accountEntry);
 	}
 
 	@Test
 	public void testDeleteAccountEntryByPrimaryKey() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_accountEntryLocalService.deleteAccountEntry(
 			accountEntry.getAccountEntryId());
 
-		_assertDeleted(accountEntry.getAccountEntryId());
+		_assertDeleted(accountEntry);
+	}
+
+	@Test
+	public void testDeleteAccountEntryWithAddress() throws Exception {
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
+
+		Address address = _addressLocalService.addAddress(
+			null, accountEntry.getUserId(), AccountEntry.class.getName(),
+			accountEntry.getAccountEntryId(), 0,
+			_listTypeLocalService.getListTypeId(
+				accountEntry.getCompanyId(), "personal",
+				ListTypeConstants.CONTACT_ADDRESS),
+			0, RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			false, RandomTestUtil.randomString(), false,
+			RandomTestUtil.randomString(), null, null, null, null, "1234567890",
+			ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertNotNull(address);
+
+		_accountEntryLocalService.deleteAccountEntry(
+			accountEntry.getAccountEntryId());
+
+		_assertDeleted(accountEntry);
 	}
 
 	@Test
@@ -336,30 +735,71 @@ public class AccountEntryLocalServiceTest {
 	}
 
 	@Test
+	public void testGetOrAddIncompleteAccountEntry() throws Exception {
+
+		// Lazy referencing disabled
+
+		try {
+			_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+				RandomTestUtil.randomString(), TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			Assert.fail();
+		}
+		catch (NoSuchEntryException noSuchEntryException) {
+			Assert.assertNotNull(noSuchEntryException);
+		}
+
+		// Lazy referencing enabled, workflow disabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		}
+
+		// Lazy referencing enabled, workflow enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			_enableWorkflow();
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		}
+	}
+
+	@Test
 	public void testGetUserAccountEntriesByAccountEntryMembership()
 		throws Exception {
 
-		User accountEntryOwner = UserTestUtil.addUser();
+		User user = UserTestUtil.addUser();
 
-		List<AccountEntry> accountEntries = new ArrayList<>();
-		List<User> users = new ArrayList<>();
-
-		for (int i = 0; i < 5; i++) {
-			User user = UserTestUtil.addUser();
-
-			users.add(user);
-
-			accountEntries.add(
-				_addUserAccountEntry(
-					accountEntryOwner.getUserId(),
-					RandomTestUtil.randomString(), null,
-					new long[] {user.getUserId()}));
-		}
-
-		for (int i = 0; i < accountEntries.size(); i++) {
-			_testGetUserAccountEntries(
-				users.get(i), Collections.singletonList(accountEntries.get(i)));
-		}
+		_testGetUserAccountEntries(
+			user,
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withUsers(user)));
 	}
 
 	@Test
@@ -368,19 +808,7 @@ public class AccountEntryLocalServiceTest {
 
 		User accountEntryOwner = UserTestUtil.addUser();
 
-		List<AccountEntry> accountEntries = new ArrayList<>();
-		List<User> users = new ArrayList<>();
-
-		for (int i = 0; i < 4; i++) {
-			users.add(UserTestUtil.addUser());
-
-			accountEntries.add(
-				_addUserAccountEntry(
-					accountEntryOwner.getUserId(),
-					RandomTestUtil.randomString(), null, null));
-		}
-
-		User user1 = users.get(0);
+		User user1 = UserTestUtil.addUser();
 
 		Organization organizationA = _addOrganization(
 			accountEntryOwner,
@@ -401,27 +829,12 @@ public class AccountEntryLocalServiceTest {
 		_organizationLocalService.addUserOrganization(
 			user1.getUserId(), organizationABA);
 
-		AccountEntry accountEntryAA = accountEntries.get(0);
+		AccountEntry accountEntryAA = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOrganizations(organizationAA),
+			AccountEntryArgs.withOwner(accountEntryOwner),
+			AccountEntryArgs.withUsers(user1));
 
-		_accountEntryOrganizationRelLocalService.
-			addAccountEntryOrganizationRels(
-				accountEntryAA.getAccountEntryId(),
-				new long[] {organizationAA.getOrganizationId()});
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRels(
-			accountEntryAA.getAccountEntryId(), new long[] {user1.getUserId()});
-
-		AccountEntry accountEntryABA = accountEntries.get(1);
-
-		_accountEntryOrganizationRelLocalService.
-			addAccountEntryOrganizationRels(
-				accountEntryABA.getAccountEntryId(),
-				new long[] {organizationABA.getOrganizationId()});
-
-		_testGetUserAccountEntries(
-			user1, Arrays.asList(accountEntryAA, accountEntryABA));
-
-		User user2 = users.get(1);
+		User user2 = UserTestUtil.addUser();
 
 		Organization organizationABB = _addOrganization(
 			accountEntryOwner, organizationAB.getOrganizationId());
@@ -429,46 +842,38 @@ public class AccountEntryLocalServiceTest {
 		_organizationLocalService.addUserOrganization(
 			user2.getUserId(), organizationABB);
 
-		_accountEntryUserRelLocalService.addAccountEntryUserRels(
-			accountEntryABA.getAccountEntryId(),
-			new long[] {user2.getUserId()});
+		AccountEntry accountEntryABA = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOrganizations(organizationABA),
+			AccountEntryArgs.withOwner(accountEntryOwner),
+			AccountEntryArgs.withUsers(user2));
 
-		AccountEntry accountEntryABB1 = accountEntries.get(2);
+		_testGetUserAccountEntries(user1, accountEntryAA, accountEntryABA);
 
-		_accountEntryOrganizationRelLocalService.
-			addAccountEntryOrganizationRels(
-				accountEntryABB1.getAccountEntryId(),
-				new long[] {organizationABB.getOrganizationId()});
-
-		AccountEntry accountEntryABB2 = accountEntries.get(3);
-
-		_accountEntryOrganizationRelLocalService.
-			addAccountEntryOrganizationRels(
-				accountEntryABB2.getAccountEntryId(),
-				new long[] {organizationABB.getOrganizationId()});
+		AccountEntry accountEntryABB1 = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOwner(accountEntryOwner),
+			AccountEntryArgs.withOrganizations(organizationABB));
+		AccountEntry accountEntryABB2 = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOwner(accountEntryOwner),
+			AccountEntryArgs.withOrganizations(organizationABB));
 
 		_testGetUserAccountEntries(
-			user2,
-			Arrays.asList(accountEntryABA, accountEntryABB1, accountEntryABB2));
+			user2, accountEntryABA, accountEntryABB1, accountEntryABB2);
 
-		User user3 = users.get(2);
+		User user3 = UserTestUtil.addUser();
 
 		_organizationLocalService.addUserOrganization(
 			user3.getUserId(), organizationABA);
 
-		_testGetUserAccountEntries(
-			user3, Collections.singletonList(accountEntryABA));
+		_testGetUserAccountEntries(user3, accountEntryABA);
 
-		User user4 = users.get(3);
+		User user4 = UserTestUtil.addUser();
 
 		_organizationLocalService.addUserOrganization(
 			user4.getUserId(), organizationA);
 
 		_testGetUserAccountEntries(
-			user4,
-			Arrays.asList(
-				accountEntryAA, accountEntryABA, accountEntryABB1,
-				accountEntryABB2));
+			user4, accountEntryAA, accountEntryABA, accountEntryABB1,
+			accountEntryABB2);
 	}
 
 	@Test
@@ -479,10 +884,8 @@ public class AccountEntryLocalServiceTest {
 
 		_testGetUserAccountEntries(
 			accountEntryOwner,
-			Collections.singletonList(
-				_addUserAccountEntry(
-					accountEntryOwner.getUserId(),
-					RandomTestUtil.randomString(), null, null)));
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withOwner(accountEntryOwner)));
 	}
 
 	@Test
@@ -506,15 +909,13 @@ public class AccountEntryLocalServiceTest {
 					organization, RoleConstants.ORGANIZATION_USER));
 
 			accountEntries.add(
-				_addUserAccountEntry(
-					accountEntryOwner.getUserId(),
-					RandomTestUtil.randomString(),
-					new long[] {organization.getOrganizationId()}, null));
+				AccountEntryTestUtil.addAccountEntry(
+					AccountEntryArgs.withOrganizations(organization),
+					AccountEntryArgs.withOwner(accountEntryOwner)));
 		}
 
 		for (int i = 0; i < accountEntries.size(); i++) {
-			_testGetUserAccountEntries(
-				users.get(i), Collections.singletonList(accountEntries.get(i)));
+			_testGetUserAccountEntries(users.get(i), accountEntries.get(i));
 		}
 	}
 
@@ -530,13 +931,11 @@ public class AccountEntryLocalServiceTest {
 				}) {
 
 			_testGetUserAccountEntries(
-				accountEntryMember,
-				Collections.singletonList(
-					_addUserAccountEntry(
-						accountEntryOwner.getUserId(),
-						RandomTestUtil.randomString(), null, type,
-						new long[] {accountEntryMember.getUserId()})),
-				type);
+				accountEntryMember, type,
+				AccountEntryTestUtil.addAccountEntry(
+					AccountEntryArgs.withOwner(accountEntryOwner),
+					AccountEntryArgs.withUsers(accountEntryMember),
+					accountEntryArgs -> accountEntryArgs.type = type));
 		}
 	}
 
@@ -544,16 +943,9 @@ public class AccountEntryLocalServiceTest {
 	public void testGetUserAccountEntriesOrderByComparator() throws Exception {
 		User user = UserTestUtil.addUser();
 
-		List<AccountEntry> accountEntries = Arrays.asList(
-			_addUserAccountEntry(
-				user.getUserId(), RandomTestUtil.randomString(), null,
-				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, null),
-			_addUserAccountEntry(
-				user.getUserId(), RandomTestUtil.randomString(), null,
-				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, null),
-			_addUserAccountEntry(
-				user.getUserId(), RandomTestUtil.randomString(), null,
-				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, null));
+		List<AccountEntry> accountEntries =
+			AccountEntryTestUtil.addAccountEntries(
+				2, AccountEntryArgs.withUsers(user));
 
 		accountEntries.sort(
 			Comparator.comparing(
@@ -574,17 +966,12 @@ public class AccountEntryLocalServiceTest {
 	public void testGetUserAccountEntriesWithKeywords() throws Exception {
 		User user = UserTestUtil.addUser();
 
-		AccountEntry accountEntry = _addAccountEntryWithUser(user);
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withUsers(user));
 
 		_assertGetUserAccountEntriesWithKeywords(
 			accountEntry, user.getUserId(),
 			String.valueOf(accountEntry.getAccountEntryId()));
-
-		accountEntry.setExternalReferenceCode(RandomTestUtil.randomString());
-
-		accountEntry = _accountEntryLocalService.updateAccountEntry(
-			accountEntry);
-
 		_assertGetUserAccountEntriesWithKeywords(
 			accountEntry, user.getUserId(),
 			accountEntry.getExternalReferenceCode());
@@ -592,7 +979,7 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testSearchByAccountEntryId() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_assertKeywordSearch(
 			accountEntry, String.valueOf(accountEntry.getAccountEntryId()));
@@ -600,7 +987,7 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testSearchByAccountGroupIds() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
 		AccountGroup accountGroup = AccountGroupTestUtil.addAccountGroup(
 			_accountGroupLocalService, RandomTestUtil.randomString(),
@@ -610,50 +997,86 @@ public class AccountEntryLocalServiceTest {
 			"accountGroupIds", new long[] {accountGroup.getAccountGroupId()});
 
 		_assertSearchWithParams(
-			Arrays.asList(
-				_addAccountGroupAccountEntry(accountGroup.getAccountGroupId()),
-				_addAccountGroupAccountEntry(accountGroup.getAccountGroupId())),
-			params);
+			StringPool.BLANK, params,
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withAccountGroups(accountGroup)));
 
 		_accountGroupLocalService.deleteAccountGroup(accountGroup);
 
-		_assertSearchWithParams(Collections.emptyList(), params);
+		_assertSearchWithParams(StringPool.BLANK, params);
 	}
 
 	@Test
 	public void testSearchByAccountUserIds() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
 		User user1 = UserTestUtil.addUser();
 		User user2 = UserTestUtil.addUser();
 
 		_assertSearchWithParams(
-			Arrays.asList(
-				_addAccountEntryWithUser(user1),
-				_addAccountEntryWithUser(user2)),
+			StringPool.BLANK,
 			_getLinkedHashMap(
 				"accountUserIds",
-				new long[] {user1.getUserId(), user2.getUserId()}));
+				new long[] {user1.getUserId(), user2.getUserId()}),
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withUsers(user1)),
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withUsers(user2)));
+	}
+
+	@Test
+	public void testSearchByAllowNewUserMembership() throws Exception {
+		String name = RandomTestUtil.randomString();
+
+		AccountEntry businessAccountEntry1 =
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withName(name));
+		AccountEntry businessAccountEntry2 =
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withName(name));
+		AccountEntry personAccountEntry1 = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.TYPE_PERSON, AccountEntryArgs.withName(name));
+		AccountEntry personAccountEntry2 = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.TYPE_PERSON, AccountEntryArgs.withName(name));
+
+		User user = UserTestUtil.addUser();
+
+		_accountEntryUserRelLocalService.addAccountEntryUserRel(
+			businessAccountEntry2.getAccountEntryId(), user.getUserId());
+		_accountEntryUserRelLocalService.addAccountEntryUserRel(
+			personAccountEntry2.getAccountEntryId(), user.getUserId());
+
+		_assertSearchWithParams(
+			name, null, businessAccountEntry1, businessAccountEntry2,
+			personAccountEntry1, personAccountEntry2);
+		_assertSearchWithParams(
+			name, _getLinkedHashMap("allowNewUserMembership", Boolean.TRUE),
+			businessAccountEntry1, businessAccountEntry2, personAccountEntry1);
+		_assertSearchWithParams(
+			name, _getLinkedHashMap("allowNewUserMembership", Boolean.FALSE),
+			personAccountEntry2);
 	}
 
 	@Test
 	public void testSearchByDomains() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
 		String emailDomain1 = "foo.com";
 		String emailDomain2 = "bar.com";
 
 		_assertSearchWithParams(
-			Arrays.asList(
-				_addAccountEntryWithEmailDomain(emailDomain1),
-				_addAccountEntryWithEmailDomain(emailDomain2)),
+			StringPool.BLANK,
 			_getLinkedHashMap(
-				"domains", new String[] {emailDomain1, emailDomain2}));
+				"domains", new String[] {emailDomain1, emailDomain2}),
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withDomains(emailDomain1)),
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withDomains(emailDomain2)));
 	}
 
 	@Test
 	public void testSearchByExternalReferenceCode() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
 
 		_assertKeywordSearch(
 			accountEntry, accountEntry.getExternalReferenceCode());
@@ -661,122 +1084,128 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testSearchByOrganizations() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
 		Organization parentOrganization =
 			OrganizationTestUtil.addOrganization();
+
+		AccountEntry accountEntry1 = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOrganizations(parentOrganization));
 
 		Organization organization = OrganizationTestUtil.addOrganization(
 			parentOrganization.getOrganizationId(),
 			RandomTestUtil.randomString(), false);
 
-		AccountEntry accountEntry1 = _addAccountEntryWithOrganization(
-			parentOrganization);
-
-		AccountEntry accountEntry2 = _addAccountEntryWithOrganization(
-			organization);
+		AccountEntry accountEntry2 = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOrganizations(organization));
 
 		_assertSearchWithParams(
-			Arrays.asList(accountEntry1),
+			StringPool.BLANK,
 			_getLinkedHashMap(
 				"organizationIds",
-				new long[] {parentOrganization.getOrganizationId()}));
+				new long[] {parentOrganization.getOrganizationId()}),
+			accountEntry1);
 		_assertSearchWithParams(
-			Arrays.asList(accountEntry2),
+			StringPool.BLANK,
 			_getLinkedHashMap(
 				"organizationIds",
-				new long[] {organization.getOrganizationId()}));
+				new long[] {organization.getOrganizationId()}),
+			accountEntry2);
 		_assertSearchWithParams(
-			Arrays.asList(accountEntry1, accountEntry2),
+			StringPool.BLANK,
 			_getLinkedHashMap(
 				"organizationIds",
 				new long[] {
 					parentOrganization.getOrganizationId(),
 					organization.getOrganizationId()
-				}));
+				}),
+			accountEntry1, accountEntry2);
 	}
 
 	@Test
 	public void testSearchByParentAccountEntryId() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
-		AccountEntry parentAccountEntry = _addAccountEntry();
+		AccountEntry parentAccountEntry =
+			AccountEntryTestUtil.addAccountEntry();
 
 		_assertSearchWithParams(
-			Arrays.asList(
-				_addAccountEntryWithParentAccountEntryId(
-					parentAccountEntry.getAccountEntryId()),
-				_addAccountEntryWithParentAccountEntryId(
-					parentAccountEntry.getAccountEntryId())),
+			StringPool.BLANK,
 			_getLinkedHashMap(
-				"parentAccountEntryId",
-				parentAccountEntry.getAccountEntryId()));
+				"parentAccountEntryId", parentAccountEntry.getAccountEntryId()),
+			AccountEntryTestUtil.addAccountEntry(
+				accountEntryArgs ->
+					accountEntryArgs.parentAccountEntry = parentAccountEntry));
 	}
 
 	@Test
 	public void testSearchByStatus() throws Exception {
-		List<AccountEntry> activeAccountEntries = Arrays.asList(
-			_addAccountEntry(), _addAccountEntry(), _addAccountEntry());
-		List<AccountEntry> inactiveAccountEntries = Arrays.asList(
-			_addAccountEntry(WorkflowConstants.STATUS_INACTIVE),
-			_addAccountEntry(WorkflowConstants.STATUS_INACTIVE),
-			_addAccountEntry(WorkflowConstants.STATUS_INACTIVE),
-			_addAccountEntry(WorkflowConstants.STATUS_INACTIVE));
+		String name = RandomTestUtil.randomString();
+
+		AccountEntry activeAccountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withName(name));
+		AccountEntry inactiveAccountEntry =
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.STATUS_INACTIVE,
+				AccountEntryArgs.withName(name));
 
 		_assertSearchWithParams(
-			activeAccountEntries,
-			_getLinkedHashMap("status", WorkflowConstants.STATUS_APPROVED));
-		_assertSearchWithParams(activeAccountEntries, new LinkedHashMap<>());
+			name,
+			_getLinkedHashMap("status", WorkflowConstants.STATUS_APPROVED),
+			activeAccountEntry);
+		_assertSearchWithParams(name, null, activeAccountEntry);
 		_assertSearchWithParams(
-			inactiveAccountEntries,
-			_getLinkedHashMap("status", WorkflowConstants.STATUS_INACTIVE));
+			name,
+			_getLinkedHashMap("status", WorkflowConstants.STATUS_INACTIVE),
+			inactiveAccountEntry);
 		_assertSearchWithParams(
-			ListUtil.concat(activeAccountEntries, inactiveAccountEntries),
-			_getLinkedHashMap("status", WorkflowConstants.STATUS_ANY));
+			name, _getLinkedHashMap("status", WorkflowConstants.STATUS_ANY),
+			activeAccountEntry, inactiveAccountEntry);
 	}
 
 	@Test
 	public void testSearchByType() throws Exception {
-		AccountEntry businessAccountEntry = _addAccountEntry();
-		AccountEntry personAccountEntry = _addPersonAccountEntry();
+		String name = RandomTestUtil.randomString();
+
+		AccountEntry businessAccountEntry =
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withName(name));
+		AccountEntry personAccountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.TYPE_PERSON, AccountEntryArgs.withName(name));
 
 		_assertSearchWithParams(
-			Arrays.asList(businessAccountEntry, personAccountEntry), null);
+			name, null, businessAccountEntry, personAccountEntry);
 
 		_assertSearchWithParams(
-			Collections.singletonList(businessAccountEntry),
+			name,
 			_getLinkedHashMap(
 				"types",
-				new String[] {AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS}));
+				new String[] {AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS}),
+			businessAccountEntry);
 		_assertSearchWithParams(
-			Collections.singletonList(personAccountEntry),
+			name,
 			_getLinkedHashMap(
 				"types",
-				new String[] {AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON}));
+				new String[] {AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON}),
+			personAccountEntry);
 		_assertSearchWithParams(
-			Arrays.asList(businessAccountEntry, personAccountEntry),
+			name,
 			_getLinkedHashMap(
 				"types",
 				new String[] {
 					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
 					AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON
-				}));
+				}),
+			businessAccountEntry, personAccountEntry);
 		_assertSearchWithParams(
-			Collections.emptyList(),
-			_getLinkedHashMap("types", new String[] {"invalidType"}));
+			name, _getLinkedHashMap("types", new String[] {"invalidType"}));
 	}
 
 	@Test
 	public void testSearchByUserName() throws Exception {
 		User user = UserTestUtil.addUser();
 
-		_accountEntryLocalService.addAccountEntry(
-			user.getUserId(), 0L, RandomTestUtil.randomString(50),
-			RandomTestUtil.randomString(50), null, null, null,
-			RandomTestUtil.randomString(50),
-			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
-			WorkflowConstants.STATUS_APPROVED,
-			ServiceContextTestUtil.getServiceContext());
+		AccountEntryTestUtil.addAccountEntry(AccountEntryArgs.withOwner(user));
 
 		BaseModelSearchResult<AccountEntry> baseModelSearchResult =
 			_keywordSearch(user.getFullName());
@@ -786,19 +1215,12 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testSearchIndexerDocument() throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
-
 		User user1 = UserTestUtil.addUser();
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry.getAccountEntryId(), user1.getUserId());
-
 		User user2 = UserTestUtil.addUser();
 
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry.getAccountEntryId(), user2.getUserId());
-
-		accountEntry.setDomains("one,two,three");
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withDomains("one.com", "two.com", "three.com"),
+			AccountEntryArgs.withUsers(user1, user2));
 
 		Indexer<AccountEntry> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
 			AccountEntry.class);
@@ -815,7 +1237,7 @@ public class AccountEntryLocalServiceTest {
 			_getAccountUserIds(accountEntry),
 			GetterUtil.getLongValues(document.getValues("accountUserIds")));
 		Assert.assertArrayEquals(
-			_getDomains(accountEntry), document.getValues("domains"));
+			accountEntry.getDomainsArray(), document.getValues("domains"));
 		Assert.assertEquals(
 			accountEntry.getParentAccountEntryId(),
 			GetterUtil.getLong(document.get("parentAccountEntryId"), -1L));
@@ -829,13 +1251,15 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testSearchKeywords() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
 		String keywords = RandomTestUtil.randomString();
 
 		List<AccountEntry> expectedAccountEntries = Arrays.asList(
-			_addAccountEntry(keywords, RandomTestUtil.randomString()),
-			_addAccountEntry(RandomTestUtil.randomString(), keywords));
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withName(keywords)),
+			AccountEntryTestUtil.addAccountEntry(
+				AccountEntryArgs.withDescription(keywords)));
 
 		BaseModelSearchResult<AccountEntry> baseModelSearchResult =
 			_keywordSearch(keywords);
@@ -846,7 +1270,7 @@ public class AccountEntryLocalServiceTest {
 
 	@Test
 	public void testSearchNoKeywords() throws Exception {
-		_addAccountEntries();
+		AccountEntryTestUtil.addAccountEntry();
 
 		List<AccountEntry> expectedAccountEntries =
 			_accountEntryLocalService.getAccountEntries(
@@ -865,106 +1289,237 @@ public class AccountEntryLocalServiceTest {
 	public void testSearchPagination() throws Exception {
 		String keywords = RandomTestUtil.randomString();
 
-		List<AccountEntry> expectedAccountEntries = Arrays.asList(
-			_addAccountEntry(RandomTestUtil.randomString(), keywords),
-			_addAccountEntry(RandomTestUtil.randomString(), keywords),
-			_addAccountEntry(RandomTestUtil.randomString(), keywords),
-			_addAccountEntry(RandomTestUtil.randomString(), keywords),
-			_addAccountEntry(RandomTestUtil.randomString(), keywords));
+		List<AccountEntry> expectedAccountEntries =
+			AccountEntryTestUtil.addAccountEntries(
+				5, AccountEntryArgs.withDescription(keywords));
 
 		_assertPaginationSort(expectedAccountEntries, keywords, false);
 		_assertPaginationSort(expectedAccountEntries, keywords, true);
 	}
 
+	@Test
+	public void testUpdateAccountEntry() throws Exception {
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
+
+		String[] expectedDomains = {"update1.com", "update2.com"};
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext();
+
+		serviceContext.setExpandoBridgeAttributes(
+			HashMapBuilder.<String, Serializable>put(
+				() -> {
+					ExpandoColumn expandoColumn = ExpandoTestUtil.addColumn(
+						ExpandoTestUtil.addTable(
+							PortalUtil.getClassNameId(AccountEntry.class),
+							ExpandoTableConstants.DEFAULT_TABLE_NAME),
+						"customFieldName", ExpandoColumnConstants.STRING);
+
+					return expandoColumn.getName();
+				},
+				"customFieldValue"
+			).build());
+
+		accountEntry = _accountEntryLocalService.updateAccountEntry(
+			accountEntry.getExternalReferenceCode(),
+			accountEntry.getAccountEntryId(),
+			accountEntry.getParentAccountEntryId(), accountEntry.getName(),
+			accountEntry.getDescription(), false, expectedDomains,
+			accountEntry.getEmailAddress(), null, accountEntry.getTaxIdNumber(),
+			accountEntry.getStatus(), serviceContext);
+
+		Assert.assertArrayEquals(
+			expectedDomains, accountEntry.getDomainsArray());
+
+		accountEntry = _accountEntryLocalService.updateAccountEntry(
+			accountEntry.getExternalReferenceCode(),
+			accountEntry.getAccountEntryId(),
+			accountEntry.getParentAccountEntryId(), accountEntry.getName(),
+			accountEntry.getDescription(), false, null,
+			accountEntry.getEmailAddress(), null, accountEntry.getTaxIdNumber(),
+			accountEntry.getStatus(),
+			ServiceContextTestUtil.getServiceContext());
+
+		Assert.assertArrayEquals(
+			expectedDomains, accountEntry.getDomainsArray());
+
+		_assertStatus(
+			accountEntry, WorkflowConstants.STATUS_APPROVED,
+			TestPropsValues.getUser());
+
+		ExpandoBridge expandoBridge =
+			_testAccountEntryModelListener._accountEntry.getExpandoBridge();
+
+		Assert.assertEquals(
+			"customFieldValue",
+			GetterUtil.getString(
+				expandoBridge.getAttribute("customFieldName")));
+	}
+
+	@Test
+	public void testUpdateAccountEntryWithLazyReferencingEnabled()
+		throws Exception {
+
+		// Workflow disabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+
+			accountEntry = _accountEntryLocalService.updateAccountEntry(
+				accountEntry.getExternalReferenceCode(),
+				accountEntry.getAccountEntryId(),
+				accountEntry.getParentAccountEntryId(), accountEntry.getName(),
+				accountEntry.getDescription(), false, null,
+				accountEntry.getEmailAddress(), null,
+				accountEntry.getTaxIdNumber(), accountEntry.getStatus(), null);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_APPROVED,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		}
+
+		// Workflow enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			_enableWorkflow();
+
+			AccountEntry accountEntry =
+				_accountEntryLocalService.getOrAddIncompleteAccountEntry(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString(),
+					AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_INCOMPLETE,
+				TestPropsValues.getUser());
+			Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+
+			accountEntry = _accountEntryLocalService.updateAccountEntry(
+				accountEntry.getExternalReferenceCode(),
+				accountEntry.getAccountEntryId(),
+				accountEntry.getParentAccountEntryId(), accountEntry.getName(),
+				accountEntry.getDescription(), false, null,
+				accountEntry.getEmailAddress(), null,
+				accountEntry.getTaxIdNumber(), accountEntry.getStatus(), null);
+
+			_assertStatus(
+				accountEntry, WorkflowConstants.STATUS_PENDING,
+				TestPropsValues.getUser());
+			Assert.assertTrue(_hasWorkflowInstance(accountEntry));
+		}
+	}
+
+	@Test
+	public void testUpdateDomains() throws Exception {
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
+
+		Assert.assertArrayEquals(new String[0], accountEntry.getDomainsArray());
+
+		String[] expectedDomains = {"foo.com", "bar.com"};
+
+		accountEntry = _accountEntryLocalService.updateDomains(
+			accountEntry.getAccountEntryId(), expectedDomains);
+
+		Assert.assertArrayEquals(
+			ArrayUtil.sortedUnique(expectedDomains),
+			ArrayUtil.sortedUnique(accountEntry.getDomainsArray()));
+
+		BaseModelSearchResult<AccountEntry> baseModelSearchResult =
+			_accountEntryLocalService.searchAccountEntries(
+				accountEntry.getCompanyId(), null,
+				LinkedHashMapBuilder.<String, Object>put(
+					"domains", expectedDomains
+				).build(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null, false);
+
+		Assert.assertEquals(1, baseModelSearchResult.getLength());
+
+		List<AccountEntry> accountEntries =
+			baseModelSearchResult.getBaseModels();
+
+		Assert.assertEquals(accountEntry, accountEntries.get(0));
+	}
+
+	@Test
+	public void testUpdateRestrictMembership() throws Exception {
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
+
+		long mvccVersion = accountEntry.getMvccVersion();
+
+		boolean expectedRestrictMembership =
+			!accountEntry.isRestrictMembership();
+
+		accountEntry = _accountEntryLocalService.updateRestrictMembership(
+			accountEntry.getAccountEntryId(), expectedRestrictMembership);
+
+		Assert.assertNotEquals(mvccVersion, accountEntry.getMvccVersion());
+		Assert.assertEquals(
+			expectedRestrictMembership, accountEntry.isRestrictMembership());
+
+		mvccVersion = accountEntry.getMvccVersion();
+
+		accountEntry = _accountEntryLocalService.updateRestrictMembership(
+			accountEntry.getAccountEntryId(),
+			accountEntry.isRestrictMembership());
+
+		Assert.assertEquals(mvccVersion, accountEntry.getMvccVersion());
+	}
+
+	@Test
+	public void testUpdateStatus() throws Exception {
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry();
+
+		_assertStatus(
+			accountEntry, WorkflowConstants.STATUS_APPROVED,
+			TestPropsValues.getUser());
+
+		long mvccVersion = accountEntry.getMvccVersion();
+
+		accountEntry = _accountEntryLocalService.updateStatus(
+			TestPropsValues.getUserId(), accountEntry.getAccountEntryId(),
+			accountEntry.getStatus(), null, null);
+
+		Assert.assertEquals(mvccVersion, accountEntry.getMvccVersion());
+
+		int expectedStatus = WorkflowConstants.STATUS_DENIED;
+		User user = UserTestUtil.addUser();
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext();
+
+		Date modifiedDate = new Date();
+
+		serviceContext.setModifiedDate(modifiedDate);
+
+		accountEntry = _accountEntryLocalService.updateStatus(
+			user.getUserId(), accountEntry.getAccountEntryId(), expectedStatus,
+			serviceContext, null);
+
+		_assertStatus(accountEntry, expectedStatus, user);
+		Assert.assertEquals(modifiedDate, accountEntry.getModifiedDate());
+	}
+
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
-	private long[] _addAccountEntries() throws Exception {
-		return _addAccountEntries(WorkflowConstants.STATUS_APPROVED);
-	}
-
-	private long[] _addAccountEntries(int status) throws Exception {
-		int size = 5;
-
-		long[] accountEntryIds = new long[size];
-
-		for (int i = 0; i < size; i++) {
-			AccountEntry accountEntry = _addAccountEntry(status);
-
-			accountEntryIds[i] = accountEntry.getAccountEntryId();
-		}
-
-		return accountEntryIds;
-	}
-
-	private AccountEntry _addAccountEntry() throws Exception {
-		return _addAccountEntry(WorkflowConstants.STATUS_APPROVED);
-	}
-
-	private AccountEntry _addAccountEntry(int status) throws Exception {
-		return AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService, status);
-	}
-
-	private AccountEntry _addAccountEntry(String name, String description)
-		throws Exception {
-
-		return AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService, name, description);
-	}
-
-	private AccountEntry _addAccountEntryWithEmailDomain(String emailDomain)
-		throws Exception {
-
-		return AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService, new String[] {emailDomain});
-	}
-
-	private AccountEntry _addAccountEntryWithOrganization(
-			Organization organization)
-		throws Exception {
-
-		AccountEntry accountEntry = _addAccountEntry();
-
-		_accountEntryOrganizationRelLocalService.addAccountEntryOrganizationRel(
-			accountEntry.getAccountEntryId(), organization.getOrganizationId());
-
-		return accountEntry;
-	}
-
-	private AccountEntry _addAccountEntryWithParentAccountEntryId(
-			long parentAccountEntryId)
-		throws Exception {
-
-		return _accountEntryLocalService.addAccountEntry(
-			TestPropsValues.getUserId(), parentAccountEntryId,
-			RandomTestUtil.randomString(50), RandomTestUtil.randomString(50),
-			null, null, null, null,
-			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
-			WorkflowConstants.STATUS_APPROVED,
-			ServiceContextTestUtil.getServiceContext());
-	}
-
-	private AccountEntry _addAccountEntryWithUser(User user) throws Exception {
-		AccountEntry accountEntry = _addAccountEntry();
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry.getAccountEntryId(), user.getUserId());
-
-		return accountEntry;
-	}
-
-	private AccountEntry _addAccountGroupAccountEntry(long accountGroupId)
-		throws Exception {
-
-		AccountEntry accountEntry = _addAccountEntry();
-
-		_accountGroupRelLocalService.addAccountGroupRel(
-			accountGroupId, AccountEntry.class.getName(),
-			accountEntry.getAccountEntryId());
-
-		return accountEntry;
-	}
+	@Rule
+	public TestName testName = new TestName();
 
 	private Organization _addOrganization(User user, long parentOrganizationId)
 		throws Exception {
@@ -974,55 +1529,31 @@ public class AccountEntryLocalServiceTest {
 			RandomTestUtil.randomString(), false);
 	}
 
-	private AccountEntry _addPersonAccountEntry() throws Exception {
-		return AccountEntryTestUtil.addPersonAccountEntry(
-			_accountEntryLocalService);
-	}
-
-	private AccountEntry _addUserAccountEntry(
-			long userId, String name, long[] organizationIds, long[] userIds)
-		throws Exception {
-
-		return _addUserAccountEntry(
-			userId, name, organizationIds,
-			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, userIds);
-	}
-
-	private AccountEntry _addUserAccountEntry(
-			long userId, String name, long[] organizationIds, String type,
-			long[] userIds)
-		throws Exception {
-
-		AccountEntry accountEntry = _accountEntryLocalService.addAccountEntry(
-			userId, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, name,
-			RandomTestUtil.randomString(), null, null, null, null, type,
-			WorkflowConstants.STATUS_APPROVED, null);
-
-		if (ArrayUtil.isNotEmpty(organizationIds)) {
-			_accountEntryOrganizationRelLocalService.
-				addAccountEntryOrganizationRels(
-					accountEntry.getAccountEntryId(), organizationIds);
-		}
-
-		if (ArrayUtil.isNotEmpty(userIds)) {
-			_accountEntryUserRelLocalService.addAccountEntryUserRels(
-				accountEntry.getAccountEntryId(), userIds);
-		}
-
-		return accountEntry;
-	}
-
-	private void _assertDeleted(long accountEntryId) throws Exception {
+	private void _assertDeleted(AccountEntry accountEntry) throws Exception {
 		Assert.assertNull(
-			_accountEntryLocalService.fetchAccountEntry(accountEntryId));
-
-		int resourcePermissionsCount =
+			_accountEntryLocalService.fetchAccountEntry(
+				accountEntry.getAccountEntryId()));
+		Assert.assertEquals(
+			0,
 			_resourcePermissionLocalService.getResourcePermissionsCount(
 				TestPropsValues.getCompanyId(), AccountEntry.class.getName(),
 				ResourceConstants.SCOPE_INDIVIDUAL,
-				String.valueOf(accountEntryId));
+				String.valueOf(accountEntry.getAccountEntryId())));
+		Assert.assertFalse(_hasWorkflowInstance(accountEntry));
+		Assert.assertFalse(_hasAddresses(accountEntry));
 
-		Assert.assertEquals(0, resourcePermissionsCount);
+		List<SystemEvent> systemEvents =
+			_systemEventLocalService.getSystemEvents(
+				0, _portal.getClassNameId(accountEntry.getModelClassName()),
+				accountEntry.getPrimaryKey());
+
+		SystemEvent systemEvent = systemEvents.get(0);
+
+		Assert.assertEquals(
+			accountEntry.getExternalReferenceCode(),
+			systemEvent.getClassExternalReferenceCode());
+		Assert.assertEquals(
+			SystemEventConstants.TYPE_DELETE, systemEvent.getType());
 	}
 
 	private void _assertGetUserAccountEntriesWithKeywords(
@@ -1091,20 +1622,34 @@ public class AccountEntryLocalServiceTest {
 	}
 
 	private void _assertSearchWithParams(
-			List<AccountEntry> expectedAccountEntries,
-			LinkedHashMap<String, Object> params)
+			String keywords, LinkedHashMap<String, Object> params,
+			AccountEntry... expectedAccountEntries)
 		throws Exception {
 
 		BaseModelSearchResult<AccountEntry> baseModelSearchResult =
 			_accountEntryLocalService.searchAccountEntries(
-				TestPropsValues.getCompanyId(), null, params, 0, 10, null,
+				TestPropsValues.getCompanyId(), keywords, params, 0, 10, null,
 				false);
 
 		Assert.assertEquals(
-			expectedAccountEntries.size(), baseModelSearchResult.getLength());
+			expectedAccountEntries.length, baseModelSearchResult.getLength());
+
 		Assert.assertTrue(
-			expectedAccountEntries.containsAll(
-				baseModelSearchResult.getBaseModels()));
+			Arrays.asList(
+				expectedAccountEntries
+			).containsAll(
+				baseModelSearchResult.getBaseModels()
+			));
+	}
+
+	private void _assertStatus(
+		AccountEntry accountEntry, int expectedStatus, User expectedUser) {
+
+		Assert.assertEquals(expectedStatus, accountEntry.getStatus());
+		Assert.assertEquals(
+			expectedUser.getUserId(), accountEntry.getStatusByUserId());
+		Assert.assertEquals(
+			expectedUser.getFullName(), accountEntry.getStatusByUserName());
 	}
 
 	private void _assertStatus(long accountEntryId, int expectedStatus) {
@@ -1114,16 +1659,18 @@ public class AccountEntryLocalServiceTest {
 		Assert.assertEquals(expectedStatus, accountEntry.getStatus());
 	}
 
+	private void _enableWorkflow() throws Exception {
+		_workflowDefinitionLinkLocalService.addWorkflowDefinitionLink(
+			null, TestPropsValues.getUserId(), TestPropsValues.getCompanyId(),
+			GroupConstants.DEFAULT_LIVE_GROUP_ID, AccountEntry.class.getName(),
+			0, 0, "Single Approver", 1);
+	}
+
 	private long[] _getAccountUserIds(AccountEntry accountEntry) {
 		return ListUtil.toLongArray(
 			_accountUserRetriever.getAccountUsers(
 				accountEntry.getAccountEntryId()),
 			User.USER_ID_ACCESSOR);
-	}
-
-	private String[] _getDomains(AccountEntry accountEntry) {
-		return ArrayUtil.toStringArray(
-			StringUtil.split(accountEntry.getDomains(), CharPool.COMMA));
 	}
 
 	private LinkedHashMap<String, Object> _getLinkedHashMap(
@@ -1134,6 +1681,30 @@ public class AccountEntryLocalServiceTest {
 		).build();
 	}
 
+	private boolean _hasAddresses(AccountEntry accountEntry) throws Exception {
+		List<Address> addresses = _addressLocalService.getAddresses(
+			accountEntry.getCompanyId(), AccountEntry.class.getName(),
+			accountEntry.getAccountEntryId());
+
+		return !addresses.isEmpty();
+	}
+
+	private boolean _hasWorkflowInstance(AccountEntry accountEntry)
+		throws Exception {
+
+		WorkflowInstanceLink workflowInstanceLink =
+			_workflowInstanceLinkLocalService.fetchWorkflowInstanceLink(
+				accountEntry.getCompanyId(),
+				GroupConstants.DEFAULT_LIVE_GROUP_ID,
+				AccountEntry.class.getName(), accountEntry.getAccountEntryId());
+
+		if (workflowInstanceLink != null) {
+			return true;
+		}
+
+		return false;
+	}
+
 	private BaseModelSearchResult<AccountEntry> _keywordSearch(String keywords)
 		throws Exception {
 
@@ -1142,19 +1713,19 @@ public class AccountEntryLocalServiceTest {
 	}
 
 	private void _testGetUserAccountEntries(
-			User user, List<AccountEntry> expectedAccountEntries)
+			User user, AccountEntry... expectedAccountEntries)
 		throws Exception {
 
 		_testGetUserAccountEntries(
-			user, expectedAccountEntries,
-			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+			user, AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS,
+			expectedAccountEntries);
 	}
 
 	private void _testGetUserAccountEntries(
-			User user, List<AccountEntry> expectedAccountEntries, String type)
+			User user, String type, AccountEntry... expectedAccountEntries)
 		throws Exception {
 
-		expectedAccountEntries = ListUtil.sort(expectedAccountEntries);
+		Arrays.sort(expectedAccountEntries);
 
 		List<AccountEntry> userAccountEntries =
 			_accountEntryLocalService.getUserAccountEntries(
@@ -1163,19 +1734,19 @@ public class AccountEntryLocalServiceTest {
 				QueryUtil.ALL_POS);
 
 		Assert.assertEquals(
-			userAccountEntries.toString(), expectedAccountEntries.size(),
+			userAccountEntries.toString(), expectedAccountEntries.length,
 			userAccountEntries.size());
 
 		Assert.assertEquals(
-			expectedAccountEntries.size(),
+			expectedAccountEntries.length,
 			_accountEntryLocalService.getUserAccountEntriesCount(
 				user.getUserId(), AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
 				null, new String[] {type}));
 
 		userAccountEntries = ListUtil.sort(userAccountEntries);
 
-		for (int i = 0; i < expectedAccountEntries.size(); i++) {
-			AccountEntry expectedAccountEntry = expectedAccountEntries.get(i);
+		for (int i = 0; i < expectedAccountEntries.length; i++) {
+			AccountEntry expectedAccountEntry = expectedAccountEntries[i];
 			AccountEntry userAccountEntry = userAccountEntries.get(i);
 
 			Assert.assertEquals(
@@ -1198,11 +1769,14 @@ public class AccountEntryLocalServiceTest {
 		};
 
 	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
+	private static ListTypeLocalService _listTypeLocalService;
+
+	private static ServiceRegistration<?> _serviceRegistration;
+	private static final TestAccountEntryModelListener
+		_testAccountEntryModelListener = new TestAccountEntryModelListener();
 
 	@Inject
-	private AccountEntryOrganizationRelLocalService
-		_accountEntryOrganizationRelLocalService;
+	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
@@ -1211,10 +1785,10 @@ public class AccountEntryLocalServiceTest {
 	private AccountGroupLocalService _accountGroupLocalService;
 
 	@Inject
-	private AccountGroupRelLocalService _accountGroupRelLocalService;
+	private AccountUserRetriever _accountUserRetriever;
 
 	@Inject
-	private AccountUserRetriever _accountUserRetriever;
+	private AddressLocalService _addressLocalService;
 
 	@Inject
 	private AssetTagLocalService _assetTagLocalService;
@@ -1223,9 +1797,52 @@ public class AccountEntryLocalServiceTest {
 	private ClassNameLocalService _classNameLocalService;
 
 	@Inject
+	private JSONFactory _jsonFactory;
+
+	@Inject
+	private ObjectActionExecutorRegistry _objectActionExecutorRegistry;
+
+	@Inject
+	private ObjectActionLocalService _objectActionLocalService;
+
+	@Inject
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Inject
+	private ObjectValidationRuleLocalService _objectValidationRuleLocalService;
+
+	@Inject
 	private OrganizationLocalService _organizationLocalService;
 
 	@Inject
+	private Portal _portal;
+
+	@Inject
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private SystemEventLocalService _systemEventLocalService;
+
+	@Inject
+	private WorkflowDefinitionLinkLocalService
+		_workflowDefinitionLinkLocalService;
+
+	@Inject
+	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
+
+	private static class TestAccountEntryModelListener
+		extends BaseModelListener<AccountEntry> {
+
+		@Override
+		public void onAfterUpdate(
+				AccountEntry originalAccountEntry, AccountEntry accountEntry)
+			throws ModelListenerException {
+
+			_accountEntry = accountEntry;
+		}
+
+		private AccountEntry _accountEntry;
+
+	}
 
 }

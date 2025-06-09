@@ -1,17 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
+import {ClayRadio, ClayRadioGroup} from '@clayui/form';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayModal from '@clayui/modal';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {
 	useCallback,
@@ -32,14 +28,14 @@ import {
 	MIN_CONFIDENCE_LEVEL,
 	percentageNumberToIndex,
 } from '../util/percentages.es';
-import BusyButton from './BusyButton/BusyButton.es';
+import LoadingButton from './LoadingButton/LoadingButton.es';
 import {SliderWithLabel} from './SliderWithLabel.es';
 import {SplitPicker} from './SplitPicker/SplitPicker.es';
 
 const TIME_ESTIMATION_THROTTLE_TIME_MS = 1000;
 
 function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
-	const [busy, setBusy] = useState(false);
+	const [loading, setLoading] = useState(false);
 	const [success, setSuccess] = useState(false);
 	const [estimation, setEstimation] = useState({
 		days: null,
@@ -68,13 +64,13 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 	const {APIService, imagesPath} = useContext(SegmentsExperimentContext);
 	const {experiment} = useContext(StateContext);
 
-	const mounted = useRef();
+	const mountedRef = useRef();
 
 	useEffect(() => {
-		mounted.current = true;
+		mountedRef.current = true;
 
 		return () => {
-			mounted.current = false;
+			mountedRef.current = false;
 		};
 	});
 
@@ -83,7 +79,7 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 	const [getEstimation] = useDebounceCallback((body) => {
 		APIService.getEstimatedTime(body)
 			.then(({segmentsExperimentEstimatedDaysDuration}) => {
-				if (mounted.current) {
+				if (mountedRef.current) {
 					setEstimation({
 						days: segmentsExperimentEstimatedDaysDuration,
 						loading: false,
@@ -91,7 +87,7 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 				}
 			})
 			.catch((_error) => {
-				if (mounted.current) {
+				if (mountedRef.current) {
 					setEstimation({
 						error: true,
 					});
@@ -127,6 +123,8 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 		[setHeight, success]
 	);
 
+	const [selectedTestType, setSelectedTestType] = useState('AB');
+
 	return (
 		<ClayModal observer={modalObserver} size="lg">
 			<ClayModal.Header>
@@ -134,11 +132,12 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 					? Liferay.Language.get('test-started-successfully')
 					: Liferay.Language.get('review-and-run-test')}
 			</ClayModal.Header>
+
 			<ClayModal.Body>
 				{success ? (
 					<div
 						className="text-center"
-						style={{height: height + 'px'}}
+						style={{maxHeight: height + 'px'}}
 					>
 						<img
 							alt=""
@@ -146,28 +145,73 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 							src={successAnimationPath}
 							width="250px"
 						/>
+
 						<h3>{Liferay.Language.get('test-running-message')}</h3>
 					</div>
 				) : (
 					<div ref={measureHeight}>
-						<h3 className="border-bottom-0 sheet-subtitle text-secondary">
-							{Liferay.Language.get('traffic-split')}
-						</h3>
+						{!Liferay.FeatureFlags['LRAC-15017'] && (
+							<h3 className="border-bottom-0 sheet-subtitle text-secondary">
+								{Liferay.Language.get('traffic-split')}
+							</h3>
+						)}
+
+						{Liferay.FeatureFlags['LRAC-15017'] && (
+							<>
+								<h3 className="sheet-subtitle text-secondary">
+									{Liferay.Language.get('test-type')}
+								</h3>
+
+								<p className="small">
+									{Liferay.Language.get(
+										'choose-how-your-experiment-is-going-to-be-measured'
+									)}
+								</p>
+
+								<label>
+									{Liferay.Language.get('standard')}
+								</label>
+
+								<p className="small">
+									{Liferay.Language.get(
+										'use-the-ab-test-methodology-to-determine-which-variant-performs-better-based-on-statistical-significance'
+									)}
+								</p>
+
+								<ClayRadioGroup
+									inline
+									onChange={setSelectedTestType}
+									value={selectedTestType}
+								>
+									<ClayRadio
+										label={Liferay.Language.get(
+											'enable-standard-test-type'
+										)}
+										value="AB"
+									/>
+								</ClayRadioGroup>
+
+								<h3 className="border-bottom-0 mt-3 sheet-subtitle text-secondary">
+									{Liferay.Language.get('traffic-split')}
+								</h3>
+							</>
+						)}
 
 						<SplitPicker
+							disabled={selectedTestType === 'MAB'}
 							onChange={(variants) => {
 								setDraftVariants(variants);
 							}}
+							selectedTestType={selectedTestType}
 							variants={draftVariants}
 						/>
-
-						<hr />
 
 						<h3 className="border-bottom-0 sheet-subtitle text-secondary">
 							{Liferay.Language.get('confidence-level')}
 						</h3>
 
 						<SliderWithLabel
+							disabled={selectedTestType === 'MAB'}
 							label={Liferay.Language.get(
 								'confidence-level-required'
 							)}
@@ -177,7 +221,33 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 							value={confidenceLevel}
 						/>
 
+						{Liferay.FeatureFlags['LRAC-15017'] && (
+							<>
+								<label>{Liferay.Language.get('Dynamic')}</label>
+
+								<p className="small">
+									{Liferay.Language.get(
+										'use-the-multiarmed-bandit-method-to-determine-which-variant-performs-better-by-adapting-dynamically'
+									)}
+								</p>
+
+								<ClayRadioGroup
+									inline
+									onChange={setSelectedTestType}
+									value={selectedTestType}
+								>
+									<ClayRadio
+										label={Liferay.Language.get(
+											'enable-dynamic-test-type'
+										)}
+										value="MAB"
+									/>
+								</ClayRadioGroup>
+							</>
+						)}
+
 						<hr />
+
 						<div className="d-flex">
 							<div className="w-100">
 								<label>
@@ -237,13 +307,13 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 								{Liferay.Language.get('cancel')}
 							</ClayButton>
 
-							<BusyButton
-								busy={busy}
-								disabled={busy}
+							<LoadingButton
+								disabled={loading}
+								loading={loading}
 								onClick={_handleRun}
 							>
 								{Liferay.Language.get('run')}
-							</BusyButton>
+							</LoadingButton>
 						</ClayButton.Group>
 					)
 				}
@@ -258,14 +328,15 @@ function ReviewExperimentModal({modalObserver, onModalClose, onRun, variants}) {
 	function _handleRun() {
 		const splitVariantsMap = _variantsToSplitVariantsMap(draftVariants);
 
-		setBusy(true);
+		setLoading(true);
 
 		onRun({
 			confidenceLevel: percentageNumberToIndex(confidenceLevel),
+			segmentsExperimentType: selectedTestType,
 			splitVariantsMap,
 		}).then(() => {
-			if (mounted.current) {
-				setBusy(false);
+			if (mountedRef.current) {
+				setLoading(false);
 				setSuccess(true);
 			}
 		});
@@ -283,10 +354,10 @@ function _variantsToSplitVariantsMap(variants) {
 
 function _getDaysMessage(days) {
 	if (days === 1) {
-		return Liferay.Util.sub(Liferay.Language.get('x-day'), days);
+		return sub(Liferay.Language.get('x-day'), days);
 	}
 	else {
-		return Liferay.Util.sub(Liferay.Language.get('x-days'), days);
+		return sub(Liferay.Language.get('x-days'), days);
 	}
 }
 

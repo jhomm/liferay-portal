@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.web.internal.admin.display.context;
@@ -17,34 +8,38 @@ package com.liferay.portal.reports.engine.console.web.internal.admin.display.con
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
-import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.reports.engine.console.constants.ReportsEngineConsolePortletKeys;
 import com.liferay.portal.reports.engine.console.model.Definition;
-import com.liferay.portal.reports.engine.console.model.Entry;
-import com.liferay.portal.reports.engine.console.model.Source;
 import com.liferay.portal.reports.engine.console.service.DefinitionServiceUtil;
 import com.liferay.portal.reports.engine.console.service.EntryServiceUtil;
 import com.liferay.portal.reports.engine.console.service.SourceServiceUtil;
-import com.liferay.portal.reports.engine.console.web.internal.admin.configuration.ReportsEngineAdminWebConfiguration;
-import com.liferay.portal.reports.engine.console.web.internal.admin.display.context.util.ReportsEngineRequestHelper;
+import com.liferay.portal.reports.engine.console.web.internal.admin.constants.ReportsEngineWebKeys;
+import com.liferay.portal.reports.engine.console.web.internal.admin.display.context.helper.ReportsEngineRequestHelper;
 import com.liferay.portal.reports.engine.console.web.internal.admin.search.DefinitionDisplayTerms;
 import com.liferay.portal.reports.engine.console.web.internal.admin.search.DefinitionSearch;
 import com.liferay.portal.reports.engine.console.web.internal.admin.search.EntryDisplayTerms;
@@ -52,13 +47,13 @@ import com.liferay.portal.reports.engine.console.web.internal.admin.search.Entry
 import com.liferay.portal.reports.engine.console.web.internal.admin.search.SourceDisplayTerms;
 import com.liferay.portal.reports.engine.console.web.internal.admin.search.SourceSearch;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Rafael Praxedes
@@ -74,9 +69,6 @@ public class ReportsEngineDisplayContext {
 
 		_httpServletRequest = PortalUtil.getHttpServletRequest(
 			liferayPortletRequest);
-
-		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
-			_httpServletRequest);
 
 		_reportsEngineRequestHelper = new ReportsEngineRequestHelper(
 			_httpServletRequest);
@@ -106,7 +98,6 @@ public class ReportsEngineDisplayContext {
 					"/admin/definition/edit_definition.jsp", "redirect",
 					PortalUtil.getCurrentURL(
 						_reportsEngineRequestHelper.getRequest()));
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						_reportsEngineRequestHelper.getRequest(), "add"));
@@ -119,7 +110,6 @@ public class ReportsEngineDisplayContext {
 					"/admin/data_source/edit_data_source.jsp", "redirect",
 					PortalUtil.getCurrentURL(
 						_reportsEngineRequestHelper.getRequest()));
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(
 						_reportsEngineRequestHelper.getRequest(), "add"));
@@ -137,17 +127,9 @@ public class ReportsEngineDisplayContext {
 				_liferayPortletRequest, "displayStyle");
 
 			if (Validator.isNull(_displayStyle)) {
-				ReportsEngineAdminWebConfiguration
-					reportsEngineAdminWebConfiguration =
-						(ReportsEngineAdminWebConfiguration)
-							_liferayPortletRequest.getAttribute(
-								ReportsEngineAdminWebConfiguration.class.
-									getName());
-
 				_displayStyle = portalPreferences.getValue(
 					ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
-					"display-style",
-					reportsEngineAdminWebConfiguration.defaultDisplayView());
+					"display-style", "list");
 			}
 			else if (ArrayUtil.contains(_DISPLAY_VIEWS, _displayStyle)) {
 				portalPreferences.setValue(
@@ -163,54 +145,31 @@ public class ReportsEngineDisplayContext {
 		return _displayStyle;
 	}
 
-	public DropdownItemList getFilterOptions() {
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					DropdownItemListBuilder.add(
-						_getFilterNavigationDropdownItem("all")
-					).build());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_reportsEngineRequestHelper.getRequest(), "filter"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					DropdownItemListBuilder.add(
-						_getOrderByDropdownItem("create-date")
-					).build());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_reportsEngineRequestHelper.getRequest(), "order-by"));
-			}
-		).build();
-	}
-
 	public String getOrderByType() {
-		if (_orderByType != null) {
+		if (Validator.isNotNull(_orderByType)) {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(_httpServletRequest, "orderByType");
-
-		if (Validator.isNull(_orderByType)) {
-			_orderByType = _portalPreferences.getValue(
-				ReportsEngineConsolePortletKeys.REPORTS_ADMIN, "order-by-type",
-				"asc");
-		}
-		else {
-			boolean saveOrderBy = ParamUtil.getBoolean(
-				_httpServletRequest, "saveOrderBy");
-
-			if (saveOrderBy) {
-				_portalPreferences.setValue(
-					ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
-					"order-by-type", _orderByType);
-			}
-		}
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
+			"asc");
 
 		return _orderByType;
+	}
+
+	public List<DropdownItem> getOrderItemsDropdownItems() {
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setActive(
+					Objects.equals(_getOrderByCol(), "create-date"));
+				dropdownItem.setHref(
+					getPortletURL(), "orderByCol", "create-date");
+				dropdownItem.setLabel(
+					LanguageUtil.get(
+						_reportsEngineRequestHelper.getRequest(),
+						"create-date"));
+			}
+		).build();
 	}
 
 	public PortletURL getPortletURL() {
@@ -230,6 +189,42 @@ public class ReportsEngineDisplayContext {
 		).setTabs1(
 			_getTabs1()
 		).buildPortletURL();
+	}
+
+	public String getReportParameters() throws JSONException {
+		Definition definition = (Definition)_httpServletRequest.getAttribute(
+			ReportsEngineWebKeys.DEFINITION);
+
+		String reportParameters = BeanParamUtil.getString(
+			definition, _httpServletRequest, "reportParameters");
+
+		if (!JSONUtil.isJSONArray(reportParameters)) {
+			return null;
+		}
+
+		JSONArray reportParametersJSONArray = JSONFactoryUtil.createJSONArray(
+			reportParameters);
+
+		for (int i = 0; i < reportParametersJSONArray.length(); i++) {
+			JSONObject reportParameterJSONObject =
+				reportParametersJSONArray.getJSONObject(i);
+
+			if (reportParameterJSONObject.has("value")) {
+				reportParameterJSONObject.put(
+					"value",
+					HtmlUtil.escapeJS(
+						reportParameterJSONObject.getString("value")));
+			}
+
+			if (reportParameterJSONObject.has("key")) {
+				reportParameterJSONObject.put(
+					"key",
+					HtmlUtil.escapeJS(
+						reportParameterJSONObject.getString("key")));
+			}
+		}
+
+		return reportParametersJSONArray.toString();
 	}
 
 	public SearchContainer<?> getSearchContainer() throws PortalException {
@@ -299,11 +294,7 @@ public class ReportsEngineDisplayContext {
 	public boolean isDefinitionsTabSelected() {
 		String tabs1 = _getTabs1();
 
-		if (tabs1.equals("definitions")) {
-			return true;
-		}
-
-		return false;
+		return tabs1.equals("definitions");
 	}
 
 	public boolean isDisabled() throws PortalException {
@@ -317,21 +308,13 @@ public class ReportsEngineDisplayContext {
 	public boolean isReportsTabSelected() {
 		String tabs1 = _getTabs1();
 
-		if (tabs1.equals("reports")) {
-			return true;
-		}
-
-		return false;
+		return tabs1.equals("reports");
 	}
 
 	public boolean isSourcesTabSelected() {
 		String tabs1 = _getTabs1();
 
-		if (tabs1.equals("sources")) {
-			return true;
-		}
-
-		return false;
+		return tabs1.equals("sources");
 	}
 
 	private DefinitionSearch _getDefinitionSearch() throws PortalException {
@@ -341,45 +324,39 @@ public class ReportsEngineDisplayContext {
 		DefinitionDisplayTerms displayTerms =
 			(DefinitionDisplayTerms)definitionSearch.getDisplayTerms();
 
-		if (displayTerms.isAdvancedSearch()) {
-			int total = DefinitionServiceUtil.getDefinitionsCount(
-				_themeDisplay.getSiteGroupId(),
-				displayTerms.getDefinitionName(), displayTerms.getDescription(),
-				displayTerms.getSourceId(), displayTerms.getReportName(),
-				displayTerms.isAndOperator());
-
-			definitionSearch.setTotal(total);
-
-			List<Definition> results = DefinitionServiceUtil.getDefinitions(
-				_themeDisplay.getSiteGroupId(),
-				displayTerms.getDefinitionName(), displayTerms.getDescription(),
-				displayTerms.getSourceId(), displayTerms.getReportName(),
-				displayTerms.isAndOperator(), definitionSearch.getStart(),
-				definitionSearch.getEnd(),
-				definitionSearch.getOrderByComparator());
-
-			definitionSearch.setResults(results);
-		}
-		else {
-			int total = DefinitionServiceUtil.getDefinitionsCount(
-				_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
-				displayTerms.getKeywords(), null, displayTerms.getKeywords(),
-				false);
-
-			definitionSearch.setTotal(total);
-
-			List<Definition> results = DefinitionServiceUtil.getDefinitions(
-				_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
-				displayTerms.getKeywords(), null, displayTerms.getKeywords(),
-				false, definitionSearch.getStart(), definitionSearch.getEnd(),
-				definitionSearch.getOrderByComparator());
-
-			definitionSearch.setResults(results);
-		}
-
 		if (definitionSearch.isSearch()) {
 			definitionSearch.setEmptyResultsMessage(
 				"no-definitions-were-found");
+		}
+
+		if (displayTerms.isAdvancedSearch()) {
+			definitionSearch.setResultsAndTotal(
+				() -> DefinitionServiceUtil.getDefinitions(
+					_themeDisplay.getSiteGroupId(),
+					displayTerms.getDefinitionName(),
+					displayTerms.getDescription(), displayTerms.getSourceId(),
+					displayTerms.getReportName(), displayTerms.isAndOperator(),
+					definitionSearch.getStart(), definitionSearch.getEnd(),
+					definitionSearch.getOrderByComparator()),
+				DefinitionServiceUtil.getDefinitionsCount(
+					_themeDisplay.getSiteGroupId(),
+					displayTerms.getDefinitionName(),
+					displayTerms.getDescription(), displayTerms.getSourceId(),
+					displayTerms.getReportName(),
+					displayTerms.isAndOperator()));
+		}
+		else {
+			definitionSearch.setResultsAndTotal(
+				() -> DefinitionServiceUtil.getDefinitions(
+					_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
+					displayTerms.getKeywords(), null,
+					displayTerms.getKeywords(), false,
+					definitionSearch.getStart(), definitionSearch.getEnd(),
+					definitionSearch.getOrderByComparator()),
+				DefinitionServiceUtil.getDefinitionsCount(
+					_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
+					displayTerms.getKeywords(), null,
+					displayTerms.getKeywords(), false));
 		}
 
 		return definitionSearch;
@@ -392,6 +369,10 @@ public class ReportsEngineDisplayContext {
 		EntryDisplayTerms displayTerms =
 			(EntryDisplayTerms)entrySearch.getDisplayTerms();
 
+		if (entrySearch.isSearch()) {
+			entrySearch.setEmptyResultsMessage("no-reports-were-found");
+		}
+
 		if (displayTerms.isAdvancedSearch()) {
 			Date startDate = PortalUtil.getDate(
 				displayTerms.getStartDateMonth(),
@@ -402,56 +383,29 @@ public class ReportsEngineDisplayContext {
 				displayTerms.getEndDateDay() + 1, displayTerms.getEndDateYear(),
 				_themeDisplay.getTimeZone(), null);
 
-			int total = EntryServiceUtil.getEntriesCount(
-				_themeDisplay.getSiteGroupId(),
-				displayTerms.getDefinitionName(), null, startDate, endDate,
-				displayTerms.isAndOperator());
-
-			entrySearch.setTotal(total);
-
-			List<Entry> results = EntryServiceUtil.getEntries(
-				_themeDisplay.getSiteGroupId(),
-				displayTerms.getDefinitionName(), null, startDate, endDate,
-				displayTerms.isAndOperator(), entrySearch.getStart(),
-				entrySearch.getEnd(), entrySearch.getOrderByComparator());
-
-			entrySearch.setResults(results);
+			entrySearch.setResultsAndTotal(
+				() -> EntryServiceUtil.getEntries(
+					_themeDisplay.getSiteGroupId(),
+					displayTerms.getDefinitionName(), null, startDate, endDate,
+					displayTerms.isAndOperator(), entrySearch.getStart(),
+					entrySearch.getEnd(), entrySearch.getOrderByComparator()),
+				EntryServiceUtil.getEntriesCount(
+					_themeDisplay.getSiteGroupId(),
+					displayTerms.getDefinitionName(), null, startDate, endDate,
+					displayTerms.isAndOperator()));
 		}
 		else {
-			int total = EntryServiceUtil.getEntriesCount(
-				_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
-				null, null, null, false);
-
-			entrySearch.setTotal(total);
-
-			List<Entry> results = EntryServiceUtil.getEntries(
-				_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
-				null, null, null, false, entrySearch.getStart(),
-				entrySearch.getEnd(), entrySearch.getOrderByComparator());
-
-			entrySearch.setResults(results);
-		}
-
-		if (entrySearch.isSearch()) {
-			entrySearch.setEmptyResultsMessage("no-reports-were-found");
+			entrySearch.setResultsAndTotal(
+				() -> EntryServiceUtil.getEntries(
+					_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
+					null, null, null, false, entrySearch.getStart(),
+					entrySearch.getEnd(), entrySearch.getOrderByComparator()),
+				EntryServiceUtil.getEntriesCount(
+					_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
+					null, null, null, false));
 		}
 
 		return entrySearch;
-	}
-
-	private UnsafeConsumer<DropdownItem, Exception>
-		_getFilterNavigationDropdownItem(String navigation) {
-
-		return dropdownItem -> {
-			dropdownItem.setActive(
-				Objects.equals(_getNavigation(), navigation));
-			dropdownItem.setHref(
-				getPortletURL(), "navigation", navigation, "mvcPath",
-				"/admin/view.jsp", "tabs1", _getTabs1());
-			dropdownItem.setLabel(
-				LanguageUtil.get(
-					_reportsEngineRequestHelper.getRequest(), navigation));
-		};
 	}
 
 	private String _getNavigation() {
@@ -466,32 +420,15 @@ public class ReportsEngineDisplayContext {
 	}
 
 	private String _getOrderByCol() {
-		if (_orderByCol != null) {
+		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(_httpServletRequest, "orderByCol");
-
-		if (Validator.isNull(_orderByCol)) {
-			_orderByCol = _portalPreferences.getValue(
-				ReportsEngineConsolePortletKeys.REPORTS_ADMIN, "order-by-col",
-				"create-date");
-		}
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
+			"create-date");
 
 		return _orderByCol;
-	}
-
-	private UnsafeConsumer<DropdownItem, Exception> _getOrderByDropdownItem(
-		String orderByCol) {
-
-		return dropdownItem -> {
-			dropdownItem.setActive(
-				Objects.equals(_getOrderByCol(), orderByCol));
-			dropdownItem.setHref(getPortletURL(), "orderByCol", orderByCol);
-			dropdownItem.setLabel(
-				LanguageUtil.get(
-					_reportsEngineRequestHelper.getRequest(), orderByCol));
-		};
 	}
 
 	private String _getPortletName() {
@@ -505,38 +442,30 @@ public class ReportsEngineDisplayContext {
 		SourceDisplayTerms displayTerms =
 			(SourceDisplayTerms)sourceSearch.getDisplayTerms();
 
-		if (displayTerms.isAdvancedSearch()) {
-			int total = SourceServiceUtil.getSourcesCount(
-				_themeDisplay.getSiteGroupId(), displayTerms.getName(),
-				displayTerms.getDriverUrl(), displayTerms.isAndOperator());
-
-			sourceSearch.setTotal(total);
-
-			List<Source> results = SourceServiceUtil.getSources(
-				_themeDisplay.getSiteGroupId(), displayTerms.getName(),
-				displayTerms.getDriverUrl(), displayTerms.isAndOperator(),
-				sourceSearch.getStart(), sourceSearch.getEnd(),
-				sourceSearch.getOrderByComparator());
-
-			sourceSearch.setResults(results);
-		}
-		else {
-			int total = SourceServiceUtil.getSourcesCount(
-				_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
-				displayTerms.getKeywords(), false);
-
-			sourceSearch.setTotal(total);
-
-			List<Source> results = SourceServiceUtil.getSources(
-				_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
-				displayTerms.getKeywords(), false, sourceSearch.getStart(),
-				sourceSearch.getEnd(), sourceSearch.getOrderByComparator());
-
-			sourceSearch.setResults(results);
-		}
-
 		if (sourceSearch.isSearch()) {
 			sourceSearch.setEmptyResultsMessage("no-sources-were-found");
+		}
+
+		if (displayTerms.isAdvancedSearch()) {
+			sourceSearch.setResultsAndTotal(
+				() -> SourceServiceUtil.getSources(
+					_themeDisplay.getSiteGroupId(), displayTerms.getName(),
+					displayTerms.getDriverUrl(), displayTerms.isAndOperator(),
+					sourceSearch.getStart(), sourceSearch.getEnd(),
+					sourceSearch.getOrderByComparator()),
+				SourceServiceUtil.getSourcesCount(
+					_themeDisplay.getSiteGroupId(), displayTerms.getName(),
+					displayTerms.getDriverUrl(), displayTerms.isAndOperator()));
+		}
+		else {
+			sourceSearch.setResultsAndTotal(
+				() -> SourceServiceUtil.getSources(
+					_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
+					displayTerms.getKeywords(), false, sourceSearch.getStart(),
+					sourceSearch.getEnd(), sourceSearch.getOrderByComparator()),
+				SourceServiceUtil.getSourcesCount(
+					_themeDisplay.getSiteGroupId(), displayTerms.getKeywords(),
+					displayTerms.getKeywords(), false));
 		}
 
 		return sourceSearch;
@@ -555,7 +484,6 @@ public class ReportsEngineDisplayContext {
 	private String _navigation;
 	private String _orderByCol;
 	private String _orderByType;
-	private final PortalPreferences _portalPreferences;
 	private final ReportsEngineRequestHelper _reportsEngineRequestHelper;
 	private SearchContainer<?> _searchContainer;
 	private final ThemeDisplay _themeDisplay;

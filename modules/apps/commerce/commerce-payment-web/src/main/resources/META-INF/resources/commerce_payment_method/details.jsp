@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,15 +19,14 @@ CommercePaymentMethodGroupRel commercePaymentMethodGroupRel = commercePaymentMet
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= (commercePaymentMethodGroupRel != null) ? Constants.ADD : Constants.UPDATE %>" />
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 	<aui:input name="commerceChannelId" type="hidden" value="<%= commercePaymentMethodsDisplayContext.getCommerceChannelId() %>" />
-	<aui:input name="commercePaymentMethodGroupRelId" type="hidden" value="<%= commercePaymentMethodsDisplayContext.getCommercePaymentMethodGroupRelId() %>" />
+	<aui:input name="commercePaymentIntegrationKey" type="hidden" value="<%= commercePaymentMethodsDisplayContext.getCommercePaymentIntegrationKey() %>" />
 	<aui:input name="commercePaymentMethodEngineKey" type="hidden" value="<%= commercePaymentMethodsDisplayContext.getCommercePaymentMethodEngineKey() %>" />
+	<aui:input name="commercePaymentMethodGroupRelId" type="hidden" value="<%= commercePaymentMethodsDisplayContext.getCommercePaymentMethodGroupRelId() %>" />
 
 	<liferay-ui:error exception="<%= CommercePaymentMethodGroupRelNameException.class %>" message="please-enter-a-valid-name" />
 
 	<commerce-ui:panel>
-		<aui:input autoFocus="<%= true %>" label="name" localized="<%= true %>" name="nameMapAsXML" type="text" value='<%= BeanParamUtil.getString(commercePaymentMethodGroupRel, request, "name", commercePaymentMethodsDisplayContext.getCommercePaymentMethodEngineName(locale)) %>'>
-			<aui:validator name="required" />
-		</aui:input>
+		<aui:input label="name" localized="<%= true %>" name="nameMapAsXML" required="<%= true %>" type="text" value='<%= BeanParamUtil.getString(commercePaymentMethodGroupRel, request, "name", commercePaymentMethodsDisplayContext.getCommercePaymentMethodEngineName(locale)) %>' />
 
 		<aui:input label="description" localized="<%= true %>" name="descriptionMapAsXML" type="text" value='<%= BeanParamUtil.getString(commercePaymentMethodGroupRel, request, "description", commercePaymentMethodsDisplayContext.getCommercePaymentMethodEngineDescription(locale)) %>' />
 

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service;
 
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,12 +32,30 @@ public class LayoutPageTemplateCollectionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.layout.page.template.service.impl.LayoutPageTemplateCollectionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static LayoutPageTemplateCollection addLayoutPageTemplateCollection(
-			long groupId, String name, String description,
+			String externalReferenceCode, long groupId,
+			long parentLayoutPageTemplateCollectionId,
+			String layoutPageTemplateCollectionKey, String name,
+			String description, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addLayoutPageTemplateCollection(
-			groupId, name, description, serviceContext);
+			externalReferenceCode, groupId,
+			parentLayoutPageTemplateCollectionId,
+			layoutPageTemplateCollectionKey, name, description, type,
+			serviceContext);
+	}
+
+	public static LayoutPageTemplateCollection copyLayoutPageTemplateCollection(
+			long groupId, long sourceLayoutPageTemplateCollectionId,
+			long layoutParentPageTemplateCollectionId, boolean copyPermissions,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws Exception {
+
+		return getService().copyLayoutPageTemplateCollection(
+			groupId, sourceLayoutPageTemplateCollectionId,
+			layoutParentPageTemplateCollectionId, copyPermissions,
+			serviceContext);
 	}
 
 	public static LayoutPageTemplateCollection
@@ -55,6 +65,15 @@ public class LayoutPageTemplateCollectionServiceUtil {
 
 		return getService().deleteLayoutPageTemplateCollection(
 			layoutPageTemplateCollectionId);
+	}
+
+	public static LayoutPageTemplateCollection
+			deleteLayoutPageTemplateCollection(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteLayoutPageTemplateCollection(
+			externalReferenceCode, groupId);
 	}
 
 	public static void deleteLayoutPageTemplateCollections(
@@ -74,46 +93,85 @@ public class LayoutPageTemplateCollectionServiceUtil {
 			layoutPageTemplateCollectionId);
 	}
 
-	public static List<LayoutPageTemplateCollection>
-		getLayoutPageTemplateCollections(long groupId) {
+	public static LayoutPageTemplateCollection
+			fetchLayoutPageTemplateCollection(
+				long groupId, String name,
+				long parentLayoutPageTemplateCollectionId, int type)
+		throws PortalException {
 
-		return getService().getLayoutPageTemplateCollections(groupId);
+		return getService().fetchLayoutPageTemplateCollection(
+			groupId, name, parentLayoutPageTemplateCollectionId, type);
+	}
+
+	public static LayoutPageTemplateCollection
+			fetchLayoutPageTemplateCollection(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().fetchLayoutPageTemplateCollection(
+			externalReferenceCode, groupId);
+	}
+
+	public static LayoutPageTemplateCollection getLayoutPageTemplateCollection(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getLayoutPageTemplateCollection(
+			externalReferenceCode, groupId);
 	}
 
 	public static List<LayoutPageTemplateCollection>
-		getLayoutPageTemplateCollections(long groupId, int start, int end) {
+		getLayoutPageTemplateCollections(long groupId, int type) {
 
-		return getService().getLayoutPageTemplateCollections(
-			groupId, start, end);
+		return getService().getLayoutPageTemplateCollections(groupId, type);
 	}
 
 	public static List<LayoutPageTemplateCollection>
 		getLayoutPageTemplateCollections(
-			long groupId, int start, int end,
-			OrderByComparator<LayoutPageTemplateCollection> orderByComparator) {
+			long groupId, int type, int start, int end) {
 
 		return getService().getLayoutPageTemplateCollections(
-			groupId, start, end, orderByComparator);
+			groupId, type, start, end);
 	}
 
 	public static List<LayoutPageTemplateCollection>
 		getLayoutPageTemplateCollections(
-			long groupId, String name, int start, int end,
+			long groupId, int type, int start, int end,
 			OrderByComparator<LayoutPageTemplateCollection> orderByComparator) {
 
 		return getService().getLayoutPageTemplateCollections(
-			groupId, name, start, end, orderByComparator);
+			groupId, type, start, end, orderByComparator);
 	}
 
-	public static int getLayoutPageTemplateCollectionsCount(long groupId) {
-		return getService().getLayoutPageTemplateCollectionsCount(groupId);
+	public static List<LayoutPageTemplateCollection>
+		getLayoutPageTemplateCollections(
+			long groupId, long layoutPageTemplateCollectionId) {
+
+		return getService().getLayoutPageTemplateCollections(
+			groupId, layoutPageTemplateCollectionId);
+	}
+
+	public static List<LayoutPageTemplateCollection>
+		getLayoutPageTemplateCollections(
+			long groupId, String name, int type, int start, int end,
+			OrderByComparator<LayoutPageTemplateCollection> orderByComparator) {
+
+		return getService().getLayoutPageTemplateCollections(
+			groupId, name, type, start, end, orderByComparator);
 	}
 
 	public static int getLayoutPageTemplateCollectionsCount(
-		long groupId, String name) {
+		long groupId, int type) {
 
 		return getService().getLayoutPageTemplateCollectionsCount(
-			groupId, name);
+			groupId, type);
+	}
+
+	public static int getLayoutPageTemplateCollectionsCount(
+		long groupId, String name, int type) {
+
+		return getService().getLayoutPageTemplateCollectionsCount(
+			groupId, name, type);
 	}
 
 	/**
@@ -123,6 +181,25 @@ public class LayoutPageTemplateCollectionServiceUtil {
 	 */
 	public static String getOSGiServiceIdentifier() {
 		return getService().getOSGiServiceIdentifier();
+	}
+
+	public static LayoutPageTemplateCollection moveLayoutPageTemplateCollection(
+			long layoutPageTemplateCollectionId,
+			long targetLayoutPageTemplateCollectionId)
+		throws PortalException {
+
+		return getService().moveLayoutPageTemplateCollection(
+			layoutPageTemplateCollectionId,
+			targetLayoutPageTemplateCollectionId);
+	}
+
+	public static LayoutPageTemplateCollection
+			updateLayoutPageTemplateCollection(
+				long layoutPageTemplateCollectionId, String name)
+		throws PortalException {
+
+		return getService().updateLayoutPageTemplateCollection(
+			layoutPageTemplateCollectionId, name);
 	}
 
 	public static LayoutPageTemplateCollection
@@ -136,9 +213,12 @@ public class LayoutPageTemplateCollectionServiceUtil {
 	}
 
 	public static LayoutPageTemplateCollectionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile LayoutPageTemplateCollectionService _service;
+	private static final Snapshot<LayoutPageTemplateCollectionService>
+		_serviceSnapshot = new Snapshot<>(
+			LayoutPageTemplateCollectionServiceUtil.class,
+			LayoutPageTemplateCollectionService.class);
 
 }

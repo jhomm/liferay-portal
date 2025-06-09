@@ -1,25 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.theme.speedwell.site.initializer.internal;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.settings.AccountEntryGroupSettings;
-import com.liferay.commerce.account.configuration.CommerceAccountGroupServiceConfiguration;
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
-import com.liferay.commerce.account.util.CommerceAccountRoleHelper;
+import com.liferay.commerce.configuration.CommerceAccountGroupServiceConfiguration;
+import com.liferay.commerce.constants.CommerceConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.helper.CommerceAccountRoleHelper;
 import com.liferay.commerce.initializer.util.AssetCategoriesImporter;
 import com.liferay.commerce.initializer.util.BlogsImporter;
 import com.liferay.commerce.initializer.util.CPDefinitionsImporter;
@@ -56,18 +48,19 @@ import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceShippingMethodLocalService;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionLocalService;
-import com.liferay.commerce.theme.speedwell.site.initializer.internal.dependencies.resolver.SpeedwellDependencyResolver;
+import com.liferay.commerce.theme.speedwell.site.initializer.internal.dependencies.resolver.SpeedwellDependencyResolverUtil;
 import com.liferay.commerce.util.AccountEntryAllowedTypesUtil;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -79,7 +72,6 @@ import com.liferay.portal.kernel.model.RoleConstants;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.ThemeSetting;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -90,20 +82,22 @@ import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ThemeLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.TempFileEntryUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.site.exception.InitializationException;
 import com.liferay.site.initializer.SiteInitializer;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.File;
 import java.io.InputStream;
@@ -119,8 +113,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 
-import javax.servlet.ServletContext;
-
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -132,7 +124,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gianmarco Brunialti Masera
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "site.initializer.key=" + SpeedwellSiteInitializer.KEY,
 	service = SiteInitializer.class
 )
@@ -145,7 +136,7 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "speedwell-description");
+		return _language.get(resourceBundle, "speedwell-description");
 	}
 
 	@Override
@@ -158,7 +149,7 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "speedwell");
+		return _language.get(resourceBundle, "speedwell");
 	}
 
 	@Override
@@ -173,25 +164,25 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 	@Override
 	public void initialize(long groupId) throws InitializationException {
 		try {
-			ServiceContext serviceContext = getServiceContext(groupId);
+			ServiceContext serviceContext = _getServiceContext(groupId);
 
 			_cpFileImporter.updateLookAndFeel(
 				_SPEEDWELL_THEME_ID, false, serviceContext);
 
-			updateLogo(serviceContext);
+			_updateLogo(serviceContext);
 
-			createRoles(serviceContext);
+			_createRoles(serviceContext);
 
-			CommerceCatalog commerceCatalog = createCatalog(serviceContext);
+			CommerceCatalog commerceCatalog = _createCatalog(serviceContext);
 
 			long catalogGroupId = commerceCatalog.getGroupId();
 
-			CommerceChannel commerceChannel = createChannel(
+			CommerceChannel commerceChannel = _createChannel(
 				commerceCatalog, serviceContext);
 
-			configureB2CSite(commerceChannel.getGroupId(), serviceContext);
+			_configureB2CSite(commerceChannel.getGroup(), serviceContext);
 
-			_speedwellLayoutsInitializer.initialize(serviceContext);
+			_createLayouts(serviceContext);
 
 			_importAssetCategories(serviceContext);
 
@@ -238,9 +229,9 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 			_importPortletSettings(serviceContext);
 
-			fixDLFileEntryPermissions(groupId);
+			_fixDLFileEntryPermissions(groupId);
 
-			setCommerceShippingMethod(
+			_setCommerceShippingMethod(
 				commerceChannel.getGroupId(), "fixed", serviceContext);
 
 			int catalogCPDefinitionsCount =
@@ -248,20 +239,20 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 					catalogGroupId, WorkflowConstants.STATUS_ANY);
 
 			if (catalogCPDefinitionsCount > 0) {
-				setDefaultCatalogImage(catalogGroupId, serviceContext);
+				_setDefaultCatalogImage(catalogGroupId, serviceContext);
 			}
 			else {
 				_commerceCatalogLocalService.deleteCommerceCatalog(
 					commerceCatalog);
 			}
 
-			setThemeSettings(serviceContext);
+			_setThemeSettings(serviceContext);
 		}
 		catch (InitializationException initializationException) {
 			throw initializationException;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new InitializationException(exception);
 		}
@@ -269,6 +260,10 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 	@Override
 	public boolean isActive(long companyId) {
+		if (!_searchCapabilities.isCommerceSupported()) {
+			return false;
+		}
+
 		Theme theme = _themeLocalService.fetchTheme(
 			companyId, _SPEEDWELL_THEME_ID);
 
@@ -288,41 +283,46 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 		init();
 	}
 
-	protected void configureB2CSite(long groupId, ServiceContext serviceContext)
-		throws Exception {
+	@Deactivate
+	protected void deactivate() {
+		_cpDefinitions = null;
+	}
 
-		Group group = _groupLocalService.getGroup(groupId);
+	private void _configureB2CSite(Group group, ServiceContext serviceContext)
+		throws Exception {
 
 		group.setType(GroupConstants.TYPE_SITE_OPEN);
 		group.setManualMembership(true);
 		group.setMembershipRestriction(
 			GroupConstants.DEFAULT_MEMBERSHIP_RESTRICTION);
 
-		_groupLocalService.updateGroup(group);
+		group = _groupLocalService.updateGroup(group);
 
-		_commerceCurrencyLocalService.importDefaultValues(serviceContext);
+		_commerceCurrencyLocalService.importDefaultValues(true, serviceContext);
 		_cpMeasurementUnitLocalService.importDefaultValues(serviceContext);
 
 		_commerceAccountRoleHelper.checkCommerceAccountRoles(serviceContext);
 
-		Settings settings = _settingsFactory.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
-				groupId, CommerceAccountConstants.SERVICE_NAME));
+				group.getGroupId(),
+				CommerceConstants.SERVICE_NAME_COMMERCE_ACCOUNT));
 
 		ModifiableSettings modifiableSettings =
 			settings.getModifiableSettings();
 
 		modifiableSettings.setValue(
 			"commerceSiteType",
-			String.valueOf(CommerceAccountConstants.SITE_TYPE_B2C));
+			String.valueOf(CommerceChannelConstants.SITE_TYPE_B2C));
 
 		modifiableSettings.store();
 
 		_accountEntryGroupSettings.setAllowedTypes(
-			serviceContext.getScopeGroupId(), _getAllowedTypes(groupId));
+			serviceContext.getScopeGroupId(),
+			_getAllowedTypes(group.getGroupId()));
 	}
 
-	protected CommerceCatalog createCatalog(ServiceContext serviceContext)
+	private CommerceCatalog _createCatalog(ServiceContext serviceContext)
 		throws Exception {
 
 		Group group = serviceContext.getScopeGroup();
@@ -337,32 +337,42 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 			serviceContext);
 	}
 
-	protected CommerceChannel createChannel(
+	private CommerceChannel _createChannel(
 			CommerceCatalog commerceCatalog, ServiceContext serviceContext)
 		throws Exception {
 
 		Group group = serviceContext.getScopeGroup();
 
 		return _commerceChannelLocalService.addCommerceChannel(
-			StringPool.BLANK, group.getGroupId(),
+			StringPool.BLANK, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			group.getGroupId(),
 			group.getName(serviceContext.getLanguageId()) + " Portal",
 			CommerceChannelConstants.CHANNEL_TYPE_SITE, null,
 			commerceCatalog.getCommerceCurrencyCode(), serviceContext);
 	}
 
-	protected void createRoles(ServiceContext serviceContext) throws Exception {
+	private void _createLayouts(ServiceContext serviceContext)
+		throws Exception {
+
+		_cpFileImporter.cleanLayouts(serviceContext);
+
+		JSONArray jsonArray = _jsonFactory.createJSONArray(
+			SpeedwellDependencyResolverUtil.getJSON("layouts.json"));
+
+		_cpFileImporter.createLayouts(
+			jsonArray, SpeedwellDependencyResolverUtil.getImageClassLoader(),
+			SpeedwellDependencyResolverUtil.getImageDependencyPath(),
+			serviceContext);
+	}
+
+	private void _createRoles(ServiceContext serviceContext) throws Exception {
 		_cpFileImporter.createRoles(
 			_getJSONArray("roles.json"), serviceContext);
 
-		updateUserRole(serviceContext);
+		_updateUserRole(serviceContext);
 	}
 
-	@Deactivate
-	protected void deactivate() {
-		_cpDefinitions = null;
-	}
-
-	protected void fixDLFileEntryPermissions(long groupId)
+	private void _fixDLFileEntryPermissions(long groupId)
 		throws PortalException {
 
 		List<DLFileEntry> dlFileEntries =
@@ -389,171 +399,6 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 		}
 	}
 
-	protected CPDefinition getCPDefinitionByName(String name) {
-		return _cpDefinitions.get(name);
-	}
-
-	protected ServiceContext getServiceContext(long groupId)
-		throws PortalException {
-
-		User user = _userLocalService.getUser(PrincipalThreadLocal.getUserId());
-		Group group = _groupLocalService.getGroup(groupId);
-
-		Locale locale = LocaleUtil.getSiteDefault();
-
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setAddGroupPermissions(true);
-		serviceContext.setAddGuestPermissions(true);
-		serviceContext.setCompanyId(group.getCompanyId());
-		serviceContext.setLanguageId(LanguageUtil.getLanguageId(locale));
-		serviceContext.setScopeGroupId(groupId);
-		serviceContext.setTimeZone(user.getTimeZone());
-		serviceContext.setUserId(user.getUserId());
-
-		return serviceContext;
-	}
-
-	protected void setCommerceShippingMethod(
-			long groupId, String shippingMethod, ServiceContext serviceContext)
-		throws PortalException {
-
-		Locale locale = serviceContext.getLocale();
-
-		CommerceShippingEngine commerceShippingEngine =
-			_commerceShippingEngineRegistry.getCommerceShippingEngine(
-				shippingMethod);
-
-		Map<Locale, String> nameMap = Collections.singletonMap(
-			locale, commerceShippingEngine.getName(locale));
-		Map<Locale, String> descriptionMap = Collections.singletonMap(
-			locale, commerceShippingEngine.getDescription(locale));
-
-		CommerceShippingMethod commerceShippingMethod =
-			_commerceShippingMethodLocalService.addCommerceShippingMethod(
-				serviceContext.getUserId(), groupId, nameMap, descriptionMap,
-				null, shippingMethod, 0, true);
-
-		setCommerceShippingOption(
-			commerceShippingMethod, "Standard Delivery", StringPool.BLANK,
-			BigDecimal.valueOf(15), serviceContext);
-
-		setCommerceShippingOption(
-			commerceShippingMethod, "Expedited Delivery", StringPool.BLANK,
-			BigDecimal.valueOf(25), serviceContext);
-	}
-
-	protected void setCommerceShippingOption(
-			CommerceShippingMethod commerceShippingMethod, String name,
-			String description, BigDecimal price, ServiceContext serviceContext)
-		throws PortalException {
-
-		Map<Locale, String> nameMap = Collections.singletonMap(
-			serviceContext.getLocale(), name);
-		Map<Locale, String> descriptionMap = Collections.singletonMap(
-			serviceContext.getLocale(), description);
-
-		_commerceShippingFixedOptionLocalService.addCommerceShippingFixedOption(
-			serviceContext.getUserId(), commerceShippingMethod.getGroupId(),
-			commerceShippingMethod.getCommerceShippingMethodId(), nameMap,
-			descriptionMap, price, 0);
-	}
-
-	protected void setDefaultCatalogImage(
-			long catalogGroupId, ServiceContext serviceContext)
-		throws Exception {
-
-		ClassLoader classLoader =
-			_speedwellDependencyResolver.getImageClassLoader();
-
-		InputStream inputStream = classLoader.getResourceAsStream(
-			_speedwellDependencyResolver.getImageDependencyPath() +
-				"Speedwell_ProductImage_Default.png");
-
-		File file = null;
-
-		try {
-			file = FileUtil.createTempFile(inputStream);
-
-			String mimeType = MimeTypesUtil.getContentType(file);
-
-			FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
-				catalogGroupId, serviceContext.getUserId(),
-				SpeedwellSiteInitializer.class.getName(), file.getName(), file,
-				mimeType);
-
-			_commerceCatalogDefaultImage.updateDefaultCatalogFileEntryId(
-				catalogGroupId, fileEntry.getFileEntryId());
-		}
-		finally {
-			if (file != null) {
-				FileUtil.delete(file);
-			}
-		}
-	}
-
-	protected void setThemeSettings(ServiceContext serviceContext)
-		throws Exception {
-
-		JSONObject themeSettingsJSONObject = _getJSONObject(
-			"theme-settings.json");
-
-		Iterator<String> iterator = themeSettingsJSONObject.keys();
-
-		while (iterator.hasNext()) {
-			String key = iterator.next();
-
-			String value = themeSettingsJSONObject.getString(key);
-
-			updateThemeSetting(key, value, serviceContext);
-		}
-	}
-
-	protected void updateLogo(ServiceContext serviceContext) throws Exception {
-		ClassLoader classLoader =
-			_speedwellDependencyResolver.getImageClassLoader();
-
-		InputStream inputStream = classLoader.getResourceAsStream(
-			_speedwellDependencyResolver.getImageDependencyPath() +
-				"Speedwell_Logo.png");
-
-		File file = FileUtil.createTempFile(inputStream);
-
-		_cpFileImporter.updateLogo(file, false, true, serviceContext);
-		_cpFileImporter.updateLogo(file, true, true, serviceContext);
-	}
-
-	protected void updateThemeSetting(
-		String key, String value, ServiceContext serviceContext) {
-
-		Theme theme = _themeLocalService.fetchTheme(
-			serviceContext.getCompanyId(), _SPEEDWELL_THEME_ID);
-
-		if (theme == null) {
-			return;
-		}
-
-		Map<String, ThemeSetting> configurableSettings =
-			theme.getConfigurableSettings();
-
-		ThemeSetting themeSetting = configurableSettings.get(key);
-
-		themeSetting.setValue(value);
-	}
-
-	protected void updateUserRole(ServiceContext serviceContext)
-		throws PortalException {
-
-		Role role = _roleLocalService.fetchRole(
-			serviceContext.getCompanyId(), "User");
-
-		_resourcePermissionLocalService.addResourcePermission(
-			serviceContext.getCompanyId(), "com.liferay.commerce.product",
-			ResourceConstants.SCOPE_GROUP_TEMPLATE,
-			String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID),
-			role.getRoleId(), "VIEW_PRICE");
-	}
-
 	private String[] _getAllowedTypes(long commerceChannelGroupId)
 		throws Exception {
 
@@ -563,17 +408,21 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 					CommerceAccountGroupServiceConfiguration.class,
 					new GroupServiceSettingsLocator(
 						commerceChannelGroupId,
-						CommerceAccountConstants.SERVICE_NAME));
+						CommerceConstants.SERVICE_NAME_COMMERCE_ACCOUNT));
 
 		return AccountEntryAllowedTypesUtil.getAllowedTypes(
 			commerceAccountGroupServiceConfiguration.commerceSiteType());
+	}
+
+	private CPDefinition _getCPDefinitionByName(String name) {
+		return _cpDefinitions.get(name);
 	}
 
 	private long[] _getCProductIds(JSONArray jsonArray) {
 		List<Long> cProductIdsList = new ArrayList<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			CPDefinition cpDefinitionEntry = getCPDefinitionByName(
+			CPDefinition cpDefinitionEntry = _getCPDefinitionByName(
 				jsonArray.getString(i));
 
 			cProductIdsList.add(cpDefinitionEntry.getCProductId());
@@ -584,12 +433,36 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 	private JSONArray _getJSONArray(String name) throws Exception {
 		return _jsonFactory.createJSONArray(
-			_speedwellDependencyResolver.getJSON(name));
+			SpeedwellDependencyResolverUtil.getJSON(name));
 	}
 
 	private JSONObject _getJSONObject(String name) throws Exception {
 		return _jsonFactory.createJSONObject(
-			_speedwellDependencyResolver.getJSON(name));
+			SpeedwellDependencyResolverUtil.getJSON(name));
+	}
+
+	private ServiceContext _getServiceContext(long groupId)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setAddGuestPermissions(true);
+
+		Group group = _groupLocalService.getGroup(groupId);
+
+		serviceContext.setCompanyId(group.getCompanyId());
+
+		serviceContext.setLanguageId(
+			_language.getLanguageId(LocaleUtil.getSiteDefault()));
+		serviceContext.setScopeGroupId(groupId);
+
+		User user = _userLocalService.getUser(PrincipalThreadLocal.getUserId());
+
+		serviceContext.setTimeZone(user.getTimeZone());
+		serviceContext.setUserId(user.getUserId());
+
+		return serviceContext;
 	}
 
 	private void _importAssetCategories(ServiceContext serviceContext)
@@ -607,8 +480,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 		_assetCategoriesImporter.importAssetCategories(
 			_getJSONArray("categories.json"),
 			group.getName(serviceContext.getLocale()),
-			_speedwellDependencyResolver.getImageClassLoader(),
-			_speedwellDependencyResolver.getImageDependencyPath(),
+			SpeedwellDependencyResolverUtil.getImageClassLoader(),
+			SpeedwellDependencyResolverUtil.getImageDependencyPath(),
 			company.getGroupId(), serviceContext.getUserId(), true);
 
 		if (_log.isInfoEnabled()) {
@@ -645,8 +518,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_blogsImporter.importBlogsEntries(
 			_getJSONArray("blogs.json"),
-			_speedwellDependencyResolver.getImageClassLoader(),
-			_speedwellDependencyResolver.getImageDependencyPath(),
+			SpeedwellDependencyResolverUtil.getImageClassLoader(),
+			SpeedwellDependencyResolverUtil.getImageDependencyPath(),
 			serviceContext.getScopeGroupId(), serviceContext.getUserId());
 
 		if (_log.isInfoEnabled()) {
@@ -663,8 +536,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_commerceAccountsImporter.importCommerceAccounts(
 			_getJSONArray("accounts.json"),
-			_speedwellDependencyResolver.getImageClassLoader(),
-			_speedwellDependencyResolver.getDependenciesPath(),
+			SpeedwellDependencyResolverUtil.getImageClassLoader(),
+			SpeedwellDependencyResolverUtil.getDependenciesPath(),
 			serviceContext.getScopeGroupId(), serviceContext.getUserId());
 
 		if (_log.isInfoEnabled()) {
@@ -757,8 +630,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_commerceUsersImporter.importCommerceUsers(
 			_getJSONArray("users.json"),
-			_speedwellDependencyResolver.getImageClassLoader(),
-			_speedwellDependencyResolver.getImageDependencyPath(),
+			SpeedwellDependencyResolverUtil.getImageClassLoader(),
+			SpeedwellDependencyResolverUtil.getImageDependencyPath(),
 			serviceContext.getScopeGroupId(), serviceContext.getUserId());
 
 		if (_log.isInfoEnabled()) {
@@ -784,8 +657,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 		return _cpDefinitionsImporter.importCPDefinitions(
 			jsonArray, group.getName(serviceContext.getLocale()),
 			catalogGroupId, commerceChannelId, commerceInventoryWarehouseIds,
-			_speedwellDependencyResolver.getImageClassLoader(),
-			_speedwellDependencyResolver.getImageDependencyPath(),
+			SpeedwellDependencyResolverUtil.getImageClassLoader(),
+			SpeedwellDependencyResolverUtil.getImageDependencyPath(),
 			serviceContext.getScopeGroupId(), serviceContext.getUserId());
 	}
 
@@ -859,8 +732,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_dlImporter.importDocuments(
 			_getJSONArray("dl-file-entries.json"),
-			_speedwellDependencyResolver.getDocumentsClassLoader(),
-			_speedwellDependencyResolver.getDocumentsDependencyPath(),
+			SpeedwellDependencyResolverUtil.getDocumentsClassLoader(),
+			SpeedwellDependencyResolverUtil.getDocumentsDependencyPath(),
 			serviceContext.getScopeGroupId(), serviceContext.getUserId());
 
 		if (_log.isInfoEnabled()) {
@@ -877,8 +750,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_journalArticleImporter.importJournalArticles(
 			_getJSONArray("journal-articles.json"),
-			_speedwellDependencyResolver.getDocumentsClassLoader(),
-			_speedwellDependencyResolver.getDependenciesPath() +
+			SpeedwellDependencyResolverUtil.getDocumentsClassLoader(),
+			SpeedwellDependencyResolverUtil.getDependenciesPath() +
 				"journal_articles/",
 			serviceContext.getScopeGroupId(), serviceContext.getUserId());
 
@@ -917,8 +790,8 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_portletSettingsImporter.importPortletSettings(
 			jsonArray,
-			_speedwellDependencyResolver.getDisplayTemplatesClassLoader(),
-			_speedwellDependencyResolver.getDisplayTemplatesDependencyPath(),
+			SpeedwellDependencyResolverUtil.getDisplayTemplatesClassLoader(),
+			SpeedwellDependencyResolverUtil.getDisplayTemplatesDependencyPath(),
 			serviceContext.getScopeGroupId(), company.getGroupId(),
 			serviceContext.getUserId());
 
@@ -943,7 +816,7 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 			String name = productJSONObject.getString("Name");
 
-			CPDefinition cpDefinition = getCPDefinitionByName(name);
+			CPDefinition cpDefinition = _getCPDefinitionByName(name);
 
 			_cpDefinitionLinkLocalService.updateCPDefinitionLinkCProductIds(
 				cpDefinition.getCPDefinitionId(),
@@ -983,10 +856,150 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 		_portletSettingsImporter.importPortletSettings(
 			jsonArray,
-			_speedwellDependencyResolver.getDisplayTemplatesClassLoader(),
-			_speedwellDependencyResolver.getDisplayTemplatesDependencyPath(),
+			SpeedwellDependencyResolverUtil.getDisplayTemplatesClassLoader(),
+			SpeedwellDependencyResolverUtil.getDisplayTemplatesDependencyPath(),
 			serviceContext.getScopeGroupId(), company.getGroupId(),
 			serviceContext.getUserId());
+	}
+
+	private void _setCommerceShippingMethod(
+			long groupId, String shippingMethod, ServiceContext serviceContext)
+		throws PortalException {
+
+		Locale locale = serviceContext.getLocale();
+
+		CommerceShippingEngine commerceShippingEngine =
+			_commerceShippingEngineRegistry.getCommerceShippingEngine(
+				shippingMethod);
+
+		Map<Locale, String> nameMap = Collections.singletonMap(
+			locale, commerceShippingEngine.getName(locale));
+		Map<Locale, String> descriptionMap = Collections.singletonMap(
+			locale, commerceShippingEngine.getDescription(locale));
+
+		CommerceShippingMethod commerceShippingMethod =
+			_commerceShippingMethodLocalService.addCommerceShippingMethod(
+				serviceContext.getUserId(), groupId, nameMap, descriptionMap,
+				true, shippingMethod, null, 0, StringPool.BLANK);
+
+		_setCommerceShippingOption(
+			commerceShippingMethod, "Standard Delivery", StringPool.BLANK,
+			BigDecimal.valueOf(15), serviceContext);
+
+		_setCommerceShippingOption(
+			commerceShippingMethod, "Expedited Delivery", StringPool.BLANK,
+			BigDecimal.valueOf(25), serviceContext);
+	}
+
+	private void _setCommerceShippingOption(
+			CommerceShippingMethod commerceShippingMethod, String name,
+			String description, BigDecimal price, ServiceContext serviceContext)
+		throws PortalException {
+
+		Map<Locale, String> nameMap = Collections.singletonMap(
+			serviceContext.getLocale(), name);
+		Map<Locale, String> descriptionMap = Collections.singletonMap(
+			serviceContext.getLocale(), description);
+
+		_commerceShippingFixedOptionLocalService.addCommerceShippingFixedOption(
+			serviceContext.getUserId(), commerceShippingMethod.getGroupId(),
+			commerceShippingMethod.getCommerceShippingMethodId(), price,
+			descriptionMap, null, nameMap, 0);
+	}
+
+	private void _setDefaultCatalogImage(
+			long catalogGroupId, ServiceContext serviceContext)
+		throws Exception {
+
+		ClassLoader classLoader =
+			SpeedwellDependencyResolverUtil.getImageClassLoader();
+
+		InputStream inputStream = classLoader.getResourceAsStream(
+			SpeedwellDependencyResolverUtil.getImageDependencyPath() +
+				"Speedwell_ProductImage_Default.png");
+
+		File file = null;
+
+		try {
+			file = _file.createTempFile(inputStream);
+
+			String mimeType = MimeTypesUtil.getContentType(file);
+
+			FileEntry fileEntry = TempFileEntryUtil.addTempFileEntry(
+				catalogGroupId, serviceContext.getUserId(),
+				SpeedwellSiteInitializer.class.getName(), file.getName(), file,
+				mimeType);
+
+			_commerceCatalogDefaultImage.updateDefaultCatalogFileEntryId(
+				catalogGroupId, fileEntry.getFileEntryId());
+		}
+		finally {
+			if (file != null) {
+				_file.delete(file);
+			}
+		}
+	}
+
+	private void _setThemeSettings(ServiceContext serviceContext)
+		throws Exception {
+
+		JSONObject themeSettingsJSONObject = _getJSONObject(
+			"theme-settings.json");
+
+		Iterator<String> iterator = themeSettingsJSONObject.keys();
+
+		while (iterator.hasNext()) {
+			String key = iterator.next();
+
+			String value = themeSettingsJSONObject.getString(key);
+
+			_updateThemeSetting(key, value, serviceContext);
+		}
+	}
+
+	private void _updateLogo(ServiceContext serviceContext) throws Exception {
+		ClassLoader classLoader =
+			SpeedwellDependencyResolverUtil.getImageClassLoader();
+
+		InputStream inputStream = classLoader.getResourceAsStream(
+			SpeedwellDependencyResolverUtil.getImageDependencyPath() +
+				"Speedwell_Logo.png");
+
+		File file = _file.createTempFile(inputStream);
+
+		_cpFileImporter.updateLogo(file, false, true, serviceContext);
+		_cpFileImporter.updateLogo(file, true, true, serviceContext);
+	}
+
+	private void _updateThemeSetting(
+		String key, String value, ServiceContext serviceContext) {
+
+		Theme theme = _themeLocalService.fetchTheme(
+			serviceContext.getCompanyId(), _SPEEDWELL_THEME_ID);
+
+		if (theme == null) {
+			return;
+		}
+
+		Map<String, ThemeSetting> configurableSettings =
+			theme.getConfigurableSettings();
+
+		ThemeSetting themeSetting = configurableSettings.get(key);
+
+		themeSetting.setValue(value);
+	}
+
+	private void _updateUserRole(ServiceContext serviceContext)
+		throws Exception {
+
+		Role role = _roleLocalService.fetchRole(
+			serviceContext.getCompanyId(), "User");
+
+		_resourcePermissionLocalService.addResourcePermission(
+			serviceContext.getCompanyId(), "com.liferay.commerce.product",
+			ResourceConstants.SCOPE_GROUP_TEMPLATE,
+			String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID),
+			role.getRoleId(), "VIEW_PRICE");
 	}
 
 	private static final String _SPEEDWELL_THEME_ID =
@@ -1091,6 +1104,9 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 	private DLImporter _dlImporter;
 
 	@Reference
+	private com.liferay.portal.kernel.util.File _file;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
@@ -1101,6 +1117,9 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 
 	@Reference
 	private KBArticleImporter _kbArticleImporter;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private OrganizationImporter _organizationImporter;
@@ -1114,19 +1133,13 @@ public class SpeedwellSiteInitializer implements SiteInitializer {
 	@Reference
 	private RoleLocalService _roleLocalService;
 
+	@Reference
+	private SearchCapabilities _searchCapabilities;
+
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.theme.speedwell.site.initializer)"
 	)
 	private ServletContext _servletContext;
-
-	@Reference
-	private SettingsFactory _settingsFactory;
-
-	@Reference
-	private SpeedwellDependencyResolver _speedwellDependencyResolver;
-
-	@Reference
-	private SpeedwellLayoutsInitializer _speedwellLayoutsInitializer;
 
 	@Reference
 	private ThemeLocalService _themeLocalService;

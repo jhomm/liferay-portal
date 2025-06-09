@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Luca Pellizzon
- * @see CommercePaymentMethodGroupRelServiceSoap
  * @generated
  */
 public class CommercePaymentMethodGroupRelServiceHttp {
@@ -145,8 +135,9 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 					HttpPrincipal httpPrincipal, long groupId,
 					java.util.Map<java.util.Locale, String> nameMap,
 					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.io.File imageFile, String engineKey, double priority,
-					boolean active)
+					boolean active, java.io.File imageFile,
+					String paymentIntegrationKey, double priority,
+					String typeSettings)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
@@ -156,8 +147,8 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 				_addCommercePaymentMethodGroupRelParameterTypes2);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, groupId, nameMap, descriptionMap, imageFile,
-				engineKey, priority, active);
+				methodKey, groupId, nameMap, descriptionMap, active, imageFile,
+				paymentIntegrationKey, priority, typeSettings);
 
 			Object returnObj = null;
 
@@ -302,7 +293,8 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 	public static
 		com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel
 				fetchCommercePaymentMethodGroupRel(
-					HttpPrincipal httpPrincipal, long groupId, String engineKey)
+					HttpPrincipal httpPrincipal,
+					long commercePaymentMethodGroupRelId)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
@@ -310,6 +302,50 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"fetchCommercePaymentMethodGroupRel",
 				_fetchCommercePaymentMethodGroupRelParameterTypes6);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, commercePaymentMethodGroupRelId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.payment.model.
+				CommercePaymentMethodGroupRel)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static
+		com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel
+				fetchCommercePaymentMethodGroupRel(
+					HttpPrincipal httpPrincipal, long groupId, String engineKey)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommercePaymentMethodGroupRelServiceUtil.class,
+				"fetchCommercePaymentMethodGroupRel",
+				_fetchCommercePaymentMethodGroupRelParameterTypes7);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, engineKey);
@@ -357,7 +393,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommerceAddressRestrictions",
-				_getCommerceAddressRestrictionsParameterTypes7);
+				_getCommerceAddressRestrictionsParameterTypes8);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, classPK, start, end, orderByComparator);
@@ -400,7 +436,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommerceAddressRestrictionsCount",
-				_getCommerceAddressRestrictionsCountParameterTypes8);
+				_getCommerceAddressRestrictionsCountParameterTypes9);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey, classPK);
 
@@ -443,7 +479,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRel",
-				_getCommercePaymentMethodGroupRelParameterTypes9);
+				_getCommercePaymentMethodGroupRelParameterTypes10);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentMethodGroupRelId);
@@ -487,7 +523,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRel",
-				_getCommercePaymentMethodGroupRelParameterTypes10);
+				_getCommercePaymentMethodGroupRelParameterTypes11);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, engineKey);
@@ -531,7 +567,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRels",
-				_getCommercePaymentMethodGroupRelsParameterTypes11);
+				_getCommercePaymentMethodGroupRelsParameterTypes12);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey, groupId);
 
@@ -575,7 +611,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRels",
-				_getCommercePaymentMethodGroupRelsParameterTypes12);
+				_getCommercePaymentMethodGroupRelsParameterTypes13);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, active);
@@ -621,7 +657,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRels",
-				_getCommercePaymentMethodGroupRelsParameterTypes13);
+				_getCommercePaymentMethodGroupRelsParameterTypes14);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, active, start, end);
@@ -670,7 +706,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRels",
-				_getCommercePaymentMethodGroupRelsParameterTypes14);
+				_getCommercePaymentMethodGroupRelsParameterTypes15);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, active, start, end, orderByComparator);
@@ -719,7 +755,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRels",
-				_getCommercePaymentMethodGroupRelsParameterTypes15);
+				_getCommercePaymentMethodGroupRelsParameterTypes16);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, start, end, orderByComparator);
@@ -765,7 +801,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRels",
-				_getCommercePaymentMethodGroupRelsParameterTypes16);
+				_getCommercePaymentMethodGroupRelsParameterTypes17);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, countryId, active);
@@ -808,7 +844,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRelsCount",
-				_getCommercePaymentMethodGroupRelsCountParameterTypes17);
+				_getCommercePaymentMethodGroupRelsCountParameterTypes18);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey, groupId);
 
@@ -848,7 +884,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"getCommercePaymentMethodGroupRelsCount",
-				_getCommercePaymentMethodGroupRelsCountParameterTypes18);
+				_getCommercePaymentMethodGroupRelsCountParameterTypes19);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, groupId, active);
@@ -891,10 +927,57 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class, "setActive",
-				_setActiveParameterTypes19);
+				_setActiveParameterTypes20);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentMethodGroupRelId, active);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.payment.model.
+				CommercePaymentMethodGroupRel)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static
+		com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel
+				updateCommercePaymentMethodGroupRel(
+					HttpPrincipal httpPrincipal,
+					com.liferay.commerce.payment.model.
+						CommercePaymentMethodGroupRel
+							commercePaymentMethodGroupRel)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommercePaymentMethodGroupRelServiceUtil.class,
+				"updateCommercePaymentMethodGroupRel",
+				_updateCommercePaymentMethodGroupRelParameterTypes21);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, commercePaymentMethodGroupRel);
 
 			Object returnObj = null;
 
@@ -939,7 +1022,7 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommercePaymentMethodGroupRelServiceUtil.class,
 				"updateCommercePaymentMethodGroupRel",
-				_updateCommercePaymentMethodGroupRelParameterTypes20);
+				_updateCommercePaymentMethodGroupRelParameterTypes22);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commercePaymentMethodGroupRelId, nameMap,
@@ -988,8 +1071,8 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 		};
 	private static final Class<?>[]
 		_addCommercePaymentMethodGroupRelParameterTypes2 = new Class[] {
-			long.class, java.util.Map.class, java.util.Map.class,
-			java.io.File.class, String.class, double.class, boolean.class
+			long.class, java.util.Map.class, java.util.Map.class, boolean.class,
+			java.io.File.class, String.class, double.class, String.class
 		};
 	private static final Class<?>[]
 		_deleteCommerceAddressRestrictionParameterTypes3 = new Class[] {
@@ -1005,64 +1088,73 @@ public class CommercePaymentMethodGroupRelServiceHttp {
 		};
 	private static final Class<?>[]
 		_fetchCommercePaymentMethodGroupRelParameterTypes6 = new Class[] {
+			long.class
+		};
+	private static final Class<?>[]
+		_fetchCommercePaymentMethodGroupRelParameterTypes7 = new Class[] {
 			long.class, String.class
 		};
 	private static final Class<?>[]
-		_getCommerceAddressRestrictionsParameterTypes7 = new Class[] {
+		_getCommerceAddressRestrictionsParameterTypes8 = new Class[] {
 			long.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
 	private static final Class<?>[]
-		_getCommerceAddressRestrictionsCountParameterTypes8 = new Class[] {
-			long.class
-		};
-	private static final Class<?>[]
-		_getCommercePaymentMethodGroupRelParameterTypes9 = new Class[] {
+		_getCommerceAddressRestrictionsCountParameterTypes9 = new Class[] {
 			long.class
 		};
 	private static final Class<?>[]
 		_getCommercePaymentMethodGroupRelParameterTypes10 = new Class[] {
-			long.class, String.class
-		};
-	private static final Class<?>[]
-		_getCommercePaymentMethodGroupRelsParameterTypes11 = new Class[] {
 			long.class
 		};
 	private static final Class<?>[]
+		_getCommercePaymentMethodGroupRelParameterTypes11 = new Class[] {
+			long.class, String.class
+		};
+	private static final Class<?>[]
 		_getCommercePaymentMethodGroupRelsParameterTypes12 = new Class[] {
-			long.class, boolean.class
+			long.class
 		};
 	private static final Class<?>[]
 		_getCommercePaymentMethodGroupRelsParameterTypes13 = new Class[] {
-			long.class, boolean.class, int.class, int.class
+			long.class, boolean.class
 		};
 	private static final Class<?>[]
 		_getCommercePaymentMethodGroupRelsParameterTypes14 = new Class[] {
+			long.class, boolean.class, int.class, int.class
+		};
+	private static final Class<?>[]
+		_getCommercePaymentMethodGroupRelsParameterTypes15 = new Class[] {
 			long.class, boolean.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
 	private static final Class<?>[]
-		_getCommercePaymentMethodGroupRelsParameterTypes15 = new Class[] {
+		_getCommercePaymentMethodGroupRelsParameterTypes16 = new Class[] {
 			long.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
 	private static final Class<?>[]
-		_getCommercePaymentMethodGroupRelsParameterTypes16 = new Class[] {
+		_getCommercePaymentMethodGroupRelsParameterTypes17 = new Class[] {
 			long.class, long.class, boolean.class
 		};
 	private static final Class<?>[]
-		_getCommercePaymentMethodGroupRelsCountParameterTypes17 = new Class[] {
+		_getCommercePaymentMethodGroupRelsCountParameterTypes18 = new Class[] {
 			long.class
 		};
 	private static final Class<?>[]
-		_getCommercePaymentMethodGroupRelsCountParameterTypes18 = new Class[] {
+		_getCommercePaymentMethodGroupRelsCountParameterTypes19 = new Class[] {
 			long.class, boolean.class
 		};
-	private static final Class<?>[] _setActiveParameterTypes19 = new Class[] {
+	private static final Class<?>[] _setActiveParameterTypes20 = new Class[] {
 		long.class, boolean.class
 	};
 	private static final Class<?>[]
-		_updateCommercePaymentMethodGroupRelParameterTypes20 = new Class[] {
+		_updateCommercePaymentMethodGroupRelParameterTypes21 = new Class[] {
+			com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel.
+				class
+		};
+	private static final Class<?>[]
+		_updateCommercePaymentMethodGroupRelParameterTypes22 = new Class[] {
 			long.class, java.util.Map.class, java.util.Map.class,
 			java.io.File.class, double.class, boolean.class
 		};

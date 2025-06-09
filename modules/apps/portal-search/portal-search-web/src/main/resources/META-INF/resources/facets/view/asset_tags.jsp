@@ -1,33 +1,24 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/facets/init.jsp" %>
 
 <%
-AssetTagsSearchFacetDisplayBuilder assetTagsSearchFacetDisplayBuilder = new AssetTagsSearchFacetDisplayBuilder(renderRequest);
+AssetTagsSearchFacetDisplayContextBuilder assetTagsSearchFacetDisplayContextBuilder = new AssetTagsSearchFacetDisplayContextBuilder(renderRequest);
 
-assetTagsSearchFacetDisplayBuilder.setDisplayStyle(dataJSONObject.getString("displayStyle", "cloud"));
-assetTagsSearchFacetDisplayBuilder.setFacet(facet);
-assetTagsSearchFacetDisplayBuilder.setFrequenciesVisible(dataJSONObject.getBoolean("showAssetCount", true));
-assetTagsSearchFacetDisplayBuilder.setFrequencyThreshold(dataJSONObject.getInt("frequencyThreshold"));
-assetTagsSearchFacetDisplayBuilder.setMaxTerms(dataJSONObject.getInt("maxTerms", 10));
-assetTagsSearchFacetDisplayBuilder.setParameterName(facet.getFieldId());
-assetTagsSearchFacetDisplayBuilder.setParameterValue(fieldParam);
+assetTagsSearchFacetDisplayContextBuilder.setDisplayStyle(dataJSONObject.getString("displayStyle", "cloud"));
+assetTagsSearchFacetDisplayContextBuilder.setFacet(facet);
+assetTagsSearchFacetDisplayContextBuilder.setFrequenciesVisible(dataJSONObject.getBoolean("showAssetCount", true));
+assetTagsSearchFacetDisplayContextBuilder.setFrequencyThreshold(dataJSONObject.getInt("frequencyThreshold"));
+assetTagsSearchFacetDisplayContextBuilder.setMaxTerms(dataJSONObject.getInt("maxTerms", 10));
+assetTagsSearchFacetDisplayContextBuilder.setParameterName(facet.getFieldId());
+assetTagsSearchFacetDisplayContextBuilder.setParameterValue(fieldParam);
 
-AssetTagsSearchFacetDisplayContext assetTagsSearchFacetDisplayContext = assetTagsSearchFacetDisplayBuilder.build();
+AssetTagsSearchFacetDisplayContext assetTagsSearchFacetDisplayContext = assetTagsSearchFacetDisplayContextBuilder.build();
 %>
 
 <c:choose>
@@ -48,21 +39,21 @@ AssetTagsSearchFacetDisplayContext assetTagsSearchFacetDisplayContext = assetTag
 
 					<ul class="<%= assetTagsSearchFacetDisplayContext.isCloudWithCount() ? "tag-cloud" : "tag-list" %> list-unstyled">
 						<li class="default facet-value">
-							<a class="<%= assetTagsSearchFacetDisplayContext.isNothingSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="" href="javascript:;"><liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" /></a>
+							<a class="<%= assetTagsSearchFacetDisplayContext.isNothingSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="" href="javascript:void(0);"><liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" /></a>
 						</li>
 
 						<%
-						java.util.List<AssetTagsSearchFacetTermDisplayContext> assetTagsSearchFacetTermDisplayContexts = assetTagsSearchFacetDisplayContext.getTermDisplayContexts();
+						java.util.List<BucketDisplayContext> bucketDisplayContexts = assetTagsSearchFacetDisplayContext.getBucketDisplayContexts();
 
-						for (AssetTagsSearchFacetTermDisplayContext assetTagsSearchFacetTermDisplayContext : assetTagsSearchFacetTermDisplayContexts) {
+						for (BucketDisplayContext bucketDisplayContext : bucketDisplayContexts) {
 						%>
 
-							<li class="facet-value tag-popularity-<%= assetTagsSearchFacetTermDisplayContext.getPopularity() %>">
-								<a class="<%= assetTagsSearchFacetTermDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="<%= HtmlUtil.escapeAttribute(assetTagsSearchFacetTermDisplayContext.getValue()) %>" href="javascript:;">
-									<%= HtmlUtil.escape(assetTagsSearchFacetTermDisplayContext.getDisplayName()) %>
+							<li class="facet-value tag-popularity-<%= bucketDisplayContext.getPopularity() %>">
+								<a class="<%= bucketDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="<%= HtmlUtil.escapeAttribute(bucketDisplayContext.getFilterValue()) %>" href="javascript:void(0);">
+									<%= HtmlUtil.escape(bucketDisplayContext.getBucketText()) %>
 
-									<c:if test="<%= assetTagsSearchFacetTermDisplayContext.isFrequencyVisible() %>">
-										<span class="frequency">(<%= assetTagsSearchFacetTermDisplayContext.getFrequency() %>)</span>
+									<c:if test="<%= bucketDisplayContext.isFrequencyVisible() %>">
+										<span class="frequency">(<%= bucketDisplayContext.getFrequency() %>)</span>
 									</c:if>
 								</a>
 							</li>

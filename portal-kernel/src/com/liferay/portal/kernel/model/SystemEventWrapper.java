@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -51,6 +42,8 @@ public class SystemEventWrapper
 		attributes.put("userId", getUserId());
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
+		attributes.put(
+			"classExternalReferenceCode", getClassExternalReferenceCode());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
 		attributes.put("classUuid", getClassUuid());
@@ -113,6 +106,13 @@ public class SystemEventWrapper
 			setCreateDate(createDate);
 		}
 
+		String classExternalReferenceCode = (String)attributes.get(
+			"classExternalReferenceCode");
+
+		if (classExternalReferenceCode != null) {
+			setClassExternalReferenceCode(classExternalReferenceCode);
+		}
+
 		Long classNameId = (Long)attributes.get("classNameId");
 
 		if (classNameId != null) {
@@ -165,6 +165,16 @@ public class SystemEventWrapper
 	@Override
 	public SystemEvent cloneWithOriginalValues() {
 		return wrap(model.cloneWithOriginalValues());
+	}
+
+	/**
+	 * Returns the class external reference code of this system event.
+	 *
+	 * @return the class external reference code of this system event
+	 */
+	@Override
+	public String getClassExternalReferenceCode() {
+		return model.getClassExternalReferenceCode();
 	}
 
 	/**
@@ -367,6 +377,18 @@ public class SystemEventWrapper
 		model.persist();
 	}
 
+	/**
+	 * Sets the class external reference code of this system event.
+	 *
+	 * @param classExternalReferenceCode the class external reference code of this system event
+	 */
+	@Override
+	public void setClassExternalReferenceCode(
+		String classExternalReferenceCode) {
+
+		model.setClassExternalReferenceCode(classExternalReferenceCode);
+	}
+
 	@Override
 	public void setClassName(String className) {
 		model.setClassName(className);
@@ -555,6 +577,11 @@ public class SystemEventWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

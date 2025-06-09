@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.portlet;
 
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.Portlet;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -24,7 +15,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-asset-publisher",
@@ -36,18 +26,20 @@ import org.osgi.service.component.annotations.Component;
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Highest Rated Assets",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + AssetPublisherPortletKeys.HIGHEST_RATED_ASSETS,
-		"javax.portlet.preferences=classpath:/META-INF/portlet-preferences/highest-rated-assets-default-portlet-preferences.xml",
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user",
-		"javax.portlet.supported-public-render-parameter=categoryId",
-		"javax.portlet.supported-public-render-parameter=resetCur",
-		"javax.portlet.supported-public-render-parameter=tag",
-		"javax.portlet.supported-public-render-parameter=tags"
+		"jakarta.portlet.display-name=Highest Rated Assets",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + AssetPublisherPortletKeys.HIGHEST_RATED_ASSETS,
+		"jakarta.portlet.preferences=classpath:/META-INF/portlet-preferences/highest-rated-assets-default-portlet-preferences.xml",
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.supported-public-render-parameter=assetEntryId",
+		"jakarta.portlet.supported-public-render-parameter=categoryId",
+		"jakarta.portlet.supported-public-render-parameter=resetCur",
+		"jakarta.portlet.supported-public-render-parameter=tag",
+		"jakarta.portlet.supported-public-render-parameter=tags",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )

@@ -1,28 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.struts;
 
+import com.liferay.fragment.importer.FragmentsImportStrategy;
 import com.liferay.fragment.importer.FragmentsImporter;
 import com.liferay.fragment.importer.FragmentsImporterResultEntry;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporter;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporterResultEntry;
+import com.liferay.layout.importer.LayoutsImportStrategy;
+import com.liferay.layout.importer.LayoutsImporter;
+import com.liferay.layout.importer.LayoutsImporterResultEntry;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -31,12 +24,12 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.File;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +38,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = "path=/portal/fragment/import_fragment_entries",
 	service = StrutsAction.class
 )
@@ -64,18 +56,18 @@ public class ImportFragmentEntriesStrutsAction implements StrutsAction {
 
 		File file = uploadServletRequest.getFile("file");
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 		if (file == null) {
 			jsonObject.put(
 				"error",
-				LanguageUtil.get(
+				_language.get(
 					httpServletRequest,
 					"the-selected-file-is-not-a-valid-zip-file"));
 		}
 		else {
 			JSONArray fragmentEntriesImportResultJSONArray =
-				JSONFactoryUtil.createJSONArray();
+				_jsonFactory.createJSONArray();
 
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)httpServletRequest.getAttribute(
@@ -83,7 +75,8 @@ public class ImportFragmentEntriesStrutsAction implements StrutsAction {
 
 			List<FragmentsImporterResultEntry> fragmentsImporterResultEntries =
 				_fragmentsImporter.importFragmentEntries(
-					themeDisplay.getUserId(), groupId, 0L, file, true);
+					themeDisplay.getUserId(), groupId, 0L, file,
+					FragmentsImportStrategy.OVERWRITE, false);
 
 			for (FragmentsImporterResultEntry fragmentsImporterResultEntry :
 					fragmentsImporterResultEntries) {
@@ -110,30 +103,28 @@ public class ImportFragmentEntriesStrutsAction implements StrutsAction {
 				fragmentEntriesImportResultJSONArray);
 
 			JSONArray pageTemplatesImportResultJSONArray =
-				JSONFactoryUtil.createJSONArray();
+				_jsonFactory.createJSONArray();
 
-			List<LayoutPageTemplatesImporterResultEntry>
-				layoutPageTemplatesImporterResultEntries =
-					_layoutPageTemplatesImporter.importFile(
-						themeDisplay.getUserId(), groupId, 0L, file, true);
+			List<LayoutsImporterResultEntry> layoutsImporterResultEntries =
+				_layoutsImporter.importFile(
+					themeDisplay.getUserId(), groupId, 0L, file,
+					LayoutsImportStrategy.OVERWRITE, true);
 
-			for (LayoutPageTemplatesImporterResultEntry
-					layoutPageTemplatesImporterResultEntry :
-						layoutPageTemplatesImporterResultEntries) {
+			for (LayoutsImporterResultEntry layoutsImporterResultEntry :
+					layoutsImporterResultEntries) {
 
 				pageTemplatesImportResultJSONArray.put(
 					JSONUtil.put(
 						"errorMessage",
-						layoutPageTemplatesImporterResultEntry.getErrorMessage()
+						layoutsImporterResultEntry.getErrorMessage(
+							themeDisplay.getLocale())
 					).put(
-						"name", layoutPageTemplatesImporterResultEntry.getName()
+						"name", layoutsImporterResultEntry.getName()
 					).put(
 						"status",
 						() -> {
-							LayoutPageTemplatesImporterResultEntry.Status
-								status =
-									layoutPageTemplatesImporterResultEntry.
-										getStatus();
+							LayoutsImporterResultEntry.Status status =
+								layoutsImporterResultEntry.getStatus();
 
 							return status.getLabel();
 						}
@@ -154,7 +145,13 @@ public class ImportFragmentEntriesStrutsAction implements StrutsAction {
 	private FragmentsImporter _fragmentsImporter;
 
 	@Reference
-	private LayoutPageTemplatesImporter _layoutPageTemplatesImporter;
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private LayoutsImporter _layoutsImporter;
 
 	@Reference
 	private Portal _portal;

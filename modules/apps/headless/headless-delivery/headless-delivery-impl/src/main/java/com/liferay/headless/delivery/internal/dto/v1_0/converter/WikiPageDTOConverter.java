@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.converter;
@@ -17,33 +8,30 @@ package com.liferay.headless.delivery.internal.dto.v1_0.converter;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.asset.kernel.service.AssetLinkLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
+import com.liferay.asset.link.service.AssetLinkLocalService;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.delivery.dto.v1_0.WikiPage;
 import com.liferay.headless.delivery.dto.v1_0.util.CreatorUtil;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.AggregateRatingUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.RelatedContentUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.TaxonomyCategoryBriefUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
-import com.liferay.portal.vulcan.util.TransformUtil;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
 import com.liferay.subscription.service.SubscriptionLocalService;
 import com.liferay.wiki.service.WikiPageService;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "dto.class.name=com.liferay.wiki.model.WikiPage",
-	service = {DTOConverter.class, WikiPageDTOConverter.class}
+	service = DTOConverter.class
 )
 public class WikiPageDTOConverter
 	implements DTOConverter<com.liferay.wiki.model.WikiPage, WikiPage> {
@@ -70,71 +58,50 @@ public class WikiPageDTOConverter
 		com.liferay.wiki.model.WikiPage wikiPage = _wikiPageService.getPage(
 			(Long)dtoConverterContext.getId());
 
-		Optional<UriInfo> uriInfoOptional =
-			dtoConverterContext.getUriInfoOptional();
-
 		return new WikiPage() {
 			{
-				actions = dtoConverterContext.getActions();
-				aggregateRating = AggregateRatingUtil.toAggregateRating(
-					_ratingsStatsLocalService.fetchStats(
+				setActions(dtoConverterContext::getActions);
+				setAggregateRating(
+					() -> AggregateRatingUtil.toAggregateRating(
+						_ratingsStatsLocalService.fetchStats(
+							com.liferay.wiki.model.WikiPage.class.getName(),
+							wikiPage.getResourcePrimKey())));
+				setContent(wikiPage::getContent);
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						dtoConverterContext, _portal,
+						_userLocalService.fetchUser(wikiPage.getUserId())));
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
 						com.liferay.wiki.model.WikiPage.class.getName(),
-						wikiPage.getResourcePrimKey()));
-				content = wikiPage.getContent();
-				creator = CreatorUtil.toCreator(
-					_portal, dtoConverterContext.getUriInfoOptional(),
-					_userLocalService.fetchUser(wikiPage.getUserId()));
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					com.liferay.wiki.model.WikiPage.class.getName(),
-					wikiPage.getPageId(), wikiPage.getCompanyId(),
-					dtoConverterContext.getLocale());
-				dateCreated = wikiPage.getCreateDate();
-				dateModified = wikiPage.getModifiedDate();
-				description = wikiPage.getSummary();
-				encodingFormat = _getEncodingFormat(wikiPage);
-				externalReferenceCode = wikiPage.getExternalReferenceCode();
-				headline = wikiPage.getTitle();
-				id = wikiPage.getResourcePrimKey();
-				keywords = ListUtil.toArray(
-					_assetTagLocalService.getTags(
-						BlogsEntry.class.getName(), wikiPage.getPageId()),
-					AssetTag.NAME_ACCESSOR);
-				numberOfAttachments = wikiPage.getAttachmentsFileEntriesCount();
-				numberOfWikiPages = Optional.ofNullable(
-					wikiPage.getChildPages()
-				).map(
-					List::size
-				).orElse(
-					0
-				);
-				relatedContents = RelatedContentUtil.toRelatedContents(
-					_assetEntryLocalService, _assetLinkLocalService,
-					_dtoConverterRegistry, wikiPage.getModelClassName(),
-					wikiPage.getResourcePrimKey(),
-					dtoConverterContext.getLocale());
-				siteId = wikiPage.getGroupId();
-				subscribed = _subscriptionLocalService.isSubscribed(
-					wikiPage.getCompanyId(), dtoConverterContext.getUserId(),
-					com.liferay.wiki.model.WikiPage.class.getName(),
-					wikiPage.getResourcePrimKey());
-				taxonomyCategoryBriefs = TransformUtil.transformToArray(
-					_assetCategoryLocalService.getCategories(
-						com.liferay.wiki.model.WikiPage.class.getName(),
-						wikiPage.getPageId()),
-					assetCategory ->
-						TaxonomyCategoryBriefUtil.toTaxonomyCategoryBrief(
-							assetCategory,
-							new DefaultDTOConverterContext(
-								dtoConverterContext.isAcceptAllLanguages(),
-								Collections.emptyMap(), _dtoConverterRegistry,
-								dtoConverterContext.getHttpServletRequest(),
-								assetCategory.getCategoryId(),
-								dtoConverterContext.getLocale(),
-								uriInfoOptional.orElse(null),
-								dtoConverterContext.getUser())),
-					TaxonomyCategoryBrief.class);
+						wikiPage.getPageId(), wikiPage.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setDateCreated(wikiPage::getCreateDate);
+				setDateModified(wikiPage::getModifiedDate);
+				setDescription(wikiPage::getSummary);
+				setEncodingFormat(() -> _getEncodingFormat(wikiPage));
+				setExternalReferenceCode(wikiPage::getExternalReferenceCode);
+				setHeadline(wikiPage::getTitle);
+				setId(wikiPage::getResourcePrimKey);
+				setKeywords(
+					() -> ListUtil.toArray(
+						_assetTagLocalService.getTags(
+							BlogsEntry.class.getName(), wikiPage.getPageId()),
+						AssetTag.NAME_ACCESSOR));
+				setNumberOfAttachments(
+					wikiPage::getAttachmentsFileEntriesCount);
+				setNumberOfWikiPages(
+					() -> {
+						List<com.liferay.wiki.model.WikiPage> wikiPages =
+							wikiPage.getChildPages();
 
+						if (wikiPages != null) {
+							return wikiPages.size();
+						}
+
+						return 0;
+					});
 				setParentWikiPageId(
 					() -> {
 						com.liferay.wiki.model.WikiPage parentWikiPage =
@@ -148,7 +115,38 @@ public class WikiPageDTOConverter
 
 						return parentWikiPage.getResourcePrimKey();
 					});
-				wikiNodeId = wikiPage.getNodeId();
+				setRelatedContents(
+					() -> RelatedContentUtil.toRelatedContents(
+						_assetEntryLocalService, _assetLinkLocalService,
+						_dtoConverterRegistry, wikiPage.getModelClassName(),
+						wikiPage.getResourcePrimKey(),
+						dtoConverterContext.getLocale()));
+				setSiteId(wikiPage::getGroupId);
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						wikiPage.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						com.liferay.wiki.model.WikiPage.class.getName(),
+						wikiPage.getResourcePrimKey()));
+				setTaxonomyCategoryBriefs(
+					() -> TransformUtil.transformToArray(
+						_assetCategoryLocalService.getCategories(
+							com.liferay.wiki.model.WikiPage.class.getName(),
+							wikiPage.getResourcePrimKey()),
+						assetCategory ->
+							TaxonomyCategoryBriefUtil.toTaxonomyCategoryBrief(
+								assetCategory,
+								new DefaultDTOConverterContext(
+									dtoConverterContext.isAcceptAllLanguages(),
+									Collections.emptyMap(),
+									_dtoConverterRegistry,
+									dtoConverterContext.getHttpServletRequest(),
+									assetCategory.getCategoryId(),
+									dtoConverterContext.getLocale(),
+									dtoConverterContext.getUriInfo(),
+									dtoConverterContext.getUser())),
+						TaxonomyCategoryBrief.class));
+				setWikiNodeId(wikiPage::getNodeId);
 			}
 		};
 	}

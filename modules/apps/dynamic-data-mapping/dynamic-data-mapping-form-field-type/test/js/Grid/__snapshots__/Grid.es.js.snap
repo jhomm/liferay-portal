@@ -6,8 +6,8 @@ exports[`Grid has a label 1`] = `
     class="form-group hide"
   >
     <label
+      aria-labelledby="undefined_fieldDetails"
       class="ddm-label"
-      tabindex="0"
     >
       label
     </label>
@@ -15,8 +15,6 @@ exports[`Grid has a label 1`] = `
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -24,7 +22,7 @@ exports[`Grid has a label 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -82,7 +80,21 @@ exports[`Grid has a label 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
+    <span
+      class="sr-only"
+      id="undefined_fieldDetails"
+    >
+      label
+    </span>
   </div>
 </div>
 `;
@@ -92,14 +104,11 @@ exports[`Grid has a tip 1`] = `
   <div
     aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -107,7 +116,7 @@ exports[`Grid has a tip 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -165,18 +174,23 @@ exports[`Grid has a tip 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      aria-hidden="true"
-      class="form-text"
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
     >
-      Type something
-    </span>
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+      <div>
+        Type something
+      </div>
+    </div>
     <span
       class="sr-only"
       id="undefined_fieldDetails"
     >
       Type something
-      <br />
     </span>
   </div>
 </div>
@@ -185,16 +199,12 @@ exports[`Grid has a tip 1`] = `
 exports[`Grid has an id 1`] = `
 <div>
   <div
-    aria-labelledby="Id_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -202,7 +212,7 @@ exports[`Grid has an id 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -260,7 +270,15 @@ exports[`Grid has an id 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="Id_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -268,9 +286,7 @@ exports[`Grid has an id 1`] = `
 exports[`Grid is not editable 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -279,7 +295,7 @@ exports[`Grid is not editable 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -338,7 +354,15 @@ exports[`Grid is not editable 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -346,16 +370,12 @@ exports[`Grid is not editable 1`] = `
 exports[`Grid is not required 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -363,7 +383,8 @@ exports[`Grid is not required 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          aria-required="false"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -421,7 +442,15 @@ exports[`Grid is not required 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -432,8 +461,8 @@ exports[`Grid renders Label if showLabel is true 1`] = `
     class="form-group hide"
   >
     <label
+      aria-labelledby="undefined_fieldDetails"
       class="ddm-label"
-      tabindex="0"
     >
       text
     </label>
@@ -441,8 +470,6 @@ exports[`Grid renders Label if showLabel is true 1`] = `
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -450,7 +477,7 @@ exports[`Grid renders Label if showLabel is true 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -508,7 +535,21 @@ exports[`Grid renders Label if showLabel is true 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
+    <span
+      class="sr-only"
+      id="undefined_fieldDetails"
+    >
+      text
+    </span>
   </div>
 </div>
 `;
@@ -516,16 +557,12 @@ exports[`Grid renders Label if showLabel is true 1`] = `
 exports[`Grid renders columns 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -533,7 +570,7 @@ exports[`Grid renders columns 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -618,7 +655,15 @@ exports[`Grid renders columns 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -626,16 +671,12 @@ exports[`Grid renders columns 1`] = `
 exports[`Grid renders no columns when columns comes empty 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -643,7 +684,7 @@ exports[`Grid renders no columns when columns comes empty 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -674,7 +715,15 @@ exports[`Grid renders no columns when columns comes empty 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -682,9 +731,7 @@ exports[`Grid renders no columns when columns comes empty 1`] = `
 exports[`Grid renders no rows when row comes empty 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
@@ -693,7 +740,7 @@ exports[`Grid renders no rows when row comes empty 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -718,7 +765,15 @@ exports[`Grid renders no rows when row comes empty 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -726,22 +781,16 @@ exports[`Grid renders no rows when row comes empty 1`] = `
 exports[`Grid renders rows 1`] = `
 <div>
   <div
-    aria-labelledby="undefined_fieldDetails"
     class="form-group hide"
-    tabindex="0"
   >
     <div
       class="table-responsive"
     >
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
       <input
-        aria-hidden="true"
-        class="form-control"
         type="hidden"
         value=""
       />
@@ -749,7 +798,7 @@ exports[`Grid renders rows 1`] = `
         class="table-responsive"
       >
         <table
-          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-striped"
+          class="table table-autofit show-quick-actions-on-hover table-hover table-list table-head-bordered table-striped"
         >
           <thead>
             <tr
@@ -839,7 +888,15 @@ exports[`Grid renders rows 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="undefined_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;

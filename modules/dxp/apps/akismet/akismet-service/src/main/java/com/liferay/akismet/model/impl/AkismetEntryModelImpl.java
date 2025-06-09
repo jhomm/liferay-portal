@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.akismet.model.impl;
@@ -32,7 +23,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -111,24 +101,6 @@ public class AkismetEntryModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -153,9 +125,19 @@ public class AkismetEntryModelImpl
 	@Deprecated
 	public static final long AKISMETENTRYID_COLUMN_BITMASK = 8L;
 
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.akismet.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.akismet.model.AkismetEntry"));
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
+	}
 
 	public AkismetEntryModelImpl() {
 	}
@@ -233,101 +215,93 @@ public class AkismetEntryModelImpl
 	public Map<String, Function<AkismetEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AkismetEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AkismetEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AkismetEntry.class.getClassLoader(), AkismetEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<AkismetEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AkismetEntry> constructor =
-				(Constructor<AkismetEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AkismetEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<AkismetEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"akismetEntryId", AkismetEntry::getAkismetEntryId);
+			attributeGetterFunctions.put(
+				"modifiedDate", AkismetEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", AkismetEntry::getClassNameId);
+			attributeGetterFunctions.put("classPK", AkismetEntry::getClassPK);
+			attributeGetterFunctions.put("type", AkismetEntry::getType);
+			attributeGetterFunctions.put(
+				"permalink", AkismetEntry::getPermalink);
+			attributeGetterFunctions.put("referrer", AkismetEntry::getReferrer);
+			attributeGetterFunctions.put(
+				"userAgent", AkismetEntry::getUserAgent);
+			attributeGetterFunctions.put("userIP", AkismetEntry::getUserIP);
+			attributeGetterFunctions.put("userURL", AkismetEntry::getUserURL);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AkismetEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AkismetEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AkismetEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<AkismetEntry, Object>>();
-		Map<String, BiConsumer<AkismetEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<AkismetEntry, ?>>();
+		private static final Map<String, BiConsumer<AkismetEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"akismetEntryId", AkismetEntry::getAkismetEntryId);
-		attributeSetterBiConsumers.put(
-			"akismetEntryId",
-			(BiConsumer<AkismetEntry, Long>)AkismetEntry::setAkismetEntryId);
-		attributeGetterFunctions.put(
-			"modifiedDate", AkismetEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<AkismetEntry, Date>)AkismetEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", AkismetEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<AkismetEntry, Long>)AkismetEntry::setClassNameId);
-		attributeGetterFunctions.put("classPK", AkismetEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<AkismetEntry, Long>)AkismetEntry::setClassPK);
-		attributeGetterFunctions.put("type", AkismetEntry::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<AkismetEntry, String>)AkismetEntry::setType);
-		attributeGetterFunctions.put("permalink", AkismetEntry::getPermalink);
-		attributeSetterBiConsumers.put(
-			"permalink",
-			(BiConsumer<AkismetEntry, String>)AkismetEntry::setPermalink);
-		attributeGetterFunctions.put("referrer", AkismetEntry::getReferrer);
-		attributeSetterBiConsumers.put(
-			"referrer",
-			(BiConsumer<AkismetEntry, String>)AkismetEntry::setReferrer);
-		attributeGetterFunctions.put("userAgent", AkismetEntry::getUserAgent);
-		attributeSetterBiConsumers.put(
-			"userAgent",
-			(BiConsumer<AkismetEntry, String>)AkismetEntry::setUserAgent);
-		attributeGetterFunctions.put("userIP", AkismetEntry::getUserIP);
-		attributeSetterBiConsumers.put(
-			"userIP",
-			(BiConsumer<AkismetEntry, String>)AkismetEntry::setUserIP);
-		attributeGetterFunctions.put("userURL", AkismetEntry::getUserURL);
-		attributeSetterBiConsumers.put(
-			"userURL",
-			(BiConsumer<AkismetEntry, String>)AkismetEntry::setUserURL);
+		static {
+			Map<String, BiConsumer<AkismetEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<AkismetEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"akismetEntryId",
+				(BiConsumer<AkismetEntry, Long>)
+					AkismetEntry::setAkismetEntryId);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<AkismetEntry, Date>)AkismetEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<AkismetEntry, Long>)AkismetEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<AkismetEntry, Long>)AkismetEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<AkismetEntry, String>)AkismetEntry::setType);
+			attributeSetterBiConsumers.put(
+				"permalink",
+				(BiConsumer<AkismetEntry, String>)AkismetEntry::setPermalink);
+			attributeSetterBiConsumers.put(
+				"referrer",
+				(BiConsumer<AkismetEntry, String>)AkismetEntry::setReferrer);
+			attributeSetterBiConsumers.put(
+				"userAgent",
+				(BiConsumer<AkismetEntry, String>)AkismetEntry::setUserAgent);
+			attributeSetterBiConsumers.put(
+				"userIP",
+				(BiConsumer<AkismetEntry, String>)AkismetEntry::setUserIP);
+			attributeSetterBiConsumers.put(
+				"userURL",
+				(BiConsumer<AkismetEntry, String>)AkismetEntry::setUserURL);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -701,7 +675,7 @@ public class AkismetEntryModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -710,7 +684,7 @@ public class AkismetEntryModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -842,41 +816,12 @@ public class AkismetEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AkismetEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AkismetEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AkismetEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((AkismetEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AkismetEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AkismetEntry.class, ModelWrapper.class);
 
 	}
 
@@ -895,8 +840,9 @@ public class AkismetEntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<AkismetEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<AkismetEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +30,29 @@ public class GitRemote {
 		}
 
 		return matcher;
+	}
+
+	@Override
+	public boolean equals(Object object) {
+		if (this == object) {
+			return true;
+		}
+
+		if (!(object instanceof GitRemote)) {
+			return false;
+		}
+
+		GitRemote otherGitRemote = (GitRemote)object;
+
+		if (Objects.equals(
+				getGitRepositoryName(),
+				otherGitRemote.getGitRepositoryName()) &&
+			Objects.equals(getRemoteURL(), otherGitRemote.getRemoteURL())) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public String getGitRepositoryName() {
@@ -70,6 +85,47 @@ public class GitRemote {
 
 	public String getUsername() {
 		return _username;
+	}
+
+	@Override
+	public int hashCode() {
+		String key = getRemoteURL() + getGitRepositoryName();
+
+		return key.hashCode();
+	}
+
+	public boolean isAvailable() {
+		if (_available != null) {
+			return _available;
+		}
+
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		String command = JenkinsResultsParserUtil.combine(
+			"git ls-remote -h -t ", getRemoteURL(), " ",
+			gitWorkingDirectory.getUpstreamBranchName());
+
+		try {
+			GitUtil.ExecutionResult executionResult =
+				GitUtil.executeBashCommands(
+					1, GitUtil.MILLIS_RETRY_DELAY, 1000 * 5,
+					gitWorkingDirectory.getWorkingDirectory(), command);
+
+			if (executionResult.getExitValue() != 0) {
+				_available = false;
+
+				return _available;
+			}
+		}
+		catch (Exception exception) {
+			_available = false;
+
+			return _available;
+		}
+
+		_available = true;
+
+		return _available;
 	}
 
 	@Override
@@ -186,6 +242,7 @@ public class GitRemote {
 		"root@(?<hostname>[^:]+):/opt/dev/projects/github" +
 			"/(?<gitRepositoryName>[^\\\\.]+)");
 
+	private Boolean _available;
 	private final String _fetchRemoteURL;
 	private String _gitRepositoryName;
 	private final GitWorkingDirectory _gitWorkingDirectory;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal.closure.test;
@@ -164,27 +155,28 @@ public class CTClosureFactoryImplTest {
 
 		_db.runSQL(
 			"create table GrandParentTable (grandParentId LONG not null " +
-				"primary key, parentGrandParentId LONG);");
+				"primary key, parentGrandParentId LONG)");
 		_db.runSQL(
 			StringBundler.concat(
 				"create table ParentTable (parentId LONG not null, ",
 				"ctCollectionId LONG not null, grandParentId LONG, name ",
-				"VARCHAR(75) null, primary key (parentId, ctCollectionId));"));
+				"VARCHAR(75) null, primary key (parentId, ctCollectionId))"));
 
 		_db.runSQL(
 			"create unique index IX_GP_N on ParentTable (grandParentId, " +
-				"name, ctCollectionId);");
+				"name, ctCollectionId)");
 
 		_db.runSQL(
 			StringBundler.concat(
 				"create table ChildTable (childId LONG not null, ",
 				"ctCollectionId LONG not null, grandParentId LONG, ",
 				"parentChildId LONG, parentName VARCHAR(75) null, primary key ",
-				"(childId, ctCollectionId));"));
+				"(childId, ctCollectionId))"));
 
 		_ctCollection = _ctCollectionLocalService.addCTCollection(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			CTClosureFactoryImplTest.class.getSimpleName(), StringPool.BLANK);
+			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			0, CTClosureFactoryImplTest.class.getSimpleName(),
+			StringPool.BLANK);
 	}
 
 	@After
@@ -194,8 +186,7 @@ public class CTClosureFactoryImplTest {
 					"CTCollectionLocalServiceImpl",
 				LoggerTestUtil.WARN)) {
 
-			_ctCollectionLocalService.deleteCTCollection(
-				_ctCollection.getCtCollectionId());
+			_ctCollectionLocalService.deleteCTCollection(_ctCollection);
 		}
 
 		_db.runSQL("drop table GrandParentTable");
@@ -277,7 +268,7 @@ public class CTClosureFactoryImplTest {
 		throws Exception {
 
 		_ctEntryLocalService.addCTEntry(
-			_ctCollection.getCtCollectionId(),
+			null, _ctCollection.getCtCollectionId(),
 			_classNameLocalService.getClassNameId(ctModel.getModelClass()),
 			ctModel, TestPropsValues.getUserId(), changeType);
 	}
@@ -916,11 +907,6 @@ public class CTClosureFactoryImplTest {
 
 		@Override
 		public void setPrimaryKeyObj(Serializable primaryKeyObj) {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public String toXmlString() {
 			throw new UnsupportedOperationException();
 		}
 

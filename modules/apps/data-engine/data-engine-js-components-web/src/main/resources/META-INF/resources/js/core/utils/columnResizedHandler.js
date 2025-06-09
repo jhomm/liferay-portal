@@ -1,30 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import * as FormSupport from '../../utils/FormSupport.es';
 import {updateField} from '../../utils/settingsContext';
 
-export const getColumn = (pages, nestedIndexes = []) => {
+export function getColumn(pages, nestedIndexes = []) {
 	let column;
 	let context = pages;
 
 	nestedIndexes.forEach((indexes) => {
 		const {columnIndex, pageIndex, rowIndex} = indexes;
 
+		let index = pageIndex;
+
+		if (pages.length - 1 < pageIndex) {
+			index = 0;
+		}
+
 		column = FormSupport.getColumn(
 			context,
-			column ? 0 : pageIndex,
+			column ? 0 : index,
 			rowIndex,
 			columnIndex
 		);
@@ -40,7 +37,7 @@ export const getColumn = (pages, nestedIndexes = []) => {
 	});
 
 	return column;
-};
+}
 
 const getContext = (context, nestedIndexes = []) => {
 	if (nestedIndexes.length) {
@@ -78,7 +75,7 @@ const getColumnPosition = (context, indexes) => {
 	);
 };
 
-export const handleResizeRight = (props, state, indexes, columnTarget) => {
+export function handleResizeRight(props, state, indexes, columnTarget) {
 	const {pages} = state;
 
 	const {columnIndex, pageIndex, rowIndex} = indexes[indexes.length - 1];
@@ -148,7 +145,7 @@ export const handleResizeRight = (props, state, indexes, columnTarget) => {
 			};
 		}
 		else if (columnTarget > currentColumnPosition) {
-			if (nextColumn.size === 1 && nextColumn.fields.length === 0) {
+			if (nextColumn.size === 1 && !nextColumn.fields.length) {
 				newCurrentColumn = {
 					...currentColumn,
 					size: currentColumn.size + newSize,
@@ -207,9 +204,9 @@ export const handleResizeRight = (props, state, indexes, columnTarget) => {
 		newContext[indexes.length > 1 ? 0 : pageIndex].rows;
 
 	return pages;
-};
+}
 
-export const handleResizeLeft = (props, state, indexes, columnTarget) => {
+export function handleResizeLeft(props, state, indexes, columnTarget) {
 	const {pages} = state;
 
 	const {columnIndex, pageIndex, rowIndex} = indexes[indexes.length - 1];
@@ -262,7 +259,7 @@ export const handleResizeLeft = (props, state, indexes, columnTarget) => {
 	else if (
 		previousColumn &&
 		previousColumn.size === 1 &&
-		previousColumn.fields.length === 0 &&
+		!previousColumn.fields.length &&
 		columnTarget <= previousColumnPosition
 	) {
 		newContext = FormSupport.removeColumn(
@@ -330,9 +327,15 @@ export const handleResizeLeft = (props, state, indexes, columnTarget) => {
 		newContext[indexes.length > 1 ? 0 : pageIndex].rows;
 
 	return pages;
-};
+}
 
-export default ({column, direction, loc, props, state}) => {
+export default function columnResizedHandler({
+	column,
+	direction,
+	loc,
+	props,
+	state,
+}) {
 	const {pages} = state;
 
 	let newPages = [...pages];
@@ -351,4 +354,4 @@ export default ({column, direction, loc, props, state}) => {
 	return {
 		pages: newPages,
 	};
-};
+}

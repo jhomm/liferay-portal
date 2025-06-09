@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.comment.internal;
@@ -26,17 +17,16 @@ import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.message.boards.util.MBUtil;
 import com.liferay.message.boards.util.comparator.MessageThreadComparator;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.comment.Comment;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.comment.Discussion;
 import com.liferay.portal.kernel.comment.DiscussionComment;
-import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.comment.DiscussionStagingHandler;
 import com.liferay.portal.kernel.comment.DuplicateCommentException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -53,8 +43,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -96,7 +84,7 @@ public class MBCommentManagerImpl implements CommentManager {
 			MBMessage.class.getName());
 
 		MBMessage mbMessage = _mbMessageLocalService.addDiscussionMessage(
-			userId, StringPool.BLANK, groupId, className, classPK,
+			null, userId, StringPool.BLANK, groupId, className, classPK,
 			thread.getThreadId(), thread.getRootMessageId(), StringPool.BLANK,
 			body, serviceContext);
 
@@ -105,8 +93,9 @@ public class MBCommentManagerImpl implements CommentManager {
 
 	@Override
 	public long addComment(
-			long userId, long groupId, String className, long classPK,
-			String userName, String subject, String body,
+			String externalReferenceCode, long userId, long groupId,
+			String className, long classPK, String userName, String subject,
+			String body,
 			Function<String, ServiceContext> serviceContextFunction)
 		throws PortalException {
 
@@ -121,17 +110,18 @@ public class MBCommentManagerImpl implements CommentManager {
 			MBMessage.class.getName());
 
 		MBMessage mbMessage = _mbMessageLocalService.addDiscussionMessage(
-			userId, userName, groupId, className, classPK,
-			mbThread.getThreadId(), mbThread.getRootMessageId(), subject, body,
-			serviceContext);
+			externalReferenceCode, userId, userName, groupId, className,
+			classPK, mbThread.getThreadId(), mbThread.getRootMessageId(),
+			subject, body, serviceContext);
 
 		return mbMessage.getMessageId();
 	}
 
 	@Override
 	public long addComment(
-			long userId, String className, long classPK, String userName,
-			long parentCommentId, String subject, String body,
+			String externalReferenceCode, long userId, String className,
+			long classPK, String userName, long parentCommentId, String subject,
+			String body,
 			Function<String, ServiceContext> serviceContextFunction)
 		throws PortalException {
 
@@ -142,9 +132,9 @@ public class MBCommentManagerImpl implements CommentManager {
 			MBMessage.class.getName());
 
 		MBMessage mbMessage = _mbMessageLocalService.addDiscussionMessage(
-			userId, userName, parentMessage.getGroupId(), className, classPK,
-			parentMessage.getThreadId(), parentCommentId, subject, body,
-			serviceContext);
+			externalReferenceCode, userId, userName, parentMessage.getGroupId(),
+			className, classPK, parentMessage.getThreadId(), parentCommentId,
+			subject, body, serviceContext);
 
 		return mbMessage.getMessageId();
 	}
@@ -231,6 +221,19 @@ public class MBCommentManagerImpl implements CommentManager {
 	}
 
 	@Override
+	public Comment fetchComment(long groupId, String externalReferenceCode) {
+		MBMessage mbMessage =
+			_mbMessageLocalService.fetchMBMessageByExternalReferenceCode(
+				externalReferenceCode, groupId);
+
+		if (mbMessage == null) {
+			return null;
+		}
+
+		return new MBCommentImpl(mbMessage);
+	}
+
+	@Override
 	public DiscussionComment fetchDiscussionComment(long userId, long commentId)
 		throws PortalException {
 
@@ -246,29 +249,32 @@ public class MBCommentManagerImpl implements CommentManager {
 				mbMessage.getClassPK(), WorkflowConstants.STATUS_ANY,
 				new MessageThreadComparator());
 
-		return getDiscussionComment(userId, messageDisplay);
+		return _getDiscussionComment(userId, messageDisplay);
 	}
 
 	@Override
 	public List<Comment> getChildComments(
 		long parentCommentId, int status, int start, int end) {
 
-		return Stream.of(
+		return TransformUtil.transform(
 			_mbMessageLocalService.getChildMessages(
-				parentCommentId, status, start, end)
-		).flatMap(
-			List::stream
-		).map(
-			MBCommentImpl::new
-		).collect(
-			Collectors.toList()
-		);
+				parentCommentId, status, start, end),
+			MBCommentImpl::new);
 	}
 
 	@Override
 	public int getChildCommentsCount(long parentCommentId, int status) {
 		return _mbMessageLocalService.getChildMessagesCount(
 			parentCommentId, status);
+	}
+
+	@Override
+	public Comment getComment(long groupId, String externalReferenceCode)
+		throws PortalException {
+
+		return new MBCommentImpl(
+			_mbMessageLocalService.getMBMessageByExternalReferenceCode(
+				externalReferenceCode, groupId));
 	}
 
 	@Override
@@ -289,7 +295,7 @@ public class MBCommentManagerImpl implements CommentManager {
 				userId, groupId, className, classPK,
 				WorkflowConstants.STATUS_ANY, new MessageThreadComparator());
 
-		DiscussionComment rootDiscussionComment = getDiscussionComment(
+		DiscussionComment rootDiscussionComment = _getDiscussionComment(
 			userId, messageDisplay);
 
 		MBTreeWalker treeWalker = messageDisplay.getTreeWalker();
@@ -302,13 +308,6 @@ public class MBCommentManagerImpl implements CommentManager {
 	}
 
 	@Override
-	public DiscussionPermission getDiscussionPermission(
-		PermissionChecker permissionChecker) {
-
-		return new MBDiscussionPermissionImpl(permissionChecker);
-	}
-
-	@Override
 	public DiscussionStagingHandler getDiscussionStagingHandler() {
 		return new MBDiscussionStagingHandler();
 	}
@@ -318,16 +317,10 @@ public class MBCommentManagerImpl implements CommentManager {
 			String className, long classPK, int status, int start, int end)
 		throws PortalException {
 
-		return Stream.of(
+		return TransformUtil.transform(
 			_mbMessageLocalService.getRootDiscussionMessages(
-				className, classPK, status, start, end)
-		).flatMap(
-			List::stream
-		).map(
-			MBCommentImpl::new
-		).collect(
-			Collectors.toList()
-		);
+				className, classPK, status, start, end),
+			MBCommentImpl::new);
 	}
 
 	@Override
@@ -409,7 +402,70 @@ public class MBCommentManagerImpl implements CommentManager {
 		return message.getMessageId();
 	}
 
-	protected DiscussionComment getDiscussionComment(
+	private MBMessage _copyRootMessage(
+			long userId, long groupId, String className, long classPK,
+			long newClassPK,
+			Function<String, ServiceContext> serviceContextFunction)
+		throws PortalException {
+
+		Discussion discussion = getDiscussion(
+			userId, groupId, className, classPK, serviceContextFunction);
+
+		DiscussionComment rootDiscussionComment =
+			discussion.getRootDiscussionComment();
+
+		MBMessage rootMBMessage = _mbMessageLocalService.addDiscussionMessage(
+			rootDiscussionComment.getUserId(),
+			rootDiscussionComment.getUserName(),
+			rootDiscussionComment.getGroupId(),
+			rootDiscussionComment.getClassName(), newClassPK,
+			WorkflowConstants.ACTION_PUBLISH);
+
+		rootMBMessage.setCreateDate(rootDiscussionComment.getCreateDate());
+		rootMBMessage.setModifiedDate(rootDiscussionComment.getModifiedDate());
+
+		return _mbMessageLocalService.updateMBMessage(rootMBMessage);
+	}
+
+	private void _duplicateComment(
+			Comment comment, long parentCommentId, long newClassPK,
+			Function<String, ServiceContext> serviceContextFunction)
+		throws PortalException {
+
+		MBMessage mbMessage = _mbMessageLocalService.getMBMessage(
+			comment.getCommentId());
+
+		long newCommentId = addComment(
+			null, comment.getUserId(), comment.getClassName(), newClassPK,
+			comment.getUserName(), parentCommentId, mbMessage.getSubject(),
+			comment.getBody(), serviceContextFunction);
+
+		MBMessage newMBMessage = _mbMessageLocalService.fetchMBMessage(
+			newCommentId);
+
+		int childCommentsCount = getChildCommentsCount(
+			comment.getCommentId(), WorkflowConstants.STATUS_ANY);
+
+		if (childCommentsCount > 0) {
+			List<Comment> childComments = getChildComments(
+				comment.getCommentId(), WorkflowConstants.STATUS_ANY, 0,
+				childCommentsCount);
+
+			for (Comment childComment : childComments) {
+				_duplicateComment(
+					childComment, newCommentId, newClassPK,
+					serviceContextFunction);
+			}
+		}
+
+		newMBMessage.setCreateDate(mbMessage.getCreateDate());
+		newMBMessage.setModifiedDate(mbMessage.getModifiedDate());
+		newMBMessage.setStatus(mbMessage.getStatus());
+
+		_mbMessageLocalService.updateMBMessage(newMBMessage);
+	}
+
+	private DiscussionComment _getDiscussionComment(
 		long userId, MBMessageDisplay messageDisplay) {
 
 		MBTreeWalker treeWalker = messageDisplay.getTreeWalker();
@@ -450,69 +506,6 @@ public class MBCommentManagerImpl implements CommentManager {
 
 		return new MBDiscussionCommentImpl(
 			treeWalker.getRoot(), treeWalker, ratingsEntries, ratingsStats);
-	}
-
-	private MBMessage _copyRootMessage(
-			long userId, long groupId, String className, long classPK,
-			long newClassPK,
-			Function<String, ServiceContext> serviceContextFunction)
-		throws PortalException {
-
-		Discussion discussion = getDiscussion(
-			userId, groupId, className, classPK, serviceContextFunction);
-
-		DiscussionComment rootDiscussionComment =
-			discussion.getRootDiscussionComment();
-
-		MBMessage rootMBMessage = _mbMessageLocalService.addDiscussionMessage(
-			rootDiscussionComment.getUserId(),
-			rootDiscussionComment.getUserName(),
-			rootDiscussionComment.getGroupId(),
-			rootDiscussionComment.getClassName(), newClassPK,
-			WorkflowConstants.ACTION_PUBLISH);
-
-		rootMBMessage.setCreateDate(rootDiscussionComment.getCreateDate());
-		rootMBMessage.setModifiedDate(rootDiscussionComment.getModifiedDate());
-
-		return _mbMessageLocalService.updateMBMessage(rootMBMessage);
-	}
-
-	private void _duplicateComment(
-			Comment comment, long parentCommentId, long newClassPK,
-			Function<String, ServiceContext> serviceContextFunction)
-		throws PortalException {
-
-		MBMessage mbMessage = _mbMessageLocalService.getMBMessage(
-			comment.getCommentId());
-
-		long newCommentId = addComment(
-			comment.getUserId(), comment.getClassName(), newClassPK,
-			comment.getUserName(), parentCommentId, mbMessage.getSubject(),
-			comment.getBody(), serviceContextFunction);
-
-		MBMessage newMBMessage = _mbMessageLocalService.fetchMBMessage(
-			newCommentId);
-
-		int childCommentsCount = getChildCommentsCount(
-			comment.getCommentId(), WorkflowConstants.STATUS_ANY);
-
-		if (childCommentsCount > 0) {
-			List<Comment> childComments = getChildComments(
-				comment.getCommentId(), WorkflowConstants.STATUS_ANY, 0,
-				childCommentsCount);
-
-			for (Comment childComment : childComments) {
-				_duplicateComment(
-					childComment, newCommentId, newClassPK,
-					serviceContextFunction);
-			}
-		}
-
-		newMBMessage.setCreateDate(mbMessage.getCreateDate());
-		newMBMessage.setModifiedDate(mbMessage.getModifiedDate());
-		newMBMessage.setStatus(mbMessage.getStatus());
-
-		_mbMessageLocalService.updateMBMessage(newMBMessage);
 	}
 
 	@Reference

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.model.impl;
@@ -23,6 +14,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.asset.util.AssetVocabularySettingsHelper;
@@ -166,11 +158,24 @@ public class AssetVocabularyImpl extends AssetVocabularyBaseImpl {
 			classNameId, classTypePK);
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #isMissingRequiredCategory(long, long, long[], long)}
+	 */
+	@Deprecated
 	@Override
 	public boolean isMissingRequiredCategory(
 		long classNameId, long classTypePK, long[] categoryIds) {
 
-		if (!isRequired(classNameId, classTypePK)) {
+		return isMissingRequiredCategory(
+			classNameId, classTypePK, categoryIds,
+			GroupThreadLocal.getGroupId());
+	}
+
+	@Override
+	public boolean isMissingRequiredCategory(
+		long classNameId, long classTypePK, long[] categoryIds, long groupId) {
+
+		if (!isRequired(classNameId, classTypePK, groupId)) {
 			return false;
 		}
 
@@ -188,10 +193,45 @@ public class AssetVocabularyImpl extends AssetVocabularyBaseImpl {
 		return vocabularySettingsHelper.isMultiValued();
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #isRequired(long, long, long)}
+	 */
+	@Deprecated
 	@Override
 	public boolean isRequired(long classNameId, long classTypePK) {
+		return isRequired(
+			classNameId, classTypePK, GroupThreadLocal.getGroupId());
+	}
+
+	@Override
+	public boolean isRequired(
+		long classNameId, long classTypePK, long groupId) {
+
 		AssetVocabularySettingsHelper vocabularySettingsHelper =
 			getVocabularySettingsHelper();
+
+		Group currentGroup = GroupLocalServiceUtil.fetchGroup(groupId);
+
+		if ((currentGroup != null) && currentGroup.isDepot()) {
+			if (vocabularySettingsHelper.isClassNameIdAndClassTypePKRequired(
+					classNameId, classTypePK) ||
+				vocabularySettingsHelper.
+					isClassNameIdAndClassTypePKDepotRequired(
+						classNameId, classTypePK)) {
+
+				return true;
+			}
+
+			return false;
+		}
+
+		Group vocabularyGroup = GroupLocalServiceUtil.fetchGroup(getGroupId());
+
+		if ((vocabularyGroup != null) && vocabularyGroup.isDepot()) {
+			return vocabularySettingsHelper.
+				isClassNameIdAndClassTypePKDepotRequired(
+					classNameId, classTypePK);
+		}
 
 		return vocabularySettingsHelper.isClassNameIdAndClassTypePKRequired(
 			classNameId, classTypePK);

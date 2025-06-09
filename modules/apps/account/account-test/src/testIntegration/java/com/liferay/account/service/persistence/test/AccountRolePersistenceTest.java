@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.persistence.test;
 
+import com.liferay.account.exception.DuplicateAccountRoleExternalReferenceCodeException;
 import com.liferay.account.exception.NoSuchRoleException;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountRoleLocalServiceUtil;
@@ -125,6 +117,8 @@ public class AccountRolePersistenceTest {
 
 		newAccountRole.setMvccVersion(RandomTestUtil.nextLong());
 
+		newAccountRole.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newAccountRole.setCompanyId(RandomTestUtil.nextLong());
 
 		newAccountRole.setAccountEntryId(RandomTestUtil.nextLong());
@@ -140,6 +134,9 @@ public class AccountRolePersistenceTest {
 			existingAccountRole.getMvccVersion(),
 			newAccountRole.getMvccVersion());
 		Assert.assertEquals(
+			existingAccountRole.getExternalReferenceCode(),
+			newAccountRole.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingAccountRole.getAccountRoleId(),
 			newAccountRole.getAccountRoleId());
 		Assert.assertEquals(
@@ -149,6 +146,26 @@ public class AccountRolePersistenceTest {
 			newAccountRole.getAccountEntryId());
 		Assert.assertEquals(
 			existingAccountRole.getRoleId(), newAccountRole.getRoleId());
+	}
+
+	@Test(expected = DuplicateAccountRoleExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		AccountRole accountRole = addAccountRole();
+
+		AccountRole newAccountRole = addAccountRole();
+
+		newAccountRole.setCompanyId(accountRole.getCompanyId());
+
+		newAccountRole = _persistence.update(newAccountRole);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newAccountRole);
+
+		newAccountRole.setExternalReferenceCode(
+			accountRole.getExternalReferenceCode());
+
+		_persistence.update(newAccountRole);
 	}
 
 	@Test
@@ -179,6 +196,30 @@ public class AccountRolePersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_A() throws Exception {
+		_persistence.countByC_A(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByC_A(0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_AArrayable() throws Exception {
+		_persistence.countByC_A(
+			RandomTestUtil.nextLong(),
+			new long[] {RandomTestUtil.nextLong(), 0L});
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		AccountRole newAccountRole = addAccountRole();
 
@@ -203,8 +244,9 @@ public class AccountRolePersistenceTest {
 
 	protected OrderByComparator<AccountRole> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"AccountRole", "mvccVersion", true, "accountRoleId", true,
-			"companyId", true, "accountEntryId", true, "roleId", true);
+			"AccountRole", "mvccVersion", true, "externalReferenceCode", true,
+			"accountRoleId", true, "companyId", true, "accountEntryId", true,
+			"roleId", true);
 	}
 
 	@Test
@@ -472,6 +514,17 @@ public class AccountRolePersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				accountRole, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "roleId"));
+
+		Assert.assertEquals(
+			accountRole.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				accountRole, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(accountRole.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				accountRole, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected AccountRole addAccountRole() throws Exception {
@@ -480,6 +533,8 @@ public class AccountRolePersistenceTest {
 		AccountRole accountRole = _persistence.create(pk);
 
 		accountRole.setMvccVersion(RandomTestUtil.nextLong());
+
+		accountRole.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		accountRole.setCompanyId(RandomTestUtil.nextLong());
 

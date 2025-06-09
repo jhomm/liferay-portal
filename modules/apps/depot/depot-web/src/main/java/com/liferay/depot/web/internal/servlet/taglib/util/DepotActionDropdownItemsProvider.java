@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.servlet.taglib.util;
@@ -30,11 +21,11 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.ActionURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alicia García
@@ -64,7 +55,6 @@ public class DepotActionDropdownItemsProvider {
 					DepotEntryURLUtil.getEditDepotEntryPortletURL(
 						_depotEntry, _themeDisplay.getURLCurrent(),
 						_liferayPortletRequest));
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "edit"));
 			}
@@ -107,14 +97,9 @@ public class DepotActionDropdownItemsProvider {
 
 	private boolean _hasDeletePermission() {
 		try {
-			if (!DepotEntryPermission.contains(
-					_themeDisplay.getPermissionChecker(),
-					_depotEntry.getDepotEntryId(), ActionKeys.DELETE)) {
-
-				return false;
-			}
-
-			return true;
+			return DepotEntryPermission.contains(
+				_themeDisplay.getPermissionChecker(),
+				_depotEntry.getDepotEntryId(), ActionKeys.DELETE);
 		}
 		catch (PortalException portalException) {
 			throw new SystemException(portalException);
@@ -123,14 +108,9 @@ public class DepotActionDropdownItemsProvider {
 
 	private boolean _hasPermissionsPermission() {
 		try {
-			if (!DepotEntryPermission.contains(
-					_themeDisplay.getPermissionChecker(),
-					_depotEntry.getDepotEntryId(), ActionKeys.PERMISSIONS)) {
-
-				return false;
-			}
-
-			return true;
+			return DepotEntryPermission.contains(
+				_themeDisplay.getPermissionChecker(),
+				_depotEntry.getDepotEntryId(), ActionKeys.PERMISSIONS);
 		}
 		catch (PortalException portalException) {
 			throw new SystemException(portalException);

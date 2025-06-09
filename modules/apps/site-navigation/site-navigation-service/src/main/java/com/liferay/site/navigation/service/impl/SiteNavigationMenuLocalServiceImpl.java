@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service.impl;
@@ -55,13 +46,13 @@ public class SiteNavigationMenuLocalServiceImpl
 
 	@Override
 	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type, boolean auto,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, boolean auto, ServiceContext serviceContext)
 		throws PortalException {
 
 		// Site navigation menu
 
-		validate(groupId, name);
+		_validate(groupId, name);
 
 		User user = _userLocalService.getUser(userId);
 
@@ -71,6 +62,7 @@ public class SiteNavigationMenuLocalServiceImpl
 			siteNavigationMenuPersistence.create(siteNavigationMenuId);
 
 		siteNavigationMenu.setUuid(serviceContext.getUuid());
+		siteNavigationMenu.setExternalReferenceCode(externalReferenceCode);
 		siteNavigationMenu.setGroupId(groupId);
 		siteNavigationMenu.setCompanyId(user.getCompanyId());
 		siteNavigationMenu.setUserId(userId);
@@ -89,6 +81,11 @@ public class SiteNavigationMenuLocalServiceImpl
 			siteNavigationMenu.getUserId(), SiteNavigationMenu.class.getName(),
 			siteNavigationMenu.getSiteNavigationMenuId(), false, true, true);
 
+		if (serviceContext.getModelPermissions() != null) {
+			_resourceLocalService.updateModelResources(
+				siteNavigationMenu, serviceContext);
+		}
+
 		_updateOldSiteNavigationMenuType(siteNavigationMenu, type);
 
 		return siteNavigationMenu;
@@ -96,23 +93,24 @@ public class SiteNavigationMenuLocalServiceImpl
 
 	@Override
 	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name, int type,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			String name, int type, ServiceContext serviceContext)
 		throws PortalException {
 
 		return addSiteNavigationMenu(
-			userId, groupId, name, type, false, serviceContext);
+			externalReferenceCode, userId, groupId, name, type, false,
+			serviceContext);
 	}
 
 	@Override
 	public SiteNavigationMenu addSiteNavigationMenu(
-			long userId, long groupId, String name,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			String name, ServiceContext serviceContext)
 		throws PortalException {
 
 		return addSiteNavigationMenu(
-			userId, groupId, name, SiteNavigationConstants.TYPE_DEFAULT,
-			serviceContext);
+			externalReferenceCode, userId, groupId, name,
+			SiteNavigationConstants.TYPE_DEFAULT, serviceContext);
 	}
 
 	@Override
@@ -160,8 +158,24 @@ public class SiteNavigationMenuLocalServiceImpl
 	}
 
 	@Override
-	public void deleteSiteNavigationMenus(long groupId) {
-		siteNavigationMenuPersistence.removeByGroupId(groupId);
+	public SiteNavigationMenu deleteSiteNavigationMenu(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		SiteNavigationMenu siteNavigationMenu =
+			siteNavigationMenuPersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		return deleteSiteNavigationMenu(siteNavigationMenu);
+	}
+
+	@Override
+	public void deleteSiteNavigationMenus(long groupId) throws PortalException {
+		for (SiteNavigationMenu siteNavigationMenu :
+				getSiteNavigationMenus(groupId)) {
+
+			deleteSiteNavigationMenu(siteNavigationMenu);
+		}
 	}
 
 	@Override
@@ -282,13 +296,18 @@ public class SiteNavigationMenuLocalServiceImpl
 		SiteNavigationMenu siteNavigationMenu = getSiteNavigationMenu(
 			siteNavigationMenuId);
 
+		if (serviceContext.getModelPermissions() != null) {
+			_resourceLocalService.updateModelResources(
+				siteNavigationMenu, serviceContext);
+		}
+
 		if (Objects.equals(siteNavigationMenu.getName(), name)) {
 			return siteNavigationMenu;
 		}
 
 		User user = _userLocalService.getUser(userId);
 
-		validate(siteNavigationMenu.getGroupId(), name);
+		_validate(siteNavigationMenu.getGroupId(), name);
 
 		siteNavigationMenu.setUserId(userId);
 		siteNavigationMenu.setUserName(user.getFullName());
@@ -297,27 +316,6 @@ public class SiteNavigationMenuLocalServiceImpl
 		siteNavigationMenu.setName(name);
 
 		return siteNavigationMenuPersistence.update(siteNavigationMenu);
-	}
-
-	protected void validate(long groupId, String name) throws PortalException {
-		if (Validator.isNull(name)) {
-			throw new SiteNavigationMenuNameException();
-		}
-
-		int nameMaxLength = ModelHintsUtil.getMaxLength(
-			SiteNavigationMenu.class.getName(), "name");
-
-		if (name.length() > nameMaxLength) {
-			throw new SiteNavigationMenuNameException(
-				"Maximum length of name exceeded");
-		}
-
-		SiteNavigationMenu siteNavigationMenu =
-			siteNavigationMenuPersistence.fetchByG_N(groupId, name);
-
-		if (siteNavigationMenu != null) {
-			throw new DuplicateSiteNavigationMenuException(name);
-		}
 	}
 
 	private void _updateOldSiteNavigationMenuType(
@@ -349,6 +347,27 @@ public class SiteNavigationMenuLocalServiceImpl
 			SiteNavigationConstants.TYPE_DEFAULT);
 
 		siteNavigationMenuPersistence.update(actualTypeSiteNavigationMenu);
+	}
+
+	private void _validate(long groupId, String name) throws PortalException {
+		if (Validator.isNull(name)) {
+			throw new SiteNavigationMenuNameException();
+		}
+
+		int nameMaxLength = ModelHintsUtil.getMaxLength(
+			SiteNavigationMenu.class.getName(), "name");
+
+		if (name.length() > nameMaxLength) {
+			throw new SiteNavigationMenuNameException(
+				"Maximum length of name exceeded");
+		}
+
+		SiteNavigationMenu siteNavigationMenu =
+			siteNavigationMenuPersistence.fetchByG_N(groupId, name);
+
+		if (siteNavigationMenu != null) {
+			throw new DuplicateSiteNavigationMenuException(name);
+		}
 	}
 
 	@Reference

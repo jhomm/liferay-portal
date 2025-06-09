@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 let _filterPrefix = '';
@@ -22,15 +13,15 @@ let _filterPrefix = '';
  *  are found for the given filterType (Java's filterKey) and
  *  fragmentEntryLinkId.
  */
-export const getCollectionFilterValue = (
+export function getCollectionFilterValue(
 	filterType,
 	filterFragmentEntryLinkId
-) => {
+) {
 	let value = new URL(window.location.href).searchParams.getAll(
 		`${_filterPrefix}${filterType}_${filterFragmentEntryLinkId}`
 	);
 
-	if (value.length === 0) {
+	if (!value.length) {
 		value = null;
 	}
 	else if (value.length === 1) {
@@ -38,7 +29,7 @@ export const getCollectionFilterValue = (
 	}
 
 	return value;
-};
+}
 
 /**
  * Replaces all existing filter values with the new one, only for given
@@ -47,11 +38,12 @@ export const getCollectionFilterValue = (
  * @param {string} filterFragmentEntryLinkId
  * @param {string|string[]} value
  */
-export const setCollectionFilterValue = (
+export function setCollectionFilterValue(
 	filterType,
 	filterFragmentEntryLinkId,
-	value
-) => {
+	value,
+	targetCollections
+) {
 	if (document.body.classList.contains('has-edit-mode-menu')) {
 		return;
 	}
@@ -70,14 +62,23 @@ export const setCollectionFilterValue = (
 		url.searchParams.set(paramName, value);
 	}
 
+	if (targetCollections) {
+		for (const targetCollection of targetCollections) {
+			if (!targetCollection) {
+				continue;
+			}
+
+			url.searchParams.delete('page_number_' + targetCollection);
+		}
+	}
 	window.location.href = url.toString();
-};
+}
 
 /**
  *
  * @param {object} data
  * @param {string} data.filterPrefix
  */
-export default function CollectionFilterRegister({filterPrefix}) {
+export function CollectionFilterRegister({filterPrefix}) {
 	_filterPrefix = filterPrefix;
 }

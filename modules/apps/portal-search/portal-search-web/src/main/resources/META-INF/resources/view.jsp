@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -42,12 +33,14 @@ pageContext.setAttribute("portletURL", portletURL);
 					<input class="form-control input-group-inset input-group-inset-after search-input search-portlet-keywords-input" id="<portlet:namespace />keywords" name="<portlet:namespace />keywords" placeholder="<%= LanguageUtil.get(request, "search") %>" type="text" value="<%= (searchDisplayContext.getKeywords() != null) ? HtmlUtil.escapeAttribute(searchDisplayContext.getKeywords()) : StringPool.BLANK %>" />
 
 					<div class="input-group-inset-item input-group-inset-item-after">
-						<button class="btn btn-light btn-unstyled" onclick="<%= liferayPortletResponse.getNamespace() + "search();" %>" type="submit">
-							<liferay-ui:icon
-								icon="search"
-								markupView="lexicon"
-							/>
-						</button>
+						<liferay-ui:csp>
+							<button class="btn btn-light btn-unstyled" onclick="<portlet:namespace />search();" type="submit">
+								<clay:icon
+									markupView="lexicon"
+									symbol="search"
+								/>
+							</button>
+						</liferay-ui:csp>
 					</div>
 				</div>
 			</div>

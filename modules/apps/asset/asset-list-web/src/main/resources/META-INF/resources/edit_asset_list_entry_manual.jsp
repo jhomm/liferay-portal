@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,6 +9,7 @@
 
 <%
 portletDisplay.setURLBack(editAssetListDisplayContext.getBackURL());
+portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backURLTitle"));
 
 AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 %>
@@ -51,9 +43,12 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 
 			<c:if test="<%= !editAssetListDisplayContext.isLiveGroup() %>">
 				<liferay-frontend:edit-form-footer>
-					<aui:button disabled="<%= editAssetListDisplayContext.isNoAssetTypeSelected() %>" id="saveButton" onClick='<%= liferayPortletResponse.getNamespace() + "saveSelectBoxes();" %>' type="submit" />
-
-					<aui:button href="<%= editAssetListDisplayContext.getBackURL() %>" type="cancel" />
+					<liferay-frontend:edit-form-buttons
+						redirect="<%= editAssetListDisplayContext.getBackURL() %>"
+						submitDisabled="<%= editAssetListDisplayContext.isNoAssetTypeSelected() %>"
+						submitId="saveButton"
+						submitOnClick='<%= liferayPortletResponse.getNamespace() + "saveSelectBoxes();" %>'
+					/>
 				</liferay-frontend:edit-form-footer>
 			</c:if>
 		</liferay-frontend:edit-form>
@@ -84,7 +79,17 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 						<clay:content-col
 							cssClass="inline-item-after"
 						>
-							<liferay-util:include page="/asset_list_entry_variation_action.jsp" servletContext="<%= application %>" />
+
+							<%
+							AssetListEntryVariationActionDropdownItemsProvider assetListEntryVariationActionDropdownItemsProvider = new AssetListEntryVariationActionDropdownItemsProvider(editAssetListDisplayContext, liferayPortletRequest, liferayPortletResponse);
+							%>
+
+							<clay:dropdown-actions
+								aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+								dropdownItems="<%= assetListEntryVariationActionDropdownItemsProvider.getActionDropdownItems() %>"
+								propsTransformer="{AssetListEntryVariationDefaultPropsTransformer} from asset-list-web"
+								title='<%= LanguageUtil.get(request, "show-actions") %>'
+							/>
 						</clay:content-col>
 					</clay:content-row>
 				</h3>
@@ -98,42 +103,22 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 							containerElement="span"
 							expand="<%= true %>"
 						>
-					<span class="heading-text">
-						<liferay-ui:message key="collection-items" />
-					</span>
+							<span class="heading-text">
+								<liferay-ui:message key="collection-items" />
+							</span>
 						</clay:content-col>
 
 						<c:if test="<%= !editAssetListDisplayContext.isLiveGroup() %>">
 							<clay:content-col
 								containerElement="span"
 							>
-								<liferay-ui:icon-menu
-									direction="right"
-									message="select"
-									showArrow="<%= false %>"
-									showWhenSingleIcon="<%= true %>"
-									triggerCssClass="btn-sm"
-								>
-
-									<%
-									Map<String, Map<String, Object>> manualAddIconDataMap = editAssetListDisplayContext.getManualAddIconDataMap();
-
-									for (Map.Entry<String, Map<String, Object>> entry : manualAddIconDataMap.entrySet()) {
-									%>
-
-									<liferay-ui:icon
-										cssClass="asset-selector"
-										data="<%= entry.getValue() %>"
-										id="<%= themeDisplay.getScopeGroupId() + HtmlUtil.getAUICompatibleId(entry.getKey()) %>"
-										message="<%= HtmlUtil.escape(entry.getKey()) %>"
-										url="javascript:;"
-									/>
-
-									<%
-									}
-									%>
-
-								</liferay-ui:icon-menu>
+								<clay:dropdown-menu
+									aria-label='<%= LanguageUtil.get(request, "select-items") %>'
+									cssClass="btn btn-secondary btn-sm"
+									dropdownItems="<%= editAssetListDisplayContext.getActionDropdownItems() %>"
+									label='<%= LanguageUtil.get(request, "select") %>'
+									propsTransformer="{EditAssetListEntryManualDefaultPropsTransformer} from asset-list-web"
+								/>
 							</clay:content-col>
 						</c:if>
 					</clay:content-row>
@@ -164,17 +149,19 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 							name="title"
 							truncate="<%= true %>"
 						>
-							<%= HtmlUtil.escape(assetRenderer.getTitle(locale)) %>
+							<div class="d-flex">
+								<%= HtmlUtil.escape(assetRenderer.getTitle(locale)) %>
 
-							<c:if test="<%= !assetEntry.isVisible() %>">
-								(<aui:workflow-status
-								markupView="lexicon"
-								showIcon="<%= false %>"
-								showLabel="<%= false %>"
-								status="<%= assetRenderer.getStatus() %>"
-								statusMessage='<%= (assetRenderer.getStatus() == 0) ? "not-visible" : WorkflowConstants.getStatusLabel(assetRenderer.getStatus()) %>'
-							/>)
-							</c:if>
+								<c:if test="<%= !assetEntry.isVisible() %>">
+									(<div class="ml-1">
+										<liferay-portal-workflow:status
+											showStatusLabel="<%= false %>"
+											status="<%= assetRenderer.getStatus() %>"
+											statusMessage='<%= (assetRenderer.getStatus() == 0) ? "not-visible" : WorkflowConstants.getStatusLabel(assetRenderer.getStatus()) %>'
+										/>
+									</div>)
+								</c:if>
+							</div>
 						</liferay-ui:search-container-column-text>
 
 						<liferay-ui:search-container-column-text
@@ -210,52 +197,3 @@ AssetListEntry assetListEntry = assetListDisplayContext.getAssetListEntry();
 		</liferay-frontend:edit-form>
 	</c:otherwise>
 </c:choose>
-
-<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
-	var delegate = delegateModule.default;
-
-	var delegateHandler = delegate(
-		document.body,
-		'click',
-		'.asset-selector a',
-		(event) => {
-			event.preventDefault();
-
-			var delegateTarget = event.delegateTarget;
-
-			Liferay.Util.openSelectionModal({
-				customSelectEvent: true,
-				multiple: true,
-				onSelect: function (selectedItems) {
-					if (selectedItems) {
-						var assetEntryIds = [];
-
-						Array.prototype.forEach.call(
-							selectedItems,
-							(assetEntry) => {
-								assetEntryIds.push(assetEntry.value);
-							}
-						);
-
-						Liferay.Util.postForm(document.<portlet:namespace />fm, {
-							data: {
-								assetEntryIds: assetEntryIds.join(','),
-							},
-						});
-					}
-				},
-				selectEventName: '<portlet:namespace />selectAsset',
-				title: delegateTarget.dataset.title,
-				url: delegateTarget.dataset.href,
-			});
-		}
-	);
-
-	var onDestroyPortlet = function () {
-		delegateHandler.dispose();
-
-		Liferay.detach('destroyPortlet', onDestroyPortlet);
-	};
-
-	Liferay.on('destroyPortlet', onDestroyPortlet);
-</aui:script>

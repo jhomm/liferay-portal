@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.client.dto.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.commerce.delivery.cart.client.dto.v1_0;
 import com.liferay.headless.commerce.delivery.cart.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.delivery.cart.client.serdes.v1_0.CartSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -78,6 +69,27 @@ public class Cart implements Cloneable, Serializable {
 
 	protected Long accountId;
 
+	public Attachment[] getAttachments() {
+		return attachments;
+	}
+
+	public void setAttachments(Attachment[] attachments) {
+		this.attachments = attachments;
+	}
+
+	public void setAttachments(
+		UnsafeSupplier<Attachment[], Exception> attachmentsUnsafeSupplier) {
+
+		try {
+			attachments = attachmentsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Attachment[] attachments;
+
 	public String getAuthor() {
 		return author;
 	}
@@ -119,6 +131,32 @@ public class Cart implements Cloneable, Serializable {
 	}
 
 	protected Address billingAddress;
+
+	public String getBillingAddressExternalReferenceCode() {
+		return billingAddressExternalReferenceCode;
+	}
+
+	public void setBillingAddressExternalReferenceCode(
+		String billingAddressExternalReferenceCode) {
+
+		this.billingAddressExternalReferenceCode =
+			billingAddressExternalReferenceCode;
+	}
+
+	public void setBillingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			billingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			billingAddressExternalReferenceCode =
+				billingAddressExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String billingAddressExternalReferenceCode;
 
 	public Long getBillingAddressId() {
 		return billingAddressId;
@@ -246,6 +284,52 @@ public class Cart implements Cloneable, Serializable {
 
 	protected String currencyCode;
 
+	public String getCurrencyExternalReferenceCode() {
+		return currencyExternalReferenceCode;
+	}
+
+	public void setCurrencyExternalReferenceCode(
+		String currencyExternalReferenceCode) {
+
+		this.currencyExternalReferenceCode = currencyExternalReferenceCode;
+	}
+
+	public void setCurrencyExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			currencyExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			currencyExternalReferenceCode =
+				currencyExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String currencyExternalReferenceCode;
+
+	public Long getCurrencyId() {
+		return currencyId;
+	}
+
+	public void setCurrencyId(Long currencyId) {
+		this.currencyId = currencyId;
+	}
+
+	public void setCurrencyId(
+		UnsafeSupplier<Long, Exception> currencyIdUnsafeSupplier) {
+
+		try {
+			currencyId = currencyIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long currencyId;
+
 	public Map<String, ?> getCustomFields() {
 		return customFields;
 	}
@@ -267,6 +351,48 @@ public class Cart implements Cloneable, Serializable {
 
 	protected Map<String, ?> customFields;
 
+	public Long getDeliveryTermId() {
+		return deliveryTermId;
+	}
+
+	public void setDeliveryTermId(Long deliveryTermId) {
+		this.deliveryTermId = deliveryTermId;
+	}
+
+	public void setDeliveryTermId(
+		UnsafeSupplier<Long, Exception> deliveryTermIdUnsafeSupplier) {
+
+		try {
+			deliveryTermId = deliveryTermIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long deliveryTermId;
+
+	public String getDeliveryTermLabel() {
+		return deliveryTermLabel;
+	}
+
+	public void setDeliveryTermLabel(String deliveryTermLabel) {
+		this.deliveryTermLabel = deliveryTermLabel;
+	}
+
+	public void setDeliveryTermLabel(
+		UnsafeSupplier<String, Exception> deliveryTermLabelUnsafeSupplier) {
+
+		try {
+			deliveryTermLabel = deliveryTermLabelUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String deliveryTermLabel;
+
 	public String[] getErrorMessages() {
 		return errorMessages;
 	}
@@ -287,6 +413,48 @@ public class Cart implements Cloneable, Serializable {
 	}
 
 	protected String[] errorMessages;
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
+
+	public String getFriendlyURLSeparator() {
+		return friendlyURLSeparator;
+	}
+
+	public void setFriendlyURLSeparator(String friendlyURLSeparator) {
+		this.friendlyURLSeparator = friendlyURLSeparator;
+	}
+
+	public void setFriendlyURLSeparator(
+		UnsafeSupplier<String, Exception> friendlyURLSeparatorUnsafeSupplier) {
+
+		try {
+			friendlyURLSeparator = friendlyURLSeparatorUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String friendlyURLSeparator;
 
 	public Long getId() {
 		return id;
@@ -349,6 +517,25 @@ public class Cart implements Cloneable, Serializable {
 
 	protected Date modifiedDate;
 
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
+		try {
+			name = nameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String name;
+
 	public CartComment[] getNotes() {
 		return notes;
 	}
@@ -390,6 +577,27 @@ public class Cart implements Cloneable, Serializable {
 	}
 
 	protected Status orderStatusInfo;
+
+	public String getOrderType() {
+		return orderType;
+	}
+
+	public void setOrderType(String orderType) {
+		this.orderType = orderType;
+	}
+
+	public void setOrderType(
+		UnsafeSupplier<String, Exception> orderTypeUnsafeSupplier) {
+
+		try {
+			orderType = orderTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String orderType;
 
 	public String getOrderTypeExternalReferenceCode() {
 		return orderTypeExternalReferenceCode;
@@ -500,6 +708,27 @@ public class Cart implements Cloneable, Serializable {
 
 	protected String paymentMethodLabel;
 
+	public Integer getPaymentMethodType() {
+		return paymentMethodType;
+	}
+
+	public void setPaymentMethodType(Integer paymentMethodType) {
+		this.paymentMethodType = paymentMethodType;
+	}
+
+	public void setPaymentMethodType(
+		UnsafeSupplier<Integer, Exception> paymentMethodTypeUnsafeSupplier) {
+
+		try {
+			paymentMethodType = paymentMethodTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Integer paymentMethodType;
+
 	public Integer getPaymentStatus() {
 		return paymentStatus;
 	}
@@ -563,6 +792,48 @@ public class Cart implements Cloneable, Serializable {
 
 	protected String paymentStatusLabel;
 
+	public Long getPaymentTermId() {
+		return paymentTermId;
+	}
+
+	public void setPaymentTermId(Long paymentTermId) {
+		this.paymentTermId = paymentTermId;
+	}
+
+	public void setPaymentTermId(
+		UnsafeSupplier<Long, Exception> paymentTermIdUnsafeSupplier) {
+
+		try {
+			paymentTermId = paymentTermIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long paymentTermId;
+
+	public String getPaymentTermLabel() {
+		return paymentTermLabel;
+	}
+
+	public void setPaymentTermLabel(String paymentTermLabel) {
+		this.paymentTermLabel = paymentTermLabel;
+	}
+
+	public void setPaymentTermLabel(
+		UnsafeSupplier<String, Exception> paymentTermLabelUnsafeSupplier) {
+
+		try {
+			paymentTermLabel = paymentTermLabelUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String paymentTermLabel;
+
 	public String getPrintedNote() {
 		return printedNote;
 	}
@@ -605,6 +876,27 @@ public class Cart implements Cloneable, Serializable {
 
 	protected String purchaseOrderNumber;
 
+	public Date getRequestedDeliveryDate() {
+		return requestedDeliveryDate;
+	}
+
+	public void setRequestedDeliveryDate(Date requestedDeliveryDate) {
+		this.requestedDeliveryDate = requestedDeliveryDate;
+	}
+
+	public void setRequestedDeliveryDate(
+		UnsafeSupplier<Date, Exception> requestedDeliveryDateUnsafeSupplier) {
+
+		try {
+			requestedDeliveryDate = requestedDeliveryDateUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date requestedDeliveryDate;
+
 	public Address getShippingAddress() {
 		return shippingAddress;
 	}
@@ -625,6 +917,32 @@ public class Cart implements Cloneable, Serializable {
 	}
 
 	protected Address shippingAddress;
+
+	public String getShippingAddressExternalReferenceCode() {
+		return shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		String shippingAddressExternalReferenceCode) {
+
+		this.shippingAddressExternalReferenceCode =
+			shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			shippingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			shippingAddressExternalReferenceCode =
+				shippingAddressExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String shippingAddressExternalReferenceCode;
 
 	public Long getShippingAddressId() {
 		return shippingAddressId;
@@ -709,6 +1027,27 @@ public class Cart implements Cloneable, Serializable {
 	}
 
 	protected String status;
+
+	public Step[] getSteps() {
+		return steps;
+	}
+
+	public void setSteps(Step[] steps) {
+		this.steps = steps;
+	}
+
+	public void setSteps(
+		UnsafeSupplier<Step[], Exception> stepsUnsafeSupplier) {
+
+		try {
+			steps = stepsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Step[] steps;
 
 	public Summary getSummary() {
 		return summary;

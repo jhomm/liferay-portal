@@ -1,27 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.MimeTypes;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
@@ -32,38 +28,78 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.mockito.invocation.InvocationOnMock;
+import org.mockito.Mockito;
 import org.mockito.stubbing.Answer;
 
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * @author Tomas Polesovsky
  */
-@RunWith(PowerMockRunner.class)
-public class ServletResponseUtilRangeTest extends PowerMockito {
+public class ServletResponseUtilRangeTest {
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
+	@BeforeClass
+	public static void setUpClass() {
+		FileUtil fileUtil = new FileUtil();
 
-		setUpFileUtil();
-		setUpPropsUtil();
+		com.liferay.portal.kernel.util.File file = Mockito.mock(
+			com.liferay.portal.kernel.util.File.class);
+
+		fileUtil.setFile(file);
+
+		Mockito.when(
+			file.createTempFile()
+		).thenAnswer(
+			(Answer<File>)invocation -> {
+				String name = String.valueOf(System.currentTimeMillis());
+
+				return File.createTempFile(name, null);
+			}
+		);
+
+		Mockito.when(
+			file.delete(Mockito.any(File.class))
+		).thenAnswer(
+			(Answer<Boolean>)invocation -> {
+				Object[] args = invocation.getArguments();
+
+				File arg = (File)args[0];
+
+				return arg.delete();
+			}
+		);
+
+		PropsTestUtil.setProps(
+			PropsKeys.WEB_SERVER_SERVLET_MAX_RANGE_FIELDS, "10");
+
+		MimeTypes mimeTypes = Mockito.mock(MimeTypes.class);
+
+		Mockito.when(
+			mimeTypes.getExtensions(Mockito.anyString())
+		).thenReturn(
+			Collections.emptySet()
+		);
+
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		_serviceRegistration = bundleContext.registerService(
+			MimeTypes.class, mimeTypes, null);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_serviceRegistration.unregister();
 	}
 
 	@Test
@@ -200,57 +236,10 @@ public class ServletResponseUtilRangeTest extends PowerMockito {
 		Assert.assertEquals(range.getLength(), length);
 	}
 
-	protected void setUpFileUtil() {
-		FileUtil fileUtil = new FileUtil();
-
-		fileUtil.setFile(_file);
-
-		when(
-			_file.createTempFile()
-		).thenAnswer(
-			new Answer<File>() {
-
-				@Override
-				public File answer(InvocationOnMock invocation)
-					throws Throwable {
-
-					String name = String.valueOf(System.currentTimeMillis());
-
-					return File.createTempFile(name, null);
-				}
-
-			}
-		);
-
-		when(
-			_file.delete(Matchers.any(File.class))
-		).thenAnswer(
-			new Answer<Boolean>() {
-
-				@Override
-				public Boolean answer(InvocationOnMock invocation)
-					throws Throwable {
-
-					Object[] args = invocation.getArguments();
-
-					File file = (File)args[0];
-
-					return file.delete();
-				}
-
-			}
-		);
-	}
-
-	protected void setUpPropsUtil() {
-		PropsTestUtil.setProps(
-			PropsKeys.WEB_SERVER_SERVLET_MAX_RANGE_FIELDS, "10");
-	}
-
 	protected void setUpRange(
 		HttpServletRequest httpServletRequest, String rangeHeader) {
 
-		when(
+		Mockito.when(
 			httpServletRequest.getHeader(HttpHeaders.RANGE)
 		).thenReturn(
 			rangeHeader
@@ -282,7 +271,8 @@ public class ServletResponseUtilRangeTest extends PowerMockito {
 			contentType.startsWith(_CONTENT_TYPE_BOUNDARY_PREFACE));
 
 		String boundary = contentType.substring(
-			_CONTENT_TYPE_BOUNDARY_PREFACE.length());
+			_CONTENT_TYPE_BOUNDARY_PREFACE.length(),
+			contentType.lastIndexOf(CharPool.SEMICOLON));
 
 		String responseBody = mockHttpServletResponse.getContentAsString();
 
@@ -324,13 +314,9 @@ public class ServletResponseUtilRangeTest extends PowerMockito {
 	private static final String _CONTENT_TYPE_BOUNDARY_PREFACE =
 		"multipart/byteranges; boundary=";
 
-	@Mock
-	private BrowserSniffer _browserSniffer;
+	private static ServiceRegistration<MimeTypes> _serviceRegistration;
 
-	@Mock
-	private com.liferay.portal.kernel.util.File _file;
-
-	@Mock
-	private HttpServletRequest _httpServletRequest;
+	private final HttpServletRequest _httpServletRequest = Mockito.mock(
+		HttpServletRequest.class);
 
 }

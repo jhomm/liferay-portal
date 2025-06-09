@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.shortcut.internal.instance.lifecycle;
@@ -18,8 +9,7 @@ import com.liferay.oauth2.provider.constants.ClientProfile;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.oauth2.provider.model.OAuth2Application;
 import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalService;
-import com.liferay.oauth2.provider.service.OAuth2ApplicationScopeAliasesLocalService;
-import com.liferay.oauth2.provider.service.OAuth2ScopeGrantLocalService;
+import com.liferay.osgi.util.configuration.ConfigurationPersistenceUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.instance.lifecycle.BasePortalInstanceLifecycleListener;
 import com.liferay.portal.instance.lifecycle.PortalInstanceLifecycleListener;
@@ -41,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = {
 		"applicationName=Fragment Renderer", "clientId=FragmentRenderer"
 	},
@@ -49,6 +38,11 @@ import org.osgi.service.component.annotations.Reference;
 )
 public class FragmentRendererPortalInstanceLifecycleListener
 	extends BasePortalInstanceLifecycleListener {
+
+	@Override
+	public long getLastModifiedTime() {
+		return _lastModifiedTime;
+	}
 
 	@Override
 	public void portalInstanceRegistered(Company company) throws Exception {
@@ -60,7 +54,7 @@ public class FragmentRendererPortalInstanceLifecycleListener
 			return;
 		}
 
-		User user = _userLocalService.getDefaultUser(company.getCompanyId());
+		User user = _userLocalService.getGuestUser(company.getCompanyId());
 
 		_oAuth2ApplicationLocalService.addOAuth2Application(
 			company.getCompanyId(), user.getUserId(), user.getScreenName(),
@@ -70,9 +64,10 @@ public class FragmentRendererPortalInstanceLifecycleListener
 					add(GrantType.RESOURCE_OWNER_PASSWORD);
 				}
 			},
-			user.getUserId(), _clientId, ClientProfile.NATIVE_APPLICATION.id(),
-			StringPool.BLANK, null, null, null, 0, _applicationName, null,
-			Collections.emptyList(),
+			"none", user.getUserId(), _clientId,
+			ClientProfile.NATIVE_APPLICATION.id(), StringPool.BLANK, null, null,
+			null, 0, null, _applicationName, null, Collections.emptyList(),
+			false, false,
 			builder -> builder.forApplication(
 				"liferay-json-web-services",
 				"com.liferay.oauth2.provider.jsonws",
@@ -86,7 +81,10 @@ public class FragmentRendererPortalInstanceLifecycleListener
 	}
 
 	@Activate
-	protected void activate(Map<String, Object> properties) {
+	protected void activate(Map<String, Object> properties) throws Exception {
+		_lastModifiedTime = ConfigurationPersistenceUtil.update(
+			this, properties);
+
 		_applicationName = GetterUtil.getString(
 			properties.get("applicationName"));
 		_clientId = GetterUtil.getString(properties.get("clientId"));
@@ -94,16 +92,10 @@ public class FragmentRendererPortalInstanceLifecycleListener
 
 	private String _applicationName = "Fragment Renderer";
 	private String _clientId = "FragmentRenderer";
+	private long _lastModifiedTime;
 
 	@Reference
 	private OAuth2ApplicationLocalService _oAuth2ApplicationLocalService;
-
-	@Reference
-	private OAuth2ApplicationScopeAliasesLocalService
-		_oAuth2ApplicationScopeAliasesLocalService;
-
-	@Reference
-	private OAuth2ScopeGrantLocalService _oAuth2ScopeGrantLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

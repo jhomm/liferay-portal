@@ -30,7 +30,7 @@
 	}
 
 	.hide-data-labels .toggle-switch-handle:after {
-		content: normal !important;
+		content: none !important;
 	}
 
 	.label-holder {
@@ -100,12 +100,6 @@
 	.form-navigator {
 		.user-info,
 		.organization-info {
-			.user-logo,
-			.organization-logo {
-				margin-right: 5px;
-				width: 35px;
-			}
-
 			.user-name {
 				word-wrap: break-word;
 			}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service.impl;
@@ -26,78 +17,78 @@ import com.liferay.commerce.wish.list.internal.configuration.CommerceWishListCon
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.commerce.wish.list.model.CommerceWishListItem;
 import com.liferay.commerce.wish.list.service.base.CommerceWishListItemLocalServiceBaseImpl;
+import com.liferay.commerce.wish.list.service.persistence.CommerceWishListPersistence;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.aop.AopService;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.List;
+import java.util.Map;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Andrea Di Giorgi
  */
+@Component(
+	configurationPid = "com.liferay.commerce.wish.list.internal.configuration.CommerceWishListConfiguration",
+	property = "model.class.name=com.liferay.commerce.wish.list.model.CommerceWishListItem",
+	service = AopService.class
+)
 public class CommerceWishListItemLocalServiceImpl
 	extends CommerceWishListItemLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	@Override
 	public CommerceWishListItem addCommerceWishListItem(
-			long commerceWishListId, long cpDefinitionId, long cpInstanceId,
-			String json, ServiceContext serviceContext)
+			long userId, long commerceWishListId, String cpInstanceUuid,
+			long cProductId, String json)
 		throws PortalException {
 
-		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
-			cpDefinitionId);
-
-		String cpInstanceUuid = null;
-
-		if (cpInstanceId > 0) {
-			CPInstance cpInstance = _cpInstanceLocalService.getCPInstance(
-				cpInstanceId);
-
-			cpInstanceUuid = cpInstance.getCPInstanceUuid();
-		}
-
-		return commerceWishListItemLocalService.addCommerceWishListItem(
-			commerceWishListId, cpDefinition.getCProductId(), cpInstanceUuid,
-			json, serviceContext);
-	}
-
-	@Override
-	public CommerceWishListItem addCommerceWishListItem(
-			long commerceWishListId, long cProductId, String cpInstanceUuid,
-			String json, ServiceContext serviceContext)
-		throws PortalException {
-
+		User user = _userLocalService.getUser(userId);
 		CommerceWishList commerceWishList =
-			commerceWishListLocalService.getCommerceWishList(
-				commerceWishListId);
-		User user = userLocalService.getUser(serviceContext.getUserId());
+			_commerceWishListPersistence.findByPrimaryKey(commerceWishListId);
 
-		validate(commerceWishList, cProductId, cpInstanceUuid);
-
-		long commerceWishListItemId = counterLocalService.increment();
+		_validate(
+			commerceWishListId, cpInstanceUuid, cProductId, user.getUserId());
 
 		CommerceWishListItem commerceWishListItem =
-			commerceWishListItemPersistence.create(commerceWishListItemId);
+			commerceWishListItemPersistence.create(
+				counterLocalService.increment());
 
 		commerceWishListItem.setGroupId(commerceWishList.getGroupId());
 		commerceWishListItem.setCompanyId(user.getCompanyId());
 		commerceWishListItem.setUserId(user.getUserId());
 		commerceWishListItem.setUserName(user.getFullName());
-		commerceWishListItem.setCommerceWishListId(
-			commerceWishList.getCommerceWishListId());
+		commerceWishListItem.setCommerceWishListId(commerceWishListId);
 		commerceWishListItem.setCPInstanceUuid(cpInstanceUuid);
 		commerceWishListItem.setCProductId(cProductId);
 		commerceWishListItem.setJson(json);
 
 		return commerceWishListItemPersistence.update(commerceWishListItem);
+	}
+
+	public CommerceWishListItem addOrUpdateCommerceWishListItem(
+			long userId, long commerceWishListId, String cpInstanceUuid,
+			long cProductId, String json)
+		throws PortalException {
+
+		CommerceWishListItem commerceWishListItem =
+			commerceWishListItemLocalService.fetchCommerceWishListItem(
+				commerceWishListId, cpInstanceUuid, cProductId);
+
+		if (commerceWishListItem == null) {
+			return commerceWishListItemLocalService.addCommerceWishListItem(
+				userId, commerceWishListId, cpInstanceUuid, cProductId, json);
+		}
+
+		return commerceWishListItemLocalService.updateCommerceWishListItem(
+			commerceWishListId, cpInstanceUuid, cProductId, json);
 	}
 
 	@Override
@@ -136,6 +127,14 @@ public class CommerceWishListItemLocalServiceImpl
 			commerceWishListItemPersistence.removeByCPInstanceUuid(
 				cpInstance.getCPInstanceUuid());
 		}
+	}
+
+	@Override
+	public CommerceWishListItem fetchCommerceWishListItem(
+		long commerceWishListId, String cpInstanceUuid, long cProductId) {
+
+		return commerceWishListItemPersistence.fetchByCW_CPI_CP(
+			commerceWishListId, cpInstanceUuid, cProductId);
 	}
 
 	@Override
@@ -178,15 +177,39 @@ public class CommerceWishListItemLocalServiceImpl
 			commerceWishListId);
 	}
 
-	protected void validate(
-			CommerceWishList commerceWishList, long cProductId,
-			String cpInstanceUuid)
+	@Override
+	public CommerceWishListItem updateCommerceWishListItem(
+			long commerceWishListId, String cpInstanceUuid, long cProductId,
+			String json)
 		throws PortalException {
 
-		if (commerceWishList.getUserId() == 0) {
+		CommerceWishListItem commerceWishListItem = getCommerceWishListItem(
+			commerceWishListId, cpInstanceUuid, cProductId);
+
+		_validate(
+			commerceWishListId, cpInstanceUuid, cProductId,
+			commerceWishListItem.getUserId());
+
+		commerceWishListItem.setJson(json);
+
+		return commerceWishListItemPersistence.update(commerceWishListItem);
+	}
+
+	@Activate
+	protected void activate(Map<String, Object> properties) {
+		_commerceWishListConfiguration = ConfigurableUtil.createConfigurable(
+			CommerceWishListConfiguration.class, properties);
+	}
+
+	private void _validate(
+			long commerceWishListId, String cpInstanceUuid, long cProductId,
+			long userId)
+		throws PortalException {
+
+		if (userId == 0) {
 			int count =
 				commerceWishListItemPersistence.countByCommerceWishListId(
-					commerceWishList.getCommerceWishListId());
+					commerceWishListId);
 
 			if (count >=
 					_commerceWishListConfiguration.
@@ -213,16 +236,21 @@ public class CommerceWishListItemLocalServiceImpl
 		}
 	}
 
-	@ServiceReference(type = CommerceWishListConfiguration.class)
 	private CommerceWishListConfiguration _commerceWishListConfiguration;
 
-	@ServiceReference(type = CPDefinitionLocalService.class)
+	@Reference
+	private CommerceWishListPersistence _commerceWishListPersistence;
+
+	@Reference
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
-	@ServiceReference(type = CPInstanceLocalService.class)
+	@Reference
 	private CPInstanceLocalService _cpInstanceLocalService;
 
-	@ServiceReference(type = CProductLocalService.class)
+	@Reference
 	private CProductLocalService _cProductLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

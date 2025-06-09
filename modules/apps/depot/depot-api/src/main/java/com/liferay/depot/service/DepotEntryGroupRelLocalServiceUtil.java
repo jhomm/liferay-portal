@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -45,8 +37,9 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.depot.service.impl.DepotEntryGroupRelLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static DepotEntryGroupRel addDepotEntryGroupRel(
-		boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
-		boolean searchable) {
+			boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
+			boolean searchable)
+		throws PortalException {
 
 		return getService().addDepotEntryGroupRel(
 			ddmStructuresAvailable, depotEntryId, toGroupId, searchable);
@@ -69,13 +62,15 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	}
 
 	public static DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId) {
+			long depotEntryId, long toGroupId)
+		throws PortalException {
 
 		return getService().addDepotEntryGroupRel(depotEntryId, toGroupId);
 	}
 
 	public static DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId, boolean searchable) {
+			long depotEntryId, long toGroupId, boolean searchable)
+		throws PortalException {
 
 		return getService().addDepotEntryGroupRel(
 			depotEntryId, toGroupId, searchable);
@@ -112,9 +107,11 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	 *
 	 * @param depotEntryGroupRel the depot entry group rel
 	 * @return the depot entry group rel that was removed
+	 * @throws PortalException
 	 */
 	public static DepotEntryGroupRel deleteDepotEntryGroupRel(
-		DepotEntryGroupRel depotEntryGroupRel) {
+			DepotEntryGroupRel depotEntryGroupRel)
+		throws PortalException {
 
 		return getService().deleteDepotEntryGroupRel(depotEntryGroupRel);
 	}
@@ -284,6 +281,15 @@ public class DepotEntryGroupRelLocalServiceUtil {
 		return getService().getDepotEntryGroupRel(depotEntryGroupRelId);
 	}
 
+	public static DepotEntryGroupRel
+			getDepotEntryGroupRelByDepotEntryIdToGroupId(
+				long depotEntryId, long toGroupId)
+		throws PortalException {
+
+		return getService().getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			depotEntryId, toGroupId);
+	}
+
 	/**
 	 * Returns the depot entry group rel matching the UUID and group.
 	 *
@@ -304,6 +310,12 @@ public class DepotEntryGroupRelLocalServiceUtil {
 		com.liferay.depot.model.DepotEntry depotEntry) {
 
 		return getService().getDepotEntryGroupRels(depotEntry);
+	}
+
+	public static List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		com.liferay.depot.model.DepotEntry depotEntry, int start, int end) {
+
+		return getService().getDepotEntryGroupRels(depotEntry, start, end);
 	}
 
 	/**
@@ -457,9 +469,12 @@ public class DepotEntryGroupRelLocalServiceUtil {
 	}
 
 	public static DepotEntryGroupRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile DepotEntryGroupRelLocalService _service;
+	private static final Snapshot<DepotEntryGroupRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DepotEntryGroupRelLocalServiceUtil.class,
+			DepotEntryGroupRelLocalService.class);
 
 }

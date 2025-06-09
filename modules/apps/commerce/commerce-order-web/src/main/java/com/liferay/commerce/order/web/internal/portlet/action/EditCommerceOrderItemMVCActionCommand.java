@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.web.internal.portlet.action;
@@ -17,12 +8,15 @@ package com.liferay.commerce.order.web.internal.portlet.action;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
+import com.liferay.commerce.exception.CommerceOrderItemPriceException;
+import com.liferay.commerce.exception.CommerceOrderItemQuantityException;
 import com.liferay.commerce.exception.CommerceOrderItemRequestedDeliveryDateException;
 import com.liferay.commerce.exception.CommerceOrderValidatorException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
-import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.commerce.service.CommerceOrderItemService;
+import com.liferay.commerce.util.CommerceOrderItemQuantityFormatter;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -37,12 +31,12 @@ import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.math.BigDecimal;
 
 import java.util.concurrent.Callable;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,9 +46,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
 		"mvc.command.name=/commerce_order/edit_commerce_order_item"
 	},
 	service = MVCActionCommand.class
@@ -62,11 +55,86 @@ import org.osgi.service.component.annotations.Reference;
 public class EditCommerceOrderItemMVCActionCommand
 	extends BaseMVCActionCommand {
 
-	protected void addCommerceOrderItems(ActionRequest actionRequest)
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		try {
+			if (cmd.equals(Constants.ADD)) {
+				_addCommerceOrderItems(actionRequest);
+			}
+			else if (cmd.equals(Constants.UPDATE)) {
+				Callable<Object> commerceOrderItemCallable =
+					new CommerceOrderItemCallable(actionRequest);
+
+				TransactionInvokerUtil.invoke(
+					_transactionConfig, commerceOrderItemCallable);
+			}
+			else if (cmd.equals(Constants.DELETE)) {
+				_deleteCommerceOrderItems(actionRequest);
+			}
+			else if (cmd.equals("customFields")) {
+				updateCustomFields(actionRequest);
+			}
+		}
+		catch (Throwable throwable) {
+			if (throwable instanceof CommerceOrderItemPriceException ||
+				throwable instanceof CommerceOrderItemQuantityException ||
+				throwable instanceof
+					CommerceOrderItemRequestedDeliveryDateException) {
+
+				SessionErrors.add(
+					actionRequest, throwable.getClass(), throwable);
+
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else if (throwable instanceof CommerceOrderValidatorException) {
+				SessionErrors.add(
+					actionRequest, throwable.getClass(), throwable);
+
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else {
+				_log.error(throwable, throwable);
+
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+		}
+	}
+
+	protected void updateCustomFields(ActionRequest actionRequest)
+		throws PortalException {
+
+		long commerceOrderItemId = ParamUtil.getLong(
+			actionRequest, "commerceOrderItemId");
+
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			CommerceOrderItem.class.getName(), actionRequest);
+
+		_commerceOrderItemService.updateCustomFields(
+			commerceOrderItemId, serviceContext);
+	}
+
+	private void _addCommerceOrderItems(ActionRequest actionRequest)
 		throws Exception {
 
 		long commerceOrderId = ParamUtil.getLong(
 			actionRequest, "commerceOrderId");
+
+		String unitOfMeasureKey = ParamUtil.getString(
+			actionRequest, "unitOfMeasureKey");
 
 		CommerceContext commerceContext =
 			(CommerceContext)actionRequest.getAttribute(
@@ -80,12 +148,13 @@ public class EditCommerceOrderItemMVCActionCommand
 
 		for (long cpInstanceId : cpInstanceIds) {
 			_commerceOrderItemService.addCommerceOrderItem(
-				commerceOrderId, cpInstanceId, null, 1, 0, commerceContext,
+				commerceOrderId, cpInstanceId, null, BigDecimal.ONE, 0,
+				BigDecimal.ZERO, unitOfMeasureKey, commerceContext,
 				serviceContext);
 		}
 	}
 
-	protected void deleteCommerceOrderItems(ActionRequest actionRequest)
+	private void _deleteCommerceOrderItems(ActionRequest actionRequest)
 		throws Exception {
 
 		CommerceContext commerceContext =
@@ -111,97 +180,60 @@ public class EditCommerceOrderItemMVCActionCommand
 		}
 	}
 
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
+	private void _updateCommerceOrderItem(ActionRequest actionRequest)
 		throws Exception {
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		try {
-			if (cmd.equals(Constants.ADD)) {
-				addCommerceOrderItems(actionRequest);
-			}
-			else if (cmd.equals(Constants.UPDATE)) {
-				Callable<Object> commerceOrderItemCallable =
-					new CommerceOrderItemCallable(actionRequest);
-
-				TransactionInvokerUtil.invoke(
-					_transactionConfig, commerceOrderItemCallable);
-			}
-			else if (cmd.equals(Constants.DELETE)) {
-				deleteCommerceOrderItems(actionRequest);
-			}
-			else if (cmd.equals("customFields")) {
-				updateCustomFields(actionRequest);
-			}
-		}
-		catch (Throwable throwable) {
-			if (throwable instanceof CommerceOrderValidatorException) {
-				SessionErrors.add(
-					actionRequest, throwable.getClass(), throwable);
-
-				String redirect = ParamUtil.getString(
-					actionRequest, "redirect");
-
-				sendRedirect(actionRequest, actionResponse, redirect);
-			}
-			else if (throwable instanceof
-						CommerceOrderItemRequestedDeliveryDateException) {
-
-				SessionErrors.add(
-					actionRequest, throwable.getClass(), throwable);
-
-				String redirect = ParamUtil.getString(
-					actionRequest, "redirect");
-
-				sendRedirect(actionRequest, actionResponse, redirect);
-			}
-			else {
-				_log.error(throwable, throwable);
-
-				String redirect = ParamUtil.getString(
-					actionRequest, "redirect");
-
-				sendRedirect(actionRequest, actionResponse, redirect);
-			}
-		}
-	}
-
-	protected void updateCommerceOrderItem(ActionRequest actionRequest)
-		throws PortalException {
 
 		long commerceOrderItemId = ParamUtil.getLong(
 			actionRequest, "commerceOrderItemId");
-		int quantity = ParamUtil.getInteger(actionRequest, "quantity");
 
 		CommerceOrderItem commerceOrderItem =
 			_commerceOrderItemService.getCommerceOrderItem(commerceOrderItemId);
 
 		CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
 
-		if (commerceOrder.isOpen()) {
-			CommerceContext commerceContext =
-				(CommerceContext)actionRequest.getAttribute(
-					CommerceWebKeys.COMMERCE_CONTEXT);
+		long cpMeasurementUnitId = ParamUtil.getLong(
+			actionRequest, "cpMeasurementUnitId");
 
-			ServiceContext serviceContext = ServiceContextFactory.getInstance(
-				CommerceOrderItem.class.getName(), actionRequest);
+		BigDecimal decimalQuantity = _commerceOrderItemQuantityFormatter.parse(
+			actionRequest, CommerceOrderItem.class.getName(),
+			"decimalQuantity");
 
-			commerceOrderItem =
-				_commerceOrderItemService.updateCommerceOrderItem(
-					commerceOrderItemId, quantity, commerceContext,
-					serviceContext);
-		}
-		else {
-			BigDecimal price = (BigDecimal)ParamUtil.getNumber(
-				actionRequest, "price");
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			CommerceOrderItem.class.getName(), actionRequest);
 
+		serviceContext.setAttribute("validateOrder", Boolean.FALSE);
+
+		commerceOrderItem = _commerceOrderItemService.updateCommerceOrderItem(
+			commerceOrderItemId, cpMeasurementUnitId, decimalQuantity,
+			serviceContext);
+
+		if (!commerceOrder.isOpen()) {
 			commerceOrderItem =
 				_commerceOrderItemService.updateCommerceOrderItemUnitPrice(
-					commerceOrderItemId, quantity, price);
+					commerceOrderItemId, decimalQuantity,
+					_commercePriceFormatter.parse(
+						actionRequest, false, CommerceOrderItem.class.getName(),
+						"price"));
+
+			commerceOrderItem =
+				_commerceOrderItemService.updateCommerceOrderItemPrices(
+					commerceOrderItemId,
+					_commercePriceFormatter.parse(
+						actionRequest, false, CommerceOrderItem.class.getName(),
+						"discountAmount"),
+					commerceOrderItem.getDiscountPercentageLevel1(),
+					commerceOrderItem.getDiscountPercentageLevel2(),
+					commerceOrderItem.getDiscountPercentageLevel3(),
+					commerceOrderItem.getDiscountPercentageLevel4(),
+					_commercePriceFormatter.parse(
+						actionRequest, false, CommerceOrderItem.class.getName(),
+						"finalPrice"),
+					commerceOrderItem.getPromoPrice(),
+					commerceOrderItem.getUnitPrice());
 		}
 
+		String deliveryGroupName = ParamUtil.getString(
+			actionRequest, "deliveryGroupName");
 		int requestedDeliveryDateMonth = ParamUtil.getInteger(
 			actionRequest, "requestedDeliveryDateMonth");
 		int requestedDeliveryDateDay = ParamUtil.getInteger(
@@ -209,27 +241,11 @@ public class EditCommerceOrderItemMVCActionCommand
 		int requestedDeliveryDateYear = ParamUtil.getInteger(
 			actionRequest, "requestedDeliveryDateYear");
 
-		String deliveryGroup = ParamUtil.getString(
-			actionRequest, "deliveryGroup");
-
 		_commerceOrderItemService.updateCommerceOrderItemInfo(
 			commerceOrderItem.getCommerceOrderItemId(),
-			commerceOrderItem.getShippingAddressId(), deliveryGroup,
+			commerceOrderItem.getShippingAddressId(), deliveryGroupName,
 			commerceOrderItem.getPrintedNote(), requestedDeliveryDateMonth,
 			requestedDeliveryDateDay, requestedDeliveryDateYear);
-	}
-
-	protected void updateCustomFields(ActionRequest actionRequest)
-		throws PortalException {
-
-		long commerceOrderItemId = ParamUtil.getLong(
-			actionRequest, "commerceOrderItemId");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceOrderItem.class.getName(), actionRequest);
-
-		_commerceOrderItemService.updateCustomFields(
-			commerceOrderItemId, serviceContext);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -240,16 +256,20 @@ public class EditCommerceOrderItemMVCActionCommand
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
+	private CommerceOrderItemQuantityFormatter
+		_commerceOrderItemQuantityFormatter;
+
+	@Reference
 	private CommerceOrderItemService _commerceOrderItemService;
 
 	@Reference
-	private CPInstanceService _cpInstanceService;
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	private class CommerceOrderItemCallable implements Callable<Object> {
 
 		@Override
 		public Object call() throws Exception {
-			updateCommerceOrderItem(_actionRequest);
+			_updateCommerceOrderItem(_actionRequest);
 
 			return null;
 		}

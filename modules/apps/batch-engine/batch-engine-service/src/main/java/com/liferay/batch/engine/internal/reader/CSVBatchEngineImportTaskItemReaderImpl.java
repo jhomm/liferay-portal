@@ -1,97 +1,127 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.reader;
 
 import com.liferay.petra.io.unsync.UnsyncBufferedReader;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.CSVUtil;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 
-import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 /**
  * @author Ivica Cardic
+ * @author Igor Beslic
+ * @author Matija Petanjek
  */
 public class CSVBatchEngineImportTaskItemReaderImpl
 	implements BatchEngineImportTaskItemReader {
 
 	public CSVBatchEngineImportTaskItemReaderImpl(
-			String delimiter, InputStream inputStream)
+			String delimiter, InputStream inputStream,
+			Map<String, Serializable> parameters)
 		throws IOException {
 
-		_delimiter = delimiter;
+		_delimiter = (String)parameters.getOrDefault("delimiter", delimiter);
 
-		_inputStream = inputStream;
+		_enclosingCharacter = (String)parameters.getOrDefault(
+			"enclosingCharacter", StringPool.QUOTE);
 
-		_unsyncBufferedReader = new UnsyncBufferedReader(
-			new InputStreamReader(_inputStream));
+		_csvParser = CSVParser.parse(
+			new UnsyncBufferedReader(new InputStreamReader(inputStream)),
+			CSVFormat.Builder.create(
+			).setDelimiter(
+				_delimiter
+			).setIgnoreEmptyLines(
+				true
+			).setQuote(
+				_enclosingCharacter.charAt(0)
+			).build());
 
-		_fieldNames = StringUtil.split(
-			_unsyncBufferedReader.readLine(), delimiter);
+		_iterator = _csvParser.iterator();
+
+		_fieldNames = _getFieldNames(
+			Boolean.valueOf(
+				(String)parameters.getOrDefault(
+					"containsHeaders", StringPool.TRUE)),
+			_iterator);
 	}
 
 	@Override
 	public void close() throws IOException {
-		_unsyncBufferedReader.close();
+		_csvParser.close();
 	}
 
 	@Override
 	public Map<String, Object> read() throws Exception {
-		String line = _unsyncBufferedReader.readLine();
-
-		if (line == null) {
+		if (!_iterator.hasNext()) {
 			return null;
 		}
 
-		Map<String, Object> fieldNameValueMap = new HashMap<>();
+		Map<String, Object> fieldNameValueMap = new LinkedHashMap<>();
 
-		String[] values = StringUtil.split(line, _delimiter);
+		CSVRecord csvRecord = _iterator.next();
 
-		for (int i = 0; i < values.length; i++) {
+		List<String> values = csvRecord.toList();
+
+		for (int i = 0; i < values.size(); i++) {
 			String fieldName = _fieldNames[i];
 
 			if (fieldName == null) {
 				continue;
 			}
 
-			String value = values[i].trim();
+			FieldNameValueMapHandlerFactory.FieldNameValueMapHandler
+				fieldNameValueMapHandler =
+					FieldNameValueMapHandlerFactory.getFieldNameValueMapHandler(
+						fieldName);
 
-			if (value.isEmpty()) {
-				value = null;
-			}
-
-			int lastDelimiterIndex = fieldName.lastIndexOf('_');
-
-			if (lastDelimiterIndex == -1) {
-				fieldNameValueMap.put(fieldName, value);
-			}
-			else {
-				BatchEngineImportTaskItemReaderUtil.handleMapField(
-					fieldName, fieldNameValueMap, lastDelimiterIndex, value);
-			}
+			fieldNameValueMapHandler.handle(
+				fieldName, fieldNameValueMap,
+				CSVUtil.decode(_enclosingCharacter, _delimiter, values.get(i)));
 		}
 
 		return fieldNameValueMap;
 	}
 
+	private String[] _getFieldNames(
+		boolean containsHeaders, Iterator<CSVRecord> csvRecordIterator) {
+
+		if (containsHeaders) {
+			CSVRecord csvRecord = csvRecordIterator.next();
+
+			List<String> fieldNames = csvRecord.toList();
+
+			return fieldNames.toArray(new String[0]);
+		}
+
+		String[] fieldNames = new String[100];
+
+		for (int i = 0; i < fieldNames.length; i++) {
+			fieldNames[i] = String.valueOf(i);
+		}
+
+		return fieldNames;
+	}
+
+	private final CSVParser _csvParser;
 	private final String _delimiter;
+	private final String _enclosingCharacter;
 	private final String[] _fieldNames;
-	private final InputStream _inputStream;
-	private final UnsyncBufferedReader _unsyncBufferedReader;
+	private final Iterator<CSVRecord> _iterator;
 
 }

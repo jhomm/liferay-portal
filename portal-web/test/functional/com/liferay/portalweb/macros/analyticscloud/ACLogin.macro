@@ -1,23 +1,31 @@
 definition {
 
-	macro loginAs {
+	@summary = "Default summary"
+	macro loginAs(emailAddress = null) {
+		var faroEmailAddress = PropsUtil.get("analytics.cloud.faro.user.login");
+
 		WaitForPageLoad();
 
-		if (!(isSet(password))) {
-			password = "test";
+		if (${faroEmailAddress} != "null") {
+			var faroPassword = PropsUtil.get("analytics.cloud.faro.password");
+			var emailAddress = ${faroEmailAddress};
+			var password = ${faroPassword};
+		}
+		else if (!(isSet(password))) {
+			var password = PropsUtil.get("default.admin.password");
 		}
 
 		Click(locator1 = "ACLogin#EMAIL_LOGIN_FIELD");
 
 		Type(
 			locator1 = "ACLogin#EMAIL_LOGIN_FIELD",
-			value1 = "${emailAddress}");
+			value1 = ${emailAddress});
 
 		Click(locator1 = "ACLogin#PASSWORD_LOGIN_FIELD");
 
 		Type(
 			locator1 = "ACLogin#PASSWORD_LOGIN_FIELD",
-			value1 = "${password}");
+			value1 = ${password});
 
 		Click(locator1 = "ACLogin#LOGIN_BUTTON");
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.util;
@@ -207,15 +198,10 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 			(SocialAchievement)ProxyFactory.newInstance(
 				classLoader, SocialAchievement.class, achievementClassName);
 
-		String name = GetterUtil.getString(
-			achievementElement.elementText("name"));
-
-		achievement.setName(name);
-
-		String icon = GetterUtil.getString(
-			achievementElement.elementText("icon"));
-
-		achievement.setIcon(icon);
+		achievement.setName(
+			GetterUtil.getString(achievementElement.elementText("name")));
+		achievement.setIcon(
+			GetterUtil.getString(achievementElement.elementText("icon")));
 
 		List<Element> propertyElements = achievementElement.elements(
 			"property");
@@ -251,10 +237,8 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 			SocialActivityDefinition activityDefinition)
 		throws Exception {
 
-		boolean logActivity = GetterUtil.getBoolean(
-			activityElement.elementText("log-activity"));
-
-		activityDefinition.setLogActivity(logActivity);
+		activityDefinition.setLogActivity(
+			GetterUtil.getBoolean(activityElement.elementText("log-activity")));
 
 		boolean countersEnabled = GetterUtil.getBoolean(
 			activityElement.elementText("counters-enabled"), true);
@@ -265,10 +249,8 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 			return;
 		}
 
-		String languageKey = GetterUtil.getString(
-			activityElement.elementText("language-key"));
-
-		activityDefinition.setLanguageKey(languageKey);
+		activityDefinition.setLanguageKey(
+			GetterUtil.getString(activityElement.elementText("language-key")));
 
 		String processorClassName = GetterUtil.getString(
 			activityElement.elementText("processor-class"));
@@ -384,10 +366,8 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 				activityCounterDefinition.setLimitPeriod(limitPeriod);
 			}
 
-			int limitValue = GetterUtil.getInteger(
-				contributionLimitElement.getText());
-
-			activityCounterDefinition.setLimitValue(limitValue);
+			activityCounterDefinition.setLimitValue(
+				GetterUtil.getInteger(contributionLimitElement.getText()));
 		}
 
 		activityDefinition.addCounter(activityCounterDefinition);
@@ -458,10 +438,8 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 				activityCounterDefinition.setLimitPeriod(limitPeriod);
 			}
 
-			int limitValue = GetterUtil.getInteger(
-				participationLimitElement.getText());
-
-			activityCounterDefinition.setLimitValue(limitValue);
+			activityCounterDefinition.setLimitValue(
+				GetterUtil.getInteger(participationLimitElement.getText()));
 		}
 
 		activityDefinition.addCounter(activityCounterDefinition);
@@ -474,16 +452,10 @@ public class SocialConfigurationImpl implements SocialConfiguration {
 		SocialActivityCounterDefinition activityCounterDefinition =
 			new SocialActivityCounterDefinition();
 
-		int increment = GetterUtil.getInteger(
-			counterElement.elementText("increment"), 1);
-
-		activityCounterDefinition.setIncrement(increment);
-
-		boolean enabled = GetterUtil.getBoolean(
-			counterElement.elementText("enabled"), true);
-
-		activityCounterDefinition.setEnabled(enabled);
-
+		activityCounterDefinition.setIncrement(
+			GetterUtil.getInteger(counterElement.elementText("increment"), 1));
+		activityCounterDefinition.setEnabled(
+			GetterUtil.getBoolean(counterElement.elementText("enabled"), true));
 		activityCounterDefinition.setName(
 			GetterUtil.getString(counterElement.elementText("name")));
 

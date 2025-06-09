@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.service.persistence;
@@ -643,6 +634,352 @@ public class ListTypeDefinitionUtil {
 	}
 
 	/**
+	 * Returns all the list type definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the matching list type definitions
+	 */
+	public static List<ListTypeDefinition> findByC_U(
+		long companyId, long userId) {
+
+		return getPersistence().findByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns a range of all the list type definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ListTypeDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of list type definitions
+	 * @param end the upper bound of the range of list type definitions (not inclusive)
+	 * @return the range of matching list type definitions
+	 */
+	public static List<ListTypeDefinition> findByC_U(
+		long companyId, long userId, int start, int end) {
+
+		return getPersistence().findByC_U(companyId, userId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the list type definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ListTypeDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of list type definitions
+	 * @param end the upper bound of the range of list type definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching list type definitions
+	 */
+	public static List<ListTypeDefinition> findByC_U(
+		long companyId, long userId, int start, int end,
+		OrderByComparator<ListTypeDefinition> orderByComparator) {
+
+		return getPersistence().findByC_U(
+			companyId, userId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the list type definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ListTypeDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of list type definitions
+	 * @param end the upper bound of the range of list type definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching list type definitions
+	 */
+	public static List<ListTypeDefinition> findByC_U(
+		long companyId, long userId, int start, int end,
+		OrderByComparator<ListTypeDefinition> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_U(
+			companyId, userId, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first list type definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching list type definition
+	 * @throws NoSuchListTypeDefinitionException if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition findByC_U_First(
+			long companyId, long userId,
+			OrderByComparator<ListTypeDefinition> orderByComparator)
+		throws com.liferay.list.type.exception.
+			NoSuchListTypeDefinitionException {
+
+		return getPersistence().findByC_U_First(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the first list type definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching list type definition, or <code>null</code> if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition fetchByC_U_First(
+		long companyId, long userId,
+		OrderByComparator<ListTypeDefinition> orderByComparator) {
+
+		return getPersistence().fetchByC_U_First(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last list type definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching list type definition
+	 * @throws NoSuchListTypeDefinitionException if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition findByC_U_Last(
+			long companyId, long userId,
+			OrderByComparator<ListTypeDefinition> orderByComparator)
+		throws com.liferay.list.type.exception.
+			NoSuchListTypeDefinitionException {
+
+		return getPersistence().findByC_U_Last(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last list type definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching list type definition, or <code>null</code> if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition fetchByC_U_Last(
+		long companyId, long userId,
+		OrderByComparator<ListTypeDefinition> orderByComparator) {
+
+		return getPersistence().fetchByC_U_Last(
+			companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns the list type definitions before and after the current list type definition in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param listTypeDefinitionId the primary key of the current list type definition
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next list type definition
+	 * @throws NoSuchListTypeDefinitionException if a list type definition with the primary key could not be found
+	 */
+	public static ListTypeDefinition[] findByC_U_PrevAndNext(
+			long listTypeDefinitionId, long companyId, long userId,
+			OrderByComparator<ListTypeDefinition> orderByComparator)
+		throws com.liferay.list.type.exception.
+			NoSuchListTypeDefinitionException {
+
+		return getPersistence().findByC_U_PrevAndNext(
+			listTypeDefinitionId, companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Returns all the list type definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the matching list type definitions that the user has permission to view
+	 */
+	public static List<ListTypeDefinition> filterFindByC_U(
+		long companyId, long userId) {
+
+		return getPersistence().filterFindByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns a range of all the list type definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ListTypeDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of list type definitions
+	 * @param end the upper bound of the range of list type definitions (not inclusive)
+	 * @return the range of matching list type definitions that the user has permission to view
+	 */
+	public static List<ListTypeDefinition> filterFindByC_U(
+		long companyId, long userId, int start, int end) {
+
+		return getPersistence().filterFindByC_U(companyId, userId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the list type definitions that the user has permissions to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ListTypeDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of list type definitions
+	 * @param end the upper bound of the range of list type definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching list type definitions that the user has permission to view
+	 */
+	public static List<ListTypeDefinition> filterFindByC_U(
+		long companyId, long userId, int start, int end,
+		OrderByComparator<ListTypeDefinition> orderByComparator) {
+
+		return getPersistence().filterFindByC_U(
+			companyId, userId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the list type definitions before and after the current list type definition in the ordered set of list type definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param listTypeDefinitionId the primary key of the current list type definition
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next list type definition
+	 * @throws NoSuchListTypeDefinitionException if a list type definition with the primary key could not be found
+	 */
+	public static ListTypeDefinition[] filterFindByC_U_PrevAndNext(
+			long listTypeDefinitionId, long companyId, long userId,
+			OrderByComparator<ListTypeDefinition> orderByComparator)
+		throws com.liferay.list.type.exception.
+			NoSuchListTypeDefinitionException {
+
+		return getPersistence().filterFindByC_U_PrevAndNext(
+			listTypeDefinitionId, companyId, userId, orderByComparator);
+	}
+
+	/**
+	 * Removes all the list type definitions where companyId = &#63; and userId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 */
+	public static void removeByC_U(long companyId, long userId) {
+		getPersistence().removeByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns the number of list type definitions where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the number of matching list type definitions
+	 */
+	public static int countByC_U(long companyId, long userId) {
+		return getPersistence().countByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns the number of list type definitions that the user has permission to view where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the number of matching list type definitions that the user has permission to view
+	 */
+	public static int filterCountByC_U(long companyId, long userId) {
+		return getPersistence().filterCountByC_U(companyId, userId);
+	}
+
+	/**
+	 * Returns the list type definition where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchListTypeDefinitionException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching list type definition
+	 * @throws NoSuchListTypeDefinitionException if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition findByERC_C(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.list.type.exception.
+			NoSuchListTypeDefinitionException {
+
+		return getPersistence().findByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the list type definition where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching list type definition, or <code>null</code> if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition fetchByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return getPersistence().fetchByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the list type definition where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching list type definition, or <code>null</code> if a matching list type definition could not be found
+	 */
+	public static ListTypeDefinition fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
+
+		return getPersistence().fetchByERC_C(
+			externalReferenceCode, companyId, useFinderCache);
+	}
+
+	/**
+	 * Removes the list type definition where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the list type definition that was removed
+	 */
+	public static ListTypeDefinition removeByERC_C(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.list.type.exception.
+			NoSuchListTypeDefinitionException {
+
+		return getPersistence().removeByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the number of list type definitions where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching list type definitions
+	 */
+	public static int countByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return getPersistence().countByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
 	 * Caches the list type definition in the entity cache if it is enabled.
 	 *
 	 * @param listTypeDefinition the list type definition
@@ -801,6 +1138,12 @@ public class ListTypeDefinitionUtil {
 
 	public static ListTypeDefinitionPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(
+		ListTypeDefinitionPersistence persistence) {
+
+		_persistence = persistence;
 	}
 
 	private static volatile ListTypeDefinitionPersistence _persistence;

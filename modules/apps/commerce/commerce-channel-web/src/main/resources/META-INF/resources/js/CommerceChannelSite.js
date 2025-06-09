@@ -1,18 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {delegate, openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {delegate, sub} from 'frontend-js-web';
 
 export default function ({
 	itemSelectorUrl,
@@ -36,7 +28,8 @@ export default function ({
 								return;
 							}
 
-							const searchContainerData = searchContainer.getData();
+							const searchContainerData =
+								searchContainer.getData();
 
 							const link = document.querySelector(
 								`a[data-rowid="${searchContainerData}"]`
@@ -57,7 +50,7 @@ export default function ({
 
 							rowColumns.push(selectedItem.name);
 							rowColumns.push(
-								`<a class="float-right modify-link" data-rowId="${selectedItem.id}" href="javascript:;">${removeCommerceChannelSiteIcon}</a>`
+								`<a class="float-right modify-link" data-rowId="${selectedItem.id}" href="javascript:void(0);">${removeCommerceChannelSiteIcon}</a>`
 							);
 
 							const siteGroupInput = document.getElementById(
@@ -73,7 +66,7 @@ export default function ({
 							searchContainer.updateDataStore();
 						},
 						selectEventName: 'sitesSelectItem',
-						title: Liferay.Util.sub(
+						title: sub(
 							Liferay.Language.get('select-x'),
 							Liferay.Language.get('site')
 						),

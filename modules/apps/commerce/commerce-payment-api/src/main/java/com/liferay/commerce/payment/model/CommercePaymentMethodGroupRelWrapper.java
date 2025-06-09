@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.model;
@@ -45,6 +36,7 @@ public class CommercePaymentMethodGroupRelWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put(
 			"commercePaymentMethodGroupRelId",
 			getCommercePaymentMethodGroupRelId());
@@ -56,16 +48,23 @@ public class CommercePaymentMethodGroupRelWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("name", getName());
 		attributes.put("description", getDescription());
-		attributes.put("imageId", getImageId());
-		attributes.put("engineKey", getEngineKey());
-		attributes.put("priority", getPriority());
 		attributes.put("active", isActive());
+		attributes.put("imageId", getImageId());
+		attributes.put("paymentIntegrationKey", getPaymentIntegrationKey());
+		attributes.put("priority", getPriority());
+		attributes.put("typeSettings", getTypeSettings());
 
 		return attributes;
 	}
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		Long commercePaymentMethodGroupRelId = (Long)attributes.get(
 			"commercePaymentMethodGroupRelId");
 
@@ -121,16 +120,23 @@ public class CommercePaymentMethodGroupRelWrapper
 			setDescription(description);
 		}
 
+		Boolean active = (Boolean)attributes.get("active");
+
+		if (active != null) {
+			setActive(active);
+		}
+
 		Long imageId = (Long)attributes.get("imageId");
 
 		if (imageId != null) {
 			setImageId(imageId);
 		}
 
-		String engineKey = (String)attributes.get("engineKey");
+		String paymentIntegrationKey = (String)attributes.get(
+			"paymentIntegrationKey");
 
-		if (engineKey != null) {
-			setEngineKey(engineKey);
+		if (paymentIntegrationKey != null) {
+			setPaymentIntegrationKey(paymentIntegrationKey);
 		}
 
 		Double priority = (Double)attributes.get("priority");
@@ -139,10 +145,10 @@ public class CommercePaymentMethodGroupRelWrapper
 			setPriority(priority);
 		}
 
-		Boolean active = (Boolean)attributes.get("active");
+		String typeSettings = (String)attributes.get("typeSettings");
 
-		if (active != null) {
-			setActive(active);
+		if (typeSettings != null) {
+			setTypeSettings(typeSettings);
 		}
 	}
 
@@ -278,16 +284,6 @@ public class CommercePaymentMethodGroupRelWrapper
 	}
 
 	/**
-	 * Returns the engine key of this commerce payment method group rel.
-	 *
-	 * @return the engine key of this commerce payment method group rel
-	 */
-	@Override
-	public String getEngineKey() {
-		return model.getEngineKey();
-	}
-
-	/**
 	 * Returns the group ID of this commerce payment method group rel.
 	 *
 	 * @return the group ID of this commerce payment method group rel
@@ -322,6 +318,16 @@ public class CommercePaymentMethodGroupRelWrapper
 	@Override
 	public Date getModifiedDate() {
 		return model.getModifiedDate();
+	}
+
+	/**
+	 * Returns the mvcc version of this commerce payment method group rel.
+	 *
+	 * @return the mvcc version of this commerce payment method group rel
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
 	}
 
 	/**
@@ -401,6 +407,16 @@ public class CommercePaymentMethodGroupRelWrapper
 	}
 
 	/**
+	 * Returns the payment integration key of this commerce payment method group rel.
+	 *
+	 * @return the payment integration key of this commerce payment method group rel
+	 */
+	@Override
+	public String getPaymentIntegrationKey() {
+		return model.getPaymentIntegrationKey();
+	}
+
+	/**
 	 * Returns the primary key of this commerce payment method group rel.
 	 *
 	 * @return the primary key of this commerce payment method group rel
@@ -418,6 +434,23 @@ public class CommercePaymentMethodGroupRelWrapper
 	@Override
 	public double getPriority() {
 		return model.getPriority();
+	}
+
+	/**
+	 * Returns the type settings of this commerce payment method group rel.
+	 *
+	 * @return the type settings of this commerce payment method group rel
+	 */
+	@Override
+	public String getTypeSettings() {
+		return model.getTypeSettings();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.util.UnicodeProperties
+		getTypeSettingsUnicodeProperties() {
+
+		return model.getTypeSettingsUnicodeProperties();
 	}
 
 	/**
@@ -591,16 +624,6 @@ public class CommercePaymentMethodGroupRelWrapper
 	}
 
 	/**
-	 * Sets the engine key of this commerce payment method group rel.
-	 *
-	 * @param engineKey the engine key of this commerce payment method group rel
-	 */
-	@Override
-	public void setEngineKey(String engineKey) {
-		model.setEngineKey(engineKey);
-	}
-
-	/**
 	 * Sets the group ID of this commerce payment method group rel.
 	 *
 	 * @param groupId the group ID of this commerce payment method group rel
@@ -628,6 +651,16 @@ public class CommercePaymentMethodGroupRelWrapper
 	@Override
 	public void setModifiedDate(Date modifiedDate) {
 		model.setModifiedDate(modifiedDate);
+	}
+
+	/**
+	 * Sets the mvcc version of this commerce payment method group rel.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce payment method group rel
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
 	}
 
 	/**
@@ -694,6 +727,16 @@ public class CommercePaymentMethodGroupRelWrapper
 	}
 
 	/**
+	 * Sets the payment integration key of this commerce payment method group rel.
+	 *
+	 * @param paymentIntegrationKey the payment integration key of this commerce payment method group rel
+	 */
+	@Override
+	public void setPaymentIntegrationKey(String paymentIntegrationKey) {
+		model.setPaymentIntegrationKey(paymentIntegrationKey);
+	}
+
+	/**
 	 * Sets the primary key of this commerce payment method group rel.
 	 *
 	 * @param primaryKey the primary key of this commerce payment method group rel
@@ -711,6 +754,16 @@ public class CommercePaymentMethodGroupRelWrapper
 	@Override
 	public void setPriority(double priority) {
 		model.setPriority(priority);
+	}
+
+	/**
+	 * Sets the type settings of this commerce payment method group rel.
+	 *
+	 * @param typeSettings the type settings of this commerce payment method group rel
+	 */
+	@Override
+	public void setTypeSettings(String typeSettings) {
+		model.setTypeSettings(typeSettings);
 	}
 
 	/**
@@ -741,6 +794,11 @@ public class CommercePaymentMethodGroupRelWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

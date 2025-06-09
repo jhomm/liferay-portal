@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence;
@@ -688,6 +679,74 @@ public class CPInstanceUtil {
 	}
 
 	/**
+	 * Returns all the cp instances that the user has permission to view where groupId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @return the matching cp instances that the user has permission to view
+	 */
+	public static List<CPInstance> filterFindByGroupId(long groupId) {
+		return getPersistence().filterFindByGroupId(groupId);
+	}
+
+	/**
+	 * Returns a range of all the cp instances that the user has permission to view where groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @return the range of matching cp instances that the user has permission to view
+	 */
+	public static List<CPInstance> filterFindByGroupId(
+		long groupId, int start, int end) {
+
+		return getPersistence().filterFindByGroupId(groupId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp instances that the user has permissions to view where groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp instances that the user has permission to view
+	 */
+	public static List<CPInstance> filterFindByGroupId(
+		long groupId, int start, int end,
+		OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().filterFindByGroupId(
+			groupId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the cp instances before and after the current cp instance in the ordered set of cp instances that the user has permission to view where groupId = &#63;.
+	 *
+	 * @param CPInstanceId the primary key of the current cp instance
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp instance
+	 * @throws NoSuchCPInstanceException if a cp instance with the primary key could not be found
+	 */
+	public static CPInstance[] filterFindByGroupId_PrevAndNext(
+			long CPInstanceId, long groupId,
+			OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().filterFindByGroupId_PrevAndNext(
+			CPInstanceId, groupId, orderByComparator);
+	}
+
+	/**
 	 * Removes all the cp instances where groupId = &#63; from the database.
 	 *
 	 * @param groupId the group ID
@@ -704,6 +763,16 @@ public class CPInstanceUtil {
 	 */
 	public static int countByGroupId(long groupId) {
 		return getPersistence().countByGroupId(groupId);
+	}
+
+	/**
+	 * Returns the number of cp instances that the user has permission to view where groupId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @return the number of matching cp instances that the user has permission to view
+	 */
+	public static int filterCountByGroupId(long groupId) {
+		return getPersistence().filterCountByGroupId(groupId);
 	}
 
 	/**
@@ -1397,6 +1466,78 @@ public class CPInstanceUtil {
 	}
 
 	/**
+	 * Returns all the cp instances that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @return the matching cp instances that the user has permission to view
+	 */
+	public static List<CPInstance> filterFindByG_ST(long groupId, int status) {
+		return getPersistence().filterFindByG_ST(groupId, status);
+	}
+
+	/**
+	 * Returns a range of all the cp instances that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @return the range of matching cp instances that the user has permission to view
+	 */
+	public static List<CPInstance> filterFindByG_ST(
+		long groupId, int status, int start, int end) {
+
+		return getPersistence().filterFindByG_ST(groupId, status, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp instances that the user has permissions to view where groupId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp instances that the user has permission to view
+	 */
+	public static List<CPInstance> filterFindByG_ST(
+		long groupId, int status, int start, int end,
+		OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().filterFindByG_ST(
+			groupId, status, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns the cp instances before and after the current cp instance in the ordered set of cp instances that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * @param CPInstanceId the primary key of the current cp instance
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp instance
+	 * @throws NoSuchCPInstanceException if a cp instance with the primary key could not be found
+	 */
+	public static CPInstance[] filterFindByG_ST_PrevAndNext(
+			long CPInstanceId, long groupId, int status,
+			OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().filterFindByG_ST_PrevAndNext(
+			CPInstanceId, groupId, status, orderByComparator);
+	}
+
+	/**
 	 * Removes all the cp instances where groupId = &#63; and status = &#63; from the database.
 	 *
 	 * @param groupId the group ID
@@ -1415,6 +1556,204 @@ public class CPInstanceUtil {
 	 */
 	public static int countByG_ST(long groupId, int status) {
 		return getPersistence().countByG_ST(groupId, status);
+	}
+
+	/**
+	 * Returns the number of cp instances that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @return the number of matching cp instances that the user has permission to view
+	 */
+	public static int filterCountByG_ST(long groupId, int status) {
+		return getPersistence().filterCountByG_ST(groupId, status);
+	}
+
+	/**
+	 * Returns all the cp instances where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @return the matching cp instances
+	 */
+	public static List<CPInstance> findByC_S(long companyId, String sku) {
+		return getPersistence().findByC_S(companyId, sku);
+	}
+
+	/**
+	 * Returns a range of all the cp instances where companyId = &#63; and sku = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @return the range of matching cp instances
+	 */
+	public static List<CPInstance> findByC_S(
+		long companyId, String sku, int start, int end) {
+
+		return getPersistence().findByC_S(companyId, sku, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp instances where companyId = &#63; and sku = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp instances
+	 */
+	public static List<CPInstance> findByC_S(
+		long companyId, String sku, int start, int end,
+		OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().findByC_S(
+			companyId, sku, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp instances where companyId = &#63; and sku = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp instances
+	 */
+	public static List<CPInstance> findByC_S(
+		long companyId, String sku, int start, int end,
+		OrderByComparator<CPInstance> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_S(
+			companyId, sku, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first cp instance in the ordered set where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp instance
+	 * @throws NoSuchCPInstanceException if a matching cp instance could not be found
+	 */
+	public static CPInstance findByC_S_First(
+			long companyId, String sku,
+			OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().findByC_S_First(
+			companyId, sku, orderByComparator);
+	}
+
+	/**
+	 * Returns the first cp instance in the ordered set where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp instance, or <code>null</code> if a matching cp instance could not be found
+	 */
+	public static CPInstance fetchByC_S_First(
+		long companyId, String sku,
+		OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().fetchByC_S_First(
+			companyId, sku, orderByComparator);
+	}
+
+	/**
+	 * Returns the last cp instance in the ordered set where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp instance
+	 * @throws NoSuchCPInstanceException if a matching cp instance could not be found
+	 */
+	public static CPInstance findByC_S_Last(
+			long companyId, String sku,
+			OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().findByC_S_Last(
+			companyId, sku, orderByComparator);
+	}
+
+	/**
+	 * Returns the last cp instance in the ordered set where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp instance, or <code>null</code> if a matching cp instance could not be found
+	 */
+	public static CPInstance fetchByC_S_Last(
+		long companyId, String sku,
+		OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().fetchByC_S_Last(
+			companyId, sku, orderByComparator);
+	}
+
+	/**
+	 * Returns the cp instances before and after the current cp instance in the ordered set where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param CPInstanceId the primary key of the current cp instance
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp instance
+	 * @throws NoSuchCPInstanceException if a cp instance with the primary key could not be found
+	 */
+	public static CPInstance[] findByC_S_PrevAndNext(
+			long CPInstanceId, long companyId, String sku,
+			OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().findByC_S_PrevAndNext(
+			CPInstanceId, companyId, sku, orderByComparator);
+	}
+
+	/**
+	 * Removes all the cp instances where companyId = &#63; and sku = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 */
+	public static void removeByC_S(long companyId, String sku) {
+		getPersistence().removeByC_S(companyId, sku);
+	}
+
+	/**
+	 * Returns the number of cp instances where companyId = &#63; and sku = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param sku the sku
+	 * @return the number of matching cp instances
+	 */
+	public static int countByC_S(long companyId, String sku) {
+		return getPersistence().countByC_S(companyId, sku);
 	}
 
 	/**
@@ -1495,11 +1834,11 @@ public class CPInstanceUtil {
 	 * @return the matching cp instance
 	 * @throws NoSuchCPInstanceException if a matching cp instance could not be found
 	 */
-	public static CPInstance findByC_S(long CPDefinitionId, String sku)
+	public static CPInstance findByCPDI_S(long CPDefinitionId, String sku)
 		throws com.liferay.commerce.product.exception.
 			NoSuchCPInstanceException {
 
-		return getPersistence().findByC_S(CPDefinitionId, sku);
+		return getPersistence().findByCPDI_S(CPDefinitionId, sku);
 	}
 
 	/**
@@ -1509,8 +1848,8 @@ public class CPInstanceUtil {
 	 * @param sku the sku
 	 * @return the matching cp instance, or <code>null</code> if a matching cp instance could not be found
 	 */
-	public static CPInstance fetchByC_S(long CPDefinitionId, String sku) {
-		return getPersistence().fetchByC_S(CPDefinitionId, sku);
+	public static CPInstance fetchByCPDI_S(long CPDefinitionId, String sku) {
+		return getPersistence().fetchByCPDI_S(CPDefinitionId, sku);
 	}
 
 	/**
@@ -1521,10 +1860,11 @@ public class CPInstanceUtil {
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching cp instance, or <code>null</code> if a matching cp instance could not be found
 	 */
-	public static CPInstance fetchByC_S(
+	public static CPInstance fetchByCPDI_S(
 		long CPDefinitionId, String sku, boolean useFinderCache) {
 
-		return getPersistence().fetchByC_S(CPDefinitionId, sku, useFinderCache);
+		return getPersistence().fetchByCPDI_S(
+			CPDefinitionId, sku, useFinderCache);
 	}
 
 	/**
@@ -1534,11 +1874,11 @@ public class CPInstanceUtil {
 	 * @param sku the sku
 	 * @return the cp instance that was removed
 	 */
-	public static CPInstance removeByC_S(long CPDefinitionId, String sku)
+	public static CPInstance removeByCPDI_S(long CPDefinitionId, String sku)
 		throws com.liferay.commerce.product.exception.
 			NoSuchCPInstanceException {
 
-		return getPersistence().removeByC_S(CPDefinitionId, sku);
+		return getPersistence().removeByCPDI_S(CPDefinitionId, sku);
 	}
 
 	/**
@@ -1548,8 +1888,8 @@ public class CPInstanceUtil {
 	 * @param sku the sku
 	 * @return the number of matching cp instances
 	 */
-	public static int countByC_S(long CPDefinitionId, String sku) {
-		return getPersistence().countByC_S(CPDefinitionId, sku);
+	public static int countByCPDI_S(long CPDefinitionId, String sku) {
+		return getPersistence().countByCPDI_S(CPDefinitionId, sku);
 	}
 
 	/**
@@ -2137,75 +2477,298 @@ public class CPInstanceUtil {
 	}
 
 	/**
-	 * Returns the cp instance where companyId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchCPInstanceException</code> if it could not be found.
+	 * Returns all the cp instances where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
 	 *
-	 * @param companyId the company ID
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @return the matching cp instances
+	 */
+	public static List<CPInstance> findByR_R_S(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status) {
+
+		return getPersistence().findByR_R_S(
+			replacementCPInstanceUuid, replacementCProductId, status);
+	}
+
+	/**
+	 * Returns a range of all the cp instances where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @return the range of matching cp instances
+	 */
+	public static List<CPInstance> findByR_R_S(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status, int start, int end) {
+
+		return getPersistence().findByR_R_S(
+			replacementCPInstanceUuid, replacementCProductId, status, start,
+			end);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp instances where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp instances
+	 */
+	public static List<CPInstance> findByR_R_S(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status, int start, int end,
+		OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().findByR_R_S(
+			replacementCPInstanceUuid, replacementCProductId, status, start,
+			end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the cp instances where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPInstanceModelImpl</code>.
+	 * </p>
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp instances
+	 * @param end the upper bound of the range of cp instances (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp instances
+	 */
+	public static List<CPInstance> findByR_R_S(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status, int start, int end,
+		OrderByComparator<CPInstance> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByR_R_S(
+			replacementCPInstanceUuid, replacementCProductId, status, start,
+			end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first cp instance in the ordered set where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp instance
+	 * @throws NoSuchCPInstanceException if a matching cp instance could not be found
+	 */
+	public static CPInstance findByR_R_S_First(
+			String replacementCPInstanceUuid, long replacementCProductId,
+			int status, OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().findByR_R_S_First(
+			replacementCPInstanceUuid, replacementCProductId, status,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the first cp instance in the ordered set where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp instance, or <code>null</code> if a matching cp instance could not be found
+	 */
+	public static CPInstance fetchByR_R_S_First(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status, OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().fetchByR_R_S_First(
+			replacementCPInstanceUuid, replacementCProductId, status,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the last cp instance in the ordered set where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp instance
+	 * @throws NoSuchCPInstanceException if a matching cp instance could not be found
+	 */
+	public static CPInstance findByR_R_S_Last(
+			String replacementCPInstanceUuid, long replacementCProductId,
+			int status, OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().findByR_R_S_Last(
+			replacementCPInstanceUuid, replacementCProductId, status,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the last cp instance in the ordered set where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp instance, or <code>null</code> if a matching cp instance could not be found
+	 */
+	public static CPInstance fetchByR_R_S_Last(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status, OrderByComparator<CPInstance> orderByComparator) {
+
+		return getPersistence().fetchByR_R_S_Last(
+			replacementCPInstanceUuid, replacementCProductId, status,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the cp instances before and after the current cp instance in the ordered set where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * @param CPInstanceId the primary key of the current cp instance
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp instance
+	 * @throws NoSuchCPInstanceException if a cp instance with the primary key could not be found
+	 */
+	public static CPInstance[] findByR_R_S_PrevAndNext(
+			long CPInstanceId, String replacementCPInstanceUuid,
+			long replacementCProductId, int status,
+			OrderByComparator<CPInstance> orderByComparator)
+		throws com.liferay.commerce.product.exception.
+			NoSuchCPInstanceException {
+
+		return getPersistence().findByR_R_S_PrevAndNext(
+			CPInstanceId, replacementCPInstanceUuid, replacementCProductId,
+			status, orderByComparator);
+	}
+
+	/**
+	 * Removes all the cp instances where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63; from the database.
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 */
+	public static void removeByR_R_S(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status) {
+
+		getPersistence().removeByR_R_S(
+			replacementCPInstanceUuid, replacementCProductId, status);
+	}
+
+	/**
+	 * Returns the number of cp instances where replacementCPInstanceUuid = &#63; and replacementCProductId = &#63; and status = &#63;.
+	 *
+	 * @param replacementCPInstanceUuid the replacement cp instance uuid
+	 * @param replacementCProductId the replacement c product ID
+	 * @param status the status
+	 * @return the number of matching cp instances
+	 */
+	public static int countByR_R_S(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status) {
+
+		return getPersistence().countByR_R_S(
+			replacementCPInstanceUuid, replacementCProductId, status);
+	}
+
+	/**
+	 * Returns the cp instance where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchCPInstanceException</code> if it could not be found.
+	 *
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching cp instance
 	 * @throws NoSuchCPInstanceException if a matching cp instance could not be found
 	 */
-	public static CPInstance findByC_ERC(
-			long companyId, String externalReferenceCode)
+	public static CPInstance findByERC_C(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.commerce.product.exception.
 			NoSuchCPInstanceException {
 
-		return getPersistence().findByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().findByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
-	 * Returns the cp instance where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the cp instance where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching cp instance, or <code>null</code> if a matching cp instance could not be found
 	 */
-	public static CPInstance fetchByC_ERC(
-		long companyId, String externalReferenceCode) {
+	public static CPInstance fetchByERC_C(
+		String externalReferenceCode, long companyId) {
 
-		return getPersistence().fetchByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().fetchByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
-	 * Returns the cp instance where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the cp instance where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching cp instance, or <code>null</code> if a matching cp instance could not be found
 	 */
-	public static CPInstance fetchByC_ERC(
-		long companyId, String externalReferenceCode, boolean useFinderCache) {
+	public static CPInstance fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
 
-		return getPersistence().fetchByC_ERC(
-			companyId, externalReferenceCode, useFinderCache);
+		return getPersistence().fetchByERC_C(
+			externalReferenceCode, companyId, useFinderCache);
 	}
 
 	/**
-	 * Removes the cp instance where companyId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the cp instance where externalReferenceCode = &#63; and companyId = &#63; from the database.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the cp instance that was removed
 	 */
-	public static CPInstance removeByC_ERC(
-			long companyId, String externalReferenceCode)
+	public static CPInstance removeByERC_C(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.commerce.product.exception.
 			NoSuchCPInstanceException {
 
-		return getPersistence().removeByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().removeByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
-	 * Returns the number of cp instances where companyId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of cp instances where externalReferenceCode = &#63; and companyId = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the number of matching cp instances
 	 */
-	public static int countByC_ERC(
-		long companyId, String externalReferenceCode) {
+	public static int countByERC_C(
+		String externalReferenceCode, long companyId) {
 
-		return getPersistence().countByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().countByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
@@ -2359,6 +2922,10 @@ public class CPInstanceUtil {
 
 	public static CPInstancePersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(CPInstancePersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile CPInstancePersistence _persistence;

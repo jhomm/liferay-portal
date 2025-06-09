@@ -1,31 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.internal.security.permission.contributor;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.GroupConstants;
+import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.security.permission.contributor.PermissionSQLContributor;
 import com.liferay.sharing.configuration.SharingConfiguration;
 import com.liferay.sharing.configuration.SharingConfigurationFactory;
@@ -47,11 +43,13 @@ public class SharingPermissionSQLContributor
 	public SharingPermissionSQLContributor(
 		ClassNameLocalService classNameLocalService,
 		GroupLocalService groupLocalService,
-		SharingConfigurationFactory sharingConfigurationFactory) {
+		SharingConfigurationFactory sharingConfigurationFactory,
+		UserGroupLocalService userGroupLocalService) {
 
 		_classNameLocalService = classNameLocalService;
 		_groupLocalService = groupLocalService;
 		_sharingConfigurationFactory = sharingConfigurationFactory;
+		_userGroupLocalService = userGroupLocalService;
 	}
 
 	@Override
@@ -94,14 +92,12 @@ public class SharingPermissionSQLContributor
 				SharingEntryTable.INSTANCE
 			).where(
 				() -> {
-					Predicate predicate =
-						SharingEntryTable.INSTANCE.toUserId.eq(
-							permissionChecker.getUserId()
-						).and(
-							SharingEntryTable.INSTANCE.classNameId.eq(
-								_classNameLocalService.getClassNameId(
-									className))
-						);
+					Predicate predicate = _getUserAndUserGroupPredicate(
+						permissionChecker
+					).and(
+						SharingEntryTable.INSTANCE.classNameId.eq(
+							_classNameLocalService.getClassNameId(className))
+					);
 
 					if (disableGroupIds.isEmpty()) {
 						return predicate;
@@ -136,9 +132,24 @@ public class SharingPermissionSQLContributor
 
 		_addDisabledGroupsSQL(sb, groupIds);
 
+		List<UserGroup> userGroups = _userGroupLocalService.getUserUserGroups(
+			permissionChecker.getUserId());
+
+		sb.append("(");
+
+		if (!userGroups.isEmpty()) {
+			sb.append("(SharingEntry.toUserGroupId IN ( ");
+			sb.append(
+				StringUtil.merge(
+					TransformUtil.transformToLongArray(
+						userGroups, UserGroup::getUserGroupId),
+					StringPool.COMMA));
+			sb.append(")) OR ");
+		}
+
 		sb.append("(SharingEntry.toUserId = ");
 		sb.append(permissionChecker.getUserId());
-		sb.append(") AND (SharingEntry.classNameId = ");
+		sb.append(")) AND (SharingEntry.classNameId = ");
 		sb.append(_classNameLocalService.getClassNameId(className));
 		sb.append("))");
 
@@ -146,7 +157,7 @@ public class SharingPermissionSQLContributor
 	}
 
 	private void _addDisabledGroupsSQL(StringBundler sb, long[] groupIds) {
-		if ((groupIds == null) || (groupIds.length == 0)) {
+		if (ArrayUtil.isEmpty(groupIds)) {
 			return;
 		}
 
@@ -189,8 +200,31 @@ public class SharingPermissionSQLContributor
 		}
 	}
 
+	private Predicate _getUserAndUserGroupPredicate(
+		PermissionChecker permissionChecker) {
+
+		return SharingEntryTable.INSTANCE.toUserId.eq(
+			permissionChecker.getUserId()
+		).or(
+			() -> {
+				List<UserGroup> userGroups =
+					_userGroupLocalService.getUserUserGroups(
+						permissionChecker.getUserId());
+
+				if (userGroups.isEmpty()) {
+					return null;
+				}
+
+				return SharingEntryTable.INSTANCE.toUserGroupId.in(
+					TransformUtil.transformToArray(
+						userGroups, UserGroup::getUserGroupId, Long.class));
+			}
+		);
+	}
+
 	private final ClassNameLocalService _classNameLocalService;
 	private final GroupLocalService _groupLocalService;
 	private final SharingConfigurationFactory _sharingConfigurationFactory;
+	private final UserGroupLocalService _userGroupLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.item.selector.web.internal.display.context;
@@ -19,26 +10,26 @@ import com.liferay.item.selector.ItemSelectorReturnTypeResolver;
 import com.liferay.item.selector.ItemSelectorReturnTypeResolverHandler;
 import com.liferay.item.selector.taglib.servlet.taglib.util.RepositoryEntryBrowserTagUtil;
 import com.liferay.knowledge.base.constants.KBPortletKeys;
-import com.liferay.knowledge.base.item.selector.criterion.KBAttachmentItemSelectorCriterion;
+import com.liferay.knowledge.base.item.selector.KBAttachmentItemSelectorCriterion;
 import com.liferay.knowledge.base.item.selector.web.internal.KBAttachmentItemSelectorView;
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.service.KBArticleLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Roberto Díaz
@@ -63,13 +54,13 @@ public class KBAttachmentItemSelectorViewDisplayContext {
 		_search = search;
 
 		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
-			_httpServletRequest);
+			httpServletRequest);
 	}
 
 	public long getAttachmentsFolderId() throws PortalException {
 		KBArticle kbArticle = KBArticleLocalServiceUtil.getLatestKBArticle(
 			_kbAttachmentItemSelectorCriterion.getResourcePrimKey(),
-			WorkflowConstants.STATUS_APPROVED);
+			WorkflowConstants.STATUS_ANY);
 
 		return kbArticle.getAttachmentsFolderId();
 	}
@@ -123,7 +114,7 @@ public class KBAttachmentItemSelectorViewDisplayContext {
 		return PortletURLBuilder.createActionURL(
 			liferayPortletResponse, KBPortletKeys.KNOWLEDGE_BASE_ADMIN
 		).setActionName(
-			"uploadKBArticleAttachments"
+			"/knowledge_base/upload_kb_article_attachments"
 		).setParameter(
 			"resourcePrimKey",
 			_kbAttachmentItemSelectorCriterion.getResourcePrimKey()

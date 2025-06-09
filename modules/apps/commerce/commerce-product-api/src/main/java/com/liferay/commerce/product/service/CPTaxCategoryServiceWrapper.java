@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
+import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -26,30 +18,18 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CPTaxCategoryServiceWrapper
 	implements CPTaxCategoryService, ServiceWrapper<CPTaxCategoryService> {
 
+	public CPTaxCategoryServiceWrapper() {
+		this(null);
+	}
+
 	public CPTaxCategoryServiceWrapper(
 		CPTaxCategoryService cpTaxCategoryService) {
 
 		_cpTaxCategoryService = cpTaxCategoryService;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addCPTaxCategory(String, Map, Map, ServiceContext)}
-	 */
-	@Deprecated
 	@Override
-	public com.liferay.commerce.product.model.CPTaxCategory addCPTaxCategory(
-			java.util.Map<java.util.Locale, String> nameMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpTaxCategoryService.addCPTaxCategory(
-			nameMap, descriptionMap, serviceContext);
-	}
-
-	@Override
-	public com.liferay.commerce.product.model.CPTaxCategory addCPTaxCategory(
+	public CPTaxCategory addCPTaxCategory(
 			String externalReferenceCode,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
@@ -76,9 +56,8 @@ public class CPTaxCategoryServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.commerce.product.model.CPTaxCategory>
-			findCPTaxCategoriesByCompanyId(
-				long companyId, String keyword, int start, int end)
+	public java.util.List<CPTaxCategory> findCPTaxCategoriesByCompanyId(
+			long companyId, String keyword, int start, int end)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpTaxCategoryService.findCPTaxCategoriesByCompanyId(
@@ -86,20 +65,17 @@ public class CPTaxCategoryServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.commerce.product.model.CPTaxCategory>
-			getCPTaxCategories(long companyId)
+	public java.util.List<CPTaxCategory> getCPTaxCategories(long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpTaxCategoryService.getCPTaxCategories(companyId);
 	}
 
 	@Override
-	public java.util.List<com.liferay.commerce.product.model.CPTaxCategory>
-			getCPTaxCategories(
-				long companyId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.product.model.CPTaxCategory>
-						orderByComparator)
+	public java.util.List<CPTaxCategory> getCPTaxCategories(
+			long companyId, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator<CPTaxCategory>
+				orderByComparator)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpTaxCategoryService.getCPTaxCategories(
@@ -114,8 +90,7 @@ public class CPTaxCategoryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPTaxCategory getCPTaxCategory(
-			long cpTaxCategoryId)
+	public CPTaxCategory getCPTaxCategory(long cpTaxCategoryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpTaxCategoryService.getCPTaxCategory(cpTaxCategoryId);
@@ -131,24 +106,19 @@ public class CPTaxCategoryServiceWrapper
 		return _cpTaxCategoryService.getOSGiServiceIdentifier();
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateCPTaxCategory(String, long, Map, Map)}
-	 */
-	@Deprecated
 	@Override
-	public com.liferay.commerce.product.model.CPTaxCategory updateCPTaxCategory(
-			long cpTaxCategoryId,
-			java.util.Map<java.util.Locale, String> nameMap,
-			java.util.Map<java.util.Locale, String> descriptionMap)
+	public com.liferay.portal.kernel.search.BaseModelSearchResult<CPTaxCategory>
+			searchCPTaxCategories(
+				long companyId, String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _cpTaxCategoryService.updateCPTaxCategory(
-			cpTaxCategoryId, nameMap, descriptionMap);
+		return _cpTaxCategoryService.searchCPTaxCategories(
+			companyId, keywords, start, end, sort);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPTaxCategory updateCPTaxCategory(
+	public CPTaxCategory updateCPTaxCategory(
 			String externalReferenceCode, long cpTaxCategoryId,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> descriptionMap)

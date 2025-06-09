@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.token.definition.internal.json;
@@ -19,13 +10,13 @@ import com.liferay.frontend.token.definition.internal.FrontendTokenDefinitionReg
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import java.net.URL;
 
@@ -66,9 +57,11 @@ public class JSONLocalizerTest {
 			_FRONTEND_TOKEN_DEFINITION_JSON, new JSONFactoryImpl(),
 			resourceBundleLoader, "theme_id");
 
+		JSONObject jsonObject = jsonLocalizer.getJSONObject(LocaleUtil.ENGLISH);
+
 		Assert.assertEquals(
-			_TRANSLATED_FRONTEND_TOKEN_DEFINITION_JSON,
-			jsonLocalizer.getJSON(LocaleUtil.ENGLISH));
+			_TRANSLATED_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT.toMap(),
+			jsonObject.toMap());
 	}
 
 	@Test
@@ -77,9 +70,10 @@ public class JSONLocalizerTest {
 			_FRONTEND_TOKEN_DEFINITION_JSON, new JSONFactoryImpl(),
 			Mockito.mock(ResourceBundleLoader.class), "theme_id");
 
+		JSONObject jsonObject = jsonLocalizer.getJSONObject(LocaleUtil.SPAIN);
+
 		Assert.assertEquals(
-			_FRONTEND_TOKEN_DEFINITION_JSON,
-			jsonLocalizer.getJSON(LocaleUtil.SPAIN));
+			_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT.toMap(), jsonObject.toMap());
 	}
 
 	@Test
@@ -88,8 +82,10 @@ public class JSONLocalizerTest {
 			_FRONTEND_TOKEN_DEFINITION_JSON, new JSONFactoryImpl(),
 			Mockito.mock(ResourceBundleLoader.class), "theme_id");
 
+		JSONObject jsonObject = jsonLocalizer.getJSONObject(null);
+
 		Assert.assertEquals(
-			_FRONTEND_TOKEN_DEFINITION_JSON, jsonLocalizer.getJSON(null));
+			_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT.toMap(), jsonObject.toMap());
 	}
 
 	@Test
@@ -110,14 +106,20 @@ public class JSONLocalizerTest {
 			_FRONTEND_TOKEN_DEFINITION_JSON, new JSONFactoryImpl(),
 			resourceBundleLoader, "theme_id");
 
-		Assert.assertSame(
-			jsonLocalizer.getJSON(LocaleUtil.ENGLISH),
-			jsonLocalizer.getJSON(LocaleUtil.ENGLISH));
+		JSONObject jsonObject1 = jsonLocalizer.getJSONObject(
+			LocaleUtil.ENGLISH);
+		JSONObject jsonObject2 = jsonLocalizer.getJSONObject(
+			LocaleUtil.ENGLISH);
+
+		Assert.assertEquals(jsonObject1.toMap(), jsonObject2.toMap());
 	}
 
 	private static final String _FRONTEND_TOKEN_DEFINITION_JSON;
 
-	private static final String _TRANSLATED_FRONTEND_TOKEN_DEFINITION_JSON;
+	private static final JSONObject _FRONTEND_TOKEN_DEFINITION_JSON_OBJECT;
+
+	private static final JSONObject
+		_TRANSLATED_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT;
 
 	static {
 		JSONFactory jsonFactory = new JSONFactoryImpl();
@@ -125,9 +127,12 @@ public class JSONLocalizerTest {
 		URL url = FrontendTokenDefinitionRegistryImplTest.class.getResource(
 			"dependencies/frontend-token-definition.json");
 
-		try (InputStream inputStream = url.openStream()) {
+		try {
+			_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT =
+				jsonFactory.createJSONObject(URLUtil.toString(url));
+
 			_FRONTEND_TOKEN_DEFINITION_JSON = jsonFactory.looseSerializeDeep(
-				jsonFactory.createJSONObject(StringUtil.read(inputStream)));
+				_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT);
 		}
 		catch (IOException | JSONException exception) {
 			throw new RuntimeException(exception);
@@ -136,10 +141,9 @@ public class JSONLocalizerTest {
 		url = FrontendTokenDefinitionRegistryImplTest.class.getResource(
 			"dependencies/translated-frontend-token-definition.json");
 
-		try (InputStream inputStream = url.openStream()) {
-			_TRANSLATED_FRONTEND_TOKEN_DEFINITION_JSON =
-				jsonFactory.looseSerializeDeep(
-					jsonFactory.createJSONObject(StringUtil.read(inputStream)));
+		try {
+			_TRANSLATED_FRONTEND_TOKEN_DEFINITION_JSON_OBJECT =
+				jsonFactory.createJSONObject(URLUtil.toString(url));
 		}
 		catch (IOException | JSONException exception) {
 			throw new RuntimeException(exception);

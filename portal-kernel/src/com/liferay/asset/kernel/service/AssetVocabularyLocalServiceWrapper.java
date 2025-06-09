@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.kernel.service;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class AssetVocabularyLocalServiceWrapper
 	implements AssetVocabularyLocalService,
 			   ServiceWrapper<AssetVocabularyLocalService> {
+
+	public AssetVocabularyLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AssetVocabularyLocalServiceWrapper(
 		AssetVocabularyLocalService assetVocabularyLocalService) {
@@ -94,25 +90,6 @@ public class AssetVocabularyLocalServiceWrapper
 
 		return _assetVocabularyLocalService.addVocabulary(
 			userId, groupId, title, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addVocabulary(String, long, long, String, String, Map, Map, String, int, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public AssetVocabulary addVocabulary(
-			long userId, long groupId, String name, String title,
-			java.util.Map<java.util.Locale, String> titleMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
-			String settings, int visibilityType,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetVocabularyLocalService.addVocabulary(
-			userId, groupId, name, title, titleMap, descriptionMap, settings,
-			visibilityType, serviceContext);
 	}
 
 	@Override
@@ -364,32 +341,13 @@ public class AssetVocabularyLocalServiceWrapper
 		return _assetVocabularyLocalService.fetchAssetVocabulary(vocabularyId);
 	}
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary, or <code>null</code> if a matching asset vocabulary could not be found
-	 */
 	@Override
 	public AssetVocabulary fetchAssetVocabularyByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return _assetVocabularyLocalService.
 			fetchAssetVocabularyByExternalReferenceCode(
-				groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAssetVocabularyByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public AssetVocabulary fetchAssetVocabularyByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return _assetVocabularyLocalService.fetchAssetVocabularyByReferenceCode(
-			groupId, externalReferenceCode);
+				externalReferenceCode, groupId);
 	}
 
 	/**
@@ -498,22 +456,14 @@ public class AssetVocabularyLocalServiceWrapper
 		return _assetVocabularyLocalService.getAssetVocabulary(vocabularyId);
 	}
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary
-	 * @throws PortalException if a matching asset vocabulary could not be found
-	 */
 	@Override
 	public AssetVocabulary getAssetVocabularyByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetVocabularyLocalService.
 			getAssetVocabularyByExternalReferenceCode(
-				groupId, externalReferenceCode);
+				externalReferenceCode, groupId);
 	}
 
 	/**
@@ -599,16 +549,6 @@ public class AssetVocabularyLocalServiceWrapper
 
 	@Override
 	public java.util.List<AssetVocabulary> getGroupVocabularies(
-		long groupId, String name, int start, int end,
-		com.liferay.portal.kernel.util.OrderByComparator<AssetVocabulary>
-			orderByComparator) {
-
-		return _assetVocabularyLocalService.getGroupVocabularies(
-			groupId, name, start, end, orderByComparator);
-	}
-
-	@Override
-	public java.util.List<AssetVocabulary> getGroupVocabularies(
 		long[] groupIds) {
 
 		return _assetVocabularyLocalService.getGroupVocabularies(groupIds);
@@ -640,6 +580,15 @@ public class AssetVocabularyLocalServiceWrapper
 
 		return _assetVocabularyLocalService.
 			getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public AssetVocabulary getOrAddIncompleteVocabulary(
+			String externalReferenceCode, long userId, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetVocabularyLocalService.getOrAddIncompleteVocabulary(
+			externalReferenceCode, userId, groupId);
 	}
 
 	/**
@@ -688,22 +637,13 @@ public class AssetVocabularyLocalServiceWrapper
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
 		<AssetVocabulary> searchVocabularies(
-				long companyId, long groupId, String title, int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetVocabularyLocalService.searchVocabularies(
-			companyId, groupId, title, start, end);
-	}
-
-	@Override
-	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<AssetVocabulary> searchVocabularies(
-				long companyId, long groupId, String title, int start, int end,
+				long companyId, long[] groupIds, String title,
+				int[] visibilityTypes, int start, int end,
 				com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetVocabularyLocalService.searchVocabularies(
-			companyId, groupId, title, start, end, sort);
+			companyId, groupIds, title, visibilityTypes, start, end, sort);
 	}
 
 	/**
@@ -761,17 +701,8 @@ public class AssetVocabularyLocalServiceWrapper
 	}
 
 	@Override
-	public AssetVocabulary updateVocabulary(
-			long vocabularyId, String name, String title,
-			java.util.Map<java.util.Locale, String> titleMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
-			String settings,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetVocabularyLocalService.updateVocabulary(
-			vocabularyId, name, title, titleMap, descriptionMap, settings,
-			serviceContext);
+	public BasePersistence<?> getBasePersistence() {
+		return _assetVocabularyLocalService.getBasePersistence();
 	}
 
 	@Override

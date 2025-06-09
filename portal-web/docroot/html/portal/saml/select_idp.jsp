@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,17 +10,34 @@
 <%
 String redirect = ParamUtil.getString(request, "redirect");
 
-JSONObject samlSsoLoginContext = (JSONObject)request.getAttribute("SAML_SSO_LOGIN_CONTEXT");
+String samlIdPRedirectMessage = GetterUtil.getString(request.getAttribute("SAML_IDP_REDIRECT_MESSAGE"));
 
-JSONArray relevantIdpConnectionsJSONArray = samlSsoLoginContext.getJSONArray("relevantIdpConnections");
+JSONObject samlSsoLoginContextJSONObject = (JSONObject)request.getAttribute("SAML_SSO_LOGIN_CONTEXT");
+
+JSONArray relevantIdpConnectionsJSONArray = samlSsoLoginContextJSONObject.getJSONArray("relevantIdpConnections");
 %>
 
-<aui:form action='<%= PortalUtil.getPortalURL(request) + "/c/portal/login" %>' method="get" name="fm" style="padding: 1rem;">
+<aui:form action='<%= PortalUtil.getPortalURL(request) + PortalUtil.getPathMain() + "/portal/login" %>' cssClass="p-3" method="get" name="fm">
 	<aui:input name="saveLastPath" type="hidden" value="<%= false %>" />
 	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 
 	<c:choose>
-		<c:when test="<%= relevantIdpConnectionsJSONArray.length() > 0 %>">
+		<c:when test="<%= relevantIdpConnectionsJSONArray.length() == 1 %>">
+			<p><%= samlIdPRedirectMessage %></p>
+
+			<%
+			JSONObject relevantIdpConnectionJSONObject = relevantIdpConnectionsJSONArray.getJSONObject(0);
+			%>
+
+			<aui:input name="idpEntityId" type="hidden" value='<%= HtmlUtil.escapeAttribute(relevantIdpConnectionJSONObject.getString("entityId")) %>' />
+
+			<aui:script sandbox="<%= true %>">
+				window.addEventListener("load", (event) => {
+					window.fm.submit();
+				});
+			</aui:script>
+		</c:when>
+		<c:when test="<%= relevantIdpConnectionsJSONArray.length() > 1 %>">
 			<p><liferay-ui:message key="please-select-your-identity-provider" /></p>
 
 			<aui:select label="identity-provider" name="idpEntityId">
@@ -61,3 +69,17 @@ JSONArray relevantIdpConnectionsJSONArray = samlSsoLoginContext.getJSONArray("re
 		</c:otherwise>
 	</c:choose>
 </aui:form>
+
+<c:if test="<%= Validator.isNotNull(redirect) %>">
+	<aui:script sandbox="<%= true %>">
+		var form = document.getElementById('<portlet:namespace />fm');
+
+		var redirect = form.querySelector('#<portlet:namespace />redirect');
+
+		if (redirect) {
+			var redirectVal = redirect.getAttribute('value');
+
+			redirect.setAttribute('value', redirectVal + window.location.hash);
+		}
+	</aui:script>
+</c:if>

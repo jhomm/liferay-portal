@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.internal.resource.v1_0;
@@ -27,6 +18,7 @@ import com.liferay.search.experiences.rest.internal.web.cache.FieldMappingsWebCa
 import com.liferay.search.experiences.rest.resource.v1_0.FieldMappingInfoResource;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -43,6 +35,7 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Brian Wing Shun Chan
  */
 @Component(
+	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/field-mapping-info.properties",
 	scope = ServiceScope.PROTOTYPE, service = FieldMappingInfoResource.class
 )
@@ -50,16 +43,18 @@ public class FieldMappingInfoResourceImpl
 	extends BaseFieldMappingInfoResourceImpl {
 
 	@Override
-	public Page<FieldMappingInfo> getFieldMappingInfosPage(String query)
+	public Page<FieldMappingInfo> getFieldMappingInfosPage(
+			Boolean external, String indexName, String query)
 		throws Exception {
 
-		return Page.of(getFieldMappings(query));
+		return Page.of(getFieldMappings(external, indexName, query));
 	}
 
-	public List<FieldMappingInfo> getFieldMappings(String query) {
+	public List<FieldMappingInfo> getFieldMappings(
+		boolean external, String indexName, String query) {
+
 		JSONObject jsonObject = FieldMappingsWebCacheItem.get(
-			_indexInformation,
-			_indexNameBuilder.getIndexName(contextCompany.getCompanyId()));
+			_indexInformation, _getIndexName(indexName), _jsonFactory);
 
 		if (jsonObject.length() == 0) {
 			return Collections.<FieldMappingInfo>emptyList();
@@ -85,9 +80,9 @@ public class FieldMappingInfoResourceImpl
 			fieldMappingInfos.add(
 				new FieldMappingInfo() {
 					{
-						languageIdPosition = languageIdPosition1;
-						name = fieldName;
-						type = jsonObject.getString("type");
+						setLanguageIdPosition(() -> languageIdPosition1);
+						setName(() -> fieldName);
+						setType(() -> jsonObject.getString("type"));
 					}
 				});
 			fieldNames.add(fieldNameWithPosition);
@@ -103,12 +98,6 @@ public class FieldMappingInfoResourceImpl
 
 			String fieldPath = fieldName;
 
-			if (!Validator.isBlank(query) &&
-				!StringUtil.containsIgnoreCase(fieldPath, query)) {
-
-				continue;
-			}
-
 			if (!Validator.isBlank(path)) {
 				fieldPath = path + "." + fieldName;
 			}
@@ -120,12 +109,20 @@ public class FieldMappingInfoResourceImpl
 					query);
 			}
 			else {
+				if (!Validator.isBlank(query) &&
+					!StringUtil.containsIgnoreCase(
+						fieldPath, query, StringPool.BLANK)) {
+
+					continue;
+				}
+
 				String languageId = _getLanguageId(fieldName);
 
 				int languageIdPosition = -1;
 
 				if (!Validator.isBlank(languageId)) {
-					languageIdPosition = fieldName.lastIndexOf(languageId);
+					languageIdPosition = fieldPath.lastIndexOf(languageId);
+
 					fieldPath = StringUtil.removeSubstring(
 						fieldPath, languageId);
 				}
@@ -135,6 +132,26 @@ public class FieldMappingInfoResourceImpl
 					languageIdPosition);
 			}
 		}
+	}
+
+	private String _getIndexName(String indexName) {
+		String fullIndexName = _indexNameBuilder.getIndexName(
+			contextCompany.getCompanyId());
+
+		if (Validator.isBlank(indexName)) {
+			return fullIndexName;
+		}
+
+		fullIndexName = fullIndexName + StringPool.DASH + indexName;
+
+		List<String> indexNames = Arrays.asList(
+			_indexInformation.getIndexNames());
+
+		if (indexNames.contains(fullIndexName)) {
+			return fullIndexName;
+		}
+
+		return _indexNameBuilder.getIndexName(contextCompany.getCompanyId());
 	}
 
 	private String _getLanguageId(String fieldName) {

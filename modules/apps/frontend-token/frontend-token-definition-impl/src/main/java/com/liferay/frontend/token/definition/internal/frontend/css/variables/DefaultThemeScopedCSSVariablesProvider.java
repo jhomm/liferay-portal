@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.token.definition.internal.frontend.css.variables;
@@ -20,17 +11,20 @@ import com.liferay.frontend.token.definition.FrontendToken;
 import com.liferay.frontend.token.definition.FrontendTokenDefinition;
 import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
 import com.liferay.frontend.token.definition.FrontendTokenMapping;
-import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,12 +47,34 @@ public class DefaultThemeScopedCSSVariablesProvider
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		LayoutSet layoutSet = _layoutSetLocalService.fetchLayoutSet(
-			themeDisplay.getSiteGroupId(), false);
+		FrontendTokenDefinition frontendTokenDefinition = null;
 
-		FrontendTokenDefinition frontendTokenDefinition =
-			_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
-				layoutSet.getThemeId());
+		if (FeatureFlagManagerUtil.isEnabled(
+				themeDisplay.getCompanyId(), "LPD-30204")) {
+
+			String styleBookEntryThemeId = ParamUtil.getString(
+				httpServletRequest, "styleBookEntryThemeId");
+
+			if (Validator.isNotNull(styleBookEntryThemeId)) {
+				frontendTokenDefinition =
+					_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+						themeDisplay.getCompanyId(), styleBookEntryThemeId);
+			}
+			else {
+				frontendTokenDefinition =
+					_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+						themeDisplay.getLayout());
+			}
+		}
+		else {
+			Group group = themeDisplay.getScopeGroup();
+
+			frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					_layoutSetLocalService.fetchLayoutSet(
+						themeDisplay.getSiteGroupId(),
+						group.isLayoutSetPrototype()));
+		}
 
 		if (frontendTokenDefinition == null) {
 			return Collections.emptyList();
@@ -77,9 +93,14 @@ public class DefaultThemeScopedCSSVariablesProvider
 			for (FrontendTokenMapping frontendTokenMapping :
 					frontendTokenMappings) {
 
-				cssVariables.put(
-					frontendTokenMapping.getValue(),
-					frontendToken.getDefaultValue());
+				if (Validator.isNotNull(
+						String.valueOf(
+							frontendToken.<Object>getDefaultValue()))) {
+
+					cssVariables.put(
+						frontendTokenMapping.getValue(),
+						frontendToken.getDefaultValue());
+				}
 			}
 		}
 

@@ -1,39 +1,47 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.server.admin.web.internal.portlet.action;
 
-import com.liferay.document.library.kernel.util.DLPreviewableProcessor;
+import com.liferay.captcha.util.CaptchaUtil;
+import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.model.CTCollectionModel;
+import com.liferay.change.tracking.service.CTCollectionLocalService;
+import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
+import com.liferay.document.library.kernel.document.conversion.DocumentConversion;
+import com.liferay.document.library.kernel.model.DLProcessorConstants;
+import com.liferay.document.library.kernel.processor.AudioProcessor;
+import com.liferay.document.library.kernel.processor.DLProcessor;
+import com.liferay.document.library.kernel.processor.PDFProcessor;
+import com.liferay.document.library.kernel.processor.VideoProcessor;
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.document.library.preview.processor.BasePreviewableDLProcessor;
+import com.liferay.image.Ghostscript;
+import com.liferay.image.ImageMagick;
 import com.liferay.mail.kernel.model.Account;
 import com.liferay.mail.kernel.service.MailService;
-import com.liferay.petra.log4j.Log4JUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.convert.ConvertException;
 import com.liferay.portal.convert.ConvertProcess;
+import com.liferay.portal.convert.ConvertProcessUtil;
 import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.SingleVMPool;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.cluster.ClusterExecutorUtil;
+import com.liferay.portal.kernel.cluster.ClusterMasterExecutorUtil;
+import com.liferay.portal.kernel.cluster.ClusterRequest;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.image.GhostscriptUtil;
-import com.liferay.portal.kernel.image.ImageMagickUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncPrintWriter;
 import com.liferay.portal.kernel.log.Log;
@@ -57,64 +65,71 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.LiferayActionResponse;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.scripting.Scripting;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.scripting.ScriptingException;
 import com.liferay.portal.kernel.scripting.ScriptingHelperUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicy;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyFactory;
 import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicy;
-import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicyFactory;
-import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicy;
-import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyFactory;
 import com.liferay.portal.kernel.security.membershippolicy.UserGroupMembershipPolicy;
-import com.liferay.portal.kernel.security.membershippolicy.UserGroupMembershipPolicyFactory;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutRevisionLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
-import com.liferay.portal.kernel.service.ServiceComponentLocalService;
-import com.liferay.portal.kernel.servlet.DirectServletRegistry;
+import com.liferay.portal.kernel.servlet.DirectServletRegistryUtil;
+import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.InstancePool;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
+import com.liferay.portal.kernel.util.MethodHandler;
+import com.liferay.portal.kernel.util.MethodKey;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.PrefsProps;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.ThreadUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.xuggler.XugglerInstallException;
-import com.liferay.portal.kernel.xuggler.XugglerUtil;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portal.log4j.Log4JUtil;
+import com.liferay.portal.security.membershippolicy.RoleMembershipPolicyFactoryUtil;
+import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyFactoryUtil;
 import com.liferay.portal.util.MaintenanceUtil;
-import com.liferay.portal.util.PrefsPropsUtil;
+import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.ShutdownUtil;
+import com.liferay.server.admin.web.internal.constants.ImageMagickResourceLimitConstants;
+import com.liferay.server.admin.web.internal.scripting.util.ServerScriptingUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.WindowState;
+
+import java.lang.reflect.InvocationHandler;
+
+import java.util.Collections;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletSession;
-import javax.portlet.WindowState;
+import java.util.function.Function;
 
 import org.apache.logging.log4j.Level;
 
@@ -128,7 +143,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + PortletKeys.SERVER_ADMIN,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + PortletKeys.SERVER_ADMIN,
 		"mvc.command.name=/server_admin/edit_server"
 	},
 	service = MVCActionCommand.class
@@ -140,11 +156,30 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		if (!StringUtil.equals(actionRequest.getMethod(), HttpMethods.POST)) {
+			return;
+		}
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		String redirect = ParamUtil.getString(actionRequest, "redirect");
+
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
+
+		PortletPreferences portletPreferences = _prefsProps.getPreferences(
+			ParamUtil.getLong(actionRequest, "preferencesCompanyId"));
+
+		if (permissionChecker.isCompanyAdmin() && cmd.equals("updateMail")) {
+			_updateMail(actionRequest, portletPreferences);
+
+			sendRedirect(actionRequest, actionResponse, redirect);
+
+			return;
+		}
 
 		if (!permissionChecker.isOmniadmin()) {
 			SessionErrors.add(
@@ -156,107 +191,169 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			return;
 		}
 
-		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences();
+		if (!cmd.equals("addLogLevel") &&
+			!cmd.equals("dlGenerateAudioPreviews") &&
+			!cmd.equals("dlGenerateOpenOfficePreviews") &&
+			!cmd.equals("dlGenerateVideoPreviews") &&
+			!cmd.equals("updateLogLevels") &&
+			!cmd.equals("updatePortalProperties")) {
 
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		String redirect = ParamUtil.getString(actionRequest, "redirect");
+			CaptchaUtil.check(actionRequest);
+		}
 
 		if (cmd.equals("addLogLevel")) {
-			addLogLevel(actionRequest);
+			_updateLogLevels(
+				Collections.singletonMap(
+					ParamUtil.getString(actionRequest, "loggerName"),
+					ParamUtil.getString(actionRequest, "priority")));
 		}
 		else if (cmd.equals("cacheDb")) {
-			cacheDb();
+			_cacheDb();
 		}
 		else if (cmd.equals("cacheMulti")) {
-			cacheMulti();
+			_cacheMulti();
 		}
 		else if (cmd.equals("cacheServlet")) {
-			cacheServlet();
+			_cacheServlet();
 		}
 		else if (cmd.equals("cacheSingle")) {
-			cacheSingle();
+			_cacheSingle();
 		}
 		else if (cmd.equals("cleanUpAddToPagePermissions")) {
-			cleanUpAddToPagePermissions(actionRequest);
+			_cleanUpAddToPagePermissions(actionRequest);
 		}
 		else if (cmd.equals("cleanUpLayoutRevisionPortletPreferences")) {
-			cleanUpLayoutRevisionPortletPreferences();
+			_cleanUpLayoutRevisionPortletPreferences();
 		}
 		else if (cmd.equals("cleanUpOrphanedPortletPreferences")) {
-			cleanUpOrphanedPortletPreferences();
+			_cleanUpOrphanedPortletPreferences();
 		}
 		else if (cmd.startsWith("convertProcess.")) {
-			redirect = convertProcess(actionRequest, actionResponse, cmd);
+			redirect = _convertProcess(actionRequest, actionResponse, cmd);
 		}
-		else if (cmd.equals("dlPreviews")) {
-			DLPreviewableProcessor.deleteFiles();
+		else if (cmd.equals("dlDeletePreviews")) {
+			_deleteFiles();
+		}
+		else if (cmd.equals("dlGenerateAudioPreviews")) {
+			AudioProcessor audioProcessor = (AudioProcessor)_audioDLProcessor;
+
+			audioProcessor.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGenerateAudioPreviews");
+		}
+		else if (cmd.equals("dlGenerateOpenOfficePreviews")) {
+			_documentConversion.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGenerateOpenOfficePreviews");
+		}
+		else if (cmd.equals("dlGeneratePDFPreviews")) {
+			PDFProcessor pdfProcessor = (PDFProcessor)_dlProcessor;
+
+			pdfProcessor.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGeneratePDFPreviews");
+		}
+		else if (cmd.equals("dlGenerateVideoPreviews")) {
+			VideoProcessor videoProcessor = (VideoProcessor)_videoDLProcessor;
+
+			videoProcessor.generatePreviews();
+
+			hideDefaultSuccessMessage(actionRequest);
+
+			SessionMessages.add(actionRequest, "dlGenerateVideoPreviews");
 		}
 		else if (cmd.equals("gc")) {
-			gc();
-		}
-		else if (cmd.equals("installXuggler")) {
-			try {
-				installXuggler(actionRequest, actionResponse);
-			}
-			catch (XugglerInstallException xugglerInstallException) {
-				SessionErrors.add(
-					actionRequest, XugglerInstallException.class.getName(),
-					xugglerInstallException);
-			}
+			_gc();
 		}
 		else if (cmd.equals("runScript")) {
-			runScript(actionRequest, actionResponse);
+			_runScript(actionRequest, actionResponse);
 		}
 		else if (cmd.equals("shutdown")) {
-			shutdown(actionRequest);
+			_shutdown(actionRequest);
 		}
 		else if (cmd.equals("threadDump")) {
-			threadDump();
+			_threadDump();
 		}
 		else if (cmd.equals("updateExternalServices")) {
-			updateExternalServices(actionRequest, portletPreferences);
+			_updateExternalServices(actionRequest, portletPreferences);
 		}
 		else if (cmd.equals("updateLogLevels")) {
-			updateLogLevels(actionRequest);
+			_updateLogLevels(actionRequest);
 		}
 		else if (cmd.equals("updateMail")) {
-			updateMail(actionRequest, portletPreferences);
+			_updateMail(actionRequest, portletPreferences);
+		}
+		else if (cmd.equals("updatePortalProperties")) {
+			_updatePortalProperties(actionRequest);
 		}
 		else if (cmd.equals("verifyMembershipPolicies")) {
-			verifyMembershipPolicies();
-		}
-		else if (cmd.equals("verifyPluginTables")) {
-			verifyPluginTables();
+			_verifyMembershipPolicies();
 		}
 
 		sendRedirect(actionRequest, actionResponse, redirect);
 	}
 
-	protected void addLogLevel(ActionRequest actionRequest) throws Exception {
-		String loggerName = ParamUtil.getString(actionRequest, "loggerName");
-		String priority = ParamUtil.getString(actionRequest, "priority");
+	private static void _resetLogLevels(
+		Map<String, String> logLevels, Map<String, String> customLogSettings) {
 
-		Log4JUtil.setLevel(loggerName, priority, true);
+		for (Map.Entry<String, String> logLevel : logLevels.entrySet()) {
+			Log4JUtil.setLevel(
+				logLevel.getKey(), logLevel.getValue(),
+				customLogSettings.containsKey(logLevel.getKey()));
+		}
 	}
 
-	protected void cacheDb() throws Exception {
+	private static void _updateLogLevels(Map<String, String> logLevels) {
+		for (Map.Entry<String, String> logLevelEntry : logLevels.entrySet()) {
+			Log4JUtil.setLevel(
+				logLevelEntry.getKey(), logLevelEntry.getValue(), true);
+		}
+
+		if (!ClusterExecutorUtil.isEnabled()) {
+			return;
+		}
+
+		if (ClusterMasterExecutorUtil.isMaster()) {
+			ClusterRequest clusterRequest =
+				ClusterRequest.createMulticastRequest(
+					new MethodHandler(
+						_resetLogLevelsMethodKey, Log4JUtil.getPriorities(),
+						Log4JUtil.getCustomLogSettings()),
+					true);
+
+			clusterRequest.setFireAndForget(true);
+
+			ClusterExecutorUtil.execute(clusterRequest);
+		}
+		else {
+			ClusterMasterExecutorUtil.executeOnMaster(
+				new MethodHandler(_updateLogLevelsMethodKey, logLevels));
+		}
+	}
+
+	private void _cacheDb() throws Exception {
 		CacheRegistryUtil.clear();
 	}
 
-	protected void cacheMulti() throws Exception {
+	private void _cacheMulti() throws Exception {
 		_multiVMPool.clear();
 	}
 
-	protected void cacheServlet() throws Exception {
-		_directServletRegistry.clearServlets();
+	private void _cacheServlet() throws Exception {
+		DirectServletRegistryUtil.clearServlets();
 	}
 
-	protected void cacheSingle() throws Exception {
+	private void _cacheSingle() throws Exception {
 		_singleVMPool.clear();
 	}
 
-	protected void cleanUpAddToPagePermissions(ActionRequest actionRequest)
+	private void _cleanUpAddToPagePermissions(ActionRequest actionRequest)
 		throws Exception {
 
 		long companyId = _portal.getCompanyId(actionRequest);
@@ -274,7 +371,40 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		_cleanUpAddToPagePermissions(companyId, role.getRoleId(), false);
 	}
 
-	protected void cleanUpLayoutRevisionPortletPreferences() throws Exception {
+	private void _cleanUpAddToPagePermissions(
+			long companyId, long roleId, boolean limitScope)
+		throws Exception {
+
+		Group userPersonalSite = _groupLocalService.getGroup(
+			companyId, GroupConstants.USER_PERSONAL_SITE);
+
+		String groupIdString = String.valueOf(userPersonalSite.getGroupId());
+
+		for (ResourcePermission resourcePermission :
+				_resourcePermissionLocalService.getRoleResourcePermissions(
+					roleId)) {
+
+			if (!resourcePermission.hasActionId(ActionKeys.ADD_TO_PAGE)) {
+				continue;
+			}
+
+			_resourcePermissionLocalService.removeResourcePermission(
+				companyId, resourcePermission.getName(),
+				resourcePermission.getScope(), resourcePermission.getPrimKey(),
+				roleId, ActionKeys.ADD_TO_PAGE);
+
+			if (!limitScope) {
+				continue;
+			}
+
+			_resourcePermissionLocalService.addResourcePermission(
+				companyId, resourcePermission.getName(),
+				ResourceConstants.SCOPE_GROUP, groupIdString, roleId,
+				ActionKeys.ADD_TO_PAGE);
+		}
+	}
+
+	private void _cleanUpLayoutRevisionPortletPreferences() throws Exception {
 		boolean active = CacheRegistryUtil.isActive();
 
 		CacheRegistryUtil.setActive(true);
@@ -321,12 +451,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 					layoutStagingHandler.setLayoutRevision(layoutRevision);
 
 					if (_containsPortlet(
-							(Layout)ProxyUtil.newProxyInstance(
-								PortalClassLoaderUtil.getClassLoader(),
-								new Class<?>[] {
-									Layout.class, ModelWrapper.class
-								},
-								layoutStagingHandler),
+							_proxyProviderFunction.apply(layoutStagingHandler),
 							portletPreferences.getPortletId())) {
 
 						return;
@@ -339,7 +464,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 					}
 
 					_portletPreferencesLocalService.deletePortletPreferences(
-						portletPreferences);
+						portletPreferences.getPortletPreferencesId());
 				});
 
 			actionableDynamicQuery.performActions();
@@ -349,65 +474,80 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void cleanUpOrphanedPortletPreferences() throws PortalException {
+	private void _cleanUpOrphanedPortletPreferences() throws Exception {
 		boolean active = CacheRegistryUtil.isActive();
 
 		CacheRegistryUtil.setActive(true);
 
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
-			ActionableDynamicQuery actionableDynamicQuery =
-				_portletPreferencesLocalService.getActionableDynamicQuery();
+			_companyLocalService.forEachCompanyId(
+				companyId -> {
+					List<Long> ctCollectionIds = ListUtil.toList(
+						_ctCollectionLocalService.getCTCollections(
+							companyId,
+							new int[] {
+								WorkflowConstants.STATUS_DRAFT,
+								WorkflowConstants.STATUS_SCHEDULED
+							},
+							QueryUtil.ALL_POS, QueryUtil.ALL_POS, null),
+						CTCollectionModel::getCtCollectionId);
 
-			actionableDynamicQuery.setParallel(true);
-			actionableDynamicQuery.setPerformActionMethod(
-				(com.liferay.portal.kernel.model.PortletPreferences pref) -> {
-					if ((pref.getOwnerId() !=
-							PortletKeys.PREFS_OWNER_ID_DEFAULT) ||
-						(pref.getOwnerType() !=
-							PortletKeys.PREFS_OWNER_TYPE_LAYOUT)) {
+					ctCollectionIds.add(
+						CTConstants.CT_COLLECTION_ID_PRODUCTION);
 
-						return;
-					}
-
-					Layout layout = _layoutLocalService.getLayout(
-						pref.getPlid());
-
-					if (layout.isTypeContent() || layout.isTypeControlPanel()) {
-						return;
-					}
-
-					UnicodeProperties typeSettingsUnicodeProperties =
-						layout.getTypeSettingsProperties();
-
-					Set<String> keys = typeSettingsUnicodeProperties.keySet();
-
-					boolean orphan = true;
-
-					for (String key : keys) {
-						String value =
-							typeSettingsUnicodeProperties.getProperty(key);
-
-						if (value.contains(pref.getPortletId())) {
-							orphan = false;
-
-							break;
-						}
-					}
-
-					if (orphan) {
-						_portletPreferencesLocalService.
-							deletePortletPreferences(pref);
+					for (long ctCollectionId : ctCollectionIds) {
+						_cleanUpOrphanedPortletPreferences(ctCollectionId);
 					}
 				});
-
-			actionableDynamicQuery.performActions();
 		}
 		finally {
 			CacheRegistryUtil.setActive(active);
 		}
 	}
 
-	protected String convertProcess(
+	private void _cleanUpOrphanedPortletPreferences(long ctCollectionId)
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollectionId)) {
+
+			ActionableDynamicQuery actionableDynamicQuery =
+				_portletPreferencesLocalService.getActionableDynamicQuery();
+
+			actionableDynamicQuery.setAddCriteriaMethod(
+				dynamicQuery -> {
+					Property plidProperty = PropertyFactoryUtil.forName("plid");
+
+					DynamicQuery layoutRevisionDynamicQuery =
+						_layoutRevisionLocalService.dynamicQuery();
+
+					layoutRevisionDynamicQuery.setProjection(
+						ProjectionFactoryUtil.property("layoutRevisionId"));
+
+					dynamicQuery.add(
+						plidProperty.notIn(layoutRevisionDynamicQuery));
+				});
+			actionableDynamicQuery.setParallel(true);
+			actionableDynamicQuery.setPerformActionMethod(
+				(com.liferay.portal.kernel.model.PortletPreferences
+					portletPreferences) -> _performAction(portletPreferences));
+
+			actionableDynamicQuery.performActions();
+		}
+	}
+
+	private boolean _containsPortlet(Layout layout, String portletId) {
+		LayoutTypePortlet layoutTypePortlet =
+			(LayoutTypePortlet)layout.getLayoutType();
+
+		List<String> portletIds = ListUtil.toList(
+			layoutTypePortlet.getAllPortlets(), Portlet.PORTLET_ID_ACCESSOR);
+
+		return portletIds.contains(portletId);
+	}
+
+	private String _convertProcess(
 			ActionRequest actionRequest, ActionResponse actionResponse,
 			String cmd)
 		throws Exception {
@@ -415,7 +555,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		String className = StringUtil.replaceFirst(
 			cmd, "convertProcess.", StringPool.BLANK);
 
-		ConvertProcess convertProcess = (ConvertProcess)InstancePool.get(
+		ConvertProcess convertProcess = ConvertProcessUtil.getConvertProcess(
 			className);
 
 		String[] parameters = convertProcess.getParameterNames();
@@ -472,29 +612,83 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 
 		Message message = new Message();
 
-		message.setPayload(className);
+		message.setPayload(convertProcess);
 
 		_messageBus.sendMessage(DestinationNames.CONVERT_PROCESS, message);
 
 		return null;
 	}
 
-	protected void gc() throws Exception {
+	private void _deleteFiles() {
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				_store.deleteDirectory(
+					companyId, BasePreviewableDLProcessor.REPOSITORY_ID,
+					BasePreviewableDLProcessor.PREVIEW_PATH);
+
+				_store.deleteDirectory(
+					companyId, BasePreviewableDLProcessor.REPOSITORY_ID,
+					BasePreviewableDLProcessor.THUMBNAIL_PATH);
+			});
+	}
+
+	private void _gc() throws Exception {
 		Runtime runtime = Runtime.getRuntime();
 
 		runtime.gc();
 	}
 
-	protected void installXuggler(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
+	private void _performAction(
+			com.liferay.portal.kernel.model.PortletPreferences
+				portletPreferences)
+		throws PortalException {
 
-		String jarName = ParamUtil.getString(actionRequest, "jarName");
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					portletPreferences.getCtCollectionId())) {
 
-		XugglerUtil.installNativeLibraries(jarName);
+			if ((portletPreferences.getOwnerId() !=
+					PortletKeys.PREFS_OWNER_ID_DEFAULT) ||
+				(portletPreferences.getOwnerType() !=
+					PortletKeys.PREFS_OWNER_TYPE_LAYOUT)) {
+
+				return;
+			}
+
+			Layout layout = _layoutLocalService.getLayout(
+				portletPreferences.getPlid());
+
+			if (layout.isTypeAssetDisplay() || layout.isTypeContent() ||
+				layout.isTypeControlPanel()) {
+
+				return;
+			}
+
+			UnicodeProperties typeSettingsUnicodeProperties =
+				layout.getTypeSettingsProperties();
+
+			Set<String> keys = typeSettingsUnicodeProperties.keySet();
+
+			boolean orphan = true;
+
+			for (String key : keys) {
+				String value = typeSettingsUnicodeProperties.getProperty(key);
+
+				if (value.contains(portletPreferences.getPortletId())) {
+					orphan = false;
+
+					break;
+				}
+			}
+
+			if (orphan) {
+				_portletPreferencesLocalService.deletePortletPreferences(
+					portletPreferences.getPortletPreferencesId());
+			}
+		}
 	}
 
-	protected void runScript(
+	private void _runScript(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
@@ -512,7 +706,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
 			new UnsyncByteArrayOutputStream();
 
-		UnsyncPrintWriter unsyncPrintWriter = UnsyncPrintWriterPool.borrow(
+		UnsyncPrintWriter unsyncPrintWriter = new UnsyncPrintWriter(
 			unsyncByteArrayOutputStream);
 
 		portletObjects.put("out", unsyncPrintWriter);
@@ -522,7 +716,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			SessionMessages.add(actionRequest, "script", script);
 			SessionMessages.add(actionRequest, "output", output);
 
-			_scripting.exec(null, portletObjects, language, script);
+			ServerScriptingUtil.execute(portletObjects, language, script);
 
 			unsyncPrintWriter.flush();
 
@@ -541,7 +735,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void shutdown(ActionRequest actionRequest) throws Exception {
+	private void _shutdown(ActionRequest actionRequest) throws Exception {
 		if (ShutdownUtil.isInProcess()) {
 			ShutdownUtil.cancel();
 		}
@@ -560,7 +754,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void threadDump() throws Exception {
+	private void _threadDump() throws Exception {
 		if (_log.isInfoEnabled()) {
 			Log log = SanitizerLogWrapper.allowCRLF(_log);
 
@@ -575,7 +769,7 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void updateExternalServices(
+	private void _updateExternalServices(
 			ActionRequest actionRequest, PortletPreferences portletPreferences)
 		throws Exception {
 
@@ -583,56 +777,45 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest, "imageMagickEnabled");
 		String imageMagickPath = ParamUtil.getString(
 			actionRequest, "imageMagickPath");
-		boolean xugglerEnabled = ParamUtil.getBoolean(
-			actionRequest, "xugglerEnabled");
 
 		portletPreferences.setValue(
 			PropsKeys.IMAGEMAGICK_ENABLED, String.valueOf(imageMagickEnabled));
 		portletPreferences.setValue(
 			PropsKeys.IMAGEMAGICK_GLOBAL_SEARCH_PATH, imageMagickPath);
-		portletPreferences.setValue(
-			PropsKeys.XUGGLER_ENABLED, String.valueOf(xugglerEnabled));
 
-		Enumeration<String> enumeration = actionRequest.getParameterNames();
+		for (String name : ImageMagickResourceLimitConstants.PROPERTY_NAMES) {
+			String propertyName = PropsKeys.IMAGEMAGICK_RESOURCE_LIMIT + name;
 
-		while (enumeration.hasMoreElements()) {
-			String name = enumeration.nextElement();
-
-			if (name.startsWith("imageMagickLimit")) {
-				String key = StringUtil.toLowerCase(name.substring(16));
-				String value = ParamUtil.getString(actionRequest, name);
-
-				portletPreferences.setValue(
-					PropsKeys.IMAGEMAGICK_RESOURCE_LIMIT + key, value);
-			}
+			portletPreferences.setValue(
+				propertyName, ParamUtil.getString(actionRequest, propertyName));
 		}
 
 		portletPreferences.store();
 
-		GhostscriptUtil.reset();
-		ImageMagickUtil.reset();
+		_ghostscript.reset();
+		_imageMagick.reset();
 	}
 
-	protected void updateLogLevels(ActionRequest actionRequest)
-		throws Exception {
-
+	private void _updateLogLevels(ActionRequest actionRequest) {
 		Enumeration<String> enumeration = actionRequest.getParameterNames();
+
+		Map<String, String> logLevels = new HashMap<>();
 
 		while (enumeration.hasMoreElements()) {
 			String name = enumeration.nextElement();
 
 			if (name.startsWith("logLevel")) {
-				String loggerName = name.substring(8);
-
-				String priority = ParamUtil.getString(
-					actionRequest, name, Level.INFO.toString());
-
-				Log4JUtil.setLevel(loggerName, priority, true);
+				logLevels.put(
+					name.substring(8),
+					ParamUtil.getString(
+						actionRequest, name, Level.INFO.toString()));
 			}
 		}
+
+		_updateLogLevels(logLevels);
 	}
 
-	protected void updateMail(
+	private void _updateMail(
 			ActionRequest actionRequest, PortletPreferences portletPreferences)
 		throws Exception {
 
@@ -644,6 +827,8 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		int pop3Port = ParamUtil.getInteger(actionRequest, "pop3Port");
 		boolean pop3Secure = ParamUtil.getBoolean(actionRequest, "pop3Secure");
 		String pop3User = ParamUtil.getString(actionRequest, "pop3User");
+		boolean popServerNotificationsEnabled = ParamUtil.getBoolean(
+			actionRequest, "popServerNotificationsEnabled");
 		String smtpHost = ParamUtil.getString(actionRequest, "smtpHost");
 		String smtpPassword = ParamUtil.getString(
 			actionRequest, "smtpPassword");
@@ -700,13 +885,40 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 			PropsKeys.MAIL_SESSION_MAIL_STORE_PROTOCOL, storeProtocol);
 		portletPreferences.setValue(
 			PropsKeys.MAIL_SESSION_MAIL_TRANSPORT_PROTOCOL, transportProtocol);
+		portletPreferences.setValue(
+			PropsKeys.POP_SERVER_NOTIFICATIONS_ENABLED,
+			String.valueOf(popServerNotificationsEnabled));
 
 		portletPreferences.store();
 
 		_mailService.clearSession();
 	}
 
-	protected void verifyMembershipPolicies() throws Exception {
+	private void _updatePortalProperties(ActionRequest actionRequest) {
+		Enumeration<String> enumeration = actionRequest.getParameterNames();
+
+		Map<String, String> portalProperties = new HashMap<>();
+
+		while (enumeration.hasMoreElements()) {
+			String name = enumeration.nextElement();
+
+			if (name.startsWith("portalProperty")) {
+				portalProperties.put(
+					name.substring(14),
+					ParamUtil.getString(actionRequest, name, "false"));
+			}
+		}
+
+		_updatePortalProperties(portalProperties);
+	}
+
+	private void _updatePortalProperties(Map<String, String> portalProperties) {
+		for (Map.Entry<String, String> entry : portalProperties.entrySet()) {
+			PropsUtil.set(entry.getKey(), entry.getValue());
+		}
+	}
+
+	private void _verifyMembershipPolicies() throws Exception {
 		OrganizationMembershipPolicy organizationMembershipPolicy =
 			_organizationMembershipPolicyFactory.
 				getOrganizationMembershipPolicy();
@@ -714,76 +926,53 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 		organizationMembershipPolicy.verifyPolicy();
 
 		RoleMembershipPolicy roleMembershipPolicy =
-			_roleMembershipPolicyFactory.getRoleMembershipPolicy();
+			RoleMembershipPolicyFactoryUtil.getRoleMembershipPolicy();
 
 		roleMembershipPolicy.verifyPolicy();
 
-		SiteMembershipPolicy siteMembershipPolicy =
-			_siteMembershipPolicyFactory.getSiteMembershipPolicy();
-
-		siteMembershipPolicy.verifyPolicy();
+		SiteMembershipPolicyUtil.verifyPolicy();
 
 		UserGroupMembershipPolicy userGroupMembershipPolicy =
-			_userGroupMembershipPolicyFactory.getUserGroupMembershipPolicy();
+			UserGroupMembershipPolicyFactoryUtil.getUserGroupMembershipPolicy();
 
 		userGroupMembershipPolicy.verifyPolicy();
-	}
-
-	protected void verifyPluginTables() throws Exception {
-		_serviceComponentLocalService.verifyDB();
-	}
-
-	private void _cleanUpAddToPagePermissions(
-			long companyId, long roleId, boolean limitScope)
-		throws Exception {
-
-		Group userPersonalSite = _groupLocalService.getGroup(
-			companyId, GroupConstants.USER_PERSONAL_SITE);
-
-		String groupIdString = String.valueOf(userPersonalSite.getGroupId());
-
-		for (ResourcePermission resourcePermission :
-				_resourcePermissionLocalService.getRoleResourcePermissions(
-					roleId)) {
-
-			if (!resourcePermission.hasActionId(ActionKeys.ADD_TO_PAGE)) {
-				continue;
-			}
-
-			_resourcePermissionLocalService.removeResourcePermission(
-				companyId, resourcePermission.getName(),
-				resourcePermission.getScope(), resourcePermission.getPrimKey(),
-				roleId, ActionKeys.ADD_TO_PAGE);
-
-			if (!limitScope) {
-				continue;
-			}
-
-			_resourcePermissionLocalService.addResourcePermission(
-				companyId, resourcePermission.getName(),
-				ResourceConstants.SCOPE_GROUP, groupIdString, roleId,
-				ActionKeys.ADD_TO_PAGE);
-		}
-	}
-
-	private boolean _containsPortlet(Layout layout, String portletId) {
-		LayoutTypePortlet layoutTypePortlet =
-			(LayoutTypePortlet)layout.getLayoutType();
-
-		List<String> portletIds = ListUtil.toList(
-			layoutTypePortlet.getAllPortlets(), Portlet.PORTLET_ID_ACCESSOR);
-
-		return portletIds.contains(portletId);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditServerMVCActionCommand.class);
 
+	private static final Function<InvocationHandler, Layout>
+		_proxyProviderFunction = ProxyUtil.getProxyProviderFunction(
+			Layout.class, ModelWrapper.class);
+	private static final MethodKey _resetLogLevelsMethodKey = new MethodKey(
+		EditServerMVCActionCommand.class, "_resetLogLevels", Map.class,
+		Map.class);
+	private static final MethodKey _updateLogLevelsMethodKey = new MethodKey(
+		EditServerMVCActionCommand.class, "_updateLogLevels", Map.class);
+
+	@Reference(target = "(type=" + DLProcessorConstants.AUDIO_PROCESSOR + ")")
+	private DLProcessor _audioDLProcessor;
+
 	@Reference
-	private DirectServletRegistry _directServletRegistry;
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private CTCollectionLocalService _ctCollectionLocalService;
+
+	@Reference(target = "(type=" + DLProcessorConstants.PDF_PROCESSOR + ")")
+	private DLProcessor _dlProcessor;
+
+	@Reference
+	private DocumentConversion _documentConversion;
+
+	@Reference
+	private Ghostscript _ghostscript;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private ImageMagick _imageMagick;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -811,27 +1000,21 @@ public class EditServerMVCActionCommand extends BaseMVCActionCommand {
 	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
+	private PrefsProps _prefsProps;
+
+	@Reference
 	private ResourcePermissionLocalService _resourcePermissionLocalService;
 
 	@Reference
 	private RoleLocalService _roleLocalService;
 
 	@Reference
-	private RoleMembershipPolicyFactory _roleMembershipPolicyFactory;
-
-	@Reference
-	private Scripting _scripting;
-
-	@Reference
-	private ServiceComponentLocalService _serviceComponentLocalService;
-
-	@Reference
 	private SingleVMPool _singleVMPool;
 
-	@Reference
-	private SiteMembershipPolicyFactory _siteMembershipPolicyFactory;
+	@Reference(target = "(default=true)")
+	private Store _store;
 
-	@Reference
-	private UserGroupMembershipPolicyFactory _userGroupMembershipPolicyFactory;
+	@Reference(target = "(type=" + DLProcessorConstants.VIDEO_PROCESSOR + ")")
+	private DLProcessor _videoDLProcessor;
 
 }

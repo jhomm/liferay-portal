@@ -1,29 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.portlet.action;
 
 import com.liferay.asset.list.constants.AssetListPortletKeys;
 import com.liferay.asset.list.service.AssetListEntryService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,9 +26,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
+		"jakarta.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
 		"mvc.command.name=/asset_list/delete_asset_list_entry_variation"
 	},
 	service = MVCActionCommand.class
@@ -58,23 +51,38 @@ public class DeleteAssetListEntryVariationMVCActionCommand
 
 		sendRedirect(
 			actionRequest, actionResponse,
-			getRedirectURL(actionResponse, assetListEntryId));
+			getRedirectURL(actionRequest, actionResponse, assetListEntryId));
 	}
 
 	protected String getRedirectURL(
-		ActionResponse actionResponse, long assetListEntryId) {
+		ActionRequest actionRequest, ActionResponse actionResponse,
+		long assetListEntryId) {
 
 		return PortletURLBuilder.createRenderURL(
 			_portal.getLiferayPortletResponse(actionResponse)
 		).setMVCPath(
 			"/edit_asset_list_entry.jsp"
+		).setBackURL(
+			ParamUtil.getString(actionRequest, "backURL")
 		).setParameter(
 			"assetListEntryId", assetListEntryId
+		).setParameter(
+			"backURLTitle",
+			() -> {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)actionRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
+
+				return _language.get(themeDisplay.getLocale(), "collections");
+			}
 		).buildString();
 	}
 
 	@Reference
 	private AssetListEntryService _assetListEntryService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

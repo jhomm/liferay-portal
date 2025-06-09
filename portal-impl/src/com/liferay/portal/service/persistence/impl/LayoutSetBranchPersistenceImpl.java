@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -48,7 +39,6 @@ import com.liferay.portal.model.impl.LayoutSetBranchModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -185,7 +175,7 @@ public class LayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutSetBranch layoutSetBranch : list) {
@@ -608,7 +598,8 @@ public class LayoutSetBranchPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(LayoutSetBranchModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					LayoutSetBranchModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(LayoutSetBranchModelImpl.ORDER_BY_SQL);
@@ -804,7 +795,8 @@ public class LayoutSetBranchPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(LayoutSetBranchModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					LayoutSetBranchModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(LayoutSetBranchModelImpl.ORDER_BY_SQL);
@@ -877,7 +869,8 @@ public class LayoutSetBranchPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1070,7 +1063,7 @@ public class LayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutSetBranch layoutSetBranch : list) {
@@ -1529,7 +1522,8 @@ public class LayoutSetBranchPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(LayoutSetBranchModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					LayoutSetBranchModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(LayoutSetBranchModelImpl.ORDER_BY_SQL);
@@ -1733,7 +1727,8 @@ public class LayoutSetBranchPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(LayoutSetBranchModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					LayoutSetBranchModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(LayoutSetBranchModelImpl.ORDER_BY_SQL);
@@ -1811,7 +1806,8 @@ public class LayoutSetBranchPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, privateLayout};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1912,7 +1908,6 @@ public class LayoutSetBranchPersistenceImpl
 		"layoutSetBranch.privateLayout = ?";
 
 	private FinderPath _finderPathFetchByG_P_N;
-	private FinderPath _finderPathCountByG_P_N;
 
 	/**
 	 * Returns the layout set branch where groupId = &#63; and privateLayout = &#63; and name = &#63; or throws a <code>NoSuchLayoutSetBranchException</code> if it could not be found.
@@ -1998,7 +1993,7 @@ public class LayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_P_N, finderArgs);
+				_finderPathFetchByG_P_N, finderArgs, this);
 		}
 
 		if (result instanceof LayoutSetBranch) {
@@ -2112,66 +2107,14 @@ public class LayoutSetBranchPersistenceImpl
 	 */
 	@Override
 	public int countByG_P_N(long groupId, boolean privateLayout, String name) {
-		name = Objects.toString(name, "");
+		LayoutSetBranch layoutSetBranch = fetchByG_P_N(
+			groupId, privateLayout, name);
 
-		FinderPath finderPath = _finderPathCountByG_P_N;
-
-		Object[] finderArgs = new Object[] {groupId, privateLayout, name};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_LAYOUTSETBRANCH_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_P_N_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_P_N_PRIVATELAYOUT_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_P_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_P_N_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(privateLayout);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (layoutSetBranch == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_P_N_GROUPID_2 =
@@ -2298,7 +2241,7 @@ public class LayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (LayoutSetBranch layoutSetBranch : list) {
@@ -2787,7 +2730,8 @@ public class LayoutSetBranchPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(LayoutSetBranchModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					LayoutSetBranchModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(LayoutSetBranchModelImpl.ORDER_BY_SQL);
@@ -2998,7 +2942,8 @@ public class LayoutSetBranchPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(LayoutSetBranchModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					LayoutSetBranchModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(LayoutSetBranchModelImpl.ORDER_BY_SQL);
@@ -3084,7 +3029,8 @@ public class LayoutSetBranchPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, privateLayout, master};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3313,8 +3259,6 @@ public class LayoutSetBranchPersistenceImpl
 			layoutSetBranchModelImpl.getName()
 		};
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByG_P_N, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByG_P_N, args, layoutSetBranchModelImpl);
 	}
@@ -3641,7 +3585,7 @@ public class LayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<LayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3711,7 +3655,7 @@ public class LayoutSetBranchPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -3826,14 +3770,6 @@ public class LayoutSetBranchPersistenceImpl
 			},
 			new String[] {"groupId", "privateLayout", "name"}, true);
 
-		_finderPathCountByG_P_N = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_P_N",
-			new String[] {
-				Long.class.getName(), Boolean.class.getName(),
-				String.class.getName()
-			},
-			new String[] {"groupId", "privateLayout", "name"}, false);
-
 		_finderPathWithPaginationFindByG_P_M = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_P_M",
 			new String[] {
@@ -3859,29 +3795,13 @@ public class LayoutSetBranchPersistenceImpl
 			},
 			new String[] {"groupId", "privateLayout", "master"}, false);
 
-		_setLayoutSetBranchUtilPersistence(this);
+		LayoutSetBranchUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setLayoutSetBranchUtilPersistence(null);
+		LayoutSetBranchUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(LayoutSetBranchImpl.class.getName());
-	}
-
-	private void _setLayoutSetBranchUtilPersistence(
-		LayoutSetBranchPersistence layoutSetBranchPersistence) {
-
-		try {
-			Field field = LayoutSetBranchUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, layoutSetBranchPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_LAYOUTSETBRANCH =

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.portlet.action;
@@ -38,8 +29,8 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,27 +39,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
-		"javax.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS_DISPLAY,
+		"jakarta.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
+		"jakarta.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS_DISPLAY,
 		"mvc.command.name=/dynamic_data_lists/add_record"
 	},
 	service = MVCActionCommand.class
 )
 public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
-
-	protected DDMFormValues deserialize(String content, DDMForm ddmForm) {
-		DDMFormValuesDeserializerDeserializeRequest.Builder builder =
-			DDMFormValuesDeserializerDeserializeRequest.Builder.newBuilder(
-				content, ddmForm);
-
-		DDMFormValuesDeserializerDeserializeResponse
-			ddmFormValuesDeserializerDeserializeResponse =
-				jsonDDMFormValuesDeserializer.deserialize(builder.build());
-
-		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -87,14 +65,52 @@ public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
 			ddmFormValues, serviceContext);
 	}
 
-	protected DDMForm getDDMForm(ActionRequest actionRequest)
+	protected DDMFormValues getDDMFormValues(ActionRequest actionRequest)
+		throws PortalException {
+
+		DDMForm ddmForm = _getDDMForm(actionRequest);
+
+		String serializedDDMFormValues = ParamUtil.getString(
+			actionRequest, "ddmFormValues");
+
+		return _deserialize(serializedDDMFormValues, ddmForm);
+	}
+
+	@Reference
+	protected DDLRecordService ddlRecordService;
+
+	@Reference
+	protected DDLRecordSetService ddlRecordSetService;
+
+	@Reference
+	protected DDMTemplateService ddmTemplateService;
+
+	@Reference(target = "(ddm.form.deserializer.type=json)")
+	protected DDMFormDeserializer jsonDDMFormDeserializer;
+
+	@Reference(target = "(ddm.form.values.deserializer.type=json)")
+	protected DDMFormValuesDeserializer jsonDDMFormValuesDeserializer;
+
+	private DDMFormValues _deserialize(String content, DDMForm ddmForm) {
+		DDMFormValuesDeserializerDeserializeRequest.Builder builder =
+			DDMFormValuesDeserializerDeserializeRequest.Builder.newBuilder(
+				content, ddmForm);
+
+		DDMFormValuesDeserializerDeserializeResponse
+			ddmFormValuesDeserializerDeserializeResponse =
+				jsonDDMFormValuesDeserializer.deserialize(builder.build());
+
+		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
+	}
+
+	private DDMForm _getDDMForm(ActionRequest actionRequest)
 		throws PortalException {
 
 		long formDDMTemplateId = ParamUtil.getLong(
 			actionRequest, "formDDMTemplateId");
 
 		if (formDDMTemplateId > 0) {
-			return getDDMFormTemplate(formDDMTemplateId);
+			return _getDDMFormTemplate(formDDMTemplateId);
 		}
 
 		long recordSetId = ParamUtil.getLong(actionRequest, "recordSetId");
@@ -106,7 +122,7 @@ public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
 		return ddmStructure.getFullHierarchyDDMForm();
 	}
 
-	protected DDMForm getDDMFormTemplate(long formDDMTemplateId)
+	private DDMForm _getDDMFormTemplate(long formDDMTemplateId)
 		throws PortalException {
 
 		DDMTemplate ddmTemplate = ddmTemplateService.getTemplate(
@@ -122,45 +138,5 @@ public class AddRecordMVCActionCommand extends BaseMVCActionCommand {
 
 		return ddmFormDeserializerDeserializeResponse.getDDMForm();
 	}
-
-	protected DDMFormValues getDDMFormValues(ActionRequest actionRequest)
-		throws PortalException {
-
-		DDMForm ddmForm = getDDMForm(actionRequest);
-
-		String serializedDDMFormValues = ParamUtil.getString(
-			actionRequest, "ddmFormValues");
-
-		return deserialize(serializedDDMFormValues, ddmForm);
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordService(DDLRecordService ddlRecordService) {
-		this.ddlRecordService = ddlRecordService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordSetService(
-		DDLRecordSetService ddlRecordSetService) {
-
-		this.ddlRecordSetService = ddlRecordSetService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMTemplateService(
-		DDMTemplateService ddmTemplateService) {
-
-		this.ddmTemplateService = ddmTemplateService;
-	}
-
-	protected DDLRecordService ddlRecordService;
-	protected DDLRecordSetService ddlRecordSetService;
-	protected DDMTemplateService ddmTemplateService;
-
-	@Reference(target = "(ddm.form.deserializer.type=json)")
-	protected DDMFormDeserializer jsonDDMFormDeserializer;
-
-	@Reference(target = "(ddm.form.values.deserializer.type=json)")
-	protected DDMFormValuesDeserializer jsonDDMFormValuesDeserializer;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -53,9 +44,7 @@ String viewCategoryHREF = ConfigurationCategoryUtil.getHREF(configurationCategor
 
 PortalUtil.addPortletBreadcrumbEntry(request, categoryDisplayName, viewCategoryHREF);
 
-ResourceBundleLoaderProvider resourceBundleLoaderProvider = (ResourceBundleLoaderProvider)request.getAttribute(ConfigurationAdminWebKeys.RESOURCE_BUNDLE_LOADER_PROVIDER);
-
-ResourceBundleLoader resourceBundleLoader = resourceBundleLoaderProvider.getResourceBundleLoader(configurationModel.getBundleSymbolicName());
+ResourceBundleLoader resourceBundleLoader = ResourceBundleLoaderProviderUtil.getResourceBundleLoader(configurationModel.getBundleSymbolicName());
 
 ResourceBundle componentResourceBundle = resourceBundleLoader.loadResourceBundle(PortalUtil.getLocale(request));
 
@@ -77,7 +66,7 @@ renderResponse.setTitle(categoryDisplayName);
 	ConfigurationModelListenerException cmle = (ConfigurationModelListenerException)errorException;
 	%>
 
-	<liferay-ui:message key="<%= cmle.causeMessage %>" localizeKey="<%= false %>" />
+	<liferay-ui:message key="<%= HtmlUtil.escape(cmle.causeMessage) %>" localizeKey="<%= false %>" />
 </liferay-ui:error>
 
 <portlet:actionURL name="/configuration_admin/bind_configuration" var="bindConfigurationActionURL" />
@@ -87,11 +76,8 @@ renderResponse.setTitle(categoryDisplayName);
 	<clay:col
 		size="12"
 	>
-		<liferay-ui:breadcrumb
-			showCurrentGroup="<%= false %>"
-			showGuestGroup="<%= false %>"
-			showLayout="<%= false %>"
-			showParentGroups="<%= false %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, false, true) %>"
 		/>
 	</clay:col>
 </clay:container-fluid>
@@ -133,86 +119,57 @@ renderResponse.setTitle(categoryDisplayName);
 					}
 					%>
 
-					<h2>
-						<%= HtmlUtil.escape(configurationTitle) %>
+					<clay:content-row
+						cssClass="autofit-padded-no-gutters-x sheet-title"
+					>
+						<clay:content-col
+							containerElement="h2"
+							expand="<%= true %>"
+						>
+							<clay:content-row
+								cssClass="autofit-padded-no-gutters-x"
+							>
+								<clay:content-col>
+									<%= HtmlUtil.escape(configurationTitle) %>
+								</clay:content-col>
+
+								<c:if test="<%= configurationModel.isDeprecated() %>">
+									<clay:content-col>
+										<liferay-frontend:feature-indicator
+											interactive="<%= true %>"
+											type="deprecated"
+										/>
+									</clay:content-col>
+								</c:if>
+							</clay:content-row>
+						</clay:content-col>
 
 						<c:if test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-							<liferay-ui:icon-menu
-								cssClass="float-right"
-								direction="right"
-								markupView="lexicon"
-								showWhenSingleIcon="<%= true %>"
-							>
-								<c:choose>
-									<c:when test="<%= configurationModel.isFactory() %>">
-										<portlet:actionURL name="/configuration_admin/delete_configuration" var="deleteConfigActionURL">
-											<portlet:param name="redirect" value="<%= currentURL %>" />
-											<portlet:param name="factoryPid" value="<%= configurationModel.getFactoryPid() %>" />
-											<portlet:param name="pid" value="<%= configurationModel.getID() %>" />
-										</portlet:actionURL>
-
-										<liferay-ui:icon
-											message="delete"
-											method="post"
-											url="<%= deleteConfigActionURL %>"
-										/>
-									</c:when>
-									<c:otherwise>
-										<portlet:actionURL name="/configuration_admin/delete_configuration" var="deleteConfigActionURL">
-											<portlet:param name="redirect" value="<%= currentURL %>" />
-											<portlet:param name="factoryPid" value="<%= configurationModel.getFactoryPid() %>" />
-											<portlet:param name="pid" value="<%= configurationModel.getID() %>" />
-										</portlet:actionURL>
-
-										<liferay-ui:icon
-											message="reset-default-values"
-											method="post"
-											url="<%= deleteConfigActionURL %>"
-										/>
-									</c:otherwise>
-								</c:choose>
-
-								<portlet:resourceURL id="/configuration_admin/export_configuration" var="exportURL">
-									<portlet:param name="factoryPid" value="<%= configurationModel.getFactoryPid() %>" />
-									<portlet:param name="pid" value="<%= configurationModel.getID() %>" />
-								</portlet:resourceURL>
-
-								<liferay-ui:icon
-									message="export"
-									method="get"
-									url="<%= exportURL %>"
-								/>
+							<clay:content-col>
 
 								<%
-								List<ConfigurationMenuItem> configurationMenuItems = (List<ConfigurationMenuItem>)request.getAttribute(ConfigurationAdminWebKeys.CONFIGURATION_MENU_ITEMS);
+								EditConfigurationDisplayContext editConfigurationDisplayContext = new EditConfigurationDisplayContext(request, renderRequest, renderResponse);
 								%>
 
-								<c:if test="<%= ListUtil.isNotEmpty(configurationMenuItems) %>">
-
-									<%
-									for (ConfigurationMenuItem configurationMenuItem : configurationMenuItems) {
-										Configuration configuration = configurationModel.getConfiguration();
-									%>
-
-										<liferay-ui:icon
-											message="<%= configurationMenuItem.getLabel(locale) %>"
-											url="<%= configurationMenuItem.getURL(renderRequest, renderResponse, configurationModel.getID(), configurationModel.getFactoryPid(), configuration.getProperties()) %>"
-											useDialog="<%= true %>"
-										/>
-
-									<%
-									}
-									%>
-
-								</c:if>
-							</liferay-ui:icon-menu>
+								<clay:dropdown-actions
+									dropdownItems="<%= editConfigurationDisplayContext.getDropdownItems() %>"
+									propsTransformer="{EditConfigurationActionDropdownPropsTransformer} from configuration-admin-web"
+									title='<%= LanguageUtil.get(request, "actions") %>'
+								/>
+							</clay:content-col>
 						</c:if>
-					</h2>
+					</clay:content-row>
+
+					<c:if test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) && configurationModel.isReadOnly() %>">
+						<clay:alert
+							message="this-configuration-is-read-only"
+						/>
+					</c:if>
 
 					<c:if test="<%= !configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-						<aui:alert closeable="<%= false %>" id="errorAlert" type="info">
-							<liferay-ui:message key="this-configuration-is-not-saved-yet.-the-values-shown-are-the-default" />
-						</aui:alert>
+						<clay:alert
+							message="this-configuration-is-not-saved-yet.-the-values-shown-are-the-default"
+						/>
 					</c:if>
 
 					<liferay-util:dynamic-include key='<%= "com.liferay.configuration.admin.web#/edit_configuration.jsp#" + configurationModel.getFactoryPid() + "#pre" %>' />
@@ -235,27 +192,29 @@ renderResponse.setTitle(categoryDisplayName);
 
 					<liferay-util:dynamic-include key='<%= "com.liferay.configuration.admin.web#/edit_configuration.jsp#" + configurationModel.getFactoryPid() + "#post" %>' />
 
-					<aui:button-row>
-						<c:choose>
-							<c:when test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
-								<aui:button name="update" type="submit" value="update" />
-							</c:when>
-							<c:otherwise>
-								<aui:button name="save" type="submit" value="save" />
-							</c:otherwise>
-						</c:choose>
+					<c:if test="<%= !configurationModel.isReadOnly() %>">
+						<div class="align-items-center d-flex justify-content-between">
+							<aui:button-row>
+								<c:choose>
+									<c:when test="<%= configurationModel.hasScopeConfiguration(configurationScopeDisplayContext.getScope()) %>">
+										<aui:button data-qa-id="submitConfiguration" name="update" type="submit" value="update" />
+									</c:when>
+									<c:otherwise>
+										<aui:button data-qa-id="submitConfiguration" name="save" type="submit" value="save" />
+									</c:otherwise>
+								</c:choose>
 
-						<aui:button href="<%= redirect %>" name="cancel" type="cancel" />
+								<aui:button cssClass="ml-3" href="<%= redirect %>" name="cancel" type="cancel" />
+							</aui:button-row>
 
-						<c:if test="<%= Validator.isNotNull(configurationModel.getLiferayLearnMessageKey()) && Validator.isNotNull(configurationModel.getLiferayLearnMessageResource()) %>">
-							<div class="btn float-right">
+							<c:if test="<%= Validator.isNotNull(configurationModel.getLiferayLearnMessageKey()) && Validator.isNotNull(configurationModel.getLiferayLearnMessageResource()) %>">
 								<liferay-learn:message
 									key="<%= configurationModel.getLiferayLearnMessageKey() %>"
 									resource="<%= configurationModel.getLiferayLearnMessageResource() %>"
 								/>
-							</div>
-						</c:if>
-					</aui:button-row>
+							</c:if>
+						</div>
+					</c:if>
 				</aui:form>
 			</clay:sheet>
 		</clay:col>

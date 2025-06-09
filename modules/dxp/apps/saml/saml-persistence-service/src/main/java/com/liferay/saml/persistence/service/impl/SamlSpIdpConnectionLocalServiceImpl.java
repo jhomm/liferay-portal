@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service.impl;
@@ -83,13 +74,10 @@ public class SamlSpIdpConnectionLocalServiceImpl
 			assertionSignatureRequired);
 		samlSpIdpConnection.setClockSkew(clockSkew);
 		samlSpIdpConnection.setEnabled(enabled);
-		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
-		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 		samlSpIdpConnection.setForceAuthn(forceAuthn);
 		samlSpIdpConnection.setLdapImportEnabled(ldapImportEnabled);
 		samlSpIdpConnection.setMetadataUpdatedDate(new Date());
-		samlSpIdpConnection.setUnknownUsersAreStrangers(
-			unknownUsersAreStrangers);
+		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 
 		if ((metadataXmlInputStream == null) &&
 			Validator.isNotNull(metadataUrl)) {
@@ -114,14 +102,17 @@ public class SamlSpIdpConnectionLocalServiceImpl
 		}
 
 		samlSpIdpConnection.setMetadataXml(
-			getMetadataXml(metadataXmlInputStream, samlIdpEntityId));
+			_getMetadataXml(metadataXmlInputStream, samlIdpEntityId));
 		samlSpIdpConnection.setName(name);
 		samlSpIdpConnection.setNameIdFormat(nameIdFormat);
 		samlSpIdpConnection.setSamlIdpEntityId(samlIdpEntityId);
 		samlSpIdpConnection.setSignAuthnRequest(signAuthnRequest);
+		samlSpIdpConnection.setUnknownUsersAreStrangers(
+			unknownUsersAreStrangers);
 		samlSpIdpConnection.setUserAttributeMappings(userAttributeMappings);
 		samlSpIdpConnection.setUserIdentifierExpression(
 			userIdentifierExpression);
+		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 
 		return samlSpIdpConnectionPersistence.update(samlSpIdpConnection);
 	}
@@ -247,14 +238,13 @@ public class SamlSpIdpConnectionLocalServiceImpl
 			assertionSignatureRequired);
 		samlSpIdpConnection.setClockSkew(clockSkew);
 		samlSpIdpConnection.setEnabled(enabled);
-		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 		samlSpIdpConnection.setForceAuthn(forceAuthn);
 		samlSpIdpConnection.setLdapImportEnabled(ldapImportEnabled);
 		samlSpIdpConnection.setMetadataUpdatedDate(new Date());
 		samlSpIdpConnection.setUnknownUsersAreStrangers(
 			unknownUsersAreStrangers);
 
-		if (enabled && (metadataXmlInputStream == null) &&
+		if ((metadataXmlInputStream == null) &&
 			Validator.isNotNull(metadataUrl)) {
 
 			samlSpIdpConnection.setMetadataUrl(metadataUrl);
@@ -263,18 +253,23 @@ public class SamlSpIdpConnectionLocalServiceImpl
 				metadataXmlInputStream = _metadataUtil.getMetadata(metadataUrl);
 			}
 			catch (Exception exception) {
-				throw new SamlSpIdpConnectionMetadataUrlException(
-					StringBundler.concat(
-						"Unable to get metadata from ", metadataUrl, ": ",
-						exception.getMessage()),
-					exception);
+				if (enabled) {
+					throw new SamlSpIdpConnectionMetadataUrlException(
+						StringBundler.concat(
+							"Unable to get metadata from ", metadataUrl, ": ",
+							exception.getMessage()),
+						exception);
+				}
 			}
+		}
+		else {
+			samlSpIdpConnection.setMetadataUrl(StringPool.BLANK);
 		}
 
 		String metadataXml = StringPool.BLANK;
 
 		if (metadataXmlInputStream != null) {
-			metadataXml = getMetadataXml(
+			metadataXml = _getMetadataXml(
 				metadataXmlInputStream, samlIdpEntityId);
 		}
 
@@ -290,11 +285,12 @@ public class SamlSpIdpConnectionLocalServiceImpl
 		samlSpIdpConnection.setUserAttributeMappings(userAttributeMappings);
 		samlSpIdpConnection.setUserIdentifierExpression(
 			userIdentifierExpression);
+		samlSpIdpConnection.setExpandoBridgeAttributes(serviceContext);
 
 		return samlSpIdpConnectionPersistence.update(samlSpIdpConnection);
 	}
 
-	protected String getMetadataXml(
+	private String _getMetadataXml(
 			InputStream metadataXmlInputStream, String samlIdpEntityId)
 		throws PortalException {
 

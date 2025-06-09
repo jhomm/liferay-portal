@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
@@ -21,22 +12,35 @@ import com.liferay.commerce.constants.CommerceAddressConstants;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.list.type.model.ListTypeEntry;
+import com.liferay.list.type.service.ListTypeEntryLocalServiceUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.account.configuration.manager.AccountEntryAddressSubtypeConfigurationManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.list.type.manager.ListTypeEntryManagerUtil;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.ListType;
+import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CountryLocalServiceUtil;
 import com.liferay.portal.kernel.service.ListTypeLocalServiceUtil;
+import com.liferay.portal.kernel.service.PhoneLocalServiceUtil;
 import com.liferay.portal.kernel.service.RegionLocalServiceUtil;
+import com.liferay.portal.kernel.util.Validator;
 
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
 
 /**
  * @author Andrea Di Giorgi
+ * @deprecated As of Cavanaugh (7.4.x)
  */
+@Deprecated
 public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 
 	public static CommerceAddress fromAddress(Address address) {
@@ -64,6 +68,17 @@ public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 		}
 
 		commerceAddress.setCommerceAddressId(address.getAddressId());
+
+		List<Phone> phones = PhoneLocalServiceUtil.getPhones(
+			address.getCompanyId(), Address.class.getName(),
+			address.getAddressId());
+
+		if (!phones.isEmpty()) {
+			Phone phone = phones.get(0);
+
+			commerceAddress.setPhoneNumber(phone.getNumber());
+		}
+
 		commerceAddress.setDefaultBilling(
 			toCommerceAccountDefaultBilling(address));
 		commerceAddress.setDefaultShipping(
@@ -74,13 +89,8 @@ public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 	}
 
 	public static boolean isAccountEntryAddress(Address address) {
-		if (Objects.equals(
-				AccountEntry.class.getName(), address.getClassName())) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			AccountEntry.class.getName(), address.getClassName());
 	}
 
 	public static long toAddressTypeId(int commerceAddressType) {
@@ -147,7 +157,7 @@ public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 	}
 
 	public static int toCommerceAddressType(Address address) {
-		ListType listType = address.getType();
+		ListType listType = address.getListType();
 
 		String listTypeName = listType.getName();
 
@@ -203,6 +213,35 @@ public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 	}
 
 	@Override
+	public String getSubtype(Locale locale) {
+		if (Validator.isNull(getSubtype())) {
+			return StringPool.BLANK;
+		}
+
+		String externalReferenceCode =
+			AccountEntryAddressSubtypeConfigurationManagerUtil.
+				getAddressSubtypeListTypeDefinitionExternalReferenceCode(
+					getCompanyId(),
+					CommerceAddressConstants.getAddressTypeLabel(getType()));
+
+		if (Validator.isNull(externalReferenceCode)) {
+			return getSubtype();
+		}
+
+		ListTypeEntry listTypeEntry =
+			ListTypeEntryLocalServiceUtil.fetchListTypeEntry(
+				ListTypeEntryManagerUtil.
+					getListTypeEntryIdByListTypeDefinitionExternalReferenceCode(
+						externalReferenceCode, getCompanyId(), getSubtype()));
+
+		if (listTypeEntry == null) {
+			return getSubtype();
+		}
+
+		return listTypeEntry.getName(locale);
+	}
+
+	@Override
 	public boolean isGeolocated() {
 		if ((getLatitude() == 0) && (getLongitude() == 0)) {
 			return false;
@@ -213,16 +252,19 @@ public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 
 	@Override
 	public boolean isSameAddress(CommerceAddress commerceAddress) {
-		if (Objects.equals(getName(), commerceAddress.getName()) &&
+		if (Objects.equals(getCity(), commerceAddress.getCity()) &&
+			(getCountryId() == commerceAddress.getCountryId()) &&
+			(getLatitude() == commerceAddress.getLatitude()) &&
+			(getLongitude() == commerceAddress.getLongitude()) &&
+			Objects.equals(getName(), commerceAddress.getName()) &&
+			Objects.equals(
+				getPhoneNumber(), commerceAddress.getPhoneNumber()) &&
+			(getRegionId() == commerceAddress.getRegionId()) &&
 			Objects.equals(getStreet1(), commerceAddress.getStreet1()) &&
 			Objects.equals(getStreet2(), commerceAddress.getStreet2()) &&
 			Objects.equals(getStreet3(), commerceAddress.getStreet3()) &&
-			Objects.equals(getCity(), commerceAddress.getCity()) &&
-			Objects.equals(getZip(), commerceAddress.getZip()) &&
-			(getRegionId() == commerceAddress.getRegionId()) &&
-			(getCountryId() == commerceAddress.getCountryId()) &&
-			Objects.equals(
-				getPhoneNumber(), commerceAddress.getPhoneNumber())) {
+			(getType() == commerceAddress.getType()) &&
+			Objects.equals(getZip(), commerceAddress.getZip())) {
 
 			return true;
 		}
@@ -232,7 +274,8 @@ public class CommerceAddressImpl extends CommerceAddressBaseImpl {
 
 	private static long _getAddressTypeId(String name) {
 		ListType listType = ListTypeLocalServiceUtil.getListType(
-			name, AccountListTypeConstants.ACCOUNT_ENTRY_ADDRESS);
+			CompanyThreadLocal.getCompanyId(), name,
+			AccountListTypeConstants.ACCOUNT_ENTRY_ADDRESS);
 
 		return listType.getListTypeId();
 	}

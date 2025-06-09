@@ -1,24 +1,18 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
+String redirect = ParamUtil.getString(request, "redirect");
+
+String backURL = ParamUtil.getString(request, "backURL", redirect);
+
 DispatchTrigger dispatchTrigger = (DispatchTrigger)request.getAttribute(DispatchWebKeys.DISPATCH_TRIGGER);
-String fileEntryName = (String)request.getAttribute(DispatchWebKeys.FILE_ENTRY_NAME);
 %>
 
 <liferay-portlet:actionURL name="/dispatch_talend/edit_dispatch_talend_job_archive" portletName="<%= DispatchPortletKeys.DISPATCH %>" var="editDispatchTalendJobArchiveActionURL" />
@@ -35,8 +29,14 @@ String fileEntryName = (String)request.getAttribute(DispatchWebKeys.FILE_ENTRY_N
 				<liferay-ui:message key="the-file-must-be-a-valid-talend-job-archive" />
 			</liferay-ui:error>
 
-			<p class="<%= Objects.equals(fileEntryName, StringPool.BLANK) ? "hide" : StringPool.BLANK %> text-default" id="<portlet:namespace />fileEntryName">
-				<span id="<portlet:namespace />fileEntryRemove">
+			<%
+			TalendDispatchDisplayContext talendDispatchDisplayContext = (TalendDispatchDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+
+			String talendArchiveFileName = talendDispatchDisplayContext.getTalendArchiveFileName();
+			%>
+
+			<p class="<%= Objects.equals(talendArchiveFileName, StringPool.BLANK) ? "hide" : StringPool.BLANK %> text-default" id="<portlet:namespace />talendArchiveFileName">
+				<span id="<portlet:namespace />removeIconId">
 					<liferay-ui:icon
 						icon="times"
 						markupView="lexicon"
@@ -44,12 +44,12 @@ String fileEntryName = (String)request.getAttribute(DispatchWebKeys.FILE_ENTRY_N
 					/>
 				</span>
 				<span>
-					<%= fileEntryName %>
+					<%= talendArchiveFileName %>
 				</span>
 			</p>
 
 			<c:if test="<%= (dispatchTrigger == null) || !dispatchTrigger.isSystem() %>">
-				<div class="<%= Objects.equals(fileEntryName, StringPool.BLANK) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />fileEntry">
+				<div class="<%= Objects.equals(talendArchiveFileName, StringPool.BLANK) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />talendArchiveFile">
 					<aui:input label="upload-your-talend-job-file" name="jobArchive" required="<%= true %>" type="file" />
 				</div>
 			</c:if>
@@ -57,20 +57,24 @@ String fileEntryName = (String)request.getAttribute(DispatchWebKeys.FILE_ENTRY_N
 			<div class="sheet-footer">
 				<aui:button type="submit" value="save" />
 
-				<aui:button href="<%= currentURL %>" type="cancel" />
+				<aui:button href="<%= backURL %>" type="cancel" value="back" />
 			<div>
 		</aui:form>
 	</div>
 </div>
 
 <aui:script>
-	AUI().ready((A) => {
-		A.one('#<portlet:namespace />fileEntryRemove').on('click', (event) => {
+	document
+		.getElementById('<portlet:namespace />removeIconId')
+		.addEventListener('click', (event) => {
 			event.preventDefault();
 
-			A.one('#<portlet:namespace />fileEntry').removeClass('hide');
+			document
+				.getElementById('<portlet:namespace />talendArchiveFile')
+				.classList.remove('hide');
 
-			A.one('#<portlet:namespace />fileEntryName').addClass('hide');
+			document
+				.getElementById('<portlet:namespace />talendArchiveFileName')
+				.classList.add('hide');
 		});
-	});
 </aui:script>

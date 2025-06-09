@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,7 +13,7 @@
 		<%
 		String signedInAs = HtmlUtil.escape(user.getFullName());
 
-		if (themeDisplay.isShowMyAccountIcon() && (themeDisplay.getURLMyAccount() != null)) {
+		if (themeDisplay.isShowMyAccountIcon() && (themeDisplay.getURLMyAccount() != null) && PortletPermissionUtil.contains(themeDisplay.getPermissionChecker(), 0, PortletKeys.MY_ACCOUNT, ActionKeys.ACCESS_IN_CONTROL_PANEL, true)) {
 			String myAccountURL = String.valueOf(themeDisplay.getURLMyAccount());
 
 			signedInAs = "<a class=\"signed-in\" href=\"" + HtmlUtil.escape(myAccountURL) + "\">" + signedInAs + "</a>";
@@ -57,7 +48,7 @@
 		%>
 
 		<div class="login-container">
-			<portlet:actionURL name="/login/login" secure="<%= PropsValues.COMPANY_SECURITY_AUTH_REQUIRES_HTTPS || request.isSecure() %>" var="loginURL">
+			<portlet:actionURL name="/login/login" secure="<%= request.isSecure() %>" var="loginURL">
 				<portlet:param name="mvcRenderCommandName" value="/login/login" />
 			</portlet:actionURL>
 
@@ -91,7 +82,7 @@
 
 							<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.ADMIN_EMAIL_USER_ADDED_ENABLED) %>">
 								<c:choose>
-									<c:when test="<%= PropsValues.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD %>">
+									<c:when test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD, PropsValues.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD) %>">
 										<liferay-ui:message key="use-your-password-to-login" />
 									</c:when>
 									<c:otherwise>
@@ -114,39 +105,36 @@
 				</c:choose>
 
 				<c:if test="<%= PropsValues.SESSION_ENABLE_PERSISTENT_COOKIES && PropsValues.SESSION_TEST_COOKIE_SUPPORT %>">
-					<div class="alert alert-danger" id="<portlet:namespace />cookieDisabled" style="display: none;">
+					<div class="alert alert-danger hide" id="<portlet:namespace />cookieDisabled">
 						<liferay-ui:message key="authentication-failed-please-enable-browser-cookies" />
 					</div>
 				</c:if>
 
-				<liferay-ui:error exception="<%= AuthException.class %>" message="authentication-failed" />
+				<c:choose>
+					<c:when test="<%= company.isSendPasswordResetLink() %>">
+						<liferay-ui:error exception="<%= AuthException.class %>" message="authentication-failed-due-to-incorrect-credentials-or-account-lockout" />
+					</c:when>
+					<c:otherwise>
+						<liferay-ui:error exception="<%= AuthException.class %>" message="authentication-failed" />
+					</c:otherwise>
+				</c:choose>
+
 				<liferay-ui:error exception="<%= CompanyMaxUsersException.class %>" message="unable-to-log-in-because-the-maximum-number-of-users-has-been-reached" />
 				<liferay-ui:error exception="<%= CookieNotSupportedException.class %>" message="authentication-failed-please-enable-browser-cookies" />
 				<liferay-ui:error exception="<%= NoSuchUserException.class %>" message="authentication-failed" />
 				<liferay-ui:error exception="<%= PasswordExpiredException.class %>" message="your-password-has-expired" />
+				<liferay-ui:error exception="<%= PwdEncryptorException.class %>" message="authentication-failed" />
 				<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeNull.class %>" message="please-enter-an-email-address" />
 				<liferay-ui:error exception="<%= UserLockoutException.LDAPLockout.class %>" message="this-account-is-locked" />
 
-				<liferay-ui:error exception="<%= UserLockoutException.PasswordPolicyLockout.class %>">
-
-					<%
-					UserLockoutException.PasswordPolicyLockout ule = (UserLockoutException.PasswordPolicyLockout)errorException;
-					%>
-
-					<c:choose>
-						<c:when test="<%= ule.passwordPolicy.isRequireUnlock() %>">
-							<liferay-ui:message key="this-account-is-locked" />
-						</c:when>
-						<c:otherwise>
-
-							<%
-							Format dateFormat = FastDateFormatFactoryUtil.getDateTime(FastDateFormatConstants.SHORT, FastDateFormatConstants.LONG, locale, TimeZone.getTimeZone(ule.user.getTimeZoneId()));
-							%>
-
-							<liferay-ui:message arguments="<%= dateFormat.format(ule.user.getUnlockDate()) %>" key="this-account-is-locked-until-x" translateArguments="<%= false %>" />
-						</c:otherwise>
-					</c:choose>
-				</liferay-ui:error>
+				<c:choose>
+					<c:when test="<%= company.isSendPasswordResetLink() %>">
+						<liferay-ui:error exception="<%= UserLockoutException.PasswordPolicyLockout.class %>" message="authentication-failed-due-to-incorrect-credentials-or-account-lockout" />
+					</c:when>
+					<c:otherwise>
+						<liferay-ui:error exception="<%= UserLockoutException.PasswordPolicyLockout.class %>" message="authentication-failed" />
+					</c:otherwise>
+				</c:choose>
 
 				<liferay-ui:error exception="<%= UserPasswordException.class %>" message="authentication-failed" />
 				<liferay-ui:error exception="<%= UserScreenNameException.MustNotBeNull.class %>" message="the-screen-name-cannot-be-blank" />
@@ -169,19 +157,15 @@
 					}
 					%>
 
-					<aui:input autoFocus="<%= windowState.equals(LiferayWindowState.EXCLUSIVE) || windowState.equals(WindowState.MAXIMIZED) %>" cssClass="clearable" label="<%= loginLabel %>" name="login" showRequiredLabel="<%= false %>" type="text" value="<%= login %>">
-						<aui:validator name="required" />
-
+					<aui:input cssClass="clearable" label="<%= loginLabel %>" name="login" required="<%= true %>" showRequiredLabel="<%= false %>" type="text" value="<%= login %>">
 						<c:if test="<%= authType.equals(CompanyConstants.AUTH_TYPE_EA) %>">
 							<aui:validator name="email" />
 						</c:if>
 					</aui:input>
 
-					<aui:input name="password" showRequiredLabel="<%= false %>" type="password" value="<%= password %>">
-						<aui:validator name="required" />
-					</aui:input>
+					<aui:input name="password" required="<%= true %>" showRequiredLabel="<%= false %>" type="password" value="<%= password %>" />
 
-					<span id="<portlet:namespace />passwordCapsLockSpan" style="display: none;"><liferay-ui:message key="caps-lock-is-on" /></span>
+					<span class="hide" id="<portlet:namespace />passwordCapsLockSpan"><liferay-ui:message key="caps-lock-is-on" /></span>
 
 					<c:if test="<%= company.isAutoLogin() %>">
 						<aui:input checked="<%= rememberMe %>" name="rememberMe" type="checkbox" />
@@ -189,7 +173,7 @@
 				</aui:fieldset>
 
 				<aui:button-row>
-					<aui:button type="submit" value="sign-in" />
+					<aui:button disabled="<%= true %>" type="submit" value="sign-in" />
 				</aui:button-row>
 			</aui:form>
 
@@ -203,9 +187,9 @@
 				form.addEventListener('submit', (event) => {
 					<c:if test="<%= PropsValues.SESSION_ENABLE_PERSISTENT_COOKIES && PropsValues.SESSION_TEST_COOKIE_SUPPORT %>">
 						if (!navigator.cookieEnabled) {
-							document.getElementById(
-								'<portlet:namespace />cookieDisabled'
-							).style.display = '';
+							document
+								.getElementById('<portlet:namespace />cookieDisabled')
+								.classList.remove('hide');
 
 							return;
 						}
@@ -235,6 +219,16 @@
 					});
 				}
 			}
+			AUI().ready(function (A) {
+				const signInButton = document.getElementsByClassName(
+					'btn disabled btn-primary'
+				)[0];
+
+				if (signInButton) {
+					signInButton.classList.remove('disabled');
+					signInButton.disabled = false;
+				}
+			});
 		</aui:script>
 	</c:otherwise>
 </c:choose>

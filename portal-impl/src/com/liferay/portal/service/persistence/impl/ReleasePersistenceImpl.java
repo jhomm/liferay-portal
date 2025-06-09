@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -46,7 +37,6 @@ import com.liferay.portal.model.impl.ReleaseModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -87,7 +77,6 @@ public class ReleasePersistenceImpl
 	private FinderPath _finderPathWithoutPaginationFindAll;
 	private FinderPath _finderPathCountAll;
 	private FinderPath _finderPathFetchByServletContextName;
-	private FinderPath _finderPathCountByServletContextName;
 
 	/**
 	 * Returns the release where servletContextName = &#63; or throws a <code>NoSuchReleaseException</code> if it could not be found.
@@ -156,7 +145,7 @@ public class ReleasePersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByServletContextName, finderArgs);
+				_finderPathFetchByServletContextName, finderArgs, this);
 		}
 
 		if (result instanceof Release) {
@@ -258,60 +247,13 @@ public class ReleasePersistenceImpl
 	 */
 	@Override
 	public int countByServletContextName(String servletContextName) {
-		servletContextName = Objects.toString(servletContextName, "");
+		Release release = fetchByServletContextName(servletContextName);
 
-		FinderPath finderPath = _finderPathCountByServletContextName;
-
-		Object[] finderArgs = new Object[] {servletContextName};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_RELEASE__WHERE);
-
-			boolean bindServletContextName = false;
-
-			if (servletContextName.isEmpty()) {
-				sb.append(
-					_FINDER_COLUMN_SERVLETCONTEXTNAME_SERVLETCONTEXTNAME_3);
-			}
-			else {
-				bindServletContextName = true;
-
-				sb.append(
-					_FINDER_COLUMN_SERVLETCONTEXTNAME_SERVLETCONTEXTNAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindServletContextName) {
-					queryPos.add(StringUtil.toLowerCase(servletContextName));
-				}
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (release == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String
@@ -422,8 +364,6 @@ public class ReleasePersistenceImpl
 	protected void cacheUniqueFindersCache(ReleaseModelImpl releaseModelImpl) {
 		Object[] args = new Object[] {releaseModelImpl.getServletContextName()};
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByServletContextName, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByServletContextName, args, releaseModelImpl);
 	}
@@ -738,7 +678,7 @@ public class ReleasePersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<Release>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -808,7 +748,7 @@ public class ReleasePersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -883,33 +823,15 @@ public class ReleasePersistenceImpl
 			new String[] {String.class.getName()},
 			new String[] {"servletContextName"}, true);
 
-		_finderPathCountByServletContextName = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION,
-			"countByServletContextName", new String[] {String.class.getName()},
-			new String[] {"servletContextName"}, false);
+		_finderPathFetchByServletContextName.touch();
 
-		_setReleaseUtilPersistence(this);
+		ReleaseUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setReleaseUtilPersistence(null);
+		ReleaseUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(ReleaseImpl.class.getName());
-	}
-
-	private void _setReleaseUtilPersistence(
-		ReleasePersistence releasePersistence) {
-
-		try {
-			Field field = ReleaseUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, releasePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_RELEASE_ =

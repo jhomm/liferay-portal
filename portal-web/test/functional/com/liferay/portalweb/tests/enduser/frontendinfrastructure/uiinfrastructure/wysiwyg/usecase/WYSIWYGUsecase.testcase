@@ -1,9 +1,10 @@
 @component-name = "portal-frontend-infrastructure"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.component.names = "WYSIWYG";
 	property testray.main.component.name = "User Interface";
 
 	var pageName = "CKEditor Page";
@@ -13,13 +14,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "WYSIWYG Site Name");
+		WikiPortlet.enableWiki();
+
+		HeadlessSite.addSite(siteName = "WYSIWYG Site Name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,21 +30,22 @@ definition {
 		}
 	}
 
-	@priority = "4"
+	@description = "LRQA-67229. Verify if add blog entry with image via blog images is possible"
+	@priority = 4
 	@refactordone
 	test CanAddBlogsEntryWithImageViaBlogsImages {
 		JSONLayout.addPublicLayout(
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}");
+			layoutName = ${pageName});
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}",
+			layoutName = ${pageName},
 			widgetName = "Blogs");
 
 		Navigator.gotoSitePage(
-			pageName = "${pageName}",
+			pageName = ${pageName},
 			siteName = "WYSIWYG Site Name");
 
 		Blogs.addEntryWithUploadedCoverImage(
@@ -52,7 +56,7 @@ definition {
 			navTab = "Blog Images",
 			uploadFileName = "Document_1.jpg");
 
-		Pause(locator1 = "1000");
+		WaitForElementPresent(locator1 = "Button#SAVE_AS_DRAFT");
 
 		BlogsEntry.saveAsDraft();
 
@@ -79,8 +83,8 @@ definition {
 		BlogsEntry.viewInlineImage(uploadFileName = "Document_1");
 	}
 
-	@description = "Verify existing text can be formatted as a hyperlink"
-	@priority = "4"
+	@description = "LPS-110663. Verify existing text can be formatted as a hyperlink"
+	@priority = 4
 	@refactordone
 	test CanAddHyperlinkToExistingText {
 		property portal.acceptance = "true";
@@ -98,7 +102,7 @@ definition {
 
 		CKEditor.addEntryExternalURLToExistingText(
 			entryExternalURL = "/web/guest/home",
-			fieldLabel = "content");
+			fieldLabel = "Content");
 
 		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
 
@@ -108,7 +112,8 @@ definition {
 			locator1 = "CKEditor#BODY_TEXT_HREF");
 	}
 
-	@priority = "4"
+	@description = "LRQA-67229. Verify if add web content article with image via URL is possible"
+	@priority = 4
 	@refactordone
 	test CanAddWebContentArticleWithImageViaURL {
 		JSONWebcontent.addWebContent(
@@ -137,6 +142,8 @@ definition {
 
 		PortletEntry.publish();
 
+		Click(locator1 = "//button[contains(@class, 'dropdown-item') and contains(., 'Publish')]");
+
 		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "Web Content Title");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
@@ -145,22 +152,22 @@ definition {
 	}
 
 	@description = "Verify content can display content from left to right"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDisplayContentLeftToRight {
 		property portal.acceptance = "true";
 
 		JSONLayout.addPublicLayout(
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}");
+			layoutName = ${pageName});
 
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}",
+			layoutName = ${pageName},
 			widgetName = "Wiki");
 
 		Navigator.gotoSitePage(
-			pageName = "${pageName}",
+			pageName = ${pageName},
 			siteName = "WYSIWYG Site Name");
 
 		WikiPage.addLocalizedFrontPagePG(
@@ -169,35 +176,34 @@ definition {
 			wikiPageContent = "Wiki Left to Right Content");
 
 		Navigator.gotoSitePage(
-			pageName = "${pageName}",
+			pageName = ${pageName},
 			siteName = "WYSIWYG Site Name");
 
 		WikiPage.viewLocalizedFrontPagePG(wikiPageContent = "Wiki Left to Right Content");
 	}
 
 	@description = "Verify content localized with a right to left language is displayed from right to left"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDisplayContentRightToLeft {
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "WYSIWIGUsecase#ViewWikiFrontPageRightToLeft";
 
 		JSONLayout.addPublicLayout(
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}");
+			layoutName = ${pageName});
 
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}",
+			layoutName = ${pageName},
 			widgetName = "Language Selector");
 
 		JSONLayout.addWidgetToPublicLayout(
 			groupName = "WYSIWYG Site Name",
-			layoutName = "${pageName}",
+			layoutName = ${pageName},
 			widgetName = "Wiki");
 
 		Navigator.gotoSitePage(
-			pageName = "${pageName}",
+			pageName = ${pageName},
 			siteName = "WYSIWYG Site Name");
 
 		LanguagePortlet.selectLanguagePG(
@@ -211,7 +217,7 @@ definition {
 			wikiPageContent = "Wiki Right to Left يحتوى");
 
 		Navigator.gotoSitePage(
-			pageName = "${pageName}",
+			pageName = ${pageName},
 			siteName = "WYSIWYG Site Name");
 
 		WikiPage.viewLocalizedFrontPagePG(
@@ -224,19 +230,20 @@ definition {
 	}
 
 	@description = "Verify editor can display html formatted contents from copy paste"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDisplayFormattedHTMLFromCopyPaste {
 		property app.server.types = "tomcat";
 		property database.types = "mysql";
 		property environment.acceptance = "true";
+		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
-		Open(locator1 = "http://www.standards-schmandards.com/exhibits/wysiwyg/sampledoc.htm");
+		Open(value1 = "http://www.standards-schmandards.com/exhibits/wysiwyg/sampledoc.htm");
 
 		var browserType = PropsUtil.get("browser.type");
 
-		if ("${browserType}" == "safari") {
+		if (${browserType} == "safari") {
 			KeyPress.keyDown(
 				locator1 = "//body",
 				value1 = "\COMMAND");
@@ -244,8 +251,6 @@ definition {
 			KeyPress(
 				locator1 = "//body",
 				value1 = "a");
-
-			Pause(locator1 = "1000");
 
 			KeyPress(
 				locator1 = "//body",
@@ -255,11 +260,14 @@ definition {
 				locator1 = "//body",
 				value1 = "\COMMAND");
 		}
-
 		else {
-			SelectFieldText(locator1 = "//body");
+			Type.sendKeys(
+				locator1 = "//body",
+				value1 = "keys=CONTROL,a");
 
-			RobotType.robotTypeShortcut(locator1 = "Ctrl + c");
+			Type.sendKeys(
+				locator1 = "//body",
+				value1 = "keys=CONTROL,c");
 		}
 
 		Navigator.openURL();
@@ -283,7 +291,7 @@ definition {
 
 		var browserType = PropsUtil.get("browser.type");
 
-		if ("${browserType}" == "safari") {
+		if (${browserType} == "safari") {
 			KeyPress.keyDown(
 				key_editor = "content",
 				locator1 = "AlloyEditor#EDITOR",
@@ -299,9 +307,10 @@ definition {
 				locator1 = "AlloyEditor#EDITOR",
 				value1 = "\COMMAND");
 		}
-
 		else {
-			RobotType.robotTypeShortcut(locator1 = "Ctrl + v");
+			Type.sendKeys(
+				locator1 = "CKEditor#BODY",
+				value1 = "keys=CONTROL,v");
 		}
 
 		WaitForElementPresent(
@@ -314,12 +323,14 @@ definition {
 
 		PortletEntry.publish();
 
+		Click(locator1 = "//button[contains(@class, 'dropdown-item') and contains(., 'Publish')]");
+
 		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "Web Content Title");
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		AssertTextEquals.assertPartialText(
-			locator1 = "//div[@class='portlet-body']/div[contains(@class,'mt-2')]",
+			locator1 = "//div[@class='portlet-body']/div[contains(@class,'container-fluid-max')]",
 			value1 = "Sample document for editor area test");
 
 		AssertElementPresent(locator1 = "//img[contains(@src,'redhead.JPG')]");
@@ -327,8 +338,8 @@ definition {
 		takeScreenshot();
 	}
 
-	@description = "Verify source content can be previewed"
-	@priority = "4"
+	@description = "LRQA-67229. Verify source content can be previewed"
+	@priority = 4
 	@refactordone
 	test CanEditTextInPreviewSourceContent {
 		property portal.acceptance = "true";
@@ -338,11 +349,15 @@ definition {
 			groupName = "WYSIWYG Site Name",
 			title = "Web Content Title");
 
-		Open(locator1 = "http://www.standards-schmandards.com/exhibits/wysiwyg/sampledoc.htm");
+		Open(value1 = "http://www.standards-schmandards.com/exhibits/wysiwyg/sampledoc.htm");
 
-		SelectFieldText(locator1 = "//body");
+		Type.sendKeys(
+			locator1 = "//body",
+			value1 = "keys=CONTROL,a");
 
-		RobotType.robotTypeShortcut(locator1 = "Ctrl + c");
+		Type.sendKeys(
+			locator1 = "//body",
+			value1 = "keys=CONTROL,c");
 
 		Navigator.openURL();
 
@@ -354,7 +369,9 @@ definition {
 
 		Click(locator1 = "CKEditor#BODY");
 
-		RobotType.robotTypeShortcut(locator1 = "Ctrl + v");
+		Type.sendKeys(
+			locator1 = "CKEditor#BODY",
+			value1 = "keys=CONTROL,v");
 
 		SelectFrame(value1 = "relative=top");
 
@@ -375,8 +392,8 @@ definition {
 		AssertElementPresent(locator1 = "//h1[normalize-space(text())='Sample document for editor area test edit']");
 	}
 
-	@description = "Verify source content can be previewed"
-	@priority = "4"
+	@description = "LPS-110663. Verify source content can be previewed"
+	@priority = 4
 	@refactordone
 	test CanPreviewSourceContent {
 		property portal.acceptance = "true";
@@ -417,23 +434,14 @@ definition {
 		AssertElementPresent(locator1 = "//p[normalize-space(text())='sample text']");
 	}
 
-	@description = "Verify a styling button can be toggled on text"
-	@ignore = "Test Stub"
-	@priority = "5"
-	test CanToggleTextStyling {
-		property portal.acceptance = "false";
-
-		// TODO LPS-133050 CanToggleContentStyling pending implementation
-
-	}
-
-	@description = "Verify styled content can be added from source view"
-	@priority = "4"
+	@description = "LRQA-67229. Verify styled content can be added from source view"
+	@priority = 4
 	@refactordone
 	test CanViewSourceCodeFormattedInTextView {
 		property app.server.types = "tomcat";
 		property database.types = "mysql";
 		property environment.acceptance = "true";
+		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
 
 		JSONWebcontent.addWebContent(
@@ -462,6 +470,55 @@ definition {
 		AssertElementPresent(locator1 = "//h1[normalize-space(text())='Sample Header 1']");
 
 		AssertElementPresent(locator1 = "//p[normalize-space(text())='sample text']");
+	}
+
+	@description = "LPS-127012. Verify that basic CKEditor toolbar is present on DM"
+	@priority = 3
+	@refactorneeded
+	test DMCanFormatTextWithEditorToolbar {
+		DMNavigator.openDocumentTypesAdmin(siteURLKey = "wysiwyg-site-name");
+
+		DMDocumentType.add(
+			dmDocumentTypeDescription = "DM Document Type Description",
+			dmDocumentTypeFieldNames = "Rich Text",
+			dmDocumentTypeName = "DM Document Type Name");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "wysiwyg-site-name");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.txt",
+			dmDocumentTitle = "DM Document Title");
+
+		DMDocument.editCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.txt",
+			dmDocumentTitle = "DM Document Title",
+			dmDocumentTypeEdit = "DM Document Type Name");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Edit",
+			rowEntry = "DM Document Title");
+
+		AssertElementPresent(locator1 = "CKEditor#TOOLBAR");
+
+		Click(locator1 = "CKEditor#TOOLBAR_SOURCE_BUTTON");
+
+		Click(locator1 = "CKEditor#TOOLBAR_PREVIEW_BUTTON");
+
+		Type.typeCodeMirrorEditorNoError(
+			locator1 = "CKEditor#SOURCE_CODE_DIALOG",
+			value1 = "<h1>Sample Header 1</h1><p>sample text</p>");
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "CKEditor#SOURCE_CODE_DIALOG",
+			value1 = "<h1>Sample Header 1</h1>");
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "CKEditor#SOURCE_CODE_DIALOG",
+			value1 = "<p>sample text</p>");
+
+		takeScreenshot();
 	}
 
 }

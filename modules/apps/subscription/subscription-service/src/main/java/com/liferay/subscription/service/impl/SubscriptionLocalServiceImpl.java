@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.subscription.service.impl;
 
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Property;
@@ -26,6 +19,8 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.social.SocialActivityManagerUtil;
@@ -156,6 +151,19 @@ public class SubscriptionLocalServiceImpl
 			}
 		}
 
+		if (className.equals(AssetTag.class.getName())) {
+			AssetTag assetTag = _assetTagLocalService.fetchAssetTag(classPK);
+
+			if (assetTag == null) {
+				return subscription;
+			}
+
+			Indexer<AssetTag> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+				AssetTag.class);
+
+			indexer.reindex(assetTag);
+		}
+
 		return subscription;
 	}
 
@@ -201,6 +209,19 @@ public class SubscriptionLocalServiceImpl
 
 		if (subscription != null) {
 			deleteSubscription(subscription);
+		}
+
+		if (className.equals(AssetTag.class.getName())) {
+			AssetTag assetTag = _assetTagLocalService.fetchAssetTag(classPK);
+
+			if (assetTag == null) {
+				return;
+			}
+
+			Indexer<AssetTag> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+				AssetTag.class);
+
+			indexer.reindex(assetTag);
 		}
 	}
 
@@ -500,8 +521,25 @@ public class SubscriptionLocalServiceImpl
 		return false;
 	}
 
+	@Override
+	public void updateSubscriptions(
+		long companyId, long classNameId, long oldClassPK, long newClassPK) {
+
+		List<Subscription> subscriptions = subscriptionPersistence.findByC_C_C(
+			companyId, classNameId, oldClassPK);
+
+		for (Subscription subscription : subscriptions) {
+			subscription.setClassPK(newClassPK);
+
+			subscriptionPersistence.update(subscription);
+		}
+	}
+
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
+	private AssetTagLocalService _assetTagLocalService;
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;

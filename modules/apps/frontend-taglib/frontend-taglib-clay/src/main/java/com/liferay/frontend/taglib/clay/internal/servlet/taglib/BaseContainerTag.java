@@ -1,47 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.internal.servlet.taglib;
 
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolvedPackageNameUtil;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
-import com.liferay.frontend.js.module.launcher.JSModuleResolver;
-import com.liferay.frontend.taglib.clay.internal.js.loader.modules.extender.npm.NPMResolverProvider;
 import com.liferay.frontend.taglib.clay.internal.servlet.ServletContextUtil;
-import com.liferay.frontend.taglib.clay.internal.util.ServicesProvider;
+import com.liferay.frontend.taglib.clay.internal.servlet.taglib.util.ServicesProvider;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.template.react.renderer.ComponentDescriptor;
 import com.liferay.portal.template.react.renderer.ReactRenderer;
 import com.liferay.taglib.util.AttributesTagSupport;
 import com.liferay.taglib.util.InlineUtil;
 
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletResponse;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Chema Balsas
@@ -51,6 +45,10 @@ public class BaseContainerTag extends AttributesTagSupport {
 	@Override
 	public int doEndTag() throws JspException {
 		try {
+			if (_hasBodyContent()) {
+				processEndBodyTag();
+			}
+
 			return processEndTag();
 		}
 		catch (Exception exception) {
@@ -64,7 +62,13 @@ public class BaseContainerTag extends AttributesTagSupport {
 	@Override
 	public int doStartTag() throws JspException {
 		try {
-			return processStartTag();
+			_tagAction = processStartTag();
+
+			if (_hasBodyContent()) {
+				processStartBodyTag();
+			}
+
+			return _tagAction;
 		}
 		catch (Exception exception) {
 			throw new JspException(exception);
@@ -266,6 +270,7 @@ public class BaseContainerTag extends AttributesTagSupport {
 		_namespace = null;
 		_propsTransformer = null;
 		_propsTransformerServletContext = null;
+		_tagAction = EVAL_BODY_INCLUDE;
 	}
 
 	protected void doClearTag() {
@@ -301,11 +306,18 @@ public class BaseContainerTag extends AttributesTagSupport {
 			props.put("defaultEventHandler", defaultEventHandler);
 		}
 
+		props.put("hasBodyContent", _hasBodyContent());
 		props.put("id", getId());
 
 		props.putAll(getDynamicAttributes());
 
 		return props;
+	}
+
+	protected String processBodyCssClasses(Set<String> cssClasses) {
+		cssClasses.add("tag-body-content");
+
+		return StringUtil.merge(cssClasses, StringPool.SPACE);
 	}
 
 	protected String processCssClasses(Set<String> cssClasses) {
@@ -326,6 +338,12 @@ public class BaseContainerTag extends AttributesTagSupport {
 		return data;
 	}
 
+	protected void processEndBodyTag() throws Exception {
+		JspWriter jspWriter = pageContext.getOut();
+
+		jspWriter.write("</div>");
+	}
+
 	protected int processEndTag() throws Exception {
 		JspWriter jspWriter = pageContext.getOut();
 
@@ -336,42 +354,29 @@ public class BaseContainerTag extends AttributesTagSupport {
 		String hydratedModuleName = getHydratedModuleName();
 
 		if (hydratedModuleName != null) {
-			NPMResolver npmResolver = NPMResolverProvider.getNPMResolver();
-
-			String moduleName = npmResolver.resolveModuleName(
-				hydratedModuleName);
-
 			String propsTransformer = null;
 
 			if (Validator.isNotNull(_propsTransformer)) {
-				String resolvedPackageName;
-
-				try {
-					resolvedPackageName = NPMResolvedPackageNameUtil.get(
+				if (ESImportUtil.isESImport(_propsTransformer)) {
+					propsTransformer = _propsTransformer;
+				}
+				else {
+					String resolvedPackageName = NPMResolvedPackageNameUtil.get(
 						getPropsTransformerServletContext());
+
+					propsTransformer =
+						resolvedPackageName + "/" + _propsTransformer;
 				}
-				catch (UnsupportedOperationException
-							unsupportedOperationException) {
-
-					JSModuleResolver jsModuleResolver =
-						ServicesProvider.getJSModuleResolver();
-
-					resolvedPackageName = jsModuleResolver.resolveModule(
-						getPropsTransformerServletContext(), null);
-				}
-
-				propsTransformer =
-					resolvedPackageName + "/" + _propsTransformer;
 			}
 			else if (Validator.isNotNull(getDefaultEventHandler())) {
-				propsTransformer = npmResolver.resolveModuleName(
-					"frontend-taglib-clay" +
-						"/DefaultEventHandlersPropsTransformer");
+				propsTransformer =
+					"{DefaultEventHandlersPropsTransformer} from " +
+						"frontend-taglib-clay";
 			}
 
 			ComponentDescriptor componentDescriptor = new ComponentDescriptor(
-				moduleName, getId(), new LinkedHashSet<>(), false,
-				propsTransformer);
+				hydratedModuleName, getId(), new LinkedHashSet<>(),
+				_isPositionInLine(), propsTransformer);
 
 			ReactRenderer reactRenderer = ServicesProvider.getReactRenderer();
 
@@ -385,6 +390,16 @@ public class BaseContainerTag extends AttributesTagSupport {
 		}
 
 		return EVAL_PAGE;
+	}
+
+	protected void processStartBodyTag() throws Exception {
+		JspWriter jspWriter = pageContext.getOut();
+
+		jspWriter.write("<div ");
+
+		writeBodyCssClassAttribute();
+
+		jspWriter.write(">");
 	}
 
 	protected int processStartTag() throws Exception {
@@ -416,21 +431,37 @@ public class BaseContainerTag extends AttributesTagSupport {
 		return EVAL_BODY_INCLUDE;
 	}
 
-	protected void writeCssClassAttribute() throws Exception {
-		JspWriter jspWriter = pageContext.getOut();
+	protected void writeBodyCssClassAttribute() throws Exception {
+		_writeCssClassAttribute(processBodyCssClasses(new LinkedHashSet<>()));
+	}
 
-		jspWriter.write(" class=\"");
-		jspWriter.write(processCssClasses(new LinkedHashSet<>()));
-		jspWriter.write("\"");
+	protected void writeCssClassAttribute() throws Exception {
+		_writeCssClassAttribute(processCssClasses(new LinkedHashSet<>()));
 	}
 
 	protected void writeDynamicAttributes() throws Exception {
+		Map<String, Object> escapedDynamicAttributes = new HashMap<>();
+
+		Map<String, Object> dynamicAttributes = getDynamicAttributes();
+
+		for (Map.Entry<String, Object> entry : dynamicAttributes.entrySet()) {
+			if (entry.getValue() instanceof String) {
+				escapedDynamicAttributes.put(
+					entry.getKey(),
+					HtmlUtil.escapeAttribute((String)entry.getValue()));
+			}
+			else {
+				escapedDynamicAttributes.put(entry.getKey(), entry.getValue());
+			}
+		}
+
 		String dynamicAttributesString = InlineUtil.buildDynamicAttributes(
-			getDynamicAttributes());
+			escapedDynamicAttributes);
 
 		if (!dynamicAttributesString.isEmpty()) {
 			JspWriter jspWriter = pageContext.getOut();
 
+			jspWriter.write(StringPool.SPACE);
 			jspWriter.write(dynamicAttributesString);
 		}
 	}
@@ -440,6 +471,58 @@ public class BaseContainerTag extends AttributesTagSupport {
 
 		jspWriter.write(" id=\"");
 		jspWriter.write(getId());
+		jspWriter.write("\"");
+	}
+
+	private boolean _hasBodyContent() {
+		if ((_tagAction == EVAL_BODY_INCLUDE) &&
+			(getHydratedModuleName() != null)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private boolean _isPositionInLine() {
+		HttpServletRequest httpServletRequest = getRequest();
+
+		String fragmentId = ParamUtil.getString(httpServletRequest, "p_f_id");
+
+		if (Validator.isNotNull(fragmentId)) {
+			return true;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (themeDisplay.isIsolated() || themeDisplay.isLifecycleResource() ||
+			themeDisplay.isStateExclusive()) {
+
+			return true;
+		}
+
+		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+
+		String portletId = portletDisplay.getId();
+
+		if (Validator.isNotNull(portletId) &&
+			themeDisplay.isPortletEmbedded(
+				themeDisplay.getScopeGroupId(), themeDisplay.getLayout(),
+				portletId)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _writeCssClassAttribute(String cssClasses) throws Exception {
+		JspWriter jspWriter = pageContext.getOut();
+
+		jspWriter.write(" class=\"");
+		jspWriter.write(cssClasses);
 		jspWriter.write("\"");
 	}
 
@@ -456,5 +539,6 @@ public class BaseContainerTag extends AttributesTagSupport {
 	private String _namespace;
 	private String _propsTransformer;
 	private ServletContext _propsTransformerServletContext;
+	private int _tagAction = EVAL_BODY_INCLUDE;
 
 }

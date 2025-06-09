@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 
 import java.text.DateFormat;
@@ -25,6 +15,12 @@ import java.util.Date;
  * @author Brian Wing Shun Chan
  */
 public class ReleaseInfo {
+
+	public static final int RELEASE_6_0_12_BUILD_NUMBER = 6012;
+
+	public static final int RELEASE_6_1_0_BUILD_NUMBER = 6100;
+
+	public static final int RELEASE_6_1_1_BUILD_NUMBER = 6101;
 
 	public static final int RELEASE_6_2_0_BUILD_NUMBER = 6200;
 
@@ -112,10 +108,17 @@ public class ReleaseInfo {
 
 	public static String getReleaseInfo() {
 		if (_releaseInfo == null) {
-			_releaseInfo = StringBundler.concat(
-				_RELEASE_INFO_PREFIX, _NAME, " ", _VERSION_DISPLAY_NAME, " (",
-				_CODE_NAME, " / Build ", _BUILD, " / ", _DATE, ")",
-				_RELEASE_INFO_SUFFIX);
+			StringBuilder sb = new StringBuilder(_RELEASE_INFO_PREFIX);
+
+			sb.append(_NAME);
+			sb.append(" ");
+			sb.append(_VERSION_DISPLAY_NAME);
+			sb.append(" (");
+			sb.append(_DATE);
+			sb.append(")");
+			sb.append(_RELEASE_INFO_SUFFIX);
+
+			_releaseInfo = sb.toString();
 		}
 
 		return _releaseInfo;
@@ -130,11 +133,7 @@ public class ReleaseInfo {
 	}
 
 	public static boolean isDXP() {
-		if (_NAME.contains("Community")) {
-			return false;
-		}
-
-		return true;
+		return !_NAME.contains("Community");
 	}
 
 	public static String getVendor() {
@@ -143,6 +142,10 @@ public class ReleaseInfo {
 
 	public static String getVersion() {
 		return _VERSION;
+	}
+
+	public static String getVersionDisplayName() {
+		return _VERSION_DISPLAY_NAME;
 	}
 
 	private static final String _BUILD = "@release.info.build@";

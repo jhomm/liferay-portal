@@ -1,29 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal;
 
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.PortalPreferences;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.Portal;
@@ -32,6 +28,7 @@ import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.document.Document;
+import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.document.DeleteDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.DocumentResponse;
@@ -40,58 +37,93 @@ import com.liferay.portal.search.engine.adapter.document.GetDocumentResponse;
 import com.liferay.portal.search.engine.adapter.document.IndexDocumentRequest;
 import com.liferay.portal.search.engine.adapter.index.CreateIndexRequest;
 import com.liferay.portal.search.engine.adapter.index.DeleteIndexRequest;
+import com.liferay.portal.search.engine.adapter.index.IndicesExistsIndexRequest;
+import com.liferay.portal.search.engine.adapter.index.IndicesExistsIndexResponse;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.filter.ComplexQueryPart;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilder;
 import com.liferay.portal.search.filter.ComplexQueryPartBuilderFactory;
 import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.IdsQuery;
+import com.liferay.portal.search.query.MatchAllQuery;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexName;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexNameBuilder;
-import com.liferay.portal.search.tuning.rankings.web.internal.util.RankingResultUtil;
-import com.liferay.portal.search.web.interpreter.SearchResultInterpreter;
+import com.liferay.portal.search.tuning.rankings.helper.RankingHelper;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexName;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexNameBuilder;
+import com.liferay.portal.search.tuning.rankings.web.internal.helper.RankingHelperImpl;
 import com.liferay.portal.search.web.interpreter.SearchResultInterpreterProvider;
+
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.text.SimpleDateFormat;
 
+import java.util.Collections;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.function.Consumer;
-import java.util.stream.Stream;
 
-import javax.portlet.ActionResponse;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
-
-import org.mockito.Matchers;
-import org.mockito.Mock;
+import org.mockito.AdditionalAnswers;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Wade Cao
  */
 public abstract class BaseRankingsWebTestCase {
 
-	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
+	@BeforeClass
+	public static void setUpClass() {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		Mockito.when(
+			FrameworkUtil.getBundle(Mockito.any())
+		).thenReturn(
+			bundleContext.getBundle()
+		);
+
+		documentBuilderFactoryServiceRegistration =
+			bundleContext.registerService(
+				DocumentBuilderFactory.class, documentBuilderFactory, null);
+
+		searchResultInterpreterProviderServiceRegistration =
+			bundleContext.registerService(
+				SearchResultInterpreterProvider.class,
+				searchResultInterpreterProvider, null);
 	}
 
-	@Mock
-	public ComplexQueryPartBuilderFactory complexQueryPartBuilderFactory;
+	@AfterClass
+	public static void tearDownClass() {
+		frameworkUtilMockedStatic.close();
+
+		documentBuilderFactoryServiceRegistration.unregister();
+
+		searchResultInterpreterProviderServiceRegistration.unregister();
+	}
+
+	public ComplexQueryPartBuilderFactory complexQueryPartBuilderFactory =
+		Mockito.mock(ComplexQueryPartBuilderFactory.class);
 
 	protected ComplexQueryPartBuilder setUpComplexQueryPartBuilder() {
 		ComplexQueryPartBuilder complexQueryPartBuilder = Mockito.mock(
@@ -110,7 +142,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			complexQueryPartBuilder
 		).query(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -146,7 +178,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			complexQueryPartBuilder
 		).query(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -215,9 +247,8 @@ public abstract class BaseRankingsWebTestCase {
 				else if (argument.equals("userName")) {
 					return "theAuthor";
 				}
-				else {
-					return "undefined";
-				}
+
+				return "undefined";
 			}
 		);
 
@@ -230,8 +261,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			fastDateFormatFactory
 		).getDateTime(
-			Mockito.anyInt(), Mockito.anyInt(), Mockito.anyObject(),
-			Mockito.anyObject()
+			Mockito.anyInt(), Mockito.anyInt(), Mockito.any(), Mockito.any()
 		);
 	}
 
@@ -260,6 +290,38 @@ public abstract class BaseRankingsWebTestCase {
 		return getDocumentResponse;
 	}
 
+	protected void setUpGroupLocalServiceFetchGroup() throws PortalException {
+		Group group = Mockito.mock(Group.class);
+
+		Mockito.doReturn(
+			"groupExternalReferenceCode"
+		).when(
+			group
+		).getExternalReferenceCode();
+
+		Mockito.doReturn(
+			12345L
+		).when(
+			group
+		).getGroupId();
+
+		Mockito.doReturn(
+			group
+		).when(
+			groupLocalService
+		).fetchGroup(
+			Mockito.anyLong()
+		);
+
+		Mockito.doReturn(
+			group
+		).when(
+			groupLocalService
+		).fetchGroupByExternalReferenceCode(
+			Mockito.anyString(), Mockito.anyLong()
+		);
+	}
+
 	protected void setUpHttpServletRequestAttribute(
 		HttpServletRequest httpServletRequest, String paramName,
 		Object object) {
@@ -269,7 +331,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			httpServletRequest
 		).getAttribute(
-			Matchers.eq(paramName)
+			Mockito.eq(paramName)
 		);
 	}
 
@@ -282,7 +344,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			httpServletRequest
 		).getAttribute(
-			Matchers.eq(param)
+			Mockito.eq(param)
 		);
 	}
 
@@ -295,7 +357,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			httpServletRequest
 		).getParameter(
-			Matchers.eq(paramName)
+			Mockito.eq(paramName)
 		);
 	}
 
@@ -308,7 +370,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			httpServletRequest
 		).getParameterValues(
-			Matchers.eq(paramName)
+			Mockito.eq(paramName)
 		);
 	}
 
@@ -318,8 +380,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			language
 		).get(
-			Matchers.any(Locale.class), Matchers.anyString(),
-			Matchers.anyString()
+			Mockito.any(Locale.class), Mockito.anyString(), Mockito.anyString()
 		);
 
 		LanguageUtil languageUtil = new LanguageUtil();
@@ -348,7 +409,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getCurrentURL(
-			Matchers.any(HttpServletRequest.class)
+			Mockito.any(HttpServletRequest.class)
 		);
 
 		LiferayPortletResponse liferayPortletResponse = Mockito.mock(
@@ -365,7 +426,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getLiferayPortletResponse(
-			Matchers.any(ActionResponse.class)
+			Mockito.any(ActionResponse.class)
 		);
 
 		Mockito.doReturn(
@@ -379,7 +440,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getOriginalServletRequest(
-			Matchers.any(HttpServletRequest.class)
+			Mockito.any(HttpServletRequest.class)
 		);
 
 		Mockito.doReturn(
@@ -387,7 +448,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getLiferayPortletRequest(
-			Matchers.any(PortletRequest.class)
+			Mockito.any(PortletRequest.class)
 		);
 
 		Mockito.doReturn(
@@ -395,7 +456,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).escapeRedirect(
-			Matchers.anyString()
+			Mockito.anyString()
 		);
 	}
 
@@ -408,7 +469,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getHttpServletRequest(
-			Matchers.any(PortletRequest.class)
+			Mockito.any(PortletRequest.class)
 		);
 
 		return httpServletRequest;
@@ -422,9 +483,9 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portal
 		).getControlPanelPortletURL(
-			Matchers.any(HttpServletRequest.class), Matchers.any(Group.class),
-			Matchers.anyString(), Matchers.anyLong(), Matchers.anyLong(),
-			Matchers.anyString()
+			Mockito.nullable(HttpServletRequest.class),
+			Mockito.nullable(Group.class), Mockito.nullable(String.class),
+			Mockito.anyLong(), Mockito.anyLong(), Mockito.nullable(String.class)
 		);
 
 		return portletURL;
@@ -436,6 +497,34 @@ public abstract class BaseRankingsWebTestCase {
 		portalUtil.setPortal(portal);
 	}
 
+	protected void setUpPortletPreferencesFactoryUtil() throws Exception {
+		PortletPreferencesFactoryUtil portletPreferencesFactoryUtil =
+			new PortletPreferencesFactoryUtil();
+
+		PortletPreferencesFactory portletPreferencesFactory = Mockito.mock(
+			PortletPreferencesFactory.class);
+
+		portletPreferencesFactoryUtil.setPortletPreferencesFactory(
+			portletPreferencesFactory);
+
+		PortalPreferences portalPreferences = Mockito.mock(
+			PortalPreferences.class);
+
+		Mockito.when(
+			portletPreferencesFactory.getPortalPreferences(
+				Mockito.any(HttpServletRequest.class))
+		).thenReturn(
+			portalPreferences
+		);
+
+		Mockito.when(
+			portalPreferences.getValue(
+				Mockito.anyString(), Mockito.anyString(), Mockito.anyString())
+		).then(
+			AdditionalAnswers.returnsLastArg()
+		);
+	}
+
 	protected void setUpPortletRequestParamValue(
 		PortletRequest portletRequest, String paramName, String returnValue) {
 
@@ -444,7 +533,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			portletRequest
 		).getParameter(
-			Matchers.eq(paramName)
+			Mockito.eq(paramName)
 		);
 	}
 
@@ -456,7 +545,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			props
 		).get(
-			Matchers.anyString()
+			Mockito.anyString()
 		);
 
 		Mockito.doReturn(
@@ -464,7 +553,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			props
 		).getProperties(
-			Matchers.anyString(), Matchers.anyBoolean()
+			Mockito.anyString(), Mockito.anyBoolean()
 		);
 
 		PropsUtil.setProps(props);
@@ -477,7 +566,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			idsQuery
 		).addIds(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 
 		Mockito.doNothing(
@@ -488,10 +577,32 @@ public abstract class BaseRankingsWebTestCase {
 		);
 
 		Mockito.doReturn(
+			Mockito.mock(BooleanQuery.class)
+		).when(
+			queries
+		).booleanQuery();
+
+		Mockito.doReturn(
 			idsQuery
 		).when(
 			queries
 		).ids();
+
+		Mockito.doReturn(
+			Mockito.mock(MatchAllQuery.class)
+		).when(
+			queries
+		).matchAll();
+	}
+
+	protected void setUpRankingHelper() {
+		Mockito.doReturn(
+			StringPool.BLANK
+		).when(
+			rankingHelper
+		).getDocumentId(
+			Mockito.anyString()
+		);
 	}
 
 	protected void setUpRankingIndexNameBuilder() {
@@ -500,28 +611,8 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			rankingIndexNameBuilder
 		).getRankingIndexName(
-			Matchers.anyLong()
+			Mockito.anyLong()
 		);
-	}
-
-	protected void setUpRankingResultUtil() {
-		SearchResultInterpreterProvider searchResultInterpreterProvider =
-			Mockito.mock(SearchResultInterpreterProvider.class);
-
-		Mockito.doReturn(
-			Mockito.mock(SearchResultInterpreter.class)
-		).when(
-			searchResultInterpreterProvider
-		).getSearchResultInterpreter(
-			Mockito.anyString()
-		);
-
-		RankingResultUtil rankingResultUtil = new RankingResultUtil();
-
-		ReflectionTestUtil.setFieldValue(
-			rankingResultUtil, "_searchResultInterpreterProvider",
-			searchResultInterpreterProvider);
-		ReflectionTestUtil.setFieldValue(rankingResultUtil, "_portal", portal);
 	}
 
 	protected void setUpRenderResponse(MimeResponse mimeResponse) {
@@ -564,7 +655,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchEngineAdapter
 		).execute(
-			(CreateIndexRequest)Mockito.anyObject()
+			(CreateIndexRequest)Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -572,7 +663,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchEngineAdapter
 		).execute(
-			(DeleteIndexRequest)Mockito.anyObject()
+			(DeleteIndexRequest)Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -580,7 +671,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchEngineAdapter
 		).execute(
-			(GetDocumentRequest)Mockito.anyObject()
+			(GetDocumentRequest)Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -588,7 +679,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchEngineAdapter
 		).execute(
-			(IndexDocumentRequest)Mockito.anyObject()
+			(IndexDocumentRequest)Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -596,7 +687,24 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchEngineAdapter
 		).execute(
-			(DeleteDocumentRequest)Mockito.anyObject()
+			(DeleteDocumentRequest)Mockito.any()
+		);
+
+		IndicesExistsIndexResponse indicesExistsIndexResponse = Mockito.mock(
+			IndicesExistsIndexResponse.class);
+
+		Mockito.doReturn(
+			true
+		).when(
+			indicesExistsIndexResponse
+		).isExists();
+
+		Mockito.doReturn(
+			indicesExistsIndexResponse
+		).when(
+			searchEngineAdapter
+		).execute(
+			(IndicesExistsIndexRequest)Mockito.any()
 		);
 	}
 
@@ -620,7 +728,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchEngineAdapter
 		).execute(
-			(SearchSearchRequest)Mockito.anyObject()
+			(SearchSearchRequest)Mockito.any()
 		);
 
 		return searchHits;
@@ -632,7 +740,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searcher
 		).search(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 	}
 
@@ -652,7 +760,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchRequestBuilder
 		).addComplexQueryPart(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 
 		Mockito.doReturn(
@@ -668,7 +776,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchRequestBuilder
 		).queryString(
-			Mockito.anyString()
+			Mockito.nullable(String.class)
 		);
 
 		Mockito.doReturn(
@@ -684,7 +792,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchRequestBuilder
 		).withSearchContext(
-			Mockito.any(Consumer.class)
+			Mockito.nullable(Consumer.class)
 		);
 
 		return searchRequestBuilder;
@@ -704,7 +812,7 @@ public abstract class BaseRankingsWebTestCase {
 		).when(
 			searchRequestBuilderFactory
 		).builder(
-			Mockito.anyObject()
+			Mockito.any()
 		);
 	}
 
@@ -712,10 +820,10 @@ public abstract class BaseRankingsWebTestCase {
 		SearchResponse searchResponse = Mockito.mock(SearchResponse.class);
 
 		Mockito.doReturn(
-			Stream.of(document)
+			Collections.singletonList(document)
 		).when(
 			searchResponse
-		).getDocumentsStream();
+		).getDocuments();
 
 		Mockito.doReturn(
 			1
@@ -730,37 +838,39 @@ public abstract class BaseRankingsWebTestCase {
 		return Mockito.mock(SearchSearchResponse.class);
 	}
 
-	@Mock
-	protected DLAppLocalService dlAppLocalService;
+	protected static final DocumentBuilderFactory documentBuilderFactory =
+		Mockito.mock(DocumentBuilderFactory.class);
+	protected static ServiceRegistration<DocumentBuilderFactory>
+		documentBuilderFactoryServiceRegistration;
+	protected static final MockedStatic<FrameworkUtil>
+		frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
+	protected static final SearchResultInterpreterProvider
+		searchResultInterpreterProvider = Mockito.mock(
+			SearchResultInterpreterProvider.class);
+	protected static ServiceRegistration<SearchResultInterpreterProvider>
+		searchResultInterpreterProviderServiceRegistration;
 
-	@Mock
-	protected FastDateFormatFactory fastDateFormatFactory;
-
-	@Mock
-	protected Language language;
-
-	@Mock
-	protected Portal portal;
-
-	@Mock
-	protected Queries queries;
-
-	@Mock
-	protected RankingIndexNameBuilder rankingIndexNameBuilder;
-
-	@Mock
-	protected ResourceRequest resourceRequest;
-
-	@Mock
-	protected ResourceResponse resourceResponse;
-
-	@Mock
-	protected SearchEngineAdapter searchEngineAdapter;
-
-	@Mock
-	protected Searcher searcher;
-
-	@Mock
-	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
+	protected DLAppLocalService dlAppLocalService = Mockito.mock(
+		DLAppLocalService.class);
+	protected FastDateFormatFactory fastDateFormatFactory = Mockito.mock(
+		FastDateFormatFactory.class);
+	protected GroupLocalService groupLocalService = Mockito.mock(
+		GroupLocalService.class);
+	protected Language language = Mockito.mock(Language.class);
+	protected Portal portal = Mockito.mock(Portal.class);
+	protected Queries queries = Mockito.mock(Queries.class);
+	protected RankingHelper rankingHelper = Mockito.spy(
+		RankingHelperImpl.class);
+	protected RankingIndexNameBuilder rankingIndexNameBuilder = Mockito.mock(
+		RankingIndexNameBuilder.class);
+	protected ResourceRequest resourceRequest = Mockito.mock(
+		ResourceRequest.class);
+	protected ResourceResponse resourceResponse = Mockito.mock(
+		ResourceResponse.class);
+	protected SearchEngineAdapter searchEngineAdapter = Mockito.mock(
+		SearchEngineAdapter.class);
+	protected Searcher searcher = Mockito.mock(Searcher.class);
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory =
+		Mockito.mock(SearchRequestBuilderFactory.class);
 
 }

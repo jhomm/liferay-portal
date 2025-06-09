@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.model;
@@ -44,6 +35,7 @@ public class SharingEntryWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("sharingEntryId", getSharingEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -51,6 +43,7 @@ public class SharingEntryWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
+		attributes.put("toUserGroupId", getToUserGroupId());
 		attributes.put("toUserId", getToUserId());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
@@ -67,6 +60,13 @@ public class SharingEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long sharingEntryId = (Long)attributes.get("sharingEntryId");
@@ -109,6 +109,12 @@ public class SharingEntryWrapper
 
 		if (modifiedDate != null) {
 			setModifiedDate(modifiedDate);
+		}
+
+		Long toUserGroupId = (Long)attributes.get("toUserGroupId");
+
+		if (toUserGroupId != null) {
+			setToUserGroupId(toUserGroupId);
 		}
 
 		Long toUserId = (Long)attributes.get("toUserId");
@@ -224,6 +230,16 @@ public class SharingEntryWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this sharing entry.
+	 *
+	 * @return the external reference code of this sharing entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the group ID of this sharing entry.
 	 *
 	 * @return the group ID of this sharing entry
@@ -271,6 +287,16 @@ public class SharingEntryWrapper
 	@Override
 	public long getSharingEntryId() {
 		return model.getSharingEntryId();
+	}
+
+	/**
+	 * Returns the to user group ID of this sharing entry.
+	 *
+	 * @return the to user group ID of this sharing entry
+	 */
+	@Override
+	public long getToUserGroupId() {
+		return model.getToUserGroupId();
 	}
 
 	/**
@@ -430,6 +456,16 @@ public class SharingEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this sharing entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this sharing entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this sharing entry.
 	 *
 	 * @param groupId the group ID of this sharing entry
@@ -477,6 +513,16 @@ public class SharingEntryWrapper
 	@Override
 	public void setSharingEntryId(long sharingEntryId) {
 		model.setSharingEntryId(sharingEntryId);
+	}
+
+	/**
+	 * Sets the to user group ID of this sharing entry.
+	 *
+	 * @param toUserGroupId the to user group ID of this sharing entry
+	 */
+	@Override
+	public void setToUserGroupId(long toUserGroupId) {
+		model.setToUserGroupId(toUserGroupId);
 	}
 
 	/**
@@ -537,6 +583,11 @@ public class SharingEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

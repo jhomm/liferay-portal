@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.action;
 
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -26,19 +17,19 @@ import com.liferay.portal.workflow.kaleo.designer.web.constants.KaleoDesignerPor
 import com.liferay.portal.workflow.kaleo.designer.web.internal.constants.KaleoDesignerWebKeys;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jeyvison Nascimento
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.CONTROL_PANEL_WORKFLOW,
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.CONTROL_PANEL_WORKFLOW,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
 		"mvc.command.name=/kaleo_designer/unpublish_kaleo_definition_version"
 	},
 	service = MVCActionCommand.class
@@ -89,9 +80,12 @@ public class UnpublishKaleoDefinitionVersionMVCActionCommand
 
 	@Override
 	protected String getSuccessMessage(ActionRequest actionRequest) {
-		return LanguageUtil.get(
+		return _language.get(
 			getResourceBundle(actionRequest),
 			"workflow-unpublished-successfully");
 	}
+
+	@Reference
+	private Language _language;
 
 }

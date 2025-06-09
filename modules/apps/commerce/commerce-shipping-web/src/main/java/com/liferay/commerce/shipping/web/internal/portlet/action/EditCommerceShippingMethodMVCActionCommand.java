@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.web.internal.portlet.action;
@@ -28,17 +19,17 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.io.File;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,9 +39,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_SHIPPING_METHODS,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_SHIPPING_METHODS,
 		"mvc.command.name=/commerce_shipping_methods/edit_commerce_shipping_method"
 	},
 	service = MVCActionCommand.class
@@ -67,7 +57,7 @@ public class EditCommerceShippingMethodMVCActionCommand
 
 		try {
 			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateCommerceShippingMethod(actionRequest);
+				_updateCommerceShippingMethod(actionRequest);
 			}
 		}
 		catch (Exception exception) {
@@ -94,7 +84,7 @@ public class EditCommerceShippingMethodMVCActionCommand
 		}
 	}
 
-	protected CommerceShippingMethod updateCommerceShippingMethod(
+	private CommerceShippingMethod _updateCommerceShippingMethod(
 			ActionRequest actionRequest)
 		throws PortalException {
 
@@ -104,14 +94,14 @@ public class EditCommerceShippingMethodMVCActionCommand
 		long commerceShippingMethodId = ParamUtil.getLong(
 			actionRequest, "commerceShippingMethodId");
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "nameMapAsXML");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(
-				actionRequest, "descriptionMapAsXML");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "descriptionMapAsXML");
+		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 		File imageFile = uploadPortletRequest.getFile("imageFile");
 		double priority = ParamUtil.getDouble(actionRequest, "priority");
-		boolean active = ParamUtil.getBoolean(actionRequest, "active");
+		String trackingURL = ParamUtil.getString(actionRequest, "trackingURL");
 
 		CommerceShippingMethod commerceShippingMethod = null;
 
@@ -128,14 +118,14 @@ public class EditCommerceShippingMethodMVCActionCommand
 			commerceShippingMethod =
 				_commerceShippingMethodService.addCommerceShippingMethod(
 					commerceChannel.getGroupId(), nameMap, descriptionMap,
-					imageFile, commerceShippingMethodEngineKey, priority,
-					active);
+					active, commerceShippingMethodEngineKey, imageFile,
+					priority, trackingURL);
 		}
 		else {
 			commerceShippingMethod =
 				_commerceShippingMethodService.updateCommerceShippingMethod(
-					commerceShippingMethodId, nameMap, descriptionMap,
-					imageFile, priority, active);
+					commerceShippingMethodId, nameMap, descriptionMap, active,
+					imageFile, priority, trackingURL);
 		}
 
 		return commerceShippingMethod;
@@ -146,6 +136,9 @@ public class EditCommerceShippingMethodMVCActionCommand
 
 	@Reference
 	private CommerceShippingMethodService _commerceShippingMethodService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

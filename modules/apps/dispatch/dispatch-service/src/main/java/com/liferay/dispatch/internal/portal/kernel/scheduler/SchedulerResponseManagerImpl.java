@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.internal.portal.kernel.scheduler;
@@ -18,7 +9,6 @@ import com.liferay.dispatch.scheduler.SchedulerResponseManager;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.scheduler.SchedulerEngineHelper;
 import com.liferay.portal.kernel.scheduler.SchedulerException;
 import com.liferay.portal.kernel.scheduler.StorageType;
@@ -41,14 +31,23 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = SchedulerResponseManager.class)
 public class SchedulerResponseManagerImpl implements SchedulerResponseManager {
 
+	@Override
 	public Date getNextFireDate(
 			String jobName, String groupName, StorageType storageType)
 		throws SchedulerException {
 
-		return _schedulerEngineHelper.getNextFireTime(
-			jobName, groupName, storageType);
+		SchedulerResponse schedulerResponse =
+			_schedulerEngineHelper.getScheduledJob(
+				jobName, groupName, storageType);
+
+		if (schedulerResponse == null) {
+			return null;
+		}
+
+		return _schedulerEngineHelper.getNextFireTime(schedulerResponse);
 	}
 
+	@Override
 	public List<SchedulerResponse> getSchedulerResponses(int start, int end) {
 		List<SchedulerResponse> schedulerResponses = new ArrayList<>();
 
@@ -79,6 +78,7 @@ public class SchedulerResponseManagerImpl implements SchedulerResponseManager {
 			start, Math.min(end, schedulerResponses.size()));
 	}
 
+	@Override
 	public int getSchedulerResponsesCount() {
 		List<SchedulerResponse> schedulerResponses = null;
 
@@ -100,16 +100,25 @@ public class SchedulerResponseManagerImpl implements SchedulerResponseManager {
 			});
 	}
 
+	@Override
 	public String getSimpleJobName(String jobName) {
 		return jobName.substring(jobName.lastIndexOf(StringPool.PERIOD) + 1);
 	}
 
+	@Override
 	public TriggerState getTriggerState(
 			String jobName, String groupName, StorageType storageType)
 		throws SchedulerException {
 
-		return _schedulerEngineHelper.getJobState(
-			jobName, groupName, storageType);
+		SchedulerResponse schedulerResponse =
+			_schedulerEngineHelper.getScheduledJob(
+				jobName, groupName, storageType);
+
+		if (schedulerResponse == null) {
+			return null;
+		}
+
+		return _schedulerEngineHelper.getJobState(schedulerResponse);
 	}
 
 	@Override
@@ -128,23 +137,16 @@ public class SchedulerResponseManagerImpl implements SchedulerResponseManager {
 	}
 
 	@Override
-	public void run(String jobName, String groupName, StorageType storageType)
+	public void run(
+			long companyId, String jobName, String groupName,
+			StorageType storageType)
 		throws SchedulerException {
 
-		SchedulerResponse schedulerResponse =
-			_schedulerEngineHelper.getScheduledJob(
-				jobName, groupName, storageType);
-
-		_messageBus.sendMessage(
-			schedulerResponse.getDestinationName(),
-			schedulerResponse.getMessage());
+		_schedulerEngineHelper.run(companyId, jobName, groupName, storageType);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SchedulerResponseManagerImpl.class);
-
-	@Reference
-	private MessageBus _messageBus;
 
 	@Reference
 	private SchedulerEngineHelper _schedulerEngineHelper;

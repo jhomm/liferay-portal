@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {Token, Tokenizer} from 'dynamic-data-mapping-form-builder';
-
+import {Token} from '../../utils/Token';
+import {Tokenizer} from '../../utils/Tokenizer';
 import {RulesVisitor} from '../../utils/visitors.es';
 
 const isEqualLengthOptions = (options1, options2) => {
@@ -27,9 +18,9 @@ const isEqualLengthOptions = (options1, options2) => {
 
 const isFieldValueOperand = (operands) => {
 	return (
-		operands.length == 2 &&
+		operands.length === 2 &&
 		operands[0].type === 'field' &&
-		operands[1].type == 'string'
+		operands[1].type === 'string'
 	);
 };
 
@@ -37,11 +28,11 @@ const isOptionReferencedByOperand = (options, operandValue) => {
 	return options.some(({label}) => operandValue === label);
 };
 
-export const renameFieldInsideExpression = (
+export function renameFieldInsideExpression(
 	expression,
 	fieldName,
 	newFieldName
-) => {
+) {
 	const tokens = Tokenizer.tokenize(expression);
 
 	return Tokenizer.stringifyTokens(
@@ -53,7 +44,7 @@ export const renameFieldInsideExpression = (
 			return token;
 		})
 	);
-};
+}
 
 const renameFieldInsideAutofill = (object, oldFieldName, newFieldName) => {
 	Object.keys(object).map((key) => {
@@ -65,7 +56,7 @@ const renameFieldInsideAutofill = (object, oldFieldName, newFieldName) => {
 	return object;
 };
 
-export const updateRulesReferences = (rules, oldProperties, newProperties) => {
+export function updateRulesReferences(rules, oldProperties, newProperties) {
 	const oldFieldName = oldProperties.fieldName;
 	const newFieldName = newProperties.fieldName;
 	const visitor = new RulesVisitor(rules);
@@ -151,4 +142,4 @@ export const updateRulesReferences = (rules, oldProperties, newProperties) => {
 			}),
 		};
 	});
-};
+}

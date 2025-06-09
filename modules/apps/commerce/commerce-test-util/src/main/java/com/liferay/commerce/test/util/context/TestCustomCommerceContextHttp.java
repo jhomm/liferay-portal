@@ -1,31 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.test.util.context;
 
-import com.liferay.commerce.account.util.CommerceAccountHelper;
+import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.commerce.context.BaseCommerceContextHttp;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
+import com.liferay.commerce.helper.CommerceAccountHelper;
+import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
+import com.liferay.commerce.product.discovery.CPConfigurationListDiscovery;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
+import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alec Sloan
@@ -34,16 +33,25 @@ public class TestCustomCommerceContextHttp extends BaseCommerceContextHttp {
 
 	public TestCustomCommerceContextHttp(
 		HttpServletRequest httpServletRequest,
+		AccountGroupLocalService accountGroupLocalService,
 		CommerceAccountHelper commerceAccountHelper,
+		CommerceCatalogLocalService commerceCatalogLocalService,
+		CommerceChannelAccountEntryRelLocalService
+			commerceChannelAccountEntryRelLocalService,
 		CommerceChannelLocalService commerceChannelLocalService,
 		CommerceCurrencyLocalService commerceCurrencyLocalService,
 		CommerceOrderHttpHelper commerceOrderHttpHelper,
-		ConfigurationProvider configurationProvider, Portal portal) {
+		ConfigurationProvider configurationProvider,
+		CPConfigurationListDiscovery cpConfigurationListDiscovery,
+		Portal portal) {
 
 		super(
-			httpServletRequest, commerceAccountHelper,
+			httpServletRequest, accountGroupLocalService, commerceAccountHelper,
+			commerceCatalogLocalService,
+			commerceChannelAccountEntryRelLocalService,
 			commerceChannelLocalService, commerceCurrencyLocalService,
-			commerceOrderHttpHelper, configurationProvider, portal);
+			commerceOrderHttpHelper, configurationProvider,
+			cpConfigurationListDiscovery, portal);
 
 		_httpServletRequest = httpServletRequest;
 		_commerceCurrencyLocalService = commerceCurrencyLocalService;
@@ -54,6 +62,28 @@ public class TestCustomCommerceContextHttp extends BaseCommerceContextHttp {
 	public CommerceCurrency getCommerceCurrency() throws PortalException {
 		if (_commerceCurrency != null) {
 			return _commerceCurrency;
+		}
+
+		CommerceOrder commerceOrder = getCommerceOrder();
+
+		if (commerceOrder != null) {
+			return commerceOrder.getCommerceCurrency();
+		}
+
+		String commerceCurrencyCode = CookiesManagerUtil.getCookieValue(
+			CommerceCurrency.class.getName() + StringPool.POUND +
+				getCommerceChannelGroupId(),
+			_httpServletRequest);
+
+		if (!Validator.isBlank(commerceCurrencyCode)) {
+			_commerceCurrency =
+				_commerceCurrencyLocalService.fetchCommerceCurrency(
+					_portal.getCompanyId(_httpServletRequest),
+					commerceCurrencyCode);
+
+			if ((_commerceCurrency != null) && _commerceCurrency.isActive()) {
+				return _commerceCurrency;
+			}
 		}
 
 		long companyId = _portal.getCompanyId(_httpServletRequest);

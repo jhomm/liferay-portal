@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.my.subscriptions.web.internal.portlet;
@@ -25,9 +16,9 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Peter Fellwock
  */
 @Component(
-	enabled = false, immediate = true,
+	enabled = false,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=my-subscriptions-portlet",
 		"com.liferay.portlet.display-category=category.collaboration",
@@ -47,17 +38,18 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-request-attributes=false",
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=0",
-		"javax.portlet.display-name=My Subscriptions",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.copy-request-parameters=true",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + MySubscriptionsPortletKeys.MY_SUBSCRIPTIONS,
-		"javax.portlet.portlet-info.keywords=My Subscriptions",
-		"javax.portlet.portlet-info.short-title=My Subscriptions",
-		"javax.portlet.portlet-info.title=My Subscriptions",
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=My Subscriptions",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.copy-request-parameters=true",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + MySubscriptionsPortletKeys.MY_SUBSCRIPTIONS,
+		"jakarta.portlet.portlet-info.keywords=My Subscriptions",
+		"jakarta.portlet.portlet-info.short-title=My Subscriptions",
+		"jakarta.portlet.portlet-info.title=My Subscriptions",
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -94,11 +86,9 @@ public class MySubscriptionsPortlet extends MVCPortlet {
 	}
 
 	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.my.subscriptions.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
+		target = "(&(release.bundle.symbolic.name=com.liferay.my.subscriptions.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
 	)
-	protected void setRelease(Release release) {
-	}
+	private Release _release;
 
 	@Reference
 	private SubscriptionLocalService _subscriptionLocalService;

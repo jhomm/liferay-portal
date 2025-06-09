@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.asset.model;
@@ -31,7 +22,7 @@ import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,8 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+	property = "jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 	service = AssetRendererFactory.class
 )
 public class LayoutRevisionAssetRendererFactory
@@ -57,16 +47,8 @@ public class LayoutRevisionAssetRendererFactory
 	}
 
 	@Override
-	public AssetEntry getAssetEntry(long assetEntryId) throws PortalException {
-		return getAssetEntry(getClassName(), assetEntryId);
-	}
-
-	@Override
-	public AssetEntry getAssetEntry(String className, long classPK)
+	public AssetEntry getAssetEntry(LayoutRevision layoutRevision)
 		throws PortalException {
-
-		LayoutRevision layoutRevision =
-			_layoutRevisionLocalService.getLayoutRevision(classPK);
 
 		LayoutSetBranch layoutSetBranch =
 			_layoutSetBranchLocalService.getLayoutSetBranch(
@@ -75,7 +57,7 @@ public class LayoutRevisionAssetRendererFactory
 		User user = _userLocalService.getUserById(layoutRevision.getUserId());
 
 		AssetEntry assetEntry = _assetEntryLocalService.createAssetEntry(
-			classPK);
+			layoutRevision.getLayoutRevisionId());
 
 		assetEntry.setGroupId(layoutRevision.getGroupId());
 		assetEntry.setCompanyId(user.getCompanyId());
@@ -85,13 +67,25 @@ public class LayoutRevisionAssetRendererFactory
 		assetEntry.setClassNameId(
 			_portal.getClassNameId(LayoutRevision.class.getName()));
 		assetEntry.setClassPK(layoutRevision.getLayoutRevisionId());
-
 		assetEntry.setTitle(
 			StringBundler.concat(
 				layoutRevision.getHTMLTitle(LocaleUtil.getSiteDefault()), " [",
 				layoutSetBranch.getName(), "]"));
 
 		return assetEntry;
+	}
+
+	@Override
+	public AssetEntry getAssetEntry(long assetEntryId) throws PortalException {
+		return getAssetEntry(getClassName(), assetEntryId);
+	}
+
+	@Override
+	public AssetEntry getAssetEntry(String className, long classPK)
+		throws PortalException {
+
+		return getAssetEntry(
+			_layoutRevisionLocalService.getLayoutRevision(classPK));
 	}
 
 	@Override
@@ -125,48 +119,22 @@ public class LayoutRevisionAssetRendererFactory
 		return TYPE;
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
-	}
-
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutRevisionLocalService(
-		LayoutRevisionLocalService layoutRevisionLocalService) {
-
-		_layoutRevisionLocalService = layoutRevisionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutSetBranchLocalService(
-		LayoutSetBranchLocalService layoutSetBranchLocalService) {
-
-		_layoutSetBranchLocalService = layoutSetBranchLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
+	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Reference
 	private LayoutRevisionLocalService _layoutRevisionLocalService;
+
+	@Reference
 	private LayoutSetBranchLocalService _layoutSetBranchLocalService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.layout.admin.web)")
 	private ServletContext _servletContext;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

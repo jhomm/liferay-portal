@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.web.internal.portlet.action;
@@ -18,10 +9,10 @@ import com.liferay.dynamic.data.mapping.configuration.DDMGroupServiceConfigurati
 import com.liferay.dynamic.data.mapping.configuration.DDMWebConfiguration;
 import com.liferay.dynamic.data.mapping.constants.DDMConstants;
 import com.liferay.dynamic.data.mapping.util.DDMTemplateHelper;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -32,15 +23,14 @@ import com.liferay.template.constants.TemplatePortletKeys;
 import com.liferay.template.web.internal.display.context.InformationTemplatesEditDDMTemplateDisplayContext;
 import com.liferay.template.web.internal.display.context.WidgetTemplatesEditDDMTemplateDisplayContext;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.Map;
 import java.util.Objects;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -49,9 +39,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.dynamic.data.mapping.configuration.DDMWebConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
 	property = {
-		"javax.portlet.name=" + TemplatePortletKeys.TEMPLATE,
+		"jakarta.portlet.name=" + TemplatePortletKeys.TEMPLATE,
 		"mvc.command.name=/template/edit_ddm_template_properties"
 	},
 	service = MVCRenderCommand.class
@@ -80,7 +69,7 @@ public class EditDDMTemplatePropertiesMVCRenderCommand
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
 				new InformationTemplatesEditDDMTemplateDisplayContext(
-					_infoItemServiceTracker,
+					_infoItemServiceRegistry,
 					_portal.getLiferayPortletRequest(renderRequest),
 					_portal.getLiferayPortletResponse(renderResponse)));
 		}
@@ -128,7 +117,7 @@ public class EditDDMTemplatePropertiesMVCRenderCommand
 	private volatile DDMWebConfiguration _ddmWebConfiguration;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
 	private Portal _portal;

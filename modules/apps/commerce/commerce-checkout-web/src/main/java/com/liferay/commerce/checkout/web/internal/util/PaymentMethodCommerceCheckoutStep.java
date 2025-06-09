@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.checkout.web.internal.util;
@@ -18,13 +9,14 @@ import com.liferay.commerce.checkout.helper.CommerceCheckoutStepHttpHelper;
 import com.liferay.commerce.checkout.web.internal.display.context.PaymentMethodCheckoutStepDisplayContext;
 import com.liferay.commerce.constants.CommerceCheckoutWebKeys;
 import com.liferay.commerce.constants.CommerceOrderActionKeys;
-import com.liferay.commerce.constants.CommerceWebKeys;
-import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.exception.CommerceOrderPaymentMethodException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.payment.engine.CommercePaymentEngine;
+import com.liferay.commerce.payment.integration.CommercePaymentIntegrationRegistry;
+import com.liferay.commerce.payment.method.CommercePaymentMethodRegistry;
+import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelLocalService;
+import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelQualifierLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
-import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.util.BaseCommerceCheckoutStep;
 import com.liferay.commerce.util.CommerceCheckoutStep;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
@@ -34,11 +26,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +40,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.checkout.step.name=" + PaymentMethodCommerceCheckoutStep.NAME,
 		"commerce.checkout.step.order:Integer=40"
@@ -75,14 +66,9 @@ public class PaymentMethodCommerceCheckoutStep
 			(CommerceOrder)httpServletRequest.getAttribute(
 				CommerceCheckoutWebKeys.COMMERCE_ORDER);
 
-		if (!_commerceCheckoutStepHttpHelper.
-				isActivePaymentMethodCommerceCheckoutStep(
-					httpServletRequest, commerceOrder)) {
-
-			return false;
-		}
-
-		return true;
+		return _commerceCheckoutStepHttpHelper.
+			isActivePaymentMethodCommerceCheckoutStep(
+				httpServletRequest, commerceOrder);
 	}
 
 	@Override
@@ -91,7 +77,7 @@ public class PaymentMethodCommerceCheckoutStep
 		throws Exception {
 
 		try {
-			updateCommerceOrderPaymentMethod(actionRequest);
+			_updateCommerceOrderPaymentMethod(actionRequest);
 		}
 		catch (Exception exception) {
 			if (exception instanceof CommerceOrderPaymentMethodException) {
@@ -113,7 +99,10 @@ public class PaymentMethodCommerceCheckoutStep
 		PaymentMethodCheckoutStepDisplayContext
 			paymentMethodCheckoutStepDisplayContext =
 				new PaymentMethodCheckoutStepDisplayContext(
-					_commercePaymentEngine, httpServletRequest);
+					_commercePaymentEngine, _commercePaymentIntegrationRegistry,
+					_commercePaymentMethodGroupRelLocalService,
+					_commercePaymentMethodGroupRelQualifierLocalService,
+					_commercePaymentMethodRegistry, httpServletRequest);
 
 		httpServletRequest.setAttribute(
 			CommerceCheckoutWebKeys.COMMERCE_CHECKOUT_STEP_DISPLAY_CONTEXT,
@@ -124,17 +113,7 @@ public class PaymentMethodCommerceCheckoutStep
 			"/checkout_step/payment_method.jsp");
 	}
 
-	@Reference(
-		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)",
-		unbind = "-"
-	)
-	protected void setModelResourcePermission(
-		ModelResourcePermission<CommerceOrder> modelResourcePermission) {
-
-		_commerceOrderModelResourcePermission = modelResourcePermission;
-	}
-
-	protected void updateCommerceOrderPaymentMethod(ActionRequest actionRequest)
+	private void _updateCommerceOrderPaymentMethod(ActionRequest actionRequest)
 		throws Exception {
 
 		String commercePaymentMethodKey = ParamUtil.getString(
@@ -144,19 +123,11 @@ public class PaymentMethodCommerceCheckoutStep
 			throw new CommerceOrderPaymentMethodException();
 		}
 
+		CommerceOrder commerceOrder = (CommerceOrder)actionRequest.getAttribute(
+			CommerceCheckoutWebKeys.COMMERCE_ORDER);
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
-
-		String commerceOrderUuid = ParamUtil.getString(
-			actionRequest, "commerceOrderUuid");
-
-		CommerceContext commerceContext =
-			(CommerceContext)actionRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
-		CommerceOrder commerceOrder =
-			_commerceOrderService.getCommerceOrderByUuidAndGroupId(
-				commerceOrderUuid, commerceContext.getCommerceChannelGroupId());
 
 		if (!_commerceOrderModelResourcePermission.contains(
 				themeDisplay.getPermissionChecker(), commerceOrder,
@@ -165,15 +136,22 @@ public class PaymentMethodCommerceCheckoutStep
 			return;
 		}
 
-		_commerceOrderLocalService.updateCommerceOrder(
-			commerceOrder.getCommerceOrderId(),
+		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+			null, commerceOrder.getCommerceOrderId(),
 			commerceOrder.getBillingAddressId(),
-			commerceOrder.getShippingAddressId(), commercePaymentMethodKey,
 			commerceOrder.getCommerceShippingMethodId(),
-			commerceOrder.getShippingOptionName(),
-			commerceOrder.getPurchaseOrderNumber(), commerceOrder.getSubtotal(),
-			commerceOrder.getShippingAmount(), commerceOrder.getTotal(),
-			commerceOrder.getAdvanceStatus(), commerceContext);
+			commerceOrder.getShippingAddressId(),
+			commerceOrder.getAdvanceStatus(), commercePaymentMethodKey, null,
+			commerceOrder.getPurchaseOrderNumber(),
+			commerceOrder.getShippingAmount(),
+			commerceOrder.getShippingOptionName(), commerceOrder.getSubtotal(),
+			commerceOrder.getTotal());
+
+		commerceOrder = _commerceOrderLocalService.resetTermsAndConditions(
+			commerceOrder.getCommerceOrderId(), false, true);
+
+		actionRequest.setAttribute(
+			CommerceCheckoutWebKeys.COMMERCE_ORDER, commerceOrder);
 	}
 
 	@Reference
@@ -182,14 +160,29 @@ public class PaymentMethodCommerceCheckoutStep
 	@Reference
 	private CommerceOrderLocalService _commerceOrderLocalService;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
+	)
 	private ModelResourcePermission<CommerceOrder>
 		_commerceOrderModelResourcePermission;
 
 	@Reference
-	private CommerceOrderService _commerceOrderService;
+	private CommercePaymentEngine _commercePaymentEngine;
 
 	@Reference
-	private CommercePaymentEngine _commercePaymentEngine;
+	private CommercePaymentIntegrationRegistry
+		_commercePaymentIntegrationRegistry;
+
+	@Reference
+	private CommercePaymentMethodGroupRelLocalService
+		_commercePaymentMethodGroupRelLocalService;
+
+	@Reference
+	private CommercePaymentMethodGroupRelQualifierLocalService
+		_commercePaymentMethodGroupRelQualifierLocalService;
+
+	@Reference
+	private CommercePaymentMethodRegistry _commercePaymentMethodRegistry;
 
 	@Reference
 	private JSPRenderer _jspRenderer;

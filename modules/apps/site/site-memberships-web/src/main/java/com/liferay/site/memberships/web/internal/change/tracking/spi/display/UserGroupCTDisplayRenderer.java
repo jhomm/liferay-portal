@@ -1,45 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.memberships.web.internal.change.tracking.spi.display;
 
 import com.liferay.change.tracking.spi.display.BaseCTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.user.groups.admin.constants.UserGroupsAdminPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
+
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Cheryl Tang
  */
-@Component(immediate = true, service = CTDisplayRenderer.class)
+@Component(service = CTDisplayRenderer.class)
 public class UserGroupCTDisplayRenderer
 	extends BaseCTDisplayRenderer<UserGroup> {
 
@@ -75,8 +65,6 @@ public class UserGroupCTDisplayRenderer
 			"/edit_user_group.jsp"
 		).setRedirect(
 			_portal.getCurrentURL(httpServletRequest)
-		).setBackURL(
-			ParamUtil.getString(httpServletRequest, "backURL")
 		).setParameter(
 			"userGroupId", userGroup.getUserGroupId()
 		).buildString();
@@ -124,7 +112,7 @@ public class UserGroupCTDisplayRenderer
 			() -> ListUtil.toString(
 				_userGroupGroupRoleLocalService.getUserGroupGroupRoles(
 					userGroup.getUserGroupId(), userGroup.getGroupId()),
-				UsersAdmin.USER_GROUP_GROUP_ROLE_TITLE_ACCESSOR,
+				UsersAdminUtil.USER_GROUP_GROUP_ROLE_TITLE_ACCESSOR,
 				StringPool.COMMA_AND_SPACE)
 		);
 	}

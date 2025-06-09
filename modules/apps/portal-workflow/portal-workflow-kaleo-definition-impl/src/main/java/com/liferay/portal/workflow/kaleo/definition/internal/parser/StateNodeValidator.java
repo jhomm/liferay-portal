@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.internal.parser;
 
 import com.liferay.portal.workflow.kaleo.definition.Definition;
+import com.liferay.portal.workflow.kaleo.definition.NodeType;
 import com.liferay.portal.workflow.kaleo.definition.State;
 import com.liferay.portal.workflow.kaleo.definition.exception.KaleoDefinitionValidationException;
 import com.liferay.portal.workflow.kaleo.definition.parser.NodeValidator;
@@ -27,26 +19,28 @@ import org.osgi.service.component.annotations.Component;
  * @author Michael C. Han
  * @author Marcellus Tavares
  */
-@Component(
-	immediate = true, property = "node.type=STATE",
-	service = NodeValidator.class
-)
+@Component(service = NodeValidator.class)
 public class StateNodeValidator extends BaseNodeValidator<State> {
+
+	@Override
+	public NodeType getNodeType() {
+		return NodeType.STATE;
+	}
 
 	@Override
 	protected void doValidate(Definition definition, State state)
 		throws KaleoDefinitionValidationException {
 
 		if (state.isInitial()) {
-			validateInitialState(definition, state);
+			_validateInitialState(definition, state);
 		}
 		else if (state.getIncomingTransitionsCount() == 0) {
 			throw new KaleoDefinitionValidationException.
-				MustSetIncomingTransition(state.getName());
+				MustSetIncomingTransition(state.getDefaultLabel());
 		}
 	}
 
-	protected void validateInitialState(Definition definition, State state)
+	private void _validateInitialState(Definition definition, State state)
 		throws KaleoDefinitionValidationException {
 
 		State initialState = definition.getInitialState();
@@ -54,17 +48,17 @@ public class StateNodeValidator extends BaseNodeValidator<State> {
 		if (!Objects.equals(initialState, state)) {
 			throw new KaleoDefinitionValidationException.
 				MultipleInitialStateNodes(
-					state.getName(), initialState.getName());
+					state.getDefaultLabel(), initialState.getDefaultLabel());
 		}
 
 		if (state.getIncomingTransitionsCount() > 0) {
 			throw new KaleoDefinitionValidationException.
-				MustNotSetIncomingTransition(state.getName());
+				MustNotSetIncomingTransition(state.getDefaultLabel());
 		}
 
 		if (state.getOutgoingTransitionsCount() == 0) {
 			throw new KaleoDefinitionValidationException.
-				MustSetOutgoingTransition(state.getName());
+				MustSetOutgoingTransition(state.getDefaultLabel());
 		}
 	}
 

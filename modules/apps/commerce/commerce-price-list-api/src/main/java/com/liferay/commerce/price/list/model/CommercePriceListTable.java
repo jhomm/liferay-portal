@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model;
@@ -33,6 +24,12 @@ public class CommercePriceListTable extends BaseTable<CommercePriceListTable> {
 	public static final CommercePriceListTable INSTANCE =
 		new CommercePriceListTable();
 
+	public final Column<CommercePriceListTable, Long> mvccVersion =
+		createColumn(
+			"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
+	public final Column<CommercePriceListTable, Long> ctCollectionId =
+		createColumn(
+			"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<CommercePriceListTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<CommercePriceListTable, String> externalReferenceCode =
@@ -56,9 +53,9 @@ public class CommercePriceListTable extends BaseTable<CommercePriceListTable> {
 	public final Column<CommercePriceListTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
-	public final Column<CommercePriceListTable, Long> commerceCurrencyId =
+	public final Column<CommercePriceListTable, String> commerceCurrencyCode =
 		createColumn(
-			"commerceCurrencyId", Long.class, Types.BIGINT,
+			"commerceCurrencyCode", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
 	public final Column<CommercePriceListTable, Long>
 		parentCommercePriceListId = createColumn(

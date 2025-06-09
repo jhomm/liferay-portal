@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.taglib.servlet.taglib;
@@ -24,19 +15,19 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.sharing.constants.SharingPortletKeys;
 import com.liferay.sharing.display.context.util.SharingJavaScriptFactory;
 import com.liferay.sharing.security.permission.SharingPermission;
+import com.liferay.sharing.taglib.internal.permission.util.SharingPermissionUtil;
 import com.liferay.sharing.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.sharing.taglib.internal.servlet.SharingJavaScriptFactoryUtil;
-import com.liferay.sharing.taglib.internal.servlet.SharingPermissionUtil;
 import com.liferay.sharing.taglib.internal.util.CollaboratorsUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Alejandro Tardín
@@ -98,7 +89,7 @@ public class SharingCollaboratorsTag extends BaseSharingTag {
 			SharingJavaScriptFactory sharingJavaScriptFactory =
 				SharingJavaScriptFactoryUtil.getSharingJavaScriptFactory();
 
-			sharingJavaScriptFactory.requestSharingJavascript();
+			sharingJavaScriptFactory.requestSharingJavaScript();
 
 			data.put("canManageCollaborators", true);
 		}
@@ -140,7 +131,7 @@ public class SharingCollaboratorsTag extends BaseSharingTag {
 				themeDisplay.getScopeGroupId());
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return false;
 		}

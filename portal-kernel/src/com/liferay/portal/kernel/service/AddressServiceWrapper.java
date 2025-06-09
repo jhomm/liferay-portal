@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
+
+import com.liferay.portal.kernel.model.Address;
 
 /**
  * Provides a wrapper for {@link AddressService}.
@@ -24,22 +17,27 @@ package com.liferay.portal.kernel.service;
 public class AddressServiceWrapper
 	implements AddressService, ServiceWrapper<AddressService> {
 
+	public AddressServiceWrapper() {
+		this(null);
+	}
+
 	public AddressServiceWrapper(AddressService addressService) {
 		_addressService = addressService;
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.Address addAddress(
-			java.lang.String className, long classPK, java.lang.String street1,
-			java.lang.String street2, java.lang.String street3,
-			java.lang.String city, java.lang.String zip, long regionId,
-			long countryId, long typeId, boolean mailing, boolean primary,
-			ServiceContext serviceContext)
+	public Address addAddress(
+			String externalReferenceCode, String className, long classPK,
+			long countryId, long listTypeId, long regionId, String city,
+			String description, boolean mailing, String name, boolean primary,
+			String street1, String street2, String street3, String subtype,
+			String zip, String phoneNumber, ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _addressService.addAddress(
-			className, classPK, street1, street2, street3, city, zip, regionId,
-			countryId, typeId, mailing, primary, serviceContext);
+			externalReferenceCode, className, classPK, countryId, listTypeId,
+			regionId, city, description, mailing, name, primary, street1,
+			street2, street3, subtype, zip, phoneNumber, serviceContext);
 	}
 
 	@Override
@@ -50,18 +48,26 @@ public class AddressServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.Address getAddress(long addressId)
+	public Address getAddress(long addressId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _addressService.getAddress(addressId);
 	}
 
 	@Override
-	public java.util.List<com.liferay.portal.kernel.model.Address> getAddresses(
-			java.lang.String className, long classPK)
+	public java.util.List<Address> getAddresses(String className, long classPK)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _addressService.getAddresses(className, classPK);
+	}
+
+	@Override
+	public java.util.List<Address> getListTypeAddresses(
+			String className, long classPK, long[] listTypeIds)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _addressService.getListTypeAddresses(
+			className, classPK, listTypeIds);
 	}
 
 	/**
@@ -70,21 +76,41 @@ public class AddressServiceWrapper
 	 * @return the OSGi service identifier
 	 */
 	@Override
-	public java.lang.String getOSGiServiceIdentifier() {
+	public String getOSGiServiceIdentifier() {
 		return _addressService.getOSGiServiceIdentifier();
 	}
 
 	@Override
-	public com.liferay.portal.kernel.model.Address updateAddress(
-			long addressId, java.lang.String street1, java.lang.String street2,
-			java.lang.String street3, java.lang.String city,
-			java.lang.String zip, long regionId, long countryId, long typeId,
-			boolean mailing, boolean primary)
+	public Address updateAddress(
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _addressService.updateAddress(
-			addressId, street1, street2, street3, city, zip, regionId,
-			countryId, typeId, mailing, primary);
+			externalReferenceCode, addressId, countryId, listTypeId, regionId,
+			city, description, mailing, name, primary, street1, street2,
+			street3, subtype, zip, phoneNumber);
+	}
+
+	@Override
+	public Address updateExternalReferenceCode(
+			Address address, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _addressService.updateExternalReferenceCode(
+			address, externalReferenceCode);
+	}
+
+	@Override
+	public Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _addressService.updateExternalReferenceCode(
+			addressId, externalReferenceCode);
 	}
 
 	@Override

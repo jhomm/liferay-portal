@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.upgrade.v_1_0_0;
@@ -30,10 +21,10 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		updateLayouts();
+		_updateLayouts();
 	}
 
-	protected void updateLayout(long plid, String typeSettings)
+	private void _updateLayout(long plid, String typeSettings)
 		throws Exception {
 
 		if (Validator.isNull(typeSettings)) {
@@ -48,15 +39,12 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 			).build();
 
 		typeSettingsUnicodeProperties.setProperty(
-			"embeddedLayoutURL",
-			typeSettingsUnicodeProperties.getProperty("url"));
+			"embeddedLayoutURL", typeSettingsUnicodeProperties.remove("url"));
 
-		typeSettingsUnicodeProperties.remove("url");
-
-		updateTypeSettings(plid, typeSettingsUnicodeProperties.toString());
+		_updateTypeSettings(plid, typeSettingsUnicodeProperties.toString());
 	}
 
-	protected void updateLayouts() throws Exception {
+	private void _updateLayouts() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select plid, typeSettings from Layout where type_ = ?")) {
@@ -68,13 +56,13 @@ public class LayoutUpgradeProcess extends UpgradeProcess {
 					long plid = resultSet.getLong("plid");
 					String typeSettings = resultSet.getString("typeSettings");
 
-					updateLayout(plid, typeSettings);
+					_updateLayout(plid, typeSettings);
 				}
 			}
 		}
 	}
 
-	protected void updateTypeSettings(long plid, String typeSettings)
+	private void _updateTypeSettings(long plid, String typeSettings)
 		throws Exception {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(

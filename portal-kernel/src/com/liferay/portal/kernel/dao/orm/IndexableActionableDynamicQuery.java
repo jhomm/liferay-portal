@@ -1,28 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.dao.orm;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskThreadLocal;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
-import com.liferay.portal.kernel.search.SearchEngineHelperUtil;
 import com.liferay.portal.kernel.search.background.task.ReindexStatusMessageSenderUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
-import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,10 +64,6 @@ public class IndexableActionableDynamicQuery
 		}
 	}
 
-	public void setIndexWriterHelper(IndexWriterHelper indexWriterHelper) {
-		_indexWriterHelper = indexWriterHelper;
-	}
-
 	@Override
 	public void setParallel(boolean parallel) {
 		if (isParallel() == parallel) {
@@ -88,15 +77,12 @@ public class IndexableActionableDynamicQuery
 		}
 	}
 
-	public void setSearchEngineId(String searchEngineId) {
-		_searchEngineId = searchEngineId;
-	}
-
 	@Override
 	protected void actionsCompleted() throws PortalException {
-		if (Validator.isNotNull(_searchEngineId)) {
-			_indexWriterHelper.commit(_searchEngineId, getCompanyId());
-		}
+		IndexWriterHelper indexWriterHelper =
+			_indexWriterHelperProxySnapshot.get();
+
+		indexWriterHelper.commit(getCompanyId());
 	}
 
 	@Override
@@ -111,29 +97,43 @@ public class IndexableActionableDynamicQuery
 		}
 	}
 
-	protected String getSearchEngineId() {
-		return _searchEngineId;
-	}
-
 	protected void indexInterval() throws PortalException {
 		if ((_documents == null) || _documents.isEmpty()) {
 			return;
 		}
 
-		if (Validator.isNull(_searchEngineId)) {
-			_searchEngineId = SearchEngineHelperUtil.getSearchEngineId(
-				_documents);
-		}
+		IndexWriterHelper indexWriterHelper =
+			_indexWriterHelperProxySnapshot.get();
 
-		_indexWriterHelper.updateDocuments(
-			_searchEngineId, getCompanyId(), new ArrayList<>(_documents),
-			false);
+		indexWriterHelper.updateDocuments(
+			getCompanyId(), new ArrayList<>(_documents), false);
 
 		_count += _documents.size();
 
 		_documents.clear();
 
 		sendStatusMessage();
+	}
+
+	@Override
+	protected void performAction(Object object) throws PortalException {
+		long ctCollectionId = 0;
+
+		if (object instanceof CTModel) {
+			CTModel<?> ctModel = (CTModel<?>)object;
+
+			ctCollectionId = ctModel.getCtCollectionId();
+		}
+
+		try (SafeCloseable safeCloseable1 =
+				CTSQLModeThreadLocal.setCTSQLModeWithSafeCloseable(
+					CTSQLModeThreadLocal.CTSQLMode.DEFAULT);
+			SafeCloseable safeCloseable2 =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollectionId)) {
+
+			super.performAction(object);
+		}
 	}
 
 	protected void sendStatusMessage() {
@@ -151,17 +151,14 @@ public class IndexableActionableDynamicQuery
 			modelClass.getName(), _count + documentIntervalCount, _total);
 	}
 
-	private static final long _STATUS_INTERVAL = 1000;
+	private static final long _STATUS_INTERVAL = 100;
 
-	private static volatile IndexWriterHelper _indexWriterHelperProxy =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			IndexWriterHelper.class, IndexableActionableDynamicQuery.class,
-			"_indexWriterHelperProxy", false);
+	private static final Snapshot<IndexWriterHelper>
+		_indexWriterHelperProxySnapshot = new Snapshot<>(
+			IndexableActionableDynamicQuery.class, IndexWriterHelper.class);
 
 	private long _count;
 	private Collection<Document> _documents = new ArrayList<>();
-	private IndexWriterHelper _indexWriterHelper = _indexWriterHelperProxy;
-	private String _searchEngineId;
 	private long _total;
 
 }

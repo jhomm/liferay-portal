@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.inventory.client.dto.v1_0;
@@ -17,11 +8,12 @@ package com.liferay.headless.commerce.admin.inventory.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.inventory.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.inventory.client.serdes.v1_0.WarehouseSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
+import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -33,6 +25,28 @@ public class Warehouse implements Cloneable, Serializable {
 	public static Warehouse toDTO(String json) {
 		return WarehouseSerDes.toDTO(json);
 	}
+
+	public Map<String, Map<String, String>> getActions() {
+		return actions;
+	}
+
+	public void setActions(Map<String, Map<String, String>> actions) {
+		this.actions = actions;
+	}
+
+	public void setActions(
+		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
+			actionsUnsafeSupplier) {
+
+		try {
+			actions = actionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Map<String, Map<String, String>> actions;
 
 	public Boolean getActive() {
 		return active;
@@ -95,16 +109,17 @@ public class Warehouse implements Cloneable, Serializable {
 
 	protected String countryISOCode;
 
-	public String getDescription() {
+	public Map<String, String> getDescription() {
 		return description;
 	}
 
-	public void setDescription(String description) {
+	public void setDescription(Map<String, String> description) {
 		this.description = description;
 	}
 
 	public void setDescription(
-		UnsafeSupplier<String, Exception> descriptionUnsafeSupplier) {
+		UnsafeSupplier<Map<String, String>, Exception>
+			descriptionUnsafeSupplier) {
 
 		try {
 			description = descriptionUnsafeSupplier.get();
@@ -114,7 +129,7 @@ public class Warehouse implements Cloneable, Serializable {
 		}
 	}
 
-	protected String description;
+	protected Map<String, String> description;
 
 	public String getExternalReferenceCode() {
 		return externalReferenceCode;
@@ -198,36 +213,17 @@ public class Warehouse implements Cloneable, Serializable {
 
 	protected Double longitude;
 
-	public Number getMvccVersion() {
-		return mvccVersion;
-	}
-
-	public void setMvccVersion(Number mvccVersion) {
-		this.mvccVersion = mvccVersion;
-	}
-
-	public void setMvccVersion(
-		UnsafeSupplier<Number, Exception> mvccVersionUnsafeSupplier) {
-
-		try {
-			mvccVersion = mvccVersionUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Number mvccVersion;
-
-	public String getName() {
+	public Map<String, String> getName() {
 		return name;
 	}
 
-	public void setName(String name) {
+	public void setName(Map<String, String> name) {
 		this.name = name;
 	}
 
-	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
+	public void setName(
+		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
+
 		try {
 			name = nameUnsafeSupplier.get();
 		}
@@ -236,7 +232,7 @@ public class Warehouse implements Cloneable, Serializable {
 		}
 	}
 
-	protected String name;
+	protected Map<String, String> name;
 
 	public String getRegionISOCode() {
 		return regionISOCode;

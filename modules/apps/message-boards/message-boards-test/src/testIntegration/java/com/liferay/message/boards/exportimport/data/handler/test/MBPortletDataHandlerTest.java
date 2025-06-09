@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.exportimport.data.handler.test;
@@ -83,12 +74,12 @@ public class MBPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 				group.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory parentCategory = MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategory childCategory = MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(), parentCategory.getCategoryId(),
+			null, TestPropsValues.getUserId(), parentCategory.getCategoryId(),
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategoryLocalServiceUtil.moveCategoryToTrash(
@@ -122,7 +113,7 @@ public class MBPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 				stagingGroup.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory category = MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 

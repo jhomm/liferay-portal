@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
+import com.liferay.dynamic.data.mapping.form.web.internal.display.context.util.DDMFormInstanceExpirationStatusUtil;
+import com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.helper.SaveFormInstanceMVCCommandHelper;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.UnlocalizedValue;
@@ -22,24 +15,27 @@ import com.liferay.dynamic.data.mapping.service.DDMFormInstanceService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseTransactionalMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.AggregateResourceBundle;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,9 +44,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pedro Queiroz
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"mvc.command.name=/dynamic_data_mapping_form/copy_form_instance"
 	},
 	service = MVCActionCommand.class
@@ -59,13 +54,14 @@ public class CopyFormInstanceMVCActionCommand
 	extends BaseTransactionalMVCActionCommand {
 
 	protected DDMFormValues createFormInstanceSettingsDDMFormValues(
-			DDMFormInstance formInstance)
+			DDMFormInstance formInstance, ThemeDisplay themeDisplay)
 		throws Exception {
 
 		DDMFormValues settingsDDMFormValuesCopy =
 			formInstance.getSettingsDDMFormValues();
 
-		setDefaultPublishedDDMFormFieldValue(settingsDDMFormValuesCopy);
+		_setDefaultDDMFormFieldValues(
+			formInstance, settingsDDMFormValuesCopy, themeDisplay);
 
 		return settingsDDMFormValuesCopy;
 	}
@@ -89,7 +85,10 @@ public class CopyFormInstanceMVCActionCommand
 			ddmStructure.getDefaultLanguageId());
 
 		DDMFormValues settingsDDMFormValues =
-			createFormInstanceSettingsDDMFormValues(formInstance);
+			createFormInstanceSettingsDDMFormValues(
+				formInstance,
+				(ThemeDisplay)actionRequest.getAttribute(
+					WebKeys.THEME_DISPLAY));
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			DDMFormInstance.class.getName(), actionRequest);
@@ -104,7 +103,7 @@ public class CopyFormInstanceMVCActionCommand
 
 		Map<Locale, String> nameMap = formInstance.getNameMap();
 
-		String name = LanguageUtil.format(
+		String name = _language.format(
 			getResourceBundle(defaultLocale), "copy-of-x",
 			nameMap.get(defaultLocale));
 
@@ -123,18 +122,6 @@ public class CopyFormInstanceMVCActionCommand
 			moduleResourceBundle, portalResourceBundle);
 	}
 
-	protected void setDefaultPublishedDDMFormFieldValue(
-		DDMFormValues ddmFormValues) {
-
-		for (DDMFormFieldValue ddmFormFieldValue :
-				ddmFormValues.getDDMFormFieldValues()) {
-
-			if (Objects.equals(ddmFormFieldValue.getName(), "published")) {
-				ddmFormFieldValue.setValue(new UnlocalizedValue("false"));
-			}
-		}
-	}
-
 	@Reference
 	protected DDMFormInstanceService ddmFormInstanceService;
 
@@ -146,5 +133,40 @@ public class CopyFormInstanceMVCActionCommand
 
 	@Reference
 	protected SaveFormInstanceMVCCommandHelper saveFormInstanceMVCCommandHelper;
+
+	private void _setDefaultDDMFormFieldValues(
+			DDMFormInstance ddmFormInstance, DDMFormValues ddmFormValues,
+			ThemeDisplay themeDisplay)
+		throws Exception {
+
+		boolean expired = DDMFormInstanceExpirationStatusUtil.isFormExpired(
+			ddmFormInstance, themeDisplay.getTimeZone());
+
+		for (DDMFormFieldValue ddmFormFieldValue :
+				ddmFormValues.getDDMFormFieldValues()) {
+
+			if (Objects.equals(ddmFormFieldValue.getName(), "published")) {
+				ddmFormFieldValue.setValue(new UnlocalizedValue("false"));
+			}
+
+			if (!expired) {
+				continue;
+			}
+
+			if (StringUtil.equals(
+					ddmFormFieldValue.getName(), "expirationDate")) {
+
+				ddmFormFieldValue.setValue(new UnlocalizedValue(""));
+			}
+			else if (StringUtil.equals(
+						ddmFormFieldValue.getName(), "neverExpire")) {
+
+				ddmFormFieldValue.setValue(new UnlocalizedValue("true"));
+			}
+		}
+	}
+
+	@Reference
+	private Language _language;
 
 }

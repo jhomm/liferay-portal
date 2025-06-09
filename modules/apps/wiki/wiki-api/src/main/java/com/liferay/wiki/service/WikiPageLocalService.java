@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -34,7 +27,9 @@ import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.PersistedResourcedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -44,6 +39,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.model.WikiPageDisplay;
 
+import jakarta.portlet.PortletURL;
+
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
@@ -52,8 +49,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
-import javax.portlet.PortletURL;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -67,13 +62,14 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see WikiPageLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface WikiPageLocalService
-	extends BaseLocalService, PersistedModelLocalService,
+	extends BaseLocalService, CTService<WikiPage>, PersistedModelLocalService,
 			PersistedResourcedModelLocalService {
 
 	/*
@@ -83,9 +79,9 @@ public interface WikiPageLocalService
 	 */
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addPage(String, long, long, String, double, String, String, boolean,
-	 String, boolean, String, String, ServiceContext)}
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #addPage(String,
+	 long, long, String, double, String, String, boolean, String,
+	 boolean, String, String, ServiceContext)}
 	 */
 	@Deprecated
 	public WikiPage addPage(
@@ -328,7 +324,7 @@ public interface WikiPageLocalService
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 matching wiki page could be found
 	 */
@@ -344,6 +340,9 @@ public interface WikiPageLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public WikiPage fetchPage(long nodeId, String title, double version);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public PersistedModel fetchPersistedModel(Serializable primaryKeyObj);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public WikiPage fetchWikiPage(long pageId);
@@ -432,7 +431,7 @@ public interface WikiPageLocalService
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -538,6 +537,10 @@ public interface WikiPageLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<WikiPage> getPages(
 		long userId, long nodeId, int status, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<WikiPage> getPages(
+		long groupId, long nodeId, int status, long statusByUserId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<WikiPage> getPages(
@@ -782,5 +785,19 @@ public interface WikiPageLocalService
 
 	public WikiPage updateWikiPage(
 		WikiPage wikiPage, ServiceContext serviceContext);
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<WikiPage> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<WikiPage> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<WikiPage>, R, E> updateUnsafeFunction)
+		throws E;
 
 }

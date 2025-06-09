@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service.persistence;
@@ -2802,7 +2793,7 @@ public class DLFileEntryUtil {
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param start the lower bound of the range of document library file entries
 	 * @param end the upper bound of the range of document library file entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -3636,7 +3627,7 @@ public class DLFileEntryUtil {
 	 *
 	 * @param groupId the group ID
 	 * @param userId the user ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param start the lower bound of the range of document library file entries
 	 * @param end the upper bound of the range of document library file entries (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -4336,7 +4327,7 @@ public class DLFileEntryUtil {
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param folderId the folder ID
+	 * @param folderIds the folder IDs
 	 * @param fileEntryTypeId the file entry type ID
 	 * @param start the lower bound of the range of document library file entries
 	 * @param end the upper bound of the range of document library file entries (not inclusive)
@@ -4664,73 +4655,73 @@ public class DLFileEntryUtil {
 	}
 
 	/**
-	 * Returns the document library file entry where groupId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchFileEntryException</code> if it could not be found.
+	 * Returns the document library file entry where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchFileEntryException</code> if it could not be found.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the matching document library file entry
 	 * @throws NoSuchFileEntryException if a matching document library file entry could not be found
 	 */
-	public static DLFileEntry findByG_ERC(
-			long groupId, String externalReferenceCode)
+	public static DLFileEntry findByERC_G(
+			String externalReferenceCode, long groupId)
 		throws com.liferay.document.library.kernel.exception.
 			NoSuchFileEntryException {
 
-		return getPersistence().findByG_ERC(groupId, externalReferenceCode);
+		return getPersistence().findByERC_G(externalReferenceCode, groupId);
 	}
 
 	/**
-	 * Returns the document library file entry where groupId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the document library file entry where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the matching document library file entry, or <code>null</code> if a matching document library file entry could not be found
 	 */
-	public static DLFileEntry fetchByG_ERC(
-		long groupId, String externalReferenceCode) {
+	public static DLFileEntry fetchByERC_G(
+		String externalReferenceCode, long groupId) {
 
-		return getPersistence().fetchByG_ERC(groupId, externalReferenceCode);
+		return getPersistence().fetchByERC_G(externalReferenceCode, groupId);
 	}
 
 	/**
-	 * Returns the document library file entry where groupId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the document library file entry where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching document library file entry, or <code>null</code> if a matching document library file entry could not be found
 	 */
-	public static DLFileEntry fetchByG_ERC(
-		long groupId, String externalReferenceCode, boolean useFinderCache) {
+	public static DLFileEntry fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
 
-		return getPersistence().fetchByG_ERC(
-			groupId, externalReferenceCode, useFinderCache);
+		return getPersistence().fetchByERC_G(
+			externalReferenceCode, groupId, useFinderCache);
 	}
 
 	/**
-	 * Removes the document library file entry where groupId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the document library file entry where externalReferenceCode = &#63; and groupId = &#63; from the database.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the document library file entry that was removed
 	 */
-	public static DLFileEntry removeByG_ERC(
-			long groupId, String externalReferenceCode)
+	public static DLFileEntry removeByERC_G(
+			String externalReferenceCode, long groupId)
 		throws com.liferay.document.library.kernel.exception.
 			NoSuchFileEntryException {
 
-		return getPersistence().removeByG_ERC(groupId, externalReferenceCode);
+		return getPersistence().removeByERC_G(externalReferenceCode, groupId);
 	}
 
 	/**
-	 * Returns the number of document library file entries where groupId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of document library file entries where externalReferenceCode = &#63; and groupId = &#63;.
 	 *
-	 * @param groupId the group ID
 	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
 	 * @return the number of matching document library file entries
 	 */
-	public static int countByG_ERC(long groupId, String externalReferenceCode) {
-		return getPersistence().countByG_ERC(groupId, externalReferenceCode);
+	public static int countByERC_G(String externalReferenceCode, long groupId) {
+		return getPersistence().countByERC_G(externalReferenceCode, groupId);
 	}
 
 	/**
@@ -4884,6 +4875,10 @@ public class DLFileEntryUtil {
 
 	public static DLFileEntryPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(DLFileEntryPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile DLFileEntryPersistence _persistence;

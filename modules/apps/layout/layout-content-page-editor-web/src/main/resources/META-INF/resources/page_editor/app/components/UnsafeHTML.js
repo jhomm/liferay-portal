@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ReactPortal} from '@liferay/frontend-js-react-web';
+import {isNullOrUndefined} from '@liferay/layout-js-components-web';
 import PropTypes from 'prop-types';
 import React from 'react';
 
 import RawDOM from '../../common/components/RawDOM';
-import isNullOrUndefined from '../utils/isNullOrUndefined';
 
 /**
  * DOM node which will be manually updated and injects
@@ -51,16 +42,52 @@ export default class UnsafeHTML extends React.PureComponent {
 
 		const scriptElements = Array.from(
 			this.state.ref.querySelectorAll('script')
-		).filter((script) => !script.type || script.type === 'text/javascript');
+		).filter(
+			(script) =>
+				!script.type ||
+				script.type === 'module' ||
+				script.type === 'text/javascript'
+		);
 
 		const runNextScript = () => {
 			if (scriptElements.length) {
 				const nextScriptElement = doc.createElement('script');
 				const prevScriptElement = scriptElements.shift();
 
-				nextScriptElement.appendChild(
-					doc.createTextNode(prevScriptElement.innerHTML)
-				);
+				if (Liferay.CSP.nonce) {
+					nextScriptElement.setAttribute('nonce', Liferay.CSP.nonce);
+				}
+
+				if (prevScriptElement.type) {
+					nextScriptElement.type = prevScriptElement.type;
+				}
+
+				if (prevScriptElement.className) {
+					nextScriptElement.className = prevScriptElement.className;
+				}
+
+				const dataset = prevScriptElement.dataset;
+
+				for (const key in dataset) {
+					nextScriptElement.dataset[key] = dataset[key];
+				}
+
+				if (prevScriptElement.async) {
+					nextScriptElement.setAttribute('async', '');
+				}
+
+				if (prevScriptElement.defer) {
+					nextScriptElement.setAttribute('defer', '');
+				}
+
+				if (prevScriptElement.src) {
+					nextScriptElement.src = prevScriptElement.src;
+				}
+				else {
+					nextScriptElement.appendChild(
+						doc.createTextNode(prevScriptElement.innerHTML)
+					);
+				}
 
 				prevScriptElement.parentNode.replaceChild(
 					nextScriptElement,
@@ -129,11 +156,23 @@ export default class UnsafeHTML extends React.PureComponent {
 			ref.removeAttribute('id');
 		}
 
+		if (this.props.hideFromAccessibilityTree) {
+			ref.setAttribute('aria-hidden', 'true');
+		}
+		else {
+			ref.removeAttribute('aria-hidden');
+		}
+
 		ref.removeAttribute('style');
 
 		Object.entries(this.props.style).forEach(([key, value]) => {
 			if (!isNullOrUndefined(value)) {
-				ref.style[key] = value;
+				if (isCSSVariable(key)) {
+					ref.style.setProperty(key, value);
+				}
+				else {
+					ref.style[key] = value;
+				}
 			}
 		});
 	}
@@ -192,6 +231,7 @@ UnsafeHTML.defaultProps = {
 		document,
 		window,
 	},
+	hideFromAccessibilityTree: true,
 	id: '',
 	markup: '',
 	onRender: () => {},
@@ -215,3 +255,7 @@ UnsafeHTML.propTypes = {
 	onRender: PropTypes.func,
 	style: PropTypes.object,
 };
+
+function isCSSVariable(styleName) {
+	return styleName.startsWith('--');
+}

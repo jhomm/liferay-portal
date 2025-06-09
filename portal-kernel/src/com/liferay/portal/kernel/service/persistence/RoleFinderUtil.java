@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -23,12 +14,13 @@ import com.liferay.portal.kernel.bean.PortalBeanLocatorUtil;
 public class RoleFinderUtil {
 
 	public static int countByGroupRoleAndTeamRole(
-		long companyId, String keywords, java.util.List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId) {
+		long companyId, String name, java.util.List<String> excludedNames,
+		String title, String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId) {
 
 		return getFinder().countByGroupRoleAndTeamRole(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId);
 	}
 
 	public static int countByKeywords(
@@ -60,13 +52,32 @@ public class RoleFinderUtil {
 			companyId, names, descriptions, types, params, andOperator);
 	}
 
+	public static int countByC_N_T_D_T(
+		long companyId, String name, String title, String description,
+		Integer[] types, java.util.LinkedHashMap<String, Object> params,
+		boolean andOperator) {
+
+		return getFinder().countByC_N_T_D_T(
+			companyId, name, title, description, types, params, andOperator);
+	}
+
+	public static int countByC_N_T_D_T(
+		long companyId, String[] names, String[] titles, String[] descriptions,
+		Integer[] types, java.util.LinkedHashMap<String, Object> params,
+		boolean andOperator) {
+
+		return getFinder().countByC_N_T_D_T(
+			companyId, names, titles, descriptions, types, params, andOperator);
+	}
+
 	public static int filterCountByGroupRoleAndTeamRole(
-		long companyId, String keywords, java.util.List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId) {
+		long companyId, String name, java.util.List<String> excludedNames,
+		String title, String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId) {
 
 		return getFinder().filterCountByGroupRoleAndTeamRole(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId);
 	}
 
 	public static int filterCountByKeywords(
@@ -93,15 +104,33 @@ public class RoleFinderUtil {
 			companyId, names, descriptions, types, params, andOperator);
 	}
 
+	public static int filterCountByC_N_T_D_T(
+		long companyId, String name, String title, String description,
+		Integer[] types, java.util.LinkedHashMap<String, Object> params,
+		boolean andOperator) {
+
+		return getFinder().filterCountByC_N_T_D_T(
+			companyId, name, title, description, types, params, andOperator);
+	}
+
+	public static int filterCountByC_N_T_D_T(
+		long companyId, String[] names, String[] titles, String[] descriptions,
+		Integer[] types, java.util.LinkedHashMap<String, Object> params,
+		boolean andOperator) {
+
+		return getFinder().filterCountByC_N_T_D_T(
+			companyId, names, titles, descriptions, types, params, andOperator);
+	}
+
 	public static java.util.List<com.liferay.portal.kernel.model.Role>
 		filterFindByGroupRoleAndTeamRole(
-			long companyId, String keywords,
-			java.util.List<String> excludedNames, int[] types,
+			long companyId, String name, java.util.List<String> excludedNames,
+			String title, String description, int[] types,
 			long excludedTeamRoleId, long teamGroupId, int start, int end) {
 
 		return getFinder().filterFindByGroupRoleAndTeamRole(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId, start, end);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId, start, end);
 	}
 
 	public static java.util.List<com.liferay.portal.kernel.model.Role>
@@ -142,14 +171,41 @@ public class RoleFinderUtil {
 	}
 
 	public static java.util.List<com.liferay.portal.kernel.model.Role>
+		filterFindByC_N_T_D_T(
+			long companyId, String name, String title, String description,
+			Integer[] types, java.util.LinkedHashMap<String, Object> params,
+			boolean andOperator, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<com.liferay.portal.kernel.model.Role> orderByComparator) {
+
+		return getFinder().filterFindByC_N_T_D_T(
+			companyId, name, title, description, types, params, andOperator,
+			start, end, orderByComparator);
+	}
+
+	public static java.util.List<com.liferay.portal.kernel.model.Role>
+		filterFindByC_N_T_D_T(
+			long companyId, String[] names, String[] titles,
+			String[] descriptions, Integer[] types,
+			java.util.LinkedHashMap<String, Object> params, boolean andOperator,
+			int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<com.liferay.portal.kernel.model.Role> orderByComparator) {
+
+		return getFinder().filterFindByC_N_T_D_T(
+			companyId, names, titles, descriptions, types, params, andOperator,
+			start, end, orderByComparator);
+	}
+
+	public static java.util.List<com.liferay.portal.kernel.model.Role>
 		findByGroupRoleAndTeamRole(
-			long companyId, String keywords,
-			java.util.List<String> excludedNames, int[] types,
+			long companyId, String name, java.util.List<String> excludedNames,
+			String title, String description, int[] types,
 			long excludedTeamRoleId, long teamGroupId, int start, int end) {
 
 		return getFinder().findByGroupRoleAndTeamRole(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId, start, end);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId, start, end);
 	}
 
 	public static java.util.List<com.liferay.portal.kernel.model.Role>
@@ -198,6 +254,33 @@ public class RoleFinderUtil {
 		return getFinder().findByC_N_D_T(
 			companyId, names, descriptions, types, params, andOperator, start,
 			end, orderByComparator);
+	}
+
+	public static java.util.List<com.liferay.portal.kernel.model.Role>
+		findByC_N_T_D_T(
+			long companyId, String name, String title, String description,
+			Integer[] types, java.util.LinkedHashMap<String, Object> params,
+			boolean andOperator, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<com.liferay.portal.kernel.model.Role> orderByComparator) {
+
+		return getFinder().findByC_N_T_D_T(
+			companyId, name, title, description, types, params, andOperator,
+			start, end, orderByComparator);
+	}
+
+	public static java.util.List<com.liferay.portal.kernel.model.Role>
+		findByC_N_T_D_T(
+			long companyId, String[] names, String[] titles,
+			String[] descriptions, Integer[] types,
+			java.util.LinkedHashMap<String, Object> params, boolean andOperator,
+			int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<com.liferay.portal.kernel.model.Role> orderByComparator) {
+
+		return getFinder().findByC_N_T_D_T(
+			companyId, names, titles, descriptions, types, params, andOperator,
+			start, end, orderByComparator);
 	}
 
 	public static RoleFinder getFinder() {

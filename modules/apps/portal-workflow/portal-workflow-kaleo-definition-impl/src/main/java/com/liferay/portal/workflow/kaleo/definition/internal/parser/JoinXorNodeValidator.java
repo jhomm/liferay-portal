@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.internal.parser;
 
 import com.liferay.portal.workflow.kaleo.definition.Definition;
 import com.liferay.portal.workflow.kaleo.definition.JoinXor;
+import com.liferay.portal.workflow.kaleo.definition.NodeType;
 import com.liferay.portal.workflow.kaleo.definition.exception.KaleoDefinitionValidationException;
 import com.liferay.portal.workflow.kaleo.definition.parser.NodeValidator;
 
@@ -24,11 +16,13 @@ import org.osgi.service.component.annotations.Component;
 /**
  * @author Michael C. Han
  */
-@Component(
-	immediate = true, property = "node.type=JOIN_XOR",
-	service = NodeValidator.class
-)
+@Component(service = NodeValidator.class)
 public class JoinXorNodeValidator extends BaseNodeValidator<JoinXor> {
+
+	@Override
+	public NodeType getNodeType() {
+		return NodeType.JOIN_XOR;
+	}
 
 	@Override
 	protected void doValidate(Definition definition, JoinXor joinXor)
@@ -36,12 +30,12 @@ public class JoinXorNodeValidator extends BaseNodeValidator<JoinXor> {
 
 		if (joinXor.getIncomingTransitionsCount() == 0) {
 			throw new KaleoDefinitionValidationException.
-				MustSetIncomingTransition(joinXor.getName());
+				MustSetIncomingTransition(joinXor.getDefaultLabel());
 		}
 
 		if (joinXor.getOutgoingTransitionsCount() == 0) {
 			throw new KaleoDefinitionValidationException.
-				MustSetOutgoingTransition(joinXor.getName());
+				MustSetOutgoingTransition(joinXor.getDefaultLabel());
 		}
 	}
 

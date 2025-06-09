@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -91,9 +82,7 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 					</c:otherwise>
 				</c:choose>
 
-				<aui:input autoFocus="<%= true %>" defaultLanguageId="<%= defaultLanguageId %>" label="name" localized="<%= true %>" name="nameMapAsXML" type="text">
-					<aui:validator name="required" />
-				</aui:input>
+				<aui:input defaultLanguageId="<%= defaultLanguageId %>" label="name" localized="<%= true %>" name="nameMapAsXML" required="<%= true %>" type="text" />
 
 				<aui:input defaultLanguageId="<%= defaultLanguageId %>" label="short-description" localized="<%= true %>" name="shortDescriptionMapAsXML" resizable="<%= true %>" type="textarea" />
 
@@ -129,7 +118,7 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 						defaultLanguageId="<%= defaultLanguageId %>"
 						inputAddon="<%= StringUtil.shorten(friendlyURLBase, 40) %>"
 						name="urlTitleMapAsXML"
-						xml="<%= HttpUtil.decodeURL(cpDefinitionsDisplayContext.getUrlTitleMapAsXML()) %>"
+						xml="<%= HttpComponentsUtil.decodeURL(cpDefinitionsDisplayContext.getUrlTitleMapAsXML()) %>"
 					/>
 				</div>
 
@@ -195,138 +184,24 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 
 		<c:if test="<%= cpDefinition != null %>">
 			<div class="col-12">
-				<div id="item-finder-root"></div>
-
-				<aui:script require="commerce-frontend-js/components/item_finder/entry as itemFinder, commerce-frontend-js/utilities/slugify as slugify, commerce-frontend-js/utilities/eventsDefinitions as events, commerce-frontend-js/utilities/index as utilities">
-					var headers = utilities.fetchParams.headers;
-					var id = <%= cpDefinitionsDisplayContext.getCPDefinitionId() %>;
-					var productId = <%= cpDefinition.getCProductId() %>;
-
-					function selectItem(specification) {
-						return Liferay.Util.fetch(
-							'/o/headless-commerce-admin-catalog/v1.0/products/' +
-								id +
-								'/productSpecifications/',
-							{
-								body: JSON.stringify(
-									Object.assign(
-										{
-											productId: productId,
-											specificationId: specification.id,
-											specificationKey: specification.key,
-											value: {},
-										},
-										specification.optionCategory
-											? {
-													optionCategoryId:
-														specification.optionCategory.id,
-											  }
-											: {}
-									)
-								),
-								headers: headers,
-								method: 'POST',
-							}
-						).then(() => {
-							Liferay.fire(events.UPDATE_DATASET_DISPLAY, {
-								id:
-									'<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>',
-							});
-							return null;
-						});
-					}
-
-					function addNewItem(name) {
-						var nameDefinition = {};
-
-						nameDefinition[themeDisplay.getLanguageId()] = name;
-
-						if (themeDisplay.getLanguageId() !== themeDisplay.getDefaultLanguageId()) {
-							nameDefinition[themeDisplay.getDefaultLanguageId()] = name;
-						}
-
-						return Liferay.Util.fetch(
-							'/o/headless-commerce-admin-catalog/v1.0/specifications',
-							{
-								body: JSON.stringify({
-									key: slugify.default(name),
-									title: nameDefinition,
-								}),
-								headers: headers,
-								method: 'POST',
-							}
-						)
-							.then((response) => {
-								if (response.ok) {
-									return response.json();
-								}
-
-								return response.json().then((data) => {
-									return Promise.reject(data.errorDescription);
-								});
-							})
-							.then(selectItem);
-					}
-
-					function getSelectedItems() {
-						return Promise.resolve([]);
-					}
-
-					itemFinder.default('itemFinder', 'item-finder-root', {
-						apiUrl: '/o/headless-commerce-admin-catalog/v1.0/specifications',
-						createNewItemLabel:
-							'<%= LanguageUtil.get(request, "create-new-specification") %>',
-						getSelectedItems: getSelectedItems,
-						inputPlaceholder:
-							'<%= LanguageUtil.get(request, "find-or-create-a-specification") %>',
-						itemSelectedMessage:
-							'<%= LanguageUtil.get(request, "specification-selected") %>',
-						itemsKey: 'id',
-						linkedDatasetsId: [
-							'<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>',
-						],
-						multiSelectableEntries: true,
-						itemsKey: 'id',
-						onItemCreated: addNewItem,
-						onItemSelected: selectItem,
-						pageSize: 10,
-						panelHeaderLabel: '<%= LanguageUtil.get(request, "add-specifications") %>',
-						portletId: '<%= portletDisplay.getRootPortletId() %>',
-						schema: [
-							{
-								fieldName: ['title', 'LANG'],
-							},
-							{
-								fieldName: 'key',
-							},
-						],
-						spritemap: '<%= themeDisplay.getPathThemeImages() %>/lexicon/icons.svg',
-						titleLabel:
-							'<%= LanguageUtil.get(request, "add-existing-specification") %>',
-					});
-				</aui:script>
-			</div>
-
-			<div class="col-12">
 				<commerce-ui:panel
 					bodyClasses="p-0"
 					title='<%= LanguageUtil.get(request, "specifications") %>'
 				>
-					<clay:data-set-display
+					<frontend-data-set:classic-display
 						contextParams='<%=
 							HashMapBuilder.<String, String>put(
 								"cpDefinitionId", String.valueOf(cpDefinitionId)
 							).build()
 						%>'
-						dataProviderKey="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>"
+						creationMenu="<%= cpDefinitionsDisplayContext.getCPDefinitionSpecificationOptionValueCreationMenu() %>"
+						dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>"
 						formName="fm"
-						id="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_DEFINITION_SPECIFICATIONS %>"
+						id="<%= CommerceProductFDSNames.PRODUCT_DEFINITION_SPECIFICATIONS %>"
 						itemsPerPage="<%= 10 %>"
-						namespace="<%= liferayPortletResponse.getNamespace() %>"
-						pageNumber="<%= 1 %>"
-						portletURL="<%= currentURLObj %>"
 						selectedItemsKey="cpdefinitionSpecificationOptionValueId"
-						showManagementBar="<%= false %>"
+						showManagementBar="<%= true %>"
+						showSearch="<%= true %>"
 					/>
 				</commerce-ui:panel>
 			</div>
@@ -335,24 +210,14 @@ if ((cpDefinition != null) && (cpDefinition.getExpirationDate() != null)) {
 </aui:form>
 
 <c:if test="<%= cpDefinition == null %>">
-	<aui:script require="commerce-frontend-js/utilities/debounce as debounce, commerce-frontend-js/utilities/slugify as slugify">
-		var form = document.getElementById('<portlet:namespace />fm');
-
-		var nameInput = form.querySelector('#<portlet:namespace />nameMapAsXML');
-		var urlInput = form.querySelector('#<portlet:namespace />urlTitleMapAsXML');
-		var urlTitleInputLocalized = Liferay.component(
-			'<portlet:namespace />urlTitleMapAsXML'
-		);
-
-		var handleOnNameInput = function () {
-			var slug = slugify.default(nameInput.value);
-			urlInput.value = slug;
-
-			urlTitleInputLocalized.updateInputLanguage(slug);
-		};
-
-		nameInput.addEventListener('input', debounce.default(handleOnNameInput, 200));
-	</aui:script>
+	<liferay-frontend:component
+		context='<%=
+			HashMapBuilder.<String, Object>put(
+				"namespace", liferayPortletResponse.getNamespace()
+			).build()
+		%>'
+		module="{debounceDetails} from commerce-product-definitions-web"
+	/>
 
 	<aui:script>
 		document

@@ -1,37 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 (function (w) {
 	'use strict';
 
-	var TOPBAR_CLASS = 'speedwell-topbar',
-		TRANSLUCENT_CLASS = TOPBAR_CLASS + '--translucent',
-		TOGGLE_PREFIX = '.js-toggle-',
-		SPEEDWELL_PREFIX = '.speedwell-',
-		IS_OPEN = 'is-open',
-		IS_BEHIND = 'is-behind';
+	const TOPBAR_CLASS = 'speedwell-topbar';
+	const TRANSLUCENT_CLASS = TOPBAR_CLASS + '--translucent';
+	const TOGGLE_PREFIX = '.js-toggle-';
+	const SPEEDWELL_PREFIX = '.speedwell-';
+	const IS_OPEN = 'is-open';
+	const IS_BEHIND = 'is-behind';
 
-	var TOGGLES = {
+	const TOGGLES = {
 		ACCOUNT: {name: 'account'},
 		MAIN_MENU: {name: 'main-menu'},
 		SEARCH: {name: 'search'},
 	};
 
-	var CONTAINER = window.document.getElementById('speedwell');
+	const CONTAINER = window.document.getElementById('speedwell');
 
-	var TOPBAR,
-		translucencyIsEnabled = false;
+	let TOPBAR;
+	let translucencyIsEnabled = false;
 
 	function hideFiltersButtonOnMenuOpen() {
 		Liferay.componentReady('SpeedwellMobileHelpers').then(

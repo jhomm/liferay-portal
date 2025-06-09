@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.comment.demo.data.creator.internal;
@@ -66,7 +57,7 @@ public class CommentDemoDataCreatorImpl implements CommentDemoDataCreator {
 			new IdentityServiceContextFunction(new ServiceContext());
 
 		long commentId = _commentManager.addComment(
-			user.getUserId(), group.getGroupId(), className, classPK,
+			null, user.getUserId(), group.getGroupId(), className, classPK,
 			user.getFullName(), StringPool.BLANK, _getRandomBody(),
 			identityServiceContextFunction);
 
@@ -84,9 +75,9 @@ public class CommentDemoDataCreatorImpl implements CommentDemoDataCreator {
 			new IdentityServiceContextFunction(new ServiceContext());
 
 		long commentId = _commentManager.addComment(
-			userId, parentComment.getClassName(), parentComment.getClassPK(),
-			user.getFullName(), parentCommentId, StringPool.BLANK,
-			_getRandomBody(), identityServiceContextFunction);
+			null, userId, parentComment.getClassName(),
+			parentComment.getClassPK(), user.getFullName(), parentCommentId,
+			StringPool.BLANK, _getRandomBody(), identityServiceContextFunction);
 
 		return _getComment(commentId);
 	}
@@ -99,7 +90,7 @@ public class CommentDemoDataCreatorImpl implements CommentDemoDataCreator {
 			}
 			catch (NoSuchMessageException noSuchMessageException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(noSuchMessageException, noSuchMessageException);
+					_log.warn(noSuchMessageException);
 				}
 			}
 

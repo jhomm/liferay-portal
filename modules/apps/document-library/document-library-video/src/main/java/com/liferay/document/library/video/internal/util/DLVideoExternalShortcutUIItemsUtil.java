@@ -1,23 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.video.internal.util;
 
 import com.liferay.document.library.display.context.DLUIItemKeys;
-import com.liferay.portal.kernel.servlet.taglib.ui.UIItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
 
 /**
  * @author Iván Zaera
@@ -25,33 +21,30 @@ import java.util.List;
  */
 public class DLVideoExternalShortcutUIItemsUtil {
 
-	public static void processUIItems(List<? extends UIItem> uiItems) {
-		_removeUIItem(uiItems, DLUIItemKeys.CANCEL_CHECKOUT);
-		_removeUIItem(uiItems, DLUIItemKeys.CHECKIN);
-		_removeUIItem(uiItems, DLUIItemKeys.CHECKOUT);
-		_removeUIItem(uiItems, DLUIItemKeys.DOWNLOAD);
-		_removeUIItem(uiItems, DLUIItemKeys.OPEN_IN_MS_OFFICE);
+	public static void processDropdownItems(List<DropdownItem> dropdownItems) {
+		_removeUIItems(
+			dropdownItems, dropdownItem -> (String)dropdownItem.get("key"),
+			SetUtil.fromArray(
+				DLUIItemKeys.CANCEL_CHECKOUT, DLUIItemKeys.CHECKIN,
+				DLUIItemKeys.CHECKOUT, DLUIItemKeys.DOWNLOAD,
+				DLUIItemKeys.OPEN_IN_MS_OFFICE));
 	}
 
-	private static int _getIndex(List<? extends UIItem> uiItems, String key) {
-		for (int i = 0; i < uiItems.size(); i++) {
-			UIItem uiItem = uiItems.get(i);
+	private static <T> void _removeUIItems(
+		List<T> items, Function<T, String> function, Set<String> keys) {
 
-			if (key.equals(uiItem.getKey())) {
-				return i;
-			}
+		if (ListUtil.isEmpty(items)) {
+			return;
 		}
 
-		return -1;
-	}
+		Iterator<T> iterator = items.iterator();
 
-	private static void _removeUIItem(
-		List<? extends UIItem> uiItems, String key) {
+		while (iterator.hasNext()) {
+			T item = iterator.next();
 
-		int index = _getIndex(uiItems, key);
-
-		if (index != -1) {
-			uiItems.remove(index);
+			if (keys.contains(function.apply(item))) {
+				iterator.remove();
+			}
 		}
 	}
 

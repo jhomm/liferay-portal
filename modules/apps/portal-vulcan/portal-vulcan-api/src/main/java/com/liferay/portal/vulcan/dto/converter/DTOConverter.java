@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.dto.converter;
+
+import jakarta.ws.rs.core.UriInfo;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -44,6 +37,32 @@ public interface DTOConverter<E, D> {
 			return argumentTypes[0].getTypeName();
 		}
 
+		return null;
+	}
+
+	public default String getExternalDTOClassName() {
+		Class<?> clazz = getClass();
+
+		Type[] types = clazz.getGenericInterfaces();
+
+		for (Type type : types) {
+			String typeName = type.getTypeName();
+
+			if (!typeName.contains(DTOConverter.class.getSimpleName())) {
+				continue;
+			}
+
+			ParameterizedType parameterizedType = (ParameterizedType)type;
+
+			Type[] argumentTypes = parameterizedType.getActualTypeArguments();
+
+			return argumentTypes[1].getTypeName();
+		}
+
+		return null;
+	}
+
+	public default String getJaxRsLink(long classPK, UriInfo uriInfo) {
 		return null;
 	}
 

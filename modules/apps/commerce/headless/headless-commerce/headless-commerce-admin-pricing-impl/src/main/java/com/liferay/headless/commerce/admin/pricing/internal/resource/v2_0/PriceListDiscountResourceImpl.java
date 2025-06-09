@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
@@ -22,17 +13,15 @@ import com.liferay.commerce.price.list.service.CommercePriceListDiscountRelServi
 import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceList;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceListDiscount;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.PriceListDiscountDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceListDiscountUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.PriceListDiscountResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
@@ -43,13 +32,12 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v2_0/price-list-discount.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {NestedFieldSupport.class, PriceListDiscountResource.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = PriceListDiscountResource.class
 )
 public class PriceListDiscountResourceImpl
-	extends BasePriceListDiscountResourceImpl implements NestedFieldSupport {
+	extends BasePriceListDiscountResourceImpl {
 
 	@Override
 	public void deletePriceListDiscount(Long id) throws Exception {
@@ -64,8 +52,9 @@ public class PriceListDiscountResourceImpl
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -80,14 +69,14 @@ public class PriceListDiscountResourceImpl
 					pagination.getStartPosition(), pagination.getEndPosition(),
 					null);
 
-		int totalItems =
+		int totalCount =
 			_commercePriceListDiscountRelService.
 				getCommercePriceListDiscountRelsCount(
 					commercePriceList.getCommercePriceListId());
 
 		return Page.of(
 			_toPriceListDiscounts(commercePriceListDiscountRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@NestedField(parentClass = PriceList.class, value = "priceListDiscounts")
@@ -102,13 +91,13 @@ public class PriceListDiscountResourceImpl
 					id, pagination.getStartPosition(),
 					pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_commercePriceListDiscountRelService.
 				getCommercePriceListDiscountRelsCount(id);
 
 		return Page.of(
 			_toPriceListDiscounts(commercePriceListDiscountRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@Override
@@ -119,8 +108,9 @@ public class PriceListDiscountResourceImpl
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -167,18 +157,11 @@ public class PriceListDiscountResourceImpl
 			List<CommercePriceListDiscountRel> commercePriceListDiscountRels)
 		throws Exception {
 
-		List<PriceListDiscount> priceListDiscounts = new ArrayList<>();
-
-		for (CommercePriceListDiscountRel commercePriceListDiscountRel :
-				commercePriceListDiscountRels) {
-
-			priceListDiscounts.add(
-				_toPriceListDiscount(
-					commercePriceListDiscountRel.
-						getCommercePriceListDiscountRelId()));
-		}
-
-		return priceListDiscounts;
+		return transform(
+			commercePriceListDiscountRels,
+			commercePriceListDiscountRel -> _toPriceListDiscount(
+				commercePriceListDiscountRel.
+					getCommercePriceListDiscountRelId()));
 	}
 
 	@Reference
@@ -191,8 +174,11 @@ public class PriceListDiscountResourceImpl
 	@Reference
 	private CommercePriceListService _commercePriceListService;
 
-	@Reference
-	private PriceListDiscountDTOConverter _priceListDiscountDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.PriceListDiscountDTOConverter)"
+	)
+	private DTOConverter<CommercePriceListDiscountRel, PriceListDiscount>
+		_priceListDiscountDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

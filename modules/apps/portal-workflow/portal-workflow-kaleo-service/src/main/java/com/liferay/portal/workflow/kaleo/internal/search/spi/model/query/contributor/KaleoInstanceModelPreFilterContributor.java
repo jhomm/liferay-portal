@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.search.spi.model.query.contributor;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
@@ -25,7 +17,7 @@ import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
@@ -40,8 +32,6 @@ import com.liferay.portal.workflow.kaleo.service.persistence.KaleoInstanceQuery;
 import java.text.Format;
 
 import java.util.Date;
-import java.util.List;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,7 +40,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Inácio Nery
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.portal.workflow.kaleo.model.KaleoInstance",
 	service = ModelPreFilterContributor.class
 )
@@ -76,7 +65,7 @@ public class KaleoInstanceModelPreFilterContributor
 			innerBooleanFilter, kaleoInstanceQuery, searchContext);
 		appendAssetDescriptionTerm(
 			innerBooleanFilter, kaleoInstanceQuery, searchContext);
-		appendClassName(innerBooleanFilter, kaleoInstanceQuery);
+		_appendClassName(innerBooleanFilter, kaleoInstanceQuery);
 		appendCurrentKaleoNodeNameTerm(innerBooleanFilter, kaleoInstanceQuery);
 		appendKaleoDefinitionNameTerm(innerBooleanFilter, kaleoInstanceQuery);
 
@@ -84,14 +73,16 @@ public class KaleoInstanceModelPreFilterContributor
 			booleanFilter.add(innerBooleanFilter, BooleanClauseOccur.MUST);
 		}
 
+		_appendActiveTerm(booleanFilter, kaleoInstanceQuery);
 		appendClassNameIdsTerm(booleanFilter, kaleoInstanceQuery);
-		appendClassPKTerm(booleanFilter, kaleoInstanceQuery);
+		_appendClassPKTerm(booleanFilter, kaleoInstanceQuery);
 		appendCompletedTerm(booleanFilter, kaleoInstanceQuery);
 		appendCompletionDateRangeTerm(booleanFilter, kaleoInstanceQuery);
-		appendKaleoDefinitionVersionIdTerm(booleanFilter, kaleoInstanceQuery);
-		appendKaleoDefinitionVersionTerm(booleanFilter, kaleoInstanceQuery);
+		_appendKaleoDefinitionVersionIdTerm(booleanFilter, kaleoInstanceQuery);
+		_appendKaleoDefinitionVersionTerm(booleanFilter, kaleoInstanceQuery);
 		appendKaleoInstanceIdTerm(booleanFilter, kaleoInstanceQuery);
-		appendRootKaleoInstanceTokenIdTerm(booleanFilter, kaleoInstanceQuery);
+		_appendRootKaleoInstanceTokenIdTerm(booleanFilter, kaleoInstanceQuery);
+		appendUserIdTerm(booleanFilter, kaleoInstanceQuery);
 	}
 
 	protected void appendAssetDescriptionTerm(
@@ -108,7 +99,7 @@ public class KaleoInstanceModelPreFilterContributor
 
 		try {
 			booleanQuery.addTerm(
-				LocalizationUtil.getLocalizedName(
+				_localization.getLocalizedName(
 					"assetDescription", searchContext.getLanguageId()),
 				assetDescription);
 		}
@@ -133,35 +124,12 @@ public class KaleoInstanceModelPreFilterContributor
 
 		try {
 			booleanQuery.addTerm(
-				LocalizationUtil.getLocalizedName(
+				_localization.getLocalizedName(
 					"assetTitle", searchContext.getLanguageId()),
 				assetTitle);
 		}
 		catch (ParseException parseException) {
 			throw new RuntimeException(parseException);
-		}
-
-		booleanFilter.add(new QueryFilter(booleanQuery));
-	}
-
-	protected void appendClassName(
-		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
-
-		String[] classNames = kaleoInstanceQuery.getClassNames();
-
-		if (ListUtil.isNull(ListUtil.fromArray(classNames))) {
-			return;
-		}
-
-		BooleanQuery booleanQuery = new BooleanQueryImpl();
-
-		for (String className : classNames) {
-			try {
-				booleanQuery.addTerm("className", className);
-			}
-			catch (ParseException parseException) {
-				throw new RuntimeException(parseException);
-			}
 		}
 
 		booleanFilter.add(new QueryFilter(booleanQuery));
@@ -178,32 +146,13 @@ public class KaleoInstanceModelPreFilterContributor
 			Field.CLASS_NAME_ID);
 
 		classNameIdsTermsFilter.addValues(
-			Stream.of(
-				WorkflowHandlerRegistryUtil.getWorkflowHandlers()
-			).flatMap(
-				List::stream
-			).map(
-				workflowHandler -> portal.getClassNameId(
-					workflowHandler.getClassName())
-			).map(
-				String::valueOf
-			).toArray(
-				String[]::new
-			));
+			TransformUtil.transformToArray(
+				WorkflowHandlerRegistryUtil.getWorkflowHandlers(),
+				workflowHandler -> String.valueOf(
+					portal.getClassNameId(workflowHandler.getClassName())),
+				String.class));
 
 		booleanFilter.add(classNameIdsTermsFilter, BooleanClauseOccur.MUST);
-	}
-
-	protected void appendClassPKTerm(
-		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
-
-		Long classPK = kaleoInstanceQuery.getClassPK();
-
-		if (classPK == null) {
-			return;
-		}
-
-		booleanFilter.addRequiredTerm("classPK", classPK);
 	}
 
 	protected void appendCompletedTerm(
@@ -297,7 +246,84 @@ public class KaleoInstanceModelPreFilterContributor
 		booleanFilter.add(new QueryFilter(booleanQuery));
 	}
 
-	protected void appendKaleoDefinitionVersionIdTerm(
+	protected void appendKaleoInstanceIdTerm(
+		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
+
+		Long kaleoInstanceId = kaleoInstanceQuery.getKaleoInstanceId();
+
+		if (kaleoInstanceId == null) {
+			return;
+		}
+
+		booleanFilter.addRequiredTerm("kaleoInstanceId", kaleoInstanceId);
+	}
+
+	protected void appendUserIdTerm(
+		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
+
+		Long userId = kaleoInstanceQuery.getUserId();
+
+		if (userId == null) {
+			return;
+		}
+
+		booleanFilter.addRequiredTerm(Field.USER_ID, userId);
+	}
+
+	@Reference
+	protected FilterBuilders filterBuilders;
+
+	@Reference
+	protected Portal portal;
+
+	private void _appendActiveTerm(
+		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
+
+		Boolean active = kaleoInstanceQuery.isActive();
+
+		if (active == null) {
+			return;
+		}
+
+		booleanFilter.addRequiredTerm("active", active);
+	}
+
+	private void _appendClassName(
+		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
+
+		String[] classNames = kaleoInstanceQuery.getClassNames();
+
+		if (ListUtil.isNull(ListUtil.fromArray(classNames))) {
+			return;
+		}
+
+		BooleanQuery booleanQuery = new BooleanQueryImpl();
+
+		for (String className : classNames) {
+			try {
+				booleanQuery.addTerm("className", className);
+			}
+			catch (ParseException parseException) {
+				throw new RuntimeException(parseException);
+			}
+		}
+
+		booleanFilter.add(new QueryFilter(booleanQuery));
+	}
+
+	private void _appendClassPKTerm(
+		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
+
+		Long classPK = kaleoInstanceQuery.getClassPK();
+
+		if (classPK == null) {
+			return;
+		}
+
+		booleanFilter.addRequiredTerm("classPK", classPK);
+	}
+
+	private void _appendKaleoDefinitionVersionIdTerm(
 		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
 
 		Long kaleoDefinitionVersionId =
@@ -311,7 +337,7 @@ public class KaleoInstanceModelPreFilterContributor
 			"kaleoDefinitionVersionId", kaleoDefinitionVersionId);
 	}
 
-	protected void appendKaleoDefinitionVersionTerm(
+	private void _appendKaleoDefinitionVersionTerm(
 		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
 
 		Integer kaleoDefinitionVersion =
@@ -325,19 +351,7 @@ public class KaleoInstanceModelPreFilterContributor
 			"kaleoDefinitionVersion", kaleoDefinitionVersion);
 	}
 
-	protected void appendKaleoInstanceIdTerm(
-		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
-
-		Long kaleoInstanceId = kaleoInstanceQuery.getKaleoInstanceId();
-
-		if (kaleoInstanceId == null) {
-			return;
-		}
-
-		booleanFilter.addRequiredTerm("kaleoInstanceId", kaleoInstanceId);
-	}
-
-	protected void appendRootKaleoInstanceTokenIdTerm(
+	private void _appendRootKaleoInstanceTokenIdTerm(
 		BooleanFilter booleanFilter, KaleoInstanceQuery kaleoInstanceQuery) {
 
 		Long rootKaleoInstanceTokenId =
@@ -352,9 +366,6 @@ public class KaleoInstanceModelPreFilterContributor
 	}
 
 	@Reference
-	protected FilterBuilders filterBuilders;
-
-	@Reference
-	protected Portal portal;
+	private Localization _localization;
 
 }

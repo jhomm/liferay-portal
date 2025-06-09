@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.portlet.action;
@@ -17,7 +8,6 @@ package com.liferay.users.admin.web.internal.portlet.action;
 import com.liferay.portal.kernel.exception.AddressCityException;
 import com.liferay.portal.kernel.exception.AddressStreetException;
 import com.liferay.portal.kernel.exception.AddressZipException;
-import com.liferay.portal.kernel.exception.DuplicateOpenIdException;
 import com.liferay.portal.kernel.exception.EmailAddressException;
 import com.liferay.portal.kernel.exception.NoSuchCountryException;
 import com.liferay.portal.kernel.exception.NoSuchListTypeException;
@@ -60,7 +50,6 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
 import com.liferay.users.admin.web.internal.manager.AddressContactInfoManager;
 import com.liferay.users.admin.web.internal.manager.ContactInfoManager;
 import com.liferay.users.admin.web.internal.manager.EmailAddressContactInfoManager;
@@ -68,10 +57,10 @@ import com.liferay.users.admin.web.internal.manager.OrgLaborContactInfoManager;
 import com.liferay.users.admin.web.internal.manager.PhoneContactInfoManager;
 import com.liferay.users.admin.web.internal.manager.WebsiteContactInfoManager;
 
-import java.util.Objects;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -80,11 +69,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Drew Brokke
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.SERVICE_ACCOUNTS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/update_contact_information"
 	},
 	service = MVCActionCommand.class
@@ -126,7 +115,6 @@ public class UpdateContactInformationMVCActionCommand
 			else if (exception instanceof AddressCityException ||
 					 exception instanceof AddressStreetException ||
 					 exception instanceof AddressZipException ||
-					 exception instanceof DuplicateOpenIdException ||
 					 exception instanceof EmailAddressException ||
 					 exception instanceof NoSuchCountryException ||
 					 exception instanceof NoSuchListTypeException ||
@@ -179,17 +167,16 @@ public class UpdateContactInformationMVCActionCommand
 
 		if (listType.equals(ListTypeConstants.ADDRESS)) {
 			return new AddressContactInfoManager(
-				className, classPK, _addressLocalService, _addressService);
+				_addressLocalService, _addressService, className, classPK);
 		}
 		else if (listType.equals(ListTypeConstants.EMAIL_ADDRESS)) {
 			return new EmailAddressContactInfoManager(
 				className, classPK, _emailAddressLocalService,
-				_emailAddressService, _usersAdmin);
+				_emailAddressService);
 		}
 		else if (listType.equals(ListTypeConstants.PHONE)) {
 			return new PhoneContactInfoManager(
-				className, classPK, _phoneLocalService, _phoneService,
-				_usersAdmin);
+				className, classPK, _phoneLocalService, _phoneService);
 		}
 		else if (listType.equals(ListTypeConstants.ORGANIZATION_SERVICE)) {
 			return new OrgLaborContactInfoManager(
@@ -197,8 +184,7 @@ public class UpdateContactInformationMVCActionCommand
 		}
 		else if (listType.equals(ListTypeConstants.WEBSITE)) {
 			return new WebsiteContactInfoManager(
-				className, classPK, _websiteLocalService, _websiteService,
-				_usersAdmin);
+				className, classPK, _websiteLocalService, _websiteService);
 		}
 
 		return null;
@@ -269,9 +255,6 @@ public class UpdateContactInformationMVCActionCommand
 
 	@Reference
 	private UserLocalService _userLocalService;
-
-	@Reference
-	private UsersAdmin _usersAdmin;
 
 	@Reference
 	private WebsiteLocalService _websiteLocalService;

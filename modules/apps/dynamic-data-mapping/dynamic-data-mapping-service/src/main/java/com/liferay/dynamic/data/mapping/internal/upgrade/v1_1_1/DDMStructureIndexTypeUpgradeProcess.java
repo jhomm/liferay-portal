@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v1_1_1;
@@ -20,6 +11,8 @@ import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.metadata.RawMetadataProcessor;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 
@@ -37,10 +30,6 @@ public class DDMStructureIndexTypeUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		_upgradeDDMStructureDefinition();
-	}
-
-	private void _upgradeDDMStructureDefinition() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select DDMStructure.definition, DDMStructure.structureId " +
 					"from DDMStructure where structureKey = ? ");
@@ -70,7 +59,6 @@ public class DDMStructureIndexTypeUpgradeProcess extends UpgradeProcess {
 					preparedStatement2.addBatch();
 
 					preparedStatement3.setString(1, newDefinition);
-
 					preparedStatement3.setLong(2, resultSet.getLong(2));
 
 					preparedStatement3.addBatch();
@@ -101,9 +89,16 @@ public class DDMStructureIndexTypeUpgradeProcess extends UpgradeProcess {
 			return definitionJSONObject.toString();
 		}
 		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
 			return definition;
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DDMStructureIndexTypeUpgradeProcess.class);
 
 	private final JSONFactory _jsonFactory;
 

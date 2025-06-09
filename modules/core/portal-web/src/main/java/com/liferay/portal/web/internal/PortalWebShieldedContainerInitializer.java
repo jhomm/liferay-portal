@@ -1,32 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.web.internal;
 
 import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.petra.io.AnnotatedObjectInputStream;
+import com.liferay.petra.io.AnnotatedObjectOutputStream;
+import com.liferay.portal.kernel.dependency.manager.DependencyManagerSyncUtil;
 import com.liferay.portal.kernel.servlet.PortletSessionListenerManager;
 import com.liferay.portal.kernel.servlet.SerializableSessionAttributeListener;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ServerDetector;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.servlet.AxisServlet;
 import com.liferay.portal.servlet.PortalSessionListener;
+import com.liferay.portal.servlet.filters.healthcheckdatasource.HealthCheckDataSourceFilter;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.web.internal.session.replication.SessionReplicationFilter;
 import com.liferay.shielded.container.Ordered;
 import com.liferay.shielded.container.ShieldedContainerInitializer;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.MultipartConfigElement;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
+
+import java.lang.reflect.Method;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -36,12 +44,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.FilterRegistration;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
+import java.util.function.Function;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -62,7 +65,58 @@ public class PortalWebShieldedContainerInitializer
 	public void initialize(ServletContext servletContext)
 		throws ServletException {
 
-		if (PropsValues.PORTLET_SESSION_REPLICATE_ENABLED) {
+		if (PropsValues.PORTLET_SESSION_REPLICATE_ENABLED &&
+			ServerDetector.isTomcat()) {
+
+			DependencyManagerSyncUtil.registerSyncCallable(
+				() -> {
+					Class<?> clazz = Class.forName(
+						"com.liferay.support.tomcat.session." +
+							"LiferayDeltaManager",
+						true, ServletContext.class.getClassLoader());
+
+					Method initMethod = clazz.getMethod(
+						"init", Function.class, Function.class);
+
+					initMethod.invoke(
+						null,
+						new Function<InputStream, ObjectInputStream>() {
+
+							@Override
+							public ObjectInputStream apply(
+								InputStream inputStream) {
+
+								try {
+									return new AnnotatedObjectInputStream(
+										inputStream);
+								}
+								catch (IOException ioException) {
+									throw new RuntimeException(ioException);
+								}
+							}
+
+						},
+						new Function<OutputStream, ObjectOutputStream>() {
+
+							@Override
+							public ObjectOutputStream apply(
+								OutputStream outputStream) {
+
+								try {
+									return new AnnotatedObjectOutputStream(
+										outputStream);
+								}
+								catch (IOException ioException) {
+									throw new RuntimeException(ioException);
+								}
+							}
+
+						});
+
+					return null;
+				});
+		}
+		else if (PropsValues.PORTLET_SESSION_REPLICATE_ENABLED) {
 			FilterRegistration.Dynamic dynamic = servletContext.addFilter(
 				SessionReplicationFilter.class.getName(),
 				new SessionReplicationFilter());
@@ -72,6 +126,18 @@ public class PortalWebShieldedContainerInitializer
 			dynamic.addMappingForUrlPatterns(
 				EnumSet.of(DispatcherType.REQUEST), false, "/*");
 		}
+
+		if (PropsValues.HEALTH_CHECK_DATA_SOURCE_ENABLED) {
+			FilterRegistration.Dynamic dynamic = servletContext.addFilter(
+				HealthCheckDataSourceFilter.class.getName(),
+				new HealthCheckDataSourceFilter());
+
+			dynamic.addMappingForUrlPatterns(
+				EnumSet.of(DispatcherType.REQUEST), false,
+				"/health_check/data_source");
+		}
+
+		JakartaEETransformerJSFilter.register(servletContext);
 
 		DocumentBuilderFactory documentBuilderFactory =
 			DocumentBuilderFactory.newInstance();
@@ -205,6 +271,24 @@ public class PortalWebShieldedContainerInitializer
 						initParamElement -> dynamic.setInitParameter(
 							_getChildText(initParamElement, "param-name"),
 							_getChildText(initParamElement, "param-value")));
+					_forEachChildElement(
+						servletElement, "multipart-config",
+						multipartConfigElement -> dynamic.setMultipartConfig(
+							new MultipartConfigElement(
+								_getChildText(
+									multipartConfigElement, "location"),
+								GetterUtil.getLong(
+									_getChildText(
+										multipartConfigElement,
+										"max-file-size")),
+								GetterUtil.getLong(
+									_getChildText(
+										multipartConfigElement,
+										"max-request-size")),
+								GetterUtil.getInteger(
+									_getChildText(
+										multipartConfigElement,
+										"file-size-threshold")))));
 
 					List<String> urlPatterns = servletMappingMap.get(
 						servletName);
@@ -213,16 +297,6 @@ public class PortalWebShieldedContainerInitializer
 						dynamic.addMapping(urlPatterns.toArray(new String[0]));
 					}
 				});
-
-			if (PropsValues.AXIS_SERVLET_ENABLED) {
-				ServletRegistration.Dynamic dynamic = servletContext.addServlet(
-					"Axis Servlet", new AxisServlet());
-
-				dynamic.addMapping(PropsValues.AXIS_SERVLET_MAPPING);
-
-				dynamic.setAsyncSupported(true);
-				dynamic.setLoadOnStartup(1);
-			}
 		}
 		catch (Exception exception) {
 			throw new ServletException(exception);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.social;
@@ -17,10 +8,9 @@ package com.liferay.message.boards.web.internal.social;
 import com.liferay.message.boards.model.MBDiscussion;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBDiscussionLocalService;
-import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.social.BaseSocialActivityManager;
@@ -46,10 +36,15 @@ public class MBMessageSocialActivityManager
 
 	@Override
 	public void deleteActivities(MBMessage message) throws PortalException {
-		deleteDiscussionSocialActivities(message.getClassName(), message);
+		_deleteDiscussionSocialActivities(message.getClassName(), message);
 	}
 
-	protected void deleteDiscussionSocialActivities(
+	@Override
+	protected SocialActivityLocalService getSocialActivityLocalService() {
+		return _socialActivityLocalService;
+	}
+
+	private void _deleteDiscussionSocialActivities(
 			String className, MBMessage message)
 		throws PortalException {
 
@@ -72,7 +67,7 @@ public class MBMessageSocialActivityManager
 				continue;
 			}
 
-			JSONObject extraDataJSONObject = JSONFactoryUtil.createJSONObject(
+			JSONObject extraDataJSONObject = _jsonFactory.createJSONObject(
 				socialActivity.getExtraData());
 
 			long extraDataMessageId = extraDataJSONObject.getLong("messageId");
@@ -84,19 +79,14 @@ public class MBMessageSocialActivityManager
 		}
 	}
 
-	@Override
-	protected SocialActivityLocalService getSocialActivityLocalService() {
-		return _socialActivityLocalService;
-	}
-
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
-	private MBDiscussionLocalService _mbDiscussionLocalService;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private MBMessageLocalService _mbMessageLocalService;
+	private MBDiscussionLocalService _mbDiscussionLocalService;
 
 	@Reference
 	private SocialActivityLocalService _socialActivityLocalService;

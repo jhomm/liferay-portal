@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.page.change.test;
@@ -19,7 +10,7 @@ import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluatorEvaluateR
 import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluatorEvaluateResponse;
 import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluatorFieldContextKey;
 import com.liferay.dynamic.data.mapping.form.page.change.DDMFormPageChange;
-import com.liferay.dynamic.data.mapping.form.page.change.DDMFormPageChangeTracker;
+import com.liferay.dynamic.data.mapping.form.page.change.DDMFormPageChangeRegistry;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.UnlocalizedValue;
@@ -75,7 +66,7 @@ public class DDMFormPageChangeTest {
 	@Test
 	public void testDDMFormPageChangeEvaluate() throws Exception {
 		DDMFormPageChange ddmFormPageChange =
-			_ddmFormPageChangeTracker.getDDMFormPageChangeByDDMFormInstanceId(
+			_ddmFormPageChangeRegistry.getDDMFormPageChangeByDDMFormInstanceId(
 				_DDM_FORM_INSTANCE_ID);
 
 		DDMForm ddmForm = DDMFormTestUtil.createDDMForm();
@@ -114,7 +105,7 @@ public class DDMFormPageChangeTest {
 	@Test
 	public void testGetDDMFormPageChangeByDDMFormInstanceId() {
 		DDMFormPageChange ddmFormPageChange =
-			_ddmFormPageChangeTracker.getDDMFormPageChangeByDDMFormInstanceId(
+			_ddmFormPageChangeRegistry.getDDMFormPageChangeByDDMFormInstanceId(
 				_DDM_FORM_INSTANCE_ID);
 
 		Assert.assertNotNull(ddmFormPageChange);
@@ -145,7 +136,7 @@ public class DDMFormPageChangeTest {
 		RandomTestUtil.randomString();
 
 	@Inject
-	private static DDMFormPageChangeTracker _ddmFormPageChangeTracker;
+	private static DDMFormPageChangeRegistry _ddmFormPageChangeRegistry;
 
 	private static ServiceRegistration<DDMFormPageChange> _serviceRegistration;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Marco Leo
- * @see CPAttachmentFileEntryServiceSoap
  * @generated
  */
 public class CPAttachmentFileEntryServiceHttp {
@@ -60,6 +50,7 @@ public class CPAttachmentFileEntryServiceHttp {
 				int expirationDateMonth, int expirationDateDay,
 				int expirationDateYear, int expirationDateHour,
 				int expirationDateMinute, boolean neverExpire,
+				boolean galleryEnabled,
 				java.util.Map<java.util.Locale, String> titleMap, String json,
 				double priority, int type,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -76,8 +67,8 @@ public class CPAttachmentFileEntryServiceHttp {
 				cdnEnabled, cdnURL, displayDateMonth, displayDateDay,
 				displayDateYear, displayDateHour, displayDateMinute,
 				expirationDateMonth, expirationDateDay, expirationDateYear,
-				expirationDateHour, expirationDateMinute, neverExpire, titleMap,
-				json, priority, type, serviceContext);
+				expirationDateHour, expirationDateMinute, neverExpire,
+				galleryEnabled, titleMap, json, priority, type, serviceContext);
 
 			Object returnObj = null;
 
@@ -118,7 +109,7 @@ public class CPAttachmentFileEntryServiceHttp {
 				int displayDateMinute, int expirationDateMonth,
 				int expirationDateDay, int expirationDateYear,
 				int expirationDateHour, int expirationDateMinute,
-				boolean neverExpire,
+				boolean neverExpire, boolean galleryEnabled,
 				java.util.Map<java.util.Locale, String> titleMap, String json,
 				double priority, int type,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -136,8 +127,8 @@ public class CPAttachmentFileEntryServiceHttp {
 				displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
-				expirationDateMinute, neverExpire, titleMap, json, priority,
-				type, serviceContext);
+				expirationDateMinute, neverExpire, galleryEnabled, titleMap,
+				json, priority, type, serviceContext);
 
 			Object returnObj = null;
 
@@ -206,19 +197,18 @@ public class CPAttachmentFileEntryServiceHttp {
 	}
 
 	public static com.liferay.commerce.product.model.CPAttachmentFileEntry
-			fetchByExternalReferenceCode(
-				HttpPrincipal httpPrincipal, String externalReferenceCode,
-				long companyId)
+			fetchCPAttachmentFileEntry(
+				HttpPrincipal httpPrincipal, long cpAttachmentFileEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CPAttachmentFileEntryServiceUtil.class,
-				"fetchByExternalReferenceCode",
-				_fetchByExternalReferenceCodeParameterTypes3);
+				"fetchCPAttachmentFileEntry",
+				_fetchCPAttachmentFileEntryParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, externalReferenceCode, companyId);
+				methodKey, cpAttachmentFileEntryId);
 
 			Object returnObj = null;
 
@@ -250,18 +240,19 @@ public class CPAttachmentFileEntryServiceHttp {
 	}
 
 	public static com.liferay.commerce.product.model.CPAttachmentFileEntry
-			fetchCPAttachmentFileEntry(
-				HttpPrincipal httpPrincipal, long cpAttachmentFileEntryId)
+			fetchCPAttachmentFileEntryByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CPAttachmentFileEntryServiceUtil.class,
-				"fetchCPAttachmentFileEntry",
-				_fetchCPAttachmentFileEntryParameterTypes4);
+				"fetchCPAttachmentFileEntryByExternalReferenceCode",
+				_fetchCPAttachmentFileEntryByExternalReferenceCodeParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpAttachmentFileEntryId);
+				methodKey, externalReferenceCode, companyId);
 
 			Object returnObj = null;
 
@@ -388,6 +379,53 @@ public class CPAttachmentFileEntryServiceHttp {
 		}
 	}
 
+	public static java.util.List
+		<com.liferay.commerce.product.model.CPAttachmentFileEntry>
+				getCPAttachmentFileEntries(
+					HttpPrincipal httpPrincipal, long classNameId, long classPK,
+					String keywords, int type, int status, int start, int end)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CPAttachmentFileEntryServiceUtil.class,
+				"getCPAttachmentFileEntries",
+				_getCPAttachmentFileEntriesParameterTypes7);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, classNameId, classPK, keywords, type, status, start,
+				end);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (java.util.List
+				<com.liferay.commerce.product.model.CPAttachmentFileEntry>)
+					returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static int getCPAttachmentFileEntriesCount(
 			HttpPrincipal httpPrincipal, long classNameId, long classPK,
 			int type, int status)
@@ -397,10 +435,52 @@ public class CPAttachmentFileEntryServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPAttachmentFileEntryServiceUtil.class,
 				"getCPAttachmentFileEntriesCount",
-				_getCPAttachmentFileEntriesCountParameterTypes7);
+				_getCPAttachmentFileEntriesCountParameterTypes8);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, classNameId, classPK, type, status);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return ((Integer)returnObj).intValue();
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static int getCPAttachmentFileEntriesCount(
+			HttpPrincipal httpPrincipal, long classNameId, long classPK,
+			String keywords, int type, int status)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CPAttachmentFileEntryServiceUtil.class,
+				"getCPAttachmentFileEntriesCount",
+				_getCPAttachmentFileEntriesCountParameterTypes9);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, classNameId, classPK, keywords, type, status);
 
 			Object returnObj = null;
 
@@ -439,7 +519,7 @@ public class CPAttachmentFileEntryServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPAttachmentFileEntryServiceUtil.class,
 				"getCPAttachmentFileEntry",
-				_getCPAttachmentFileEntryParameterTypes8);
+				_getCPAttachmentFileEntryParameterTypes10);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, cpAttachmentFileEntryId);
@@ -482,6 +562,7 @@ public class CPAttachmentFileEntryServiceHttp {
 				int expirationDateMonth, int expirationDateDay,
 				int expirationDateYear, int expirationDateHour,
 				int expirationDateMinute, boolean neverExpire,
+				boolean galleryEnabled,
 				java.util.Map<java.util.Locale, String> titleMap, String json,
 				double priority, int type,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -491,15 +572,15 @@ public class CPAttachmentFileEntryServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPAttachmentFileEntryServiceUtil.class,
 				"updateCPAttachmentFileEntry",
-				_updateCPAttachmentFileEntryParameterTypes9);
+				_updateCPAttachmentFileEntryParameterTypes11);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, cpAttachmentFileEntryId, fileEntryId, cdnEnabled,
 				cdnURL, displayDateMonth, displayDateDay, displayDateYear,
 				displayDateHour, displayDateMinute, expirationDateMonth,
 				expirationDateDay, expirationDateYear, expirationDateHour,
-				expirationDateMinute, neverExpire, titleMap, json, priority,
-				type, serviceContext);
+				expirationDateMinute, neverExpire, galleryEnabled, titleMap,
+				json, priority, type, serviceContext);
 
 			Object returnObj = null;
 
@@ -538,26 +619,26 @@ public class CPAttachmentFileEntryServiceHttp {
 			long.class, long.class, long.class, long.class, boolean.class,
 			String.class, int.class, int.class, int.class, int.class, int.class,
 			int.class, int.class, int.class, int.class, int.class,
-			boolean.class, java.util.Map.class, String.class, double.class,
-			int.class, com.liferay.portal.kernel.service.ServiceContext.class
+			boolean.class, boolean.class, java.util.Map.class, String.class,
+			double.class, int.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
 		_addOrUpdateCPAttachmentFileEntryParameterTypes1 = new Class[] {
 			String.class, long.class, long.class, long.class, long.class,
 			long.class, boolean.class, String.class, int.class, int.class,
 			int.class, int.class, int.class, int.class, int.class, int.class,
-			int.class, int.class, boolean.class, java.util.Map.class,
-			String.class, double.class, int.class,
+			int.class, int.class, boolean.class, boolean.class,
+			java.util.Map.class, String.class, double.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
 		_deleteCPAttachmentFileEntryParameterTypes2 = new Class[] {long.class};
-	private static final Class<?>[]
-		_fetchByExternalReferenceCodeParameterTypes3 = new Class[] {
-			String.class, long.class
-		};
-	private static final Class<?>[] _fetchCPAttachmentFileEntryParameterTypes4 =
+	private static final Class<?>[] _fetchCPAttachmentFileEntryParameterTypes3 =
 		new Class[] {long.class};
+	private static final Class<?>[]
+		_fetchCPAttachmentFileEntryByExternalReferenceCodeParameterTypes4 =
+			new Class[] {String.class, long.class};
 	private static final Class<?>[] _getCPAttachmentFileEntriesParameterTypes5 =
 		new Class[] {
 			long.class, long.class, int.class, int.class, int.class, int.class
@@ -567,18 +648,27 @@ public class CPAttachmentFileEntryServiceHttp {
 			long.class, long.class, int.class, int.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
+	private static final Class<?>[] _getCPAttachmentFileEntriesParameterTypes7 =
+		new Class[] {
+			long.class, long.class, String.class, int.class, int.class,
+			int.class, int.class
+		};
 	private static final Class<?>[]
-		_getCPAttachmentFileEntriesCountParameterTypes7 = new Class[] {
+		_getCPAttachmentFileEntriesCountParameterTypes8 = new Class[] {
 			long.class, long.class, int.class, int.class
 		};
-	private static final Class<?>[] _getCPAttachmentFileEntryParameterTypes8 =
+	private static final Class<?>[]
+		_getCPAttachmentFileEntriesCountParameterTypes9 = new Class[] {
+			long.class, long.class, String.class, int.class, int.class
+		};
+	private static final Class<?>[] _getCPAttachmentFileEntryParameterTypes10 =
 		new Class[] {long.class};
 	private static final Class<?>[]
-		_updateCPAttachmentFileEntryParameterTypes9 = new Class[] {
+		_updateCPAttachmentFileEntryParameterTypes11 = new Class[] {
 			long.class, long.class, boolean.class, String.class, int.class,
 			int.class, int.class, int.class, int.class, int.class, int.class,
-			int.class, int.class, int.class, boolean.class, java.util.Map.class,
-			String.class, double.class, int.class,
+			int.class, int.class, int.class, boolean.class, boolean.class,
+			java.util.Map.class, String.class, double.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 

@@ -1,30 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
+import java.io.File;
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -37,14 +31,20 @@ import org.json.JSONObject;
  */
 public class JenkinsCohort {
 
-	public JenkinsCohort(String name) {
-		_name = name;
+	public static synchronized JenkinsCohort getInstance(String cohortName) {
+		if (!_jenkinsCohorts.containsKey(cohortName)) {
+			_jenkinsCohorts.put(cohortName, new JenkinsCohort(cohortName));
+		}
 
-		update();
+		return _jenkinsCohorts.get(cohortName);
 	}
 
 	public int getIdleJenkinsSlaveCount() {
 		int idleJenkinsSlaveCount = 0;
+
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			idleJenkinsSlaveCount += jenkinsMaster.getIdleJenkinsSlavesCount();
@@ -53,12 +53,67 @@ public class JenkinsCohort {
 		return idleJenkinsSlaveCount;
 	}
 
+	public List<JenkinsMaster> getJenkinsMasters() {
+		synchronized (_jenkinsMastersMap) {
+			if (!_jenkinsMastersMap.isEmpty()) {
+				return new ArrayList<>(_jenkinsMastersMap.values());
+			}
+
+			try {
+				List<JenkinsMaster> jenkinsMasters =
+					JenkinsResultsParserUtil.getJenkinsMasters(
+						JenkinsResultsParserUtil.getBuildProperties(),
+						JenkinsMaster.getSlaveRAMMinimumDefault(),
+						JenkinsMaster.getSlavesPerHostDefault(), getName());
+
+				for (JenkinsMaster jenkinsMaster : jenkinsMasters) {
+					_jenkinsMastersMap.put(
+						jenkinsMaster.getName(), jenkinsMaster);
+				}
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
+
+			return new ArrayList<>(_jenkinsMastersMap.values());
+		}
+	}
+
+	public JenkinsMaster getMostAvailableJenkinsMaster(
+		int invokedBatchSize, String jobName, String labelExpression,
+		int minimumRAM, int maximumSlavesPerHost) {
+
+		String mostAvailableMasterURL =
+			JenkinsResultsParserUtil.getMostAvailableMasterURL(
+				"http://" + getName() + ".liferay.com",
+				JenkinsResultsParserUtil.join(",", _jenkinsMastersBlacklist),
+				invokedBatchSize, jobName, labelExpression, minimumRAM,
+				maximumSlavesPerHost);
+
+		return JenkinsMaster.getInstance(
+			mostAvailableMasterURL.replaceAll("http://(.+)", "$1"));
+	}
+
 	public String getName() {
 		return _name;
 	}
 
+	public Set<String> getNetworkNames() {
+		Set<String> networkNames = new HashSet<>();
+
+		for (JenkinsMaster jenkinsMaster : getJenkinsMasters()) {
+			networkNames.add(jenkinsMaster.getNetworkName());
+		}
+
+		return networkNames;
+	}
+
 	public int getOfflineJenkinsSlaveCount() {
 		int offlineJenkinsSlaveCount = 0;
+
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
 
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			offlineJenkinsSlaveCount +=
@@ -71,6 +126,10 @@ public class JenkinsCohort {
 	public int getOnlineJenkinsSlaveCount() {
 		int onlineJenkinsSlaveCount = 0;
 
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
+
 		for (JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
 			onlineJenkinsSlaveCount +=
 				jenkinsMaster.getOnlineJenkinsSlavesCount();
@@ -81,6 +140,10 @@ public class JenkinsCohort {
 
 	public int getQueuedBuildCount() {
 		int queuedBuildCount = 0;
+
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
 
 		for (JenkinsCohortJob jenkinsCohortJob :
 				_jenkinsCohortJobsMap.values()) {
@@ -95,6 +158,10 @@ public class JenkinsCohort {
 	public int getRunningBuildCount() {
 		int runningBuildCount = 0;
 
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
+
 		for (JenkinsCohortJob jenkinsCohortJob :
 				_jenkinsCohortJobsMap.values()) {
 
@@ -106,70 +173,70 @@ public class JenkinsCohort {
 	}
 
 	public void update() {
-		Properties buildProperties = null;
-
-		try {
-			buildProperties = JenkinsResultsParserUtil.getBuildProperties();
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(
-				"Unable to get Jenkins properties", ioException);
-		}
-
-		if (_jenkinsMastersMap.isEmpty()) {
-			List<JenkinsMaster> jenkinsMasters =
-				JenkinsResultsParserUtil.getJenkinsMasters(
-					buildProperties, JenkinsMaster.getSlaveRAMMinimumDefault(),
-					JenkinsMaster.getSlavesPerHostDefault(), getName());
-
-			for (JenkinsMaster jenkinsMaster : jenkinsMasters) {
-				_jenkinsMastersMap.put(jenkinsMaster.getName(), jenkinsMaster);
+		synchronized (_jenkinsCohortJobsMap) {
+			if (!_jenkinsCohortJobsMap.isEmpty()) {
+				return;
 			}
-		}
 
-		List<Callable<Void>> callables = new ArrayList<>();
-		final List<String> buildURLs = Collections.synchronizedList(
-			new ArrayList<String>());
-		final Map<String, JSONObject> queuedBuildURLs =
-			Collections.synchronizedMap(new HashMap<String, JSONObject>());
+			List<Callable<Void>> callables = new ArrayList<>();
+			final List<String> buildURLs = Collections.synchronizedList(
+				new ArrayList<String>());
+			final Map<String, JSONObject> queuedBuildURLs =
+				Collections.synchronizedMap(new HashMap<String, JSONObject>());
 
-		for (final JenkinsMaster jenkinsMaster : _jenkinsMastersMap.values()) {
-			Callable<Void> callable = new Callable<Void>() {
+			for (final JenkinsMaster jenkinsMaster : getJenkinsMasters()) {
+				Callable<Void> callable = new Callable<Void>() {
 
-				@Override
-				public Void call() {
-					jenkinsMaster.update(false);
+					@Override
+					public Void call() {
+						jenkinsMaster.update(false);
 
-					buildURLs.addAll(jenkinsMaster.getBuildURLs());
-					queuedBuildURLs.putAll(jenkinsMaster.getQueuedBuildURLs());
+						buildURLs.addAll(jenkinsMaster.getBuildURLs());
+						queuedBuildURLs.putAll(
+							jenkinsMaster.getQueuedBuildURLs());
 
-					return null;
+						return null;
+					}
+
+				};
+
+				callables.add(callable);
+			}
+
+			if (!_jenkinsMastersMap.isEmpty()) {
+				ThreadPoolExecutor threadPoolExecutor =
+					JenkinsResultsParserUtil.getNewThreadPoolExecutor(
+						_jenkinsMastersMap.size(), true);
+
+				ParallelExecutor<Void> parallelExecutor =
+					new ParallelExecutor<>(
+						callables, threadPoolExecutor, "update");
+
+				try {
+					parallelExecutor.execute();
 				}
+				catch (TimeoutException timeoutException) {
+					throw new RuntimeException(timeoutException);
+				}
+			}
 
-			};
+			for (String buildURL : buildURLs) {
+				_loadBuildURL(buildURL);
+			}
 
-			callables.add(callable);
-		}
+			for (Map.Entry<String, JSONObject> entry :
+					queuedBuildURLs.entrySet()) {
 
-		ThreadPoolExecutor threadPoolExecutor =
-			JenkinsResultsParserUtil.getNewThreadPoolExecutor(
-				_jenkinsMastersMap.size(), true);
-
-		ParallelExecutor<Void> parallelExecutor = new ParallelExecutor<>(
-			callables, threadPoolExecutor);
-
-		parallelExecutor.execute();
-
-		for (String buildURL : buildURLs) {
-			_loadBuildURL(buildURL);
-		}
-
-		for (Map.Entry<String, JSONObject> entry : queuedBuildURLs.entrySet()) {
-			_loadQueuedBuildURL(entry);
+				_loadQueuedBuildURL(entry);
+			}
 		}
 	}
 
 	public void writeDataJavaScriptFile(String filePath) throws IOException {
+		if (_jenkinsCohortJobsMap.isEmpty()) {
+			update();
+		}
+
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("var jenkinsDataGeneratedDate = new Date(");
@@ -326,6 +393,69 @@ public class JenkinsCohort {
 		JenkinsResultsParserUtil.write(filePath, sb.toString());
 	}
 
+	public void writeNodeDataJSONFile(String filePath) throws IOException {
+		File file = new File(filePath);
+
+		JSONObject jsonObject = null;
+
+		if (file.exists()) {
+			String fileContent = JenkinsResultsParserUtil.read(file);
+
+			jsonObject = new JSONObject(fileContent);
+		}
+		else {
+			jsonObject = new JSONObject();
+
+			jsonObject.put(
+				"idle_nodes", new JSONArray()
+			).put(
+				"occupied_nodes", new JSONArray()
+			).put(
+				"offline_nodes", new JSONArray()
+			).put(
+				"online_nodes", new JSONArray()
+			).put(
+				"queued_builds", new JSONArray()
+			).put(
+				"timestamps", new JSONArray()
+			);
+		}
+
+		JSONArray idleNodesJSONArray = jsonObject.getJSONArray("idle_nodes");
+
+		idleNodesJSONArray.put(getIdleJenkinsSlaveCount());
+
+		JSONArray occupiedNodesJSONArray = jsonObject.getJSONArray(
+			"occupied_nodes");
+
+		occupiedNodesJSONArray.put(getRunningBuildCount());
+
+		JSONArray offlineNodesJSONArray = jsonObject.getJSONArray(
+			"offline_nodes");
+
+		offlineNodesJSONArray.put(getOfflineJenkinsSlaveCount());
+
+		JSONArray onlineNodesJSONArray = jsonObject.getJSONArray(
+			"online_nodes");
+
+		onlineNodesJSONArray.put(getOnlineJenkinsSlaveCount());
+
+		JSONArray queuedBuildsJSONArray = jsonObject.getJSONArray(
+			"queued_builds");
+
+		queuedBuildsJSONArray.put(getQueuedBuildCount());
+
+		JSONArray timestampsJSONArray = jsonObject.getJSONArray("timestamps");
+
+		timestampsJSONArray.put(System.currentTimeMillis());
+
+		JenkinsResultsParserUtil.write(filePath, jsonObject.toString());
+	}
+
+	protected JenkinsCohort(String name) {
+		_name = name;
+	}
+
 	private JSONArray _createJSONArray(Object... items) {
 		JSONArray jsonArray = new JSONArray();
 
@@ -400,12 +530,18 @@ public class JenkinsCohort {
 
 		String jobName = jobNameMatcher.group(1);
 
-		String batchJobName = null;
+		String downstreamJobName = null;
 
 		if (jobName.contains("-batch")) {
-			batchJobName = jobName;
+			downstreamJobName = jobName;
 
 			jobName = jobName.replace("-batch", "");
+		}
+
+		if (jobName.contains("-downstream")) {
+			downstreamJobName = jobName;
+
+			jobName = jobName.replace("-downstream", "");
 		}
 
 		if (!_jenkinsCohortJobsMap.containsKey(jobName)) {
@@ -414,7 +550,7 @@ public class JenkinsCohort {
 
 		JenkinsCohortJob jenkinsCohortJob = _jenkinsCohortJobsMap.get(jobName);
 
-		if (batchJobName == null) {
+		if (downstreamJobName == null) {
 			jenkinsCohortJob.addTopLevelBuildURL(buildURL);
 		}
 		else {
@@ -438,12 +574,18 @@ public class JenkinsCohort {
 
 				String jobName = jobNameMatcher.group(1);
 
-				String batchJobName = null;
+				String downstreamJobName = null;
 
 				if (jobName.contains("-batch")) {
-					batchJobName = jobName;
+					downstreamJobName = jobName;
 
 					jobName = jobName.replace("-batch", "");
+				}
+
+				if (jobName.contains("-downstream")) {
+					downstreamJobName = jobName;
+
+					jobName = jobName.replace("-downstream", "");
 				}
 
 				if (!_jenkinsCohortJobsMap.containsKey(jobName)) {
@@ -454,7 +596,7 @@ public class JenkinsCohort {
 				JenkinsCohortJob jenkinsCohortJob = _jenkinsCohortJobsMap.get(
 					jobName);
 
-				if (batchJobName == null) {
+				if (downstreamJobName == null) {
 					jenkinsCohortJob.addQueuedTopLevelBuildJsonMapEntry(
 						queuedBuildURL);
 				}
@@ -468,8 +610,26 @@ public class JenkinsCohort {
 
 	private static final Pattern _buildNumberPattern = Pattern.compile(
 		".*\\/([0-9]+)");
+	private static final Map<String, JenkinsCohort> _jenkinsCohorts =
+		new HashMap<>();
+	private static final List<String> _jenkinsMastersBlacklist =
+		new ArrayList<>();
 	private static final Pattern _jobNamePattern = Pattern.compile(
 		"https?:.*job\\/(.*?)\\/");
+
+	static {
+		try {
+			String jenkinsMastersBlacklist =
+				JenkinsResultsParserUtil.getBuildProperty(
+					"jenkins.load.balancer.blacklist");
+
+			Collections.addAll(
+				_jenkinsMastersBlacklist, jenkinsMastersBlacklist.split(","));
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+	}
 
 	private final Map<String, JenkinsCohortJob> _jenkinsCohortJobsMap =
 		new HashMap<>();

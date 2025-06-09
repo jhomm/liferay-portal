@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.background.task;
@@ -42,17 +33,6 @@ public class LayoutStagingBackgroundTaskStatusMessageTranslator
 			currentModelAdditionCountersTotal;
 	}
 
-	protected long getAllPortletAdditionCounter(
-		BackgroundTaskStatus backgroundTaskStatus) {
-
-		long allPortletAdditionCounter = GetterUtil.getLong(
-			backgroundTaskStatus.getAttribute("allPortletAdditionCounter"));
-		long currentPortletAdditionCounter = GetterUtil.getLong(
-			backgroundTaskStatus.getAttribute("currentPortletAdditionCounter"));
-
-		return allPortletAdditionCounter + currentPortletAdditionCounter;
-	}
-
 	@Override
 	protected synchronized void translateLayoutMessage(
 		BackgroundTaskStatus backgroundTaskStatus, Message message) {
@@ -79,7 +59,7 @@ public class LayoutStagingBackgroundTaskStatusMessageTranslator
 				getAllModelAdditionCountersTotal(backgroundTaskStatus));
 			backgroundTaskStatus.setAttribute(
 				"allPortletAdditionCounter",
-				getAllPortletAdditionCounter(backgroundTaskStatus));
+				_getAllPortletAdditionCounter(backgroundTaskStatus));
 			backgroundTaskStatus.setAttribute(
 				"allPortletModelAdditionCounters",
 				new HashMap<String, LongWrapper>());
@@ -87,6 +67,17 @@ public class LayoutStagingBackgroundTaskStatusMessageTranslator
 				"currentPortletModelAdditionCounters",
 				new HashMap<String, LongWrapper>());
 		}
+	}
+
+	private long _getAllPortletAdditionCounter(
+		BackgroundTaskStatus backgroundTaskStatus) {
+
+		long allPortletAdditionCounter = GetterUtil.getLong(
+			backgroundTaskStatus.getAttribute("allPortletAdditionCounter"));
+		long currentPortletAdditionCounter = GetterUtil.getLong(
+			backgroundTaskStatus.getAttribute("currentPortletAdditionCounter"));
+
+		return allPortletAdditionCounter + currentPortletAdditionCounter;
 	}
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -33,37 +24,35 @@
 			<clay:col
 				md="6"
 			>
-				<liferay-frontend:fieldset-group>
-					<liferay-frontend:fieldset>
-						<div class="display-template">
-							<liferay-template:template-selector
-								className="<%= BreadcrumbEntry.class.getName() %>"
-								displayStyle="<%= siteNavigationBreadcrumbDisplayContext.getDisplayStyle() %>"
-								displayStyleGroupId="<%= siteNavigationBreadcrumbDisplayContext.getDisplayStyleGroupId() %>"
-								refreshURL="<%= configurationRenderURL %>"
-							/>
-						</div>
-					</liferay-frontend:fieldset>
+				<liferay-frontend:fieldset>
+					<div class="display-template">
+						<liferay-template:template-selector
+							className="<%= BreadcrumbEntry.class.getName() %>"
+							displayStyle="<%= siteNavigationBreadcrumbDisplayContext.getDisplayStyle() %>"
+							displayStyleGroupKey="<%= siteNavigationBreadcrumbDisplayContext.getDisplayStyleGroupKey() %>"
+							refreshURL="<%= configurationRenderURL %>"
+						/>
+					</div>
+				</liferay-frontend:fieldset>
 
-					<liferay-frontend:fieldset
-						id='<%= liferayPortletResponse.getNamespace() + "checkBoxes" %>'
+				<liferay-frontend:fieldset
+					id='<%= liferayPortletResponse.getNamespace() + "checkBoxes" %>'
+				>
+					<clay:col
+						md="6"
 					>
-						<clay:col
-							md="6"
-						>
-							<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showCurrentGroup" %>' label="show-current-site" name="preferences--showCurrentGroup--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowCurrentGroup() %>" />
-							<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showGuestGroup" %>' label="show-guest-site" name="preferences--showGuestGroup--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowGuestGroup() %>" />
-						</clay:col>
+						<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showCurrentGroup" %>' label="show-current-site" name="preferences--showCurrentGroup--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowCurrentGroup() %>" />
+						<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showGuestGroup" %>' label="show-guest-site" name="preferences--showGuestGroup--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowGuestGroup() %>" />
+					</clay:col>
 
-						<clay:col
-							md="6"
-						>
-							<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showLayout" %>' label="show-page" name="preferences--showLayout--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowLayout() %>" />
-							<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showParentGroups" %>' label="show-parent-sites" name="preferences--showParentGroups--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowParentGroups() %>" />
-							<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showPortletBreadcrumb" %>' label="show-application-breadcrumb" name="preferences--showPortletBreadcrumb--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowPortletBreadcrumb() %>" />
-						</clay:col>
-					</liferay-frontend:fieldset>
-				</liferay-frontend:fieldset-group>
+					<clay:col
+						md="6"
+					>
+						<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showLayout" %>' label="show-page" name="preferences--showLayout--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowLayout() %>" />
+						<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showParentGroups" %>' label="show-parent-sites" name="preferences--showParentGroups--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowParentGroups() %>" />
+						<aui:input data-key='<%= "_" + HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) + "_showPortletBreadcrumb" %>' label="show-application-breadcrumb" name="preferences--showPortletBreadcrumb--" type="toggle-switch" value="<%= siteNavigationBreadcrumbDisplayContext.isShowPortletBreadcrumb() %>" />
+					</clay:col>
+				</liferay-frontend:fieldset>
 			</clay:col>
 
 			<clay:col
@@ -78,9 +67,7 @@
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
@@ -106,24 +93,20 @@
 		'_<%= HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) %>_showPortletBreadcrumb'
 	] = <%= siteNavigationBreadcrumbDisplayContext.isShowPortletBreadcrumb() %>;
 
-	var selectDisplayStyle = document.getElementById(
-		'<portlet:namespace />displayStyle'
-	);
+	Liferay.on('templateSelector:changedTemplate', (event) => {
+		const displayStyle = event.value;
 
-	if (selectDisplayStyle) {
-		selectDisplayStyle.addEventListener('change', (event) => {
-			if (selectDisplayStyle.selectedIndex > -1) {
-				data[
-					'_<%= HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) %>_displayStyle'
-				] = selectDisplayStyle.value;
+		if (displayStyle) {
+			data[
+				'_<%= HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) %>_displayStyle'
+			] = displayStyle;
 
-				Liferay.Portlet.refresh(
-					'#p_p_id_<%= HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) %>_',
-					data
-				);
-			}
-		});
-	}
+			Liferay.Portlet.refresh(
+				'#p_p_id_<%= HtmlUtil.escapeJS(siteNavigationBreadcrumbDisplayContext.getPortletResource()) %>_',
+				data
+			);
+		}
+	});
 
 	var checkBoxes = document.getElementById('<portlet:namespace />checkBoxes');
 

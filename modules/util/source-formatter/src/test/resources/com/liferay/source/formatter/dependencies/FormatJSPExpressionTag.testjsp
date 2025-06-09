@@ -1,0 +1,16 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<%@ taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
+
+<a class="<%= variable1 + "a" %>"></a>
+<a class="<%= "b" + variable2 %>"></a>
+<a class="<%= variable3 + "c" + variable4 + "d" %>"></a>
+<a class="<%= "e" + variable5 + "c" + variable6 %>"></a>
+<a class="f<%= variable7++ %>g<%= variable8++ %>"></a>
+<a class=data-layoutSetBranchId="<%= curLayoutRevision.getLayoutSetBranchId() %>" href="javascript:void(0);" onevent="<%= liferayPortletResponse.getNamespace() + "selectRevision(" + curLayoutRevision.getLayoutRevisionId() + ", " + curLayoutRevision.getLayoutSetBranchId() + ");" %>" title="<liferay-ui:message key="go-to-this-version" />"></a>
+<a class="<%= "info-box" + Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK %>"></a>

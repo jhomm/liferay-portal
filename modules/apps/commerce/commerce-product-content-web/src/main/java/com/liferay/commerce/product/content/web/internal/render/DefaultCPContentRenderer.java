@@ -1,48 +1,44 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.render;
 
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.content.render.CPContentRenderer;
+import com.liferay.commerce.product.type.grouped.constants.GroupedCPTypeConstants;
+import com.liferay.commerce.product.type.grouped.constants.GroupedCPTypeWebKeys;
 import com.liferay.commerce.product.type.grouped.util.GroupedCPTypeHelper;
-import com.liferay.commerce.product.type.virtual.util.VirtualCPTypeHelper;
+import com.liferay.commerce.product.type.simple.constants.SimpleCPTypeConstants;
+import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeConstants;
+import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeWebKeys;
+import com.liferay.commerce.product.type.virtual.helper.VirtualCPTypeHelper;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Gianmarco Brunialti Masera
+ * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.product.content.renderer.key=" + DefaultCPContentRenderer.KEY,
 		"commerce.product.content.renderer.order=" + Integer.MIN_VALUE,
-		"commerce.product.content.renderer.type=grouped",
-		"commerce.product.content.renderer.type=simple",
-		"commerce.product.content.renderer.type=virtual"
+		"commerce.product.content.renderer.type=" + GroupedCPTypeConstants.NAME,
+		"commerce.product.content.renderer.type=" + SimpleCPTypeConstants.NAME,
+		"commerce.product.content.renderer.type=" + VirtualCPTypeConstants.NAME
 	},
 	service = CPContentRenderer.class
 )
@@ -60,7 +56,7 @@ public class DefaultCPContentRenderer implements CPContentRenderer {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, KEY);
+		return _language.get(resourceBundle, KEY);
 	}
 
 	@Override
@@ -71,9 +67,9 @@ public class DefaultCPContentRenderer implements CPContentRenderer {
 		throws Exception {
 
 		httpServletRequest.setAttribute(
-			"groupedCPTypeHelper", _groupedCPTypeHelper);
+			GroupedCPTypeWebKeys.GROUPED_CP_TYPE_HELPER, _groupedCPTypeHelper);
 		httpServletRequest.setAttribute(
-			"virtualCPTypeHelper", _virtualCPTypeHelper);
+			VirtualCPTypeWebKeys.VIRTUAL_CP_TYPE_HELPER, _virtualCPTypeHelper);
 
 		_jspRenderer.renderJSP(
 			_servletContext, httpServletRequest, httpServletResponse,
@@ -85,6 +81,9 @@ public class DefaultCPContentRenderer implements CPContentRenderer {
 
 	@Reference
 	private JSPRenderer _jspRenderer;
+
+	@Reference
+	private Language _language;
 
 	@Reference(
 		target = "(osgi.web.symbolicname=com.liferay.commerce.product.content.web)"

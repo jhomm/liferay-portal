@@ -1,26 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.forecast.alert.web.internal.display.context;
 
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.machine.learning.forecast.alert.constants.CommerceMLForecastAlertActionKeys;
 import com.liferay.commerce.machine.learning.forecast.alert.constants.CommerceMLForecastAlertConstants;
 import com.liferay.commerce.machine.learning.forecast.alert.model.CommerceMLForecastAlertEntry;
 import com.liferay.commerce.machine.learning.forecast.alert.service.CommerceMLForecastAlertEntryService;
-import com.liferay.commerce.machine.learning.forecast.alert.web.internal.display.context.util.CommerceMLForecastAlertEntryRequestHelper;
+import com.liferay.commerce.machine.learning.forecast.alert.web.internal.display.context.helper.CommerceMLForecastAlertEntryRequestHelper;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -29,10 +20,8 @@ import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
 
 /**
  * @author Riccardo Ferrari
@@ -40,12 +29,12 @@ import javax.portlet.RenderRequest;
 public class CommerceMLForecastAlertEntryListDisplayContext {
 
 	public CommerceMLForecastAlertEntryListDisplayContext(
-		CommerceAccountLocalService commerceAccountLocalService,
+		AccountEntryLocalService accountEntryLocalService,
 		CommerceMLForecastAlertEntryService commerceMLForecastAlertEntryService,
 		PortletResourcePermission portletResourcePermission,
 		RenderRequest renderRequest) {
 
-		_commerceAccountLocalService = commerceAccountLocalService;
+		_accountEntryLocalService = accountEntryLocalService;
 		_commerceMLForecastAlertEntryService =
 			commerceMLForecastAlertEntryService;
 		_portletResourcePermission = portletResourcePermission;
@@ -54,13 +43,12 @@ public class CommerceMLForecastAlertEntryListDisplayContext {
 			new CommerceMLForecastAlertEntryRequestHelper(renderRequest);
 	}
 
-	public CommerceAccount getCommerceAccount(long commerceAccountId) {
+	public AccountEntry getAccountEntry(long accountEntryId) {
 		try {
-			return _commerceAccountLocalService.getCommerceAccount(
-				commerceAccountId);
+			return _accountEntryLocalService.getAccountEntry(accountEntryId);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return null;
 		}
@@ -84,29 +72,23 @@ public class CommerceMLForecastAlertEntryListDisplayContext {
 		_searchContainer = new SearchContainer<>(
 			_commerceMLForecastAlertEntryRequestHelper.
 				getLiferayPortletRequest(),
-			getPortletURL(), null, null);
-
-		_searchContainer.setEmptyResultsMessage(
+			getPortletURL(), null,
 			"there-are-no-forecast-alert-entries-to-display");
 
-		List<CommerceMLForecastAlertEntry> results =
-			_commerceMLForecastAlertEntryService.
-				getBelowThresholdCommerceMLForecastAlertEntries(
-					_commerceMLForecastAlertEntryRequestHelper.getCompanyId(),
-					_commerceMLForecastAlertEntryRequestHelper.getUserId(),
-					CommerceMLForecastAlertConstants.STATUS_NEW, 0.0,
-					_searchContainer.getStart(), _searchContainer.getEnd());
-
-		_searchContainer.setResults(results);
-
-		int total =
+		_searchContainer.setResultsAndTotal(
+			() ->
+				_commerceMLForecastAlertEntryService.
+					getBelowThresholdCommerceMLForecastAlertEntries(
+						_commerceMLForecastAlertEntryRequestHelper.
+							getCompanyId(),
+						_commerceMLForecastAlertEntryRequestHelper.getUserId(),
+						CommerceMLForecastAlertConstants.STATUS_NEW, 0.0,
+						_searchContainer.getStart(), _searchContainer.getEnd()),
 			_commerceMLForecastAlertEntryService.
 				getBelowThresholdCommerceMLForecastAlertEntriesCount(
 					_commerceMLForecastAlertEntryRequestHelper.getCompanyId(),
 					_commerceMLForecastAlertEntryRequestHelper.getUserId(),
-					CommerceMLForecastAlertConstants.STATUS_NEW, 0.0);
-
-		_searchContainer.setTotal(total);
+					CommerceMLForecastAlertConstants.STATUS_NEW, 0.0));
 
 		return _searchContainer;
 	}
@@ -128,7 +110,7 @@ public class CommerceMLForecastAlertEntryListDisplayContext {
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceMLForecastAlertEntryListDisplayContext.class);
 
-	private final CommerceAccountLocalService _commerceAccountLocalService;
+	private final AccountEntryLocalService _accountEntryLocalService;
 	private final CommerceMLForecastAlertEntryRequestHelper
 		_commerceMLForecastAlertEntryRequestHelper;
 	private final CommerceMLForecastAlertEntryService

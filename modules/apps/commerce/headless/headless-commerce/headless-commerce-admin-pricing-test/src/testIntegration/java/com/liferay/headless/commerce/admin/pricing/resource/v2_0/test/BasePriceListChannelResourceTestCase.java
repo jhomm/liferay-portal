@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.resource.v2_0.test;
@@ -22,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceListChannel;
 import com.liferay.headless.commerce.admin.pricing.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Page;
@@ -29,50 +22,49 @@ import com.liferay.headless.commerce.admin.pricing.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.PriceListChannelResource;
 import com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0.PriceListChannelSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -96,7 +88,7 @@ public abstract class BasePriceListChannelResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -110,11 +102,25 @@ public abstract class BasePriceListChannelResourceTestCase {
 
 		_priceListChannelResource.setContextCompany(testCompany);
 
-		PriceListChannelResource.Builder builder =
-			PriceListChannelResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		priceListChannelResource = builder.authentication(
-			"test@liferay.com", "test"
+		priceListChannelResource = PriceListChannelResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -128,7 +134,32 @@ public abstract class BasePriceListChannelResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		PriceListChannel priceListChannel1 = randomPriceListChannel();
+
+		String json = objectMapper.writeValueAsString(priceListChannel1);
+
+		PriceListChannel priceListChannel2 = PriceListChannelSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(priceListChannel1, priceListChannel2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		PriceListChannel priceListChannel = randomPriceListChannel();
+
+		String json1 = objectMapper.writeValueAsString(priceListChannel);
+		String json2 = PriceListChannelSerDes.toJSON(priceListChannel);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -143,40 +174,6 @@ public abstract class BasePriceListChannelResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		PriceListChannel priceListChannel1 = randomPriceListChannel();
-
-		String json = objectMapper.writeValueAsString(priceListChannel1);
-
-		PriceListChannel priceListChannel2 = PriceListChannelSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(priceListChannel1, priceListChannel2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		PriceListChannel priceListChannel = randomPriceListChannel();
-
-		String json1 = objectMapper.writeValueAsString(priceListChannel);
-		String json2 = PriceListChannelSerDes.toJSON(priceListChannel);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -211,6 +208,44 @@ public abstract class BasePriceListChannelResourceTestCase {
 	}
 
 	@Test
+	public void testDeletePriceListChannelBatch() throws Exception {
+		PriceListChannel priceListChannel1 =
+			testDeletePriceListChannelBatch_addPriceListChannel();
+
+		testDeletePriceListChannelBatch_deletePriceListChannel(
+			"COMPLETED", null, priceListChannel1.getPriceListChannelId());
+	}
+
+	protected PriceListChannel
+			testDeletePriceListChannelBatch_addPriceListChannel()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected void testDeletePriceListChannelBatch_deletePriceListChannel(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			priceListChannelResource.deletePriceListChannelBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"priceListChannelId", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
 	public void testGetPriceListByExternalReferenceCodePriceListChannelsPage()
 		throws Exception {
 
@@ -224,7 +259,7 @@ public abstract class BasePriceListChannelResourceTestCase {
 				getPriceListByExternalReferenceCodePriceListChannelsPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			PriceListChannel irrelevantPriceListChannel =
@@ -235,14 +270,18 @@ public abstract class BasePriceListChannelResourceTestCase {
 			page =
 				priceListChannelResource.
 					getPriceListByExternalReferenceCodePriceListChannelsPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPriceListChannel),
+			assertContains(
+				irrelevantPriceListChannel,
 				(List<PriceListChannel>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceListByExternalReferenceCodePriceListChannelsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		PriceListChannel priceListChannel1 =
@@ -258,12 +297,26 @@ public abstract class BasePriceListChannelResourceTestCase {
 				getPriceListByExternalReferenceCodePriceListChannelsPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceListChannel1, priceListChannel2),
-			(List<PriceListChannel>)page.getItems());
-		assertValid(page);
+		assertContains(
+			priceListChannel1, (List<PriceListChannel>)page.getItems());
+		assertContains(
+			priceListChannel2, (List<PriceListChannel>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceListByExternalReferenceCodePriceListChannelsPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPriceListByExternalReferenceCodePriceListChannelsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -272,6 +325,14 @@ public abstract class BasePriceListChannelResourceTestCase {
 
 		String externalReferenceCode =
 			testGetPriceListByExternalReferenceCodePriceListChannelsPage_getExternalReferenceCode();
+
+		Page<PriceListChannel> priceListChannelsPage =
+			priceListChannelResource.
+				getPriceListByExternalReferenceCodePriceListChannelsPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(
+			priceListChannelsPage.getTotalCount());
 
 		PriceListChannel priceListChannel1 =
 			testGetPriceListByExternalReferenceCodePriceListChannelsPage_addPriceListChannel(
@@ -285,39 +346,87 @@ public abstract class BasePriceListChannelResourceTestCase {
 			testGetPriceListByExternalReferenceCodePriceListChannelsPage_addPriceListChannel(
 				externalReferenceCode, randomPriceListChannel());
 
-		Page<PriceListChannel> page1 =
-			priceListChannelResource.
-				getPriceListByExternalReferenceCodePriceListChannelsPage(
-					externalReferenceCode, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceListChannel> priceListChannels1 =
-			(List<PriceListChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			priceListChannels1.toString(), 2, priceListChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceListChannel> page1 =
+				priceListChannelResource.
+					getPriceListByExternalReferenceCodePriceListChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<PriceListChannel> page2 =
-			priceListChannelResource.
-				getPriceListByExternalReferenceCodePriceListChannelsPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				priceListChannel1, (List<PriceListChannel>)page1.getItems());
 
-		List<PriceListChannel> priceListChannels2 =
-			(List<PriceListChannel>)page2.getItems();
+			Page<PriceListChannel> page2 =
+				priceListChannelResource.
+					getPriceListByExternalReferenceCodePriceListChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			priceListChannels2.toString(), 1, priceListChannels2.size());
+			assertContains(
+				priceListChannel2, (List<PriceListChannel>)page2.getItems());
 
-		Page<PriceListChannel> page3 =
-			priceListChannelResource.
-				getPriceListByExternalReferenceCodePriceListChannelsPage(
-					externalReferenceCode, Pagination.of(1, 3));
+			Page<PriceListChannel> page3 =
+				priceListChannelResource.
+					getPriceListByExternalReferenceCodePriceListChannelsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(
-				priceListChannel1, priceListChannel2, priceListChannel3),
-			(List<PriceListChannel>)page3.getItems());
+			assertContains(
+				priceListChannel3, (List<PriceListChannel>)page3.getItems());
+		}
+		else {
+			Page<PriceListChannel> page1 =
+				priceListChannelResource.
+					getPriceListByExternalReferenceCodePriceListChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<PriceListChannel> priceListChannels1 =
+				(List<PriceListChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				priceListChannels1.toString(), totalCount + 2,
+				priceListChannels1.size());
+
+			Page<PriceListChannel> page2 =
+				priceListChannelResource.
+					getPriceListByExternalReferenceCodePriceListChannelsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceListChannel> priceListChannels2 =
+				(List<PriceListChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				priceListChannels2.toString(), 1, priceListChannels2.size());
+
+			Page<PriceListChannel> page3 =
+				priceListChannelResource.
+					getPriceListByExternalReferenceCodePriceListChannelsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				priceListChannel1, (List<PriceListChannel>)page3.getItems());
+			assertContains(
+				priceListChannel2, (List<PriceListChannel>)page3.getItems());
+			assertContains(
+				priceListChannel3, (List<PriceListChannel>)page3.getItems());
+		}
 	}
 
 	protected PriceListChannel
@@ -345,29 +454,6 @@ public abstract class BasePriceListChannelResourceTestCase {
 	}
 
 	@Test
-	public void testPostPriceListByExternalReferenceCodePriceListChannel()
-		throws Exception {
-
-		PriceListChannel randomPriceListChannel = randomPriceListChannel();
-
-		PriceListChannel postPriceListChannel =
-			testPostPriceListByExternalReferenceCodePriceListChannel_addPriceListChannel(
-				randomPriceListChannel);
-
-		assertEquals(randomPriceListChannel, postPriceListChannel);
-		assertValid(postPriceListChannel);
-	}
-
-	protected PriceListChannel
-			testPostPriceListByExternalReferenceCodePriceListChannel_addPriceListChannel(
-				PriceListChannel priceListChannel)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetPriceListIdPriceListChannelsPage() throws Exception {
 		Long id = testGetPriceListIdPriceListChannelsPage_getId();
 		Long irrelevantId =
@@ -377,7 +463,7 @@ public abstract class BasePriceListChannelResourceTestCase {
 			priceListChannelResource.getPriceListIdPriceListChannelsPage(
 				id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantId != null) {
 			PriceListChannel irrelevantPriceListChannel =
@@ -385,14 +471,18 @@ public abstract class BasePriceListChannelResourceTestCase {
 					irrelevantId, randomIrrelevantPriceListChannel());
 
 			page = priceListChannelResource.getPriceListIdPriceListChannelsPage(
-				irrelevantId, null, null, Pagination.of(1, 2), null);
+				irrelevantId, null, null, Pagination.of(1, (int)totalCount + 1),
+				null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPriceListChannel),
+			assertContains(
+				irrelevantPriceListChannel,
 				(List<PriceListChannel>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceListIdPriceListChannelsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		PriceListChannel priceListChannel1 =
@@ -406,12 +496,24 @@ public abstract class BasePriceListChannelResourceTestCase {
 		page = priceListChannelResource.getPriceListIdPriceListChannelsPage(
 			id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceListChannel1, priceListChannel2),
-			(List<PriceListChannel>)page.getItems());
-		assertValid(page);
+		assertContains(
+			priceListChannel1, (List<PriceListChannel>)page.getItems());
+		assertContains(
+			priceListChannel2, (List<PriceListChannel>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceListIdPriceListChannelsPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPriceListIdPriceListChannelsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -447,11 +549,42 @@ public abstract class BasePriceListChannelResourceTestCase {
 	}
 
 	@Test
+	public void testGetPriceListIdPriceListChannelsPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetPriceListIdPriceListChannelsPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetPriceListIdPriceListChannelsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetPriceListIdPriceListChannelsPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetPriceListIdPriceListChannelsPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetPriceListIdPriceListChannelsPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetPriceListIdPriceListChannelsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetPriceListIdPriceListChannelsPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetPriceListIdPriceListChannelsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -472,7 +605,7 @@ public abstract class BasePriceListChannelResourceTestCase {
 			Page<PriceListChannel> page =
 				priceListChannelResource.getPriceListIdPriceListChannelsPage(
 					id, null,
-					getFilterString(entityField, "eq", priceListChannel1),
+					getFilterString(entityField, operator, priceListChannel1),
 					Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -487,6 +620,13 @@ public abstract class BasePriceListChannelResourceTestCase {
 
 		Long id = testGetPriceListIdPriceListChannelsPage_getId();
 
+		Page<PriceListChannel> priceListChannelsPage =
+			priceListChannelResource.getPriceListIdPriceListChannelsPage(
+				id, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			priceListChannelsPage.getTotalCount());
+
 		PriceListChannel priceListChannel1 =
 			testGetPriceListIdPriceListChannelsPage_addPriceListChannel(
 				id, randomPriceListChannel());
@@ -499,36 +639,82 @@ public abstract class BasePriceListChannelResourceTestCase {
 			testGetPriceListIdPriceListChannelsPage_addPriceListChannel(
 				id, randomPriceListChannel());
 
-		Page<PriceListChannel> page1 =
-			priceListChannelResource.getPriceListIdPriceListChannelsPage(
-				id, null, null, Pagination.of(1, 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceListChannel> priceListChannels1 =
-			(List<PriceListChannel>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			priceListChannels1.toString(), 2, priceListChannels1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceListChannel> page1 =
+				priceListChannelResource.getPriceListIdPriceListChannelsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<PriceListChannel> page2 =
-			priceListChannelResource.getPriceListIdPriceListChannelsPage(
-				id, null, null, Pagination.of(2, 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				priceListChannel1, (List<PriceListChannel>)page1.getItems());
 
-		List<PriceListChannel> priceListChannels2 =
-			(List<PriceListChannel>)page2.getItems();
+			Page<PriceListChannel> page2 =
+				priceListChannelResource.getPriceListIdPriceListChannelsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			priceListChannels2.toString(), 1, priceListChannels2.size());
+			assertContains(
+				priceListChannel2, (List<PriceListChannel>)page2.getItems());
 
-		Page<PriceListChannel> page3 =
-			priceListChannelResource.getPriceListIdPriceListChannelsPage(
-				id, null, null, Pagination.of(1, 3), null);
+			Page<PriceListChannel> page3 =
+				priceListChannelResource.getPriceListIdPriceListChannelsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(
-				priceListChannel1, priceListChannel2, priceListChannel3),
-			(List<PriceListChannel>)page3.getItems());
+			assertContains(
+				priceListChannel3, (List<PriceListChannel>)page3.getItems());
+		}
+		else {
+			Page<PriceListChannel> page1 =
+				priceListChannelResource.getPriceListIdPriceListChannelsPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<PriceListChannel> priceListChannels1 =
+				(List<PriceListChannel>)page1.getItems();
+
+			Assert.assertEquals(
+				priceListChannels1.toString(), totalCount + 2,
+				priceListChannels1.size());
+
+			Page<PriceListChannel> page2 =
+				priceListChannelResource.getPriceListIdPriceListChannelsPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceListChannel> priceListChannels2 =
+				(List<PriceListChannel>)page2.getItems();
+
+			Assert.assertEquals(
+				priceListChannels2.toString(), 1, priceListChannels2.size());
+
+			Page<PriceListChannel> page3 =
+				priceListChannelResource.getPriceListIdPriceListChannelsPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(
+				priceListChannel1, (List<PriceListChannel>)page3.getItems());
+			assertContains(
+				priceListChannel2, (List<PriceListChannel>)page3.getItems());
+			assertContains(
+				priceListChannel3, (List<PriceListChannel>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -538,9 +724,23 @@ public abstract class BasePriceListChannelResourceTestCase {
 		testGetPriceListIdPriceListChannelsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, priceListChannel1, priceListChannel2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					priceListChannel1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetPriceListIdPriceListChannelsPageWithSortDouble()
+		throws Exception {
+
+		testGetPriceListIdPriceListChannelsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, priceListChannel1, priceListChannel2) -> {
+				BeanTestUtil.setProperty(
+					priceListChannel1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					priceListChannel2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -551,9 +751,9 @@ public abstract class BasePriceListChannelResourceTestCase {
 		testGetPriceListIdPriceListChannelsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, priceListChannel1, priceListChannel2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					priceListChannel1, entityField.getName(), 0);
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					priceListChannel2, entityField.getName(), 1);
 			});
 	}
@@ -569,27 +769,27 @@ public abstract class BasePriceListChannelResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceListChannel1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceListChannel2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceListChannel1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceListChannel2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -597,12 +797,12 @@ public abstract class BasePriceListChannelResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceListChannel1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceListChannel2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -642,24 +842,32 @@ public abstract class BasePriceListChannelResourceTestCase {
 			testGetPriceListIdPriceListChannelsPage_addPriceListChannel(
 				id, priceListChannel2);
 
+		Page<PriceListChannel> page =
+			priceListChannelResource.getPriceListIdPriceListChannelsPage(
+				id, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<PriceListChannel> ascPage =
 				priceListChannelResource.getPriceListIdPriceListChannelsPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(priceListChannel1, priceListChannel2),
-				(List<PriceListChannel>)ascPage.getItems());
+			assertContains(
+				priceListChannel1, (List<PriceListChannel>)ascPage.getItems());
+			assertContains(
+				priceListChannel2, (List<PriceListChannel>)ascPage.getItems());
 
 			Page<PriceListChannel> descPage =
 				priceListChannelResource.getPriceListIdPriceListChannelsPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(priceListChannel2, priceListChannel1),
-				(List<PriceListChannel>)descPage.getItems());
+			assertContains(
+				priceListChannel2, (List<PriceListChannel>)descPage.getItems());
+			assertContains(
+				priceListChannel1, (List<PriceListChannel>)descPage.getItems());
 		}
 	}
 
@@ -683,6 +891,29 @@ public abstract class BasePriceListChannelResourceTestCase {
 		throws Exception {
 
 		return null;
+	}
+
+	@Test
+	public void testPostPriceListByExternalReferenceCodePriceListChannel()
+		throws Exception {
+
+		PriceListChannel randomPriceListChannel = randomPriceListChannel();
+
+		PriceListChannel postPriceListChannel =
+			testPostPriceListByExternalReferenceCodePriceListChannel_addPriceListChannel(
+				randomPriceListChannel);
+
+		assertEquals(randomPriceListChannel, postPriceListChannel);
+		assertValid(postPriceListChannel);
+	}
+
+	protected PriceListChannel
+			testPostPriceListByExternalReferenceCodePriceListChannel_addPriceListChannel(
+				PriceListChannel priceListChannel)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -877,6 +1108,13 @@ public abstract class BasePriceListChannelResourceTestCase {
 	}
 
 	protected void assertValid(Page<PriceListChannel> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PriceListChannel> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PriceListChannel> priceListChannels =
@@ -892,6 +1130,25 @@ public abstract class BasePriceListChannelResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1097,14 +1354,20 @@ public abstract class BasePriceListChannelResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1121,6 +1384,10 @@ public abstract class BasePriceListChannelResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1130,18 +1397,18 @@ public abstract class BasePriceListChannelResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1169,11 +1436,47 @@ public abstract class BasePriceListChannelResourceTestCase {
 		}
 
 		if (entityFieldName.equals("channelExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					priceListChannel.getChannelExternalReferenceCode()));
-			sb.append("'");
+			Object object = priceListChannel.getChannelExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1184,8 +1487,9 @@ public abstract class BasePriceListChannelResourceTestCase {
 		}
 
 		if (entityFieldName.equals("order")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(priceListChannel.getOrder()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("priceListChannelId")) {
@@ -1194,11 +1498,48 @@ public abstract class BasePriceListChannelResourceTestCase {
 		}
 
 		if (entityFieldName.equals("priceListExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					priceListChannel.getPriceListExternalReferenceCode()));
-			sb.append("'");
+			Object object =
+				priceListChannel.getPriceListExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1222,7 +1563,8 @@ public abstract class BasePriceListChannelResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1277,10 +1619,155 @@ public abstract class BasePriceListChannelResourceTestCase {
 		return randomPriceListChannel();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected PriceListChannelResource priceListChannelResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1356,19 +1843,9 @@ public abstract class BasePriceListChannelResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BasePriceListChannelResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.pricing.resource.v2_0.

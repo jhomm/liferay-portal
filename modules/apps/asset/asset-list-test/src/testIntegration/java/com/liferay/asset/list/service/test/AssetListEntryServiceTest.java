@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service.test;
@@ -20,7 +11,9 @@ import com.liferay.asset.list.constants.AssetListEntryTypeConstants;
 import com.liferay.asset.list.exception.AssetListEntryTitleException;
 import com.liferay.asset.list.exception.DuplicateAssetListEntryTitleException;
 import com.liferay.asset.list.model.AssetListEntry;
+import com.liferay.asset.list.service.AssetListEntryAssetEntryRelLocalService;
 import com.liferay.asset.list.service.AssetListEntryService;
+import com.liferay.asset.list.test.util.AssetListTestUtil;
 import com.liferay.asset.list.util.comparator.AssetListEntryCreateDateComparator;
 import com.liferay.asset.list.util.comparator.AssetListEntryTitleComparator;
 import com.liferay.asset.test.util.AssetTestUtil;
@@ -30,17 +23,28 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.model.SegmentsEntry;
+import com.liferay.segments.test.util.SegmentsTestUtil;
 
 import java.util.List;
 
@@ -105,6 +109,114 @@ public class AssetListEntryServiceTest {
 	}
 
 	@Test
+	public void testAssetEntrySelectionAllowsSameAssetEntryForDifferentSegmentsEntries()
+		throws PortalException {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		AssetListEntry assetListEntry =
+			_assetListEntryService.addAssetListEntry(
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
+				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		AssetListTestUtil.addAssetListEntrySegmentsEntryRel(
+			_group.getGroupId(), assetListEntry,
+			segmentsEntry.getSegmentsEntryId());
+
+		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
+			_group.getGroupId(), null,
+			TestAssetRendererFactory.class.getName());
+
+		_assetListEntryService.addAssetEntrySelection(
+			assetListEntry.getAssetListEntryId(), assetEntry.getEntryId(), 0,
+			serviceContext);
+
+		_assetListEntryService.addAssetEntrySelection(
+			assetListEntry.getAssetListEntryId(), assetEntry.getEntryId(),
+			segmentsEntry.getSegmentsEntryId(), serviceContext);
+
+		Assert.assertEquals(
+			2,
+			_assetListEntryAssetEntryRelLocalService.
+				getAssetListEntryAssetEntryRelsCount(
+					assetListEntry.getAssetListEntryId()));
+	}
+
+	@Test
+	public void testAssetEntrySelectionDontAddAssetEntryRelIfExist()
+		throws PortalException {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		AssetListEntry assetListEntry =
+			_assetListEntryService.addAssetListEntry(
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
+				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
+
+		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
+			_group.getGroupId(), null,
+			TestAssetRendererFactory.class.getName());
+
+		_assetListEntryService.addAssetEntrySelections(
+			assetListEntry.getAssetListEntryId(),
+			new long[] {assetEntry.getEntryId()}, 0, serviceContext);
+
+		int assetListEntriesAssetEntryRelsCount =
+			_assetListEntryAssetEntryRelLocalService.
+				getAssetListEntryAssetEntryRelsCount(
+					assetListEntry.getAssetListEntryId());
+
+		_assetListEntryService.addAssetEntrySelection(
+			assetListEntry.getAssetListEntryId(), assetEntry.getEntryId(), 0,
+			serviceContext);
+
+		Assert.assertEquals(
+			assetListEntriesAssetEntryRelsCount,
+			_assetListEntryAssetEntryRelLocalService.
+				getAssetListEntryAssetEntryRelsCount(
+					assetListEntry.getAssetListEntryId()));
+	}
+
+	@Test
+	public void testAssetEntrySelectionDontDuplicateAssetEntryRel()
+		throws PortalException {
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		AssetListEntry assetListEntry =
+			_assetListEntryService.addAssetListEntry(
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
+				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
+
+		AssetEntry assetEntry = AssetTestUtil.addAssetEntry(
+			_group.getGroupId(), null,
+			TestAssetRendererFactory.class.getName());
+
+		_assetListEntryService.addAssetEntrySelections(
+			assetListEntry.getAssetListEntryId(),
+			new long[] {assetEntry.getEntryId(), assetEntry.getEntryId()}, 0,
+			serviceContext);
+
+		Assert.assertEquals(
+			1,
+			_assetListEntryAssetEntryRelLocalService.
+				getAssetListEntryAssetEntryRelsCount(
+					assetListEntry.getAssetListEntryId()));
+	}
+
+	@Test
 	public void testAssetListEntryKey() throws PortalException {
 		AssetListEntry assetListEntry = _addAssetListEntry("Asset List Title");
 
@@ -147,6 +259,77 @@ public class AssetListEntryServiceTest {
 	}
 
 	@Test
+	public void testFetchAndGetAssetListEntryByExternalReferenceCode()
+		throws Exception {
+
+		AssetListEntry assetListEntry = _addAssetListEntry(
+			RandomTestUtil.randomString());
+
+		Assert.assertEquals(
+			assetListEntry,
+			_assetListEntryService.fetchAssetListEntryByExternalReferenceCode(
+				assetListEntry.getExternalReferenceCode(),
+				_group.getGroupId()));
+		Assert.assertEquals(
+			assetListEntry,
+			_assetListEntryService.getAssetListEntryByExternalReferenceCode(
+				assetListEntry.getExternalReferenceCode(),
+				_group.getGroupId()));
+
+		RoleTestUtil.removeResourcePermission(
+			RoleConstants.GUEST, AssetListEntry.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(assetListEntry.getAssetListEntryId()),
+			ActionKeys.VIEW);
+		RoleTestUtil.removeResourcePermission(
+			RoleConstants.SITE_MEMBER, AssetListEntry.class.getName(),
+			ResourceConstants.SCOPE_INDIVIDUAL,
+			String.valueOf(assetListEntry.getAssetListEntryId()),
+			ActionKeys.VIEW);
+
+		User user = UserTestUtil.addGroupUser(
+			_group, RoleConstants.SITE_MEMBER);
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				user)) {
+
+			_assetListEntryService.fetchAssetListEntryByExternalReferenceCode(
+				assetListEntry.getExternalReferenceCode(), _group.getGroupId());
+
+			Assert.fail();
+		}
+		catch (PrincipalException.MustHavePermission principalException) {
+			String message = principalException.getMessage();
+
+			Assert.assertTrue(
+				message,
+				message.contains(
+					"User " + user.getUserId() +
+						" must have VIEW permission for"));
+		}
+
+		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
+				user)) {
+
+			_assetListEntryService.getAssetListEntryByExternalReferenceCode(
+				assetListEntry.getExternalReferenceCode(), _group.getGroupId());
+
+			Assert.fail();
+		}
+		catch (PrincipalException.MustHavePermission principalException) {
+			String message = principalException.getMessage();
+
+			Assert.assertTrue(
+				message,
+				message.contains(
+					"User " + user.getUserId() +
+						" must have VIEW permission for"));
+		}
+
+		_userLocalService.deleteUser(user);
+	}
+
+	@Test
 	public void testGetAssetListEntriesByGroup() throws PortalException {
 		List<AssetListEntry> originalAssetListEntries =
 			_assetListEntryService.getAssetListEntries(
@@ -183,16 +366,19 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), "Test Name", 0, serviceContext);
+				RandomTestUtil.randomString(), _group.getGroupId(), "Test Name",
+				0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "A Test Name", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(), "A Test Name",
+			0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "B Test name", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(), "B Test name",
+			0, serviceContext);
 
 		OrderByComparator<AssetListEntry> orderByComparator =
-			new AssetListEntryCreateDateComparator(true);
+			AssetListEntryCreateDateComparator.getInstance(true);
 
 		List<AssetListEntry> assetListEntries =
 			_assetListEntryService.getAssetListEntries(
@@ -203,7 +389,8 @@ public class AssetListEntryServiceTest {
 
 		Assert.assertEquals(assetListEntry, firstAssetListEntry);
 
-		orderByComparator = new AssetListEntryCreateDateComparator(false);
+		orderByComparator = AssetListEntryCreateDateComparator.getInstance(
+			false);
 
 		assetListEntries = _assetListEntryService.getAssetListEntries(
 			_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
@@ -225,16 +412,19 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), "AA Asset List Entry", 0, serviceContext);
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				"AA Asset List Entry", 0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "AB Asset List Entry", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(),
+			"AB Asset List Entry", 0, serviceContext);
 
 		_assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), "AC Asset List Entry", 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(),
+			"AC Asset List Entry", 0, serviceContext);
 
 		OrderByComparator<AssetListEntry> orderByComparator =
-			new AssetListEntryTitleComparator(true);
+			AssetListEntryTitleComparator.getInstance(true);
 
 		List<AssetListEntry> assetListEntries =
 			_assetListEntryService.getAssetListEntries(
@@ -245,7 +435,7 @@ public class AssetListEntryServiceTest {
 
 		Assert.assertEquals(assetListEntry, firstAssetListEntry);
 
-		orderByComparator = new AssetListEntryTitleComparator(false);
+		orderByComparator = AssetListEntryTitleComparator.getInstance(false);
 
 		assetListEntries = _assetListEntryService.getAssetListEntries(
 			_group.getGroupId(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
@@ -283,7 +473,8 @@ public class AssetListEntryServiceTest {
 
 		AssetListEntry assetListEntry =
 			_assetListEntryService.addAssetListEntry(
-				_group.getGroupId(), "Manual Asset List Entry",
+				RandomTestUtil.randomString(), _group.getGroupId(),
+				"Manual Asset List Entry",
 				AssetListEntryTypeConstants.TYPE_MANUAL, serviceContext);
 
 		AssetEntry assetEntry1 = AssetTestUtil.addAssetEntry(
@@ -339,18 +530,23 @@ public class AssetListEntryServiceTest {
 	private AssetListEntry _addAssetListEntry(String title)
 		throws PortalException {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		return _assetListEntryService.addAssetListEntry(
-			_group.getGroupId(), title, 0, serviceContext);
+			RandomTestUtil.randomString(), _group.getGroupId(), title, 0,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
+
+	@Inject
+	private AssetListEntryAssetEntryRelLocalService
+		_assetListEntryAssetEntryRelLocalService;
 
 	@Inject
 	private AssetListEntryService _assetListEntryService;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 }

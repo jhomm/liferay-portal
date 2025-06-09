@@ -8,32 +8,33 @@ package ${configYAML.apiPackagePath}.resource.${escapedVersion};
 	import ${configYAML.apiPackagePath}.dto.${escapedVersion}.${schemaName};
 </#list>
 
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceActionLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import ${configYAML.javaEEPackage}.annotation.Generated;
+
+import ${configYAML.javaEEPackage}.servlet.http.HttpServletRequest;
+import ${configYAML.javaEEPackage}.servlet.http.HttpServletResponse;
+
+import ${configYAML.javaEEPackage}.ws.rs.core.Response;
+import ${configYAML.javaEEPackage}.ws.rs.core.UriInfo;
 
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -47,16 +48,21 @@ import org.osgi.annotation.versioning.ProviderType;
  * @author ${configYAML.author}
  * @generated
  */
+<#if configYAML.changeTrackingEnabled>
+	@CTAware
+</#if>
 @Generated("")
 @ProviderType
 public interface ${schemaName}Resource {
 
-	public static Builder builder() {
-		return FactoryHolder.factory.create();
-	}
+	<#assign
+		javaDataType = freeMarkerTool.getJavaDataType(configYAML, openAPIYAML, schemaName)!""
+		javaMethodSignatures = freeMarkerTool.getResourceJavaMethodSignatures(configYAML, openAPIYAML, schemaName)
+		generateBatch = freeMarkerTool.generateBatch(configYAML, javaDataType, javaMethodSignatures, schemaName)
+	/>
 
-	<#list freeMarkerTool.getResourceJavaMethodSignatures(configYAML, openAPIYAML, schemaName) as javaMethodSignature>
-		public ${javaMethodSignature.returnType} ${javaMethodSignature.methodName}(${freeMarkerTool.getResourceParameters(javaMethodSignature.javaMethodParameters, openAPIYAML, javaMethodSignature.operation, false)}) throws Exception;
+	<#list javaMethodSignatures as javaMethodSignature>
+		public ${javaMethodSignature.returnType} ${javaMethodSignature.methodName}(${freeMarkerTool.getResourceParameters(configYAML, javaMethodSignature.javaMethodParameters, javaMethodSignature.operation, allSchemas, false)}) throws Exception;
 	</#list>
 
 	public default void setContextAcceptLanguage(AcceptLanguage contextAcceptLanguage) {
@@ -77,7 +83,7 @@ public interface ${schemaName}Resource {
 
 	public void setContextUser(com.liferay.portal.kernel.model.User contextUser);
 
-	public void setExpressionConvert(ExpressionConvert<Filter> expressionConvert);
+	public void setExpressionConvert(ExpressionConvert<com.liferay.portal.kernel.search.filter.Filter> expressionConvert);
 
 	public void setFilterParserProvider(FilterParserProvider filterParserProvider);
 
@@ -89,18 +95,26 @@ public interface ${schemaName}Resource {
 
 	public void setRoleLocalService(RoleLocalService roleLocalService);
 
-	public default Filter toFilter(String filterString) {
+	public void setSortParserProvider(SortParserProvider sortParserProvider);
+
+	<#if generateBatch>
+		<#if freeMarkerTool.isVersionCompatible(configYAML, 2)>
+			public void setVulcanBatchEngineExportTaskResource(VulcanBatchEngineExportTaskResource vulcanBatchEngineExportTaskResource);
+		</#if>
+
+		public void setVulcanBatchEngineImportTaskResource(VulcanBatchEngineImportTaskResource vulcanBatchEngineImportTaskResource);
+	</#if>
+
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(String filterString) {
 		return toFilter(filterString, Collections.<String, List<String>>emptyMap());
 	}
 
-	public default Filter toFilter(String filterString, Map<String, List<String>> multivaluedMap) {
+	public default com.liferay.portal.kernel.search.filter.Filter toFilter(String filterString, Map<String, List<String>> multivaluedMap) {
 		return null;
 	}
 
-	public static class FactoryHolder {
-
-		public static volatile Factory factory;
-
+	public default com.liferay.portal.kernel.search.Sort[] toSorts(String sortsString) {
+		return new com.liferay.portal.kernel.search.Sort[0];
 	}
 
 	@ProviderType
@@ -115,6 +129,8 @@ public interface ${schemaName}Resource {
 		public Builder httpServletResponse(HttpServletResponse httpServletResponse);
 
 		public Builder preferredLocale(Locale preferredLocale);
+
+		public Builder uriInfo(UriInfo uriInfo);
 
 		public Builder user(com.liferay.portal.kernel.model.User user);
 

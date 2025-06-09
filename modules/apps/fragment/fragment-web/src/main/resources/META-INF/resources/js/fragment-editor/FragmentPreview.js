@@ -1,26 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
-import {
-	useEventListener,
-	useIsMounted,
-	usePrevious,
-} from '@liferay/frontend-js-react-web';
+import {useEventListener, useIsMounted} from '@liferay/frontend-js-react-web';
 import classNames from 'classnames';
-import {cancelDebounce, debounce, fetch} from 'frontend-js-web';
+import {debounce, fetch} from 'frontend-js-web';
 import React, {useCallback, useEffect, useRef, useState} from 'react';
+
+import createFile from './createFile';
 
 /**
  * Defined ratios for preview sizing.
@@ -54,19 +43,14 @@ const PREVIEW_SIZES = [
 	'full-size',
 ];
 
-const stopEventPropagation = (event) => {
-	event.preventDefault();
-	event.stopPropagation();
+const PREVIEW_SIZES_LABELS = {
+	'desktop': Liferay.Language.get('desktop'),
+	'full-size': Liferay.Language.get('full-size'),
+	'mobile-portrait': Liferay.Language.get('portrait-phone'),
+	'tablet-portrait': Liferay.Language.get('tablet'),
 };
 
-const FragmentPreview = ({
-	configuration,
-	css,
-	html,
-	js,
-	namespace,
-	urls = {},
-}) => {
+const FragmentPreview = ({configuration, css, html, js, urls = {}}) => {
 	const iframeRef = useRef();
 	const ref = useRef();
 
@@ -76,87 +60,44 @@ const FragmentPreview = ({
 
 	const isMounted = useIsMounted();
 
-	/* eslint-disable-next-line react-hooks/exhaustive-deps */
-	const updatePreview = useCallback(
-		debounce(() => {
-			if (!loading && isMounted()) {
-				setLoading(true);
+	const updatePreviewStyles = useCallback(() => {
+		const ratio = SIZE_RATIOS[currentPreviewSize];
 
-				const formData = new FormData();
+		if (ratio && ref.current) {
+			const wrapperRect = ref.current.getBoundingClientRect();
 
-				formData.append(`${namespace}configuration`, configuration);
-				formData.append(`${namespace}css`, css);
-				formData.append(`${namespace}html`, html);
-				formData.append(`${namespace}js`, js);
+			const scale = Math.min(
+				(wrapperRect.width * 0.9) / ratio.width,
+				(wrapperRect.height * 0.8) / ratio.height
+			);
 
-				fetch(urls.render, {
-					body: formData,
-					method: 'POST',
-				})
-					.then((response) => response.text())
-					.then((response) => {
-						if (isMounted()) {
-							setLoading(false);
-						}
-
-						iframeRef.current.contentWindow.postMessage(
-							JSON.stringify({data: response}),
-							'*'
-						);
-					});
-			}
-		}, 500),
-		[configuration, css, html, js, iframeRef]
-	);
-
-	/* eslint-disable-next-line react-hooks/exhaustive-deps */
-	const updatePreviewStyles = useCallback(
-		debounce(() => {
-			const ratio = SIZE_RATIOS[currentPreviewSize];
-
-			if (ratio && ref.current) {
-				const wrapperRect = ref.current.getBoundingClientRect();
-
-				const scale = Math.min(
-					(wrapperRect.width * 0.9) / ratio.width,
-					(wrapperRect.height * 0.8) / ratio.height
-				);
-
-				setPreviewStyles({
-					height: ratio.height ? `${ratio.height * scale}px` : '',
-					width: ratio.width ? `${ratio.width * scale}px` : '',
-				});
-			}
-		}, 100),
-		[currentPreviewSize]
-	);
-
-	const previousUpdatePreview = usePrevious(updatePreview);
-	const previousUpdatePreviewStyles = usePrevious(updatePreviewStyles);
+			setPreviewStyles({
+				height: ratio.height ? `${ratio.height * scale}px` : '',
+				width: ratio.width ? `${ratio.width * scale}px` : '',
+			});
+		}
+	}, [currentPreviewSize]);
 
 	useEffect(() => {
-		if (previousUpdatePreview && previousUpdatePreview !== updatePreview) {
-			cancelDebounce(previousUpdatePreview);
-			updatePreview();
-		}
-	}, [previousUpdatePreview, updatePreview]);
+		updatePreviewStyles();
+	}, [updatePreviewStyles]);
 
 	useEffect(() => {
-		if (
-			previousUpdatePreviewStyles &&
-			previousUpdatePreviewStyles !== updatePreviewStyles
-		) {
-			cancelDebounce(previousUpdatePreviewStyles);
-			updatePreviewStyles();
+		if (!isMounted()) {
+			return;
 		}
-	}, [previousUpdatePreviewStyles, updatePreviewStyles]);
 
-	useEventListener(
-		'click',
-		stopEventPropagation,
-		true,
-		iframeRef.current && iframeRef.current.contentWindow
-	);
+		updatePreviewDebounced({
+			configuration,
+			css,
+			html,
+			iframe: iframeRef.current,
+			isMounted,
+			js,
+			renderUrl: urls.render,
+			setLoading,
+		});
+	}, [configuration, css, isMounted, html, js, urls]);
 
 	useEventListener('resize', updatePreviewStyles, true, window);
 
@@ -165,6 +106,7 @@ const FragmentPreview = ({
 			<div className="btn-group fragment-preview__toolbar">
 				{PREVIEW_SIZES.map((previewSize) => (
 					<ClayButtonWithIcon
+						aria-label={PREVIEW_SIZES_LABELS[previewSize]}
 						borderless={true}
 						className={classNames({
 							active: currentPreviewSize === previewSize,
@@ -172,8 +114,9 @@ const FragmentPreview = ({
 						displayType="secondary"
 						key={previewSize}
 						onClick={() => setCurrentPreviewSize(previewSize)}
-						small={true}
+						size="sm"
 						symbol={previewSize}
+						title={PREVIEW_SIZES_LABELS[previewSize]}
 					/>
 				))}
 			</div>
@@ -196,7 +139,31 @@ const FragmentPreview = ({
 
 				<iframe
 					className="fragment-preview__content"
-					onLoad={updatePreview}
+					onClickCapture={(event) => {
+						event.preventDefault();
+						event.stopPropagation();
+					}}
+					onLoad={(event) => {
+						event.target.contentWindow.addEventListener(
+							'click',
+							(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+							}
+						);
+
+						updatePreviewDebounced({
+							configuration,
+							css,
+							html,
+							iframe: iframeRef.current,
+							isMounted,
+							js,
+							loading,
+							renderUrl: urls.render,
+							setLoading,
+						});
+					}}
 					ref={iframeRef}
 					src={urls.preview}
 				></iframe>
@@ -204,5 +171,44 @@ const FragmentPreview = ({
 		</div>
 	);
 };
+
+const updatePreviewDebounced = debounce(
+	({
+		configuration,
+		css,
+		html,
+		iframe,
+		isMounted,
+		js,
+		renderUrl,
+		setLoading,
+	}) => {
+		setLoading(true);
+
+		const formData = new FormData();
+
+		formData.append(`configuration`, configuration);
+		formData.append(`css`, createFile('css', css));
+		formData.append(`html`, createFile('html', html));
+		formData.append(`js`, createFile('js', js));
+
+		fetch(renderUrl, {
+			body: formData,
+			method: 'POST',
+		})
+			.then((response) => response.text())
+			.then((response) => {
+				if (isMounted()) {
+					setLoading(false);
+				}
+
+				iframe.contentWindow.Liferay.fire(
+					'fragmentEditor:updatePreview',
+					{data: response}
+				);
+			});
+	},
+	500
+);
 
 export default FragmentPreview;

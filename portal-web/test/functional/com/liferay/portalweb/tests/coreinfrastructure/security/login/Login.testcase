@@ -1,211 +1,137 @@
-@component-name = "portal-security"
+@component-name = "portal-application-security"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Login";
 
-	setUp {
-		TestCase.setUpPortalInstance();
-	}
-
-	@description = "This is a use case for LRQA-48218. User should be redirected to the changed landing page upon login."
-	@priority = "5"
-	test DefaultPortalLandingPage {
-		property test.name.skip.portal.instance = "Login#DefaultPortalLandingPage";
-
-		task ("Login and configure landing page CP") {
-			User.firstLoginPG();
-
-			PortalSettings.gotoConfiguration(
-				baseURL = "http://localhost:8080",
-				configurationCategory = "Instance Configuration",
-				configurationName = "General",
-				configurationScope = "Virtual Instance Scope");
-
-			PortalSettings.editDefaultLandingPageCP(defaultLandingPage = "/web/guest/landing");
-		}
-
-		task ("Add public page") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Sites",
-				panel = "Control Panel",
-				portlet = "Sites");
-
-			var siteName = TestCase.getSiteName(siteName = "${siteName}");
-
-			Navigator.openSiteURL(siteName = "${siteName}");
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			SitePages.addPublicPage(pageName = "landing");
-		}
-
-		task ("Logout and login") {
-			User.logoutPG();
-
-			User.firstLoginUI(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
-		}
-
-		task ("Assert url value") {
-			var portalURL = PropsUtil.get("portal.url");
-
-			AssertLocation(value1 = "${portalURL}/web/guest/landing");
-		}
-	}
-
-	@description = "This is a use case for LPS-39744. Default landing page could be set by property and user is redirected to the changed landing page."
-	@priority = "5"
-	test DefaultPortalLandingPageSetByProperty {
-		property custom.properties = "default.landing.page.path=/web/guest/landing";
-		property test.name.skip.portal.instance = "Login#DefaultPortalLandingPageSetByProperty";
-
-		task ("Login and add a public page ") {
-			User.firstLoginPG();
-
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			SitePages.addPublicPage(pageName = "landing");
-		}
-
-		task ("Logout and login") {
-			User.logoutPG();
-
-			User.firstLoginUI(
-				password = "test",
-				userEmailAddress = "test@liferay.com");
-		}
-
-		task ("Assert url value") {
-			var portalURL = PropsUtil.get("portal.url");
-
-			AssertLocation(value1 = "${portalURL}/web/guest/landing");
-		}
-	}
-
-	@description = "This is a use case for LPS-105151. User could login to a virtual instance using the system level's OpenID Connect Provider."
-	@priority = "4"
-	test EnabledOpenIDConnectOnSystemLevel {
-		property dummy.socket.proxy.disabled = "true";
-		property test.name.skip.portal.instance = "Login#EnabledOpenIDConnectOnSystemLevel";
-
-		var openIDConnectClientID = PropsUtil.get("google.client.id.2");
-		var openIDConnectClientSecret = PropsUtil.get("google.client.secret.2");
-		var userEmailAddress = PropsUtil.get("email.address.2");
-		var userPassword = PropsUtil.get("email.password.2");
-
-		task ("Login and add CP") {
-			User.firstLoginPG();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
-
-			PortalInstances.addCP(
-				mailDomain = "www.able.com",
-				virtualHost = "www.able.com",
-				webId = "www.able.com");
-		}
-
-		task ("View CP") {
-			PortalInstances.viewCP(virtualHost = "www.able.com");
-		}
-
-		task ("Goto new CP url and sign in") {
-			Navigator.openSpecificURL(url = "http://www.able.com:8080/");
-
-			AssertClick(
-				locator1 = "UserBar#USER_SIGN_IN",
-				value1 = "Sign In");
-
-			AssertElementNotPresent(locator1 = "Icon#OPENID_CONNECT");
-		}
-
-		task ("Enable openID connect CP") {
-			Navigator.openURL();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "System Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect",
-				configurationScope = "System Scope");
-
-			PortalSettings.enableOpenIDConnectCP(systemLevel = "true");
-		}
-
-		task ("Add OpenID connect provider") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "System Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect Provider Connection",
-				configurationScope = "Virtual Instance Scope");
-
-			OpenIDConnect.addProvider(
-				openIDConnectClientID = "${openIDConnectClientID}",
-				openIDConnectClientSecret = "${openIDConnectClientSecret}",
-				providerName = "Google");
-		}
-
-		task ("Go to able.com and assert openId connect") {
-			Navigator.openSpecificURL(url = "http://www.able.com:8080/");
-
-			AssertClick(
-				locator1 = "UserBar#USER_SIGN_IN",
-				value1 = "Sign In");
-
-			AssertElementPresent(locator1 = "Icon#OPENID_CONNECT");
-		}
-	}
-
-	@description = "This is a use case for LRQA-27624. Users could login and logout using their Facebook profile."
-	@priority = "4"
-	test FacebookSSOSmoke {
+	@description = "This is a test for LPS-179689. TC-8: Verify if users cannot edit their password on the My Account page if the change password option is disabled by default policy and Facebook SSO is enabled. Blocked by LPS-173860."
+	@ignore = "true"
+	@priority = 5
+	test CannotChangePasswordWhenLoginViaFacebookSSOWithDisablePasswordChangeable {
 		property portal.ssl.enabled = "true";
-		property test.name.skip.portal.instance = "Login#FacebookSSOSmoke";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		var facebookApplicationID = PropsUtil.get("facebook.application.id");
+		var facebookApplicationId = PropsUtil.get("facebook.application.id");
 		var facebookApplicationSecret = PropsUtil.get("facebook.application.secret");
 		var facebookEmail = PropsUtil.get("facebook.email");
 		var facebookPassword = PropsUtil.get("facebook.password");
 
-		task ("Login and edit facebook authentication") {
-			User.firstLoginUI();
+		task ("Given: Go to edit default password policy to disable password changeable and enabled Facebook SSO") {
+			User.firstLoginPG();
 
-			var siteName = TestCase.getSiteName(siteName = "${siteName}");
+			var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+			PasswordPolicies.openPasswordPoliciesAdmin();
+
+			PasswordPolicies.disableChangeable(
+				passwordPolicyName = "Default Password Policy",
+				passwordPolicyPanel = "Password Changes");
 
 			PortalSettings.gotoConfiguration(
-				baseURL = "https://localhost:8443",
+				baseURL = "http://localhost:8080",
 				configurationCategory = "SSO",
 				configurationName = "Facebook Connect",
 				configurationScope = "Virtual Instance Scope");
 
 			PortalSettings.editConfigurationAuthenticationFacebook(
-				facebookApplicationID = "${facebookApplicationID}",
-				facebookApplicationSecret = "${facebookApplicationSecret}");
+				facebookApplicationId = ${facebookApplicationId},
+				facebookApplicationSecret = ${facebookApplicationSecret});
+
+			User.logoutPG();
+		}
+
+		task ("When: Login portal using the Facebook login option and navigate to Account Settings") {
+			User.loginUserWithFacebookSSOEnabledPG(
+				baseURL = "https://localhost:8443",
+				facebookEmail = ${facebookEmail},
+				facebookPassword = ${facebookPassword},
+				siteName = ${siteName});
+
+			UserBar.gotoDropdownItem(dropdownItem = "Account Settings");
+
+			UserNavigator.gotoGeneral();
+		}
+
+		task ("Then: Assert there is no Password menu item at the General tab") {
+			AssertElementNotPresent(
+				key_navNested = "Password",
+				locator1 = "NavNested#NAV_NESTED_LINK");
+		}
+	}
+
+	@description = "This is a use case for LPS-39744 and LPS-78508. Default landing page could be set by property and user is redirected to the changed landing page."
+	@priority = 5
+	test DefaultPortalLandingPageSetByProperty {
+		property custom.properties = "company.default.home.url=${line.separator}default.landing.page.path=/web/guest/landing";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Login and add a public page ") {
+			User.firstLoginPG();
+
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "landing");
+		}
+
+		task ("Logout and login") {
+			User.logoutPG();
+
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				userEmailAddress = "test@liferay.com");
+		}
+
+		task ("Assert url value") {
+			AssertLocation(value1 = "http://localhost:8080/web/guest/landing");
+		}
+
+		task ("Assert no errors occurred in the console") {
+			AssertConsoleTextNotPresent(value1 = "java.lang.StackOverflowError");
+		}
+	}
+
+	@description = "This is a use case for LRQA-27624. Users could login and logout using their Facebook profile. Blocked by LPS-173860."
+	@ignore = "true"
+	@priority = 5
+	test FacebookSSOSmoke {
+		property portal.ssl.enabled = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		var facebookApplicationId = PropsUtil.get("facebook.application.id");
+		var facebookApplicationSecret = PropsUtil.get("facebook.application.secret");
+		var facebookEmail = PropsUtil.get("facebook.email");
+		var facebookPassword = PropsUtil.get("facebook.password");
+
+		task ("Login and edit facebook authentication") {
+			User.firstLoginPG();
+
+			var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+			PortalSettings.gotoConfiguration(
+				baseURL = "http://localhost:8080",
+				configurationCategory = "SSO",
+				configurationName = "Facebook Connect",
+				configurationScope = "Virtual Instance Scope");
+
+			PortalSettings.editConfigurationAuthenticationFacebook(
+				facebookApplicationId = ${facebookApplicationId},
+				facebookApplicationSecret = ${facebookApplicationSecret});
 		}
 
 		task ("Logout and login with facebook SSO") {
 			User.logoutPG();
 
 			User.loginUserWithFacebookSSOEnabledPG(
-				facebookEmail = "${facebookEmail}",
-				facebookPassword = "${facebookPassword}",
-				siteName = "${siteName}");
+				baseURL = "https://localhost:8443",
+				facebookEmail = ${facebookEmail},
+				facebookPassword = ${facebookPassword},
+				siteName = ${siteName});
 		}
 
 		task ("Logout and login") {
@@ -215,13 +141,15 @@ definition {
 		}
 	}
 
-	@description = "This is a use case for LPS-72398. Users could login to Portal when the default langauge is not English."
-	@priority = "5"
+	@description = "This is a use case for LPS-72398. Users could login to Portal when the default language is not English."
+	@priority = 5
 	test LoginWithSpanishOnlyEnabledLocale {
-		property test.name.skip.portal.instance = "Login#LoginWithSpanishOnlyEnabledLocale";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Login and configure spanish as default and current portal language") {
-			User.firstLoginUI();
+			User.firstLoginPG();
 
 			var portalURL = PropsUtil.get("portal.url");
 
@@ -236,7 +164,7 @@ definition {
 		}
 
 		task ("Logout, restart server and login") {
-			User.logoutPG();
+			User.logoutPG(signOutLocalizationName = "Salir");
 
 			Portlet.shutdownServer();
 
@@ -246,442 +174,159 @@ definition {
 
 			User.firstLoginUI(
 				localization = "ES",
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				specificURL = "${portalURL}/es",
 				userEmailAddress = "test@liferay.com");
 		}
 	}
 
 	@description = "Users could login through the UI."
-	@priority = "5"
+	@priority = 5
 	test LoginWithUI {
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
 		property environment.acceptance = "true";
+		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "Login#DefaultPortalLandingPageSetByProperty";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Login and go to control panel - roles") {
 			User.firstLoginUI();
 
-			// Standard and safe UI action to assert Portal is accessible after login
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Users",
-				panel = "Control Panel",
-				portlet = "Roles");
+			Role.openRolesAdmin();
 		}
 	}
 
-	@description = "This is a use case for LPS-105151. Users could login and logout using multiple OpenID Connect providers."
-	@priority = "4"
-	test MultipleOpenIDConnectProvider {
-		property dummy.socket.proxy.disabled = "true";
-		property test.name.skip.portal.instance = "Login#MultipleOpenIDConnectProvider";
+	@description = "This is a use case for LPS-150234. Login page not breaks visually when user enters his credentials incorrectly."
+	@priority = 5
+	test LoginWithUIUsingWrongCredentials {
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		var openIDConnectClientID = PropsUtil.get("google.client.id.2");
-		var openIDConnectClientSecret = PropsUtil.get("google.client.secret.2");
-		var openIDConnectClientID1 = PropsUtil.get("google.client.id.3");
-		var openIDConnectClientSecret1 = PropsUtil.get("google.client.secret.3");
-		var userEmailAddress = PropsUtil.get("email.address.2");
-		var userPassword = PropsUtil.get("email.password.2");
+		task ("When: User tries to login with wrong credential") {
+			User.firstLoginUI(userEmailAddress = "wrong@liferay.com");
+		}
 
-		task ("Login and add CP www.able.com") {
+		task ("Then: Regular UI is present with site logo") {
+			WaitForElementPresent(locator1 = "Home#SITE_NAME_LOGO");
+		}
+
+		task ("And: Error message is present") {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_DISMISSIBLE",
+				value1 = "Authentication failed due to incorrect credentials or account lockout. Click \"Forgot Password\" if the correct credentials were provided.");
+		}
+	}
+
+	@description = "This is a use case for LPS-150234. Login page not breaks visually when user enters his credentials incorrectly and one MFA verifier is enabled."
+	@priority = 5
+	test LoginWithUIUsingWrongCredentialsAndMFAIsEnabled {
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: Login and enable OTP and Sign Out as Instance Admin") {
 			User.firstLoginPG();
 
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
+			MultiFactorAuthentication.openToConfigInInstanceSettings();
 
-			PortalInstances.addCP(
-				mailDomain = "www.able.com",
-				virtualHost = "www.able.com",
-				webId = "www.able.com");
+			MultiFactorAuthentication.configureOTP(enableOtp = "true");
 
-			PortalInstances.viewCP(virtualHost = "www.able.com");
+			SignOut.signOut();
 		}
 
-		task ("add CP www.baker.com") {
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
-
-			PortalInstances.addCP(
-				mailDomain = "www.baker.com",
-				virtualHost = "www.baker.com",
-				webId = "www.baker.com");
-
-			PortalInstances.viewCP(virtualHost = "www.baker.com");
+		task ("When: User tries to login with wrong credential") {
+			User.firstLoginUI(userEmailAddress = "wrong@liferay.com");
 		}
 
-		task ("Inable OpenID connection CP") {
-			Navigator.openURL();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "System Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect",
-				configurationScope = "System Scope");
-
-			PortalSettings.enableOpenIDConnectCP(systemLevel = "true");
+		task ("Then: Regular UI is present with site logo") {
+			WaitForElementPresent(locator1 = "Home#SITE_NAME_LOGO");
 		}
 
-		task ("Add SSO openID connect provider") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "System Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect Provider Connection",
-				configurationScope = "Virtual Instance Scope");
-
-			OpenIDConnect.addProvider(
-				openIDConnectClientID = "${openIDConnectClientID}",
-				openIDConnectClientSecret = "${openIDConnectClientSecret}",
-				providerName = "Google");
-		}
-
-		task ("Login at www.able.com and add SSO openID connect provider") {
-			User.firstLoginPG(
-				password = "test",
-				userEmailAddress = "test@www.able.com",
-				virtualHostsURL = "http://www.able.com:8080");
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect Provider Connection",
-				configurationScope = "Virtual Instance Scope");
-
-			OpenIDConnect.addProvider(
-				openIDConnectClientID = "${openIDConnectClientID1}",
-				openIDConnectClientSecret = "${openIDConnectClientSecret1}",
-				providerName = "Test Google");
-		}
-
-		task ("Sign out and go to able.com") {
-			UserBar.signOut();
-
-			Navigator.openSpecificURL(url = "http://www.able.com:8080/");
-		}
-
-		task ("View provider and assert openID connect login option") {
-			OpenIDConnect.viewProvider();
-
-			AssertElementPresent(
-				key_providerNname = "Test Google",
-				locator1 = "OpenIDConnectLogin#OPENID_CONNECT_DROPDOWN_OPTION");
-		}
-
-		task ("Login and logout at baker.com and view provider") {
-			User.firstLoginPG(
-				password = "test",
-				userEmailAddress = "test@www.baker.com",
-				virtualHostsURL = "http://www.baker.com:8080");
-
-			UserBar.signOut();
-
-			Navigator.openSpecificURL(url = "http://www.baker.com:8080/");
-
-			OpenIDConnect.viewProvider();
+		task ("And: Error message is present") {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_DISMISSIBLE",
+				value1 = "Authentication failed due to incorrect credentials or account lockout. Click \"Forgot Password\" if the correct credentials were provided.");
 		}
 	}
 
-	@description = "This is a use case for LPS-105151. Users could login with instance-level configured OpenID Connect provider."
-	@priority = "4"
-	test OpenIDConnectOnInstanceLevelSmoke {
-		property dummy.socket.proxy.disabled = "true";
-		property test.name.skip.portal.instance = "Login#OpenIDConnectOnInstanceLevelSmoke";
+	@description = "This is a use case for LRQA-48218. User should be redirected to the changed landing page upon login."
+	@priority = 5
+	test RedirectToDefaultPortalLandingPageOnLogin {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		var openIDConnectClientID = PropsUtil.get("google.client.id.1");
-		var openIDConnectClientSecret = PropsUtil.get("google.client.secret.1");
-		var userEmailAddress = PropsUtil.get("email.address.2");
-		var userPassword = PropsUtil.get("email.password.2");
-
-		task ("Login and add CP") {
-			User.firstLoginUI();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "System",
-				panel = "Control Panel",
-				portlet = "Virtual Instances");
-
-			PortalInstances.addCP(
-				mailDomain = "www.able.com",
-				virtualHost = "www.able.com",
-				webId = "www.able.com");
-
-			PortalInstances.viewCP(virtualHost = "www.able.com");
-		}
-
-		task ("Login at able.com and enable OpenId connect CP") {
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://www.able.com:8080",
-				userEmailAddress = "test@www.able.com");
-
-			PortalSettings.gotoConfiguration(
-				baseURL = "http://www.able.com:8080",
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect",
-				configurationScope = "Virtual Instance Scope");
-
-			PortalSettings.enableOpenIDConnectCP();
-		}
-
-		task ("Add SSO openID connect provider") {
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect Provider Connection",
-				configurationScope = "Virtual Instance Scope");
-
-			OpenIDConnect.addProvider(
-				openIDConnectClientID = "${openIDConnectClientID}",
-				openIDConnectClientSecret = "${openIDConnectClientSecret}",
-				providerName = "Google");
-		}
-
-		task ("Sign out and login at able.com with openID connect enabled") {
-			UserBar.signOut();
-
-			User.loginUserWithOpenIDConnectEnabledPG(
-				specificURL = "http://www.able.com:8080",
-				userEmailAddress = "${userEmailAddress}",
-				userPassword = "${userPassword}");
-		}
-
-		task ("Sign out and login") {
-			UserBar.signOut();
-
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://www.able.com:8080",
-				userEmailAddress = "test@www.able.com");
-		}
-	}
-
-	@description = "This is a use case for LRQA-40911. Users could login and logout using OpenID Connect provider."
-	@priority = "4"
-	test OpenIDConnectSmoke {
-		property dummy.socket.proxy.disabled = "true";
-		property test.name.skip.portal.instance = "Login#OpenIDConnectSmoke";
-
-		// LRQA-43729
-
-		var openIDConnectClientID = PropsUtil.get("google.client.id.3");
-		var openIDConnectClientSecret = PropsUtil.get("google.client.secret.3");
-		var userEmailAddress = PropsUtil.get("email.address.2");
-		var userPassword = PropsUtil.get("email.password.2");
-
-		task ("Login and add SSO openID connect provider") {
+		task ("Login and configure landing page CP") {
 			User.firstLoginPG();
 
 			PortalSettings.gotoConfiguration(
 				baseURL = "http://localhost:8080",
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect",
+				configurationCategory = "Instance Configuration",
+				configurationName = "General",
 				configurationScope = "Virtual Instance Scope");
 
-			PortalSettings.enableOpenIDConnectCP();
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "System Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "OpenID Connect Provider Connection",
-				configurationScope = "Virtual Instance Scope");
-
-			OpenIDConnect.addProvider(
-				openIDConnectClientID = "${openIDConnectClientID}",
-				openIDConnectClientSecret = "${openIDConnectClientSecret}",
-				providerName = "Google");
+			PortalSettings.editDefaultLandingPageCP(defaultLandingPage = "/web/guest/landing");
 		}
 
-		task ("Logout and login with openID connect") {
-			User.logoutPG();
-
-			User.loginUserWithOpenIDConnectEnabledPG(
-				userEmailAddress = "${userEmailAddress}",
-				userPassword = "${userPassword}");
+		task ("Add public page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "landing");
 		}
 
 		task ("Logout and login") {
 			User.logoutPG();
 
-			User.loginUserPG(
-				password = "test",
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com");
 		}
+
+		task ("Assert url value") {
+			AssertLocation(value1 = "http://localhost:8080/web/guest/landing");
+		}
 	}
 
-	@description = "This is a use case for LRQA-43015. Ignore test due to OpenAM 12 doesn't support Tomcat 9."
-	@ignore = "true"
-	@priority = "5"
-	test OpenSSOSmoke {
-		property dummy.socket.proxy.disabled = "true";
-		property openam.enabled = "true";
-		property test.name.skip.portal.instance = "Login#OpenSSOSmoke";
+	@description = "This is a use case for LPS-150388 TC-1/5: Admin password need to be set on first startup if the default admin password property is not set."
+	@priority = 5
+	test UserSetNewPasswordWithoutPasswordProperty {
+		property custom.properties = "company.security.send.password.reset.link=true${line.separator}default.admin.password=${line.separator}jsonws.web.service.paths.excludes=${line.separator}passwords.default.policy.change.required=false";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		// LRQA-40534
-
-		task ("Go to http://test.able.com:8080/openam and run ant command") {
-			Navigator.openSpecificURL(url = "http://test.able.com:8080/openam");
-
-			AntCommand(
-				locator1 = "build-test-authentication.xml",
-				value1 = "run-openam-tools");
+		task ("Given: User opens the portal for the first time without default admin password property") {
+			Navigator.openURL();
 		}
 
-		task ("Wait for OpenAM setup") {
-			var pauseCount = "0";
+		task ("When: User accepts termss and sets the admin password") {
+			SignIn.agreeToTermsOfUse();
 
-			while ((IsElementNotPresent(locator1 = "TextInput#TEXT")) && ("${pauseCount}" != "20")) {
-				Refresh();
+			WaitForElementPresent(locator1 = "SignIn#SET_PASSWORD_TITLE");
 
-				Pause(locator1 = "30000");
+			User.resetPassword(newPassword = "tester");
 
-				var pauseCount = ${pauseCount} + 1;
-
-				echo("Pause count: ${pauseCount}");
-			}
-
-			if ("${pauseCount}" == "20") {
-				fail("OpenAM setup timed out after 10 minutes.");
-			}
+			User.answerPasswordReminder();
 		}
 
-		task ("Login and configure open SSO") {
-			User.firstLoginPG();
+		task ("Then: Admin password is set and user can log in with this password in the future") {
+			AssertLocation(value1 = "http://localhost:8080/web/guest/home");
 
-			Pause(locator1 = "30000");
-
-			PortalSettings.gotoConfiguration(
-				baseURL = "http://localhost:8080",
-				configurationCategory = "SSO",
-				configurationName = "OpenSSO",
-				configurationScope = "Virtual Instance Scope");
-
-			PortalSettings.configureOpenSSO(
-				OpenSSOLoginURL = "http://test.able.com:8080/openam/UI/Login?goto=http://www.able.com:8080/c/portal/login",
-				OpenSSOLogoutURL = "http://test.able.com:8080/openam/UI/Logout?goto=http://www.able.com:8080/web/guest/home",
-				OpenSSOServiceURL = "http://test.able.com:8080/openam");
-		}
-
-		task ("Test SSO connection") {
-			PortalSettings.gotoConfiguration(
-				baseURL = "http://localhost:8080",
-				configurationCategory = "SSO",
-				configurationName = "OpenSSO",
-				configurationScope = "Virtual Instance Scope");
-
-			PortalSettings.testOpenSSOConnection();
-		}
-
-		task ("Logout and login with open SSO") {
 			User.logoutPG();
 
-			User.loginUserWithOpenSSOEnabledPG(
-				hostsURL = "http://www.able.com:8080",
-				password = "password",
-				userScreenName = "test");
+			User.firstLoginUI(password = "tester");
 		}
 	}
 
-	@description = "This is a use case for LRQA-27622. Users could login using Token Based SSO."
-	@priority = "5"
-	test TokenBasedSSOSmoke {
-		property test.name.skip.portal.instance = "Login#TokenBasedSSOSmoke";
-
-		task ("Login and reset token based SSO configuration") {
-			User.firstLoginUI();
-
-			SystemSettings.openSystemSettingsAdmin();
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "Token Based SSO",
-				configurationScope = "System Scope");
-
-			SystemSettings.resetConfiguration();
-		}
-
-		task ("Enable and save configuration") {
-			FormFields.enableCheckbox(fieldName = "Enabled");
-
-			SystemSettings.saveConfiguration();
-		}
-
-		task ("Run and command") {
-			AntCommand(
-				locator1 = "build-test-authentication.xml",
-				value1 = "verify-token-based-login -Dportal.url=http://localhost:8080/web/guest -Duser.token=test@liferay.com");
-		}
-
-		task ("Disable configuration") {
-			FormFields.disableCheckbox(fieldName = "Enabled");
-
-			SystemSettings.saveConfiguration();
-		}
-
-		task ("Add CP able.com") {
-			PortalInstances.openVirtualInstancesAdmin();
-
-			PortalInstances.addCP(
-				mailDomain = "www.able.com",
-				virtualHost = "www.able.com",
-				webId = "www.able.com");
-		}
-
-		task ("Login at able.com and enable token based SSO") {
-			User.firstLoginUI(
-				password = "test",
-				specificURL = "http://www.able.com:8080",
-				userEmailAddress = "test@www.able.com");
-
-			ApplicationsMenu.gotoPortlet(
-				category = "Configuration",
-				panel = "Control Panel",
-				portlet = "Instance Settings");
-
-			SystemSettings.gotoConfiguration(
-				configurationCategory = "SSO",
-				configurationName = "Token Based SSO",
-				configurationScope = "Virtual Instance Scope");
-
-			FormFields.enableCheckbox(fieldName = "enabled");
-
-			SystemSettings.saveConfiguration();
-		}
-
-		task ("Run ant command") {
-			AntCommand(
-				locator1 = "build-test-authentication.xml",
-				value1 = "verify-token-based-login -Dportal.url=http://www.able.com:8080/web/guest -Duser.token=test@www.able.com");
-		}
-	}
-
-	@description = "This is a use case for LRQA-27619. Verify that LDAP and OpenSSO portlets are present at Instance Settings."
-	@priority = "3"
+	@description = "This is a use case for LRQA-27619. Verify that LDAP portlet is present at Instance Settings."
+	@priority = 5
 	test ViewInstanceSettingsAuthentication {
 		property osgi.app.includes = "portal-security-sso-openid";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Login and view General CP authentication settings") {
 			User.firstLoginPG();
@@ -692,9 +337,74 @@ definition {
 		task ("View LDAP CP authentication settings") {
 			PortalSettings.viewAuthenticationLDAPCP();
 		}
+	}
 
-		task ("View openSSO CP authentication settings") {
-			PortalSettings.viewAuthenticationOpenSSOCP();
+	@description = "This is a use case for LPS-150388 TC-3: If the default admin password property is not given, virtual instances need to be defined with 3 extra informations: screen name, admin email and password."
+	@priority = 5
+	test VirtualInstancesNeedExtraInformationWithoutPasswordProperty {
+		property custom.properties = "default.admin.password=";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: User opens the portal for the first time without default admin password property") {
+			Navigator.openURL();
+
+			SignIn.agreeToTermsOfUse();
+
+			WaitForElementPresent(locator1 = "SignIn#SET_PASSWORD_TITLE");
+
+			User.resetPassword(newPassword = PropsUtil.get("default.admin.password"));
+
+			User.answerPasswordReminder();
+		}
+
+		task ("When: User adds a new virtual instance and sets the new fields with correct information") {
+			SAML.addVirtualInstances(
+				instanceAdminEmail = "test@www.able.com",
+				instanceAdminFirstName = "FirstTest",
+				instanceAdminLastName = "LastTest",
+				instancePassword = "tester",
+				instanceScreenName = "tester",
+				virtualHosts = "www.able.com");
+		}
+
+		task ("Then: The virtual instance will be created with the given information") {
+			User.firstLoginUI(
+				password = "tester",
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			MyAccount.openMyAccountAdmin(baseURL = "http://www.able.com:8080");
+
+			User.viewUserInformation(
+				userEmailAddress = "test@www.able.com",
+				userFirstName = "FirstTest",
+				userLastName = "LastTest",
+				userScreenName = "tester");
+		}
+	}
+
+	@description = "This is a use case for LPS-150388 TC-2: If the default admin password property is set, user doesn't need to define screen name, admin email and password upon virtual instance creation."
+	@priority = 5
+	test VirtualInstancesNeedNoExtraInformationWithPasswordProperty {
+		property custom.properties = "company.security.send.password.reset.link=true${line.separator}passwords.default.policy.change.required=false";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Given: User opens the portal with a set admin password and logs in") {
+			User.firstLoginPG();
+		}
+
+		task ("When: User start to create a virtuali instance") {
+			PortalInstances.openVirtualInstancesAdmin();
+
+			LexiconEntry.gotoAdd();
+		}
+
+		task ("Then: The screen name field will not be present and can create an instance with setting basic information") {
+			AssertElementNotPresent(locator1 = "TextInput#VIRTUAL_INSTANCE_SCREEN_NAME");
+
+			SAML.addVirtualInstances(virtualHosts = "www.able.com");
 		}
 	}
 

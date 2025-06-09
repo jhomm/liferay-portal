@@ -1,16 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayManagementToolbar from '@clayui/management-toolbar';
 import {usePrevious} from '@liferay/frontend-js-react-web';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React, {useContext, useEffect} from 'react';
 
 import ResultsBar from '../../../../../shared/components/results-bar/ResultsBar.es';
@@ -68,28 +62,29 @@ function Header({items = [], instanceIds, totalCount, withoutUnassigned}) {
 	);
 
 	const allPageSelected =
-		items.length > 0 && items.length === selectedOnPage.length;
+		!!items.length && items.length === selectedOnPage.length;
 
 	const checkbox = {
 		checked: allPageSelected || selectAll,
 		indeterminate:
-			selectedOnPage.length > 0 && !allPageSelected && !selectAll,
+			!!selectedOnPage.length && !allPageSelected && !selectAll,
 	};
 
 	const remainingItems = items.filter(
 		(item) => !tasks.find(({id}) => item.id === id)
 	);
 
-	const toolbarActive = tasks.length > 0;
+	const toolbarActive = !!tasks.length;
 
 	useEffect(() => {
 		if (
 			selectAll &&
-			remainingItems.length > 0 &&
+			!!remainingItems.length &&
 			previousCount === totalCount
 		) {
 			setSelectTasks({selectAll, tasks: items});
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [items]);
 
@@ -98,6 +93,7 @@ function Header({items = [], instanceIds, totalCount, withoutUnassigned}) {
 			...selectTasks,
 			selectAll: totalCount > 0 && totalCount === tasks.length,
 		}));
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [totalCount]);
 
@@ -137,11 +133,11 @@ function Header({items = [], instanceIds, totalCount, withoutUnassigned}) {
 			>
 				{!toolbarActive && (
 					<>
-						<ClayManagementToolbar.Item>
+						<ManagementToolbar.Item>
 							<strong className="ml-0 mr-0 navbar-text">
 								{Liferay.Language.get('filter-by')}
 							</strong>
-						</ClayManagementToolbar.Item>
+						</ManagementToolbar.Item>
 
 						<ProcessStepFilter
 							options={stepFilterOptions}
@@ -161,7 +157,7 @@ function Header({items = [], instanceIds, totalCount, withoutUnassigned}) {
 				)}
 			</ToolbarWithSelection>
 
-			{selectedFilters.length > 0 && (
+			{!!selectedFilters.length && (
 				<ResultsBar>
 					<ResultsBar.TotalCount totalCount={totalCount} />
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.evaluator.internal.function;
@@ -34,31 +25,21 @@ public class EqualsFunctionTest {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Test
-	public void testApplyFalse1() {
+	public void testApply() {
 		EqualsFunction equalsFunction = new EqualsFunction();
 
 		Assert.assertFalse(equalsFunction.apply("FORMS", "forms"));
-	}
-
-	@Test
-	public void testApplyFalse2() {
-		EqualsFunction equalsFunction = new EqualsFunction();
-
+		Assert.assertFalse(equalsFunction.apply("forms&#39;", "forms'"));
+		Assert.assertFalse(equalsFunction.apply(2, new BigDecimal(1)));
+		Assert.assertFalse(equalsFunction.apply(2.0D, new BigDecimal(1)));
+		Assert.assertFalse(equalsFunction.apply(2L, new BigDecimal(1)));
 		Assert.assertFalse(equalsFunction.apply(null, "forms"));
-	}
-
-	@Test
-	public void testApplyTrue1() {
-		EqualsFunction equalsFunction = new EqualsFunction();
-
+		Assert.assertFalse(equalsFunction.apply(null, new BigDecimal(1)));
 		Assert.assertTrue(equalsFunction.apply("1", new BigDecimal(1)));
-	}
-
-	@Test
-	public void testApplyTrue2() {
-		EqualsFunction equalsFunction = new EqualsFunction();
-
 		Assert.assertTrue(equalsFunction.apply("forms", "forms"));
+		Assert.assertTrue(equalsFunction.apply(1, new BigDecimal(1)));
+		Assert.assertTrue(equalsFunction.apply(1.0D, new BigDecimal(1)));
+		Assert.assertTrue(equalsFunction.apply(1L, new BigDecimal(1)));
 	}
 
 }

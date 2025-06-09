@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.membership.policy.test.util;
@@ -41,6 +32,7 @@ import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.Website;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.service.GroupServiceUtil;
+import com.liferay.portal.kernel.service.ListTypeServiceUtil;
 import com.liferay.portal.kernel.service.OrganizationServiceUtil;
 import com.liferay.portal.kernel.service.RoleServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -94,17 +86,22 @@ public class MembershipPolicyTestUtil {
 		String name = RandomTestUtil.randomString();
 
 		return OrganizationServiceUtil.addOrganization(
-			OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID, name,
+			null, OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID, name,
 			OrganizationConstants.TYPE_ORGANIZATION, 0, 0,
-			ListTypeConstants.ORGANIZATION_STATUS_DEFAULT, StringPool.BLANK,
-			false, populateServiceContext(Organization.class, true));
+			ListTypeServiceUtil.getListTypeId(
+				TestPropsValues.getCompanyId(),
+				ListTypeConstants.ORGANIZATION_STATUS_DEFAULT,
+				ListTypeConstants.ORGANIZATION_STATUS),
+			StringPool.BLANK, false,
+			populateServiceContext(Organization.class, true));
 	}
 
 	public static Role addRole(int type) throws Exception {
 		String name = RandomTestUtil.randomString();
 
 		return RoleServiceUtil.addRole(
-			null, 0, name, RandomTestUtil.randomLocaleStringMap(),
+			RandomTestUtil.randomString(), null, 0, name,
+			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(), type,
 			RandomTestUtil.randomString(),
 			populateServiceContext(Role.class, false));
@@ -126,8 +123,8 @@ public class MembershipPolicyTestUtil {
 		String firstName = "UserServiceTest";
 		String middleName = StringPool.BLANK;
 		String lastName = "UserServiceTest";
-		long prefixId = 0;
-		long suffixId = 0;
+		long prefixListTypeId = 0;
+		long suffixListTypeId = 0;
 		boolean male = true;
 		int birthdayMonth = Calendar.JANUARY;
 		int birthdayDay = 1;
@@ -138,9 +135,10 @@ public class MembershipPolicyTestUtil {
 		return UserServiceUtil.addUser(
 			TestPropsValues.getCompanyId(), autoPassword, password1, password2,
 			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, siteIds, organizationIds,
-			roleIds, userGroupIds, sendMail, new ServiceContext());
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle, siteIds,
+			organizationIds, roleIds, userGroupIds, sendMail,
+			new ServiceContext());
 	}
 
 	public static UserGroup addUserGroup() throws Exception {
@@ -148,7 +146,8 @@ public class MembershipPolicyTestUtil {
 		String description = RandomTestUtil.randomString(50);
 
 		return UserGroupServiceUtil.addUserGroup(
-			name, description, populateServiceContext(UserGroup.class, false));
+			StringPool.BLANK, name, description,
+			populateServiceContext(UserGroup.class, false));
 	}
 
 	public static void updateUser(
@@ -178,8 +177,8 @@ public class MembershipPolicyTestUtil {
 		String firstName = "UserServiceTest";
 		String middleName = StringPool.BLANK;
 		String lastName = "UserServiceTest";
-		long prefixId = 0;
-		long suffixId = 0;
+		long prefixListTypeId = 0;
+		long suffixListTypeId = 0;
 		boolean male = true;
 		int birthdayMonth = Calendar.JANUARY;
 		int birthdayDay = 1;
@@ -202,11 +201,12 @@ public class MembershipPolicyTestUtil {
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
 			emailAddress, false, null, languageId, timeZoneId, greeting,
-			comments, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, smsSn, facebookSn,
-			jabberSn, skypeSn, twitterSn, jobTitle, siteIds, organizationIds,
-			roleIds, userGroupRoles, userGroupIds, addresses, emailAddresses,
-			phones, websites, announcementsDelivers, new ServiceContext());
+			comments, firstName, middleName, lastName, prefixListTypeId,
+			suffixListTypeId, male, birthdayMonth, birthdayDay, birthdayYear,
+			smsSn, facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, siteIds,
+			organizationIds, roleIds, userGroupRoles, userGroupIds, addresses,
+			emailAddresses, phones, websites, announcementsDelivers,
+			new ServiceContext());
 	}
 
 	protected static Map<String, Serializable> addExpandoMap(Class<?> clazz)
@@ -243,7 +243,7 @@ public class MembershipPolicyTestUtil {
 
 		if (includeCategorization) {
 			AssetTag tag = AssetTagLocalServiceUtil.addTag(
-				TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+				null, TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
 				RandomTestUtil.randomString(), new ServiceContext());
 
 			serviceContext.setAssetTagNames(new String[] {tag.getName()});

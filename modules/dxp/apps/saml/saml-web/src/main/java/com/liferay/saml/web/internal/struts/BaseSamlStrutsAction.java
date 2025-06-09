@@ -1,31 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.web.internal.struts;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.runtime.exception.StatusException;
 import com.liferay.saml.util.JspUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Mika Koivisto
@@ -46,28 +38,24 @@ public abstract class BaseSamlStrutsAction implements StrutsAction {
 			WebKeys.RESOURCE_BUNDLE_LOADER,
 			ResourceBundleLoaderUtil.getPortalResourceBundleLoader());
 
-		Thread currentThread = Thread.currentThread();
+		Class<? extends BaseSamlStrutsAction> clazz = getClass();
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			Class<? extends BaseSamlStrutsAction> clazz = getClass();
-
-			currentThread.setContextClassLoader(clazz.getClassLoader());
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				clazz.getClassLoader())) {
 
 			return doExecute(httpServletRequest, httpServletResponse);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 			else {
-				_log.error(exception.getMessage());
+				_log.error(exception);
 			}
 
-			Class<?> clazz = exception.getClass();
+			Class<?> exceptionClass = exception.getClass();
 
-			SessionErrors.add(httpServletRequest, clazz.getName());
+			SessionErrors.add(httpServletRequest, exceptionClass.getName());
 
 			if (exception instanceof StatusException) {
 				StatusException statusException = (StatusException)exception;
@@ -81,29 +69,16 @@ public abstract class BaseSamlStrutsAction implements StrutsAction {
 				httpServletRequest, httpServletResponse,
 				JspUtil.PATH_PORTAL_SAML_ERROR, "status");
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
 
 		return null;
 	}
 
-	public boolean isEnabled() {
-		return samlProviderConfigurationHelper.isEnabled();
-	}
-
-	public void setSamlProviderConfigurationHelper(
-		SamlProviderConfigurationHelper samlProviderConfigurationHelper) {
-
-		this.samlProviderConfigurationHelper = samlProviderConfigurationHelper;
-	}
+	public abstract boolean isEnabled();
 
 	protected abstract String doExecute(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse)
 		throws Exception;
-
-	protected SamlProviderConfigurationHelper samlProviderConfigurationHelper;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseSamlStrutsAction.class);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.model.impl;
@@ -33,22 +24,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.social.kernel.model.SocialRequest;
 import com.liferay.social.kernel.model.SocialRequestModel;
-import com.liferay.social.kernel.model.SocialRequestSoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -204,63 +191,6 @@ public class SocialRequestModelImpl
 	@Deprecated
 	public static final long REQUESTID_COLUMN_BITMASK = 512L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static SocialRequest toModel(SocialRequestSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		SocialRequest model = new SocialRequestImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setRequestId(soapModel.getRequestId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setType(soapModel.getType());
-		model.setExtraData(soapModel.getExtraData());
-		model.setReceiverUserId(soapModel.getReceiverUserId());
-		model.setStatus(soapModel.getStatus());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<SocialRequest> toModels(SocialRequestSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<SocialRequest> models = new ArrayList<SocialRequest>(
-			soapModels.length);
-
-		for (SocialRequestSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.social.kernel.model.SocialRequest"));
@@ -341,123 +271,120 @@ public class SocialRequestModelImpl
 	public Map<String, Function<SocialRequest, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SocialRequest, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SocialRequest>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SocialRequest.class.getClassLoader(), SocialRequest.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SocialRequest, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SocialRequest> constructor =
-				(Constructor<SocialRequest>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SocialRequest, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SocialRequest, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", SocialRequest::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", SocialRequest::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", SocialRequest::getUuid);
+			attributeGetterFunctions.put(
+				"requestId", SocialRequest::getRequestId);
+			attributeGetterFunctions.put("groupId", SocialRequest::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", SocialRequest::getCompanyId);
+			attributeGetterFunctions.put("userId", SocialRequest::getUserId);
+			attributeGetterFunctions.put(
+				"createDate", SocialRequest::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SocialRequest::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", SocialRequest::getClassNameId);
+			attributeGetterFunctions.put("classPK", SocialRequest::getClassPK);
+			attributeGetterFunctions.put("type", SocialRequest::getType);
+			attributeGetterFunctions.put(
+				"extraData", SocialRequest::getExtraData);
+			attributeGetterFunctions.put(
+				"receiverUserId", SocialRequest::getReceiverUserId);
+			attributeGetterFunctions.put("status", SocialRequest::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SocialRequest, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SocialRequest, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SocialRequest, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<SocialRequest, Object>>();
-		Map<String, BiConsumer<SocialRequest, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<SocialRequest, ?>>();
+		private static final Map<String, BiConsumer<SocialRequest, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", SocialRequest::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", SocialRequest::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", SocialRequest::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<SocialRequest, String>)SocialRequest::setUuid);
-		attributeGetterFunctions.put("requestId", SocialRequest::getRequestId);
-		attributeSetterBiConsumers.put(
-			"requestId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setRequestId);
-		attributeGetterFunctions.put("groupId", SocialRequest::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setGroupId);
-		attributeGetterFunctions.put("companyId", SocialRequest::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setCompanyId);
-		attributeGetterFunctions.put("userId", SocialRequest::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setUserId);
-		attributeGetterFunctions.put(
-			"createDate", SocialRequest::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SocialRequest::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", SocialRequest::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setClassNameId);
-		attributeGetterFunctions.put("classPK", SocialRequest::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setClassPK);
-		attributeGetterFunctions.put("type", SocialRequest::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<SocialRequest, Integer>)SocialRequest::setType);
-		attributeGetterFunctions.put("extraData", SocialRequest::getExtraData);
-		attributeSetterBiConsumers.put(
-			"extraData",
-			(BiConsumer<SocialRequest, String>)SocialRequest::setExtraData);
-		attributeGetterFunctions.put(
-			"receiverUserId", SocialRequest::getReceiverUserId);
-		attributeSetterBiConsumers.put(
-			"receiverUserId",
-			(BiConsumer<SocialRequest, Long>)SocialRequest::setReceiverUserId);
-		attributeGetterFunctions.put("status", SocialRequest::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<SocialRequest, Integer>)SocialRequest::setStatus);
+		static {
+			Map<String, BiConsumer<SocialRequest, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<SocialRequest, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<SocialRequest, Long>)
+					SocialRequest::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<SocialRequest, String>)SocialRequest::setUuid);
+			attributeSetterBiConsumers.put(
+				"requestId",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setRequestId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setUserId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SocialRequest, Long>)
+					SocialRequest::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<SocialRequest, Long>)SocialRequest::setClassPK);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<SocialRequest, Integer>)SocialRequest::setType);
+			attributeSetterBiConsumers.put(
+				"extraData",
+				(BiConsumer<SocialRequest, String>)SocialRequest::setExtraData);
+			attributeSetterBiConsumers.put(
+				"receiverUserId",
+				(BiConsumer<SocialRequest, Long>)
+					SocialRequest::setReceiverUserId);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<SocialRequest, Integer>)SocialRequest::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1121,41 +1048,12 @@ public class SocialRequestModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SocialRequest, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SocialRequest, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SocialRequest, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SocialRequest)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SocialRequest>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SocialRequest.class, ModelWrapper.class);
 
 	}
 
@@ -1179,7 +1077,8 @@ public class SocialRequestModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<SocialRequest, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

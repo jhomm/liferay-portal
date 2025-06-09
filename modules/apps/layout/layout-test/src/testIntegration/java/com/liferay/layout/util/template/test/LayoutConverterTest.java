@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.util.template.test;
@@ -21,6 +12,7 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
 import com.liferay.layout.util.structure.LayoutStructureItemUtil;
+import com.liferay.layout.util.template.LayoutConversionResult;
 import com.liferay.layout.util.template.LayoutConverter;
 import com.liferay.layout.util.template.LayoutConverterRegistry;
 import com.liferay.layout.util.template.LayoutData;
@@ -36,28 +28,36 @@ import com.liferay.portal.kernel.model.LayoutTypePortletConstants;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.test.TestInfo;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.TreeMapBuilder;
-import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+
+import jakarta.portlet.GenericPortlet;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -67,8 +67,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.portlet.GenericPortlet;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -652,8 +650,90 @@ public class LayoutConverterTest {
 	}
 
 	@Test
+	@TestInfo("LPS-105943")
+	public void testGetConversionWarningMessagesWithNestedApplicationsWidgetAndWidgetPageCustomizable()
+		throws Exception {
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutConstants.CUSTOMIZABLE_LAYOUT, Boolean.TRUE.toString()
+			).put(
+				LayoutTypePortletConstants.NESTED_COLUMN_IDS,
+				StringUtil.randomString()
+			).buildString());
+
+		LayoutTestUtil.addPortletToLayout(
+			layout, LayoutTypePortletConstants.NESTED_COLUMN_IDS);
+
+		layout = _layoutLocalService.fetchLayout(layout.getPlid());
+
+		LayoutConverter layoutConverter =
+			_layoutConverterRegistry.getLayoutConverter(
+				_getLayoutTemplateId(layout));
+
+		LayoutConversionResult layoutConversionResult = layoutConverter.convert(
+			layout, LocaleUtil.getSiteDefault());
+
+		String[] conversionWarningMessages =
+			layoutConversionResult.getConversionWarningMessages();
+
+		Assert.assertEquals(
+			Arrays.toString(conversionWarningMessages), 2,
+			conversionWarningMessages.length);
+		Assert.assertTrue(
+			ArrayUtil.contains(
+				conversionWarningMessages,
+				StringBundler.concat(
+					"This page uses nested applications widgets. All widgets ",
+					"that were inside a nested application widget have been ",
+					"placed in a single column and may require manual ",
+					"reorganization.")));
+		Assert.assertTrue(
+			ArrayUtil.contains(
+				conversionWarningMessages,
+				"This page has customizable columns. This capability is not " +
+					"supported for content pages and will be lost if the " +
+						"conversion draft is published."));
+	}
+
+	@Test
+	@TestInfo("LPS-105943")
+	public void testGetConversionWarningMessagesWithNonstandarLayout()
+		throws Exception {
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID,
+				"custom-template-id"
+			).buildString());
+
+		LayoutConverter layoutConverter =
+			_layoutConverterRegistry.getLayoutConverter(
+				_getLayoutTemplateId(layout));
+
+		LayoutConversionResult layoutConversionResult = layoutConverter.convert(
+			layout, LocaleUtil.getSiteDefault());
+
+		String[] conversionWarningMessages =
+			layoutConversionResult.getConversionWarningMessages();
+
+		Assert.assertEquals(
+			Arrays.toString(conversionWarningMessages), 1,
+			conversionWarningMessages.length);
+		Assert.assertTrue(
+			ArrayUtil.contains(
+				conversionWarningMessages,
+				"This page uses a custom page layout. All widgets have been " +
+					"placed in a single column and will require manual " +
+						"reorganization."));
+	}
+
+	@Test
 	public void testIsConvertibleTrue() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_group.getGroupId());
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId());
 
 		LayoutConverter layoutConverter =
 			_layoutConverterRegistry.getLayoutConverter(
@@ -664,14 +744,11 @@ public class LayoutConverterTest {
 
 	@Test
 	public void testIsConvertibleTrueWidgetPageCustomizable() throws Exception {
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutConstants.CUSTOMIZABLE_LAYOUT, Boolean.TRUE.toString());
-
-		Layout layout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutConstants.CUSTOMIZABLE_LAYOUT, Boolean.TRUE.toString()
+			).buildString());
 
 		LayoutConverter layoutConverter =
 			_layoutConverterRegistry.getLayoutConverter(
@@ -684,7 +761,7 @@ public class LayoutConverterTest {
 	public void testIsConvertibleTrueWidgetPageWithNestedApplicationsWidget()
 		throws Exception {
 
-		Layout layout = LayoutTestUtil.addLayout(
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
 			_group.getGroupId(),
 			UnicodePropertiesBuilder.put(
 				LayoutTypePortletConstants.NESTED_COLUMN_IDS,
@@ -756,12 +833,12 @@ public class LayoutConverterTest {
 			newLayoutStructure.addLayoutStructureItem(newLayoutStructureItem);
 		}
 
-		String mainItemId = itemIds.computeIfAbsent(
-			layoutStructure.getMainItemId(),
-			itemId -> _getReadableItemId(
-				layoutStructure, layoutStructure.getMainLayoutStructureItem()));
-
-		newLayoutStructure.setMainItemId(mainItemId);
+		newLayoutStructure.setMainItemId(
+			itemIds.computeIfAbsent(
+				layoutStructure.getMainItemId(),
+				itemId -> _getReadableItemId(
+					layoutStructure,
+					layoutStructure.getMainLayoutStructureItem())));
 
 		return newLayoutStructure;
 	}
@@ -850,11 +927,11 @@ public class LayoutConverterTest {
 	private void _registerTestPortlet(String portletName) {
 		_serviceRegistrations.add(
 			_bundleContext.registerService(
-				javax.portlet.Portlet.class, new TestPortlet(),
+				jakarta.portlet.Portlet.class, new TestPortlet(),
 				HashMapDictionaryBuilder.put(
 					"com.liferay.portlet.instanceable", "true"
 				).put(
-					"javax.portlet.name", portletName
+					"jakarta.portlet.name", portletName
 				).build()));
 	}
 
@@ -867,17 +944,18 @@ public class LayoutConverterTest {
 		List<Map<String, List<String>>> encodedPortletIdsMaps =
 			new ArrayList<>();
 
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, layoutTemplateId
+			).put(
+				"lfr-theme:regular:wrap-widget-page-content",
+				Boolean.FALSE.toString()
+			).buildString());
 
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, layoutTemplateId);
-		typeSettingsUnicodeProperties.setProperty(
-			"lfr-theme:regular:wrap-widget-page-content",
-			Boolean.FALSE.toString());
-
-		Layout layout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		_segmentsExperienceLocalService.addDefaultSegmentsExperience(
+			null, PrincipalThreadLocal.getUserId(), layout.getPlid(),
+			ServiceContextThreadLocal.getServiceContext());
 
 		for (Map<String, String[]> portletIdsMap : portletIdsMaps) {
 			Set<Map.Entry<String, String[]>> entries = portletIdsMap.entrySet();
@@ -917,7 +995,10 @@ public class LayoutConverterTest {
 			_layoutConverterRegistry.getLayoutConverter(
 				_getLayoutTemplateId(layout));
 
-		LayoutData layoutData = layoutConverter.convert(layout);
+		LayoutConversionResult layoutConversionResult = layoutConverter.convert(
+			layout, LocaleUtil.getSiteDefault());
+
+		LayoutData layoutData = layoutConversionResult.getLayoutData();
 
 		LayoutStructure actualLayoutStructure = LayoutStructure.of(
 			String.valueOf(layoutData.getLayoutDataJSONObject()));
@@ -1001,20 +1082,20 @@ public class LayoutConverterTest {
 	private void _testConvertNoPortlets(String layoutTemplateId)
 		throws Exception {
 
-		UnicodeProperties typeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
-		typeSettingsUnicodeProperties.setProperty(
-			LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, layoutTemplateId);
-
-		Layout layout = LayoutTestUtil.addLayout(
-			_group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			_group.getGroupId(),
+			UnicodePropertiesBuilder.put(
+				LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID, layoutTemplateId
+			).buildString());
 
 		LayoutConverter layoutConverter =
 			_layoutConverterRegistry.getLayoutConverter(
 				_getLayoutTemplateId(layout));
 
-		LayoutData layoutData = layoutConverter.convert(layout);
+		LayoutConversionResult layoutConversionResult = layoutConverter.convert(
+			layout, LocaleUtil.getSiteDefault());
+
+		LayoutData layoutData = layoutConversionResult.getLayoutData();
 
 		LayoutStructure actualLayoutStructure = LayoutStructure.of(
 			String.valueOf(layoutData.getLayoutDataJSONObject()));
@@ -1189,7 +1270,13 @@ public class LayoutConverterTest {
 	private LayoutConverterRegistry _layoutConverterRegistry;
 
 	@Inject
+	private LayoutLocalService _layoutLocalService;
+
+	@Inject
 	private PortletLocalService _portletLocalService;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	private final List<ServiceRegistration<?>> _serviceRegistrations =
 		new CopyOnWriteArrayList<>();

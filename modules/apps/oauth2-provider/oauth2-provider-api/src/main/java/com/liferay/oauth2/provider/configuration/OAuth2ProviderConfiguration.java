@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.configuration;
@@ -35,24 +26,28 @@ import org.osgi.annotation.versioning.ProviderType;
 public interface OAuth2ProviderConfiguration {
 
 	@Meta.AD(
-		deflt = "true",
-		description = "oauth2-allow-authorization-code-grant-description",
+		deflt = "true", description = "oauth2-allow-grant-description",
 		id = "oauth2.allow.authorization.code.grant",
 		name = "oauth2-allow-authorization-code-grant", required = false
 	)
 	public boolean allowAuthorizationCodeGrant();
 
 	@Meta.AD(
-		deflt = "true",
-		description = "oauth2-allow-authorization-code-pkce-grant-description",
+		deflt = "true", description = "oauth2-allow-grant-description",
 		id = "oauth2.allow.authorization.code.pkce.grant",
 		name = "oauth2-allow-authorization-code-pkce-grant", required = false
 	)
 	public boolean allowAuthorizationCodePKCEGrant();
 
 	@Meta.AD(
-		deflt = "true",
-		description = "oauth2-allow-resource-owner-password-credentials-grant-description",
+		deflt = "true", description = "oauth2-allow-grant-description",
+		id = "oauth2.allow.jwt.bearer.grant",
+		name = "oauth2-allow-jwt-bearer-grant", required = false
+	)
+	public boolean allowJWTBearerGrant();
+
+	@Meta.AD(
+		deflt = "true", description = "oauth2-allow-grant-description",
 		id = "oauth2.allow.resource.owner.password.credentials.grant",
 		name = "oauth2-allow-resource-owner-password-credentials-grant",
 		required = false
@@ -60,16 +55,14 @@ public interface OAuth2ProviderConfiguration {
 	public boolean allowResourceOwnerPasswordCredentialsGrant();
 
 	@Meta.AD(
-		deflt = "true",
-		description = "oauth2-allow-client-credentials-grant-description",
+		deflt = "true", description = "oauth2-allow-grant-description",
 		id = "oauth2.allow.client.credentials.grant",
 		name = "oauth2-allow-client-credentials-grant", required = false
 	)
 	public boolean allowClientCredentialsGrant();
 
 	@Meta.AD(
-		deflt = "true",
-		description = "oauth2-allow-refresh-token-grant-description",
+		deflt = "true", description = "oauth2-allow-grant-description",
 		id = "oauth2.allow.refresh.token.grant",
 		name = "oauth2-allow-refresh-token-grant", required = false
 	)
@@ -95,7 +88,7 @@ public interface OAuth2ProviderConfiguration {
 	@Meta.AD(
 		deflt = "60",
 		description = "oauth2-expired-authorizations-check-interval-description",
-		id = "oauth2.expired.authorizations.check.interval",
+		id = "oauth2.expired.authorizations.check.interval", min = "1",
 		name = "oauth2-expired-authorizations-check-interval", required = false
 	)
 	public int expiredAuthorizationsCheckInterval();

@@ -13,6 +13,11 @@ package org.eclipse.osgi.internal.serviceregistry;
 
 import java.security.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.osgi.container.Module;
 import org.eclipse.osgi.container.ModuleRevision;
 import org.eclipse.osgi.framework.eventmgr.*;
@@ -49,33 +54,29 @@ public class ServiceRegistry {
 	 * in the natural order of ServiceRegistrationImpl and also are sets in that
 	 * there must be no two entries in a List which are equal.
 	 */
-	/* @GuardedBy("this") */
-	private final Map<String, List<ServiceRegistrationImpl<?>>> publishedServicesByClass;
+	private final Map<String, List<ServiceRegistrationImpl<?>>> publishedServicesByClass = new ConcurrentHashMap<>();
 
 	/** All published services. 
 	 * The List is both sorted in the natural order of ServiceRegistrationImpl and also is a
 	 * set in that there must be no two entries in the List which are equal.
 	 */
-	/* @GuardedBy("this") */
-	private final List<ServiceRegistrationImpl<?>> allPublishedServices;
+	private final Set<ServiceRegistrationImpl<?>> allPublishedServices = Collections.newSetFromMap(new ConcurrentSkipListMap<>());
 
 	/** Published services by BundleContextImpl.  
 	 * The {@literal List<ServiceRegistrationImpl<?>>}s are NOT sorted 
 	 * and also are sets in that
 	 * there must be no two entries in a List which are equal.
 	 */
-	/* @GuardedBy("this") */
-	private final Map<BundleContextImpl, List<ServiceRegistrationImpl<?>>> publishedServicesByContext;
+	private final Map<BundleContextImpl, Queue<ServiceRegistrationImpl<?>>> publishedServicesByContext = new ConcurrentHashMap<>();
 
 	/** next free service id. */
-	/* @GuardedBy("this") */
-	private long serviceid;
+	private final AtomicLong serviceid = new AtomicLong(1);
 
-	/** Active Service Listeners.
-	 * {@literal Map<BundleContextImpl,CopyOnWriteIdentityMap<ServiceListener,FilteredServiceListener>>}.
-	 */
-	/* @GuardedBy("serviceEventListeners") */
-	private final Map<BundleContextImpl, CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener>> serviceEventListeners;
+	private final Map<String, List<FilteredServiceListener>> _objectClassFilteredServiceListeners;
+
+	private final Map<ServiceListener, FilteredServiceListener> _serviceListenerFilteredServiceListeners;
+
+	private final Map<ServiceListener, FilteredServiceListener> _globalFilteredServiceListeners;
 
 	/** initial capacity of the main data structure */
 	private static final int initialCapacity = 50;
@@ -93,11 +94,9 @@ public class ServiceRegistry {
 	public ServiceRegistry(EquinoxContainer container) {
 		this.container = container;
 		this.debug = container.getConfiguration().getDebug();
-		serviceid = 1;
-		publishedServicesByClass = new HashMap<>(initialCapacity);
-		publishedServicesByContext = new HashMap<>(initialCapacity);
-		allPublishedServices = new ArrayList<>(initialCapacity);
-		serviceEventListeners = new HashMap<>(initialCapacity);
+		_objectClassFilteredServiceListeners = new ConcurrentHashMap<>(initialCapacity);
+		_serviceListenerFilteredServiceListeners = new ConcurrentHashMap<>(initialCapacity);
+		_globalFilteredServiceListeners = new ConcurrentHashMap<>();
 		Module systemModule = container.getStorage().getModuleContainer().getModule(0);
 		systemBundleContext = (BundleContextImpl) systemModule.getBundle().getBundleContext();
 		systemBundleContext.provisionServicesInUseMap();
@@ -714,15 +713,28 @@ public class ServiceRegistry {
 		}
 
 		FilteredServiceListener filteredListener = new FilteredServiceListener(context, listener, filter);
-		FilteredServiceListener oldFilteredListener;
-		synchronized (serviceEventListeners) {
-			CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener> listeners = serviceEventListeners.get(context);
-			if (listeners == null) {
-				listeners = new CopyOnWriteIdentityMap<>();
-				serviceEventListeners.put(context, listeners);
-			}
-			oldFilteredListener = listeners.put(listener, filteredListener);
+
+		String objectClass = filteredListener.getObjectClass();
+
+		if (objectClass == null) {
+			_globalFilteredServiceListeners.put(listener, filteredListener);
 		}
+		else {
+			_objectClassFilteredServiceListeners.compute(
+				objectClass,
+				(key, filteredListeners) -> {
+					if (filteredListeners == null) {
+						filteredListeners = new CopyOnWriteArrayList<>();
+					}
+
+					filteredListeners.add(filteredListener);
+
+					return filteredListeners;
+				}
+			);
+		}
+
+		FilteredServiceListener oldFilteredListener = _serviceListenerFilteredServiceListeners.put(listener, filteredListener);
 
 		if (oldFilteredListener != null) {
 			oldFilteredListener.markRemoved();
@@ -746,18 +758,32 @@ public class ServiceRegistry {
 			Debug.println("removeServiceListener[" + context.getBundleImpl() + "](" + listenerName + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
-		FilteredServiceListener oldFilteredListener;
-		synchronized (serviceEventListeners) {
-			Map<ServiceListener, FilteredServiceListener> listeners = serviceEventListeners.get(context);
-			if (listeners == null) {
-				return; // this context has no listeners to begin with
-			}
-			oldFilteredListener = listeners.remove(listener);
-		}
+		FilteredServiceListener oldFilteredListener = _serviceListenerFilteredServiceListeners.remove(listener);
 
 		if (oldFilteredListener == null) {
 			return;
 		}
+
+		String objectClass = oldFilteredListener.getObjectClass();
+
+		if (objectClass == null) {
+			_globalFilteredServiceListeners.remove(listener);
+		}
+		else {
+			_objectClassFilteredServiceListeners.compute(
+				objectClass,
+				(key, filteredListeners) -> {
+					filteredListeners.remove(oldFilteredListener);
+
+					if (filteredListeners.isEmpty()) {
+						return null;
+					}
+
+					return filteredListeners;
+				}
+			);
+		}
+
 		oldFilteredListener.markRemoved();
 		Collection<ListenerInfo> removedListeners = Collections.<ListenerInfo> singletonList(oldFilteredListener);
 		notifyListenerHooks(removedListeners, false);
@@ -769,16 +795,40 @@ public class ServiceRegistry {
 	 * @param context Context of bundle removing all listeners.
 	 */
 	public void removeAllServiceListeners(BundleContextImpl context) {
-		Map<ServiceListener, FilteredServiceListener> removedListenersMap;
-		synchronized (serviceEventListeners) {
-			removedListenersMap = serviceEventListeners.remove(context);
-		}
-		if ((removedListenersMap == null) || removedListenersMap.isEmpty()) {
-			return;
-		}
-		Collection<FilteredServiceListener> removedListeners = removedListenersMap.values();
-		for (FilteredServiceListener oldFilteredListener : removedListeners) {
-			oldFilteredListener.markRemoved();
+		List<FilteredServiceListener> removedListeners = new ArrayList<>();
+
+		Iterator<FilteredServiceListener> iterator =
+			_serviceListenerFilteredServiceListeners.values().iterator();
+
+		while (iterator.hasNext()) {
+			FilteredServiceListener filteredServiceListener = iterator.next();
+
+			if (context == filteredServiceListener.getBundleContext()) {
+				filteredServiceListener.markRemoved();
+
+				removedListeners.add(filteredServiceListener);
+
+				String objectClass = filteredServiceListener.getObjectClass();
+
+				if (objectClass == null) {
+					_globalFilteredServiceListeners.remove(
+						filteredServiceListener.getListener());
+				}
+				else {
+					_objectClassFilteredServiceListeners.compute(
+						objectClass, (key, filteredListeners) -> {
+							filteredListeners.remove(filteredServiceListener);
+
+							if (filteredListeners.isEmpty()) {
+								return null;
+							}
+
+							return filteredListeners;
+						});
+				}
+
+				iterator.remove();
+			}
 		}
 		notifyListenerHooks(asListenerInfos(removedListeners), false);
 	}
@@ -800,55 +850,86 @@ public class ServiceRegistry {
 	 * @param event The ServiceEvent to deliver.
 	 */
 	public void publishServiceEvent(final ServiceEvent event) {
-		if (System.getSecurityManager() == null) {
-			publishServiceEventPrivileged(event);
-		} else {
-			AccessController.doPrivileged(new PrivilegedAction<Void>() {
-				public Void run() {
-					publishServiceEventPrivileged(event);
-					return null;
-				}
-			});
-		}
+		publishServiceEventPrivileged(event);
 	}
 
 	void publishServiceEventPrivileged(final ServiceEvent event) {
 		/* Build the listener snapshot */
-		Map<BundleContextImpl, Set<Map.Entry<ServiceListener, FilteredServiceListener>>> listenerSnapshot;
-		Set<Map.Entry<ServiceListener, FilteredServiceListener>> systemServiceListenersOrig = null;
-		BundleContextImpl systemContext = null;
-		synchronized (serviceEventListeners) {
-			listenerSnapshot = new HashMap<>(serviceEventListeners.size());
-			for (Map.Entry<BundleContextImpl, CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener>> entry : serviceEventListeners.entrySet()) {
-				Map<ServiceListener, FilteredServiceListener> listeners = entry.getValue();
-				if (!listeners.isEmpty()) {
-					if (entry.getKey().getBundleImpl().getBundleId() == 0) {
-						systemContext = entry.getKey();
-						// make a copy that we can use to discard hook removals later
-						systemServiceListenersOrig = listeners.entrySet();
-					}
-					listenerSnapshot.put(entry.getKey(), listeners.entrySet());
+
+		Map<String, List<FilteredServiceListener>> listenerSnapshot;
+
+		List<ServiceRegistrationImpl<?>> eventHooks = lookupServiceRegistrations(eventHookName, null);
+		List<ServiceRegistrationImpl<?>> eventListenerHooks = lookupServiceRegistrations(eventListenerHookName, null);
+
+		if (eventHooks.isEmpty() && eventListenerHooks.isEmpty()) {
+			listenerSnapshot = _objectClassFilteredServiceListeners;
+		}
+		else {
+			CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener> systemServiceListenersOrig = null;
+			BundleContextImpl systemContext = null;
+
+			Map<BundleContextImpl, CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener>> bundleContextFilteredServiceListeners = new HashMap<>();
+
+			for (Map.Entry<ServiceListener, FilteredServiceListener> entry : _serviceListenerFilteredServiceListeners.entrySet()) {
+				FilteredServiceListener filteredServiceListener = entry.getValue();
+
+				BundleContextImpl bundleContextImpl = (BundleContextImpl)filteredServiceListener.getBundleContext();
+
+				CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener> copyOnWriteIdentityMap = bundleContextFilteredServiceListeners.computeIfAbsent(bundleContextImpl, key -> new CopyOnWriteIdentityMap<>());
+
+				copyOnWriteIdentityMap.put(entry.getKey(), filteredServiceListener);
+
+				if (bundleContextImpl.getBundleImpl().getBundleId() == 0) {
+					systemContext = bundleContextImpl;
+					systemServiceListenersOrig = copyOnWriteIdentityMap;
 				}
 			}
-		}
 
-		/* shrink the snapshot.
-		 * keySet returns a Collection which cannot be added to and
-		 * removals from that collection will result in removals of the
-		 * entry from the snapshot.
-		 */
-		Collection<BundleContext> contexts = asBundleContexts(listenerSnapshot.keySet());
-		notifyEventHooksPrivileged(event, contexts);
-		if (!listenerSnapshot.isEmpty()) {
-			Map<BundleContext, Collection<ListenerInfo>> listeners = new ShrinkableValueCollectionMap<BundleContext, ListenerInfo>(listenerSnapshot);
-			notifyEventListenerHooksPrivileged(event, listeners);
-		}
-		// always add back the system service listeners if they were removed
-		if (systemServiceListenersOrig != null) {
-			// No contains key check is done because hooks may have removed
-			// a single listener from the value instead of the whole context key.
-			// It is more simple to just replace with the original snapshot.
-			listenerSnapshot.put(systemContext, systemServiceListenersOrig);
+			/* shrink the snapshot.
+			 * keySet returns a Collection which cannot be added to and
+			 * removals from that collection will result in removals of the
+			 * entry from the snapshot.
+			 */
+			Collection<BundleContext> contexts = asBundleContexts(bundleContextFilteredServiceListeners.keySet());
+			notifyEventHooksPrivileged(event, contexts);
+			if (!bundleContextFilteredServiceListeners.isEmpty()) {
+				Map<BundleContextImpl, Set<Map.Entry<ServiceListener, FilteredServiceListener>>> adaptedListenerSnapshot = new HashMap<>();
+
+				bundleContextFilteredServiceListeners.forEach(
+					(key, value) -> {
+						adaptedListenerSnapshot.put(key, value.entrySet());
+					}
+				);
+
+				Map<BundleContext, Collection<ListenerInfo>> listeners = new ShrinkableValueCollectionMap<BundleContext, ListenerInfo>(adaptedListenerSnapshot);
+
+				notifyEventListenerHooksPrivileged(event, listeners);
+
+				bundleContextFilteredServiceListeners.keySet().retainAll(adaptedListenerSnapshot.keySet());
+			}
+			// always add back the system service listeners if they were removed
+			if (systemServiceListenersOrig != null) {
+				// No contains key check is done because hooks may have removed
+				// a single listener from the value instead of the whole context key.
+				// It is more simple to just replace with the original snapshot.
+				bundleContextFilteredServiceListeners.put(systemContext, systemServiceListenersOrig);
+			}
+
+			Map<String, List<FilteredServiceListener>> copyListenerSnapshot = new HashMap<>();
+
+			for (CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener> copyOnWriteIdentityMap : bundleContextFilteredServiceListeners.values()) {
+				for (FilteredServiceListener filteredServiceListener : copyOnWriteIdentityMap.values()) {
+					String objectClass = filteredServiceListener.getObjectClass();
+
+					if (objectClass != null) {
+						List<FilteredServiceListener> filteredServiceListeners = copyListenerSnapshot.computeIfAbsent(objectClass, key -> new ArrayList<>());
+
+						filteredServiceListeners.add(filteredServiceListener);
+					}
+				}
+			}
+
+			listenerSnapshot = copyListenerSnapshot;
 		}
 		if (listenerSnapshot.isEmpty()) {
 			return;
@@ -878,44 +959,51 @@ public class ServiceRegistry {
 		}
 
 		try {
-			for (Map.Entry<BundleContextImpl, Set<Map.Entry<ServiceListener, FilteredServiceListener>>> bundleContextEntry :
-					listenerSnapshot.entrySet()) {
+			ServiceReferenceImpl<?> reference = (ServiceReferenceImpl<?>) event.getServiceReference();
 
-				for (Map.Entry<ServiceListener, FilteredServiceListener> serviceListenerEntry :
-						bundleContextEntry.getValue()) {
+			for (String clazz : reference.getClasses()) {
+				List<FilteredServiceListener> filteredServiceListeners = _objectClassFilteredServiceListeners.get(clazz);
 
-					FilteredServiceListener filteredServiceListener =
-						serviceListenerEntry.getValue();
-
-					try {
-						filteredServiceListener.serviceChanged(event);
-					}
-					catch (Throwable t) {
-						if (debug.DEBUG_GENERAL) {
-							Debug.println(
-								"Exception in bottom level event dispatcher: " +
-									t.getMessage());
-
-							Debug.printStackTrace(t);
-						}
-
-						container.handleRuntimeError(t);
-
-						EquinoxEventPublisher equinoxEventPublisher =
-							container.getEventPublisher();
-
-						BundleContextImpl bundleContextImpl = bundleContextEntry.getKey();
-
-						equinoxEventPublisher.publishFrameworkEvent(
-							FrameworkEvent.ERROR, bundleContextImpl.getBundle(), t);
+				if (filteredServiceListeners != null) {
+					for (FilteredServiceListener filteredServiceListener : filteredServiceListeners) {
+						_serviceChanged(filteredServiceListener, event);
 					}
 				}
+			}
+
+			for (FilteredServiceListener filteredServiceListener : _globalFilteredServiceListeners.values()) {
+				_serviceChanged(filteredServiceListener, event);
 			}
 		}
 		finally {
 			if (previousTCCL != null) {
 				currentThread.setContextClassLoader(previousTCCL);
 			}
+		}
+	}
+
+	private void _serviceChanged(FilteredServiceListener filteredServiceListener, ServiceEvent serviceEvent) {
+		try {
+			filteredServiceListener.doServiceChanged(serviceEvent);
+		}
+		catch (Throwable t) {
+			if (debug.DEBUG_GENERAL) {
+				Debug.println(
+					"Exception in bottom level event dispatcher: " +
+						t.getMessage());
+
+				Debug.printStackTrace(t);
+			}
+
+			container.handleRuntimeError(t);
+
+			EquinoxEventPublisher equinoxEventPublisher =
+				container.getEventPublisher();
+
+			BundleContextImpl bundleContextImpl = (BundleContextImpl)filteredServiceListener.getBundleContext();
+
+			equinoxEventPublisher.publishFrameworkEvent(
+				FrameworkEvent.ERROR, bundleContextImpl.getBundleImpl(), t);
 		}
 	}
 
@@ -935,10 +1023,8 @@ public class ServiceRegistry {
 	 * 
 	 * @return next service id.
 	 */
-	synchronized long getNextServiceId() {
-		long id = serviceid;
-		serviceid = id + 1;
-		return id;
+	long getNextServiceId() {
+		return serviceid.getAndIncrement();
 	}
 
 	/**
@@ -947,37 +1033,42 @@ public class ServiceRegistry {
 	 * @param context The BundleContext of the bundle registering the service.
 	 * @param registration The new ServiceRegistration.
 	 */
-	/* @GuardedBy("this") */
 	void addServiceRegistration(BundleContextImpl context, ServiceRegistrationImpl<?> registration) {
-		assert Thread.holdsLock(this);
 		// Add the ServiceRegistrationImpl to the list of Services published by BundleContextImpl.
-		List<ServiceRegistrationImpl<?>> contextServices = publishedServicesByContext.get(context);
+		Queue<ServiceRegistrationImpl<?>> contextServices = publishedServicesByContext.get(context);
 		if (contextServices == null) {
-			contextServices = new ArrayList<>(initialSubCapacity);
-			publishedServicesByContext.put(context, contextServices);
+			contextServices = new ConcurrentLinkedQueue<>();
+
+			Queue<ServiceRegistrationImpl<?>> previousContextServices =
+				publishedServicesByContext.putIfAbsent(context, contextServices);
+
+			if (previousContextServices != null) {
+				contextServices = previousContextServices;
+			}
 		}
 		// The list is NOT sorted, so we just add
 		contextServices.add(registration);
 
 		// Add the ServiceRegistrationImpl to the list of Services published by Class Name.
-		int insertIndex;
 		for (String clazz : registration.getClasses()) {
-			List<ServiceRegistrationImpl<?>> services = publishedServicesByClass.get(clazz);
+			publishedServicesByClass.compute(
+				clazz,
+				(className, services) -> {
+					if (services == null) {
+						return Collections.singletonList(registration);
+					}
 
-			if (services == null) {
-				services = new ArrayList<>(initialSubCapacity);
-				publishedServicesByClass.put(clazz, services);
-			}
+					services = new ArrayList<>(services);
 
-			// The list is sorted, so we must find the proper location to insert
-			insertIndex = -Collections.binarySearch(services, registration) - 1;
-			services.add(insertIndex, registration);
+					int insertIndex = -Collections.binarySearch(services, registration) - 1;
+
+					services.add(insertIndex, registration);
+
+					return services;
+				});
 		}
 
-		// Add the ServiceRegistrationImpl to the list of all published Services.
-		// The list is sorted, so we must find the proper location to insert
-		insertIndex = -Collections.binarySearch(allPublishedServices, registration) - 1;
-		allPublishedServices.add(insertIndex, registration);
+		allPublishedServices.add(registration);
 	}
 
 	/**
@@ -986,29 +1077,32 @@ public class ServiceRegistry {
 	 * @param context The BundleContext of the bundle registering the service.
 	 * @param registration The modified ServiceRegistration.
 	 */
-	/* @GuardedBy("this") */
 	void modifyServiceRegistration(BundleContextImpl context, ServiceRegistrationImpl<?> registration) {
-		assert Thread.holdsLock(this);
 		// The list of Services published by BundleContextImpl is not sorted, so
 		// we do not need to modify it.
 
 		// Remove the ServiceRegistrationImpl from the list of Services published by Class Name
 		// and then add at the correct index.
-		int insertIndex;
 		for (String clazz : registration.getClasses()) {
-			List<ServiceRegistrationImpl<?>> services = publishedServicesByClass.get(clazz);
-			services.remove(registration);
-			// The list is sorted, so we must find the proper location to insert
-			insertIndex = -Collections.binarySearch(services, registration) - 1;
-			services.add(insertIndex, registration);
+			publishedServicesByClass.compute(
+				clazz,
+				(className, services) -> {
+					services = new ArrayList<>(services);
+
+					services.remove(registration);
+
+					// The list is sorted, so we must find the proper location to insert
+					int insertIndex = -Collections.binarySearch(services, registration) - 1;
+					services.add(insertIndex, registration);
+
+					return services;
+				});
 		}
 
 		// Remove the ServiceRegistrationImpl from the list of all published Services
 		// and then add at the correct index.
 		allPublishedServices.remove(registration);
-		// The list is sorted, so we must find the proper location to insert
-		insertIndex = -Collections.binarySearch(allPublishedServices, registration) - 1;
-		allPublishedServices.add(insertIndex, registration);
+		allPublishedServices.add(registration);
 	}
 
 	/**
@@ -1017,22 +1111,28 @@ public class ServiceRegistry {
 	 * @param context The BundleContext of the bundle registering the service.
 	 * @param registration The ServiceRegistration to remove.
 	 */
-	/* @GuardedBy("this") */
 	void removeServiceRegistration(BundleContextImpl context, ServiceRegistrationImpl<?> registration) {
-		assert Thread.holdsLock(this);
 		// Remove the ServiceRegistrationImpl from the list of Services published by BundleContextImpl.
-		List<ServiceRegistrationImpl<?>> contextServices = publishedServicesByContext.get(context);
+		Queue<ServiceRegistrationImpl<?>> contextServices = publishedServicesByContext.get(context);
 		if (contextServices != null) {
 			contextServices.remove(registration);
 		}
 
 		// Remove the ServiceRegistrationImpl from the list of Services published by Class Name.
 		for (String clazz : registration.getClasses()) {
-			List<ServiceRegistrationImpl<?>> services = publishedServicesByClass.get(clazz);
-			services.remove(registration);
-			if (services.isEmpty()) { // remove empty list
-				publishedServicesByClass.remove(clazz);
-			}
+			publishedServicesByClass.compute(
+				clazz,
+				(className, services) -> {
+					services = new ArrayList<>(services);
+
+					services.remove(registration);
+
+					if (services.isEmpty()) {
+						return null;
+					}
+
+					return services;
+				});
 		}
 
 		// Remove the ServiceRegistrationImpl from the list of all published Services.
@@ -1054,28 +1154,27 @@ public class ServiceRegistry {
 			clazz = filterImpl.getRequiredObjectClass();
 		}
 
-		List<ServiceRegistrationImpl<?>> result;
-		synchronized (this) {
-			if (clazz == null) { /* all services */
-				result = allPublishedServices;
-			} else {
-				/* services registered under the class name */
-				result = publishedServicesByClass.get(clazz);
-			}
+		Collection<ServiceRegistrationImpl<?>> result;
 
-			if ((result == null) || result.isEmpty()) {
-				List<ServiceRegistrationImpl<?>> empty = Collections.<ServiceRegistrationImpl<?>> emptyList();
-				return empty;
-			}
-
-			if (filter == null) {
-				return new ArrayList<>(result);
-			}
-
-			result = new LinkedList<>(result); /* make a new list since we don't want to change the real list */
+		if (clazz == null) { /* all services */
+			result = allPublishedServices;
+		} else {
+			/* services registered under the class name */
+			result = publishedServicesByClass.get(clazz);
 		}
 
-		for (Iterator<ServiceRegistrationImpl<?>> iter = result.iterator(); iter.hasNext();) {
+		if ((result == null) || result.isEmpty()) {
+			List<ServiceRegistrationImpl<?>> empty = Collections.<ServiceRegistrationImpl<?>> emptyList();
+			return empty;
+		}
+
+		if (filter == null) {
+			return new ArrayList<>(result);
+		}
+
+		List<ServiceRegistrationImpl<?>> listResult = new LinkedList<>(result); /* make a new list since we don't want to change the real list */
+
+		for (Iterator<ServiceRegistrationImpl<?>> iter = listResult.iterator(); iter.hasNext();) {
 			ServiceRegistrationImpl<?> registration = iter.next();
 			ServiceReferenceImpl<?> reference;
 			try {
@@ -1088,7 +1187,7 @@ public class ServiceRegistry {
 				iter.remove();
 			}
 		}
-		return result;
+		return listResult;
 	}
 
 	/**
@@ -1097,8 +1196,8 @@ public class ServiceRegistry {
 	 * @param context The BundleContext for which to return Service Registrations.
 	 * @return List<ServiceRegistrationImpl>
 	 */
-	private synchronized List<ServiceRegistrationImpl<?>> lookupServiceRegistrations(BundleContextImpl context) {
-		List<ServiceRegistrationImpl<?>> result = publishedServicesByContext.get(context);
+	private List<ServiceRegistrationImpl<?>> lookupServiceRegistrations(BundleContextImpl context) {
+		Queue<ServiceRegistrationImpl<?>> result = publishedServicesByContext.get(context);
 
 		if ((result == null) || result.isEmpty()) {
 			List<ServiceRegistrationImpl<?>> empty = Collections.<ServiceRegistrationImpl<?>> emptyList();
@@ -1113,7 +1212,7 @@ public class ServiceRegistry {
 	 * 
 	 * @param context The BundleContext for which to remove Service Registrations.
 	 */
-	private synchronized void removeServiceRegistrations(BundleContextImpl context) {
+	private void removeServiceRegistrations(BundleContextImpl context) {
 		publishedServicesByContext.remove(context);
 	}
 
@@ -1166,11 +1265,8 @@ public class ServiceRegistry {
 	 * @return The name of the class that is not satisfied by the service object.
 	 */
 	static String checkServiceClass(final String[] clazzes, final Object serviceObject) {
-		ClassLoader cl = AccessController.doPrivileged(new PrivilegedAction<ClassLoader>() {
-			public ClassLoader run() {
-				return serviceObject.getClass().getClassLoader();
-			}
-		});
+		ClassLoader cl = serviceObject.getClass().getClassLoader();
+
 		for (int i = 0, len = clazzes.length; i < len; i++) {
 			try {
 				Class<?> serviceClazz = cl == null ? Class.forName(clazzes[i]) : cl.loadClass(clazzes[i]);
@@ -1220,16 +1316,7 @@ public class ServiceRegistry {
 	 * @param result The result to return to the caller which may have been shrunk by the FindHooks.
 	 */
 	private void notifyFindHooks(final BundleContextImpl context, final String clazz, final String filterstring, final boolean allservices, final Collection<ServiceReference<?>> result) {
-		if (System.getSecurityManager() == null) {
-			notifyFindHooksPrivileged(context, clazz, filterstring, allservices, result);
-		} else {
-			AccessController.doPrivileged(new PrivilegedAction<Void>() {
-				public Void run() {
-					notifyFindHooksPrivileged(context, clazz, filterstring, allservices, result);
-					return null;
-				}
-			});
-		}
+		notifyFindHooksPrivileged(context, clazz, filterstring, allservices, result);
 	}
 
 	void notifyFindHooksPrivileged(final BundleContextImpl context, final String clazz, final String filterstring, final boolean allservices, final Collection<ServiceReference<?>> result) {
@@ -1380,17 +1467,7 @@ public class ServiceRegistry {
 	 * @param registration The newly registered ListenerHook service.
 	 */
 	private void notifyNewListenerHook(final ServiceRegistrationImpl<?> registration) {
-		if (System.getSecurityManager() == null) {
-			notifyNewListenerHookPrivileged(registration);
-		} else {
-			AccessController.doPrivileged(new PrivilegedAction<Void>() {
-				public Void run() {
-					notifyNewListenerHookPrivileged(registration);
-					return null;
-				}
-			});
-		}
-
+		notifyNewListenerHookPrivileged(registration);
 	}
 
 	void notifyNewListenerHookPrivileged(ServiceRegistrationImpl<?> registration) {
@@ -1398,15 +1475,7 @@ public class ServiceRegistry {
 			Debug.println("notifyServiceNewListenerHook(" + registration + ")"); //$NON-NLS-1$ //$NON-NLS-2$ 
 		}
 
-		// snapshot the listeners
-		Collection<ListenerInfo> addedListeners = new ArrayList<>(initialCapacity);
-		synchronized (serviceEventListeners) {
-			for (CopyOnWriteIdentityMap<ServiceListener, FilteredServiceListener> listeners : serviceEventListeners.values()) {
-				if (!listeners.isEmpty()) {
-					addedListeners.addAll(listeners.values());
-				}
-			}
-		}
+		Collection<ListenerInfo> addedListeners = new ArrayList<>(_serviceListenerFilteredServiceListeners.values());
 
 		final Collection<ListenerInfo> listeners = Collections.unmodifiableCollection(addedListeners);
 		notifyHookPrivileged(systemBundleContext, registration, new HookContext() {
@@ -1442,17 +1511,7 @@ public class ServiceRegistry {
 	 * if they are being removed.
 	 */
 	private void notifyListenerHooks(final Collection<ListenerInfo> listeners, final boolean added) {
-		if (System.getSecurityManager() == null) {
-			notifyListenerHooksPrivileged(listeners, added);
-		} else {
-			AccessController.doPrivileged(new PrivilegedAction<Void>() {
-				public Void run() {
-					notifyListenerHooksPrivileged(listeners, added);
-					return null;
-				}
-			});
-		}
-
+		notifyListenerHooksPrivileged(listeners, added);
 	}
 
 	void notifyListenerHooksPrivileged(final Collection<ListenerInfo> listeners, final boolean added) {

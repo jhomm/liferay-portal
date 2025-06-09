@@ -1,0 +1,38 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<c:if test="<%= hasPermission %>">
+	<div id="item-finder-root-delivery-terms"></div>
+
+	<liferay-frontend:component
+		context='<%=
+			HashMapBuilder.<String, Object>put(
+				"apiUrl", "/o/headless-commerce-admin-order/v1.0/terms?filter=type eq '" + CommerceTermEntryConstants.TYPE_DELIVERY_TERMS + "'"
+			).put(
+				"dataSetId", CommerceShippingFixedOptionFDSNames.TERM_ENTRIES
+			).put(
+				"rootPortletId", portletDisplay.getRootPortletId()
+			).put(
+				"shippingFixedOptionId", commerceShippingFixedOptionId
+			).build()
+		%>'
+		module="{commerceTermEntries} from commerce-shipping-engine-fixed-web"
+	/>
+
+	<commerce-ui:panel
+		bodyClasses="p-0"
+		title="<%= LanguageUtil.get(request, CommerceTermEntryConstants.TYPE_DELIVERY_TERMS) %>"
+	>
+		<frontend-data-set:headless-display
+			apiURL="<%= commerceShippingFixedOptionQualifiersDisplayContext.getCommerceTermEntriesCommerceShippingFixedOptionsAPIURL() %>"
+			fdsActionDropdownItems="<%= commerceShippingFixedOptionQualifiersDisplayContext.getCommerceTermEntryFDSActionDropdownItems() %>"
+			formName="fm"
+			id="<%= CommerceShippingFixedOptionFDSNames.TERM_ENTRIES %>"
+			itemsPerPage="<%= 10 %>"
+		/>
+	</commerce-ui:panel>
+</c:if>

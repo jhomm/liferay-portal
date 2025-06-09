@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.tags.compiler.web.internal.portlet;
@@ -18,7 +9,7 @@ import com.liferay.asset.tags.compiler.web.internal.constants.AssetTagsCompilerP
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 
-import javax.portlet.Portlet;
+import jakarta.portlet.Portlet;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,7 +18,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.ajaxable=false",
@@ -39,13 +29,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.show-portlet-inactive=false",
 		"com.liferay.portlet.system=true",
 		"com.liferay.portlet.use-default-template=false",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.info.keywords=Tags Compiler",
-		"javax.portlet.info.short-title=Tags Compiler",
-		"javax.portlet.info.title=Tags Compiler",
-		"javax.portlet.name=" + AssetTagsCompilerPortletKeys.ASSET_TAGS_COMPILER,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.supported-public-render-parameter=tags"
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.info.keywords=Tags Compiler",
+		"jakarta.portlet.info.short-title=Tags Compiler",
+		"jakarta.portlet.info.title=Tags Compiler",
+		"jakarta.portlet.name=" + AssetTagsCompilerPortletKeys.ASSET_TAGS_COMPILER,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.supported-public-render-parameter=tags",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )

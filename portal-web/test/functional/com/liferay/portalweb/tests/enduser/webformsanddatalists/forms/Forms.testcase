@@ -1,7 +1,8 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
-	property custom.properties = "minifier.enabled=true";
+	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
+	property osgi.module.configurations = "waitTimeout=\"15\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Forms";
@@ -13,16 +14,16 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			Navigator.openURL();
 
 			ProductMenu.gotoPortlet(
-				category = "Content &amp; Data",
+				category = "Content & Data",
 				portlet = "Forms");
 
 			FormsAdmin.teardownForms();
@@ -31,16 +32,24 @@ definition {
 
 			FormsAdmin.teardownElementSets();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@priority = "5"
+	@priority = 5
 	test AddFormInGlobal {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#AddFormInGlobal";
-		property testray.component.names = "Training";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Enable Scope Configuration") {
+			Portlet.enableScopeConfiguration();
+		}
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 
 		Navigator.openURL();
 
@@ -54,9 +63,9 @@ definition {
 
 		Form.editPageTitle(
 			formPageName = "Created Form Page Name",
-			formTitleNumber = "1");
+			formTitleNumber = 1);
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Label");
 
@@ -68,10 +77,10 @@ definition {
 
 		Form.closeSidebar();
 
-		Form.save();
+		Form.publishForm();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdmin.viewForm(
@@ -92,7 +101,7 @@ definition {
 			category = "Site Builder",
 			portlet = "Pages");
 
-		SitePages.addPrivatePage(pageName = "Private Form Page");
+		PagesAdmin.addPrivatePage(pageName = "Private Form Page");
 
 		Navigator.gotoPrivateSitePage(
 			pageName = "Private Form Page",
@@ -120,18 +129,14 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-68377."
-	@priority = "3"
+	@priority = 3
 	test AddFormToUserSiteAndViewNoDuplicates {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#AddFormToUserSiteAndViewNoDuplicates";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.addCP(
 			userEmailAddress = "userea@liferay.com",
@@ -139,21 +144,19 @@ definition {
 			userLastName = "userln",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.editPasswordCP(
 			userEmailAddress = "userea@liferay.com",
 			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+		Site.openSitesAdmin();
 
 		Site.addBlankCP(siteName = "Form Site");
+
+		Navigator.gotoBack();
+
+		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Form Site",
@@ -163,7 +166,7 @@ definition {
 			category = "Site Builder",
 			portlet = "Pages");
 
-		SitePages.addPublicPage(pageName = "Form Page");
+		PagesAdmin.addPage(pageName = "Form Page");
 
 		ProductMenu.gotoPortlet(
 			category = "People",
@@ -180,7 +183,7 @@ definition {
 
 		for (var resourceActionIndex : list "ADD_DATA_PROVIDER_INSTANCE,ADD_FORM_INSTANCE,ADD_STRUCTURE,PERMISSIONS") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.dynamic.data.mapping",
 				roleTitle = "Forms Site Role Name",
 				roleType = "site");
@@ -198,10 +201,7 @@ definition {
 			roleTitle = "Forms Site Role Name",
 			roleType = "site");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignSiteRoleCP(
 			siteRoleName = "Forms Site Role Name",
@@ -214,16 +214,16 @@ definition {
 		Navigator.openSiteURL(siteName = "Form Site");
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
-		FormsAdminNavigator.gotoAddForm();
+		LexiconEntry.gotoAdd();
 
 		Form.editName();
 
 		Form.editDescription();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field");
 
@@ -237,19 +237,20 @@ definition {
 	}
 
 	@description = "LPS-68390 - Verify that a notification appears when a Form is autosaved."
-	@priority = "3"
+	@priority = 3
 	test AutosaveDisplaysANotification {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#AutosaveDisplaysANotification";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
 		Form.editName();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
-		Pause(locator1 = "60000");
+		WaitForElementPresent(locator1 = "Form#SAVE_NOTIFICATION");
 
 		Form.viewSaveNotification();
 
@@ -261,11 +262,12 @@ definition {
 	}
 
 	@description = "LPS-68418 - Verify that a Form's autosave interval can be configured"
-	@priority = "3"
+	@priority = 3
 	test AutosaveIntervalCanBeConfigured {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#AutosaveIntervalCanBeConfigured";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		Navigator.openURL();
 
@@ -285,7 +287,7 @@ definition {
 
 		FormFields.editText(
 			fieldName = "autosaveInterval",
-			fieldValue = "2");
+			fieldValue = 2);
 
 		SystemSettings.saveConfiguration();
 
@@ -293,13 +295,15 @@ definition {
 
 		Form.editName();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field Should Not Be Saved");
 
 		Form.closeSidebar();
 
-		Pause(locator1 = "60000");
+		// Pausing 60 seconds to check no autosave due to changing the default autosave interval. See LPS-159468
+
+		Pause(value1 = 60000);
 
 		FormsAdminNavigator.gotoBack();
 
@@ -309,13 +313,15 @@ definition {
 
 		Form.editName();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field Will Be Saved");
 
 		Form.closeSidebar();
 
-		Pause(locator1 = "120000");
+		// Pausing 120 seconds due to autosave interval set to two minutes. LPS-159468
+
+		Pause(value1 = 120000);
 
 		FormsAdminNavigator.gotoBack();
 
@@ -325,17 +331,18 @@ definition {
 	}
 
 	@description = "LPS-72048 - Verify that Belongs To rule can be paired with Guest role"
-	@priority = "4"
+	@priority = 4
 	test BelongsToRuleCanPairWithGuestUser {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#BelongsToRuleCanPairWithGuestUser";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -346,12 +353,12 @@ definition {
 		FormRules.configureConditionOptions(
 			conditionField = "User",
 			conditionOperator = "Belongs To",
-			conditionRowNumber = "1",
+			conditionRowNumber = 1,
 			conditionValueType = "Guest");
 
 		FormRules.configureActionOptions(
 			action = "Show",
-			actionRowNumber = "1",
+			actionRowNumber = 1,
 			actionTarget = "Text");
 
 		FormRules.save();
@@ -362,11 +369,9 @@ definition {
 
 		FormsAdminNavigator.gotoPublishCopyURLLink();
 
-		var publishedFormPublicURL = Form.getPublishedFormPublicURL(
-			publishedFormPublicURL = "${publishedFormPublicURL}"
-		);
+		var publishedFormPublicURL = Form.getPublishedFormPublicURL(publishedFormPublicURL = ${publishedFormPublicURL});
 
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
+		Navigator.openSpecificURL(url = ${publishedFormPublicURL});
 
 		FormFields.viewTextFieldNotVisible(
 			fieldLabel = "Text",
@@ -374,18 +379,60 @@ definition {
 
 		User.logoutPG();
 
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
+		Navigator.openSpecificURL(url = ${publishedFormPublicURL});
 
 		FormFields.viewTextLabel(
 			fieldLabel = "Text",
 			fieldName = "Text");
 	}
 
-	@description = "Verify that a Form can be created"
-	@priority = "5"
-	test CanBeCreated {
-		property forms.functional = "true";
+	@description = "LPS-163705 - Verify if you can add an expiration date to the form."
+	@priority = 5
+	test CanAddExpirationDate {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
 
+		FormsAdmin.addForm();
+
+		Form.editName(formName = "Form 1");
+
+		Form.addTextField(fieldPositionNumber = 0);
+
+		FormsAdminNavigator.gotoSettings();
+
+		Form.gotoSubmissionsTab();
+
+		AssertElementPresent(locator1 = "Form#EXPIRATION_DATE_DISABLED");
+
+		Click(
+			key_checkboxOption = "Never Expire",
+			locator1 = "Form#CHECKBOX_SUBMISSIONS");
+
+		FormFields.editDateCalendar(
+			fieldName = "Date",
+			fieldValue = "01/01/2024",
+			valueDay = 1,
+			valueMonth = "January",
+			valueYear = 2024);
+
+		Click(locator1 = "FormFields#DATE_CALENDAR");
+
+		AssertElementPresent(
+			key_feedbackMessage = "Please enter a valid expiration date. Only future dates are accepted.",
+			locator1 = "Form#FEEDBACK_MESSAGE");
+
+		FormViewBuilder.editDate(
+			fieldName = "Date",
+			fieldValue = "01/01/2100");
+
+		Form.save();
+
+		Alert.viewSuccessMessageText(successMessage = "Your request completed successfully.");
+	}
+
+	@description = "Verify that a Form can be created"
+	@priority = 5
+	test CanBeCreated {
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
@@ -394,12 +441,12 @@ definition {
 
 		Form.editPageTitle(
 			formPageName = "Page 1",
-			formTitleNumber = "1");
+			formTitleNumber = 1);
 
 		Form.editPageDescription(formPageDescriptionName = "Page 1 Descripton");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Text");
 
 		Form.save();
@@ -413,7 +460,7 @@ definition {
 		Form.viewFormDescription(formDescription = "Form 1 Description");
 
 		AssertTextEquals(
-			key_titleNumber = "1",
+			key_titleNumber = 1,
 			locator1 = "Form#PAGE_TITLE_FIELD",
 			value1 = "Page 1");
 
@@ -425,9 +472,9 @@ definition {
 	}
 
 	@description = "Verify that a Form can be published from an autosaved draft"
-	@priority = "5"
+	@priority = 5
 	test CanBeCreatedFromAutosavedDraft {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -436,15 +483,15 @@ definition {
 		Form.editDescription(formDescription = "Test");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Text");
 
-		Pause(locator1 = "60000");
+		WaitForElementPresent(locator1 = "Form#SAVE_NOTIFICATION");
 
 		Form.viewSaveNotification();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		AppBuilderAdmin.openItem(itemName = "Test");
@@ -467,48 +514,46 @@ definition {
 	}
 
 	@description = "Verify that a Form can be created with more than one page"
-	@priority = "5"
+	@priority = 5
 	test CanBeCreatedWithMultiplePages {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
-		Form.addPage(formAddNewPageNumber = "1");
+		Form.addPage(formAddNewPageNumber = 1);
 
 		FormFields.viewPaginationField(
-			key_currentPage = "1",
-			key_lastPage = "2");
+			key_currentPage = 1,
+			key_lastPage = 2);
 
 		FormFields.viewPaginationField(
-			key_currentPage = "2",
-			key_lastPage = "2");
+			key_currentPage = 2,
+			key_lastPage = 2);
 
 		AssertElementPresent(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			locator1 = "Form#PAGE_DEFAULT_TITLE_BY_NUMBER");
 
 		AssertElementPresent(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			locator1 = "Form#PAGE_DEFAULT_DESCRIPTION_BY_NUMBER");
 
 		AssertElementPresent(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			locator1 = "FormViewBuilder#EMPTY_FORM_FIELD_BY_NUMBER");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Text",
-			formPageNumber = "1");
+			formPageNumber = 1);
 
 		Type(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			locator1 = "Form#PAGE_DEFAULT_TITLE_BY_NUMBER",
 			value1 = "Page Title Test");
 
 		Type(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			locator1 = "Form#PAGE_DEFAULT_DESCRIPTION_BY_NUMBER",
 			value1 = "Page Description");
 
@@ -519,30 +564,31 @@ definition {
 		FormsAdminNavigator.gotoEditFormByName(formName = "Form 1");
 
 		AssertElementPresent(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			key_value = "Page Title Test",
 			locator1 = "Form#PAGE_TITLE_BY_NUMBER");
 
 		AssertElementPresent(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			key_value = "Page Description",
 			locator1 = "Form#PAGE_DESCRIPTION_BY_NUMBER");
 
 		AssertElementNotPresent(
-			key_pageNumber = "1",
+			key_pageNumber = 1,
 			locator1 = "FormViewBuilder#EMPTY_FORM_FIELD_BY_NUMBER");
 	}
 
 	@description = "LPS-64379 - Verify that a Form can be created without a Form Title"
-	@priority = "5"
+	@priority = 5
 	test CanBeCreatedWithoutTitle {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#CanBeCreatedWithoutTitle";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field");
 
@@ -551,7 +597,7 @@ definition {
 		Form.save();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdmin.viewForm(
@@ -560,20 +606,18 @@ definition {
 	}
 
 	@description = "Verify that a Form can be deleted"
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
-		property forms.functional = "true";
-
-		FormsAdmin.addForm();
+		FormsAdminNavigator.gotoNewForm();
 
 		Form.editName(formName = "Form 1");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		AssertElementPresent(
@@ -581,12 +625,16 @@ definition {
 			locator1 = "FormsAdmin#FORMS_TABLE_NAME");
 
 		FormsAdmin.deleteForm(formName = "Form 1");
+
+		Alert.viewSuccessMessage();
+
+		FormsAdmin.viewNoForms();
 	}
 
 	@description = "Verify that a Form can be duplicated"
-	@priority = "5"
+	@priority = 5
 	test CanBeDuplicated {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -594,7 +642,7 @@ definition {
 
 		Form.editDescription(formDescription = "Form Description");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -618,17 +666,15 @@ definition {
 	}
 
 	@description = "Verify that a Form can be edited"
-	@priority = "5"
+	@priority = 5
 	test CanBeEdited {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.editDescription(formDescription = "Form Description");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -649,7 +695,7 @@ definition {
 		Form.editDescription(formDescription = "Form Description 2");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "1",
+			fieldPositionNumber = 1,
 			fieldType = "Numeric");
 
 		Form.save();
@@ -678,11 +724,12 @@ definition {
 	}
 
 	@description = "LPS-69334 - Verify that a Form can be edited after the default language is changed"
-	@priority = "3"
+	@priority = 3
 	test CanBeEditedAfterChangingLanguage {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#CanBeEditedAfterChangingLanguage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -690,7 +737,7 @@ definition {
 
 		Form.editDescription();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field");
 
@@ -708,6 +755,8 @@ definition {
 			category = "Contenido",
 			portlet = "Formularios");
 
+		Refresh();
+
 		FormsAdminNavigator.gotoEditFormByName(formName = "Created Form Name");
 
 		Form.editNameLocalized(
@@ -720,17 +769,18 @@ definition {
 	}
 
 	@description = "LPS-69100 - Verify that a Form can be edited after the Site's default locale is changed"
-	@priority = "3"
+	@priority = 3
 	test CanBeEditedAfterChangingLocale {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#CanBeEditedAfterChangingLocale";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Site Locale Form Name");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field");
 
@@ -745,7 +795,7 @@ definition {
 			displaySettings = "Display Settings");
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdminNavigator.gotoEditFormByName(formName = "Site Locale Form Name");
@@ -758,13 +808,15 @@ definition {
 	}
 
 	@description = "LPS-61740 - Verify that a Form can be previewed"
-	@priority = "5"
+	@priority = 5
 	test CanBePreviewed {
+		property portal.acceptance = "true";
+
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -778,13 +830,15 @@ definition {
 	}
 
 	@description = "LPS-61740 - Verify that a Form can be published"
-	@priority = "5"
+	@priority = 5
 	test CanBePublished {
+		property portal.acceptance = "true";
+
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -807,7 +861,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdminNavigator.gotoViewEntries();
@@ -818,58 +872,46 @@ definition {
 	}
 
 	@description = "Verify that a Form can be unpublished"
-	@priority = "5"
+	@priority = 5
 	test CanBeUnpublished {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
-		FormsAdmin.addForm();
+		task ("Given that a form is published") {
+			FormsAdmin.addForm();
 
-		Form.editName(formName = "Form 1");
+			Form.editName(formName = "Form 1");
 
-		Form.addTextField(fieldPositionNumber = "0");
+			Form.addTextField(fieldPositionNumber = 0);
 
-		Form.save();
+			Form.save();
 
-		Form.publishForm();
+			Form.publishForm();
+		}
 
-		FormsAdminNavigator.gotoPublishCopyURLLink();
+		task ("When the user unpublishes the form and navigates to the form's published URL") {
+			FormsAdminNavigator.gotoPublishCopyURLLink();
 
-		var publishedFormPublicURL = Form.getPublishedFormPublicURL(
-			publishedFormPublicURL = "${publishedFormPublicURL}");
+			var publishedFormPublicURL = Form.getPublishedFormPublicURL(publishedFormPublicURL = ${publishedFormPublicURL});
 
-		Form.unpublishForm();
+			Form.unpublishForm();
 
-		AssertElementPresent(locator1 = "Form#PUBLISH_FORM_BUTTON");
+			Navigator.openSpecificURL(url = ${publishedFormPublicURL});
+		}
 
-		AssertElementPresent(
-			key_value = "Share",
-			locator1 = "Form#ANY_DISABLED_BUTTON");
-
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
-
-		AssertElementNotPresent(
-			key_fieldLabe = "Text",
-			locator1 = "FormFields#LABEL");
-
-		AssertElementNotPresent(
-			key_text = "Submit",
-			locator1 = "Button#ANY");
-
-		AssertElementNotPresent(
-			key_fieldName = "Text",
-			locator1 = "FormFields#TEXT_FIELD");
-
-		AssertTextEquals(
-			locator1 = "Message#ERROR_3_ALT",
-			value1 = "This form is not available or it was not published.");
+		task ("Then an error should be displayed to inform that the form is unavailable") {
+			AssertTextEquals(
+				locator1 = "Message#ERROR_3_ALT",
+				value1 = "This form is not available or it was not published.");
+		}
 	}
 
 	@description = "LPS-60520 - Verify that a Form can still be viewed after one of the Fields is deleted"
-	@priority = "4"
+	@priority = 4
 	test CanBeViewedAfterDeletingAField {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#CanBeViewedAfterDeletingAField";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -877,7 +919,7 @@ definition {
 
 		Form.editDescription();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		var fieldTextField = FormFields.getFieldName();
 
@@ -886,7 +928,7 @@ definition {
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "1",
+			fieldPositionNumber = 1,
 			fieldType = "Date");
 
 		var fieldDateField = FormFields.getFieldName();
@@ -895,44 +937,35 @@ definition {
 
 		Form.closeSidebar();
 
-		Form.save();
+		Form.publishForm();
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page");
 
-		SitePages.addPublicPage(pageName = "Form Page");
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page",
+			widgetName = "Form");
 
-		Navigator.gotoPage(pageName = "Form Page");
-
-		Portlet.addPG(
-			pageName = "Form Page",
-			portletName = "Form");
-
-		FormPortletNavigator.gotoSelectForm();
-
-		FormPortletConfiguration.selectForm();
-
-		PortletEntry.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
+		FormPortletConfiguration.selectFormOnAPage(pageName = "Form Page");
 
 		FormPortlet.waitFormRenderer(text = "Submit");
 
 		FormFields.viewTextField(
 			fieldLabel = "Text Field",
-			fieldName = "${fieldTextField}");
+			fieldName = ${fieldTextField});
 
 		FormFields.editText(
-			fieldName = "${fieldTextField}",
+			fieldName = ${fieldTextField},
 			fieldValue = "Text Field Value");
 
 		FormFields.viewDateField(
 			fieldLabel = "Date Field",
-			fieldName = "${fieldDateField}");
+			fieldName = ${fieldDateField});
 
 		FormFields.editDate(
-			fieldName = "${fieldDateField}",
+			fieldName = ${fieldDateField},
 			fieldValue = "01/01/2016");
 
 		FormPortlet.submitSuccessfully();
@@ -940,7 +973,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		LexiconEntry.gotoEntryMenuItem(
@@ -958,7 +991,7 @@ definition {
 		Form.save();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		LexiconEntry.changeDisplayStyle(displayStyle = "list");
@@ -970,16 +1003,177 @@ definition {
 			fieldValue = "1/1/16");
 	}
 
-	@description = "LPS-69214 - Verify that a confirmation appears when attempting to leave a Form without saving."
-	@priority = "3"
-	test ConfirmationAppearsWhenLeavingFormWithoutSaving {
+	@description = "LPS-167481 - Verify that the back button on the forms view entries page works correctly without creating new forms."
+	@priority = 4
+	test CheckBackButtonFormsViewEntries {
 		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#ConfirmationAppearsWhenLeavingFormWithoutSaving";
 
 		FormsAdmin.addForm();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Click(locator1 = "Form#FORM_BACK_BUTTON");
+
+		AssertElementPresent(
+			key_fieldLabel = "Form",
+			locator1 = "Form#FORM_PORTLET_HEADER");
+	}
+
+	@description = "Verify that the back button on the forms view entries page works correctly without creating new forms."
+	@priority = 4
+	test CheckBackButtonViewEntries {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		FormsAdmin.addForm();
+
+		Form.editName(formName = "Test");
+
+		Form.gotoAddField(
+			fieldPositionNumber = 0,
+			fieldType = "Single Selection");
+
+		Form.publishForm();
+
+		FormsAdminNavigator.gotoBack();
+
+		Form.duplicate(formName = "Test");
+
+		FormsAdmin.viewForm(
+			formDescription = "",
+			formName = "Test");
+
+		FormsAdmin.viewForm(
+			formDescription = "",
+			formName = "Copy of Test");
+
+		FormsAdminNavigator.gotoViewEntries(formName = "Copy of Test");
+
+		FormsAdminNavigator.gotoBack();
+
+		FormsAdmin.viewForm(
+			formDescription = "",
+			formName = "Test");
+
+		FormsAdmin.viewForm(
+			formDescription = "",
+			formName = "Copy of Test");
+	}
+
+	@description = "LPS-161854 - Verify if title and description work correctly with line break"
+	@priority = 4
+	test CheckTitleAndDescriptionWithLineBreak {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		FormsAdmin.addForm();
+
+		Form.editName(formName = "Form 1");
+
+		Form.editDescription(formDescription = "Form Description");
+
+		Form.addTextField(fieldPositionNumber = 0);
+
+		Form.save();
+
+		Form.publishForm();
+
+		FormsAdminNavigator.gotoPublishedForm();
+
+		AssertTextEquals(
+			key_formDescription = "Form Description",
+			locator1 = "Form#PUBLISH_FORM_DESCRIPTION_FIELD",
+			value1 = "Form Description");
+
+		AssertTextEquals(
+			key_formName = "Form 1",
+			locator1 = "Form#PUBLISH_FORM_NAME_FIELD",
+			value1 = "Form 1");
+
+		Navigator.openURL();
+
+		PopulateObjectFormsConfiguration.openForm();
+
+		FormsAdminNavigator.gotoEditFormByName(formName = "Form 1");
+
+		Form.editName(formName = "Form 1");
+
+		for (var n : list "1,2") {
+			KeyPress(
+				locator1 = "Form#NAME_FIELD",
+				value1 = "\ENTER");
+		}
+
+		Form.editDescription(formDescription = "Form Description");
+
+		for (var n2 : list "1,2") {
+			KeyPress(
+				locator1 = "Form#DESCRIPTION_FIELD",
+				value1 = "\ENTER");
+		}
+
+		Form.save();
+
+		FormsAdminNavigator.gotoPublishedForm();
+
+		AssertTextEquals(
+			key_formDescription = "Form Description",
+			locator1 = "Form#PUBLISH_FORM_DESCRIPTION_FIELD",
+			value1 = "Form Description");
+
+		AssertTextEquals(
+			key_formName = "Form 1",
+			locator1 = "Form#PUBLISH_FORM_NAME_FIELD",
+			value1 = "Form 1");
+	}
+
+	@description = "Verify if an unpublished form becomes unavailable on the page"
+	@priority = 4
+	test CheckUnpublishedFormUnavailableOnPage {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		FormsAdmin.addForm();
+
+		Form.editName(formName = "Test Form");
+
+		Form.gotoAddField(
+			fieldPositionNumber = 0,
+			fieldType = "Single Selection");
+
+		Form.save();
+
+		AssertElementPresent(
+			key_value = "Share",
+			locator1 = "Form#ANY_DISABLED_BUTTON");
+
+		Navigator.openURL();
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page",
+			widgetName = "Form");
+
+		FormPortletConfiguration.selectFormOnAPage(
+			formName = "Test Form",
+			pageName = "Form Page");
+
+		Alert.viewWarningSpecific(warningMessage = "This form is not available or it was not published.");
+	}
+
+	@description = "LPS-69214 - Verify that a confirmation appears when attempting to leave a Form without saving."
+	@priority = 3
+	test ConfirmationAppearsWhenLeavingFormWithoutSaving {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		FormsAdmin.addForm();
+
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field");
 
@@ -1001,24 +1195,18 @@ definition {
 	}
 
 	@description = "Verify that Data Provider can retreive data for guest users"
-	@priority = "5"
+	@priority = 5
 	test DataProviderCanRetrieveDataForGuestUser {
+		property portal.acceptance = "false";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "FormsDataProvider#DataProviderCanRetrieveDataForGuestUser";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
 
-		FormsAdminNavigator.enableLocalNetworkDataProvider();
+		FormsAdmin.enableLocalNetworkDataProvider();
 
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		Navigator.gotoNavItem(navItem = "Data Providers");
-
-		FormsAdminNavigator.gotoAddDataProvider();
+		FormsAdminNavigator.gotoRESTDataProvider();
 
 		FormsAdmin.editDataProvider(
 			name = "Liferay Countries",
@@ -1026,7 +1214,7 @@ definition {
 			outputParameterName = "Country Names",
 			outputParameterPath = "nameCurrentValue",
 			outputParameterType = "List",
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			url = "${portalURL}/api/jsonws/country/get-countries",
 			username = "test@liferay.com");
 
@@ -1038,7 +1226,7 @@ definition {
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		Check(locator1 = "AssetPermissions#GUEST_VIEW_CHECKBOX");
+		Click.javaScriptClick(locator1 = "AssetPermissions#GUEST_VIEW_CHECKBOX");
 
 		Button.clickSave();
 
@@ -1047,7 +1235,7 @@ definition {
 		Form.editName();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Select from List");
 
 		var fieldNameCountries = FormFields.getFieldName();
@@ -1064,129 +1252,30 @@ definition {
 
 		FormsAdminNavigator.gotoPublishCopyURLLink();
 
-		var publishedFormPublicURL = Form.getPublishedFormPublicURL(
-			publishedFormPublicURL = "${publishedFormPublicURL}"
-		);
+		var publishedFormPublicURL = Form.getPublishedFormPublicURL(publishedFormPublicURL = ${publishedFormPublicURL});
 
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
+		Navigator.openSpecificURL(url = ${publishedFormPublicURL});
 
 		FormFields.viewSelectOptionsList(
-			fieldName = "${fieldNameCountries}",
+			fieldName = ${fieldNameCountries},
 			selectOption = "Afghanistan");
 
 		User.logoutPG();
 
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
+		Navigator.openSpecificURL(url = ${publishedFormPublicURL});
 
 		FormFields.viewSelectOptionsList(
-			fieldName = "${fieldNameCountries}",
+			fieldName = ${fieldNameCountries},
 			selectOption = "Afghanistan");
 
 		User.loginUserPG();
 	}
 
-	@description = "This is a use case for LPS-74997."
-	@priority = "4"
-	test DeleteSelectFromListOptionAndViewEntries {
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#DeleteSelectFromListOptionAndViewEntries";
-
-		FormsAdmin.addForm();
-
-		Form.editName(formName = "Delete Select Option Test");
-
-		Form.gotoAddField(
-			fieldPositionNumber = "0",
-			fieldType = "Select from List");
-
-		var fieldName = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Select");
-
-		for (var number : list "1,2,3") {
-			FormFields.editOptionsRow(
-				optionName = "Select${number}",
-				optionValue = "Select ${number}",
-				rowNumber = "${number}");
-		}
-
-		Form.closeSidebar();
-
-		Form.save();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoEditFormByName(formName = "Delete Select Option Test");
-
-		Form.publishForm();
-
-		FormsAdminNavigator.gotoPublishedForm();
-
-		FormPortlet.waitFormRenderer(text = "Submit");
-
-		FormFields.selectSelectOption(
-			fieldName = "Select",
-			selectOption = "Select 2");
-
-		FormPortlet.submitSuccessfully();
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoViewEntries();
-
-		FormsAdminNavigator.gotoView();
-
-		FormsAdmin.viewSelectEntry(
-			fieldLabel = "Select",
-			fieldName = "${fieldName}",
-			selectOption = "Select 2");
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Edit",
-			rowEntry = "Delete Select Option Test");
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Select");
-
-		FormFields.deleteOptionsRow(rowNumber = "2");
-
-		FormFields.viewDeletedSelectOptionsRowFieldValue(
-			fieldValue = "Select 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		Form.save();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoViewEntries();
-
-		FormsAdminNavigator.gotoView();
-
-		FormsAdmin.viewSelectEntry(
-			fieldLabel = "Select",
-			fieldName = "${fieldName}",
-			selectOption = "Select 2");
-	}
-
-	@priority = "4"
+	@priority = 4
 	test EditAllFormFieldNames {
-		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#EditAllFormFieldNames";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -1195,97 +1284,101 @@ definition {
 		Form.editDescription();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Paragraph");
 
 		var fieldParagraphField = FormFields.getFieldName();
 
 		Form.editFieldLabelMetal(fieldValue = "Paragraph");
 
-		FormFields.viewFieldName(fieldName = "${fieldParagraphField}");
+		FormFields.viewFieldName(fieldName = ${fieldParagraphField});
 
 		FormFields.editParagraphBody(content = "Paragraph body text.");
 
 		Form.closeSidebar();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		var fieldTextField = FormFields.getFieldName();
 
 		Form.editFieldLabelMetal(fieldValue = "Text");
 
-		FormFields.viewFieldName(fieldName = "${fieldTextField}");
+		FormFields.viewFieldName(fieldName = ${fieldTextField});
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "1",
+			fieldPositionNumber = 1,
 			fieldType = "Select from List");
 
 		var fieldSelectFromListField = FormFields.getFieldName();
 
 		Form.editFieldLabelMetal(fieldValue = "Select");
 
-		FormFields.viewFieldName(fieldName = "${fieldSelectFromListField}");
+		FormFields.viewFieldName(fieldName = ${fieldSelectFromListField});
 
 		FormFields.editOptionsRow(
 			optionName = "Select1",
 			optionValue = "Select 1");
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Select2",
 			optionValue = "Select 2",
-			rowNumber = "2");
+			rowNumber = 2);
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "2",
+			fieldPositionNumber = 2,
 			fieldType = "Single Selection");
 
 		var fieldSingleSelectionField = FormFields.getFieldName();
 
 		Form.editFieldLabelMetal(fieldValue = "Radio");
 
-		FormFields.viewFieldName(fieldName = "${fieldSingleSelectionField}");
+		FormFields.viewFieldName(fieldName = ${fieldSingleSelectionField});
 
 		FormFields.editOptionsRow(
 			optionName = "Option1",
 			optionValue = "Option 1");
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
-			rowNumber = "2");
+			rowNumber = 2);
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "3",
+			fieldPositionNumber = 3,
 			fieldType = "Date");
 
 		var fieldDateField = FormFields.getFieldName();
 
 		Form.editFieldLabelMetal(fieldValue = "Date");
 
-		FormFields.viewFieldName(fieldName = "${fieldDateField}");
+		FormFields.viewFieldName(fieldName = ${fieldDateField});
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "4",
+			fieldPositionNumber = 4,
 			fieldType = "Multiple Selection");
 
 		var fieldMultipleSelectionField = FormFields.getFieldName();
 
 		Form.editFieldLabelMetal(fieldValue = "Checkbox");
 
-		FormFields.viewFieldName(fieldName = "${fieldMultipleSelectionField}");
+		FormFields.viewFieldName(fieldName = ${fieldMultipleSelectionField});
 
 		FormFields.editOptionsRow(
 			optionName = "Checkbox1",
 			optionValue = "Checkbox 1",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		Form.closeSidebar();
 
@@ -1293,11 +1386,12 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-50757."
-	@priority = "4"
+	@priority = 4
 	test EditAllFormFieldsTypesUsedBySystemSettings {
-		property portal.acceptance = "true";
+		property portal.release = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#EditAllFormFieldsTypesUsedBySystemSettings";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		Navigator.openURL();
 
@@ -1321,17 +1415,7 @@ definition {
 			fieldHelpText = "If checked, the default language of data definitions will be changeable. The default language of data definitions is inherited from the site settings.",
 			fieldName = "changeableDefaultLanguage");
 
-		FormFields.viewSelectLabel(
-			fieldLabel = "Default Display View",
-			fieldName = "defaultDisplayView");
-
-		FormFields.viewSelectValue(fieldName = "defaultDisplayView");
-
 		FormFields.enableCheckbox(fieldName = "changeableDefaultLanguage");
-
-		FormFields.selectSelectOption(
-			fieldName = "defaultDisplayView",
-			selectOption = "List");
 
 		SystemSettings.saveConfiguration();
 
@@ -1343,10 +1427,6 @@ definition {
 			configurationScope = "System Scope");
 
 		FormFields.viewCheckboxChecked(fieldName = "changeableDefaultLanguage");
-
-		FormFields.viewSelectOption(
-			fieldName = "defaultDisplayView",
-			selectOption = "List");
 
 		SystemSettings.resetConfiguration(configurationName = "Dynamic Data Lists");
 
@@ -1361,17 +1441,17 @@ definition {
 			fieldHelpText = "Set the allowed file extensions for template images. A file extension of * will permit all file extensions.",
 			fieldLabel = "Small Image Extensions",
 			fieldName = "smallImageExtensions",
-			repeatableFieldNumber = "4");
+			repeatableFieldNumber = 4);
 
 		FormFields.addRepeatableField(
 			fieldName = "smallImageExtensions",
-			repeatableFieldNumber = "4");
+			repeatableFieldNumber = 4);
 
 		FormFields.viewRepeatableTextMultilineField(
 			fieldHelpText = "Set the allowed file extensions for template images. A file extension of * will permit all file extensions.",
 			fieldLabel = "Small Image Extensions",
 			fieldName = "smallImageExtensions",
-			repeatableFieldNumber = "5");
+			repeatableFieldNumber = 5);
 
 		FormFields.viewTextField(
 			fieldHelpText = "Set the maximum file size for template images in bytes. A value of 0 can be used to indicate unlimited file size.",
@@ -1381,16 +1461,16 @@ definition {
 		FormFields.editRepeatableTextMultiline(
 			fieldName = "smallImageExtensions",
 			fieldValue = ".svg",
-			repeatableFieldNumber = "4");
+			repeatableFieldNumber = 4);
 
 		FormFields.editRepeatableTextMultiline(
 			fieldName = "smallImageExtensions",
 			fieldValue = "*",
-			repeatableFieldNumber = "5");
+			repeatableFieldNumber = 5);
 
 		FormFields.editText(
 			fieldName = "smallImageMaxSize",
-			fieldValue = "5120");
+			fieldValue = 5120);
 
 		SystemSettings.saveConfiguration();
 
@@ -1404,16 +1484,16 @@ definition {
 		FormFields.viewRepeatableTextMultilineValue(
 			fieldName = "smallImageExtensions",
 			fieldValue = ".svg",
-			repeatableFieldNumber = "4");
+			repeatableFieldNumber = 4);
 
 		FormFields.viewRepeatableTextMultilineValue(
 			fieldName = "smallImageExtensions",
 			fieldValue = "*",
-			repeatableFieldNumber = "5");
+			repeatableFieldNumber = 5);
 
 		FormFields.viewTextValue(
 			fieldName = "smallImageMaxSize",
-			fieldValue = "5120");
+			fieldValue = 5120);
 
 		SystemSettings.resetConfiguration(configurationName = "Dynamic Data Mapping Service");
 
@@ -1427,16 +1507,16 @@ definition {
 		FormFields.viewTextField(
 			fieldHelpText = "Configure how long a lock is held before releasing due to suspected deadlock.",
 			fieldLabel = "Lock Timeout Milliseconds",
-			fieldName = "ds.lock.timeout.milliseconds");
+			fieldName = "Lock Timeout Milliseconds");
 
 		Refresh();
 
-		FormFields.editTextWithBackspace(fieldName = "ds.lock.timeout.milliseconds");
+		FormFields.editTextWithBackspace(fieldName = "Lock Timeout Milliseconds");
 
 		Button.clickSave();
 
 		FormFields.viewFieldValidationErrorMessage(
-			fieldName = "ds.lock.timeout.milliseconds",
+			fieldName = "Lock Timeout Milliseconds",
 			fieldValidationErrorMessage = "This field is required.");
 
 		SystemSettings.exitEditConfiguration();
@@ -1459,11 +1539,11 @@ definition {
 			fieldName = "exposeGlobal");
 
 		for (var fieldName : list "applyVersioning,explainResolutions,exposeGlobal") {
-			FormFields.enableCheckbox(fieldName = "${fieldName}");
+			FormFields.enableCheckbox(fieldName = ${fieldName});
 
-			FormFields.viewCheckboxChecked(fieldName = "${fieldName}");
+			FormFields.viewCheckboxChecked(fieldName = ${fieldName});
 
-			FormFields.disableCheckbox(fieldName = "${fieldName}");
+			FormFields.disableCheckbox(fieldName = ${fieldName});
 		}
 
 		SystemSettings.saveConfiguration();
@@ -1475,81 +1555,19 @@ definition {
 			configurationName = "JavaScript Loader",
 			configurationScope = "System Scope");
 
+		Refresh();
+
 		for (var fieldName : list "applyVersioning,exposeGlobal") {
-			FormFields.viewCheckboxNotChecked(fieldName = "${fieldName}");
+			FormFields.viewCheckboxNotChecked(fieldName = ${fieldName});
 		}
 
 		SystemSettings.resetConfiguration(configurationName = "JavaScript Loader");
 	}
 
-	@description = "This is a use case for LPS-59749"
-	@priority = "3"
-	test EditFormsConfigurationViaSystemSettings {
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#EditFormsConfigurationViaSystemSettings";
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		LexiconEntry.viewActiveDisplayStyle(displayStyle = "table");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "System Settings");
-
-		SystemSettings.gotoConfiguration(
-			configurationCategory = "Forms",
-			configurationName = "Forms",
-			configurationScope = "Site Scope");
-
-		FormFields.viewSelectOption(
-			fieldName = "Default Display View",
-			selectOption = "Table");
-
-		FormFields.selectSelectOption(
-			fieldName = "Default Display View",
-			selectOption = "List");
-
-		SystemSettings.saveConfiguration();
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		LexiconEntry.viewActiveDisplayStyle(displayStyle = "list");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "System Settings");
-
-		SystemSettings.gotoConfiguration(
-			configurationCategory = "Forms",
-			configurationName = "Forms",
-			configurationScope = "Site Scope");
-
-		SystemSettings.resetConfiguration(configurationName = "Forms");
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		LexiconEntry.viewActiveDisplayStyle(displayStyle = "table");
-	}
-
 	@description = "This is a use case for LPS-81578."
-	@priority = "4"
+	@priority = 4
 	test GuestUserCanNotSeeFormAfterPermissionRemoved {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -1557,7 +1575,7 @@ definition {
 
 		Form.editDescription();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -1576,36 +1594,34 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdminNavigator.gotoEditFormByName();
 
 		FormsAdminNavigator.gotoPublishCopyURLLink();
 
-		var publishedFormPublicURL = Form.getPublishedFormPublicURL(
-			publishedFormPublicURL = "${publishedFormPublicURL}"
-		);
+		var publishedFormPublicURL = Form.getPublishedFormPublicURL(publishedFormPublicURL = ${publishedFormPublicURL});
 
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
+		Navigator.openSpecificURL(url = ${publishedFormPublicURL});
 
 		User.logoutPG();
 
-		Navigator.openSpecificURL(url = "${publishedFormPublicURL}");
+		Navigator.openSpecificURL(url = ${publishedFormPublicURL});
 
 		Alert.viewWarningSpecific(warningMessage = "You do not have the permission to view this form.");
 	}
 
 	@description = "Verify that multiple Forms can be deleted"
-	@priority = "5"
+	@priority = 5
 	test MultipleFormsCanBeDeleted {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
@@ -1613,14 +1629,14 @@ definition {
 
 		Form.editName(formName = "Form 2");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
 		FormsAdminNavigator.gotoBack();
 
-		while (IsElementPresent(locator1 = "Icon#BODY_VERTICAL_ELLIPSIS")) {
-			LexiconEntry.gotoEllipsisMenuItemNoError(menuItem = "Delete");
+		while (IsElementPresent(locator1 = "Icon#VERTICAL_ELLIPSIS_BUTTON")) {
+			LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Delete");
 
 			AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
 
@@ -1637,11 +1653,12 @@ definition {
 	}
 
 	@description = "LPS-84276 - Verify that Form Pages can be removed"
-	@priority = "5"
+	@priority = 5
 	test PagesCanBeDeleted {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#PagesCanBeDeleted";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -1649,27 +1666,27 @@ definition {
 
 		Form.editPageTitle(
 			formPageName = "Page A",
-			formTitleNumber = "1");
+			formTitleNumber = 1);
 
-		Form.addTextField(formPageNumber = "0");
+		Form.addTextField(formPageNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field Page A");
 
 		Form.closeSidebar();
 
-		Form.addPage(formAddNewPageNumber = "1");
+		Form.addPage(formAddNewPageNumber = 1);
 
 		Form.editPageTitle(
 			formPageName = "Page B",
-			formTitleNumber = "2");
+			formTitleNumber = 2);
 
-		Form.addTextField(formPageNumber = "1");
+		Form.addTextField(formPageNumber = 1);
 
 		Form.editFieldLabelMetal(fieldValue = "Text Field Page B");
 
 		Form.deleteCurrentPage(
-			formDropDownNumber = "1",
-			formPageNumber = "2");
+			formDropDownNumber = 1,
+			formPageNumber = 2);
 
 		FormFields.viewDeletedFieldLabel(fieldName = "Text Field Page B");
 
@@ -1679,9 +1696,9 @@ definition {
 	}
 
 	@description = "Verify that Form Pages can be reordered"
-	@priority = "5"
+	@priority = 5
 	test PagesCanBeReordered {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -1689,19 +1706,19 @@ definition {
 
 		Form.editPageTitle(
 			formPageName = "Page A",
-			formTitleNumber = "1");
+			formTitleNumber = 1);
 
-		Form.addPage(formAddNewPageNumber = "1");
+		Form.addPage(formAddNewPageNumber = 1);
 
 		Form.editPageTitle(
 			formPageName = "Page B",
-			formTitleNumber = "2");
+			formTitleNumber = 2);
 
-		Form.addPage(formAddNewPageNumber = "2");
+		Form.addPage(formAddNewPageNumber = 2);
 
 		Form.editPageTitle(
 			formPageName = "Page C",
-			formTitleNumber = "3");
+			formTitleNumber = 3);
 
 		Form.viewButtonPageDisabled(
 			formPageName = "Page A",
@@ -1739,9 +1756,9 @@ definition {
 	}
 
 	@description = "Verify that Form Pages can be reset"
-	@priority = "5"
+	@priority = 5
 	test PagesCanBeReset {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -1749,29 +1766,96 @@ definition {
 
 		Form.editPageTitle(
 			formPageName = "Test title",
-			formTitleNumber = "1");
+			formTitleNumber = 1);
 
 		Form.editPageDescription(formPageDescriptionName = "Text");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.save();
 
-		Form.pageReset(pageIndex = "1");
+		Form.pageReset(pageIndex = 1);
 
-		Form.viewFormPlaceholderPage(pageIndex = "0");
+		Form.viewFormPlaceholderPage(pageIndex = 0);
 
-		Form.viewPageTitleDefault(pageIndex = "0");
+		Form.viewPageTitleDefault(pageIndex = 0);
 
-		Form.viewPageEmptyField(pageIndex = "0");
+		Form.viewPageEmptyField(pageIndex = 0);
+	}
+
+	@description = "LPS-111551 - As a Forms admin, I want to reorder my form pages"
+	@priority = 4
+	test ReorderPagesAndVerifyFields {
+		FormsAdmin.addForm();
+
+		Form.editName(formName = "Form 1");
+
+		Form.editPageTitle(
+			formPageName = "Page A",
+			formTitleNumber = 1);
+
+		Form.addTextField(fieldPositionNumber = 0);
+
+		var fieldTextField = FormFields.getFieldName();
+
+		Form.editFieldLabelMetal(fieldValue = "Text Field 1");
+
+		Form.closeSidebar();
+
+		Form.addPage(formAddNewPageNumber = 1);
+
+		Form.editPageTitle(
+			formPageName = "Page B",
+			formTitleNumber = 2);
+
+		Form.addTextField(
+			fieldPositionNumber = 0,
+			formPageNumber = 1);
+
+		Form.editFieldLabelMetal(fieldValue = "Text Field 2");
+
+		Form.closeSidebar();
+
+		Form.movePageDown(formPageName = "Page A");
+
+		Form.viewButtonPageDisabled(
+			formPageName = "Page A",
+			pageMove = "Down");
+
+		Form.viewButtonPageDownEnabled(formPageName = "Page B");
+
+		Form.viewButtonPageUpEnabled(formPageName = "Page A");
+
+		Form.viewReorderPageAndVerifyField(
+			fieldName = "Text Field 2",
+			fieldPositionNumber = 0,
+			formPageNumber = 0);
+
+		Form.viewReorderPageAndVerifyField(
+			fieldName = "Text Field 1",
+			fieldPositionNumber = 0,
+			formPageNumber = 1);
+
+		Form.movePageUp(formPageName = "Page A");
+
+		Form.viewReorderPageAndVerifyField(
+			fieldName = "Text Field 1",
+			fieldPositionNumber = 0,
+			formPageNumber = 0);
+
+		Form.viewReorderPageAndVerifyField(
+			fieldName = "Text Field 2",
+			fieldPositionNumber = 0,
+			formPageNumber = 1);
 	}
 
 	@description = "This is a use case for LPS-59336."
-	@priority = "4"
+	@priority = 4
 	test SearchFormRecordMultipleEntries {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#SearchFormRecordMultipleEntries";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var fieldValueList = "testEntry1,exampleText,sampleAnswer";
 
@@ -1781,7 +1865,7 @@ definition {
 
 		Form.editDescription(formDescription = "Test Form Description");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		var fieldTextField = FormFields.getFieldName();
 
@@ -1789,34 +1873,27 @@ definition {
 
 		Form.closeSidebar();
 
-		Form.save();
+		Form.publishForm();
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page");
 
-		SitePages.addPublicPage(pageName = "Form Page");
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page",
+			widgetName = "Form");
 
-		Navigator.gotoPage(pageName = "Form Page");
-
-		Portlet.addPG(
-			pageName = "Form Page",
-			portletName = "Form");
-
-		FormPortletNavigator.gotoSelectForm();
-
-		FormPortletConfiguration.selectForm(formName = "Test Form");
-
-		PortletEntry.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
+		FormPortletConfiguration.selectFormOnAPage(
+			formName = "Test Form",
+			pageName = "Form Page");
 
 		FormPortlet.waitFormRenderer(text = "Submit");
 
-		for (var fieldValue : list "${fieldValueList}") {
+		for (var fieldValue : list ${fieldValueList}) {
 			FormFields.editText(
-				fieldName = "${fieldTextField}",
-				fieldValue = "${fieldValue}");
+				fieldName = ${fieldTextField},
+				fieldValue = ${fieldValue});
 
 			FormPortlet.clickSubmit();
 
@@ -1828,7 +1905,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdmin.viewForm(
@@ -1841,18 +1918,18 @@ definition {
 			fieldLabel = "Text Field",
 			fieldValue = "testEntry1");
 
-		for (var fieldValue : list "${fieldValueList}") {
-			Search.searchCP(searchTerm = "${fieldValue}");
+		for (var fieldValue : list ${fieldValueList}) {
+			Search.searchCP(searchTerm = ${fieldValue});
 
 			FormsAdmin.viewFormTableEntry(
 				fieldLabel = "Text Field",
-				fieldValue = "${fieldValue}");
+				fieldValue = ${fieldValue});
 
-			for (var fieldValueNotVisible : list "${fieldValueList}") {
-				if ("${fieldValueNotVisible}" != "${fieldValue}") {
+			for (var fieldValueNotVisible : list ${fieldValueList}) {
+				if (${fieldValueNotVisible} != ${fieldValue}) {
 					FormsAdmin.viewTableEntryNotPresent(
 						fieldLabel = "Text Field",
-						fieldValue = "${fieldValueNotVisible}");
+						fieldValue = ${fieldValueNotVisible});
 				}
 			}
 		}
@@ -1863,9 +1940,9 @@ definition {
 	}
 
 	@description = "Verify that a Form cannot be created without at least 1 field"
-	@priority = "5"
+	@priority = 5
 	test ShouldHaveAtLeastOneField {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -1878,384 +1955,11 @@ definition {
 		Alert.viewErrorMessage(errorMessage = "Error:Please add at least one field.");
 	}
 
-	@priority = "5"
-	test SubmitFormAfterEditingFields {
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#SubmitFormAfterEditingFields";
-
-		FormsAdmin.addForm();
-
-		Form.editName();
-
-		Form.editDescription();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "0",
-			fieldType = "Paragraph");
-
-		var fieldParagraphField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Paragraph");
-
-		FormFields.editParagraphBody(content = "Paragraph body text.");
-
-		Form.closeSidebar();
-
-		Form.addTextField(fieldPositionNumber = "1");
-
-		var fieldTextField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Text");
-
-		Form.closeSidebar();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "2",
-			fieldType = "Select from List");
-
-		var fieldSelectFromListField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Select");
-
-		FormFields.editOptionsRow(
-			optionName = "Select1",
-			optionValue = "Select 1");
-
-		FormFields.editOptionsRow(
-			optionName = "Select2",
-			optionValue = "Select 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "3",
-			fieldType = "Single Selection");
-
-		var fieldSingleSelectionField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Radio");
-
-		FormFields.editOptionsRow(
-			optionName = "Option1",
-			optionValue = "Option 1");
-
-		FormFields.editOptionsRow(
-			optionName = "Option2",
-			optionValue = "Option 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "4",
-			fieldType = "Date");
-
-		var fieldDateField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Date");
-
-		Form.closeSidebar();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "5",
-			fieldType = "Multiple Selection");
-
-		var fieldMultipleSelectionField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Checkbox");
-
-		FormFields.editOptionsRow(
-			optionName = "Checkbox1",
-			optionValue = "Checkbox 1",
-			rowNumber = "1");
-
-		Form.closeSidebar();
-
-		Form.save();
-
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
-
-		SitePages.addPublicPage(pageName = "Form Page");
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		Portlet.addPG(
-			pageName = "Form Page",
-			portletName = "Form");
-
-		FormPortletNavigator.gotoSelectForm();
-
-		FormPortletConfiguration.selectForm();
-
-		PortletEntry.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		FormPortlet.waitFormRenderer(text = "Submit");
-
-		FormFields.viewParagraphField(
-			fieldName = "${fieldParagraphField}",
-			fieldTitle = "Paragraph",
-			fieldValue = "Paragraph body text.");
-
-		FormFields.viewTextLabel(
-			fieldLabel = "Text",
-			fieldName = "${fieldTextField}");
-
-		FormFields.viewSelectLabel(
-			fieldLabel = "Select",
-			fieldName = "${fieldSelectFromListField}");
-
-		FormFields.selectSelectOption(
-			fieldName = "${fieldSelectFromListField}",
-			selectOption = "Select 1");
-
-		FormFields.selectSelectOption(
-			fieldName = "${fieldSelectFromListField}",
-			selectOption = "Select 2");
-
-		FormFields.viewRadioLabel(
-			fieldLabel = "Radio",
-			fieldName = "${fieldSingleSelectionField}");
-
-		FormFields.selectRadioOption(
-			fieldName = "${fieldSingleSelectionField}",
-			radioOption = "Option 1");
-
-		FormFields.selectRadioOption(
-			fieldName = "${fieldSingleSelectionField}",
-			radioOption = "Option 2");
-
-		FormFields.viewDateLabel(
-			fieldLabel = "Date",
-			fieldName = "${fieldDateField}");
-
-		FormFields.viewCheckboxLabel(
-			fieldLabel = "Checkbox",
-			fieldName = "${fieldMultipleSelectionField}");
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoEditFormByName();
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Paragraph");
-
-		Form.editFieldLabelMetal(fieldValue = "New Paragraph");
-
-		FormFields.editParagraphBody(content = "New Paragraph body text.");
-
-		Form.closeSidebar();
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Text");
-
-		Form.editFieldLabelMetal(fieldValue = "New Text");
-
-		Form.closeSidebar();
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Radio");
-
-		Form.editFieldLabelMetal(fieldValue = "New Radio");
-
-		FormFields.editOptionsRow(optionValue = "New Option 1");
-
-		FormFields.editOptionsRow(
-			optionValue = "New Option 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Date");
-
-		Form.editFieldLabelMetal(fieldValue = "New Date");
-
-		Form.closeSidebar();
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Select");
-
-		Form.editFieldLabelMetal(fieldValue = "New Select");
-
-		FormFields.editOptionsRow(optionValue = "New Select 1");
-
-		FormFields.editOptionsRow(
-			optionValue = "New Select 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		FormsAdminNavigator.gotoEditField(fieldName = "Checkbox");
-
-		Form.editFieldLabelMetal(fieldValue = "New Checkbox");
-
-		Form.closeSidebar();
-
-		Form.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		FormPortlet.waitFormRenderer(text = "Submit");
-
-		FormFields.viewParagraphField(
-			fieldName = "${fieldParagraphField}",
-			fieldTitle = "New Paragraph",
-			fieldValue = "New Paragraph body text.");
-
-		FormFields.editText(
-			fieldName = "${fieldTextField}",
-			fieldValue = "Text");
-
-		FormFields.selectSelectOption(
-			fieldName = "${fieldSelectFromListField}",
-			selectOption = "New Select 1");
-
-		FormFields.selectSelectOption(
-			fieldName = "${fieldSelectFromListField}",
-			selectOption = "New Select 2");
-
-		FormFields.selectRadioOption(
-			fieldName = "${fieldSingleSelectionField}",
-			radioOption = "New Option 1");
-
-		FormFields.selectRadioOption(
-			fieldName = "${fieldSingleSelectionField}",
-			radioOption = "New Option 2");
-
-		FormFields.editDate(
-			fieldName = "${fieldDateField}",
-			fieldValue = "05/02/2016");
-
-		FormFields.selectCheckboxOption(
-			checkboxOption = "Checkbox 1",
-			fieldName = "${fieldMultipleSelectionField}");
-
-		FormPortlet.submitSuccessfully();
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoViewEntries();
-
-		FormsAdminNavigator.gotoView();
-
-		FormFields.viewParagraphField(
-			fieldName = "${fieldParagraphField}",
-			fieldTitle = "New Paragraph",
-			fieldValue = "New Paragraph body text.");
-
-		FormsAdmin.viewTextEntry(
-			fieldLabel = "New Text",
-			fieldName = "${fieldTextField}",
-			fieldValue = "Text");
-
-		FormsAdmin.viewSelectEntry(
-			fieldLabel = "New Select",
-			fieldName = "${fieldSelectFromListField}",
-			selectOption = "New Select 2");
-
-		FormsAdmin.viewRadioEntry(
-			fieldLabel = "New Radio",
-			fieldName = "${fieldSingleSelectionField}",
-			fieldValue = "Option 2");
-
-		FormsAdmin.viewDateEntry(
-			fieldLabel = "New Date",
-			fieldName = "${fieldDateField}",
-			fieldValue = "05/02/2016");
-
-		FormsAdmin.viewCheckboxEntry(
-			fieldName = "${fieldMultipleSelectionField}",
-			fieldValue = "Checkbox 1");
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		LAR.exportPortlet(larFileName = "FormsExport.lar");
-
-		Pause(locator1 = "5000");
-
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
-
-		Site.addBlankCP(siteName = "Site Name");
-
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
-
-		SitePages.addPublicPage(pageName = "Site Page Name");
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		LAR.importPortlet(
-			larFileName = "FormsExport.lar",
-			siteName = "Site Name");
-
-		Navigator.openSiteURL(siteName = "Site Name");
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoViewEntries();
-
-		FormsAdminNavigator.gotoView();
-
-		FormFields.viewParagraphField(
-			fieldName = "${fieldParagraphField}",
-			fieldTitle = "New Paragraph",
-			fieldValue = "New Paragraph body text.");
-
-		FormsAdmin.viewTextEntry(
-			fieldLabel = "New Text",
-			fieldName = "${fieldTextField}",
-			fieldValue = "Text");
-
-		FormsAdmin.viewSelectEntry(
-			fieldLabel = "New Select",
-			fieldName = "${fieldSelectFromListField}",
-			selectOption = "New Select 2");
-
-		FormsAdmin.viewRadioEntry(
-			fieldLabel = "New Radio",
-			fieldName = "${fieldSingleSelectionField}",
-			fieldValue = "Option 2");
-
-		FormsAdmin.viewDateEntry(
-			fieldLabel = "New Date",
-			fieldName = "${fieldDateField}",
-			fieldValue = "05/02/2016");
-
-		FormsAdmin.viewCheckboxEntry(
-			fieldName = "${fieldMultipleSelectionField}",
-			fieldValue = "Checkbox 1");
-
-		Navigator.openURL();
-
-		Site.tearDownCP();
-	}
-
-	@priority = "4"
+	@priority = 4
 	test SubmitFormWithMultipleFieldsAndViewEntriesViaDescriptiveDisplay {
-		property portal.acceptance = "quarantine";
-		property portal.upstream = "quarantine";
-		property test.name.skip.portal.instance = "Forms#SubmitFormWithMultipleFieldsAndViewEntriesViaDescriptiveDisplay";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -2263,7 +1967,7 @@ definition {
 
 		Form.editDescription();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		var fieldTextField = FormFields.getFieldName();
 
@@ -2272,7 +1976,7 @@ definition {
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Multiple Selection");
 
 		var fieldMultipleSelectionField = FormFields.getFieldName();
@@ -2282,12 +1986,12 @@ definition {
 		FormFields.editOptionsRow(
 			optionName = "Checkbox1",
 			optionValue = "Checkbox 1",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "1",
+			fieldPositionNumber = 1,
 			fieldType = "Single Selection");
 
 		var fieldSingleSelectionField = FormFields.getFieldName();
@@ -2298,15 +2002,17 @@ definition {
 			optionName = "Option1",
 			optionValue = "Option 1");
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Option2",
 			optionValue = "Option 2",
-			rowNumber = "2");
+			rowNumber = 2);
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "2",
+			fieldPositionNumber = 2,
 			fieldType = "Select from List");
 
 		var fieldSelectFromListField = FormFields.getFieldName();
@@ -2317,72 +2023,65 @@ definition {
 			optionName = "Select1",
 			optionValue = "Select 1");
 
+		FormFields.clickAddOptionButton();
+
 		FormFields.editOptionsRow(
 			optionName = "Select2",
 			optionValue = "Select 2",
-			rowNumber = "2");
+			rowNumber = 2);
 
 		Form.closeSidebar();
 
-		Form.save();
+		Form.publishForm();
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page");
 
-		SitePages.addPublicPage(pageName = "Form Page");
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = "Guest",
+			layoutName = "Form Page",
+			widgetName = "Form");
 
-		Navigator.gotoPage(pageName = "Form Page");
-
-		Portlet.addPG(
-			pageName = "Form Page",
-			portletName = "Form");
-
-		FormPortletNavigator.gotoSelectForm();
-
-		FormPortletConfiguration.selectForm();
-
-		PortletEntry.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
+		FormPortletConfiguration.selectFormOnAPage(pageName = "Form Page");
 
 		FormPortlet.waitFormRenderer(text = "Submit");
 
 		FormFields.viewTextLabel(
 			fieldLabel = "Text Field",
-			fieldName = "${fieldTextField}");
+			fieldName = ${fieldTextField});
 
 		FormFields.editText(
-			fieldName = "${fieldTextField}",
+			fieldName = ${fieldTextField},
 			fieldValue = "Text Field Value");
 
 		FormFields.viewCheckboxLabel(
 			fieldLabel = "Checkbox Field",
-			fieldName = "${fieldMultipleSelectionField}");
+			fieldName = ${fieldMultipleSelectionField});
 
 		FormFields.selectCheckboxOption(
 			checkboxOption = "Checkbox 1",
-			fieldName = "${fieldMultipleSelectionField}");
+			fieldName = ${fieldMultipleSelectionField});
 
 		FormFields.viewRadioLabel(
 			fieldLabel = "Radio Field",
-			fieldName = "${fieldSingleSelectionField}");
+			fieldName = ${fieldSingleSelectionField});
 
 		FormFields.selectRadioOption(
-			fieldName = "${fieldSingleSelectionField}",
+			fieldName = ${fieldSingleSelectionField},
 			radioOption = "Option 1");
 
 		FormFields.viewSelectLabel(
 			fieldLabel = "Select Field",
-			fieldName = "${fieldSelectFromListField}");
+			fieldName = ${fieldSelectFromListField});
 
 		FormFields.selectSelectOption(
-			fieldName = "${fieldSelectFromListField}",
+			fieldName = ${fieldSelectFromListField},
 			selectOption = "Select 2");
 
 		FormPortlet.submitSuccessfully();
 
-		FormsAdmin.openFormsAdmin(siteURLKey = "guest");
+		FormsAdminNavigator.openFormsAdmin(siteURLKey = "guest");
 
 		LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
@@ -2408,206 +2107,31 @@ definition {
 
 		FormsAdmin.viewTextEntry(
 			fieldLabel = "Text Field",
-			fieldName = "${fieldTextField}",
+			fieldName = ${fieldTextField},
 			fieldValue = "Text Field Value");
 
 		FormsAdmin.viewCheckboxEntry(
-			fieldName = "${fieldMultipleSelectionField}",
+			fieldName = ${fieldMultipleSelectionField},
 			fieldValue = "Checkbox 1");
 
 		FormsAdmin.viewRadioEntry(
 			fieldLabel = "Radio Field",
-			fieldName = "${fieldSingleSelectionField}",
+			fieldName = ${fieldSingleSelectionField},
 			fieldValue = "Option 1");
 
 		FormsAdmin.viewSelectEntry(
 			fieldLabel = "Select Field",
-			fieldName = "${fieldSelectFromListField}",
+			fieldName = ${fieldSelectFromListField},
 			fieldValue = "Select 2");
 	}
 
-	@priority = "4"
-	test SubmitFormWithRequiredRadioField {
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#SubmitFormWithRequiredRadioField";
-
-		FormsAdmin.addForm();
-
-		Form.editName();
-
-		Form.editDescription();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "0",
-			fieldType = "Single Selection");
-
-		var fieldSingleSelectionField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Radio Field");
-
-		FormFields.enableSwitch(fieldName = "required");
-
-		FormFields.editOptionsRow(
-			optionName = "Option1",
-			optionValue = "Option 1");
-
-		FormFields.editOptionsRow(
-			optionName = "Option2",
-			optionValue = "Option 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		Form.save();
-
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
-
-		SitePages.addPublicPage(pageName = "Form Page");
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		Portlet.addPG(
-			pageName = "Form Page",
-			portletName = "Form");
-
-		FormPortletNavigator.gotoSelectForm();
-
-		FormPortletConfiguration.selectForm();
-
-		PortletEntry.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		FormPortlet.waitFormRenderer(text = "Submit");
-
-		FormFields.viewRadioLabel(
-			fieldLabel = "Radio Field",
-			fieldName = "${fieldSingleSelectionField}");
-
-		FormFields.viewRequiredAsterisk();
-
-		FormPortlet.submitWithValidationError();
-
-		FormFields.selectRadioOption(
-			fieldName = "${fieldSingleSelectionField}",
-			radioOption = "Option 1");
-
-		FormPortlet.waitForValidationErrorNotPresent();
-
-		FormPortlet.submitSuccessfully();
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoViewEntries();
-
-		FormsAdmin.viewFormTableEntry(
-			fieldLabel = "Radio Field",
-			fieldValue = "Option 1");
-	}
-
-	@description = "This is a use case for LPS-59351."
-	@priority = "4"
-	test SubmitFormWithSwitchCheckboxField {
-		property portal.acceptance = "true";
-		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#SubmitFormWithSwitchCheckboxField";
-
-		FormsAdmin.addForm();
-
-		Form.editName();
-
-		Form.editDescription();
-
-		Form.gotoAddField(
-			fieldPositionNumber = "0",
-			fieldType = "Multiple Selection");
-
-		var fieldMultipleSelectionField = FormFields.getFieldName();
-
-		Form.editFieldLabelMetal(fieldValue = "Checkbox Field");
-
-		FormFields.enableSwitch(fieldName = "showAsSwitcher");
-
-		FormFields.editOptionsRow(
-			optionName = "Switch1",
-			optionValue = "Switch 1",
-			rowNumber = "1");
-
-		FormFields.editOptionsRow(
-			optionName = "Switch2",
-			optionValue = "Switch 2",
-			rowNumber = "2");
-
-		Form.closeSidebar();
-
-		Form.save();
-
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
-
-		SitePages.addPublicPage(pageName = "Form Page");
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		Portlet.addPG(
-			pageName = "Form Page",
-			portletName = "Form");
-
-		FormPortletNavigator.gotoSelectForm();
-
-		FormPortletConfiguration.selectForm();
-
-		PortletEntry.save();
-
-		Navigator.gotoPage(pageName = "Form Page");
-
-		FormPortlet.waitFormRenderer(text = "Submit");
-
-		FormFields.viewSwitchLabel(
-			fieldLabel = "Checkbox Field",
-			fieldName = "${fieldMultipleSelectionField}");
-
-		FormFields.selectSwitchOption(
-			fieldName = "${fieldMultipleSelectionField}",
-			switchOption = "Switch 1");
-
-		FormPortlet.clickSubmit();
-
-		Alert.viewSuccessMessage();
-
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Forms");
-
-		FormsAdminNavigator.gotoViewEntries();
-
-		FormsAdmin.viewFormTableEntry(
-			fieldLabel = "Checkbox Field",
-			fieldValue = "Switch 1");
-
-		FormsAdminNavigator.gotoView();
-
-		FormsAdmin.viewCheckboxEntry(
-			fieldName = "${fieldMultipleSelectionField}",
-			fieldValue = "Switch 1");
-	}
-
 	@description = "LPS-84637 - Form title and description get unescaped after unpublish it."
-	@priority = "5"
+	@priority = 5
 	test TitleAndDescriptionXSSUnescapedAfterUnpublish {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
-		property test.name.skip.portal.instance = "Forms#TitleAndDescriptionXSSUnescapedAfterUnpublish";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -2615,7 +2139,7 @@ definition {
 
 		Form.editDescription(formDescription = "<script>alert(456)</script>");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.publishForm();
 
@@ -2642,22 +2166,22 @@ definition {
 		AssertAlertNotPresent();
 
 		var actualScript = '''<script>alert(123)</script>''';
-
 		var escapedScript = '''&lt;script&gt;alert(123)&lt;/script&gt;''';
 
-		AssertHTMLSourceTextNotPresent(value1 = "${actualScript}");
+		AssertHTMLSourceTextNotPresent(value1 = ${actualScript});
 
-		AssertHTMLSourceTextPresent(value1 = "${escapedScript}");
+		AssertHTMLSourceTextPresent(value1 = ${escapedScript});
 	}
 
 	@description = "This is a use case for LPS-64305 and LPS-96253."
-	@priority = "4"
+	@priority = 4
 	test ViewDefaultFieldNamesWithPunctuationCharacters {
 		property portal.acceptance = "true";
 		property portal.upstream = "true";
 		property test.assert.javascript.errors = "true";
 		property test.assert.warning.exceptions = "true";
-		property test.name.skip.portal.instance = "Forms#ViewDefaultFieldNamesWithPunctuationCharacters";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -2665,7 +2189,7 @@ definition {
 
 		Form.editDescription();
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = ",-+!@#$%^*()=.?/;:{}[]\|");
 
@@ -2675,7 +2199,7 @@ definition {
 
 		Form.closeSidebar();
 
-		Form.addTextField(fieldPositionNumber = "1");
+		Form.addTextField(fieldPositionNumber = 1);
 
 		Form.editFieldLabelMetal(fieldValue = "Jump, She exclaimed!");
 
@@ -2693,27 +2217,29 @@ definition {
 
 		FormFields.viewTextField(
 			fieldLabel = ",-+!@#$%^*()=.?/;:{}[]\|",
-			fieldName = "${textFieldName1}");
+			fieldName = ${textFieldName1});
 
 		FormFields.viewTextField(
 			fieldLabel = "Jump, She exclaimed!",
-			fieldName = "${textFieldName2}");
+			fieldName = ${textFieldName2});
 
 		FormFields.editText(
-			fieldName = "${textFieldName1}",
+			fieldName = ${textFieldName1},
 			fieldValue = "1,2,3.");
 
 		FormFields.editText(
-			fieldName = "${textFieldName2}",
+			fieldName = ${textFieldName2},
 			fieldValue = ",-+!@#$%^*()=.?/;:{}[]\|");
 
 		FormPortlet.submitSuccessfully();
 	}
 
 	@description = "This is a use case for LPS-126817."
-	@priority = "5"
+	@priority = 5
 	test ViewSelectFromListOptionValueWithCharacter {
-		property test.name.skip.portal.instance = "Forms#ViewSelectFromListOptionValueWithCharacter";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		FormsAdmin.addForm();
 
@@ -2722,7 +2248,7 @@ definition {
 		Form.editDescription();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Select from List");
 
 		Form.editFieldLabelMetal(fieldValue = "Select");
@@ -2731,7 +2257,11 @@ definition {
 			FormFields.editOptionsRow(
 				optionName = "<test${number}",
 				optionValue = "<test ${number}",
-				rowNumber = "${number}");
+				rowNumber = ${number});
+
+			if (${number} != 2) {
+				FormFields.clickAddOptionButton();
+			}
 		}
 
 		Form.gotoAdvancedTab();
@@ -2744,17 +2274,100 @@ definition {
 
 		FormFields.viewOptionsRowFieldValue(
 			fieldValue = "<test 1",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		FormFields.viewOptionsRowFieldValue(
 			fieldValue = "<test 2",
-			rowNumber = "2");
+			rowNumber = 2);
+	}
+
+	@description = "LPS-177877 - Verify that when reloading the widget page the scroll position still at the top"
+	@priority = 4
+	test ViewWidgetPageAtTheTop {
+		var portalURL = PropsUtil.get("portal.url");
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
+		task ("Given an created Web Content") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+
+			WebContentNavigator.gotoAddCP();
+
+			WebContent.addCP(
+				webContentContent = "WC WebContent Content",
+				webContentTitle = "WC WebContent Title");
+
+			WebContent.publishWithPermissions();
+
+			Navigator.openURL();
+		}
+
+		task ("and Given an created Form with a text field") {
+			FormsAdmin.addForm();
+
+			Form.editName(formName = "Form 1");
+
+			Form.addTextField(fieldPositionNumber = 0);
+
+			Form.publishForm();
+		}
+
+		task ("When the user creates a Widget page with an asset publisher rendering dynamic content on top") {
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Form Page");
+
+			JSONLayout.addWidgetToPublicLayout(
+				column = 1,
+				groupName = "Guest",
+				layoutName = "Form Page",
+				widgetName = "Asset Publisher");
+
+			JSONLayout.addWidgetToPublicLayout(
+				column = 1,
+				groupName = "Guest",
+				layoutName = "Form Page",
+				widgetName = "Form");
+
+			Navigator.gotoPage(pageName = "Form Page");
+
+			AssetPublisherPortlet.gotoConfigurationPG();
+
+			Click(locator1 = "APConfiguration#ASSET_SELECTION_DYNAMIC");
+
+			IFrame.closeFrame();
+
+			FormPortletNavigator.gotoSelectForm();
+
+			FormPortletConfiguration.selectForm(formName = "Form 1");
+
+			PortletEntry.save();
+
+			IFrame.closeFrame();
+		}
+
+		task ("and When the user leaves the page, returns to the page and refreshes") {
+			Navigator.openURL();
+
+			Navigator.openSpecificURL(url = "${portalURL}/web/guest/form-page");
+
+			Refresh();
+		}
+
+		task ("Then the widget page the scroll position still at the top") {
+			AssertVisible(
+				key_assetTitle = "WC WebContent Title",
+				key_viewCount = "WC WebContent Content",
+				locator1 = "APAsset#ASSET_VIEW_COUNT");
+		}
 	}
 
 	@description = "Verify that a Form autosaves after 1 minute by default"
-	@priority = "5"
+	@priority = 5
 	test WillAutosaveAfterOneMinute {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
@@ -2762,11 +2375,13 @@ definition {
 
 		Form.editDescription(formDescription = "Form Description");
 
-		Form.addTextField(fieldPositionNumber = "0");
+		Form.addTextField(fieldPositionNumber = 0);
 
-		Pause(locator1 = "60000");
+		WaitForElementPresent(locator1 = "Form#SAVE_NOTIFICATION");
 
-		Form.viewSaveNotification();
+		// Pausing 60 seconds due to autosave interval set to one minute. See LPS-159468
+
+		Pause(value1 = 60000);
 
 		FormsAdminNavigator.gotoBack();
 

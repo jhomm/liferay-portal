@@ -36,6 +36,8 @@
 			(KBArticle.urlTitle = ?) AND
 			(KBFolder.urlTitle = ?) AND
 			(KBArticle.status IN ([$WORKFLOW_STATUS$]))
+		ORDER BY
+			KBArticle.version DESC
 	</sql>
 	<sql id="com.liferay.knowledge.base.service.persistence.KBFolderFinder.countA_ByG_P">
 		SELECT
@@ -55,7 +57,8 @@
 			KBFolder
 		WHERE
 			(KBFolder.groupId = ?) AND
-			(KBFolder.parentKBFolderId = ?)
+			(KBFolder.parentKBFolderId = ?) AND
+			([$STATUS$])
 	</sql>
 	<sql id="com.liferay.knowledge.base.service.persistence.KBFolderFinder.findA_ByG_P">
 		SELECT
@@ -107,6 +110,7 @@
 			KBFolder
 		WHERE
 			(KBFolder.groupId = ?) AND
-			(KBFolder.parentKBFolderId = ?)
+			(KBFolder.parentKBFolderId = ?) AND
+			([$STATUS$])
 	</sql>
 </custom-sql>

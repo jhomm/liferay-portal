@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service;
@@ -72,17 +63,11 @@ public interface SiteNavigationMenuItemLocalService
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.site.navigation.service.impl.SiteNavigationMenuItemLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the site navigation menu item local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link SiteNavigationMenuItemLocalServiceUtil} if injection and service tracking are not available.
 	 */
-	public SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type, int order,
-			String typeSettings, ServiceContext serviceContext)
-		throws PortalException;
-
-	public SiteNavigationMenuItem addSiteNavigationMenuItem(
-			long userId, long groupId, long siteNavigationMenuId,
-			long parentSiteNavigationMenuItemId, String type,
-			String typeSettings, ServiceContext serviceContext)
-		throws PortalException;
+	public SiteNavigationMenuItem addOrUpdateSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings, ServiceContext serviceContext)
+		throws Exception;
 
 	/**
 	 * Adds the site navigation menu item to the database. Also notifies the appropriate model listeners.
@@ -97,6 +82,19 @@ public interface SiteNavigationMenuItemLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public SiteNavigationMenuItem addSiteNavigationMenuItem(
 		SiteNavigationMenuItem siteNavigationMenuItem);
+
+	public SiteNavigationMenuItem addSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, int order, String typeSettings,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public SiteNavigationMenuItem addSiteNavigationMenuItem(
+			String externalReferenceCode, long userId, long groupId,
+			long siteNavigationMenuId, long parentSiteNavigationMenuItemId,
+			String type, String typeSettings, ServiceContext serviceContext)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -137,6 +135,10 @@ public interface SiteNavigationMenuItemLocalService
 			long siteNavigationMenuItemId)
 		throws PortalException;
 
+	public SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			long siteNavigationMenuItemId, boolean deleteChildren)
+		throws PortalException;
+
 	/**
 	 * Deletes the site navigation menu item from the database. Also notifies the appropriate model listeners.
 	 *
@@ -151,6 +153,10 @@ public interface SiteNavigationMenuItemLocalService
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public SiteNavigationMenuItem deleteSiteNavigationMenuItem(
 		SiteNavigationMenuItem siteNavigationMenuItem);
+
+	public SiteNavigationMenuItem deleteSiteNavigationMenuItem(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	public void deleteSiteNavigationMenuItems(long siteNavigationMenuId);
 
@@ -232,6 +238,11 @@ public interface SiteNavigationMenuItemLocalService
 	public SiteNavigationMenuItem fetchSiteNavigationMenuItem(
 		long siteNavigationMenuItemId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SiteNavigationMenuItem
+		fetchSiteNavigationMenuItemByExternalReferenceCode(
+			String externalReferenceCode, long groupId);
+
 	/**
 	 * Returns the site navigation menu item matching the UUID and group.
 	 *
@@ -284,6 +295,12 @@ public interface SiteNavigationMenuItemLocalService
 			long siteNavigationMenuItemId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SiteNavigationMenuItem
+			getSiteNavigationMenuItemByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Returns the site navigation menu item matching the UUID and group.
 	 *
@@ -319,6 +336,11 @@ public interface SiteNavigationMenuItemLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SiteNavigationMenuItem> getSiteNavigationMenuItems(
 		long siteNavigationMenuId, long parentSiteNavigationMenuItemId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<SiteNavigationMenuItem> getSiteNavigationMenuItems(
+		long siteNavigationMenuId,
+		OrderByComparator<SiteNavigationMenuItem> orderByComparator);
 
 	/**
 	 * Returns all the site navigation menu items matching the UUID and company.

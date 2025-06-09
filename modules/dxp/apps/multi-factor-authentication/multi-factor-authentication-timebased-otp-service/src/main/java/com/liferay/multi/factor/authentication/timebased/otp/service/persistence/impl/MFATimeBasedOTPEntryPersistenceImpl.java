@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.timebased.otp.service.persistence.impl;
@@ -37,7 +28,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -47,7 +37,6 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -72,9 +61,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Arthur Chan
  * @generated
  */
-@Component(
-	service = {MFATimeBasedOTPEntryPersistence.class, BasePersistence.class}
-)
+@Component(service = MFATimeBasedOTPEntryPersistence.class)
 public class MFATimeBasedOTPEntryPersistenceImpl
 	extends BasePersistenceImpl<MFATimeBasedOTPEntry>
 	implements MFATimeBasedOTPEntryPersistence {
@@ -97,7 +84,6 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 	private FinderPath _finderPathWithoutPaginationFindAll;
 	private FinderPath _finderPathCountAll;
 	private FinderPath _finderPathFetchByUserId;
-	private FinderPath _finderPathCountByUserId;
 
 	/**
 	 * Returns the mfa time based otp entry where userId = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
@@ -164,7 +150,7 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUserId, finderArgs);
+				_finderPathFetchByUserId, finderArgs, this);
 		}
 
 		if (result instanceof MFATimeBasedOTPEntry) {
@@ -251,45 +237,13 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 	 */
 	@Override
 	public int countByUserId(long userId) {
-		FinderPath finderPath = _finderPathCountByUserId;
+		MFATimeBasedOTPEntry mfaTimeBasedOTPEntry = fetchByUserId(userId);
 
-		Object[] finderArgs = new Object[] {userId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_MFATIMEBASEDOTPENTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_USERID_USERID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(userId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (mfaTimeBasedOTPEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_USERID_USERID_2 =
@@ -404,7 +358,6 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 			mfaTimeBasedOTPEntryModelImpl.getUserId()
 		};
 
-		finderCache.putResult(_finderPathCountByUserId, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByUserId, args, mfaTimeBasedOTPEntryModelImpl);
 	}
@@ -739,7 +692,7 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<MFATimeBasedOTPEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -809,7 +762,7 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -880,35 +833,14 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUserId",
 			new String[] {Long.class.getName()}, new String[] {"userId"}, true);
 
-		_finderPathCountByUserId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUserId",
-			new String[] {Long.class.getName()}, new String[] {"userId"},
-			false);
-
-		_setMFATimeBasedOTPEntryUtilPersistence(this);
+		MFATimeBasedOTPEntryUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setMFATimeBasedOTPEntryUtilPersistence(null);
+		MFATimeBasedOTPEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(MFATimeBasedOTPEntryImpl.class.getName());
-	}
-
-	private void _setMFATimeBasedOTPEntryUtilPersistence(
-		MFATimeBasedOTPEntryPersistence mfaTimeBasedOTPEntryPersistence) {
-
-		try {
-			Field field = MFATimeBasedOTPEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, mfaTimeBasedOTPEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -971,9 +903,5 @@ public class MFATimeBasedOTPEntryPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private MFATimeBasedOTPEntryModelArgumentsResolver
-		_mfaTimeBasedOTPEntryModelArgumentsResolver;
 
 }

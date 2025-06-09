@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v1_1_6;
@@ -57,79 +48,9 @@ public class AssetDisplayPageEntryUpgradeProcess extends UpgradeProcess {
 			company -> {
 				_init(company.getCompanyId());
 
-				updateAssetDisplayPageEntry(company, true);
-				updateAssetDisplayPageEntry(company, false);
+				_updateAssetDisplayPageEntry(company, true);
+				_updateAssetDisplayPageEntry(company, false);
 			});
-	}
-
-	protected void updateAssetDisplayPageEntry(
-			Company company, boolean stagingGroups)
-		throws Exception {
-
-		long journalArticleClassNameId = PortalUtil.getClassNameId(
-			JournalArticle.class);
-		User user = company.getDefaultUser();
-
-		try (LoggingTimer loggingTimer = new LoggingTimer()) {
-			processConcurrently(
-				StringBundler.concat(
-					"select JournalArticle.groupId, ",
-					"JournalArticle.resourcePrimKey, AssetEntry.classUuid ",
-					"from JournalArticle inner join AssetEntry on ( ",
-					"AssetEntry.classNameId = ", journalArticleClassNameId,
-					" and AssetEntry.classPK = JournalArticle.resourcePrimKey ",
-					") inner join Group_ on (Group_.groupId = ",
-					"JournalArticle.groupId and Group_.liveGroupId ",
-					stagingGroups ? "" : "!",
-					"= 0) where JournalArticle.companyId = ",
-					company.getCompanyId(),
-					" and JournalArticle.layoutUuid is not null and ",
-					"JournalArticle.layoutUuid != '' and ",
-					"Group_.remoteStagingGroupCount = 0 and not exists ( ",
-					"select 1 from AssetDisplayPageEntry where ",
-					"AssetDisplayPageEntry.groupId = JournalArticle.groupId ",
-					"and AssetDisplayPageEntry.classNameId = ",
-					journalArticleClassNameId,
-					" and AssetDisplayPageEntry.classPK = ",
-					"JournalArticle.resourcePrimKey) group by ",
-					"JournalArticle.groupId, JournalArticle.resourcePrimKey, ",
-					"AssetEntry.classUuid"),
-				resultSet -> new Object[] {
-					resultSet.getLong("groupId"),
-					resultSet.getLong("resourcePrimKey"),
-					resultSet.getString("classUuid")
-				},
-				values -> {
-					long groupId = (Long)values[0];
-					long resourcePrimKey = (Long)values[1];
-
-					String journalArticleUuid = (String)values[2];
-
-					try {
-						ServiceContext serviceContext = new ServiceContext();
-
-						serviceContext.setUuid(
-							_generateLocalStagingAwareUUID(
-								groupId, journalArticleUuid));
-
-						_assetDisplayPageEntryLocalService.
-							addAssetDisplayPageEntry(
-								user.getUserId(), groupId,
-								journalArticleClassNameId, resourcePrimKey, 0,
-								AssetDisplayPageConstants.TYPE_SPECIFIC,
-								serviceContext);
-					}
-					catch (Exception exception) {
-						_log.error(
-							"Unable to add asset display page entry for " +
-								"article " + resourcePrimKey,
-							exception);
-
-						throw exception;
-					}
-				},
-				"Unable to add asset display pages for the journal articles");
-		}
 	}
 
 	private String _generateLocalStagingAwareUUID(
@@ -188,6 +109,73 @@ public class AssetDisplayPageEntryUpgradeProcess extends UpgradeProcess {
 					_stagedGroupIds.add(liveGroupId);
 				}
 			}
+		}
+	}
+
+	private void _updateAssetDisplayPageEntry(
+			Company company, boolean stagingGroups)
+		throws Exception {
+
+		long journalArticleClassNameId = PortalUtil.getClassNameId(
+			JournalArticle.class);
+
+		String sql = StringBundler.concat(
+			"select JournalArticle.groupId, JournalArticle.resourcePrimKey, ",
+			"AssetEntry.classUuid from JournalArticle inner join AssetEntry ",
+			"on ( AssetEntry.classNameId = ", journalArticleClassNameId,
+			" and AssetEntry.classPK = JournalArticle.resourcePrimKey) inner ",
+			"join Group_ on (Group_.groupId = JournalArticle.groupId and ",
+			"Group_.liveGroupId ", stagingGroups ? "" : "!",
+			"= 0) where JournalArticle.companyId = ", company.getCompanyId(),
+			" and JournalArticle.layoutUuid is not null and CAST_TEXT(",
+			"JournalArticle.layoutUuid) != '' and Group_.",
+			"remoteStagingGroupCount = 0 and not exists (select 1 from ",
+			"AssetDisplayPageEntry where AssetDisplayPageEntry.groupId = ",
+			"JournalArticle.groupId and AssetDisplayPageEntry.classNameId = ",
+			journalArticleClassNameId, " and AssetDisplayPageEntry.classPK = ",
+			"JournalArticle.resourcePrimKey) group by JournalArticle.groupId, ",
+			"JournalArticle.resourcePrimKey, AssetEntry.classUuid");
+
+		User user = company.getGuestUser();
+
+		try (LoggingTimer loggingTimer = new LoggingTimer()) {
+			processConcurrently(
+				SQLTransformer.transform(sql),
+				resultSet -> new Object[] {
+					resultSet.getLong("groupId"),
+					resultSet.getLong("resourcePrimKey"),
+					resultSet.getString("classUuid")
+				},
+				values -> {
+					long groupId = (Long)values[0];
+					long resourcePrimKey = (Long)values[1];
+
+					String journalArticleUuid = (String)values[2];
+
+					try {
+						ServiceContext serviceContext = new ServiceContext();
+
+						serviceContext.setUuid(
+							_generateLocalStagingAwareUUID(
+								groupId, journalArticleUuid));
+
+						_assetDisplayPageEntryLocalService.
+							addAssetDisplayPageEntry(
+								user.getUserId(), groupId,
+								journalArticleClassNameId, resourcePrimKey, 0,
+								AssetDisplayPageConstants.TYPE_SPECIFIC,
+								serviceContext);
+					}
+					catch (Exception exception) {
+						_log.error(
+							"Unable to add asset display page entry for " +
+								"article " + resourcePrimKey,
+							exception);
+
+						throw exception;
+					}
+				},
+				null);
 		}
 	}
 

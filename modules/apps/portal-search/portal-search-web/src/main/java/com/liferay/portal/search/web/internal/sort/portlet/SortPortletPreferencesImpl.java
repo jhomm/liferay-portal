@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.sort.portlet;
@@ -22,22 +13,18 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.search.web.internal.util.PortletPreferencesHelper;
+import com.liferay.portal.search.web.internal.portlet.preferences.BasePortletPreferences;
 
-import java.util.Optional;
-
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * @author Wade Cao
  */
-public class SortPortletPreferencesImpl implements SortPortletPreferences {
+public class SortPortletPreferencesImpl
+	extends BasePortletPreferences implements SortPortletPreferences {
 
-	public SortPortletPreferencesImpl(
-		Optional<PortletPreferences> portletPreferencesOptional) {
-
-		_portletPreferencesHelper = new PortletPreferencesHelper(
-			portletPreferencesOptional);
+	public SortPortletPreferencesImpl(PortletPreferences portletPreferences) {
+		super(portletPreferences);
 	}
 
 	@Override
@@ -45,7 +32,7 @@ public class SortPortletPreferencesImpl implements SortPortletPreferences {
 		String fieldsString = getFieldsString();
 
 		if (Validator.isBlank(fieldsString)) {
-			return getDefaultFieldsJSONArray();
+			return _getDefaultFieldsJSONArray();
 		}
 
 		try {
@@ -56,13 +43,13 @@ public class SortPortletPreferencesImpl implements SortPortletPreferences {
 				"Unable to create a JSON array from: " + fieldsString,
 				jsonException);
 
-			return getDefaultFieldsJSONArray();
+			return _getDefaultFieldsJSONArray();
 		}
 	}
 
 	@Override
 	public String getFieldsString() {
-		return _portletPreferencesHelper.getString(
+		return getString(
 			SortPortletPreferences.PREFERENCE_KEY_FIELDS, StringPool.BLANK);
 	}
 
@@ -71,7 +58,7 @@ public class SortPortletPreferencesImpl implements SortPortletPreferences {
 		return "sort";
 	}
 
-	protected JSONArray getDefaultFieldsJSONArray() {
+	private JSONArray _getDefaultFieldsJSONArray() {
 		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
 
 		for (Preset preset : _presets) {
@@ -97,8 +84,6 @@ public class SortPortletPreferencesImpl implements SortPortletPreferences {
 		new Preset("createDate+", "created-oldest-first"),
 		new Preset("userName", "user")
 	};
-
-	private final PortletPreferencesHelper _portletPreferencesHelper;
 
 	private static class Preset {
 

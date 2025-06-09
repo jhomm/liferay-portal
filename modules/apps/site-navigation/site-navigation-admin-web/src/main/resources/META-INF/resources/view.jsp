@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,14 +13,14 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= siteNavigationAdminManagementToolbarDisplayContext %>"
-	propsTransformer="js/SiteNavigationManagementToolbarPropsTransformer"
+	propsTransformer="{SiteNavigationManagementToolbarPropsTransformer} from site-navigation-admin-web"
 />
 
 <portlet:actionURL name="/site_navigation_admin/delete_site_navigation_menu" var="deleteSitaNavigationMenuURL">
 	<portlet:param name="redirect" value="<%= currentURL %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteSitaNavigationMenuURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
+<aui:form action="<%= deleteSitaNavigationMenuURL %>" cssClass="container-fluid" name="fm">
 	<liferay-ui:search-container
 		id="siteNavigationMenus"
 		searchContainer="<%= siteNavigationAdminDisplayContext.getSearchContainer() %>"
@@ -92,9 +83,18 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 						</span>
 					</liferay-ui:search-container-column-text>
 
-					<liferay-ui:search-container-column-jsp
-						path="/site_navigation_menu_action.jsp"
-					/>
+					<liferay-ui:search-container-column-text>
+
+						<%
+						SiteNavigationMenuActionDropdownItemsProvider siteNavigationMenuActionDropdownItemsProvider = new SiteNavigationMenuActionDropdownItemsProvider(siteNavigationAdminDisplayContext.hasEditPermission(), liferayPortletRequest, liferayPortletResponse, siteNavigationAdminDisplayContext.getPrimarySiteNavigationMenu(), siteNavigationMenu);
+						%>
+
+						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+							dropdownItems="<%= siteNavigationMenuActionDropdownItemsProvider.getActionDropdownItems() %>"
+							propsTransformer="{SiteNavigationMenuDropdownDefaultPropsTransformer} from site-navigation-admin-web"
+						/>
+					</liferay-ui:search-container-column-text>
 				</c:when>
 				<c:otherwise>
 					<liferay-ui:search-container-column-text
@@ -134,9 +134,18 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 						property="createDate"
 					/>
 
-					<liferay-ui:search-container-column-jsp
-						path="/site_navigation_menu_action.jsp"
-					/>
+					<liferay-ui:search-container-column-text>
+
+						<%
+						SiteNavigationMenuActionDropdownItemsProvider siteNavigationMenuActionDropdownItemsProvider = new SiteNavigationMenuActionDropdownItemsProvider(siteNavigationAdminDisplayContext.hasEditPermission(), liferayPortletRequest, liferayPortletResponse, siteNavigationAdminDisplayContext.getPrimarySiteNavigationMenu(), siteNavigationMenu);
+						%>
+
+						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+							dropdownItems="<%= siteNavigationMenuActionDropdownItemsProvider.getActionDropdownItems() %>"
+							propsTransformer="{SiteNavigationMenuDropdownDefaultPropsTransformer} from site-navigation-admin-web"
+						/>
+					</liferay-ui:search-container-column-text>
 				</c:otherwise>
 			</c:choose>
 		</liferay-ui:search-container-row>
@@ -147,41 +156,3 @@ SiteNavigationAdminManagementToolbarDisplayContext siteNavigationAdminManagement
 		/>
 	</liferay-ui:search-container>
 </aui:form>
-
-<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule,frontend-js-web/liferay/modal/commands/OpenSimpleInputModal.es as openSimpleInputModal">
-	var delegate = delegateModule.default;
-
-	var renameSiteNavigationMenuClickHandler = delegate(
-		document.body,
-		'click',
-		'.<portlet:namespace />update-site-navigation-menu-action-option > a',
-		(event) => {
-			var data = event.delegateTarget.dataset;
-
-			event.preventDefault();
-
-			openSimpleInputModal.default({
-				dialogTitle:
-					'<liferay-ui:message key="rename-site-navigation-menu" />',
-				formSubmitURL: data.formSubmitUrl,
-				idFieldName: 'id',
-				idFieldValue: data.idFieldValue,
-				mainFieldLabel: '<liferay-ui:message key="name" />',
-				mainFieldName: 'name',
-				mainFieldPlaceholder: '<liferay-ui:message key="name" />',
-				mainFieldValue: data.mainFieldValue,
-				namespace: '<portlet:namespace />',
-				spritemap:
-					'<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg',
-			});
-		}
-	);
-
-	function handleDestroyPortlet() {
-		renameSiteNavigationMenuClickHandler.dispose();
-
-		Liferay.detach('destroyPortlet', handleDestroyPortlet);
-	}
-
-	Liferay.on('destroyPortlet', handleDestroyPortlet);
-</aui:script>

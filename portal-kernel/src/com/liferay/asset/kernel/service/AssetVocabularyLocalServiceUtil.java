@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -100,24 +91,6 @@ public class AssetVocabularyLocalServiceUtil {
 
 		return getService().addVocabulary(
 			userId, groupId, title, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addVocabulary(String, long, long, String, String, Map, Map, String, int, ServiceContext)}
-	 */
-	@Deprecated
-	public static AssetVocabulary addVocabulary(
-			long userId, long groupId, String name, String title,
-			Map<java.util.Locale, String> titleMap,
-			Map<java.util.Locale, String> descriptionMap, String settings,
-			int visibilityType,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addVocabulary(
-			userId, groupId, name, title, titleMap, descriptionMap, settings,
-			visibilityType, serviceContext);
 	}
 
 	public static AssetVocabulary addVocabulary(
@@ -331,29 +304,11 @@ public class AssetVocabularyLocalServiceUtil {
 		return getService().fetchAssetVocabulary(vocabularyId);
 	}
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary, or <code>null</code> if a matching asset vocabulary could not be found
-	 */
 	public static AssetVocabulary fetchAssetVocabularyByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return getService().fetchAssetVocabularyByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAssetVocabularyByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static AssetVocabulary fetchAssetVocabularyByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return getService().fetchAssetVocabularyByReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -452,20 +407,12 @@ public class AssetVocabularyLocalServiceUtil {
 		return getService().getAssetVocabulary(vocabularyId);
 	}
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary
-	 * @throws PortalException if a matching asset vocabulary could not be found
-	 */
 	public static AssetVocabulary getAssetVocabularyByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
 		return getService().getAssetVocabularyByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -531,14 +478,6 @@ public class AssetVocabularyLocalServiceUtil {
 		return getService().getGroupVocabularies(groupId, visibilityType);
 	}
 
-	public static List<AssetVocabulary> getGroupVocabularies(
-		long groupId, String name, int start, int end,
-		OrderByComparator<AssetVocabulary> orderByComparator) {
-
-		return getService().getGroupVocabularies(
-			groupId, name, start, end, orderByComparator);
-	}
-
 	public static List<AssetVocabulary> getGroupVocabularies(long[] groupIds) {
 		return getService().getGroupVocabularies(groupIds);
 	}
@@ -564,6 +503,14 @@ public class AssetVocabularyLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static AssetVocabulary getOrAddIncompleteVocabulary(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException {
+
+		return getService().getOrAddIncompleteVocabulary(
+			externalReferenceCode, userId, groupId);
 	}
 
 	/**
@@ -605,21 +552,13 @@ public class AssetVocabularyLocalServiceUtil {
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<AssetVocabulary> searchVocabularies(
-				long companyId, long groupId, String title, int start, int end)
-			throws PortalException {
-
-		return getService().searchVocabularies(
-			companyId, groupId, title, start, end);
-	}
-
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<AssetVocabulary> searchVocabularies(
-				long companyId, long groupId, String title, int start, int end,
+				long companyId, long[] groupIds, String title,
+				int[] visibilityTypes, int start, int end,
 				com.liferay.portal.kernel.search.Sort sort)
 			throws PortalException {
 
 		return getService().searchVocabularies(
-			companyId, groupId, title, start, end, sort);
+			companyId, groupIds, title, visibilityTypes, start, end, sort);
 	}
 
 	/**
@@ -669,20 +608,12 @@ public class AssetVocabularyLocalServiceUtil {
 			serviceContext);
 	}
 
-	public static AssetVocabulary updateVocabulary(
-			long vocabularyId, String name, String title,
-			Map<java.util.Locale, String> titleMap,
-			Map<java.util.Locale, String> descriptionMap, String settings,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateVocabulary(
-			vocabularyId, name, title, titleMap, descriptionMap, settings,
-			serviceContext);
-	}
-
 	public static AssetVocabularyLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(AssetVocabularyLocalService service) {
+		_service = service;
 	}
 
 	private static volatile AssetVocabularyLocalService _service;

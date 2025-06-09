@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.staging.processes.web.internal.portlet.action;
@@ -25,8 +16,8 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.staging.constants.StagingProcessesPortletKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,9 +26,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Levente Hudák
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + StagingProcessesPortletKeys.STAGING_PROCESSES,
+		"jakarta.portlet.name=" + StagingProcessesPortletKeys.STAGING_PROCESSES,
 		"mvc.command.name=/staging_processes/delete_background_tasks"
 	},
 	service = MVCActionCommand.class
@@ -45,29 +35,13 @@ import org.osgi.service.component.annotations.Reference;
 public class DeleteBackgroundTasksMVCActionCommand
 	extends BaseMVCActionCommand {
 
-	protected void deleteBackgroundTask(ActionRequest actionRequest)
-		throws PortalException {
-
-		long[] backgroundTaskIds = ParamUtil.getLongValues(
-			actionRequest, "deleteBackgroundTaskIds");
-
-		for (long backgroundTaskId : backgroundTaskIds) {
-			BackgroundTask backgroundTask =
-				_backgroundTaskManager.getBackgroundTask(backgroundTaskId);
-
-			if (!backgroundTask.isInProgress()) {
-				_backgroundTaskManager.deleteBackgroundTask(backgroundTaskId);
-			}
-		}
-	}
-
 	@Override
 	protected void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
 		try {
-			deleteBackgroundTask(actionRequest);
+			_deleteBackgroundTask(actionRequest);
 		}
 		catch (Exception exception) {
 			if (exception instanceof NoSuchBackgroundTaskException ||
@@ -80,6 +54,22 @@ public class DeleteBackgroundTasksMVCActionCommand
 			}
 			else {
 				throw exception;
+			}
+		}
+	}
+
+	private void _deleteBackgroundTask(ActionRequest actionRequest)
+		throws PortalException {
+
+		long[] backgroundTaskIds = ParamUtil.getLongValues(
+			actionRequest, "deleteBackgroundTaskIds");
+
+		for (long backgroundTaskId : backgroundTaskIds) {
+			BackgroundTask backgroundTask =
+				_backgroundTaskManager.getBackgroundTask(backgroundTaskId);
+
+			if (!backgroundTask.isInProgress()) {
+				_backgroundTaskManager.deleteBackgroundTask(backgroundTaskId);
 			}
 		}
 	}

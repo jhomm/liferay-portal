@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.io;
@@ -191,11 +182,8 @@ public class Serializer {
 		else if (serializable instanceof Class) {
 			Class<?> clazz = (Class<?>)serializable;
 
-			String contextName = ClassLoaderPool.getContextName(
-				clazz.getClassLoader());
-
 			writeByte(SerializationConstants.TC_CLASS);
-			writeString(contextName);
+			writeString(ClassLoaderPool.getContextName(clazz.getClassLoader()));
 			writeString(clazz.getName());
 
 			return;
@@ -230,9 +218,8 @@ public class Serializer {
 
 			return;
 		}
-		else {
-			writeByte(SerializationConstants.TC_OBJECT);
-		}
+
+		writeByte(SerializationConstants.TC_OBJECT);
 
 		try {
 			ObjectOutputStream objectOutputStream =
@@ -353,9 +340,9 @@ public class Serializer {
 	}
 
 	private BufferQueue _getBufferQueue() {
-		Reference<BufferQueue> reference = _bufferQueueThreadLocal.get();
-
 		BufferQueue bufferQueue = null;
+
+		Reference<BufferQueue> reference = _bufferQueue.get();
 
 		if (reference != null) {
 			bufferQueue = reference.get();
@@ -364,7 +351,7 @@ public class Serializer {
 		if (bufferQueue == null) {
 			bufferQueue = new BufferQueue();
 
-			_bufferQueueThreadLocal.set(new SoftReference<>(bufferQueue));
+			_bufferQueue.set(new SoftReference<>(bufferQueue));
 		}
 
 		return bufferQueue;
@@ -395,8 +382,8 @@ public class Serializer {
 	 * likely be released by GC.
 	 * </p>
 	 */
-	private static final ThreadLocal<Reference<BufferQueue>>
-		_bufferQueueThreadLocal = new CentralizedThreadLocal<>(false);
+	private static final ThreadLocal<Reference<BufferQueue>> _bufferQueue =
+		new CentralizedThreadLocal<>(false);
 
 	static {
 		int threadLocalBufferCountLimit = Integer.getInteger(

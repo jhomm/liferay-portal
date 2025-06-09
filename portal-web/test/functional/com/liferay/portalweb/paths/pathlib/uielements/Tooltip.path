@@ -22,7 +22,22 @@
 </tr>
 <tr>
 	<td>FLOATING_TOOLTIP_CONTENT</td>
-	<td>//div[contains(@class,'tooltip')]//div[contains(.,'${key_content}')]</td>
+	<td>//div[contains(@class,'tooltip')]//div[contains(.,"${key_content}")]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>POPOVER_BODY_CONTENT</td>
+	<td>//div[contains(@class,'popover-body')][normalize-space(text())='${key_content}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>POPOVER_BODY</td>
+	<td>//div[contains(@class, 'popover-body')]//p[contains(@class, 'text-neutral') and contains(text(), '${key_content}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>POPOVER_HEADER</td>
+	<td>//div[contains(@class,'popover-header')][normalize-space(text())='${key_header}']</td>
 	<td></td>
 </tr>
 </tbody>

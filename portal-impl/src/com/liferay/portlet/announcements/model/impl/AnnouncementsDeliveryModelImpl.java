@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.announcements.model.impl;
 
 import com.liferay.announcements.kernel.model.AnnouncementsDelivery;
 import com.liferay.announcements.kernel.model.AnnouncementsDeliveryModel;
-import com.liferay.announcements.kernel.model.AnnouncementsDeliverySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -35,18 +25,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -76,10 +63,11 @@ public class AnnouncementsDeliveryModelImpl
 	public static final String TABLE_NAME = "AnnouncementsDelivery";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"deliveryId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
-		{"type_", Types.VARCHAR}, {"email", Types.BOOLEAN},
-		{"sms", Types.BOOLEAN}, {"website", Types.BOOLEAN}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"deliveryId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"userId", Types.BIGINT}, {"type_", Types.VARCHAR},
+		{"email", Types.BOOLEAN}, {"sms", Types.BOOLEAN},
+		{"website", Types.BOOLEAN}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -87,6 +75,7 @@ public class AnnouncementsDeliveryModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("deliveryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -97,7 +86,7 @@ public class AnnouncementsDeliveryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table AnnouncementsDelivery (mvccVersion LONG default 0 not null,deliveryId LONG not null primary key,companyId LONG,userId LONG,type_ VARCHAR(75) null,email BOOLEAN,sms BOOLEAN,website BOOLEAN)";
+		"create table AnnouncementsDelivery (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,deliveryId LONG not null,companyId LONG,userId LONG,type_ VARCHAR(75) null,email BOOLEAN,sms BOOLEAN,website BOOLEAN,primary key (deliveryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table AnnouncementsDelivery";
@@ -156,60 +145,6 @@ public class AnnouncementsDeliveryModelImpl
 	 */
 	@Deprecated
 	public static final long DELIVERYID_COLUMN_BITMASK = 8L;
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static AnnouncementsDelivery toModel(
-		AnnouncementsDeliverySoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		AnnouncementsDelivery model = new AnnouncementsDeliveryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setDeliveryId(soapModel.getDeliveryId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setType(soapModel.getType());
-		model.setEmail(soapModel.isEmail());
-		model.setSms(soapModel.isSms());
-		model.setWebsite(soapModel.isWebsite());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AnnouncementsDelivery> toModels(
-		AnnouncementsDeliverySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<AnnouncementsDelivery> models =
-			new ArrayList<AnnouncementsDelivery>(soapModels.length);
-
-		for (AnnouncementsDeliverySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -292,108 +227,104 @@ public class AnnouncementsDeliveryModelImpl
 	public Map<String, Function<AnnouncementsDelivery, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AnnouncementsDelivery, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AnnouncementsDelivery>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AnnouncementsDelivery.class.getClassLoader(),
-			AnnouncementsDelivery.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<AnnouncementsDelivery, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<AnnouncementsDelivery> constructor =
-				(Constructor<AnnouncementsDelivery>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AnnouncementsDelivery, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<AnnouncementsDelivery, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AnnouncementsDelivery::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", AnnouncementsDelivery::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"deliveryId", AnnouncementsDelivery::getDeliveryId);
+			attributeGetterFunctions.put(
+				"companyId", AnnouncementsDelivery::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", AnnouncementsDelivery::getUserId);
+			attributeGetterFunctions.put(
+				"type", AnnouncementsDelivery::getType);
+			attributeGetterFunctions.put(
+				"email", AnnouncementsDelivery::getEmail);
+			attributeGetterFunctions.put("sms", AnnouncementsDelivery::getSms);
+			attributeGetterFunctions.put(
+				"website", AnnouncementsDelivery::getWebsite);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AnnouncementsDelivery, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AnnouncementsDelivery, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AnnouncementsDelivery, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<AnnouncementsDelivery, Object>>();
-		Map<String, BiConsumer<AnnouncementsDelivery, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<AnnouncementsDelivery, ?>>();
+		private static final Map
+			<String, BiConsumer<AnnouncementsDelivery, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AnnouncementsDelivery::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AnnouncementsDelivery, Long>)
-				AnnouncementsDelivery::setMvccVersion);
-		attributeGetterFunctions.put(
-			"deliveryId", AnnouncementsDelivery::getDeliveryId);
-		attributeSetterBiConsumers.put(
-			"deliveryId",
-			(BiConsumer<AnnouncementsDelivery, Long>)
-				AnnouncementsDelivery::setDeliveryId);
-		attributeGetterFunctions.put(
-			"companyId", AnnouncementsDelivery::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AnnouncementsDelivery, Long>)
-				AnnouncementsDelivery::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", AnnouncementsDelivery::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<AnnouncementsDelivery, Long>)
-				AnnouncementsDelivery::setUserId);
-		attributeGetterFunctions.put("type", AnnouncementsDelivery::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<AnnouncementsDelivery, String>)
-				AnnouncementsDelivery::setType);
-		attributeGetterFunctions.put("email", AnnouncementsDelivery::getEmail);
-		attributeSetterBiConsumers.put(
-			"email",
-			(BiConsumer<AnnouncementsDelivery, Boolean>)
-				AnnouncementsDelivery::setEmail);
-		attributeGetterFunctions.put("sms", AnnouncementsDelivery::getSms);
-		attributeSetterBiConsumers.put(
-			"sms",
-			(BiConsumer<AnnouncementsDelivery, Boolean>)
-				AnnouncementsDelivery::setSms);
-		attributeGetterFunctions.put(
-			"website", AnnouncementsDelivery::getWebsite);
-		attributeSetterBiConsumers.put(
-			"website",
-			(BiConsumer<AnnouncementsDelivery, Boolean>)
-				AnnouncementsDelivery::setWebsite);
+		static {
+			Map<String, BiConsumer<AnnouncementsDelivery, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<AnnouncementsDelivery, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AnnouncementsDelivery, Long>)
+					AnnouncementsDelivery::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AnnouncementsDelivery, Long>)
+					AnnouncementsDelivery::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"deliveryId",
+				(BiConsumer<AnnouncementsDelivery, Long>)
+					AnnouncementsDelivery::setDeliveryId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AnnouncementsDelivery, Long>)
+					AnnouncementsDelivery::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<AnnouncementsDelivery, Long>)
+					AnnouncementsDelivery::setUserId);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<AnnouncementsDelivery, String>)
+					AnnouncementsDelivery::setType);
+			attributeSetterBiConsumers.put(
+				"email",
+				(BiConsumer<AnnouncementsDelivery, Boolean>)
+					AnnouncementsDelivery::setEmail);
+			attributeSetterBiConsumers.put(
+				"sms",
+				(BiConsumer<AnnouncementsDelivery, Boolean>)
+					AnnouncementsDelivery::setSms);
+			attributeSetterBiConsumers.put(
+				"website",
+				(BiConsumer<AnnouncementsDelivery, Boolean>)
+					AnnouncementsDelivery::setWebsite);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -409,6 +340,21 @@ public class AnnouncementsDeliveryModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -642,6 +588,7 @@ public class AnnouncementsDeliveryModelImpl
 			new AnnouncementsDeliveryImpl();
 
 		announcementsDeliveryImpl.setMvccVersion(getMvccVersion());
+		announcementsDeliveryImpl.setCtCollectionId(getCtCollectionId());
 		announcementsDeliveryImpl.setDeliveryId(getDeliveryId());
 		announcementsDeliveryImpl.setCompanyId(getCompanyId());
 		announcementsDeliveryImpl.setUserId(getUserId());
@@ -662,6 +609,8 @@ public class AnnouncementsDeliveryModelImpl
 
 		announcementsDeliveryImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		announcementsDeliveryImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		announcementsDeliveryImpl.setDeliveryId(
 			this.<Long>getColumnOriginalValue("deliveryId"));
 		announcementsDeliveryImpl.setCompanyId(
@@ -755,6 +704,8 @@ public class AnnouncementsDeliveryModelImpl
 
 		announcementsDeliveryCacheModel.mvccVersion = getMvccVersion();
 
+		announcementsDeliveryCacheModel.ctCollectionId = getCtCollectionId();
+
 		announcementsDeliveryCacheModel.deliveryId = getDeliveryId();
 
 		announcementsDeliveryCacheModel.companyId = getCompanyId();
@@ -828,46 +779,17 @@ public class AnnouncementsDeliveryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AnnouncementsDelivery, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AnnouncementsDelivery, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AnnouncementsDelivery, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((AnnouncementsDelivery)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AnnouncementsDelivery>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AnnouncementsDelivery.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private long _deliveryId;
 	private long _companyId;
 	private long _userId;
@@ -880,7 +802,8 @@ public class AnnouncementsDeliveryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<AnnouncementsDelivery, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -906,6 +829,7 @@ public class AnnouncementsDeliveryModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("deliveryId", _deliveryId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -938,19 +862,21 @@ public class AnnouncementsDeliveryModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("deliveryId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("deliveryId", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("type_", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("email", 32L);
+		columnBitmasks.put("type_", 32L);
 
-		columnBitmasks.put("sms", 64L);
+		columnBitmasks.put("email", 64L);
 
-		columnBitmasks.put("website", 128L);
+		columnBitmasks.put("sms", 128L);
+
+		columnBitmasks.put("website", 256L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

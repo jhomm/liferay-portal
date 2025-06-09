@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.impl;
@@ -29,6 +20,7 @@ import com.liferay.portlet.documentlibrary.service.base.DLFileEntryMetadataLocal
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Alexander Chow
@@ -51,11 +43,9 @@ public class DLFileEntryMetadataLocalServiceImpl
 
 		// Dynamic data mapping structure link
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			DLFileEntryMetadata.class);
-
 		DDMStructureLinkManagerUtil.deleteStructureLinks(
-			classNameId, fileEntryMetadata.getFileEntryMetadataId());
+			_classNameLocalService.getClassNameId(DLFileEntryMetadata.class),
+			fileEntryMetadata.getFileEntryMetadataId());
 	}
 
 	@Override
@@ -68,6 +58,17 @@ public class DLFileEntryMetadataLocalServiceImpl
 		for (DLFileEntryMetadata fileEntryMetadata : fileEntryMetadatas) {
 			deleteFileEntryMetadata(fileEntryMetadata);
 		}
+	}
+
+	@Override
+	public void deleteFileEntryMetadataByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		deleteFileEntryMetadata(
+			dlFileEntryMetadataLocalService.
+				getDLFileEntryMetadataByExternalReferenceCode(
+					externalReferenceCode, companyId));
 	}
 
 	@Override
@@ -143,7 +144,8 @@ public class DLFileEntryMetadataLocalServiceImpl
 
 	@Override
 	public void updateFileEntryMetadata(
-			long companyId, List<DDMStructure> ddmStructures, long fileEntryId,
+			String externalReferenceCode, long companyId,
+			List<DDMStructure> ddmStructures, long fileEntryId,
 			long fileVersionId, Map<String, DDMFormValues> ddmFormValuesMap,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -154,15 +156,16 @@ public class DLFileEntryMetadataLocalServiceImpl
 
 			if (ddmFormValues != null) {
 				updateFileEntryMetadata(
-					companyId, ddmStructure, fileEntryId, fileVersionId,
-					ddmFormValues, serviceContext);
+					externalReferenceCode, companyId, ddmStructure, fileEntryId,
+					fileVersionId, ddmFormValues, serviceContext);
 			}
 		}
 	}
 
 	@Override
 	public void updateFileEntryMetadata(
-			long fileEntryTypeId, long fileEntryId, long fileVersionId,
+			String externalReferenceCode, long fileEntryTypeId,
+			long fileEntryId, long fileVersionId,
 			Map<String, DDMFormValues> ddmFormValuesMap,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -171,14 +174,15 @@ public class DLFileEntryMetadataLocalServiceImpl
 			_dlFileEntryTypeLocalService.getFileEntryType(fileEntryTypeId);
 
 		updateFileEntryMetadata(
-			fileEntryType.getCompanyId(), fileEntryType.getDDMStructures(),
-			fileEntryId, fileVersionId, ddmFormValuesMap, serviceContext);
+			externalReferenceCode, fileEntryType.getCompanyId(),
+			fileEntryType.getDDMStructures(), fileEntryId, fileVersionId,
+			ddmFormValuesMap, serviceContext);
 	}
 
 	protected void updateFileEntryMetadata(
-			long companyId, DDMStructure ddmStructure, long fileEntryId,
-			long fileVersionId, DDMFormValues ddmFormValues,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long companyId,
+			DDMStructure ddmStructure, long fileEntryId, long fileVersionId,
+			DDMFormValues ddmFormValues, ServiceContext serviceContext)
 		throws PortalException {
 
 		DLFileEntryMetadata fileEntryMetadata =
@@ -186,25 +190,32 @@ public class DLFileEntryMetadataLocalServiceImpl
 				ddmStructure.getStructureId(), fileVersionId);
 
 		if (fileEntryMetadata != null) {
+			if (!Objects.equals(
+					fileEntryMetadata.getExternalReferenceCode(),
+					externalReferenceCode)) {
+
+				fileEntryMetadata.setExternalReferenceCode(
+					externalReferenceCode);
+
+				fileEntryMetadata = dlFileEntryMetadataPersistence.update(
+					fileEntryMetadata);
+			}
+
 			StorageEngineManagerUtil.update(
 				fileEntryMetadata.getDDMStorageId(), ddmFormValues,
 				serviceContext);
 		}
 		else {
-
-			// File entry metadata
-
 			long fileEntryMetadataId = counterLocalService.increment();
 
 			fileEntryMetadata = dlFileEntryMetadataPersistence.create(
 				fileEntryMetadataId);
 
-			long ddmStorageId = StorageEngineManagerUtil.create(
-				companyId, ddmStructure.getStructureId(), ddmFormValues,
-				serviceContext);
-
-			fileEntryMetadata.setDDMStorageId(ddmStorageId);
-
+			fileEntryMetadata.setExternalReferenceCode(externalReferenceCode);
+			fileEntryMetadata.setDDMStorageId(
+				StorageEngineManagerUtil.create(
+					companyId, ddmStructure.getStructureId(), ddmFormValues,
+					serviceContext));
 			fileEntryMetadata.setDDMStructureId(ddmStructure.getStructureId());
 			fileEntryMetadata.setFileEntryId(fileEntryId);
 			fileEntryMetadata.setFileVersionId(fileVersionId);
@@ -212,13 +223,10 @@ public class DLFileEntryMetadataLocalServiceImpl
 			fileEntryMetadata = dlFileEntryMetadataPersistence.update(
 				fileEntryMetadata);
 
-			// Dynamic data mapping structure link
-
-			long classNameId = _classNameLocalService.getClassNameId(
-				DLFileEntryMetadata.class);
-
 			DDMStructureLinkManagerUtil.addStructureLink(
-				classNameId, fileEntryMetadata.getFileEntryMetadataId(),
+				_classNameLocalService.getClassNameId(
+					DLFileEntryMetadata.class),
+				fileEntryMetadata.getFileEntryMetadataId(),
 				ddmStructure.getStructureId());
 		}
 	}

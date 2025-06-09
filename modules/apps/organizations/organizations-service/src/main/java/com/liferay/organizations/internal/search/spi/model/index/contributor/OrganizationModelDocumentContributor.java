@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.organizations.internal.search.spi.model.index.contributor;
@@ -20,7 +11,7 @@ import com.liferay.portal.kernel.exception.NoSuchCountryException;
 import com.liferay.portal.kernel.exception.NoSuchRegionException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Address;
@@ -48,7 +39,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Igor Fabiano Nazar
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.portal.kernel.model.Organization",
 	service = ModelDocumentContributor.class
 )
@@ -115,7 +105,7 @@ public class OrganizationModelDocumentContributor
 	private Set<String> _getLocalizedCountryNames(Country country) {
 		Set<String> countryNames = new HashSet<>();
 
-		for (Locale locale : LanguageUtil.getAvailableLocales()) {
+		for (Locale locale : _language.getAvailableLocales()) {
 			String countryName = country.getName(locale);
 
 			countryName = StringUtil.toLowerCase(countryName);
@@ -143,7 +133,7 @@ public class OrganizationModelDocumentContributor
 			}
 			catch (NoSuchCountryException noSuchCountryException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(noSuchCountryException.getMessage());
+					_log.warn(noSuchCountryException);
 				}
 			}
 		}
@@ -158,7 +148,7 @@ public class OrganizationModelDocumentContributor
 			}
 			catch (NoSuchRegionException noSuchRegionException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(noSuchRegionException.getMessage());
+					_log.warn(noSuchRegionException);
 				}
 			}
 		}
@@ -195,6 +185,9 @@ public class OrganizationModelDocumentContributor
 
 	@Reference
 	private CountryService _countryService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;

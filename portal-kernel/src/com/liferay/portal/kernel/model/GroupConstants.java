@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -22,6 +13,14 @@ public class GroupConstants {
 	public static final int ANY_PARENT_GROUP_ID = -1;
 
 	public static final String APP = "App";
+
+	public static final String CALENDAR = "Calendar";
+
+	public static final String CALENDAR_FRIENDLY_URL = "/calendar";
+
+	public static final String CMS = "CMS";
+
+	public static final String CMS_FRIENDLY_URL = "/cms";
 
 	public static final String CONTROL_PANEL = "Control Panel";
 
@@ -48,7 +47,8 @@ public class GroupConstants {
 	public static final int MEMBERSHIP_RESTRICTION_TO_PARENT_SITE_MEMBERS = 1;
 
 	public static final String[] SYSTEM_GROUPS = {
-		CONTROL_PANEL, FORMS, GUEST, GroupConstants.USER_PERSONAL_SITE
+		CALENDAR, CMS, CONTROL_PANEL, FORMS, GUEST,
+		GroupConstants.USER_PERSONAL_SITE
 	};
 
 	public static final int TYPE_DEPOT = 5;
@@ -71,10 +71,6 @@ public class GroupConstants {
 
 	public static final String TYPE_SITE_RESTRICTED_LABEL = "restricted";
 
-	public static final int TYPE_SITE_SYSTEM = 4;
-
-	public static final String TYPE_SITE_SYSTEM_LABEL = "system";
-
 	public static final String USER_PERSONAL_SITE = "User Personal Site";
 
 	public static final String USER_PERSONAL_SITE_FRIENDLY_URL =
@@ -87,11 +83,8 @@ public class GroupConstants {
 		else if (type == TYPE_SITE_PRIVATE) {
 			return TYPE_SITE_PRIVATE_LABEL;
 		}
-		else if (type == TYPE_SITE_RESTRICTED) {
-			return TYPE_SITE_RESTRICTED_LABEL;
-		}
 
-		return TYPE_SITE_SYSTEM_LABEL;
+		return TYPE_SITE_RESTRICTED_LABEL;
 	}
 
 }

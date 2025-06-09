@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.model.impl;
@@ -77,12 +68,14 @@ public class ListTypeEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(31);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", listTypeEntryId=");
 		sb.append(listTypeEntryId);
 		sb.append(", companyId=");
@@ -101,8 +94,12 @@ public class ListTypeEntryCacheModel
 		sb.append(key);
 		sb.append(", name=");
 		sb.append(name);
+		sb.append(", system=");
+		sb.append(system);
 		sb.append(", type=");
 		sb.append(type);
+		sb.append(", status=");
+		sb.append(status);
 		sb.append("}");
 
 		return sb.toString();
@@ -119,6 +116,13 @@ public class ListTypeEntryCacheModel
 		}
 		else {
 			listTypeEntryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			listTypeEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			listTypeEntryImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		listTypeEntryImpl.setListTypeEntryId(listTypeEntryId);
@@ -162,12 +166,16 @@ public class ListTypeEntryCacheModel
 			listTypeEntryImpl.setName(name);
 		}
 
+		listTypeEntryImpl.setSystem(system);
+
 		if (type == null) {
 			listTypeEntryImpl.setType("");
 		}
 		else {
 			listTypeEntryImpl.setType(type);
 		}
+
+		listTypeEntryImpl.setStatus(status);
 
 		listTypeEntryImpl.resetOriginalValues();
 
@@ -178,6 +186,7 @@ public class ListTypeEntryCacheModel
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		listTypeEntryId = objectInput.readLong();
 
@@ -191,7 +200,11 @@ public class ListTypeEntryCacheModel
 		listTypeDefinitionId = objectInput.readLong();
 		key = objectInput.readUTF();
 		name = objectInput.readUTF();
+
+		system = objectInput.readBoolean();
 		type = objectInput.readUTF();
+
+		status = objectInput.readInt();
 	}
 
 	@Override
@@ -203,6 +216,13 @@ public class ListTypeEntryCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(listTypeEntryId);
@@ -237,16 +257,21 @@ public class ListTypeEntryCacheModel
 			objectOutput.writeUTF(name);
 		}
 
+		objectOutput.writeBoolean(system);
+
 		if (type == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(type);
 		}
+
+		objectOutput.writeInt(status);
 	}
 
 	public long mvccVersion;
 	public String uuid;
+	public String externalReferenceCode;
 	public long listTypeEntryId;
 	public long companyId;
 	public long userId;
@@ -256,6 +281,8 @@ public class ListTypeEntryCacheModel
 	public long listTypeDefinitionId;
 	public String key;
 	public String name;
+	public boolean system;
 	public String type;
+	public int status;
 
 }

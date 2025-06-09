@@ -1,21 +1,11 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
-<!-- test order_details.jsp -->
 
 <%
 CommerceOrderEditDisplayContext commerceOrderEditDisplayContext = (CommerceOrderEditDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
@@ -39,6 +29,8 @@ Date requestedDeliveryDate = commerceOrderItem.getRequestedDeliveryDate();
 		<aui:input name="commerceOrderId" type="hidden" value="<%= commerceOrderItem.getCommerceOrderId() %>" />
 		<aui:input name="commerceOrderItemId" type="hidden" value="<%= commerceOrderItem.getCommerceOrderItemId() %>" />
 
+		<liferay-ui:error exception="<%= CommerceOrderItemPriceException.class %>" message="please-enter-a-valid-price" />
+		<liferay-ui:error exception="<%= CommerceOrderItemQuantityException.class %>" message="please-enter-a-valid-quantity" />
 		<liferay-ui:error exception="<%= CommerceOrderItemRequestedDeliveryDateException.class %>" message="please-enter-a-valid-requested-delivery-date" />
 
 		<liferay-ui:error exception="<%= CommerceOrderValidatorException.class %>">
@@ -62,13 +54,37 @@ Date requestedDeliveryDate = commerceOrderItem.getRequestedDeliveryDate();
 			</c:if>
 		</liferay-ui:error>
 
-		<aui:input bean="<%= commerceOrderItem %>" model="<%= CommerceOrderItem.class %>" name="quantity">
-			<aui:validator name="min">1</aui:validator>
+		<aui:input name="decimalQuantity" type="quantity" value="<%= commerceOrderEditDisplayContext.getQuantity(commerceOrderItem) %>">
+			<aui:validator name="min">0</aui:validator>
 			<aui:validator name="number" />
 		</aui:input>
 
+		<aui:select label="measurement-units" name="cpMeasurementUnitId" showEmptyOption="<%= true %>">
+
+			<%
+			for (CPMeasurementUnit cpMeasurementUnit : commerceOrderEditDisplayContext.getCPMeasurementUnits()) {
+			%>
+
+				<aui:option label="<%= cpMeasurementUnit.getName(locale) %>" selected="<%= commerceOrderItem.getCPMeasurementUnitId() == cpMeasurementUnit.getCPMeasurementUnitId() %>" value="<%= cpMeasurementUnit.getCPMeasurementUnitId() %>" />
+
+			<%
+			}
+			%>
+
+		</aui:select>
+
 		<c:if test="<%= !commerceOrder.isOpen() %>">
-			<aui:input name="price" suffix="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" type="text" value="<%= commerceCurrency.round(commerceOrderItem.getUnitPrice()) %>">
+			<aui:input name="price" suffix="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" type="currency" value="<%= commerceOrderEditDisplayContext.getFormattedValue(commerceOrderItem.getUnitPrice()) %>">
+				<aui:validator name="min">0</aui:validator>
+				<aui:validator name="number" />
+			</aui:input>
+
+			<aui:input label="discount" name="discountAmount" suffix="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" type="currency" value="<%= commerceOrderEditDisplayContext.getFormattedValue(commerceOrderItem.getDiscountAmount()) %>">
+				<aui:validator name="min">0</aui:validator>
+				<aui:validator name="number" />
+			</aui:input>
+
+			<aui:input label="total" name="finalPrice" suffix="<%= HtmlUtil.escape(commerceCurrency.getCode()) %>" type="currency" value="<%= commerceOrderEditDisplayContext.getFormattedValue(commerceOrderItem.getFinalPrice()) %>">
 				<aui:validator name="min">0</aui:validator>
 				<aui:validator name="number" />
 			</aui:input>
@@ -105,7 +121,7 @@ Date requestedDeliveryDate = commerceOrderItem.getRequestedDeliveryDate();
 			/>
 		</div>
 
-		<aui:input bean="<%= commerceOrderItem %>" model="<%= CommerceOrderItem.class %>" name="deliveryGroup" />
+		<aui:input bean="<%= commerceOrderItem %>" model="<%= CommerceOrderItem.class %>" name="deliveryGroupName" />
 
 		<aui:button-row>
 			<aui:button cssClass="btn-lg" type="submit" />

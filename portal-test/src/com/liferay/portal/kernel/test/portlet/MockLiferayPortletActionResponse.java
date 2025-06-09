@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.test.portlet;
@@ -20,26 +11,26 @@ import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.servlet.URLEncoder;
 import com.liferay.portlet.test.MockActionURL;
 
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.ActionURL;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.MutableRenderParameters;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletModeException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderURL;
+import jakarta.portlet.ResourceURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serializable;
 
 import java.util.Collection;
 import java.util.Map;
-
-import javax.portlet.ActionResponse;
-import javax.portlet.ActionURL;
-import javax.portlet.MimeResponse;
-import javax.portlet.MutableRenderParameters;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletModeException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderURL;
-import javax.portlet.ResourceURL;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 
 import javax.xml.namespace.QName;
 

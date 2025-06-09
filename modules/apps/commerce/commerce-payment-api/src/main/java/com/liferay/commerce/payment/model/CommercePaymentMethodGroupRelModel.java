@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.model;
@@ -19,6 +10,7 @@ import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 
 import java.util.Date;
@@ -41,7 +33,7 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface CommercePaymentMethodGroupRelModel
 	extends BaseModel<CommercePaymentMethodGroupRel>, GroupedModel,
-			LocalizedModel, ShardedModel {
+			LocalizedModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -62,6 +54,22 @@ public interface CommercePaymentMethodGroupRelModel
 	 * @param primaryKey the primary key of this commerce payment method group rel
 	 */
 	public void setPrimaryKey(long primaryKey);
+
+	/**
+	 * Returns the mvcc version of this commerce payment method group rel.
+	 *
+	 * @return the mvcc version of this commerce payment method group rel
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this commerce payment method group rel.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce payment method group rel
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
 
 	/**
 	 * Returns the commerce payment method group rel ID of this commerce payment method group rel.
@@ -392,49 +400,6 @@ public interface CommercePaymentMethodGroupRelModel
 		Map<Locale, String> descriptionMap, Locale defaultLocale);
 
 	/**
-	 * Returns the image ID of this commerce payment method group rel.
-	 *
-	 * @return the image ID of this commerce payment method group rel
-	 */
-	public long getImageId();
-
-	/**
-	 * Sets the image ID of this commerce payment method group rel.
-	 *
-	 * @param imageId the image ID of this commerce payment method group rel
-	 */
-	public void setImageId(long imageId);
-
-	/**
-	 * Returns the engine key of this commerce payment method group rel.
-	 *
-	 * @return the engine key of this commerce payment method group rel
-	 */
-	@AutoEscape
-	public String getEngineKey();
-
-	/**
-	 * Sets the engine key of this commerce payment method group rel.
-	 *
-	 * @param engineKey the engine key of this commerce payment method group rel
-	 */
-	public void setEngineKey(String engineKey);
-
-	/**
-	 * Returns the priority of this commerce payment method group rel.
-	 *
-	 * @return the priority of this commerce payment method group rel
-	 */
-	public double getPriority();
-
-	/**
-	 * Sets the priority of this commerce payment method group rel.
-	 *
-	 * @param priority the priority of this commerce payment method group rel
-	 */
-	public void setPriority(double priority);
-
-	/**
 	 * Returns the active of this commerce payment method group rel.
 	 *
 	 * @return the active of this commerce payment method group rel
@@ -455,6 +420,64 @@ public interface CommercePaymentMethodGroupRelModel
 	 */
 	public void setActive(boolean active);
 
+	/**
+	 * Returns the image ID of this commerce payment method group rel.
+	 *
+	 * @return the image ID of this commerce payment method group rel
+	 */
+	public long getImageId();
+
+	/**
+	 * Sets the image ID of this commerce payment method group rel.
+	 *
+	 * @param imageId the image ID of this commerce payment method group rel
+	 */
+	public void setImageId(long imageId);
+
+	/**
+	 * Returns the payment integration key of this commerce payment method group rel.
+	 *
+	 * @return the payment integration key of this commerce payment method group rel
+	 */
+	@AutoEscape
+	public String getPaymentIntegrationKey();
+
+	/**
+	 * Sets the payment integration key of this commerce payment method group rel.
+	 *
+	 * @param paymentIntegrationKey the payment integration key of this commerce payment method group rel
+	 */
+	public void setPaymentIntegrationKey(String paymentIntegrationKey);
+
+	/**
+	 * Returns the priority of this commerce payment method group rel.
+	 *
+	 * @return the priority of this commerce payment method group rel
+	 */
+	public double getPriority();
+
+	/**
+	 * Sets the priority of this commerce payment method group rel.
+	 *
+	 * @param priority the priority of this commerce payment method group rel
+	 */
+	public void setPriority(double priority);
+
+	/**
+	 * Returns the type settings of this commerce payment method group rel.
+	 *
+	 * @return the type settings of this commerce payment method group rel
+	 */
+	@AutoEscape
+	public String getTypeSettings();
+
+	/**
+	 * Sets the type settings of this commerce payment method group rel.
+	 *
+	 * @param typeSettings the type settings of this commerce payment method group rel
+	 */
+	public void setTypeSettings(String typeSettings);
+
 	@Override
 	public String[] getAvailableLanguageIds();
 
@@ -470,5 +493,9 @@ public interface CommercePaymentMethodGroupRelModel
 
 	@Override
 	public CommercePaymentMethodGroupRel cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

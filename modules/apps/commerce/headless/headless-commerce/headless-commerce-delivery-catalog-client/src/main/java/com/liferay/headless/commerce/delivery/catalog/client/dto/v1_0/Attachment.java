@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.delivery.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0.AttachmentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -56,6 +47,79 @@ public class Attachment implements Cloneable, Serializable {
 	}
 
 	protected String attachment;
+
+	public Boolean getCdnEnabled() {
+		return cdnEnabled;
+	}
+
+	public void setCdnEnabled(Boolean cdnEnabled) {
+		this.cdnEnabled = cdnEnabled;
+	}
+
+	public void setCdnEnabled(
+		UnsafeSupplier<Boolean, Exception> cdnEnabledUnsafeSupplier) {
+
+		try {
+			cdnEnabled = cdnEnabledUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean cdnEnabled;
+
+	public String getCdnURL() {
+		return cdnURL;
+	}
+
+	public void setCdnURL(String cdnURL) {
+		this.cdnURL = cdnURL;
+	}
+
+	public void setCdnURL(
+		UnsafeSupplier<String, Exception> cdnURLUnsafeSupplier) {
+
+		try {
+			cdnURL = cdnURLUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String cdnURL;
+
+	public com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+		CustomField[] getCustomFields() {
+
+		return customFields;
+	}
+
+	public void setCustomFields(
+		com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+			CustomField[] customFields) {
+
+		this.customFields = customFields;
+	}
+
+	public void setCustomFields(
+		UnsafeSupplier
+			<com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+				CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
+
+		try {
+			customFields = customFieldsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected
+		com.liferay.headless.commerce.delivery.catalog.client.custom.field.
+			CustomField[] customFields;
 
 	public Date getDisplayDate() {
 		return displayDate;
@@ -98,6 +162,69 @@ public class Attachment implements Cloneable, Serializable {
 	}
 
 	protected Date expirationDate;
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
+
+	public Long getFileEntryId() {
+		return fileEntryId;
+	}
+
+	public void setFileEntryId(Long fileEntryId) {
+		this.fileEntryId = fileEntryId;
+	}
+
+	public void setFileEntryId(
+		UnsafeSupplier<Long, Exception> fileEntryIdUnsafeSupplier) {
+
+		try {
+			fileEntryId = fileEntryIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long fileEntryId;
+
+	public Boolean getGalleryEnabled() {
+		return galleryEnabled;
+	}
+
+	public void setGalleryEnabled(Boolean galleryEnabled) {
+		this.galleryEnabled = galleryEnabled;
+	}
+
+	public void setGalleryEnabled(
+		UnsafeSupplier<Boolean, Exception> galleryEnabledUnsafeSupplier) {
+
+		try {
+			galleryEnabled = galleryEnabledUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean galleryEnabled;
 
 	public Long getId() {
 		return id;
@@ -199,6 +326,27 @@ public class Attachment implements Cloneable, Serializable {
 	}
 
 	protected String src;
+
+	public String[] getTags() {
+		return tags;
+	}
+
+	public void setTags(String[] tags) {
+		this.tags = tags;
+	}
+
+	public void setTags(
+		UnsafeSupplier<String[], Exception> tagsUnsafeSupplier) {
+
+		try {
+			tags = tagsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String[] tags;
 
 	public String getTitle() {
 		return title;

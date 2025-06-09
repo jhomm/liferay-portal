@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence.impl;
@@ -21,6 +12,7 @@ import com.liferay.petra.sql.dsl.Table;
 import com.liferay.petra.sql.dsl.ast.ASTNode;
 import com.liferay.petra.sql.dsl.expression.Alias;
 import com.liferay.petra.sql.dsl.expression.Expression;
+import com.liferay.petra.sql.dsl.expression.ScalarDSLQueryAlias;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.petra.sql.dsl.query.FromStep;
 import com.liferay.petra.sql.dsl.query.GroupByStep;
@@ -30,12 +22,14 @@ import com.liferay.petra.sql.dsl.spi.ast.DefaultASTNodeListener;
 import com.liferay.petra.sql.dsl.spi.expression.AggregateExpression;
 import com.liferay.petra.sql.dsl.spi.expression.DSLFunction;
 import com.liferay.petra.sql.dsl.spi.expression.DSLFunctionType;
+import com.liferay.petra.sql.dsl.spi.expression.Scalar;
 import com.liferay.petra.sql.dsl.spi.expression.TableStar;
+import com.liferay.petra.sql.dsl.spi.expression.step.ElseEnd;
+import com.liferay.petra.sql.dsl.spi.query.QueryTable;
 import com.liferay.petra.sql.dsl.spi.query.Select;
 import com.liferay.petra.sql.dsl.spi.query.SetOperation;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.dao.db.DB;
@@ -73,6 +67,7 @@ import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -100,6 +95,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 
 import javax.sql.DataSource;
 
@@ -187,7 +183,11 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 			if (astNode instanceof Select) {
 				select = (Select)astNode;
 
-				break;
+				astNode = _unwrapQueryTable(select);
+
+				if (astNode == null) {
+					break;
+				}
 			}
 
 			BaseASTNode baseASTNode = (BaseASTNode)astNode;
@@ -216,16 +216,15 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 
 		FinderPath finderPath = new FinderPath(
 			FinderPath.encodeDSLQueryCacheName(tableNames), "dslQuery",
-			sb.getStrings(), new String[0],
-			projectionType == ProjectionType.MODELS);
+			ArrayUtil.append(
+				sb.getStrings(), _getAliasTypes(select.getExpressions())),
+			new String[0], projectionType == ProjectionType.MODELS);
 
 		Object[] arguments = _getArguments(defaultASTNodeListener);
 
-		Object cacheResult = finderCache.getResult(finderPath, arguments);
+		Object cacheResult = finderCache.getResult(finderPath, arguments, this);
 
-		boolean productionMode = CTCollectionThreadLocal.isProductionMode();
-
-		if ((cacheResult != null) && productionMode) {
+		if (cacheResult != null) {
 			return (R)cacheResult;
 		}
 
@@ -267,6 +266,14 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 
 						sqlQuery.addScalar(column.getName(), _getType(column));
 					}
+					else if (expression instanceof ScalarDSLQueryAlias) {
+						ScalarDSLQueryAlias<?> scalarDSLQueryAlias =
+							(ScalarDSLQueryAlias<?>)expression;
+
+						sqlQuery.addScalar(
+							scalarDSLQueryAlias.getName(),
+							_types.get(scalarDSLQueryAlias.getJavaType()));
+					}
 					else {
 						throw new IllegalArgumentException(
 							"Unnamed projection expression " + expression);
@@ -292,9 +299,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 					defaultASTNodeListener.getEnd());
 			}
 
-			if (productionMode) {
-				finderCache.putResult(finderPath, arguments, result);
-			}
+			finderCache.putResult(finderPath, arguments, result);
 
 			return (R)result;
 		}
@@ -591,7 +596,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 	@Override
 	public DB getDB() {
 		if (_db == null) {
-			_db = DBManagerUtil.getDB(_dialect, _dataSource);
+			_db = DBManagerUtil.getDB(getDialect(), _dataSource);
 		}
 
 		return _db;
@@ -599,7 +604,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 
 	@Override
 	public Dialect getDialect() {
-		return _dialect;
+		return _sessionFactory.getDialect();
 	}
 
 	@Override
@@ -628,7 +633,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 			_log.error("Caught unexpected exception", exception);
 		}
 		else if (_log.isDebugEnabled()) {
-			_log.debug(exception, exception);
+			_log.debug(exception);
 		}
 
 		return new SystemException(exception);
@@ -646,6 +651,11 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 
 	@Override
 	public T remove(T model) {
+		return removeByFunction(model, this::removeImpl);
+	}
+
+	@Override
+	public T removeByFunction(T model, Function<T, T> function) {
 		if (ReadOnlyTransactionThreadLocal.isReadOnly()) {
 			throw new IllegalStateException(
 				"Remove called with read only transaction");
@@ -663,7 +673,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 			modelListener.onBeforeRemove(model);
 		}
 
-		T removedModel = removeImpl(model);
+		T removedModel = function.apply(model);
 
 		if (removedModel != null) {
 			model = removedModel;
@@ -701,9 +711,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 	public void setSessionFactory(SessionFactory sessionFactory) {
 		_sessionFactory = sessionFactory;
 
-		_dialect = _sessionFactory.getDialect();
-
-		DBType dbType = DBManagerUtil.getDBType(_dialect);
+		DBType dbType = DBManagerUtil.getDBType(_dataSource);
 
 		_databaseOrderByMaxColumns = GetterUtil.getInteger(
 			PropsUtil.get(
@@ -1038,6 +1046,28 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 	@Deprecated
 	protected boolean finderCacheEnabled = true;
 
+	private String[] _getAliasTypes(
+		Collection<? extends Expression<?>> expressions) {
+
+		List<String> aliasTypes = new ArrayList<>();
+
+		for (Expression<?> expression : expressions) {
+			Type type = null;
+
+			if (expression instanceof Alias) {
+				Alias<?> alias = (Alias<?>)expression;
+
+				type = _getType(alias.getExpression());
+			}
+
+			if (type != null) {
+				aliasTypes.add(String.valueOf(type));
+			}
+		}
+
+		return aliasTypes.toArray(new String[0]);
+	}
+
 	private Object[] _getArguments(
 		DefaultASTNodeListener defaultASTNodeListener) {
 
@@ -1103,7 +1133,7 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 
 			Class<?> javaTypeClass = column.getJavaType();
 
-			Type type = _typeMap.get(javaTypeClass);
+			Type type = _types.get(javaTypeClass);
 
 			if (type != null) {
 				return type;
@@ -1146,16 +1176,63 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 				return Type.LONG;
 			}
 
+			if (dslFunctionType == DSLFunctionType.FLOAT_DIVISION) {
+				return Type.FLOAT;
+			}
+
 			return _getType(dslFunction.getExpressions()[0]);
+		}
+
+		if (expression instanceof ElseEnd<?>) {
+			ElseEnd<?> elseEnd = (ElseEnd<?>)expression;
+
+			return _getType(elseEnd.getElseExpression());
+		}
+
+		if (expression instanceof Scalar<?>) {
+			Scalar<?> scalar = (Scalar<?>)expression;
+
+			Object value = scalar.getValue();
+
+			return _types.get(value.getClass());
 		}
 
 		throw new IllegalArgumentException(expression.toString());
 	}
 
+	private ASTNode _unwrapQueryTable(Select select) {
+		Collection<? extends Expression<?>> expressions =
+			select.getExpressions();
+
+		if (expressions.size() != 1) {
+			return null;
+		}
+
+		Iterator<? extends Expression<?>> iterator = expressions.iterator();
+
+		Expression<?> expression = iterator.next();
+
+		if (!(expression instanceof TableStar)) {
+			return null;
+		}
+
+		TableStar tableStar = (TableStar)expression;
+
+		Table table = tableStar.getTable();
+
+		if (!(table instanceof QueryTable)) {
+			return null;
+		}
+
+		QueryTable queryTable = (QueryTable)table;
+
+		return queryTable.getDslQuery();
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		BasePersistenceImpl.class);
 
-	private static final Map<Class<?>, Type> _typeMap =
+	private static final Map<Class<?>, Type> _types =
 		HashMapBuilder.<Class<?>, Type>put(
 			BigDecimal.class, Type.BIG_DECIMAL
 		).put(
@@ -1183,7 +1260,6 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 	private DataSource _dataSource;
 	private DB _db;
 	private Map<String, String> _dbColumnNames = Collections.emptyMap();
-	private Dialect _dialect;
 	private Class<T> _modelClass;
 	private Class<? extends T> _modelImplClass;
 	private ModelPKType _modelPKType = ModelPKType.COMPOUND;
@@ -1330,11 +1406,6 @@ public class BasePersistenceImpl<T extends BaseModel<T>>
 
 		@Override
 		public NullModel toUnescapedModel() {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public String toXmlString() {
 			throw new UnsupportedOperationException();
 		}
 

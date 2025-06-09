@@ -1,18 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import uuidv1 from 'uuid/v1';
+import {v4 as uuidv4} from 'uuid';
 
 import fetch from './../util/fetch.es';
 import isObject from './../util/is_object';
@@ -95,13 +86,11 @@ class PortletInit {
 			this._updateHistory(true);
 		}
 
-		this.portletModes = pageRenderState.portlets[
-			this._portletId
-		].allowedPM.slice(0);
+		this.portletModes =
+			pageRenderState.portlets[this._portletId].allowedPM.slice(0);
 
-		this.windowStates = pageRenderState.portlets[
-			this._portletId
-		].allowedWS.slice(0);
+		this.windowStates =
+			pageRenderState.portlets[this._portletId].allowedWS.slice(0);
 	}
 
 	/**
@@ -448,7 +437,7 @@ class PortletInit {
 
 	_updatePortletStates(updatedIds) {
 		return new Promise((resolve) => {
-			if (updatedIds.length === 0) {
+			if (!updatedIds.length) {
 				busy = false;
 			}
 			else {
@@ -522,11 +511,11 @@ class PortletInit {
 			}
 		});
 
-		if (eventListenersQueue.length > 0) {
+		if (eventListenersQueue.length) {
 			setTimeout(() => {
 				busy = true;
 
-				while (eventListenersQueue.length > 0) {
+				while (eventListenersQueue.length) {
 					const eventData = eventListenersQueue.shift();
 					const handler = eventData.handler;
 					const id = eventData.id;
@@ -655,7 +644,7 @@ class PortletInit {
 			}
 		}
 
-		const handle = uuidv1();
+		const handle = uuidv4();
 
 		const listener = {
 			handle,

@@ -42,12 +42,12 @@
 </tr>
 <tr>
 	<td>PRODUCT_MENU_OPENED</td>
-	<td>//div[contains(@id,'sidenavSliderId') and contains(@class,'open') and not(contains(@class,'sidenav-transition')) and not(contains(@class,'closed'))]</td>
+	<td>//*[contains(@id,'sidenavSliderId') and contains(@class,'open') and not(contains(@class,'sidenav-transition')) and not(contains(@class,'closed'))]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PRODUCT_MENU_CLOSED</td>
-	<td>//div[contains(@id,'sidenavSliderId') and contains(@class,'closed') and not(contains(@class,'sidenav-transition')) and not(contains(@class,'open'))]</td>
+	<td>//*[contains(@id,'sidenavSliderId') and contains(@class,'closed') and not(contains(@class,'sidenav-transition')) and not(contains(@class,'open'))]</td>
 	<td></td>
 </tr>
 <tr>
@@ -57,12 +57,17 @@
 </tr>
 <tr>
 	<td>CHANGE_SPACE_ICON</td>
-	<td>//div[contains(@class,'icon-sites')]//a</td>
+	<td>//div[contains(@class,'icon-sites')]//button</td>
 	<td></td>
 </tr>
 <tr>
 	<td>HOME_PAGE_LINK</td>
 	<td>//a[contains(@class,'navigation-link') and contains(.,'Home')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LIVE_LINK</td>
+	<td>//*[@data-qa-id='live']</td>
 	<td></td>
 </tr>
 <tr>
@@ -72,12 +77,12 @@
 </tr>
 <tr>
 	<td>PORTLET</td>
-	<td>//div[a[@aria-expanded='true']]//a[contains(@id,'Portlet') and @data-title='${key_portlet}']</td>
+	<td>xpath=(//div | //li)[a[@aria-expanded='true']]//a[contains(@id,'Portlet') and @data-title='${key_portlet}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PORTLET_ACTIVE</td>
-	<td>//div[a[@aria-expanded='true']]//li[contains(@class,'active')]//a[contains(@id,'Portlet') and @data-title='${key_portlet}']</td>
+	<td>//li[a[@aria-expanded='true']]//li[contains(@class,'active')]//a[contains(@id,'Portlet') and @data-title='${key_portlet}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -87,12 +92,12 @@
 </tr>
 <tr>
 	<td>SITE</td>
-	<td>//div[contains(@id,'siteSelector')]//div[h5[.='${key_site}']]</td>
+	<td>//div[contains(@id,'siteSelector')]//div[div[.='${key_site}']]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>LIVE_LINK</td>
-	<td>//*[@data-qa-id='live']</td>
+	<td>SITE_NAME</td>
+	<td>//*[contains(@class,'site-name') and contains(.,'${key_siteName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -111,11 +116,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>USER_SIGNOUT</td>
+	<td>//div[contains(@class,'list-group')]//a[contains(.,'Sign Out')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PRODUCT_MENU_PANEL-->
+
 <tr>
 	<td>CHOOSE_A_SITE</td>
 	<td>//span[contains(@class,'site-name')][normalize-space(text())='Choose a Site']</td>
@@ -144,11 +156,6 @@
 <tr>
 	<td>PRODUCT_MENU_PANEL_TIMES</td>
 	<td>//a[contains(@id,'ProductMenu')][*[name()='svg'][contains(@class,'icon-times')]]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>STICKER</td>
-	<td>//div[contains(@class,'product-menu-sidebar')]//div[contains(@class,'sticker')][contains(@style,'${key_imageName}')]</td>
 	<td></td>
 </tr>
 </tbody>

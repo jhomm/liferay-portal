@@ -1,32 +1,46 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {addParams, openSelectionModal} from 'frontend-js-web';
+import {openConfirmModal, openSelectionModal} from 'frontend-js-components-web';
+import {addParams, sub} from 'frontend-js-web';
 
 export default function propsTransformer({portletNamespace, ...otherProps}) {
 	const deleteSelectedUserGroups = () => {
-		if (
-			confirm(
-				Liferay.Language.get('are-you-sure-you-want-to-delete-this')
-			)
-		) {
-			const form = document.getElementById(`${portletNamespace}fm`);
+		openConfirmModal({
+			message: Liferay.Language.get(
+				'are-you-sure-you-want-to-delete-this'
+			),
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					const form = document.getElementById(
+						`${portletNamespace}fm`
+					);
 
-			if (form) {
-				submitForm(form);
-			}
-		}
+					if (form) {
+						submitForm(form);
+					}
+				}
+			},
+		});
+	};
+
+	const removeUserGroupRole = (itemData) => {
+		openConfirmModal({
+			message: Liferay.Language.get(itemData?.message),
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					const form = document.getElementById(
+						`${portletNamespace}fm`
+					);
+
+					if (form) {
+						submitForm(form, itemData?.removeUserGroupRoleURL);
+					}
+				}
+			},
+		});
 	};
 
 	const selectRole = (itemData) => {
@@ -90,7 +104,11 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 					const input = document.createElement('input');
 
 					input.name = `${portletNamespace}rowIds`;
-					input.value = selectedItems.map((item) => item.value);
+					input.value = selectedItems.map((selectedItem) => {
+						const item = JSON.parse(selectedItem.value);
+
+						return item.userGroupId;
+					});
 
 					addGroupUserGroupsFm.appendChild(input);
 
@@ -98,7 +116,7 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 				}
 			},
 			selectEventName: `${portletNamespace}selectUserGroups`,
-			title: Liferay.Util.sub(
+			title: sub(
 				Liferay.Language.get('assign-user-groups-to-this-x'),
 				itemData?.groupTypeLabel
 			),
@@ -115,6 +133,9 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 
 			if (action === 'deleteSelectedUserGroups') {
 				deleteSelectedUserGroups();
+			}
+			else if (action === 'removeUserGroupRole') {
+				removeUserGroupRole(data);
 			}
 			else if (action === 'selectRole') {
 				selectRole(data);

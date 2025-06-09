@@ -1,31 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {waitForElementToBeRemoved} from '@testing-library/dom';
-import {cleanup, fireEvent, render} from '@testing-library/react';
+import {fireEvent, render} from '@testing-library/react';
+import {getOpener} from 'frontend-js-web';
 import React from 'react';
 
 import '@testing-library/jest-dom/extend-expect';
 
 import DLVideoExternalShortcutURLItemSelectorView from '../src/main/resources/META-INF/resources/js/DLVideoExternalShortcutURLItemSelectorView';
 
-const liferayOpenerfireMock = jest.fn();
+const mockLiferayOpenerFire = jest.fn();
 
-Liferay.Util.getOpener = jest.fn(() => ({
-	Liferay: {
-		fire: liferayOpenerfireMock,
-	},
+jest.mock('frontend-js-web', () => ({
+	...jest.requireActual('frontend-js-web'),
+	getOpener: jest.fn(() => ({
+		Liferay: {
+			fire: mockLiferayOpenerFire,
+		},
+	})),
 }));
 
 const defaultProps = {
@@ -39,8 +34,6 @@ const renderComponent = (props) =>
 	render(<DLVideoExternalShortcutURLItemSelectorView {...props} />);
 
 describe('DLVideoExternalShortcutURLItemSelectorView', () => {
-	afterEach(cleanup);
-
 	describe('when rendered with the default props', () => {
 		let result;
 
@@ -49,10 +42,10 @@ describe('DLVideoExternalShortcutURLItemSelectorView', () => {
 		});
 
 		it('has an add button disabled', () => {
-			const add = result.getByRole('button');
+			const addButton = result.getByRole('button');
 
-			expect(add).toBeInTheDocument();
-			expect(add).toBeDisabled();
+			expect(addButton).toBeInTheDocument();
+			expect(addButton).toBeDisabled();
 		});
 	});
 
@@ -73,6 +66,7 @@ describe('DLVideoExternalShortcutURLItemSelectorView', () => {
 			fetch.mockResponseOnce(JSON.stringify(responseFields));
 
 			result = renderComponent(defaultProps);
+
 			const {getByLabelText} = result;
 
 			fireEvent.change(getByLabelText('video-url'), {
@@ -102,15 +96,15 @@ describe('DLVideoExternalShortcutURLItemSelectorView', () => {
 			expect(add).toBeEnabled();
 		});
 
-		describe('when the form is submitted', () => {
+		describe('when add button is clicked', () => {
 			beforeEach(async () => {
-				fireEvent.submit(result.getByRole('form'));
+				fireEvent.click(result.getByRole('button'));
 			});
 
 			it('fires an event in the opener', () => {
-				expect(Liferay.Util.getOpener).toHaveBeenCalled();
+				expect(getOpener).toHaveBeenCalled();
 
-				expect(liferayOpenerfireMock).toHaveBeenCalledWith(
+				expect(mockLiferayOpenerFire).toHaveBeenCalledWith(
 					defaultProps.eventName,
 					{
 						data: {
@@ -134,6 +128,7 @@ describe('DLVideoExternalShortcutURLItemSelectorView', () => {
 			fetch.mockResponseOnce('');
 
 			result = renderComponent(defaultProps);
+
 			const {getByLabelText} = result;
 
 			fireEvent.change(getByLabelText('video-url'), {
@@ -157,21 +152,10 @@ describe('DLVideoExternalShortcutURLItemSelectorView', () => {
 		});
 
 		it('has an add button disabled', () => {
-			const add = result.getByRole('button');
+			const addButton = result.getByRole('button');
 
-			expect(add).toBeInTheDocument();
-			expect(add).toBeDisabled();
-		});
-
-		describe('when the form is submitted', () => {
-			beforeEach(async () => {
-				fireEvent.submit(result.getByRole('form'));
-			});
-
-			it('does not fire an event in the opener', () => {
-				expect(Liferay.Util.getOpener).not.toHaveBeenCalled();
-				expect(liferayOpenerfireMock).not.toHaveBeenCalled();
-			});
+			expect(addButton).toBeInTheDocument();
+			expect(addButton).toBeDisabled();
 		});
 	});
 });

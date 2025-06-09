@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
+import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 
@@ -1690,6 +1682,25 @@ public class GetterUtil {
 	public static Object getObject(Object value, Object defaultValue) {
 		if (value == null) {
 			return defaultValue;
+		}
+
+		return value;
+	}
+
+	/**
+	 * Returns the Object value. If the value is <code>null</code>, the value
+	 * supplied by the default value unsafe supplier is returned.
+	 *
+	 * @param  value the value
+	 * @param  defaultValueUnsafeSupplier a default value unsafe supplier
+	 * @return the value
+	 */
+	public static <T, E extends Throwable> T getObject(
+			T value, UnsafeSupplier<T, E> defaultValueUnsafeSupplier)
+		throws E {
+
+		if (value == null) {
+			return defaultValueUnsafeSupplier.get();
 		}
 
 		return value;

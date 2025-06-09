@@ -1,40 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.content.dashboard.web.internal.servlet.taglib.util;
 
+import com.liferay.content.dashboard.item.ContentDashboardItem;
 import com.liferay.content.dashboard.item.action.ContentDashboardItemAction;
-import com.liferay.content.dashboard.web.internal.item.ContentDashboardItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.vulcan.util.TransformUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Cristina González
@@ -42,61 +33,40 @@ import javax.servlet.http.HttpServletRequest;
 public class ContentDashboardDropdownItemsProvider {
 
 	public ContentDashboardDropdownItemsProvider(
-		Http http, Language language,
-		LiferayPortletRequest liferayPortletRequest,
+		Language language, LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse, Portal portal) {
 
-		_http = http;
 		_language = language;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
 		_portal = portal;
-
-		_currentURL = String.valueOf(
-			PortletURLUtil.getCurrent(
-				_liferayPortletRequest, liferayPortletResponse));
 	}
 
 	public List<DropdownItem> getDropdownItems(
-		ContentDashboardItem contentDashboardItem) {
+		ContentDashboardItem<?> contentDashboardItem) {
 
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
 			_liferayPortletRequest);
 
 		Locale locale = _portal.getLocale(_liferayPortletRequest);
 
-		DropdownItemList dropdownItemList = DropdownItemList.of(
-			(DropdownItem[])TransformUtil.transformToArray(
-				(List<ContentDashboardItemAction>)
+		return DropdownItemListBuilder.addAll(
+			DropdownItemList.of(
+				(DropdownItem[])TransformUtil.transformToArray(
 					contentDashboardItem.getContentDashboardItemActions(
 						httpServletRequest,
 						ContentDashboardItemAction.Type.VIEW,
 						ContentDashboardItemAction.Type.EDIT),
-				contentDashboardItemAction -> _toDropdownItem(
-					contentDashboardItemAction, locale),
-				DropdownItem.class));
-
-		dropdownItemList.addAll(
+					contentDashboardItemAction -> _toDropdownItem(
+						contentDashboardItemAction, locale),
+					DropdownItem.class))
+		).addAll(
 			DropdownItemList.of(
 				() -> {
-					ResourceURL resourceURL =
-						_liferayPortletResponse.createResourceURL();
-
-					resourceURL.setParameter(
-						"backURL",
-						_portal.getCurrentURL(_liferayPortletRequest));
-
 					InfoItemReference infoItemReference =
 						contentDashboardItem.getInfoItemReference();
 
-					resourceURL.setParameter(
-						"className", infoItemReference.getClassName());
-					resourceURL.setParameter(
-						"classPK",
-						String.valueOf(infoItemReference.getClassPK()));
-
-					resourceURL.setResourceID(
-						"/content_dashboard/get_content_dashboard_item_info");
+					long classPK = _getClassPK(infoItemReference);
 
 					return DropdownItemBuilder.setData(
 						HashMapBuilder.<String, Object>put(
@@ -104,9 +74,35 @@ public class ContentDashboardDropdownItemsProvider {
 						).put(
 							"className", infoItemReference.getClassName()
 						).put(
-							"classPK", infoItemReference.getClassPK()
+							"classPK", classPK
 						).put(
-							"fetchURL", String.valueOf(resourceURL)
+							"contentPerformanceDataFetchURL",
+							ResourceURLBuilder.createResourceURL(
+								_liferayPortletResponse
+							).setBackURL(
+								_portal.getCurrentURL(_liferayPortletRequest)
+							).setParameter(
+								"className", infoItemReference.getClassName()
+							).setParameter(
+								"classPK", classPK
+							).setResourceID(
+								"/content_dashboard" +
+									"/get_content_performance_info"
+							).buildString()
+						).put(
+							"fetchURL",
+							ResourceURLBuilder.createResourceURL(
+								_liferayPortletResponse
+							).setBackURL(
+								_portal.getCurrentURL(_liferayPortletRequest)
+							).setParameter(
+								"className", infoItemReference.getClassName()
+							).setParameter(
+								"classPK", classPK
+							).setResourceID(
+								"/content_dashboard" +
+									"/get_content_dashboard_item_info"
+							).buildString()
 						).build()
 					).setIcon(
 						"info-circle-open"
@@ -115,18 +111,30 @@ public class ContentDashboardDropdownItemsProvider {
 					).setQuickAction(
 						true
 					).build();
-				}));
-
-		dropdownItemList.addAll(
+				})
+		).addAll(
 			TransformUtil.transform(
-				(List<ContentDashboardItemAction>)
-					contentDashboardItem.getContentDashboardItemActions(
-						httpServletRequest,
-						ContentDashboardItemAction.Type.VIEW_IN_PANEL),
+				contentDashboardItem.getContentDashboardItemActions(
+					httpServletRequest,
+					ContentDashboardItemAction.Type.VIEW_IN_PANEL),
 				contentDashboardItemAction -> _toViewInPanelDropdownItem(
-					contentDashboardItem, contentDashboardItemAction, locale)));
+					contentDashboardItem, contentDashboardItemAction, locale))
+		).build();
+	}
 
-		return dropdownItemList;
+	private long _getClassPK(InfoItemReference infoItemReference) {
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		if (infoItemIdentifier instanceof ClassPKInfoItemIdentifier) {
+			ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+				(ClassPKInfoItemIdentifier)
+					infoItemReference.getInfoItemIdentifier();
+
+			return classPKInfoItemIdentifier.getClassPK();
+		}
+
+		return 0;
 	}
 
 	private DropdownItem _toDropdownItem(
@@ -148,7 +156,7 @@ public class ContentDashboardDropdownItemsProvider {
 	}
 
 	private DropdownItem _toViewInPanelDropdownItem(
-		ContentDashboardItem contentDashboardItem,
+		ContentDashboardItem<?> contentDashboardItem,
 		ContentDashboardItemAction contentDashboardItemAction, Locale locale) {
 
 		InfoItemReference infoItemReference =
@@ -160,7 +168,7 @@ public class ContentDashboardDropdownItemsProvider {
 			).put(
 				"className", infoItemReference.getClassName()
 			).put(
-				"classPK", infoItemReference.getClassPK()
+				"classPK", _getClassPK(infoItemReference)
 			).put(
 				"fetchURL", contentDashboardItemAction.getURL(locale)
 			).build()
@@ -173,8 +181,6 @@ public class ContentDashboardDropdownItemsProvider {
 		).build();
 	}
 
-	private final String _currentURL;
-	private final Http _http;
 	private final Language _language;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;

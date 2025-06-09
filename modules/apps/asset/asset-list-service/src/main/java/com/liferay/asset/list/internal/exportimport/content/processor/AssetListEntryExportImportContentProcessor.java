@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.internal.exportimport.content.processor;
@@ -28,6 +19,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -48,8 +40,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -59,10 +49,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "model.class.name=com.liferay.asset.list.model.AssetListEntry",
-	service = {
-		AssetListEntryExportImportContentProcessor.class,
-		ExportImportContentProcessor.class
-	}
+	service = ExportImportContentProcessor.class
 )
 public class AssetListEntryExportImportContentProcessor
 	implements ExportImportContentProcessor<String> {
@@ -81,19 +68,14 @@ public class AssetListEntryExportImportContentProcessor
 		long[] groupIds = GetterUtil.getLongValues(
 			StringUtil.split(unicodeProperties.getProperty("groupIds", null)));
 
-		_addGroupMappingsElement(portletDataContext, groupIds);
+		addGroupMappingsElement(portletDataContext, groupIds);
 
-		long[] classNameIds = GetterUtil.getLongValues(
+		String[] classNames = TransformUtil.transform(
 			StringUtil.split(
-				unicodeProperties.getProperty("classNameIds", null)));
-
-		LongStream classNameIdsLongStream = Arrays.stream(classNameIds);
-
-		String[] classNames = classNameIdsLongStream.mapToObj(
-			classNameId -> _portal.getClassName(classNameId)
-		).toArray(
-			String[]::new
-		);
+				unicodeProperties.getProperty("classNameIds", null)),
+			classNameId -> _portal.getClassName(
+				GetterUtil.getLong(classNameId)),
+			String.class);
 
 		unicodeProperties.setProperty(
 			"classNames", StringUtil.merge(classNames, ","));
@@ -162,10 +144,22 @@ public class AssetListEntryExportImportContentProcessor
 				String queryValues = unicodeProperties.getProperty(
 					"queryValues" + index);
 
+				if (Validator.isNull(queryValues)) {
+					continue;
+				}
+
 				long[] categoryIds = GetterUtil.getLongValues(
 					queryValues.split(","));
 
 				for (long categoryId : categoryIds) {
+					AssetCategory assetCategory =
+						_assetCategoryLocalService.fetchAssetCategory(
+							categoryId);
+
+					if (assetCategory == null) {
+						continue;
+					}
+
 					StagedModelDataHandlerUtil.exportReferenceStagedModel(
 						portletDataContext, stagedModel,
 						_assetCategoryLocalService.getCategory(categoryId),
@@ -208,30 +202,30 @@ public class AssetListEntryExportImportContentProcessor
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 				Group.class);
 
-		long[] oldGroupIds = GetterUtil.getLongValues(
-			StringUtil.split(unicodeProperties.getProperty("groupIds", null)));
-
-		LongStream oldGroupIdsLongStream = Arrays.stream(oldGroupIds);
-
 		unicodeProperties.put(
 			"groupIds",
 			StringUtil.merge(
-				oldGroupIdsLongStream.map(
-					oldGroupId -> MapUtil.getLong(
-						groupIds, oldGroupId, oldGroupId)
-				).filter(
-					oldGroupId ->
-						_groupLocalService.fetchGroup(oldGroupId) != null
-				).toArray()));
+				TransformUtil.transformToLongArray(
+					Arrays.asList(
+						StringUtil.split(
+							unicodeProperties.getProperty("groupIds", null))),
+					oldGroupId -> {
+						long groupId = GetterUtil.getLong(oldGroupId);
 
-		String[] classNames = StringUtil.split(
-			unicodeProperties.getProperty("classNames"));
+						Group group = _groupLocalService.fetchGroup(
+							MapUtil.getLong(groupIds, groupId, groupId));
 
-		Stream<String> classNamesStream = Arrays.stream(classNames);
+						if (group != null) {
+							return group.getGroupId();
+						}
 
-		long[] classNameIds = classNamesStream.mapToLong(
-			className -> _portal.getClassNameId(className)
-		).toArray();
+						return null;
+					})));
+
+		long[] classNameIds = TransformUtil.transformToLongArray(
+			Arrays.asList(
+				StringUtil.split(unicodeProperties.getProperty("classNames"))),
+			className -> _portal.getClassNameId(className));
 
 		unicodeProperties.setProperty(
 			"classNameIds", StringUtil.merge(classNameIds));
@@ -259,16 +253,13 @@ public class AssetListEntryExportImportContentProcessor
 			Class<?> clazz = _assetRendererFactoryClassProvider.getClass(
 				assetRendererFactory);
 
-			long[] classTypeIds = GetterUtil.getLongValues(
-				StringUtil.split(
-					unicodeProperties.getProperty(
-						"classTypeIds" + clazz.getSimpleName())));
+			String[] classTypeIds = StringUtil.split(
+				unicodeProperties.getProperty(
+					"classTypeIds" + clazz.getSimpleName()));
 
 			if (ArrayUtil.isEmpty(classTypeIds)) {
 				continue;
 			}
-
-			LongStream classTypeIdsLongStream = Arrays.stream(classTypeIds);
 
 			Map<Long, Long> dlFileEntryTypeIds =
 				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
@@ -277,10 +268,11 @@ public class AssetListEntryExportImportContentProcessor
 			unicodeProperties.setProperty(
 				"classTypeIds" + clazz.getSimpleName(),
 				StringUtil.merge(
-					classTypeIdsLongStream.map(
+					TransformUtil.transformToLongArray(
+						Arrays.asList(classTypeIds),
 						classTypeId -> _getClassTypeId(
-							classTypeId, ddmStructureIds, dlFileEntryTypeIds)
-					).toArray()));
+							GetterUtil.getLong(classTypeId), ddmStructureIds,
+							dlFileEntryTypeIds))));
 
 			long anyClassType = GetterUtil.getLong(
 				unicodeProperties.getProperty(
@@ -309,6 +301,10 @@ public class AssetListEntryExportImportContentProcessor
 
 				String queryValues = unicodeProperties.getProperty(
 					"queryValues" + index);
+
+				if (Validator.isNull(queryValues)) {
+					continue;
+				}
 
 				long[] categoryIds = GetterUtil.getLongValues(
 					queryValues.split(","));
@@ -359,9 +355,8 @@ public class AssetListEntryExportImportContentProcessor
 		throws PortalException {
 	}
 
-	private void _addGroupMappingsElement(
-			PortletDataContext portletDataContext, long[] groupIds)
-		throws Exception {
+	protected void addGroupMappingsElement(
+		PortletDataContext portletDataContext, long[] groupIds) {
 
 		Element rootElement = portletDataContext.getExportDataRootElement();
 
@@ -369,10 +364,14 @@ public class AssetListEntryExportImportContentProcessor
 			"group-id-mappings");
 
 		for (long groupId : groupIds) {
+			Group group = _groupLocalService.fetchGroup(groupId);
+
+			if (group == null) {
+				continue;
+			}
+
 			Element groupIdMappingElement = groupIdMappingsElement.addElement(
 				"group-id-mapping");
-
-			Group group = _groupLocalService.getGroup(groupId);
 
 			long liveGroupId = group.getLiveGroupId();
 

@@ -1,28 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayLink from '@clayui/link';
 import ClayPopover from '@clayui/popover';
 import {useEventListener} from '@liferay/frontend-js-react-web';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 import React, {useRef, useState} from 'react';
 
 export default function ({
 	enableDisablePropagationURL,
 	portletNamespace,
 	readyForPropagation,
+	triggerPropagation,
 }) {
 	const [show, setShow] = useState(false);
 	const ref = useRef();
@@ -53,6 +45,7 @@ export default function ({
 			}}
 			onShowChange={setShow}
 			show={show}
+			size="lg"
 			trigger={
 				<ClayButtonWithIcon
 					data-qa-id="info"
@@ -90,10 +83,14 @@ export default function ({
 							message: readyForPropagation
 								? Liferay.Language.get(
 										'propagation-is-disabled-connected-sites-might-not-have-been-updated-yet-propagation-is-only-triggered-when-a-site-created-from-the-template-is-visited'
-								  )
-								: Liferay.Language.get(
-										'propagation-is-enabled-connected-sites-will-be-updated-once-a-site-page-is-visited'
-								  ),
+									)
+								: triggerPropagation
+									? Liferay.Language.get(
+											'propagation-is-enabled-connected-sites-are-being-updated'
+										)
+									: Liferay.Language.get(
+											'propagation-is-enabled-connected-sites-will-be-updated-once-a-site-page-is-visited'
+										),
 							type: 'info',
 						});
 					}}

@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.oauth;
 
 import com.github.scribejava.core.model.OAuth2AccessToken;
+
+import java.io.Serializable;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -22,7 +15,7 @@ import java.time.temporal.ChronoUnit;
 /**
  * @author Cristina González
  */
-public class AccessToken {
+public class AccessToken implements Serializable {
 
 	public AccessToken(OAuth2AccessToken oAuth2AccessToken) {
 		if (oAuth2AccessToken == null) {
@@ -54,11 +47,7 @@ public class AccessToken {
 	public boolean isValid() {
 		LocalDateTime localDateTime = LocalDateTime.now();
 
-		if (localDateTime.isBefore(_expirationLocalDateTime)) {
-			return true;
-		}
-
-		return false;
+		return localDateTime.isBefore(_expirationLocalDateTime);
 	}
 
 	private final LocalDateTime _expirationLocalDateTime;

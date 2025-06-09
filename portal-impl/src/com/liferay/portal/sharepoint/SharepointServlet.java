@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.sharepoint;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
@@ -26,10 +16,10 @@ import com.liferay.portal.kernel.webdav.WebDAVUtil;
 import com.liferay.portal.sharepoint.methods.Method;
 import com.liferay.portal.sharepoint.methods.MethodFactory;
 
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * @author Bruno Farache
@@ -57,7 +47,7 @@ public class SharepointServlet extends HttpServlet {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -102,7 +92,6 @@ public class SharepointServlet extends HttpServlet {
 				}
 
 				sharepointRequest.setRootPath(rootPath);
-
 				sharepointRequest.setSharepointStorage(
 					SharepointUtil.getStorage(rootPath));
 
@@ -128,7 +117,7 @@ public class SharepointServlet extends HttpServlet {
 			}
 		}
 		catch (SharepointException sharepointException) {
-			_log.error(sharepointException, sharepointException);
+			_log.error(sharepointException);
 		}
 	}
 
@@ -138,15 +127,12 @@ public class SharepointServlet extends HttpServlet {
 		ServletResponseUtil.write(
 			httpServletResponse,
 			StringBundler.concat(
-				"<!-- FrontPage Configuration Information", StringPool.NEW_LINE,
-				" FPVersion=\"6.0.2.9999\"", StringPool.NEW_LINE,
-				"FPShtmlScriptUrl=\"_vti_bin/shtml.dll/_vti_rpc\"",
-				StringPool.NEW_LINE,
-				"FPAuthorScriptUrl=\"_vti_bin/_vti_aut/author.dll\"",
-				StringPool.NEW_LINE,
-				"FPAdminScriptUrl=\"_vti_bin/_vti_adm/admin.dll\"",
-				StringPool.NEW_LINE, "TPScriptUrl=\"_vti_bin/owssvr.dll\"",
-				StringPool.NEW_LINE, "-->"));
+				"<!-- FrontPage Configuration Information\n ",
+				"FPVersion=\"6.0.2.9999\"\n",
+				"FPShtmlScriptUrl=\"_vti_bin/shtml.dll/_vti_rpc\"\n",
+				"FPAuthorScriptUrl=\"_vti_bin/_vti_aut/author.dll\"\n",
+				"FPAdminScriptUrl=\"_vti_bin/_vti_adm/admin.dll\"\n",
+				"TPScriptUrl=\"_vti_bin/owssvr.dll\"\n-->"));
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

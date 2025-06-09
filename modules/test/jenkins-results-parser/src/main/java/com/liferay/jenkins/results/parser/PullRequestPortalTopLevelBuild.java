@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -40,17 +31,10 @@ public class PullRequestPortalTopLevelBuild
 
 		setCompareToUpstream(true);
 
-		try {
-			String testSuiteName = getTestSuiteName();
+		String testSuiteName = getTestSuiteName();
 
-			if (testSuiteName.equals("relevant")) {
-				_stableJob = JobFactory.newJob(jobName, "stable", branchName);
-			}
-		}
-		catch (Exception exception) {
-			System.out.println("Unable to create stable job for " + jobName);
-
-			exception.printStackTrace();
+		if (testSuiteName.equals("stable")) {
+			setCompareToUpstream(false);
 		}
 	}
 
@@ -77,6 +61,17 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	@Override
+	public String getBranchName() {
+		String branchName = getParameterValue("GITHUB_UPSTREAM_BRANCH_NAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(branchName)) {
+			return branchName;
+		}
+
+		return super.getBranchName();
+	}
+
+	@Override
 	public PortalWorkspace getPortalWorkspace() {
 		Workspace workspace = getWorkspace();
 
@@ -97,14 +92,8 @@ public class PullRequestPortalTopLevelBuild
 
 		sb.append("https://github.com/");
 		sb.append(getParameterValue("GITHUB_RECEIVER_USERNAME"));
-		sb.append("/liferay-portal");
-
-		String branchName = getBranchName();
-
-		if (!branchName.equals("master")) {
-			sb.append("-ee");
-		}
-
+		sb.append("/");
+		sb.append(getBaseGitRepositoryName());
 		sb.append("/pull/");
 		sb.append(getParameterValue("GITHUB_PULL_REQUEST_NUMBER"));
 
@@ -115,12 +104,10 @@ public class PullRequestPortalTopLevelBuild
 
 	@Override
 	public String getResult() {
-		String result = super.getResult();
-
 		List<Build> downstreamBuildFailures = getFailedDownstreamBuilds();
 
-		if ((result == null) || downstreamBuildFailures.isEmpty()) {
-			return result;
+		if (downstreamBuildFailures.isEmpty()) {
+			return super.getResult();
 		}
 
 		Properties buildProperties;
@@ -138,6 +125,8 @@ public class PullRequestPortalTopLevelBuild
 				buildProperties.getProperty(
 					"pull.request.forward.upstream.failure.comparison." +
 						"enabled"));
+
+		String result = "FAILURE";
 
 		if (!pullRequestForwardUpstreamFailureComparisonEnabled ||
 			!isCompareToUpstream()) {
@@ -185,10 +174,6 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	public String getStableJobResult() {
-		if (_stableJob == null) {
-			return null;
-		}
-
 		if (_stableJobResult != null) {
 			return _stableJobResult;
 		}
@@ -201,8 +186,24 @@ public class PullRequestPortalTopLevelBuild
 			return null;
 		}
 
+		String result = getResult();
+
+		if (result == null) {
+			return null;
+		}
+
+		if (result.equals("SUCCESS")) {
+			_stableJobResult = result;
+		}
+
+		Job stableJob = _getStableJob();
+
+		if (stableJob == null) {
+			return null;
+		}
+
 		List<String> stableJobBatchNames = new ArrayList<>(
-			_stableJob.getBatchNames());
+			stableJob.getBatchNames());
 
 		int stableJobDownstreamBuildsCompletedCount =
 			getJobVariantsDownstreamBuildCount(
@@ -214,14 +215,12 @@ public class PullRequestPortalTopLevelBuild
 			return null;
 		}
 
-		String result = getResult();
 		int stableJobDownstreamBuildsSuccessCount =
 			getJobVariantsDownstreamBuildCount(
 				stableJobBatchNames, "SUCCESS", null);
 
-		if (((result != null) && result.matches("(APPROVED|SUCCESS)")) ||
-			(stableJobDownstreamBuildsSuccessCount ==
-				stableJobDownstreamBuildsSize)) {
+		if (stableJobDownstreamBuildsSuccessCount ==
+				stableJobDownstreamBuildsSize) {
 
 			_stableJobResult = "SUCCESS";
 		}
@@ -278,16 +277,18 @@ public class PullRequestPortalTopLevelBuild
 			}
 		}
 
-		if (failedDownstreamBuilds.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return failedDownstreamBuilds.isEmpty();
 	}
 
 	protected Element getFailedStableJobSummaryElement() {
+		Job stableJob = _getStableJob();
+
+		if (stableJob == null) {
+			return Dom4JUtil.getNewElement("span");
+		}
+
 		List<String> stableJobBatchNames = new ArrayList<>(
-			_stableJob.getBatchNames());
+			stableJob.getBatchNames());
 
 		Element jobSummaryListElement = getJobSummaryListElement(
 			false, stableJobBatchNames);
@@ -313,16 +314,20 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	protected List<Build> getStableJobDownstreamBuilds() {
-		if (_stableJob != null) {
+		Job stableJob = _getStableJob();
+
+		if (stableJob != null) {
 			return getJobVariantsDownstreamBuilds(
-				_stableJob.getBatchNames(), null, null);
+				stableJob.getBatchNames(), null, null);
 		}
 
 		return Collections.emptyList();
 	}
 
 	protected Element getStableJobResultElement() {
-		if (_stableJob == null) {
+		Job stableJob = _getStableJob();
+
+		if (stableJob == null) {
 			return null;
 		}
 
@@ -341,7 +346,7 @@ public class PullRequestPortalTopLevelBuild
 
 		sb.append(
 			getJobVariantsDownstreamBuildCount(
-				new ArrayList<>(_stableJob.getBatchNames()), "SUCCESS", null));
+				new ArrayList<>(stableJob.getBatchNames()), "SUCCESS", null));
 
 		sb.append(" out of ");
 
@@ -355,8 +360,14 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	protected Element getStableJobSuccessSummaryElement() {
+		Job stableJob = _getStableJob();
+
+		if (stableJob == null) {
+			return Dom4JUtil.getNewElement("span");
+		}
+
 		List<String> stableJobBatchNames = new ArrayList<>(
-			_stableJob.getBatchNames());
+			stableJob.getBatchNames());
 
 		Element stableJobSummaryListElement = getJobSummaryListElement(
 			true, stableJobBatchNames);
@@ -377,8 +388,14 @@ public class PullRequestPortalTopLevelBuild
 	}
 
 	protected Element getStableJobSummaryElement() {
+		Job stableJob = _getStableJob();
+
+		if (stableJob == null) {
+			return Dom4JUtil.getNewElement("span");
+		}
+
 		List<String> stableJobBatchNames = new ArrayList<>(
-			_stableJob.getBatchNames());
+			stableJob.getBatchNames());
 
 		int stableJobDownstreamBuildSuccessCount =
 			getJobVariantsDownstreamBuildCount(
@@ -421,7 +438,9 @@ public class PullRequestPortalTopLevelBuild
 
 		List<Build> stableJobDownstreamBuilds = new ArrayList<>();
 
-		if (_stableJob != null) {
+		Job stableJob = _getStableJob();
+
+		if (stableJob != null) {
 			stableJobDownstreamBuilds.addAll(getStableJobDownstreamBuilds());
 		}
 
@@ -469,10 +488,15 @@ public class PullRequestPortalTopLevelBuild
 		Build controllerBuild = getControllerBuild();
 
 		if (controllerBuild != null) {
-			return controllerBuild.getParameterValue("OSB_FARO_GITHUB_URL");
+			osbFaroGitHubURL = controllerBuild.getParameterValue(
+				"OSB_FARO_GITHUB_URL");
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(osbFaroGitHubURL)) {
+				return osbFaroGitHubURL;
+			}
 		}
 
-		return null;
+		return "https://github.com/liferay/liferay-portal/tree/master";
 	}
 
 	private String _getSenderBranchSHA() {
@@ -483,6 +507,45 @@ public class PullRequestPortalTopLevelBuild
 		}
 
 		return null;
+	}
+
+	private synchronized Job _getStableJob() {
+		if (_stableJob != null) {
+			return _stableJob;
+		}
+
+		String testSuiteName = getTestSuiteName();
+
+		if (!testSuiteName.equals("relevant")) {
+			return null;
+		}
+
+		String branchName = getBranchName();
+		Job.BuildProfile buildProfile = getBuildProfile();
+		String jobName = getJobName();
+		String repositoryName = getBaseGitRepositoryName();
+		String stableTestSuiteName = "stable";
+
+		try {
+			_stableJob = JobFactory.newJob(
+				buildProfile, jobName, null, null, null, branchName, null,
+				repositoryName, stableTestSuiteName, branchName);
+
+			BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
+
+			buildDatabase.putJob(
+				JobFactory.getKey(
+					buildProfile, jobName, null, branchName, null,
+					repositoryName, stableTestSuiteName, branchName),
+				_stableJob);
+		}
+		catch (Exception exception) {
+			System.out.println("Unable to create stable job for " + jobName);
+
+			exception.printStackTrace();
+		}
+
+		return _stableJob;
 	}
 
 	private String _getUpstreamBranchSHA() {

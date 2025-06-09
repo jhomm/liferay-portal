@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -34,50 +25,48 @@ if (addURL == null) {
 		"/site_navigation_admin/add_site_navigation_menu_item"
 	).buildPortletURL();
 }
-
-portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(redirect);
-
-renderResponse.setTitle(LanguageUtil.format(request, "add-x", siteNavigationMenuItemType.getLabel(locale)));
 %>
 
 <liferay-ui:error exception="<%= SiteNavigationMenuItemNameException.class %>">
 	<liferay-ui:message arguments='<%= ModelHintsUtil.getMaxLength(SiteNavigationMenuItem.class.getName(), "name") %>' key="please-enter-a-name-with-fewer-than-x-characters" translateArguments="<%= false %>" />
 </liferay-ui:error>
 
-<aui:form action="<%= addURL.toString() %>" cssClass="container-fluid container-fluid-max-xl" name="fm" onSubmit="event.preventDefault();">
+<aui:form action="<%= addURL %>" cssClass="add-site-navigation-menu-item container-fluid" name="fm" onSubmit="event.preventDefault();">
 	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 	<aui:input name="siteNavigationMenuId" type="hidden" value="<%= siteNavigationMenuId %>" />
 	<aui:input name="type" type="hidden" value="<%= type %>" />
 
-	<aui:fieldset-group markupView="lexicon">
-		<aui:fieldset>
+	<aui:fieldset>
 
-			<%
-			siteNavigationMenuItemType.renderAddPage(request, PipingServletResponseFactory.createPipingServletResponse(pageContext));
-			%>
+		<%
+		siteNavigationMenuItemType.renderAddPage(request, PipingServletResponseFactory.createPipingServletResponse(pageContext));
+		%>
 
-		</aui:fieldset>
-	</aui:fieldset-group>
+	</aui:fieldset>
 
-	<aui:button-row>
-		<aui:button name="addButton" type="submit" value="add" />
+	<aui:button-row cssClass="modal-footer position-fixed">
+		<clay:button
+			id='<%= liferayPortletResponse.getNamespace() + "addButton" %>'
+			label='<%= type.equals("layout") ? "select" : "add" %>'
+			type="submit"
+		/>
 
-		<aui:button href="<%= redirect %>" type="cancel" />
+		<clay:button
+			displayType="btn-secondary cancel"
+			label="cancel"
+			onClick='<%= "Liferay.Util.navigation('" + redirect + "')" %>'
+			type="button"
+		/>
 	</aui:button-row>
 </aui:form>
-
-<%
-Portlet selPortlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), portletDisplay.getId());
-%>
 
 <liferay-frontend:component
 	context='<%=
 		HashMapBuilder.<String, Object>put(
-			"selPortletId", HtmlUtil.escapeJS(selPortlet.getPortletId())
+			"order", ParamUtil.getLong(request, "order", -1)
 		).put(
-			"selPortletIsAjaxable", selPortlet.isAjaxable()
+			"parentSiteNavigationMenuItemId", ParamUtil.getLong(request, "parentSiteNavigationMenuItemId")
 		).build()
 	%>'
-	module="js/AddSiteNavigationMenuItem"
+	module="{AddSiteNavigationMenuItem} from site-navigation-admin-web"
 />

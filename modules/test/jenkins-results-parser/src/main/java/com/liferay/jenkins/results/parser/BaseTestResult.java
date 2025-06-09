@@ -1,24 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
+
+import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 
 import java.io.IOException;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import org.json.JSONObject;
 
 /**
  * @author Leslie Wong
@@ -29,6 +24,17 @@ public abstract class BaseTestResult implements TestResult {
 	@Override
 	public Build getBuild() {
 		return _build;
+	}
+
+	@Override
+	public TestClass getTestClass() {
+		TestClassResult testClassResult = getTestClassResult();
+
+		if (testClassResult == null) {
+			return null;
+		}
+
+		return testClassResult.getTestClass();
 	}
 
 	@Override
@@ -55,8 +61,33 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	@Override
+	public TestHistory getTestHistory() {
+		TestClass testClass = getTestClass();
+
+		if (testClass == null) {
+			return null;
+		}
+
+		return testClass.getTestHistory();
+	}
+
+	@Override
 	public boolean isFailing() {
 		String status = getStatus();
+
+		Build build = getBuild();
+
+		if (status.equals("PASSED") && build.isFailing()) {
+			JSONObject testReportJSONObject = build.getTestReportJSONObject(
+				false);
+
+			int failCount = testReportJSONObject.getInt("failCount");
+			int passCount = testReportJSONObject.getInt("passCount");
+
+			if ((failCount == 0) && (passCount == 1)) {
+				return true;
+			}
+		}
 
 		if (status.equals("FIXED") || status.equals("PASSED") ||
 			status.equals("SKIPPED")) {
@@ -68,8 +99,41 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	@Override
+	public boolean isSkipped() {
+		String status = getStatus();
+
+		return status.equals("SKIPPED");
+	}
+
+	@Override
 	public boolean isUniqueFailure() {
-		return !UpstreamFailureUtil.isTestFailingInUpstreamJob(this);
+		if (!isFailing()) {
+			return false;
+		}
+
+		Build build = getBuild();
+
+		if (!build.isCompareToUpstream()) {
+			return true;
+		}
+
+		String batchName = build.getBatchName(build.getJobVariant());
+
+		TopLevelBuild topLevelBuild = build.getTopLevelBuild();
+
+		for (String upstreamFailure :
+				UpstreamFailureUtil.getUpstreamJobFailures(
+					"test", topLevelBuild)) {
+
+			String testFailure = JenkinsResultsParserUtil.combine(
+				getDisplayName(), ",", batchName);
+
+			if (upstreamFailure.equals(testFailure)) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	protected BaseTestResult(Build build) {
@@ -87,6 +151,11 @@ public abstract class BaseTestResult implements TestResult {
 			AxisBuild axisBuild = (AxisBuild)build;
 
 			return axisBuild.getAxisNumber();
+		}
+		else if (build instanceof DownstreamBuild) {
+			DownstreamBuild downstreamBuild = (DownstreamBuild)build;
+
+			return downstreamBuild.getAxisVariable();
 		}
 
 		return "INVALID_AXIS_NUMBER";
@@ -164,7 +233,7 @@ public abstract class BaseTestResult implements TestResult {
 	}
 
 	private static final String _URL_BASE_LOGS_DEFAULT =
-		"https://testray.liferay.com/reports/production/logs";
+		"https://storage.cloud.google.com/testray-results";
 
 	private final Build _build;
 	private TestClassResult _testClassResult;

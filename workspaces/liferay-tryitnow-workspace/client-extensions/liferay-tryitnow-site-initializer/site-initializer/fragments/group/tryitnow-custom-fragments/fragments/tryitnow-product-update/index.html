@@ -1,0 +1,39 @@
+[@liferay_aui.style]
+	.${fragmentEntryLinkNamespace}-fragment-product-update-container .min-height{
+		min-height:${configuration.minHeight};
+	}
+
+	.${fragmentEntryLinkNamespace}-fragment-product-update-container .separator-color {
+		background-color:${configuration.separatorColor};
+	}
+
+	.${fragmentEntryLinkNamespace}-fragment-product-update-container .icon-width{
+		width: ${configuration.iconWidthAndHeight};
+	}
+
+	.${fragmentEntryLinkNamespace}-fragment-product-update-container .icon-height{
+		height: ${configuration.iconWidthAndHeight};
+	}
+[/@]
+
+<div class="${fragmentEntryLinkNamespace}-fragment-product-update-container fragmentcss-product-update-container">
+	<div class="border-neutral-2 min-height product-update-container">
+		<div class="icon-container icon-height icon-width rounded-lg separator-color">
+			<lfr-drop-zone data-lfr-drop-zone-id="1"></lfr-drop-zone>
+		</div>
+
+		<div class="product-update-info">
+			<div class="info-item">
+				<lfr-drop-zone data-lfr-drop-zone-id="2"></lfr-drop-zone>
+			</div>
+
+			<div class="info-item">
+				<lfr-drop-zone data-lfr-drop-zone-id="3"></lfr-drop-zone>
+			</div>
+
+			<div class="info-item">
+				<lfr-drop-zone data-lfr-drop-zone-id="4"></lfr-drop-zone>
+			</div>
+		</div>
+	</div>
+</div>

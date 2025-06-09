@@ -20,9 +20,9 @@ LPS-30525.
 
 <#if themeDisplay??>
 	<#assign
-		css_main_file = htmlUtil.escape(portalUtil.getStaticResourceURL(request, "${themeDisplay.getPathThemeCss()}/main.css"))
+		css_main_file = htmlUtil.escape(themeDisplay.getMainCSSURL())
 		is_signed_in = themeDisplay.isSignedIn()
-		js_main_file = htmlUtil.escape(portalUtil.getStaticResourceURL(request, "${themeDisplay.getPathThemeJavaScript()}/main.js"))
+		js_main_file = htmlUtil.escape(themeDisplay.getMainJSURL())
 	/>
 
 	<#if !is_setup_complete>
@@ -66,9 +66,9 @@ LPS-30525.
 	file_name
 >
 	<#if file_name == css_main_file>
-		<link class="lfr-css-file" href="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" id="mainLiferayThemeCSS" rel="stylesheet" type="text/css" />
+		<link class="lfr-css-file" href="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" id="mainLiferayThemeCSS" ${nonceAttribute} rel="stylesheet" type="text/css" />
 	<#else>
-		<link class="lfr-css-file" href="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" rel="stylesheet" type="text/css" />
+		<link class="lfr-css-file" href="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" ${nonceAttribute} rel="stylesheet" type="text/css" />
 	</#if>
 </#macro>
 
@@ -81,9 +81,9 @@ ${dateUtil.getCurrentDate(format, locale)}</#macro>
 	file_name
 >
 	<#if file_name == js_main_file>
-		<script id="mainLiferayThemeJavaScript" src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
+		<script ${nonceAttribute} id="mainLiferayThemeJavaScript" src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
 	<#else>
-		<script src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
+		<script ${nonceAttribute} src="${htmlUtil.escape(portalUtil.getStaticResourceURL(request, file_name))}" type="text/javascript"></script>
 	</#if>
 </#macro>
 

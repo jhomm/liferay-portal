@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.web.internal.display.context;
@@ -22,9 +13,9 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.info.item.InfoItemClassDetails;
 import com.liferay.info.item.InfoItemFormVariation;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFormVariationsProvider;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.info.permission.provider.InfoPermissionProvider;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -35,9 +26,11 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -46,13 +39,12 @@ import com.liferay.template.info.item.capability.TemplateInfoItemCapability;
 import com.liferay.template.model.TemplateEntry;
 import com.liferay.template.web.internal.security.permissions.resource.TemplateEntryPermission;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -75,9 +67,9 @@ public class InformationTemplatesManagementToolbarDisplayContext
 		_informationTemplatesTemplateDisplayContext =
 			informationTemplatesTemplateDisplayContext;
 
-		_infoItemServiceTracker =
-			(InfoItemServiceTracker)liferayPortletRequest.getAttribute(
-				InfoItemServiceTracker.class.getName());
+		_infoItemServiceRegistry =
+			(InfoItemServiceRegistry)liferayPortletRequest.getAttribute(
+				InfoItemServiceRegistry.class.getName());
 
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -88,7 +80,7 @@ public class InformationTemplatesManagementToolbarDisplayContext
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteSelectedTemplateEntries");
-				dropdownItem.setIcon("times-circle");
+				dropdownItem.setIcon("trash");
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "delete"));
 				dropdownItem.setQuickAction(true);
@@ -96,6 +88,7 @@ public class InformationTemplatesManagementToolbarDisplayContext
 		).build();
 	}
 
+	@Override
 	public Map<String, Object> getAdditionalProps() {
 		return HashMapBuilder.<String, Object>put(
 			"addTemplateEntryURL",
@@ -184,18 +177,22 @@ public class InformationTemplatesManagementToolbarDisplayContext
 		}
 
 		for (InfoItemClassDetails infoItemClassDetails :
-				_infoItemServiceTracker.getInfoItemClassDetails(
-					TemplateInfoItemCapability.KEY)) {
+				_infoItemServiceRegistry.getInfoItemClassDetails(
+					_themeDisplay.getScopeGroupId(),
+					TemplateInfoItemCapability.KEY,
+					_themeDisplay.getPermissionChecker())) {
 
 			InfoItemFormVariationsProvider<?> infoItemFormVariationsProvider =
-				_infoItemServiceTracker.getFirstInfoItemService(
+				_infoItemServiceRegistry.getFirstInfoItemService(
 					InfoItemFormVariationsProvider.class,
 					infoItemClassDetails.getClassName());
 
 			if (infoItemFormVariationsProvider != null) {
-				Collection<InfoItemFormVariation> infoItemFormVariations =
-					infoItemFormVariationsProvider.getInfoItemFormVariations(
-						_themeDisplay.getScopeGroupId());
+				List<InfoItemFormVariation> infoItemFormVariations =
+					new ArrayList<>(
+						infoItemFormVariationsProvider.
+							getInfoItemFormVariations(
+								_themeDisplay.getScopeGroupId()));
 
 				if (infoItemFormVariations.isEmpty()) {
 					continue;
@@ -204,11 +201,27 @@ public class InformationTemplatesManagementToolbarDisplayContext
 				JSONArray itemSubtypesJSONArray =
 					JSONFactoryUtil.createJSONArray();
 
+				InfoPermissionProvider infoPermissionProvider =
+					_infoItemServiceRegistry.getFirstInfoItemService(
+						InfoPermissionProvider.class,
+						infoItemClassDetails.getClassName());
+
+				if (infoPermissionProvider != null) {
+					infoItemFormVariations = ListUtil.filter(
+						infoItemFormVariations,
+						infoItemFormVariation ->
+							infoPermissionProvider.hasViewPermission(
+								infoItemFormVariation.getKey(),
+								_themeDisplay.getScopeGroupId(),
+								_themeDisplay.getPermissionChecker()));
+				}
+
 				infoItemFormVariations = ListUtil.sort(
-					new ArrayList<>(infoItemFormVariations),
+					infoItemFormVariations,
 					Comparator.comparing(
-						infoItemFormVariation -> infoItemFormVariation.getLabel(
-							_themeDisplay.getLocale())));
+						infoItemFormVariation -> GetterUtil.getString(
+							infoItemFormVariation.getLabel(
+								_themeDisplay.getLocale()))));
 
 				for (InfoItemFormVariation infoItemFormVariation :
 						infoItemFormVariations) {
@@ -250,7 +263,7 @@ public class InformationTemplatesManagementToolbarDisplayContext
 	private static final Log _log = LogFactoryUtil.getLog(
 		InformationTemplatesManagementToolbarDisplayContext.class);
 
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
 	private final InformationTemplatesTemplateDisplayContext
 		_informationTemplatesTemplateDisplayContext;
 	private final ThemeDisplay _themeDisplay;

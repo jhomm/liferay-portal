@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service.persistence.test;
@@ -176,27 +167,11 @@ public class JournalArticleLocalizationPersistenceTest {
 	}
 
 	@Test
-	public void testCountByArticlePK() throws Exception {
-		_persistence.countByArticlePK(RandomTestUtil.nextLong());
-
-		_persistence.countByArticlePK(0L);
-	}
-
-	@Test
 	public void testCountByC_A() throws Exception {
 		_persistence.countByC_A(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
 		_persistence.countByC_A(0L, 0L);
-	}
-
-	@Test
-	public void testCountByA_L() throws Exception {
-		_persistence.countByA_L(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByA_L(0L, "null");
-
-		_persistence.countByA_L(0L, (String)null);
 	}
 
 	@Test
@@ -207,16 +182,6 @@ public class JournalArticleLocalizationPersistenceTest {
 		_persistence.countByC_A_L(0L, 0L, "null");
 
 		_persistence.countByC_A_L(0L, 0L, (String)null);
-	}
-
-	@Test
-	public void testCountByC_A_T_L() throws Exception {
-		_persistence.countByC_A_T_L(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "", "");
-
-		_persistence.countByC_A_T_L(0L, 0L, "null", "null");
-
-		_persistence.countByC_A_T_L(0L, 0L, (String)null, (String)null);
 	}
 
 	@Test
@@ -536,49 +501,6 @@ public class JournalArticleLocalizationPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				journalArticleLocalization, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "articlePK"));
-
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getArticlePK()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "articlePK"));
-		Assert.assertEquals(
-			journalArticleLocalization.getLanguageId(),
-			ReflectionTestUtil.invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "languageId"));
-
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getArticlePK()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "articlePK"));
-		Assert.assertEquals(
-			journalArticleLocalization.getLanguageId(),
-			ReflectionTestUtil.invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "languageId"));
-
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(journalArticleLocalization.getArticlePK()),
-			ReflectionTestUtil.<Long>invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "articlePK"));
-		Assert.assertEquals(
-			journalArticleLocalization.getTitle(),
-			ReflectionTestUtil.invoke(
-				journalArticleLocalization, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "title"));
 		Assert.assertEquals(
 			journalArticleLocalization.getLanguageId(),
 			ReflectionTestUtil.invoke(

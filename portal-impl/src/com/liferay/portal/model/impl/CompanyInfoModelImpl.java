@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -209,76 +199,64 @@ public class CompanyInfoModelImpl
 	public Map<String, Function<CompanyInfo, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CompanyInfo, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CompanyInfo>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CompanyInfo.class.getClassLoader(), CompanyInfo.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CompanyInfo, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CompanyInfo> constructor =
-				(Constructor<CompanyInfo>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CompanyInfo, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<CompanyInfo, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CompanyInfo::getMvccVersion);
+			attributeGetterFunctions.put(
+				"companyInfoId", CompanyInfo::getCompanyInfoId);
+			attributeGetterFunctions.put(
+				"companyId", CompanyInfo::getCompanyId);
+			attributeGetterFunctions.put("key", CompanyInfo::getKey);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CompanyInfo, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CompanyInfo, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CompanyInfo, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CompanyInfo, Object>>();
-		Map<String, BiConsumer<CompanyInfo, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CompanyInfo, ?>>();
+		private static final Map<String, BiConsumer<CompanyInfo, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CompanyInfo::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CompanyInfo, Long>)CompanyInfo::setMvccVersion);
-		attributeGetterFunctions.put(
-			"companyInfoId", CompanyInfo::getCompanyInfoId);
-		attributeSetterBiConsumers.put(
-			"companyInfoId",
-			(BiConsumer<CompanyInfo, Long>)CompanyInfo::setCompanyInfoId);
-		attributeGetterFunctions.put("companyId", CompanyInfo::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CompanyInfo, Long>)CompanyInfo::setCompanyId);
-		attributeGetterFunctions.put("key", CompanyInfo::getKey);
-		attributeSetterBiConsumers.put(
-			"key", (BiConsumer<CompanyInfo, String>)CompanyInfo::setKey);
+		static {
+			Map<String, BiConsumer<CompanyInfo, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<CompanyInfo, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CompanyInfo, Long>)CompanyInfo::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"companyInfoId",
+				(BiConsumer<CompanyInfo, Long>)CompanyInfo::setCompanyInfoId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CompanyInfo, Long>)CompanyInfo::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"key", (BiConsumer<CompanyInfo, String>)CompanyInfo::setKey);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -571,41 +549,12 @@ public class CompanyInfoModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CompanyInfo, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CompanyInfo, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CompanyInfo, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CompanyInfo)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CompanyInfo>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CompanyInfo.class, ModelWrapper.class);
 
 	}
 
@@ -617,8 +566,9 @@ public class CompanyInfoModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<CompanyInfo, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<CompanyInfo, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

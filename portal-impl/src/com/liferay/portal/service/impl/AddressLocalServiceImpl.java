@@ -1,24 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.account.configuration.manager.AccountEntryAddressSubtypeConfigurationManagerUtil;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.exception.AddressCityException;
 import com.liferay.portal.kernel.exception.AddressStreetException;
+import com.liferay.portal.kernel.exception.AddressSubtypeException;
 import com.liferay.portal.kernel.exception.AddressZipException;
+import com.liferay.portal.kernel.exception.NoSuchAddressException;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
+import com.liferay.portal.kernel.list.type.manager.ListTypeEntryManagerUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Contact;
@@ -42,6 +43,7 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ContactLocalService;
 import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.PhoneLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -54,6 +56,7 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.service.base.AddressLocalServiceBaseImpl;
 
 import java.io.Serializable;
@@ -61,6 +64,7 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -68,43 +72,25 @@ import java.util.List;
  */
 public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #addAddress(String, long, String, long, String, String,
-	 *             String, String, String, String, String, long, long, long,
-	 *             boolean, boolean, String, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public Address addAddress(
-			long userId, String className, long classPK, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long typeId, boolean mailing,
-			boolean primary, ServiceContext serviceContext)
-		throws PortalException {
-
-		return addressLocalService.addAddress(
-			null, userId, className, classPK, null, null, street1, street2,
-			street3, city, zip, regionId, countryId, typeId, mailing, primary,
-			null, serviceContext);
-	}
-
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Address addAddress(
 			String externalReferenceCode, long userId, String className,
-			long classPK, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long typeId, boolean mailing,
-			boolean primary, String phoneNumber, ServiceContext serviceContext)
+			long classPK, long countryId, long listTypeId, long regionId,
+			String city, String description, boolean mailing, String name,
+			boolean primary, String street1, String street2, String street3,
+			String subtype, String zip, String phoneNumber,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userPersistence.findByPrimaryKey(userId);
 		long classNameId = _classNameLocalService.getClassNameId(className);
 
-		validate(
-			0, user.getCompanyId(), classNameId, classPK, street1, city, zip,
-			regionId, countryId, typeId, mailing, primary);
+		if (!LazyReferencingThreadLocal.isIncompleteModel()) {
+			validate(
+				0, city, classNameId, classPK, user.getCompanyId(), countryId,
+				listTypeId, mailing, primary, regionId, street1, subtype, zip);
+		}
 
 		long addressId = counterLocalService.increment();
 
@@ -118,8 +104,8 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 		address.setClassNameId(classNameId);
 		address.setClassPK(classPK);
 		address.setCountryId(countryId);
+		address.setListTypeId(listTypeId);
 		address.setRegionId(regionId);
-		address.setTypeId(typeId);
 		address.setCity(city);
 		address.setDescription(description);
 		address.setMailing(mailing);
@@ -128,32 +114,46 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 		address.setStreet1(street1);
 		address.setStreet2(street2);
 		address.setStreet3(street3);
+		address.setSubtype(subtype);
 		address.setZip(zip);
+
+		if (LazyReferencingThreadLocal.isIncompleteModel()) {
+			address.setStatus(WorkflowConstants.STATUS_INCOMPLETE);
+		}
+		else {
+			address.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		address = addressPersistence.update(address);
 
 		if (Validator.isNotNull(phoneNumber)) {
-			_addAddressPhone(addressId, phoneNumber);
+			_addAddressPhone(addressId, address.getCompanyId(), phoneNumber);
 		}
+
+		_reindexUser(address.getClassName(), address.getClassPK());
 
 		return address;
 	}
 
 	@Override
 	public Address copyAddress(
-			long addressId, String className, long classPK,
+			long sourceAddressId, String className, long classPK,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		Address address = addressPersistence.findByPrimaryKey(addressId);
+		Address sourceAddress = addressPersistence.findByPrimaryKey(
+			sourceAddressId);
 
 		return addressLocalService.addAddress(
-			address.getExternalReferenceCode(), serviceContext.getUserId(),
-			className, classPK, address.getName(), address.getDescription(),
-			address.getStreet1(), address.getStreet2(), address.getStreet3(),
-			address.getCity(), address.getZip(), address.getRegionId(),
-			address.getCountryId(), address.getTypeId(), address.isMailing(),
-			address.isPrimary(), address.getPhoneNumber(), serviceContext);
+			null, serviceContext.getUserId(), className, classPK,
+			sourceAddress.getCountryId(), sourceAddress.getListTypeId(),
+			sourceAddress.getRegionId(), sourceAddress.getCity(),
+			sourceAddress.getDescription(), sourceAddress.isMailing(),
+			sourceAddress.getName(), sourceAddress.isPrimary(),
+			sourceAddress.getStreet1(), sourceAddress.getStreet2(),
+			sourceAddress.getStreet3(), sourceAddress.getSubtype(),
+			sourceAddress.getZip(), sourceAddress.getPhoneNumber(),
+			serviceContext);
 	}
 
 	@Indexable(type = IndexableType.DELETE)
@@ -168,6 +168,8 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 		_phoneLocalService.deletePhones(
 			address.getCompanyId(), address.getClassName(),
 			address.getAddressId());
+
+		_reindexUser(address.getClassName(), address.getClassPK());
 
 		return address;
 	}
@@ -244,22 +246,54 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 	}
 
 	@Override
-	public List<Address> getTypeAddresses(
-		long companyId, String className, long classPK, long[] typeIds) {
+	public List<Address> getListTypeAddresses(
+		long companyId, String className, long classPK, long[] listTypeIds) {
 
-		return addressPersistence.findByC_C_C_T(
+		return addressPersistence.findByC_C_C_L(
 			companyId, _classNameLocalService.getClassNameId(className),
-			classPK, typeIds);
+			classPK, listTypeIds);
 	}
 
 	@Override
-	public List<Address> getTypeAddresses(
-		long companyId, String className, long classPK, long[] typeIds,
+	public List<Address> getListTypeAddresses(
+		long companyId, String className, long classPK, long[] listTypeIds,
 		int start, int end, OrderByComparator<Address> orderByComparator) {
 
-		return addressPersistence.findByC_C_C_T(
+		return addressPersistence.findByC_C_C_L(
 			companyId, _classNameLocalService.getClassNameId(className),
-			classPK, typeIds, start, end, orderByComparator);
+			classPK, listTypeIds, start, end, orderByComparator);
+	}
+
+	@Override
+	public Address getOrAddIncompleteAddress(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK)
+		throws Exception {
+
+		Address address = fetchAddressByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (address != null) {
+			return address;
+		}
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			throw new NoSuchAddressException(
+				StringBundler.concat(
+					"Unable to find address with external reference code ",
+					externalReferenceCode, " and company ", companyId));
+		}
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setIncompleteModelWithSafeCloseable(
+					true)) {
+
+			return addressLocalService.addAddress(
+				externalReferenceCode, userId, className, classPK, 0, 0, 0,
+				StringPool.BLANK, StringPool.BLANK, false, null, false,
+				StringPool.BLANK, null, null, null, null, null,
+				new ServiceContext());
+		}
 	}
 
 	@Override
@@ -274,39 +308,26 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 		return searchAddresses(searchContext);
 	}
 
-	@Override
-	public Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId, long typeId,
-			boolean mailing, boolean primary)
-		throws PortalException {
-
-		Address address = addressPersistence.findByPrimaryKey(addressId);
-
-		return addressLocalService.updateAddress(
-			addressId, address.getName(), address.getDescription(), street1,
-			street2, street3, city, zip, regionId, countryId, typeId, mailing,
-			primary, address.getPhoneNumber());
-	}
-
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public Address updateAddress(
-			long addressId, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long typeId, boolean mailing,
-			boolean primary, String phoneNumber)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws PortalException {
 
 		validate(
-			addressId, 0, 0, 0, street1, city, zip, regionId, countryId, typeId,
-			mailing, primary);
+			addressId, city, 0, 0, 0, countryId, listTypeId, mailing, primary,
+			regionId, street1, subtype, zip);
 
 		Address address = addressPersistence.findByPrimaryKey(addressId);
 
+		address.setExternalReferenceCode(externalReferenceCode);
 		address.setCountryId(countryId);
+		address.setListTypeId(listTypeId);
 		address.setRegionId(regionId);
-		address.setTypeId(typeId);
 		address.setCity(city);
 		address.setDescription(description);
 		address.setMailing(mailing);
@@ -315,7 +336,12 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 		address.setStreet1(street1);
 		address.setStreet2(street2);
 		address.setStreet3(street3);
+		address.setSubtype(subtype);
 		address.setZip(zip);
+
+		if (address.getStatus() == WorkflowConstants.STATUS_INCOMPLETE) {
+			address.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		address = addressPersistence.update(address);
 
@@ -324,7 +350,8 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 				address.getCompanyId(), Address.class.getName(), addressId);
 
 			if (ListUtil.isEmpty(phones)) {
-				_addAddressPhone(addressId, phoneNumber);
+				_addAddressPhone(
+					addressId, address.getCompanyId(), phoneNumber);
 			}
 			else {
 				Phone phone = phones.get(0);
@@ -335,7 +362,35 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 			}
 		}
 
+		_reindexUser(address.getClassName(), address.getClassPK());
+
 		return address;
+	}
+
+	@Override
+	public Address updateExternalReferenceCode(
+			Address address, String externalReferenceCode)
+		throws PortalException {
+
+		if (Objects.equals(
+				address.getExternalReferenceCode(), externalReferenceCode)) {
+
+			return address;
+		}
+
+		address.setExternalReferenceCode(externalReferenceCode);
+
+		return addressPersistence.update(address);
+	}
+
+	@Override
+	public Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
+		throws PortalException {
+
+		return updateExternalReferenceCode(
+			addressPersistence.findByPrimaryKey(addressId),
+			externalReferenceCode);
 	}
 
 	protected SearchContext buildSearchContext(
@@ -363,7 +418,6 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 			).put(
 				"zip", keywords
 			).build());
-
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
 
@@ -474,9 +528,10 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 	}
 
 	protected void validate(
-			long addressId, long companyId, long classNameId, long classPK,
-			String street1, String city, String zip, long regionId,
-			long countryId, long typeId, boolean mailing, boolean primary)
+			long addressId, String city, long classNameId, long classPK,
+			long companyId, long countryId, long listTypeId, boolean mailing,
+			boolean primary, long regionId, String street1, String subtype,
+			String zip)
 		throws PortalException {
 
 		if (Validator.isNull(street1)) {
@@ -509,28 +564,89 @@ public class AddressLocalServiceImpl extends AddressLocalServiceBaseImpl {
 				Organization.class))) {
 
 			_listTypeLocalService.validate(
-				typeId, classNameId, ListTypeConstants.ADDRESS);
+				listTypeId, classNameId, ListTypeConstants.ADDRESS);
+		}
+
+		if (Validator.isNotNull(subtype) &&
+			((classNameId == _classNameLocalService.getClassNameId(
+				"com.liferay.account.model.AccountEntry")) ||
+			 (classNameId == _classNameLocalService.getClassNameId(
+				 "com.liferay.commerce.model.CommerceOrder")))) {
+
+			ListType listType = _listTypeLocalService.getListType(listTypeId);
+
+			String externalReferenceCode =
+				AccountEntryAddressSubtypeConfigurationManagerUtil.
+					getAddressSubtypeListTypeDefinitionExternalReferenceCode(
+						companyId, listType.getName());
+
+			if (Validator.isNull(externalReferenceCode)) {
+				throw new AddressSubtypeException();
+			}
+
+			long listTypeEntryId =
+				ListTypeEntryManagerUtil.
+					getListTypeEntryIdByListTypeDefinitionExternalReferenceCode(
+						externalReferenceCode, companyId, subtype);
+
+			if (listTypeEntryId == 0) {
+				throw new AddressSubtypeException();
+			}
 		}
 
 		validate(addressId, companyId, classNameId, classPK, mailing, primary);
 	}
 
-	private void _addAddressPhone(long addressId, String phoneNumber)
+	private void _addAddressPhone(
+			long addressId, long companyId, String phoneNumber)
 		throws PortalException {
 
 		ListType listType = _listTypeLocalService.getListType(
-			"phone-number", ListTypeConstants.ADDRESS_PHONE);
+			companyId, "phone-number", ListTypeConstants.ADDRESS_PHONE);
 
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
 		_phoneLocalService.addPhone(
-			serviceContext.getUserId(), Address.class.getName(), addressId,
-			phoneNumber, null, listType.getListTypeId(), false, serviceContext);
+			null, serviceContext.getUserId(), Address.class.getName(),
+			addressId, phoneNumber, null, listType.getListTypeId(), false,
+			serviceContext);
 	}
+
+	private void _reindexUser(String className, long classPK) {
+		if (!Objects.equals(className, Contact.class.getName())) {
+			return;
+		}
+
+		Contact contact = _contactLocalService.fetchContact(classPK);
+
+		if ((contact == null) ||
+			!Objects.equals(contact.getClassName(), User.class.getName())) {
+
+			return;
+		}
+
+		try {
+			Indexer<User> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+				User.class);
+
+			indexer.reindex(contact.getClassName(), contact.getClassPK());
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(portalException);
+			}
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AddressLocalServiceImpl.class);
 
 	@BeanReference(type = ClassNameLocalService.class)
 	private ClassNameLocalService _classNameLocalService;
+
+	@BeanReference(type = ContactLocalService.class)
+	private ContactLocalService _contactLocalService;
 
 	@BeanReference(type = CountryPersistence.class)
 	private CountryPersistence _countryPersistence;

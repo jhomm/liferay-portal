@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.rest.internal.jaxrs.feature;
@@ -29,29 +20,28 @@ import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.annotation.Priority;
+
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Priority;
-
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Provider;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Constants;
@@ -86,27 +76,25 @@ public class ConfigurableScopeCheckerFeature implements Feature {
 			return false;
 		}
 
+		Set<String> scopes = new HashSet<>();
+
+		for (CheckPattern checkPattern : _checkPatterns) {
+			for (String scope : checkPattern.getScopes()) {
+				if (Validator.isNotNull(scope)) {
+					scopes.add(scope);
+				}
+			}
+		}
+
 		context.register(
 			new ConfigurableContainerScopeCheckerContainerRequestFilter(),
 			HashMapBuilder.<Class<?>, Integer>put(
 				ContainerRequestFilter.class, Priorities.AUTHORIZATION - 8
 			).build());
 
-		Configuration configuration = context.getConfiguration();
-
-		Stream<CheckPattern> stream = _checkPatterns.stream();
-
 		_serviceRegistration = _bundleContext.registerService(
-			ScopeFinder.class,
-			new CollectionScopeFinder(
-				stream.flatMap(
-					c -> Arrays.stream(c.getScopes())
-				).filter(
-					Validator::isNotNull
-				).collect(
-					Collectors.toSet()
-				)),
-			buildProperties(configuration));
+			ScopeFinder.class, new CollectionScopeFinder(scopes),
+			_buildProperties(context.getConfiguration()));
 
 		return true;
 	}
@@ -118,16 +106,16 @@ public class ConfigurableScopeCheckerFeature implements Feature {
 		_bundleContext = bundleContext;
 
 		ConfigurableScopeCheckerFeatureConfiguration
-			configurableCheckerFeatureConfiguration =
+			configurableScopeCheckerFeatureConfiguration =
 				ConfigurableUtil.createConfigurable(
 					ConfigurableScopeCheckerFeatureConfiguration.class,
 					properties);
 
 		_allowUnmatched =
-			configurableCheckerFeatureConfiguration.allowUnmatched();
+			configurableScopeCheckerFeatureConfiguration.allowUnmatched();
 
 		for (String pattern :
-				configurableCheckerFeatureConfiguration.patterns()) {
+				configurableScopeCheckerFeatureConfiguration.patterns()) {
 
 			String[] split = pattern.split("::");
 
@@ -161,7 +149,14 @@ public class ConfigurableScopeCheckerFeature implements Feature {
 		}
 	}
 
-	protected Dictionary<String, Object> buildProperties(
+	@Deactivate
+	protected void deactivate() {
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
+	}
+
+	private Dictionary<String, Object> _buildProperties(
 		Configuration configuration) {
 
 		return HashMapDictionaryBuilder.<String, Object>putAll(
@@ -170,13 +165,6 @@ public class ConfigurableScopeCheckerFeature implements Feature {
 		).put(
 			Constants.SERVICE_RANKING, Integer.MIN_VALUE
 		).build();
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		if (_serviceRegistration != null) {
-			_serviceRegistration.unregister();
-		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -310,11 +298,7 @@ public class ConfigurableScopeCheckerFeature implements Feature {
 			Predicate<String> methodPatternPredicate =
 				checkPattern.getMethodPatternPredicate();
 
-			if (!methodPatternPredicate.test(request.getMethod())) {
-				return false;
-			}
-
-			return true;
+			return methodPatternPredicate.test(request.getMethod());
 		}
 
 		protected boolean requiresNoScope(String[] scopes) {

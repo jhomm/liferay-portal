@@ -1,33 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet;
 
 import com.liferay.document.library.constants.DLPortletKeys;
+import com.liferay.fragment.processor.PortletRegistry;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -35,7 +28,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"com.liferay.fragment.entry.processor.portlet.alias=media-gallery",
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.application-type=full-page-application",
 		"com.liferay.portlet.application-type=widget",
@@ -51,17 +43,18 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.scopeable=true",
 		"com.liferay.portlet.struts-path=document_library",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Media Gallery",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.always-display-default-configuration-icons=true",
-		"javax.portlet.init-param.portlet-title-based-navigation=false",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user",
-		"javax.portlet.supported-public-render-parameter=categoryId",
-		"javax.portlet.supported-public-render-parameter=resetCur",
-		"javax.portlet.supported-public-render-parameter=tag"
+		"jakarta.portlet.display-name=Media Gallery",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.always-display-default-configuration-icons=true",
+		"jakarta.portlet.init-param.portlet-title-based-navigation=false",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.supported-public-render-parameter=categoryId",
+		"jakarta.portlet.supported-public-render-parameter=resetCur",
+		"jakarta.portlet.supported-public-render-parameter=tag",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -77,17 +70,28 @@ public class IGDisplayPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
+	@Activate
+	protected void activate() {
+		_portletRegistry.registerAlias(
+			_ALIAS, DLPortletKeys.MEDIA_GALLERY_DISPLAY);
 	}
+
+	@Deactivate
+	protected void deactivate() {
+		_portletRegistry.unregisterAlias(_ALIAS);
+	}
+
+	private static final String _ALIAS = "media-gallery";
 
 	@Reference
 	private ItemSelector _itemSelector;
 
 	@Reference
-	private Portal _portal;
+	private PortletRegistry _portletRegistry;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.document.library.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
 
 }

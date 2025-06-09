@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,17 +22,6 @@ ImportStyleBookDisplayContext importStyleBookDisplayContext = new ImportStyleBoo
 	name="fm"
 >
 	<liferay-frontend:edit-form-body>
-
-		<%
-		List<String> draftStyleBookEntryZipProcessorImportResultEntryNames = importStyleBookDisplayContext.getStyleBookEntryZipProcessorImportResultEntryNames(StyleBookEntryZipProcessorImportResultEntry.Status.IMPORTED_DRAFT);
-		%>
-
-		<c:if test="<%= ListUtil.isNotEmpty(draftStyleBookEntryZipProcessorImportResultEntryNames) %>">
-			<clay:alert
-				dismissible="<%= true %>"
-				message='<%= LanguageUtil.format(request, "the-following-style-books-have-validation-issues.-they-have-been-left-in-draft-status-x", "<strong>" + StringUtil.merge(draftStyleBookEntryZipProcessorImportResultEntryNames, StringPool.COMMA_AND_SPACE) + "</strong>", false) %>'
-			/>
-		</c:if>
 
 		<%
 		List<String> invalidStyleBookEntryZipProcessorImportResultEntryNames = importStyleBookDisplayContext.getStyleBookEntryZipProcessorImportResultEntryNames(StyleBookEntryZipProcessorImportResultEntry.Status.INVALID);
@@ -65,25 +45,36 @@ ImportStyleBookDisplayContext importStyleBookDisplayContext = new ImportStyleBoo
 		</liferay-ui:error>
 
 		<liferay-ui:error exception="<%= StyleBookEntryFileException.class %>" message="the-selected-file-is-not-a-valid-zip-file" />
+		<liferay-ui:error exception="<%= StyleBookEntryThemeIdException.MustNotBeNull.class %>" message="the-property-theme-id-is-missing-from-the-file-style-books-json-you-must-specify-the-theme-or-theme-css-client-extension-that-provides-the-style-books-frontend-token-definition" />
 
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<aui:input label="select-file" name="file" type="file">
-					<aui:validator name="required" />
+		<c:if test='<%= SessionMessages.contains(renderRequest, "styleBookFrontendTokensValuesNotValidated") %>'>
+			<aui:script>
+				Liferay.Util.openToast({
+					message:
+						'<liferay-ui:message key="one-or-more-of-the-style-books-are-based-on-a-theme-that-is-different-from-the-site-default-theme" />',
+					title: Liferay.Language.get('warning'),
+					toastProps: {
+						autoClose: 5000,
+					},
+					type: 'warning',
+				});
+			</aui:script>
+		</c:if>
 
-					<aui:validator name="acceptFiles">
-						'zip'
-					</aui:validator>
-				</aui:input>
+		<liferay-frontend:fieldset>
+			<aui:input label="select-file" name="file" required="<%= true %>" type="file">
+				<aui:validator name="acceptFiles">
+					'zip'
+				</aui:validator>
+			</aui:input>
 
-				<aui:input checked="<%= true %>" label="overwrite-existing-style-books" name="overwrite" type="checkbox" />
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<aui:input checked="<%= true %>" label="overwrite-existing-style-books" name="overwrite" type="checkbox" />
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" value="import" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons
+			submitLabel="import"
+		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -48,6 +40,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see ERCCompanyEntryLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -201,24 +198,20 @@ public interface ERCCompanyEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ERCCompanyEntry fetchERCCompanyEntry(long ercCompanyEntryId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ERCCompanyEntry fetchERCCompanyEntryByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
-	 * Returns the erc company entry with the matching external reference code and company.
+	 * Returns the erc company entry with the matching UUID and company.
 	 *
+	 * @param uuid the erc company entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the erc company entry's external reference code
 	 * @return the matching erc company entry, or <code>null</code> if a matching erc company entry could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ERCCompanyEntry fetchERCCompanyEntryByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchERCCompanyEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ERCCompanyEntry fetchERCCompanyEntryByReferenceCode(
-		long companyId, String externalReferenceCode);
+	public ERCCompanyEntry fetchERCCompanyEntryByUuidAndCompanyId(
+		String uuid, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -256,17 +249,22 @@ public interface ERCCompanyEntryLocalService
 	public ERCCompanyEntry getERCCompanyEntry(long ercCompanyEntryId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ERCCompanyEntry getERCCompanyEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
-	 * Returns the erc company entry with the matching external reference code and company.
+	 * Returns the erc company entry with the matching UUID and company.
 	 *
+	 * @param uuid the erc company entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the erc company entry's external reference code
 	 * @return the matching erc company entry
 	 * @throws PortalException if a matching erc company entry could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ERCCompanyEntry getERCCompanyEntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+	public ERCCompanyEntry getERCCompanyEntryByUuidAndCompanyId(
+			String uuid, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)

@@ -1,34 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.index;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.search.engine.adapter.search.CountSearchResponse;
+import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexName;
+import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.tuning.rankings.index.Ranking;
+import com.liferay.portal.search.tuning.rankings.index.RankingBuilderFactory;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexName;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 /**
@@ -43,22 +41,46 @@ public class RankingIndexReaderImplTest extends BaseRankingsIndexTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_rankingIndexReaderImpl = new RankingIndexReaderImpl();
 
 		ReflectionTestUtil.setFieldValue(
-			_rankingIndexReaderImpl, "_documentToRankingTranslator",
-			_documentToRankingTranslator);
+			_rankingIndexReaderImpl, "_rankingBuilderFactory",
+			Mockito.mock(RankingBuilderFactory.class));
+		ReflectionTestUtil.setFieldValue(
+			_rankingIndexReaderImpl, "_queries", queries);
+		ReflectionTestUtil.setFieldValue(
+			_rankingIndexReaderImpl, "_searchEngineAdapter",
+			searchEngineAdapter);
+	}
 
-		_rankingIndexReaderImpl.setQueries(queries);
-		_rankingIndexReaderImpl.setSearchEngineAdapter(searchEngineAdapter);
+	@After
+	public void tearDown() {
+		_documentToRankingTranslatorUtilMockedStatic.close();
 	}
 
 	@Test
-	public void testFetchByQueryStringOptional() {
-		_setUpDocumentToRankingTranslator();
+	public void testFetch() {
+		setUpSearchEngineAdapter(
+			setUpGetDocumentResponseGetDocument(
+				setUpDocument(Arrays.asList("queryStrings")),
+				setUpGetDocumentResponse()));
 
+		Assert.assertEquals(
+			_setUpDocumentToRankingTranslator(),
+			_rankingIndexReaderImpl.fetch(
+				"id", Mockito.mock(RankingIndexName.class)));
+	}
+
+	@Test
+	public void testFetchBlankQueryString() {
+		Assert.assertNull(
+			_rankingIndexReaderImpl.fetch(
+				null, StringPool.BLANK, Mockito.mock(RankingIndexName.class),
+				null));
+	}
+
+	@Test
+	public void testFetchQueryString() {
 		setUpQueries();
 		setUpSearchEngineAdapter(
 			setUpGetDocumentResponseGetDocument(
@@ -67,31 +89,12 @@ public class RankingIndexReaderImplTest extends BaseRankingsIndexTestCase {
 		setUpSearchEngineAdapter(
 			setUpSearchHits(Arrays.asList("queryStrings")));
 
-		Assert.assertEquals(
-			Optional.of(_setUpDocumentToRankingTranslator()),
-			_rankingIndexReaderImpl.fetchByQueryStringOptional(
-				Mockito.mock(RankingIndexName.class), "queryString"));
-	}
+		Ranking ranking = _setUpDocumentToRankingTranslator();
 
-	@Test
-	public void testFetchByQueryStringOptionalBlankQueryString() {
-		Assert.assertEquals(
-			Optional.empty(),
-			_rankingIndexReaderImpl.fetchByQueryStringOptional(
-				Mockito.mock(RankingIndexName.class), ""));
-	}
+		List<Ranking> rankings = _rankingIndexReaderImpl.fetch(
+			null, "queryString", Mockito.mock(RankingIndexName.class), null);
 
-	@Test
-	public void testFetchOptional() {
-		setUpSearchEngineAdapter(
-			setUpGetDocumentResponseGetDocument(
-				setUpDocument(Arrays.asList("queryStrings")),
-				setUpGetDocumentResponse()));
-
-		Assert.assertEquals(
-			Optional.of(_setUpDocumentToRankingTranslator()),
-			_rankingIndexReaderImpl.fetchOptional(
-				Mockito.mock(RankingIndexName.class), "id"));
+		Assert.assertEquals(ranking, rankings.get(0));
 	}
 
 	@Test
@@ -113,6 +116,36 @@ public class RankingIndexReaderImplTest extends BaseRankingsIndexTestCase {
 	}
 
 	@Override
+	protected SearchHits setUpSearchEngineAdapter(SearchHits searchHits) {
+		CountSearchResponse countSearchResponse = Mockito.mock(
+			CountSearchResponse.class);
+
+		Mockito.doReturn(
+			1L
+		).when(
+			countSearchResponse
+		).getCount();
+
+		SearchSearchResponse searchSearchResponse = setUpSearchSearchResponse();
+
+		Mockito.doReturn(
+			searchHits
+		).when(
+			searchSearchResponse
+		).getSearchHits();
+
+		Mockito.doReturn(
+			countSearchResponse, searchSearchResponse
+		).when(
+			searchEngineAdapter
+		).execute(
+			(SearchSearchRequest)Mockito.any()
+		);
+
+		return searchHits;
+	}
+
+	@Override
 	protected SearchSearchResponse setUpSearchSearchResponse() {
 		SearchSearchResponse searchSearchResponse = Mockito.mock(
 			SearchSearchResponse.class);
@@ -129,20 +162,19 @@ public class RankingIndexReaderImplTest extends BaseRankingsIndexTestCase {
 	private Ranking _setUpDocumentToRankingTranslator() {
 		Ranking ranking = Mockito.mock(Ranking.class);
 
-		Mockito.doReturn(
+		Mockito.when(
+			DocumentToRankingTranslatorUtil.translate(
+				Mockito.any(), Mockito.any(), Mockito.nullable(String.class))
+		).thenReturn(
 			ranking
-		).when(
-			_documentToRankingTranslator
-		).translate(
-			Mockito.anyObject(), Mockito.anyString()
 		);
 
 		return ranking;
 	}
 
-	@Mock
-	private DocumentToRankingTranslator _documentToRankingTranslator;
-
+	private final MockedStatic<DocumentToRankingTranslatorUtil>
+		_documentToRankingTranslatorUtilMockedStatic = Mockito.mockStatic(
+			DocumentToRankingTranslatorUtil.class);
 	private RankingIndexReaderImpl _rankingIndexReaderImpl;
 
 }

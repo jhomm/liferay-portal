@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.writer;
@@ -19,9 +10,11 @@ import com.fasterxml.jackson.annotation.JsonFilter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -30,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +31,7 @@ import org.junit.Before;
 
 /**
  * @author Ivica Cardic
+ * @author Igor Beslic
  */
 public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 
@@ -45,7 +40,7 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 		_createDate = new Date();
 	}
 
-	public static class BaseItem {
+	public class BaseItem {
 
 		public Long getId() {
 			return _id;
@@ -60,7 +55,11 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 	}
 
 	@JsonFilter("Liferay.Vulcan")
-	public static class Item extends BaseItem {
+	public class Item extends BaseItem {
+
+		public Item getChildItem() {
+			return _childItem;
+		}
 
 		public Date getCreateDate() {
 			return _createDate;
@@ -70,8 +69,16 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 			return _description;
 		}
 
+		public Map<Object, String> getMap() {
+			return _map;
+		}
+
 		public Map<String, String> getName() {
 			return _name;
+		}
+
+		public void setChildItem(Item childItem) {
+			_childItem = childItem;
 		}
 
 		public void setCreateDate(Date createDate) {
@@ -82,12 +89,18 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 			_description = description;
 		}
 
+		public void setMap(Map<Object, String> map) {
+			_map = map;
+		}
+
 		public void setName(Map<String, String> name) {
 			_name = name;
 		}
 
+		private Item _childItem;
 		private Date _createDate;
 		private String _description;
+		private Map<Object, String> _map;
 		private Map<String, String> _name;
 
 	}
@@ -112,6 +125,10 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 				}
 
 				item.setId((long)(i + j));
+				item.setMap(
+					HashMapBuilder.<Object, String>put(
+						LocaleUtil.getDefault(), "test"
+					).build());
 
 				Map<String, String> name = HashMapBuilder.put(
 					"en", "sample name" + i + j
@@ -130,6 +147,37 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 
 				item.setName(name);
 
+				if (j != 4) {
+					Item childItem = new Item();
+
+					childItem.setCreateDate(_createDate);
+					childItem.setDescription("Child Description");
+					childItem.setId((long)(i + j));
+
+					Map<String, String> childItemName = new HashMap<>();
+
+					for (String key : name.keySet()) {
+						childItemName.computeIfAbsent(
+							key,
+							childItemNameKey -> {
+								if (name.get(childItemNameKey) == null) {
+									return null;
+								}
+
+								return "Child Item " +
+									name.get(childItemNameKey);
+							});
+					}
+
+					childItem.setMap(
+						HashMapBuilder.<Object, String>put(
+							LocaleUtil.getDefault(), "test"
+						).build());
+					childItem.setName(childItemName);
+
+					item.setChildItem(childItem);
+				}
+
 				items[j] = item;
 			}
 		}
@@ -141,6 +189,12 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 		StringBundler sb = new StringBundler();
 
 		sb.append("{");
+
+		if (fieldNames.contains("childItem") && (item.getChildItem() != null)) {
+			sb.append("\"childItem\": ");
+			sb.append(getItemJSONContent(jsonFieldNames, item.getChildItem()));
+			sb.append(StringPool.COMMA);
+		}
 
 		if (fieldNames.contains("createDate") &&
 			(item.getCreateDate() != null)) {
@@ -161,6 +215,29 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 		if (fieldNames.contains("id")) {
 			sb.append("\"id\": ");
 			sb.append(_formatJSONValue(item.getId()));
+			sb.append(StringPool.COMMA);
+		}
+
+		if (fieldNames.contains("map")) {
+			Map<Object, String> map = item.getMap();
+
+			sb.append("\"map\": {");
+
+			for (Map.Entry<Object, String> entry : map.entrySet()) {
+				if (entry.getValue() == null) {
+					continue;
+				}
+
+				sb.append("\"");
+				sb.append(entry.getKey());
+				sb.append("\": ");
+				sb.append(_formatJSONValue(entry.getValue()));
+				sb.append(StringPool.COMMA);
+			}
+
+			sb.setIndex(sb.index() - 1);
+
+			sb.append("}");
 			sb.append(StringPool.COMMA);
 		}
 
@@ -205,13 +282,14 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 	}
 
 	protected static final List<String> columnFieldNames = Arrays.asList(
-		"createDate", "description", "id", "name_en", "name_hr");
+		"createDate", "description", "id", "map", "name_en", "name_hr");
 	protected static final DateFormat dateFormat = new SimpleDateFormat(
-		"yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-	protected static Map<String, Field> fieldMap = ItemClassIndexUtil.index(
-		Item.class);
+		"yyyy-MM-dd'T'HH:mm:ssX");
 	protected static final List<String> jsonFieldNames = Arrays.asList(
-		"createDate", "description", "id", "name");
+		"childItem", "createDate", "description", "id", "map", "name");
+
+	protected Map<String, ObjectValuePair<Field, Method>>
+		fieldNameObjectValuePairs = ItemClassIndexUtil.index(Item.class);
 
 	private String _formatJSONValue(Object value) {
 		if (value == null) {
@@ -219,9 +297,7 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 		}
 
 		if (value instanceof Date) {
-			return "\"" +
-				StringUtil.replace(dateFormat.format(value), 'Z', "+00:00") +
-					"\"";
+			return "\"" + dateFormat.format(value) + "\"";
 		}
 
 		if (value instanceof String) {
@@ -231,6 +307,6 @@ public abstract class BaseBatchEngineExportTaskItemWriterImplTestCase {
 		return value.toString();
 	}
 
-	private static Date _createDate;
+	private Date _createDate;
 
 }

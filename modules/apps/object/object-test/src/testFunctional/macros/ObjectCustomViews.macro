@@ -1,0 +1,474 @@
+definition {
+
+	@summary = "Default summary"
+	macro addColumnsViaUI(addColumns = null) {
+		if (IsElementPresent(key_text = "No columns added yet", locator1 = "ObjectCustomViews#ADD_COLUMN")) {
+			Click(locator1 = "ObjectCustomViews#ADD_COLUMN");
+		}
+		else {
+			Click(locator1 = "Button#PLUS");
+		}
+
+		SelectFrame(locator1 = "ObjectCustomViews#VIEW_MODAL_CONTENT");
+
+		for (var columnsOptions : list ${addColumns}) {
+			Click.clickAtNotVisible(
+				key_columnOption = ${columnsOptions},
+				locator1 = "ObjectCustomViews#CHECKBOX_COLUMN_OPTION");
+		}
+
+		PortletEntry.save();
+
+		SelectFrame(locator1 = "IFrame#IFRAME");
+	}
+
+	@summary = "Default summary"
+	macro addDefaultSort(columnOption = null, sortOption = null) {
+		if (IsElementPresent(key_text = "No default sort was created yet", locator1 = "ObjectCustomViews#VIEW_BUILDER_EMPTY_STATE_TEXT")) {
+			ObjectCustomViews.addNewDefaultSort();
+		}
+		else {
+			Click(locator1 = "ObjectCustomViews#DEFAULT_SORT_ADD_BUTTON");
+		}
+
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Columns",
+			optionName = ${columnOption});
+
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Sorting",
+			optionName = ${sortOption});
+
+		Click(
+			key_tab = "Save",
+			locator1 = "Button#TAB_SUBMIT_BTN");
+	}
+
+	@summary = "Default summary"
+	macro addNewAggregationFilterViaUI(dateValueList = null, filterValue = null, filterBy = null, filterType = null) {
+		Click(locator1 = "ObjectCustomViews#ADD_NEW_FILTER");
+
+		Click(locator1 = "ObjectCustomViews#VIEW_MODAL_CONTENT");
+
+		Click(
+			key_optionName = ${filterBy},
+			locator1 = "ObjectAdmin#CLAY_GENERIC_DROPDOWN_ITEM");
+
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Filter Type",
+			optionName = ${filterType});
+
+		if (${filterType} == "Range") {
+			var dateIndex = 1;
+
+			for (var dateValue : list ${dateValueList}) {
+				Type(
+					key_dateIndex = ${dateIndex},
+					locator1 = "ObjectCustomViews#FIELD_VIEW_FILTER_DATE_INPUT",
+					value1 = ${dateValue});
+
+				var dateIndex = ${dateIndex} + 1;
+			}
+		}
+		else {
+			Type(
+				key_text = "Value",
+				locator1 = "TextInput#ANY",
+				value1 = ${filterValue});
+		}
+
+		ObjectCustomViews.clickSaveOnModal();
+	}
+
+	@summary = "Default summary"
+	macro addNewDefaultSort() {
+		Click(locator1 = "ObjectCustomViews#ADD_NEW_DEFAULT_SORT");
+	}
+
+	@summary = "Default summary"
+	macro addNewFilterViaUI(filterValue = null, filterBy = null, filterType = null) {
+		if (IsElementPresent(key_text = "No filter was created yet", locator1 = "ObjectCustomViews#ADD_NEW_FILTER")) {
+			Click(locator1 = "ObjectCustomViews#ADD_NEW_FILTER");
+		}
+		else {
+			Click(locator1 = "ObjectCustomViews#FILTER_ADD_BUTTON");
+		}
+
+		Click(locator1 = "ObjectCustomViews#VIEW_MODAL_CONTENT");
+
+		MenuItem.clickNoError(menuItem = ${filterBy});
+
+		if (isSet(filterType)) {
+			ObjectAdmin.selectDropdownItem(
+				labelName = "Filter Type",
+				optionName = ${filterType});
+		}
+
+		if (isSet(filterValue)) {
+			Click(
+				key_labelName = "Value",
+				locator1 = "ObjectAdmin#CLAY_MULTI_SELECT_INPUT");
+
+			for (var filterValueList : list ${filterValue}) {
+				Click.clickAtNotVisible(
+					key_columnOption = ${filterValueList},
+					locator1 = "ObjectCustomViews#CHECKBOX_COLUMN_OPTION");
+			}
+		}
+
+		ObjectCustomViews.clickSaveOnModal();
+	}
+
+	@summary = "Default summary"
+	macro addObjectViewViaUI(viewName = null) {
+		LexiconEntry.gotoAdd();
+
+		Type(
+			locator1 = "ObjectCustomViews#ADD_VIEW_NAME",
+			value1 = ${viewName});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro assertColumnPresentOnDefaultSort(sortingLabel = null, columnName = null) {
+		AssertElementPresent(
+			key_columnName = ${columnName},
+			locator1 = "ObjectCustomViews#DEFAULT_SORT_SEARCH_RESULT");
+
+		AssertTextEquals(
+			key_sortingLabel = ${sortingLabel},
+			locator1 = "ObjectCustomViews#DEFAULT_SORT_SORTING_LABEL",
+			value1 = ${sortingLabel});
+	}
+
+	@summary = "Default summary"
+	macro assertColumnVisibleOnAddColumnModal(columnOption = null) {
+		SelectFrame(locator1 = "ObjectCustomViews#VIEW_MODAL_CONTENT");
+
+		AssertVisible(
+			key_columnName = ${columnOption},
+			locator1 = "ObjectCustomViews#ADD_COLUMNS_COLUMN_LABEL");
+	}
+
+	@summary = "Default summary"
+	macro assertFilterPresent(filterBy = null) {
+		Click(locator1 = "ObjectCustomViews#ADD_NEW_FILTER");
+
+		Click(locator1 = "ObjectCustomViews#VIEW_MODAL_CONTENT");
+
+		AssertElementPresent(
+			key_menuItem = ${filterBy},
+			locator1 = "MenuItem#ANY_MENU_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro assertObjectView(viewLabel = null) {
+		var key_viewLabel = ${viewLabel};
+
+		AssertElementPresent(locator1 = "ObjectCustomViews#OBJECT_VIEW_LABEL");
+	}
+
+	@summary = "Default summary"
+	macro assertPresentEntriesOnFilters(filterValue = null, filterBy = null) {
+		AssertElementPresent(
+			key_columnName = ${filterBy},
+			locator1 = "ObjectCustomViews#VIEW_BUILDER_SEARCH_RESULT");
+
+		if (isSet(filterValue)) {
+			for (var filterValueList : list ${filterValue}) {
+				AssertElementPresent(
+					key_columnLabel = ${filterValueList},
+					locator1 = "ObjectCustomViews#BUILDER_SEARCH_RESULT_COLUMN_LABEL");
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro clickOnFilterOnEntries() {
+		Click(
+			key_buttonName = "Filter",
+			locator1 = "ObjectCustomViews#DROPDOWN_BUTTON_ON_OBJECT_VIEW");
+
+		SelectFrame(locator1 = "ObjectCustomViews#VIEW_DROPDOWN_MENU_ON_MODAL_DEFAULT_SORT");
+	}
+
+	@summary = "Default summary"
+	macro clickSaveOnModal() {
+		Click(
+			key_name = "Save",
+			locator1 = "Button#GENERAL_BUTTON_MODAL_FOOTER");
+	}
+
+	@summary = "Default summary"
+	macro defineDateOnFilter(filterName = null, displayDateMonth = null, displayDateYear = null, displayDateDay = null) {
+		var displayDate = "${displayDateMonth}/${displayDateDay}/${displayDateYear}";
+
+		Type(
+			locator1 = "ObjectCustomViews#SEARCH_DROPDOWN_MENU_FILTER",
+			value1 = ${filterName});
+
+		Click(
+			key_fieldName = ${filterName},
+			locator1 = "FormViewBuilder#OBJECT_FIELD_BUTTON_DROPDOWN");
+
+		Type(
+			key_fieldName = "yyyy-mm-dd",
+			locator1 = "ObjectCustomViews#FROM_DATE_INPUT",
+			value1 = ${displayDate});
+
+		Click(
+			key_text = "Add Filter",
+			locator1 = "Button#ANY");
+	}
+
+	@summary = "Default summary"
+	macro deleteObjectCustomViewViaUI(viewLabel = null) {
+		Click(
+			key_objectCustomViewLabel = ${viewLabel},
+			locator1 = "ObjectCustomViews#OBJECT_VIEW_KEBAB_MENU");
+
+		MenuItem.clickNoError(menuItem = "Delete");
+	}
+
+	@summary = "Default summary"
+	macro deleteSpecificColumn(columnName = null) {
+		Click(
+			key_columnName = ${columnName},
+			locator1 = "ObjectCustomViews#VIEW_BUILDER_DROPDOWN_SPECIFIC_COLUMN");
+
+		DropdownMenuItem.click(menuItem = "Delete");
+	}
+
+	@summary = "Default summary"
+	macro duplicateObjectCustomView(viewLabel = null) {
+		Click(
+			key_objectCustomViewLabel = ${viewLabel},
+			locator1 = "ObjectCustomViews#OBJECT_VIEW_KEBAB_MENU");
+
+		MenuItem.clickNoError(menuItem = "Duplicate");
+	}
+
+	@summary = "Default summary"
+	macro editName(name = null) {
+		Type(
+			locator1 = "ObjectCustomViews#OBJECT_VIEWS_NAME",
+			value1 = ${name});
+	}
+
+	@summary = "Default summary"
+	macro editSortingType(newSortOption = null, actualSort = null) {
+		Click(
+			key_cardName = "Default Sort",
+			locator1 = "ObjectCustomViews#SELECT_DROPDOWN_ON_LABEL");
+
+		DropdownMenuItem.click(menuItem = "Edit");
+
+		ObjectAdmin.selectDropdownItem(
+			currentOption = ${actualSort},
+			labelName = "Sorting",
+			optionName = ${newSortOption});
+
+		Click(
+			key_tab = "Save",
+			locator1 = "Button#TAB_SUBMIT_BTN");
+	}
+
+	@summary = "Default summary"
+	macro editSpecificColumn(columnName = null) {
+		Click(
+			key_columnName = ${columnName},
+			locator1 = "ObjectCustomViews#VIEW_BUILDER_DROPDOWN_SPECIFIC_COLUMN");
+
+		DropdownMenuItem.click(menuItem = "Edit");
+	}
+
+	@summary = "Default summary"
+	macro goToDefaultSortTab() {
+		Click(locator1 = "ObjectCustomViews#DEFAULT_SORT_TAB");
+	}
+
+	@summary = "Default summary"
+	macro goToFiltersTab() {
+		Click(locator1 = "ObjectCustomViews#FILTERS_TAB");
+	}
+
+	@summary = "Default summary"
+	macro gotoPermissions(entryName = null) {
+		Click(
+			key_objectLabel = ${entryName},
+			locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU");
+
+		MenuItem.click(menuItem = "Permissions");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+	}
+
+	@summary = "Default summary"
+	macro goToViewsBuilderTab() {
+		if (IsElementPresent(locator1 = "ObjectCustomViews#VIEW_BUILDER_TAB")) {
+			Click(locator1 = "ObjectCustomViews#VIEW_BUILDER_TAB");
+		}
+	}
+
+	@summary = "Default summary"
+	macro goToViewsDetails(label = null) {
+		Click(
+			key_label = ${label},
+			locator1 = "ObjectCustomViews#SELECT_OBJECT_VIEWS");
+
+		SelectFrame(locator1 = "IFrame#IFRAME");
+	}
+
+	@summary = "Default summary"
+	macro goToViewsTab() {
+		Click(locator1 = "ObjectCustomViews#OBJECT_VIEWS_TAB");
+	}
+
+	@summary = "Default summary"
+	macro markViewAsDefault() {
+		Click(locator1 = "ObjectAdmin#LAYOUT_INFO_TAB");
+
+		Click.clickAtNotVisible(locator1 = "ObjectCustomViews#MARK_AS_DEFAULT");
+	}
+
+	@summary = "Default summary"
+	macro saveColumnsModal() {
+		Click(
+			key_tab = "Save",
+			locator1 = "Button#TAB_SUBMIT_BTN");
+	}
+
+	@summary = "Default summary"
+	macro searchOnAddColumnModal(columnName = null) {
+		SelectFrame(locator1 = "ObjectCustomViews#VIEW_MODAL_CONTENT");
+
+		Click(locator1 = "ObjectCustomViews#ADD_COLUMNS_SEARCH_BAR");
+
+		Type(
+			locator1 = "ObjectCustomViews#ADD_COLUMNS_SEARCH_BAR",
+			value1 = ${columnName});
+	}
+
+	@summary = "Default summary"
+	macro searchOnDefaultSort(columnName = null) {
+		Click(locator1 = "ObjectCustomViews#DEFAULT_SORT_SEARCH_BAR");
+
+		Type(
+			locator1 = "ObjectCustomViews#DEFAULT_SORT_SEARCH_BAR",
+			value1 = ${columnName});
+	}
+
+	@summary = "Default summary"
+	macro searchOnViewBuilder(columnName = null) {
+		Click(locator1 = "ObjectCustomViews#VIEW_BUILDER_SEARCH_BAR");
+
+		Type(
+			locator1 = "ObjectCustomViews#VIEW_BUILDER_SEARCH_BAR",
+			value1 = ${columnName});
+	}
+
+	@summary = "Default summary"
+	macro selectAnyPermissions(permissionsList = null) {
+		for (var permissionsName : list ${permissionsList}) {
+			if (isSet(analyticsAdministrator)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "analytics-administrator",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(guest)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "guest",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(owner)) {
+				Click.clickAtNotVisible(
+					key_permissionName = ${permissionsName},
+					key_roleName = "owner",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(powerUser)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "power-user",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(portalContentReviewer)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "portal-content-reviewer",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(publicationsUser)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "publications-user",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(siteContentReviewer)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "site-content-reviewer",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(siteMember)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "site-member",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+
+			if (isSet(user)) {
+				Click(
+					key_permissionName = ${permissionsName},
+					key_roleName = "user",
+					locator1 = "ObjectCustomViews#SELECT_ANY_PERMISSIONS");
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro selectPermissionToRegularRole(permissionsList = null) {
+		for (var permissionsName : list ${permissionsList}) {
+			Click.clickAtNotVisible(
+				key_permissionName = ${permissionsName},
+				locator1 = "ObjectCustomViews#SELECT_PERMISSIONS_TO_REGULAR_ROLE");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewOptionNotPresentInKebabMenu(entryName = null, menuItem = null) {
+		if (IsElementPresent(key_objectLabel = ${entryName}, locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU")) {
+			Click(
+				key_objectLabel = ${entryName},
+				locator1 = "ObjectAdmin#OBJECT_KEBAB_MENU");
+
+			AssertElementNotPresent(
+				key_menuItem = ${menuItem},
+				locator1 = "MenuItem#ANY_MENU_ITEM");
+		}
+		else {
+			AssertElementNotPresent(
+				key_objectCustomViewLabel = ${entryName},
+				locator1 = "ObjectCustomViews#OBJECT_VIEW_KEBAB_MENU");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewOrdersOfTheColumns(position = null, columnName = null) {
+		AssertVisible(
+			key_columnName1 = ${columnName},
+			key_position = ${position},
+			locator1 = "ObjectCustomViews#VIEW_LIST_COLUMNS_BY_POSITION");
+	}
+
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.trash.test;
@@ -37,9 +28,11 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.ClassedModel;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.WorkflowedModel;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.security.SecureRandomUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
@@ -80,6 +73,7 @@ import com.liferay.trash.test.util.WhenIsVersionableBaseModel;
 import java.io.InputStream;
 
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -275,6 +269,9 @@ public class JournalArticleTrashHandlerTest
 			"/com/liferay/journal/dependencies/liferay.png");
 
 		FileEntry tempFileEntry = TempFileEntryUtil.addTempFileEntry(
+			String.valueOf(
+				new UUID(
+					SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong())),
 			group.getGroupId(), TestPropsValues.getUserId(),
 			JournalArticle.class.getName(), "liferay.png", inputStream,
 			ContentTypes.IMAGE_PNG);
@@ -464,12 +461,15 @@ public class JournalArticleTrashHandlerTest
 	}
 
 	@Override
-	protected void moveBaseModelToTrash(long primaryKey) throws Exception {
-		JournalArticle article = JournalArticleLocalServiceUtil.getArticle(
-			primaryKey);
+	protected boolean isInTrashContainer(TrashedModel trashedModel) {
+		return _trashHelper.isInTrashContainer(trashedModel);
+	}
 
+	@Override
+	protected void moveBaseModelToTrash(long primaryKey) throws Exception {
 		JournalArticleLocalServiceUtil.moveArticleToTrash(
-			TestPropsValues.getUserId(), article);
+			TestPropsValues.getUserId(),
+			JournalArticleLocalServiceUtil.getArticle(primaryKey));
 	}
 
 	private static final int _FOLDER_NAME_MAX_LENGTH = 100;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.resource.v1_0.test;
@@ -20,14 +11,7 @@ import com.liferay.headless.admin.workflow.client.dto.v1_0.WorkflowInstance;
 import com.liferay.headless.admin.workflow.resource.v1_0.test.util.ObjectReviewedTestUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.test.util.WorkflowDefinitionTestUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.test.util.WorkflowInstanceTestUtil;
-import com.liferay.portal.kernel.messaging.proxy.ProxyMessageListener;
 import com.liferay.portal.kernel.test.rule.DataGuard;
-import com.liferay.portal.kernel.workflow.WorkflowException;
-import com.liferay.portal.test.log.LogCapture;
-import com.liferay.portal.test.log.LogEntry;
-import com.liferay.portal.test.log.LoggerTestUtil;
-
-import java.util.List;
 
 import org.hamcrest.CoreMatchers;
 
@@ -55,18 +39,6 @@ public class WorkflowInstanceResourceTest
 
 	@Override
 	@Test
-	public void testDeleteWorkflowInstance() throws Exception {
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				ProxyMessageListener.class.getName(), LoggerTestUtil.WARN)) {
-
-			super.testDeleteWorkflowInstance();
-
-			_assertNoSuchInstanceLoggingEvents(logCapture, 2);
-		}
-	}
-
-	@Override
-	@Test
 	public void testGetWorkflowInstance() throws Exception {
 		WorkflowInstance postWorkflowInstance =
 			testGetWorkflowInstance_addWorkflowInstance();
@@ -83,30 +55,6 @@ public class WorkflowInstanceResourceTest
 	}
 
 	@Override
-	@Test
-	public void testGraphQLDeleteWorkflowInstance() throws Exception {
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				ProxyMessageListener.class.getName(), LoggerTestUtil.WARN)) {
-
-			super.testGraphQLDeleteWorkflowInstance();
-
-			_assertNoSuchInstanceLoggingEvents(logCapture, 1);
-		}
-	}
-
-	@Override
-	@Test
-	public void testGraphQLGetWorkflowInstanceNotFound() throws Exception {
-		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				ProxyMessageListener.class.getName(), LoggerTestUtil.WARN)) {
-
-			super.testGraphQLGetWorkflowInstanceNotFound();
-
-			_assertNoSuchInstanceLoggingEvents(logCapture, 1);
-		}
-	}
-
-	@Override
 	protected String[] getAdditionalAssertFieldNames() {
 		return new String[] {
 			"completed", "objectReviewed", "workflowDefinitionName",
@@ -119,10 +67,8 @@ public class WorkflowInstanceResourceTest
 		WorkflowInstance workflowInstance = super.randomWorkflowInstance();
 
 		workflowInstance.setCompleted(false);
-
 		workflowInstance.setObjectReviewed(
 			ObjectReviewedTestUtil.addObjectReviewed());
-
 		workflowInstance.setWorkflowDefinitionName(
 			_workflowDefinition.getName());
 		workflowInstance.setWorkflowDefinitionVersion(
@@ -181,37 +127,6 @@ public class WorkflowInstanceResourceTest
 
 		return testGetWorkflowInstancesPage_addWorkflowInstance(
 			workflowInstance);
-	}
-
-	private void _assertNoSuchInstanceLoggingEvents(
-		LogCapture logCapture, int totallogEntries) {
-
-		List<LogEntry> logEntries = logCapture.getLogEntries();
-
-		Assert.assertEquals(
-			logEntries.toString(), totallogEntries, logEntries.size());
-
-		for (LogEntry logEntry : logEntries) {
-			Throwable throwable = logEntry.getThrowable();
-
-			Assert.assertNotNull(throwable);
-
-			Assert.assertSame(WorkflowException.class, throwable.getClass());
-
-			throwable = throwable.getCause();
-
-			Class<? extends Throwable> throwableClass = throwable.getClass();
-
-			Assert.assertEquals(
-				"NoSuchInstanceException", throwableClass.getSimpleName());
-
-			String message = throwable.toString();
-
-			Assert.assertTrue(
-				message,
-				message.contains(
-					"No KaleoInstance exists with the primary key"));
-		}
 	}
 
 	private WorkflowDefinition _workflowDefinition;

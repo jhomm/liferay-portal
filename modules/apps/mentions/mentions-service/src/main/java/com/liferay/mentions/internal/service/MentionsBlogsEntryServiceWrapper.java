@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.internal.service;
@@ -20,8 +11,8 @@ import com.liferay.blogs.service.BlogsEntryLocalServiceWrapper;
 import com.liferay.mentions.configuration.MentionsGroupServiceConfiguration;
 import com.liferay.mentions.util.MentionsNotifier;
 import com.liferay.mentions.util.MentionsUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.util.Portal;
@@ -38,19 +29,9 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Sergio González
  */
-@Component(immediate = true, service = ServiceWrapper.class)
+@Component(service = ServiceWrapper.class)
 public class MentionsBlogsEntryServiceWrapper
 	extends BlogsEntryLocalServiceWrapper {
-
-	public MentionsBlogsEntryServiceWrapper() {
-		super(null);
-	}
-
-	public MentionsBlogsEntryServiceWrapper(
-		BlogsEntryLocalService blogsEntryLocalService) {
-
-		super(blogsEntryLocalService);
-	}
 
 	@Override
 	public BlogsEntry updateStatus(
@@ -95,27 +76,13 @@ public class MentionsBlogsEntryServiceWrapper
 		return entry;
 	}
 
-	@Reference(unbind = "-")
-	protected void setBlogsEntryLocalService(
-		BlogsEntryLocalService blogsEntryLocalService) {
-
-		_blogsEntryLocalService = blogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMentionsNotifier(MentionsNotifier mentionsNotifier) {
-		_mentionsNotifier = mentionsNotifier;
-	}
-
+	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
+
+	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
 	private MentionsNotifier _mentionsNotifier;
 
 	@Reference

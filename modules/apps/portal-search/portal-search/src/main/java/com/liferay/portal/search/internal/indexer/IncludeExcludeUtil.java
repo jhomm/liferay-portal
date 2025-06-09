@@ -1,66 +1,58 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.indexer;
 
+import com.liferay.petra.string.StringPool;
+
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * @author André de Oliveira
  */
 public class IncludeExcludeUtil {
 
-	public static <T> Stream<T> stream(
-		Stream<T> stream, Collection<String> includeIds,
+	public static <T> List<T> filter(
+		List<T> list, Collection<String> includeIds,
 		Collection<String> excludeIds, Function<T, String> function) {
 
-		return exclude(
-			include(stream, includeIds, function), excludeIds, function);
-	}
-
-	protected static <T> Stream<T> exclude(
-		Stream<T> stream, Collection<String> ids,
-		Function<T, String> function) {
-
-		return filter(stream, ids, t -> !isPresent(t, ids, function));
-	}
-
-	protected static <T> Stream<T> filter(
-		Stream<T> stream, Collection<String> ids,
-		Predicate<? super T> predicate) {
-
-		if ((ids == null) || ids.isEmpty()) {
-			return stream;
+		if ((excludeIds.size() == 1) && excludeIds.contains(StringPool.STAR)) {
+			return new ArrayList<>();
 		}
 
-		return stream.filter(predicate);
-	}
+		if (!((includeIds.size() == 1) &&
+			  includeIds.contains(StringPool.STAR))) {
 
-	protected static <T> Stream<T> include(
-		Stream<T> stream, Collection<String> ids,
-		Function<T, String> function) {
+			_filter(list, includeIds, t -> isPresent(t, includeIds, function));
+		}
 
-		return filter(stream, ids, t -> isPresent(t, ids, function));
+		_filter(list, excludeIds, t -> !isPresent(t, excludeIds, function));
+
+		return list;
 	}
 
 	protected static <T> boolean isPresent(
 		T t, Collection<String> ids, Function<T, String> function) {
 
 		return ids.contains(function.apply(t));
+	}
+
+	private static <T> List<T> _filter(
+		List<T> list, Collection<String> ids, Predicate<? super T> predicate) {
+
+		if ((ids == null) || ids.isEmpty()) {
+			return list;
+		}
+
+		list.removeIf(cur -> !predicate.test(cur));
+
+		return list;
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.ldap.exportimport;
@@ -115,8 +106,8 @@ public class LDAPUser {
 		return _user.getPortraitId();
 	}
 
-	public long getPrefixId() {
-		return _contact.getPrefixId();
+	public long getPrefixListTypeId() {
+		return _contact.getPrefixListTypeId();
 	}
 
 	public String getReminderQueryAnswer() {
@@ -151,8 +142,8 @@ public class LDAPUser {
 		return _user.getStatus();
 	}
 
-	public long getSuffixId() {
-		return _contact.getSuffixId();
+	public long getSuffixListTypeId() {
+		return _contact.getSuffixListTypeId();
 	}
 
 	public String getTimeZoneId() {
@@ -305,8 +296,8 @@ public class LDAPUser {
 		_portraitBytes = portraitBytes;
 	}
 
-	public void setPrefixId(long prefixId) {
-		_contact.setPrefixId(prefixId);
+	public void setPrefixListTypeId(long prefixListTypeId) {
+		_contact.setPrefixListTypeId(prefixListTypeId);
 	}
 
 	public void setReminderQueryAnswer(String reminderQueryAnswer) {
@@ -345,8 +336,8 @@ public class LDAPUser {
 		_user.setStatus(status);
 	}
 
-	public void setSuffixId(long suffixId) {
-		_contact.setSuffixId(suffixId);
+	public void setSuffixListTypeId(long suffixListTypeId) {
+		_contact.setSuffixListTypeId(suffixListTypeId);
 	}
 
 	public void setTimeZoneId(String timeZoneId) {

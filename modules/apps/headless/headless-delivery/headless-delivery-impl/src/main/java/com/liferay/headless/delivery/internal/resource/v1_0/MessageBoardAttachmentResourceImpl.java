@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
@@ -26,13 +17,15 @@ import com.liferay.message.boards.service.MBThreadLocalService;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.vulcan.multipart.BinaryFile;
 import com.liferay.portal.vulcan.multipart.MultipartBody;
 import com.liferay.portal.vulcan.pagination.Page;
 
-import java.util.Optional;
+import jakarta.ws.rs.BadRequestException;
 
-import javax.ws.rs.BadRequestException;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,6 +50,25 @@ public class MessageBoardAttachmentResourceImpl
 	}
 
 	@Override
+	public void
+			deleteSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode(
+				Long siteId, String messageBoardMessageExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		MBMessage mbMessage =
+			_mbMessageService.getMBMessageByExternalReferenceCode(
+				messageBoardMessageExternalReferenceCode, siteId);
+
+		FileEntry fileEntry =
+			mbMessage.getAttachmentsFileEntryByExternalReferenceCode(
+				externalReferenceCode, siteId);
+
+		_portletFileRepository.deletePortletFileEntry(
+			fileEntry.getFileEntryId());
+	}
+
+	@Override
 	public MessageBoardAttachment getMessageBoardAttachment(
 			Long messageBoardAttachmentId)
 		throws Exception {
@@ -72,7 +84,19 @@ public class MessageBoardAttachmentResourceImpl
 				Long messageBoardMessageId)
 		throws Exception {
 
-		return _getMessageBoardAttachmentsPage(messageBoardMessageId);
+		MBMessage mbMessage = _mbMessageService.getMessage(
+			messageBoardMessageId);
+
+		return _getMessageBoardAttachmentsPage(
+			HashMapBuilder.<String, Map<String, String>>put(
+				"createBatch",
+				addAction(
+					ActionKeys.VIEW, mbMessage.getMessageId(),
+					"postMessageBoardMessageMessageBoardAttachmentBatch",
+					mbMessage.getUserId(), MBConstants.RESOURCE_NAME,
+					mbMessage.getGroupId())
+			).build(),
+			mbMessage);
 	}
 
 	@Override
@@ -84,7 +108,37 @@ public class MessageBoardAttachmentResourceImpl
 		MBThread mbThread = _mbThreadLocalService.getMBThread(
 			messageBoardThreadId);
 
-		return _getMessageBoardAttachmentsPage(mbThread.getRootMessageId());
+		MBMessage mbMessage = _mbMessageService.getMessage(
+			mbThread.getRootMessageId());
+
+		return _getMessageBoardAttachmentsPage(
+			HashMapBuilder.<String, Map<String, String>>put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_MESSAGE, mbThread.getThreadId(),
+					"postMessageBoardThreadMessageBoardAttachmentBatch",
+					mbThread.getUserId(), MBConstants.RESOURCE_NAME,
+					mbThread.getGroupId())
+			).build(),
+			mbMessage);
+	}
+
+	@Override
+	public MessageBoardAttachment
+			getSiteMessageBoardMessageByExternalReferenceCodeMessageBoardMessageExternalReferenceCodeMessageBoardAttachmentByExternalReferenceCode(
+				Long siteId, String messageBoardMessageExternalReferenceCode,
+				String externalReferenceCode)
+		throws Exception {
+
+		MBMessage mbMessage =
+			_mbMessageService.getMBMessageByExternalReferenceCode(
+				messageBoardMessageExternalReferenceCode, siteId);
+
+		FileEntry fileEntry =
+			mbMessage.getAttachmentsFileEntryByExternalReferenceCode(
+				externalReferenceCode, siteId);
+
+		return _toMessageBoardAttachment(fileEntry);
 	}
 
 	@Override
@@ -124,7 +178,7 @@ public class MessageBoardAttachmentResourceImpl
 
 		return _toMessageBoardAttachment(
 			_portletFileRepository.addPortletFileEntry(
-				mbMessage.getGroupId(), contextUser.getUserId(),
+				null, mbMessage.getGroupId(), contextUser.getUserId(),
 				MBMessage.class.getName(), mbMessage.getClassPK(),
 				MBConstants.SERVICE_NAME, folder.getFolderId(),
 				binaryFile.getInputStream(), binaryFile.getFileName(),
@@ -132,13 +186,11 @@ public class MessageBoardAttachmentResourceImpl
 	}
 
 	private Page<MessageBoardAttachment> _getMessageBoardAttachmentsPage(
-			Long messageBoardMessageId)
+			Map<String, Map<String, String>> actions, MBMessage mbMessage)
 		throws Exception {
 
-		MBMessage mbMessage = _mbMessageService.getMessage(
-			messageBoardMessageId);
-
 		return Page.of(
+			actions,
 			transform(
 				mbMessage.getAttachmentsFileEntries(),
 				this::_toMessageBoardAttachment));
@@ -150,17 +202,20 @@ public class MessageBoardAttachmentResourceImpl
 
 		return new MessageBoardAttachment() {
 			{
-				contentUrl = _dlURLHelper.getPreviewURL(
-					fileEntry, fileEntry.getFileVersion(), null, "", false,
-					false);
-				contentValue = ContentValueUtil.toContentValue(
-					"contentValue", fileEntry::getContentStream,
-					Optional.of(contextUriInfo));
-				encodingFormat = fileEntry.getMimeType();
-				fileExtension = fileEntry.getExtension();
-				id = fileEntry.getFileEntryId();
-				sizeInBytes = fileEntry.getSize();
-				title = fileEntry.getTitle();
+				setContentUrl(
+					() -> _dlURLHelper.getPreviewURL(
+						fileEntry, fileEntry.getFileVersion(), null, "", false,
+						false));
+				setContentValue(
+					() -> ContentValueUtil.toContentValue(
+						"contentValue", fileEntry::getContentStream,
+						contextUriInfo));
+				setEncodingFormat(fileEntry::getMimeType);
+				setExternalReferenceCode(fileEntry::getExternalReferenceCode);
+				setFileExtension(fileEntry::getExtension);
+				setId(fileEntry::getFileEntryId);
+				setSizeInBytes(fileEntry::getSize);
+				setTitle(fileEntry::getTitle);
 			}
 		};
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.test;
@@ -20,6 +11,7 @@ import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
 import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
@@ -83,6 +75,18 @@ public abstract class BaseAssetAutoTaggerTestCase {
 		_assetAutoTagProviderServiceRegistration.unregister();
 	}
 
+	protected FileEntry addFileEntry(ServiceContext serviceContext)
+		throws PortalException {
+
+		return DLAppServiceUtil.addFileEntry(
+			null, group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
+			null, null, null, serviceContext);
+	}
+
 	protected AssetEntry addFileEntryAssetEntry(ServiceContext serviceContext)
 		throws PortalException {
 
@@ -90,8 +94,9 @@ public abstract class BaseAssetAutoTaggerTestCase {
 			null, group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
-			RandomTestUtil.randomString(), StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null, serviceContext);
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
+			null, null, null, serviceContext);
 
 		return AssetEntryLocalServiceUtil.getEntry(
 			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
@@ -135,9 +140,24 @@ public abstract class BaseAssetAutoTaggerTestCase {
 	}
 
 	protected void assertHasNoTags(AssetEntry assetEntry) {
-		List<AssetTag> tags = assetEntry.getTags();
+		List<AssetTag> assetTag = assetEntry.getTags();
 
-		Assert.assertEquals(tags.toString(), 0, tags.size());
+		Assert.assertEquals(assetTag.toString(), 0, assetTag.size());
+	}
+
+	protected AssetEntry updateFileEntryAssetEntry(
+			FileEntry fileEntry, ServiceContext serviceContext)
+		throws PortalException {
+
+		DLAppServiceUtil.updateFileEntry(
+			fileEntry.getFileEntryId(), fileEntry.getFileName(), null,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			DLVersionNumberIncrease.AUTOMATIC, new byte[0], null, null, null,
+			serviceContext);
+
+		return AssetEntryLocalServiceUtil.getEntry(
+			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
 	}
 
 	protected void withAutoTaggerDisabled(

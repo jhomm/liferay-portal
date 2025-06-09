@@ -1,28 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.content.processor;
 
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
+import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.StagedModel;
-import com.liferay.portal.kernel.util.Validator;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -34,10 +26,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "model.class.name=com.liferay.fragment.model.FragmentEntryLink",
-	service = {
-		ExportImportContentProcessor.class,
-		FragmentEntryLinkExportImportContentProcessor.class
-	}
+	service = ExportImportContentProcessor.class
 )
 public class FragmentEntryLinkExportImportContentProcessor
 	implements ExportImportContentProcessor<String> {
@@ -49,12 +38,9 @@ public class FragmentEntryLinkExportImportContentProcessor
 			boolean escapeContent)
 		throws Exception {
 
-		JSONObject editableValuesJSONObject = JSONFactoryUtil.createJSONObject(
-			content);
+		FragmentEntryLink fragmentEntryLink = (FragmentEntryLink)stagedModel;
 
-		String portletId = editableValuesJSONObject.getString("portletId");
-
-		if (Validator.isNotNull(portletId)) {
+		if (fragmentEntryLink.isTypePortlet()) {
 			return content;
 		}
 
@@ -69,7 +55,8 @@ public class FragmentEntryLinkExportImportContentProcessor
 					portletDataContext, stagedModel, content,
 					exportReferencedContent, escapeContent);
 
-		editableValuesJSONObject = JSONFactoryUtil.createJSONObject(content);
+		JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
+			content);
 
 		for (ExportImportContentProcessor<JSONObject>
 				exportImportContentProcessor :
@@ -90,12 +77,9 @@ public class FragmentEntryLinkExportImportContentProcessor
 			String content)
 		throws Exception {
 
-		JSONObject editableValuesJSONObject = JSONFactoryUtil.createJSONObject(
-			content);
+		FragmentEntryLink fragmentEntryLink = (FragmentEntryLink)stagedModel;
 
-		String portletId = editableValuesJSONObject.getString("portletId");
-
-		if (Validator.isNotNull(portletId)) {
+		if (fragmentEntryLink.isTypePortlet()) {
 			return content;
 		}
 
@@ -108,7 +92,22 @@ public class FragmentEntryLinkExportImportContentProcessor
 				replaceImportContentReferences(
 					portletDataContext, stagedModel, content);
 
-		editableValuesJSONObject = JSONFactoryUtil.createJSONObject(content);
+		JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
+			content);
+
+		for (String fragmentEntryProcessorKey :
+				_FRAGMENT_ENTRY_PROCESSOR_KEYS) {
+
+			JSONObject fragmentEntryProcessorJSONObject =
+				editableValuesJSONObject.getJSONObject(
+					fragmentEntryProcessorKey);
+
+			if ((fragmentEntryProcessorJSONObject != null) &&
+				(fragmentEntryProcessorJSONObject.length() == 0)) {
+
+				editableValuesJSONObject.remove(fragmentEntryProcessorKey);
+			}
+		}
 
 		for (ExportImportContentProcessor<JSONObject>
 				exportImportContentProcessor :
@@ -137,12 +136,22 @@ public class FragmentEntryLinkExportImportContentProcessor
 				"(content.processor.type=FragmentEntryLinkEditableValues)");
 	}
 
+	private static final String[] _FRAGMENT_ENTRY_PROCESSOR_KEYS = {
+		FragmentEntryProcessorConstants.
+			KEY_BACKGROUND_IMAGE_FRAGMENT_ENTRY_PROCESSOR,
+		FragmentEntryProcessorConstants.KEY_EDITABLE_FRAGMENT_ENTRY_PROCESSOR,
+		FragmentEntryProcessorConstants.KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR
+	};
+
 	@Reference(target = "(content.processor.type=DLReferences)")
 	private ExportImportContentProcessor<String>
 		_dlReferencesExportImportContentProcessor;
 
 	private ServiceTrackerList<ExportImportContentProcessor<JSONObject>>
 		_fragmentEntryLinkEditableValuesExportImportProcessors;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference(target = "(content.processor.type=LayoutReferences)")
 	private ExportImportContentProcessor<String>

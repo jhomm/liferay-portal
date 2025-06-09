@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.spring.extender.internal.context;
@@ -18,14 +9,13 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.configuration.Configuration;
+import com.liferay.portal.kernel.configuration.ConfigurationFactoryUtil;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.configurator.ConfigurableApplicationContextConfigurator;
-import com.liferay.portal.spring.extender.internal.configuration.ConfigurationUtil;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -52,7 +42,7 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 /**
  * @author Miguel Pastor
  */
-@Component(immediate = true, service = {})
+@Component(service = {})
 public class ModuleApplicationContextExtender
 	implements BundleTrackerCustomizer
 		<ModuleApplicationContextExtender.ModuleApplicationContextExtension> {
@@ -78,7 +68,7 @@ public class ModuleApplicationContextExtender
 			return moduleApplicationContextExtension;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return null;
@@ -121,8 +111,7 @@ public class ModuleApplicationContextExtender
 
 			_component.setImplementation(
 				new ModuleApplicationContextRegistrator(
-					_configurableApplicationContextConfigurator, _bundle,
-					bundleContext.getBundle()));
+					_bundle, bundleContext.getBundle()));
 
 			BundleWiring bundleWiring = _bundle.adapt(BundleWiring.class);
 
@@ -153,12 +142,13 @@ public class ModuleApplicationContextExtender
 		private void _generateConfigurationDependency(
 			ClassLoader classLoader, String name) {
 
-			if (ConfigurationUtil.hasConfiguration(classLoader, name)) {
+			if (ConfigurationFactoryUtil.getConfiguration(classLoader, name) !=
+					null) {
+
 				ServiceDependency serviceDependency =
 					_dependencyManager.createServiceDependency();
 
 				serviceDependency.setRequired(true);
-
 				serviceDependency.setService(
 					Configuration.class,
 					StringBundler.concat(
@@ -174,7 +164,6 @@ public class ModuleApplicationContextExtender
 				_dependencyManager.createServiceDependency();
 
 			serviceDependency.setRequired(true);
-
 			serviceDependency.setService(
 				Release.class,
 				StringBundler.concat(
@@ -241,7 +230,7 @@ public class ModuleApplicationContextExtender
 		_bundleContext = bundleContext;
 
 		_bundleTracker = new BundleTracker<>(
-			bundleContext, Bundle.ACTIVE | Bundle.STARTING, this);
+			bundleContext, Bundle.ACTIVE, this);
 
 		_bundleTracker.open();
 	}
@@ -256,10 +245,6 @@ public class ModuleApplicationContextExtender
 
 	private BundleContext _bundleContext;
 	private BundleTracker<?> _bundleTracker;
-
-	@Reference
-	private ConfigurableApplicationContextConfigurator
-		_configurableApplicationContextConfigurator;
 
 	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
 	private ModuleServiceLifecycle _moduleServiceLifecycle;

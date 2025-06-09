@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.exportimport.data.handler;
 
+import com.liferay.data.engine.model.DEDataDefinitionFieldLink;
 import com.liferay.dynamic.data.lists.constants.DDLConstants;
 import com.liferay.dynamic.data.lists.constants.DDLPortletKeys;
 import com.liferay.dynamic.data.lists.model.DDLRecord;
@@ -33,9 +25,9 @@ import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -45,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	property = "javax.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
+	property = "jakarta.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
 	service = PortletDataHandler.class
 )
 public class DDLPortletDataHandler extends BasePortletDataHandler {
@@ -66,6 +58,11 @@ public class DDLPortletDataHandler extends BasePortletDataHandler {
 	@Override
 	public String getSchemaVersion() {
 		return SCHEMA_VERSION;
+	}
+
+	@Override
+	public String getServiceName() {
+		return DDLConstants.SERVICE_NAME;
 	}
 
 	@Activate
@@ -163,6 +160,28 @@ public class DDLPortletDataHandler extends BasePortletDataHandler {
 					portletDataContext, ddmStructureElement);
 			}
 
+			for (Element ddmStructureElement : ddmStructureElements) {
+				List<Element> deDataDefinitionFieldLinkElements =
+					portletDataContext.getReferenceDataElements(
+						ddmStructureElement, DEDataDefinitionFieldLink.class,
+						null);
+
+				for (Element deDataDefinitionFieldLinkElement :
+						deDataDefinitionFieldLinkElements) {
+
+					String path =
+						deDataDefinitionFieldLinkElement.attributeValue("path");
+
+					DEDataDefinitionFieldLink deDataDefinitionFieldLink =
+						(DEDataDefinitionFieldLink)
+							portletDataContext.getZipEntryAsObject(
+								deDataDefinitionFieldLinkElement, path);
+
+					StagedModelDataHandlerUtil.importStagedModel(
+						portletDataContext, deDataDefinitionFieldLink);
+				}
+			}
+
 			Element ddmTemplatesElement =
 				portletDataContext.getImportDataGroupElement(DDMTemplate.class);
 
@@ -222,33 +241,18 @@ public class DDLPortletDataHandler extends BasePortletDataHandler {
 	}
 
 	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.lists.model.DDLRecordSet)",
-		unbind = "-"
+		target = "(model.class.name=com.liferay.dynamic.data.lists.model.DDLRecordSet)"
 	)
-	protected void setDDLRecordSetStagedModelRepository(
-		StagedModelRepository<DDLRecordSet> ddlRecordSetStagedModelRepository) {
-
-		_ddlRecordSetStagedModelRepository = ddlRecordSetStagedModelRepository;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.lists.model.DDLRecord)",
-		unbind = "-"
-	)
-	protected void setDDLRecordStagedModelRepository(
-		StagedModelRepository<DDLRecord> ddlRecordStagedModelRepository) {
-
-		_ddlRecordStagedModelRepository = ddlRecordStagedModelRepository;
-	}
-
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
-	}
-
 	private StagedModelRepository<DDLRecordSet>
 		_ddlRecordSetStagedModelRepository;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.lists.model.DDLRecord)"
+	)
 	private StagedModelRepository<DDLRecord> _ddlRecordStagedModelRepository;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
 
 	@Reference
 	private Staging _staging;

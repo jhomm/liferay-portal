@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
+import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -27,6 +19,10 @@ public class CPOptionCategoryServiceWrapper
 	implements CPOptionCategoryService,
 			   ServiceWrapper<CPOptionCategoryService> {
 
+	public CPOptionCategoryServiceWrapper() {
+		this(null);
+	}
+
 	public CPOptionCategoryServiceWrapper(
 		CPOptionCategoryService cpOptionCategoryService) {
 
@@ -34,16 +30,31 @@ public class CPOptionCategoryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPOptionCategory
-			addCPOptionCategory(
-				java.util.Map<java.util.Locale, String> titleMap,
-				java.util.Map<java.util.Locale, String> descriptionMap,
-				double priority, String key,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CPOptionCategory addCPOptionCategory(
+			String externalReferenceCode,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap,
+			double priority, String key,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionCategoryService.addCPOptionCategory(
-			titleMap, descriptionMap, priority, key, serviceContext);
+			externalReferenceCode, titleMap, descriptionMap, priority, key,
+			serviceContext);
+	}
+
+	@Override
+	public CPOptionCategory addOrUpdateCPOptionCategory(
+			String externalReferenceCode, long cpOptionCategoryId,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap,
+			double priority, String key,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionCategoryService.addOrUpdateCPOptionCategory(
+			externalReferenceCode, cpOptionCategoryId, titleMap, descriptionMap,
+			priority, key, serviceContext);
 	}
 
 	@Override
@@ -54,8 +65,7 @@ public class CPOptionCategoryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPOptionCategory
-			fetchCPOptionCategory(long cpOptionCategoryId)
+	public CPOptionCategory fetchCPOptionCategory(long cpOptionCategoryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionCategoryService.fetchCPOptionCategory(
@@ -63,11 +73,30 @@ public class CPOptionCategoryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPOptionCategory
-			getCPOptionCategory(long cpOptionCategoryId)
+	public CPOptionCategory fetchCPOptionCategoryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionCategoryService.
+			fetchCPOptionCategoryByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	@Override
+	public CPOptionCategory getCPOptionCategory(long cpOptionCategoryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionCategoryService.getCPOptionCategory(cpOptionCategoryId);
+	}
+
+	@Override
+	public CPOptionCategory getCPOptionCategoryByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpOptionCategoryService.
+			getCPOptionCategoryByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -82,10 +111,9 @@ public class CPOptionCategoryServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<com.liferay.commerce.product.model.CPOptionCategory>
-				searchCPOptionCategories(
-					long companyId, String keywords, int start, int end,
-					com.liferay.portal.kernel.search.Sort sort)
+		<CPOptionCategory> searchCPOptionCategories(
+				long companyId, String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionCategoryService.searchCPOptionCategories(
@@ -93,16 +121,16 @@ public class CPOptionCategoryServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPOptionCategory
-			updateCPOptionCategory(
-				long cpOptionCategoryId,
-				java.util.Map<java.util.Locale, String> titleMap,
-				java.util.Map<java.util.Locale, String> descriptionMap,
-				double priority, String key)
+	public CPOptionCategory updateCPOptionCategory(
+			String externalReferenceCode, long cpOptionCategoryId,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap,
+			double priority, String key)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpOptionCategoryService.updateCPOptionCategory(
-			cpOptionCategoryId, titleMap, descriptionMap, priority, key);
+			externalReferenceCode, cpOptionCategoryId, titleMap, descriptionMap,
+			priority, key);
 	}
 
 	@Override

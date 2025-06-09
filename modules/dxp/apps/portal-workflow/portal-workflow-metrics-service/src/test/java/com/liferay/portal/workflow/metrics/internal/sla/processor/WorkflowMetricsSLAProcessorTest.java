@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.sla.processor;
@@ -20,9 +11,8 @@ import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.internal.document.DocumentBuilderImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.workflow.metrics.internal.sla.calendar.DefaultWorkflowMetricsSLACalendar;
-import com.liferay.portal.workflow.metrics.internal.sla.calendar.WorkflowMetricsSLACalendarTrackerImpl;
 import com.liferay.portal.workflow.metrics.model.WorkflowMetricsSLADefinitionVersion;
-import com.liferay.portal.workflow.metrics.sla.calendar.WorkflowMetricsSLACalendarTracker;
+import com.liferay.portal.workflow.metrics.sla.calendar.WorkflowMetricsSLACalendarRegistry;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
 
 import java.time.LocalDateTime;
@@ -37,12 +27,12 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 /**
  * @author Rafael Praxedes
  */
-public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
+public class WorkflowMetricsSLAProcessorTest {
 
 	@ClassRule
 	public static LiferayUnitTestRule liferayUnitTestRule =
@@ -266,10 +256,10 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 			5, ChronoUnit.SECONDS);
 
 		WorkflowMetricsSLADefinitionVersion
-			workflowMetricsSLADefinitionVersion = mock(
+			workflowMetricsSLADefinitionVersion = Mockito.mock(
 				WorkflowMetricsSLADefinitionVersion.class);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStartNodeKeys()
 		).thenReturn(
 			"1:leave"
@@ -298,22 +288,22 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 			10, ChronoUnit.SECONDS);
 
 		WorkflowMetricsSLADefinitionVersion
-			workflowMetricsSLADefinitionVersion = mock(
+			workflowMetricsSLADefinitionVersion = Mockito.mock(
 				WorkflowMetricsSLADefinitionVersion.class);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getDuration()
 		).thenReturn(
 			5000L
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStartNodeKeys()
 		).thenReturn(
 			"1:enter"
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getPauseNodeKeys()
 		).thenReturn(
 			"2:enter"
@@ -355,28 +345,28 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 			10, ChronoUnit.SECONDS);
 
 		WorkflowMetricsSLADefinitionVersion
-			workflowMetricsSLADefinitionVersion = mock(
+			workflowMetricsSLADefinitionVersion = Mockito.mock(
 				WorkflowMetricsSLADefinitionVersion.class);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getDuration()
 		).thenReturn(
 			10000L
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getPauseNodeKeys()
 		).thenReturn(
 			"2"
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStartNodeKeys()
 		).thenReturn(
 			"1:enter"
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStopNodeKeys()
 		).thenReturn(
 			"2:leave"
@@ -420,22 +410,22 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 			10, ChronoUnit.SECONDS);
 
 		WorkflowMetricsSLADefinitionVersion
-			workflowMetricsSLADefinitionVersion = mock(
+			workflowMetricsSLADefinitionVersion = Mockito.mock(
 				WorkflowMetricsSLADefinitionVersion.class);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getDuration()
 		).thenReturn(
 			10000L
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStartNodeKeys()
 		).thenReturn(
 			"1:enter"
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStopNodeKeys()
 		).thenReturn(
 			"1:leave"
@@ -520,22 +510,22 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 		LocalDateTime nowLocalDateTime = _createLocalDateTime();
 
 		WorkflowMetricsSLADefinitionVersion
-			workflowMetricsSLADefinitionVersion = mock(
+			workflowMetricsSLADefinitionVersion = Mockito.mock(
 				WorkflowMetricsSLADefinitionVersion.class);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getDuration()
 		).thenReturn(
 			10000L
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStartNodeKeys()
 		).thenReturn(
 			"1:enter"
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStopNodeKeys()
 		).thenReturn(
 			"2:leave"
@@ -547,33 +537,14 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 				{
 					setElapsedTime(10000);
 					setModifiedLocalDateTime(nowLocalDateTime);
+					setOnTime(true);
 					setRemainingTime(0);
 					setWorkflowMetricsSLAStatus(
 						WorkflowMetricsSLAStatus.STOPPED);
-					setOnTime(true);
 				}
 			},
 			nowLocalDateTime, true, 0, 1, workflowMetricsSLADefinitionVersion,
 			WorkflowMetricsSLAStatus.STOPPED);
-	}
-
-	protected WorkflowMetricsSLACalendarTracker
-			mockWorkflowMetricsSLACalendarTracker()
-		throws Exception {
-
-		WorkflowMetricsSLACalendarTrackerImpl
-			workflowMetricsSLACalendarTrackerImpl =
-				new WorkflowMetricsSLACalendarTrackerImpl();
-
-		field(
-			WorkflowMetricsSLACalendarTrackerImpl.class,
-			"_defaultWorkflowMetricsSLACalendar"
-		).set(
-			workflowMetricsSLACalendarTrackerImpl,
-			new DefaultWorkflowMetricsSLACalendar()
-		);
-
-		return workflowMetricsSLACalendarTrackerImpl;
 	}
 
 	private void _assertIsBreached(
@@ -622,6 +593,22 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 		return _dateTimeFormatter.format(nowLocalDateTime);
 	}
 
+	private WorkflowMetricsSLACalendarRegistry
+		_mockWorkflowMetricsSLACalendarRegistry() {
+
+		WorkflowMetricsSLACalendarRegistry workflowMetricsSLACalendarRegistry =
+			Mockito.mock(WorkflowMetricsSLACalendarRegistry.class);
+
+		Mockito.when(
+			workflowMetricsSLACalendarRegistry.getWorkflowMetricsSLACalendar(
+				Mockito.anyString())
+		).thenReturn(
+			new DefaultWorkflowMetricsSLACalendar()
+		);
+
+		return workflowMetricsSLACalendarRegistry;
+	}
+
 	private void _test(
 			LocalDateTime completionLocalDateTime,
 			LocalDateTime createLocalDateTime, List<Document> documents,
@@ -633,16 +620,16 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 		throws Exception {
 
 		WorkflowMetricsSLADefinitionVersion
-			workflowMetricsSLADefinitionVersion = mock(
+			workflowMetricsSLADefinitionVersion = Mockito.mock(
 				WorkflowMetricsSLADefinitionVersion.class);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getDuration()
 		).thenReturn(
 			duration
 		);
 
-		when(
+		Mockito.when(
 			workflowMetricsSLADefinitionVersion.getStartNodeKeys()
 		).thenReturn(
 			"0"
@@ -656,32 +643,29 @@ public class WorkflowMetricsSLAProcessorTest extends PowerMockito {
 	}
 
 	private void _test(
-			LocalDateTime completionLocalDateTime,
-			LocalDateTime createLocalDateTime, List<Document> documents,
-			long elapsedTime,
-			WorkflowMetricsSLAInstanceResult
-				lastWorkflowMetricsSLAInstanceResult,
-			LocalDateTime nowLocalDateTime, boolean onTime, long remainingTime,
-			long startNodeId,
-			WorkflowMetricsSLADefinitionVersion
-				workflowMetricsSLADefinitionVersion,
-			WorkflowMetricsSLAStatus workflowMetricsSLAStatus)
-		throws Exception {
+		LocalDateTime completionLocalDateTime,
+		LocalDateTime createLocalDateTime, List<Document> documents,
+		long elapsedTime,
+		WorkflowMetricsSLAInstanceResult lastWorkflowMetricsSLAInstanceResult,
+		LocalDateTime nowLocalDateTime, boolean onTime, long remainingTime,
+		long startNodeId,
+		WorkflowMetricsSLADefinitionVersion workflowMetricsSLADefinitionVersion,
+		WorkflowMetricsSLAStatus workflowMetricsSLAStatus) {
+
+		Mockito.when(
+			workflowMetricsSLADefinitionVersion.getCalendarKey()
+		).thenReturn(
+			""
+		);
 
 		WorkflowMetricsSLAProcessor workflowMetricsSLAProcessor =
 			new WorkflowMetricsSLAProcessor();
-
-		field(
-			WorkflowMetricsSLAProcessor.class,
-			"_workflowMetricsSLACalendarTracker"
-		).set(
-			workflowMetricsSLAProcessor, mockWorkflowMetricsSLACalendarTracker()
-		);
 
 		WorkflowMetricsSLAInstanceResult workflowMetricsSLAInstanceResult =
 			workflowMetricsSLAProcessor.process(
 				completionLocalDateTime, createLocalDateTime, documents, 0,
 				nowLocalDateTime, startNodeId,
+				_mockWorkflowMetricsSLACalendarRegistry(),
 				workflowMetricsSLADefinitionVersion,
 				lastWorkflowMetricsSLAInstanceResult);
 

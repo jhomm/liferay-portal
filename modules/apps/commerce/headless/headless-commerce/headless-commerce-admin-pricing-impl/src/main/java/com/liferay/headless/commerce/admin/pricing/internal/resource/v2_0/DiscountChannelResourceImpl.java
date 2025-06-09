@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
@@ -22,22 +13,20 @@ import com.liferay.commerce.product.service.CommerceChannelRelService;
 import com.liferay.commerce.product.service.CommerceChannelService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.Discount;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountChannel;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.DiscountChannelDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.DiscountChannelUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.DiscountChannelResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -50,13 +39,12 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v2_0/discount-channel.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {DiscountChannelResource.class, NestedFieldSupport.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = DiscountChannelResource.class
 )
 public class DiscountChannelResourceImpl
-	extends BaseDiscountChannelResourceImpl implements NestedFieldSupport {
+	extends BaseDiscountChannelResourceImpl {
 
 	@Override
 	public void deleteDiscountChannel(Long id) throws Exception {
@@ -70,8 +58,9 @@ public class DiscountChannelResourceImpl
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -85,12 +74,12 @@ public class DiscountChannelResourceImpl
 				commerceDiscount.getCommerceDiscountId(), null,
 				pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems = _commerceChannelRelService.getCommerceChannelRelsCount(
+		int totalCount = _commerceChannelRelService.getCommerceChannelRelsCount(
 			CommerceDiscount.class.getName(),
 			commerceDiscount.getCommerceDiscountId());
 
 		return Page.of(
-			_toDiscountChannels(commerceChannelRels), pagination, totalItems);
+			_toDiscountChannels(commerceChannelRels), pagination, totalCount);
 	}
 
 	@NestedField(parentClass = Discount.class, value = "discountChannels")
@@ -112,11 +101,11 @@ public class DiscountChannelResourceImpl
 				CommerceDiscount.class.getName(), id, search,
 				pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems = _commerceChannelRelService.getCommerceChannelRelsCount(
+		int totalCount = _commerceChannelRelService.getCommerceChannelRelsCount(
 			CommerceDiscount.class.getName(), id, search);
 
 		return Page.of(
-			_toDiscountChannels(commerceChannelRel), pagination, totalItems);
+			_toDiscountChannels(commerceChannelRel), pagination, totalCount);
 	}
 
 	@Override
@@ -125,8 +114,9 @@ public class DiscountChannelResourceImpl
 		throws Exception {
 
 		CommerceDiscount commerceDiscount =
-			_commerceDiscountService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceDiscountService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceDiscount == null) {
 			throw new NoSuchDiscountException(
@@ -190,15 +180,10 @@ public class DiscountChannelResourceImpl
 			List<CommerceChannelRel> commerceChannelRels)
 		throws Exception {
 
-		List<DiscountChannel> discountChannels = new ArrayList<>();
-
-		for (CommerceChannelRel commerceChannelRel : commerceChannelRels) {
-			discountChannels.add(
-				_toDiscountChannel(
-					commerceChannelRel.getCommerceChannelRelId()));
-		}
-
-		return discountChannels;
+		return transform(
+			commerceChannelRels,
+			commerceChannelRel -> _toDiscountChannel(
+				commerceChannelRel.getCommerceChannelRelId()));
 	}
 
 	@Reference(
@@ -216,8 +201,11 @@ public class DiscountChannelResourceImpl
 	@Reference
 	private CommerceDiscountService _commerceDiscountService;
 
-	@Reference
-	private DiscountChannelDTOConverter _discountChannelDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.DiscountChannelDTOConverter)"
+	)
+	private DTOConverter<CommerceChannelRel, DiscountChannel>
+		_discountChannelDTOConverter;
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;

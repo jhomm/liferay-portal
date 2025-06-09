@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -17,12 +8,6 @@ package com.liferay.taglib.ui;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Portlet;
-import com.liferay.portal.kernel.model.PortletApp;
-import com.liferay.portal.kernel.model.SpriteImage;
-import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -37,16 +22,13 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
-import java.net.MalformedURLException;
-import java.net.URL;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -91,7 +73,7 @@ public class IconTag extends IncludeTag {
 	}
 
 	public String getMarkupView() {
-		return _markupView;
+		return null;
 	}
 
 	public String getTarget() {
@@ -163,7 +145,6 @@ public class IconTag extends IncludeTag {
 	}
 
 	public void setMarkupView(String markupView) {
-		_markupView = markupView;
 	}
 
 	public void setMessage(String message) {
@@ -219,7 +200,6 @@ public class IconTag extends IncludeTag {
 		_lang = null;
 		_linkCssClass = null;
 		_localizeMessage = true;
-		_markupView = null;
 		_message = null;
 		_method = null;
 		_onClick = null;
@@ -336,7 +316,7 @@ public class IconTag extends IncludeTag {
 
 	protected String getProcessedUrl() {
 		if (isForcePost()) {
-			return "javascript:;";
+			return "javascript:void(0);";
 		}
 
 		return _url;
@@ -439,7 +419,7 @@ public class IconTag extends IncludeTag {
 		httpServletRequest.setAttribute("liferay-ui:icon:cssClass", _cssClass);
 		httpServletRequest.setAttribute("liferay-ui:icon:data", _getData());
 		httpServletRequest.setAttribute(
-			"liferay-ui:icon:details", _getDetails(themeDisplay));
+			"liferay-ui:icon:details", _getDetails());
 		httpServletRequest.setAttribute(
 			"liferay-ui:icon:forcePost", String.valueOf(isForcePost()));
 		httpServletRequest.setAttribute("liferay-ui:icon:icon", _icon);
@@ -457,8 +437,6 @@ public class IconTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			"liferay-ui:icon:localizeMessage",
 			String.valueOf(_localizeMessage));
-		httpServletRequest.setAttribute(
-			"liferay-ui:icon:markupView", _markupView);
 		httpServletRequest.setAttribute(
 			"liferay-ui:icon:message", getProcessedMessage());
 		httpServletRequest.setAttribute("liferay-ui:icon:method", getMethod());
@@ -511,7 +489,7 @@ public class IconTag extends IncludeTag {
 		return data;
 	}
 
-	private String _getDetails(ThemeDisplay themeDisplay) {
+	private String _getDetails() {
 		String details = null;
 
 		if (_alt != null) {
@@ -544,96 +522,6 @@ public class IconTag extends IncludeTag {
 			sb.append("\"");
 
 			details = sb.toString();
-		}
-
-		if (Validator.isNull(_src) || !themeDisplay.isThemeImagesFastLoad() ||
-			isAUIImage()) {
-
-			return details;
-		}
-
-		SpriteImage spriteImage = null;
-		String spriteFileURL = null;
-
-		String imageFileName = StringUtil.removeSubstring(_src, "common/../");
-
-		HttpServletRequest httpServletRequest = getRequest();
-
-		if (imageFileName.contains(Http.PROTOCOL_DELIMITER)) {
-			String portalURL = PortalUtil.getPortalURL(httpServletRequest);
-
-			if (imageFileName.startsWith(portalURL)) {
-				imageFileName = imageFileName.substring(portalURL.length());
-			}
-			else {
-				URL imageURL = null;
-
-				try {
-					imageURL = new URL(imageFileName);
-
-					imageFileName = imageURL.getPath();
-				}
-				catch (MalformedURLException malformedURLException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(
-							malformedURLException, malformedURLException);
-					}
-				}
-			}
-		}
-
-		Theme theme = themeDisplay.getTheme();
-
-		String contextPath = theme.getContextPath();
-
-		String imagesPath = contextPath.concat(theme.getImagesPath());
-
-		if (imageFileName.startsWith(imagesPath)) {
-			spriteImage = theme.getSpriteImage(imageFileName);
-
-			if (spriteImage != null) {
-				String cdnBaseURL = themeDisplay.getCDNBaseURL();
-
-				spriteFileURL = cdnBaseURL.concat(
-					spriteImage.getSpriteFileName());
-			}
-		}
-
-		if (spriteImage == null) {
-			Portlet portlet = (Portlet)httpServletRequest.getAttribute(
-				"liferay-portlet:icon_portlet:portlet");
-
-			if (portlet == null) {
-				portlet = (Portlet)httpServletRequest.getAttribute(
-					WebKeys.RENDER_PORTLET);
-			}
-
-			if (portlet != null) {
-				PortletApp portletApp = portlet.getPortletApp();
-
-				spriteImage = portletApp.getSpriteImage(imageFileName);
-
-				if (spriteImage != null) {
-					String cdnBaseURL = themeDisplay.getCDNBaseURL();
-
-					spriteFileURL = cdnBaseURL.concat(
-						spriteImage.getSpriteFileName());
-				}
-			}
-		}
-
-		if (spriteImage != null) {
-			String themeImagesPath = themeDisplay.getPathThemeImages();
-
-			_src = themeImagesPath.concat("/spacer.png");
-
-			details = StringBundler.concat(
-				details, " style=\"background-image: url('",
-				HtmlUtil.escapeCSS(spriteFileURL),
-				"'); background-position: 50% -", spriteImage.getOffset(),
-				"px; background-repeat: no-repeat; height: ",
-				spriteImage.getHeight(), "px; width: ", spriteImage.getWidth(),
-				"px;\"");
 		}
 
 		return details;
@@ -682,8 +570,6 @@ public class IconTag extends IncludeTag {
 
 	private static final boolean _CLEAN_UP_SET_ATTRIBUTES = true;
 
-	private static final Log _log = LogFactoryUtil.getLog(IconTag.class);
-
 	private String _alt;
 	private String _ariaRole;
 	private String _cssClass;
@@ -697,7 +583,6 @@ public class IconTag extends IncludeTag {
 	private String _lang;
 	private String _linkCssClass;
 	private boolean _localizeMessage = true;
-	private String _markupView;
 	private String _message;
 	private String _method;
 	private String _onClick;

@@ -1,10 +1,10 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
-	property custom.properties = "default.layout.template.id=1_column${line.separator}jsonws.web.service.paths.excludes=";
-	property portal.release = "true";
+	property custom.properties = "default.layout.template.id=1_column${line.separator}feature.flag.LPD-35013=false${line.separator}jsonws.web.service.paths.excludes=";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.component.names = "Mentions";
 	property testray.main.component.name = "Mentions";
 
 	setUp {
@@ -12,12 +12,14 @@ definition {
 
 		User.firstLoginPG();
 
+		WikiPortlet.enableWiki();
+
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
 			layoutName = "Wiki Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Wiki Page",
 			widgetName = "Wiki");
@@ -38,9 +40,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -48,13 +50,15 @@ definition {
 
 			JSONUser.tearDownNonAdminUsers();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewWikiCommentMentionedUser {
+		property portal.acceptance = "true";
+
 		JSONWiki.addWikiPage(
 			groupName = "Guest",
 			wikiNodeName = "Main",

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,11 +8,12 @@ import ClayCard from '@clayui/card';
 import ClayForm from '@clayui/form';
 import ClayLayout from '@clayui/layout';
 import {useFormik} from 'formik';
+import {openToast} from 'frontend-js-components-web';
 import {
 	createResourceURL,
 	fetch,
+	navigate,
 	objectToFormData,
-	openToast,
 } from 'frontend-js-web';
 import React, {useContext} from 'react';
 
@@ -41,11 +33,8 @@ const defaultRecipient = {
 };
 
 const DigitalSignatureForm = ({fileEntries = [], history}) => {
-	const {
-		allowedFileExtensions,
-		baseResourceURL,
-		portletNamespace,
-	} = useContext(AppContext);
+	const {allowedFileExtensions, baseResourceURL, portletNamespace} =
+		useContext(AppContext);
 	const urlParams = new URLSearchParams(window.location.href);
 	const backURL = urlParams.get(`${portletNamespace}backURL`);
 
@@ -54,7 +43,7 @@ const DigitalSignatureForm = ({fileEntries = [], history}) => {
 			return history.goBack();
 		}
 
-		return Liferay.Util.navigate(backURL);
+		return navigate(backURL);
 	};
 
 	const onSubmit = async (values) => {
@@ -184,7 +173,9 @@ const DigitalSignatureForm = ({fileEntries = [], history}) => {
 						{Liferay.Language.get('new-digital-signature-envelope')}
 					</h1>
 				</div>
+
 				<hr />
+
 				<ClayCard.Body className="m-2">
 					<ClayForm onSubmit={handleSubmit}>
 						<DigitalSignatureFormBase
@@ -199,12 +190,14 @@ const DigitalSignatureForm = ({fileEntries = [], history}) => {
 							disabled={
 								!isValid ||
 								isSubmitting ||
-								!values.fileEntries.length
+								!values.fileEntries.length ||
+								values.fileEntries.length > 10
 							}
 							type="submit"
 						>
 							{Liferay.Language.get('send')}
 						</ClayButton>
+
 						<ClayButton
 							className="ml-2"
 							displayType="secondary"

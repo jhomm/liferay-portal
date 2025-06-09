@@ -1,0 +1,457 @@
+definition {
+
+	@summary = "Default summary"
+	macro addLanguageOnPicklist(itemName = null, newLanguage = null) {
+		SelectFrameTop();
+
+		Picklist.assertPicklistDetails(title = "Basic Info");
+
+		ObjectAdmin.changeLabelLanguage(newLanguage = ${newLanguage});
+
+		Type(
+			locator1 = "Picklist#UPDATE_PICKLIST_NAME",
+			value1 = ${itemName});
+
+		WaitForSPARefresh();
+	}
+
+	@summary = "Default summary"
+	macro addLanguageOnPicklistItem(itemName = null, newLanguage = null) {
+		SelectFrameTop();
+
+		if (IsElementPresent(locator1 = "IFrame#MODAL_IFRAME")) {
+			IFrame.selectModalFrame();
+		}
+
+		ObjectAdmin.changeLabelLanguage(newLanguage = ${newLanguage});
+
+		Type(
+			locator1 = "Picklist#EDIT_ITEM_NAME",
+			value1 = ${itemName});
+
+		WaitForSPARefresh();
+	}
+
+	@summary = "Default summary"
+	macro addPicklistItemViaAPI(itemName = null, picklistName = null, userPassword = null, userEmailAddress = null, itemKey = null) {
+		JSONObject.addPicklistItem(
+			itemKey = ${itemKey},
+			itemName = ${itemName},
+			picklistName = ${picklistName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+	}
+
+	@summary = "Default summary"
+	macro addPicklistItemViaUI(picklistItemKey = null, picklistItemName = null) {
+		SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_MODAL");
+
+		WaitForElementPresent(locator1 = "Picklist#ADD_ITEM_BUTTON");
+
+		Click.javaScriptClick(locator1 = "Picklist#ADD_ITEM_BUTTON");
+
+		SelectFrame(locator1 = "Picklist#DIV_PICKLIST_MODAL");
+
+		if (isSet(picklistItemName)) {
+			Type(
+				key_selectField = "Name",
+				locator1 = "Picklist#ADD_PICKLIST_ITEM_NAME_AND_KEY",
+				value1 = ${picklistItemName});
+		}
+
+		if (isSet(picklistItemKey)) {
+			Type(
+				key_selectField = "Key",
+				locator1 = "Picklist#ADD_PICKLIST_ITEM_NAME_AND_KEY",
+				value1 = ${picklistItemKey});
+		}
+	}
+
+	@summary = "Default summary"
+	macro addPicklistItemWithTranslationViaUI(picklistItemName = null, newLanguage = null, defaultLanguage = null, newItemName = null) {
+		Picklist.addPicklistItemViaUI(picklistItemName = ${picklistItemName});
+
+		ObjectAdmin.chooseAnyLanguage(
+			newLanguage = ${newLanguage},
+			symbolName = "");
+
+		if (IsElementNotPresent(locator1 = "Picklist#VIEW_PICKLIST_ITEM_NAME")) {
+			Click(
+				key_symbolName = "",
+				locator1 = "FormViewBuilder#BUTTON_LOCALIZATION");
+
+			Click(locator1 = "Modal#BODY");
+		}
+
+		Type(
+			key_selectField = "Name",
+			locator1 = "Picklist#ADD_PICKLIST_ITEM_NAME_AND_KEY",
+			value1 = ${newItemName});
+
+		ObjectAdmin.chooseAnyLanguage(
+			newLanguage = ${defaultLanguage},
+			symbolName = "");
+
+		WaitForSPARefresh();
+	}
+
+	@summary = "Default summary"
+	macro addPicklistViaAPI(picklistName = null, userPassword = null, userEmailAddress = null, externalReferenceCode = null) {
+		JSONObject.addPicklist(
+			externalReferenceCode = ${externalReferenceCode},
+			picklistName = ${picklistName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+	}
+
+	@summary = "Default summary"
+	macro addPicklistViaUI(picklistName = null) {
+		WaitForElementPresent(locator1 = "Picklist#ADD_PICKLIST_BUTTON");
+
+		Click.javaScriptClick(locator1 = "Picklist#ADD_PICKLIST_BUTTON");
+
+		WaitForElementPresent(
+			locator1 = "Picklist#ADD_PICKLIST_NAME",
+			value1 = ${picklistName});
+
+		Type(
+			locator1 = "Picklist#ADD_PICKLIST_NAME",
+			value1 = ${picklistName});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro assertDisabledPicklistItem(keyName = null) {
+		Picklist.assertDisableKey(keyName = ${keyName});
+
+		AssertElementPresent(locator1 = "Picklist#DISABLED_PICKLIST_NAME");
+	}
+
+	@summary = "Default summary"
+	macro assertDisabledPicklistName() {
+		AssertElementPresent(locator1 = "Picklist#DISABLED_PICKLIST_NAME");
+	}
+
+	@summary = "Default summary"
+	macro assertDisabledSaveButton() {
+		AssertElementPresent(locator1 = "CreateObject#SAVE_BUTTON_DISABLED");
+	}
+
+	@summary = "Default summary"
+	macro assertDisableKey(keyName = null) {
+		SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_ITEM_MODAL");
+
+		AssertElementPresent(
+			key_keyName = ${keyName},
+			locator1 = "Picklist#DISABLE_PICKLIST_KEY");
+	}
+
+	@summary = "Default summary"
+	macro assertDownloadedPicklist(downloadedFile = null) {
+		var downloadedFileName = TestCase.getDownloadedTempFileName(fileNamePattern = ${downloadedFile});
+
+		echo("## downloadedFileName: ListType_*");
+
+		if (contains("ListType_*", ${downloadedFile})) {
+			echo("This is a correct file.");
+		}
+		else {
+			fail("FAIL!");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertItemNameAndItemKeyOnModal(itemName = null, itemKey = null) {
+		if (IsElementPresent(locator1 = "Picklist#VIEW_PICKLIST_ITEM_NAME")) {
+			AssertElementPresent(
+				key_itemName = ${itemName},
+				locator1 = "Picklist#VIEW_PICKLIST_ITEM_NAME");
+
+			AssertElementPresent(
+				key_labelName = ${itemName},
+				locator1 = "ObjectAdmin#VIEW_SIMPLE_TEXT_GENERIC");
+
+			AssertElementPresent(
+				key_itemKey = ${itemKey},
+				locator1 = "Picklist#VIEW_PICKLIST_ITEM_KEY");
+		}
+
+		if (IsElementPresent(locator1 = "Picklist#VIEW_PICKLIST_EDIT_ITEM_NAME")) {
+			AssertElementPresent(
+				key_itemName = ${itemName},
+				locator1 = "Picklist#VIEW_PICKLIST_EDIT_ITEM_NAME");
+
+			AssertElementPresent(
+				key_itemKey = ${itemKey},
+				locator1 = "Picklist#VIEW_PICKLIST_EDIT_ITEM_KEY");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertPicklist(picklistName = null) {
+		var key_picklistName = ${picklistName};
+
+		AssertElementPresent(locator1 = "Picklist#VIEW_PICKLIST");
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistDetails(title = null) {
+		var key_title = ${title};
+
+		SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_MODAL");
+
+		AssertElementPresent(locator1 = "Picklist#PICKLIST_DETAILS");
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistItem(picklistItemKey = null, picklistItemName = null) {
+		if (IsElementPresent(locator1 = "Picklist#IFRAME_PICKLIST_MODAL")) {
+			SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_MODAL");
+		}
+
+		var key_picklistItemName = ${picklistItemName};
+		var key_picklistItemKey = ${picklistItemKey};
+
+		WaitForPageLoad();
+
+		AssertElementPresent(locator1 = "Picklist#VIEW_PICKLIST_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistItemByLanguage(newLanguage = null, nameItem = null) {
+		SelectFrameTop();
+
+		if (IsElementPresent(locator1 = "IFrame#MODAL_IFRAME")) {
+			IFrame.selectModalFrame();
+		}
+
+		ObjectAdmin.changeLabelLanguage(newLanguage = ${newLanguage});
+
+		AssertTextEquals(
+			locator1 = "Picklist#EDIT_ITEM_NAME",
+			value1 = ${nameItem});
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistItemInTable(picklistItemKey = null, picklistItemName = null) {
+		Picklist.assertPicklistDetails(title = "Items");
+
+		AssertElementPresent(
+			key_picklistItemKey = ${picklistItemKey},
+			key_picklistItemName = ${picklistItemName},
+			locator1 = "Picklist#VIEW_PICKLIST_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistItemNotPresent(picklistItemKey = null, picklistItemName = null) {
+		var key_picklistItemName = ${picklistItemName};
+		var key_picklistItemKey = ${picklistItemKey};
+
+		AssertElementNotPresent(locator1 = "Picklist#VIEW_PICKLIST_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistMessage(picklistMessage = null) {
+		var key_picklistMessage = ${picklistMessage};
+
+		AssertElementPresent(locator1 = "Picklist#PICKLIST_MESSAGE");
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistNameByLanguage(newLanguage = null, nameItem = null) {
+		SelectFrameTop();
+
+		Picklist.assertPicklistDetails(title = "Basic Info");
+
+		ObjectAdmin.changeLabelLanguage(newLanguage = ${newLanguage});
+
+		AssertTextEquals(
+			locator1 = "Picklist#UPDATE_PICKLIST_NAME",
+			value1 = ${nameItem});
+	}
+
+	@summary = "Default summary"
+	macro assertPicklistNotPresent(picklistName = null) {
+		var key_picklistName = ${picklistName};
+
+		AssertElementNotPresent(locator1 = "Picklist#VIEW_PICKLIST");
+	}
+
+	@summary = "Default summary"
+	macro cancelPicklist(picklistName = null) {
+		Click.javaScriptClick(locator1 = "Picklist#ADD_PICKLIST_BUTTON");
+
+		Type(
+			locator1 = "Picklist#ADD_PICKLIST_NAME",
+			value1 = ${picklistName});
+
+		Picklist.cancelPicklistButton();
+	}
+
+	@summary = "Default summary"
+	macro cancelPicklistButton() {
+		Click(locator1 = "Picklist#CANCEL_PICKLIST");
+	}
+
+	@summary = "Default summary"
+	macro clickSaveButton() {
+		Click.javaScriptClick(locator1 = "Picklist#SAVE_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro deleteAllPicklistsViaAPI(userPassword = null, userEmailAddress = null) {
+		JSONObject.deleteAllPicklists(
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+	}
+
+	@summary = "Default summary"
+	macro deletePicklistViaAPI(picklistName = null, userPassword = null, userEmailAddress = null) {
+		JSONObject.deletePicklist(
+			picklistName = ${picklistName},
+			userEmailAddress = ${userEmailAddress},
+			userPassword = ${userPassword});
+	}
+
+	@summary = "Default summary"
+	macro gotoPicklists() {
+		Navigator.openSpecificURL(url = "/group/guest/~/control_panel/manage?p_p_id=com_liferay_object_web_internal_list_type_portlet_portlet_ListTypeDefinitionsPortlet");
+	}
+
+	@summary = "Default summary"
+	macro gotoPicklistView(picklistName = null) {
+		WaitForPageLoad();
+
+		Click.javaScriptClick(
+			key_picklistName = ${picklistName},
+			locator1 = "Picklist#SELECT_PICKLIST_VIEW");
+
+		MenuItem.clickNoError(menuItem = "View");
+	}
+
+	@summary = "Default summary"
+	macro importPicklist(picklistFileName = null, picklistName = null) {
+		Click(locator1 = "ObjectAdmin#KEBAB_MENU");
+
+		Click(locator1 = "Picklist#IMPORT_PICKLIST");
+
+		var filePath = TestCase.getDependenciesDirPath(fileName = "${picklistFileName}.json");
+
+		UploadFile(
+			locator1 = "TextInput#FILE",
+			value1 = ${filePath});
+
+		Type(
+			key_fieldLabel = "Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${picklistName});
+
+		Button.clickImport();
+	}
+
+	@summary = "Default summary"
+	macro optionsPicklist(picklistName = null, menuItem = null) {
+		Click.javaScriptClick(
+			key_picklistName = ${picklistName},
+			locator1 = "Picklist#PICKLIST_KEBAB_MENU");
+
+		MenuItem.clickNoError(menuItem = ${menuItem});
+	}
+
+	@summary = "Default summary"
+	macro optionsPicklistItem(menuItem = null, itemKey = null) {
+		var key_itemKey = ${itemKey};
+
+		SelectFrameTop();
+
+		SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_MODAL");
+
+		ScrollWebElementIntoView(locator1 = "Picklist#PICKLIST_ITEM_KEBAB_MENU");
+
+		Click.javaScriptClick(locator1 = "Picklist#PICKLIST_ITEM_KEBAB_MENU");
+
+		MenuItem.clickNoError(menuItem = ${menuItem});
+	}
+
+	@summary = "Default summary"
+	macro searchPicklist(picklistName = null) {
+		Type(
+			locator1 = "TextInput#SEARCH",
+			value1 = ${picklistName});
+
+		KeyPress(
+			locator1 = "TextInput#SEARCH",
+			value1 = "\RETURN");
+	}
+
+	@summary = "Default summary"
+	macro searchPicklistItem(picklistItemName = null) {
+		Picklist.selectPickilistModalFrame();
+
+		Type(
+			locator1 = "TextInput#SEARCH",
+			value1 = ${picklistItemName});
+
+		KeyPress(
+			locator1 = "TextInput#SEARCH",
+			value1 = "\RETURN");
+	}
+
+	@summary = "Default summary"
+	macro selectPickilistModalFrame() {
+		SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_MODAL");
+	}
+
+	@summary = "Default summary"
+	macro selectPicklistImportFile(picklistFileName = null, picklistName = null) {
+		var filePath = TestCase.getDependenciesDirPath(fileName = "${picklistFileName}.json");
+
+		UploadFile(
+			locator1 = "TextInput#FILE",
+			value1 = ${filePath});
+
+		Type(
+			key_fieldLabel = "Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${picklistName});
+
+		Button.clickImport();
+	}
+
+	@summary = "Default summary"
+	macro updatePicklistItemName(newItemName = null, itemkey = null) {
+		Picklist.optionsPicklistItem(
+			itemKey = ${itemkey},
+			menuItem = "View");
+
+		SelectFrameTop();
+
+		SelectFrame(locator1 = "Picklist#DIV_PICKLIST_MODAL");
+
+		Type(
+			locator1 = "Picklist#EDIT_ITEM_NAME",
+			value1 = ${newItemName});
+
+		WaitForSPARefresh();
+	}
+
+	@summary = "Default summary"
+	macro updatePicklistName(picklistName = null) {
+		SelectFrame(locator1 = "Picklist#IFRAME_PICKLIST_MODAL");
+
+		Type(
+			locator1 = "Picklist#UPDATE_PICKLIST_NAME",
+			value1 = ${picklistName});
+
+		WaitForSPARefresh();
+	}
+
+	@summary = "Default summary"
+	macro viewPicklist(picklistName = null) {
+		Click(
+			key_picklistName = ${picklistName},
+			locator1 = "Picklist#VIEW_PICKLIST");
+	}
+
+}

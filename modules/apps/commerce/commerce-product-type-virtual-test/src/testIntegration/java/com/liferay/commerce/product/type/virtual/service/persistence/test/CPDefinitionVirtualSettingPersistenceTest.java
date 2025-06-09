@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.service.persistence.test;
@@ -130,6 +121,8 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		CPDefinitionVirtualSetting newCPDefinitionVirtualSetting =
 			_persistence.create(pk);
 
+		newCPDefinitionVirtualSetting.setMvccVersion(RandomTestUtil.nextLong());
+
 		newCPDefinitionVirtualSetting.setUuid(RandomTestUtil.randomString());
 
 		newCPDefinitionVirtualSetting.setGroupId(RandomTestUtil.nextLong());
@@ -150,10 +143,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 
 		newCPDefinitionVirtualSetting.setClassPK(RandomTestUtil.nextLong());
 
-		newCPDefinitionVirtualSetting.setFileEntryId(RandomTestUtil.nextLong());
-
-		newCPDefinitionVirtualSetting.setUrl(RandomTestUtil.randomString());
-
 		newCPDefinitionVirtualSetting.setActivationStatus(
 			RandomTestUtil.nextInt());
 
@@ -167,7 +156,7 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		newCPDefinitionVirtualSetting.setSampleFileEntryId(
 			RandomTestUtil.nextLong());
 
-		newCPDefinitionVirtualSetting.setSampleUrl(
+		newCPDefinitionVirtualSetting.setSampleURL(
 			RandomTestUtil.randomString());
 
 		newCPDefinitionVirtualSetting.setTermsOfUseRequired(
@@ -193,6 +182,9 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCPDefinitionVirtualSetting.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCPDefinitionVirtualSetting.getMvccVersion(),
+			newCPDefinitionVirtualSetting.getMvccVersion());
 		Assert.assertEquals(
 			existingCPDefinitionVirtualSetting.getUuid(),
 			newCPDefinitionVirtualSetting.getUuid());
@@ -229,12 +221,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 			existingCPDefinitionVirtualSetting.getClassPK(),
 			newCPDefinitionVirtualSetting.getClassPK());
 		Assert.assertEquals(
-			existingCPDefinitionVirtualSetting.getFileEntryId(),
-			newCPDefinitionVirtualSetting.getFileEntryId());
-		Assert.assertEquals(
-			existingCPDefinitionVirtualSetting.getUrl(),
-			newCPDefinitionVirtualSetting.getUrl());
-		Assert.assertEquals(
 			existingCPDefinitionVirtualSetting.getActivationStatus(),
 			newCPDefinitionVirtualSetting.getActivationStatus());
 		Assert.assertEquals(
@@ -250,8 +236,8 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 			existingCPDefinitionVirtualSetting.getSampleFileEntryId(),
 			newCPDefinitionVirtualSetting.getSampleFileEntryId());
 		Assert.assertEquals(
-			existingCPDefinitionVirtualSetting.getSampleUrl(),
-			newCPDefinitionVirtualSetting.getSampleUrl());
+			existingCPDefinitionVirtualSetting.getSampleURL(),
+			newCPDefinitionVirtualSetting.getSampleURL());
 		Assert.assertEquals(
 			existingCPDefinitionVirtualSetting.isTermsOfUseRequired(),
 			newCPDefinitionVirtualSetting.isTermsOfUseRequired());
@@ -338,14 +324,13 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CPDefinitionVirtualSetting", "uuid", true,
+			"CPDefinitionVirtualSetting", "mvccVersion", true, "uuid", true,
 			"CPDefinitionVirtualSettingId", true, "groupId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "classNameId", true, "classPK", true,
-			"fileEntryId", true, "url", true, "activationStatus", true,
-			"duration", true, "maxUsages", true, "useSample", true,
-			"sampleFileEntryId", true, "sampleUrl", true, "termsOfUseRequired",
-			true, "termsOfUseContent", true,
+			"activationStatus", true, "duration", true, "maxUsages", true,
+			"useSample", true, "sampleFileEntryId", true, "sampleURL", true,
+			"termsOfUseRequired", true, "termsOfUseContent", true,
 			"termsOfUseJournalArticleResourcePrimKey", true, "override", true,
 			"lastPublishDate", true);
 	}
@@ -684,6 +669,8 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		CPDefinitionVirtualSetting cpDefinitionVirtualSetting =
 			_persistence.create(pk);
 
+		cpDefinitionVirtualSetting.setMvccVersion(RandomTestUtil.nextLong());
+
 		cpDefinitionVirtualSetting.setUuid(RandomTestUtil.randomString());
 
 		cpDefinitionVirtualSetting.setGroupId(RandomTestUtil.nextLong());
@@ -702,10 +689,6 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 
 		cpDefinitionVirtualSetting.setClassPK(RandomTestUtil.nextLong());
 
-		cpDefinitionVirtualSetting.setFileEntryId(RandomTestUtil.nextLong());
-
-		cpDefinitionVirtualSetting.setUrl(RandomTestUtil.randomString());
-
 		cpDefinitionVirtualSetting.setActivationStatus(
 			RandomTestUtil.nextInt());
 
@@ -718,7 +701,7 @@ public class CPDefinitionVirtualSettingPersistenceTest {
 		cpDefinitionVirtualSetting.setSampleFileEntryId(
 			RandomTestUtil.nextLong());
 
-		cpDefinitionVirtualSetting.setSampleUrl(RandomTestUtil.randomString());
+		cpDefinitionVirtualSetting.setSampleURL(RandomTestUtil.randomString());
 
 		cpDefinitionVirtualSetting.setTermsOfUseRequired(
 			RandomTestUtil.randomBoolean());

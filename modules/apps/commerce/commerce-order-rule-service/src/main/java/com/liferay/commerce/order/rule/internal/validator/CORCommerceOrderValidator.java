@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.internal.validator;
 
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.util.CommerceAccountHelper;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.order.CommerceOrderValidator;
@@ -24,12 +15,13 @@ import com.liferay.commerce.order.rule.entry.type.COREntryType;
 import com.liferay.commerce.order.rule.entry.type.COREntryTypeRegistry;
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.service.COREntryLocalService;
-import com.liferay.commerce.order.rule.service.COREntryRelLocalService;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.Validator;
+
+import java.math.BigDecimal;
 
 import java.util.HashSet;
 import java.util.List;
@@ -43,7 +35,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.order.validator.key=" + CORCommerceOrderValidator.KEY,
 		"commerce.order.validator.priority:Integer=50"
@@ -64,7 +55,7 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 			Locale locale, CommerceOrder commerceOrder)
 		throws PortalException {
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
 
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.getCommerceChannelByOrderGroupId(
@@ -74,7 +65,7 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 			_corEntryLocalService.
 				getAccountEntryAndCommerceChannelAndCommerceOrderTypeCOREntries(
 					commerceOrder.getCompanyId(),
-					commerceAccount.getCommerceAccountId(),
+					accountEntry.getAccountEntryId(),
 					commerceChannel.getCommerceChannelId(),
 					commerceOrder.getCommerceOrderTypeId());
 
@@ -90,8 +81,7 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 
 		corEntries =
 			_corEntryLocalService.getAccountEntryAndCommerceOrderTypeCOREntries(
-				commerceOrder.getCompanyId(),
-				commerceAccount.getCommerceAccountId(),
+				commerceOrder.getCompanyId(), accountEntry.getAccountEntryId(),
 				commerceOrder.getCommerceOrderTypeId());
 
 		if (!corEntries.isEmpty()) {
@@ -106,8 +96,7 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 
 		corEntries =
 			_corEntryLocalService.getAccountEntryAndCommerceChannelCOREntries(
-				commerceOrder.getCompanyId(),
-				commerceAccount.getCommerceAccountId(),
+				commerceOrder.getCompanyId(), accountEntry.getAccountEntryId(),
 				commerceChannel.getCommerceChannelId());
 
 		if (!corEntries.isEmpty()) {
@@ -121,8 +110,7 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 		}
 
 		corEntries = _corEntryLocalService.getAccountEntryCOREntries(
-			commerceOrder.getCompanyId(),
-			commerceAccount.getCommerceAccountId());
+			commerceOrder.getCompanyId(), accountEntry.getAccountEntryId());
 
 		if (!corEntries.isEmpty()) {
 			String errorMessage = _validate(commerceOrder, corEntries, locale);
@@ -135,8 +123,8 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 		}
 
 		long[] commerceAccountGroupIds =
-			_commerceAccountHelper.getCommerceAccountGroupIds(
-				commerceAccount.getCommerceAccountId());
+			_accountGroupLocalService.getAccountGroupIds(
+				accountEntry.getAccountEntryId());
 
 		corEntries =
 			_corEntryLocalService.
@@ -244,13 +232,26 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 			return new CommerceOrderValidatorResult(false, errorMessage);
 		}
 
+		corEntries = _corEntryLocalService.getUnqualifiedCOREntries(
+			commerceOrder.getCompanyId());
+
+		if (!corEntries.isEmpty()) {
+			String errorMessage = _validate(commerceOrder, corEntries, locale);
+
+			if (Validator.isBlank(errorMessage)) {
+				return new CommerceOrderValidatorResult(true);
+			}
+
+			return new CommerceOrderValidatorResult(false, errorMessage);
+		}
+
 		return new CommerceOrderValidatorResult(true);
 	}
 
 	@Override
 	public CommerceOrderValidatorResult validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			int quantity)
+			String json, BigDecimal quantity, boolean child)
 		throws PortalException {
 
 		return new CommerceOrderValidatorResult(true);
@@ -291,16 +292,13 @@ public class CORCommerceOrderValidator implements CommerceOrderValidator {
 	}
 
 	@Reference
-	private CommerceAccountHelper _commerceAccountHelper;
+	private AccountGroupLocalService _accountGroupLocalService;
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
 
 	@Reference
 	private COREntryLocalService _corEntryLocalService;
-
-	@Reference
-	private COREntryRelLocalService _corEntryRelLocalService;
 
 	@Reference
 	private COREntryTypeRegistry _corEntryTypeRegistry;

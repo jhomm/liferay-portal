@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import State from '../src/main/resources/META-INF/resources/State';
-import {withEnv} from './helpers';
+/* eslint-disable @liferay/no-use-strict-in-module */
 
-import type {
+import {
 	Atom,
 	Selector,
-} from '../src/main/resources/META-INF/resources/State';
+	default as State,
+} from '../src/main/resources/META-INF/resources/main/State';
+import {withEnv} from './helpers';
 
 describe('State', () => {
 	beforeEach(() => {
@@ -136,9 +128,12 @@ describe('State', () => {
 
 				const value = State.readAtom(atom);
 
-				// @ts-expect-error TS2339: Property 'added' does not exist
+				expect(() => {
 
-				value.added = true;
+					// @ts-expect-error TS2339: Property 'added' does not exist
+
+					value.added = true;
+				}).toThrow(TypeError);
 
 				// @ts-expect-error TS2339: Property 'added' does not exist
 
@@ -172,15 +167,15 @@ describe('State', () => {
 			person = State.atom('person', 'Chema');
 			fruit = State.atom('fruit', 'apples');
 
-			letterCount = State.selector('letterCount', (get) => {
+			letterCount = State.selector('letterCount', (get: Function) => {
 				return get(person).length + get(fruit).length;
 			});
 
-			nameAndLength = State.selector('nameAndLength', (get) => {
+			nameAndLength = State.selector('nameAndLength', (get: Function) => {
 				return `${get(person)}: ${get(letterCount)}`;
 			});
 
-			everything = State.selector('everything', (get) => {
+			everything = State.selector('everything', (get: Function) => {
 				return [
 					get(person),
 					get(fruit),
@@ -296,9 +291,12 @@ describe('State', () => {
 
 				const value = State.readSelector(selector);
 
-				// @ts-expect-error TS2339: Property 'added' does not exist
+				expect(() => {
 
-				value.added = 'thing';
+					// @ts-expect-error TS2339: Property 'added' does not exist
+
+					value.added = 'thing';
+				}).toThrow(TypeError);
 
 				// @ts-expect-error TS2339: Property 'added' does not exist
 

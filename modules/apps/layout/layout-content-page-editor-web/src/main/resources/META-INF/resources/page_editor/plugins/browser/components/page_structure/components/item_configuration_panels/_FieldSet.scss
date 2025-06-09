@@ -1,0 +1,33 @@
+@import 'cadmin-variables';
+
+html#{$cadmin-selector} {
+	.cadmin {
+		.page-editor__sidebar__fieldset {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: space-between;
+
+			&__field {
+				margin-bottom: $pageEditorSpacing * 2;
+				width: 100%;
+
+				&-small {
+					width: calc(50% - 4px);
+				}
+			}
+
+			&-label {
+				border-top: 1px solid $cadmin-secondary-l3;
+				color: $cadmin-black;
+				font-size: 12px;
+				font-weight: 700;
+				margin-top: $pageEditorSpacing * 1.5;
+
+				&:first-child {
+					border-top: 0;
+					margin-top: 0;
+				}
+			}
+		}
+	}
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.social.kernel.service;
@@ -32,6 +23,7 @@ import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -56,6 +48,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.social.kernel.model.SocialActivity"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -467,27 +464,6 @@ public interface SocialActivityLocalService
 		int end);
 
 	/**
-	 * @param className the target asset's class name
-	 * @param start the lower bound of the range of results
-	 * @param end the upper bound of the range of results (not inclusive)
-	 * @return the range of matching activities
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getActivities(long, String, int, int)}  Returns a range of
-	 all the activities done on assets identified by the class
-	 name.  <p> Useful when paginating results. Returns a maximum
-	 of <code>end - start</code> instances. <code>start</code> and
-	 <code>end</code> are not primary keys, they are indexes in
-	 the result set. Thus, <code>0</code> refers to the first
-	 result in the set. Setting both <code>start</code> and
-	 <code>end</code> to {@link QueryUtil#ALL_POS} will return the
-	 full result set.</p>
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<SocialActivity> getActivities(
-		String className, int start, int end);
-
-	/**
 	 * @param classNameId the target asset's class name ID
 	 * @return the number of matching activities
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
@@ -542,16 +518,6 @@ public interface SocialActivityLocalService
 		long mirrorActivityId, String className, long classPK);
 
 	/**
-	 * @param className the target asset's class name
-	 * @return the number of matching activities
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getActivitiesCount(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getActivitiesCount(String className);
-
-	/**
 	 * Returns the activity identified by its primary key.
 	 *
 	 * @param activityId the primary key of the activity
@@ -563,6 +529,10 @@ public interface SocialActivityLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SocialActivity> getActivitySetActivities(
 		long activitySetId, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<SocialActivity> getApprovedActivities(
+		long classPK, double version);
 
 	/**
 	 * Returns a range of all the activities done in the group.

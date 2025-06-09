@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.web.internal.portlet.action;
@@ -26,8 +17,8 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,9 +27,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
 		"mvc.command.name=/commerce_channels/edit_commerce_notification_queue_entry"
 	},
 	service = MVCActionCommand.class
@@ -46,7 +36,36 @@ import org.osgi.service.component.annotations.Reference;
 public class EditCommerceNotificationQueueEntryMVCActionCommand
 	extends BaseMVCActionCommand {
 
-	protected void deleteCommerceNotificationQueues(ActionRequest actionRequest)
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		try {
+			if (cmd.equals(Constants.DELETE)) {
+				_deleteCommerceNotificationQueues(actionRequest);
+			}
+			else if (cmd.equals("resend")) {
+				_resendCommerceNotificationQueueEntry(actionRequest);
+			}
+		}
+		catch (Exception exception) {
+			if (exception instanceof NoSuchNotificationQueueEntryException ||
+				exception instanceof PrincipalException) {
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
+			}
+			else {
+				throw exception;
+			}
+		}
+	}
+
+	private void _deleteCommerceNotificationQueues(ActionRequest actionRequest)
 		throws PortalException {
 
 		long[] deleteCommerceNotificationQueueEntryIds = null;
@@ -75,36 +94,7 @@ public class EditCommerceNotificationQueueEntryMVCActionCommand
 		}
 	}
 
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		try {
-			if (cmd.equals(Constants.DELETE)) {
-				deleteCommerceNotificationQueues(actionRequest);
-			}
-			else if (cmd.equals("resend")) {
-				resendCommerceNotificationQueueEntry(actionRequest);
-			}
-		}
-		catch (Exception exception) {
-			if (exception instanceof NoSuchNotificationQueueEntryException ||
-				exception instanceof PrincipalException) {
-
-				SessionErrors.add(actionRequest, exception.getClass());
-
-				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
-			}
-			else {
-				throw exception;
-			}
-		}
-	}
-
-	protected void resendCommerceNotificationQueueEntry(
+	private void _resendCommerceNotificationQueueEntry(
 			ActionRequest actionRequest)
 		throws PortalException {
 

@@ -1,30 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetVocabulary;
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
+import com.liferay.headless.delivery.client.dto.v1_0.TaxonomyCategoryBrief;
+import com.liferay.headless.delivery.client.dto.v1_0.TaxonomyCategoryReference;
 import com.liferay.headless.delivery.client.dto.v1_0.WikiPage;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.wiki.model.WikiNode;
-import com.liferay.wiki.service.WikiNodeLocalServiceUtil;
+import com.liferay.wiki.service.WikiNodeLocalService;
 
+import java.util.Arrays;
+import java.util.Objects;
+
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -44,13 +50,13 @@ public class WikiPageResourceTest extends BaseWikiPageResourceTestCase {
 
 		serviceContext.setScopeGroupId(testGroup.getGroupId());
 
-		_wikiNode = WikiNodeLocalServiceUtil.addNode(
-			UserLocalServiceUtil.getDefaultUserId(testGroup.getCompanyId()),
+		_wikiNode = _wikiNodeLocalService.addNode(
+			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			serviceContext);
 
-		WikiNode parentWikiNode = WikiNodeLocalServiceUtil.addNode(
-			UserLocalServiceUtil.getDefaultUserId(testGroup.getCompanyId()),
+		WikiNode parentWikiNode = _wikiNodeLocalService.addNode(
+			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			serviceContext);
 
@@ -76,6 +82,15 @@ public class WikiPageResourceTest extends BaseWikiPageResourceTestCase {
 						randomWikiPage.getExternalReferenceCode(),
 						randomWikiPage));
 		}
+	}
+
+	@Override
+	@Test
+	public void testPutWikiPage() throws Exception {
+		super.testPutWikiPage();
+
+		_testPutWikiPageSuccessTaxonomyCategoryBriefWithoutAssetCategory();
+		_testPutWikiPageSuccessTaxonomyCategoryBriefWithAssetCategory();
 	}
 
 	@Override
@@ -169,7 +184,7 @@ public class WikiPageResourceTest extends BaseWikiPageResourceTestCase {
 	}
 
 	@Override
-	protected WikiPage testPutWikiPagePermission_addWikiPage()
+	protected WikiPage testPutWikiPagePermissionsPage_addWikiPage()
 		throws Exception {
 
 		return _addWikiPage(testGetWikiNodeWikiPagesPage_getWikiNodeId());
@@ -187,13 +202,179 @@ public class WikiPageResourceTest extends BaseWikiPageResourceTestCase {
 		return _addWikiPage(testGetWikiNodeWikiPagesPage_getWikiNodeId());
 	}
 
+	private WikiPage _addWikiPage() throws Exception {
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setScopeGroupId(testGroup.getGroupId());
+
+		WikiNode parentWikiNode = _wikiNodeLocalService.addNode(
+			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			serviceContext);
+
+		return _addWikiPage(parentWikiNode.getNodeId());
+	}
+
 	private WikiPage _addWikiPage(Long wikiNodeId) throws Exception {
 		return wikiPageResource.postWikiNodeWikiPage(
 			wikiNodeId, randomWikiPage());
 	}
 
+	private void _assertEqualsIgnoringOrder(
+		TaxonomyCategoryBrief[] taxonomyCategoryBriefs1,
+		TaxonomyCategoryBrief[] taxonomyCategoryBriefs2) {
+
+		Assert.assertEquals(
+			Arrays.toString(taxonomyCategoryBriefs2),
+			taxonomyCategoryBriefs1.length, taxonomyCategoryBriefs2.length);
+
+		for (TaxonomyCategoryBrief taxonomyCategoryBrief1 :
+				taxonomyCategoryBriefs1) {
+
+			boolean contains = false;
+
+			for (TaxonomyCategoryBrief taxonomyCategoryBrief2 :
+					taxonomyCategoryBriefs2) {
+
+				if (taxonomyCategoryBrief1.equals(taxonomyCategoryBrief2)) {
+					contains = true;
+
+					break;
+				}
+			}
+
+			Assert.assertTrue(contains);
+		}
+	}
+
+	private void _testPutWikiPageSuccessTaxonomyCategoryBriefs(
+			TaxonomyCategoryBrief[] expectedTaxonomyCategoryBriefs,
+			Long assetCategoryId)
+		throws Exception {
+
+		WikiPage randomWikiPage = _addWikiPage();
+
+		randomWikiPage.setTaxonomyCategoryIds(new Long[] {assetCategoryId});
+
+		WikiPage wikiPage = wikiPageResource.putWikiPage(
+			randomWikiPage.getId(), randomWikiPage);
+
+		long[] wikiPageAssetCategoryIds =
+			_assetCategoryLocalService.getCategoryIds(
+				com.liferay.wiki.model.WikiPage.class.getName(),
+				wikiPage.getId());
+
+		Assert.assertEquals(
+			Arrays.toString(wikiPageAssetCategoryIds),
+			expectedTaxonomyCategoryBriefs.length,
+			wikiPageAssetCategoryIds.length);
+
+		for (long wikiPageAssetCategoryId : wikiPageAssetCategoryIds) {
+			AssetCategory assetCategory =
+				_assetCategoryLocalService.fetchAssetCategory(
+					wikiPageAssetCategoryId);
+
+			TaxonomyCategoryBrief[] filteredTaxonomyCategoryBriefs =
+				ArrayUtil.filter(
+					expectedTaxonomyCategoryBriefs,
+					taxonomyCategoryBrief -> {
+						TaxonomyCategoryReference taxonomyCategoryReference =
+							taxonomyCategoryBrief.
+								getTaxonomyCategoryReference();
+
+						Group group = _groupLocalService.fetchGroup(
+							assetCategory.getGroupId());
+
+						if (Objects.equals(
+								taxonomyCategoryReference.
+									getExternalReferenceCode(),
+								assetCategory.getExternalReferenceCode()) &&
+							(((taxonomyCategoryReference.getSiteKey() ==
+								null) &&
+							  (wikiPage.getSiteId() ==
+								  assetCategory.getGroupId())) ||
+							 ((taxonomyCategoryReference.getSiteKey() !=
+								 null) &&
+							  Objects.equals(
+								  taxonomyCategoryReference.getSiteKey(),
+								  group.getGroupKey())))) {
+
+							return true;
+						}
+
+						return false;
+					});
+
+			Assert.assertEquals(
+				Arrays.toString(filteredTaxonomyCategoryBriefs), 1,
+				filteredTaxonomyCategoryBriefs.length);
+		}
+
+		_assertEqualsIgnoringOrder(
+			expectedTaxonomyCategoryBriefs,
+			wikiPage.getTaxonomyCategoryBriefs());
+	}
+
+	private void _testPutWikiPageSuccessTaxonomyCategoryBriefWithAssetCategory()
+		throws Exception {
+
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyLocalService.addVocabulary(
+				testGroup.getCreatorUserId(), testGroup.getGroupId(),
+				RandomTestUtil.randomString(),
+				ServiceContextTestUtil.getServiceContext(
+					testGroup.getGroupId()));
+
+		AssetCategory assetCategory = _assetCategoryLocalService.addCategory(
+			RandomTestUtil.randomString(), testGroup.getCreatorUserId(),
+			testGroup.getGroupId(), 0, RandomTestUtil.randomLocaleStringMap(),
+			null, assetVocabulary.getVocabularyId(), null,
+			ServiceContextTestUtil.getServiceContext(testGroup.getGroupId()));
+
+		TaxonomyCategoryBrief[] expectedTaxonomyCategoryBriefs = {
+			new TaxonomyCategoryBrief() {
+				{
+					taxonomyCategoryId = assetCategory.getCategoryId();
+					taxonomyCategoryName = assetCategory.getName();
+					taxonomyCategoryReference =
+						new TaxonomyCategoryReference() {
+							{
+								externalReferenceCode =
+									assetCategory.getExternalReferenceCode();
+								siteKey = testGroup.getGroupKey();
+							}
+						};
+				}
+			}
+		};
+
+		_testPutWikiPageSuccessTaxonomyCategoryBriefs(
+			expectedTaxonomyCategoryBriefs, assetCategory.getCategoryId());
+	}
+
+	private void _testPutWikiPageSuccessTaxonomyCategoryBriefWithoutAssetCategory()
+		throws Exception {
+
+		WikiPage wikiPage = _addWikiPage();
+
+		_assertEqualsIgnoringOrder(
+			new TaxonomyCategoryBrief[0], wikiPage.getTaxonomyCategoryBriefs());
+	}
+
+	@Inject
+	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Inject
+	private AssetVocabularyLocalService _assetVocabularyLocalService;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
 	@DeleteAfterTestRun
 	private WikiNode _wikiNode;
+
+	@Inject
+	private WikiNodeLocalService _wikiNodeLocalService;
 
 	private WikiPage _wikiPage;
 

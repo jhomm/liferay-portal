@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,7 +16,6 @@ GeneralTabDefaultViewDisplayContext.X509CertificateStatus x509CertificateStatus 
 
 X509Certificate x509Certificate = x509CertificateStatus.getX509Certificate();
 
-String deleteCertificatePrompt = UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this-certificate-from-the-keystore");
 String introKey = StringPool.BLANK;
 %>
 
@@ -68,13 +58,13 @@ String introKey = StringPool.BLANK;
 			<portlet:param name="certificateUsage" value="<%= certificateUsage.name() %>" />
 		</portlet:resourceURL>
 
-		<aui:form action="<%= deleteCertificateURL %>">
+		<aui:form action="<%= deleteCertificateURL %>" name="fm">
 			<aui:button-row>
 				<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "showCertificateDialog('" + replaceCertificateURL + "');" %>' value="replace-certificate" />
 				<aui:button href="<%= downloadCertificateURL %>" value="download-certificate" />
 
 				<c:if test="<%= certificateUsage == LocalEntityManager.CertificateUsage.ENCRYPTION %>">
-					<aui:button onClick='<%= "return confirm('" + deleteCertificatePrompt + "')" %>' type="submit" value="delete-certificate" />
+					<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "handleDeleteCertificatePrompt(...arguments);" %>' type="submit" value="delete-certificate" />
 				</c:if>
 			</aui:button-row>
 		</aui:form>
@@ -96,13 +86,13 @@ String introKey = StringPool.BLANK;
 			<liferay-ui:message key="certificate-needs-auth" />
 		</div>
 
-		<aui:form action="<%= deleteCertificateURL %>">
+		<aui:form action="<%= deleteCertificateURL %>" name="fm">
 			<aui:button-row>
 				<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "showCertificateDialog('" + authCertificateURL + "');" %>' value="auth-certificate" />
 				<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "showCertificateDialog('" + replaceCertificateURL + "');" %>' value="replace-certificate" />
 
 				<c:if test="<%= certificateUsage == LocalEntityManager.CertificateUsage.ENCRYPTION %>">
-					<aui:button onClick='<%= "return confirm('" + deleteCertificatePrompt + "')" %>' type="submit" value="delete-certificate" />
+					<aui:button onClick='<%= liferayPortletResponse.getNamespace() + "handleDeleteCertificatePrompt(...arguments);" %>' type="submit" value="delete-certificate" />
 				</c:if>
 			</aui:button-row>
 		</aui:form>
@@ -117,3 +107,23 @@ String introKey = StringPool.BLANK;
 		</aui:button-row>
 	</c:otherwise>
 </c:choose>
+
+<aui:script>
+	window['<portlet:namespace />handleDeleteCertificatePrompt'] = function (
+		event
+	) {
+		event.preventDefault();
+
+		const form = event.target.closest('form');
+
+		Liferay.Util.openConfirmModal({
+			message:
+				'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this-certificate-from-the-keystore") %>',
+			onConfirm: (isConfirmed) => {
+				if (isConfirmed) {
+					form.submit();
+				}
+			},
+		});
+	};
+</aui:script>

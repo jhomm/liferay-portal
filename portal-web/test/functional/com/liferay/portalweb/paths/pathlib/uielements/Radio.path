@@ -11,6 +11,16 @@
 
 <tbody>
 <tr>
+	<td>ANY</td>
+	<td>//label[contains(.,'${radioLabel}')]/input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ANY_CHECKED</td>
+	<td>//label[contains(.,'${radioLabel}')]/input[@type='radio' and @checked]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>APPEND</td>
 	<td>//label[contains(.,'Append')]/input</td>
 	<td></td>
@@ -23,11 +33,6 @@
 <tr>
 	<td>AUTOMATIC_URL_DISABLED</td>
 	<td>//label[contains(.,'Automatic')]/input[@type='radio' and @disabled]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CHOOSE_MENU</td>
-	<td>//label[contains(.,'Choose Menu')]/input[@type='radio']</td>
 	<td></td>
 </tr>
 <tr>
@@ -51,8 +56,28 @@
 	<td></td>
 </tr>
 <tr>
+	<td>CHOOSE_CONTENT_FROM_LAST_PUBLISH_DATE_CHANGE</td>
+	<td>//input[contains(@id,'rangeLastPublish')]//following-sibling::span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHOOSE_CONTENT_LAST_CHANGE</td>
+	<td>//input[contains(@id,'rangeLast')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>CUSTOM_ABSTRACT</td>
 	<td>//label[contains(.,'Custom Abstract')]/input[contains(@id,'customAbstract')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_URL</td>
+	<td>//label[contains(.,'Default')]/input[@type='radio']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_URL_DISABLED</td>
+	<td>//label[contains(.,'Default')]/input[@type='radio' and @disabled]</td>
 	<td></td>
 </tr>
 <tr>
@@ -68,6 +93,11 @@
 <tr>
 	<td>CURRENT_VERSION</td>
 	<td>//label[contains(.,'Current Version')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>LABEL_NUMBER</td>
+	<td>xpath=(//label)[${key_rowNumber}]</td>
 	<td></td>
 </tr>
 <tr>
@@ -92,7 +122,7 @@
 </tr>
 <tr>
 	<td>SPECIFIC_LOOK</td>
-	<td>//input[contains(@id,'UniqueLookAndFeel')]</td>
+	<td>//div[contains(@id,'UniqueLookAndFeel')]//input</td>
 	<td></td>
 </tr>
 <tr>

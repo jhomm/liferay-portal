@@ -1,0 +1,24 @@
+.collapsable-panel {
+	.ddm-form-field-panel-header-container {
+		display: flex;
+		justify-content: space-between;
+	}
+
+	.collapse-icon-options {
+		.ddm-form-field-repeatable-add-button,
+		.ddm-form-field-repeatable-delete-button {
+			display: flex;
+			justify-content: center;
+			position: relative;
+			right: 0;
+		}
+
+		.ddm-form-field-repeatable-delete-button {
+			margin-right: 4px !important;
+		}
+	}
+}
+
+.lfr-ddm-form-field-repeatable-toolbar {
+	display: flex;
+}

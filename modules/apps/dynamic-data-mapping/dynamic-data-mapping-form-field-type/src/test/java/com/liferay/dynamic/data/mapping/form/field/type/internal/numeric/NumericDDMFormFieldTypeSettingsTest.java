@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.numeric;
 
-import com.liferay.dynamic.data.mapping.form.field.type.BaseDDMFormFieldTypeSettingsTestCase;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidation;
@@ -22,39 +12,35 @@ import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidationExpression;
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
 import com.liferay.dynamic.data.mapping.model.DDMFormRule;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
+import com.liferay.dynamic.data.mapping.test.util.BaseDDMFormFieldTypeSettingsTestCase;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormLayoutTestUtil;
 import com.liferay.dynamic.data.mapping.util.DDMFormFactory;
 import com.liferay.dynamic.data.mapping.util.DDMFormLayoutFactory;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-import java.util.ResourceBundle;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
  */
-@PrepareForTest({PortalClassLoaderUtil.class, ResourceBundleUtil.class})
-@RunWith(PowerMockRunner.class)
 public class NumericDDMFormFieldTypeSettingsTest
 	extends BaseDDMFormFieldTypeSettingsTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	@Override
@@ -123,6 +109,16 @@ public class NumericDDMFormFieldTypeSettingsTest
 		Assert.assertNotNull(hideFieldDDMFormField.getLabel());
 		Assert.assertEquals(
 			"true", hideFieldDDMFormField.getProperty("showAsSwitcher"));
+
+		DDMFormField htmlAutocompleteAttribute = ddmFormFieldsMap.get(
+			"htmlAutocompleteAttribute");
+
+		Assert.assertNotNull(htmlAutocompleteAttribute);
+		Assert.assertNotNull(htmlAutocompleteAttribute.getLabel());
+		Assert.assertNotNull(
+			htmlAutocompleteAttribute.getProperty("invalidCharacters"));
+		Assert.assertEquals("text", htmlAutocompleteAttribute.getType());
+		Assert.assertTrue(htmlAutocompleteAttribute.isVisualProperty());
 
 		DDMFormField inputMaskDDMFormField = ddmFormFieldsMap.get("inputMask");
 
@@ -255,7 +251,7 @@ public class NumericDDMFormFieldTypeSettingsTest
 
 		actions = ddmFormRule3.getActions();
 
-		Assert.assertEquals(actions.toString(), 15, actions.size());
+		Assert.assertEquals(actions.toString(), 18, actions.size());
 		Assert.assertEquals(
 			"setDataType('predefinedValue', getValue('dataType'))",
 			actions.get(0));
@@ -276,37 +272,49 @@ public class NumericDDMFormFieldTypeSettingsTest
 				"getLocalizedValue('numericInputMask'))",
 			actions.get(4));
 		Assert.assertEquals(
-			"setValidationDataType('validation', getValue('dataType'))",
+			"setPropertyValue('validation', 'inputMask', " +
+				"getValue('inputMask'))",
 			actions.get(5));
 		Assert.assertEquals(
-			"setValidationFieldName('validation', getValue('name'))",
+			"setPropertyValue('validation', 'inputMaskFormat', " +
+				"getLocalizedValue('inputMaskFormat'))",
 			actions.get(6));
+		Assert.assertEquals(
+			"setPropertyValue('validation', 'numericInputMask', " +
+				"getLocalizedValue('numericInputMask'))",
+			actions.get(7));
+		Assert.assertEquals(
+			"setValidationDataType('validation', getValue('dataType'))",
+			actions.get(8));
+		Assert.assertEquals(
+			"setValidationFieldName('validation', getValue('name'))",
+			actions.get(9));
 		Assert.assertEquals(
 			"setVisible('characterOptions', equals(getValue('dataType'), " +
 				"'integer') and equals(getValue('inputMask'), TRUE))",
-			actions.get(7));
+			actions.get(10));
 		Assert.assertEquals(
 			"setVisible('confirmationErrorMessage', getValue(" +
 				"'requireConfirmation'))",
-			actions.get(8));
+			actions.get(11));
 		Assert.assertEquals(
 			"setVisible('confirmationLabel', getValue('requireConfirmation'))",
-			actions.get(9));
+			actions.get(12));
 		Assert.assertEquals(
 			"setVisible('direction', getValue('requireConfirmation'))",
-			actions.get(10));
+			actions.get(13));
 		Assert.assertEquals(
 			"setVisible('inputMaskFormat', equals(getValue('dataType'), " +
 				"'integer') and equals(getValue('inputMask'), TRUE))",
-			actions.get(11));
+			actions.get(14));
 		Assert.assertEquals(
 			"setVisible('numericInputMask', equals(getValue('dataType'), " +
 				"'double') and equals(getValue('inputMask'), TRUE))",
-			actions.get(12));
+			actions.get(15));
 		Assert.assertEquals(
 			"setVisible('requiredErrorMessage', getValue('required'))",
-			actions.get(13));
-		Assert.assertEquals("setVisible('tooltip', false)", actions.get(14));
+			actions.get(16));
+		Assert.assertEquals("setVisible('tooltip', false)", actions.get(17));
 	}
 
 	@Test
@@ -319,50 +327,22 @@ public class NumericDDMFormFieldTypeSettingsTest
 					"label", "placeholder", "tip", "dataType", "required",
 					"requiredErrorMessage"),
 				DDMFormLayoutTestUtil.createDDMFormLayoutPage(
-					"name", "fieldReference", "predefinedValue",
-					"objectFieldName", "visibilityExpression", "fieldNamespace",
-					"indexType", "labelAtStructureLevel", "localizable",
-					"nativeField", "readOnly", "type", "hideField", "showLabel",
-					"repeatable", "requireConfirmation", "direction",
-					"confirmationLabel", "confirmationErrorMessage",
-					"validation", "tooltip", "inputMask", "inputMaskFormat",
-					"characterOptions", "numericInputMask")));
+					"fieldReference", "name", "htmlAutocompleteAttribute",
+					"predefinedValue", "objectFieldName",
+					"visibilityExpression", "fieldNamespace", "indexType",
+					"labelAtStructureLevel", "localizable", "nativeField",
+					"readOnly", "type", "hideField", "showLabel", "repeatable",
+					"requireConfirmation", "direction", "confirmationLabel",
+					"confirmationErrorMessage", "validation", "tooltip",
+					"inputMask", "inputMaskFormat", "characterOptions",
+					"numericInputMask")));
 	}
 
 	@Override
 	protected void setUpLanguageUtil() {
 		LanguageUtil languageUtil = new LanguageUtil();
 
-		languageUtil.setLanguage(PowerMockito.mock(Language.class));
-	}
-
-	protected void setUpPortalUtil() {
-		PortalUtil portalUtil = new PortalUtil();
-
-		Portal portal = mock(Portal.class);
-
-		ResourceBundle resourceBundle = mock(ResourceBundle.class);
-
-		when(
-			portal.getResourceBundle(Matchers.any(Locale.class))
-		).thenReturn(
-			resourceBundle
-		);
-
-		portalUtil.setPortal(portal);
-	}
-
-	@Override
-	protected void setUpResourceBundleUtil() {
-		PowerMockito.mockStatic(ResourceBundleUtil.class);
-
-		PowerMockito.when(
-			ResourceBundleUtil.getBundle(
-				Matchers.anyString(), Matchers.any(Locale.class),
-				Matchers.any(ClassLoader.class))
-		).thenReturn(
-			ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE
-		);
+		languageUtil.setLanguage(Mockito.mock(Language.class));
 	}
 
 }

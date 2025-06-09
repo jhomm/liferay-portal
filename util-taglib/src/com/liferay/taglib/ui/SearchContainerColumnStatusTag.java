@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -22,17 +13,16 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.search.StatusSearchEntry;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspTagException;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspTagException;
 
 /**
  * @author Eudaldo Alonso
@@ -83,12 +73,8 @@ public class SearchContainerColumnStatusTag<R>
 				(HttpServletRequest)pageContext.getRequest());
 			statusSearchEntry.setResponse(
 				(HttpServletResponse)pageContext.getResponse());
-
-			ServletContext servletContext = ServletContextPool.get(
-				PortalUtil.getServletContextName());
-
-			statusSearchEntry.setServletContext(servletContext);
-
+			statusSearchEntry.setServletContext(
+				ServletContextPool.get(PortalUtil.getServletContextName()));
 			statusSearchEntry.setStatus(_status);
 			statusSearchEntry.setStatusByUserId(_statusByUserId);
 			statusSearchEntry.setStatusDate(_statusDate);

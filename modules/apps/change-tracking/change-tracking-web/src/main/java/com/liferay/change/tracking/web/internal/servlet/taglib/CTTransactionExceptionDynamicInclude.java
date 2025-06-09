@@ -1,37 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.servlet.taglib;
 
-import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.change.tracking.CTTransactionException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.servlet.SessionErrors;
-import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
-import com.liferay.portal.kernel.util.Portal;
-import com.liferay.taglib.aui.ScriptTag;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.io.Writer;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,8 +23,9 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Samuel Trong Tran
  */
-@Component(immediate = true, service = DynamicInclude.class)
-public class CTTransactionExceptionDynamicInclude extends BaseDynamicInclude {
+@Component(service = DynamicInclude.class)
+public class CTTransactionExceptionDynamicInclude
+	extends BaseCTExceptionDynamicInclude {
 
 	@Override
 	public void include(
@@ -54,57 +39,21 @@ public class CTTransactionExceptionDynamicInclude extends BaseDynamicInclude {
 			return;
 		}
 
-		try {
-			ScriptTag scriptTag = new ScriptTag();
-
-			scriptTag.setPosition("inline");
-
-			scriptTag.doBodyTag(
-				httpServletRequest, httpServletResponse,
-				pageContext -> _processScriptTagBody(
-					httpServletRequest, pageContext));
-		}
-		catch (JspException jspException) {
-			ReflectionUtil.throwException(jspException);
-		}
+		super.include(httpServletRequest, httpServletResponse, key);
 	}
 
 	@Override
-	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
-		dynamicIncludeRegistry.register("/html/common/themes/bottom.jsp#post");
+	protected String getMessage(Locale locale) {
+		return _language.get(
+			locale, "this-action-can-only-be-performed-in-production-mode");
 	}
 
-	private void _processScriptTagBody(
-		HttpServletRequest httpServletRequest, PageContext pageContext) {
-
-		try {
-			Writer writer = pageContext.getOut();
-
-			writer.write(
-				"Liferay.Util.openToast({autoClose: 10000, message: '");
-
-			Locale locale = _portal.getLocale(httpServletRequest);
-
-			writer.write(
-				_language.get(
-					locale,
-					"this-action-can-only-be-performed-in-production-mode"));
-
-			writer.write("', title: '");
-
-			writer.write(_language.get(locale, "error"));
-
-			writer.write(":', type: 'danger',});");
-		}
-		catch (IOException ioException) {
-			ReflectionUtil.throwException(ioException);
-		}
+	@Override
+	protected String getTitle(Locale locale) {
+		return _language.get(locale, "error");
 	}
 
 	@Reference
 	private Language _language;
-
-	@Reference
-	private Portal _portal;
 
 }

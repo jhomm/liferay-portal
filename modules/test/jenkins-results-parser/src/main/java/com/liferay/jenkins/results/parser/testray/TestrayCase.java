@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.testray;
@@ -21,24 +12,24 @@ import org.json.JSONObject;
  */
 public class TestrayCase {
 
-	public TestrayCase(TestrayProject testrayProject, JSONObject jsonObject) {
-		_testrayProject = testrayProject;
-		_jsonObject = jsonObject;
-	}
+	public static final String[] FIELD_NAMES = {
+		"caseTypeToCases", "dateCreated", "dateModified", "id", "name"
+	};
 
 	public String getComponent() {
-		JSONObject mainComponentJSONObject = _jsonObject.getJSONObject(
-			"mainComponent");
-
-		return mainComponentJSONObject.getString("name");
+		return null;
 	}
 
-	public String getID() {
-		return _jsonObject.optString("testrayCaseId");
+	public long getID() {
+		return _jsonObject.getLong("id");
+	}
+
+	public JSONObject getJSONObject() {
+		return _jsonObject;
 	}
 
 	public String getName() {
-		return _jsonObject.optString("name");
+		return _jsonObject.getString("name");
 	}
 
 	public int getPriority() {
@@ -46,14 +37,48 @@ public class TestrayCase {
 	}
 
 	public String getTeamName() {
-		return _jsonObject.getString("testrayTeamName");
+		return null;
+	}
+
+	public TestrayCaseType getTestrayCaseType() {
+		return _testrayCaseType;
+	}
+
+	public long getTestrayCaseTypeID() {
+		return _testrayCaseType.getID();
+	}
+
+	public TestrayProject getTestrayProject() {
+		return _testrayProject;
 	}
 
 	public String getType() {
-		return _jsonObject.getString("testrayCaseTypeName");
+		return null;
+	}
+
+	protected TestrayCase(
+		TestrayProject testrayProject, JSONObject jsonObject) {
+
+		_testrayProject = testrayProject;
+		_jsonObject = jsonObject;
+
+		TestrayServer testrayServer = testrayProject.getTestrayServer();
+
+		if (jsonObject.has("r_caseTypeToCases_c_caseTypeId")) {
+			_testrayCaseType = testrayServer.getTestrayCaseTypeByID(
+				jsonObject.getLong("r_caseTypeToCases_c_caseTypeId"));
+		}
+		else {
+			JSONObject caseTypeJSONObject = jsonObject.getJSONObject(
+				"caseTypeToCases");
+
+			_testrayCaseType = testrayServer.getTestrayCaseTypeByID(
+				caseTypeJSONObject.getLong("id"));
+		}
 	}
 
 	private final JSONObject _jsonObject;
+	private final TestrayCaseType _testrayCaseType;
 	private final TestrayProject _testrayProject;
 
 }

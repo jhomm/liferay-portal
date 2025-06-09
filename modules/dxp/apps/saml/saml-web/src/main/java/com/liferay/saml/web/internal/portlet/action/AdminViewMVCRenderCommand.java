@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.web.internal.portlet.action;
@@ -23,8 +14,6 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.saml.constants.SamlPortletKeys;
 import com.liferay.saml.constants.SamlWebKeys;
-import com.liferay.saml.persistence.model.SamlIdpSpConnection;
-import com.liferay.saml.persistence.model.SamlSpIdpConnection;
 import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
 import com.liferay.saml.persistence.service.SamlSpIdpConnectionLocalService;
 import com.liferay.saml.runtime.certificate.CertificateTool;
@@ -33,14 +22,13 @@ import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.runtime.metadata.LocalEntityManager;
 import com.liferay.saml.web.internal.display.context.GeneralTabDefaultViewDisplayContext;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -51,9 +39,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.saml.runtime.configuration.SamlConfiguration",
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
 		"mvc.command.name=/", "mvc.command.name=/admin/view"
 	},
 	service = MVCRenderCommand.class
@@ -77,14 +64,14 @@ public class AdminViewMVCRenderCommand implements MVCRenderCommand {
 			httpServletRequest, "tabs1", "general");
 
 		if (tabs1.equals("general")) {
-			renderGeneralTab(renderRequest, renderResponse);
+			_renderGeneralTab(renderRequest);
 		}
 		else if (tabs1.equals("identity-provider-connections")) {
-			renderViewIdentityProviderConnections(
+			_renderViewIdentityProviderConnections(
 				httpServletRequest, renderRequest, renderResponse);
 		}
 		else if (tabs1.equals("service-provider-connections")) {
-			renderViewServiceProviderConnections(
+			_renderViewServiceProviderConnections(
 				httpServletRequest, renderRequest, renderResponse);
 		}
 
@@ -97,9 +84,7 @@ public class AdminViewMVCRenderCommand implements MVCRenderCommand {
 			SamlConfiguration.class, properties);
 	}
 
-	protected void renderGeneralTab(
-		RenderRequest renderRequest, RenderResponse renderResponse) {
-
+	private void _renderGeneralTab(RenderRequest renderRequest) {
 		String entityId = _localEntityManager.getLocalEntityId();
 
 		renderRequest.setAttribute(SamlWebKeys.SAML_ENTITY_ID, entityId);
@@ -123,7 +108,7 @@ public class AdminViewMVCRenderCommand implements MVCRenderCommand {
 			SamlWebKeys.SAML_CERTIFICATE_TOOL, _certificateTool);
 	}
 
-	protected void renderViewIdentityProviderConnections(
+	private void _renderViewIdentityProviderConnections(
 		HttpServletRequest httpServletRequest, RenderRequest renderRequest,
 		RenderResponse renderResponse) {
 
@@ -136,24 +121,19 @@ public class AdminViewMVCRenderCommand implements MVCRenderCommand {
 			SearchContainer.DEFAULT_DELTA, renderResponse.createRenderURL(),
 			null, null);
 
-		List<SamlSpIdpConnection> samlSpIdpConnections =
+		renderRequest.setAttribute(
+			SamlWebKeys.SAML_SP_IDP_CONNECTIONS,
 			_samlSpIdpConnectionLocalService.getSamlSpIdpConnections(
 				themeDisplay.getCompanyId(), searchContainer.getStart(),
-				searchContainer.getEnd());
-
-		renderRequest.setAttribute(
-			SamlWebKeys.SAML_SP_IDP_CONNECTIONS, samlSpIdpConnections);
-
-		int samlSpIdpConnectionsCount =
-			_samlSpIdpConnectionLocalService.getSamlSpIdpConnectionsCount(
-				themeDisplay.getCompanyId());
+				searchContainer.getEnd()));
 
 		renderRequest.setAttribute(
 			SamlWebKeys.SAML_SP_IDP_CONNECTIONS_COUNT,
-			samlSpIdpConnectionsCount);
+			_samlSpIdpConnectionLocalService.getSamlSpIdpConnectionsCount(
+				themeDisplay.getCompanyId()));
 	}
 
-	protected void renderViewServiceProviderConnections(
+	private void _renderViewServiceProviderConnections(
 		HttpServletRequest httpServletRequest, RenderRequest renderRequest,
 		RenderResponse renderResponse) {
 
@@ -171,13 +151,11 @@ public class AdminViewMVCRenderCommand implements MVCRenderCommand {
 			renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM, 0,
 			SearchContainer.DEFAULT_DELTA, portletURL, null, null);
 
-		List<SamlIdpSpConnection> samlIdpSpConnections =
+		renderRequest.setAttribute(
+			SamlWebKeys.SAML_IDP_SP_CONNECTIONS,
 			_samlIdpSpConnectionLocalService.getSamlIdpSpConnections(
 				themeDisplay.getCompanyId(), searchContainer.getStart(),
-				searchContainer.getEnd());
-
-		renderRequest.setAttribute(
-			SamlWebKeys.SAML_IDP_SP_CONNECTIONS, samlIdpSpConnections);
+				searchContainer.getEnd()));
 
 		renderRequest.setAttribute(
 			SamlWebKeys.SAML_IDP_SP_CONNECTIONS_COUNT,

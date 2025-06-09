@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,18 +12,14 @@ String redirect = ParamUtil.getString(request, "redirect");
 
 String modelResource = ParamUtil.getString(request, "modelResource");
 
-String modelResourceName = ResourceActionsUtil.getModelResource(request, modelResource);
-
 ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.getCompanyId(), modelResource);
 
-List<String> attributeNames = Collections.list(expandoBridge.getAttributeNames());
-
-ExpandoDisplayContext expandoDisplayContext = new ExpandoDisplayContext(request);
+ExpandoDisplayContext expandoDisplayContext = (ExpandoDisplayContext)request.getAttribute(ExpandoDisplayContext.class.getName());
 
 PortletURL portletURL = PortletURLBuilder.createRenderURL(
 	renderResponse
-).setMVCPath(
-	"/view_attributes.jsp"
+).setMVCRenderCommandName(
+	"/expando/view_attributes"
 ).setRedirect(
 	redirect
 ).setParameter(
@@ -42,53 +29,27 @@ PortletURL portletURL = PortletURLBuilder.createRenderURL(
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(redirect);
 
-renderResponse.setTitle(modelResourceName);
-
-PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "custom-field"), String.valueOf(renderResponse.createRenderURL()));
-
-PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "view-attributes"), null);
+renderResponse.setTitle(ResourceActionsUtil.getModelResource(request, modelResource));
 %>
 
-<clay:navigation-bar
-	navigationItems='<%= expandoDisplayContext.getNavigationItems("fields") %>'
-/>
-
 <clay:management-toolbar
-	actionDropdownItems="<%= expandoDisplayContext.getActionDropdownItems() %>"
-	additionalProps="<%= expandoDisplayContext.getAdditionalProps() %>"
-	creationMenu="<%= expandoDisplayContext.getCreationMenu() %>"
-	disabled="<%= attributeNames.size() == 0 %>"
-	propsTransformer="js/ExpandoManagementToolbarPropsTransformer"
-	searchContainerId="customFields"
-	selectable="<%= true %>"
-	showCreationMenu="<%= expandoDisplayContext.showCreationMenu() %>"
-	showSearch="<%= false %>"
+	managementToolbarDisplayContext="<%= new ExpandoManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, expandoDisplayContext.getSearchContainer()) %>"
+	propsTransformer="{ExpandoManagementToolbarPropsTransformer} from expando-web"
 />
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+<aui:form action="<%= portletURL %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= portletURL.toString() %>" />
 	<aui:input name="columnIds" type="hidden" />
 
 	<clay:container-fluid>
-		<liferay-ui:breadcrumb
-			showCurrentGroup="<%= false %>"
-			showGuestGroup="<%= false %>"
-			showLayout="<%= false %>"
-			showPortletBreadcrumb="<%= true %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= expandoDisplayContext.getBreadcrumbEntries() %>"
 		/>
 	</clay:container-fluid>
 
 	<liferay-ui:search-container
-		emptyResultsMessage='<%= LanguageUtil.format(request, "no-custom-fields-are-defined-for-x", HtmlUtil.escape(modelResourceName), false) %>'
-		id="customFields"
-		iteratorURL="<%= portletURL %>"
-		rowChecker="<%= new CustomFieldChecker(renderRequest, renderResponse) %>"
-		total="<%= attributeNames.size() %>"
+		searchContainer="<%= expandoDisplayContext.getSearchContainer() %>"
 	>
-		<liferay-ui:search-container-results
-			results="<%= attributeNames %>"
-		/>
-
 		<liferay-ui:search-container-row
 			className="java.lang.String"
 			modelVar="name"
@@ -96,11 +57,9 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "view-at
 		>
 
 			<%
-			int type = expandoBridge.getAttributeType(name);
-
 			ExpandoColumn expandoColumn = ExpandoColumnLocalServiceUtil.getDefaultTableColumn(company.getCompanyId(), modelResource, name);
 
-			UnicodeProperties typeSettings = expandoColumn.getTypeSettingsProperties();
+			UnicodeProperties typeSettingsUnicodeProperties = expandoColumn.getTypeSettingsProperties();
 			%>
 
 			<portlet:renderURL var="rowURL">
@@ -120,7 +79,76 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "view-at
 				value="<%= modelResource %>"
 			/>
 
-			<%@ include file="/attribute_columns.jspf" %>
+			<%
+			String localizedName = name;
+
+			boolean propertyLocalizeFieldName = GetterUtil.getBoolean(typeSettingsUnicodeProperties.getProperty(ExpandoColumnConstants.PROPERTY_LOCALIZE_FIELD_NAME), true);
+
+			if (propertyLocalizeFieldName) {
+				localizedName = LanguageUtil.get(request, name);
+
+				if (name.equals(localizedName)) {
+					localizedName = TextFormatter.format(name, TextFormatter.J);
+				}
+			}
+			%>
+
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand table-cell-minw-200 table-title"
+				href="<%= rowURL %>"
+				name="name"
+				value="<%= HtmlUtil.escape(localizedName) %>"
+			/>
+
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand table-cell-minw-200"
+				name="key"
+				value="<%= HtmlUtil.escape(name) %>"
+			/>
+
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand table-cell-minw-200"
+				name="type"
+				value="<%= LanguageUtil.get(request, ExpandoColumnConstants.getTypeLabel(expandoBridge.getAttributeType(name))) %>"
+			/>
+
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand-smallest table-cell-ws-nowrap"
+				name="hidden"
+			>
+
+				<%
+				boolean hidden = GetterUtil.getBoolean(typeSettingsUnicodeProperties.getProperty(ExpandoColumnConstants.PROPERTY_HIDDEN));
+				%>
+
+				<liferay-ui:message key="<%= String.valueOf(hidden) %>" />
+			</liferay-ui:search-container-column-text>
+
+			<liferay-ui:search-container-column-text
+				cssClass="table-cell-expand-smallest table-cell-ws-nowrap"
+				name="searchable"
+			>
+
+				<%
+				int indexType = GetterUtil.getInteger(typeSettingsUnicodeProperties.getProperty(ExpandoColumnConstants.INDEX_TYPE));
+				%>
+
+				<c:choose>
+					<c:when test="<%= indexType == ExpandoColumnConstants.INDEX_TYPE_KEYWORD %>">
+						<liferay-ui:message key="as-keyword" />
+					</c:when>
+					<c:when test="<%= indexType == ExpandoColumnConstants.INDEX_TYPE_TEXT %>">
+						<liferay-ui:message key="as-text" />
+					</c:when>
+					<c:otherwise>
+						<liferay-ui:message key="not-searchable" />
+					</c:otherwise>
+				</c:choose>
+			</liferay-ui:search-container-column-text>
+
+			<liferay-ui:search-container-column-jsp
+				path="/expando_action.jsp"
+			/>
 		</liferay-ui:search-container-row>
 
 		<liferay-ui:search-iterator

@@ -6,30 +6,20 @@ definition {
 	property testray.main.component.name = "Shopping Experience";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		CommerceConfiguration.commerceSetUp(storeFront = "true");
 
-		User.firstLoginPG();
-
-		CommerceConfiguration.commerceStoreFrontSetUp();
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 	}
 
 	tearDown {
-		Navigator.openURL();
-
-		if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
-			User.logoutPG();
-		}
-
-		User.firstLoginPG();
-
-		CommerceConfiguration.commerceAdminTearDown();
-
-		User.logoutPG();
+		CommerceConfiguration.commerceTearDown(doLogout = "true");
 	}
 
+	@priority = 4
 	test ViewStoreFrontSimpleProduct {
-		property portal.acceptance = "quarantine";
-		property portal.upstream = "quarantine";
+		property portal.acceptance = "false";
 
 		CommerceNavigator.gotoPortlet(
 			category = "Product Management",
@@ -37,12 +27,13 @@ definition {
 
 		echo("Creating new Option complete with Values...");
 
-		Pause(locator1 = "2000");
+		WaitForElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
 
 		CPCommerceCatalog.newOptionsEntry(
 			optionDescription = "Option Description",
 			optionFieldType = "Select from List",
-			optionName = "Color");
+			optionName = "Color",
+			skuContributor = "true");
 
 		Button.clickSave();
 
@@ -50,9 +41,7 @@ definition {
 
 		echo("Creating new Product...");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		CommerceProducts.openProductsAdmin();
 
 		CPCommerceCatalog.newProductsEntry(
 			productName = "Simple T-Shirt",
@@ -70,7 +59,9 @@ definition {
 
 		CommerceEntry.gotoMenuTab(menuTab = "SKUs");
 
-		CommerceSKUs.addSKU(optionValuesList = "Black:10.0,Blue:20.0,White:30.0");
+		CommerceSKUs.addSKU(
+			optionValuesList = "Black:10.0,Blue:20.0,White:30.0",
+			priceList = "Master Base Price List");
 
 		echo("Adding Product Images...");
 
@@ -85,8 +76,9 @@ definition {
 		CommerceNavigator.gotoFrontStoreProductPage(productName = "Simple T-Shirt");
 
 		FrontStore.viewProductDetail(
-			FSOptionValuesList = "Black:10.0,Blue:20.0,White:30.0",
-			FSProductName = "Simple T-Shirt");
+			fsOptionName = "Color",
+			fsOptionValuesList = "Black:10.0,Blue:20.0,White:30.0",
+			fsProductName = "Simple T-Shirt");
 	}
 
 }

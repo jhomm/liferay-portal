@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.web.internal;
@@ -18,6 +9,7 @@ import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.exception.CommerceShippingEngineException;
+import com.liferay.commerce.helper.CommerceShippingHelper;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceShippingEngine;
@@ -29,12 +21,18 @@ import com.liferay.commerce.service.CommerceAddressRestrictionLocalService;
 import com.liferay.commerce.service.CommerceShippingMethodLocalService;
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOption;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionLocalService;
-import com.liferay.commerce.util.CommerceShippingHelper;
+import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionQualifierLocalService;
+import com.liferay.commerce.shipping.engine.fixed.util.comparator.CommerceShippingFixedOptionPriorityComparator;
+import com.liferay.commerce.shipping.engine.fixed.web.internal.util.CommerceShippingFixedOptionEngineUtil;
+import com.liferay.commerce.util.comparator.CommerceShippingOptionPriorityComparator;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 
 import java.math.BigDecimal;
@@ -53,7 +51,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "commerce.shipping.engine.key=" + FixedCommerceShippingEngine.KEY,
 	service = CommerceShippingEngine.class
 )
@@ -63,7 +60,16 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 
 	@Override
 	public String getCommerceShippingOptionLabel(String name, Locale locale) {
-		return ResourceBundleUtil.getString(_getResourceBundle(locale), name);
+		CommerceShippingFixedOption commerceShippingFixedOption =
+			_commerceShippingFixedOptionLocalService.
+				fetchCommerceShippingFixedOption(
+					CompanyThreadLocal.getCompanyId(), name);
+
+		if (commerceShippingFixedOption == null) {
+			return StringPool.BLANK;
+		}
+
+		return commerceShippingFixedOption.getName(locale);
 	}
 
 	@Override
@@ -77,11 +83,11 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 
 		try {
 			commerceShippingOptions = _getCommerceShippingOptions(
-				commerceOrder.getGroupId(), commerceOrder, locale);
+				false, commerceOrder, locale);
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -90,13 +96,40 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 
 	@Override
 	public String getDescription(Locale locale) {
-		return LanguageUtil.get(
+		return _language.get(
 			_getResourceBundle(locale), "fixed-shipping-description");
 	}
 
 	@Override
+	public List<CommerceShippingOption> getEnabledCommerceShippingOptions(
+			CommerceContext commerceContext, CommerceOrder commerceOrder,
+			Locale locale)
+		throws CommerceShippingEngineException {
+
+		List<CommerceShippingOption> commerceShippingOptions =
+			new ArrayList<>();
+
+		try {
+			commerceShippingOptions = _getCommerceShippingOptions(
+				true, commerceOrder, locale);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return commerceShippingOptions;
+	}
+
+	@Override
+	public String getKey() {
+		return KEY;
+	}
+
+	@Override
 	public String getName(Locale locale) {
-		return LanguageUtil.get(_getResourceBundle(locale), "flat-rate");
+		return _language.get(_getResourceBundle(locale), "flat-rate");
 	}
 
 	private List<CommerceShippingFixedOption> _getCommerceShippingFixedOptions(
@@ -113,11 +146,14 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 		return _commerceShippingFixedOptionLocalService.
 			getCommerceShippingFixedOptions(
 				commerceShippingMethod.getCommerceShippingMethodId(),
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				CommerceShippingFixedOptionPriorityComparator.getInstance(
+					false));
 	}
 
 	private List<CommerceShippingOption> _getCommerceShippingOptions(
-			long groupId, CommerceOrder commerceOrder, Locale locale)
+			boolean checkEligibility, CommerceOrder commerceOrder,
+			Locale locale)
 		throws PortalException {
 
 		List<CommerceShippingOption> commerceShippingOptions =
@@ -131,8 +167,21 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 			commerceCountryId = commerceAddress.getCountryId();
 		}
 
-		List<CommerceShippingFixedOption> commerceShippingFixedOptions =
-			_getCommerceShippingFixedOptions(groupId);
+		List<CommerceShippingFixedOption> commerceShippingFixedOptions = null;
+
+		if (checkEligibility) {
+			commerceShippingFixedOptions =
+				CommerceShippingFixedOptionEngineUtil.
+					getEligibleCommerceShippingFixedOptions(
+						commerceOrder.getCommerceOrderTypeId(),
+						_commerceShippingFixedOptionQualifierLocalService,
+						_getCommerceShippingFixedOptions(
+							commerceOrder.getGroupId()));
+		}
+		else {
+			commerceShippingFixedOptions = _getCommerceShippingFixedOptions(
+				commerceOrder.getGroupId());
+		}
 
 		for (CommerceShippingFixedOption commerceShippingFixedOption :
 				commerceShippingFixedOptions) {
@@ -148,11 +197,14 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 				continue;
 			}
 
+			String key = commerceShippingFixedOption.getKey();
 			String name = commerceShippingFixedOption.getName(locale);
+			double priority = commerceShippingFixedOption.getPriority();
 
 			if (_commerceShippingHelper.isFreeShipping(commerceOrder)) {
 				commerceShippingOptions.add(
-					new CommerceShippingOption(name, name, BigDecimal.ZERO));
+					new CommerceShippingOption(
+						BigDecimal.ZERO, KEY, key, name, priority));
 
 				continue;
 			}
@@ -185,10 +237,12 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 			}
 
 			commerceShippingOptions.add(
-				new CommerceShippingOption(name, name, amount));
+				new CommerceShippingOption(amount, KEY, key, name, priority));
 		}
 
-		return commerceShippingOptions;
+		return ListUtil.sort(
+			commerceShippingOptions,
+			new CommerceShippingOptionPriorityComparator());
 	}
 
 	private ResourceBundle _getResourceBundle(Locale locale) {
@@ -214,10 +268,17 @@ public class FixedCommerceShippingEngine implements CommerceShippingEngine {
 		_commerceShippingFixedOptionLocalService;
 
 	@Reference
+	private CommerceShippingFixedOptionQualifierLocalService
+		_commerceShippingFixedOptionQualifierLocalService;
+
+	@Reference
 	private CommerceShippingHelper _commerceShippingHelper;
 
 	@Reference
 	private CommerceShippingMethodLocalService
 		_commerceShippingMethodLocalService;
+
+	@Reference
+	private Language _language;
 
 }

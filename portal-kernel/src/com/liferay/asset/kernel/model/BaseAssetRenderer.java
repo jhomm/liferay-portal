@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.model;
@@ -39,20 +30,17 @@ import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.trash.kernel.util.TrashUtil;
+
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jorge Ferrer
@@ -101,7 +89,7 @@ public abstract class BaseAssetRenderer<T> implements AssetRenderer<T> {
 
 	@Override
 	public String getNewName(String oldName, String token) {
-		return TrashUtil.getNewName(oldName, token);
+		return StringBundler.concat(oldName, StringPool.SPACE, token);
 	}
 
 	@Override
@@ -232,6 +220,14 @@ public abstract class BaseAssetRenderer<T> implements AssetRenderer<T> {
 	}
 
 	@Override
+	public String getURLShare(
+		LiferayPortletRequest liferayPortletRequest,
+		LiferayPortletResponse liferayPortletResponse) {
+
+		return null;
+	}
+
+	@Override
 	public String getUrlTitle() {
 		return null;
 	}
@@ -270,8 +266,16 @@ public abstract class BaseAssetRenderer<T> implements AssetRenderer<T> {
 	}
 
 	@Override
+	public String getURLViewInContext(
+			ThemeDisplay themeDisplay, String noSuchEntryRedirect)
+		throws Exception {
+
+		return null;
+	}
+
+	@Override
 	public String getViewInContextMessage() {
-		return "view-in-context";
+		return "view-on-new-page";
 	}
 
 	@Override
@@ -290,11 +294,7 @@ public abstract class BaseAssetRenderer<T> implements AssetRenderer<T> {
 
 	@Override
 	public boolean isCommentable() {
-		if (Validator.isNull(getDiscussionPath())) {
-			return false;
-		}
-
-		return true;
+		return Validator.isNotNull(getDiscussionPath());
 	}
 
 	@Override
@@ -325,13 +325,6 @@ public abstract class BaseAssetRenderer<T> implements AssetRenderer<T> {
 	@Override
 	public boolean isRatable() {
 		return true;
-	}
-
-	public String renderActions(
-			RenderRequest renderRequest, RenderResponse renderResponse)
-		throws Exception {
-
-		return null;
 	}
 
 	public void setAssetRendererType(int assetRendererType) {
@@ -367,6 +360,15 @@ public abstract class BaseAssetRenderer<T> implements AssetRenderer<T> {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
+
+		return getURLViewInContext(
+			themeDisplay, noSuchEntryRedirect, path, primaryKeyParameterName,
+			primaryKeyParameterValue);
+	}
+
+	protected String getURLViewInContext(
+		ThemeDisplay themeDisplay, String noSuchEntryRedirect, String path,
+		String primaryKeyParameterName, long primaryKeyParameterValue) {
 
 		return PortalUtil.addPreservedParameters(
 			themeDisplay,

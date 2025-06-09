@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.service.impl;
@@ -25,15 +16,20 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.mass.delete.MassDeleteCacheThreadLocal;
 import com.liferay.portal.kernel.messaging.async.Async;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portlet.asset.util.DeletedAssetEntryThreadLocal;
 import com.liferay.portlet.social.service.base.SocialActivityLocalServiceBaseImpl;
 import com.liferay.portlet.social.util.SocialActivityHierarchyEntry;
 import com.liferay.portlet.social.util.SocialActivityHierarchyEntryThreadLocal;
@@ -52,6 +48,8 @@ import com.liferay.social.kernel.service.persistence.SocialActivitySettingPersis
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 
 /**
@@ -248,10 +246,8 @@ public class SocialActivityLocalServiceImpl
 		}
 
 		if (isLogActivity(activity)) {
-			long activityId = counterLocalService.increment(
-				SocialActivity.class.getName());
-
-			activity.setActivityId(activityId);
+			activity.setActivityId(
+				counterLocalService.increment(SocialActivity.class.getName()));
 
 			activity = socialActivityPersistence.update(activity);
 
@@ -600,31 +596,6 @@ public class SocialActivityLocalServiceImpl
 	}
 
 	/**
-	 * @param      className the target asset's class name
-	 * @param      start the lower bound of the range of results
-	 * @param      end the upper bound of the range of results (not inclusive)
-	 * @return     the range of matching activities
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getActivities(long, String, int, int)}  Returns a range of
-	 *             all the activities done on assets identified by the class
-	 *             name.  <p> Useful when paginating results. Returns a maximum
-	 *             of <code>end - start</code> instances. <code>start</code> and
-	 *             <code>end</code> are not primary keys, they are indexes in
-	 *             the result set. Thus, <code>0</code> refers to the first
-	 *             result in the set. Setting both <code>start</code> and
-	 *             <code>end</code> to {@link QueryUtil#ALL_POS} will return the
-	 *             full result set.</p>
-	 */
-	@Deprecated
-	@Override
-	public List<SocialActivity> getActivities(
-		String className, int start, int end) {
-
-		return getActivities(
-			_classNameLocalService.getClassNameId(className), start, end);
-	}
-
-	/**
 	 * @param      classNameId the target asset's class name ID
 	 * @return     the number of matching activities
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
@@ -719,19 +690,6 @@ public class SocialActivityLocalServiceImpl
 	}
 
 	/**
-	 * @param      className the target asset's class name
-	 * @return     the number of matching activities
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getActivitiesCount(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public int getActivitiesCount(String className) {
-		return getActivitiesCount(
-			_classNameLocalService.getClassNameId(className));
-	}
-
-	/**
 	 * Returns the activity identified by its primary key.
 	 *
 	 * @param  activityId the primary key of the activity
@@ -748,6 +706,41 @@ public class SocialActivityLocalServiceImpl
 
 		return socialActivityPersistence.findByActivitySetId(
 			activitySetId, start, end);
+	}
+
+	@Override
+	public List<SocialActivity> getApprovedActivities(
+		long classPK, double version) {
+
+		String versionString = String.valueOf(version);
+
+		if (Math.floor(version) == version) {
+			versionString = String.valueOf((int)version);
+		}
+
+		return dslQuery(
+			DSLQueryFactoryUtil.select(
+				SocialActivityTable.INSTANCE
+			).from(
+				SocialActivityTable.INSTANCE
+			).where(
+				SocialActivityTable.INSTANCE.classPK.eq(
+					classPK
+				).and(
+					SocialActivityTable.INSTANCE.type.notIn(
+						new Integer[] {
+							SocialActivityConstants.TYPE_ADD_ATTACHMENT,
+							SocialActivityConstants.
+								TYPE_MOVE_ATTACHMENT_TO_TRASH,
+							SocialActivityConstants.
+								TYPE_RESTORE_ATTACHMENT_FROM_TRASH
+						}
+					).or(
+						SocialActivityTable.INSTANCE.extraData.notLike(
+							"%version\":" + versionString + ",%")
+					).withParentheses()
+				)
+			));
 	}
 
 	/**
@@ -1157,13 +1150,43 @@ public class SocialActivityLocalServiceImpl
 	protected void deleteActivities(long classNameId, long classPK)
 		throws PortalException {
 
-		_socialActivitySetLocalService.decrementActivityCount(
-			classNameId, classPK);
+		Map<Long, List<SocialActivity>> partitionSocialActivities =
+			MassDeleteCacheThreadLocal.getMassDeleteCache(
+				SocialActivityLocalServiceImpl.class.getName() +
+					".deleteActivities#" + classNameId,
+				() -> MapUtil.toPartitionMap(
+					socialActivityPersistence.findByC_CN(
+						CompanyThreadLocal.getCompanyId(), classNameId),
+					SocialActivity::getClassPK));
 
-		socialActivityPersistence.removeByC_C(classNameId, classPK);
+		if (partitionSocialActivities == null) {
+			_socialActivitySetLocalService.decrementActivityCount(
+				classNameId, classPK);
 
-		_socialActivityCounterLocalService.deleteActivityCounters(
-			classNameId, classPK);
+			socialActivityPersistence.removeByC_C(classNameId, classPK);
+		}
+		else {
+			List<SocialActivity> socialActivities =
+				partitionSocialActivities.remove(classPK);
+
+			if (socialActivities != null) {
+				for (SocialActivity socialActivity : socialActivities) {
+					_socialActivitySetLocalService.decrementActivityCount(
+						classNameId, classPK);
+
+					socialActivityPersistence.remove(socialActivity);
+				}
+			}
+		}
+
+		if (!DeletedAssetEntryThreadLocal.isDeletedAssetEntry(
+				classNameId, classPK) &&
+			!Objects.equals(
+				User.class.getName(), PortalUtil.getClassName(classNameId))) {
+
+			_socialActivityCounterLocalService.deleteActivityCounters(
+				classNameId, classPK);
+		}
 	}
 
 	protected boolean isLogActivity(SocialActivity activity) {

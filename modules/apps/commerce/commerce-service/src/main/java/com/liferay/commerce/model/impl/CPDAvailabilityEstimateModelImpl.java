@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
 
 import com.liferay.commerce.model.CPDAvailabilityEstimate;
 import com.liferay.commerce.model.CPDAvailabilityEstimateModel;
-import com.liferay.commerce.model.CPDAvailabilityEstimateSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -123,24 +110,6 @@ public class CPDAvailabilityEstimateModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -172,67 +141,18 @@ public class CPDAvailabilityEstimateModelImpl
 	public static final long CPDAVAILABILITYESTIMATEID_COLUMN_BITMASK = 16L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CPDAvailabilityEstimate toModel(
-		CPDAvailabilityEstimateSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CPDAvailabilityEstimate model = new CPDAvailabilityEstimateImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setCPDAvailabilityEstimateId(
-			soapModel.getCPDAvailabilityEstimateId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCommerceAvailabilityEstimateId(
-			soapModel.getCommerceAvailabilityEstimateId());
-		model.setCProductId(soapModel.getCProductId());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CPDAvailabilityEstimate> toModels(
-		CPDAvailabilityEstimateSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CPDAvailabilityEstimate> models =
-			new ArrayList<CPDAvailabilityEstimate>(soapModels.length);
-
-		for (CPDAvailabilityEstimateSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.model.CPDAvailabilityEstimate"));
 
 	public CPDAvailabilityEstimateModelImpl() {
 	}
@@ -311,131 +231,119 @@ public class CPDAvailabilityEstimateModelImpl
 	public Map<String, Function<CPDAvailabilityEstimate, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CPDAvailabilityEstimate, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CPDAvailabilityEstimate>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CPDAvailabilityEstimate.class.getClassLoader(),
-			CPDAvailabilityEstimate.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CPDAvailabilityEstimate, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CPDAvailabilityEstimate> constructor =
-				(Constructor<CPDAvailabilityEstimate>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CPDAvailabilityEstimate, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CPDAvailabilityEstimate, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CPDAvailabilityEstimate::getMvccVersion);
+			attributeGetterFunctions.put(
+				"uuid", CPDAvailabilityEstimate::getUuid);
+			attributeGetterFunctions.put(
+				"CPDAvailabilityEstimateId",
+				CPDAvailabilityEstimate::getCPDAvailabilityEstimateId);
+			attributeGetterFunctions.put(
+				"companyId", CPDAvailabilityEstimate::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CPDAvailabilityEstimate::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CPDAvailabilityEstimate::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CPDAvailabilityEstimate::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CPDAvailabilityEstimate::getModifiedDate);
+			attributeGetterFunctions.put(
+				"commerceAvailabilityEstimateId",
+				CPDAvailabilityEstimate::getCommerceAvailabilityEstimateId);
+			attributeGetterFunctions.put(
+				"CProductId", CPDAvailabilityEstimate::getCProductId);
+			attributeGetterFunctions.put(
+				"lastPublishDate", CPDAvailabilityEstimate::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CPDAvailabilityEstimate, Object>>
-		_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CPDAvailabilityEstimate, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CPDAvailabilityEstimate, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CPDAvailabilityEstimate, Object>>();
-		Map<String, BiConsumer<CPDAvailabilityEstimate, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CPDAvailabilityEstimate, ?>>();
+		private static final Map
+			<String, BiConsumer<CPDAvailabilityEstimate, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CPDAvailabilityEstimate::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CPDAvailabilityEstimate, Long>)
-				CPDAvailabilityEstimate::setMvccVersion);
-		attributeGetterFunctions.put("uuid", CPDAvailabilityEstimate::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CPDAvailabilityEstimate, String>)
-				CPDAvailabilityEstimate::setUuid);
-		attributeGetterFunctions.put(
-			"CPDAvailabilityEstimateId",
-			CPDAvailabilityEstimate::getCPDAvailabilityEstimateId);
-		attributeSetterBiConsumers.put(
-			"CPDAvailabilityEstimateId",
-			(BiConsumer<CPDAvailabilityEstimate, Long>)
-				CPDAvailabilityEstimate::setCPDAvailabilityEstimateId);
-		attributeGetterFunctions.put(
-			"companyId", CPDAvailabilityEstimate::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CPDAvailabilityEstimate, Long>)
-				CPDAvailabilityEstimate::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CPDAvailabilityEstimate::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CPDAvailabilityEstimate, Long>)
-				CPDAvailabilityEstimate::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CPDAvailabilityEstimate::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CPDAvailabilityEstimate, String>)
-				CPDAvailabilityEstimate::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CPDAvailabilityEstimate::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CPDAvailabilityEstimate, Date>)
-				CPDAvailabilityEstimate::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CPDAvailabilityEstimate::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CPDAvailabilityEstimate, Date>)
-				CPDAvailabilityEstimate::setModifiedDate);
-		attributeGetterFunctions.put(
-			"commerceAvailabilityEstimateId",
-			CPDAvailabilityEstimate::getCommerceAvailabilityEstimateId);
-		attributeSetterBiConsumers.put(
-			"commerceAvailabilityEstimateId",
-			(BiConsumer<CPDAvailabilityEstimate, Long>)
-				CPDAvailabilityEstimate::setCommerceAvailabilityEstimateId);
-		attributeGetterFunctions.put(
-			"CProductId", CPDAvailabilityEstimate::getCProductId);
-		attributeSetterBiConsumers.put(
-			"CProductId",
-			(BiConsumer<CPDAvailabilityEstimate, Long>)
-				CPDAvailabilityEstimate::setCProductId);
-		attributeGetterFunctions.put(
-			"lastPublishDate", CPDAvailabilityEstimate::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<CPDAvailabilityEstimate, Date>)
-				CPDAvailabilityEstimate::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<CPDAvailabilityEstimate, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CPDAvailabilityEstimate, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CPDAvailabilityEstimate, Long>)
+					CPDAvailabilityEstimate::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CPDAvailabilityEstimate, String>)
+					CPDAvailabilityEstimate::setUuid);
+			attributeSetterBiConsumers.put(
+				"CPDAvailabilityEstimateId",
+				(BiConsumer<CPDAvailabilityEstimate, Long>)
+					CPDAvailabilityEstimate::setCPDAvailabilityEstimateId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CPDAvailabilityEstimate, Long>)
+					CPDAvailabilityEstimate::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CPDAvailabilityEstimate, Long>)
+					CPDAvailabilityEstimate::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CPDAvailabilityEstimate, String>)
+					CPDAvailabilityEstimate::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CPDAvailabilityEstimate, Date>)
+					CPDAvailabilityEstimate::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CPDAvailabilityEstimate, Date>)
+					CPDAvailabilityEstimate::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"commerceAvailabilityEstimateId",
+				(BiConsumer<CPDAvailabilityEstimate, Long>)
+					CPDAvailabilityEstimate::setCommerceAvailabilityEstimateId);
+			attributeSetterBiConsumers.put(
+				"CProductId",
+				(BiConsumer<CPDAvailabilityEstimate, Long>)
+					CPDAvailabilityEstimate::setCProductId);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CPDAvailabilityEstimate, Date>)
+					CPDAvailabilityEstimate::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -841,7 +749,7 @@ public class CPDAvailabilityEstimateModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -850,7 +758,7 @@ public class CPDAvailabilityEstimateModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -979,44 +887,13 @@ public class CPDAvailabilityEstimateModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CPDAvailabilityEstimate, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CPDAvailabilityEstimate, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CPDAvailabilityEstimate, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((CPDAvailabilityEstimate)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CPDAvailabilityEstimate>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CPDAvailabilityEstimate.class, ModelWrapper.class);
 
 	}
 
@@ -1037,7 +914,8 @@ public class CPDAvailabilityEstimateModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CPDAvailabilityEstimate, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

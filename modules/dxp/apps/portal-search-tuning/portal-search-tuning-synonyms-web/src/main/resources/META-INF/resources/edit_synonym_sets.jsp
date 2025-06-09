@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -33,6 +24,7 @@ EditSynonymSetsDisplayContext editSynonymSetsDisplayContext = (EditSynonymSetsDi
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(editSynonymSetsDisplayContext.getBackURL());
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 %>
 
 <portlet:actionURL name="/synonyms/edit_synonym_sets" var="editSynonymSetURL">
@@ -41,6 +33,7 @@ portletDisplay.setURLBack(editSynonymSetsDisplayContext.getBackURL());
 
 <liferay-frontend:edit-form
 	action="<%= editSynonymSetURL %>"
+	fluid="<%= true %>"
 	name="<%= editSynonymSetsDisplayContext.getFormName() %>"
 >
 	<aui:input name="<%= editSynonymSetsDisplayContext.getInputName() %>" type="hidden" value="" />
@@ -51,7 +44,7 @@ portletDisplay.setURLBack(editSynonymSetsDisplayContext.getBackURL());
 		<span aria-hidden="true" class="loading-animation"></span>
 
 		<react:component
-			module="js/SynonymSetsApp.es"
+			module="{SynonymSetsApp} from portal-search-tuning-synonyms-web"
 			props="<%= editSynonymSetsDisplayContext.getData() %>"
 		/>
 	</liferay-frontend:edit-form-body>

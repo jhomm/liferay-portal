@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.model.impl;
@@ -82,7 +73,7 @@ public class AssetListEntrySegmentsEntryRelCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(31);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -106,6 +97,8 @@ public class AssetListEntrySegmentsEntryRelCacheModel
 		sb.append(modifiedDate);
 		sb.append(", assetListEntryId=");
 		sb.append(assetListEntryId);
+		sb.append(", priority=");
+		sb.append(priority);
 		sb.append(", segmentsEntryId=");
 		sb.append(segmentsEntryId);
 		sb.append(", typeSettings=");
@@ -163,6 +156,7 @@ public class AssetListEntrySegmentsEntryRelCacheModel
 
 		assetListEntrySegmentsEntryRelImpl.setAssetListEntryId(
 			assetListEntryId);
+		assetListEntrySegmentsEntryRelImpl.setPriority(priority);
 		assetListEntrySegmentsEntryRelImpl.setSegmentsEntryId(segmentsEntryId);
 
 		if (typeSettings == null) {
@@ -207,6 +201,8 @@ public class AssetListEntrySegmentsEntryRelCacheModel
 
 		assetListEntryId = objectInput.readLong();
 
+		priority = objectInput.readInt();
+
 		segmentsEntryId = objectInput.readLong();
 		typeSettings = (String)objectInput.readObject();
 		lastPublishDate = objectInput.readLong();
@@ -245,6 +241,8 @@ public class AssetListEntrySegmentsEntryRelCacheModel
 
 		objectOutput.writeLong(assetListEntryId);
 
+		objectOutput.writeInt(priority);
+
 		objectOutput.writeLong(segmentsEntryId);
 
 		if (typeSettings == null) {
@@ -268,6 +266,7 @@ public class AssetListEntrySegmentsEntryRelCacheModel
 	public long createDate;
 	public long modifiedDate;
 	public long assetListEntryId;
+	public int priority;
 	public long segmentsEntryId;
 	public String typeSettings;
 	public long lastPublishDate;

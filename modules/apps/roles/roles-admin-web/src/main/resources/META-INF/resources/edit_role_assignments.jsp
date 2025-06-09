@@ -1,24 +1,13 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String tabs2 = ParamUtil.getString(request, "tabs2", "users");
-
 String redirect = ParamUtil.getString(request, "redirect");
 
 String backURL = ParamUtil.getString(request, "backURL", redirect);
@@ -41,11 +30,12 @@ else {
 EditRoleAssignmentsManagementToolbarDisplayContext editRoleAssignmentsManagementToolbarDisplayContext = new EditRoleAssignmentsManagementToolbarDisplayContext(request, renderRequest, renderResponse, displayStyle, "current");
 
 SearchContainer<?> searchContainer = editRoleAssignmentsManagementToolbarDisplayContext.getSearchContainer();
-
 PortletURL portletURL = editRoleAssignmentsManagementToolbarDisplayContext.getPortletURL();
+String tabs2 = editRoleAssignmentsManagementToolbarDisplayContext.getTabs2();
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
 renderResponse.setTitle(role.getTitle(locale));
 %>
@@ -88,9 +78,9 @@ renderResponse.setTitle(role.getTitle(locale));
 		).build()
 	%>'
 	clearResultsURL="<%= editRoleAssignmentsManagementToolbarDisplayContext.getClearResultsURL() %>"
-	filterDropdownItems="<%= editRoleAssignmentsManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 	itemsTotal="<%= searchContainer.getTotal() %>"
-	propsTransformer="js/EditRoleAssignmentsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= editRoleAssignmentsManagementToolbarDisplayContext.getOrderByDropDownItems() %>"
+	propsTransformer="{EditRoleAssignmentsManagementToolbarPropsTransformer} from roles-admin-web"
 	searchActionURL="<%= editRoleAssignmentsManagementToolbarDisplayContext.getSearchActionURL() %>"
 	searchContainerId="assigneesSearch"
 	searchFormName="searchFm"
@@ -102,16 +92,32 @@ renderResponse.setTitle(role.getTitle(locale));
 	viewTypeItems="<%= editRoleAssignmentsManagementToolbarDisplayContext.getViewTypeItems() %>"
 />
 
-<c:if test='<%= !SegmentsEntryDisplayContext.isRoleSegmentationEnabled() && tabs2.equals("segments") %>'>
+<c:if test='<%= !SegmentsEntryDisplayUtil.isRoleSegmentationEnabled(themeDisplay.getCompanyId()) && tabs2.equals("segments") %>'>
 	<clay:stripe
-		elementClasses="assign-roles-segments-warning"
-		message="assigning-roles-by-segment-is-disabled-.to-enable,-go-to-system-settings-segments-segments-service"
-		style="warning"
-		title="Warning"
-	/>
+		displayType="warning"
+	>
+		<strong class="lead"><liferay-ui:message key="assigning-roles-by-segment-is-disabled" /></strong>
+
+		<%
+		String segmentsConfigurationURL = SegmentsEntryDisplayUtil.getSegmentsCompanyConfigurationURL(request);
+		%>
+
+		<c:choose>
+			<c:when test="<%= segmentsConfigurationURL != null %>">
+				<clay:link
+					cssClass="assign-roles-segments-warning"
+					href="<%= segmentsConfigurationURL %>"
+					label='<%= LanguageUtil.get(request, "to-enable,-go-to-instance-settings") %>'
+				/>
+			</c:when>
+			<c:otherwise>
+				<span><liferay-ui:message key="contact-your-system-administrator-to-enable-it" /></span>
+			</c:otherwise>
+		</c:choose>
+	</clay:stripe>
 </c:if>
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl container-form-view" method="post" name="fm">
+<aui:form action="<%= portletURL %>" cssClass="container-fluid container-fluid-max-xl container-form-view" method="post" name="fm">
 	<aui:input name="tabs2" type="hidden" value="<%= tabs2 %>" />
 	<aui:input name="tabs3" type="hidden" value="current" />
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
@@ -147,21 +153,21 @@ renderResponse.setTitle(role.getTitle(locale));
 	</c:choose>
 </aui:form>
 
-<aui:script require='<%= npmResolvedPackageName + "/js/add_assignees as addAssignees" %>'>
-	var modalSegmentState = '<%= RolesAdminWebKeys.MODAL_SEGMENT_STATE %>';
-
-	var state = window.sessionStorage.getItem(modalSegmentState);
-
-	if (state === 'open') {
-		window.sessionStorage.removeItem(modalSegmentState);
-
-		addAssignees.default({
-			editRoleAssignmentsURL: '<%= editRoleAssignmentsURL.toString() %>',
-			modalSegmentState: modalSegmentState,
-			namespace: '<portlet:namespace />',
-			portletURL: '<%= portletURL.toString() %>',
-			roleName: '<%= role.getName() %>',
-			selectAssigneesURL: '<%= selectAssigneesURL.toString() %>',
-		});
-	}
-</aui:script>
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"editRoleAssignmentsURL", editRoleAssignmentsURL.toString()
+		).put(
+			"modalSegmentState", RolesAdminWebKeys.MODAL_SEGMENT_STATE
+		).put(
+			"namespace", liferayPortletResponse.getNamespace()
+		).put(
+			"portletURL", portletURL.toString()
+		).put(
+			"roleName", HtmlUtil.escapeJS(role.getName())
+		).put(
+			"selectAssigneesURL", selectAssigneesURL.toString()
+		).build()
+	%>'
+	module="{editRoleAssignmentsMain} from roles-admin-web"
+/>

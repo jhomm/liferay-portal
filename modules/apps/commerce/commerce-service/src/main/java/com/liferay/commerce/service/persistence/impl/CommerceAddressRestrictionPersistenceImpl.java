@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.model.impl.CommerceAddressRestrictionImpl;
 import com.liferay.commerce.model.impl.CommerceAddressRestrictionModelImpl;
 import com.liferay.commerce.service.persistence.CommerceAddressRestrictionPersistence;
 import com.liferay.commerce.service.persistence.CommerceAddressRestrictionUtil;
+import com.liferay.commerce.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -40,17 +34,22 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce address restriction service.
@@ -62,6 +61,7 @@ import java.util.Set;
  * @author Alessio Antonio Rendina
  * @generated
  */
+@Component(service = CommerceAddressRestrictionPersistence.class)
 public class CommerceAddressRestrictionPersistenceImpl
 	extends BasePersistenceImpl<CommerceAddressRestriction>
 	implements CommerceAddressRestrictionPersistence {
@@ -181,7 +181,7 @@ public class CommerceAddressRestrictionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceAddressRestriction>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceAddressRestriction commerceAddressRestriction :
@@ -554,7 +554,7 @@ public class CommerceAddressRestrictionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {countryId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -699,7 +699,7 @@ public class CommerceAddressRestrictionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceAddressRestriction>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceAddressRestriction commerceAddressRestriction :
@@ -1095,7 +1095,7 @@ public class CommerceAddressRestrictionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {classNameId, classPK};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1143,7 +1143,6 @@ public class CommerceAddressRestrictionPersistenceImpl
 		"commerceAddressRestriction.classPK = ?";
 
 	private FinderPath _finderPathFetchByC_C_C;
-	private FinderPath _finderPathCountByC_C_C;
 
 	/**
 	 * Returns the commerce address restriction where classNameId = &#63; and classPK = &#63; and countryId = &#63; or throws a <code>NoSuchAddressRestrictionException</code> if it could not be found.
@@ -1226,7 +1225,8 @@ public class CommerceAddressRestrictionPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByC_C_C, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByC_C_C, finderArgs, this);
 		}
 
 		if (result instanceof CommerceAddressRestriction) {
@@ -1331,53 +1331,14 @@ public class CommerceAddressRestrictionPersistenceImpl
 	 */
 	@Override
 	public int countByC_C_C(long classNameId, long classPK, long countryId) {
-		FinderPath finderPath = _finderPathCountByC_C_C;
+		CommerceAddressRestriction commerceAddressRestriction = fetchByC_C_C(
+			classNameId, classPK, countryId);
 
-		Object[] finderArgs = new Object[] {classNameId, classPK, countryId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_COMMERCEADDRESSRESTRICTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_2);
-
-			sb.append(_FINDER_COLUMN_C_C_C_COUNTRYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				queryPos.add(countryId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceAddressRestriction == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_C_C_CLASSNAMEID_2 =
@@ -1515,7 +1476,6 @@ public class CommerceAddressRestrictionPersistenceImpl
 			commerceAddressRestrictionModelImpl.getCountryId()
 		};
 
-		finderCache.putResult(_finderPathCountByC_C_C, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByC_C_C, args, commerceAddressRestrictionModelImpl);
 	}
@@ -1861,7 +1821,7 @@ public class CommerceAddressRestrictionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceAddressRestriction>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1934,7 +1894,7 @@ public class CommerceAddressRestrictionPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1984,7 +1944,8 @@ public class CommerceAddressRestrictionPersistenceImpl
 	/**
 	 * Initializes the commerce address restriction persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -2044,43 +2005,46 @@ public class CommerceAddressRestrictionPersistenceImpl
 			},
 			new String[] {"classNameId", "classPK", "countryId"}, true);
 
-		_finderPathCountByC_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName()
-			},
-			new String[] {"classNameId", "classPK", "countryId"}, false);
-
-		_setCommerceAddressRestrictionUtilPersistence(this);
+		CommerceAddressRestrictionUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceAddressRestrictionUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceAddressRestrictionUtil.setPersistence(null);
 
 		entityCache.removeCache(CommerceAddressRestrictionImpl.class.getName());
 	}
 
-	private void _setCommerceAddressRestrictionUtilPersistence(
-		CommerceAddressRestrictionPersistence
-			commerceAddressRestrictionPersistence) {
-
-		try {
-			Field field = CommerceAddressRestrictionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceAddressRestrictionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCEADDRESSRESTRICTION =

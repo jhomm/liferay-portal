@@ -1,71 +1,21 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String cmd = "unschedule_publish_to_live";
-
-boolean localPublishing = true;
-
-if (group.isStaged() && group.isStagedRemotely()) {
-	cmd = "unschedule_publish_to_remote";
-
-	localPublishing = false;
-}
-
-String destinationName = localPublishing ? DestinationNames.LAYOUTS_LOCAL_PUBLISHER : DestinationNames.LAYOUTS_REMOTE_PUBLISHER;
-
-PortletURL renderURL = liferayPortletResponse.createRenderURL();
-
-String orderByCol = ParamUtil.getString(request, "orderByCol");
-String orderByType = ParamUtil.getString(request, "orderByType");
-
-if (Validator.isNotNull(orderByCol) && Validator.isNotNull(orderByType)) {
-	portalPreferences.setValue(PortletKeys.BACKGROUND_TASK, "entries-order-by-col", orderByCol);
-	portalPreferences.setValue(PortletKeys.BACKGROUND_TASK, "entries-order-by-type", orderByType);
-}
-else {
-	orderByCol = portalPreferences.getValue(PortletKeys.BACKGROUND_TASK, "entries-order-by-col", "create-date");
-	orderByType = portalPreferences.getValue(PortletKeys.BACKGROUND_TASK, "entries-order-by-type", "desc");
-}
+ScheduledPublishProcessesDisplayContext scheduledPublishProcessesDisplayContext = new ScheduledPublishProcessesDisplayContext(group, request, liferayPortletResponse, liveGroupId);
 %>
 
 <div id="<portlet:namespace />scheduledPublishProcessesSearchContainer">
 	<liferay-ui:search-container
-		emptyResultsMessage="no-scheduled-publish-processes-were-found"
 		id="scheduledPublishProcesses"
-		iteratorURL="<%= renderURL %>"
-		orderByCol="<%= orderByCol %>"
-		orderByType="<%= orderByType %>"
+		searchContainer="<%= scheduledPublishProcessesDisplayContext.getSearchContainer() %>"
 	>
-		<liferay-ui:search-container-results>
-
-			<%
-			results.addAll(SchedulerEngineHelperUtil.getScheduledJobs(StagingUtil.getSchedulerGroupName(destinationName, liveGroupId), StorageType.PERSISTED));
-
-			searchContainer.setTotal(results.size());
-
-			results = ListUtil.subList(results, searchContainer.getStart(), searchContainer.getEnd());
-
-			searchContainer.setResults(results);
-			%>
-
-		</liferay-ui:search-container-results>
-
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse"
 			modelVar="schedulerResponse"
@@ -81,10 +31,7 @@ else {
 				ExportImportConfiguration exportImportConfiguration = ExportImportConfigurationLocalServiceUtil.getExportImportConfiguration(GetterUtil.getLong(message.getPayload()));
 				%>
 
-				<liferay-ui:user-display
-					displayStyle="3"
-					showUserDetails="<%= false %>"
-					showUserName="<%= false %>"
+				<liferay-user:user-portrait
 					userId="<%= exportImportConfiguration.getUserId() %>"
 				/>
 			</liferay-ui:search-container-column-text>
@@ -147,7 +94,7 @@ else {
 					</portlet:renderURL>
 
 					<portlet:actionURL name="/staging_processes/publish_layouts" var="deleteScheduledPublicationURL">
-						<portlet:param name="cmd" value="<%= cmd %>" />
+						<portlet:param name="cmd" value="<%= scheduledPublishProcessesDisplayContext.getCmd() %>" />
 						<portlet:param name="stagingGroupId" value="<%= String.valueOf(stagingGroupId) %>" />
 						<portlet:param name="jobName" value="<%= schedulerResponse.getJobName() %>" />
 						<portlet:param name="redirect" value="<%= deleteScheduledPublicationRedirectURL %>" />

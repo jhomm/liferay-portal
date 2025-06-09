@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.admin.web.internal.exportimport.data.handler;
@@ -53,7 +44,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gergely Mathe
  * @author Máté Thurzó
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class AssetCategoryStagedModelDataHandler
 	extends BaseStagedModelDataHandler<AssetCategory> {
 
@@ -151,20 +142,23 @@ public class AssetCategoryStagedModelDataHandler
 
 		category.setUserUuid(category.getUserUuid());
 
-		List<AssetCategoryProperty> categoryProperties =
+		List<AssetCategoryProperty> assetCategoryProperties =
 			_assetCategoryPropertyLocalService.getCategoryProperties(
 				category.getCategoryId());
 
-		for (AssetCategoryProperty categoryProperty : categoryProperties) {
-			if (!_exists(categoryElement, categoryProperty)) {
+		for (AssetCategoryProperty assetCategoryProperty :
+				assetCategoryProperties) {
+
+			if (!_exists(categoryElement, assetCategoryProperty)) {
 				Element propertyElement = categoryElement.addElement(
 					"property");
 
 				propertyElement.addAttribute(
-					"userUuid", categoryProperty.getUserUuid());
-				propertyElement.addAttribute("key", categoryProperty.getKey());
+					"userUuid", assetCategoryProperty.getUserUuid());
 				propertyElement.addAttribute(
-					"value", categoryProperty.getValue());
+					"key", assetCategoryProperty.getKey());
+				propertyElement.addAttribute(
+					"value", assetCategoryProperty.getValue());
 			}
 		}
 
@@ -253,7 +247,7 @@ public class AssetCategoryStagedModelDataHandler
 			category.getUuid(), portletDataContext.getScopeGroupId());
 
 		if (existingCategory == null) {
-			String name = getCategoryName(
+			String name = _getCategoryName(
 				null, portletDataContext.getScopeGroupId(), parentCategoryId,
 				category.getName(), vocabularyId, 2);
 
@@ -262,19 +256,19 @@ public class AssetCategoryStagedModelDataHandler
 			importedCategory = _assetCategoryLocalService.addCategory(
 				category.getExternalReferenceCode(), userId,
 				portletDataContext.getScopeGroupId(), parentCategoryId,
-				getCategoryTitleMap(
+				_getCategoryTitleMap(
 					portletDataContext.getScopeGroupId(), category, name),
 				category.getDescriptionMap(), vocabularyId, properties,
 				serviceContext);
 		}
 		else {
-			String name = getCategoryName(
+			String name = _getCategoryName(
 				category.getUuid(), portletDataContext.getScopeGroupId(),
 				parentCategoryId, category.getName(), vocabularyId, 2);
 
 			importedCategory = _assetCategoryLocalService.updateCategory(
 				userId, existingCategory.getCategoryId(), parentCategoryId,
-				getCategoryTitleMap(
+				_getCategoryTitleMap(
 					portletDataContext.getScopeGroupId(), category, name),
 				category.getDescriptionMap(), vocabularyId, properties,
 				serviceContext);
@@ -294,43 +288,6 @@ public class AssetCategoryStagedModelDataHandler
 			importedCategory.getCategoryId());
 
 		_importAssetDisplayPage(portletDataContext, category, importedCategory);
-	}
-
-	protected String getCategoryName(
-			String uuid, long groupId, long parentCategoryId, String name,
-			long vocabularyId, int count)
-		throws Exception {
-
-		AssetCategory category = _assetCategoryLocalService.fetchCategory(
-			groupId, parentCategoryId, name, vocabularyId);
-
-		if ((category == null) ||
-			(Validator.isNotNull(uuid) && uuid.equals(category.getUuid()))) {
-
-			return name;
-		}
-
-		name = StringUtil.appendParentheticalSuffix(name, count);
-
-		return getCategoryName(
-			uuid, groupId, parentCategoryId, name, vocabularyId, ++count);
-	}
-
-	protected Map<Locale, String> getCategoryTitleMap(
-			long groupId, AssetCategory category, String name)
-		throws PortalException {
-
-		Map<Locale, String> titleMap = category.getTitleMap();
-
-		Locale locale = _portal.getSiteDefaultLocale(groupId);
-
-		if (titleMap.isEmpty() || !Objects.equals(category.getName(), name) ||
-			!titleMap.containsKey(locale)) {
-
-			titleMap.put(locale, name);
-		}
-
-		return titleMap;
 	}
 
 	private boolean _exists(
@@ -362,6 +319,43 @@ public class AssetCategoryStagedModelDataHandler
 				portletDataContext, category, assetDisplayPageEntry,
 				PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
 		}
+	}
+
+	private String _getCategoryName(
+			String uuid, long groupId, long parentCategoryId, String name,
+			long vocabularyId, int count)
+		throws Exception {
+
+		AssetCategory category = _assetCategoryLocalService.fetchCategory(
+			groupId, parentCategoryId, name, vocabularyId);
+
+		if ((category == null) ||
+			(Validator.isNotNull(uuid) && uuid.equals(category.getUuid()))) {
+
+			return name;
+		}
+
+		name = StringUtil.appendParentheticalSuffix(name, count);
+
+		return _getCategoryName(
+			uuid, groupId, parentCategoryId, name, vocabularyId, ++count);
+	}
+
+	private Map<Locale, String> _getCategoryTitleMap(
+			long groupId, AssetCategory category, String name)
+		throws Exception {
+
+		Map<Locale, String> titleMap = category.getTitleMap();
+
+		Locale locale = _portal.getSiteDefaultLocale(groupId);
+
+		if (titleMap.isEmpty() || !Objects.equals(category.getName(), name) ||
+			!titleMap.containsKey(locale)) {
+
+			titleMap.put(locale, name);
+		}
+
+		return titleMap;
 	}
 
 	private void _importAssetDisplayPage(

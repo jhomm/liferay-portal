@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.editor.taglib.servlet.taglib;
@@ -24,9 +15,9 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
-import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
 import com.liferay.portal.kernel.servlet.PortalWebResourcesUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -38,6 +29,14 @@ import com.liferay.taglib.BaseValidatorTagSupport;
 import com.liferay.taglib.aui.AUIUtil;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+
 import java.io.IOException;
 
 import java.lang.reflect.InvocationHandler;
@@ -46,14 +45,6 @@ import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
 
 /**
  * @author Iván Zaera Avellón
@@ -139,6 +130,10 @@ public class EditorTag extends BaseValidatorTagSupport {
 		return _placeholder;
 	}
 
+	public String getResizeDirection() {
+		return _resizeDirection;
+	}
+
 	public String getToolbarSet() {
 		return _toolbarSet;
 	}
@@ -153,6 +148,10 @@ public class EditorTag extends BaseValidatorTagSupport {
 
 	public boolean isAutoCreate() {
 		return _autoCreate;
+	}
+
+	public boolean isDisabled() {
+		return _disabled;
 	}
 
 	public boolean isInlineEdit() {
@@ -207,6 +206,10 @@ public class EditorTag extends BaseValidatorTagSupport {
 		_data = data;
 	}
 
+	public void setDisabled(boolean disabled) {
+		_disabled = disabled;
+	}
+
 	public void setEditorName(String editorName) {
 		_editorName = editorName;
 	}
@@ -259,6 +262,10 @@ public class EditorTag extends BaseValidatorTagSupport {
 		_resizable = resizable;
 	}
 
+	public void setResizeDirection(String resizeDirection) {
+		_resizeDirection = resizeDirection;
+	}
+
 	public void setShowSource(boolean showSource) {
 		_showSource = showSource;
 	}
@@ -287,6 +294,7 @@ public class EditorTag extends BaseValidatorTagSupport {
 		_contentsLanguageId = null;
 		_cssClass = null;
 		_data = null;
+		_disabled = false;
 		_editorName = null;
 		_fileBrowserParams = null;
 		_height = null;
@@ -300,6 +308,7 @@ public class EditorTag extends BaseValidatorTagSupport {
 		_placeholder = null;
 		_required = false;
 		_resizable = true;
+		_resizeDirection = "vertical";
 		_showSource = true;
 		_skipEditorLoading = false;
 		_toolbarSet = _TOOLBAR_SET_DEFAULT;
@@ -370,7 +379,11 @@ public class EditorTag extends BaseValidatorTagSupport {
 		setNamespacedAttribute(
 			httpServletRequest, "required", String.valueOf(_required));
 		setNamespacedAttribute(
+			httpServletRequest, "disabled", String.valueOf(_disabled));
+		setNamespacedAttribute(
 			httpServletRequest, "resizable", String.valueOf(_resizable));
+		setNamespacedAttribute(
+			httpServletRequest, "resizeDirection", _resizeDirection);
 		setNamespacedAttribute(
 			httpServletRequest, "showSource", String.valueOf(_showSource));
 		setNamespacedAttribute(
@@ -412,12 +425,12 @@ public class EditorTag extends BaseValidatorTagSupport {
 	}
 
 	private String _getCssClasses() {
+		String cssClasses = "portlet ";
+
 		HttpServletRequest httpServletRequest = getRequest();
 
 		Portlet portlet = (Portlet)httpServletRequest.getAttribute(
 			WebKeys.RENDER_PORTLET);
-
-		String cssClasses = "portlet ";
 
 		if (portlet != null) {
 			cssClasses += portlet.getCssClassWrapper();
@@ -429,12 +442,8 @@ public class EditorTag extends BaseValidatorTagSupport {
 	private Map<String, Object> _getData() {
 		HttpServletRequest httpServletRequest = getRequest();
 
-		String portletId = (String)httpServletRequest.getAttribute(
-			WebKeys.PORTLET_ID);
-
-		if (portletId == null) {
-			return _data;
-		}
+		String portletId = GetterUtil.getString(
+			(String)httpServletRequest.getAttribute(WebKeys.PORTLET_ID));
 
 		Map<String, Object> attributes = new HashMap<>();
 
@@ -517,10 +526,6 @@ public class EditorTag extends BaseValidatorTagSupport {
 	}
 
 	private String _getResolvedEditorName() {
-		if (!BrowserSnifferUtil.isRtf(getRequest())) {
-			return "simple";
-		}
-
 		if (Validator.isNull(_editorName)) {
 			return _EDITOR_WYSIWYG_DEFAULT;
 		}
@@ -556,6 +561,7 @@ public class EditorTag extends BaseValidatorTagSupport {
 	private String _contentsLanguageId;
 	private String _cssClass;
 	private Map<String, Object> _data;
+	private boolean _disabled;
 	private String _editorName;
 	private Map<String, String> _fileBrowserParams;
 	private String _height;
@@ -569,6 +575,7 @@ public class EditorTag extends BaseValidatorTagSupport {
 	private String _placeholder;
 	private boolean _required;
 	private boolean _resizable = true;
+	private String _resizeDirection = "vertical";
 	private boolean _showSource = true;
 	private boolean _skipEditorLoading;
 	private String _toolbarSet = _TOOLBAR_SET_DEFAULT;

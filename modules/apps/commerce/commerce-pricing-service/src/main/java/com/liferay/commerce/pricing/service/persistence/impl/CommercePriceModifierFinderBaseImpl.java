@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.persistence.impl;
 
 import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.commerce.pricing.service.persistence.CommercePriceModifierPersistence;
-import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.commerce.pricing.service.persistence.impl.constants.CommercePersistenceConstants;
+import com.liferay.portal.kernel.configuration.Configuration;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
@@ -25,11 +18,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Riccardo Alberti
  * @generated
  */
-public class CommercePriceModifierFinderBaseImpl
+public abstract class CommercePriceModifierFinderBaseImpl
 	extends BasePersistenceImpl<CommercePriceModifier> {
 
 	public CommercePriceModifierFinderBaseImpl() {
@@ -45,33 +42,36 @@ public class CommercePriceModifierFinderBaseImpl
 
 	@Override
 	public Set<String> getBadColumnNames() {
-		return getCommercePriceModifierPersistence().getBadColumnNames();
+		return commercePriceModifierPersistence.getBadColumnNames();
 	}
 
-	/**
-	 * Returns the commerce price modifier persistence.
-	 *
-	 * @return the commerce price modifier persistence
-	 */
-	public CommercePriceModifierPersistence
-		getCommercePriceModifierPersistence() {
-
-		return commercePriceModifierPersistence;
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	/**
-	 * Sets the commerce price modifier persistence.
-	 *
-	 * @param commercePriceModifierPersistence the commerce price modifier persistence
-	 */
-	public void setCommercePriceModifierPersistence(
-		CommercePriceModifierPersistence commercePriceModifierPersistence) {
-
-		this.commercePriceModifierPersistence =
-			commercePriceModifierPersistence;
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
 	}
 
-	@BeanReference(type = CommercePriceModifierPersistence.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected CommercePriceModifierPersistence commercePriceModifierPersistence;
 
 	private static final Log _log = LogFactoryUtil.getLog(

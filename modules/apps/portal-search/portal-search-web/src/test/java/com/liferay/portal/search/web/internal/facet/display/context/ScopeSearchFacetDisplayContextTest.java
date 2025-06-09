@@ -1,236 +1,81 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.facet.display.context;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.search.facet.Facet;
-import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
 import com.liferay.portal.kernel.search.facet.collector.TermCollector;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.theme.PortletDisplay;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.web.internal.facet.display.builder.ScopeSearchFacetDisplayBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.search.web.internal.BaseFacetDisplayContextTestCase;
+import com.liferay.portal.search.web.internal.facet.display.context.builder.ScopeSearchFacetDisplayContextBuilder;
 import com.liferay.portal.search.web.internal.site.facet.configuration.SiteFacetPortletInstanceConfiguration;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import javax.portlet.RenderRequest;
-
-import org.junit.Assert;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author André de Oliveira
  */
-public class ScopeSearchFacetDisplayContextTest {
+public class ScopeSearchFacetDisplayContextTest
+	extends BaseFacetDisplayContextTestCase {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
-		Mockito.doReturn(
-			_facetCollector
-		).when(
-			_facet
-		).getFacetCollector();
-	}
-
-	@Test
-	public void testEmptySearchResults() throws Exception {
-		String parameterValue = "0";
-
-		ScopeSearchFacetDisplayContext scopeSearchFacetDisplayContext =
-			createDisplayContext(parameterValue);
-
-		List<ScopeSearchFacetTermDisplayContext>
-			scopeSearchFacetTermDisplayContexts =
-				scopeSearchFacetDisplayContext.getTermDisplayContexts();
-
-		Assert.assertEquals(
-			scopeSearchFacetTermDisplayContexts.toString(), 0,
-			scopeSearchFacetTermDisplayContexts.size());
-
-		Assert.assertEquals(
-			parameterValue, scopeSearchFacetDisplayContext.getParameterValue());
-		Assert.assertTrue(scopeSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertTrue(scopeSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	@Test
-	public void testEmptySearchResultsWithPreviousSelection() throws Exception {
-		long groupId = RandomTestUtil.randomLong();
-		String name = RandomTestUtil.randomString();
-
-		addGroup(groupId, name);
-
-		String parameterValue = String.valueOf(groupId);
-
-		ScopeSearchFacetDisplayContext scopeSearchFacetDisplayContext =
-			createDisplayContext(parameterValue);
-
-		List<ScopeSearchFacetTermDisplayContext>
-			scopeSearchFacetTermDisplayContexts =
-				scopeSearchFacetDisplayContext.getTermDisplayContexts();
-
-		Assert.assertEquals(
-			scopeSearchFacetTermDisplayContexts.toString(), 1,
-			scopeSearchFacetTermDisplayContexts.size());
-
-		ScopeSearchFacetTermDisplayContext scopeSearchFacetTermDisplayContext =
-			scopeSearchFacetTermDisplayContexts.get(0);
-
-		Assert.assertEquals(0, scopeSearchFacetTermDisplayContext.getCount());
-		Assert.assertEquals(
-			name, scopeSearchFacetTermDisplayContext.getDescriptiveName());
-		Assert.assertEquals(
-			groupId, scopeSearchFacetTermDisplayContext.getGroupId());
-		Assert.assertTrue(scopeSearchFacetTermDisplayContext.isSelected());
-		Assert.assertTrue(scopeSearchFacetTermDisplayContext.isShowCount());
-
-		Assert.assertEquals(
-			parameterValue, scopeSearchFacetDisplayContext.getParameterValue());
-		Assert.assertFalse(scopeSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertFalse(scopeSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	@Test
-	public void testOneTerm() throws Exception {
-		long groupId = RandomTestUtil.randomLong();
-		String name = RandomTestUtil.randomString();
-
-		addGroup(groupId, name);
-
-		int count = RandomTestUtil.randomInt();
-
-		setUpOneTermCollector(groupId, count);
-
-		String parameterValue = "0";
-
-		ScopeSearchFacetDisplayContext scopeSearchFacetDisplayContext =
-			createDisplayContext(parameterValue);
-
-		List<ScopeSearchFacetTermDisplayContext>
-			scopeSearchFacetTermDisplayContexts =
-				scopeSearchFacetDisplayContext.getTermDisplayContexts();
-
-		Assert.assertEquals(
-			scopeSearchFacetTermDisplayContexts.toString(), 1,
-			scopeSearchFacetTermDisplayContexts.size());
-
-		ScopeSearchFacetTermDisplayContext scopeSearchFacetTermDisplayContext =
-			scopeSearchFacetTermDisplayContexts.get(0);
-
-		Assert.assertEquals(
-			count, scopeSearchFacetTermDisplayContext.getCount());
-		Assert.assertEquals(
-			name, scopeSearchFacetTermDisplayContext.getDescriptiveName());
-		Assert.assertEquals(
-			groupId, scopeSearchFacetTermDisplayContext.getGroupId());
-		Assert.assertFalse(scopeSearchFacetTermDisplayContext.isSelected());
-		Assert.assertTrue(scopeSearchFacetTermDisplayContext.isShowCount());
-
-		Assert.assertEquals(
-			parameterValue, scopeSearchFacetDisplayContext.getParameterValue());
-		Assert.assertTrue(scopeSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertFalse(scopeSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	@Test
-	public void testOneTermWithPreviousSelection() throws Exception {
-		long groupId = RandomTestUtil.randomLong();
-		String name = RandomTestUtil.randomString();
-
-		addGroup(groupId, name);
-
-		int count = RandomTestUtil.randomInt();
-
-		setUpOneTermCollector(groupId, count);
-
-		String parameterValue = String.valueOf(groupId);
-
-		ScopeSearchFacetDisplayContext scopeSearchFacetDisplayContext =
-			createDisplayContext(parameterValue);
-
-		List<ScopeSearchFacetTermDisplayContext>
-			scopeSearchFacetTermDisplayContexts =
-				scopeSearchFacetDisplayContext.getTermDisplayContexts();
-
-		Assert.assertEquals(
-			scopeSearchFacetTermDisplayContexts.toString(), 1,
-			scopeSearchFacetTermDisplayContexts.size());
-
-		ScopeSearchFacetTermDisplayContext scopeSearchFacetTermDisplayContext =
-			scopeSearchFacetTermDisplayContexts.get(0);
-
-		Assert.assertEquals(
-			count, scopeSearchFacetTermDisplayContext.getCount());
-		Assert.assertEquals(
-			name, scopeSearchFacetTermDisplayContext.getDescriptiveName());
-		Assert.assertEquals(
-			groupId, scopeSearchFacetTermDisplayContext.getGroupId());
-		Assert.assertTrue(scopeSearchFacetTermDisplayContext.isSelected());
-		Assert.assertTrue(scopeSearchFacetTermDisplayContext.isShowCount());
-
-		Assert.assertEquals(
-			parameterValue, scopeSearchFacetDisplayContext.getParameterValue());
-		Assert.assertFalse(scopeSearchFacetDisplayContext.isNothingSelected());
-		Assert.assertFalse(scopeSearchFacetDisplayContext.isRenderNothing());
-	}
-
-	protected void addGroup(long groupId, String name) throws Exception {
-		Mockito.doReturn(
-			createGroup(groupId, name)
-		).when(
-			_groupLocalService
-		).fetchGroup(
-			groupId
-		);
-	}
-
-	protected ScopeSearchFacetDisplayContext createDisplayContext(
-			String parameterValue)
+	@Override
+	public FacetDisplayContext createFacetDisplayContext(String parameterValue)
 		throws ConfigurationException {
 
-		ScopeSearchFacetDisplayBuilder scopeSearchFacetDisplayBuilder =
-			new ScopeSearchFacetDisplayBuilder(getRenderRequest());
+		return createFacetDisplayContext(parameterValue, "count:desc");
+	}
 
-		scopeSearchFacetDisplayBuilder.setFacet(_facet);
-		scopeSearchFacetDisplayBuilder.setFrequenciesVisible(true);
-		scopeSearchFacetDisplayBuilder.setGroupLocalService(_groupLocalService);
-		scopeSearchFacetDisplayBuilder.setParameterValue(parameterValue);
+	@Override
+	public FacetDisplayContext createFacetDisplayContext(
+			String parameterValue, String order)
+		throws ConfigurationException {
 
-		return scopeSearchFacetDisplayBuilder.build();
+		configurationProviderUtilMockedStatic.when(
+			() -> ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				Mockito.any(), Mockito.any())
+		).thenReturn(
+			Mockito.mock(SiteFacetPortletInstanceConfiguration.class)
+		);
+
+		ScopeSearchFacetDisplayContextBuilder
+			scopeSearchFacetDisplayContextBuilder =
+				new ScopeSearchFacetDisplayContextBuilder(getRenderRequest());
+
+		scopeSearchFacetDisplayContextBuilder.setFacet(facet);
+		scopeSearchFacetDisplayContextBuilder.setFrequenciesVisible(true);
+		scopeSearchFacetDisplayContextBuilder.setGroupLocalService(
+			_groupLocalService);
+		scopeSearchFacetDisplayContextBuilder.setLocale(
+			LocaleUtil.getDefault());
+		scopeSearchFacetDisplayContextBuilder.setOrder(order);
+		scopeSearchFacetDisplayContextBuilder.setParameterValue(parameterValue);
+
+		return scopeSearchFacetDisplayContextBuilder.build();
+	}
+
+	@Override
+	public String getFacetDisplayContextParameterValue() {
+		return "0";
 	}
 
 	protected Group createGroup(long groupId, String name) throws Exception {
@@ -253,79 +98,98 @@ public class ScopeSearchFacetDisplayContextTest {
 		return group;
 	}
 
-	protected TermCollector createTermCollector(long groupId, int count) {
-		TermCollector termCollector = Mockito.mock(TermCollector.class);
+	@Override
+	protected FacetDisplayContext getFacetDisplayContext(Group group)
+		throws Exception {
 
-		Mockito.doReturn(
-			count
-		).when(
-			termCollector
-		).getFrequency();
+		ScopeSearchFacetDisplayContextBuilder
+			scopeSearchFacetDisplayContextBuilder =
+				new ScopeSearchFacetDisplayContextBuilder(
+					getRenderRequest(group));
 
-		Mockito.doReturn(
-			String.valueOf(groupId)
-		).when(
-			termCollector
-		).getTerm();
-
-		return termCollector;
+		return scopeSearchFacetDisplayContextBuilder.build();
 	}
 
-	protected PortletDisplay getPortletDisplay() throws ConfigurationException {
-		PortletDisplay portletDisplay = Mockito.mock(PortletDisplay.class);
+	@Override
+	protected String getFilterValue(String term) {
+		return String.valueOf(_groupId);
+	}
 
-		Mockito.doReturn(
-			Mockito.mock(SiteFacetPortletInstanceConfiguration.class)
-		).when(
-			portletDisplay
-		).getPortletInstanceConfiguration(
-			Matchers.any()
+	@Override
+	protected void setUpAsset(String term) throws Exception {
+		_groupId = RandomTestUtil.randomLong();
+
+		_addGroup(_groupId, term);
+	}
+
+	@Override
+	protected void setUpPortletDisplayStyleGroupExternalReferenceCode(
+		String externalReferenceCode) {
+
+		SiteFacetPortletInstanceConfiguration
+			siteFacetPortletInstanceConfiguration = Mockito.mock(
+				SiteFacetPortletInstanceConfiguration.class);
+
+		Mockito.when(
+			siteFacetPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode()
+		).thenReturn(
+			externalReferenceCode
 		);
 
-		return portletDisplay;
-	}
-
-	protected RenderRequest getRenderRequest() throws ConfigurationException {
-		RenderRequest renderRequest = Mockito.mock(RenderRequest.class);
-
-		Mockito.doReturn(
-			getThemeDisplay()
-		).when(
-			renderRequest
-		).getAttribute(
-			WebKeys.THEME_DISPLAY
+		configurationProviderUtilMockedStatic.when(
+			() -> ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				Mockito.any(), Mockito.any())
+		).thenReturn(
+			siteFacetPortletInstanceConfiguration
 		);
-
-		return renderRequest;
 	}
 
-	protected ThemeDisplay getThemeDisplay() throws ConfigurationException {
-		ThemeDisplay themeDisplay = Mockito.mock(ThemeDisplay.class);
+	@Override
+	protected void testOrderBy(
+			int[] expectedFrequencies, String[] expectedGroupNames,
+			int[] frequencies, String order, String[] groupNames)
+		throws Exception {
 
+		setUpTermCollectors(
+			facetCollector, _getTermCollectors(groupNames, frequencies));
+
+		FacetDisplayContext facetDisplayContext = createFacetDisplayContext(
+			StringPool.BLANK, order);
+
+		assertFacetOrder(
+			facetDisplayContext.getBucketDisplayContexts(), expectedGroupNames,
+			expectedFrequencies);
+	}
+
+	private void _addGroup(long groupId, String name) throws Exception {
 		Mockito.doReturn(
-			getPortletDisplay()
+			createGroup(groupId, name)
 		).when(
-			themeDisplay
-		).getPortletDisplay();
-
-		return themeDisplay;
+			_groupLocalService
+		).fetchGroup(
+			groupId
+		);
 	}
 
-	protected void setUpOneTermCollector(long groupId, int count) {
-		Mockito.doReturn(
-			Collections.singletonList(createTermCollector(groupId, count))
-		).when(
-			_facetCollector
-		).getTermCollectors();
+	private List<TermCollector> _getTermCollectors(
+			String[] groupNames, int[] frequencies)
+		throws Exception {
+
+		List<TermCollector> termCollectors = new ArrayList<>();
+
+		for (int i = 1; i <= groupNames.length; i++) {
+			_addGroup(i, groupNames[i - 1]);
+
+			termCollectors.add(
+				createTermCollector(String.valueOf(i), frequencies[i - 1]));
+		}
+
+		return termCollectors;
 	}
 
-	@Mock
-	private Facet _facet;
-
-	@Mock
-	private FacetCollector _facetCollector;
-
-	@Mock
-	private GroupLocalService _groupLocalService;
+	private long _groupId;
+	private final GroupLocalService _groupLocalService = Mockito.mock(
+		GroupLocalService.class);
 
 }

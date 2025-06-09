@@ -1,28 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.upgrade.v1_1_0;
 
 import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBTemplateTable;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTable;
-import com.liferay.portal.kernel.upgrade.util.UpgradeTableFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.upgrade.util.UpgradeTableFactoryUtil;
 
 /**
  * @author Peter Shin
@@ -91,33 +81,15 @@ public class KBTemplateUpgradeProcess extends UpgradeProcess {
 
 		String dataTypeUpperCase = StringUtil.toUpperCase(dataType);
 
-		StringBundler sb = new StringBundler(6);
-
-		sb.append("alter table ");
-		sb.append(tableName);
-		sb.append(" add ");
-		sb.append(columnName);
-		sb.append(StringPool.SPACE);
-		sb.append(dataTypeUpperCase);
-
-		String sql = sb.toString();
-
 		if (dataTypeUpperCase.equals("DATE") || dataType.equals("STRING")) {
-			sql = sql.concat(" null");
+			dataTypeUpperCase = dataTypeUpperCase.concat(" null");
 		}
 
-		runSQL(sql);
+		alterTableAddColumn(tableName, columnName, dataTypeUpperCase);
 
-		sb.setIndex(0);
-
-		sb.append("update ");
-		sb.append(tableName);
-		sb.append(" set ");
-		sb.append(columnName);
-		sb.append(" = ");
-		sb.append(data);
-
-		runSQL(sb.toString());
+		runSQL(
+			StringBundler.concat(
+				"update ", tableName, " set ", columnName, " = ", data));
 	}
 
 	protected void updateSchema(
@@ -132,13 +104,8 @@ public class KBTemplateUpgradeProcess extends UpgradeProcess {
 		updateColumn(oldTableName, "engineType", "INTEGER", "0");
 		updateColumn(oldTableName, "cacheable", "BOOLEAN", "TRUE");
 
-		if (hasColumn(oldTableName, "templateId")) {
-			runSQL("alter table " + oldTableName + " drop column templateId");
-		}
-
-		if (hasColumn(oldTableName, "description")) {
-			runSQL("alter table " + oldTableName + " drop column description");
-		}
+		alterTableDropColumn(oldTableName, "templateId");
+		alterTableDropColumn(oldTableName, "description");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

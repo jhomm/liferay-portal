@@ -12,7 +12,7 @@ exports[`DigitalSignature renders 1`] = `
         class="management-bar navbar navbar-expand-md management-bar-light"
       >
         <div
-          class="container-fluid container-fluid-max-xl"
+          class="container-fluid container-fluid-max-xxxl"
         >
           <ul
             class="navbar-nav"
@@ -24,10 +24,12 @@ exports[`DigitalSignature renders 1`] = `
                 class="dropdown"
               >
                 <button
+                  aria-controls="clay-dropdown-menu-1"
+                  aria-expanded="false"
+                  aria-haspopup="true"
                   class="dropdown-toggle nav-link btn btn-unstyled"
                   disabled=""
                   id="filter-and-order"
-                  style=""
                   type="button"
                 >
                   <span
@@ -39,7 +41,7 @@ exports[`DigitalSignature renders 1`] = `
                       role="presentation"
                     >
                       <use
-                        xlink:href="#caret-bottom"
+                        href="#caret-bottom"
                       />
                     </svg>
                   </span>
@@ -51,7 +53,7 @@ exports[`DigitalSignature renders 1`] = `
                       role="presentation"
                     >
                       <use
-                        xlink:href="#filter"
+                        href="#filter"
                       />
                     </svg>
                   </span>
@@ -72,7 +74,7 @@ exports[`DigitalSignature renders 1`] = `
                   role="presentation"
                 >
                   <use
-                    xlink:href="#order-arrow"
+                    href="#order-arrow"
                   />
                 </svg>
               </button>
@@ -82,7 +84,7 @@ exports[`DigitalSignature renders 1`] = `
             class="navbar-form navbar-form-autofit navbar-overlay navbar-overlay-sm-down"
           >
             <div
-              class="container-fluid container-fluid-max-xl"
+              class="container-fluid container-fluid-max-xxxl"
             >
               <form
                 role="search"
@@ -114,7 +116,7 @@ exports[`DigitalSignature renders 1`] = `
                           role="presentation"
                         >
                           <use
-                            xlink:href="#times"
+                            href="#times"
                           />
                         </svg>
                       </button>
@@ -128,7 +130,7 @@ exports[`DigitalSignature renders 1`] = `
                           role="presentation"
                         >
                           <use
-                            xlink:href="#search"
+                            href="#search"
                           />
                         </svg>
                       </button>
@@ -153,7 +155,7 @@ exports[`DigitalSignature renders 1`] = `
                   role="presentation"
                 >
                   <use
-                    xlink:href="#search"
+                    href="#search"
                   />
                 </svg>
               </button>
@@ -170,7 +172,7 @@ exports[`DigitalSignature renders 1`] = `
                   role="presentation"
                 >
                   <use
-                    xlink:href="#plus"
+                    href="#plus"
                   />
                 </svg>
               </button>
@@ -179,20 +181,36 @@ exports[`DigitalSignature renders 1`] = `
         </div>
       </nav>
       <div
-        class="taglib-empty-result-message"
+        class="c-empty-state c-empty-state-animation"
       >
         <div
-          class="text-center"
+          class="c-empty-state-image"
         >
           <div
-            class="taglib-empty-state"
-          />
-          <h1
-            class="taglib-empty-result-message-title"
+            class="c-empty-state-aspect-ratio"
           >
-            there-are-no-entries
-          </h1>
+            <img
+              alt=""
+              class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
+              src="http://localhost:8080/o/admin-theme/images/states/empty_state.svg"
+            />
+            <img
+              alt=""
+              class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
+              src="/o/admin-theme/images/states/empty_state_reduced_motion.svg"
+            />
+          </div>
         </div>
+        <div
+          class="c-empty-state-title"
+        >
+          <span>
+            there-are-no-entries
+          </span>
+        </div>
+        <div
+          class="c-empty-state-text"
+        />
       </div>
     </div>
   </div>

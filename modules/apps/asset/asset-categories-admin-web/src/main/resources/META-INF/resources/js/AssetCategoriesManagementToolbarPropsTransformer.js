@@ -1,18 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {addParams, navigate, openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {addParams, navigate} from 'frontend-js-web';
+
+import openDeleteCategoryModal from './openDeleteCategoryModal';
 
 export default function propsTransformer({portletNamespace, ...otherProps}) {
 	const setCategoryDisplayPageTemplate = (
@@ -35,21 +29,21 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 	};
 
 	const deleteSelectedCategories = () => {
-		if (
-			confirm(
-				Liferay.Language.get('are-you-sure-you-want-to-delete-this')
-			)
-		) {
-			const form = document.getElementById(`${portletNamespace}fm`);
+		openDeleteCategoryModal({
+			multiple: true,
+			onDelete: () => {
+				const form = document.getElementById(`${portletNamespace}fm`);
 
-			if (form) {
-				submitForm(form);
-			}
-		}
+				if (form) {
+					submitForm(form);
+				}
+			},
+		});
 	};
 
 	const selectCategory = (itemData) => {
 		openSelectionModal({
+			height: '70vh',
 			iframeBodyCssClass: '',
 			onSelect(selectedItem) {
 				const category = selectedItem
@@ -64,6 +58,7 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 				}
 			},
 			selectEventName: `${portletNamespace}selectCategory`,
+			size: 'md',
 			title: Liferay.Language.get('select-category'),
 			url: itemData?.categoriesSelectorURL,
 		});
@@ -84,8 +79,10 @@ export default function propsTransformer({portletNamespace, ...otherProps}) {
 			if (action === 'deleteSelectedCategories') {
 				deleteSelectedCategories();
 			}
-			else if (action === 'selectCategory') {
-				selectCategory(data);
+		},
+		onFilterDropdownItemClick(event, {item}) {
+			if (item?.data?.action === 'selectCategory') {
+				selectCategory(item?.data);
 			}
 		},
 	};

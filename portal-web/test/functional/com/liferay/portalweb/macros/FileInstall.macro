@@ -1,45 +1,47 @@
 definition {
 
-	macro deleteJarOffline {
+	@summary = "Delete ${configFile} from Bundle's Liferay home"
+	macro deleteConfigFile(configFile = null) {
 		var liferayHome = PropsUtil.get("liferay.home.dir.name");
 
-		AntCommand(
-			locator1 = "build-test.xml",
-			value1 = "delete-dependency-file  -Dliferay.dependency.jars=${liferayDependencyJars} -Dliferay.home=${liferayHome}");
-
-		Pause(locator1 = "10000");
+		AntCommands.runCommand("build-test.xml", "delete-dependency-file  -Dliferay.dependency.config=${configFile} -Dliferay.home=${liferayHome}");
 	}
 
-	macro deleteWarOffline {
+	@summary = "Delete ${jarFile} from Bundle's Liferay home"
+	macro deleteJarOffline(jarFile = null) {
 		var liferayHome = PropsUtil.get("liferay.home.dir.name");
 
-		AntCommand(
-			locator1 = "build-test.xml",
-			value1 = "delete-dependency-file  -Dliferay.dependency.wars=${liferayDependencyWars} -Dliferay.home=${liferayHome}");
-
-		Pause(locator1 = "10000");
+		AntCommands.runCommand("build-test.xml", "delete-dependency-file  -Dliferay.dependency.jar=${jarFile} -Dliferay.home=${liferayHome}");
 	}
 
-	macro deployFileOnServer {
+	@summary = "Delete portal ${jarFile} from Bundle's Liferay home"
+	macro deletePortalJarOffline(jarFile = null) {
 		var liferayHome = PropsUtil.get("liferay.home.dir.name");
-		var testBaseDirName = PropsUtil.get("test.base.dir.name");
-		var testDependenciesDirName = PropsUtil.get("test.dependencies.dir.name");
 
-		if (("${bundleIndex}" == "0") || (!(isSet(bundleIndex)))) {
+		AntCommands.runCommand("build-test.xml", "delete-dependency-file  -Dliferay.home=${liferayHome} -Dliferay.portal.dependency.jar=${jarFile}");
+	}
+
+	@summary = "Delete ${warFile} from Bundle's Liferay home"
+	macro deleteWarOffline(warFile = null) {
+		var liferayHome = PropsUtil.get("liferay.home.dir.name");
+
+		AntCommands.runCommand("build-test.xml", "delete-dependency-file  -Dliferay.dependency.war=${warFile} -Dliferay.home=${liferayHome}");
+	}
+
+	@summary = "Deploy ${jarFile} on the server"
+	macro deployFileOnServer(jarFile = null, bundleIndex = null) {
+		var liferayHome = PropsUtil.get("liferay.home.dir.name");
+
+		if ((${bundleIndex} == 0) || !(isSet(bundleIndex))) {
 			var deployDir = "${liferayHome}/deploy";
 		}
 		else {
 			var deployDir = "${liferayHome}-${bundleIndex}/deploy";
 		}
 
-		if (isSet(filePath)) {
-			ArchiveUtil.archive("${testBaseDirName}tests/${filePath}/${testDependenciesDirName}/${liferayDependencyJars}", "${deployDir}/${liferayDependencyJars}");
-		}
-		else {
-			ArchiveUtil.archive("${testBaseDirName}/${testDependenciesDirName}/${liferayDependencyJars}", "${deployDir}/${liferayDependencyJars}");
-		}
+		var dependencyFilePath = TestCase.getDependenciesDirPath(fileName = ${jarFile});
 
-		Pause(locator1 = "10000");
+		ArchiveUtil.archive(${dependencyFilePath}, "${deployDir}/${jarFile}");
 	}
 
 }

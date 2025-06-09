@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal.beans;
@@ -17,28 +8,28 @@ package com.liferay.bean.portlet.spring.extension.internal.beans;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringScopedBeanManager;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringScopedBeanManagerThreadLocal;
 
+import jakarta.annotation.ManagedBean;
+import jakarta.annotation.Priority;
+
+import jakarta.portlet.PortalContext;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderParameters;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderState;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.filter.RenderRequestWrapper;
+
+import jakarta.servlet.http.Cookie;
+
 import java.security.Principal;
 
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.annotation.ManagedBean;
-import javax.annotation.Priority;
-
-import javax.portlet.PortalContext;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderParameters;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderState;
-import javax.portlet.WindowState;
-import javax.portlet.filter.RenderRequestWrapper;
-
-import javax.servlet.http.Cookie;
 
 /**
  * @author Neil Griffin

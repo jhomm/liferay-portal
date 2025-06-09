@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
@@ -26,6 +17,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceOrderNoteServiceWrapper
 	implements CommerceOrderNoteService,
 			   ServiceWrapper<CommerceOrderNoteService> {
+
+	public CommerceOrderNoteServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceOrderNoteServiceWrapper(
 		CommerceOrderNoteService commerceOrderNoteService) {
@@ -64,22 +59,23 @@ public class CommerceOrderNoteServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.model.CommerceOrderNote
-			fetchByExternalReferenceCode(
-				String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceOrderNoteService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public com.liferay.commerce.model.CommerceOrderNote fetchCommerceOrderNote(
 			long commerceOrderNoteId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceOrderNoteService.fetchCommerceOrderNote(
 			commerceOrderNoteId);
+	}
+
+	@Override
+	public com.liferay.commerce.model.CommerceOrderNote
+			fetchCommerceOrderNoteByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceOrderNoteService.
+			fetchCommerceOrderNoteByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -98,6 +94,16 @@ public class CommerceOrderNoteServiceWrapper
 
 		return _commerceOrderNoteService.getCommerceOrderNotes(
 			commerceOrderId, restricted);
+	}
+
+	@Override
+	public java.util.List<com.liferay.commerce.model.CommerceOrderNote>
+			getCommerceOrderNotes(
+				long commerceOrderId, boolean restricted, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceOrderNoteService.getCommerceOrderNotes(
+			commerceOrderId, restricted, start, end);
 	}
 
 	@Override

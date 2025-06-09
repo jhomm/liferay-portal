@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -55,10 +46,12 @@ public class CommerceShippingMethodWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("name", getName());
 		attributes.put("description", getDescription());
-		attributes.put("imageId", getImageId());
-		attributes.put("engineKey", getEngineKey());
-		attributes.put("priority", getPriority());
 		attributes.put("active", isActive());
+		attributes.put("engineKey", getEngineKey());
+		attributes.put("imageId", getImageId());
+		attributes.put("priority", getPriority());
+		attributes.put("trackingURL", getTrackingURL());
+		attributes.put("typeSettings", getTypeSettings());
 
 		return attributes;
 	}
@@ -126,10 +119,10 @@ public class CommerceShippingMethodWrapper
 			setDescription(description);
 		}
 
-		Long imageId = (Long)attributes.get("imageId");
+		Boolean active = (Boolean)attributes.get("active");
 
-		if (imageId != null) {
-			setImageId(imageId);
+		if (active != null) {
+			setActive(active);
 		}
 
 		String engineKey = (String)attributes.get("engineKey");
@@ -138,16 +131,28 @@ public class CommerceShippingMethodWrapper
 			setEngineKey(engineKey);
 		}
 
+		Long imageId = (Long)attributes.get("imageId");
+
+		if (imageId != null) {
+			setImageId(imageId);
+		}
+
 		Double priority = (Double)attributes.get("priority");
 
 		if (priority != null) {
 			setPriority(priority);
 		}
 
-		Boolean active = (Boolean)attributes.get("active");
+		String trackingURL = (String)attributes.get("trackingURL");
 
-		if (active != null) {
-			setActive(active);
+		if (trackingURL != null) {
+			setTrackingURL(trackingURL);
+		}
+
+		String typeSettings = (String)attributes.get("typeSettings");
+
+		if (typeSettings != null) {
+			setTypeSettings(typeSettings);
 		}
 	}
 
@@ -433,6 +438,33 @@ public class CommerceShippingMethodWrapper
 	@Override
 	public double getPriority() {
 		return model.getPriority();
+	}
+
+	/**
+	 * Returns the tracking url of this commerce shipping method.
+	 *
+	 * @return the tracking url of this commerce shipping method
+	 */
+	@Override
+	public String getTrackingURL() {
+		return model.getTrackingURL();
+	}
+
+	/**
+	 * Returns the type settings of this commerce shipping method.
+	 *
+	 * @return the type settings of this commerce shipping method
+	 */
+	@Override
+	public String getTypeSettings() {
+		return model.getTypeSettings();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.util.UnicodeProperties
+		getTypeSettingsUnicodeProperties() {
+
+		return model.getTypeSettingsUnicodeProperties();
 	}
 
 	/**
@@ -736,6 +768,34 @@ public class CommerceShippingMethodWrapper
 	}
 
 	/**
+	 * Sets the tracking url of this commerce shipping method.
+	 *
+	 * @param trackingURL the tracking url of this commerce shipping method
+	 */
+	@Override
+	public void setTrackingURL(String trackingURL) {
+		model.setTrackingURL(trackingURL);
+	}
+
+	/**
+	 * Sets the type settings of this commerce shipping method.
+	 *
+	 * @param typeSettings the type settings of this commerce shipping method
+	 */
+	@Override
+	public void setTypeSettings(String typeSettings) {
+		model.setTypeSettings(typeSettings);
+	}
+
+	@Override
+	public void setTypeSettingsUnicodeProperties(
+		com.liferay.portal.kernel.util.UnicodeProperties
+			typeSettingsUnicodeProperties) {
+
+		model.setTypeSettingsUnicodeProperties(typeSettingsUnicodeProperties);
+	}
+
+	/**
 	 * Sets the user ID of this commerce shipping method.
 	 *
 	 * @param userId the user ID of this commerce shipping method
@@ -763,6 +823,11 @@ public class CommerceShippingMethodWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

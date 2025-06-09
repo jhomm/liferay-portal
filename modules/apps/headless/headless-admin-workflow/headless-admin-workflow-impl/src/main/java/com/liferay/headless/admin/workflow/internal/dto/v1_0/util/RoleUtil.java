@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.internal.dto.v1_0.util;
@@ -33,19 +24,22 @@ public class RoleUtil {
 
 		return new Role() {
 			{
-				availableLanguages = LocaleUtil.toW3cLanguageIds(
-					role.getAvailableLanguageIds());
-				creator = CreatorUtil.toCreator(portal, user);
-				dateCreated = role.getCreateDate();
-				dateModified = role.getModifiedDate();
-				description = role.getDescription(locale);
-				description_i18n = LocalizedMapUtil.getI18nMap(
-					acceptAllLanguages, role.getDescriptionMap());
-				id = role.getRoleId();
-				name = role.getTitle(locale);
-				name_i18n = LocalizedMapUtil.getI18nMap(
-					acceptAllLanguages, role.getTitleMap());
-				roleType = role.getTypeLabel();
+				setAvailableLanguages(
+					() -> LocaleUtil.toW3cLanguageIds(
+						role.getAvailableLanguageIds()));
+				setCreator(() -> CreatorUtil.toCreator(portal, user));
+				setDateCreated(role::getCreateDate);
+				setDateModified(role::getModifiedDate);
+				setDescription(() -> role.getDescription(locale));
+				setDescription_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguages, role.getDescriptionMap()));
+				setId(role::getRoleId);
+				setName(() -> role.getTitle(locale));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						acceptAllLanguages, role.getTitleMap()));
+				setRoleType(role::getTypeLabel);
 			}
 		};
 	}

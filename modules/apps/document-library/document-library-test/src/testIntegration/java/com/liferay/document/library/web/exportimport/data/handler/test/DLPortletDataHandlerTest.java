@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.exportimport.data.handler.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.data.engine.rest.dto.v2_0.DataDefinition;
+import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.test.util.DataDefinitionTestUtil;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.exportimport.data.handler.DLExportableRepositoryPublisher;
@@ -23,6 +15,7 @@ import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFileShortcutConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
@@ -36,8 +29,9 @@ import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLTrashServiceUtil;
 import com.liferay.document.library.test.util.BaseDLAppTestCase;
 import com.liferay.document.library.test.util.DLAppTestUtil;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
 import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
@@ -66,6 +60,7 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.LongWrapper;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
@@ -77,10 +72,10 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portlet.PortletPreferencesImpl;
-import com.liferay.portlet.dynamicdatamapping.util.test.DDMStructureTestUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -197,11 +192,12 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 				group.getGroupId(), TestPropsValues.getUserId());
 
 		Folder parentFolder = DLAppServiceUtil.addFolder(
-			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			"parent", RandomTestUtil.randomString(), serviceContext);
+			null, group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, "parent",
+			RandomTestUtil.randomString(), serviceContext);
 
 		Folder childFolder = DLAppServiceUtil.addFolder(
-			group.getGroupId(), parentFolder.getFolderId(), "child",
+			null, group.getGroupId(), parentFolder.getFolderId(), "child",
 			RandomTestUtil.randomString(), serviceContext);
 
 		DLTrashServiceUtil.moveFolderToTrash(childFolder.getFolderId());
@@ -212,10 +208,11 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 
 		GroupLocalServiceUtil.deleteGroup(group);
 
-		int foldersCount = DLFolderLocalServiceUtil.getFoldersCount(
-			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
-
-		Assert.assertEquals(0, foldersCount);
+		Assert.assertEquals(
+			0,
+			DLFolderLocalServiceUtil.getFoldersCount(
+				group.getGroupId(),
+				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID));
 	}
 
 	@Test
@@ -230,8 +227,8 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 
 		DataDefinition dataDefinition =
 			DataDefinitionTestUtil.addDataDefinition(
-				"document-library", group.getGroupId(), json,
-				TestPropsValues.getUser());
+				"document-library", _dataDefinitionResourceFactory,
+				group.getGroupId(), json, TestPropsValues.getUser());
 
 		Assert.assertNotNull(
 			_ddmStructureLocalService.fetchDDMStructure(
@@ -292,7 +289,7 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 		Group stagingGroup = this.stagingGroup.getStagingGroup();
 
 		Folder folder = DLAppServiceUtil.addFolder(
-			stagingGroup.getGroupId(),
+			null, stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			new ServiceContext());
@@ -301,8 +298,8 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 			null, folder.getGroupId(), folder.getFolderId(),
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			BaseDLAppTestCase.CONTENT.getBytes(), null, null,
-			new ServiceContext());
+			StringPool.BLANK, BaseDLAppTestCase.CONTENT.getBytes(), null, null,
+			null, new ServiceContext());
 
 		FileVersion fileVersion = fileEntry.getFileVersion();
 
@@ -348,7 +345,7 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 		Group stagingGroup = this.stagingGroup.getStagingGroup();
 
 		Folder folder = DLAppServiceUtil.addFolder(
-			stagingGroup.getGroupId(),
+			null, stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			new ServiceContext());
@@ -357,8 +354,8 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 			null, folder.getGroupId(), folder.getFolderId(),
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			BaseDLAppTestCase.CONTENT.getBytes(), null, null,
-			new ServiceContext());
+			StringPool.BLANK, BaseDLAppTestCase.CONTENT.getBytes(), null, null,
+			null, new ServiceContext());
 
 		FileVersion fileVersion = fileEntry.getFileVersion();
 
@@ -466,11 +463,9 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 	}
 
 	protected long addRepositoryEntries() throws Exception {
-		long classNameId = PortalUtil.getClassNameId(
-			LiferayRepository.class.getName());
-
 		Repository repository = RepositoryLocalServiceUtil.addRepository(
-			TestPropsValues.getUserId(), stagingGroup.getGroupId(), classNameId,
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			PortalUtil.getClassNameId(LiferayRepository.class.getName()),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			PortletKeys.BACKGROUND_TASK, StringPool.BLANK,
 			PortletKeys.BACKGROUND_TASK, new UnicodeProperties(), true,
@@ -481,7 +476,7 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 				stagingGroup.getGroupId(), TestPropsValues.getUserId());
 
 		Folder folder = DLAppServiceUtil.addFolder(
-			repository.getRepositoryId(),
+			null, repository.getRepositoryId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			serviceContext);
@@ -490,7 +485,7 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 			null, TestPropsValues.getUserId(), repository.getRepositoryId(),
 			folder.getFolderId(), RandomTestUtil.randomString() + ".txt",
 			ContentTypes.TEXT_PLAIN, TestDataConstants.TEST_BYTE_ARRAY, null,
-			null, serviceContext);
+			null, null, serviceContext);
 
 		return repository.getRepositoryId();
 	}
@@ -502,7 +497,7 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 				stagingGroup.getGroupId(), TestPropsValues.getUserId());
 
 		Folder folder = DLAppServiceUtil.addFolder(
-			stagingGroup.getGroupId(),
+			null, stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
 			serviceContext);
@@ -512,9 +507,12 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 
 		DLFileEntryType dlFileEntryType =
 			DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-				TestPropsValues.getUserId(), stagingGroup.getGroupId(),
-				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-				new long[] {ddmStructure.getStructureId()}, serviceContext);
+				null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+				ddmStructure.getStructureId(), null,
+				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
+				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
+				serviceContext);
 
 		DLAppTestUtil.populateServiceContext(
 			serviceContext, dlFileEntryType.getFileEntryTypeId());
@@ -523,10 +521,10 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
 			folder.getFolderId(), RandomTestUtil.randomString() + ".txt",
 			ContentTypes.TEXT_PLAIN, TestDataConstants.TEST_BYTE_ARRAY, null,
-			null, serviceContext);
+			null, null, serviceContext);
 
 		DLAppLocalServiceUtil.addFileShortcut(
-			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
 			folder.getFolderId(), fileEntry.getFileEntryId(), serviceContext);
 	}
 
@@ -537,7 +535,11 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 
 	@Override
 	protected String[] getDataPortletPreferences() {
-		return new String[] {"rootFolderId"};
+		return new String[] {
+			"rootFolderExternalReferenceCode",
+			"selectedGroupExternalReferenceCode",
+			"selectedRepositoryExternalReferenceCode"
+		};
 	}
 
 	@Override
@@ -684,6 +686,9 @@ public class DLPortletDataHandlerTest extends BasePortletDataHandlerTestCase {
 
 	@Inject
 	private static GroupLocalService _groupLocalService;
+
+	@Inject
+	private DataDefinitionResource.Factory _dataDefinitionResourceFactory;
 
 	@Inject
 	private DLAppHelperLocalService _dlAppHelperLocalService;

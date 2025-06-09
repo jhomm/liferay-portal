@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.internal.security.permission.wrapper;
 
 import com.liferay.depot.constants.DepotRolesConstants;
 import com.liferay.depot.model.DepotEntry;
+import com.liferay.exportimport.kernel.staging.StagingUtil;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -128,7 +120,7 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 				this::_isContentReviewer);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return false;
@@ -151,7 +143,7 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 				this::_isGroupAdmin);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return false;
 		}
@@ -171,7 +163,7 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 			return _isGroupMember(_groupLocalService.fetchGroup(groupId));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return false;
 		}
@@ -193,7 +185,7 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 				DepotRolesConstants.ASSET_LIBRARY_OWNER, this::_isGroupOwner);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return false;
 		}
@@ -226,10 +218,22 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 				this, group.getClassPK(), actionId);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return false;
 		}
+	}
+
+	private boolean _hasRole(long companyId, long[] roleIds, String roleName)
+		throws Exception {
+
+		Role role = _roleLocalService.getRole(companyId, roleName);
+
+		if (Arrays.binarySearch(roleIds, role.getRoleId()) >= 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private boolean _isContentReviewer(Group group) throws PortalException {
@@ -237,14 +241,11 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 			return false;
 		}
 
-		if (_userGroupRoleLocalService.hasUserGroupRole(
-				getUserId(), group.getGroupId(),
-				DepotRolesConstants.ASSET_LIBRARY_CONTENT_REVIEWER, true)) {
+		Group liveGroup = StagingUtil.getLiveGroup(group);
 
-			return true;
-		}
-
-		return false;
+		return _userGroupRoleLocalService.hasUserGroupRole(
+			getUserId(), liveGroup.getGroupId(),
+			DepotRolesConstants.ASSET_LIBRARY_CONTENT_REVIEWER, true);
 	}
 
 	private boolean _isDepotGroupOwner(Group group) {
@@ -262,17 +263,19 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 			return false;
 		}
 
+		Group liveGroup = StagingUtil.getLiveGroup(group);
+
 		if (_userGroupRoleLocalService.hasUserGroupRole(
-				getUserId(), group.getGroupId(),
+				getUserId(), liveGroup.getGroupId(),
 				DepotRolesConstants.ASSET_LIBRARY_ADMINISTRATOR, true) ||
 			_userGroupRoleLocalService.hasUserGroupRole(
-				getUserId(), group.getGroupId(),
+				getUserId(), liveGroup.getGroupId(),
 				DepotRolesConstants.ASSET_LIBRARY_OWNER, true)) {
 
 			return true;
 		}
 
-		Group parentGroup = group;
+		Group parentGroup = liveGroup;
 
 		while (!parentGroup.isRoot()) {
 			parentGroup = parentGroup.getParentGroup();
@@ -294,12 +297,17 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 			return false;
 		}
 
-		long[] roleIds = getRoleIds(getUserId(), group.getGroupId());
+		Group liveGroup = StagingUtil.getLiveGroup(group);
 
-		Role role = _roleLocalService.getRole(
-			group.getCompanyId(), DepotRolesConstants.ASSET_LIBRARY_MEMBER);
+		long[] roleIds = getRoleIds(getUserId(), liveGroup.getGroupId());
 
-		if (Arrays.binarySearch(roleIds, role.getRoleId()) >= 0) {
+		if (_hasRole(
+				liveGroup.getCompanyId(), roleIds,
+				DepotRolesConstants.ASSET_LIBRARY_CONNECTED_SITE_MEMBER) ||
+			_hasRole(
+				liveGroup.getCompanyId(), roleIds,
+				DepotRolesConstants.ASSET_LIBRARY_MEMBER)) {
+
 			return true;
 		}
 
@@ -311,14 +319,11 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 			return false;
 		}
 
-		if (_userGroupRoleLocalService.hasUserGroupRole(
-				getUserId(), group.getGroupId(),
-				DepotRolesConstants.ASSET_LIBRARY_OWNER, true)) {
+		Group liveGroup = StagingUtil.getLiveGroup(group);
 
-			return true;
-		}
-
-		return false;
+		return _userGroupRoleLocalService.hasUserGroupRole(
+			getUserId(), liveGroup.getGroupId(),
+			DepotRolesConstants.ASSET_LIBRARY_OWNER, true);
 	}
 
 	private boolean _isOrAddToPermissionCache(
@@ -351,8 +356,9 @@ public class DepotPermissionCheckerWrapper extends PermissionCheckerWrapper {
 	private static final Set<String> _supportedActionIds = new HashSet<>(
 		Arrays.asList(
 			ActionKeys.ASSIGN_MEMBERS, ActionKeys.ASSIGN_USER_ROLES,
-			ActionKeys.DELETE, ActionKeys.UPDATE, ActionKeys.VIEW,
-			ActionKeys.VIEW_MEMBERS, ActionKeys.VIEW_SITE_ADMINISTRATION));
+			ActionKeys.DELETE, ActionKeys.PUBLISH_STAGING, ActionKeys.UPDATE,
+			ActionKeys.VIEW, ActionKeys.VIEW_MEMBERS,
+			ActionKeys.VIEW_SITE_ADMINISTRATION, ActionKeys.VIEW_STAGING));
 
 	private final ModelResourcePermission<DepotEntry>
 		_depotEntryModelResourcePermission;

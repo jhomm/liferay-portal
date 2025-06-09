@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.audit.router.internal;
@@ -19,6 +10,7 @@ import com.liferay.portal.kernel.audit.AuditMessage;
 import com.liferay.portal.kernel.change.tracking.CTTransactionException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.BatchProcessor;
 import com.liferay.portal.security.audit.AuditEventManager;
 import com.liferay.portal.security.audit.AuditMessageProcessor;
 import com.liferay.portal.security.audit.router.configuration.PersistentAuditMessageProcessorConfiguration;
@@ -27,6 +19,7 @@ import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
@@ -36,8 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.security.audit.router.configuration.PersistentAuditMessageProcessorConfiguration",
-	immediate = true, property = "eventTypes=*",
-	service = AuditMessageProcessor.class
+	property = "eventTypes=*", service = AuditMessageProcessor.class
 )
 public class PersistentAuditMessageProcessor implements AuditMessageProcessor {
 
@@ -56,27 +48,49 @@ public class PersistentAuditMessageProcessor implements AuditMessageProcessor {
 	}
 
 	@Activate
-	@Modified
 	protected void activate(Map<String, Object> properties) {
-		PersistentAuditMessageProcessorConfiguration
-			messageProcessorConfiguration = ConfigurableUtil.createConfigurable(
-				PersistentAuditMessageProcessorConfiguration.class, properties);
+		modified(properties);
+	}
 
-		_enabled = false;
-
-		if ((messageProcessorConfiguration != null) &&
-			messageProcessorConfiguration.enabled()) {
-
-			_enabled = true;
-		}
+	@Deactivate
+	protected void deactivate() {
+		_batchProcessor.close();
 	}
 
 	protected void doProcess(AuditMessage auditMessage) throws Exception {
-		if (!_enabled) {
+		PersistentAuditMessageProcessorConfiguration
+			persistentAuditMessageProcessorConfiguration =
+				_persistentAuditMessageProcessorConfiguration;
+
+		if (!persistentAuditMessageProcessorConfiguration.enabled()) {
 			return;
 		}
 
-		_auditEventManager.addAuditEvent(auditMessage);
+		_batchProcessor.add(auditMessage);
+	}
+
+	@Modified
+	protected void modified(Map<String, Object> properties) {
+		_persistentAuditMessageProcessorConfiguration =
+			ConfigurableUtil.createConfigurable(
+				PersistentAuditMessageProcessorConfiguration.class, properties);
+
+		if (!_persistentAuditMessageProcessorConfiguration.enabled()) {
+			return;
+		}
+
+		if (_batchProcessor == null) {
+			_batchProcessor = new BatchProcessor<>(
+				_persistentAuditMessageProcessorConfiguration.flushInterval(),
+				_persistentAuditMessageProcessorConfiguration.bufferSize(),
+				_auditEventManager::addAuditEvents,
+				PersistentAuditMessageProcessor.class.getName());
+		}
+		else {
+			_batchProcessor.configure(
+				_persistentAuditMessageProcessorConfiguration.flushInterval(),
+				_persistentAuditMessageProcessorConfiguration.bufferSize());
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -85,6 +99,8 @@ public class PersistentAuditMessageProcessor implements AuditMessageProcessor {
 	@Reference
 	private AuditEventManager _auditEventManager;
 
-	private volatile boolean _enabled;
+	private volatile BatchProcessor<AuditMessage> _batchProcessor;
+	private volatile PersistentAuditMessageProcessorConfiguration
+		_persistentAuditMessageProcessorConfiguration;
 
 }

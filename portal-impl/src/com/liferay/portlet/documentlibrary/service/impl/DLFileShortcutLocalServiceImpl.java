@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.impl;
 
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
+import com.liferay.document.library.kernel.exception.NoSuchFolderException;
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.model.DLFileShortcutConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
@@ -34,6 +28,7 @@ import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.RepositoryLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalService;
@@ -41,10 +36,9 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.persistence.UserPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.trash.helper.TrashHelper;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.documentlibrary.service.base.DLFileShortcutLocalServiceBaseImpl;
-import com.liferay.trash.kernel.service.TrashEntryLocalService;
-import com.liferay.trash.kernel.service.TrashVersionLocalService;
 
 import java.util.Date;
 import java.util.List;
@@ -57,8 +51,9 @@ public class DLFileShortcutLocalServiceImpl
 
 	@Override
 	public DLFileShortcut addFileShortcut(
-			long userId, long groupId, long repositoryId, long folderId,
-			long toFileEntryId, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long repositoryId, long folderId, long toFileEntryId,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		// File shortcut
@@ -67,7 +62,7 @@ public class DLFileShortcutLocalServiceImpl
 
 		folderId = getFolderId(user.getCompanyId(), folderId);
 
-		validate(user, toFileEntryId);
+		validate(user, groupId, folderId, toFileEntryId);
 
 		long fileShortcutId = counterLocalService.increment();
 
@@ -75,6 +70,7 @@ public class DLFileShortcutLocalServiceImpl
 			fileShortcutId);
 
 		fileShortcut.setUuid(serviceContext.getUuid());
+		fileShortcut.setExternalReferenceCode(externalReferenceCode);
 		fileShortcut.setGroupId(groupId);
 		fileShortcut.setCompanyId(user.getCompanyId());
 		fileShortcut.setUserId(user.getUserId());
@@ -114,11 +110,15 @@ public class DLFileShortcutLocalServiceImpl
 
 		// Asset
 
-		copyAssetTags(
-			_dlAppLocalService.getFileEntry(toFileEntryId), serviceContext);
+		FileEntry fileEntry = _dlAppLocalService.getFileEntry(toFileEntryId);
+
+		copyAssetTags(fileEntry, serviceContext);
 
 		updateAsset(
-			userId, fileShortcut, serviceContext.getAssetCategoryIds(),
+			userId, fileShortcut,
+			_assetCategoryLocalService.getCategoryIds(
+				DLFileEntryConstants.getClassName(),
+				fileEntry.getFileEntryId()),
 			serviceContext.getAssetTagNames());
 
 		return fileShortcut;
@@ -193,19 +193,6 @@ public class DLFileShortcutLocalServiceImpl
 		_assetEntryLocalService.deleteEntry(
 			DLFileShortcutConstants.getClassName(),
 			fileShortcut.getFileShortcutId());
-
-		// Trash
-
-		if (fileShortcut.isInTrashExplicitly()) {
-			_trashEntryLocalService.deleteEntry(
-				DLFileShortcutConstants.getClassName(),
-				fileShortcut.getFileShortcutId());
-		}
-		else {
-			_trashVersionLocalService.deleteTrashVersion(
-				DLFileShortcutConstants.getClassName(),
-				fileShortcut.getFileShortcutId());
-		}
 	}
 
 	@Override
@@ -214,6 +201,15 @@ public class DLFileShortcutLocalServiceImpl
 			dlFileShortcutLocalService.getDLFileShortcut(fileShortcutId);
 
 		dlFileShortcutLocalService.deleteFileShortcut(fileShortcut);
+	}
+
+	@Override
+	public void deleteFileShortcut(String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		dlFileShortcutLocalService.deleteFileShortcut(
+			dlFileShortcutPersistence.findByERC_G(
+				externalReferenceCode, groupId));
 	}
 
 	@Override
@@ -242,7 +238,11 @@ public class DLFileShortcutLocalServiceImpl
 			dlFileShortcutPersistence.findByG_F(groupId, folderId);
 
 		for (DLFileShortcut fileShortcut : fileShortcuts) {
-			if (includeTrashedEntries || !fileShortcut.isInTrashExplicitly()) {
+			TrashHelper trashHelper = _trashHelperSnapshot.get();
+
+			if (includeTrashedEntries ||
+				!trashHelper.isInTrashExplicitly(fileShortcut)) {
+
 				dlFileShortcutLocalService.deleteFileShortcut(fileShortcut);
 			}
 		}
@@ -272,7 +272,7 @@ public class DLFileShortcutLocalServiceImpl
 
 		actionableDynamicQuery.setPerformActionMethod(
 			(DLFileShortcut fileShortcut) ->
-				dlFileShortcutLocalService.deleteDLFileShortcut(fileShortcut));
+				dlFileShortcutLocalService.deleteFileShortcut(fileShortcut));
 
 		actionableDynamicQuery.performActions();
 	}
@@ -300,6 +300,11 @@ public class DLFileShortcutLocalServiceImpl
 	}
 
 	@Override
+	public List<DLFileShortcut> getFileShortcuts(long groupId, long folderId) {
+		return dlFileShortcutPersistence.findByG_F(groupId, folderId);
+	}
+
+	@Override
 	public List<DLFileShortcut> getFileShortcuts(
 		long groupId, long folderId, boolean active, int status, int start,
 		int end) {
@@ -314,6 +319,11 @@ public class DLFileShortcutLocalServiceImpl
 
 		return dlFileShortcutPersistence.countByG_F_A_S(
 			groupId, folderId, active, status);
+	}
+
+	@Override
+	public List<DLFileShortcut> getGroupFileShortcuts(long groupId) {
+		return dlFileShortcutPersistence.findByGroupId(groupId);
 	}
 
 	@Override
@@ -334,6 +344,19 @@ public class DLFileShortcutLocalServiceImpl
 
 		actionableDynamicQuery.setAddCriteriaMethod(
 			dynamicQuery -> {
+				if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+					DLFolder dlFolder = _dlFolderLocalService.fetchDLFolder(
+						folderId);
+
+					if (dlFolder != null) {
+						Property groupIdProperty = PropertyFactoryUtil.forName(
+							"groupId");
+
+						dynamicQuery.add(
+							groupIdProperty.eq(dlFolder.getGroupId()));
+					}
+				}
+
 				Property folderIdProperty = PropertyFactoryUtil.forName(
 					"folderId");
 
@@ -347,7 +370,6 @@ public class DLFileShortcutLocalServiceImpl
 						treePathProperty.isNull(),
 						treePathProperty.ne(treePath)));
 			});
-
 		actionableDynamicQuery.setPerformActionMethod(
 			(DLFileShortcut dlFileShortcut) -> {
 				dlFileShortcut.setTreePath(treePath);
@@ -391,7 +413,7 @@ public class DLFileShortcutLocalServiceImpl
 		DLFileShortcut fileShortcut =
 			dlFileShortcutPersistence.findByPrimaryKey(fileShortcutId);
 
-		validate(user, toFileEntryId);
+		validate(user, fileShortcut.getGroupId(), folderId, toFileEntryId);
 
 		fileShortcut.setFolderId(folderId);
 		fileShortcut.setToFileEntryId(toFileEntryId);
@@ -408,11 +430,15 @@ public class DLFileShortcutLocalServiceImpl
 
 		// Asset
 
-		copyAssetTags(
-			_dlAppLocalService.getFileEntry(toFileEntryId), serviceContext);
+		FileEntry fileEntry = _dlAppLocalService.getFileEntry(toFileEntryId);
+
+		copyAssetTags(fileEntry, serviceContext);
 
 		updateAsset(
-			userId, fileShortcut, serviceContext.getAssetCategoryIds(),
+			userId, fileShortcut,
+			_assetCategoryLocalService.getCategoryIds(
+				DLFileEntryConstants.getClassName(),
+				fileEntry.getFileEntryId()),
 			serviceContext.getAssetTagNames());
 
 		return fileShortcut;
@@ -468,7 +494,7 @@ public class DLFileShortcutLocalServiceImpl
 		throws PortalException {
 
 		String[] assetTagNames = _assetTagLocalService.getTagNames(
-			FileEntry.class.getName(), fileEntry.getFileEntryId());
+			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
 
 		_assetTagLocalService.checkTags(
 			serviceContext.getUserId(), serviceContext.getScopeGroupId(),
@@ -493,8 +519,20 @@ public class DLFileShortcutLocalServiceImpl
 		return folderId;
 	}
 
-	protected void validate(User user, long toFileEntryId)
+	protected void validate(
+			User user, long groupId, long folderId, long toFileEntryId)
 		throws PortalException {
+
+		if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+			DLFolder parentDLFolder = _dlFolderPersistence.findByPrimaryKey(
+				folderId);
+
+			if ((groupId != parentDLFolder.getGroupId()) ||
+				parentDLFolder.isInTrash()) {
+
+				throw new NoSuchFolderException();
+			}
+		}
 
 		FileEntry fileEntry = _dlAppLocalService.getFileEntry(toFileEntryId);
 
@@ -503,6 +541,12 @@ public class DLFileShortcutLocalServiceImpl
 				"{fileEntryId=" + toFileEntryId + "}");
 		}
 	}
+
+	private static final Snapshot<TrashHelper> _trashHelperSnapshot =
+		new Snapshot<>(DLFileShortcutLocalServiceImpl.class, TrashHelper.class);
+
+	@BeanReference(type = AssetCategoryLocalService.class)
+	private AssetCategoryLocalService _assetCategoryLocalService;
 
 	@BeanReference(type = AssetEntryLocalService.class)
 	private AssetEntryLocalService _assetEntryLocalService;
@@ -524,14 +568,6 @@ public class DLFileShortcutLocalServiceImpl
 
 	@BeanReference(type = ResourceLocalService.class)
 	private ResourceLocalService _resourceLocalService;
-
-	@BeanReference(type = TrashEntryLocalService.class)
-	@SuppressWarnings("deprecation")
-	private TrashEntryLocalService _trashEntryLocalService;
-
-	@BeanReference(type = TrashVersionLocalService.class)
-	@SuppressWarnings("deprecation")
-	private TrashVersionLocalService _trashVersionLocalService;
 
 	@BeanReference(type = UserPersistence.class)
 	private UserPersistence _userPersistence;

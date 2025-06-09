@@ -1,33 +1,24 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/wiki/init.jsp" %>
 
-<h4>
+<div class="h4">
 	<liferay-ui:message key="text-styles" />
-</h4>
+</div>
 
 <pre>
 //italics//
 **bold**
 </pre>
 
-<h4>
+<div class="h4">
 	<liferay-ui:message key="headers" />
-</h4>
+</div>
 
 <pre>
 == Large heading ==
@@ -35,18 +26,18 @@
 ==== Small heading ====
 </pre>
 
-<h4>
+<div class="h4">
 	<liferay-ui:message key="links" />
-</h4>
+</div>
 
 <pre>
 [[Link to a page]]
 [[http://www.liferay.com|Link to website]]
 </pre>
 
-<h4>
+<div class="h4">
 	<liferay-ui:message key="lists" />
-</h4>
+</div>
 
 <pre>
 * Item
@@ -55,18 +46,18 @@
 ## Ordered Subitem
 </pre>
 
-<h4>
+<div class="h4">
 	<liferay-ui:message key="images" />
-</h4>
+</div>
 
 <pre>
 {{attached-image.png}}
 {{Page Name/other-image.jpg|label}}
 </pre>
 
-<h4>
+<div class="h4">
 	<liferay-ui:message key="other" />
-</h4>
+</div>
 
 <pre>
 &lt;&lt;TableOfContents&gt;&gt;

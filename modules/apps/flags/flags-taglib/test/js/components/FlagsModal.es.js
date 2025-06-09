@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {cleanup, render, waitForElement} from '@testing-library/react';
+import {render} from '@testing-library/react';
 import React from 'react';
 
-import FlagsModal from '../../../src/main/resources/META-INF/resources/flags/js/components/FlagsModal.es';
+import FlagsModal from '../../../src/main/resources/META-INF/resources/flags/js/components/FlagsModal';
 import {
 	STATUS_ERROR,
 	STATUS_LOGIN,
 	STATUS_REPORT,
 	STATUS_SUCCESS,
-} from '../../../src/main/resources/META-INF/resources/flags/js/constants.es';
+} from '../../../src/main/resources/META-INF/resources/flags/js/constants';
 
 function _renderFlagsModalComponent({
 	captchaURI = '',
@@ -63,42 +54,38 @@ function _renderFlagsModalComponent({
 }
 
 describe('FlagsModal', () => {
-	afterEach(cleanup);
-
 	it('renders', async () => {
-		const {getByRole, getByText} = _renderFlagsModalComponent();
+		const {findByRole, findByText} = _renderFlagsModalComponent();
 
-		await waitForElement(() => getByText('report-inappropriate-content'));
-		await waitForElement(() => getByRole('form'));
+		await findByText('report-inappropriate-content');
+		await findByRole('form');
 	});
 
 	it('renders as guess and render email field', async () => {
-		const {getByLabelText} = _renderFlagsModalComponent({
+		const {findByLabelText} = _renderFlagsModalComponent({
 			signedIn: false,
 		});
 
-		await waitForElement(() => getByLabelText('email', {exact: false}));
+		await findByLabelText('email', {exact: false});
 	});
 
 	it('renders error', async () => {
-		const {getByText} = _renderFlagsModalComponent({status: STATUS_ERROR});
+		const {findByText} = _renderFlagsModalComponent({status: STATUS_ERROR});
 
-		await waitForElement(() =>
-			getByText('an-error-occurred', {exact: false})
-		);
+		await findByText('an-error-occurred', {exact: false});
 	});
 
 	it('renders login', async () => {
-		const {getByText} = _renderFlagsModalComponent({status: STATUS_LOGIN});
+		const {findByText} = _renderFlagsModalComponent({status: STATUS_LOGIN});
 
-		await waitForElement(() => getByText('please-sign-in', {exact: false}));
+		await findByText('please-sign-in', {exact: false});
 	});
 
 	it('renders success', async () => {
-		const {getByText} = _renderFlagsModalComponent({
+		const {findByText} = _renderFlagsModalComponent({
 			status: STATUS_SUCCESS,
 		});
 
-		await waitForElement(() => getByText('thank-you', {exact: false}));
+		await findByText('thank-you', {exact: false});
 	});
 });

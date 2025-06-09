@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
@@ -27,6 +18,10 @@ public class AccountEntryUserRelServiceWrapper
 	implements AccountEntryUserRelService,
 			   ServiceWrapper<AccountEntryUserRelService> {
 
+	public AccountEntryUserRelServiceWrapper() {
+		this(null);
+	}
+
 	public AccountEntryUserRelServiceWrapper(
 		AccountEntryUserRelService accountEntryUserRelService) {
 
@@ -37,12 +32,15 @@ public class AccountEntryUserRelServiceWrapper
 	public com.liferay.account.model.AccountEntryUserRel addAccountEntryUserRel(
 			long accountEntryId, long creatorUserId, String screenName,
 			String emailAddress, java.util.Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, String jobTitle,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _accountEntryUserRelService.addAccountEntryUserRel(
 			accountEntryId, creatorUserId, screenName, emailAddress, locale,
-			firstName, middleName, lastName, prefixId, suffixId);
+			firstName, middleName, lastName, prefixListTypeId, suffixListTypeId,
+			jobTitle, serviceContext);
 	}
 
 	@Override
@@ -68,6 +66,22 @@ public class AccountEntryUserRelServiceWrapper
 	}
 
 	@Override
+	public com.liferay.account.model.AccountEntryUserRel
+			addPersonTypeAccountEntryUserRel(
+				long accountEntryId, long creatorUserId, String screenName,
+				String emailAddress, java.util.Locale locale, String firstName,
+				String middleName, String lastName, long prefixListTypeId,
+				long suffixListTypeId, String jobTitle,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.addPersonTypeAccountEntryUserRel(
+			accountEntryId, creatorUserId, screenName, emailAddress, locale,
+			firstName, middleName, lastName, prefixListTypeId, suffixListTypeId,
+			jobTitle, serviceContext);
+	}
+
+	@Override
 	public void deleteAccountEntryUserRelByEmailAddress(
 			long accountEntryId, String emailAddress)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -85,6 +99,70 @@ public class AccountEntryUserRelServiceWrapper
 			accountEntryId, accountUserIds);
 	}
 
+	@Override
+	public com.liferay.account.model.AccountEntryUserRel
+			fetchAccountEntryUserRel(long accountEntryUserRelId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.fetchAccountEntryUserRel(
+			accountEntryUserRelId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntryUserRel
+			fetchAccountEntryUserRel(long accountEntryId, long accountUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.fetchAccountEntryUserRel(
+			accountEntryId, accountUserId);
+	}
+
+	@Override
+	public com.liferay.account.model.AccountEntryUserRel getAccountEntryUserRel(
+			long accountEntryId, long accountUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.getAccountEntryUserRel(
+			accountEntryId, accountUserId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.account.model.AccountEntryUserRel>
+			getAccountEntryUserRelsByAccountEntryId(long accountEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.
+			getAccountEntryUserRelsByAccountEntryId(accountEntryId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.account.model.AccountEntryUserRel>
+			getAccountEntryUserRelsByAccountEntryId(
+				long accountEntryId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.
+			getAccountEntryUserRelsByAccountEntryId(accountEntryId, start, end);
+	}
+
+	@Override
+	public java.util.List<com.liferay.account.model.AccountEntryUserRel>
+			getAccountEntryUserRelsByAccountUserId(long accountUserId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.
+			getAccountEntryUserRelsByAccountUserId(accountUserId);
+	}
+
+	@Override
+	public long getAccountEntryUserRelsCountByAccountEntryId(
+			long accountEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _accountEntryUserRelService.
+			getAccountEntryUserRelsCountByAccountEntryId(accountEntryId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -93,6 +171,18 @@ public class AccountEntryUserRelServiceWrapper
 	@Override
 	public String getOSGiServiceIdentifier() {
 		return _accountEntryUserRelService.getOSGiServiceIdentifier();
+	}
+
+	@Override
+	public void inviteUser(
+			long accountEntryId, long[] accountRoleIds, String emailAddress,
+			com.liferay.portal.kernel.model.User inviter,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_accountEntryUserRelService.inviteUser(
+			accountEntryId, accountRoleIds, emailAddress, inviter,
+			serviceContext);
 	}
 
 	@Override

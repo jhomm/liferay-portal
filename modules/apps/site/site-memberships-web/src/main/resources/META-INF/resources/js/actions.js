@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {setFormValues} from 'frontend-js-web';
 
 export const ACTIONS = {
 	assignRoles(itemData, portletNamespace) {
 		openSelectionModal({
 			buttonAddLabel: Liferay.Language.get('done'),
+			getSelectedItemsOnly: false,
 			multiple: true,
-			onSelect: (selectedItems) => {
+			onSelect: (items) => {
 				const editUserGroupRoleFm = document.getElementById(
 					`${portletNamespace}editUserGroupRoleFm`
 				);
@@ -28,12 +21,21 @@ export const ACTIONS = {
 					return;
 				}
 
-				const input = document.createElement('input');
+				const allInput = document.createElement('input');
 
-				input.name = `${portletNamespace}rowIds`;
-				input.value = selectedItems.map((item) => item.value);
+				allInput.name = `${portletNamespace}availableRowIds`;
+				allInput.value = items.map((item) => item.value);
 
-				editUserGroupRoleFm.appendChild(input);
+				editUserGroupRoleFm.appendChild(allInput);
+
+				const checkedInput = document.createElement('input');
+
+				checkedInput.name = `${portletNamespace}rowIds`;
+				checkedInput.value = items
+					.filter((item) => item.checked)
+					.map((item) => item.value);
+
+				editUserGroupRoleFm.appendChild(checkedInput);
 
 				submitForm(editUserGroupRoleFm, itemData.editUserGroupRoleURL);
 			},
@@ -43,12 +45,39 @@ export const ACTIONS = {
 	},
 
 	deleteGroupUsers(itemData) {
-		if (
-			confirm(
-				Liferay.Language.get('are-you-sure-you-want-to-delete-this')
-			)
-		) {
-			submitForm(document.hrefFm, itemData.deleteGroupUsersURL);
-		}
+		submitForm(document.hrefFm, itemData.deleteGroupUsersURL);
+	},
+
+	unassignRoles(itemData, portletNamespace) {
+		openSelectionModal({
+			buttonAddLabel: Liferay.Language.get('done'),
+			multiple: true,
+			onSelect(selectedItems) {
+				const unassignUserGroupRoleFm = document.getElementById(
+					`${portletNamespace}unassignUserGroupRoleFm`
+				);
+
+				setFormValues(unassignUserGroupRoleFm, {
+					userId: itemData.userId,
+				});
+
+				const input = document.createElement('input');
+
+				input.name = `${portletNamespace}rowIds`;
+
+				const selectedUserGroupIds = Array.prototype.map.call(
+					selectedItems,
+					(item) => item.value
+				);
+
+				input.value = selectedUserGroupIds.join();
+
+				unassignUserGroupRoleFm.appendChild(input);
+
+				submitForm(unassignUserGroupRoleFm);
+			},
+			title: Liferay.Language.get('unassign-roles'),
+			url: itemData.unassignUserGroupRoleURL,
+		});
 	},
 };

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.price.list.exception.DuplicateCommerceTierPriceEntryExternalReferenceCodeException;
 import com.liferay.commerce.price.list.exception.NoSuchTierPriceEntryException;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
 import com.liferay.commerce.price.list.service.CommerceTierPriceEntryLocalServiceUtil;
@@ -131,6 +123,10 @@ public class CommerceTierPriceEntryPersistenceTest {
 		CommerceTierPriceEntry newCommerceTierPriceEntry = _persistence.create(
 			pk);
 
+		newCommerceTierPriceEntry.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCommerceTierPriceEntry.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCommerceTierPriceEntry.setUuid(RandomTestUtil.randomString());
 
 		newCommerceTierPriceEntry.setExternalReferenceCode(
@@ -170,7 +166,8 @@ public class CommerceTierPriceEntryPersistenceTest {
 		newCommerceTierPriceEntry.setDiscountLevel4(
 			new BigDecimal(RandomTestUtil.nextDouble()));
 
-		newCommerceTierPriceEntry.setMinQuantity(RandomTestUtil.nextInt());
+		newCommerceTierPriceEntry.setMinQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
 
 		newCommerceTierPriceEntry.setDisplayDate(RandomTestUtil.nextDate());
 
@@ -194,6 +191,12 @@ public class CommerceTierPriceEntryPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommerceTierPriceEntry.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommerceTierPriceEntry.getMvccVersion(),
+			newCommerceTierPriceEntry.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceTierPriceEntry.getCtCollectionId(),
+			newCommerceTierPriceEntry.getCtCollectionId());
 		Assert.assertEquals(
 			existingCommerceTierPriceEntry.getUuid(),
 			newCommerceTierPriceEntry.getUuid());
@@ -277,6 +280,32 @@ public class CommerceTierPriceEntryPersistenceTest {
 			Time.getShortTimestamp(newCommerceTierPriceEntry.getStatusDate()));
 	}
 
+	@Test(
+		expected = DuplicateCommerceTierPriceEntryExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceTierPriceEntry commerceTierPriceEntry =
+			addCommerceTierPriceEntry();
+
+		CommerceTierPriceEntry newCommerceTierPriceEntry =
+			addCommerceTierPriceEntry();
+
+		newCommerceTierPriceEntry.setCompanyId(
+			commerceTierPriceEntry.getCompanyId());
+
+		newCommerceTierPriceEntry = _persistence.update(
+			newCommerceTierPriceEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceTierPriceEntry);
+
+		newCommerceTierPriceEntry.setExternalReferenceCode(
+			commerceTierPriceEntry.getExternalReferenceCode());
+
+		_persistence.update(newCommerceTierPriceEntry);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -311,18 +340,24 @@ public class CommerceTierPriceEntryPersistenceTest {
 
 	@Test
 	public void testCountByC_M() throws Exception {
-		_persistence.countByC_M(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
+		_persistence.countByC_M(RandomTestUtil.nextLong(), (BigDecimal)null);
 
-		_persistence.countByC_M(0L, 0);
+		_persistence.countByC_M(0L, (BigDecimal)null);
 	}
 
 	@Test
 	public void testCountByC_LteM() throws Exception {
-		_persistence.countByC_LteM(
+		_persistence.countByC_LteM(RandomTestUtil.nextLong(), (BigDecimal)null);
+
+		_persistence.countByC_LteM(0L, (BigDecimal)null);
+	}
+
+	@Test
+	public void testCountByC_S() throws Exception {
+		_persistence.countByC_S(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
-		_persistence.countByC_LteM(0L, 0);
+		_persistence.countByC_S(0L, 0);
 	}
 
 	@Test
@@ -344,19 +379,19 @@ public class CommerceTierPriceEntryPersistenceTest {
 	@Test
 	public void testCountByC_LteM_S() throws Exception {
 		_persistence.countByC_LteM_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(),
+			RandomTestUtil.nextLong(), (BigDecimal)null,
 			RandomTestUtil.nextInt());
 
-		_persistence.countByC_LteM_S(0L, 0, 0);
+		_persistence.countByC_LteM_S(0L, (BigDecimal)null, 0);
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -387,9 +422,10 @@ public class CommerceTierPriceEntryPersistenceTest {
 
 	protected OrderByComparator<CommerceTierPriceEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceTierPriceEntry", "uuid", true, "externalReferenceCode",
-			true, "commerceTierPriceEntryId", true, "companyId", true, "userId",
-			true, "userName", true, "createDate", true, "modifiedDate", true,
+			"CommerceTierPriceEntry", "mvccVersion", true, "ctCollectionId",
+			true, "uuid", true, "externalReferenceCode", true,
+			"commerceTierPriceEntryId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true,
 			"commercePriceEntryId", true, "price", true, "promoPrice", true,
 			"discountDiscovery", true, "discountLevel1", true, "discountLevel2",
 			true, "discountLevel3", true, "discountLevel4", true, "minQuantity",
@@ -697,21 +733,21 @@ public class CommerceTierPriceEntryPersistenceTest {
 				commerceTierPriceEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "commercePriceEntryId"));
 		Assert.assertEquals(
-			Integer.valueOf(commerceTierPriceEntry.getMinQuantity()),
-			ReflectionTestUtil.<Integer>invoke(
+			commerceTierPriceEntry.getMinQuantity(),
+			ReflectionTestUtil.invoke(
 				commerceTierPriceEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "minQuantity"));
 
-		Assert.assertEquals(
-			Long.valueOf(commerceTierPriceEntry.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				commerceTierPriceEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
 		Assert.assertEquals(
 			commerceTierPriceEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				commerceTierPriceEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceTierPriceEntry.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceTierPriceEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CommerceTierPriceEntry addCommerceTierPriceEntry()
@@ -720,6 +756,10 @@ public class CommerceTierPriceEntryPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceTierPriceEntry commerceTierPriceEntry = _persistence.create(pk);
+
+		commerceTierPriceEntry.setMvccVersion(RandomTestUtil.nextLong());
+
+		commerceTierPriceEntry.setCtCollectionId(RandomTestUtil.nextLong());
 
 		commerceTierPriceEntry.setUuid(RandomTestUtil.randomString());
 
@@ -760,7 +800,8 @@ public class CommerceTierPriceEntryPersistenceTest {
 		commerceTierPriceEntry.setDiscountLevel4(
 			new BigDecimal(RandomTestUtil.nextDouble()));
 
-		commerceTierPriceEntry.setMinQuantity(RandomTestUtil.nextInt());
+		commerceTierPriceEntry.setMinQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
 
 		commerceTierPriceEntry.setDisplayDate(RandomTestUtil.nextDate());
 

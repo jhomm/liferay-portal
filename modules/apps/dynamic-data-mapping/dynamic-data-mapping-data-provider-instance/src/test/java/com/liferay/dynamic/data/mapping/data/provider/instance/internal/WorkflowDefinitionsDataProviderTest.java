@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.data.provider.instance.internal;
@@ -19,44 +10,75 @@ import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRequest;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderResponse;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManager;
 import com.liferay.portal.kernel.workflow.WorkflowException;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Leonardo Barros
  */
-@PrepareForTest(LocaleUtil.class)
-@RunWith(PowerMockRunner.class)
-public class WorkflowDefinitionsDataProviderTest extends PowerMockito {
+public class WorkflowDefinitionsDataProviderTest {
 
-	@Before
-	public void setUp() throws Exception {
-		_setUpLanguageUtil();
-		_setUpLocaleUtil();
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
+
+	@BeforeClass
+	public static void setUpClass() {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		Mockito.when(
+			FrameworkUtil.getBundle(Mockito.any())
+		).thenReturn(
+			bundleContext.getBundle()
+		);
+
+		_workflowDefinitionManagerServiceRegistration =
+			bundleContext.registerService(
+				WorkflowDefinitionManager.class, _workflowDefinitionManager,
+				null);
 
 		_workflowDefinitionsDataProvider =
 			new WorkflowDefinitionsDataProvider();
+
+		Mockito.when(
+			_language.get(_locale, "no-workflow")
+		).thenReturn(
+			"No Workflow"
+		);
+
+		ReflectionTestUtil.setFieldValue(
+			_workflowDefinitionsDataProvider, "_language", _language);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_frameworkUtilMockedStatic.close();
+		_workflowDefinitionManagerServiceRegistration.unregister();
 	}
 
 	@Test(expected = UnsupportedOperationException.class)
@@ -75,21 +97,20 @@ public class WorkflowDefinitionsDataProviderTest extends PowerMockito {
 			1L
 		).build();
 
-		_workflowDefinitionsDataProvider.workflowDefinitionManager =
-			_workflowDefinitionManager;
-
-		WorkflowDefinition workflowDefinition1 = mock(WorkflowDefinition.class);
+		WorkflowDefinition workflowDefinition1 = Mockito.mock(
+			WorkflowDefinition.class);
 
 		_setUpWorkflowDefinition(
 			workflowDefinition1, "definition1", "Definition 1");
 
-		WorkflowDefinition workflowDefinition2 = mock(WorkflowDefinition.class);
+		WorkflowDefinition workflowDefinition2 = Mockito.mock(
+			WorkflowDefinition.class);
 
 		_setUpWorkflowDefinition(
 			workflowDefinition2, "definition2", "Definition 2");
 
-		when(
-			_workflowDefinitionManager.getActiveWorkflowDefinitions(
+		Mockito.when(
+			_workflowDefinitionManager.liberalGetActiveWorkflowDefinitions(
 				1, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)
 		).thenReturn(
 			Arrays.asList(workflowDefinition1, workflowDefinition2)
@@ -100,21 +121,21 @@ public class WorkflowDefinitionsDataProviderTest extends PowerMockito {
 
 		Assert.assertTrue(ddmDataProviderResponse.hasOutput("Default-Output"));
 
-		Optional<List<KeyValuePair>> optional =
-			ddmDataProviderResponse.getOutputOptional(
-				"Default-Output", List.class);
+		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
+			"Default-Output", List.class);
 
-		Assert.assertTrue(optional.isPresent());
+		Assert.assertNotNull(keyValuePairs);
 
-		List<KeyValuePair> keyValuePairs = new ArrayList<KeyValuePair>() {
-			{
-				add(new KeyValuePair("no-workflow", "No Workflow"));
-				add(new KeyValuePair("definition1", "Definition 1"));
-				add(new KeyValuePair("definition2", "Definition 2"));
-			}
-		};
+		List<KeyValuePair> expectedKeyValuePairs =
+			new ArrayList<KeyValuePair>() {
+				{
+					add(new KeyValuePair("no-workflow", "No Workflow"));
+					add(new KeyValuePair("definition1", "Definition 1"));
+					add(new KeyValuePair("definition2", "Definition 2"));
+				}
+			};
 
-		Assert.assertEquals(keyValuePairs, optional.get());
+		Assert.assertEquals(expectedKeyValuePairs, keyValuePairs);
 	}
 
 	@Test
@@ -131,19 +152,19 @@ public class WorkflowDefinitionsDataProviderTest extends PowerMockito {
 
 		Assert.assertTrue(ddmDataProviderResponse.hasOutput("Default-Output"));
 
-		Optional<List<KeyValuePair>> optional =
-			ddmDataProviderResponse.getOutputOptional(
-				"Default-Output", List.class);
+		List<KeyValuePair> keyValuePairs = ddmDataProviderResponse.getOutput(
+			"Default-Output", List.class);
 
-		Assert.assertTrue(optional.isPresent());
+		Assert.assertNotNull(keyValuePairs);
 
-		List<KeyValuePair> keyValuePairs = new ArrayList<KeyValuePair>() {
-			{
-				add(new KeyValuePair("no-workflow", "No Workflow"));
-			}
-		};
+		List<KeyValuePair> expectedKeyValuePairs =
+			new ArrayList<KeyValuePair>() {
+				{
+					add(new KeyValuePair("no-workflow", "No Workflow"));
+				}
+			};
 
-		Assert.assertEquals(keyValuePairs, optional.get());
+		Assert.assertEquals(expectedKeyValuePairs, keyValuePairs);
 	}
 
 	@Test(expected = DDMDataProviderException.class)
@@ -157,11 +178,8 @@ public class WorkflowDefinitionsDataProviderTest extends PowerMockito {
 			1L
 		).build();
 
-		_workflowDefinitionsDataProvider.workflowDefinitionManager =
-			_workflowDefinitionManager;
-
-		when(
-			_workflowDefinitionManager.getActiveWorkflowDefinitions(
+		Mockito.when(
+			_workflowDefinitionManager.liberalGetActiveWorkflowDefinitions(
 				1, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)
 		).thenThrow(
 			WorkflowException.class
@@ -170,52 +188,31 @@ public class WorkflowDefinitionsDataProviderTest extends PowerMockito {
 		_workflowDefinitionsDataProvider.getData(ddmDataProviderRequest);
 	}
 
-	private void _setUpLanguageUtil() {
-		LanguageUtil languageUtil = new LanguageUtil();
-
-		languageUtil.setLanguage(_language);
-
-		when(
-			_language.get(_locale, "no-workflow")
-		).thenReturn(
-			"No Workflow"
-		);
-	}
-
-	private void _setUpLocaleUtil() {
-		mockStatic(LocaleUtil.class);
-
-		when(
-			LocaleUtil.toLanguageId(_locale)
-		).thenReturn(
-			"en_US"
-		);
-	}
-
 	private void _setUpWorkflowDefinition(
-		WorkflowDefinition workflowDefinition1, String name, String title) {
+		WorkflowDefinition workflowDefinition, String name, String title) {
 
-		when(
-			workflowDefinition1.getName()
+		Mockito.when(
+			workflowDefinition.getName()
 		).thenReturn(
 			name
 		);
 
-		when(
-			workflowDefinition1.getTitle("en_US")
+		Mockito.when(
+			workflowDefinition.getTitle("en_US")
 		).thenReturn(
 			title
 		);
 	}
 
+	private static final MockedStatic<FrameworkUtil>
+		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
+	private static final Language _language = Mockito.mock(Language.class);
 	private static final Locale _locale = new Locale("en", "US");
-
-	@Mock
-	private Language _language;
-
-	@Mock
-	private WorkflowDefinitionManager _workflowDefinitionManager;
-
-	private WorkflowDefinitionsDataProvider _workflowDefinitionsDataProvider;
+	private static final WorkflowDefinitionManager _workflowDefinitionManager =
+		Mockito.mock(WorkflowDefinitionManager.class);
+	private static ServiceRegistration<WorkflowDefinitionManager>
+		_workflowDefinitionManagerServiceRegistration;
+	private static WorkflowDefinitionsDataProvider
+		_workflowDefinitionsDataProvider;
 
 }

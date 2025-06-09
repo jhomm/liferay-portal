@@ -1,63 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import 'codemirror/addon/display/autorefresh';
-
-import 'codemirror/addon/edit/closebrackets';
-
-import 'codemirror/addon/edit/closetag';
-
-import 'codemirror/addon/edit/matchbrackets';
-
-import 'codemirror/addon/fold/brace-fold';
-
-import 'codemirror/addon/fold/comment-fold';
-
-import 'codemirror/addon/fold/foldcode';
-
-import 'codemirror/addon/fold/foldgutter.css';
-
-import 'codemirror/addon/fold/foldgutter';
-
-import 'codemirror/addon/fold/indent-fold';
-
-import 'codemirror/addon/fold/xml-fold';
-
-import 'codemirror/addon/hint/css-hint';
-
-import 'codemirror/addon/hint/html-hint';
-
-import 'codemirror/addon/hint/javascript-hint';
-
-import 'codemirror/addon/hint/show-hint.css';
-
-import 'codemirror/addon/hint/show-hint';
-
-import 'codemirror/addon/hint/xml-hint';
-
-import 'codemirror/lib/codemirror.css';
-
-import 'codemirror/mode/css/css';
-
-import 'codemirror/mode/htmlmixed/htmlmixed';
-
-import 'codemirror/mode/javascript/javascript';
-
-import 'codemirror/mode/xml/xml';
 import ClayIcon from '@clayui/icon';
-import CodeMirror from 'codemirror';
-import React, {useEffect, useMemo, useRef} from 'react';
+import {CodeMirror} from '@liferay/frontend-js-codemirror-web';
+import {CodeMirrorKeyboardMessage} from 'frontend-js-components-web';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 const AUTOCOMPLETE_EXCLUDED_KEYS = new Set([
 	' ',
@@ -210,10 +159,15 @@ const escapeChars = (string) => string.replace(/[.*+\-?^${}()|[\]\\]/g, '\\$&');
 
 const noop = () => {};
 
-const FixedText = ({helpText, text = ''}) => {
+const FixedText = ({helpText, texts = []}) => {
 	return (
 		<div className="source-editor__fixed-text">
-			<code className="source-editor__fixed-text__content">{text}</code>
+			<code
+				className="source-editor__fixed-text__content"
+				style={{whiteSpace: 'pre-line'}}
+			>
+				{texts.join('\n')}
+			</code>
 
 			{helpText && (
 				<span
@@ -237,13 +191,16 @@ const CodeMirrorEditor = ({
 	onChange = noop,
 	mode = 'html',
 	codeFooterText,
-	codeHeaderText,
+	codeHeaderTexts,
 	codeHeaderHelpText,
 	content = '',
 	readOnly,
+	showHeader = true,
 }) => {
-	const editor = useRef();
+	const editorRef = useRef();
 	const ref = useRef();
+	const [isEnabled, setIsEnabled] = useState(true);
+	const [isFocused, setIsFocused] = useState(false);
 
 	const customEntitiesSymbolsRegex = useMemo(() => {
 		if (!customEntities) {
@@ -262,14 +219,37 @@ const CodeMirrorEditor = ({
 
 	useEffect(() => {
 		if (ref.current) {
+			const hasEnabledTabKey = ({state: {keyMaps}}) =>
+				keyMaps.every((key) => key.name !== 'tabKey');
+
 			const codeMirror = CodeMirror(ref.current, {
 				autoCloseTags: true,
 				autoRefresh: true,
 				extraKeys: {
-					'Ctrl-Space': 'autocomplete',
+					'Ctrl-M'(cm) {
+						const tabKeyIsEnabled = hasEnabledTabKey(cm);
+
+						setIsEnabled(tabKeyIsEnabled);
+
+						if (tabKeyIsEnabled) {
+							cm.addKeyMap({
+								'Shift-Tab': false,
+								'Tab': false,
+								'name': 'tabKey',
+							});
+						}
+						else {
+							cm.removeKeyMap('tabKey');
+						}
+					},
+					'Ctrl-Space': readOnly ? '' : 'autocomplete',
 				},
 				foldGutter: true,
-				gutters: ['CodeMirror-linenumbers', 'CodeMirror-foldgutter'],
+				gutters: [
+					'CodeMirror-warning',
+					'CodeMirror-linenumbers',
+					'CodeMirror-foldgutter',
+				],
 				hintOptions: {
 					completeSingle: false,
 					customDataAttributes,
@@ -284,18 +264,56 @@ const CodeMirrorEditor = ({
 				matchBrackets: true,
 				mode: {globalVars: true, name: MODES[mode].type},
 				readOnly,
-				showHint: true,
+				showHint: !readOnly,
 				tabSize: 2,
 				value: content,
 				viewportMargin: Infinity,
 			});
 
+			const updateWarningsInGutter = () => {
+				codeMirror.clearGutter('CodeMirror-warning');
+				const lineCount = codeMirror.lineCount();
+
+				const widgetRegex = new RegExp('<lfr-widget(?:-[^>]+)?>', 'g');
+
+				for (let i = 0; i < lineCount; i++) {
+					const lineContent = codeMirror.getLine(i);
+
+					if (
+						widgetRegex.test(lineContent) ||
+						lineContent.includes('[@liferay_portlet["runtime"]')
+					) {
+						const warningIcon = document.createElement('div');
+						warningIcon.className = 'warning-icon';
+						warningIcon.title =
+							'Embedding widgets within fragments is a deprecated practice that can cause performance issues.';
+						warningIcon.dataset.tooltipAlign = 'right';
+						warningIcon.innerHTML = `
+						<svg class="lexicon-icon lexicon-icon-warning-full" focusable="false">
+							<use href="${Liferay.Icons.spritemap}#warning-full" />
+						</svg>`;
+
+						codeMirror.setGutterMarker(
+							i,
+							'CodeMirror-warning',
+							warningIcon
+						);
+					}
+				}
+			};
+
 			codeMirror.on('change', (cm) => {
+				if (Liferay.FeatureFlags['LPD-40535']) {
+					codeMirror.operation(() => {
+						updateWarningsInGutter();
+					});
+				}
 				onChange(cm.getValue());
 			});
 
 			codeMirror.on('keyup', (cm, event) => {
 				if (
+					!readOnly &&
 					!cm.state.completionActive &&
 					!AUTOCOMPLETE_EXCLUDED_KEYS.has(event.key)
 				) {
@@ -303,21 +321,35 @@ const CodeMirrorEditor = ({
 				}
 			});
 
-			editor.current = codeMirror;
+			codeMirror.on('focus', (cm) => {
+				setIsFocused(true);
+
+				if (hasEnabledTabKey(cm)) {
+					cm.addKeyMap({
+						'Shift-Tab': false,
+						'Tab': false,
+						'name': 'tabKey',
+					});
+				}
+			});
+
+			codeMirror.on('blur', () => setIsFocused(false));
+
+			editorRef.current = codeMirror;
 		}
 	}, [ref]); // eslint-disable-line
 
 	useEffect(() => {
-		if (editor.current) {
-			editor.current.setOption('mode', {
+		if (editorRef.current) {
+			editorRef.current.setOption('mode', {
 				globalVars: true,
 				name: MODES[mode].type,
 			});
 
-			editor.current.setOption('readOnly', readOnly);
+			editorRef.current.setOption('readOnly', readOnly);
 
-			editor.current.setOption('hintOptions', {
-				...editor.current.getOption('hintOptions'),
+			editorRef.current.setOption('hintOptions', {
+				...editorRef.current.getOption('hintOptions'),
 				customEntities,
 				customEntitiesSymbolsRegex,
 				customTags,
@@ -332,31 +364,49 @@ const CodeMirrorEditor = ({
 	]);
 
 	useEffect(() => {
-		if (editor.current) {
-			editor.current.setValue(content);
+		if (editorRef.current) {
+			editorRef.current.setValue(content);
 		}
 	}, [content]);
 
 	return (
 		<>
-			<nav className="source-editor-toolbar tbar">
-				<ul className="tbar-nav">
-					<li className="source-editor-toolbar__syntax tbar-item tbar-item-expand text-center">
-						{MODES[mode].name}
-					</li>
-				</ul>
-			</nav>
+			{showHeader && (
+				<nav className="source-editor-toolbar tbar">
+					<ul className="tbar-nav">
+						<li className="source-editor-toolbar__syntax tbar-item tbar-item-expand text-center">
+							{MODES[mode].name}
+						</li>
+					</ul>
+				</nav>
+			)}
 
-			{(codeHeaderHelpText || codeHeaderText) && (
+			{(codeHeaderHelpText || codeHeaderTexts) && (
 				<FixedText
 					helpText={codeHeaderHelpText}
-					text={codeHeaderText}
+					texts={codeHeaderTexts}
 				/>
 			)}
 
-			<div className="codemirror-editor-wrapper" ref={ref}></div>
+			<div className="d-flex flex-column flex-grow-1 overflow-hidden position-relative">
+				{isFocused && !readOnly ? (
+					<CodeMirrorKeyboardMessage keyIsEnabled={isEnabled} />
+				) : null}
 
-			{codeFooterText && <FixedText text={codeFooterText} />}
+				<div
+					aria-label={
+						readOnly
+							? null
+							: Liferay.Language.get(
+									'use-ctrl-m-to-enable-or-disable-the-tab-key'
+								)
+					}
+					className="codemirror-editor-wrapper h-100"
+					ref={ref}
+				></div>
+			</div>
+
+			{codeFooterText && <FixedText texts={[codeFooterText]} />}
 		</>
 	);
 };

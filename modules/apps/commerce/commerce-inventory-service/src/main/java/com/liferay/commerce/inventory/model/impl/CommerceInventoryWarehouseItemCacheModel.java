@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.model.impl;
@@ -24,6 +15,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.math.BigDecimal;
 
 import java.util.Date;
 
@@ -82,10 +75,12 @@ public class CommerceInventoryWarehouseItemCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(29);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", uuid=");
+		sb.append(uuid);
 		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
 		sb.append(", commerceInventoryWarehouseItemId=");
@@ -102,12 +97,14 @@ public class CommerceInventoryWarehouseItemCacheModel
 		sb.append(modifiedDate);
 		sb.append(", commerceInventoryWarehouseId=");
 		sb.append(commerceInventoryWarehouseId);
-		sb.append(", sku=");
-		sb.append(sku);
 		sb.append(", quantity=");
 		sb.append(quantity);
 		sb.append(", reservedQuantity=");
 		sb.append(reservedQuantity);
+		sb.append(", sku=");
+		sb.append(sku);
+		sb.append(", unitOfMeasureKey=");
+		sb.append(unitOfMeasureKey);
 		sb.append("}");
 
 		return sb.toString();
@@ -119,6 +116,13 @@ public class CommerceInventoryWarehouseItemCacheModel
 			new CommerceInventoryWarehouseItemImpl();
 
 		commerceInventoryWarehouseItemImpl.setMvccVersion(mvccVersion);
+
+		if (uuid == null) {
+			commerceInventoryWarehouseItemImpl.setUuid("");
+		}
+		else {
+			commerceInventoryWarehouseItemImpl.setUuid(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			commerceInventoryWarehouseItemImpl.setExternalReferenceCode("");
@@ -158,6 +162,9 @@ public class CommerceInventoryWarehouseItemCacheModel
 
 		commerceInventoryWarehouseItemImpl.setCommerceInventoryWarehouseId(
 			commerceInventoryWarehouseId);
+		commerceInventoryWarehouseItemImpl.setQuantity(quantity);
+		commerceInventoryWarehouseItemImpl.setReservedQuantity(
+			reservedQuantity);
 
 		if (sku == null) {
 			commerceInventoryWarehouseItemImpl.setSku("");
@@ -166,9 +173,13 @@ public class CommerceInventoryWarehouseItemCacheModel
 			commerceInventoryWarehouseItemImpl.setSku(sku);
 		}
 
-		commerceInventoryWarehouseItemImpl.setQuantity(quantity);
-		commerceInventoryWarehouseItemImpl.setReservedQuantity(
-			reservedQuantity);
+		if (unitOfMeasureKey == null) {
+			commerceInventoryWarehouseItemImpl.setUnitOfMeasureKey("");
+		}
+		else {
+			commerceInventoryWarehouseItemImpl.setUnitOfMeasureKey(
+				unitOfMeasureKey);
+		}
 
 		commerceInventoryWarehouseItemImpl.resetOriginalValues();
 
@@ -176,8 +187,11 @@ public class CommerceInventoryWarehouseItemCacheModel
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
 		mvccVersion = objectInput.readLong();
+		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
 		commerceInventoryWarehouseItemId = objectInput.readLong();
@@ -190,16 +204,22 @@ public class CommerceInventoryWarehouseItemCacheModel
 		modifiedDate = objectInput.readLong();
 
 		commerceInventoryWarehouseId = objectInput.readLong();
+		quantity = (BigDecimal)objectInput.readObject();
+		reservedQuantity = (BigDecimal)objectInput.readObject();
 		sku = objectInput.readUTF();
-
-		quantity = objectInput.readInt();
-
-		reservedQuantity = objectInput.readInt();
+		unitOfMeasureKey = objectInput.readUTF();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			objectOutput.writeUTF("");
@@ -225,6 +245,8 @@ public class CommerceInventoryWarehouseItemCacheModel
 		objectOutput.writeLong(modifiedDate);
 
 		objectOutput.writeLong(commerceInventoryWarehouseId);
+		objectOutput.writeObject(quantity);
+		objectOutput.writeObject(reservedQuantity);
 
 		if (sku == null) {
 			objectOutput.writeUTF("");
@@ -233,12 +255,16 @@ public class CommerceInventoryWarehouseItemCacheModel
 			objectOutput.writeUTF(sku);
 		}
 
-		objectOutput.writeInt(quantity);
-
-		objectOutput.writeInt(reservedQuantity);
+		if (unitOfMeasureKey == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(unitOfMeasureKey);
+		}
 	}
 
 	public long mvccVersion;
+	public String uuid;
 	public String externalReferenceCode;
 	public long commerceInventoryWarehouseItemId;
 	public long companyId;
@@ -247,8 +273,9 @@ public class CommerceInventoryWarehouseItemCacheModel
 	public long createDate;
 	public long modifiedDate;
 	public long commerceInventoryWarehouseId;
+	public BigDecimal quantity;
+	public BigDecimal reservedQuantity;
 	public String sku;
-	public int quantity;
-	public int reservedQuantity;
+	public String unitOfMeasureKey;
 
 }

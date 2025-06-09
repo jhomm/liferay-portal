@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.client.dto.v1_0;
 
 import com.liferay.headless.commerce.admin.order.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.order.client.serdes.v1_0.OrderItemSerDes;
+
+import jakarta.annotation.Generated;
 
 import java.io.Serializable;
 
@@ -24,8 +17,6 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -59,16 +50,25 @@ public class OrderItem implements Cloneable, Serializable {
 
 	protected Long bookedQuantityId;
 
-	public Map<String, ?> getCustomFields() {
+	public
+		com.liferay.headless.commerce.admin.order.client.custom.field.
+			CustomField[] getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(Map<String, ?> customFields) {
+	public void setCustomFields(
+		com.liferay.headless.commerce.admin.order.client.custom.field.
+			CustomField[] customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<Map<String, ?>, Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.commerce.admin.order.client.custom.field.
+				CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -78,7 +78,30 @@ public class OrderItem implements Cloneable, Serializable {
 		}
 	}
 
-	protected Map<String, ?> customFields;
+	protected
+		com.liferay.headless.commerce.admin.order.client.custom.field.
+			CustomField[] customFields;
+
+	public BigDecimal getDecimalQuantity() {
+		return decimalQuantity;
+	}
+
+	public void setDecimalQuantity(BigDecimal decimalQuantity) {
+		this.decimalQuantity = decimalQuantity;
+	}
+
+	public void setDecimalQuantity(
+		UnsafeSupplier<BigDecimal, Exception> decimalQuantityUnsafeSupplier) {
+
+		try {
+			decimalQuantity = decimalQuantityUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected BigDecimal decimalQuantity;
 
 	public String getDeliveryGroup() {
 		return deliveryGroup;
@@ -101,6 +124,27 @@ public class OrderItem implements Cloneable, Serializable {
 
 	protected String deliveryGroup;
 
+	public String getDeliveryGroupName() {
+		return deliveryGroupName;
+	}
+
+	public void setDeliveryGroupName(String deliveryGroupName) {
+		this.deliveryGroupName = deliveryGroupName;
+	}
+
+	public void setDeliveryGroupName(
+		UnsafeSupplier<String, Exception> deliveryGroupNameUnsafeSupplier) {
+
+		try {
+			deliveryGroupName = deliveryGroupNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String deliveryGroupName;
+
 	public BigDecimal getDiscountAmount() {
 		return discountAmount;
 	}
@@ -121,6 +165,29 @@ public class OrderItem implements Cloneable, Serializable {
 	}
 
 	protected BigDecimal discountAmount;
+
+	public Boolean getDiscountManuallyAdjusted() {
+		return discountManuallyAdjusted;
+	}
+
+	public void setDiscountManuallyAdjusted(Boolean discountManuallyAdjusted) {
+		this.discountManuallyAdjusted = discountManuallyAdjusted;
+	}
+
+	public void setDiscountManuallyAdjusted(
+		UnsafeSupplier<Boolean, Exception>
+			discountManuallyAdjustedUnsafeSupplier) {
+
+		try {
+			discountManuallyAdjusted =
+				discountManuallyAdjustedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean discountManuallyAdjusted;
 
 	public BigDecimal getDiscountPercentageLevel1() {
 		return discountPercentageLevel1;
@@ -413,6 +480,27 @@ public class OrderItem implements Cloneable, Serializable {
 
 	protected BigDecimal finalPriceWithTaxAmount;
 
+	public String getFormattedQuantity() {
+		return formattedQuantity;
+	}
+
+	public void setFormattedQuantity(String formattedQuantity) {
+		this.formattedQuantity = formattedQuantity;
+	}
+
+	public void setFormattedQuantity(
+		UnsafeSupplier<String, Exception> formattedQuantityUnsafeSupplier) {
+
+		try {
+			formattedQuantity = formattedQuantityUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String formattedQuantity;
+
 	public Long getId() {
 		return id;
 	}
@@ -452,6 +540,27 @@ public class OrderItem implements Cloneable, Serializable {
 	}
 
 	protected Map<String, String> name;
+
+	public String getOptions() {
+		return options;
+	}
+
+	public void setOptions(String options) {
+		this.options = options;
+	}
+
+	public void setOptions(
+		UnsafeSupplier<String, Exception> optionsUnsafeSupplier) {
+
+		try {
+			options = optionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String options;
 
 	public String getOrderExternalReferenceCode() {
 		return orderExternalReferenceCode;
@@ -498,6 +607,28 @@ public class OrderItem implements Cloneable, Serializable {
 	}
 
 	protected Long orderId;
+
+	public Boolean getPriceManuallyAdjusted() {
+		return priceManuallyAdjusted;
+	}
+
+	public void setPriceManuallyAdjusted(Boolean priceManuallyAdjusted) {
+		this.priceManuallyAdjusted = priceManuallyAdjusted;
+	}
+
+	public void setPriceManuallyAdjusted(
+		UnsafeSupplier<Boolean, Exception>
+			priceManuallyAdjustedUnsafeSupplier) {
+
+		try {
+			priceManuallyAdjusted = priceManuallyAdjustedUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean priceManuallyAdjusted;
 
 	public String getPrintedNote() {
 		return printedNote;
@@ -564,16 +695,16 @@ public class OrderItem implements Cloneable, Serializable {
 
 	protected BigDecimal promoPriceWithTaxAmount;
 
-	public Integer getQuantity() {
+	public BigDecimal getQuantity() {
 		return quantity;
 	}
 
-	public void setQuantity(Integer quantity) {
+	public void setQuantity(BigDecimal quantity) {
 		this.quantity = quantity;
 	}
 
 	public void setQuantity(
-		UnsafeSupplier<Integer, Exception> quantityUnsafeSupplier) {
+		UnsafeSupplier<BigDecimal, Exception> quantityUnsafeSupplier) {
 
 		try {
 			quantity = quantityUnsafeSupplier.get();
@@ -583,7 +714,75 @@ public class OrderItem implements Cloneable, Serializable {
 		}
 	}
 
-	protected Integer quantity;
+	protected BigDecimal quantity;
+
+	public String getReplacedSku() {
+		return replacedSku;
+	}
+
+	public void setReplacedSku(String replacedSku) {
+		this.replacedSku = replacedSku;
+	}
+
+	public void setReplacedSku(
+		UnsafeSupplier<String, Exception> replacedSkuUnsafeSupplier) {
+
+		try {
+			replacedSku = replacedSkuUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String replacedSku;
+
+	public String getReplacedSkuExternalReferenceCode() {
+		return replacedSkuExternalReferenceCode;
+	}
+
+	public void setReplacedSkuExternalReferenceCode(
+		String replacedSkuExternalReferenceCode) {
+
+		this.replacedSkuExternalReferenceCode =
+			replacedSkuExternalReferenceCode;
+	}
+
+	public void setReplacedSkuExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			replacedSkuExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			replacedSkuExternalReferenceCode =
+				replacedSkuExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String replacedSkuExternalReferenceCode;
+
+	public Long getReplacedSkuId() {
+		return replacedSkuId;
+	}
+
+	public void setReplacedSkuId(Long replacedSkuId) {
+		this.replacedSkuId = replacedSkuId;
+	}
+
+	public void setReplacedSkuId(
+		UnsafeSupplier<Long, Exception> replacedSkuIdUnsafeSupplier) {
+
+		try {
+			replacedSkuId = replacedSkuIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long replacedSkuId;
 
 	public Date getRequestedDeliveryDate() {
 		return requestedDeliveryDate;
@@ -606,16 +805,37 @@ public class OrderItem implements Cloneable, Serializable {
 
 	protected Date requestedDeliveryDate;
 
-	public Integer getShippedQuantity() {
+	public Boolean getShippable() {
+		return shippable;
+	}
+
+	public void setShippable(Boolean shippable) {
+		this.shippable = shippable;
+	}
+
+	public void setShippable(
+		UnsafeSupplier<Boolean, Exception> shippableUnsafeSupplier) {
+
+		try {
+			shippable = shippableUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean shippable;
+
+	public BigDecimal getShippedQuantity() {
 		return shippedQuantity;
 	}
 
-	public void setShippedQuantity(Integer shippedQuantity) {
+	public void setShippedQuantity(BigDecimal shippedQuantity) {
 		this.shippedQuantity = shippedQuantity;
 	}
 
 	public void setShippedQuantity(
-		UnsafeSupplier<Integer, Exception> shippedQuantityUnsafeSupplier) {
+		UnsafeSupplier<BigDecimal, Exception> shippedQuantityUnsafeSupplier) {
 
 		try {
 			shippedQuantity = shippedQuantityUnsafeSupplier.get();
@@ -625,7 +845,7 @@ public class OrderItem implements Cloneable, Serializable {
 		}
 	}
 
-	protected Integer shippedQuantity;
+	protected BigDecimal shippedQuantity;
 
 	public ShippingAddress getShippingAddress() {
 		return shippingAddress;
@@ -648,6 +868,32 @@ public class OrderItem implements Cloneable, Serializable {
 	}
 
 	protected ShippingAddress shippingAddress;
+
+	public String getShippingAddressExternalReferenceCode() {
+		return shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		String shippingAddressExternalReferenceCode) {
+
+		this.shippingAddressExternalReferenceCode =
+			shippingAddressExternalReferenceCode;
+	}
+
+	public void setShippingAddressExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			shippingAddressExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			shippingAddressExternalReferenceCode =
+				shippingAddressExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String shippingAddressExternalReferenceCode;
 
 	public Long getShippingAddressId() {
 		return shippingAddressId;
@@ -752,6 +998,48 @@ public class OrderItem implements Cloneable, Serializable {
 
 	protected Boolean subscription;
 
+	public String getUnitOfMeasure() {
+		return unitOfMeasure;
+	}
+
+	public void setUnitOfMeasure(String unitOfMeasure) {
+		this.unitOfMeasure = unitOfMeasure;
+	}
+
+	public void setUnitOfMeasure(
+		UnsafeSupplier<String, Exception> unitOfMeasureUnsafeSupplier) {
+
+		try {
+			unitOfMeasure = unitOfMeasureUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String unitOfMeasure;
+
+	public String getUnitOfMeasureKey() {
+		return unitOfMeasureKey;
+	}
+
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		this.unitOfMeasureKey = unitOfMeasureKey;
+	}
+
+	public void setUnitOfMeasureKey(
+		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
+
+		try {
+			unitOfMeasureKey = unitOfMeasureKeyUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String unitOfMeasureKey;
+
 	public BigDecimal getUnitPrice() {
 		return unitPrice;
 	}
@@ -794,6 +1082,48 @@ public class OrderItem implements Cloneable, Serializable {
 	}
 
 	protected BigDecimal unitPriceWithTaxAmount;
+
+	public String[] getVirtualItemURLs() {
+		return virtualItemURLs;
+	}
+
+	public void setVirtualItemURLs(String[] virtualItemURLs) {
+		this.virtualItemURLs = virtualItemURLs;
+	}
+
+	public void setVirtualItemURLs(
+		UnsafeSupplier<String[], Exception> virtualItemURLsUnsafeSupplier) {
+
+		try {
+			virtualItemURLs = virtualItemURLsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String[] virtualItemURLs;
+
+	public VirtualItem[] getVirtualItems() {
+		return virtualItems;
+	}
+
+	public void setVirtualItems(VirtualItem[] virtualItems) {
+		this.virtualItems = virtualItems;
+	}
+
+	public void setVirtualItems(
+		UnsafeSupplier<VirtualItem[], Exception> virtualItemsUnsafeSupplier) {
+
+		try {
+			virtualItems = virtualItemsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected VirtualItem[] virtualItems;
 
 	@Override
 	public OrderItem clone() throws CloneNotSupportedException {

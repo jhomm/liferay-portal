@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.web.internal.portlet.action;
@@ -20,23 +11,19 @@ import com.liferay.commerce.wish.list.exception.NoSuchWishListException;
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.commerce.wish.list.service.CommerceWishListService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
-import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,38 +32,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommerceWishListPortletKeys.COMMERCE_WISH_LIST_CONTENT,
-		"javax.portlet.name=" + CommerceWishListPortletKeys.MY_COMMERCE_WISH_LISTS,
+		"jakarta.portlet.name=" + CommerceWishListPortletKeys.COMMERCE_WISH_LIST_CONTENT,
+		"jakarta.portlet.name=" + CommerceWishListPortletKeys.MY_COMMERCE_WISH_LISTS,
 		"mvc.command.name=/commerce_wish_list_content/edit_commerce_wish_list"
 	},
 	service = MVCActionCommand.class
 )
 public class EditCommerceWishListMVCActionCommand extends BaseMVCActionCommand {
-
-	protected void deleteCommerceWishLists(ActionRequest actionRequest)
-		throws PortalException {
-
-		long[] deleteCommerceWishListIds = null;
-
-		long commerceWishListId = ParamUtil.getLong(
-			actionRequest, "commerceWishListId");
-
-		if (commerceWishListId > 0) {
-			deleteCommerceWishListIds = new long[] {commerceWishListId};
-		}
-		else {
-			deleteCommerceWishListIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "deleteCommerceWishListIds"),
-				0L);
-		}
-
-		for (long deleteCommerceWishListId : deleteCommerceWishListIds) {
-			_commerceWishListService.deleteCommerceWishList(
-				deleteCommerceWishListId);
-		}
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -87,13 +50,13 @@ public class EditCommerceWishListMVCActionCommand extends BaseMVCActionCommand {
 
 		try {
 			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateCommerceWishList(actionRequest);
+				_updateCommerceWishList(actionRequest);
 			}
 			else if (cmd.equals(Constants.DELETE)) {
-				deleteCommerceWishLists(actionRequest);
+				_deleteCommerceWishLists(actionRequest);
 			}
 			else if (cmd.equals(Constants.SAVE)) {
-				saveCommerceWishList(actionRequest, actionResponse);
+				_saveCommerceWishList(actionRequest, actionResponse);
 
 				hideDefaultSuccessMessage(actionRequest);
 			}
@@ -120,28 +83,48 @@ public class EditCommerceWishListMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void saveCommerceWishList(
+	private void _deleteCommerceWishLists(ActionRequest actionRequest)
+		throws PortalException {
+
+		long[] deleteCommerceWishListIds = null;
+
+		long commerceWishListId = ParamUtil.getLong(
+			actionRequest, "commerceWishListId");
+
+		if (commerceWishListId > 0) {
+			deleteCommerceWishListIds = new long[] {commerceWishListId};
+		}
+		else {
+			deleteCommerceWishListIds = StringUtil.split(
+				ParamUtil.getString(actionRequest, "deleteCommerceWishListIds"),
+				0L);
+		}
+
+		for (long deleteCommerceWishListId : deleteCommerceWishListIds) {
+			_commerceWishListService.deleteCommerceWishList(
+				deleteCommerceWishListId);
+		}
+	}
+
+	private void _saveCommerceWishList(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws PortalException {
 
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", _portal.getLocale(actionRequest), getClass());
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-		String name = LanguageUtil.get(resourceBundle, "new-wish-list");
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			CommerceWishList.class.getName(), actionRequest);
+		String name = _language.get(themeDisplay.getLocale(), "new-wish-list");
 
 		CommerceWishList commerceWishList =
 			_commerceWishListService.addCommerceWishList(
-				name, false, serviceContext);
+				themeDisplay.getScopeGroupId(), name, false);
 
 		actionResponse.setRenderParameter(
 			"commerceWishListId",
 			String.valueOf(commerceWishList.getCommerceWishListId()));
 	}
 
-	protected void updateCommerceWishList(ActionRequest actionRequest)
+	private void _updateCommerceWishList(ActionRequest actionRequest)
 		throws PortalException {
 
 		long commerceWishListId = ParamUtil.getLong(
@@ -156,11 +139,11 @@ public class EditCommerceWishListMVCActionCommand extends BaseMVCActionCommand {
 				commerceWishListId, name, defaultWishList);
 		}
 		else {
-			ServiceContext serviceContext = ServiceContextFactory.getInstance(
-				CommerceWishList.class.getName(), actionRequest);
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
 			_commerceWishListService.addCommerceWishList(
-				name, defaultWishList, serviceContext);
+				themeDisplay.getScopeGroupId(), name, defaultWishList);
 		}
 	}
 
@@ -168,6 +151,6 @@ public class EditCommerceWishListMVCActionCommand extends BaseMVCActionCommand {
 	private CommerceWishListService _commerceWishListService;
 
 	@Reference
-	private Portal _portal;
+	private Language _language;
 
 }

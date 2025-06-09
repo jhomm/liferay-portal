@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.model;
@@ -45,6 +36,7 @@ public class SXPBlueprintWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("sxpBlueprintId", getSXPBlueprintId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -54,7 +46,9 @@ public class SXPBlueprintWrapper
 		attributes.put("configurationJSON", getConfigurationJSON());
 		attributes.put("description", getDescription());
 		attributes.put("elementInstancesJSON", getElementInstancesJSON());
+		attributes.put("schemaVersion", getSchemaVersion());
 		attributes.put("title", getTitle());
+		attributes.put("version", getVersion());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
 		attributes.put("statusByUserName", getStatusByUserName());
@@ -75,6 +69,13 @@ public class SXPBlueprintWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long sxpBlueprintId = (Long)attributes.get("sxpBlueprintId");
@@ -132,10 +133,22 @@ public class SXPBlueprintWrapper
 			setElementInstancesJSON(elementInstancesJSON);
 		}
 
+		String schemaVersion = (String)attributes.get("schemaVersion");
+
+		if (schemaVersion != null) {
+			setSchemaVersion(schemaVersion);
+		}
+
 		String title = (String)attributes.get("title");
 
 		if (title != null) {
 			setTitle(title);
+		}
+
+		String version = (String)attributes.get("version");
+
+		if (version != null) {
+			setVersion(version);
 		}
 
 		Integer status = (Integer)attributes.get("status");
@@ -295,6 +308,16 @@ public class SXPBlueprintWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this sxp blueprint.
+	 *
+	 * @return the external reference code of this sxp blueprint
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the modified date of this sxp blueprint.
 	 *
 	 * @return the modified date of this sxp blueprint
@@ -322,6 +345,16 @@ public class SXPBlueprintWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
+	}
+
+	/**
+	 * Returns the schema version of this sxp blueprint.
+	 *
+	 * @return the schema version of this sxp blueprint
+	 */
+	@Override
+	public String getSchemaVersion() {
+		return model.getSchemaVersion();
 	}
 
 	/**
@@ -498,6 +531,16 @@ public class SXPBlueprintWrapper
 	@Override
 	public String getUuid() {
 		return model.getUuid();
+	}
+
+	/**
+	 * Returns the version of this sxp blueprint.
+	 *
+	 * @return the version of this sxp blueprint
+	 */
+	@Override
+	public String getVersion() {
+		return model.getVersion();
 	}
 
 	/**
@@ -708,6 +751,16 @@ public class SXPBlueprintWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this sxp blueprint.
+	 *
+	 * @param externalReferenceCode the external reference code of this sxp blueprint
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the modified date of this sxp blueprint.
 	 *
 	 * @param modifiedDate the modified date of this sxp blueprint
@@ -735,6 +788,16 @@ public class SXPBlueprintWrapper
 	@Override
 	public void setPrimaryKey(long primaryKey) {
 		model.setPrimaryKey(primaryKey);
+	}
+
+	/**
+	 * Sets the schema version of this sxp blueprint.
+	 *
+	 * @param schemaVersion the schema version of this sxp blueprint
+	 */
+	@Override
+	public void setSchemaVersion(String schemaVersion) {
+		model.setSchemaVersion(schemaVersion);
 	}
 
 	/**
@@ -899,6 +962,21 @@ public class SXPBlueprintWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	/**
+	 * Sets the version of this sxp blueprint.
+	 *
+	 * @param version the version of this sxp blueprint
+	 */
+	@Override
+	public void setVersion(String version) {
+		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

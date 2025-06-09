@@ -1,23 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.resolver;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.portal.kernel.bean.BeanProperties;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -29,6 +21,7 @@ import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.UserGroupGroupRole;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalService;
@@ -36,8 +29,9 @@ import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManager;
 import com.liferay.saml.opensaml.integration.resolver.AttributeResolver;
+import com.liferay.saml.persistence.model.SamlIdpSpConnection;
+import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
 import com.liferay.saml.util.PortletPropsKeys;
 
 import java.io.Serializable;
@@ -49,7 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import org.opensaml.saml.common.xml.SAMLConstants;
 import org.opensaml.saml.saml2.core.Attribute;
@@ -62,7 +55,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carlos Sierra
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=" + Integer.MIN_VALUE,
+	property = "service.ranking:Integer=" + Integer.MIN_VALUE,
 	service = AttributeResolver.class
 )
 public class DefaultAttributeResolver implements AttributeResolver {
@@ -74,108 +67,85 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 		String entityId = attributeResolverSAMLContext.resolvePeerEntityId();
 
-		boolean namespaceEnabled =
-			_metadataManager.isAttributesNamespaceEnabled(entityId);
+		boolean namespaceEnabled = _isAttributesNamespaceEnabled(entityId);
 
 		for (String attributeName : getAttributeNames(entityId)) {
 			if (attributeName.startsWith("expando:")) {
 				attributeName = attributeName.substring(8);
 
-				addExpandoAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addExpandoAttribute(
+					user, attributePublisher, attributeName, namespaceEnabled);
 			}
 			else if (attributeName.equals("groups")) {
-				addGroupsAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addGroupsAttribute(user, attributePublisher, namespaceEnabled);
 			}
 			else if (attributeName.startsWith("map:")) {
 				attributeName = attributeName.substring(4);
 
-				addMapAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addMapAttribute(
+					user, attributePublisher, attributeName, namespaceEnabled);
 			}
 			else if (attributeName.equals("organizations")) {
-				addOrganizationsAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addOrganizationsAttribute(
+					user, attributePublisher, namespaceEnabled);
 			}
 			else if (attributeName.equals("organizationRoles")) {
-				addOrganizationRolesAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addOrganizationRolesAttribute(
+					user, attributePublisher, namespaceEnabled);
 			}
 			else if (attributeName.equals("roles")) {
-				addRolesAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addRolesAttribute(user, attributePublisher, namespaceEnabled);
 			}
 			else if (attributeName.startsWith("static:")) {
 				attributeName = attributeName.substring(7);
 
-				addStaticAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addStaticAttribute(
+					attributePublisher, attributeName, namespaceEnabled);
 			}
 			else if (attributeName.equals("siteRoles") ||
 					 attributeName.equals("userGroupRoles")) {
 
-				addSiteRolesAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addSiteRolesAttribute(
+					user, attributePublisher, attributeName, namespaceEnabled);
 			}
 			else if (attributeName.equals("userGroups")) {
-				addUserGroupsAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addUserGroupsAttribute(
+					user, attributePublisher, namespaceEnabled);
 			}
 			else {
-				addUserAttribute(
-					user, attributeResolverSAMLContext, attributePublisher,
-					attributeName, namespaceEnabled);
+				_addUserAttribute(
+					user, attributePublisher, attributeName, namespaceEnabled);
 			}
 		}
 
-		if (isPeerSalesForce(entityId)) {
-			addSalesForceAttributes(
+		if (_isPeerSalesForce(entityId)) {
+			_addSalesForceAttributes(
 				attributeResolverSAMLContext, attributePublisher);
 		}
 	}
 
-	@Reference(unbind = "-")
-	public void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
+	protected String[] getAttributeNames(String entityId) {
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		try {
+			SamlIdpSpConnection samlIdpSpConnection =
+				_samlIdpSpConnectionLocalService.getSamlIdpSpConnection(
+					companyId, entityId);
+
+			return StringUtil.splitLines(
+				samlIdpSpConnection.getAttributeNames());
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return null;
 	}
 
-	@Reference(unbind = "-")
-	public void setMetadataManager(MetadataManager metadataManager) {
-		_metadataManager = metadataManager;
-	}
-
-	@Reference(unbind = "-")
-	public void setRoleLocalService(RoleLocalService roleLocalService) {
-		_roleLocalService = roleLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setUserGroupGroupRoleLocalService(
-		UserGroupGroupRoleLocalService userGroupGroupRoleLocalService) {
-
-		_userGroupGroupRoleLocalService = userGroupGroupRoleLocalService;
-	}
-
-	@Reference(unbind = "-")
-	public void setUserGroupRoleLocalService(
-		UserGroupRoleLocalService userGroupRoleLocalService) {
-
-		_userGroupRoleLocalService = userGroupRoleLocalService;
-	}
-
-	protected void addExpandoAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addExpandoAttribute(
+		User user, AttributePublisher attributePublisher, String attributeName,
 		boolean namespaceEnabled) {
 
 		ExpandoBridge expandoBridge = user.getExpandoBridge();
@@ -188,20 +158,17 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 		if (!namespaceEnabled) {
 			attributePublisher.publish(
-				attributeName, Attribute.UNSPECIFIED,
-				attributePublisher.buildString(value.toString()));
+				attributeName, Attribute.UNSPECIFIED, value.toString());
 		}
 		else {
 			attributePublisher.publish(
 				"urn:liferay:user:expando:" + attributeName,
-				Attribute.URI_REFERENCE,
-				attributePublisher.buildString(value.toString()));
+				Attribute.URI_REFERENCE, value.toString());
 		}
 	}
 
-	protected void addGroupsAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addGroupsAttribute(
+		User user, AttributePublisher attributePublisher,
 		boolean namespaceEnabled) {
 
 		try {
@@ -223,17 +190,10 @@ public class DefaultAttributeResolver implements AttributeResolver {
 				nameFormat = Attribute.UNSPECIFIED;
 			}
 
-			Stream<Group> groupsStream = groups.stream();
-
 			attributePublisher.publish(
 				name, nameFormat,
-				groupsStream.map(
-					Group::getName
-				).map(
-					attributePublisher::buildString
-				).toArray(
-					AttributePublisher.AttributeValue[]::new
-				));
+				TransformUtil.transformToArray(
+					groups, Group::getName, String.class));
 		}
 		catch (Exception exception) {
 			String message = StringBundler.concat(
@@ -249,9 +209,8 @@ public class DefaultAttributeResolver implements AttributeResolver {
 		}
 	}
 
-	protected void addMapAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addMapAttribute(
+		User user, AttributePublisher attributePublisher, String attributeName,
 		boolean namespaceEnabled) {
 
 		if (attributeName.indexOf(StringPool.EQUAL) <= 0) {
@@ -264,23 +223,20 @@ public class DefaultAttributeResolver implements AttributeResolver {
 			return;
 		}
 
-		String attributeValue = BeanPropertiesUtil.getString(user, values[1]);
+		String attributeValue = _beanProperties.getString(user, values[1]);
 
 		if (namespaceEnabled) {
 			attributePublisher.publish(
-				values[0], Attribute.URI_REFERENCE,
-				attributePublisher.buildString(attributeValue));
+				values[0], Attribute.URI_REFERENCE, attributeValue);
 		}
 		else {
 			attributePublisher.publish(
-				values[0], Attribute.UNSPECIFIED,
-				attributePublisher.buildString(attributeValue));
+				values[0], Attribute.UNSPECIFIED, attributeValue);
 		}
 	}
 
-	protected void addOrganizationRolesAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addOrganizationRolesAttribute(
+		User user, AttributePublisher attributePublisher,
 		boolean namespaceEnabled) {
 
 		try {
@@ -321,17 +277,10 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 				Set<Role> roles = entry.getValue();
 
-				Stream<Role> rolesStream = roles.stream();
-
 				attributePublisher.publish(
 					name, nameFormat,
-					rolesStream.map(
-						Role::getName
-					).map(
-						attributePublisher::buildString
-					).toArray(
-						AttributePublisher.AttributeValue[]::new
-					));
+					TransformUtil.transformToArray(
+						roles, Role::getName, String.class));
 			}
 		}
 		catch (Exception exception) {
@@ -348,10 +297,8 @@ public class DefaultAttributeResolver implements AttributeResolver {
 		}
 	}
 
-	protected void addOrganizationsAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher publisher, String attributeName,
-		boolean namespaceEnabled) {
+	private void _addOrganizationsAttribute(
+		User user, AttributePublisher publisher, boolean namespaceEnabled) {
 
 		try {
 			List<Organization> organizations = user.getOrganizations();
@@ -372,17 +319,10 @@ public class DefaultAttributeResolver implements AttributeResolver {
 				nameFormat = Attribute.UNSPECIFIED;
 			}
 
-			Stream<Organization> organizationsStream = organizations.stream();
-
 			publisher.publish(
 				name, nameFormat,
-				organizationsStream.map(
-					Organization::getName
-				).map(
-					publisher::buildString
-				).toArray(
-					AttributePublisher.AttributeValue[]::new
-				));
+				TransformUtil.transformToArray(
+					organizations, Organization::getName, String.class));
 		}
 		catch (Exception exception) {
 			String message = StringBundler.concat(
@@ -398,9 +338,8 @@ public class DefaultAttributeResolver implements AttributeResolver {
 		}
 	}
 
-	protected void addRolesAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addRolesAttribute(
+		User user, AttributePublisher attributePublisher,
 		boolean namespaceEnabled) {
 
 		try {
@@ -444,10 +383,8 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 			for (Group group : allGroups) {
 				if (_roleLocalService.hasGroupRoles(group.getGroupId())) {
-					List<Role> groupRoles = _roleLocalService.getGroupRoles(
-						group.getGroupId());
-
-					uniqueRoles.addAll(groupRoles);
+					uniqueRoles.addAll(
+						_roleLocalService.getGroupRoles(group.getGroupId()));
 				}
 			}
 
@@ -467,17 +404,10 @@ public class DefaultAttributeResolver implements AttributeResolver {
 				nameFormat = Attribute.UNSPECIFIED;
 			}
 
-			Stream<Role> uniqueRolesStream = uniqueRoles.stream();
-
 			attributePublisher.publish(
 				name, nameFormat,
-				uniqueRolesStream.map(
-					Role::getName
-				).map(
-					attributePublisher::buildString
-				).toArray(
-					AttributePublisher.AttributeValue[]::new
-				));
+				TransformUtil.transformToArray(
+					uniqueRoles, Role::getName, String.class));
 		}
 		catch (Exception exception) {
 			String message = StringBundler.concat(
@@ -493,7 +423,7 @@ public class DefaultAttributeResolver implements AttributeResolver {
 		}
 	}
 
-	protected void addSalesForceAttributes(
+	private void _addSalesForceAttributes(
 		AttributeResolverSAMLContext attributeResolverSAMLContext,
 		AttributePublisher attributePublisher) {
 
@@ -503,7 +433,7 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 		attributePublisher.publish(
 			"logoutURL", Attribute.UNSPECIFIED,
-			attributePublisher.buildString(samlIdpMetadataSalesForceLogoutURL));
+			samlIdpMetadataSalesForceLogoutURL);
 
 		String samlIdpMetadataSalesForceSsoStartPage = GetterUtil.getString(
 			PropsUtil.get(
@@ -519,13 +449,11 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 		attributePublisher.publish(
 			"ssoStartPage", Attribute.UNSPECIFIED,
-			attributePublisher.buildString(
-				samlIdpMetadataSalesForceSsoStartPage));
+			samlIdpMetadataSalesForceSsoStartPage);
 	}
 
-	protected void addSiteRolesAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addSiteRolesAttribute(
+		User user, AttributePublisher attributePublisher, String attributeName,
 		boolean namespaceEnabled) {
 
 		try {
@@ -594,17 +522,10 @@ public class DefaultAttributeResolver implements AttributeResolver {
 
 				Set<Role> roles = entry.getValue();
 
-				Stream<Role> rolesStream = roles.stream();
-
 				attributePublisher.publish(
 					name, nameFormat,
-					rolesStream.map(
-						Role::getName
-					).map(
-						attributePublisher::buildString
-					).toArray(
-						AttributePublisher.AttributeValue[]::new
-					));
+					TransformUtil.transformToArray(
+						roles, Role::getName, String.class));
 			}
 		}
 		catch (Exception exception) {
@@ -621,8 +542,7 @@ public class DefaultAttributeResolver implements AttributeResolver {
 		}
 	}
 
-	protected void addStaticAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
+	private void _addStaticAttribute(
 		AttributePublisher attributePublisher, String attributeName,
 		boolean namespaceEnabled) {
 
@@ -652,34 +572,29 @@ public class DefaultAttributeResolver implements AttributeResolver {
 			nameFormat = Attribute.UNSPECIFIED;
 		}
 
-		attributePublisher.publish(
-			attributeName, nameFormat,
-			attributePublisher.buildString(attributeValue));
+		attributePublisher.publish(attributeName, nameFormat, attributeValue);
 	}
 
-	protected void addUserAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addUserAttribute(
+		User user, AttributePublisher attributePublisher, String attributeName,
 		boolean namespaceEnabled) {
 
-		Serializable value = (Serializable)BeanPropertiesUtil.getObject(
+		Serializable value = (Serializable)_beanProperties.getObject(
 			user, attributeName);
 
 		if (!namespaceEnabled) {
 			attributePublisher.publish(
-				attributeName, Attribute.UNSPECIFIED,
-				attributePublisher.buildString(value.toString()));
+				attributeName, Attribute.UNSPECIFIED, value.toString());
 		}
 		else {
 			attributePublisher.publish(
 				"urn:liferay:user:" + attributeName, Attribute.URI_REFERENCE,
-				attributePublisher.buildString(value.toString()));
+				value.toString());
 		}
 	}
 
-	protected void addUserGroupsAttribute(
-		User user, AttributeResolverSAMLContext attributeResolverSAMLContext,
-		AttributePublisher attributePublisher, String attributeName,
+	private void _addUserGroupsAttribute(
+		User user, AttributePublisher attributePublisher,
 		boolean namespaceEnabled) {
 
 		try {
@@ -693,25 +608,18 @@ public class DefaultAttributeResolver implements AttributeResolver {
 			String nameFormat = null;
 
 			if (namespaceEnabled) {
-				name = "urn:liferay:userGroups";
+				name = "urn:liferay:membership:userGroups";
 				nameFormat = Attribute.URI_REFERENCE;
 			}
 			else {
-				name = "userGroups";
+				name = "membership:userGroups";
 				nameFormat = Attribute.UNSPECIFIED;
 			}
 
-			Stream<UserGroup> userGroupsStream = userGroups.stream();
-
 			attributePublisher.publish(
 				name, nameFormat,
-				userGroupsStream.map(
-					UserGroup::getName
-				).map(
-					attributePublisher::buildString
-				).toArray(
-					AttributePublisher.AttributeValue[]::new
-				));
+				TransformUtil.transformToArray(
+					userGroups, UserGroup::getName, String.class));
 		}
 		catch (Exception exception) {
 			String message = StringBundler.concat(
@@ -727,11 +635,26 @@ public class DefaultAttributeResolver implements AttributeResolver {
 		}
 	}
 
-	protected String[] getAttributeNames(String entityId) {
-		return _metadataManager.getAttributeNames(entityId);
+	private boolean _isAttributesNamespaceEnabled(String entityId) {
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		try {
+			SamlIdpSpConnection samlIdpSpConnection =
+				_samlIdpSpConnectionLocalService.getSamlIdpSpConnection(
+					companyId, entityId);
+
+			return samlIdpSpConnection.isAttributesNamespaceEnabled();
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return false;
 	}
 
-	protected boolean isPeerSalesForce(String entityId) {
+	private boolean _isPeerSalesForce(String entityId) {
 		if (entityId.equals(_SALESFORCE_ENTITY_ID)) {
 			return true;
 		}
@@ -749,10 +672,22 @@ public class DefaultAttributeResolver implements AttributeResolver {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DefaultAttributeResolver.class);
 
+	@Reference
+	private BeanProperties _beanProperties;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
-	private MetadataManager _metadataManager;
+
+	@Reference
 	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private SamlIdpSpConnectionLocalService _samlIdpSpConnectionLocalService;
+
+	@Reference
 	private UserGroupGroupRoleLocalService _userGroupGroupRoleLocalService;
+
+	@Reference
 	private UserGroupRoleLocalService _userGroupRoleLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -32,7 +23,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -93,7 +83,7 @@ public class TicketModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table Ticket (mvccVersion LONG default 0 not null,ticketId LONG not null primary key,companyId LONG,createDate DATE null,classNameId LONG,classPK LONG,key_ VARCHAR(75) null,type_ INTEGER,extraInfo TEXT null,expirationDate DATE null)";
+		"create table Ticket (mvccVersion LONG default 0 not null,ticketId LONG not null primary key,companyId LONG,createDate DATE null,classNameId LONG,classPK LONG,key_ VARCHAR(255) null,type_ INTEGER,extraInfo TEXT null,expirationDate DATE null)";
 
 	public static final String TABLE_SQL_DROP = "drop table Ticket";
 
@@ -238,90 +228,79 @@ public class TicketModelImpl
 	}
 
 	public Map<String, Function<Ticket, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Ticket, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Ticket>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Ticket.class.getClassLoader(), Ticket.class, ModelWrapper.class);
+		private static final Map<String, Function<Ticket, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Ticket> constructor =
-				(Constructor<Ticket>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Ticket, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Ticket, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("mvccVersion", Ticket::getMvccVersion);
+			attributeGetterFunctions.put("ticketId", Ticket::getTicketId);
+			attributeGetterFunctions.put("companyId", Ticket::getCompanyId);
+			attributeGetterFunctions.put("createDate", Ticket::getCreateDate);
+			attributeGetterFunctions.put("classNameId", Ticket::getClassNameId);
+			attributeGetterFunctions.put("classPK", Ticket::getClassPK);
+			attributeGetterFunctions.put("key", Ticket::getKey);
+			attributeGetterFunctions.put("type", Ticket::getType);
+			attributeGetterFunctions.put("extraInfo", Ticket::getExtraInfo);
+			attributeGetterFunctions.put(
+				"expirationDate", Ticket::getExpirationDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Ticket, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Ticket, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Ticket, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Ticket, Object>>();
-		Map<String, BiConsumer<Ticket, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Ticket, ?>>();
+		private static final Map<String, BiConsumer<Ticket, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", Ticket::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion", (BiConsumer<Ticket, Long>)Ticket::setMvccVersion);
-		attributeGetterFunctions.put("ticketId", Ticket::getTicketId);
-		attributeSetterBiConsumers.put(
-			"ticketId", (BiConsumer<Ticket, Long>)Ticket::setTicketId);
-		attributeGetterFunctions.put("companyId", Ticket::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<Ticket, Long>)Ticket::setCompanyId);
-		attributeGetterFunctions.put("createDate", Ticket::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<Ticket, Date>)Ticket::setCreateDate);
-		attributeGetterFunctions.put("classNameId", Ticket::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId", (BiConsumer<Ticket, Long>)Ticket::setClassNameId);
-		attributeGetterFunctions.put("classPK", Ticket::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK", (BiConsumer<Ticket, Long>)Ticket::setClassPK);
-		attributeGetterFunctions.put("key", Ticket::getKey);
-		attributeSetterBiConsumers.put(
-			"key", (BiConsumer<Ticket, String>)Ticket::setKey);
-		attributeGetterFunctions.put("type", Ticket::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<Ticket, Integer>)Ticket::setType);
-		attributeGetterFunctions.put("extraInfo", Ticket::getExtraInfo);
-		attributeSetterBiConsumers.put(
-			"extraInfo", (BiConsumer<Ticket, String>)Ticket::setExtraInfo);
-		attributeGetterFunctions.put(
-			"expirationDate", Ticket::getExpirationDate);
-		attributeSetterBiConsumers.put(
-			"expirationDate",
-			(BiConsumer<Ticket, Date>)Ticket::setExpirationDate);
+		static {
+			Map<String, BiConsumer<Ticket, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Ticket, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<Ticket, Long>)Ticket::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ticketId", (BiConsumer<Ticket, Long>)Ticket::setTicketId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<Ticket, Long>)Ticket::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"createDate", (BiConsumer<Ticket, Date>)Ticket::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<Ticket, Long>)Ticket::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK", (BiConsumer<Ticket, Long>)Ticket::setClassPK);
+			attributeSetterBiConsumers.put(
+				"key", (BiConsumer<Ticket, String>)Ticket::setKey);
+			attributeSetterBiConsumers.put(
+				"type", (BiConsumer<Ticket, Integer>)Ticket::setType);
+			attributeSetterBiConsumers.put(
+				"extraInfo", (BiConsumer<Ticket, String>)Ticket::setExtraInfo);
+			attributeSetterBiConsumers.put(
+				"expirationDate",
+				(BiConsumer<Ticket, Date>)Ticket::setExpirationDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -811,40 +790,12 @@ public class TicketModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Ticket, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Ticket, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Ticket, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Ticket)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Ticket>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Ticket.class, ModelWrapper.class);
 
 	}
 
@@ -862,8 +813,9 @@ public class TicketModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<Ticket, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Ticket, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

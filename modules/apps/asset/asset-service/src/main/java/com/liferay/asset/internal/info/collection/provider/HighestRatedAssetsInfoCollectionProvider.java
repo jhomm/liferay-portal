@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.internal.info.collection.provider;
@@ -20,9 +11,12 @@ import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.info.pagination.InfoPage;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.info.sort.Sort;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 
 import java.util.Collections;
 import java.util.Locale;
@@ -33,7 +27,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = InfoCollectionProvider.class)
+@Component(service = InfoCollectionProvider.class)
 public class HighestRatedAssetsInfoCollectionProvider
 	extends BaseAssetsInfoCollectionProvider
 	implements InfoCollectionProvider<AssetEntry> {
@@ -42,8 +36,13 @@ public class HighestRatedAssetsInfoCollectionProvider
 	public InfoPage<AssetEntry> getCollectionInfoPage(
 		CollectionQuery collectionQuery) {
 
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
 		AssetEntryQuery assetEntryQuery = getAssetEntryQuery(
-			"ratings", "DESC", collectionQuery.getPagination());
+			serviceContext.getCompanyId(), serviceContext.getScopeGroupId(),
+			collectionQuery.getPagination(), new Sort("ratings", true),
+			new Sort("title", true));
 
 		try {
 			return InfoPage.of(
@@ -61,7 +60,7 @@ public class HighestRatedAssetsInfoCollectionProvider
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "highest-rated-assets");
+		return _language.get(locale, "highest-rated-assets");
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -69,5 +68,8 @@ public class HighestRatedAssetsInfoCollectionProvider
 
 	@Reference
 	private AssetEntryService _assetEntryService;
+
+	@Reference
+	private Language _language;
 
 }

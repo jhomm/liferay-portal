@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.template.velocity.configuration;
@@ -36,10 +27,10 @@ public interface VelocityEngineConfiguration {
 	public boolean directiveIfToStringNullCheck();
 
 	@Meta.AD(
-		deflt = "60000", name = "resource-modification-check-interval",
+		deflt = "true", name = "include-navigation-items-in-the-context",
 		required = false
 	)
-	public int resourceModificationCheckInterval();
+	public boolean includeNavItemsInTheContext();
 
 	@Meta.AD(
 		deflt = "com.liferay.portal.json.jabsorb.serializer.LiferayJSONDeserializationWhitelist|java.lang.Class|java.lang.ClassLoader|java.lang.Compiler|java.lang.Package|java.lang.Process|java.lang.Runtime|java.lang.RuntimePermission|java.lang.SecurityManager|java.lang.System|java.lang.Thread|java.lang.ThreadGroup|java.lang.ThreadLocal",
@@ -60,7 +51,7 @@ public interface VelocityEngineConfiguration {
 	public String[] restrictedPackages();
 
 	@Meta.AD(
-		deflt = "httpUtilUnsafe|serviceLocator|staticFieldGetter|utilLocator",
+		deflt = "httpUtilUnsafe|serviceLocator|staticFieldGetter",
 		name = "restricted-variables", required = false
 	)
 	public String[] restrictedVariables();

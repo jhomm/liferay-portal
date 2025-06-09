@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,7 +11,7 @@
 
 <div class="lfr-ddm-container" id="<%= randomNamespace %>">
 	<c:if test="<%= ddmForm != null %>">
-		<div class="input-group-item input-group-item-shrink input-localized-content <%= hideCssClass %>" role="menu" style="justify-content: flex-end;">
+		<div class="input-group-item input-group-item-shrink input-localized-content justify-content-end <%= hideCssClass %>" role="menu">
 
 			<%
 			String defaultLanguageId = null;
@@ -75,7 +66,33 @@
 							String linkCssClass = "dropdown-item palette-item";
 
 							Locale curLocale = LocaleUtil.fromLanguageId(curLanguageId);
+
+							String translationStatusCssClass = "warning";
+							String translationStatusMessage = LanguageUtil.get(request, "untranslated");
+
+							if (ddmFormValues != null) {
+								Set<Locale> ddmFormValuesAvailableLocales = ddmFormValues.getAvailableLocales();
+
+								if (ddmFormValuesAvailableLocales.contains(curLocale)) {
+									translationStatusCssClass = "success";
+									translationStatusMessage = LanguageUtil.get(request, "translated");
+								}
+							}
+
+							if (curLanguageId.equals(defaultLanguageId)) {
+								linkCssClass += " active";
+								translationStatusCssClass = "info";
+								translationStatusMessage = LanguageUtil.get(request, "default");
+							}
 						%>
+
+						<liferay-util:buffer
+							var="messageBuffer"
+						>
+							<%= StringUtil.replace(curLanguageId, '_', '-') %>
+
+							<span class="label label-<%= translationStatusCssClass %>"><%= translationStatusMessage %></span>
+						</liferay-util:buffer>
 
 							<c:if test="<%= showLanguageSelector %>">
 								<liferay-ui:icon
@@ -93,9 +110,9 @@
 									iconCssClass="inline-item inline-item-before"
 									linkCssClass="<%= linkCssClass %>"
 									markupView="lexicon"
-									message="<%= StringUtil.replace(curLanguageId, '_', '-') %>"
+									message="<%= messageBuffer %>"
 									onClick="event.preventDefault(); fireLocaleChanged(event);"
-									url="javascript:;"
+									url="javascript:void(0);"
 								>
 								</liferay-ui:icon>
 							</c:if>
@@ -143,6 +160,8 @@
 
 			<%
 			}
+
+			Group group = themeDisplay.getScopeGroup();
 			%>
 
 			var liferayDDMForm = Liferay.component(
@@ -158,8 +177,11 @@
 					doAsGroupId: <%= scopeGroupId %>,
 					fieldsNamespace: '<%= HtmlUtil.escapeJS(fieldsNamespace) %>',
 					imageSelectorURL: '<%= imageSelectorURL %>',
+					layoutSelectorURL: '<%= layoutSelectorURL %>',
+					isPrivateLayoutsEnabled: <%= group.isPrivateLayoutsEnabled() %>,
 					mode: '<%= HtmlUtil.escapeJS(mode) %>',
 					p_l_id: <%= themeDisplay.getPlid() %>,
+					portletId: '<%= themeDisplay.getPpid() %>',
 					portletNamespace: '<portlet:namespace />',
 					repeatable: <%= repeatable %>,
 					requestedLocale:
@@ -175,9 +197,35 @@
 			var onLocaleChange = function (event) {
 				var languageId = event.item.getAttribute('data-value');
 
-				languageId = languageId.replace('_', '-');
+				var childrenItems = A.all(
+					'#<portlet:namespace /><%= fieldsNamespace %>PaletteContentBox a'
+				);
 
-				var triggerContent = Lang.sub(
+				const triggerMenu = A.one(
+					'#<portlet:namespace /><%= fieldsNamespace %>Menu'
+				);
+
+				const listContainer = triggerMenu.getData('menuListContainer');
+
+				if (childrenItems._nodes && !childrenItems._nodes.length && listContainer) {
+					childrenItems = listContainer.all(childrenItems._query);
+				}
+
+				childrenItems.each((item) => {
+					if (item.hasClass('active')) {
+						item.removeClass('active');
+					}
+
+					var languageIdActive = item.getAttribute('data-value');
+
+					if (languageId === languageIdActive) {
+						item.addClass('active');
+					}
+				});
+
+				languageId = languageId.replaceAll('_', '-');
+
+				const triggerContent = Lang.sub(
 					'<span class="inline-item">{flag}</span><span class="btn-section">{languageId}</span>',
 					{
 						flag: Liferay.Util.getLexiconIconTpl(languageId.toLowerCase()),
@@ -185,9 +233,8 @@
 					}
 				);
 
-				var trigger = A.one('#<portlet:namespace /><%= fieldsNamespace %>Menu');
-
-				trigger.setHTML(triggerContent);
+				triggerMenu.setData('menuListContainer', listContainer);
+				triggerMenu.setHTML(triggerContent);
 			};
 
 			Liferay.on('inputLocalized:localeChanged', onLocaleChange);

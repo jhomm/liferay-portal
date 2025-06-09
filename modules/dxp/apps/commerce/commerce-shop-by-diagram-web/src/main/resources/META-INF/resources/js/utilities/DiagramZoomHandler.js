@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
@@ -25,9 +19,10 @@ class DiagramZoomHandler {
 	_handleClickOutside(event) {
 		if (
 			!this._diagramWrapper.parentNode.contains(event.target) &&
-			!event.target.closest('.diagram-tooltip-wrapper')
+			!event.target.closest('.diagram-tooltip-wrapper') &&
+			!event.target.closest('.dropdown-menu')
 		) {
-			this._resetActivePinsState();
+			this.resetActivePinsState();
 		}
 	}
 
@@ -43,11 +38,7 @@ class DiagramZoomHandler {
 		this._currentScale = d3event.transform.k;
 
 		if (d3event.sourceEvent) {
-			this._updateZoomState(
-				this._currentScale,
-				d3event.transform,
-				d3event
-			);
+			this._updateZoomState(this._currentScale);
 		}
 
 		this._d3zoomWrapper.attr('transform', d3event.transform);
@@ -57,16 +48,12 @@ class DiagramZoomHandler {
 		window.removeEventListener('click', this._handleClickOutside);
 	}
 
-	updateZoom(scale) {
+	updateZoom(scale, duration = 800) {
 		this._currentScale = scale;
 
-		this._animateZoom();
-	}
-
-	_animateZoom() {
 		const transition = this._d3diagramWrapper
 			.transition()
-			.duration(800)
+			.duration(duration)
 			.tween(
 				'resize',
 				window.ResizeObserver
@@ -74,12 +61,21 @@ class DiagramZoomHandler {
 					: () => this._d3diagramWrapper.dispatch('toggle')
 			);
 
-		this._d3diagramWrapper
-			.transition(transition)
-			.call(this._zoom.scaleTo, this._currentScale);
+		return new Promise((resolve) => {
+			this._d3diagramWrapper
+				.transition(transition)
+				.call(this._zoom.scaleTo, this._currentScale)
+				.on('end', resolve);
+		});
 	}
 
-	_recenterViewport(x, y, duration) {
+	_recenterViewport(x, y, duration, k) {
+		if (k) {
+			this._currentScale = k;
+		}
+
+		this._updateZoomState(this._currentScale);
+
 		return new Promise((resolve) => {
 			this._d3diagramWrapper
 				.transition(

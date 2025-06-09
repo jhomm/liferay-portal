@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,7 +12,7 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 %>
 
 <liferay-util:html-top>
-	<link href="<%= PortalUtil.getStaticResourceURL(request, application.getContextPath() + "/css/main.css") %>" rel="stylesheet" />
+	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>' rel="stylesheet" />
 </liferay-util:html-top>
 
 <clay:container-fluid
@@ -43,7 +34,7 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 
 				<span class="ml-1"> <%= sourceLanguageIdTitle %> </span>
 
-				<div class="separator"><!-- --></div>
+				<hr class="separator" />
 			</clay:col>
 
 			<clay:col
@@ -60,7 +51,7 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 
 				<span class="ml-1"> <%= targetLanguageIdTitle %> </span>
 
-				<div class="separator"><!-- --></div>
+				<hr class="separator" />
 			</clay:col>
 		</clay:row>
 
@@ -97,63 +88,68 @@ ViewTranslationDisplayContext viewTranslationDisplayContext = (ViewTranslationDi
 
 			<%
 			for (InfoField<TextInfoFieldType> infoField : infoFields) {
-				boolean html = viewTranslationDisplayContext.getBooleanValue(infoField, TextInfoFieldType.HTML);
+				boolean html = viewTranslationDisplayContext.isHTMLInfoFieldType(infoField);
 				String label = viewTranslationDisplayContext.getInfoFieldLabel(infoField);
-				boolean multiline = viewTranslationDisplayContext.getBooleanValue(infoField, TextInfoFieldType.MULTILINE);
+
+				boolean multiline = html || viewTranslationDisplayContext.getBooleanValue(infoField, TextInfoFieldType.MULTILINE);
+
+				String sourceContentDir = LanguageUtil.get(viewTranslationDisplayContext.getSourceLocale(), "lang.dir");
+
+				List<String> sourceStringValues = viewTranslationDisplayContext.getStringValues(infoField, viewTranslationDisplayContext.getSourceLocale());
+
+				Iterator<String> sourceStringValuesIterator = sourceStringValues.iterator();
+
+				List<String> targetStringValues = viewTranslationDisplayContext.getStringValues(infoField, viewTranslationDisplayContext.getTargetLocale());
+
+				Iterator<String> targetStringValuesIterator = targetStringValues.iterator();
+
+				while (sourceStringValuesIterator.hasNext() && targetStringValuesIterator.hasNext()) {
+					String sourceContent = sourceStringValuesIterator.next();
+					String targetContent = targetStringValuesIterator.next();
 			%>
 
-				<clay:row>
-					<clay:col
-						md="6"
-					>
+					<clay:row>
+						<clay:col
+							md="6"
+						>
+							<c:choose>
+								<c:when test="<%= html %>">
+									<label class="control-label">
+										<%= label %>
+									</label>
 
-						<%
-						String sourceContent = viewTranslationDisplayContext.getStringValue(infoField, viewTranslationDisplayContext.getSourceLocale());
-						String sourceContentDir = LanguageUtil.get(viewTranslationDisplayContext.getSourceLocale(), "lang.dir");
-						%>
+									<div class="translation-editor-preview" dir="<%= sourceContentDir %>">
+										<%= sourceContent %>
+									</div>
+								</c:when>
+								<c:otherwise>
+									<aui:input dir="<%= sourceContentDir %>" label="<%= label %>" name="<%= infoField.getUniqueId() %>" readonly="true" tabIndex="-1" type='<%= multiline ? "textarea" : "text" %>' value="<%= sourceContent %>" />
+								</c:otherwise>
+							</c:choose>
+						</clay:col>
 
-						<c:choose>
-							<c:when test="<%= html %>">
-								<label class="control-label">
-									<%= label %>
-								</label>
+						<clay:col
+							md="6"
+						>
+							<c:choose>
+								<c:when test="<%= html %>">
+									<label class="control-label">
+										<%= label %>
+									</label>
 
-								<div class="translation-editor-preview" dir="<%= sourceContentDir %>">
-									<%= sourceContent %>
-								</div>
-							</c:when>
-							<c:otherwise>
-								<aui:input dir="<%= sourceContentDir %>" label="<%= label %>" name="<%= label %>" readonly="true" tabIndex="-1" type='<%= multiline ? "textarea" : "text" %>' value="<%= sourceContent %>" />
-							</c:otherwise>
-						</c:choose>
-					</clay:col>
-
-					<clay:col
-						md="6"
-					>
-
-						<%
-						String targetContent = viewTranslationDisplayContext.getStringValue(infoField, viewTranslationDisplayContext.getTargetLocale());
-						%>
-
-						<c:choose>
-							<c:when test="<%= html %>">
-								<label class="control-label">
-									<%= label %>
-								</label>
-
-								<div class="translation-editor-preview" dir="<%= LanguageUtil.get(viewTranslationDisplayContext.getTargetLocale(), "lang.dir") %>">
-									<%= targetContent %>
-								</div>
-							</c:when>
-							<c:otherwise>
-								<aui:input dir='<%= LanguageUtil.get(viewTranslationDisplayContext.getTargetLocale(), "lang.dir") %>' label="<%= label %>" name="<%= label %>" readonly="true" tabIndex="-1" type='<%= multiline ? "textarea" : "text" %>' value="<%= targetContent %>" />
-							</c:otherwise>
-						</c:choose>
-					</clay:col>
-				</clay:row>
+									<div class="translation-editor-preview" dir="<%= LanguageUtil.get(viewTranslationDisplayContext.getTargetLocale(), "lang.dir") %>">
+										<%= targetContent %>
+									</div>
+								</c:when>
+								<c:otherwise>
+									<aui:input dir='<%= LanguageUtil.get(viewTranslationDisplayContext.getTargetLocale(), "lang.dir") %>' label="<%= label %>" name="<%= infoField.getUniqueId() %>" readonly="true" tabIndex="-1" type='<%= multiline ? "textarea" : "text" %>' value="<%= targetContent %>" />
+								</c:otherwise>
+							</c:choose>
+						</clay:col>
+					</clay:row>
 
 		<%
+				}
 			}
 		}
 		%>

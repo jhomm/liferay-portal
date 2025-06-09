@@ -1,0 +1,151 @@
+definition {
+
+	@summary = "Default summary"
+	macro addAnyFolder(folderName = null) {
+		IFrame.selectModalFrame();
+
+		LexiconEntry.gotoAdd();
+
+		SelectFrame(locator1 = "IFrame#IFRAME");
+
+		Click(
+			key_kebabOption = "Folder",
+			locator1 = "ObjectAdmin#KEBAB_MENU_OPTION");
+
+		Type(
+			locator1 = "ObjectPortlet#INPUT_NAME",
+			value1 = ${folderName});
+
+		PortletEntry.save();
+
+		AssertTextEquals(
+			locator1 = "ObjectField#DOCUMENT_NAME",
+			value1 = ${folderName});
+	}
+
+	@summary = "Default summary"
+	macro addTranslatableTextEntryViaUI(mainEntryValue = null, fieldLabel = null, buttonFieldEntryLanguage = null, locale = null, translatedEntryValue = null) {
+		LexiconEntry.gotoAdd();
+
+		Type(
+			key_fieldLabel = ${fieldLabel},
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${mainEntryValue});
+
+		Click(
+			key_buttonFieldEntryLanguage = ${buttonFieldEntryLanguage},
+			locator1 = "ObjectField#BUTTON_FIELD_ENTRY_LANGUAGE");
+
+		Click(
+			key_locale = ${locale},
+			locator1 = "Translation#DROPDOWN_MENU_ITEM");
+
+		Type(
+			key_fieldLabel = ${fieldLabel},
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${translatedEntryValue});
+
+		Button.clickSave();
+	}
+
+	@summary = "Default summary"
+	macro checkLimitCharacters() {
+		Click(
+			key_labelName = "Limit Characters",
+			locator1 = "ObjectField#DEFAULT_TOGGLE_SWITCH");
+	}
+
+	@summary = "Default summary"
+	macro checkToggleEnableEntryTranslations() {
+		Check.checkToggleSwitch(locator1 = "ObjectField#ENABLE_ENTRY_TRANSLATION_TOGGLE");
+	}
+
+	@summary = "Default summary"
+	macro checkToggleMandatory() {
+		Check.checkToggleSwitch(locator1 = "ObjectField#MANDATORY_TOGGLE");
+	}
+
+	@summary = "Default summary"
+	macro closeModal() {
+		Click(locator1 = "ObjectField#MODAL_CLOSE_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro editFormulaField(newContent = null, formulaScript = null, newTypeFormula = null) {
+		ObjectField.typeLabel(content = ${newContent});
+
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Output",
+			optionName = ${newTypeFormula});
+
+		Type(
+			key_text = "Formula Builder",
+			locator1 = "TextInput#ANY",
+			value1 = ${formulaScript});
+	}
+
+	@summary = "Default summary"
+	macro save() {
+		Click(locator1 = "ObjectField#SAVE_BUTTON");
+
+		Refresh();
+	}
+
+	@summary = "Default summary"
+	macro selectOptionOnRequestFiles(option = null) {
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Request Files",
+			optionName = ${option});
+	}
+
+	@summary = "Default summary"
+	macro selectType(fieldType = null) {
+		ObjectAdmin.selectDropdownItem(
+			labelName = "Type",
+			optionName = ${fieldType});
+	}
+
+	@summary = "Default summary"
+	macro toggleMandatory() {
+		Check.toggleSwitch(locator1 = "ObjectField#MANDATORY_TOGGLE");
+	}
+
+	@summary = "Default summary"
+	macro typeLabel(content = null) {
+		Type(
+			locator1 = "ObjectField#LABEL_LOCALIZED",
+			value1 = ${content});
+	}
+
+	@summary = "Default summary"
+	macro typeName(fieldName = null) {
+		Type(
+			locator1 = "ObjectField#NAME_FIELD",
+			value1 = ${fieldName});
+	}
+
+	@summary = "Default summary"
+	macro typeStorageFolder(content = null) {
+		Type(
+			locator1 = "ObjectField#STORAGE_FOLDER_INPUT",
+			value1 = ${content});
+	}
+
+	@summary = "Default summary"
+	macro typeValueOnLimitCharacters(newValue = null) {
+		Type(
+			locator1 = "ObjectField#TYPE_MAXIMUM_NUMBER_CHARACTERS",
+			value1 = ${newValue});
+	}
+
+	@summary = "Default summary"
+	macro viewToogleOnSidePanelShowFilesInDM(isDisabled = null) {
+		if (${isDisabled} == "Yes") {
+			AssertElementPresent(locator1 = "ObjectField#SHOW_FILES_IN_DM_SIDE_PANEL_DISABLED");
+		}
+		else if (${isDisabled} == "No") {
+			AssertElementPresent(locator1 = "ObjectField#SHOW_FILES_IN_DM_SIDE_PANEL_NOT_DISABLED");
+		}
+	}
+
+}

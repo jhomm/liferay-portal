@@ -1,50 +1,52 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentImpl;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Hits;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.search.generic.MatchAllQuery;
 import com.liferay.portal.kernel.search.suggest.CompletionSuggester;
 import com.liferay.portal.kernel.search.suggest.PhraseSuggester;
 import com.liferay.portal.kernel.search.suggest.Suggester;
 import com.liferay.portal.kernel.search.suggest.TermSuggester;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchFixture;
 import com.liferay.portal.search.elasticsearch7.internal.document.DefaultElasticsearchDocumentFactory;
 import com.liferay.portal.search.elasticsearch7.internal.document.ElasticsearchDocumentFactory;
 import com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.search.SearchRequestExecutorFixture;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
+import com.liferay.portal.search.engine.adapter.search.OpenPointInTimeRequest;
+import com.liferay.portal.search.engine.adapter.search.OpenPointInTimeResponse;
 import com.liferay.portal.search.engine.adapter.search.SearchRequestExecutor;
+import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
+import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.engine.adapter.search.SuggestSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SuggestSearchResponse;
 import com.liferay.portal.search.engine.adapter.search.SuggestSearchResult;
+import com.liferay.portal.search.hits.SearchHit;
+import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.pit.PointInTime;
 import com.liferay.portal.search.test.util.indexing.DocumentFixture;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
@@ -52,7 +54,9 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.PutMappingRequest;
+import org.elasticsearch.xcontent.XContentType;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -61,6 +65,12 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.FrameworkUtil;
 
 /**
  * @author Michael C. Han
@@ -73,6 +83,14 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		Mockito.when(
+			FrameworkUtil.getBundle(Mockito.any())
+		).thenReturn(
+			bundleContext.getBundle()
+		);
+
 		_elasticsearchFixture = new ElasticsearchFixture(
 			ElasticsearchSearchEngineAdapterSearchRequestTest.class);
 
@@ -82,6 +100,8 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 	@AfterClass
 	public static void tearDownClass() throws Exception {
 		_elasticsearchFixture.tearDown();
+
+		_frameworkUtilMockedStatic.close();
 	}
 
 	@Before
@@ -97,7 +117,6 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		_createIndex();
 
 		_putMapping(
-			_MAPPING_NAME,
 			StringBundler.concat(
 				"{\n\"dynamic_templates\": [\n{\n",
 				"\"template_en\": {\n\"mapping\": {\n",
@@ -120,12 +139,14 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		_deleteIndex();
 
 		_documentFixture.tearDown();
+
+		_searchRequestExecutorFixture.tearDown();
 	}
 
 	@Test
 	public void testCompletionSuggester() throws IOException {
-		indexSuggestKeyword("message");
-		indexSuggestKeyword("search");
+		_indexSuggestKeyword("message");
+		_indexSuggestKeyword("search");
 
 		SuggestSearchRequest suggestSearchRequest = new SuggestSearchRequest(
 			_INDEX_NAME);
@@ -143,14 +164,90 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		SuggestSearchResponse suggestSearchResponse =
 			_searchEngineAdapter.execute(suggestSearchRequest);
 
-		assertSuggestion(
+		_assertSuggestion(
 			suggestSearchResponse.getSuggestSearchResultMap(),
 			"completion|[search]", "completion2|[message]");
 	}
 
 	@Test
+	public void testDeepPaginationWithScroll() throws Exception {
+		_indexSuggestKeyword(RandomTestUtil.randomString());
+		_indexSuggestKeyword(RandomTestUtil.randomString());
+		_indexSuggestKeyword(RandomTestUtil.randomString());
+
+		SearchSearchRequest searchSearchRequest = new SearchSearchRequest();
+
+		searchSearchRequest.setIndexNames(_INDEX_NAME);
+		searchSearchRequest.setQuery(new MatchAllQuery());
+		searchSearchRequest.setScrollKeepAliveMinutes(1);
+		searchSearchRequest.setSize(1);
+
+		for (int i = 0; i < 3; i++) {
+			SearchSearchResponse searchSearchResponse =
+				_searchEngineAdapter.execute(searchSearchRequest);
+
+			Assert.assertEquals(1, _getDocumentsLength(searchSearchResponse));
+
+			searchSearchRequest.setScrollId(searchSearchResponse.getScrollId());
+		}
+
+		SearchSearchResponse searchSearchResponse =
+			_searchEngineAdapter.execute(searchSearchRequest);
+
+		Assert.assertEquals(0, _getDocumentsLength(searchSearchResponse));
+	}
+
+	@Test
+	public void testDeepPaginationWithSearchAfter() throws IOException {
+		_indexSuggestKeyword(RandomTestUtil.randomString());
+		_indexSuggestKeyword(RandomTestUtil.randomString());
+		_indexSuggestKeyword(RandomTestUtil.randomString());
+
+		OpenPointInTimeRequest openPointInTimeRequest =
+			new OpenPointInTimeRequest(1);
+
+		openPointInTimeRequest.setIndices(_INDEX_NAME);
+
+		OpenPointInTimeResponse openPointInTimeResponse =
+			_searchEngineAdapter.execute(openPointInTimeRequest);
+
+		PointInTime pointInTime = new PointInTime(
+			openPointInTimeResponse.pitId());
+
+		SearchSearchRequest searchSearchRequest = new SearchSearchRequest();
+
+		searchSearchRequest.setIndexNames(_INDEX_NAME);
+		searchSearchRequest.setPointInTime(pointInTime);
+		searchSearchRequest.setQuery(new MatchAllQuery());
+		searchSearchRequest.setSize(1);
+		searchSearchRequest.setSorts(new Sort[] {new Sort("_count", true)});
+		searchSearchRequest.setStart(0);
+
+		SearchSearchResponse searchSearchResponse =
+			_searchEngineAdapter.execute(searchSearchRequest);
+
+		for (int i = 0; i < 3; i++) {
+			Assert.assertEquals(1, _getDocumentsLength(searchSearchResponse));
+
+			SearchHits searchHits = searchSearchResponse.getSearchHits();
+
+			List<SearchHit> searchHitList = searchHits.getSearchHits();
+
+			SearchHit lastSearchHit = searchHitList.get(
+				searchHitList.size() - 1);
+
+			searchSearchRequest.setSearchAfter(lastSearchHit.getSortValues());
+
+			searchSearchResponse = _searchEngineAdapter.execute(
+				searchSearchRequest);
+		}
+
+		Assert.assertEquals(0, _getDocumentsLength(searchSearchResponse));
+	}
+
+	@Test
 	public void testGlobalText() throws IOException {
-		indexSuggestKeyword("search");
+		_indexSuggestKeyword("search");
 
 		SuggestSearchRequest suggestSearchRequest = new SuggestSearchRequest(
 			_INDEX_NAME);
@@ -169,15 +266,15 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		SuggestSearchResponse suggestSearchResponse =
 			_searchEngineAdapter.execute(suggestSearchRequest);
 
-		assertSuggestion(
+		_assertSuggestion(
 			suggestSearchResponse.getSuggestSearchResultMap(),
 			"completion|[search]", "term|[search]");
 	}
 
 	@Test
 	public void testGlobalTextOverride() throws IOException {
-		indexSuggestKeyword("message");
-		indexSuggestKeyword("search");
+		_indexSuggestKeyword("message");
+		_indexSuggestKeyword("search");
 
 		SuggestSearchRequest suggestSearchRequest = new SuggestSearchRequest(
 			_INDEX_NAME);
@@ -196,14 +293,14 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		SuggestSearchResponse suggestSearchResponse =
 			_searchEngineAdapter.execute(suggestSearchRequest);
 
-		assertSuggestion(
+		_assertSuggestion(
 			suggestSearchResponse.getSuggestSearchResultMap(),
 			"completion|[message]", "term|[search]");
 	}
 
 	@Test
 	public void testPhraseSuggester() throws IOException {
-		indexSuggestKeyword("indexed this phrase");
+		_indexSuggestKeyword("indexed this phrase");
 
 		SuggestSearchRequest suggestSearchRequest = new SuggestSearchRequest(
 			_INDEX_NAME);
@@ -218,15 +315,15 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		SuggestSearchResponse suggestSearchResponse =
 			_searchEngineAdapter.execute(suggestSearchRequest);
 
-		assertSuggestion(
+		_assertSuggestion(
 			suggestSearchResponse.getSuggestSearchResultMap(), 2,
 			"phrase|[indexef phrase, index phrasd]");
 	}
 
 	@Test
 	public void testTermSuggester() throws IOException {
-		indexSuggestKeyword("message");
-		indexSuggestKeyword("search");
+		_indexSuggestKeyword("message");
+		_indexSuggestKeyword("search");
 
 		SuggestSearchRequest suggestSearchRequest = new SuggestSearchRequest(
 			_INDEX_NAME);
@@ -239,12 +336,25 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		SuggestSearchResponse suggestSearchResponse =
 			_searchEngineAdapter.execute(suggestSearchRequest);
 
-		assertSuggestion(
+		_assertSuggestion(
 			suggestSearchResponse.getSuggestSearchResultMap(),
 			"termSuggestion|[search]");
 	}
 
-	protected void assertSuggestion(
+	protected SearchEngineAdapter createSearchEngineAdapter(
+		ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		SearchEngineAdapter searchEngineAdapter =
+			new ElasticsearchSearchEngineAdapterImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_searchRequestExecutor",
+			_createSearchRequestExecutor(elasticsearchClientResolver));
+
+		return searchEngineAdapter;
+	}
+
+	private void _assertSuggestion(
 		Map<String, SuggestSearchResult> suggestSearchResultMap, int size,
 		String... expectedSuggestionsString) {
 
@@ -277,82 +387,18 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 				suggestSearchResultEntryOptions.size());
 
 			String actualSuggestions = String.valueOf(
-				toList(suggestSearchResultEntryOptions));
+				_toList(suggestSearchResultEntryOptions));
 
 			Assert.assertEquals(expectedSuggestions, actualSuggestions);
 		}
 	}
 
-	protected void assertSuggestion(
+	private void _assertSuggestion(
 		Map<String, SuggestSearchResult> suggestSearchResultsMap,
 		String... expectedSuggestionsString) {
 
-		assertSuggestion(suggestSearchResultsMap, 1, expectedSuggestionsString);
-	}
-
-	protected SearchEngineAdapter createSearchEngineAdapter(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		return new ElasticsearchSearchEngineAdapterImpl() {
-			{
-				setSearchRequestExecutor(
-					createSearchRequestExecutor(elasticsearchClientResolver));
-			}
-		};
-	}
-
-	protected SearchRequestExecutor createSearchRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		SearchRequestExecutorFixture searchRequestExecutorFixture =
-			new SearchRequestExecutorFixture() {
-				{
-					setElasticsearchClientResolver(elasticsearchClientResolver);
-				}
-			};
-
-		searchRequestExecutorFixture.setUp();
-
-		return searchRequestExecutorFixture.getSearchRequestExecutor();
-	}
-
-	protected String getUID(String value) {
-		return StringBundler.concat(
-			_DEFAULT_COMPANY_ID, "_", _LOCALIZED_FIELD_NAME, "_", value);
-	}
-
-	protected void indexSuggestKeyword(String value) throws IOException {
-		Document document = new DocumentImpl();
-
-		document.addKeyword(_LOCALIZED_FIELD_NAME, value);
-		document.addKeyword("keywordSuggestion", value);
-
-		document.addKeyword(Field.COMPANY_ID, _DEFAULT_COMPANY_ID);
-		document.addKeyword(Field.LANGUAGE_ID, _EN_US_LANGUAGE_ID);
-		document.addKeyword(Field.TYPE, "spellCheckKeyword");
-		document.addKeyword(Field.UID, getUID(value));
-
-		_indexDocument(document);
-
-		GetResponse getResponse = _getDocument(getUID(value));
-
-		Assert.assertTrue(
-			"Expected document added: " + value, getResponse.isExists());
-	}
-
-	protected List<String> toList(
-		List<SuggestSearchResult.Entry.Option>
-			suggestSearchResultEntryOptions) {
-
-		List<String> options = new ArrayList<>();
-
-		for (SuggestSearchResult.Entry.Option suggestSearchResultEntryOption :
-				suggestSearchResultEntryOptions) {
-
-			options.add(suggestSearchResultEntryOption.getText());
-		}
-
-		return options;
+		_assertSuggestion(
+			suggestSearchResultsMap, 1, expectedSuggestionsString);
 	}
 
 	private void _createIndex() {
@@ -365,6 +411,20 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
+	}
+
+	private SearchRequestExecutor _createSearchRequestExecutor(
+		ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		_searchRequestExecutorFixture = new SearchRequestExecutorFixture() {
+			{
+				setElasticsearchClientResolver(elasticsearchClientResolver);
+			}
+		};
+
+		_searchRequestExecutorFixture.setUp();
+
+		return _searchRequestExecutorFixture.getSearchRequestExecutor();
 	}
 
 	private void _deleteIndex() {
@@ -393,12 +453,24 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		}
 	}
 
+	private int _getDocumentsLength(SearchSearchResponse searchSearchResponse) {
+		Hits hits = searchSearchResponse.getHits();
+
+		Document[] documents = hits.getDocs();
+
+		return documents.length;
+	}
+
+	private String _getUID(String value) {
+		return StringBundler.concat(
+			_DEFAULT_COMPANY_ID, "_", _LOCALIZED_FIELD_NAME, "_", value);
+	}
+
 	private void _indexDocument(Document document) {
 		IndexRequest indexRequest = new IndexRequest(_INDEX_NAME);
 
 		indexRequest.id(document.getUID());
 		indexRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-		indexRequest.type(_MAPPING_NAME);
 
 		ElasticsearchDocumentFactory elasticsearchDocumentFactory =
 			new DefaultElasticsearchDocumentFactory();
@@ -415,12 +487,30 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		}
 	}
 
-	private void _putMapping(String mappingName, String mappingSource) {
+	private void _indexSuggestKeyword(String value) throws IOException {
+		Document document = new DocumentImpl();
+
+		document.addKeyword(_LOCALIZED_FIELD_NAME, value);
+		document.addKeyword("keywordSuggestion", value);
+
+		document.addKeyword(Field.COMPANY_ID, _DEFAULT_COMPANY_ID);
+		document.addKeyword(Field.LANGUAGE_ID, _EN_US_LANGUAGE_ID);
+		document.addKeyword(Field.TYPE, "spellCheckKeyword");
+		document.addKeyword(Field.UID, _getUID(value));
+
+		_indexDocument(document);
+
+		GetResponse getResponse = _getDocument(_getUID(value));
+
+		Assert.assertTrue(
+			"Expected document added: " + value, getResponse.isExists());
+	}
+
+	private void _putMapping(String mappingSource) {
 		PutMappingRequest putMappingRequest = new PutMappingRequest(
 			_INDEX_NAME);
 
 		putMappingRequest.source(mappingSource, XContentType.JSON);
-		putMappingRequest.type(mappingName);
 
 		try {
 			_indicesClient.putMapping(
@@ -429,6 +519,16 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 		catch (IOException ioException) {
 			throw new RuntimeException(ioException);
 		}
+	}
+
+	private List<String> _toList(
+		List<SuggestSearchResult.Entry.Option>
+			suggestSearchResultEntryOptions) {
+
+		return TransformUtil.transform(
+			suggestSearchResultEntryOptions,
+			suggestSearchResultEntryOption ->
+				suggestSearchResultEntryOption.getText());
 	}
 
 	private static final long _DEFAULT_COMPANY_ID = 12345;
@@ -440,13 +540,14 @@ public class ElasticsearchSearchEngineAdapterSearchRequestTest {
 	private static final String _LOCALIZED_FIELD_NAME =
 		"spellCheckKeyword_en_US";
 
-	private static final String _MAPPING_NAME = "test_mapping";
-
 	private static ElasticsearchFixture _elasticsearchFixture;
+	private static final MockedStatic<FrameworkUtil>
+		_frameworkUtilMockedStatic = Mockito.mockStatic(FrameworkUtil.class);
 
 	private final DocumentFixture _documentFixture = new DocumentFixture();
 	private IndicesClient _indicesClient;
 	private RestHighLevelClient _restHighLevelClient;
 	private SearchEngineAdapter _searchEngineAdapter;
+	private SearchRequestExecutorFixture _searchRequestExecutorFixture;
 
 }

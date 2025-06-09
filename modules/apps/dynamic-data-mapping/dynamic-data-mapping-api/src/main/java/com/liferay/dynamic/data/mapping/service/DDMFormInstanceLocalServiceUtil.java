@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -125,15 +117,15 @@ public class DDMFormInstanceLocalServiceUtil {
 
 	public static DDMFormInstance copyFormInstance(
 			long userId, long groupId, Map<java.util.Locale, String> nameMap,
-			DDMFormInstance ddmFormInstance,
+			DDMFormInstance sourceDDMFormInstance,
 			com.liferay.dynamic.data.mapping.storage.DDMFormValues
 				settingsDDMFormValues,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyFormInstance(
-			userId, groupId, nameMap, ddmFormInstance, settingsDDMFormValues,
-			serviceContext);
+			userId, groupId, nameMap, sourceDDMFormInstance,
+			settingsDDMFormValues, serviceContext);
 	}
 
 	/**
@@ -436,6 +428,12 @@ public class DDMFormInstanceLocalServiceUtil {
 		return getService().getFormInstance(uuid, ddmFormInstanceId);
 	}
 
+	public static DDMFormInstance getFormInstanceByStructureId(long structureId)
+		throws PortalException {
+
+		return getService().getFormInstanceByStructureId(structureId);
+	}
+
 	public static List<DDMFormInstance> getFormInstances(long groupId) {
 		return getService().getFormInstances(groupId);
 	}
@@ -586,9 +584,12 @@ public class DDMFormInstanceLocalServiceUtil {
 	}
 
 	public static DDMFormInstanceLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile DDMFormInstanceLocalService _service;
+	private static final Snapshot<DDMFormInstanceLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DDMFormInstanceLocalServiceUtil.class,
+			DDMFormInstanceLocalService.class);
 
 }

@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.web.internal.portlet.contributor;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -23,6 +13,7 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.toolbar.contributor.PortletToolbarContributor;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.servlet.taglib.ui.Menu;
@@ -32,15 +23,15 @@ import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.site.navigation.menu.web.internal.constants.SiteNavigationMenuPortletKeys;
+import com.liferay.site.navigation.constants.SiteNavigationMenuPortletKeys;
 import com.liferay.site.navigation.menu.web.internal.display.context.SiteNavigationMenuDisplayContext;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,15 +40,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SiteNavigationMenuPortletKeys.SITE_NAVIGATION_MENU,
+		"jakarta.portlet.name=" + SiteNavigationMenuPortletKeys.SITE_NAVIGATION_MENU,
 		"mvc.path=-", "mvc.path=/view.jsp"
 	},
-	service = {
-		PortletToolbarContributor.class,
-		SiteNavigationMenuAddPortletToolbarContributor.class
-	}
+	service = PortletToolbarContributor.class
 )
 public class SiteNavigationMenuAddPortletToolbarContributor
 	implements PortletToolbarContributor {
@@ -118,7 +105,7 @@ public class SiteNavigationMenuAddPortletToolbarContributor
 		URLMenuItem urlMenuItem = new URLMenuItem();
 
 		urlMenuItem.setLabel(
-			LanguageUtil.get(
+			_language.get(
 				_portal.getHttpServletRequest(portletRequest), "add-page"));
 
 		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
@@ -128,8 +115,8 @@ public class SiteNavigationMenuAddPortletToolbarContributor
 				PortletProviderUtil.getPortletURL(
 					portletRequest, Layout.class.getName(),
 					PortletProvider.Action.EDIT)
-			).setMVCPath(
-				"/select_layout_page_template_entry.jsp"
+			).setMVCRenderCommandName(
+				"/layout_admin/select_layout_page_template_entry"
 			).setRedirect(
 				_portal.getLayoutFullURL(themeDisplay)
 			).setPortletResource(
@@ -181,6 +168,9 @@ public class SiteNavigationMenuAddPortletToolbarContributor
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SiteNavigationMenuAddPortletToolbarContributor.class);
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

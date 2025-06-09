@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.model.listener;
@@ -18,29 +9,41 @@ import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLinkLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
+import com.liferay.fragment.listener.FragmentEntryLinkListener;
+import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.layout.content.page.editor.web.internal.util.ContentUtil;
+import com.liferay.fragment.processor.PortletRegistry;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
+import com.liferay.layout.content.page.editor.web.internal.exception.NoninstanceablePortletException;
+import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
+import com.liferay.layout.util.CheckNoninstanceablePortletThreadLocal;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.ModelListener;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
 
 import java.util.Iterator;
-import java.util.Optional;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
@@ -68,7 +71,7 @@ public class FragmentEntryLinkModelListener
 
 		_layoutClassedModelUsageLocalService.deleteLayoutClassedModelUsages(
 			String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-			_portal.getClassNameId(FragmentEntryLink.class),
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
 			fragmentEntryLink.getPlid());
 
 		try {
@@ -77,6 +80,14 @@ public class FragmentEntryLinkModelListener
 			_commentManager.deleteDiscussion(
 				FragmentEntryLink.class.getName(),
 				fragmentEntryLink.getFragmentEntryLinkId());
+
+			for (FragmentEntryLinkListener fragmentEntryLinkListener :
+					_fragmentEntryLinkListenerRegistry.
+						getFragmentEntryLinkListeners()) {
+
+				fragmentEntryLinkListener.onDeleteFragmentEntryLink(
+					fragmentEntryLink);
+			}
 		}
 		catch (PortalException portalException) {
 			throw new ModelListenerException(portalException);
@@ -94,14 +105,96 @@ public class FragmentEntryLinkModelListener
 		_updateDDMTemplateLink(fragmentEntryLink);
 	}
 
+	@Override
+	public void onBeforeCreate(FragmentEntryLink fragmentEntryLink)
+		throws ModelListenerException {
+
+		if (!CheckNoninstanceablePortletThreadLocal.
+				isCheckNoninstanceablePortlet()) {
+
+			return;
+		}
+
+		_checkNoninstanceablePortletUsed(fragmentEntryLink);
+	}
+
+	@Override
+	public void onBeforeUpdate(
+			FragmentEntryLink originalFragmentEntryLink,
+			FragmentEntryLink fragmentEntryLink)
+		throws ModelListenerException {
+
+		if (!CheckNoninstanceablePortletThreadLocal.
+				isCheckNoninstanceablePortlet() ||
+			Objects.equals(
+				originalFragmentEntryLink.getHtml(),
+				fragmentEntryLink.getHtml())) {
+
+			return;
+		}
+
+		_checkNoninstanceablePortletUsed(fragmentEntryLink);
+	}
+
+	private void _checkNoninstanceablePortletUsed(
+			FragmentEntryLink fragmentEntryLink)
+		throws ModelListenerException {
+
+		List<String> portletNames = TransformUtil.transform(
+			_portletRegistry.getFragmentEntryLinkPortletIds(
+				null, fragmentEntryLink),
+			portletId -> {
+				Portlet portlet = _portletLocalService.getPortletById(
+					fragmentEntryLink.getCompanyId(), portletId);
+
+				if (portlet.isInstanceable()) {
+					return null;
+				}
+
+				return PortletIdCodec.decodePortletName(portletId);
+			});
+
+		if (ListUtil.isEmpty(portletNames)) {
+			return;
+		}
+
+		List<FragmentEntryLink> fragmentEntryLinks =
+			_fragmentEntryLinkLocalService.
+				getFragmentEntryLinksBySegmentsExperienceId(
+					fragmentEntryLink.getGroupId(),
+					fragmentEntryLink.getSegmentsExperienceId(),
+					fragmentEntryLink.getPlid(), false);
+
+		for (FragmentEntryLink curFragmentEntryLink : fragmentEntryLinks) {
+			if (curFragmentEntryLink.getFragmentEntryLinkId() ==
+					fragmentEntryLink.getFragmentEntryLinkId()) {
+
+				continue;
+			}
+
+			for (String portletId :
+					_portletRegistry.getFragmentEntryLinkPortletIds(
+						null, curFragmentEntryLink)) {
+
+				String portletName = PortletIdCodec.decodePortletName(
+					portletId);
+
+				if (portletNames.contains(portletName)) {
+					throw new ModelListenerException(
+						new NoninstanceablePortletException(portletName));
+				}
+			}
+		}
+	}
+
 	private void _deleteDDMTemplateLinks(FragmentEntryLink fragmentEntryLink)
 		throws PortalException {
 
 		_ddmTemplateLinkLocalService.deleteTemplateLink(
-			_portal.getClassNameId(FragmentEntryLink.class),
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
 			fragmentEntryLink.getFragmentEntryLinkId());
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			fragmentEntryLink.getEditableValues());
 
 		Iterator<String> keysIterator = jsonObject.keys();
@@ -142,11 +235,11 @@ public class FragmentEntryLinkModelListener
 
 	private void _updateDDMTemplateLink(FragmentEntryLink fragmentEntryLink) {
 		_ddmTemplateLinkLocalService.deleteTemplateLink(
-			_portal.getClassNameId(FragmentEntryLink.class),
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
 			fragmentEntryLink.getFragmentEntryLinkId());
 
 		try {
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+			JSONObject jsonObject = _jsonFactory.createJSONObject(
 				fragmentEntryLink.getEditableValues());
 
 			Iterator<String> keysIterator = jsonObject.keys();
@@ -208,7 +301,8 @@ public class FragmentEntryLinkModelListener
 
 		DDMTemplate ddmTemplate = _ddmTemplateLocalService.fetchTemplate(
 			fragmentEntryLink.getGroupId(),
-			_portal.getClassNameId(DDMStructure.class), ddmTemplateKey);
+			_portal.getClassNameId(DDMStructure.class.getName()),
+			ddmTemplateKey);
 
 		if (ddmTemplate == null) {
 			return;
@@ -228,12 +322,12 @@ public class FragmentEntryLinkModelListener
 
 		_layoutClassedModelUsageLocalService.deleteLayoutClassedModelUsages(
 			String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-			_portal.getClassNameId(FragmentEntryLink.class),
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
 			fragmentEntryLink.getPlid());
 
 		Set<LayoutDisplayPageObjectProvider<?>>
 			layoutDisplayPageObjectProviders =
-				ContentUtil.
+				_contentManager.
 					getFragmentEntryLinkMappedLayoutDisplayPageObjectProviders(
 						fragmentEntryLink);
 
@@ -244,29 +338,35 @@ public class FragmentEntryLinkModelListener
 			LayoutClassedModelUsage layoutClassedModelUsage =
 				_layoutClassedModelUsageLocalService.
 					fetchLayoutClassedModelUsage(
+						fragmentEntryLink.getGroupId(),
 						layoutDisplayPageObjectProvider.getClassNameId(),
 						layoutDisplayPageObjectProvider.getClassPK(),
+						layoutDisplayPageObjectProvider.
+							getExternalReferenceCode(),
 						String.valueOf(
 							fragmentEntryLink.getFragmentEntryLinkId()),
-						_portal.getClassNameId(FragmentEntryLink.class),
+						_portal.getClassNameId(
+							FragmentEntryLink.class.getName()),
 						fragmentEntryLink.getPlid());
 
 			if (layoutClassedModelUsage != null) {
 				continue;
 			}
 
-			ServiceContext serviceContext = Optional.ofNullable(
-				ServiceContextThreadLocal.getServiceContext()
-			).orElse(
-				new ServiceContext()
-			);
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			if (serviceContext == null) {
+				serviceContext = new ServiceContext();
+			}
 
 			_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
 				fragmentEntryLink.getGroupId(),
 				layoutDisplayPageObjectProvider.getClassNameId(),
 				layoutDisplayPageObjectProvider.getClassPK(),
+				layoutDisplayPageObjectProvider.getExternalReferenceCode(),
 				String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-				_portal.getClassNameId(FragmentEntryLink.class),
+				_portal.getClassNameId(FragmentEntryLink.class.getName()),
 				fragmentEntryLink.getPlid(), serviceContext);
 		}
 	}
@@ -278,10 +378,23 @@ public class FragmentEntryLinkModelListener
 	private CommentManager _commentManager;
 
 	@Reference
+	private ContentManager _contentManager;
+
+	@Reference
 	private DDMTemplateLinkLocalService _ddmTemplateLinkLocalService;
 
 	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
+
+	@Reference
+	private FragmentEntryLinkListenerRegistry
+		_fragmentEntryLinkListenerRegistry;
+
+	@Reference
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private LayoutClassedModelUsageLocalService
@@ -289,5 +402,11 @@ public class FragmentEntryLinkModelListener
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private PortletLocalService _portletLocalService;
+
+	@Reference
+	private PortletRegistry _portletRegistry;
 
 }

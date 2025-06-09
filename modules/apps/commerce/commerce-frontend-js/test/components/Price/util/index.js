@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
 
-import * as PriceUtils from '../../../../src/main/resources/META-INF/resources/components/price/util/index';
+import * as Pricetests_utilities from '../../../../src/main/resources/META-INF/resources/components/price/util/index';
 
-describe('Price Utils', () => {
+describe('Price tests_utilities', () => {
 	beforeEach(() => {
 		jest.resetAllMocks();
 	});
@@ -36,7 +27,7 @@ describe('Price Utils', () => {
 			};
 
 			expect(
-				PriceUtils.adaptLegacyPriceModel(
+				Pricetests_utilities.adaptLegacyPriceModel(
 					CheckCPInstancePriceModel.cpInstance.prices
 				)
 			).toEqual({
@@ -46,7 +37,9 @@ describe('Price Utils', () => {
 				discountPercentageLevel3: 0.0,
 				discountPercentageLevel4: 0.0,
 				finalPriceFormatted: '$ 20.00',
+				price: '$ 20.00',
 				priceFormatted: '$ 20.00',
+				priceOnApplication: false,
 				promoPrice: '1',
 				promoPriceFormatted: '$ 10.00',
 			});
@@ -68,7 +61,7 @@ describe('Price Utils', () => {
 			};
 
 			expect(
-				PriceUtils.adaptLegacyPriceModel(compatiblePriceModel)
+				Pricetests_utilities.adaptLegacyPriceModel(compatiblePriceModel)
 			).toEqual(compatiblePriceModel);
 		});
 	});
@@ -89,19 +82,23 @@ describe('Price Utils', () => {
 
 			const result = ['2.00', '5.40', '3.34', '0.00'];
 
-			expect(PriceUtils.collectDiscountLevels(price)).toEqual(result);
+			expect(Pricetests_utilities.collectDiscountLevels(price)).toEqual(
+				result
+			);
 		});
 	});
 
 	describe('isNonnull', () => {
 		it('checks that one or more numerical values are non-null', () => {
-			expect(PriceUtils.isNonnull('0')).toBe(false);
-			expect(PriceUtils.isNonnull('0', '0.000', 0)).toBe(false);
-			expect(PriceUtils.isNonnull('1')).toBe(true);
-			expect(PriceUtils.isNonnull('1.00', '2.4', '0')).toBe(true);
-			expect(PriceUtils.isNonnull(0)).toBe(false);
-			expect(PriceUtils.isNonnull(1)).toBe(true);
-			expect(PriceUtils.isNonnull(1.2, '3.1', 0)).toBe(true);
+			expect(Pricetests_utilities.isNonnull('0')).toBe(false);
+			expect(Pricetests_utilities.isNonnull('0', '0.000', 0)).toBe(false);
+			expect(Pricetests_utilities.isNonnull('1')).toBe(true);
+			expect(Pricetests_utilities.isNonnull('1.00', '2.4', '0')).toBe(
+				true
+			);
+			expect(Pricetests_utilities.isNonnull(0)).toBe(false);
+			expect(Pricetests_utilities.isNonnull(1)).toBe(true);
+			expect(Pricetests_utilities.isNonnull(1.2, '3.1', 0)).toBe(true);
 		});
 	});
 });

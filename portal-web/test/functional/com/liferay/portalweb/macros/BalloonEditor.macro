@@ -1,6 +1,7 @@
 definition {
 
-	macro addTable {
+	@summary = "Default summary"
+	macro addTable() {
 		VerifyElementPresent(locator1 = "CKEditor#INSERT_BTN");
 
 		Click(locator1 = "CKEditor#INSERT_BTN");
@@ -10,31 +11,46 @@ definition {
 		Click(locator1 = "CKEditor#CHK_BTN_TABLE");
 	}
 
-	macro clearParagraphWithBackspace {
-		TripleClick(locator1 = "CKEditorBalloonEditorSample#BODY_TEXT");
+	@summary = "Default summary"
+	macro clearParagraphWithBackspace(paragraph_number = null) {
+		BalloonEditor.highlightText(paragraph_number = ${paragraph_number});
 
 		KeyPress(
 			locator1 = "CKEditorBalloonEditorSample#BODY_TEXT",
 			value1 = "\BACK_SPACE");
 	}
 
-	macro goToAddVideo {
-		VerifyElementPresent(locator1 = "CKEditor#INSERT_BTN");
+	@summary = "Default summary"
+	macro goToAddVideo() {
+		VerifyVisible(locator1 = "CKEditor#INSERT_BTN");
 
 		Click(locator1 = "CKEditor#INSERT_BTN");
 
 		Click(locator1 = "CKEditor#INSERT_VIDEO_BTN");
 	}
 
-	macro toggleBalloonEditorContentStyle {
-		TripleClick(locator1 = "CKEditorBalloonEditorSample#BODY_TEXT");
+	@summary = "Default summary"
+	macro highlightText(paragraph_number = null) {
+		TripleClick(
+			locator1 = "CKEditorBalloonEditorSample#BODY_TEXT",
+			paragraph_number = ${paragraph_number});
+	}
 
-		VerifyElementPresent(
-			key_titleName = "${optionTool}",
+	@summary = "Default summary"
+	macro selectTab(tabName = null) {
+		Click(
+			key_tabName = ${tabName},
+			locator1 = "CKEditorBalloonEditorSample#TAB_LABEL");
+	}
+
+	@summary = "Default summary"
+	macro toggleBalloonEditorContentStyle(optionTool = null) {
+		ScrollWebElementIntoView(
+			key_titleName = ${optionTool},
 			locator1 = "CKEditor#TOOLBAR_ANY_ITEM_BUTTON");
 
 		Click(
-			key_titleName = "${optionTool}",
+			key_titleName = ${optionTool},
 			locator1 = "CKEditor#TOOLBAR_ANY_ITEM_BUTTON");
 	}
 

@@ -1,4 +1,4 @@
-@component-name = "portal-user-management-and-portal-configuration"
+@component-name = "portal-commerce"
 definition {
 
 	property portal.release = "true";
@@ -20,10 +20,9 @@ definition {
 			groupName = "Guest",
 			layoutName = "Contacts Center Page");
 
-		SitePages.configurePage(
+		PagesAdmin.configurePage(
 			columnName = "1 Column",
 			pageName = "Contacts Center Page",
-			privacy = "Public Pages",
 			sitePageType = "Widget Page");
 
 		JSONLayout.addWidgetToPublicLayout(
@@ -33,22 +32,28 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONUser.tearDownNonAdminUsers();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
 	@description = "This is a use case for LPS-100624."
-	@priority = "4"
+	@priority = 4
 	test Smoke {
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
+		property test.liferay.virtual.instance = "false";
+
 		Navigator.gotoPage(pageName = "Contacts Center Page");
+
+		ContactsCenter.enableEmailAddressOnPortlet();
 
 		ContactsCenter.addPG(
 			contactName = "test1",
@@ -74,11 +79,11 @@ definition {
 		Navigator.gotoPage(pageName = "Contacts Center Page");
 
 		ContactsCenter.viewContactCenterContainerPG(
-			allUser = "3",
-			contactConnection = "0",
-			contactFollower = "0",
-			contactFollowing = "0",
-			myContact = "1");
+			allUser = 3,
+			contactConnection = 0,
+			contactFollower = 0,
+			contactFollowing = 0,
+			myContact = 1);
 	}
 
 }

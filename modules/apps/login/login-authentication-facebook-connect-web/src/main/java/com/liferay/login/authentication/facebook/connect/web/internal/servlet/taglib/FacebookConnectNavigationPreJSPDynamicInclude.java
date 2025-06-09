@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.login.authentication.facebook.connect.web.internal.servlet.taglib;
@@ -17,6 +8,8 @@ package com.liferay.login.authentication.facebook.connect.web.internal.servlet.t
 import com.liferay.portal.kernel.facebook.FacebookConnect;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -24,11 +17,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.security.sso.facebook.connect.constants.FacebookConnectWebKeys;
 
-import java.io.IOException;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,9 +33,14 @@ import org.osgi.service.component.annotations.Reference;
  *
  * @author Michael C. Han
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class FacebookConnectNavigationPreJSPDynamicInclude
 	extends BaseJSPDynamicInclude {
+
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
+	}
 
 	@Override
 	public void include(
@@ -57,8 +55,11 @@ public class FacebookConnectNavigationPreJSPDynamicInclude
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		Layout layout = themeDisplay.getLayout();
+
 		if (strutsAction.startsWith("/login/facebook_connect") ||
-			!_facebookConnect.isEnabled(themeDisplay.getCompanyId())) {
+			!_facebookConnect.isEnabled(themeDisplay.getCompanyId()) ||
+			LayoutConstants.TYPE_UTILITY.equals(layout.getType())) {
 
 			return;
 		}
@@ -103,23 +104,15 @@ public class FacebookConnectNavigationPreJSPDynamicInclude
 		return _log;
 	}
 
-	@Reference(unbind = "-")
-	protected void setFacebookConnect(FacebookConnect facebookConnect) {
-		_facebookConnect = facebookConnect;
-	}
-
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.login.authentication.facebook.connect.web)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		FacebookConnectNavigationPreJSPDynamicInclude.class);
 
+	@Reference
 	private FacebookConnect _facebookConnect;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.login.authentication.facebook.connect.web)"
+	)
+	private ServletContext _servletContext;
 
 }

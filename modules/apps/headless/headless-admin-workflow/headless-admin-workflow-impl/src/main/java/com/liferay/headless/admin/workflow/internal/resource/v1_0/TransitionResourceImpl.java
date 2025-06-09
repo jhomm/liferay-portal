@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.internal.resource.v1_0;
@@ -17,11 +8,10 @@ package com.liferay.headless.admin.workflow.internal.resource.v1_0;
 import com.liferay.headless.admin.workflow.dto.v1_0.Transition;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.TransitionUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.TransitionResource;
-import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManager;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManager;
+import com.liferay.portal.kernel.workflow.WorkflowTransition;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
@@ -45,22 +35,20 @@ public class TransitionResourceImpl extends BaseTransitionResourceImpl {
 			Long workflowInstanceId, Pagination pagination)
 		throws Exception {
 
-		List<String> nextTransitionNames =
-			_workflowInstanceManager.getNextTransitionNames(
+		List<WorkflowTransition> workflowTransitions =
+			_workflowInstanceManager.getNextWorkflowTransitions(
 				contextCompany.getCompanyId(), contextUser.getUserId(),
 				workflowInstanceId);
 
 		return Page.of(
 			transform(
 				ListUtil.subList(
-					nextTransitionNames, pagination.getStartPosition(),
+					workflowTransitions, pagination.getStartPosition(),
 					pagination.getEndPosition()),
-				transitionName -> TransitionUtil.toTransition(
-					_language, transitionName,
-					ResourceBundleUtil.getModuleAndPortalResourceBundle(
-						contextAcceptLanguage.getPreferredLocale(),
-						TransitionResourceImpl.class))),
-			pagination, nextTransitionNames.size());
+				workflowTransition -> TransitionUtil.toTransition(
+					contextAcceptLanguage.getPreferredLocale(),
+					workflowTransition)),
+			pagination, workflowTransitions.size());
 	}
 
 	@Override
@@ -68,26 +56,19 @@ public class TransitionResourceImpl extends BaseTransitionResourceImpl {
 			Long workflowTaskId, Pagination pagination)
 		throws Exception {
 
-		List<String> nextTransitionNames =
-			_workflowTaskManager.getNextTransitionNames(
-				contextCompany.getCompanyId(), contextUser.getUserId(),
-				workflowTaskId);
+		List<WorkflowTransition> workflowTransitions =
+			_workflowTaskManager.getNextWorkflowTransitions(workflowTaskId);
 
 		return Page.of(
 			transform(
 				ListUtil.subList(
-					nextTransitionNames, pagination.getStartPosition(),
+					workflowTransitions, pagination.getStartPosition(),
 					pagination.getEndPosition()),
-				transitionName -> TransitionUtil.toTransition(
-					_language, transitionName,
-					ResourceBundleUtil.getModuleAndPortalResourceBundle(
-						contextAcceptLanguage.getPreferredLocale(),
-						TransitionResourceImpl.class))),
-			pagination, nextTransitionNames.size());
+				workflowTransition -> TransitionUtil.toTransition(
+					contextAcceptLanguage.getPreferredLocale(),
+					workflowTransition)),
+			pagination, workflowTransitions.size());
 	}
-
-	@Reference
-	private Language _language;
 
 	@Reference
 	private WorkflowInstanceManager _workflowInstanceManager;

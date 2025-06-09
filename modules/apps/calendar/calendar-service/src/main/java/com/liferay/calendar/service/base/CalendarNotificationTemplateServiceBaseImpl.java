@@ -1,40 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.service.base;
 
 import com.liferay.calendar.model.CalendarNotificationTemplate;
 import com.liferay.calendar.service.CalendarNotificationTemplateService;
-import com.liferay.calendar.service.CalendarNotificationTemplateServiceUtil;
-import com.liferay.calendar.service.persistence.CalendarBookingFinder;
-import com.liferay.calendar.service.persistence.CalendarBookingPersistence;
-import com.liferay.calendar.service.persistence.CalendarFinder;
 import com.liferay.calendar.service.persistence.CalendarNotificationTemplatePersistence;
-import com.liferay.calendar.service.persistence.CalendarPersistence;
-import com.liferay.calendar.service.persistence.CalendarResourceFinder;
-import com.liferay.calendar.service.persistence.CalendarResourcePersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
-import com.liferay.portal.kernel.util.PortalUtil;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import javax.sql.DataSource;
 
@@ -60,11 +44,10 @@ public abstract class CalendarNotificationTemplateServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>CalendarNotificationTemplateService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>CalendarNotificationTemplateServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>CalendarNotificationTemplateService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.calendar.service.CalendarNotificationTemplateServiceUtil</code>.
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
 	}
 
 	@Override
@@ -79,8 +62,6 @@ public abstract class CalendarNotificationTemplateServiceBaseImpl
 	public void setAopProxy(Object aopProxy) {
 		calendarNotificationTemplateService =
 			(CalendarNotificationTemplateService)aopProxy;
-
-		_setServiceUtilService(calendarNotificationTemplateService);
 	}
 
 	/**
@@ -107,54 +88,29 @@ public abstract class CalendarNotificationTemplateServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource =
+			calendarNotificationTemplatePersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource =
-				calendarNotificationTemplatePersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
 		}
 	}
-
-	private void _setServiceUtilService(
-		CalendarNotificationTemplateService
-			calendarNotificationTemplateService) {
-
-		try {
-			Field field =
-				CalendarNotificationTemplateServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, calendarNotificationTemplateService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected CalendarPersistence calendarPersistence;
-
-	@Reference
-	protected CalendarFinder calendarFinder;
-
-	@Reference
-	protected CalendarBookingPersistence calendarBookingPersistence;
-
-	@Reference
-	protected CalendarBookingFinder calendarBookingFinder;
 
 	@Reference
 	protected
@@ -169,32 +125,10 @@ public abstract class CalendarNotificationTemplateServiceBaseImpl
 		calendarNotificationTemplatePersistence;
 
 	@Reference
-	protected CalendarResourcePersistence calendarResourcePersistence;
-
-	@Reference
-	protected CalendarResourceFinder calendarResourceFinder;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		CalendarNotificationTemplateServiceBaseImpl.class);
 
 }

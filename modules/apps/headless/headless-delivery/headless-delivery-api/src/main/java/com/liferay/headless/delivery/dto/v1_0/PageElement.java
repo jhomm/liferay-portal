@@ -1,32 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -34,12 +32,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -59,58 +52,126 @@ public class PageElement implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(PageElement.class, json);
 	}
 
-	@Schema(description = "The page element's definition.")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page element's definition."
+	)
 	@Valid
 	public Object getDefinition() {
+		if (_definitionSupplier != null) {
+			definition = _definitionSupplier.get();
+
+			_definitionSupplier = null;
+		}
+
 		return definition;
 	}
 
 	public void setDefinition(Object definition) {
 		this.definition = definition;
+
+		_definitionSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDefinition(
 		UnsafeSupplier<Object, Exception> definitionUnsafeSupplier) {
 
-		try {
-			definition = definitionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_definitionSupplier = () -> {
+			try {
+				return definitionUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "The page element's definition.")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Object definition;
 
-	@Schema(description = "A list of the page elements this page element has.")
+	@JsonIgnore
+	private Supplier<Object> _definitionSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page element's ID."
+	)
+	public String getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+
+		_idSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setId(UnsafeSupplier<String, Exception> idUnsafeSupplier) {
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField(description = "The page element's ID.")
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String id;
+
+	@JsonIgnore
+	private Supplier<String> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "A list of the page elements this page element has."
+	)
 	@Valid
 	public PageElement[] getPageElements() {
+		if (_pageElementsSupplier != null) {
+			pageElements = _pageElementsSupplier.get();
+
+			_pageElementsSupplier = null;
+		}
+
 		return pageElements;
 	}
 
 	public void setPageElements(PageElement[] pageElements) {
 		this.pageElements = pageElements;
+
+		_pageElementsSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPageElements(
 		UnsafeSupplier<PageElement[], Exception> pageElementsUnsafeSupplier) {
 
-		try {
-			pageElements = pageElementsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_pageElementsSupplier = () -> {
+			try {
+				return pageElementsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
@@ -119,16 +180,28 @@ public class PageElement implements Serializable {
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected PageElement[] pageElements;
 
-	@Schema(
-		description = "The page element's type (collection, collection item,, column, drop zone, fragment, fragment drop zone, root, row, section or widget)."
+	@JsonIgnore
+	private Supplier<PageElement[]> _pageElementsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "The page element's type (collection, collection item, column, drop zone, form, fragment, fragment drop zone, root, row, section or widget)."
 	)
+	@JsonGetter("type")
 	@Valid
 	public Type getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	@JsonIgnore
 	public String getTypeAsString() {
+		Type type = getType();
+
 		if (type == null) {
 			return null;
 		}
@@ -138,26 +211,33 @@ public class PageElement implements Serializable {
 
 	public void setType(Type type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<Type, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(
-		description = "The page element's type (collection, collection item,, column, drop zone, fragment, fragment drop zone, root, row, section or widget)."
+		description = "The page element's type (collection, collection item, column, drop zone, form, fragment, fragment drop zone, root, row, section or widget)."
 	)
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Type type;
+
+	@JsonIgnore
+	private Supplier<Type> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -186,6 +266,8 @@ public class PageElement implements Serializable {
 
 		sb.append("{");
 
+		Object definition = getDefinition();
+
 		if (definition != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -193,8 +275,37 @@ public class PageElement implements Serializable {
 
 			sb.append("\"definition\": ");
 
-			sb.append(String.valueOf(definition));
+			if (definition instanceof Map) {
+				sb.append(
+					JSONFactoryUtil.createJSONObject((Map<?, ?>)definition));
+			}
+			else if (definition instanceof String) {
+				sb.append("\"");
+				sb.append(_escape((String)definition));
+				sb.append("\"");
+			}
+			else {
+				sb.append(definition);
+			}
 		}
+
+		String id = getId();
+
+		if (id != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"id\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(id));
+
+			sb.append("\"");
+		}
+
+		PageElement[] pageElements = getPageElements();
 
 		if (pageElements != null) {
 			if (sb.length() > 1) {
@@ -216,6 +327,8 @@ public class PageElement implements Serializable {
 			sb.append("]");
 		}
 
+		Type type = getType();
+
 		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -235,8 +348,8 @@ public class PageElement implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.delivery.dto.v1_0.PageElement",
 		name = "x-class-name"
 	)
@@ -246,9 +359,10 @@ public class PageElement implements Serializable {
 	public static enum Type {
 
 		COLLECTION("Collection"), COLLECTION_ITEM("CollectionItem"),
-		COLUMN("Column"), DROP_ZONE("DropZone"), FRAGMENT("Fragment"),
-		FRAGMENT_DROP_ZONE("FragmentDropZone"), ROOT("Root"), ROW("Row"),
-		SECTION("Section"), WIDGET("Widget");
+		COLUMN("Column"), DROP_ZONE("DropZone"), FORM("Form"),
+		FORM_STEP("FormStep"), FORM_STEP_CONTAINER("FormStepContainer"),
+		FRAGMENT("Fragment"), FRAGMENT_DROP_ZONE("FragmentDropZone"),
+		ROOT("Root"), ROW("Row"), SECTION("Section"), WIDGET("Widget");
 
 		@JsonCreator
 		public static Type create(String value) {
@@ -284,9 +398,9 @@ public class PageElement implements Serializable {
 	}
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -312,7 +426,7 @@ public class PageElement implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -323,7 +437,10 @@ public class PageElement implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -344,7 +461,7 @@ public class PageElement implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -360,5 +477,12 @@ public class PageElement implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

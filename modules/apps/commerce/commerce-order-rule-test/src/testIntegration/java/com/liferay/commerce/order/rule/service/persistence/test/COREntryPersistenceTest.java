@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.order.rule.exception.DuplicateCOREntryExternalReferenceCodeException;
 import com.liferay.commerce.order.rule.exception.NoSuchCOREntryException;
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.service.COREntryLocalServiceUtil;
@@ -125,6 +117,10 @@ public class COREntryPersistenceTest {
 
 		COREntry newCOREntry = _persistence.create(pk);
 
+		newCOREntry.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCOREntry.setUuid(RandomTestUtil.randomString());
+
 		newCOREntry.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		newCOREntry.setCompanyId(RandomTestUtil.nextLong());
@@ -168,6 +164,9 @@ public class COREntryPersistenceTest {
 		COREntry existingCOREntry = _persistence.findByPrimaryKey(
 			newCOREntry.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCOREntry.getMvccVersion(), newCOREntry.getMvccVersion());
+		Assert.assertEquals(existingCOREntry.getUuid(), newCOREntry.getUuid());
 		Assert.assertEquals(
 			existingCOREntry.getExternalReferenceCode(),
 			newCOREntry.getExternalReferenceCode());
@@ -217,6 +216,44 @@ public class COREntryPersistenceTest {
 			Time.getShortTimestamp(newCOREntry.getStatusDate()));
 	}
 
+	@Test(expected = DuplicateCOREntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		COREntry corEntry = addCOREntry();
+
+		COREntry newCOREntry = addCOREntry();
+
+		newCOREntry.setCompanyId(corEntry.getCompanyId());
+
+		newCOREntry = _persistence.update(newCOREntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCOREntry);
+
+		newCOREntry.setExternalReferenceCode(
+			corEntry.getExternalReferenceCode());
+
+		_persistence.update(newCOREntry);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
 	@Test
 	public void testCountByC_A() throws Exception {
 		_persistence.countByC_A(
@@ -263,12 +300,12 @@ public class COREntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByERC_C("null", 0L);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -296,9 +333,10 @@ public class COREntryPersistenceTest {
 
 	protected OrderByComparator<COREntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"COREntry", "externalReferenceCode", true, "COREntryId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "active", true, "description", true,
+			"COREntry", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "COREntryId", true, "companyId",
+			true, "userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "active", true, "description", true,
 			"displayDate", true, "expirationDate", true, "name", true,
 			"priority", true, "type", true, "lastPublishDate", true, "status",
 			true, "statusByUserId", true, "statusByUserName", true,
@@ -563,21 +601,25 @@ public class COREntryPersistenceTest {
 
 	private void _assertOriginalValues(COREntry corEntry) {
 		Assert.assertEquals(
-			Long.valueOf(corEntry.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				corEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			corEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				corEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(corEntry.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				corEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected COREntry addCOREntry() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		COREntry corEntry = _persistence.create(pk);
+
+		corEntry.setMvccVersion(RandomTestUtil.nextLong());
+
+		corEntry.setUuid(RandomTestUtil.randomString());
 
 		corEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 

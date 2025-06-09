@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.checkout.web.internal.util;
@@ -26,15 +17,15 @@ import com.liferay.commerce.model.CommerceShippingEngine;
 import com.liferay.commerce.model.CommerceShippingMethod;
 import com.liferay.commerce.model.CommerceShippingOption;
 import com.liferay.commerce.service.CommerceOrderLocalService;
-import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.commerce.service.CommerceShippingMethodLocalService;
+import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionLocalService;
 import com.liferay.commerce.util.BaseCommerceCheckoutStep;
 import com.liferay.commerce.util.CommerceCheckoutStep;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
-import com.liferay.commerce.util.CommerceShippingHelper;
 import com.liferay.frontend.taglib.servlet.taglib.util.JSPRenderer;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -42,21 +33,26 @@ import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUti
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.transaction.TransactionConfig;
+import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,7 +63,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.checkout.step.name=" + ShippingMethodCommerceCheckoutStep.NAME,
 		"commerce.checkout.step.order:Integer=20"
@@ -99,8 +94,8 @@ public class ShippingMethodCommerceCheckoutStep
 
 		if (_commerceCheckoutStepHttpHelper.
 				isActiveShippingMethodCommerceCheckoutStep(
-					httpServletRequest) &&
-			_commerceShippingHelper.isShippable(commerceOrder)) {
+					commerceOrder, httpServletRequest) &&
+			commerceOrder.isShippable()) {
 
 			return true;
 		}
@@ -114,7 +109,7 @@ public class ShippingMethodCommerceCheckoutStep
 		throws Exception {
 
 		try {
-			updateCommerceOrderShippingMethod(actionRequest);
+			_updateCommerceOrderShippingMethod(actionRequest);
 		}
 		catch (Exception exception) {
 			if (exception instanceof CommerceOrderShippingMethodException) {
@@ -137,7 +132,9 @@ public class ShippingMethodCommerceCheckoutStep
 			shippingMethodCheckoutStepDisplayContext =
 				new ShippingMethodCheckoutStepDisplayContext(
 					_commercePriceFormatter, _commerceShippingEngineRegistry,
-					_commerceShippingMethodLocalService, httpServletRequest);
+					_commerceShippingMethodLocalService,
+					_commerceShippingFixedOptionLocalService,
+					_configurationProvider, httpServletRequest);
 
 		CommerceOrder commerceOrder =
 			shippingMethodCheckoutStepDisplayContext.getCommerceOrder();
@@ -206,8 +203,20 @@ public class ShippingMethodCommerceCheckoutStep
 		for (CommerceShippingOption commerceShippingOption :
 				commerceShippingOptions) {
 
-			if (shippingOptionName.equals(commerceShippingOption.getName())) {
-				return commerceShippingOption.getAmount();
+			if (shippingOptionName.equals(commerceShippingOption.getKey())) {
+				BigDecimal shippingAmount = commerceShippingOption.getAmount();
+
+				if (CommerceOrderUtil.isCommerceOrderMultishipping(
+						commerceOrder)) {
+
+					return shippingAmount.multiply(
+						BigDecimal.valueOf(
+							CommerceOrderUtil.
+								getCommerceOrderDeliveryGroupNamesCount(
+									commerceOrder)));
+				}
+
+				return shippingAmount;
 			}
 		}
 
@@ -217,18 +226,7 @@ public class ShippingMethodCommerceCheckoutStep
 				"\" for shipping method ", commerceShippingMethodId));
 	}
 
-	@Reference(
-		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)",
-		unbind = "-"
-	)
-	protected void setModelResourcePermission(
-		ModelResourcePermission<CommerceOrder> modelResourcePermission) {
-
-		_commerceOrderModelResourcePermission = modelResourcePermission;
-	}
-
-	protected void updateCommerceOrderShippingMethod(
-			ActionRequest actionRequest)
+	private void _updateCommerceOrderShippingMethod(ActionRequest actionRequest)
 		throws Exception {
 
 		String commerceShippingOptionKey = ParamUtil.getString(
@@ -241,19 +239,11 @@ public class ShippingMethodCommerceCheckoutStep
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		String commerceOrderUuid = ParamUtil.getString(
-			actionRequest, "commerceOrderUuid");
-
-		CommerceContext commerceContext =
-			(CommerceContext)actionRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
-		CommerceOrder commerceOrder =
-			_commerceOrderService.getCommerceOrderByUuidAndGroupId(
-				commerceOrderUuid, commerceContext.getCommerceChannelGroupId());
-
 		PermissionChecker permissionChecker =
 			PermissionCheckerFactoryUtil.create(themeDisplay.getUser());
+
+		CommerceOrder commerceOrder = (CommerceOrder)actionRequest.getAttribute(
+			CommerceCheckoutWebKeys.COMMERCE_ORDER);
 
 		if (!_commerceOrderModelResourcePermission.contains(
 				permissionChecker, commerceOrder, ActionKeys.UPDATE)) {
@@ -261,22 +251,136 @@ public class ShippingMethodCommerceCheckoutStep
 			return;
 		}
 
+		CommerceContext commerceContext =
+			(CommerceContext)actionRequest.getAttribute(
+				CommerceWebKeys.COMMERCE_CONTEXT);
+
 		int pos = commerceShippingOptionKey.indexOf(
 			COMMERCE_SHIPPING_OPTION_KEY_SEPARATOR);
 
 		long commerceShippingMethodId = GetterUtil.getLong(
 			commerceShippingOptionKey.substring(0, pos));
-		String commerceShippingOptionName = commerceShippingOptionKey.substring(
+		String shippingOptionName = commerceShippingOptionKey.substring(
 			pos + 1);
 
 		BigDecimal shippingAmount = getShippingAmount(
 			commerceContext, commerceOrder, commerceShippingMethodId,
-			commerceShippingOptionName, themeDisplay.getLocale());
+			shippingOptionName, themeDisplay.getLocale());
 
-		_commerceOrderLocalService.updateCommerceShippingMethod(
-			commerceOrder.getCommerceOrderId(), commerceShippingMethodId,
-			commerceShippingOptionName, shippingAmount, commerceContext);
+		try {
+			if ((commerceOrder.getCommerceShippingMethodId() !=
+					commerceShippingMethodId) ||
+				!StringUtil.equals(
+					commerceOrder.getShippingOptionName(),
+					shippingOptionName) ||
+				!Objects.equals(
+					commerceOrder.getShippingAmount(), shippingAmount)) {
+
+				CommerceOrder updateCommerceOrder =
+					TransactionInvokerUtil.invoke(
+						_transactionConfig,
+						() -> _commerceOrderLocalService.updateCommerceOrder(
+							commerceOrder.getUserId(),
+							commerceOrder.getExternalReferenceCode(),
+							commerceOrder.getCommerceOrderId(),
+							commerceOrder.getBillingAddressId(),
+							commerceOrder.getCommerceAccountId(),
+							commerceOrder.getCommerceCurrencyCode(),
+							commerceOrder.getCommerceOrderTypeId(),
+							commerceShippingMethodId,
+							commerceOrder.getDeliveryCommerceTermEntryId(),
+							commerceOrder.getPaymentCommerceTermEntryId(),
+							commerceOrder.getShippingAddressId(),
+							commerceOrder.getAdvanceStatus(),
+							commerceOrder.getCommercePaymentMethodKey(),
+							commerceOrder.getCouponCode(),
+							commerceOrder.
+								getDeliveryCommerceTermEntryDescription(),
+							commerceOrder.getDeliveryCommerceTermEntryName(),
+							commerceOrder.getLastPriceUpdateDate(),
+							commerceOrder.isManuallyAdjusted(), null,
+							commerceOrder.getOrderDate(),
+							commerceOrder.getOrderStatus(),
+							commerceOrder.
+								getPaymentCommerceTermEntryDescription(),
+							commerceOrder.getPaymentCommerceTermEntryName(),
+							commerceOrder.getPaymentStatus(),
+							commerceOrder.getPrintedNote(),
+							commerceOrder.getPurchaseOrderNumber(),
+							commerceOrder.getRequestedDeliveryDate(),
+							commerceOrder.isShippable(), shippingAmount,
+							commerceOrder.getShippingDiscountAmount(),
+							commerceOrder.getShippingDiscountPercentageLevel1(),
+							commerceOrder.getShippingDiscountPercentageLevel2(),
+							commerceOrder.getShippingDiscountPercentageLevel3(),
+							commerceOrder.getShippingDiscountPercentageLevel4(),
+							commerceOrder.
+								getShippingDiscountPercentageLevel1WithTaxAmount(),
+							commerceOrder.
+								getShippingDiscountPercentageLevel2WithTaxAmount(),
+							commerceOrder.
+								getShippingDiscountPercentageLevel3WithTaxAmount(),
+							commerceOrder.
+								getShippingDiscountPercentageLevel4WithTaxAmount(),
+							commerceOrder.getShippingDiscountWithTaxAmount(),
+							shippingOptionName,
+							commerceOrder.getShippingWithTaxAmount(),
+							commerceOrder.getSubtotal(),
+							commerceOrder.getSubtotalDiscountAmount(),
+							commerceOrder.getSubtotalDiscountPercentageLevel1(),
+							commerceOrder.getSubtotalDiscountPercentageLevel2(),
+							commerceOrder.getSubtotalDiscountPercentageLevel3(),
+							commerceOrder.getSubtotalDiscountPercentageLevel4(),
+							commerceOrder.
+								getSubtotalDiscountPercentageLevel1WithTaxAmount(),
+							commerceOrder.
+								getSubtotalDiscountPercentageLevel2WithTaxAmount(),
+							commerceOrder.
+								getSubtotalDiscountPercentageLevel3WithTaxAmount(),
+							commerceOrder.
+								getSubtotalDiscountPercentageLevel4WithTaxAmount(),
+							commerceOrder.getSubtotalDiscountWithTaxAmount(),
+							commerceOrder.getSubtotalWithTaxAmount(),
+							commerceOrder.getTaxAmount(),
+							commerceOrder.getTotal(),
+							commerceOrder.getTotalDiscountAmount(),
+							commerceOrder.getTotalDiscountPercentageLevel1(),
+							commerceOrder.getTotalDiscountPercentageLevel2(),
+							commerceOrder.getTotalDiscountPercentageLevel3(),
+							commerceOrder.getTotalDiscountPercentageLevel4(),
+							commerceOrder.
+								getTotalDiscountPercentageLevel1WithTaxAmount(),
+							commerceOrder.
+								getTotalDiscountPercentageLevel2WithTaxAmount(),
+							commerceOrder.
+								getTotalDiscountPercentageLevel3WithTaxAmount(),
+							commerceOrder.
+								getTotalDiscountPercentageLevel4WithTaxAmount(),
+							commerceOrder.getTotalDiscountWithTaxAmount(),
+							commerceOrder.getTotalWithTaxAmount(),
+							commerceOrder.getTransactionId(),
+							commerceOrder.getStatus(),
+							commerceOrder.getStatusByUserId(),
+							commerceOrder.getStatusByUserName(),
+							commerceOrder.getStatusDate(), true,
+							commerceContext));
+
+				_commerceOrderLocalService.resetTermsAndConditions(
+					commerceOrder.getCommerceOrderId(), true, false);
+
+				actionRequest.setAttribute(
+					CommerceCheckoutWebKeys.COMMERCE_ORDER,
+					updateCommerceOrder);
+			}
+		}
+		catch (Throwable throwable) {
+			throw new PortalException(throwable);
+		}
 	}
+
+	private static final TransactionConfig _transactionConfig =
+		TransactionConfig.Factory.create(
+			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private CommerceCheckoutStepHttpHelper _commerceCheckoutStepHttpHelper;
@@ -284,11 +388,11 @@ public class ShippingMethodCommerceCheckoutStep
 	@Reference
 	private CommerceOrderLocalService _commerceOrderLocalService;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
+	)
 	private ModelResourcePermission<CommerceOrder>
 		_commerceOrderModelResourcePermission;
-
-	@Reference
-	private CommerceOrderService _commerceOrderService;
 
 	@Reference
 	private CommercePriceFormatter _commercePriceFormatter;
@@ -297,11 +401,15 @@ public class ShippingMethodCommerceCheckoutStep
 	private CommerceShippingEngineRegistry _commerceShippingEngineRegistry;
 
 	@Reference
-	private CommerceShippingHelper _commerceShippingHelper;
+	private CommerceShippingFixedOptionLocalService
+		_commerceShippingFixedOptionLocalService;
 
 	@Reference
 	private CommerceShippingMethodLocalService
 		_commerceShippingMethodLocalService;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private JSPRenderer _jspRenderer;

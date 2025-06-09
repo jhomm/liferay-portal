@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,9 +10,7 @@
 <%
 PanelCategory panelCategory = (PanelCategory)request.getAttribute(ApplicationListWebKeys.PANEL_CATEGORY);
 
-SiteAdministrationPanelCategoryDisplayContext siteAdministrationPanelCategoryDisplayContext = new SiteAdministrationPanelCategoryDisplayContext(liferayPortletRequest, liferayPortletResponse, null);
-
-Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
+SiteAdministrationPanelCategoryDisplayContext siteAdministrationPanelCategoryDisplayContext = new SiteAdministrationPanelCategoryDisplayContext(liferayPortletRequest, null);
 %>
 
 <c:if test="<%= siteAdministrationPanelCategoryDisplayContext.getGroup() != null %>">
@@ -60,7 +49,7 @@ Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
 					}
 					catch (RemoteExportException | SystemException e) {
 						if (e instanceof SystemException) {
-							_log.error(e, e);
+							_log.error(e);
 						}
 					%>
 
@@ -94,14 +83,14 @@ Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
 				/>
 			</c:if>
 
-			<c:if test="<%= !group.isDepot() && !group.isCompany() %>">
+			<c:if test="<%= siteAdministrationPanelCategoryDisplayContext.isShowLayoutsTree() %>">
 				<clay:button
 					cssClass="list-group-heading navigation-link panel-header-link"
-					disabled="<%= !siteAdministrationPanelCategoryDisplayContext.isShowLayoutsTree() %>"
+					disabled="<%= siteAdministrationPanelCategoryDisplayContext.isLayoutsTreeDisabled() %>"
 					displayType="unstyled"
 					icon="pages-tree"
 					id='<%= liferayPortletResponse.getNamespace() + "pagesTreeSidenavToggleId" %>'
-					label='<%= LanguageUtil.get(resourceBundle, "page-tree") %>'
+					label="page-tree"
 				/>
 			</c:if>
 		</clay:col>
@@ -114,35 +103,22 @@ Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
 	</c:if>
 </c:if>
 
-<c:if test="<%= !group.isDepot() && !group.isCompany() %>">
-
-	<%
-	PortletURL portletURL = PortletURLBuilder.create(
-		PortletURLFactoryUtil.create(request, ProductNavigationProductMenuPortletKeys.PRODUCT_NAVIGATION_PRODUCT_MENU, RenderRequest.RENDER_PHASE)
-	).setMVCPath(
-		"/portlet/pages_tree.jsp"
-	).setRedirect(
-		themeDisplay.getURLCurrent()
-	).setParameter(
-		"selPpid", portletDisplay.getId()
-	).setWindowState(
-		LiferayWindowState.EXCLUSIVE
-	).buildPortletURL();
-	%>
-
+<c:if test="<%= (siteAdministrationPanelCategoryDisplayContext.getGroup() != null) && siteAdministrationPanelCategoryDisplayContext.isShowLayoutsTree() %>">
 	<aui:script sandbox="<%= true %>">
 		var pagesTreeToggle = document.getElementById(
 			'<portlet:namespace />pagesTreeSidenavToggleId'
 		);
 
 		pagesTreeToggle.addEventListener('click', (event) => {
-			Liferay.Portlet.destroy('#p_p_id<portlet:namespace />', true);
+			Liferay.Portlet.destroy('#p_p_id<portlet:namespace />');
 
 			Liferay.Util.Session.set(
 				'com.liferay.product.navigation.product.menu.web_pagesTreeState',
 				'open'
 			).then(() => {
-				Liferay.Util.fetch('<%= portletURL.toString() %>')
+				Liferay.Util.fetch(
+					'<%= siteAdministrationPanelCategoryDisplayContext.getPageTreeURL() %>'
+				)
 					.then((response) => {
 						if (!response.ok) {
 							throw new Error(

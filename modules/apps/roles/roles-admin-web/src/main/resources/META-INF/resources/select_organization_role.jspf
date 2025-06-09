@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,13 +19,20 @@ List<Organization> organizations = null;
 String organizationIds = ParamUtil.getString(request, "organizationIds");
 
 if (step == 1) {
-	organizations = OrganizationLocalServiceUtil.getOrganizations(StringUtil.split(organizationIds, 0L));
+	String keywords = ParamUtil.getString(request, "keywords");
+
+	if (Validator.isNull(keywords)) {
+		organizations = OrganizationLocalServiceUtil.getOrganizations(StringUtil.split(organizationIds, 0L));
+	}
+	else {
+		organizations = OrganizationLocalServiceUtil.search(selUser.getCompanyId(), OrganizationConstants.ANY_PARENT_ORGANIZATION_ID, keywords, null, null, null, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+	}
 
 	if (filterManageableOrganizations) {
 		organizations = UsersAdminUtil.filterOrganizations(permissionChecker, organizations);
 	}
 
-	if (organizations.size() == 1) {
+	if (Validator.isNull(keywords) && (organizations.size() == 1)) {
 		step = 2;
 
 		Organization organization = organizations.get(0);
@@ -76,7 +74,7 @@ else {
 	viewTypeItems="<%= selectRoleManagementToolbarDisplayContext.getViewTypeItems() %>"
 />
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl container-form-lg" method="post" name="selectOrganizationRoleFm">
+<aui:form action="<%= portletURL %>" cssClass="container-fluid container-fluid-max-xl container-form-lg" method="post" name="selectOrganizationRoleFm">
 	<c:choose>
 		<c:when test="<%= step == 1 %>">
 			<aui:input name="organizationId" type="hidden" />
@@ -132,22 +130,26 @@ else {
 
 					<liferay-ui:search-container-column-text
 						name="country"
-						property="address.country.name"
+						value="<%= UsersAdminUtil.ORGANIZATION_COUNTRY_NAME_ACCESSOR.get(organization) %>"
 					/>
 
 					<liferay-ui:search-container-column-text>
 
 						<%
 						Group group = organization.getGroup();
-
-						Map<String, Object> data = HashMapBuilder.<String, Object>put(
-							"groupid", group.getGroupId()
-						).put(
-							"organizationid", organization.getOrganizationId()
-						).build();
 						%>
 
-						<aui:button cssClass="organization-selector-button" data="<%= data %>" value="choose" />
+						<aui:button
+							cssClass="organization-selector-button"
+							data='<%=
+								HashMapBuilder.<String, Object>put(
+									"groupid", group.getGroupId()
+								).put(
+									"organizationid", organization.getOrganizationId()
+								).build()
+							%>'
+							value="choose"
+						/>
 					</liferay-ui:search-container-column-text>
 				</liferay-ui:search-container-row>
 
@@ -156,28 +158,46 @@ else {
 				/>
 			</liferay-ui:search-container>
 
-			<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
+			<aui:script sandbox="<%= true %>">
 				var form = document.<portlet:namespace />selectOrganizationRoleFm;
 
-				var delegate = delegateModule.default;
+				Liferay.Util.delegate(
+					form,
+					'click',
+					'.organization-selector-button',
+					(event) => {
+						Liferay.Util.postForm(form, {
+							data: {
+								organizationId: event.delegateTarget.dataset.organizationid,
+							},
 
-				delegate(form, 'click', '.organization-selector-button', (event) => {
-					Liferay.Util.postForm(form, {
-						data: {
-							organizationId: event.delegateTarget.dataset.organizationid,
-						},
+							<%
+							portletURL.setParameter("resetCur", Boolean.TRUE.toString());
+							portletURL.setParameter("step", "2");
+							%>
 
-						<%
-						portletURL.setParameter("resetCur", Boolean.TRUE.toString());
-						portletURL.setParameter("step", "2");
-						%>
-
-						url: '<%= portletURL.toString() %>',
-					});
-				});
+							url: '<%= portletURL.toString() %>',
+						});
+					}
+				);
 			</aui:script>
 		</c:when>
 		<c:when test="<%= step == 2 %>">
+
+			<%
+			String groupEventName = ParamUtil.getString(request, "groupEventName");
+			%>
+
+			<c:if test="<%= Validator.isNotNull(groupEventName) %>">
+				<aui:script>
+					const openingLiferay = Liferay.Util.getOpener().Liferay;
+
+					openingLiferay.fire('<%= HtmlUtil.escapeJS(groupEventName) %>', {
+						data: '<%= organizationId %>',
+					});
+				</aui:script>
+			</c:if>
+
 			<aui:input name="step" type="hidden" value="2" />
 			<aui:input name="organizationId" type="hidden" value="<%= String.valueOf(organizationId) %>" />
 
@@ -210,7 +230,7 @@ else {
 						name="title"
 					>
 						<liferay-ui:icon
-							icon="<%= RolesAdminUtil.getIconCssClass(role) %>"
+							icon="<%= role.getIconCssClass() %>"
 							label="<%= true %>"
 							markupView="lexicon"
 							message="<%= HtmlUtil.escape(role.getTitle(locale)) %>"
@@ -232,7 +252,7 @@ else {
 							).put(
 								"groupid", selectedOrganization.getGroupId()
 							).put(
-								"iconcssclass", RolesAdminUtil.getIconCssClass(role)
+								"iconcssclass", role.getIconCssClass()
 							).put(
 								"searchcontainername", "organizationRoles"
 							).build();

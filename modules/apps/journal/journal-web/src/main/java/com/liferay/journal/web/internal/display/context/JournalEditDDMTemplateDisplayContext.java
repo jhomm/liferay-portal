@@ -1,61 +1,55 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.display.context;
 
+import com.liferay.change.tracking.spi.history.util.CTTimelineUtil;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.util.DDMTemplateHelper;
 import com.liferay.journal.configuration.JournalFileUploadsConfiguration;
+import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.model.JournalArticle;
-import com.liferay.journal.web.internal.configuration.JournalWebConfiguration;
 import com.liferay.journal.web.internal.helper.JournalDDMTemplateHelper;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateHandler;
 import com.liferay.portal.kernel.template.TemplateHandlerRegistryUtil;
 import com.liferay.portal.kernel.template.TemplateVariableDefinition;
 import com.liferay.portal.kernel.template.TemplateVariableGroup;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Base64;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.template.TemplateContextHelper;
+import com.liferay.portal.template.engine.TemplateContextHelper;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -63,26 +57,37 @@ import javax.servlet.http.HttpServletRequest;
 public class JournalEditDDMTemplateDisplayContext {
 
 	public JournalEditDDMTemplateDisplayContext(
-		HttpServletRequest httpServletRequest, RenderResponse renderResponse) {
+			DDMTemplateHelper ddmTemplateHelper,
+			JournalDDMTemplateHelper journalDDMTemplateHelper, Portal portal,
+			RenderRequest renderRequest, RenderResponse renderResponse)
+		throws ConfigurationException {
 
-		_httpServletRequest = httpServletRequest;
+		_ddmTemplateHelper = ddmTemplateHelper;
+		_journalDDMTemplateHelper = journalDDMTemplateHelper;
+		_portal = portal;
 		_renderResponse = renderResponse;
 
-		_ddmTemplateHelper =
-			(DDMTemplateHelper)_httpServletRequest.getAttribute(
-				DDMTemplateHelper.class.getName());
+		_httpServletRequest = portal.getHttpServletRequest(renderRequest);
 
 		_journalFileUploadsConfiguration =
-			(JournalFileUploadsConfiguration)_httpServletRequest.getAttribute(
+			(JournalFileUploadsConfiguration)renderRequest.getAttribute(
 				JournalFileUploadsConfiguration.class.getName());
 
-		_journalWebConfiguration =
-			(JournalWebConfiguration)_httpServletRequest.getAttribute(
-				JournalWebConfiguration.class.getName());
+		_themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		_journalServiceConfiguration =
+			ConfigurationProviderUtil.getCompanyConfiguration(
+				JournalServiceConfiguration.class,
+				_themeDisplay.getCompanyId());
 	}
 
 	public boolean autogenerateDDMTemplateKey() {
-		return _journalWebConfiguration.autogenerateDDMTemplateKey();
+		if (_journalServiceConfiguration == null) {
+			return true;
+		}
+
+		return _journalServiceConfiguration.autogenerateDDMTemplateKey();
 	}
 
 	public JSONObject getAutocompleteJSONObject() throws Exception {
@@ -135,7 +140,8 @@ public class JournalEditDDMTemplateDisplayContext {
 		return _ddmTemplate;
 	}
 
-	public HashMap<String, Object> getDDMTemplateEditorContext()
+	public HashMap<String, Object> getDDMTemplateEditorContext(
+			long scopeGroupId)
 		throws Exception {
 
 		return HashMapBuilder.<String, Object>put(
@@ -169,6 +175,9 @@ public class JournalEditDDMTemplateDisplayContext {
 				return false;
 			}
 		).put(
+			"showTemplateWarning",
+			(_ddmTemplate != null) && (getGroupId() != scopeGroupId)
+		).put(
 			"templateVariableGroups", getTemplateVariableGroupJSONArray()
 		).build();
 	}
@@ -180,6 +189,9 @@ public class JournalEditDDMTemplateDisplayContext {
 
 		_ddmTemplateId = ParamUtil.getLong(
 			_httpServletRequest, "ddmTemplateId");
+
+		CTTimelineUtil.setCTTimelineKeys(
+			_httpServletRequest, DDMTemplate.class, _ddmTemplateId);
 
 		return _ddmTemplateId;
 	}
@@ -215,13 +227,17 @@ public class JournalEditDDMTemplateDisplayContext {
 			return _script;
 		}
 
-		_script = BeanParamUtil.getString(
+		String script = BeanParamUtil.getString(
 			getDDMTemplate(), _httpServletRequest, "script");
+
+		if (Validator.isNotNull(script)) {
+			_script = new String(Base64.decode(script));
+		}
 
 		if (Validator.isNull(_script)) {
 			TemplateHandler templateHandler =
 				TemplateHandlerRegistryUtil.getTemplateHandler(
-					PortalUtil.getClassNameId(JournalArticle.class));
+					_portal.getClassNameId(JournalArticle.class));
 
 			_script = templateHandler.getTemplatesHelpContent(
 				TemplateConstants.LANG_TYPE_FTL);
@@ -231,7 +247,7 @@ public class JournalEditDDMTemplateDisplayContext {
 			_httpServletRequest, "scriptContent");
 
 		if (Validator.isNotNull(scriptContent)) {
-			_script = scriptContent;
+			_script = new String(Base64.decode(scriptContent));
 		}
 
 		return _script;
@@ -279,7 +295,7 @@ public class JournalEditDDMTemplateDisplayContext {
 
 		TemplateHandler templateHandler =
 			TemplateHandlerRegistryUtil.getTemplateHandler(
-				PortalUtil.getClassNameId(JournalArticle.class));
+				_portal.getClassNameId(JournalArticle.class));
 
 		Class<?> clazz = getClass();
 
@@ -290,20 +306,10 @@ public class JournalEditDDMTemplateDisplayContext {
 		return ResourceBundleUtil.getBundle(themeDisplay.getLocale(), clazz);
 	}
 
-	public String getTemplateLanguageTypeLabel(String templateLanguageType) {
-		return StringBundler.concat(
-			LanguageUtil.get(
-				_httpServletRequest, templateLanguageType + "[stands-for]"),
-			StringPool.SPACE, StringPool.OPEN_PARENTHESIS, StringPool.PERIOD,
-			templateLanguageType, StringPool.CLOSE_PARENTHESIS);
-	}
-
 	public JSONArray getTemplateVariableGroupJSONArray() throws Exception {
-		JournalDDMTemplateHelper journalDDMTemplateHelper =
-			(JournalDDMTemplateHelper)_httpServletRequest.getAttribute(
-				JournalDDMTemplateHelper.class.getName());
 		JSONArray templateVariableGroupJSONArray =
 			JSONFactoryUtil.createJSONArray();
+
 		ResourceBundle resourceBundle = getTemplateHandlerResourceBundle();
 
 		for (TemplateVariableGroup templateVariableGroup :
@@ -322,7 +328,7 @@ public class JournalEditDDMTemplateDisplayContext {
 				templateVariableDefinitionJSONArray.put(
 					JSONUtil.put(
 						"content",
-						journalDDMTemplateHelper.getDataContent(
+						_journalDDMTemplateHelper.getDataContent(
 							templateVariableDefinition)
 					).put(
 						"label",
@@ -335,7 +341,7 @@ public class JournalEditDDMTemplateDisplayContext {
 						templateVariableDefinition.isRepeatable()
 					).put(
 						"tooltip",
-						journalDDMTemplateHelper.getPaletteItemTitle(
+						_journalDDMTemplateHelper.getPaletteItemTitle(
 							_httpServletRequest, resourceBundle,
 							templateVariableDefinition)
 					));
@@ -364,7 +370,7 @@ public class JournalEditDDMTemplateDisplayContext {
 
 		Map<String, TemplateVariableGroup> templateVariableGroups =
 			TemplateContextHelper.getTemplateVariableGroups(
-				PortalUtil.getClassNameId(JournalArticle.class), getClassPK(),
+				_portal.getClassNameId(JournalArticle.class), getClassPK(),
 				TemplateConstants.LANG_TYPE_FTL, themeDisplay.getLocale());
 
 		return templateVariableGroups.values();
@@ -402,11 +408,6 @@ public class JournalEditDDMTemplateDisplayContext {
 		return _journalFileUploadsConfiguration.imageExtensions();
 	}
 
-	public boolean isAutocompleteEnabled() {
-		return _ddmTemplateHelper.isAutocompleteEnabled(
-			TemplateConstants.LANG_TYPE_FTL);
-	}
-
 	public boolean isCacheable() {
 		if (_cacheable != null) {
 			return _cacheable;
@@ -441,13 +442,16 @@ public class JournalEditDDMTemplateDisplayContext {
 	private Long _ddmTemplateId;
 	private Long _groupId;
 	private final HttpServletRequest _httpServletRequest;
+	private final JournalDDMTemplateHelper _journalDDMTemplateHelper;
 	private final JournalFileUploadsConfiguration
 		_journalFileUploadsConfiguration;
-	private final JournalWebConfiguration _journalWebConfiguration;
+	private final JournalServiceConfiguration _journalServiceConfiguration;
+	private final Portal _portal;
 	private String _redirect;
 	private final RenderResponse _renderResponse;
 	private String _script;
 	private Boolean _smallImage;
 	private String _smallImageSource;
+	private final ThemeDisplay _themeDisplay;
 
 }

@@ -1,22 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.display.context;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONException;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Hits;
@@ -24,8 +21,9 @@ import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -42,28 +40,25 @@ import com.liferay.portal.search.summary.SummaryBuilderFactory;
 import com.liferay.portal.search.web.constants.SearchPortletParameterNames;
 import com.liferay.portal.search.web.facet.SearchFacet;
 import com.liferay.portal.search.web.internal.facet.AssetEntriesSearchFacet;
-import com.liferay.portal.search.web.internal.facet.SearchFacetTracker;
+import com.liferay.portal.search.web.internal.facet.util.SearchFacetRegistryUtil;
 import com.liferay.portal.search.web.internal.portlet.SearchPortletSearchResultPreferences;
 import com.liferay.portal.search.web.internal.search.request.SearchRequestImpl;
 import com.liferay.portal.search.web.internal.search.request.SearchResponseImpl;
-import com.liferay.portal.search.web.internal.util.SearchOptionalUtil;
 import com.liferay.portal.search.web.search.request.SearchSettings;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -72,13 +67,13 @@ public class SearchDisplayContext {
 
 	public SearchDisplayContext(
 			RenderRequest renderRequest, PortletPreferences portletPreferences,
-			Portal portal, Html html, Language language, Searcher searcher,
+			Portal portal, Language language, Searcher searcher,
 			IndexSearchPropsValues indexSearchPropsValues,
 			PortletURLFactory portletURLFactory,
 			SummaryBuilderFactory summaryBuilderFactory,
 			SearchContextFactory searchContextFactory,
 			SearchRequestBuilderFactory searchRequestBuilderFactory,
-			SearchFacetTracker searchFacetTracker)
+			JSONFactory jsonFactory)
 		throws PortletException {
 
 		_renderRequest = renderRequest;
@@ -87,7 +82,6 @@ public class SearchDisplayContext {
 		_portletURLFactory = portletURLFactory;
 		_summaryBuilderFactory = summaryBuilderFactory;
 		_searchContextFactory = searchContextFactory;
-		_searchFacetTracker = searchFacetTracker;
 
 		ThemeDisplaySupplier themeDisplaySupplier =
 			new PortletRequestThemeDisplaySupplier(renderRequest);
@@ -115,12 +109,12 @@ public class SearchDisplayContext {
 		_keywords = new Keywords(keywords);
 
 		HttpServletRequest httpServletRequest = portal.getHttpServletRequest(
-			_renderRequest);
+			renderRequest);
 
 		String emptyResultMessage = language.format(
 			httpServletRequest,
 			"no-results-were-found-that-matched-the-keywords-x",
-			"<strong>" + html.escape(keywords) + "</strong>", false);
+			"<strong>" + HtmlUtil.escape(keywords) + "</strong>", false);
 
 		SearchContainer<Document> searchContainer = new SearchContainer<>(
 			_renderRequest, getPortletURL(), null, emptyResultMessage);
@@ -133,7 +127,7 @@ public class SearchDisplayContext {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		SearchContext searchContext = _searchContextFactory.getSearchContext(
+		SearchContext searchContext = searchContextFactory.getSearchContext(
 			assetCategoryIds, assetTagNames, themeDisplay.getCompanyId(),
 			ParamUtil.getString(httpServletRequest, "keywords"),
 			themeDisplay.getLayout(), themeDisplay.getLocale(),
@@ -155,18 +149,16 @@ public class SearchDisplayContext {
 				Boolean.TRUE);
 		}
 
-		searchContext.setKeywords(_keywords.getKeywords());
-
 		searchContext.setEntryClassNames(
-			AssetEntriesSearchFacet.getEntryClassNames(
-				getSearchConfiguration()));
+			_getEntryClassNames(getSearchConfiguration(), jsonFactory));
+		searchContext.setKeywords(_keywords.getKeywords());
 
 		SearchRequestImpl searchRequestImpl = new SearchRequestImpl(
 			() -> searchContext, searchContainerOptions -> searchContainer,
 			searcher, searchRequestBuilderFactory);
 
 		searchRequestImpl.addSearchSettingsContributor(
-			this::contributeSearchSettings);
+			this::_contributeSearchSettings);
 
 		SearchResponseImpl searchResponseImpl = searchRequestImpl.search();
 
@@ -335,7 +327,7 @@ public class SearchDisplayContext {
 	}
 
 	public List<SearchFacet> getSearchFacets() {
-		return _searchFacetTracker.getSearchFacets();
+		return SearchFacetRegistryUtil.getSearchFacets();
 	}
 
 	public SearchResultPreferences getSearchResultPreferences() {
@@ -356,6 +348,10 @@ public class SearchDisplayContext {
 
 	public String getSearchScopeParameterString() {
 		SearchScope searchScope = getSearchScope();
+
+		if (searchScope == null) {
+			searchScope = SearchScopePreference.THIS_SITE.getSearchScope();
+		}
 
 		return searchScope.getParameterString();
 	}
@@ -473,11 +469,7 @@ public class SearchDisplayContext {
 
 		Group group = themeDisplay.getScopeGroup();
 
-		if (group.isStagingGroup()) {
-			return false;
-		}
-
-		return true;
+		return !group.isStagingGroup();
 	}
 
 	public boolean isSearchScopePreferenceLetTheUserChoose() {
@@ -518,29 +510,49 @@ public class SearchDisplayContext {
 		return _searchResultPreferences.isViewInContext();
 	}
 
-	protected void addEnabledSearchFacets(
+	protected SearchScope getSearchScope() {
+		String scopeString = ParamUtil.getString(
+			_renderRequest, SearchPortletParameterNames.SCOPE);
+
+		if (Validator.isNotNull(scopeString)) {
+			return SearchScope.getSearchScope(scopeString);
+		}
+
+		SearchScopePreference searchScopePreference =
+			getSearchScopePreference();
+
+		return searchScopePreference.getSearchScope();
+	}
+
+	protected SearchScopePreference getSearchScopePreference() {
+		return SearchScopePreference.getSearchScopePreference(
+			getSearchScopePreferenceString());
+	}
+
+	protected ThemeDisplay getThemeDisplay() {
+		return _themeDisplaySupplier.getThemeDisplay();
+	}
+
+	private void _addEnabledSearchFacets(
 		SearchRequestBuilder searchRequestBuilder) {
 
 		ThemeDisplay themeDisplay = _themeDisplaySupplier.getThemeDisplay();
 
 		long companyId = themeDisplay.getCompanyId();
 
-		Collection<SearchFacet> searchFacets = getEnabledSearchFacets();
+		for (SearchFacet searchFacet : getEnabledSearchFacets()) {
+			Facet facet = searchRequestBuilder.withSearchContextGet(
+				searchContext -> _getFacet(
+					searchFacet, companyId, searchContext));
 
-		Stream<SearchFacet> searchFacetsStream = searchFacets.stream();
-
-		Stream<Optional<Facet>> facetOptionalsStream = searchFacetsStream.map(
-			searchFacet -> searchRequestBuilder.withSearchContextGet(
-				searchContext -> createFacet(
-					searchFacet, companyId, searchContext)));
-
-		searchRequestBuilder.withFacetContext(
-			facetContext -> facetOptionalsStream.forEach(
-				facetOptional -> facetOptional.ifPresent(
-					facetContext::addFacet)));
+			if (facet != null) {
+				searchRequestBuilder.withFacetContext(
+					facetContext -> facetContext.addFacet(facet));
+			}
+		}
 	}
 
-	protected void contributeSearchSettings(SearchSettings searchSettings) {
+	private void _contributeSearchSettings(SearchSettings searchSettings) {
 		searchSettings.setKeywords(_keywords.getKeywords());
 
 		QueryConfig queryConfig = searchSettings.getQueryConfig();
@@ -557,12 +569,80 @@ public class SearchDisplayContext {
 			getQuerySuggestionDisplayThreshold());
 		queryConfig.setQuerySuggestionMax(getQuerySuggestionMax());
 
-		addEnabledSearchFacets(searchSettings.getSearchRequestBuilder());
+		_addEnabledSearchFacets(searchSettings.getSearchRequestBuilder());
 
-		filterByThisSite(searchSettings);
+		_filterByThisSite(searchSettings);
 	}
 
-	protected Optional<Facet> createFacet(
+	private void _filterByThisSite(SearchSettings searchSettings) {
+		long groupId = getSearchScopeGroupId();
+
+		if (groupId == 0) {
+			return;
+		}
+
+		SearchContext searchContext = searchSettings.getSearchContext();
+
+		searchContext.setGroupIds(new long[] {groupId});
+	}
+
+	private String[] _getEntryClassNames(
+		String configuration, JSONFactory jsonFactory) {
+
+		if (Validator.isNull(configuration)) {
+			return null;
+		}
+
+		JSONObject configurationJSONObject;
+
+		try {
+			configurationJSONObject = jsonFactory.createJSONObject(
+				configuration);
+		}
+		catch (JSONException jsonException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(
+					"Unable to parse configuration", jsonException.getCause());
+			}
+
+			return null;
+		}
+
+		JSONArray jsonArray = configurationJSONObject.getJSONArray("facets");
+
+		if (jsonArray == null) {
+			return null;
+		}
+
+		for (int i = 0; i < (jsonArray.length() - 1); i++) {
+			JSONObject jsonObject = jsonArray.getJSONObject(i);
+
+			if (!Objects.equals(
+					AssetEntriesSearchFacet.class.getName(),
+					jsonObject.getString("id"))) {
+
+				continue;
+			}
+
+			JSONObject dataJSONObject = jsonObject.getJSONObject("data");
+
+			if (dataJSONObject == null) {
+				continue;
+			}
+
+			JSONArray valuesJSONArray = dataJSONObject.getJSONArray("values");
+
+			if (valuesJSONArray == null) {
+				continue;
+			}
+
+			return ArrayUtil.toStringArray(valuesJSONArray);
+		}
+
+		return null;
+	}
+
+	private Facet _getFacet(
 		SearchFacet searchFacet, long companyId, SearchContext searchContext) {
 
 		try {
@@ -576,58 +656,7 @@ public class SearchDisplayContext {
 			throw new RuntimeException(exception);
 		}
 
-		return Optional.ofNullable(searchFacet.getFacet());
-	}
-
-	protected void filterByThisSite(SearchSettings searchSettings) {
-		SearchOptionalUtil.copy(
-			this::getThisSiteGroupId,
-			groupId -> {
-				SearchContext searchContext = searchSettings.getSearchContext();
-
-				searchContext.setGroupIds(new long[] {groupId});
-			});
-	}
-
-	protected SearchScope getSearchScope() {
-		String scopeString = ParamUtil.getString(
-			_renderRequest, SearchPortletParameterNames.SCOPE);
-
-		if (Validator.isNotNull(scopeString)) {
-			return SearchScope.getSearchScope(scopeString);
-		}
-
-		SearchScopePreference searchScopePreference =
-			getSearchScopePreference();
-
-		SearchScope searchScope = searchScopePreference.getSearchScope();
-
-		if (searchScope == null) {
-			throw new IllegalArgumentException(
-				"Scope parameter is empty and no default is set in " +
-					"preferences");
-		}
-
-		return searchScope;
-	}
-
-	protected SearchScopePreference getSearchScopePreference() {
-		return SearchScopePreference.getSearchScopePreference(
-			getSearchScopePreferenceString());
-	}
-
-	protected ThemeDisplay getThemeDisplay() {
-		return _themeDisplaySupplier.getThemeDisplay();
-	}
-
-	protected Optional<Long> getThisSiteGroupId() {
-		long searchScopeGroupId = getSearchScopeGroupId();
-
-		if (searchScopeGroupId == 0) {
-			return Optional.empty();
-		}
-
-		return Optional.of(searchScopeGroupId);
+		return searchFacet.getFacet();
 	}
 
 	private void _resetScope(SearchContext searchContext) {
@@ -637,6 +666,9 @@ public class SearchDisplayContext {
 
 		attributes.remove("groupId", "0");
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SearchDisplayContext.class);
 
 	private Integer _collatedSpellCheckResultDisplayThreshold;
 	private Boolean _collatedSpellCheckResultEnabled;
@@ -662,7 +694,6 @@ public class SearchDisplayContext {
 	private final SearchContainer<Document> _searchContainer;
 	private final SearchContext _searchContext;
 	private final SearchContextFactory _searchContextFactory;
-	private final SearchFacetTracker _searchFacetTracker;
 	private final SearchResultPreferences _searchResultPreferences;
 	private String _searchScopePreferenceString;
 	private final SummaryBuilderFactory _summaryBuilderFactory;

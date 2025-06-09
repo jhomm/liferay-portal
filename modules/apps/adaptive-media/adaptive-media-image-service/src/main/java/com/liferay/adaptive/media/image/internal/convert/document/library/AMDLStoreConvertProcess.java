@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.internal.convert.document.library;
@@ -17,17 +8,19 @@ package com.liferay.adaptive.media.image.internal.convert.document.library;
 import com.liferay.adaptive.media.image.internal.storage.AMStoreUtil;
 import com.liferay.adaptive.media.image.model.AMImageEntry;
 import com.liferay.adaptive.media.image.service.AMImageEntryLocalService;
-import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.store.Store;
 import com.liferay.portal.convert.documentlibrary.DLStoreConvertProcess;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.util.MaintenanceUtil;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,21 +45,34 @@ public class AMDLStoreConvertProcess implements DLStoreConvertProcess {
 		_transfer(sourceStore, targetStore, true);
 	}
 
-	private void _transfer(Store sourceStore, Store targetStore, boolean delete)
-		throws PortalException {
-
-		int count = _amImageEntryLocalService.getAMImageEntriesCount();
-
-		MaintenanceUtil.appendStatus(
-			"Migrating images in " + count + " adaptive media image entries");
+	private ActionableDynamicQuery _getActionableDynamicQuery(
+		long companyId, Store sourceStore, Store targetStore, boolean delete) {
 
 		ActionableDynamicQuery actionableDynamicQuery =
 			_amImageEntryLocalService.getActionableDynamicQuery();
 
+		actionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> dynamicQuery.add(
+				RestrictionsFactoryUtil.eq("companyId", companyId)));
+
 		actionableDynamicQuery.setPerformActionMethod(
 			(AMImageEntry amImageEntry) -> {
-				FileVersion fileVersion = _dlAppService.getFileVersion(
-					amImageEntry.getFileVersionId());
+				FileVersion fileVersion = null;
+
+				try {
+					fileVersion = _dlAppLocalService.getFileVersion(
+						amImageEntry.getFileVersionId());
+				}
+				catch (PortalException portalException) {
+					_log.error(
+						"Unable to migrate file version " +
+							amImageEntry.getFileVersionId(),
+						portalException);
+				}
+
+				if (fileVersion == null) {
+					return;
+				}
 
 				String fileVersionPath = AMStoreUtil.getFileVersionPath(
 					fileVersion, amImageEntry.getConfigurationUuid());
@@ -76,36 +82,60 @@ public class AMDLStoreConvertProcess implements DLStoreConvertProcess {
 							amImageEntry.getCompanyId(),
 							CompanyConstants.SYSTEM, fileVersionPath)) {
 
-					try (InputStream inputStream = sourceStore.getFileAsStream(
+					try {
+						transferFile(
+							sourceStore, targetStore,
 							amImageEntry.getCompanyId(),
 							CompanyConstants.SYSTEM, fileVersionPath,
-							versionLabel)) {
-
-						targetStore.addFile(
-							amImageEntry.getCompanyId(),
-							CompanyConstants.SYSTEM, fileVersionPath,
-							versionLabel, inputStream);
-
-						if (delete) {
-							sourceStore.deleteFile(
-								amImageEntry.getCompanyId(),
-								CompanyConstants.SYSTEM, fileVersionPath,
-								versionLabel);
-						}
+							versionLabel, delete);
 					}
-					catch (IOException ioException) {
-						throw new PortalException(ioException);
+					catch (Exception exception) {
+						_log.error(
+							"Unable to migrate " + fileVersionPath, exception);
 					}
 				}
 			});
 
-		actionableDynamicQuery.performActions();
+		return actionableDynamicQuery;
 	}
+
+	private long _getCount(long companyId) {
+		DynamicQuery dynamicQuery = _amImageEntryLocalService.dynamicQuery();
+
+		dynamicQuery.add(RestrictionsFactoryUtil.eq("companyId", companyId));
+
+		return _amImageEntryLocalService.dynamicQueryCount(dynamicQuery);
+	}
+
+	private void _transfer(Store sourceStore, Store targetStore, boolean delete)
+		throws PortalException {
+
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				MaintenanceUtil.appendStatus(
+					String.format(
+						"Migrating images in %d adaptive media image entries " +
+							"for company %d",
+						_getCount(companyId), companyId));
+
+				ActionableDynamicQuery actionableDynamicQuery =
+					_getActionableDynamicQuery(
+						companyId, sourceStore, targetStore, delete);
+
+				actionableDynamicQuery.performActions();
+			});
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AMDLStoreConvertProcess.class);
 
 	@Reference
 	private AMImageEntryLocalService _amImageEntryLocalService;
 
 	@Reference
-	private DLAppService _dlAppService;
+	private CompanyLocalService _companyLocalService;
+
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
 
 }

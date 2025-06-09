@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ant.bnd.jsp;
@@ -109,6 +100,11 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 		}
 
 		return false;
+	}
+
+	@Override
+	public int ordering() {
+		return 1;
 	}
 
 	protected void addApiUses(Analyzer analyzer, String originalContent) {
@@ -452,14 +448,14 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 	}
 
 	protected Set<String> getTaglibURIs(String originalContent) {
+		Set<String> taglibURis = new HashSet<String>();
+
 		String noCommentsContent = _removeComments(originalContent);
 
 		String content = noCommentsContent;
 
 		int contentX = -1;
 		int contentY = content.length();
-
-		Set<String> taglibURis = new HashSet<String>();
 
 		while (true) {
 			contentX = content.lastIndexOf("<%@", contentY);
@@ -517,7 +513,11 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 				if ((importX != -1) && (importY != -1)) {
 					String s = content.substring(importX, importY);
 
-					taglibURis.add(s);
+					if (!s.startsWith("urn:jsptagdir") &&
+						!s.startsWith("urn:jsptld")) {
+
+						taglibURis.add(s);
+					}
 				}
 
 				contentY -= 1;
@@ -561,16 +561,15 @@ public class JspAnalyzerPlugin implements AnalyzerPlugin {
 	}
 
 	private static final String[] _JSTL_CORE_URIS = {
-		"http://java.sun.com/jsp/jstl/core", "http://java.sun.com/jsp/jstl/fmt",
-		"http://java.sun.com/jsp/jstl/functions",
-		"http://java.sun.com/jsp/jstl/sql", "http://java.sun.com/jsp/jstl/xml"
+		"jakarta.tags.core", "jakarta.tags.fmt", "jakarta.tags.functions",
+		"jakarta.tags.sql", "jakarta.tags.xml"
 	};
 
 	private static final String _LOAD_EXTERNAL_DTD =
 		"http://apache.org/xml/features/nonvalidating/load-external-dtd";
 
 	private static final String[] _REQUIRED_PACKAGE_NAMES = {
-		"javax.servlet", "javax.servlet.http"
+		"jakarta.servlet", "jakarta.servlet.http"
 	};
 
 	private static final Pattern _commentPattern = Pattern.compile(

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,17 +23,17 @@ if (dataJSONObject.has("values")) {
 	}
 }
 
-AssetEntriesSearchFacetDisplayBuilder assetEntriesSearchFacetDisplayBuilder = new AssetEntriesSearchFacetDisplayBuilder(renderRequest);
+AssetEntriesSearchFacetDisplayContextBuilder assetEntriesSearchFacetDisplayContextBuilder = new AssetEntriesSearchFacetDisplayContextBuilder(renderRequest);
 
-assetEntriesSearchFacetDisplayBuilder.setClassNames(values);
-assetEntriesSearchFacetDisplayBuilder.setFacet(facet);
-assetEntriesSearchFacetDisplayBuilder.setFrequenciesVisible(showAssetCount);
-assetEntriesSearchFacetDisplayBuilder.setFrequencyThreshold(frequencyThreshold);
-assetEntriesSearchFacetDisplayBuilder.setLocale(locale);
-assetEntriesSearchFacetDisplayBuilder.setParameterName(facet.getFieldId());
-assetEntriesSearchFacetDisplayBuilder.setParameterValue(fieldParam);
+assetEntriesSearchFacetDisplayContextBuilder.setClassNames(values);
+assetEntriesSearchFacetDisplayContextBuilder.setFacet(facet);
+assetEntriesSearchFacetDisplayContextBuilder.setFrequenciesVisible(showAssetCount);
+assetEntriesSearchFacetDisplayContextBuilder.setFrequencyThreshold(frequencyThreshold);
+assetEntriesSearchFacetDisplayContextBuilder.setLocale(locale);
+assetEntriesSearchFacetDisplayContextBuilder.setParameterName(facet.getFieldId());
+assetEntriesSearchFacetDisplayContextBuilder.setParameterValue(fieldParam);
 
-AssetEntriesSearchFacetDisplayContext assetEntriesSearchFacetDisplayContext = assetEntriesSearchFacetDisplayBuilder.build();
+AssetEntriesSearchFacetDisplayContext assetEntriesSearchFacetDisplayContext = assetEntriesSearchFacetDisplayContextBuilder.build();
 %>
 
 <div class="panel panel-secondary">
@@ -58,19 +49,19 @@ AssetEntriesSearchFacetDisplayContext assetEntriesSearchFacetDisplayContext = as
 
 			<ul class="asset-type list-unstyled">
 				<li class="default facet-value">
-					<a class="<%= assetEntriesSearchFacetDisplayContext.isNothingSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="" href="javascript:;"><liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" /></a>
+					<a class="<%= assetEntriesSearchFacetDisplayContext.isNothingSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="" href="javascript:void(0);"><liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" /></a>
 				</li>
 
 				<%
-				for (AssetEntriesSearchFacetTermDisplayContext assetEntriesSearchFacetTermDisplayContext : assetEntriesSearchFacetDisplayContext.getTermDisplayContexts()) {
+				for (BucketDisplayContext bucketDisplayContext : assetEntriesSearchFacetDisplayContext.getBucketDisplayContexts()) {
 				%>
 
 					<li class="facet-value">
-						<a class="<%= assetEntriesSearchFacetTermDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="<%= HtmlUtil.escapeAttribute(assetEntriesSearchFacetTermDisplayContext.getAssetType()) %>" href="javascript:;">
-							<%= assetEntriesSearchFacetTermDisplayContext.getTypeName() %>
+						<a class="<%= bucketDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="<%= HtmlUtil.escapeAttribute(bucketDisplayContext.getFilterValue()) %>" href="javascript:void(0);">
+							<%= bucketDisplayContext.getBucketText() %>
 
-							<c:if test="<%= assetEntriesSearchFacetTermDisplayContext.isFrequencyVisible() %>">
-								<span class="frequency">(<%= assetEntriesSearchFacetTermDisplayContext.getFrequency() %>)</span>
+							<c:if test="<%= bucketDisplayContext.isFrequencyVisible() %>">
+								<span class="frequency">(<%= bucketDisplayContext.getFrequency() %>)</span>
 							</c:if>
 						</a>
 					</li>

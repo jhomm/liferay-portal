@@ -1,176 +1,40 @@
 definition {
 
-	macro addCollection {
-		FragmentsAdminNavigator.gotoAddCollection();
+	@summary = "Default summary"
+	macro importCollectionFromDependenciesFolder(collectionZipFile = null, importOption = null) {
+		FragmentsAdminNavigator.gotoImportCollection();
 
-		Collection.editCollection(
-			collectionDescription = "${collectionDescription}",
-			collectionName = "${collectionName}");
+		WaitForPageLoad();
 
-		Button.clickSave();
-	}
+		UploadDependencyFile.uploadArchiveFile(fileName = ${collectionZipFile});
 
-	macro addFragment {
-		LexiconEntry.gotoAdd();
+		Button.clickImport();
 
-		AssertTextEquals(
-			locator1 = "Modal#HEADER",
-			value1 = "Add Fragment");
+		if (isSet(importOption)) {
+			WaitForVisible(locator1 = "Modal#HEADER");
 
-		PortletEntry.inputName(name = "${fragmentName}");
+			Check.checkNotVisible(
+				locator1 = "Radio#ANY",
+				radioLabel = ${importOption});
 
-		Button.clickSave();
-	}
-
-	macro addResource {
-		LexiconEntry.gotoAdd();
-
-		IFrame.selectConfigurationFrame();
-
-		Pause(locator1 = "3000");
-
-		AssertVisible(locator1 = "ItemSelector#SELECT_FILE_UPLOAD_IMAGE");
-
-		UploadCommonFile.uploadCommonFileHiddenNoMouseOver(
-			locator1 = "TextInput#FILE",
-			value1 = "${resourceFile}");
-
-		IFrame.selectConfigurationFrame();
-
-		Button.clickAdd();
-	}
-
-	macro deleteEntry {
-		LexiconCard.delete(card = "${entry}");
-	}
-
-	macro exportCollection {
-		Navigator.gotoNavNested(navNested = "${collectionName}");
-
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Export");
-	}
-
-	macro exportFragment {
-		FragmentsAdminNavigator.gotoCollection(collectionName = "${collectionName}");
-
-		FragmentsAdminNavigator.gotoEntryEllipsisItem(
-			entry = "${fragmentName}",
-			item = "Export");
-	}
-
-	macro exportMultipleCollections {
-		for (var collectionName : list "${collectionNameList}") {
-			Check(
-				key_tableEntry = "${collectionName}",
-				locator1 = "LexiconTable#TABLE_ENTRY_CHECKBOX");
-
-			Pause(locator1 = "3000");
+			Click(
+				key_text = "Import",
+				locator1 = "Modal#MODAL_FOOTER_BUTTON");
 		}
 
-		SelectFrameTop();
+		AssertVisible(locator1 = "Message#SUCCESS_IMPORT");
 
-		Button.click(button = "Export");
-
-		Alert.viewSuccessMessage();
+		Button.clickDone();
 	}
 
-	macro importCollectionFromDependenciesFolder {
-		FragmentsAdminNavigator.gotoImportCollection();
+	@summary = "Default summary"
+	macro selectCollection(collectionName = null) {
+		Select(
+			key_fieldLabel = "Fragment Sets",
+			locator1 = "Select#GENERIC_SELECT_FIELD",
+			value1 = ${collectionName});
 
-		UploadFileWithCustomPath.uploadArchiveFile(
-			fileName = "${collectionZipFile}",
-			filePath = "enduser/wem/fragment");
-
-		SelectFrameTop();
-
-		Button.clickImport();
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
-
-		Alert.viewSuccessMessage();
-
-		SelectFrameTop();
-
-		IFrame.closeFrame();
-	}
-
-	macro importCollectionFromTempFolder {
-		FragmentsAdminNavigator.gotoImportCollection();
-
-		var collectionsZipFileName = TestCase.getDownloadedTempFileName(fileNamePattern = "collections-*.zip");
-
-		UploadTempFile(
-			locator1 = "TextInput#FILE",
-			value1 = "${collectionsZipFileName}");
-
-		SelectFrameTop();
-
-		Button.clickImport();
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
-
-		Alert.viewSuccessMessage();
-
-		SelectFrameTop();
-
-		IFrame.closeFrame();
-	}
-
-	macro importFragmentFromTempFolder {
-		WaitForLiferayEvent.initializeLiferayEventLog();
-
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Import");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		var entriesZipFileName = TestCase.getDownloadedTempFileName(fileNamePattern = "entries-*.zip");
-
-		UploadTempFile(
-			locator1 = "TextInput#FILE",
-			value1 = "${entriesZipFileName}");
-
-		SelectFrameTop();
-
-		Button.clickImport();
-
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#MODAL_IFRAME");
-
-		Alert.viewSuccessMessage();
-
-		SelectFrameTop();
-
-		IFrame.closeFrame();
-	}
-
-	macro openFragmentsAdmin {
-		Navigator.openWithAppendToBaseURL(urlAppend = "group/${siteURLKey}/~/control_panel/manage/-/fragments");
-	}
-
-	macro selectCollection {
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
-
-		LexiconCard.clickCard(card = "${collectionName}");
-	}
-
-	macro viewEntryNotPresent {
-		LexiconCard.viewCardNotPresent(card = "${entry}");
-	}
-
-	macro viewEntryPresent {
-		LexiconCard.viewCardPresent(card = "${entry}");
-	}
-
-	macro viewEntryWorkflowStatus {
-		LexiconCard.viewCardLabel(
-			card = "${entry}",
-			cardLabel = "${workflowStatus}");
-	}
-
-	macro viewSiteUsages {
-		LexiconTable.viewTableEntryInfo(
-			columnName = "usages",
-			tableEntry = "${siteName}",
-			tableEntryInfo = "${usages}");
+		Modal.save();
 	}
 
 }

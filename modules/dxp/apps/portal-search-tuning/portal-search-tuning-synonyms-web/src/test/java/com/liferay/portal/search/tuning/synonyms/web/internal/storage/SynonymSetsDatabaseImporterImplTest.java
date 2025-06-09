@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.storage;
@@ -17,9 +8,8 @@ package com.liferay.portal.search.tuning.synonyms.web.internal.storage;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslator;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslatorImpl;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetIndexReindexer;
+import com.liferay.portal.search.tuning.synonyms.web.internal.storage.helper.SynonymSetJSONStorageHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Before;
@@ -27,7 +17,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -43,16 +32,8 @@ public class SynonymSetsDatabaseImporterImplTest
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_synonymSetsDatabaseImporterImpl =
 			new SynonymSetsDatabaseImporterImpl();
-		_documentToSynonymSetTranslator =
-			new DocumentToSynonymSetTranslatorImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			_synonymSetsDatabaseImporterImpl, "documentToSynonymSetTranslator",
-			_documentToSynonymSetTranslator);
 
 		ReflectionTestUtil.setFieldValue(
 			_synonymSetsDatabaseImporterImpl, "queries", _queries);
@@ -71,7 +52,7 @@ public class SynonymSetsDatabaseImporterImplTest
 	}
 
 	@Test
-	public void testPopulateDatabase() {
+	public void testPopulateDatabase() throws Exception {
 		setUpSynonymSetIndexNameBuilder();
 		setUpSearchEngineAdapter(setUpSearchHits("car,automobile"));
 
@@ -80,32 +61,26 @@ public class SynonymSetsDatabaseImporterImplTest
 		Mockito.verify(
 			_synonymSetIndexReindexer, Mockito.times(1)
 		).reindex(
-			Mockito.anyObject()
+			Mockito.anyLong()
 		);
 	}
 
 	@Test
-	public void testPopulateDatabaseExceptionBeforeReindex() {
+	public void testPopulateDatabaseExceptionBeforeReindex() throws Exception {
 		_synonymSetsDatabaseImporterImpl.populateDatabase(111L);
 
 		Mockito.verify(
 			_synonymSetIndexReindexer, Mockito.never()
 		).reindex(
-			Mockito.anyObject()
+			Mockito.anyLong()
 		);
 	}
 
-	private DocumentToSynonymSetTranslator _documentToSynonymSetTranslator;
-
-	@Mock
-	private Queries _queries;
-
-	@Mock
-	private SynonymSetIndexReindexer _synonymSetIndexReindexer;
-
-	@Mock
-	private SynonymSetJSONStorageHelper _synonymSetJSONStorageHelper;
-
+	private final Queries _queries = Mockito.mock(Queries.class);
+	private final SynonymSetIndexReindexer _synonymSetIndexReindexer =
+		Mockito.mock(SynonymSetIndexReindexer.class);
+	private final SynonymSetJSONStorageHelper _synonymSetJSONStorageHelper =
+		Mockito.mock(SynonymSetJSONStorageHelper.class);
 	private SynonymSetsDatabaseImporterImpl _synonymSetsDatabaseImporterImpl;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.resource.v1_0.test;
@@ -22,51 +13,55 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v1_0.PriceListAccountGroup;
 import com.liferay.headless.commerce.admin.pricing.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Page;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.pricing.client.resource.v1_0.PriceListAccountGroupResource;
 import com.liferay.headless.commerce.admin.pricing.client.serdes.v1_0.PriceListAccountGroupSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -90,7 +85,7 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -104,11 +99,25 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 
 		_priceListAccountGroupResource.setContextCompany(testCompany);
 
-		PriceListAccountGroupResource.Builder builder =
-			PriceListAccountGroupResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		priceListAccountGroupResource = builder.authentication(
-			"test@liferay.com", "test"
+		priceListAccountGroupResource = PriceListAccountGroupResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -122,21 +131,7 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				enable(SerializationFeature.INDENT_OUTPUT);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
 
 		PriceListAccountGroup priceListAccountGroup1 =
 			randomPriceListAccountGroup();
@@ -152,20 +147,7 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 
 	@Test
 	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
 
 		PriceListAccountGroup priceListAccountGroup =
 			randomPriceListAccountGroup();
@@ -176,6 +158,24 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 
 		Assert.assertEquals(
 			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
+			{
+				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
+				configure(
+					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
+				enable(SerializationFeature.INDENT_OUTPUT);
+				setDateFormat(new ISO8601DateFormat());
+				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+				setSerializationInclusion(JsonInclude.Include.NON_NULL);
+				setVisibility(
+					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+				setVisibility(
+					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
+			}
+		};
 	}
 
 	@Test
@@ -224,8 +224,11 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 
 	@Test
 	public void testGraphQLDeletePriceListAccountGroup() throws Exception {
-		PriceListAccountGroup priceListAccountGroup =
-			testGraphQLPriceListAccountGroup_addPriceListAccountGroup();
+
+		// No namespace
+
+		PriceListAccountGroup priceListAccountGroup1 =
+			testGraphQLDeletePriceListAccountGroup_addPriceListAccountGroup();
 
 		Assert.assertTrue(
 			JSONUtil.getValueAsBoolean(
@@ -234,10 +237,78 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 						"deletePriceListAccountGroup",
 						new HashMap<String, Object>() {
 							{
-								put("id", priceListAccountGroup.getId());
+								put("id", priceListAccountGroup1.getId());
 							}
 						})),
 				"JSONObject/data", "Object/deletePriceListAccountGroup"));
+
+		// Using the namespace headlessCommerceAdminPricing_v1_0
+
+		PriceListAccountGroup priceListAccountGroup2 =
+			testGraphQLDeletePriceListAccountGroup_addPriceListAccountGroup();
+
+		Assert.assertTrue(
+			JSONUtil.getValueAsBoolean(
+				invokeGraphQLMutation(
+					new GraphQLField(
+						"headlessCommerceAdminPricing_v1_0",
+						new GraphQLField(
+							"deletePriceListAccountGroup",
+							new HashMap<String, Object>() {
+								{
+									put("id", priceListAccountGroup2.getId());
+								}
+							}))),
+				"JSONObject/data",
+				"JSONObject/headlessCommerceAdminPricing_v1_0",
+				"Object/deletePriceListAccountGroup"));
+	}
+
+	protected PriceListAccountGroup
+			testGraphQLDeletePriceListAccountGroup_addPriceListAccountGroup()
+		throws Exception {
+
+		return testGraphQLPriceListAccountGroup_addPriceListAccountGroup();
+	}
+
+	@Test
+	public void testDeletePriceListAccountGroupBatch() throws Exception {
+		PriceListAccountGroup priceListAccountGroup1 =
+			testDeletePriceListAccountGroupBatch_addPriceListAccountGroup();
+
+		testDeletePriceListAccountGroupBatch_deletePriceListAccountGroup(
+			"COMPLETED", null, priceListAccountGroup1.getId());
+	}
+
+	protected PriceListAccountGroup
+			testDeletePriceListAccountGroupBatch_addPriceListAccountGroup()
+		throws Exception {
+
+		return testDeletePriceListAccountGroup_addPriceListAccountGroup();
+	}
+
+	protected void
+			testDeletePriceListAccountGroupBatch_deletePriceListAccountGroup(
+				String expectedExecuteStatus, String externalReferenceCode,
+				Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			priceListAccountGroupResource.
+				deletePriceListAccountGroupBatchHttpResponse(
+					null,
+					JSONUtil.putAll(
+						JSONUtil.put(
+							"externalReferenceCode", () -> externalReferenceCode
+						).put(
+							"id", () -> id
+						)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
 	}
 
 	@Test
@@ -254,7 +325,7 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 				getPriceListByExternalReferenceCodePriceListAccountGroupPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			PriceListAccountGroup irrelevantPriceListAccountGroup =
@@ -265,14 +336,18 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			page =
 				priceListAccountGroupResource.
 					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPriceListAccountGroup),
+			assertContains(
+				irrelevantPriceListAccountGroup,
 				(List<PriceListAccountGroup>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceListByExternalReferenceCodePriceListAccountGroupPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		PriceListAccountGroup priceListAccountGroup1 =
@@ -288,12 +363,18 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 				getPriceListByExternalReferenceCodePriceListAccountGroupPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceListAccountGroup1, priceListAccountGroup2),
+		assertContains(
+			priceListAccountGroup1,
 			(List<PriceListAccountGroup>)page.getItems());
-		assertValid(page);
+		assertContains(
+			priceListAccountGroup2,
+			(List<PriceListAccountGroup>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceListByExternalReferenceCodePriceListAccountGroupPage_getExpectedActions(
+				externalReferenceCode));
 
 		priceListAccountGroupResource.deletePriceListAccountGroup(
 			priceListAccountGroup1.getId());
@@ -302,12 +383,30 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			priceListAccountGroup2.getId());
 	}
 
+	protected Map<String, Map<String, String>>
+			testGetPriceListByExternalReferenceCodePriceListAccountGroupPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
 	@Test
 	public void testGetPriceListByExternalReferenceCodePriceListAccountGroupPageWithPagination()
 		throws Exception {
 
 		String externalReferenceCode =
 			testGetPriceListByExternalReferenceCodePriceListAccountGroupPage_getExternalReferenceCode();
+
+		Page<PriceListAccountGroup> priceListAccountGroupsPage =
+			priceListAccountGroupResource.
+				getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(
+			priceListAccountGroupsPage.getTotalCount());
 
 		PriceListAccountGroup priceListAccountGroup1 =
 			testGetPriceListByExternalReferenceCodePriceListAccountGroupPage_addPriceListAccountGroup(
@@ -321,42 +420,94 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			testGetPriceListByExternalReferenceCodePriceListAccountGroupPage_addPriceListAccountGroup(
 				externalReferenceCode, randomPriceListAccountGroup());
 
-		Page<PriceListAccountGroup> page1 =
-			priceListAccountGroupResource.
-				getPriceListByExternalReferenceCodePriceListAccountGroupPage(
-					externalReferenceCode, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceListAccountGroup> priceListAccountGroups1 =
-			(List<PriceListAccountGroup>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			priceListAccountGroups1.toString(), 2,
-			priceListAccountGroups1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceListAccountGroup> page1 =
+				priceListAccountGroupResource.
+					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<PriceListAccountGroup> page2 =
-			priceListAccountGroupResource.
-				getPriceListByExternalReferenceCodePriceListAccountGroupPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				priceListAccountGroup1,
+				(List<PriceListAccountGroup>)page1.getItems());
 
-		List<PriceListAccountGroup> priceListAccountGroups2 =
-			(List<PriceListAccountGroup>)page2.getItems();
+			Page<PriceListAccountGroup> page2 =
+				priceListAccountGroupResource.
+					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			priceListAccountGroups2.toString(), 1,
-			priceListAccountGroups2.size());
+			assertContains(
+				priceListAccountGroup2,
+				(List<PriceListAccountGroup>)page2.getItems());
 
-		Page<PriceListAccountGroup> page3 =
-			priceListAccountGroupResource.
-				getPriceListByExternalReferenceCodePriceListAccountGroupPage(
-					externalReferenceCode, Pagination.of(1, 3));
+			Page<PriceListAccountGroup> page3 =
+				priceListAccountGroupResource.
+					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(
-				priceListAccountGroup1, priceListAccountGroup2,
-				priceListAccountGroup3),
-			(List<PriceListAccountGroup>)page3.getItems());
+			assertContains(
+				priceListAccountGroup3,
+				(List<PriceListAccountGroup>)page3.getItems());
+		}
+		else {
+			Page<PriceListAccountGroup> page1 =
+				priceListAccountGroupResource.
+					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<PriceListAccountGroup> priceListAccountGroups1 =
+				(List<PriceListAccountGroup>)page1.getItems();
+
+			Assert.assertEquals(
+				priceListAccountGroups1.toString(), totalCount + 2,
+				priceListAccountGroups1.size());
+
+			Page<PriceListAccountGroup> page2 =
+				priceListAccountGroupResource.
+					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceListAccountGroup> priceListAccountGroups2 =
+				(List<PriceListAccountGroup>)page2.getItems();
+
+			Assert.assertEquals(
+				priceListAccountGroups2.toString(), 1,
+				priceListAccountGroups2.size());
+
+			Page<PriceListAccountGroup> page3 =
+				priceListAccountGroupResource.
+					getPriceListByExternalReferenceCodePriceListAccountGroupPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				priceListAccountGroup1,
+				(List<PriceListAccountGroup>)page3.getItems());
+			assertContains(
+				priceListAccountGroup2,
+				(List<PriceListAccountGroup>)page3.getItems());
+			assertContains(
+				priceListAccountGroup3,
+				(List<PriceListAccountGroup>)page3.getItems());
+		}
 	}
 
 	protected PriceListAccountGroup
@@ -385,30 +536,6 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 	}
 
 	@Test
-	public void testPostPriceListByExternalReferenceCodePriceListAccountGroup()
-		throws Exception {
-
-		PriceListAccountGroup randomPriceListAccountGroup =
-			randomPriceListAccountGroup();
-
-		PriceListAccountGroup postPriceListAccountGroup =
-			testPostPriceListByExternalReferenceCodePriceListAccountGroup_addPriceListAccountGroup(
-				randomPriceListAccountGroup);
-
-		assertEquals(randomPriceListAccountGroup, postPriceListAccountGroup);
-		assertValid(postPriceListAccountGroup);
-	}
-
-	protected PriceListAccountGroup
-			testPostPriceListByExternalReferenceCodePriceListAccountGroup_addPriceListAccountGroup(
-				PriceListAccountGroup priceListAccountGroup)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetPriceListIdPriceListAccountGroupsPage()
 		throws Exception {
 
@@ -421,7 +548,7 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 				getPriceListIdPriceListAccountGroupsPage(
 					id, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantId != null) {
 			PriceListAccountGroup irrelevantPriceListAccountGroup =
@@ -431,14 +558,17 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			page =
 				priceListAccountGroupResource.
 					getPriceListIdPriceListAccountGroupsPage(
-						irrelevantId, Pagination.of(1, 2));
+						irrelevantId, Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPriceListAccountGroup),
+			assertContains(
+				irrelevantPriceListAccountGroup,
 				(List<PriceListAccountGroup>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetPriceListIdPriceListAccountGroupsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		PriceListAccountGroup priceListAccountGroup1 =
@@ -454,12 +584,18 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 				getPriceListIdPriceListAccountGroupsPage(
 					id, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceListAccountGroup1, priceListAccountGroup2),
+		assertContains(
+			priceListAccountGroup1,
 			(List<PriceListAccountGroup>)page.getItems());
-		assertValid(page);
+		assertContains(
+			priceListAccountGroup2,
+			(List<PriceListAccountGroup>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceListIdPriceListAccountGroupsPage_getExpectedActions(
+				id));
 
 		priceListAccountGroupResource.deletePriceListAccountGroup(
 			priceListAccountGroup1.getId());
@@ -468,11 +604,28 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			priceListAccountGroup2.getId());
 	}
 
+	protected Map<String, Map<String, String>>
+			testGetPriceListIdPriceListAccountGroupsPage_getExpectedActions(
+				Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
 	@Test
 	public void testGetPriceListIdPriceListAccountGroupsPageWithPagination()
 		throws Exception {
 
 		Long id = testGetPriceListIdPriceListAccountGroupsPage_getId();
+
+		Page<PriceListAccountGroup> priceListAccountGroupsPage =
+			priceListAccountGroupResource.
+				getPriceListIdPriceListAccountGroupsPage(id, null);
+
+		int totalCount = GetterUtil.getInteger(
+			priceListAccountGroupsPage.getTotalCount());
 
 		PriceListAccountGroup priceListAccountGroup1 =
 			testGetPriceListIdPriceListAccountGroupsPage_addPriceListAccountGroup(
@@ -486,42 +639,91 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			testGetPriceListIdPriceListAccountGroupsPage_addPriceListAccountGroup(
 				id, randomPriceListAccountGroup());
 
-		Page<PriceListAccountGroup> page1 =
-			priceListAccountGroupResource.
-				getPriceListIdPriceListAccountGroupsPage(
-					id, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceListAccountGroup> priceListAccountGroups1 =
-			(List<PriceListAccountGroup>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			priceListAccountGroups1.toString(), 2,
-			priceListAccountGroups1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceListAccountGroup> page1 =
+				priceListAccountGroupResource.
+					getPriceListIdPriceListAccountGroupsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<PriceListAccountGroup> page2 =
-			priceListAccountGroupResource.
-				getPriceListIdPriceListAccountGroupsPage(
-					id, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				priceListAccountGroup1,
+				(List<PriceListAccountGroup>)page1.getItems());
 
-		List<PriceListAccountGroup> priceListAccountGroups2 =
-			(List<PriceListAccountGroup>)page2.getItems();
+			Page<PriceListAccountGroup> page2 =
+				priceListAccountGroupResource.
+					getPriceListIdPriceListAccountGroupsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			priceListAccountGroups2.toString(), 1,
-			priceListAccountGroups2.size());
+			assertContains(
+				priceListAccountGroup2,
+				(List<PriceListAccountGroup>)page2.getItems());
 
-		Page<PriceListAccountGroup> page3 =
-			priceListAccountGroupResource.
-				getPriceListIdPriceListAccountGroupsPage(
-					id, Pagination.of(1, 3));
+			Page<PriceListAccountGroup> page3 =
+				priceListAccountGroupResource.
+					getPriceListIdPriceListAccountGroupsPage(
+						id,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(
-				priceListAccountGroup1, priceListAccountGroup2,
-				priceListAccountGroup3),
-			(List<PriceListAccountGroup>)page3.getItems());
+			assertContains(
+				priceListAccountGroup3,
+				(List<PriceListAccountGroup>)page3.getItems());
+		}
+		else {
+			Page<PriceListAccountGroup> page1 =
+				priceListAccountGroupResource.
+					getPriceListIdPriceListAccountGroupsPage(
+						id, Pagination.of(1, totalCount + 2));
+
+			List<PriceListAccountGroup> priceListAccountGroups1 =
+				(List<PriceListAccountGroup>)page1.getItems();
+
+			Assert.assertEquals(
+				priceListAccountGroups1.toString(), totalCount + 2,
+				priceListAccountGroups1.size());
+
+			Page<PriceListAccountGroup> page2 =
+				priceListAccountGroupResource.
+					getPriceListIdPriceListAccountGroupsPage(
+						id, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceListAccountGroup> priceListAccountGroups2 =
+				(List<PriceListAccountGroup>)page2.getItems();
+
+			Assert.assertEquals(
+				priceListAccountGroups2.toString(), 1,
+				priceListAccountGroups2.size());
+
+			Page<PriceListAccountGroup> page3 =
+				priceListAccountGroupResource.
+					getPriceListIdPriceListAccountGroupsPage(
+						id, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				priceListAccountGroup1,
+				(List<PriceListAccountGroup>)page3.getItems());
+			assertContains(
+				priceListAccountGroup2,
+				(List<PriceListAccountGroup>)page3.getItems());
+			assertContains(
+				priceListAccountGroup3,
+				(List<PriceListAccountGroup>)page3.getItems());
+		}
 	}
 
 	protected PriceListAccountGroup
@@ -545,6 +747,30 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 		throws Exception {
 
 		return null;
+	}
+
+	@Test
+	public void testPostPriceListByExternalReferenceCodePriceListAccountGroup()
+		throws Exception {
+
+		PriceListAccountGroup randomPriceListAccountGroup =
+			randomPriceListAccountGroup();
+
+		PriceListAccountGroup postPriceListAccountGroup =
+			testPostPriceListByExternalReferenceCodePriceListAccountGroup_addPriceListAccountGroup(
+				randomPriceListAccountGroup);
+
+		assertEquals(randomPriceListAccountGroup, postPriceListAccountGroup);
+		assertValid(postPriceListAccountGroup);
+	}
+
+	protected PriceListAccountGroup
+			testPostPriceListByExternalReferenceCodePriceListAccountGroup_addPriceListAccountGroup(
+				PriceListAccountGroup priceListAccountGroup)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -732,6 +958,13 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 	}
 
 	protected void assertValid(Page<PriceListAccountGroup> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PriceListAccountGroup> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PriceListAccountGroup> priceListAccountGroups =
@@ -747,6 +980,25 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -931,14 +1183,20 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -955,6 +1213,10 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -964,18 +1226,18 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -993,12 +1255,48 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 		sb.append(" ");
 
 		if (entityFieldName.equals("accountGroupExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					priceListAccountGroup.
-						getAccountGroupExternalReferenceCode()));
-			sb.append("'");
+			Object object =
+				priceListAccountGroup.getAccountGroupExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1014,16 +1312,54 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 		}
 
 		if (entityFieldName.equals("order")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(priceListAccountGroup.getOrder()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("priceListExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					priceListAccountGroup.getPriceListExternalReferenceCode()));
-			sb.append("'");
+			Object object =
+				priceListAccountGroup.getPriceListExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1047,7 +1383,8 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1106,10 +1443,155 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 		return randomPriceListAccountGroup();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected PriceListAccountGroupResource priceListAccountGroupResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1185,19 +1667,9 @@ public abstract class BasePriceListAccountGroupResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BasePriceListAccountGroupResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.pricing.resource.v1_0.

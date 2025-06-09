@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder auto-import-default-references="false" auto-namespace-tables="false" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.wiki">
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" dependency-injector="ds" mvcc-enabled="true" package-path="com.liferay.wiki">
 	<namespace>Wiki</namespace>
 	<entity external-reference-code="group" local-service="true" name="WikiNode" remote-service="true" trash-enabled="true" uuid="true">
 
@@ -25,7 +25,7 @@
 
 		<column name="name" type="String" uad-nonanonymizable="true" />
 		<column name="description" type="String" uad-nonanonymizable="true" />
-		<column name="lastPostDate" type="Date" />
+		<column change-tracking-resolution-type="max" name="lastPostDate" type="Date" />
 		<column name="lastPublishDate" type="Date" />
 		<column name="status" type="int" />
 		<column name="statusByUserId" type="long" />
@@ -166,7 +166,7 @@
 			<finder-column name="nodeId" />
 			<finder-column name="status" />
 		</finder>
-		<finder name="G_ERC_V" return-type="WikiPage">
+		<finder name="G_ERC_V" return-type="WikiPage" unique="true">
 			<finder-column name="groupId" />
 			<finder-column name="externalReferenceCode" />
 			<finder-column name="version" />
@@ -298,14 +298,11 @@
 		</finder>
 	</entity>
 	<exceptions>
-		<exception>DuplicateNodeExternalReferenceCode</exception>
 		<exception>DuplicateNodeName</exception>
 		<exception>DuplicatePage</exception>
-		<exception>DuplicatePageExternalReferenceCode</exception>
 		<exception>ImportFiles</exception>
 		<exception>NodeName</exception>
-		<exception>NoSuchNode</exception>
-		<exception>NoSuchPage</exception>
+		<exception>PageAttachment</exception>
 		<exception>PageContent</exception>
 		<exception>PageTitle</exception>
 		<exception>PageVersion</exception>

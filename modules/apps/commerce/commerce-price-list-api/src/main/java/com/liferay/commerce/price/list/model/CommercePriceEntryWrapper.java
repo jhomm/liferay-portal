@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model;
@@ -23,6 +14,8 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -45,6 +38,8 @@ public class CommercePriceEntryWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("commercePriceEntryId", getCommercePriceEntryId());
@@ -56,17 +51,21 @@ public class CommercePriceEntryWrapper
 		attributes.put("commercePriceListId", getCommercePriceListId());
 		attributes.put("CPInstanceUuid", getCPInstanceUuid());
 		attributes.put("CProductId", getCProductId());
-		attributes.put("price", getPrice());
-		attributes.put("promoPrice", getPromoPrice());
+		attributes.put("bulkPricing", isBulkPricing());
 		attributes.put("discountDiscovery", isDiscountDiscovery());
 		attributes.put("discountLevel1", getDiscountLevel1());
 		attributes.put("discountLevel2", getDiscountLevel2());
 		attributes.put("discountLevel3", getDiscountLevel3());
 		attributes.put("discountLevel4", getDiscountLevel4());
-		attributes.put("hasTierPrice", isHasTierPrice());
-		attributes.put("bulkPricing", isBulkPricing());
 		attributes.put("displayDate", getDisplayDate());
 		attributes.put("expirationDate", getExpirationDate());
+		attributes.put("hasTierPrice", isHasTierPrice());
+		attributes.put("price", getPrice());
+		attributes.put("priceOnApplication", isPriceOnApplication());
+		attributes.put("pricingQuantity", getPricingQuantity());
+		attributes.put("promoPrice", getPromoPrice());
+		attributes.put("quantity", getQuantity());
+		attributes.put("unitOfMeasureKey", getUnitOfMeasureKey());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -78,6 +77,18 @@ public class CommercePriceEntryWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
@@ -146,16 +157,10 @@ public class CommercePriceEntryWrapper
 			setCProductId(CProductId);
 		}
 
-		BigDecimal price = (BigDecimal)attributes.get("price");
+		Boolean bulkPricing = (Boolean)attributes.get("bulkPricing");
 
-		if (price != null) {
-			setPrice(price);
-		}
-
-		BigDecimal promoPrice = (BigDecimal)attributes.get("promoPrice");
-
-		if (promoPrice != null) {
-			setPromoPrice(promoPrice);
+		if (bulkPricing != null) {
+			setBulkPricing(bulkPricing);
 		}
 
 		Boolean discountDiscovery = (Boolean)attributes.get(
@@ -193,18 +198,6 @@ public class CommercePriceEntryWrapper
 			setDiscountLevel4(discountLevel4);
 		}
 
-		Boolean hasTierPrice = (Boolean)attributes.get("hasTierPrice");
-
-		if (hasTierPrice != null) {
-			setHasTierPrice(hasTierPrice);
-		}
-
-		Boolean bulkPricing = (Boolean)attributes.get("bulkPricing");
-
-		if (bulkPricing != null) {
-			setBulkPricing(bulkPricing);
-		}
-
 		Date displayDate = (Date)attributes.get("displayDate");
 
 		if (displayDate != null) {
@@ -215,6 +208,50 @@ public class CommercePriceEntryWrapper
 
 		if (expirationDate != null) {
 			setExpirationDate(expirationDate);
+		}
+
+		Boolean hasTierPrice = (Boolean)attributes.get("hasTierPrice");
+
+		if (hasTierPrice != null) {
+			setHasTierPrice(hasTierPrice);
+		}
+
+		BigDecimal price = (BigDecimal)attributes.get("price");
+
+		if (price != null) {
+			setPrice(price);
+		}
+
+		Boolean priceOnApplication = (Boolean)attributes.get(
+			"priceOnApplication");
+
+		if (priceOnApplication != null) {
+			setPriceOnApplication(priceOnApplication);
+		}
+
+		BigDecimal pricingQuantity = (BigDecimal)attributes.get(
+			"pricingQuantity");
+
+		if (pricingQuantity != null) {
+			setPricingQuantity(pricingQuantity);
+		}
+
+		BigDecimal promoPrice = (BigDecimal)attributes.get("promoPrice");
+
+		if (promoPrice != null) {
+			setPromoPrice(promoPrice);
+		}
+
+		BigDecimal quantity = (BigDecimal)attributes.get("quantity");
+
+		if (quantity != null) {
+			setQuantity(quantity);
+		}
+
+		String unitOfMeasureKey = (String)attributes.get("unitOfMeasureKey");
+
+		if (unitOfMeasureKey != null) {
+			setUnitOfMeasureKey(unitOfMeasureKey);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -300,13 +337,6 @@ public class CommercePriceEntryWrapper
 		return model.getCompanyId();
 	}
 
-	@Override
-	public com.liferay.commerce.product.model.CPInstance getCPInstance()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getCPInstance();
-	}
-
 	/**
 	 * Returns the cp instance uuid of this commerce price entry.
 	 *
@@ -335,6 +365,16 @@ public class CommercePriceEntryWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this commerce price entry.
+	 *
+	 * @return the ct collection ID of this commerce price entry
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	/**
@@ -448,6 +488,16 @@ public class CommercePriceEntryWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this commerce price entry.
+	 *
+	 * @return the mvcc version of this commerce price entry
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the price of this commerce price entry.
 	 *
 	 * @return the price of this commerce price entry
@@ -463,6 +513,26 @@ public class CommercePriceEntryWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getPriceCommerceMoney(commerceCurrencyId);
+	}
+
+	/**
+	 * Returns the price on application of this commerce price entry.
+	 *
+	 * @return the price on application of this commerce price entry
+	 */
+	@Override
+	public boolean getPriceOnApplication() {
+		return model.getPriceOnApplication();
+	}
+
+	/**
+	 * Returns the pricing quantity of this commerce price entry.
+	 *
+	 * @return the pricing quantity of this commerce price entry
+	 */
+	@Override
+	public BigDecimal getPricingQuantity() {
+		return model.getPricingQuantity();
 	}
 
 	/**
@@ -491,6 +561,16 @@ public class CommercePriceEntryWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getPromoPriceCommerceMoney(commerceCurrencyId);
+	}
+
+	/**
+	 * Returns the quantity of this commerce price entry.
+	 *
+	 * @return the quantity of this commerce price entry
+	 */
+	@Override
+	public BigDecimal getQuantity() {
+		return model.getQuantity();
 	}
 
 	/**
@@ -541,6 +621,16 @@ public class CommercePriceEntryWrapper
 	@Override
 	public Date getStatusDate() {
 		return model.getStatusDate();
+	}
+
+	/**
+	 * Returns the unit of measure key of this commerce price entry.
+	 *
+	 * @return the unit of measure key of this commerce price entry
+	 */
+	@Override
+	public String getUnitOfMeasureKey() {
+		return model.getUnitOfMeasureKey();
 	}
 
 	/**
@@ -684,6 +774,16 @@ public class CommercePriceEntryWrapper
 	}
 
 	/**
+	 * Returns <code>true</code> if this commerce price entry is price on application.
+	 *
+	 * @return <code>true</code> if this commerce price entry is price on application; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isPriceOnApplication() {
+		return model.isPriceOnApplication();
+	}
+
+	/**
 	 * Returns <code>true</code> if this commerce price entry is scheduled.
 	 *
 	 * @return <code>true</code> if this commerce price entry is scheduled; <code>false</code> otherwise
@@ -766,6 +866,16 @@ public class CommercePriceEntryWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this commerce price entry.
+	 *
+	 * @param ctCollectionId the ct collection ID of this commerce price entry
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -879,6 +989,16 @@ public class CommercePriceEntryWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this commerce price entry.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce price entry
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the price of this commerce price entry.
 	 *
 	 * @param price the price of this commerce price entry
@@ -886,6 +1006,26 @@ public class CommercePriceEntryWrapper
 	@Override
 	public void setPrice(BigDecimal price) {
 		model.setPrice(price);
+	}
+
+	/**
+	 * Sets whether this commerce price entry is price on application.
+	 *
+	 * @param priceOnApplication the price on application of this commerce price entry
+	 */
+	@Override
+	public void setPriceOnApplication(boolean priceOnApplication) {
+		model.setPriceOnApplication(priceOnApplication);
+	}
+
+	/**
+	 * Sets the pricing quantity of this commerce price entry.
+	 *
+	 * @param pricingQuantity the pricing quantity of this commerce price entry
+	 */
+	@Override
+	public void setPricingQuantity(BigDecimal pricingQuantity) {
+		model.setPricingQuantity(pricingQuantity);
 	}
 
 	/**
@@ -906,6 +1046,16 @@ public class CommercePriceEntryWrapper
 	@Override
 	public void setPromoPrice(BigDecimal promoPrice) {
 		model.setPromoPrice(promoPrice);
+	}
+
+	/**
+	 * Sets the quantity of this commerce price entry.
+	 *
+	 * @param quantity the quantity of this commerce price entry
+	 */
+	@Override
+	public void setQuantity(BigDecimal quantity) {
+		model.setQuantity(quantity);
 	}
 
 	/**
@@ -959,6 +1109,16 @@ public class CommercePriceEntryWrapper
 	}
 
 	/**
+	 * Sets the unit of measure key of this commerce price entry.
+	 *
+	 * @param unitOfMeasureKey the unit of measure key of this commerce price entry
+	 */
+	@Override
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		model.setUnitOfMeasureKey(unitOfMeasureKey);
+	}
+
+	/**
 	 * Sets the user ID of this commerce price entry.
 	 *
 	 * @param userId the user ID of this commerce price entry
@@ -996,6 +1156,25 @@ public class CommercePriceEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CommercePriceEntry, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CommercePriceEntry, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

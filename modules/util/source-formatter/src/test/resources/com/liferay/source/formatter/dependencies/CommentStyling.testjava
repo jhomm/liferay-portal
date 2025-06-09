@@ -1,0 +1,64 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies;
+
+/**
+ * @author Qi Zhang
+ */
+public class CommentStyling {
+
+	public void method() {
+
+		// Test1
+
+		System.out.println("Test 1.");
+
+		//Test2
+
+		System.out.println("Test 2.");
+
+		///Test3
+
+		System.out.println("Test 3.");
+
+		//	TODO Test4
+
+		System.out.println("Test 4.");
+
+		//int e;
+
+		System.out.println("Test 5.");
+
+		// Non-existing blog A
+
+		System.out.println("Test 6.");
+
+		// Nonexisting blog B
+
+		System.out.println("Test 7.");
+
+		// Override non-existing configuration A
+
+		System.out.println("Test 8.");
+
+		// Override nonexisting configuration B
+
+		System.out.println("Test 9.");
+
+		// todo test
+
+		System.out.println("Test 10.");
+
+		//int nonexisting = 0;
+
+		System.out.println("Test 11.");
+
+		// non-existent blog C
+
+		System.out.println("Test 12.");
+	}
+
+}

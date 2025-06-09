@@ -1,36 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.editor.ckeditor.web.internal.editor.configuration;
 
-import com.liferay.document.library.kernel.util.AudioProcessorUtil;
+import com.liferay.document.library.kernel.processor.AudioProcessorUtil;
 import com.liferay.frontend.editor.ckeditor.web.internal.constants.CKEditorConstants;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.xuggler.XugglerUtil;
 
 import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Ambrín Chaudhary
@@ -60,8 +51,8 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 		);
 
 		String extraPlugins =
-			"addimages,autogrow,autolink,filebrowser,itemselector,lfrpopup," +
-				"media,stylescombo,videoembed";
+			"addimages,autogrow,autolink,colordialog,filebrowser," +
+				"itemselector,lfrpopup,media,stylescombo,videoembed";
 
 		boolean inlineEdit = GetterUtil.getBoolean(
 			(String)inputEditorTaglibAttributes.get(
@@ -71,11 +62,18 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			extraPlugins += ",ajaxsave,restore";
 		}
 
+		if (_isShowAICreator(inputEditorTaglibAttributes)) {
+			extraPlugins += ",aicreator";
+		}
+
 		jsonObject.put(
+			"applicationTitle",
+			_language.get(themeDisplay.getLocale(), "rich-text-editor")
+		).put(
 			"extraPlugins", extraPlugins
 		).put(
 			"filebrowserWindowFeatures",
-			"title=" + LanguageUtil.get(themeDisplay.getLocale(), "browse")
+			"title=" + _language.get(themeDisplay.getLocale(), "browse")
 		).put(
 			"pasteFromWordRemoveFontStyles", Boolean.FALSE
 		).put(
@@ -83,12 +81,12 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 		).put(
 			"removePlugins", "elementspath"
 		).put(
-			"stylesSet", getStyleFormatsJSONArray(themeDisplay.getLocale())
+			"stylesSet", _getStyleFormatsJSONArray(themeDisplay.getLocale())
 		).put(
 			"title", false
 		);
 
-		JSONArray toolbarSimpleJSONArray = getToolbarSimpleJSONArray(
+		JSONArray toolbarSimpleJSONArray = _getToolbarSimpleJSONArray(
 			inputEditorTaglibAttributes);
 
 		jsonObject.put(
@@ -107,14 +105,14 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			"toolbar_tablet", toolbarSimpleJSONArray
 		).put(
 			"toolbar_text_advanced",
-			getToolbarTextAdvancedJSONArray(inputEditorTaglibAttributes)
+			_getToolbarTextAdvancedJSONArray(inputEditorTaglibAttributes)
 		).put(
 			"toolbar_text_simple",
-			getToolbarTextSimpleJSONArray(inputEditorTaglibAttributes)
+			_getToolbarTextSimpleJSONArray(inputEditorTaglibAttributes)
 		);
 	}
 
-	protected JSONObject getStyleFormatJSONObject(
+	private JSONObject _getStyleFormatJSONObject(
 		String styleFormatName, String element, String cssClass) {
 
 		return JSONUtil.put(
@@ -133,36 +131,36 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 		);
 	}
 
-	protected JSONArray getStyleFormatsJSONArray(Locale locale) {
+	private JSONArray _getStyleFormatsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "normal"), "p", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "1"), "h1", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "2"), "h2", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "3"), "h3", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "4"), "h4", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "preformatted-text"), "pre", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "cited-work"), "cite", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "computer-code"), "code", null),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "info-message"), "div",
+			_getStyleFormatJSONObject(
+				_language.get(locale, "normal"), "p", null),
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "1"), "h1", null),
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "2"), "h2", null),
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "3"), "h3", null),
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "4"), "h4", null),
+			_getStyleFormatJSONObject(
+				_language.get(locale, "preformatted-text"), "pre", null),
+			_getStyleFormatJSONObject(
+				_language.get(locale, "cited-work"), "cite", null),
+			_getStyleFormatJSONObject(
+				_language.get(locale, "computer-code"), "code", null),
+			_getStyleFormatJSONObject(
+				_language.get(locale, "info-message"), "div",
 				"overflow-auto portlet-msg-info"),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "alert-message"), "div",
+			_getStyleFormatJSONObject(
+				_language.get(locale, "alert-message"), "div",
 				"overflow-auto portlet-msg-alert"),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "error-message"), "div",
+			_getStyleFormatJSONObject(
+				_language.get(locale, "error-message"), "div",
 				"overflow-auto portlet-msg-error"));
 	}
 
-	protected JSONArray getToolbarSimpleJSONArray(
+	private JSONArray _getToolbarSimpleJSONArray(
 		Map<String, Object> inputEditorTaglibAttributes) {
 
 		return JSONUtil.putAll(
@@ -173,7 +171,7 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 			toJSONArray("['Table', 'ImageSelector', 'VideoSelector']")
 		).put(
 			() -> {
-				if (AudioProcessorUtil.isEnabled() || XugglerUtil.isEnabled()) {
+				if (AudioProcessorUtil.isEnabled()) {
 					return toJSONArray("['AudioSelector']");
 				}
 
@@ -187,10 +185,18 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 				return null;
 			}
+		).put(
+			() -> {
+				if (_isShowAICreator(inputEditorTaglibAttributes)) {
+					return toJSONArray("['AICreator']");
+				}
+
+				return null;
+			}
 		);
 	}
 
-	protected JSONArray getToolbarTextAdvancedJSONArray(
+	private JSONArray _getToolbarTextAdvancedJSONArray(
 		Map<String, Object> inputEditorTaglibAttributes) {
 
 		return JSONUtil.putAll(
@@ -210,10 +216,18 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 				return null;
 			}
+		).put(
+			() -> {
+				if (_isShowAICreator(inputEditorTaglibAttributes)) {
+					return toJSONArray("['AICreator']");
+				}
+
+				return null;
+			}
 		);
 	}
 
-	protected JSONArray getToolbarTextSimpleJSONArray(
+	private JSONArray _getToolbarTextSimpleJSONArray(
 		Map<String, Object> inputEditorTaglibAttributes) {
 
 		return JSONUtil.putAll(
@@ -229,7 +243,26 @@ public class CKEditorConfigContributor extends BaseCKEditorConfigContributor {
 
 				return null;
 			}
+		).put(
+			() -> {
+				if (_isShowAICreator(inputEditorTaglibAttributes)) {
+					return toJSONArray("['AICreator']");
+				}
+
+				return null;
+			}
 		);
 	}
+
+	private boolean _isShowAICreator(
+		Map<String, Object> inputEditorTaglibAttributes) {
+
+		return GetterUtil.getBoolean(
+			inputEditorTaglibAttributes.get(
+				CKEditorConstants.ATTRIBUTE_NAMESPACE + ":showAICreator"));
+	}
+
+	@Reference
+	private Language _language;
 
 }

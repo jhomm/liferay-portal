@@ -1,37 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import classNames from 'classnames';
+import {openToast} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import {useDrop} from 'react-dnd';
 
 import {
 	LayoutDataPropTypes,
 	getLayoutDataItemPropTypes,
-} from '../../prop-types/index';
+} from '../../prop_types/index';
 import {LAYOUT_DATA_ITEM_TYPES} from '../config/constants/layoutDataItemTypes';
 import {useSelectItem} from '../contexts/ControlsContext';
-import {useSelector} from '../contexts/StoreContext';
+import {useSelector, useSelectorRef} from '../contexts/StoreContext';
 import Layout from './Layout';
-import FragmentContent from './fragment-content/FragmentContent';
-import {Collection, Column, Container, Row} from './layout-data-items/index';
+import FragmentContent from './fragment_content/FragmentContent';
+import {FormStep} from './layout_data_items/FormStep';
+import {FormStepContainer} from './layout_data_items/FormStepContainer';
+import hasDropZoneChild from './layout_data_items/hasDropZoneChild';
+import {
+	Collection,
+	Column,
+	Container,
+	Form,
+	Row,
+} from './layout_data_items/index';
 
 const LAYOUT_DATA_ITEMS = {
 	[LAYOUT_DATA_ITEM_TYPES.collection]: Collection,
 	[LAYOUT_DATA_ITEM_TYPES.collectionItem]: CollectionItem,
 	[LAYOUT_DATA_ITEM_TYPES.column]: MasterColumn,
 	[LAYOUT_DATA_ITEM_TYPES.container]: Container,
+	[LAYOUT_DATA_ITEM_TYPES.form]: Form,
+	[LAYOUT_DATA_ITEM_TYPES.formStep]: FormStep,
+	[LAYOUT_DATA_ITEM_TYPES.formStepContainer]: FormStepContainer,
 	[LAYOUT_DATA_ITEM_TYPES.dropZone]: DropZoneContainer,
 	[LAYOUT_DATA_ITEM_TYPES.fragment]: Fragment,
 	[LAYOUT_DATA_ITEM_TYPES.fragmentDropZone]: Root,
@@ -39,7 +44,7 @@ const LAYOUT_DATA_ITEMS = {
 	[LAYOUT_DATA_ITEM_TYPES.row]: Row,
 };
 
-export default function MasterPage() {
+const MasterPage = React.memo(() => {
 	const fragmentEntryLinks = useSelector((state) => state.fragmentEntryLinks);
 	const masterLayoutData = useSelector(
 		(state) => state.masterLayout?.masterLayoutData
@@ -47,8 +52,28 @@ export default function MasterPage() {
 
 	const mainItem = masterLayoutData.items[masterLayoutData.rootItems.main];
 
+	const [, targetRef] = useDrop({
+		accept: Object.values(LAYOUT_DATA_ITEM_TYPES),
+		drop: (_, monitor) => {
+			const {x, y} = monitor.getClientOffset();
+
+			const element = document.elementFromPoint(x, y);
+
+			if (element.closest('.page-editor')) {
+				return;
+			}
+
+			openToast({
+				message: Liferay.Language.get(
+					'fragments-and-widgets-cannot-be-placed-inside-this-area'
+				),
+				type: 'danger',
+			});
+		},
+	});
+
 	return (
-		<div className="master-page">
+		<div className="master-page" ref={targetRef}>
 			<MasterLayoutDataItem
 				fragmentEntryLinks={fragmentEntryLinks}
 				item={mainItem}
@@ -56,7 +81,11 @@ export default function MasterPage() {
 			/>
 		</div>
 	);
-}
+});
+
+MasterPage.displayName = 'MasterPage';
+
+export default MasterPage;
 
 function MasterLayoutDataItem({fragmentEntryLinks, item, layoutData}) {
 	const Component = LAYOUT_DATA_ITEMS[item.type];
@@ -104,9 +133,15 @@ function Root({children}) {
 function CollectionItem({children}) {
 	return <div>{children}</div>;
 }
-function Fragment({item}) {
+
+function Fragment({item, layoutData}) {
 	const ref = useRef(null);
 	const selectItem = useSelectItem();
+
+	const hasDropzoneChild = useMemo(
+		() => hasDropZoneChild(item, layoutData),
+		[item, layoutData]
+	);
 
 	useEffect(() => {
 		const element = ref.current;
@@ -129,13 +164,27 @@ function Fragment({item}) {
 
 		element.addEventListener('click', handler);
 
+		if (!hasDropzoneChild) {
+			element.setAttribute('inert', '');
+		}
+
+		element.setAttribute('aria-hidden', 'true');
+
 		return () => {
 			element.removeEventListener('click', handler);
+
+			if (!hasDropzoneChild) {
+				element.removeAttribute('inert');
+			}
+
+			element.removeAttribute('aria-hidden');
 		};
 	});
 
-	const fragmentEntryLinks = useSelector((state) => state.fragmentEntryLinks);
-	const masterLayoutData = useSelector(
+	const fragmentEntryLinksRef = useSelectorRef(
+		(state) => state.fragmentEntryLinks
+	);
+	const masterLayoutDataRef = useSelectorRef(
 		(state) => state.masterLayout?.masterLayoutData
 	);
 
@@ -149,9 +198,15 @@ function Fragment({item}) {
 					const Component = () =>
 						mainItemId ? (
 							<MasterLayoutDataItem
-								fragmentEntryLinks={fragmentEntryLinks}
-								item={masterLayoutData.items[mainItemId]}
-								layoutData={masterLayoutData}
+								fragmentEntryLinks={
+									fragmentEntryLinksRef.current
+								}
+								item={
+									masterLayoutDataRef.current.items[
+										mainItemId
+									]
+								}
+								layoutData={masterLayoutDataRef.current}
 							/>
 						) : null;
 
@@ -163,7 +218,7 @@ function Fragment({item}) {
 					};
 				}
 			),
-		[fragmentEntryLinks, masterLayoutData]
+		[fragmentEntryLinksRef, masterLayoutDataRef]
 	);
 
 	return (

@@ -1,0 +1,200 @@
+<?xml version="1.0"?>
+
+<workflow-definition
+	xmlns="urn:liferay.com:liferay-workflow_7.4.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="urn:liferay.com:liferay-workflow_7.4.0 http://www.liferay.com/dtd/liferay-workflow-definition_7_4_0.xsd"
+>
+	<state>
+		<name>072ccf3c-6487-4976-ba4c-a1eafc4e6cd7</name>
+		<description>Begin a workflow.</description>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						-4,
+						-92
+					]
+				}
+			]]>
+		</metadata>
+		<initial>true</initial>
+		<labels>
+			<label language-id="en_US">
+				Start
+			</label>
+		</labels>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Start Fork
+					</label>
+				</labels>
+				<name>cf54177e-013a-429c-9f75-e1b8542beeea</name>
+				<target>4c72c2cd-541b-4e91-9613-5b00e388c0d8</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</state>
+	<state>
+		<name>a1fec818-ac42-44a4-b4a0-0d191a32eb46</name>
+		<description>Conclude the workflow.</description>
+		<metadata>
+			<![CDATA[
+				{
+					"terminal": true,
+					"xy": [
+						638,
+						445
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				End
+			</label>
+		</labels>
+	</state>
+	<fork>
+		<name>4c72c2cd-541b-4e91-9613-5b00e388c0d8</name>
+		<description>Split the workflow into multiple paths.</description>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						382,
+						22
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Fork
+			</label>
+		</labels>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Fork Task One
+					</label>
+				</labels>
+				<name>a45a01e4-1766-446e-be3c-737c6835d807</name>
+				<target>8ed7c9a6-402e-4281-b652-5e09b7e01ea7</target>
+				<default>true</default>
+			</transition>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Fork Task Two
+					</label>
+				</labels>
+				<name>4133ecd8-58bf-4ceb-a7c4-21150c54337c</name>
+				<target>a9d44ec0-f455-4739-a40c-3d0a4f65090e</target>
+				<default>false</default>
+			</transition>
+		</transitions>
+	</fork>
+	<task>
+		<name>8ed7c9a6-402e-4281-b652-5e09b7e01ea7</name>
+		<description>Ask a user to work on the item.</description>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						74,
+						210
+					]
+				}
+			]]>
+		</metadata>
+		<assignments>
+			<user />
+		</assignments>
+		<labels>
+			<label language-id="en_US">
+				Task
+			</label>
+		</labels>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Task Join One
+					</label>
+				</labels>
+				<name>aaed243c-cbb0-4496-b2e1-0935eea8b161</name>
+				<target>29da6355-4757-4c73-9e1f-8f76db9dadb8</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</task>
+	<task>
+		<name>a9d44ec0-f455-4739-a40c-3d0a4f65090e</name>
+		<description>Ask a user to work on the item.</description>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						438,
+						212
+					]
+				}
+			]]>
+		</metadata>
+		<assignments>
+			<user />
+		</assignments>
+		<labels>
+			<label language-id="en_US">
+				Task
+			</label>
+		</labels>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Task Join Two
+					</label>
+				</labels>
+				<name>a0627242-65d9-4d13-a28c-a904a1c271b7</name>
+				<target>29da6355-4757-4c73-9e1f-8f76db9dadb8</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</task>
+	<join>
+		<name>29da6355-4757-4c73-9e1f-8f76db9dadb8</name>
+		<description>All interactions need to be closed.</description>
+		<metadata>
+			<![CDATA[
+				{
+					"xy": [
+						224,
+						447
+					]
+				}
+			]]>
+		</metadata>
+		<labels>
+			<label language-id="en_US">
+				Join
+			</label>
+		</labels>
+		<transitions>
+			<transition>
+				<labels>
+					<label language-id="en_US">
+						Join End
+					</label>
+				</labels>
+				<name>188d75ae-32a6-4048-8220-b5963157ded3</name>
+				<target>a1fec818-ac42-44a4-b4a0-0d191a32eb46</target>
+				<default>true</default>
+			</transition>
+		</transitions>
+	</join>
+</workflow-definition>

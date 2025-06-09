@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.persistence;
@@ -338,6 +329,149 @@ public interface ObjectRelationshipPersistence
 	 * @return the number of matching object relationships
 	 */
 	public int countByUuid_C(String uuid, long companyId);
+
+	/**
+	 * Returns all the object relationships where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByCompanyId(long companyId);
+
+	/**
+	 * Returns a range of all the object relationships where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByCompanyId(
+		long companyId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByCompanyId(
+		long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByCompanyId(
+		long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByCompanyId_First(
+			long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByCompanyId_First(
+		long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByCompanyId_Last(
+			long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByCompanyId_Last(
+		long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where companyId = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByCompanyId_PrevAndNext(
+			long objectRelationshipId, long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where companyId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 */
+	public void removeByCompanyId(long companyId);
+
+	/**
+	 * Returns the number of object relationships where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @return the number of matching object relationships
+	 */
+	public int countByCompanyId(long companyId);
 
 	/**
 	 * Returns all the object relationships where objectDefinitionId1 = &#63;.
@@ -673,48 +807,604 @@ public interface ObjectRelationshipPersistence
 	public int countByObjectFieldId2(long objectFieldId2);
 
 	/**
-	 * Returns the object relationship where objectDefinitionId1 = &#63; and name = &#63; or throws a <code>NoSuchObjectRelationshipException</code> if it could not be found.
+	 * Returns all the object relationships where parameterObjectFieldId = &#63;.
 	 *
-	 * @param objectDefinitionId1 the object definition id1
-	 * @param name the name
-	 * @return the matching object relationship
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByParameterObjectFieldId(
+		long parameterObjectFieldId);
+
+	/**
+	 * Returns a range of all the object relationships where parameterObjectFieldId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByParameterObjectFieldId(
+		long parameterObjectFieldId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where parameterObjectFieldId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByParameterObjectFieldId(
+		long parameterObjectFieldId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where parameterObjectFieldId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByParameterObjectFieldId(
+		long parameterObjectFieldId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where parameterObjectFieldId = &#63;.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
 	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
 	 */
-	public ObjectRelationship findByODI1_N(
-			long objectDefinitionId1, String name)
+	public ObjectRelationship findByParameterObjectFieldId_First(
+			long parameterObjectFieldId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
 		throws NoSuchObjectRelationshipException;
 
 	/**
-	 * Returns the object relationship where objectDefinitionId1 = &#63; and name = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the first object relationship in the ordered set where parameterObjectFieldId = &#63;.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByParameterObjectFieldId_First(
+		long parameterObjectFieldId,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where parameterObjectFieldId = &#63;.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByParameterObjectFieldId_Last(
+			long parameterObjectFieldId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where parameterObjectFieldId = &#63;.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByParameterObjectFieldId_Last(
+		long parameterObjectFieldId,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where parameterObjectFieldId = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByParameterObjectFieldId_PrevAndNext(
+			long objectRelationshipId, long parameterObjectFieldId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where parameterObjectFieldId = &#63; from the database.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 */
+	public void removeByParameterObjectFieldId(long parameterObjectFieldId);
+
+	/**
+	 * Returns the number of object relationships where parameterObjectFieldId = &#63;.
+	 *
+	 * @param parameterObjectFieldId the parameter object field ID
+	 * @return the number of matching object relationships
+	 */
+	public int countByParameterObjectFieldId(long parameterObjectFieldId);
+
+	/**
+	 * Returns all the object relationships where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByC_U(
+		long companyId, long userId);
+
+	/**
+	 * Returns a range of all the object relationships where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByC_U(
+		long companyId, long userId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByC_U(
+		long companyId, long userId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where companyId = &#63; and userId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByC_U(
+		long companyId, long userId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByC_U_First(
+			long companyId, long userId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByC_U_First(
+		long companyId, long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByC_U_Last(
+			long companyId, long userId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByC_U_Last(
+		long companyId, long userId,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByC_U_PrevAndNext(
+			long objectRelationshipId, long companyId, long userId,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where companyId = &#63; and userId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 */
+	public void removeByC_U(long companyId, long userId);
+
+	/**
+	 * Returns the number of object relationships where companyId = &#63; and userId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param userId the user ID
+	 * @return the number of matching object relationships
+	 */
+	public int countByC_U(long companyId, long userId);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_E(
+		long objectDefinitionId1, boolean edge);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_E(
+		long objectDefinitionId1, boolean edge, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_E(
+		long objectDefinitionId1, boolean edge, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_E(
+		long objectDefinitionId1, boolean edge, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_E_First(
+			long objectDefinitionId1, boolean edge,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_E_First(
+		long objectDefinitionId1, boolean edge,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_E_Last(
+			long objectDefinitionId1, boolean edge,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_E_Last(
+		long objectDefinitionId1, boolean edge,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI1_E_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId1, boolean edge,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId1 = &#63; and edge = &#63; from the database.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 */
+	public void removeByODI1_E(long objectDefinitionId1, boolean edge);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId1 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param edge the edge
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI1_E(long objectDefinitionId1, boolean edge);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId1 = &#63; and name = &#63;.
 	 *
 	 * @param objectDefinitionId1 the object definition id1
 	 * @param name the name
-	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 * @return the matching object relationships
 	 */
-	public ObjectRelationship fetchByODI1_N(
+	public java.util.List<ObjectRelationship> findByODI1_N(
 		long objectDefinitionId1, String name);
 
 	/**
-	 * Returns the object relationship where objectDefinitionId1 = &#63; and name = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns a range of all the object relationships where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
 	 *
 	 * @param objectDefinitionId1 the object definition id1
 	 * @param name the name
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
 	 */
-	public ObjectRelationship fetchByODI1_N(
-		long objectDefinitionId1, String name, boolean useFinderCache);
+	public java.util.List<ObjectRelationship> findByODI1_N(
+		long objectDefinitionId1, String name, int start, int end);
 
 	/**
-	 * Removes the object relationship where objectDefinitionId1 = &#63; and name = &#63; from the database.
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
 	 *
 	 * @param objectDefinitionId1 the object definition id1
 	 * @param name the name
-	 * @return the object relationship that was removed
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
 	 */
-	public ObjectRelationship removeByODI1_N(
-			long objectDefinitionId1, String name)
+	public java.util.List<ObjectRelationship> findByODI1_N(
+		long objectDefinitionId1, String name, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_N(
+		long objectDefinitionId1, String name, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_N_First(
+			long objectDefinitionId1, String name,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
 		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_N_First(
+		long objectDefinitionId1, String name,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_N_Last(
+			long objectDefinitionId1, String name,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_N_Last(
+		long objectDefinitionId1, String name,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId1 = &#63; and name = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI1_N_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId1, String name,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId1 = &#63; and name = &#63; from the database.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param name the name
+	 */
+	public void removeByODI1_N(long objectDefinitionId1, String name);
 
 	/**
 	 * Returns the number of object relationships where objectDefinitionId1 = &#63; and name = &#63;.
@@ -724,6 +1414,1171 @@ public interface ObjectRelationshipPersistence
 	 * @return the number of matching object relationships
 	 */
 	public int countByODI1_N(long objectDefinitionId1, String name);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R(
+		long objectDefinitionId1, boolean reverse);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R(
+		long objectDefinitionId1, boolean reverse, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R(
+		long objectDefinitionId1, boolean reverse, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R(
+		long objectDefinitionId1, boolean reverse, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_R_First(
+			long objectDefinitionId1, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_R_First(
+		long objectDefinitionId1, boolean reverse,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_R_Last(
+			long objectDefinitionId1, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_R_Last(
+		long objectDefinitionId1, boolean reverse,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI1_R_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId1,
+			boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63; from the database.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 */
+	public void removeByODI1_R(long objectDefinitionId1, boolean reverse);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId1 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI1_R(long objectDefinitionId1, boolean reverse);
+
+	/**
+	 * Returns the object relationship where objectDefinitionId2 = &#63; and edge = &#63; or throws a <code>NoSuchObjectRelationshipException</code> if it could not be found.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param edge the edge
+	 * @return the matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI2_E(
+			long objectDefinitionId2, boolean edge)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the object relationship where objectDefinitionId2 = &#63; and edge = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param edge the edge
+	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI2_E(
+		long objectDefinitionId2, boolean edge);
+
+	/**
+	 * Returns the object relationship where objectDefinitionId2 = &#63; and edge = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param edge the edge
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI2_E(
+		long objectDefinitionId2, boolean edge, boolean useFinderCache);
+
+	/**
+	 * Removes the object relationship where objectDefinitionId2 = &#63; and edge = &#63; from the database.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param edge the edge
+	 * @return the object relationship that was removed
+	 */
+	public ObjectRelationship removeByODI2_E(
+			long objectDefinitionId2, boolean edge)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId2 = &#63; and edge = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param edge the edge
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI2_E(long objectDefinitionId2, boolean edge);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R(
+		long objectDefinitionId2, boolean reverse);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R(
+		long objectDefinitionId2, boolean reverse, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R(
+		long objectDefinitionId2, boolean reverse, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R(
+		long objectDefinitionId2, boolean reverse, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI2_R_First(
+			long objectDefinitionId2, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI2_R_First(
+		long objectDefinitionId2, boolean reverse,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI2_R_Last(
+			long objectDefinitionId2, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI2_R_Last(
+		long objectDefinitionId2, boolean reverse,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI2_R_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId2,
+			boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63; from the database.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 */
+	public void removeByODI2_R(long objectDefinitionId2, boolean reverse);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId2 = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI2_R(long objectDefinitionId2, boolean reverse);
+
+	/**
+	 * Returns the object relationship where dbTableName = &#63; and reverse = &#63; or throws a <code>NoSuchObjectRelationshipException</code> if it could not be found.
+	 *
+	 * @param dbTableName the db table name
+	 * @param reverse the reverse
+	 * @return the matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByDTN_R(String dbTableName, boolean reverse)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the object relationship where dbTableName = &#63; and reverse = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param dbTableName the db table name
+	 * @param reverse the reverse
+	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByDTN_R(String dbTableName, boolean reverse);
+
+	/**
+	 * Returns the object relationship where dbTableName = &#63; and reverse = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param dbTableName the db table name
+	 * @param reverse the reverse
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByDTN_R(
+		String dbTableName, boolean reverse, boolean useFinderCache);
+
+	/**
+	 * Removes the object relationship where dbTableName = &#63; and reverse = &#63; from the database.
+	 *
+	 * @param dbTableName the db table name
+	 * @param reverse the reverse
+	 * @return the object relationship that was removed
+	 */
+	public ObjectRelationship removeByDTN_R(String dbTableName, boolean reverse)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the number of object relationships where dbTableName = &#63; and reverse = &#63;.
+	 *
+	 * @param dbTableName the db table name
+	 * @param reverse the reverse
+	 * @return the number of matching object relationships
+	 */
+	public int countByDTN_R(String dbTableName, boolean reverse);
+
+	/**
+	 * Returns the object relationship where externalReferenceCode = &#63; and companyId = &#63; and objectDefinitionId1 = &#63; or throws a <code>NoSuchObjectRelationshipException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param objectDefinitionId1 the object definition id1
+	 * @return the matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByERC_C_ODI1(
+			String externalReferenceCode, long companyId,
+			long objectDefinitionId1)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the object relationship where externalReferenceCode = &#63; and companyId = &#63; and objectDefinitionId1 = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param objectDefinitionId1 the object definition id1
+	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByERC_C_ODI1(
+		String externalReferenceCode, long companyId, long objectDefinitionId1);
+
+	/**
+	 * Returns the object relationship where externalReferenceCode = &#63; and companyId = &#63; and objectDefinitionId1 = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByERC_C_ODI1(
+		String externalReferenceCode, long companyId, long objectDefinitionId1,
+		boolean useFinderCache);
+
+	/**
+	 * Removes the object relationship where externalReferenceCode = &#63; and companyId = &#63; and objectDefinitionId1 = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param objectDefinitionId1 the object definition id1
+	 * @return the object relationship that was removed
+	 */
+	public ObjectRelationship removeByERC_C_ODI1(
+			String externalReferenceCode, long companyId,
+			long objectDefinitionId1)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the number of object relationships where externalReferenceCode = &#63; and companyId = &#63; and objectDefinitionId1 = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param objectDefinitionId1 the object definition id1
+	 * @return the number of matching object relationships
+	 */
+	public int countByERC_C_ODI1(
+		String externalReferenceCode, long companyId, long objectDefinitionId1);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_ODI2_T(
+		long objectDefinitionId1, long objectDefinitionId2, String type);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_ODI2_T(
+		long objectDefinitionId1, long objectDefinitionId2, String type,
+		int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_ODI2_T(
+		long objectDefinitionId1, long objectDefinitionId2, String type,
+		int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_ODI2_T(
+		long objectDefinitionId1, long objectDefinitionId2, String type,
+		int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_ODI2_T_First(
+			long objectDefinitionId1, long objectDefinitionId2, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_ODI2_T_First(
+		long objectDefinitionId1, long objectDefinitionId2, String type,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_ODI2_T_Last(
+			long objectDefinitionId1, long objectDefinitionId2, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_ODI2_T_Last(
+		long objectDefinitionId1, long objectDefinitionId2, String type,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI1_ODI2_T_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId1,
+			long objectDefinitionId2, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63; from the database.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 */
+	public void removeByODI1_ODI2_T(
+		long objectDefinitionId1, long objectDefinitionId2, String type);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param type the type
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI1_ODI2_T(
+		long objectDefinitionId1, long objectDefinitionId2, String type);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_DT_R(
+		long objectDefinitionId1, String deletionType, boolean reverse);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_DT_R(
+		long objectDefinitionId1, String deletionType, boolean reverse,
+		int start, int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_DT_R(
+		long objectDefinitionId1, String deletionType, boolean reverse,
+		int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_DT_R(
+		long objectDefinitionId1, String deletionType, boolean reverse,
+		int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_DT_R_First(
+			long objectDefinitionId1, String deletionType, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_DT_R_First(
+		long objectDefinitionId1, String deletionType, boolean reverse,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_DT_R_Last(
+			long objectDefinitionId1, String deletionType, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_DT_R_Last(
+		long objectDefinitionId1, String deletionType, boolean reverse,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI1_DT_R_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId1,
+			String deletionType, boolean reverse,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63; from the database.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 */
+	public void removeByODI1_DT_R(
+		long objectDefinitionId1, String deletionType, boolean reverse);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId1 = &#63; and deletionType = &#63; and reverse = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param deletionType the deletion type
+	 * @param reverse the reverse
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI1_DT_R(
+		long objectDefinitionId1, String deletionType, boolean reverse);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R_T(
+		long objectDefinitionId1, boolean reverse, String type);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R_T(
+		long objectDefinitionId1, boolean reverse, String type, int start,
+		int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R_T(
+		long objectDefinitionId1, boolean reverse, String type, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI1_R_T(
+		long objectDefinitionId1, boolean reverse, String type, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_R_T_First(
+			long objectDefinitionId1, boolean reverse, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_R_T_First(
+		long objectDefinitionId1, boolean reverse, String type,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI1_R_T_Last(
+			long objectDefinitionId1, boolean reverse, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI1_R_T_Last(
+		long objectDefinitionId1, boolean reverse, String type,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI1_R_T_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId1,
+			boolean reverse, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63; from the database.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 */
+	public void removeByODI1_R_T(
+		long objectDefinitionId1, boolean reverse, String type);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId1 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId1 the object definition id1
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI1_R_T(
+		long objectDefinitionId1, boolean reverse, String type);
+
+	/**
+	 * Returns all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @return the matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R_T(
+		long objectDefinitionId2, boolean reverse, String type);
+
+	/**
+	 * Returns a range of all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @return the range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R_T(
+		long objectDefinitionId2, boolean reverse, String type, int start,
+		int end);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R_T(
+		long objectDefinitionId2, boolean reverse, String type, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>ObjectRelationshipModelImpl</code>.
+	 * </p>
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param start the lower bound of the range of object relationships
+	 * @param end the upper bound of the range of object relationships (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching object relationships
+	 */
+	public java.util.List<ObjectRelationship> findByODI2_R_T(
+		long objectDefinitionId2, boolean reverse, String type, int start,
+		int end,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI2_R_T_First(
+			long objectDefinitionId2, boolean reverse, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the first object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI2_R_T_First(
+		long objectDefinitionId2, boolean reverse, String type,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship
+	 * @throws NoSuchObjectRelationshipException if a matching object relationship could not be found
+	 */
+	public ObjectRelationship findByODI2_R_T_Last(
+			long objectDefinitionId2, boolean reverse, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Returns the last object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching object relationship, or <code>null</code> if a matching object relationship could not be found
+	 */
+	public ObjectRelationship fetchByODI2_R_T_Last(
+		long objectDefinitionId2, boolean reverse, String type,
+		com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+			orderByComparator);
+
+	/**
+	 * Returns the object relationships before and after the current object relationship in the ordered set where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectRelationshipId the primary key of the current object relationship
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next object relationship
+	 * @throws NoSuchObjectRelationshipException if a object relationship with the primary key could not be found
+	 */
+	public ObjectRelationship[] findByODI2_R_T_PrevAndNext(
+			long objectRelationshipId, long objectDefinitionId2,
+			boolean reverse, String type,
+			com.liferay.portal.kernel.util.OrderByComparator<ObjectRelationship>
+				orderByComparator)
+		throws NoSuchObjectRelationshipException;
+
+	/**
+	 * Removes all the object relationships where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63; from the database.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 */
+	public void removeByODI2_R_T(
+		long objectDefinitionId2, boolean reverse, String type);
+
+	/**
+	 * Returns the number of object relationships where objectDefinitionId2 = &#63; and reverse = &#63; and type = &#63;.
+	 *
+	 * @param objectDefinitionId2 the object definition id2
+	 * @param reverse the reverse
+	 * @param type the type
+	 * @return the number of matching object relationships
+	 */
+	public int countByODI2_R_T(
+		long objectDefinitionId2, boolean reverse, String type);
 
 	/**
 	 * Returns all the object relationships where objectDefinitionId1 = &#63; and objectDefinitionId2 = &#63; and name = &#63; and type = &#63;.

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.web.internal.display.context;
@@ -18,15 +9,15 @@ import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.sharing.configuration.SharingConfigurationFactory;
-import com.liferay.sharing.display.context.util.SharingMenuItemFactory;
+import com.liferay.sharing.display.context.util.SharingDropdownItemFactory;
 import com.liferay.sharing.interpreter.SharingEntryInterpreterProvider;
 import com.liferay.sharing.security.permission.SharingPermission;
 import com.liferay.sharing.service.SharingEntryLocalService;
-import com.liferay.sharing.web.internal.filter.SharedAssetsFilterItemTracker;
-import com.liferay.sharing.web.internal.servlet.taglib.ui.SharingEntryMenuItemContributorRegistry;
+import com.liferay.sharing.web.internal.filter.SharedAssetsFilterItemRegistry;
+import com.liferay.sharing.web.internal.servlet.taglib.ui.SharingEntryDropdownItemContributorRegistry;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,10 +35,11 @@ public class ViewSharedAssetsDisplayContextFactory {
 			_groupLocalService, _itemSelector,
 			_portal.getLiferayPortletRequest(renderRequest),
 			_portal.getLiferayPortletResponse(renderResponse),
-			_sharedAssetsFilterItemTracker, _sharingConfigurationFactory,
+			_sharedAssetsFilterItemRegistry, _sharingConfigurationFactory,
+			_sharingDropdownItemFactory,
+			_sharingEntryDropdownItemContributorRegistry,
 			_sharingEntryInterpreterProvider::getSharingEntryInterpreter,
-			_sharingEntryLocalService, _sharingEntryMenuItemContributorRegistry,
-			_sharingMenuItemFactory, _sharingPermission);
+			_sharingEntryLocalService, _sharingPermission);
 	}
 
 	@Reference
@@ -60,23 +52,23 @@ public class ViewSharedAssetsDisplayContextFactory {
 	private Portal _portal;
 
 	@Reference
-	private SharedAssetsFilterItemTracker _sharedAssetsFilterItemTracker;
+	private SharedAssetsFilterItemRegistry _sharedAssetsFilterItemRegistry;
 
 	@Reference
 	private SharingConfigurationFactory _sharingConfigurationFactory;
+
+	@Reference
+	private SharingDropdownItemFactory _sharingDropdownItemFactory;
+
+	@Reference
+	private SharingEntryDropdownItemContributorRegistry
+		_sharingEntryDropdownItemContributorRegistry;
 
 	@Reference
 	private SharingEntryInterpreterProvider _sharingEntryInterpreterProvider;
 
 	@Reference
 	private SharingEntryLocalService _sharingEntryLocalService;
-
-	@Reference
-	private SharingEntryMenuItemContributorRegistry
-		_sharingEntryMenuItemContributorRegistry;
-
-	@Reference
-	private SharingMenuItemFactory _sharingMenuItemFactory;
 
 	@Reference
 	private SharingPermission _sharingPermission;

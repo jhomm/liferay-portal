@@ -1,24 +1,11 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
-
-<%
-List<LayoutDescription> layoutDescriptions = siteNavigationSiteMapDisplayContext.getLayoutDescriptions();
-%>
 
 <liferay-portlet:actionURL portletConfiguration="<%= true %>" var="configurationActionURL" />
 
@@ -33,68 +20,63 @@ List<LayoutDescription> layoutDescriptions = siteNavigationSiteMapDisplayContext
 	<aui:input name="redirect" type="hidden" value="<%= configurationRenderURL %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<div class="display-template">
-					<liferay-template:template-selector
-						className="<%= LayoutSet.class.getName() %>"
-						displayStyle="<%= siteNavigationSiteMapPortletInstanceConfiguration.displayStyle() %>"
-						displayStyleGroupId="<%= siteNavigationSiteMapDisplayContext.getDisplayStyleGroupId() %>"
-						refreshURL="<%= configurationRenderURL %>"
-						showEmptyOption="<%= true %>"
-					/>
-				</div>
+		<liferay-frontend:fieldset>
+			<div class="display-template">
+				<liferay-template:template-selector
+					className="<%= LayoutSet.class.getName() %>"
+					displayStyle="<%= siteNavigationSiteMapPortletInstanceConfiguration.displayStyle() %>"
+					displayStyleGroupKey="<%= siteNavigationSiteMapDisplayContext.getDisplayStyleGroupKey() %>"
+					refreshURL="<%= configurationRenderURL %>"
+					showEmptyOption="<%= true %>"
+				/>
+			</div>
 
-				<aui:select label="root-layout" name="preferences--rootLayoutUuid--">
-					<aui:option value="" />
+			<%
+			Layout rootLayout = siteNavigationSiteMapDisplayContext.getRootLayout();
+			%>
 
-					<%
-					for (LayoutDescription layoutDescription : layoutDescriptions) {
-						Layout layoutDescriptionLayout = LayoutLocalServiceUtil.fetchLayout(layoutDescription.getPlid());
-					%>
+			<liferay-frontend:resource-selector
+				inputLabel='<%= LanguageUtil.get(request, "root-layout") %>'
+				inputName="preferences--rootLayoutUuid--"
+				modalTitle='<%= LanguageUtil.get(request, "select-layout") %>'
+				resourceName="<%= Validator.isNotNull(rootLayout) ? rootLayout.getName(themeDisplay.getSiteDefaultLocale()) : StringPool.BLANK %>"
+				resourceNameKey="name"
+				resourceValue="<%= Validator.isNotNull(rootLayout) ? siteNavigationSiteMapPortletInstanceConfiguration.rootLayoutUuid() : StringPool.BLANK %>"
+				resourceValueKey="id"
+				selectEventName="selectLayout"
+				selectResourceURL="<%= siteNavigationSiteMapDisplayContext.getItemSelectorURL() %>"
+				showRemoveButton="<%= false %>"
+			/>
 
-						<c:if test="<%= layoutDescriptionLayout != null %>">
-							<aui:option label="<%= layoutDescription.getDisplayName() %>" selected="<%= Objects.equals(layoutDescriptionLayout.getUuid(), siteNavigationSiteMapPortletInstanceConfiguration.rootLayoutUuid()) %>" value="<%= layoutDescriptionLayout.getUuid() %>" />
-						</c:if>
+			<aui:select name="preferences--displayDepth--">
+				<aui:option label="unlimited" value="0" />
 
-					<%
-					}
-					%>
+				<%
+				for (int i = 1; i <= 20; i++) {
+				%>
 
-				</aui:select>
+					<aui:option label="<%= i %>" selected="<%= siteNavigationSiteMapPortletInstanceConfiguration.displayDepth() == i %>" />
 
-				<aui:select name="preferences--displayDepth--">
-					<aui:option label="unlimited" value="0" />
+				<%
+				}
+				%>
 
-					<%
-					for (int i = 1; i <= 20; i++) {
-					%>
+			</aui:select>
 
-						<aui:option label="<%= i %>" selected="<%= siteNavigationSiteMapPortletInstanceConfiguration.displayDepth() == i %>" />
+			<div class="<%= Validator.isNotNull(siteNavigationSiteMapPortletInstanceConfiguration.rootLayoutUuid()) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />includeRootInTreeContainer">
+				<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--includeRootInTree--" type="toggle-switch" value="<%= siteNavigationSiteMapDisplayContext.isIncludeRootInTree() %>" />
+			</div>
 
-					<%
-					}
-					%>
+			<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showCurrentPage--" type="toggle-switch" value="<%= siteNavigationSiteMapPortletInstanceConfiguration.showCurrentPage() %>" />
 
-				</aui:select>
+			<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--useHtmlTitle--" type="toggle-switch" value="<%= siteNavigationSiteMapPortletInstanceConfiguration.useHtmlTitle() %>" />
 
-				<div class="<%= Validator.isNotNull(siteNavigationSiteMapPortletInstanceConfiguration.rootLayoutUuid()) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />includeRootInTreeContainer">
-					<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--includeRootInTree--" type="toggle-switch" value="<%= siteNavigationSiteMapDisplayContext.isIncludeRootInTree() %>" />
-				</div>
-
-				<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showCurrentPage--" type="toggle-switch" value="<%= siteNavigationSiteMapPortletInstanceConfiguration.showCurrentPage() %>" />
-
-				<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--useHtmlTitle--" type="toggle-switch" value="<%= siteNavigationSiteMapPortletInstanceConfiguration.useHtmlTitle() %>" />
-
-				<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showHiddenPages--" type="toggle-switch" value="<%= siteNavigationSiteMapPortletInstanceConfiguration.showHiddenPages() %>" />
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<aui:input inlineLabel="right" labelCssClass="simple-toggle-switch" name="preferences--showHiddenPages--" type="toggle-switch" value="<%= siteNavigationSiteMapPortletInstanceConfiguration.showHiddenPages() %>" />
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 

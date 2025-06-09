@@ -1,24 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.web.internal.portlet;
 
-import com.liferay.petra.model.adapter.util.ModelAdapterUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.TrashPermissionException;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -30,34 +20,35 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.model.adapter.ModelAdapterUtil;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashEntryConstants;
 import com.liferay.trash.constants.TrashPortletKeys;
-import com.liferay.trash.kernel.exception.RestoreEntryException;
+import com.liferay.trash.exception.RestoreEntryException;
 import com.liferay.trash.model.TrashEntry;
 import com.liferay.trash.service.TrashEntryLocalService;
 import com.liferay.trash.service.TrashEntryService;
 import com.liferay.trash.web.internal.constants.TrashWebKeys;
 import com.liferay.trash.web.internal.util.TrashUndoUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * Provides the Recycle Bin implementation of the <code>Portlet</code> interface
- * (in <code>javax.portlet</code>). If the Recycle Bin is enabled, this portlet
+ * (in <code>jakarta.portlet</code>). If the Recycle Bin is enabled, this portlet
  * moves assets into the Recycle Bin instead of deleting them directly. The site
  * administrator is able to browse the list of removed asset entries, restore
  * selected entries, and empty the Recycle Bin.
@@ -65,7 +56,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-trash",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -75,14 +65,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.scopeable=true",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Trash",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + TrashPortletKeys.TRASH,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Trash",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + TrashPortletKeys.TRASH,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {Portlet.class, TrashPortlet.class}
+	service = Portlet.class
 )
 public class TrashPortlet extends MVCPortlet {
 
@@ -173,7 +164,7 @@ public class TrashPortlet extends MVCPortlet {
 		long trashEntryId = ParamUtil.getLong(actionRequest, "trashEntryId");
 
 		if (trashEntryId > 0) {
-			checkEntry(actionRequest, actionResponse);
+			_checkEntry(actionRequest, actionResponse);
 
 			TrashEntry entry = _trashEntryService.restoreEntry(trashEntryId);
 
@@ -194,12 +185,9 @@ public class TrashPortlet extends MVCPortlet {
 						new ObjectValuePair<>(
 							entry.getClassName(), entry.getClassPK()));
 				}
-				catch (com.liferay.trash.exception.RestoreEntryException
-							restoreEntryException) {
-
+				catch (RestoreEntryException restoreEntryException) {
 					if (restoreEntryException.getType() !=
-							com.liferay.trash.exception.RestoreEntryException.
-								NOT_RESTORABLE) {
+							RestoreEntryException.NOT_RESTORABLE) {
 
 						throw restoreEntryException;
 					}
@@ -223,7 +211,7 @@ public class TrashPortlet extends MVCPortlet {
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
 		if (cmd.equals(Constants.RENAME)) {
-			checkEntry(actionRequest, actionResponse);
+			_checkEntry(actionRequest, actionResponse);
 
 			restoreRename(actionRequest, actionResponse);
 		}
@@ -280,7 +268,18 @@ public class TrashPortlet extends MVCPortlet {
 		sendRedirect(actionRequest, actionResponse);
 	}
 
-	protected void checkEntry(
+	@Override
+	protected boolean isSessionErrorException(Throwable throwable) {
+		if (throwable instanceof RestoreEntryException ||
+			throwable instanceof TrashPermissionException) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _checkEntry(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
@@ -324,48 +323,24 @@ public class TrashPortlet extends MVCPortlet {
 
 			sendRedirect(actionRequest, actionResponse);
 
-			throw new com.liferay.trash.exception.RestoreEntryException(
+			throw new RestoreEntryException(
 				restoreEntryException.getType(),
 				restoreEntryException.getCause());
 		}
 	}
 
-	@Override
-	protected boolean isSessionErrorException(Throwable throwable) {
-		if (throwable instanceof
-				com.liferay.trash.exception.RestoreEntryException ||
-			throwable instanceof RestoreEntryException ||
-			throwable instanceof TrashPermissionException) {
-
-			return true;
-		}
-
-		return false;
-	}
-
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.trash.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
-	}
-
-	@Reference(unbind = "-")
-	protected void setTrashEntryLocalService(
-		TrashEntryLocalService trashEntryLocalService) {
-
-		_trashEntryLocalService = trashEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setTrashEntryService(TrashEntryService trashEntryService) {
-		_trashEntryService = trashEntryService;
-	}
-
 	@Reference
 	private Portal _portal;
 
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.trash.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	private Release _release;
+
+	@Reference
 	private TrashEntryLocalService _trashEntryLocalService;
+
+	@Reference
 	private TrashEntryService _trashEntryService;
 
 	@Reference

@@ -1,28 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins;
 
 import com.liferay.gradle.plugins.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.node.NodePlugin;
-import com.liferay.gradle.plugins.python.PythonPlugin;
 import com.liferay.gradle.plugins.source.formatter.FormatSourceTask;
 import com.liferay.gradle.plugins.source.formatter.SourceFormatterPlugin;
 import com.liferay.gradle.plugins.util.PortalTools;
 import com.liferay.gradle.util.Validator;
-
-import com.pswidersk.gradle.python.VenvTask;
 
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
@@ -93,19 +81,6 @@ public class SourceFormatterDefaultsPlugin
 				}
 
 			});
-
-		pluginContainer.withType(
-			PythonPlugin.class,
-			new Action<PythonPlugin>() {
-
-				@Override
-				public void execute(PythonPlugin pythonPlugin) {
-					_configurePluginPython(
-						project, checkSourceFormattingTaskProvider,
-						formatSourceTaskProvider);
-				}
-
-			});
 	}
 
 	@Override
@@ -164,45 +139,6 @@ public class SourceFormatterDefaultsPlugin
 					});
 			}
 		}
-	}
-
-	private void _configurePluginPython(
-		Project project,
-		final TaskProvider<FormatSourceTask> checkSourceFormattingTaskProvider,
-		final TaskProvider<FormatSourceTask> formatSourceTaskProvider) {
-
-		TaskProvider<VenvTask> checkPythonFormattingTaskProvider =
-			GradleUtil.getTaskProvider(
-				project, PythonPlugin.CHECK_PYTHON_FORMATTING_TASK_NAME,
-				VenvTask.class);
-		TaskProvider<VenvTask> formatPythonTaskProvider =
-			GradleUtil.getTaskProvider(
-				project, PythonPlugin.FORMAT_PYTHON_TASK_NAME, VenvTask.class);
-
-		checkPythonFormattingTaskProvider.configure(
-			new Action<VenvTask>() {
-
-				@Override
-				public void execute(VenvTask checkPythonFormattingTask) {
-					checkPythonFormattingTask.finalizedBy(
-						checkSourceFormattingTaskProvider);
-
-					checkPythonFormattingTask.setEnabled(false);
-				}
-
-			});
-
-		formatPythonTaskProvider.configure(
-			new Action<VenvTask>() {
-
-				@Override
-				public void execute(VenvTask formatPythonTask) {
-					formatPythonTask.finalizedBy(formatSourceTaskProvider);
-
-					formatPythonTask.setEnabled(false);
-				}
-
-			});
 	}
 
 	private void _configureTaskFormatSource(FormatSourceTask formatSourceTask) {
@@ -292,6 +228,14 @@ public class SourceFormatterDefaultsPlugin
 				Boolean.parseBoolean(includeSubrepositories));
 		}
 
+		String javaParserEnabled = GradleUtil.getProperty(
+			project, "java.parser.enabled", (String)null);
+
+		if (Validator.isNotNull(javaParserEnabled)) {
+			formatSourceTask.setJavaParserEnabled(
+				Boolean.parseBoolean(javaParserEnabled));
+		}
+
 		String maxLineLength = GradleUtil.getProperty(
 			project, "source.formatter.max.line.length", (String)null);
 
@@ -320,22 +264,6 @@ public class SourceFormatterDefaultsPlugin
 		if (Validator.isNotNull(showDebugInformation)) {
 			formatSourceTask.setShowDebugInformation(
 				Boolean.parseBoolean(showDebugInformation));
-		}
-
-		String showDocumentation = GradleUtil.getProperty(
-			project, "source.formatter.show.documentation", (String)null);
-
-		if (Validator.isNotNull(showDocumentation)) {
-			formatSourceTask.setShowDocumentation(
-				Boolean.parseBoolean(showDocumentation));
-		}
-
-		String showStatusUpdates = GradleUtil.getProperty(
-			project, "source.formatter.show.status.updates", (String)null);
-
-		if (Validator.isNotNull(showStatusUpdates)) {
-			formatSourceTask.setShowStatusUpdates(
-				Boolean.parseBoolean(showStatusUpdates));
 		}
 
 		String sourceFileNames = GradleUtil.getProperty(

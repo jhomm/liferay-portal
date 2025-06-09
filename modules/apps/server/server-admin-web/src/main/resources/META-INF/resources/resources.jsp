@@ -1,23 +1,18 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
+<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
+<liferay-ui:error exception="<%= CaptchaException.class %>" message="captcha-verification-failed" />
+<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
+
 <%
-String[] installedPatches = PatcherUtil.getInstalledPatches();
+String[] installedPatches = PatcherValues.INSTALLED_PATCH_NAMES;
 
 Date modifiedDate = PortalUtil.getUptime();
 
@@ -35,13 +30,9 @@ long totalMemory = runtime.totalMemory();
 long usedMemory = totalMemory - runtime.freeMemory();
 %>
 
-<liferay-ui:panel-container
-	extended="<%= true %>"
-	id="adminServerAdministrationActionsPanelContainer"
-	persistState="<%= true %>"
->
-	<div class="panel panel-secondary server-admin-tabs" id="adminServerInformationPanel">
-		<div class="panel-body">
+<div class="sheet">
+	<div class="panel-group panel-group-flush">
+		<aui:fieldset>
 			<div class="alert alert-info">
 				<strong><liferay-ui:message key="info" /></strong>: <%= ReleaseInfo.getReleaseInfo() %>
 				<c:if test="<%= (installedPatches != null) && (installedPatches.length > 0) %>">
@@ -51,7 +42,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 				<strong><liferay-ui:message key="uptime" /></strong>:
 
 				<c:if test="<%= days > 0 %>">
-					<%= days %> <%= LanguageUtil.get(request, ((days > 1) ? "days" : "day")) %>,
+					<%= days %> <liferay-ui:message key='<%= (days > 1) ? "days" : "day" %>' />,
 				</c:if>
 
 				<%
@@ -91,7 +82,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 			<table class="lfr-table memory-status-table">
 				<tr>
 					<td>
-						<h4 class="float-right"><liferay-ui:message key="used-memory" /></h4>
+						<span class="font-weight-semi-bold"><liferay-ui:message key="used-memory" /></span>
 					</td>
 					<td>
 						<span class="text-muted"><%= basicNumberFormat.format(usedMemory) %> <liferay-ui:message key="bytes" /></span>
@@ -99,7 +90,7 @@ long usedMemory = totalMemory - runtime.freeMemory();
 				</tr>
 				<tr>
 					<td>
-						<h4 class="float-right"><liferay-ui:message key="total-memory" /></h4>
+						<span class="font-weight-semi-bold"><liferay-ui:message key="total-memory" /></span>
 					</td>
 					<td>
 						<span class="text-muted"><%= basicNumberFormat.format(runtime.totalMemory()) %> <liferay-ui:message key="bytes" /></span>
@@ -107,175 +98,294 @@ long usedMemory = totalMemory - runtime.freeMemory();
 				</tr>
 				<tr>
 					<td>
-						<h4 class="float-right"><liferay-ui:message key="maximum-memory" /></h4>
+						<span class="font-weight-semi-bold"><liferay-ui:message key="maximum-memory" /></span>
 					</td>
 					<td>
 						<span class="text-muted"><%= basicNumberFormat.format(runtime.maxMemory()) %> <liferay-ui:message key="bytes" /></span>
 					</td>
 				</tr>
 			</table>
+		</aui:fieldset>
 
-			<br />
-		</div>
+		<liferay-captcha:captcha />
+
+		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="system-actions">
+			<ul class="list-group system-action-group">
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="run-the-garbage-collector-to-free-up-memory" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="gc" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="generate-thread-dump" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="threadDump" value="execute" />
+					</div>
+				</li>
+			</ul>
+		</aui:fieldset>
+
+		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="cache-actions">
+			<ul class="list-group system-action-group">
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clear-content-cached-by-this-vm" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cacheSingle" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clear-content-cached-across-the-cluster" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cacheMulti" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clear-the-database-cache" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cacheDb" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clear-the-direct-servlet-cache" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cacheServlet" value="execute" />
+					</div>
+				</li>
+			</ul>
+		</aui:fieldset>
+
+		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="verification-actions">
+			<ul class="list-group system-action-group">
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="verify-membership-policies" />
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="verifyMembershipPolicies" value="execute" />
+					</div>
+				</li>
+			</ul>
+		</aui:fieldset>
+
+		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="clean-up-actions">
+			<ul class="list-group system-action-group">
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="reset-preview-and-thumbnail-files-for-documents-and-media" />
+
+							<span aria-label="<%= LanguageUtil.get(request, "reset-preview-and-thumbnail-files-for-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "reset-preview-and-thumbnail-files-for-documents-and-media-help") %>">
+								<clay:icon
+									symbol="question-circle-full"
+								/>
+							</span>
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="dlDeletePreviews" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clean-up-permissions" />
+
+							<span aria-label="<%= LanguageUtil.get(request, "clean-up-permissions-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-permissions-help") %>">
+								<clay:icon
+									symbol="question-circle-full"
+								/>
+							</span>
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cleanUpAddToPagePermissions" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clean-up-orphaned-page-revision-portlet-preferences" />
+
+							<span aria-label="<%= LanguageUtil.get(request, "clean-up-orphaned-page-revision-portlet-preferences-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-orphaned-page-revision-portlet-preferences-help") %>">
+								<clay:icon
+									symbol="question-circle-full"
+								/>
+							</span>
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cleanUpLayoutRevisionPortletPreferences" value="execute" />
+					</div>
+				</li>
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="clean-up-orphaned-theme-portlet-preferences" />
+
+							<span aria-label="<%= LanguageUtil.get(request, "clean-up-orphaned-theme-portlet-preferences-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "clean-up-orphaned-theme-portlet-preferences-help") %>">
+								<clay:icon
+									symbol="question-circle-full"
+								/>
+							</span>
+						</p>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="cleanUpOrphanedPortletPreferences" value="execute" />
+					</div>
+				</li>
+			</ul>
+		</aui:fieldset>
+
+		<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="regeneration-actions">
+			<ul class="list-group system-action-group">
+				<c:if test="<%= (audioConverter != null) && audioConverter.isEnabled() %>">
+					<li class="list-group-item list-group-item-flex">
+						<div class="autofit-col autofit-col-expand">
+							<p class="list-group-title text-truncate">
+								<liferay-ui:message key="regenerate-preview-of-audio-files-in-documents-and-media" />
+
+								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-of-audio-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-of-audio-files-in-documents-and-media-help") %>">
+									<clay:icon
+										symbol="question-circle-full"
+									/>
+								</span>
+							</p>
+						</div>
+
+						<%
+						List<BackgroundTask> audioPreviewBackgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasks(CompanyConstants.SYSTEM, "com.liferay.document.library.preview.audio.internal.background.task.AudioPreviewBackgroundTaskExecutor", BackgroundTaskConstants.STATUS_IN_PROGRESS);
+						%>
+
+						<div class="autofit-col">
+							<span class="<%= (audioPreviewBackgroundTasks.size() > 0) ? StringPool.BLANK : "hide" %> loading-animation loading-animation-sm"></span>
+						</div>
+
+						<div class="autofit-col">
+							<aui:button cssClass="save-server-button" data-cmd="dlGenerateAudioPreviews" disabled="<%= (audioPreviewBackgroundTasks.size() > 0) ? true : false %>" value="execute" />
+						</div>
+					</li>
+				</c:if>
+
+				<c:if test="<%= DocumentConversionUtil.isEnabled() %>">
+					<li class="list-group-item list-group-item-flex">
+						<div class="autofit-col autofit-col-expand">
+							<p class="list-group-title text-truncate">
+								<liferay-ui:message key="regenerate-preview-and-thumbnail-of-openoffice-files-in-documents-and-media" />
+
+								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-openoffice-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>">
+									<clay:icon
+										symbol="question-circle-full"
+									/>
+								</span>
+							</p>
+						</div>
+
+						<%
+						List<BackgroundTask> openOfficeConversionPreviewBackgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasks(CompanyConstants.SYSTEM, "com.liferay.document.library.document.conversion.internal.background.task.OpenOfficeConversionPreviewBackgroundTaskExecutor", BackgroundTaskConstants.STATUS_IN_PROGRESS);
+						%>
+
+						<div class="autofit-col">
+							<span class="<%= (openOfficeConversionPreviewBackgroundTasks.size() > 0) ? StringPool.BLANK : "hide" %> loading-animation loading-animation-sm"></span>
+						</div>
+
+						<div class="autofit-col">
+							<aui:button cssClass="save-server-button" data-cmd="dlGenerateOpenOfficePreviews" disabled="<%= (openOfficeConversionPreviewBackgroundTasks.size() > 0) ? true : false %>" value="execute" />
+						</div>
+					</li>
+				</c:if>
+
+				<li class="list-group-item list-group-item-flex">
+					<div class="autofit-col autofit-col-expand">
+						<p class="list-group-title text-truncate">
+							<liferay-ui:message key="regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media" />
+
+							<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-pdf-files-in-documents-and-media-help") %>">
+								<clay:icon
+									symbol="question-circle-full"
+								/>
+							</span>
+						</p>
+					</div>
+
+					<%
+					List<BackgroundTask> pdfPreviewBackgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasks(CompanyConstants.SYSTEM, "com.liferay.document.library.preview.pdf.internal.background.task.PDFPreviewBackgroundTaskExecutor", BackgroundTaskConstants.STATUS_IN_PROGRESS);
+					%>
+
+					<div class="autofit-col">
+						<span class="<%= (pdfPreviewBackgroundTasks.size() > 0) ? StringPool.BLANK : "hide" %> loading-animation loading-animation-sm"></span>
+					</div>
+
+					<div class="autofit-col">
+						<aui:button cssClass="save-server-button" data-cmd="dlGeneratePDFPreviews" disabled="<%= (pdfPreviewBackgroundTasks.size() > 0) ? true : false %>" value="execute" />
+					</div>
+				</li>
+
+				<c:if test="<%= (videoConverter != null) && videoConverter.isEnabled() %>">
+					<li class="list-group-item list-group-item-flex">
+						<div class="autofit-col autofit-col-expand">
+							<p class="list-group-title text-truncate">
+								<liferay-ui:message key="regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media" />
+
+								<span aria-label="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media-help") %>" class="lfr-portal-tooltip" tabindex="0" title="<%= LanguageUtil.get(request, "regenerate-preview-and-thumbnail-of-video-files-in-documents-and-media-help") %>">
+									<clay:icon
+										symbol="question-circle-full"
+									/>
+								</span>
+							</p>
+						</div>
+
+						<%
+						List<BackgroundTask> videoPreviewBackgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasks(CompanyConstants.SYSTEM, "com.liferay.document.library.preview.video.internal.background.task.VideoPreviewBackgroundTaskExecutor", BackgroundTaskConstants.STATUS_IN_PROGRESS);
+						%>
+
+						<div class="autofit-col">
+							<span class="<%= (videoPreviewBackgroundTasks.size() > 0) ? StringPool.BLANK : "hide" %> loading-animation loading-animation-sm"></span>
+						</div>
+
+						<div class="autofit-col">
+							<aui:button cssClass="save-server-button" data-cmd="dlGenerateVideoPreviews" disabled="<%= (videoPreviewBackgroundTasks.size() > 0) ? true : false %>" value="execute" />
+						</div>
+					</li>
+				</c:if>
+			</ul>
+		</aui:fieldset>
 	</div>
-
-	<liferay-ui:panel
-		collapsible="<%= true %>"
-		cssClass="panel-secondary server-admin-actions-panel"
-		extended="<%= true %>"
-		id="adminServerAdministrationSystemActionsPanel"
-		markupView="lexicon"
-		persistState="<%= true %>"
-		title="system-actions"
-	>
-		<ul class="list-group system-action-group">
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="run-the-garbage-collector-to-free-up-memory" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="gc" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="generate-thread-dump" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="threadDump" value="execute" />
-				</div>
-			</li>
-		</ul>
-	</liferay-ui:panel>
-
-	<liferay-ui:panel
-		collapsible="<%= true %>"
-		cssClass="panel-secondary server-admin-actions-panel"
-		extended="<%= true %>"
-		id="adminServerAdministrationCacheActionsPanel"
-		markupView="lexicon"
-		persistState="<%= true %>"
-		title="cache-actions"
-	>
-		<ul class="list-group system-action-group">
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clear-content-cached-by-this-vm" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cacheSingle" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clear-content-cached-across-the-cluster" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cacheMulti" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clear-the-database-cache" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cacheDb" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clear-the-direct-servlet-cache" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cacheServlet" value="execute" />
-				</div>
-			</li>
-		</ul>
-	</liferay-ui:panel>
-
-	<liferay-ui:panel
-		collapsible="<%= true %>"
-		cssClass="panel-secondary server-admin-actions-panel"
-		extended="<%= true %>"
-		id="adminServerAdministrationVerificationActionsPanel"
-		markupView="lexicon"
-		persistState="<%= true %>"
-		title="verification-actions"
-	>
-		<ul class="list-group system-action-group">
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="verify-database-tables-of-all-plugins" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="verifyPluginTables" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="verify-membership-policies" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="verifyMembershipPolicies" value="execute" />
-				</div>
-			</li>
-		</ul>
-	</liferay-ui:panel>
-
-	<liferay-ui:panel
-		collapsible="<%= true %>"
-		cssClass="panel-secondary server-admin-actions-panel"
-		extended="<%= true %>"
-		id="adminServerAdministrationCleanUpActionsPanel"
-		markupView="lexicon"
-		persistState="<%= true %>"
-		title="clean-up-actions"
-	>
-		<ul class="list-group system-action-group">
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="reset-preview-and-thumbnail-files-for-documents-and-media" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="dlPreviews" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clean-up-permissions" /> <liferay-ui:icon-help message="clean-up-permissions-help" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cleanUpAddToPagePermissions" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clean-up-orphaned-page-revision-portlet-preferences" /> <liferay-ui:icon-help message="clean-up-orphaned-page-revision-portlet-preferences-help" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cleanUpLayoutRevisionPortletPreferences" value="execute" />
-				</div>
-			</li>
-			<li class="clearfix list-group-item">
-				<div class="float-left">
-					<h5><liferay-ui:message key="clean-up-orphaned-theme-portlet-preferences" /> <liferay-ui:icon-help message="clean-up-orphaned-theme-portlet-preferences-help" /></h5>
-				</div>
-
-				<div class="float-right">
-					<aui:button cssClass="save-server-button" data-cmd="cleanUpOrphanedPortletPreferences" value="execute" />
-				</div>
-			</li>
-		</ul>
-	</liferay-ui:panel>
-</liferay-ui:panel-container>
+</div>

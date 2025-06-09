@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
+
+import java.util.Date;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -30,7 +23,8 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @ProviderType
-public interface ListTypeModel extends BaseModel<ListType>, MVCCModel {
+public interface ListTypeModel
+	extends BaseModel<ListType>, MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -69,6 +63,23 @@ public interface ListTypeModel extends BaseModel<ListType>, MVCCModel {
 	public void setMvccVersion(long mvccVersion);
 
 	/**
+	 * Returns the uuid of this list type.
+	 *
+	 * @return the uuid of this list type
+	 */
+	@AutoEscape
+	@Override
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this list type.
+	 *
+	 * @param uuid the uuid of this list type
+	 */
+	@Override
+	public void setUuid(String uuid);
+
+	/**
 	 * Returns the list type ID of this list type.
 	 *
 	 * @return the list type ID of this list type
@@ -81,6 +92,103 @@ public interface ListTypeModel extends BaseModel<ListType>, MVCCModel {
 	 * @param listTypeId the list type ID of this list type
 	 */
 	public void setListTypeId(long listTypeId);
+
+	/**
+	 * Returns the company ID of this list type.
+	 *
+	 * @return the company ID of this list type
+	 */
+	@Override
+	public long getCompanyId();
+
+	/**
+	 * Sets the company ID of this list type.
+	 *
+	 * @param companyId the company ID of this list type
+	 */
+	@Override
+	public void setCompanyId(long companyId);
+
+	/**
+	 * Returns the user ID of this list type.
+	 *
+	 * @return the user ID of this list type
+	 */
+	@Override
+	public long getUserId();
+
+	/**
+	 * Sets the user ID of this list type.
+	 *
+	 * @param userId the user ID of this list type
+	 */
+	@Override
+	public void setUserId(long userId);
+
+	/**
+	 * Returns the user uuid of this list type.
+	 *
+	 * @return the user uuid of this list type
+	 */
+	@Override
+	public String getUserUuid();
+
+	/**
+	 * Sets the user uuid of this list type.
+	 *
+	 * @param userUuid the user uuid of this list type
+	 */
+	@Override
+	public void setUserUuid(String userUuid);
+
+	/**
+	 * Returns the user name of this list type.
+	 *
+	 * @return the user name of this list type
+	 */
+	@AutoEscape
+	@Override
+	public String getUserName();
+
+	/**
+	 * Sets the user name of this list type.
+	 *
+	 * @param userName the user name of this list type
+	 */
+	@Override
+	public void setUserName(String userName);
+
+	/**
+	 * Returns the create date of this list type.
+	 *
+	 * @return the create date of this list type
+	 */
+	@Override
+	public Date getCreateDate();
+
+	/**
+	 * Sets the create date of this list type.
+	 *
+	 * @param createDate the create date of this list type
+	 */
+	@Override
+	public void setCreateDate(Date createDate);
+
+	/**
+	 * Returns the modified date of this list type.
+	 *
+	 * @return the modified date of this list type
+	 */
+	@Override
+	public Date getModifiedDate();
+
+	/**
+	 * Sets the modified date of this list type.
+	 *
+	 * @param modifiedDate the modified date of this list type
+	 */
+	@Override
+	public void setModifiedDate(Date modifiedDate);
 
 	/**
 	 * Returns the name of this list type.
@@ -114,5 +222,9 @@ public interface ListTypeModel extends BaseModel<ListType>, MVCCModel {
 
 	@Override
 	public ListType cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

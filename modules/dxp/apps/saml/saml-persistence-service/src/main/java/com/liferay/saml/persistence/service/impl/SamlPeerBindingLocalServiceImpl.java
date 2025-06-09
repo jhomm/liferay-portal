@@ -1,26 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service.impl;
 
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
 import com.liferay.saml.persistence.service.base.SamlPeerBindingLocalServiceBaseImpl;
 
+import java.util.List;
+import java.util.Objects;
+
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Mika Koivisto
@@ -32,6 +31,7 @@ import org.osgi.service.component.annotations.Component;
 public class SamlPeerBindingLocalServiceImpl
 	extends SamlPeerBindingLocalServiceBaseImpl {
 
+	@Override
 	public SamlPeerBinding addSamlPeerBinding(
 			long userId, String samlNameIdFormat,
 			String samlNameIdNameQualifier, String samlNameIdSpNameQualifier,
@@ -39,7 +39,7 @@ public class SamlPeerBindingLocalServiceImpl
 			String samlPeerEntityId)
 		throws PortalException {
 
-		User user = userLocalService.getUserById(userId);
+		User user = _userLocalService.getUserById(userId);
 
 		SamlPeerBinding samlPeerBinding = samlPeerBindingPersistence.create(
 			counterLocalService.increment(SamlPeerBinding.class.getName()));
@@ -48,6 +48,7 @@ public class SamlPeerBindingLocalServiceImpl
 		samlPeerBinding.setUserId(user.getUserId());
 		samlPeerBinding.setUserName(user.getFullName());
 		samlPeerBinding.setSamlNameIdFormat(samlNameIdFormat);
+		samlPeerBinding.setSamlNameIdNameQualifier(samlNameIdNameQualifier);
 		samlPeerBinding.setSamlNameIdSpNameQualifier(samlNameIdSpNameQualifier);
 		samlPeerBinding.setSamlNameIdSpProvidedId(samlNameIdSpProvidedId);
 		samlPeerBinding.setSamlNameIdValue(samlNameIdValue);
@@ -56,13 +57,73 @@ public class SamlPeerBindingLocalServiceImpl
 		return samlPeerBindingPersistence.update(samlPeerBinding);
 	}
 
+	@Override
 	public SamlPeerBinding fetchSamlPeerBinding(
-		long companyId, String samlNameIdFormat, String samlNameIdNameQualifier,
-		String samlNameIdValue, String samlSpEntityId) {
+		long companyId, boolean deleted, String samlNameIdFormat,
+		String samlNameIdNameQualifier, String samlNameIdValue,
+		String samlPeerEntityId) {
 
-		return samlPeerBindingPersistence.fetchByC_D_SNIF_SNINQ_SNIV_SPEI_First(
-			companyId, false, samlNameIdFormat, samlNameIdNameQualifier,
-			samlNameIdValue, samlSpEntityId, null);
+		List<SamlPeerBinding> samlPeerBindings = getSamlPeerBindings(
+			companyId, deleted, samlNameIdFormat, samlNameIdNameQualifier,
+			samlNameIdValue, samlPeerEntityId);
+
+		if (!samlPeerBindings.isEmpty()) {
+			return samlPeerBindings.get(0);
+		}
+
+		return null;
 	}
+
+	@Override
+	public List<SamlPeerBinding> getSamlPeerBindings(
+		long companyId, boolean deleted, String samlNameIdFormat,
+		String samlNameIdNameQualifier, String samlNameIdValue,
+		String samlPeerEntityId) {
+
+		List<SamlPeerBinding> samlPeerBindings =
+			samlPeerBindingPersistence.findByC_D_SNIV(
+				companyId, deleted, samlNameIdValue, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null);
+
+		return ListUtil.filter(
+			samlPeerBindings,
+			samlPeerBinding ->
+				Objects.equals(
+					GetterUtil.getString(samlNameIdFormat),
+					samlPeerBinding.getSamlNameIdFormat()) &&
+				Objects.equals(
+					GetterUtil.getString(samlNameIdNameQualifier),
+					samlPeerBinding.getSamlNameIdNameQualifier()) &&
+				Objects.equals(
+					GetterUtil.getString(samlPeerEntityId),
+					samlPeerBinding.getSamlPeerEntityId()));
+	}
+
+	@Override
+	public List<SamlPeerBinding> getUserSamlPeerBindings(
+			long userId, boolean deleted, String samlNameIdFormat,
+			String samlNameIdNameQualifier, String samlPeerEntityId)
+		throws PortalException {
+
+		User user = _userLocalService.getUserById(userId);
+
+		List<SamlPeerBinding> samlPeerBindings =
+			samlPeerBindingPersistence.findByC_U_D_SPEI(
+				user.getCompanyId(), userId, deleted, samlPeerEntityId,
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		return ListUtil.filter(
+			samlPeerBindings,
+			samlPeerBinding ->
+				Objects.equals(
+					GetterUtil.getString(samlNameIdFormat),
+					samlPeerBinding.getSamlNameIdFormat()) &&
+				Objects.equals(
+					GetterUtil.getString(samlNameIdNameQualifier),
+					samlPeerBinding.getSamlNameIdNameQualifier()));
+	}
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -59,24 +50,24 @@ public class AssetEntryLocalServiceUtil {
 		return getService().addAssetEntry(assetEntry);
 	}
 
-	public static void addAssetTagAssetEntries(
+	public static boolean addAssetTagAssetEntries(
 		long tagId, List<AssetEntry> assetEntries) {
 
-		getService().addAssetTagAssetEntries(tagId, assetEntries);
+		return getService().addAssetTagAssetEntries(tagId, assetEntries);
 	}
 
-	public static void addAssetTagAssetEntries(long tagId, long[] entryIds) {
-		getService().addAssetTagAssetEntries(tagId, entryIds);
+	public static boolean addAssetTagAssetEntries(long tagId, long[] entryIds) {
+		return getService().addAssetTagAssetEntries(tagId, entryIds);
 	}
 
-	public static void addAssetTagAssetEntry(
+	public static boolean addAssetTagAssetEntry(
 		long tagId, AssetEntry assetEntry) {
 
-		getService().addAssetTagAssetEntry(tagId, assetEntry);
+		return getService().addAssetTagAssetEntry(tagId, assetEntry);
 	}
 
-	public static void addAssetTagAssetEntry(long tagId, long entryId) {
-		getService().addAssetTagAssetEntry(tagId, entryId);
+	public static boolean addAssetTagAssetEntry(long tagId, long entryId) {
+		return getService().addAssetTagAssetEntry(tagId, entryId);
 	}
 
 	public static void clearAssetTagAssetEntries(long tagId) {
@@ -154,18 +145,26 @@ public class AssetEntryLocalServiceUtil {
 		getService().deleteAssetTagAssetEntry(tagId, entryId);
 	}
 
-	public static void deleteEntry(AssetEntry entry) throws PortalException {
-		getService().deleteEntry(entry);
-	}
-
-	public static void deleteEntry(long entryId) throws PortalException {
-		getService().deleteEntry(entryId);
-	}
-
-	public static void deleteEntry(String className, long classPK)
+	public static void deleteEntries(long companyId, String className)
 		throws PortalException {
 
-		getService().deleteEntry(className, classPK);
+		getService().deleteEntries(companyId, className);
+	}
+
+	public static AssetEntry deleteEntry(AssetEntry entry)
+		throws PortalException {
+
+		return getService().deleteEntry(entry);
+	}
+
+	public static AssetEntry deleteEntry(long entryId) throws PortalException {
+		return getService().deleteEntry(entryId);
+	}
+
+	public static AssetEntry deleteEntry(String className, long classPK)
+		throws PortalException {
+
+		return getService().deleteEntry(className, classPK);
 	}
 
 	public static void deleteGroupEntries(long groupId) throws PortalException {
@@ -293,12 +292,6 @@ public class AssetEntryLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
-	public static List<AssetEntry> getAncestorEntries(long entryId)
-		throws PortalException {
-
-		return getService().getAncestorEntries(entryId);
-	}
-
 	/**
 	 * Returns a range of all the asset entries.
 	 *
@@ -366,12 +359,6 @@ public class AssetEntryLocalServiceUtil {
 	 */
 	public static long[] getAssetTagPrimaryKeys(long entryId) {
 		return getService().getAssetTagPrimaryKeys(entryId);
-	}
-
-	public static List<AssetEntry> getChildEntries(long entryId)
-		throws PortalException {
-
-		return getService().getChildEntries(entryId);
 	}
 
 	public static List<AssetEntry> getCompanyEntries(
@@ -479,10 +466,6 @@ public class AssetEntryLocalServiceUtil {
 		return getService().getIndexableActionableDynamicQuery();
 	}
 
-	public static AssetEntry getNextEntry(long entryId) throws PortalException {
-		return getService().getNextEntry(entryId);
-	}
-
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -492,12 +475,6 @@ public class AssetEntryLocalServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	public static AssetEntry getParentEntry(long entryId)
-		throws PortalException {
-
-		return getService().getParentEntry(entryId);
-	}
-
 	/**
 	 * @throws PortalException
 	 */
@@ -505,12 +482,6 @@ public class AssetEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
-	}
-
-	public static AssetEntry getPreviousEntry(long entryId)
-		throws PortalException {
-
-		return getService().getPreviousEntry(entryId);
 	}
 
 	public static List<AssetEntry> getTopViewedEntries(
@@ -763,6 +734,27 @@ public class AssetEntryLocalServiceUtil {
 	}
 
 	public static AssetEntry updateEntry(
+			long userId, long groupId, java.util.Date createDate,
+			java.util.Date modifiedDate, String className, long classPK,
+			String classUuid, long classTypeId, long[] categoryIds,
+			String[] tagNames, boolean listable, boolean visible,
+			java.util.Date startDate, java.util.Date endDate,
+			java.util.Date publishDate, java.util.Date expirationDate,
+			String mimeType, String title, String description, String summary,
+			String url, String layoutUuid, int height, int width,
+			Double priority,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateEntry(
+			userId, groupId, createDate, modifiedDate, className, classPK,
+			classUuid, classTypeId, categoryIds, tagNames, listable, visible,
+			startDate, endDate, publishDate, expirationDate, mimeType, title,
+			description, summary, url, layoutUuid, height, width, priority,
+			serviceContext);
+	}
+
+	public static AssetEntry updateEntry(
 			long userId, long groupId, String className, long classPK,
 			long[] categoryIds, String[] tagNames)
 		throws PortalException {
@@ -813,6 +805,10 @@ public class AssetEntryLocalServiceUtil {
 
 	public static AssetEntryLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(AssetEntryLocalService service) {
+		_service = service;
 	}
 
 	private static volatile AssetEntryLocalService _service;

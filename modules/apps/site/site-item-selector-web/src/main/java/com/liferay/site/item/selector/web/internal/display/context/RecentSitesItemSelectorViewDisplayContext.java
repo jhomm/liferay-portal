@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.item.selector.web.internal.display.context;
@@ -20,16 +11,15 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
 import com.liferay.site.item.selector.display.context.SitesItemSelectorViewDisplayContext;
-import com.liferay.site.util.RecentGroupManager;
+import com.liferay.site.manager.RecentGroupManager;
+import com.liferay.site.search.GroupSearch;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -73,15 +63,15 @@ public class RecentSitesItemSelectorViewDisplayContext
 		groupSearch.setEmptyResultsMessage(
 			"you-have-not-visited-any-sites-recently");
 
-		List<Group> results = _recentGroupManager.getRecentGroups(
-			httpServletRequest);
+		GroupItemSelectorCriterion groupItemSelectorCriterion =
+			getGroupItemSelectorCriterion();
 
-		groupSearch.setTotal(results.size());
-
-		results = ListUtil.subList(
-			results, groupSearch.getStart(), groupSearch.getEnd());
-
-		groupSearch.setResults(results);
+		groupSearch.setResultsAndTotal(
+			ListUtil.filter(
+				_recentGroupManager.getRecentGroups(httpServletRequest),
+				group -> !ArrayUtil.contains(
+					groupItemSelectorCriterion.getExcludedGroupIds(),
+					group.getGroupId())));
 
 		return groupSearch;
 	}

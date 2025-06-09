@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.util;
 
 import com.liferay.message.boards.constants.MBMessageConstants;
 import com.liferay.message.boards.model.MBMessage;
-import com.liferay.petra.mail.JavaMailUtil;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -32,13 +25,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
 
-import java.io.InputStream;
+import jakarta.mail.BodyPart;
+import jakarta.mail.Message;
+import jakarta.mail.Part;
+import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 
-import javax.mail.BodyPart;
-import javax.mail.Message;
-import javax.mail.Part;
-import javax.mail.internet.MimeMessage;
-import javax.mail.internet.MimeMultipart;
+import java.io.InputStream;
 
 /**
  * @author Sergio González
@@ -52,8 +45,6 @@ public class MBMailUtil {
 		throws Exception {
 
 		Object partContent = _getPartContent(part);
-
-		String contentType = StringUtil.toLowerCase(part.getContentType());
 
 		if ((part.getDisposition() != null) &&
 			StringUtil.equalsIgnoreCase(
@@ -71,7 +62,7 @@ public class MBMailUtil {
 				bytes = s.getBytes();
 			}
 			else if (partContent instanceof InputStream) {
-				bytes = JavaMailUtil.getBytes(part);
+				bytes = StreamUtil.toByteArray(part.getInputStream());
 			}
 
 			mbMailMessage.addBytes(part.getFileName(), bytes);
@@ -87,6 +78,9 @@ public class MBMailUtil {
 				}
 			}
 			else if (partContent instanceof String) {
+				String contentType = StringUtil.toLowerCase(
+					part.getContentType());
+
 				String messageBody = SanitizerUtil.sanitize(
 					0, 0, 0, MBMessage.class.getName(), 0, contentType,
 					Sanitizer.MODE_ALL, (String)partContent,
@@ -284,17 +278,10 @@ public class MBMailUtil {
 
 		// See LPS-56173
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader classLoader = currentThread.getContextClassLoader();
-
-		try {
-			currentThread.setContextClassLoader(Part.class.getClassLoader());
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				Part.class.getClassLoader())) {
 
 			return part.getContent();
-		}
-		finally {
-			currentThread.setContextClassLoader(classLoader);
 		}
 	}
 

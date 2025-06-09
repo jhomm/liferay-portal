@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.token.definition.internal.json;
@@ -46,44 +37,42 @@ public class JSONLocalizer {
 		String json, JSONFactory jsonFactory,
 		ResourceBundleLoader resourceBundleLoader, String themeId) {
 
-		_json = json;
+		try {
+			JSONObject jsonObject = jsonFactory.createJSONObject(json);
+
+			_jsonMap = jsonObject.toMap();
+		}
+		catch (JSONException jsonException) {
+			throw new RuntimeException(jsonException);
+		}
+
 		_jsonFactory = jsonFactory;
 		_resourceBundleLoader = resourceBundleLoader;
 		_themeId = themeId;
 	}
 
 	/**
-	 * Get a translated JSON
-	 * @param locale the target locale or null to get the untranslated JSON
-	 * @return the translated JSON
+	 * Get a JSONObject
+	 * @param locale the target locale or null to get the default JSONObject
+	 * @return the JSONObject that created with the translated JSON
 	 */
-	public String getJSON(Locale locale) {
+	public JSONObject getJSONObject(Locale locale) {
 		if ((_resourceBundleLoader == null) || (locale == null)) {
-			return _json;
+			return _jsonFactory.createJSONObject(_jsonMap);
 		}
 
-		String json = _jsons.get(locale);
+		Map<?, ?> jsonMap = _jsonMaps.computeIfAbsent(
+			locale,
+			key -> {
+				JSONObject newJSONObject = _jsonFactory.createJSONObject(
+					_jsonMap);
 
-		if (json == null) {
-			try {
-				JSONObject jsonObject = _jsonFactory.createJSONObject(_json);
+				_localize(newJSONObject, locale);
 
-				_localize(jsonObject, locale);
+				return newJSONObject.toMap();
+			});
 
-				json = _jsonFactory.looseSerializeDeep(jsonObject);
-			}
-			catch (JSONException jsonException) {
-				_log.error(
-					"Unable to parse JSON for theme " + _themeId,
-					jsonException);
-
-				json = _json;
-			}
-
-			_jsons.put(locale, json);
-		}
-
-		return json;
+		return _jsonFactory.createJSONObject(jsonMap);
 	}
 
 	private void _localize(JSONObject jsonObject, Locale locale) {
@@ -154,9 +143,9 @@ public class JSONLocalizer {
 	private static final Set<String> _localizableKeys = new HashSet<>(
 		Arrays.asList("label"));
 
-	private final String _json;
 	private final JSONFactory _jsonFactory;
-	private final Map<Locale, String> _jsons = new ConcurrentHashMap<>();
+	private final Map<?, ?> _jsonMap;
+	private final Map<Locale, Map<?, ?>> _jsonMaps = new ConcurrentHashMap<>();
 	private final ResourceBundleLoader _resourceBundleLoader;
 	private final String _themeId;
 

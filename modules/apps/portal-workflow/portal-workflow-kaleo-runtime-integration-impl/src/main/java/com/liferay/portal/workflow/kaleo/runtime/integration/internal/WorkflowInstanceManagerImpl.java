@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.runtime.integration.internal;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -22,6 +14,7 @@ import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowInstance;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManager;
+import com.liferay.portal.kernel.workflow.WorkflowTransition;
 import com.liferay.portal.kernel.workflow.search.WorkflowModelSearchResult;
 import com.liferay.portal.lock.service.LockLocalService;
 import com.liferay.portal.workflow.kaleo.runtime.WorkflowEngine;
@@ -39,10 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  * @author Marcellus Tavares
  */
-@Component(
-	immediate = true, property = "proxy.bean=false",
-	service = WorkflowInstanceManager.class
-)
+@Component(service = WorkflowInstanceManager.class)
 public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 
 	@Override
@@ -62,13 +52,23 @@ public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 			long companyId, long userId, long workflowInstanceId)
 		throws WorkflowException {
 
+		return TransformUtil.transform(
+			getNextWorkflowTransitions(companyId, userId, workflowInstanceId),
+			WorkflowTransition::getName);
+	}
+
+	@Override
+	public List<WorkflowTransition> getNextWorkflowTransitions(
+			long companyId, long userId, long workflowInstanceId)
+		throws WorkflowException {
+
 		try {
 			ServiceContext serviceContext = new ServiceContext();
 
 			serviceContext.setCompanyId(companyId);
 			serviceContext.setUserId(userId);
 
-			return _workflowEngine.getNextTransitionNames(
+			return _workflowEngine.getNextWorkflowTransitions(
 				workflowInstanceId, serviceContext);
 		}
 		catch (WorkflowException workflowException) {
@@ -199,7 +199,7 @@ public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 
 	@Override
 	public List<WorkflowInstance> search(
-			long companyId, Long userId, String assetClassName,
+			long companyId, Long userId, Boolean active, String assetClassName,
 			String assetTitle, String assetDescription, String nodeName,
 			String kaleoDefinitionName, Boolean completed, int start, int end,
 			OrderByComparator<WorkflowInstance> orderByComparator)
@@ -210,14 +210,14 @@ public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 		serviceContext.setCompanyId(companyId);
 
 		return _workflowEngine.search(
-			userId, assetClassName, assetTitle, assetDescription, nodeName,
-			kaleoDefinitionName, completed, start, end, orderByComparator,
-			serviceContext);
+			userId, active, assetClassName, assetTitle, assetDescription,
+			nodeName, kaleoDefinitionName, completed, start, end,
+			orderByComparator, serviceContext);
 	}
 
 	@Override
 	public int searchCount(
-			long companyId, Long userId, String assetClassName,
+			long companyId, Long userId, Boolean active, String assetClassName,
 			String assetTitle, String assetDescription, String nodeName,
 			String kaleoDefinitionName, Boolean completed)
 		throws WorkflowException {
@@ -227,13 +227,13 @@ public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 		serviceContext.setCompanyId(companyId);
 
 		return _workflowEngine.searchCount(
-			userId, assetClassName, assetTitle, assetDescription, nodeName,
-			kaleoDefinitionName, completed, serviceContext);
+			userId, active, assetClassName, assetTitle, assetDescription,
+			nodeName, kaleoDefinitionName, completed, serviceContext);
 	}
 
 	@Override
 	public WorkflowModelSearchResult<WorkflowInstance> searchWorkflowInstances(
-			long companyId, Long userId, String assetClassName,
+			long companyId, Long userId, Boolean active, String assetClassName,
 			String assetTitle, String assetDescription, String nodeName,
 			String kaleoDefinitionName, Boolean completed,
 			boolean searchByActiveWorkflowHandlers, int start, int end,
@@ -245,9 +245,10 @@ public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 		serviceContext.setCompanyId(companyId);
 
 		return _workflowEngine.searchWorkflowInstances(
-			userId, assetClassName, assetTitle, assetDescription, nodeName,
-			kaleoDefinitionName, completed, searchByActiveWorkflowHandlers,
-			start, end, orderByComparator, serviceContext);
+			userId, active, assetClassName, assetTitle, assetDescription,
+			nodeName, kaleoDefinitionName, completed,
+			searchByActiveWorkflowHandlers, start, end, orderByComparator,
+			serviceContext);
 	}
 
 	@Override
@@ -320,6 +321,16 @@ public class WorkflowInstanceManagerImpl implements WorkflowInstanceManager {
 		return _workflowEngine.startWorkflowInstance(
 			workflowDefinitionName, workflowDefinitionVersion, transitionName,
 			workflowContext, serviceContext, waitForCompletion);
+	}
+
+	@Override
+	public WorkflowInstance updateActive(
+			long userId, long companyId, long workflowInstanceId,
+			boolean active)
+		throws WorkflowException {
+
+		return _workflowEngine.updateWorkflowInstanceActive(
+			userId, companyId, workflowInstanceId, active);
 	}
 
 	@Override

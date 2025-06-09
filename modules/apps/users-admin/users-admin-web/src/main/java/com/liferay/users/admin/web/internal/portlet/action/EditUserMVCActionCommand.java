@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.portlet.action;
@@ -18,7 +9,6 @@ import com.liferay.announcements.kernel.model.AnnouncementsDelivery;
 import com.liferay.asset.kernel.exception.AssetCategoryException;
 import com.liferay.asset.kernel.exception.AssetTagException;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
@@ -26,16 +16,17 @@ import com.liferay.portal.kernel.exception.CompanyMaxUsersException;
 import com.liferay.portal.kernel.exception.ContactBirthdayException;
 import com.liferay.portal.kernel.exception.ContactNameException;
 import com.liferay.portal.kernel.exception.GroupFriendlyURLException;
+import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.NoSuchListTypeException;
 import com.liferay.portal.kernel.exception.NoSuchUserException;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredUserException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.exception.UserFieldException;
 import com.liferay.portal.kernel.exception.UserIdException;
 import com.liferay.portal.kernel.exception.UserReminderQueryException;
 import com.liferay.portal.kernel.exception.UserScreenNameException;
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.messaging.proxy.ProxyModeThreadLocal;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Contact;
@@ -48,9 +39,10 @@ import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.Website;
 import com.liferay.portal.kernel.portlet.DynamicActionRequest;
-import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
+import com.liferay.portal.kernel.portlet.bridges.mvc.BaseTransactionalMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.security.auth.Authenticator;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.membershippolicy.MembershipPolicyException;
 import com.liferay.portal.kernel.service.ListTypeLocalService;
@@ -64,10 +56,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
@@ -75,20 +69,21 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.InvokerPortletUtil;
 import com.liferay.portlet.admin.util.AdminUtil;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -100,68 +95,17 @@ import org.osgi.service.component.annotations.Reference;
  * @author Wesley Gong
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.SERVICE_ACCOUNTS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/edit_user"
 	},
 	service = MVCActionCommand.class
 )
-public class EditUserMVCActionCommand extends BaseMVCActionCommand {
-
-	protected User addUser(ActionRequest actionRequest) throws Exception {
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		boolean autoScreenName = ParamUtil.getBoolean(
-			actionRequest, "autoScreenName");
-		String screenName = ParamUtil.getString(actionRequest, "screenName");
-		String emailAddress = ParamUtil.getString(
-			actionRequest, "emailAddress");
-		String languageId = ParamUtil.getString(actionRequest, "languageId");
-		String firstName = ParamUtil.getString(actionRequest, "firstName");
-		String middleName = ParamUtil.getString(actionRequest, "middleName");
-		String lastName = ParamUtil.getString(actionRequest, "lastName");
-		long prefixId = ParamUtil.getInteger(actionRequest, "prefixId");
-		long suffixId = ParamUtil.getInteger(actionRequest, "suffixId");
-		boolean male = ParamUtil.getBoolean(actionRequest, "male", true);
-		int birthdayMonth = ParamUtil.getInteger(
-			actionRequest, "birthdayMonth");
-		int birthdayDay = ParamUtil.getInteger(actionRequest, "birthdayDay");
-		int birthdayYear = ParamUtil.getInteger(actionRequest, "birthdayYear");
-		String comments = ParamUtil.getString(actionRequest, "comments");
-		String jobTitle = ParamUtil.getString(actionRequest, "jobTitle");
-		long[] organizationIds = UsersAdminUtil.getOrganizationIds(
-			actionRequest);
-		boolean sendEmail = true;
-
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			User.class.getName(), actionRequest);
-
-		User user = _userService.addUser(
-			themeDisplay.getCompanyId(), true, null, null, autoScreenName,
-			screenName, emailAddress, LocaleUtil.fromLanguageId(languageId),
-			firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, jobTitle, null,
-			organizationIds, null, null, new ArrayList<Address>(),
-			new ArrayList<EmailAddress>(), new ArrayList<Phone>(),
-			new ArrayList<Website>(), new ArrayList<AnnouncementsDelivery>(),
-			sendEmail, serviceContext);
-
-		user.setComments(comments);
-
-		return userLocalService.updateUser(user);
-	}
-
-	protected void deleteRole(ActionRequest actionRequest) throws Exception {
-		User user = portal.getSelectedUser(actionRequest);
-
-		long roleId = ParamUtil.getLong(actionRequest, "roleId");
-
-		_userService.deleteRoleUser(roleId, user.getUserId());
-	}
+public class EditUserMVCActionCommand
+	extends BaseTransactionalMVCActionCommand {
 
 	protected void deleteUsers(ActionRequest actionRequest) throws Exception {
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
@@ -169,35 +113,28 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 		long[] deleteUserIds = StringUtil.split(
 			ParamUtil.getString(actionRequest, "deleteUserIds"), 0L);
 
-		try (SafeCloseable safeCloseable =
-				ProxyModeThreadLocal.setWithSafeCloseable(true)) {
+		if (cmd.equals(Constants.DEACTIVATE)) {
+			_updateUsers(
+				actionRequest, deleteUserIds,
+				WorkflowConstants.STATUS_INACTIVE);
+		}
+		else if (cmd.equals(Constants.DELETE)) {
+			_deleteUsers(deleteUserIds);
+		}
+		else if (cmd.equals(Constants.RESTORE)) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
-			for (long deleteUserId : deleteUserIds) {
-				if (cmd.equals(Constants.DEACTIVATE) ||
-					cmd.equals(Constants.RESTORE)) {
+			_userLocalService.validateMaxUsers(themeDisplay.getCompanyId());
 
-					int status = WorkflowConstants.STATUS_APPROVED;
-
-					if (cmd.equals(Constants.DEACTIVATE)) {
-						status = WorkflowConstants.STATUS_INACTIVE;
-					}
-
-					ServiceContext serviceContext =
-						ServiceContextFactory.getInstance(
-							User.class.getName(), actionRequest);
-
-					_userService.updateStatus(
-						deleteUserId, status, serviceContext);
-				}
-				else {
-					_userService.deleteUser(deleteUserId);
-				}
-			}
+			_updateUsers(
+				actionRequest, deleteUserIds,
+				WorkflowConstants.STATUS_APPROVED);
 		}
 	}
 
 	@Override
-	protected void doProcessAction(
+	protected void doTransactionalCommand(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
@@ -219,7 +156,7 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 			boolean updateLanguageId = false;
 
 			if (cmd.equals(Constants.ADD)) {
-				user = addUser(actionRequest);
+				user = _addUser(actionRequest);
 
 				SessionMessages.add(actionRequest, "userAdded");
 
@@ -232,7 +169,7 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 				deleteUsers(actionRequest);
 			}
 			else if (cmd.equals("deleteRole")) {
-				deleteRole(actionRequest);
+				_deleteRole(actionRequest);
 			}
 			else if (cmd.equals(Constants.UPDATE)) {
 				Object[] returnValue = updateUser(
@@ -243,7 +180,7 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 				updateLanguageId = (Boolean)returnValue[2];
 			}
 			else if (cmd.equals("unlock")) {
-				user = updateLockout(actionRequest);
+				user = _updateLockout(actionRequest);
 			}
 
 			ThemeDisplay themeDisplay =
@@ -297,7 +234,7 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 						redirect, themeDisplay.getI18nPath(), i18nPath);
 				}
 
-				redirect = http.setParameter(
+				redirect = HttpComponentsUtil.setParameter(
 					redirect, actionResponse.getNamespace() + "p_u_i_d",
 					user.getUserId());
 			}
@@ -308,8 +245,10 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 				(userLocalService.fetchUserById(scopeGroup.getClassPK()) ==
 					null)) {
 
-				redirect = http.setParameter(redirect, "doAsGroupId", 0);
-				redirect = http.setParameter(redirect, "refererPlid", 0);
+				redirect = HttpComponentsUtil.setParameter(
+					redirect, "doAsGroupId", 0);
+				redirect = HttpComponentsUtil.setParameter(
+					redirect, "refererPlid", 0);
 			}
 
 			sendRedirect(actionRequest, actionResponse, redirect);
@@ -366,6 +305,17 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 						return;
 					}
 				}
+
+				actionResponse.setRenderParameter("mvcPath", mvcPath);
+
+				throw exception;
+			}
+			else if (exception instanceof ModelListenerException) {
+				if (exception.getCause() instanceof PortalException) {
+					throw (PortalException)exception.getCause();
+				}
+
+				throw exception;
 			}
 			else {
 				throw exception;
@@ -373,49 +323,6 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 
 			actionResponse.setRenderParameter("mvcPath", mvcPath);
 		}
-	}
-
-	protected long getListTypeId(
-			PortletRequest portletRequest, String parameterName, String type)
-		throws Exception {
-
-		String parameterValue = ParamUtil.getString(
-			portletRequest, parameterName);
-
-		ListType listType = _listTypeLocalService.addListType(
-			parameterValue, type);
-
-		return listType.getListTypeId();
-	}
-
-	@Reference(unbind = "-")
-	protected void setDLAppLocalService(DLAppLocalService dlAppLocalService) {
-		_dlAppLocalService = dlAppLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setListTypeLocalService(
-		ListTypeLocalService listTypeLocalService) {
-
-		_listTypeLocalService = listTypeLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		this.userLocalService = userLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserService(UserService userService) {
-		_userService = userService;
-	}
-
-	protected User updateLockout(ActionRequest actionRequest) throws Exception {
-		User user = portal.getSelectedUser(actionRequest);
-
-		_userService.updateLockoutById(user.getUserId(), false);
-
-		return user;
 	}
 
 	protected Object[] updateUser(
@@ -435,9 +342,33 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 		String oldScreenName = user.getScreenName();
 		String screenName = BeanParamUtil.getString(
 			user, actionRequest, "screenName");
+
+		if (PrefsPropsUtil.getBoolean(
+				user.getCompanyId(),
+				PropsKeys.USERS_SCREEN_NAME_ALWAYS_AUTOGENERATE)) {
+
+			screenName = oldScreenName;
+		}
+
 		String oldEmailAddress = user.getEmailAddress();
 		String emailAddress = BeanParamUtil.getString(
 			user, actionRequest, "emailAddress");
+
+		Company company = portal.getCompany(actionRequest);
+
+		if (company.isUpdatePasswordRequired() &&
+			(!screenName.equals(oldScreenName) ||
+			 !emailAddress.equals(oldEmailAddress))) {
+
+			int authResult = _userLocalService.authenticateByUserId(
+				themeDisplay.getCompanyId(), portal.getUserId(actionRequest),
+				ParamUtil.getString(actionRequest, "password"), new HashMap<>(),
+				new HashMap<>(), new HashMap<>());
+
+			if (authResult != Authenticator.SUCCESS) {
+				throw new PrincipalException();
+			}
+		}
 
 		boolean deleteLogo = ParamUtil.getBoolean(actionRequest, "deleteLogo");
 
@@ -459,10 +390,10 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 			user, actionRequest, "middleName");
 		String lastName = BeanParamUtil.getString(
 			user, actionRequest, "lastName");
-		long prefixId = BeanParamUtil.getInteger(
-			contact, actionRequest, "prefixId");
-		long suffixId = BeanParamUtil.getInteger(
-			contact, actionRequest, "suffixId");
+		long prefixListTypeId = BeanParamUtil.getInteger(
+			contact, actionRequest, "prefixListTypeId");
+		long suffixListTypeId = BeanParamUtil.getInteger(
+			contact, actionRequest, "suffixListTypeId");
 		boolean male = BeanParamUtil.getBoolean(
 			user, actionRequest, "male", true);
 
@@ -489,8 +420,8 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 			user.getUserId(), oldPassword, null, null, user.isPasswordReset(),
 			null, null, screenName, emailAddress, !deleteLogo, portraitBytes,
 			languageId, user.getTimeZoneId(), user.getGreeting(), comments,
-			firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, contact.getSmsSn(),
+			firstName, middleName, lastName, prefixListTypeId, suffixListTypeId,
+			male, birthdayMonth, birthdayDay, birthdayYear, contact.getSmsSn(),
 			contact.getFacebookSn(), contact.getJabberSn(),
 			contact.getSkypeSn(), contact.getTwitterSn(), jobTitle, null, null,
 			null, null, null, null, null, null, null, null, serviceContext);
@@ -517,7 +448,7 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 
 			Locale locale = LocaleUtil.fromLanguageId(languageId);
 
-			LanguageUtil.updateCookie(
+			_language.updateCookie(
 				httpServletRequest, httpServletResponse, locale);
 
 			// Clear cached portlet responses
@@ -527,8 +458,6 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 
 			updateLanguageId = true;
 		}
-
-		Company company = portal.getCompany(actionRequest);
 
 		if (company.isStrangersVerify() &&
 			!StringUtil.equalsIgnoreCase(oldEmailAddress, emailAddress)) {
@@ -542,12 +471,123 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
-	protected Http http;
-
-	@Reference
 	protected Portal portal;
 
+	@Reference
 	protected UserLocalService userLocalService;
+
+	private User _addUser(ActionRequest actionRequest) throws Exception {
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		boolean autoScreenName = ParamUtil.getBoolean(
+			actionRequest, "autoScreenName");
+		String screenName = ParamUtil.getString(actionRequest, "screenName");
+		String emailAddress = ParamUtil.getString(
+			actionRequest, "emailAddress");
+		String languageId = ParamUtil.getString(actionRequest, "languageId");
+		String firstName = ParamUtil.getString(actionRequest, "firstName");
+		String middleName = ParamUtil.getString(actionRequest, "middleName");
+		String lastName = ParamUtil.getString(actionRequest, "lastName");
+		long prefixListTypeId = ParamUtil.getInteger(
+			actionRequest, "prefixListTypeId");
+		long suffixListTypeId = ParamUtil.getInteger(
+			actionRequest, "suffixListTypeId");
+		boolean male = ParamUtil.getBoolean(actionRequest, "male", true);
+		int birthdayMonth = ParamUtil.getInteger(
+			actionRequest, "birthdayMonth");
+		int birthdayDay = ParamUtil.getInteger(actionRequest, "birthdayDay");
+		int birthdayYear = ParamUtil.getInteger(actionRequest, "birthdayYear");
+		String comments = ParamUtil.getString(actionRequest, "comments");
+		String jobTitle = ParamUtil.getString(actionRequest, "jobTitle");
+		long[] organizationIds = UsersAdminUtil.getOrganizationIds(
+			actionRequest);
+		boolean sendEmail = true;
+
+		ServiceContext serviceContext = ServiceContextFactory.getInstance(
+			User.class.getName(), actionRequest);
+
+		User user = _userService.addUserWithWorkflow(
+			themeDisplay.getCompanyId(), true, null, null, autoScreenName,
+			screenName, emailAddress, LocaleUtil.fromLanguageId(languageId),
+			firstName, middleName, lastName, prefixListTypeId, suffixListTypeId,
+			male, birthdayMonth, birthdayDay, birthdayYear, jobTitle, null,
+			organizationIds, null, null, new ArrayList<Address>(),
+			new ArrayList<EmailAddress>(), new ArrayList<Phone>(),
+			new ArrayList<Website>(), new ArrayList<AnnouncementsDelivery>(),
+			sendEmail, serviceContext);
+
+		byte[] portraitBytes = null;
+
+		long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
+
+		if (fileEntryId > 0) {
+			FileEntry fileEntry = _dlAppLocalService.getFileEntry(fileEntryId);
+
+			portraitBytes = FileUtil.getBytes(fileEntry.getContentStream());
+		}
+
+		if (portraitBytes != null) {
+			user = userLocalService.updatePortrait(
+				user.getUserId(), portraitBytes);
+		}
+
+		user.setComments(comments);
+
+		return userLocalService.updateUser(user);
+	}
+
+	private void _deleteRole(ActionRequest actionRequest) throws Exception {
+		User user = portal.getSelectedUser(actionRequest);
+
+		long roleId = ParamUtil.getLong(actionRequest, "roleId");
+
+		_userService.deleteRoleUser(roleId, user.getUserId());
+	}
+
+	private void _deleteUsers(long[] accountUserIds) throws Exception {
+		for (long accountUserId : accountUserIds) {
+			_userService.deleteUser(accountUserId);
+		}
+	}
+
+	private long _getListTypeId(
+			long companyId, PortletRequest portletRequest, String parameterName,
+			String type)
+		throws Exception {
+
+		String parameterValue = ParamUtil.getString(
+			portletRequest, parameterName);
+
+		if (Validator.isNull(parameterValue)) {
+			return 0;
+		}
+
+		ListType listType = _listTypeLocalService.addListType(
+			companyId, parameterValue, type);
+
+		return listType.getListTypeId();
+	}
+
+	private User _updateLockout(ActionRequest actionRequest) throws Exception {
+		User user = portal.getSelectedUser(actionRequest);
+
+		_userService.updateLockoutById(user.getUserId(), false);
+
+		return user;
+	}
+
+	private void _updateUsers(
+			ActionRequest actionRequest, long[] accountUserIds, int status)
+		throws Exception {
+
+		for (long accountUserId : accountUserIds) {
+			_userService.updateStatus(
+				accountUserId, status,
+				ServiceContextFactory.getInstance(
+					User.class.getName(), actionRequest));
+		}
+	}
 
 	private ActionRequest _wrapActionRequest(ActionRequest actionRequest)
 		throws Exception {
@@ -555,25 +595,41 @@ public class EditUserMVCActionCommand extends BaseMVCActionCommand {
 		DynamicActionRequest dynamicActionRequest = new DynamicActionRequest(
 			actionRequest);
 
-		long prefixId = getListTypeId(
-			actionRequest, "prefixValue", ListTypeConstants.CONTACT_PREFIX);
+		long companyId = _portal.getCompanyId(actionRequest);
 
-		dynamicActionRequest.setParameter("prefixId", String.valueOf(prefixId));
+		long prefixListTypeId = _getListTypeId(
+			companyId, actionRequest, "prefixListTypeValue",
+			ListTypeConstants.CONTACT_PREFIX);
 
-		long suffixId = getListTypeId(
-			actionRequest, "suffixValue", ListTypeConstants.CONTACT_SUFFIX);
+		dynamicActionRequest.setParameter(
+			"prefixListTypeId", String.valueOf(prefixListTypeId));
 
-		dynamicActionRequest.setParameter("suffixId", String.valueOf(suffixId));
+		long suffixListTypeId = _getListTypeId(
+			companyId, actionRequest, "suffixListTypeValue",
+			ListTypeConstants.CONTACT_SUFFIX);
+
+		dynamicActionRequest.setParameter(
+			"suffixListTypeId", String.valueOf(suffixListTypeId));
 
 		return dynamicActionRequest;
 	}
 
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
 	private ListTypeLocalService _listTypeLocalService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
+	private UserLocalService _userLocalService;
+
+	@Reference
 	private UserService _userService;
 
 }

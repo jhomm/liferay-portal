@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.repository;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.repository.search.RepositorySearchQueryBuilderUtil;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
@@ -62,15 +52,17 @@ public abstract class BaseRepositoryImpl
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			String urlTitle, String description, String changeLog, File file,
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		try (InputStream inputStream = new FileInputStream(file)) {
 			return addFileEntry(
 				externalReferenceCode, userId, folderId, sourceFileName,
-				mimeType, title, description, changeLog, inputStream,
-				file.length(), expirationDate, reviewDate, serviceContext);
+				mimeType, title, urlTitle, description, changeLog, inputStream,
+				file.length(), displayDate, expirationDate, reviewDate,
+				serviceContext);
 		}
 		catch (IOException ioException) {
 			throw new SystemException(ioException);
@@ -79,8 +71,8 @@ public abstract class BaseRepositoryImpl
 
 	@Override
 	public abstract Folder addFolder(
-			long userId, long parentFolderId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentFolderId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Override
@@ -317,8 +309,6 @@ public abstract class BaseRepositoryImpl
 
 	@Override
 	public Hits search(SearchContext searchContext) throws SearchException {
-		searchContext.setSearchEngineId(SearchEngineHelper.GENERIC_ENGINE_ID);
-
 		return search(
 			searchContext,
 			RepositorySearchQueryBuilderUtil.getFullQuery(searchContext));
@@ -398,16 +388,18 @@ public abstract class BaseRepositoryImpl
 	@Override
 	public FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			File file, Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		try (InputStream inputStream = new FileInputStream(file)) {
 			return updateFileEntry(
-				userId, fileEntryId, sourceFileName, mimeType, title,
+				userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
 				description, changeLog, dlVersionNumberIncrease, inputStream,
-				file.length(), expirationDate, reviewDate, serviceContext);
+				file.length(), displayDate, expirationDate, reviewDate,
+				serviceContext);
 		}
 		catch (IOException ioException) {
 			throw new SystemException(ioException);
@@ -417,10 +409,10 @@ public abstract class BaseRepositoryImpl
 	@Override
 	public abstract FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Override

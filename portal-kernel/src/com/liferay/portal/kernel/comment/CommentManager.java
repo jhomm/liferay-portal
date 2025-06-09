@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.comment;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ServiceContext;
 
 import java.util.List;
@@ -36,14 +26,16 @@ public interface CommentManager {
 		throws PortalException;
 
 	public long addComment(
-			long userId, long groupId, String className, long classPK,
-			String userName, String subject, String body,
+			String externalReferenceCode, long userId, long groupId,
+			String className, long classPK, String userName, String subject,
+			String body,
 			Function<String, ServiceContext> serviceContextFunction)
 		throws PortalException;
 
 	public long addComment(
-			long userId, String className, long classPK, String userName,
-			long parentCommentId, String subject, String body,
+			String externalReferenceCode, long userId, String className,
+			long classPK, String userName, long parentCommentId, String subject,
+			String body,
 			Function<String, ServiceContext> serviceContextFunction)
 		throws PortalException;
 
@@ -66,6 +58,16 @@ public interface CommentManager {
 	public void deleteGroupComments(long groupId) throws PortalException;
 
 	public Comment fetchComment(long commentId);
+
+	/**
+	 * Returns a comment matching with the external reference code and the
+	 * group ID
+	 *
+	 * @param groupId the primary key of the group
+	 * @param externalReferenceCode the comment's external reference code
+	 * @return the matching comment or null if it could not be found
+	 */
+	public Comment fetchComment(long groupId, String externalReferenceCode);
 
 	public DiscussionComment fetchDiscussionComment(long userId, long commentId)
 		throws PortalException;
@@ -92,15 +94,15 @@ public interface CommentManager {
 	 */
 	public int getChildCommentsCount(long parentCommentId, int status);
 
+	public Comment getComment(long groupId, String externalReferenceCode)
+		throws PortalException;
+
 	public int getCommentsCount(String className, long classPK);
 
 	public Discussion getDiscussion(
 			long userId, long groupId, String className, long classPK,
 			Function<String, ServiceContext> serviceContextFunction)
 		throws PortalException;
-
-	public DiscussionPermission getDiscussionPermission(
-		PermissionChecker permissionChecker);
 
 	public DiscussionStagingHandler getDiscussionStagingHandler();
 

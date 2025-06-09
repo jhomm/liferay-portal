@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.kernel.lar;
@@ -35,6 +26,7 @@ import com.liferay.portal.kernel.model.StagedGroupedModel;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.WorkflowedModel;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -75,6 +67,10 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 	public void exportStagedModel(
 			PortletDataContext portletDataContext, T stagedModel)
 		throws PortletDataException {
+
+		if (!isEnabled(_getCompanyId(stagedModel))) {
+			return;
+		}
 
 		validateExport(portletDataContext, stagedModel);
 
@@ -226,14 +222,14 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 				}
 				catch (PortalException portalException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(portalException, portalException);
+						_log.debug(portalException);
 					}
 				}
 			}
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 			else if (_log.isWarnEnabled()) {
 				_log.warn(
@@ -279,6 +275,10 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 			PortletDataContext portletDataContext, Element referenceElement)
 		throws PortletDataException {
 
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return;
+		}
+
 		try {
 			doImportMissingReference(portletDataContext, referenceElement);
 		}
@@ -298,6 +298,10 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 			long classPK)
 		throws PortletDataException {
 
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return;
+		}
+
 		try {
 			doImportMissingReference(
 				portletDataContext, uuid, groupId, classPK);
@@ -314,6 +318,10 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 	public void importStagedModel(
 			PortletDataContext portletDataContext, T stagedModel)
 		throws PortletDataException {
+
+		if (!isEnabled(stagedModel.getCompanyId())) {
+			return;
+		}
 
 		String path = ExportImportPathUtil.getModelPath(stagedModel);
 
@@ -432,6 +440,10 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 			PortletDataContext portletDataContext, T stagedModel)
 		throws PortletDataException {
 
+		if (!isEnabled(_getCompanyId(stagedModel))) {
+			return;
+		}
+
 		try {
 			if (stagedModel instanceof TrashedModel) {
 				doRestoreStagedModel(portletDataContext, stagedModel);
@@ -477,7 +489,7 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return false;
@@ -945,6 +957,22 @@ public abstract class BaseStagedModelDataHandler<T extends StagedModel>
 		}
 
 		return true;
+	}
+
+	private long _getCompanyId(PortletDataContext portletDataContext) {
+		if (portletDataContext != null) {
+			return portletDataContext.getCompanyId();
+		}
+
+		return CompanyThreadLocal.getCompanyId();
+	}
+
+	private long _getCompanyId(T stagedModel) {
+		if (stagedModel != null) {
+			return stagedModel.getCompanyId();
+		}
+
+		return CompanyThreadLocal.getCompanyId();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

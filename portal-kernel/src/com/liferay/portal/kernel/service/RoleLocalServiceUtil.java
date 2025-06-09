@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -45,53 +36,20 @@ public class RoleLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.RoleLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static void addGroupRole(long groupId, long roleId) {
-		getService().addGroupRole(groupId, roleId);
+	public static boolean addGroupRole(long groupId, long roleId) {
+		return getService().addGroupRole(groupId, roleId);
 	}
 
-	public static void addGroupRole(long groupId, Role role) {
-		getService().addGroupRole(groupId, role);
+	public static boolean addGroupRole(long groupId, Role role) {
+		return getService().addGroupRole(groupId, role);
 	}
 
-	public static void addGroupRoles(long groupId, List<Role> roles) {
-		getService().addGroupRoles(groupId, roles);
+	public static boolean addGroupRoles(long groupId, List<Role> roles) {
+		return getService().addGroupRoles(groupId, roles);
 	}
 
-	public static void addGroupRoles(long groupId, long[] roleIds) {
-		getService().addGroupRoles(groupId, roleIds);
-	}
-
-	/**
-	 * Adds a role with additional parameters. The user is reindexed after role
-	 * is added.
-	 *
-	 * @param userId the primary key of the user
-	 * @param className the name of the class for which the role is created
-	 (optionally <code>null</code>)
-	 * @param classPK the primary key of the class for which the role is
-	 created (optionally <code>0</code>)
-	 * @param name the role's name
-	 * @param titleMap the role's localized titles (optionally
-	 <code>null</code>)
-	 * @param descriptionMap the role's localized descriptions (optionally
-	 <code>null</code>)
-	 * @param type the role's type (optionally <code>0</code>)
-	 * @param subtype the role's subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 role.
-	 * @return the role
-	 */
-	public static Role addRole(
-			long userId, String className, long classPK, String name,
-			Map<java.util.Locale, String> titleMap,
-			Map<java.util.Locale, String> descriptionMap, int type,
-			String subtype, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addRole(
-			userId, className, classPK, name, titleMap, descriptionMap, type,
-			subtype, serviceContext);
+	public static boolean addGroupRoles(long groupId, long[] roleIds) {
+		return getService().addGroupRoles(groupId, roleIds);
 	}
 
 	/**
@@ -108,40 +66,52 @@ public class RoleLocalServiceUtil {
 		return getService().addRole(role);
 	}
 
-	/**
-	 * @throws PortalException
-	 */
-	public static void addUserRole(long userId, long roleId)
+	public static Role addRole(
+			String externalReferenceCode, long userId, String className,
+			long classPK, String name, Map<java.util.Locale, String> titleMap,
+			Map<java.util.Locale, String> descriptionMap, int type,
+			String subtype, ServiceContext serviceContext)
 		throws PortalException {
 
-		getService().addUserRole(userId, roleId);
+		return getService().addRole(
+			externalReferenceCode, userId, className, classPK, name, titleMap,
+			descriptionMap, type, subtype, serviceContext);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addUserRole(long userId, Role role)
+	public static boolean addUserRole(long userId, long roleId)
 		throws PortalException {
 
-		getService().addUserRole(userId, role);
+		return getService().addUserRole(userId, roleId);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addUserRoles(long userId, List<Role> roles)
+	public static boolean addUserRole(long userId, Role role)
 		throws PortalException {
 
-		getService().addUserRoles(userId, roles);
+		return getService().addUserRole(userId, role);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addUserRoles(long userId, long[] roleIds)
+	public static boolean addUserRoles(long userId, List<Role> roles)
 		throws PortalException {
 
-		getService().addUserRoles(userId, roleIds);
+		return getService().addUserRoles(userId, roles);
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	public static boolean addUserRoles(long userId, long[] roleIds)
+		throws PortalException {
+
+		return getService().addUserRoles(userId, roleIds);
 	}
 
 	/**
@@ -391,6 +361,13 @@ public class RoleLocalServiceUtil {
 		return getService().fetchRole(companyId, name);
 	}
 
+	public static Role fetchRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the role with the matching UUID and company.
 	 *
@@ -476,22 +453,23 @@ public class RoleLocalServiceUtil {
 	}
 
 	public static List<Role> getGroupRolesAndTeamRoles(
-		long companyId, String keywords, List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId, int start,
-		int end) {
+		long companyId, String name, List<String> excludedNames, String title,
+		String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId, int start, int end) {
 
 		return getService().getGroupRolesAndTeamRoles(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId, start, end);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId, start, end);
 	}
 
 	public static int getGroupRolesAndTeamRolesCount(
-		long companyId, String keywords, List<String> excludedNames,
-		int[] types, long excludedTeamRoleId, long teamGroupId) {
+		long companyId, String name, List<String> excludedNames, String title,
+		String description, int[] types, long excludedTeamRoleId,
+		long teamGroupId) {
 
 		return getService().getGroupRolesAndTeamRolesCount(
-			companyId, keywords, excludedNames, types, excludedTeamRoleId,
-			teamGroupId);
+			companyId, name, excludedNames, title, description, types,
+			excludedTeamRoleId, teamGroupId);
 	}
 
 	public static int getGroupRolesCount(long groupId) {
@@ -503,6 +481,16 @@ public class RoleLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static Role getOrAddIncompleteRole(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK, String name, int type)
+		throws Exception {
+
+		return getService().getOrAddIncompleteRole(
+			externalReferenceCode, companyId, userId, className, classPK, name,
+			type);
 	}
 
 	/**
@@ -585,6 +573,14 @@ public class RoleLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getRole(companyId, name);
+	}
+
+	public static Role getRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -832,7 +828,9 @@ public class RoleLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the union of all the user's roles within the groups.
+	 * Returns the union of all the user's roles within the groups. If no
+	 * groups are provided, only the user's directly assigned roles are
+	 * returned.
 	 *
 	 * @param userId the primary key of the user
 	 * @param groups the groups (optionally <code>null</code>)
@@ -856,7 +854,9 @@ public class RoleLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the union of all the user's roles within the groups.
+	 * Returns the union of all the user's roles within the groups. If no
+	 * groupIds are provided, only the user's directly assigned roles are
+	 * returned.
 	 *
 	 * @param userId the primary key of the user
 	 * @param groupIds the primary keys of the groups
@@ -941,37 +941,6 @@ public class RoleLocalServiceUtil {
 		throws PortalException {
 
 		return getService().hasUserRoles(userId, companyId, names, inherited);
-	}
-
-	/**
-	 * Returns a role with the name in the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param name the role's name (optionally <code>null</code>)
-	 * @return the role with the name, or <code>null</code> if a role with the
-	 name could not be found in the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #fetchRole(long, String)}
-	 */
-	@Deprecated
-	public static Role loadFetchRole(long companyId, String name) {
-		return getService().loadFetchRole(companyId, name);
-	}
-
-	/**
-	 * Returns a role with the name in the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param name the role's name
-	 * @return the role with the name in the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getRole(long, String)}
-	 */
-	@Deprecated
-	public static Role loadGetRole(long companyId, String name)
-		throws PortalException {
-
-		return getService().loadGetRole(companyId, name);
 	}
 
 	/**
@@ -1218,29 +1187,20 @@ public class RoleLocalServiceUtil {
 		getService().unsetUserRoles(userId, roleIds);
 	}
 
-	/**
-	 * Updates the role with the primary key.
-	 *
-	 * @param roleId the primary key of the role
-	 * @param name the role's new name
-	 * @param titleMap the new localized titles (optionally <code>null</code>)
-	 to replace those existing for the role
-	 * @param descriptionMap the new localized descriptions (optionally
-	 <code>null</code>) to replace those existing for the role
-	 * @param subtype the role's new subtype (optionally <code>null</code>)
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 role.
-	 * @return the role with the primary key
-	 */
-	public static Role updateRole(
-			long roleId, String name, Map<java.util.Locale, String> titleMap,
-			Map<java.util.Locale, String> descriptionMap, String subtype,
-			ServiceContext serviceContext)
+	public static Role updateExternalReferenceCode(
+			long roleId, String externalReferenceCode)
 		throws PortalException {
 
-		return getService().updateRole(
-			roleId, name, titleMap, descriptionMap, subtype, serviceContext);
+		return getService().updateExternalReferenceCode(
+			roleId, externalReferenceCode);
+	}
+
+	public static Role updateExternalReferenceCode(
+			Role role, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			role, externalReferenceCode);
 	}
 
 	/**
@@ -1257,12 +1217,43 @@ public class RoleLocalServiceUtil {
 		return getService().updateRole(role);
 	}
 
+	/**
+	 * Updates the role with the primary key.
+	 *
+	 * @param roleId the primary key of the role
+	 * @param name the role's new name
+	 * @param titleMap the new localized titles (optionally <code>null</code>)
+	 to replace those existing for the role
+	 * @param descriptionMap the new localized descriptions (optionally
+	 <code>null</code>) to replace those existing for the role
+	 * @param subtype the role's new subtype (optionally <code>null</code>)
+	 * @param serviceContext the service context to be applied (optionally
+	 <code>null</code>). Can set expando bridge attributes for the
+	 role.
+	 * @return the role with the primary key
+	 */
+	public static Role updateRole(
+			String externalReferenceCode, long roleId, String name,
+			Map<java.util.Locale, String> titleMap,
+			Map<java.util.Locale, String> descriptionMap, String subtype,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateRole(
+			externalReferenceCode, roleId, name, titleMap, descriptionMap,
+			subtype, serviceContext);
+	}
+
 	public static void validateName(String name) throws PortalException {
 		getService().validateName(name);
 	}
 
 	public static RoleLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(RoleLocalService service) {
+		_service = service;
 	}
 
 	private static volatile RoleLocalService _service;

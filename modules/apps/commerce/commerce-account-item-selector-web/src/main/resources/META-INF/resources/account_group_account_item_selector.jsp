@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,61 +11,30 @@
 CommerceAccountGroupAccountItemSelectorViewDisplayContext commerceAccountGroupAccountItemSelectorViewDisplayContext = (CommerceAccountGroupAccountItemSelectorViewDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 String itemSelectedEventName = commerceAccountGroupAccountItemSelectorViewDisplayContext.getItemSelectedEventName();
-PortletURL portletURL = commerceAccountGroupAccountItemSelectorViewDisplayContext.getPortletURL();
 %>
 
-<liferay-frontend:management-bar
-	includeCheckBox="<%= true %>"
-	searchContainerId="commerceAccounts"
->
-	<liferay-frontend:management-bar-buttons>
-		<liferay-frontend:management-bar-display-buttons
-			displayViews='<%= new String[] {"list"} %>'
-			portletURL="<%= portletURL %>"
-			selectedDisplayStyle="list"
-		/>
-	</liferay-frontend:management-bar-buttons>
-
-	<liferay-frontend:management-bar-filters>
-		<liferay-frontend:management-bar-navigation
-			navigationKeys='<%= new String[] {"all"} %>'
-			portletURL="<%= portletURL %>"
-		/>
-
-		<liferay-frontend:management-bar-sort
-			orderByCol="<%= commerceAccountGroupAccountItemSelectorViewDisplayContext.getOrderByCol() %>"
-			orderByType="<%= commerceAccountGroupAccountItemSelectorViewDisplayContext.getOrderByType() %>"
-			orderColumns="<%= new String[0] %>"
-			portletURL="<%= portletURL %>"
-		/>
-
-		<li>
-			<liferay-commerce:search-input
-				actionURL="<%= portletURL %>"
-				formName="searchFm"
-			/>
-		</li>
-	</liferay-frontend:management-bar-filters>
-</liferay-frontend:management-bar>
+<clay:management-toolbar
+	managementToolbarDisplayContext="<%= new CommerceAccountGroupAccountItemSelectorViewManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, commerceAccountGroupAccountItemSelectorViewDisplayContext.getSearchContainer()) %>"
+/>
 
 <div class="container-fluid container-fluid-max-xl" id="<portlet:namespace />commerceAccountSelectorWrapper">
 	<liferay-ui:search-container
-		id="commerceAccounts"
+		id="accountEntry"
 		searchContainer="<%= commerceAccountGroupAccountItemSelectorViewDisplayContext.getSearchContainer() %>"
 	>
 		<liferay-ui:search-container-row
-			className="com.liferay.commerce.account.model.CommerceAccount"
+			className="com.liferay.account.model.AccountEntry"
 			cssClass="commerce-account-row"
-			keyProperty="commerceAccountId"
-			modelVar="commerceAccount"
+			keyProperty="accountEntryId"
+			modelVar="accountEntry"
 		>
 
 			<%
 			row.setData(
 				HashMapBuilder.<String, Object>put(
-					"commerce-account-id", commerceAccount.getCommerceAccountId()
+					"commerce-account-id", accountEntry.getAccountEntryId()
 				).put(
-					"name", commerceAccount.getName()
+					"name", accountEntry.getName()
 				).build());
 			%>
 
@@ -97,7 +57,7 @@ PortletURL portletURL = commerceAccountGroupAccountItemSelectorViewDisplayContex
 
 <aui:script use="liferay-search-container">
 	var searchContainer = Liferay.SearchContainer.get(
-		'<portlet:namespace />commerceAccounts'
+		'<portlet:namespace />accountEntries'
 	);
 
 	searchContainer.on('rowToggled', (event) => {
@@ -109,7 +69,7 @@ PortletURL portletURL = commerceAccountGroupAccountItemSelectorViewDisplayContex
 
 			var data = row.getDOM().dataset;
 
-			arr.push({commerceAccountId: data.commerceAccountId, name: data.name});
+			arr.push({accountEntryId: data.accountEntryId, name: data.name});
 		});
 
 		Liferay.Util.getOpener().Liferay.fire(

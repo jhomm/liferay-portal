@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -17,6 +8,7 @@ package com.liferay.portal.service.impl;
 import com.liferay.announcements.kernel.model.AnnouncementsDelivery;
 import com.liferay.announcements.kernel.service.AnnouncementsDeliveryService;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredUserException;
@@ -37,6 +29,7 @@ import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.Website;
@@ -46,9 +39,6 @@ import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.membershippolicy.OrganizationMembershipPolicyUtil;
-import com.liferay.portal.kernel.security.membershippolicy.RoleMembershipPolicyUtil;
-import com.liferay.portal.kernel.security.membershippolicy.SiteMembershipPolicyUtil;
-import com.liferay.portal.kernel.security.membershippolicy.UserGroupMembershipPolicyUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -59,11 +49,9 @@ import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
-import com.liferay.portal.kernel.service.permission.PasswordPolicyPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
 import com.liferay.portal.kernel.service.permission.TeamPermissionUtil;
-import com.liferay.portal.kernel.service.permission.UserGroupPermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserGroupRolePermissionUtil;
 import com.liferay.portal.kernel.service.permission.UserPermissionUtil;
 import com.liferay.portal.kernel.service.persistence.CompanyPersistence;
@@ -82,10 +70,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.comparator.UserIdComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
+import com.liferay.portal.security.membershippolicy.RoleMembershipPolicyUtil;
+import com.liferay.portal.security.membershippolicy.SiteMembershipPolicyUtil;
+import com.liferay.portal.security.membershippolicy.UserGroupMembershipPolicyUtil;
 import com.liferay.portal.service.base.UserServiceBaseImpl;
+import com.liferay.portal.service.permission.PasswordPolicyPermissionUtil;
+import com.liferay.portal.service.permission.UserGroupPermissionUtil;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.admin.util.OmniadminUtil;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -178,6 +171,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			return;
 		}
 
+		validateUserIds(userIds);
+
 		OrganizationPermissionUtil.check(
 			getPermissionChecker(), organizationId, ActionKeys.ASSIGN_MEMBERS);
 
@@ -198,10 +193,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			boolean autoPassword, String password1, String password2,
 			boolean autoScreenName, String screenName, String emailAddress,
 			Locale locale, String firstName, String middleName, String lastName,
-			long prefixId, long suffixId, boolean male, int birthdayMonth,
-			int birthdayDay, int birthdayYear, String jobTitle,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites, boolean sendEmail,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -211,7 +207,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			WorkflowThreadLocal.setEnabled(false);
 
 			User user = userLocalService.fetchUserByExternalReferenceCode(
-				companyId, externalReferenceCode);
+				externalReferenceCode, companyId);
 
 			if (user == null) {
 				checkAddUserPermission(
@@ -225,8 +221,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 				validateUpdatePermission(
 					user, screenName, emailAddress, firstName, middleName,
-					lastName, prefixId, suffixId, birthdayMonth, birthdayDay,
-					birthdayYear, male, jobTitle);
+					lastName, prefixListTypeId, suffixListTypeId, birthdayMonth,
+					birthdayDay, birthdayYear, male, jobTitle);
 
 				long curUserId = getUserId();
 
@@ -245,9 +241,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			user = userLocalService.addOrUpdateUser(
 				externalReferenceCode, creatorUserId, companyId, autoPassword,
 				password1, password2, autoScreenName, screenName, emailAddress,
-				locale, firstName, middleName, lastName, prefixId, suffixId,
-				male, birthdayMonth, birthdayDay, birthdayYear, jobTitle,
-				sendEmail, serviceContext);
+				locale, firstName, middleName, lastName, prefixListTypeId,
+				suffixListTypeId, male, birthdayMonth, birthdayDay,
+				birthdayYear, jobTitle, sendEmail, serviceContext);
 
 			if (addresses != null) {
 				UsersAdminUtil.updateAddresses(
@@ -367,8 +363,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
 	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
+	 * @param  prefixListTypeId the user's name prefix ID
+	 * @param  suffixListTypeId the user's name suffix ID
 	 * @param  male whether the user is male
 	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 *         January)
@@ -392,11 +388,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, boolean sendEmail,
-			ServiceContext serviceContext)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
 
 		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
@@ -407,9 +403,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			return addUserWithWorkflow(
 				companyId, autoPassword, password1, password2, autoScreenName,
 				screenName, emailAddress, locale, firstName, middleName,
-				lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-				birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
-				userGroupIds, sendEmail, serviceContext);
+				lastName, prefixListTypeId, suffixListTypeId, male,
+				birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+				organizationIds, roleIds, userGroupIds, sendEmail,
+				serviceContext);
 		}
 		finally {
 			WorkflowThreadLocal.setEnabled(workflowEnabled);
@@ -439,8 +436,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
 	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
+	 * @param  prefixListTypeId the user's name prefix ID
+	 * @param  suffixListTypeId the user's name suffix ID
 	 * @param  male whether the user is male
 	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 *         January)
@@ -469,12 +466,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, List<Address> addresses,
-			List<EmailAddress> emailAddresses, List<Phone> phones,
-			List<Website> websites,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			List<Address> addresses, List<EmailAddress> emailAddresses,
+			List<Phone> phones, List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
@@ -487,10 +484,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			return addUserWithWorkflow(
 				companyId, autoPassword, password1, password2, autoScreenName,
 				screenName, emailAddress, locale, firstName, middleName,
-				lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-				birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
-				userGroupIds, addresses, emailAddresses, phones, websites,
-				announcementsDelivers, sendEmail, serviceContext);
+				lastName, prefixListTypeId, suffixListTypeId, male,
+				birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+				organizationIds, roleIds, userGroupIds, addresses,
+				emailAddresses, phones, websites, announcementsDelivers,
+				sendEmail, serviceContext);
 		}
 		finally {
 			WorkflowThreadLocal.setEnabled(workflowEnabled);
@@ -522,8 +520,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's first name
 	 * @param      middleName the user's middle name
 	 * @param      lastName the user's last name
-	 * @param      prefixId the user's name prefix ID
-	 * @param      suffixId the user's name suffix ID
+	 * @param      prefixListTypeId the user's name prefix ID
+	 * @param      suffixListTypeId the user's name suffix ID
 	 * @param      male whether the user is male
 	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
 	 *             for January)
@@ -553,11 +551,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, boolean sendEmail,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		boolean workflowEnabled = WorkflowThreadLocal.isEnabled();
@@ -568,9 +567,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			return addUserWithWorkflow(
 				companyId, autoPassword, password1, password2, autoScreenName,
 				screenName, emailAddress, facebookId, openId, locale, firstName,
-				middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-				birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-				roleIds, userGroupIds, sendEmail, serviceContext);
+				middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+				birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+				organizationIds, roleIds, userGroupIds, sendEmail,
+				serviceContext);
 		}
 		finally {
 			WorkflowThreadLocal.setEnabled(workflowEnabled);
@@ -602,8 +602,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's first name
 	 * @param      middleName the user's middle name
 	 * @param      lastName the user's last name
-	 * @param      prefixId the user's name prefix ID
-	 * @param      suffixId the user's name suffix ID
+	 * @param      prefixListTypeId the user's name prefix ID
+	 * @param      suffixListTypeId the user's name suffix ID
 	 * @param      male whether the user is male
 	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
 	 *             for January)
@@ -638,12 +638,13 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
@@ -656,10 +657,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			return addUserWithWorkflow(
 				companyId, autoPassword, password1, password2, autoScreenName,
 				screenName, emailAddress, facebookId, openId, locale, firstName,
-				middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-				birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-				roleIds, userGroupIds, addresses, emailAddresses, phones,
-				websites, announcementsDelivers, sendEmail, serviceContext);
+				middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+				birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+				organizationIds, roleIds, userGroupIds, addresses,
+				emailAddresses, phones, websites, announcementsDelivers,
+				sendEmail, serviceContext);
 		}
 		finally {
 			WorkflowThreadLocal.setEnabled(workflowEnabled);
@@ -715,8 +717,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
 	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
+	 * @param  prefixListTypeId the user's name prefix ID
+	 * @param  suffixListTypeId the user's name suffix ID
 	 * @param  male whether the user is male
 	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 *         January)
@@ -740,11 +742,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, boolean sendEmail,
-			ServiceContext serviceContext)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
 
 		long creatorUserId = 0;
@@ -767,9 +769,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		User user = userLocalService.addUserWithWorkflow(
 			creatorUserId, companyId, autoPassword, password1, password2,
 			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-			roleIds, userGroupIds, sendEmail, serviceContext);
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle,
+			UserConstants.TYPE_REGULAR, groupIds, organizationIds, roleIds,
+			userGroupIds, sendEmail, serviceContext);
 
 		checkMembership(
 			new long[] {user.getUserId()}, groupIds, organizationIds, roleIds,
@@ -805,8 +808,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
 	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
+	 * @param  prefixListTypeId the user's name prefix ID
+	 * @param  suffixListTypeId the user's name suffix ID
 	 * @param  male whether the user is male
 	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 *         January)
@@ -835,12 +838,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
-			long[] roleIds, long[] userGroupIds, List<Address> addresses,
-			List<EmailAddress> emailAddresses, List<Phone> phones,
-			List<Website> websites,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle, long[] groupIds,
+			long[] organizationIds, long[] roleIds, long[] userGroupIds,
+			List<Address> addresses, List<EmailAddress> emailAddresses,
+			List<Phone> phones, List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
@@ -857,9 +860,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			User user = addUserWithWorkflow(
 				companyId, autoPassword, password1, password2, autoScreenName,
 				screenName, emailAddress, locale, firstName, middleName,
-				lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-				birthdayYear, jobTitle, groupIds, organizationIds, roleIds,
-				userGroupIds, sendEmail, serviceContext);
+				lastName, prefixListTypeId, suffixListTypeId, male,
+				birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+				organizationIds, roleIds, userGroupIds, sendEmail,
+				serviceContext);
 
 			UsersAdminUtil.updateAddresses(
 				Contact.class.getName(), user.getContactId(), addresses);
@@ -917,8 +921,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's first name
 	 * @param      middleName the user's middle name
 	 * @param      lastName the user's last name
-	 * @param      prefixId the user's name prefix ID
-	 * @param      suffixId the user's name suffix ID
+	 * @param      prefixListTypeId the user's name prefix ID
+	 * @param      suffixListTypeId the user's name suffix ID
 	 * @param      male whether the user is male
 	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
 	 *             for January)
@@ -948,11 +952,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, boolean sendEmail,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		long creatorUserId = 0;
@@ -974,10 +979,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		User user = userLocalService.addUserWithWorkflow(
 			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
-			organizationIds, roleIds, userGroupIds, sendEmail, serviceContext);
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle,
+			UserConstants.TYPE_REGULAR, groupIds, organizationIds, roleIds,
+			userGroupIds, sendEmail, serviceContext);
 
 		checkMembership(
 			new long[] {user.getUserId()}, groupIds, organizationIds, roleIds,
@@ -1015,8 +1021,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's first name
 	 * @param      middleName the user's middle name
 	 * @param      lastName the user's last name
-	 * @param      prefixId the user's name prefix ID
-	 * @param      suffixId the user's name suffix ID
+	 * @param      prefixListTypeId the user's name prefix ID
+	 * @param      suffixListTypeId the user's name suffix ID
 	 * @param      male whether the user is male
 	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
 	 *             for January)
@@ -1052,12 +1058,13 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			List<Address> addresses, List<EmailAddress> emailAddresses,
-			List<Phone> phones, List<Website> websites,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, long[] groupIds, long[] organizationIds,
+			long[] roleIds, long[] userGroupIds, List<Address> addresses,
+			List<EmailAddress> emailAddresses, List<Phone> phones,
+			List<Website> websites,
 			List<AnnouncementsDelivery> announcementsDelivers,
 			boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
@@ -1074,9 +1081,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			User user = addUserWithWorkflow(
 				companyId, autoPassword, password1, password2, autoScreenName,
 				screenName, emailAddress, facebookId, openId, locale, firstName,
-				middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-				birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-				roleIds, userGroupIds, sendEmail, serviceContext);
+				middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+				birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+				organizationIds, roleIds, userGroupIds, sendEmail,
+				serviceContext);
 
 			UsersAdminUtil.updateAddresses(
 				Contact.class.getName(), user.getContactId(), addresses);
@@ -1153,6 +1161,22 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), userId, ActionKeys.DELETE);
 
 		userLocalService.deleteUser(userId);
+	}
+
+	@Override
+	public User fetchUserByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		User user = userLocalService.fetchUserByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (user != null) {
+			UserPermissionUtil.check(
+				getPermissionChecker(), user.getUserId(), ActionKeys.VIEW);
+		}
+
+		return user;
 	}
 
 	@Override
@@ -1292,7 +1316,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		}
 
 		return userPersistence.findByGtU_C(
-			gtUserId, companyId, 0, size, new UserIdComparator(true));
+			gtUserId, companyId, 0, size, UserIdComparator.getInstance(true));
 	}
 
 	@Override
@@ -1476,7 +1500,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	@Override
 	public long[] getRoleUserIds(long roleId) throws PortalException {
 		RolePermissionUtil.check(
-			getPermissionChecker(), roleId, ActionKeys.VIEW);
+			getPermissionChecker(), roleId, ActionKeys.ASSIGN_MEMBERS);
 
 		return userLocalService.getRoleUserIds(roleId);
 	}
@@ -1501,20 +1525,13 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		return user;
 	}
 
-	/**
-	 * Returns the user with the external reference code.
-	 *
-	 * @param  companyId the primary key of the user's company
-	 * @param  externalReferenceCode the user's external reference code
-	 * @return the user with the external reference code
-	 */
 	@Override
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		User user = userLocalService.getUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 
 		UserPermissionUtil.check(
 			getPermissionChecker(), user.getUserId(), ActionKeys.VIEW);
@@ -2068,6 +2085,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  agreedToTermsOfUse whether the user has agree to the terms of use
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	@Override
 	public User updateAgreedToTermsOfUse(
 			long userId, boolean agreedToTermsOfUse)
@@ -2109,6 +2127,30 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			userId, password, emailAddress1, emailAddress2, serviceContext);
 	}
 
+	@Override
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
+		return userLocalService.updateExternalReferenceCode(
+			userId, externalReferenceCode);
+	}
+
+	@Override
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), user.getUserId(), ActionKeys.UPDATE);
+
+		return userLocalService.updateExternalReferenceCode(
+			user, externalReferenceCode);
+	}
+
 	/**
 	 * Updates a user account that was automatically created when a guest user
 	 * participated in an action (e.g. posting a comment) and only provided his
@@ -2127,8 +2169,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's first name
 	 * @param  middleName the user's middle name
 	 * @param  lastName the user's last name
-	 * @param  prefixId the user's name prefix ID
-	 * @param  suffixId the user's name suffix ID
+	 * @param  prefixListTypeId the user's name prefix ID
+	 * @param  suffixListTypeId the user's name suffix ID
 	 * @param  male whether the user is male
 	 * @param  birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 *         January)
@@ -2148,9 +2190,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, boolean updateUserInformation, boolean sendEmail,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String jobTitle,
+			boolean updateUserInformation, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -2174,9 +2217,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		return userLocalService.updateIncompleteUser(
 			creatorUserId, companyId, autoPassword, password1, password2,
 			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, updateUserInformation,
-			sendEmail, serviceContext);
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle,
+			updateUserInformation, sendEmail, serviceContext);
 	}
 
 	/**
@@ -2199,8 +2242,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's first name
 	 * @param      middleName the user's middle name
 	 * @param      lastName the user's last name
-	 * @param      prefixId the user's name prefix ID
-	 * @param      suffixId the user's name suffix ID
+	 * @param      prefixListTypeId the user's name prefix ID
+	 * @param      suffixListTypeId the user's name suffix ID
 	 * @param      male whether the user is male
 	 * @param      birthdayMonth the user's birthday month (0-based, meaning 0
 	 *             for January)
@@ -2227,10 +2270,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long companyId, boolean autoPassword, String password1,
 			String password2, boolean autoScreenName, String screenName,
 			String emailAddress, long facebookId, String openId, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, boolean updateUserInformation,
-			boolean sendEmail, ServiceContext serviceContext)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, boolean updateUserInformation, boolean sendEmail,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		long creatorUserId = 0;
@@ -2252,10 +2296,20 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		return userLocalService.updateIncompleteUser(
 			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
 			birthdayMonth, birthdayDay, birthdayYear, jobTitle,
 			updateUserInformation, sendEmail, serviceContext);
+	}
+
+	@Override
+	public User updateLanguageId(long userId, String languageId)
+		throws PortalException {
+
+		UserPermissionUtil.check(
+			getPermissionChecker(), userId, ActionKeys.UPDATE);
+
+		return userLocalService.updateLanguageId(userId, languageId);
 	}
 
 	/**
@@ -2273,25 +2327,6 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			getPermissionChecker(), userId, ActionKeys.DELETE);
 
 		return userLocalService.updateLockoutById(userId, lockout);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param      userId the primary key of the user
-	 * @param      openId the new OpenID
-	 * @return     the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		UserPermissionUtil.check(
-			getPermissionChecker(), userId, ActionKeys.UPDATE);
-
-		return userLocalService.updateOpenId(userId, openId);
 	}
 
 	/**
@@ -2327,6 +2362,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 *         password the next time they log in
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	@Override
 	public User updatePassword(
 			long userId, String password1, String password2,
@@ -2365,6 +2401,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  answer the user's new password reset answer
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	@Override
 	public User updateReminderQuery(long userId, String question, String answer)
 		throws PortalException {
@@ -2407,16 +2444,53 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			long userId, int status, ServiceContext serviceContext)
 		throws PortalException {
 
+		return updateStatus(
+			userPersistence.findByPrimaryKey(userId), status, serviceContext);
+	}
+
+	@Override
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		long userId = user.getUserId();
+
 		if ((getUserId() == userId) &&
 			(status != WorkflowConstants.STATUS_APPROVED)) {
 
 			throw new RequiredUserException();
 		}
 
-		UserPermissionUtil.check(
-			getPermissionChecker(), userId, ActionKeys.DELETE);
+		if ((status == WorkflowConstants.STATUS_APPROVED) &&
+			!UserPermissionUtil.contains(
+				getPermissionChecker(), userId, ActionKeys.ACTIVATE) &&
+			!UserPermissionUtil.contains(
+				getPermissionChecker(), userId, ActionKeys.DELETE)) {
 
-		return userLocalService.updateStatus(userId, status, serviceContext);
+			throw new PrincipalException.MustHavePermission(
+				getPermissionChecker(), User.class.getName(), userId,
+				ActionKeys.ACTIVATE, ActionKeys.DELETE);
+		}
+
+		if ((status == WorkflowConstants.STATUS_INACTIVE) &&
+			!UserPermissionUtil.contains(
+				getPermissionChecker(), userId, ActionKeys.DEACTIVATE) &&
+			!UserPermissionUtil.contains(
+				getPermissionChecker(), userId, ActionKeys.DELETE)) {
+
+			throw new PrincipalException.MustHavePermission(
+				getPermissionChecker(), User.class.getName(), userId,
+				ActionKeys.DEACTIVATE, ActionKeys.DELETE);
+		}
+
+		if ((status != WorkflowConstants.STATUS_APPROVED) &&
+			(status != WorkflowConstants.STATUS_INACTIVE)) {
+
+			UserPermissionUtil.check(
+				getPermissionChecker(), userId, ActionKeys.DELETE);
+		}
+
+		return userLocalService.updateStatus(user, status, serviceContext);
 	}
 
 	/**
@@ -2443,8 +2517,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's new first name
 	 * @param  middleName the user's new middle name
 	 * @param  lastName the user's new last name
-	 * @param  prefixId the user's new name prefix ID
-	 * @param  suffixId the user's new name suffix ID
+	 * @param  prefixListTypeId the user's new name prefix ID
+	 * @param  suffixListTypeId the user's new name suffix ID
 	 * @param  male whether user is male
 	 * @param  birthdayMonth the user's new birthday month (0-based, meaning 0
 	 *         for January)
@@ -2480,11 +2554,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			String screenName, String emailAddress, boolean hasPortrait,
 			byte[] portraitBytes, String languageId, String timeZoneId,
 			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle,
+			long[] groupIds, long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			List<Address> addresses, List<EmailAddress> emailAddresses,
 			List<Phone> phones, List<Website> websites,
@@ -2537,8 +2611,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		validateUpdatePermission(
 			user, screenName, emailAddress, firstName, middleName, lastName,
-			prefixId, suffixId, birthdayMonth, birthdayDay, birthdayYear, male,
-			jobTitle);
+			prefixListTypeId, suffixListTypeId, birthdayMonth, birthdayDay,
+			birthdayYear, male, jobTitle);
 
 		// Group membership policy
 
@@ -2726,11 +2800,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
 			emailAddress, hasPortrait, portraitBytes, languageId, timeZoneId,
-			greeting, comments, firstName, middleName, lastName, prefixId,
-			suffixId, male, birthdayMonth, birthdayDay, birthdayYear, smsSn,
-			facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, groupIds,
-			organizationIds, roleIds, userGroupRoles, userGroupIds,
-			serviceContext);
+			greeting, comments, firstName, middleName, lastName,
+			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, smsSn, facebookSn, jabberSn, skypeSn,
+			twitterSn, jobTitle, groupIds, organizationIds, roleIds,
+			userGroupRoles, userGroupIds, serviceContext);
 
 		if (!addGroupIds.isEmpty() || !removeGroupIds.isEmpty()) {
 			SiteMembershipPolicyUtil.propagateMembership(
@@ -2802,8 +2876,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's new first name
 	 * @param      middleName the user's new middle name
 	 * @param      lastName the user's new last name
-	 * @param      prefixId the user's new name prefix ID
-	 * @param      suffixId the user's new name suffix ID
+	 * @param      prefixListTypeId the user's new name prefix ID
+	 * @param      suffixListTypeId the user's new name suffix ID
 	 * @param      male whether user is male
 	 * @param      birthdayMonth the user's new birthday month (0-based, meaning
 	 *             0 for January)
@@ -2848,9 +2922,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			String openId, boolean hasPortrait, byte[] portraitBytes,
 			String languageId, String timeZoneId, String greeting,
 			String comments, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
-			String facebookSn, String jabberSn, String skypeSn,
+			String lastName, long prefixListTypeId, long suffixListTypeId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String smsSn, String facebookSn, String jabberSn, String skypeSn,
 			String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
@@ -2905,8 +2979,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		validateUpdatePermission(
 			user, screenName, emailAddress, firstName, middleName, lastName,
-			prefixId, suffixId, birthdayMonth, birthdayDay, birthdayYear, male,
-			jobTitle);
+			prefixListTypeId, suffixListTypeId, birthdayMonth, birthdayDay,
+			birthdayYear, male, jobTitle);
 
 		// Group membership policy
 
@@ -3093,12 +3167,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		user = userLocalService.updateUser(
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
-			emailAddress, facebookId, openId, hasPortrait, portraitBytes,
-			languageId, timeZoneId, greeting, comments, firstName, middleName,
-			lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-			birthdayYear, smsSn, facebookSn, jabberSn, skypeSn, twitterSn,
-			jobTitle, groupIds, organizationIds, roleIds, userGroupRoles,
-			userGroupIds, serviceContext);
+			emailAddress, hasPortrait, portraitBytes, languageId, timeZoneId,
+			greeting, comments, firstName, middleName, lastName,
+			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, smsSn, facebookSn, jabberSn, skypeSn,
+			twitterSn, jobTitle, groupIds, organizationIds, roleIds,
+			userGroupRoles, userGroupIds, serviceContext);
 
 		if (!addGroupIds.isEmpty() || !removeGroupIds.isEmpty()) {
 			SiteMembershipPolicyUtil.propagateMembership(
@@ -3168,8 +3242,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param      firstName the user's new first name
 	 * @param      middleName the user's new middle name
 	 * @param      lastName the user's new last name
-	 * @param      prefixId the user's new name prefix ID
-	 * @param      suffixId the user's new name suffix ID
+	 * @param      prefixListTypeId the user's new name prefix ID
+	 * @param      suffixListTypeId the user's new name suffix ID
 	 * @param      male whether user is male
 	 * @param      birthdayMonth the user's new birthday month (0-based, meaning
 	 *             0 for January)
@@ -3207,11 +3281,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			String screenName, String emailAddress, long facebookId,
 			String openId, String languageId, String timeZoneId,
 			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle,
+			long[] groupIds, long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -3221,10 +3295,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
 			emailAddress, facebookId, openId, true, null, languageId,
 			timeZoneId, greeting, comments, firstName, middleName, lastName,
-			prefixId, suffixId, male, birthdayMonth, birthdayDay, birthdayYear,
-			smsSn, facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, groupIds,
-			organizationIds, roleIds, userGroupRoles, userGroupIds, null, null,
-			null, null, null, serviceContext);
+			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, smsSn, facebookSn, jabberSn, skypeSn,
+			twitterSn, jobTitle, groupIds, organizationIds, roleIds,
+			userGroupRoles, userGroupIds, null, null, null, null, null,
+			serviceContext);
 	}
 
 	/**
@@ -3249,8 +3324,8 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 	 * @param  firstName the user's new first name
 	 * @param  middleName the user's new middle name
 	 * @param  lastName the user's new last name
-	 * @param  prefixId the user's new name prefix ID
-	 * @param  suffixId the user's new name suffix ID
+	 * @param  prefixListTypeId the user's new name prefix ID
+	 * @param  suffixListTypeId the user's new name suffix ID
 	 * @param  male whether user is male
 	 * @param  birthdayMonth the user's new birthday month (0-based, meaning 0
 	 *         for January)
@@ -3280,10 +3355,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			String reminderQueryQuestion, String reminderQueryAnswer,
 			String screenName, String emailAddress, String languageId,
 			String timeZoneId, String greeting, String comments,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String smsSn, String facebookSn, String jabberSn,
-			String skypeSn, String twitterSn, String jobTitle, long[] groupIds,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
+			String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle, long[] groupIds,
 			long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			ServiceContext serviceContext)
@@ -3293,11 +3369,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
 			emailAddress, true, null, languageId, timeZoneId, greeting,
-			comments, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, smsSn, facebookSn,
-			jabberSn, skypeSn, twitterSn, jobTitle, groupIds, organizationIds,
-			roleIds, userGroupRoles, userGroupIds, null, null, null, null, null,
-			serviceContext);
+			comments, firstName, middleName, lastName, prefixListTypeId,
+			suffixListTypeId, male, birthdayMonth, birthdayDay, birthdayYear,
+			smsSn, facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, groupIds,
+			organizationIds, roleIds, userGroupRoles, userGroupIds, null, null,
+			null, null, null, serviceContext);
 	}
 
 	protected void checkAddUserPermission(
@@ -3327,9 +3403,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 		boolean anonymousUser = ParamUtil.getBoolean(
 			serviceContext, "anonymousUser");
 
-		long defaultUserId = userLocalService.getDefaultUserId(companyId);
+		long guestUserId = userLocalService.getGuestUserId(companyId);
 
-		if (((creatorUserId != 0) && (creatorUserId != defaultUserId)) ||
+		if (((creatorUserId != 0) && (creatorUserId != guestUserId)) ||
 			(!company.isStrangers() && !anonymousUser)) {
 
 			PermissionChecker permissionChecker = getPermissionChecker();
@@ -3346,7 +3422,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			}
 		}
 
-		if (((creatorUserId == 0) || (creatorUserId == defaultUserId)) &&
+		if (((creatorUserId == 0) || (creatorUserId == guestUserId)) &&
 			!company.isStrangersWithMx() &&
 			company.hasCompanyMx(emailAddress)) {
 
@@ -3452,6 +3528,14 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		PermissionChecker permissionChecker = getPermissionChecker();
 
+		boolean strictAssignment = false;
+
+		if (PropsValues.ORGANIZATIONS_ASSIGNMENT_STRICT ||
+			!permissionChecker.isCompanyAdmin()) {
+
+			strictAssignment = true;
+		}
+
 		if (userId != CompanyConstants.SYSTEM) {
 
 			// Add back any mandatory organizations or organizations that the
@@ -3471,6 +3555,10 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 					(!OrganizationPermissionUtil.contains(
 						permissionChecker, organization,
 						ActionKeys.ASSIGN_MEMBERS) ||
+					 (strictAssignment &&
+					  !OrganizationPermissionUtil.contains(
+						  permissionChecker, organization,
+						  ActionKeys.MANAGE_USERS)) ||
 					 OrganizationMembershipPolicyUtil.isMembershipProtected(
 						 permissionChecker, userId,
 						 organization.getOrganizationId()) ||
@@ -3500,6 +3588,11 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 			OrganizationPermissionUtil.check(
 				permissionChecker, organization, ActionKeys.ASSIGN_MEMBERS);
+
+			if (strictAssignment) {
+				OrganizationPermissionUtil.check(
+					permissionChecker, organization, ActionKeys.MANAGE_USERS);
+			}
 		}
 
 		return organizationIds;
@@ -3775,9 +3868,9 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 	protected void validateUpdatePermission(
 			User user, String screenName, String emailAddress, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			int birthdayMonth, int birthdayDay, int birthdayYear, boolean male,
-			String jobTitle)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, int birthdayMonth, int birthdayDay,
+			int birthdayYear, boolean male, String jobTitle)
 		throws PortalException {
 
 		List<String> fields = new ArrayList<>();
@@ -3821,7 +3914,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			fields.add("middleName");
 		}
 
-		if (prefixId != contact.getPrefixId()) {
+		if (prefixListTypeId != contact.getPrefixListTypeId()) {
 			fields.add("prefix");
 		}
 
@@ -3829,7 +3922,7 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 			fields.add("screenName");
 		}
 
-		if (suffixId != contact.getSuffixId()) {
+		if (suffixListTypeId != contact.getSuffixListTypeId()) {
 			fields.add("suffix");
 		}
 
@@ -3845,6 +3938,12 @@ public class UserServiceImpl extends UserServiceBaseImpl {
 
 		if (userFieldException.hasFields()) {
 			throw userFieldException;
+		}
+	}
+
+	protected void validateUserIds(long[] userIds) throws PortalException {
+		for (long userId : userIds) {
+			getUserById(userId);
 		}
 	}
 

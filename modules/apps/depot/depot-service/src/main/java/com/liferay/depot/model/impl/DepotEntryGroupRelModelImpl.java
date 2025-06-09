@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.model.impl;
 
 import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.depot.model.DepotEntryGroupRelModel;
-import com.liferay.depot.model.DepotEntryGroupRelSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -78,11 +65,11 @@ public class DepotEntryGroupRelModelImpl
 	public static final String TABLE_NAME = "DepotEntryGroupRel";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
-		{"depotEntryGroupRelId", Types.BIGINT}, {"groupId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
-		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
-		{"modifiedDate", Types.TIMESTAMP},
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"depotEntryGroupRelId", Types.BIGINT},
+		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
+		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"ddmStructuresAvailable", Types.BOOLEAN},
 		{"depotEntryId", Types.BIGINT}, {"searchable", Types.BOOLEAN},
 		{"toGroupId", Types.BIGINT}, {"lastPublishDate", Types.TIMESTAMP}
@@ -93,6 +80,7 @@ public class DepotEntryGroupRelModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("depotEntryGroupRelId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
@@ -109,7 +97,7 @@ public class DepotEntryGroupRelModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DepotEntryGroupRel (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,depotEntryGroupRelId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,ddmStructuresAvailable BOOLEAN,depotEntryId LONG,searchable BOOLEAN,toGroupId LONG,lastPublishDate DATE null)";
+		"create table DepotEntryGroupRel (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,depotEntryGroupRelId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,ddmStructuresAvailable BOOLEAN,depotEntryId LONG,searchable BOOLEAN,toGroupId LONG,lastPublishDate DATE null,primary key (depotEntryGroupRelId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table DepotEntryGroupRel";
 
@@ -188,64 +176,6 @@ public class DepotEntryGroupRelModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static DepotEntryGroupRel toModel(DepotEntryGroupRelSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		DepotEntryGroupRel model = new DepotEntryGroupRelImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setDepotEntryGroupRelId(soapModel.getDepotEntryGroupRelId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setDdmStructuresAvailable(soapModel.isDdmStructuresAvailable());
-		model.setDepotEntryId(soapModel.getDepotEntryId());
-		model.setSearchable(soapModel.isSearchable());
-		model.setToGroupId(soapModel.getToGroupId());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<DepotEntryGroupRel> toModels(
-		DepotEntryGroupRelSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<DepotEntryGroupRel> models = new ArrayList<DepotEntryGroupRel>(
-			soapModels.length);
-
-		for (DepotEntryGroupRelSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public DepotEntryGroupRelModelImpl() {
 	}
 
@@ -322,145 +252,140 @@ public class DepotEntryGroupRelModelImpl
 	public Map<String, Function<DepotEntryGroupRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DepotEntryGroupRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DepotEntryGroupRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DepotEntryGroupRel.class.getClassLoader(), DepotEntryGroupRel.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DepotEntryGroupRel, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DepotEntryGroupRel> constructor =
-				(Constructor<DepotEntryGroupRel>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DepotEntryGroupRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<DepotEntryGroupRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DepotEntryGroupRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DepotEntryGroupRel::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DepotEntryGroupRel::getUuid);
+			attributeGetterFunctions.put(
+				"depotEntryGroupRelId",
+				DepotEntryGroupRel::getDepotEntryGroupRelId);
+			attributeGetterFunctions.put(
+				"groupId", DepotEntryGroupRel::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", DepotEntryGroupRel::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", DepotEntryGroupRel::getUserId);
+			attributeGetterFunctions.put(
+				"userName", DepotEntryGroupRel::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", DepotEntryGroupRel::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DepotEntryGroupRel::getModifiedDate);
+			attributeGetterFunctions.put(
+				"ddmStructuresAvailable",
+				DepotEntryGroupRel::getDdmStructuresAvailable);
+			attributeGetterFunctions.put(
+				"depotEntryId", DepotEntryGroupRel::getDepotEntryId);
+			attributeGetterFunctions.put(
+				"searchable", DepotEntryGroupRel::getSearchable);
+			attributeGetterFunctions.put(
+				"toGroupId", DepotEntryGroupRel::getToGroupId);
+			attributeGetterFunctions.put(
+				"lastPublishDate", DepotEntryGroupRel::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DepotEntryGroupRel, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DepotEntryGroupRel, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DepotEntryGroupRel, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<DepotEntryGroupRel, Object>>();
-		Map<String, BiConsumer<DepotEntryGroupRel, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<DepotEntryGroupRel, ?>>();
+		private static final Map<String, BiConsumer<DepotEntryGroupRel, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", DepotEntryGroupRel::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setMvccVersion);
-		attributeGetterFunctions.put("uuid", DepotEntryGroupRel::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<DepotEntryGroupRel, String>)
-				DepotEntryGroupRel::setUuid);
-		attributeGetterFunctions.put(
-			"depotEntryGroupRelId",
-			DepotEntryGroupRel::getDepotEntryGroupRelId);
-		attributeSetterBiConsumers.put(
-			"depotEntryGroupRelId",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setDepotEntryGroupRelId);
-		attributeGetterFunctions.put("groupId", DepotEntryGroupRel::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", DepotEntryGroupRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setCompanyId);
-		attributeGetterFunctions.put("userId", DepotEntryGroupRel::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setUserId);
-		attributeGetterFunctions.put(
-			"userName", DepotEntryGroupRel::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<DepotEntryGroupRel, String>)
-				DepotEntryGroupRel::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", DepotEntryGroupRel::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DepotEntryGroupRel, Date>)
-				DepotEntryGroupRel::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DepotEntryGroupRel::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DepotEntryGroupRel, Date>)
-				DepotEntryGroupRel::setModifiedDate);
-		attributeGetterFunctions.put(
-			"ddmStructuresAvailable",
-			DepotEntryGroupRel::getDdmStructuresAvailable);
-		attributeSetterBiConsumers.put(
-			"ddmStructuresAvailable",
-			(BiConsumer<DepotEntryGroupRel, Boolean>)
-				DepotEntryGroupRel::setDdmStructuresAvailable);
-		attributeGetterFunctions.put(
-			"depotEntryId", DepotEntryGroupRel::getDepotEntryId);
-		attributeSetterBiConsumers.put(
-			"depotEntryId",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setDepotEntryId);
-		attributeGetterFunctions.put(
-			"searchable", DepotEntryGroupRel::getSearchable);
-		attributeSetterBiConsumers.put(
-			"searchable",
-			(BiConsumer<DepotEntryGroupRel, Boolean>)
-				DepotEntryGroupRel::setSearchable);
-		attributeGetterFunctions.put(
-			"toGroupId", DepotEntryGroupRel::getToGroupId);
-		attributeSetterBiConsumers.put(
-			"toGroupId",
-			(BiConsumer<DepotEntryGroupRel, Long>)
-				DepotEntryGroupRel::setToGroupId);
-		attributeGetterFunctions.put(
-			"lastPublishDate", DepotEntryGroupRel::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<DepotEntryGroupRel, Date>)
-				DepotEntryGroupRel::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<DepotEntryGroupRel, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<DepotEntryGroupRel, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<DepotEntryGroupRel, String>)
+					DepotEntryGroupRel::setUuid);
+			attributeSetterBiConsumers.put(
+				"depotEntryGroupRelId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setDepotEntryGroupRelId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DepotEntryGroupRel, String>)
+					DepotEntryGroupRel::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DepotEntryGroupRel, Date>)
+					DepotEntryGroupRel::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DepotEntryGroupRel, Date>)
+					DepotEntryGroupRel::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"ddmStructuresAvailable",
+				(BiConsumer<DepotEntryGroupRel, Boolean>)
+					DepotEntryGroupRel::setDdmStructuresAvailable);
+			attributeSetterBiConsumers.put(
+				"depotEntryId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setDepotEntryId);
+			attributeSetterBiConsumers.put(
+				"searchable",
+				(BiConsumer<DepotEntryGroupRel, Boolean>)
+					DepotEntryGroupRel::setSearchable);
+			attributeSetterBiConsumers.put(
+				"toGroupId",
+				(BiConsumer<DepotEntryGroupRel, Long>)
+					DepotEntryGroupRel::setToGroupId);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<DepotEntryGroupRel, Date>)
+					DepotEntryGroupRel::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -476,6 +401,21 @@ public class DepotEntryGroupRelModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -850,6 +790,7 @@ public class DepotEntryGroupRelModelImpl
 			new DepotEntryGroupRelImpl();
 
 		depotEntryGroupRelImpl.setMvccVersion(getMvccVersion());
+		depotEntryGroupRelImpl.setCtCollectionId(getCtCollectionId());
 		depotEntryGroupRelImpl.setUuid(getUuid());
 		depotEntryGroupRelImpl.setDepotEntryGroupRelId(
 			getDepotEntryGroupRelId());
@@ -878,6 +819,8 @@ public class DepotEntryGroupRelModelImpl
 
 		depotEntryGroupRelImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		depotEntryGroupRelImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		depotEntryGroupRelImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
 		depotEntryGroupRelImpl.setDepotEntryGroupRelId(
@@ -983,6 +926,8 @@ public class DepotEntryGroupRelModelImpl
 			new DepotEntryGroupRelCacheModel();
 
 		depotEntryGroupRelCacheModel.mvccVersion = getMvccVersion();
+
+		depotEntryGroupRelCacheModel.ctCollectionId = getCtCollectionId();
 
 		depotEntryGroupRelCacheModel.uuid = getUuid();
 
@@ -1099,45 +1044,17 @@ public class DepotEntryGroupRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DepotEntryGroupRel, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DepotEntryGroupRel, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DepotEntryGroupRel, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DepotEntryGroupRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DepotEntryGroupRel>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DepotEntryGroupRel.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _depotEntryGroupRelId;
 	private long _groupId;
@@ -1157,7 +1074,8 @@ public class DepotEntryGroupRelModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<DepotEntryGroupRel, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1183,6 +1101,7 @@ public class DepotEntryGroupRelModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
 			"depotEntryGroupRelId", _depotEntryGroupRelId);
@@ -1223,31 +1142,33 @@ public class DepotEntryGroupRelModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("uuid_", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("depotEntryGroupRelId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("groupId", 8L);
+		columnBitmasks.put("depotEntryGroupRelId", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("groupId", 16L);
 
-		columnBitmasks.put("userId", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("userName", 64L);
+		columnBitmasks.put("userId", 64L);
 
-		columnBitmasks.put("createDate", 128L);
+		columnBitmasks.put("userName", 128L);
 
-		columnBitmasks.put("modifiedDate", 256L);
+		columnBitmasks.put("createDate", 256L);
 
-		columnBitmasks.put("ddmStructuresAvailable", 512L);
+		columnBitmasks.put("modifiedDate", 512L);
 
-		columnBitmasks.put("depotEntryId", 1024L);
+		columnBitmasks.put("ddmStructuresAvailable", 1024L);
 
-		columnBitmasks.put("searchable", 2048L);
+		columnBitmasks.put("depotEntryId", 2048L);
 
-		columnBitmasks.put("toGroupId", 4096L);
+		columnBitmasks.put("searchable", 4096L);
 
-		columnBitmasks.put("lastPublishDate", 8192L);
+		columnBitmasks.put("toGroupId", 8192L);
+
+		columnBitmasks.put("lastPublishDate", 16384L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

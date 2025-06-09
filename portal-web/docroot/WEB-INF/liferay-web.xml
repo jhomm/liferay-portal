@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<web-app version="3.0" xmlns="http://java.sun.com/xml/ns/javaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd">
+<web-app version="6.0" xmlns="https://jakarta.ee/xml/ns/jakartaee" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_6_0.xsd">
 	<filter>
 		<filter-name>Absolute Redirects Filter</filter-name>
 		<filter-class>com.liferay.portal.servlet.filters.absoluteredirects.AbsoluteRedirectsFilter</filter-class>
@@ -43,46 +43,6 @@
 		<init-param>
 			<param-name>portal_property_prefix</param-name>
 			<param-value>axis.servlet.</param-value>
-		</init-param>
-	</filter>
-	<filter>
-		<filter-name>Cache Filter - Friendly</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.cache.CacheFilter</filter-class>
-		<init-param>
-			<param-name>pattern</param-name>
-			<param-value>0</param-value>
-		</init-param>
-	</filter>
-	<filter>
-		<filter-name>Cache Filter - Layout</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.cache.CacheFilter</filter-class>
-		<init-param>
-			<param-name>pattern</param-name>
-			<param-value>1</param-value>
-		</init-param>
-	</filter>
-	<filter>
-		<filter-name>Cache Filter - Resource</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.cache.CacheFilter</filter-class>
-		<init-param>
-			<param-name>url-regex-ignore-pattern</param-name>
-			<param-value>(.+/-/.+|/webdav/.*)</param-value>
-		</init-param>
-		<init-param>
-			<param-name>pattern</param-name>
-			<param-value>2</param-value>
-		</init-param>
-	</filter>
-	<filter>
-		<filter-name>Cache Filter - Resource JSP</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.cache.CacheFilter</filter-class>
-		<init-param>
-			<param-name>url-regex-pattern</param-name>
-			<param-value>.+/(barebone|css|everything|main)\.jsp</param-value>
-		</init-param>
-		<init-param>
-			<param-name>pattern</param-name>
-			<param-value>2</param-value>
 		</init-param>
 	</filter>
 	<filter>
@@ -146,7 +106,7 @@
 		<filter-class>com.liferay.portal.servlet.filters.header.HeaderFilter</filter-class>
 		<init-param>
 			<param-name>url-regex-ignore-pattern</param-name>
-			<param-value>.+/-/.+</param-value>
+			<param-value>(.+/-/.+|/adaptive-media/.*)</param-value>
 		</init-param>
 		<init-param>
 			<param-name>Cache-Control</param-name>
@@ -204,14 +164,6 @@
 	<filter>
 		<filter-name>Ignore Filter - VM</filter-name>
 		<filter-class>com.liferay.portal.servlet.filters.ignore.IgnoreFilter</filter-class>
-	</filter>
-	<filter>
-		<filter-name>I18n Filter</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.i18n.I18nFilter</filter-class>
-	</filter>
-	<filter>
-		<filter-name>JSON Content Type Filter</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.jsoncontenttype.JSONContentTypeFilter</filter-class>
 	</filter>
 	<filter>
 		<filter-name>JSON Servlet Filter</filter-name>
@@ -314,10 +266,6 @@
 		</init-param>
 	</filter>
 	<filter>
-		<filter-name>SSO Open SSO Filter</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.sso.opensso.OpenSSOFilter</filter-class>
-	</filter>
-	<filter>
 		<filter-name>Strip Filter</filter-name>
 		<filter-class>com.liferay.portal.servlet.filters.strip.StripFilter</filter-class>
 	</filter>
@@ -343,26 +291,6 @@
 		<init-param>
 			<param-name>portal_property_prefix</param-name>
 			<param-value>tunnel.servlet.</param-value>
-		</init-param>
-	</filter>
-	<filter>
-		<filter-name>UnsyncPrintWriter Pool Filter</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.unsyncprintwriterpool.UnsyncPrintWriterPoolFilter</filter-class>
-	</filter>
-	<filter>
-		<filter-name>URL Rewrite Filter</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.urlrewrite.UrlRewriteFilter</filter-class>
-		<init-param>
-			<param-name>logLevel</param-name>
-			<param-value>ERROR</param-value>
-		</init-param>
-		<init-param>
-			<param-name>statusEnabled</param-name>
-			<param-value>false</param-value>
-		</init-param>
-		<init-param>
-			<param-name>url-regex-ignore-pattern</param-name>
-			<param-value>(^/combo/)|(^/html/.+\.(css|gif|html|ico|jpg|js|png)(\?.*)?$)</param-value>
 		</init-param>
 	</filter>
 	<filter>
@@ -401,10 +329,6 @@
 		<filter-name>WebLogic Include Filter</filter-name>
 		<filter-class>com.liferay.portal.servlet.filters.weblogic.WebLogicIncludeFilter</filter-class>
 	</filter>
-	<filter>
-		<filter-name>WebSphere Async Servlet Request Filter</filter-name>
-		<filter-class>com.liferay.portal.servlet.filters.websphere.WebSphereAsyncServletRequestFilter</filter-class>
-	</filter>
 	<filter-mapping>
 		<filter-name>Ignore Filter - FTL</filter-name>
 		<url-pattern>*.ftl</url-pattern>
@@ -436,14 +360,6 @@
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>Char Buffer Pool Filter</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>UnsyncPrintWriter Pool Filter</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>URL Rewrite Filter</filter-name>
 		<url-pattern>/*</url-pattern>
 	</filter-mapping>
 	<filter-mapping>
@@ -483,18 +399,6 @@
 	<filter-mapping>
 		<filter-name>Sharepoint Filter</filter-name>
 		<url-pattern>/sharepoint/_vti_bin/owssvr.dll</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>SSO Open SSO Filter</filter-name>
-		<url-pattern>/c/portal/login</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>SSO Open SSO Filter</filter-name>
-		<url-pattern>/c/portal/logout</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>Auto Login Filter</filter-name>
@@ -580,10 +484,6 @@
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>Header Filter</filter-name>
-		<url-pattern>/o/js_loader_config</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Header Filter</filter-name>
 		<url-pattern>*.css</url-pattern>
 	</filter-mapping>
 	<filter-mapping>
@@ -615,12 +515,6 @@
 		<url-pattern>/c/portal/logout</url-pattern>
 	</filter-mapping>
 	<filter-mapping>
-		<filter-name>JSON Content Type Filter</filter-name>
-		<url-pattern>/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
 		<filter-name>ETag Filter</filter-name>
 		<url-pattern>^(/c/document_library/get_file|/c/message_boards/get_message_attachment|/c/wiki/get_page_attachment)(\?.*)?$</url-pattern>
 		<dispatcher>FORWARD</dispatcher>
@@ -629,24 +523,6 @@
 	<filter-mapping>
 		<filter-name>ETag Filter</filter-name>
 		<url-pattern>/combo/*</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>ETag Filter</filter-name>
-		<url-pattern>/group/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>ETag Filter</filter-name>
-		<url-pattern>/user/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>ETag Filter</filter-name>
-		<url-pattern>/web/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>ETag Filter</filter-name>
@@ -659,10 +535,6 @@
 	<filter-mapping>
 		<filter-name>ETag Filter</filter-name>
 		<url-pattern>/o/js_bundle_config</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>ETag Filter</filter-name>
-		<url-pattern>/o/js_loader_config</url-pattern>
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>ETag Filter</filter-name>
@@ -690,52 +562,6 @@
 	</filter-mapping>
 	<filter-mapping>
 		<filter-name>ETag Filter - JSP</filter-name>
-		<url-pattern>*.jsp</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Friendly</filter-name>
-		<url-pattern>/group/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Friendly</filter-name>
-		<url-pattern>/user/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Friendly</filter-name>
-		<url-pattern>/web/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Layout</filter-name>
-		<url-pattern>/c/portal/layout</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Resource</filter-name>
-		<url-pattern>/combo/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Resource</filter-name>
-		<url-pattern>/language/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Resource</filter-name>
-		<url-pattern>*.css</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Resource</filter-name>
-		<url-pattern>*.js</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>Cache Filter - Resource JSP</filter-name>
 		<url-pattern>*.jsp</url-pattern>
 	</filter-mapping>
 	<filter-mapping>
@@ -787,24 +613,6 @@
 		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>
 	<filter-mapping>
-		<filter-name>I18n Filter</filter-name>
-		<url-pattern>/group/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>I18n Filter</filter-name>
-		<url-pattern>/user/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>I18n Filter</filter-name>
-		<url-pattern>/web/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
 		<filter-name>GZip Filter</filter-name>
 		<url-pattern>/c/*</url-pattern>
 		<dispatcher>FORWARD</dispatcher>
@@ -831,11 +639,6 @@
 	<filter-mapping>
 		<filter-name>GZip Filter</filter-name>
 		<url-pattern>/o/js_bundle_config</url-pattern>
-		<dispatcher>REQUEST</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>GZip Filter</filter-name>
-		<url-pattern>/o/js_loader_config</url-pattern>
 		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>
 	<filter-mapping>
@@ -1021,12 +824,5 @@
 		<filter-name>WebLogic Include Filter</filter-name>
 		<url-pattern>/*</url-pattern>
 		<dispatcher>INCLUDE</dispatcher>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>WebSphere Async Servlet Request Filter</filter-name>
-		<url-pattern>/*</url-pattern>
-		<dispatcher>FORWARD</dispatcher>
-		<dispatcher>INCLUDE</dispatcher>
-		<dispatcher>REQUEST</dispatcher>
 	</filter-mapping>
 </web-app>

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.service.persistence.impl;
 
+import com.liferay.batch.engine.exception.DuplicateBatchEngineImportTaskExternalReferenceCodeException;
 import com.liferay.batch.engine.exception.NoSuchImportTaskException;
 import com.liferay.batch.engine.model.BatchEngineImportTask;
 import com.liferay.batch.engine.model.BatchEngineImportTaskTable;
@@ -32,13 +24,18 @@ import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.SessionFactory;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -50,7 +47,6 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -77,9 +73,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Shuyang Zhou
  * @generated
  */
-@Component(
-	service = {BatchEngineImportTaskPersistence.class, BasePersistence.class}
-)
+@Component(service = BatchEngineImportTaskPersistence.class)
 public class BatchEngineImportTaskPersistenceImpl
 	extends BasePersistenceImpl<BatchEngineImportTask>
 	implements BatchEngineImportTaskPersistence {
@@ -198,7 +192,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchEngineImportTask>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchEngineImportTask batchEngineImportTask : list) {
@@ -588,7 +582,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -749,7 +743,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchEngineImportTask>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchEngineImportTask batchEngineImportTask : list) {
@@ -1167,7 +1161,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1326,7 +1320,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchEngineImportTask>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchEngineImportTask batchEngineImportTask : list) {
@@ -1694,7 +1688,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1837,7 +1831,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchEngineImportTask>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchEngineImportTask batchEngineImportTask : list) {
@@ -2234,7 +2228,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		Object[] finderArgs = new Object[] {executeStatus};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2288,6 +2282,214 @@ public class BatchEngineImportTaskPersistenceImpl
 	private static final String _FINDER_COLUMN_EXECUTESTATUS_EXECUTESTATUS_3 =
 		"(batchEngineImportTask.executeStatus IS NULL OR batchEngineImportTask.executeStatus = '')";
 
+	private FinderPath _finderPathFetchByERC_C;
+
+	/**
+	 * Returns the batch engine import task where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchImportTaskException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching batch engine import task
+	 * @throws NoSuchImportTaskException if a matching batch engine import task could not be found
+	 */
+	@Override
+	public BatchEngineImportTask findByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchImportTaskException {
+
+		BatchEngineImportTask batchEngineImportTask = fetchByERC_C(
+			externalReferenceCode, companyId);
+
+		if (batchEngineImportTask == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", companyId=");
+			sb.append(companyId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchImportTaskException(sb.toString());
+		}
+
+		return batchEngineImportTask;
+	}
+
+	/**
+	 * Returns the batch engine import task where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching batch engine import task, or <code>null</code> if a matching batch engine import task could not be found
+	 */
+	@Override
+	public BatchEngineImportTask fetchByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return fetchByERC_C(externalReferenceCode, companyId, true);
+	}
+
+	/**
+	 * Returns the batch engine import task where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching batch engine import task, or <code>null</code> if a matching batch engine import task could not be found
+	 */
+	@Override
+	public BatchEngineImportTask fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
+
+		externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+		Object[] finderArgs = null;
+
+		if (useFinderCache) {
+			finderArgs = new Object[] {externalReferenceCode, companyId};
+		}
+
+		Object result = null;
+
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByERC_C, finderArgs, this);
+		}
+
+		if (result instanceof BatchEngineImportTask) {
+			BatchEngineImportTask batchEngineImportTask =
+				(BatchEngineImportTask)result;
+
+			if (!Objects.equals(
+					externalReferenceCode,
+					batchEngineImportTask.getExternalReferenceCode()) ||
+				(companyId != batchEngineImportTask.getCompanyId())) {
+
+				result = null;
+			}
+		}
+
+		if (result == null) {
+			StringBundler sb = new StringBundler(4);
+
+			sb.append(_SQL_SELECT_BATCHENGINEIMPORTTASK_WHERE);
+
+			boolean bindExternalReferenceCode = false;
+
+			if (externalReferenceCode.isEmpty()) {
+				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
+			}
+			else {
+				bindExternalReferenceCode = true;
+
+				sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
+			}
+
+			sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				if (bindExternalReferenceCode) {
+					queryPos.add(externalReferenceCode);
+				}
+
+				queryPos.add(companyId);
+
+				List<BatchEngineImportTask> list = query.list();
+
+				if (list.isEmpty()) {
+					if (useFinderCache) {
+						finderCache.putResult(
+							_finderPathFetchByERC_C, finderArgs, list);
+					}
+				}
+				else {
+					BatchEngineImportTask batchEngineImportTask = list.get(0);
+
+					result = batchEngineImportTask;
+
+					cacheResult(batchEngineImportTask);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		if (result instanceof List<?>) {
+			return null;
+		}
+		else {
+			return (BatchEngineImportTask)result;
+		}
+	}
+
+	/**
+	 * Removes the batch engine import task where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the batch engine import task that was removed
+	 */
+	@Override
+	public BatchEngineImportTask removeByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchImportTaskException {
+
+		BatchEngineImportTask batchEngineImportTask = findByERC_C(
+			externalReferenceCode, companyId);
+
+		return remove(batchEngineImportTask);
+	}
+
+	/**
+	 * Returns the number of batch engine import tasks where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching batch engine import tasks
+	 */
+	@Override
+	public int countByERC_C(String externalReferenceCode, long companyId) {
+		BatchEngineImportTask batchEngineImportTask = fetchByERC_C(
+			externalReferenceCode, companyId);
+
+		if (batchEngineImportTask == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
+		"batchEngineImportTask.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3 =
+		"(batchEngineImportTask.externalReferenceCode IS NULL OR batchEngineImportTask.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_C_COMPANYID_2 =
+		"batchEngineImportTask.companyId = ?";
+
 	public BatchEngineImportTaskPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -2313,6 +2515,14 @@ public class BatchEngineImportTaskPersistenceImpl
 		entityCache.putResult(
 			BatchEngineImportTaskImpl.class,
 			batchEngineImportTask.getPrimaryKey(), batchEngineImportTask);
+
+		finderCache.putResult(
+			_finderPathFetchByERC_C,
+			new Object[] {
+				batchEngineImportTask.getExternalReferenceCode(),
+				batchEngineImportTask.getCompanyId()
+			},
+			batchEngineImportTask);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -2391,6 +2601,18 @@ public class BatchEngineImportTaskPersistenceImpl
 			entityCache.removeResult(
 				BatchEngineImportTaskImpl.class, primaryKey);
 		}
+	}
+
+	protected void cacheUniqueFindersCache(
+		BatchEngineImportTaskModelImpl batchEngineImportTaskModelImpl) {
+
+		Object[] args = new Object[] {
+			batchEngineImportTaskModelImpl.getExternalReferenceCode(),
+			batchEngineImportTaskModelImpl.getCompanyId()
+		};
+
+		finderCache.putResult(
+			_finderPathFetchByERC_C, args, batchEngineImportTaskModelImpl);
 	}
 
 	/**
@@ -2539,6 +2761,76 @@ public class BatchEngineImportTaskPersistenceImpl
 			batchEngineImportTask.setUuid(uuid);
 		}
 
+		if (Validator.isNull(
+				batchEngineImportTask.getExternalReferenceCode())) {
+
+			batchEngineImportTask.setExternalReferenceCode(
+				batchEngineImportTask.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					batchEngineImportTaskModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					batchEngineImportTask.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = batchEngineImportTask.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = batchEngineImportTask.getPrimaryKey();
+					}
+
+					try {
+						batchEngineImportTask.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								BatchEngineImportTask.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								batchEngineImportTask.
+									getExternalReferenceCode(),
+								null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			BatchEngineImportTask ercBatchEngineImportTask = fetchByERC_C(
+				batchEngineImportTask.getExternalReferenceCode(),
+				batchEngineImportTask.getCompanyId());
+
+			if (isNew) {
+				if (ercBatchEngineImportTask != null) {
+					throw new DuplicateBatchEngineImportTaskExternalReferenceCodeException(
+						"Duplicate batch engine import task with external reference code " +
+							batchEngineImportTask.getExternalReferenceCode() +
+								" and company " +
+									batchEngineImportTask.getCompanyId());
+				}
+			}
+			else {
+				if ((ercBatchEngineImportTask != null) &&
+					(batchEngineImportTask.getBatchEngineImportTaskId() !=
+						ercBatchEngineImportTask.
+							getBatchEngineImportTaskId())) {
+
+					throw new DuplicateBatchEngineImportTaskExternalReferenceCodeException(
+						"Duplicate batch engine import task with external reference code " +
+							batchEngineImportTask.getExternalReferenceCode() +
+								" and company " +
+									batchEngineImportTask.getCompanyId());
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -2593,6 +2885,8 @@ public class BatchEngineImportTaskPersistenceImpl
 		entityCache.putResult(
 			BatchEngineImportTaskImpl.class, batchEngineImportTaskModelImpl,
 			false, true);
+
+		cacheUniqueFindersCache(batchEngineImportTaskModelImpl);
 
 		if (isNew) {
 			batchEngineImportTask.setNew(false);
@@ -2741,7 +3035,7 @@ public class BatchEngineImportTaskPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchEngineImportTask>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2811,7 +3105,7 @@ public class BatchEngineImportTaskPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2956,30 +3250,19 @@ public class BatchEngineImportTaskPersistenceImpl
 			new String[] {String.class.getName()},
 			new String[] {"executeStatus"}, false);
 
-		_setBatchEngineImportTaskUtilPersistence(this);
+		_finderPathFetchByERC_C = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "companyId"}, true);
+
+		BatchEngineImportTaskUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setBatchEngineImportTaskUtilPersistence(null);
+		BatchEngineImportTaskUtil.setPersistence(null);
 
 		entityCache.removeCache(BatchEngineImportTaskImpl.class.getName());
-	}
-
-	private void _setBatchEngineImportTaskUtilPersistence(
-		BatchEngineImportTaskPersistence batchEngineImportTaskPersistence) {
-
-		try {
-			Field field = BatchEngineImportTaskUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, batchEngineImportTaskPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3045,9 +3328,5 @@ public class BatchEngineImportTaskPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private BatchEngineImportTaskModelArgumentsResolver
-		_batchEngineImportTaskModelArgumentsResolver;
 
 }

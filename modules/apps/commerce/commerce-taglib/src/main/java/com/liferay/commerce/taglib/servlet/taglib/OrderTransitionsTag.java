@@ -1,44 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.taglib.servlet.taglib;
 
 import com.liferay.commerce.constants.CommerceOrderConstants;
+import com.liferay.commerce.helper.CommerceWorkflowedModelHelper;
 import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.model.CommerceOrderItemModel;
 import com.liferay.commerce.order.CommerceOrderValidatorRegistry;
 import com.liferay.commerce.order.status.CommerceOrderStatus;
 import com.liferay.commerce.order.status.CommerceOrderStatusRegistry;
 import com.liferay.commerce.service.CommerceOrderServiceUtil;
 import com.liferay.commerce.taglib.servlet.taglib.internal.servlet.ServletContextUtil;
-import com.liferay.commerce.util.CommerceWorkflowedModelHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Alessio Antonio Rendina
@@ -64,7 +57,7 @@ public class OrderTransitionsTag extends IncludeTag {
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return SKIP_BODY;
@@ -135,6 +128,19 @@ public class OrderTransitionsTag extends IncludeTag {
 			_commerceOrderTransitionOVPs);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:order-transitions:cssClass", _cssClass);
+
+		if (_commerceOrder == null) {
+			httpServletRequest.setAttribute(
+				"liferay-commerce:order-transitions:disabled", Boolean.TRUE);
+		}
+		else {
+			httpServletRequest.setAttribute(
+				"liferay-commerce:order-transitions:disabled",
+				ListUtil.exists(
+					_commerceOrder.getCommerceOrderItems(),
+					CommerceOrderItemModel::isPriceOnApplication));
+		}
+
 		httpServletRequest.setAttribute(
 			"liferay-commerce:order-transitions:pathThemeImages",
 			_pathThemeImages);

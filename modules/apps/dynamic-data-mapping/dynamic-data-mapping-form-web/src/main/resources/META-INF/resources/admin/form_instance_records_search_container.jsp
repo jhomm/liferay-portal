@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,14 +22,18 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 	actionDropdownItems="<%= ddmFormViewFormInstanceRecordsDisplayContext.getActionItemsDropdownItems() %>"
 	additionalProps='<%=
 		HashMapBuilder.<String, Object>put(
+			"allSelectedLocalizedMessage", ddmFormViewFormInstanceRecordsDisplayContext.getLocalizedMessage(themeDisplay.getLocale(), "all-selected")
+		).put(
+			"ddmFormInstanceRecordIds", ddmFormViewFormInstanceRecordsDisplayContext.getDDMFormInstanceRecordIds()
+		).put(
 			"deleteFormInstanceRecordURL", deleteFormInstanceRecordURL.toString()
 		).build()
 	%>'
 	clearResultsURL="<%= ddmFormViewFormInstanceRecordsDisplayContext.getClearResultsURL() %>"
 	disabled="<%= ddmFormViewFormInstanceRecordsDisplayContext.isDisabledManagementBar() %>"
-	filterDropdownItems="<%= ddmFormViewFormInstanceRecordsDisplayContext.getFilterItemsDropdownItems() %>"
 	itemsTotal="<%= ddmFormViewFormInstanceRecordsDisplayContext.getTotalItems() %>"
-	propsTransformer="admin/js/DDMFormViewFormInstanceRecordsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= ddmFormViewFormInstanceRecordsDisplayContext.getOrderItemsDropdownItems() %>"
+	propsTransformer="{DDMFormViewFormInstanceRecordsManagementToolbarPropsTransformer} from dynamic-data-mapping-form-web"
 	searchActionURL="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchActionURL() %>"
 	searchContainerId="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainerId() %>"
 	searchFormName="fm"
@@ -46,16 +41,29 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 	sortingURL="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSortingURL() %>"
 />
 
+<c:if test="<%= DDMFormInstanceExpirationStatusUtil.isFormExpired(ddmFormViewFormInstanceRecordsDisplayContext.getDDMFormInstance(), timeZone) %>">
+	<clay:stripe
+		dismissible="<%= true %>"
+		displayType="warning"
+		message="the-form-is-expired-and-is-no-longer-available-for-editing-or-submitting-new-answers"
+	/>
+</c:if>
+
+<clay:stripe
+	displayType="info"
+	message="view-current-fields-warning-message"
+/>
+
 <clay:container-fluid
 	id='<%= liferayPortletResponse.getNamespace() + "viewEntriesContainer" %>'
 >
-	<aui:form action="<%= portletURL.toString() %>" method="post" name="searchContainerForm">
+	<aui:form action="<%= portletURL %>" method="post" name="searchContainerForm">
 		<aui:input name="deleteFormInstanceRecordIds" type="hidden" />
 
 		<liferay-ui:search-container
 			id="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainerId() %>"
 			rowChecker="<%= new EmptyOnClickRowChecker(renderResponse) %>"
-			searchContainer="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearch() %>"
+			searchContainer="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainer() %>"
 		>
 			<liferay-ui:search-container-row
 				className="com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord"
@@ -73,7 +81,7 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 
 						<div class="search-container-column-language">
 							<svg class="h4 lexicon-icon lexicon-icon-<%= w3cLanguageId %> reference-mark">
-								<use xlink:href="<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg#<%= w3cLanguageId %>" />
+								<use xlink:href="<%= themeDisplay.getPathThemeSpritemap() %>#<%= w3cLanguageId %>" />
 							</svg>
 						</div>
 					</liferay-ui:search-container-column-text>
@@ -167,7 +175,7 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 				displayStyle="<%= ddmFormViewFormInstanceRecordsDisplayContext.getDisplayStyle() %>"
 				markupView="lexicon"
 				paginate="<%= false %>"
-				searchContainer="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearch() %>"
+				searchContainer="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainer() %>"
 			/>
 		</liferay-ui:search-container>
 	</aui:form>
@@ -176,7 +184,7 @@ PortletURL portletURL = ddmFormViewFormInstanceRecordsDisplayContext.getPortletU
 <clay:container-fluid>
 	<liferay-ui:search-paginator
 		markupView="lexicon"
-		searchContainer="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearch() %>"
+		searchContainer="<%= ddmFormViewFormInstanceRecordsDisplayContext.getSearchContainer() %>"
 	/>
 </clay:container-fluid>
 

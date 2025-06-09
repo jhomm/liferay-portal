@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.internal.rest.context.path;
 
+import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.rest.context.path.RESTContextPathResolver;
 import com.liferay.object.scope.ObjectScopeProvider;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 /**
  * @author Marco Leo
@@ -24,21 +17,30 @@ import com.liferay.portal.kernel.util.StringUtil;
 public class RESTContextPathResolverImpl implements RESTContextPathResolver {
 
 	public RESTContextPathResolverImpl(
+		ObjectDefinition objectDefinition,
+		ObjectScopeProvider objectScopeProvider, boolean system) {
+
+		_objectDefinition = objectDefinition;
+		_objectScopeProvider = objectScopeProvider;
+		_system = system;
+	}
+
+	public RESTContextPathResolverImpl(
 		String contextPath, ObjectScopeProvider objectScopeProvider,
 		boolean system) {
 
 		_objectScopeProvider = objectScopeProvider;
+		_system = system;
 
-		if (_objectScopeProvider.isGroupAware() && !system) {
-			_contextPath = contextPath + "/scopes/{scopeKey}";
-		}
-		else {
-			_contextPath = contextPath;
-		}
+		_initContextPath(contextPath);
 	}
 
 	@Override
 	public String getRESTContextPath(long groupId) {
+		if (Validator.isNull(_contextPath)) {
+			_initContextPath("/o" + _objectDefinition.getRESTContextPath());
+		}
+
 		if (!_objectScopeProvider.isGroupAware() ||
 			!_objectScopeProvider.isValidGroupId(groupId)) {
 
@@ -50,7 +52,17 @@ public class RESTContextPathResolverImpl implements RESTContextPathResolver {
 			new String[] {String.valueOf(groupId), String.valueOf(groupId)});
 	}
 
-	private final String _contextPath;
+	private void _initContextPath(String contextPath) {
+		_contextPath = contextPath;
+
+		if (_objectScopeProvider.isGroupAware() && !_system) {
+			_contextPath = _contextPath + "/scopes/{scopeKey}";
+		}
+	}
+
+	private String _contextPath;
+	private ObjectDefinition _objectDefinition;
 	private final ObjectScopeProvider _objectScopeProvider;
+	private final boolean _system;
 
 }

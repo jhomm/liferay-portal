@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.commerce.model.CommerceShipment;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -92,15 +85,15 @@ public interface CommerceShipmentLocalService
 	public CommerceShipment addCommerceShipment(
 		CommerceShipment commerceShipment);
 
-	@Indexable(type = IndexableType.REINDEX)
-	public CommerceShipment addCommerceShipment(
-			long groupId, long commerceAccountId, long commerceAddressId,
-			long commerceShippingMethodId, String commerceShippingOptionName,
-			ServiceContext serviceContext)
-		throws PortalException;
-
 	public CommerceShipment addCommerceShipment(
 			long commerceOrderId, ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CommerceShipment addCommerceShipment(
+			String externalReferenceCode, long groupId, long commerceAccountId,
+			long commerceAddressId, long commerceShippingMethodId,
+			String commerceShippingOptionName, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -241,6 +234,21 @@ public interface CommerceShipmentLocalService
 	public CommerceShipment fetchCommerceShipment(long commerceShipmentId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipment fetchCommerceShipmentByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the commerce shipment matching the UUID and group.
+	 *
+	 * @param uuid the commerce shipment's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce shipment, or <code>null</code> if a matching commerce shipment could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipment fetchCommerceShipmentByUuidAndGroupId(
+		String uuid, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	/**
@@ -252,6 +260,24 @@ public interface CommerceShipmentLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceShipment getCommerceShipment(long commerceShipmentId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipment getCommerceShipmentByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	/**
+	 * Returns the commerce shipment matching the UUID and group.
+	 *
+	 * @param uuid the commerce shipment's UUID
+	 * @param groupId the primary key of the group
+	 * @return the matching commerce shipment
+	 * @throws PortalException if a matching commerce shipment could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceShipment getCommerceShipmentByUuidAndGroupId(
+			String uuid, long groupId)
 		throws PortalException;
 
 	/**
@@ -295,6 +321,32 @@ public interface CommerceShipmentLocalService
 		OrderByComparator<CommerceShipment> orderByComparator);
 
 	/**
+	 * Returns all the commerce shipments matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce shipments
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce shipments, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceShipment> getCommerceShipmentsByUuidAndCompanyId(
+		String uuid, long companyId);
+
+	/**
+	 * Returns a range of commerce shipments matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce shipments
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of commerce shipments
+	 * @param end the upper bound of the range of commerce shipments (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching commerce shipments, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceShipment> getCommerceShipmentsByUuidAndCompanyId(
+		String uuid, long companyId, int start, int end,
+		OrderByComparator<CommerceShipment> orderByComparator);
+
+	/**
 	 * Returns the number of commerce shipments.
 	 *
 	 * @return the number of commerce shipments
@@ -327,6 +379,10 @@ public interface CommerceShipmentLocalService
 		long commerceOrderId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
 	/**
@@ -357,30 +413,18 @@ public interface CommerceShipmentLocalService
 	public long searchCommerceShipmentsCount(SearchContext searchContext)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #updateAddress(long, String, String, String, String, String, String,
-	 String, long, long, String, ServiceContext)}
-	 */
-	@Deprecated
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipment updateAddress(
-			long commerceShipmentId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public CommerceShipment updateAddress(
-			long commerceShipmentId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long commerceShipmentId, String name,
+			String description, String street1, String street2, String street3,
+			String city, String zip, long regionId, long countryId,
+			String phoneNumber, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipment updateCarrierDetails(
-			long commerceShipmentId, String carrier, String trackingNumber)
+			long commerceShipmentId, long commerceShippingMethodId,
+			String carrier, String trackingNumber, String trackingURL)
 		throws PortalException;
 
 	/**
@@ -398,29 +442,36 @@ public interface CommerceShipmentLocalService
 		CommerceShipment commerceShipment);
 
 	public CommerceShipment updateCommerceShipment(
-			long commerceShipmentId, String carrier, String trackingNumber,
-			int status, int shippingDateMonth, int shippingDateDay,
-			int shippingDateYear, int shippingDateHour, int shippingDateMinute,
-			int expectedDateMonth, int expectedDateDay, int expectedDateYear,
-			int expectedDateHour, int expectedDateMinute)
+			long commerceShipmentId, long commerceShippingMethodId,
+			String carrier, int expectedDateMonth, int expectedDateDay,
+			int expectedDateYear, int expectedDateHour, int expectedDateMinute,
+			int shippingDateMonth, int shippingDateDay, int shippingDateYear,
+			int shippingDateHour, int shippingDateMinute, String trackingNumber,
+			String trackingURL, int status, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipment updateCommerceShipment(
-			long commerceShipmentId, String name, String description,
+			long commerceShipmentId, long commerceShippingMethodId,
+			String carrier, int expectedDateMonth, int expectedDateDay,
+			int expectedDateYear, int expectedDateHour, int expectedDateMinute,
+			int shippingDateMonth, int shippingDateDay, int shippingDateYear,
+			int shippingDateHour, int shippingDateMinute, String trackingNumber,
+			String trackingURL, int status, String name, String description,
 			String street1, String street2, String street3, String city,
 			String zip, long regionId, long countryId, String phoneNumber,
-			String carrier, String trackingNumber, int status,
-			int shippingDateMonth, int shippingDateDay, int shippingDateYear,
-			int shippingDateHour, int shippingDateMinute, int expectedDateMonth,
-			int expectedDateDay, int expectedDateYear, int expectedDateHour,
-			int expectedDateMinute)
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceShipment updateExpectedDate(
 			long commerceShipmentId, int expectedDateMonth, int expectedDateDay,
 			int expectedDateYear, int expectedDateHour, int expectedDateMinute)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CommerceShipment updateExternalReferenceCode(
+			long commerceShipmentId, String externalReferenceCode)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)

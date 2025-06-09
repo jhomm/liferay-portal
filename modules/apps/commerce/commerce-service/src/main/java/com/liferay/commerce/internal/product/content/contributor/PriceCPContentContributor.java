@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.product.content.contributor;
@@ -31,19 +22,20 @@ import com.liferay.commerce.product.option.CommerceOptionValueHelper;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.util.CPContentContributor;
 import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
-import com.liferay.commerce.util.CommerceBigDecimalUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "commerce.product.content.contributor.name=" + CPContentContributorConstants.PRICE,
 	service = CPContentContributor.class
 )
@@ -82,12 +73,12 @@ public class PriceCPContentContributor implements CPContentContributor {
 			return jsonObject;
 		}
 
-		String ddmFormValues = ParamUtil.getString(
-			httpServletRequest, "ddmFormValues");
+		String formFieldValues = ParamUtil.getString(
+			httpServletRequest, "formFieldValues");
 
 		List<CommerceOptionValue> commerceOptionValues =
 			_commerceOptionValueHelper.getCPDefinitionCommerceOptionValues(
-				cpInstance.getCPDefinitionId(), ddmFormValues);
+				cpInstance.getCPDefinitionId(), formFieldValues);
 
 		CPDefinitionInventory cpDefinitionInventory =
 			_cpDefinitionInventoryLocalService.
@@ -105,8 +96,8 @@ public class PriceCPContentContributor implements CPContentContributor {
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
 				_getCommerceProductPriceRequest(
-					cpInstance, cpDefinitionInventoryEngine, commerceContext,
-					commerceOptionValues));
+					cpInstance, cpDefinitionInventoryEngine,
+					commerceOptionValues, StringPool.BLANK, commerceContext));
 
 		CommerceMoney unitPriceCommerceMoney =
 			commerceProductPrice.getUnitPrice();
@@ -128,9 +119,9 @@ public class PriceCPContentContributor implements CPContentContributor {
 			return jsonObject;
 		}
 
-		if (CommerceBigDecimalUtil.gt(
+		if (BigDecimalUtil.gt(
 				unitPromoPriceCommerceMoney.getPrice(), BigDecimal.ZERO) &&
-			CommerceBigDecimalUtil.lte(
+			BigDecimalUtil.lte(
 				unitPromoPriceCommerceMoney.getPrice(),
 				unitPriceCommerceMoney.getPrice())) {
 
@@ -145,21 +136,25 @@ public class PriceCPContentContributor implements CPContentContributor {
 	private CommerceProductPriceRequest _getCommerceProductPriceRequest(
 			CPInstance cpInstance,
 			CPDefinitionInventoryEngine cpDefinitionInventoryEngine,
-			CommerceContext commerceContext,
-			List<CommerceOptionValue> commerceOptionValues)
+			List<CommerceOptionValue> commerceOptionValues,
+			String unitOfMeasureKey, CommerceContext commerceContext)
 		throws PortalException {
 
 		CommerceProductPriceRequest commerceProductPriceRequest =
 			new CommerceProductPriceRequest();
 
-		commerceProductPriceRequest.setCpInstanceId(
-			cpInstance.getCPInstanceId());
-		commerceProductPriceRequest.setQuantity(
-			cpDefinitionInventoryEngine.getMinOrderQuantity(cpInstance));
-		commerceProductPriceRequest.setSecure(false);
 		commerceProductPriceRequest.setCommerceContext(commerceContext);
 		commerceProductPriceRequest.setCommerceOptionValues(
 			commerceOptionValues);
+		commerceProductPriceRequest.setCpInstanceId(
+			cpInstance.getCPInstanceId());
+		commerceProductPriceRequest.setQuantity(
+			cpDefinitionInventoryEngine.getMinOrderQuantity(
+				commerceContext.getCPConfigurationListId(
+					cpInstance.getGroupId()),
+				cpInstance));
+		commerceProductPriceRequest.setSecure(false);
+		commerceProductPriceRequest.setUnitOfMeasureKey(unitOfMeasureKey);
 
 		return commerceProductPriceRequest;
 	}

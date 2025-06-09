@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.service.impl;
@@ -17,33 +8,41 @@ package com.liferay.commerce.wish.list.service.impl;
 import com.liferay.commerce.wish.list.constants.CommerceWishListActionKeys;
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.commerce.wish.list.service.base.CommerceWishListServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Andrea Di Giorgi
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceWishList"
+	},
+	service = AopService.class
+)
 public class CommerceWishListServiceImpl
 	extends CommerceWishListServiceBaseImpl {
 
 	@Override
 	public CommerceWishList addCommerceWishList(
-			String name, boolean defaultWishList, ServiceContext serviceContext)
+			long groupId, String name, boolean defaultWishList)
 		throws PortalException {
 
-		if (getUserId() != serviceContext.getUserId()) {
-			checkManagePermission(serviceContext.getScopeGroupId());
-		}
+		_checkPortletResourcePermission(
+			groupId, CommerceWishListActionKeys.ADD_COMMERCE_WISH_LIST);
 
 		return commerceWishListLocalService.addCommerceWishList(
-			name, defaultWishList, serviceContext);
+			getUserId(), groupId, name, defaultWishList);
 	}
 
 	@Override
@@ -58,13 +57,13 @@ public class CommerceWishListServiceImpl
 
 	@Override
 	public CommerceWishList fetchCommerceWishList(
-			long groupId, long userId, boolean defaultWishList,
+			long groupId, boolean defaultWishList,
 			OrderByComparator<CommerceWishList> orderByComparator)
 		throws PortalException {
 
 		CommerceWishList commerceWishList =
 			commerceWishListLocalService.fetchCommerceWishList(
-				groupId, userId, defaultWishList, orderByComparator);
+				getUserId(), groupId, defaultWishList, orderByComparator);
 
 		if (commerceWishList != null) {
 			_commerceWishListModelResourcePermission.check(
@@ -91,53 +90,29 @@ public class CommerceWishListServiceImpl
 			OrderByComparator<CommerceWishList> orderByComparator)
 		throws PortalException {
 
-		checkManagePermission(groupId);
+		_checkPortletResourcePermission(
+			groupId, CommerceWishListActionKeys.VIEW_COMMERCE_WISH_LISTS);
 
 		return commerceWishListLocalService.getCommerceWishLists(
-			groupId, start, end, orderByComparator);
-	}
-
-	@Override
-	public List<CommerceWishList> getCommerceWishLists(
-			long groupId, long userId, int start, int end,
-			OrderByComparator<CommerceWishList> orderByComparator)
-		throws PortalException {
-
-		if (getUserId() != userId) {
-			checkManagePermission(groupId);
-		}
-
-		return commerceWishListLocalService.getCommerceWishLists(
-			groupId, userId, start, end, orderByComparator);
+			getUserId(), groupId, start, end, orderByComparator);
 	}
 
 	@Override
 	public int getCommerceWishListsCount(long groupId) throws PortalException {
-		checkManagePermission(groupId);
-
-		return commerceWishListLocalService.getCommerceWishListsCount(groupId);
-	}
-
-	@Override
-	public int getCommerceWishListsCount(long groupId, long userId)
-		throws PortalException {
-
-		if (getUserId() != userId) {
-			checkManagePermission(groupId);
-		}
+		_checkPortletResourcePermission(
+			groupId, CommerceWishListActionKeys.VIEW_COMMERCE_WISH_LISTS);
 
 		return commerceWishListLocalService.getCommerceWishListsCount(
-			groupId, userId);
+			getUserId(), groupId);
 	}
 
 	@Override
-	public CommerceWishList getDefaultCommerceWishList(
-			long groupId, long userId)
+	public CommerceWishList getDefaultCommerceWishList(long groupId)
 		throws PortalException {
 
 		CommerceWishList commerceWishList =
 			commerceWishListLocalService.getDefaultCommerceWishList(
-				groupId, userId, null);
+				getUserId(), groupId, null);
 
 		if (commerceWishList != null) {
 			_commerceWishListModelResourcePermission.check(
@@ -159,21 +134,21 @@ public class CommerceWishListServiceImpl
 			commerceWishListId, name, defaultWishList);
 	}
 
-	protected void checkManagePermission(long groupId) throws PortalException {
+	private void _checkPortletResourcePermission(long groupId, String actionId)
+		throws PortalException {
+
 		PortletResourcePermission portletResourcePermission =
 			_commerceWishListModelResourcePermission.
 				getPortletResourcePermission();
 
 		portletResourcePermission.check(
-			getPermissionChecker(), groupId,
-			CommerceWishListActionKeys.MANAGE_COMMERCE_WISH_LISTS);
+			getPermissionChecker(), groupId, actionId);
 	}
 
-	private static volatile ModelResourcePermission<CommerceWishList>
-		_commerceWishListModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommerceWishListServiceImpl.class,
-				"_commerceWishListModelResourcePermission",
-				CommerceWishList.class);
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.wish.list.model.CommerceWishList)"
+	)
+	private ModelResourcePermission<CommerceWishList>
+		_commerceWishListModelResourcePermission;
 
 }

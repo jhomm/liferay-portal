@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,19 +11,20 @@
 String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwitchName : (randomNamespace + "toggle-switch-check");
 %>
 
-<div class="<%= "card d-flex flex-column" + (Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK) %>">
+<div class="card d-flex flex-column<%= Validator.isNotNull(elementClasses) ? StringPool.SPACE + elementClasses : StringPool.BLANK %>">
 	<c:if test="<%= Validator.isNotNull(actionLabel) || Validator.isNotNull(actionIcon) || Validator.isNotNull(title) %>">
-		<h4 class="align-items-center card-header d-flex justify-content-between py-3">
+		<div class="align-items-center card-header d-flex h4 justify-content-between py-3">
 			<%= HtmlUtil.escape(title) %>
 
 			<c:if test="<%= Validator.isNotNull(actionTargetId) %>">
-				<aui:script require="commerce-frontend-js/utilities/eventsDefinitions as eventsDefinitions">
-					var link = document.getElementById('<%= HtmlUtil.escapeJS(linkId) %>');
+				<aui:script>
+					var link = document.getElementById('<%= linkId %>');
 
 					if (link) {
 						link.addEventListener('click', (e) => {
 							e.preventDefault();
-							Liferay.fire(eventsDefinitions.OPEN_MODAL, {
+
+							Liferay.fire('open-modal', {
 								id: '<%= HtmlUtil.escapeJS(actionTargetId) %>',
 							});
 						});
@@ -42,9 +34,36 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 
 			<c:choose>
 				<c:when test="<%= Validator.isNotNull(actionLabel) %>">
+
+					<%
+					String href = Validator.isNotNull(actionUrl) ? actionUrl : "#";
+					%>
+
+					<c:if test="<%= actionContext != null %>">
+
+						<%
+						href = "#";
+						%>
+
+						<liferay-frontend:component
+							context='<%=
+								HashMapBuilder.<String, Object>put(
+									"title", title
+								).put(
+									"url", actionUrl
+								).putAll(
+									actionContext
+								).put(
+									"linkId", linkId
+								).build()
+							%>'
+							module="{ModalActionContextHandler} from commerce-frontend-taglib"
+						/>
+					</c:if>
+
 					<clay:link
-						href='<%= (Validator.isNotNull(actionUrl) && Validator.isNull(actionTargetId)) ? actionUrl : "#" %>'
-						id="<%= HtmlUtil.escape(linkId) %>"
+						href="<%= href %>"
+						id="<%= linkId %>"
 						label="<%= HtmlUtil.escape(actionLabel) %>"
 					/>
 				</c:when>
@@ -66,7 +85,7 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 								'<%= HtmlUtil.escapeJS(randomNamespace) %>toggle-label'
 							);
 							var toggleCheckbox = document.getElementById(
-								'<%=HtmlUtil.escapeJS(collapseSwitchId) %>'
+								'<%= HtmlUtil.escapeJS(collapseSwitchId) %>'
 							);
 							var collapseClickable = true;
 							var collapsableElement = document.getElementById(
@@ -98,9 +117,9 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 					<span class="d-flex mr-n2">
 						<c:if test="<%= Validator.isNotNull(collapseLabel) %>">
 							<label for="<%= HtmlUtil.escapeAttribute(collapseSwitchId) %>" id="<%= HtmlUtil.escapeAttribute(randomNamespace) %>toggle-label">
-								<h5 class="mb-0 mr-3">
+								<div class="h5 mb-0 mr-3">
 									<%= HtmlUtil.escape(collapseLabel) %>
-								</h5>
+								</div>
 							</label>
 						</c:if>
 
@@ -125,8 +144,8 @@ String collapseSwitchId = Validator.isNotNull(collapseSwitchName) ? collapseSwit
 					</span>
 				</c:when>
 			</c:choose>
-		</h4>
+		</div>
 	</c:if>
 
 	<div class="collapse<%= collapsed ? StringPool.BLANK : " show" %>" id="<%= randomNamespace %>collapse">
-		<div class="<%= "card-body" + (Validator.isNotNull(bodyClasses) ? StringPool.SPACE + bodyClasses : StringPool.BLANK) %>">
+		<div class="card-body<%= Validator.isNotNull(bodyClasses) ? StringPool.SPACE + bodyClasses : StringPool.BLANK %>">

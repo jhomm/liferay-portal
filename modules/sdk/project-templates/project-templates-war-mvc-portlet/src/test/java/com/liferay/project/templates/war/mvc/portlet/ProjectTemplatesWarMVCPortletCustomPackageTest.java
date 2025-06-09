@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.war.mvc.portlet;
@@ -45,11 +36,13 @@ public class ProjectTemplatesWarMVCPortletCustomPackageTest
 	@ClassRule
 	public static final MavenExecutor mavenExecutor = new MavenExecutor();
 
-	@Parameterized.Parameters(name = "Testcase-{index}: testing {0}")
+	@Parameterized.Parameters(name = "Testcase-{index}: testing {1} {0}")
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(
 			new Object[][] {
-				{"7.0.6-2"}, {"7.1.3-1"}, {"7.2.1-1"}, {"7.3.7"}, {"7.4.1-1"}
+				{"dxp", "7.0.10.17"}, {"dxp", "7.1.10.7"}, {"dxp", "7.2.10.7"},
+				{"portal", "7.3.7"}, {"portal", "7.4.3.56"},
+				{"dxp", "2024.q1.1"}
 			});
 	}
 
@@ -70,8 +63,9 @@ public class ProjectTemplatesWarMVCPortletCustomPackageTest
 	}
 
 	public ProjectTemplatesWarMVCPortletCustomPackageTest(
-		String liferayVersion) {
+		String liferayProduct, String liferayVersion) {
 
+		_liferayProduct = liferayProduct;
 		_liferayVersion = liferayVersion;
 	}
 
@@ -79,7 +73,8 @@ public class ProjectTemplatesWarMVCPortletCustomPackageTest
 	public void testBuildTemplateWarMvcPortlet() throws Exception {
 		File gradleProjectDir = testBuildTemplatePortlet(
 			temporaryFolder, "war-mvc-portlet", "foo", "com.liferay.test",
-			_liferayVersion, mavenExecutor, _gradleDistribution);
+			_liferayProduct, _liferayVersion, mavenExecutor,
+			_gradleDistribution);
 
 		testTemplateWarPortletDTD(gradleProjectDir, _liferayVersion);
 	}
@@ -89,6 +84,7 @@ public class ProjectTemplatesWarMVCPortletCustomPackageTest
 
 	private static URI _gradleDistribution;
 
+	private final String _liferayProduct;
 	private final String _liferayVersion;
 
 }

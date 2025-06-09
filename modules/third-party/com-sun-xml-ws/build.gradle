@@ -1,30 +1,37 @@
-apply plugin: "nebula.optional-base"
-
-dependencies {
-	compileOnly group: "com.sun.xml.ws", name: "jaxws-rt", transitive: false, version: "2.1.7"
-}
-
+task jarManifest
 task jarPatched(type: Zip)
 
 sourceCompatibility = "1.6"
 targetCompatibility = "1.6"
 
-jar {
-	setActions([])
+dependencies {
+	compileOnly group: "com.sun.xml.ws", name: "jaxws-rt", transitive: false, version: "2.1.7"
+}
 
+jar {
 	dependsOn jarPatched
+	finalizedBy jarManifest
+	setActions([])
+}
+
+jarManifest {
+	doLast {
+		ant.jar(destfile: jar.archivePath, update: true)
+	}
 }
 
 jarPatched {
-	archiveName = jar.archiveName
-	destinationDir = jar.destinationDir
+	archiveFileName = jar.archiveFileName
+	destinationDirectory = jar.destinationDirectory
 	duplicatesStrategy = "exclude"
-
 	exclude "META-INF/services/javax.xml.ws.spi.Provider"
-
 	from sourceSets.main.output
 
 	from {
 		zipTree(configurations.compileOnly.singleFile)
 	}
+
+	mustRunAfter compileJava
+	mustRunAfter generatePomFileForMavenPublication
+	mustRunAfter processResources
 }

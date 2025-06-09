@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.impl;
@@ -18,18 +9,28 @@ import com.liferay.commerce.constants.CommerceOrderActionKeys;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderNote;
 import com.liferay.commerce.service.base.CommerceOrderNoteServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 
 import java.util.List;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Andrea Di Giorgi
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceOrderNote"
+	},
+	service = AopService.class
+)
 public class CommerceOrderNoteServiceImpl
 	extends CommerceOrderNoteServiceBaseImpl {
 
@@ -99,24 +100,6 @@ public class CommerceOrderNoteServiceImpl
 	}
 
 	@Override
-	public CommerceOrderNote fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		CommerceOrderNote commerceOrderNote =
-			commerceOrderNoteLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
-
-		if (commerceOrderNote != null) {
-			_commerceOrderModelResourcePermission.check(
-				getPermissionChecker(), commerceOrderNote.getCommerceOrderId(),
-				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_RESTRICTED_NOTES);
-		}
-
-		return commerceOrderNote;
-	}
-
-	@Override
 	public CommerceOrderNote fetchCommerceOrderNote(long commerceOrderNoteId)
 		throws PortalException {
 
@@ -124,7 +107,26 @@ public class CommerceOrderNoteServiceImpl
 			commerceOrderNoteLocalService.fetchCommerceOrderNote(
 				commerceOrderNoteId);
 
-		checkCommerceOrderNotePermissions(commerceOrderNote);
+		_checkCommerceOrderNotePermissions(commerceOrderNote);
+
+		return commerceOrderNote;
+	}
+
+	@Override
+	public CommerceOrderNote fetchCommerceOrderNoteByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		CommerceOrderNote commerceOrderNote =
+			commerceOrderNoteLocalService.
+				fetchCommerceOrderNoteByExternalReferenceCode(
+					externalReferenceCode, companyId);
+
+		if (commerceOrderNote != null) {
+			_commerceOrderModelResourcePermission.check(
+				getPermissionChecker(), commerceOrderNote.getCommerceOrderId(),
+				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_RESTRICTED_NOTES);
+		}
 
 		return commerceOrderNote;
 	}
@@ -137,7 +139,7 @@ public class CommerceOrderNoteServiceImpl
 			commerceOrderNoteLocalService.getCommerceOrderNote(
 				commerceOrderNoteId);
 
-		checkCommerceOrderNotePermissions(commerceOrderNote);
+		_checkCommerceOrderNotePermissions(commerceOrderNote);
 
 		return commerceOrderNote;
 	}
@@ -159,6 +161,25 @@ public class CommerceOrderNoteServiceImpl
 
 		return commerceOrderNoteLocalService.getCommerceOrderNotes(
 			commerceOrderId, restricted);
+	}
+
+	@Override
+	public List<CommerceOrderNote> getCommerceOrderNotes(
+			long commerceOrderId, boolean restricted, int start, int end)
+		throws PortalException {
+
+		String actionId = ActionKeys.VIEW;
+
+		if (restricted) {
+			actionId =
+				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_RESTRICTED_NOTES;
+		}
+
+		_commerceOrderModelResourcePermission.check(
+			getPermissionChecker(), commerceOrderId, actionId);
+
+		return commerceOrderNoteLocalService.getCommerceOrderNotes(
+			commerceOrderId, restricted, start, end);
 	}
 
 	@Override
@@ -229,7 +250,7 @@ public class CommerceOrderNoteServiceImpl
 			commerceOrderNote.getCommerceOrderNoteId(), content, restricted);
 	}
 
-	protected void checkCommerceOrderNotePermissions(
+	private void _checkCommerceOrderNotePermissions(
 			CommerceOrderNote commerceOrderNote)
 		throws PortalException {
 
@@ -249,10 +270,10 @@ public class CommerceOrderNoteServiceImpl
 			actionId);
 	}
 
-	private static volatile ModelResourcePermission<CommerceOrder>
-		_commerceOrderModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommerceOrderNoteServiceImpl.class,
-				"_commerceOrderModelResourcePermission", CommerceOrder.class);
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
+	)
+	private ModelResourcePermission<CommerceOrder>
+		_commerceOrderModelResourcePermission;
 
 }

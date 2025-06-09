@@ -1,37 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.spring.extender.internal.configuration;
 
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.configuration.Configuration;
+import com.liferay.portal.kernel.dependency.manager.DependencyManagerSyncUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.service.ServiceComponentLocalService;
 import com.liferay.portal.kernel.service.configuration.ServiceComponentConfiguration;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.internal.loader.ModuleResourceLoader;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.tools.DBUpgrader;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.InputStream;
+
+import java.net.URL;
+
 import java.util.Properties;
+import java.util.concurrent.FutureTask;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -44,48 +40,58 @@ public class ServiceConfigurationInitializer {
 
 	public ServiceConfigurationInitializer(
 		Bundle bundle, ClassLoader classLoader,
-		Configuration portletConfiguration, Configuration serviceConfiguration,
-		ResourceActions resourceActions,
+		Configuration serviceConfiguration,
 		ServiceComponentLocalService serviceComponentLocalService) {
 
 		_bundle = bundle;
 		_classLoader = classLoader;
-		_portletConfiguration = portletConfiguration;
 		_serviceConfiguration = serviceConfiguration;
-		_resourceActions = resourceActions;
 		_serviceComponentLocalService = serviceComponentLocalService;
 
-		_serviceComponentConfiguration = new ModuleResourceLoader(bundle);
+		_futureTask = new FutureTask<>(
+			() -> {
+				_initServiceComponent();
+
+				BundleContext bundleContext = bundle.getBundleContext();
+
+				ServiceRegistration<?> serviceRegistration =
+					bundleContext.registerService(
+						Configuration.class, _serviceConfiguration,
+						HashMapDictionaryBuilder.<String, Object>put(
+							"name", "service"
+						).put(
+							"origin.bundle.symbolic.name",
+							bundle.getSymbolicName()
+						).build());
+
+				return serviceRegistration::unregister;
+			});
 	}
 
 	public void stop() {
-		_serviceComponentLocalService.destroyServiceComponent(
-			_serviceComponentConfiguration, _classLoader);
+		try {
+			Closeable closeable = _futureTask.get();
 
-		for (ServiceRegistration<?> serviceRegistration :
-				_serviceRegistrations) {
-
-			serviceRegistration.unregister();
+			closeable.close();
 		}
-
-		_serviceRegistrations.clear();
+		catch (Exception exception) {
+			ReflectionUtil.throwException(exception);
+		}
 	}
 
 	protected void start() {
-		BundleContext bundleContext = _bundle.getBundleContext();
+		if (GetterUtil.getBoolean(
+				PropsUtil.get(PropsKeys.DEPENDENCY_MANAGER_THREAD_POOL_ENABLED),
+				true) &&
+			!DBUpgrader.isUpgradeDatabaseAutoRunEnabled()) {
 
-		if (_portletConfiguration != null) {
-			_readResourceActions();
-
-			_registerConfiguration(
-				bundleContext, _portletConfiguration, "portlet");
+			DependencyManagerSyncUtil.registerSyncFutureTask(
+				_futureTask,
+				ServiceConfigurationInitializer.class.getName() + "-" +
+					_bundle.getSymbolicName());
 		}
-
-		if (_serviceConfiguration != null) {
-			_initServiceComponent();
-
-			_registerConfiguration(
-				bundleContext, _serviceConfiguration, "service");
+		else {
+			_futureTask.run();
 		}
 	}
 
@@ -124,54 +130,78 @@ public class ServiceConfigurationInitializer {
 		}
 	}
 
-	private void _readResourceActions() {
-		try {
-			_resourceActions.populateModelResources(
-				_classLoader,
-				StringUtil.split(
-					_portletConfiguration.get(
-						PropsKeys.RESOURCE_ACTIONS_CONFIGS)));
-
-			if (!PropsValues.RESOURCE_ACTIONS_STRICT_MODE_ENABLED) {
-				_resourceActions.populatePortletResources(
-					_classLoader,
-					StringUtil.split(
-						_portletConfiguration.get(
-							PropsKeys.RESOURCE_ACTIONS_CONFIGS)));
-			}
-		}
-		catch (Exception exception) {
-			_log.error(
-				"Unable to read resource actions config in " +
-					PropsKeys.RESOURCE_ACTIONS_CONFIGS,
-				exception);
-		}
-	}
-
-	private void _registerConfiguration(
-		BundleContext bundleContext, Configuration configuration, String name) {
-
-		_serviceRegistrations.add(
-			bundleContext.registerService(
-				Configuration.class, configuration,
-				HashMapDictionaryBuilder.<String, Object>put(
-					"name", name
-				).put(
-					"origin.bundle.symbolic.name", _bundle.getSymbolicName()
-				).build()));
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ServiceConfigurationInitializer.class);
 
 	private final Bundle _bundle;
 	private final ClassLoader _classLoader;
-	private final Configuration _portletConfiguration;
-	private final ResourceActions _resourceActions;
-	private final ServiceComponentConfiguration _serviceComponentConfiguration;
+	private final FutureTask<Closeable> _futureTask;
+	private final ServiceComponentConfiguration _serviceComponentConfiguration =
+		new ModuleResourceLoader();
 	private final ServiceComponentLocalService _serviceComponentLocalService;
 	private final Configuration _serviceConfiguration;
-	private final List<ServiceRegistration<?>> _serviceRegistrations =
-		new ArrayList<>();
+
+	private class ModuleResourceLoader
+		implements ServiceComponentConfiguration {
+
+		@Override
+		public InputStream getHibernateInputStream() {
+			return _getInputStream("/META-INF/module-hbm.xml");
+		}
+
+		@Override
+		public InputStream getModelHintsExtInputStream() {
+			return _getInputStream("/META-INF/portlet-model-hints-ext.xml");
+		}
+
+		@Override
+		public InputStream getModelHintsInputStream() {
+			return _getInputStream("/META-INF/portlet-model-hints.xml");
+		}
+
+		@Override
+		public String getServletContextName() {
+			return _bundle.getSymbolicName();
+		}
+
+		@Override
+		public InputStream getSQLIndexesInputStream() {
+			return _getInputStream("/META-INF/sql/indexes.sql");
+		}
+
+		@Override
+		public InputStream getSQLSequencesInputStream() {
+			return _getInputStream("/META-INF/sql/sequences.sql");
+		}
+
+		@Override
+		public InputStream getSQLTablesInputStream() {
+			return _getInputStream("/META-INF/sql/tables.sql");
+		}
+
+		private InputStream _getInputStream(String location) {
+			URL url = _bundle.getResource(location);
+
+			if (url == null) {
+				if (_log.isDebugEnabled()) {
+					_log.debug("Unable to find " + location);
+				}
+
+				return null;
+			}
+
+			InputStream inputStream = null;
+
+			try {
+				inputStream = url.openStream();
+			}
+			catch (IOException ioException) {
+				_log.error("Unable to read " + location, ioException);
+			}
+
+			return inputStream;
+		}
+
+	}
 
 }

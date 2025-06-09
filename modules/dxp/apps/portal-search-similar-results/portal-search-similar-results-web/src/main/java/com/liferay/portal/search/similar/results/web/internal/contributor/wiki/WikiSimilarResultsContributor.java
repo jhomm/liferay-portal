@@ -1,91 +1,78 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.wiki;
 
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.search.model.uid.UIDFactory;
+import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelperUtil;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
-import com.liferay.portal.search.similar.results.web.internal.util.http.HttpHelper;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.RouteBuilder;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.RouteHelper;
 import com.liferay.wiki.service.WikiNodeLocalService;
 import com.liferay.wiki.service.WikiPageLocalService;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Wade Cao
  * @author André de Oliveira
  */
-@Component(service = SimilarResultsContributor.class)
 public class WikiSimilarResultsContributor
 	extends BaseWikiSimilarResultsContributor {
+
+	public WikiSimilarResultsContributor(
+		AssetEntryLocalService assetEntryLocalService, UIDFactory uidFactory,
+		WikiNodeLocalService wikiNodeLocalService,
+		WikiPageLocalService wikiPageLocalService) {
+
+		_assetEntryLocalService = assetEntryLocalService;
+		_uidFactory = uidFactory;
+		_wikiNodeLocalService = wikiNodeLocalService;
+		_wikiPageLocalService = wikiPageLocalService;
+	}
 
 	@Override
 	public void detectRoute(
 		RouteBuilder routeBuilder, RouteHelper routeHelper) {
 
-		String[] parameters = _httpHelper.getFriendlyURLParameters(
+		String[] parameters = HttpHelperUtil.getFriendlyURLParameters(
 			routeHelper.getURLString());
 
-		SearchStringUtil.requireEquals("wiki", parameters[0]);
+		SearchStringUtil.requireEquals(
+			"wiki", URLCodec.decodeURL(parameters[0]));
 
 		routeBuilder.addAttribute(
-			"nodeName", parameters[1]
+			"nodeName", URLCodec.decodeURL(parameters[1])
 		).addAttribute(
-			"title", parameters[2]
+			"title", URLCodec.decodeURL(parameters[2])
 		);
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		super.setAssetEntryLocalService(assetEntryLocalService);
-	}
-
-	@Reference(unbind = "-")
-	protected void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
+	protected AssetEntryLocalService getAssetEntryLocalService() {
+		return _assetEntryLocalService;
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setUIDFactory(UIDFactory uidFactory) {
-		super.setUIDFactory(uidFactory);
+	protected UIDFactory getUidFactory() {
+		return _uidFactory;
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setWikiNodeLocalService(
-		WikiNodeLocalService wikiNodeLocalService) {
-
-		super.setWikiNodeLocalService(wikiNodeLocalService);
+	protected WikiNodeLocalService getWikiNodeLocalService() {
+		return _wikiNodeLocalService;
 	}
 
 	@Override
-	@Reference(unbind = "-")
-	protected void setWikiPageLocalService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		super.setWikiPageLocalService(wikiPageLocalService);
+	protected WikiPageLocalService getWikiPageLocalService() {
+		return _wikiPageLocalService;
 	}
 
-	private HttpHelper _httpHelper;
+	private final AssetEntryLocalService _assetEntryLocalService;
+	private final UIDFactory _uidFactory;
+	private final WikiNodeLocalService _wikiNodeLocalService;
+	private final WikiPageLocalService _wikiPageLocalService;
 
 }

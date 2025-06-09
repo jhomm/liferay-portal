@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -22,7 +13,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Plugin;
 import com.liferay.portal.kernel.model.PortletDecorator;
-import com.liferay.portal.kernel.model.SpriteImage;
 import com.liferay.portal.kernel.model.Theme;
 import com.liferay.portal.kernel.model.ThemeSetting;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
@@ -38,9 +28,10 @@ import com.liferay.portal.kernel.theme.ThemeGroupLimit;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.ServletContext;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -49,8 +40,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.ServletContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -100,11 +89,7 @@ public class ThemeImpl extends PluginBaseImpl implements Theme {
 
 		Theme theme = (Theme)object;
 
-		if (getThemeId().equals(theme.getThemeId())) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getThemeId(), theme.getThemeId());
 	}
 
 	@Override
@@ -331,11 +316,6 @@ public class ThemeImpl extends PluginBaseImpl implements Theme {
 	}
 
 	@Override
-	public SpriteImage getSpriteImage(String fileName) {
-		return _spriteImagesMap.get(fileName);
-	}
-
-	@Override
 	public String getStaticResourcePath() {
 		String proxyPath = PortalUtil.getPathProxy();
 
@@ -418,11 +398,7 @@ public class ThemeImpl extends PluginBaseImpl implements Theme {
 
 	@Override
 	public boolean hasColorSchemes() {
-		if (!_colorSchemesMap.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !_colorSchemesMap.isEmpty();
 	}
 
 	@Override
@@ -553,28 +529,6 @@ public class ThemeImpl extends PluginBaseImpl implements Theme {
 		}
 		else {
 			addSetting(key, value, false, null, null, null);
-		}
-	}
-
-	@Override
-	public void setSpriteImages(
-		String spriteFileName, Properties spriteProperties) {
-
-		for (Map.Entry<Object, Object> entry : spriteProperties.entrySet()) {
-			String key = (String)entry.getKey();
-
-			String value = (String)entry.getValue();
-
-			int[] values = StringUtil.split(value, 0);
-
-			int offset = values[0];
-			int height = values[1];
-			int width = values[2];
-
-			SpriteImage spriteImage = new SpriteImage(
-				spriteFileName, key, offset, height, width);
-
-			_spriteImagesMap.put(key, spriteImage);
 		}
 	}
 
@@ -797,7 +751,6 @@ public class ThemeImpl extends PluginBaseImpl implements Theme {
 		new ConcurrentHashMap<>();
 	private String _rootPath = "/";
 	private String _servletContextName = StringPool.BLANK;
-	private final Map<String, SpriteImage> _spriteImagesMap = new HashMap<>();
 	private String _templateExtension = "ftl";
 	private String _templatesPath = "${root-path}/templates";
 	private ThemeCompanyLimit _themeCompanyLimit;

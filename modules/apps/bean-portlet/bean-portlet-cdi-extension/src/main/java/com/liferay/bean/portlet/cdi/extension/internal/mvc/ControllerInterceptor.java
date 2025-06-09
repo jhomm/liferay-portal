@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.cdi.extension.internal.mvc;
@@ -21,6 +12,38 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.annotation.Priority;
+
+import jakarta.enterprise.event.Event;
+
+import jakarta.inject.Inject;
+
+import jakarta.interceptor.AroundInvoke;
+import jakarta.interceptor.Interceptor;
+import jakarta.interceptor.InvocationContext;
+
+import jakarta.mvc.View;
+import jakarta.mvc.event.MvcEvent;
+
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.BaseURL;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.MutableRenderParameters;
+import jakarta.portlet.MutableResourceParameters;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderParameters;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.annotations.ActionMethod;
+import jakarta.portlet.annotations.DestroyMethod;
+import jakarta.portlet.annotations.EventMethod;
+import jakarta.portlet.annotations.InitMethod;
+import jakarta.portlet.annotations.RenderMethod;
+import jakarta.portlet.filter.RenderURLWrapper;
+import jakarta.portlet.filter.ResourceURLWrapper;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serializable;
 
@@ -28,38 +51,6 @@ import java.lang.reflect.Method;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import javax.annotation.Priority;
-
-import javax.enterprise.event.Event;
-
-import javax.inject.Inject;
-
-import javax.interceptor.AroundInvoke;
-import javax.interceptor.Interceptor;
-import javax.interceptor.InvocationContext;
-
-import javax.mvc.View;
-import javax.mvc.event.MvcEvent;
-
-import javax.portlet.ActionResponse;
-import javax.portlet.BaseURL;
-import javax.portlet.MimeResponse;
-import javax.portlet.MutableRenderParameters;
-import javax.portlet.MutableResourceParameters;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderParameters;
-import javax.portlet.ResourceResponse;
-import javax.portlet.annotations.ActionMethod;
-import javax.portlet.annotations.DestroyMethod;
-import javax.portlet.annotations.EventMethod;
-import javax.portlet.annotations.InitMethod;
-import javax.portlet.annotations.RenderMethod;
-import javax.portlet.filter.RenderURLWrapper;
-import javax.portlet.filter.ResourceURLWrapper;
-
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Neil Griffin
@@ -166,7 +157,7 @@ public class ControllerInterceptor implements Serializable {
 						_actionResponse.sendRedirect(redirectURL.toString());
 					}
 					catch (IOException ioException) {
-						_log.error(ioException, ioException);
+						_log.error(ioException);
 					}
 				}
 			}
@@ -212,7 +203,7 @@ public class ControllerInterceptor implements Serializable {
 						new UriInfoImpl()));
 			}
 			catch (URISyntaxException uriSyntaxException) {
-				_log.error(uriSyntaxException, uriSyntaxException);
+				_log.error(uriSyntaxException);
 			}
 		}
 

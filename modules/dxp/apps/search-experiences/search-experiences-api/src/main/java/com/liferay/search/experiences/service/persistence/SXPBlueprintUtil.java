@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service.persistence;
@@ -887,6 +878,78 @@ public class SXPBlueprintUtil {
 	}
 
 	/**
+	 * Returns the sxp blueprint where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchSXPBlueprintException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching sxp blueprint
+	 * @throws NoSuchSXPBlueprintException if a matching sxp blueprint could not be found
+	 */
+	public static SXPBlueprint findByERC_C(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.search.experiences.exception.
+			NoSuchSXPBlueprintException {
+
+		return getPersistence().findByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the sxp blueprint where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching sxp blueprint, or <code>null</code> if a matching sxp blueprint could not be found
+	 */
+	public static SXPBlueprint fetchByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return getPersistence().fetchByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the sxp blueprint where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching sxp blueprint, or <code>null</code> if a matching sxp blueprint could not be found
+	 */
+	public static SXPBlueprint fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
+
+		return getPersistence().fetchByERC_C(
+			externalReferenceCode, companyId, useFinderCache);
+	}
+
+	/**
+	 * Removes the sxp blueprint where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the sxp blueprint that was removed
+	 */
+	public static SXPBlueprint removeByERC_C(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.search.experiences.exception.
+			NoSuchSXPBlueprintException {
+
+		return getPersistence().removeByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the number of sxp blueprints where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching sxp blueprints
+	 */
+	public static int countByERC_C(
+		String externalReferenceCode, long companyId) {
+
+		return getPersistence().countByERC_C(externalReferenceCode, companyId);
+	}
+
+	/**
 	 * Caches the sxp blueprint in the entity cache if it is enabled.
 	 *
 	 * @param sxpBlueprint the sxp blueprint
@@ -1037,6 +1100,10 @@ public class SXPBlueprintUtil {
 
 	public static SXPBlueprintPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(SXPBlueprintPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile SXPBlueprintPersistence _persistence;

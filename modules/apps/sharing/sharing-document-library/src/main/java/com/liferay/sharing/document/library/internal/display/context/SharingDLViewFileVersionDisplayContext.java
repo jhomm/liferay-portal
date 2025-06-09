@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.document.library.internal.display.context;
@@ -19,31 +10,33 @@ import com.liferay.document.library.display.context.BaseDLViewFileVersionDisplay
 import com.liferay.document.library.display.context.DLUIItemKeys;
 import com.liferay.document.library.display.context.DLViewFileVersionDisplayContext;
 import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownGroupItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portal.kernel.servlet.taglib.ui.BaseUIItem;
-import com.liferay.portal.kernel.servlet.taglib.ui.Menu;
-import com.liferay.portal.kernel.servlet.taglib.ui.ToolbarItem;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.PortletInstanceSettingsLocator;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.kernel.settings.TypedSettings;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.sharing.configuration.SharingConfiguration;
-import com.liferay.sharing.display.context.util.SharingMenuItemFactory;
-import com.liferay.sharing.display.context.util.SharingToolbarItemFactory;
+import com.liferay.sharing.display.context.util.SharingDropdownItemFactory;
 import com.liferay.sharing.security.permission.SharingPermission;
 import com.liferay.sharing.service.SharingEntryLocalService;
 
-import java.util.List;
-import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * @author Sergio González
@@ -57,8 +50,7 @@ public class SharingDLViewFileVersionDisplayContext
 		HttpServletResponse httpServletResponse, FileEntry fileEntry,
 		FileVersion fileVersion,
 		SharingEntryLocalService sharingEntryLocalService,
-		SharingMenuItemFactory sharingMenuItemFactory,
-		SharingToolbarItemFactory sharingToolbarItemFactory,
+		SharingDropdownItemFactory sharingDropdownItemFactory,
 		SharingPermission sharingPermission,
 		SharingConfiguration sharingConfiguration) {
 
@@ -69,8 +61,7 @@ public class SharingDLViewFileVersionDisplayContext
 		_httpServletRequest = httpServletRequest;
 		_fileEntry = fileEntry;
 		_sharingEntryLocalService = sharingEntryLocalService;
-		_sharingMenuItemFactory = sharingMenuItemFactory;
-		_sharingToolbarItemFactory = sharingToolbarItemFactory;
+		_sharingDropdownItemFactory = sharingDropdownItemFactory;
 		_sharingPermission = sharingPermission;
 		_sharingConfiguration = sharingConfiguration;
 
@@ -79,37 +70,14 @@ public class SharingDLViewFileVersionDisplayContext
 	}
 
 	@Override
-	public Menu getMenu() throws PortalException {
-		Menu menu = super.getMenu();
+	public List<DropdownItem> getActionDropdownItems() throws PortalException {
+		List<DropdownItem> dropdownItems = super.getActionDropdownItems();
 
-		if (!_isShowShareAction() || !_sharingConfiguration.isEnabled()) {
-			return menu;
+		if (dropdownItems == null) {
+			dropdownItems = new ArrayList<>();
 		}
 
-		_addSharingUIItem(
-			menu.getMenuItems(),
-			_sharingMenuItemFactory.createShareMenuItem(
-				DLFileEntryConstants.getClassName(),
-				_fileEntry.getFileEntryId(), _httpServletRequest));
-
-		return menu;
-	}
-
-	@Override
-	public List<ToolbarItem> getToolbarItems() throws PortalException {
-		List<ToolbarItem> toolbarItems = super.getToolbarItems();
-
-		if (!_isShowShareAction() || !_sharingConfiguration.isEnabled()) {
-			return toolbarItems;
-		}
-
-		_addSharingUIItem(
-			toolbarItems,
-			_sharingToolbarItemFactory.createShareToolbarItem(
-				DLFileEntryConstants.getClassName(),
-				_fileEntry.getFileEntryId(), _httpServletRequest));
-
-		return toolbarItems;
+		return _addSharingDropdownItem(dropdownItems);
 	}
 
 	@Override
@@ -143,30 +111,135 @@ public class SharingDLViewFileVersionDisplayContext
 		return false;
 	}
 
-	/**
-	 * @see com.liferay.document.library.opener.onedrive.web.internal.display.context.DLOpenerOneDriveDLViewFileVersionDisplayContext#_addEditInOffice365UIItem(List, BaseUIItem)
-	 */
-	private <T extends BaseUIItem> List<T> _addSharingUIItem(
-		List<T> uiItems, T sharingUIItem) {
+	private List<DropdownItem> _addSharingDropdownItem(
+			List<DropdownItem> dropdownItems)
+		throws PortalException {
 
 		int i = 1;
 
-		for (T uiItem : uiItems) {
-			if (DLUIItemKeys.DOWNLOAD.equals(uiItem.getKey())) {
+		for (DropdownItem dropdownItem : dropdownItems) {
+			if (dropdownItem instanceof DropdownGroupItem) {
+				DropdownGroupItem dropdownGroupItem =
+					(DropdownGroupItem)dropdownItem;
+
+				if (_addSharingDropdownItemGroup(
+						(List<DropdownItem>)dropdownGroupItem.get("items"))) {
+
+					return dropdownItems;
+				}
+			}
+			else if (Objects.equals(
+						DLUIItemKeys.DOWNLOAD, dropdownItem.get("key"))) {
+
 				break;
 			}
 
 			i++;
 		}
 
-		if (i >= uiItems.size()) {
-			uiItems.add(sharingUIItem);
-		}
-		else {
-			uiItems.add(i, sharingUIItem);
+		if (FeatureFlagManagerUtil.isEnabled("LPS-197477")) {
+			if (_isSharingEnabled()) {
+				dropdownItems.addAll(
+					Math.min(i, dropdownItems.size()),
+					DropdownItemListBuilder.addContext(
+						_sharingDropdownItemFactory.
+							createShareActionUnsafeConsumer(
+								DLFileEntryConstants.getClassName(),
+								_fileEntry.getFileEntryId(),
+								_httpServletRequest)
+					).build());
+			}
+			else {
+				dropdownItems.add(
+					Math.min(i, dropdownItems.size()),
+					_sharingDropdownItemFactory.createCopyLinkDropdownItem(
+						DLFileEntryConstants.getClassName(),
+						_fileEntry.getFileEntryId(), _httpServletRequest));
+			}
+
+			return dropdownItems;
 		}
 
-		return uiItems;
+		if (_isSharingEnabled()) {
+			dropdownItems.add(
+				Math.min(i, dropdownItems.size()),
+				_sharingDropdownItemFactory.createShareDropdownItem(
+					DLFileEntryConstants.getClassName(),
+					_fileEntry.getFileEntryId(), _httpServletRequest));
+		}
+
+		return dropdownItems;
+	}
+
+	private boolean _addSharingDropdownItemGroup(
+			List<DropdownItem> dropdownItems)
+		throws PortalException {
+
+		int i = 1;
+
+		for (DropdownItem dropdownItem : dropdownItems) {
+			if (dropdownItem instanceof DropdownGroupItem) {
+				DropdownGroupItem dropdownGroupItem =
+					(DropdownGroupItem)dropdownItem;
+
+				if (_addSharingDropdownItemGroup(
+						(List<DropdownItem>)dropdownGroupItem.get("items"))) {
+
+					return true;
+				}
+			}
+			else if (Objects.equals(
+						DLUIItemKeys.DOWNLOAD, dropdownItem.get("key"))) {
+
+				break;
+			}
+
+			i++;
+		}
+
+		if (i < dropdownItems.size()) {
+			if (FeatureFlagManagerUtil.isEnabled("LPS-197477")) {
+				if (_isSharingEnabled()) {
+					dropdownItems.addAll(
+						i,
+						DropdownItemListBuilder.addContext(
+							_sharingDropdownItemFactory.
+								createShareActionUnsafeConsumer(
+									DLFileEntryConstants.getClassName(),
+									_fileEntry.getFileEntryId(),
+									_httpServletRequest)
+						).build());
+				}
+				else {
+					dropdownItems.add(
+						i,
+						_sharingDropdownItemFactory.createCopyLinkDropdownItem(
+							DLFileEntryConstants.getClassName(),
+							_fileEntry.getFileEntryId(), _httpServletRequest));
+				}
+			}
+			else {
+				if (_isSharingEnabled()) {
+					dropdownItems.add(
+						i,
+						_sharingDropdownItemFactory.createShareDropdownItem(
+							DLFileEntryConstants.getClassName(),
+							_fileEntry.getFileEntryId(), _httpServletRequest));
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private boolean _isSharingEnabled() throws PortalException {
+		if (!_isShowShareAction() || !_sharingConfiguration.isEnabled()) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private boolean _isShowActions() throws PortalException {
@@ -178,7 +251,7 @@ public class SharingDLViewFileVersionDisplayContext
 			return true;
 		}
 
-		Settings settings = SettingsFactoryUtil.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new PortletInstanceSettingsLocator(
 				_themeDisplay.getLayout(), portletDisplay.getId()));
 
@@ -212,10 +285,9 @@ public class SharingDLViewFileVersionDisplayContext
 	private final FileEntry _fileEntry;
 	private final HttpServletRequest _httpServletRequest;
 	private final SharingConfiguration _sharingConfiguration;
+	private final SharingDropdownItemFactory _sharingDropdownItemFactory;
 	private final SharingEntryLocalService _sharingEntryLocalService;
-	private final SharingMenuItemFactory _sharingMenuItemFactory;
 	private final SharingPermission _sharingPermission;
-	private final SharingToolbarItemFactory _sharingToolbarItemFactory;
 	private Boolean _showShareAction;
 	private final ThemeDisplay _themeDisplay;
 

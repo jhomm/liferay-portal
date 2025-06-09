@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.odata.retriever.test;
@@ -21,8 +12,6 @@ import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Contact;
@@ -40,20 +29,20 @@ import com.liferay.portal.kernel.service.ContactLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.TeamLocalService;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
 import com.liferay.portal.kernel.test.randomizerbumpers.UniqueStringRandomizerBumper;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
-import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserGroupTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -70,10 +59,8 @@ import java.time.temporal.ChronoUnit;
 
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Dictionary;
 import java.util.List;
 
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -82,7 +69,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 
 /**
@@ -100,30 +86,10 @@ public class UserODataRetrieverTest {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		try (ConfigurationTemporarySwapper
-				elasticSearchConfigurationTemporarySwapper =
-					new ConfigurationTemporarySwapper(
-						_CONFIGURATION_PID_ELASTICSEARCH,
-						_setUpElasticsearchProperties())) {
-
-			_company = CompanyTestUtil.addCompany();
-
-			_companyGuestGroup = _groupLocalService.getGroup(
-				_company.getCompanyId(), GroupConstants.GUEST);
-			_companyUser = UserTestUtil.getAdminUser(_company.getCompanyId());
-		}
-
-		_safeCloseable = PropsValuesTestUtil.swapWithSafeCloseable(
-			"INDEX_SEARCH_LIMIT", _ELASTICSEARCH_MAX_RESULT_WINDOW);
-	}
-
-	@AfterClass
-	public static void tearDownClass() throws Exception {
-		if (_safeCloseable != null) {
-			_safeCloseable.close();
-		}
-
-		_companyLocalService.deleteCompany(_company);
+		_companyGuestGroup = _groupLocalService.getGroup(
+			TestPropsValues.getCompanyId(), GroupConstants.GUEST);
+		_companyUser = UserTestUtil.getAdminUser(
+			TestPropsValues.getCompanyId());
 	}
 
 	@Before
@@ -381,7 +347,7 @@ public class UserODataRetrieverTest {
 
 		_user2.setModifiedDate(Date.from(instant.plusSeconds(1)));
 
-		_userLocalService.updateUser(_user2);
+		_user2 = _userLocalService.updateUser(_user2);
 
 		String filterString = String.format(
 			"(dateModified eq %s) and (firstName eq '%s')",
@@ -412,7 +378,7 @@ public class UserODataRetrieverTest {
 
 		_user2.setModifiedDate(Date.from(instant.plusSeconds(1)));
 
-		_userLocalService.updateUser(_user2);
+		_user2 = _userLocalService.updateUser(_user2);
 
 		String filterString = String.format(
 			"(dateModified gt %s) and (firstName eq '%s')",
@@ -445,7 +411,7 @@ public class UserODataRetrieverTest {
 
 		_user2.setModifiedDate(Date.from(instant.plusSeconds(1)));
 
-		_userLocalService.updateUser(_user2);
+		_user2 = _userLocalService.updateUser(_user2);
 
 		String filterString = String.format(
 			"(dateModified ge %s) and (firstName eq '%s')",
@@ -476,7 +442,7 @@ public class UserODataRetrieverTest {
 
 		_user2.setModifiedDate(Date.from(instant.plusSeconds(1)));
 
-		_userLocalService.updateUser(_user2);
+		_user2 = _userLocalService.updateUser(_user2);
 
 		String filterString = String.format(
 			"(dateModified lt %s) and (firstName eq '%s')",
@@ -509,7 +475,7 @@ public class UserODataRetrieverTest {
 
 		_user2.setModifiedDate(Date.from(instant.plusSeconds(1)));
 
-		_userLocalService.updateUser(_user2);
+		_user2 = _userLocalService.updateUser(_user2);
 
 		String filterString = String.format(
 			"(dateModified le %s) and (firstName eq '%s')",
@@ -781,7 +747,7 @@ public class UserODataRetrieverTest {
 
 		_user1.setJobTitle(RandomTestUtil.randomString());
 
-		_userLocalService.updateUser(_user1);
+		_user1 = _userLocalService.updateUser(_user1);
 
 		_user2 = _addUser(_group1);
 
@@ -807,7 +773,7 @@ public class UserODataRetrieverTest {
 
 		_user1.setJobTitle(jobTitlePrefix + RandomTestUtil.randomString());
 
-		_userLocalService.updateUser(_user1);
+		_user1 = _userLocalService.updateUser(_user1);
 
 		_user2 = _addUser(_group1);
 
@@ -979,20 +945,44 @@ public class UserODataRetrieverTest {
 
 		_userLocalService.addTeamUser(_team.getTeamId(), _user1);
 
+		_userGroup = UserGroupTestUtil.addUserGroup(
+			_companyGuestGroup.getGroupId());
+
+		_userGroupLocalService.addTeamUserGroups(
+			_team.getTeamId(), new long[] {_userGroup.getUserGroupId()});
+
+		_userLocalService.addUserGroupUser(_userGroup.getUserGroupId(), _user2);
+
 		String filterString = String.format(
 			"(firstName eq '%s') and (teamIds eq '%s')", firstName,
 			_team.getTeamId());
 
-		int count = _oDataRetriever.getResultsCount(
-			_group1.getCompanyId(), filterString, LocaleUtil.getDefault());
+		Assert.assertEquals(
+			2,
+			_oDataRetriever.getResultsCount(
+				_group1.getCompanyId(), filterString, LocaleUtil.getDefault()));
 
-		Assert.assertEquals(1, count);
-
-		List<User> users = _oDataRetriever.getResults(
+		List<User> results = _oDataRetriever.getResults(
 			_group1.getCompanyId(), filterString, LocaleUtil.getDefault(), 0,
 			2);
 
-		Assert.assertEquals(_user1, users.get(0));
+		Assert.assertTrue(results.contains(_user1));
+		Assert.assertTrue(results.contains(_user2));
+
+		_userGroupLocalService.unsetTeamUserGroups(
+			_team.getTeamId(), new long[] {_userGroup.getUserGroupId()});
+
+		Assert.assertEquals(
+			1,
+			_oDataRetriever.getResultsCount(
+				_group1.getCompanyId(), filterString, LocaleUtil.getDefault()));
+
+		results = _oDataRetriever.getResults(
+			_group1.getCompanyId(), filterString, LocaleUtil.getDefault(), 0,
+			2);
+
+		Assert.assertTrue(results.contains(_user1));
+		Assert.assertFalse(results.contains(_user2));
 	}
 
 	@Test
@@ -1066,49 +1056,39 @@ public class UserODataRetrieverTest {
 	public void testGetUsersWithMoreUsersThanElasticsearchMaxResultWindow()
 		throws Exception {
 
-		String firstName = RandomTestUtil.randomString();
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"INDEX_SEARCH_LIMIT", _ELASTICSEARCH_MAX_RESULT_WINDOW)) {
 
-		for (int i = 0; i < _MORE_USERS_THAN_ELASTICSEARCH_MAX_RESULT_WINDOW;
-			 i++) {
+			String firstName = RandomTestUtil.randomString();
 
-			_addUser(firstName, _group1);
+			for (int i = 0;
+				 i < _MORE_USERS_THAN_ELASTICSEARCH_MAX_RESULT_WINDOW; i++) {
+
+				_addUser(firstName, _group1);
+			}
+
+			String filterString = String.format(
+				"(firstName eq '%s')", firstName);
+
+			List<User> users = _oDataRetriever.getResults(
+				_group1.getCompanyId(), filterString, LocaleUtil.getDefault(),
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+			Assert.assertEquals(
+				users.toString(),
+				_MORE_USERS_THAN_ELASTICSEARCH_MAX_RESULT_WINDOW, users.size());
 		}
-
-		String filterString = String.format("(firstName eq '%s')", firstName);
-
-		List<User> users = _oDataRetriever.getResults(
-			_group1.getCompanyId(), filterString, LocaleUtil.getDefault(),
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS);
-
-		Assert.assertEquals(
-			users.toString(), _MORE_USERS_THAN_ELASTICSEARCH_MAX_RESULT_WINDOW,
-			users.size());
-	}
-
-	private static Dictionary<String, Object> _setUpElasticsearchProperties()
-		throws Exception {
-
-		Configuration configuration = _configurationAdmin.getConfiguration(
-			_CONFIGURATION_PID_ELASTICSEARCH, StringPool.QUESTION);
-
-		Dictionary<String, Object> properties = configuration.getProperties();
-
-		if (properties == null) {
-			properties = new HashMapDictionary<>();
-		}
-
-		properties.put(
-			"additionalIndexConfigurations",
-			"{\"max_result_window\" : \"" + _ELASTICSEARCH_MAX_RESULT_WINDOW +
-				"\"}");
-
-		return properties;
 	}
 
 	private Group _addGroup() throws Exception {
-		return GroupTestUtil.addGroup(
-			_company.getCompanyId(), _companyUser.getUserId(),
+		Group group = GroupTestUtil.addGroup(
+			TestPropsValues.getCompanyId(), _companyUser.getUserId(),
 			GroupConstants.DEFAULT_PARENT_GROUP_ID);
+
+		_groups.add(group);
+
+		return group;
 	}
 
 	private Team _addTeam() throws Exception {
@@ -1127,13 +1107,17 @@ public class UserODataRetrieverTest {
 	}
 
 	private User _addUser(String firstName, long... groupIds) throws Exception {
-		return UserTestUtil.addUser(
-			_company.getCompanyId(), _companyUser.getUserId(),
+		User user = UserTestUtil.addUser(
+			TestPropsValues.getCompanyId(), _companyUser.getUserId(),
 			RandomTestUtil.randomString(
 				NumericStringRandomizerBumper.INSTANCE,
 				UniqueStringRandomizerBumper.INSTANCE),
 			LocaleUtil.getDefault(), firstName, RandomTestUtil.randomString(),
 			groupIds, ServiceContextTestUtil.getServiceContext());
+
+		_users.add(user);
+
+		return user;
 	}
 
 	private String _toISOFormat(Instant instant) {
@@ -1156,16 +1140,11 @@ public class UserODataRetrieverTest {
 		_userLocalService.updateUser(_user2);
 	}
 
-	private static final String _CONFIGURATION_PID_ELASTICSEARCH =
-		"com.liferay.portal.search.elasticsearch7.configuration." +
-			"ElasticsearchConfiguration";
-
 	private static final int _ELASTICSEARCH_MAX_RESULT_WINDOW = 10;
 
 	private static final int _MORE_USERS_THAN_ELASTICSEARCH_MAX_RESULT_WINDOW =
 		_ELASTICSEARCH_MAX_RESULT_WINDOW * 3;
 
-	private static Company _company;
 	private static Group _companyGuestGroup;
 
 	@Inject
@@ -1179,19 +1158,17 @@ public class UserODataRetrieverTest {
 	@Inject
 	private static GroupLocalService _groupLocalService;
 
-	private static SafeCloseable _safeCloseable;
-
 	@DeleteAfterTestRun
 	private final List<AssetTag> _assetTags = new ArrayList<>();
 
 	@Inject
 	private ContactLocalService _contactLocalService;
 
-	@DeleteAfterTestRun
 	private Group _group1;
+	private Group _group2;
 
 	@DeleteAfterTestRun
-	private Group _group2;
+	private final List<Group> _groups = new ArrayList<>();
 
 	@Inject(filter = "model.class.name=com.liferay.portal.kernel.model.User")
 	private ODataRetriever<User> _oDataRetriever;
@@ -1211,16 +1188,19 @@ public class UserODataRetrieverTest {
 	@Inject
 	private TeamLocalService _teamLocalService;
 
-	@DeleteAfterTestRun
 	private User _user1;
-
-	@DeleteAfterTestRun
 	private User _user2;
 
 	@DeleteAfterTestRun
 	private UserGroup _userGroup;
 
 	@Inject
+	private UserGroupLocalService _userGroupLocalService;
+
+	@Inject
 	private UserLocalService _userLocalService;
+
+	@DeleteAfterTestRun
+	private final List<User> _users = new ArrayList<>();
 
 }

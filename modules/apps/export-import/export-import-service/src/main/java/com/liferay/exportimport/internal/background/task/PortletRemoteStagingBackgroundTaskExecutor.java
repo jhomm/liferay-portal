@@ -1,27 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.background.task;
 
 import com.liferay.exportimport.internal.background.task.display.PortletExportImportBackgroundTaskDisplay;
+import com.liferay.exportimport.kernel.exception.MissingReferenceException;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
+import com.liferay.exportimport.kernel.lar.MissingReference;
 import com.liferay.exportimport.kernel.lar.MissingReferences;
 import com.liferay.exportimport.kernel.lifecycle.ExportImportLifecycleManagerUtil;
 import com.liferay.exportimport.kernel.lifecycle.constants.ExportImportLifecycleConstants;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
-import com.liferay.exportimport.kernel.service.ExportImportLocalServiceUtil;
-import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.exportimport.kernel.service.ExportImportLocalService;
+import com.liferay.exportimport.kernel.staging.Staging;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskResult;
@@ -41,9 +36,16 @@ import java.io.Serializable;
 
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Akos Thurzo
  */
+@Component(
+	property = "background.task.executor.class.name=com.liferay.exportimport.internal.background.task.PortletRemoteStagingBackgroundTaskExecutor",
+	service = BackgroundTaskExecutor.class
+)
 public class PortletRemoteStagingBackgroundTaskExecutor
 	extends BaseStagingBackgroundTaskExecutor {
 
@@ -54,17 +56,7 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 
 	@Override
 	public BackgroundTaskExecutor clone() {
-		PortletRemoteStagingBackgroundTaskExecutor
-			portletRemoteStagingBackgroundTaskExecutor =
-				new PortletRemoteStagingBackgroundTaskExecutor();
-
-		portletRemoteStagingBackgroundTaskExecutor.
-			setBackgroundTaskStatusMessageTranslator(
-				getBackgroundTaskStatusMessageTranslator());
-		portletRemoteStagingBackgroundTaskExecutor.setIsolationLevel(
-			getIsolationLevel());
-
-		return portletRemoteStagingBackgroundTaskExecutor;
+		return this;
 	}
 
 	@Override
@@ -74,18 +66,13 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 		ExportImportConfiguration exportImportConfiguration =
 			getExportImportConfiguration(backgroundTask);
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
 		File file = null;
 		HttpPrincipal httpPrincipal = null;
 		MissingReferences missingReferences = null;
 		long stagingRequestId = 0L;
 
-		try {
-			currentThread.setContextClassLoader(
-				PortalClassLoaderUtil.getClassLoader());
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				PortalClassLoaderUtil.getClassLoader())) {
 
 			ExportImportThreadLocal.setPortletStagingInProcess(true);
 
@@ -98,7 +85,7 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 					exportImportConfiguration.getExportImportConfigurationId()),
 				exportImportConfiguration);
 
-			file = ExportImportLocalServiceUtil.exportPortletInfoAsFile(
+			file = _exportImportLocalService.exportPortletInfoAsFile(
 				exportImportConfiguration);
 
 			String checksum = FileUtil.getMD5Checksum(file);
@@ -114,7 +101,7 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 			stagingRequestId = StagingServiceHttp.createStagingRequest(
 				httpPrincipal, targetGroupId, checksum);
 
-			StagingUtil.transferFileToRemoteLive(
+			_staging.transferFileToRemoteLive(
 				file, stagingRequestId, httpPrincipal);
 
 			markBackgroundTask(
@@ -122,6 +109,13 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 
 			missingReferences = StagingServiceHttp.publishStagingRequest(
 				httpPrincipal, stagingRequestId, exportImportConfiguration);
+
+			Map<String, MissingReference> dependencyMissingReferences =
+				missingReferences.getDependencyMissingReferences();
+
+			if (!dependencyMissingReferences.isEmpty()) {
+				throw new MissingReferenceException(missingReferences);
+			}
 
 			deleteExportedChangesetEntries();
 
@@ -153,8 +147,6 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 			throw new SystemException(throwable);
 		}
 		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-
 			if ((stagingRequestId > 0) && (httpPrincipal != null)) {
 				try {
 					StagingServiceHttp.cleanUpStagingRequest(
@@ -185,5 +177,11 @@ public class PortletRemoteStagingBackgroundTaskExecutor
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortletRemoteStagingBackgroundTaskExecutor.class);
+
+	@Reference
+	private ExportImportLocalService _exportImportLocalService;
+
+	@Reference
+	private Staging _staging;
 
 }

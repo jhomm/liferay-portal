@@ -25,11 +25,7 @@ html#{$cadmin-selector} {
 			}
 
 			.custom-tooltip {
-				background-color: #fff;
-				border: 1px solid #ccc;
-				margin: 0;
-				opacity: 0.9;
-				padding: 4px;
+				position: static;
 				white-space: nowrap;
 			}
 
@@ -61,6 +57,7 @@ html#{$cadmin-selector} {
 			}
 
 			.list-group-keywords-list,
+			.list-group-countries-list,
 			.list-group-pages-list {
 				li {
 					border-width: 0;
@@ -85,6 +82,7 @@ html#{$cadmin-selector} {
 			.pie-chart-wrapper {
 				display: flex;
 				justify-content: space-between;
+				overflow-x: hidden;
 				position: relative;
 
 				&.pie-chart-wrapper--loading {
@@ -114,6 +112,8 @@ html#{$cadmin-selector} {
 				}
 
 				.pie-chart-wrapper--chart {
+					flex-shrink: 0;
+
 					.dim {
 						opacity: 0.4;
 					}
@@ -126,6 +126,10 @@ html#{$cadmin-selector} {
 
 			.recharts-legend-item {
 				padding-bottom: 8px;
+
+				svg {
+					width: 0;
+				}
 
 				&:last-child {
 					padding-bottom: 16px;
@@ -158,6 +162,22 @@ html#{$cadmin-selector} {
 
 				tbody > tr {
 					height: 30px;
+				}
+			}
+
+			.traffic-source-detail-drawer {
+				background: white;
+				height: 100%;
+				left: 0;
+				position: absolute;
+				top: 0;
+				width: 100%;
+				z-index: 99;
+			}
+			&-main {
+				visibility: visible;
+				&--hide {
+					visibility: hidden;
 				}
 			}
 		}

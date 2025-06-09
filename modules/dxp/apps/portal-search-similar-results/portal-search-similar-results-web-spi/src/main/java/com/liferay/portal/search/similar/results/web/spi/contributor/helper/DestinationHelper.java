@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.spi.contributor.helper;
@@ -17,24 +8,56 @@ package com.liferay.portal.search.similar.results.web.spi.contributor.helper;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 
-import org.osgi.annotation.versioning.ProviderType;
-
 /**
  * @author André de Oliveira
  */
-@ProviderType
 public interface DestinationHelper {
 
+	/**
+	 * @return The {@link AssetEntry} object associated with the current
+	 *         destination.
+	 */
 	public AssetEntry getAssetEntry();
 
+	/**
+	 * @return The {@link AssetRenderer} for the {@link AssetEntry} associated
+	 *         with the current destination.
+	 */
 	public AssetRenderer<?> getAssetRenderer();
 
+	/**
+	 * @return The view URL of the asset associated with the current
+	 *         destination.
+	 */
+	public String getAssetViewURL();
+
+	/**
+	 * @return The fully qualified class name of the {@link AssetEntry}
+	 *         associated with the current destination.
+	 */
 	public String getClassName();
 
+	/**
+	 * @return The class primary key of the {@link AssetEntry} associated with
+	 *         the current destination.
+	 */
 	public long getClassPK();
 
+	/**
+	 * @param  name The name of the route parameter to retrieve.
+	 * @return The value of a route parameter with the specified name.
+	 */
 	public Object getRouteParameter(String name);
 
+	/**
+	 * @return The group ID associated with the current destination.
+	 */
+	public long getScopeGroupId();
+
+	/**
+	 * @return The unique identifier (UID) of the {@link AssetEntry} associated
+	 *         with the current destination.
+	 */
 	public String getUID();
 
 }

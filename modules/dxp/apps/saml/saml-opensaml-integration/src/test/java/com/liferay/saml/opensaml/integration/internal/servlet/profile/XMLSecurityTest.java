@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.servlet.profile;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.cookies.CookiesManager;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.saml.constants.SamlWebKeys;
 import com.liferay.saml.opensaml.integration.internal.BaseSamlTestCase;
+import com.liferay.saml.opensaml.integration.internal.provider.CachingChainingMetadataResolver;
 import com.liferay.saml.opensaml.integration.internal.util.OpenSamlUtil;
 import com.liferay.saml.persistence.model.SamlSpIdpConnection;
 import com.liferay.saml.persistence.model.impl.SamlSpIdpConnectionImpl;
@@ -31,12 +26,15 @@ import com.liferay.saml.persistence.service.SamlSpSessionLocalServiceUtil;
 import java.io.ByteArrayOutputStream;
 
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
 import org.apache.xml.security.algorithms.JCEMapper;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +48,9 @@ import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.opensaml.security.credential.Credential;
 import org.opensaml.security.crypto.SigningUtil;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -62,6 +63,17 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
+
+	@BeforeClass
+	public static void setUpClass() {
+		_cookiesManagerServiceRegistration = _bundleContext.registerService(
+			CookiesManager.class, Mockito.mock(CookiesManager.class), null);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_cookiesManagerServiceRegistration.unregister();
+	}
 
 	@Before
 	@Override
@@ -84,33 +96,54 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 		SamlSpIdpConnection samlSpIdpConnection = new SamlSpIdpConnectionImpl();
 
-		when(
+		Mockito.when(
 			samlSpIdpConnectionLocalService.getSamlSpIdpConnection(
 				Mockito.eq(COMPANY_ID), Mockito.eq(IDP_ENTITY_ID))
 		).thenReturn(
 			samlSpIdpConnection
 		);
 
-		_webSsoProfileImpl.setIdentifierGenerationStrategyFactory(
-			identifierGenerationStrategyFactory);
-		_webSsoProfileImpl.setMetadataManager(metadataManagerImpl);
-		_webSsoProfileImpl.setPortal(portal);
-		_webSsoProfileImpl.setSamlBindings(samlBindings);
-		_webSsoProfileImpl.setSamlProviderConfigurationHelper(
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "credentialResolver", credentialResolver);
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "localEntityManager",
+			keyStoreLocalEntityManager);
+		ReflectionTestUtil.setFieldValue(_webSsoProfileImpl, "portal", portal);
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "samlBindingProvider", samlBindingProvider);
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "samlProviderConfigurationHelper",
 			samlProviderConfigurationHelper);
-		_webSsoProfileImpl.setSamlSpAuthRequestLocalService(
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "_samlSpAuthRequestLocalService",
 			samlSpAuthRequestLocalService);
-		_webSsoProfileImpl.setSamlSpIdpConnectionLocalService(
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "samlSpIdpConnectionLocalService",
 			samlSpIdpConnectionLocalService);
-		_webSsoProfileImpl.setSamlSpSessionLocalService(
+		ReflectionTestUtil.setFieldValue(
+			_webSsoProfileImpl, "samlSpSessionLocalService",
 			samlSpSessionLocalService);
+
+		_webSsoProfileImpl.activate(
+			SystemBundleUtil.getBundleContext(), new HashMap<String, Object>());
+
+		ReflectionTestUtil.invoke(
+			_webSsoProfileImpl.getMetadataResolver(), "doDestroy",
+			new Class<?>[0]);
+
+		CachingChainingMetadataResolver cachingChainingMetadataResolver =
+			(CachingChainingMetadataResolver)
+				_webSsoProfileImpl.getMetadataResolver();
+
+		cachingChainingMetadataResolver.addMetadataResolver(
+			new MockMetadataResolver());
 
 		prepareServiceProvider(SP_ENTITY_ID);
 	}
 
 	@Test(expected = MessageDecodingException.class)
 	public void testXMLBombBillionLaughs() throws Exception {
-		String redirectURL = getAuthnRequestRedirectURL();
+		String redirectURL = _getAuthnRequestRedirectURL();
 
 		String authnRequestXML = OpenSamlUtil.marshall(
 			getAuthnRequest(redirectURL));
@@ -143,7 +176,7 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 	@Test(expected = MessageDecodingException.class)
 	public void testXMLBombQuadraticBlowup() throws Exception {
-		String redirectURL = getAuthnRequestRedirectURL();
+		String redirectURL = _getAuthnRequestRedirectURL();
 
 		String authnRequestXML = OpenSamlUtil.marshall(
 			getAuthnRequest(redirectURL));
@@ -177,7 +210,7 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 	@Test(expected = MessageDecodingException.class)
 	public void testXXEGeneralEntities1() throws Exception {
-		String redirectURL = getAuthnRequestRedirectURL();
+		String redirectURL = _getAuthnRequestRedirectURL();
 
 		String authnRequestXML = OpenSamlUtil.marshall(
 			getAuthnRequest(redirectURL));
@@ -197,7 +230,7 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 	@Test(expected = MessageDecodingException.class)
 	public void testXXEGeneralEntities2() throws Exception {
-		String redirectURL = getAuthnRequestRedirectURL();
+		String redirectURL = _getAuthnRequestRedirectURL();
 
 		String authnRequestXML = OpenSamlUtil.marshall(
 			getAuthnRequest(redirectURL));
@@ -217,7 +250,7 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 	@Test(expected = MessageDecodingException.class)
 	public void testXXEParameterEntities() throws Exception {
-		String redirectURL = getAuthnRequestRedirectURL();
+		String redirectURL = _getAuthnRequestRedirectURL();
 
 		String authnRequestXML = OpenSamlUtil.marshall(
 			getAuthnRequest(redirectURL));
@@ -235,9 +268,9 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 			String authnRequestXML, String redirectURL)
 		throws Exception {
 
-		Credential credential = metadataManagerImpl.getSigningCredential();
+		Credential credential = _webSsoProfileImpl.getSigningCredential();
 
-		String encodedAuthnRequest = encodeRequest(authnRequestXML);
+		String encodedAuthnRequest = _encodeRequest(authnRequestXML);
 
 		MockHttpServletRequest mockHttpServletRequest =
 			getMockHttpServletRequest(redirectURL);
@@ -247,7 +280,7 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 		mockHttpServletRequest.setParameter("SAMLRequest", encodedAuthnRequest);
 
-		String signature = generateSignature(
+		String signature = _generateSignature(
 			credential, mockHttpServletRequest.getParameter("SigAlg"),
 			mockHttpServletRequest.getQueryString());
 
@@ -255,38 +288,6 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 		_webSsoProfileImpl.decodeAuthnRequest(
 			mockHttpServletRequest, new MockHttpServletResponse());
-	}
-
-	protected String encodeRequest(String requestXML) throws Exception {
-		Base64.Encoder encoder = _getEncoder();
-
-		ByteArrayOutputStream byteArrayOutputStream =
-			new ByteArrayOutputStream();
-
-		Deflater deflater = new Deflater(Deflater.DEFLATED, true);
-
-		DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(
-			byteArrayOutputStream, deflater);
-
-		deflaterOutputStream.write(requestXML.getBytes("UTF-8"));
-
-		deflaterOutputStream.finish();
-
-		return encoder.encodeToString(byteArrayOutputStream.toByteArray());
-	}
-
-	protected String generateSignature(
-			Credential signingCredential, String algorithmURI,
-			String queryString)
-		throws Exception {
-
-		Base64.Encoder encoder = _getEncoder();
-
-		byte[] signatureBytes = SigningUtil.sign(
-			signingCredential, JCEMapper.translateURItoJCEID(algorithmURI),
-			false, queryString.getBytes("UTF-8"));
-
-		return encoder.encodeToString(signatureBytes);
 	}
 
 	protected AuthnRequest getAuthnRequest(String redirectURL)
@@ -309,7 +310,39 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 		return inboundMessageContext.getMessage();
 	}
 
-	protected String getAuthnRequestRedirectURL() throws Exception {
+	private String _encodeRequest(String requestXML) throws Exception {
+		Base64.Encoder encoder = _getEncoder();
+
+		ByteArrayOutputStream byteArrayOutputStream =
+			new ByteArrayOutputStream();
+
+		Deflater deflater = new Deflater(Deflater.DEFLATED, true);
+
+		DeflaterOutputStream deflaterOutputStream = new DeflaterOutputStream(
+			byteArrayOutputStream, deflater);
+
+		deflaterOutputStream.write(requestXML.getBytes("UTF-8"));
+
+		deflaterOutputStream.finish();
+
+		return encoder.encodeToString(byteArrayOutputStream.toByteArray());
+	}
+
+	private String _generateSignature(
+			Credential signingCredential, String algorithmURI,
+			String queryString)
+		throws Exception {
+
+		Base64.Encoder encoder = _getEncoder();
+
+		byte[] signatureBytes = SigningUtil.sign(
+			signingCredential, JCEMapper.translateURItoJCEID(algorithmURI),
+			false, queryString.getBytes("UTF-8"));
+
+		return encoder.encodeToString(signatureBytes);
+	}
+
+	private String _getAuthnRequestRedirectURL() throws Exception {
 		SamlSpIdpConnectionLocalService samlSpIdpConnectionLocalService =
 			getMockPortletService(
 				SamlSpIdpConnectionLocalServiceUtil.class,
@@ -319,7 +352,7 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 		samlSpIdpConnection.setSamlIdpEntityId(IDP_ENTITY_ID);
 
-		when(
+		Mockito.when(
 			samlSpIdpConnectionLocalService.getSamlSpIdpConnection(
 				Mockito.eq(COMPANY_ID), Mockito.eq(IDP_ENTITY_ID))
 		).thenReturn(
@@ -346,6 +379,11 @@ public class XMLSecurityTest extends BaseSamlTestCase {
 
 		return encoder.withoutPadding();
 	}
+
+	private static final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+	private static ServiceRegistration<CookiesManager>
+		_cookiesManagerServiceRegistration;
 
 	private final WebSsoProfileImpl _webSsoProfileImpl =
 		new WebSsoProfileImpl();

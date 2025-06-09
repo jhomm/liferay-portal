@@ -60,7 +60,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#caret-top"
+              href="#caret-top"
             />
           </svg>
         </button>
@@ -75,7 +75,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#caret-bottom"
+              href="#caret-bottom"
             />
           </svg>
         </button>
@@ -92,7 +92,7 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#full-size"
+              href="#full-size"
             />
           </svg>
         </button>
@@ -102,59 +102,60 @@ exports[`DocumentPreviewerWrapper renders with a document 1`] = `
   <div
     class="align-items-center d-flex flex-column justify-content-center"
   >
-    <ul
-      class="pagination pagination-root"
+    <nav
+      aria-label="Pagination"
     >
-      <li
-        class="page-item disabled"
+      <ul
+        class="pagination pagination-root"
       >
-        <button
-          aria-label="Previous"
-          class="page-link"
-          disabled=""
-          type="button"
+        <li
+          class="page-item disabled"
         >
-          <svg
-            class="lexicon-icon lexicon-icon-angle-left"
-            role="presentation"
+          <div
+            class="page-link"
           >
-            <use
-              xlink:href="#angle-left"
-            />
-          </svg>
-        </button>
-      </li>
-      <li
-        class="page-item active"
-      >
-        <button
-          class="page-link"
-          type="button"
+            <svg
+              class="lexicon-icon lexicon-icon-angle-left"
+              role="presentation"
+            >
+              <use
+                href="#angle-left"
+              />
+            </svg>
+          </div>
+        </li>
+        <li
+          class="page-item active"
         >
-          1
-        </button>
-      </li>
-      <li
-        class="page-item disabled"
-      >
-        <button
-          aria-label="Next"
-          class="page-link"
-          disabled=""
-          type="button"
-        >
-          <svg
-            class="lexicon-icon lexicon-icon-angle-right"
-            role="presentation"
+          <a
+            aria-label="Go to page, 1"
+            class="page-link"
+            tabindex="0"
           >
-            <use
-              xlink:href="#angle-right"
-            />
-          </svg>
-        </button>
-      </li>
-    </ul>
-    <span />
+            1
+          </a>
+        </li>
+        <li
+          class="page-item disabled"
+        >
+          <div
+            class="page-link"
+          >
+            <svg
+              class="lexicon-icon lexicon-icon-angle-right"
+              role="presentation"
+            >
+              <use
+                href="#angle-right"
+              />
+            </svg>
+          </div>
+        </li>
+      </ul>
+    </nav>
+    <span>
+      document-x-of-x
+    </span>
   </div>
 </DocumentFragment>
 `;
@@ -168,24 +169,37 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
       class="preview-file-container unavailable-preview"
     >
       <div
-        class="taglib-empty-result-message"
+        class="mb-2 mt-4 c-empty-state c-empty-state-animation"
       >
         <div
-          class="text-center"
+          class="c-empty-state-image"
         >
           <div
-            class="taglib-empty-state mb-2 mt-4"
-          />
-          <h1
-            class="taglib-empty-result-message-title"
+            class="c-empty-state-aspect-ratio"
           >
+            <img
+              alt=""
+              class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
+              src="http://localhost:8080/o/admin-theme/images/states/empty_state.svg"
+            />
+            <img
+              alt=""
+              class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
+              src="/o/admin-theme/images/states/empty_state_reduced_motion.svg"
+            />
+          </div>
+        </div>
+        <div
+          class="c-empty-state-title"
+        >
+          <span>
             no-preview-available
-          </h1>
-          <p
-            class="empty-message-color taglib-empty-result-message-description"
-          >
-            the-envelope-does-not-have-a-document-to-preview
-          </p>
+          </span>
+        </div>
+        <div
+          class="c-empty-state-text"
+        >
+          the-document-x-does-not-have-a-preview
         </div>
       </div>
       <div
@@ -227,59 +241,60 @@ exports[`DocumentPreviewerWrapper renders with a document without preview 1`] = 
   <div
     class="align-items-center d-flex flex-column justify-content-center"
   >
-    <ul
-      class="pagination pagination-root"
+    <nav
+      aria-label="Pagination"
     >
-      <li
-        class="page-item disabled"
+      <ul
+        class="pagination pagination-root"
       >
-        <button
-          aria-label="Previous"
-          class="page-link"
-          disabled=""
-          type="button"
+        <li
+          class="page-item disabled"
         >
-          <svg
-            class="lexicon-icon lexicon-icon-angle-left"
-            role="presentation"
+          <div
+            class="page-link"
           >
-            <use
-              xlink:href="#angle-left"
-            />
-          </svg>
-        </button>
-      </li>
-      <li
-        class="page-item active"
-      >
-        <button
-          class="page-link"
-          type="button"
+            <svg
+              class="lexicon-icon lexicon-icon-angle-left"
+              role="presentation"
+            >
+              <use
+                href="#angle-left"
+              />
+            </svg>
+          </div>
+        </li>
+        <li
+          class="page-item active"
         >
-          1
-        </button>
-      </li>
-      <li
-        class="page-item disabled"
-      >
-        <button
-          aria-label="Next"
-          class="page-link"
-          disabled=""
-          type="button"
-        >
-          <svg
-            class="lexicon-icon lexicon-icon-angle-right"
-            role="presentation"
+          <a
+            aria-label="Go to page, 1"
+            class="page-link"
+            tabindex="0"
           >
-            <use
-              xlink:href="#angle-right"
-            />
-          </svg>
-        </button>
-      </li>
-    </ul>
-    <span />
+            1
+          </a>
+        </li>
+        <li
+          class="page-item disabled"
+        >
+          <div
+            class="page-link"
+          >
+            <svg
+              class="lexicon-icon lexicon-icon-angle-right"
+              role="presentation"
+            >
+              <use
+                href="#angle-right"
+              />
+            </svg>
+          </div>
+        </li>
+      </ul>
+    </nav>
+    <span>
+      document-x-of-x
+    </span>
   </div>
 </DocumentFragment>
 `;
@@ -337,7 +352,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#hr"
+              href="#hr"
             />
           </svg>
         </button>
@@ -362,7 +377,7 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
             role="presentation"
           >
             <use
-              xlink:href="#plus"
+              href="#plus"
             />
           </svg>
         </button>
@@ -372,59 +387,60 @@ exports[`DocumentPreviewerWrapper renders with an image 1`] = `
   <div
     class="align-items-center d-flex flex-column justify-content-center"
   >
-    <ul
-      class="pagination pagination-root"
+    <nav
+      aria-label="Pagination"
     >
-      <li
-        class="page-item disabled"
+      <ul
+        class="pagination pagination-root"
       >
-        <button
-          aria-label="Previous"
-          class="page-link"
-          disabled=""
-          type="button"
+        <li
+          class="page-item disabled"
         >
-          <svg
-            class="lexicon-icon lexicon-icon-angle-left"
-            role="presentation"
+          <div
+            class="page-link"
           >
-            <use
-              xlink:href="#angle-left"
-            />
-          </svg>
-        </button>
-      </li>
-      <li
-        class="page-item active"
-      >
-        <button
-          class="page-link"
-          type="button"
+            <svg
+              class="lexicon-icon lexicon-icon-angle-left"
+              role="presentation"
+            >
+              <use
+                href="#angle-left"
+              />
+            </svg>
+          </div>
+        </li>
+        <li
+          class="page-item active"
         >
-          1
-        </button>
-      </li>
-      <li
-        class="page-item disabled"
-      >
-        <button
-          aria-label="Next"
-          class="page-link"
-          disabled=""
-          type="button"
-        >
-          <svg
-            class="lexicon-icon lexicon-icon-angle-right"
-            role="presentation"
+          <a
+            aria-label="Go to page, 1"
+            class="page-link"
+            tabindex="0"
           >
-            <use
-              xlink:href="#angle-right"
-            />
-          </svg>
-        </button>
-      </li>
-    </ul>
-    <span />
+            1
+          </a>
+        </li>
+        <li
+          class="page-item disabled"
+        >
+          <div
+            class="page-link"
+          >
+            <svg
+              class="lexicon-icon lexicon-icon-angle-right"
+              role="presentation"
+            >
+              <use
+                href="#angle-right"
+              />
+            </svg>
+          </div>
+        </li>
+      </ul>
+    </nav>
+    <span>
+      document-x-of-x
+    </span>
   </div>
 </DocumentFragment>
 `;
@@ -438,24 +454,37 @@ exports[`DocumentPreviewerWrapper renders with empty state 1`] = `
       class="preview-file-container unavailable-preview"
     >
       <div
-        class="taglib-empty-result-message"
+        class="mb-2 mt-4 c-empty-state c-empty-state-animation"
       >
         <div
-          class="text-center"
+          class="c-empty-state-image"
         >
           <div
-            class="taglib-empty-state mb-2 mt-4"
-          />
-          <h1
-            class="taglib-empty-result-message-title"
+            class="c-empty-state-aspect-ratio"
           >
+            <img
+              alt=""
+              class="aspect-ratio-item aspect-ratio-item-fluid d-none-c-prefers-reduced-motion"
+              src="http://localhost:8080/o/admin-theme/images/states/empty_state.svg"
+            />
+            <img
+              alt=""
+              class="aspect-ratio-item aspect-ratio-item-fluid d-block-c-prefers-reduced-motion"
+              src="/o/admin-theme/images/states/empty_state_reduced_motion.svg"
+            />
+          </div>
+        </div>
+        <div
+          class="c-empty-state-title"
+        >
+          <span>
             no-preview-available
-          </h1>
-          <p
-            class="empty-message-color taglib-empty-result-message-description"
-          >
-            the-envelope-does-not-have-a-document-to-preview
-          </p>
+          </span>
+        </div>
+        <div
+          class="c-empty-state-text"
+        >
+          the-envelope-does-not-have-a-document-to-preview
         </div>
       </div>
       <div

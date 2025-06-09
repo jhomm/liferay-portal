@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.display.context;
@@ -20,19 +11,28 @@ import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
+import com.liferay.asset.tags.item.selector.AssetTagsItemSelectorCriterion;
+import com.liferay.asset.tags.item.selector.AssetTagsItemSelectorReturnType;
+import com.liferay.commerce.constants.CommerceWebKeys;
+import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.catalog.CPSku;
 import com.liferay.commerce.product.content.render.list.CPContentListRendererRegistry;
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
-import com.liferay.commerce.product.content.web.internal.util.CPPublisherWebHelper;
+import com.liferay.commerce.product.content.web.internal.helper.CPPublisherWebHelper;
 import com.liferay.commerce.product.data.source.CPDataSource;
 import com.liferay.commerce.product.data.source.CPDataSourceRegistry;
-import com.liferay.commerce.product.item.selector.criterion.CPDefinitionItemSelectorCriterion;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
+import com.liferay.commerce.product.item.selector.CPDefinitionItemSelectorCriterion;
+import com.liferay.commerce.product.type.CPTypeRegistry;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorReturnType;
+import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
+import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -42,11 +42,10 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.LiferayWindowState;
-import com.liferay.portal.kernel.portlet.PortletProvider;
-import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -55,19 +54,20 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PrefsParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletPreferences;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * @author Marco Leo
+ * @author Alessio Antonio Rendina
  */
 public class CPPublisherConfigurationDisplayContext
 	extends BaseCPPublisherDisplayContext {
@@ -75,22 +75,27 @@ public class CPPublisherConfigurationDisplayContext
 	public CPPublisherConfigurationDisplayContext(
 			AssetCategoryLocalService assetCategoryLocalService,
 			AssetTagLocalService assetTagLocalService,
+			ConfigurationProvider configurationProvider,
 			CPContentListEntryRendererRegistry contentListEntryRendererRegistry,
 			CPContentListRendererRegistry cpContentListRendererRegistry,
 			CPDataSourceRegistry cpDataSourceRegistry,
+			CPDefinitionHelper cpDefinitionHelper,
 			CPInstanceHelper cpInstanceHelper,
 			CPPublisherWebHelper cpPublisherWebHelper,
-			CPTypeServicesTracker cpTypeServicesTracker,
+			CPTypeRegistry cpTypeRegistry, GroupLocalService groupLocalService,
 			HttpServletRequest httpServletRequest, ItemSelector itemSelector)
 		throws PortalException {
 
 		super(
-			contentListEntryRendererRegistry, cpContentListRendererRegistry,
-			cpPublisherWebHelper, cpTypeServicesTracker, httpServletRequest);
+			configurationProvider, contentListEntryRendererRegistry,
+			cpContentListRendererRegistry, cpPublisherWebHelper, cpTypeRegistry,
+			groupLocalService, httpServletRequest);
 
 		_assetCategoryLocalService = assetCategoryLocalService;
 		_assetTagLocalService = assetTagLocalService;
+		_configurationProvider = configurationProvider;
 		_cpDataSourceRegistry = cpDataSourceRegistry;
+		_cpDefinitionHelper = cpDefinitionHelper;
 		_cpInstanceHelper = cpInstanceHelper;
 		_itemSelector = itemSelector;
 	}
@@ -222,33 +227,28 @@ public class CPPublisherConfigurationDisplayContext
 	}
 
 	public String getCategorySelectorURL() {
-		try {
-			PortletURL portletURL = PortletProviderUtil.getPortletURL(
-				cpContentRequestHelper.getRequest(),
-				AssetCategory.class.getName(), PortletProvider.Action.BROWSE);
+		HttpServletRequest httpServletRequest =
+			cpContentRequestHelper.getRequest();
 
-			if (portletURL == null) {
-				return null;
-			}
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
 
-			portletURL.setParameter(
-				"eventName", _getPortletNamespace() + "selectCategory");
-			portletURL.setParameter(
-				"selectedCategories", "{selectedCategories}");
-			portletURL.setParameter("singleSelect", "{singleSelect}");
-			portletURL.setParameter("vocabularyIds", "{vocabularyIds}");
+		InfoItemItemSelectorCriterion itemSelectorCriterion =
+			new InfoItemItemSelectorCriterion();
 
-			portletURL.setWindowState(LiferayWindowState.POP_UP);
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new InfoItemItemSelectorReturnType());
+		itemSelectorCriterion.setItemType(AssetCategory.class.getName());
 
-			return portletURL.toString();
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-		}
-
-		return null;
+		return PortletURLBuilder.create(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(
+					cpContentRequestHelper.getLiferayPortletRequest()),
+				themeDisplay.getScopeGroup(), themeDisplay.getScopeGroupId(),
+				_getPortletNamespace() + "selectCategory",
+				itemSelectorCriterion)
+		).buildString();
 	}
 
 	public List<CPDataSource> getCPDataSources() {
@@ -261,7 +261,20 @@ public class CPPublisherConfigurationDisplayContext
 		return _cpInstanceHelper.getDefaultCPSku(cpCatalogEntry);
 	}
 
-	public String getItemSelectorUrl() throws Exception {
+	public String getDefaultImageFileURL(CPCatalogEntry cpCatalogEntry)
+		throws PortalException {
+
+		HttpServletRequest httpServletRequest =
+			cpContentRequestHelper.getRequest();
+
+		return _cpDefinitionHelper.getDefaultImageFileURL(
+			CommerceUtil.getCommerceAccountId(
+				(CommerceContext)httpServletRequest.getAttribute(
+					CommerceWebKeys.COMMERCE_CONTEXT)),
+			cpCatalogEntry.getCPDefinitionId());
+	}
+
+	public String getItemSelectorUrl() {
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
 			RequestBackedPortletURLFactoryUtil.create(
 				cpContentRequestHelper.getRenderRequest());
@@ -273,11 +286,10 @@ public class CPPublisherConfigurationDisplayContext
 			Collections.<ItemSelectorReturnType>singletonList(
 				new UUIDItemSelectorReturnType()));
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			requestBackedPortletURLFactory, "productDefinitionsSelectItem",
-			cpDefinitionItemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory, "productDefinitionsSelectItem",
+				cpDefinitionItemSelectorCriterion));
 	}
 
 	public String getOrderByColumn1() {
@@ -338,30 +350,29 @@ public class CPPublisherConfigurationDisplayContext
 
 	public String getTagSelectorURL() {
 		try {
-			PortletURL portletURL = PortletProviderUtil.getPortletURL(
-				cpContentRequestHelper.getRequest(), AssetTag.class.getName(),
-				PortletProvider.Action.BROWSE);
+			AssetTagsItemSelectorCriterion assetTagsItemSelectorCriterion =
+				new AssetTagsItemSelectorCriterion();
 
-			if (portletURL == null) {
-				return null;
-			}
-
-			portletURL.setParameter(
-				"eventName", _getPortletNamespace() + "selectTag");
+			assetTagsItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+				new AssetTagsItemSelectorReturnType());
 
 			Company company = cpContentRequestHelper.getCompany();
 
-			portletURL.setParameter(
-				"groupIds", String.valueOf(company.getGroupId()));
+			assetTagsItemSelectorCriterion.setGroupIds(
+				new long[] {company.getGroupId()});
 
-			portletURL.setParameter("selectedTagNames", "{selectedTagNames}");
-			portletURL.setWindowState(LiferayWindowState.POP_UP);
+			assetTagsItemSelectorCriterion.setMultiSelection(true);
 
-			return portletURL.toString();
+			return String.valueOf(
+				_itemSelector.getItemSelectorURL(
+					RequestBackedPortletURLFactoryUtil.create(
+						cpContentRequestHelper.getRequest()),
+					_getPortletNamespace() + "selectTag",
+					assetTagsItemSelectorCriterion));
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -408,7 +419,9 @@ public class CPPublisherConfigurationDisplayContext
 
 	private final AssetCategoryLocalService _assetCategoryLocalService;
 	private final AssetTagLocalService _assetTagLocalService;
+	private final ConfigurationProvider _configurationProvider;
 	private final CPDataSourceRegistry _cpDataSourceRegistry;
+	private final CPDefinitionHelper _cpDefinitionHelper;
 	private final CPInstanceHelper _cpInstanceHelper;
 	private final ItemSelector _itemSelector;
 	private String _orderByColumn1;

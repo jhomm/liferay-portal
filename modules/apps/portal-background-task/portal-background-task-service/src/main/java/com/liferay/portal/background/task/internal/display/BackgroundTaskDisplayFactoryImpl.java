@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.background.task.internal.display;
@@ -27,7 +18,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Andrew Betts
  */
-@Component(immediate = true, service = BackgroundTaskDisplayFactory.class)
+@Component(service = BackgroundTaskDisplayFactory.class)
 public class BackgroundTaskDisplayFactoryImpl
 	implements BackgroundTaskDisplayFactory {
 
@@ -50,27 +41,14 @@ public class BackgroundTaskDisplayFactoryImpl
 	public BackgroundTaskDisplay getBackgroundTaskDisplay(
 		long backgroundTaskId) {
 
-		BackgroundTask backgroundTask =
-			_backgroundTaskManager.fetchBackgroundTask(backgroundTaskId);
-
-		return getBackgroundTaskDisplay(backgroundTask);
+		return getBackgroundTaskDisplay(
+			_backgroundTaskManager.fetchBackgroundTask(backgroundTaskId));
 	}
 
-	@Reference(unbind = "-")
-	protected void setBackgroundTaskExecutorRegistry(
-		BackgroundTaskExecutorRegistry backgroundTaskExecutorRegistry) {
-
-		_backgroundTaskExecutorRegistry = backgroundTaskExecutorRegistry;
-	}
-
-	@Reference(unbind = "-")
-	protected void setBackgroundTaskManager(
-		BackgroundTaskManager backgroundTaskManager) {
-
-		_backgroundTaskManager = backgroundTaskManager;
-	}
-
+	@Reference
 	private BackgroundTaskExecutorRegistry _backgroundTaskExecutorRegistry;
+
+	@Reference
 	private BackgroundTaskManager _backgroundTaskManager;
 
 }

@@ -1,18 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal, postForm} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes, postForm, sub} from 'frontend-js-web';
 
 export default function propsTransformer({
 	additionalProps: {
@@ -27,23 +19,26 @@ export default function propsTransformer({
 	const addUsers = () => {
 		openSelectionModal({
 			multiple: true,
-			onSelect(selectedItem) {
+			onSelect(data) {
+				const selectedItems = data.value;
+
 				const form = document.getElementById(`${portletNamespace}fm`);
 
-				if (form && selectedItem) {
+				if (form && selectedItems.length) {
 					postForm(form, {
 						data: {
-							addUserIds: selectedItem,
+							addUserIds: selectedItems.map((selectedItem) => {
+								const item = JSON.parse(selectedItem);
+
+								return item.id;
+							}),
 						},
 						url: editUserGroupAssignmentsURL,
 					});
 				}
 			},
 			selectEventName: `${portletNamespace}selectUsers`,
-			title: Liferay.Util.sub(
-				Liferay.Language.get('add-users-to-x'),
-				userGroupName
-			),
+			title: sub(Liferay.Language.get('add-users-to-x'), userGroupName),
 			url: selectUsersURL,
 		});
 	};
@@ -55,7 +50,7 @@ export default function propsTransformer({
 			postForm(form, {
 				data: {
 					redirect: portletURL,
-					removeUserIds: Liferay.Util.listCheckedExcept(
+					removeUserIds: getCheckedCheckboxes(
 						form,
 						`${portletNamespace}allRowIds`
 					),

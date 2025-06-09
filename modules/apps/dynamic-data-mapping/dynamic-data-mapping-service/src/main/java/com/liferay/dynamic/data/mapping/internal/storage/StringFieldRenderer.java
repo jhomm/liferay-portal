@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.storage;
@@ -46,7 +37,7 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 
 	@Override
 	protected String doRender(Field field, Locale locale) throws Exception {
-		String fieldType = getFieldType(field);
+		String fieldType = _getFieldType(field);
 
 		List<String> values = new ArrayList<>();
 
@@ -58,11 +49,11 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 			}
 
 			if (fieldType.equals(DDMFormFieldType.SELECT)) {
-				valueString = handleSelectFieldValue(
+				valueString = _handleSelectFieldValue(
 					field, valueString, locale);
 			}
 			else if (fieldType.equals(DDMFormFieldType.RADIO)) {
-				return handleRadioFieldValue(
+				return _handleRadioFieldValue(
 					field, String.valueOf(value), locale);
 			}
 
@@ -82,22 +73,21 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 			return StringPool.BLANK;
 		}
 
-		String fieldType = getFieldType(field);
+		String fieldType = _getFieldType(field);
 
 		String valueString = String.valueOf(value);
 
 		if (fieldType.equals(DDMFormFieldType.SELECT)) {
-			return handleSelectFieldValue(field, valueString, locale);
+			return _handleSelectFieldValue(field, valueString, locale);
 		}
 		else if (fieldType.equals(DDMFormFieldType.RADIO)) {
-			return handleRadioFieldValue(field, valueString, locale);
+			return _handleRadioFieldValue(field, valueString, locale);
 		}
 
 		return valueString;
 	}
 
-	protected LocalizedValue getFieldOptionLabel(
-			Field field, String optionValue)
+	private LocalizedValue _getFieldOptionLabel(Field field, String optionValue)
 		throws Exception {
 
 		DDMStructure ddmStructure = field.getDDMStructure();
@@ -111,13 +101,13 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 		return ddmFormFieldOptions.getOptionLabels(optionValue);
 	}
 
-	protected String getFieldType(Field field) throws Exception {
+	private String _getFieldType(Field field) throws Exception {
 		DDMStructure ddmStructure = field.getDDMStructure();
 
 		return ddmStructure.getFieldType(field.getName());
 	}
 
-	protected String handleRadioFieldValue(
+	private String _handleRadioFieldValue(
 			Field field, String value, Locale locale)
 		throws Exception {
 
@@ -125,7 +115,7 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 			return StringPool.BLANK;
 		}
 
-		LocalizedValue label = getFieldOptionLabel(field, value);
+		LocalizedValue label = _getFieldOptionLabel(field, value);
 
 		if (label == null) {
 			return value;
@@ -134,7 +124,7 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 		return GetterUtil.getString(label.getString(locale));
 	}
 
-	protected String handleSelectFieldValue(
+	private String _handleSelectFieldValue(
 			Field field, String json, Locale locale)
 		throws Exception {
 
@@ -147,7 +137,7 @@ public class StringFieldRenderer extends BaseFieldRenderer {
 		StringBundler sb = new StringBundler(jsonArray.length() * 2);
 
 		for (int i = 0; i < jsonArray.length(); i++) {
-			LocalizedValue localizedValue = getFieldOptionLabel(
+			LocalizedValue localizedValue = _getFieldOptionLabel(
 				field, jsonArray.getString(i));
 
 			if (localizedValue != null) {

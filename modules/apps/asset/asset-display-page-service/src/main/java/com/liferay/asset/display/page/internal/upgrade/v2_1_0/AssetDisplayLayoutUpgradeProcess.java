@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.display.page.internal.upgrade.v2_1_0;
 
-import com.liferay.asset.display.page.internal.upgrade.v2_1_0.util.AssetDisplayPageEntryTable;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
@@ -38,7 +28,6 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import java.util.HashMap;
-import java.util.Optional;
 
 /**
  * @author Pavel Savinov
@@ -69,16 +58,17 @@ public class AssetDisplayLayoutUpgradeProcess extends UpgradeProcess {
 			long layoutPageTemplateEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
-		LayoutPageTemplateEntry layoutPageTemplateEntry = Optional.ofNullable(
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.fetchLayoutPageTemplateEntry(
-				layoutPageTemplateEntryId)
-		).orElseGet(
-			() ->
+				layoutPageTemplateEntryId);
+
+		if (layoutPageTemplateEntry == null) {
+			layoutPageTemplateEntry =
 				_layoutPageTemplateEntryService.
 					fetchDefaultLayoutPageTemplateEntry(
 						groupId, assetEntry.getClassNameId(),
-						assetEntry.getClassTypeId())
-		);
+						assetEntry.getClassTypeId());
+		}
 
 		if (layoutPageTemplateEntry == null) {
 			return 0;
@@ -92,7 +82,7 @@ public class AssetDisplayLayoutUpgradeProcess extends UpgradeProcess {
 			"layout.instanceable.allowed", Boolean.TRUE);
 
 		Layout layout = _layoutLocalService.addLayout(
-			userId, groupId, false, 0, assetEntry.getTitleMap(),
+			null, userId, groupId, false, 0, assetEntry.getTitleMap(),
 			assetEntry.getTitleMap(), assetEntry.getDescriptionMap(), null,
 			null, LayoutConstants.TYPE_ASSET_DISPLAY, StringPool.BLANK, true,
 			true, new HashMap<>(), serviceContext);
@@ -124,9 +114,7 @@ public class AssetDisplayLayoutUpgradeProcess extends UpgradeProcess {
 	}
 
 	private void _upgradeSchema() throws Exception {
-		alter(
-			AssetDisplayPageEntryTable.class,
-			new AlterTableAddColumn("plid", "LONG"));
+		alterTableAddColumn("AssetDisplayPageEntry", "plid", "LONG");
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -139,9 +127,9 @@ public class AssetDisplayLayoutUpgradeProcess extends UpgradeProcess {
 					"AssetDisplayPageEntry where plid is null or plid = 0"));
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update AssetDisplayPageEntry set plid = ? where " +
-							"assetDisplayPageEntryId = ?"))) {
+					connection,
+					"update AssetDisplayPageEntry set plid = ? where " +
+						"assetDisplayPageEntryId = ?")) {
 
 			while (resultSet.next()) {
 				long classNameId = resultSet.getLong("classNameId");

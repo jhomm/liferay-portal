@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.grouped.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.type.grouped.model.CPDefinitionGroupedEntry;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CPDefinitionGroupedEntryCacheModel
-	implements CacheModel<CPDefinitionGroupedEntry>, Externalizable {
+	implements CacheModel<CPDefinitionGroupedEntry>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,8 +40,10 @@ public class CPDefinitionGroupedEntryCacheModel
 		CPDefinitionGroupedEntryCacheModel cpDefinitionGroupedEntryCacheModel =
 			(CPDefinitionGroupedEntryCacheModel)object;
 
-		if (CPDefinitionGroupedEntryId ==
-				cpDefinitionGroupedEntryCacheModel.CPDefinitionGroupedEntryId) {
+		if ((CPDefinitionGroupedEntryId ==
+				cpDefinitionGroupedEntryCacheModel.
+					CPDefinitionGroupedEntryId) &&
+			(mvccVersion == cpDefinitionGroupedEntryCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -59,14 +53,28 @@ public class CPDefinitionGroupedEntryCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, CPDefinitionGroupedEntryId);
+		int hashCode = HashUtil.hash(0, CPDefinitionGroupedEntryId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(27);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", CPDefinitionGroupedEntryId=");
 		sb.append(CPDefinitionGroupedEntryId);
@@ -99,6 +107,8 @@ public class CPDefinitionGroupedEntryCacheModel
 	public CPDefinitionGroupedEntry toEntityModel() {
 		CPDefinitionGroupedEntryImpl cpDefinitionGroupedEntryImpl =
 			new CPDefinitionGroupedEntryImpl();
+
+		cpDefinitionGroupedEntryImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
 			cpDefinitionGroupedEntryImpl.setUuid("");
@@ -147,6 +157,7 @@ public class CPDefinitionGroupedEntryCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		CPDefinitionGroupedEntryId = objectInput.readLong();
@@ -171,6 +182,8 @@ public class CPDefinitionGroupedEntryCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
@@ -205,6 +218,7 @@ public class CPDefinitionGroupedEntryCacheModel
 		objectOutput.writeInt(quantity);
 	}
 
+	public long mvccVersion;
 	public String uuid;
 	public long CPDefinitionGroupedEntryId;
 	public long groupId;

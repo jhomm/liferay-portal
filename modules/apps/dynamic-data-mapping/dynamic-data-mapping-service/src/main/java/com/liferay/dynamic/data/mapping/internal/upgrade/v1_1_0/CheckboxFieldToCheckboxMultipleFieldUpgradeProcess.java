@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v1_1_0;
@@ -94,7 +85,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 					long structureId = resultSet.getLong(3);
 					long recordSetId = resultSet.getLong(4);
 
-					String newDefinition = upgradeRecordSetStructureDefinition(
+					String newDefinition = _upgradeRecordSetStructureDefinition(
 						definition);
 
 					preparedStatement2.setString(1, newDefinition);
@@ -109,7 +100,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 
 					preparedStatement3.addBatch();
 
-					updateRecords(
+					_updateRecords(
 						DDMFormDeserializeUtil.deserialize(
 							_ddmFormDeserializer, definition),
 						recordSetId);
@@ -122,9 +113,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 		}
 	}
 
-	protected JSONArray getOptionsJSONArray(
-		JSONObject checkboxFieldJSONObject) {
-
+	private JSONArray _getOptionsJSONArray(JSONObject checkboxFieldJSONObject) {
 		return JSONUtil.putAll(
 			JSONUtil.put(
 				"label", checkboxFieldJSONObject.getJSONObject("label")
@@ -133,7 +122,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 			));
 	}
 
-	protected JSONObject getPredefinedValueJSONObject(
+	private JSONObject _getPredefinedValueJSONObject(
 		JSONObject checkboxFieldJSONObject) {
 
 		JSONObject oldPredefinedValueJSONObject =
@@ -163,22 +152,22 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 		return newPredefinedValueJSONObject;
 	}
 
-	protected void transformCheckboxDDMFormField(
+	private void _transformCheckboxDDMFormField(
 		JSONObject checkboxFieldJSONObject) {
 
 		checkboxFieldJSONObject.put(
 			"dataType", "string"
 		).put(
-			"options", getOptionsJSONArray(checkboxFieldJSONObject)
+			"options", _getOptionsJSONArray(checkboxFieldJSONObject)
 		).put(
 			"predefinedValue",
-			getPredefinedValueJSONObject(checkboxFieldJSONObject)
+			_getPredefinedValueJSONObject(checkboxFieldJSONObject)
 		).put(
 			"type", "checkbox_multiple"
 		);
 	}
 
-	protected void transformCheckboxDDMFormFieldValues(
+	private void _transformCheckboxDDMFormFieldValues(
 			DDMFormValues ddmFormValues)
 		throws Exception {
 
@@ -191,7 +180,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 		ddmFormValuesTransformer.transform();
 	}
 
-	protected void updateRecords(DDMForm ddmForm, long recordSetId)
+	private void _updateRecords(DDMForm ddmForm, long recordSetId)
 		throws Exception {
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
@@ -216,7 +205,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 						DDMFormValuesDeserializeUtil.deserialize(
 							data_, ddmForm, _ddmFormValuesDeserializer);
 
-					transformCheckboxDDMFormFieldValues(ddmFormValues);
+					_transformCheckboxDDMFormFieldValues(ddmFormValues);
 
 					preparedStatement2.setString(
 						1,
@@ -235,7 +224,7 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 		}
 	}
 
-	protected String upgradeRecordSetStructureDefinition(String definition)
+	private String _upgradeRecordSetStructureDefinition(String definition)
 		throws JSONException {
 
 		JSONObject definitionJSONObject = _jsonFactory.createJSONObject(
@@ -243,26 +232,26 @@ public class CheckboxFieldToCheckboxMultipleFieldUpgradeProcess
 
 		JSONArray fieldsJSONArray = definitionJSONObject.getJSONArray("fields");
 
-		upgradeRecordSetStructureFields(fieldsJSONArray);
+		_upgradeRecordSetStructureFields(fieldsJSONArray);
 
 		return definitionJSONObject.toString();
 	}
 
-	protected void upgradeRecordSetStructureFields(JSONArray fieldsJSONArray) {
+	private void _upgradeRecordSetStructureFields(JSONArray fieldsJSONArray) {
 		for (int i = 0; i < fieldsJSONArray.length(); i++) {
 			JSONObject fieldJSONObject = fieldsJSONArray.getJSONObject(i);
 
 			String type = fieldJSONObject.getString("type");
 
 			if (type.equals("checkbox")) {
-				transformCheckboxDDMFormField(fieldJSONObject);
+				_transformCheckboxDDMFormField(fieldJSONObject);
 			}
 
 			JSONArray nestedFieldsJSONArray = fieldJSONObject.getJSONArray(
 				"nestedFields");
 
 			if (nestedFieldsJSONArray != null) {
-				upgradeRecordSetStructureFields(nestedFieldsJSONArray);
+				_upgradeRecordSetStructureFields(nestedFieldsJSONArray);
 			}
 		}
 	}

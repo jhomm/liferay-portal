@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.service;
 
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 
@@ -63,18 +55,18 @@ public class COREntryServiceUtil {
 		return getService().deleteCOREntry(corEntryId);
 	}
 
-	public static COREntry fetchByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
-		throws PortalException {
-
-		return getService().fetchByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
 	public static COREntry fetchCOREntry(long corEntryId)
 		throws PortalException {
 
 		return getService().fetchCOREntry(corEntryId);
+	}
+
+	public static COREntry fetchCOREntryByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().fetchCOREntryByExternalReferenceCode(
+			companyId, externalReferenceCode);
 	}
 
 	public static List<COREntry> getCOREntries(
@@ -137,10 +129,19 @@ public class COREntryServiceUtil {
 			externalReferenceCode, corEntryId);
 	}
 
-	public static COREntryService getService() {
-		return _service;
+	public static COREntry updateCOREntryTypeSettings(
+			long corEntryId, String typeSettings)
+		throws PortalException {
+
+		return getService().updateCOREntryTypeSettings(
+			corEntryId, typeSettings);
 	}
 
-	private static volatile COREntryService _service;
+	public static COREntryService getService() {
+		return _serviceSnapshot.get();
+	}
+
+	private static final Snapshot<COREntryService> _serviceSnapshot =
+		new Snapshot<>(COREntryServiceUtil.class, COREntryService.class);
 
 }

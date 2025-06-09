@@ -1,0 +1,13 @@
+{
+	"cacheable": false,
+	"fragmentEntryKey": "textarea",
+	"icon": "field-area",
+	"name": "textarea",
+	"type": "input",
+	"typeOptions": {
+		"fieldTypes": [
+			"long-text",
+			"text"
+		]
+	}
+}

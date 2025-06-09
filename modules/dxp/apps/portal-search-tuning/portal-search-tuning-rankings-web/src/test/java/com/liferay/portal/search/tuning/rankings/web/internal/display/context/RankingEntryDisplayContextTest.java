@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.display.context;
 
+import com.liferay.portal.search.tuning.rankings.constants.ResultRankingsConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Assert;
@@ -36,16 +28,23 @@ public class RankingEntryDisplayContextTest {
 		_rankingEntryDisplayContext = new RankingEntryDisplayContext();
 
 		_rankingEntryDisplayContext.setAliases("aliases");
+		_rankingEntryDisplayContext.setGroupExternalReferenceCode(
+			"groupExternalReferenceCode");
 		_rankingEntryDisplayContext.setHiddenResultsCount("hiddenResultsCount");
-		_rankingEntryDisplayContext.setInactive(false);
 		_rankingEntryDisplayContext.setIndex("index");
 		_rankingEntryDisplayContext.setKeywords("keywords");
 		_rankingEntryDisplayContext.setPinnedResultsCount("pinnedResultsCount");
+		_rankingEntryDisplayContext.setStatus(
+			ResultRankingsConstants.STATUS_ACTIVE);
+		_rankingEntryDisplayContext.setSXPBlueprintExternalReferenceCode(
+			"sxpBlueprintExternalReferenceCode");
 		_rankingEntryDisplayContext.setUid("uid");
 
 		Assert.assertEquals(
 			"aliases", _rankingEntryDisplayContext.getAliases());
-		Assert.assertFalse(_rankingEntryDisplayContext.getInactive());
+		Assert.assertEquals(
+			"groupExternalReferenceCode",
+			_rankingEntryDisplayContext.getGroupExternalReferenceCode());
 		Assert.assertEquals(
 			"hiddenResultsCount",
 			_rankingEntryDisplayContext.getHiddenResultsCount());
@@ -55,6 +54,12 @@ public class RankingEntryDisplayContextTest {
 		Assert.assertEquals(
 			"pinnedResultsCount",
 			_rankingEntryDisplayContext.getPinnedResultsCount());
+		Assert.assertEquals(
+			ResultRankingsConstants.STATUS_ACTIVE,
+			_rankingEntryDisplayContext.getStatus());
+		Assert.assertEquals(
+			"sxpBlueprintExternalReferenceCode",
+			_rankingEntryDisplayContext.getSXPBlueprintExternalReferenceCode());
 		Assert.assertEquals("uid", _rankingEntryDisplayContext.getUid());
 	}
 

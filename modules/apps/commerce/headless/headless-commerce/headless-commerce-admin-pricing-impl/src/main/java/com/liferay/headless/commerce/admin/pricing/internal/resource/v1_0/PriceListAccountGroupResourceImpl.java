@@ -1,39 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v1_0;
 
-import com.liferay.commerce.account.service.CommerceAccountGroupService;
+import com.liferay.account.service.AccountGroupService;
+import com.liferay.commerce.discount.model.CommerceDiscountCommerceAccountGroupRel;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommercePriceListCommerceAccountGroupRel;
 import com.liferay.commerce.price.list.service.CommercePriceListCommerceAccountGroupRelService;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.headless.commerce.admin.pricing.dto.v1_0.PriceListAccountGroup;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v1_0.converter.PriceListAccountGroupDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v1_0.PriceListAccountGroupUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v1_0.PriceListAccountGroupResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.core.Response;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,14 +33,12 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/price-list-account-group.properties",
 	scope = ServiceScope.PROTOTYPE,
 	service = PriceListAccountGroupResource.class
 )
 public class PriceListAccountGroupResourceImpl
-	extends BasePriceListAccountGroupResourceImpl
-	implements NestedFieldSupport {
+	extends BasePriceListAccountGroupResourceImpl {
 
 	@Override
 	public Response deletePriceListAccountGroup(Long id) throws Exception {
@@ -69,8 +57,9 @@ public class PriceListAccountGroupResourceImpl
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -86,7 +75,7 @@ public class PriceListAccountGroupResourceImpl
 						pagination.getStartPosition(),
 						pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_commercePriceListCommerceAccountGroupRelService.
 				getCommercePriceListCommerceAccountGroupRelsCount(
 					commercePriceList.getCommercePriceListId());
@@ -94,7 +83,7 @@ public class PriceListAccountGroupResourceImpl
 		return Page.of(
 			_toPriceListAccountGroups(
 				commercePriceListCommerceAccountGroupRels),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	@Override
@@ -117,14 +106,14 @@ public class PriceListAccountGroupResourceImpl
 						id, pagination.getStartPosition(),
 						pagination.getEndPosition(), null);
 
-		int totalItems =
+		int totalCount =
 			_commercePriceListCommerceAccountGroupRelService.
 				getCommercePriceListCommerceAccountGroupRelsCount(id);
 
 		return Page.of(
 			_toPriceListAccountGroups(
 				commercePriceListCommerceAccountGroupRels),
-			pagination, totalItems);
+			pagination, totalCount);
 	}
 
 	@Override
@@ -135,8 +124,9 @@ public class PriceListAccountGroupResourceImpl
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -146,13 +136,12 @@ public class PriceListAccountGroupResourceImpl
 
 		CommercePriceListCommerceAccountGroupRel
 			commercePriceListCommerceAccountGroupRel =
-				PriceListAccountGroupUtil.
-					addCommercePriceListCommerceAccountGroupRel(
-						_commerceAccountGroupService,
-						_commercePriceListCommerceAccountGroupRelService,
-						priceListAccountGroup, commercePriceList,
-						_serviceContextHelper.getServiceContext(
-							commercePriceList.getGroupId()));
+				PriceListAccountGroupUtil.addCommercePriceListAccountGroupRel(
+					_accountGroupService,
+					_commercePriceListCommerceAccountGroupRelService,
+					priceListAccountGroup, commercePriceList,
+					_serviceContextHelper.getServiceContext(
+						commercePriceList.getGroupId()));
 
 		return _toPriceListAccountGroup(
 			commercePriceListCommerceAccountGroupRel.
@@ -169,13 +158,12 @@ public class PriceListAccountGroupResourceImpl
 
 		CommercePriceListCommerceAccountGroupRel
 			commercePriceListCommerceAccountGroupRel =
-				PriceListAccountGroupUtil.
-					addCommercePriceListCommerceAccountGroupRel(
-						_commerceAccountGroupService,
-						_commercePriceListCommerceAccountGroupRelService,
-						priceListAccountGroup, commercePriceList,
-						_serviceContextHelper.getServiceContext(
-							commercePriceList.getGroupId()));
+				PriceListAccountGroupUtil.addCommercePriceListAccountGroupRel(
+					_accountGroupService,
+					_commercePriceListCommerceAccountGroupRelService,
+					priceListAccountGroup, commercePriceList,
+					_serviceContextHelper.getServiceContext(
+						commercePriceList.getGroupId()));
 
 		return _toPriceListAccountGroup(
 			commercePriceListCommerceAccountGroupRel.
@@ -197,23 +185,16 @@ public class PriceListAccountGroupResourceImpl
 				commercePriceListCommerceAccountGroupRels)
 		throws Exception {
 
-		List<PriceListAccountGroup> priceListAccountGroups = new ArrayList<>();
-
-		for (CommercePriceListCommerceAccountGroupRel
-				commercePriceListCommerceAccountGroupRel :
-					commercePriceListCommerceAccountGroupRels) {
-
-			priceListAccountGroups.add(
+		return transform(
+			commercePriceListCommerceAccountGroupRels,
+			commercePriceListCommerceAccountGroupRel ->
 				_toPriceListAccountGroup(
 					commercePriceListCommerceAccountGroupRel.
 						getCommercePriceListCommerceAccountGroupRelId()));
-		}
-
-		return priceListAccountGroups;
 	}
 
 	@Reference
-	private CommerceAccountGroupService _commerceAccountGroupService;
+	private AccountGroupService _accountGroupService;
 
 	@Reference
 	private CommercePriceListCommerceAccountGroupRelService
@@ -222,9 +203,12 @@ public class PriceListAccountGroupResourceImpl
 	@Reference
 	private CommercePriceListService _commercePriceListService;
 
-	@Reference
-	private PriceListAccountGroupDTOConverter
-		_priceListAccountGroupDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v1_0.converter.PriceListAccountGroupDTOConverter)"
+	)
+	private DTOConverter
+		<CommerceDiscountCommerceAccountGroupRel, PriceListAccountGroup>
+			_priceListAccountGroupDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

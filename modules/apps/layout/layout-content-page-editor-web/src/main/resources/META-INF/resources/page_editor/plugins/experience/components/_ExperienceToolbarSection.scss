@@ -1,4 +1,7 @@
-@import '../../../app/components/variables';
+$average-label-width: 120px;
+$base-dropdown-padding: 24px;
+$experiences-dropdown-width: 808px;
+$product-menu-width: 320px;
 
 html#{$cadmin-selector} {
 	.cadmin {
@@ -14,16 +17,20 @@ html#{$cadmin-selector} {
 				display: inline-block;
 				max-width: 100%;
 				width: 12em;
+
+				@include media-breakpoint-down(xs) {
+					width: 10em;
+				}
 			}
 		}
 
 		.page-editor__toolbar-experience__dropdown-menu.toggled {
 			display: block;
 			left: 0;
-			max-width: 100vw;
-			position: absolute;
+			max-width: $experiences-dropdown-width;
+			position: fixed;
 			top: 0;
-			width: 808px;
+			width: calc(100vw - #{$base-dropdown-padding});
 			z-index: $modalZIndex + 1;
 
 			li.dropdown-menu__experience {
@@ -33,6 +40,32 @@ html#{$cadmin-selector} {
 				&:focus {
 					background-color: $cadmin-primary-l3;
 					border: 1px solid $cadmin-primary-l1;
+				}
+			}
+
+			.segmentation-disabled-alert {
+				line-height: inherit;
+				margin: inherit;
+				padding: 15px 16px;
+			}
+		}
+	}
+
+	body.product-menu-open {
+		.cadmin {
+			.page-editor__toolbar-experience__dropdown-menu.toggled {
+				width: calc(
+					100vw - (#{$base-dropdown-padding} + #{$product-menu-width})
+				);
+
+				@include media-breakpoint-up(lg) {
+					width: calc(
+						100vw -
+							(
+								#{$average-label-width} + #{$base-dropdown-padding} +
+									#{$product-menu-width}
+							)
+					);
 				}
 			}
 		}

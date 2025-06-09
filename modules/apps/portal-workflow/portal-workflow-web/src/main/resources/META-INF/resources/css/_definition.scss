@@ -13,25 +13,6 @@
 	}
 }
 
-.info-bar-item {
-	margin-top: -3px;
-	position: absolute;
-}
-
-.info-bar-container .info-bar-default .btn.sidenav-transition {
-	pointer-events: none;
-}
-
-.info-bar-container .management-bar-header-right {
-	float: right;
-	margin-right: 0;
-	position: relative;
-
-	> a {
-		padding: 0;
-	}
-}
-
 .info-content {
 	font-size: 0.875rem;
 	font-weight: 100;
@@ -103,10 +84,6 @@
 	min-height: 325px;
 	min-width: 500px;
 	overflow-y: hidden !important;
-}
-
-.workflow-definition-container {
-	margin-top: 20px;
 }
 
 .workflow-definition-content {

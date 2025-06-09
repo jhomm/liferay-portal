@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,19 +23,19 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 <c:if test="<%= expandoBridge.hasAttribute(name) %>">
 
 	<%
+	Serializable defaultValue = expandoBridge.getAttributeDefault(name);
 	int type = expandoBridge.getAttributeType(name);
 	Serializable value = expandoBridge.getAttribute(name);
-	Serializable defaultValue = expandoBridge.getAttributeDefault(name);
 
-	UnicodeProperties properties = expandoBridge.getAttributeProperties(name);
+	UnicodeProperties unicodeProperties = expandoBridge.getAttributeProperties(name);
 
-	boolean propertyHidden = GetterUtil.getBoolean(properties.get(ExpandoColumnConstants.PROPERTY_HIDDEN));
-	boolean propertyLocalizeFieldName = GetterUtil.getBoolean(properties.get(ExpandoColumnConstants.PROPERTY_LOCALIZE_FIELD_NAME), true);
-	boolean propertyVisibleWithUpdatePermission = GetterUtil.getBoolean(properties.get(ExpandoColumnConstants.PROPERTY_VISIBLE_WITH_UPDATE_PERMISSION));
-	boolean propertySecret = GetterUtil.getBoolean(properties.getProperty(ExpandoColumnConstants.PROPERTY_SECRET));
-	int propertyHeight = GetterUtil.getInteger(properties.getProperty(ExpandoColumnConstants.PROPERTY_HEIGHT));
-	int propertyWidth = GetterUtil.getInteger(properties.getProperty(ExpandoColumnConstants.PROPERTY_WIDTH));
-	String propertyDisplayType = GetterUtil.getString(properties.getProperty(ExpandoColumnConstants.PROPERTY_DISPLAY_TYPE), ExpandoColumnConstants.PROPERTY_DISPLAY_TYPE_TEXT_BOX);
+	String propertyDisplayType = GetterUtil.getString(unicodeProperties.getProperty(ExpandoColumnConstants.PROPERTY_DISPLAY_TYPE), ExpandoColumnConstants.PROPERTY_DISPLAY_TYPE_TEXT_BOX);
+	int propertyHeight = GetterUtil.getInteger(unicodeProperties.getProperty(ExpandoColumnConstants.PROPERTY_HEIGHT));
+	boolean propertyHidden = GetterUtil.getBoolean(unicodeProperties.get(ExpandoColumnConstants.PROPERTY_HIDDEN));
+	boolean propertyLocalizeFieldName = GetterUtil.getBoolean(unicodeProperties.get(ExpandoColumnConstants.PROPERTY_LOCALIZE_FIELD_NAME), true);
+	boolean propertySecret = GetterUtil.getBoolean(unicodeProperties.getProperty(ExpandoColumnConstants.PROPERTY_SECRET));
+	boolean propertyVisibleWithUpdatePermission = GetterUtil.getBoolean(unicodeProperties.get(ExpandoColumnConstants.PROPERTY_VISIBLE_WITH_UPDATE_PERMISSION));
+	int propertyWidth = GetterUtil.getInteger(unicodeProperties.getProperty(ExpandoColumnConstants.PROPERTY_WIDTH));
 
 	if (editable && propertyVisibleWithUpdatePermission) {
 		propertyHidden = !ExpandoColumnPermissionUtil.contains(permissionChecker, company.getCompanyId(), className, ExpandoTableConstants.DEFAULT_TABLE_NAME, name, ActionKeys.UPDATE);
@@ -60,13 +51,13 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 		}
 	}
 
-	Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
+	Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 	%>
 
 	<c:if test="<%= !propertyHidden && ExpandoColumnPermissionUtil.contains(permissionChecker, company.getCompanyId(), className, ExpandoTableConstants.DEFAULT_TABLE_NAME, name, ActionKeys.VIEW) %>">
 		<c:choose>
 			<c:when test="<%= editable && ExpandoColumnPermissionUtil.contains(permissionChecker, company.getCompanyId(), className, ExpandoTableConstants.DEFAULT_TABLE_NAME, name, ActionKeys.UPDATE) %>">
-				<aui:field-wrapper label="<%= label ? localizedName : StringPool.BLANK %>" localizeLabel="<%= propertyLocalizeFieldName %>" name="<%= randomNamespace + name %>">
+				<aui:field-wrapper inlineLabel='<%= (type == ExpandoColumnConstants.BOOLEAN)? "right":StringPool.BLANK %>' label="<%= label ? localizedName : StringPool.BLANK %>" localizeLabel="<%= propertyLocalizeFieldName %>" name="<%= randomNamespace + name %>">
 					<input name="<portlet:namespace />ExpandoAttributeName--<%= HtmlUtil.escapeAttribute(name) %>--" type="hidden" value="<%= HtmlUtil.escapeAttribute(name) %>" />
 
 					<c:choose>
@@ -75,17 +66,10 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 							<%
 							Boolean curValue = (Boolean)value;
 
-							if (curValue == null) {
-								curValue = (Boolean)defaultValue;
-							}
-
 							curValue = ParamUtil.getBoolean(request, "ExpandoAttribute--" + name + "--", curValue);
 							%>
 
-							<select class="form-control" id="<portlet:namespace /><%= randomNamespace %><%= HtmlUtil.getAUICompatibleId(name) %>" name="<portlet:namespace />ExpandoAttribute--<%= HtmlUtil.escapeAttribute(name) %>--">
-								<option <%= curValue ? "selected" : "" %> value="1"><liferay-ui:message key="<%= Boolean.TRUE.toString() %>" /></option>
-								<option <%= !curValue ? "selected" : "" %> value="0"><liferay-ui:message key="<%= Boolean.FALSE.toString() %>" /></option>
-							</select>
+							<aui:input inlineLabel="right" label="" labelCssClass="simple-toggle-switch" name='<%= "ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--" %>' type="toggle-switch" value="<%= curValue %>" />
 						</c:when>
 						<c:when test="<%= type == ExpandoColumnConstants.BOOLEAN_ARRAY %>">
 						</c:when>
@@ -97,9 +81,6 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 
 								if (value != null) {
 									valueDate.setTime((Date)value);
-								}
-								else if (defaultValue != null) {
-									valueDate.setTime((Date)defaultValue);
 								}
 								else {
 									valueDate.setTime(new Date());
@@ -300,7 +281,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 						</c:when>
 						<c:when test="<%= type == ExpandoColumnConstants.GEOLOCATION %>">
 							<div id="<portlet:namespace />CoordinatesContainer">
-								<div class="glyphicon glyphicon-map-marker" id="<%= portletDisplay.getNamespace()+"ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--Location" %>">
+								<div class="glyphicon glyphicon-map-marker" id="<%= portletDisplay.getNamespace() %>ExpandoAttribute--<%= HtmlUtil.escapeAttribute(name) %>--Location">
 								</div>
 
 								<%
@@ -325,10 +306,10 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 										"mapName", portletDisplay.getNamespace() + "ExpandoAttribute--" + mapDisplayName + "--"
 									).build()
 								%>'
-								module="js/GeoLocationField"
+								module="{GeoLocationField} from expando-taglib"
 							/>
 
-							<aui:input name='<%= "ExpandoAttribute--" + HtmlUtil.escapeJS(name) + "--" %>' type="hidden" value="<%= HtmlUtil.escape(value.toString()) %>" />
+							<aui:input name='<%= "ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--" %>' type="hidden" value="<%= HtmlUtil.escape(value.toString()) %>" />
 						</c:when>
 						<c:when test="<%= type == ExpandoColumnConstants.INTEGER_ARRAY %>">
 
@@ -583,7 +564,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 									for (String curDefaultValue : (String[])defaultValue) {
 									%>
 
-										<aui:input checked="<%= (curValue.length > 0) && ArrayUtil.contains(curValue, curDefaultValue) %>" id="<%= StringUtil.randomId() %>" label="<%= String.valueOf(curDefaultValue) %>" name='<%= "ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--" %>' type="checkbox" value="<%= curDefaultValue %>" />
+										<aui:input checked="<%= (curValue.length > 0) && ArrayUtil.contains(curValue, curDefaultValue) %>" id="<%= StringUtil.randomId() %>" label="<%= HtmlUtil.escape(String.valueOf(curDefaultValue)) %>" name='<%= "ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--" %>' type="checkbox" value="<%= curDefaultValue %>" />
 
 									<%
 									}
@@ -596,7 +577,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 									for (String curDefaultValue : (String[])defaultValue) {
 									%>
 
-										<aui:input checked="<%= (curValue.length > 0) && ArrayUtil.contains(curValue, curDefaultValue) %>" label="<%= curDefaultValue %>" name='<%= "ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--" %>' type="radio" value="<%= curDefaultValue %>" />
+										<aui:input checked="<%= (curValue.length > 0) && ArrayUtil.contains(curValue, curDefaultValue) %>" label="<%= HtmlUtil.escape(curDefaultValue) %>" name='<%= "ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--" %>' type="radio" value="<%= curDefaultValue %>" />
 
 									<%
 									}
@@ -610,7 +591,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 										for (String curDefaultValue : (String[])defaultValue) {
 										%>
 
-											<aui:option label="<%= HtmlUtil.escape(curDefaultValue) %>" selected="<%= (curValue.length > 0) && ArrayUtil.contains(curValue, curDefaultValue) %>" value="<%= HtmlUtil.escape(curDefaultValue) %>" />
+											<aui:option label="<%= curDefaultValue %>" selected="<%= (curValue.length > 0) && ArrayUtil.contains(curValue, HtmlUtil.escape(curDefaultValue)) %>" value="<%= HtmlUtil.escape(curDefaultValue) %>" />
 
 										<%
 										}
@@ -657,10 +638,6 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 
 							<%
 							value = ParamUtil.getString(request, "ExpandoAttribute--" + name + "--", String.valueOf(value));
-
-							if (Validator.isNull(String.valueOf(value))) {
-								value = defaultValue;
-							}
 							%>
 
 							<c:choose>
@@ -710,7 +687,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 					}
 				}
 				else if (type == ExpandoColumnConstants.DATE) {
-					sb.append(dateFormatDateTime.format((Date)value));
+					sb.append(dateTimeFormat.format((Date)value));
 				}
 				else if (type == ExpandoColumnConstants.DATE_ARRAY) {
 					if (!Arrays.deepEquals((Date[])value, (Date[])defaultValue)) {
@@ -721,7 +698,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 								sb.append(StringPool.COMMA_AND_SPACE);
 							}
 
-							sb.append(dateFormatDateTime.format(dates[i]));
+							sb.append(dateTimeFormat.format(dates[i]));
 						}
 					}
 				}
@@ -785,7 +762,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 
 				<c:if test="<%= (type == ExpandoColumnConstants.GEOLOCATION) && (editable || Validator.isNotNull(sb.toString())) %>">
 					<div id="<portlet:namespace />CoordinatesContainer">
-						<div class="glyphicon glyphicon-map-marker" id="<%= portletDisplay.getNamespace()+"ExpandoAttribute--" + HtmlUtil.escapeAttribute(name) + "--Location" %>">
+						<div class="glyphicon glyphicon-map-marker" id="<%= portletDisplay.getNamespace() %>ExpandoAttribute--<%= HtmlUtil.escapeAttribute(name) %>--Location">
 						</div>
 
 						<%
@@ -809,7 +786,7 @@ ExpandoBridge expandoBridge = ExpandoBridgeFactoryUtil.getExpandoBridge(company.
 									"mapName", portletDisplay.getNamespace() + "ExpandoAttribute--" + mapDisplayName + "--"
 								).build()
 							%>'
-							module="js/GeoLocationField"
+							module="{GeoLocationField} from expando-taglib"
 						/>
 					</div>
 				</c:if>

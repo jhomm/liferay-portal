@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration;
@@ -56,10 +47,9 @@ import org.apache.commons.configuration.SystemConfiguration;
 public class ClassLoaderAggregateProperties extends CompositeConfiguration {
 
 	public ClassLoaderAggregateProperties(
-		ClassLoader classLoader, String companyId, String componentName) {
+		ClassLoader classLoader, String componentName) {
 
 		_classLoader = classLoader;
-		_companyId = companyId;
 		_componentName = componentName;
 
 		_prefixedSystemConfiguration = new SubsetConfiguration(
@@ -272,7 +262,8 @@ public class ClassLoaderAggregateProperties extends CompositeConfiguration {
 
 			if (url != null) {
 				newConfiguration = _addURLProperties(
-					url, loadedCompositeConfiguration, includeAndOverrides);
+					sourceName, url, loadedCompositeConfiguration,
+					includeAndOverrides);
 			}
 			else {
 				newConfiguration = _addFileProperties(
@@ -316,7 +307,8 @@ public class ClassLoaderAggregateProperties extends CompositeConfiguration {
 	}
 
 	private Configuration _addURLProperties(
-		URL url, CompositeConfiguration loadedCompositeConfiguration,
+		String sourceFileName, URL url,
+		CompositeConfiguration loadedCompositeConfiguration,
 		List<String> includeAndOverrides) {
 
 		try {
@@ -355,6 +347,18 @@ public class ClassLoaderAggregateProperties extends CompositeConfiguration {
 				_log.debug("Adding resource " + url);
 			}
 
+			if (sourceFileName.equals("portal.properties")) {
+				String value = System.getenv(
+					"LIFERAY_INCLUDE_MINUS_AND_MINUS_OVERRIDE");
+
+				if (value != null) {
+					Collections.addAll(
+						(List<String>)propertiesConfiguration.getProperty(
+							"include-and-override"),
+						StringUtil.split(value));
+				}
+			}
+
 			_addIncludedPropertiesSources(
 				propertiesConfiguration, loadedCompositeConfiguration,
 				includeAndOverrides);
@@ -391,8 +395,7 @@ public class ClassLoaderAggregateProperties extends CompositeConfiguration {
 				}
 				catch (MalformedURLException malformedURLException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							malformedURLException, malformedURLException);
+						_log.debug(malformedURLException);
 					}
 
 					return null;
@@ -429,7 +432,6 @@ public class ClassLoaderAggregateProperties extends CompositeConfiguration {
 	private final CompositeConfiguration _baseCompositeConfiguration =
 		new CompositeConfiguration();
 	private final ClassLoader _classLoader;
-	private final String _companyId;
 	private final String _componentName;
 	private final CompositeConfiguration _globalCompositeConfiguration =
 		new CompositeConfiguration();

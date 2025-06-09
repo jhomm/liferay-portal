@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.search.spi.model.query.contributor;
@@ -46,7 +37,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.portal.kernel.model.Organization",
 	service = ModelPreFilterContributor.class
 )
@@ -85,49 +75,50 @@ public class OrganizationModelPreFilterContributor
 			return;
 		}
 
-		List<Organization> accountsOrgsTree = (List<Organization>)params.get(
+		List<Organization> organizations = (List<Organization>)params.get(
 			"accountsOrgsTree");
 
-		if (accountsOrgsTree != null) {
-			BooleanFilter treePathBooleanFilter = new BooleanFilter();
-
-			if (accountsOrgsTree.isEmpty()) {
-				TermQuery termQuery = new TermQueryImpl(
-					Field.TREE_PATH, StringPool.BLANK);
-
-				treePathBooleanFilter.add(new QueryFilter(termQuery));
-			}
-
-			PermissionChecker permissionChecker =
-				PermissionThreadLocal.getPermissionChecker();
-
-			for (Organization organization : accountsOrgsTree) {
-				String treePath;
-
-				try {
-					treePath = organization.buildTreePath();
-
-					if ((permissionChecker != null) &&
-						OrganizationPermissionUtil.contains(
-							permissionChecker, organization,
-							AccountActionKeys.
-								MANAGE_SUBORGANIZATIONS_ACCOUNTS)) {
-
-						treePath = treePath + "*";
-					}
-				}
-				catch (PortalException portalException) {
-					throw new RuntimeException(portalException);
-				}
-
-				WildcardQuery wildcardQuery = new WildcardQueryImpl(
-					Field.TREE_PATH, treePath);
-
-				treePathBooleanFilter.add(new QueryFilter(wildcardQuery));
-			}
-
-			booleanFilter.add(treePathBooleanFilter, BooleanClauseOccur.MUST);
+		if (organizations == null) {
+			return;
 		}
+
+		BooleanFilter treePathBooleanFilter = new BooleanFilter();
+
+		if (organizations.isEmpty()) {
+			TermQuery termQuery = new TermQueryImpl(
+				Field.TREE_PATH, StringPool.BLANK);
+
+			treePathBooleanFilter.add(new QueryFilter(termQuery));
+		}
+
+		PermissionChecker permissionChecker =
+			PermissionThreadLocal.getPermissionChecker();
+
+		for (Organization organization : organizations) {
+			String treePath;
+
+			try {
+				treePath = organization.buildTreePath();
+
+				if ((permissionChecker != null) &&
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization,
+						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS)) {
+
+					treePath = treePath + "*";
+				}
+			}
+			catch (PortalException portalException) {
+				throw new RuntimeException(portalException);
+			}
+
+			WildcardQuery wildcardQuery = new WildcardQueryImpl(
+				Field.TREE_PATH, treePath);
+
+			treePathBooleanFilter.add(new QueryFilter(wildcardQuery));
+		}
+
+		booleanFilter.add(treePathBooleanFilter, BooleanClauseOccur.MUST);
 	}
 
 }

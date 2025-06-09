@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.portlet.action;
@@ -22,7 +13,7 @@ import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CPDefinitionSpecificationOptionValue;
 import com.liferay.commerce.product.model.CPInstance;
-import com.liferay.commerce.product.model.CProduct;
+import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
 import com.liferay.commerce.product.portlet.action.ActionHelper;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryService;
 import com.liferay.commerce.product.service.CPDefinitionLinkService;
@@ -31,25 +22,24 @@ import com.liferay.commerce.product.service.CPDefinitionOptionValueRelService;
 import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.service.CPDefinitionSpecificationOptionValueService;
 import com.liferay.commerce.product.service.CPInstanceService;
-import com.liferay.commerce.product.service.CProductLocalService;
+import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureService;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -58,7 +48,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, service = ActionHelper.class)
+@Component(service = ActionHelper.class)
 public class ActionHelperImpl implements ActionHelper {
 
 	@Override
@@ -128,7 +118,7 @@ public class ActionHelperImpl implements ActionHelper {
 		long cpDefinitionId = ParamUtil.getLong(
 			portletRequest, "cpDefinitionId");
 
-		cpDefinition = _validateCPDefinition(cpDefinitionId);
+		cpDefinition = _cpDefinitionService.fetchCPDefinition(cpDefinitionId);
 
 		if (cpDefinition != null) {
 			portletRequest.setAttribute(CPWebKeys.CP_DEFINITION, cpDefinition);
@@ -428,13 +418,43 @@ public class ActionHelperImpl implements ActionHelper {
 	}
 
 	@Override
+	public CPInstanceUnitOfMeasure getCPInstanceUnitOfMeasure(
+			PortletRequest portletRequest)
+		throws PortalException {
+
+		CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
+			(CPInstanceUnitOfMeasure)portletRequest.getAttribute(
+				CPWebKeys.CP_INSTANCE_UNIT_OF_MEASURE);
+
+		if (cpInstanceUnitOfMeasure != null) {
+			return cpInstanceUnitOfMeasure;
+		}
+
+		long cpInstanceUnitOfMeasureId = ParamUtil.getLong(
+			portletRequest, "cpInstanceUnitOfMeasureId");
+
+		if (cpInstanceUnitOfMeasureId > 0) {
+			cpInstanceUnitOfMeasure =
+				_cpInstanceUnitOfMeasureService.getCPInstanceUnitOfMeasure(
+					cpInstanceUnitOfMeasureId);
+		}
+
+		if (cpInstanceUnitOfMeasure != null) {
+			portletRequest.setAttribute(
+				CPWebKeys.CP_INSTANCE_UNIT_OF_MEASURE, cpInstanceUnitOfMeasure);
+		}
+
+		return cpInstanceUnitOfMeasure;
+	}
+
+	@Override
 	public CPType getCPType(String name) {
-		return _cpTypeServicesTracker.getCPType(name);
+		return _cpTypeRegistry.getCPType(name);
 	}
 
 	@Override
 	public List<CPType> getCPTypes() {
-		return _cpTypeServicesTracker.getCPTypes();
+		return _cpTypeRegistry.getCPTypes();
 	}
 
 	@Override
@@ -462,28 +482,6 @@ public class ActionHelperImpl implements ActionHelper {
 		httpServletResponse.flushBuffer();
 	}
 
-	private CPDefinition _validateCPDefinition(Long cpDefinitionId)
-		throws PortalException {
-
-		CPDefinition cpDefinition = _cpDefinitionService.fetchCPDefinition(
-			cpDefinitionId);
-
-		if (cpDefinition != null) {
-			CProduct cProduct = _cProductLocalService.getCProduct(
-				cpDefinition.getCProductId());
-
-			if ((cpDefinition.getStatus() ==
-					WorkflowConstants.STATUS_APPROVED) &&
-				(cpDefinitionId != cProduct.getPublishedCPDefinitionId())) {
-
-				cpDefinition = _cpDefinitionService.fetchCPDefinition(
-					cProduct.getPublishedCPDefinitionId());
-			}
-		}
-
-		return cpDefinition;
-	}
-
 	@Reference
 	private CPAttachmentFileEntryService _cpAttachmentFileEntryService;
 
@@ -508,10 +506,10 @@ public class ActionHelperImpl implements ActionHelper {
 	private CPInstanceService _cpInstanceService;
 
 	@Reference
-	private CProductLocalService _cProductLocalService;
+	private CPInstanceUnitOfMeasureService _cpInstanceUnitOfMeasureService;
 
 	@Reference
-	private CPTypeServicesTracker _cpTypeServicesTracker;
+	private CPTypeRegistry _cpTypeRegistry;
 
 	@Reference
 	private Portal _portal;

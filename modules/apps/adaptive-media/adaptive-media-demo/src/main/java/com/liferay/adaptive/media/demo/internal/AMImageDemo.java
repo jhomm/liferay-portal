@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.demo.internal;
@@ -29,7 +20,7 @@ import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.users.admin.demo.data.creator.OmniAdminUserDemoDataCreator;
+import com.liferay.users.admin.demo.data.creator.OmniadminUserDemoDataCreator;
 
 import java.io.IOException;
 
@@ -40,12 +31,12 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alejandro Hernández
  */
-@Component(immediate = true, service = PortalInstanceLifecycleListener.class)
+@Component(service = PortalInstanceLifecycleListener.class)
 public class AMImageDemo extends BasePortalInstanceLifecycleListener {
 
 	@Override
 	public void portalInstanceRegistered(Company company) throws Exception {
-		User user = _omniAdminUserDemoDataCreator.create(
+		User user = _omniadminUserDemoDataCreator.create(
 			company.getCompanyId(), "alejandro.hernandez@liferay.com");
 		Group group = _groupLocalService.getGroup(
 			company.getCompanyId(), "Guest");
@@ -86,7 +77,7 @@ public class AMImageDemo extends BasePortalInstanceLifecycleListener {
 		_amImageConfigurationDemoDataCreator.delete();
 		_fileEntryDemoDataCreator.delete();
 		_rootFolderDemoDataCreator.delete();
-		_omniAdminUserDemoDataCreator.delete();
+		_omniadminUserDemoDataCreator.delete();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(AMImageDemo.class);
@@ -105,7 +96,7 @@ public class AMImageDemo extends BasePortalInstanceLifecycleListener {
 	private ModuleServiceLifecycle _moduleServiceLifecycle;
 
 	@Reference
-	private OmniAdminUserDemoDataCreator _omniAdminUserDemoDataCreator;
+	private OmniadminUserDemoDataCreator _omniadminUserDemoDataCreator;
 
 	@Reference
 	private RootFolderDemoDataCreator _rootFolderDemoDataCreator;

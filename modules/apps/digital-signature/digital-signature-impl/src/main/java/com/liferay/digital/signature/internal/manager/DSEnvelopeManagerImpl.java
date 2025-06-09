@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.digital.signature.internal.manager;
@@ -30,6 +21,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
@@ -49,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Brian Wing Shun Chan
  */
-@Component(immediate = true, service = DSEnvelopeManager.class)
+@Component(service = DSEnvelopeManager.class)
 public class DSEnvelopeManagerImpl implements DSEnvelopeManager {
 
 	@Override
@@ -134,7 +126,7 @@ public class DSEnvelopeManagerImpl implements DSEnvelopeManager {
 		long companyId, long groupId, String fromDateString, String keywords,
 		String order, Pagination pagination, String status) {
 
-		Matcher matcher = _pattern.matcher(keywords);
+		Matcher matcher = _pattern.matcher(GetterUtil.get(keywords, ""));
 
 		if (matcher.matches()) {
 			DSEnvelope dsEnvelope = getDSEnvelope(companyId, groupId, keywords);
@@ -149,9 +141,11 @@ public class DSEnvelopeManagerImpl implements DSEnvelopeManager {
 
 		String location = StringBundler.concat(
 			"envelopes?count=", pagination.getPageSize(), "&from_date=",
-			fromDateString, "&folder_types=sentitems&start_position=",
+			GetterUtil.get(fromDateString, "2000-01-01"),
+			"&folder_types=sentitems&start_position=",
 			pagination.getStartPosition(),
-			"&include=custom_fields,documents,recipients&order=", order);
+			"&include=custom_fields,documents,recipients&order=",
+			GetterUtil.get(order, ""));
 
 		if (!Validator.isBlank(keywords)) {
 			location += "&search_text=" + keywords;
@@ -197,6 +191,7 @@ public class DSEnvelopeManagerImpl implements DSEnvelopeManager {
 					emailAddress = signerJSONObject.getString("email");
 					name = signerJSONObject.getString("name");
 					status = signerJSONObject.getString("status");
+					tabsJSONObject = signerJSONObject.getJSONObject("tabs");
 				}
 			},
 			_log);
@@ -257,6 +252,10 @@ public class DSEnvelopeManagerImpl implements DSEnvelopeManager {
 	}
 
 	private LocalDateTime _toLocalDateTime(String localDateTimeString) {
+		if (Validator.isNull(localDateTimeString)) {
+			return null;
+		}
+
 		try {
 			return LocalDateTime.parse(
 				localDateTimeString,
@@ -264,7 +263,9 @@ public class DSEnvelopeManagerImpl implements DSEnvelopeManager {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn("Invalid local date time " + localDateTimeString);
+				_log.warn(
+					"Invalid local date time " + localDateTimeString,
+					exception);
 			}
 
 			return null;

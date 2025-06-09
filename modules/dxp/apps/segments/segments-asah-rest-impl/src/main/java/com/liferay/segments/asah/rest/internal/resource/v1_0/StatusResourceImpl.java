@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.asah.rest.internal.resource.v1_0;
@@ -23,9 +14,7 @@ import com.liferay.segments.constants.SegmentsExperimentConstants;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.service.SegmentsExperimentService;
 
-import java.util.Optional;
-
-import javax.ws.rs.ClientErrorException;
+import jakarta.ws.rs.ClientErrorException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,37 +45,40 @@ public class StatusResourceImpl extends BaseStatusResourceImpl {
 
 		ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
-		Optional<SegmentsExperimentConstants.Status> statusOptional =
+		SegmentsExperimentConstants.Status segmentsExperimentConstantsStatus =
 			SegmentsExperimentConstants.Status.parse(status.getStatus());
+
+		if (segmentsExperimentConstantsStatus == null) {
+			throw new ClientErrorException("Experiment status is invalid", 422);
+		}
 
 		return _toExperiment(
 			_segmentsExperimentService.updateSegmentsExperimentStatus(
 				String.valueOf(segmentsExperimentKey),
 				status.getWinnerVariantId(),
-				statusOptional.map(
-					SegmentsExperimentConstants.Status::getValue
-				).orElseThrow(
-					() -> new ClientErrorException(
-						"Experiment status is invalid", 422)
-				)));
+				segmentsExperimentConstantsStatus.getValue()));
 	}
 
 	private Experiment _toExperiment(SegmentsExperiment segmentsExperiment) {
-		SegmentsExperimentConstants.Status segmentsExperimentConstantsStatus =
-			SegmentsExperimentConstants.Status.valueOf(
-				segmentsExperiment.getStatus());
-
 		return new Experiment() {
 			{
-				dateCreated = segmentsExperiment.getCreateDate();
-				dateModified = segmentsExperiment.getModifiedDate();
-				description = segmentsExperiment.getDescription();
-				id = segmentsExperiment.getSegmentsExperimentKey();
-				name = segmentsExperiment.getName();
-				siteId = segmentsExperiment.getGroupId();
-				status = segmentsExperimentConstantsStatus.toString();
-				winnerVariantId =
-					segmentsExperiment.getWinnerSegmentsExperienceId();
+				setDateCreated(segmentsExperiment::getCreateDate);
+				setDateModified(segmentsExperiment::getModifiedDate);
+				setDescription(segmentsExperiment::getDescription);
+				setId(segmentsExperiment::getSegmentsExperimentKey);
+				setName(segmentsExperiment::getName);
+				setSiteId(segmentsExperiment::getGroupId);
+				setStatus(
+					() -> {
+						SegmentsExperimentConstants.Status
+							segmentsExperimentConstantsStatus =
+								SegmentsExperimentConstants.Status.valueOf(
+									segmentsExperiment.getStatus());
+
+						return segmentsExperimentConstantsStatus.toString();
+					});
+				setWinnerVariantId(
+					segmentsExperiment::getWinnerSegmentsExperienceId);
 			}
 		};
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
@@ -80,8 +71,9 @@ public interface AccountRoleLocalService
 	public AccountRole addAccountRole(AccountRole accountRole);
 
 	public AccountRole addAccountRole(
-			long userId, long accountEntryId, String name,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap)
+			String externalReferenceCode, long userId, long accountEntryId,
+			String name, Map<Locale, String> titleMap,
+			Map<Locale, String> descriptionMap)
 		throws PortalException;
 
 	public void associateUser(
@@ -91,8 +83,6 @@ public interface AccountRoleLocalService
 	public void associateUser(
 			long accountEntryId, long[] accountRoleIds, long userId)
 		throws PortalException;
-
-	public void checkCompanyAccountRoles(long companyId) throws PortalException;
 
 	/**
 	 * Creates a new account role with the primary key. Does not add the account role to the database.
@@ -139,7 +129,8 @@ public interface AccountRoleLocalService
 	public AccountRole deleteAccountRole(long accountRoleId)
 		throws PortalException;
 
-	public void deleteAccountRolesByCompanyId(long companyId);
+	public void deleteAccountRolesByCompanyId(long companyId)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -224,6 +215,10 @@ public interface AccountRoleLocalService
 	public AccountRole fetchAccountRole(long accountRoleId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountRole fetchAccountRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AccountRole fetchAccountRoleByRoleId(long roleId);
 
 	/**
@@ -235,6 +230,11 @@ public interface AccountRoleLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AccountRole getAccountRole(long accountRoleId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountRole getAccountRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -261,6 +261,10 @@ public interface AccountRoleLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AccountRole> getAccountRolesByAccountEntryIds(
+		long companyId, long[] accountEntryIds);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<AccountRole> getAccountRolesByAccountEntryIds(
 		long[] accountEntryIds);
 
 	/**
@@ -276,6 +280,12 @@ public interface AccountRoleLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AccountRole getOrAddIncompleteAccountRole(
+			String externalReferenceCode, long companyId, long userId,
+			long accountEntryId, String name)
+		throws Exception;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -302,6 +312,10 @@ public interface AccountRoleLocalService
 		long companyId, long[] accountEntryIds, String keywords,
 		LinkedHashMap<String, Object> params, int start, int end,
 		OrderByComparator<?> orderByComparator);
+
+	public void setUserAccountRoles(
+			long accountEntryId, long[] accountRoleIds, long userId)
+		throws PortalException;
 
 	public void unassociateUser(
 			long accountEntryId, long accountRoleId, long userId)

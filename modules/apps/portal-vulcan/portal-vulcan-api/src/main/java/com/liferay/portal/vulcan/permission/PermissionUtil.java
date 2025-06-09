@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.permission;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.NoSuchRoleException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Resource;
 import com.liferay.portal.kernel.model.ResourceAction;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.ResourcePermission;
@@ -30,15 +23,21 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ResourceLocalServiceUtil;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
+
+import jakarta.ws.rs.BadRequestException;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-
-import javax.ws.rs.BadRequestException;
 
 /**
  * @author Javier Gamarra
@@ -67,6 +66,126 @@ public class PermissionUtil {
 		}
 	}
 
+	/**
+	 * Changes made here must also be made in
+	 * base_resource_impl.ftl#_getPermissions to ensure consistent behavior.
+	 */
+	public static Collection<Permission> getPermissions(
+			long companyId, List<ResourceAction> resourceActions,
+			long resourceId, String resourceName, String[] roleNames)
+		throws Exception {
+
+		Map<String, Permission> permissions = new HashMap<>();
+
+		int count =
+			ResourcePermissionLocalServiceUtil.getResourcePermissionsCount(
+				companyId, resourceName, ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(resourceId));
+
+		if (count == 0) {
+			ResourceLocalServiceUtil.addResources(
+				companyId, resourceId, 0, resourceName,
+				String.valueOf(resourceId), false, true, true);
+		}
+
+		List<String> actionIds = TransformUtil.transform(
+			resourceActions, ResourceAction::getActionId);
+
+		Set<Role> roles = new HashSet<>();
+
+		Set<ResourcePermission> resourcePermissions = new HashSet<>();
+
+		resourcePermissions.addAll(
+			ResourcePermissionLocalServiceUtil.getResourcePermissions(
+				companyId, resourceName, ResourceConstants.SCOPE_COMPANY,
+				String.valueOf(companyId)));
+		resourcePermissions.addAll(
+			ResourcePermissionLocalServiceUtil.getResourcePermissions(
+				companyId, resourceName, ResourceConstants.SCOPE_GROUP,
+				String.valueOf(GroupThreadLocal.getGroupId())));
+		resourcePermissions.addAll(
+			ResourcePermissionLocalServiceUtil.getResourcePermissions(
+				companyId, resourceName, ResourceConstants.SCOPE_GROUP_TEMPLATE,
+				"0"));
+		resourcePermissions.addAll(
+			ResourcePermissionLocalServiceUtil.getResourcePermissions(
+				companyId, resourceName, ResourceConstants.SCOPE_INDIVIDUAL,
+				String.valueOf(resourceId)));
+
+		if (roleNames != null) {
+			for (String roleName : roleNames) {
+				roles.add(RoleLocalServiceUtil.getRole(companyId, roleName));
+			}
+		}
+		else {
+			for (ResourcePermission resourcePermission : resourcePermissions) {
+				roles.add(
+					RoleLocalServiceUtil.getRole(
+						resourcePermission.getRoleId()));
+			}
+		}
+
+		for (Role role : roles) {
+			Set<String> actionsIdsSet = new HashSet<>();
+
+			for (Resource resource :
+					TransformUtil.transform(
+						resourcePermissions,
+						resourcePermission ->
+							ResourceLocalServiceUtil.getResource(
+								resourcePermission.getCompanyId(),
+								resourcePermission.getName(),
+								resourcePermission.getScope(),
+								resourcePermission.getPrimKey()))) {
+
+				actionsIdsSet.addAll(
+					ResourcePermissionLocalServiceUtil.
+						getAvailableResourcePermissionActionIds(
+							resource.getCompanyId(), resource.getName(),
+							ResourceConstants.SCOPE_COMPANY,
+							String.valueOf(resource.getCompanyId()),
+							role.getRoleId(), actionIds));
+				actionsIdsSet.addAll(
+					ResourcePermissionLocalServiceUtil.
+						getAvailableResourcePermissionActionIds(
+							resource.getCompanyId(), resource.getName(),
+							ResourceConstants.SCOPE_GROUP,
+							String.valueOf(GroupThreadLocal.getGroupId()),
+							role.getRoleId(), actionIds));
+				actionsIdsSet.addAll(
+					ResourcePermissionLocalServiceUtil.
+						getAvailableResourcePermissionActionIds(
+							resource.getCompanyId(), resource.getName(),
+							ResourceConstants.SCOPE_GROUP_TEMPLATE, "0",
+							role.getRoleId(), actionIds));
+				actionsIdsSet.addAll(
+					ResourcePermissionLocalServiceUtil.
+						getAvailableResourcePermissionActionIds(
+							resource.getCompanyId(), resource.getName(),
+							resource.getScope(), resource.getPrimKey(),
+							role.getRoleId(), actionIds));
+			}
+
+			if (actionsIdsSet.isEmpty()) {
+				continue;
+			}
+
+			permissions.put(
+				role.getName(),
+				new Permission() {
+					{
+						actionIds = actionsIdsSet.toArray(new String[0]);
+						roleExternalReferenceCode =
+							role.getExternalReferenceCode();
+						roleName = role.getName();
+						roleType = role.getTypeLabel();
+					}
+				});
+		}
+
+		return permissions.values();
+	}
+
 	public static List<ResourcePermission> getResourcePermissions(
 			long companyId, long resourceId, String resourceName,
 			ResourcePermissionLocalService resourcePermissionLocalService)
@@ -86,15 +205,14 @@ public class PermissionUtil {
 			String[] roleNames)
 		throws PortalException {
 
-		List<String> invalidRoleNames = new ArrayList<>();
 		List<Role> roles = new ArrayList<>();
+
+		List<String> invalidRoleNames = new ArrayList<>();
 
 		for (String roleName : roleNames) {
 			try {
-				Role role = roleLocalService.getRole(
-					company.getCompanyId(), roleName);
-
-				roles.add(role);
+				roles.add(
+					roleLocalService.getRole(company.getCompanyId(), roleName));
 			}
 			catch (NoSuchRoleException noSuchRoleException) {
 				if (_log.isDebugEnabled()) {
@@ -132,7 +250,9 @@ public class PermissionUtil {
 		return new Permission() {
 			{
 				actionIds = actionsIdsSet.toArray(new String[0]);
+				roleExternalReferenceCode = role.getExternalReferenceCode();
 				roleName = role.getName();
+				roleType = role.getTypeLabel();
 			}
 		};
 	}

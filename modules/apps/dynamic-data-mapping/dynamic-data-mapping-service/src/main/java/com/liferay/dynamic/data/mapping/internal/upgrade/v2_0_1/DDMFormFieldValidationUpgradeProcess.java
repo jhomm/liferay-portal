@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_1;
@@ -65,7 +56,7 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 					String definition = resultSet.getString("definition");
 
 					preparedStatement2.setString(
-						1, updateValidation(definition));
+						1, _updateValidation(definition));
 
 					long structureId = resultSet.getLong("structureId");
 
@@ -82,7 +73,7 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 							definition = resultSet2.getString("definition");
 
 							preparedStatement4.setString(
-								1, updateValidation(definition));
+								1, _updateValidation(definition));
 
 							long structureVersionId = resultSet2.getLong(
 								"structureVersionId");
@@ -101,9 +92,51 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected String updateValidation(String definition)
-		throws PortalException {
+	private void _addParameterValue(
+		String value, JSONObject validationJSONObject,
+		String defaultLanguageId) {
 
+		JSONObject parameterJSONObject = validationJSONObject.getJSONObject(
+			"parameter");
+
+		if (!parameterJSONObject.has(defaultLanguageId)) {
+			parameterJSONObject.put(defaultLanguageId, value);
+		}
+	}
+
+	private String _getExpressionName(String expressionValue) {
+		String name = "";
+
+		if (expressionValue.startsWith("contains")) {
+			name = "contains";
+		}
+		else if (expressionValue.startsWith("NOT(contains")) {
+			name = "notContains";
+		}
+		else if (expressionValue.startsWith("isEmailAddress")) {
+			name = "email";
+		}
+		else if (expressionValue.startsWith("match")) {
+			name = "regularExpression";
+		}
+		else if (expressionValue.startsWith("isURL")) {
+			name = "url";
+		}
+
+		return name;
+	}
+
+	private String _getParameterValueFromExpression(String expressionValue) {
+		String[] parts = expressionValue.split("\"");
+
+		if (parts.length > 1) {
+			return parts[1];
+		}
+
+		return "";
+	}
+
+	private String _updateValidation(String definition) throws PortalException {
 		JSONObject definitionJSONObject = _jsonFactory.createJSONObject(
 			definition);
 
@@ -158,51 +191,7 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 			}
 		}
 
-		return definitionJSONObject.toJSONString();
-	}
-
-	private void _addParameterValue(
-		String value, JSONObject validationJSONObject,
-		String defaultLanguageId) {
-
-		JSONObject parameterJSONObject = validationJSONObject.getJSONObject(
-			"parameter");
-
-		if (!parameterJSONObject.has(defaultLanguageId)) {
-			parameterJSONObject.put(defaultLanguageId, value);
-		}
-	}
-
-	private String _getExpressionName(String expressionValue) {
-		String name = "";
-
-		if (expressionValue.startsWith("contains")) {
-			name = "contains";
-		}
-		else if (expressionValue.startsWith("NOT(contains")) {
-			name = "notContains";
-		}
-		else if (expressionValue.startsWith("isEmailAddress")) {
-			name = "email";
-		}
-		else if (expressionValue.startsWith("match")) {
-			name = "regularExpression";
-		}
-		else if (expressionValue.startsWith("isURL")) {
-			name = "url";
-		}
-
-		return name;
-	}
-
-	private String _getParameterValueFromExpression(String expressionValue) {
-		String[] parts = expressionValue.split("\"");
-
-		if (parts.length > 1) {
-			return parts[1];
-		}
-
-		return "";
+		return definitionJSONObject.toString();
 	}
 
 	private final JSONFactory _jsonFactory;

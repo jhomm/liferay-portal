@@ -1,41 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.content.web.internal.importer.type.util;
 
+import com.liferay.commerce.configuration.CommerceOrderImporterTypeConfiguration;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.context.CommerceContextFactory;
 import com.liferay.commerce.exception.CommerceOrderValidatorException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
+import com.liferay.commerce.order.CommerceOrderThreadLocal;
 import com.liferay.commerce.order.importer.item.CommerceOrderImporterItem;
 import com.liferay.commerce.order.importer.item.CommerceOrderImporterItemImpl;
 import com.liferay.commerce.price.CommerceOrderPriceCalculation;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
-import java.util.ArrayList;
+import java.math.BigDecimal;
+
 import java.util.List;
+
+import org.apache.commons.csv.CSVFormat;
 
 /**
  * @author Alessio Antonio Rendina
+ * @author Luca Pellizzon
  */
 public class CommerceOrderImporterTypeUtil {
 
@@ -49,140 +53,159 @@ public class CommerceOrderImporterTypeUtil {
 			UserLocalService userLocalService)
 		throws Exception {
 
-		CommerceOrder tempCommerceOrder = commerceOrderService.addCommerceOrder(
-			commerceOrder.getGroupId(), commerceOrder.getCommerceAccountId(),
-			commerceOrder.getCommerceCurrencyId(),
-			commerceOrder.getCommerceOrderTypeId());
+		boolean skipValidateAccountLimit =
+			CommerceOrderThreadLocal.isSkipValidateAccountLimit();
 
-		CommerceContext commerceContext = commerceContextFactory.create(
-			tempCommerceOrder.getCompanyId(), tempCommerceOrder.getGroupId(),
-			PrincipalThreadLocal.getUserId(),
-			tempCommerceOrder.getCommerceOrderId(),
-			tempCommerceOrder.getCommerceAccountId());
+		try {
+			CommerceOrderThreadLocal.setSkipValidateAccountLimit(true);
 
-		for (CommerceOrderImporterItemImpl commerceOrderImporterItemImpl :
-				commerceOrderImporterItemImpls) {
+			CommerceOrder tempCommerceOrder =
+				commerceOrderService.addCommerceOrder(
+					commerceOrder.getGroupId(),
+					commerceOrder.getCommerceAccountId(),
+					commerceOrder.getCommerceCurrencyCode(),
+					commerceOrder.getCommerceOrderTypeId());
 
-			try {
+			tempCommerceOrder.setManuallyAdjusted(true);
 
-				// Temporary commerce order item
+			tempCommerceOrder = commerceOrderService.updateCommerceOrder(
+				tempCommerceOrder);
 
-				CommerceOrderItem commerceOrderItem =
-					commerceOrderItemService.addCommerceOrderItem(
-						tempCommerceOrder.getCommerceOrderId(),
-						commerceOrderImporterItemImpl.getCPInstanceId(),
-						commerceOrderImporterItemImpl.getJSON(),
-						commerceOrderImporterItemImpl.getQuantity(), 0,
-						commerceContext, _getServiceContext(userLocalService));
+			CommerceContext commerceContext = commerceContextFactory.create(
+				tempCommerceOrder.getCommerceAccountId(),
+				tempCommerceOrder.getGroupId(), null,
+				tempCommerceOrder.getCommerceOrderId(),
+				tempCommerceOrder.getCompanyId());
 
-				commerceOrderImporterItemImpl.setCommerceOrderItemPrice(
-					commerceOrderPriceCalculation.getCommerceOrderItemPrice(
-						tempCommerceOrder.getCommerceCurrency(),
-						commerceOrderItem));
+			ServiceContext serviceContext = _getServiceContext(
+				userLocalService);
+
+			_addPreviousCommerceOrderItems(
+				commerceContext, commerceOrder,
+				tempCommerceOrder.getCommerceOrderId(),
+				commerceOrderItemService, serviceContext);
+
+			for (CommerceOrderImporterItemImpl commerceOrderImporterItemImpl :
+					commerceOrderImporterItemImpls) {
+
+				try {
+
+					// Temporary commerce order item
+
+					CommerceOrderItem commerceOrderItem =
+						commerceOrderItemService.addOrUpdateCommerceOrderItem(
+							tempCommerceOrder.getCommerceOrderId(),
+							commerceOrderImporterItemImpl.getCPInstanceId(),
+							commerceOrderImporterItemImpl.getJSON(),
+							commerceOrderImporterItemImpl.getQuantity(), 0,
+							BigDecimal.ZERO,
+							commerceOrderImporterItemImpl.getUnitOfMeasureKey(),
+							commerceContext, serviceContext);
+
+					commerceOrderImporterItemImpl.setCommerceOrderItemPrice(
+						commerceOrderPriceCalculation.getCommerceOrderItemPrice(
+							tempCommerceOrder.getCommerceCurrency(),
+							commerceOrderItem));
+				}
+				catch (Exception exception) {
+					if (exception instanceof CommerceOrderValidatorException) {
+						CommerceOrderValidatorException
+							commerceOrderValidatorException =
+								(CommerceOrderValidatorException)exception;
+
+						commerceOrderImporterItemImpl.setErrorMessages(
+							TransformUtil.transformToArray(
+								commerceOrderValidatorException.
+									getCommerceOrderValidatorResults(),
+								commerceOrderValidatorResult ->
+									commerceOrderValidatorResult.
+										getLocalizedMessage(),
+								String.class));
+					}
+
+					if (exception instanceof PrincipalException) {
+						commerceOrderImporterItemImpl.setErrorMessages(
+							new String[] {
+								LanguageUtil.get(
+									serviceContext.getLocale(),
+									"the-product-is-no-longer-available")
+							});
+					}
+					else {
+						String[] errorMessages =
+							commerceOrderImporterItemImpl.getErrorMessages();
+
+						if ((errorMessages == null) ||
+							ArrayUtil.isNotEmpty(errorMessages)) {
+
+							commerceOrderImporterItemImpl.setErrorMessages(
+								TransformUtil.transform(
+									errorMessages,
+									errorMessage -> LanguageUtil.get(
+										serviceContext.getLocale(),
+										errorMessage),
+									String.class));
+						}
+					}
+				}
 			}
-			catch (CommerceOrderValidatorException
-						commerceOrderValidatorException) {
 
-				commerceOrderImporterItemImpl.setErrorMessages(
-					TransformUtil.transformToArray(
-						commerceOrderValidatorException.
-							getCommerceOrderValidatorResults(),
-						commerceOrderValidatorResult ->
-							commerceOrderValidatorResult.getLocalizedMessage(),
-						String.class));
-			}
+			// Delete temporary commerce order
+
+			commerceOrderService.deleteCommerceOrder(
+				tempCommerceOrder.getCommerceOrderId());
+
+			return ListUtil.fromArray(commerceOrderImporterItemImpls);
 		}
-
-		// Delete temporary commerce order
-
-		commerceOrderService.deleteCommerceOrder(
-			tempCommerceOrder.getCommerceOrderId());
-
-		return ListUtil.fromArray(commerceOrderImporterItemImpls);
+		finally {
+			CommerceOrderThreadLocal.setSkipValidateAccountLimit(
+				skipValidateAccountLimit);
+		}
 	}
 
-	public static List<CommerceOrderImporterItem> getCommerceOrderImporterItems(
-			CommerceContextFactory commerceContextFactory,
-			CommerceOrder commerceOrder,
-			List<CommerceOrderItem> commerceOrderItems,
-			CommerceOrderItemService commerceOrderItemService,
-			CommerceOrderPriceCalculation commerceOrderPriceCalculation,
-			CommerceOrderService commerceOrderService,
-			UserLocalService userLocalService)
-		throws Exception {
+	public static CSVFormat getCSVFormat(
+		CommerceOrderImporterTypeConfiguration
+			commerceOrderImporterTypeConfiguration) {
 
-		List<CommerceOrderImporterItem> commerceOrderImporterItems =
-			new ArrayList<>(commerceOrderItems.size());
+		CSVFormat csvFormat = CSVFormat.DEFAULT;
 
-		// Temporary commerce order
+		String csvSeparator =
+			commerceOrderImporterTypeConfiguration.csvSeparator();
 
-		CommerceOrder tempCommerceOrder = commerceOrderService.addCommerceOrder(
-			commerceOrder.getGroupId(), commerceOrder.getCommerceAccountId(),
-			commerceOrder.getCommerceCurrencyId(),
-			commerceOrder.getCommerceOrderTypeId());
-
-		CommerceContext commerceContext = commerceContextFactory.create(
-			tempCommerceOrder.getCompanyId(), tempCommerceOrder.getGroupId(),
-			PrincipalThreadLocal.getUserId(),
-			tempCommerceOrder.getCommerceOrderId(),
-			tempCommerceOrder.getCommerceAccountId());
-
-		for (CommerceOrderItem commerceOrderItem : commerceOrderItems) {
-			CommerceOrderImporterItemImpl commerceOrderImporterItemImpl =
-				new CommerceOrderImporterItemImpl();
-
-			commerceOrderImporterItemImpl.setCPDefinitionId(
-				commerceOrderItem.getCPDefinitionId());
-			commerceOrderImporterItemImpl.setCPInstanceId(
-				commerceOrderItem.getCPInstanceId());
-			commerceOrderImporterItemImpl.setJSON(commerceOrderItem.getJson());
-			commerceOrderImporterItemImpl.setNameMap(
-				commerceOrderItem.getNameMap());
-			commerceOrderImporterItemImpl.
-				setParentCommerceOrderItemCPDefinitionId(
-					commerceOrderItem.
-						getParentCommerceOrderItemCPDefinitionId());
-			commerceOrderImporterItemImpl.setQuantity(
-				commerceOrderItem.getQuantity());
-
-			try {
-
-				// Temporary commerce order item
-
-				CommerceOrderItem tempCommerceOrderItem =
-					commerceOrderItemService.addCommerceOrderItem(
-						tempCommerceOrder.getCommerceOrderId(),
-						commerceOrderItem.getCPInstanceId(),
-						commerceOrderItem.getJson(),
-						commerceOrderItem.getQuantity(), 0, commerceContext,
-						_getServiceContext(userLocalService));
-
-				commerceOrderImporterItemImpl.setCommerceOrderItemPrice(
-					commerceOrderPriceCalculation.getCommerceOrderItemPrice(
-						tempCommerceOrder.getCommerceCurrency(),
-						tempCommerceOrderItem));
-			}
-			catch (CommerceOrderValidatorException
-						commerceOrderValidatorException) {
-
-				commerceOrderImporterItemImpl.setErrorMessages(
-					TransformUtil.transformToArray(
-						commerceOrderValidatorException.
-							getCommerceOrderValidatorResults(),
-						commerceOrderValidatorResult ->
-							commerceOrderValidatorResult.getLocalizedMessage(),
-						String.class));
-			}
-
-			commerceOrderImporterItems.add(commerceOrderImporterItemImpl);
+		if (StringPool.SEMICOLON.equals(csvSeparator)) {
+			csvFormat = csvFormat.withDelimiter(CharPool.SEMICOLON);
 		}
 
-		// Delete temporary commerce order
+		csvFormat = csvFormat.withFirstRecordAsHeader();
+		csvFormat = csvFormat.withIgnoreEmptyLines();
+		csvFormat = csvFormat.withIgnoreSurroundingSpaces();
+		csvFormat = csvFormat.withNullString(StringPool.BLANK);
 
-		commerceOrderService.deleteCommerceOrder(
-			tempCommerceOrder.getCommerceOrderId());
+		return csvFormat;
+	}
 
-		return commerceOrderImporterItems;
+	private static void _addPreviousCommerceOrderItems(
+		CommerceContext commerceContext, CommerceOrder commerceOrder,
+		long tempCommerceOrderId,
+		CommerceOrderItemService commerceOrderItemService,
+		ServiceContext serviceContext) {
+
+		try {
+			for (CommerceOrderItem commerceOrderItem :
+					commerceOrder.getCommerceOrderItems()) {
+
+				commerceOrderItemService.addCommerceOrderItem(
+					tempCommerceOrderId, commerceOrderItem.getCPInstanceId(),
+					commerceOrderItem.getJson(),
+					commerceOrderItem.getQuantity(), 0, BigDecimal.ZERO,
+					StringPool.BLANK, commerceContext, serviceContext);
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
 	}
 
 	private static ServiceContext _getServiceContext(
@@ -200,5 +223,8 @@ public class CommerceOrderImporterTypeUtil {
 
 		return serviceContext;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		CommerceOrderImporterTypeUtil.class);
 
 }

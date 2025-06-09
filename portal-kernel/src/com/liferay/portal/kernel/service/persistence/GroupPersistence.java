@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -531,40 +522,139 @@ public interface GroupPersistence
 	public int countByCompanyId(long companyId);
 
 	/**
-	 * Returns the group where liveGroupId = &#63; or throws a <code>NoSuchGroupException</code> if it could not be found.
+	 * Returns all the groups where liveGroupId = &#63;.
 	 *
 	 * @param liveGroupId the live group ID
-	 * @return the matching group
+	 * @return the matching groups
+	 */
+	public java.util.List<Group> findByLiveGroupId(long liveGroupId);
+
+	/**
+	 * Returns a range of all the groups where liveGroupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param liveGroupId the live group ID
+	 * @param start the lower bound of the range of groups
+	 * @param end the upper bound of the range of groups (not inclusive)
+	 * @return the range of matching groups
+	 */
+	public java.util.List<Group> findByLiveGroupId(
+		long liveGroupId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the groups where liveGroupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param liveGroupId the live group ID
+	 * @param start the lower bound of the range of groups
+	 * @param end the upper bound of the range of groups (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching groups
+	 */
+	public java.util.List<Group> findByLiveGroupId(
+		long liveGroupId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Group>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the groups where liveGroupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param liveGroupId the live group ID
+	 * @param start the lower bound of the range of groups
+	 * @param end the upper bound of the range of groups (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching groups
+	 */
+	public java.util.List<Group> findByLiveGroupId(
+		long liveGroupId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Group>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first group in the ordered set where liveGroupId = &#63;.
+	 *
+	 * @param liveGroupId the live group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching group
 	 * @throws NoSuchGroupException if a matching group could not be found
 	 */
-	public Group findByLiveGroupId(long liveGroupId)
+	public Group findByLiveGroupId_First(
+			long liveGroupId,
+			com.liferay.portal.kernel.util.OrderByComparator<Group>
+				orderByComparator)
 		throws NoSuchGroupException;
 
 	/**
-	 * Returns the group where liveGroupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the first group in the ordered set where liveGroupId = &#63;.
 	 *
 	 * @param liveGroupId the live group ID
-	 * @return the matching group, or <code>null</code> if a matching group could not be found
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching group, or <code>null</code> if a matching group could not be found
 	 */
-	public Group fetchByLiveGroupId(long liveGroupId);
+	public Group fetchByLiveGroupId_First(
+		long liveGroupId,
+		com.liferay.portal.kernel.util.OrderByComparator<Group>
+			orderByComparator);
 
 	/**
-	 * Returns the group where liveGroupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the last group in the ordered set where liveGroupId = &#63;.
 	 *
 	 * @param liveGroupId the live group ID
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching group, or <code>null</code> if a matching group could not be found
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching group
+	 * @throws NoSuchGroupException if a matching group could not be found
 	 */
-	public Group fetchByLiveGroupId(long liveGroupId, boolean useFinderCache);
-
-	/**
-	 * Removes the group where liveGroupId = &#63; from the database.
-	 *
-	 * @param liveGroupId the live group ID
-	 * @return the group that was removed
-	 */
-	public Group removeByLiveGroupId(long liveGroupId)
+	public Group findByLiveGroupId_Last(
+			long liveGroupId,
+			com.liferay.portal.kernel.util.OrderByComparator<Group>
+				orderByComparator)
 		throws NoSuchGroupException;
+
+	/**
+	 * Returns the last group in the ordered set where liveGroupId = &#63;.
+	 *
+	 * @param liveGroupId the live group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching group, or <code>null</code> if a matching group could not be found
+	 */
+	public Group fetchByLiveGroupId_Last(
+		long liveGroupId,
+		com.liferay.portal.kernel.util.OrderByComparator<Group>
+			orderByComparator);
+
+	/**
+	 * Returns the groups before and after the current group in the ordered set where liveGroupId = &#63;.
+	 *
+	 * @param groupId the primary key of the current group
+	 * @param liveGroupId the live group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next group
+	 * @throws NoSuchGroupException if a group with the primary key could not be found
+	 */
+	public Group[] findByLiveGroupId_PrevAndNext(
+			long groupId, long liveGroupId,
+			com.liferay.portal.kernel.util.OrderByComparator<Group>
+				orderByComparator)
+		throws NoSuchGroupException;
+
+	/**
+	 * Removes all the groups where liveGroupId = &#63; from the database.
+	 *
+	 * @param liveGroupId the live group ID
+	 */
+	public void removeByLiveGroupId(long liveGroupId);
 
 	/**
 	 * Returns the number of groups where liveGroupId = &#63;.
@@ -883,6 +973,75 @@ public interface GroupPersistence
 	public int countByC_P(long companyId, long parentGroupId);
 
 	/**
+	 * Returns all the groups where companyId = &#63; and groupKey = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param groupKeys the group keys
+	 * @return the matching groups
+	 */
+	public java.util.List<Group> findByC_GK(long companyId, String[] groupKeys);
+
+	/**
+	 * Returns a range of all the groups where companyId = &#63; and groupKey = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param groupKeys the group keys
+	 * @param start the lower bound of the range of groups
+	 * @param end the upper bound of the range of groups (not inclusive)
+	 * @return the range of matching groups
+	 */
+	public java.util.List<Group> findByC_GK(
+		long companyId, String[] groupKeys, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the groups where companyId = &#63; and groupKey = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param groupKeys the group keys
+	 * @param start the lower bound of the range of groups
+	 * @param end the upper bound of the range of groups (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching groups
+	 */
+	public java.util.List<Group> findByC_GK(
+		long companyId, String[] groupKeys, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Group>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the groups where companyId = &#63; and groupKey = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>GroupModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param groupKeys the group keys
+	 * @param start the lower bound of the range of groups
+	 * @param end the upper bound of the range of groups (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching groups
+	 */
+	public java.util.List<Group> findByC_GK(
+		long companyId, String[] groupKeys, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<Group>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
 	 * Returns the group where companyId = &#63; and groupKey = &#63; or throws a <code>NoSuchGroupException</code> if it could not be found.
 	 *
 	 * @param companyId the company ID
@@ -931,6 +1090,15 @@ public interface GroupPersistence
 	 * @return the number of matching groups
 	 */
 	public int countByC_GK(long companyId, String groupKey);
+
+	/**
+	 * Returns the number of groups where companyId = &#63; and groupKey = any &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param groupKeys the group keys
+	 * @return the number of matching groups
+	 */
+	public int countByC_GK(long companyId, String[] groupKeys);
 
 	/**
 	 * Returns the group where companyId = &#63; and friendlyURL = &#63; or throws a <code>NoSuchGroupException</code> if it could not be found.
@@ -3630,6 +3798,56 @@ public interface GroupPersistence
 		boolean inheritContent);
 
 	/**
+	 * Returns the group where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchGroupException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching group
+	 * @throws NoSuchGroupException if a matching group could not be found
+	 */
+	public Group findByERC_C(String externalReferenceCode, long companyId)
+		throws NoSuchGroupException;
+
+	/**
+	 * Returns the group where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching group, or <code>null</code> if a matching group could not be found
+	 */
+	public Group fetchByERC_C(String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the group where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching group, or <code>null</code> if a matching group could not be found
+	 */
+	public Group fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache);
+
+	/**
+	 * Removes the group where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the group that was removed
+	 */
+	public Group removeByERC_C(String externalReferenceCode, long companyId)
+		throws NoSuchGroupException;
+
+	/**
+	 * Returns the number of groups where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching groups
+	 */
+	public int countByERC_C(String externalReferenceCode, long companyId);
+
+	/**
 	 * Caches the group in the entity cache if it is enabled.
 	 *
 	 * @param group the group
@@ -3829,16 +4047,18 @@ public interface GroupPersistence
 	 *
 	 * @param pk the primary key of the group
 	 * @param organizationPK the primary key of the organization
+	 * @return <code>true</code> if an association between the group and the organization was added; <code>false</code> if they were already associated
 	 */
-	public void addOrganization(long pk, long organizationPK);
+	public boolean addOrganization(long pk, long organizationPK);
 
 	/**
 	 * Adds an association between the group and the organization. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param organization the organization
+	 * @return <code>true</code> if an association between the group and the organization was added; <code>false</code> if they were already associated
 	 */
-	public void addOrganization(
+	public boolean addOrganization(
 		long pk, com.liferay.portal.kernel.model.Organization organization);
 
 	/**
@@ -3846,16 +4066,18 @@ public interface GroupPersistence
 	 *
 	 * @param pk the primary key of the group
 	 * @param organizationPKs the primary keys of the organizations
+	 * @return <code>true</code> if at least one association between the group and the organizations was added; <code>false</code> if they were all already associated
 	 */
-	public void addOrganizations(long pk, long[] organizationPKs);
+	public boolean addOrganizations(long pk, long[] organizationPKs);
 
 	/**
 	 * Adds an association between the group and the organizations. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param organizations the organizations
+	 * @return <code>true</code> if at least one association between the group and the organizations was added; <code>false</code> if they were all already associated
 	 */
-	public void addOrganizations(
+	public boolean addOrganizations(
 		long pk,
 		java.util.List<com.liferay.portal.kernel.model.Organization>
 			organizations);
@@ -4002,32 +4224,36 @@ public interface GroupPersistence
 	 *
 	 * @param pk the primary key of the group
 	 * @param rolePK the primary key of the role
+	 * @return <code>true</code> if an association between the group and the role was added; <code>false</code> if they were already associated
 	 */
-	public void addRole(long pk, long rolePK);
+	public boolean addRole(long pk, long rolePK);
 
 	/**
 	 * Adds an association between the group and the role. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param role the role
+	 * @return <code>true</code> if an association between the group and the role was added; <code>false</code> if they were already associated
 	 */
-	public void addRole(long pk, com.liferay.portal.kernel.model.Role role);
+	public boolean addRole(long pk, com.liferay.portal.kernel.model.Role role);
 
 	/**
 	 * Adds an association between the group and the roles. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param rolePKs the primary keys of the roles
+	 * @return <code>true</code> if at least one association between the group and the roles was added; <code>false</code> if they were all already associated
 	 */
-	public void addRoles(long pk, long[] rolePKs);
+	public boolean addRoles(long pk, long[] rolePKs);
 
 	/**
 	 * Adds an association between the group and the roles. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param roles the roles
+	 * @return <code>true</code> if at least one association between the group and the roles was added; <code>false</code> if they were all already associated
 	 */
-	public void addRoles(
+	public boolean addRoles(
 		long pk, java.util.List<com.liferay.portal.kernel.model.Role> roles);
 
 	/**
@@ -4168,16 +4394,18 @@ public interface GroupPersistence
 	 *
 	 * @param pk the primary key of the group
 	 * @param userGroupPK the primary key of the user group
+	 * @return <code>true</code> if an association between the group and the user group was added; <code>false</code> if they were already associated
 	 */
-	public void addUserGroup(long pk, long userGroupPK);
+	public boolean addUserGroup(long pk, long userGroupPK);
 
 	/**
 	 * Adds an association between the group and the user group. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param userGroup the user group
+	 * @return <code>true</code> if an association between the group and the user group was added; <code>false</code> if they were already associated
 	 */
-	public void addUserGroup(
+	public boolean addUserGroup(
 		long pk, com.liferay.portal.kernel.model.UserGroup userGroup);
 
 	/**
@@ -4185,16 +4413,18 @@ public interface GroupPersistence
 	 *
 	 * @param pk the primary key of the group
 	 * @param userGroupPKs the primary keys of the user groups
+	 * @return <code>true</code> if at least one association between the group and the user groups was added; <code>false</code> if they were all already associated
 	 */
-	public void addUserGroups(long pk, long[] userGroupPKs);
+	public boolean addUserGroups(long pk, long[] userGroupPKs);
 
 	/**
 	 * Adds an association between the group and the user groups. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param userGroups the user groups
+	 * @return <code>true</code> if at least one association between the group and the user groups was added; <code>false</code> if they were all already associated
 	 */
-	public void addUserGroups(
+	public boolean addUserGroups(
 		long pk,
 		java.util.List<com.liferay.portal.kernel.model.UserGroup> userGroups);
 
@@ -4338,32 +4568,36 @@ public interface GroupPersistence
 	 *
 	 * @param pk the primary key of the group
 	 * @param userPK the primary key of the user
+	 * @return <code>true</code> if an association between the group and the user was added; <code>false</code> if they were already associated
 	 */
-	public void addUser(long pk, long userPK);
+	public boolean addUser(long pk, long userPK);
 
 	/**
 	 * Adds an association between the group and the user. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param user the user
+	 * @return <code>true</code> if an association between the group and the user was added; <code>false</code> if they were already associated
 	 */
-	public void addUser(long pk, com.liferay.portal.kernel.model.User user);
+	public boolean addUser(long pk, com.liferay.portal.kernel.model.User user);
 
 	/**
 	 * Adds an association between the group and the users. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param userPKs the primary keys of the users
+	 * @return <code>true</code> if at least one association between the group and the users was added; <code>false</code> if they were all already associated
 	 */
-	public void addUsers(long pk, long[] userPKs);
+	public boolean addUsers(long pk, long[] userPKs);
 
 	/**
 	 * Adds an association between the group and the users. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the group
 	 * @param users the users
+	 * @return <code>true</code> if at least one association between the group and the users was added; <code>false</code> if they were all already associated
 	 */
-	public void addUsers(
+	public boolean addUsers(
 		long pk, java.util.List<com.liferay.portal.kernel.model.User> users);
 
 	/**

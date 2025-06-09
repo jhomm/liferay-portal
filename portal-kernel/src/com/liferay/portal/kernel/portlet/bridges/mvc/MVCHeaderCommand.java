@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.portlet.bridges.mvc;
 
 import com.liferay.petra.string.StringPool;
 
-import javax.portlet.HeaderRequest;
-import javax.portlet.HeaderResponse;
-import javax.portlet.PortletException;
+import jakarta.portlet.HeaderRequest;
+import jakarta.portlet.HeaderResponse;
+import jakarta.portlet.PortletException;
 
 /**
  * Provides an interface to handle the header phase of the portlet. This
@@ -44,7 +35,7 @@ import javax.portlet.PortletException;
  *
  * <ul>
  * <li>
- * <code>javax.portlet.name</code>: The portlet name associated to this header
+ * <code>jakarta.portlet.name</code>: The portlet name associated to this header
  * command.
  * </li>
  * <li>
@@ -57,7 +48,7 @@ import javax.portlet.PortletException;
  * <p>
  * The method {@link MVCPortlet#renderHeaders(HeaderRequest, HeaderResponse)}
  * searches the OSGi Registry for the header command that matches both the
- * portlet name with the property <code>javax.portlet.name</code> and the
+ * portlet name with the property <code>jakarta.portlet.name</code> and the
  * parameter value <code>mvc.command.name</code> with the property
  * <code>mvc.command.name</code>.
  * </p>

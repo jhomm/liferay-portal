@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.web.internal.portlet.action;
@@ -45,6 +36,12 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -53,13 +50,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,7 +59,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_AUTHORIZE,
+		"jakarta.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_AUTHORIZE,
 		"mvc.command.name=/",
 		"mvc.command.name=/oauth2_provider/view_authorization_request"
 	},
@@ -87,7 +77,7 @@ public class ViewAuthorizationRequestMVCRenderCommand
 			_portal.getOriginalServletRequest(
 				_portal.getHttpServletRequest(renderRequest));
 
-		Map<String, String> oAuth2Parameters = getOAuth2Parameters(
+		Map<String, String> oAuth2Parameters = _getOAuth2Parameters(
 			httpServletRequest);
 
 		String error = oAuth2Parameters.get("error");
@@ -140,7 +130,7 @@ public class ViewAuthorizationRequestMVCRenderCommand
 				String[] requestedScopeAliases = StringUtil.split(
 					oAuth2Parameters.get("scope"), StringPool.SPACE);
 
-				populateAssignableScopes(
+				_populateAssignableScopes(
 					assignableScopes, oAuth2ApplicationScopeAliases,
 					requestedScopeAliases);
 			}
@@ -156,9 +146,7 @@ public class ViewAuthorizationRequestMVCRenderCommand
 					noSuchOAuth2ApplicationException) {
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchOAuth2ApplicationException,
-					noSuchOAuth2ApplicationException);
+				_log.debug(noSuchOAuth2ApplicationException);
 			}
 
 			SessionErrors.add(renderRequest, "clientIdInvalid");
@@ -167,7 +155,7 @@ public class ViewAuthorizationRequestMVCRenderCommand
 		}
 		catch (PrincipalException principalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(principalException, principalException);
+				_log.debug(principalException);
 			}
 
 			SessionErrors.add(renderRequest, principalException.getClass());
@@ -181,7 +169,7 @@ public class ViewAuthorizationRequestMVCRenderCommand
 		return "/authorize/authorize.jsp";
 	}
 
-	protected Map<String, String> getOAuth2Parameters(
+	private Map<String, String> _getOAuth2Parameters(
 		HttpServletRequest httpServletRequest) {
 
 		Map<String, String> oAuth2Parameters = new HashMap<>();
@@ -202,7 +190,7 @@ public class ViewAuthorizationRequestMVCRenderCommand
 		return oAuth2Parameters;
 	}
 
-	protected void populateAssignableScopes(
+	private void _populateAssignableScopes(
 		AssignableScopes assignableScopes,
 		OAuth2ApplicationScopeAliases oAuth2ApplicationScopeAliases,
 		String[] requestedScopeAliases) {
@@ -210,32 +198,33 @@ public class ViewAuthorizationRequestMVCRenderCommand
 		Set<String> requestedScopeAliasesSet = new HashSet<>(
 			Arrays.asList(requestedScopeAliases));
 
-		Collection<OAuth2ScopeGrant> oAuth2ScopeGrants =
-			_oAuth2ScopeGrantLocalService.getOAuth2ScopeGrants(
-				oAuth2ApplicationScopeAliases.
-					getOAuth2ApplicationScopeAliasesId(),
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-
-		Stream<OAuth2ScopeGrant> stream = oAuth2ScopeGrants.stream();
-
 		Collection<LiferayOAuth2Scope> liferayOAuth2Scopes =
 			_scopeLocator.getLiferayOAuth2Scopes(
 				oAuth2ApplicationScopeAliases.getCompanyId());
 
-		stream.filter(
-			oAuth2ScopeGrant -> !Collections.disjoint(
-				oAuth2ScopeGrant.getScopeAliasesList(),
-				requestedScopeAliasesSet)
-		).map(
-			oAuth2ScopeGrant -> _scopeLocator.getLiferayOAuth2Scope(
-				oAuth2ScopeGrant.getCompanyId(),
-				oAuth2ScopeGrant.getApplicationName(),
-				oAuth2ScopeGrant.getScope())
-		).filter(
-			liferayOAuth2Scopes::contains
-		).forEach(
-			assignableScopes::addLiferayOAuth2Scope
-		);
+		for (OAuth2ScopeGrant oAuth2ScopeGrant :
+				_oAuth2ScopeGrantLocalService.getOAuth2ScopeGrants(
+					oAuth2ApplicationScopeAliases.
+						getOAuth2ApplicationScopeAliasesId(),
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			if (Collections.disjoint(
+					oAuth2ScopeGrant.getScopeAliasesList(),
+					requestedScopeAliasesSet)) {
+
+				continue;
+			}
+
+			LiferayOAuth2Scope liferayOAuth2Scope =
+				_scopeLocator.getLiferayOAuth2Scope(
+					oAuth2ScopeGrant.getCompanyId(),
+					oAuth2ScopeGrant.getApplicationName(),
+					oAuth2ScopeGrant.getScope());
+
+			if (liferayOAuth2Scopes.contains(liferayOAuth2Scope)) {
+				assignableScopes.addLiferayOAuth2Scope(liferayOAuth2Scope);
+			}
+		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

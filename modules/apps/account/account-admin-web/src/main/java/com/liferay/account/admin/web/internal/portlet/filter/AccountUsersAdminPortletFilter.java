@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.portlet.filter;
@@ -21,22 +12,22 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
 
-import java.io.IOException;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.filter.ActionFilter;
+import jakarta.portlet.filter.FilterChain;
+import jakarta.portlet.filter.FilterConfig;
+import jakarta.portlet.filter.PortletFilter;
+import jakarta.portlet.filter.RenderFilter;
+import jakarta.portlet.filter.ResourceFilter;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.filter.ActionFilter;
-import javax.portlet.filter.FilterChain;
-import javax.portlet.filter.FilterConfig;
-import javax.portlet.filter.PortletFilter;
-import javax.portlet.filter.RenderFilter;
-import javax.portlet.filter.ResourceFilter;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,10 +36,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_USERS_ADMIN
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_USERS_ADMIN
 	},
 	service = PortletFilter.class
 )
@@ -127,7 +117,7 @@ public class AccountUsersAdminPortletFilter
 	}
 
 	@Reference(
-		target = "(javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN + ")",
+		target = "(jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN + ")",
 		unbind = "-"
 	)
 	private Portlet _portlet;

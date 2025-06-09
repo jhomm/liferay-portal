@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -42,9 +33,9 @@
 	<aui:select label="default-language" name="languageId">
 
 		<%
-		User defaultUser = company.getDefaultUser();
+		User guestUser = company.getGuestUser();
 
-		String languageId = ParamUtil.getString(request, "languageId", defaultUser.getLanguageId());
+		String languageId = ParamUtil.getString(request, "languageId", guestUser.getLanguageId());
 
 		Locale companyLocale = LocaleUtil.fromLanguageId(languageId);
 
@@ -75,10 +66,12 @@
 
 		List<KeyValuePair> leftList = new ArrayList<>();
 
-		String[] currentLanguageIds = PrefsPropsUtil.getStringArray(company.getCompanyId(), PropsKeys.LOCALES, StringPool.COMMA, PropsValues.LOCALES_ENABLED);
+		String[] currentLanguageIds = ArrayUtil.unique(PrefsPropsUtil.getStringArray(company.getCompanyId(), PropsKeys.LOCALES, StringPool.COMMA, PropsValues.LOCALES_ENABLED));
 
-		for (Locale currentLocale : LocaleUtil.fromLanguageIds(currentLanguageIds)) {
-			leftList.add(new KeyValuePair(LanguageUtil.getLanguageId(currentLocale), currentLocale.getDisplayName(locale)));
+		for (String currentLanguageId : currentLanguageIds) {
+			Locale currentLocale = LocaleUtil.fromLanguageId(currentLanguageId);
+
+			leftList.add(new KeyValuePair(currentLanguageId, currentLocale.getDisplayName(locale)));
 		}
 
 		// Right list
@@ -87,7 +80,7 @@
 
 		for (String propsValuesLanguageId : SetUtil.fromArray(PropsValues.LOCALES)) {
 			if (!ArrayUtil.contains(availableLanguageIds, propsValuesLanguageId)) {
-				Locale propsValuesLocale = LocaleUtil.fromLanguageId(propsValuesLanguageId, true, false);
+				Locale propsValuesLocale = LocaleUtil.fromLanguageId(propsValuesLanguageId, false);
 
 				if (propsValuesLocale != null) {
 					rightList.add(new KeyValuePair(propsValuesLanguageId, propsValuesLocale.getDisplayName(locale)));
@@ -111,10 +104,12 @@
 </aui:fieldset>
 
 <aui:script use="aui-alert,aui-base">
-	var languageSelectInput = A.one('#<portlet:namespace />languageId');
+	const languageSelectInput = document.getElementById(
+		'<portlet:namespace />languageId'
+	);
 
 	if (languageSelectInput) {
-		languageSelectInput.on('change', () => {
+		languageSelectInput.addEventListener('change', () => {
 			new A.Alert({
 				bodyContent:
 					'<liferay-ui:message key="this-change-will-only-affect-the-newly-created-localized-content" />',
@@ -128,20 +123,25 @@
 	}
 
 	function <portlet:namespace />saveLocales() {
-		var form = document.<portlet:namespace />fm;
 
-		var currentLanguageIdsElement = Liferay.Util.getFormElement(
-			form,
-			'currentLanguageIds'
-		);
+		// Wrapping in a timeout to deal with React's async rendering
 
-		if (currentLanguageIdsElement) {
-			Liferay.Util.setFormValues(form, {
-				<%= PropsKeys.LOCALES %>: Liferay.Util.listSelect(
-					currentLanguageIdsElement
-				),
-			});
-		}
+		setTimeout(() => {
+			var form = document.<portlet:namespace />fm;
+
+			var currentLanguageIdsElement = Liferay.Util.getFormElement(
+				form,
+				'currentLanguageIds'
+			);
+
+			if (currentLanguageIdsElement) {
+				Liferay.Util.setFormValues(form, {
+					<%= PropsKeys.LOCALES %>: Liferay.Util.getSelectedOptionValues(
+						currentLanguageIdsElement
+					),
+				});
+			}
+		});
 	}
 
 	Liferay.after(

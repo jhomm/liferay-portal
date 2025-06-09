@@ -1,25 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.opensaml.integration.internal.resolver;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.bean.BeanProperties;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.saml.opensaml.integration.internal.metadata.MetadataManager;
 import com.liferay.saml.opensaml.integration.resolver.NameIdResolver;
+import com.liferay.saml.persistence.model.SamlIdpSpConnection;
+import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,7 +24,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mika Koivisto
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=" + Integer.MIN_VALUE,
+	property = "service.ranking:Integer=" + Integer.MIN_VALUE,
 	service = NameIdResolver.class
 )
 public class DefaultNameIdResolver implements NameIdResolver {
@@ -39,25 +35,39 @@ public class DefaultNameIdResolver implements NameIdResolver {
 		boolean allowCreate,
 		NameIdResolverSAMLContext nameIdResolverSAMLContext) {
 
-		return getNameIdValue(user, entityId);
-	}
-
-	@Reference(unbind = "-")
-	public void setMetadataManager(MetadataManager metadataManager) {
-		_metadataManager = metadataManager;
+		return _getNameIdValue(user, entityId);
 	}
 
 	protected String getNameIdAttributeName(String entityId) {
-		return _metadataManager.getNameIdAttribute(entityId);
+		long companyId = CompanyThreadLocal.getCompanyId();
+
+		String nameIdAttributeName = StringPool.BLANK;
+
+		try {
+			SamlIdpSpConnection samlIdpSpConnection =
+				_samlIdpSpConnectionLocalService.getSamlIdpSpConnection(
+					companyId, entityId);
+
+			nameIdAttributeName = samlIdpSpConnection.getNameIdAttribute();
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		if (Validator.isNotNull(nameIdAttributeName)) {
+			return nameIdAttributeName;
+		}
+
+		return "emailAddress";
 	}
 
-	protected String getNameIdValue(User user, String entityId) {
+	private String _getNameIdValue(User user, String entityId) {
 		String nameIdAttributeName = getNameIdAttributeName(entityId);
 
-		String nameIdValue = user.getEmailAddress();
-
 		if (Validator.isNull(nameIdAttributeName)) {
-			return nameIdValue;
+			return user.getEmailAddress();
 		}
 
 		if (nameIdAttributeName.startsWith("expando:")) {
@@ -65,20 +75,31 @@ public class DefaultNameIdResolver implements NameIdResolver {
 
 			ExpandoBridge expandoBridge = user.getExpandoBridge();
 
-			nameIdValue = String.valueOf(
-				expandoBridge.getAttribute(attributeName));
-		}
-		else if (nameIdAttributeName.startsWith("static:")) {
-			nameIdValue = nameIdAttributeName.substring(7);
-		}
-		else {
-			nameIdValue = String.valueOf(
-				BeanPropertiesUtil.getObject(user, nameIdAttributeName));
+			return _toString(expandoBridge.getAttribute(attributeName));
 		}
 
-		return nameIdValue;
+		if (nameIdAttributeName.startsWith("static:")) {
+			return nameIdAttributeName.substring(7);
+		}
+
+		return _toString(_beanProperties.getObject(user, nameIdAttributeName));
 	}
 
-	private MetadataManager _metadataManager;
+	private String _toString(Object object) {
+		if (object == null) {
+			return StringPool.BLANK;
+		}
+
+		return object.toString();
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		DefaultNameIdResolver.class);
+
+	@Reference
+	private BeanProperties _beanProperties;
+
+	@Reference
+	private SamlIdpSpConnectionLocalService _samlIdpSpConnectionLocalService;
 
 }

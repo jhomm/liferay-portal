@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useEffect} from 'react';
@@ -27,7 +18,7 @@ import {
 	pagesStructureReducer,
 } from '../../core/reducers/index.es';
 import {parseProps} from '../../utils/parseProps.es';
-import {EVENT_TYPES} from './eventTypes.es';
+import {EVENT_TYPES} from './eventTypes';
 import {
 	formBuilderReducer,
 	objectFieldsReducer,
@@ -43,6 +34,7 @@ const StateSync = ({
 	defaultLanguageId,
 	editingLanguageId,
 	focusedField,
+	formBuilder,
 	objectFields,
 	pages,
 	rules,
@@ -73,7 +65,7 @@ const StateSync = ({
 	useEffect(() => {
 		dispatch({
 			payload: {objectFields},
-			type: EVENT_TYPES.OBJECT_FIELDS.ADD,
+			type: EVENT_TYPES.OBJECT.FIELDS_CHANGE,
 		});
 	}, [dispatch, objectFields]);
 
@@ -84,6 +76,13 @@ const StateSync = ({
 		});
 	}, [dispatch, focusedField]);
 
+	useEffect(() => {
+		dispatch({
+			payload: formBuilder,
+			type: EVENT_TYPES.FORM_BUILDER.PAGES.UPDATE,
+		});
+	}, [dispatch, formBuilder]);
+
 	return null;
 };
 
@@ -92,7 +91,7 @@ const StateSync = ({
  * properties of a field, a new FormProvider is needed to control
  * the reducers of a Field's settingsContext structure.
  */
-export const FormFieldSettings = ({children, onAction, ...otherProps}) => {
+export function FormFieldSettings({children, onAction, ...otherProps}) {
 	const {config, state} = parseProps(otherProps);
 
 	return (
@@ -120,10 +119,11 @@ export const FormFieldSettings = ({children, onAction, ...otherProps}) => {
 				value={state}
 			>
 				<StateSync {...state} />
+
 				{children}
 			</FormProvider>
 		</ConfigProvider>
 	);
-};
+}
 
 FormFieldSettings.displayName = 'FormFieldSettings';

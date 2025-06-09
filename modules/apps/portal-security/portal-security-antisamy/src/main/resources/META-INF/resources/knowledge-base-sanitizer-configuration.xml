@@ -11,6 +11,7 @@ http://www.w3.org/TR/html401/struct/global.html
 		xsi:noNamespaceSchemaLocation="antisamy.xsd">
 
 	<directives>
+		<directive name="noopenerAndNoreferrerAnchors" value="true" />
 		<directive name="omitXmlDeclaration" value="true"/>
 		<directive name="omitDoctypeDeclaration" value="true"/>
 		<directive name="maxInputSize" value="200000"/>
@@ -114,6 +115,9 @@ http://www.w3.org/TR/html401/struct/global.html
 
 		<!-- CSS2 Allowed System Color Values -->
 		<regexp name="systemColor" value="(activeborder|activecaption|appworkspace|background|buttonface|buttonhighlight|buttonshadow|buttontext|captiontext|graytext|highlight|highlighttext|inactiveborder|inactivecaption|inactivecaptiontext|infobackground|infotext|menu|menutext|scrollbar|threeddarkshadow|threedface|threedhighlight|threedlightshadow|threedshadow|window|windowframe|windowtext)"/>
+
+		<!-- Used for onclick attribute on a tag -->
+		<regexp name="onclick-window" value="(^window\.open\(this\.href, \'.*\', \'resizable=(yes|no),status=(yes|no),location=(yes|no),toolbar=(yes|no),menubar=(yes|no),fullscreen=(yes|no),scrollbars=(yes|no),dependent=(yes|no)(,width=(\d)+(px|cm|mm|in|pt|pc|\%){0,1}){0,1}(,left=(\d)+(px|cm|mm|in|pt|pc|\%){0,1}){0,1}(,height=(\d)+(px|cm|mm|in|pt|pc|\%){0,1}){0,1}(,top=(\d)+(px|cm|mm|in|pt|pc|\%){0,1}){0,1}\'\); return false;)"/>
 
 	</common-regexps>
 
@@ -368,6 +372,9 @@ http://www.w3.org/TR/html401/struct/global.html
 		</attribute>
 
 		 <attribute name="onClick" description="The 'onClick' event is executed when the control associated with the tag is clicked">
+			<regexp-list>
+				<regexp name="onclick-window"/>
+			</regexp-list>
 			<literal-list>
 				<literal value="javascript:void(0)"/>
 				<literal value="javascript:history.go(-1)"/>
@@ -524,6 +531,12 @@ http://www.w3.org/TR/html401/struct/global.html
 		<tag name="s" action="validate" />
 		<tag name="section" action="validate" />
 		<tag name="source" action="validate">
+			<attribute name="src" onInvalid="removeTag">
+				<regexp-list>
+					<regexp name="onsiteURL"/>
+					<regexp name="offsiteURL"/>
+				</regexp-list>
+			</attribute>
 			<attribute name="srcset">
 				<regexp-list>
 					<regexp name="anything"/>
@@ -542,6 +555,63 @@ http://www.w3.org/TR/html401/struct/global.html
 		</tag>
 		<tag name="summary" action="validate" />
 		<tag name="time" action="validate" />
+		<tag name="video" action="validate">
+			<attribute name="autoplay">
+				<regexp-list>
+					<regexp name="anything"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="controls">
+				<regexp-list>
+					<regexp name="anything"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="crossorigin">
+				<literal-list>
+					<literal value="anonymous"/>
+					<literal value="use-credentials"/>
+				</literal-list>
+			</attribute>
+			<attribute name="height">
+				<regexp-list>
+					<regexp name="number"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="loop">
+				<regexp-list>
+					<regexp name="anything"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="muted">
+				<regexp-list>
+					<regexp name="anything"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="poster">
+				<regexp-list>
+					<regexp name="onsiteURL"/>
+					<regexp name="offsiteURL"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="preload">
+				<literal-list>
+					<literal value="auto"/>
+					<literal value="metadata"/>
+					<literal value="none"/>
+				</literal-list>
+			</attribute>
+			<attribute name="src">
+				<regexp-list>
+					<regexp name="onsiteURL"/>
+					<regexp name="offsiteURL"/>
+				</regexp-list>
+			</attribute>
+			<attribute name="width">
+				<regexp-list>
+					<regexp name="number" />
+				</regexp-list>
+			</attribute>
+		</tag>
 		<tag name="wbr" action="validate" />
 
 		<!-- Tags related to JavaScript -->
@@ -576,6 +646,11 @@ http://www.w3.org/TR/html401/struct/global.html
 		</attribute>
 		<attribute name="height"/>
 		<attribute name="mozallowfullscreen">
+			<regexp-list>
+				<regexp name="anything"/>
+			</regexp-list>
+		</attribute>
+		<attribute name="sandbox">
 			<regexp-list>
 				<regexp name="anything"/>
 			</regexp-list>
@@ -679,6 +754,8 @@ http://www.w3.org/TR/html401/struct/global.html
 		<!-- Anchor and anchor related tags -->
 
 		<tag name="a" action="validate">
+			<attribute name="onClick"/>
+
 			<attribute name="target">
 				<regexp-list>
 					<regexp name="htmlId"/>
@@ -695,9 +772,9 @@ http://www.w3.org/TR/html401/struct/global.html
 				</regexp-list>
 			</attribute>
 			<attribute name="rel">
-				<literal-list>
-					<literal value="nofollow"/>
-				</literal-list>
+				<regexp-list>
+					<regexp value="(\s*(nofollow|noopener|noreferrer)(\s(nofollow|noopener|noreferrer))*\s*)?"/>
+				</regexp-list>
 			</attribute>
 			<attribute name="name"/>
 
@@ -2567,8 +2644,8 @@ http://www.w3.org/TR/html401/struct/global.html
 		<allowed-empty-tags>
 			<literal-list>
 				<literal value="br"/>
-					<literal value="hr"/>
-	<literal value="iframe"/>
+				<literal value="hr"/>
+				<literal value="iframe"/>
 				<literal value="a"/>
 				<literal value="img"/>
 				<literal value="param"/>

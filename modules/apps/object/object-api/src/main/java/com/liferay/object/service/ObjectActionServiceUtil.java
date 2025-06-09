@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.object.model.ObjectAction;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
+
+import java.util.Map;
 
 /**
  * Provides the remote service utility for ObjectAction. This utility wraps
@@ -37,15 +31,21 @@ public class ObjectActionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.object.service.impl.ObjectActionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static ObjectAction addObjectAction(
-			long objectDefinitionId, boolean active, String name,
+			String externalReferenceCode, long objectDefinitionId,
+			boolean active, String conditionExpression, String description,
+			Map<java.util.Locale, String> errorMessageMap,
+			Map<java.util.Locale, String> labelMap, String name,
 			String objectActionExecutorKey, String objectActionTriggerKey,
 			com.liferay.portal.kernel.util.UnicodeProperties
-				parametersUnicodeProperties)
+				parametersUnicodeProperties,
+			boolean system)
 		throws PortalException {
 
 		return getService().addObjectAction(
-			objectDefinitionId, active, name, objectActionExecutorKey,
-			objectActionTriggerKey, parametersUnicodeProperties);
+			externalReferenceCode, objectDefinitionId, active,
+			conditionExpression, description, errorMessageMap, labelMap, name,
+			objectActionExecutorKey, objectActionTriggerKey,
+			parametersUnicodeProperties, system);
 	}
 
 	public static ObjectAction deleteObjectAction(long objectActionId)
@@ -70,19 +70,28 @@ public class ObjectActionServiceUtil {
 	}
 
 	public static ObjectAction updateObjectAction(
-			long objectActionId, boolean active, String name,
+			String externalReferenceCode, long objectActionId, boolean active,
+			String conditionExpression, String description,
+			Map<java.util.Locale, String> errorMessageMap,
+			Map<java.util.Locale, String> labelMap, String name,
+			String objectActionExecutorKey, String objectActionTriggerKey,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				parametersUnicodeProperties)
 		throws PortalException {
 
 		return getService().updateObjectAction(
-			objectActionId, active, name, parametersUnicodeProperties);
+			externalReferenceCode, objectActionId, active, conditionExpression,
+			description, errorMessageMap, labelMap, name,
+			objectActionExecutorKey, objectActionTriggerKey,
+			parametersUnicodeProperties);
 	}
 
 	public static ObjectActionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile ObjectActionService _service;
+	private static final Snapshot<ObjectActionService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectActionServiceUtil.class, ObjectActionService.class);
 
 }

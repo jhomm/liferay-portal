@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.taglib.servlet.taglib;
@@ -17,12 +8,13 @@ package com.liferay.commerce.frontend.taglib.servlet.taglib;
 import com.liferay.commerce.frontend.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Fabio Diego Mastrorilli
+ * @author Gianmarco Brunialti Masera
  */
 public class ModalContentTag extends IncludeTag {
 
@@ -42,12 +34,16 @@ public class ModalContentTag extends IncludeTag {
 		httpServletRequest.setAttribute(
 			_ATTRIBUTE_NAMESPACE + "modalId", _modalId);
 		httpServletRequest.setAttribute(
+			_ATTRIBUTE_NAMESPACE + "redirect", _redirect);
+		httpServletRequest.setAttribute(
 			_ATTRIBUTE_NAMESPACE + "showCancelButton", _showCancelButton);
 		httpServletRequest.setAttribute(
 			_ATTRIBUTE_NAMESPACE + "showSubmitButton", _showSubmitButton);
 		httpServletRequest.setAttribute(
 			_ATTRIBUTE_NAMESPACE + "submitButtonLabel", _submitButtonLabel);
 		httpServletRequest.setAttribute(_ATTRIBUTE_NAMESPACE + "title", _title);
+		httpServletRequest.setAttribute(
+			_ATTRIBUTE_NAMESPACE + "useNativeSubmit", _useNativeSubmit);
 
 		super.doStartTag();
 
@@ -60,6 +56,10 @@ public class ModalContentTag extends IncludeTag {
 
 	public String getModalId() {
 		return _modalId;
+	}
+
+	public String getRedirect() {
+		return _redirect;
 	}
 
 	public boolean getShowCancelButton() {
@@ -78,6 +78,10 @@ public class ModalContentTag extends IncludeTag {
 		return _title;
 	}
 
+	public boolean getUseNativeSubmit() {
+		return _useNativeSubmit;
+	}
+
 	public void setContentCssClasses(String contentCssClasses) {
 		_contentCssClasses = contentCssClasses;
 	}
@@ -91,6 +95,10 @@ public class ModalContentTag extends IncludeTag {
 		super.setPageContext(pageContext);
 
 		setServletContext(ServletContextUtil.getServletContext());
+	}
+
+	public void setRedirect(String redirect) {
+		_redirect = redirect;
 	}
 
 	public void setShowCancelButton(boolean showCancelButton) {
@@ -109,16 +117,22 @@ public class ModalContentTag extends IncludeTag {
 		_title = title;
 	}
 
+	public void setUseNativeSubmit(boolean useNativeSubmit) {
+		_useNativeSubmit = useNativeSubmit;
+	}
+
 	@Override
 	protected void cleanUp() {
 		super.cleanUp();
 
 		_contentCssClasses = null;
 		_modalId = null;
+		_redirect = null;
 		_showCancelButton = true;
 		_showSubmitButton = true;
 		_submitButtonLabel = null;
 		_title = null;
+		_useNativeSubmit = true;
 	}
 
 	@Override
@@ -140,9 +154,11 @@ public class ModalContentTag extends IncludeTag {
 
 	private String _contentCssClasses;
 	private String _modalId;
+	private String _redirect;
 	private boolean _showCancelButton = true;
 	private boolean _showSubmitButton = true;
 	private String _submitButtonLabel;
 	private String _title;
+	private boolean _useNativeSubmit = true;
 
 }

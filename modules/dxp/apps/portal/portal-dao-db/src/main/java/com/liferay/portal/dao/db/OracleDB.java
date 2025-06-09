@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.db;
@@ -19,16 +10,22 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.db.Index;
+import com.liferay.portal.kernel.dao.db.IndexMetadata;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.io.unsync.UnsyncBufferedReader;
 import com.liferay.portal.kernel.io.unsync.UnsyncStringReader;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
 
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -36,6 +33,8 @@ import java.sql.Types;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -51,6 +50,80 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	public void alterColumnType(
+			Connection connection, String tableName, String columnName,
+			String newColumnType)
+		throws Exception {
+
+		DBInspector dbInspector = new DBInspector(connection);
+
+		if (!dbInspector.hasColumn(tableName, columnName)) {
+			throw new SQLException(
+				StringBundler.concat(
+					"Unknown column ", columnName, " in table ", tableName));
+		}
+
+		try {
+			super.alterColumnType(
+				connection, tableName, columnName, newColumnType);
+		}
+		catch (SQLException sqlException) {
+			if (_log.isInfoEnabled()) {
+				_log.info(
+					StringBundler.concat(
+						"Attempting to upgrade table ", tableName,
+						" by adding a temporary column due to: ",
+						sqlException.getMessage()));
+			}
+
+			String tempColumnName = "temp" + columnName;
+
+			alterTableAddColumn(
+				connection, tableName, tempColumnName, newColumnType);
+
+			runSQL(
+				StringBundler.concat(
+					"update ", tableName, " set ", tempColumnName, " = ",
+					columnName));
+
+			List<IndexMetadata> indexMetadatas = dropIndexes(
+				connection, tableName, columnName);
+
+			String[] primaryKeyColumnNames = getPrimaryKeyColumnNames(
+				connection, tableName);
+
+			boolean primaryKey = ArrayUtil.contains(
+				primaryKeyColumnNames, columnName);
+
+			if (primaryKey) {
+				removePrimaryKey(connection, tableName);
+			}
+
+			alterColumnName(
+				connection, tableName, columnName,
+				tempColumnName + "2 " + newColumnType);
+
+			alterColumnName(
+				connection, tableName, tempColumnName,
+				columnName + StringPool.SPACE + newColumnType);
+
+			if (!indexMetadatas.isEmpty()) {
+				addIndexes(connection, indexMetadatas);
+			}
+
+			if (primaryKey) {
+				addPrimaryKey(connection, tableName, primaryKeyColumnNames);
+			}
+
+			alterTableDropColumn(connection, tableName, tempColumnName + "2");
+
+			if (_log.isInfoEnabled()) {
+				_log.info("Successfully upgraded table " + tableName);
+			}
+		}
+	}
+
+	@Override
 	public String buildSQL(String template) throws IOException, SQLException {
 		template = replaceTemplate(template);
 		template = reword(template);
@@ -59,6 +132,22 @@ public class OracleDB extends BaseDB {
 			new String[] {"\\", "''", "\""});
 
 		return StringUtil.replace(template, "\\n", "'||CHR(10)||'");
+	}
+
+	@Override
+	public String getCharacterSet(Connection connection) throws SQLException {
+		try (PreparedStatement preparedStatement = connection.prepareStatement(
+				"select value from nls_database_parameters where parameter " +
+					"in ('NLS_CHARACTERSET')")) {
+
+			try (ResultSet resultSet = preparedStatement.executeQuery()) {
+				if (resultSet.next()) {
+					return resultSet.getString(1);
+				}
+			}
+		}
+
+		return StringPool.BLANK;
 	}
 
 	@Override
@@ -91,6 +180,20 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	public ResultSet getIndexResultSet(
+			Connection connection, String tableName, boolean onlyUnique)
+		throws SQLException {
+
+		DatabaseMetaData databaseMetaData = connection.getMetaData();
+
+		DBInspector dbInspector = new DBInspector(connection);
+
+		return databaseMetaData.getIndexInfo(
+			dbInspector.getCatalog(), dbInspector.getSchema(), tableName,
+			onlyUnique, true);
+	}
+
+	@Override
 	public String getPopulateSQL(String databaseName, String sqlContent) {
 		return StringBundler.concat(
 			"connect &1/&2;\n", "set define off;\n\n", sqlContent, "quit");
@@ -103,8 +206,15 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	public boolean isSupportsCharacterSet(Connection connection)
+		throws SQLException {
+
+		return Objects.equals(getCharacterSet(connection), "AL32UTF8");
+	}
+
+	@Override
 	public boolean isSupportsInlineDistinct() {
-		return _SUPPORTS_INLINE_DISTINCT;
+		return false;
 	}
 
 	@Override
@@ -128,8 +238,163 @@ public class OracleDB extends BaseDB {
 	}
 
 	@Override
+	protected void createSyncDeleteTrigger(
+			Connection connection, String sourceTableName,
+			String targetTableName, String triggerName,
+			String[] sourcePrimaryKeyColumnNames,
+			String[] targetPrimaryKeyColumnNames)
+		throws Exception {
+
+		StringBundler sb = new StringBundler();
+
+		sb.append("create trigger ");
+		sb.append(triggerName);
+		sb.append(" after delete on ");
+		sb.append(sourceTableName);
+		sb.append(" for each row delete from ");
+		sb.append(targetTableName);
+		sb.append(" where ");
+
+		for (int i = 0; i < sourcePrimaryKeyColumnNames.length; i++) {
+			if (i > 0) {
+				sb.append(" and ");
+			}
+
+			sb.append(targetPrimaryKeyColumnNames[i]);
+			sb.append(" = :old.");
+			sb.append(sourcePrimaryKeyColumnNames[i]);
+		}
+
+		runSQL(connection, sb.toString());
+	}
+
+	@Override
+	protected void createSyncInsertTrigger(
+			Connection connection, String sourceTableName,
+			String targetTableName, String triggerName,
+			String[] sourceColumnNames, String[] targetColumnNames,
+			String[] sourcePrimaryKeyColumnNames,
+			String[] targetPrimaryKeyColumnNames,
+			Map<String, String> defaultValuesMap)
+		throws Exception {
+
+		StringBundler sb = new StringBundler();
+
+		sb.append("create trigger ");
+		sb.append(triggerName);
+		sb.append(" after insert on ");
+		sb.append(sourceTableName);
+		sb.append(" for each row insert into ");
+		sb.append(targetTableName);
+		sb.append(" (");
+		sb.append(StringUtil.merge(targetColumnNames, ", "));
+		sb.append(") values (");
+
+		for (int i = 0; i < sourceColumnNames.length; i++) {
+			if (i > 0) {
+				sb.append(", ");
+			}
+
+			String defaultValue = defaultValuesMap.get(targetColumnNames[i]);
+
+			if (defaultValue != null) {
+				sb.append("COALESCE(");
+			}
+
+			sb.append(":new.");
+			sb.append(sourceColumnNames[i]);
+
+			if (defaultValue != null) {
+				sb.append(", ");
+				sb.append(defaultValue);
+				sb.append(")");
+			}
+		}
+
+		sb.append(")");
+
+		runSQL(connection, sb.toString());
+	}
+
+	@Override
+	protected void createSyncUpdateTrigger(
+			Connection connection, String sourceTableName,
+			String targetTableName, String triggerName,
+			String[] sourceColumnNames, String[] targetColumnNames,
+			String[] sourcePrimaryKeyColumnNames,
+			String[] targetPrimaryKeyColumnNames,
+			Map<String, String> defaultValuesMap)
+		throws Exception {
+
+		StringBundler sb = new StringBundler();
+
+		sb.append("create trigger ");
+		sb.append(triggerName);
+		sb.append(" after update on ");
+		sb.append(sourceTableName);
+		sb.append(" for each row update ");
+		sb.append(targetTableName);
+		sb.append(" set ");
+
+		for (int i = 0; i < sourceColumnNames.length; i++) {
+			if (i > 0) {
+				sb.append(", ");
+			}
+
+			sb.append(targetColumnNames[i]);
+			sb.append(" = ");
+
+			String defaultValue = defaultValuesMap.get(targetColumnNames[i]);
+
+			if (defaultValue != null) {
+				sb.append("COALESCE(");
+			}
+
+			sb.append(":new.");
+			sb.append(sourceColumnNames[i]);
+
+			if (defaultValue != null) {
+				sb.append(", ");
+				sb.append(defaultValue);
+				sb.append(")");
+			}
+		}
+
+		sb.append(" where ");
+
+		for (int i = 0; i < sourcePrimaryKeyColumnNames.length; i++) {
+			if (i > 0) {
+				sb.append(" and ");
+			}
+
+			sb.append(targetPrimaryKeyColumnNames[i]);
+			sb.append(" = :old.");
+			sb.append(sourcePrimaryKeyColumnNames[i]);
+		}
+
+		runSQL(connection, sb.toString());
+	}
+
+	@Override
+	protected String getRenameTableSQL(
+		String oldTableName, String newTableName) {
+
+		return StringBundler.concat(
+			"rename ", oldTableName, " to ", newTableName);
+	}
+
+	@Override
 	protected int[] getSQLTypes() {
 		return _SQL_TYPES;
+	}
+
+	@Override
+	protected Map<String, Integer> getSQLVarcharSizes() {
+		return HashMapBuilder.put(
+			"STRING", _SQL_STRING_SIZE
+		).put(
+			"TEXT", SQL_SIZE_NONE
+		).build();
 	}
 
 	@Override
@@ -145,6 +410,21 @@ public class OracleDB extends BaseDB {
 
 			return dbInspector.isNullable(tableName, columnName);
 		}
+	}
+
+	@Override
+	protected boolean isSupportsDDLRollback() {
+		return false;
+	}
+
+	@Override
+	protected boolean isSupportsDuplicatedIndexName() {
+		return false;
+	}
+
+	@Override
+	protected String limitColumnLength(String column, int length) {
+		return StringBundler.concat("substr(", column, ", 1, ", length, ")");
 	}
 
 	@Override
@@ -175,6 +455,10 @@ public class OracleDB extends BaseDB {
 
 	@Override
 	protected String reword(String data) throws IOException, SQLException {
+		if (Validator.isNull(data)) {
+			return null;
+		}
+
 		try (UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new UnsyncStringReader(data))) {
 
@@ -196,21 +480,36 @@ public class OracleDB extends BaseDB {
 
 					String nullable = template[template.length - 1];
 
-					if (!Validator.isBlank(nullable)) {
-						boolean currentNullable = isNullable(
-							template[0], template[1]);
+					boolean currentNullable = isNullable(
+						template[0], template[1]);
 
+					if (!Validator.isBlank(nullable)) {
 						if ((nullable.equals("null") && currentNullable) ||
 							(nullable.equals("not null") && !currentNullable)) {
 
 							nullable = StringPool.BLANK;
 						}
 					}
+					else if (!currentNullable) {
+						nullable = "null";
+					}
 
-					line = StringUtil.replace(
-						"alter table @table@ modify @old-column@ @type@ " +
-							nullable + ";",
-						REWORD_TEMPLATE, template);
+					String defaultValue = template[template.length - 2];
+
+					if (!Validator.isBlank(defaultValue)) {
+						line = StringUtil.replace(
+							StringBundler.concat(
+								"alter table @table@ modify @old-column@ ",
+								"@type@ default @default@ ", nullable, ";"),
+							REWORD_TEMPLATE, template);
+					}
+					else {
+						line = StringUtil.replace(
+							StringBundler.concat(
+								"alter table @table@ modify @old-column@ ",
+								"@type@ default null ", nullable, ";"),
+							REWORD_TEMPLATE, template);
+					}
 
 					line = StringUtil.replace(line, " ;", ";");
 				}
@@ -239,17 +538,22 @@ public class OracleDB extends BaseDB {
 	private static final String[] _ORACLE = {
 		"--", "1", "0",
 		"to_date('1970-01-01 00:00:00','YYYY-MM-DD HH24:MI:SS')", "sysdate",
-		" blob", " blob", " number(1, 0)", " timestamp", " number(30,20)",
-		" number(30,0)", " number(30,0)", " varchar2(4000 char)", " clob",
-		" varchar2", "", "commit"
+		" blob", " blob", " decimal(30, 16)", " number(1, 0)", " timestamp",
+		" binary_double", " number(30,0)", " number(30,0)",
+		" varchar2(4000 char)", " clob", " varchar2", "", "commit"
 	};
+
+	private static final int _SQL_STRING_SIZE = 4000;
+
+	private static final int _SQL_TYPE_BINARY_DOUBLE = 101;
 
 	private static final int[] _SQL_TYPES = {
-		Types.BLOB, Types.BLOB, Types.NUMERIC, Types.TIMESTAMP, Types.NUMERIC,
-		Types.NUMERIC, Types.NUMERIC, Types.VARCHAR, Types.CLOB, Types.VARCHAR
+		Types.BLOB, Types.BLOB, Types.NUMERIC, Types.NUMERIC, Types.TIMESTAMP,
+		_SQL_TYPE_BINARY_DOUBLE, Types.NUMERIC, Types.NUMERIC, Types.VARCHAR,
+		Types.CLOB, Types.VARCHAR
 	};
 
-	private static final boolean _SUPPORTS_INLINE_DISTINCT = false;
+	private static final Log _log = LogFactoryUtil.getLog(OracleDB.class);
 
 	private static final Pattern _varchar2CharPattern = Pattern.compile(
 		"VARCHAR2\\((\\d+) CHAR\\)", Pattern.CASE_INSENSITIVE);

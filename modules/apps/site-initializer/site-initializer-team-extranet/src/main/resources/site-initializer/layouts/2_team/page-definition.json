@@ -1,0 +1,501 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"fragmentStyle": {
+						"backgroundColor": "brandColor1",
+						"paddingBottom": "7",
+						"paddingTop": "7"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "5",
+								"paddingTop": "3"
+							},
+							"id": "tablet"
+						}
+					],
+					"layout": {
+						"paddingBottom": 8
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"fragmentStyle": {
+								"textColor": "whiteColor"
+							},
+							"layout": {
+								"widthType": "Fixed"
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "text-block"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Team"
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"fontSize": "fontSizeLg",
+										"marginBottom": "2",
+										"textColor": "brandColor3"
+									}
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "heading"
+									},
+									"fragmentConfig": {
+										"displayLevel": "4",
+										"headingLevel": "h1"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "This is a amazing and talented team."
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"marginBottom": "3",
+										"maxWidth": "100%",
+										"width": "540px"
+									},
+									"fragmentViewports": [
+										{
+											"fragmentViewportStyle": {
+												"marginBottom": "2"
+											},
+											"id": "tablet"
+										}
+									]
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "text-block"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Lorem ipsum dolor sit amet, consectetur adipiscing elit ut at magna eros."
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"fontSize": "fontSizeLg",
+										"maxWidth": "100%",
+										"width": "420px"
+									}
+								},
+								"type": "Fragment"
+							}
+						],
+						"type": "Section"
+					}
+				],
+				"type": "Section"
+			},
+			{
+				"definition": {
+					"fragment": {
+						"key": "class-container"
+					},
+					"fragmentConfig": {
+						"classContainerName": "filter-bar"
+					},
+					"fragmentFields": [
+					],
+					"fragmentStyle": {
+						"backgroundColor": "gray200Color",
+						"marginBottom": "7",
+						"paddingBottom": "5",
+						"paddingTop": "6"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"marginBottom": "4"
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "4",
+								"paddingTop": "4"
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"fragmentViewportStyle": {
+								"marginBottom": "5",
+								"paddingBottom": "4",
+								"paddingTop": "4"
+							},
+							"id": "tablet"
+						}
+					]
+				},
+				"pageElements": [
+					{
+						"pageElements": [
+							{
+								"definition": {
+									"layout": {
+										"widthType": "Fixed"
+									}
+								},
+								"pageElements": [
+									{
+										"definition": {
+											"fragmentStyle": {
+												"marginBottom": "1",
+												"overflow": "visible"
+											},
+											"gutters": true,
+											"modulesPerRow": 4,
+											"numberOfColumns": 4,
+											"rowViewports": [
+												{
+													"id": "tablet",
+													"rowViewportDefinition": {
+														"modulesPerRow": 1
+													}
+												}
+											],
+											"verticalAlignment": "middle"
+										},
+										"pageElements": [
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															},
+															"fragmentFields": [
+															]
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															}
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															},
+															"fragmentStyle": {
+																"marginTop": "4"
+															}
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											}
+										],
+										"type": "Row"
+									}
+								],
+								"type": "Section"
+							}
+						],
+						"type": "FragmentDropZone"
+					}
+				],
+				"type": "Fragment"
+			},
+			{
+				"definition": {
+					"layout": {
+						"widthType": "Fixed"
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"collectionConfig": {
+								"collectionReference": {
+									"className": "com.liferay.asset.list.model.AssetListEntry",
+									"classPK": "[$ASSET_LIST_ENTRY_ID:TEAM-MEMBERS$]"
+								},
+								"collectionType": "Collection"
+							},
+							"numberOfColumns": 4,
+							"numberOfItems": 8,
+							"numberOfItemsPerPage": 8
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"collectionItemConfig": {
+									}
+								},
+								"pageElements": [
+									{
+										"definition": {
+											"fragment": {
+												"key": "member-card"
+											},
+											"fragmentFields": [
+												{
+													"id": "image",
+													"value": {
+														"fragmentImage": {
+															"url": {
+																"mapping": {
+																	"fieldKey": "Image",
+																	"itemReference": {
+																		"contextSource": "CollectionItem"
+																	}
+																}
+															}
+														},
+														"fragmentLink": {
+															"value": {
+																"href": {
+																	"mapping": {
+																		"fieldKey": "displayPageURL",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "role",
+													"value": {
+														"text": {
+															"mapping": {
+																"fieldKey": "Role",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "socialTwitterLink",
+													"value": {
+														"fragmentLink": {
+															"value": {
+																"href": {
+																	"value": "#"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "memberShortDescription",
+													"value": {
+														"text": {
+															"mapping": {
+																"fieldKey": "ShortDescription",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "socialInstagram",
+													"value": {
+														"fragmentImage": {
+															"url": {
+															}
+														},
+														"fragmentLink": {
+														}
+													}
+												},
+												{
+													"id": "name",
+													"value": {
+														"text": {
+															"mapping": {
+																"fieldKey": "Name",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "socialLinkedinLink",
+													"value": {
+														"fragmentLink": {
+															"value": {
+																"href": {
+																	"value": "#"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "socialTwitter",
+													"value": {
+														"fragmentImage": {
+															"url": {
+															}
+														},
+														"fragmentLink": {
+														}
+													}
+												},
+												{
+													"id": "socialInstagramLink",
+													"value": {
+														"fragmentLink": {
+															"value": {
+																"href": {
+																	"value": "#"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "socialLinkedin",
+													"value": {
+														"fragmentImage": {
+															"url": {
+															}
+														},
+														"fragmentLink": {
+														}
+													}
+												}
+											],
+											"fragmentStyle": {
+												"marginBottom": "4"
+											},
+											"fragmentViewports": [
+												{
+													"fragmentViewportStyle": {
+														"marginBottom": "2"
+													},
+													"id": "tablet"
+												}
+											]
+										},
+										"type": "Fragment"
+									}
+								],
+								"type": "CollectionItem"
+							}
+						],
+						"type": "Collection"
+					}
+				],
+				"type": "Section"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"masterPage": {
+			"key": "master"
+		}
+	}
+}

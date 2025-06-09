@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.dao.db;
@@ -25,7 +16,7 @@ import java.util.Objects;
 public class Index {
 
 	public Index(String indexName, String tableName, boolean unique) {
-		_indexName = indexName;
+		this.indexName = indexName;
 		_tableName = tableName;
 		_unique = unique;
 	}
@@ -42,7 +33,7 @@ public class Index {
 
 		Index index = (Index)object;
 
-		if (Objects.equals(_indexName, index._indexName) &&
+		if (Objects.equals(indexName, index.indexName) &&
 			Objects.equals(_tableName, index._tableName) &&
 			(_unique == index._unique)) {
 
@@ -53,7 +44,7 @@ public class Index {
 	}
 
 	public String getIndexName() {
-		return _indexName;
+		return indexName;
 	}
 
 	public String getTableName() {
@@ -62,7 +53,7 @@ public class Index {
 
 	@Override
 	public int hashCode() {
-		int hash = HashUtil.hash(0, _indexName);
+		int hash = HashUtil.hash(0, indexName);
 
 		hash = HashUtil.hash(hash, _tableName);
 
@@ -76,11 +67,12 @@ public class Index {
 	@Override
 	public String toString() {
 		return StringBundler.concat(
-			"{indexName=", _indexName, ", tableName=", _tableName, ", unique=",
+			"{indexName=", indexName, ", tableName=", _tableName, ", unique=",
 			_unique, "}");
 	}
 
-	private final String _indexName;
+	protected String indexName;
+
 	private final String _tableName;
 	private final boolean _unique;
 

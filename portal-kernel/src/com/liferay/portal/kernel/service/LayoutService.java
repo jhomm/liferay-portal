@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -72,6 +63,7 @@ public interface LayoutService extends BaseService {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -106,8 +98,9 @@ public interface LayoutService extends BaseService {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			long classNameId, long classPK, Map<Locale, String> localeNamesMap,
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, long classNameId, long classPK,
+			Map<Locale, String> localeNamesMap,
 			Map<Locale, String> localeTitlesMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> keywordsMap,
 			Map<Locale, String> robotsMap, String type, String typeSettings,
@@ -125,6 +118,7 @@ public interface LayoutService extends BaseService {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -156,8 +150,8 @@ public interface LayoutService extends BaseService {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			Map<Locale, String> localeNamesMap,
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, Map<Locale, String> localeNamesMap,
 			Map<Locale, String> localeTitlesMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> keywordsMap,
 			Map<Locale, String> robotsMap, String type, String typeSettings,
@@ -175,6 +169,7 @@ public interface LayoutService extends BaseService {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -205,8 +200,8 @@ public interface LayoutService extends BaseService {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			Map<Locale, String> localeNamesMap,
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, Map<Locale, String> localeNamesMap,
 			Map<Locale, String> localeTitlesMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> keywordsMap,
 			Map<Locale, String> robotsMap, String type, String typeSettings,
@@ -225,6 +220,7 @@ public interface LayoutService extends BaseService {
 	 * etc.
 	 * </p>
 	 *
+	 * @param externalReferenceCode the layout's external reference code
 	 * @param groupId the primary key of the group
 	 * @param privateLayout whether the layout is private to the group
 	 * @param parentLayoutId the layout ID of the parent layout (optionally
@@ -250,14 +246,22 @@ public interface LayoutService extends BaseService {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public Layout addLayout(
-			long groupId, boolean privateLayout, long parentLayoutId,
-			String name, String title, String description, String type,
-			boolean hidden, String friendlyURL, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, boolean privateLayout,
+			long parentLayoutId, String name, String title, String description,
+			String type, boolean hidden, String friendlyURL,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public FileEntry addTempFileEntry(
 			long groupId, String folderName, String fileName,
 			InputStream inputStream, String mimeType)
+		throws PortalException;
+
+	public Layout copyLayout(
+			long groupId, boolean privateLayout,
+			Map<Locale, String> localeNamesMap, boolean hidden, boolean system,
+			boolean copyPermissions, long sourcePlid,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -286,13 +290,30 @@ public interface LayoutService extends BaseService {
 	public void deleteLayout(long plid, ServiceContext serviceContext)
 		throws PortalException;
 
+	public void deleteLayout(String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	public void deleteTempFileEntry(
 			long groupId, String folderName, String fileName)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Layout fetchFirstLayout(
+		long groupId, boolean privateLayout, boolean published);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Layout fetchLayout(
 			long groupId, boolean privateLayout, long layoutId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Layout fetchLayoutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public long fetchLayoutPlid(
+			String uuid, long groupId, boolean privateLayout)
 		throws PortalException;
 
 	/**
@@ -347,6 +368,11 @@ public interface LayoutService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long getDefaultPlid(
 			long groupId, long scopeGroupId, String portletId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Layout getLayoutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -420,6 +446,12 @@ public interface LayoutService extends BaseService {
 	public List<Layout> getLayouts(
 			long groupId, boolean privateLayout, long parentLayoutId,
 			boolean incomplete, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Layout> getLayouts(
+			long groupId, boolean privateLayout, long parentLayoutId, int start,
+			int end)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -531,7 +563,7 @@ public interface LayoutService extends BaseService {
 	 DestinationNames#LAYOUTS_LOCAL_PUBLISHER}). See {@link
 	 DestinationNames}.
 	 * @param cronText the cron text. See {@link
-	 com.liferay.portal.kernel.cal.RecurrenceSerializer #toCronText}
+	 com.liferay.portal.kernel.scheduler.CronTextUtil#getCronText}
 	 * @param schedulerStartDate the scheduler start date
 	 * @param schedulerEndDate the scheduler end date
 	 * @param description the scheduler description
@@ -566,7 +598,7 @@ public interface LayoutService extends BaseService {
 	 DestinationNames#LAYOUTS_LOCAL_PUBLISHER}). See {@link
 	 DestinationNames}.
 	 * @param cronText the cron text. See {@link
-	 com.liferay.portal.kernel.cal.RecurrenceSerializer #toCronText}
+	 com.liferay.portal.kernel.scheduler.CronTextUtil#getCronText}
 	 * @param schedulerStartDate the scheduler start date
 	 * @param schedulerEndDate the scheduler end date
 	 * @param description the scheduler description
@@ -653,8 +685,9 @@ public interface LayoutService extends BaseService {
 	 String)}.
 	 * @param hasIconImage if the layout has a custom icon image
 	 * @param iconBytes the byte array of the layout's new icon image
-	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param styleBookEntryId the primary key of the style book entry
+	 * @param faviconFileEntryId the file entry ID of the layout's new favicon
+	 * @param masterLayoutPlid the primary key of the master layout
 	 * @param serviceContext the service context to be applied. Can set the
 	 modification date and expando bridge attributes for the layout.
 	 * @return the updated layout
@@ -667,8 +700,8 @@ public interface LayoutService extends BaseService {
 			Map<Locale, String> descriptionMap, Map<Locale, String> keywordsMap,
 			Map<Locale, String> robotsMap, String type, boolean hidden,
 			Map<Locale, String> friendlyURLMap, boolean hasIconImage,
-			byte[] iconBytes, long masterLayoutPlid, long styleBookEntryId,
-			ServiceContext serviceContext)
+			byte[] iconBytes, long styleBookEntryId, long faviconFileEntryId,
+			long masterLayoutPlid, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_6;
@@ -63,7 +54,6 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 						resultSet.getLong("dataProviderInstanceId"),
 						resultSet.getString("definition"),
 						resultSet.getString("uuid_")));
-
 				preparedStatement2.setLong(
 					2, resultSet.getLong("dataProviderInstanceId"));
 
@@ -84,7 +74,7 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return 0;
@@ -99,7 +89,7 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return StringPool.BLANK;
@@ -305,7 +295,6 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 						!_updatedStructureIds.contains(structureId)) {
 
 						preparedStatement2.setString(1, jsonObject.toString());
-
 						preparedStatement2.setLong(2, structureId);
 
 						preparedStatement2.addBatch();
@@ -333,7 +322,6 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 
 								preparedStatement4.setString(
 									1, jsonObject.toString());
-
 								preparedStatement4.setLong(
 									2, structureVersionId);
 

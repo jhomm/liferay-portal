@@ -1,0 +1,25 @@
+.sharing-modal-content {
+	background-color: #fff;
+
+	.custom-radio .form-text {
+		font-weight: normal;
+		margin-bottom: 1rem;
+		margin-top: 0;
+		padding-left: 1.5rem;
+	}
+
+	.modal-body.inline-scroller {
+		max-height: 400px;
+	}
+
+	.modal-footer {
+		bottom: 0;
+		position: absolute;
+		right: 0;
+		width: 100%;
+	}
+}
+
+.sharing-autocomplete-sticker {
+	margin-right: 1rem;
+}

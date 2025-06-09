@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.questions.web.internal.portlet;
 
-import com.liferay.asset.kernel.model.AssetTag;
+import com.liferay.asset.tags.item.selector.AssetTagsItemSelectorCriterion;
+import com.liferay.asset.tags.item.selector.AssetTagsItemSelectorReturnType;
+import com.liferay.flags.taglib.servlet.taglib.util.FlagsTagUtil;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
@@ -22,38 +15,43 @@ import com.liferay.item.selector.criteria.URLItemSelectorReturnType;
 import com.liferay.item.selector.criteria.image.criterion.ImageItemSelectorCriterion;
 import com.liferay.message.boards.moderation.configuration.MBModerationGroupConfiguration;
 import com.liferay.message.boards.service.MBStatsUserLocalService;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
-import com.liferay.portal.kernel.portlet.LiferayWindowState;
-import com.liferay.portal.kernel.portlet.PortletProvider;
-import com.liferay.portal.kernel.portlet.PortletProviderUtil;
-import com.liferay.portal.kernel.portlet.PortletURLWrapper;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.questions.web.internal.configuration.QuestionsConfiguration;
 import com.liferay.questions.web.internal.constants.QuestionsPortletKeys;
 import com.liferay.questions.web.internal.constants.QuestionsWebKeys;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
+import java.util.Properties;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -65,7 +63,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.questions.web.internal.configuration.QuestionsConfiguration",
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-questions",
 		"com.liferay.portlet.display-category=category.collaboration",
@@ -76,14 +73,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.scopeable=true",
 		"com.liferay.portlet.single-page-application=false",
-		"javax.portlet.display-name=Questions",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + QuestionsPortletKeys.QUESTIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user"
+		"jakarta.portlet.display-name=Questions",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + QuestionsPortletKeys.QUESTIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,guest,power-user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -100,6 +98,39 @@ public class QuestionsPortlet extends MVCPortlet {
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
 			renderRequest);
 
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		Company company = themeDisplay.getCompany();
+
+		renderRequest.setAttribute(
+			QuestionsWebKeys.COMPANY_NAME, company.getName());
+
+		Properties properties = _portal.getPortalProperties();
+
+		String ranks = properties.getProperty("message.boards.user.ranks");
+
+		if (ranks == null) {
+			throw new IllegalArgumentException(
+				"No value found for property \"message.boards.user.ranks\"");
+		}
+
+		String min = Collections.min(
+			StringUtil.split(ranks),
+			Comparator.comparing(
+				rank -> {
+					List<String> rankParts = StringUtil.split(
+						rank, CharPool.EQUAL);
+
+					return rankParts.get(1);
+				}));
+
+		List<String> minParts = StringUtil.split(min, CharPool.EQUAL);
+
+		String lowestRank = minParts.get(0);
+
+		renderRequest.setAttribute(QuestionsWebKeys.DEFAULT_RANK, lowestRank);
+
 		ItemSelectorCriterion itemSelectorCriterion =
 			new ImageItemSelectorCriterion();
 
@@ -114,24 +145,37 @@ public class QuestionsPortlet extends MVCPortlet {
 		renderRequest.setAttribute(
 			QuestionsWebKeys.IMAGE_BROWSE_URL, portletURL.toString());
 
-		String lowestRank = Stream.of(
-			_portal.getPortalProperties()
-		).map(
-			properties -> properties.getProperty("message.boards.user.ranks")
-		).map(
-			s -> s.split(",")
-		).flatMap(
-			Arrays::stream
-		).min(
-			Comparator.comparing(rank -> rank.split("=")[1])
-		).map(
-			rank -> rank.split("=")[0]
-		).orElse(
-			"Youngling"
-		);
-
-		renderRequest.setAttribute(QuestionsWebKeys.DEFAULT_RANK, lowestRank);
-
+		renderRequest.setAttribute(
+			QuestionsWebKeys.FLAGS_PROPERTIES,
+			HashMapBuilder.<String, Object>put(
+				"context",
+				HashMapBuilder.<String, Object>put(
+					"namespace", _portal.getPortletNamespace(PortletKeys.FLAGS)
+				).build()
+			).put(
+				"props",
+				() -> HashMapBuilder.<String, Object>put(
+					"captchaURI", FlagsTagUtil.getCaptchaURI(httpServletRequest)
+				).put(
+					"isFlagEnabled", FlagsTagUtil.isFlagsEnabled(themeDisplay)
+				).put(
+					"pathTermsOfUse",
+					_portal.getPathMain() + "/portal/terms_of_use"
+				).put(
+					"reasons",
+					FlagsTagUtil.getReasons(
+						themeDisplay.getCompanyId(), httpServletRequest)
+				).put(
+					"uri", FlagsTagUtil.getURI(httpServletRequest)
+				).put(
+					"viewMode",
+					Objects.equals(
+						Constants.VIEW,
+						ParamUtil.getString(
+							themeDisplay.getRequest(), "p_l_mode",
+							Constants.VIEW))
+				).build()
+			).build());
 		renderRequest.setAttribute(
 			QuestionsWebKeys.TAG_SELECTOR_URL,
 			_getTagSelectorURL(renderRequest, renderResponse));
@@ -148,41 +192,28 @@ public class QuestionsPortlet extends MVCPortlet {
 			QuestionsConfiguration.class, properties);
 	}
 
-	@Reference(unbind = "-")
-	protected void setItemSelector(ItemSelector itemSelector) {
-		_itemSelector = itemSelector;
-	}
-
 	private String _getTagSelectorURL(
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
-		try {
-			PortletURL portletURL = PortletProviderUtil.getPortletURL(
-				renderRequest, AssetTag.class.getName(),
-				PortletProvider.Action.BROWSE);
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 
-			PortletURLWrapper portletURLWrapper = new PortletURLWrapper(
-				portletURL);
+		AssetTagsItemSelectorCriterion assetTagsItemSelectorCriterion =
+			new AssetTagsItemSelectorCriterion();
 
-			if (portletURL == null) {
-				return null;
-			}
+		assetTagsItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new AssetTagsItemSelectorReturnType());
+		assetTagsItemSelectorCriterion.setGroupIds(
+			new long[] {
+				_portal.getSiteGroupId(themeDisplay.getScopeGroupId())
+			});
+		assetTagsItemSelectorCriterion.setMultiSelection(true);
 
-			portletURLWrapper.setParameter(
-				"eventName", renderResponse.getNamespace() + "selectTag");
-			portletURLWrapper.setParameter(
-				"selectedTagNames", "{selectedTagNames}");
-			portletURLWrapper.setWindowState(LiferayWindowState.POP_UP);
-
-			return portletURLWrapper.toString();
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-
-			return null;
-		}
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(renderRequest),
+				renderResponse.getNamespace() + "selectTag",
+				assetTagsItemSelectorCriterion));
 	}
 
 	private boolean _isTrustedUser(RenderRequest renderRequest) {
@@ -214,7 +245,7 @@ public class QuestionsPortlet extends MVCPortlet {
 		}
 		catch (ConfigurationException configurationException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(configurationException, configurationException);
+				_log.debug(configurationException);
 			}
 		}
 
@@ -227,6 +258,7 @@ public class QuestionsPortlet extends MVCPortlet {
 	@Reference
 	private ConfigurationProvider _configurationProvider;
 
+	@Reference
 	private ItemSelector _itemSelector;
 
 	@Reference

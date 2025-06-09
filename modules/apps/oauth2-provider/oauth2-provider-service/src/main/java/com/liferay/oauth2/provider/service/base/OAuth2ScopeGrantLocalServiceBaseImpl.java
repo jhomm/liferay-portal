@@ -1,31 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service.base;
 
 import com.liferay.oauth2.provider.model.OAuth2ScopeGrant;
 import com.liferay.oauth2.provider.service.OAuth2ScopeGrantLocalService;
-import com.liferay.oauth2.provider.service.OAuth2ScopeGrantLocalServiceUtil;
 import com.liferay.oauth2.provider.service.persistence.OAuth2AuthorizationPersistence;
-import com.liferay.oauth2.provider.service.persistence.OAuth2ScopeGrantFinder;
 import com.liferay.oauth2.provider.service.persistence.OAuth2ScopeGrantPersistence;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -34,6 +22,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -43,11 +33,10 @@ import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -75,7 +64,7 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>OAuth2ScopeGrantLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>OAuth2ScopeGrantLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>OAuth2ScopeGrantLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.oauth2.provider.service.OAuth2ScopeGrantLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -328,6 +317,11 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement OAuth2ScopeGrantLocalServiceImpl#deleteOAuth2ScopeGrant(OAuth2ScopeGrant) to avoid orphaned data");
+		}
+
 		return oAuth2ScopeGrantLocalService.deleteOAuth2ScopeGrant(
 			(OAuth2ScopeGrant)persistedModel);
 	}
@@ -394,40 +388,40 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addOAuth2AuthorizationOAuth2ScopeGrant(
+	public boolean addOAuth2AuthorizationOAuth2ScopeGrant(
 		long oAuth2AuthorizationId, long oAuth2ScopeGrantId) {
 
-		oAuth2AuthorizationPersistence.addOAuth2ScopeGrant(
+		return oAuth2AuthorizationPersistence.addOAuth2ScopeGrant(
 			oAuth2AuthorizationId, oAuth2ScopeGrantId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOAuth2AuthorizationOAuth2ScopeGrant(
+	public boolean addOAuth2AuthorizationOAuth2ScopeGrant(
 		long oAuth2AuthorizationId, OAuth2ScopeGrant oAuth2ScopeGrant) {
 
-		oAuth2AuthorizationPersistence.addOAuth2ScopeGrant(
+		return oAuth2AuthorizationPersistence.addOAuth2ScopeGrant(
 			oAuth2AuthorizationId, oAuth2ScopeGrant);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOAuth2AuthorizationOAuth2ScopeGrants(
+	public boolean addOAuth2AuthorizationOAuth2ScopeGrants(
 		long oAuth2AuthorizationId, long[] oAuth2ScopeGrantIds) {
 
-		oAuth2AuthorizationPersistence.addOAuth2ScopeGrants(
+		return oAuth2AuthorizationPersistence.addOAuth2ScopeGrants(
 			oAuth2AuthorizationId, oAuth2ScopeGrantIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addOAuth2AuthorizationOAuth2ScopeGrants(
+	public boolean addOAuth2AuthorizationOAuth2ScopeGrants(
 		long oAuth2AuthorizationId, List<OAuth2ScopeGrant> oAuth2ScopeGrants) {
 
-		oAuth2AuthorizationPersistence.addOAuth2ScopeGrants(
+		return oAuth2AuthorizationPersistence.addOAuth2ScopeGrants(
 			oAuth2AuthorizationId, oAuth2ScopeGrants);
 	}
 
@@ -568,7 +562,6 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
 	}
 
 	@Override
@@ -582,8 +575,6 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		oAuth2ScopeGrantLocalService = (OAuth2ScopeGrantLocalService)aopProxy;
-
-		_setLocalServiceUtilService(oAuth2ScopeGrantLocalService);
 	}
 
 	/**
@@ -610,38 +601,26 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = oAuth2ScopeGrantPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = oAuth2ScopeGrantPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		OAuth2ScopeGrantLocalService oAuth2ScopeGrantLocalService) {
-
-		try {
-			Field field =
-				OAuth2ScopeGrantLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, oAuth2ScopeGrantLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -651,13 +630,13 @@ public abstract class OAuth2ScopeGrantLocalServiceBaseImpl
 	protected OAuth2ScopeGrantPersistence oAuth2ScopeGrantPersistence;
 
 	@Reference
-	protected OAuth2ScopeGrantFinder oAuth2ScopeGrantFinder;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
 	@Reference
 	protected OAuth2AuthorizationPersistence oAuth2AuthorizationPersistence;
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		OAuth2ScopeGrantLocalServiceBaseImpl.class);
 
 }

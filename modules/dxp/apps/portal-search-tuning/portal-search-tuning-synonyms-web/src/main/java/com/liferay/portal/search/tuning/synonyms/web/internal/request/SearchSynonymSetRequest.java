@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.request;
 
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchContextFactory;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
@@ -29,14 +20,15 @@ import com.liferay.portal.search.sort.Sort;
 import com.liferay.portal.search.sort.SortOrder;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
+import com.liferay.portal.search.tuning.synonyms.web.internal.constants.SynonymsPortletKeys;
 import com.liferay.portal.search.tuning.synonyms.web.internal.display.context.SynonymSetDisplayContext;
 import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSetFields;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adam Brandizzi
@@ -84,6 +76,29 @@ public class SearchSynonymSetRequest {
 		return searchRankingResponse;
 	}
 
+	private String _getOrderByCol() {
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
+		}
+
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, SynonymsPortletKeys.SYNONYMS,
+			SynonymSetFields.SYNONYMS_KEYWORD);
+
+		return _orderByCol;
+	}
+
+	private String _getOrderByType() {
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
+		}
+
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, SynonymsPortletKeys.SYNONYMS, "asc");
+
+		return _orderByType;
+	}
+
 	private Query _getQuery() {
 		String keywords = _searchContext.getKeywords();
 
@@ -95,22 +110,18 @@ public class SearchSynonymSetRequest {
 	}
 
 	private Collection<Sort> _getSorts() {
-		String orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol",
-			SynonymSetFields.SYNONYMS_KEYWORD);
-		String orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
-
 		SortOrder sortOrder = SortOrder.ASC;
 
-		if (Objects.equals(orderByType, "desc")) {
+		if (Objects.equals(_getOrderByType(), "desc")) {
 			sortOrder = SortOrder.DESC;
 		}
 
-		return Arrays.asList(_sorts.field(orderByCol, sortOrder));
+		return Arrays.asList(_sorts.field(_getOrderByCol(), sortOrder));
 	}
 
 	private final HttpServletRequest _httpServletRequest;
+	private String _orderByCol;
+	private String _orderByType;
 	private final Queries _queries;
 	private final SearchContainer<SynonymSetDisplayContext> _searchContainer;
 	private final SearchContext _searchContext;

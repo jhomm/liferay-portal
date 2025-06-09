@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -55,9 +46,6 @@ public interface User extends PersistedModel, UserModel {
 
 		};
 
-	public void addRemotePreference(
-		com.liferay.portal.kernel.util.RemotePreference remotePreference);
-
 	public Contact fetchContact();
 
 	public String fetchPortraitURL(
@@ -69,6 +57,12 @@ public interface User extends PersistedModel, UserModel {
 	 * @return the user's addresses
 	 */
 	public java.util.List<Address> getAddresses();
+
+	public java.util.List<Group> getAllGroups()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Role> getAllRoles()
+		throws com.liferay.portal.kernel.exception.PortalException;
 
 	/**
 	 * Returns the user's birth date.
@@ -98,9 +92,9 @@ public interface User extends PersistedModel, UserModel {
 	/**
 	 * Returns a digest for the user, incorporating the password.
 	 *
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 * @param password a password to incorporate with the digest
 	 * @return a digest for the user, incorporating the password
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	public String getDigest(String password);
@@ -218,6 +212,17 @@ public interface User extends PersistedModel, UserModel {
 
 	public java.util.List<Group> getGroups();
 
+	public java.util.List<Group> getInheritedGroups()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Role> getInheritedRoles()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Group> getInheritedSiteGroups()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Role> getInheritedSiteRoles();
+
 	public String getInitials();
 
 	public java.util.Locale getLocale();
@@ -256,6 +261,16 @@ public interface User extends PersistedModel, UserModel {
 			boolean includeAdministrative)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public java.util.List<Organization> getOrganizations(
+			boolean includeAdministrative, boolean includeParentOrganizations)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Group> getOrganizationsGroups()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Role> getOrganizationsRoles()
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	public String getOriginalEmailAddress();
 
 	public boolean getPasswordModified();
@@ -280,12 +295,6 @@ public interface User extends PersistedModel, UserModel {
 	public java.util.Set<String> getReminderQueryQuestions()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
-	public com.liferay.portal.kernel.util.RemotePreference getRemotePreference(
-		String name);
-
-	public Iterable<com.liferay.portal.kernel.util.RemotePreference>
-		getRemotePreferences();
-
 	public long[] getRoleIds();
 
 	public java.util.List<Role> getRoles();
@@ -294,6 +303,9 @@ public interface User extends PersistedModel, UserModel {
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public java.util.List<Group> getSiteGroups(boolean includeAdministrative)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
+	public java.util.List<Role> getSiteRoles()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public long[] getTeamIds();
@@ -308,6 +320,9 @@ public interface User extends PersistedModel, UserModel {
 	public java.util.Date getUnlockDate(PasswordPolicy passwordPolicy);
 
 	public long[] getUserGroupIds();
+
+	public java.util.List<UserGroupRole> getUserGroupRoles()
+		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public java.util.List<UserGroup> getUserGroups();
 
@@ -334,6 +349,12 @@ public interface User extends PersistedModel, UserModel {
 
 	public boolean isActive();
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #isGuestUser}
+	 */
+	@Deprecated
+	public boolean isDefaultUser();
+
 	public boolean isEmailAddressComplete();
 
 	public boolean isEmailAddressVerificationComplete();
@@ -341,12 +362,20 @@ public interface User extends PersistedModel, UserModel {
 	public boolean isFemale()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public boolean isGuestUser();
+
 	public boolean isMale()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public boolean isOnDemandUser();
+
 	public boolean isPasswordModified();
 
+	public boolean isPasswordResetRequired();
+
 	public boolean isReminderQueryComplete();
+
+	public boolean isServiceAccountUser();
 
 	public boolean isSetupComplete();
 
@@ -354,8 +383,22 @@ public interface User extends PersistedModel, UserModel {
 
 	public void setContact(Contact contact);
 
+	public void setGroup(Group group);
+
+	public void setGroupId(long groupId);
+
+	public void setGroupIds(long[] groupIds);
+
+	public void setOrganizationIds(long[] organizationIds);
+
 	public void setPasswordModified(boolean passwordModified);
 
 	public void setPasswordUnencrypted(String passwordUnencrypted);
+
+	public void setRoleIds(long[] roleIds);
+
+	public void setTeamIds(long[] teamIds);
+
+	public void setUserGroupIds(long[] userGroupIds);
 
 }

@@ -1,32 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
 
 import com.liferay.document.library.constants.DLPortletKeys;
+import com.liferay.document.library.kernel.exception.NoSuchFolderException;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.document.library.web.internal.display.context.logic.DLPortletInstanceSettingsHelper;
-import com.liferay.document.library.web.internal.display.context.util.IGRequestHelper;
-import com.liferay.document.library.web.internal.settings.DLPortletInstanceSettings;
+import com.liferay.document.library.web.internal.display.context.helper.DLPortletInstanceSettingsHelper;
+import com.liferay.document.library.web.internal.display.context.helper.IGRequestHelper;
+import com.liferay.document.library.web.internal.util.DLFolderUtil;
+import com.liferay.document.library.web.internal.util.FolderItemSelectorURLProvider;
 import com.liferay.item.selector.ItemSelector;
-import com.liferay.item.selector.criteria.FolderItemSelectorReturnType;
-import com.liferay.item.selector.criteria.folder.criterion.FolderItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.repository.capabilities.TrashCapability;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
@@ -35,17 +27,17 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.KeyValuePair;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -53,12 +45,10 @@ import javax.servlet.http.HttpServletRequest;
 public class IGConfigurationDisplayContext {
 
 	public IGConfigurationDisplayContext(
-		DLAppLocalService dlAppLocalService, ItemSelector itemSelector,
-		HttpServletRequest httpServletRequest,
+		ItemSelector itemSelector, HttpServletRequest httpServletRequest,
 		PortletPreferencesLocalService portletPreferencesLocalService,
 		TrashHelper trashHelper) {
 
-		_dlAppLocalService = dlAppLocalService;
 		_itemSelector = itemSelector;
 		_httpServletRequest = httpServletRequest;
 		_portletPreferencesLocalService = portletPreferencesLocalService;
@@ -117,24 +107,19 @@ public class IGConfigurationDisplayContext {
 		return _folderName;
 	}
 
-	public PortletURL getSelectFolderURL() throws PortalException {
-		FolderItemSelectorCriterion folderItemSelectorCriterion =
-			new FolderItemSelectorCriterion();
+	public long getSelectedRepositoryId() throws PortalException {
+		_initRepository();
 
-		folderItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
-			new FolderItemSelectorReturnType());
+		return _selectedRepositoryId;
+	}
 
-		if (!isRootFolderInTrash()) {
-			folderItemSelectorCriterion.setFolderId(getRootFolderId());
-		}
+	public String getSelectRootFolderURL() throws PortalException {
+		FolderItemSelectorURLProvider folderItemSelectorURLProvider =
+			new FolderItemSelectorURLProvider(
+				_httpServletRequest, _itemSelector);
 
-		folderItemSelectorCriterion.setIgnoreRootFolder(true);
-		folderItemSelectorCriterion.setSelectedFolderId(getRootFolderId());
-		folderItemSelectorCriterion.setShowGroupSelector(true);
-
-		return _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
-			getItemSelectedEventName(), folderItemSelectorCriterion);
+		return folderItemSelectorURLProvider.getSelectRootFolderURL(
+			getSelectedRepositoryId(), getRootFolderId());
 	}
 
 	public boolean isRootFolderInTrash() throws PortalException {
@@ -151,17 +136,6 @@ public class IGConfigurationDisplayContext {
 
 	public boolean isShowActions() {
 		return _dlPortletInstanceSettingsHelper.isShowActions();
-	}
-
-	private Folder _getFolder() {
-		try {
-			return _dlAppLocalService.getFolder(_folderId);
-		}
-		catch (Exception exception) {
-			_folderNotFound = true;
-
-			return null;
-		}
 	}
 
 	private PortletPreferences _getPortletPreferences() {
@@ -194,26 +168,31 @@ public class IGConfigurationDisplayContext {
 		_folderId = DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
 		_folderInTrash = false;
 		_folderName = StringPool.BLANK;
+
 		_folderNotFound = false;
 
-		DLPortletInstanceSettings dlPortletInstanceSettings =
-			_igRequestHelper.getDLPortletInstanceSettings();
-
-		_folderId = dlPortletInstanceSettings.getRootFolderId();
-
-		if (_folderId == DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-			return;
+		try {
+			_folder = _dlPortletInstanceSettingsHelper.getRootFolder();
 		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
 
-		Folder folder = _getFolder();
-
-		if ((folder == null) ||
-			(folder.getGroupId() != _themeDisplay.getScopeGroupId())) {
+			_folderNotFound = true;
 
 			return;
 		}
 
-		_folder = folder;
+		if (_folder == null) {
+			_folderName = LanguageUtil.get(_httpServletRequest, "home");
+
+			return;
+		}
+
+		_folderId = _folder.getFolderId();
+
+		_folderName = _folder.getName();
 
 		if (_folder.isRepositoryCapabilityProvided(TrashCapability.class)) {
 			TrashCapability trashCapability = _folder.getRepositoryCapability(
@@ -225,9 +204,48 @@ public class IGConfigurationDisplayContext {
 				_folderName = _trashHelper.getOriginalTitle(_folder.getName());
 			}
 		}
+
+		try {
+			DLFolderUtil.validateDepotFolder(
+				_folderId, _folder.getGroupId(),
+				_themeDisplay.getScopeGroupId());
+		}
+		catch (NoSuchFolderException noSuchFolderException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(noSuchFolderException);
+			}
+
+			_folderNotFound = true;
+		}
 	}
 
-	private final DLAppLocalService _dlAppLocalService;
+	private void _initRepository() throws PortalException {
+		if (_selectedRepositoryId != 0) {
+			return;
+		}
+
+		_selectedRepositoryId =
+			_dlPortletInstanceSettingsHelper.getSelectedRepositoryId();
+
+		if (_selectedRepositoryId != 0) {
+			return;
+		}
+
+		_initFolder();
+
+		if (_folder != null) {
+			_selectedRepositoryId = _folder.getRepositoryId();
+		}
+		else {
+			_selectedRepositoryId = ParamUtil.getLong(
+				_httpServletRequest, "repositoryId",
+				_themeDisplay.getScopeGroupId());
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		IGConfigurationDisplayContext.class);
+
 	private final DLPortletInstanceSettingsHelper
 		_dlPortletInstanceSettingsHelper;
 	private Folder _folder;
@@ -242,6 +260,7 @@ public class IGConfigurationDisplayContext {
 	private final PortletPreferencesLocalService
 		_portletPreferencesLocalService;
 	private final RenderRequest _renderRequest;
+	private long _selectedRepositoryId;
 	private final ThemeDisplay _themeDisplay;
 	private final TrashHelper _trashHelper;
 

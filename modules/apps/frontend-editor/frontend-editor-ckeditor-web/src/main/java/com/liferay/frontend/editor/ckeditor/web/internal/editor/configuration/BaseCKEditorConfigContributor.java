@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.editor.ckeditor.web.internal.editor.configuration;
@@ -69,20 +60,20 @@ public class BaseCKEditorConfigContributor extends BaseEditorConfigContributor {
 		).put(
 			"contentsCss",
 			JSONUtil.putAll(
-				HtmlUtil.escape(
-					PortalUtil.getStaticResourceURL(
-						themeDisplay.getRequest(),
-						themeDisplay.getPathThemeCss() + "/clay.css")),
-				HtmlUtil.escape(
-					PortalUtil.getStaticResourceURL(
-						themeDisplay.getRequest(),
-						themeDisplay.getPathThemeCss() + "/main.css")),
+				HtmlUtil.escape(themeDisplay.getClayCSSURL()),
+				HtmlUtil.escape(themeDisplay.getMainCSSURL()),
 				HtmlUtil.escape(
 					PortalUtil.getStaticResourceURL(
 						themeDisplay.getRequest(),
 						PortalUtil.getPathContext() +
 							"/o/frontend-editor-ckeditor-web/ckeditor/skins" +
-								"/moono-lexicon/editor.css")))
+								"/moono-lexicon/editor.css")),
+				HtmlUtil.escape(
+					PortalUtil.getStaticResourceURL(
+						themeDisplay.getRequest(),
+						PortalUtil.getPathContext() +
+							"/o/frontend-editor-ckeditor-web/ckeditor/skins" +
+								"/moono-lexicon/dialog.css")))
 		).put(
 			"contentsLangDirection",
 			HtmlUtil.escapeJS(
@@ -113,7 +104,12 @@ public class BaseCKEditorConfigContributor extends BaseEditorConfigContributor {
 				CKEditorConstants.ATTRIBUTE_NAMESPACE + ":resizable"));
 
 		if (resizable) {
-			jsonObject.put("resize_dir", "vertical");
+			String resizeDirection = GetterUtil.getString(
+				inputEditorTaglibAttributes.get(
+					CKEditorConstants.ATTRIBUTE_NAMESPACE +
+						":resizeDirection"));
+
+			jsonObject.put("resize_dir", resizeDirection);
 		}
 
 		jsonObject.put("resize_enabled", resizable);

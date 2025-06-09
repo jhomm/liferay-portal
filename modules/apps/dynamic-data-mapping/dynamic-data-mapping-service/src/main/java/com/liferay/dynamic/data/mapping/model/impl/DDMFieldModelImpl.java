@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -94,7 +84,7 @@ public class DDMFieldModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DDMField (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,fieldId LONG not null,companyId LONG,parentFieldId LONG,storageId LONG,structureVersionId LONG,fieldName VARCHAR(255) null,fieldType VARCHAR(255) null,instanceId VARCHAR(75) null,localizable BOOLEAN,priority INTEGER,primary key (fieldId, ctCollectionId))";
+		"create table DDMField (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,fieldId LONG not null,companyId LONG,parentFieldId LONG,storageId LONG,structureVersionId LONG,fieldName VARCHAR(500) null,fieldType VARCHAR(255) null,instanceId VARCHAR(75) null,localizable BOOLEAN,priority INTEGER,primary key (fieldId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table DDMField";
 
@@ -119,32 +109,38 @@ public class DDMFieldModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FIELDTYPE_COLUMN_BITMASK = 2L;
+	public static final long FIELDNAME_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long INSTANCEID_COLUMN_BITMASK = 4L;
+	public static final long FIELDTYPE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STORAGEID_COLUMN_BITMASK = 8L;
+	public static final long INSTANCEID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STRUCTUREVERSIONID_COLUMN_BITMASK = 16L;
+	public static final long STORAGEID_COLUMN_BITMASK = 16L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long STRUCTUREVERSIONID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 32L;
+	public static final long PRIORITY_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -235,104 +231,97 @@ public class DDMFieldModelImpl
 	public Map<String, Function<DDMField, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DDMField, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DDMField>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DDMField.class.getClassLoader(), DDMField.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DDMField, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DDMField> constructor =
-				(Constructor<DDMField>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DDMField, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<DDMField, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DDMField::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DDMField::getCtCollectionId);
+			attributeGetterFunctions.put("fieldId", DDMField::getFieldId);
+			attributeGetterFunctions.put("companyId", DDMField::getCompanyId);
+			attributeGetterFunctions.put(
+				"parentFieldId", DDMField::getParentFieldId);
+			attributeGetterFunctions.put("storageId", DDMField::getStorageId);
+			attributeGetterFunctions.put(
+				"structureVersionId", DDMField::getStructureVersionId);
+			attributeGetterFunctions.put("fieldName", DDMField::getFieldName);
+			attributeGetterFunctions.put("fieldType", DDMField::getFieldType);
+			attributeGetterFunctions.put("instanceId", DDMField::getInstanceId);
+			attributeGetterFunctions.put(
+				"localizable", DDMField::getLocalizable);
+			attributeGetterFunctions.put("priority", DDMField::getPriority);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DDMField, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DDMField, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DDMField, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<DDMField, Object>>();
-		Map<String, BiConsumer<DDMField, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DDMField, ?>>();
+		private static final Map<String, BiConsumer<DDMField, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", DDMField::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DDMField, Long>)DDMField::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DDMField::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DDMField, Long>)DDMField::setCtCollectionId);
-		attributeGetterFunctions.put("fieldId", DDMField::getFieldId);
-		attributeSetterBiConsumers.put(
-			"fieldId", (BiConsumer<DDMField, Long>)DDMField::setFieldId);
-		attributeGetterFunctions.put("companyId", DDMField::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<DDMField, Long>)DDMField::setCompanyId);
-		attributeGetterFunctions.put(
-			"parentFieldId", DDMField::getParentFieldId);
-		attributeSetterBiConsumers.put(
-			"parentFieldId",
-			(BiConsumer<DDMField, Long>)DDMField::setParentFieldId);
-		attributeGetterFunctions.put("storageId", DDMField::getStorageId);
-		attributeSetterBiConsumers.put(
-			"storageId", (BiConsumer<DDMField, Long>)DDMField::setStorageId);
-		attributeGetterFunctions.put(
-			"structureVersionId", DDMField::getStructureVersionId);
-		attributeSetterBiConsumers.put(
-			"structureVersionId",
-			(BiConsumer<DDMField, Long>)DDMField::setStructureVersionId);
-		attributeGetterFunctions.put("fieldName", DDMField::getFieldName);
-		attributeSetterBiConsumers.put(
-			"fieldName", (BiConsumer<DDMField, String>)DDMField::setFieldName);
-		attributeGetterFunctions.put("fieldType", DDMField::getFieldType);
-		attributeSetterBiConsumers.put(
-			"fieldType", (BiConsumer<DDMField, String>)DDMField::setFieldType);
-		attributeGetterFunctions.put("instanceId", DDMField::getInstanceId);
-		attributeSetterBiConsumers.put(
-			"instanceId",
-			(BiConsumer<DDMField, String>)DDMField::setInstanceId);
-		attributeGetterFunctions.put("localizable", DDMField::getLocalizable);
-		attributeSetterBiConsumers.put(
-			"localizable",
-			(BiConsumer<DDMField, Boolean>)DDMField::setLocalizable);
-		attributeGetterFunctions.put("priority", DDMField::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority", (BiConsumer<DDMField, Integer>)DDMField::setPriority);
+		static {
+			Map<String, BiConsumer<DDMField, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<DDMField, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DDMField, Long>)DDMField::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DDMField, Long>)DDMField::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"fieldId", (BiConsumer<DDMField, Long>)DDMField::setFieldId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DDMField, Long>)DDMField::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"parentFieldId",
+				(BiConsumer<DDMField, Long>)DDMField::setParentFieldId);
+			attributeSetterBiConsumers.put(
+				"storageId",
+				(BiConsumer<DDMField, Long>)DDMField::setStorageId);
+			attributeSetterBiConsumers.put(
+				"structureVersionId",
+				(BiConsumer<DDMField, Long>)DDMField::setStructureVersionId);
+			attributeSetterBiConsumers.put(
+				"fieldName",
+				(BiConsumer<DDMField, String>)DDMField::setFieldName);
+			attributeSetterBiConsumers.put(
+				"fieldType",
+				(BiConsumer<DDMField, String>)DDMField::setFieldType);
+			attributeSetterBiConsumers.put(
+				"instanceId",
+				(BiConsumer<DDMField, String>)DDMField::setInstanceId);
+			attributeSetterBiConsumers.put(
+				"localizable",
+				(BiConsumer<DDMField, Boolean>)DDMField::setLocalizable);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<DDMField, Integer>)DDMField::setPriority);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -480,6 +469,15 @@ public class DDMFieldModelImpl
 		}
 
 		_fieldName = fieldName;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalFieldName() {
+		return getColumnOriginalValue("fieldName");
 	}
 
 	@Override
@@ -847,41 +845,12 @@ public class DDMFieldModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DDMField, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DDMField, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DDMField, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DDMField)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DDMField>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DDMField.class, ModelWrapper.class);
 
 	}
 
@@ -899,8 +868,9 @@ public class DDMFieldModelImpl
 	private int _priority;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<DDMField, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<DDMField, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

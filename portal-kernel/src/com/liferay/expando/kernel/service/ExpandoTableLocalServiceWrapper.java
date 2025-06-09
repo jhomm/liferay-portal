@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.expando.kernel.service;
@@ -17,6 +8,7 @@ package com.liferay.expando.kernel.service;
 import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class ExpandoTableLocalServiceWrapper
 	implements ExpandoTableLocalService,
 			   ServiceWrapper<ExpandoTableLocalService> {
+
+	public ExpandoTableLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ExpandoTableLocalServiceWrapper(
 		ExpandoTableLocalService expandoTableLocalService) {
@@ -111,9 +107,12 @@ public class ExpandoTableLocalServiceWrapper
 	 *
 	 * @param expandoTable the expando table
 	 * @return the expando table that was removed
+	 * @throws PortalException
 	 */
 	@Override
-	public ExpandoTable deleteExpandoTable(ExpandoTable expandoTable) {
+	public ExpandoTable deleteExpandoTable(ExpandoTable expandoTable)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		return _expandoTableLocalService.deleteExpandoTable(expandoTable);
 	}
 
@@ -147,7 +146,9 @@ public class ExpandoTableLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteTable(ExpandoTable table) {
+	public void deleteTable(ExpandoTable table)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_expandoTableLocalService.deleteTable(table);
 	}
 
@@ -173,12 +174,16 @@ public class ExpandoTableLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteTables(long companyId, long classNameId) {
+	public void deleteTables(long companyId, long classNameId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_expandoTableLocalService.deleteTables(companyId, classNameId);
 	}
 
 	@Override
-	public void deleteTables(long companyId, String className) {
+	public void deleteTables(long companyId, String className)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_expandoTableLocalService.deleteTables(companyId, className);
 	}
 
@@ -454,6 +459,11 @@ public class ExpandoTableLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _expandoTableLocalService.updateTable(tableId, name);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _expandoTableLocalService.getBasePersistence();
 	}
 
 	@Override

@@ -1,28 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.test.util;
 
+import com.liferay.osgi.util.configuration.ConfigurationFactoryUtil;
 import com.liferay.osgi.util.service.OSGiServiceUtil;
+import com.liferay.petra.function.UnsafeBiConsumer;
+import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Dictionary;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import org.junit.Assert;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -31,8 +30,10 @@ import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.ConfigurationException;
 import org.osgi.service.cm.ConfigurationListener;
 import org.osgi.service.cm.ManagedService;
+import org.osgi.service.cm.ManagedServiceFactory;
 
 /**
  * @author Drew Brokke
@@ -43,7 +44,16 @@ public class ConfigurationTestUtil {
 			String factoryPid, Dictionary<String, Object> properties)
 		throws Exception {
 
-		Configuration configuration = _createFactoryConfiguration(factoryPid);
+		return createFactoryConfiguration(factoryPid, null, properties);
+	}
+
+	public static String createFactoryConfiguration(
+			String factoryPid, String name,
+			Dictionary<String, Object> properties)
+		throws Exception {
+
+		Configuration configuration = _createFactoryConfiguration(
+			factoryPid, name);
 
 		_updateProperties(configuration, properties);
 
@@ -84,8 +94,126 @@ public class ConfigurationTestUtil {
 		_updateProperties(_getConfiguration(pid), properties);
 	}
 
-	private static Configuration _createFactoryConfiguration(String factoryPid)
+	public static Configuration updateConfiguration(
+			String pid, UnsafeRunnable<Exception> unsafeRunnable)
 		throws Exception {
+
+		CountDownLatch countDownLatch = new CountDownLatch(2);
+
+		ServiceRegistration<ManagedService> serviceRegistration =
+			_bundleContext.registerService(
+				ManagedService.class, props -> countDownLatch.countDown(),
+				MapUtil.singletonDictionary(Constants.SERVICE_PID, pid));
+
+		unsafeRunnable.run();
+
+		try {
+			countDownLatch.await(1, TimeUnit.MINUTES);
+		}
+		finally {
+			serviceRegistration.unregister();
+		}
+
+		Configuration[] configurations = OSGiServiceUtil.callService(
+			_bundleContext, ConfigurationAdmin.class,
+			configurationAdmin -> configurationAdmin.listConfigurations(
+				StringBundler.concat(
+					"(", Constants.SERVICE_PID, "=", pid, ")")));
+
+		if (ArrayUtil.isEmpty(configurations)) {
+			return null;
+		}
+
+		return configurations[0];
+	}
+
+	public static Configuration updateFactoryConfiguration(
+			String pid, UnsafeRunnable<Exception> unsafeRunnable)
+		throws Exception {
+
+		String factoryPid = ConfigurationFactoryUtil.getFactoryPidFromPid(pid);
+
+		Assert.assertNotNull(factoryPid);
+
+		CountDownLatch countDownLatch = new CountDownLatch(2);
+
+		ServiceRegistration<ManagedServiceFactory> serviceRegistration =
+			_bundleContext.registerService(
+				ManagedServiceFactory.class,
+				new InternalManagerServiceFactory(
+					factoryPid,
+					(servicePid, props) -> countDownLatch.countDown()),
+				MapUtil.singletonDictionary(Constants.SERVICE_PID, factoryPid));
+
+		unsafeRunnable.run();
+
+		try {
+			countDownLatch.await(1, TimeUnit.MINUTES);
+		}
+		finally {
+			serviceRegistration.unregister();
+		}
+
+		Configuration[] configurations = OSGiServiceUtil.callService(
+			_bundleContext, ConfigurationAdmin.class,
+			configurationAdmin -> configurationAdmin.listConfigurations(
+				StringBundler.concat(
+					"(", Constants.SERVICE_PID, "=", pid, ")")));
+
+		if (ArrayUtil.isEmpty(configurations)) {
+			return null;
+		}
+
+		return configurations[0];
+	}
+
+	public static class InternalManagerServiceFactory
+		implements ManagedServiceFactory {
+
+		public InternalManagerServiceFactory(
+			String factoryPid,
+			UnsafeBiConsumer
+				<String, Dictionary<String, ?>, ConfigurationException>
+					unsafeBiConsumer) {
+
+			_factoryPid = factoryPid;
+			_unsafeBiConsumer = unsafeBiConsumer;
+		}
+
+		@Override
+		public void deleted(String pid) {
+		}
+
+		@Override
+		public String getName() {
+			return _factoryPid;
+		}
+
+		@Override
+		public void updated(String pid, Dictionary<String, ?> properties)
+			throws ConfigurationException {
+
+			_unsafeBiConsumer.accept(pid, properties);
+		}
+
+		private final String _factoryPid;
+		private final UnsafeBiConsumer
+			<String, Dictionary<String, ?>, ConfigurationException>
+				_unsafeBiConsumer;
+
+	}
+
+	private static Configuration _createFactoryConfiguration(
+			String factoryPid, String name)
+		throws Exception {
+
+		if (name != null) {
+			return OSGiServiceUtil.callService(
+				_bundleContext, ConfigurationAdmin.class,
+				(ConfigurationAdmin configurationAdmin) ->
+					configurationAdmin.getFactoryConfiguration(
+						factoryPid, name, StringPool.QUESTION));
+		}
 
 		return OSGiServiceUtil.callService(
 			_bundleContext, ConfigurationAdmin.class,
@@ -153,7 +281,7 @@ public class ConfigurationTestUtil {
 
 		ManagedService managedService = properties -> {
 			try {
-				eventCountDownLatch.await();
+				eventCountDownLatch.await(1, TimeUnit.MINUTES);
 			}
 			catch (InterruptedException interruptedException) {
 				ReflectionUtil.throwException(interruptedException);
@@ -186,7 +314,7 @@ public class ConfigurationTestUtil {
 
 			markerConfiguration.delete();
 
-			updateCountDownLatch.await();
+			updateCountDownLatch.await(1, TimeUnit.MINUTES);
 		}
 		finally {
 			configurationListenerServiceRegistration.unregister();

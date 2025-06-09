@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrde
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CommerceVirtualOrderItemCacheModel
-	implements CacheModel<CommerceVirtualOrderItem>, Externalizable {
+	implements CacheModel<CommerceVirtualOrderItem>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,8 +40,10 @@ public class CommerceVirtualOrderItemCacheModel
 		CommerceVirtualOrderItemCacheModel commerceVirtualOrderItemCacheModel =
 			(CommerceVirtualOrderItemCacheModel)object;
 
-		if (commerceVirtualOrderItemId ==
-				commerceVirtualOrderItemCacheModel.commerceVirtualOrderItemId) {
+		if ((commerceVirtualOrderItemId ==
+				commerceVirtualOrderItemCacheModel.
+					commerceVirtualOrderItemId) &&
+			(mvccVersion == commerceVirtualOrderItemCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -59,14 +53,28 @@ public class CommerceVirtualOrderItemCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceVirtualOrderItemId);
+		int hashCode = HashUtil.hash(0, commerceVirtualOrderItemId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(37);
+		StringBundler sb = new StringBundler(33);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", commerceVirtualOrderItemId=");
 		sb.append(commerceVirtualOrderItemId);
@@ -84,16 +92,10 @@ public class CommerceVirtualOrderItemCacheModel
 		sb.append(modifiedDate);
 		sb.append(", commerceOrderItemId=");
 		sb.append(commerceOrderItemId);
-		sb.append(", fileEntryId=");
-		sb.append(fileEntryId);
-		sb.append(", url=");
-		sb.append(url);
 		sb.append(", activationStatus=");
 		sb.append(activationStatus);
 		sb.append(", duration=");
 		sb.append(duration);
-		sb.append(", usages=");
-		sb.append(usages);
 		sb.append(", maxUsages=");
 		sb.append(maxUsages);
 		sb.append(", active=");
@@ -111,6 +113,8 @@ public class CommerceVirtualOrderItemCacheModel
 	public CommerceVirtualOrderItem toEntityModel() {
 		CommerceVirtualOrderItemImpl commerceVirtualOrderItemImpl =
 			new CommerceVirtualOrderItemImpl();
+
+		commerceVirtualOrderItemImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
 			commerceVirtualOrderItemImpl.setUuid("");
@@ -149,18 +153,8 @@ public class CommerceVirtualOrderItemCacheModel
 
 		commerceVirtualOrderItemImpl.setCommerceOrderItemId(
 			commerceOrderItemId);
-		commerceVirtualOrderItemImpl.setFileEntryId(fileEntryId);
-
-		if (url == null) {
-			commerceVirtualOrderItemImpl.setUrl("");
-		}
-		else {
-			commerceVirtualOrderItemImpl.setUrl(url);
-		}
-
 		commerceVirtualOrderItemImpl.setActivationStatus(activationStatus);
 		commerceVirtualOrderItemImpl.setDuration(duration);
-		commerceVirtualOrderItemImpl.setUsages(usages);
 		commerceVirtualOrderItemImpl.setMaxUsages(maxUsages);
 		commerceVirtualOrderItemImpl.setActive(active);
 
@@ -185,6 +179,7 @@ public class CommerceVirtualOrderItemCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		commerceVirtualOrderItemId = objectInput.readLong();
@@ -200,14 +195,9 @@ public class CommerceVirtualOrderItemCacheModel
 
 		commerceOrderItemId = objectInput.readLong();
 
-		fileEntryId = objectInput.readLong();
-		url = objectInput.readUTF();
-
 		activationStatus = objectInput.readInt();
 
 		duration = objectInput.readLong();
-
-		usages = objectInput.readInt();
 
 		maxUsages = objectInput.readInt();
 
@@ -218,6 +208,8 @@ public class CommerceVirtualOrderItemCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
@@ -245,20 +237,9 @@ public class CommerceVirtualOrderItemCacheModel
 
 		objectOutput.writeLong(commerceOrderItemId);
 
-		objectOutput.writeLong(fileEntryId);
-
-		if (url == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(url);
-		}
-
 		objectOutput.writeInt(activationStatus);
 
 		objectOutput.writeLong(duration);
-
-		objectOutput.writeInt(usages);
 
 		objectOutput.writeInt(maxUsages);
 
@@ -267,6 +248,7 @@ public class CommerceVirtualOrderItemCacheModel
 		objectOutput.writeLong(endDate);
 	}
 
+	public long mvccVersion;
 	public String uuid;
 	public long commerceVirtualOrderItemId;
 	public long groupId;
@@ -276,11 +258,8 @@ public class CommerceVirtualOrderItemCacheModel
 	public long createDate;
 	public long modifiedDate;
 	public long commerceOrderItemId;
-	public long fileEntryId;
-	public String url;
 	public int activationStatus;
 	public long duration;
-	public int usages;
 	public int maxUsages;
 	public boolean active;
 	public long startDate;

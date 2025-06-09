@@ -1,4 +1,4 @@
-@component-name = "data-engine"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -10,15 +10,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,7 +27,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68573. This test verifies that is possible to delete the field."
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
 		NavItem.gotoStructures();
 
@@ -55,7 +55,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68573. This test verifies that is possible to duplicate the field."
-	@priority = "4"
+	@priority = 4
 	test CanBeDuplicated {
 		NavItem.gotoStructures();
 
@@ -81,7 +81,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69039. This test verifies that editing chosen options persists."
-	@priority = "5"
+	@priority = 5
 	test CanEditChosenOptions {
 		NavItem.gotoStructures();
 
@@ -112,37 +112,37 @@ definition {
 		for (var row : list "1,2,3") {
 			for (var column : list "2,2,2") {
 				DERenderer.inputDataInGridField(
-					column = "${column}",
+					column = ${column},
 					fieldLabel = "Grid",
-					row = "${row}");
+					row = ${row});
 			}
 		}
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		for (var index : list "1,2,3") {
 			DERenderer.inputDataInGridField(
-				column = "${index}",
+				column = ${index},
 				fieldLabel = "Grid",
-				row = "${index}");
+				row = ${index});
 		}
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		for (var index : list "1,2,3") {
 			DERenderer.assertDataInGridField(
-				column = "${index}",
+				column = ${index},
 				fieldLabel = "Grid",
-				row = "${index}");
+				row = ${index});
 		}
 	}
 
 	@description = "This is a test for LRQA-68573. This test verifies that Label and Help text can be edited."
-	@priority = "5"
+	@priority = 5
 	test CanEditLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -179,7 +179,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69039. This test verifies that is not possible to publish the Web Content with a blank required field."
-	@priority = "4"
+	@priority = 4
 	test CanNotPublishBlankRequiredField {
 		NavItem.gotoStructures();
 
@@ -199,13 +199,13 @@ definition {
 
 		PortletEntry.inputTitle(title = "Web Content Title");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		FormViewBuilder.validateObjectLabelOptionTextIsShown(text = "This field is required.");
 	}
 
 	@description = "This is a test for LRQA-69039. This test verifies that chosen options persists."
-	@priority = "5"
+	@priority = 5
 	test CanSelectOptions {
 		NavItem.gotoStructures();
 
@@ -235,25 +235,25 @@ definition {
 
 		for (var index : list "1,2,3") {
 			DERenderer.inputDataInGridField(
-				column = "${index}",
+				column = ${index},
 				fieldLabel = "Grid",
-				row = "${index}");
+				row = ${index});
 		}
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		for (var index : list "1,2,3") {
 			DERenderer.assertDataInGridField(
-				column = "${index}",
+				column = ${index},
 				fieldLabel = "Grid",
-				row = "${index}");
+				row = ${index});
 		}
 	}
 
 	@description = "This is a test for LRQA-68573. This test verifies that Label and Help text can be set."
-	@priority = "5"
+	@priority = 5
 	test CanSetLabelAndHelpText {
 		NavItem.gotoStructures();
 
@@ -278,7 +278,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68573. This test verifies that Label can be shown or hidden."
-	@priority = "3"
+	@priority = 3
 	test CanSetLabelToShownOrHidden {
 		NavItem.gotoStructures();
 
@@ -308,7 +308,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68573. This test verifies that multiple options on Column and Row can be set."
-	@priority = "5"
+	@priority = 5
 	test CanSetMultipleOptions {
 		NavItem.gotoStructures();
 
@@ -345,6 +345,49 @@ definition {
 			fieldFieldLabel = "Grid",
 			optionFieldLabel = "Columns",
 			optionLabelList = "Option 1,Option 2,Option 3");
+	}
+
+	@description = "Check if Grid Field details can be seen."
+	@priority = 4
+	test ViewGridFieldDetails {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Grid Structure");
+
+		DEBuilder.addField(
+			fieldLabel = "Grid",
+			fieldName = "Grid");
+
+		DEBuilder.openField(
+			fieldLabel = "Grid",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Grid");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Grid");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "Grid Structure");
+
+		DEBuilder.openField(
+			fieldLabel = "Grid",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Grid");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Grid");
 	}
 
 }

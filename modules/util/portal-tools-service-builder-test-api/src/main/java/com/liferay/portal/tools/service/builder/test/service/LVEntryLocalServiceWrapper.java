@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link LVEntryLocalService}.
@@ -26,43 +18,47 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class LVEntryLocalServiceWrapper
 	implements LVEntryLocalService, ServiceWrapper<LVEntryLocalService> {
 
+	public LVEntryLocalServiceWrapper() {
+		this(null);
+	}
+
 	public LVEntryLocalServiceWrapper(LVEntryLocalService lvEntryLocalService) {
 		_lvEntryLocalService = lvEntryLocalService;
 	}
 
 	@Override
-	public void addBigDecimalEntryLVEntries(
+	public boolean addBigDecimalEntryLVEntries(
 		long bigDecimalEntryId,
 		java.util.List
 			<com.liferay.portal.tools.service.builder.test.model.LVEntry>
 				lvEntries) {
 
-		_lvEntryLocalService.addBigDecimalEntryLVEntries(
+		return _lvEntryLocalService.addBigDecimalEntryLVEntries(
 			bigDecimalEntryId, lvEntries);
 	}
 
 	@Override
-	public void addBigDecimalEntryLVEntries(
+	public boolean addBigDecimalEntryLVEntries(
 		long bigDecimalEntryId, long[] lvEntryIds) {
 
-		_lvEntryLocalService.addBigDecimalEntryLVEntries(
+		return _lvEntryLocalService.addBigDecimalEntryLVEntries(
 			bigDecimalEntryId, lvEntryIds);
 	}
 
 	@Override
-	public void addBigDecimalEntryLVEntry(
+	public boolean addBigDecimalEntryLVEntry(
 		long bigDecimalEntryId, long lvEntryId) {
 
-		_lvEntryLocalService.addBigDecimalEntryLVEntry(
+		return _lvEntryLocalService.addBigDecimalEntryLVEntry(
 			bigDecimalEntryId, lvEntryId);
 	}
 
 	@Override
-	public void addBigDecimalEntryLVEntry(
+	public boolean addBigDecimalEntryLVEntry(
 		long bigDecimalEntryId,
 		com.liferay.portal.tools.service.builder.test.model.LVEntry lvEntry) {
 
-		_lvEntryLocalService.addBigDecimalEntryLVEntry(
+		return _lvEntryLocalService.addBigDecimalEntryLVEntry(
 			bigDecimalEntryId, lvEntry);
 	}
 
@@ -676,7 +672,7 @@ public class LVEntryLocalServiceWrapper
 	 * <strong>Important:</strong> Inspect LVEntryLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 	 * </p>
 	 *
-	 * @param lvEntry the lv entry
+	 * @param draftLVEntry the lv entry
 	 * @return the lv entry that was updated
 	 */
 	@Override
@@ -714,6 +710,11 @@ public class LVEntryLocalServiceWrapper
 
 		return _lvEntryLocalService.updateLVEntryLocalizations(
 			draftLVEntry, titleMap, contentMap);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _lvEntryLocalService.getBasePersistence();
 	}
 
 	@Override

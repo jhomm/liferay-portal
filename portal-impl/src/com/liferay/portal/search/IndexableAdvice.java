@@ -1,33 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search;
 
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.portal.kernel.aop.AopMethodInvocation;
 import com.liferay.portal.kernel.aop.ChainableMethodAdvice;
 import com.liferay.portal.kernel.dependency.manager.DependencyManagerSyncUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.IndexWriterHelperUtil;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.SearchException;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.CompanyInheritableThreadLocalCallable;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.util.PortalInstances;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -61,7 +56,7 @@ public class IndexableAdvice extends ChainableMethodAdvice {
 		}
 
 		return new IndexableContext(
-			returnType.getName(), indexable.type(),
+			indexable.callbackKey(), returnType.getName(), indexable.type(),
 			_getServiceContextParameterIndex(method));
 	}
 
@@ -75,11 +70,11 @@ public class IndexableAdvice extends ChainableMethodAdvice {
 			return;
 		}
 
-		if (CompanyThreadLocal.isDeleteInProcess() ||
+		if (PortalInstances.isCurrentCompanyInDeletionProcess() ||
 			IndexWriterHelperUtil.isIndexReadOnly()) {
 
 			if (_log.isDebugEnabled()) {
-				if (CompanyThreadLocal.isDeleteInProcess()) {
+				if (PortalInstances.isCurrentCompanyInDeletionProcess()) {
 					_log.debug(
 						"Skip indexing because company delete is in process");
 				}
@@ -98,24 +93,26 @@ public class IndexableAdvice extends ChainableMethodAdvice {
 
 		Indexer<Object> indexer = IndexerRegistryUtil.getIndexer(name);
 
-		if (indexer == null) {
-			DependencyManagerSyncUtil.registerSyncCallable(
-				() -> {
-					Indexer<Object> curIndexer = IndexerRegistryUtil.getIndexer(
-						name);
-
-					if (curIndexer != null) {
-						_reindex(
-							curIndexer, indexableContext, arguments, result);
-					}
-
-					return null;
-				});
+		if (indexer != null) {
+			_reindex(indexer, indexableContext, arguments, result);
 
 			return;
 		}
 
-		_reindex(indexer, indexableContext, arguments, result);
+		DependencyManagerSyncUtil.registerSyncCallable(
+			new CompanyInheritableThreadLocalCallable<>(
+				() -> {
+					Indexer<Object> curIndexer = IndexerRegistryUtil.getIndexer(
+						name);
+
+					if (curIndexer == null) {
+						return null;
+					}
+
+					_reindex(curIndexer, indexableContext, arguments, result);
+
+					return null;
+				}));
 	}
 
 	private int _getServiceContextParameterIndex(Method method) {
@@ -162,23 +159,39 @@ public class IndexableAdvice extends ChainableMethodAdvice {
 			indexer.delete(result);
 		}
 		else {
-			indexer.reindex(result);
+			Indexable.Callback callback = _callbacks.getService(
+				indexableContext._callbackKey);
+
+			if (callback == null) {
+				indexer.reindex(result);
+			}
+			else {
+				callback.reindex((BaseModel<?>)result);
+			}
 		}
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		IndexableAdvice.class);
 
+	private static final ServiceTrackerMap<String, Indexable.Callback>
+		_callbacks = ServiceTrackerMapFactory.openSingleValueMap(
+			SystemBundleUtil.getBundleContext(), Indexable.Callback.class,
+			"key");
+
 	private static class IndexableContext {
 
 		private IndexableContext(
-			String name, IndexableType indexableType, int serviceContextIndex) {
+			String callbackKey, String name, IndexableType indexableType,
+			int serviceContextIndex) {
 
+			_callbackKey = callbackKey;
 			_name = name;
 			_indexableType = indexableType;
 			_serviceContextIndex = serviceContextIndex;
 		}
 
+		private final String _callbackKey;
 		private final IndexableType _indexableType;
 		private final String _name;
 		private final int _serviceContextIndex;

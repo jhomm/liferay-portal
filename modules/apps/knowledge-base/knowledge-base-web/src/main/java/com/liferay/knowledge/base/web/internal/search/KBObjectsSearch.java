@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.search;
@@ -18,15 +9,10 @@ import com.liferay.knowledge.base.constants.KBPortletKeys;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.PortalPreferences;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 
-import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
 /**
  * @author Peter Shin
@@ -44,43 +30,14 @@ public class KBObjectsSearch extends SearchContainer<Object> {
 			iteratorURL, null, EMPTY_RESULTS_MESSAGE);
 
 		try {
-			PortalPreferences preferences =
-				PortletPreferencesFactoryUtil.getPortalPreferences(
-					portletRequest);
-
-			PortletPreferences portletPreferences =
-				PortletPreferencesFactoryUtil.getPortletSetup(portletRequest);
-
-			String portletOrderByCol = portletPreferences.getValue(
-				"kbArticlesOrderByCol", "priority");
-			String portletOrderByType = portletPreferences.getValue(
-				"kbArticlesOrderByType", "asc");
-
-			String oldOrderByCol = preferences.getValue(
-				KBPortletKeys.KNOWLEDGE_BASE_ADMIN, "kb-articles-order-by-col",
-				portletOrderByCol);
-			String oldOrderByType = preferences.getValue(
-				KBPortletKeys.KNOWLEDGE_BASE_ADMIN, "kb-articles-order-by-type",
-				portletOrderByType);
-
-			String orderByCol = ParamUtil.getString(
-				portletRequest, "orderByCol", oldOrderByCol);
-			String orderByType = ParamUtil.getString(
-				portletRequest, "orderByType", oldOrderByType);
-
-			if (!Objects.equals(orderByCol, oldOrderByCol) ||
-				!Objects.equals(orderByType, oldOrderByType)) {
-
-				preferences.setValue(
-					KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
-					"kb-articles-order-by-col", orderByCol);
-				preferences.setValue(
-					KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
-					"kb-articles-order-by-type", orderByType);
-			}
-
-			setOrderByCol(orderByCol);
-			setOrderByType(orderByType);
+			setOrderByCol(
+				SearchOrderByUtil.getOrderByCol(
+					portletRequest, KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+					"kb-articles-order-by-col", "priority"));
+			setOrderByType(
+				SearchOrderByUtil.getOrderByType(
+					portletRequest, KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+					"kb-articles-order-by-type", "asc"));
 		}
 		catch (Exception exception) {
 			_log.error(

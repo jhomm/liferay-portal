@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CommerceCatalogCacheModel
-	implements CacheModel<CommerceCatalog>, Externalizable {
+	implements CacheModel<CommerceCatalog>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,7 +40,10 @@ public class CommerceCatalogCacheModel
 		CommerceCatalogCacheModel commerceCatalogCacheModel =
 			(CommerceCatalogCacheModel)object;
 
-		if (commerceCatalogId == commerceCatalogCacheModel.commerceCatalogId) {
+		if ((commerceCatalogId ==
+				commerceCatalogCacheModel.commerceCatalogId) &&
+			(mvccVersion == commerceCatalogCacheModel.mvccVersion)) {
+
 			return true;
 		}
 
@@ -57,14 +52,32 @@ public class CommerceCatalogCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceCatalogId);
+		int hashCode = HashUtil.hash(0, commerceCatalogId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(31);
 
-		sb.append("{externalReferenceCode=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", uuid=");
+		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
 		sb.append(", commerceCatalogId=");
 		sb.append(commerceCatalogId);
@@ -78,6 +91,8 @@ public class CommerceCatalogCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", accountEntryId=");
+		sb.append(accountEntryId);
 		sb.append(", name=");
 		sb.append(name);
 		sb.append(", commerceCurrencyCode=");
@@ -94,6 +109,16 @@ public class CommerceCatalogCacheModel
 	@Override
 	public CommerceCatalog toEntityModel() {
 		CommerceCatalogImpl commerceCatalogImpl = new CommerceCatalogImpl();
+
+		commerceCatalogImpl.setMvccVersion(mvccVersion);
+		commerceCatalogImpl.setCtCollectionId(ctCollectionId);
+
+		if (uuid == null) {
+			commerceCatalogImpl.setUuid("");
+		}
+		else {
+			commerceCatalogImpl.setUuid(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			commerceCatalogImpl.setExternalReferenceCode("");
@@ -127,6 +152,8 @@ public class CommerceCatalogCacheModel
 			commerceCatalogImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		commerceCatalogImpl.setAccountEntryId(accountEntryId);
+
 		if (name == null) {
 			commerceCatalogImpl.setName("");
 		}
@@ -158,6 +185,10 @@ public class CommerceCatalogCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
+		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
 		commerceCatalogId = objectInput.readLong();
@@ -168,6 +199,8 @@ public class CommerceCatalogCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
+
+		accountEntryId = objectInput.readLong();
 		name = objectInput.readUTF();
 		commerceCurrencyCode = objectInput.readUTF();
 		catalogDefaultLanguageId = objectInput.readUTF();
@@ -177,6 +210,17 @@ public class CommerceCatalogCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
+
 		if (externalReferenceCode == null) {
 			objectOutput.writeUTF("");
 		}
@@ -199,6 +243,8 @@ public class CommerceCatalogCacheModel
 
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
+
+		objectOutput.writeLong(accountEntryId);
 
 		if (name == null) {
 			objectOutput.writeUTF("");
@@ -224,6 +270,9 @@ public class CommerceCatalogCacheModel
 		objectOutput.writeBoolean(system);
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
+	public String uuid;
 	public String externalReferenceCode;
 	public long commerceCatalogId;
 	public long companyId;
@@ -231,6 +280,7 @@ public class CommerceCatalogCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public long accountEntryId;
 	public String name;
 	public String commerceCurrencyCode;
 	public String catalogDefaultLanguageId;

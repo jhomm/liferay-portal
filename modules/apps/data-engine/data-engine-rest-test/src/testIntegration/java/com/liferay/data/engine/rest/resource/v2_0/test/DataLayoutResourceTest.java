@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.resource.v2_0.test;
@@ -27,27 +18,39 @@ import com.liferay.data.engine.rest.client.pagination.Page;
 import com.liferay.data.engine.rest.client.pagination.Pagination;
 import com.liferay.data.engine.rest.client.problem.Problem;
 import com.liferay.data.engine.rest.client.resource.v2_0.DataDefinitionResource;
+import com.liferay.data.engine.rest.client.resource.v2_0.DataLayoutResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataLayoutTestUtil;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.data.engine.rest.strategy.util.DataRecordValueKeyUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.Inject;
+import com.liferay.portal.util.PropsValues;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.hamcrest.CoreMatchers;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -57,6 +60,19 @@ import org.junit.runner.RunWith;
 @DataGuard(scope = DataGuard.Scope.METHOD)
 @RunWith(Arquillian.class)
 public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		BaseDataLayoutResourceTestCase.setUpClass();
+
+		ModelResourceActionTestUtil.populateModelResourceAction(
+			_resourceActions);
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
+	}
 
 	@Before
 	@Override
@@ -212,7 +228,7 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 			DataDefinitionResource.builder();
 
 		DataDefinitionResource dataDefinitionResource = builder.authentication(
-			"test@liferay.com", "test"
+			"test@liferay.com", TestPropsValues.USER_PASSWORD
 		).build();
 
 		DataDefinition dataDefinition =
@@ -224,6 +240,8 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 						dataDefinitionFields = new DataDefinitionField[] {
 							new DataDefinitionField() {
 								{
+									customProperties = Collections.singletonMap(
+										"fieldReference", "fieldReference1");
 									fieldType = "text";
 									label = HashMapBuilder.<String, Object>put(
 										"en_US", RandomTestUtil.randomString()
@@ -235,6 +253,8 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 							},
 							new DataDefinitionField() {
 								{
+									customProperties = Collections.singletonMap(
+										"fieldReference", "fieldReference2");
 									fieldType = "text";
 									label = HashMapBuilder.<String, Object>put(
 										"en_US", RandomTestUtil.randomString()
@@ -273,32 +293,28 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 				dataDefinition.getId(),
 				new DataLayout() {
 					{
+						dataDefinitionId = dataDefinition.getId();
 						dataLayoutKey = RandomTestUtil.randomString();
-						paginationMode = "wizard";
-
-						setDataDefinitionId(dataDefinition.getId());
-						setDataLayoutPages(
-							new DataLayoutPage[] {
-								new DataLayoutPage() {
-									{
-										dataLayoutRows = new DataLayoutRow[] {
-											dataLayoutRow
-										};
-										description =
-											HashMapBuilder.<String, Object>put(
-												"en_US", "Page Description"
-											).build();
-										title =
-											HashMapBuilder.<String, Object>put(
-												"en_US", "Page Title"
-											).build();
-									}
+						dataLayoutPages = new DataLayoutPage[] {
+							new DataLayoutPage() {
+								{
+									dataLayoutRows = new DataLayoutRow[] {
+										dataLayoutRow
+									};
+									description =
+										HashMapBuilder.<String, Object>put(
+											"en_US", "Page Description"
+										).build();
+									title = HashMapBuilder.<String, Object>put(
+										"en_US", "Page Title"
+									).build();
 								}
-							});
-						setName(
-							HashMapBuilder.<String, Object>put(
-								"en_US", RandomTestUtil.randomString()
-							).build());
+							}
+						};
+						name = HashMapBuilder.<String, Object>put(
+							"en_US", RandomTestUtil.randomString()
+						).build();
+						paginationMode = "wizard";
 					}
 				});
 
@@ -309,7 +325,9 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 
 			Assert.assertEquals("text1", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustNotDuplicateFieldName", problem.getType());
+			Assert.assertEquals(
+				"DataLayoutValidationException.MustNotDuplicateFieldName",
+				problem.getType());
 		}
 		finally {
 			dataDefinitionResource.deleteDataDefinition(dataDefinition.getId());
@@ -319,6 +337,14 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	@Override
 	@Test
 	public void testPostDataLayoutContext() throws Exception {
+		DataLayoutResource.Builder builder = DataLayoutResource.builder();
+
+		dataLayoutResource = builder.authentication(
+			"test@liferay.com", PropsValues.DEFAULT_ADMIN_PASSWORD
+		).locale(
+			LocaleUtil.ENGLISH
+		).build();
+
 		DataDefinition dataDefinition =
 			DataDefinitionTestUtil.addDataDefinitionWithDataLayout(
 				testGroup.getGroupId());
@@ -356,6 +382,13 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 			content, CoreMatchers.containsString("testContainer"));
 		Assert.assertThat(content, CoreMatchers.containsString("valor"));
 		Assert.assertThat(content, CoreMatchers.containsString("value"));
+
+		JSONObject contentJSONObject = JSONFactoryUtil.createJSONObject(
+			content);
+
+		Assert.assertEquals(
+			LocaleUtil.ENGLISH.getLanguage(),
+			contentJSONObject.getString("editingLanguageId"));
 
 		Assert.assertEquals(200, httpResponse.getStatusCode());
 	}
@@ -412,15 +445,15 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 	}
 
 	@Override
-	protected DataLayout testDeleteDataLayout_addDataLayout() throws Exception {
+	protected DataLayout testDeleteDataDefinitionDataLayout_addDataLayout()
+		throws Exception {
+
 		return dataLayoutResource.postDataDefinitionDataLayout(
 			_dataDefinition.getId(), randomDataLayout());
 	}
 
 	@Override
-	protected DataLayout testDeleteDataLayoutsDataDefinition_addDataLayout()
-		throws Exception {
-
+	protected DataLayout testDeleteDataLayout_addDataLayout() throws Exception {
 		return dataLayoutResource.postDataDefinitionDataLayout(
 			_dataDefinition.getId(), randomDataLayout());
 	}
@@ -430,6 +463,15 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 		throws Exception {
 
 		return _dataDefinition.getId();
+	}
+
+	@Override
+	protected Map<String, Map<String, String>>
+			testGetDataDefinitionDataLayoutsPage_getExpectedActions(
+				Long dataDefinitionId)
+		throws Exception {
+
+		return Collections.emptyMap();
 	}
 
 	@Override
@@ -543,6 +585,9 @@ public class DataLayoutResourceTest extends BaseDataLayoutResourceTestCase {
 
 		dataLayoutResource.deleteDataLayout(dataLayout.getId());
 	}
+
+	@Inject
+	private static ResourceActions _resourceActions;
 
 	private DataDefinition _dataDefinition;
 	private DataDefinition _irrelevantDataDefinition;

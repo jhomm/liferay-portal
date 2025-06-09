@@ -1,0 +1,482 @@
+@component-name = "portal-content-management"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Documents and Media";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		DMNavigator.openToConfigInSystemSettings(portlet = "FFMPEG Video Converter");
+
+		FormFields.enableCheckbox(fieldName = "enabled");
+
+		SystemSettings.saveConfiguration();
+
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Video Title In Site",
+			groupName = "Site Name",
+			mimeType = "video/mp4",
+			sourceFileName = "Document_1.mp4");
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONDepot.deleteDepot(depotName = "Test Depot Name");
+
+			JSONGroup.deleteGroupByName(groupName = "Site Name");
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "This test ensures that no internal video is not listed via item selector after disabling FFMPEG."
+	@priority = 3
+	@refactordone
+	test AssertNoVideoInItemSelectorAfterDisablingFFmpeg {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		DMNavigator.openToConfigInSystemSettings(portlet = "FFMPEG Video Converter");
+
+		FormFields.disableCheckbox(fieldName = "enabled");
+
+		PortletEntry.update();
+
+		BlogsNavigator.openToAddEntry(siteURLKey = "site-name");
+
+		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
+
+		ItemSelector.gotoItemSelectorViaAlloyEditor(video = "true");
+
+		ItemSelector.configureFilterViaSelectFile(
+			filterBy = "Everywhere",
+			navTab = "Documents and Media");
+
+		AssertElementNotPresent(
+			key_card = "DM Video Title In Site",
+			locator1 = "Card#CARD_TITLE");
+	}
+
+	@description = "This test ensures that an internal video can be selected via item selector when creating Blog."
+	@priority = 5
+	@refactordone
+	test CanAddBlogEntryWithEmbeddedVideo {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
+
+		Blogs.addEntry(
+			embedVideo = "true",
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title",
+			navTab = "Documents and Media",
+			videoName = "Document_1.mp4",
+			videoShortcutTitle = "DM Video Title In Site",
+			viewInternalVideoPreview = "true");
+
+		BlogsNavigator.openToEditEntryInSite(
+			entryTitle = "Blogs Entry Title",
+			groupName = "Site Name",
+			siteURLKey = "site-name");
+
+		BlogsEntry.viewEntryCP(
+			embedVideo = "true",
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title",
+			internalVideo = "true",
+			videoName = "Document_1.mp4");
+	}
+
+	@description = "This test ensures that an internal video can be selected via item selector when creating KB article."
+	@priority = 5
+	@refactordone
+	test CanAddKBArticleWithEmbeddedVideo {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
+
+		KBArticle.addCP(
+			embedVideo = "true",
+			kbArticleContent = "Knowledge Base Video Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			navTab = "Documents and Media",
+			videoName = "Document_1.mp4",
+			videoShortcutTitle = "DM Video Title In Site",
+			viewInternalVideoPreview = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
+
+		KBArticle.viewCP(
+			embedVideo = "true",
+			internalVideo = "true",
+			kbArticleContent = "Knowledge Base Video Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			videoName = "Document_1.mp4");
+	}
+
+	@description = "This test ensures that an internal video can be selected via item selector when creating Web Content."
+	@priority = 5
+	@refactordone
+	test CanAddWCWithEmbeddedVideo {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONDepot.connectSite(
+			depotName = "Test Depot Name",
+			groupName = "Site Name");
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Video Title In Depot",
+			groupName = "Test Depot Name",
+			mimeType = "video/mp4",
+			sourceFileName = "Document_1.mp4");
+
+		WebContentNavigator.openToAddBasicArticle(
+			groupName = "Site Name",
+			siteURLKey = "site-name");
+
+		WebContent.addCP(
+			depotName = "Test Depot Name",
+			embedVideo = "true",
+			navTab = "Documents and Media",
+			videoShortcutTitle = "DM Video Title In Depot",
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC WebContent Title");
+
+		AssertElementPresent.assertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+
+		WebContent.publishWithPermissions();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "Site Name");
+
+		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "WC WebContent Title");
+
+		WaitForVisible(locator1 = "IFrame#MODAL_BODY");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+
+		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addCP(
+			embedVideo = "true",
+			navTab = "Documents and Media",
+			videoShortcutTitle = "DM Video Title In Depot",
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC WebContent Title In Depot");
+
+		AssertElementPresent.assertVisible(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "CKEditor#BODY_FIELD_IFRAME_2");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+
+		WebContent.publishWithPermissions();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "Site Name");
+
+		WebContentNavigator.gotoPreviewEntryCP(webContentTitle = "WC WebContent Title");
+
+		WaitForVisible(locator1 = "IFrame#MODAL_BODY");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+	}
+
+	@priority = 3
+	@refactorneeded
+	test CanConfigureFFmpegVideoPreviewSizePG {
+		property custom.properties = "dl.file.entry.preview.video.height=0${line.separator}dl.file.entry.preview.video.width=0";
+		property test.assert.warning.exceptions = "false";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Documents and Media Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Documents and Media Page",
+			widgetName = "Documents and Media");
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Document_1.mp4",
+			groupName = "Guest",
+			mimeType = "video/mp4",
+			sourceFileName = "Document_1.mp4");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+		DMNavigator.gotoDocumentPG(dmDocumentTitle = "Document_1.mp4");
+
+		// Pausing 5 seconds to be able to test a timing issue that was present in LPD-26535
+
+		Pause(value1 = 5000);
+
+		WaitForElementPresent(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
+
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
+
+		var videoGenerationTimeCounter = 0;
+		var videoGenerationTimeMaxWaitTime = 6;
+
+		while ((${videoGenerationTimeCounter} != ${videoGenerationTimeMaxWaitTime}) && (IsElementPresent(locator1 = "Message#INFO"))) {
+			var videoGenerationTimeCounter = ${videoGenerationTimeCounter} + 1;
+
+			Navigator.gotoPage(pageName = "Documents and Media Page");
+
+			DMNavigator.gotoDocumentPG(dmDocumentTitle = "Document_1.mp4");
+		}
+
+		var videoPreviewThumbnailLink = selenium.getAttribute("//video@poster");
+
+		SelectFrameTop();
+
+		Navigator.openSpecificURL(url = ${videoPreviewThumbnailLink});
+
+		AssertElementPresent(
+			key_imageSourceURL = "Document_1.mp4",
+			locator1 = "DocumentsAndMediaDocument#DOCUMENT_VIEWPORT_PREVIEW");
+
+		AssertElementNotPresent(
+			key_videoGenerationThumbnailResolution = 640,
+			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
+
+		AssertElementNotPresent(
+			key_videoGenerationThumbnailResolution = 360,
+			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
+
+		AssertElementPresent.assertElementPresent(
+			key_videoGenerationThumbnailResolution = 854,
+			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
+
+		AssertElementPresent.assertElementPresent(
+			key_videoGenerationThumbnailResolution = 480,
+			locator1 = "DocumentsAndMediaDocument#VIDEO_GENERATION_THUMBNAIL_RESOLUTION");
+	}
+
+	@description = "This test ensures that a blog entry created with an internal video embedded in it can be exported and imported."
+	@priority = 3
+	@refactordone
+	test CanImportExportedBlogWithEmbeddedVideo {
+		property portal.release = "quarantine";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
+
+		Blogs.addEntry(
+			embedVideo = "true",
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title",
+			navTab = "Documents and Media",
+			videoName = "Document_1.mp4",
+			videoShortcutTitle = "DM Video Title In Site",
+			viewInternalVideoPreview = "true");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
+
+		LAR.exportPortlet(larFileName = "Blog_portlet.lar");
+
+		JSONGroup.deleteGroupByName(groupName = "Site Name");
+
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
+
+		LAR.importPortlet(larFileName = "Blog_portlet.lar");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "Site Name");
+
+		BlogsNavigator.gotoEntryCP(entryTitle = "Blogs Entry Title");
+
+		BlogsEntry.viewEntryCP(
+			embedVideo = "true",
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title",
+			internalVideo = "true",
+			videoName = "Document_1.mp4");
+	}
+
+	@description = "This test ensures that a kb article created with an internal video embedded in it can be exported and imported."
+	@priority = 3
+	@refactordone
+	test CanImportExportedKBWithEmbeddedVideo {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Video Title In Depot",
+			groupName = "Test Depot Name",
+			mimeType = "video/mp4",
+			sourceFileName = "Document_1.mp4");
+
+		JSONDepot.connectSite(
+			depotName = "Test Depot Name",
+			groupName = "Site Name");
+
+		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
+
+		KBArticle.addCP(
+			depotName = "Test Depot Name",
+			embedVideo = "true",
+			kbArticleContent = "Knowledge Base Video Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			navTab = "Documents and Media",
+			videoName = "Document_1.mp4",
+			videoShortcutTitle = "DM Video Title In Depot",
+			viewInternalVideoPreview = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
+
+		LAR.exportPortlet(larFileName = "KB_portlet.lar");
+
+		JSONGroup.deleteGroupByName(groupName = "Site Name");
+
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
+
+		LAR.importPortlet(larFileName = "KB_portlet.lar");
+
+		KBAdmin.openKBAdmin(siteURLKey = "Site Name");
+
+		KBArticle.viewCP(
+			embedVideo = "true",
+			internalVideo = "true",
+			kbArticleContent = "Knowledge Base Video Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			videoName = "Document_1.mp4");
+	}
+
+	@description = "This ensures that a depot internal video cannot be viewed from the disconnected site."
+	@priority = 3
+	@refactordone
+	test CanViewFromDisconnectedSite {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONDepot.connectSite(
+			depotName = "Test Depot Name",
+			groupName = "Site Name");
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Video Title In Depot",
+			groupName = "Test Depot Name",
+			mimeType = "video/mp4",
+			sourceFileName = "Document_1.mp4");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
+
+		BlogsNavigator.gotoAddEntry();
+
+		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
+
+		ItemSelector.gotoItemSelectorViaAlloyEditor(video = "true");
+
+		ItemSelector.configureFilterViaSelectFile(
+			filterBy = "Everywhere",
+			navTab = "Documents and Media");
+
+		AssertElementPresent(
+			key_card = "DM Video Title In Depot",
+			locator1 = "Card#CARD_TITLE");
+
+		JSONDepot.disconnectSite(groupName = "Site Name");
+
+		BlogsNavigator.openBlogsAdmin(siteURLKey = "site-name");
+
+		BlogsNavigator.gotoAddEntry();
+
+		BlogsEntry.addTitle(entryTitle = "Blogs Entry Title");
+
+		ItemSelector.gotoItemSelectorViaAlloyEditor(video = "true");
+
+		ItemSelector.configureFilterViaSelectFile(
+			filterBy = "Everywhere",
+			navTab = "Documents and Media");
+
+		AssertElementNotPresent(
+			key_card = "DM Video Title In Depot",
+			locator1 = "Card#CARD_TITLE");
+	}
+
+	@description = "This test ensures that the video preview generated for a document remains intact after FFmpeg is disabled."
+	@priority = 4
+	test PreviewRemainsAfterDisablingFFmpeg {
+		property portal.acceptance = "quarantine";
+		property portal.release = "quarantine";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		DMNavigator.openToEntryInAdmin(
+			dmDocumentTitle = "DM Video Title In Site",
+			groupName = "Site Name",
+			siteURLKey = "site-name");
+
+		DMDocument.viewVideoPreviewGeneratingInfo();
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+
+		DMNavigator.openToConfigInSystemSettings(portlet = "FFMPEG Video Converter");
+
+		FormFields.disableCheckbox(fieldName = "enabled");
+
+		PortletEntry.update();
+
+		FormFields.viewCheckboxNotChecked(fieldName = "enabled");
+
+		DMNavigator.openToEntryInAdmin(
+			dmDocumentTitle = "DM Video Title In Site",
+			groupName = "Site Name",
+			siteURLKey = "site-name");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+	}
+
+}

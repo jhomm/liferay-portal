@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.service.persistence.test;
@@ -218,6 +209,17 @@ public class FriendlyURLEntryLocalizationPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_C_U_C() throws Exception {
+		_persistence.countByC_C_U_C(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "",
+			RandomTestUtil.nextLong());
+
+		_persistence.countByC_C_U_C(0L, 0L, "null", 0L);
+
+		_persistence.countByC_C_U_C(0L, 0L, (String)null, 0L);
+	}
+
+	@Test
 	public void testCountByG_C_C_L() throws Exception {
 		_persistence.countByG_C_C_L(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -226,6 +228,26 @@ public class FriendlyURLEntryLocalizationPersistenceTest {
 		_persistence.countByG_C_C_L(0L, 0L, 0L, "null");
 
 		_persistence.countByG_C_C_L(0L, 0L, 0L, (String)null);
+	}
+
+	@Test
+	public void testCountByG_C_L_U() throws Exception {
+		_persistence.countByG_C_L_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "", "");
+
+		_persistence.countByG_C_L_U(0L, 0L, "null", "null");
+
+		_persistence.countByG_C_L_U(0L, 0L, (String)null, (String)null);
+	}
+
+	@Test
+	public void testCountByG_C_NotL_U() throws Exception {
+		_persistence.countByG_C_NotL_U(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "", "");
+
+		_persistence.countByG_C_NotL_U(0L, 0L, "null", "null");
+
+		_persistence.countByG_C_NotL_U(0L, 0L, (String)null, (String)null);
 	}
 
 	@Test
@@ -564,6 +586,11 @@ public class FriendlyURLEntryLocalizationPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				friendlyURLEntryLocalization, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "classNameId"));
+		Assert.assertEquals(
+			friendlyURLEntryLocalization.getLanguageId(),
+			ReflectionTestUtil.invoke(
+				friendlyURLEntryLocalization, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "languageId"));
 		Assert.assertEquals(
 			friendlyURLEntryLocalization.getUrlTitle(),
 			ReflectionTestUtil.invoke(

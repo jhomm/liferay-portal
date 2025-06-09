@@ -1,34 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.editor.configuration.internal;
 
-import com.liferay.document.library.kernel.util.AudioProcessorUtil;
+import com.liferay.document.library.kernel.processor.AudioProcessorUtil;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.portal.kernel.editor.configuration.BaseEditorConfigContributor;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.xuggler.XugglerUtil;
 
 import java.util.Map;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Antonio Pol
@@ -36,7 +27,7 @@ import org.osgi.service.component.annotations.Component;
 @Component(
 	property = {
 		"editor.name=alloyeditor",
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL
 	},
 	service = EditorConfigContributor.class
 )
@@ -49,23 +40,23 @@ public class JournalMediaEditorConfigContributor
 		ThemeDisplay themeDisplay,
 		RequestBackedPortletURLFactory requestBackedPortletURLFactory) {
 
-		if (!AudioProcessorUtil.isEnabled() && !XugglerUtil.isEnabled()) {
+		if (!AudioProcessorUtil.isEnabled()) {
 			return;
 		}
 
 		JSONObject toolbarsJSONObject = jsonObject.getJSONObject("toolbars");
 
 		if (toolbarsJSONObject == null) {
-			toolbarsJSONObject = JSONFactoryUtil.createJSONObject();
+			toolbarsJSONObject = _jsonFactory.createJSONObject();
 		}
 
 		JSONObject addJSONObject = toolbarsJSONObject.getJSONObject("add");
 
 		if (addJSONObject == null) {
-			addJSONObject = JSONFactoryUtil.createJSONObject();
+			addJSONObject = _jsonFactory.createJSONObject();
 		}
 
-		JSONArray buttonsJSONArray = JSONFactoryUtil.createJSONArray();
+		JSONArray buttonsJSONArray = _jsonFactory.createJSONArray();
 
 		JSONArray currentButtonsJSONArray = addJSONObject.getJSONArray(
 			"buttons");
@@ -91,5 +82,8 @@ public class JournalMediaEditorConfigContributor
 
 		jsonObject.put("toolbars", toolbarsJSONObject);
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

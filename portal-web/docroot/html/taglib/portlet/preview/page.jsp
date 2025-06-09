@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -39,7 +30,7 @@ if (Validator.isNull(width)) {
 	</c:if>
 
 	<div class="preview" id="<%= randomNamespace %>">
-		<div style="margin: 3px; width: <%= Validator.isNotNull(previewWidth) ? ((GetterUtil.getInteger(previewWidth) + 20) + "px") : "100%" %>;">
+		<div id="<%= randomNamespace %>previewContainer">
 			<liferay-portlet:runtime
 				persistSettings="<%= false %>"
 				portletName="<%= portletResource %>"
@@ -50,5 +41,35 @@ if (Validator.isNull(width)) {
 </div>
 
 <aui:script>
-	Liferay.Util.disableElements('#<%= randomNamespace %>');
+	var randomElement = document.getElementById('<%= randomNamespace %>');
+
+	if (randomElement) {
+		var previewContainer = document.getElementById('<%= randomNamespace %>previewContainer');
+
+		if (previewContainer) {
+			previewContainer.style.margin = '3px';
+			previewContainer.style.width = <%= previewWidth %> ? parseInt('<%= HtmlUtil.escape(previewWidth) %>', 10) + 20 + 'px' : '100%';
+		}
+
+		var children = randomElement.getElementsByTagName('*');
+
+		var emptyFnFalse = function () {
+			return false;
+		};
+
+		for (var i = children.length - 1; i >= 0; i--) {
+			var item = children[i];
+
+			item.action = '';
+			item.disabled = true;
+			item.href = 'javascript:void(0);';
+			item.onclick = emptyFnFalse;
+			item.onmouseenter = emptyFnFalse;
+			item.onmouseleave = emptyFnFalse;
+			item.onmouseout = emptyFnFalse;
+			item.onmouseover = emptyFnFalse;
+			item.onsubmit = emptyFnFalse;
+			item.style.cursor = 'default';
+		}
+	}
 </aui:script>

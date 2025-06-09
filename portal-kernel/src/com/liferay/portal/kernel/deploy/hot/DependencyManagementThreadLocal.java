@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.deploy.hot;
@@ -26,11 +17,17 @@ import com.liferay.portal.kernel.util.PropsUtil;
 public class DependencyManagementThreadLocal {
 
 	public static Boolean isEnabled() {
-		return _enabled.get();
+		if (_enabled != null) {
+			return _enabled.get();
+		}
+
+		return Boolean.FALSE;
 	}
 
 	public static void setEnabled(boolean enabled) {
-		_enabled.set(enabled);
+		if (_enabled != null) {
+			_enabled.set(enabled);
+		}
 	}
 
 	private static final ThreadLocal<Boolean> _enabled;
@@ -42,18 +39,11 @@ public class DependencyManagementThreadLocal {
 				true)) {
 
 			_enabled = new CentralizedThreadLocal<>(
-				DependencyManagementThreadLocal.class + ".enabled",
+				DependencyManagementThreadLocal.class + "._enabled",
 				() -> Boolean.TRUE);
 		}
 		else {
-			_enabled = new ThreadLocal<Boolean>() {
-
-				@Override
-				public Boolean get() {
-					return Boolean.FALSE;
-				}
-
-			};
+			_enabled = null;
 		}
 	}
 

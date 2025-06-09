@@ -1,41 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.web.internal.portlet;
 
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
-import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
 import com.liferay.portal.workflow.portlet.tab.WorkflowPortletTab;
+import com.liferay.portal.workflow.portlet.tab.WorkflowPortletTabRegistry;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adam Brandizzi
@@ -51,15 +38,9 @@ public abstract class BaseWorkflowPortlet extends MVCPortlet {
 	public abstract List<String> getWorkflowPortletTabNames();
 
 	public List<WorkflowPortletTab> getWorkflowPortletTabs() {
-		List<String> workflowPortletTabNames = getWorkflowPortletTabNames();
-
-		Stream<String> stream = workflowPortletTabNames.stream();
-
-		return stream.map(
-			name -> _workflowPortletTabServiceTrackerMap.getService(name)
-		).collect(
-			Collectors.toList()
-		);
+		return TransformUtil.transform(
+			getWorkflowPortletTabNames(),
+			workflowPortletTabRegistry::getWorkflowPortletTab);
 	}
 
 	@Override
@@ -89,25 +70,12 @@ public abstract class BaseWorkflowPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	@Activate
-	protected void activate(BundleContext bundleContext) {
-		_workflowPortletTabServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, WorkflowPortletTab.class,
-				"portal.workflow.tabs.name");
-	}
-
 	protected void addRenderRequestAttributes(RenderRequest renderRequest) {
 		renderRequest.setAttribute(
 			WorkflowWebKeys.SELECTED_WORKFLOW_PORTLET_TAB,
-			getSelectedWorkflowPortletTab(renderRequest));
+			_getSelectedWorkflowPortletTab(renderRequest));
 		renderRequest.setAttribute(
 			WorkflowWebKeys.WORKFLOW_PORTLET_TABS, getWorkflowPortletTabs());
-	}
-
-	@Deactivate
-	protected void deactivate() {
-		_workflowPortletTabServiceTrackerMap.close();
 	}
 
 	@Override
@@ -122,21 +90,17 @@ public abstract class BaseWorkflowPortlet extends MVCPortlet {
 		super.doDispatch(renderRequest, renderResponse);
 	}
 
-	protected WorkflowPortletTab getSelectedWorkflowPortletTab(
+	@Reference
+	protected WorkflowPortletTabRegistry workflowPortletTabRegistry;
+
+	private WorkflowPortletTab _getSelectedWorkflowPortletTab(
 		RenderRequest renderRequest) {
 
 		String workflowPortletTabName = ParamUtil.get(
 			renderRequest, "tab", getDefaultWorkflowPortletTabName());
 
-		return _workflowPortletTabServiceTrackerMap.getService(
+		return workflowPortletTabRegistry.getWorkflowPortletTab(
 			workflowPortletTabName);
 	}
-
-	protected WorkflowPortletTab getWorkflowPortletTab(String name) {
-		return _workflowPortletTabServiceTrackerMap.getService(name);
-	}
-
-	private ServiceTrackerMap<String, WorkflowPortletTab>
-		_workflowPortletTabServiceTrackerMap;
 
 }

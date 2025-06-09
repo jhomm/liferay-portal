@@ -22,3 +22,43 @@ f9bc8ce1273f02b91c3a12086ceb3890e154b4ad^..07adfdc898b5b90004d592db0ed139ad688a2
 # Bundle Version 5.1.0
 #
 1e8627d8f29367dab21310900767539dfe3d182d^..d5dcfba8f05a18ba0033d35d05dd61e022c663f0=COMMERCE-6557
+
+#
+# Bundle Version 5.1.4
+#
+d5dcfba8f05a18ba0033d35d05dd61e022c663f0^..83f5a4f767e2ca410eb8346af19903fd9f8be06e=LPS-164866
+
+#
+# Bundle Version 5.2.0
+#
+83f5a4f767e2ca410eb8346af19903fd9f8be06e^..0cedec638de39aa16e6aabc7d919851f1a53c20a=COMMERCE-10763 COMMERCE-10769
+
+#
+# Bundle Version 5.3.0
+#
+0cedec638de39aa16e6aabc7d919851f1a53c20a^..b15273e152db5f22a7f16ba137932314ac0d2369=COMMERCE-11044
+
+#
+# Bundle Version 6.0.0
+#
+b15273e152db5f22a7f16ba137932314ac0d2369^..383866eaf6e4c93beede954e290e223af1a01daf=COMMERCE-11152
+
+#
+# Bundle Version 6.0.1
+#
+383866eaf6e4c93beede954e290e223af1a01daf^..0ac4ff6ee76ddb2ff88b07d634decea016a6cb3d=LPS-188912
+
+#
+# Bundle Version 7.0.0
+#
+0ac4ff6ee76ddb2ff88b07d634decea016a6cb3d^..ee5d26597d0e00dff933b3f14f6dd170edfe7530=COMMERCE-12776
+
+#
+# Bundle Version 7.0.1
+#
+ee5d26597d0e00dff933b3f14f6dd170edfe7530^..c0113c25b5d714a182b9c5349355bc6f275f5cd9=LPD-46081
+
+#
+# Bundle Version 7.0.2
+#
+c0113c25b5d714a182b9c5349355bc6f275f5cd9^..75f5cd24638a558d4d33e3c00ae86725cb29a8eb=LPD-56284

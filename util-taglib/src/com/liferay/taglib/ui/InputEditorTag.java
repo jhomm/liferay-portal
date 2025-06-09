@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -25,9 +16,9 @@ import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
-import com.liferay.portal.kernel.servlet.BrowserSnifferUtil;
 import com.liferay.portal.kernel.servlet.PortalWebResourcesUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -37,6 +28,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.BaseValidatorTagSupport;
 import com.liferay.taglib.aui.AUIUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
@@ -48,13 +46,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
@@ -65,10 +56,6 @@ public class InputEditorTag extends BaseValidatorTagSupport {
 
 	public static Editor getEditor(
 		HttpServletRequest httpServletRequest, String editorName) {
-
-		if (!BrowserSnifferUtil.isRtf(httpServletRequest)) {
-			return _serviceTrackerMap.getService("simple");
-		}
 
 		if (Validator.isNull(editorName) ||
 			!_serviceTrackerMap.containsKey(editorName)) {
@@ -339,12 +326,12 @@ public class InputEditorTag extends BaseValidatorTagSupport {
 	}
 
 	protected String getCssClasses() {
+		String cssClasses = "portlet ";
+
 		HttpServletRequest httpServletRequest = getRequest();
 
 		Portlet portlet = (Portlet)httpServletRequest.getAttribute(
 			WebKeys.RENDER_PORTLET);
-
-		String cssClasses = "portlet ";
 
 		if (portlet != null) {
 			cssClasses += portlet.getCssClassWrapper();
@@ -356,12 +343,8 @@ public class InputEditorTag extends BaseValidatorTagSupport {
 	protected Map<String, Object> getData() {
 		HttpServletRequest httpServletRequest = getRequest();
 
-		String portletId = (String)httpServletRequest.getAttribute(
-			WebKeys.PORTLET_ID);
-
-		if (portletId == null) {
-			return _data;
-		}
+		String portletId = GetterUtil.getString(
+			(String)httpServletRequest.getAttribute(WebKeys.PORTLET_ID));
 
 		Map<String, Object> attributes = new HashMap<>();
 
@@ -494,6 +477,9 @@ public class InputEditorTag extends BaseValidatorTagSupport {
 		httpServletRequest.setAttribute(
 			"liferay-ui:input-editor:cssClasses", getCssClasses());
 		httpServletRequest.setAttribute(
+			"liferay-ui:input-editor:data",
+			_mapProxyProviderFunction.apply(new LazyDataInvocationHandler()));
+		httpServletRequest.setAttribute(
 			"liferay-ui:input-editor:editorName",
 			getEditorName(httpServletRequest));
 		httpServletRequest.setAttribute(
@@ -530,10 +516,6 @@ public class InputEditorTag extends BaseValidatorTagSupport {
 			"liferay-ui:input-editor:toolbarSet", getToolbarSet());
 		httpServletRequest.setAttribute(
 			"liferay-ui:input-editor:width", _width);
-
-		httpServletRequest.setAttribute(
-			"liferay-ui:input-editor:data",
-			_mapProxyProviderFunction.apply(new LazyDataInvocationHandler()));
 	}
 
 	private static final String _EDITOR_WYSIWYG_DEFAULT = PropsUtil.get(

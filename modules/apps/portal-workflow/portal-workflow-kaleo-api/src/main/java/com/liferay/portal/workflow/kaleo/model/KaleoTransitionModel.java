@@ -1,26 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
+import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.GroupedModel;
+import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
 
 import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -37,7 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface KaleoTransitionModel
-	extends BaseModel<KaleoTransition>, GroupedModel, MVCCModel, ShardedModel {
+	extends BaseModel<KaleoTransition>, CTModel<KaleoTransition>, GroupedModel,
+			LocalizedModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -50,6 +47,7 @@ public interface KaleoTransitionModel
 	 *
 	 * @return the primary key of this kaleo transition
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -57,6 +55,7 @@ public interface KaleoTransitionModel
 	 *
 	 * @param primaryKey the primary key of this kaleo transition
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -74,6 +73,22 @@ public interface KaleoTransitionModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this kaleo transition.
+	 *
+	 * @return the ct collection ID of this kaleo transition
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this kaleo transition.
+	 *
+	 * @param ctCollectionId the ct collection ID of this kaleo transition
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the kaleo transition ID of this kaleo transition.
@@ -260,6 +275,105 @@ public interface KaleoTransitionModel
 	public void setName(String name);
 
 	/**
+	 * Returns the label of this kaleo transition.
+	 *
+	 * @return the label of this kaleo transition
+	 */
+	public String getLabel();
+
+	/**
+	 * Returns the localized label of this kaleo transition in the language. Uses the default language if no localization exists for the requested language.
+	 *
+	 * @param locale the locale of the language
+	 * @return the localized label of this kaleo transition
+	 */
+	@AutoEscape
+	public String getLabel(Locale locale);
+
+	/**
+	 * Returns the localized label of this kaleo transition in the language, optionally using the default language if no localization exists for the requested language.
+	 *
+	 * @param locale the local of the language
+	 * @param useDefault whether to use the default language if no localization exists for the requested language
+	 * @return the localized label of this kaleo transition. If <code>useDefault</code> is <code>false</code> and no localization exists for the requested language, an empty string will be returned.
+	 */
+	@AutoEscape
+	public String getLabel(Locale locale, boolean useDefault);
+
+	/**
+	 * Returns the localized label of this kaleo transition in the language. Uses the default language if no localization exists for the requested language.
+	 *
+	 * @param languageId the ID of the language
+	 * @return the localized label of this kaleo transition
+	 */
+	@AutoEscape
+	public String getLabel(String languageId);
+
+	/**
+	 * Returns the localized label of this kaleo transition in the language, optionally using the default language if no localization exists for the requested language.
+	 *
+	 * @param languageId the ID of the language
+	 * @param useDefault whether to use the default language if no localization exists for the requested language
+	 * @return the localized label of this kaleo transition
+	 */
+	@AutoEscape
+	public String getLabel(String languageId, boolean useDefault);
+
+	@AutoEscape
+	public String getLabelCurrentLanguageId();
+
+	@AutoEscape
+	public String getLabelCurrentValue();
+
+	/**
+	 * Returns a map of the locales and localized labels of this kaleo transition.
+	 *
+	 * @return the locales and localized labels of this kaleo transition
+	 */
+	public Map<Locale, String> getLabelMap();
+
+	/**
+	 * Sets the label of this kaleo transition.
+	 *
+	 * @param label the label of this kaleo transition
+	 */
+	public void setLabel(String label);
+
+	/**
+	 * Sets the localized label of this kaleo transition in the language.
+	 *
+	 * @param label the localized label of this kaleo transition
+	 * @param locale the locale of the language
+	 */
+	public void setLabel(String label, Locale locale);
+
+	/**
+	 * Sets the localized label of this kaleo transition in the language, and sets the default locale.
+	 *
+	 * @param label the localized label of this kaleo transition
+	 * @param locale the locale of the language
+	 * @param defaultLocale the default locale
+	 */
+	public void setLabel(String label, Locale locale, Locale defaultLocale);
+
+	public void setLabelCurrentLanguageId(String languageId);
+
+	/**
+	 * Sets the localized labels of this kaleo transition from the map of locales and localized labels.
+	 *
+	 * @param labelMap the locales and localized labels of this kaleo transition
+	 */
+	public void setLabelMap(Map<Locale, String> labelMap);
+
+	/**
+	 * Sets the localized labels of this kaleo transition from the map of locales and localized labels, and sets the default locale.
+	 *
+	 * @param labelMap the locales and localized labels of this kaleo transition
+	 * @param defaultLocale the default locale
+	 */
+	public void setLabelMap(Map<Locale, String> labelMap, Locale defaultLocale);
+
+	/**
 	 * Returns the description of this kaleo transition.
 	 *
 	 * @return the description of this kaleo transition
@@ -354,6 +468,23 @@ public interface KaleoTransitionModel
 	public void setDefaultTransition(boolean defaultTransition);
 
 	@Override
+	public String[] getAvailableLanguageIds();
+
+	@Override
+	public String getDefaultLanguageId();
+
+	@Override
+	public void prepareLocalizedFieldsForImport() throws LocaleException;
+
+	@Override
+	public void prepareLocalizedFieldsForImport(Locale defaultImportLocale)
+		throws LocaleException;
+
+	@Override
 	public KaleoTransition cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

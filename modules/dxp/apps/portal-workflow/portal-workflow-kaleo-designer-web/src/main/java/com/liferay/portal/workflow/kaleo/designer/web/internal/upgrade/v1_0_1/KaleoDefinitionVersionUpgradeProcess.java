@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.upgrade.v1_0_1;
@@ -33,7 +24,6 @@ import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalServ
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 
 /**
@@ -54,7 +44,14 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 		_userLocalService = userLocalService;
 	}
 
-	protected KaleoDefinition addKaleoDefinition(
+	@Override
+	protected void doUpgrade() throws Exception {
+		if (hasTable("KaleoDraftDefinition")) {
+			_upgradeKaleoDefinitionVersion();
+		}
+	}
+
+	private KaleoDefinition _addKaleoDefinition(
 			long groupId, long userId, Timestamp createDate,
 			Timestamp modifiedDate, String name, String title, String content,
 			int version)
@@ -85,13 +82,13 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 		return _kaleoDefinitionLocalService.addKaleoDefinition(kaleoDefinition);
 	}
 
-	protected void addKaleoDefinitionVersion(
+	private void _addKaleoDefinitionVersion(
 			long groupId, long companyId, long userId, Timestamp createDate,
 			Timestamp modifiedDate, String name, String title, String content,
 			int version, int draftVersion)
 		throws PortalException {
 
-		removeDuplicatesKaleoDefinitionVersion(
+		_removeDuplicatesKaleoDefinitionVersion(
 			companyId, name, version, draftVersion);
 
 		ServiceContext serviceContext = new ServiceContext();
@@ -105,6 +102,7 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 				"status", WorkflowConstants.STATUS_DRAFT);
 		}
 
+		serviceContext.setCompanyId(companyId);
 		serviceContext.setCreateDate(createDate);
 		serviceContext.setModifiedDate(modifiedDate);
 		serviceContext.setScopeGroupId(groupId);
@@ -115,25 +113,28 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 				name, serviceContext);
 
 		if (kaleoDefinition == null) {
-			kaleoDefinition = addKaleoDefinition(
-				groupId, userId, createDate, modifiedDate, name, title, content,
-				version);
+			kaleoDefinition = _addKaleoDefinition(
+				groupId, _getValidUserId(companyId, userId), createDate,
+				modifiedDate, name, title, content, version);
 		}
 
 		_kaleoDefinitionVersionLocalService.addKaleoDefinitionVersion(
 			kaleoDefinition.getKaleoDefinitionId(), name, title,
-			StringPool.BLANK, content, getVersion(version, draftVersion),
+			StringPool.BLANK, content, _getVersion(version, draftVersion),
 			serviceContext);
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		if (hasTable("KaleoDraftDefinition")) {
-			upgradeKaleoDefinitionVersion();
+	private long _getValidUserId(long companyId, long userId)
+		throws PortalException {
+
+		if (_userLocalService.fetchUserById(userId) != null) {
+			return userId;
 		}
+
+		return _userLocalService.getGuestUserId(companyId);
 	}
 
-	protected String getVersion(int version, int draftVersion) {
+	private String _getVersion(int version, int draftVersion) {
 		if (version == 0) {
 			version = 1;
 		}
@@ -141,12 +142,12 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 		return version + StringPool.PERIOD + --draftVersion;
 	}
 
-	protected boolean hasApprovedKaleoDefinitionVersion(
+	private boolean _hasApprovedKaleoDefinitionVersion(
 		long companyId, String name, int version, int draftVersion) {
 
 		KaleoDefinitionVersion kaleoDefinitionVersion =
 			_kaleoDefinitionVersionLocalService.fetchKaleoDefinitionVersion(
-				companyId, name, getVersion(version, draftVersion));
+				companyId, name, _getVersion(version, draftVersion));
 
 		if (kaleoDefinitionVersion == null) {
 			return false;
@@ -161,27 +162,25 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 		return false;
 	}
 
-	protected void removeDuplicatesKaleoDefinitionVersion(
+	private void _removeDuplicatesKaleoDefinitionVersion(
 		long companyId, String name, int version, int draftVersion) {
 
 		try {
 			KaleoDefinitionVersion kaleoDefinitionVersion =
 				_kaleoDefinitionVersionLocalService.getKaleoDefinitionVersion(
-					companyId, name, getVersion(version, draftVersion));
+					companyId, name, _getVersion(version, draftVersion));
 
 			_kaleoDefinitionVersionLocalService.deleteKaleoDefinitionVersion(
 				kaleoDefinitionVersion);
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 	}
 
-	protected void upgradeKaleoDefinitionVersion()
-		throws PortalException, SQLException {
-
+	private void _upgradeKaleoDefinitionVersion() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select * from KaleoDraftDefinition order by version, " +
@@ -194,7 +193,7 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 				int version = resultSet.getInt("version");
 				int draftVersion = resultSet.getInt("draftVersion");
 
-				if (hasApprovedKaleoDefinitionVersion(
+				if (_hasApprovedKaleoDefinitionVersion(
 						companyId, name, version, draftVersion)) {
 
 					continue;
@@ -207,21 +206,11 @@ public class KaleoDefinitionVersionUpgradeProcess extends UpgradeProcess {
 				String title = resultSet.getString("title");
 				String content = resultSet.getString("content");
 
-				addKaleoDefinitionVersion(
+				_addKaleoDefinitionVersion(
 					groupId, companyId, userId, createDate, modifiedDate, name,
 					title, content, version, draftVersion);
 			}
 		}
-	}
-
-	private long _getValidUserId(long companyId, long userId)
-		throws PortalException {
-
-		if (_userLocalService.fetchUserById(userId) != null) {
-			return userId;
-		}
-
-		return _userLocalService.getDefaultUserId(companyId);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

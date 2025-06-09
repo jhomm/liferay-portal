@@ -1,21 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.indexer;
 
+import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.model.CTCollectionModel;
+import com.liferay.change.tracking.service.CTCollectionLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.configuration.Filter;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
@@ -24,25 +22,29 @@ import com.liferay.portal.kernel.model.WorkflowedModel;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.search.SearchException;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.batch.BatchIndexingActionable;
+import com.liferay.portal.search.batch.BatchIndexingHelper;
 import com.liferay.portal.search.index.IndexStatusManager;
 import com.liferay.portal.search.index.UpdateDocumentIndexWriter;
 import com.liferay.portal.search.indexer.BaseModelRetriever;
 import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
 import com.liferay.portal.search.indexer.IndexerWriter;
 import com.liferay.portal.search.internal.index.contributor.helper.ModelIndexerWriterDocumentHelperImpl;
+import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.permission.SearchPermissionIndexWriter;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
 
 import java.util.Collection;
-import java.util.Optional;
+import java.util.List;
 
 /**
  * @author Michael C. Han
@@ -53,15 +55,20 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 	public IndexerWriterImpl(
 		ModelSearchSettings modelSearchSettings,
 		BaseModelRetriever baseModelRetriever,
+		BatchIndexingHelper batchIndexingHelper,
+		CTCollectionLocalService ctCollectionLocalService,
 		ModelIndexerWriterContributor<T> modelIndexerWriterContributor,
 		IndexerDocumentBuilder indexerDocumentBuilder,
 		SearchPermissionIndexWriter searchPermissionIndexWriter,
 		UpdateDocumentIndexWriter updateDocumentIndexWriter,
 		IndexStatusManager indexStatusManager,
-		IndexWriterHelper indexWriterHelper, Props props) {
+		IndexWriterHelper indexWriterHelper, Props props,
+		UIDFactory uidFactory) {
 
 		_modelSearchSettings = modelSearchSettings;
 		_baseModelRetriever = baseModelRetriever;
+		_batchIndexingHelper = batchIndexingHelper;
+		_ctCollectionLocalService = ctCollectionLocalService;
 		_modelIndexerWriterContributor = modelIndexerWriterContributor;
 		_indexerDocumentBuilder = indexerDocumentBuilder;
 		_searchPermissionIndexWriter = searchPermissionIndexWriter;
@@ -69,6 +76,7 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 		_indexStatusManager = indexStatusManager;
 		_indexWriterHelper = indexWriterHelper;
 		_props = props;
+		_uidFactory = uidFactory;
 	}
 
 	@Override
@@ -78,9 +86,7 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 		}
 
 		try {
-			_indexWriterHelper.deleteDocument(
-				_modelSearchSettings.getSearchEngineId(), companyId, uid,
-				_modelSearchSettings.isCommitImmediately());
+			_indexWriterHelper.deleteDocument(companyId, uid, false);
 		}
 		catch (SearchException searchException) {
 			throw new RuntimeException(searchException);
@@ -93,11 +99,11 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 			return;
 		}
 
-		long companyId = _modelIndexerWriterContributor.getCompanyId(baseModel);
+		delete(
+			_modelIndexerWriterContributor.getCompanyId(baseModel),
+			_uidFactory.getUID(baseModel));
 
-		String uid = _indexerDocumentBuilder.getDocumentUID(baseModel);
-
-		delete(companyId, uid);
+		_modelIndexerWriterContributor.modelDeleted(baseModel);
 	}
 
 	@Override
@@ -105,8 +111,9 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 		BatchIndexingActionable batchIndexingActionable =
 			_modelIndexerWriterContributor.getBatchIndexingActionable();
 
-		batchIndexingActionable.setSearchEngineId(
-			_modelSearchSettings.getSearchEngineId());
+		batchIndexingActionable.setInterval(
+			_batchIndexingHelper.getBulkSize(
+				_modelSearchSettings.getClassName()));
 
 		return batchIndexingActionable;
 	}
@@ -151,11 +158,14 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 			return;
 		}
 
-		Optional<BaseModel<?>> baseModelOptional =
-			_baseModelRetriever.fetchBaseModel(
-				_modelSearchSettings.getClassName(), classPK);
+		BaseModel<?> baseModel = _baseModelRetriever.fetchBaseModel(
+			_modelSearchSettings.getClassName(), classPK);
 
-		baseModelOptional.ifPresent(baseModel -> reindex((T)baseModel));
+		if (baseModel == null) {
+			return;
+		}
+
+		reindex((T)baseModel);
 	}
 
 	@Override
@@ -164,47 +174,62 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 			return;
 		}
 
-		long companyThreadLocalCompanyId = CompanyThreadLocal.getCompanyId();
+		long[] companyIds = new long[ids.length];
 
-		try {
-			for (String id : ids) {
-				long companyId = GetterUtil.getLong(id);
+		for (int i = 0; i < ids.length; i++) {
+			companyIds[i] = GetterUtil.getLong(ids[i]);
+		}
 
-				CompanyThreadLocal.setCompanyId(companyId);
+		CompanyLocalServiceUtil.forEachCompanyId(
+			companyId -> {
+				for (long ctCollectionId : _getCTCollectionIds(companyId)) {
+					try (SafeCloseable safeCloseable1 =
+							CTSQLModeThreadLocal.setCTSQLModeWithSafeCloseable(
+								CTSQLModeThreadLocal.CTSQLMode.CT_ONLY);
+						SafeCloseable safeCloseable2 =
+							CTCollectionThreadLocal.
+								setCTCollectionIdWithSafeCloseable(
+									ctCollectionId)) {
 
-				BatchIndexingActionable batchIndexingActionable =
-					getBatchIndexingActionable();
+						BatchIndexingActionable batchIndexingActionable =
+							getBatchIndexingActionable();
 
-				batchIndexingActionable.setCompanyId(companyId);
+						batchIndexingActionable.setCompanyId(companyId);
 
-				_modelIndexerWriterContributor.customize(
-					batchIndexingActionable,
-					new ModelIndexerWriterDocumentHelperImpl(
-						_modelSearchSettings.getClassName(),
-						_indexerDocumentBuilder));
-
-				try {
-					batchIndexingActionable.performActions();
-				}
-				catch (Exception exception) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							StringBundler.concat(
-								"Error reindexing all ",
+						_modelIndexerWriterContributor.customize(
+							batchIndexingActionable,
+							new ModelIndexerWriterDocumentHelperImpl(
 								_modelSearchSettings.getClassName(),
-								" for company: ", companyId),
-							exception);
+								_indexerDocumentBuilder));
+
+						try {
+							batchIndexingActionable.performActions();
+						}
+						catch (Exception exception) {
+							if (_log.isWarnEnabled()) {
+								_log.warn(
+									StringBundler.concat(
+										"Unable to reindex ",
+										_modelSearchSettings.getClassName(),
+										" for change tracking collection ID ",
+										ctCollectionId, " and company ID ",
+										companyId),
+									exception);
+							}
+						}
 					}
 				}
-			}
-		}
-		finally {
-			CompanyThreadLocal.setCompanyId(companyThreadLocalCompanyId);
-		}
+			},
+			companyIds);
 	}
 
 	@Override
 	public void reindex(T baseModel) {
+		reindex(baseModel, true);
+	}
+
+	@Override
+	public void reindex(T baseModel, boolean notify) {
 		if (!isEnabled() || (baseModel == null)) {
 			return;
 		}
@@ -217,12 +242,15 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 			Document document = _indexerDocumentBuilder.getDocument(baseModel);
 
 			_updateDocumentIndexWriter.updateDocument(
-				_modelSearchSettings.getSearchEngineId(),
 				_modelIndexerWriterContributor.getCompanyId(baseModel),
-				document, _modelSearchSettings.isCommitImmediately());
+				document);
 		}
 		else if (indexerWriterMode == IndexerWriterMode.DELETE) {
-			delete(baseModel);
+			long companyId = _modelIndexerWriterContributor.getCompanyId(
+				baseModel);
+			String uid = _indexerDocumentBuilder.getDocumentUID(baseModel);
+
+			delete(companyId, uid);
 		}
 		else if (indexerWriterMode == IndexerWriterMode.SKIP) {
 			if (_log.isDebugEnabled()) {
@@ -230,7 +258,9 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 			}
 		}
 
-		_modelIndexerWriterContributor.modelIndexed(baseModel);
+		if (notify) {
+			_modelIndexerWriterContributor.modelIndexed(baseModel);
+		}
 	}
 
 	@Override
@@ -242,8 +272,23 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 	public void updatePermissionFields(T baseModel) {
 		_searchPermissionIndexWriter.updatePermissionFields(
 			baseModel, _modelIndexerWriterContributor.getCompanyId(baseModel),
-			_modelSearchSettings.getSearchEngineId(),
-			_modelSearchSettings.isCommitImmediately());
+			false);
+	}
+
+	private List<Long> _getCTCollectionIds(long companyId) {
+		List<Long> ctCollectionIds = ListUtil.toList(
+			_ctCollectionLocalService.getCTCollections(
+				companyId,
+				new int[] {
+					WorkflowConstants.STATUS_DRAFT,
+					WorkflowConstants.STATUS_SCHEDULED
+				},
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null),
+			CTCollectionModel::getCtCollectionId);
+
+		ctCollectionIds.add(CTConstants.CT_COLLECTION_ID_PRODUCTION);
+
+		return ctCollectionIds;
 	}
 
 	private IndexerWriterMode _getIndexerWriterMode(T baseModel) {
@@ -272,6 +317,8 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 		IndexerWriterImpl.class);
 
 	private final BaseModelRetriever _baseModelRetriever;
+	private final BatchIndexingHelper _batchIndexingHelper;
+	private final CTCollectionLocalService _ctCollectionLocalService;
 	private final IndexerDocumentBuilder _indexerDocumentBuilder;
 	private Boolean _indexerEnabled;
 	private final IndexStatusManager _indexStatusManager;
@@ -281,6 +328,7 @@ public class IndexerWriterImpl<T extends BaseModel<?>>
 	private final ModelSearchSettings _modelSearchSettings;
 	private final Props _props;
 	private final SearchPermissionIndexWriter _searchPermissionIndexWriter;
+	private final UIDFactory _uidFactory;
 	private final UpdateDocumentIndexWriter _updateDocumentIndexWriter;
 
 }

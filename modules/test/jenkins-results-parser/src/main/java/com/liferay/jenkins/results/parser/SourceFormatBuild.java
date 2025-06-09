@@ -1,25 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
 import com.liferay.jenkins.results.parser.failure.message.generator.FailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.FormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.GenericFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.NodeSourceFormatFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.PoshiValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.RebaseFailureMessageGenerator;
+import com.liferay.jenkins.results.parser.failure.message.generator.RelevantRuleValidationFailureMessageGenerator;
 import com.liferay.jenkins.results.parser.failure.message.generator.SourceFormatFailureMessageGenerator;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -152,7 +147,7 @@ public class SourceFormatBuild
 		String result = getResult();
 		int successCount = 0;
 
-		if (result.equals("SUCCESS")) {
+		if (Objects.equals(result, "SUCCESS")) {
 			successCount++;
 		}
 
@@ -161,7 +156,7 @@ public class SourceFormatBuild
 			String.valueOf(getDownstreamBuildCountByResult(null) + 1),
 			"jobs PASSED");
 
-		if (result.equals("SUCCESS")) {
+		if (Objects.equals(result, "SUCCESS")) {
 			Dom4JUtil.addToElement(
 				detailsElement, getSuccessfulJobSummaryElement());
 		}
@@ -172,7 +167,7 @@ public class SourceFormatBuild
 
 		Dom4JUtil.addToElement(detailsElement, getMoreDetailsElement());
 
-		if (!result.equals("SUCCESS")) {
+		if (!Objects.equals(result, "SUCCESS")) {
 			Dom4JUtil.addToElement(
 				detailsElement, (Object[])getBuildFailureElements());
 		}
@@ -221,8 +216,12 @@ public class SourceFormatBuild
 	@Override
 	protected FailureMessageGenerator[] getFailureMessageGenerators() {
 		return new FailureMessageGenerator[] {
+			new NodeSourceFormatFailureMessageGenerator(),
+			//
+			new FormatFailureMessageGenerator(),
 			new PoshiValidationFailureMessageGenerator(),
 			new RebaseFailureMessageGenerator(),
+			new RelevantRuleValidationFailureMessageGenerator(),
 			new SourceFormatFailureMessageGenerator(),
 			//
 			new GenericFailureMessageGenerator()
@@ -241,12 +240,7 @@ public class SourceFormatBuild
 			"https://github.com/", senderUsername, "/",
 			gitHubRemoteGitRepositoryName, "/tree/", senderBranchName);
 
-		Workspace workspace = getWorkspace();
-
-		WorkspaceGitRepository primaryWorkspaceGitRepository =
-			workspace.getPrimaryWorkspaceGitRepository();
-
-		String senderSHA = primaryWorkspaceGitRepository.getSenderBranchSHA();
+		String senderSHA = pullRequest.getSenderSHA();
 
 		String senderCommitURL = JenkinsResultsParserUtil.combine(
 			"https://github.com/", senderUsername, "/",

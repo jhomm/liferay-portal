@@ -1,28 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.background.task;
 
 import com.liferay.exportimport.kernel.exception.ExportImportIOException;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
-import com.liferay.exportimport.kernel.service.ExportImportLocalServiceUtil;
+import com.liferay.exportimport.kernel.service.ExportImportLocalService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskResult;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.FileUtil;
@@ -34,10 +26,17 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Daniel Kocsis
  * @author Akos Thurzo
  */
+@Component(
+	property = "background.task.executor.class.name=com.liferay.exportimport.internal.background.task.LayoutImportBackgroundTaskExecutor",
+	service = BackgroundTaskExecutor.class
+)
 public class LayoutImportBackgroundTaskExecutor
 	extends BaseExportImportBackgroundTaskExecutor {
 
@@ -52,16 +51,7 @@ public class LayoutImportBackgroundTaskExecutor
 
 	@Override
 	public BackgroundTaskExecutor clone() {
-		LayoutImportBackgroundTaskExecutor layoutImportBackgroundTaskExecutor =
-			new LayoutImportBackgroundTaskExecutor();
-
-		layoutImportBackgroundTaskExecutor.
-			setBackgroundTaskStatusMessageTranslator(
-				getBackgroundTaskStatusMessageTranslator());
-		layoutImportBackgroundTaskExecutor.setIsolationLevel(
-			getIsolationLevel());
-
-		return layoutImportBackgroundTaskExecutor;
+		return this;
 	}
 
 	@Override
@@ -110,13 +100,19 @@ public class LayoutImportBackgroundTaskExecutor
 			}
 			finally {
 				FileUtil.delete(file);
+
+				PortletFileRepositoryUtil.deletePortletFileEntry(
+					attachmentsFileEntry.getFileEntryId());
 			}
 		}
 
 		return BackgroundTaskResult.SUCCESS;
 	}
 
-	private static class LayoutImportCallable implements Callable<Void> {
+	@Reference
+	private ExportImportLocalService _exportImportLocalService;
+
+	private class LayoutImportCallable implements Callable<Void> {
 
 		public LayoutImportCallable(
 			ExportImportConfiguration exportImportConfiguration, File file) {
@@ -127,10 +123,10 @@ public class LayoutImportBackgroundTaskExecutor
 
 		@Override
 		public Void call() throws PortalException {
-			ExportImportLocalServiceUtil.importLayoutsDataDeletions(
+			_exportImportLocalService.importLayoutsDataDeletions(
 				_exportImportConfiguration, _file);
 
-			ExportImportLocalServiceUtil.importLayouts(
+			_exportImportLocalService.importLayouts(
 				_exportImportConfiguration, _file);
 
 			return null;

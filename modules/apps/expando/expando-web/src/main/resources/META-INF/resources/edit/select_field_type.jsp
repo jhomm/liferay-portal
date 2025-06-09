@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -33,6 +24,7 @@ if (columnId > 0) {
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(redirect);
+portletDisplay.setURLBackTitle(ParamUtil.getString(request, "backTitle"));
 
 renderResponse.setTitle(modelResourceName + ": " + ((expandoColumn == null) ? LanguageUtil.get(request, "new-custom-field") : expandoColumn.getName()));
 
@@ -42,8 +34,8 @@ PortalUtil.addPortletBreadcrumbEntry(
 	request, LanguageUtil.get(request, "view-attributes"),
 	PortletURLBuilder.createRenderURL(
 		renderResponse
-	).setMVCPath(
-		"/view_attributes.jsp"
+	).setMVCRenderCommandName(
+		"/expando/view_attributes"
 	).setRedirect(
 		redirect
 	).setParameter(
@@ -56,11 +48,8 @@ PortalUtil.addPortletBreadcrumbEntry(request, LanguageUtil.get(request, "new-cus
 <clay:container-fluid
 	cssClass="container-view"
 >
-	<liferay-ui:breadcrumb
-		showCurrentGroup="<%= false %>"
-		showGuestGroup="<%= false %>"
-		showLayout="<%= false %>"
-		showPortletBreadcrumb="<%= true %>"
+	<liferay-site-navigation:breadcrumb
+		breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 	/>
 
 	<liferay-frontend:edit-form>

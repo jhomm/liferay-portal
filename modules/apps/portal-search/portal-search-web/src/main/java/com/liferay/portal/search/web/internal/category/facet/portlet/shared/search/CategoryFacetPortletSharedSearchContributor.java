@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.category.facet.portlet.shared.search;
 
+import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -33,8 +26,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lino Alves
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + CategoryFacetPortletKeys.CATEGORY_FACET,
+	property = "jakarta.portlet.name=" + CategoryFacetPortletKeys.CATEGORY_FACET,
 	service = PortletSharedSearchContributor.class
 )
 public class CategoryFacetPortletSharedSearchContributor
@@ -46,7 +38,8 @@ public class CategoryFacetPortletSharedSearchContributor
 
 		CategoryFacetPortletPreferences categoryFacetPortletPreferences =
 			new CategoryFacetPortletPreferencesImpl(
-				portletSharedSearchSettings.getPortletPreferencesOptional());
+				_assetVocabularyLocalService, _groupLocalService,
+				portletSharedSearchSettings.getPortletPreferences());
 
 		categoryFacetSearchContributor.contribute(
 			portletSharedSearchSettings.getSearchRequestBuilder(),
@@ -57,14 +50,19 @@ public class CategoryFacetPortletSharedSearchContributor
 			).maxTerms(
 				categoryFacetPortletPreferences.getMaxTerms()
 			).selectedCategoryIds(
-				toLongArray(
+				_toLongArray(
 					portletSharedSearchSettings.getParameterValues(
 						categoryFacetPortletPreferences.getParameterName()))
+			).vocabularyIds(
+				categoryFacetPortletPreferences.getVocabularyIds()
 			));
 	}
 
-	protected static long[] toLongArray(String[] parameterValues) {
-		if (!ArrayUtil.isEmpty(parameterValues)) {
+	@Reference
+	protected CategoryFacetSearchContributor categoryFacetSearchContributor;
+
+	private long[] _toLongArray(String[] parameterValues) {
+		if (ArrayUtil.isNotEmpty(parameterValues)) {
 			return ListUtil.toLongArray(
 				Arrays.asList(parameterValues), GetterUtil::getLong);
 		}
@@ -73,6 +71,9 @@ public class CategoryFacetPortletSharedSearchContributor
 	}
 
 	@Reference
-	protected CategoryFacetSearchContributor categoryFacetSearchContributor;
+	private AssetVocabularyLocalService _assetVocabularyLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 }

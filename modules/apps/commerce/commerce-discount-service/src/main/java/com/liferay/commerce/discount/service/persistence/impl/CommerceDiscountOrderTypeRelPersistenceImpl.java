@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.discount.model.impl.CommerceDiscountOrderTypeRelImpl
 import com.liferay.commerce.discount.model.impl.CommerceDiscountOrderTypeRelModelImpl;
 import com.liferay.commerce.discount.service.persistence.CommerceDiscountOrderTypeRelPersistence;
 import com.liferay.commerce.discount.service.persistence.CommerceDiscountOrderTypeRelUtil;
+import com.liferay.commerce.discount.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -43,11 +37,9 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -56,6 +48,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce discount order type rel service.
@@ -67,6 +66,7 @@ import java.util.Set;
  * @author Marco Leo
  * @generated
  */
+@Component(service = CommerceDiscountOrderTypeRelPersistence.class)
 public class CommerceDiscountOrderTypeRelPersistenceImpl
 	extends BasePersistenceImpl<CommerceDiscountOrderTypeRel>
 	implements CommerceDiscountOrderTypeRelPersistence {
@@ -185,7 +185,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceDiscountOrderTypeRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel :
@@ -581,7 +581,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -742,7 +742,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceDiscountOrderTypeRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel :
@@ -1165,7 +1165,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1328,7 +1328,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceDiscountOrderTypeRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel :
@@ -1706,7 +1706,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {commerceDiscountId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1849,7 +1849,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceDiscountOrderTypeRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel :
@@ -2227,7 +2227,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {commerceOrderTypeId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2269,7 +2269,6 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 			"commerceDiscountOrderTypeRel.commerceOrderTypeId = ?";
 
 	private FinderPath _finderPathFetchByCDI_COTI;
-	private FinderPath _finderPathCountByCDI_COTI;
 
 	/**
 	 * Returns the commerce discount order type rel where commerceDiscountId = &#63; and commerceOrderTypeId = &#63; or throws a <code>NoSuchDiscountOrderTypeRelException</code> if it could not be found.
@@ -2347,7 +2346,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByCDI_COTI, finderArgs);
+				_finderPathFetchByCDI_COTI, finderArgs, this);
 		}
 
 		if (result instanceof CommerceDiscountOrderTypeRel) {
@@ -2449,51 +2448,14 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 	public int countByCDI_COTI(
 		long commerceDiscountId, long commerceOrderTypeId) {
 
-		FinderPath finderPath = _finderPathCountByCDI_COTI;
+		CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel =
+			fetchByCDI_COTI(commerceDiscountId, commerceOrderTypeId);
 
-		Object[] finderArgs = new Object[] {
-			commerceDiscountId, commerceOrderTypeId
-		};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COMMERCEDISCOUNTORDERTYPEREL_WHERE);
-
-			sb.append(_FINDER_COLUMN_CDI_COTI_COMMERCEDISCOUNTID_2);
-
-			sb.append(_FINDER_COLUMN_CDI_COTI_COMMERCEORDERTYPEID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(commerceDiscountId);
-
-				queryPos.add(commerceOrderTypeId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceDiscountOrderTypeRel == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_CDI_COTI_COMMERCEDISCOUNTID_2 =
@@ -2633,8 +2595,6 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 			commerceDiscountOrderTypeRelModelImpl.getCommerceOrderTypeId()
 		};
 
-		finderCache.putResult(
-			_finderPathCountByCDI_COTI, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByCDI_COTI, args,
 			commerceDiscountOrderTypeRelModelImpl);
@@ -2997,7 +2957,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceDiscountOrderTypeRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3070,7 +3030,7 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -3125,7 +3085,8 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 	/**
 	 * Initializes the commerce discount order type rel persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -3219,43 +3180,47 @@ public class CommerceDiscountOrderTypeRelPersistenceImpl
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"commerceDiscountId", "commerceOrderTypeId"}, true);
 
-		_finderPathCountByCDI_COTI = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByCDI_COTI",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"commerceDiscountId", "commerceOrderTypeId"}, false);
-
-		_setCommerceDiscountOrderTypeRelUtilPersistence(this);
+		CommerceDiscountOrderTypeRelUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceDiscountOrderTypeRelUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceDiscountOrderTypeRelUtil.setPersistence(null);
 
 		entityCache.removeCache(
 			CommerceDiscountOrderTypeRelImpl.class.getName());
 	}
 
-	private void _setCommerceDiscountOrderTypeRelUtilPersistence(
-		CommerceDiscountOrderTypeRelPersistence
-			commerceDiscountOrderTypeRelPersistence) {
-
-		try {
-			Field field =
-				CommerceDiscountOrderTypeRelUtil.class.getDeclaredField(
-					"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceDiscountOrderTypeRelPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCEDISCOUNTORDERTYPEREL =

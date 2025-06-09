@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.info.item.provider;
@@ -21,6 +12,7 @@ import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeService;
+import com.liferay.document.library.util.DLFileEntryTypeUtil;
 import com.liferay.document.library.web.internal.info.item.FileEntryInfoItemFields;
 import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
 import com.liferay.dynamic.data.mapping.info.item.provider.DDMStructureInfoItemFieldSetProvider;
@@ -33,21 +25,20 @@ import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.field.reader.InfoItemFieldReaderFieldSetProvider;
 import com.liferay.info.item.provider.InfoItemFormProvider;
 import com.liferay.info.localized.InfoLocalizedValue;
+import com.liferay.info.localized.bundle.ModelResourceLocalizedValue;
+import com.liferay.layout.page.template.info.item.provider.DisplayPageInfoItemFieldSetProvider;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.template.info.item.provider.TemplateInfoItemFieldSetProvider;
 
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
 
 import org.osgi.framework.Constants;
 import org.osgi.service.component.annotations.Component;
@@ -68,9 +59,13 @@ public class FileEntryInfoItemFormProvider
 	public InfoForm getInfoForm() {
 		try {
 			return _getInfoForm(
-				_assetEntryInfoItemFieldSetProvider.getInfoFieldSet(
+				assetEntryInfoItemFieldSetProvider.getInfoFieldSet(
 					DLFileEntryConstants.getClassName()),
-				0, 0);
+				0,
+				displayPageInfoItemFieldSetProvider.getInfoFieldSet(
+					FileEntry.class.getName(), StringPool.BLANK,
+					FileEntry.class.getSimpleName(), 0),
+				0);
 		}
 		catch (NoSuchFormVariationException noSuchFormVariationException) {
 			throw new RuntimeException(noSuchFormVariationException);
@@ -87,7 +82,7 @@ public class FileEntryInfoItemFormProvider
 
 			fileEntryTypeId = dlFileEntry.getFileEntryTypeId();
 
-			DDMStructure ddmStructure = _fetchDDMStructure(fileEntryTypeId);
+			DDMStructure ddmStructure = fetchDDMStructure(fileEntryTypeId);
 
 			if (ddmStructure != null) {
 				ddmStructureId = ddmStructure.getStructureId();
@@ -96,11 +91,15 @@ public class FileEntryInfoItemFormProvider
 
 		try {
 			return _getInfoForm(
-				_assetEntryInfoItemFieldSetProvider.getInfoFieldSet(
-					_assetEntryLocalService.getEntry(
+				assetEntryInfoItemFieldSetProvider.getInfoFieldSet(
+					assetEntryLocalService.getEntry(
 						DLFileEntryConstants.getClassName(),
 						fileEntry.getFileEntryId())),
-				ddmStructureId, fileEntryTypeId);
+				ddmStructureId,
+				displayPageInfoItemFieldSetProvider.getInfoFieldSet(
+					FileEntry.class.getName(), String.valueOf(fileEntryTypeId),
+					FileEntry.class.getSimpleName(), 0),
+				fileEntryTypeId);
 		}
 		catch (NoSuchFormVariationException noSuchFormVariationException) {
 			throw new RuntimeException(noSuchFormVariationException);
@@ -119,7 +118,7 @@ public class FileEntryInfoItemFormProvider
 
 		long ddmStructureId = 0;
 
-		DDMStructure ddmStructure = _fetchDDMStructure(
+		DDMStructure ddmStructure = fetchDDMStructure(
 			GetterUtil.getLong(formVariationKey));
 
 		if (ddmStructure != null) {
@@ -127,15 +126,19 @@ public class FileEntryInfoItemFormProvider
 		}
 
 		return _getInfoForm(
-			_assetEntryInfoItemFieldSetProvider.getInfoFieldSet(
+			assetEntryInfoItemFieldSetProvider.getInfoFieldSet(
 				DLFileEntryConstants.getClassName(),
 				GetterUtil.getLong(formVariationKey), groupId),
-			ddmStructureId, GetterUtil.getLong(formVariationKey));
+			ddmStructureId,
+			displayPageInfoItemFieldSetProvider.getInfoFieldSet(
+				FileEntry.class.getName(), String.valueOf(ddmStructureId),
+				FileEntry.class.getSimpleName(), groupId),
+			GetterUtil.getLong(formVariationKey));
 	}
 
-	private DDMStructure _fetchDDMStructure(long fileEntryTypeId) {
+	protected DDMStructure fetchDDMStructure(long fileEntryTypeId) {
 		DLFileEntryType dlFileEntryType =
-			_dlFileEntryTypeLocalService.fetchDLFileEntryType(fileEntryTypeId);
+			dlFileEntryTypeLocalService.fetchDLFileEntryType(fileEntryTypeId);
 
 		if ((dlFileEntryType == null) ||
 			(dlFileEntryType.getDataDefinitionId() == 0)) {
@@ -143,9 +146,43 @@ public class FileEntryInfoItemFormProvider
 			return null;
 		}
 
-		return _ddmStructureLocalService.fetchStructure(
+		return ddmStructureLocalService.fetchStructure(
 			dlFileEntryType.getDataDefinitionId());
 	}
+
+	@Reference
+	protected AssetEntryInfoItemFieldSetProvider
+		assetEntryInfoItemFieldSetProvider;
+
+	@Reference
+	protected AssetEntryLocalService assetEntryLocalService;
+
+	@Reference
+	protected DDMStructureInfoItemFieldSetProvider
+		ddmStructureInfoItemFieldSetProvider;
+
+	@Reference
+	protected DDMStructureLocalService ddmStructureLocalService;
+
+	@Reference
+	protected DisplayPageInfoItemFieldSetProvider
+		displayPageInfoItemFieldSetProvider;
+
+	@Reference
+	protected DLFileEntryTypeLocalService dlFileEntryTypeLocalService;
+
+	@Reference
+	protected DLFileEntryTypeService dlFileEntryTypeService;
+
+	@Reference
+	protected ExpandoInfoItemFieldSetProvider expandoInfoItemFieldSetProvider;
+
+	@Reference
+	protected InfoItemFieldReaderFieldSetProvider
+		infoItemFieldReaderFieldSetProvider;
+
+	@Reference
+	protected TemplateInfoItemFieldSetProvider templateInfoItemFieldSetProvider;
 
 	private InfoFieldSet _getBasicInformationFieldSet() {
 		return InfoFieldSet.builder(
@@ -162,22 +199,11 @@ public class FileEntryInfoItemFormProvider
 		).infoFieldSetEntry(
 			FileEntryInfoItemFields.authorProfileImageInfoField
 		).infoFieldSetEntry(
-			FileEntryInfoItemFields.previewImage
+			FileEntryInfoItemFields.previewImageInfoField
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(getClass(), "basic-information")
 		).name(
 			"basic-information"
-		).build();
-	}
-
-	private InfoFieldSet _getDisplayPageInfoFieldSet() {
-		return InfoFieldSet.builder(
-		).infoFieldSetEntry(
-			FileEntryInfoItemFields.displayPageURLInfoField
-		).labelInfoLocalizedValue(
-			InfoLocalizedValue.localize(getClass(), "display-page")
-		).name(
-			"display-page"
 		).build();
 	}
 
@@ -186,7 +212,7 @@ public class FileEntryInfoItemFormProvider
 		throws NoSuchStructureException {
 
 		InfoFieldSet infoFieldSet =
-			_ddmStructureInfoItemFieldSetProvider.getInfoItemFieldSet(
+			ddmStructureInfoItemFieldSetProvider.getInfoItemFieldSet(
 				ddmStructureId,
 				_getStructureFieldSetNameInfoLocalizedValue(ddmStructureId));
 
@@ -210,15 +236,15 @@ public class FileEntryInfoItemFormProvider
 	private InfoFieldSet _getFileInformationFieldSet() {
 		return InfoFieldSet.builder(
 		).infoFieldSetEntry(
-			FileEntryInfoItemFields.fileName
+			FileEntryInfoItemFields.fileNameInfoField
 		).infoFieldSetEntry(
-			FileEntryInfoItemFields.downloadURL
+			FileEntryInfoItemFields.downloadURLInfoField
 		).infoFieldSetEntry(
-			FileEntryInfoItemFields.fileURL
+			FileEntryInfoItemFields.fileURLInfoField
 		).infoFieldSetEntry(
-			FileEntryInfoItemFields.mimeType
+			FileEntryInfoItemFields.mimeTypeInfoField
 		).infoFieldSetEntry(
-			FileEntryInfoItemFields.size
+			FileEntryInfoItemFields.sizeInfoField
 		).labelInfoLocalizedValue(
 			InfoLocalizedValue.localize(getClass(), "file-information")
 		).name(
@@ -228,20 +254,8 @@ public class FileEntryInfoItemFormProvider
 
 	private InfoForm _getInfoForm(
 			InfoFieldSet assetEntryInfoFieldSet, long ddmStructureId,
-			long fileEntryTypeId)
+			InfoFieldSet displayPageInfoFieldSet, long fileEntryTypeId)
 		throws NoSuchFormVariationException {
-
-		Set<Locale> availableLocales = LanguageUtil.getAvailableLocales();
-
-		InfoLocalizedValue.Builder infoLocalizedValueBuilder =
-			InfoLocalizedValue.builder();
-
-		for (Locale locale : availableLocales) {
-			infoLocalizedValueBuilder.value(
-				locale,
-				ResourceActionsUtil.getModelResource(
-					locale, FileEntry.class.getName()));
-		}
 
 		try {
 			return InfoForm.builder(
@@ -258,20 +272,20 @@ public class FileEntryInfoItemFormProvider
 					}
 				}
 			).infoFieldSetEntry(
-				_getDisplayPageInfoFieldSet()
+				displayPageInfoFieldSet
 			).infoFieldSetEntry(
-				_expandoInfoItemFieldSetProvider.getInfoFieldSet(
+				expandoInfoItemFieldSetProvider.getInfoFieldSet(
 					DLFileEntryConstants.getClassName())
 			).infoFieldSetEntry(
-				_templateInfoItemFieldSetProvider.getInfoFieldSet(
+				templateInfoItemFieldSetProvider.getInfoFieldSet(
 					FileEntry.class.getName(), String.valueOf(fileEntryTypeId))
 			).infoFieldSetEntry(
 				assetEntryInfoFieldSet
 			).infoFieldSetEntry(
-				_infoItemFieldReaderFieldSetProvider.getInfoFieldSet(
+				infoItemFieldReaderFieldSetProvider.getInfoFieldSet(
 					FileEntry.class.getName())
 			).labelInfoLocalizedValue(
-				infoLocalizedValueBuilder.build()
+				new ModelResourceLocalizedValue(FileEntry.class.getName())
 			).name(
 				FileEntry.class.getName()
 			).build();
@@ -286,30 +300,23 @@ public class FileEntryInfoItemFormProvider
 		long ddmStructureId, long fileEntryTypeId) {
 
 		try {
-			DLFileEntryType fileEntryType =
-				_dlFileEntryTypeService.getFileEntryType(fileEntryTypeId);
+			return TransformUtil.transform(
+				DLFileEntryTypeUtil.getDDMStructures(
+					dlFileEntryTypeService.getFileEntryType(fileEntryTypeId)),
+				ddmStructure -> {
+					if (ddmStructure.getStructureId() == ddmStructureId) {
+						return null;
+					}
 
-			List<com.liferay.dynamic.data.mapping.kernel.DDMStructure>
-				ddmStructures = fileEntryType.getDDMStructures();
-
-			List<InfoFieldSet> infoFieldSets = new ArrayList<>(
-				ddmStructures.size());
-
-			for (com.liferay.dynamic.data.mapping.kernel.DDMStructure
-					ddmStructure : ddmStructures) {
-
-				if (ddmStructure.getStructureId() == ddmStructureId) {
-					continue;
-				}
-
-				infoFieldSets.add(
-					_ddmStructureInfoItemFieldSetProvider.getInfoItemFieldSet(
-						ddmStructure.getStructureId()));
-			}
-
-			return infoFieldSets;
+					return ddmStructureInfoItemFieldSetProvider.
+						getInfoItemFieldSet(ddmStructure.getStructureId());
+				});
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			return Collections.emptyList();
 		}
 	}
@@ -320,14 +327,13 @@ public class FileEntryInfoItemFormProvider
 
 		try {
 			DDMStructure ddmStructure =
-				_ddmStructureLocalService.getDDMStructure(ddmStructureId);
-
-			Map<Locale, String> nameMap = new HashMap<>(
-				ddmStructure.getNameMap());
+				ddmStructureLocalService.getDDMStructure(ddmStructureId);
 
 			return InfoLocalizedValue.<String>builder(
+			).defaultLocale(
+				LocaleUtil.fromLanguageId(ddmStructure.getDefaultLanguageId())
 			).values(
-				nameMap
+				ddmStructure.getNameMap()
 			).build();
 		}
 		catch (NoSuchStructureException noSuchStructureException) {
@@ -338,37 +344,7 @@ public class FileEntryInfoItemFormProvider
 		}
 	}
 
-	@Reference
-	private AssetEntryInfoItemFieldSetProvider
-		_assetEntryInfoItemFieldSetProvider;
-
-	@Reference
-	private AssetEntryLocalService _assetEntryLocalService;
-
-	@Reference
-	private DDMStructureInfoItemFieldSetProvider
-		_ddmStructureInfoItemFieldSetProvider;
-
-	@Reference
-	private DDMStructureLocalService _ddmStructureLocalService;
-
-	@Reference
-	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
-
-	@Reference
-	private DLFileEntryTypeService _dlFileEntryTypeService;
-
-	@Reference
-	private ExpandoInfoItemFieldSetProvider _expandoInfoItemFieldSetProvider;
-
-	@Reference
-	private InfoItemFieldReaderFieldSetProvider
-		_infoItemFieldReaderFieldSetProvider;
-
-	@Reference
-	private Portal _portal;
-
-	@Reference
-	private TemplateInfoItemFieldSetProvider _templateInfoItemFieldSetProvider;
+	private static final Log _log = LogFactoryUtil.getLog(
+		FileEntryInfoItemFormProvider.class);
 
 }

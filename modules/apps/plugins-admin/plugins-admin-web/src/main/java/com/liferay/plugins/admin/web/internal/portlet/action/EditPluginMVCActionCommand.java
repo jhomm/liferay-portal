@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.plugins.admin.web.internal.portlet.action;
@@ -27,10 +18,10 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import java.util.Arrays;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Arrays;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + PluginsAdminPortletKeys.PLUGINS_ADMIN,
+		"jakarta.portlet.name=" + PluginsAdminPortletKeys.PLUGINS_ADMIN,
 		"mvc.command.name=/plugins_admin/edit_plugin"
 	},
 	service = MVCActionCommand.class
@@ -55,7 +46,7 @@ public class EditPluginMVCActionCommand extends BaseMVCActionCommand {
 		throws Exception {
 
 		try {
-			updatePluginSetting(actionRequest);
+			_updatePluginSetting(actionRequest);
 		}
 		catch (Exception exception) {
 			if (exception instanceof PrincipalException) {
@@ -69,19 +60,7 @@ public class EditPluginMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setPluginSettingService(
-		PluginSettingService pluginSettingService) {
-
-		_pluginSettingService = pluginSettingService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletService(PortletService portletService) {
-		_portletService = portletService;
-	}
-
-	protected void updatePluginSetting(ActionRequest actionRequest)
+	private void _updatePluginSetting(ActionRequest actionRequest)
 		throws Exception {
 
 		long companyId = _portal.getCompanyId(actionRequest);
@@ -109,11 +88,13 @@ public class EditPluginMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
+	@Reference
 	private PluginSettingService _pluginSettingService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private PortletService _portletService;
 
 }

@@ -1,0 +1,8 @@
+ext.expectedContentStrings = [
+	'"id": "siteinitializer"',
+	'"LIFERAY_BATCH_OAUTH_APP_ERC": "oauth"',
+]
+ext.expectedFilePath = "LCP.json"
+ext.taskPath = ":site-initializer:createClientExtensionConfig"
+
+apply from: project.property("commonScript.testClientExtensionBuildFileContentsTestCase.gradle")

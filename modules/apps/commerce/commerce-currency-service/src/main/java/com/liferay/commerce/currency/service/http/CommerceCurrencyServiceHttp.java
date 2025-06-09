@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.currency.service.http;
@@ -46,16 +37,15 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Andrea Di Giorgi
- * @see CommerceCurrencyServiceSoap
  * @generated
  */
 public class CommerceCurrencyServiceHttp {
 
 	public static com.liferay.commerce.currency.model.CommerceCurrency
 			addCommerceCurrency(
-				HttpPrincipal httpPrincipal, String code,
-				java.util.Map<java.util.Locale, String> nameMap, String symbol,
-				java.math.BigDecimal rate,
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				String code, java.util.Map<java.util.Locale, String> nameMap,
+				String symbol, java.math.BigDecimal rate,
 				java.util.Map<java.util.Locale, String> formatPatternMap,
 				int maxFractionDigits, int minFractionDigits,
 				String roundingMode, boolean primary, double priority,
@@ -68,9 +58,9 @@ public class CommerceCurrencyServiceHttp {
 				_addCommerceCurrencyParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, code, nameMap, symbol, rate, formatPatternMap,
-				maxFractionDigits, minFractionDigits, roundingMode, primary,
-				priority, active);
+				methodKey, externalReferenceCode, code, nameMap, symbol, rate,
+				formatPatternMap, maxFractionDigits, minFractionDigits,
+				roundingMode, primary, priority, active);
 
 			Object returnObj = null;
 
@@ -138,6 +128,50 @@ public class CommerceCurrencyServiceHttp {
 	}
 
 	public static com.liferay.commerce.currency.model.CommerceCurrency
+			fetchCommerceCurrencyByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommerceCurrencyServiceUtil.class,
+				"fetchCommerceCurrencyByExternalReferenceCode",
+				_fetchCommerceCurrencyByExternalReferenceCodeParameterTypes2);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.currency.model.CommerceCurrency)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.commerce.currency.model.CommerceCurrency
 			fetchPrimaryCommerceCurrency(
 				HttpPrincipal httpPrincipal, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -146,7 +180,7 @@ public class CommerceCurrencyServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class,
 				"fetchPrimaryCommerceCurrency",
-				_fetchPrimaryCommerceCurrencyParameterTypes2);
+				_fetchPrimaryCommerceCurrencyParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId);
@@ -193,7 +227,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "getCommerceCurrencies",
-				_getCommerceCurrenciesParameterTypes3);
+				_getCommerceCurrenciesParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, active, start, end, orderByComparator);
@@ -241,7 +275,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "getCommerceCurrencies",
-				_getCommerceCurrenciesParameterTypes4);
+				_getCommerceCurrenciesParameterTypes5);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, start, end, orderByComparator);
@@ -283,7 +317,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "getCommerceCurrenciesCount",
-				_getCommerceCurrenciesCountParameterTypes5);
+				_getCommerceCurrenciesCountParameterTypes6);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId);
@@ -323,7 +357,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "getCommerceCurrenciesCount",
-				_getCommerceCurrenciesCountParameterTypes6);
+				_getCommerceCurrenciesCountParameterTypes7);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, active);
@@ -364,7 +398,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "getCommerceCurrency",
-				_getCommerceCurrencyParameterTypes7);
+				_getCommerceCurrencyParameterTypes8);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commerceCurrencyId);
@@ -406,7 +440,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "getCommerceCurrency",
-				_getCommerceCurrencyParameterTypes8);
+				_getCommerceCurrencyParameterTypes9);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, code);
@@ -440,6 +474,53 @@ public class CommerceCurrencyServiceHttp {
 		}
 	}
 
+	public static com.liferay.portal.kernel.search.BaseModelSearchResult
+		<com.liferay.commerce.currency.model.CommerceCurrency>
+				searchCommerceCurrencies(
+					HttpPrincipal httpPrincipal, long companyId,
+					String keywords,
+					java.util.LinkedHashMap<String, Object> params, int start,
+					int end, com.liferay.portal.kernel.search.Sort sort)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CommerceCurrencyServiceUtil.class, "searchCommerceCurrencies",
+				_searchCommerceCurrenciesParameterTypes10);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, companyId, keywords, params, start, end, sort);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.portal.kernel.search.BaseModelSearchResult
+				<com.liferay.commerce.currency.model.CommerceCurrency>)
+					returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.commerce.currency.model.CommerceCurrency
 			setActive(
 				HttpPrincipal httpPrincipal, long commerceCurrencyId,
@@ -449,7 +530,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "setActive",
-				_setActiveParameterTypes9);
+				_setActiveParameterTypes11);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commerceCurrencyId, active);
@@ -492,7 +573,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "setPrimary",
-				_setPrimaryParameterTypes10);
+				_setPrimaryParameterTypes12);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commerceCurrencyId, primary);
@@ -528,9 +609,10 @@ public class CommerceCurrencyServiceHttp {
 
 	public static com.liferay.commerce.currency.model.CommerceCurrency
 			updateCommerceCurrency(
-				HttpPrincipal httpPrincipal, long commerceCurrencyId,
-				String code, java.util.Map<java.util.Locale, String> nameMap,
-				String symbol, java.math.BigDecimal rate,
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long commerceCurrencyId,
+				java.util.Map<java.util.Locale, String> nameMap, String symbol,
+				java.math.BigDecimal rate,
 				java.util.Map<java.util.Locale, String> formatPatternMap,
 				int maxFractionDigits, int minFractionDigits,
 				String roundingMode, boolean primary, double priority,
@@ -541,12 +623,13 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "updateCommerceCurrency",
-				_updateCommerceCurrencyParameterTypes11);
+				_updateCommerceCurrencyParameterTypes13);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, commerceCurrencyId, code, nameMap, symbol, rate,
-				formatPatternMap, maxFractionDigits, minFractionDigits,
-				roundingMode, primary, priority, active, serviceContext);
+				methodKey, externalReferenceCode, commerceCurrencyId, nameMap,
+				symbol, rate, formatPatternMap, maxFractionDigits,
+				minFractionDigits, roundingMode, primary, priority, active,
+				serviceContext);
 
 			Object returnObj = null;
 
@@ -585,7 +668,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "updateExchangeRate",
-				_updateExchangeRateParameterTypes12);
+				_updateExchangeRateParameterTypes14);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, commerceCurrencyId, exchangeRateProviderKey);
@@ -620,7 +703,7 @@ public class CommerceCurrencyServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommerceCurrencyServiceUtil.class, "updateExchangeRates",
-				_updateExchangeRatesParameterTypes13);
+				_updateExchangeRatesParameterTypes15);
 
 			MethodHandler methodHandler = new MethodHandler(methodKey);
 
@@ -653,48 +736,56 @@ public class CommerceCurrencyServiceHttp {
 
 	private static final Class<?>[] _addCommerceCurrencyParameterTypes0 =
 		new Class[] {
-			String.class, java.util.Map.class, String.class,
+			String.class, String.class, java.util.Map.class, String.class,
 			java.math.BigDecimal.class, java.util.Map.class, int.class,
 			int.class, String.class, boolean.class, double.class, boolean.class
 		};
 	private static final Class<?>[] _deleteCommerceCurrencyParameterTypes1 =
 		new Class[] {long.class};
 	private static final Class<?>[]
-		_fetchPrimaryCommerceCurrencyParameterTypes2 = new Class[] {long.class};
-	private static final Class<?>[] _getCommerceCurrenciesParameterTypes3 =
+		_fetchCommerceCurrencyByExternalReferenceCodeParameterTypes2 =
+			new Class[] {String.class, long.class};
+	private static final Class<?>[]
+		_fetchPrimaryCommerceCurrencyParameterTypes3 = new Class[] {long.class};
+	private static final Class<?>[] _getCommerceCurrenciesParameterTypes4 =
 		new Class[] {
 			long.class, boolean.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
-	private static final Class<?>[] _getCommerceCurrenciesParameterTypes4 =
+	private static final Class<?>[] _getCommerceCurrenciesParameterTypes5 =
 		new Class[] {
 			long.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
-	private static final Class<?>[] _getCommerceCurrenciesCountParameterTypes5 =
-		new Class[] {long.class};
 	private static final Class<?>[] _getCommerceCurrenciesCountParameterTypes6 =
-		new Class[] {long.class, boolean.class};
-	private static final Class<?>[] _getCommerceCurrencyParameterTypes7 =
 		new Class[] {long.class};
+	private static final Class<?>[] _getCommerceCurrenciesCountParameterTypes7 =
+		new Class[] {long.class, boolean.class};
 	private static final Class<?>[] _getCommerceCurrencyParameterTypes8 =
+		new Class[] {long.class};
+	private static final Class<?>[] _getCommerceCurrencyParameterTypes9 =
 		new Class[] {long.class, String.class};
-	private static final Class<?>[] _setActiveParameterTypes9 = new Class[] {
-		long.class, boolean.class
-	};
-	private static final Class<?>[] _setPrimaryParameterTypes10 = new Class[] {
-		long.class, boolean.class
-	};
-	private static final Class<?>[] _updateCommerceCurrencyParameterTypes11 =
+	private static final Class<?>[] _searchCommerceCurrenciesParameterTypes10 =
 		new Class[] {
-			long.class, String.class, java.util.Map.class, String.class,
+			long.class, String.class, java.util.LinkedHashMap.class, int.class,
+			int.class, com.liferay.portal.kernel.search.Sort.class
+		};
+	private static final Class<?>[] _setActiveParameterTypes11 = new Class[] {
+		long.class, boolean.class
+	};
+	private static final Class<?>[] _setPrimaryParameterTypes12 = new Class[] {
+		long.class, boolean.class
+	};
+	private static final Class<?>[] _updateCommerceCurrencyParameterTypes13 =
+		new Class[] {
+			String.class, long.class, java.util.Map.class, String.class,
 			java.math.BigDecimal.class, java.util.Map.class, int.class,
 			int.class, String.class, boolean.class, double.class, boolean.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
-	private static final Class<?>[] _updateExchangeRateParameterTypes12 =
+	private static final Class<?>[] _updateExchangeRateParameterTypes14 =
 		new Class[] {long.class, String.class};
-	private static final Class<?>[] _updateExchangeRatesParameterTypes13 =
+	private static final Class<?>[] _updateExchangeRatesParameterTypes15 =
 		new Class[] {};
 
 }

@@ -1,47 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.associated.data.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskConstants;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.user.associated.data.constants.UserAssociatedDataPortletKeys;
 import com.liferay.user.associated.data.web.internal.export.background.task.UADExportBackgroundTaskManagerUtil;
+import com.liferay.user.associated.data.web.internal.util.UADLanguageUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 
 import java.util.Comparator;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -70,7 +64,7 @@ public class UADExportProcessDisplayContext {
 	}
 
 	public Comparator<BackgroundTask> getComparator(
-		String orderByCol, String orderByType) {
+		Locale locale, String orderByCol, String orderByType) {
 
 		Comparator<BackgroundTask> comparator = Comparator.comparing(
 			BackgroundTask::getCreateDate);
@@ -85,12 +79,16 @@ public class UADExportProcessDisplayContext {
 					Map<String, Serializable> taskContextMap2 =
 						backgroundTask2.getTaskContextMap();
 
-					String applicationKey1 = (String)taskContextMap1.get(
-						"applicationKey");
-					String applicationKey2 = (String)taskContextMap2.get(
-						"applicationKey");
+					String applicationName1 =
+						UADLanguageUtil.getApplicationName(
+							(String)taskContextMap1.get("applicationKey"),
+							locale);
+					String applicationName2 =
+						UADLanguageUtil.getApplicationName(
+							(String)taskContextMap2.get("applicationKey"),
+							locale);
 
-					return applicationKey1.compareTo(applicationKey2);
+					return applicationName1.compareTo(applicationName2);
 				};
 		}
 
@@ -113,23 +111,27 @@ public class UADExportProcessDisplayContext {
 	}
 
 	public String getOrderByCol() {
-		if (_orderByCol != null) {
+		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "create-date");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest,
+			UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
+			"export-order-by-col", "name");
 
 		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		if (_orderByType != null) {
+		if (Validator.isNotNull(_orderByType)) {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "desc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest,
+			UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
+			"export-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -191,46 +193,32 @@ public class UADExportProcessDisplayContext {
 
 		User selectedUser = PortalUtil.getSelectedUser(_httpServletRequest);
 
-		List<BackgroundTask> results = null;
-
 		if (navigation.equals("failed") || navigation.equals("in-progress") ||
 			navigation.equals("successful")) {
 
 			int status = getBackgroundTaskStatus(navigation);
 
-			searchContainer.setTotal(
-				UADExportBackgroundTaskManagerUtil.getBackgroundTasksCount(
-					themeDisplay.getScopeGroupId(), selectedUser.getUserId(),
-					status));
-
-			results = UADExportBackgroundTaskManagerUtil.getBackgroundTasks(
-				themeDisplay.getScopeGroupId(), selectedUser.getUserId(),
-				status);
+			searchContainer.setResultsAndTotal(
+				ListUtil.sort(
+					UADExportBackgroundTaskManagerUtil.getBackgroundTasks(
+						themeDisplay.getScopeGroupId(),
+						selectedUser.getUserId(), status),
+					getComparator(
+						themeDisplay.getLocale(),
+						searchContainer.getOrderByCol(),
+						searchContainer.getOrderByType())));
 		}
 		else {
-			searchContainer.setTotal(
-				UADExportBackgroundTaskManagerUtil.getBackgroundTasksCount(
-					themeDisplay.getScopeGroupId(), selectedUser.getUserId()));
-
-			results = UADExportBackgroundTaskManagerUtil.getBackgroundTasks(
-				themeDisplay.getScopeGroupId(), selectedUser.getUserId());
+			searchContainer.setResultsAndTotal(
+				ListUtil.sort(
+					UADExportBackgroundTaskManagerUtil.getBackgroundTasks(
+						themeDisplay.getScopeGroupId(),
+						selectedUser.getUserId()),
+					getComparator(
+						themeDisplay.getLocale(),
+						searchContainer.getOrderByCol(),
+						searchContainer.getOrderByType())));
 		}
-
-		Stream<BackgroundTask> backgroundTaskStream = results.stream();
-
-		results = backgroundTaskStream.sorted(
-			getComparator(
-				searchContainer.getOrderByCol(),
-				searchContainer.getOrderByType())
-		).skip(
-			searchContainer.getStart()
-		).limit(
-			searchContainer.getDelta()
-		).collect(
-			Collectors.toList()
-		);
-
-		searchContainer.setResults(results);
 
 		_searchContainer = searchContainer;
 

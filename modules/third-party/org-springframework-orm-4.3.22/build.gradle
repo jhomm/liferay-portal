@@ -1,0 +1,71 @@
+import com.liferay.gradle.plugins.patcher.PatchTask
+
+apply plugin: "com.liferay.patcher"
+
+task deployJar(type: Copy)
+task jarManifest
+task jarPatched(type: Zip)
+task patch(type: PatchTask)
+
+sourceCompatibility = "1.6"
+targetCompatibility = "1.6"
+
+dependencies {
+	api group: "org.hibernate", name: "hibernate-core", version: "3.6.10.Final"
+	api group: "org.springframework", name: "spring-orm", version: "4.3.22.RELEASE"
+}
+
+deploy {
+	finalizedBy deployJar
+}
+
+deployJar {
+	ext {
+		autoClean = false
+	}
+
+	from jar
+	into "../../../lib/portal"
+
+	rename {
+		"spring-orm.jar"
+	}
+}
+
+jar {
+	dependsOn jarPatched
+	setActions([])
+}
+
+jarManifest {
+	doLast {
+		ant.jar(destfile: jar.archivePath, update: true)
+	}
+}
+
+jarPatched {
+	archiveFileName = jar.archiveFileName
+	destinationDirectory = jar.destinationDirectory
+	duplicatesStrategy = "exclude"
+	from copyPatchOriginalLibClasses
+	mustRunAfter compileJava
+	mustRunAfter generatePomFileForMavenPublication
+	mustRunAfter processResources
+}
+
+jarSources {
+	mustRunAfter patch
+}
+
+javadoc {
+	enabled = false
+}
+
+patch {
+	ext {
+		autoClean = false
+	}
+
+	fileNames "org/springframework/orm/hibernate3/SpringSessionSynchronization.java"
+	originalLibModuleName = "spring-orm"
+}

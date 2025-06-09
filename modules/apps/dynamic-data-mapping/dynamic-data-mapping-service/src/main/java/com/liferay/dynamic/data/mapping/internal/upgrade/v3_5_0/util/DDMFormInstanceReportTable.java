@@ -1,67 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_5_0.util;
 
-import java.sql.Types;
-
-import java.util.HashMap;
-import java.util.Map;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 
 /**
- * @author	  Brian Wing Shun Chan
+ * @author Brian Wing Shun Chan
  * @generated
+ * @see com.liferay.portal.tools.upgrade.table.builder.UpgradeTableBuilder
  */
 public class DDMFormInstanceReportTable {
 
-	public static final String TABLE_NAME = "DDMFormInstanceReport";
+	public static UpgradeProcess create() {
+		return new UpgradeProcess() {
 
-	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"formInstanceReportId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"formInstanceId", Types.BIGINT}, {"data_", Types.CLOB}
-	};
+			@Override
+			protected void doUpgrade() throws Exception {
+				if (!hasTable(_TABLE_NAME)) {
+					runSQL(_TABLE_SQL_CREATE);
+				}
+			}
 
-	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
-new HashMap<String, Integer>();
+		};
+	}
 
-static {
-TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+	private static final String _TABLE_NAME = "DDMFormInstanceReport";
 
-TABLE_COLUMNS_MAP.put("formInstanceReportId", Types.BIGINT);
-
-TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
-
-TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
-
-TABLE_COLUMNS_MAP.put("createDate", Types.TIMESTAMP);
-
-TABLE_COLUMNS_MAP.put("modifiedDate", Types.TIMESTAMP);
-
-TABLE_COLUMNS_MAP.put("formInstanceId", Types.BIGINT);
-
-TABLE_COLUMNS_MAP.put("data_", Types.CLOB);
-
-}
-	public static final String TABLE_SQL_CREATE =
-"create table DDMFormInstanceReport (mvccVersion LONG default 0 not null,formInstanceReportId LONG not null primary key,groupId LONG,companyId LONG,createDate DATE null,modifiedDate DATE null,formInstanceId LONG,data_ TEXT null)";
-
-	public static final String TABLE_SQL_DROP =
-"drop table DDMFormInstanceReport";
-
-	public static final String[] TABLE_SQL_ADD_INDEXES = {
-	};
+	private static final String _TABLE_SQL_CREATE =
+		"create table DDMFormInstanceReport (mvccVersion LONG default 0 not null,formInstanceReportId LONG not null primary key,groupId LONG,companyId LONG,createDate DATE null,modifiedDate DATE null,formInstanceId LONG,data_ TEXT null)";
 
 }

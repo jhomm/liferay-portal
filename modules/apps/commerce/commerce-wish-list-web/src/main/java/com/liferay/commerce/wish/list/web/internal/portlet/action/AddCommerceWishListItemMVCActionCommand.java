@@ -1,52 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.wish.list.web.internal.portlet.action;
 
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.commerce.wish.list.constants.CommerceWishListPortletKeys;
+import com.liferay.commerce.wish.list.helper.CommerceWishListHttpHelper;
 import com.liferay.commerce.wish.list.model.CommerceWishList;
 import com.liferay.commerce.wish.list.model.CommerceWishListItem;
 import com.liferay.commerce.wish.list.service.CommerceWishListItemService;
 import com.liferay.commerce.wish.list.service.CommerceWishListService;
-import com.liferay.commerce.wish.list.util.CommerceWishListHttpHelper;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -56,9 +45,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Andrea Di Giorgi
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommerceWishListPortletKeys.COMMERCE_WISH_LIST_CONTENT,
+		"jakarta.portlet.name=" + CommerceWishListPortletKeys.COMMERCE_WISH_LIST_CONTENT,
 		"mvc.command.name=/commerce_wish_list_content/add_commerce_wish_list_item"
 	},
 	service = MVCActionCommand.class
@@ -76,25 +64,13 @@ public class AddCommerceWishListItemMVCActionCommand
 		long cpDefinitionId = ParamUtil.getLong(
 			actionRequest, "cpDefinitionId");
 		long cpInstanceId = ParamUtil.getLong(actionRequest, "cpInstanceId");
-		String ddmFormValues = ParamUtil.getString(
-			actionRequest, "ddmFormValues");
+		String formFieldValues = ParamUtil.getString(
+			actionRequest, "formFieldValues");
 
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
 			actionRequest);
 		HttpServletResponse httpServletResponse =
 			_portal.getHttpServletResponse(actionResponse);
-
-		CommerceContext commerceContext =
-			(CommerceContext)httpServletRequest.getAttribute(
-				CommerceWebKeys.COMMERCE_CONTEXT);
-
-		long commerceAccountId = 0;
-
-		CommerceAccount commerceAccount = commerceContext.getCommerceAccount();
-
-		if (commerceAccount != null) {
-			commerceAccountId = commerceAccount.getCommerceAccountId();
-		}
 
 		try {
 			CPInstance cpInstance = _cpInstanceLocalService.fetchCPInstance(
@@ -110,36 +86,37 @@ public class AddCommerceWishListItemMVCActionCommand
 				_commerceWishListHttpHelper.getCurrentCommerceWishList(
 					httpServletRequest, httpServletResponse);
 
-			ServiceContext serviceContext = ServiceContextFactory.getInstance(
-				CommerceWishListItem.class.getName(), actionRequest);
-
 			if (commerceWishList == null) {
+				ThemeDisplay themeDisplay =
+					(ThemeDisplay)actionRequest.getAttribute(
+						WebKeys.THEME_DISPLAY);
+
 				commerceWishList = _commerceWishListService.addCommerceWishList(
-					LanguageUtil.get(serviceContext.getLocale(), "default"),
-					true, serviceContext);
+					themeDisplay.getScopeGroupId(),
+					_language.get(themeDisplay.getLocale(), "default"), true);
 			}
 
 			CommerceWishListItem commerceWishListItem =
 				_commerceWishListItemService.addCommerceWishListItem(
-					commerceAccountId, commerceWishList.getCommerceWishListId(),
-					cpDefinitionId, cpInstanceUuid, ddmFormValues,
-					serviceContext);
-
-			int commerceWishListItemsCount =
-				_commerceWishListItemService.getCommerceWishListItemsCount(
-					commerceWishList.getCommerceWishListId());
+					CommerceUtil.getCommerceAccountId(
+						(CommerceContext)httpServletRequest.getAttribute(
+							CommerceWebKeys.COMMERCE_CONTEXT)),
+					commerceWishList.getCommerceWishListId(), cpInstanceUuid,
+					cpDefinitionId, formFieldValues);
 
 			jsonObject.put(
 				"commerceWishListItemId",
 				commerceWishListItem.getCommerceWishListItemId()
 			).put(
-				"commerceWishListItemsCount", commerceWishListItemsCount
+				"commerceWishListItemsCount",
+				_commerceWishListItemService.getCommerceWishListItemsCount(
+					commerceWishList.getCommerceWishListId())
 			).put(
 				"success", true
 			);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			jsonObject.put(
 				"error", exception.getMessage()
@@ -150,12 +127,12 @@ public class AddCommerceWishListItemMVCActionCommand
 
 		hideDefaultSuccessMessage(actionRequest);
 
-		writeJSON(httpServletResponse, jsonObject);
+		_writeJSON(httpServletResponse, jsonObject);
 	}
 
-	protected void writeJSON(
+	private void _writeJSON(
 			HttpServletResponse httpServletResponse, JSONObject jsonObject)
-		throws IOException {
+		throws Exception {
 
 		httpServletResponse.setContentType(ContentTypes.APPLICATION_JSON);
 
@@ -181,6 +158,9 @@ public class AddCommerceWishListItemMVCActionCommand
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

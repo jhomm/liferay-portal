@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -35,6 +27,8 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -48,6 +42,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see ContactLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Contact"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -78,10 +75,11 @@ public interface ContactLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Contact addContact(
 			long userId, String className, long classPK, String emailAddress,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String smsSn, String facebookSn, String jabberSn,
-			String skypeSn, String twitterSn, String jobTitle)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
+			String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle)
 		throws PortalException;
 
 	/**
@@ -210,6 +208,10 @@ public interface ContactLocalService
 	public Contact fetchContact(long contactId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Serializable, Contact> fetchContacts(
+		Set<Serializable> primaryKeys);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -292,10 +294,10 @@ public interface ContactLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Contact updateContact(
 			long contactId, String emailAddress, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle)
 		throws PortalException;
 
 }

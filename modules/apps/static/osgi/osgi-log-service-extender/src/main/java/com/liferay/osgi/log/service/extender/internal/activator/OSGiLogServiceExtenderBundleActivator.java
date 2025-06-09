@@ -1,29 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.osgi.log.service.extender.internal.activator;
 
-import com.liferay.petra.log4j.Log4JUtil;
+import com.liferay.osgi.log.service.extender.internal.osgi.commands.LoggingOSGiCommands;
+import com.liferay.osgi.util.osgi.commands.OSGiCommands;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.PropertiesUtil;
+import com.liferay.portal.log4j.Log4JUtil;
 
 import java.io.IOException;
-import java.io.InputStream;
 
 import java.net.URL;
 
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -35,6 +30,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleEvent;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.log.LogLevel;
 import org.osgi.service.log.admin.LoggerAdmin;
 import org.osgi.service.log.admin.LoggerContext;
@@ -60,6 +56,19 @@ public class OSGiLogServiceExtenderBundleActivator implements BundleActivator {
 	@Override
 	public void stop(BundleContext bundleContext) {
 		_serviceTracker.close();
+	}
+
+	public static class Tracked
+		extends AbstractMap.SimpleEntry
+			<BundleTracker<LoggerContext>, ServiceRegistration<OSGiCommands>> {
+
+		public Tracked(
+			BundleTracker<LoggerContext> bundleTracker,
+			ServiceRegistration<OSGiCommands> serviceRegistration) {
+
+			super(bundleTracker, serviceRegistration);
+		}
+
 	}
 
 	private static Map<String, LogLevel> _loadLogConfigurations(Bundle bundle) {
@@ -91,13 +100,8 @@ public class OSGiLogServiceExtenderBundleActivator implements BundleActivator {
 
 		if (enumeration != null) {
 			while (enumeration.hasMoreElements()) {
-				URL url = enumeration.nextElement();
-
-				Properties properties = new Properties();
-
-				try (InputStream inputStream = url.openStream()) {
-					properties.load(inputStream);
-				}
+				Properties properties = PropertiesUtil.load(
+					enumeration.nextElement());
 
 				for (String name : properties.stringPropertyNames()) {
 					String value = properties.getProperty(name);
@@ -126,39 +130,55 @@ public class OSGiLogServiceExtenderBundleActivator implements BundleActivator {
 	private static final Log _log = LogFactoryUtil.getLog(
 		OSGiLogServiceExtenderBundleActivator.class);
 
-	private volatile ServiceTracker<LoggerAdmin, BundleTracker<LoggerContext>>
-		_serviceTracker;
+	private volatile ServiceTracker<LoggerAdmin, Tracked> _serviceTracker;
 
 	private static class LoggerAdminServiceTrackerCustomizer
-		implements ServiceTrackerCustomizer
-			<LoggerAdmin, BundleTracker<LoggerContext>> {
+		implements ServiceTrackerCustomizer<LoggerAdmin, Tracked> {
 
 		@Override
-		public BundleTracker<LoggerContext> addingService(
+		public Tracked addingService(
 			ServiceReference<LoggerAdmin> serviceReference) {
 
 			LoggerAdmin loggerAdmin = _bundleContext.getService(
 				serviceReference);
 
 			BundleTracker<LoggerContext> bundleTracker = new BundleTracker<>(
-				_bundleContext, ~(Bundle.INSTALLED | Bundle.UNINSTALLED),
+				_bundleContext, Bundle.ACTIVE,
 				new LoggerContextBundleTrackerCustomizer(loggerAdmin));
 
 			bundleTracker.open();
 
-			return bundleTracker;
+			LoggingOSGiCommands loggingOSGiCommands = new LoggingOSGiCommands(
+				loggerAdmin);
+
+			ServiceRegistration<OSGiCommands> serviceRegistration =
+				_bundleContext.registerService(
+					OSGiCommands.class, loggingOSGiCommands,
+					HashMapDictionaryBuilder.<String, Object>put(
+						"osgi.command.function",
+						new String[] {"levels", "level"}
+					).put(
+						"osgi.command.scope", "logging"
+					).build());
+
+			return new Tracked(bundleTracker, serviceRegistration);
 		}
 
 		@Override
 		public void modifiedService(
-			ServiceReference<LoggerAdmin> serviceReference,
-			BundleTracker<LoggerContext> bundleTracker) {
+			ServiceReference<LoggerAdmin> serviceReference, Tracked tracked) {
 		}
 
 		@Override
 		public void removedService(
-			ServiceReference<LoggerAdmin> serviceReference,
-			BundleTracker<LoggerContext> bundleTracker) {
+			ServiceReference<LoggerAdmin> serviceReference, Tracked tracked) {
+
+			ServiceRegistration<OSGiCommands> serviceRegistration =
+				tracked.getValue();
+
+			serviceRegistration.unregister();
+
+			BundleTracker<LoggerContext> bundleTracker = tracked.getKey();
 
 			bundleTracker.close();
 

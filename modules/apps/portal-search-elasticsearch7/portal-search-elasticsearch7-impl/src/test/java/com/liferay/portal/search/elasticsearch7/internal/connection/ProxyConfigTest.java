@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.connection;
@@ -27,9 +18,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Adam Brandizzi
@@ -43,8 +32,6 @@ public class ProxyConfigTest {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
 		_systemProperties = new Properties(System.getProperties());
 	}
 
@@ -86,12 +73,6 @@ public class ProxyConfigTest {
 		String networkAddress = "http://domain:9200";
 
 		Mockito.when(
-			_http.getDomain(networkAddress)
-		).thenReturn(
-			domain
-		);
-
-		Mockito.when(
 			_http.isNonProxyHost(domain)
 		).thenReturn(
 			Objects.equals(domain, "nonProxyHostDomain")
@@ -114,12 +95,6 @@ public class ProxyConfigTest {
 
 		String domain = "domain";
 		String networkAddress = "http://domain:9200";
-
-		Mockito.when(
-			_http.getDomain(networkAddress)
-		).thenReturn(
-			domain
-		);
 
 		Mockito.when(
 			_http.isNonProxyHost(domain)
@@ -160,9 +135,7 @@ public class ProxyConfigTest {
 		Assert.assertFalse(proxyConfig.shouldApplyConfig());
 	}
 
-	@Mock
-	private Http _http;
-
+	private final Http _http = Mockito.mock(Http.class);
 	private Properties _systemProperties;
 
 }

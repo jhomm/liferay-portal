@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,7 +14,7 @@ DepotAdminRolesDisplayContext depotAdminRolesDisplayContext = (DepotAdminRolesDi
 <aui:input name="<%= ActionRequest.ACTION_NAME %>" type="hidden" value="/depot/update_roles" />
 
 <clay:content-row
-	containerElement="h3"
+	containerElement="div"
 	cssClass="sheet-subtitle"
 >
 	<clay:content-col
@@ -34,18 +25,15 @@ DepotAdminRolesDisplayContext depotAdminRolesDisplayContext = (DepotAdminRolesDi
 
 	<c:if test="<%= depotAdminRolesDisplayContext.isSelectable() %>">
 		<clay:content-col>
-			<span class="heading-end">
-				<liferay-ui:icon
-					cssClass="modify-link"
-					id="selectDepotRoleLink"
-					label="<%= true %>"
-					linkCssClass="btn btn-secondary btn-sm"
-					message="select"
-					method="get"
-					url="javascript:;"
-				/>
-			</clay:content-col>
-		</span>
+			<clay:button
+				aria-label='<%= LanguageUtil.format(request, "select-x", "asset-library-roles") %>'
+				cssClass="heading-end modify-link"
+				displayType="secondary"
+				id='<%= liferayPortletResponse.getNamespace() + "selectDepotRoleLink" %>'
+				label='<%= LanguageUtil.get(request, "select") %>'
+				small="<%= true %>"
+			/>
+		</clay:content-col>
 	</c:if>
 </clay:content-row>
 
@@ -88,10 +76,15 @@ DepotAdminRolesDisplayContext depotAdminRolesDisplayContext = (DepotAdminRolesDi
 			cssClass="table-cell-expand"
 			name="title"
 		>
+
+			<%
+			Role role = userGroupRole.getRole();
+			%>
+
 			<liferay-ui:icon
-				iconCssClass="<%= RolesAdminUtil.getIconCssClass(userGroupRole.getRole()) %>"
+				iconCssClass="<%= role.getIconCssClass() %>"
 				label="<%= true %>"
-				message="<%= HtmlUtil.escape(userGroupRole.getRole().getTitle(locale)) %>"
+				message="<%= HtmlUtil.escape(role.getTitle(locale)) %>"
 			/>
 		</liferay-ui:search-container-column-text>
 
@@ -106,7 +99,7 @@ DepotAdminRolesDisplayContext depotAdminRolesDisplayContext = (DepotAdminRolesDi
 
 		<c:if test="<%= depotAdminRolesDisplayContext.isDeletable() %>">
 			<liferay-ui:search-container-column-text>
-				<a class="modify-link" data-entityId="<%= userGroupRole.getGroupId() %>-<%= userGroupRole.getRoleId() %>" href="javascript:;"><%= removeDepotRoleIcon %></a>
+				<a class="modify-link" data-entityId="<%= userGroupRole.getGroupId() %>-<%= userGroupRole.getRoleId() %>" href="javascript:void(0);"><%= removeDepotRoleIcon %></a>
 			</liferay-ui:search-container-column-text>
 		</c:if>
 	</liferay-ui:search-container-row>
@@ -131,6 +124,6 @@ DepotAdminRolesDisplayContext depotAdminRolesDisplayContext = (DepotAdminRolesDi
 				"selectEventName", depotAdminRolesDisplayContext.getSelectDepotRolesEventName()
 			).build()
 		%>'
-		module="js/DepotRoles"
+		module="{DepotRoles} from depot-web"
 	/>
 </c:if>

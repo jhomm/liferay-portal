@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.info.list.renderer.test;
@@ -19,7 +10,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.info.list.renderer.DefaultInfoListRendererContext;
 import com.liferay.info.list.renderer.InfoListRenderer;
-import com.liferay.info.list.renderer.InfoListRendererTracker;
+import com.liferay.info.list.renderer.InfoListRendererRegistry;
 import com.liferay.journal.constants.JournalFolderConstants;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
@@ -32,12 +23,15 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.servlet.HttpMethods;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletRenderResponse;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
@@ -47,13 +41,14 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
 import org.hamcrest.CoreMatchers;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -102,24 +97,37 @@ public class AssetInfoListRendererTest {
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
 		_infoListRenderer =
 			(InfoListRenderer<AssetEntry>)
-				_infoListRendererTracker.getInfoListRenderer(
+				_infoListRendererRegistry.getInfoListRenderer(
 					"com.liferay.asset.info.internal.list.renderer." +
 						"UnstyledAssetEntryBasicInfoListRenderer");
-		_layout = LayoutTestUtil.addLayout(_group);
+		_layout = LayoutTestUtil.addTypePortletLayout(_group);
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_company.getGroupId(), TestPropsValues.getUserId());
+
+		serviceContext.setRequest(_getHttpServletRequest());
+
+		ServiceContextThreadLocal.pushServiceContext(serviceContext);
+	}
+
+	@After
+	public void tearDown() {
+		ServiceContextThreadLocal.popServiceContext();
 	}
 
 	@Test
 	public void testAssetInfoListRendererAbstract() throws Exception {
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
-		MockHttpServletResponse httpServletResponse =
+		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
 		DefaultInfoListRendererContext defaultInfoListRendererContext =
 			new DefaultInfoListRendererContext(
 				_getHttpServletRequest(),
 				new PipingServletResponse(
-					httpServletResponse, unsyncStringWriter));
+					mockHttpServletResponse, unsyncStringWriter));
 
 		defaultInfoListRendererContext.setListItemRendererKey(
 			"com.liferay.asset.internal.info.renderer." +
@@ -134,14 +142,14 @@ public class AssetInfoListRendererTest {
 	public void testAssetInfoListRendererFullContent() throws Exception {
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
-		MockHttpServletResponse httpServletResponse =
+		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
 		DefaultInfoListRendererContext defaultInfoListRendererContext =
 			new DefaultInfoListRendererContext(
 				_getHttpServletRequest(),
 				new PipingServletResponse(
-					httpServletResponse, unsyncStringWriter));
+					mockHttpServletResponse, unsyncStringWriter));
 
 		defaultInfoListRendererContext.setListItemRendererKey(
 			"com.liferay.asset.internal.info.renderer." +
@@ -156,14 +164,14 @@ public class AssetInfoListRendererTest {
 	public void testAssetInfoListRendererTitle() throws Exception {
 		UnsyncStringWriter unsyncStringWriter = new UnsyncStringWriter();
 
-		MockHttpServletResponse httpServletResponse =
+		MockHttpServletResponse mockHttpServletResponse =
 			new MockHttpServletResponse();
 
 		DefaultInfoListRendererContext defaultInfoListRendererContext =
 			new DefaultInfoListRendererContext(
 				_getHttpServletRequest(),
 				new PipingServletResponse(
-					httpServletResponse, unsyncStringWriter));
+					mockHttpServletResponse, unsyncStringWriter));
 
 		defaultInfoListRendererContext.setListItemRendererKey(
 			"com.liferay.asset.info.internal.item.renderer." +
@@ -208,10 +216,10 @@ public class AssetInfoListRendererTest {
 	}
 
 	private HttpServletRequest _getHttpServletRequest() throws Exception {
-		MockHttpServletRequest httpServletRequest =
+		MockHttpServletRequest mockHttpServletRequest =
 			new MockHttpServletRequest();
 
-		httpServletRequest.setAttribute(
+		mockHttpServletRequest.setAttribute(
 			JavaConstants.JAVAX_PORTLET_RESPONSE,
 			new MockLiferayPortletRenderResponse());
 
@@ -227,16 +235,17 @@ public class AssetInfoListRendererTest {
 			layoutSet.getTheme(), layoutSet.getColorScheme());
 
 		themeDisplay.setRealUser(TestPropsValues.getUser());
-		themeDisplay.setRequest(httpServletRequest);
+		themeDisplay.setRequest(mockHttpServletRequest);
 		themeDisplay.setResponse(new MockHttpServletResponse());
-		themeDisplay.setUser(TestPropsValues.getUser());
 		themeDisplay.setScopeGroupId(_group.getGroupId());
+		themeDisplay.setUser(TestPropsValues.getUser());
 
-		httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, themeDisplay);
+		mockHttpServletRequest.setAttribute(
+			WebKeys.THEME_DISPLAY, themeDisplay);
 
-		httpServletRequest.setMethod(HttpMethods.GET);
+		mockHttpServletRequest.setMethod(HttpMethods.GET);
 
-		return httpServletRequest;
+		return mockHttpServletRequest;
 	}
 
 	private final List<AssetEntry> _assetEntries = new ArrayList<>();
@@ -255,7 +264,7 @@ public class AssetInfoListRendererTest {
 	private InfoListRenderer<AssetEntry> _infoListRenderer;
 
 	@Inject
-	private InfoListRendererTracker _infoListRendererTracker;
+	private InfoListRendererRegistry _infoListRendererRegistry;
 
 	@Inject
 	private JournalArticleLocalService _journalArticleLocalService;

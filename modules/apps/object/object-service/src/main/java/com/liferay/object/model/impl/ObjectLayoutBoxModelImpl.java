@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -40,7 +31,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -85,7 +75,8 @@ public class ObjectLayoutBoxModelImpl
 		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
 		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
 		{"objectLayoutTabId", Types.BIGINT}, {"collapsable", Types.BOOLEAN},
-		{"name", Types.VARCHAR}, {"priority", Types.INTEGER}
+		{"name", Types.VARCHAR}, {"priority", Types.INTEGER},
+		{"type_", Types.VARCHAR}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -104,10 +95,11 @@ public class ObjectLayoutBoxModelImpl
 		TABLE_COLUMNS_MAP.put("collapsable", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("priority", Types.INTEGER);
+		TABLE_COLUMNS_MAP.put("type_", Types.VARCHAR);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table ObjectLayoutBox (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,objectLayoutBoxId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectLayoutTabId LONG,collapsable BOOLEAN,name STRING null,priority INTEGER)";
+		"create table ObjectLayoutBox (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,objectLayoutBoxId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,objectLayoutTabId LONG,collapsable BOOLEAN,name STRING null,priority INTEGER,type_ VARCHAR(75) null)";
 
 	public static final String TABLE_SQL_DROP = "drop table ObjectLayoutBox";
 
@@ -238,119 +230,118 @@ public class ObjectLayoutBoxModelImpl
 	public Map<String, Function<ObjectLayoutBox, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ObjectLayoutBox, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ObjectLayoutBox>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ObjectLayoutBox.class.getClassLoader(), ObjectLayoutBox.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ObjectLayoutBox, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ObjectLayoutBox> constructor =
-				(Constructor<ObjectLayoutBox>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ObjectLayoutBox, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ObjectLayoutBox, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ObjectLayoutBox::getMvccVersion);
+			attributeGetterFunctions.put("uuid", ObjectLayoutBox::getUuid);
+			attributeGetterFunctions.put(
+				"objectLayoutBoxId", ObjectLayoutBox::getObjectLayoutBoxId);
+			attributeGetterFunctions.put(
+				"companyId", ObjectLayoutBox::getCompanyId);
+			attributeGetterFunctions.put("userId", ObjectLayoutBox::getUserId);
+			attributeGetterFunctions.put(
+				"userName", ObjectLayoutBox::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", ObjectLayoutBox::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", ObjectLayoutBox::getModifiedDate);
+			attributeGetterFunctions.put(
+				"objectLayoutTabId", ObjectLayoutBox::getObjectLayoutTabId);
+			attributeGetterFunctions.put(
+				"collapsable", ObjectLayoutBox::getCollapsable);
+			attributeGetterFunctions.put("name", ObjectLayoutBox::getName);
+			attributeGetterFunctions.put(
+				"priority", ObjectLayoutBox::getPriority);
+			attributeGetterFunctions.put("type", ObjectLayoutBox::getType);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ObjectLayoutBox, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ObjectLayoutBox, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ObjectLayoutBox, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<ObjectLayoutBox, Object>>();
-		Map<String, BiConsumer<ObjectLayoutBox, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<ObjectLayoutBox, ?>>();
+		private static final Map<String, BiConsumer<ObjectLayoutBox, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ObjectLayoutBox::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ObjectLayoutBox, Long>)ObjectLayoutBox::setMvccVersion);
-		attributeGetterFunctions.put("uuid", ObjectLayoutBox::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<ObjectLayoutBox, String>)ObjectLayoutBox::setUuid);
-		attributeGetterFunctions.put(
-			"objectLayoutBoxId", ObjectLayoutBox::getObjectLayoutBoxId);
-		attributeSetterBiConsumers.put(
-			"objectLayoutBoxId",
-			(BiConsumer<ObjectLayoutBox, Long>)
-				ObjectLayoutBox::setObjectLayoutBoxId);
-		attributeGetterFunctions.put(
-			"companyId", ObjectLayoutBox::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ObjectLayoutBox, Long>)ObjectLayoutBox::setCompanyId);
-		attributeGetterFunctions.put("userId", ObjectLayoutBox::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<ObjectLayoutBox, Long>)ObjectLayoutBox::setUserId);
-		attributeGetterFunctions.put("userName", ObjectLayoutBox::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<ObjectLayoutBox, String>)ObjectLayoutBox::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", ObjectLayoutBox::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<ObjectLayoutBox, Date>)ObjectLayoutBox::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", ObjectLayoutBox::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<ObjectLayoutBox, Date>)
-				ObjectLayoutBox::setModifiedDate);
-		attributeGetterFunctions.put(
-			"objectLayoutTabId", ObjectLayoutBox::getObjectLayoutTabId);
-		attributeSetterBiConsumers.put(
-			"objectLayoutTabId",
-			(BiConsumer<ObjectLayoutBox, Long>)
-				ObjectLayoutBox::setObjectLayoutTabId);
-		attributeGetterFunctions.put(
-			"collapsable", ObjectLayoutBox::getCollapsable);
-		attributeSetterBiConsumers.put(
-			"collapsable",
-			(BiConsumer<ObjectLayoutBox, Boolean>)
-				ObjectLayoutBox::setCollapsable);
-		attributeGetterFunctions.put("name", ObjectLayoutBox::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<ObjectLayoutBox, String>)ObjectLayoutBox::setName);
-		attributeGetterFunctions.put("priority", ObjectLayoutBox::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<ObjectLayoutBox, Integer>)ObjectLayoutBox::setPriority);
+		static {
+			Map<String, BiConsumer<ObjectLayoutBox, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<ObjectLayoutBox, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ObjectLayoutBox, Long>)
+					ObjectLayoutBox::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<ObjectLayoutBox, String>)ObjectLayoutBox::setUuid);
+			attributeSetterBiConsumers.put(
+				"objectLayoutBoxId",
+				(BiConsumer<ObjectLayoutBox, Long>)
+					ObjectLayoutBox::setObjectLayoutBoxId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ObjectLayoutBox, Long>)
+					ObjectLayoutBox::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<ObjectLayoutBox, Long>)ObjectLayoutBox::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<ObjectLayoutBox, String>)
+					ObjectLayoutBox::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<ObjectLayoutBox, Date>)
+					ObjectLayoutBox::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<ObjectLayoutBox, Date>)
+					ObjectLayoutBox::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"objectLayoutTabId",
+				(BiConsumer<ObjectLayoutBox, Long>)
+					ObjectLayoutBox::setObjectLayoutTabId);
+			attributeSetterBiConsumers.put(
+				"collapsable",
+				(BiConsumer<ObjectLayoutBox, Boolean>)
+					ObjectLayoutBox::setCollapsable);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<ObjectLayoutBox, String>)ObjectLayoutBox::setName);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<ObjectLayoutBox, Integer>)
+					ObjectLayoutBox::setPriority);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<ObjectLayoutBox, String>)ObjectLayoutBox::setType);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -680,6 +671,25 @@ public class ObjectLayoutBoxModelImpl
 	}
 
 	@Override
+	public String getType() {
+		if (_type == null) {
+			return "";
+		}
+		else {
+			return _type;
+		}
+	}
+
+	@Override
+	public void setType(String type) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_type = type;
+	}
+
+	@Override
 	public StagedModelType getStagedModelType() {
 		return new StagedModelType(
 			PortalUtil.getClassNameId(ObjectLayoutBox.class.getName()));
@@ -819,6 +829,7 @@ public class ObjectLayoutBoxModelImpl
 		objectLayoutBoxImpl.setCollapsable(isCollapsable());
 		objectLayoutBoxImpl.setName(getName());
 		objectLayoutBoxImpl.setPriority(getPriority());
+		objectLayoutBoxImpl.setType(getType());
 
 		objectLayoutBoxImpl.resetOriginalValues();
 
@@ -853,6 +864,8 @@ public class ObjectLayoutBoxModelImpl
 			this.<String>getColumnOriginalValue("name"));
 		objectLayoutBoxImpl.setPriority(
 			this.<Integer>getColumnOriginalValue("priority"));
+		objectLayoutBoxImpl.setType(
+			this.<String>getColumnOriginalValue("type_"));
 
 		return objectLayoutBoxImpl;
 	}
@@ -987,6 +1000,14 @@ public class ObjectLayoutBoxModelImpl
 
 		objectLayoutBoxCacheModel.priority = getPriority();
 
+		objectLayoutBoxCacheModel.type = getType();
+
+		String type = objectLayoutBoxCacheModel.type;
+
+		if ((type != null) && (type.length() == 0)) {
+			objectLayoutBoxCacheModel.type = null;
+		}
+
 		return objectLayoutBoxCacheModel;
 	}
 
@@ -1039,41 +1060,12 @@ public class ObjectLayoutBoxModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ObjectLayoutBox, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ObjectLayoutBox, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ObjectLayoutBox, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ObjectLayoutBox)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ObjectLayoutBox>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ObjectLayoutBox.class, ModelWrapper.class);
 
 	}
 
@@ -1091,12 +1083,14 @@ public class ObjectLayoutBoxModelImpl
 	private String _name;
 	private String _nameCurrentLanguageId;
 	private int _priority;
+	private String _type;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ObjectLayoutBox, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1133,6 +1127,7 @@ public class ObjectLayoutBoxModelImpl
 		_columnOriginalValues.put("collapsable", _collapsable);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("priority", _priority);
+		_columnOriginalValues.put("type_", _type);
 	}
 
 	private static final Map<String, String> _attributeNames;
@@ -1141,6 +1136,7 @@ public class ObjectLayoutBoxModelImpl
 		Map<String, String> attributeNames = new HashMap<>();
 
 		attributeNames.put("uuid_", "uuid");
+		attributeNames.put("type_", "type");
 
 		_attributeNames = Collections.unmodifiableMap(attributeNames);
 	}
@@ -1179,6 +1175,8 @@ public class ObjectLayoutBoxModelImpl
 		columnBitmasks.put("name", 1024L);
 
 		columnBitmasks.put("priority", 2048L);
+
+		columnBitmasks.put("type_", 4096L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

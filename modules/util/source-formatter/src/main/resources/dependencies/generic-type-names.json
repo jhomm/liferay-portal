@@ -50,10 +50,6 @@
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "com.liferay.adaptive.media.content.transformer.ContentTransformer"
-		},
-		{
-			"genericTypeCount": 1,
 			"name": "com.liferay.adaptive.media.content.transformer.ContentTransformerContentType"
 		},
 		{
@@ -274,10 +270,6 @@
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "com.liferay.frontend.taglib.chart.model.ChartConfig"
-		},
-		{
-			"genericTypeCount": 1,
 			"name": "com.liferay.frontend.taglib.clay.servlet.taglib.data.ClayTagDataSource"
 		},
 		{
@@ -343,10 +335,6 @@
 		{
 			"genericTypeCount": 1,
 			"name": "com.liferay.info.item.renderer.InfoItemTemplatedRenderer"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.info.item.selector.InfoItemSelector"
 		},
 		{
 			"genericTypeCount": 1,
@@ -447,18 +435,6 @@
 		{
 			"genericTypeCount": 2,
 			"name": "com.liferay.osgi.service.tracker.collections.ServiceReferenceServiceTuple"
-		},
-		{
-			"genericTypeCount": 4,
-			"name": "com.liferay.osgi.service.tracker.collections.ServiceTrackerMapBuilder.Collector"
-		},
-		{
-			"genericTypeCount": 4,
-			"name": "com.liferay.osgi.service.tracker.collections.ServiceTrackerMapBuilder.Mapper"
-		},
-		{
-			"genericTypeCount": 2,
-			"name": "com.liferay.osgi.service.tracker.collections.ServiceTrackerMapBuilder.Selector"
 		},
 		{
 			"genericTypeCount": 1,
@@ -645,26 +621,6 @@
 			"name": "com.liferay.portal.deploy.hot.ServiceBag"
 		},
 		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.fabric.netty.codec.serialization.ObjectDecodeChannelInboundHandler"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.fabric.netty.worker.NettyFabricWorkerConfig"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.fabric.netty.worker.NettyFabricWorkerStub"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.fabric.repository.Repository"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.fabric.worker.FabricWorker"
-		},
-		{
 			"genericTypeCount": 2,
 			"name": "com.liferay.portal.kernel.cache.PortalCache"
 		},
@@ -790,23 +746,7 @@
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "com.liferay.portal.kernel.nio.intraband.CompletionHandler"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.kernel.nio.intraband.RecordCompletionHandler"
-		},
-		{
-			"genericTypeCount": 1,
 			"name": "com.liferay.portal.kernel.portlet.bridges.mvc.MVCCommandCache"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.kernel.process.ProcessCallable"
-		},
-		{
-			"genericTypeCount": 1,
-			"name": "com.liferay.portal.kernel.process.ProcessChannel"
 		},
 		{
 			"genericTypeCount": 1,
@@ -1014,10 +954,6 @@
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "com.liferay.portal.nio.intraband.proxy.StubMap"
-		},
-		{
-			"genericTypeCount": 1,
 			"name": "com.liferay.portal.odata.filter.ExpressionConvert"
 		},
 		{
@@ -1083,6 +1019,14 @@
 		{
 			"genericTypeCount": 1,
 			"name": "com.liferay.portal.search.query.function.score.ScoreFunctionTranslator"
+		},
+		{
+			"genericTypeCount": 1,
+			"name": "com.liferay.portal.search.solr7.internal.facet.FacetProcessor"
+		},
+		{
+			"genericTypeCount": 1,
+			"name": "com.liferay.portal.search.solr7.internal.filter.FilterTranslator"
 		},
 		{
 			"genericTypeCount": 1,
@@ -1678,11 +1622,11 @@
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.enterprise.event.Event"
+			"name": "jakarta.enterprise.event.Event"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.enterprise.inject.Instance"
+			"name": "jakarta.enterprise.inject.Instance"
 		},
 		{
 			"genericTypeCount": 1,
@@ -1698,55 +1642,55 @@
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.validation.ConstraintViolation"
+			"name": "jakarta.validation.ConstraintViolation"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.websocket.Decoder.Text"
+			"name": "jakarta.websocket.Decoder.Text"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.websocket.Encoder.Text"
+			"name": "jakarta.websocket.Encoder.Text"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.ws.rs.client.Entity"
+			"name": "jakarta.ws.rs.client.Entity"
 		},
 		{
 			"genericTypeCount": 2,
-			"name": "javax.ws.rs.core.MultivaluedHashMap"
+			"name": "jakarta.ws.rs.core.MultivaluedHashMap"
 		},
 		{
 			"genericTypeCount": 2,
-			"name": "javax.ws.rs.core.MultivaluedMap"
+			"name": "jakarta.ws.rs.core.MultivaluedMap"
 		},
 		{
 			"genericTypeCount": 2,
-			"name": "javax.ws.rs.core.MultivaluedMap.Entry"
+			"name": "jakarta.ws.rs.core.MultivaluedMap.Entry"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.ws.rs.ext.ContextResolver"
+			"name": "jakarta.ws.rs.ext.ContextResolver"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.ws.rs.ext.ExceptionMapper"
+			"name": "jakarta.ws.rs.ext.ExceptionMapper"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.ws.rs.ext.MessageBodyReader"
+			"name": "jakarta.ws.rs.ext.MessageBodyReader"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.ws.rs.ext.MessageBodyWriter"
+			"name": "jakarta.ws.rs.ext.MessageBodyWriter"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.ws.rs.ext.ParamConverter"
+			"name": "jakarta.ws.rs.ext.ParamConverter"
 		},
 		{
 			"genericTypeCount": 1,
-			"name": "javax.xml.ws.handler.LogicalHandler"
+			"name": "jakarta.xml.ws.handler.LogicalHandler"
 		},
 		{
 			"genericTypeCount": 1,
@@ -1807,6 +1751,10 @@
 		{
 			"genericTypeCount": 1,
 			"name": "org.apache.shindig.protocol.RestfulCollection"
+		},
+		{
+			"genericTypeCount": 1,
+			"name": "org.apache.solr.common.util.NamedList"
 		},
 		{
 			"genericTypeCount": 1,

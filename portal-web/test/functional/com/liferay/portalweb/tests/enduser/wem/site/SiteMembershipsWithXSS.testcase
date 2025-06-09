@@ -1,43 +1,32 @@
-@component-name = "portal-wcm"
+@component-name = "portal-site-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Site Administration";
+	property testray.main.component.name = "Sites Administration";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		task ("Set up instance and sign in") {
+			TestCase.setUpPortalInstance();
 
-		User.firstLoginPG();
-	}
-
-	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
-
-		if ("${testPortalInstance}" == "true") {
-			PortalInstances.tearDownCP();
+			User.firstLoginPG();
 		}
-		else {
-			Organization.tearDownCP();
 
-			Site.tearDownCP();
-
-			UserGroup.tearDownCP();
-
-			JSONUser.tearDownNonAdminUsers();
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = "Test Site Name");
 		}
 	}
 
 	@description = "This is a use case for LPS-124620. Assert no pop up when viewing membership request detail."
-	@priority = "4"
+	@priority = 4
 	test AddXSSRequestMembershipComment {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
-		property testray.component.names = "Site Administration,XSS";
 
 		task ("Add a site") {
-			JSONGroup.addGroup(
-				groupName = "Site Name",
-				membershipType = "Restricted");
+			HeadlessSite.addSite(
+				membershipType = "Restricted",
+				siteName = "Site Name");
 		}
 
 		task ("Add a My Sites widget to Liferay Home page and add view permission to it") {
@@ -55,7 +44,7 @@ definition {
 
 			IFrame.selectPermissionsFrame();
 
-			Check(
+			Check.checkNotVisible(
 				key_roleTitle = "user",
 				locator1 = "Permissions#CONFIGURATION_PERMISSIONS_VIEW_CHECKBOX");
 
@@ -65,7 +54,7 @@ definition {
 
 			IFrame.closeFrame();
 
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Add a user and login with the user") {
@@ -83,7 +72,7 @@ definition {
 			User.logoutPG();
 
 			User.loginUserPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "userea@liferay.com");
 		}
 
@@ -99,7 +88,7 @@ definition {
 			User.logoutPG();
 
 			User.loginPG(
-				password = "test",
+				password = PropsUtil.get("default.admin.password"),
 				userEmailAddress = "test@liferay.com");
 
 			Site.openSiteMembershipsAdmin(siteURLKey = "site-name");
@@ -120,6 +109,38 @@ definition {
 			Click(
 				key_card = "userfn userln",
 				locator1 = "Card#CARD_TITLE");
+
+			AssertAlertNotPresent();
+		}
+	}
+
+	@description = "This is a test for LPS-135079. View no pop up when select user card with XSS name in memberships."
+	@priority = 4
+	test SelectUserWithXSSNameInMemberships {
+		var firstName = '''"><script>alert(1)</script>''';
+		var lastName = '''"><script>alert(2)</script>''';
+
+		task ("Add a user with XSS name") {
+			User.openUsersAdmin();
+
+			User.addCP(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = ${firstName},
+				userLastName = ${lastName},
+				userScreenName = "usersn");
+		}
+
+		task ("Assign the new user as member") {
+			Site.openSiteMembershipsAdmin(siteURLKey = "test-site-name");
+
+			Site.assignUserAsMemberCP(
+				userFirstName = ${firstName},
+				userLastName = ${lastName},
+				userScreenName = "usersn");
+		}
+
+		task ("View alert not shown when select user card") {
+			LexiconCard.checkCardCheckbox(card = "${firstName} ${lastName}");
 
 			AssertAlertNotPresent();
 		}

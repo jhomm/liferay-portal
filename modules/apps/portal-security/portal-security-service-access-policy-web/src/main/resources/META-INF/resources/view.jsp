@@ -1,73 +1,24 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String displayStyle = ParamUtil.getString(request, "displayStyle", "list");
-
-boolean orderByAsc = false;
-
-String orderByType = ParamUtil.getString(request, "orderByType", "asc");
-
-if (orderByType.equals("asc")) {
-	orderByAsc = true;
-}
-
-OrderByComparator<SAPEntry> orderByComparator = new SAPEntryNameComparator(orderByAsc);
-
-int sapEntriesCount = SAPEntryServiceUtil.getCompanySAPEntriesCount(company.getCompanyId());
-
-PortletURL portletURL = renderResponse.createRenderURL();
+SAPEntryDisplayContext sapEntryDisplayContext = new SAPEntryDisplayContext(liferayPortletRequest, liferayPortletResponse);
 %>
 
 <clay:management-toolbar
-	creationMenu='<%=
-		new JSPCreationMenu(pageContext) {
-			{
-				addPrimaryDropdownItem(dropdownItem -> dropdownItem.setHref(renderResponse.createRenderURL(), "mvcPath", "/edit_entry.jsp", "redirect", PortalUtil.getCurrentURL(httpServletRequest)));
-			}
-		}
-	%>'
-	disabled="<%= sapEntriesCount == 0 %>"
-	selectable="<%= false %>"
-	showCreationMenu="<%= SAPPermission.contains(permissionChecker, SAPActionKeys.ACTION_ADD_SAP_ENTRY) %>"
-	showSearch="<%= false %>"
-	sortingOrder="<%= orderByType %>"
-	sortingURL='<%=
-		PortletURLBuilder.createRenderURL(
-			renderResponse
-		).setParameter(
-			"displayStyle", displayStyle
-		).setParameter(
-			"orderByType", orderByAsc ? "desc" : "asc"
-		).buildString()
-	%>'
+	managementToolbarDisplayContext="<%= new SAPEntryManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, sapEntryDisplayContext.getSearchContainer()) %>"
 />
 
 <clay:container-fluid>
 	<liferay-ui:search-container
-		emptyResultsMessage="there-are-no-service-access-policies"
-		iteratorURL="<%= portletURL %>"
-		total="<%= sapEntriesCount %>"
+		searchContainer="<%= sapEntryDisplayContext.getSearchContainer() %>"
 	>
-		<liferay-ui:search-container-results
-			results="<%= SAPEntryServiceUtil.getCompanySAPEntries(company.getCompanyId(), searchContainer.getStart(), searchContainer.getEnd(), orderByComparator) %>"
-		/>
-
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.security.service.access.policy.model.SAPEntry"
 			escapedModel="<%= true %>"

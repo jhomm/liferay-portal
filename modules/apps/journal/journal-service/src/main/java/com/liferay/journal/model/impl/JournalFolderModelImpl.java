@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.model.impl;
@@ -19,16 +10,12 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.model.JournalFolderModel;
-import com.liferay.journal.model.JournalFolderSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
-import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
-import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -37,23 +24,19 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -83,13 +66,13 @@ public class JournalFolderModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"folderId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"parentFolderId", Types.BIGINT}, {"treePath", Types.VARCHAR},
-		{"name", Types.VARCHAR}, {"description", Types.VARCHAR},
-		{"restrictionType", Types.INTEGER},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"folderId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"parentFolderId", Types.BIGINT},
+		{"treePath", Types.VARCHAR}, {"name", Types.VARCHAR},
+		{"description", Types.VARCHAR}, {"restrictionType", Types.INTEGER},
 		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER},
 		{"statusByUserId", Types.BIGINT}, {"statusByUserName", Types.VARCHAR},
 		{"statusDate", Types.TIMESTAMP}
@@ -102,6 +85,7 @@ public class JournalFolderModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("folderId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -122,7 +106,7 @@ public class JournalFolderModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table JournalFolder (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,folderId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentFolderId LONG,treePath STRING null,name VARCHAR(100) null,description STRING null,restrictionType INTEGER,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (folderId, ctCollectionId))";
+		"create table JournalFolder (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,folderId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentFolderId LONG,treePath STRING null,name VARCHAR(100) null,description STRING null,restrictionType INTEGER,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (folderId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table JournalFolder";
 
@@ -131,6 +115,9 @@ public class JournalFolderModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY JournalFolder.parentFolderId ASC, JournalFolder.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY journalFolder.parentFolderId ASC, journalFolder.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -148,37 +135,43 @@ public class JournalFolderModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FOLDERID_COLUMN_BITMASK = 2L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 4L;
+	public static final long FOLDERID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 8L;
+	public static final long GROUPID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PARENTFOLDERID_COLUMN_BITMASK = 16L;
+	public static final long NAME_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 32L;
+	public static final long PARENTFOLDERID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 64L;
+	public static final long STATUS_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -192,68 +185,6 @@ public class JournalFolderModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static JournalFolder toModel(JournalFolderSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		JournalFolder model = new JournalFolderImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setFolderId(soapModel.getFolderId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setParentFolderId(soapModel.getParentFolderId());
-		model.setTreePath(soapModel.getTreePath());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setRestrictionType(soapModel.getRestrictionType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<JournalFolder> toModels(JournalFolderSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<JournalFolder> models = new ArrayList<JournalFolder>(
-			soapModels.length);
-
-		for (JournalFolderSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public JournalFolderModelImpl() {
@@ -332,150 +263,158 @@ public class JournalFolderModelImpl
 	public Map<String, Function<JournalFolder, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<JournalFolder, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, JournalFolder>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			JournalFolder.class.getClassLoader(), JournalFolder.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<JournalFolder, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<JournalFolder> constructor =
-				(Constructor<JournalFolder>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<JournalFolder, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<JournalFolder, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", JournalFolder::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", JournalFolder::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", JournalFolder::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				JournalFolder::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"folderId", JournalFolder::getFolderId);
+			attributeGetterFunctions.put("groupId", JournalFolder::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", JournalFolder::getCompanyId);
+			attributeGetterFunctions.put("userId", JournalFolder::getUserId);
+			attributeGetterFunctions.put(
+				"userName", JournalFolder::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", JournalFolder::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", JournalFolder::getModifiedDate);
+			attributeGetterFunctions.put(
+				"parentFolderId", JournalFolder::getParentFolderId);
+			attributeGetterFunctions.put(
+				"treePath", JournalFolder::getTreePath);
+			attributeGetterFunctions.put("name", JournalFolder::getName);
+			attributeGetterFunctions.put(
+				"description", JournalFolder::getDescription);
+			attributeGetterFunctions.put(
+				"restrictionType", JournalFolder::getRestrictionType);
+			attributeGetterFunctions.put(
+				"lastPublishDate", JournalFolder::getLastPublishDate);
+			attributeGetterFunctions.put("status", JournalFolder::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", JournalFolder::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", JournalFolder::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", JournalFolder::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<JournalFolder, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<JournalFolder, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<JournalFolder, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<JournalFolder, Object>>();
-		Map<String, BiConsumer<JournalFolder, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<JournalFolder, ?>>();
+		private static final Map<String, BiConsumer<JournalFolder, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", JournalFolder::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", JournalFolder::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", JournalFolder::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<JournalFolder, String>)JournalFolder::setUuid);
-		attributeGetterFunctions.put("folderId", JournalFolder::getFolderId);
-		attributeSetterBiConsumers.put(
-			"folderId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setFolderId);
-		attributeGetterFunctions.put("groupId", JournalFolder::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setGroupId);
-		attributeGetterFunctions.put("companyId", JournalFolder::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setCompanyId);
-		attributeGetterFunctions.put("userId", JournalFolder::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setUserId);
-		attributeGetterFunctions.put("userName", JournalFolder::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<JournalFolder, String>)JournalFolder::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", JournalFolder::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<JournalFolder, Date>)JournalFolder::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", JournalFolder::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<JournalFolder, Date>)JournalFolder::setModifiedDate);
-		attributeGetterFunctions.put(
-			"parentFolderId", JournalFolder::getParentFolderId);
-		attributeSetterBiConsumers.put(
-			"parentFolderId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setParentFolderId);
-		attributeGetterFunctions.put("treePath", JournalFolder::getTreePath);
-		attributeSetterBiConsumers.put(
-			"treePath",
-			(BiConsumer<JournalFolder, String>)JournalFolder::setTreePath);
-		attributeGetterFunctions.put("name", JournalFolder::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<JournalFolder, String>)JournalFolder::setName);
-		attributeGetterFunctions.put(
-			"description", JournalFolder::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<JournalFolder, String>)JournalFolder::setDescription);
-		attributeGetterFunctions.put(
-			"restrictionType", JournalFolder::getRestrictionType);
-		attributeSetterBiConsumers.put(
-			"restrictionType",
-			(BiConsumer<JournalFolder, Integer>)
-				JournalFolder::setRestrictionType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", JournalFolder::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<JournalFolder, Date>)JournalFolder::setLastPublishDate);
-		attributeGetterFunctions.put("status", JournalFolder::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<JournalFolder, Integer>)JournalFolder::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", JournalFolder::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<JournalFolder, Long>)JournalFolder::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", JournalFolder::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<JournalFolder, String>)
-				JournalFolder::setStatusByUserName);
-		attributeGetterFunctions.put(
-			"statusDate", JournalFolder::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<JournalFolder, Date>)JournalFolder::setStatusDate);
+		static {
+			Map<String, BiConsumer<JournalFolder, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<JournalFolder, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<JournalFolder, Long>)JournalFolder::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<JournalFolder, Long>)
+					JournalFolder::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<JournalFolder, String>)JournalFolder::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<JournalFolder, String>)
+					JournalFolder::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"folderId",
+				(BiConsumer<JournalFolder, Long>)JournalFolder::setFolderId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<JournalFolder, Long>)JournalFolder::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<JournalFolder, Long>)JournalFolder::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<JournalFolder, Long>)JournalFolder::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<JournalFolder, String>)JournalFolder::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<JournalFolder, Date>)JournalFolder::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<JournalFolder, Date>)
+					JournalFolder::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"parentFolderId",
+				(BiConsumer<JournalFolder, Long>)
+					JournalFolder::setParentFolderId);
+			attributeSetterBiConsumers.put(
+				"treePath",
+				(BiConsumer<JournalFolder, String>)JournalFolder::setTreePath);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<JournalFolder, String>)JournalFolder::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<JournalFolder, String>)
+					JournalFolder::setDescription);
+			attributeSetterBiConsumers.put(
+				"restrictionType",
+				(BiConsumer<JournalFolder, Integer>)
+					JournalFolder::setRestrictionType);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<JournalFolder, Date>)
+					JournalFolder::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<JournalFolder, Integer>)JournalFolder::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<JournalFolder, Long>)
+					JournalFolder::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<JournalFolder, String>)
+					JournalFolder::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<JournalFolder, Date>)JournalFolder::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -535,6 +474,35 @@ public class JournalFolderModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -945,74 +913,8 @@ public class JournalFolderModelImpl
 	}
 
 	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException {
-
-		if (!isInTrash()) {
-			return null;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return trashEntry;
-		}
-
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if (Validator.isNotNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			ContainerModel containerModel = null;
-
-			try {
-				containerModel = trashHandler.getParentContainerModel(this);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-				return null;
-			}
-
-			while (containerModel != null) {
-				if (containerModel instanceof TrashedModel) {
-					TrashedModel trashedModel = (TrashedModel)containerModel;
-
-					return trashedModel.getTrashEntry();
-				}
-
-				trashHandler =
-					com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-						getTrashHandler(
-							trashHandler.getContainerModelClassName(
-								containerModel.getContainerModelId()));
-
-				if (trashHandler == null) {
-					return null;
-				}
-
-				containerModel = trashHandler.getContainerModel(
-					containerModel.getParentContainerModelId());
-			}
-		}
-
-		return null;
-	}
-
-	@Override
 	public long getTrashEntryClassPK() {
 		return getPrimaryKey();
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-			getTrashHandler(getModelClassName());
 	}
 
 	@Override
@@ -1023,70 +925,6 @@ public class JournalFolderModelImpl
 		else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean isInTrashContainer() {
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if ((trashHandler == null) ||
-			Validator.isNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			return false;
-		}
-
-		try {
-			ContainerModel containerModel =
-				trashHandler.getParentContainerModel(this);
-
-			if (containerModel == null) {
-				return false;
-			}
-
-			if (containerModel instanceof TrashedModel) {
-				return ((TrashedModel)containerModel).isInTrash();
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override
@@ -1228,6 +1066,7 @@ public class JournalFolderModelImpl
 		journalFolderImpl.setMvccVersion(getMvccVersion());
 		journalFolderImpl.setCtCollectionId(getCtCollectionId());
 		journalFolderImpl.setUuid(getUuid());
+		journalFolderImpl.setExternalReferenceCode(getExternalReferenceCode());
 		journalFolderImpl.setFolderId(getFolderId());
 		journalFolderImpl.setGroupId(getGroupId());
 		journalFolderImpl.setCompanyId(getCompanyId());
@@ -1260,6 +1099,8 @@ public class JournalFolderModelImpl
 		journalFolderImpl.setCtCollectionId(
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		journalFolderImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		journalFolderImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		journalFolderImpl.setFolderId(
 			this.<Long>getColumnOriginalValue("folderId"));
 		journalFolderImpl.setGroupId(
@@ -1393,6 +1234,18 @@ public class JournalFolderModelImpl
 
 		if ((uuid != null) && (uuid.length() == 0)) {
 			journalFolderCacheModel.uuid = null;
+		}
+
+		journalFolderCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			journalFolderCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			journalFolderCacheModel.externalReferenceCode = null;
 		}
 
 		journalFolderCacheModel.folderId = getFolderId();
@@ -1539,47 +1392,19 @@ public class JournalFolderModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<JournalFolder, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<JournalFolder, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<JournalFolder, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((JournalFolder)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, JournalFolder>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					JournalFolder.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _folderId;
 	private long _groupId;
 	private long _companyId;
@@ -1603,7 +1428,8 @@ public class JournalFolderModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<JournalFolder, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1631,6 +1457,8 @@ public class JournalFolderModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("folderId", _folderId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1677,39 +1505,41 @@ public class JournalFolderModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("folderId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("groupId", 16L);
+		columnBitmasks.put("folderId", 16L);
 
-		columnBitmasks.put("companyId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userId", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("userName", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("createDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("modifiedDate", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("parentFolderId", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("treePath", 2048L);
+		columnBitmasks.put("parentFolderId", 2048L);
 
-		columnBitmasks.put("name", 4096L);
+		columnBitmasks.put("treePath", 4096L);
 
-		columnBitmasks.put("description", 8192L);
+		columnBitmasks.put("name", 8192L);
 
-		columnBitmasks.put("restrictionType", 16384L);
+		columnBitmasks.put("description", 16384L);
 
-		columnBitmasks.put("lastPublishDate", 32768L);
+		columnBitmasks.put("restrictionType", 32768L);
 
-		columnBitmasks.put("status", 65536L);
+		columnBitmasks.put("lastPublishDate", 65536L);
 
-		columnBitmasks.put("statusByUserId", 131072L);
+		columnBitmasks.put("status", 131072L);
 
-		columnBitmasks.put("statusByUserName", 262144L);
+		columnBitmasks.put("statusByUserId", 262144L);
 
-		columnBitmasks.put("statusDate", 524288L);
+		columnBitmasks.put("statusByUserName", 524288L);
+
+		columnBitmasks.put("statusDate", 1048576L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

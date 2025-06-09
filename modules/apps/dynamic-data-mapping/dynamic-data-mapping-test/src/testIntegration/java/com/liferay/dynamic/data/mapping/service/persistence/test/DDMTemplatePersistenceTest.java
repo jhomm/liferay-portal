@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.dynamic.data.mapping.exception.DuplicateDDMTemplateExternalReferenceCodeException;
 import com.liferay.dynamic.data.mapping.exception.NoSuchTemplateException;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil;
@@ -27,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -131,6 +127,8 @@ public class DDMTemplatePersistenceTest {
 
 		newDDMTemplate.setUuid(RandomTestUtil.randomString());
 
+		newDDMTemplate.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newDDMTemplate.setGroupId(RandomTestUtil.nextLong());
 
 		newDDMTemplate.setCompanyId(RandomTestUtil.nextLong());
@@ -193,6 +191,9 @@ public class DDMTemplatePersistenceTest {
 		Assert.assertEquals(
 			existingDDMTemplate.getUuid(), newDDMTemplate.getUuid());
 		Assert.assertEquals(
+			existingDDMTemplate.getExternalReferenceCode(),
+			newDDMTemplate.getExternalReferenceCode());
+		Assert.assertEquals(
 			existingDDMTemplate.getTemplateId(),
 			newDDMTemplate.getTemplateId());
 		Assert.assertEquals(
@@ -254,6 +255,26 @@ public class DDMTemplatePersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingDDMTemplate.getLastPublishDate()),
 			Time.getShortTimestamp(newDDMTemplate.getLastPublishDate()));
+	}
+
+	@Test(expected = DuplicateDDMTemplateExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		DDMTemplate ddmTemplate = addDDMTemplate();
+
+		DDMTemplate newDDMTemplate = addDDMTemplate();
+
+		newDDMTemplate.setGroupId(ddmTemplate.getGroupId());
+
+		newDDMTemplate = _persistence.update(newDDMTemplate);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newDDMTemplate);
+
+		newDDMTemplate.setExternalReferenceCode(
+			ddmTemplate.getExternalReferenceCode());
+
+		_persistence.update(newDDMTemplate);
 	}
 
 	@Test
@@ -413,6 +434,15 @@ public class DDMTemplatePersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		DDMTemplate newDDMTemplate = addDDMTemplate();
 
@@ -437,6 +467,24 @@ public class DDMTemplatePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -444,14 +492,14 @@ public class DDMTemplatePersistenceTest {
 	protected OrderByComparator<DDMTemplate> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"DDMTemplate", "mvccVersion", true, "ctCollectionId", true, "uuid",
-			true, "templateId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "versionUserId", true,
-			"versionUserName", true, "createDate", true, "modifiedDate", true,
-			"classNameId", true, "classPK", true, "resourceClassNameId", true,
-			"templateKey", true, "version", true, "type", true, "mode", true,
-			"language", true, "cacheable", true, "smallImage", true,
-			"smallImageId", true, "smallImageURL", true, "lastPublishDate",
-			true);
+			true, "externalReferenceCode", true, "templateId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"versionUserId", true, "versionUserName", true, "createDate", true,
+			"modifiedDate", true, "classNameId", true, "classPK", true,
+			"resourceClassNameId", true, "templateKey", true, "version", true,
+			"type", true, "mode", true, "language", true, "cacheable", true,
+			"smallImage", true, "smallImageId", true, "smallImageURL", true,
+			"lastPublishDate", true);
 	}
 
 	@Test
@@ -746,6 +794,17 @@ public class DDMTemplatePersistenceTest {
 			ReflectionTestUtil.invoke(
 				ddmTemplate, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "templateKey"));
+
+		Assert.assertEquals(
+			ddmTemplate.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				ddmTemplate, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(ddmTemplate.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				ddmTemplate, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected DDMTemplate addDDMTemplate() throws Exception {
@@ -758,6 +817,8 @@ public class DDMTemplatePersistenceTest {
 		ddmTemplate.setCtCollectionId(RandomTestUtil.nextLong());
 
 		ddmTemplate.setUuid(RandomTestUtil.randomString());
+
+		ddmTemplate.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		ddmTemplate.setGroupId(RandomTestUtil.nextLong());
 

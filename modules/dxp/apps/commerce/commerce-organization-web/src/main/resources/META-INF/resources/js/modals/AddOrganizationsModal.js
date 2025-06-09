@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -15,11 +9,13 @@ import ClayIcon from '@clayui/icon';
 import ClayModal from '@clayui/modal';
 import ClayMultiSelect from '@clayui/multi-select';
 import classNames from 'classnames';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useContext, useState} from 'react';
 
 import ChartContext from '../ChartContext';
 import {createOrganizations} from '../data/organizations';
+import {MODEL_TYPE_MAP} from '../utils/constants';
 
 export default function AddOrganizationModal({
 	closeModal,
@@ -67,19 +63,19 @@ export default function AddOrganizationModal({
 				if (newOrganizationsDetails.length) {
 					const message =
 						newOrganizationsDetails.length === 1
-							? Liferay.Util.sub(
+							? sub(
 									Liferay.Language.get(
 										'1-organization-was-added-to-x'
 									),
 									parentData.name
-							  )
-							: Liferay.Util.sub(
+								)
+							: sub(
 									Liferay.Language.get(
 										'x-organizations-were-added-to-x'
 									),
 									newOrganizationsDetails.length,
 									parentData.name
-							  );
+								);
 
 					openToast({
 						message,
@@ -88,7 +84,7 @@ export default function AddOrganizationModal({
 
 					chartInstanceRef.current.addNodes(
 						newOrganizationsDetails,
-						'organization',
+						MODEL_TYPE_MAP.organization,
 						parentData
 					);
 
@@ -119,6 +115,7 @@ export default function AddOrganizationModal({
 				>
 					<label htmlFor="addNewOrganization">
 						{Liferay.Language.get('name') + ' '}
+
 						<ClayIcon
 							className="ml-1 reference-mark"
 							symbol="asterisk"
@@ -129,13 +126,13 @@ export default function AddOrganizationModal({
 						<ClayInput.GroupItem>
 							<ClayMultiSelect
 								id="addNewOrganization"
-								inputValue={query}
 								items={items}
 								onChange={setQuery}
 								onItemsChange={setItems}
 								placeholder={Liferay.Language.get(
 									'organization-name'
 								)}
+								value={query}
 							/>
 
 							{!!errors.length && (
@@ -143,6 +140,7 @@ export default function AddOrganizationModal({
 									{errors.map((error, i) => (
 										<ClayForm.FeedbackItem key={i}>
 											<ClayForm.FeedbackIndicator symbol="info-circle" />
+
 											{error}
 										</ClayForm.FeedbackItem>
 									))}

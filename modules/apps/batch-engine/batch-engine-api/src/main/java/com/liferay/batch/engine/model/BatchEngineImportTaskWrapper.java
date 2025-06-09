@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.model;
@@ -51,6 +42,7 @@ public class BatchEngineImportTaskWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("batchEngineImportTaskId", getBatchEngineImportTaskId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -65,6 +57,7 @@ public class BatchEngineImportTaskWrapper
 		attributes.put("errorMessage", getErrorMessage());
 		attributes.put("executeStatus", getExecuteStatus());
 		attributes.put("fieldNameMapping", getFieldNameMapping());
+		attributes.put("importStrategy", getImportStrategy());
 		attributes.put("operation", getOperation());
 		attributes.put("parameters", getParameters());
 		attributes.put("processedItemsCount", getProcessedItemsCount());
@@ -87,6 +80,13 @@ public class BatchEngineImportTaskWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long batchEngineImportTaskId = (Long)attributes.get(
@@ -175,6 +175,12 @@ public class BatchEngineImportTaskWrapper
 			setFieldNameMapping(fieldNameMapping);
 		}
 
+		Integer importStrategy = (Integer)attributes.get("importStrategy");
+
+		if (importStrategy != null) {
+			setImportStrategy(importStrategy);
+		}
+
 		String operation = (String)attributes.get("operation");
 
 		if (operation != null) {
@@ -218,6 +224,18 @@ public class BatchEngineImportTaskWrapper
 	@Override
 	public BatchEngineImportTask cloneWithOriginalValues() {
 		return wrap(model.cloneWithOriginalValues());
+	}
+
+	@Override
+	public java.util.List<BatchEngineImportTaskError>
+		getBatchEngineImportTaskErrors() {
+
+		return model.getBatchEngineImportTaskErrors();
+	}
+
+	@Override
+	public int getBatchEngineImportTaskErrorsCount() {
+		return model.getBatchEngineImportTaskErrorsCount();
 	}
 
 	/**
@@ -331,6 +349,16 @@ public class BatchEngineImportTaskWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this batch engine import task.
+	 *
+	 * @return the external reference code of this batch engine import task
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the field name mapping of this batch engine import task.
 	 *
 	 * @return the field name mapping of this batch engine import task
@@ -338,6 +366,16 @@ public class BatchEngineImportTaskWrapper
 	@Override
 	public Map<String, Serializable> getFieldNameMapping() {
 		return model.getFieldNameMapping();
+	}
+
+	/**
+	 * Returns the import strategy of this batch engine import task.
+	 *
+	 * @return the import strategy of this batch engine import task
+	 */
+	@Override
+	public int getImportStrategy() {
+		return model.getImportStrategy();
 	}
 
 	/**
@@ -378,6 +416,11 @@ public class BatchEngineImportTaskWrapper
 	@Override
 	public Map<String, Serializable> getParameters() {
 		return model.getParameters();
+	}
+
+	@Override
+	public String getParameterValue(String name) {
+		return model.getParameterValue(name);
 	}
 
 	/**
@@ -576,6 +619,16 @@ public class BatchEngineImportTaskWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this batch engine import task.
+	 *
+	 * @param externalReferenceCode the external reference code of this batch engine import task
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the field name mapping of this batch engine import task.
 	 *
 	 * @param fieldNameMapping the field name mapping of this batch engine import task
@@ -585,6 +638,16 @@ public class BatchEngineImportTaskWrapper
 		Map<String, Serializable> fieldNameMapping) {
 
 		model.setFieldNameMapping(fieldNameMapping);
+	}
+
+	/**
+	 * Sets the import strategy of this batch engine import task.
+	 *
+	 * @param importStrategy the import strategy of this batch engine import task
+	 */
+	@Override
+	public void setImportStrategy(int importStrategy) {
+		model.setImportStrategy(importStrategy);
 	}
 
 	/**
@@ -705,6 +768,11 @@ public class BatchEngineImportTaskWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

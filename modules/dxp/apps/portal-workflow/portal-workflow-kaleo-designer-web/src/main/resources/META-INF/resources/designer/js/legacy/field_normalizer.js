@@ -1,34 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-kaleo-designer-field-normalizer',
 	(A) => {
-		var AArray = A.Array;
-		var AObject = A.Object;
-		var Lang = A.Lang;
+		const AArray = A.Array;
 
-		var KaleoDesignerRemoteServices = Liferay.KaleoDesignerRemoteServices;
+		// eslint-disable-next-line @liferay/aui/no-object
+		const AObject = A.Object;
+		const Lang = A.Lang;
 
-		var isArray = Lang.isArray;
-		var isObject = Lang.isObject;
-		var isValue = Lang.isValue;
+		const KaleoDesignerRemoteServices = Liferay.KaleoDesignerRemoteServices;
 
-		var STR_BLANK = '';
+		const isArray = Lang.isArray;
+		const isObject = Lang.isObject;
+		const isValue = Lang.isValue;
 
-		var isNotEmptyValue = function (item) {
+		const STR_BLANK = '';
+
+		const isNotEmptyValue = function (item) {
 			return isValue(item) && item !== STR_BLANK;
 		};
 
-		var COL_TYPES_ASSIGNMENT = [
+		const COL_TYPES_ASSIGNMENT = [
 			'address',
 			'receptionType',
 			'resourceActions',
@@ -41,11 +37,11 @@ AUI.add(
 			'userId',
 		];
 
-		var populateRole = function (assignments) {
+		const populateRole = function (assignments) {
 			KaleoDesignerRemoteServices.getRole(assignments.roleId, (data) => {
 				AArray.each(data, (item) => {
 					if (item) {
-						var index = assignments.roleId.indexOf(item.roleId);
+						const index = assignments.roleId.indexOf(item.roleId);
 
 						assignments.roleNameAC[index] = item.name;
 					}
@@ -53,7 +49,7 @@ AUI.add(
 			});
 		};
 
-		var populateUser = function (assignments) {
+		const populateUser = function (assignments) {
 			if (
 				isArray(assignments.emailAddress) &&
 				assignments.emailAddress.filter(isNotEmptyValue).length !== 0
@@ -65,7 +61,7 @@ AUI.add(
 					(data) => {
 						AArray.each(data, (item) => {
 							if (item) {
-								var index = assignments.emailAddress.indexOf(
+								const index = assignments.emailAddress.indexOf(
 									item.emailAddress
 								);
 
@@ -86,7 +82,7 @@ AUI.add(
 					(data) => {
 						AArray.each(data, (item) => {
 							if (item) {
-								var index = assignments.screenName.indexOf(
+								const index = assignments.screenName.indexOf(
 									item.screenName
 								);
 
@@ -107,7 +103,7 @@ AUI.add(
 					(data) => {
 						AArray.each(data, (item) => {
 							if (item) {
-								var index = assignments.userId.indexOf(
+								const index = assignments.userId.indexOf(
 									item.userId
 								);
 
@@ -119,7 +115,7 @@ AUI.add(
 			}
 		};
 
-		var _put = function (object, key, value, index) {
+		const _put = function (object, key, value, index) {
 			object[key] = object[key] || [];
 
 			if (index === undefined) {
@@ -130,9 +126,9 @@ AUI.add(
 			}
 		};
 
-		var FieldNormalizer = {
+		const FieldNormalizer = {
 			normalizeToActions(data) {
-				var actions = {};
+				const actions = {};
 
 				data = data || {};
 
@@ -148,11 +144,11 @@ AUI.add(
 			},
 
 			normalizeToAssignments(data) {
-				var assignments = {};
+				const assignments = {};
 
 				if (data && data.length) {
 					COL_TYPES_ASSIGNMENT.forEach((item1) => {
-						var value = data[0][item1];
+						const value = data[0][item1];
 
 						if (item1 === 'taskAssignees' && value === '') {
 							assignments.assignmentType = 'taskAssignees';
@@ -162,7 +158,7 @@ AUI.add(
 							return;
 						}
 
-						var assignmentValue = AArray(value);
+						const assignmentValue = AArray(value);
 
 						assignmentValue.forEach((item2, index2) => {
 							if (isObject(item2)) {
@@ -180,7 +176,7 @@ AUI.add(
 						if (
 							item1 !== 'receptionType' &&
 							AArray.some(assignmentValue, (item2) => {
-								var valid = isNotEmptyValue(item2);
+								let valid = isNotEmptyValue(item2);
 
 								if (
 									valid &&
@@ -201,10 +197,10 @@ AUI.add(
 						}
 					});
 
-					if (assignments.assignmentType == 'roleId') {
+					if (assignments.assignmentType === 'roleId') {
 						populateRole(assignments);
 					}
-					else if (assignments.assignmentType == 'user') {
+					else if (assignments.assignmentType === 'user') {
 						populateUser(assignments);
 					}
 				}
@@ -213,7 +209,7 @@ AUI.add(
 			},
 
 			normalizeToDelays(data) {
-				var delays = {};
+				const delays = {};
 
 				data = data || {};
 
@@ -229,7 +225,7 @@ AUI.add(
 			},
 
 			normalizeToNotifications(data) {
-				var notifications = {};
+				const notifications = {};
 
 				data = data || {};
 
@@ -245,9 +241,10 @@ AUI.add(
 									);
 								}
 
-								item2 = FieldNormalizer.normalizeToAssignments(
-									item2
-								);
+								item2 =
+									FieldNormalizer.normalizeToAssignments(
+										item2
+									);
 							}
 
 							_put(notifications, index2, item2, index1);
@@ -259,7 +256,7 @@ AUI.add(
 			},
 
 			normalizeToTaskTimers(data) {
-				var taskTimers = {};
+				const taskTimers = {};
 
 				data = data || {};
 
@@ -270,30 +267,31 @@ AUI.add(
 								return;
 							}
 							else if (index2 === 'timerNotifications') {
-								item2 = FieldNormalizer.normalizeToNotifications(
-									item2
-								);
+								item2 =
+									FieldNormalizer.normalizeToNotifications(
+										item2
+									);
 							}
 							else if (index2 === 'timerActions') {
-								item2 = FieldNormalizer.normalizeToActions(
-									item2
-								);
+								item2 =
+									FieldNormalizer.normalizeToActions(item2);
 							}
 							else if (index2 === 'reassignments') {
 								if (item2[0]?.taskAssignees === '') {
 									item2[0].taskAssignees = null;
 								}
 
-								item2 = FieldNormalizer.normalizeToAssignments(
-									item2
-								);
+								item2 =
+									FieldNormalizer.normalizeToAssignments(
+										item2
+									);
 							}
 
 							_put(taskTimers, index2, item2, index1);
 						}
 					});
 
-					var delays = item1.delay.concat(item1.recurrence);
+					const delays = item1.delay.concat(item1.recurrence);
 
 					_put(
 						taskTimers,

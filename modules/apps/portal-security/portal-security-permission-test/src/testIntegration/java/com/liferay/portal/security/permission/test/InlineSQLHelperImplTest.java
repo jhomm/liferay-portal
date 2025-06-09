@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.permission.test;
@@ -162,7 +153,7 @@ public class InlineSQLHelperImplTest {
 			_groupThree.getCompanyId(), RoleConstants.USER);
 
 		long[] roleIds = ReflectionTestUtil.invoke(
-			_inlineSQLHelper, "getRoleIds", new Class<?>[] {long.class},
+			_inlineSQLHelper, "_getRoleIds", new Class<?>[] {long.class},
 			_groupThree.getGroupId());
 
 		String msg = StringUtil.merge(roleIds);
@@ -243,11 +234,7 @@ public class InlineSQLHelperImplTest {
 	public void testInvalidCompany() throws Exception {
 		_company = CompanyTestUtil.addCompany();
 
-		_groupThree = GroupTestUtil.addGroup();
-
-		_groupThree.setCompanyId(_company.getCompanyId());
-
-		_groupLocalService.updateGroup(_groupThree);
+		_groupThree = GroupTestUtil.addGroupToCompany(_company.getCompanyId());
 
 		_addGroupRole(_groupThree, RoleConstants.SITE_MEMBER);
 
@@ -263,7 +250,20 @@ public class InlineSQLHelperImplTest {
 	}
 
 	@Test
-	public void testIsNotEnabledForOmniAdmin() throws Exception {
+	public void testIsNotEnabledForCompanyAdminWithNewCompany()
+		throws Exception {
+
+		_company = CompanyTestUtil.addCompany();
+
+		_user = UserTestUtil.addCompanyAdminUser(_company);
+
+		_setPermissionChecker();
+
+		Assert.assertFalse(_inlineSQLHelper.isEnabled());
+	}
+
+	@Test
+	public void testIsNotEnabledForOmniadmin() throws Exception {
 		Role role = _roleLocalService.getRole(
 			_user.getCompanyId(), RoleConstants.ADMINISTRATOR);
 
@@ -306,8 +306,8 @@ public class InlineSQLHelperImplTest {
 				"ResourcePermission.companyId = ? and ResourcePermission.name ",
 				"= ? and ResourcePermission.scope = ? and ",
 				"ResourcePermission.viewActionId = ? and ",
-				"(ResourcePermission.roleId in (?, ?, ?, ?) or Layout.userId ",
-				"= ?)) or Layout.groupId in (?))"),
+				"(ResourcePermission.roleId in (?, ?, ?, ?) or ",
+				"ResourcePermission.ownerId = ?)) or Layout.groupId in (?))"),
 			dslQuery.toString());
 
 		_assertValidSql(dslQuery);
@@ -338,8 +338,8 @@ public class InlineSQLHelperImplTest {
 				"ResourcePermission.companyId = ? and ResourcePermission.name ",
 				"= ? and ResourcePermission.scope = ? and ",
 				"ResourcePermission.viewActionId = ? and ",
-				"(ResourcePermission.roleId in (?, ?, ?, ?) or Layout.userId ",
-				"= ?)) or Layout.groupId in (?))"),
+				"(ResourcePermission.roleId in (?, ?, ?, ?) or ",
+				"ResourcePermission.ownerId = ?)) or Layout.groupId in (?))"),
 			dslQuery.toString());
 
 		_assertValidSql(dslQuery);
@@ -356,7 +356,8 @@ public class InlineSQLHelperImplTest {
 				"ResourcePermission.companyId = ? and ResourcePermission.name ",
 				"= ? and ResourcePermission.scope = ? and ",
 				"ResourcePermission.viewActionId = ? and ",
-				"(ResourcePermission.roleId in (?, ?) or Layout.userId = ?))"),
+				"(ResourcePermission.roleId in (?, ?) or ",
+				"ResourcePermission.ownerId = ?))"),
 			dslQuery.toString());
 
 		_assertValidSql(dslQuery);

@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cluster.multiple.internal;
 
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.concurrent.ConcurrentReferenceValueHashMap;
 import com.liferay.petra.executor.PortalExecutorManager;
 import com.liferay.petra.lang.HashUtil;
@@ -21,6 +14,7 @@ import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.cluster.multiple.configuration.ClusterExecutorConfiguration;
+import com.liferay.portal.cluster.multiple.internal.jgroups.JGroupsClusterChannelFactory;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.cluster.Address;
 import com.liferay.portal.kernel.cluster.ClusterEvent;
@@ -54,7 +48,6 @@ import java.net.UnknownHostException;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -64,21 +57,16 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Tina Tian
@@ -86,22 +74,9 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  */
 @Component(
 	configurationPid = "com.liferay.portal.cluster.multiple.configuration.ClusterExecutorConfiguration",
-	enabled = false, immediate = true,
-	service = {ClusterExecutor.class, ClusterExecutorImpl.class}
+	enabled = false, service = ClusterExecutor.class
 )
 public class ClusterExecutorImpl implements ClusterExecutor {
-
-	@Override
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	public void addClusterEventListener(
-		ClusterEventListener clusterEventListener) {
-
-		_clusterEventListeners.addIfAbsent(clusterEventListener);
-	}
 
 	@Override
 	public FutureClusterResponses execute(ClusterRequest clusterRequest) {
@@ -176,7 +151,7 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 
 	@Override
 	public List<ClusterEventListener> getClusterEventListeners() {
-		return Collections.unmodifiableList(_clusterEventListeners);
+		return _serviceTrackerList.toList();
 	}
 
 	@Override
@@ -207,48 +182,26 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 		return _enabled;
 	}
 
-	@Override
-	public void removeClusterEventListener(
-		ClusterEventListener clusterEventListener) {
-
-		_clusterEventListeners.remove(clusterEventListener);
-	}
-
 	@Activate
-	protected void activate(ComponentContext componentContext) {
+	protected void activate(
+		BundleContext bundleContext, Map<String, Object> properties) {
+
 		_enabled = true;
 
-		clusterExecutorConfiguration = ConfigurableUtil.createConfigurable(
-			ClusterExecutorConfiguration.class,
-			componentContext.getProperties());
+		modified(properties);
+
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			bundleContext, ClusterEventListener.class);
 
 		initialize(
 			_props.get(PropsKeys.CLUSTER_LINK_CHANNEL_LOGIC_NAME_CONTROL),
 			_props.get(PropsKeys.CLUSTER_LINK_CHANNEL_PROPERTIES_CONTROL),
 			_props.get(PropsKeys.CLUSTER_LINK_CHANNEL_NAME_CONTROL));
 
-		BundleContext bundleContext = componentContext.getBundleContext();
-
 		_serviceRegistration = bundleContext.registerService(
 			PortalInetSocketAddressEventListener.class,
 			new ClusterExecutorPortalInetSocketAddressEventListener(),
 			new HashMapDictionary<String, Object>());
-	}
-
-	protected void configurePortalInstanceCommunications() {
-		if ((_localClusterNodeStatus == null) ||
-			Validator.isNull(_props.get(PropsKeys.PORTAL_INSTANCE_PROTOCOL))) {
-
-			return;
-		}
-
-		ClusterNode localClusterNode = _localClusterNodeStatus.getClusterNode();
-
-		localClusterNode.setPortalProtocol(
-			_props.get(PropsKeys.PORTAL_INSTANCE_PROTOCOL));
-
-		localClusterNode.setPortalInetSocketAddress(
-			getConfiguredPortalInetSocketAddress(_props));
 	}
 
 	@Deactivate
@@ -265,7 +218,8 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 
 		_executorService = null;
 
-		_clusterEventListeners.clear();
+		_serviceTrackerList.close();
+
 		_clusterNodeStatuses.clear();
 		_futureClusterResponses.clear();
 		_localClusterNodeStatus = null;
@@ -320,16 +274,9 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 	}
 
 	protected void fireClusterEvent(ClusterEvent clusterEvent) {
-		for (ClusterEventListener listener : _clusterEventListeners) {
+		for (ClusterEventListener listener : _serviceTrackerList) {
 			listener.processClusterEvent(clusterEvent);
 		}
-	}
-
-	protected String generateClusterNodeId() {
-		UUID uuid = new UUID(
-			SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong());
-
-		return uuid.toString();
 	}
 
 	protected ClusterChannel getClusterChannel() {
@@ -355,7 +302,181 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 		return null;
 	}
 
-	protected InetSocketAddress getConfiguredPortalInetSocketAddress(
+	protected ExecutorService getExecutorService() {
+		return _executorService;
+	}
+
+	protected void handleReceivedClusterNodeResponse(
+		ClusterNodeResponse clusterNodeResponse) {
+
+		Exception exception = clusterNodeResponse.getException();
+
+		if (exception == null) {
+			Serializable result = clusterNodeResponse.getResult();
+
+			if (result instanceof ClusterNodeStatus) {
+				_memberJoined((ClusterNodeStatus)result);
+
+				return;
+			}
+		}
+
+		String uuid = clusterNodeResponse.getUuid();
+
+		FutureClusterResponses futureClusterResponses =
+			_futureClusterResponses.get(uuid);
+
+		if (futureClusterResponses == null) {
+			if (_log.isInfoEnabled()) {
+				_log.info("Unable to get response container for " + uuid);
+			}
+
+			return;
+		}
+
+		if (!futureClusterResponses.addClusterNodeResponse(
+				clusterNodeResponse) &&
+			_log.isWarnEnabled()) {
+
+			ClusterNode clusterNode = clusterNodeResponse.getClusterNode();
+
+			_log.warn(
+				StringBundler.concat(
+					"Unexpected cluster node ID ",
+					clusterNode.getClusterNodeId(),
+					" for response container with UUID ", uuid));
+		}
+	}
+
+	protected Serializable handleReceivedClusterRequest(
+		ClusterRequest clusterRequest) {
+
+		Serializable payload = clusterRequest.getPayload();
+
+		if (payload instanceof ClusterNodeStatus) {
+			_memberJoined((ClusterNodeStatus)payload);
+
+			return ClusterNodeResponse.createResultClusterNodeResponse(
+				_localClusterNodeStatus.getClusterNode(),
+				clusterRequest.getUuid(), _localClusterNodeStatus);
+		}
+
+		return executeClusterRequest(clusterRequest);
+	}
+
+	protected void initialize(
+		String channelLogicName, String channelPropertiesLocation,
+		String channelName) {
+
+		if (Validator.isNull(channelPropertiesLocation)) {
+			throw new IllegalStateException(
+				"Set \"" + PropsKeys.CLUSTER_LINK_CHANNEL_PROPERTIES_CONTROL +
+					"\"");
+		}
+
+		if (Validator.isNull(channelName)) {
+			throw new IllegalStateException(
+				"Set \"" + PropsKeys.CLUSTER_LINK_CHANNEL_NAME_CONTROL + "\"");
+		}
+
+		_executorService = _portalExecutorManager.getPortalExecutor(
+			ClusterExecutorImpl.class.getName());
+
+		ClusterRequestReceiver clusterReceiver = new ClusterRequestReceiver(
+			this);
+
+		_clusterChannel = _clusterChannelFactory.createClusterChannel(
+			_executorService, channelLogicName, channelPropertiesLocation,
+			channelName, clusterReceiver);
+
+		ClusterNode localClusterNode = new ClusterNode(
+			_generateClusterNodeId(), _clusterChannel.getBindInetAddress());
+
+		_localClusterNodeStatus = new ClusterNodeStatus(
+			localClusterNode, _clusterChannel.getLocalAddress());
+
+		_memberJoined(_localClusterNodeStatus);
+
+		sendNotifyRequest();
+
+		clusterReceiver.openLatch();
+
+		_configurePortalInstanceCommunications();
+	}
+
+	protected void memberRemoved(List<Address> departAddresses) {
+		for (Address address : departAddresses) {
+			_clusterNodeIdCompletableFutures.remove(address);
+		}
+
+		List<ClusterNode> departClusterNodes = new ArrayList<>();
+
+		Collection<ClusterNodeStatus> clusterNodeStatuses =
+			_clusterNodeStatuses.values();
+
+		Iterator<ClusterNodeStatus> iterator = clusterNodeStatuses.iterator();
+
+		while (iterator.hasNext()) {
+			ClusterNodeStatus clusterNodeStatus = iterator.next();
+
+			if (departAddresses.contains(clusterNodeStatus.getAddress())) {
+				departClusterNodes.add(clusterNodeStatus.getClusterNode());
+
+				iterator.remove();
+			}
+		}
+
+		if (departClusterNodes.isEmpty()) {
+			return;
+		}
+
+		ClusterEvent clusterEvent = ClusterEvent.depart(departClusterNodes);
+
+		fireClusterEvent(clusterEvent);
+	}
+
+	@Modified
+	protected void modified(Map<String, Object> properies) {
+		clusterExecutorConfiguration = ConfigurableUtil.createConfigurable(
+			ClusterExecutorConfiguration.class, properies);
+
+		_clusterChannelFactory = new JGroupsClusterChannelFactory(
+			clusterExecutorConfiguration);
+	}
+
+	protected void sendNotifyRequest() {
+		ClusterRequest clusterRequest = ClusterRequest.createMulticastRequest(
+			_localClusterNodeStatus, true);
+
+		_clusterChannel.sendMulticastMessage(clusterRequest);
+	}
+
+	protected volatile ClusterExecutorConfiguration
+		clusterExecutorConfiguration;
+
+	private void _configurePortalInstanceCommunications() {
+		if ((_localClusterNodeStatus == null) ||
+			Validator.isNull(_props.get(PropsKeys.PORTAL_INSTANCE_PROTOCOL))) {
+
+			return;
+		}
+
+		ClusterNode localClusterNode = _localClusterNodeStatus.getClusterNode();
+
+		localClusterNode.setPortalProtocol(
+			_props.get(PropsKeys.PORTAL_INSTANCE_PROTOCOL));
+		localClusterNode.setPortalInetSocketAddress(
+			_getConfiguredPortalInetSocketAddress(_props));
+	}
+
+	private String _generateClusterNodeId() {
+		UUID uuid = new UUID(
+			SecureRandomUtil.nextLong(), SecureRandomUtil.nextLong());
+
+		return uuid.toString();
+	}
+
+	private InetSocketAddress _getConfiguredPortalInetSocketAddress(
 		Props props) {
 
 		String portalInstanceInetSocketAddress = props.get(
@@ -403,127 +524,7 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 		return new InetSocketAddress(hostInetAddress, port);
 	}
 
-	protected ExecutorService getExecutorService() {
-		return _executorService;
-	}
-
-	protected void handleReceivedClusterNodeResponse(
-		ClusterNodeResponse clusterNodeResponse) {
-
-		Exception exception = clusterNodeResponse.getException();
-
-		if (exception == null) {
-			Serializable result = clusterNodeResponse.getResult();
-
-			if (result instanceof ClusterNodeStatus) {
-				memberJoined((ClusterNodeStatus)result);
-
-				return;
-			}
-		}
-
-		String uuid = clusterNodeResponse.getUuid();
-
-		FutureClusterResponses futureClusterResponses =
-			_futureClusterResponses.get(uuid);
-
-		if (futureClusterResponses == null) {
-			if (_log.isInfoEnabled()) {
-				_log.info("Unable to get response container for " + uuid);
-			}
-
-			return;
-		}
-
-		if (!futureClusterResponses.addClusterNodeResponse(
-				clusterNodeResponse) &&
-			_log.isWarnEnabled()) {
-
-			ClusterNode clusterNode = clusterNodeResponse.getClusterNode();
-
-			_log.warn(
-				StringBundler.concat(
-					"Unexpected cluster node ID ",
-					clusterNode.getClusterNodeId(),
-					" for response container with UUID ", uuid));
-		}
-	}
-
-	protected Serializable handleReceivedClusterRequest(
-		ClusterRequest clusterRequest) {
-
-		Serializable payload = clusterRequest.getPayload();
-
-		if (payload instanceof ClusterNodeStatus) {
-			memberJoined((ClusterNodeStatus)payload);
-
-			return ClusterNodeResponse.createResultClusterNodeResponse(
-				_localClusterNodeStatus.getClusterNode(),
-				clusterRequest.getUuid(), _localClusterNodeStatus);
-		}
-
-		return executeClusterRequest(clusterRequest);
-	}
-
-	protected void initialize(
-		String channelLogicName, String channelPropertiesLocation,
-		String channelName) {
-
-		if (Validator.isNull(channelPropertiesLocation)) {
-			throw new IllegalStateException(
-				"Set \"" + PropsKeys.CLUSTER_LINK_CHANNEL_PROPERTIES_CONTROL +
-					"\"");
-		}
-
-		if (Validator.isNull(channelName)) {
-			throw new IllegalStateException(
-				"Set \"" + PropsKeys.CLUSTER_LINK_CHANNEL_NAME_CONTROL + "\"");
-		}
-
-		_executorService = _portalExecutorManager.getPortalExecutor(
-			ClusterExecutorImpl.class.getName());
-
-		ClusterRequestReceiver clusterReceiver = new ClusterRequestReceiver(
-			this);
-
-		_clusterChannel = _clusterChannelFactory.createClusterChannel(
-			_executorService, channelLogicName, channelPropertiesLocation,
-			channelName, clusterReceiver);
-
-		ClusterNode localClusterNode = new ClusterNode(
-			generateClusterNodeId(), _clusterChannel.getBindInetAddress());
-
-		_localClusterNodeStatus = new ClusterNodeStatus(
-			localClusterNode, _clusterChannel.getLocalAddress());
-
-		memberJoined(_localClusterNodeStatus);
-
-		sendNotifyRequest();
-
-		clusterReceiver.openLatch();
-
-		configurePortalInstanceCommunications();
-
-		manageDebugClusterEventListener();
-	}
-
-	protected void manageDebugClusterEventListener() {
-		if (clusterExecutorConfiguration.debugEnabled() &&
-			(_debugClusterEventListener == null)) {
-
-			_debugClusterEventListener =
-				new DebuggingClusterEventListenerImpl();
-
-			addClusterEventListener(_debugClusterEventListener);
-		}
-		else if (!clusterExecutorConfiguration.debugEnabled() &&
-				 (_debugClusterEventListener != null)) {
-
-			removeClusterEventListener(_debugClusterEventListener);
-		}
-	}
-
-	protected boolean memberJoined(ClusterNodeStatus clusterNodeStatus) {
+	private boolean _memberJoined(ClusterNodeStatus clusterNodeStatus) {
 		CompletableFuture<String> completableFuture =
 			_clusterNodeIdCompletableFutures.computeIfAbsent(
 				clusterNodeStatus.getAddress(),
@@ -554,103 +555,31 @@ public class ClusterExecutorImpl implements ClusterExecutor {
 		return true;
 	}
 
-	protected void memberRemoved(List<Address> departAddresses) {
-		for (Address address : departAddresses) {
-			_clusterNodeIdCompletableFutures.remove(address);
-		}
-
-		List<ClusterNode> departClusterNodes = new ArrayList<>();
-
-		Collection<ClusterNodeStatus> clusterNodeStatusCollection =
-			_clusterNodeStatuses.values();
-
-		Iterator<ClusterNodeStatus> iterator =
-			clusterNodeStatusCollection.iterator();
-
-		while (iterator.hasNext()) {
-			ClusterNodeStatus clusterNodeStatus = iterator.next();
-
-			if (departAddresses.contains(clusterNodeStatus.getAddress())) {
-				departClusterNodes.add(clusterNodeStatus.getClusterNode());
-
-				iterator.remove();
-			}
-		}
-
-		if (departClusterNodes.isEmpty()) {
-			return;
-		}
-
-		ClusterEvent clusterEvent = ClusterEvent.depart(departClusterNodes);
-
-		fireClusterEvent(clusterEvent);
-	}
-
-	@Modified
-	protected synchronized void modified(Map<String, Object> properties) {
-		clusterExecutorConfiguration = ConfigurableUtil.createConfigurable(
-			ClusterExecutorConfiguration.class, properties);
-
-		manageDebugClusterEventListener();
-	}
-
-	protected void sendNotifyRequest() {
-		ClusterRequest clusterRequest = ClusterRequest.createMulticastRequest(
-			_localClusterNodeStatus, true);
-
-		_clusterChannel.sendMulticastMessage(clusterRequest);
-	}
-
-	@Reference(unbind = "-")
-	protected void setClusterChannelFactory(
-		ClusterChannelFactory clusterChannelFactory) {
-
-		_clusterChannelFactory = clusterChannelFactory;
-	}
-
-	protected void setClusterEventListeners(
-		List<ClusterEventListener> clusterEventListeners) {
-
-		_clusterEventListeners.addAllAbsent(clusterEventListeners);
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortalExecutorManager(
-		PortalExecutorManager portalExecutorManager) {
-
-		_portalExecutorManager = portalExecutorManager;
-	}
-
-	@Reference(unbind = "-")
-	protected void setProps(Props props) {
-		_props = props;
-	}
-
-	protected volatile ClusterExecutorConfiguration
-		clusterExecutorConfiguration;
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		ClusterExecutorImpl.class);
 
 	private ClusterChannel _clusterChannel;
-	private ClusterChannelFactory _clusterChannelFactory;
-	private final CopyOnWriteArrayList<ClusterEventListener>
-		_clusterEventListeners = new CopyOnWriteArrayList<>();
+	private volatile ClusterChannelFactory _clusterChannelFactory;
 	private final Map<Address, CompletableFuture<String>>
 		_clusterNodeIdCompletableFutures = new ConcurrentHashMap<>();
 	private final Map<String, ClusterNodeStatus> _clusterNodeStatuses =
 		new ConcurrentHashMap<>();
-	private ClusterEventListener _debugClusterEventListener;
 	private boolean _enabled;
 	private ExecutorService _executorService;
 	private final Map<String, FutureClusterResponses> _futureClusterResponses =
 		new ConcurrentReferenceValueHashMap<>(
 			FinalizeManager.WEAK_REFERENCE_FACTORY);
 	private ClusterNodeStatus _localClusterNodeStatus;
+
+	@Reference
 	private PortalExecutorManager _portalExecutorManager;
+
+	@Reference
 	private Props _props;
+
 	private ServiceRegistration<PortalInetSocketAddressEventListener>
 		_serviceRegistration;
+	private ServiceTrackerList<ClusterEventListener> _serviceTrackerList;
 
 	private static class ClusterNodeStatus implements Serializable {
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.web.internal.display.context;
@@ -23,21 +14,26 @@ import com.liferay.commerce.shipping.engine.fixed.constants.CommerceShippingEngi
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOption;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionService;
 import com.liferay.commerce.shipping.engine.fixed.web.internal.FixedCommerceShippingEngine;
-import com.liferay.commerce.shipping.engine.fixed.web.internal.frontend.taglib.servlet.taglib.CommerceShippingMethodFixedOptionsScreenNavigationCategory;
+import com.liferay.commerce.shipping.engine.fixed.web.internal.constants.CommerceShippingFixedOptionScreenNavigationConstants;
+import com.liferay.frontend.data.set.model.FDSSortItemBuilder;
+import com.liferay.frontend.data.set.model.FDSSortItemList;
+import com.liferay.frontend.data.set.model.FDSSortItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import java.util.ResourceBundle;
 
 /**
  * @author Alessio Antonio Rendina
@@ -48,8 +44,8 @@ public class CommerceShippingFixedOptionsDisplayContext
 	public CommerceShippingFixedOptionsDisplayContext(
 		CommerceChannelLocalService commerceChannelLocalService,
 		CommerceCurrencyLocalService commerceCurrencyLocalService,
-		CommerceShippingMethodService commerceShippingMethodService,
 		CommerceShippingFixedOptionService commerceShippingFixedOptionService,
+		CommerceShippingMethodService commerceShippingMethodService,
 		Portal portal, RenderRequest renderRequest,
 		RenderResponse renderResponse) {
 
@@ -102,6 +98,20 @@ public class CommerceShippingFixedOptionsDisplayContext
 		return commerceShippingFixedOption;
 	}
 
+	public String getCommerceShippingFixedOptionName(
+			ResourceBundle resourceBundle)
+		throws PortalException {
+
+		CommerceShippingFixedOption commerceShippingFixedOption =
+			getCommerceShippingFixedOption();
+
+		if (commerceShippingFixedOption == null) {
+			return LanguageUtil.get(resourceBundle, "shipping-option");
+		}
+
+		return commerceShippingFixedOption.getName(resourceBundle.getLocale());
+	}
+
 	public CreationMenu getCreationMenu() throws Exception {
 		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -117,10 +127,20 @@ public class CommerceShippingFixedOptionsDisplayContext
 		).build();
 	}
 
+	public FDSSortItemList getFDSSortItemList() {
+		return FDSSortItemListBuilder.add(
+			FDSSortItemBuilder.setDirection(
+				"desc"
+			).setKey(
+				"priority"
+			).build()
+		).build();
+	}
+
 	@Override
 	public String getScreenNavigationCategoryKey() {
-		return CommerceShippingMethodFixedOptionsScreenNavigationCategory.
-			CATEGORY_KEY;
+		return CommerceShippingFixedOptionScreenNavigationConstants.
+			CATEGORY_KEY_SHIPPING_OPTIONS;
 	}
 
 	public boolean isFixed() throws PortalException {
@@ -138,11 +158,7 @@ public class CommerceShippingFixedOptionsDisplayContext
 
 		String engineKey = commerceShippingMethod.getEngineKey();
 
-		if (engineKey.equals(FixedCommerceShippingEngine.KEY)) {
-			return true;
-		}
-
-		return false;
+		return engineKey.equals(FixedCommerceShippingEngine.KEY);
 	}
 
 	private final CommerceShippingFixedOptionService

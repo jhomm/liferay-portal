@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.web.internal.display.context;
@@ -18,7 +9,6 @@ import com.liferay.dynamic.data.mapping.configuration.DDMGroupServiceConfigurati
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.util.DDMTemplateHelper;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.json.JSONArray;
@@ -28,6 +18,7 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateHandler;
 import com.liferay.portal.kernel.template.TemplateHandlerRegistryUtil;
@@ -41,16 +32,16 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.template.TemplateContextHelper;
+import com.liferay.portal.template.engine.TemplateContextHelper;
 import com.liferay.template.web.internal.util.TemplateDDMTemplateUtil;
+
+import jakarta.portlet.PortletConfig;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletConfig;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -109,6 +100,8 @@ public class EditDDMTemplateDisplayContext {
 				_ddmTemplateHelper.getAutocompleteJSON(
 					httpServletRequest, TemplateConstants.LANG_TYPE_FTL))
 		).put(
+			"mode", "text/html"
+		).put(
 			"propertiesViewURL",
 			() -> PortletURLBuilder.createRenderURL(
 				liferayPortletResponse
@@ -119,7 +112,7 @@ public class EditDDMTemplateDisplayContext {
 			).setParameter(
 				"classNameId", getClassNameId()
 			).setParameter(
-				"classPK", getClassPK()
+				"classPK", _getClassPK()
 			).setParameter(
 				"ddmTemplateId", getDDMTemplateId()
 			).setParameter(
@@ -238,16 +231,6 @@ public class EditDDMTemplateDisplayContext {
 		return _ddmGroupServiceConfiguration.smallImageMaxSize();
 	}
 
-	protected long getClassPK() {
-		DDMTemplate ddmTemplate = getDDMTemplate();
-
-		if (ddmTemplate != null) {
-			return ddmTemplate.getClassPK();
-		}
-
-		return 0;
-	}
-
 	protected long getDDMTemplateId() {
 		if (_ddmTemplateId != null) {
 			return _ddmTemplateId;
@@ -272,7 +255,7 @@ public class EditDDMTemplateDisplayContext {
 
 		Map<String, TemplateVariableGroup> templateVariableGroups =
 			TemplateContextHelper.getTemplateVariableGroups(
-				getTemplateHandlerClassNameId(), getClassPK(),
+				getTemplateHandlerClassNameId(), _getClassPK(),
 				TemplateConstants.LANG_TYPE_FTL, _themeDisplay.getLocale());
 
 		return templateVariableGroups.values();
@@ -280,6 +263,16 @@ public class EditDDMTemplateDisplayContext {
 
 	protected final HttpServletRequest httpServletRequest;
 	protected final LiferayPortletResponse liferayPortletResponse;
+
+	private long _getClassPK() {
+		DDMTemplate ddmTemplate = getDDMTemplate();
+
+		if (ddmTemplate != null) {
+			return ddmTemplate.getClassPK();
+		}
+
+		return 0;
+	}
 
 	private String _getScript() {
 		if (_script != null) {

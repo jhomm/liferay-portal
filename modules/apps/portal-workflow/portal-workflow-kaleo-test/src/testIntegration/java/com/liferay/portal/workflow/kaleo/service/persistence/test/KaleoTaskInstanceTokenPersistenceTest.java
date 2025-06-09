@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -131,6 +122,8 @@ public class KaleoTaskInstanceTokenPersistenceTest {
 
 		newKaleoTaskInstanceToken.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoTaskInstanceToken.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoTaskInstanceToken.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoTaskInstanceToken.setCompanyId(RandomTestUtil.nextLong());
@@ -185,6 +178,9 @@ public class KaleoTaskInstanceTokenPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoTaskInstanceToken.getMvccVersion(),
 			newKaleoTaskInstanceToken.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoTaskInstanceToken.getCtCollectionId(),
+			newKaleoTaskInstanceToken.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoTaskInstanceToken.getKaleoTaskInstanceTokenId(),
 			newKaleoTaskInstanceToken.getKaleoTaskInstanceTokenId());
@@ -335,10 +331,10 @@ public class KaleoTaskInstanceTokenPersistenceTest {
 
 	protected OrderByComparator<KaleoTaskInstanceToken> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoTaskInstanceToken", "mvccVersion", true,
-			"kaleoTaskInstanceTokenId", true, "groupId", true, "companyId",
-			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "kaleoDefinitionId", true,
+			"KaleoTaskInstanceToken", "mvccVersion", true, "ctCollectionId",
+			true, "kaleoTaskInstanceTokenId", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "kaleoDefinitionId", true,
 			"kaleoDefinitionVersionId", true, "kaleoInstanceId", true,
 			"kaleoInstanceTokenId", true, "kaleoTaskId", true, "kaleoTaskName",
 			true, "className", true, "classPK", true, "completionUserId", true,
@@ -658,6 +654,8 @@ public class KaleoTaskInstanceTokenPersistenceTest {
 		KaleoTaskInstanceToken kaleoTaskInstanceToken = _persistence.create(pk);
 
 		kaleoTaskInstanceToken.setMvccVersion(RandomTestUtil.nextLong());
+
+		kaleoTaskInstanceToken.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoTaskInstanceToken.setGroupId(RandomTestUtil.nextLong());
 

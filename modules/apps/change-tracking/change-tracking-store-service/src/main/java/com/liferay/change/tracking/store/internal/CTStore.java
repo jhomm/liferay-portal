@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.store.internal;
@@ -25,6 +16,7 @@ import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.InputStream;
 
@@ -42,12 +34,11 @@ import java.util.Set;
 public class CTStore implements Store {
 
 	public CTStore(
-		CTEntryLocalService ctEntryLocalService, long ctsContentClassNameId,
+		CTEntryLocalService ctEntryLocalService,
 		CTSContentLocalService ctsContentLocalService, Store store,
 		String storeType) {
 
 		_ctEntryLocalService = ctEntryLocalService;
-		_ctsContentClassNameId = ctsContentClassNameId;
 		_ctsContentLocalService = ctsContentLocalService;
 		_store = store;
 		_storeType = storeType;
@@ -113,10 +104,10 @@ public class CTStore implements Store {
 		else {
 			_ensureCTSContentIsLoaded(
 				companyId, repositoryId, fileName, versionLabel);
-		}
 
-		_ctsContentLocalService.deleteCTSContent(
-			companyId, repositoryId, fileName, versionLabel, _storeType);
+			_ctsContentLocalService.deleteCTSContent(
+				companyId, repositoryId, fileName, versionLabel, _storeType);
+		}
 	}
 
 	@Override
@@ -197,8 +188,7 @@ public class CTStore implements Store {
 		}
 
 		try (SafeCloseable safeCloseable =
-				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-					CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
 
 			for (CTSContent ctsContent :
 					_ctsContentLocalService.getCTSContentsByDirectory(
@@ -270,8 +260,8 @@ public class CTStore implements Store {
 
 		if (deletedCTSContentIds != null) {
 			try (SafeCloseable safeCloseable =
-					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-						CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
 
 				for (CTSContent ctsContent :
 						_ctsContentLocalService.getCTSContents(
@@ -303,8 +293,8 @@ public class CTStore implements Store {
 			}
 
 			try (SafeCloseable safeCloseable =
-					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-						CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
 
 				if (_ctsContentLocalService.hasCTSContent(
 						companyId, repositoryId, fileName, versionLabel,
@@ -337,7 +327,8 @@ public class CTStore implements Store {
 
 		for (CTEntry ctEntry :
 				_ctEntryLocalService.getCTEntries(
-					ctCollectionId, _ctsContentClassNameId)) {
+					ctCollectionId,
+					PortalUtil.getClassNameId(CTSContent.class.getName()))) {
 
 			if (ctEntry.getChangeType() ==
 					CTConstants.CT_CHANGE_TYPE_DELETION) {
@@ -364,8 +355,7 @@ public class CTStore implements Store {
 		}
 
 		try (SafeCloseable safeCloseable =
-				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-					CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
 
 			return _ctsContentLocalService.hasCTSContent(
 				companyId, repositoryId, fileName, versionLabel, _storeType);
@@ -379,8 +369,7 @@ public class CTStore implements Store {
 		try (InputStream inputStream = _store.getFileAsStream(
 				companyId, repositoryId, fileName, versionLabel);
 			SafeCloseable safeCloseable =
-				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-					CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
 
 			_ctsContentLocalService.addCTSContent(
 				companyId, repositoryId, fileName, versionLabel, _storeType,
@@ -404,7 +393,6 @@ public class CTStore implements Store {
 	}
 
 	private final CTEntryLocalService _ctEntryLocalService;
-	private final long _ctsContentClassNameId;
 	private final CTSContentLocalService _ctsContentLocalService;
 	private final Store _store;
 	private final String _storeType;

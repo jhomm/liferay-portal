@@ -1,22 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.model.AccountGroup;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountGroupLocalService;
+import com.liferay.account.service.AccountGroupRelLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
+import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
@@ -24,12 +20,15 @@ import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.discount.CommerceDiscountValue;
 import com.liferay.commerce.discount.constants.CommerceDiscountConstants;
 import com.liferay.commerce.discount.exception.CommerceDiscountLimitationTimesException;
+import com.liferay.commerce.discount.exception.CommerceDiscountValidatorException;
 import com.liferay.commerce.discount.model.CommerceDiscount;
-import com.liferay.commerce.discount.service.CommerceDiscountLocalService;
+import com.liferay.commerce.discount.service.CommerceDiscountCommerceAccountGroupRelLocalService;
 import com.liferay.commerce.discount.service.CommerceDiscountUsageEntryLocalService;
 import com.liferay.commerce.discount.test.util.CommerceDiscountTestUtil;
+import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.order.engine.CommerceOrderEngine;
+import com.liferay.commerce.price.CommerceOrderPriceCalculation;
 import com.liferay.commerce.price.CommerceProductPrice;
 import com.liferay.commerce.price.CommerceProductPriceCalculation;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
@@ -43,6 +42,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.test.util.CPTestUtil;
 import com.liferay.commerce.service.CommerceOrderLocalService;
+import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
 import com.liferay.petra.string.StringPool;
@@ -51,8 +51,9 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
-import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -101,12 +102,59 @@ public class CommerceDiscountUsageTest {
 
 		PrincipalThreadLocal.setName(_user.getUserId());
 
-		_commerceAccount =
-			_commerceAccountLocalService.getPersonalCommerceAccount(
-				_user.getUserId());
+		_accountEntry = CommerceAccountTestUtil.getPersonAccountEntry(
+			_user.getUserId());
+
+		_serviceContext = ServiceContextTestUtil.getServiceContext();
+
+		_accountGroup = _accountGroupLocalService.addAccountGroup(
+			StringPool.BLANK, _serviceContext.getUserId(), null,
+			RandomTestUtil.randomString(), _serviceContext);
+
+		_accountGroup.setDefaultAccountGroup(false);
+		_accountGroup.setType(AccountConstants.ACCOUNT_GROUP_TYPE_STATIC);
+		_accountGroup.setExpandoBridgeAttributes(_serviceContext);
+
+		_accountGroup = _accountGroupLocalService.updateAccountGroup(
+			_accountGroup);
 
 		_commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
 			_group.getCompanyId());
+
+		_commerceChannel = CommerceTestUtil.addCommerceChannel(
+			_group.getGroupId(), _commerceCurrency.getCode());
+
+		_commerceCatalog = _commerceCatalogLocalService.addCommerceCatalog(
+			null, RandomTestUtil.randomString(), _commerceCurrency.getCode(),
+			LocaleUtil.US.getDisplayLanguage(),
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		_cpInstance = CPTestUtil.addCPInstanceFromCatalog(
+			_commerceCatalog.getGroupId());
+
+		_cpDefinition = _cpInstance.getCPDefinition();
+
+		_commercePriceList =
+			_commercePriceListLocalService.fetchCatalogBaseCommercePriceList(
+				_commerceCatalog.getGroupId());
+
+		_commercePriceEntry = CommercePriceEntryTestUtil.addCommercePriceEntry(
+			StringPool.BLANK, _cpDefinition.getCProductId(),
+			_cpInstance.getCPInstanceUuid(),
+			_commercePriceList.getCommercePriceListId(),
+			BigDecimal.valueOf(35));
+
+		_commerceInventoryWarehouse =
+			CommerceInventoryTestUtil.addCommerceInventoryWarehouse(
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		CommerceTestUtil.addWarehouseCommerceChannelRel(
+			_commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+			_commerceChannel.getCommerceChannelId());
+
+		CommerceInventoryTestUtil.addCommerceInventoryWarehouseItem(
+			_user.getUserId(), _commerceInventoryWarehouse,
+			BigDecimal.valueOf(1000), _cpInstance.getSku(), StringPool.BLANK);
 	}
 
 	@After
@@ -114,6 +162,67 @@ public class CommerceDiscountUsageTest {
 		for (CommerceOrder commerceOrder : _commerceOrders) {
 			_commerceOrderLocalService.deleteCommerceOrder(commerceOrder);
 		}
+	}
+
+	@Test
+	public void testAccountGroupCouponCodeDiscount() throws Exception {
+		frutillaRule.scenario(
+			"Discounts can be applied by coupon code"
+		).given(
+			"A discount is associated with a account group"
+		).and(
+			"Account is assigned to account group"
+		).when(
+			"I apply the coupon to my order"
+		).then(
+			"The discount is applied to the order"
+		);
+
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString() + "@liferay.com",
+				RandomTestUtil.randomString(), new long[] {_user.getUserId()},
+				null, _serviceContext);
+
+		_accountGroupRelLocalService.addAccountGroupRel(
+			_accountGroup.getAccountGroupId(), AccountEntry.class.getName(),
+			accountEntry.getAccountEntryId());
+
+		String couponCode = StringUtil.randomString();
+
+		CommerceDiscount commerceDiscount =
+			CommerceDiscountTestUtil.addCouponDiscount(
+				_group.getGroupId(), 35, couponCode,
+				CommerceDiscountConstants.LIMITATION_TYPE_UNLIMITED, 0, 0,
+				CommerceDiscountConstants.TARGET_PRODUCTS,
+				_cpDefinition.getCPDefinitionId());
+
+		_commerceDiscountCommerceAccountGroupRelLocalService.
+			addCommerceDiscountCommerceAccountGroupRel(
+				_serviceContext.getUserId(),
+				commerceDiscount.getCommerceDiscountId(),
+				_accountGroup.getAccountGroupId(), _serviceContext);
+
+		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
+			_group.getGroupId(), _user.getUserId(),
+			accountEntry.getAccountEntryId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceOrders.add(commerceOrder);
+
+		CommerceContext commerceContext = new TestCommerceContext(
+			accountEntry, _commerceCurrency, null, _user, _group,
+			commerceOrder);
+
+		CommerceTestUtil.addCommerceOrderItem(
+			commerceOrder.getCommerceOrderId(), _cpInstance.getCPInstanceId(),
+			BigDecimal.ONE, commerceContext);
+
+		commerceOrder = _commerceOrderLocalService.applyCouponCode(
+			commerceOrder.getCommerceOrderId(), couponCode, commerceContext);
+
+		Assert.assertEquals(couponCode, commerceOrder.getCouponCode());
 	}
 
 	@Test(expected = CommerceDiscountLimitationTimesException.class)
@@ -158,20 +267,20 @@ public class CommerceDiscountUsageTest {
 		CommerceChannel commerceChannel = CommerceTestUtil.addCommerceChannel(
 			_group.getGroupId(), _commerceCurrency.getCode());
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
 		CommercePriceList commercePriceList =
 			_commercePriceListLocalService.fetchCatalogBaseCommercePriceList(
-				catalog.getGroupId());
+				commerceCatalog.getGroupId());
 
 		BigDecimal priceEntryPrice = BigDecimal.valueOf(35);
 
@@ -181,12 +290,13 @@ public class CommerceDiscountUsageTest {
 			commercePriceList.getCommercePriceListId(), priceEntryPrice);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_commerceCurrency, commerceChannel, _user, _group, _commerceAccount,
+			_accountEntry, _commerceCurrency, commerceChannel, _user, _group,
 			null);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
-				cpInstance.getCPInstanceId(), 1, commerceContext);
+				cpInstance.getCPInstanceId(), BigDecimal.ONE, StringPool.BLANK,
+				commerceContext);
 
 		CommerceMoney finalPriceCommerceMoney =
 			commerceProductPrice.getFinalPrice();
@@ -200,10 +310,22 @@ public class CommerceDiscountUsageTest {
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
 			_user.getUserId(), commerceChannel.getGroupId(), _commerceCurrency);
 
-		commerceOrder.setCommerceCurrencyId(
-			_commerceCurrency.getCommerceCurrencyId());
+		commerceOrder.setCommerceCurrencyCode(_commerceCurrency.getCode());
 
-		_commerceOrderLocalService.updateCommerceOrder(commerceOrder);
+		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+			commerceOrder);
+
+		CommerceInventoryWarehouse commerceInventoryWarehouse =
+			CommerceInventoryTestUtil.addCommerceInventoryWarehouse(
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		CommerceTestUtil.addWarehouseCommerceChannelRel(
+			commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+			commerceChannel.getCommerceChannelId());
+
+		CommerceInventoryTestUtil.addCommerceInventoryWarehouseItem(
+			_user.getUserId(), commerceInventoryWarehouse, BigDecimal.TEN,
+			cpInstance.getSku(), StringPool.BLANK);
 
 		String couponCode = StringUtil.randomString();
 
@@ -214,9 +336,18 @@ public class CommerceDiscountUsageTest {
 				CommerceDiscountConstants.TARGET_PRODUCTS,
 				cpDefinition.getCPDefinitionId());
 
+		CommerceTestUtil.addCommerceOrderItem(
+			commerceOrder.getCommerceOrderId(), cpInstance.getCPInstanceId(),
+			BigDecimal.ONE, commerceContext);
+
+		commerceContext = new TestCommerceContext(
+			_accountEntry, _commerceCurrency, commerceChannel, _user, _group,
+			commerceOrder);
+
 		commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
-				cpInstance.getCPInstanceId(), 1, commerceContext);
+				cpInstance.getCPInstanceId(), BigDecimal.ONE, StringPool.BLANK,
+				commerceContext);
 
 		finalPriceCommerceMoney = commerceProductPrice.getFinalPrice();
 
@@ -239,11 +370,12 @@ public class CommerceDiscountUsageTest {
 		_commerceOrders.add(commerceOrder);
 
 		commerceContext = new TestCommerceContext(
-			_commerceCurrency, commerceChannel, _user, _group, _commerceAccount,
+			_accountEntry, _commerceCurrency, commerceChannel, _user, _group,
 			commerceOrder);
 
 		_commerceProductPriceCalculation.getCommerceProductPrice(
-			cpInstance.getCPInstanceId(), 1, commerceContext);
+			cpInstance.getCPInstanceId(), BigDecimal.ONE, StringPool.BLANK,
+			commerceContext);
 
 		_commerceOrderEngine.checkoutCommerceOrder(
 			commerceOrder, _user.getUserId());
@@ -256,7 +388,8 @@ public class CommerceDiscountUsageTest {
 		Assert.assertEquals(1, commerceDiscountUsageCount);
 
 		_commerceProductPriceCalculation.getCommerceProductPrice(
-			cpInstance.getCPInstanceId(), 1, commerceContext);
+			cpInstance.getCPInstanceId(), BigDecimal.ONE, StringPool.BLANK,
+			commerceContext);
 
 		commerceDiscountUsageCount =
 			_commerceDiscountUsageEntryLocalService.
@@ -264,6 +397,61 @@ public class CommerceDiscountUsageTest {
 					commerceDiscount.getCommerceDiscountId());
 
 		Assert.assertEquals(1, commerceDiscountUsageCount);
+	}
+
+	@Test(expected = CommerceDiscountValidatorException.class)
+	public void testInvalidAccountGroupCouponCodeDiscount() throws Exception {
+		frutillaRule.scenario(
+			"Discounts can not be applied by coupon code"
+		).given(
+			"A discount is associated with a account group"
+		).and(
+			"Account is not assigned to account group"
+		).when(
+			"I apply the coupon to my order"
+		).then(
+			"The discount is not applied to the order"
+		);
+
+		AccountEntry accountEntry =
+			CommerceAccountTestUtil.addBusinessAccountEntry(
+				_user.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString() + "@liferay.com",
+				RandomTestUtil.randomString(), new long[] {_user.getUserId()},
+				null, _serviceContext);
+
+		String couponCode = StringUtil.randomString();
+
+		CommerceDiscount commerceDiscount =
+			CommerceDiscountTestUtil.addCouponDiscount(
+				_group.getGroupId(), 35, couponCode,
+				CommerceDiscountConstants.LIMITATION_TYPE_UNLIMITED, 0, 0,
+				CommerceDiscountConstants.TARGET_PRODUCTS,
+				_cpDefinition.getCPDefinitionId());
+
+		_commerceDiscountCommerceAccountGroupRelLocalService.
+			addCommerceDiscountCommerceAccountGroupRel(
+				_serviceContext.getUserId(),
+				commerceDiscount.getCommerceDiscountId(),
+				_accountGroup.getAccountGroupId(), _serviceContext);
+
+		CommerceOrder commerceOrder = CommerceTestUtil.addB2BCommerceOrder(
+			_group.getGroupId(), _user.getUserId(),
+			accountEntry.getAccountEntryId(),
+			_commerceCurrency.getCommerceCurrencyId());
+
+		_commerceOrders.add(commerceOrder);
+
+		CommerceContext commerceContext = new TestCommerceContext(
+			accountEntry, _commerceCurrency, null, _user, _group,
+			commerceOrder);
+
+		CommerceTestUtil.addCommerceOrderItem(
+			commerceOrder.getCommerceOrderId(), _cpInstance.getCPInstanceId(),
+			BigDecimal.ONE, commerceContext);
+
+		_commerceOrderLocalService.applyCouponCode(
+			commerceOrder.getCommerceOrderId(), couponCode, commerceContext);
 	}
 
 	@Test
@@ -288,25 +476,25 @@ public class CommerceDiscountUsageTest {
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
 			_user.getUserId(), commerceChannel.getGroupId(), _commerceCurrency);
 
-		commerceOrder.setCommerceCurrencyId(
-			_commerceCurrency.getCommerceCurrencyId());
+		commerceOrder.setCommerceCurrencyCode(_commerceCurrency.getCode());
 
-		_commerceOrderLocalService.updateCommerceOrder(commerceOrder);
+		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+			commerceOrder);
 
-		CommerceCatalog catalog =
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
 
 		CPDefinition cpDefinition = cpInstance.getCPDefinition();
 
 		CommercePriceList commercePriceList =
 			_commercePriceListLocalService.fetchCatalogBaseCommercePriceList(
-				catalog.getGroupId());
+				commerceCatalog.getGroupId());
 
 		BigDecimal priceEntryPrice = BigDecimal.valueOf(35);
 
@@ -314,6 +502,18 @@ public class CommerceDiscountUsageTest {
 			StringPool.BLANK, cpDefinition.getCProductId(),
 			cpInstance.getCPInstanceUuid(),
 			commercePriceList.getCommercePriceListId(), priceEntryPrice);
+
+		CommerceInventoryWarehouse commerceInventoryWarehouse =
+			CommerceInventoryTestUtil.addCommerceInventoryWarehouse(
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		CommerceTestUtil.addWarehouseCommerceChannelRel(
+			commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
+			commerceChannel.getCommerceChannelId());
+
+		CommerceInventoryTestUtil.addCommerceInventoryWarehouseItem(
+			_user.getUserId(), commerceInventoryWarehouse, BigDecimal.TEN,
+			cpInstance.getSku(), StringPool.BLANK);
 
 		String couponCode = StringUtil.randomString();
 
@@ -324,8 +524,12 @@ public class CommerceDiscountUsageTest {
 				cpDefinition.getCPDefinitionId());
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_commerceCurrency, commerceChannel, _user, _group, _commerceAccount,
+			_accountEntry, _commerceCurrency, commerceChannel, _user, _group,
 			commerceOrder);
+
+		CommerceTestUtil.addCommerceOrderItem(
+			commerceOrder.getCommerceOrderId(), cpInstance.getCPInstanceId(),
+			BigDecimal.ONE, commerceContext);
 
 		commerceOrder = _commerceOrderLocalService.applyCouponCode(
 			commerceOrder.getCommerceOrderId(), couponCode, commerceContext);
@@ -419,7 +623,7 @@ public class CommerceDiscountUsageTest {
 				"exception"
 		);
 
-		_commerceAccount = _commerceAccountLocalService.getGuestCommerceAccount(
+		_accountEntry = _accountEntryLocalService.getGuestAccountEntry(
 			_group.getCompanyId());
 
 		_assertDiscountLimitation(
@@ -475,32 +679,6 @@ public class CommerceDiscountUsageTest {
 			int numberOfOrders, String limitationType)
 		throws Exception {
 
-		CommerceChannel commerceChannel = CommerceTestUtil.addCommerceChannel(
-			_group.getGroupId(), _commerceCurrency.getCode());
-
-		CommerceCatalog catalog =
-			_commerceCatalogLocalService.addCommerceCatalog(
-				null, RandomTestUtil.randomString(),
-				_commerceCurrency.getCode(), LocaleUtil.US.getDisplayLanguage(),
-				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
-
-		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
-
-		CPDefinition cpDefinition = cpInstance.getCPDefinition();
-
-		CommercePriceList commercePriceList =
-			_commercePriceListLocalService.fetchCatalogBaseCommercePriceList(
-				catalog.getGroupId());
-
-		BigDecimal priceEntryPrice = BigDecimal.valueOf(35);
-
-		CommercePriceEntry commercePriceEntry =
-			CommercePriceEntryTestUtil.addCommercePriceEntry(
-				StringPool.BLANK, cpDefinition.getCProductId(),
-				cpInstance.getCPInstanceUuid(),
-				commercePriceList.getCommercePriceListId(), priceEntryPrice);
-
 		String couponCode = StringUtil.randomString();
 
 		CommerceDiscount commerceDiscount =
@@ -508,21 +686,25 @@ public class CommerceDiscountUsageTest {
 				_group.getGroupId(), 10, couponCode, limitationType,
 				limitationTimes, limitationTimesPerAccount,
 				CommerceDiscountConstants.TARGET_PRODUCTS,
-				cpDefinition.getCPDefinitionId());
+				_cpDefinition.getCPDefinitionId());
 
 		for (int i = 0; i < numberOfOrders; i++) {
 			CommerceOrder commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
-				_user.getUserId(), commerceChannel.getGroupId(),
+				_user.getUserId(), _commerceChannel.getGroupId(),
 				_commerceCurrency);
 
-			commerceOrder.setCommerceCurrencyId(
-				_commerceCurrency.getCommerceCurrencyId());
+			commerceOrder.setCommerceCurrencyCode(_commerceCurrency.getCode());
 
-			_commerceOrderLocalService.updateCommerceOrder(commerceOrder);
+			commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+				commerceOrder);
 
 			CommerceContext commerceContext = new TestCommerceContext(
-				_commerceCurrency, commerceChannel, _user, _group,
-				_commerceAccount, commerceOrder);
+				_accountEntry, _commerceCurrency, _commerceChannel, _user,
+				_group, commerceOrder);
+
+			CommerceTestUtil.addCommerceOrderItem(
+				commerceOrder.getCommerceOrderId(),
+				_cpInstance.getCPInstanceId(), BigDecimal.ONE, commerceContext);
 
 			commerceOrder = _commerceOrderLocalService.applyCouponCode(
 				commerceOrder.getCommerceOrderId(), couponCode,
@@ -534,12 +716,13 @@ public class CommerceDiscountUsageTest {
 			BigDecimal discountPrice = BigDecimal.ZERO;
 
 			commerceContext = new TestCommerceContext(
-				_commerceCurrency, commerceChannel, _user, _group,
-				_commerceAccount, commerceOrder);
+				_accountEntry, _commerceCurrency, _commerceChannel, _user,
+				_group, commerceOrder);
 
 			CommerceProductPrice commerceProductPrice =
 				_commerceProductPriceCalculation.getCommerceProductPrice(
-					cpInstance.getCPInstanceId(), 1, commerceContext);
+					_cpInstance.getCPInstanceId(), BigDecimal.ONE,
+					StringPool.BLANK, commerceContext);
 
 			if (commerceProductPrice != null) {
 				CommerceMoney finalPriceCommerceMoney =
@@ -562,7 +745,7 @@ public class CommerceDiscountUsageTest {
 				expectedPrice.stripTrailingZeros(),
 				discountPrice.stripTrailingZeros());
 
-			BigDecimal price = commercePriceEntry.getPrice();
+			BigDecimal price = _commercePriceEntry.getPrice();
 
 			expectedPrice = price.subtract(commerceDiscount.getLevel1());
 
@@ -575,18 +758,23 @@ public class CommerceDiscountUsageTest {
 		}
 
 		CommerceOrder commerceOrder = CommerceTestUtil.addB2CCommerceOrder(
-			_user.getUserId(), commerceChannel.getGroupId(), _commerceCurrency);
+			_user.getUserId(), _commerceChannel.getGroupId(),
+			_commerceCurrency);
 
-		commerceOrder.setCommerceCurrencyId(
-			_commerceCurrency.getCommerceCurrencyId());
+		commerceOrder.setCommerceCurrencyCode(_commerceCurrency.getCode());
 
-		_commerceOrderLocalService.updateCommerceOrder(commerceOrder);
+		commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+			commerceOrder);
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_commerceCurrency, commerceChannel, _user, _group, _commerceAccount,
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
 			commerceOrder);
 
 		_commerceOrders.add(commerceOrder);
+
+		CommerceTestUtil.addCommerceOrderItem(
+			commerceOrder.getCommerceOrderId(), _cpInstance.getCPInstanceId(),
+			BigDecimal.ONE, commerceContext);
 
 		commerceOrder = _commerceOrderLocalService.applyCouponCode(
 			commerceOrder.getCommerceOrderId(), couponCode, commerceContext);
@@ -595,12 +783,13 @@ public class CommerceDiscountUsageTest {
 		BigDecimal discountPrice = BigDecimal.ZERO;
 
 		commerceContext = new TestCommerceContext(
-			_commerceCurrency, commerceChannel, _user, _group, _commerceAccount,
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
 			commerceOrder);
 
 		CommerceProductPrice commerceProductPrice =
 			_commerceProductPriceCalculation.getCommerceProductPrice(
-				cpInstance.getCPInstanceId(), 1, commerceContext);
+				_cpInstance.getCPInstanceId(), BigDecimal.ONE, StringPool.BLANK,
+				commerceContext);
 
 		if (commerceProductPrice != null) {
 			CommerceMoney finalPriceCommerceMoney =
@@ -623,7 +812,7 @@ public class CommerceDiscountUsageTest {
 			expectedPrice.stripTrailingZeros(),
 			discountPrice.stripTrailingZeros());
 
-		BigDecimal price = commercePriceEntry.getPrice();
+		BigDecimal price = _commercePriceEntry.getPrice();
 
 		expectedPrice = price.subtract(commerceDiscount.getLevel1());
 
@@ -637,22 +826,42 @@ public class CommerceDiscountUsageTest {
 
 	private static User _user;
 
-	private CommerceAccount _commerceAccount;
+	@DeleteAfterTestRun
+	private AccountEntry _accountEntry;
 
 	@Inject
-	private CommerceAccountLocalService _commerceAccountLocalService;
+	private AccountEntryLocalService _accountEntryLocalService;
+
+	@DeleteAfterTestRun
+	private AccountGroup _accountGroup;
+
+	@Inject
+	private AccountGroupLocalService _accountGroupLocalService;
+
+	@Inject
+	private AccountGroupRelLocalService _accountGroupRelLocalService;
+
+	@DeleteAfterTestRun
+	private CommerceCatalog _commerceCatalog;
 
 	@Inject
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
+	@DeleteAfterTestRun
+	private CommerceChannel _commerceChannel;
+
 	private CommerceCurrency _commerceCurrency;
 
 	@Inject
-	private CommerceDiscountLocalService _commerceDiscountLocalService;
+	private CommerceDiscountCommerceAccountGroupRelLocalService
+		_commerceDiscountCommerceAccountGroupRelLocalService;
 
 	@Inject
 	private CommerceDiscountUsageEntryLocalService
 		_commerceDiscountUsageEntryLocalService;
+
+	@DeleteAfterTestRun
+	private CommerceInventoryWarehouse _commerceInventoryWarehouse;
 
 	@Inject
 	private CommerceOrderEngine _commerceOrderEngine;
@@ -660,7 +869,16 @@ public class CommerceDiscountUsageTest {
 	@Inject
 	private CommerceOrderLocalService _commerceOrderLocalService;
 
+	@Inject
+	private CommerceOrderPriceCalculation _commerceOrderPriceCalculation;
+
 	private final List<CommerceOrder> _commerceOrders = new ArrayList<>();
+
+	@DeleteAfterTestRun
+	private CommercePriceEntry _commercePriceEntry;
+
+	@DeleteAfterTestRun
+	private CommercePriceList _commercePriceList;
 
 	@Inject
 	private CommercePriceListLocalService _commercePriceListLocalService;
@@ -668,9 +886,13 @@ public class CommerceDiscountUsageTest {
 	@Inject
 	private CommerceProductPriceCalculation _commerceProductPriceCalculation;
 
-	private Group _group;
+	@DeleteAfterTestRun
+	private CPDefinition _cpDefinition;
 
-	@Inject
-	private UserLocalService _userLocalService;
+	@DeleteAfterTestRun
+	private CPInstance _cpInstance;
+
+	private Group _group;
+	private ServiceContext _serviceContext;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
@@ -26,19 +17,11 @@ import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.Map;
 
-import org.osgi.service.component.annotations.Component;
-
 /**
  * @author Jürgen Kappler
  */
-@Component(service = LayoutStructureItemMapper.class)
 public class ColumnLayoutStructureItemMapper
 	implements LayoutStructureItemMapper {
-
-	@Override
-	public String getClassName() {
-		return ColumnLayoutStructureItem.class.getName();
-	}
 
 	@Override
 	public PageElement getPageElement(
@@ -50,70 +33,71 @@ public class ColumnLayoutStructureItemMapper
 
 		return new PageElement() {
 			{
-				definition = new PageColumnDefinition() {
-					{
-						size = columnLayoutStructureItem.getSize();
+				setDefinition(
+					() -> new PageColumnDefinition() {
+						{
+							setColumnViewports(
+								() -> {
+									Map<String, JSONObject>
+										columnViewportConfigurationJSONObjects =
+											columnLayoutStructureItem.
+												getViewportConfigurationJSONObjects();
 
-						setColumnViewports(
-							() -> {
-								Map<String, JSONObject>
-									columnViewportConfigurations =
-										columnLayoutStructureItem.
-											getViewportConfigurations();
+									if (MapUtil.isEmpty(
+											columnViewportConfigurationJSONObjects)) {
 
-								if (MapUtil.isEmpty(
-										columnViewportConfigurations)) {
+										return null;
+									}
 
-									return null;
-								}
+									ColumnViewport[] columnViewports =
+										new ColumnViewport[3];
 
-								ColumnViewport[] columnViewports =
-									new ColumnViewport[3];
+									columnViewports[0] = _toColumnViewport(
+										columnViewportConfigurationJSONObjects,
+										ViewportSize.MOBILE_LANDSCAPE);
+									columnViewports[1] = _toColumnViewport(
+										columnViewportConfigurationJSONObjects,
+										ViewportSize.PORTRAIT_MOBILE);
+									columnViewports[2] = _toColumnViewport(
+										columnViewportConfigurationJSONObjects,
+										ViewportSize.TABLET);
 
-								columnViewports[0] = _toColumnViewport(
-									columnViewportConfigurations,
-									ViewportSize.MOBILE_LANDSCAPE);
-								columnViewports[1] = _toColumnViewport(
-									columnViewportConfigurations,
-									ViewportSize.PORTRAIT_MOBILE);
-								columnViewports[2] = _toColumnViewport(
-									columnViewportConfigurations,
-									ViewportSize.TABLET);
-
-								return columnViewports;
-							});
-					}
-				};
-				type = Type.COLUMN;
+									return columnViewports;
+								});
+							setSize(columnLayoutStructureItem::getSize);
+						}
+					});
+				setId(layoutStructureItem::getItemId);
+				setType(() -> Type.COLUMN);
 			}
 		};
 	}
 
 	private ColumnViewport _toColumnViewport(
-		Map<String, JSONObject> columnViewportConfigurationsMap,
+		Map<String, JSONObject> columnViewportConfigurationJSONObjects,
 		ViewportSize viewportSize) {
 
 		return new ColumnViewport() {
 			{
-				columnViewportDefinition =
-					_toColumnViewportColumnViewportDefinition(
-						columnViewportConfigurationsMap, viewportSize);
-				id = viewportSize.getViewportSizeId();
+				setColumnViewportDefinition(
+					() -> _toColumnViewportColumnViewportDefinition(
+						columnViewportConfigurationJSONObjects, viewportSize));
+				setId(viewportSize::getViewportSizeId);
 			}
 		};
 	}
 
 	private ColumnViewportDefinition _toColumnViewportColumnViewportDefinition(
-		Map<String, JSONObject> columnViewportConfigurationsMap,
+		Map<String, JSONObject> columnViewportConfigurationJSONObjects,
 		ViewportSize viewportSize) {
 
-		if (!columnViewportConfigurationsMap.containsKey(
+		if (!columnViewportConfigurationJSONObjects.containsKey(
 				viewportSize.getViewportSizeId())) {
 
 			return null;
 		}
 
-		JSONObject jsonObject = columnViewportConfigurationsMap.get(
+		JSONObject jsonObject = columnViewportConfigurationJSONObjects.get(
 			viewportSize.getViewportSizeId());
 
 		return new ColumnViewportDefinition() {

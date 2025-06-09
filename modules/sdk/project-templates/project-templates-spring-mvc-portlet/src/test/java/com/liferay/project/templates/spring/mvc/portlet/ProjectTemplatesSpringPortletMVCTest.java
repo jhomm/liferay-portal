@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.spring.mvc.portlet;
@@ -46,24 +37,42 @@ public class ProjectTemplatesSpringPortletMVCTest
 	public static final MavenExecutor mavenExecutor = new MavenExecutor();
 
 	@Parameterized.Parameters(
-		name = "Testcase-{index}: testing {0}, {1}, {2}, {3}"
+		name = "Testcase-{index}: testing {0}, {1}, {2}, {3}, {4}"
 	)
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(
 			new Object[][] {
-				{"springportletmvc", "embedded", "jsp", "7.0.6-2"},
-				{"springportletmvc", "embedded", "jsp", "7.1.3-1"},
-				{"springportletmvc", "embedded", "jsp", "7.2.1-1"},
-				{"springportletmvc", "embedded", "jsp", "7.3.7"},
-				{"springportletmvc", "embedded", "jsp", "7.4.2-1"},
-				{"portletmvc4spring", "embedded", "jsp", "7.1.3-1"},
-				{"portletmvc4spring", "embedded", "jsp", "7.2.1-1"},
-				{"portletmvc4spring", "embedded", "jsp", "7.3.7"},
-				{"portletmvc4spring", "embedded", "jsp", "7.4.2-1"},
-				{"portletmvc4spring", "embedded", "thymeleaf", "7.1.3-1"},
-				{"portletmvc4spring", "embedded", "thymeleaf", "7.2.1-1"},
-				{"portletmvc4spring", "embedded", "thymeleaf", "7.3.7"},
-				{"portletmvc4spring", "embedded", "thymeleaf", "7.4.2-1"}
+				{"springportletmvc", "embedded", "jsp", "dxp", "7.0.10.17"},
+				{"springportletmvc", "embedded", "jsp", "dxp", "7.1.10.7"},
+				{"springportletmvc", "embedded", "jsp", "dxp", "7.2.10.7"},
+				{"springportletmvc", "embedded", "jsp", "dxp", "2024.q1.1"},
+				{"springportletmvc", "embedded", "jsp", "portal", "7.3.7"},
+				{"springportletmvc", "embedded", "jsp", "portal", "7.4.3.56"},
+				{"portletmvc4spring", "embedded", "jsp", "dxp", "7.1.10.7"},
+				{"portletmvc4spring", "embedded", "jsp", "dxp", "7.2.10.7"},
+				{"portletmvc4spring", "embedded", "jsp", "dxp", "2024.q1.1"},
+				{"portletmvc4spring", "embedded", "jsp", "portal", "7.3.7"},
+				{"portletmvc4spring", "embedded", "jsp", "portal", "7.4.3.56"},
+				{
+					"portletmvc4spring", "embedded", "thymeleaf", "dxp",
+					"7.1.10.7"
+				},
+				{
+					"portletmvc4spring", "embedded", "thymeleaf", "dxp",
+					"7.2.10.7"
+				},
+				{
+					"portletmvc4spring", "embedded", "thymeleaf", "dxp",
+					"2024.q1.1"
+				},
+				{
+					"portletmvc4spring", "embedded", "thymeleaf", "portal",
+					"7.3.7"
+				},
+				{
+					"portletmvc4spring", "embedded", "thymeleaf", "portal",
+					"7.4.3.56"
+				}
 			});
 	}
 
@@ -85,11 +94,12 @@ public class ProjectTemplatesSpringPortletMVCTest
 
 	public ProjectTemplatesSpringPortletMVCTest(
 		String framework, String frameworkDependencies, String viewType,
-		String liferayVersion) {
+		String liferayProduct, String liferayVersion) {
 
 		_framework = framework;
 		_frameworkDependencies = frameworkDependencies;
 		_viewType = viewType;
+		_liferayProduct = liferayProduct;
 		_liferayVersion = liferayVersion;
 	}
 
@@ -98,6 +108,15 @@ public class ProjectTemplatesSpringPortletMVCTest
 		File gradleWorkspaceDir = buildWorkspace(
 			temporaryFolder, "gradle", "gradleWS", _liferayVersion,
 			mavenExecutor);
+
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			_liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
 
 		File gradleWorkspaceModulesDir = new File(
 			gradleWorkspaceDir, "modules");
@@ -208,23 +227,26 @@ public class ProjectTemplatesSpringPortletMVCTest
 
 			return buildTemplateWithMaven(
 				destinationDir, destinationDir, template, name, groupId,
-				mavenExecutor, "-Dpackage=com.test", "-DclassName=Sample",
-				"-Dframework=" + framework,
+				mavenExecutor, "-DclassName=Sample", "-Dframework=" + framework,
 				"-DframeworkDependencies=" + frameworkDependencies,
-				"-DviewType=" + viewType, "-DliferayVersion=" + liferayVersion);
+				"-DliferayProduct=" + _liferayProduct,
+				"-DliferayVersion=" + liferayVersion, "-Dpackage=com.test",
+				"-DviewType=" + viewType);
 		}
 
 		return buildTemplateWithGradle(
-			destinationDir, template, name, "--package-name", "com.test",
-			"--class-name", "Sample", "--framework", framework,
-			"--framework-dependencies", frameworkDependencies, "--view-type",
-			viewType, "--liferay-version", liferayVersion);
+			destinationDir, template, name, "--class-name", "Sample",
+			"--framework", framework, "--framework-dependencies",
+			frameworkDependencies, "--liferay-product", _liferayProduct,
+			"--liferay-version", liferayVersion, "--package-name", "com.test",
+			"--view-type", viewType);
 	}
 
 	private static URI _gradleDistribution;
 
 	private final String _framework;
 	private final String _frameworkDependencies;
+	private final String _liferayProduct;
 	private final String _liferayVersion;
 	private final String _viewType;
 

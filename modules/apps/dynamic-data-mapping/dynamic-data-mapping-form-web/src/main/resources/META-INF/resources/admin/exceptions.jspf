@@ -1,22 +1,24 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <clay:container-fluid>
 	<div class="ddm-form-web__exception-container ddm-form-web__exception-container--sidebar-open">
 		<%@ include file="/admin/error_model_listener_exception.jspf" %>
+
+		<div>
+			<react:component
+				module="{ShowPartialResultsAlert} from dynamic-data-mapping-form-web"
+				props='<%=
+					HashMapBuilder.<String, Object>put(
+						"showPartialResultsToRespondents", ddmFormAdminDisplayContext.isShowPartialResultsToRespondents(ddmFormAdminDisplayContext.getDDMFormInstance())
+					).build()
+				%>'
+			/>
+		</div>
 
 		<liferay-ui:error exception="<%= DDMFormLayoutValidationException.class %>" message="please-enter-a-valid-form-layout" />
 
@@ -80,6 +82,34 @@
 			<liferay-ui:message arguments="<%= new Object[] {HtmlUtil.escape(msvve.getVisibilityExpression()), HtmlUtil.escape(msvve.getFieldName())} %>" key="the-visibility-expression-x-set-for-field-x-is-invalid" translateArguments="<%= false %>" />
 		</liferay-ui:error>
 
+		<%
+		boolean showExpirationDateError = false;
+		%>
+
+		<liferay-ui:error exception="<%= DDMFormValuesValidationException.MustSetValidValue.class %>">
+
+			<%
+			DDMFormValuesValidationException.MustSetValidValue msvv = (DDMFormValuesValidationException.MustSetValidValue)errorException;
+
+			String fieldLabelValue = msvv.getFieldLabelValue(themeDisplay.getLocale());
+
+			if (Validator.isNull(fieldLabelValue)) {
+				fieldLabelValue = msvv.getFieldName();
+			}
+
+			showExpirationDateError = Objects.equals(msvv.getFieldName(), "expirationDate");
+			%>
+
+			<c:choose>
+				<c:when test="<%= showExpirationDateError %>">
+					<liferay-ui:message key="please-enter-a-valid-expiration-date-only-future-dates-are-accepted" />
+				</c:when>
+				<c:otherwise>
+					<liferay-ui:message arguments="<%= HtmlUtil.escape(fieldLabelValue) %>" key="validation-failed-for-field-x" translateArguments="<%= false %>" />
+				</c:otherwise>
+			</c:choose>
+		</liferay-ui:error>
+
 		<liferay-ui:error exception="<%= FormInstanceFieldSettingsException.MustSetValidValueForProperties.class %>">
 
 			<%
@@ -89,7 +119,7 @@
 
 			StringBundler sb = new StringBundler(fieldNamePropertiesMap.size());
 
-			for (Entry<String, Set<String>> fieldNameProperties : fieldNamePropertiesMap.entrySet()) {
+			for (Map.Entry<String, Set<String>> fieldNameProperties : fieldNamePropertiesMap.entrySet()) {
 				Set<String> value = fieldNameProperties.getValue();
 
 				sb.append(LanguageUtil.format(request, (value.size() == 1) ? "the-setting-x-set-for-field-x-is-invalid" : "the-settings-x-set-for-field-x-are-invalid", new Object[] {HtmlUtil.escape(StringUtil.merge(value, StringPool.COMMA_AND_SPACE)), HtmlUtil.escape(fieldNameProperties.getKey())}, false));
@@ -123,9 +153,21 @@
 			<%= formInstanceSettingsStorageTypeException.getMessage() %>
 		</liferay-ui:error>
 
+		<liferay-ui:error exception="<%= LiferayFileItemException.class %>">
+			<liferay-ui:message arguments="<%= LanguageUtil.formatStorageSize(FileItem.THRESHOLD_SIZE, locale) %>" key="please-enter-valid-content-with-valid-content-size-no-larger-than-x" translateArguments="<%= false %>" />
+		</liferay-ui:error>
+
 		<liferay-ui:error exception="<%= StorageException.class %>" message="please-enter-a-valid-form-settings" />
 		<liferay-ui:error exception="<%= StructureDefinitionException.class %>" message="please-enter-a-valid-form-definition" />
 		<liferay-ui:error exception="<%= StructureLayoutException.class %>" message="please-enter-a-valid-form-layout" />
 		<liferay-ui:error exception="<%= StructureNameException.class %>" message="please-enter-a-valid-form-name" />
+
+		<c:if test="<%= !showExpirationDateError && DDMFormInstanceExpirationStatusUtil.isFormExpired(ddmFormAdminDisplayContext.getDDMFormInstance(), timeZone) %>">
+			<clay:alert
+				dismissible="<%= true %>"
+				displayType="warning"
+				message="the-form-is-expired-and-is-no-longer-available-for-editing-or-submitting-new-answers"
+			/>
+		</c:if>
 	</div>
 </clay:container-fluid>

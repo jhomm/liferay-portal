@@ -1,3 +1,11 @@
+.col-md-4 {
+	.lfr-ddm-form-pagination-controls {
+		button {
+			width: 100%;
+		}
+	}
+}
+
 .cursor-pointer {
 	cursor: pointer;
 }
@@ -220,13 +228,20 @@ td.lfr-name-column {
 	text-align: center;
 }
 
+div.lfr-de__partial-results--background {
+	.ddm-form-builder-app {
+		margin-top: 0;
+		padding-top: 28px;
+	}
+}
+
 .form-builder-sidebar,
 .portlet-forms {
 	.forms-navigation-bar,
 	.navigation-bar-secondary,
 	.management-bar {
 		position: sticky;
-		top: 56px;
+		top: var(--control-menu-container-height);
 		width: 100%;
 		z-index: 51;
 	}
@@ -246,7 +261,9 @@ td.lfr-name-column {
 	}
 
 	.management-bar {
-		top: 104px;
+		top: calc(
+			var(--control-menu-container-height) + #{$form-navigation-bar-height}
+		);
 	}
 
 	.radio-inline {
@@ -285,6 +302,8 @@ td.lfr-name-column {
 	}
 
 	.ddm-form-basic-info {
+		.h4,
+		.h5,
 		h1,
 		h2,
 		h3,
@@ -374,16 +393,15 @@ td.lfr-name-column {
 		}
 	}
 
-	.form-builder-tabview,
-	.lfr-ddm-form-wizard {
-		border-bottom: 1px solid #dee4e9;
-		padding: 20px 34px 11px;
-		position: relative;
-	}
-
 	.form-instance-id,
 	.form-instance-modified-date {
 		margin-right: 20px;
+	}
+
+	.taglib-workflow-status {
+		.workflow-version {
+			color: #6b6c7e;
+		}
 	}
 }
 
@@ -441,10 +459,6 @@ td.lfr-name-column {
 	}
 }
 
-.taglib-empty-result-message {
-	margin-top: 104px;
-}
-
 .modal {
 	max-width: none;
 }
@@ -493,5 +507,12 @@ td.lfr-name-column {
 		.hidden {
 			display: none;
 		}
+	}
+}
+
+.mobile.touch body:first-of-type .portlet-content .lfr-icon-actions {
+	.lfr-icon-menu-text,
+	.taglib-text {
+		max-width: 200px;
 	}
 }

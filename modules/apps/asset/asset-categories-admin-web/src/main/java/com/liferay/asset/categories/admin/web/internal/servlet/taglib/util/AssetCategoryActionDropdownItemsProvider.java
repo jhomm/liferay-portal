@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.admin.web.internal.servlet.taglib.util;
@@ -27,28 +18,35 @@ import com.liferay.asset.kernel.service.AssetVocabularyServiceUtil;
 import com.liferay.exportimport.kernel.staging.permission.StagingPermissionUtil;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
+import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
-import com.liferay.portal.kernel.portlet.PortletProvider;
-import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Víctor Galán
@@ -57,21 +55,22 @@ public class AssetCategoryActionDropdownItemsProvider {
 
 	public AssetCategoryActionDropdownItemsProvider(
 			AssetCategoriesDisplayContext assetCategoriesDisplayContext,
-			HttpServletRequest httpServletRequest,
+			HttpServletRequest httpServletRequest, RenderRequest renderRequest,
 			RenderResponse renderResponse)
 		throws PortalException {
 
 		_httpServletRequest = httpServletRequest;
+		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		_assetCategoriesLimitExceeded = _isAssetCategoriesLimitExceeded(
 			assetCategoriesDisplayContext);
 		_assetDisplayPageFriendlyURLProvider =
 			(AssetDisplayPageFriendlyURLProvider)
-				_httpServletRequest.getAttribute(
+				httpServletRequest.getAttribute(
 					AssetCategoriesAdminWebKeys.
 						ASSET_DISPLAY_PAGE_FRIENDLY_URL_PROVIDER);
 	}
@@ -87,13 +86,13 @@ public class AssetCategoryActionDropdownItemsProvider {
 								PortletURLBuilder.createRenderURL(
 									_renderResponse
 								).setMVCPath(
-									"/edit_category.jsp"
+									"/edit_asset_category.jsp"
 								).setParameter(
 									"categoryId", category.getCategoryId()
 								).setParameter(
 									"vocabularyId", category.getVocabularyId()
 								).buildString());
-
+							dropdownItem.setIcon("pencil");
 							dropdownItem.setLabel(
 								LanguageUtil.get(_httpServletRequest, "edit"));
 						}
@@ -112,7 +111,7 @@ public class AssetCategoryActionDropdownItemsProvider {
 								PortletURLBuilder.createRenderURL(
 									_renderResponse
 								).setMVCPath(
-									"/edit_category.jsp"
+									"/edit_asset_category.jsp"
 								).setParameter(
 									"parentCategoryId", category.getCategoryId()
 								).setParameter(
@@ -125,7 +124,12 @@ public class AssetCategoryActionDropdownItemsProvider {
 					).add(
 						() -> _getDisplayPageURL(category) != null,
 						dropdownItem -> {
-							dropdownItem.setHref(_getDisplayPageURL(category));
+							dropdownItem.setHref(
+								HttpComponentsUtil.addParameters(
+									_getDisplayPageURL(category),
+									"p_l_back_url",
+									_themeDisplay.getURLCurrent()));
+							dropdownItem.setIcon("view");
 							dropdownItem.setLabel(
 								LanguageUtil.get(
 									_httpServletRequest, "view-display-page"));
@@ -149,9 +153,10 @@ public class AssetCategoryActionDropdownItemsProvider {
 									category.getTitle(
 										_themeDisplay.getLocale())));
 							dropdownItem.putData(
-								"moveCategoryURL",
+								"selectParentCategoryURL",
 								_getSelectCategoryURL(
 									category.getVocabularyId()));
+							dropdownItem.setIcon("move-folder");
 							dropdownItem.setLabel(
 								LanguageUtil.get(_httpServletRequest, "move"));
 						}
@@ -177,6 +182,7 @@ public class AssetCategoryActionDropdownItemsProvider {
 									String.valueOf(category.getCategoryId()),
 									LiferayWindowState.POP_UP.toString(), null,
 									_httpServletRequest));
+							dropdownItem.setIcon("password-policies");
 							dropdownItem.setLabel(
 								LanguageUtil.get(
 									_httpServletRequest, "permissions"));
@@ -197,12 +203,15 @@ public class AssetCategoryActionDropdownItemsProvider {
 								PortletURLBuilder.createActionURL(
 									_renderResponse
 								).setActionName(
-									"deleteCategory"
+									"/asset_categories_admin" +
+										"/delete_asset_category"
 								).setRedirect(
 									_themeDisplay.getURLCurrent()
 								).setParameter(
 									"categoryId", category.getCategoryId()
 								).buildString());
+
+							dropdownItem.setIcon("trash");
 							dropdownItem.setLabel(
 								LanguageUtil.get(
 									_httpServletRequest, "delete"));
@@ -217,39 +226,55 @@ public class AssetCategoryActionDropdownItemsProvider {
 		throws PortalException {
 
 		return _assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-			AssetCategory.class.getName(), category.getCategoryId(),
+			new InfoItemReference(
+				AssetCategory.class.getName(),
+				new ClassPKInfoItemIdentifier(category.getCategoryId())),
 			_themeDisplay);
 	}
 
 	private String _getSelectCategoryURL(long vocabularyId) throws Exception {
+		ItemSelector itemSelector =
+			(ItemSelector)_httpServletRequest.getAttribute(
+				ItemSelector.class.getName());
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+			RequestBackedPortletURLFactoryUtil.create(_renderRequest);
+
+		InfoItemItemSelectorCriterion itemSelectorCriterion =
+			new InfoItemItemSelectorCriterion();
+
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new InfoItemItemSelectorReturnType());
+		itemSelectorCriterion.setItemType(AssetCategory.class.getName());
+
 		return PortletURLBuilder.create(
-			PortletProviderUtil.getPortletURL(
-				_httpServletRequest, AssetCategory.class.getName(),
-				PortletProvider.Action.BROWSE)
+			itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory, themeDisplay.getScopeGroup(),
+				themeDisplay.getScopeGroupId(),
+				_renderResponse.getNamespace() + "selectCategory",
+				itemSelectorCriterion)
 		).setParameter(
 			"allowedSelectVocabularies", true
 		).setParameter(
-			"eventName", _renderResponse.getNamespace() + "selectCategory"
-		).setParameter(
 			"moveCategory", true
-		).setParameter(
-			"singleSelect", true
 		).setParameter(
 			"vocabularyIds",
 			() -> {
 				AssetVocabulary vocabulary =
 					AssetVocabularyServiceUtil.getVocabulary(vocabularyId);
 
-				List<AssetVocabulary> vocabularies =
+				List<AssetVocabulary> assetVocabularies =
 					AssetVocabularyServiceUtil.getGroupVocabularies(
 						_themeDisplay.getScopeGroupId(),
 						vocabulary.getVisibilityType());
 
 				return ListUtil.toString(
-					vocabularies, AssetVocabulary.VOCABULARY_ID_ACCESSOR);
+					assetVocabularies, AssetVocabulary.VOCABULARY_ID_ACCESSOR);
 			}
-		).setWindowState(
-			LiferayWindowState.POP_UP
 		).buildString();
 	}
 
@@ -307,7 +332,7 @@ public class AssetCategoryActionDropdownItemsProvider {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -321,6 +346,7 @@ public class AssetCategoryActionDropdownItemsProvider {
 	private final AssetDisplayPageFriendlyURLProvider
 		_assetDisplayPageFriendlyURLProvider;
 	private final HttpServletRequest _httpServletRequest;
+	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private final ThemeDisplay _themeDisplay;
 

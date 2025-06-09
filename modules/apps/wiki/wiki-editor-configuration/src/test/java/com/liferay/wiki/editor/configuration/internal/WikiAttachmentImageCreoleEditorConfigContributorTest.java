@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.editor.configuration.internal;
 
+import com.liferay.document.library.kernel.util.DLValidator;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
@@ -25,50 +17,83 @@ import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletURLWrapper;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.ProxyFactory;
 import com.liferay.portal.language.LanguageImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.wiki.configuration.WikiFileUploadConfiguration;
 import com.liferay.wiki.constants.WikiPortletKeys;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-
-import org.powermock.api.mockito.PowerMockito;
 
 import org.skyscreamer.jsonassert.JSONAssert;
 
 /**
  * @author Roberto Díaz
  */
-public class WikiAttachmentImageCreoleEditorConfigContributorTest
-	extends PowerMockito {
+public class WikiAttachmentImageCreoleEditorConfigContributorTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-
+	@BeforeClass
+	public static void setUpClass() {
 		LanguageUtil languageUtil = new LanguageUtil();
 
 		languageUtil.setLanguage(new LanguageImpl());
 
+		_mimeTypesUtilMockedStatic = Mockito.mockStatic(MimeTypesUtil.class);
+
+		Mockito.when(
+			MimeTypesUtil.getExtensions(Mockito.anyString())
+		).thenReturn(
+			Collections.emptySet()
+		);
+
+		_uploadServletRequestConfigurationProviderUtilMockedStatic =
+			Mockito.mockStatic(
+				UploadServletRequestConfigurationProviderUtil.class);
+
+		Mockito.when(
+			UploadServletRequestConfigurationProviderUtil.getMaxSize()
+		).thenReturn(
+			0L
+		);
+	}
+
+	@AfterClass
+	public static void tearDownClass() {
+		_mimeTypesUtilMockedStatic.close();
+
+		_uploadServletRequestConfigurationProviderUtilMockedStatic.close();
+	}
+
+	@Before
+	public void setUp() {
 		_inputEditorTaglibAttributes.put(
 			"liferay-ui:input-editor:name", "testEditor");
+
+		_wikiAttachmentImageCreoleEditorConfigContributor =
+			new WikiAttachmentImageCreoleEditorConfigContributor();
+
+		_wikiAttachmentImageCreoleEditorConfigContributor.itemSelector =
+			_itemSelector;
 	}
 
 	@Test
@@ -78,10 +103,11 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 		setAllowBrowseDocuments(true);
 		setWikiPageResourcePrimKey(0);
 
-		when(
+		Mockito.when(
 			_itemSelector.getItemSelectorURL(
-				Mockito.any(RequestBackedPortletURLFactory.class),
-				Mockito.anyString(), Mockito.any(ItemSelectorCriterion.class))
+				Mockito.nullable(RequestBackedPortletURLFactory.class),
+				Mockito.nullable(String.class),
+				Mockito.any(ItemSelectorCriterion.class))
 		).thenReturn(
 			new PortletURLWrapper(null) {
 
@@ -97,31 +123,23 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 			getJSONObjectWithDefaultItemSelectorURL();
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			originalJSONObject.toJSONString());
+			originalJSONObject.toString());
 
-		WikiAttachmentImageCreoleEditorConfigContributor
-			wikiAttachmentImageCreoleEditorConfigContributor =
-				new WikiAttachmentImageCreoleEditorConfigContributor();
-
-		wikiAttachmentImageCreoleEditorConfigContributor.setItemSelector(
-			_itemSelector);
-
-		wikiAttachmentImageCreoleEditorConfigContributor.
+		_wikiAttachmentImageCreoleEditorConfigContributor.
 			populateConfigJSONObject(
 				jsonObject, _inputEditorTaglibAttributes, null, null);
 
-		JSONObject expectedJSONObject = JSONUtil.put(
-			"filebrowserImageBrowseLinkUrl",
-			"itemSelectorPortletURLWithUrlSelectionViews"
-		).put(
-			"filebrowserImageBrowseUrl",
-			"itemSelectorPortletURLWithUrlSelectionViews"
-		).put(
-			"removePlugins", "plugin1,ae_addimages"
-		);
-
 		JSONAssert.assertEquals(
-			expectedJSONObject.toJSONString(), jsonObject.toJSONString(), true);
+			JSONUtil.put(
+				"filebrowserImageBrowseLinkUrl",
+				"itemSelectorPortletURLWithUrlSelectionViews"
+			).put(
+				"filebrowserImageBrowseUrl",
+				"itemSelectorPortletURLWithUrlSelectionViews"
+			).put(
+				"removePlugins", "plugin1,ae_addimages"
+			).toString(),
+			jsonObject.toString(), true);
 	}
 
 	@Test
@@ -131,7 +149,7 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 		setAllowBrowseDocuments(true);
 		setWikiPageResourcePrimKey(1);
 
-		when(
+		Mockito.when(
 			_itemSelector.getItemSelectorURL(
 				Mockito.any(RequestBackedPortletURLFactory.class),
 				Mockito.anyString(), Mockito.any(ItemSelectorCriterion.class),
@@ -149,10 +167,10 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 			}
 		);
 
-		RequestBackedPortletURLFactory requestBackedPortletURLFactory = mock(
-			RequestBackedPortletURLFactory.class);
+		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+			Mockito.mock(RequestBackedPortletURLFactory.class);
 
-		when(
+		Mockito.when(
 			requestBackedPortletURLFactory.createActionURL(WikiPortletKeys.WIKI)
 		).thenReturn(
 			ProxyFactory.newDummyInstance(LiferayPortletURL.class)
@@ -160,45 +178,40 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 
 		JSONObject jsonObject = getJSONObjectWithDefaultItemSelectorURL();
 
-		WikiAttachmentImageCreoleEditorConfigContributor
-			wikiAttachmentImageCreoleEditorConfigContributor =
-				new WikiAttachmentImageCreoleEditorConfigContributor();
+		_wikiAttachmentImageCreoleEditorConfigContributor.
+			wikiFileUploadConfiguration = new WikiFileUploadConfiguration() {
 
-		wikiAttachmentImageCreoleEditorConfigContributor.setItemSelector(
-			_itemSelector);
-		wikiAttachmentImageCreoleEditorConfigContributor.
-			setWikiFileUploadConfiguration(
-				new WikiFileUploadConfiguration() {
+				@Override
+				public long attachmentMaxSize() {
+					return 0;
+				}
 
-					@Override
-					public long attachmentMaxSize() {
-						return 0;
-					}
+				@Override
+				public String[] attachmentMimeTypes() {
+					return new String[] {StringPool.STAR};
+				}
 
-					@Override
-					public String[] attachmentMimeTypes() {
-						return new String[] {StringPool.STAR};
-					}
+			};
 
-				});
+		_wikiAttachmentImageCreoleEditorConfigContributor.dlValidator =
+			Mockito.mock(DLValidator.class);
 
-		wikiAttachmentImageCreoleEditorConfigContributor.
+		_wikiAttachmentImageCreoleEditorConfigContributor.
 			populateConfigJSONObject(
 				jsonObject, _inputEditorTaglibAttributes, new ThemeDisplay(),
 				requestBackedPortletURLFactory);
 
-		JSONObject expectedJSONObject = JSONUtil.put(
-			"filebrowserImageBrowseLinkUrl",
-			"itemSelectorPortletURLWithWikiUrlAndUploadSelectionViews"
-		).put(
-			"filebrowserImageBrowseUrl",
-			"itemSelectorPortletURLWithWikiUrlAndUploadSelectionViews"
-		).put(
-			"removePlugins", "plugin1"
-		);
-
 		JSONAssert.assertEquals(
-			expectedJSONObject.toJSONString(), jsonObject.toJSONString(), true);
+			JSONUtil.put(
+				"filebrowserImageBrowseLinkUrl",
+				"itemSelectorPortletURLWithWikiUrlAndUploadSelectionViews"
+			).put(
+				"filebrowserImageBrowseUrl",
+				"itemSelectorPortletURLWithWikiUrlAndUploadSelectionViews"
+			).put(
+				"removePlugins", "plugin1"
+			).toString(),
+			jsonObject.toString(), true);
 	}
 
 	@Test
@@ -212,26 +225,19 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 			getJSONObjectWithDefaultItemSelectorURL();
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			originalJSONObject.toJSONString());
+			originalJSONObject.toString());
 
-		WikiAttachmentImageCreoleEditorConfigContributor
-			wikiAttachmentImageCreoleEditorConfigContributor =
-				new WikiAttachmentImageCreoleEditorConfigContributor();
-
-		wikiAttachmentImageCreoleEditorConfigContributor.setItemSelector(
-			_itemSelector);
-
-		wikiAttachmentImageCreoleEditorConfigContributor.
+		_wikiAttachmentImageCreoleEditorConfigContributor.
 			populateConfigJSONObject(
 				jsonObject, _inputEditorTaglibAttributes, null, null);
 
 		JSONObject expectedJSONObject = JSONFactoryUtil.createJSONObject(
-			originalJSONObject.toJSONString());
+			originalJSONObject.toString());
 
 		expectedJSONObject.put("removePlugins", "plugin1");
 
 		JSONAssert.assertEquals(
-			expectedJSONObject.toJSONString(), jsonObject.toJSONString(), true);
+			expectedJSONObject.toString(), jsonObject.toString(), true);
 	}
 
 	@Test
@@ -245,31 +251,22 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 			getJSONObjectWithDefaultItemSelectorURL();
 
 		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			originalJSONObject.toJSONString());
+			originalJSONObject.toString());
 
-		WikiAttachmentImageCreoleEditorConfigContributor
-			wikiAttachmentImageCreoleEditorConfigContributor =
-				new WikiAttachmentImageCreoleEditorConfigContributor();
-
-		wikiAttachmentImageCreoleEditorConfigContributor.setItemSelector(
-			_itemSelector);
-
-		wikiAttachmentImageCreoleEditorConfigContributor.
+		_wikiAttachmentImageCreoleEditorConfigContributor.
 			populateConfigJSONObject(
 				jsonObject, _inputEditorTaglibAttributes, null, null);
 
 		JSONObject expectedJSONObject = JSONFactoryUtil.createJSONObject(
-			originalJSONObject.toJSONString());
+			originalJSONObject.toString());
 
 		expectedJSONObject.put("removePlugins", "plugin1");
 
 		JSONAssert.assertEquals(
-			expectedJSONObject.toJSONString(), jsonObject.toJSONString(), true);
+			expectedJSONObject.toString(), jsonObject.toString(), true);
 	}
 
-	protected JSONObject getJSONObjectWithDefaultItemSelectorURL()
-		throws Exception {
-
+	protected JSONObject getJSONObjectWithDefaultItemSelectorURL() {
 		return JSONUtil.put(
 			"filebrowserImageBrowseLinkUrl", "defaultItemSelectorPortletURL"
 		).put(
@@ -293,10 +290,14 @@ public class WikiAttachmentImageCreoleEditorConfigContributorTest
 			).build());
 	}
 
+	private static MockedStatic<MimeTypesUtil> _mimeTypesUtilMockedStatic;
+	private static MockedStatic<UploadServletRequestConfigurationProviderUtil>
+		_uploadServletRequestConfigurationProviderUtilMockedStatic;
+
 	private final Map<String, Object> _inputEditorTaglibAttributes =
 		new HashMap<>();
-
-	@Mock
-	private ItemSelector _itemSelector;
+	private final ItemSelector _itemSelector = Mockito.mock(ItemSelector.class);
+	private WikiAttachmentImageCreoleEditorConfigContributor
+		_wikiAttachmentImageCreoleEditorConfigContributor;
 
 }

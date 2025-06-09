@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.internal.util.copy;
@@ -18,6 +9,7 @@ import aQute.bnd.osgi.Constants;
 
 import com.liferay.gradle.util.Validator;
 
+import java.io.File;
 import java.io.IOException;
 
 import java.util.jar.Attributes;
@@ -56,8 +48,10 @@ public class RenameDependencyAction implements Action<FileCopyDetails> {
 			return;
 		}
 
-		try (JarFile jarFile = new JarFile(fileCopyDetails.getFile())) {
-			fileName = _getFileName(jarFile);
+		File file = fileCopyDetails.getFile();
+
+		try (JarFile jarFile = new JarFile(file)) {
+			fileName = _getFileName(_getFileName(file), jarFile);
 
 			fileCopyDetails.setName(fileName);
 		}
@@ -66,7 +60,21 @@ public class RenameDependencyAction implements Action<FileCopyDetails> {
 		}
 	}
 
-	private String _getFileName(JarFile jarFile) throws IOException {
+	private String _getFileName(File file) {
+		String fileName = file.getName();
+
+		fileName = fileName.substring(0, _getVersionStart(fileName));
+
+		if (fileName.endsWith(".jar")) {
+			fileName = fileName.substring(0, fileName.length() - 4);
+		}
+
+		return fileName;
+	}
+
+	private String _getFileName(String defaultFileName, JarFile jarFile)
+		throws IOException {
+
 		Manifest manifest = jarFile.getManifest();
 
 		if (manifest == null) {
@@ -90,10 +98,7 @@ public class RenameDependencyAction implements Action<FileCopyDetails> {
 		if (Validator.isNull(fileName) ||
 			(_getVersionStart(fileName) < fileName.length())) {
 
-			throw new GradleException(
-				"Unable to rename " + jarFile.getName() +
-					", as its manifest does not contain a valid '" +
-						Constants.BUNDLE_SYMBOLICNAME + "' header");
+			fileName = defaultFileName;
 		}
 
 		if (_keepVersion) {
@@ -121,7 +126,7 @@ public class RenameDependencyAction implements Action<FileCopyDetails> {
 			return name.length();
 		}
 
-		return matcher.start();
+		return matcher.start() + 1;
 	}
 
 	private static final Pattern _versionStartPattern = Pattern.compile(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.portlet.configuration.icon;
@@ -18,8 +9,8 @@ import com.liferay.dynamic.data.lists.constants.DDLActionKeys;
 import com.liferay.dynamic.data.lists.constants.DDLPortletKeys;
 import com.liferay.dynamic.data.lists.web.internal.security.permission.resource.DDLPermission;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletProvider;
@@ -27,14 +18,15 @@ import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.webdav.WebDAVUtil;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -43,8 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rafael Praxedes
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
+	property = "jakarta.portlet.name=" + DDLPortletKeys.DYNAMIC_DATA_LISTS,
 	service = PortletConfigurationIcon.class
 )
 public class DDMStructuresPortletConfigurationIcon
@@ -52,9 +43,8 @@ public class DDMStructuresPortletConfigurationIcon
 
 	@Override
 	public String getMessage(PortletRequest portletRequest) {
-		return LanguageUtil.get(
-			getResourceBundle(getLocale(portletRequest)),
-			"manage-data-definitions");
+		return _language.get(
+			getLocale(portletRequest), "manage-data-definitions");
 	}
 
 	@Override
@@ -63,11 +53,6 @@ public class DDMStructuresPortletConfigurationIcon
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
-		Portlet portlet = _portletLocalService.getPortletById(
-			portletDisplay.getId());
 
 		return PortletURLBuilder.create(
 			PortletURLFactoryUtil.create(
@@ -84,7 +69,16 @@ public class DDMStructuresPortletConfigurationIcon
 		).setParameter(
 			"refererPortletName", DDLPortletKeys.DYNAMIC_DATA_LISTS
 		).setParameter(
-			"refererWebDAVToken", WebDAVUtil.getStorageToken(portlet)
+			"refererWebDAVToken",
+			() -> {
+				PortletDisplay portletDisplay =
+					themeDisplay.getPortletDisplay();
+
+				Portlet portlet = _portletLocalService.getPortletById(
+					portletDisplay.getId());
+
+				return WebDAVUtil.getStorageToken(portlet);
+			}
 		).setParameter(
 			"showAncestorScopes", true
 		).buildString();
@@ -97,12 +91,16 @@ public class DDMStructuresPortletConfigurationIcon
 
 	@Override
 	public boolean isShow(PortletRequest portletRequest) {
+		if (!FeatureFlagManagerUtil.isEnabled("LPS-196935")) {
+			return false;
+		}
+
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		User user = themeDisplay.getUser();
 
-		if (user.isDefaultUser()) {
+		if (user.isGuestUser()) {
 			return false;
 		}
 
@@ -111,18 +109,10 @@ public class DDMStructuresPortletConfigurationIcon
 			DDLActionKeys.ADD_RECORD_SET);
 	}
 
-	@Override
-	public boolean isToolTip() {
-		return false;
-	}
+	@Reference
+	private Language _language;
 
-	@Reference(unbind = "-")
-	protected void setPortletLocalService(
-		PortletLocalService portletLocalService) {
-
-		_portletLocalService = portletLocalService;
-	}
-
+	@Reference
 	private PortletLocalService _portletLocalService;
 
 }

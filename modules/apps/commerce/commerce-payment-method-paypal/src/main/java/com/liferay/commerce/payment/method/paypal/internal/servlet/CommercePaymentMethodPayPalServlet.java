@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.method.paypal.internal.servlet;
@@ -17,21 +8,25 @@ package com.liferay.commerce.payment.method.paypal.internal.servlet;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.payment.engine.CommercePaymentEngine;
 import com.liferay.commerce.payment.engine.CommerceSubscriptionEngine;
+import com.liferay.commerce.payment.helper.CommercePaymentHttpHelper;
+import com.liferay.commerce.payment.method.paypal.internal.PayPalCommercePaymentMethod;
 import com.liferay.commerce.payment.method.paypal.internal.constants.PayPalCommercePaymentMethodConstants;
-import com.liferay.commerce.payment.util.CommercePaymentHttpHelper;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.net.URL;
+
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,11 +35,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"osgi.http.whiteboard.context.path=/" + PayPalCommercePaymentMethodConstants.SERVLET_PATH,
+		"osgi.http.whiteboard.context.path=/" + PayPalCommercePaymentMethodConstants.PAYMENT_METHOD_SERVLET_PATH,
 		"osgi.http.whiteboard.servlet.name=com.liferay.commerce.payment.method.paypal.internal.servlet.CommercePaymentMethodPayPalServlet",
-		"osgi.http.whiteboard.servlet.pattern=/" + PayPalCommercePaymentMethodConstants.SERVLET_PATH + "/*"
+		"osgi.http.whiteboard.servlet.pattern=/" + PayPalCommercePaymentMethodConstants.PAYMENT_METHOD_SERVLET_PATH + "/*"
 	},
 	service = Servlet.class
 )
@@ -62,8 +56,26 @@ public class CommercePaymentMethodPayPalServlet extends HttpServlet {
 					httpServletRequest.getSession());
 			}
 
+			URL portalURL = new URL(_portal.getPortalURL(httpServletRequest));
+
+			String redirect = ParamUtil.getString(
+				httpServletRequest, "redirect");
+
+			URL url = new URL(redirect);
+
+			if (!Objects.equals(portalURL.getHost(), url.getHost())) {
+				throw new ServletException();
+			}
+
 			CommerceOrder commerceOrder =
 				_commercePaymentHttpHelper.getCommerceOrder(httpServletRequest);
+
+			if (!Objects.equals(
+					commerceOrder.getCommercePaymentMethodKey(),
+					PayPalCommercePaymentMethod.KEY)) {
+
+				throw new ServletException();
+			}
 
 			boolean cancel = ParamUtil.getBoolean(httpServletRequest, "cancel");
 
@@ -89,18 +101,13 @@ public class CommercePaymentMethodPayPalServlet extends HttpServlet {
 				}
 			}
 
-			String redirect = ParamUtil.getString(
-				httpServletRequest, "redirect");
-
 			httpServletResponse.sendRedirect(redirect);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_portal.sendError(
+				exception, httpServletRequest, httpServletResponse);
 		}
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		CommercePaymentMethodPayPalServlet.class);
 
 	@Reference
 	private CommercePaymentEngine _commercePaymentEngine;
@@ -110,5 +117,8 @@ public class CommercePaymentMethodPayPalServlet extends HttpServlet {
 
 	@Reference
 	private CommerceSubscriptionEngine _commerceSubscriptionEngine;
+
+	@Reference
+	private Portal _portal;
 
 }

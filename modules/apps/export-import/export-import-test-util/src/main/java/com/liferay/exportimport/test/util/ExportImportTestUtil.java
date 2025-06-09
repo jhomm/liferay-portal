@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test.util;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataContextFactoryUtil;
+import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -24,6 +16,7 @@ import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Máté Thurzó
@@ -82,12 +75,8 @@ public class ExportImportTestUtil {
 		Element rootElement = SAXReaderUtil.createElement("root");
 
 		portletDataContext.setExportDataRootElement(rootElement);
-
-		Element missingReferencesElement = rootElement.addElement(
-			"missing-references");
-
 		portletDataContext.setMissingReferencesElement(
-			missingReferencesElement);
+			rootElement.addElement("missing-references"));
 
 		return portletDataContext;
 	}
@@ -127,12 +116,8 @@ public class ExportImportTestUtil {
 		Element rootElement = SAXReaderUtil.createElement("root");
 
 		portletDataContext.setImportDataRootElement(rootElement);
-
-		Element missingReferencesElement = rootElement.addElement(
-			"missing-references");
-
 		portletDataContext.setMissingReferencesElement(
-			missingReferencesElement);
+			rootElement.addElement("missing-references"));
 
 		return portletDataContext;
 	}
@@ -143,6 +128,30 @@ public class ExportImportTestUtil {
 
 		return getImportPortletDataContext(
 			companyId, groupId, new HashMap<String, String[]>());
+	}
+
+	public static void retryAssert(
+			long pause, TimeUnit pauseTimeUnit, long timeout,
+			TimeUnit timeoutTimeUnit, UnsafeRunnable<Exception> unsafeRunnable)
+		throws Exception {
+
+		long deadline =
+			System.currentTimeMillis() + timeoutTimeUnit.toMillis(timeout);
+
+		while (true) {
+			try {
+				unsafeRunnable.run();
+
+				return;
+			}
+			catch (AssertionError assertionError) {
+				if (System.currentTimeMillis() > deadline) {
+					throw assertionError;
+				}
+			}
+
+			Thread.sleep(pauseTimeUnit.toMillis(pause));
+		}
 	}
 
 }

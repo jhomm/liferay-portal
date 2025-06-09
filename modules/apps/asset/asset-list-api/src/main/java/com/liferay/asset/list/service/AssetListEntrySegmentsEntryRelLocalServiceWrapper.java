@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.list.service;
 import com.liferay.asset.list.model.AssetListEntrySegmentsEntryRel;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class AssetListEntrySegmentsEntryRelLocalServiceWrapper
 	implements AssetListEntrySegmentsEntryRelLocalService,
 			   ServiceWrapper<AssetListEntrySegmentsEntryRelLocalService> {
+
+	public AssetListEntrySegmentsEntryRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AssetListEntrySegmentsEntryRelLocalServiceWrapper(
 		AssetListEntrySegmentsEntryRelLocalService
@@ -54,6 +50,19 @@ public class AssetListEntrySegmentsEntryRelLocalServiceWrapper
 
 		return _assetListEntrySegmentsEntryRelLocalService.
 			addAssetListEntrySegmentsEntryRel(assetListEntrySegmentsEntryRel);
+	}
+
+	@Override
+	public AssetListEntrySegmentsEntryRel addAssetListEntrySegmentsEntryRel(
+			long userId, long groupId, long assetListEntryId, int priority,
+			long segmentsEntryId, String typeSettings,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetListEntrySegmentsEntryRelLocalService.
+			addAssetListEntrySegmentsEntryRel(
+				userId, groupId, assetListEntryId, priority, segmentsEntryId,
+				typeSettings, serviceContext);
 	}
 
 	@Override
@@ -317,6 +326,16 @@ public class AssetListEntrySegmentsEntryRelLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<AssetListEntrySegmentsEntryRel>
+		fetchAssetListEntrySegmentsEntryRels(
+			long assetListEntryId, long[] segmentsEntryIds) {
+
+		return _assetListEntrySegmentsEntryRelLocalService.
+			fetchAssetListEntrySegmentsEntryRels(
+				assetListEntryId, segmentsEntryIds);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -394,6 +413,19 @@ public class AssetListEntrySegmentsEntryRelLocalServiceWrapper
 
 		return _assetListEntrySegmentsEntryRelLocalService.
 			getAssetListEntrySegmentsEntryRels(assetListEntryId, start, end);
+	}
+
+	@Override
+	public java.util.List<AssetListEntrySegmentsEntryRel>
+		getAssetListEntrySegmentsEntryRels(
+			long assetListEntryId, long[] segmentsEntryIds, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<AssetListEntrySegmentsEntryRel> orderByComparator) {
+
+		return _assetListEntrySegmentsEntryRelLocalService.
+			getAssetListEntrySegmentsEntryRels(
+				assetListEntryId, segmentsEntryIds, start, end,
+				orderByComparator);
 	}
 
 	/**
@@ -520,6 +552,17 @@ public class AssetListEntrySegmentsEntryRelLocalServiceWrapper
 		return _assetListEntrySegmentsEntryRelLocalService.
 			updateAssetListEntrySegmentsEntryRelTypeSettings(
 				assetListEntryId, segmentsEntryId, typeSettings);
+	}
+
+	@Override
+	public void updateVariationsPriority(long[] variationsPriority) {
+		_assetListEntrySegmentsEntryRelLocalService.updateVariationsPriority(
+			variationsPriority);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _assetListEntrySegmentsEntryRelLocalService.getBasePersistence();
 	}
 
 	@Override

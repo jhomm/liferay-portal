@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.changeset.service.impl;
@@ -18,17 +9,20 @@ import com.liferay.changeset.exception.NoSuchEntryException;
 import com.liferay.changeset.model.ChangesetCollection;
 import com.liferay.changeset.model.ChangesetEntry;
 import com.liferay.changeset.service.base.ChangesetEntryLocalServiceBaseImpl;
+import com.liferay.changeset.service.persistence.ChangesetCollectionPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.SetUtil;
 
 import java.util.List;
 import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -46,9 +40,9 @@ public class ChangesetEntryLocalServiceImpl
 			long classPK)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 		ChangesetCollection changesetCollection =
-			changesetCollectionPersistence.fetchByPrimaryKey(
+			_changesetCollectionPersistence.fetchByPrimaryKey(
 				changesetCollectionId);
 
 		long changesetEntryId = counterLocalService.increment();
@@ -122,10 +116,10 @@ public class ChangesetEntryLocalServiceImpl
 		}
 
 		ChangesetCollection changesetCollection =
-			changesetCollectionPersistence.findByPrimaryKey(
+			_changesetCollectionPersistence.findByPrimaryKey(
 				changesetCollectionId);
 
-		User user = userLocalService.getDefaultUser(
+		User user = _userLocalService.getGuestUser(
 			changesetCollection.getCompanyId());
 
 		return changesetEntryLocalService.addChangesetEntry(
@@ -184,5 +178,11 @@ public class ChangesetEntryLocalServiceImpl
 		return changesetEntryPersistence.findByC_C_C(
 			changesetCollectionId, classNameId, classPK);
 	}
+
+	@Reference
+	private ChangesetCollectionPersistence _changesetCollectionPersistence;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

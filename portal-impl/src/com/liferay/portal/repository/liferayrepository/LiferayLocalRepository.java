@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.repository.liferayrepository;
@@ -98,8 +89,9 @@ public class LiferayLocalRepository
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			String urlTitle, String description, String changeLog, File file,
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -117,9 +109,9 @@ public class LiferayLocalRepository
 
 		DLFileEntry dlFileEntry = dlFileEntryLocalService.addFileEntry(
 			externalReferenceCode, userId, getGroupId(), getRepositoryId(),
-			toFolderId(folderId), sourceFileName, mimeType, title, description,
-			changeLog, fileEntryTypeId, ddmFormValuesMap, file, null, size,
-			null, null, serviceContext);
+			toFolderId(folderId), sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, fileEntryTypeId, ddmFormValuesMap, file,
+			null, size, null, null, null, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -128,9 +120,9 @@ public class LiferayLocalRepository
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, InputStream inputStream,
-			long size, Date expirationDate, Date reviewDate,
-			ServiceContext serviceContext)
+			String urlTitle, String description, String changeLog,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -142,38 +134,39 @@ public class LiferayLocalRepository
 
 		DLFileEntry dlFileEntry = dlFileEntryLocalService.addFileEntry(
 			externalReferenceCode, userId, getGroupId(), getRepositoryId(),
-			toFolderId(folderId), sourceFileName, mimeType, title, description,
-			changeLog, fileEntryTypeId, ddmFormValuesMap, null, inputStream,
-			size, null, null, serviceContext);
+			toFolderId(folderId), sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, fileEntryTypeId, ddmFormValuesMap, null,
+			inputStream, size, displayDate, expirationDate, reviewDate,
+			serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
 
 	@Override
 	public FileShortcut addFileShortcut(
-			long userId, long folderId, long toFileEntryId,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long folderId,
+			long toFileEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
 		DLFileShortcut dlFileShortcut =
 			dlFileShortcutLocalService.addFileShortcut(
-				userId, getGroupId(), getRepositoryId(), toFolderId(folderId),
-				toFileEntryId, serviceContext);
+				externalReferenceCode, userId, getGroupId(), getRepositoryId(),
+				toFolderId(folderId), toFileEntryId, serviceContext);
 
 		return new LiferayFileShortcut(dlFileShortcut);
 	}
 
 	@Override
 	public Folder addFolder(
-			long userId, long parentFolderId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentFolderId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		boolean mountPoint = ParamUtil.getBoolean(serviceContext, "mountPoint");
 
 		DLFolder dlFolder = dlFolderLocalService.addFolder(
-			userId, getGroupId(), getRepositoryId(), mountPoint,
-			toFolderId(parentFolderId), name, description, false,
+			externalReferenceCode, userId, getGroupId(), getRepositoryId(),
+			mountPoint, toFolderId(parentFolderId), name, description, false,
 			serviceContext);
 
 		return new LiferayFolder(dlFolder);
@@ -209,7 +202,7 @@ public class LiferayLocalRepository
 
 		DLFileEntry dlFileEntry = dlFileEntryLocalService.copyFileEntry(
 			userId, groupId, getRepositoryId(), fileEntryId,
-			toFolderId(destFolderId), serviceContext);
+			toFolderId(destFolderId), null, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -249,6 +242,18 @@ public class LiferayLocalRepository
 	}
 
 	@Override
+	public FileEntry fetchFileEntry(long folderId, String title) {
+		DLFileEntry dlFileEntry = dlFileEntryLocalService.fetchFileEntry(
+			getGroupId(), toFolderId(folderId), title);
+
+		if (dlFileEntry == null) {
+			return null;
+		}
+
+		return new LiferayFileEntry(dlFileEntry);
+	}
+
+	@Override
 	public FileEntry fetchFileEntryByExternalReferenceCode(
 		String externalReferenceCode) {
 
@@ -258,6 +263,49 @@ public class LiferayLocalRepository
 
 		if (dlFileEntry != null) {
 			return new LiferayFileEntry(dlFileEntry);
+		}
+
+		return null;
+	}
+
+	@Override
+	public FileShortcut fetchFileShortcut(long fileShortcutId) {
+		DLFileShortcut dlFileShortcut =
+			dlFileShortcutLocalService.fetchDLFileShortcut(fileShortcutId);
+
+		if (dlFileShortcut != null) {
+			return new LiferayFileShortcut(dlFileShortcut);
+		}
+
+		return null;
+	}
+
+	@Override
+	public FileShortcut fetchFileShortcutByExternalReferenceCode(
+		String externalReferenceCode) {
+
+		DLFileShortcut dlFileShortcut =
+			dlFileShortcutLocalService.
+				fetchDLFileShortcutByExternalReferenceCode(
+					externalReferenceCode, getGroupId());
+
+		if (dlFileShortcut != null) {
+			return new LiferayFileShortcut(dlFileShortcut);
+		}
+
+		return null;
+	}
+
+	@Override
+	public Folder fetchFolderByExternalReferenceCode(
+		String externalReferenceCode) {
+
+		DLFolder dlFolder =
+			dlFolderLocalService.fetchDLFolderByExternalReferenceCode(
+				externalReferenceCode, getGroupId());
+
+		if (dlFolder != null) {
+			return new LiferayFolder(dlFolder);
 		}
 
 		return null;
@@ -402,7 +450,7 @@ public class LiferayLocalRepository
 
 		DLFileEntry dlFileEntry =
 			dlFileEntryLocalService.getFileEntryByExternalReferenceCode(
-				getGroupId(), externalReferenceCode);
+				externalReferenceCode, getGroupId());
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -436,6 +484,16 @@ public class LiferayLocalRepository
 	}
 
 	@Override
+	public FileShortcut getFileShortcutByExternalReferenceCode(
+			String externalReferenceCode)
+		throws PortalException {
+
+		return new LiferayFileShortcut(
+			dlFileShortcutLocalService.getDLFileShortcutByExternalReferenceCode(
+				externalReferenceCode, getGroupId()));
+	}
+
+	@Override
 	public FileVersion getFileVersion(long fileVersionId)
 		throws PortalException {
 
@@ -461,6 +519,15 @@ public class LiferayLocalRepository
 			getGroupId(), toFolderId(parentFolderId), name);
 
 		return new LiferayFolder(dlFolder);
+	}
+
+	@Override
+	public Folder getFolderByExternalReferenceCode(String externalReferenceCode)
+		throws PortalException {
+
+		return new LiferayFolder(
+			dlFolderLocalService.getDLFolderByExternalReferenceCode(
+				externalReferenceCode, getGroupId()));
 	}
 
 	@Override
@@ -586,9 +653,10 @@ public class LiferayLocalRepository
 	@Override
 	public FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			File file, Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -604,10 +672,10 @@ public class LiferayLocalRepository
 		}
 
 		DLFileEntry dlFileEntry = dlFileEntryLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, fileEntryTypeId,
-			ddmFormValuesMap, file, null, size, expirationDate, reviewDate,
-			serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, fileEntryTypeId,
+			ddmFormValuesMap, file, null, size, displayDate, expirationDate,
+			reviewDate, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}
@@ -615,10 +683,10 @@ public class LiferayLocalRepository
 	@Override
 	public FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		long fileEntryTypeId = ParamUtil.getLong(
@@ -628,10 +696,10 @@ public class LiferayLocalRepository
 			serviceContext, fileEntryTypeId);
 
 		DLFileEntry dlFileEntry = dlFileEntryLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, fileEntryTypeId,
-			ddmFormValuesMap, null, inputStream, size, expirationDate,
-			reviewDate, serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, fileEntryTypeId,
+			ddmFormValuesMap, null, inputStream, size, displayDate,
+			expirationDate, reviewDate, serviceContext);
 
 		return new LiferayFileEntry(dlFileEntry);
 	}

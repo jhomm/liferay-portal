@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.upload.internal.web.attachment;
@@ -20,43 +11,41 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.upload.AttachmentElementReplacer;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.powermock.api.mockito.PowerMockito;
-
 /**
  * @author Alejandro Tardín
  */
-public class AMHTMLImageAttachmentElementHandlerTest extends PowerMockito {
+public class AMHTMLImageAttachmentElementHandlerTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
-		_fileEntry = mock(FileEntry.class);
+	@BeforeClass
+	public static void setUpClass() {
+		_fileEntry = Mockito.mock(FileEntry.class);
 
-		when(
+		Mockito.when(
 			_fileEntry.getFileEntryId()
 		).thenReturn(
 			_IMAGE_FILE_ENTRY_ID
 		);
 
-		_defaultAttachmentElementReplacer = mock(
+		_defaultAttachmentElementReplacer = Mockito.mock(
 			AttachmentElementReplacer.class);
 
-		when(
+		Mockito.when(
 			_defaultAttachmentElementReplacer.replace(
 				Mockito.anyString(), Mockito.eq(_fileEntry))
 		).thenAnswer(
-			arguments -> arguments.getArgumentAt(0, String.class)
+			arguments -> arguments.getArgument(0, String.class)
 		);
 
 		_amHTMLImageAttachmentElementReplacer =
@@ -65,7 +54,7 @@ public class AMHTMLImageAttachmentElementHandlerTest extends PowerMockito {
 	}
 
 	@Test
-	public void testGetBlogsEntryAttachmentFileEntryImgTag() throws Exception {
+	public void testGetBlogsEntryAttachmentFileEntryImgTag() {
 		String originalImgTag = String.format(
 			"<img src=\"%s\" />", _FILE_ENTRY_IMAGE_URL);
 		String expectedImgTag = String.format(
@@ -79,9 +68,7 @@ public class AMHTMLImageAttachmentElementHandlerTest extends PowerMockito {
 	}
 
 	@Test
-	public void testGetBlogsEntryAttachmentFileEntryImgTagWithCustomAttribute()
-		throws Exception {
-
+	public void testGetBlogsEntryAttachmentFileEntryImgTagWithCustomAttribute() {
 		String originalImgTag = String.format(
 			"<img class=\"custom\" src=\"%s\" />", _FILE_ENTRY_IMAGE_URL);
 		String expectedImgTag = String.format(
@@ -100,9 +87,9 @@ public class AMHTMLImageAttachmentElementHandlerTest extends PowerMockito {
 	private static final long _IMAGE_FILE_ENTRY_ID =
 		RandomTestUtil.randomLong();
 
-	private AMHTMLImageAttachmentElementReplacer
+	private static AMHTMLImageAttachmentElementReplacer
 		_amHTMLImageAttachmentElementReplacer;
-	private AttachmentElementReplacer _defaultAttachmentElementReplacer;
-	private FileEntry _fileEntry;
+	private static AttachmentElementReplacer _defaultAttachmentElementReplacer;
+	private static FileEntry _fileEntry;
 
 }

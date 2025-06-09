@@ -1,22 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 const FIELD_NAME_REGEX = /(_\w+_)ddm\$\$(.+)\$(\w+)\$(\d+)\$\$(\w+)/;
 
-const NESTED_FIELD_NAME_REGEX = /(_\w+_)ddm\$\$(.+)\$(\w+)\$(\d+)#(.+)\$(\w+)\$(\d+)\$\$(\w+)/;
+const NESTED_FIELD_NAME_REGEX =
+	/(_\w+_)ddm\$\$(.+)\$(\w+)\$(\d+)#(.+)\$(\w+)\$(\d+)\$\$(\w+)/;
 
-export const parseName = (name) => {
+export function parseName(name) {
 	const result = FIELD_NAME_REGEX.exec(name);
 
 	return result
@@ -26,11 +18,15 @@ export const parseName = (name) => {
 				instanceId: result[3],
 				portletNamespace: result[1],
 				repeatedIndex: Number(result[4]),
-		  }
+			}
 		: {};
-};
+}
 
-export const generateName = (name, props = {}) => {
+export function isNestedFieldName(name) {
+	return NESTED_FIELD_NAME_REGEX.test(name);
+}
+
+export function generateName(name, props = {}) {
 	const parsedName = parseName(name);
 	const {
 		editingLanguageId = parsedName.editingLanguageId,
@@ -41,9 +37,9 @@ export const generateName = (name, props = {}) => {
 	} = props;
 
 	return `${portletNamespace}ddm$$${fieldName}$${instanceId}$${repeatedIndex}$$${editingLanguageId}`;
-};
+}
 
-export const parseNestedFieldName = (name) => {
+export function parseNestedFieldName(name) {
 	let parsed = {};
 	const result = NESTED_FIELD_NAME_REGEX.exec(name);
 
@@ -61,9 +57,33 @@ export const parseNestedFieldName = (name) => {
 	}
 
 	return parsed;
-};
+}
 
-export const generateNestedFieldName = (name, parentFieldName) => {
+export function updateNestedFieldNameIndex(name, repeatedIndex) {
+	const parsedName = parseNestedFieldName(name);
+
+	const {fieldName, instanceId, portletNamespace} = parsedName;
+
+	return [
+		portletNamespace,
+		'ddm$$',
+		parsedName.parentFieldName,
+		'$',
+		parsedName.parentInstanceId,
+		'$',
+		parsedName.parentRepeatedIndex,
+		'#',
+		fieldName,
+		'$',
+		instanceId,
+		'$',
+		repeatedIndex,
+		'$$',
+		parsedName.locale || parsedName.editingLanguageId,
+	].join('');
+}
+
+export function generateNestedFieldName(name, parentFieldName) {
 	const parsedParentFieldName = parseName(parentFieldName);
 	let parsedName = parseNestedFieldName(name);
 
@@ -90,9 +110,9 @@ export const generateNestedFieldName = (name, parentFieldName) => {
 		'$$',
 		parsedName.locale || parsedName.editingLanguageId,
 	].join('');
-};
+}
 
-export const getRepeatedIndex = (name) => {
+export function getRepeatedIndex(name) {
 	let parsedName;
 
 	if (NESTED_FIELD_NAME_REGEX.test(name)) {
@@ -103,4 +123,4 @@ export const getRepeatedIndex = (name) => {
 	}
 
 	return parsedName.repeatedIndex;
-};
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.constants;
@@ -18,7 +9,12 @@ import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountRoleLocalServiceUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 
+import java.util.Collections;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,40 +31,48 @@ public class AccountRoleConstants {
 	public static final String REQUIRED_ROLE_NAME_ACCOUNT_MEMBER =
 		"Account Member";
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #REQUIRED_ROLE_NAME_ACCOUNT_MANAGER}
-	 */
-	@Deprecated
-	public static final String REQUIRED_ROLE_NAME_ACCOUNT_OWNER =
-		"Account Owner";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR}
-	 */
-	@Deprecated
-	public static final String REQUIRED_ROLE_NAME_ACCOUNT_POWER_USER =
-		"Account Power User";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #REQUIRED_ROLE_NAME_ACCOUNT_MEMBER}
-	 */
-	@Deprecated
-	public static final String REQUIRED_ROLE_NAME_ACCOUNT_USER = "Account User";
-
 	public static final String[] REQUIRED_ROLE_NAMES = {
 		REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR,
 		REQUIRED_ROLE_NAME_ACCOUNT_MANAGER, REQUIRED_ROLE_NAME_ACCOUNT_MEMBER
 	};
 
-	public static boolean isImpliedRole(Role role) {
-		if (Objects.equals(REQUIRED_ROLE_NAME_ACCOUNT_MEMBER, role.getName())) {
-			return true;
-		}
+	public static final String ROLE_NAME_ACCOUNT_BUYER = "Buyer";
 
-		return false;
+	public static final String ROLE_NAME_ACCOUNT_DISCOUNT_MANAGER =
+		"Discount Manager";
+
+	public static final String ROLE_NAME_ACCOUNT_ORDER_MANAGER =
+		"Order Manager";
+
+	public static final String ROLE_NAME_ACCOUNT_SUPPLIER = "Account Supplier";
+
+	public static final String ROLE_NAME_RETURNS_MANAGER = "Returns Manager";
+
+	public static final String ROLE_NAME_SUPPLIER = "Supplier";
+
+	public static final Map<String, Map<Locale, String>> roleDescriptionsMap =
+		HashMapBuilder.<String, Map<Locale, String>>put(
+			REQUIRED_ROLE_NAME_ACCOUNT_ADMINISTRATOR,
+			Collections.singletonMap(
+				LocaleUtil.US,
+				"Account Administrators are super users of their account.")
+		).put(
+			REQUIRED_ROLE_NAME_ACCOUNT_MANAGER,
+			Collections.singletonMap(
+				LocaleUtil.US,
+				"Account Managers who belong to an organization can " +
+					"administer all accounts associated to that organization.")
+		).put(
+			REQUIRED_ROLE_NAME_ACCOUNT_MEMBER,
+			Collections.singletonMap(
+				LocaleUtil.US,
+				"All users who belong to an account have this role within " +
+					"that account.")
+		).build();
+
+	public static boolean isImpliedRole(Role role) {
+		return Objects.equals(
+			REQUIRED_ROLE_NAME_ACCOUNT_MEMBER, role.getName());
 	}
 
 	public static boolean isRequiredRole(Role role) {
@@ -80,14 +84,9 @@ public class AccountRoleConstants {
 			AccountRoleLocalServiceUtil.fetchAccountRoleByRoleId(
 				role.getRoleId());
 
-		if (Objects.equals(
-				accountRole.getAccountEntryId(),
-				AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT)) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			accountRole.getAccountEntryId(),
+			AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT);
 	}
 
 }

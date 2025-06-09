@@ -1,42 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.display.context;
 
+import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionServiceUtil;
 import com.liferay.fragment.web.internal.util.FragmentPortletUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.PortalInstances;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -69,8 +59,9 @@ public class FragmentCollectionsDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, FragmentPortletKeys.FRAGMENT,
+			"fragment-collections-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -87,23 +78,13 @@ public class FragmentCollectionsDisplayContext {
 		SearchContainer<FragmentCollection> searchContainer =
 			new SearchContainer(
 				_renderRequest, _getPortletURL(), null,
-				"there-are-no-collections");
-
-		searchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(_renderResponse));
-
-		OrderByComparator<FragmentCollection> orderByComparator =
-			FragmentPortletUtil.getFragmentCollectionOrderByComparator(
-				_getOrderByCol(), getOrderByType());
+				"there-are-no-fragment-sets");
 
 		searchContainer.setOrderByCol(_getOrderByCol());
-		searchContainer.setOrderByComparator(orderByComparator);
+		searchContainer.setOrderByComparator(
+			FragmentPortletUtil.getFragmentCollectionOrderByComparator(
+				_getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
-		searchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(_renderResponse));
-
-		List<FragmentCollection> fragmentCollections = null;
-		int fragmentCollectionsCount = 0;
 
 		long[] groupIds = {themeDisplay.getScopeGroupId()};
 
@@ -116,35 +97,57 @@ public class FragmentCollectionsDisplayContext {
 		Group scopeGroup = themeDisplay.getScopeGroup();
 
 		if ((themeDisplay.getCompanyId() ==
-				PortalInstances.getDefaultCompanyId()) &&
+				PortalInstancePool.getDefaultCompanyId()) &&
 			scopeGroup.isCompany()) {
 
 			groupIds = ArrayUtil.append(groupIds, CompanyConstants.SYSTEM);
 		}
 
-		if (_isSearch()) {
-			fragmentCollections =
-				FragmentCollectionServiceUtil.getFragmentCollections(
-					groupIds, _getKeywords(), searchContainer.getStart(),
-					searchContainer.getEnd(), orderByComparator);
+		long[] allGroupIds = groupIds;
 
-			fragmentCollectionsCount =
-				FragmentCollectionServiceUtil.getFragmentCollectionsCount(
-					groupIds, _getKeywords());
+		if (_isSearch()) {
+			if (_isIncludeMarketplaceFragmentCollections()) {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, _getKeywords(), searchContainer.getStart(),
+						searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds, _getKeywords()));
+			}
+			else {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, _getKeywords(), false,
+						searchContainer.getStart(), searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds, _getKeywords(), false));
+			}
 		}
 		else {
-			fragmentCollections =
-				FragmentCollectionServiceUtil.getFragmentCollections(
-					groupIds, searchContainer.getStart(),
-					searchContainer.getEnd(), orderByComparator);
-
-			fragmentCollectionsCount =
-				FragmentCollectionServiceUtil.getFragmentCollectionsCount(
-					groupIds);
+			if (_isIncludeMarketplaceFragmentCollections()) {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, searchContainer.getStart(),
+						searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds));
+			}
+			else {
+				searchContainer.setResultsAndTotal(
+					() -> FragmentCollectionServiceUtil.getFragmentCollections(
+						allGroupIds, false, searchContainer.getStart(),
+						searchContainer.getEnd(),
+						searchContainer.getOrderByComparator()),
+					FragmentCollectionServiceUtil.getFragmentCollectionsCount(
+						allGroupIds, false));
+			}
 		}
 
-		searchContainer.setTotal(fragmentCollectionsCount);
-		searchContainer.setResults(fragmentCollections);
+		searchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(_renderResponse));
 
 		_searchContainer = searchContainer;
 
@@ -166,8 +169,9 @@ public class FragmentCollectionsDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "create-date");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, FragmentPortletKeys.FRAGMENT,
+			"fragment-collections-order-by-col", "create-date");
 
 		return _orderByCol;
 	}
@@ -192,6 +196,9 @@ public class FragmentCollectionsDisplayContext {
 		).setParameter(
 			"includeGlobalFragmentCollections",
 			_isIncludeGlobalFragmentCollections()
+		).setParameter(
+			"includeMarketplaceFragmentCollections",
+			_isIncludeMarketplaceFragmentCollections()
 		).setParameter(
 			"orderByCol",
 			() -> {
@@ -228,17 +235,25 @@ public class FragmentCollectionsDisplayContext {
 		return _includeGlobalFragmentCollections;
 	}
 
-	private boolean _isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
+	private boolean _isIncludeMarketplaceFragmentCollections() {
+		if (_includeMarketplaceFragmentCollections != null) {
+			return _includeMarketplaceFragmentCollections;
 		}
 
-		return false;
+		_includeMarketplaceFragmentCollections = ParamUtil.getBoolean(
+			_httpServletRequest, "includeMarketplaceFragmentCollections");
+
+		return _includeMarketplaceFragmentCollections;
+	}
+
+	private boolean _isSearch() {
+		return Validator.isNotNull(_getKeywords());
 	}
 
 	private String _eventName;
 	private final HttpServletRequest _httpServletRequest;
 	private Boolean _includeGlobalFragmentCollections;
+	private Boolean _includeMarketplaceFragmentCollections;
 	private String _keywords;
 	private String _orderByCol;
 	private String _orderByType;

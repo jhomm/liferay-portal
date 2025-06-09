@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.LayoutPrototype;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.permission.LayoutPrototypePermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.service.base.LayoutPrototypeServiceBaseImpl;
+import com.liferay.portal.service.permission.LayoutPrototypePermissionUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -96,23 +87,21 @@ public class LayoutPrototypeServiceImpl extends LayoutPrototypeServiceBaseImpl {
 			OrderByComparator<LayoutPrototype> orderByComparator)
 		throws PortalException {
 
-		List<LayoutPrototype> filteredLayoutPrototypes = new ArrayList<>();
-
-		List<LayoutPrototype> layoutPrototypes =
+		return TransformUtil.transform(
 			layoutPrototypeLocalService.search(
 				companyId, active, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-				orderByComparator);
+				orderByComparator),
+			layoutPrototype -> {
+				if (LayoutPrototypePermissionUtil.contains(
+						getPermissionChecker(),
+						layoutPrototype.getLayoutPrototypeId(),
+						ActionKeys.VIEW)) {
 
-		for (LayoutPrototype layoutPrototype : layoutPrototypes) {
-			if (LayoutPrototypePermissionUtil.contains(
-					getPermissionChecker(),
-					layoutPrototype.getLayoutPrototypeId(), ActionKeys.VIEW)) {
+					return layoutPrototype;
+				}
 
-				filteredLayoutPrototypes.add(layoutPrototype);
-			}
-		}
-
-		return filteredLayoutPrototypes;
+				return null;
+			});
 	}
 
 	@Override

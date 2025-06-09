@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.importer;
@@ -19,11 +10,14 @@ import com.liferay.document.library.util.DLURLHelper;
 import com.liferay.knowledge.base.constants.KBArticleConstants;
 import com.liferay.knowledge.base.constants.KBFolderConstants;
 import com.liferay.knowledge.base.exception.KBArticleImportException;
+import com.liferay.knowledge.base.internal.importer.util.KBArchiveFactoryUtil;
 import com.liferay.knowledge.base.internal.importer.util.KBArticleMarkdownConverter;
+import com.liferay.knowledge.base.markdown.converter.MarkdownConverter;
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.service.KBArticleLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -33,12 +27,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.zip.ZipReader;
-import com.liferay.portal.kernel.zip.ZipReaderFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipReaderFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -51,14 +46,17 @@ import java.util.Properties;
 public class KBArticleImporter {
 
 	public KBArticleImporter(
-		KBArchiveFactory kbArchiveFactory,
+		ConfigurationProvider configurationProvider,
+		MarkdownConverter markdownConverter,
 		KBArticleLocalService kbArticleLocalService, Portal portal,
-		DLURLHelper dlURLHelper) {
+		DLURLHelper dlURLHelper, ZipReaderFactory zipReaderFactory) {
 
-		_kbArchiveFactory = kbArchiveFactory;
+		_configurationProvider = configurationProvider;
+		_markdownConverter = markdownConverter;
 		_kbArticleLocalService = kbArticleLocalService;
 		_portal = portal;
 		_dlURLHelper = dlURLHelper;
+		_zipReaderFactory = zipReaderFactory;
 	}
 
 	public int processZipFile(
@@ -72,19 +70,18 @@ public class KBArticleImporter {
 		}
 
 		try {
-			ZipReader zipReader = ZipReaderFactoryUtil.getZipReader(
-				inputStream);
+			ZipReader zipReader = _zipReaderFactory.getZipReader(inputStream);
 
-			return processKBArticleFiles(
+			return _processKBArticleFiles(
 				userId, groupId, parentKBFolderId, prioritizeByNumericalPrefix,
-				zipReader, getMetadata(zipReader), serviceContext);
+				zipReader, _getMetadata(zipReader), serviceContext);
 		}
 		catch (IOException ioException) {
 			throw new KBArticleImportException(ioException);
 		}
 	}
 
-	protected KBArticle addKBArticleMarkdown(
+	private KBArticle _addKBArticleMarkdown(
 			long userId, long groupId, long parentKBFolderId,
 			long parentResourceClassNameId, long parentResourcePrimaryKey,
 			String markdown, String fileEntryName, ZipReader zipReader,
@@ -98,7 +95,8 @@ public class KBArticleImporter {
 
 		KBArticleMarkdownConverter kbArticleMarkdownConverter =
 			new KBArticleMarkdownConverter(
-				markdown, fileEntryName, metadata, _dlURLHelper);
+				markdown, fileEntryName, _markdownConverter, metadata,
+				_dlURLHelper);
 
 		String urlTitle = kbArticleMarkdownConverter.getUrlTitle();
 
@@ -116,8 +114,8 @@ public class KBArticleImporter {
 					null, userId, parentResourceClassNameId,
 					parentResourcePrimaryKey,
 					kbArticleMarkdownConverter.getTitle(), urlTitle, markdown,
-					null, kbArticleMarkdownConverter.getSourceURL(), null, null,
-					serviceContext);
+					null, null, kbArticleMarkdownConverter.getSourceURL(),
+					new Date(), null, null, null, serviceContext);
 
 				serviceContext.setWorkflowAction(workflowAction);
 			}
@@ -142,9 +140,10 @@ public class KBArticleImporter {
 			return _kbArticleLocalService.updateKBArticle(
 				userId, kbArticle.getResourcePrimKey(),
 				kbArticleMarkdownConverter.getTitle(), html,
-				kbArticle.getDescription(),
-				kbArticleMarkdownConverter.getSourceURL(), null, null, null,
-				serviceContext);
+				kbArticle.getDescription(), null,
+				kbArticleMarkdownConverter.getSourceURL(),
+				kbArticle.getDisplayDate(), kbArticle.getExpirationDate(),
+				kbArticle.getReviewDate(), null, null, serviceContext);
 		}
 		catch (Exception exception) {
 			throw new KBArticleImportException(
@@ -155,7 +154,7 @@ public class KBArticleImporter {
 		}
 	}
 
-	protected double getKBArchiveResourcePriority(
+	private double _getKBArchiveResourcePriority(
 			KBArchive.Resource kbArchiveResource)
 		throws KBArticleImportException {
 
@@ -193,7 +192,7 @@ public class KBArticleImporter {
 		return KBArticleConstants.DEFAULT_PRIORITY;
 	}
 
-	protected Map<String, String> getMetadata(ZipReader zipReader)
+	private Map<String, String> _getMetadata(ZipReader zipReader)
 		throws KBArticleImportException {
 
 		try (InputStream inputStream = zipReader.getEntryAsInputStream(
@@ -225,7 +224,7 @@ public class KBArticleImporter {
 		}
 	}
 
-	protected int processKBArticleFiles(
+	private int _processKBArticleFiles(
 			long userId, long groupId, long parentKBFolderId,
 			boolean prioritizeByNumericalPrefix, ZipReader zipReader,
 			Map<String, String> metadata, ServiceContext serviceContext)
@@ -233,8 +232,8 @@ public class KBArticleImporter {
 
 		int importedKBArticlesCount = 0;
 
-		KBArchive kbArchive = _kbArchiveFactory.createKBArchive(
-			groupId, zipReader);
+		KBArchive kbArchive = KBArchiveFactoryUtil.createKBArchive(
+			_configurationProvider, groupId, zipReader);
 
 		Map<KBArchive.File, KBArticle> introFileNameKBArticleMap =
 			new HashMap<>();
@@ -259,7 +258,7 @@ public class KBArticleImporter {
 						parentIntroKBArticle.getResourcePrimKey();
 				}
 
-				introKBArticle = addKBArticleMarkdown(
+				introKBArticle = _addKBArticleMarkdown(
 					userId, groupId, parentKBFolderId,
 					sectionResourceClassNameId, sectionResourcePrimaryKey,
 					introFile.getContent(), introFile.getName(), zipReader,
@@ -270,7 +269,7 @@ public class KBArticleImporter {
 				introFileNameKBArticleMap.put(introFile, introKBArticle);
 
 				if (prioritizeByNumericalPrefix) {
-					double introFilePriority = getKBArchiveResourcePriority(
+					double introFilePriority = _getKBArchiveResourcePriority(
 						folder);
 
 					_kbArticleLocalService.moveKBArticle(
@@ -300,7 +299,7 @@ public class KBArticleImporter {
 					}
 				}
 
-				KBArticle kbArticle = addKBArticleMarkdown(
+				KBArticle kbArticle = _addKBArticleMarkdown(
 					userId, groupId, parentKBFolderId,
 					sectionResourceClassNameId, sectionResourcePrimaryKey,
 					markdown, file.getName(), zipReader, metadata,
@@ -309,7 +308,7 @@ public class KBArticleImporter {
 				importedKBArticlesCount++;
 
 				if (prioritizeByNumericalPrefix) {
-					double nonintroFilePriority = getKBArchiveResourcePriority(
+					double nonintroFilePriority = _getKBArchiveResourcePriority(
 						file);
 
 					int value = Double.compare(
@@ -331,9 +330,11 @@ public class KBArticleImporter {
 	private static final Log _log = LogFactoryUtil.getLog(
 		KBArticleImporter.class);
 
+	private final ConfigurationProvider _configurationProvider;
 	private final DLURLHelper _dlURLHelper;
-	private final KBArchiveFactory _kbArchiveFactory;
 	private final KBArticleLocalService _kbArticleLocalService;
+	private final MarkdownConverter _markdownConverter;
 	private final Portal _portal;
+	private final ZipReaderFactory _zipReaderFactory;
 
 }

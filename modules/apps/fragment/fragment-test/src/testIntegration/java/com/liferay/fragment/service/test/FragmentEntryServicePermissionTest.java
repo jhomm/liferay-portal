@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.test;
@@ -20,8 +11,8 @@ import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.service.FragmentEntryService;
-import com.liferay.fragment.util.FragmentEntryTestUtil;
-import com.liferay.fragment.util.FragmentTestUtil;
+import com.liferay.fragment.test.util.FragmentEntryTestUtil;
+import com.liferay.fragment.test.util.FragmentTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -103,10 +94,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(), 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), false, StringPool.BLANK, null, 0,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test
@@ -122,12 +116,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
 			StringUtil.randomString(), StringUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), "{fieldSets: []}", 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			RandomTestUtil.randomString(), false, "{fieldSets: []}", null, 0,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test(expected = PrincipalException.MustHavePermission.class)
@@ -140,10 +135,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(), 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
+			StringUtil.randomString(), StringUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), false, StringPool.BLANK, null, 0,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test
@@ -159,12 +157,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
 			StringUtil.randomString(), StringUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), "{fieldSets: []}", 0,
-			FragmentConstants.TYPE_SECTION, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			RandomTestUtil.randomString(), false, "{fieldSets: []}", null, 0,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test(expected = PrincipalException.MustHavePermission.class)
@@ -178,10 +177,12 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
+			StringUtil.randomString(), StringUtil.randomString(),
 			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			0, FragmentConstants.TYPE_COMPONENT,
+			false, StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -196,10 +197,12 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			0, FragmentConstants.TYPE_COMPONENT,
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -211,10 +214,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test
@@ -228,12 +234,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
 			StringUtil.randomString(), StringUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), "{fieldSets: []}", 0,
-			FragmentConstants.TYPE_SECTION, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			StringUtil.randomString(), RandomTestUtil.randomString(),
+			StringUtil.randomString(), false, "{fieldSets: []}", null, 0, false,
+			false, FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test(expected = PrincipalException.MustHavePermission.class)
@@ -247,10 +254,12 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			0, FragmentConstants.TYPE_COMPONENT,
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -267,10 +276,12 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			0, FragmentConstants.TYPE_COMPONENT,
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
@@ -284,10 +295,12 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
+			StringPool.BLANK, false, StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test
@@ -301,12 +314,13 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringUtil.randomString(), StringUtil.randomString(),
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(),
+			RandomTestUtil.randomString(), StringUtil.randomString(),
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), "{fieldSets: []}", 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_APPROVED,
-			serviceContext);
+			RandomTestUtil.randomString(), false, "{fieldSets: []}", null, 0,
+			false, false, FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_APPROVED, serviceContext);
 	}
 
 	@Test(expected = PrincipalException.MustHavePermission.class)
@@ -316,10 +330,12 @@ public class FragmentEntryServicePermissionTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		FragmentEntry fragmentEntry = _fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			0, FragmentConstants.TYPE_COMPONENT,
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		serviceContext = ServiceContextTestUtil.getServiceContext(
@@ -339,10 +355,12 @@ public class FragmentEntryServicePermissionTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		FragmentEntry fragmentEntry = _fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
-			0, FragmentConstants.TYPE_COMPONENT,
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
 			WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		serviceContext = ServiceContextTestUtil.getServiceContext(
@@ -495,26 +513,28 @@ public class FragmentEntryServicePermissionTest {
 	public void testUpdateFragmentEntryValuesAndPreviewFileEntryIdWithoutPermissions()
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		FragmentEntry fragmentEntry = _fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_DRAFT,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_DRAFT,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		Assert.assertEquals(0, fragmentEntry.getPreviewFileEntryId());
 
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.updateFragmentEntry(
-			fragmentEntry.getFragmentEntryId(), RandomTestUtil.randomString(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			"{\n\t\"fieldSets\": [\n\t]\n}", 1,
+			fragmentEntry.getFragmentEntryId(),
+			fragmentEntry.getFragmentCollectionId(),
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			fragmentEntry.isCacheable(), "{\n\t\"fieldSets\": [\n\t]\n}",
+			fragmentEntry.getIcon(), 1, false, fragmentEntry.getTypeOptions(),
 			WorkflowConstants.STATUS_APPROVED);
 	}
 
@@ -522,17 +542,16 @@ public class FragmentEntryServicePermissionTest {
 	public void testUpdateFragmentEntryValuesAndPreviewFileEntryIdWithPermissions()
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		FragmentEntry fragmentEntry = _fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_DRAFT,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_DRAFT,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		Assert.assertEquals(0, fragmentEntry.getPreviewFileEntryId());
 
@@ -541,9 +560,12 @@ public class FragmentEntryServicePermissionTest {
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.updateFragmentEntry(
-			fragmentEntry.getFragmentEntryId(), RandomTestUtil.randomString(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			"{\n\t\"fieldSets\": [\n\t]\n}", 1,
+			fragmentEntry.getFragmentEntryId(),
+			fragmentEntry.getFragmentCollectionId(),
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			fragmentEntry.isCacheable(), "{\n\t\"fieldSets\": [\n\t]\n}",
+			fragmentEntry.getIcon(), 1, false, fragmentEntry.getTypeOptions(),
 			WorkflowConstants.STATUS_APPROVED);
 	}
 
@@ -551,50 +573,57 @@ public class FragmentEntryServicePermissionTest {
 	public void testUpdateFragmentEntryValuesWithoutPermissions()
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		FragmentEntry fragmentEntry = _fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_DRAFT,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_DRAFT,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.updateFragmentEntry(
-			fragmentEntry.getFragmentEntryId(), RandomTestUtil.randomString(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			"{\n\t\"fieldSets\": [\n\t]\n}", WorkflowConstants.STATUS_APPROVED);
+			fragmentEntry.getFragmentEntryId(),
+			fragmentEntry.getFragmentCollectionId(),
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			"{\n\t\"fieldSets\": [\n\t]\n}", fragmentEntry.getIcon(),
+			fragmentEntry.getPreviewFileEntryId(), false,
+			fragmentEntry.getTypeOptions(), WorkflowConstants.STATUS_APPROVED);
 	}
 
 	@Test
 	public void testUpdateFragmentEntryValuesWithPermissions()
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		FragmentEntry fragmentEntry = _fragmentEntryService.addFragmentEntry(
-			_group.getGroupId(), _fragmentCollection.getFragmentCollectionId(),
-			StringPool.BLANK, RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			RandomTestUtil.randomString(), StringPool.BLANK, 0,
-			FragmentConstants.TYPE_COMPONENT, WorkflowConstants.STATUS_DRAFT,
-			serviceContext);
+			null, _group.getGroupId(),
+			_fragmentCollection.getFragmentCollectionId(), StringPool.BLANK,
+			StringUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK, false,
+			StringPool.BLANK, null, 0, false, false,
+			FragmentConstants.TYPE_COMPONENT, null,
+			WorkflowConstants.STATUS_DRAFT,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 
 		_setRolePermissions(FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 
 		UserTestUtil.setUser(_user);
 
 		_fragmentEntryService.updateFragmentEntry(
-			fragmentEntry.getFragmentEntryId(), RandomTestUtil.randomString(),
-			StringPool.BLANK, RandomTestUtil.randomString(), StringPool.BLANK,
-			"{\n\t\"fieldSets\": [\n\t]\n}", WorkflowConstants.STATUS_APPROVED);
+			fragmentEntry.getFragmentEntryId(),
+			fragmentEntry.getFragmentCollectionId(),
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			fragmentEntry.isCacheable(), "{\n\t\"fieldSets\": [\n\t]\n}",
+			fragmentEntry.getIcon(), fragmentEntry.getPreviewFileEntryId(),
+			false, fragmentEntry.getTypeOptions(),
+			WorkflowConstants.STATUS_APPROVED);
 	}
 
 	@Test(expected = PrincipalException.MustHavePermission.class)

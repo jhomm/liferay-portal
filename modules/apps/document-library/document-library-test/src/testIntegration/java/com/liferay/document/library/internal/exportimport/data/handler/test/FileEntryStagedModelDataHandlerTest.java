@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.exportimport.data.handler.test;
@@ -20,17 +11,17 @@ import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
-import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
-import com.liferay.document.library.kernel.service.DLAppServiceUtil;
-import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
-import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
-import com.liferay.document.library.kernel.service.DLFolderLocalServiceUtil;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
+import com.liferay.document.library.kernel.service.DLFolderLocalService;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.document.library.test.util.DLAppTestUtil;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructureManagerUtil;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
@@ -38,6 +29,8 @@ import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMStructureTestUtil;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
+import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -61,11 +54,17 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.repository.portletrepository.PortletRepository;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -103,6 +102,93 @@ public class FileEntryStagedModelDataHandlerTest
 	}
 
 	@Test
+	public void testExportFileEntryFriendlyURLEntries() throws Exception {
+		String fileName = "PDF_Test.pdf";
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId());
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
+			ContentTypes.APPLICATION_PDF,
+			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
+			null, null, serviceContext);
+
+		fileEntry = _dlAppService.updateFileEntry(
+			fileEntry.getFileEntryId(), StringPool.BLANK,
+			ContentTypes.TEXT_PLAIN, fileEntry.getTitle(), "urltitle",
+			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
+			(byte[])null, null, null, null, serviceContext);
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertNotNull(friendlyURLEntry);
+		Assert.assertEquals("urltitle", friendlyURLEntry.getUrlTitle());
+
+		exportImportStagedModel(fileEntry);
+
+		FileEntry importedFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), liveGroup.getGroupId());
+
+		FriendlyURLEntry importedFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				importedFileEntry.getFileEntryId());
+
+		Assert.assertNotNull(importedFriendlyURLEntry);
+		Assert.assertEquals(
+			friendlyURLEntry.getUrlTitle(),
+			importedFriendlyURLEntry.getUrlTitle());
+	}
+
+	@Test
+	public void testExportFileEntryFriendlyURLEntriesNormalizedTitle()
+		throws Exception {
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), liveGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
+			StringUtil.randomString(), StringPool.BLANK,
+			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
+			null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				liveGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertNotNull(friendlyURLEntry);
+		Assert.assertEquals(
+			_friendlyURLNormalizer.normalizeWithEncoding(fileEntry.getTitle()),
+			friendlyURLEntry.getUrlTitle());
+
+		exportImportStagedModelFromLiveToStaging(fileEntry);
+
+		FileEntry importedFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), liveGroup.getGroupId());
+
+		FriendlyURLEntry importedFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				importedFileEntry.getFileEntryId());
+
+		Assert.assertNotNull(importedFriendlyURLEntry);
+		Assert.assertEquals(
+			friendlyURLEntry.getUrlTitle(),
+			importedFriendlyURLEntry.getUrlTitle());
+	}
+
+	@Test
 	public void testExportImportCheckedOutFileEntryAfterInitialPublication()
 		throws Exception {
 
@@ -115,21 +201,21 @@ public class FileEntryStagedModelDataHandlerTest
 				ServiceContextTestUtil.getServiceContext(
 					liveGroup.getGroupId(), TestPropsValues.getUserId());
 
-			FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
+			FileEntry fileEntry = _dlAppLocalService.addFileEntry(
 				null, TestPropsValues.getUserId(), liveGroup.getGroupId(),
 				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 				ContentTypes.APPLICATION_PDF,
 				FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-				null, serviceContext);
+				null, null, serviceContext);
 
-			DLFileEntryLocalServiceUtil.checkOutFileEntry(
+			_dlFileEntryLocalService.checkOutFileEntry(
 				TestPropsValues.getUserId(), fileEntry.getFileEntryId(),
 				serviceContext);
 
 			exportImportStagedModelFromLiveToStaging(fileEntry);
 
 			FileEntry stagingGroupFileEntry =
-				DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+				_dlAppLocalService.getFileEntryByUuidAndGroupId(
 					fileEntry.getUuid(), stagingGroup.getGroupId());
 
 			exportImportStagedModel(stagingGroupFileEntry);
@@ -140,6 +226,125 @@ public class FileEntryStagedModelDataHandlerTest
 	}
 
 	@Test
+	public void testExportImportFileEntryFriendlyURLEntries() throws Exception {
+		String fileName = "PDF_Test.pdf";
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId());
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
+			ContentTypes.APPLICATION_PDF,
+			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
+			null, null, serviceContext);
+
+		fileEntry = _dlAppService.updateFileEntry(
+			fileEntry.getFileEntryId(), StringPool.BLANK,
+			ContentTypes.TEXT_PLAIN, fileEntry.getTitle(), "urltitle",
+			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
+			(byte[])null, null, null, null, serviceContext);
+
+		FriendlyURLEntry mainFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertEquals("urltitle", mainFriendlyURLEntry.getUrlTitle());
+
+		List<FriendlyURLEntry> friendlyURLEntries =
+			_friendlyURLEntryLocalService.getFriendlyURLEntries(
+				fileEntry.getGroupId(), _portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			friendlyURLEntries.toString(), 2, friendlyURLEntries.size());
+
+		exportImportStagedModel(fileEntry);
+
+		FileEntry importedFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), liveGroup.getGroupId());
+
+		FriendlyURLEntry mainImportedFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			"urltitle", mainImportedFriendlyURLEntry.getUrlTitle());
+
+		List<FriendlyURLEntry> importedFriendlyURLEntries =
+			_friendlyURLEntryLocalService.getFriendlyURLEntries(
+				importedFileEntry.getGroupId(),
+				_portal.getClassNameId(FileEntry.class),
+				importedFileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			importedFriendlyURLEntries.toString(), 2,
+			importedFriendlyURLEntries.size());
+	}
+
+	@Test
+	public void testExportImportFileEntryFriendlyURLEntriesUpdatingFileEntry()
+		throws Exception {
+
+		String fileName = "PDF_Test.pdf";
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId());
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
+			ContentTypes.APPLICATION_PDF,
+			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
+			null, null, serviceContext);
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertNotNull(friendlyURLEntry);
+		Assert.assertEquals("pdf_test-pdf", friendlyURLEntry.getUrlTitle());
+
+		exportImportStagedModel(fileEntry);
+
+		FileEntry importedFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), liveGroup.getGroupId());
+
+		FriendlyURLEntry importedFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				importedFileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			"pdf_test-pdf", importedFriendlyURLEntry.getUrlTitle());
+
+		fileEntry = _dlAppService.updateFileEntry(
+			fileEntry.getFileEntryId(), StringPool.BLANK,
+			ContentTypes.TEXT_PLAIN, fileEntry.getTitle(), "urltitle",
+			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
+			(byte[])null, null, null, null, serviceContext);
+
+		exportImportStagedModel(fileEntry);
+
+		importedFileEntry = _dlAppLocalService.getFileEntryByUuidAndGroupId(
+			fileEntry.getUuid(), liveGroup.getGroupId());
+
+		importedFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				importedFileEntry.getFileEntryId());
+
+		Assert.assertEquals("urltitle", importedFriendlyURLEntry.getUrlTitle());
+	}
+
+	@Test
 	public void testExportImportFileExtension() throws Exception {
 		String fileName = "PDF_Test.pdf";
 
@@ -147,35 +352,36 @@ public class FileEntryStagedModelDataHandlerTest
 			ServiceContextTestUtil.getServiceContext(
 				stagingGroup.getGroupId(), TestPropsValues.getUserId());
 
-		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 			ContentTypes.APPLICATION_PDF,
 			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-			null, serviceContext);
+			null, null, serviceContext);
 
 		exportImportStagedModel(fileEntry);
 
 		FileEntry importedFileEntry =
-			DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
 				fileEntry.getUuid(), liveGroup.getGroupId());
 
 		Assert.assertEquals("pdf", importedFileEntry.getExtension());
 
 		String title = RandomTestUtil.randomString() + ".awesome";
 
-		DLAppServiceUtil.updateFileEntry(
+		fileEntry = _dlAppService.updateFileEntry(
 			fileEntry.getFileEntryId(), StringPool.BLANK,
 			ContentTypes.TEXT_PLAIN, title, StringPool.BLANK, StringPool.BLANK,
-			DLVersionNumberIncrease.MINOR, (byte[])null, null, null,
-			serviceContext);
+			StringPool.BLANK, DLVersionNumberIncrease.MINOR, (byte[])null, null,
+			null, null, serviceContext);
 
 		exportImportStagedModel(fileEntry);
 
-		importedFileEntry = DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+		importedFileEntry = _dlAppLocalService.getFileEntryByUuidAndGroupId(
 			fileEntry.getUuid(), liveGroup.getGroupId());
 
 		Assert.assertEquals("pdf", importedFileEntry.getExtension());
+		Assert.assertEquals(title, importedFileEntry.getTitle());
 	}
 
 	@Test
@@ -198,12 +404,12 @@ public class FileEntryStagedModelDataHandlerTest
 			serviceContext.setAttribute(
 				"fileEntryTypeId", dlFileEntryType.getFileEntryTypeId());
 
-			FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
+			FileEntry fileEntry = _dlAppLocalService.addFileEntry(
 				null, TestPropsValues.getUserId(), liveGroup.getGroupId(),
 				DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 				ContentTypes.APPLICATION_PDF,
 				FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
-				null, serviceContext);
+				null, null, serviceContext);
 
 			DDMForm ddmForm = ddmStructure.getDDMForm();
 
@@ -219,7 +425,7 @@ public class FileEntryStagedModelDataHandlerTest
 			exportImportStagedModelFromLiveToStaging(fileEntry);
 
 			FileEntry stagingGroupFileEntry =
-				DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+				_dlAppLocalService.getFileEntryByUuidAndGroupId(
 					fileEntry.getUuid(), stagingGroup.getGroupId());
 
 			exportImportStagedModel(stagingGroupFileEntry);
@@ -278,42 +484,78 @@ public class FileEntryStagedModelDataHandlerTest
 	}
 
 	@Test
+	public void testImportFileEntryFriendlyURLEntries() throws Exception {
+		String fileName = "PDF_Test.pdf";
+
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
+			ContentTypes.APPLICATION_PDF,
+			FileUtil.getBytes(getClass(), "dependencies/" + fileName), null,
+			null, null,
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		FriendlyURLEntry friendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				fileEntry.getFileEntryId());
+
+		Assert.assertNotNull(friendlyURLEntry);
+		Assert.assertEquals("pdf_test-pdf", friendlyURLEntry.getUrlTitle());
+
+		exportImportStagedModel(fileEntry);
+
+		FileEntry importedFileEntry =
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
+				fileEntry.getUuid(), liveGroup.getGroupId());
+
+		FriendlyURLEntry importedFriendlyURLEntry =
+			_friendlyURLEntryLocalService.getMainFriendlyURLEntry(
+				_portal.getClassNameId(FileEntry.class),
+				importedFileEntry.getFileEntryId());
+
+		Assert.assertEquals(
+			"pdf_test-pdf", importedFriendlyURLEntry.getUrlTitle());
+	}
+
+	@Test
 	public void testsExportImportNondefaultRepository() throws Exception {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
 				stagingGroup.getGroupId(), TestPropsValues.getUserId());
 
 		Repository repository = RepositoryLocalServiceUtil.addRepository(
-			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			null, TestPropsValues.getUserId(), stagingGroup.getGroupId(),
 			PortalUtil.getClassNameId(PortletRepository.class.getName()),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, "com.liferay.blogs",
 			"test repository", DLPortletKeys.DOCUMENT_LIBRARY,
 			new UnicodeProperties(), true, serviceContext);
 
-		Folder folder = DLAppLocalServiceUtil.addFolder(
-			TestPropsValues.getUserId(), repository.getRepositoryId(),
+		Folder folder = _dlAppLocalService.addFolder(
+			null, TestPropsValues.getUserId(), repository.getRepositoryId(),
 			repository.getDlFolderId(), "testFolder", "test folder",
 			serviceContext);
 
-		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
+		FileEntry fileEntry = _dlAppLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), repository.getRepositoryId(),
 			folder.getFolderId(), "test.txt", "text/plain", new byte[] {0, 1},
-			null, null, serviceContext);
+			null, null, null, serviceContext);
 
 		exportImportStagedModel(fileEntry);
 
 		FileEntry importedFileEntry =
-			DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+			_dlAppLocalService.getFileEntryByUuidAndGroupId(
 				fileEntry.getUuid(), liveGroup.getGroupId());
 
-		Folder importedFolder = DLAppLocalServiceUtil.getFolder(
+		Folder importedFolder = _dlAppLocalService.getFolder(
 			importedFileEntry.getFolderId());
 
 		Repository importedRepository =
 			RepositoryLocalServiceUtil.getRepository(
 				importedFileEntry.getRepositoryId());
 
-		Folder repositoryFolder = DLAppLocalServiceUtil.getFolder(
+		Folder repositoryFolder = _dlAppLocalService.getFolder(
 			importedRepository.getDlFolderId());
 
 		Assert.assertEquals(
@@ -339,8 +581,7 @@ public class FileEntryStagedModelDataHandlerTest
 			companyGroup.getGroupId(), DLFileEntryMetadata.class.getName());
 
 		addDependentStagedModel(
-			dependentStagedModelsMap,
-			DDMStructureManagerUtil.getDDMStructureModelClass(), ddmStructure);
+			dependentStagedModelsMap, DDMStructure.class, ddmStructure);
 
 		DLFileEntryType dlFileEntryType = addDLFileEntryType(
 			companyGroup.getGroupId(), ddmStructure.getStructureId());
@@ -348,15 +589,12 @@ public class FileEntryStagedModelDataHandlerTest
 		addDependentStagedModel(
 			dependentStagedModelsMap, DLFileEntryType.class, dlFileEntryType);
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				stagingGroup.getGroupId(), TestPropsValues.getUserId());
-
-		Folder folder = DLAppServiceUtil.addFolder(
-			stagingGroup.getGroupId(),
+		Folder folder = _dlAppService.addFolder(
+			null, stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				stagingGroup.getGroupId(), TestPropsValues.getUserId()));
 
 		addDependentStagedModel(
 			dependentStagedModelsMap, DLFolder.class, folder);
@@ -384,14 +622,12 @@ public class FileEntryStagedModelDataHandlerTest
 		addDependentStagedModel(
 			dependentStagedModelsMap, DDMStructure.class, ddmStructure);
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), TestPropsValues.getUserId());
-
-		Folder folder = DLAppServiceUtil.addFolder(
-			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+		Folder folder = _dlAppService.addFolder(
+			null, group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId()));
 
 		addDependentStagedModel(
 			dependentStagedModelsMap, DLFolder.class, folder);
@@ -408,13 +644,21 @@ public class FileEntryStagedModelDataHandlerTest
 				groupId, TestPropsValues.getUserId());
 
 		DLFileEntryType dlFileEntryType =
-			DLFileEntryTypeLocalServiceUtil.addFileEntryType(
-				TestPropsValues.getUserId(), groupId,
-				RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-				new long[] {ddmStructureId}, serviceContext);
+			_dlFileEntryTypeLocalService.addFileEntryType(
+				null, TestPropsValues.getUserId(), groupId, ddmStructureId,
+				null,
+				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
+				Collections.singletonMap(LocaleUtil.US, "New File Entry Type"),
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_SCOPE_DEFAULT,
+				serviceContext);
 
-		DDMStructureManagerUtil.updateStructureKey(
-			ddmStructureId, DLUtil.getDDMStructureKey(dlFileEntryType));
+		DDMStructure ddmStructure =
+			DDMStructureLocalServiceUtil.getDDMStructure(ddmStructureId);
+
+		ddmStructure.setStructureKey(
+			DLUtil.getDDMStructureKey(dlFileEntryType));
+
+		DDMStructureLocalServiceUtil.updateDDMStructure(ddmStructure);
 
 		return dlFileEntryType;
 	}
@@ -443,22 +687,22 @@ public class FileEntryStagedModelDataHandlerTest
 		DLAppTestUtil.populateServiceContext(
 			serviceContext, dlFileEntryType.getFileEntryTypeId());
 
-		return DLAppLocalServiceUtil.addFileEntry(
+		return _dlAppLocalService.addFileEntry(
 			null, TestPropsValues.getUserId(), group.getGroupId(),
 			folder.getFolderId(), RandomTestUtil.randomString() + ".txt",
 			ContentTypes.TEXT_PLAIN, TestDataConstants.TEST_BYTE_ARRAY, null,
-			null, serviceContext);
+			null, null, serviceContext);
 	}
 
 	@Override
 	protected FileEntry addVersion(StagedModel stagedModel) throws Exception {
 		FileEntry fileEntry = (FileEntry)stagedModel;
 
-		return DLAppServiceUtil.updateFileEntry(
+		return _dlAppService.updateFileEntry(
 			fileEntry.getFileEntryId(), StringPool.BLANK,
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(),
-			StringPool.BLANK, StringPool.BLANK, DLVersionNumberIncrease.MINOR,
-			(byte[])null, null, null,
+			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
+			DLVersionNumberIncrease.MINOR, (byte[])null, null, null, null,
 			ServiceContextThreadLocal.getServiceContext());
 	}
 
@@ -466,7 +710,7 @@ public class FileEntryStagedModelDataHandlerTest
 	protected FileEntry getStagedModel(String uuid, Group group)
 		throws PortalException {
 
-		return DLAppLocalServiceUtil.getFileEntryByUuidAndGroupId(
+		return _dlAppLocalService.getFileEntryByUuidAndGroupId(
 			uuid, group.getGroupId());
 	}
 
@@ -490,11 +734,8 @@ public class FileEntryStagedModelDataHandlerTest
 			Group group)
 		throws Exception {
 
-		Class<?> ddmStructureClass =
-			DDMStructureManagerUtil.getDDMStructureModelClass();
-
 		List<StagedModel> ddmStructureDependentStagedModels =
-			dependentStagedModelsMap.get(ddmStructureClass.getSimpleName());
+			dependentStagedModelsMap.get(DDMStructure.class.getSimpleName());
 
 		Assert.assertEquals(
 			ddmStructureDependentStagedModels.toString(), 1,
@@ -505,7 +746,7 @@ public class FileEntryStagedModelDataHandlerTest
 
 		Assert.assertNull(
 			"Company DDM structure dependency should not be imported",
-			DDMStructureManagerUtil.fetchStructureByUuidAndGroupId(
+			DDMStructureLocalServiceUtil.fetchDDMStructureByUuidAndGroupId(
 				ddmStructure.getUuid(), group.getGroupId()));
 
 		List<StagedModel> dlFileEntryTypesDependentStagedModels =
@@ -520,9 +761,8 @@ public class FileEntryStagedModelDataHandlerTest
 
 		Assert.assertNull(
 			"Company DL file entry dependency should not be imported",
-			DLFileEntryTypeLocalServiceUtil.
-				fetchDLFileEntryTypeByUuidAndGroupId(
-					dlFileEntryType.getUuid(), group.getGroupId()));
+			_dlFileEntryTypeLocalService.fetchDLFileEntryTypeByUuidAndGroupId(
+				dlFileEntryType.getUuid(), group.getGroupId()));
 	}
 
 	@Override
@@ -531,11 +771,8 @@ public class FileEntryStagedModelDataHandlerTest
 			Group group)
 		throws Exception {
 
-		Class<?> ddmStructureClass =
-			DDMStructureManagerUtil.getDDMStructureModelClass();
-
 		List<StagedModel> ddmStructureDependentStagedModels =
-			dependentStagedModelsMap.get(ddmStructureClass.getSimpleName());
+			dependentStagedModelsMap.get(DDMStructure.class.getSimpleName());
 
 		Assert.assertEquals(
 			ddmStructureDependentStagedModels.toString(), 1,
@@ -544,7 +781,7 @@ public class FileEntryStagedModelDataHandlerTest
 		DDMStructure ddmStructure =
 			(DDMStructure)ddmStructureDependentStagedModels.get(0);
 
-		DDMStructureManagerUtil.getStructureByUuidAndGroupId(
+		DDMStructureLocalServiceUtil.getDDMStructureByUuidAndGroupId(
 			ddmStructure.getUuid(), group.getGroupId());
 
 		List<StagedModel> dlFileEntryTypesDependentStagedModels =
@@ -557,7 +794,7 @@ public class FileEntryStagedModelDataHandlerTest
 		DLFileEntryType dlFileEntryType =
 			(DLFileEntryType)dlFileEntryTypesDependentStagedModels.get(0);
 
-		DLFileEntryTypeLocalServiceUtil.getDLFileEntryTypeByUuidAndGroupId(
+		_dlFileEntryTypeLocalService.getDLFileEntryTypeByUuidAndGroupId(
 			dlFileEntryType.getUuid(), group.getGroupId());
 
 		List<StagedModel> foldersDependentStagedModels =
@@ -569,7 +806,7 @@ public class FileEntryStagedModelDataHandlerTest
 
 		Folder folder = (Folder)foldersDependentStagedModels.get(0);
 
-		DLFolderLocalServiceUtil.getDLFolderByUuidAndGroupId(
+		_dlFolderLocalService.getDLFolderByUuidAndGroupId(
 			folder.getUuid(), group.getGroupId());
 	}
 
@@ -608,7 +845,7 @@ public class FileEntryStagedModelDataHandlerTest
 		}
 		catch (NoSuchFileEntryException noSuchFileEntryException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileEntryException, noSuchFileEntryException);
+				_log.debug(noSuchFileEntryException);
 			}
 
 			return;
@@ -641,14 +878,38 @@ public class FileEntryStagedModelDataHandlerTest
 	}
 
 	private FileEntry _deleteLastVersion(FileEntry fileEntry) throws Exception {
-		DLFileEntryLocalServiceUtil.deleteFileVersion(
+		_dlFileEntryLocalService.deleteFileVersion(
 			TestPropsValues.getUserId(), fileEntry.getFileEntryId(),
 			fileEntry.getVersion());
 
-		return DLAppLocalServiceUtil.getFileEntry(fileEntry.getFileEntryId());
+		return _dlAppLocalService.getFileEntry(fileEntry.getFileEntryId());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		FileEntryStagedModelDataHandlerTest.class);
+
+	@Inject
+	private DLAppLocalService _dlAppLocalService;
+
+	@Inject
+	private DLAppService _dlAppService;
+
+	@Inject
+	private DLFileEntryLocalService _dlFileEntryLocalService;
+
+	@Inject
+	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
+
+	@Inject
+	private DLFolderLocalService _dlFolderLocalService;
+
+	@Inject
+	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
+
+	@Inject
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Inject
+	private Portal _portal;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.model;
@@ -45,6 +36,7 @@ public class SXPElementWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("sxpElementId", getSXPElementId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -53,10 +45,14 @@ public class SXPElementWrapper
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("description", getDescription());
 		attributes.put("elementDefinitionJSON", getElementDefinitionJSON());
+		attributes.put("fallbackDescription", getFallbackDescription());
+		attributes.put("fallbackTitle", getFallbackTitle());
 		attributes.put("hidden", isHidden());
 		attributes.put("readOnly", isReadOnly());
+		attributes.put("schemaVersion", getSchemaVersion());
 		attributes.put("title", getTitle());
 		attributes.put("type", getType());
+		attributes.put("version", getVersion());
 		attributes.put("status", getStatus());
 
 		return attributes;
@@ -74,6 +70,13 @@ public class SXPElementWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long sxpElementId = (Long)attributes.get("sxpElementId");
@@ -125,6 +128,19 @@ public class SXPElementWrapper
 			setElementDefinitionJSON(elementDefinitionJSON);
 		}
 
+		String fallbackDescription = (String)attributes.get(
+			"fallbackDescription");
+
+		if (fallbackDescription != null) {
+			setFallbackDescription(fallbackDescription);
+		}
+
+		String fallbackTitle = (String)attributes.get("fallbackTitle");
+
+		if (fallbackTitle != null) {
+			setFallbackTitle(fallbackTitle);
+		}
+
 		Boolean hidden = (Boolean)attributes.get("hidden");
 
 		if (hidden != null) {
@@ -137,6 +153,12 @@ public class SXPElementWrapper
 			setReadOnly(readOnly);
 		}
 
+		String schemaVersion = (String)attributes.get("schemaVersion");
+
+		if (schemaVersion != null) {
+			setSchemaVersion(schemaVersion);
+		}
+
 		String title = (String)attributes.get("title");
 
 		if (title != null) {
@@ -147,6 +169,12 @@ public class SXPElementWrapper
 
 		if (type != null) {
 			setType(type);
+		}
+
+		String version = (String)attributes.get("version");
+
+		if (version != null) {
+			setVersion(version);
 		}
 
 		Integer status = (Integer)attributes.get("status");
@@ -278,6 +306,36 @@ public class SXPElementWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this sxp element.
+	 *
+	 * @return the external reference code of this sxp element
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
+	 * Returns the fallback description of this sxp element.
+	 *
+	 * @return the fallback description of this sxp element
+	 */
+	@Override
+	public String getFallbackDescription() {
+		return model.getFallbackDescription();
+	}
+
+	/**
+	 * Returns the fallback title of this sxp element.
+	 *
+	 * @return the fallback title of this sxp element
+	 */
+	@Override
+	public String getFallbackTitle() {
+		return model.getFallbackTitle();
+	}
+
+	/**
 	 * Returns the hidden of this sxp element.
 	 *
 	 * @return the hidden of this sxp element
@@ -325,6 +383,16 @@ public class SXPElementWrapper
 	@Override
 	public boolean getReadOnly() {
 		return model.getReadOnly();
+	}
+
+	/**
+	 * Returns the schema version of this sxp element.
+	 *
+	 * @return the schema version of this sxp element
+	 */
+	@Override
+	public String getSchemaVersion() {
+		return model.getSchemaVersion();
 	}
 
 	/**
@@ -474,6 +542,16 @@ public class SXPElementWrapper
 	}
 
 	/**
+	 * Returns the version of this sxp element.
+	 *
+	 * @return the version of this sxp element
+	 */
+	@Override
+	public String getVersion() {
+		return model.getVersion();
+	}
+
+	/**
 	 * Returns <code>true</code> if this sxp element is hidden.
 	 *
 	 * @return <code>true</code> if this sxp element is hidden; <code>false</code> otherwise
@@ -611,6 +689,36 @@ public class SXPElementWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this sxp element.
+	 *
+	 * @param externalReferenceCode the external reference code of this sxp element
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
+	 * Sets the fallback description of this sxp element.
+	 *
+	 * @param fallbackDescription the fallback description of this sxp element
+	 */
+	@Override
+	public void setFallbackDescription(String fallbackDescription) {
+		model.setFallbackDescription(fallbackDescription);
+	}
+
+	/**
+	 * Sets the fallback title of this sxp element.
+	 *
+	 * @param fallbackTitle the fallback title of this sxp element
+	 */
+	@Override
+	public void setFallbackTitle(String fallbackTitle) {
+		model.setFallbackTitle(fallbackTitle);
+	}
+
+	/**
 	 * Sets whether this sxp element is hidden.
 	 *
 	 * @param hidden the hidden of this sxp element
@@ -658,6 +766,16 @@ public class SXPElementWrapper
 	@Override
 	public void setReadOnly(boolean readOnly) {
 		model.setReadOnly(readOnly);
+	}
+
+	/**
+	 * Sets the schema version of this sxp element.
+	 *
+	 * @param schemaVersion the schema version of this sxp element
+	 */
+	@Override
+	public void setSchemaVersion(String schemaVersion) {
+		model.setSchemaVersion(schemaVersion);
 	}
 
 	/**
@@ -792,6 +910,21 @@ public class SXPElementWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	/**
+	 * Sets the version of this sxp element.
+	 *
+	 * @param version the version of this sxp element
+	 */
+	@Override
+	public void setVersion(String version) {
+		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

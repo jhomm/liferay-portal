@@ -1,31 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.query;
 
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.query.Query;
-import com.liferay.search.experiences.internal.blueprint.exception.UnresolvedTemplateVariableException;
+import com.liferay.search.experiences.internal.blueprint.property.PropertyValidator;
 
 import java.util.Iterator;
 import java.util.Objects;
-
-import org.apache.commons.lang.StringUtils;
 
 /**
  * @author Petteri Karttunen
@@ -43,13 +30,18 @@ public class QueryConverter {
 
 		Iterator<String> iterator = jsonObject.keys();
 
+		if (!iterator.hasNext()) {
+			return null;
+		}
+
 		String type = iterator.next();
 
 		if (Objects.equals(type, "term")) {
 			return _toTermQuery(jsonObject.getJSONObject(type));
 		}
 
-		return _queries.wrapper(_validate(JSONUtil.toString(jsonObject)));
+		return _queries.wrapper(
+			PropertyValidator.validate(JSONUtil.toString(jsonObject)));
 	}
 
 	private Query _toTermQuery(JSONObject jsonObject1) {
@@ -64,9 +56,9 @@ public class QueryConverter {
 
 			Query query = _queries.term(
 				field,
-				_validate(
+				PropertyValidator.validate(
 					Objects.requireNonNull(
-						jsonObject2.getString("value", null),
+						jsonObject2.get("value"),
 						"The key \"value\" is not set")));
 
 			if (jsonObject2.get("boost") != null) {
@@ -76,19 +68,7 @@ public class QueryConverter {
 			return query;
 		}
 
-		return _queries.term(field, _validate(object));
-	}
-
-	private <T> T _validate(T object) {
-		String[] templateVariables = StringUtils.substringsBetween(
-			object.toString(), StringPool.DOLLAR_AND_OPEN_CURLY_BRACE,
-			StringPool.CLOSE_CURLY_BRACE);
-
-		if (ArrayUtil.isNotEmpty(templateVariables)) {
-			throw UnresolvedTemplateVariableException.with(templateVariables);
-		}
-
-		return object;
+		return _queries.term(field, PropertyValidator.validate(object));
 	}
 
 	private final Queries _queries;

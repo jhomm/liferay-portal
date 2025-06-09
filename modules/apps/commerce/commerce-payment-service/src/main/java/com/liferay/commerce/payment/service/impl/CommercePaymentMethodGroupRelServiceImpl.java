@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.service.impl;
@@ -20,13 +11,12 @@ import com.liferay.commerce.payment.service.base.CommercePaymentMethodGroupRelSe
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceAddressRestrictionLocalService;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.File;
 
@@ -35,10 +25,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Luca Pellizzon
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommercePaymentMethodGroupRel"
+	},
+	service = AopService.class
+)
 public class CommercePaymentMethodGroupRelServiceImpl
 	extends CommercePaymentMethodGroupRelServiceBaseImpl {
 
@@ -71,16 +71,16 @@ public class CommercePaymentMethodGroupRelServiceImpl
 	@Override
 	public CommercePaymentMethodGroupRel addCommercePaymentMethodGroupRel(
 			long groupId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, File imageFile,
-			String engineKey, double priority, boolean active)
+			Map<Locale, String> descriptionMap, boolean active, File imageFile,
+			String paymentIntegrationKey, double priority, String typeSettings)
 		throws PortalException {
 
 		_checkCommerceChannel(groupId);
 
 		return commercePaymentMethodGroupRelLocalService.
 			addCommercePaymentMethodGroupRel(
-				getUserId(), groupId, nameMap, descriptionMap, imageFile,
-				engineKey, priority, active);
+				getUserId(), groupId, nameMap, descriptionMap, active,
+				imageFile, paymentIntegrationKey, priority, typeSettings);
 	}
 
 	@Override
@@ -133,6 +133,23 @@ public class CommercePaymentMethodGroupRelServiceImpl
 
 		commercePaymentMethodGroupRelLocalService.
 			deleteCommercePaymentMethodGroupRel(commercePaymentMethodGroupRel);
+	}
+
+	@Override
+	public CommercePaymentMethodGroupRel fetchCommercePaymentMethodGroupRel(
+			long commercePaymentMethodGroupRelId)
+		throws PortalException {
+
+		CommercePaymentMethodGroupRel commercePaymentMethodGroupRel =
+			commercePaymentMethodGroupRelLocalService.
+				fetchCommercePaymentMethodGroupRel(
+					commercePaymentMethodGroupRelId);
+
+		if (commercePaymentMethodGroupRel != null) {
+			_checkCommerceChannel(commercePaymentMethodGroupRel.getGroupId());
+		}
+
+		return commercePaymentMethodGroupRel;
 	}
 
 	@Override
@@ -333,6 +350,17 @@ public class CommercePaymentMethodGroupRelServiceImpl
 
 	@Override
 	public CommercePaymentMethodGroupRel updateCommercePaymentMethodGroupRel(
+			CommercePaymentMethodGroupRel commercePaymentMethodGroupRel)
+		throws PortalException {
+
+		_checkCommerceChannel(commercePaymentMethodGroupRel.getGroupId());
+
+		return commercePaymentMethodGroupRelLocalService.
+			updateCommercePaymentMethodGroupRel(commercePaymentMethodGroupRel);
+	}
+
+	@Override
+	public CommercePaymentMethodGroupRel updateCommercePaymentMethodGroupRel(
 			long commercePaymentMethodGroupRelId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, File imageFile, double priority,
 			boolean active)
@@ -360,18 +388,17 @@ public class CommercePaymentMethodGroupRelServiceImpl
 			getPermissionChecker(), commerceChannel, ActionKeys.UPDATE);
 	}
 
-	private static volatile ModelResourcePermission<CommerceChannel>
-		_commerceChannelModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommercePaymentMethodGroupRelServiceImpl.class,
-				"_commerceChannelModelResourcePermission",
-				CommerceChannel.class);
-
-	@ServiceReference(type = CommerceAddressRestrictionLocalService.class)
+	@Reference
 	private CommerceAddressRestrictionLocalService
 		_commerceAddressRestrictionLocalService;
 
-	@ServiceReference(type = CommerceChannelLocalService.class)
+	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceChannel)"
+	)
+	private ModelResourcePermission<CommerceChannel>
+		_commerceChannelModelResourcePermission;
 
 }

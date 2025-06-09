@@ -1,32 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.test.util.context;
 
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
-import com.liferay.commerce.account.service.CommerceAccountService;
-import com.liferay.commerce.account.util.CommerceAccountHelper;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.context.CommerceContextFactory;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.order.CommerceOrderHttpHelper;
+import com.liferay.commerce.product.discovery.CPConfigurationListDiscovery;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
+import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=1",
+	property = "service.ranking:Integer=1",
 	service = CommerceContextFactory.class
 )
 public class TestCustomCommerceContextFactory
@@ -44,32 +38,44 @@ public class TestCustomCommerceContextFactory
 	@Override
 	public CommerceContext create(HttpServletRequest httpServletRequest) {
 		return new TestCustomCommerceContextHttp(
-			httpServletRequest, _commerceAccountHelper,
+			httpServletRequest, _accountGroupLocalService,
+			_commerceAccountHelper, _commerceCatalogLocalService,
+			_commerceChannelAccountEntryRelLocalService,
 			_commerceChannelLocalService, _commerceCurrencyLocalService,
-			_commerceOrderHttpHelper, _configurationProvider, _portal);
+			_commerceOrderHttpHelper, _configurationProvider,
+			_cpConfigurationListDiscovery, _portal);
 	}
 
 	@Override
 	public CommerceContext create(
-		long companyId, long commerceChannelGroupId, long userId, long orderId,
-		long commerceAccountId) {
+		long commerceAccountId, long commerceChannelGroupId,
+		String commerceCurrencyCode, long commerceOrderId, long companyId) {
 
 		return new TestCustomCommerceContext(
-			companyId, commerceChannelGroupId, orderId, commerceAccountId,
-			_commerceAccountHelper, _commerceAccountLocalService,
-			_commerceAccountService, _commerceChannelLocalService,
-			_commerceCurrencyLocalService, _commerceOrderService,
-			_configurationProvider);
+			_accountEntryLocalService, _accountGroupLocalService,
+			commerceAccountId, _commerceCatalogLocalService,
+			_commerceChannelAccountEntryRelLocalService, commerceChannelGroupId,
+			_commerceChannelLocalService, commerceCurrencyCode,
+			_commerceCurrencyLocalService, commerceOrderId,
+			_commerceOrderService, companyId, _configurationProvider,
+			_cpConfigurationListDiscovery);
 	}
+
+	@Reference
+	private AccountEntryLocalService _accountEntryLocalService;
+
+	@Reference
+	private AccountGroupLocalService _accountGroupLocalService;
 
 	@Reference
 	private CommerceAccountHelper _commerceAccountHelper;
 
 	@Reference
-	private CommerceAccountLocalService _commerceAccountLocalService;
+	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
 	@Reference
-	private CommerceAccountService _commerceAccountService;
+	private CommerceChannelAccountEntryRelLocalService
+		_commerceChannelAccountEntryRelLocalService;
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
@@ -85,6 +91,9 @@ public class TestCustomCommerceContextFactory
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private CPConfigurationListDiscovery _cpConfigurationListDiscovery;
 
 	@Reference
 	private Portal _portal;

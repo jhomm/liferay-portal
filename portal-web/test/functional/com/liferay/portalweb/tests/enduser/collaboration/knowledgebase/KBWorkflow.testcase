@@ -1,4 +1,4 @@
-@component-name = "portal-knowledge-base"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column";
@@ -13,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,15 +27,17 @@ definition {
 
 			JSONUser.tearDownNonAdminUsers();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@description = "This is a use case for LPS-68599."
-	@priority = "5"
+	@description = "This is a use case for LPS-68599. Skip the instance for performance improvement."
+	@priority = 4
 	@refactordone
 	test CanAddCommentToWorkflowSubmission {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -71,7 +73,7 @@ definition {
 		KBArticle.addCP(
 			kbArticleContent = "Knowledge Base Article Content",
 			kbArticleTitle = "Knowledge Base Article Title",
-			kbWorkflowAction = "Submit for Publication");
+			kbWorkflowAction = "Submit for Workflow");
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "test@liferay.com",
@@ -84,7 +86,146 @@ definition {
 		WorkflowComment.add(workflowComment = "Workflow Comment");
 	}
 
-	@priority = "4"
+	@description = "This test ensures that a scheduled article reaches the publish date, the status will be changed from “Pending“ to “Approve” after approving."
+	@priority = 5
+	test CanApproveReachingScheduledDateArticle {
+		property custom.properties = "company.default.time.zone=America/Los_Angeles${line.separator}feature.flag.LPS-188058=true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Workflow.openWorkflowProcessBuilderConfiguration();
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Knowledge Base Article");
+
+		KBArticle.updateCheckInterval(fieldValue = 1);
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.addArticleWithScheduledDate(
+			increaseMinutes = 1,
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			workflowEnabled = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		LexiconList.viewListEntryLabel(
+			listEntry = "Knowledge Base Article Title",
+			listEntryLabel = "Pending");
+
+		// We need to wait for the system time to pass by 1 minute in order to verify the scheduled article is published. There is currently no easy way to manipulate the system time in CI for automation. 1 minute is the shortest value we can set while ensuring the stability of the test. See LPS-188060.
+
+		Pause(value1 = 60000);
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "Knowledge Base Article Title",
+			workflowAssetType = "Knowledge Base Article",
+			workflowTask = "Review");
+
+		Workflow.approveTaskByActions(
+			workflowAssetTitle = "Knowledge Base Article Title",
+			workflowAssetType = "Knowledge Base Article",
+			workflowTask = "Review");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		LexiconList.viewListEntryLabel(
+			listEntry = "Knowledge Base Article Title",
+			listEntryLabel = "Approved");
+	}
+
+	@e2etest
+	@priority = 4
+	@refactordone
+	test CanViewPendingContent {
+		property portal.acceptance = "true";
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Configuration",
+			portlet = "Workflow");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Knowledge Base Article");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.addCP(
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			kbWorkflowAction = "Submit for Workflow");
+
+		KBArticle.viewCP(
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			kbStatus = "Pending");
+	}
+
+	@description = "This test ensures that a scheduled article does not reach the publish date, The status will be changed from “Pending“ to “Scheduled” after approving."
+	@priority = 5
+	test ScheduledArticleCanBePublishedAfterApproving {
+		property custom.properties = "company.default.time.zone=America/Los_Angeles${line.separator}feature.flag.LPS-188058=true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Workflow.openWorkflowProcessBuilderConfiguration();
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Knowledge Base Article");
+
+		KBArticle.updateCheckInterval(fieldValue = 1);
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.addArticleWithScheduledDate(
+			increaseMinutes = 2,
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			workflowEnabled = "true");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		LexiconList.viewListEntryLabel(
+			listEntry = "Knowledge Base Article Title",
+			listEntryLabel = "Pending");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Workflow.assignToMeTaskByActions(
+			workflowAssetTitle = "Knowledge Base Article Title",
+			workflowAssetType = "Knowledge Base Article",
+			workflowTask = "Review");
+
+		Workflow.approveTaskByActions(
+			workflowAssetTitle = "Knowledge Base Article Title",
+			workflowAssetType = "Knowledge Base Article",
+			workflowTask = "Review");
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		LexiconList.viewListEntryLabel(
+			listEntry = "Knowledge Base Article Title",
+			listEntryLabel = "Scheduled");
+
+		// We need to wait for the system time to pass by 1 minute in order to verify the scheduled article is published. There is currently no easy way to manipulate the system time in CI for automation. 1 minute is the shortest value we can set while ensuring the stability of the test. See LPS-188060.
+
+		Pause(value1 = 120000);
+
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		LexiconList.viewListEntryLabel(
+			listEntry = "Knowledge Base Article Title",
+			listEntryLabel = "Approved");
+	}
+
+	@priority = 4
 	@refactorneeded
 	test ViewKBArticleSuggestionsWorkflow {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
@@ -94,17 +235,14 @@ definition {
 			layoutName = "Knowledge Base Display Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Knowledge Base Display Page",
 			widgetName = "Knowledge Base Display");
 
 		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -117,25 +255,21 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Administrator",
 			userScreenName = "usersn");
 
-		KBAdmin.openKBAdmin(siteURLKey = "guest");
-
-		KBArticle.addCP(
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
 			kbArticleContent = "Knowledge Base Article Content",
 			kbArticleTitle = "Knowledge Base Article Title");
 
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Knowledge Base Display Page");
@@ -151,20 +285,22 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
 
-		KBArticle.gotoSuggestionsNavigationCP();
+		KBArticle.openPageTreePanel(section = "Suggestions");
 
-		KBArticleSuggestion.gotoSuggestionStatusNew(suggestionCount = "1");
+		KBArticleSuggestion.gotoSuggestionStatusNew(suggestionCount = 1);
 
 		KBArticleSuggestion.moveToInProgressStatus(
 			kbArticleTitle = "Knowledge Base Article Title",
 			kbSuggestionBody = "Knowledge Base Article Suggestion");
 
-		KBArticle.gotoSuggestionsNavigationCP();
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Suggestions");
 
 		KBArticleSuggestion.viewPG(
 			kbSuggestionBody = "Knowledge Base Article Suggestion",
@@ -175,7 +311,9 @@ definition {
 			kbArticleTitle = "Knowledge Base Article Title",
 			kbSuggestionBody = "Knowledge Base Article Suggestion");
 
-		KBArticle.gotoSuggestionsNavigationCP();
+		KBAdmin.openKBAdmin(siteURLKey = "guest");
+
+		KBArticle.openPageTreePanel(section = "Suggestions");
 
 		KBArticleSuggestion.viewPG(
 			kbSuggestionBody = "Knowledge Base Article Suggestion",
@@ -186,7 +324,7 @@ definition {
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");
 
-		KBArticle.gotoSuggestionsNavigationCP();
+		KBArticle.openPageTreePanel(section = "Suggestions");
 
 		KBArticleSuggestion.viewNoSuggestions();
 	}

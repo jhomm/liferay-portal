@@ -1,0 +1,25 @@
+@import 'cadmin-variables';
+
+html#{$cadmin-selector} {
+	.cadmin {
+		.page-editor__fragments-widgets__search-results-panel__filter-subtitle {
+			font-size: 11px;
+			text-transform: uppercase;
+
+			~ .page-editor__collapse {
+				margin-left: 12px;
+			}
+		}
+
+		.page-editor__fragments-widgets__search-results-panel__filter-subtitle,
+		.page-editor__fragments-widgets__search-results-panel__marketplace-results {
+			border-top: 1px solid $cadmin-gray-500;
+			&:before,
+			&:after {
+				content: '';
+				display: block;
+				margin-bottom: 12px;
+			}
+		}
+	}
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.exportimport.data.handler.test;
@@ -34,7 +25,6 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortalPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -77,20 +67,18 @@ public class JournalFeedStagedModelDataHandlerTest
 	public void setUp() throws Exception {
 		super.setUp();
 
-		_layout = LayoutTestUtil.addLayout(stagingGroup);
+		_layout = LayoutTestUtil.addTypePortletLayout(stagingGroup);
 
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setUuid(_layout.getUuid());
 
 		LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), liveGroup.getGroupId(),
+			null, TestPropsValues.getUserId(), liveGroup.getGroupId(),
 			_layout.isPrivateLayout(), _layout.getParentLayoutId(),
 			_layout.getName(), _layout.getTitle(), _layout.getDescription(),
 			_layout.getType(), _layout.isHidden(), _layout.getFriendlyURL(),
 			serviceContext);
-
-		CompanyThreadLocal.setCompanyId(TestPropsValues.getCompanyId());
 
 		serviceContext.setCompanyId(TestPropsValues.getCompanyId());
 
@@ -110,9 +98,6 @@ public class JournalFeedStagedModelDataHandlerTest
 		portalPreferences.setValue("", "folderIconCheckCountEnabled", "true");
 		portalPreferences.setValue(
 			"", "indexAllArticleVersionsEnabled", "true");
-		portalPreferences.setValue(
-			"", "databaseContentKeywordSearchEnabled", "true");
-		portalPreferences.setValue("", "journalArticleStorageType", "json");
 		portalPreferences.setValue(
 			"", "journalArticlePageBreakToken", "@page_break@");
 
@@ -277,7 +262,7 @@ public class JournalFeedStagedModelDataHandlerTest
 
 		return JournalTestUtil.addFeed(
 			group.getGroupId(), _layout.getPlid(),
-			RandomTestUtil.randomString(), ddmStructure.getStructureKey(),
+			RandomTestUtil.randomString(), ddmStructure.getStructureId(),
 			ddmTemplate.getTemplateKey(), rendererDDMTemplate.getTemplateKey());
 	}
 

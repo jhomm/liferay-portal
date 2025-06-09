@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.portlet.configuration.icon;
@@ -18,19 +9,18 @@ import com.liferay.knowledge.base.constants.KBActionKeys;
 import com.liferay.knowledge.base.constants.KBConstants;
 import com.liferay.knowledge.base.constants.KBPortletKeys;
 import com.liferay.knowledge.base.model.KBArticle;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.subscription.service.SubscriptionLocalService;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,9 +29,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Roberto Díaz
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN, "path=-"
+		"jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN, "path=-"
 	},
 	service = PortletConfigurationIcon.class
 )
@@ -56,31 +45,28 @@ public class KBArticleGroupSubscriptionPortletConfigurationIcon
 			key = "unsubscribe";
 		}
 
-		return LanguageUtil.get(
-			getResourceBundle(getLocale(portletRequest)), key);
+		return _language.get(getLocale(portletRequest), key);
 	}
 
 	@Override
 	public String getURL(
 		PortletRequest portletRequest, PortletResponse portletResponse) {
 
-		PortletURL portletURL = _portal.getControlPanelPortletURL(
-			portletRequest, KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
-			PortletRequest.ACTION_PHASE);
+		return PortletURLBuilder.create(
+			_portal.getControlPanelPortletURL(
+				portletRequest, KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+				PortletRequest.ACTION_PHASE)
+		).setActionName(
+			() -> {
+				if (_isSubscribed(portletRequest)) {
+					return "/knowledge_base/unsubscribe_group_kb_articles";
+				}
 
-		if (_isSubscribed(portletRequest)) {
-			portletURL.setParameter(
-				ActionRequest.ACTION_NAME, "unsubscribeGroupKBArticles");
-		}
-		else {
-			portletURL.setParameter(
-				ActionRequest.ACTION_NAME, "subscribeGroupKBArticles");
-		}
-
-		portletURL.setParameter(
-			"redirect", _portal.getCurrentURL(portletRequest));
-
-		return portletURL.toString();
+				return "/knowledge_base/subscribe_group_kb_articles";
+			}
+		).setRedirect(
+			_portal.getCurrentURL(portletRequest)
+		).buildString();
 	}
 
 	@Override
@@ -98,13 +84,6 @@ public class KBArticleGroupSubscriptionPortletConfigurationIcon
 			KBActionKeys.SUBSCRIBE);
 	}
 
-	@Reference(unbind = "-")
-	protected void setSubscriptionLocalService(
-		SubscriptionLocalService subscriptionLocalService) {
-
-		_subscriptionLocalService = subscriptionLocalService;
-	}
-
 	private boolean _isSubscribed(PortletRequest portletRequest) {
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
@@ -115,6 +94,9 @@ public class KBArticleGroupSubscriptionPortletConfigurationIcon
 	}
 
 	@Reference
+	private Language _language;
+
+	@Reference
 	private Portal _portal;
 
 	@Reference(
@@ -122,6 +104,7 @@ public class KBArticleGroupSubscriptionPortletConfigurationIcon
 	)
 	private PortletResourcePermission _portletResourcePermission;
 
+	@Reference
 	private SubscriptionLocalService _subscriptionLocalService;
 
 }

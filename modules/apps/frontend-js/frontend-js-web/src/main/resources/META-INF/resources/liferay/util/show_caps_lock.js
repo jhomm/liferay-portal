@@ -1,0 +1,18 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+export default function showCapsLock(event, elementId) {
+	const element = document.getElementById(elementId);
+
+	if (element) {
+		element.classList.add('hide');
+		element.style.display = 'none';
+
+		if (event.getModifierState('CapsLock')) {
+			element.classList.remove('hide');
+			element.style.display = '';
+		}
+	}
+}

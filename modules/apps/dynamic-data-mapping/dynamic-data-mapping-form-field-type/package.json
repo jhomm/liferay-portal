@@ -1,52 +1,63 @@
 {
 	"dependencies": {
-		"@clayui/autocomplete": "3.39.0",
-		"@clayui/button": "3.39.0",
-		"@clayui/data-provider": "3.39.0",
-		"@clayui/drop-down": "3.39.0",
-		"@clayui/form": "3.39.0",
-		"@clayui/icon": "3.39.0",
-		"@clayui/layout": "3.39.0",
-		"@clayui/modal": "3.39.0",
-		"@clayui/popover": "3.39.0",
-		"@clayui/shared": "3.39.0",
-		"@clayui/table": "3.39.0",
+		"@clayui/autocomplete": "3.138.0",
+		"@clayui/button": "3.136.0",
+		"@clayui/card": "3.138.0",
+		"@clayui/color-picker": "3.138.0",
+		"@clayui/core": "3.138.0",
+		"@clayui/data-provider": "3.137.0",
+		"@clayui/date-picker": "3.138.0",
+		"@clayui/drop-down": "3.138.0",
+		"@clayui/form": "3.137.0",
+		"@clayui/icon": "3.128.0",
+		"@clayui/label": "3.128.0",
+		"@clayui/layout": "3.128.0",
+		"@clayui/modal": "3.137.0",
+		"@clayui/multi-select": "3.138.0",
+		"@clayui/panel": "3.137.0",
+		"@clayui/popover": "3.137.0",
+		"@clayui/progress-bar": "3.128.0",
+		"@clayui/table": "3.111.0",
+		"@clayui/tooltip": "3.137.0",
+		"@liferay/frontend-js-react-web": "*",
 		"@liferay/map-google-maps": "*",
 		"@liferay/map-openstreetmap": "*",
-		"axios": "0.21.1",
+		"@liferay/object-js-components-web": "*",
 		"classnames": "2.3.1",
-		"clay-icon": "2.22.4",
+		"data-engine-js-components-web": "*",
 		"frontend-editor-ckeditor-web": "*",
+		"frontend-js-components-web": "*",
 		"frontend-js-web": "*",
 		"leaflet": "1.7.1",
-		"metal-component": "2.16.8",
-		"metal-drag-drop": "3.3.1",
-		"metal-soy": "2.16.9",
-		"moment": "^2.22.2",
+		"moment": "2.29.4",
+		"react": "18.2.0",
+		"react-dnd": "11.1.1",
+		"react-dnd-html5-backend": "11.1.1",
+		"react-dom": "18.2.0",
+		"resize-observer-polyfill": "1.5.1",
 		"text-mask-addons": "^3.7.1",
-		"text-mask-core": "^5.1.2",
-		"vanilla-text-mask": "^5.0.1"
+		"text-mask-core": "^5.1.2"
 	},
 	"jest": {
 		"setupFiles": [
 			"<rootDir>/jest-setup.config.js"
 		],
-		"snapshotSerializers": [
-			"metal-jest-serializer"
+		"testMatch": [
+			"<rootDir>/test/**/*.js",
+			"<rootDir>/test/**/*.spec.js"
 		],
 		"testPathIgnorePatterns": [
-			"Tooltip",
-			"withContextMock"
+			"\\.d\\.ts$"
 		]
 	},
-	"main": "index.js",
+	"main": "js/index.ts",
 	"name": "dynamic-data-mapping-form-field-type",
 	"private": true,
 	"scripts": {
-		"build": "liferay-npm-scripts build",
-		"checkFormat": "liferay-npm-scripts check",
-		"format": "liferay-npm-scripts fix",
-		"test": "liferay-npm-scripts test"
+		"build": "node-scripts build",
+		"checkFormat": "node-scripts format --check",
+		"format": "node-scripts format",
+		"test": "USE_REACT_16=true node-scripts test"
 	},
-	"version": "6.0.54"
+	"version": "6.0.193"
 }

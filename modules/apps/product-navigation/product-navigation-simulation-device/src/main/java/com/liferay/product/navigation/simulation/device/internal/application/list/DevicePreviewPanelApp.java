@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.simulation.device.internal.application.list;
@@ -17,20 +8,18 @@ package com.liferay.product.navigation.simulation.device.internal.application.li
 import com.liferay.application.list.BaseJSPPanelApp;
 import com.liferay.application.list.PanelApp;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.product.navigation.simulation.constants.ProductNavigationSimulationConstants;
 import com.liferay.product.navigation.simulation.constants.ProductNavigationSimulationPortletKeys;
 
-import java.util.Locale;
-import java.util.ResourceBundle;
+import jakarta.servlet.ServletContext;
 
-import javax.servlet.ServletContext;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +28,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	immediate = true,
 	property = {
 		"panel.app.order:Integer=100",
 		"panel.category.key=" + ProductNavigationSimulationConstants.SIMULATION_PANEL_CATEGORY_KEY
@@ -55,10 +43,12 @@ public class DevicePreviewPanelApp extends BaseJSPPanelApp {
 
 	@Override
 	public String getLabel(Locale locale) {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", locale, getClass());
+		return _language.get(locale, "screen-size");
+	}
 
-		return LanguageUtil.get(resourceBundle, "screen-size");
+	@Override
+	public Portlet getPortlet() {
+		return _portlet;
 	}
 
 	@Override
@@ -72,7 +62,7 @@ public class DevicePreviewPanelApp extends BaseJSPPanelApp {
 		throws PortalException {
 
 		if (group.isControlPanel() ||
-			!hasPreviewInDevicePermission(permissionChecker, group)) {
+			!_hasPreviewInDevicePermission(permissionChecker, group)) {
 
 			return false;
 		}
@@ -81,29 +71,29 @@ public class DevicePreviewPanelApp extends BaseJSPPanelApp {
 	}
 
 	@Override
-	@Reference(
-		target = "(javax.portlet.name=" + ProductNavigationSimulationPortletKeys.PRODUCT_NAVIGATION_SIMULATION + ")",
-		unbind = "-"
-	)
-	public void setPortlet(Portlet portlet) {
-		super.setPortlet(portlet);
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.product.navigation.simulation.device)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
-	protected boolean hasPreviewInDevicePermission(
+	private boolean _hasPreviewInDevicePermission(
 			PermissionChecker permissionChecker, Group group)
 		throws PortalException {
 
 		return GroupPermissionUtil.contains(
 			permissionChecker, group, ActionKeys.PREVIEW_IN_DEVICE);
 	}
+
+	@Reference
+	private Language _language;
+
+	@Reference(
+		target = "(jakarta.portlet.name=" + ProductNavigationSimulationPortletKeys.PRODUCT_NAVIGATION_SIMULATION + ")"
+	)
+	private Portlet _portlet;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.product.navigation.simulation.device)"
+	)
+	private ServletContext _servletContext;
 
 }

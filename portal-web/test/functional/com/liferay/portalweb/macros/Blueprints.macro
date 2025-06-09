@@ -1,0 +1,393 @@
+definition {
+
+	@summary = "Default summary"
+	macro addElement(element = null) {
+		AssertVisible(locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_HEADER");
+
+		Blueprints.searchAddElementsSidebar(element = ${element});
+
+		MouseOver(
+			key_element = ${element},
+			locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_ELEMENT_NAME");
+
+		Click.clickNoMouseOverNoWaitForVisible(
+			key_element = ${element},
+			locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_ELEMENT_ADD_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro addElementViaDescription(searchTerm = null, element = null) {
+		AssertVisible(locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_HEADER");
+
+		Blueprints.searchAddElementsSidebar(element = ${searchTerm});
+
+		MouseOver(
+			key_element = ${element},
+			locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_ELEMENT_DESCRIPTION");
+
+		Click.clickNoMouseOverNoWaitForVisible(
+			key_element = ${element},
+			locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_ELEMENT_ADD_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro applyBlueprintViaOptionsWidget(blueprintTitle = null) {
+		if (!(IsElementPresent(key_portletName = "Blueprints Options", locator1 = "Portlet#SPECIFIC_BORDERLESS_ELLIPSIS_ICON"))) {
+			SearchPage.addWidgets(searchPortletList = "Blueprints Options");
+
+			Refresh();
+		}
+
+		Portlet.gotoPortletOptions(
+			portletName = "Blueprints Options",
+			portletOption = "Configuration");
+
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		Button.clickSelect();
+
+		WaitForElementPresent(
+			key_blueprintTitle = ${blueprintTitle},
+			locator1 = "Blueprints#BLUEPRINTS_OPTION_WIDGET_SELECT_BLUEPRINT");
+
+		Click(
+			key_blueprintTitle = ${blueprintTitle},
+			locator1 = "Blueprints#BLUEPRINTS_OPTION_WIDGET_SELECT_BLUEPRINT");
+
+		SelectFrameTop();
+
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+
+		IFrame.closeFrame();
+
+		Portlet.viewBody(
+			portletBody = "Blueprint: ${blueprintTitle}",
+			portletName = "Blueprints Options");
+	}
+
+	@summary = "Default summary"
+	macro configureElementDropdown(dropdownName = null, option = null) {
+		Click(
+			key_dropdownName = ${dropdownName},
+			locator1 = "Blueprints#BLUEPRINTS_ADDED_ELEMENT_GENERIC_DROPDOWN");
+
+		Click.clickNoMouseOver(
+			key_dropdownName = ${dropdownName},
+			key_option = ${option},
+			locator1 = "Blueprints#BLUEPRINTS_ADDED_ELEMENT_GENERIC_DROPDOWN_OPTION");
+	}
+
+	@summary = "Default summary"
+	macro configureFederatedSearchKeyForOptionsWidget(federatedSearchKey = null) {
+		Portlet.gotoPortletOptions(
+			portletName = "Blueprints Options",
+			portletOption = "Configuration");
+
+		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+
+		Type(
+			key_fieldLabel = "Federated Search Key",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = ${federatedSearchKey});
+
+		Button.clickSave();
+
+		Alert.viewSuccessMessage();
+
+		IFrame.closeFrame();
+	}
+
+	@summary = "Default summary"
+	macro createBlueprint(description = null, title = null) {
+		Click(locator1 = "Button#PLUS");
+
+		PortletEntry.inputTitle(title = ${title});
+
+		if (isSet(description)) {
+			PortletEntry.inputDescription(description = ${description});
+		}
+
+		PortletEntry.create();
+	}
+
+	@summary = "Default summary"
+	macro createElement(title = null, elementSourceJson = null) {
+		Navigator.gotoNavItem(navItem = "Elements");
+
+		Click(locator1 = "Button#PLUS");
+
+		PortletEntry.inputTitle(title = ${title});
+
+		Button.click(button = "Create");
+
+		if (isSet(elementSourceJson)) {
+			Type.typeCodeMirrorEditorNoError(
+				locator1 = "Blueprints#CODE_MIRROR_EDITOR",
+				value1 = ${elementSourceJson});
+		}
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro deleteEntry(title = null) {
+		Blueprints.gotoEntryMenuItem(
+			menuItem = "Delete",
+			title = ${title});
+
+		Confirm(value1 = "null");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro getBlueprintID(title = null) {
+		Variables.assertDefined(parameterList = ${title});
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/o/search-experiences-rest/v1.0/sxp-blueprints?search=${title} \
+				-H 'accept: application/json' \
+				-u ${userLoginInfo}
+		''';
+
+		var blueprintId = JSONCurlUtil.get(${curl}, "$.items[?(@['title'] == '${title}')]['id']");
+
+		echo("## ID for Blueprint ${title}: ${blueprintId}");
+
+		return ${blueprintId};
+	}
+
+	@summary = "Default summary"
+	macro getElementID(title = null) {
+		Variables.assertDefined(parameterList = ${title});
+
+		var portalURL = JSONCompany.getPortalURL();
+		var userLoginInfo = JSONUtil2.formatJSONUser();
+
+		var curl = '''
+			${portalURL}/o/search-experiences-rest/v1.0/sxp-elements?search=${title} \
+				-H 'accept: application/json' \
+				-u ${userLoginInfo}
+		''';
+
+		var elementId = JSONCurlUtil.get(${curl}, "$.items[?(@['title'] == '${title}')]['id']");
+
+		echo("## ID for Element ${title}: ${elementId}");
+
+		return ${elementId};
+	}
+
+	@summary = "Default summary"
+	macro gotoBlueprint(title = null) {
+		Blueprints.gotoEntry(title = ${title});
+	}
+
+	@summary = "Default summary"
+	macro gotoElement(searchForElement = null, element = null) {
+		Navigator.gotoNavItem(navItem = "Elements");
+
+		if (${searchForElement} == "true") {
+			Search.searchCP(searchTerm = ${element});
+		}
+
+		Blueprints.gotoEntry(title = ${element});
+	}
+
+	@summary = "Default summary"
+	macro gotoEntry(title = null) {
+		Click(
+			key_entryTitle = ${title},
+			locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_TITLE");
+	}
+
+	@summary = "Default summary"
+	macro gotoEntryMenuItem(title = null, menuItem = null) {
+		if (IsElementNotPresent(locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_DROPDOWN_MENU_OPEN")) {
+			Blueprints.openEntryMenu(title = ${title});
+		}
+
+		MenuItem.clickNoError(menuItem = ${menuItem});
+	}
+
+	@summary = "Default summary"
+	macro openBlueprintsAdmin(locale = null) {
+		if (!(isSet(siteURLKey))) {
+			var siteURLKey = "guest";
+		}
+
+		if (isSet(locale)) {
+			Navigator.openWithAppendToBaseURL(urlAppend = "${locale}/group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_search_experiences_web_internal_blueprint_admin_portlet_SXPBlueprintAdminPortlet");
+		}
+		else {
+			Navigator.openWithAppendToBaseURL(urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_search_experiences_web_internal_blueprint_admin_portlet_SXPBlueprintAdminPortlet");
+		}
+	}
+
+	@summary = "Default summary"
+	macro openEntryMenu(title = null) {
+		Click.waitForMenuToggleJSClick(
+			key_entryTitle = ${title},
+			locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_VERTICAL_ELLIPSIS");
+	}
+
+	@summary = "Default summary"
+	macro searchAddElementsSidebar(element = null) {
+		if (IsElementPresent(locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_SEARCH_CLEAR")) {
+			Click.clickNoMouseOver(locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_SEARCH_CLEAR");
+		}
+
+		Type.sendKeysApplicationSearch(
+			locator1 = "Blueprints#BLUEPRINTS_ADD_ELEMENTS_SIDEBAR_SEARCH_BAR",
+			value1 = ${element});
+	}
+
+	@summary = "Default summary"
+	macro searchBlueprintsPreview(searchTerm = null, attributesKey = null, attributesValue = null) {
+		if (IsNotVisible(locator1 = "Blueprints#BLUEPRINTS_PREVIEW_SEARCH_BAR")) {
+			Click(locator1 = "Button#PREVIEW");
+		}
+
+		if (isSet(attributesKey)) {
+			Click.javaScriptClick(
+				key_title = "Search Context Attributes",
+				locator1 = "Button#ANY_TITLE");
+
+			Type(
+				locator1 = "TextInput#KEY",
+				value1 = ${attributesKey});
+
+			Type(
+				key_fieldLabel = "Value",
+				locator1 = "TextInput#GENERIC_TEXT_INPUT",
+				value1 = ${attributesValue});
+
+			Button.clickDone();
+		}
+
+		Type(
+			locator1 = "Blueprints#BLUEPRINTS_PREVIEW_SEARCH_BAR",
+			value1 = ${searchTerm});
+
+		var browserType = PropsUtil.get("browser.type");
+
+		if (${browserType} == "safari") {
+			Click(locator1 = "Icon#BASIC_SEARCH");
+		}
+		else {
+			KeyPress(
+				locator1 = "Blueprints#BLUEPRINTS_PREVIEW_SEARCH_BAR",
+				value1 = "\RETURN");
+		}
+
+		WaitForLiferayEvent.initializeLiferayEventLog();
+	}
+
+	@summary = "Default summary"
+	macro selectAddedElementMenuItem(menuItem = null, element = null) {
+		Click(
+			key_element = ${element},
+			locator1 = "Blueprints#BLUEPRINTS_ADDED_ELEMENT_VERTICAL_ELLIPSIS");
+
+		MenuItem.clickNoError(menuItem = ${menuItem});
+	}
+
+	@summary = "Default summary"
+	macro setTitleAndDescriptionLocalization(currentLocale = null, description = null, locale = null, title = null) {
+		Click(
+			key_currentLocale = StringUtil.lowerCase(${currentLocale}),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		Click(
+			key_locale = ${locale},
+			locator1 = "Translation#DROPDOWN_MENU_ITEM");
+
+		AssertVisible(
+			key_currentLocale = StringUtil.lowerCase(${locale}),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		PortletEntry.inputTitle(title = ${title});
+
+		PortletEntry.inputDescription(description = ${description});
+	}
+
+	@summary = "Default summary"
+	macro viewDownloadedContent(fileName = null, text = null) {
+		var tempDir = PropsUtil.get("output.dir.name");
+
+		var fileContent = FileUtil.read("${tempDir}/${fileName}");
+
+		if (contains(${fileContent}, ${text})) {
+			echo("File ${fileName} contains text ${text}");
+		}
+		else {
+			fail("File ${fileName} does not contain text ${text}");
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewEntriesSpecificOrder(entryList = null) {
+		var entryOrder = 0;
+
+		for (var entryTitle : list ${entryList}) {
+			var entryOrder = ${entryOrder} + 1;
+
+			AssertTextEquals.assertPartialText(
+				key_rowNumber = ${entryOrder},
+				locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_ROW_NUMBER",
+				value1 = ${entryTitle});
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewEntryDescription(description = null, title = null) {
+		AssertTextEquals.assertPartialText(
+			key_entryTitle = ${title},
+			locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_DESCRIPTION",
+			value1 = ${description});
+	}
+
+	@summary = "Default summary"
+	macro viewEntryTitle(title = null) {
+		AssertElementPresent(
+			key_entryTitle = ${title},
+			locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_TITLE");
+	}
+
+	@summary = "Default summary"
+	macro viewNoEntry(title = null) {
+		AssertElementNotPresent(
+			key_entryTitle = ${title},
+			locator1 = "Blueprints#BLUEPRINTS_ADMIN_ENTRY_TITLE");
+	}
+
+	@summary = "Default summary"
+	macro viewTitleAndDescriptionLocalization(currentLocale = null, description = null, locale = null, title = null) {
+		Click(
+			key_currentLocale = StringUtil.lowerCase(${currentLocale}),
+			locator1 = "Button#TRANSLATIONS_LOCALIZATION");
+
+		AssertElementPresent(
+			key_locale = ${locale},
+			locator1 = "Blueprints#LANGUAGE_TRANSLATED_LABEL");
+
+		Click(
+			key_locale = ${locale},
+			locator1 = "Translation#DROPDOWN_MENU_ITEM");
+
+		AssertElementPresent(
+			locator1 = "TextInput#TITLE",
+			value1 = ${title});
+
+		AssertElementPresent(
+			locator1 = "TextArea#DESCRIPTION",
+			value1 = ${description});
+	}
+
+}

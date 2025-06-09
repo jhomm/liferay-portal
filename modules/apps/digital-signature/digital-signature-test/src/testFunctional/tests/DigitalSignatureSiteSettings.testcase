@@ -1,0 +1,108 @@
+@component-name = "portal-bpm"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Digital Signature";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginUI();
+
+		task ("Configure digital signature with credentials") {
+			PortalSettings.openInstanceSettingsAdmin();
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "Digital Signature",
+				configurationName = "Digital Signature Configuration",
+				configurationScope = "Virtual Instance Scope");
+
+			FormFields.enableCheckbox(fieldName = "enabled");
+		}
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			User.logoutPG();
+		}
+	}
+
+	@description = "This is a test for LPS-131427. Verify if Digital Signature can be enable in Site Settings, using the Always Override Strategy"
+	@priority = 5
+	test CanEnableDigitalSignatureBySiteSettings {
+		property portal.release = "quarantine";
+
+		task ("Given that the digital signature site strategy is set as 'Always Override'") {
+			DigitalSignature.selectSiteStrategy(siteStrategy = "Always Override");
+
+			SystemSettings.saveConfiguration();
+		}
+
+		task ("When the user set the credentials by site settings") {
+			DigitalSignature.goToDigitalSignatureByPortlet(nameComponent = "Digital Signature");
+
+			DigitalSignature.enableDigitalSignature(environment = "Sandbox");
+
+			SystemSettings.saveConfiguration();
+		}
+
+		task ("And creates a Digital Signature envelope") {
+			DigitalSignature.createEnvelope(
+				addEmail = "test@liferay.com",
+				addFullName = "Recipient Full Name",
+				addMessage = "Email Message",
+				addName = "Poshi Test CannotCreateEnvelopeWithUnsupportedFiles",
+				addSubject = "Email Subject",
+				dmDocumentFile = "Document_2.docx");
+
+			Button.click(button = "Send");
+		}
+
+		task ("Then the user can see that digital signature can be enabled using the Always Override strategy") {
+			DigitalSignature.viewDigitalSignatureEnabled(dsStatus = "Sent");
+		}
+	}
+
+	@description = "This is a test for LPS-131427. Verify if Digital Signature data persists in site settings after enabled with Always Inherit strategy"
+	@priority = 5
+	test DataPersistsAfterEnabledAlwaysInheritStrategy {
+		task ("Given the digital signature credentials are set with Always Inherit strategy") {
+			DigitalSignature.enableDigitalSignature(
+				environment = "Sandbox",
+				siteStrategy = "Always Inherit");
+		}
+
+		task ("When the user goes to Digital Signature by portlet") {
+			DigitalSignature.goToDigitalSignatureByPortlet(nameComponent = "Digital Signature");
+		}
+
+		task ("Then Digital Signature data persists in site settings after enabled with Always Inherit strategy") {
+			DigitalSignature.canSeeDataPersistAfterEnabled(siteStrategy = "Always Inherit");
+		}
+	}
+
+	@description = "This is a test for LPS-131427. Verify if Digital Signature data persists in site settings after enabled with Inherit or Override strategy"
+	@priority = 5
+	test DataPersistsAfterEnabledInheritOrOverrideStrategy {
+		task ("Given the digital signature using the Inherit or Override strategy") {
+			DigitalSignature.enableDigitalSignature(
+				environment = "Sandbox",
+				siteStrategy = "Inherit or Override");
+		}
+
+		task ("When the user goes to Digital Signature by portlet") {
+			DigitalSignature.goToDigitalSignatureByPortlet(nameComponent = "Digital Signature");
+		}
+
+		task ("Then Digital Signature data persists in site settings after enabled with Inherit or Override strategy") {
+			DigitalSignature.canSeeDataPersistAfterEnabled(siteStrategy = "Inherit or Override");
+		}
+	}
+
+}

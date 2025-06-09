@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet.action;
 
+import com.liferay.layout.importer.LayoutsImportStrategy;
+import com.liferay.layout.importer.LayoutsImporter;
+import com.liferay.layout.importer.LayoutsImporterResultEntry;
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporter;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporterResultEntry;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.layout.page.template.util.CheckUnlockedLayoutThreadLocal;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -31,12 +25,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.io.File;
 
+import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,9 +40,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"mvc.command.name=/layout_page_template_admin/import"
 	},
 	service = MVCActionCommand.class
@@ -58,7 +52,7 @@ public class ImportMVCActionCommand extends BaseMVCActionCommand {
 	protected void addSuccessMessage(
 		ActionRequest actionRequest, ActionResponse actionResponse) {
 
-		String successMessage = LanguageUtil.get(
+		String successMessage = _language.get(
 			_portal.getHttpServletRequest(actionRequest),
 			"the-file-was-processed-correctly");
 
@@ -84,25 +78,38 @@ public class ImportMVCActionCommand extends BaseMVCActionCommand {
 		boolean overwrite = ParamUtil.getBoolean(
 			actionRequest, "overwrite", true);
 
-		try {
-			List<LayoutPageTemplatesImporterResultEntry>
-				layoutPageTemplatesImporterResultEntries =
-					_layoutPageTemplatesImporter.importFile(
-						themeDisplay.getUserId(),
-						themeDisplay.getScopeGroupId(),
-						layoutPageTemplateCollectionId, file, overwrite);
+		LayoutsImportStrategy layoutsImportStrategy =
+			LayoutsImportStrategy.OVERWRITE;
 
-			if (ListUtil.isEmpty(layoutPageTemplatesImporterResultEntries)) {
+		if (!overwrite) {
+			layoutsImportStrategy = LayoutsImportStrategy.DO_NOT_OVERWRITE;
+		}
+
+		try {
+			List<LayoutsImporterResultEntry> layoutsImporterResultEntries =
+				Collections.emptyList();
+
+			try (SafeCloseable safeCloseable =
+					CheckUnlockedLayoutThreadLocal.
+						setCheckUnlockedLayoutWithSafeCloseable(false)) {
+
+				layoutsImporterResultEntries = _layoutsImporter.importFile(
+					themeDisplay.getUserId(), themeDisplay.getScopeGroupId(),
+					layoutPageTemplateCollectionId, file, layoutsImportStrategy,
+					true);
+			}
+
+			if (ListUtil.isEmpty(layoutsImporterResultEntries)) {
 				return;
 			}
 
 			SessionMessages.add(
-				actionRequest, "layoutPageTemplatesImporterResultEntries",
-				layoutPageTemplatesImporterResultEntries);
+				actionRequest, "layoutsImporterResultEntries",
+				layoutsImporterResultEntries);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			SessionErrors.add(actionRequest, exception.getClass(), exception);
@@ -115,7 +122,10 @@ public class ImportMVCActionCommand extends BaseMVCActionCommand {
 		ImportMVCActionCommand.class);
 
 	@Reference
-	private LayoutPageTemplatesImporter _layoutPageTemplatesImporter;
+	private Language _language;
+
+	@Reference
+	private LayoutsImporter _layoutsImporter;
 
 	@Reference
 	private Portal _portal;

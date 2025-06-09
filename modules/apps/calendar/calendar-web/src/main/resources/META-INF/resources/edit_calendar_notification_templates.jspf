@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,34 +17,44 @@ CalendarNotificationTemplate calendarNotificationTemplate = CalendarNotification
 
 long calendarNotificationTemplateId = BeanPropertiesUtil.getLong(calendarNotificationTemplate, "calendarNotificationTemplateId");
 
-String fromAddress = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_ADDRESS, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS));
 String fromName = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_NAME, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_NAME));
-String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificationTemplate, "body", NotificationUtil.getDefaultTemplate(notificationType, notificationTemplateType, NotificationField.BODY));
+String fromAddress = NotificationUtil.getTemplatePropertyValue(calendarNotificationTemplate, CalendarNotificationTemplateConstants.PROPERTY_FROM_ADDRESS, PrefsPropsUtil.getString(PropsKeys.ADMIN_EMAIL_FROM_ADDRESS));
+String body = BeanPropertiesUtil.getString(calendarNotificationTemplate, "body", NotificationUtil.getDefaultTemplate(notificationType, notificationTemplateType, NotificationField.BODY));
 %>
 
 <liferay-ui:header
 	backURL="<%= backURL %>"
-	cssClass="container-fluid container-fluid-max-xl"
+	cssClass="container-fluid container-fluid-max-xxxl"
 	localizeTitle="<%= false %>"
 	title="<%= calendarName %>"
 />
 
-<aui:nav-bar cssClass="navbar-collapse-absolute navbar-expand-md navbar-underline navigation-bar navigation-bar-light" markupView="lexicon">
-	<aui:nav cssClass="navbar-nav">
+<clay:navigation-bar
+	cssClass="container-fluid-max-xxxl"
+	navigationItems='<%=
+		new JSPNavigationItemList(pageContext) {
+			{
+				navigationURL.setParameter("tabs3", "invite-email");
 
-		<%
-		navigationURL.setParameter("tabs3", "invite-email");
-		%>
+				add(
+					navigationItem -> {
+						navigationItem.setActive(tabs3.equals("invite-email"));
+						navigationItem.setHref(navigationURL.toString());
+						navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "invite-email"));
+					});
 
-		<aui:nav-item href="<%= navigationURL.toString() %>" label="invite-email" selected='<%= tabs3.equals("invite-email") %>' />
+				navigationURL.setParameter("tabs3", "reminder-email");
 
-		<%
-		navigationURL.setParameter("tabs3", "reminder-email");
-		%>
-
-		<aui:nav-item href="<%= navigationURL.toString() %>" label="reminder-email" selected='<%= tabs3.equals("reminder-email") %>' />
-	</aui:nav>
-</aui:nav-bar>
+				add(
+					navigationItem -> {
+						navigationItem.setActive(tabs3.equals("reminder-email"));
+						navigationItem.setHref(navigationURL.toString());
+						navigationItem.setLabel(LanguageUtil.get(httpServletRequest, "reminder-email"));
+					});
+			}
+		}
+	%>'
+/>
 
 <liferay-portlet:actionURL name="updateCalendarNotificationTemplate" var="updateCalendarNotificationTemplateURL" />
 
@@ -79,16 +80,16 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 
 		<aui:field-wrapper label="body">
 			<liferay-editor:editor
-				contents="<%= notificationTemplateBody %>"
+				contents="<%= body %>"
 				editorName="ckeditor"
 			/>
 
-			<aui:input name="body" type="hidden" value="<%= notificationTemplateBody %>" />
+			<aui:input name="body" type="hidden" value="<%= body %>" />
 		</aui:field-wrapper>
 	</aui:fieldset>
 
 	<div class="definition-of-terms">
-		<h4><liferay-ui:message key="definition-of-terms" /></h4>
+		<div class="h4"><liferay-ui:message key="definition-of-terms" /></div>
 
 		<dl>
 			<dt>
@@ -107,19 +108,19 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 				[$EVENT_LOCATION$]
 			</dt>
 			<dd>
-				<liferay-ui:message key="the-calendar-booking-location" />
+				<liferay-ui:message key="the-event-location" />
 			</dd>
 			<dt>
 				[$EVENT_START_DATE$]
 			</dt>
 			<dd>
-				<liferay-ui:message key="the-calendar-booking-start-date" />
+				<liferay-ui:message key="the-event-start-date" />
 			</dd>
 			<dt>
 				[$EVENT_TITLE$]
 			</dt>
 			<dd>
-				<liferay-ui:message key="the-calendar-booking-title" />
+				<liferay-ui:message key="the-event-title" />
 			</dd>
 
 			<c:if test="<%= notificationTemplateType == NotificationTemplateType.INVITE %>">
@@ -192,7 +193,8 @@ String notificationTemplateBody = BeanPropertiesUtil.getString(calendarNotificat
 		);
 
 		if (notificationTemplateContentBody) {
-			notificationTemplateContentBody.value = window.<portlet:namespace />editor.getHTML();
+			notificationTemplateContentBody.value =
+				window.<portlet:namespace />editor.getHTML();
 		}
 
 		submitForm(document.<portlet:namespace />fm);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.internal.dto.v1_0.converter;
@@ -18,7 +9,7 @@ import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.service.COREntryService;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRule;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.Status;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.language.LanguageResources;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -31,9 +22,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.order.rule.model.COREntry",
-	service = {DTOConverter.class, OrderRuleDTOConverter.class}
+	service = DTOConverter.class
 )
 public class OrderRuleDTOConverter
 	implements DTOConverter<COREntry, OrderRule> {
@@ -52,23 +42,25 @@ public class OrderRuleDTOConverter
 
 		return new OrderRule() {
 			{
-				actions = dtoConverterContext.getActions();
-				active = corEntry.isActive();
-				description = corEntry.getDescription();
-				displayDate = corEntry.getDisplayDate();
-				expirationDate = corEntry.getExpirationDate();
-				externalReferenceCode = corEntry.getExternalReferenceCode();
-				id = corEntry.getCOREntryId();
-				name = corEntry.getName();
-				type = corEntry.getType();
-				typeSettings = corEntry.getTypeSettings();
-				workflowStatusInfo = _toStatus(
-					WorkflowConstants.getStatusLabel(corEntry.getStatus()),
-					LanguageUtil.get(
-						LanguageResources.getResourceBundle(
-							dtoConverterContext.getLocale()),
-						WorkflowConstants.getStatusLabel(corEntry.getStatus())),
-					corEntry.getStatus());
+				setActions(dtoConverterContext::getActions);
+				setActive(corEntry::isActive);
+				setDescription(corEntry::getDescription);
+				setDisplayDate(corEntry::getDisplayDate);
+				setExpirationDate(corEntry::getExpirationDate);
+				setExternalReferenceCode(corEntry::getExternalReferenceCode);
+				setId(corEntry::getCOREntryId);
+				setName(corEntry::getName);
+				setType(corEntry::getType);
+				setTypeSettings(corEntry::getTypeSettings);
+				setWorkflowStatusInfo(
+					() -> _toStatus(
+						WorkflowConstants.getStatusLabel(corEntry.getStatus()),
+						_language.get(
+							LanguageResources.getResourceBundle(
+								dtoConverterContext.getLocale()),
+							WorkflowConstants.getStatusLabel(
+								corEntry.getStatus())),
+						corEntry.getStatus()));
 			}
 		};
 	}
@@ -79,14 +71,17 @@ public class OrderRuleDTOConverter
 
 		return new Status() {
 			{
-				code = statusCode;
-				label = orderTypeStatusLabel;
-				label_i18n = orderTypeStatusLabelI18n;
+				setCode(() -> statusCode);
+				setLabel(() -> orderTypeStatusLabel);
+				setLabel_i18n(() -> orderTypeStatusLabelI18n);
 			}
 		};
 	}
 
 	@Reference
 	private COREntryService _corEntryService;
+
+	@Reference
+	private Language _language;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -69,10 +59,10 @@ public class DLFileEntryMetadataModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"fileEntryMetadataId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"DDMStorageId", Types.BIGINT},
-		{"DDMStructureId", Types.BIGINT}, {"fileEntryId", Types.BIGINT},
-		{"fileVersionId", Types.BIGINT}
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"fileEntryMetadataId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"DDMStorageId", Types.BIGINT}, {"DDMStructureId", Types.BIGINT},
+		{"fileEntryId", Types.BIGINT}, {"fileVersionId", Types.BIGINT}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -82,6 +72,7 @@ public class DLFileEntryMetadataModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("fileEntryMetadataId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("DDMStorageId", Types.BIGINT);
@@ -91,7 +82,7 @@ public class DLFileEntryMetadataModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table DLFileEntryMetadata (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,fileEntryMetadataId LONG not null,companyId LONG,DDMStorageId LONG,DDMStructureId LONG,fileEntryId LONG,fileVersionId LONG,primary key (fileEntryMetadataId, ctCollectionId))";
+		"create table DLFileEntryMetadata (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,fileEntryMetadataId LONG not null,companyId LONG,DDMStorageId LONG,DDMStructureId LONG,fileEntryId LONG,fileVersionId LONG,primary key (fileEntryMetadataId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table DLFileEntryMetadata";
@@ -142,26 +133,32 @@ public class DLFileEntryMetadataModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FILEENTRYID_COLUMN_BITMASK = 4L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FILEVERSIONID_COLUMN_BITMASK = 8L;
+	public static final long FILEENTRYID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 16L;
+	public static final long FILEVERSIONID_COLUMN_BITMASK = 16L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FILEENTRYMETADATAID_COLUMN_BITMASK = 32L;
+	public static final long FILEENTRYMETADATAID_COLUMN_BITMASK = 64L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -243,115 +240,111 @@ public class DLFileEntryMetadataModelImpl
 	public Map<String, Function<DLFileEntryMetadata, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DLFileEntryMetadata, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DLFileEntryMetadata>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DLFileEntryMetadata.class.getClassLoader(),
-			DLFileEntryMetadata.class, ModelWrapper.class);
+		private static final Map<String, Function<DLFileEntryMetadata, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DLFileEntryMetadata> constructor =
-				(Constructor<DLFileEntryMetadata>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DLFileEntryMetadata, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<DLFileEntryMetadata, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DLFileEntryMetadata::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DLFileEntryMetadata::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DLFileEntryMetadata::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				DLFileEntryMetadata::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"fileEntryMetadataId",
+				DLFileEntryMetadata::getFileEntryMetadataId);
+			attributeGetterFunctions.put(
+				"companyId", DLFileEntryMetadata::getCompanyId);
+			attributeGetterFunctions.put(
+				"DDMStorageId", DLFileEntryMetadata::getDDMStorageId);
+			attributeGetterFunctions.put(
+				"DDMStructureId", DLFileEntryMetadata::getDDMStructureId);
+			attributeGetterFunctions.put(
+				"fileEntryId", DLFileEntryMetadata::getFileEntryId);
+			attributeGetterFunctions.put(
+				"fileVersionId", DLFileEntryMetadata::getFileVersionId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DLFileEntryMetadata, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DLFileEntryMetadata, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DLFileEntryMetadata, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<DLFileEntryMetadata, Object>>();
-		Map<String, BiConsumer<DLFileEntryMetadata, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<DLFileEntryMetadata, ?>>();
+		private static final Map
+			<String, BiConsumer<DLFileEntryMetadata, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", DLFileEntryMetadata::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DLFileEntryMetadata::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", DLFileEntryMetadata::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<DLFileEntryMetadata, String>)
-				DLFileEntryMetadata::setUuid);
-		attributeGetterFunctions.put(
-			"fileEntryMetadataId", DLFileEntryMetadata::getFileEntryMetadataId);
-		attributeSetterBiConsumers.put(
-			"fileEntryMetadataId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setFileEntryMetadataId);
-		attributeGetterFunctions.put(
-			"companyId", DLFileEntryMetadata::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setCompanyId);
-		attributeGetterFunctions.put(
-			"DDMStorageId", DLFileEntryMetadata::getDDMStorageId);
-		attributeSetterBiConsumers.put(
-			"DDMStorageId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setDDMStorageId);
-		attributeGetterFunctions.put(
-			"DDMStructureId", DLFileEntryMetadata::getDDMStructureId);
-		attributeSetterBiConsumers.put(
-			"DDMStructureId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setDDMStructureId);
-		attributeGetterFunctions.put(
-			"fileEntryId", DLFileEntryMetadata::getFileEntryId);
-		attributeSetterBiConsumers.put(
-			"fileEntryId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setFileEntryId);
-		attributeGetterFunctions.put(
-			"fileVersionId", DLFileEntryMetadata::getFileVersionId);
-		attributeSetterBiConsumers.put(
-			"fileVersionId",
-			(BiConsumer<DLFileEntryMetadata, Long>)
-				DLFileEntryMetadata::setFileVersionId);
+		static {
+			Map<String, BiConsumer<DLFileEntryMetadata, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<DLFileEntryMetadata, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<DLFileEntryMetadata, String>)
+					DLFileEntryMetadata::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<DLFileEntryMetadata, String>)
+					DLFileEntryMetadata::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"fileEntryMetadataId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setFileEntryMetadataId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"DDMStorageId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setDDMStorageId);
+			attributeSetterBiConsumers.put(
+				"DDMStructureId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setDDMStructureId);
+			attributeSetterBiConsumers.put(
+				"fileEntryId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setFileEntryId);
+			attributeSetterBiConsumers.put(
+				"fileVersionId",
+				(BiConsumer<DLFileEntryMetadata, Long>)
+					DLFileEntryMetadata::setFileVersionId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -408,6 +401,34 @@ public class DLFileEntryMetadataModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@Override
@@ -595,6 +616,8 @@ public class DLFileEntryMetadataModelImpl
 		dlFileEntryMetadataImpl.setMvccVersion(getMvccVersion());
 		dlFileEntryMetadataImpl.setCtCollectionId(getCtCollectionId());
 		dlFileEntryMetadataImpl.setUuid(getUuid());
+		dlFileEntryMetadataImpl.setExternalReferenceCode(
+			getExternalReferenceCode());
 		dlFileEntryMetadataImpl.setFileEntryMetadataId(
 			getFileEntryMetadataId());
 		dlFileEntryMetadataImpl.setCompanyId(getCompanyId());
@@ -619,6 +642,8 @@ public class DLFileEntryMetadataModelImpl
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		dlFileEntryMetadataImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
+		dlFileEntryMetadataImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		dlFileEntryMetadataImpl.setFileEntryMetadataId(
 			this.<Long>getColumnOriginalValue("fileEntryMetadataId"));
 		dlFileEntryMetadataImpl.setCompanyId(
@@ -719,6 +744,18 @@ public class DLFileEntryMetadataModelImpl
 			dlFileEntryMetadataCacheModel.uuid = null;
 		}
 
+		dlFileEntryMetadataCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			dlFileEntryMetadataCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			dlFileEntryMetadataCacheModel.externalReferenceCode = null;
+		}
+
 		dlFileEntryMetadataCacheModel.fileEntryMetadataId =
 			getFileEntryMetadataId();
 
@@ -785,47 +822,19 @@ public class DLFileEntryMetadataModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DLFileEntryMetadata, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DLFileEntryMetadata, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DLFileEntryMetadata, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DLFileEntryMetadata)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DLFileEntryMetadata>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DLFileEntryMetadata.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _fileEntryMetadataId;
 	private long _companyId;
 	private long _DDMStorageId;
@@ -837,7 +846,8 @@ public class DLFileEntryMetadataModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<DLFileEntryMetadata, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -865,6 +875,8 @@ public class DLFileEntryMetadataModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("fileEntryMetadataId", _fileEntryMetadataId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("DDMStorageId", _DDMStorageId);
@@ -900,17 +912,19 @@ public class DLFileEntryMetadataModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("fileEntryMetadataId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("fileEntryMetadataId", 16L);
 
-		columnBitmasks.put("DDMStorageId", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("DDMStructureId", 64L);
+		columnBitmasks.put("DDMStorageId", 64L);
 
-		columnBitmasks.put("fileEntryId", 128L);
+		columnBitmasks.put("DDMStructureId", 128L);
 
-		columnBitmasks.put("fileVersionId", 256L);
+		columnBitmasks.put("fileEntryId", 256L);
+
+		columnBitmasks.put("fileVersionId", 512L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

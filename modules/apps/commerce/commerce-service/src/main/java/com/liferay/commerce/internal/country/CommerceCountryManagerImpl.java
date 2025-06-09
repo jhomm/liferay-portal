@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.country;
@@ -22,9 +13,13 @@ import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.sql.dsl.query.FromStep;
 import com.liferay.petra.sql.dsl.query.GroupByStep;
 import com.liferay.petra.sql.dsl.query.JoinStep;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.CountryTable;
+import com.liferay.portal.kernel.security.access.control.AccessControlled;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CountryLocalService;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
@@ -37,17 +32,25 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pei-Jung Lan
  */
+@AccessControlled
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"json.web.service.context.name=commerce",
 		"json.web.service.context.path=CommerceCountryManager"
 	},
-	service = CommerceCountryManager.class
+	service = AopService.class
 )
 @JSONWebService
-public class CommerceCountryManagerImpl implements CommerceCountryManager {
+public class CommerceCountryManagerImpl
+	implements AopService, CommerceCountryManager {
 
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	@Override
+	public Class<?>[] getAopInterfaces() {
+		return new Class<?>[] {CommerceCountryManager.class};
+	}
+
+	@Override
 	public List<Country> getBillingCountries(
 		long companyId, boolean active, boolean billingAllowed) {
 
@@ -71,6 +74,7 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 			));
 	}
 
+	@Override
 	public List<Country> getBillingCountriesByChannelId(
 		long channelId, int start, int end) {
 
@@ -86,6 +90,7 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 			));
 	}
 
+	@Override
 	public List<Country> getShippingCountries(
 		long companyId, boolean active, boolean shippingAllowed) {
 
@@ -109,6 +114,7 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 			));
 	}
 
+	@Override
 	public List<Country> getShippingCountriesByChannelId(
 		long channelId, int start, int end) {
 
@@ -124,6 +130,7 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 			));
 	}
 
+	@Override
 	public List<Country> getWarehouseCountries(long companyId, boolean all) {
 		return _countryLocalService.dslQuery(
 			DSLQueryFactoryUtil.selectDistinct(
@@ -140,12 +147,12 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 					companyId
 				).and(
 					() -> {
-						if (!all) {
-							return CommerceInventoryWarehouseTable.INSTANCE.
-								active.eq(true);
+						if (all) {
+							return null;
 						}
 
-						return null;
+						return CommerceInventoryWarehouseTable.INSTANCE.active.
+							eq(true);
 					}
 				)
 			).orderBy(
@@ -168,7 +175,11 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 
 		return joinStep.where(
 			() -> {
-				Predicate predicate = CountryTable.INSTANCE.active.eq(true);
+				Predicate predicate = CountryTable.INSTANCE.companyId.eq(
+					CompanyThreadLocal.getCompanyId()
+				).and(
+					CountryTable.INSTANCE.active.eq(true)
+				);
 
 				Predicate groupFilterPredicate =
 					CountryTable.INSTANCE.groupFilterEnabled.eq(false);
@@ -184,13 +195,22 @@ public class CommerceCountryManagerImpl implements CommerceCountryManager {
 						commerceChannelId));
 
 				groupFilterPredicate = groupFilterPredicate.or(
-					channelFilterPredicate);
+					channelFilterPredicate.withParentheses());
 
-				predicate = predicate.and(groupFilterPredicate);
 				predicate = predicate.and(
-					CountryTable.INSTANCE.billingAllowed.eq(billingAllowed));
-				predicate = predicate.and(
-					CountryTable.INSTANCE.shippingAllowed.eq(shippingAllowed));
+					groupFilterPredicate.withParentheses());
+
+				if (billingAllowed) {
+					predicate = predicate.and(
+						CountryTable.INSTANCE.billingAllowed.eq(
+							billingAllowed));
+				}
+
+				if (shippingAllowed) {
+					predicate = predicate.and(
+						CountryTable.INSTANCE.shippingAllowed.eq(
+							shippingAllowed));
+				}
 
 				return predicate;
 			});

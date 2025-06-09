@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,42 +9,33 @@
 
 <%
 String ppid = ParamUtil.getString(request, "p_p_id");
-
-RenderContentLayoutDisplayContext renderContentLayoutDisplayContext = new RenderContentLayoutDisplayContext(request, response);
 %>
-
-<liferay-util:html-top>
-	<%= renderContentLayoutDisplayContext.getPortletHeaderPaths() %>
-</liferay-util:html-top>
 
 <liferay-ui:success key="layoutPublished" message="the-page-was-published-successfully" />
 
+<liferay-ui:success key="variantSaved" message="the-variant-was-saved-successfully" />
+
 <c:choose>
-	<c:when test="<%= (themeDisplay.isStatePopUp() || themeDisplay.isWidget() || layoutTypePortlet.hasStateMax()) && Validator.isNotNull(ppid) %>">
+	<c:when test="<%= (themeDisplay.isStatePopUp() || themeDisplay.isWidget()) && Validator.isNotNull(ppid) %>">
 
 		<%
-		String templateId = null;
-		String templateContent = null;
-		String langType = null;
-
-		if (themeDisplay.isStatePopUp() || themeDisplay.isWidget()) {
-			templateId = theme.getThemeId() + LayoutTemplateConstants.STANDARD_SEPARATOR + "pop_up";
-			templateContent = LayoutTemplateLocalServiceUtil.getContent("pop_up", true, theme.getThemeId());
-			langType = LayoutTemplateLocalServiceUtil.getLangType("pop_up", true, theme.getThemeId());
-		}
-		else {
-			ppid = StringUtil.split(layoutTypePortlet.getStateMax())[0];
-
-			templateId = theme.getThemeId() + LayoutTemplateConstants.STANDARD_SEPARATOR + "max";
-			templateContent = LayoutTemplateLocalServiceUtil.getContent("max", true, theme.getThemeId());
-			langType = LayoutTemplateLocalServiceUtil.getLangType("max", true, theme.getThemeId());
-		}
+		String templateContent = LayoutTemplateLocalServiceUtil.getContent("pop_up", true, theme.getThemeId());
 
 		if (Validator.isNotNull(templateContent)) {
-			RuntimePageUtil.processTemplate(request, response, ppid, new StringTemplateResource(templateId, templateContent), langType);
+			String templateId = theme.getThemeId() + LayoutTemplateConstants.STANDARD_SEPARATOR + "pop_up";
+
+			RuntimePageUtil.processTemplate(request, response, ppid, templateId, templateContent, LayoutTemplateLocalServiceUtil.getLangType("pop_up", true, theme.getThemeId()));
 		}
 		%>
 
+	</c:when>
+	<c:when test="<%= layoutTypePortlet.hasStateMax() && Validator.isNotNull(ppid) %>">
+		<liferay-layout:render-state-max-layout-structure />
+	</c:when>
+	<c:when test="<%= layout.getMasterLayoutPlid() > 0 %>">
+		<liferay-layout:render-fragment-layout
+			showPreview="<%= true %>"
+		/>
 	</c:when>
 	<c:otherwise>
 		<div class="layout-content portlet-layout" id="main-content" role="main">
@@ -64,8 +46,6 @@ RenderContentLayoutDisplayContext renderContentLayoutDisplayContext = new Render
 	</c:otherwise>
 </c:choose>
 
-<liferay-ui:layout-common />
-
-<liferay-util:html-bottom>
-	<%= renderContentLayoutDisplayContext.getPortletFooterPaths() %>
-</liferay-util:html-bottom>
+<liferay-layout:layout-common
+	displaySessionMessages="<%= true %>"
+/>

@@ -1,52 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayDropDown, {Align} from '@clayui/drop-down';
-import React, {useContext, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 
 import FrontendTokenSet from './FrontendTokenSet';
-import OldToolbar from './OldToolbar';
-import {StyleBookContext} from './StyleBookContext';
 import {config} from './config';
+import {useFrontendTokensValues} from './contexts/StyleBookEditorContext';
 
-export default function Sidebar() {
-	const {frontendTokensValues = {}} = useContext(StyleBookContext);
+export default React.memo(function Sidebar() {
 	const sidebarRef = useRef();
-
-	useEffect(() => {
-		if (sidebarRef.current) {
-			Object.values(frontendTokensValues).forEach(
-				({cssVariableMapping, value}) => {
-					sidebarRef.current.style.setProperty(
-						`--${cssVariableMapping}`,
-						value
-					);
-				}
-			);
-		}
-	}, [frontendTokensValues]);
 
 	return (
 		<div className="style-book-editor__sidebar" ref={sidebarRef}>
-			{!config.templatesPreviewEnabled && <OldToolbar />}
-			<div className="style-book-editor__sidebar-content">
+			<div className="panel-group-sm style-book-editor__sidebar-content">
 				<ThemeInformation />
 
 				{config.frontendTokenDefinition.frontendTokenCategories ? (
-					<FrontendTokenCategories />
+					<>
+						<FrontendTokenCategories />
+						<UpdateStyle sidebarRef={sidebarRef} />
+					</>
 				) : (
 					<ClayAlert className="m-3" displayType="info">
 						{Liferay.Language.get(
@@ -57,27 +35,102 @@ export default function Sidebar() {
 			</div>
 		</div>
 	);
+});
+
+function UpdateStyle({sidebarRef}) {
+	const frontendTokensValues = useFrontendTokensValues();
+
+	useEffect(() => {
+		if (sidebarRef.current) {
+			sidebarRef.current.removeAttribute('style');
+
+			Object.values(frontendTokensValues).forEach(
+				({cssVariableMapping, value}) => {
+					sidebarRef.current.style.setProperty(
+						`--${cssVariableMapping}`,
+						value
+					);
+				}
+			);
+		}
+	}, [frontendTokensValues, sidebarRef]);
+
+	return null;
 }
 
 function ThemeInformation() {
-	return (
-		<div className="pb-3">
-			<p className="small text-secondary">
-				{Liferay.Language.get(
-					'this-token-definition-belongs-to-the-theme-set-for-public-pages'
-				)}
-			</p>
-			<p className="mb-0 small">
-				<span className="font-weight-semi-bold">
-					{`${Liferay.Language.get('theme')}: `}
-				</span>
-				{config.themeName}
-			</p>
-		</div>
+	if (Liferay?.FeatureFlags?.['LPD-30204']) {
+		return (
+			<div className="pb-1">
+				<p className="small text-secondary">
+					{!IsValidFrontendTokenDefinition() ? (
+						<ClayAlert className="m-0" displayType="warning">
+							{Liferay.Language.get(
+								'the-current-theme-does-not-support-editing-style-book-values'
+							)}
+						</ClayAlert>
+					) : (
+						<p className="text-dark">
+							<p className="font-weight-bold mb-1">
+								{`${Liferay.Language.get(
+									'frontend-token-definition-provided-by'
+								)}`}
+							</p>
+
+							<p>{config.themeName}</p>
+						</p>
+					)}
+				</p>
+			</div>
+		);
+	}
+	else {
+		return (
+			<div className="pb-1">
+				<p className="small text-secondary">
+					{IsValidFrontendTokenDefinition() ? (
+						config.isPrivateLayoutsEnabled ? (
+							Liferay.Language.get(
+								'this-token-definition-belongs-to-the-theme-set-for-public-pages'
+							)
+						) : (
+							Liferay.Language.get(
+								'this-token-definition-belongs-to-the-theme-set-for-pages'
+							)
+						)
+					) : (
+						<ClayAlert className="m-0" displayType="warning">
+							{Liferay.Language.get(
+								'the-current-theme-does-not-support-editing-style-book-values'
+							)}
+						</ClayAlert>
+					)}
+				</p>
+
+				<p className="mb-0 small">
+					<span className="font-weight-semi-bold">
+						{`${Liferay.Language.get('theme')}: `}
+					</span>
+
+					{config.themeName}
+				</p>
+			</div>
+		);
+	}
+}
+
+function IsValidFrontendTokenDefinition() {
+	const frontendTokensValues = useFrontendTokensValues();
+	const frontendThemeValues = config.frontendTokens;
+
+	return Object.keys(frontendTokensValues).every(
+		(tokenValue) => frontendThemeValues[tokenValue]
 	);
 }
 
 function FrontendTokenCategories() {
+	const frontendTokensValues = useFrontendTokensValues();
+
 	const frontendTokenCategories =
 		config.frontendTokenDefinition.frontendTokenCategories;
 	const [active, setActive] = useState(false);
@@ -85,12 +138,26 @@ function FrontendTokenCategories() {
 		frontendTokenCategories[0]
 	);
 
+	const tokenValues = useMemo(() => {
+		const nextTokenValues = {...config.frontendTokens};
+
+		for (const [name, {value}] of Object.entries(frontendTokensValues)) {
+			nextTokenValues[name] = {
+				...nextTokenValues[name],
+				value: value || nextTokenValues[name].defaultValue,
+			};
+		}
+
+		return nextTokenValues;
+	}, [frontendTokensValues]);
+
 	return (
 		<>
 			{selectedCategory && (
 				<ClayDropDown
 					active={active}
 					alignmentPosition={Align.BottomLeft}
+					className="mb-4"
 					menuElementAttrs={{
 						containerProps: {
 							className: 'cadmin',
@@ -101,7 +168,7 @@ function FrontendTokenCategories() {
 						<ClayButton
 							className="form-control form-control-select form-control-sm mb-3 text-left"
 							displayType="secondary"
-							small
+							size="sm"
 							type="button"
 						>
 							{selectedCategory.label}
@@ -129,12 +196,13 @@ function FrontendTokenCategories() {
 			)}
 
 			{selectedCategory?.frontendTokenSets.map(
-				({frontendTokens, label, name}) => (
+				({frontendTokens, label, name}, index) => (
 					<FrontendTokenSet
 						frontendTokens={frontendTokens}
 						key={name}
 						label={label}
-						name={name}
+						open={index === 0}
+						tokenValues={tokenValues}
 					/>
 				)
 			)}

@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.settings.web.internal.portlet.action;
 
 import com.liferay.analytics.settings.web.internal.util.AnalyticsSettingsUtil;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -32,25 +23,20 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Arrays;
+import jakarta.portlet.ActionRequest;
+
 import java.util.Collections;
 import java.util.Dictionary;
-import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-
-import javax.portlet.ActionRequest;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -65,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/analytics_settings/add_channel"
 	},
 	service = MVCActionCommand.class
@@ -112,13 +98,13 @@ public class AddChannelMVCActionCommand extends BaseAnalyticsMVCActionCommand {
 				"name", group.getDescriptiveName(themeDisplay.getLocale()));
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 				"content.Language", themeDisplay.getLocale(), getClass());
 
 			return groupJSONObject.put(
-				"name", LanguageUtil.get(resourceBundle, "unknown"));
+				"name", _language.get(resourceBundle, "unknown"));
 		}
 	}
 
@@ -152,8 +138,6 @@ public class AddChannelMVCActionCommand extends BaseAnalyticsMVCActionCommand {
 			return;
 		}
 
-		Stream<String> stream = Arrays.stream(selectedGroupIds);
-
 		HttpResponse httpResponse = AnalyticsSettingsUtil.doPost(
 			JSONUtil.put(
 				"channelType", channelType
@@ -164,15 +148,10 @@ public class AddChannelMVCActionCommand extends BaseAnalyticsMVCActionCommand {
 			).put(
 				"groups",
 				JSONUtil.toJSONArray(
-					stream.map(
-						Long::valueOf
-					).map(
-						groupLocalService::fetchGroup
-					).filter(
-						Objects::nonNull
-					).collect(
-						Collectors.toList()
-					),
+					TransformUtil.transformToList(
+						selectedGroupIds,
+						selectedGroupId -> groupLocalService.fetchGroup(
+							Long.valueOf(selectedGroupId))),
 					group -> _buildGroupJSONObject(group, themeDisplay))
 			),
 			themeDisplay.getCompanyId(), "api/1.0/channels");
@@ -244,59 +223,46 @@ public class AddChannelMVCActionCommand extends BaseAnalyticsMVCActionCommand {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		UnicodeProperties unicodeProperties = new UnicodeProperties(true);
-
-		unicodeProperties.setProperty(
-			"liferayAnalyticsGroupIds",
-			StringUtil.merge(liferayAnalyticsGroupIds, StringPool.COMMA));
-
 		_companyService.updatePreferences(
-			themeDisplay.getCompanyId(), unicodeProperties);
+			themeDisplay.getCompanyId(),
+			UnicodePropertiesBuilder.create(
+				true
+			).put(
+				"liferayAnalyticsGroupIds",
+				StringUtil.merge(liferayAnalyticsGroupIds, StringPool.COMMA)
+			).build());
 
 		return liferayAnalyticsGroupIds;
 	}
 
 	private void _updateTypeSettingsProperties(String json) throws Exception {
-		JSONArray channelsJSONArray = JSONFactoryUtil.createJSONArray(json);
+		for (Object channelObject : _jsonFactory.createJSONArray(json)) {
+			JSONObject channelJSONObject = (JSONObject)channelObject;
 
-		for (int i = 0; i < channelsJSONArray.length(); i++) {
-			JSONObject channelJSONObject = channelsJSONArray.getJSONObject(i);
+			for (Object dataSourceObject :
+					channelJSONObject.getJSONArray("dataSources")) {
 
-			String channelId = channelJSONObject.getString("id");
+				JSONObject dataSourceJSONObject = (JSONObject)dataSourceObject;
 
-			JSONArray dataSourcesJSONArray = channelJSONObject.getJSONArray(
-				"dataSources");
+				for (Object groupIdObject :
+						dataSourceJSONObject.getJSONArray("groupIds")) {
 
-			Stream<JSONObject> dataSourcesStream = StreamSupport.stream(
-				dataSourcesJSONArray.spliterator(), false);
-
-			dataSourcesStream.flatMap(
-				dataSourceJSONObject -> {
-					JSONArray groupIdsJSONArray =
-						dataSourceJSONObject.getJSONArray("groupIds");
-
-					return StreamSupport.stream(
-						groupIdsJSONArray.spliterator(), false);
-				}
-			).map(
-				String::valueOf
-			).forEach(
-				groupId -> {
 					Group group = groupLocalService.fetchGroup(
-						GetterUtil.getLong(groupId));
+						GetterUtil.getLong(groupIdObject));
 
 					UnicodeProperties typeSettingsUnicodeProperties =
 						group.getTypeSettingsProperties();
 
 					typeSettingsUnicodeProperties.put(
-						"analyticsChannelId", channelId);
+						"analyticsChannelId",
+						channelJSONObject.getString("id"));
 
 					group.setTypeSettingsProperties(
 						typeSettingsUnicodeProperties);
 
 					groupLocalService.updateGroup(group);
 				}
-			);
+			}
 		}
 	}
 
@@ -307,6 +273,9 @@ public class AddChannelMVCActionCommand extends BaseAnalyticsMVCActionCommand {
 	private CompanyService _companyService;
 
 	@Reference
-	private Portal _portal;
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 }

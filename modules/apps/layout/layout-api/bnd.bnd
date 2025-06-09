@@ -1,14 +1,27 @@
 Bundle-Name: Liferay Layout API
 Bundle-SymbolicName: com.liferay.layout.api
-Bundle-Version: 8.3.3
+Bundle-Version: 53.0.1
 Export-Package:\
 	com.liferay.layout.adaptive.media,\
 	com.liferay.layout.configuration,\
+	com.liferay.layout.constants,\
+	com.liferay.layout.content,\
+	com.liferay.layout.converter,\
 	com.liferay.layout.crawler,\
 	com.liferay.layout.exception,\
+	com.liferay.layout.exporter,\
 	com.liferay.layout.friendly.url,\
+	com.liferay.layout.helper,\
+	com.liferay.layout.helper.structure,\
+	com.liferay.layout.importer,\
+	com.liferay.layout.list.permission.provider,\
 	com.liferay.layout.list.retriever,\
+	com.liferay.layout.manager,\
 	com.liferay.layout.model,\
+	com.liferay.layout.portlet,\
+	com.liferay.layout.portlet.category,\
+	com.liferay.layout.portlet.preferences.updater,\
+	com.liferay.layout.provider,\
 	com.liferay.layout.responsive,\
 	com.liferay.layout.security.permission.resource,\
 	com.liferay.layout.service,\
@@ -18,4 +31,7 @@ Export-Package:\
 	com.liferay.layout.util.comparator,\
 	com.liferay.layout.util.constants,\
 	com.liferay.layout.util.structure,\
-	com.liferay.layout.util.template
+	com.liferay.layout.util.structure.collection,\
+	com.liferay.layout.util.structure.exception,\
+	com.liferay.layout.util.template,\
+	com.liferay.layout.validator

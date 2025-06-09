@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.web.internal.portlet.action;
@@ -39,14 +30,14 @@ import com.liferay.portlet.portletconfiguration.util.ConfigurationActionRequest;
 import com.liferay.portlet.portletconfiguration.util.ConfigurationRenderRequest;
 import com.liferay.portlet.portletconfiguration.util.ConfigurationResourceRequest;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.ResourceRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.ResourceRequest;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Daniel Kocsis
@@ -65,6 +56,8 @@ public class ActionUtil {
 	public static Group getGroup(HttpServletRequest httpServletRequest)
 		throws Exception {
 
+		Group group = null;
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
@@ -72,8 +65,6 @@ public class ActionUtil {
 		String cmd = ParamUtil.getString(httpServletRequest, Constants.CMD);
 
 		long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
-
-		Group group = null;
 
 		if (groupId > 0) {
 			group = GroupLocalServiceUtil.getGroup(groupId);
@@ -138,14 +129,15 @@ public class ActionUtil {
 		HttpServletRequest httpServletRequest =
 			PortalUtil.getHttpServletRequest(renderRequest);
 
-		PortletPreferences portletSetup = getLayoutPortletSetup(
+		PortletPreferences portletPreferences = getLayoutPortletSetup(
 			renderRequest, portlet);
 
-		portletSetup = getPortletSetup(
-			httpServletRequest, renderRequest.getPreferences(), portletSetup);
-
 		String title = PortletConfigurationUtil.getPortletTitle(
-			portletSetup, themeDisplay.getLanguageId());
+			portlet.getPortletId(),
+			_getPortletSetup(
+				httpServletRequest, renderRequest.getPreferences(),
+				portletPreferences),
+			themeDisplay.getLanguageId());
 
 		if (Validator.isNull(title)) {
 			ServletContext servletContext =
@@ -162,7 +154,7 @@ public class ActionUtil {
 			ActionRequest actionRequest, PortletPreferences portletPreferences)
 		throws PortalException {
 
-		portletPreferences = getPortletPreferences(
+		portletPreferences = _getPortletPreferences(
 			PortalUtil.getHttpServletRequest(actionRequest),
 			actionRequest.getPreferences(), portletPreferences);
 
@@ -177,7 +169,7 @@ public class ActionUtil {
 		HttpServletRequest httpServletRequest =
 			PortalUtil.getHttpServletRequest(renderRequest);
 
-		portletPreferences = getPortletPreferences(
+		portletPreferences = _getPortletPreferences(
 			httpServletRequest, renderRequest.getPreferences(),
 			portletPreferences);
 
@@ -195,7 +187,7 @@ public class ActionUtil {
 			PortletPreferences portletPreferences)
 		throws PortalException {
 
-		portletPreferences = getPortletPreferences(
+		portletPreferences = _getPortletPreferences(
 			PortalUtil.getHttpServletRequest(resourceRequest),
 			resourceRequest.getPreferences(), portletPreferences);
 
@@ -203,7 +195,7 @@ public class ActionUtil {
 			resourceRequest, portletPreferences);
 	}
 
-	protected static PortletPreferences getPortletPreferences(
+	private static PortletPreferences _getPortletPreferences(
 			HttpServletRequest httpServletRequest,
 			PortletPreferences portletConfigPortletPreferences,
 			PortletPreferences portletPreferences)
@@ -224,21 +216,21 @@ public class ActionUtil {
 			httpServletRequest, portletResource);
 	}
 
-	protected static PortletPreferences getPortletSetup(
+	private static PortletPreferences _getPortletSetup(
 			HttpServletRequest httpServletRequest,
-			PortletPreferences portletConfigPortletSetup,
-			PortletPreferences portletSetup)
-		throws PortalException {
+			PortletPreferences portletConfigPortletPreferences,
+			PortletPreferences portletPreferences)
+		throws Exception {
 
 		String portletResource = ParamUtil.getString(
 			httpServletRequest, "portletResource");
 
 		if (Validator.isNull(portletResource)) {
-			return portletConfigPortletSetup;
+			return portletConfigPortletPreferences;
 		}
 
-		if (portletSetup != null) {
-			return portletSetup;
+		if (portletPreferences != null) {
+			return portletPreferences;
 		}
 
 		return PortletPreferencesFactoryUtil.getPortletSetup(

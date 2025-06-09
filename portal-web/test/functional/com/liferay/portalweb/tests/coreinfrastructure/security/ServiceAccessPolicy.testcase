@@ -1,9 +1,10 @@
-@component-name = "portal-security"
+@component-name = "portal-application-security"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Security";
+	property testray.main.component.name = "Service Access Policy";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -12,27 +13,28 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			PortalSettings.tearDownAuthenticationCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@description = "This is a use case for LRQA-42767. Service access policy smoke"
-	@priority = "5"
+	@description = "This is a use case for LRQA-42767. Service access policy smoke."
+	@priority = 4
 	test ServiceAccessPolicySmoke {
 		property custom.properties = "access.control.sanitize.security.exception=false${line.separator}json.service.auth.token.hosts.allowed=${line.separator}json.service.serialize.throwable=true";
-		property test.name.skip.portal.instance = "ServiceAccessPolicy#ServiceAccessPolicySmoke";
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		task ("Assert access denied for viewing liferay email") {
 			var companyId = JSONCompany.getCompanyId();
-
 			var portalURL = JSONCompany.getPortalURL();
 
 			var curl = '''
@@ -41,7 +43,7 @@ definition {
 					-d emailAddress=test@liferay.com
 			''';
 
-			SystemSettings.getUserEmailAddressRequestDenied(curl = "${curl}");
+			SystemSettings.getUserEmailAddressRequestDenied(curl = ${curl});
 		}
 
 		task ("Edit service access policy") {
@@ -57,23 +59,29 @@ definition {
 
 		task ("Assert user doesn't have view permissions") {
 			var userId = JSONUserAPI._getUserIdByEmailAddress(userEmailAddress = "test@liferay.com ");
-
 			var curl = '''
 				${portalURL}/api/jsonws/user/get-user-by-email-address \
 					-d companyId=${companyId} \
 					-d emailAddress=test@liferay.com
 			''';
 
-			SystemSettings.getViewUserEmailPermissionDenied(curl = "${curl}");
+			SystemSettings.getViewUserEmailPermissionDenied(
+				curl = ${curl},
+				userId = ${userId});
 		}
 
 		task ("Assert permission available") {
+			var userPassword = PropsUtil.get("default.admin.password");
+
 			var curl = '''
 				${portalURL}/api/jsonws/user/get-current-user \
 					-basic \
-					-u test@liferay.com:test
+					-u test@liferay.com:${userPassword}
 			''';
-			SystemSettings.getUserEmailSuccessfully(curl = "${curl}");
+
+			SystemSettings.getUserEmailSuccessfully(
+				companyId = ${companyId},
+				curl = ${curl});
 		}
 
 		task ("Edit service access policy") {
@@ -88,12 +96,15 @@ definition {
 		}
 
 		task ("Assert permission denied") {
+			var userPassword = PropsUtil.get("default.admin.password");
+
 			var curl = '''
 				${portalURL}/api/jsonws/user/get-current-user \
 					-basic \
-					-u test@liferay.com:test
+					-u test@liferay.com:${userPassword}
 			''';
-			SystemSettings.getCurrentUserEmailResquestDenied(curl = "${curl}");
+
+			SystemSettings.getCurrentUserEmailResquestDenied(curl = ${curl});
 		}
 	}
 

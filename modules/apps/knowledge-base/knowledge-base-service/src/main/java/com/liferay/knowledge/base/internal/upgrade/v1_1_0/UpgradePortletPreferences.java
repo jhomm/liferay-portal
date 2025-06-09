@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.upgrade.v1_1_0;
@@ -20,32 +11,16 @@ import com.liferay.portal.kernel.upgrade.CamelCaseUpgradePortletPreferences;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Collections;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Peter Shin
  */
 public class UpgradePortletPreferences
 	extends CamelCaseUpgradePortletPreferences {
-
-	protected Map<String, String> getDefaultPreferencesMap(
-		String rootPortletId) {
-
-		if (rootPortletId.equals("1_WAR_knowledgebaseportlet")) {
-			return _adminDefaultPreferencesMap;
-		}
-		else if (rootPortletId.equals("2_WAR_knowledgebaseportlet")) {
-			return _displayDefaultPreferencesMap;
-		}
-		else if (rootPortletId.equals("3_WAR_knowledgebaseportlet")) {
-			return _articleDefaultPreferencesMap;
-		}
-
-		return Collections.emptyMap();
-	}
 
 	protected String getName(String rootPortletId, String oldName) {
 		if (rootPortletId.equals("1_WAR_knowledgebaseportlet")) {
@@ -66,46 +41,6 @@ public class UpgradePortletPreferences
 		return _PORTLET_IDS;
 	}
 
-	protected String updatePreferences(
-			long companyId, long ownerId, int ownerType, long plid,
-			String portletId, String xml)
-		throws Exception {
-
-		PortletPreferences preferences = PortletPreferencesFactoryUtil.fromXML(
-			companyId, ownerId, ownerType, plid, portletId, xml);
-
-		Map<String, String[]> preferencesMap = preferences.getMap();
-
-		String rootPortletId = PortletIdCodec.decodePortletName(portletId);
-
-		for (Map.Entry<String, String[]> entry : preferencesMap.entrySet()) {
-			String oldName = entry.getKey();
-
-			String newName = getName(rootPortletId, oldName);
-
-			preferences.reset(oldName);
-
-			if (newName != null) {
-				preferences.setValues(newName, entry.getValue());
-			}
-		}
-
-		Map<String, String> defaultPreferencesMap = getDefaultPreferencesMap(
-			rootPortletId);
-
-		for (Map.Entry<String, String> entry :
-				defaultPreferencesMap.entrySet()) {
-
-			String name = entry.getKey();
-
-			if (preferences.getValues(name, null) == null) {
-				preferences.setValues(name, StringUtil.split(entry.getValue()));
-			}
-		}
-
-		return PortletPreferencesFactoryUtil.toXML(preferences);
-	}
-
 	@Override
 	protected String upgradePreferences(
 			long companyId, long ownerId, int ownerType, long plid,
@@ -115,8 +50,66 @@ public class UpgradePortletPreferences
 		String preferences = super.upgradePreferences(
 			companyId, ownerId, ownerType, plid, portletId, xml);
 
-		return updatePreferences(
+		return _updatePreferences(
 			companyId, ownerId, ownerType, plid, portletId, preferences);
+	}
+
+	private Map<String, String> _getDefaultPreferencesMap(
+		String rootPortletId) {
+
+		if (rootPortletId.equals("1_WAR_knowledgebaseportlet")) {
+			return _adminDefaultPreferencesMap;
+		}
+		else if (rootPortletId.equals("2_WAR_knowledgebaseportlet")) {
+			return _displayDefaultPreferencesMap;
+		}
+		else if (rootPortletId.equals("3_WAR_knowledgebaseportlet")) {
+			return _articleDefaultPreferencesMap;
+		}
+
+		return Collections.emptyMap();
+	}
+
+	private String _updatePreferences(
+			long companyId, long ownerId, int ownerType, long plid,
+			String portletId, String xml)
+		throws Exception {
+
+		PortletPreferences portletPreferences =
+			PortletPreferencesFactoryUtil.fromXML(
+				companyId, ownerId, ownerType, plid, portletId, xml);
+
+		Map<String, String[]> preferencesMap = portletPreferences.getMap();
+
+		String rootPortletId = PortletIdCodec.decodePortletName(portletId);
+
+		for (Map.Entry<String, String[]> entry : preferencesMap.entrySet()) {
+			String oldName = entry.getKey();
+
+			String newName = getName(rootPortletId, oldName);
+
+			portletPreferences.reset(oldName);
+
+			if (newName != null) {
+				portletPreferences.setValues(newName, entry.getValue());
+			}
+		}
+
+		Map<String, String> defaultPreferencesMap = _getDefaultPreferencesMap(
+			rootPortletId);
+
+		for (Map.Entry<String, String> entry :
+				defaultPreferencesMap.entrySet()) {
+
+			String name = entry.getKey();
+
+			if (portletPreferences.getValues(name, null) == null) {
+				portletPreferences.setValues(
+					name, StringUtil.split(entry.getValue()));
+			}
+		}
+
+		return PortletPreferencesFactoryUtil.toXML(portletPreferences);
 	}
 
 	private static final String[] _PORTLET_IDS = {

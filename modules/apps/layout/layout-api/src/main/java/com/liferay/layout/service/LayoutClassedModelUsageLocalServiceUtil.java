@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -44,13 +36,6 @@ public class LayoutClassedModelUsageLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.layout.service.impl.LayoutClassedModelUsageLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static LayoutClassedModelUsage addDefaultLayoutClassedModelUsage(
-		long groupId, long classNameId, long classPK,
-		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
-
-		return getService().addDefaultLayoutClassedModelUsage(
-			groupId, classNameId, classPK, serviceContext);
-	}
 
 	/**
 	 * Adds the layout classed model usage to the database. Also notifies the appropriate model listeners.
@@ -69,13 +54,14 @@ public class LayoutClassedModelUsageLocalServiceUtil {
 	}
 
 	public static LayoutClassedModelUsage addLayoutClassedModelUsage(
-		long groupId, long classNameId, long classPK, String containerKey,
+		long groupId, long classNameId, long classPK,
+		String classedModelExternalReferenceCode, String containerKey,
 		long containerType, long plid,
 		com.liferay.portal.kernel.service.ServiceContext serviceContext) {
 
 		return getService().addLayoutClassedModelUsage(
-			groupId, classNameId, classPK, containerKey, containerType, plid,
-			serviceContext);
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid, serviceContext);
 	}
 
 	/**
@@ -257,11 +243,13 @@ public class LayoutClassedModelUsageLocalServiceUtil {
 	}
 
 	public static LayoutClassedModelUsage fetchLayoutClassedModelUsage(
-		long classNameId, long classPK, String containerKey, long containerType,
-		long plid) {
+		long groupId, long classNameId, long classPK,
+		String classedModelExternalReferenceCode, String containerKey,
+		long containerType, long plid) {
 
 		return getService().fetchLayoutClassedModelUsage(
-			classNameId, classPK, containerKey, containerType, plid);
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid);
 	}
 
 	/**
@@ -371,6 +359,13 @@ public class LayoutClassedModelUsageLocalServiceUtil {
 			classNameId, classPK, start, end, orderByComparator);
 	}
 
+	public static List<LayoutClassedModelUsage> getLayoutClassedModelUsages(
+		long companyId, long classNameId, long containerType) {
+
+		return getService().getLayoutClassedModelUsages(
+			companyId, classNameId, containerType);
+	}
+
 	public static List<LayoutClassedModelUsage>
 		getLayoutClassedModelUsagesByPlid(long plid) {
 
@@ -452,20 +447,6 @@ public class LayoutClassedModelUsageLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static int getUniqueLayoutClassedModelUsagesCount(
-		long classNameId, long classPK) {
-
-		return getService().getUniqueLayoutClassedModelUsagesCount(
-			classNameId, classPK);
-	}
-
-	public static boolean hasDefaultLayoutClassedModelUsage(
-		long classNameId, long classPK) {
-
-		return getService().hasDefaultLayoutClassedModelUsage(
-			classNameId, classPK);
-	}
-
 	/**
 	 * Updates the layout classed model usage in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -483,10 +464,23 @@ public class LayoutClassedModelUsageLocalServiceUtil {
 			layoutClassedModelUsage);
 	}
 
-	public static LayoutClassedModelUsageLocalService getService() {
-		return _service;
+	public static LayoutClassedModelUsage updateLayoutClassedModelUsage(
+			long classNameId, long classPK, String containerKey,
+			long containerType, long layoutClassedModelUsageId, long plid)
+		throws PortalException {
+
+		return getService().updateLayoutClassedModelUsage(
+			classNameId, classPK, containerKey, containerType,
+			layoutClassedModelUsageId, plid);
 	}
 
-	private static volatile LayoutClassedModelUsageLocalService _service;
+	public static LayoutClassedModelUsageLocalService getService() {
+		return _serviceSnapshot.get();
+	}
+
+	private static final Snapshot<LayoutClassedModelUsageLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			LayoutClassedModelUsageLocalServiceUtil.class,
+			LayoutClassedModelUsageLocalService.class);
 
 }

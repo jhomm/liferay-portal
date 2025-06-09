@@ -1,26 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.sql.transformer;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.junit.Test;
 
 /**
  * @author Manuel de la Peña
@@ -42,13 +32,6 @@ public class SQLServerSQLTransformerLogicTest
 		return "IF OBJECT_ID('Foo', 'U') IS NOT NULL DROP TABLE Foo";
 	}
 
-	@Test
-	public void testReplaceCastText() {
-		Assert.assertEquals(
-			"select CAST(foo AS NVARCHAR(MAX)) from Foo",
-			sqlTransformer.transform(getCastTextOriginalSQL()));
-	}
-
 	@Override
 	protected String getBitwiseCheckTransformedSQL() {
 		return "select (foo & bar) from Foo";
@@ -61,7 +44,18 @@ public class SQLServerSQLTransformerLogicTest
 
 	@Override
 	protected String getCastClobTextTransformedSQL() {
-		return "select CAST(foo AS NVARCHAR(MAX)) from Foo";
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS NVARCHAR(MAX)) || (bar || foo)) ",
+			"AS NVARCHAR(MAX)), CAST(foo || (bar || foo) AS NVARCHAR(MAX)) ",
+			"from Foo");
+	}
+
+	@Override
+	protected String getCastTextTransformedSQL() {
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS NVARCHAR(MAX)) || (bar || foo)) ",
+			"AS NVARCHAR(MAX)), CAST(foo || (bar || foo) AS NVARCHAR(MAX)) ",
+			"from Foo");
 	}
 
 	@Override
@@ -100,7 +94,7 @@ public class SQLServerSQLTransformerLogicTest
 			return new String[] {
 				"NOOP", "1", "0", "NOOP", "NOOP", " NOOP", " NOOP", " NOOP",
 				" NOOP", " NOOP", " NOOP", " NOOP", " NOOP", " NOOP", " NOOP",
-				" NOOP", "NOOP"
+				" NOOP", "NOOP", "NOOP"
 			};
 		}
 

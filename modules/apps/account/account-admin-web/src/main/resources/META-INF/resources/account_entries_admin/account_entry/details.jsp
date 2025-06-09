@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -37,45 +28,43 @@ renderResponse.setTitle((accountEntryDisplay.getAccountEntryId() == 0) ? Languag
 
 	<liferay-frontend:edit-form-body>
 		<h2 class="sheet-title">
-			<%= LanguageUtil.get(request, "information") %>
+			<liferay-ui:message key="information" />
 		</h2>
 
-		<liferay-frontend:fieldset-group>
-			<liferay-util:include page="/account_entries_admin/account_entry/display_data.jsp" servletContext="<%= application %>" />
+		<liferay-util:include page="/account_entries_admin/account_entry/display_data.jsp" servletContext="<%= application %>" />
 
-			<c:choose>
-				<c:when test="<%= Objects.equals(AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, accountEntryDisplay.getType()) && accountEntryDisplay.isEmailDomainValidationEnabled(themeDisplay) %>">
-					<div class="business-account-only">
-						<liferay-util:include page="/account_entries_admin/account_entry/domains.jsp" servletContext="<%= application %>" />
-					</div>
-				</c:when>
-				<c:when test="<%= Objects.equals(AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON, accountEntryDisplay.getType()) %>">
-					<div class="person-account-only">
-						<liferay-util:include page="/account_entries_admin/account_entry/person_account_entry_user.jsp" servletContext="<%= application %>" />
-					</div>
-				</c:when>
-			</c:choose>
+		<c:choose>
+			<c:when test="<%= Objects.equals(AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, accountEntryDisplay.getType()) && accountEntryDisplay.isEmailAddressDomainValidationEnabled() %>">
+				<div class="business-account-only">
+					<liferay-util:include page="/account_entries_admin/account_entry/domains.jsp" servletContext="<%= application %>" />
+				</div>
+			</c:when>
+			<c:when test="<%= Objects.equals(AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON, accountEntryDisplay.getType()) %>">
+				<div class="person-account-only">
+					<liferay-util:include page="/account_entries_admin/account_entry/person_account_entry_user.jsp" servletContext="<%= application %>" />
+				</div>
+			</c:when>
+		</c:choose>
 
-			<c:if test="<%= accountEntryDisplay.getAccountEntryId() > 0 %>">
-				<liferay-util:include page="/account_entries_admin/account_entry/default_addresses.jsp" servletContext="<%= application %>" />
-			</c:if>
+		<c:if test="<%= accountEntryDisplay.getAccountEntryId() > 0 %>">
+			<liferay-util:include page="/account_entries_admin/account_entry/default_addresses.jsp" servletContext="<%= application %>" />
+		</c:if>
 
-			<liferay-util:include page="/account_entries_admin/account_entry/categorization.jsp" servletContext="<%= application %>" />
+		<liferay-util:include page="/account_entries_admin/account_entry/categorization.jsp" servletContext="<%= application %>" />
 
-			<liferay-util:include page="/account_entries_admin/account_entry/custom_fields.jsp" servletContext="<%= application %>" />
-		</liferay-frontend:fieldset-group>
+		<liferay-util:include page="/account_entries_admin/account_entry/custom_fields.jsp" servletContext="<%= application %>" />
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button href="<%= backURL %>" type="cancel" />
+		<liferay-frontend:edit-form-buttons
+			redirect="<%= backURL %>"
+		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
 <c:if test="<%= accountEntryDisplay.getAccountEntryId() == 0 %>">
 	<liferay-frontend:component
 		componentId="AccountEntriesAdminPortlet"
-		module="account_entries_admin/js/AccountEntriesAdminPortlet.es"
+		module="{AccountEntriesAdminPortlet} from account-admin-web"
 	/>
 </c:if>

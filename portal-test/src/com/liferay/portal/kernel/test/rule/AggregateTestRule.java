@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.test.rule;
@@ -55,10 +46,18 @@ public class AggregateTestRule implements TestRule {
 	@Override
 	public Statement apply(Statement statement, Description description) {
 		for (int i = _testRules.length - 1; i >= 0; i--) {
-			statement = _testRules[i].apply(statement, description);
+			TestRule testRule = _testRules[i];
+
+			if (!_skippedTestRules.contains(testRule)) {
+				statement = testRule.apply(statement, description);
+			}
 		}
 
 		return statement;
+	}
+
+	public void skipTestRule(TestRule testRule) {
+		_skippedTestRules.add(testRule);
 	}
 
 	private static final String[] _ORDERED_RULE_CLASS_NAMES = {
@@ -71,11 +70,13 @@ public class AggregateTestRule implements TestRule {
 		"com.liferay.portal.test.rule.TransactionalTestRule",
 		SynchronousDestinationTestRule.class.getName(),
 		"com.liferay.portal.test.rule.SynchronousMailTestRule",
-		"com.liferay.document.library.webdav.test." +
+		"com.liferay.document.library.webdav.test.rule." +
 			"WebDAVEnvironmentConfigClassTestRule",
 		"com.liferay.portal.test.rule.PermissionCheckerMethodTestRule",
 		InitializeKernelUtilTestRule.class.getName(),
-		"com.liferay.portal.search.test.util.logging.ExpectedLogMethodTestRule"
+		"com.liferay.portal.search.test.rule.logging.ExpectedLogMethodTestRule",
+		"com.liferay.portal.security.script.management.test.rule." +
+			"ScriptManagementConfigurationTestRule"
 	};
 
 	private static final Comparator<TestRule> _testRuleComparator =
@@ -110,6 +111,7 @@ public class AggregateTestRule implements TestRule {
 
 		};
 
+	private final Set<TestRule> _skippedTestRules = new HashSet<>();
 	private final TestRule[] _testRules;
 
 }

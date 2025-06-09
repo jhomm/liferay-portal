@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.type.controller.panel.internal.layout.type.controller;
@@ -22,10 +13,10 @@ import com.liferay.portal.kernel.model.LayoutTypeController;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +25,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true, property = "layout.type=" + LayoutConstants.TYPE_PANEL,
+	property = "layout.type=" + LayoutConstants.TYPE_PANEL,
 	service = LayoutTypeController.class
 )
 public class PanelLayoutTypeController extends BaseLayoutTypeControllerImpl {
@@ -76,22 +67,6 @@ public class PanelLayoutTypeController extends BaseLayoutTypeControllerImpl {
 		return true;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #createServletResponse(HttpServletResponse,
-	 *             UnsyncStringWriter)}
-	 */
-	@Deprecated
-	@Override
-	protected ServletResponse createServletResponse(
-		HttpServletResponse httpServletResponse,
-		com.liferay.portal.kernel.io.unsync.UnsyncStringWriter
-			unsyncStringWriter) {
-
-		return new PipingServletResponse(
-			httpServletResponse, unsyncStringWriter);
-	}
-
 	@Override
 	protected ServletResponse createServletResponse(
 		HttpServletResponse httpServletResponse,
@@ -107,16 +82,13 @@ public class PanelLayoutTypeController extends BaseLayoutTypeControllerImpl {
 	}
 
 	@Override
-	protected String getViewPage() {
-		return _VIEW_PAGE;
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.panel)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext;
+	@Override
+	protected String getViewPage() {
+		return _VIEW_PAGE;
 	}
 
 	private static final String _EDIT_PAGE = "/layout/edit/panel.jsp";
@@ -126,5 +98,10 @@ public class PanelLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			"&p_v_l_s_g_id=${liferay:pvlsgid}";
 
 	private static final String _VIEW_PAGE = "/layout/view/panel.jsp";
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.layout.type.controller.panel)"
+	)
+	private ServletContext _servletContext;
 
 }

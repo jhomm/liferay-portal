@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.test;
@@ -96,13 +87,12 @@ public class MBCategoryServiceTest {
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user)) {
 
-			int categoriesAndThreadsCount =
+			Assert.assertEquals(
+				4,
 				MBCategoryServiceUtil.getCategoriesAndThreadsCount(
 					_group.getGroupId(),
 					MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-					WorkflowConstants.STATUS_APPROVED);
-
-			Assert.assertEquals(4, categoriesAndThreadsCount);
+					WorkflowConstants.STATUS_APPROVED));
 		}
 	}
 
@@ -119,13 +109,12 @@ public class MBCategoryServiceTest {
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user)) {
 
-			int categoriesAndThreadsCount =
+			Assert.assertEquals(
+				2,
 				MBCategoryServiceUtil.getCategoriesAndThreadsCount(
 					_group.getGroupId(),
 					MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-					WorkflowConstants.STATUS_APPROVED);
-
-			Assert.assertEquals(2, categoriesAndThreadsCount);
+					WorkflowConstants.STATUS_APPROVED));
 		}
 	}
 
@@ -140,13 +129,12 @@ public class MBCategoryServiceTest {
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user)) {
 
-			int categoriesAndThreadsCount =
+			Assert.assertEquals(
+				2,
 				MBCategoryServiceUtil.getCategoriesAndThreadsCount(
 					_group.getGroupId(),
 					MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
-					WorkflowConstants.STATUS_APPROVED);
-
-			Assert.assertEquals(2, categoriesAndThreadsCount);
+					WorkflowConstants.STATUS_APPROVED));
 		}
 	}
 
@@ -163,12 +151,11 @@ public class MBCategoryServiceTest {
 		try (ContextUserReplace contextUserReplace = new ContextUserReplace(
 				_user)) {
 
-			int categoriesAndThreadsCount =
+			Assert.assertEquals(
+				1,
 				MBCategoryServiceUtil.getCategoriesAndThreadsCount(
 					_group.getGroupId(), category1.getCategoryId(),
-					WorkflowConstants.STATUS_APPROVED);
-
-			Assert.assertEquals(1, categoriesAndThreadsCount);
+					WorkflowConstants.STATUS_APPROVED));
 		}
 	}
 
@@ -336,12 +323,12 @@ public class MBCategoryServiceTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory category1 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
@@ -366,12 +353,12 @@ public class MBCategoryServiceTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory category1 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
@@ -396,12 +383,12 @@ public class MBCategoryServiceTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory category1 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategory category2 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
@@ -427,12 +414,12 @@ public class MBCategoryServiceTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory category1 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategory category2 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
@@ -458,12 +445,12 @@ public class MBCategoryServiceTest {
 				_group.getGroupId(), TestPropsValues.getUserId());
 
 		MBCategory category1 = MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
 		MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
@@ -492,7 +479,7 @@ public class MBCategoryServiceTest {
 		serviceContext.setAddGuestPermissions(false);
 
 		MBCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 
@@ -521,13 +508,11 @@ public class MBCategoryServiceTest {
 	}
 
 	protected MBCategory addCategory(long parentCategoryId) throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		return MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(), parentCategoryId,
-			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
+			null, TestPropsValues.getUserId(), parentCategoryId,
+			RandomTestUtil.randomString(), StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	protected MBMessage addMessage(long categoryId) throws Exception {

@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.upgrade.v2_6_0;
 
-import com.liferay.fragment.internal.upgrade.v2_6_0.util.FragmentEntryTable;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
@@ -30,14 +20,14 @@ public class FragmentEntryUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		upgradeSchema();
+		_upgradeSchema();
 
-		upgradeFragmentEntryCounter();
-		upgradeFragmentEntryHeadIdAndHeadStatusApproved();
-		upgradeFragmentEntryHeadIdAndHeadStatusDraft();
+		_upgradeFragmentEntryCounter();
+		_upgradeFragmentEntryHeadIdAndHeadStatusApproved();
+		_upgradeFragmentEntryHeadIdAndHeadStatusDraft();
 	}
 
-	protected void upgradeFragmentEntryCounter() throws Exception {
+	private void _upgradeFragmentEntryCounter() throws Exception {
 		runSQL(
 			StringBundler.concat(
 				"insert into Counter (name, currentId) select '",
@@ -45,7 +35,7 @@ public class FragmentEntryUpgradeProcess extends UpgradeProcess {
 				"', max(fragmentEntryId) from FragmentEntry"));
 	}
 
-	protected void upgradeFragmentEntryHeadIdAndHeadStatusApproved()
+	private void _upgradeFragmentEntryHeadIdAndHeadStatusApproved()
 		throws Exception {
 
 		try (Statement s = connection.createStatement()) {
@@ -58,7 +48,7 @@ public class FragmentEntryUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void upgradeFragmentEntryHeadIdAndHeadStatusDraft()
+	private void _upgradeFragmentEntryHeadIdAndHeadStatusDraft()
 		throws Exception {
 
 		try (Statement s = connection.createStatement()) {
@@ -71,10 +61,9 @@ public class FragmentEntryUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void upgradeSchema() throws Exception {
-		alter(
-			FragmentEntryTable.class, new AlterTableAddColumn("headId", "LONG"),
-			new AlterTableAddColumn("head", "BOOLEAN"));
+	private void _upgradeSchema() throws Exception {
+		alterTableAddColumn("FragmentEntry", "headId", "LONG");
+		alterTableAddColumn("FragmentEntry", "head", "BOOLEAN");
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.upgrade.v1_1_0;
@@ -63,7 +54,7 @@ public class BlogsEntryUpgradeProcess extends UpgradeProcess {
 
 				if (existingFriendlyURLEntry != null) {
 					urlTitle = _friendlyURLEntryLocalService.getUniqueUrlTitle(
-						groupId, classNameId, classPK, urlTitle);
+						groupId, classNameId, classPK, urlTitle, null);
 				}
 
 				urlTitle = _getUniqueUrlTitle(classPK, groupId, urlTitle);
@@ -101,11 +92,9 @@ public class BlogsEntryUpgradeProcess extends UpgradeProcess {
 				BlogsEntry.class.getName(), "urlTitle", urlTitle);
 		}
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			BlogsEntry.class);
-
 		return _friendlyURLEntryLocalService.getUniqueUrlTitle(
-			groupId, classNameId, entryId, urlTitle, null);
+			groupId, _classNameLocalService.getClassNameId(BlogsEntry.class),
+			entryId, urlTitle, null);
 	}
 
 	private final ClassNameLocalService _classNameLocalService;

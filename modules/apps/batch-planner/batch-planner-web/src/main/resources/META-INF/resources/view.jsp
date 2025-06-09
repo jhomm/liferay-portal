@@ -1,79 +1,103 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-BatchPlannerLogDisplayContext batchPlannerLogDisplayContext = (BatchPlannerLogDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+portletDisplay.setBeta(true);
 
-SearchContainer<BatchPlannerLogDisplay> batchPlannerLogDisplaySearchContainer = batchPlannerLogDisplayContext.getSearchContainer();
+BatchPlannerPlanDisplayContext batchPlannerPlanDisplayContext = (BatchPlannerPlanDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+
+SearchContainer<BatchPlannerPlanDisplay> batchPlannerPlanDisplaySearchContainer = batchPlannerPlanDisplayContext.getSearchContainer();
 %>
 
 <clay:navigation-bar
-	navigationItems="<%= batchPlannerLogDisplayContext.getNavigationItems() %>"
+	navigationItems="<%= batchPlannerPlanDisplayContext.getNavigationItems() %>"
 />
 
 <clay:management-toolbar
-	managementToolbarDisplayContext="<%= new BatchPlannerLogManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, batchPlannerLogDisplaySearchContainer) %>"
+	managementToolbarDisplayContext="<%= new BatchPlannerPlanManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, batchPlannerPlanDisplaySearchContainer) %>"
 />
 
 <clay:container-fluid>
+	<liferay-ui:error exception="<%= BatchPlannerPlanInternalClassNameException.class %>" message="unable-to-perform-the-search-because-the-provided-search-term-is-too-ambiguous" />
+
 	<liferay-ui:search-container
-		searchContainer="<%= batchPlannerLogDisplaySearchContainer %>"
+		cssClass="mt-3"
+		searchContainer="<%= batchPlannerPlanDisplaySearchContainer %>"
 	>
 		<liferay-ui:search-container-row
-			className="com.liferay.batch.planner.web.internal.display.BatchPlannerLogDisplay"
-			keyProperty="batchPlannerLogId"
-			modelVar="batchPlannerLogDisplay"
+			className="com.liferay.batch.planner.web.internal.display.BatchPlannerPlanDisplay"
+			keyProperty="batchPlannerPlanId"
+			modelVar="batchPlannerPlanDisplay"
 		>
 			<liferay-ui:search-container-column-text
-				cssClass="important table-cell-expand"
+				cssClass="font-weight-bold important table-cell-expand"
 				href='<%=
 					PortletURLBuilder.createRenderURL(
 						renderResponse
 					).setMVCRenderCommandName(
-						"/batch_planner/view_batch_planner_log"
+						"/batch_planner/view_batch_planner_plan"
 					).setRedirect(
 						currentURL
 					).setParameter(
-						"batchPlannerLogId", batchPlannerLogDisplay.getBatchPlannerLogId()
+						"batchPlannerPlanId", batchPlannerPlanDisplay.getBatchPlannerPlanId()
 					).buildPortletURL()
 				%>'
-				name="title"
-				value="<%= batchPlannerLogDisplay.getTitle() %>"
+				name="name"
+				value="<%= batchPlannerPlanDisplay.getTitle() %>"
 			/>
 
 			<liferay-ui:search-container-column-text
 				name="action"
-				value="<%= batchPlannerLogDisplay.getAction() %>"
+				value="<%= LanguageUtil.get(request, batchPlannerPlanDisplay.getAction()) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
 				name="type"
-				value="<%= batchPlannerLogDisplayContext.getSimpleInternalClassName(batchPlannerLogDisplay.getInternalClassName()) %>"
+				value="<%= batchPlannerPlanDisplayContext.getSimpleClassName(batchPlannerPlanDisplay.getInternalClassNameKey()) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
-				name="create-date"
-				value="<%= dateFormatDateTime.format(batchPlannerLogDisplay.getCreateDate()) %>"
+				name="creation-date"
+				value="<%= dateTimeFormat.format(batchPlannerPlanDisplay.getCreateDate()) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
-				name="user"
-				value="<%= PortalUtil.getUserEmailAddress(batchPlannerLogDisplay.getUserId()) %>"
+				name="author"
+				value="<%= PortalUtil.getUserEmailAddress(batchPlannerPlanDisplay.getUserId()) %>"
+			/>
+
+			<liferay-ui:search-container-column-text
+				name="status"
+			>
+				<div class="h6 text-uppercase <%= BatchPlannerPlanConstants.getStatusCssClass(batchPlannerPlanDisplay.getStatus()) %>">
+					<liferay-ui:message key="<%= BatchPlannerPlanConstants.getStatusLabel(batchPlannerPlanDisplay.getStatus()) %>" />
+				</div>
+			</liferay-ui:search-container-column-text>
+
+			<liferay-ui:search-container-column-text
+				name="successful-rows"
+				value="<%= String.valueOf(batchPlannerPlanDisplay.getProcessedItemsCount()) %>"
+			/>
+
+			<liferay-ui:search-container-column-text
+				name="failed-rows"
+				value="<%= String.valueOf(batchPlannerPlanDisplay.getFailedItemsCount()) %>"
+			/>
+
+			<liferay-ui:search-container-column-text
+				name="total"
+				value="<%= String.valueOf(batchPlannerPlanDisplay.getTotalItemsCount()) %>"
+			/>
+
+			<liferay-ui:search-container-column-jsp
+				cssClass="entry-action-column"
+				path="/batch_planner_plan_action.jsp"
 			/>
 		</liferay-ui:search-container-row>
 

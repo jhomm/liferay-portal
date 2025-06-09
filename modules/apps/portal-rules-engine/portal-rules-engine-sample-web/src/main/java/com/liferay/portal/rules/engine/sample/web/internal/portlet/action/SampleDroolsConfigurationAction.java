@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.rules.engine.sample.web.internal.portlet.action;
@@ -33,13 +24,12 @@ import com.liferay.portal.rules.engine.RulesLanguage;
 import com.liferay.portal.rules.engine.RulesResourceRetriever;
 import com.liferay.portal.rules.engine.sample.web.internal.constants.SampleDroolsPortletKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletPreferences;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,8 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SampleDroolsPortletKeys.SAMPLE_DROOLS,
+	property = "jakarta.portlet.name=" + SampleDroolsPortletKeys.SAMPLE_DROOLS,
 	service = ConfigurationAction.class
 )
 public class SampleDroolsConfigurationAction
@@ -72,12 +61,12 @@ public class SampleDroolsConfigurationAction
 			return;
 		}
 
-		PortletPreferences preferences = actionRequest.getPreferences();
+		PortletPreferences portletPreferences = actionRequest.getPreferences();
 
-		updatePreferences(actionRequest, preferences);
+		_updatePreferences(actionRequest, portletPreferences);
 
 		if (SessionErrors.isEmpty(actionRequest)) {
-			preferences.store();
+			portletPreferences.store();
 
 			SessionMessages.add(
 				actionRequest,
@@ -86,17 +75,8 @@ public class SampleDroolsConfigurationAction
 		}
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.portal.rules.engine.sample.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
-	protected void updatePreferences(
-			ActionRequest actionRequest, PortletPreferences preferences)
+	private void _updatePreferences(
+			ActionRequest actionRequest, PortletPreferences portletPreferences)
 		throws Exception {
 
 		String domainName = ParamUtil.getString(actionRequest, "domainName");
@@ -123,23 +103,23 @@ public class SampleDroolsConfigurationAction
 				_rulesEngine.update(domainName, rulesResourceRetriever);
 			}
 			catch (RulesEngineException rulesEngineException) {
-				_log.error(rulesEngineException, rulesEngineException);
+				_log.error(rulesEngineException);
 
 				SessionErrors.add(actionRequest, "rulesEngineException");
 			}
 		}
 
 		if (SessionErrors.isEmpty(actionRequest)) {
-			preferences.setValue("rules", rules);
-			preferences.setValue("domain-name", domainName);
+			portletPreferences.setValue("rules", rules);
+			portletPreferences.setValue("domain-name", domainName);
 
 			String userCustomAttributeNames = ParamUtil.getString(
 				actionRequest, "userCustomAttributeNames");
 
-			preferences.setValue(
+			portletPreferences.setValue(
 				"user-custom-attribute-names", userCustomAttributeNames);
 
-			preferences.setValues(
+			portletPreferences.setValues(
 				"class-name-ids", ArrayUtil.toStringArray(classNameIds));
 		}
 	}

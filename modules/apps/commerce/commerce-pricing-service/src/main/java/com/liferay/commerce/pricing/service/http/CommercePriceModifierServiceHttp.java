@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Riccardo Alberti
- * @see CommercePriceModifierServiceSoap
  * @generated
  */
 public class CommercePriceModifierServiceHttp {
@@ -209,19 +199,18 @@ public class CommercePriceModifierServiceHttp {
 	}
 
 	public static com.liferay.commerce.pricing.model.CommercePriceModifier
-			fetchByExternalReferenceCode(
-				HttpPrincipal httpPrincipal, String externalReferenceCode,
-				long companyId)
+			fetchCommercePriceModifier(
+				HttpPrincipal httpPrincipal, long commercePriceModifierId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePriceModifierServiceUtil.class,
-				"fetchByExternalReferenceCode",
-				_fetchByExternalReferenceCodeParameterTypes3);
+				"fetchCommercePriceModifier",
+				_fetchCommercePriceModifierParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, externalReferenceCode, companyId);
+				methodKey, commercePriceModifierId);
 
 			Object returnObj = null;
 
@@ -253,18 +242,19 @@ public class CommercePriceModifierServiceHttp {
 	}
 
 	public static com.liferay.commerce.pricing.model.CommercePriceModifier
-			fetchCommercePriceModifier(
-				HttpPrincipal httpPrincipal, long commercePriceModifierId)
+			fetchCommercePriceModifierByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CommercePriceModifierServiceUtil.class,
-				"fetchCommercePriceModifier",
-				_fetchCommercePriceModifierParameterTypes4);
+				"fetchCommercePriceModifierByExternalReferenceCode",
+				_fetchCommercePriceModifierByExternalReferenceCodeParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, commercePriceModifierId);
+				methodKey, externalReferenceCode, companyId);
 
 			Object returnObj = null;
 
@@ -639,12 +629,11 @@ public class CommercePriceModifierServiceHttp {
 		};
 	private static final Class<?>[]
 		_deleteCommercePriceModifierParameterTypes2 = new Class[] {long.class};
-	private static final Class<?>[]
-		_fetchByExternalReferenceCodeParameterTypes3 = new Class[] {
-			String.class, long.class
-		};
-	private static final Class<?>[] _fetchCommercePriceModifierParameterTypes4 =
+	private static final Class<?>[] _fetchCommercePriceModifierParameterTypes3 =
 		new Class[] {long.class};
+	private static final Class<?>[]
+		_fetchCommercePriceModifierByExternalReferenceCodeParameterTypes4 =
+			new Class[] {String.class, long.class};
 	private static final Class<?>[] _getCommercePriceModifierParameterTypes5 =
 		new Class[] {long.class};
 	private static final Class<?>[] _getCommercePriceModifiersParameterTypes6 =

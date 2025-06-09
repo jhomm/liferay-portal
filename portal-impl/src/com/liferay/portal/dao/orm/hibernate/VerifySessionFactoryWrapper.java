@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.hibernate;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.spring.hibernate.PortalTransactionManager;
 import com.liferay.portal.spring.hibernate.PortletTransactionManager;
 import com.liferay.portal.spring.transaction.TransactionExecutor;
 import com.liferay.portal.spring.transaction.TransactionExecutorThreadLocal;
@@ -32,9 +24,11 @@ import java.lang.reflect.Method;
 
 import java.sql.Connection;
 
-import org.hibernate.engine.SessionFactoryImplementor;
+import java.util.function.Function;
 
-import org.springframework.orm.hibernate3.HibernateTransactionManager;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.metamodel.spi.MetamodelImplementor;
+
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -101,8 +95,7 @@ public class VerifySessionFactoryWrapper implements SessionFactory {
 
 		Session session = _sessionFactoryImpl.openSession();
 
-		return (Session)ProxyUtil.newProxyInstance(
-			Session.class.getClassLoader(), new Class<?>[] {Session.class},
+		return _sessionProxyProviderFunction.apply(
 			new SessionInvocationHandler(session));
 	}
 
@@ -110,15 +103,20 @@ public class VerifySessionFactoryWrapper implements SessionFactory {
 		SessionFactoryImplementor currentSessionFactoryImplementor,
 		SessionFactoryImplementor targetSessionFactoryImplementor) {
 
+		MetamodelImplementor currentSessionMetamodelImplementor =
+			currentSessionFactoryImplementor.getMetamodel();
+		MetamodelImplementor targetSessionMetamodelImplementor =
+			targetSessionFactoryImplementor.getMetamodel();
+
 		_log.error(
 			"Failed session factory verification",
 			new IllegalStateException(
 				StringBundler.concat(
 					"Wrong current transaction manager, current session ",
 					"factory classes metadata: ",
-					currentSessionFactoryImplementor.getAllClassMetadata(),
+					currentSessionMetamodelImplementor.entityPersisters(),
 					", target session factory classes metadata: ",
-					targetSessionFactoryImplementor.getAllClassMetadata())));
+					targetSessionMetamodelImplementor.entityPersisters())));
 	}
 
 	private boolean _verify() {
@@ -141,13 +139,13 @@ public class VerifySessionFactoryWrapper implements SessionFactory {
 		SessionFactoryImplementor targetSessionFactoryImplementor =
 			_sessionFactoryImpl.getSessionFactoryImplementor();
 
-		if (platformTransactionManager instanceof HibernateTransactionManager) {
-			HibernateTransactionManager hibernateTransactionManager =
-				(HibernateTransactionManager)platformTransactionManager;
+		if (platformTransactionManager instanceof PortalTransactionManager) {
+			PortalTransactionManager portalTransactionManager =
+				(PortalTransactionManager)platformTransactionManager;
 
 			SessionFactoryImplementor currentSessionFactoryImplementor =
 				(SessionFactoryImplementor)
-					hibernateTransactionManager.getSessionFactory();
+					portalTransactionManager.getSessionFactory();
 
 			if (targetSessionFactoryImplementor ==
 					currentSessionFactoryImplementor) {
@@ -189,6 +187,10 @@ public class VerifySessionFactoryWrapper implements SessionFactory {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		VerifySessionFactoryWrapper.class);
+
+	private static final Function<InvocationHandler, Session>
+		_sessionProxyProviderFunction = ProxyUtil.getProxyProviderFunction(
+			Session.class);
 
 	private final SessionFactoryImpl _sessionFactoryImpl;
 

@@ -1,26 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins;
 
-import com.liferay.gradle.plugins.extensions.AppServer;
 import com.liferay.gradle.plugins.extensions.LiferayExtension;
 import com.liferay.gradle.plugins.internal.LangBuilderDefaultsPlugin;
 import com.liferay.gradle.plugins.internal.util.FileUtil;
 import com.liferay.gradle.plugins.internal.util.GradleUtil;
-import com.liferay.gradle.plugins.tasks.DirectDeployTask;
-import com.liferay.gradle.plugins.tasks.DockerCopyTask;
+import com.liferay.gradle.plugins.task.DirectDeployTask;
+import com.liferay.gradle.plugins.task.DockerCopyTask;
 import com.liferay.gradle.plugins.util.PortalTools;
 import com.liferay.gradle.util.Validator;
 
@@ -37,11 +27,9 @@ import org.gradle.api.Task;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.DependencyResolveDetails;
-import org.gradle.api.artifacts.DependencySet;
 import org.gradle.api.artifacts.ModuleVersionSelector;
 import org.gradle.api.artifacts.ResolutionStrategy;
 import org.gradle.api.file.FileCollection;
-import org.gradle.api.file.FileTree;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.ExtensionContainer;
@@ -85,8 +73,7 @@ public class LiferayBasePlugin implements Plugin<Project> {
 		Configuration portalConfiguration = configurationContainer.create(
 			PORTAL_CONFIGURATION_NAME);
 
-		_configureConfigurationPortal(
-			project, liferayExtension, portalConfiguration);
+		_configureConfigurationPortal(portalConfiguration);
 
 		// Tasks
 
@@ -170,83 +157,11 @@ public class LiferayBasePlugin implements Plugin<Project> {
 	}
 
 	private void _configureConfigurationPortal(
-		final Project project, final LiferayExtension liferayExtension,
 		Configuration portalConfiguration) {
 
 		portalConfiguration.setDescription(
 			"Configures the classpath from the local Liferay bundle.");
 		portalConfiguration.setVisible(false);
-
-		portalConfiguration.defaultDependencies(
-			new Action<DependencySet>() {
-
-				@Override
-				public void execute(DependencySet dependencySet) {
-					File appServerClassesPortalDir = new File(
-						liferayExtension.getAppServerPortalDir(),
-						"WEB-INF/classes");
-
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME,
-						appServerClassesPortalDir);
-
-					File appServerLibPortalDir = new File(
-						liferayExtension.getAppServerPortalDir(),
-						"WEB-INF/lib");
-
-					FileTree appServerLibPortalDirJarFiles =
-						FileUtil.getJarsFileTree(
-							project, appServerLibPortalDir);
-
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME,
-						appServerLibPortalDirJarFiles);
-
-					File appServerShieldedContainerLibPortalDir = new File(
-						liferayExtension.getAppServerPortalDir(),
-						"WEB-INF/shielded-container-lib");
-
-					FileTree appServerShieldedContainerLibPortalDirJarFiles =
-						FileUtil.getJarsFileTree(
-							project, appServerShieldedContainerLibPortalDir);
-
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME,
-						appServerShieldedContainerLibPortalDirJarFiles);
-
-					FileTree appServerLibGlobalDirJarFiles =
-						FileUtil.getJarsFileTree(
-							project,
-							liferayExtension.getAppServerLibGlobalDir(),
-							"mail.jar");
-
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME,
-						appServerLibGlobalDirJarFiles);
-
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME, "com.liferay",
-						"net.sf.jargs", "1.0");
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME,
-						"com.thoughtworks.qdox", "qdox", "1.12.1");
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME, "javax.activation",
-						"activation", "1.1");
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME, "javax.servlet",
-						"javax.servlet-api", "3.0.1");
-					GradleUtil.addDependency(
-						project, PORTAL_CONFIGURATION_NAME, "javax.servlet.jsp",
-						"javax.servlet.jsp-api", "2.3.1");
-
-					AppServer appServer = liferayExtension.getAppServer();
-
-					appServer.addAdditionalDependencies(
-						PORTAL_CONFIGURATION_NAME);
-				}
-
-			});
 	}
 
 	private void _configureTaskDeployProvider(

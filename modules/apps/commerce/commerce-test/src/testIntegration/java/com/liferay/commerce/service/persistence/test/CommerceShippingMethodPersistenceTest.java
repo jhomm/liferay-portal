@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence.test;
@@ -147,13 +138,18 @@ public class CommerceShippingMethodPersistenceTest {
 
 		newCommerceShippingMethod.setDescription(RandomTestUtil.randomString());
 
-		newCommerceShippingMethod.setImageId(RandomTestUtil.nextLong());
+		newCommerceShippingMethod.setActive(RandomTestUtil.randomBoolean());
 
 		newCommerceShippingMethod.setEngineKey(RandomTestUtil.randomString());
 
+		newCommerceShippingMethod.setImageId(RandomTestUtil.nextLong());
+
 		newCommerceShippingMethod.setPriority(RandomTestUtil.nextDouble());
 
-		newCommerceShippingMethod.setActive(RandomTestUtil.randomBoolean());
+		newCommerceShippingMethod.setTrackingURL(RandomTestUtil.randomString());
+
+		newCommerceShippingMethod.setTypeSettings(
+			RandomTestUtil.randomString());
 
 		_commerceShippingMethods.add(
 			_persistence.update(newCommerceShippingMethod));
@@ -196,17 +192,23 @@ public class CommerceShippingMethodPersistenceTest {
 			existingCommerceShippingMethod.getDescription(),
 			newCommerceShippingMethod.getDescription());
 		Assert.assertEquals(
-			existingCommerceShippingMethod.getImageId(),
-			newCommerceShippingMethod.getImageId());
+			existingCommerceShippingMethod.isActive(),
+			newCommerceShippingMethod.isActive());
 		Assert.assertEquals(
 			existingCommerceShippingMethod.getEngineKey(),
 			newCommerceShippingMethod.getEngineKey());
+		Assert.assertEquals(
+			existingCommerceShippingMethod.getImageId(),
+			newCommerceShippingMethod.getImageId());
 		AssertUtils.assertEquals(
 			existingCommerceShippingMethod.getPriority(),
 			newCommerceShippingMethod.getPriority());
 		Assert.assertEquals(
-			existingCommerceShippingMethod.isActive(),
-			newCommerceShippingMethod.isActive());
+			existingCommerceShippingMethod.getTrackingURL(),
+			newCommerceShippingMethod.getTrackingURL());
+		Assert.assertEquals(
+			existingCommerceShippingMethod.getTypeSettings(),
+			newCommerceShippingMethod.getTypeSettings());
 	}
 
 	@Test
@@ -217,20 +219,20 @@ public class CommerceShippingMethodPersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_A() throws Exception {
+		_persistence.countByG_A(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByG_A(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
 	public void testCountByG_E() throws Exception {
 		_persistence.countByG_E(RandomTestUtil.nextLong(), "");
 
 		_persistence.countByG_E(0L, "null");
 
 		_persistence.countByG_E(0L, (String)null);
-	}
-
-	@Test
-	public void testCountByG_A() throws Exception {
-		_persistence.countByG_A(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByG_A(0L, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -264,8 +266,9 @@ public class CommerceShippingMethodPersistenceTest {
 			"CommerceShippingMethod", "mvccVersion", true,
 			"commerceShippingMethodId", true, "groupId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "name", true, "description", true, "imageId",
-			true, "engineKey", true, "priority", true, "active", true);
+			"modifiedDate", true, "name", true, "description", true, "active",
+			true, "engineKey", true, "imageId", true, "priority", true,
+			"trackingURL", true);
 	}
 
 	@Test
@@ -598,13 +601,17 @@ public class CommerceShippingMethodPersistenceTest {
 
 		commerceShippingMethod.setDescription(RandomTestUtil.randomString());
 
-		commerceShippingMethod.setImageId(RandomTestUtil.nextLong());
+		commerceShippingMethod.setActive(RandomTestUtil.randomBoolean());
 
 		commerceShippingMethod.setEngineKey(RandomTestUtil.randomString());
 
+		commerceShippingMethod.setImageId(RandomTestUtil.nextLong());
+
 		commerceShippingMethod.setPriority(RandomTestUtil.nextDouble());
 
-		commerceShippingMethod.setActive(RandomTestUtil.randomBoolean());
+		commerceShippingMethod.setTrackingURL(RandomTestUtil.randomString());
+
+		commerceShippingMethod.setTypeSettings(RandomTestUtil.randomString());
 
 		_commerceShippingMethods.add(
 			_persistence.update(commerceShippingMethod));

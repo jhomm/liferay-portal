@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
@@ -88,10 +79,10 @@ public interface FragmentCompositionLocalService
 		FragmentComposition fragmentComposition);
 
 	public FragmentComposition addFragmentComposition(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -141,6 +132,10 @@ public interface FragmentCompositionLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public FragmentComposition deleteFragmentComposition(
 			long fragmentCompositionId)
+		throws PortalException;
+
+	public FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -230,6 +225,10 @@ public interface FragmentCompositionLocalService
 	public FragmentComposition fetchFragmentComposition(
 		long groupId, String fragmentCompositionKey);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentComposition fetchFragmentCompositionByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
 	/**
 	 * Returns the fragment composition matching the UUID and group.
 	 *
@@ -260,6 +259,11 @@ public interface FragmentCompositionLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentComposition getFragmentComposition(
 			long fragmentCompositionId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentComposition getFragmentCompositionByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -372,6 +376,10 @@ public interface FragmentCompositionLocalService
 			long userId, long groupId, String folderName)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getUniqueFragmentCompositionName(
+		long groupId, long fragmentCollectionId, String name);
+
 	public FragmentComposition moveFragmentComposition(
 			long fragmentCompositionId, long fragmentCollectionId)
 		throws PortalException;
@@ -398,17 +406,6 @@ public interface FragmentCompositionLocalService
 			long userId, long fragmentCompositionId, long fragmentCollectionId,
 			String name, String description, String data,
 			long previewFileEntryId, int status)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateFragmentComposition(long, long, long, String, String, String, long, int)}
-	 */
-	@Deprecated
-	public FragmentComposition updateFragmentComposition(
-			long userId, long fragmentCompositionId, String name,
-			String description, String data, long previewFileEntryId,
-			int status)
 		throws PortalException;
 
 	public FragmentComposition updateFragmentComposition(

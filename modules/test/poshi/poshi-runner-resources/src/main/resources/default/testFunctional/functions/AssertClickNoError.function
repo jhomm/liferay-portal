@@ -1,0 +1,48 @@
+@default = "assertClickNoError"
+@summary = "Click on '${locator1}' that should have a value of '${value1}'"
+definition {
+
+	function assertClickNoError(locator1) {
+		if (contains(${locator1}, "/input")) {
+			AssertClickNoError.assertValueClick();
+		}
+		else {
+			AssertClickNoError.assertTextClick();
+		}
+	}
+
+	function assertPartialTextClickAt(locator1, value1) {
+		AssertTextEquals.assertPartialText();
+
+		selenium.mouseOver(${locator1});
+
+		selenium.clickAt(${locator1}, ${value1});
+	}
+
+	function assertTextClick(locator1, value1) {
+		selenium.waitForVisible(${locator1}, "true");
+
+        var regex = RegexUtil.escapeRegexChars(${value1});
+
+		selenium.waitForTextMatches(${locator1}, "(?iu)${regex}");
+
+		selenium.assertTextMatches(${locator1}, "(?iu)${regex}");
+
+		selenium.mouseOver(${locator1});
+
+		selenium.click(${locator1});
+	}
+
+	function assertValueClick(locator1, value1) {
+		selenium.waitForVisible(${locator1}, "true");
+
+		selenium.waitForValue(${locator1}, ${value1});
+
+		selenium.assertValue(${locator1}, ${value1});
+
+		selenium.mouseOver(${locator1});
+
+		selenium.click(${locator1});
+	}
+
+}

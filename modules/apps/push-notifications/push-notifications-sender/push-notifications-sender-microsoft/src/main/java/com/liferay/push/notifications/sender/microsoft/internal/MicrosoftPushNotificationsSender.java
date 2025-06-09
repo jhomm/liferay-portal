@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.push.notifications.sender.microsoft.internal;
@@ -17,7 +8,7 @@ package com.liferay.push.notifications.sender.microsoft.internal;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.push.notifications.constants.PushNotificationsConstants;
 import com.liferay.push.notifications.sender.PushNotificationsSender;
@@ -35,13 +26,13 @@ import org.jboss.aerogear.windows.mpns.notifications.ToastNotification;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Javier Gamarra
  * @author Salva Tejero
  */
 @Component(
-	immediate = true,
 	property = "platform=" + MicrosoftPushNotificationsSender.PLATFORM,
 	service = PushNotificationsSender.class
 )
@@ -64,7 +55,7 @@ public class MicrosoftPushNotificationsSender
 		String body = payloadJSONObject.getString(
 			PushNotificationsConstants.KEY_BODY);
 
-		JSONObject newPayloadJSONObject = JSONFactoryUtil.createJSONObject();
+		JSONObject newPayloadJSONObject = _jsonFactory.createJSONObject();
 
 		Iterator<String> iterator = payloadJSONObject.keys();
 
@@ -78,11 +69,11 @@ public class MicrosoftPushNotificationsSender
 			}
 		}
 
-		String attributes = getAttributes(newPayloadJSONObject);
+		String attributes = _getAttributes(newPayloadJSONObject);
 
-		TileNotification tileNotification = buildTileNotification(
+		TileNotification tileNotification = _buildTileNotification(
 			from, body, attributes);
-		ToastNotification toastNotification = buildToastNotification(
+		ToastNotification toastNotification = _buildToastNotification(
 			from, body, attributes);
 
 		for (String token : tokens) {
@@ -98,7 +89,12 @@ public class MicrosoftPushNotificationsSender
 		_mpnsService = mpnsServiceBuilder.build();
 	}
 
-	protected TileNotification buildTileNotification(
+	@Deactivate
+	protected void deactivate() {
+		_mpnsService = null;
+	}
+
+	private TileNotification _buildTileNotification(
 		String from, String body, String attributes) {
 
 		MpnsNotificationBuilder mpnsNotificationBuilder =
@@ -115,7 +111,7 @@ public class MicrosoftPushNotificationsSender
 		return builder.build();
 	}
 
-	protected ToastNotification buildToastNotification(
+	private ToastNotification _buildToastNotification(
 		String from, String body, String attributes) {
 
 		MpnsNotificationBuilder mpnsNotificationBuilder =
@@ -130,12 +126,7 @@ public class MicrosoftPushNotificationsSender
 		return builder.build();
 	}
 
-	@Deactivate
-	protected void deactivate() {
-		_mpnsService = null;
-	}
-
-	protected String getAttributes(JSONObject payloadJSONObject) {
+	private String _getAttributes(JSONObject payloadJSONObject) {
 		StringBundler sb = new StringBundler();
 
 		Iterator<String> iterator = payloadJSONObject.keys();
@@ -151,6 +142,9 @@ public class MicrosoftPushNotificationsSender
 
 		return sb.toString();
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	private volatile MpnsService _mpnsService;
 

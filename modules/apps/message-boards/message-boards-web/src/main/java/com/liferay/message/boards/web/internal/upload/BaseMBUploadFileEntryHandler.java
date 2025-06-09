@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.upload;
@@ -29,62 +20,71 @@ import com.liferay.upload.UploadFileEntryHandler;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Adolfo Pérez
  */
 public abstract class BaseMBUploadFileEntryHandler
 	implements UploadFileEntryHandler {
 
+	public BaseMBUploadFileEntryHandler(
+		DLValidator dlValidator, MBMessageService mbMessageService) {
+
+		_dlValidator = dlValidator;
+		_mbMessageService = mbMessageService;
+	}
+
 	@Override
 	public FileEntry upload(UploadPortletRequest uploadPortletRequest)
 		throws IOException, PortalException {
-
-		dlValidator.validateFileSize(
-			uploadPortletRequest.getFileName(getParameterName()),
-			uploadPortletRequest.getSize(getParameterName()));
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)uploadPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
+		String fileName = _getFileName(uploadPortletRequest);
+
+		_dlValidator.validateFileExtension(fileName);
+
+		String contentType = _getContentType(uploadPortletRequest);
+
+		_dlValidator.validateFileMimeType(
+			themeDisplay.getCompanyId(), contentType);
+
+		_dlValidator.validateFileSize(
+			themeDisplay.getScopeGroupId(), fileName, contentType,
+			uploadPortletRequest.getSize(getParameterName()));
+
 		long categoryId = ParamUtil.getLong(uploadPortletRequest, "categoryId");
 
-		try (InputStream inputStream = getFileAsInputStream(
+		try (InputStream inputStream = _getFileAsInputStream(
 				uploadPortletRequest)) {
 
-			String tempFileName = TempFileEntryUtil.getTempFileName(
-				getFileName(uploadPortletRequest));
-
-			return mbMessageService.addTempAttachment(
+			return _mbMessageService.addTempAttachment(
 				themeDisplay.getScopeGroupId(), categoryId,
-				MBMessageConstants.TEMP_FOLDER_NAME, tempFileName, inputStream,
-				getContentType(uploadPortletRequest));
+				MBMessageConstants.TEMP_FOLDER_NAME,
+				TempFileEntryUtil.getTempFileName(fileName), inputStream,
+				contentType);
 		}
 	}
 
-	protected String getContentType(UploadPortletRequest uploadPortletRequest) {
+	protected abstract String getParameterName();
+
+	private String _getContentType(UploadPortletRequest uploadPortletRequest) {
 		return uploadPortletRequest.getContentType(getParameterName());
 	}
 
-	protected InputStream getFileAsInputStream(
+	private InputStream _getFileAsInputStream(
 			UploadPortletRequest uploadPortletRequest)
 		throws IOException {
 
 		return uploadPortletRequest.getFileAsStream(getParameterName());
 	}
 
-	protected String getFileName(UploadPortletRequest uploadPortletRequest) {
+	private String _getFileName(UploadPortletRequest uploadPortletRequest) {
 		return uploadPortletRequest.getFileName(getParameterName());
 	}
 
-	protected abstract String getParameterName();
-
-	@Reference
-	protected DLValidator dlValidator;
-
-	@Reference
-	protected MBMessageService mbMessageService;
+	private final DLValidator _dlValidator;
+	private final MBMessageService _mbMessageService;
 
 }

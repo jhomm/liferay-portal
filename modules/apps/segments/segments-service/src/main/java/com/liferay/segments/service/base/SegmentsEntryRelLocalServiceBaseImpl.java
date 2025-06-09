@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.base;
@@ -19,8 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -29,6 +19,8 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
@@ -40,21 +32,13 @@ import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.segments.model.SegmentsEntryRel;
 import com.liferay.segments.service.SegmentsEntryRelLocalService;
-import com.liferay.segments.service.SegmentsEntryRelLocalServiceUtil;
-import com.liferay.segments.service.persistence.SegmentsEntryPersistence;
 import com.liferay.segments.service.persistence.SegmentsEntryRelPersistence;
-import com.liferay.segments.service.persistence.SegmentsEntryRolePersistence;
-import com.liferay.segments.service.persistence.SegmentsExperiencePersistence;
-import com.liferay.segments.service.persistence.SegmentsExperimentFinder;
-import com.liferay.segments.service.persistence.SegmentsExperimentPersistence;
-import com.liferay.segments.service.persistence.SegmentsExperimentRelPersistence;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -82,7 +66,7 @@ public abstract class SegmentsEntryRelLocalServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>SegmentsEntryRelLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>SegmentsEntryRelLocalServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>SegmentsEntryRelLocalService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.segments.service.SegmentsEntryRelLocalServiceUtil</code>.
 	 */
 
 	/**
@@ -335,6 +319,11 @@ public abstract class SegmentsEntryRelLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement SegmentsEntryRelLocalServiceImpl#deleteSegmentsEntryRel(SegmentsEntryRel) to avoid orphaned data");
+		}
+
 		return segmentsEntryRelLocalService.deleteSegmentsEntryRel(
 			(SegmentsEntryRel)persistedModel);
 	}
@@ -400,7 +389,6 @@ public abstract class SegmentsEntryRelLocalServiceBaseImpl
 
 	@Deactivate
 	protected void deactivate() {
-		_setLocalServiceUtilService(null);
 	}
 
 	@Override
@@ -414,8 +402,6 @@ public abstract class SegmentsEntryRelLocalServiceBaseImpl
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		segmentsEntryRelLocalService = (SegmentsEntryRelLocalService)aopProxy;
-
-		_setLocalServiceUtilService(segmentsEntryRelLocalService);
 	}
 
 	/**
@@ -457,43 +443,28 @@ public abstract class SegmentsEntryRelLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = segmentsEntryRelPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = segmentsEntryRelPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
 		}
 	}
-
-	private void _setLocalServiceUtilService(
-		SegmentsEntryRelLocalService segmentsEntryRelLocalService) {
-
-		try {
-			Field field =
-				SegmentsEntryRelLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, segmentsEntryRelLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected SegmentsEntryPersistence segmentsEntryPersistence;
 
 	protected SegmentsEntryRelLocalService segmentsEntryRelLocalService;
 
@@ -501,34 +472,10 @@ public abstract class SegmentsEntryRelLocalServiceBaseImpl
 	protected SegmentsEntryRelPersistence segmentsEntryRelPersistence;
 
 	@Reference
-	protected SegmentsEntryRolePersistence segmentsEntryRolePersistence;
-
-	@Reference
-	protected SegmentsExperiencePersistence segmentsExperiencePersistence;
-
-	@Reference
-	protected SegmentsExperimentPersistence segmentsExperimentPersistence;
-
-	@Reference
-	protected SegmentsExperimentFinder segmentsExperimentFinder;
-
-	@Reference
-	protected SegmentsExperimentRelPersistence segmentsExperimentRelPersistence;
-
-	@Reference
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		SegmentsEntryRelLocalServiceBaseImpl.class);
 
 }

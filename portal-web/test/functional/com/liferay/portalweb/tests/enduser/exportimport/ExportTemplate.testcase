@@ -1,26 +1,31 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Export/Import Framework";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		task ("Setup: Setup portal instance and login to portal") {
+			TestCase.setUpPortalInstance();
 
-		User.firstLoginPG();
+			User.firstLoginPG();
+		}
 
-		Navigator.openURL();
+		task ("And: Open export portlet") {
+			Navigator.openURL();
 
-		ProductMenu.gotoPortlet(
-			category = "Publishing",
-			portlet = "Export");
+			ProductMenu.gotoPortlet(
+				category = "Publishing",
+				portlet = "Export");
+		}
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -28,96 +33,117 @@ definition {
 		}
 	}
 
-	@priority = "4"
+	@description = "Verify is possible delete an export template."
+	@priority = 4
 	test DeleteExportTemplate {
-		LAR.addExportTemplateCP(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+		task ("Given: An export template is created") {
+			LAR.addExportTemplateCP(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
 
-		LAR.saveExportTemplateCP(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+			LAR.saveExportTemplateCP(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
 
-		LAR.viewExportTemplateCP(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+			LAR.viewExportTemplateCP(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
+		}
 
-		LAR.moveToTheRecycleBinExportTemplate(exportTemplateName = "Export Template Name");
+		task ("When: I delete and restore the export template") {
+			LAR.moveToTheRecycleBinExportTemplate(exportTemplateName = "Export Template Name");
 
-		Navigator.openURL();
+			Navigator.openURL();
 
-		ProductMenu.gotoPortlet(
-			category = "Recycle Bin",
-			portlet = "Recycle Bin");
+			ProductMenu.gotoPortlet(
+				category = "Recycle Bin",
+				portlet = "Recycle Bin");
 
-		RecycleBin.viewCP(
-			assetName = "Export Template Name",
-			assetType = "Export Import Template",
-			deleteUser = "Test Test");
+			RecycleBin.viewCP(
+				assetName = "Export Template Name",
+				assetType = "Export Import Template",
+				deleteUser = "Test Test");
 
-		RecycleBin.restoreCP(assetName = "Export Template Name");
+			RecycleBin.restoreCP(assetName = "Export Template Name");
+		}
 
-		Navigator.openURL();
+		task ("Then: Verify if it's possible see the template again") {
+			Navigator.openURL();
 
-		ProductMenu.gotoPortlet(
-			category = "Publishing",
-			portlet = "Export");
+			ProductMenu.gotoPortlet(
+				category = "Publishing",
+				portlet = "Export");
 
-		LexiconEntry.gotoHeaderMenuItem(menuItem = "Export Templates");
+			LexiconEntry.gotoHeaderMenuItem(menuItem = "Export Templates");
 
-		LAR.viewExportTemplateCP(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+			LAR.viewExportTemplateCP(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
+		}
 	}
 
-	@priority = "3"
+	@description = "Verify is possible relaunch the exported process."
+	@priority = 3
 	test ExportWithRelaunchedProcess {
-		LAR.exportSiteCP(siteScopeName = "Guest");
+		task ("Given: An export template is created") {
+			LAR.exportSiteCP(siteScopeName = "Guest");
 
-		var key_larFileName = "${larFileName}";
+			var key_larFileName = ${larFileName};
 
-		AssertTextEquals.assertPartialText(
-			locator1 = "SitePagesExport#CURRENT_AND_PREVIOUS_STATUS",
-			value1 = "Successful");
+			AssertTextEquals(
+				locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
+				value1 = "Successful");
 
-		var valueName = selenium.getText("//ul/li/div/h2");
+			var valueName = selenium.getText("//dl/dd/div/h2");
 
-		echo("value name ${valueName}");
+			echo("value name ${valueName}");
 
-		var larFileName = RegexUtil.replace("${valueName}", "([a-zA-z0-9_.-]*)[(0-9KB)]*", "1");
+			var larFileName = RegexUtil.replace(${valueName}, "([a-zA-z0-9_.-]*)[(0-9KB)]*", 1);
 
-		echo("lar file name ${larFileName}");
+			echo("lar file name ${larFileName}");
+		}
 
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Relaunch",
-			rowEntry = "${larFileName}");
+		task ("When: I relaunch this template") {
+			LexiconEntry.gotoEntryMenuItem(
+				menuItem = "Relaunch",
+				rowEntry = ${larFileName});
+		}
 
-		AssertTextEquals.assertPartialText(
-			locator1 = "SitePagesExport#CURRENT_AND_PREVIOUS_STATUS",
-			value1 = "Successful");
+		task ("Then: I will see the successful process") {
+			AssertTextEquals(
+				locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS_1",
+				value1 = "Successful");
+		}
 	}
 
-	@priority = "4"
+	@description = "Verify is possible search an export template."
+	@priority = 3
 	test SearchExportTemplate {
-		LAR.addExportTemplateCP(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+		task ("Given: An export template is created") {
+			LAR.addExportTemplateCP(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
 
-		LAR.saveExportTemplateCP(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+			LAR.saveExportTemplateCP(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
+		}
 
-		Navigator.openURL();
+		task ("When: I try to search for an export template") {
+			Navigator.openURL();
 
-		ProductMenu.gotoPortlet(
-			category = "Publishing",
-			portlet = "Export");
+			ProductMenu.gotoPortlet(
+				category = "Publishing",
+				portlet = "Export");
 
-		LexiconEntry.gotoHeaderMenuItem(menuItem = "Export Templates");
+			LexiconEntry.gotoHeaderMenuItem(menuItem = "Export Templates");
+		}
 
-		LAR.searchTemplate(
-			exportTemplateDescription = "Export Template Description",
-			exportTemplateName = "Export Template Name");
+		task ("Then: I can see the export template in the results") {
+			LAR.searchTemplate(
+				exportTemplateDescription = "Export Template Description",
+				exportTemplateName = "Export Template Name");
+		}
 	}
 
 }

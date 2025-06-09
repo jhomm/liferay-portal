@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -61,9 +52,10 @@ public class OrganizationWrapper
 		attributes.put("recursable", isRecursable());
 		attributes.put("regionId", getRegionId());
 		attributes.put("countryId", getCountryId());
-		attributes.put("statusId", getStatusId());
+		attributes.put("statusListTypeId", getStatusListTypeId());
 		attributes.put("comments", getComments());
 		attributes.put("logoId", getLogoId());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -174,10 +166,10 @@ public class OrganizationWrapper
 			setCountryId(countryId);
 		}
 
-		Long statusId = (Long)attributes.get("statusId");
+		Long statusListTypeId = (Long)attributes.get("statusListTypeId");
 
-		if (statusId != null) {
-			setStatusId(statusId);
+		if (statusListTypeId != null) {
+			setStatusListTypeId(statusListTypeId);
 		}
 
 		String comments = (String)attributes.get("comments");
@@ -190,6 +182,12 @@ public class OrganizationWrapper
 
 		if (logoId != null) {
 			setLogoId(logoId);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -387,7 +385,7 @@ public class OrganizationWrapper
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getPreferences() {
+	public jakarta.portlet.PortletPreferences getPreferences() {
 		return model.getPreferences();
 	}
 
@@ -444,13 +442,23 @@ public class OrganizationWrapper
 	}
 
 	/**
-	 * Returns the status ID of this organization.
+	 * Returns the status of this organization.
 	 *
-	 * @return the status ID of this organization
+	 * @return the status of this organization
 	 */
 	@Override
-	public long getStatusId() {
-		return model.getStatusId();
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
+	 * Returns the status list type ID of this organization.
+	 *
+	 * @return the status list type ID of this organization
+	 */
+	@Override
+	public long getStatusListTypeId() {
+		return model.getStatusListTypeId();
 	}
 
 	@Override
@@ -719,13 +727,23 @@ public class OrganizationWrapper
 	}
 
 	/**
-	 * Sets the status ID of this organization.
+	 * Sets the status of this organization.
 	 *
-	 * @param statusId the status ID of this organization
+	 * @param status the status of this organization
 	 */
 	@Override
-	public void setStatusId(long statusId) {
-		model.setStatusId(statusId);
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
+	 * Sets the status list type ID of this organization.
+	 *
+	 * @param statusListTypeId the status list type ID of this organization
+	 */
+	@Override
+	public void setStatusListTypeId(long statusListTypeId) {
+		model.setStatusListTypeId(statusListTypeId);
 	}
 
 	/**
@@ -786,6 +804,11 @@ public class OrganizationWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

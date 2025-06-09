@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal.mvc;
@@ -19,27 +10,27 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import jakarta.annotation.ManagedBean;
+
+import jakarta.mvc.Models;
+import jakarta.mvc.binding.BindingResult;
+import jakarta.mvc.binding.ParamError;
+import jakarta.mvc.engine.ViewEngine;
+import jakarta.mvc.engine.ViewEngineException;
+
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+
+import jakarta.ws.rs.core.Configuration;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.ManagedBean;
-
-import javax.mvc.Models;
-import javax.mvc.binding.BindingResult;
-import javax.mvc.binding.ParamError;
-import javax.mvc.engine.ViewEngine;
-import javax.mvc.engine.ViewEngineException;
-
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-
-import javax.ws.rs.core.Configuration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -184,9 +175,9 @@ public class ViewRendererMVCImpl
 
 		private ViewEnginePriorityComparator() {
 
-			// The Javadoc for javax.mvc.engine.ViewEngine states "View engines
-			// can be decorated with javax.annotation.Priority to indicate their
-			// priority; otherwise the priority is assumed to be
+			// The Javadoc for jakarta.mvc.engine.ViewEngine states "View
+			// engines can be decorated with jakarta.annotation.Priority to
+			// indicate their priority; otherwise the priority is assumed to be
 			// ViewEngine.PRIORITY_APPLICATION."
 
 			super(ViewEngine.PRIORITY_APPLICATION);

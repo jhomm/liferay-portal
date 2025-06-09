@@ -1,19 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
-import ClayIcon from '@clayui/icon';
 import React from 'react';
 
 import {useConfig} from '../../../core/hooks/useConfig.es';
@@ -24,16 +14,18 @@ import {getFormId, getFormNode} from '../../../utils/formId.es';
 import nextPage from '../thunks/nextPage.es';
 import previousPage from '../thunks/previousPage.es';
 
-export const PaginationControls = ({
+export function PaginationControls({
 	activePage,
+	onClick,
 	readOnly,
 	strings = null,
 	total,
-}) => {
+}) {
 	const {
 		cancelLabel,
 		redirectURL,
 		showCancelButton,
+		showPartialResultsToRespondents,
 		showSubmitButton,
 		submitLabel,
 	} = useConfig();
@@ -48,7 +40,8 @@ export const PaginationControls = ({
 		<div className="lfr-ddm-form-pagination-controls">
 			{activePage > 0 && (
 				<ClayButton
-					className="lfr-ddm-form-pagination-prev"
+					className="float-left lfr-ddm-form-pagination-prev"
+					displayType="secondary"
 					onClick={() =>
 						dispatch(
 							createPreviousPage({
@@ -61,7 +54,6 @@ export const PaginationControls = ({
 					}
 					type="button"
 				>
-					<ClayIcon symbol="angle-left" />
 					{strings !== null
 						? strings['previous']
 						: Liferay.Language.get('previous')}
@@ -70,8 +62,9 @@ export const PaginationControls = ({
 
 			{activePage < total - 1 && (
 				<ClayButton
-					className="float-right lfr-ddm-form-pagination-next"
-					onClick={() =>
+					className="float-left lfr-ddm-form-pagination-next"
+					displayType="primary"
+					onClick={() => {
 						dispatch(
 							createNextPage({
 								activePage,
@@ -79,21 +72,25 @@ export const PaginationControls = ({
 									getFormNode(containerElement.current)
 								),
 							})
-						)
-					}
+						);
+
+						containerElement.current?.scrollIntoView();
+					}}
 					type="button"
 				>
 					{strings !== null
 						? strings['next']
 						: Liferay.Language.get('next')}
-					<ClayIcon symbol="angle-right" />
 				</ClayButton>
 			)}
 
 			{activePage === total - 1 && !readOnly && showSubmitButton && (
 				<ClayButton
-					className="float-right lfr-ddm-form-submit"
+					className="float-left"
 					id="ddm-form-submit"
+					onClick={() => {
+						Liferay.fire('paginationControlsSubmitButtonClicked');
+					}}
 					type="submit"
 				>
 					{submitLabel}
@@ -110,6 +107,16 @@ export const PaginationControls = ({
 					</a>
 				</div>
 			)}
+
+			{showPartialResultsToRespondents && (
+				<ClayButton
+					className="float-right"
+					displayType="secondary"
+					onClick={() => onClick()}
+				>
+					{Liferay.Language.get('preview-existing-submissions')}
+				</ClayButton>
+			)}
 		</div>
 	);
-};
+}

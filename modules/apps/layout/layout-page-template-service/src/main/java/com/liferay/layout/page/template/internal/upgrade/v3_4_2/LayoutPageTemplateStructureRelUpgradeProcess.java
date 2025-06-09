@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.upgrade.v3_4_2;
 
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
@@ -186,19 +178,21 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 				ColumnLayoutStructureItem columnLayoutStructureItem =
 					(ColumnLayoutStructureItem)layoutStructureItem;
 
-				Map<String, JSONObject> viewportConfigurations =
-					columnLayoutStructureItem.getViewportConfigurations();
+				Map<String, JSONObject> viewportConfigurationJSONObjects =
+					columnLayoutStructureItem.
+						getViewportConfigurationJSONObjects();
 
 				JSONObject mobileLandscapeJSONObject =
-					viewportConfigurations.get(
+					viewportConfigurationJSONObjects.get(
 						ViewportSize.MOBILE_LANDSCAPE.getViewportSizeId());
 
 				JSONObject portraitMobileJSONObject =
-					viewportConfigurations.get(
+					viewportConfigurationJSONObjects.get(
 						ViewportSize.PORTRAIT_MOBILE.getViewportSizeId());
 
-				JSONObject tabletJSONObject = viewportConfigurations.get(
-					ViewportSize.TABLET.getViewportSizeId());
+				JSONObject tabletJSONObject =
+					viewportConfigurationJSONObjects.get(
+						ViewportSize.TABLET.getViewportSizeId());
 
 				if (_isEmpty(mobileLandscapeJSONObject) &&
 					_isEmpty(portraitMobileJSONObject) &&
@@ -244,10 +238,10 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 
 				JSONObject fragmentConfigValuesJSONObject =
 					editableValuesJSONObject.getJSONObject(
-						"com.liferay.fragment.entry.processor.freemarker." +
-							"FreeMarkerFragmentEntryProcessor");
+						FragmentEntryProcessorConstants.
+							KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
 
-				if (_isEmpty(fragmentConfigValuesJSONObject)) {
+				if (fragmentConfigValuesJSONObject == null) {
 					continue;
 				}
 
@@ -256,6 +250,10 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 						getConfigurationDefaultValuesJSONObject(
 							fragmentEntryLink.getConfiguration()),
 					fragmentConfigValuesJSONObject, stylesJSONObject);
+
+				if (_isEmpty(fragmentConfigValuesJSONObject)) {
+					continue;
+				}
 
 				_replaceAlign(fragmentConfigValuesJSONObject, stylesJSONObject);
 				_replaceBorderRadius(
@@ -275,15 +273,18 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 	private void _upgradeLayoutPageTemplateStructureRel() throws Exception {
 		try (Statement s = connection.createStatement();
 			ResultSet resultSet = s.executeQuery(
-				"select lPageTemplateStructureRelId, segmentsExperienceId, " +
-					"data_ from LayoutPageTemplateStructureRel");
+				"select ctCollectionId, lPageTemplateStructureRelId, " +
+					"segmentsExperienceId, data_ from " +
+						"LayoutPageTemplateStructureRel");
 			PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update LayoutPageTemplateStructureRel set data_ = ? " +
-							"where lPageTemplateStructureRelId = ?"))) {
+					connection,
+					"update LayoutPageTemplateStructureRel set data_ = ? " +
+						"where ctCollectionId = ? and " +
+							"lPageTemplateStructureRelId = ?")) {
 
 			while (resultSet.next()) {
+				long ctCollectionId = resultSet.getLong("ctCollectionId");
 				long layoutPageTemplateStructureRelId = resultSet.getLong(
 					"lPageTemplateStructureRelId");
 
@@ -291,7 +292,8 @@ public class LayoutPageTemplateStructureRelUpgradeProcess
 
 				preparedStatement.setString(1, _upgradeLayoutData(data));
 
-				preparedStatement.setLong(2, layoutPageTemplateStructureRelId);
+				preparedStatement.setLong(2, ctCollectionId);
+				preparedStatement.setLong(3, layoutPageTemplateStructureRelId);
 
 				preparedStatement.addBatch();
 			}

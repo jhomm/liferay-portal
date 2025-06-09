@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.field.type.util;
@@ -21,6 +12,7 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -32,9 +24,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Leonardo Barros
@@ -96,11 +85,15 @@ public class LocalizedValueUtil {
 	public static LocalizedValue toLocalizedValue(
 		Map<String, Object> localizedValues, Locale locale) {
 
-		if (localizedValues == null) {
-			return null;
-		}
+		LocalizedValue localizedValue = new LocalizedValue(
+			(Locale)GetterUtil.getObject(locale, LocaleUtil.getDefault()));
 
-		LocalizedValue localizedValue = new LocalizedValue();
+		if ((localizedValues == null) || localizedValues.isEmpty()) {
+			localizedValue.addString(
+				localizedValue.getDefaultLocale(), StringPool.BLANK);
+
+			return localizedValue;
+		}
 
 		for (Map.Entry<String, Object> entry : localizedValues.entrySet()) {
 			Object value = entry.getValue();
@@ -132,10 +125,6 @@ public class LocalizedValueUtil {
 				localizedValue.addString(
 					LocaleUtil.fromLanguageId(entry.getKey()),
 					StringPool.BLANK);
-			}
-
-			if (locale != null) {
-				localizedValue.setDefaultLocale(locale);
 			}
 		}
 
@@ -171,39 +160,51 @@ public class LocalizedValueUtil {
 			return Collections.emptyMap();
 		}
 
+		Map<String, Object> localizedValues = new HashMap<>();
+
 		Map<Locale, String> values = localizedValue.getValues();
 
-		Set<Map.Entry<Locale, String>> entrySet = values.entrySet();
+		for (Map.Entry<Locale, String> entry : values.entrySet()) {
+			String languageId = LanguageUtil.getLanguageId(entry.getKey());
 
-		Stream<Map.Entry<Locale, String>> stream = entrySet.stream();
+			String value = entry.getValue();
 
-		return stream.collect(
-			Collectors.toMap(
-				entry -> LanguageUtil.getLanguageId(entry.getKey()),
-				entry -> {
-					String value = entry.getValue();
+			if (Validator.isNull(value)) {
+				localizedValues.put(languageId, value);
 
-					if (Validator.isNotNull(value)) {
-						try {
-							Object deserializedObject =
-								JSONFactoryUtil.looseDeserialize(value);
+				continue;
+			}
 
-							if (deserializedObject instanceof List) {
-								return JSONFactoryUtil.createJSONArray(value);
-							}
-							else if (deserializedObject instanceof Map) {
-								return JSONFactoryUtil.createJSONObject(value);
-							}
-						}
-						catch (Exception exception) {
-							if (_log.isDebugEnabled()) {
-								_log.debug(exception, exception);
-							}
-						}
-					}
+			try {
+				Object deserializedObject = JSONFactoryUtil.looseDeserialize(
+					value);
 
-					return value;
-				}));
+				if (deserializedObject instanceof List) {
+					localizedValues.put(
+						languageId,
+						JSONFactoryUtil.createJSONArray(
+							(List<?>)deserializedObject));
+				}
+				else if (deserializedObject instanceof Map) {
+					localizedValues.put(
+						languageId,
+						JSONFactoryUtil.createJSONObject(
+							(Map<?, ?>)deserializedObject));
+				}
+				else {
+					localizedValues.put(languageId, value);
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+
+				localizedValues.put(languageId, value);
+			}
+		}
+
+		return localizedValues;
 	}
 
 	public static Map<String, Object> toStringObjectMap(

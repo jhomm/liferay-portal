@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.asset.categories.web.internal.info.display.contributor;
@@ -37,25 +28,17 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(enabled = false, service = InfoItemFieldReader.class)
+@Component(service = InfoItemFieldReader.class)
 public class AssetCategoryFriendlyURLInfoItemFieldReader
 	implements InfoItemFieldReader<AssetCategory> {
-
-	/**
-	 *   @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *          #getInfoField()}
-	 */
-	@Deprecated
-	@Override
-	public InfoField getField() {
-		return null;
-	}
 
 	@Override
 	public InfoField getInfoField() {
 		return InfoField.builder(
 		).infoFieldType(
 			URLInfoFieldType.INSTANCE
+		).namespace(
+			AssetCategory.class.getSimpleName()
 		).name(
 			"friendlyURL"
 		).labelInfoLocalizedValue(
@@ -97,7 +80,7 @@ public class AssetCategoryFriendlyURLInfoItemFieldReader
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 

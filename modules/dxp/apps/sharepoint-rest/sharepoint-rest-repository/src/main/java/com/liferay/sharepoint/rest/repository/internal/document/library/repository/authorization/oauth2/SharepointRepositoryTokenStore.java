@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharepoint.rest.repository.internal.document.library.repository.authorization.oauth2;
@@ -19,9 +10,11 @@ import com.liferay.document.library.repository.authorization.oauth2.TokenStore;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.sharepoint.rest.oauth2.service.SharepointOAuth2TokenEntryLocalService;
+import com.liferay.sharepoint.rest.repository.internal.document.library.repository.authorization.oauth2.util.SharepointRepositoryTokenBrokerFactoryUtil;
 
 import java.io.IOException;
 
+import org.osgi.service.cm.ConfigurationAdmin;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -53,8 +46,8 @@ public class SharepointRepositoryTokenStore implements TokenStore {
 			}
 
 			SharepointRepositoryTokenBroker sharepointRepositoryTokenBroker =
-				_sharepointRepositoryTokenBrokerFactory.create(
-					configurationPid);
+				SharepointRepositoryTokenBrokerFactoryUtil.create(
+					_configurationAdmin, configurationPid);
 
 			Token freshToken =
 				sharepointRepositoryTokenBroker.refreshAccessToken(token);
@@ -78,8 +71,8 @@ public class SharepointRepositoryTokenStore implements TokenStore {
 					fetchSharepointOAuth2TokenEntry(userId, configurationPid));
 
 			SharepointRepositoryTokenBroker sharepointRepositoryTokenBroker =
-				_sharepointRepositoryTokenBrokerFactory.create(
-					configurationPid);
+				SharepointRepositoryTokenBrokerFactoryUtil.create(
+					_configurationAdmin, configurationPid);
 
 			Token freshToken =
 				sharepointRepositoryTokenBroker.refreshAccessToken(token);
@@ -103,11 +96,10 @@ public class SharepointRepositoryTokenStore implements TokenStore {
 	}
 
 	@Reference
-	private SharepointOAuth2TokenEntryLocalService
-		_sharepointOAuth2TokenEntryLocalService;
+	private ConfigurationAdmin _configurationAdmin;
 
 	@Reference
-	private SharepointRepositoryTokenBrokerFactory
-		_sharepointRepositoryTokenBrokerFactory;
+	private SharepointOAuth2TokenEntryLocalService
+		_sharepointOAuth2TokenEntryLocalService;
 
 }

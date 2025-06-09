@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.webdav;
@@ -18,7 +9,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.lock.Lock;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.URLCodec;
@@ -64,7 +55,7 @@ public class BaseResourceImpl implements Resource {
 		_displayName = displayName;
 		_size = size;
 
-		String href = HttpUtil.encodePath(parentPath);
+		String href = HttpComponentsUtil.encodePath(parentPath);
 
 		if (Validator.isNotNull(name)) {
 			href += StringPool.SLASH + URLCodec.encodeURL(name, true);
@@ -104,7 +95,7 @@ public class BaseResourceImpl implements Resource {
 
 	@Override
 	public String getCreateDateString() {
-		return _createDateFormatter.format(_createDate);
+		return _createDateFormat.format(_createDate);
 	}
 
 	@Override
@@ -129,7 +120,7 @@ public class BaseResourceImpl implements Resource {
 
 	@Override
 	public String getModifiedDate() {
-		return _modifiedDateFormatter.format(_modifiedDate);
+		return _modifiedDateFormat.format(_modifiedDate);
 	}
 
 	@Override
@@ -167,10 +158,10 @@ public class BaseResourceImpl implements Resource {
 		_primaryKey = primaryKey;
 	}
 
-	private static final Format _createDateFormatter =
+	private static final Format _createDateFormat =
 		FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'", LocaleUtil.US, TimeZoneUtil.GMT);
-	private static final Format _modifiedDateFormatter =
+	private static final Format _modifiedDateFormat =
 		FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"EEE, dd MMM yyyy HH:mm:ss zzz", LocaleUtil.US, TimeZoneUtil.GMT);
 

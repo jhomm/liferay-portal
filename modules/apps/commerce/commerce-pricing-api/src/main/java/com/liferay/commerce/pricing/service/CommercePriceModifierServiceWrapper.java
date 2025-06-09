@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service;
 
+import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -27,6 +19,10 @@ public class CommercePriceModifierServiceWrapper
 	implements CommercePriceModifierService,
 			   ServiceWrapper<CommercePriceModifierService> {
 
+	public CommercePriceModifierServiceWrapper() {
+		this(null);
+	}
+
 	public CommercePriceModifierServiceWrapper(
 		CommercePriceModifierService commercePriceModifierService) {
 
@@ -34,17 +30,16 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			addCommercePriceModifier(
-				long groupId, String title, String target,
-				long commercePriceListId, String modifierType,
-				java.math.BigDecimal modifierAmount, double priority,
-				boolean active, int displayDateMonth, int displayDateDay,
-				int displayDateYear, int displayDateHour, int displayDateMinute,
-				int expirationDateMonth, int expirationDateDay,
-				int expirationDateYear, int expirationDateHour,
-				int expirationDateMinute, boolean neverExpire,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommercePriceModifier addCommercePriceModifier(
+			long groupId, String title, String target, long commercePriceListId,
+			String modifierType, java.math.BigDecimal modifierAmount,
+			double priority, boolean active, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.addCommercePriceModifier(
@@ -57,18 +52,17 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			addOrUpdateCommercePriceModifier(
-				String externalReferenceCode, long commercePriceModifierId,
-				long groupId, String title, String target,
-				long commercePriceListId, String modifierType,
-				java.math.BigDecimal modifierAmount, double priority,
-				boolean active, int displayDateMonth, int displayDateDay,
-				int displayDateYear, int displayDateHour, int displayDateMinute,
-				int expirationDateMonth, int expirationDateDay,
-				int expirationDateYear, int expirationDateHour,
-				int expirationDateMinute, boolean neverExpire,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommercePriceModifier addOrUpdateCommercePriceModifier(
+			String externalReferenceCode, long commercePriceModifierId,
+			long groupId, String title, String target, long commercePriceListId,
+			String modifierType, java.math.BigDecimal modifierAmount,
+			double priority, boolean active, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.addOrUpdateCommercePriceModifier(
@@ -81,8 +75,8 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			deleteCommercePriceModifier(long commercePriceModifierId)
+	public CommercePriceModifier deleteCommercePriceModifier(
+			long commercePriceModifierId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.deleteCommercePriceModifier(
@@ -90,18 +84,8 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			fetchByExternalReferenceCode(
-				String externalReferenceCode, long companyId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commercePriceModifierService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			fetchCommercePriceModifier(long commercePriceModifierId)
+	public CommercePriceModifier fetchCommercePriceModifier(
+			long commercePriceModifierId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.fetchCommercePriceModifier(
@@ -109,8 +93,19 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			getCommercePriceModifier(long commercePriceModifierId)
+	public CommercePriceModifier
+			fetchCommercePriceModifierByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commercePriceModifierService.
+			fetchCommercePriceModifierByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	@Override
+	public CommercePriceModifier getCommercePriceModifier(
+			long commercePriceModifierId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.getCommercePriceModifier(
@@ -118,14 +113,11 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePriceModifier>
-				getCommercePriceModifiers(
-					long commercePriceListId, int start, int end,
-					com.liferay.portal.kernel.util.OrderByComparator
-						<com.liferay.commerce.pricing.model.
-							CommercePriceModifier> orderByComparator)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePriceModifier> getCommercePriceModifiers(
+			long commercePriceListId, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<CommercePriceModifier> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.getCommercePriceModifiers(
 			commercePriceListId, start, end, orderByComparator);
@@ -136,10 +128,9 @@ public class CommercePriceModifierServiceWrapper
 	 */
 	@Deprecated
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePriceModifier>
-				getCommercePriceModifiers(long companyId, String target)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePriceModifier> getCommercePriceModifiers(
+			long companyId, String target)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.getCommercePriceModifiers(
 			companyId, target);
@@ -180,10 +171,9 @@ public class CommercePriceModifierServiceWrapper
 	@Deprecated
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<com.liferay.commerce.pricing.model.CommercePriceModifier>
-				searchCommercePriceModifiers(
-					long companyId, String keywords, int status, int start,
-					int end, com.liferay.portal.kernel.search.Sort sort)
+		<CommercePriceModifier> searchCommercePriceModifiers(
+				long companyId, String keywords, int status, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.searchCommercePriceModifiers(
@@ -191,17 +181,16 @@ public class CommercePriceModifierServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.pricing.model.CommercePriceModifier
-			updateCommercePriceModifier(
-				long commercePriceModifierId, long groupId, String title,
-				String target, long commercePriceListId, String modifierType,
-				java.math.BigDecimal modifierAmount, double priority,
-				boolean active, int displayDateMonth, int displayDateDay,
-				int displayDateYear, int displayDateHour, int displayDateMinute,
-				int expirationDateMonth, int expirationDateDay,
-				int expirationDateYear, int expirationDateHour,
-				int expirationDateMinute, boolean neverExpire,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommercePriceModifier updateCommercePriceModifier(
+			long commercePriceModifierId, long groupId, String title,
+			String target, long commercePriceListId, String modifierType,
+			java.math.BigDecimal modifierAmount, double priority,
+			boolean active, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceModifierService.updateCommercePriceModifier(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v4_3_1;
@@ -47,21 +38,21 @@ public class DDMFormInstanceUpgradeProcess extends UpgradeProcess {
 		sb.append("[\\\\\\\\\"%@%\\\\\\\\\"]\\\"%'");
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select formInstanceId, settings_ from DDMFormInstance " +
-					sb.toString());
+				"select ctCollectionId, formInstanceId, settings_ from " +
+					"DDMFormInstance " + sb.toString());
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMFormInstance set settings_ = ? where " +
-						"formInstanceId = ?");
+						"ctCollectionId = ? and formInstanceId = ?");
 			PreparedStatement preparedStatement3 = connection.prepareStatement(
-				"select formInstanceVersionId, settings_ from " +
-					"DDMFormInstanceVersion " + sb.toString());
+				"select ctCollectionId, formInstanceVersionId, settings_ " +
+					"from DDMFormInstanceVersion " + sb.toString());
 			PreparedStatement preparedStatement4 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMFormInstanceVersion set settings_ = ? where " +
-						"formInstanceVersionId = ?")) {
+						"ctCollectionId = ? and formInstanceVersionId = ?")) {
 
 			_executePreparedStatements(
 				"formInstanceId", preparedStatement1, preparedStatement2);
@@ -84,9 +75,11 @@ public class DDMFormInstanceUpgradeProcess extends UpgradeProcess {
 
 				if (_upgradeSettings(settingsJSONObject)) {
 					updatePreparedStatement.setString(
-						1, settingsJSONObject.toJSONString());
+						1, settingsJSONObject.toString());
 					updatePreparedStatement.setLong(
-						2, resultSet.getLong(idColumnName));
+						2, resultSet.getLong("ctCollectionId"));
+					updatePreparedStatement.setLong(
+						3, resultSet.getLong(idColumnName));
 
 					updatePreparedStatement.addBatch();
 				}

@@ -2,32 +2,28 @@
 @summary = "Open browser to '${locator1}'"
 definition {
 
-	function open {
+	function open(value1) {
 		selenium.selectWindow("null");
 
 		selenium.selectFrame("relative=top");
 
-		selenium.open();
+		selenium.open(${value1});
 	}
 
-	function openNoError {
-		selenium.selectWindow("null");
+	function openInTheNewTab(locator1) {
+		var javascript = '''
+window.open("${locator1}","_blank");
+		''';
 
-		selenium.selectFrame("relative=top");
-
-		selenium.open();
+		selenium.executeJavaScript(${value1}, ${value2}, ${value3});
 	}
 
-	function openWindow {
+	function openNoError(value1) {
 		selenium.selectWindow("null");
 
 		selenium.selectFrame("relative=top");
 
-		selenium.openWindow("${locator1}", "windowName");
-
-		selenium.waitForPopUp("windowName", "windowName");
-
-		selenium.selectWindow("windowName");
+		selenium.open(${value1});
 	}
 
 }

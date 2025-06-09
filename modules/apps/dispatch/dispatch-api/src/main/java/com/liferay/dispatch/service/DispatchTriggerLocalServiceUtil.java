@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -62,14 +54,31 @@ public class DispatchTriggerLocalServiceUtil {
 	}
 
 	public static DispatchTrigger addDispatchTrigger(
-			long userId, String dispatchTaskExecutorType,
+			String externalReferenceCode, long userId,
+			com.liferay.dispatch.executor.DispatchTaskExecutor
+				dispatchTaskExecutor,
+			String dispatchTaskExecutorType,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				dispatchTaskSettingsUnicodeProperties,
 			String name, boolean system)
 		throws PortalException {
 
 		return getService().addDispatchTrigger(
-			userId, dispatchTaskExecutorType,
+			externalReferenceCode, userId, dispatchTaskExecutor,
+			dispatchTaskExecutorType, dispatchTaskSettingsUnicodeProperties,
+			name, system);
+	}
+
+	public static DispatchTrigger addDispatchTrigger(
+			String externalReferenceCode, long userId,
+			String dispatchTaskExecutorType,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				dispatchTaskSettingsUnicodeProperties,
+			String name, boolean system)
+		throws PortalException {
+
+		return getService().addDispatchTrigger(
+			externalReferenceCode, userId, dispatchTaskExecutorType,
 			dispatchTaskSettingsUnicodeProperties, name, system);
 	}
 
@@ -235,6 +244,27 @@ public class DispatchTriggerLocalServiceUtil {
 		return getService().fetchDispatchTrigger(companyId, name);
 	}
 
+	public static DispatchTrigger fetchDispatchTriggerByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchDispatchTriggerByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the dispatch trigger with the matching UUID and company.
+	 *
+	 * @param uuid the dispatch trigger's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching dispatch trigger, or <code>null</code> if a matching dispatch trigger could not be found
+	 */
+	public static DispatchTrigger fetchDispatchTriggerByUuidAndCompanyId(
+		String uuid, long companyId) {
+
+		return getService().fetchDispatchTriggerByUuidAndCompanyId(
+			uuid, companyId);
+	}
+
 	public static java.util.Date fetchNextFireDate(long dispatchTriggerId) {
 		return getService().fetchNextFireDate(dispatchTriggerId);
 	}
@@ -260,6 +290,34 @@ public class DispatchTriggerLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getDispatchTrigger(dispatchTriggerId);
+	}
+
+	public static DispatchTrigger getDispatchTriggerByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getDispatchTriggerByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the dispatch trigger with the matching UUID and company.
+	 *
+	 * @param uuid the dispatch trigger's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching dispatch trigger
+	 * @throws PortalException if a matching dispatch trigger could not be found
+	 */
+	public static DispatchTrigger getDispatchTriggerByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return getService().getDispatchTriggerByUuidAndCompanyId(
+			uuid, companyId);
+	}
+
+	public static List<DispatchTrigger> getDispatchTriggers(boolean active) {
+		return getService().getDispatchTriggers(active);
 	}
 
 	public static List<DispatchTrigger> getDispatchTriggers(
@@ -305,6 +363,14 @@ public class DispatchTriggerLocalServiceUtil {
 
 	public static int getDispatchTriggersCount(long companyId) {
 		return getService().getDispatchTriggersCount(companyId);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -380,14 +446,14 @@ public class DispatchTriggerLocalServiceUtil {
 			int endDateMonth, int endDateDay, int endDateYear, int endDateHour,
 			int endDateMinute, boolean neverEnd, boolean overlapAllowed,
 			int startDateMonth, int startDateDay, int startDateYear,
-			int startDateHour, int startDateMinute)
+			int startDateHour, int startDateMinute, String timeZoneId)
 		throws PortalException {
 
 		return getService().updateDispatchTrigger(
 			dispatchTriggerId, active, cronExpression, dispatchTaskClusterMode,
 			endDateMonth, endDateDay, endDateYear, endDateHour, endDateMinute,
 			neverEnd, overlapAllowed, startDateMonth, startDateDay,
-			startDateYear, startDateHour, startDateMinute);
+			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
 	public static DispatchTrigger updateDispatchTrigger(
@@ -402,9 +468,12 @@ public class DispatchTriggerLocalServiceUtil {
 	}
 
 	public static DispatchTriggerLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile DispatchTriggerLocalService _service;
+	private static final Snapshot<DispatchTriggerLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			DispatchTriggerLocalServiceUtil.class,
+			DispatchTriggerLocalService.class);
 
 }

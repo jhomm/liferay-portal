@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.web.internal.trash;
@@ -17,20 +8,19 @@ package com.liferay.exportimport.web.internal.trash;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
 import com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.trash.BaseTrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.trash.BaseTrashHandler;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +29,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Levente Hudák
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.exportimport.kernel.model.ExportImportConfiguration",
 	service = TrashHandler.class
 )
@@ -81,7 +70,7 @@ public class ExportImportConfigurationTrashHandler extends BaseTrashHandler {
 						getExportImportConfiguration(classPK));
 
 		exportImportConfigurationTrashRenderer.setServletContext(
-			servletContext);
+			_servletContext);
 
 		return exportImportConfigurationTrashRenderer;
 	}
@@ -94,14 +83,6 @@ public class ExportImportConfigurationTrashHandler extends BaseTrashHandler {
 			restoreExportImportConfigurationFromTrash(userId, classPK);
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.exportimport.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		this.servletContext = servletContext;
-	}
-
 	@Override
 	protected boolean hasPermission(
 			PermissionChecker permissionChecker, long classPK, String actionId)
@@ -111,30 +92,20 @@ public class ExportImportConfigurationTrashHandler extends BaseTrashHandler {
 			_exportImportConfigurationLocalService.getExportImportConfiguration(
 				classPK);
 
-		Group group = _groupLocalService.getGroup(
-			exportImportConfiguration.getGroupId());
-
-		return GroupPermissionUtil.contains(permissionChecker, group, actionId);
+		return GroupPermissionUtil.contains(
+			permissionChecker,
+			_groupLocalService.getGroup(exportImportConfiguration.getGroupId()),
+			actionId);
 	}
 
-	@Reference(unbind = "-")
-	protected void setExportImportConfigurationLocalService(
-		ExportImportConfigurationLocalService
-			exportImportConfigurationLocalService) {
-
-		_exportImportConfigurationLocalService =
-			exportImportConfigurationLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	protected ServletContext servletContext;
-
+	@Reference
 	private ExportImportConfigurationLocalService
 		_exportImportConfigurationLocalService;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.exportimport.web)")
+	private ServletContext _servletContext;
 
 }

@@ -1,38 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.layoutconfiguration.util.velocity;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletContainerUtil;
-import com.liferay.portal.kernel.portlet.PortletJSONUtil;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.PortletInstanceSettingsLocator;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactoryUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -41,6 +28,10 @@ import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.layoutconfiguration.util.PortletRenderer;
+import com.liferay.portlet.PreferencesValueUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,9 +39,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Ivica Cardic
@@ -177,7 +165,7 @@ public class TemplateProcessor implements ColumnProcessor {
 
 				String defaultPreferences = portlet.getDefaultPreferences();
 
-				Settings currentSettings = SettingsFactoryUtil.getSettings(
+				Settings currentSettings = FallbackKeysSettingsUtil.getSettings(
 					new PortletInstanceSettingsLocator(layout, portletId));
 
 				ModifiableSettings currentModifiableSettings =
@@ -205,7 +193,8 @@ public class TemplateProcessor implements ColumnProcessor {
 
 						for (String value : values) {
 							sb.append("<value>");
-							sb.append(XMLUtil.toCompactSafe(value));
+							sb.append(
+								PreferencesValueUtil.toCompactSafe(value));
 							sb.append("</value>");
 						}
 
@@ -225,7 +214,7 @@ public class TemplateProcessor implements ColumnProcessor {
 		}
 
 		if (defaultSettingsMap != null) {
-			Settings settings = SettingsFactoryUtil.getSettings(
+			Settings settings = FallbackKeysSettingsUtil.getSettings(
 				new PortletInstanceSettingsLocator(layout, portletId));
 
 			ModifiableSettings modifiableSettings =
@@ -269,35 +258,9 @@ public class TemplateProcessor implements ColumnProcessor {
 			}
 		}
 
-		_httpServletRequest.setAttribute(
-			WebKeys.RENDER_PORTLET_RESOURCE, Boolean.TRUE);
+		StringBundler sb = _renderPortlet(portlet, null, null, null);
 
-		BufferCacheServletResponse bufferCacheServletResponse =
-			new BufferCacheServletResponse(_httpServletResponse);
-
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
-
-		PortletJSONUtil.populatePortletJSONObject(
-			_httpServletRequest, StringPool.BLANK, portlet, jsonObject);
-
-		try {
-			PortletJSONUtil.writeHeaderPaths(_httpServletResponse, jsonObject);
-
-			HttpServletRequest httpServletRequest =
-				PortletContainerUtil.setupOptionalRenderParameters(
-					_httpServletRequest, null, null, null, null);
-
-			PortletContainerUtil.render(
-				httpServletRequest, bufferCacheServletResponse, portlet);
-
-			PortletJSONUtil.writeFooterPaths(_httpServletResponse, jsonObject);
-
-			return bufferCacheServletResponse.getString();
-		}
-		finally {
-			_httpServletRequest.removeAttribute(
-				WebKeys.RENDER_PORTLET_RESOURCE);
-		}
+		return sb.toString();
 	}
 
 	@Override
@@ -306,10 +269,9 @@ public class TemplateProcessor implements ColumnProcessor {
 			PortletProvider.Action portletProviderAction)
 		throws Exception {
 
-		String portletId = PortletProviderUtil.getPortletId(
-			portletProviderClassName, portletProviderAction);
-
-		return processPortlet(portletId);
+		return processPortlet(
+			PortletProviderUtil.getPortletId(
+				portletProviderClassName, portletProviderAction));
 	}
 
 	private String _processColumn(
@@ -351,38 +313,48 @@ public class TemplateProcessor implements ColumnProcessor {
 			Integer columnCount = Integer.valueOf(portlets.size());
 			Integer columnPos = Integer.valueOf(i);
 
-			PortletRenderer portletRenderer = new PortletRenderer(
-				portlet, columnId, columnCount, columnPos);
-
-			if (_portletAjaxRender && (portlet.getRenderWeight() < 1)) {
-				StringBundler renderResultSB = portletRenderer.renderAjax(
-					_httpServletRequest, _httpServletResponse);
-
-				sb.append(renderResultSB);
-			}
-			else {
-				Integer renderWeight = portlet.getRenderWeight();
-
-				List<PortletRenderer> portletRenderers = _portletRenderers.get(
-					renderWeight);
-
-				if (portletRenderers == null) {
-					portletRenderers = new ArrayList<>();
-
-					_portletRenderers.put(renderWeight, portletRenderers);
-				}
-
-				portletRenderers.add(portletRenderer);
-
-				sb.append("[$TEMPLATE_PORTLET_");
-				sb.append(portlet.getPortletId());
-				sb.append("$]");
-			}
+			sb.append(
+				_renderPortlet(portlet, columnId, columnCount, columnPos));
 		}
 
 		sb.append("</div>");
 
 		return sb.toString();
+	}
+
+	private StringBundler _renderPortlet(
+			Portlet portlet, String columnId, Integer columnCount,
+			Integer columnPos)
+		throws Exception {
+
+		PortletRenderer portletRenderer = new PortletRenderer(
+			portlet, columnId, columnCount, columnPos);
+
+		if (_portletAjaxRender && (portlet.getRenderWeight() < 1)) {
+			return portletRenderer.renderAjax(
+				_httpServletRequest, _httpServletResponse);
+		}
+
+		Integer renderWeight = portlet.getRenderWeight();
+
+		List<PortletRenderer> portletRenderers = _portletRenderers.get(
+			renderWeight);
+
+		if (portletRenderers == null) {
+			portletRenderers = new ArrayList<>();
+
+			_portletRenderers.put(renderWeight, portletRenderers);
+		}
+
+		portletRenderers.add(portletRenderer);
+
+		StringBundler sb = new StringBundler(3);
+
+		sb.append("[$TEMPLATE_PORTLET_");
+		sb.append(portlet.getPortletId());
+		sb.append("$]");
+
+		return sb;
 	}
 
 	private static final RenderWeightComparator _renderWeightComparator =

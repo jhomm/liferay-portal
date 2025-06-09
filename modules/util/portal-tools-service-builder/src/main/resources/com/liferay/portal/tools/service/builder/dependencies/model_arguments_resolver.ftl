@@ -8,6 +8,7 @@
 	import com.liferay.portal.kernel.dao.orm.ArgumentsResolver;
 	import com.liferay.portal.kernel.dao.orm.FinderPath;
 	import com.liferay.portal.kernel.model.BaseModel;
+	import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 
 	import java.util.ArrayList;
 	import java.util.List;
@@ -29,10 +30,10 @@
 	 */
 	<#if dependencyInjectorDS>
 		@Component(
-			immediate = true,
-			service = {${entity.name}ModelArgumentsResolver.class, ArgumentsResolver.class}
-		)
+	<#else>
+		@OSGiBeanProperties(
 	</#if>
+		property = {"class.name=${packagePath}.model.impl.${entity.name}Impl", "table.name=${entity.table}"}, service = ArgumentsResolver.class)
 	public
 <#else>
 	private static

@@ -1,34 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayIcon from '@clayui/icon';
 import {isObject} from 'frontend-js-web';
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 
+import {EVENT_TYPES} from '../../../custom/form/eventTypes';
 import * as MultiPages from '../../../custom/form/renderer/MultiPagesVariant.es';
 import * as Paginated from '../../../custom/form/renderer/PaginatedVariant.es';
 import * as SuccessPage from '../../../custom/form/renderer/SuccessVariant.es';
 import * as Wizard from '../../../custom/form/renderer/WizardVariant.es';
 import {PagesVisitor} from '../../../utils/visitors.es';
+import {useForm, useFormState} from '../../hooks/useForm.es';
 import {PageProvider} from '../../hooks/usePage.es';
 import {mergeVariants} from '../../utils/merge-variants.es';
 import * as DefaultVariant from './DefaultVariant.es';
 import {Layout} from './Layout.es';
 import * as Tabbed from './TabbedVariant.es';
 import {VariantsProvider} from './VariantsContext.es';
+import * as WebContentVariant from './WebContentVariant.es';
 
 const LAYOUT_TYPES = {
+	JOURNAL: 'journal',
 	MULTI_PAGES: 'multi-pages',
 	PAGINATED: 'paginated',
 	SINGLE_PAGE: 'single-page',
@@ -38,6 +33,7 @@ const LAYOUT_TYPES = {
 };
 
 const LAYOUT_COMPONENTS_TYPES = {
+	[LAYOUT_TYPES.JOURNAL]: WebContentVariant,
 	[LAYOUT_TYPES.MULTI_PAGES]: MultiPages,
 	[LAYOUT_TYPES.PAGINATED]: Paginated,
 	[LAYOUT_TYPES.SINGLE_PAGE]: {
@@ -176,16 +172,59 @@ const Page = ({
 	if (pages?.[activePage]) {
 		const visitor = new PagesVisitor([pages[activePage]]);
 
-		visitor.mapFields((field) => {
-			if (field.required) {
-				hasFieldRequired = true;
-			}
-		});
+		hasFieldRequired = !!visitor.findField((field) => field.required);
 	}
 
 	const isDDMFormPortletNamespace = portletNamespace.includes(
 		DDM_FORM_PORTLET_NAMESPACE
 	);
+
+	const {defaultLanguageId, history} = useFormState();
+
+	const dispatch = useForm();
+	const defaultLanguageIdRef = useRef(defaultLanguageId);
+
+	useEffect(() => {
+		if (history?.steps.length === 0) {
+			dispatch({type: EVENT_TYPES.HISTORY.ADD});
+		}
+
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	useEffect(() => {
+		if (defaultLanguageIdRef.current !== defaultLanguageId) {
+			defaultLanguageIdRef.current = defaultLanguageId;
+			dispatch({type: EVENT_TYPES.HISTORY.RESET});
+		}
+	}, [defaultLanguageId, dispatch]);
+
+	useEffect(() => {
+		const goToHandler = ({step}) => {
+			dispatch({step, type: EVENT_TYPES.HISTORY.GOTO});
+		};
+		const handleStoreState = () => {
+			dispatch({type: EVENT_TYPES.HISTORY.ADD});
+		};
+		const undoHandler = () => {
+			dispatch({type: EVENT_TYPES.HISTORY.PREV});
+		};
+		const redoHandler = () => {
+			dispatch({type: EVENT_TYPES.HISTORY.NEXT});
+		};
+
+		Liferay.on('journal:goto', goToHandler);
+		Liferay.on('journal:undo', undoHandler);
+		Liferay.on('journal:redo', redoHandler);
+		Liferay.on('journal:storeState', handleStoreState);
+
+		return () => {
+			Liferay.detach('journal:goto', goToHandler);
+			Liferay.detach('journal:undo', undoHandler);
+			Liferay.detach('journal:redo', redoHandler);
+			Liferay.detach('journal:storeState', handleStoreState);
+		};
+	}, [dispatch]);
 
 	return (
 		<VariantsProvider components={variants}>
@@ -218,12 +257,15 @@ const Page = ({
 							<span className="c-mr-1 reference-mark">
 								<ClayIcon symbol="asterisk" />
 							</span>
+
 							{Liferay.Language.get('indicates-required-fields')}
 						</p>
 					)}
+
 					<Layout
 						components={Components}
 						editable={editable}
+						itemPath={[pageIndex]}
 						rows={page.rows}
 						viewMode={viewMode}
 					/>

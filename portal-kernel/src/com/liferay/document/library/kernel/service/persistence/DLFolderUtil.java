@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service.persistence;
@@ -4481,6 +4472,76 @@ public class DLFolderUtil {
 	}
 
 	/**
+	 * Returns the document library folder where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchFolderException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching document library folder
+	 * @throws NoSuchFolderException if a matching document library folder could not be found
+	 */
+	public static DLFolder findByERC_G(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.document.library.kernel.exception.
+			NoSuchFolderException {
+
+		return getPersistence().findByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
+	 * Returns the document library folder where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching document library folder, or <code>null</code> if a matching document library folder could not be found
+	 */
+	public static DLFolder fetchByERC_G(
+		String externalReferenceCode, long groupId) {
+
+		return getPersistence().fetchByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
+	 * Returns the document library folder where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching document library folder, or <code>null</code> if a matching document library folder could not be found
+	 */
+	public static DLFolder fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		return getPersistence().fetchByERC_G(
+			externalReferenceCode, groupId, useFinderCache);
+	}
+
+	/**
+	 * Removes the document library folder where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the document library folder that was removed
+	 */
+	public static DLFolder removeByERC_G(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.document.library.kernel.exception.
+			NoSuchFolderException {
+
+		return getPersistence().removeByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
+	 * Returns the number of document library folders where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching document library folders
+	 */
+	public static int countByERC_G(String externalReferenceCode, long groupId) {
+		return getPersistence().countByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
 	 * Caches the document library folder in the entity cache if it is enabled.
 	 *
 	 * @param dlFolder the document library folder
@@ -4734,9 +4795,10 @@ public class DLFolderUtil {
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryTypePK the primary key of the document library file entry type
+	 * @return <code>true</code> if an association between the document library folder and the document library file entry type was added; <code>false</code> if they were already associated
 	 */
-	public static void addDLFileEntryType(long pk, long dlFileEntryTypePK) {
-		getPersistence().addDLFileEntryType(pk, dlFileEntryTypePK);
+	public static boolean addDLFileEntryType(long pk, long dlFileEntryTypePK) {
+		return getPersistence().addDLFileEntryType(pk, dlFileEntryTypePK);
 	}
 
 	/**
@@ -4744,13 +4806,14 @@ public class DLFolderUtil {
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryType the document library file entry type
+	 * @return <code>true</code> if an association between the document library folder and the document library file entry type was added; <code>false</code> if they were already associated
 	 */
-	public static void addDLFileEntryType(
+	public static boolean addDLFileEntryType(
 		long pk,
 		com.liferay.document.library.kernel.model.DLFileEntryType
 			dlFileEntryType) {
 
-		getPersistence().addDLFileEntryType(pk, dlFileEntryType);
+		return getPersistence().addDLFileEntryType(pk, dlFileEntryType);
 	}
 
 	/**
@@ -4758,9 +4821,12 @@ public class DLFolderUtil {
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryTypePKs the primary keys of the document library file entry types
+	 * @return <code>true</code> if at least one association between the document library folder and the document library file entry types was added; <code>false</code> if they were all already associated
 	 */
-	public static void addDLFileEntryTypes(long pk, long[] dlFileEntryTypePKs) {
-		getPersistence().addDLFileEntryTypes(pk, dlFileEntryTypePKs);
+	public static boolean addDLFileEntryTypes(
+		long pk, long[] dlFileEntryTypePKs) {
+
+		return getPersistence().addDLFileEntryTypes(pk, dlFileEntryTypePKs);
 	}
 
 	/**
@@ -4768,13 +4834,14 @@ public class DLFolderUtil {
 	 *
 	 * @param pk the primary key of the document library folder
 	 * @param dlFileEntryTypes the document library file entry types
+	 * @return <code>true</code> if at least one association between the document library folder and the document library file entry types was added; <code>false</code> if they were all already associated
 	 */
-	public static void addDLFileEntryTypes(
+	public static boolean addDLFileEntryTypes(
 		long pk,
 		List<com.liferay.document.library.kernel.model.DLFileEntryType>
 			dlFileEntryTypes) {
 
-		getPersistence().addDLFileEntryTypes(pk, dlFileEntryTypes);
+		return getPersistence().addDLFileEntryTypes(pk, dlFileEntryTypes);
 	}
 
 	/**
@@ -4862,6 +4929,10 @@ public class DLFolderUtil {
 
 	public static DLFolderPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(DLFolderPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile DLFolderPersistence _persistence;

@@ -1,38 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.address.content.web.internal.portlet.action;
 
-import com.liferay.commerce.account.util.CommerceAccountHelper;
 import com.liferay.commerce.address.content.web.internal.display.context.CommerceAddressDisplayContext;
+import com.liferay.commerce.address.content.web.internal.portlet.action.helper.ActionHelper;
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.exception.NoSuchAddressException;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.service.CommerceAddressService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.CountryService;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,9 +34,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ADDRESS_CONTENT,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ADDRESS_CONTENT,
 		"mvc.command.name=/commerce_address_content/edit_commerce_address"
 	},
 	service = MVCRenderCommand.class
@@ -60,13 +52,14 @@ public class EditCommerceAddressMVCRenderCommand implements MVCRenderCommand {
 				new CommerceAddressDisplayContext(
 					_actionHelper, _commerceAccountHelper,
 					_commerceAddressService, _countryService,
+					_groupLocalService,
 					_portal.getHttpServletRequest(renderRequest),
 					_regionService);
 
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT, commerceAddressDisplayContext);
 
-			setCommerceAddressRequestAttribute(renderRequest);
+			_setCommerceAddressRequestAttribute(renderRequest);
 		}
 		catch (Exception exception) {
 			if (exception instanceof NoSuchAddressException ||
@@ -83,7 +76,7 @@ public class EditCommerceAddressMVCRenderCommand implements MVCRenderCommand {
 		return "/edit_commerce_address.jsp";
 	}
 
-	protected void setCommerceAddressRequestAttribute(
+	private void _setCommerceAddressRequestAttribute(
 			RenderRequest renderRequest)
 		throws PortalException {
 
@@ -105,6 +98,9 @@ public class EditCommerceAddressMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private CountryService _countryService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;

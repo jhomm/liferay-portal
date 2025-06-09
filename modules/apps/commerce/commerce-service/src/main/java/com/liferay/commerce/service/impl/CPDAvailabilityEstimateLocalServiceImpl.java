@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.impl;
@@ -17,20 +8,26 @@ package com.liferay.commerce.service.impl;
 import com.liferay.commerce.exception.NoSuchAvailabilityEstimateException;
 import com.liferay.commerce.model.CPDAvailabilityEstimate;
 import com.liferay.commerce.model.CommerceAvailabilityEstimate;
-import com.liferay.commerce.product.model.CPDefinition;
-import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.service.base.CPDAvailabilityEstimateLocalServiceBaseImpl;
+import com.liferay.commerce.service.persistence.CommerceAvailabilityEstimatePersistence;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.spring.extender.service.ServiceReference;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
  * @author Alec Sloan
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.model.CPDAvailabilityEstimate",
+	service = AopService.class
+)
 public class CPDAvailabilityEstimateLocalServiceImpl
 	extends CPDAvailabilityEstimateLocalServiceBaseImpl {
 
@@ -56,24 +53,6 @@ public class CPDAvailabilityEstimateLocalServiceImpl
 			deleteCPDAvailabilityEstimate(cpdAvailabilityEstimate);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	@Override
-	public void deleteCPDAvailabilityEstimateByCPDefinitionId(
-		long cpDefinitionId) {
-
-		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
-			cpDefinitionId);
-
-		if (cpDefinition != null) {
-			cpdAvailabilityEstimateLocalService.
-				deleteCPDAvailabilityEstimateByCProductId(
-					cpDefinition.getCProductId());
-		}
-	}
-
 	@Override
 	public void deleteCPDAvailabilityEstimateByCProductId(long cProductId) {
 		CPDAvailabilityEstimate cpdAvailabilityEstimate =
@@ -95,26 +74,6 @@ public class CPDAvailabilityEstimateLocalServiceImpl
 				commerceAvailabilityEstimateId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	@Override
-	public CPDAvailabilityEstimate fetchCPDAvailabilityEstimateByCPDefinitionId(
-		long cpDefinitionId) {
-
-		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
-			cpDefinitionId);
-
-		if (cpDefinition == null) {
-			return null;
-		}
-
-		return cpdAvailabilityEstimateLocalService.
-			fetchCPDAvailabilityEstimateByCProductId(
-				cpDefinition.getCProductId());
-	}
-
 	@Override
 	public CPDAvailabilityEstimate fetchCPDAvailabilityEstimateByCProductId(
 		long cProductId) {
@@ -122,32 +81,13 @@ public class CPDAvailabilityEstimateLocalServiceImpl
 		return cpdAvailabilityEstimatePersistence.fetchByCProductId(cProductId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	@Override
-	public CPDAvailabilityEstimate updateCPDAvailabilityEstimate(
-			long cpdAvailabilityEstimateId, long cpDefinitionId,
-			long commerceAvailabilityEstimateId, ServiceContext serviceContext)
-		throws PortalException {
-
-		CPDefinition cpDefinition = _cpDefinitionLocalService.getCPDefinition(
-			cpDefinitionId);
-
-		return cpdAvailabilityEstimateLocalService.
-			updateCPDAvailabilityEstimateByCProductId(
-				cpdAvailabilityEstimateId, cpDefinition.getCProductId(),
-				commerceAvailabilityEstimateId, serviceContext);
-	}
-
 	@Override
 	public CPDAvailabilityEstimate updateCPDAvailabilityEstimateByCProductId(
-			long cpdAvailabilityEstimateId, long cProductId,
-			long commerceAvailabilityEstimateId, ServiceContext serviceContext)
+			long userId, long cpdAvailabilityEstimateId, long cProductId,
+			long commerceAvailabilityEstimateId)
 		throws PortalException {
 
-		validate(commerceAvailabilityEstimateId);
+		_validate(commerceAvailabilityEstimateId);
 
 		if (cpdAvailabilityEstimateId > 0) {
 			CPDAvailabilityEstimate cpdAvailabilityEstimate =
@@ -172,16 +112,15 @@ public class CPDAvailabilityEstimateLocalServiceImpl
 				cpdAvailabilityEstimate);
 		}
 
-		return addCPDAvailabilityEstimateByCProductId(
-			cProductId, commerceAvailabilityEstimateId, serviceContext);
+		return _addCPDAvailabilityEstimateByCProductId(
+			userId, cProductId, commerceAvailabilityEstimateId);
 	}
 
-	protected CPDAvailabilityEstimate addCPDAvailabilityEstimateByCProductId(
-			long cProductId, long commerceAvailabilityEstimateId,
-			ServiceContext serviceContext)
+	private CPDAvailabilityEstimate _addCPDAvailabilityEstimateByCProductId(
+			long userId, long cProductId, long commerceAvailabilityEstimateId)
 		throws PortalException {
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(userId);
 
 		long cpdAvailabilityEstimateId = counterLocalService.increment();
 
@@ -200,14 +139,13 @@ public class CPDAvailabilityEstimateLocalServiceImpl
 			cpdAvailabilityEstimate);
 	}
 
-	protected void validate(long commerceAvailabilityEstimateId)
+	private void _validate(long commerceAvailabilityEstimateId)
 		throws PortalException {
 
 		if (commerceAvailabilityEstimateId > 0) {
 			CommerceAvailabilityEstimate commerceAvailabilityEstimate =
-				commerceAvailabilityEstimateLocalService.
-					fetchCommerceAvailabilityEstimate(
-						commerceAvailabilityEstimateId);
+				_commerceAvailabilityEstimatePersistence.fetchByPrimaryKey(
+					commerceAvailabilityEstimateId);
 
 			if (commerceAvailabilityEstimate == null) {
 				throw new NoSuchAvailabilityEstimateException();
@@ -215,7 +153,11 @@ public class CPDAvailabilityEstimateLocalServiceImpl
 		}
 	}
 
-	@ServiceReference(type = CPDefinitionLocalService.class)
-	private CPDefinitionLocalService _cpDefinitionLocalService;
+	@Reference
+	private CommerceAvailabilityEstimatePersistence
+		_commerceAvailabilityEstimatePersistence;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.model.listener;
 
 import com.liferay.asset.list.model.AssetListEntry;
-import com.liferay.asset.list.model.AssetListEntryUsage;
 import com.liferay.asset.list.service.AssetListEntryUsageLocalService;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.util.configuration.FragmentConfigurationField;
@@ -30,14 +20,12 @@ import com.liferay.portal.kernel.model.BaseModelListener;
 import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -62,7 +50,7 @@ public class FragmentEntryLinkModelListener
 
 		_assetListEntryUsageLocalService.deleteAssetListEntryUsages(
 			String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-			_portal.getClassNameId(FragmentEntryLink.class),
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
 			fragmentEntryLink.getPlid());
 	}
 
@@ -79,30 +67,22 @@ public class FragmentEntryLinkModelListener
 		long classNameId, long fragmentEntryLinkId, long groupId, String key,
 		long plid) {
 
-		AssetListEntryUsage assetListEntryUsage =
-			_assetListEntryUsageLocalService.fetchAssetListEntryUsage(
-				groupId, classNameId, String.valueOf(fragmentEntryLinkId),
-				_portal.getClassNameId(FragmentEntryLink.class), key, plid);
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
 
-		if (assetListEntryUsage != null) {
-			return;
+		if (serviceContext == null) {
+			serviceContext = new ServiceContext();
 		}
-
-		ServiceContext serviceContext = Optional.ofNullable(
-			ServiceContextThreadLocal.getServiceContext()
-		).orElse(
-			new ServiceContext()
-		);
 
 		try {
 			_assetListEntryUsageLocalService.addAssetListEntryUsage(
 				serviceContext.getUserId(), groupId, classNameId,
 				String.valueOf(fragmentEntryLinkId),
-				_portal.getClassNameId(FragmentEntryLink.class), key, plid,
-				serviceContext);
+				_portal.getClassNameId(FragmentEntryLink.class.getName()), key,
+				plid, serviceContext);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 	}
 
@@ -110,19 +90,11 @@ public class FragmentEntryLinkModelListener
 		_getCollectionSelectorFragmentConfigurationFields(
 			FragmentEntryLink fragmentEntryLink) {
 
-		List<FragmentConfigurationField> fragmentConfigurationFields =
+		return ListUtil.filter(
 			_fragmentEntryConfigurationParser.getFragmentConfigurationFields(
-				fragmentEntryLink.getConfiguration());
-
-		Stream<FragmentConfigurationField> stream =
-			fragmentConfigurationFields.stream();
-
-		return stream.filter(
+				fragmentEntryLink.getConfiguration()),
 			fragmentConfigurationField -> Objects.equals(
-				fragmentConfigurationField.getType(), "collectionSelector")
-		).collect(
-			Collectors.toList()
-		);
+				fragmentConfigurationField.getType(), "collectionSelector"));
 	}
 
 	private void _updateAssetListEntryUsages(
@@ -130,7 +102,7 @@ public class FragmentEntryLinkModelListener
 
 		_assetListEntryUsageLocalService.deleteAssetListEntryUsages(
 			String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-			_portal.getClassNameId(FragmentEntryLink.class),
+			_portal.getClassNameId(FragmentEntryLink.class.getName()),
 			fragmentEntryLink.getPlid());
 
 		List<FragmentConfigurationField> fragmentConfigurationFields =
@@ -154,7 +126,8 @@ public class FragmentEntryLinkModelListener
 
 			if (fieldValueJSONObject.has("key")) {
 				_addAssetListEntryUsage(
-					_portal.getClassNameId(InfoCollectionProvider.class),
+					_portal.getClassNameId(
+						InfoCollectionProvider.class.getName()),
 					fragmentEntryLink.getFragmentEntryLinkId(),
 					fragmentEntryLink.getGroupId(),
 					fieldValueJSONObject.getString("key"),
@@ -163,7 +136,7 @@ public class FragmentEntryLinkModelListener
 
 			if (fieldValueJSONObject.has("classPK")) {
 				_addAssetListEntryUsage(
-					_portal.getClassNameId(AssetListEntry.class),
+					_portal.getClassNameId(AssetListEntry.class.getName()),
 					fragmentEntryLink.getFragmentEntryLinkId(),
 					fragmentEntryLink.getGroupId(),
 					fieldValueJSONObject.getString("classPK"),

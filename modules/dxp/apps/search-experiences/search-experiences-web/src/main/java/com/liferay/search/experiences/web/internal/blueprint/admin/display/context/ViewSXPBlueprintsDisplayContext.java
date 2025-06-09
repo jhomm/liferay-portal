@@ -1,111 +1,149 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.web.internal.blueprint.admin.display.context;
 
-import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.search.query.BooleanQuery;
-import com.liferay.portal.search.query.Queries;
-import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
-import com.liferay.portal.search.searcher.Searcher;
-import com.liferay.portal.search.sort.Sorts;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.search.experiences.constants.SXPActionKeys;
 import com.liferay.search.experiences.model.SXPBlueprint;
-import com.liferay.search.experiences.service.SXPBlueprintService;
-import com.liferay.search.experiences.web.internal.security.permission.resource.SXPBlueprintPermission;
+import com.liferay.search.experiences.web.internal.display.context.helper.SXPRequestHelper;
 
-import java.util.Collections;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * @author Petteri Karttunen
+ * @author Kevin Tan
  */
-public class ViewSXPBlueprintsDisplayContext
-	extends BaseDisplayContext<SXPBlueprint> {
+public class ViewSXPBlueprintsDisplayContext {
 
 	public ViewSXPBlueprintsDisplayContext(
-		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse, Queries queries,
-		Searcher searcher,
-		SearchRequestBuilderFactory searchRequestBuilderFactory, Sorts sorts,
-		SXPBlueprintService sxpBlueprintService) {
+		HttpServletRequest httpServletRequest,
+		ModelResourcePermission<SXPBlueprint>
+			sxpBlueprintModelResourcePermission) {
 
-		super(
-			liferayPortletRequest, liferayPortletResponse, queries, searcher,
-			searchRequestBuilderFactory, sorts);
+		_sxpBlueprintModelResourcePermission =
+			sxpBlueprintModelResourcePermission;
 
-		_sxpBlueprintService = sxpBlueprintService;
+		_sxpRequestHelper = new SXPRequestHelper(httpServletRequest);
 	}
 
-	public List<String> getAvailableActions(SXPBlueprint sxpBlueprint)
-		throws PortalException {
+	public String getAPIURL() {
+		return "/o/search-experiences-rest/v1.0/sxp-blueprints";
+	}
 
-		if (SXPBlueprintPermission.contains(
-				themeDisplay.getPermissionChecker(), sxpBlueprint,
-				ActionKeys.DELETE)) {
+	public List<DropdownItem> getBulkActionDropdownItems() throws Exception {
+		return Arrays.asList(
+			new FDSActionDropdownItem(
+				PortletURLBuilder.createActionURL(
+					_sxpRequestHelper.getLiferayPortletResponse()
+				).setActionName(
+					"/sxp_blueprint_admin/edit_sxp_blueprint"
+				).setCMD(
+					Constants.DELETE
+				).buildString(),
+				"trash", "delete",
+				LanguageUtil.get(_sxpRequestHelper.getRequest(), "delete"),
+				"delete", "delete", null));
+	}
 
-			return Collections.singletonList("deleteSXPBlueprints");
+	public CreationMenu getCreationMenu() throws Exception {
+		CreationMenu creationMenu = new CreationMenu();
+
+		if (!_hasAddSXPBlueprintPermission()) {
+			return creationMenu;
 		}
 
-		return Collections.emptyList();
+		creationMenu.addDropdownItem(
+			dropdownItem -> {
+				dropdownItem.setHref("addSXPBlueprint");
+				dropdownItem.setLabel(
+					LanguageUtil.get(
+						_sxpRequestHelper.getRequest(),
+						"new-search-blueprint"));
+				dropdownItem.setTarget("event");
+			});
+
+		return creationMenu;
 	}
 
-	public SearchContainer<SXPBlueprint> getSearchContainer()
-		throws PortalException {
+	public List<FDSActionDropdownItem> getFDSActionDropdownItems()
+		throws Exception {
 
-		return getSearchContainer(
-			"no-blueprints-were-found", SXPBlueprint.class);
+		return Arrays.asList(
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					getPortletURL()
+				).setMVCRenderCommandName(
+					"/sxp_blueprint_admin/edit_sxp_blueprint"
+				).setParameter(
+					"sxpBlueprintId", "{id}"
+				).buildString(),
+				"pencil", "edit",
+				LanguageUtil.get(_sxpRequestHelper.getRequest(), "edit"), "get",
+				"get", "link"),
+			new FDSActionDropdownItem(
+				"#", "book", "enableAsACollectionProvider",
+				LanguageUtil.get(
+					_sxpRequestHelper.getRequest(),
+					"enable-as-a-collection-provider"),
+				"put", "update", "link"),
+			new FDSActionDropdownItem(
+				"#", "book", "disableAsACollectionProvider",
+				LanguageUtil.get(
+					_sxpRequestHelper.getRequest(),
+					"disable-as-a-collection-provider"),
+				"put", "update", "link"),
+			new FDSActionDropdownItem(
+				getAPIURL() + "/{id}/copy", "copy", "copy",
+				LanguageUtil.get(_sxpRequestHelper.getRequest(), "copy"),
+				"post", "create", "async"),
+			new FDSActionDropdownItem(
+				"#", "export", "export",
+				LanguageUtil.get(_sxpRequestHelper.getRequest(), "export"),
+				null, "get", "link"),
+			new FDSActionDropdownItem(
+				LanguageUtil.get(
+					_sxpRequestHelper.getRequest(),
+					"are-you-sure-you-want-to-delete-this-entry"),
+				getAPIURL() + "/{id}", "trash", "delete",
+				LanguageUtil.get(_sxpRequestHelper.getRequest(), "delete"),
+				"delete", "delete", "async"));
 	}
 
-	@Override
-	protected String getDisplayStylePreferenceName() {
-		return "sxp-blueprints-display-style";
+	public PortletURL getPortletURL() throws PortletException {
+		return PortletURLUtil.clone(
+			PortletURLUtil.getCurrent(
+				_sxpRequestHelper.getLiferayPortletRequest(),
+				_sxpRequestHelper.getLiferayPortletResponse()),
+			_sxpRequestHelper.getLiferayPortletResponse());
 	}
 
-	@Override
-	protected String getMVCRenderCommandName() {
-		return "/sxp_blueprint_admin/view_sxp_blueprints";
+	private boolean _hasAddSXPBlueprintPermission() {
+		PortletResourcePermission portletResourcePermission =
+			_sxpBlueprintModelResourcePermission.getPortletResourcePermission();
+
+		return portletResourcePermission.contains(
+			_sxpRequestHelper.getPermissionChecker(), null,
+			SXPActionKeys.ADD_SXP_BLUEPRINT);
 	}
 
-	@Override
-	protected void processBooleanQuery(BooleanQuery booleanQuery) {
-	}
-
-	@Override
-	protected SXPBlueprint toBaseModel(long entryClassPK) {
-		try {
-			return _sxpBlueprintService.getSXPBlueprint(entryClassPK);
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					"Unable to get search experiences blueprint " +
-						entryClassPK);
-			}
-		}
-
-		return null;
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		ViewSXPBlueprintsDisplayContext.class);
-
-	private final SXPBlueprintService _sxpBlueprintService;
+	private final ModelResourcePermission<SXPBlueprint>
+		_sxpBlueprintModelResourcePermission;
+	private final SXPRequestHelper _sxpRequestHelper;
 
 }

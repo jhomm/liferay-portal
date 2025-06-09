@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -48,6 +40,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see ERCGroupEntryLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -200,24 +197,20 @@ public interface ERCGroupEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ERCGroupEntry fetchERCGroupEntry(long ercGroupEntryId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ERCGroupEntry fetchERCGroupEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
 	/**
-	 * Returns the erc group entry with the matching external reference code and group.
+	 * Returns the erc group entry matching the UUID and group.
 	 *
+	 * @param uuid the erc group entry's UUID
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the erc group entry's external reference code
 	 * @return the matching erc group entry, or <code>null</code> if a matching erc group entry could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ERCGroupEntry fetchERCGroupEntryByExternalReferenceCode(
-		long groupId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchERCGroupEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ERCGroupEntry fetchERCGroupEntryByReferenceCode(
-		long groupId, String externalReferenceCode);
+	public ERCGroupEntry fetchERCGroupEntryByUuidAndGroupId(
+		String uuid, long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -235,6 +228,32 @@ public interface ERCGroupEntryLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<ERCGroupEntry> getERCGroupEntries(int start, int end);
+
+	/**
+	 * Returns all the erc group entries matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the erc group entries
+	 * @param companyId the primary key of the company
+	 * @return the matching erc group entries, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ERCGroupEntry> getERCGroupEntriesByUuidAndCompanyId(
+		String uuid, long companyId);
+
+	/**
+	 * Returns a range of erc group entries matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the erc group entries
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of erc group entries
+	 * @param end the upper bound of the range of erc group entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching erc group entries, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<ERCGroupEntry> getERCGroupEntriesByUuidAndCompanyId(
+		String uuid, long companyId, int start, int end,
+		OrderByComparator<ERCGroupEntry> orderByComparator);
 
 	/**
 	 * Returns the number of erc group entries.
@@ -255,17 +274,22 @@ public interface ERCGroupEntryLocalService
 	public ERCGroupEntry getERCGroupEntry(long ercGroupEntryId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ERCGroupEntry getERCGroupEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
-	 * Returns the erc group entry with the matching external reference code and group.
+	 * Returns the erc group entry matching the UUID and group.
 	 *
+	 * @param uuid the erc group entry's UUID
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the erc group entry's external reference code
 	 * @return the matching erc group entry
 	 * @throws PortalException if a matching erc group entry could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public ERCGroupEntry getERCGroupEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+	public ERCGroupEntry getERCGroupEntryByUuidAndGroupId(
+			String uuid, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.action;
@@ -18,15 +9,19 @@ import com.liferay.document.library.constants.DLFileVersionPreviewConstants;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.exception.NoSuchFileShortcutException;
 import com.liferay.document.library.kernel.exception.NoSuchFolderException;
+import com.liferay.document.library.kernel.processor.RawMetadataProcessorUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
-import com.liferay.document.library.kernel.util.RawMetadataProcessorUtil;
 import com.liferay.document.library.service.DLFileVersionPreviewLocalServiceUtil;
+import com.liferay.document.library.web.internal.display.context.helper.DLPortletInstanceSettingsHelper;
+import com.liferay.document.library.web.internal.display.context.helper.DLRequestHelper;
 import com.liferay.document.library.web.internal.security.permission.resource.DLPermission;
+import com.liferay.document.library.web.internal.util.DLFolderUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Repository;
-import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.repository.capabilities.TrashCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
@@ -35,22 +30,19 @@ import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.RepositoryServiceUtil;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Brian Wing Shun Chan
@@ -74,8 +66,7 @@ public class ActionUtil {
 			}
 			catch (NoSuchFileEntryException noSuchFileEntryException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						noSuchFileEntryException, noSuchFileEntryException);
+					_log.debug(noSuchFileEntryException);
 				}
 			}
 		}
@@ -141,10 +132,10 @@ public class ActionUtil {
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		List<FileShortcut> fileShortcuts = new ArrayList<>();
+
 		long[] fileShortcutIds = ParamUtil.getLongValues(
 			httpServletRequest, "rowIdsDLFileShortcut");
-
-		List<FileShortcut> fileShortcuts = new ArrayList<>();
 
 		for (long fileShortcutId : fileShortcutIds) {
 			try {
@@ -153,9 +144,7 @@ public class ActionUtil {
 			}
 			catch (NoSuchFileShortcutException noSuchFileShortcutException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						noSuchFileShortcutException,
-						noSuchFileShortcutException);
+					_log.debug(noSuchFileShortcutException);
 				}
 			}
 		}
@@ -222,16 +211,17 @@ public class ActionUtil {
 			httpServletRequest, "ignoreRootFolder");
 
 		if ((folderId <= 0) && !ignoreRootFolder) {
-			PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
 
-			String portletId = portletDisplay.getId();
+				DLPortletInstanceSettingsHelper
+					dlPortletInstanceSettingsHelper =
+						new DLPortletInstanceSettingsHelper(
+							new DLRequestHelper(httpServletRequest));
 
-			PortletPreferences portletPreferences =
-				PortletPreferencesFactoryUtil.getPortletPreferences(
-					httpServletRequest, portletId);
-
-			folderId = GetterUtil.getLong(
-				portletPreferences.getValue("rootFolderId", null));
+				folderId = dlPortletInstanceSettingsHelper.getRootFolderId();
+			}
 		}
 
 		if (folderId <= 0) {
@@ -243,6 +233,9 @@ public class ActionUtil {
 		}
 
 		Folder folder = DLAppServiceUtil.getFolder(folderId);
+
+		DLFolderUtil.validateDepotFolder(
+			folderId, folder.getGroupId(), themeDisplay.getScopeGroupId());
 
 		if (folder.isMountPoint()) {
 			com.liferay.portal.kernel.repository.Repository repository =
@@ -274,10 +267,10 @@ public class ActionUtil {
 	public static List<Folder> getFolders(HttpServletRequest httpServletRequest)
 		throws PortalException {
 
+		List<Folder> folders = new ArrayList<>();
+
 		long[] folderIds = ParamUtil.getLongValues(
 			httpServletRequest, "rowIdsFolder");
-
-		List<Folder> folders = new ArrayList<>();
 
 		for (long folderId : folderIds) {
 			try {
@@ -285,7 +278,7 @@ public class ActionUtil {
 			}
 			catch (NoSuchFolderException noSuchFolderException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchFolderException, noSuchFolderException);
+					_log.debug(noSuchFolderException);
 				}
 			}
 		}

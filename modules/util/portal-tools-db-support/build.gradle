@@ -1,6 +1,9 @@
 apply plugin: "com.liferay.maven.plugin.builder"
 
-String h2Version = "1.4.193"
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
+
+String h2Version = "2.1.212"
 
 buildPluginDescriptor {
 	ext {
@@ -16,18 +19,19 @@ configurations {
 	mavenDistribution
 }
 
+copyCSS {
+	mustRunAfter buildPluginDescriptor
+}
+
 dependencies {
-	compileInclude group: "com.beust", name: "jcommander", version: "1.58"
-
+	compileInclude group: "com.beust", name: "jcommander", version: "1.82"
 	compileOnly group: "com.liferay", name: "com.liferay.portal.tools.service.builder", transitive: false, version: "1.0.135"
-	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.11"
+	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.14"
 	compileOnly group: "org.apache.maven", name: "maven-plugin-api", transitive: false, version: "3.0.4"
-
 	mavenDistribution classifier: "bin", ext: "zip", group: "org.apache.maven", name: "apache-maven", version: "3.3.9"
-
-	testCompile group: "com.h2database", name: "h2", version: h2Version
-	testCompile group: "com.liferay", name: "com.liferay.maven.executor", version: "1.0.2"
-	testCompile group: "org.apache.ant", name: "ant-testutil", version: "1.9.7"
+	testImplementation group: "com.h2database", name: "h2", version: h2Version
+	testImplementation group: "com.liferay", name: "com.liferay.maven.executor", version: "1.0.2"
+	testImplementation group: "org.apache.ant", name: "ant-testutil", version: "1.9.7"
 }
 
 javadoc {
@@ -39,13 +43,13 @@ liferayOSGi {
 }
 
 test {
-	dependsOn install
+	dependsOn publishToMavenLocal
 
 	doFirst {
 		systemProperty "maven.distribution.file.name", configurations.mavenDistribution.singleFile
 	}
 
-	systemProperty "db.support.version", jar.version
+	systemProperty "db.support.version", jar.archiveVersion.get()
 	systemProperty "h2.version", h2Version
 	systemProperty "http.proxyHost", System.properties["http.proxyHost"]
 	systemProperty "http.proxyPort", System.properties["http.proxyPort"]

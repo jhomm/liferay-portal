@@ -1,22 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.upgrade.v2_2_0;
 
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
-import com.liferay.commerce.internal.upgrade.base.BaseCommerceServiceUpgradeProcess;
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.commerce.model.impl.CommerceOrderModelImpl;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
@@ -25,6 +17,10 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -34,27 +30,25 @@ import java.sql.Statement;
 /**
  * @author Ethan Bustad
  */
-public class CommerceOrderUpgradeProcess
-	extends BaseCommerceServiceUpgradeProcess {
+public class CommerceOrderUpgradeProcess extends UpgradeProcess {
 
 	public CommerceOrderUpgradeProcess(
-		CommerceAccountLocalService commerceAccountLocalService,
+		AccountEntryLocalService accountEntryLocalService,
+		AccountEntryUserRelLocalService accountEntryUserRelLocalService,
 		UserLocalService userLocalService) {
 
-		_commerceAccountLocalService = commerceAccountLocalService;
+		_accountEntryLocalService = accountEntryLocalService;
+		_accountEntryUserRelLocalService = accountEntryUserRelLocalService;
 		_userLocalService = userLocalService;
 	}
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		addColumn(
-			CommerceOrderModelImpl.class, CommerceOrderModelImpl.TABLE_NAME,
-			"commerceAccountId", "LONG");
-
 		if (hasColumn(CommerceOrderModelImpl.TABLE_NAME, "siteGroupId")) {
 			runSQL("update CommerceOrder set groupId = siteGroupId");
 
-			dropColumn(CommerceOrderModelImpl.TABLE_NAME, "siteGroupId");
+			alterTableDropColumn(
+				CommerceOrderModelImpl.TABLE_NAME, "siteGroupId");
 		}
 
 		if (!hasColumn(
@@ -113,13 +107,20 @@ public class CommerceOrderUpgradeProcess
 					serviceContext.setCompanyId(user.getCompanyId());
 					serviceContext.setUserId(user.getUserId());
 
-					CommerceAccount commerceAccount =
-						_commerceAccountLocalService.addPersonalCommerceAccount(
-							user.getUserId(), StringPool.BLANK,
-							StringPool.BLANK, serviceContext);
+					AccountEntry accountEntry =
+						_accountEntryLocalService.addAccountEntry(
+							StringPool.BLANK, user.getUserId(),
+							AccountConstants.PARENT_ACCOUNT_ENTRY_ID_DEFAULT,
+							user.getFullName(), null, null,
+							user.getEmailAddress(), null, StringPool.BLANK,
+							AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON,
+							WorkflowConstants.STATUS_APPROVED, serviceContext);
+
+					_accountEntryUserRelLocalService.addAccountEntryUserRel(
+						accountEntry.getAccountEntryId(), user.getUserId());
 
 					preparedStatement2.setLong(
-						1, commerceAccount.getCommerceAccountId());
+						1, accountEntry.getAccountEntryId());
 
 					preparedStatement2.setLong(2, orderUserId);
 
@@ -130,9 +131,23 @@ public class CommerceOrderUpgradeProcess
 			preparedStatement1.executeBatch();
 			preparedStatement2.executeBatch();
 		}
+	}
 
-		dropColumn(CommerceOrderModelImpl.TABLE_NAME, "orderOrganizationId");
-		dropColumn(CommerceOrderModelImpl.TABLE_NAME, "orderUserId");
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.dropColumns(
+				CommerceOrderModelImpl.TABLE_NAME, "orderOrganizationId",
+				"orderUserId")
+		};
+	}
+
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.addColumns(
+				"CommerceOrder", "commerceAccountId LONG")
+		};
 	}
 
 	private long _getCommerceAccountId(long organizationId)
@@ -156,7 +171,9 @@ public class CommerceOrderUpgradeProcess
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceOrderUpgradeProcess.class);
 
-	private final CommerceAccountLocalService _commerceAccountLocalService;
+	private final AccountEntryLocalService _accountEntryLocalService;
+	private final AccountEntryUserRelLocalService
+		_accountEntryUserRelLocalService;
 	private final UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.asset.model;
@@ -20,7 +11,6 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutBranch;
 import com.liferay.portal.kernel.model.LayoutRevision;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
@@ -29,17 +19,17 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetBranchLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Raymond Augé
@@ -52,10 +42,9 @@ public class LayoutRevisionAssetRenderer
 
 		try {
 			_layoutBranch = layoutRevision.getLayoutBranch();
-
 			_layoutSetBranch =
 				LayoutSetBranchLocalServiceUtil.getLayoutSetBranch(
-					_layoutRevision.getLayoutSetBranchId());
+					layoutRevision.getLayoutSetBranchId());
 		}
 		catch (Exception exception) {
 			throw new IllegalStateException(exception);
@@ -126,20 +115,26 @@ public class LayoutRevisionAssetRenderer
 		LiferayPortletResponse liferayPortletResponse,
 		String noSuchEntryRedirect) {
 
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getURLViewInContext(
+		ThemeDisplay themeDisplay, String noSuchEntryRedirect) {
+
 		try {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)liferayPortletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
+			String layoutURL = PortalUtil.getLayoutURL(
+				LayoutLocalServiceUtil.getLayout(_layoutRevision.getPlid()),
+				themeDisplay);
 
-			Layout layout = LayoutLocalServiceUtil.getLayout(
-				_layoutRevision.getPlid());
-
-			String layoutURL = PortalUtil.getLayoutURL(layout, themeDisplay);
-
-			layoutURL = HttpUtil.addParameter(
+			layoutURL = HttpComponentsUtil.addParameter(
 				layoutURL, "layoutSetBranchId",
 				_layoutRevision.getLayoutSetBranchId());
-			layoutURL = HttpUtil.addParameter(
+			layoutURL = HttpComponentsUtil.addParameter(
 				layoutURL, "layoutRevisionId",
 				_layoutRevision.getLayoutRevisionId());
 
@@ -147,7 +142,7 @@ public class LayoutRevisionAssetRenderer
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;

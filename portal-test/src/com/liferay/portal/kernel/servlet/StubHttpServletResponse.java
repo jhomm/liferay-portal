@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
+
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Collection;
 import java.util.Locale;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Shuyang Zhou
@@ -58,7 +49,6 @@ public class StubHttpServletResponse implements HttpServletResponse {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public String encodeRedirectUrl(String url) {
 		throw new UnsupportedOperationException();
 	}
@@ -72,7 +62,6 @@ public class StubHttpServletResponse implements HttpServletResponse {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public String encodeUrl(String string) {
 		throw new UnsupportedOperationException();
 	}
@@ -221,7 +210,6 @@ public class StubHttpServletResponse implements HttpServletResponse {
 	 * @deprecated As of Wilberforce (7.0.x)
 	 */
 	@Deprecated
-	@Override
 	public void setStatus(int status, String message) {
 		throw new UnsupportedOperationException();
 	}

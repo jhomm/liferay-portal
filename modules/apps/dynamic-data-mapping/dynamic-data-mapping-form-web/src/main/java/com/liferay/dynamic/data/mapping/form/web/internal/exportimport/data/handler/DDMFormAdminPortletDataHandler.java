@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.exportimport.data.handler;
@@ -34,9 +25,9 @@ import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.module.framework.ModuleServiceLifecycle;
 import com.liferay.portal.kernel.xml.Element;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -46,7 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	property = "javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+	property = "jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 	service = PortletDataHandler.class
 )
 public class DDMFormAdminPortletDataHandler extends BasePortletDataHandler {
@@ -255,51 +246,25 @@ public class DDMFormAdminPortletDataHandler extends BasePortletDataHandler {
 	}
 
 	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance)",
-		unbind = "-"
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance)"
 	)
-	protected void setDDMDataProviderInstanceStagedModelRepository(
-		StagedModelRepository<DDMDataProviderInstance>
-			ddmDataProviderInstanceStagedModelRepository) {
-
-		_ddmDataProviderInstanceStagedModelRepository =
-			ddmDataProviderInstanceStagedModelRepository;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord)",
-		unbind = "-"
-	)
-	protected void setDDMFormInstanceRecordStagedModelRepository(
-		StagedModelRepository<DDMFormInstanceRecord>
-			formInstanceRecordStagedModelRepository) {
-
-		_formInstanceRecordStagedModelRepository =
-			formInstanceRecordStagedModelRepository;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMFormInstance)",
-		unbind = "-"
-	)
-	protected void setDDMFormInstanceStagedModelRepository(
-		StagedModelRepository<DDMFormInstance>
-			formInstanceStagedModelRepository) {
-
-		_formInstanceStagedModelRepository = formInstanceStagedModelRepository;
-	}
-
-	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED, unbind = "-")
-	protected void setModuleServiceLifecycle(
-		ModuleServiceLifecycle moduleServiceLifecycle) {
-	}
-
 	private StagedModelRepository<DDMDataProviderInstance>
 		_ddmDataProviderInstanceStagedModelRepository;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord)"
+	)
 	private StagedModelRepository<DDMFormInstanceRecord>
 		_formInstanceRecordStagedModelRepository;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMFormInstance)"
+	)
 	private StagedModelRepository<DDMFormInstance>
 		_formInstanceStagedModelRepository;
+
+	@Reference(target = ModuleServiceLifecycle.PORTAL_INITIALIZED)
+	private ModuleServiceLifecycle _moduleServiceLifecycle;
 
 	@Reference
 	private Staging _staging;

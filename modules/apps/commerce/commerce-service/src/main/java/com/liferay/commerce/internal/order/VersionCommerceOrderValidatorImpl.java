@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.order;
@@ -23,8 +14,10 @@ import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import java.math.BigDecimal;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -36,7 +29,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.order.validator.key=" + VersionCommerceOrderValidatorImpl.KEY,
 		"commerce.order.validator.priority:Integer=30"
@@ -56,7 +48,7 @@ public class VersionCommerceOrderValidatorImpl
 	@Override
 	public CommerceOrderValidatorResult validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			int quantity)
+			String json, BigDecimal quantity, boolean child)
 		throws PortalException {
 
 		return new CommerceOrderValidatorResult(true);
@@ -122,7 +114,7 @@ public class VersionCommerceOrderValidatorImpl
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, key);
+		return _language.get(resourceBundle, key);
 	}
 
 	private boolean _updateInstance(
@@ -149,5 +141,8 @@ public class VersionCommerceOrderValidatorImpl
 
 	@Reference
 	private CPInstanceLocalService _cpInstanceLocalService;
+
+	@Reference
+	private Language _language;
 
 }

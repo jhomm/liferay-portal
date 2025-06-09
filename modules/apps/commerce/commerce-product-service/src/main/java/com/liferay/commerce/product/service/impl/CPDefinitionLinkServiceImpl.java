@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -19,34 +10,55 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionLink;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.service.CPDefinitionLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.base.CPDefinitionLinkServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  * @author Marco Leo
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CPDefinitionLink"
+	},
+	service = AopService.class
+)
 public class CPDefinitionLinkServiceImpl
 	extends CPDefinitionLinkServiceBaseImpl {
 
 	@Override
 	public CPDefinitionLink addCPDefinitionLink(
-			long cpDefinitionId, long cProductId, double priority, String type,
+			long cpDefinitionId, long cProductId, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire, double priority, String type,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		_checkCommerceCatalog(cpDefinitionId, ActionKeys.UPDATE);
 
 		return cpDefinitionLinkLocalService.addCPDefinitionLinkByCProductId(
-			cpDefinitionId, cProductId, priority, type, serviceContext);
+			cpDefinitionId, cProductId, displayDateMonth, displayDateDay,
+			displayDateYear, displayDateHour, displayDateMinute,
+			expirationDateMonth, expirationDateDay, expirationDateYear,
+			expirationDateHour, expirationDateMinute, neverExpire, priority,
+			type, serviceContext);
 	}
 
 	@Override
@@ -90,6 +102,17 @@ public class CPDefinitionLinkServiceImpl
 	}
 
 	@Override
+	public CPDefinitionLink fetchCPDefinitionLink(
+			long cpDefinitionId, long cProductId, String type)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.fetchCPDefinitionLink(
+			cpDefinitionId, cProductId, type);
+	}
+
+	@Override
 	public CPDefinitionLink getCPDefinitionLink(long cpDefinitionLinkId)
 		throws PortalException {
 
@@ -121,6 +144,17 @@ public class CPDefinitionLinkServiceImpl
 
 	@Override
 	public List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, int status)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.getCPDefinitionLinks(
+			cpDefinitionId, status);
+	}
+
+	@Override
+	public List<CPDefinitionLink> getCPDefinitionLinks(
 			long cpDefinitionId, int start, int end)
 		throws PortalException {
 
@@ -132,6 +166,17 @@ public class CPDefinitionLinkServiceImpl
 
 	@Override
 	public List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, int status, int start, int end)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.getCPDefinitionLinks(
+			cpDefinitionId, status, start, end);
+	}
+
+	@Override
+	public List<CPDefinitionLink> getCPDefinitionLinks(
 			long cpDefinitionId, String type)
 		throws PortalException {
 
@@ -139,6 +184,29 @@ public class CPDefinitionLinkServiceImpl
 
 		return cpDefinitionLinkLocalService.getCPDefinitionLinks(
 			cpDefinitionId, type);
+	}
+
+	@Override
+	public List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, String type, int status)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.getCPDefinitionLinks(
+			cpDefinitionId, type, status);
+	}
+
+	@Override
+	public List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, String type, int status, int start, int end,
+			OrderByComparator<CPDefinitionLink> orderByComparator)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.getCPDefinitionLinks(
+			cpDefinitionId, type, status, start, end, orderByComparator);
 	}
 
 	@Override
@@ -164,6 +232,16 @@ public class CPDefinitionLinkServiceImpl
 	}
 
 	@Override
+	public int getCPDefinitionLinksCount(long cpDefinitionId, int status)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.getCPDefinitionLinksCount(
+			cpDefinitionId, status);
+	}
+
+	@Override
 	public int getCPDefinitionLinksCount(long cpDefinitionId, String type)
 		throws PortalException {
 
@@ -174,8 +252,23 @@ public class CPDefinitionLinkServiceImpl
 	}
 
 	@Override
+	public int getCPDefinitionLinksCount(
+			long cpDefinitionId, String type, int status)
+		throws PortalException {
+
+		_checkCommerceCatalog(cpDefinitionId, ActionKeys.VIEW);
+
+		return cpDefinitionLinkLocalService.getCPDefinitionLinksCount(
+			cpDefinitionId, type, status);
+	}
+
+	@Override
 	public CPDefinitionLink updateCPDefinitionLink(
-			long cpDefinitionLinkId, double priority,
+			long cpDefinitionLinkId, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire, double priority,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -192,7 +285,11 @@ public class CPDefinitionLinkServiceImpl
 			cProduct.getPublishedCPDefinitionId(), ActionKeys.UPDATE);
 
 		return cpDefinitionLinkLocalService.updateCPDefinitionLink(
-			cpDefinitionLinkId, priority, serviceContext);
+			getUserId(), cpDefinitionLinkId, displayDateMonth, displayDateDay,
+			displayDateYear, displayDateHour, displayDateMinute,
+			expirationDateMonth, expirationDateDay, expirationDateYear,
+			expirationDateHour, expirationDateMinute, neverExpire, priority,
+			serviceContext);
 	}
 
 	@Override
@@ -203,14 +300,28 @@ public class CPDefinitionLinkServiceImpl
 
 		_checkCommerceCatalog(cpDefinitionId, ActionKeys.UPDATE);
 
-		cpDefinitionLinkLocalService.updateCPDefinitionLinks(
-			cpDefinitionId, cpDefinitionIds2, type, serviceContext);
+		if (cpDefinitionIds2 == null) {
+			return;
+		}
+
+		long[] cProductIds = new long[cpDefinitionIds2.length];
+
+		for (int i = 0; i < cProductIds.length; i++) {
+			CPDefinition cpDefinition =
+				_cpDefinitionLocalService.fetchCPDefinition(
+					cpDefinitionIds2[i]);
+
+			cProductIds[i] = cpDefinition.getCProductId();
+		}
+
+		cpDefinitionLinkLocalService.updateCPDefinitionLinkCProductIds(
+			cpDefinitionId, cProductIds, type, serviceContext);
 	}
 
 	private void _checkCommerceCatalog(long cpDefinitionId, String actionId)
 		throws PortalException {
 
-		CPDefinition cpDefinition = cpDefinitionLocalService.fetchCPDefinition(
+		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
 			cpDefinitionId);
 
 		if (cpDefinition == null) {
@@ -218,7 +329,7 @@ public class CPDefinitionLinkServiceImpl
 		}
 
 		CommerceCatalog commerceCatalog =
-			commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
+			_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
 				cpDefinition.getGroupId());
 
 		if (commerceCatalog == null) {
@@ -229,11 +340,16 @@ public class CPDefinitionLinkServiceImpl
 			getPermissionChecker(), commerceCatalog, actionId);
 	}
 
-	private static volatile ModelResourcePermission<CommerceCatalog>
-		_commerceCatalogModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CPDefinitionLinkServiceImpl.class,
-				"_commerceCatalogModelResourcePermission",
-				CommerceCatalog.class);
+	@Reference
+	private CommerceCatalogLocalService _commerceCatalogLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceCatalog)"
+	)
+	private ModelResourcePermission<CommerceCatalog>
+		_commerceCatalogModelResourcePermission;
+
+	@Reference
+	private CPDefinitionLocalService _cpDefinitionLocalService;
 
 }

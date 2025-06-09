@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
 
-import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.util.SystemProperties;
 
-import java.util.Collections;
-import java.util.Set;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponseWrapper;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Samuel Kong
@@ -62,27 +52,29 @@ public class HttpOnlyCookieServletResponse extends HttpServletResponseWrapper {
 
 	@Override
 	public void addCookie(Cookie cookie) {
-		if (!_cookieHttpOnlyCookieNamesExcludes.contains(cookie.getName())) {
+		if (!_httpOnlyCookieNames.contains(cookie.getName())) {
 			cookie.setHttpOnly(true);
 		}
 
 		super.addCookie(cookie);
 	}
 
-	private static final Set<String> _cookieHttpOnlyCookieNamesExcludes;
+	private static final Set<String> _httpOnlyCookieNames =
+		new HashSet<String>() {
+			{
+				add(CookiesConstants.NAME_CONSENT_TYPE_FUNCTIONAL);
+				add(CookiesConstants.NAME_CONSENT_TYPE_NECESSARY);
+				add(CookiesConstants.NAME_CONSENT_TYPE_PERFORMANCE);
+				add(CookiesConstants.NAME_CONSENT_TYPE_PERSONALIZATION);
+				add(CookiesConstants.NAME_USER_CONSENT_CONFIGURED);
 
-	static {
-		Set<String> cookieHttpOnlyCookieNamesExcludes = SetUtil.fromArray(
-			StringUtil.split(
-				SystemProperties.get("cookie.http.only.names.excludes")));
+				for (String cookieName :
+						SystemProperties.getArray(
+							"cookie.http.only.names.excludes")) {
 
-		if (cookieHttpOnlyCookieNamesExcludes.isEmpty()) {
-			_cookieHttpOnlyCookieNamesExcludes = Collections.emptySet();
-		}
-		else {
-			_cookieHttpOnlyCookieNamesExcludes =
-				cookieHttpOnlyCookieNamesExcludes;
-		}
-	}
+					add(cookieName);
+				}
+			}
+		};
 
 }

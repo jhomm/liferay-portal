@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -127,6 +118,8 @@ public class KaleoTransitionPersistenceTest {
 
 		newKaleoTransition.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoTransition.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoTransition.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoTransition.setCompanyId(RandomTestUtil.nextLong());
@@ -147,6 +140,8 @@ public class KaleoTransitionPersistenceTest {
 		newKaleoTransition.setKaleoNodeId(RandomTestUtil.nextLong());
 
 		newKaleoTransition.setName(RandomTestUtil.randomString());
+
+		newKaleoTransition.setLabel(RandomTestUtil.randomString());
 
 		newKaleoTransition.setDescription(RandomTestUtil.randomString());
 
@@ -170,6 +165,9 @@ public class KaleoTransitionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoTransition.getMvccVersion(),
 			newKaleoTransition.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoTransition.getCtCollectionId(),
+			newKaleoTransition.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoTransition.getKaleoTransitionId(),
 			newKaleoTransition.getKaleoTransitionId());
@@ -202,6 +200,8 @@ public class KaleoTransitionPersistenceTest {
 			newKaleoTransition.getKaleoNodeId());
 		Assert.assertEquals(
 			existingKaleoTransition.getName(), newKaleoTransition.getName());
+		Assert.assertEquals(
+			existingKaleoTransition.getLabel(), newKaleoTransition.getLabel());
 		Assert.assertEquals(
 			existingKaleoTransition.getDescription(),
 			newKaleoTransition.getDescription());
@@ -285,11 +285,12 @@ public class KaleoTransitionPersistenceTest {
 
 	protected OrderByComparator<KaleoTransition> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoTransition", "mvccVersion", true, "kaleoTransitionId", true,
-			"groupId", true, "companyId", true, "userId", true, "userName",
-			true, "createDate", true, "modifiedDate", true, "kaleoDefinitionId",
-			true, "kaleoDefinitionVersionId", true, "kaleoNodeId", true, "name",
-			true, "description", true, "sourceKaleoNodeId", true,
+			"KaleoTransition", "mvccVersion", true, "ctCollectionId", true,
+			"kaleoTransitionId", true, "groupId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "kaleoDefinitionId", true,
+			"kaleoDefinitionVersionId", true, "kaleoNodeId", true, "name", true,
+			"label", true, "description", true, "sourceKaleoNodeId", true,
 			"sourceKaleoNodeName", true, "targetKaleoNodeId", true,
 			"targetKaleoNodeName", true, "defaultTransition", true);
 	}
@@ -591,6 +592,8 @@ public class KaleoTransitionPersistenceTest {
 
 		kaleoTransition.setMvccVersion(RandomTestUtil.nextLong());
 
+		kaleoTransition.setCtCollectionId(RandomTestUtil.nextLong());
+
 		kaleoTransition.setGroupId(RandomTestUtil.nextLong());
 
 		kaleoTransition.setCompanyId(RandomTestUtil.nextLong());
@@ -610,6 +613,8 @@ public class KaleoTransitionPersistenceTest {
 		kaleoTransition.setKaleoNodeId(RandomTestUtil.nextLong());
 
 		kaleoTransition.setName(RandomTestUtil.randomString());
+
+		kaleoTransition.setLabel(RandomTestUtil.randomString());
 
 		kaleoTransition.setDescription(RandomTestUtil.randomString());
 

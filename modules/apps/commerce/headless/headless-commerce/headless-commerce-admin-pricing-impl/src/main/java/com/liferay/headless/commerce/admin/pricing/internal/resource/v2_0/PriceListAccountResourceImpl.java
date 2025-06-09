@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
-import com.liferay.commerce.account.service.CommerceAccountService;
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommercePriceListAccountRel;
@@ -22,22 +13,20 @@ import com.liferay.commerce.price.list.service.CommercePriceListAccountRelServic
 import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceList;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceListAccount;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.PriceListAccountDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceListAccountUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.PriceListAccountResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -49,13 +38,12 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v2_0/price-list-account.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {NestedFieldSupport.class, PriceListAccountResource.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = PriceListAccountResource.class
 )
 public class PriceListAccountResourceImpl
-	extends BasePriceListAccountResourceImpl implements NestedFieldSupport {
+	extends BasePriceListAccountResourceImpl {
 
 	@Override
 	public void deletePriceListAccount(Long id) throws Exception {
@@ -70,8 +58,9 @@ public class PriceListAccountResourceImpl
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -85,14 +74,14 @@ public class PriceListAccountResourceImpl
 				pagination.getStartPosition(), pagination.getEndPosition(),
 				null);
 
-		int totalItems =
+		int totalCount =
 			_commercePriceListAccountRelService.
 				getCommercePriceListAccountRelsCount(
 					commercePriceList.getCommercePriceListId());
 
 		return Page.of(
 			_toPriceListAccounts(commercePriceListAccountRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@NestedField(parentClass = PriceList.class, value = "priceListAccounts")
@@ -107,13 +96,13 @@ public class PriceListAccountResourceImpl
 				id, search, pagination.getStartPosition(),
 				pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commercePriceListAccountRelService.
 				getCommercePriceListAccountRelsCount(id, search);
 
 		return Page.of(
 			_toPriceListAccounts(commercePriceListAccountRels), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@Override
@@ -123,8 +112,9 @@ public class PriceListAccountResourceImpl
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -134,7 +124,7 @@ public class PriceListAccountResourceImpl
 
 		CommercePriceListAccountRel commercePriceListAccountRel =
 			PriceListAccountUtil.addCommercePriceListAccountRel(
-				_commerceAccountService, _commercePriceListAccountRelService,
+				_accountEntryService, _commercePriceListAccountRelService,
 				priceListAccount, commercePriceList, _serviceContextHelper);
 
 		return _toPriceListAccount(
@@ -148,7 +138,7 @@ public class PriceListAccountResourceImpl
 
 		CommercePriceListAccountRel commercePriceListAccountRel =
 			PriceListAccountUtil.addCommercePriceListAccountRel(
-				_commerceAccountService, _commercePriceListAccountRelService,
+				_accountEntryService, _commercePriceListAccountRelService,
 				priceListAccount,
 				_commercePriceListService.getCommercePriceList(id),
 				_serviceContextHelper);
@@ -192,22 +182,15 @@ public class PriceListAccountResourceImpl
 			List<CommercePriceListAccountRel> commercePriceListAccountRels)
 		throws Exception {
 
-		List<PriceListAccount> priceListAccounts = new ArrayList<>();
-
-		for (CommercePriceListAccountRel commercePriceListAccountRel :
-				commercePriceListAccountRels) {
-
-			priceListAccounts.add(
-				_toPriceListAccount(
-					commercePriceListAccountRel.
-						getCommercePriceListAccountRelId()));
-		}
-
-		return priceListAccounts;
+		return transform(
+			commercePriceListAccountRels,
+			commercePriceListAccountRel -> _toPriceListAccount(
+				commercePriceListAccountRel.
+					getCommercePriceListAccountRelId()));
 	}
 
 	@Reference
-	private CommerceAccountService _commerceAccountService;
+	private AccountEntryService _accountEntryService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.price.list.model.CommercePriceListAccountRel)"
@@ -225,8 +208,11 @@ public class PriceListAccountResourceImpl
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
 
-	@Reference
-	private PriceListAccountDTOConverter _priceListAccountDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.PriceListAccountDTOConverter)"
+	)
+	private DTOConverter<CommercePriceListAccountRel, PriceListAccount>
+		_priceListAccountDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

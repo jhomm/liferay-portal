@@ -1,0 +1,40 @@
+definition {
+
+	@summary = "Default summary"
+	macro addAccountEntryUser(userLastName = null, userScreenName = null, userEmailAddress = null, userFirstName = null, accountEntryName = null) {
+		Variables.assertDefined(parameterList = "${accountEntryName},${userEmailAddress},${userFirstName},${userLastName},${userScreenName}");
+
+		if (!(isSet(creatorEmailAddress))) {
+			var creatorEmailAddress = JSONUtil2.getAdminUserEmail();
+		}
+
+		if (!(isSet(creatorPassword))) {
+			var creatorPassword = JSONUtil2.getAdminUserPassword();
+		}
+
+		var accountEntryId = JSONAccountEntryAPI._getAccountEntryId(accountEntryName = ${accountEntryName});
+
+		JSONAccountEntryUserAPI._addAccountEntryUser(
+			accountEntryId = ${accountEntryId},
+			accountEntryName = ${accountEntryName},
+			creatorEmailAddress = ${creatorEmailAddress},
+			creatorPassword = ${creatorPassword},
+			userEmailAddress = ${userEmailAddress},
+			userFirstName = ${userFirstName},
+			userLastName = ${userLastName},
+			userScreenName = ${userScreenName});
+	}
+
+	@summary = "Default summary"
+	macro addExistUsertoAccount(userEmailAddress = null, accountEntryName = null) {
+		Variables.assertDefined(parameterList = "${accountEntryName},${userEmailAddress}");
+
+		var accountEntryId = JSONAccountEntryAPI._getAccountEntryId(accountEntryName = ${accountEntryName});
+		var userId = JSONUserSetter.setUserId(userEmailAddress = ${userEmailAddress});
+
+		JSONAccountEntryUserAPI._addExistUsertoAccount(
+			accountEntryId = ${accountEntryId},
+			userId = ${userId});
+	}
+
+}

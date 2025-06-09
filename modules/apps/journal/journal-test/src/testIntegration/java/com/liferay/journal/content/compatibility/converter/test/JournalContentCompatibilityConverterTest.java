@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.content.compatibility.converter.test;
@@ -23,16 +14,10 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
-import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
-import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
-import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Document;
@@ -109,7 +94,7 @@ public class JournalContentCompatibilityConverterTest {
 
 	@Test
 	public void testGetLinkToLayoutValue() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		String value = ReflectionTestUtil.invoke(
 			_journalContentCompatibilityConverter, "_convertLinkToLayoutValue",
@@ -131,7 +116,7 @@ public class JournalContentCompatibilityConverterTest {
 
 	@Test
 	public void testGetLinkToLayoutValueWithoutGroupId() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		String value = ReflectionTestUtil.invoke(
 			_journalContentCompatibilityConverter, "_convertLinkToLayoutValue",
@@ -151,30 +136,10 @@ public class JournalContentCompatibilityConverterTest {
 
 	@Test
 	public void testLinkToPageFieldCompatibilityLayer() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
-		Layout layout1 = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "layout1",
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			LayoutConstants.TYPE_CONTENT, false, "/layout1", serviceContext);
-		Layout layout2 = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "layout2",
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			LayoutConstants.TYPE_CONTENT, false, "/layout2", serviceContext);
-		Layout layout3 = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "layout3",
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			LayoutConstants.TYPE_CONTENT, false, "/layout3", serviceContext);
-		Layout layout4 = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "layout4",
-			RandomTestUtil.randomString(), StringPool.BLANK,
-			LayoutConstants.TYPE_CONTENT, false, "/layout4", serviceContext);
+		Layout layout1 = LayoutTestUtil.addTypeContentLayout(_group, "layout1");
+		Layout layout2 = LayoutTestUtil.addTypeContentLayout(_group, "layout2");
+		Layout layout3 = LayoutTestUtil.addTypeContentLayout(_group, "layout3");
+		Layout layout4 = LayoutTestUtil.addTypeContentLayout(_group, "layout4");
 
 		String content = StringUtil.replace(
 			read("test-journal-content-link-to-page-field-compatibility.xml"),

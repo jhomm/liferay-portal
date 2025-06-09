@@ -1,165 +1,221 @@
 definition {
 
-	macro activateCP {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro activateCP(siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		LexiconEntry.gotoEntryMenuItem(
 			menuItem = "Activate",
-			rowEntry = "${siteTemplateName}");
+			rowEntry = ${siteTemplateName});
 
 		Alert.viewSuccessMessage();
 	}
 
-	macro addChildPageViaSiteTemplateCP {
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Manage",
-			rowEntry = "${siteTemplateName}");
+	@summary = "Default summary"
+	macro addChildPageViaSiteTemplateCP(parentPageName = null, childPageName = null, siteTemplateName = null, masterLayoutName = null) {
+		SiteTemplatesNavigator.openPagesAdmin(siteTemplateName = ${siteTemplateName});
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
+		MouseOver(
+			key_itemName = ${parentPageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM");
 
-		SitePages.addChildPage(
-			childPageName = "${siteChildPageName}",
-			parentPageName = "${pageName}");
+		Click(
+			key_pageName = ${parentPageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_PLUS_ICON");
+
+		if (!(isSet(sitePageType))) {
+			var sitePageType = "Widget Page";
+		}
+
+		var rowEntry = ${sitePageType};
+
+		if (${rowEntry} == "Content Page") {
+			ContentPages._selectCard(masterLayoutName = ${masterLayoutName});
+		}
+		else {
+			LexiconCard.clickCard(card = ${rowEntry});
+		}
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		PortletEntry.inputName(name = ${childPageName});
+
+		ClickNoError(
+			key_text = "Add",
+			locator1 = "Button#ANY");
+
+		if (isSet(conflictPage)) {
+			AssertConfirm(value1 = "The friendly URL of the site template page you are trying to save conflicts with some of the own pages of the sites created from this site template. Are you sure you want to configure the site template page with this friendly URL?");
+		}
+
+		SelectFrame.selectFrameTop();
 	}
 
-	macro addCP {
-		SiteTemplatesNavigator.openSiteTemplatesAdmin();
+	@summary = "Default summary"
+	macro addCP(siteTemplateActive = null, disableChanges = null, disablePropagation = null, siteTemplateName = null) {
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		SiteTemplatesNavigator.openSiteTemplatesAdmin(baseURL = ${baseURL});
 
 		LexiconEntry.gotoAdd();
 
-		PortletEntry.inputName(name = "${siteTemplateName}");
+		PortletEntry.inputName(name = ${siteTemplateName});
 
 		Type(
 			key_fieldLabel = "Description",
 			locator1 = "TextInput#GENERIC_TEXT_INPUT",
 			value1 = "This is a site template description");
 
-		if ("${siteTemplateActive}" == "No") {
+		if (${siteTemplateActive} == "No") {
 			Uncheck.uncheckHiddenToggleSwitch(locator1 = "ToggleSwitch#ACTIVE");
 		}
 
-		if ("${disableChanges}" == "true") {
+		if (${disableChanges} == "true") {
 			Uncheck.uncheckHiddenToggleSwitch(locator1 = "ToggleSwitch#ALLOW_SITE_ADMIN_MODIFY_PAGES");
 		}
 
-		if ("${disablePropagation}" == "true") {
+		if (${disablePropagation} == "true") {
 			Uncheck.uncheckHiddenToggleSwitch(locator1 = "ToggleSwitch#READY_FOR_PROPAGATION");
 		}
 
 		PortletEntry.save();
 	}
 
-	macro addSitePageViaSiteTemplateCP {
-		SiteTemplatesNavigator.openSiteTemplatesAdmin();
+	@summary = "Default summary"
+	macro addSitePageViaSiteTemplateCP(inheritChanges = null, pageTemplateName = null, pageName = null, siteTemplateName = null, masterLayoutName = null, hideFromNavMenu = null) {
+		SiteTemplatesNavigator.openPagesAdmin(siteTemplateName = ${siteTemplateName});
 
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Manage",
-			rowEntry = "${siteTemplateName}");
+		AssertClick(
+			key_breadcrumbName = "Pages",
+			locator1 = "Breadcrumb#BREADCRUMB_ENTRY_EXACT_MATCH",
+			value1 = "Pages");
 
-		ProductMenu.gotoPortlet(
-			category = "Site Builder",
-			portlet = "Pages");
+		Button.click(button = "New");
 
-		LexiconEntry.gotoAddMenuItem(menuItem = "Add Site Template Page");
-
-		if (contains("${sitePageType}", "{sitePageType}")) {
+		if (!(isSet(sitePageType))) {
 			var sitePageType = "Widget Page";
 		}
 
-		var rowEntry = "${sitePageType}";
+		var rowEntry = ${sitePageType};
 
-		if (!(contains("${pageTemplateName}", "{pageTemplateName}"))) {
+		if (isSet(pageTemplateName)) {
 			Navigator.gotoNavNested(navNested = "Global Templates");
 
-			var rowEntry = "${pageTemplateName}";
+			var rowEntry = ${pageTemplateName};
 
 			AssertClick(
-				key_rowEntry = "${rowEntry}",
+				key_rowEntry = ${rowEntry},
 				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_NAME",
-				value1 = "${rowEntry}");
+				value1 = ${rowEntry});
 		}
-		else if ("${rowEntry}" == "Content Page") {
-			LexiconCard.clickCard(card = "Blank");
+		else if (${rowEntry} == "Content Page") {
+			ContentPages._selectCard(masterLayoutName = ${masterLayoutName});
 		}
 		else {
-			LexiconCard.clickCard(card = "${rowEntry}");
+			LexiconCard.clickCard(card = ${rowEntry});
 		}
 
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		PortletEntry.inputName(name = "${pageName}");
+		PortletEntry.inputName(name = ${pageName});
 
-		if ("${hideFromNavMenu}" == "true") {
+		if (${hideFromNavMenu} == "true") {
 			Uncheck(locator1 = "Checkbox#ADD_TO_NAVIGATION_MENU");
 		}
 
-		Button.click(button = "Add");
+		ClickNoError(
+			key_text = "Add",
+			locator1 = "Button#ANY");
+
+		if (isSet(conflictPage)) {
+			AssertConfirm(value1 = "The friendly URL of the site template page you are trying to save conflicts with some of the own pages of the sites created from this site template. Are you sure you want to configure the site template page with this friendly URL?");
+		}
 
 		SelectFrame.selectFrameTop();
 
 		if (isSet(inheritChanges)) {
-			Page.togglePageTemplateInheritChanges(toggleValue = "${inheritChanges}");
-		}
+			PagesAdmin.togglePageTemplateInheritChanges(toggleValue = ${inheritChanges});
 
-		if ("${sitePageType}" != "Content Page") {
 			Button.click(button = "Save");
 		}
 	}
 
-	macro AddSiteTemplateJavaScript {
+	@summary = "Default summary"
+	macro addSiteTemplateJavaScript(javaScript = null, pageName = null) {
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
 			portlet = "Pages");
 
-		Click(
-			key_pageName = "${pageName}",
-			locator1 = "Icon#COG_PAGE");
+		if (isSet(pageName)) {
+			Click(
+				key_pageName = ${pageName},
+				locator1 = "Icon#COG_PAGE");
+		}
+		else {
+			Click(locator1 = "Icon#HEADER_VERTICAL_ELLIPSIS");
 
-		Navigator.gotoNavTab(navTab = "Advanced");
+			MenuItem.click(menuItem = "Configuration");
+		}
 
-		Panel.expandPanel(panel = "JavaScript");
+		if (isSet(pageSet)) {
+			Navigator.gotoNavTab(navTab = "Design");
+
+			Navigator.gotoNavTab(navTab = "JavaScript");
+
+			AssertElementPresent(
+				key_fieldLabel = "JavaScript",
+				locator1 = "FormFields#LABEL");
+		}
+		else {
+			Navigator.gotoNavTab(navTab = "SEO");
+
+			Panel.expandPanel(panel = "JavaScript");
+		}
 
 		Type(
-			locator1 = "SitePages#JAVASCRIPT_TEXTAREA",
-			value1 = "${javaScript}");
+			key_text = "javascript",
+			locator1 = "TextArea#ANY",
+			value1 = ${javaScript});
 
 		AssertClickNoError(
 			locator1 = "Button#SAVE",
 			value1 = "Save");
 	}
 
-	macro deactivateCP {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro deactivateCP(siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		LexiconEntry.gotoEntryMenuItemNoError(
 			menuItem = "Deactivate",
-			rowEntry = "${siteTemplateName}");
+			rowEntry = ${siteTemplateName});
 
 		AssertConfirm(value1 = "Are you sure you want to deactivate this?");
 
 		Alert.viewSuccessMessage();
 	}
 
-	macro deleteCP {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro deleteCP(associatedToSite = null, siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
-		LexiconEntry.openEntryMenu(rowEntry = "${siteTemplateName}");
+		LexiconEntry.openEntryMenu(rowEntry = ${siteTemplateName});
 
 		MenuItem.clickNoError(menuItem = "Delete");
 
 		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
 
-		if ("${associatedToSite}" == "true") {
+		if (${associatedToSite} == "true") {
 			AssertElementPresent(locator1 = "Message#ERROR_DISMISSIBLE");
 
 			AssertTextEquals.assertPartialText(
@@ -175,14 +231,15 @@ definition {
 		}
 	}
 
-	macro deletePage {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro deletePage(pageName = null, siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
-		LexiconEntry.openEntryMenu(rowEntry = "${siteTemplateName}");
+		LexiconEntry.openEntryMenu(rowEntry = ${siteTemplateName});
 
 		MenuItem.click(menuItem = "Manage");
 
@@ -191,49 +248,54 @@ definition {
 			portlet = "Pages");
 
 		if (isSet(hasChildren)) {
-			SitePages.deletePage(
+			PagesAdmin.deletePage(
 				hasChildren = "true",
-				pageName = "${pageName}");
+				pageName = ${pageName});
 		}
 		else {
-			SitePages.deletePage(pageName = "${pageName}");
+			PagesAdmin.deletePage(pageName = ${pageName});
 		}
 	}
 
-	macro deleteViaDeleteIconCP {
+	@summary = "Default summary"
+	macro deleteViaDeleteIconCP(siteTemplateName = null) {
 		Click(
-			key_siteTemplateName = "${siteTemplateName}",
+			key_siteTemplateName = ${siteTemplateName},
 			locator1 = "Checkbox#SITE_TEMPLATE");
 
-		ClickNoError(locator1 = "Icon#DELETE");
+		ClickNoError(
+			key_text = "times-circle",
+			locator1 = "ManagementBar#ANY_ICON");
 
 		AssertConfirm(value1 = "Are you sure you want to delete this? It will be deleted immediately.");
 
 		Alert.viewSuccessMessage();
 	}
 
-	macro disablePropagation {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro disablePropagation(siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		LexiconEntry.gotoEntryMenuItem(
 			menuItem = "Disable Propagation",
-			rowEntry = "${siteTemplateName}");
+			rowEntry = ${siteTemplateName});
 
 		Alert.viewSuccessMessage();
 	}
 
-	macro disablePropagationPG {
+	@summary = "Default summary"
+	macro disablePropagationPG() {
 		WaitForElementPresent(locator1 = "ControlMenu#MERGE");
 
 		Click(locator1 = "ControlMenu#MERGE");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#CUSTOMIZED_PAGE_INFO",
-			value1 = "Each page modification can trigger a propagation from the site template to the connected sites. You can disable the propagation temporally and enable it later when the template is ready.");
+			value1 = "Each page modification can trigger a propagation from the site template to the connected sites. You can disable the propagation temporally and enable it later when the template is ready. Automatic propagation can be resource intensive depending on the scope of changes made to the template.");
 
 		AssertTextEquals(
 			locator1 = "Button#DISABLE_PROPAGATION",
@@ -245,11 +307,12 @@ definition {
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#ALERT_DISMISSIBLE",
-			value1 = "Propagation is disabled. Connected sites might not have been updated yet. Propagation is only triggered when a site created from the template is visited.");
+			value1 = "Propagation is disabled. Connected sites might not have been updated yet. Initial propagations to sites that are being created from this template still run.");
 	}
 
-	macro editCP {
-		SiteTemplates.gotoSettingsCP(siteTemplateName = "${siteTemplateName}");
+	@summary = "Default summary"
+	macro editCP(siteTemplateDescription = null, siteTemplateName = null) {
+		SiteTemplates.gotoSettingsCP(siteTemplateName = ${siteTemplateName});
 
 		PortletEntry.inputName(name = "${siteTemplateName} Edit");
 
@@ -257,17 +320,40 @@ definition {
 			Type(
 				key_fieldLabel = "Description",
 				locator1 = "TextInput#GENERIC_TEXT_INPUT",
-				value1 = "${siteTemplateDescription}");
+				value1 = ${siteTemplateDescription});
 		}
 
 		Button.clickSave();
 	}
 
-	macro editTemplateStatusCP {
-		SiteTemplates.gotoSettingsCP(siteTemplateName = "${siteTemplateName}");
+	@summary = "Default summary"
+	macro editSitePageViaSiteTemplateCP(friendlyURLEdit = null, siteTemplateName = null, layoutName = null) {
+		SiteTemplatesNavigator.openToConfigurePage(
+			layoutName = ${layoutName},
+			siteTemplateName = ${siteTemplateName});
+
+		Type(
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#TEXT_INPUT_ID",
+			value1 = ${friendlyURLEdit});
+
+		ClickNoError(
+			key_text = "Save",
+			locator1 = "Button#ANY");
+
+		if (isSet(conflictPage)) {
+			AssertConfirm(value1 = "The friendly URL of the site template page you are trying to save conflicts with some of the own pages of the sites created from this site template. Are you sure you want to configure the site template page with this friendly URL?");
+		}
+
+		SelectFrame.selectFrameTop();
+	}
+
+	@summary = "Default summary"
+	macro editTemplateStatusCP(siteTemplateActiveEdit = null, siteTemplateName = null) {
+		SiteTemplates.gotoSettingsCP(siteTemplateName = ${siteTemplateName});
 
 		if (isSet(siteTemplateActiveEdit)) {
-			if ("${siteTemplateActiveEdit}" == "No") {
+			if (${siteTemplateActiveEdit} == "No") {
 				Uncheck.uncheckHiddenToggleSwitch(locator1 = "ToggleSwitch#ACTIVE");
 			}
 		}
@@ -275,7 +361,8 @@ definition {
 		Button.clickSave();
 	}
 
-	macro enableActionsOnDMInSiteTemplate {
+	@summary = "Default summary"
+	macro enableActionsOnDMInSiteTemplate() {
 		Portlet.gotoPortletOptions(
 			portletName = "Documents and Media",
 			portletOption = "Configuration",
@@ -283,7 +370,7 @@ definition {
 
 		SelectFrame(locator1 = "DocumentsAndMedia#CONFIGURATION_IFRAME");
 
-		AssertElementPresent.pauseAssertVisible(locator1 = "Checkbox#SHOW_ACTIONS_CHECKBOX");
+		AssertElementPresent(locator1 = "Checkbox#SHOW_ACTIONS_CHECKBOX");
 
 		Check(locator1 = "Checkbox#SHOW_ACTIONS_CHECKBOX");
 
@@ -292,28 +379,46 @@ definition {
 		Alert.viewSuccessMessage();
 	}
 
-	macro enablePropagation {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro enableAutomaticPropagation() {
+		SystemSettings.openSystemSettingsAdmin();
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Infrastructure",
+			configurationName = "Site Templates",
+			configurationScope = "Virtual Instance Scope");
+
+		Check.checkToggleSwitch(
+			key_toggleSwitchLabel = "Trigger Propagation",
+			locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+
+		Button.clickSave();
+	}
+
+	@summary = "Default summary"
+	macro enablePropagation(siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		LexiconEntry.gotoEntryMenuItem(
 			menuItem = "Ready for Propagation",
-			rowEntry = "${siteTemplateName}");
+			rowEntry = ${siteTemplateName});
 
 		Alert.viewSuccessMessage();
 	}
 
-	macro enablePropagationPG {
+	@summary = "Default summary"
+	macro enablePropagationPG() {
 		WaitForElementPresent(locator1 = "ControlMenu#MERGE");
 
 		Click(locator1 = "ControlMenu#MERGE");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#CUSTOMIZED_PAGE_INFO",
-			value1 = "Each page modification can trigger a propagation from the site template to the connected sites. You can disable the propagation temporally and enable it later when the template is ready.");
+			value1 = "Each page modification can trigger a propagation from the site template to the connected sites. You can disable the propagation temporally and enable it later when the template is ready. Automatic propagation can be resource intensive depending on the scope of changes made to the template.");
 
 		AssertTextEquals(
 			locator1 = "Button#ENABLE_PROPAGATION",
@@ -328,50 +433,44 @@ definition {
 			value1 = "Propagation is enabled. Connected sites will be updated once a site page is visited.");
 	}
 
-	macro getPageModificationDate {
+	@summary = "Default summary"
+	macro getPageModificationDate(pageNameFilter = null, groupName = null) {
 		Variables.assertDefined(parameterList = "${groupName},${pageNameFilter}");
 
-		var groupId = JSONGroupAPI._getGroupIdByName(groupName = "${groupName}", site = "true");
+		var groupId = JSONGroupAPI._getGroupIdByName(
+			groupName = ${groupName},
+			site = "true");
+		var databaseType = PropsUtil.get("database.type");
 
-		var mysqlStatement = "SELECT modifiedDate FROM Layout WHERE name LIKE '${pageNameFilter}' AND groupId = '${groupId}' AND hidden_ = 0;";
+		if (${databaseType} == "mysql") {
+			var sqlStatement = "SELECT modifiedDate FROM Layout WHERE name LIKE '${pageNameFilter}' AND groupId = '${groupId}' AND hidden_ = 0;";
+		}
+		else if (${databaseType} == "postgresql") {
+			var sqlStatement = "SELECT modifiedDate FROM layout WHERE name LIKE '${pageNameFilter}' AND groupId = '${groupId}' AND hidden_ = FALSE;";
+		}
 
-		var sqlResults = SQL.executeMySQLStatement(
-			mysqlStatement = "${mysqlStatement}");
+		var sqlResults = SQL.executeSQLStatement(sqlStatement = ${sqlStatement});
 
 		echo("## * SQL Query Result is: ${sqlResults}");
 
-		var modifiedDate = StringUtil.regexReplaceAll("${sqlResults}", "[\r\n]", "");
-		var modifiedDate = StringUtil.extractDigits("${modifiedDate}");
+		var modifiedDate = StringUtil.regexReplaceAll(${sqlResults}, "[\r\n]", "");
+
+		var modifiedDate = StringUtil.extractDigits(${modifiedDate});
 
 		echo("## * Modification Date is: ${modifiedDate}");
 
-		return "${modifiedDate}";
+		return ${modifiedDate};
 	}
 
-	macro getSiteTemplateID {
-		LexiconEntry.gotoEntryMenuItem(
-			menuItem = "Manage",
-			rowEntry = "${siteTemplateName}");
-
-		Pause(locator1 = "1000");
-
-		var currentURL = Navigator.getCurrentURL();
-		var siteTemplateURL = StringUtil.extractFirst("${currentURL}", "/~/");
-		var siteTemplateID = StringUtil.extractLast("${siteTemplateURL}", "/");
-
-		echo("siteTemplateID: ${siteTemplateID}");
-
-		return "${siteTemplateID}";
-	}
-
-	macro gotoSettingsCP {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro gotoSettingsCP(siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
-		LexiconEntry.openEntryMenu(rowEntry = "${siteTemplateName}");
+		LexiconEntry.openEntryMenu(rowEntry = ${siteTemplateName});
 
 		MenuItem.click(menuItem = "Manage");
 
@@ -379,7 +478,7 @@ definition {
 
 		AssertTextEquals(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		ProductMenuHelper.expandCategory(category = "Configuration");
 
@@ -390,20 +489,96 @@ definition {
 		SiteAdmin.viewPortletTitle(portletTitle = "Site Template Settings");
 	}
 
-	macro gotoViewPages {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro gotoViewPages(siteName = null, siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertClick.assertPartialTextClickAt(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
-		SelectWindow(locator1 = "Home - ${siteTemplateName} - ${siteName}");
+		SelectWindow(value1 = "Home - ${siteTemplateName} - ${siteName}");
 	}
 
-	macro resetPageChanges {
-		WaitForElementPresent(locator1 = "ControlMenu#INFO");
+	@summary = "Default summary"
+	macro grantUserAccessToSite(userEmailAddress = null) {
+		if (isSet(site)) {
+			JSONRole.addSiteRole(
+				roleKey = "Access Site",
+				roleTitle = "Access Site");
+		}
+		else {
+			JSONRole.addRegularRole(roleKey = "Access Site");
+		}
 
-		Click(locator1 = "ControlMenu#INFO");
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "ACCESS_IN_CONTROL_PANEL",
+			resourceName = "com_liferay_site_admin_web_portlet_SiteAdminPortlet",
+			roleTitle = "Access Site");
+
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "MANAGE_LAYOUTS",
+			resourceName = "com.liferay.portal.kernel.model.Group",
+			roleTitle = "Access Site");
+
+		if (isSet(site)) {
+			JSONUser.addUserToSite(
+				groupName = "Site Name",
+				userEmailAddress = ${userEmailAddress});
+
+			JSONRole.assignSiteRoleToUser(
+				groupName = "Site Name",
+				roleTitle = "Access Site",
+				userEmailAddress = ${userEmailAddress});
+		}
+		else {
+			JSONRole.assignRoleToUser(
+				roleTitle = "Access Site",
+				userEmailAddress = ${userEmailAddress});
+		}
+	}
+
+	@summary = "Default summary"
+	macro grantUserAccessToSiteTemplates(userEmailAddress = null) {
+		JSONRole.addRegularRole(roleKey = "Access Site Templates");
+
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "ACCESS_IN_CONTROL_PANEL",
+			resourceName = "com_liferay_layout_set_prototype_web_portlet_LayoutSetPrototypePortlet",
+			roleTitle = "Access Site Templates");
+
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "UPDATE",
+			resourceName = "com.liferay.portal.kernel.model.LayoutSetPrototype",
+			roleTitle = "Access Site Templates");
+
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "VIEW",
+			resourceName = "com.liferay.portal.kernel.model.LayoutSetPrototype",
+			roleTitle = "Access Site Templates");
+
+		JSONRole.assignRoleToUser(
+			roleTitle = "Access Site Templates",
+			userEmailAddress = ${userEmailAddress});
+	}
+
+	@summary = "Default summary"
+	macro openSiteTemplateInEditMode(siteTemplateName = null) {
+		var templateId = JSONSiteTemplate.getSiteTemplateIdByName(siteTemplateName = ${siteTemplateName});
+
+		if (isSet(widgetPage)) {
+			Navigator.openWithAppendToBaseURL(urlAppend = "group/${templateId}");
+		}
+		else {
+			Navigator.openWithAppendToBaseURL(urlAppend = "group/${templateId}?p_l_mode=edit");
+		}
+	}
+
+	@summary = "Default summary"
+	macro resetPageChanges(columnNumberTo = null, portletName = null) {
+		WaitForEditable(locator1 = "ControlMenu#INFO");
+
+		Click.waitForMenuToggleJSClick(locator1 = "ControlMenu#INFO");
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "Message#CUSTOMIZED_PAGE_INFO",
@@ -413,17 +588,17 @@ definition {
 			locator1 = "Button#RESET_CHANGES",
 			value1 = "Reset Changes");
 
-		if (isSet(widgetName)) {
-			AssertElementNotPresent(
-				key_portletName = "${widgetName}",
-				locator1 = "Home#PORTLET_BORDERLESS");
-		}
-		else {
-			var key_portletTitleName = "${portletName}";
-
+		if (isSet(columnNumberTo)) {
 			AssertTextEquals(
-				locator1 = "Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberTo}_PORTLET_TITLE",
-				value1 = "${portletName}");
+				key_pageColumnNumber = ${columnNumberTo},
+				key_portletName = ${portletName},
+				locator1 = "Portlet#PORTLET_TITLE_INSIDE_PAGE_COLUMN",
+				value1 = ${portletName});
+		}
+		else if (!(isSet(columnNumberTo)) && isSet(portletName)) {
+			AssertElementNotPresent(
+				key_portletName = ${portletName},
+				locator1 = "Home#PORTLET_BORDERLESS");
 		}
 
 		AssertClick(
@@ -433,7 +608,8 @@ definition {
 		AssertElementNotPresent(locator1 = "ControlMenu#INFO");
 	}
 
-	macro tearDownCP {
+	@summary = "Default summary"
+	macro tearDownCP() {
 		ApplicationsMenu.gotoPortlet(
 			category = "Sites",
 			panel = "Control Panel",
@@ -442,7 +618,7 @@ definition {
 		var key_siteTemplateName = "Site Template Name";
 
 		while (IsElementPresent(locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_ACTIONS")) {
-			LexiconEntry.openEntryMenu(rowEntry = "${key_siteTemplateName}");
+			LexiconEntry.openEntryMenu(rowEntry = ${key_siteTemplateName});
 
 			MenuItem.clickNoError(menuItem = "Delete");
 
@@ -452,31 +628,41 @@ definition {
 		}
 	}
 
-	macro viewCP {
+	@summary = "Default summary"
+	macro viewCP(siteTemplateDescription = null, siteTemplateName = null) {
 		AssertTextEquals.assertPartialText(
-			key_siteTemplateName = "${siteTemplateName}",
+			key_siteTemplateName = ${siteTemplateName},
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		if (isSet(siteTemplateDescription)) {
 			AssertTextEquals(
-				key_siteTemplateDescription = "${siteTemplateDescription}",
+				key_siteTemplateDescription = ${siteTemplateDescription},
 				locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_DESCRIPTION",
-				value1 = "${siteTemplateDescription}");
+				value1 = ${siteTemplateDescription});
 		}
 	}
 
-	macro viewDataLocalizedCP {
-		for (var siteTemplateNameTranslation : list "${siteTemplateNameList}") {
-			var key_siteTemplateName = "${siteTemplateNameTranslation}";
+	@summary = "Default summary"
+	macro viewDataLocalizedCP(siteTemplateNameList = null) {
+		for (var siteTemplateNameTranslation : list ${siteTemplateNameList}) {
+			var key_siteTemplateName = ${siteTemplateNameTranslation};
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-				value1 = "${siteTemplateNameTranslation}");
+				value1 = ${siteTemplateNameTranslation});
 		}
 	}
 
-	macro viewNoInfoMessage {
+	@summary = "Default summary"
+	macro viewNoExclamationMark(pageName = null) {
+		AssertElementNotPresent(
+			key_pageName = ${pageName},
+			locator1 = "Icon#EXCLAMATION_MARK");
+	}
+
+	@summary = "Default summary"
+	macro viewNoInfoMessage() {
 		AssertElementNotPresent(locator1 = "ControlMenu#INFO");
 
 		AssertTextNotPresent(
@@ -484,7 +670,8 @@ definition {
 			value1 = "This page has been changed since the last update from the site template.");
 	}
 
-	macro viewNoSiteOrWorkflowLinksCP {
+	@summary = "Default summary"
+	macro viewNoSiteOrWorkflowLinksCP(portletCategoryName = null) {
 		LexiconEntry.viewEntryName(rowEntry = "Site Template Name");
 
 		LexiconEntry.gotoEntryMenuItem(
@@ -496,27 +683,29 @@ definition {
 		ProductMenuHelper.expandCategory(category = "Configuration");
 
 		for (var portletName : list "Site Settings,Social Activities,Workflow Configuration") {
-			var key_portletName = "${portletName}";
+			var key_portletName = ${portletName};
 
 			AssertTextNotPresent(
 				locator1 = "Home#SITE_ADMINISTRATION_NAVIGATION",
-				value1 = "${portletName}");
+				value1 = ${portletName});
 		}
 
-		var key_portletCategoryName = "${portletCategoryName}";
+		var key_portletCategoryName = ${portletCategoryName};
 
 		AssertElementNotPresent(locator1 = "Home#SITE_ADMINISTRATION_CATEGORY_COLLAPSED");
 	}
 
-	macro viewNoTemplatesDisplay {
+	@summary = "Default summary"
+	macro viewNoTemplatesDisplay(siteTemplateName = null) {
 		LexiconEntry.gotoAdd();
 
-		var key_siteTemplateName = "${siteTemplateName}";
+		var key_siteTemplateName = ${siteTemplateName};
 
-		MenuItem.viewNotPresent(menuItem = "${siteTemplateName}");
+		MenuItem.viewNotPresent(menuItem = ${siteTemplateName});
 	}
 
-	macro viewResetPageChanges {
+	@summary = "Default summary"
+	macro viewResetPageChanges(columnNumberFrom = null, portletName = null) {
 		AssertTextNotPresent(
 			locator1 = "Message#CUSTOMIZED_PAGE_INFO",
 			value1 = "This page has been changed since the last update from the site template.");
@@ -525,41 +714,73 @@ definition {
 			locator1 = "Button#RESET_CHANGES",
 			value1 = "Reset Changes");
 
-		var key_portletTitleName = "${portletName}";
-
 		AssertTextEquals(
-			locator1 = "Home#PAGE_COLUMN_PORTLET_COLUMN_${columnNumberFrom}_PORTLET_TITLE",
-			value1 = "${portletName}");
+			key_pageColumnNumber = ${columnNumberFrom},
+			key_portletName = ${portletName},
+			locator1 = "Portlet#PORTLET_TITLE_INSIDE_PAGE_COLUMN",
+			value1 = ${portletName});
 	}
 
-	macro ViewSiteTemplateJavaScript {
+	@summary = "Default summary"
+	macro ViewSiteTemplateJavaScript(javaScript = null, pageName = null) {
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
 			portlet = "Pages");
 
-		Click(
-			key_pageName = "${pageName}",
-			locator1 = "Icon#COG_PAGE");
+		if (isSet(pageName)) {
+			Click(
+				key_pageName = ${pageName},
+				locator1 = "Icon#COG_PAGE");
+		}
+		else {
+			Click(locator1 = "Icon#HEADER_VERTICAL_ELLIPSIS");
 
-		Navigator.gotoNavTab(navTab = "Advanced");
+			MenuItem.click(menuItem = "Configuration");
+		}
 
-		Panel.expandPanel(panel = "JavaScript");
+		if (isSet(pageSet)) {
+			Navigator.gotoNavTab(navTab = "Design");
+
+			Navigator.gotoNavTab(navTab = "JavaScript");
+
+			AssertElementPresent(
+				key_fieldLabel = "JavaScript",
+				locator1 = "FormFields#LABEL");
+		}
+		else {
+			Navigator.gotoNavTab(navTab = "SEO");
+
+			Panel.expandPanel(panel = "JavaScript");
+		}
 
 		AssertTextEquals(
-			locator1 = "SitePages#JAVASCRIPT_TEXTAREA",
-			value1 = "${javaScript}");
+			key_text = "javascript",
+			locator1 = "TextArea#ANY",
+			value1 = ${javaScript});
 	}
 
-	macro viewTemplateStatusCP {
-		var key_siteTemplateName = "${siteTemplateName}";
+	@summary = "Default summary"
+	macro viewTemplateStatusCP(siteTemplateActiveEdit = null, siteTemplateName = null) {
+		var key_siteTemplateName = ${siteTemplateName};
 
 		AssertTextEquals.assertPartialText(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_NAME",
-			value1 = "${siteTemplateName}");
+			value1 = ${siteTemplateName});
 
 		AssertTextEquals(
 			locator1 = "SiteTemplates#SITE_TEMPLATE_TABLE_ACTIVE",
-			value1 = "${siteTemplateActiveEdit}");
+			value1 = ${siteTemplateActiveEdit});
+	}
+
+	@summary = "Default summary"
+	macro viewTooltipOfExclamationMark(pageName = null) {
+		MouseOver(
+			key_pageName = ${pageName},
+			locator1 = "Icon#EXCLAMATION_MARK");
+
+		VerifyElementPresent(
+			key_text = "There is a page with the same friendly URL in the site template.",
+			locator1 = "SiteTemplates#TOOLTIP_TEXT");
 	}
 
 }

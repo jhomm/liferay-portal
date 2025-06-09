@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test;
@@ -17,6 +8,7 @@ package com.liferay.exportimport.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
+import com.liferay.exportimport.kernel.lar.DataLevel;
 import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
 import com.liferay.exportimport.kernel.lar.MissingReference;
@@ -39,7 +31,6 @@ import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.repository.capabilities.ThumbnailCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.constants.TestDataConstants;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -53,10 +44,11 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.zip.ZipReader;
-import com.liferay.portal.kernel.zip.ZipReaderFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipReaderFactory;
 import com.liferay.portal.kernel.zip.ZipWriter;
-import com.liferay.portal.kernel.zip.ZipWriterFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.model.impl.PortletImpl;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.io.InputStream;
@@ -93,9 +85,9 @@ public class ExportImportHelperUtilTest {
 	}
 
 	@Test
-	public void testDataSiteLevelPortletsRank() throws Exception {
+	public void testDataSiteAndInstanceLevelPortletsRank() throws Exception {
 		List<Portlet> portlets =
-			ExportImportHelperUtil.getDataSiteLevelPortlets(
+			ExportImportHelperUtil.getDataSiteAndInstanceLevelPortlets(
 				TestPropsValues.getCompanyId());
 
 		Integer previousRank = null;
@@ -113,6 +105,62 @@ public class ExportImportHelperUtilTest {
 			}
 
 			previousRank = actualRank;
+		}
+	}
+
+	@Test
+	public void testDataSiteLevelPortletsRank() throws Exception {
+		List<Portlet> portlets =
+			ExportImportHelperUtil.getDataSiteLevelPortlets(
+				TestPropsValues.getCompanyId());
+
+		Integer previousRank = null;
+
+		for (Portlet portlet : portlets) {
+			PortletDataHandler portletDataHandler =
+				portlet.getPortletDataHandlerInstance();
+
+			int actualRank = portletDataHandler.getRank();
+
+			if (previousRank != null) {
+				Assert.assertTrue(previousRank <= actualRank);
+			}
+
+			previousRank = actualRank;
+		}
+	}
+
+	@Test
+	public void testGetDataSiteAndInstanceLevelPortlets() throws Exception {
+		List<Portlet> portlets =
+			ExportImportHelperUtil.getDataSiteAndInstanceLevelPortlets(
+				TestPropsValues.getCompanyId());
+
+		for (Portlet portlet : portlets) {
+			PortletDataHandler portletDataHandler =
+				portlet.getPortletDataHandlerInstance();
+
+			DataLevel portletDataLevel = portletDataHandler.getDataLevel();
+
+			Assert.assertTrue(!portletDataLevel.equals(DataLevel.PORTAL));
+		}
+	}
+
+	@Test
+	public void testGetDataSiteLevelPortlets() throws Exception {
+		List<Portlet> portlets =
+			ExportImportHelperUtil.getDataSiteLevelPortlets(
+				TestPropsValues.getCompanyId());
+
+		for (Portlet portlet : portlets) {
+			PortletDataHandler portletDataHandler =
+				portlet.getPortletDataHandlerInstance();
+
+			DataLevel portletDataLevel = portletDataHandler.getDataLevel();
+
+			Assert.assertTrue(
+				!(portletDataLevel.equals(DataLevel.PORTAL) ||
+				  portletDataLevel.equals(DataLevel.PORTLET_INSTANCE)));
 		}
 	}
 
@@ -738,21 +786,18 @@ public class ExportImportHelperUtilTest {
 
 	@Test
 	public void testGetSelectedLayoutsJSONSelectAllLayouts() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_stagingGroup);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_stagingGroup);
 
-		Layout childLayout = LayoutTestUtil.addLayout(
+		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
 			_stagingGroup, layout.getPlid());
 
-		String selectedLayoutsJSON =
+		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
 			ExportImportHelperUtil.getSelectedLayoutsJSON(
 				_stagingGroup.getGroupId(), false,
 				StringUtil.merge(
 					new long[] {
 						layout.getLayoutId(), childLayout.getLayoutId()
-					}));
-
-		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
-			selectedLayoutsJSON);
+					})));
 
 		Assert.assertEquals(1, selectedLayoutsJSONArray.length());
 
@@ -764,18 +809,15 @@ public class ExportImportHelperUtilTest {
 
 	@Test
 	public void testGetSelectedLayoutsJSONSelectChildLayout() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_stagingGroup);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_stagingGroup);
 
-		Layout childLayout = LayoutTestUtil.addLayout(
+		Layout childLayout = LayoutTestUtil.addTypePortletLayout(
 			_stagingGroup, layout.getPlid());
 
-		String selectedLayoutsJSON =
+		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
 			ExportImportHelperUtil.getSelectedLayoutsJSON(
 				_stagingGroup.getGroupId(), false,
-				StringUtil.merge(new long[] {childLayout.getLayoutId()}));
-
-		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
-			selectedLayoutsJSON);
+				StringUtil.merge(new long[] {childLayout.getLayoutId()})));
 
 		Assert.assertEquals(1, selectedLayoutsJSONArray.length());
 
@@ -788,17 +830,14 @@ public class ExportImportHelperUtilTest {
 
 	@Test
 	public void testGetSelectedLayoutsJSONSelectNoLayouts() throws Exception {
-		Layout layout = LayoutTestUtil.addLayout(_stagingGroup);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_stagingGroup);
 
-		LayoutTestUtil.addLayout(_stagingGroup, layout.getPlid());
-
-		String selectedLayoutsJSON =
-			ExportImportHelperUtil.getSelectedLayoutsJSON(
-				_stagingGroup.getGroupId(), false,
-				StringUtil.merge(new long[0]));
+		LayoutTestUtil.addTypePortletLayout(_stagingGroup, layout.getPlid());
 
 		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
-			selectedLayoutsJSON);
+			ExportImportHelperUtil.getSelectedLayoutsJSON(
+				_stagingGroup.getGroupId(), false,
+				StringUtil.merge(new long[0])));
 
 		Assert.assertEquals(0, selectedLayoutsJSONArray.length());
 	}
@@ -807,18 +846,15 @@ public class ExportImportHelperUtilTest {
 	public void testGetSelectedLayoutsJSONSelectParentLayout()
 		throws Exception {
 
-		Layout layout = LayoutTestUtil.addLayout(_stagingGroup);
+		Layout layout = LayoutTestUtil.addTypePortletLayout(_stagingGroup);
 
-		LayoutTestUtil.addLayout(
+		LayoutTestUtil.addTypePortletLayout(
 			_stagingGroup.getGroupId(), "Child Layout", layout.getPlid());
 
-		String selectedLayoutsJSON =
+		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
 			ExportImportHelperUtil.getSelectedLayoutsJSON(
 				_stagingGroup.getGroupId(), false,
-				StringUtil.merge(new long[] {layout.getLayoutId()}));
-
-		JSONArray selectedLayoutsJSONArray = JSONFactoryUtil.createJSONArray(
-			selectedLayoutsJSON);
+				StringUtil.merge(new long[] {layout.getLayoutId()})));
 
 		Assert.assertEquals(1, selectedLayoutsJSONArray.length());
 
@@ -833,11 +869,11 @@ public class ExportImportHelperUtilTest {
 		String xml = replaceParameters(
 			getContent("missing_references.txt"), getFileEntry());
 
-		ZipWriter zipWriter = ZipWriterFactoryUtil.getZipWriter();
+		ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
 		zipWriter.addEntry("/manifest.xml", xml);
 
-		ZipReader zipReader = ZipReaderFactoryUtil.getZipReader(
+		ZipReader zipReader = _zipReaderFactory.getZipReader(
 			zipWriter.getFile());
 
 		PortletDataContext portletDataContextImport =
@@ -881,15 +917,13 @@ public class ExportImportHelperUtilTest {
 	}
 
 	protected FileEntry getFileEntry() throws PortalException {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_stagingGroup.getGroupId(), TestPropsValues.getUserId());
-
 		FileEntry fileEntry = DLAppLocalServiceUtil.addFileEntry(
 			null, TestPropsValues.getUserId(), _stagingGroup.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString() + ".txt", ContentTypes.TEXT_PLAIN,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			ServiceContextTestUtil.getServiceContext(
+				_stagingGroup.getGroupId(), TestPropsValues.getUserId()));
 
 		ThumbnailCapability thumbnailCapability =
 			fileEntry.getRepositoryCapability(ThumbnailCapability.class);
@@ -941,6 +975,12 @@ public class ExportImportHelperUtilTest {
 
 	@DeleteAfterTestRun
 	private Group _stagingGroup;
+
+	@Inject
+	private ZipReaderFactory _zipReaderFactory;
+
+	@Inject
+	private ZipWriterFactory _zipWriterFactory;
 
 	private class ExportImportTestParameterMapBuilder {
 

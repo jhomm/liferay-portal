@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "false";
 	property portal.upstream = "true";
@@ -26,7 +28,12 @@ definition {
 
 		task ("Add a Web Content Display to page and display a web content") {
 			ACUtils.createWCAndAddToPage(
-				webContentContent = '''<div data-analytics-asset-type="custom" data-analytics-asset-id="analytics-portal" data-analytics-asset-category="AC" data-analytics-asset-title="Custom Asset Analytics Cloud">%0A<h1> What'\''s your favorite portal? </h1>%0A</div>''',
+				webContentContent = '''<div data-analytics-asset-type="custom" data-analytics-asset-id="analytics-portal" data-analytics-asset-category="AC" data-analytics-asset-title="Custom Asset Analytics Cloud"> \
+				%0A<a href="www.liferay.com" data-analytics-asset-action="download">Download the Poll Instructions </a> \
+				%0A<h1> What'\''s your favorite portal? </h1>%0A<form action="/submit.php"> \
+				%0A<div>%0A<input type="radio" id="ac" name="portal" value="AC" checked>%0A<label for="ac">AC</label>%0A</div> \
+				%0A<div>%0A<input type="radio" id="dxp" name="portal" value="DXP">%0A<label for="dxp">DXP</label>%0A</div> \
+				%0A<input type="submit" value="Submit" />%0A</form>%0A</div>''',
 				webContentTitle = "Custom Asset AC Title");
 		}
 
@@ -53,11 +60,11 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -68,20 +75,18 @@ definition {
 	}
 
 	@description = "Feature ID: LRAC-7532 | Automation ID: LRAC-8538 | Test Summary: Create custom asset report"
-	@priority = "5"
+	@priority = 5
 	test CanCreateCustomAssetReport {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "userea@liferay.com",
 				userLoginFullName = "userfn userln");
 		}
 
-		task ("View the site page") {
+		task ("View the Custom Assets page") {
 			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -93,7 +98,7 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add a custom asset report") {
@@ -110,13 +115,96 @@ definition {
 		task ("View the new report") {
 			ACCards.viewCards(cardTitle = "Test Custom Asset Report");
 		}
+
+		task ("Check that the report was created and that the chart appears with data") {
+			ACCards.viewCards(cardTitle = "Test Custom Asset Report");
+
+			ACTimeFilter.clickTimeFilterButton(cardName = "Test Custom Asset Report");
+
+			ACTimeFilter.setLast24Hours();
+
+			ACCards.viewCardDataIsPresent(cardName = "Test Custom Asset Report");
+		}
 	}
 
 	@description = "Feature ID: LRAC-7532 | Automation ID: LRAC-8539 | Test Summary: Create multiple custom asset report"
-	@priority = "5"
+	@priority = 5
 	test CanCreateMultipleCustomAssetReport {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
+		property portal.acceptance = "true";
+		property portal.release = "true";
+		property portal.upstream = "quarantine";
+
+		task ("Sign in as new user") {
+			User.logoutAndLoginPG(
+				userLoginEmailAddress = "userea@liferay.com",
+				userLoginFullName = "userfn userln");
+		}
+
+		task ("View the Custom Assets page") {
+			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				pageName = "AC Page",
+				siteName = "Site Name");
+		}
+
+		task ("Interact with Custom Assets by downloading, clicking and submitting the form") {
+			ACAssets.interactWithCustomAssets(
+				downloadNumber = "1,2",
+				formOptionNameList = "DXP,AC",
+				submissionNumber = "1,2");
+		}
+
+		task ("Close sessions") {
+			ACUtils.closeAllSessionsAndWait();
+		}
+
+		task ("Switch the property in AC") {
+			ACUtils.launchAC();
+
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
+		}
+
+		task ("Add three custom asset reports") {
+			var n = 1;
+
+			for (var metricName : list "Asset Views (sum),Asset Clicks (sum),Form Submissions (sum),Asset Downloads (sum)") {
+				ACNavigation.goToAssets();
+
+				ACNavigation.switchTab(tabName = "Custom");
+
+				ACAssets.addCustomAssetReport(
+					assetName = "Custom Asset Analytics Cloud",
+					metric = ${metricName},
+					reportName = "Test Custom Asset Report ${n}");
+
+				var n = ${n} + 1;
+			}
+		}
+
+		task ("Check that the report was created and that the chart appears with data") {
+			for (var n : list "1,2,3,4") {
+				ACCards.viewCards(cardTitle = "Test Custom Asset Report ${n}");
+
+				ACTimeFilter.clickTimeFilterButton(cardName = "Test Custom Asset Report ${n}");
+
+				ACTimeFilter.setLast24Hours();
+
+				ACCards.viewCardDataIsPresent(cardName = "Test Custom Asset Report ${n}");
+			}
+		}
+	}
+
+	@description = "Bug ID: LRAC-12040 | Automation ID: LRAC-12199 | Test Summary: Create an untitled custom asset"
+	@priority = 4
+	test CanCreateUntitledCustomAsset {
+		task ("Add a custom asset untitled") {
+			ACUtils.addPage(layoutName = "AC Page 2");
+
+			ACUtils.createWCAndAddToPage(
+				layoutName = "AC Page 2",
+				webContentContent = '''<div data-analytics-asset-type="custom" data-analytics-asset-id="analytics-portal" data-analytics-asset-category="AC">%0A<h1> What'\''s your favorite portal? </h1>%0A</div>''',
+				webContentTitle = "Custom Asset Untitled");
 		}
 
 		task ("Sign in as new user") {
@@ -125,9 +213,11 @@ definition {
 				userLoginFullName = "userfn userln");
 		}
 
-		task ("View the site page") {
+		task ("Navigate to Custom Asset page") {
 			ACUtils.navigateToSitePage(
-				pageName = "AC Page",
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				pageName = "AC Page 2",
 				siteName = "Site Name");
 		}
 
@@ -138,52 +228,31 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Add three custom asset reports") {
-			var n = "1";
+		task ("Go to Custom Assets") {
+			ACNavigation.goToAssets();
 
-			for (var metric : list "Asset Views (sum),Asset Interaction Time (sum),Asset Downloads (sum)") {
-				ACNavigation.goToAssets();
-
-				ACNavigation.switchTab(tabName = "Custom");
-
-				ACAssets.addCustomAssetReport(
-					assetName = "Custom Asset Analytics Cloud",
-					metric = "Asset Views (sum)",
-					reportName = "Test Custom Asset Report ${n}");
-
-				var n = ${n} + 1;
-			}
+			ACNavigation.switchTab(tabName = "Custom");
 		}
 
-		task ("View the new reports") {
-			for (var n : list "1,2,3") {
-				ACCards.viewCards(cardTitle = "Test Custom Asset Report ${n}");
-			}
+		task ("Assert Untitled Custom Asset") {
+			ACUtils.viewGenericText(textValueList = "-");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8095 | Test Summary: Can delete a custom asset report"
-	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test CanDeleteCustomAssetReport {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: Data doesn't appear on time
-		// AC Refactor ticket: LRAC-9174
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Access the Custom Asset") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "userea@liferay.com",
 				userLoginFullName = "userfn userln");
 
 			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -195,14 +264,13 @@ definition {
 		task ("Change property") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
+
 		task ("Add a new Custom Asset Report") {
 			ACNavigation.goToAssets();
 
 			ACNavigation.switchTab(tabName = "Custom");
-
-			// Custom asset data doesn't appear, so the custom asset report cannot be added.
 
 			ACAssets.addCustomAssetReport(
 				assetName = "Custom Asset Analytics Cloud",
@@ -226,12 +294,8 @@ definition {
 	}
 
 	@description = "Feature ID: LRAC-7532 | Automation ID: LRAC-8542 | Test Summary: Delete multiple custom asset report"
-	@priority = "5"
+	@priority = 5
 	test CanDeleteMultipleCustomAssetReport {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "userea@liferay.com",
@@ -239,11 +303,11 @@ definition {
 		}
 
 		task ("View the site page") {
-			for (var n : list "1,2,3,4") {
-				ACUtils.navigateToSitePage(
-					pageName = "AC Page",
-					siteName = "Site Name");
-			}
+			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				pageName = "AC Page",
+				siteName = "Site Name");
 		}
 
 		task ("Close sessions") {
@@ -253,20 +317,20 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add three custom asset reports") {
-			var n = "1";
+			var n = 1;
 
-			for (var metric : list "Asset Views (sum),Asset Interaction Time (sum),Asset Downloads (sum)") {
+			for (var metricName : list "Asset Views (sum),Asset Interaction Time (average),Asset Downloads (sum)") {
 				ACNavigation.goToAssets();
 
 				ACNavigation.switchTab(tabName = "Custom");
 
 				ACAssets.addCustomAssetReport(
 					assetName = "Custom Asset Analytics Cloud",
-					metric = "Asset Views (sum)",
+					metric = ${metricName},
 					reportName = "Test Custom Asset Report ${n}");
 
 				var n = ${n} + 1;
@@ -291,12 +355,8 @@ definition {
 	}
 
 	@description = "Feature ID: LRAC-7532 | Automation ID: LRAC-8543 | Test Summary: Delete one report out of many created"
-	@priority = "3"
+	@priority = 3
 	test CanDeleteOneReportOutOfManyCreated {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "userea@liferay.com",
@@ -304,11 +364,11 @@ definition {
 		}
 
 		task ("View the site page") {
-			for (var n : list "1,2,3,4") {
-				ACUtils.navigateToSitePage(
-					pageName = "AC Page",
-					siteName = "Site Name");
-			}
+			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				pageName = "AC Page",
+				siteName = "Site Name");
 		}
 
 		task ("Close sessions") {
@@ -318,20 +378,20 @@ definition {
 		task ("Switch the property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add three custom asset reports") {
-			var n = "1";
+			var n = 1;
 
-			for (var metric : list "Asset Views (sum),Asset Interaction Time (sum),Asset Downloads (sum)") {
+			for (var metricName : list "Asset Views (sum),Asset Interaction Time (average),Asset Downloads (sum)") {
 				ACNavigation.goToAssets();
 
 				ACNavigation.switchTab(tabName = "Custom");
 
 				ACAssets.addCustomAssetReport(
 					assetName = "Custom Asset Analytics Cloud",
-					metric = "Asset Views (sum)",
+					metric = ${metricName},
 					reportName = "Test Custom Asset Report ${n}");
 
 				var n = ${n} + 1;
@@ -356,12 +416,12 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8132 | Test Summary: Custom asset list shows a list of custom assets"
-	@priority = "5"
+	@priority = 5
 	test CanShowsCustomAssetList {
 		var assetName = "Custom Asset Analytics Cloud,Custom Asset Analytics Cloud 2,Custom Asset Analytics Cloud 3";
 
 		for (var layoutName : list "AC Page 2,AC Page 3") {
-			ACUtils.addPage(layoutName = "${layoutName}");
+			ACUtils.addPage(layoutName = ${layoutName});
 		}
 
 		for (var n : list "2,3") {
@@ -371,10 +431,6 @@ definition {
 				webContentTitle = "Custom Asset AC Title ${n}");
 		}
 
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "userea@liferay.com",
@@ -382,24 +438,24 @@ definition {
 		}
 
 		for (var pageName : list "AC Page,AC Page 2,AC Page 3") {
-			for (var n : list "1,2,3") {
-				ACUtils.navigateToSitePage(
-					pageName = "AC Page",
-					siteName = "Site Name");
-			}
+			ACUtils.navigateToSitePage(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				pageName = ${pageName},
+				siteName = "Site Name");
 		}
 
 		ACUtils.closeAllSessionsAndWait();
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 		ACNavigation.goToAssets();
 
 		ACNavigation.switchTab(tabName = "Custom");
 
-		ACUtils.viewNameList(nameList = "${assetName}");
+		ACUtils.viewNameList(nameList = ${assetName});
 	}
 
 }

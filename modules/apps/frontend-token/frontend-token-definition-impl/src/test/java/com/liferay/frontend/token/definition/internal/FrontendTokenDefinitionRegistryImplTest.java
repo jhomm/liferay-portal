@@ -1,41 +1,36 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.token.definition.internal;
 
-import com.liferay.frontend.token.definition.FrontendTokenDefinition;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
+import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.PortalImpl;
-
-import java.io.InputStream;
 
 import java.net.URL;
 
 import java.util.Dictionary;
+import java.util.List;
+import java.util.Map;
 
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 
 import org.osgi.framework.Bundle;
@@ -50,6 +45,26 @@ public class FrontendTokenDefinitionRegistryImplTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@Before
+	public void setUp() {
+		_resourceBundleLoaderUtilMockedStatic = Mockito.mockStatic(
+			ResourceBundleLoaderUtil.class);
+
+		_resourceBundleLoaderUtilMockedStatic.when(
+			() ->
+				ResourceBundleLoaderUtil.
+					getResourceBundleLoaderByBundleSymbolicName(
+						Mockito.anyString())
+		).thenReturn(
+			Mockito.mock(ResourceBundleLoader.class)
+		);
+	}
+
+	@After
+	public void tearDown() {
+		_resourceBundleLoaderUtilMockedStatic.close();
+	}
+
 	@Test
 	public void testGetJSON() throws Exception {
 		FrontendTokenDefinitionRegistryImpl
@@ -57,6 +72,7 @@ public class FrontendTokenDefinitionRegistryImplTest {
 				new FrontendTokenDefinitionRegistryImpl();
 
 		frontendTokenDefinitionRegistryImpl.jsonFactory = new JSONFactoryImpl();
+		frontendTokenDefinitionRegistryImpl.portal = new PortalImpl();
 
 		Bundle bundle = Mockito.mock(Bundle.class);
 
@@ -67,30 +83,38 @@ public class FrontendTokenDefinitionRegistryImplTest {
 		);
 
 		Mockito.when(
+			bundle.getEntry("WEB-INF/liferay-look-and-feel.xml")
+		).thenReturn(
+			_liferayLookAndFeelXMLURL
+		);
+
+		Mockito.when(
 			bundle.getHeaders(Mockito.anyString())
 		).thenReturn(
 			new HashMapDictionary<>()
 		);
 
-		Mockito.when(
-			bundle.getSymbolicName()
-		).thenReturn(
-			StringPool.BLANK
-		);
-
-		FrontendTokenDefinition frontendTokenDefinition =
-			frontendTokenDefinitionRegistryImpl.getFrontendTokenDefinitionImpl(
+		List<FrontendTokenDefinitionImpl> frontendTokenDefinitionImpls =
+			frontendTokenDefinitionRegistryImpl.getFrontendTokenDefinitionImpls(
 				bundle);
 
-		try (InputStream inputStream =
-				_frontendTokenDefinitionJSONURL.openStream()) {
+		Assert.assertEquals(
+			frontendTokenDefinitionImpls.toString(), 2,
+			frontendTokenDefinitionImpls.size());
 
-			JSONFactory jsonFactory = new JSONFactoryImpl();
+		JSONFactory jsonFactory = new JSONFactoryImpl();
+
+		JSONObject expectJSONObject = jsonFactory.createJSONObject(
+			URLUtil.toString(_frontendTokenDefinitionJSONURL));
+
+		for (FrontendTokenDefinitionImpl frontendTokenDefinitionImpl :
+				frontendTokenDefinitionImpls) {
+
+			JSONObject actualJSONObject =
+				frontendTokenDefinitionImpl.getJSONObject(LocaleUtil.ENGLISH);
 
 			Assert.assertEquals(
-				jsonFactory.looseSerializeDeep(
-					jsonFactory.createJSONObject(StringUtil.read(inputStream))),
-				frontendTokenDefinition.getJSON(LocaleUtil.ENGLISH));
+				expectJSONObject.toMap(), actualJSONObject.toMap());
 		}
 	}
 
@@ -118,19 +142,21 @@ public class FrontendTokenDefinitionRegistryImplTest {
 	}
 
 	@Test
-	public void testGetThemeIdWithNontheme() {
+	public void testGetThemeMapsWithNontheme() {
 		FrontendTokenDefinitionRegistryImpl
 			frontendTokenDefinitionRegistryImpl =
 				new FrontendTokenDefinitionRegistryImpl();
 
 		Bundle bundle = Mockito.mock(Bundle.class);
 
-		Assert.assertNull(
-			frontendTokenDefinitionRegistryImpl.getThemeId(bundle));
+		List<Map<String, String>> themeMaps =
+			frontendTokenDefinitionRegistryImpl.getThemeMaps(bundle);
+
+		Assert.assertTrue(themeMaps.isEmpty());
 	}
 
 	@Test
-	public void testGetThemeIdWithoutServletContext() {
+	public void testGetThemeMapsWithoutServletContext() {
 		FrontendTokenDefinitionRegistryImpl
 			frontendTokenDefinitionRegistryImpl =
 				new FrontendTokenDefinitionRegistryImpl();
@@ -151,12 +177,24 @@ public class FrontendTokenDefinitionRegistryImplTest {
 
 		frontendTokenDefinitionRegistryImpl.portal = new PortalImpl();
 
-		Assert.assertEquals(
-			"classic", frontendTokenDefinitionRegistryImpl.getThemeId(bundle));
+		List<Map<String, String>> themeMaps =
+			frontendTokenDefinitionRegistryImpl.getThemeMaps(bundle);
+
+		Assert.assertEquals(themeMaps.toString(), 2, themeMaps.size());
+
+		Map<String, String> themesData1 = themeMaps.get(0);
+
+		Assert.assertEquals("classic", themesData1.get("id"));
+		Assert.assertEquals("Classic", themesData1.get("name"));
+
+		Map<String, String> themesData2 = themeMaps.get(1);
+
+		Assert.assertEquals("modern", themesData2.get("id"));
+		Assert.assertEquals("Modern", themesData2.get("name"));
 	}
 
 	@Test
-	public void testGetThemeIdWithServletContext() {
+	public void testGetThemeMapsWithServletContext() {
 		FrontendTokenDefinitionRegistryImpl
 			frontendTokenDefinitionRegistryImpl =
 				new FrontendTokenDefinitionRegistryImpl();
@@ -170,7 +208,7 @@ public class FrontendTokenDefinitionRegistryImplTest {
 		);
 
 		Dictionary<String, String> headers = HashMapDictionaryBuilder.put(
-			"Web-ContextPath", "/classic-theme"
+			"Web-ContextPath", "/two-themes"
 		).build();
 
 		Mockito.when(
@@ -181,9 +219,20 @@ public class FrontendTokenDefinitionRegistryImplTest {
 
 		frontendTokenDefinitionRegistryImpl.portal = new PortalImpl();
 
-		Assert.assertEquals(
-			"classic_WAR_classictheme",
-			frontendTokenDefinitionRegistryImpl.getThemeId(bundle));
+		List<Map<String, String>> themeMaps =
+			frontendTokenDefinitionRegistryImpl.getThemeMaps(bundle);
+
+		Assert.assertEquals(themeMaps.toString(), 2, themeMaps.size());
+
+		Map<String, String> themesData1 = themeMaps.get(0);
+
+		Assert.assertEquals("classic_WAR_twothemes", themesData1.get("id"));
+		Assert.assertEquals("Classic", themesData1.get("name"));
+
+		Map<String, String> themesData2 = themeMaps.get(1);
+
+		Assert.assertEquals("modern_WAR_twothemes", themesData2.get("id"));
+		Assert.assertEquals("Modern", themesData2.get("name"));
 	}
 
 	private static final URL _frontendTokenDefinitionJSONURL =
@@ -192,5 +241,8 @@ public class FrontendTokenDefinitionRegistryImplTest {
 	private static final URL _liferayLookAndFeelXMLURL =
 		FrontendTokenDefinitionRegistryImplTest.class.getResource(
 			"dependencies/liferay-look-and-feel.xml");
+
+	private MockedStatic<ResourceBundleLoaderUtil>
+		_resourceBundleLoaderUtilMockedStatic;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.log;
@@ -208,17 +199,17 @@ public class SanitizerLogWrapperTest {
 			"java.lang.Exception: java.lang.RuntimeException: " +
 				"java.lang.NullPointerException: ";
 
-		_log.debug(exception, exception);
+		_log.debug(exception);
 		_log.debug(null, exception);
-		_log.error(exception, exception);
+		_log.error(exception);
 		_log.error(null, exception);
-		_log.fatal(exception, exception);
+		_log.fatal(exception);
 		_log.fatal(null, exception);
-		_log.info(exception, exception);
+		_log.info(exception);
 		_log.info(null, exception);
-		_log.trace(exception, exception);
+		_log.trace(exception);
 		_log.trace(null, exception);
-		_log.warn(exception, exception);
+		_log.warn(exception);
 		_log.warn(null, exception);
 
 		List<LogEntry> logEntries = _logCapture.getLogEntries();

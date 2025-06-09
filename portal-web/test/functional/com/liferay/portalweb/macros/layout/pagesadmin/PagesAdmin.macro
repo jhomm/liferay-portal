@@ -1,0 +1,1359 @@
+definition {
+
+	@summary = "Default summary"
+	macro _addPage(sitePageType = null, pageTypeURL = null, pageTemplateName = null, vocabularyName = null, targetType = null, customTitle = null, pageName = null, categoryName = null, linkPageName = null, collectionName = null, target = null, assertCheckboxMissing = null, inheritChanges = null, customDescription = null, portlet = null, componentName = null, navigationMenus = null) {
+		PagesAdmin._selectPageType(
+			collectionName = ${collectionName},
+			pageTemplateName = ${pageTemplateName},
+			sitePageType = ${sitePageType});
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		PortletEntry.inputName(name = ${pageName});
+
+		PagesAdmin._addPageToNavigationMenu(
+			assertCheckboxMissing = ${assertCheckboxMissing},
+			navigationMenus = ${navigationMenus});
+
+		if (isSet(categoryName)) {
+			AssetCategorization.addCategory(
+				categoryName = ${categoryName},
+				vocabularyName = ${vocabularyName});
+		}
+
+		Button.click(button = "Add");
+
+		SelectFrame.selectFrameTop();
+
+		Alert.viewSuccessMessage();
+
+		if (${sitePageType} == "Embedded") {
+			PagesAdmin._addPageTypeEmbedded(pageTypeURL = ${pageTypeURL});
+		}
+		else if (${sitePageType} == "Full Page Application") {
+			if (isSet(portlet)) {
+				PagesAdmin._addPageTypeFullPageApplication(portlet = ${portlet});
+			}
+		}
+		else if (${sitePageType} == "Link to a Page of This Site") {
+			if (isSet(linkPageName)) {
+				Click(
+					buttonId = "selectLayoutButton",
+					locator1 = "Button#BUTTON_ID");
+
+				SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+				Portlet.expandTree();
+
+				Click(
+					key_nodeName = ${linkPageName},
+					locator1 = "Treeview#NODE_UNSELECTED");
+
+				SelectFrameTop();
+			}
+		}
+		else if (${sitePageType} == "Link to URL") {
+			if (isSet(targetType)) {
+				Select(
+					key_fieldLabel = "Target type",
+					locator1 = "Select#GENERIC_SELECT_FIELD",
+					value1 = ${targetType});
+
+				Button.click(button = "Save");
+			}
+
+			if (isSet(target)) {
+				Type(
+					key_text = "Target",
+					locator1 = "TextInput#ANY",
+					value1 = ${target});
+
+				Button.click(button = "Save");
+			}
+
+			Type(
+				locator1 = "TextInput#URL",
+				value1 = ${pageTypeURL});
+		}
+		else if (${sitePageType} == "Panel") {
+			if (isSet(componentName)) {
+				PagesAdmin._addPageTypePanel(componentName = ${componentName});
+			}
+		}
+
+		if (isSet(inheritChanges)) {
+			PagesAdmin.togglePageTemplateInheritChanges(toggleValue = ${inheritChanges});
+		}
+
+		Navigator.gotoNavTab(navTab = "General");
+
+		AssertVisible(locator1 = "TextInput#NAME");
+
+		if (isSet(openGraph)) {
+			PagesAdmin._configureOpenGraph(
+				customDescription = ${customDescription},
+				customTitle = ${customTitle});
+		}
+
+		if (isSet(sitePageType) || isSet(inheritChanges) || isSet(openGraph)) {
+			Button.click(button = "Save");
+		}
+	}
+
+	@summary = "Default summary"
+	macro _addPageToNavigationMenu(assertCheckboxMissing = null, navigationMenus = null) {
+		if (isSet(navigationMenus)) {
+			for (var navigationMenu : list ${navigationMenus}) {
+				if (${assertCheckboxMissing} == "true") {
+					AssertElementNotPresent(
+						checkboxName = ${navigationMenu},
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
+				else {
+					Check(
+						checkboxName = ${navigationMenu},
+						locator1 = "Checkbox#ANY_CHECKBOX");
+				}
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro _addPageTypeEmbedded(pageTypeURL = null) {
+		Type(
+			locator1 = "TextInput#URL",
+			value1 = ${pageTypeURL});
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "PagesAdmin#PAGE_TYPE_DESCRIPTION",
+			value1 = "Show content from another website.");
+	}
+
+	@summary = "Default summary"
+	macro _addPageTypeFullPageApplication(portlet = null) {
+		Select(
+			key_fieldLabel = "Full Page Application",
+			locator1 = "Select#GENERIC_SELECT_FIELD",
+			value1 = ${portlet});
+	}
+
+	@summary = "Default summary"
+	macro _addPageTypePanel(componentName = null) {
+		var key_componentOrPortletName = ${componentName};
+
+		Check.checkNotVisible(locator1 = "PagesAdmin#PAGE_TYPE_PANEL_CHECKBOX");
+
+		var key_componentOrPortletName = StringUtil.lowerCase(${componentName});
+
+		AssertElementPresent(locator1 = "PagesAdmin#PAGE_TYPE_PANEL_CHECKBOX_INPUT");
+	}
+
+	@summary = "Default summary"
+	macro _configureOpenGraph(customDescription = null, customTitle = null) {
+		Navigator.gotoNavTab(navTab = "Open Graph");
+
+		var checkboxName = "Use Custom Title";
+
+		if (IsNotChecked(locator1 = "Checkbox#ANY_CHECKBOX")) {
+			Click(locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+
+		Type(
+			locator1 = "TextInput#OPEN_GRAPH_CUSTOM_TITLE",
+			value1 = ${customTitle});
+
+		var checkboxName = "Use Custom Description";
+
+		if (IsNotChecked(locator1 = "Checkbox#ANY_CHECKBOX")) {
+			Click(locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+
+		Type(
+			key_text = "openGraphDescription",
+			locator1 = "TextArea#ANY",
+			value1 = ${customDescription});
+	}
+
+	@summary = "Default summary"
+	macro _configurePage(sitePageType = null, pageTypeURL = null, portlet = null, componentName = null, columnName = null) {
+		if (${sitePageType} == "Embedded") {
+			PagesAdmin._addPageTypeEmbedded(pageTypeURL = ${pageTypeURL});
+		}
+		else if (${sitePageType} == "Panel") {
+			PagesAdmin._addPageTypePanel(componentName = ${componentName});
+		}
+		else if (${sitePageType} == "Widget Page") {
+			Click(
+				key_card = ${columnName},
+				locator1 = "Card#CARD");
+		}
+		else if (${sitePageType} == "Full Page Application") {
+			PagesAdmin._addPageTypeFullPageApplication(portlet = ${portlet});
+		}
+	}
+
+	@summary = "Default summary"
+	macro _selectPageType(pageTemplateName = null, collectionName = null) {
+		if (isSet(pageTemplateName)) {
+			var sitePageType = ${pageTemplateName};
+
+			if (isSet(collectionName)) {
+				Navigator.gotoNavNested(navNested = ${collectionName});
+			}
+			else {
+				Navigator.gotoNavNested(navNested = "Global Templates");
+			}
+		}
+		else if (isSet(sitePageType)) {
+			var sitePageType = ${sitePageType};
+		}
+		else {
+			var sitePageType = "Widget Page";
+		}
+
+		LexiconCard.viewCardPresent(card = ${sitePageType});
+
+		LexiconCard.clickCard(card = ${sitePageType});
+	}
+
+	@summary = "Default summary"
+	macro addCategory(vocabularyName = null, categoryName = null) {
+		AssetCategorization.addCategory(
+			categoryName = ${categoryName},
+			vocabularyName = ${vocabularyName});
+	}
+
+	@summary = "Default summary"
+	macro addChildPage(assertCheckboxMissing = null, parentPageName = null, sitePageType = null, childPageName = null, pageTemplateName = null, navigationMenus = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		MouseOver(
+			key_itemName = ${parentPageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+
+		Click(
+			key_pageName = ${parentPageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_PLUS_ICON");
+
+		PagesAdmin._addPage(
+			assertCheckboxMissing = ${assertCheckboxMissing},
+			navigationMenus = ${navigationMenus},
+			pageName = ${childPageName},
+			pageTemplateName = ${pageTemplateName},
+			sitePageType = ${sitePageType});
+	}
+
+	@summary = "Default summary"
+	macro addChildPageWithConfirm(parentPageName = null, childPageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		MouseOver(
+			key_itemName = ${parentPageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+
+		Click(
+			key_pageName = ${parentPageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_PLUS_ICON");
+
+		LexiconCard.clickCard(card = "Widget Page");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		PortletEntry.inputName(name = ${childPageName});
+
+		ClickNoError(
+			key_text = "Add",
+			locator1 = "Button#ANY");
+
+		AssertConfirm.waitForConfirmation(value1 = "The friendly URL of the page you are trying to save conflicts with a friendly URL of a page in the site template, from which this site was created. Are you sure you want to configure the page with this friendly URL?");
+	}
+
+	@summary = "Default summary"
+	macro addJavaScript(javaScript = null, pageName = null) {
+		PagesAdmin.gotoPageEllipsisMenuItem(
+			menuItem = "Configure",
+			pageName = ${pageName});
+
+		Navigator.gotoNavTab(navTab = "Design");
+
+		Navigator.gotoNavTab(navTab = "JavaScript");
+
+		AssertElementPresent(
+			key_fieldLabel = "JavaScript",
+			locator1 = "FormFields#LABEL");
+
+		Type(
+			key_text = "javascript",
+			locator1 = "TextArea#ANY",
+			value1 = ${javaScript});
+
+		AssertClickNoError(
+			locator1 = "Button#SAVE",
+			value1 = "Save");
+	}
+
+	@summary = "Default summary"
+	macro addLocalizedFriendlyURL(friendlyURLLocalizedList = null, localizedFriendlyURLList = null, localizedNameList = null) {
+		var list1 = ListUtil.newListFromString(${friendlyURLLocalizedList});
+		var list2 = ListUtil.newListFromString(${localizedFriendlyURLList});
+		var list3 = ListUtil.newListFromString(${localizedNameList});
+		var size = ListUtil.size(${list1});
+		var i = 0;
+
+		while (${i} != ${size}) {
+			var friendlyURLLocalized = ListUtil.get(${list1}, ${i});
+			var localizedFriendlyURL = ListUtil.get(${list2}, ${i});
+			var localizedName = ListUtil.get(${list3}, ${i});
+
+			PortletEntry.changeLocale(
+				fieldName = "Friendly URL",
+				locale = ${friendlyURLLocalized});
+
+			Type(
+				inputFieldId = "friendlyURL",
+				locator1 = "TextInput#TEXT_INPUT_ID",
+				value1 = ${localizedFriendlyURL});
+
+			if (${localizedName} != "-") {
+				PortletEntry.inputName(name = ${localizedName});
+			}
+
+			if (!(isSet(configureWithoutSave))) {
+				PortletEntry.save();
+			}
+
+			var i = ${i} + 1;
+
+			var i = StringUtil.valueOf(${i});
+		}
+	}
+
+	@summary = "Default summary"
+	macro addLocalizedName(localizedNameList = null, localeList = null) {
+		var list1 = ListUtil.newListFromString(${localeList});
+		var list2 = ListUtil.newListFromString(${localizedNameList});
+		var size = ListUtil.size(${list1});
+		var i = 0;
+
+		while (${i} != ${size}) {
+			var locale = ListUtil.get(${list1}, ${i});
+			var localizedName = ListUtil.get(${list2}, ${i});
+
+			PortletEntry.inputLocalizedName(
+				language = ${locale},
+				localizedName = ${localizedName});
+
+			var i = ${i} + 1;
+
+			var i = StringUtil.valueOf(${i});
+		}
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro addPage(pageTypeURL = null, sitePageType = null, customTitle = null, pageTemplateName = null, targetType = null, vocabularyName = null, categoryName = null, linkPageName = null, pageName = null, collectionName = null, target = null, assertCheckboxMissing = null, inheritChanges = null, customDescription = null, portlet = null, componentName = null, openGraph = null, navigationMenus = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (IsElementPresent(locator1 = "Message#EMPTY_INFO_TAGLIB")) {
+			Click(locator1 = "PagesFinder#ADD_NEW_PAGE");
+		}
+		else {
+			AssertClick(
+				key_breadcrumbName = "Pages",
+				locator1 = "Breadcrumb#BREADCRUMB_ENTRY_EXACT_MATCH",
+				value1 = "Pages");
+
+			Button.click(button = "New");
+		}
+
+		PagesAdmin._addPage(
+			assertCheckboxMissing = ${assertCheckboxMissing},
+			categoryName = ${categoryName},
+			collectionName = ${collectionName},
+			componentName = ${componentName},
+			customDescription = ${customDescription},
+			customTitle = ${customTitle},
+			inheritChanges = ${inheritChanges},
+			linkPageName = ${linkPageName},
+			navigationMenus = ${navigationMenus},
+			openGraph = ${openGraph},
+			pageName = ${pageName},
+			pageTemplateName = ${pageTemplateName},
+			pageTypeURL = ${pageTypeURL},
+			portlet = ${portlet},
+			sitePageType = ${sitePageType},
+			target = ${target},
+			targetType = ${targetType},
+			vocabularyName = ${vocabularyName});
+	}
+
+	@summary = "Default summary"
+	macro addPageWithConfirm(pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (IsElementPresent(locator1 = "Message#EMPTY_INFO_TAGLIB")) {
+			Click(locator1 = "PagesFinder#ADD_NEW_PAGE");
+		}
+		else {
+			AssertClick(
+				key_breadcrumbName = "Pages",
+				locator1 = "Breadcrumb#BREADCRUMB_ENTRY_EXACT_MATCH",
+				value1 = "Pages");
+
+			Button.click(button = "New");
+		}
+
+		if (isSet(sitePageType)) {
+			var sitePageType = ${sitePageType};
+		}
+		else {
+			var sitePageType = "Widget Page";
+		}
+
+		LexiconCard.clickCard(card = ${sitePageType});
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		PortletEntry.inputName(name = ${pageName});
+
+		ClickNoError(
+			key_text = "Add",
+			locator1 = "Button#ANY");
+
+		AssertConfirm.waitForConfirmation(value1 = "The friendly URL of the page you are trying to save conflicts with a friendly URL of a page in the site template, from which this site was created. Are you sure you want to configure the page with this friendly URL?");
+	}
+
+	@summary = "Default summary"
+	macro addPrivatePage(assertCheckboxMissing = null, sitePageType = null, siteTemplate = null, pageTemplateName = null, navigationMenus = null, pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (${siteTemplate} == "true") {
+			LexiconEntry.gotoAddMenuItem(menuItem = "Add Site Template Page");
+		}
+		else if (IsElementPresent(locator1 = "Message#EMPTY_INFO_TAGLIB")) {
+			PagesAdmin.gotoAddFirstPage(pageType = "Private Page");
+		}
+		else {
+			AssertClick(
+				key_breadcrumbName = "Pages",
+				locator1 = "Breadcrumb#BREADCRUMB_ENTRY",
+				value1 = "Pages");
+
+			LexiconEntry.gotoAddMenuItem(menuItem = "Private Page");
+		}
+
+		PagesAdmin._addPage(
+			assertCheckboxMissing = ${assertCheckboxMissing},
+			navigationMenus = ${navigationMenus},
+			pageName = ${pageName},
+			pageTemplateName = ${pageTemplateName},
+			sitePageType = ${sitePageType});
+	}
+
+	@summary = "Default summary"
+	macro addPublicPage(pageTypeURL = null, sitePageType = null, customTitle = null, pageTemplateName = null, vocabularyName = null, categoryName = null, linkPageName = null, pageName = null, collectionName = null, assertCheckboxMissing = null, inheritChanges = null, customDescription = null, portlet = null, componentName = null, openGraph = null, navigationMenus = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (IsElementPresent(locator1 = "Message#EMPTY_INFO_TAGLIB")) {
+			PagesAdmin.gotoAddFirstPage(pageType = "Public Page");
+		}
+		else {
+			AssertClick(
+				key_breadcrumbName = "Pages",
+				locator1 = "Breadcrumb#BREADCRUMB_ENTRY_EXACT_MATCH",
+				value1 = "Pages");
+
+			LexiconEntry.gotoAddMenuItem(menuItem = "Public Page");
+		}
+
+		PagesAdmin._addPage(
+			assertCheckboxMissing = ${assertCheckboxMissing},
+			categoryName = ${categoryName},
+			collectionName = ${collectionName},
+			componentName = ${componentName},
+			customDescription = ${customDescription},
+			customTitle = ${customTitle},
+			inheritChanges = ${inheritChanges},
+			linkPageName = ${linkPageName},
+			navigationMenus = ${navigationMenus},
+			openGraph = ${openGraph},
+			pageName = ${pageName},
+			pageTemplateName = ${pageTemplateName},
+			pageTypeURL = ${pageTypeURL},
+			portlet = ${portlet},
+			sitePageType = ${sitePageType},
+			vocabularyName = ${vocabularyName});
+	}
+
+	@summary = "Default summary"
+	macro addUtilityPage(pageName = null, masterLayoutName = null) {
+		LexiconEntry.gotoAdd();
+
+		if (!(isSet(type))) {
+			var type = "404 Error";
+		}
+
+		MenuItem.click(menuItem = ${type});
+
+		if (isSet(masterLayoutName)) {
+			LexiconCard.clickCard(card = ${masterLayoutName});
+		}
+		else {
+			LexiconCard.clickCard(card = "Blank");
+		}
+
+		PortletEntry.inputName(name = ${pageName});
+
+		Button.click(button = "Save");
+
+		Alert.viewSuccessMessage();
+
+		PageEditor.assertFragmentSidebarLoaded();
+
+		WaitForVisible(locator1 = "Sidebar#PANEL_OPEN");
+	}
+
+	@summary = "Default summary"
+	macro cannotDeletePagesAssociatedWithSiteTemplate(page = null, pageName = null) {
+		if (isSet(pageName)) {
+			Click(
+				key_itemName = ${pageName},
+				locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+		}
+
+		Click.waitForMenuToggleJSClick(
+			key_pageName = ${page},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_ELLIPSIS_ICON");
+
+		MenuItem.viewNotPresent(menuItem = "Delete");
+
+		Click.waitForMenuToggleJSClick(
+			key_pageName = ${page},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_ELLIPSIS_ICON");
+
+		PortletEntry.selectAll();
+
+		AssertElementPresent(
+			key_text = "trash",
+			locator1 = "Icon#ANY_DISABLED");
+	}
+
+	@summary = "Default summary"
+	macro changeLogo(logoFile = null, pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		PagesAdmin.gotoPageEllipsisMenuItem(
+			menuItem = "Configure",
+			pageName = ${pageName});
+
+		Navigator.gotoNavTab(navTab = "Design");
+
+		PagesAdmin.uploadIcon(logoFile = ${logoFile});
+	}
+
+	@summary = "Default summary"
+	macro changeSiteCurrentTheme(themeName = null, privacy = null) {
+		WaitForPageLoad();
+
+		Click.waitForMenuToggleJSClick(locator1 = "Icon#HEADER_VERTICAL_ELLIPSIS");
+
+		if (IsElementPresent(key_menuItem = "Configuration", locator1 = "MenuItem#DROPDOWN_MENU_ITEM")) {
+			DropdownMenuItem.click(menuItem = "Configuration");
+		}
+		else {
+			PagesAdmin.togglePrivacy(privacy = ${privacy});
+
+			Click(
+				key_pageName = ${privacy},
+				locator1 = "Icon#COG_PAGE");
+		}
+
+		Navigator.gotoNavTab(navTab = "Design");
+
+		Theme.changeCurrentTheme(themeName = ${themeName});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro changeWidgetPageCurrentTheme(themeName = null, pageName = null) {
+		PagesAdmin.gotoPageEllipsisMenuItem(
+			menuItem = "Configure",
+			pageName = ${pageName});
+
+		Navigator.gotoNavTab(navTab = "Design");
+
+		Theme.configureLookAndFeelSpecificLook();
+
+		Theme.changeCurrentTheme(themeName = ${themeName});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro configureChildPage(pageTypeURL = null, sitePageType = null, parentPagesHierarchy = null, portlet = null, componentName = null, layoutPageTemplateName = null, pageName = null, columnName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		PagesAdmin.gotoPageEllipsisMenuItem(
+			menuItem = "Configure",
+			pageName = ${pageName},
+			parentPagesHierarchy = ${parentPagesHierarchy});
+
+		PagesAdmin._configurePage(
+			columnName = ${columnName},
+			componentName = ${componentName},
+			layoutPageTemplateName = ${layoutPageTemplateName},
+			pageTypeURL = ${pageTypeURL},
+			portlet = ${portlet},
+			sitePageType = ${sitePageType});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro configurePage(pageTypeURL = null, sitePageType = null, privacy = null, portlet = null, componentName = null, layoutPageTemplateName = null, pageName = null, columnName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (isSet(privacy)) {
+			PagesAdmin.togglePrivacy(privacy = ${privacy});
+		}
+
+		PagesAdmin.gotoPageEllipsisMenuItem(
+			menuItem = "Configure",
+			pageName = ${pageName});
+
+		PagesAdmin._configurePage(
+			columnName = ${columnName},
+			componentName = ${componentName},
+			layoutPageTemplateName = ${layoutPageTemplateName},
+			pageTypeURL = ${pageTypeURL},
+			portlet = ${portlet},
+			sitePageType = ${sitePageType});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro deleteFriendlyURL(locale = null) {
+		Navigator.gotoNavTab(navTab = "General");
+
+		PortletEntry.changeLocale(
+			fieldName = "Name",
+			locale = ${locale});
+
+		Type(
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#TEXT_INPUT_ID",
+			value1 = " ");
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro deleteLogo(pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (isSet(pageName)) {
+			PagesAdmin.gotoPageEllipsisMenuItem(
+				menuItem = "Configure",
+				pageName = ${pageName});
+
+			Navigator.gotoNavTab(navTab = "Design");
+
+			Click.javaScriptClick(
+				key_title = "Clear Icon",
+				locator1 = "Button#ANY_TITLE");
+		}
+		else {
+			LexiconEntry.gotoHeaderMenuItem(menuItem = "Configure");
+
+			Panel.expandPanel(panel = "Logo");
+
+			Click(
+				key_title = "Clear Logo",
+				locator1 = "Button#ANY_TITLE");
+		}
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro deletePage(failure = null, pageName = null) {
+		WaitForPageLoad();
+
+		Click(
+			key_pageName = ${pageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_ELLIPSIS_ICON");
+
+		MenuItem.click(menuItem = "Delete");
+
+		if (isSet(hasChidren) && isSet(hasScopeGroup)) {
+			AssertTextEquals(
+				locator1 = "Modal#BODY",
+				value1 = "Are you sure you want to delete the page \"${pageName}\"? This page serves as a scope for content and also contains child pages. Any content scoped to this page and child pages will also be removed.");
+		}
+		else if (isSet(hasChildren)) {
+			AssertTextEquals(
+				locator1 = "Modal#BODY",
+				value1 = "Are you sure you want to delete the page \"${pageName}\"? This page contains child pages that will also be removed.");
+		}
+		else if (isSet(hasScopeGroup)) {
+			AssertTextEquals(
+				locator1 = "Modal#BODY",
+				value1 = "Are you sure you want to delete the page \"${pageName}\"? This page serves as a scope for content. Any content that is scoped to this page will also be removed.");
+		}
+		else {
+			AssertTextEquals(
+				locator1 = "Modal#BODY",
+				value1 = "Are you sure you want to delete the page \"${pageName}\"? It will be removed immediately.");
+		}
+
+		Click(
+			key_text = "Delete",
+			locator1 = "Modal#MODAL_FOOTER_BUTTON");
+
+		if (isSet(failure)) {
+			if (IsElementPresent(locator1 = "Message#ERROR_2")) {
+				Alert.viewRequestFailedToComplete();
+
+				AssertTextEquals(
+					locator1 = "Message#ERROR_2",
+					value1 = ${failure});
+			}
+			else {
+				AssertTextEquals(
+					locator1 = "Message#ERROR",
+					value1 = ${failure});
+			}
+		}
+		else {
+			Alert.viewSuccessMessage();
+		}
+	}
+
+	@summary = "Default summary"
+	macro discardDraft(failure = null, pageName = null) {
+		WaitForPageLoad();
+
+		PagesAdmin.openPageEllipsisMenu(pageName = ${pageName});
+
+		MenuItem.clickNoError(menuItem = "Discard Draft");
+
+		AssertConfirm(value1 = "Are you sure you want to discard the current draft and apply the latest published changes?");
+
+		if (isSet(failure)) {
+			if (IsElementPresent(locator1 = "Message#ERROR_2")) {
+				Alert.viewRequestFailedToComplete();
+
+				AssertTextEquals(
+					locator1 = "Message#ERROR_2",
+					value1 = ${failure});
+			}
+			else {
+				AssertTextEquals(
+					locator1 = "Message#ERROR",
+					value1 = ${failure});
+			}
+		}
+		else {
+			Alert.viewSuccessMessage();
+		}
+	}
+
+	@summary = "Default summary"
+	macro editFriendlyURL(friendlyURLEdit = null) {
+		Type(
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#TEXT_INPUT_ID",
+			value1 = ${friendlyURLEdit});
+
+		if (isSet(confirm)) {
+			ClickNoError(
+				key_text = "Save",
+				locator1 = "Button#ANY");
+		}
+		else {
+			PortletEntry.save();
+		}
+	}
+
+	@summary = "Default summary"
+	macro editName(pageNameEdit = null) {
+		Navigator.gotoNavTab(navTab = "General");
+
+		PortletEntry.inputName(name = ${pageNameEdit});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro enablePrivatePages() {
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Instance Settings");
+
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Feature Flags",
+			configurationName = "Deprecation",
+			configurationScope = "Virtual Instance Scope");
+
+		if (IsElementPresent(locator1 = "FeatureFlag#TOGGLE_ROW", title_row = "Private Pages", toggle_state = "Disabled")) {
+			Check.checkToggleSwitch(
+				locator1 = "FeatureFlag#TOGGLE_ROW",
+				title_row = "Private Pages",
+				toggle_state = "Disabled");
+		}
+
+		Navigator.openURL();
+	}
+
+	@summary = "Default summary"
+	macro expandPageTree() {
+		if (!(isSet(depth))) {
+			var depth = 1;
+		}
+
+		var count = 0;
+
+		while (${count} != ${depth}) {
+			var index = ${count} + 1;
+
+			Click(
+				key_depth = ${index},
+				locator1 = "PagesAdmin#LIST_GROUP_ITEM_DEPTH");
+
+			var count = ${count} + 1;
+		}
+	}
+
+	@summary = "Default summary"
+	macro getFriendlyURL() {
+		var baseURL = ${baseURL};
+
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		var key_friendlyURL = "";
+		var friendlyURL = selenium.getElementValue("PagesAdmin#FRIENDLY_URL");
+
+		return "${baseURL}/web/guest${friendlyURL}";
+	}
+
+	@summary = "Default summary"
+	macro gotoAddFirstPage(pageType = null) {
+		var key_menuItem = ${pageType};
+
+		AssertVisible(locator1 = "Message#EMPTY_INFO_TAGLIB");
+
+		Click.waitForMenuToggleJSClick(locator1 = "Dropdown#EMPTY_MESSAGE_DROPDOWN");
+
+		Click(locator1 = "MenuItem#DROPDOWN_MENU_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro gotoFriendlyURLHistory() {
+		Click(locator1 = "Icon#FRIENDLY_URL_HISTORY");
+	}
+
+	@summary = "Default summary"
+	macro gotoPageEllipsisMenuItem(parentPage = null, parentPagesHierarchy = null, menuItem = null, pageName = null) {
+		PagesAdmin.openPageEllipsisMenu(
+			pageName = ${pageName},
+			parentPage = ${parentPage},
+			parentPagesHierarchy = ${parentPagesHierarchy});
+
+		MenuItem.click(menuItem = ${menuItem});
+	}
+
+	@summary = "Default summary"
+	macro movePageItemUp(pageNameTo = null, pageName = null) {
+		var key_pageName = ${pageName};
+		var key_pageNameTo = ${pageNameTo};
+
+		DragAndDrop.javaScriptDragAndDropToUp(
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_DRAG_HANDLER",
+			locator2 = "PagesAdmin#LIST_GROUP_ITEM_DROP_TARGET",
+			value1 = "");
+	}
+
+	@summary = "Default summary"
+	macro openPageEllipsisMenu(parentPagesHierarchy = null, pageName = null) {
+		WaitForPageLoad();
+
+		if (isSet(parentPagesHierarchy)) {
+			for (var parentPage : list ${parentPagesHierarchy}) {
+				Click(
+					key_itemName = ${parentPage},
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+			}
+		}
+
+		Click(
+			key_pageName = ${pageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM_ELLIPSIS_ICON");
+	}
+
+	@summary = "Default summary"
+	macro openPagesAdmin(baseURL = null) {
+		var siteURLKey = StringUtil.replace(${siteURLKey}, " ", "-");
+
+		var siteURLKey = StringUtil.lowerCase(${siteURLKey});
+
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_layout_admin_web_portlet_GroupPagesPortlet");
+	}
+
+	@summary = "Default summary"
+	macro openToConfigurePublicPage(groupName = null, siteURLKey = null, privateLayout = null, layoutName = null) {
+		var baseURL = ${baseURL};
+
+		if (!(isSet(baseURL))) {
+			var baseURL = JSONCompany.getPortalURL();
+		}
+
+		var plid = JSONLayout.getPlid(
+			groupName = ${groupName},
+			layoutName = ${layoutName},
+			privateLayout = ${privateLayout},
+			site = ${site});
+
+		if (!(isSet(site))) {
+			var site = "true";
+		}
+
+		var groupId = JSONLayoutSetter.setGroupId(
+			groupName = ${groupName},
+			site = ${site});
+
+		Navigator.openWithAppendToBaseURL(
+			baseURL = ${baseURL},
+			urlAppend = "group/${siteURLKey}/~/control_panel/manage?p_p_id=com_liferay_layout_admin_web_portlet_GroupPagesPortlet&_com_liferay_layout_admin_web_portlet_GroupPagesPortlet_mvcRenderCommandName=%2Flayout_admin%2Fedit_layout&_com_liferay_layout_admin_web_portlet_GroupPagesPortlet_portletResource=com_liferay_layout_admin_web_portlet_GroupPagesPortlet&_com_liferay_layout_admin_web_portlet_GroupPagesPortlet_groupId=${groupId}&_com_liferay_layout_admin_web_portlet_GroupPagesPortlet_privateLayout=false&p_r_p_selPlid=${plid}");
+	}
+
+	@summary = "Default summary"
+	macro removeOldFriendlyURL(oldFriendlyURL = null) {
+		AssertVisible(
+			key_oldFriendlyURL = ${oldFriendlyURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM");
+
+		MouseOver(
+			key_oldFriendlyURL = ${oldFriendlyURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM");
+
+		Click(
+			key_oldFriendlyURL = ${oldFriendlyURL},
+			locator1 = "Icon#FRIENDLY_URL_HISTORY_ITEM_DELETE");
+
+		AssertElementNotPresent(
+			key_oldFriendlyURL = ${oldFriendlyURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro restoreOldFriendlyURL(restoredURL = null, activeURL = null, oldFriendlyURL = null, friendlyURLEdit = null) {
+		MouseOver(
+			key_oldFriendlyURL = ${oldFriendlyURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM");
+
+		Click(locator1 = "Icon#FRIENDLY_URL_HISTORY_ITEM_RESTORE");
+
+		AssertVisible(
+			key_activeURL = ${restoredURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_ACTIVE_URL");
+
+		AssertVisible(
+			key_oldFriendlyURL = ${activeURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM");
+
+		Click(locator1 = "Modal#CLOSE_BUTTON");
+
+		AssertVisible(
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#TEXT_INPUT_ID",
+			value1 = ${friendlyURLEdit});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro selectPageItem(pageName = null) {
+		var key_pageName = ${pageName};
+
+		Check.checkNotVisible(locator1 = "PagesAdmin#LIST_GROUP_ITEM_CHECKBOX");
+	}
+
+	@summary = "Default summary"
+	macro tearDownCP() {
+		PagesAdmin.openPagesAdmin(siteURLKey = "guest");
+
+		WaitForPageLoad();
+
+		Click.waitForMenuToggleJSClick(locator1 = "Icon#HEADER_VERTICAL_ELLIPSIS");
+
+		if (IsElementPresent(key_menuItem = "Configuration", locator1 = "MenuItem#DROPDOWN_MENU_ITEM")) {
+			while (IsElementPresent(key_index = 3, locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS")) {
+				Click.waitForMenuToggleJSClick(
+					key_index = 3,
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+
+				MenuItem.click(menuItem = "Delete");
+
+				AssertTextEquals.assertPartialText(
+					locator1 = "Modal#BODY",
+					value1 = "Are you sure you want to delete the page");
+
+				Click(
+					key_text = "Delete",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+			}
+
+			AssertElementNotPresent(
+				key_index = 3,
+				locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+
+			while (IsElementPresent(key_pageName = "Home", locator1 = "PagesAdmin#LIST_GROUP_ITEM_CHILD_INDICATOR")) {
+				PagesAdmin.expandPageTree(depth = 1);
+
+				Click.waitForMenuToggleJSClick(
+					key_index = 3,
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+
+				MenuItem.click(menuItem = "Delete");
+
+				AssertTextEquals.assertPartialText(
+					locator1 = "Modal#BODY",
+					value1 = "Are you sure you want to delete the page");
+
+				Click(
+					key_text = "Delete",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+
+				AssertElementNotPresent(
+					key_index = 3,
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+			}
+		}
+		else {
+			while (IsElementPresent(key_index = 4, locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS")) {
+				Click.waitForMenuToggleJSClick(
+					key_index = 4,
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+
+				MenuItem.click(menuItem = "Delete");
+
+				AssertTextEquals.assertPartialText(
+					locator1 = "Modal#BODY",
+					value1 = "Are you sure you want to delete the page");
+
+				Click(
+					key_text = "Delete",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+			}
+
+			AssertElementNotPresent(
+				key_index = 4,
+				locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+
+			while (IsElementPresent(key_pageName = "Home", locator1 = "PagesAdmin#LIST_GROUP_ITEM_CHILD_INDICATOR")) {
+				PagesAdmin.expandPageTree(depth = 2);
+
+				Click.waitForMenuToggleJSClick(
+					key_index = 4,
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+
+				MenuItem.click(menuItem = "Delete");
+
+				AssertTextEquals.assertPartialText(
+					locator1 = "Modal#BODY",
+					value1 = "Are you sure you want to delete the page");
+
+				Click(
+					key_text = "Delete",
+					locator1 = "Modal#MODAL_FOOTER_BUTTON");
+
+				AssertElementNotPresent(
+					key_index = 4,
+					locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ELLIPSIS");
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro togglePageTemplateInheritChanges(toggleValue = null) {
+		if (${toggleValue} == "enable") {
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "Inherit Changes",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+		}
+		else if (${toggleValue} == "disable") {
+			Uncheck.uncheckToggleSwitch(
+				key_toggleSwitchLabel = "Inherit Changes",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+		}
+	}
+
+	@summary = "Default summary"
+	macro togglePrivacy(privacy = null) {
+		WaitForPageLoad();
+
+		if (IsElementNotPresent(key_breadcrumbName = ${privacy}, locator1 = "Breadcrumb#BREADCRUMB_ENTRY_EXACT_MATCH")) {
+			Click(
+				key_itemName = ${privacy},
+				locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+		}
+	}
+
+	@summary = "Default summary"
+	macro uploadIcon(logoFile = null) {
+		Click(
+			ariaLabel = "Change Icon",
+			locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		AssertElementPresent(
+			key_text = "Select",
+			locator1 = "Button#ANY");
+
+		WaitForEditable(locator1 = "TextInput#FILE");
+
+		UploadCommonFile.uploadCommonFileHiddenNoMouseOver(
+			locator1 = "TextInput#FILE",
+			value1 = ${logoFile});
+
+		WaitForElementPresent(
+			key_text = "Done",
+			locator1 = "Button#ANY_ENABLED");
+
+		Button.clickDone();
+
+		SelectFrameTop();
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro uploadLogo(logoFile = null) {
+		Click(
+			ariaLabel = "Change Logo",
+			locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		AssertElementPresent(
+			key_text = "Select",
+			locator1 = "Button#ANY");
+
+		WaitForEditable(locator1 = "TextInput#FILE");
+
+		UploadCommonFile.uploadCommonFileHiddenNoMouseOver(
+			locator1 = "TextInput#FILE",
+			value1 = ${logoFile});
+
+		WaitForElementPresent(
+			key_text = "Done",
+			locator1 = "Button#ANY_ENABLED");
+
+		Button.clickDone();
+
+		SelectFrameTop();
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro viewActiveURL(activeURL = null) {
+		AssertVisible(
+			key_activeURL = ${activeURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_ACTIVE_URL");
+	}
+
+	@summary = "Default summary"
+	macro viewAvailableLanguages(fieldName = null, availableLanguageList = null, unavailableLanguageList = null) {
+		WaitForElementPresent(
+			key_fieldName = ${fieldName},
+			locator1 = "Button#LOCALIZATION");
+
+		Click(
+			key_fieldName = ${fieldName},
+			locator1 = "Button#LOCALIZATION");
+
+		for (var availableLanguage : list ${availableLanguageList}) {
+			AssertElementPresent(
+				key_locale = ${availableLanguage},
+				locator1 = "Translation#LOCALIZATION_NAME");
+		}
+
+		if (isSet(unavailableLanguageList)) {
+			for (var unavailableLanguage : list ${unavailableLanguageList}) {
+				AssertElementNotPresent(
+					key_locale = ${unavailableLanguage},
+					locator1 = "Translation#LOCALIZATION_NAME");
+			}
+		}
+
+		Click(
+			key_fieldName = ${fieldName},
+			locator1 = "Button#LOCALIZATION");
+	}
+
+	@summary = "Default summary"
+	macro viewFriendlyURL(localizedFriendlyURL = null, pageName = null) {
+		if (isSet(localizedFriendlyURL)) {
+			PortletEntry.changeLocale(
+				fieldName = "Friendly URL",
+				locale = ${localizedFriendlyURL});
+		}
+
+		AssertTextEquals(
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#TEXT_INPUT_ID",
+			value1 = "/${pageName}");
+	}
+
+	@summary = "Default summary"
+	macro viewOldFriendlyURL(lastOldFriendlyURL = null, oldFriendlyURL = null) {
+		if (isSet(lastOldFriendlyURL)) {
+			AssertVisible(
+				key_oldFriendlyURL = ${lastOldFriendlyURL},
+				locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM_LAST");
+		}
+
+		AssertVisible(
+			key_oldFriendlyURL = ${oldFriendlyURL},
+			locator1 = "PagesAdmin#FRIENDLY_URL_HISTORY_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro viewPageItemNotPresent(privacy = null, pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (isSet(privacy)) {
+			PagesAdmin.togglePrivacy(privacy = ${privacy});
+		}
+
+		AssertElementNotPresent(
+			key_pageName = ${pageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro viewPageItemPresent(depth = null, privacy = null, pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		if (isSet(privacy)) {
+			PagesAdmin.togglePrivacy(privacy = ${privacy});
+		}
+
+		if (isSet(depth)) {
+			PagesAdmin.expandPageTree(depth = ${depth});
+		}
+
+		AssertElementPresent(
+			key_itemName = ${pageName},
+			locator1 = "PagesAdmin#LIST_GROUP_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro viewPagesOrder(pageNameList = null, depth = null) {
+		var index = 1;
+
+		for (var pageName : list ${pageNameList}) {
+			AssertTextEquals(
+				key_depth = ${depth},
+				key_index = ${index},
+				locator1 = "PagesAdmin#LIST_GROUP_ITEM_ROW_ENTRY",
+				value1 = ${pageName});
+
+			var index = ${index} + 1;
+		}
+	}
+
+	@summary = "Default summary"
+	macro viewWidgetPageCurrentTheme(themeName = null, uncheckThemeSettingList = null, checkThemeSettingList = null, pageName = null) {
+		if (IsTextNotEqual(locator1 = "ControlMenu#HEADING", value1 = "Pages")) {
+			ProductMenu.gotoPortlet(
+				category = "Site Builder",
+				portlet = "Pages");
+		}
+
+		PagesAdmin.gotoPageEllipsisMenuItem(
+			menuItem = "Configure",
+			pageName = ${pageName});
+
+		Navigator.gotoNavTab(navTab = "Design");
+
+		if (isSet(themeName)) {
+			AssertTextPresent(value1 = ${themeName});
+		}
+
+		if (isSet(checkThemeSettingList)) {
+			for (var themeSetting : list ${checkThemeSettingList}) {
+				AssertChecked.assertCheckedNotVisible(
+					key_toggleSwitchLabel = ${themeSetting},
+					locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+			}
+		}
+
+		if (isSet(uncheckThemeSettingList)) {
+			for (var themeSetting : list ${uncheckThemeSettingList}) {
+				AssertNotChecked.assertNotCheckedNotVisible(
+					key_toggleSwitchLabel = ${themeSetting},
+					locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+			}
+		}
+	}
+
+}

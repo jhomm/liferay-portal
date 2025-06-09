@@ -1,11 +1,8 @@
-@import './variables';
-
 html#{$cadmin-selector} {
 	.cadmin {
 		.page-editor__toolbar {
 			background-color: $cadmin-white;
-			border-bottom: $toolbarBorderWidth solid
-				fade_out($cadmin-secondary-l2, 0.5);
+			border-bottom: 1px solid fade_out($cadmin-secondary-l2, 0.5);
 			color: $cadmin-secondary;
 			display: flex;
 			margin-bottom: 0;
@@ -25,9 +22,12 @@ html#{$cadmin-selector} {
 
 			& > .container-fluid {
 				flex-direction: row;
-				justify-content: flex-start;
 				padding: 0;
 				white-space: nowrap;
+
+				@include media-breakpoint-down(sm) {
+					justify-content: flex-start;
+				}
 
 				> .navbar-nav {
 					display: flex;
@@ -35,9 +35,13 @@ html#{$cadmin-selector} {
 					max-width: 100%;
 					padding: 12px;
 
+					@include media-breakpoint-down(xs) {
+						padding-left: $pageEditorSpacing;
+						padding-right: $pageEditorSpacing;
+					}
+
 					&.start {
 						align-self: flex-start;
-						order: 1;
 						padding-right: 0;
 
 						> .nav-item {
@@ -47,27 +51,39 @@ html#{$cadmin-selector} {
 
 					&.middle {
 						justify-content: flex-start;
-						order: 2;
 						padding: 0;
 
 						> .nav-item {
 							margin-right: $pageEditorSpacing;
+
+							@include media-breakpoint-down(xs) {
+								&:last-child {
+									margin-right: 0;
+								}
+							}
 						}
 					}
 
 					&.end {
-						box-shadow: inset 0 -1px 0 0 fade-out($cadmin-secondary-l2, 0.5);
-						flex-basis: 100%;
+						@include media-breakpoint-down(sm) {
+							box-shadow: inset 0 1px 0 0
+								fade-out($cadmin-secondary-l2, 0.5);
+							flex-basis: 100%;
+						}
+
 						justify-content: flex-end;
-						order: 0;
 
 						> .nav-item {
 							margin-left: $pageEditorSpacing;
 						}
 					}
+
+					> .nav-item > .navbar-nav > .nav-item + .nav-item {
+						margin-left: $pageEditorSpacing;
+					}
 				}
 
-				@include media-breakpoint-up(sm, $cadmin-grid-breakpoints) {
+				@include media-breakpoint-up(md, $cadmin-grid-breakpoints) {
 					> .navbar-nav {
 						&.start > .nav-item {
 							margin-right: $pageEditorSpacing * 2;
@@ -77,36 +93,64 @@ html#{$cadmin-selector} {
 							margin-right: 0;
 						}
 
-						&.end > .nav-item {
+						&.end > .nav-item:not(:first-child) {
 							margin-left: $pageEditorSpacing * 2;
 						}
 					}
 				}
+			}
+		}
+	}
+}
 
-				@include media-breakpoint-up(xl, $cadmin-grid-breakpoints) {
-					flex-wrap: nowrap;
+html#{$cadmin-selector}
+	.page-editor__small-resolution
+	.cadmin
+	.page-editor__toolbar {
+	padding-left: 40px;
+}
 
-					> .navbar-nav {
-						padding: 16px 12px;
+html#{$cadmin-selector}
+	body.open
+	.cadmin
+	.page-editor__toolbar
+	> .container-fluid {
+	@media (min-width: 1400px) {
+		> .navbar-nav {
+			padding: 16px 12px;
 
-						&.start {
-							order: 0;
-						}
+			&.middle {
+				flex: 1;
+				justify-content: center;
+				padding-left: $pageEditorSpacing * 1.5;
+			}
 
-						&.middle {
-							flex: 1;
-							justify-content: center;
-							order: 1;
-							padding-left: $pageEditorSpacing * 1.5;
-						}
+			&.end {
+				box-shadow: none;
+				flex-basis: auto;
+			}
+		}
+	}
+}
 
-						&.end {
-							box-shadow: none;
-							flex-basis: auto;
-							order: 2;
-						}
-					}
-				}
+html#{$cadmin-selector}
+	body:not(.open)
+	.cadmin
+	.page-editor__toolbar
+	> .container-fluid {
+	@include media-breakpoint-up(xl, $cadmin-grid-breakpoints) {
+		> .navbar-nav {
+			padding: 16px 12px;
+
+			&.middle {
+				flex: 1;
+				justify-content: center;
+				padding-left: $pageEditorSpacing * 1.5;
+			}
+
+			&.end {
+				box-shadow: none;
+				flex-basis: auto;
 			}
 		}
 	}

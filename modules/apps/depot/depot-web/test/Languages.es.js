@@ -1,24 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
-	cleanup,
 	fireEvent,
 	queryAllByRole,
 	queryAllByText,
 	render,
-	waitForElement,
+	waitFor,
 } from '@testing-library/react';
 import React from 'react';
 
@@ -47,8 +37,6 @@ const defaultProps = {
 const renderLanguagesComponent = (props) => render(<Languages {...props} />);
 
 describe('Languages', () => {
-	afterEach(cleanup);
-
 	it('renders a radio group with the first option checked', () => {
 		const {getAllByRole} = renderLanguagesComponent(defaultProps);
 
@@ -59,9 +47,8 @@ describe('Languages', () => {
 	});
 
 	it('renders a list with the availableLocales', () => {
-		const {container, getAllByRole} = renderLanguagesComponent(
-			defaultProps
-		);
+		const {container, getAllByRole} =
+			renderLanguagesComponent(defaultProps);
 
 		expect(getAllByRole('table').length).toBe(1);
 
@@ -73,7 +60,7 @@ describe('Languages', () => {
 	it('renders a "default" label at the first element', () => {
 		const {container, getByText} = renderLanguagesComponent(defaultProps);
 
-		expect(getByText('default'));
+		expect(getByText('default')).toBeTruthy();
 
 		const firstLanguageElement = container.querySelectorAll('tr')[1];
 
@@ -86,7 +73,7 @@ describe('Languages', () => {
 			inheritLocales: false,
 		});
 
-		expect(getByText('edit'));
+		expect(getByText('edit')).toBeTruthy();
 	});
 
 	it('renders inputs with the default values', () => {
@@ -102,14 +89,11 @@ describe('Languages', () => {
 	});
 
 	it('changes the default language', () => {
-		const {
-			container,
-			getAllByText,
-			getByDisplayValue,
-		} = renderLanguagesComponent({
-			...defaultProps,
-			inheritLocales: false,
-		});
+		const {container, getAllByText, getByDisplayValue} =
+			renderLanguagesComponent({
+				...defaultProps,
+				inheritLocales: false,
+			});
 
 		const actions = getAllByText('make-default');
 
@@ -150,7 +134,7 @@ describe('Languages', () => {
 			getByText(
 				'this-change-will-only-affect-the-newly-created-localized-content'
 			)
-		);
+		).toBeTruthy();
 	});
 
 	// LPS-111488
@@ -162,10 +146,11 @@ describe('Languages', () => {
 			siteAvailableLocales: availableLocales,
 		});
 
-		const dropdownMenuSecond = result.baseElement.querySelectorAll(
-			'.dropdown-menu'
-		)[1];
-		const Buttons = queryAllByRole(dropdownMenuSecond, 'button');
+		const dropdownMenuSecond =
+			result.baseElement.querySelectorAll('.dropdown-menu')[1];
+		const Buttons = queryAllByRole(dropdownMenuSecond, 'menuitem', {
+			hidden: true,
+		});
 
 		expect(Buttons[0].textContent).toBe('make-default');
 		expect(Buttons[1].textContent).toBe('move-up');
@@ -181,9 +166,8 @@ describe('Languages', () => {
 
 		const dropdownTriggers = result.container.querySelectorAll('.dropdown');
 		const moveDownButtons = result.getAllByText('move-up');
-		const dropdownMenus = result.baseElement.querySelectorAll(
-			'.dropdown-menu'
-		);
+		const dropdownMenus =
+			result.baseElement.querySelectorAll('.dropdown-menu');
 		const dropdownMenuFirst = dropdownMenus[0];
 
 		expect(dropdownTriggers).toHaveLength(4);
@@ -200,9 +184,8 @@ describe('Languages', () => {
 
 		const dropdownTriggers = result.container.querySelectorAll('.dropdown');
 		const moveDownButtons = result.getAllByText('move-down');
-		const dropdownMenus = result.baseElement.querySelectorAll(
-			'.dropdown-menu'
-		);
+		const dropdownMenus =
+			result.baseElement.querySelectorAll('.dropdown-menu');
 		const dropdownMenuLast = dropdownMenus[dropdownMenus.length - 1];
 
 		expect(dropdownTriggers).toHaveLength(4);
@@ -245,8 +228,6 @@ describe('Languages', () => {
 	describe('ManageLanguages', () => {
 		let result;
 
-		afterEach(cleanup);
-
 		beforeEach(() => {
 			result = renderLanguagesComponent({
 				...defaultProps,
@@ -257,16 +238,13 @@ describe('Languages', () => {
 		});
 
 		it('renders a modal when user clicks on Edit button', async () => {
-			const title = await waitForElement(() =>
-				result.getByText('language-selection')
-			);
-			expect(title);
+			const title = await result.findByText('language-selection');
+
+			expect(title).toBeTruthy();
 		});
 
 		it('renders custom locales checked', async () => {
-			const checkboxes = await waitForElement(() =>
-				result.getAllByRole('checkbox')
-			);
+			const checkboxes = await result.findAllByRole('checkbox');
 
 			expect(checkboxes).toHaveLength(4);
 
@@ -277,23 +255,19 @@ describe('Languages', () => {
 		});
 
 		it('custom locale check is disabled', async () => {
-			const checkboxes = await waitForElement(() =>
-				result.getAllByRole('checkbox')
-			);
+			const checkboxes = await result.findAllByRole('checkbox');
 
 			expect(checkboxes[1]).toHaveProperty('disabled', true);
 		});
 
 		it('uncheck custom locale and save', async () => {
-			const checkboxes = await waitForElement(() =>
-				result.getAllByRole('checkbox')
-			);
+			const checkboxes = await result.findAllByRole('checkbox');
 
 			fireEvent.click(checkboxes[0]);
 
 			fireEvent.click(result.getByText('done'));
 
-			const languagesList = await waitForElement(() =>
+			const languagesList = await waitFor(() =>
 				result.container.querySelectorAll('tbody > tr')
 			);
 
@@ -302,15 +276,13 @@ describe('Languages', () => {
 		});
 
 		it('add custom locale and save', async () => {
-			const checkboxes = await waitForElement(() =>
-				result.getAllByRole('checkbox')
-			);
+			const checkboxes = await result.findAllByRole('checkbox');
 
 			fireEvent.click(checkboxes[2]);
 
 			fireEvent.click(result.getByText('done'));
 
-			const languagesList = await waitForElement(() =>
+			const languagesList = await waitFor(() =>
 				result.container.querySelectorAll('tbody > tr')
 			);
 

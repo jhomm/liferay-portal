@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,23 +20,27 @@ AccountGroupDisplay accountGroupDisplay = (AccountGroupDisplay)row.getObject();
 	message="<%= StringPool.BLANK %>"
 	showWhenSingleIcon="<%= true %>"
 >
-	<portlet:renderURL var="editAccountGroupURL">
-		<portlet:param name="mvcRenderCommandName" value="/account_admin/edit_account_group" />
-		<portlet:param name="backURL" value="<%= currentURL %>" />
-		<portlet:param name="accountGroupId" value="<%= String.valueOf(accountGroupDisplay.getAccountGroupId()) %>" />
-	</portlet:renderURL>
+	<c:if test="<%= AccountGroupPermission.contains(themeDisplay.getPermissionChecker(), accountGroupDisplay.getAccountGroupId(), ActionKeys.UPDATE) %>">
+		<portlet:renderURL var="editAccountGroupURL">
+			<portlet:param name="mvcRenderCommandName" value="/account_admin/edit_account_group" />
+			<portlet:param name="backURL" value="<%= currentURL %>" />
+			<portlet:param name="accountGroupId" value="<%= String.valueOf(accountGroupDisplay.getAccountGroupId()) %>" />
+		</portlet:renderURL>
 
-	<liferay-ui:icon
-		message="edit"
-		url="<%= editAccountGroupURL %>"
-	/>
+		<liferay-ui:icon
+			message="edit"
+			url="<%= editAccountGroupURL %>"
+		/>
+	</c:if>
 
-	<portlet:actionURL name="/account_admin/delete_account_groups" var="deleteAccountGroupURL">
-		<portlet:param name="redirect" value="<%= currentURL %>" />
-		<portlet:param name="accountGroupIds" value="<%= String.valueOf(accountGroupDisplay.getAccountGroupId()) %>" />
-	</portlet:actionURL>
+	<c:if test="<%= AccountGroupPermission.contains(themeDisplay.getPermissionChecker(), accountGroupDisplay.getAccountGroupId(), ActionKeys.DELETE) %>">
+		<portlet:actionURL name="/account_admin/delete_account_groups" var="deleteAccountGroupURL">
+			<portlet:param name="redirect" value="<%= currentURL %>" />
+			<portlet:param name="accountGroupIds" value="<%= String.valueOf(accountGroupDisplay.getAccountGroupId()) %>" />
+		</portlet:actionURL>
 
-	<liferay-ui:icon-delete
-		url="<%= deleteAccountGroupURL %>"
-	/>
+		<liferay-ui:icon-delete
+			url="<%= deleteAccountGroupURL %>"
+		/>
+	</c:if>
 </liferay-ui:icon-menu>

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,30 +15,15 @@ SearchContainer<AccountUserDisplay> userSearchContainer = AssignableAccountUserD
 SelectAccountUsersManagementToolbarDisplayContext selectAccountUsersManagementToolbarDisplayContext = new SelectAccountUsersManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, userSearchContainer, selectAccountUsersDisplayContext);
 %>
 
-<portlet:renderURL var="addAccountEntryUserURL">
-	<portlet:param name="mvcRenderCommandName" value="/account_admin/add_account_user" />
-	<portlet:param name="redirect" value='<%= ParamUtil.getString(request, "redirect") %>' />
-	<portlet:param name="backURL" value='<%= ParamUtil.getString(request, "redirect") %>' />
-	<portlet:param name="accountEntryId" value="<%= String.valueOf(selectAccountUsersDisplayContext.getAccountEntryId()) %>" />
-</portlet:renderURL>
-
 <clay:management-toolbar
-	additionalProps='<%=
-		HashMapBuilder.<String, Object>put(
-			"addAccountEntryUserURL", addAccountEntryUserURL.toString()
-		).put(
-			"openModalOnRedirect", selectAccountUsersDisplayContext.isOpenModalOnRedirect()
-		).build()
-	%>'
 	managementToolbarDisplayContext="<%= selectAccountUsersManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/SelectAccountUsersManagementToolbarPropsTransformer"
-	showCreationMenu="<%= selectAccountUsersDisplayContext.isShowCreateButton() %>"
+	propsTransformer="{SelectAccountUsersManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid
 	id='<%= liferayPortletResponse.getNamespace() + "selectAccountUser" %>'
 >
-	<c:if test='<%= !Objects.equals(selectAccountUsersManagementToolbarDisplayContext.getNavigation(), "all-users") %>'>
+	<c:if test='<%= Objects.equals(selectAccountUsersManagementToolbarDisplayContext.getNavigation(), "valid-domain-users") %>'>
 		<clay:alert
 			message="showing-users-with-valid-domains-only"
 		/>
@@ -64,7 +40,7 @@ SelectAccountUsersManagementToolbarDisplayContext selectAccountUsersManagementTo
 			<liferay-ui:search-container-column-text
 				cssClass="table-cell-expand-small table-cell-minw-150"
 				name="name"
-				property="name"
+				value="<%= HtmlUtil.escape(accountUserDisplay.getName()) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
@@ -76,13 +52,13 @@ SelectAccountUsersManagementToolbarDisplayContext selectAccountUsersManagementTo
 			<liferay-ui:search-container-column-text
 				cssClass="table-cell-expand-small table-cell-minw-150"
 				name="job-title"
-				property="jobTitle"
+				value="<%= HtmlUtil.escape(accountUserDisplay.getJobTitle()) %>"
 			/>
 
 			<liferay-ui:search-container-column-text
 				cssClass="table-cell-expand-small table-cell-minw-150"
 				name="account-roles"
-				value="<%= accountUserDisplay.getAccountRoleNamesString(selectAccountUsersDisplayContext.getAccountEntryId(), locale) %>"
+				value="<%= HtmlUtil.escape(accountUserDisplay.getAccountRoleNamesString(selectAccountUsersDisplayContext.getAccountEntryId(), locale)) %>"
 			/>
 
 			<c:if test="<%= selectAccountUsersDisplayContext.isSingleSelect() %>">

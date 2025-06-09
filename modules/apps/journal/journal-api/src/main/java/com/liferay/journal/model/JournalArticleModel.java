@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.AttachedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ResourcedModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -44,8 +35,8 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface JournalArticleModel
 	extends AttachedModel, BaseModel<JournalArticle>, CTModel<JournalArticle>,
-			MVCCModel, ResourcedModel, ShardedModel, StagedGroupedModel,
-			TrashedModel, WorkflowedModel {
+			ExternalReferenceCodeModel, MVCCModel, ResourcedModel, ShardedModel,
+			StagedGroupedModel, TrashedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -270,6 +261,7 @@ public interface JournalArticleModel
 	 * @return the external reference code of this journal article
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -277,6 +269,7 @@ public interface JournalArticleModel
 	 *
 	 * @param externalReferenceCode the external reference code of this journal article
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -395,19 +388,18 @@ public interface JournalArticleModel
 	public void setUrlTitle(String urlTitle);
 
 	/**
-	 * Returns the ddm structure key of this journal article.
+	 * Returns the ddm structure ID of this journal article.
 	 *
-	 * @return the ddm structure key of this journal article
+	 * @return the ddm structure ID of this journal article
 	 */
-	@AutoEscape
-	public String getDDMStructureKey();
+	public long getDDMStructureId();
 
 	/**
-	 * Sets the ddm structure key of this journal article.
+	 * Sets the ddm structure ID of this journal article.
 	 *
-	 * @param DDMStructureKey the ddm structure key of this journal article
+	 * @param DDMStructureId the ddm structure ID of this journal article
 	 */
-	public void setDDMStructureKey(String DDMStructureKey);
+	public void setDDMStructureId(long DDMStructureId);
 
 	/**
 	 * Returns the ddm template key of this journal article.
@@ -553,6 +545,20 @@ public interface JournalArticleModel
 	public void setSmallImageId(long smallImageId);
 
 	/**
+	 * Returns the small image source of this journal article.
+	 *
+	 * @return the small image source of this journal article
+	 */
+	public int getSmallImageSource();
+
+	/**
+	 * Sets the small image source of this journal article.
+	 *
+	 * @param smallImageSource the small image source of this journal article
+	 */
+	public void setSmallImageSource(int smallImageSource);
+
+	/**
 	 * Returns the small image url of this journal article.
 	 *
 	 * @return the small image url of this journal article
@@ -665,15 +671,6 @@ public interface JournalArticleModel
 	public void setStatusDate(Date statusDate);
 
 	/**
-	 * Returns the trash entry created when this journal article was moved to the Recycle Bin. The trash entry may belong to one of the ancestors of this journal article.
-	 *
-	 * @return the trash entry created when this journal article was moved to the Recycle Bin
-	 */
-	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException;
-
-	/**
 	 * Returns the class primary key of the trash entry for this journal article.
 	 *
 	 * @return the class primary key of the trash entry for this journal article
@@ -682,36 +679,12 @@ public interface JournalArticleModel
 	public long getTrashEntryClassPK();
 
 	/**
-	 * Returns the trash handler for this journal article.
-	 *
-	 * @return the trash handler for this journal article
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler();
-
-	/**
 	 * Returns <code>true</code> if this journal article is in the Recycle Bin.
 	 *
 	 * @return <code>true</code> if this journal article is in the Recycle Bin; <code>false</code> otherwise
 	 */
 	@Override
 	public boolean isInTrash();
-
-	/**
-	 * Returns <code>true</code> if the parent of this journal article is in the Recycle Bin.
-	 *
-	 * @return <code>true</code> if the parent of this journal article is in the Recycle Bin; <code>false</code> otherwise
-	 */
-	@Override
-	public boolean isInTrashContainer();
-
-	@Override
-	public boolean isInTrashExplicitly();
-
-	@Override
-	public boolean isInTrashImplicitly();
 
 	/**
 	 * Returns <code>true</code> if this journal article is approved.
@@ -779,5 +752,9 @@ public interface JournalArticleModel
 
 	@Override
 	public JournalArticle cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

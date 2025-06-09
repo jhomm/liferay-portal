@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.application.list;
@@ -31,19 +22,21 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletCategoryKeys;
+import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.MissingResourceException;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.ResourceBundle;
 
 /**
  * Provides a skeletal implementation of the {@link PanelApp} to minimize the
@@ -71,14 +64,17 @@ public abstract class BasePanelApp implements PanelApp {
 	@Override
 	public String getLabel(Locale locale) {
 		try {
+			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+				locale, getClass());
+
 			return LanguageUtil.get(
-				locale,
+				resourceBundle,
 				JavaConstants.JAVAX_PORTLET_TITLE + StringPool.PERIOD +
 					getPortletId());
 		}
 		catch (MissingResourceException missingResourceException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(missingResourceException, missingResourceException);
+				_log.debug(missingResourceException);
 			}
 		}
 
@@ -94,15 +90,12 @@ public abstract class BasePanelApp implements PanelApp {
 			return 0;
 		}
 
+		Portlet portlet = getPortlet();
+
 		return _userNotificationEventLocalService.
 			getUserNotificationEventsCount(
-				user.getUserId(), _portlet.getPortletId(),
+				user.getUserId(), portlet.getPortletId(),
 				UserNotificationDeliveryConstants.TYPE_WEBSITE, true, false);
-	}
-
-	@Override
-	public Portlet getPortlet() {
-		return _portlet;
 	}
 
 	@Override
@@ -168,9 +161,10 @@ public abstract class BasePanelApp implements PanelApp {
 		this.groupProvider = groupProvider;
 	}
 
-	@Override
-	public void setPortlet(Portlet portlet) {
-		_portlet = portlet;
+	public void setPortletLocalService(
+		PortletLocalService portletLocalService) {
+
+		_portletLocalService = portletLocalService;
 	}
 
 	protected ControlPanelEntry getControlPanelEntry() {
@@ -210,12 +204,6 @@ public abstract class BasePanelApp implements PanelApp {
 		return groupProvider.getGroup(httpServletRequest);
 	}
 
-	protected void setPortletLocalService(
-		PortletLocalService portletLocalService) {
-
-		_portletLocalService = portletLocalService;
-	}
-
 	protected void setUserNotificationEventLocalService(
 		UserNotificationEventLocalService userNotificationEventLocalService) {
 
@@ -226,7 +214,6 @@ public abstract class BasePanelApp implements PanelApp {
 
 	private static final Log _log = LogFactoryUtil.getLog(BasePanelApp.class);
 
-	private Portlet _portlet;
 	private PortletLocalService _portletLocalService;
 	private UserNotificationEventLocalService
 		_userNotificationEventLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.service.persistence.test;
@@ -27,15 +18,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -130,6 +125,9 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 		CommercePaymentMethodGroupRel newCommercePaymentMethodGroupRel =
 			_persistence.create(pk);
 
+		newCommercePaymentMethodGroupRel.setMvccVersion(
+			RandomTestUtil.nextLong());
+
 		newCommercePaymentMethodGroupRel.setGroupId(RandomTestUtil.nextLong());
 
 		newCommercePaymentMethodGroupRel.setCompanyId(
@@ -151,16 +149,19 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 		newCommercePaymentMethodGroupRel.setDescription(
 			RandomTestUtil.randomString());
 
+		newCommercePaymentMethodGroupRel.setActive(
+			RandomTestUtil.randomBoolean());
+
 		newCommercePaymentMethodGroupRel.setImageId(RandomTestUtil.nextLong());
 
-		newCommercePaymentMethodGroupRel.setEngineKey(
+		newCommercePaymentMethodGroupRel.setPaymentIntegrationKey(
 			RandomTestUtil.randomString());
 
 		newCommercePaymentMethodGroupRel.setPriority(
 			RandomTestUtil.nextDouble());
 
-		newCommercePaymentMethodGroupRel.setActive(
-			RandomTestUtil.randomBoolean());
+		newCommercePaymentMethodGroupRel.setTypeSettings(
+			RandomTestUtil.randomString());
 
 		_commercePaymentMethodGroupRels.add(
 			_persistence.update(newCommercePaymentMethodGroupRel));
@@ -169,6 +170,9 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommercePaymentMethodGroupRel.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommercePaymentMethodGroupRel.getMvccVersion(),
+			newCommercePaymentMethodGroupRel.getMvccVersion());
 		Assert.assertEquals(
 			existingCommercePaymentMethodGroupRel.
 				getCommercePaymentMethodGroupRelId(),
@@ -203,17 +207,20 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 			existingCommercePaymentMethodGroupRel.getDescription(),
 			newCommercePaymentMethodGroupRel.getDescription());
 		Assert.assertEquals(
+			existingCommercePaymentMethodGroupRel.isActive(),
+			newCommercePaymentMethodGroupRel.isActive());
+		Assert.assertEquals(
 			existingCommercePaymentMethodGroupRel.getImageId(),
 			newCommercePaymentMethodGroupRel.getImageId());
 		Assert.assertEquals(
-			existingCommercePaymentMethodGroupRel.getEngineKey(),
-			newCommercePaymentMethodGroupRel.getEngineKey());
+			existingCommercePaymentMethodGroupRel.getPaymentIntegrationKey(),
+			newCommercePaymentMethodGroupRel.getPaymentIntegrationKey());
 		AssertUtils.assertEquals(
 			existingCommercePaymentMethodGroupRel.getPriority(),
 			newCommercePaymentMethodGroupRel.getPriority());
 		Assert.assertEquals(
-			existingCommercePaymentMethodGroupRel.isActive(),
-			newCommercePaymentMethodGroupRel.isActive());
+			existingCommercePaymentMethodGroupRel.getTypeSettings(),
+			newCommercePaymentMethodGroupRel.getTypeSettings());
 	}
 
 	@Test
@@ -224,20 +231,20 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_E() throws Exception {
-		_persistence.countByG_E(RandomTestUtil.nextLong(), "");
-
-		_persistence.countByG_E(0L, "null");
-
-		_persistence.countByG_E(0L, (String)null);
-	}
-
-	@Test
 	public void testCountByG_A() throws Exception {
 		_persistence.countByG_A(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
 
 		_persistence.countByG_A(0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByG_P() throws Exception {
+		_persistence.countByG_P(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByG_P(0L, "null");
+
+		_persistence.countByG_P(0L, (String)null);
 	}
 
 	@Test
@@ -267,15 +274,40 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
+	@Test
+	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
+	}
+
 	protected OrderByComparator<CommercePaymentMethodGroupRel>
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CommercePaymentMethodGroupRel", "commercePaymentMethodGroupRelId",
-			true, "groupId", true, "companyId", true, "userId", true,
-			"userName", true, "createDate", true, "modifiedDate", true, "name",
-			true, "description", true, "imageId", true, "engineKey", true,
-			"priority", true, "active", true);
+			"CommercePaymentMethodGroupRel", "mvccVersion", true,
+			"commercePaymentMethodGroupRelId", true, "groupId", true,
+			"companyId", true, "userId", true, "userName", true, "createDate",
+			true, "modifiedDate", true, "name", true, "description", true,
+			"active", true, "imageId", true, "paymentIntegrationKey", true,
+			"priority", true);
 	}
 
 	@Test
@@ -591,10 +623,10 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 				commercePaymentMethodGroupRel, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "groupId"));
 		Assert.assertEquals(
-			commercePaymentMethodGroupRel.getEngineKey(),
+			commercePaymentMethodGroupRel.getPaymentIntegrationKey(),
 			ReflectionTestUtil.invoke(
 				commercePaymentMethodGroupRel, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "engineKey"));
+				new Class<?>[] {String.class}, "paymentIntegrationKey"));
 	}
 
 	protected CommercePaymentMethodGroupRel addCommercePaymentMethodGroupRel()
@@ -604,6 +636,8 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 
 		CommercePaymentMethodGroupRel commercePaymentMethodGroupRel =
 			_persistence.create(pk);
+
+		commercePaymentMethodGroupRel.setMvccVersion(RandomTestUtil.nextLong());
 
 		commercePaymentMethodGroupRel.setGroupId(RandomTestUtil.nextLong());
 
@@ -624,14 +658,17 @@ public class CommercePaymentMethodGroupRelPersistenceTest {
 		commercePaymentMethodGroupRel.setDescription(
 			RandomTestUtil.randomString());
 
+		commercePaymentMethodGroupRel.setActive(RandomTestUtil.randomBoolean());
+
 		commercePaymentMethodGroupRel.setImageId(RandomTestUtil.nextLong());
 
-		commercePaymentMethodGroupRel.setEngineKey(
+		commercePaymentMethodGroupRel.setPaymentIntegrationKey(
 			RandomTestUtil.randomString());
 
 		commercePaymentMethodGroupRel.setPriority(RandomTestUtil.nextDouble());
 
-		commercePaymentMethodGroupRel.setActive(RandomTestUtil.randomBoolean());
+		commercePaymentMethodGroupRel.setTypeSettings(
+			RandomTestUtil.randomString());
 
 		_commercePaymentMethodGroupRels.add(
 			_persistence.update(commercePaymentMethodGroupRel));

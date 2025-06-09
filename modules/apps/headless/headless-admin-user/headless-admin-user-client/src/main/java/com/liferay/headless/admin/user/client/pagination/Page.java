@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.client.pagination;
 
 import com.liferay.headless.admin.user.client.aggregation.Facet;
 import com.liferay.headless.admin.user.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,10 +18,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -55,7 +44,7 @@ public class Page<T> {
 		return null;
 	}
 
-	public Map<String, Map> getActions() {
+	public Map<String, Map<String, String>> getActions() {
 		return _actions;
 	}
 
@@ -103,7 +92,7 @@ public class Page<T> {
 		return false;
 	}
 
-	public void setActions(Map<String, Map> actions) {
+	public void setActions(Map<String, Map<String, String>> actions) {
 		_actions = actions;
 	}
 
@@ -176,60 +165,91 @@ public class Page<T> {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "facets")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "items")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "lastPage")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "page")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "pageSize")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "totalCount")) {
+				return false;
+			}
+			else {
+				throw new IllegalArgumentException(
+					"Unsupported field name " + jsonParserFieldName);
+			}
+		}
+
+		@Override
 		protected void setField(
 			Page page, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
-					PageJSONParser pageJSONParser = new PageJSONParser(
-						_toDTOFunction);
-
 					page.setActions(
-						pageJSONParser.parseToMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "facets")) {
-				if (jsonParserFieldValue != null) {
-					page.setFacets(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							this::parseToMap
-						).map(
-							facets -> new Facet(
-								(String)facets.get("facetCriteria"),
-								Stream.of(
-									(Object[])facets.get("facetValues")
-								).map(
-									object -> (String)object
-								).map(
-									this::parseToMap
-								).map(
-									facetValues -> new Facet.FacetValue(
-										Integer.valueOf(
-											(String)facetValues.get(
-												"numberOfOccurrences")),
-										(String)facetValues.get("term"))
-								).collect(
-									Collectors.toList()
-								))
-						).collect(
-							Collectors.toList()
-						));
+				if (jsonParserFieldValue == null) {
+					return;
 				}
+
+				List<Facet> facets = new ArrayList<>();
+
+				for (Object object1 : (Object[])jsonParserFieldValue) {
+					List<Facet.FacetValue> facetValues = new ArrayList<>();
+
+					Map<String, Object> jsonParserFieldValuesMap =
+						this.parseToMap((String)object1);
+
+					for (Object object2 :
+							(Object[])jsonParserFieldValuesMap.get(
+								"facetValues")) {
+
+						Map<String, Object> facetValueMap = this.parseToMap(
+							(String)object2);
+
+						facetValues.add(
+							new Facet.FacetValue(
+								Integer.valueOf(
+									(String)facetValueMap.get(
+										"numberOfOccurrences")),
+								(String)facetValueMap.get("term")));
+					}
+
+					facets.add(
+						new Facet(
+							(String)jsonParserFieldValuesMap.get(
+								"facetCriteria"),
+							facetValues));
+				}
+
+				page.setFacets(facets);
 			}
 			else if (Objects.equals(jsonParserFieldName, "items")) {
 				if (jsonParserFieldValue != null) {
-					page.setItems(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							string -> _toDTOFunction.apply(string)
-						).collect(
-							Collectors.toList()
-						));
+					List<T> items = new ArrayList<>();
+
+					for (Object object : (Object[])jsonParserFieldValue) {
+						items.add(_toDTOFunction.apply((String)object));
+					}
+
+					page.setItems(items);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "lastPage")) {
@@ -296,7 +316,7 @@ public class Page<T> {
 		return sb.toString();
 	}
 
-	private Map<String, Map> _actions;
+	private Map<String, Map<String, String>> _actions;
 	private List<Facet> _facets = new ArrayList<>();
 	private Collection<T> _items;
 	private long _page;

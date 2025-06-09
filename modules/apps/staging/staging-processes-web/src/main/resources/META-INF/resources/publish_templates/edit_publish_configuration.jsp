@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -117,7 +108,7 @@ renderResponse.setTitle((exportImportConfiguration == null) ? LanguageUtil.get(r
 			<portlet:param name="groupId" value="<%= String.valueOf(stagingGroupId) %>" />
 		</portlet:actionURL>
 
-		<aui:form action='<%= updatePublishConfigurationURL + "&etag=0&strip=0" %>' cssClass="lfr-export-dialog" method="post" name="exportPagesFm">
+		<aui:form action='<%= updatePublishConfigurationURL + "&etag=0&strip=0" %>' cssClass="lfr-export-dialog" method="post" name="exportPagesFm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "publishPages();" %>'>
 			<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= (exportImportConfiguration == null) ? Constants.ADD : Constants.UPDATE %>" />
 			<aui:input name="redirect" type="hidden" value="<%= renderURL.toString() %>" />
 			<aui:input name="exportImportConfigurationId" type="hidden" value="<%= exportImportConfigurationId %>" />
@@ -140,50 +131,52 @@ renderResponse.setTitle((exportImportConfiguration == null) ? LanguageUtil.get(r
 
 			<div id="<portlet:namespace />publishOptions">
 				<div class="export-dialog-tree">
-					<aui:fieldset-group markupView="lexicon">
-						<liferay-staging:configuration-header
-							exportImportConfiguration="<%= exportImportConfiguration %>"
-						/>
-
-						<liferay-staging:deletions
-							cmd="<%= Constants.PUBLISH %>"
-							exportImportConfigurationId="<%= exportImportConfigurationId %>"
-						/>
-
-						<c:if test="<%= !group.isCompany() && GroupCapabilityUtil.isSupportsPages(group) %>">
-							<liferay-staging:select-pages
-								action="<%= Constants.PUBLISH %>"
-								exportImportConfigurationId="<%= exportImportConfigurationId %>"
-								groupId="<%= stagingGroupId %>"
-								privateLayout="<%= privateLayout %>"
-								treeId="<%= treeId %>"
+					<div class="sheet">
+						<div class="panel-group panel-group-flush">
+							<liferay-staging:configuration-header
+								exportImportConfiguration="<%= exportImportConfiguration %>"
 							/>
-						</c:if>
 
-						<liferay-staging:content
-							cmd="<%= cmd %>"
-							exportImportConfigurationId="<%= exportImportConfigurationId %>"
-							showAllPortlets="<%= true %>"
-							type="<%= stagingGroup.isStagedRemotely() ? Constants.PUBLISH_TO_REMOTE : Constants.PUBLISH_TO_LIVE %>"
-						/>
+							<liferay-staging:deletions
+								cmd="<%= Constants.PUBLISH %>"
+								exportImportConfigurationId="<%= exportImportConfigurationId %>"
+							/>
 
-						<liferay-staging:permissions
-							action="<%= Constants.PUBLISH %>"
-							descriptionCSSClass="permissions-description"
-							exportImportConfigurationId="<%= exportImportConfigurationId %>"
-							global="<%= group.isCompany() %>"
-							labelCSSClass="permissions-label"
-						/>
-
-						<c:if test="<%= stagingGroup.isStagedRemotely() %>">
-							<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" cssClass="options-group" label="remote-live-connection-settings">
-								<liferay-staging:remote-options
+							<c:if test="<%= !group.isCompany() && GroupCapabilityUtil.isSupportsPages(group) %>">
+								<liferay-staging:select-pages
+									action="<%= Constants.PUBLISH %>"
 									exportImportConfigurationId="<%= exportImportConfigurationId %>"
+									groupId="<%= stagingGroupId %>"
 									privateLayout="<%= privateLayout %>"
+									treeId="<%= treeId %>"
 								/>
-							</aui:fieldset>
-						</c:if>
-					</aui:fieldset-group>
+							</c:if>
+
+							<liferay-staging:content
+								cmd="<%= cmd %>"
+								exportImportConfigurationId="<%= exportImportConfigurationId %>"
+								showAllPortlets="<%= true %>"
+								type="<%= stagingGroup.isStagedRemotely() ? Constants.PUBLISH_TO_REMOTE : Constants.PUBLISH_TO_LIVE %>"
+							/>
+
+							<liferay-staging:permissions
+								action="<%= Constants.PUBLISH %>"
+								descriptionCSSClass="permissions-description"
+								exportImportConfigurationId="<%= exportImportConfigurationId %>"
+								global="<%= group.isCompany() %>"
+								labelCSSClass="permissions-label"
+							/>
+
+							<c:if test="<%= stagingGroup.isStagedRemotely() %>">
+								<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" cssClass="options-group" label="remote-live-connection-settings">
+									<liferay-staging:remote-options
+										exportImportConfigurationId="<%= exportImportConfigurationId %>"
+										privateLayout="<%= privateLayout %>"
+									/>
+								</aui:fieldset>
+							</c:if>
+						</div>
+					</div>
 				</div>
 
 				<aui:button-row>
@@ -208,7 +201,7 @@ renderResponse.setTitle((exportImportConfiguration == null) ? LanguageUtil.get(r
 			submitForm(document.<portlet:namespace />exportPagesFm);
 		}
 		else {
-			exportImport.showNotification();
+			exportImport.showNotification(dateChecker);
 		}
 	}
 

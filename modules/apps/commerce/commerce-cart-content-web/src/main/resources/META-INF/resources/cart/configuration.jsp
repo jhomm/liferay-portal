@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,19 +21,21 @@ CommerceCartContentDisplayContext commerceCartContentDisplayContext = (CommerceC
 
 	<div class="portlet-configuration-body-content">
 		<div class="container-fluid container-fluid-max-xl">
-			<aui:fieldset-group markupView="lexicon">
-				<aui:fieldset>
-					<div class="display-template">
-						<liferay-template:template-selector
-							className="<%= CommerceCartContentPortlet.class.getName() %>"
-							displayStyle="<%= commerceCartContentDisplayContext.getDisplayStyle() %>"
-							displayStyleGroupId="<%= commerceCartContentDisplayContext.getDisplayStyleGroupId() %>"
-							refreshURL="<%= PortalUtil.getCurrentURL(request) %>"
-							showEmptyOption="<%= true %>"
-						/>
-					</div>
-				</aui:fieldset>
-			</aui:fieldset-group>
+			<div class="sheet">
+				<div class="panel-group panel-group-flush">
+					<aui:fieldset>
+						<div class="display-template">
+							<liferay-template:template-selector
+								className="<%= CommerceCartContentPortlet.class.getName() %>"
+								displayStyle="<%= commerceCartContentDisplayContext.getDisplayStyle() %>"
+								displayStyleGroupKey="<%= commerceCartContentDisplayContext.getDisplayStyleGroupKey() %>"
+								refreshURL="<%= PortalUtil.getCurrentURL(request) %>"
+								showEmptyOption="<%= true %>"
+							/>
+						</div>
+					</aui:fieldset>
+				</div>
+			</div>
 		</div>
 	</div>
 

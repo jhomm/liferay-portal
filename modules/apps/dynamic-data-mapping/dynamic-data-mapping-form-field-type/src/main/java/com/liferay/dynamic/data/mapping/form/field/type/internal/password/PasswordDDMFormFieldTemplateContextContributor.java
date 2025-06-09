@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.password;
@@ -32,12 +23,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.PASSWORD,
-	service = {
-		DDMFormFieldTemplateContextContributor.class,
-		PasswordDDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class PasswordDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -49,35 +36,35 @@ public class PasswordDDMFormFieldTemplateContextContributor
 
 		return HashMapBuilder.<String, Object>put(
 			"placeholder",
-			getPlaceholder(ddmFormField, ddmFormFieldRenderingContext)
+			_getPlaceholder(ddmFormField, ddmFormFieldRenderingContext)
 		).put(
-			"tooltip", getTooltip(ddmFormField, ddmFormFieldRenderingContext)
+			"tooltip", _getTooltip(ddmFormField, ddmFormFieldRenderingContext)
 		).build();
 	}
 
-	protected String getPlaceholder(
+	private String _getPlaceholder(
 		DDMFormField ddmFormField,
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
 
 		LocalizedValue placeholder = (LocalizedValue)ddmFormField.getProperty(
 			"placeholder");
 
-		return getValueString(
+		return _getValueString(
 			placeholder, ddmFormFieldRenderingContext.getLocale());
 	}
 
-	protected String getTooltip(
+	private String _getTooltip(
 		DDMFormField ddmFormField,
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
 
 		LocalizedValue tooltip = (LocalizedValue)ddmFormField.getProperty(
 			"tooltip");
 
-		return getValueString(
+		return _getValueString(
 			tooltip, ddmFormFieldRenderingContext.getLocale());
 	}
 
-	protected String getValueString(Value value, Locale locale) {
+	private String _getValueString(Value value, Locale locale) {
 		if (value != null) {
 			return value.getString(locale);
 		}

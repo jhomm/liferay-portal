@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.theme;
 
+import com.liferay.layout.utility.page.kernel.LayoutUtilityPageEntryTypeUtil;
+import com.liferay.layout.utility.page.kernel.provider.util.LayoutUtilityPageEntryLayoutProviderUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -26,11 +19,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspWriter;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspWriter;
 
 /**
  * @author Brian Wing Shun Chan
@@ -65,6 +58,18 @@ public class MetaTagsTag extends IncludeTag {
 
 	@Override
 	protected int processEndTag() throws Exception {
+		HttpServletResponse httpServletResponse =
+			(HttpServletResponse)pageContext.getResponse();
+
+		String layoutUtilityPageEntryType =
+			LayoutUtilityPageEntryTypeUtil.getStatusLayoutUtilityPageEntryType(
+				httpServletResponse.getStatus());
+
+		if (Validator.isNotNull(layoutUtilityPageEntryType)) {
+			return _setLayoutUtilityPageEntryMetaDescription(
+				layoutUtilityPageEntryType);
+		}
+
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)pageContext.getRequest();
 
@@ -92,18 +97,19 @@ public class MetaTagsTag extends IncludeTag {
 		String w3cDefaultLanguageId = LocaleUtil.toW3cLanguageId(
 			defaultLanguageId);
 
-		String metaRobots = layout.getRobots(
-			themeDisplay.getLanguageId(), false);
-		String metaRobotsLanguageId = w3cCurrentLanguageId;
+		String metaRobots = (String)httpServletRequest.getAttribute(
+			WebKeys.PAGE_ROBOTS);
 
 		if (Validator.isNull(metaRobots)) {
-			metaRobots = layout.getRobots(defaultLanguageId);
-			metaRobotsLanguageId = w3cDefaultLanguageId;
+			metaRobots = layout.getRobots(themeDisplay.getLanguageId(), false);
+
+			if (Validator.isNull(metaRobots)) {
+				metaRobots = layout.getRobots(defaultLanguageId);
+			}
 		}
 
 		if (Validator.isNotNull(metaRobots)) {
-			_writeMeta(
-				HtmlUtil.escape(metaRobots), metaRobotsLanguageId, "robots");
+			_writeMeta(HtmlUtil.escape(metaRobots), StringPool.BLANK, "robots");
 		}
 
 		String metaDescription = layout.getDescription(
@@ -112,7 +118,10 @@ public class MetaTagsTag extends IncludeTag {
 
 		if (Validator.isNull(metaDescription)) {
 			metaDescription = layout.getDescription(defaultLanguageId);
-			metaDescriptionLanguageId = w3cDefaultLanguageId;
+
+			if (Validator.isNotNull(metaDescription)) {
+				metaDescriptionLanguageId = w3cDefaultLanguageId;
+			}
 		}
 
 		ListMergeable<String> pageDescriptionListMergeable =
@@ -144,7 +153,10 @@ public class MetaTagsTag extends IncludeTag {
 
 		if (Validator.isNull(metaKeywords)) {
 			metaKeywords = layout.getKeywords(defaultLanguageId);
-			metaKeywordsLanguageId = w3cDefaultLanguageId;
+
+			if (Validator.isNotNull(metaKeywords)) {
+				metaKeywordsLanguageId = w3cDefaultLanguageId;
+			}
 		}
 
 		ListMergeable<String> pageKeywordsListMergeable =
@@ -176,6 +188,49 @@ public class MetaTagsTag extends IncludeTag {
 		return EVAL_PAGE;
 	}
 
+	private int _setLayoutUtilityPageEntryMetaDescription(
+			String layoutUtilityPageEntryType)
+		throws Exception {
+
+		HttpServletRequest httpServletRequest =
+			(HttpServletRequest)pageContext.getRequest();
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (themeDisplay == null) {
+			return EVAL_PAGE;
+		}
+
+		Layout layout =
+			LayoutUtilityPageEntryLayoutProviderUtil.
+				getDefaultLayoutUtilityPageEntryLayout(
+					themeDisplay.getScopeGroupId(), layoutUtilityPageEntryType);
+
+		if (layout == null) {
+			return EVAL_PAGE;
+		}
+
+		String languageId = LanguageUtil.getLanguageId(httpServletRequest);
+
+		String metaDescription = layout.getDescription(languageId, false);
+
+		if (Validator.isNull(metaDescription)) {
+			languageId = LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault());
+
+			metaDescription = layout.getDescription(languageId);
+		}
+
+		if (Validator.isNotNull(metaDescription)) {
+			_writeMeta(
+				HtmlUtil.escape(metaDescription),
+				LocaleUtil.toW3cLanguageId(languageId), "description");
+		}
+
+		return EVAL_PAGE;
+	}
+
 	private void _writeMeta(String content, String lang, String name)
 		throws Exception {
 
@@ -183,8 +238,12 @@ public class MetaTagsTag extends IncludeTag {
 
 		jspWriter.write("<meta content=\"");
 		jspWriter.write(content);
-		jspWriter.write("\" lang=\"");
-		jspWriter.write(lang);
+
+		if (!lang.equals("")) {
+			jspWriter.write("\" lang=\"");
+			jspWriter.write(lang);
+		}
+
 		jspWriter.write("\" name=\"");
 		jspWriter.write(name);
 		jspWriter.write("\" />");

@@ -1,5 +1,6 @@
 {
 	"pageElement": {
+		"id": "item1",
 		"pageElements": [
 			{
 				"definition": {
@@ -15,7 +16,6 @@
 						"maxWidth": "none",
 						"minHeight": "auto",
 						"minWidth": "auto",
-						"opacity": "100",
 						"overflow": "visible",
 						"shadow": "shadow-none",
 						"textAlign": "none",
@@ -44,6 +44,7 @@
 					],
 					"verticalAlignment": "top"
 				},
+				"id": "item2",
 				"pageElements": [
 					{
 						"definition": {
@@ -66,6 +67,7 @@
 							],
 							"size": 12
 						},
+						"id": "item3",
 						"pageElements": [
 							{
 								"definition": {
@@ -81,7 +83,6 @@
 										"maxWidth": "none",
 										"minHeight": "auto",
 										"minWidth": "auto",
-										"opacity": "100",
 										"overflow": "visible",
 										"shadow": "shadow-none",
 										"textAlign": "none",
@@ -102,6 +103,7 @@
 										"widthType": "Fluid"
 									}
 								},
+								"id": "item4",
 								"pageElements": [
 									{
 										"definition": {
@@ -134,13 +136,13 @@
 												"maxWidth": "none",
 												"minHeight": "auto",
 												"minWidth": "auto",
-												"opacity": "100",
 												"overflow": "visible",
 												"shadow": "shadow-none",
 												"textAlign": "none",
 												"width": "w-auto"
 											}
 										},
+										"id": "item5",
 										"type": "Fragment"
 									}
 								],

@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.antisamy.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -59,7 +52,7 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 				blacklistItem = blacklistItem.trim();
 
 				if (!blacklistItem.isEmpty()) {
-					blacklistItem = stripTrailingStar(blacklistItem);
+					blacklistItem = _stripTrailingStar(blacklistItem);
 
 					_blacklist.add(blacklistItem);
 				}
@@ -71,7 +64,7 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 				whitelistItem = whitelistItem.trim();
 
 				if (!whitelistItem.isEmpty()) {
-					whitelistItem = stripTrailingStar(whitelistItem);
+					whitelistItem = _stripTrailingStar(whitelistItem);
 
 					_whitelist.add(whitelistItem);
 				}
@@ -109,31 +102,32 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 
 		if (Validator.isNull(content) || Validator.isNull(contentType) ||
 			!contentType.equals(ContentTypes.TEXT_HTML) ||
-			isWhitelisted(className, classPK)) {
+			_isWhitelisted(className, classPK)) {
 
 			return content;
 		}
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				AntiSamySanitizerImpl.class.getClassLoader())) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+			CleanResults cleanResults = null;
 
-		currentThread.setContextClassLoader(
-			AntiSamySanitizerImpl.class.getClassLoader());
-
-		try {
 			AntiSamy antiSamy = new AntiSamy();
 
-			if (isConfigured(className, classPK)) {
+			if (_isConfigured(className, classPK)) {
 				Policy policy = _policies.get(className);
 
-				CleanResults cleanResults = antiSamy.scan(
-					content, policy, AntiSamy.SAX);
-
-				return cleanResults.getCleanHTML();
+				cleanResults = antiSamy.scan(content, policy, AntiSamy.SAX);
+			}
+			else {
+				cleanResults = antiSamy.scan(content, _policy);
 			}
 
-			CleanResults cleanResults = antiSamy.scan(content, _policy);
+			if (_log.isWarnEnabled()) {
+				for (String errorMessage : cleanResults.getErrorMessages()) {
+					_log.warn(errorMessage);
+				}
+			}
 
 			return cleanResults.getCleanHTML();
 		}
@@ -142,12 +136,9 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 
 			throw new SanitizerException(exception);
 		}
-		finally {
-			currentThread.setContextClassLoader(contextClassLoader);
-		}
 	}
 
-	protected boolean isConfigured(String className, long classPK) {
+	private boolean _isConfigured(String className, long classPK) {
 		String classNameAndClassPK = className + StringPool.POUND + classPK;
 
 		for (String policyClassName : _policies.keySet()) {
@@ -159,7 +150,7 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 		return false;
 	}
 
-	protected boolean isWhitelisted(String className, long classPK) {
+	private boolean _isWhitelisted(String className, long classPK) {
 		String classNameAndClassPK = className + StringPool.POUND + classPK;
 
 		for (String blacklistItem : _blacklist) {
@@ -181,7 +172,7 @@ public class AntiSamySanitizerImpl implements Sanitizer {
 		return false;
 	}
 
-	protected String stripTrailingStar(String item) {
+	private String _stripTrailingStar(String item) {
 		if (item.equals(StringPool.STAR)) {
 			return item;
 		}

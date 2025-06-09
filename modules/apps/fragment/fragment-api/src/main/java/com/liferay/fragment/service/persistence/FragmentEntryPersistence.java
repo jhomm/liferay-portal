@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence;
@@ -1472,6 +1463,304 @@ public interface FragmentEntryPersistence
 	 */
 	public int countByFragmentCollectionId_Head(
 		long fragmentCollectionId, boolean head);
+
+	/**
+	 * Returns all the fragment entries where type = &#63;.
+	 *
+	 * @param type the type
+	 * @return the matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType(int type);
+
+	/**
+	 * Returns a range of all the fragment entries where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @return the range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType(
+		int type, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the fragment entries where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType(
+		int type, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the fragment entries where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType(
+		int type, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first fragment entry in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByType_First(
+			int type,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the first fragment entry in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByType_First(
+		int type,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns the last fragment entry in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByType_Last(
+			int type,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the last fragment entry in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByType_Last(
+		int type,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns the fragment entries before and after the current fragment entry in the ordered set where type = &#63;.
+	 *
+	 * @param fragmentEntryId the primary key of the current fragment entry
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry
+	 * @throws NoSuchEntryException if a fragment entry with the primary key could not be found
+	 */
+	public FragmentEntry[] findByType_PrevAndNext(
+			long fragmentEntryId, int type,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Removes all the fragment entries where type = &#63; from the database.
+	 *
+	 * @param type the type
+	 */
+	public void removeByType(int type);
+
+	/**
+	 * Returns the number of fragment entries where type = &#63;.
+	 *
+	 * @param type the type
+	 * @return the number of matching fragment entries
+	 */
+	public int countByType(int type);
+
+	/**
+	 * Returns all the fragment entries where type = &#63; and head = &#63;.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @return the matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType_Head(
+		int type, boolean head);
+
+	/**
+	 * Returns a range of all the fragment entries where type = &#63; and head = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @return the range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType_Head(
+		int type, boolean head, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the fragment entries where type = &#63; and head = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType_Head(
+		int type, boolean head, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the fragment entries where type = &#63; and head = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByType_Head(
+		int type, boolean head, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first fragment entry in the ordered set where type = &#63; and head = &#63;.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByType_Head_First(
+			int type, boolean head,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the first fragment entry in the ordered set where type = &#63; and head = &#63;.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByType_Head_First(
+		int type, boolean head,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns the last fragment entry in the ordered set where type = &#63; and head = &#63;.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByType_Head_Last(
+			int type, boolean head,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the last fragment entry in the ordered set where type = &#63; and head = &#63;.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByType_Head_Last(
+		int type, boolean head,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns the fragment entries before and after the current fragment entry in the ordered set where type = &#63; and head = &#63;.
+	 *
+	 * @param fragmentEntryId the primary key of the current fragment entry
+	 * @param type the type
+	 * @param head the head
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry
+	 * @throws NoSuchEntryException if a fragment entry with the primary key could not be found
+	 */
+	public FragmentEntry[] findByType_Head_PrevAndNext(
+			long fragmentEntryId, int type, boolean head,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Removes all the fragment entries where type = &#63; and head = &#63; from the database.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 */
+	public void removeByType_Head(int type, boolean head);
+
+	/**
+	 * Returns the number of fragment entries where type = &#63; and head = &#63;.
+	 *
+	 * @param type the type
+	 * @param head the head
+	 * @return the number of matching fragment entries
+	 */
+	public int countByType_Head(int type, boolean head);
 
 	/**
 	 * Returns all the fragment entries where groupId = &#63; and fragmentCollectionId = &#63;.
@@ -3842,6 +4131,221 @@ public interface FragmentEntryPersistence
 	public int countByG_FCI_T_S_Head(
 		long groupId, long fragmentCollectionId, int type, int status,
 		boolean head);
+
+	/**
+	 * Returns all the fragment entries where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByERC_G(
+		String externalReferenceCode, long groupId);
+
+	/**
+	 * Returns a range of all the fragment entries where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @return the range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByERC_G(
+		String externalReferenceCode, long groupId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the fragment entries where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByERC_G(
+		String externalReferenceCode, long groupId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the fragment entries where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of fragment entries
+	 * @param end the upper bound of the range of fragment entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entries
+	 */
+	public java.util.List<FragmentEntry> findByERC_G(
+		String externalReferenceCode, long groupId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first fragment entry in the ordered set where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByERC_G_First(
+			String externalReferenceCode, long groupId,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the first fragment entry in the ordered set where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByERC_G_First(
+		String externalReferenceCode, long groupId,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns the last fragment entry in the ordered set where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByERC_G_Last(
+			String externalReferenceCode, long groupId,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the last fragment entry in the ordered set where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByERC_G_Last(
+		String externalReferenceCode, long groupId,
+		com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+			orderByComparator);
+
+	/**
+	 * Returns the fragment entries before and after the current fragment entry in the ordered set where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param fragmentEntryId the primary key of the current fragment entry
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry
+	 * @throws NoSuchEntryException if a fragment entry with the primary key could not be found
+	 */
+	public FragmentEntry[] findByERC_G_PrevAndNext(
+			long fragmentEntryId, String externalReferenceCode, long groupId,
+			com.liferay.portal.kernel.util.OrderByComparator<FragmentEntry>
+				orderByComparator)
+		throws NoSuchEntryException;
+
+	/**
+	 * Removes all the fragment entries where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 */
+	public void removeByERC_G(String externalReferenceCode, long groupId);
+
+	/**
+	 * Returns the number of fragment entries where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching fragment entries
+	 */
+	public int countByERC_G(String externalReferenceCode, long groupId);
+
+	/**
+	 * Returns the fragment entry where externalReferenceCode = &#63; and groupId = &#63; and head = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param head the head
+	 * @return the matching fragment entry
+	 * @throws NoSuchEntryException if a matching fragment entry could not be found
+	 */
+	public FragmentEntry findByERC_G_Head(
+			String externalReferenceCode, long groupId, boolean head)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the fragment entry where externalReferenceCode = &#63; and groupId = &#63; and head = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param head the head
+	 * @return the matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByERC_G_Head(
+		String externalReferenceCode, long groupId, boolean head);
+
+	/**
+	 * Returns the fragment entry where externalReferenceCode = &#63; and groupId = &#63; and head = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param head the head
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching fragment entry, or <code>null</code> if a matching fragment entry could not be found
+	 */
+	public FragmentEntry fetchByERC_G_Head(
+		String externalReferenceCode, long groupId, boolean head,
+		boolean useFinderCache);
+
+	/**
+	 * Removes the fragment entry where externalReferenceCode = &#63; and groupId = &#63; and head = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param head the head
+	 * @return the fragment entry that was removed
+	 */
+	public FragmentEntry removeByERC_G_Head(
+			String externalReferenceCode, long groupId, boolean head)
+		throws NoSuchEntryException;
+
+	/**
+	 * Returns the number of fragment entries where externalReferenceCode = &#63; and groupId = &#63; and head = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param head the head
+	 * @return the number of matching fragment entries
+	 */
+	public int countByERC_G_Head(
+		String externalReferenceCode, long groupId, boolean head);
 
 	/**
 	 * Returns the fragment entry where headId = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.

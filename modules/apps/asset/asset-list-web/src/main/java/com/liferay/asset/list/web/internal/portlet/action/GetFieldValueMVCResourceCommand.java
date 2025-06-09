@@ -1,27 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.portlet.action;
 
+import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
+import com.liferay.asset.kernel.model.ClassType;
+import com.liferay.asset.kernel.model.ClassTypeField;
+import com.liferay.asset.kernel.model.ClassTypeReader;
 import com.liferay.asset.list.constants.AssetListPortletKeys;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
 import com.liferay.dynamic.data.mapping.util.DDMUtil;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
@@ -33,25 +30,25 @@ import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.Serializable;
 
 import java.text.DateFormat;
 
 import java.util.Date;
 
-import javax.portlet.PortletException;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
+		"jakarta.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
 		"mvc.command.name=/asset_list/get_field_value"
 	},
 	service = MVCResourceCommand.class
@@ -67,31 +64,48 @@ public class GetFieldValueMVCResourceCommand extends BaseMVCResourceCommand {
 			WebKeys.THEME_DISPLAY);
 
 		try {
+			String className = ParamUtil.getString(
+				resourceRequest, "className");
+
+			AssetRendererFactory<?> assetRendererFactory =
+				AssetRendererFactoryRegistryUtil.
+					getAssetRendererFactoryByClassName(className);
+
+			ClassTypeReader classTypeReader =
+				assetRendererFactory.getClassTypeReader();
+
+			long classTypeId = ParamUtil.getLong(
+				resourceRequest, "classTypeId");
+
+			ClassType classType = classTypeReader.getClassType(
+				classTypeId, themeDisplay.getLocale());
+
+			String fieldName = ParamUtil.getString(resourceRequest, "name");
+
+			ClassTypeField classTypeField = classType.getClassTypeField(
+				fieldName);
+
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
 				resourceRequest);
 
-			long structureId = ParamUtil.getLong(
-				resourceRequest, "structureId");
-
 			Fields fields = (Fields)serviceContext.getAttribute(
-				Fields.class.getName() + structureId);
+				Fields.class.getName() + classTypeField.getClassTypeId());
 
 			if (fields == null) {
 				String fieldsNamespace = ParamUtil.getString(
 					resourceRequest, "fieldsNamespace");
 
 				fields = DDMUtil.getFields(
-					structureId, fieldsNamespace, serviceContext);
+					classTypeField.getClassTypeId(), fieldsNamespace,
+					serviceContext);
 			}
-
-			String fieldName = ParamUtil.getString(resourceRequest, "name");
 
 			Field field = fields.get(fieldName);
 
 			Serializable fieldValue = field.getValue(
 				themeDisplay.getLocale(), 0);
 
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+			JSONObject jsonObject = _jsonFactory.createJSONObject();
 
 			if (fieldValue != null) {
 				jsonObject.put("success", true);
@@ -166,14 +180,17 @@ public class GetFieldValueMVCResourceCommand extends BaseMVCResourceCommand {
 		DDMFormFieldOptions ddmFormFieldOptions =
 			ddmFormField.getDDMFormFieldOptions();
 
-		String optionReference = ddmFormFieldOptions.getOptionReference(
+		LocalizedValue localizedValue = ddmFormFieldOptions.getOptionLabels(
 			String.valueOf(fieldValue));
 
-		if (optionReference != null) {
-			return optionReference;
+		if (localizedValue != null) {
+			return localizedValue.getString(themeDisplay.getLocale());
 		}
 
 		return fieldValue;
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

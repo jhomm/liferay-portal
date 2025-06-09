@@ -1,12 +1,15 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-content-management"
 definition {
 
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property test.assert.warning.exceptions = "true";
-	property testray.component.names = "Document Management";
-	property testray.main.component.name = "Upgrades Collaboration";
+	property test.liferay.virtual.instance = "false";
+	property test.run.type = "single";
+	property testray.main.component.name = "Upgrades Content Management";
 
 	setUp {
 		SignIn.signIn();
@@ -15,47 +18,49 @@ definition {
 
 		AssertLocation(value1 = "${portalURL}/web/guest?SM_USER=test@liferay.com");
 
+		WikiPortlet.enableWiki();
+
 		SearchAdministration.executeReindex();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewWikiArchive71105 {
 		property data.archive.type = "data-archive-collaboration";
 		property portal.version = "7.1.10.5";
 
-		Upgrade.viewAndAddWiki();
+		ValidateWikiUpgrade.viewAndAddWiki();
 
-		Upgrade.editAndDeleteWiki();
+		ValidateWikiUpgrade.editAndDeleteWiki();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewWikiArchive72104 {
 		property data.archive.type = "data-archive-collaboration";
 		property portal.version = "7.2.10.4";
 
-		Upgrade.viewAndAddWiki();
+		ValidateWikiUpgrade.viewAndAddWiki();
 
-		Upgrade.editAndDeleteWiki();
+		ValidateWikiUpgrade.editAndDeleteWiki();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewWikiArchive73101 {
 		property data.archive.type = "data-archive-collaboration";
 		property portal.version = "7.3.10.1";
 
-		Upgrade.viewAndAddWiki();
+		ValidateWikiUpgrade.viewAndAddWiki();
 
-		Upgrade.editAndDeleteWiki();
+		ValidateWikiUpgrade.editAndDeleteWiki();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test ViewWikiArchive701015 {
 		property data.archive.type = "data-archive-collaboration";
 		property portal.version = "7.0.10.15";
 
-		Upgrade.viewAndAddWiki();
+		ValidateWikiUpgrade.viewAndAddWiki();
 
-		Upgrade.editAndDeleteWiki();
+		ValidateWikiUpgrade.editAndDeleteWiki();
 	}
 
 }

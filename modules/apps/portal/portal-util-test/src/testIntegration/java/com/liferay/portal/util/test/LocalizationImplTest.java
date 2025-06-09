@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.concurrent.ConcurrentReferenceKeyHashMap;
+import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.test.portlet.MockPortletRequest;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -30,20 +24,16 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.LocalizationImpl;
 import com.liferay.portlet.PortletPreferencesImpl;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletRequest;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.lang.reflect.Field;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
-
-import org.apache.commons.collections.map.ReferenceMap;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -104,7 +94,8 @@ public class LocalizationImplTest {
 
 		_cache.set(
 			_localization,
-			new ReferenceMap(ReferenceMap.SOFT, ReferenceMap.HARD));
+			new ConcurrentReferenceKeyHashMap<>(
+				FinalizeManager.SOFT_REFERENCE_FACTORY));
 	}
 
 	@Test
@@ -201,13 +192,13 @@ public class LocalizationImplTest {
 
 	@Test
 	public void testGetLocalizationXmlFromPreferences() throws Exception {
-		PortletPreferences preferences = new PortletPreferencesImpl();
+		PortletPreferences portletPreferences = new PortletPreferencesImpl();
 
 		LocalizationUtil.setPreferencesValue(
-			preferences, "test", _ENGLISH_LANGUAGE_ID, "changedValue");
+			portletPreferences, "test", _ENGLISH_LANGUAGE_ID, "changedValue");
 
 		String xml = LocalizationUtil.getLocalizationXmlFromPreferences(
-			preferences, new MockPortletRequest(), "test", "testValue");
+			portletPreferences, new MockPortletRequest(), "test", "testValue");
 
 		Assert.assertTrue(
 			"Portlet preferences were not properly applied to XML: " + xml,
@@ -230,42 +221,6 @@ public class LocalizationImplTest {
 	}
 
 	@Test
-	public void testGetModifiedLocales() throws Exception {
-		String key = RandomTestUtil.randomString();
-
-		String defaultLanguageId = LocaleUtil.toLanguageId(
-			LocaleUtil.getDefault());
-
-		PortletPreferences preferences = new PortletPreferencesImpl();
-
-		LocalizationUtil.setPreferencesValue(
-			preferences, key, defaultLanguageId, "A0");
-		LocalizationUtil.setPreferencesValue(
-			preferences, key, _GERMAN_LANGUAGE_ID, "B0");
-
-		Map<Locale, String> oldLocalizationMap =
-			LocalizationUtil.getLocalizationMap(preferences, key);
-
-		LocalizationUtil.setPreferencesValue(
-			preferences, key, defaultLanguageId, "A1");
-		LocalizationUtil.setPreferencesValue(
-			preferences, key, _GERMAN_LANGUAGE_ID, "B1");
-
-		Map<Locale, String> newLocalizationMap =
-			LocalizationUtil.getLocalizationMap(preferences, key);
-
-		List<Locale> modifiedLocales = LocalizationUtil.getModifiedLocales(
-			oldLocalizationMap, newLocalizationMap);
-
-		Assert.assertTrue(
-			modifiedLocales.toString(),
-			modifiedLocales.contains(LocaleUtil.getDefault()));
-		Assert.assertTrue(
-			modifiedLocales.toString(),
-			modifiedLocales.contains(LocaleUtil.GERMANY));
-	}
-
-	@Test
 	public void testGetPreferencesValue() throws Exception {
 		String key = RandomTestUtil.randomString();
 
@@ -273,25 +228,25 @@ public class LocalizationImplTest {
 			LocaleUtil.US.getLanguage(), LocaleUtil.US.getCountry(),
 			LocaleUtil.US.getVariant());
 
-		PortletPreferences preferences = new PortletPreferencesImpl();
+		PortletPreferences portletPreferences = new PortletPreferencesImpl();
 
 		LocalizationUtil.setPreferencesValue(
-			preferences, key, _ENGLISH_LANGUAGE_ID, "A");
+			portletPreferences, key, _ENGLISH_LANGUAGE_ID, "A");
 		LocalizationUtil.setPreferencesValue(
-			preferences, key, _GERMAN_LANGUAGE_ID, "B");
+			portletPreferences, key, _GERMAN_LANGUAGE_ID, "B");
 
 		Assert.assertEquals(
 			"A",
 			LocalizationUtil.getPreferencesValue(
-				preferences, key, _ENGLISH_LANGUAGE_ID));
+				portletPreferences, key, _ENGLISH_LANGUAGE_ID));
 		Assert.assertEquals(
 			"B",
 			LocalizationUtil.getPreferencesValue(
-				preferences, key, _GERMAN_LANGUAGE_ID));
+				portletPreferences, key, _GERMAN_LANGUAGE_ID));
 		Assert.assertEquals(
 			"A",
 			LocalizationUtil.getPreferencesValue(
-				preferences, key, _SPANISH_LANGUAGE_ID));
+				portletPreferences, key, _SPANISH_LANGUAGE_ID));
 
 		LocaleUtil.setDefault(
 			LocaleUtil.GERMANY.getLanguage(), LocaleUtil.GERMANY.getCountry(),
@@ -300,15 +255,15 @@ public class LocalizationImplTest {
 		Assert.assertEquals(
 			"A",
 			LocalizationUtil.getPreferencesValue(
-				preferences, key, _ENGLISH_LANGUAGE_ID));
+				portletPreferences, key, _ENGLISH_LANGUAGE_ID));
 		Assert.assertEquals(
 			"B",
 			LocalizationUtil.getPreferencesValue(
-				preferences, key, _GERMAN_LANGUAGE_ID));
+				portletPreferences, key, _GERMAN_LANGUAGE_ID));
 		Assert.assertEquals(
 			"B",
 			LocalizationUtil.getPreferencesValue(
-				preferences, key, _SPANISH_LANGUAGE_ID));
+				portletPreferences, key, _SPANISH_LANGUAGE_ID));
 	}
 
 	@Test
@@ -371,21 +326,22 @@ public class LocalizationImplTest {
 
 	@Test
 	public void testPreferencesLocalization() throws Exception {
-		PortletPreferences preferences = new PortletPreferencesImpl();
+		PortletPreferences portletPreferences = new PortletPreferencesImpl();
 
 		LocalizationUtil.setPreferencesValue(
-			preferences, "greeting", _ENGLISH_LANGUAGE_ID, _ENGLISH_HELLO);
+			portletPreferences, "greeting", _ENGLISH_LANGUAGE_ID,
+			_ENGLISH_HELLO);
 		LocalizationUtil.setPreferencesValue(
-			preferences, "greeting", _GERMAN_LANGUAGE_ID, _GERMAN_HELLO);
+			portletPreferences, "greeting", _GERMAN_LANGUAGE_ID, _GERMAN_HELLO);
 
 		Assert.assertEquals(
 			_ENGLISH_HELLO,
 			LocalizationUtil.getPreferencesValue(
-				preferences, "greeting", _ENGLISH_LANGUAGE_ID));
+				portletPreferences, "greeting", _ENGLISH_LANGUAGE_ID));
 		Assert.assertEquals(
 			_GERMAN_HELLO,
 			LocalizationUtil.getPreferencesValue(
-				preferences, "greeting", _GERMAN_LANGUAGE_ID));
+				portletPreferences, "greeting", _GERMAN_LANGUAGE_ID));
 	}
 
 	@Test
@@ -396,19 +352,19 @@ public class LocalizationImplTest {
 			"greeting_" + _ENGLISH_LANGUAGE_ID, _ENGLISH_HELLO);
 		request.setParameter("greeting_" + _GERMAN_LANGUAGE_ID, _GERMAN_HELLO);
 
-		PortletPreferences preferences = new PortletPreferencesImpl();
+		PortletPreferences portletPreferences = new PortletPreferencesImpl();
 
 		LocalizationUtil.setLocalizedPreferencesValues(
-			request, preferences, "greeting");
+			request, portletPreferences, "greeting");
 
 		Assert.assertEquals(
 			_ENGLISH_HELLO,
 			LocalizationUtil.getPreferencesValue(
-				preferences, "greeting", _ENGLISH_LANGUAGE_ID));
+				portletPreferences, "greeting", _ENGLISH_LANGUAGE_ID));
 		Assert.assertEquals(
 			_GERMAN_HELLO,
 			LocalizationUtil.getPreferencesValue(
-				preferences, "greeting", _GERMAN_LANGUAGE_ID));
+				portletPreferences, "greeting", _GERMAN_LANGUAGE_ID));
 	}
 
 	@Test

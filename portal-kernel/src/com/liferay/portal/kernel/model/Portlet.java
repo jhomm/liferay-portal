@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -210,15 +201,6 @@ public interface Portlet extends PersistedModel, PortletModel {
 	public java.util.List<String> getAssetRendererFactoryClasses();
 
 	/**
-	 * Returns the asset type instances of the portlet.
-	 *
-	 * @return the asset type instances of the portlet
-	 */
-	public java.util.List
-		<com.liferay.asset.kernel.model.AssetRendererFactory<?>>
-			getAssetRendererFactoryInstances();
-
-	/**
 	 * Returns the names of the parameters that will be automatically propagated
 	 * through the portlet.
 	 *
@@ -226,6 +208,13 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 through the portlet
 	 */
 	public java.util.Set<String> getAutopropagatedParameters();
+
+	/**
+	 * Returns the category names of the portlet.
+	 *
+	 * @return the category names of the portlet
+	 */
+	public java.util.Set<String> getCategoryNames();
 
 	/**
 	 * Returns <code>true</code> if the portlet is found in a WAR file.
@@ -413,6 +402,8 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @return the name of the friendly URL mapping of the portlet
 	 */
 	public String getFriendlyURLMapping();
+
+	public String getFriendlyURLMapping(boolean lookUpFriendlyURLMapper);
 
 	/**
 	 * Returns the class loader resource path to the friendly URL routes of the
@@ -648,21 +639,6 @@ public interface Portlet extends PersistedModel, PortletModel {
 	public String getPluginType();
 
 	/**
-	 * Returns the name of the poller processor class of the portlet.
-	 *
-	 * @return the name of the poller processor class of the portlet
-	 */
-	public String getPollerProcessorClass();
-
-	/**
-	 * Returns the poller processor instance of the portlet.
-	 *
-	 * @return the poller processor instance of the portlet
-	 */
-	public com.liferay.portal.kernel.poller.PollerProcessor
-		getPollerProcessorInstance();
-
-	/**
 	 * Returns the name of the POP message listener class of the portlet.
 	 *
 	 * @return the name of the POP message listener class of the portlet
@@ -699,6 +675,11 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 * @return the name of the portlet class of the portlet
 	 */
 	public String getPortletClass();
+
+	public String getPortletConfigurationListenerClass();
+
+	public com.liferay.portal.kernel.portlet.PortletConfigurationListener
+		getPortletConfigurationListenerInstance();
 
 	/**
 	 * Returns the name of the portlet data handler class of the portlet.
@@ -1323,7 +1304,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 and portlet mode
 	 */
 	public boolean hasPortletMode(
-		String mimeType, javax.portlet.PortletMode portletMode);
+		String mimeType, jakarta.portlet.PortletMode portletMode);
 
 	/**
 	 * Returns <code>true</code> if the portlet has a role with the specified
@@ -1345,7 +1326,7 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 and window state
 	 */
 	public boolean hasWindowState(
-		String mimeType, javax.portlet.WindowState windowState);
+		String mimeType, jakarta.portlet.WindowState windowState);
 
 	/**
 	 * Returns <code>true</code> if an action URL for this portlet should cause
@@ -1451,9 +1432,9 @@ public interface Portlet extends PersistedModel, PortletModel {
 
 	/**
 	 * Returns <code>true</code> if the CSS resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
+	 * <code>portlet.xml</code>, @{@link jakarta.portlet.annotations.Dependency},
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String,
+	 * String)}, or {@link jakarta.portlet.HeaderResponse#addDependency(String,
 	 * String, String, String)} are to be referenced in the page's header.
 	 *
 	 * @return <code>true</code> if the specified CSS resource dependencies are
@@ -1464,9 +1445,9 @@ public interface Portlet extends PersistedModel, PortletModel {
 	/**
 	 * Returns <code>true</code> if the JavaScript resource dependencies
 	 * specified in <code>portlet.xml</code>, @{@link
-	 * javax.portlet.annotations.Dependency}, {@link
-	 * javax.portlet.HeaderResponse#addDependency(String, String, String)}, or
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String, String,
+	 * jakarta.portlet.annotations.Dependency}, {@link
+	 * jakarta.portlet.HeaderResponse#addDependency(String, String, String)}, or
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String, String,
 	 * String)} are to be referenced in the page's header.
 	 *
 	 * @return <code>true</code> if the specified JavaScript resource
@@ -1703,6 +1684,13 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 */
 	public void setAutopropagatedParameters(
 		java.util.Set<String> autopropagatedParameters);
+
+	/**
+	 * Sets the category names of the portlet.
+	 *
+	 * @param categoryNames the category names of the portlet
+	 */
+	public void setCategoryNames(java.util.Set<String> categoryNames);
 
 	/**
 	 * Sets the configuration action class of the portlet.
@@ -2053,14 +2041,6 @@ public interface Portlet extends PersistedModel, PortletModel {
 		com.liferay.portal.kernel.plugin.PluginPackage pluginPackage);
 
 	/**
-	 * Sets the name of the poller processor class of the portlet.
-	 *
-	 * @param pollerProcessorClass the name of the poller processor class of the
-	 portlet
-	 */
-	public void setPollerProcessorClass(String pollerProcessorClass);
-
-	/**
 	 * Sets the name of the POP message listener class of the portlet.
 	 *
 	 * @param popMessageListenerClass the name of the POP message listener class
@@ -2091,6 +2071,9 @@ public interface Portlet extends PersistedModel, PortletModel {
 	 */
 	public void setPortletClass(String portletClass);
 
+	public void setPortletConfigurationListenerClass(
+		String portletConfigurationListenerClass);
+
 	/**
 	 * Sets the name of the portlet data handler class of the portlet.
 	 *
@@ -2101,9 +2084,9 @@ public interface Portlet extends PersistedModel, PortletModel {
 
 	/**
 	 * Sets whether the CSS resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
+	 * <code>portlet.xml</code>, @{@link jakarta.portlet.annotations.Dependency},
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String,
+	 * String)}, or {@link jakarta.portlet.HeaderResponse#addDependency(String,
 	 * String, String, String)} are to be referenced in the page's header.
 	 *
 	 * @param portletDependencyCssEnabled whether the CSS resource dependencies
@@ -2114,17 +2097,17 @@ public interface Portlet extends PersistedModel, PortletModel {
 
 	/**
 	 * Sets whether the JavaScript resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
+	 * <code>portlet.xml</code>, @{@link jakarta.portlet.annotations.Dependency},
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String,
+	 * String)}, or {@link jakarta.portlet.HeaderResponse#addDependency(String,
 	 * String, String, String)} are to be referenced in the page's header.
 	 *
 	 * @param portletDependencyJavaScriptEnabled whether the JavaScript resource
 	 dependencies specified in <code>portlet.xml</code>, @{@link
-	 javax.portlet.annotations.Dependency}, {@link
-	 javax.portlet.HeaderResponse#addDependency(String, String,
+	 jakarta.portlet.annotations.Dependency}, {@link
+	 jakarta.portlet.HeaderResponse#addDependency(String, String,
 	 String)}, or {@link
-	 javax.portlet.HeaderResponse#addDependency(String, String, String,
+	 jakarta.portlet.HeaderResponse#addDependency(String, String, String,
 	 String)} are to be referenced in the page's header
 	 */
 	public void setPortletDependencyJavaScriptEnabled(

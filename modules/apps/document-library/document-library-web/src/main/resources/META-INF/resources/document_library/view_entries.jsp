@@ -1,22 +1,14 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/document_library/init.jsp" %>
 
 <%
+DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletInstanceSettingsHelper(dlRequestHelper);
 DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDisplayContext(liferayPortletRequest, liferayPortletResponse);
 %>
 
@@ -41,7 +33,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 						).put(
 							"draggable", dlViewEntriesDisplayContext.isDraggable(fileEntry)
 						).put(
-							"title", fileEntry.getTitle()
+							"title", HtmlUtil.unescape(fileEntry.getTitle())
 						).build());
 
 					DLViewFileVersionDisplayContext dlViewFileVersionDisplayContext = null;
@@ -88,66 +80,151 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 								path="/document_library/view_file_entry_descriptive.jsp"
 							/>
 
-							<liferay-ui:search-container-column-jsp
-								path="/document_library/file_entry_action.jsp"
-							/>
+							<c:if test="<%= dlPortletInstanceSettingsHelper.isShowActions() %>">
+								<liferay-ui:search-container-column-jsp
+									path="/document_library/file_entry_action.jsp"
+								/>
+							</c:if>
 						</c:when>
 						<c:when test="<%= dlViewEntriesDisplayContext.isIconDisplayStyle() %>">
 							<liferay-ui:search-container-column-text>
-								<c:choose>
-									<c:when test="<%= dlViewFileVersionDisplayContext.hasCustomThumbnail() %>">
-										<liferay-util:buffer
-											var="customThumbnailHTML"
-										>
+								<div class="card-type-asset entry-display-style file-card form-check form-check-card form-check-top-left">
+									<div class="card">
+										<div class="aspect-ratio card-item-first">
+											<div class="custom-checkbox custom-control">
+												<label>
 
-											<%
-											dlViewFileVersionDisplayContext.renderCustomThumbnail(request, PipingServletResponseFactory.createPipingServletResponse(pageContext));
-											%>
+													<%
+													RowChecker rowChecker = searchContainer.getRowChecker();
 
-										</liferay-util:buffer>
+													rowChecker.setCssClass("custom-control-input");
+													%>
 
-										<liferay-frontend:html-vertical-card
-											actionJsp="/document_library/file_entry_action.jsp"
-											actionJspServletContext="<%= application %>"
-											cssClass="entry-display-style file-card"
-											html="<%= customThumbnailHTML %>"
-											resultRow="<%= row %>"
-											rowChecker="<%= searchContainer.getRowChecker() %>"
-											title="<%= latestFileVersion.getTitle() %>"
-											url="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
-										>
-											<%@ include file="/document_library/file_entry_vertical_card.jspf" %>
-										</liferay-frontend:html-vertical-card>
-									</c:when>
-									<c:when test="<%= Validator.isNull(thumbnailSrc) %>">
-										<liferay-frontend:icon-vertical-card
-											actionJsp="/document_library/file_entry_action.jsp"
-											actionJspServletContext="<%= application %>"
-											cssClass="entry-display-style file-card"
-											icon="documents-and-media"
-											resultRow="<%= row %>"
-											rowChecker="<%= searchContainer.getRowChecker() %>"
-											title="<%= latestFileVersion.getTitle() %>"
-											url="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
-										>
-											<%@ include file="/document_library/file_entry_vertical_card.jspf" %>
-										</liferay-frontend:icon-vertical-card>
-									</c:when>
-									<c:otherwise>
-										<liferay-frontend:vertical-card
-											actionJsp="/document_library/file_entry_action.jsp"
-											actionJspServletContext="<%= application %>"
-											cssClass="entry-display-style file-card"
-											imageUrl="<%= thumbnailSrc %>"
-											resultRow="<%= row %>"
-											rowChecker="<%= searchContainer.getRowChecker() %>"
-											title="<%= latestFileVersion.getTitle() %>"
-											url="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
-										>
-											<%@ include file="/document_library/file_entry_vertical_card.jspf" %>
-										</liferay-frontend:vertical-card>
-									</c:otherwise>
-								</c:choose>
+													<%= rowChecker.getRowCheckBox(request, row) %>
+
+													<c:choose>
+														<c:when test="<%= dlViewFileVersionDisplayContext.hasCustomThumbnail() %>">
+
+															<%
+															dlViewFileVersionDisplayContext.renderCustomThumbnail(request, PipingServletResponseFactory.createPipingServletResponse(pageContext));
+															%>
+
+														</c:when>
+														<c:when test="<%= Validator.isNull(thumbnailSrc) %>">
+															<span class="aspect-ratio-item-center-middle aspect-ratio-item-fluid card-type-asset-icon">
+																<clay:icon
+																	symbol="documents-and-media"
+																/>
+															</span>
+														</c:when>
+														<c:otherwise>
+															<img alt="" class="aspect-ratio-item-center-middle aspect-ratio-item-fluid" src="<%= thumbnailSrc %>" />
+														</c:otherwise>
+													</c:choose>
+
+													<liferay-document-library:mime-type-sticker
+														cssClass="sticker-bottom-left"
+														fileVersion="<%= latestFileVersion %>"
+													/>
+												</label>
+											</div>
+										</div>
+
+										<div class="card-body">
+											<div class="card-row">
+												<div class="autofit-col autofit-col-expand">
+													<div class="d-flex">
+														<clay:link
+															cssClass="card-title text-truncate"
+															href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
+															label="<%= latestFileVersion.getTitle() %>"
+															title="<%= latestFileVersion.getTitle() %>"
+														/>
+
+														<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+															<clay:icon
+																aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																cssClass="c-ml-2 c-mt-1 flex-shrink-0 lfr-portal-tooltip text-4 text-secondary"
+																data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																symbol="password-policies"
+															/>
+														</c:if>
+													</div>
+
+													<div class="card-subtitle text-truncate">
+														<%= LanguageUtil.format(request, "modified-x-ago-by-x", new String[] {LanguageUtil.getTimeDescription(locale, System.currentTimeMillis() - fileEntry.getModifiedDate().getTime(), true), HtmlUtil.escape(latestFileVersion.getUserName())}, false) %>
+													</div>
+
+													<div class="card-detail">
+														<c:if test="<%= !latestFileVersion.isApproved() && dlViewEntriesDisplayContext.hasApprovedVersion(latestFileVersion.getFileEntryId()) %>">
+															<liferay-portal-workflow:status
+																showStatusLabel="<%= false %>"
+																status="<%= WorkflowConstants.STATUS_APPROVED %>"
+															/>
+														</c:if>
+
+														<liferay-portal-workflow:status
+															showStatusLabel="<%= false %>"
+															status="<%= latestFileVersion.getStatus() %>"
+														/>
+
+														<c:if test="<%= latestFileVersion.isScheduled() %>">
+
+															<%
+															String displayDateString = StringPool.BLANK;
+
+															if (latestFileVersion.getDisplayDate() != null) {
+																displayDateString = dateTimeFormat.format(latestFileVersion.getDisplayDate());
+															}
+															%>
+
+															<span aria-label="<%= displayDateString %>" class="lfr-portal-tooltip" tabindex="0" title="<%= displayDateString %>">
+																<clay:icon
+																	symbol="question-circle-full"
+																/>
+															</span>
+														</c:if>
+
+														<c:choose>
+															<c:when test="<%= fileShortcut != null %>">
+																<clay:icon
+																	cssClass="inline-item inline-item-after state-icon"
+																	symbol="shortcut"
+																/>
+															</c:when>
+															<c:when test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
+																<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
+																	<clay:icon
+																		aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
+																		cssClass="inline-item inline-item-after state-icon"
+																		symbol="lock"
+																	/>
+																</span>
+															</c:when>
+														</c:choose>
+
+														<c:if test="<%= dlViewFileVersionDisplayContext.isShared() %>">
+															<clay:icon
+																cssClass="inline-item inline-item-after lfr-portal-tooltip state-icon"
+																symbol="users"
+															/>
+														</c:if>
+													</div>
+												</div>
+
+												<c:if test="<%= dlPortletInstanceSettingsHelper.isShowActions() %>">
+													<div class="autofit-col">
+														<clay:dropdown-actions
+															aria-label='<%= LanguageUtil.get(request, "actions") %>'
+															dropdownItems="<%= dlViewFileVersionDisplayContext.getActionDropdownItems() %>"
+															propsTransformer="{DLFileEntryDropdownPropsTransformer} from document-library-web"
+														/>
+													</div>
+												</c:if>
+											</div>
+										</div>
+									</div>
+								</div>
 							</liferay-ui:search-container-column-text>
 						</c:when>
 						<c:otherwise>
@@ -163,37 +240,59 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 											name="title"
 										>
 											<div class="autofit-row">
-												<div class="autofit-col">
+												<div class="autofit-col pr-1">
 													<liferay-document-library:mime-type-sticker
 														cssClass="sticker-secondary"
 														fileVersion="<%= latestFileVersion %>"
 													/>
 												</div>
 
-												<div class="autofit-col autofit-col-expand">
+												<div class="autofit-col autofit-col-expand pl-1">
 													<div class="table-title">
-														<aui:a href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"><%= latestFileVersion.getTitle() %></aui:a>
+														<div class="d-flex">
+															<clay:link
+																cssClass="text-truncate"
+																href="<%= dlViewEntriesDisplayContext.getViewFileEntryURL(fileEntry) %>"
+																label="<%= latestFileVersion.getTitle() %>"
+																translated="<%= false %>"
+															/>
+
+															<c:if test="<%= !dlViewEntriesDisplayContext.hasGuestViewPermission(fileEntry) %>">
+																<clay:icon
+																	aria-label='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																	cssClass="c-ml-2 c-mt-1 flex-shrink-0 lfr-portal-tooltip text-4 text-secondary"
+																	data-title='<%= LanguageUtil.get(request, "not-visible-to-guest-users") %>'
+																	symbol="password-policies"
+																/>
+															</c:if>
+														</div>
+
+														<c:if test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
+															<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "locked-document") %>">
+																<clay:icon
+																	aria-label='<%= LanguageUtil.get(request, "locked-document") %>'
+																	cssClass="inline-item inline-item-after state-icon"
+																	symbol="lock"
+																/>
+															</span>
+														</c:if>
+
+														<c:if test="<%= dlViewFileVersionDisplayContext.isShared() %>">
+															<clay:icon
+																cssClass="inline-item inline-item-after lfr-portal-tooltip state-icon"
+																symbol="users"
+															/>
+														</c:if>
+
+														<c:if test="<%= fileShortcut != null %>">
+															<clay:icon
+																cssClass="inline-item inline-item-after state-icon"
+																symbol="shortcut"
+															/>
+														</c:if>
 													</div>
 												</div>
 											</div>
-
-											<c:if test="<%= fileEntry.hasLock() || fileEntry.isCheckedOut() %>">
-												<span class="inline-item inline-item-after state-icon">
-													<aui:icon image="lock" markupView="lexicon" message="locked" />
-												</span>
-											</c:if>
-
-											<c:if test="<%= dlViewFileVersionDisplayContext.isShared() %>">
-												<span class="inline-item inline-item-after lfr-portal-tooltip state-icon" title="<%= LanguageUtil.get(request, "shared") %>">
-													<aui:icon image="users" markupView="lexicon" message="shared" />
-												</span>
-											</c:if>
-
-											<c:if test="<%= fileShortcut != null %>">
-												<span class="inline-item inline-item-after state-icon">
-													<aui:icon image="shortcut" markupView="lexicon" message="shortcut" />
-												</span>
-											</c:if>
 										</liferay-ui:search-container-column-text>
 									</c:when>
 									<c:when test='<%= curEntryColumn.equals("description") %>'>
@@ -236,11 +335,39 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 										/>
 									</c:when>
 									<c:when test='<%= curEntryColumn.equals("status") %>'>
-										<liferay-ui:search-container-column-status
+										<liferay-ui:search-container-column-text
 											cssClass="table-cell-expand-smallest"
 											name="status"
-											status="<%= latestFileVersion.getStatus() %>"
-										/>
+										>
+											<c:if test="<%= !latestFileVersion.isApproved() && dlViewEntriesDisplayContext.hasApprovedVersion(latestFileVersion.getFileEntryId()) %>">
+												<liferay-portal-workflow:status
+													showStatusLabel="<%= false %>"
+													status="<%= WorkflowConstants.STATUS_APPROVED %>"
+												/>
+											</c:if>
+
+											<liferay-portal-workflow:status
+												showStatusLabel="<%= false %>"
+												status="<%= latestFileVersion.getStatus() %>"
+											/>
+
+											<c:if test="<%= latestFileVersion.isScheduled() %>">
+
+												<%
+												String displayDateString = StringPool.BLANK;
+
+												if (latestFileVersion.getDisplayDate() != null) {
+													displayDateString = dateTimeFormat.format(latestFileVersion.getDisplayDate());
+												}
+												%>
+
+												<span aria-label="<%= displayDateString %>" class="lfr-portal-tooltip" tabindex="0" title="<%= displayDateString %>">
+													<clay:icon
+														symbol="question-circle-full"
+													/>
+												</span>
+											</c:if>
+										</liferay-ui:search-container-column-text>
 									</c:when>
 									<c:when test='<%= curEntryColumn.equals("downloads") %>'>
 										<c:if test="<%= ViewCountManagerUtil.isViewCountEnabled(PortalUtil.getClassNameId(DLFileEntryConstants.getClassName())) %>">
@@ -262,13 +389,15 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 										<liferay-ui:search-container-column-date
 											cssClass="table-cell-expand-smallest table-cell-ws-nowrap"
 											name="modified-date"
-											value="<%= latestFileVersion.getModifiedDate() %>"
+											value="<%= fileEntry.getModifiedDate() %>"
 										/>
 									</c:when>
 									<c:when test='<%= curEntryColumn.equals("action") %>'>
-										<liferay-ui:search-container-column-jsp
-											path="/document_library/file_entry_action.jsp"
-										/>
+										<c:if test="<%= dlPortletInstanceSettingsHelper.isShowActions() %>">
+											<liferay-ui:search-container-column-jsp
+												path="/document_library/file_entry_action.jsp"
+											/>
+										</c:if>
 									</c:when>
 								</c:choose>
 
@@ -292,7 +421,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 						).put(
 							"folder-id", curFolder.getFolderId()
 						).put(
-							"title", curFolder.getName()
+							"title", HtmlUtil.unescape(curFolder.getName())
 						).build());
 
 					row.setPrimaryKey(String.valueOf(curFolder.getPrimaryKey()));
@@ -310,43 +439,37 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 								path="/document_library/view_folder_descriptive.jsp"
 							/>
 
-							<liferay-ui:search-container-column-jsp
-								path="/document_library/folder_action.jsp"
-							/>
+							<c:if test="<%= dlPortletInstanceSettingsHelper.isShowActions() %>">
+								<liferay-ui:search-container-column-jsp
+									path="/document_library/folder_action.jsp"
+								/>
+							</c:if>
 						</c:when>
 						<c:when test="<%= dlViewEntriesDisplayContext.isIconDisplayStyle() %>">
 
 							<%
 							row.setCssClass("card-page-item card-page-item-directory");
+
+							String viewFolderURL = PortletURLBuilder.createRenderURL(
+								liferayPortletResponse
+							).setMVCRenderCommandName(
+								"/document_library/view_folder"
+							).setRedirect(
+								currentURL
+							).setParameter(
+								"folderId", curFolder.getFolderId()
+							).buildString();
+
+							request.setAttribute(WebKeys.SEARCH_CONTAINER_RESULT_ROW, row);
 							%>
 
 							<liferay-ui:search-container-column-text
 								colspan="<%= 2 %>"
 							>
-								<liferay-frontend:horizontal-card
-									actionJsp="/document_library/folder_action.jsp"
-									actionJspServletContext="<%= application %>"
-									resultRow="<%= row %>"
-									rowChecker="<%= searchContainer.getRowChecker() %>"
-									text="<%= curFolder.getName() %>"
-									url='<%=
-										PortletURLBuilder.createRenderURL(
-											liferayPortletResponse
-										).setMVCRenderCommandName(
-											"/document_library/view_folder"
-										).setRedirect(
-											currentURL
-										).setParameter(
-											"folderId", curFolder.getFolderId()
-										).buildString()
-									%>'
-								>
-									<liferay-frontend:horizontal-card-col>
-										<liferay-frontend:horizontal-card-icon
-											icon='<%= curFolder.isMountPoint() ? "repository" : "folder" %>'
-										/>
-									</liferay-frontend:horizontal-card-col>
-								</liferay-frontend:horizontal-card>
+								<clay:horizontal-card
+									horizontalCard="<%= new FolderHorizontalCard(dlPortletInstanceSettingsHelper, dlTrashHelper, curFolder, request, renderResponse, searchContainer.getRowChecker(), viewFolderURL) %>"
+									propsTransformer="{DLFolderDropdownPropsTransformer} from document-library-web"
+								/>
 							</liferay-ui:search-container-column-text>
 						</c:when>
 						<c:otherwise>
@@ -362,7 +485,7 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 											name="name"
 										>
 											<div class="autofit-row">
-												<div class="autofit-col">
+												<div class="autofit-col pr-1">
 													<clay:sticker
 														cssClass="sticker-document"
 														displayType="secondary"
@@ -370,9 +493,9 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 													/>
 												</div>
 
-												<div class="autofit-col autofit-col-expand">
+												<div class="autofit-col autofit-col-expand pl-1">
 													<div class="table-title">
-														<aui:a
+														<clay:link
 															href='<%=
 																PortletURLBuilder.createRenderURL(
 																	liferayPortletResponse
@@ -384,9 +507,9 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 																	"folderId", curFolder.getFolderId()
 																).buildString()
 															%>'
-														>
-															<%= HtmlUtil.escape(curFolder.getName()) %>
-														</aui:a>
+															label="<%= HtmlUtil.unescape(curFolder.getName()) %>"
+															translated="<%= false %>"
+														/>
 													</div>
 												</div>
 											</div>
@@ -442,9 +565,11 @@ DLViewEntriesDisplayContext dlViewEntriesDisplayContext = new DLViewEntriesDispl
 										/>
 									</c:when>
 									<c:when test='<%= curEntryColumn.equals("action") %>'>
-										<liferay-ui:search-container-column-jsp
-											path="/document_library/folder_action.jsp"
-										/>
+										<c:if test="<%= dlPortletInstanceSettingsHelper.isShowActions() %>">
+											<liferay-ui:search-container-column-jsp
+												path="/document_library/folder_action.jsp"
+											/>
+										</c:if>
 									</c:when>
 								</c:choose>
 

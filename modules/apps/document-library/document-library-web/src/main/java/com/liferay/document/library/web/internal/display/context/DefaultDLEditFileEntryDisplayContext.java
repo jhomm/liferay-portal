@@ -1,51 +1,60 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
 
+import com.liferay.document.library.configuration.DLFileEntryFriendlyURLConfiguration;
 import com.liferay.document.library.display.context.DLEditFileEntryDisplayContext;
 import com.liferay.document.library.display.context.DLFilePicker;
+import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
+import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalServiceUtil;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.document.library.kernel.util.DLValidator;
-import com.liferay.document.library.web.internal.display.context.logic.FileEntryDisplayContextHelper;
-import com.liferay.document.library.web.internal.display.context.logic.FileVersionDisplayContextHelper;
-import com.liferay.document.library.web.internal.display.context.util.DLRequestHelper;
+import com.liferay.document.library.web.internal.display.context.helper.DLRequestHelper;
+import com.liferay.document.library.web.internal.display.context.helper.FileEntryDisplayContextHelper;
+import com.liferay.document.library.web.internal.display.context.helper.FileVersionDisplayContextHelper;
 import com.liferay.document.library.web.internal.settings.DLPortletInstanceSettings;
 import com.liferay.dynamic.data.mapping.exception.StorageException;
-import com.liferay.dynamic.data.mapping.kernel.DDMForm;
-import com.liferay.dynamic.data.mapping.kernel.DDMFormField;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.dynamic.data.mapping.form.renderer.constants.DDMFormRendererConstants;
+import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
+import com.liferay.dynamic.data.mapping.model.DDMFormField;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.bean.BeanParamUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portlet.constants.FriendlyURLResolverConstants;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
+import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil;
+import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.RepositoryUtil;
 
-import java.util.List;
-import java.util.UUID;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * @author Iván Zaera
@@ -54,31 +63,87 @@ public class DefaultDLEditFileEntryDisplayContext
 	implements DLEditFileEntryDisplayContext {
 
 	public DefaultDLEditFileEntryDisplayContext(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse,
+		ConfigurationProvider configurationProvider,
+		DDMFormValuesFactory ddmFormValuesFactory,
+		DDMStorageEngineManager ddmStorageEngineManager,
 		DLFileEntryType dlFileEntryType, DLValidator dlValidator,
-		StorageEngine storageEngine) {
+		HttpServletRequest httpServletRequest) {
 
 		this(
-			httpServletRequest, dlFileEntryType, dlValidator, null,
-			storageEngine);
+			configurationProvider, ddmFormValuesFactory,
+			ddmStorageEngineManager, dlFileEntryType, dlValidator, null,
+			httpServletRequest);
 	}
 
 	public DefaultDLEditFileEntryDisplayContext(
-		HttpServletRequest httpServletRequest,
-		HttpServletResponse httpServletResponse, DLValidator dlValidator,
-		FileEntry fileEntry, StorageEngine storageEngine) {
+		ConfigurationProvider configurationProvider,
+		DDMFormValuesFactory ddmFormValuesFactory,
+		DDMStorageEngineManager ddmStorageEngineManager,
+		DLValidator dlValidator, FileEntry fileEntry,
+		HttpServletRequest httpServletRequest) {
 
 		this(
-			httpServletRequest, (DLFileEntryType)null, dlValidator, fileEntry,
-			storageEngine);
+			configurationProvider, ddmFormValuesFactory,
+			ddmStorageEngineManager, (DLFileEntryType)null, dlValidator,
+			fileEntry, httpServletRequest);
+	}
+
+	@Override
+	public Map<String, Long> getAllMimeTypeSizeLimit() {
+		return _dlValidator.getMimeTypeSizeLimit(
+			_dlRequestHelper.getSiteGroupId());
+	}
+
+	@Override
+	public DDMFormValues getDDMFormValues(
+			DDMStructure ddmStructure, long fileVersionId)
+		throws PortalException {
+
+		if (_isDDMFormValuesEdited(ddmStructure)) {
+			HttpServletRequest httpServletRequest =
+				_getDDMStructureHttpServletRequest(
+					_httpServletRequest, ddmStructure.getStructureId());
+
+			return _ddmFormValuesFactory.create(
+				httpServletRequest, ddmStructure.getDDMForm());
+		}
+
+		DLFileEntryMetadata fileEntryMetadata =
+			DLFileEntryMetadataLocalServiceUtil.fetchFileEntryMetadata(
+				ddmStructure.getStructureId(), fileVersionId);
+
+		if (fileEntryMetadata == null) {
+			return null;
+		}
+
+		return getDDMFormValues(fileEntryMetadata.getDDMStorageId());
 	}
 
 	@Override
 	public DDMFormValues getDDMFormValues(long classPK)
 		throws StorageException {
 
-		return _storageEngine.getDDMFormValues(classPK);
+		try {
+			return _ddmStorageEngineManager.getDDMFormValues(classPK);
+		}
+		catch (PortalException portalException) {
+			throw new StorageException(portalException);
+		}
+	}
+
+	@Override
+	public String getDLFileEntryTypeLanguageId(
+		DDMStructure ddmStructure, Locale locale) {
+
+		String languageId = LocaleUtil.toLanguageId(locale);
+
+		if (!ArrayUtil.contains(
+				ddmStructure.getAvailableLanguageIds(), languageId)) {
+
+			return ddmStructure.getDefaultLanguageId();
+		}
+
+		return languageId;
 	}
 
 	@Override
@@ -87,19 +152,40 @@ public class DefaultDLEditFileEntryDisplayContext
 	}
 
 	@Override
+	public String getFriendlyURLBase() {
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		StringBundler sb = new StringBundler(4);
+
+		sb.append("/documents");
+		sb.append(FriendlyURLResolverConstants.URL_SEPARATOR_X_FILE_ENTRY);
+
+		Group group = themeDisplay.getScopeGroup();
+
+		sb.append(group.getFriendlyURL());
+
+		sb.append(StringPool.SLASH);
+
+		return sb.toString();
+	}
+
+	@Override
 	public long getMaximumUploadRequestSize() {
-		return UploadServletRequestConfigurationHelperUtil.getMaxSize();
+		return UploadServletRequestConfigurationProviderUtil.getMaxSize();
 	}
 
 	@Override
 	public long getMaximumUploadSize() {
-		return _dlValidator.getMaxAllowableSize();
+		return _dlValidator.getMaxAllowableSize(
+			_dlRequestHelper.getSiteGroupId(), _getMimeType());
 	}
 
 	@Override
 	public String getPublishButtonLabel() {
 		if (_hasFolderWorkflowDefinitionLink()) {
-			return "submit-for-publication";
+			return "submit-for-workflow";
 		}
 
 		DLPortletInstanceSettings dlPortletInstanceSettings =
@@ -182,6 +268,12 @@ public class DefaultDLEditFileEntryDisplayContext
 	}
 
 	@Override
+	public boolean isFriendlyURLWithExtensionEnabled() throws PortalException {
+		return _dlFileEntryFriendlyURLConfiguration.
+			enableFriendlyURLWithExtension();
+	}
+
+	@Override
 	public boolean isNeverExpire() throws PortalException {
 		if (_neverExpire != null) {
 			return _neverExpire;
@@ -236,17 +328,7 @@ public class DefaultDLEditFileEntryDisplayContext
 
 	@Override
 	public boolean isPublishButtonDisabled() {
-		DLPortletInstanceSettings dlPortletInstanceSettings =
-			_dlRequestHelper.getDLPortletInstanceSettings();
-
-		if (_fileEntryDisplayContextHelper.isCheckedOutByOther() ||
-			(_fileVersionDisplayContextHelper.isPending() &&
-			 dlPortletInstanceSettings.isEnableFileEntryDrafts())) {
-
-			return true;
-		}
-
-		return false;
+		return _fileEntryDisplayContextHelper.isCheckedOutByOther();
 	}
 
 	@Override
@@ -256,11 +338,7 @@ public class DefaultDLEditFileEntryDisplayContext
 
 	@Override
 	public boolean isSaveButtonDisabled() {
-		if (_fileEntryDisplayContextHelper.isCheckedOutByOther()) {
-			return true;
-		}
-
-		return false;
+		return _fileEntryDisplayContextHelper.isCheckedOutByOther();
 	}
 
 	@Override
@@ -277,21 +355,30 @@ public class DefaultDLEditFileEntryDisplayContext
 	}
 
 	private DefaultDLEditFileEntryDisplayContext(
-		HttpServletRequest httpServletRequest, DLFileEntryType dlFileEntryType,
-		DLValidator dlValidator, FileEntry fileEntry,
-		StorageEngine storageEngine) {
+		ConfigurationProvider configurationProvider,
+		DDMFormValuesFactory ddmFormValuesFactory,
+		DDMStorageEngineManager ddmStorageEngineManager,
+		DLFileEntryType dlFileEntryType, DLValidator dlValidator,
+		FileEntry fileEntry, HttpServletRequest httpServletRequest) {
 
 		try {
-			_httpServletRequest = httpServletRequest;
+			_configurationProvider = configurationProvider;
+			_ddmFormValuesFactory = ddmFormValuesFactory;
+			_ddmStorageEngineManager = ddmStorageEngineManager;
 			_dlValidator = dlValidator;
 			_fileEntry = fileEntry;
-			_storageEngine = storageEngine;
-
-			_dlRequestHelper = new DLRequestHelper(httpServletRequest);
+			_httpServletRequest = httpServletRequest;
 
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)httpServletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
+
+			_dlFileEntryFriendlyURLConfiguration =
+				configurationProvider.getCompanyConfiguration(
+					DLFileEntryFriendlyURLConfiguration.class,
+					themeDisplay.getCompanyId());
+
+			_dlRequestHelper = new DLRequestHelper(httpServletRequest);
 
 			_fileEntryDisplayContextHelper = new FileEntryDisplayContextHelper(
 				themeDisplay.getPermissionChecker(), _fileEntry);
@@ -325,6 +412,38 @@ public class DefaultDLEditFileEntryDisplayContext
 		}
 	}
 
+	private HttpServletRequest _getDDMStructureHttpServletRequest(
+		HttpServletRequest httpServletRequest, long structureId) {
+
+		DynamicServletRequest dynamicServletRequest = new DynamicServletRequest(
+			httpServletRequest, new HashMap<>());
+
+		String namespace = structureId + StringPool.UNDERLINE;
+
+		Map<String, String[]> parameterMap =
+			httpServletRequest.getParameterMap();
+
+		for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+			String parameterName = entry.getKey();
+
+			if (StringUtil.startsWith(parameterName, namespace)) {
+				dynamicServletRequest.setParameterValues(
+					parameterName.substring(namespace.length()),
+					entry.getValue());
+			}
+		}
+
+		return dynamicServletRequest;
+	}
+
+	private String _getMimeType() {
+		if (_fileVersion == null) {
+			return null;
+		}
+
+		return _fileVersion.getMimeType();
+	}
+
 	private boolean _hasFolderWorkflowDefinitionLink() {
 		try {
 			long folderId = BeanParamUtil.getLong(
@@ -348,9 +467,38 @@ public class DefaultDLEditFileEntryDisplayContext
 		}
 	}
 
+	private boolean _isDDMFormValuesEdited(DDMStructure ddmStructure) {
+		Enumeration<String> enumeration =
+			_httpServletRequest.getParameterNames();
+
+		String namespace = ddmStructure.getStructureId() + StringPool.UNDERLINE;
+
+		while (enumeration.hasMoreElements()) {
+			String parameterName = enumeration.nextElement();
+
+			if (StringUtil.startsWith(
+					parameterName,
+					namespace +
+						DDMFormRendererConstants.DDM_FORM_FIELD_NAME_PREFIX) &&
+				StringUtil.endsWith(parameterName, "_edited") &&
+				GetterUtil.getBoolean(
+					_httpServletRequest.getParameter(parameterName))) {
+
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	private static final UUID _UUID = UUID.fromString(
 		"63326141-02F6-42B5-AE38-ABC73FA72BB5");
 
+	private final ConfigurationProvider _configurationProvider;
+	private final DDMFormValuesFactory _ddmFormValuesFactory;
+	private final DDMStorageEngineManager _ddmStorageEngineManager;
+	private final DLFileEntryFriendlyURLConfiguration
+		_dlFileEntryFriendlyURLConfiguration;
 	private final DLFileEntryType _dlFileEntryType;
 	private final DLRequestHelper _dlRequestHelper;
 	private final DLValidator _dlValidator;
@@ -359,10 +507,9 @@ public class DefaultDLEditFileEntryDisplayContext
 	private final FileVersion _fileVersion;
 	private final FileVersionDisplayContextHelper
 		_fileVersionDisplayContextHelper;
-	private HttpServletRequest _httpServletRequest;
+	private final HttpServletRequest _httpServletRequest;
 	private Boolean _neverExpire;
 	private Boolean _neverReview;
 	private final boolean _showSelectFolder;
-	private final StorageEngine _storageEngine;
 
 }

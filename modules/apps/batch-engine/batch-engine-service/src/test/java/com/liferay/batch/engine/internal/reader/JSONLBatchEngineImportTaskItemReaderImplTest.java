@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.reader;
@@ -322,7 +313,7 @@ public class JSONLBatchEngineImportTaskItemReaderImplTest
 		}
 	}
 
-	private byte[] _getContent(String[] cellNames, Object[][] rowValues) {
+	private byte[] _getContent(String[] columnNames, Object[][] rowValues) {
 		StringBundler sb = new StringBundler();
 
 		for (Object[] singleRowValues : rowValues) {
@@ -331,7 +322,7 @@ public class JSONLBatchEngineImportTaskItemReaderImplTest
 			for (int j = 0; j < singleRowValues.length; j++) {
 				if (singleRowValues[j] != null) {
 					sb.append("\"");
-					sb.append(cellNames[j]);
+					sb.append(columnNames[j]);
 					sb.append("\": ");
 					sb.append(singleRowValues[j]);
 					sb.append(",");
@@ -352,10 +343,11 @@ public class JSONLBatchEngineImportTaskItemReaderImplTest
 
 	private JSONLBatchEngineImportTaskItemReaderImpl
 		_getJSONLBatchEngineImportTaskItemReader(
-			String[] cellNames, Object[][] rowValues) {
+			String[] columnNames, Object[][] rowValues) {
 
 		return new JSONLBatchEngineImportTaskItemReaderImpl(
-			new ByteArrayInputStream(_getContent(cellNames, rowValues)));
+			Collections.emptyList(),
+			new ByteArrayInputStream(_getContent(columnNames, rowValues)));
 	}
 
 	private static final String[] _FIELD_NAMES = {

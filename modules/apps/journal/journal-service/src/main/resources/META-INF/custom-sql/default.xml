@@ -37,26 +37,6 @@
 				(tempJournalArticle.id_ IS NULL)
 		]]>
 	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.countByG_C_S">
-		<![CDATA[
-			SELECT
-				COUNT(DISTINCT JournalArticle.articleId) AS COUNT_VALUE
-			FROM
-				JournalArticle
-			LEFT JOIN
-				JournalArticle tempJournalArticle ON
-					[$STATUS_JOIN$] AND
-					(JournalArticle.groupId = tempJournalArticle.groupId) AND
-					(JournalArticle.articleId = tempJournalArticle.articleId) AND
-					(JournalArticle.version < tempJournalArticle.version)
-			WHERE
-				(JournalArticle.groupId = ?) AND
-				(JournalArticle.classNameId = ?) AND
-				([$DDM_STRUCTURE_KEY$]) AND
-				([$STATUS$]) AND
-				(tempJournalArticle.id_ IS NULL)
-		]]>
-	</sql>
 	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.countByG_U_F_C">
 		<![CDATA[
 			SELECT
@@ -77,79 +57,10 @@
 				(tempJournalArticle.id_ IS NULL)
 		]]>
 	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByExpirationDate">
+	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.countByG_F_C_S">
 		<![CDATA[
 			SELECT
-				{JournalArticle.*}
-			FROM
-				JournalArticle
-			WHERE
-				(classNameId = ?) AND
-				([$STATUS$]) AND
-				(expirationDate <= ?)
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByNoAssets">
-		<![CDATA[
-			SELECT
-				{JournalArticle.*}
-			FROM
-				JournalArticle
-			LEFT JOIN
-				AssetEntry ON
-					(AssetEntry.classNameId = ?) AND
-					(AssetEntry.classPK = JournalArticle.resourcePrimKey)
-			WHERE
-				AssetEntry.classPK IS NULL
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByNoPermissions">
-		<![CDATA[
-			SELECT
-				{JournalArticle.*}
-			FROM
-				JournalArticle
-			LEFT JOIN
-				ResourcePermission ON
-					(ResourcePermission.companyId = JournalArticle.companyId) AND
-					(ResourcePermission.name = 'com.liferay.journal.model.JournalArticle') AND
-					(ResourcePermission.primKeyId = JournalArticle.resourcePrimKey) AND
-					(ResourcePermission.scope = ?)
-			WHERE
-				ResourcePermission.primKey IS NULL
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByReviewDate">
-		<![CDATA[
-			SELECT
-				{JournalArticle.*}
-			FROM
-				JournalArticle
-			WHERE
-				(classNameId = ?) AND
-				(reviewDate >= ?) AND
-				(reviewDate <= ?)
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByR_D">
-		<![CDATA[
-			SELECT
-				{JournalArticle.*}
-			FROM
-				JournalArticle
-			WHERE
-				(resourcePrimKey = ?) AND
-				(displayDate <= ?) AND
-				(status = 0) AND
-				(indexable = [$TRUE$])
-			ORDER BY
-				version DESC
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByG_F">
-		<![CDATA[
-			SELECT
-				JournalArticle.*
+				COUNT(DISTINCT JournalArticle.articleId) AS COUNT_VALUE
 			FROM
 				JournalArticle
 			LEFT JOIN
@@ -158,45 +69,13 @@
 					(JournalArticle.groupId = tempJournalArticle.groupId) AND
 					(JournalArticle.articleId = tempJournalArticle.articleId) AND
 					(JournalArticle.version < tempJournalArticle.version)
-			LEFT JOIN
-				(
-					SELECT
-						JournalArticleLocalization.companyId, JournalArticleLocalization.articlePK, JournalArticleLocalization.title
-					FROM
-						JournalArticleLocalization
-					WHERE
-						1 = ?
-					GROUP BY
-						JournalArticleLocalization.companyId, JournalArticleLocalization.articlePK, JournalArticleLocalization.title
-				) JournalArticleLocalization ON
-					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
-					(JournalArticle.id_ = JournalArticleLocalization.articlePK)
 			WHERE
 				(JournalArticle.groupId = ?) AND
+				(JournalArticle.classNameId = ?) AND
+				([$FOLDER_ID$]) AND
+				(JournalArticle.DDMStructureId = ?) AND
 				([$STATUS$]) AND
-				[$FOLDER_ID$] AND
 				(tempJournalArticle.id_ IS NULL)
-			ORDER BY
-				JournalArticle.id_ ASC
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByG_ST">
-		<![CDATA[
-			SELECT
-				JournalArticle.*
-			FROM
-				JournalArticle
-			LEFT JOIN
-				JournalArticle tempJournalArticle ON
-					(JournalArticle.groupId = tempJournalArticle.groupId) AND
-					(JournalArticle.articleId = tempJournalArticle.articleId) AND
-					(JournalArticle.version < tempJournalArticle.version)
-			WHERE
-				(JournalArticle.groupId = ?) AND
-				(JournalArticle.status = ?) AND
-				(tempJournalArticle.id_ IS NULL)
-			ORDER BY
-				JournalArticle.id_ ASC
 		]]>
 	</sql>
 	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByG_ST_L">
@@ -212,7 +91,6 @@
 					(JournalArticle.version < tempJournalArticle.version)
 			LEFT JOIN
 				JournalArticleLocalization ON
-					(1 = ?) AND
 					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
 					(JournalArticle.id_ = JournalArticleLocalization.articlePK) AND
 					(JournalArticleLocalization.languageId = ?)
@@ -238,7 +116,6 @@
 					(JournalArticle.version < tempJournalArticle.version)
 			LEFT JOIN
 				JournalArticleLocalization ON
-					(1 = ?) AND
 					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
 					(JournalArticle.id_ = JournalArticleLocalization.articlePK) AND
 					(JournalArticleLocalization.languageId = ?)
@@ -246,69 +123,6 @@
 				(JournalArticle.groupId = ?) AND
 				([$STATUS$]) AND
 				[$FOLDER_ID$] AND
-				(tempJournalArticle.id_ IS NULL)
-			ORDER BY
-				JournalArticle.id_ ASC
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByG_C_S">
-		<![CDATA[
-			SELECT
-				JournalArticle.*
-			FROM
-				JournalArticle
-			LEFT JOIN
-				JournalArticle tempJournalArticle ON
-					[$STATUS_JOIN$] AND
-					(JournalArticle.groupId = tempJournalArticle.groupId) AND
-					(JournalArticle.articleId = tempJournalArticle.articleId) AND
-					(JournalArticle.version < tempJournalArticle.version)
-			LEFT JOIN
-				(
-					SELECT
-						JournalArticleLocalization.companyId, JournalArticleLocalization.articlePK, JournalArticleLocalization.title
-					FROM
-						JournalArticleLocalization
-					WHERE
-						1 = ?
-					GROUP BY
-						JournalArticleLocalization.companyId, JournalArticleLocalization.articlePK, JournalArticleLocalization.title
-				) JournalArticleLocalization ON
-					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
-					(JournalArticle.id_ = JournalArticleLocalization.articlePK)
-			WHERE
-				(JournalArticle.groupId = ?) AND
-				(JournalArticle.classNameId = ?) AND
-				([$DDM_STRUCTURE_KEY$]) AND
-				([$STATUS$]) AND
-				(tempJournalArticle.id_ IS NULL)
-			ORDER BY
-				JournalArticle.id_ ASC
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByG_C_S_L">
-		<![CDATA[
-			SELECT
-				JournalArticle.*
-			FROM
-				JournalArticle
-			LEFT JOIN
-				JournalArticle tempJournalArticle ON
-					[$STATUS_JOIN$] AND
-					(JournalArticle.groupId = tempJournalArticle.groupId) AND
-					(JournalArticle.articleId = tempJournalArticle.articleId) AND
-					(JournalArticle.version < tempJournalArticle.version)
-			LEFT JOIN
-				JournalArticleLocalization ON
-					(1 = ?) AND
-					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
-					(JournalArticle.id_ = JournalArticleLocalization.articlePK) AND
-					(JournalArticleLocalization.languageId = ?)
-			WHERE
-				(JournalArticle.groupId = ?) AND
-				(JournalArticle.classNameId = ?) AND
-				([$DDM_STRUCTURE_KEY$]) AND
-				([$STATUS$]) AND
 				(tempJournalArticle.id_ IS NULL)
 			ORDER BY
 				JournalArticle.id_ ASC
@@ -363,7 +177,6 @@
 					(JournalArticle.version < tempJournalArticle.version)
 			LEFT JOIN
 				JournalArticleLocalization ON
-					(1 = ?) AND
 					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
 					(JournalArticle.id_ = JournalArticleLocalization.articlePK) AND
 					(JournalArticleLocalization.languageId = ?)
@@ -377,41 +190,35 @@
 				JournalArticle.id_ ASC
 		]]>
 	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalFeedFinder.countByC_G_F_N_D">
+	<sql id="com.liferay.journal.service.persistence.JournalArticleFinder.findByG_F_C_S_L">
 		<![CDATA[
 			SELECT
-				COUNT(*) AS COUNT_VALUE
+				JournalArticle.*
 			FROM
-				JournalFeed
+				JournalArticle
+			LEFT JOIN
+				JournalArticle tempJournalArticle ON
+					[$STATUS_JOIN$] AND
+					(JournalArticle.groupId = tempJournalArticle.groupId) AND
+					(JournalArticle.articleId = tempJournalArticle.articleId) AND
+					(JournalArticle.version < tempJournalArticle.version)
+			LEFT JOIN
+				JournalArticleLocalization ON
+					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
+					(JournalArticle.id_ = JournalArticleLocalization.articlePK) AND
+					(JournalArticleLocalization.languageId = ?)
 			WHERE
-				(companyId = ?) AND
-				(groupId = ?) AND
-				(
-					(feedId LIKE ? [$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$]
-					(LOWER(name) LIKE ? [$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$]
-					(LOWER(description) LIKE ? [$AND_OR_NULL_CHECK$])
-				)
-		]]>
-	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalFeedFinder.findByC_G_F_N_D">
-		<![CDATA[
-			SELECT
-				{JournalFeed.*}
-			FROM
-				JournalFeed
-			WHERE
-				(companyId = ?) AND
-				(groupId = ?) AND
-				(
-					(feedId LIKE ? [$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$]
-					(LOWER(name) LIKE ? [$AND_OR_NULL_CHECK$]) [$AND_OR_CONNECTOR$]
-					(LOWER(description) LIKE ? [$AND_OR_NULL_CHECK$])
-				)
+				(JournalArticle.groupId = ?) AND
+				(JournalArticle.classNameId = ?) AND
+				([$FOLDER_ID$]) AND
+				(JournalArticle.DDMStructureId = ?) AND
+				([$STATUS$]) AND
+				(tempJournalArticle.id_ IS NULL)
 			ORDER BY
-				feedId ASC
+				JournalArticle.id_ ASC
 		]]>
 	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.countA_ByG_U_F">
+	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.countA_ByG_U_F_DDMSI_NotS">
 		<![CDATA[
 			SELECT
 				COUNT(DISTINCT JournalArticle.articleId) AS COUNT_VALUE
@@ -422,6 +229,8 @@
 				(JournalArticle.classNameId = 0) AND
 				([$OWNER_USER_ID$] [$OWNER_USER_ID_AND_OR_CONNECTOR$] ([$STATUS$]))
 				[$ARTICLE_FOLDER_ID$]
+				[$DDM_STRUCTURE_ID$]
+				[$EXCLUDED_STATUSES$]
 		]]>
 	</sql>
 	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.countF_ByG_F">
@@ -436,7 +245,7 @@
 				[$FOLDER_PARENT_FOLDER_ID$]
 		]]>
 	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.findA_ByG_U_F">
+	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.findA_ByG_U_F_DDMSI">
 		<![CDATA[
 			SELECT
 				JournalArticle.folderId AS modelFolderId, JournalArticle.articleId AS articleId, JournalArticle.version AS version, 0 AS modelFolder, JournalArticle.displayDate AS displayDate, JournalArticle.modifiedDate AS modifiedDate
@@ -451,6 +260,7 @@
 						(JournalArticle.classNameId = 0) AND
 						([$OWNER_USER_ID$] [$OWNER_USER_ID_AND_OR_CONNECTOR$] ([$STATUS$]))
 						[$ARTICLE_FOLDER_ID$]
+						[$DDM_STRUCTURE_ID$]
 					GROUP BY
 						JournalArticle.groupId, JournalArticle.folderId, JournalArticle.articleId
 				) TEMP_TABLE
@@ -461,10 +271,10 @@
 					(TEMP_TABLE.version = JournalArticle.version)
 		]]>
 	</sql>
-	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.findA_ByG_U_F_L">
+	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.findA_ByG_U_F_DDMSI_L_NotS">
 		<![CDATA[
 			SELECT
-				JournalArticle.folderId AS modelFolderId, JournalArticle.articleId AS articleId, JournalArticleLocalization.title AS title, JournalArticle.version AS version, 0 AS modelFolder, JournalArticle.displayDate AS displayDate, JournalArticle.modifiedDate AS modifiedDate
+				JournalArticle.folderId AS modelFolderId, JournalArticle.articleId AS articleId, JournalArticleLocalization.title AS title, JournalArticle.version AS version, 0 AS modelFolder, JournalArticle.createDate AS createDate, JournalArticle.displayDate AS displayDate, JournalArticle.modifiedDate AS modifiedDate
 			FROM
 				(
 					SELECT
@@ -476,6 +286,8 @@
 						(JournalArticle.classNameId = 0) AND
 						([$OWNER_USER_ID$] [$OWNER_USER_ID_AND_OR_CONNECTOR$] ([$STATUS$]))
 						[$ARTICLE_FOLDER_ID$]
+						[$DDM_STRUCTURE_ID$]
+						[$EXCLUDED_STATUSES$]
 					GROUP BY
 						JournalArticle.groupId, JournalArticle.folderId, JournalArticle.articleId
 				) TEMP_TABLE
@@ -484,8 +296,9 @@
 					(TEMP_TABLE.groupId = JournalArticle.groupId) AND
 					(TEMP_TABLE.articleId = JournalArticle.articleId) AND
 					(TEMP_TABLE.version = JournalArticle.version)
-			LEFT JOIN
+			INNER JOIN
 				JournalArticleLocalization ON
+					(JournalArticle.companyId = JournalArticleLocalization.companyId) AND
 					(JournalArticle.id_ = JournalArticleLocalization.articlePK) AND
 					(JournalArticleLocalization.languageId = ?)
 		]]>
@@ -519,7 +332,7 @@
 	<sql id="com.liferay.journal.service.persistence.JournalFolderFinder.findF_ByG_F_L">
 		<![CDATA[
 			SELECT
-				DISTINCT folderId AS modelFolderId, '' AS articleId, JournalFolder.name AS title, 0 AS version, 1 AS modelFolder, JournalFolder.createDate AS displayDate, JournalFolder.modifiedDate AS modifiedDate
+				DISTINCT folderId AS modelFolderId, '' AS articleId, JournalFolder.name AS title, 0 AS version, 1 AS modelFolder, JournalFolder.createDate AS createDate, JournalFolder.createDate AS displayDate, JournalFolder.modifiedDate AS modifiedDate
 			FROM
 				JournalFolder
 			WHERE

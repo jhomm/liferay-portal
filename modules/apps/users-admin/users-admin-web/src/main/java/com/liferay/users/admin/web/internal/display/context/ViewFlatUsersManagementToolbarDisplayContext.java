@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.display.context;
@@ -21,14 +12,13 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -36,12 +26,12 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.UserSearchTerms;
+import com.liferay.users.admin.search.UserSearchTerms;
 import com.liferay.users.admin.web.internal.util.DisplayStyleUtil;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletURL;
+import java.util.List;
 
 /**
  * @author Pei-Jung Lan
@@ -71,10 +61,18 @@ public class ViewFlatUsersManagementToolbarDisplayContext
 		return DropdownItemListBuilder.add(
 			() -> _showRestoreButton,
 			dropdownItem -> {
-				dropdownItem.setHref(
-					StringBundler.concat(
-						"javascript:", liferayPortletResponse.getNamespace(),
-						"deleteUsers('", Constants.RESTORE, "');"));
+				dropdownItem.putData("action", "activateUsers");
+				dropdownItem.putData(
+					"activateUsersURL",
+					PortletURLBuilder.createActionURL(
+						liferayPortletResponse
+					).setActionName(
+						"/users_admin/edit_user"
+					).setCMD(
+						Constants.RESTORE
+					).setNavigation(
+						getNavigation()
+					).buildString());
 				dropdownItem.setIcon("undo");
 				dropdownItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "activate"));
@@ -86,16 +84,26 @@ public class ViewFlatUsersManagementToolbarDisplayContext
 				UserSearchTerms userSearchTerms =
 					(UserSearchTerms)searchContainer.getSearchTerms();
 
-				String action = Constants.DELETE;
+				String action = "deleteUsers";
+				String cmd = Constants.DELETE;
 
 				if (userSearchTerms.isActive()) {
-					action = Constants.DEACTIVATE;
+					action = "deactivateUsers";
+					cmd = Constants.DEACTIVATE;
 				}
 
-				dropdownItem.setHref(
-					StringBundler.concat(
-						"javascript:", liferayPortletResponse.getNamespace(),
-						"deleteUsers('", action, "');"));
+				dropdownItem.putData("action", action);
+				dropdownItem.putData(
+					"editUsersURL",
+					PortletURLBuilder.createActionURL(
+						liferayPortletResponse
+					).setActionName(
+						"/users_admin/edit_user"
+					).setCMD(
+						cmd
+					).setNavigation(
+						getNavigation()
+					).buildString());
 
 				String icon = "times-circle";
 
@@ -106,7 +114,7 @@ public class ViewFlatUsersManagementToolbarDisplayContext
 				dropdownItem.setIcon(icon);
 
 				dropdownItem.setLabel(
-					LanguageUtil.get(httpServletRequest, action));
+					LanguageUtil.get(httpServletRequest, cmd));
 				dropdownItem.setQuickAction(true);
 			}
 		).build();
@@ -150,21 +158,13 @@ public class ViewFlatUsersManagementToolbarDisplayContext
 					).buildString());
 
 				labelItem.setCloseable(true);
-
-				String label = String.format(
-					"%s: %s", LanguageUtil.get(httpServletRequest, "status"),
-					LanguageUtil.get(httpServletRequest, _navigation));
-
-				labelItem.setLabel(label);
+				labelItem.setLabel(
+					String.format(
+						"%s: %s",
+						LanguageUtil.get(httpServletRequest, "status"),
+						LanguageUtil.get(httpServletRequest, _navigation)));
 			}
 		).build();
-	}
-
-	@Override
-	public String getSearchActionURL() {
-		PortletURL searchActionURL = getPortletURL();
-
-		return searchActionURL.toString();
 	}
 
 	@Override
@@ -173,8 +173,8 @@ public class ViewFlatUsersManagementToolbarDisplayContext
 	}
 
 	@Override
-	public Boolean isDisabled() {
-		return false;
+	public Boolean isSelectable() {
+		return _showDeleteButton || _showRestoreButton;
 	}
 
 	@Override
@@ -210,12 +210,14 @@ public class ViewFlatUsersManagementToolbarDisplayContext
 
 	@Override
 	protected String[] getNavigationKeys() {
-		return new String[] {"active", "inactive"};
+		return new String[] {"all", "active", "inactive"};
 	}
 
 	@Override
 	protected String[] getOrderByKeys() {
-		String[] orderColumns = {"first-name", "last-name", "screen-name"};
+		String[] orderColumns = {
+			"first-name", "last-login-date", "last-name", "screen-name"
+		};
 
 		if (searchContainer.isSearch()) {
 			orderColumns = ArrayUtil.append(orderColumns, "relevance");

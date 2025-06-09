@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.kernel.lar;
@@ -17,7 +8,7 @@ package com.liferay.exportimport.kernel.lar;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Portlet;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 /**
  * A <code>PortletDataHandler</code> is a special class capable of exporting and
@@ -173,6 +164,12 @@ public interface PortletDataHandler {
 	public PortletDataHandlerControl[] getImportMetadataControls()
 		throws PortletDataException;
 
+	public default String getName() {
+		Class<? extends PortletDataHandler> clazz = getClass();
+
+		return clazz.getName();
+	}
+
 	public default String getNamespace() {
 		return StringPool.BLANK;
 	}
@@ -269,6 +266,10 @@ public interface PortletDataHandler {
 			PortletPreferences portletPreferences, String data)
 		throws PortletDataException;
 
+	public default boolean isBatch() {
+		return false;
+	}
+
 	public default boolean isConfigurationEnabled() {
 		return true;
 	}
@@ -284,6 +285,14 @@ public interface PortletDataHandler {
 	public boolean isDataSiteLevel();
 
 	public boolean isDisplayPortlet();
+
+	public boolean isEmptyControlsAllowed();
+
+	public default boolean isEnabled(long companyId) {
+		return true;
+	}
+
+	public boolean isModelCountSupported();
 
 	/**
 	 * Returns whether the data exported by this handler should be included by

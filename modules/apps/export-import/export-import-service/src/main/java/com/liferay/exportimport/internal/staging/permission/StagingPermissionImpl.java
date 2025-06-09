@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.staging.permission;
@@ -30,7 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jorge Ferrer
  */
-@Component(immediate = true, service = StagingPermission.class)
+@Component(service = StagingPermission.class)
 public class StagingPermissionImpl implements StagingPermission {
 
 	@Override
@@ -39,12 +30,10 @@ public class StagingPermissionImpl implements StagingPermission {
 		long classPK, String portletId, String actionId) {
 
 		try {
-			return doHasPermission(
-				permissionChecker, group, className, classPK, portletId,
-				actionId);
+			return _hasPermission(group, portletId, actionId);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return null;
@@ -56,20 +45,18 @@ public class StagingPermissionImpl implements StagingPermission {
 		long classPK, String portletId, String actionId) {
 
 		try {
-			return doHasPermission(
-				permissionChecker, _groupLocalService.getGroup(groupId),
-				className, classPK, portletId, actionId);
+			return _hasPermission(
+				_groupLocalService.getGroup(groupId), portletId, actionId);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return null;
 	}
 
-	protected Boolean doHasPermission(
-			PermissionChecker permissionChecker, Group group, String className,
-			long classPK, String portletId, String actionId)
+	private Boolean _hasPermission(
+			Group group, String portletId, String actionId)
 		throws Exception {
 
 		if (!PropsValues.STAGING_LIVE_GROUP_LOCKING_ENABLED) {
@@ -85,6 +72,7 @@ public class StagingPermissionImpl implements StagingPermission {
 			!actionId.equals(ActionKeys.CUSTOMIZE) &&
 			!actionId.equals(ActionKeys.DELETE) &&
 			!actionId.equals(ActionKeys.DELETE_DISCUSSION) &&
+			!actionId.equals(ActionKeys.DOWNLOAD) &&
 			!actionId.equals(ActionKeys.UPDATE_DISCUSSION) &&
 			!actionId.equals(ActionKeys.VIEW) &&
 			group.hasLocalOrRemoteStagingGroup() &&
@@ -96,14 +84,10 @@ public class StagingPermissionImpl implements StagingPermission {
 		return null;
 	}
 
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		StagingPermissionImpl.class);
 
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 }

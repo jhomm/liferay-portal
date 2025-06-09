@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.virtualhost.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.LayoutSet;
@@ -22,6 +14,7 @@ import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.struts.LastPath;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -32,9 +25,9 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PortalImpl;
 
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -69,9 +62,6 @@ public class VirtualHostFilterTest {
 
 	@Before
 	public void setUp() {
-		_mockHttpServletRequest.setAttribute(
-			WebKeys.VIRTUAL_HOST_LAYOUT_SET, _layoutSet);
-
 		_portalUtil.setPortal(
 			new PortalImpl() {
 
@@ -91,55 +81,44 @@ public class VirtualHostFilterTest {
 	@After
 	public void tearDown() {
 		_portalUtil.setPortal(_portal);
+
+		_virtualHostFilter.destroy();
 	}
 
 	@Test
-	public void testProcessFilter1() {
-		_pathContext = _PATH_PROXY + _PATH_CONTEXT;
-		_pathProxy = _PATH_PROXY;
+	public void testProcessFilterForwardedURL() {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"COMPANY_DEFAULT_HOME_URL", StringPool.SLASH)) {
 
-		_mockHttpServletRequest.setRequestURI(_PATH_CONTEXT + _LAST_PATH);
-
-		Assert.assertEquals(
-			_LAST_PATH,
-			_getLastPath(
-				_mockHttpServletRequest, _mockHttpServletResponse,
-				_mockFilterChain));
+			Assert.assertNotEquals(
+				StringPool.SLASH, _getForwardedURL(StringPool.SLASH));
+		}
 	}
 
 	@Test
-	public void testProcessFilter2() {
-		_pathContext = _PATH_PROXY;
-		_pathProxy = _PATH_PROXY;
-
-		_mockHttpServletRequest.setRequestURI(_LAST_PATH);
-
+	public void testProcessFilterForwardedURLForLanguageIdWithoutTrailingSlash() {
 		Assert.assertEquals(
-			_LAST_PATH,
-			_getLastPath(
-				_mockHttpServletRequest, _mockHttpServletResponse,
-				_mockFilterChain));
+			_getForwardedURL("/en-US/"), _getForwardedURL("/en-US"));
 	}
 
 	@Test
-	public void testProcessFilter3() {
-		_pathContext = _PATH_PROXY;
-		_pathProxy = StringPool.BLANK;
-
-		_mockHttpServletRequest.setRequestURI(_LAST_PATH);
-
-		Assert.assertEquals(
-			_LAST_PATH,
-			_getLastPath(
-				_mockHttpServletRequest, _mockHttpServletResponse,
-				_mockFilterChain));
+	public void testProcessFilterLastPath() {
+		_testProcessFilterLastPath(
+			_PATH_PROXY + _PATH_CONTEXT, _PATH_PROXY,
+			_PATH_CONTEXT + _LAST_PATH);
+		_testProcessFilterLastPath(_PATH_PROXY, StringPool.BLANK, _LAST_PATH);
+		_testProcessFilterLastPath(_PATH_PROXY, _PATH_PROXY, _LAST_PATH);
 	}
 
-	private String _getLastPath(
-		MockHttpServletRequest request, MockHttpServletResponse response,
-		MockFilterChain filterChain) {
+	private String _getForwardedURL(String requestURI) {
+		MockHttpServletRequest mockHttpServletRequest =
+			_getMockHttpServletRequest(requestURI);
 
-		_virtualHostFilter.init(_mockFilterConfig);
+		MockHttpServletResponse mockHttpServletResponse =
+			new MockHttpServletResponse();
+
+		_virtualHostFilter.init(new MockFilterConfig());
 
 		ReflectionTestUtil.invoke(
 			_virtualHostFilter, "processFilter",
@@ -147,15 +126,57 @@ public class VirtualHostFilterTest {
 				HttpServletRequest.class, HttpServletResponse.class,
 				FilterChain.class
 			},
-			request, response, filterChain);
+			mockHttpServletRequest, mockHttpServletResponse,
+			new MockFilterChain());
 
-		LastPath lastPath = (LastPath)request.getAttribute(WebKeys.LAST_PATH);
+		return mockHttpServletResponse.getForwardedUrl();
+	}
+
+	private String _getLastPath(String requestURI) {
+		MockHttpServletRequest mockHttpServletRequest =
+			_getMockHttpServletRequest(requestURI);
+
+		_virtualHostFilter.init(new MockFilterConfig());
+
+		ReflectionTestUtil.invoke(
+			_virtualHostFilter, "processFilter",
+			new Class<?>[] {
+				HttpServletRequest.class, HttpServletResponse.class,
+				FilterChain.class
+			},
+			mockHttpServletRequest, new MockHttpServletResponse(),
+			new MockFilterChain());
+
+		LastPath lastPath = (LastPath)mockHttpServletRequest.getAttribute(
+			WebKeys.LAST_PATH);
 
 		if (lastPath != null) {
 			return lastPath.getPath();
 		}
 
 		return StringPool.BLANK;
+	}
+
+	private MockHttpServletRequest _getMockHttpServletRequest(
+		String requestURI) {
+
+		MockHttpServletRequest mockHttpServletRequest =
+			new MockHttpServletRequest();
+
+		mockHttpServletRequest.setAttribute(
+			WebKeys.VIRTUAL_HOST_LAYOUT_SET, _layoutSet);
+		mockHttpServletRequest.setRequestURI(requestURI);
+
+		return mockHttpServletRequest;
+	}
+
+	private void _testProcessFilterLastPath(
+		String pathContext, String pathProxy, String requestURI) {
+
+		_pathContext = pathContext;
+		_pathProxy = pathProxy;
+
+		Assert.assertEquals(_LAST_PATH, _getLastPath(requestURI));
 	}
 
 	private static final String _LAST_PATH =
@@ -170,12 +191,6 @@ public class VirtualHostFilterTest {
 	@Inject
 	private static LayoutSetLocalService _layoutSetLocalService;
 
-	private final MockFilterChain _mockFilterChain = new MockFilterChain();
-	private final MockFilterConfig _mockFilterConfig = new MockFilterConfig();
-	private final MockHttpServletRequest _mockHttpServletRequest =
-		new MockHttpServletRequest();
-	private final MockHttpServletResponse _mockHttpServletResponse =
-		new MockHttpServletResponse();
 	private String _pathContext;
 	private String _pathProxy;
 

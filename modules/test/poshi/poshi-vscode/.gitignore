@@ -1,0 +1,4 @@
+!lib/
+*.vsix
+LICENSE.txt
+out/

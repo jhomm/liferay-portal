@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.request;
@@ -55,26 +46,23 @@ public class SearchRequestImpl {
 	}
 
 	public SearchResponseImpl search() {
-		SearchContext searchContext = buildSearchContext();
+		SearchContext searchContext = _buildSearchContext();
 
 		SearchRequestBuilder searchRequestBuilder =
 			_searchRequestBuilderFactory.builder(searchContext);
 
 		searchRequestBuilder.fetchSource(true);
 
-		SearchSettingsImpl searchSettingsImpl = buildSettings(
+		SearchSettingsImpl searchSettingsImpl = _buildSettings(
 			searchRequestBuilder, searchContext);
 
-		SearchContainer<Document> searchContainer = buildSearchContainer(
+		SearchContainer<Document> searchContainer = _buildSearchContainer(
 			searchSettingsImpl);
-
-		searchContext.setEnd(searchContainer.getEnd());
-		searchContext.setStart(searchContainer.getStart());
 
 		SearchResponse searchResponse = _searcher.search(
 			searchRequestBuilder.build());
 
-		populateSearchContainer(searchContainer, searchResponse);
+		_populateSearchContainer(searchContainer, searchResponse);
 
 		SearchResponseImpl searchResponseImpl = new SearchResponseImpl();
 
@@ -95,26 +83,13 @@ public class SearchRequestImpl {
 		return searchResponseImpl;
 	}
 
-	protected static void populateSearchContainer(
-		SearchContainer<Document> searchContainer,
-		SearchResponse searchResponse) {
-
-		searchContainer.setSearch(true);
-
-		searchResponse.withHits(
-			hits -> {
-				searchContainer.setResults(hits.toList());
-				searchContainer.setTotal(hits.getLength());
-			});
-	}
-
-	protected SearchContainer<Document> buildSearchContainer(
+	private SearchContainer<Document> _buildSearchContainer(
 		SearchSettingsImpl searchSettingsImpl) {
 
 		return _searchContainerBuilder.getSearchContainer(searchSettingsImpl);
 	}
 
-	protected SearchContext buildSearchContext() {
+	private SearchContext _buildSearchContext() {
 		SearchContext searchContext = _searchContextBuilder.getSearchContext();
 
 		searchContext.setAttribute("filterExpired", Boolean.TRUE);
@@ -123,7 +98,7 @@ public class SearchRequestImpl {
 		return searchContext;
 	}
 
-	protected SearchSettingsImpl buildSettings(
+	private SearchSettingsImpl _buildSettings(
 		SearchRequestBuilder searchRequestBuilder,
 		SearchContext searchContext) {
 
@@ -135,6 +110,17 @@ public class SearchRequestImpl {
 				searchSettingsImpl));
 
 		return searchSettingsImpl;
+	}
+
+	private void _populateSearchContainer(
+		SearchContainer<Document> searchContainer,
+		SearchResponse searchResponse) {
+
+		searchContainer.setSearch(true);
+
+		searchResponse.withHits(
+			hits -> searchContainer.setResultsAndTotal(
+				hits::toList, hits.getLength()));
 	}
 
 	private final SearchContainerBuilder _searchContainerBuilder;

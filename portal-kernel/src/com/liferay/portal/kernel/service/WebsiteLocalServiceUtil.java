@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -45,12 +36,14 @@ public class WebsiteLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.WebsiteLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static Website addWebsite(
-			long userId, String className, long classPK, String url,
-			long typeId, boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String className,
+			long classPK, String url, long listTypeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addWebsite(
-			userId, className, classPK, url, typeId, primary, serviceContext);
+			externalReferenceCode, userId, className, classPK, url, listTypeId,
+			primary, serviceContext);
 	}
 
 	/**
@@ -221,6 +214,13 @@ public class WebsiteLocalServiceUtil {
 		return getService().fetchWebsite(websiteId);
 	}
 
+	public static Website fetchWebsiteByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchWebsiteByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the website with the matching UUID and company.
 	 *
@@ -284,6 +284,14 @@ public class WebsiteLocalServiceUtil {
 		return getService().getWebsite(websiteId);
 	}
 
+	public static Website getWebsiteByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getWebsiteByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the website with the matching UUID and company.
 	 *
@@ -334,10 +342,12 @@ public class WebsiteLocalServiceUtil {
 	}
 
 	public static Website updateWebsite(
-			long websiteId, String url, long typeId, boolean primary)
+			String externalReferenceCode, long websiteId, String url,
+			long listTypeId, boolean primary)
 		throws PortalException {
 
-		return getService().updateWebsite(websiteId, url, typeId, primary);
+		return getService().updateWebsite(
+			externalReferenceCode, websiteId, url, listTypeId, primary);
 	}
 
 	/**
@@ -356,6 +366,10 @@ public class WebsiteLocalServiceUtil {
 
 	public static WebsiteLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(WebsiteLocalService service) {
+		_service = service;
 	}
 
 	private static volatile WebsiteLocalService _service;

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,19 +12,27 @@ CPDefinitionVirtualSettingDisplayContext cpDefinitionVirtualSettingDisplayContex
 
 CPDefinitionVirtualSetting cpDefinitionVirtualSetting = cpDefinitionVirtualSettingDisplayContext.getCPDefinitionVirtualSetting();
 
-FileEntry fileEntry = cpDefinitionVirtualSettingDisplayContext.getFileEntry();
+String className = CPDefinition.class.getName();
+long classPK = cpDefinitionVirtualSettingDisplayContext.getCPDefinitionId();
 
-long fileEntryId = BeanParamUtil.getLong(cpDefinitionVirtualSetting, request, "fileEntryId");
-
-String textCssClass = "text-default ";
-
-boolean useFileEntry = false;
-
-if (fileEntryId > 0) {
-	textCssClass += "hide";
-
-	useFileEntry = true;
+if (cpDefinitionVirtualSetting != null) {
+	className = cpDefinitionVirtualSetting.getClassName();
+	classPK = cpDefinitionVirtualSetting.getClassPK();
 }
 %>
 
-<%@ include file="/details.jspf" %>
+<frontend-data-set:classic-display
+	contextParams='<%=
+		HashMapBuilder.<String, String>put(
+			"className", className
+		).put(
+			"classPK", String.valueOf(classPK)
+		).build()
+	%>'
+	creationMenu="<%= cpDefinitionVirtualSettingDisplayContext.getCreationMenu() %>"
+	dataProviderKey="<%= CPDefinitionVirtualSettingFDSNames.VIRTUAL_SETTING_FILES %>"
+	formName="fm"
+	id="<%= CPDefinitionVirtualSettingFDSNames.VIRTUAL_SETTING_FILES %>"
+	itemsPerPage="<%= 10 %>"
+	selectedItemsKey="cpDefinitionVirtualSettingFileId"
+/>

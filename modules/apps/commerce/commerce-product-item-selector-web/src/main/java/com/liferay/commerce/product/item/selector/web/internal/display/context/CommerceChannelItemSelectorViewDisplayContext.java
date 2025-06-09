@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.item.selector.web.internal.display.context;
@@ -19,16 +10,14 @@ import com.liferay.commerce.product.item.selector.web.internal.search.CommerceCh
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelRelService;
 import com.liferay.commerce.product.service.CommerceChannelService;
-import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -73,8 +62,8 @@ public class CommerceChannelItemSelectorViewDisplayContext
 
 	@Override
 	public PortletURL getPortletURL() {
-		_portletURL.setParameter("className", getClassName());
-		_portletURL.setParameter("classPK", String.valueOf(getClassPK()));
+		_portletURL.setParameter("className", _getClassName());
+		_portletURL.setParameter("classPK", String.valueOf(_getClassPK()));
 
 		return _portletURL;
 	}
@@ -89,43 +78,38 @@ public class CommerceChannelItemSelectorViewDisplayContext
 
 		_searchContainer = new SearchContainer<>(
 			cpRequestHelper.getLiferayPortletRequest(), getPortletURL(), null,
-			null);
-
-		_searchContainer.setEmptyResultsMessage("there-are-no-channels");
+			"there-are-no-channels");
 
 		_searchContainer.setOrderByCol(getOrderByCol());
 		_searchContainer.setOrderByType(getOrderByType());
-
-		RowChecker rowChecker = new CommerceChannelItemSelectorChecker(
-			cpRequestHelper.getRenderResponse(),
-			getCheckedCommerceChannelIds());
-
-		_searchContainer.setRowChecker(rowChecker);
-
-		int total = _commerceChannelService.searchCommerceChannelsCount(
-			cpRequestHelper.getCompanyId(), getKeywords());
-
-		List<CommerceChannel> results = _commerceChannelService.search(
-			cpRequestHelper.getCompanyId(), getKeywords(),
-			_searchContainer.getStart(), _searchContainer.getEnd(), null);
-
-		_searchContainer.setTotal(total);
-		_searchContainer.setResults(results);
+		_searchContainer.setResultsAndTotal(
+			() -> _commerceChannelService.search(
+				cpRequestHelper.getCompanyId(), getKeywords(),
+				_searchContainer.getStart(), _searchContainer.getEnd(), null),
+			_commerceChannelService.searchCommerceChannelsCount(
+				cpRequestHelper.getCompanyId(), getKeywords()));
+		_searchContainer.setRowChecker(
+			new CommerceChannelItemSelectorChecker(
+				cpRequestHelper.getRenderResponse(),
+				_getCheckedCommerceChannelIds()));
 
 		return _searchContainer;
 	}
 
-	protected long[] getCheckedCommerceChannelIds() {
-		return ParamUtil.getLongValues(
-			cpRequestHelper.getRenderRequest(), "checkedCommerceChannelIds");
+	private long[] _getCheckedCommerceChannelIds() {
+		return StringUtil.split(
+			ParamUtil.getString(
+				cpRequestHelper.getRenderRequest(),
+				"checkedCommerceChannelIds"),
+			0L);
 	}
 
-	protected String getClassName() {
+	private String _getClassName() {
 		return ParamUtil.getString(
 			cpRequestHelper.getRenderRequest(), "className");
 	}
 
-	protected long getClassPK() {
+	private long _getClassPK() {
 		return ParamUtil.getLong(cpRequestHelper.getRenderRequest(), "classPK");
 	}
 

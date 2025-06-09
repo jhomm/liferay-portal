@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.struts.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.RoleConstants;
@@ -28,7 +20,7 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.sharepoint.methods.Method;
 import com.liferay.portal.test.rule.Inject;
@@ -75,7 +67,7 @@ public class RenderFragmentEntryStrutsActionTest {
 
 	@Test
 	public void testRenderFragment() throws Exception {
-		_user = UserTestUtil.addOmniAdminUser();
+		_user = UserTestUtil.addOmniadminUser();
 
 		UserTestUtil.setUser(_user);
 
@@ -91,26 +83,25 @@ public class RenderFragmentEntryStrutsActionTest {
 		PipingServletResponse pipingServletResponse = new PipingServletResponse(
 			mockHttpServletResponse, unsyncStringWriter);
 
+		mockHttpServletRequest.setContentType(
+			"multipart/form-data;boundary=" + System.currentTimeMillis());
 		mockHttpServletRequest.setParameter(
 			"groupId", String.valueOf(_group.getGroupId()));
 
 		URL htmlURL = _bundle.getEntry(
 			_RESOURCES_PATH + "fragments/card/index.html");
 
-		mockHttpServletRequest.setParameter(
-			"html", StringUtil.read(htmlURL.openStream()));
+		mockHttpServletRequest.setParameter("html", URLUtil.toString(htmlURL));
 
 		URL cssURL = _bundle.getEntry(
 			_RESOURCES_PATH + "fragments/card/index.css");
 
-		mockHttpServletRequest.setParameter(
-			"css", StringUtil.read(cssURL.openStream()));
+		mockHttpServletRequest.setParameter("css", URLUtil.toString(cssURL));
 
 		URL jsURL = _bundle.getEntry(
 			_RESOURCES_PATH + "fragments/card/index.js");
 
-		mockHttpServletRequest.setParameter(
-			"js", StringUtil.read(jsURL.openStream()));
+		mockHttpServletRequest.setParameter("js", URLUtil.toString(jsURL));
 
 		_processEvents(mockHttpServletRequest, mockHttpServletResponse, _user);
 
@@ -122,8 +113,7 @@ public class RenderFragmentEntryStrutsActionTest {
 
 		String actualHTML = _getHTML(unsyncStringWriter.toString());
 
-		String expectedHTML = _getHTML(
-			StringUtil.read(renderedURL.openStream()));
+		String expectedHTML = _getHTML(URLUtil.toString(renderedURL));
 
 		Assert.assertEquals(expectedHTML, actualHTML);
 	}
@@ -174,6 +164,14 @@ public class RenderFragmentEntryStrutsActionTest {
 
 		elements.remove();
 
+		Elements fragmentElements =
+			bodyElement.getElementsByAttributeValueContaining(
+				"id", "fragment-");
+
+		for (Element fragmentElement : fragmentElements) {
+			fragmentElement.attr("id", StringPool.BLANK);
+		}
+
 		return _removeSpacingCharactersBetweenTags(bodyElement);
 	}
 
@@ -184,7 +182,6 @@ public class RenderFragmentEntryStrutsActionTest {
 
 		mockHttpServletRequest.setAttribute(
 			WebKeys.CURRENT_URL, "/portal/fragment/render_fragment_entry");
-
 		mockHttpServletRequest.setAttribute(WebKeys.USER, user);
 
 		EventsProcessorUtil.process(
@@ -209,7 +206,9 @@ public class RenderFragmentEntryStrutsActionTest {
 	@DeleteAfterTestRun
 	private Group _group;
 
-	@Inject(filter = "component.name=*.RenderFragmentEntryStrutsAction")
+	@Inject(
+		filter = "component.name=com.liferay.fragment.web.internal.struts.RenderFragmentEntryStrutsAction"
+	)
 	private StrutsAction _renderFragmentEntryStrutsAction;
 
 	@DeleteAfterTestRun

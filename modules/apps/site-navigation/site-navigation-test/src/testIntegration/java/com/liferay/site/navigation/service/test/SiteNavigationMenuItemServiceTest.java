@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service.test;
@@ -23,17 +14,20 @@ import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.site.navigation.exception.DuplicateSiteNavigationMenuItemExternalReferenceCodeException;
+import com.liferay.site.navigation.exception.NoSuchMenuItemException;
 import com.liferay.site.navigation.menu.item.layout.constants.SiteNavigationMenuItemTypeConstants;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.model.SiteNavigationMenuItem;
 import com.liferay.site.navigation.service.SiteNavigationMenuItemService;
 import com.liferay.site.navigation.service.persistence.SiteNavigationMenuItemPersistence;
-import com.liferay.site.navigation.util.SiteNavigationMenuItemTestUtil;
-import com.liferay.site.navigation.util.SiteNavigationMenuTestUtil;
+import com.liferay.site.navigation.test.util.SiteNavigationMenuItemTestUtil;
+import com.liferay.site.navigation.test.util.SiteNavigationMenuTestUtil;
 
 import java.util.List;
 
@@ -70,7 +64,7 @@ public class SiteNavigationMenuItemServiceTest {
 	public void testAddSiteNavigationMenuItem() throws PortalException {
 		SiteNavigationMenuItem siteNavigationMenuItem =
 			_siteNavigationMenuItemService.addSiteNavigationMenuItem(
-				_group.getGroupId(),
+				null, _group.getGroupId(),
 				_siteNavigationMenu.getSiteNavigationMenuId(), 0,
 				SiteNavigationMenuItemTypeConstants.LAYOUT, StringPool.BLANK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
@@ -81,6 +75,26 @@ public class SiteNavigationMenuItemServiceTest {
 
 		Assert.assertEquals(
 			siteNavigationMenuItem, persistedSiteNavigationMenuItem);
+	}
+
+	@Test(
+		expected = DuplicateSiteNavigationMenuItemExternalReferenceCodeException.class
+	)
+	public void testAddSiteNavigationMenuItemWithExistingExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = StringUtil.randomString();
+
+		_siteNavigationMenuItemService.addSiteNavigationMenuItem(
+			externalReferenceCode, _group.getGroupId(),
+			_siteNavigationMenu.getSiteNavigationMenuId(), 0,
+			SiteNavigationMenuItemTypeConstants.LAYOUT, StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+		_siteNavigationMenuItemService.addSiteNavigationMenuItem(
+			externalReferenceCode, _group.getGroupId(),
+			_siteNavigationMenu.getSiteNavigationMenuId(), 0,
+			SiteNavigationMenuItemTypeConstants.LAYOUT, StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
 	@Test
@@ -95,6 +109,26 @@ public class SiteNavigationMenuItemServiceTest {
 		Assert.assertNull(
 			_siteNavigationMenuItemPersistence.fetchByPrimaryKey(
 				siteNavigationMenuItem.getSiteNavigationMenuItemId()));
+	}
+
+	@Test(expected = NoSuchMenuItemException.class)
+	public void testDeleteSiteNavigationMenuItemByExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = StringUtil.randomString();
+
+		_siteNavigationMenuItemService.addSiteNavigationMenuItem(
+			externalReferenceCode, _group.getGroupId(),
+			_siteNavigationMenu.getSiteNavigationMenuId(), 0,
+			SiteNavigationMenuItemTypeConstants.LAYOUT, StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		_siteNavigationMenuItemService.deleteSiteNavigationMenuItem(
+			externalReferenceCode, _group.getGroupId());
+
+		_siteNavigationMenuItemService.
+			getSiteNavigationMenuItemByExternalReferenceCode(
+				externalReferenceCode, _group.getGroupId());
 	}
 
 	@Test

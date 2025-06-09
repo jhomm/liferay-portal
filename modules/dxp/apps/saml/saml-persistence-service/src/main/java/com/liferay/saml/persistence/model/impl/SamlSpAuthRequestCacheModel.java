@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.model.impl;
@@ -64,7 +55,7 @@ public class SamlSpAuthRequestCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(11);
+		StringBundler sb = new StringBundler(13);
 
 		sb.append("{samlSpAuthnRequestId=");
 		sb.append(samlSpAuthnRequestId);
@@ -74,6 +65,8 @@ public class SamlSpAuthRequestCacheModel
 		sb.append(createDate);
 		sb.append(", samlIdpEntityId=");
 		sb.append(samlIdpEntityId);
+		sb.append(", samlRelayState=");
+		sb.append(samlRelayState);
 		sb.append(", samlSpAuthRequestKey=");
 		sb.append(samlSpAuthRequestKey);
 		sb.append("}");
@@ -103,6 +96,13 @@ public class SamlSpAuthRequestCacheModel
 			samlSpAuthRequestImpl.setSamlIdpEntityId(samlIdpEntityId);
 		}
 
+		if (samlRelayState == null) {
+			samlSpAuthRequestImpl.setSamlRelayState("");
+		}
+		else {
+			samlSpAuthRequestImpl.setSamlRelayState(samlRelayState);
+		}
+
 		if (samlSpAuthRequestKey == null) {
 			samlSpAuthRequestImpl.setSamlSpAuthRequestKey("");
 		}
@@ -122,6 +122,7 @@ public class SamlSpAuthRequestCacheModel
 		companyId = objectInput.readLong();
 		createDate = objectInput.readLong();
 		samlIdpEntityId = objectInput.readUTF();
+		samlRelayState = objectInput.readUTF();
 		samlSpAuthRequestKey = objectInput.readUTF();
 	}
 
@@ -139,6 +140,13 @@ public class SamlSpAuthRequestCacheModel
 			objectOutput.writeUTF(samlIdpEntityId);
 		}
 
+		if (samlRelayState == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(samlRelayState);
+		}
+
 		if (samlSpAuthRequestKey == null) {
 			objectOutput.writeUTF("");
 		}
@@ -151,6 +159,7 @@ public class SamlSpAuthRequestCacheModel
 	public long companyId;
 	public long createDate;
 	public String samlIdpEntityId;
+	public String samlRelayState;
 	public String samlSpAuthRequestKey;
 
 }

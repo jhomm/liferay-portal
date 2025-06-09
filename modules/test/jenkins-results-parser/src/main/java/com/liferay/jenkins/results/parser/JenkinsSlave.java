@@ -1,20 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
 import java.io.IOException;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -25,9 +24,15 @@ import org.json.JSONObject;
 public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 
 	public JenkinsSlave() {
-		this(
-			JenkinsResultsParserUtil.getHostName(
-				JenkinsResultsParserUtil.getHostIPAddress()));
+		_jenkinsMaster = JenkinsMaster.getInstance(
+			System.getenv("MASTER_HOSTNAME"));
+		_name = System.getenv("NODE_NAME");
+
+		update(
+			JenkinsAPIUtil.getAPIJSONObject(
+				getComputerURL(),
+				"assignedLabels[name],displayName,idle,offline," +
+					"offlineCauseReason"));
 	}
 
 	public JenkinsSlave(String hostname) {
@@ -53,7 +58,8 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 		}
 
 		JSONObject jenkinsSlaveJSONObject = JenkinsAPIUtil.getAPIJSONObject(
-			getComputerURL(), "displayName,idle,offline");
+			getComputerURL(),
+			"assignedLabels[name],displayName,idle,offline,offlineCauseReason");
 
 		update(jenkinsSlaveJSONObject);
 	}
@@ -76,6 +82,11 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 		}
 
 		return super.equals(object);
+	}
+
+	@Override
+	public List<String> getAssignedLabels() {
+		return _assignedLabels;
 	}
 
 	public String getComputerURL() {
@@ -110,6 +121,11 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 	}
 
 	@Override
+	public JenkinsCohort getJenkinsCohort() {
+		return _jenkinsMaster.getJenkinsCohort();
+	}
+
+	@Override
 	public JenkinsMaster getJenkinsMaster() {
 		return _jenkinsMaster;
 	}
@@ -119,6 +135,58 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 		return _name;
 	}
 
+	public String getNamePrefix() {
+		Matcher matcher = _namePattern.matcher(getName());
+
+		if (!matcher.matches()) {
+			return null;
+		}
+
+		return matcher.group("prefix");
+	}
+
+	public Integer getNumber() {
+		Matcher matcher = _namePattern.matcher(getName());
+
+		if (!matcher.matches()) {
+			return null;
+		}
+
+		return Integer.parseInt(matcher.group("number"));
+	}
+
+	public String getOfflineCauseReason() {
+		return _offlineCauseReason;
+	}
+
+	public Set<JenkinsSlave> getSiblings() {
+		JenkinsMaster jenkinsMaster = getJenkinsMaster();
+
+		if (jenkinsMaster.getSlavesPerHost() < 2) {
+			return Collections.emptySet();
+		}
+
+		Integer slaveNumber = getNumber();
+
+		if (slaveNumber == null) {
+			return Collections.emptySet();
+		}
+
+		Set<JenkinsSlave> siblings = new HashSet<>();
+
+		int siblingSlaveNumber = slaveNumber + 1;
+
+		if ((slaveNumber % 2) == 0) {
+			siblingSlaveNumber = slaveNumber - 1;
+		}
+
+		siblings.add(
+			jenkinsMaster.getJenkinsSlave(
+				getNamePrefix() + siblingSlaveNumber));
+
+		return siblings;
+	}
+
 	@Override
 	public int hashCode() {
 		String hashCodeString = _jenkinsMaster.getName() + "_" + _name;
@@ -126,16 +194,27 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 		return hashCodeString.hashCode();
 	}
 
+	public boolean isEC2FleetNodeComputer() {
+		if (_jenkinsNodeClassName == null) {
+			update();
+		}
+
+		return _jenkinsNodeClassName.equals(
+			"com.amazon.jenkins.ec2fleet.EC2FleetNodeComputer");
+	}
+
+	@Override
 	public boolean isIdle() {
 		return _idle;
 	}
 
+	@Override
 	public boolean isOffline() {
 		return _offline;
 	}
 
 	public boolean isReachable() {
-		return JenkinsResultsParserUtil.isReachable(getName());
+		return JenkinsResultsParserUtil.isServerPortReachable(getName(), 22);
 	}
 
 	public void takeSlavesOffline(String offlineReason) {
@@ -155,19 +234,59 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 		_jenkinsMaster.update();
 	}
 
+	protected static String getDisplayName(JSONObject jenkinsSlaveJSONObject) {
+		String displayName = jenkinsSlaveJSONObject.getString("displayName");
+
+		String className = jenkinsSlaveJSONObject.getString("_class");
+
+		if (className.contains("EC2FleetNodeComputer")) {
+			Matcher matcher = _instanceIDPattern.matcher(displayName);
+
+			if (matcher.find()) {
+				displayName = matcher.group("instanceID");
+			}
+		}
+
+		return displayName;
+	}
+
 	protected JenkinsSlave(
 		JenkinsMaster jenkinsMaster, JSONObject jenkinsSlaveJSONObject) {
 
 		_jenkinsMaster = jenkinsMaster;
 
-		_name = jenkinsSlaveJSONObject.getString("displayName");
+		_name = getDisplayName(jenkinsSlaveJSONObject);
 
 		update(jenkinsSlaveJSONObject);
 	}
 
 	protected void update(JSONObject jenkinsSlaveJSONObject) {
+		_assignedLabels.clear();
+
+		JSONArray assignedLabelsJSONArray = jenkinsSlaveJSONObject.optJSONArray(
+			"assignedLabels");
+
+		if (assignedLabelsJSONArray != null) {
+			for (int i = 0; i < assignedLabelsJSONArray.length(); i++) {
+				JSONObject assignedLabelJSONObject =
+					assignedLabelsJSONArray.getJSONObject(i);
+
+				String assignedLabelName = assignedLabelJSONObject.optString(
+					"name");
+
+				if (JenkinsResultsParserUtil.isNullOrEmpty(assignedLabelName)) {
+					continue;
+				}
+
+				_assignedLabels.add(assignedLabelName);
+			}
+		}
+
 		_idle = jenkinsSlaveJSONObject.getBoolean("idle");
+		_jenkinsNodeClassName = jenkinsSlaveJSONObject.getString("_class");
 		_offline = jenkinsSlaveJSONObject.getBoolean("offline");
+		_offlineCauseReason = jenkinsSlaveJSONObject.optString(
+			"offlineCauseReason");
 	}
 
 	private void _setSlaveStatus(String offlineReason, boolean offlineStatus) {
@@ -185,8 +304,9 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 			script = script.replace(
 				"${offline.status}", String.valueOf(offlineStatus));
 
-			JenkinsResultsParserUtil.executeJenkinsScript(
-				_jenkinsMaster.getName(), script);
+			System.out.println(
+				JenkinsResultsParserUtil.executeJenkinsScript(
+					_jenkinsMaster.getName(), script));
 		}
 		catch (IOException ioException) {
 			System.out.println("Unable to set the status for slaves: " + _name);
@@ -195,9 +315,17 @@ public class JenkinsSlave implements JenkinsNode<JenkinsSlave> {
 		}
 	}
 
+	private static final Pattern _instanceIDPattern = Pattern.compile(
+		".* (?<instanceID>i-[0-9a-z]+) .*");
+	private static final Pattern _namePattern = Pattern.compile(
+		"(?<prefix>.*[^\\d]+)(?<number>\\d+)");
+
+	private final List<String> _assignedLabels = new ArrayList<>();
 	private boolean _idle;
 	private final JenkinsMaster _jenkinsMaster;
+	private String _jenkinsNodeClassName;
 	private final String _name;
 	private boolean _offline;
+	private String _offlineCauseReason;
 
 }

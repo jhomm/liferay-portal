@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal.background.task;
@@ -86,7 +77,46 @@ public class CTServicePublisher<T extends CTModel<T>> {
 		_ctService.updateWithUnsafeFunction(this::_publish);
 	}
 
-	private int _getPreDeletedRowCount(
+	private void _copyCTRow(
+			Connection connection, CTPersistence<?> ctPersistence,
+			String tableName, String primaryKeyName, Serializable primaryKey,
+			long tempCTCollectionId)
+		throws Exception {
+
+		StringBundler sb = new StringBundler();
+
+		Map<String, Integer> tableColumnsMap =
+			ctPersistence.getTableColumnsMap();
+
+		sb.append("select ");
+
+		for (String name : tableColumnsMap.keySet()) {
+			if (name.equals("ctCollectionId")) {
+				sb.append(_targetCTCollectionId);
+				sb.append(" as ");
+			}
+			else if (name.equals("mvccVersion")) {
+				sb.append("(mvccVersion + 1) ");
+			}
+
+			sb.append(name);
+			sb.append(", ");
+		}
+
+		sb.setStringAt(" from ", sb.index() - 1);
+
+		sb.append(tableName);
+		sb.append(" where ");
+		sb.append(primaryKeyName);
+		sb.append(" = ");
+		sb.append(primaryKey);
+		sb.append(" and ctCollectionId = ");
+		sb.append(tempCTCollectionId);
+
+		CTRowUtil.copyCTRows(ctPersistence, connection, sb.toString());
+	}
+
+	private int _getPredeletedRowCount(
 			Connection connection, String tableName, String primaryKeyName)
 		throws Exception {
 
@@ -149,16 +179,16 @@ public class CTServicePublisher<T extends CTModel<T>> {
 		}
 
 		if (_deletionCTEntries != null) {
-			int updatedRowCount = _updateCTCollectionId(
-				connection, tableName, primaryKeyName,
-				_deletionCTEntries.values(), _targetCTCollectionId,
-				_sourceCTCollectionId, true, false);
+			int predeletedRowCount = _getPredeletedRowCount(
+				connection, tableName, primaryKeyName);
 
-			if (updatedRowCount != _deletionCTEntries.size()) {
-				int preDeletedRowCount = _getPreDeletedRowCount(
-					connection, tableName, primaryKeyName);
+			if (predeletedRowCount != _deletionCTEntries.size()) {
+				int updatedRowCount = _updateCTCollectionId(
+					connection, tableName, primaryKeyName,
+					_deletionCTEntries.values(), _targetCTCollectionId,
+					_sourceCTCollectionId, true, false);
 
-				if ((updatedRowCount + preDeletedRowCount) !=
+				if ((predeletedRowCount + updatedRowCount) !=
 						_deletionCTEntries.size()) {
 
 					throw new SystemException(
@@ -193,51 +223,46 @@ public class CTServicePublisher<T extends CTModel<T>> {
 		}
 
 		if (_modificationCTEntries != null) {
-			StringBundler sb = new StringBundler();
-
-			Map<String, Integer> tableColumnsMap =
-				ctPersistence.getTableColumnsMap();
-
-			sb.append("select ");
-
-			for (String name : tableColumnsMap.keySet()) {
-				if (name.equals("ctCollectionId")) {
-					sb.append(_targetCTCollectionId);
-					sb.append(" as ");
-				}
-				else if (name.equals("mvccVersion")) {
-					sb.append("(t1.mvccVersion + 1) ");
-				}
-				else {
-					sb.append("t1.");
-				}
-
-				sb.append(name);
-				sb.append(", ");
+			for (Serializable primaryKey : _modificationCTEntries.keySet()) {
+				_copyCTRow(
+					connection, ctPersistence, tableName, primaryKeyName,
+					primaryKey, tempCTCollectionId);
 			}
 
-			sb.setStringAt(" from ", sb.index() - 1);
-
-			sb.append(tableName);
-			sb.append(" t1, ");
-			sb.append(tableName);
-			sb.append(" t2 where t1.");
-			sb.append(primaryKeyName);
-			sb.append(" = t2.");
-			sb.append(primaryKeyName);
-			sb.append(" and t1.ctCollectionId = ");
-			sb.append(tempCTCollectionId);
-			sb.append(" and t2.ctCollectionId = ");
-			sb.append(_sourceCTCollectionId);
-
-			CTRowUtil.copyCTRows(ctPersistence, connection, sb.toString());
-
-			sb.setIndex(0);
+			StringBundler sb = new StringBundler();
 
 			sb.append("delete from ");
 			sb.append(tableName);
 			sb.append(" where ctCollectionId = ");
 			sb.append(tempCTCollectionId);
+			sb.append(" and (");
+			sb.append(primaryKeyName);
+			sb.append(" in (");
+
+			int i = 0;
+
+			for (Serializable primaryKey : _modificationCTEntries.keySet()) {
+				if (i == _BATCH_SIZE) {
+					sb.setStringAt(")", sb.index() - 1);
+
+					sb.append(" or ");
+					sb.append(tableName);
+					sb.append(".");
+					sb.append(primaryKeyName);
+					sb.append(" in (");
+
+					i = 0;
+				}
+
+				sb.append(primaryKey);
+				sb.append(", ");
+
+				i++;
+			}
+
+			sb.setStringAt(")", sb.index() - 1);
+
+			sb.append(")");
 
 			try (PreparedStatement preparedStatement =
 					connection.prepareStatement(sb.toString())) {
@@ -305,17 +330,36 @@ public class CTServicePublisher<T extends CTModel<T>> {
 			sb.setStringAt(")", sb.index() - 1);
 		}
 		else {
+			sb.append("(");
 			sb.append(tableName);
 			sb.append(".");
 			sb.append(primaryKeyName);
 			sb.append(" in (");
 
+			int i = 0;
+
 			for (CTEntry ctEntry : ctEntries) {
+				if (i == _BATCH_SIZE) {
+					sb.setStringAt(")", sb.index() - 1);
+
+					sb.append(" or ");
+					sb.append(tableName);
+					sb.append(".");
+					sb.append(primaryKeyName);
+					sb.append(" in (");
+
+					i = 0;
+				}
+
 				sb.append(ctEntry.getModelClassPK());
 				sb.append(", ");
+
+				i++;
 			}
 
 			sb.setStringAt(")", sb.index() - 1);
+
+			sb.append(")");
 		}
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -339,7 +383,7 @@ public class CTServicePublisher<T extends CTModel<T>> {
 			Map<Serializable, CTEntry> ctEntries, long ctCollectionId)
 		throws Exception {
 
-		StringBundler sb = new StringBundler((2 * ctEntries.size()) + 9);
+		StringBundler sb = new StringBundler();
 
 		sb.append("select ");
 		sb.append(primaryKeyName);
@@ -347,16 +391,32 @@ public class CTServicePublisher<T extends CTModel<T>> {
 		sb.append(tableName);
 		sb.append(" where ctCollectionId = ");
 		sb.append(ctCollectionId);
-		sb.append(" and ");
+		sb.append(" and (");
 		sb.append(primaryKeyName);
 		sb.append(" in (");
 
+		int i = 0;
+
 		for (Serializable serializable : ctEntries.keySet()) {
+			if (i == _BATCH_SIZE) {
+				sb.setStringAt(")", sb.index() - 1);
+
+				sb.append(" or ");
+				sb.append(primaryKeyName);
+				sb.append(" in (");
+
+				i = 0;
+			}
+
 			sb.append(serializable);
 			sb.append(", ");
+
+			i++;
 		}
 
 		sb.setStringAt(")", sb.index() - 1);
+
+		sb.append(")");
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				sb.toString());
@@ -368,13 +428,13 @@ public class CTServicePublisher<T extends CTModel<T>> {
 
 				CTEntry ctEntry = ctEntries.get(pk);
 
-				ctEntry.setModifiedDate(ctEntry.getModifiedDate());
-				ctEntry.setModelMvccVersion(mvccVersion);
-
-				_ctEntryLocalService.updateCTEntry(ctEntry);
+				_ctEntryLocalService.updateModelMvccVersion(
+					ctEntry.getCtEntryId(), mvccVersion);
 			}
 		}
 	}
+
+	private static final int _BATCH_SIZE = 1000;
 
 	private Map<Serializable, CTEntry> _additionCTEntries;
 	private final CTEntryLocalService _ctEntryLocalService;

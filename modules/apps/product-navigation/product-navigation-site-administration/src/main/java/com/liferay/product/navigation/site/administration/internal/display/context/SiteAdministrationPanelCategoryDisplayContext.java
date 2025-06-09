@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.site.administration.internal.display.context;
@@ -17,7 +8,6 @@ package com.liferay.product.navigation.site.administration.internal.display.cont
 import com.liferay.application.list.GroupProvider;
 import com.liferay.application.list.PanelCategory;
 import com.liferay.application.list.constants.ApplicationListWebKeys;
-import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
 import com.liferay.exportimport.kernel.exception.RemoteExportException;
 import com.liferay.exportimport.kernel.staging.StagingUtil;
@@ -34,33 +24,36 @@ import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
+import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.product.navigation.product.menu.constants.ProductNavigationProductMenuPortletKeys;
 import com.liferay.product.navigation.product.menu.display.context.ProductMenuDisplayContext;
 import com.liferay.product.navigation.site.administration.internal.application.list.SiteAdministrationPanelCategory;
 import com.liferay.product.navigation.site.administration.internal.constants.SiteAdministrationWebKeys;
-import com.liferay.site.util.GroupURLProvider;
-import com.liferay.site.util.RecentGroupManager;
+import com.liferay.site.manager.RecentGroupManager;
+import com.liferay.site.provider.GroupURLProvider;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.ConnectException;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Julio Camarero
@@ -68,12 +61,9 @@ import javax.servlet.http.HttpServletRequest;
 public class SiteAdministrationPanelCategoryDisplayContext {
 
 	public SiteAdministrationPanelCategoryDisplayContext(
-			PortletRequest portletRequest, PortletResponse portletResponse,
-			Group group)
-		throws PortalException {
+		PortletRequest portletRequest, Group group) {
 
 		_portletRequest = portletRequest;
-		_portletResponse = portletResponse;
 
 		if (group != null) {
 			_group = group;
@@ -83,14 +73,13 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 			ApplicationListWebKeys.GROUP_PROVIDER);
 		_groupURLProvider = (GroupURLProvider)portletRequest.getAttribute(
 			SiteAdministrationWebKeys.GROUP_URL_PROVIDER);
-		_panelCategory = (PanelCategory)_portletRequest.getAttribute(
+		_panelCategory = (PanelCategory)portletRequest.getAttribute(
 			ApplicationListWebKeys.PANEL_CATEGORY);
-		_panelCategoryHelper =
-			(PanelCategoryHelper)_portletRequest.getAttribute(
-				ApplicationListWebKeys.PANEL_CATEGORY_HELPER);
+		_panelCategoryHelper = (PanelCategoryHelper)portletRequest.getAttribute(
+			ApplicationListWebKeys.PANEL_CATEGORY_HELPER);
 		_recentGroupManager = (RecentGroupManager)portletRequest.getAttribute(
 			SiteAdministrationWebKeys.RECENT_GROUP_MANAGER);
-		_themeDisplay = (ThemeDisplay)_portletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -103,7 +92,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 			PortalUtil.getHttpServletRequest(_portletRequest));
 
 		if (_group != null) {
-			updateLatentGroup(_group.getGroupId());
+			_updateLatentGroup(_group.getGroupId());
 		}
 
 		return _group;
@@ -130,7 +119,8 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 						group.getClassPK());
 
 					_groupName = LanguageUtil.format(
-						getResourceBundle(), "x-site", user.getFullName());
+						_themeDisplay.getLocale(), "x-site",
+						user.getFullName());
 				}
 			}
 			else {
@@ -150,11 +140,6 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		_groupURL = StringPool.BLANK;
 
 		return _groupURLProvider.getGroupURL(getGroup(), _portletRequest);
-	}
-
-	public String getGroupURL(boolean privateLayout) {
-		return _groupURLProvider.getGroupLayoutsURL(
-			getGroup(), privateLayout, _portletRequest);
 	}
 
 	public String getLiveGroupLabel() {
@@ -216,7 +201,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 						systemException.getMessage());
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(systemException, systemException);
+					_log.debug(systemException);
 				}
 
 				throw new RemoteExportException(
@@ -279,7 +264,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 
 	public int getNotificationsCount() {
 		if (_notificationsCount != null) {
-			return _notificationsCount.intValue();
+			return _notificationsCount;
 		}
 
 		_notificationsCount = 0;
@@ -300,6 +285,34 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 			_themeDisplay.getUser());
 
 		return _notificationsCount;
+	}
+
+	public String getPageTreeURL() {
+		return PortletURLBuilder.create(
+			PortletURLFactoryUtil.create(
+				_portletRequest,
+				ProductNavigationProductMenuPortletKeys.
+					PRODUCT_NAVIGATION_PRODUCT_MENU,
+				RenderRequest.RENDER_PHASE)
+		).setMVCPath(
+			"/portlet/pages_tree.jsp"
+		).setRedirect(
+			ParamUtil.getString(
+				_portletRequest, "redirect", _themeDisplay.getURLCurrent())
+		).setBackURL(
+			ParamUtil.getString(
+				_portletRequest, "backURL", _themeDisplay.getURLCurrent())
+		).setParameter(
+			"selPpid",
+			() -> {
+				PortletDisplay portletDisplay =
+					_themeDisplay.getPortletDisplay();
+
+				return portletDisplay.getId();
+			}
+		).setWindowState(
+			LiferayWindowState.EXCLUSIVE
+		).buildString();
 	}
 
 	public PanelCategory getPanelCategory() {
@@ -355,7 +368,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		}
 
 		ProductMenuDisplayContext productMenuDisplayContext =
-			new ProductMenuDisplayContext(_portletRequest, _portletResponse);
+			new ProductMenuDisplayContext(_portletRequest);
 
 		_collapsedPanel = Objects.equals(
 			_panelCategory.getKey(),
@@ -390,9 +403,16 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		return true;
 	}
 
-	public boolean isShowLayoutsTree() throws PortalException {
+	public boolean isLayoutsTreeDisabled() throws PortalException {
 		ProductMenuDisplayContext productMenuDisplayContext =
-			new ProductMenuDisplayContext(_portletRequest, _portletResponse);
+			new ProductMenuDisplayContext(_portletRequest);
+
+		return productMenuDisplayContext.isLayoutsTreeDisabled();
+	}
+
+	public boolean isShowLayoutsTree() throws Exception {
+		ProductMenuDisplayContext productMenuDisplayContext =
+			new ProductMenuDisplayContext(_portletRequest);
 
 		return productMenuDisplayContext.isShowLayoutsTree();
 	}
@@ -404,14 +424,9 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 			return false;
 		}
 
-		if (GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(), group,
-				ActionKeys.VIEW_SITE_ADMINISTRATION)) {
-
-			return true;
-		}
-
-		return false;
+		return GroupPermissionUtil.contains(
+			_themeDisplay.getPermissionChecker(), group,
+			ActionKeys.VIEW_SITE_ADMINISTRATION);
 	}
 
 	public boolean isShowSiteSelector() throws PortalException {
@@ -424,16 +439,12 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		List<Group> recentSites = _recentGroupManager.getRecentGroups(
 			PortalUtil.getHttpServletRequest(_portletRequest));
 
-		if (!recentSites.isEmpty()) {
-			return true;
-		}
-
-		return false;
+		return !recentSites.isEmpty();
 	}
 
 	public boolean isShowStagingInfo() throws PortalException {
 		if (_showStagingInfo != null) {
-			return _showStagingInfo.booleanValue();
+			return _showStagingInfo;
 		}
 
 		_showStagingInfo = false;
@@ -444,7 +455,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 			return _showStagingInfo;
 		}
 
-		if (!hasStagingPermission()) {
+		if (!_hasStagingPermission()) {
 			return _showStagingInfo;
 		}
 
@@ -453,69 +464,7 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		return _showStagingInfo;
 	}
 
-	protected String getGroupAdministrationURL(Group group) {
-		if (_panelCategoryHelper == null) {
-			return null;
-		}
-
-		String portletId = _panelCategoryHelper.getFirstPortletId(
-			PanelCategoryKeys.SITE_ADMINISTRATION,
-			_themeDisplay.getPermissionChecker(), group);
-
-		if (Validator.isNotNull(portletId)) {
-			PortletURL groupAdministrationURL =
-				PortalUtil.getControlPanelPortletURL(
-					_portletRequest, group, portletId, 0, 0,
-					PortletRequest.RENDER_PHASE);
-
-			if (groupAdministrationURL != null) {
-				return groupAdministrationURL.toString();
-			}
-		}
-
-		return null;
-	}
-
-	protected ResourceBundle getResourceBundle() {
-		return ResourceBundleUtil.getBundle(
-			"content.Language", _themeDisplay.getLocale(), getClass());
-	}
-
-	protected boolean hasStagingPermission() throws PortalException {
-		if (GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(), getGroup(),
-				ActionKeys.MANAGE_STAGING) ||
-			GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(), getGroup(),
-				ActionKeys.PUBLISH_STAGING) ||
-			GroupPermissionUtil.contains(
-				_themeDisplay.getPermissionChecker(), getGroup(),
-				ActionKeys.VIEW_STAGING)) {
-
-			return true;
-		}
-
-		return false;
-	}
-
-	protected void updateLatentGroup(long groupId) {
-		if (groupId <= 0) {
-			return;
-		}
-
-		HttpServletRequest httpServletRequest =
-			PortalUtil.getHttpServletRequest(_portletRequest);
-
-		_recentGroupManager.addRecentGroup(httpServletRequest, groupId);
-
-		_groupProvider.setGroup(httpServletRequest, _group);
-	}
-
 	private Layout _getFirstLayout(Group group) {
-		if (_firstLayout != null) {
-			return _firstLayout;
-		}
-
 		Layout layout = LayoutLocalServiceUtil.fetchFirstLayout(
 			group.getGroupId(), false, LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			false);
@@ -535,11 +484,40 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 		return null;
 	}
 
+	private boolean _hasStagingPermission() throws PortalException {
+		if (GroupPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(), getGroup(),
+				ActionKeys.MANAGE_STAGING) ||
+			GroupPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(), getGroup(),
+				ActionKeys.PUBLISH_STAGING) ||
+			GroupPermissionUtil.contains(
+				_themeDisplay.getPermissionChecker(), getGroup(),
+				ActionKeys.VIEW_STAGING)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _updateLatentGroup(long groupId) {
+		if (groupId <= 0) {
+			return;
+		}
+
+		HttpServletRequest httpServletRequest =
+			PortalUtil.getHttpServletRequest(_portletRequest);
+
+		_recentGroupManager.addRecentGroup(httpServletRequest, groupId);
+
+		_groupProvider.setGroup(httpServletRequest, _group);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		SiteAdministrationPanelCategoryDisplayContext.class);
 
 	private Boolean _collapsedPanel;
-	private Layout _firstLayout;
 	private Group _group;
 	private String _groupName;
 	private final GroupProvider _groupProvider;
@@ -552,7 +530,6 @@ public class SiteAdministrationPanelCategoryDisplayContext {
 	private final PanelCategory _panelCategory;
 	private final PanelCategoryHelper _panelCategoryHelper;
 	private final PortletRequest _portletRequest;
-	private final PortletResponse _portletResponse;
 	private final RecentGroupManager _recentGroupManager;
 	private Boolean _showStagingInfo;
 	private String _stagingGroupURL;

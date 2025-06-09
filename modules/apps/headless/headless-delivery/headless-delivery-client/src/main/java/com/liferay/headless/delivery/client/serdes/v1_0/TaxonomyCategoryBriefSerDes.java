@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.delivery.client.serdes.v1_0;
 import com.liferay.headless.delivery.client.dto.v1_0.TaxonomyCategoryBrief;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -62,12 +53,18 @@ public class TaxonomyCategoryBriefSerDes {
 
 			sb.append("\"embeddedTaxonomyCategory\": ");
 
-			sb.append("\"");
+			if (taxonomyCategoryBrief.getEmbeddedTaxonomyCategory() instanceof
+					String) {
 
-			sb.append(
-				_escape(taxonomyCategoryBrief.getEmbeddedTaxonomyCategory()));
-
-			sb.append("\"");
+				sb.append("\"");
+				sb.append(
+					(String)
+						taxonomyCategoryBrief.getEmbeddedTaxonomyCategory());
+				sb.append("\"");
+			}
+			else {
+				sb.append(taxonomyCategoryBrief.getEmbeddedTaxonomyCategory());
+			}
 		}
 
 		if (taxonomyCategoryBrief.getTaxonomyCategoryId() != null) {
@@ -103,6 +100,18 @@ public class TaxonomyCategoryBriefSerDes {
 
 			sb.append(
 				_toJSON(taxonomyCategoryBrief.getTaxonomyCategoryName_i18n()));
+		}
+
+		if (taxonomyCategoryBrief.getTaxonomyCategoryReference() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"taxonomyCategoryReference\": ");
+
+			sb.append(
+				String.valueOf(
+					taxonomyCategoryBrief.getTaxonomyCategoryReference()));
 		}
 
 		sb.append("}");
@@ -165,6 +174,16 @@ public class TaxonomyCategoryBriefSerDes {
 					taxonomyCategoryBrief.getTaxonomyCategoryName_i18n()));
 		}
 
+		if (taxonomyCategoryBrief.getTaxonomyCategoryReference() == null) {
+			map.put("taxonomyCategoryReference", null);
+		}
+		else {
+			map.put(
+				"taxonomyCategoryReference",
+				String.valueOf(
+					taxonomyCategoryBrief.getTaxonomyCategoryReference()));
+		}
+
 		return map;
 	}
 
@@ -179,6 +198,37 @@ public class TaxonomyCategoryBriefSerDes {
 		@Override
 		protected TaxonomyCategoryBrief[] createDTOArray(int size) {
 			return new TaxonomyCategoryBrief[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "embeddedTaxonomyCategory")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryId")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryName")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryName_i18n")) {
+
+				return true;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryReference")) {
+
+				return false;
+			}
+
+			return false;
 		}
 
 		@Override
@@ -215,7 +265,15 @@ public class TaxonomyCategoryBriefSerDes {
 
 				if (jsonParserFieldValue != null) {
 					taxonomyCategoryBrief.setTaxonomyCategoryName_i18n(
-						(Map)TaxonomyCategoryBriefSerDes.toMap(
+						(Map<String, String>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "taxonomyCategoryReference")) {
+
+				if (jsonParserFieldValue != null) {
+					taxonomyCategoryBrief.setTaxonomyCategoryReference(
+						TaxonomyCategoryReferenceSerDes.toDTO(
 							(String)jsonParserFieldValue));
 				}
 			}
@@ -251,36 +309,7 @@ public class TaxonomyCategoryBriefSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -290,6 +319,42 @@ public class TaxonomyCategoryBriefSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

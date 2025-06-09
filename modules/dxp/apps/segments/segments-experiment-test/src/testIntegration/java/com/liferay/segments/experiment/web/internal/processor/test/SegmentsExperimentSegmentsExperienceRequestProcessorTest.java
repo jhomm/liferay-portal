@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.experiment.web.internal.processor.test;
 
+import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutConstants;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -31,12 +21,11 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.PrefsProps;
-import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PrefsPropsImpl;
 import com.liferay.segments.constants.SegmentsExperimentConstants;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsExperience;
@@ -47,10 +36,9 @@ import com.liferay.segments.service.SegmentsExperimentLocalService;
 import com.liferay.segments.service.SegmentsExperimentRelLocalService;
 import com.liferay.segments.test.util.SegmentsTestUtil;
 
-import java.util.Arrays;
-import java.util.Objects;
+import jakarta.servlet.http.Cookie;
 
-import javax.servlet.http.Cookie;
+import java.util.Arrays;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -76,6 +64,8 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 	@Before
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
+
+		_layout = LayoutTestUtil.addTypeContentLayout(_group);
 	}
 
 	@Test
@@ -83,23 +73,18 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Layout.class.getName());
-
-		Layout layout = _addLayout();
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), classNameId,
-				layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), 0,
-				true,
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentLocalService.addSegmentsExperiment(
 				segmentsExperience.getSegmentsExperienceId(),
-				segmentsExperience.getClassNameId(),
-				segmentsExperience.getClassPK(), RandomTestUtil.randomString(),
+				segmentsExperience.getPlid(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
 				SegmentsExperimentConstants.Goal.BOUNCE_RATE.getLabel(),
 				StringPool.BLANK,
@@ -109,70 +94,113 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			segmentsExperiment.getSegmentsExperimentId(),
 			SegmentsExperimentConstants.STATUS_RUNNING);
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					_getMockHttpServletRequest(), new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[] {segmentsExperience.getSegmentsEntryId()});
+					_group.getGroupId(), _layout.getPlid(),
+					new long[] {segmentsExperience.getSegmentsExperienceId()});
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
 				segmentsExperienceIds.length);
 
 			Assert.assertEquals(
-				segmentsExperience.getSegmentsEntryId(),
+				segmentsExperience.getSegmentsExperienceId(),
 				segmentsExperienceIds[0]);
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
 		}
 	}
 
 	@Test
-	public void testGetSegmentsExperienceIdsWithAnalyticsUnSyncedPrefsProps()
+	public void testGetSegmentsExperienceIdsFromAnotherLayout()
 		throws Exception {
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
-		AnalyticsUnSyncedPrefsPropsWrapper analyticsUnSyncedPrefsPropsWrapper =
-			new AnalyticsUnSyncedPrefsPropsWrapper(prefsProps);
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
 
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsUnSyncedPrefsPropsWrapper);
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.addSegmentsExperience(
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
-		try {
-			long classNameId = _classNameLocalService.getClassNameId(
-				Layout.class.getName());
+		SegmentsExperiment segmentsExperiment =
+			_segmentsExperimentLocalService.addSegmentsExperiment(
+				segmentsExperience.getSegmentsExperienceId(),
+				segmentsExperience.getPlid(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(),
+				SegmentsExperimentConstants.Goal.BOUNCE_RATE.getLabel(),
+				StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
-			Layout layout = _addLayout();
+		_segmentsExperimentLocalService.updateSegmentsExperimentStatus(
+			segmentsExperiment.getSegmentsExperimentId(),
+			SegmentsExperimentConstants.STATUS_RUNNING);
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
+
+			MockHttpServletRequest mockHttpServletRequest =
+				_getMockHttpServletRequest();
+
+			mockHttpServletRequest.setParameter(
+				"segmentsExperienceId",
+				String.valueOf(
+					_segmentsExperienceLocalService.
+						fetchDefaultSegmentsExperienceId(layout.getPlid())));
+
+			long defaultSegmentsExperienceId =
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(
+						segmentsExperience.getPlid());
 
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
-					_getMockHttpServletRequest(), new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[] {12345L});
+					mockHttpServletRequest, new MockHttpServletResponse(),
+					_group.getGroupId(), _layout.getPlid(),
+					new long[] {defaultSegmentsExperienceId});
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
 				segmentsExperienceIds.length);
-
-			Assert.assertEquals(12345L, segmentsExperienceIds[0]);
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
+			Assert.assertEquals(
+				defaultSegmentsExperienceId, segmentsExperienceIds[0]);
 		}
 	}
 
@@ -181,23 +209,18 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Layout.class.getName());
-
-		Layout layout = _addLayout();
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), classNameId,
-				layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), 0,
-				true,
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentLocalService.addSegmentsExperiment(
 				segmentsExperience.getSegmentsExperienceId(),
-				segmentsExperience.getClassNameId(),
-				segmentsExperience.getClassPK(), RandomTestUtil.randomString(),
+				segmentsExperience.getPlid(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
 				SegmentsExperimentConstants.Goal.BOUNCE_RATE.getLabel(),
 				StringPool.BLANK,
@@ -207,29 +230,36 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			segmentsExperiment.getSegmentsExperimentId(),
 			SegmentsExperimentConstants.STATUS_RUNNING);
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
 			MockHttpServletRequest mockHttpServletRequest =
 				_getMockHttpServletRequest();
 
 			mockHttpServletRequest.setCookies(
 				new Cookie(
-					"ab_test_variant_id",
+					"ab_test_variant_id_" + _layout.getPlid(),
 					segmentsExperiment.getSegmentsExperienceKey()));
 
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					mockHttpServletRequest, new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[0]);
+					_group.getGroupId(), _layout.getPlid(), new long[0]);
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
@@ -239,9 +269,114 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 				segmentsExperience.getSegmentsExperienceId(),
 				segmentsExperienceIds[0]);
 		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
+	}
+
+	@Test
+	public void testGetSegmentsExperienceIdsWithNonexistentSegmentsEntryId()
+		throws Exception {
+
+		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
+			_group.getGroupId());
+
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.addSegmentsExperience(
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		SegmentsExperiment segmentsExperiment =
+			_segmentsExperimentLocalService.addSegmentsExperiment(
+				segmentsExperience.getSegmentsExperienceId(),
+				segmentsExperience.getPlid(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(),
+				SegmentsExperimentConstants.Goal.BOUNCE_RATE.getLabel(),
+				StringPool.BLANK,
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		_segmentsExperimentLocalService.updateSegmentsExperimentStatus(
+			segmentsExperiment.getSegmentsExperimentId(),
+			SegmentsExperimentConstants.STATUS_RUNNING);
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
+
+			MockHttpServletRequest mockHttpServletRequest =
+				_getMockHttpServletRequest();
+
+			mockHttpServletRequest.setParameter(
+				"segmentsExperienceId",
+				String.valueOf(RandomTestUtil.randomLong()));
+
+			long defaultSegmentsExperienceId =
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(
+						segmentsExperience.getPlid());
+
+			long[] segmentsExperienceIds =
+				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
+					_getMockHttpServletRequest(), new MockHttpServletResponse(),
+					_group.getGroupId(), _layout.getPlid(),
+					new long[] {defaultSegmentsExperienceId});
+
+			Assert.assertEquals(
+				Arrays.toString(segmentsExperienceIds), 1,
+				segmentsExperienceIds.length);
+
+			Assert.assertEquals(
+				defaultSegmentsExperienceId, segmentsExperienceIds[0]);
+		}
+	}
+
+	@Test
+	public void testGetSegmentsExperienceIdsWithoutLiferayAnalyticsEnableAllGroupIds()
+		throws Exception {
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", false
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
+
+			long[] segmentsExperienceIds =
+				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
+					_getMockHttpServletRequest(), new MockHttpServletResponse(),
+					_group.getGroupId(), _layout.getPlid(),
+					new long[] {12345L});
+
+			Assert.assertEquals(
+				Arrays.toString(segmentsExperienceIds), 1,
+				segmentsExperienceIds.length);
+
+			Assert.assertEquals(12345L, segmentsExperienceIds[0]);
 		}
 	}
 
@@ -249,34 +384,32 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 	public void testGetSegmentsExperienceIdsWithoutSegmentsExperienceIds()
 		throws Exception {
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
-
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
-			long classNameId = _classNameLocalService.getClassNameId(
-				Layout.class.getName());
-
-			Layout layout = _addLayout();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					_getMockHttpServletRequest(), new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[0]);
+					_group.getGroupId(), _layout.getPlid(), new long[0]);
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 0,
 				segmentsExperienceIds.length);
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
 		}
 	}
 
@@ -287,23 +420,18 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Layout.class.getName());
-
-		Layout layout = _addLayout();
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), classNameId,
-				layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), 0,
-				true,
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentLocalService.addSegmentsExperiment(
 				segmentsExperience.getSegmentsExperienceId(),
-				segmentsExperience.getClassNameId(),
-				segmentsExperience.getClassPK(), RandomTestUtil.randomString(),
+				segmentsExperience.getPlid(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
 				SegmentsExperimentConstants.Goal.BOUNCE_RATE.getLabel(),
 				StringPool.BLANK,
@@ -313,34 +441,38 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			segmentsExperiment.getSegmentsExperimentId(),
 			SegmentsExperimentConstants.STATUS_RUNNING);
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					_getMockHttpServletRequest(), new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
+					_group.getGroupId(), _layout.getPlid(),
 					new long[] {segmentsEntry.getSegmentsEntryId()},
-					new long[] {segmentsExperience.getSegmentsEntryId()});
+					new long[] {segmentsExperience.getSegmentsExperienceId()});
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
 				segmentsExperienceIds.length);
 
 			Assert.assertEquals(
-				segmentsExperience.getSegmentsEntryId(),
+				segmentsExperience.getSegmentsExperienceId(),
 				segmentsExperienceIds[0]);
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
 		}
 	}
 
@@ -348,29 +480,33 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 	public void testGetSegmentsExperienceIdsWithSegmentsExperienceId()
 		throws Exception {
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
 			SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 				_group.getGroupId());
 
-			long classNameId = _classNameLocalService.getClassNameId(
-				Layout.class.getName());
-
-			Layout layout = _addLayout();
-
 			SegmentsExperience segmentsExperience =
 				_segmentsExperienceLocalService.addSegmentsExperience(
-					segmentsEntry.getSegmentsEntryId(), classNameId,
-					layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), 0,
-					true,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+					RandomTestUtil.randomLocaleStringMap(), true,
+					new UnicodeProperties(true),
 					ServiceContextTestUtil.getServiceContext(
 						_group.getGroupId()));
 
@@ -386,8 +522,7 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					mockHttpServletRequest, new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[0]);
+					_group.getGroupId(), _layout.getPlid(), new long[0]);
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
@@ -397,39 +532,39 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 				segmentsExperience.getSegmentsExperienceId(),
 				segmentsExperienceIds[0]);
 		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
-		}
 	}
 
 	@Test
 	public void testGetSegmentsExperienceIdsWithSegmentsExperienceKey()
 		throws Exception {
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
 			SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 				_group.getGroupId());
 
-			long classNameId = _classNameLocalService.getClassNameId(
-				Layout.class.getName());
-
-			Layout layout = _addLayout();
-
 			SegmentsExperience segmentsExperience =
 				_segmentsExperienceLocalService.addSegmentsExperience(
-					segmentsEntry.getSegmentsEntryId(), classNameId,
-					layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), 0,
-					true,
+					null, TestPropsValues.getUserId(), _group.getGroupId(),
+					segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+					RandomTestUtil.randomLocaleStringMap(), true,
+					new UnicodeProperties(true),
 					ServiceContextTestUtil.getServiceContext(
 						_group.getGroupId()));
 
@@ -443,8 +578,7 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					mockHttpServletRequest, new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[0]);
+					_group.getGroupId(), _layout.getPlid(), new long[0]);
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
@@ -453,10 +587,6 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			Assert.assertEquals(
 				segmentsExperience.getSegmentsExperienceId(),
 				segmentsExperienceIds[0]);
-		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
 		}
 	}
 
@@ -467,38 +597,41 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 		SegmentsEntry segmentsEntry = SegmentsTestUtil.addSegmentsEntry(
 			_group.getGroupId());
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			Layout.class.getName());
-
-		Layout layout = _addLayout();
-
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				segmentsEntry.getSegmentsEntryId(), classNameId,
-				layout.getPlid(), RandomTestUtil.randomLocaleStringMap(), 0,
-				true,
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				segmentsEntry.getSegmentsEntryId(), _layout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new UnicodeProperties(true),
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		SegmentsExperiment segmentsExperiment =
 			_segmentsExperimentLocalService.addSegmentsExperiment(
 				segmentsExperience.getSegmentsExperienceId(),
-				segmentsExperience.getClassNameId(),
-				segmentsExperience.getClassPK(), RandomTestUtil.randomString(),
+				segmentsExperience.getPlid(), RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
 				SegmentsExperimentConstants.Goal.BOUNCE_RATE.getLabel(),
 				StringPool.BLANK,
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId",
+							RandomTestUtil.randomLong()
+						).put(
+							"liferayAnalyticsEnableAllGroupIds", true
+						).put(
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
+						).put(
+							"liferayAnalyticsFaroBackendURL",
+							RandomTestUtil.randomString()
+						).build())) {
 
-		AnalyticsSyncedPrefsPropsWrapper analyticsSyncedPrefsPropsWrapper =
-			new AnalyticsSyncedPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps",
-			analyticsSyncedPrefsPropsWrapper);
-
-		try {
 			MockHttpServletRequest mockHttpServletRequest =
 				_getMockHttpServletRequest();
 
@@ -509,8 +642,7 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 			long[] segmentsExperienceIds =
 				_segmentsExperienceRequestProcessor.getSegmentsExperienceIds(
 					mockHttpServletRequest, new MockHttpServletResponse(),
-					_group.getGroupId(), classNameId, layout.getPlid(),
-					new long[0]);
+					_group.getGroupId(), _layout.getPlid(), new long[0]);
 
 			Assert.assertEquals(
 				Arrays.toString(segmentsExperienceIds), 1,
@@ -520,23 +652,6 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 				segmentsExperience.getSegmentsExperienceId(),
 				segmentsExperienceIds[0]);
 		}
-		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
-		}
-	}
-
-	private Layout _addLayout() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				TestPropsValues.getGroupId(), TestPropsValues.getUserId());
-
-		return _layoutLocalService.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
-			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
-			StringPool.BLANK, LayoutConstants.TYPE_CONTENT, false,
-			StringPool.BLANK, serviceContext);
 	}
 
 	private MockHttpServletRequest _getMockHttpServletRequest()
@@ -556,6 +671,7 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 
 		themeDisplay.setCompany(
 			_companyLocalService.fetchCompany(TestPropsValues.getCompanyId()));
+		themeDisplay.setPlid(_layout.getPlid());
 		themeDisplay.setScopeGroupId(_group.getGroupId());
 		themeDisplay.setSignedIn(true);
 		themeDisplay.setUser(TestPropsValues.getUser());
@@ -564,13 +680,12 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 	}
 
 	@Inject
-	private ClassNameLocalService _classNameLocalService;
-
-	@Inject
 	private CompanyLocalService _companyLocalService;
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	private Layout _layout;
 
 	@Inject
 	private LayoutLocalService _layoutLocalService;
@@ -579,7 +694,7 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	@Inject(
-		filter = "component.name=*.SegmentsExperimentSegmentsExperienceRequestProcessor"
+		filter = "component.name=com.liferay.segments.experiment.web.internal.processor.SegmentsExperimentSegmentsExperienceRequestProcessor"
 	)
 	private SegmentsExperienceRequestProcessor
 		_segmentsExperienceRequestProcessor;
@@ -590,71 +705,5 @@ public class SegmentsExperimentSegmentsExperienceRequestProcessorTest {
 	@Inject
 	private SegmentsExperimentRelLocalService
 		_segmentsExperimentRelLocalService;
-
-	private final class AnalyticsSyncedPrefsPropsWrapper
-		extends PrefsPropsImpl {
-
-		public AnalyticsSyncedPrefsPropsWrapper(PrefsProps prefsProps) {
-			_prefsProps = prefsProps;
-		}
-
-		@Override
-		public boolean getBoolean(long companyId, String name) {
-			if (Objects.equals("liferayAnalyticsEnableAllGroupIds", name)) {
-				return true;
-			}
-
-			return _prefsProps.getBoolean(companyId, name);
-		}
-
-		@Override
-		public String getString(long companyId, String name) {
-			if (Objects.equals("liferayAnalyticsDataSourceId", name) ||
-				Objects.equals(
-					name, "liferayAnalyticsFaroBackendSecuritySignature") ||
-				Objects.equals("liferayAnalyticsFaroBackendURL", name)) {
-
-				return "test";
-			}
-
-			return _prefsProps.getString(companyId, name);
-		}
-
-		private final PrefsProps _prefsProps;
-
-	}
-
-	private final class AnalyticsUnSyncedPrefsPropsWrapper
-		extends PrefsPropsImpl {
-
-		public AnalyticsUnSyncedPrefsPropsWrapper(PrefsProps prefsProps) {
-			_prefsProps = prefsProps;
-		}
-
-		@Override
-		public boolean getBoolean(long companyId, String name) {
-			if (Objects.equals("liferayAnalyticsEnableAllGroupIds", name)) {
-				return false;
-			}
-
-			return _prefsProps.getBoolean(companyId, name);
-		}
-
-		@Override
-		public String getString(long companyId, String name) {
-			if (Objects.equals("liferayAnalyticsDataSourceId", name) ||
-				Objects.equals(
-					name, "liferayAnalyticsFaroBackendSecuritySignature") ||
-				Objects.equals("liferayAnalyticsFaroBackendURL", name)) {
-
-				return "test";
-			}
-
-			return _prefsProps.getString(companyId, name);
-		}
-
-		private final PrefsProps _prefsProps;
-
-	}
 
 }

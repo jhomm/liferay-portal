@@ -3,6 +3,7 @@
 <model-hints>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoAction">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoActionId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -33,14 +34,19 @@
 		<field name="script" type="String">
 			<hint-collection name="CLOB" />
 		</field>
-		<field name="scriptLanguage" type="String" />
+		<field name="scriptLanguage" type="String">
+			<hint name="max-length">255</hint>
+		</field>
 		<field name="scriptRequiredContexts" type="String">
 			<hint-collection name="TEXTAREA" />
 		</field>
 		<field name="priority" type="int" />
+		<field name="type" type="String" />
+		<field name="status" type="int" />
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoCondition">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoConditionId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -63,6 +69,9 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoDefinition">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
+		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="kaleoDefinitionId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -90,6 +99,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoDefinitionVersionId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -97,9 +107,6 @@
 		<field name="userName" type="String">
 			<hint name="max-length">200</hint>
 		</field>
-		<field name="statusByUserId" type="long" />
-		<field name="statusByUserName" type="String" />
-		<field name="statusDate" type="Date" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
 		<field name="kaleoDefinitionId" type="long" />
@@ -118,9 +125,13 @@
 		<field name="version" type="String" />
 		<field name="startKaleoNodeId" type="long" />
 		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoInstance">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoInstanceId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -137,6 +148,7 @@
 		</field>
 		<field name="kaleoDefinitionVersion" type="int" />
 		<field name="rootKaleoInstanceTokenId" type="long" />
+		<field name="active" type="boolean" />
 		<field name="className" type="String">
 			<hint name="max-length">200</hint>
 		</field>
@@ -149,6 +161,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoInstanceTokenId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -175,6 +188,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoLog">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoLogId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -231,6 +245,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoNode">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoNodeId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -245,6 +260,7 @@
 		<field name="name" type="String">
 			<hint name="max-length">200</hint>
 		</field>
+		<field localized="true" name="label" type="String" />
 		<field name="metadata" type="String">
 			<hint-collection name="TEXTAREA" />
 		</field>
@@ -259,6 +275,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoNotification">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoNotificationId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -296,6 +313,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoNotificationRecipient">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoNotificationRecipientId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -329,6 +347,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTask">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTaskId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -350,6 +369,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignment">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTaskAssignmentId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -381,6 +401,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignmentInstance">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTaskAssignmentInstanceId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -408,6 +429,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTaskForm">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTaskFormId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -442,6 +464,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTaskFormInstance">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTaskFormInstanceId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -467,6 +490,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTaskInstanceTokenId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -498,6 +522,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTimer">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTimerId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -525,6 +550,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTimerInstanceToken">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTimerInstanceTokenId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -557,6 +583,7 @@
 	</model>
 	<model name="com.liferay.portal.workflow.kaleo.model.KaleoTransition">
 		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="kaleoTransitionId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -572,6 +599,7 @@
 		<field name="name" type="String">
 			<hint name="max-length">200</hint>
 		</field>
+		<field localized="true" name="label" type="String" />
 		<field name="description" type="String">
 			<hint-collection name="TEXTAREA" />
 		</field>

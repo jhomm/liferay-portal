@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.kernel.service;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class AssetCategoryLocalServiceWrapper
 	implements AssetCategoryLocalService,
 			   ServiceWrapper<AssetCategoryLocalService> {
+
+	public AssetCategoryLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AssetCategoryLocalServiceWrapper(
 		AssetCategoryLocalService assetCategoryLocalService) {
@@ -49,25 +45,6 @@ public class AssetCategoryLocalServiceWrapper
 	@Override
 	public AssetCategory addAssetCategory(AssetCategory assetCategory) {
 		return _assetCategoryLocalService.addAssetCategory(assetCategory);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addCategory(String, long, long, long, Map, Map, long, String[], ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public AssetCategory addCategory(
-			long userId, long groupId, long parentCategoryId,
-			java.util.Map<java.util.Locale, String> titleMap,
-			java.util.Map<java.util.Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _assetCategoryLocalService.addCategory(
-			userId, groupId, parentCategoryId, titleMap, descriptionMap,
-			vocabularyId, categoryProperties, serviceContext);
 	}
 
 	@Override
@@ -334,32 +311,13 @@ public class AssetCategoryLocalServiceWrapper
 		return _assetCategoryLocalService.fetchAssetCategory(categoryId);
 	}
 
-	/**
-	 * Returns the asset category with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset category's external reference code
-	 * @return the matching asset category, or <code>null</code> if a matching asset category could not be found
-	 */
 	@Override
 	public AssetCategory fetchAssetCategoryByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return _assetCategoryLocalService.
 			fetchAssetCategoryByExternalReferenceCode(
-				groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAssetCategoryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public AssetCategory fetchAssetCategoryByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return _assetCategoryLocalService.fetchAssetCategoryByReferenceCode(
-			groupId, externalReferenceCode);
+				externalReferenceCode, groupId);
 	}
 
 	/**
@@ -474,22 +432,14 @@ public class AssetCategoryLocalServiceWrapper
 		return _assetCategoryLocalService.getAssetCategory(categoryId);
 	}
 
-	/**
-	 * Returns the asset category with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset category's external reference code
-	 * @return the matching asset category
-	 * @throws PortalException if a matching asset category could not be found
-	 */
 	@Override
 	public AssetCategory getAssetCategoryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetCategoryLocalService.
 			getAssetCategoryByExternalReferenceCode(
-				groupId, externalReferenceCode);
+				externalReferenceCode, groupId);
 	}
 
 	/**
@@ -531,9 +481,23 @@ public class AssetCategoryLocalServiceWrapper
 
 	@Override
 	public java.util.List<AssetCategory> getCategories(
+		long classNameId, long classPK, int start, int end) {
+
+		return _assetCategoryLocalService.getCategories(
+			classNameId, classPK, start, end);
+	}
+
+	@Override
+	public java.util.List<AssetCategory> getCategories(
 		String className, long classPK) {
 
 		return _assetCategoryLocalService.getCategories(className, classPK);
+	}
+
+	@Override
+	public int getCategoriesCount(long classNameId, long classPK) {
+		return _assetCategoryLocalService.getCategoriesCount(
+			classNameId, classPK);
 	}
 
 	@Override
@@ -621,6 +585,15 @@ public class AssetCategoryLocalServiceWrapper
 		getIndexableActionableDynamicQuery() {
 
 		return _assetCategoryLocalService.getIndexableActionableDynamicQuery();
+	}
+
+	@Override
+	public AssetCategory getOrAddIncompleteCategory(
+			String externalReferenceCode, long userId, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetCategoryLocalService.getOrAddIncompleteCategory(
+			externalReferenceCode, userId, groupId);
 	}
 
 	/**
@@ -802,6 +775,11 @@ public class AssetCategoryLocalServiceWrapper
 		return _assetCategoryLocalService.updateCategory(
 			userId, categoryId, parentCategoryId, titleMap, descriptionMap,
 			vocabularyId, categoryProperties, serviceContext);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _assetCategoryLocalService.getBasePersistence();
 	}
 
 	@Override

@@ -1,0 +1,10 @@
+{
+	"editor.formatOnSave": false,
+	"files.exclude": {
+		"out": false
+	},
+	"search.exclude": {
+		"out": true
+	},
+	"typescript.tsc.autoDetect": "off"
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import duplicateItem from '../../../../src/main/resources/META-INF/resources/page_editor/app/actions/duplicateItem';
@@ -76,14 +67,14 @@ describe('undoReducer', () => {
 
 		const undoAction = undoHistory[0];
 
-		expect(undoAction.itemId).toBe(ITEM_ID);
+		expect(undoAction.itemIds).toStrictEqual([ITEM_ID]);
 	});
 
 	it('saves needed state for undo when dispatching DUPLICATE_ITEM action', () => {
 		const ITEM_ID = 'itemId';
 		const initialState = {...STATE};
 
-		const action = duplicateItem({itemId: ITEM_ID});
+		const action = duplicateItem({itemIds: [ITEM_ID]});
 
 		const {undoHistory} = undoReducer(initialState, {
 			...action,
@@ -93,7 +84,7 @@ describe('undoReducer', () => {
 
 		const undoAction = undoHistory[0];
 
-		expect(undoAction.itemId).toBe(ITEM_ID);
+		expect(undoAction.itemIds).toStrictEqual([ITEM_ID]);
 	});
 
 	it('saves needed state for undo when dispatching SELECT_SEGMENTS_EXPERIENCE action', () => {
@@ -229,7 +220,7 @@ describe('undoReducer', () => {
 		};
 
 		const action = {
-			itemId: ITEM_ID,
+			itemIds: [ITEM_ID],
 		};
 
 		const {undoHistory} = undoReducer(initialState, {
@@ -240,7 +231,7 @@ describe('undoReducer', () => {
 
 		const undoAction = undoHistory[0];
 
-		expect(undoAction.itemId).toBe(ITEM_ID);
+		expect(undoAction.itemIds).toStrictEqual([ITEM_ID]);
 	});
 
 	it('saves needed state for undo when dispatching MOVE_ITEM action', () => {
@@ -276,7 +267,7 @@ describe('undoReducer', () => {
 		};
 
 		const action = {
-			itemId: ITEM_ID,
+			itemIds: [ITEM_ID],
 			layoutData: {items: []},
 		};
 
@@ -288,9 +279,9 @@ describe('undoReducer', () => {
 
 		const undoAction = undoHistory[0];
 
-		expect(undoAction.itemId).toBe(ITEM_ID);
-		expect(undoAction.parentItemId).toBe('rootId');
-		expect(undoAction.position).toBe(0);
+		expect(undoAction.itemIds).toStrictEqual([ITEM_ID]);
+		expect(undoAction.parentItemIds).toStrictEqual(['rootId']);
+		expect(undoAction.positions).toStrictEqual([0]);
 	});
 
 	it('saves needed state for undo when dispatching UPDATE_ITEM_CONFIG action', () => {
@@ -326,7 +317,7 @@ describe('undoReducer', () => {
 		};
 
 		const action = {
-			itemId: ITEM_ID,
+			itemIds: [ITEM_ID],
 			layoutData: {items: []},
 		};
 
@@ -338,10 +329,12 @@ describe('undoReducer', () => {
 
 		const undoAction = undoHistory[0];
 
-		expect(undoAction.itemId).toBe(ITEM_ID);
+		expect(undoAction.itemIds).toStrictEqual([ITEM_ID]);
 		expect(undoAction.config).toStrictEqual({
-			paddingBottom: 3,
-			paddingTop: 1,
+			[ITEM_ID]: {
+				paddingBottom: 3,
+				paddingTop: 1,
+			},
 		});
 	});
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.scope.internal.spi.prefix.handler;
@@ -61,7 +52,7 @@ public class PrefixHandlerFactoryImpl implements PrefixHandlerFactory {
 		List<String> strings = new ArrayList<>(_serviceProperties.size() + 1);
 
 		if (_includeBundleSymbolicName) {
-			Bundle bundle = getBundle(propertyAccessorFunction);
+			Bundle bundle = _getBundle(propertyAccessorFunction);
 
 			if (bundle != null) {
 				strings.add(bundle.getSymbolicName());
@@ -131,11 +122,11 @@ public class PrefixHandlerFactoryImpl implements PrefixHandlerFactory {
 		for (String serviceProperty :
 				bundlePrefixHandlerFactoryConfiguration.serviceProperties()) {
 
-			_serviceProperties.add(initializeServiceProperty(serviceProperty));
+			_serviceProperties.add(_initializeServiceProperty(serviceProperty));
 		}
 	}
 
-	protected Bundle getBundle(
+	private Bundle _getBundle(
 		Function<String, Object> propertyAccessorFunction) {
 
 		long bundleId = GetterUtil.getLong(
@@ -150,7 +141,7 @@ public class PrefixHandlerFactoryImpl implements PrefixHandlerFactory {
 		return _bundleContext.getBundle(bundleId);
 	}
 
-	protected String initializeServiceProperty(String serviceProperty) {
+	private String _initializeServiceProperty(String serviceProperty) {
 		int indexOfSpace = serviceProperty.indexOf(StringPool.SPACE);
 
 		if (indexOfSpace == -1) {

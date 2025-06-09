@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.css.cadmin.web.internal.servlet.taglib;
 
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
@@ -21,13 +13,13 @@ import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.ComponentContext;
@@ -39,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Patrick Yeo
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class CadminTopHeadDynamicInclude extends BaseDynamicInclude {
 
 	@Override
@@ -48,25 +40,28 @@ public class CadminTopHeadDynamicInclude extends BaseDynamicInclude {
 			HttpServletResponse httpServletResponse, String key)
 		throws IOException {
 
-		if (!isSignedIn()) {
+		if (!_isSignedIn()) {
 			return;
 		}
 
 		PrintWriter printWriter = httpServletResponse.getWriter();
 
-		printWriter.print("<link data-senna-track=\"temporary\" href=\"");
+		printWriter.write("<link data-senna-track=\"temporary\" href=\"");
 
 		AbsolutePortalURLBuilder absolutePortalURLBuilder =
 			_absolutePortalURLBuilderFactory.getAbsolutePortalURLBuilder(
 				httpServletRequest);
 
 		printWriter.print(
-			absolutePortalURLBuilder.forModuleStylesheet(
+			absolutePortalURLBuilder.forBundleStylesheet(
 				_bundleContext.getBundle(), "clay_admin.css"
 			).build());
 
-		printWriter.println("\" id=\"liferayCadminCSS\" rel=\"stylesheet\"");
-		printWriter.println(" type=\"text/css\" />");
+		printWriter.println("\" id=\"liferayCadminCSS\"");
+		printWriter.write(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest));
+		printWriter.println(" rel=\"stylesheet\" type=\"text/css\" />");
 	}
 
 	@Override
@@ -84,7 +79,7 @@ public class CadminTopHeadDynamicInclude extends BaseDynamicInclude {
 		_bundleContext = bundleContext;
 	}
 
-	protected boolean isSignedIn() {
+	private boolean _isSignedIn() {
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 

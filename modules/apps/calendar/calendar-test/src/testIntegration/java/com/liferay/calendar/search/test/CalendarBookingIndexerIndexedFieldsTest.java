@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.search.test;
@@ -22,19 +13,24 @@ import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.model.CalendarBooking;
 import com.liferay.calendar.model.CalendarResource;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.test.rule.Inject;
 
@@ -103,6 +99,24 @@ public class CalendarBookingIndexerIndexedFieldsTest
 		map.put(Field.RELATED_ENTRY, "true");
 		map.put(Field.STAGING_GROUP, "false");
 		map.put(Field.STATUS, "0");
+
+		Group group = _groupLocalService.getGroup(calendarBooking.getGroupId());
+
+		map.put("groupExternalReferenceCode", group.getExternalReferenceCode());
+		map.put(
+			"scopeGroupExternalReferenceCode",
+			group.getExternalReferenceCode());
+
+		User user = TestPropsValues.getUser();
+
+		map.put(
+			"statusByUserExternalReferenceCode",
+			user.getExternalReferenceCode());
+
+		map.put(
+			"statusByUserId",
+			String.valueOf(calendarBooking.getStatusByUserId()));
+		map.put("userExternalReferenceCode", user.getExternalReferenceCode());
 		map.put("viewActionId", CalendarActionKeys.VIEW_BOOKING_DETAILS);
 
 		populateTitle(originalTitle, map);
@@ -131,11 +145,15 @@ public class CalendarBookingIndexerIndexedFieldsTest
 
 		String keywords = "nev";
 
-		Document document = searchOnlyOne(keywords, LocaleUtil.HUNGARY);
+		SearchResponse searchResponse = searchOnlyOneSearchResponse(
+			keywords, LocaleUtil.HUNGARY);
 
-		indexedFieldsFixture.postProcessDocument(document);
-
-		FieldValuesAssert.assertFieldValues(map, document, keywords);
+		FieldValuesAssert.assertFieldValues(
+			map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("score") &&
+				!name.equals("timestamp"),
+			searchResponse);
 	}
 
 	protected CalendarBooking addCalendarBooking(
@@ -267,5 +285,8 @@ public class CalendarBookingIndexerIndexedFieldsTest
 
 	@Inject
 	private AssetEntryLocalService _assetEntryLocalService;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
 
 }

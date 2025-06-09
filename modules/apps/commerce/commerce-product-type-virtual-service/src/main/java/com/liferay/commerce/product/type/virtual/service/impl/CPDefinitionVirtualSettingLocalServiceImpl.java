@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.service.impl;
@@ -18,38 +9,48 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
-import com.liferay.commerce.product.service.CProductLocalService;
-import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingException;
-import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingFileEntryIdException;
 import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingSampleException;
 import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingSampleFileEntryIdException;
-import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingSampleUrlException;
+import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingSampleURLException;
 import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingTermsOfUseArticleResourcePKException;
 import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingTermsOfUseContentException;
 import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingTermsOfUseException;
-import com.liferay.commerce.product.type.virtual.exception.CPDefinitionVirtualSettingUrlException;
 import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
+import com.liferay.commerce.product.type.virtual.service.CPDVirtualSettingFileEntryLocalService;
 import com.liferay.commerce.product.type.virtual.service.base.CPDefinitionVirtualSettingLocalServiceBaseImpl;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Marco Leo
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting",
+	service = AopService.class
+)
 public class CPDefinitionVirtualSettingLocalServiceImpl
 	extends CPDefinitionVirtualSettingLocalServiceBaseImpl {
 
@@ -57,15 +58,29 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 	public CPDefinitionVirtualSetting addCPDefinitionVirtualSetting(
 			String className, long classPK, long fileEntryId, String url,
 			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey, boolean override,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
-		long groupId = serviceContext.getScopeGroupId();
+		User user = _userLocalService.getUser(serviceContext.getUserId());
+
+		long groupId = 0;
+
+		if (className.equals(CPDefinition.class.getName())) {
+			CPDefinition cpDefinition =
+				_cpDefinitionLocalService.getCPDefinition(classPK);
+
+			groupId = cpDefinition.getGroupId();
+		}
+		else {
+			CPInstance cpInstance = _cpInstanceLocalService.getCPInstance(
+				classPK);
+
+			groupId = cpInstance.getGroupId();
+		}
 
 		if (Validator.isNotNull(url)) {
 			fileEntryId = 0;
@@ -75,15 +90,15 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 		}
 
 		if (useSample) {
-			if (Validator.isNotNull(sampleUrl)) {
+			if (Validator.isNotNull(sampleURL)) {
 				sampleFileEntryId = 0;
 			}
 			else {
-				sampleUrl = null;
+				sampleURL = null;
 			}
 		}
 		else {
-			sampleUrl = null;
+			sampleURL = null;
 			sampleFileEntryId = 0;
 		}
 
@@ -100,10 +115,9 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			termsOfUseJournalArticleResourcePrimKey = 0;
 		}
 
-		validate(
-			fileEntryId, url, useSample, sampleFileEntryId, sampleUrl,
-			termsOfUseRequired, termsOfUseContentMap,
-			termsOfUseJournalArticleResourcePrimKey);
+		_validate(
+			useSample, sampleFileEntryId, sampleURL, termsOfUseRequired,
+			termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey);
 
 		long cpDefinitionVirtualSettingId = counterLocalService.increment();
 
@@ -146,14 +160,12 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 		cpDefinitionVirtualSetting.setUserName(user.getFullName());
 		cpDefinitionVirtualSetting.setClassName(className);
 		cpDefinitionVirtualSetting.setClassPK(classPK);
-		cpDefinitionVirtualSetting.setFileEntryId(fileEntryId);
-		cpDefinitionVirtualSetting.setUrl(url);
 		cpDefinitionVirtualSetting.setActivationStatus(activationStatus);
 		cpDefinitionVirtualSetting.setDuration(duration);
 		cpDefinitionVirtualSetting.setMaxUsages(maxUsages);
 		cpDefinitionVirtualSetting.setUseSample(useSample);
 		cpDefinitionVirtualSetting.setSampleFileEntryId(sampleFileEntryId);
-		cpDefinitionVirtualSetting.setSampleUrl(sampleUrl);
+		cpDefinitionVirtualSetting.setSampleURL(sampleURL);
 		cpDefinitionVirtualSetting.setTermsOfUseRequired(termsOfUseRequired);
 		cpDefinitionVirtualSetting.setTermsOfUseContentMap(
 			termsOfUseContentMap);
@@ -162,27 +174,20 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 		cpDefinitionVirtualSetting.setOverride(override);
 		cpDefinitionVirtualSetting.setExpandoBridgeAttributes(serviceContext);
 
-		return cpDefinitionVirtualSettingPersistence.update(
-			cpDefinitionVirtualSetting);
-	}
+		cpDefinitionVirtualSetting =
+			cpDefinitionVirtualSettingPersistence.update(
+				cpDefinitionVirtualSetting);
 
-	@Override
-	public CPDefinitionVirtualSetting addCPDefinitionVirtualSetting(
-			String className, long classPK, long fileEntryId, String url,
-			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
-			boolean termsOfUseRequired,
-			Map<Locale, String> termsOfUseContentMap,
-			long termsOfUseJournalArticleResourcePrimKey,
-			ServiceContext serviceContext)
-		throws PortalException {
+		if ((fileEntryId > 0) || Validator.isNotNull(url)) {
+			_cpdVirtualSettingFileEntryLocalService.
+				addCPDVirtualSettingFileEntry(
+					user.getUserId(), groupId,
+					cpDefinitionVirtualSetting.
+						getCPDefinitionVirtualSettingId(),
+					fileEntryId, url, StringPool.BLANK);
+		}
 
-		return cpDefinitionVirtualSettingLocalService.
-			addCPDefinitionVirtualSetting(
-				className, classPK, fileEntryId, url, activationStatus,
-				duration, maxUsages, useSample, sampleFileEntryId, sampleUrl,
-				termsOfUseRequired, termsOfUseContentMap,
-				termsOfUseJournalArticleResourcePrimKey, false, serviceContext);
+		return cpDefinitionVirtualSetting;
 	}
 
 	@Override
@@ -201,7 +206,6 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			newCPDefinitionVirtualSetting.setUuid(PortalUUIDUtil.generate());
 			newCPDefinitionVirtualSetting.setCPDefinitionVirtualSettingId(
 				counterLocalService.increment());
-
 			newCPDefinitionVirtualSetting.setClassPK(newCPDefinitionId);
 
 			cpDefinitionVirtualSettingLocalService.
@@ -214,7 +218,7 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			String className, long classPK)
 		throws PortalException {
 
-		long classNameId = classNameLocalService.getClassNameId(className);
+		long classNameId = _classNameLocalService.getClassNameId(className);
 
 		CPDefinitionVirtualSetting cpDefinitionVirtualSetting =
 			cpDefinitionVirtualSettingPersistence.fetchByC_C(
@@ -253,6 +257,11 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 				}
 			}
 
+			_cpdVirtualSettingFileEntryLocalService.
+				deleteCPDVirtualSettingFileEntries(
+					cpDefinitionVirtualSetting.
+						getCPDefinitionVirtualSettingId());
+
 			cpDefinitionVirtualSettingPersistence.remove(
 				cpDefinitionVirtualSetting);
 		}
@@ -265,23 +274,22 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 		String className, long classPK) {
 
 		return cpDefinitionVirtualSettingPersistence.fetchByC_C(
-			classNameLocalService.getClassNameId(className), classPK);
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
 	public CPDefinitionVirtualSetting getCPDefinitionVirtualSetting(
-			String className, long classPK)
-		throws PortalException {
+		String className, long classPK) {
 
 		return cpDefinitionVirtualSettingPersistence.fetchByC_C(
-			classNameLocalService.getClassNameId(className), classPK);
+			_classNameLocalService.getClassNameId(className), classPK);
 	}
 
 	@Override
 	public CPDefinitionVirtualSetting updateCPDefinitionVirtualSetting(
 			long cpDefinitionVirtualSettingId, long fileEntryId, String url,
 			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey, boolean override,
@@ -292,23 +300,16 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			cpDefinitionVirtualSettingPersistence.findByPrimaryKey(
 				cpDefinitionVirtualSettingId);
 
-		if (Validator.isNotNull(url)) {
-			fileEntryId = 0;
-		}
-		else {
-			url = null;
-		}
-
 		if (useSample) {
-			if (Validator.isNotNull(sampleUrl)) {
+			if (Validator.isNotNull(sampleURL)) {
 				sampleFileEntryId = 0;
 			}
 			else {
-				sampleUrl = null;
+				sampleURL = null;
 			}
 		}
 		else {
-			sampleUrl = null;
+			sampleURL = null;
 			sampleFileEntryId = 0;
 		}
 
@@ -325,14 +326,13 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			termsOfUseJournalArticleResourcePrimKey = 0;
 		}
 
-		validate(
-			fileEntryId, url, useSample, sampleFileEntryId, sampleUrl,
-			termsOfUseRequired, termsOfUseContentMap,
-			termsOfUseJournalArticleResourcePrimKey);
+		_validate(
+			useSample, sampleFileEntryId, sampleURL, termsOfUseRequired,
+			termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey);
 
-		long cpDefinitionClassNameId = classNameLocalService.getClassNameId(
+		long cpDefinitionClassNameId = _classNameLocalService.getClassNameId(
 			CPDefinition.class);
-		long cpInstanceClassNameId = classNameLocalService.getClassNameId(
+		long cpInstanceClassNameId = _classNameLocalService.getClassNameId(
 			CPInstance.class);
 
 		if ((cpDefinitionVirtualSetting.getClassNameId() ==
@@ -374,14 +374,12 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			}
 		}
 
-		cpDefinitionVirtualSetting.setFileEntryId(fileEntryId);
-		cpDefinitionVirtualSetting.setUrl(url);
 		cpDefinitionVirtualSetting.setActivationStatus(activationStatus);
 		cpDefinitionVirtualSetting.setDuration(duration);
 		cpDefinitionVirtualSetting.setMaxUsages(maxUsages);
 		cpDefinitionVirtualSetting.setUseSample(useSample);
 		cpDefinitionVirtualSetting.setSampleFileEntryId(sampleFileEntryId);
-		cpDefinitionVirtualSetting.setSampleUrl(sampleUrl);
+		cpDefinitionVirtualSetting.setSampleURL(sampleURL);
 		cpDefinitionVirtualSetting.setTermsOfUseRequired(termsOfUseRequired);
 		cpDefinitionVirtualSetting.setTermsOfUseContentMap(
 			termsOfUseContentMap);
@@ -390,15 +388,28 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 		cpDefinitionVirtualSetting.setOverride(override);
 		cpDefinitionVirtualSetting.setExpandoBridgeAttributes(serviceContext);
 
-		return cpDefinitionVirtualSettingPersistence.update(
-			cpDefinitionVirtualSetting);
+		cpDefinitionVirtualSetting =
+			cpDefinitionVirtualSettingPersistence.update(
+				cpDefinitionVirtualSetting);
+
+		if ((fileEntryId > 0) || Validator.isNotNull(url)) {
+			_cpdVirtualSettingFileEntryLocalService.
+				addCPDVirtualSettingFileEntry(
+					cpDefinitionVirtualSetting.getUserId(),
+					cpDefinitionVirtualSetting.getGroupId(),
+					cpDefinitionVirtualSetting.
+						getCPDefinitionVirtualSettingId(),
+					fileEntryId, url, StringPool.BLANK);
+		}
+
+		return cpDefinitionVirtualSetting;
 	}
 
 	@Override
 	public CPDefinitionVirtualSetting updateCPDefinitionVirtualSetting(
 			long cpDefinitionVirtualSettingId, long fileEntryId, String url,
 			int activationStatus, long duration, int maxUsages,
-			boolean useSample, long sampleFileEntryId, String sampleUrl,
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey,
@@ -409,34 +420,17 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 			updateCPDefinitionVirtualSetting(
 				cpDefinitionVirtualSettingId, fileEntryId, url,
 				activationStatus, duration, maxUsages, useSample,
-				sampleFileEntryId, sampleUrl, termsOfUseRequired,
+				sampleFileEntryId, sampleURL, termsOfUseRequired,
 				termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey,
 				false, serviceContext);
 	}
 
-	protected void validate(
-			long fileEntryId, String url, boolean useSample,
-			long sampleFileEntryId, String sampleUrl,
+	private void _validate(
+			boolean useSample, long sampleFileEntryId, String sampleURL,
 			boolean termsOfUseRequired,
 			Map<Locale, String> termsOfUseContentMap,
 			long termsOfUseJournalArticleResourcePrimKey)
 		throws PortalException {
-
-		if (fileEntryId > 0) {
-			try {
-				_dlAppLocalService.getFileEntry(fileEntryId);
-			}
-			catch (NoSuchFileEntryException noSuchFileEntryException) {
-				throw new CPDefinitionVirtualSettingFileEntryIdException(
-					noSuchFileEntryException);
-			}
-		}
-		else if ((fileEntryId <= 0) && Validator.isNull(url)) {
-			throw new CPDefinitionVirtualSettingException();
-		}
-		else if (Validator.isNull(url)) {
-			throw new CPDefinitionVirtualSettingUrlException();
-		}
 
 		if (useSample) {
 			if (sampleFileEntryId > 0) {
@@ -448,11 +442,17 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 						noSuchFileEntryException);
 				}
 			}
-			else if ((sampleFileEntryId <= 0) && Validator.isNull(sampleUrl)) {
+			else if (Validator.isNull(sampleURL)) {
 				throw new CPDefinitionVirtualSettingSampleException();
 			}
-			else if (Validator.isNull(sampleUrl)) {
-				throw new CPDefinitionVirtualSettingSampleUrlException();
+			else {
+				try {
+					new URL(sampleURL);
+				}
+				catch (MalformedURLException malformedURLException) {
+					throw new CPDefinitionVirtualSettingSampleURLException(
+						malformedURLException);
+				}
 			}
 		}
 
@@ -489,19 +489,26 @@ public class CPDefinitionVirtualSettingLocalServiceImpl
 		}
 	}
 
-	@ServiceReference(type = CPDefinitionLocalService.class)
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
-	@ServiceReference(type = CPInstanceLocalService.class)
+	@Reference
+	private CPDVirtualSettingFileEntryLocalService
+		_cpdVirtualSettingFileEntryLocalService;
+
+	@Reference
 	private CPInstanceLocalService _cpInstanceLocalService;
 
-	@ServiceReference(type = CProductLocalService.class)
-	private CProductLocalService _cProductLocalService;
-
-	@ServiceReference(type = DLAppLocalService.class)
+	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
-	@ServiceReference(type = JournalArticleLocalService.class)
+	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

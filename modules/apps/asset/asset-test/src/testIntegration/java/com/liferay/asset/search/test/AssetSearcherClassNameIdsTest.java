@@ -1,30 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.search.AssetSearcherFactory;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
-import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.bookmarks.constants.BookmarksFolderConstants;
-import com.liferay.bookmarks.model.BookmarksEntry;
 import com.liferay.bookmarks.service.BookmarksEntryLocalService;
-import com.liferay.journal.model.JournalArticle;
-import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.constants.JournalFolderConstants;
+import com.liferay.journal.test.util.JournalTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.BaseSearcher;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -35,14 +27,13 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portlet.asset.util.AssetSearcher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -66,19 +57,24 @@ public class AssetSearcherClassNameIdsTest {
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		_journalArticleFixture.setGroup(_group);
+		_blogsEntryLocalService.addEntry(
+			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), getServiceContext());
 
-		_journalArticleFixture.setJournalArticleLocalService(
-			_journalArticleLocalService);
+		_bookmarksEntryLocalService.addEntry(
+			TestPropsValues.getUserId(), _group.getGroupId(),
+			BookmarksFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString(), "http://www.liferay.com",
+			RandomTestUtil.randomString(), getServiceContext());
+
+		JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 	}
 
 	@Test
 	public void testAll() throws Exception {
 		UserTestUtil.setUser(addUser());
-
-		addBlogsEntry();
-		addBookmarksEntry();
-		addJournalArticle();
 
 		Hits hits = search(getAssetEntryQuery(), getSearchContext());
 
@@ -89,15 +85,11 @@ public class AssetSearcherClassNameIdsTest {
 	public void testMultiple() throws Exception {
 		UserTestUtil.setUser(addUser());
 
-		addBlogsEntry();
-		addBookmarksEntry();
-		addJournalArticle();
-
-		AssetEntryQuery assetEntryQuery = getAssetEntryQuery(
-			"com.liferay.bookmarks.model.BookmarksEntry",
-			"com.liferay.journal.model.JournalArticle");
-
-		Hits hits = search(assetEntryQuery, getSearchContext());
+		Hits hits = search(
+			getAssetEntryQuery(
+				"com.liferay.bookmarks.model.BookmarksEntry",
+				"com.liferay.journal.model.JournalArticle"),
+			getSearchContext());
 
 		Assert.assertEquals(hits.toString(), 2, hits.getLength());
 	}
@@ -106,38 +98,15 @@ public class AssetSearcherClassNameIdsTest {
 	public void testSingle() throws Exception {
 		UserTestUtil.setUser(addUser());
 
-		addBlogsEntry();
-		addBookmarksEntry();
-		addJournalArticle();
-
-		AssetEntryQuery assetEntryQuery = getAssetEntryQuery(
-			"com.liferay.journal.model.JournalArticle");
-
-		Hits hits = search(assetEntryQuery, getSearchContext());
+		Hits hits = search(
+			getAssetEntryQuery("com.liferay.journal.model.JournalArticle"),
+			getSearchContext());
 
 		Assert.assertEquals(hits.toString(), 1, hits.getLength());
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
-
-	protected BlogsEntry addBlogsEntry() throws Exception {
-		return _blogsEntryLocalService.addEntry(
-			TestPropsValues.getUserId(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), getServiceContext());
-	}
-
-	protected BookmarksEntry addBookmarksEntry() throws Exception {
-		return _bookmarksEntryLocalService.addEntry(
-			TestPropsValues.getUserId(), _group.getGroupId(),
-			BookmarksFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			RandomTestUtil.randomString(), "http://www.liferay.com",
-			RandomTestUtil.randomString(), getServiceContext());
-	}
-
-	protected JournalArticle addJournalArticle() throws Exception {
-		return _journalArticleFixture.addJournalArticle(getServiceContext());
-	}
 
 	protected User addUser() throws Exception {
 		User user = UserTestUtil.addUser(_group.getGroupId());
@@ -157,11 +126,8 @@ public class AssetSearcherClassNameIdsTest {
 	}
 
 	protected long[] getClassNameIds(String... classNames) {
-		return Stream.of(
-			classNames
-		).mapToLong(
-			PortalUtil::getClassNameId
-		).toArray();
+		return TransformUtil.transformToLongArray(
+			Arrays.asList(classNames), PortalUtil::getClassNameId);
 	}
 
 	protected SearchContext getSearchContext() {
@@ -182,12 +148,14 @@ public class AssetSearcherClassNameIdsTest {
 			AssetEntryQuery assetEntryQuery, SearchContext searchContext)
 		throws Exception {
 
-		AssetSearcher assetSearcher = new AssetSearcher();
+		BaseSearcher baseSearcher = _assetSearcherFactory.createBaseSearcher(
+			assetEntryQuery);
 
-		assetSearcher.setAssetEntryQuery(assetEntryQuery);
-
-		return assetSearcher.search(searchContext);
+		return baseSearcher.search(searchContext);
 	}
+
+	@Inject
+	private static AssetSearcherFactory _assetSearcherFactory;
 
 	@Inject
 	private static BlogsEntryLocalService _blogsEntryLocalService;
@@ -195,14 +163,9 @@ public class AssetSearcherClassNameIdsTest {
 	@Inject
 	private static BookmarksEntryLocalService _bookmarksEntryLocalService;
 
-	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
-
 	@DeleteAfterTestRun
 	private Group _group;
 
-	private final JournalArticleFixture _journalArticleFixture =
-		new JournalArticleFixture();
 	private final List<User> _users = new ArrayList<>();
 
 }

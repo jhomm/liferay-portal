@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.lar;
@@ -82,11 +73,13 @@ public class PermissionExporter {
 			portletDataElement.addAttribute(
 				"resource-pk", String.valueOf(resourcePK));
 
-			List<KeyValuePair> permissions = entry.getValue();
+			List<KeyValuePair> permissionKeyValuePairs = entry.getValue();
 
-			for (KeyValuePair permission : permissions) {
-				String roleName = permission.getKey();
-				String actions = permission.getValue();
+			for (KeyValuePair permissionKeyValuePair :
+					permissionKeyValuePairs) {
+
+				String roleName = permissionKeyValuePair.getKey();
+				String actions = permissionKeyValuePair.getValue();
 
 				Element permissionsElement = portletDataElement.addElement(
 					"permissions");
@@ -122,12 +115,15 @@ public class PermissionExporter {
 
 		Element permissionsElement = portletElement.addElement("permissions");
 
-		exportPermissions(
+		_exportPermissions(
 			portletDataContext, resourceName, resourcePrimKey,
 			permissionsElement);
 	}
 
-	protected void exportPermissions(
+	private PermissionExporter() {
+	}
+
+	private void _exportPermissions(
 			PortletDataContext portletDataContext, String resourceName,
 			String resourcePrimKey, Element permissionsElement)
 		throws Exception {
@@ -141,9 +137,15 @@ public class PermissionExporter {
 				resourcePrimKey, actionIds);
 
 		for (Map.Entry<Long, Set<String>> entry : roleToActionIds.entrySet()) {
+			Set<String> availableActionIds = entry.getValue();
+
 			long roleId = entry.getKey();
 
 			Role role = RoleLocalServiceUtil.fetchRole(roleId);
+
+			if (availableActionIds.isEmpty() && !role.isSystem()) {
+				continue;
+			}
 
 			String roleName = role.getName();
 
@@ -157,7 +159,7 @@ public class PermissionExporter {
 					// LPS-52675
 
 					if (_log.isDebugEnabled()) {
-						_log.debug(portalException, portalException);
+						_log.debug(portalException);
 					}
 				}
 			}
@@ -171,17 +173,12 @@ public class PermissionExporter {
 			roleElement.addAttribute("type", String.valueOf(role.getType()));
 			roleElement.addAttribute("subtype", role.getSubtype());
 
-			Set<String> availableActionIds = entry.getValue();
-
 			for (String actionId : availableActionIds) {
 				Element actionKeyElement = roleElement.addElement("action-key");
 
 				actionKeyElement.addText(actionId);
 			}
 		}
-	}
-
-	private PermissionExporter() {
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -35,13 +26,7 @@ request.setAttribute("view.jsp-portletURL", portletURL);
 request.setAttribute("view.jsp-showSearch", false);
 
 portletDisplay.setShowBackIcon(true);
-
-if (Validator.isNull(redirect)) {
-	portletDisplay.setURLBack(String.valueOf(renderResponse.createRenderURL()));
-}
-else {
-	portletDisplay.setURLBack(redirect);
-}
+portletDisplay.setURLBack(ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL())));
 %>
 
 <liferay-portlet:renderURL var="editCProductExternalReferenceCodeURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
@@ -53,6 +38,7 @@ else {
 	actions="<%= cpDefinitionsDisplayContext.getHeaderActionModels() %>"
 	bean="<%= cpDefinition %>"
 	beanIdLabel="id"
+	displayBeanId="<%= cpDefinition.getCProductId() %>"
 	dropdownItems="<%= cpDefinitionsDisplayContext.getDropdownItems() %>"
 	externalReferenceCode="<%= (cProduct == null) ? StringPool.BLANK : cProduct.getExternalReferenceCode() %>"
 	externalReferenceCodeEditUrl="<%= (cProduct == null) ? StringPool.BLANK : editCProductExternalReferenceCodeURL %>"
@@ -70,27 +56,17 @@ else {
 	portletURL="<%= currentURLObj %>"
 />
 
-<aui:script>
-	document
-		.getElementById('<portlet:namespace />publishButton')
-		.addEventListener('click', (e) => {
-			e.preventDefault();
-
-			var form = document.getElementById('<portlet:namespace />fm');
-
-			if (!form) {
-				throw new Error('Form with id: <portlet:namespace />fm not found!');
-			}
-
-			var workflowActionInput = document.getElementById(
-				'<portlet:namespace />workflowAction'
-			);
-
-			if (workflowActionInput) {
-				workflowActionInput.value =
-					'<%= WorkflowConstants.ACTION_PUBLISH %>';
-			}
-
-			submitForm(form);
-		});
-</aui:script>
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"message", LanguageUtil.get(request, "there-is-already-a-draft-version-of-this-product.-continuing-will-replace-that-draft-version-with-this-draft-version.-do-you-wish-to-proceed")
+		).put(
+			"showConfirmationMessage", cpDefinitionsDisplayContext.showConfirmationMessage(cpDefinition)
+		).put(
+			"title", LanguageUtil.get(request, "save-as-draft")
+		).put(
+			"WORKFLOW_ACTION_PUBLISH", WorkflowConstants.ACTION_PUBLISH
+		).build()
+	%>'
+	module="{editCpDefinition} from commerce-product-definitions-web"
+/>

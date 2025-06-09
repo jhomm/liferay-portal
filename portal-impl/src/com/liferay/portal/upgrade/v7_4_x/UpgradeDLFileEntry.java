@@ -1,22 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_4_x;
 
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
-import com.liferay.portal.upgrade.v7_4_x.util.DLFileEntryTable;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -29,45 +21,42 @@ public class UpgradeDLFileEntry extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		if (!hasColumn(DLFileEntryTable.TABLE_NAME, "externalReferenceCode")) {
-			alter(
-				DLFileEntryTable.class,
-				new AlterTableAddColumn(
-					"externalReferenceCode", "VARCHAR(75)"));
+		if (!hasColumn("DLFileEntry", "externalReferenceCode")) {
+			alterTableAddColumn(
+				"DLFileEntry", "externalReferenceCode", "VARCHAR(75)");
 
 			_populateExternalReferenceCode();
 		}
+	}
 
-		if (!hasColumn(DLFileEntryTable.TABLE_NAME, "expirationDate")) {
-			alter(
-				DLFileEntryTable.class,
-				new AlterTableAddColumn("expirationDate", "DATE null"));
-		}
-
-		if (!hasColumn(DLFileEntryTable.TABLE_NAME, "reviewDate")) {
-			alter(
-				DLFileEntryTable.class,
-				new AlterTableAddColumn("reviewDate", "DATE null"));
-		}
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.addColumns(
+				"DLFileEntry", "expirationDate DATE null",
+				"reviewDate DATE null")
+		};
 	}
 
 	private void _populateExternalReferenceCode() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select fileEntryId from DLFileEntry where " +
+				"select ctCollectionId, fileEntryId from DLFileEntry where " +
 					"externalReferenceCode is null or externalReferenceCode " +
 						"= ''");
 			ResultSet resultSet = preparedStatement1.executeQuery();
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update DLFileEntry set externalReferenceCode = ? " +
-							"where fileEntryId = ?"))) {
+					connection,
+					"update DLFileEntry set externalReferenceCode = ? where " +
+						"ctCollectionId = ? and fileEntryId = ?")) {
 
 			while (resultSet.next()) {
-				long fileEntryId = resultSet.getLong(1);
+				long fileEntryId = resultSet.getLong(2);
 
 				preparedStatement2.setString(1, String.valueOf(fileEntryId));
-				preparedStatement2.setLong(2, fileEntryId);
+
+				preparedStatement2.setLong(2, resultSet.getLong(1));
+				preparedStatement2.setLong(3, fileEntryId);
 
 				preparedStatement2.addBatch();
 			}

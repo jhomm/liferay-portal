@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults.internal;
@@ -31,10 +22,10 @@ import com.liferay.gradle.plugins.defaults.internal.util.GitUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.GradlePluginsDefaultsUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.LiferayRelengUtil;
-import com.liferay.gradle.plugins.defaults.tasks.MergeFilesTask;
-import com.liferay.gradle.plugins.defaults.tasks.ReplaceRegexTask;
-import com.liferay.gradle.plugins.defaults.tasks.WriteArtifactPublishCommandsTask;
-import com.liferay.gradle.plugins.defaults.tasks.WritePropertiesTask;
+import com.liferay.gradle.plugins.defaults.task.MergeFilesTask;
+import com.liferay.gradle.plugins.defaults.task.ReplaceRegexTask;
+import com.liferay.gradle.plugins.defaults.task.WriteArtifactPublishCommandsTask;
+import com.liferay.gradle.plugins.defaults.task.WritePropertiesTask;
 import com.liferay.gradle.plugins.node.NodePlugin;
 import com.liferay.gradle.util.Validator;
 
@@ -61,21 +52,21 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.PublishArtifact;
 import org.gradle.api.artifacts.PublishArtifactSet;
 import org.gradle.api.file.CopySpec;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.invocation.Gradle;
 import org.gradle.api.logging.Logger;
-import org.gradle.api.plugins.BasePlugin;
 import org.gradle.api.plugins.JavaBasePlugin;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.plugins.MavenPlugin;
 import org.gradle.api.plugins.PluginContainer;
 import org.gradle.api.plugins.WarPlugin;
+import org.gradle.api.publish.maven.plugins.MavenPublishPlugin;
+import org.gradle.api.publish.plugins.PublishingPlugin;
 import org.gradle.api.specs.Spec;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.Delete;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.TaskProvider;
-import org.gradle.api.tasks.Upload;
 import org.gradle.util.CollectionUtils;
 
 /**
@@ -110,15 +101,16 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 		// Plugins
 
 		GradleUtil.applyPlugin(project, ChangeLogBuilderPlugin.class);
-		GradleUtil.applyPlugin(project, MavenPlugin.class);
+		GradleUtil.applyPlugin(project, MavenPublishPlugin.class);
 
 		// Configurations
 
 		ConfigurationContainer configurationContainer =
 			project.getConfigurations();
 
-		Configuration archivesConfiguration = configurationContainer.getByName(
-			Dependency.ARCHIVES_CONFIGURATION);
+		Configuration archivesConfiguration =
+			configurationContainer.maybeCreate(
+				Dependency.ARCHIVES_CONFIGURATION);
 
 		// Tasks
 
@@ -149,9 +141,8 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 			GradleUtil.getTaskProvider(
 				project, ChangeLogBuilderPlugin.BUILD_CHANGE_LOG_TASK_NAME,
 				BuildChangeLogTask.class);
-		TaskProvider<Upload> uploadArchivesTaskProvider =
-			GradleUtil.getTaskProvider(
-				project, BasePlugin.UPLOAD_ARCHIVES_TASK_NAME, Upload.class);
+		TaskProvider<Task> publishTaskProvider = GradleUtil.getTaskProvider(
+			project, PublishingPlugin.PUBLISH_LIFECYCLE_TASK_NAME);
 
 		File relengDir = LiferayRelengUtil.getRelengDir(project);
 
@@ -164,8 +155,8 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 			printStaleArtifactTaskProvider);
 		_configureTaskRecordArtifactProvider(
 			project, recordArtifactTaskProvider, relengDir);
-		_configureTaskUploadArchivesProvider(
-			recordArtifactTaskProvider, uploadArchivesTaskProvider);
+		_configureTaskPublishProvider(
+			recordArtifactTaskProvider, publishTaskProvider);
 		_configureTaskWriteArtifactPublishCommandsProvider(
 			project, cleanArtifactsPublishCommandsTaskProvider,
 			mergeArtifactsPublishCommandsTaskProvider,
@@ -390,11 +381,25 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 
 							if (Validator.isNull(result) ||
 								GradlePluginsDefaultsUtil.isTestProject(
-									project) ||
-								!LiferayRelengUtil.hasUnpublishedDependencies(
 									project)) {
 
 								return false;
+							}
+
+							String dependencyName =
+								LiferayRelengUtil.getUnpublishedDependencyName(
+									project);
+
+							if (dependencyName == null) {
+								return false;
+							}
+
+							Logger logger = project.getLogger();
+
+							if (logger.isQuietEnabled()) {
+								logger.quiet(
+									"The project dependency '{}' has new commits.",
+									dependencyName);
 							}
 
 							return true;
@@ -487,13 +492,8 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 					return true;
 				}
 
-				if (LiferayRelengUtil.hasStaleUnstyledTheme(
-						project, recordArtifactTask.getOutputFile())) {
-
-					return true;
-				}
-
-				return false;
+				return LiferayRelengUtil.hasStaleUnstyledTheme(
+					project, recordArtifactTask.getOutputFile());
 			}
 
 		};
@@ -569,6 +569,9 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 
 				@Override
 				public void execute(Copy processResourcesCopy) {
+					processResourcesCopy.setDuplicatesStrategy(
+						DuplicatesStrategy.INCLUDE);
+
 					processResourcesCopy.from(
 						new Callable<File>() {
 
@@ -589,6 +592,24 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 							}
 
 						});
+				}
+
+			});
+	}
+
+	private void _configureTaskPublishProvider(
+		final TaskProvider<WritePropertiesTask> recordArtifactTaskProvider,
+		TaskProvider<Task> publishTaskProvider) {
+
+		publishTaskProvider.configure(
+			new Action<Task>() {
+
+				@Override
+				public void execute(Task publishTask) {
+					publishTask.dependsOn(recordArtifactTaskProvider);
+
+					_configureTaskEnabledIfRelease(
+						recordArtifactTaskProvider.get());
 				}
 
 			});
@@ -676,24 +697,6 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 			});
 	}
 
-	private void _configureTaskUploadArchivesProvider(
-		final TaskProvider<WritePropertiesTask> recordArtifactTaskProvider,
-		TaskProvider<Upload> uploadArchivesTaskProvider) {
-
-		uploadArchivesTaskProvider.configure(
-			new Action<Upload>() {
-
-				@Override
-				public void execute(Upload uploadArchivesUpload) {
-					uploadArchivesUpload.dependsOn(recordArtifactTaskProvider);
-
-					_configureTaskEnabledIfRelease(
-						recordArtifactTaskProvider.get());
-				}
-
-			});
-	}
-
 	private void _configureTaskWriteArtifactPublishCommandsOnlyIf(
 		Project project,
 		WriteArtifactPublishCommandsTask writeArtifactPublishCommandsTask,
@@ -770,7 +773,9 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 					return true;
 				}
 
-				if (LiferayRelengUtil.hasStaleUnstyledTheme(
+				if (LiferayRelengUtil.hasStalePortalDependencies(
+						project, recordArtifactTask.getOutputFile()) ||
+					LiferayRelengUtil.hasStaleUnstyledTheme(
 						project, recordArtifactTask.getOutputFile())) {
 
 					return true;
@@ -780,7 +785,18 @@ public class LiferayRelengPlugin implements Plugin<Project> {
 						project, project.getProjectDir(),
 						recordArtifactTask.getOutputFile())) {
 
-					if (LiferayRelengUtil.hasUnpublishedDependencies(project)) {
+					String dependencyName =
+						LiferayRelengUtil.getUnpublishedDependencyName(project);
+
+					if (dependencyName != null) {
+						Logger logger = project.getLogger();
+
+						if (logger.isInfoEnabled()) {
+							logger.info(
+								"The project dependency '{}' has new commits.",
+								dependencyName);
+						}
+
 						return false;
 					}
 

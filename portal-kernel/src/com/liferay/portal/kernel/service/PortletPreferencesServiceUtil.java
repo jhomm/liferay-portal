@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -54,7 +45,7 @@ public class PortletPreferencesServiceUtil {
 	public static void restoreArchivedPreferences(
 			long groupId, com.liferay.portal.kernel.model.Layout layout,
 			String portletId, long portletItemId,
-			javax.portlet.PortletPreferences jxPortletPreferences)
+			jakarta.portlet.PortletPreferences jxPortletPreferences)
 		throws PortalException {
 
 		getService().restoreArchivedPreferences(
@@ -65,7 +56,7 @@ public class PortletPreferencesServiceUtil {
 			long groupId, com.liferay.portal.kernel.model.Layout layout,
 			String portletId,
 			com.liferay.portal.kernel.model.PortletItem portletItem,
-			javax.portlet.PortletPreferences jxPortletPreferences)
+			jakarta.portlet.PortletPreferences jxPortletPreferences)
 		throws PortalException {
 
 		getService().restoreArchivedPreferences(
@@ -75,7 +66,7 @@ public class PortletPreferencesServiceUtil {
 	public static void restoreArchivedPreferences(
 			long groupId, String name,
 			com.liferay.portal.kernel.model.Layout layout, String portletId,
-			javax.portlet.PortletPreferences jxPortletPreferences)
+			jakarta.portlet.PortletPreferences jxPortletPreferences)
 		throws PortalException {
 
 		getService().restoreArchivedPreferences(
@@ -84,7 +75,7 @@ public class PortletPreferencesServiceUtil {
 
 	public static void updateArchivePreferences(
 			long userId, long groupId, String name, String portletId,
-			javax.portlet.PortletPreferences jxPortletPreferences)
+			jakarta.portlet.PortletPreferences jxPortletPreferences)
 		throws PortalException {
 
 		getService().updateArchivePreferences(
@@ -93,6 +84,10 @@ public class PortletPreferencesServiceUtil {
 
 	public static PortletPreferencesService getService() {
 		return _service;
+	}
+
+	public static void setService(PortletPreferencesService service) {
+		_service = service;
 	}
 
 	private static volatile PortletPreferencesService _service;

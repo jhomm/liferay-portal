@@ -1,15 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React, {useMemo} from 'react';
 
 import HeaderKebab from '../../shared/components/header/HeaderKebab.es';
@@ -24,9 +18,9 @@ import Body from './ProcessListPageBody.es';
 const Header = ({page, pageSize, search, sort, totalCount}) => {
 	return (
 		<>
-			<ClayManagementToolbar className="mb-0">
+			<ManagementToolbar.Container className="mb-0">
 				<SearchField disabled={!search && totalCount === 0} />
-			</ClayManagementToolbar>
+			</ManagementToolbar.Container>
 
 			{search && (
 				<ResultsBar>
@@ -72,7 +66,7 @@ function ProcessListPage({history, query, routeParams}) {
 		return [new Promise(() => {})];
 
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [page, pageSize, sort]);
+	}, [page, pageSize, search, sort]);
 
 	return (
 		<PromisesResolver promises={promises}>
@@ -84,6 +78,7 @@ function ProcessListPage({history, query, routeParams}) {
 					},
 				]}
 			/>
+
 			<ProcessListPage.Header
 				search={search}
 				totalCount={data?.totalCount}

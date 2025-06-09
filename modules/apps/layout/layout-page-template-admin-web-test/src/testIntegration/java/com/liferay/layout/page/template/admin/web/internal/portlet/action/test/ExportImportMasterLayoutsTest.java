@@ -1,23 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet.action.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.layout.importer.LayoutsImportStrategy;
+import com.liferay.layout.importer.LayoutsImporter;
+import com.liferay.layout.importer.LayoutsImporterResultEntry;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporter;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporterResultEntry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
@@ -50,6 +42,7 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.io.File;
 
@@ -94,20 +87,22 @@ public class ExportImportMasterLayoutsTest {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry1 =
 			_layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-				_serviceContext1.getUserId(),
-				_serviceContext1.getScopeGroupId(), 0,
+				null, _serviceContext1.getUserId(),
+				_serviceContext1.getScopeGroupId(), 0, null,
 				StringUtil.randomString(),
-				LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT, 0,
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 				WorkflowConstants.STATUS_APPROVED, _serviceContext1);
 
 		Layout layout1 = _layoutLocalService.fetchLayout(
 			layoutPageTemplateEntry1.getPlid());
 
-		_layoutPageTemplateStructureLocalService.addLayoutPageTemplateStructure(
-			TestPropsValues.getUserId(), _group1.getGroupId(),
-			layoutPageTemplateEntry1.getPlid(),
-			_read("export_import_master_layout_layout_data.json"),
-			_serviceContext1);
+		_layoutPageTemplateStructureLocalService.
+			updateLayoutPageTemplateStructureData(
+				_group1.getGroupId(), layoutPageTemplateEntry1.getPlid(),
+				_segmentsExperienceLocalService.
+					fetchDefaultSegmentsExperienceId(
+						layoutPageTemplateEntry1.getPlid()),
+				_read("export_import_master_layout_layout_data.json"));
 
 		Repository repository = PortletFileRepositoryUtil.addPortletRepository(
 			_group1.getGroupId(), RandomTestUtil.randomString(),
@@ -116,7 +111,7 @@ public class ExportImportMasterLayoutsTest {
 		Class<?> clazz = getClass();
 
 		FileEntry fileEntry = PortletFileRepositoryUtil.addPortletFileEntry(
-			_group1.getGroupId(), TestPropsValues.getUserId(),
+			null, _group1.getGroupId(), TestPropsValues.getUserId(),
 			LayoutPageTemplateEntry.class.getName(),
 			layoutPageTemplateEntry1.getLayoutPageTemplateEntryId(),
 			RandomTestUtil.randomString(), repository.getDlFolderId(),
@@ -133,32 +128,30 @@ public class ExportImportMasterLayoutsTest {
 				layoutPageTemplateEntry1.getLayoutPageTemplateEntryId()
 			});
 
-		List<LayoutPageTemplatesImporterResultEntry>
-			layoutPageTemplatesImporterResultEntries = null;
+		List<LayoutsImporterResultEntry> layoutsImporterResultEntries = null;
 
 		ServiceContextThreadLocal.pushServiceContext(_serviceContext2);
 
 		try {
-			layoutPageTemplatesImporterResultEntries =
-				_layoutPageTemplatesImporter.importFile(
-					TestPropsValues.getUserId(), _group2.getGroupId(), 0, file,
-					false);
+			layoutsImporterResultEntries = _layoutsImporter.importFile(
+				TestPropsValues.getUserId(), _group2.getGroupId(), 0, file,
+				LayoutsImportStrategy.DO_NOT_OVERWRITE, true);
 		}
 		finally {
 			ServiceContextThreadLocal.popServiceContext();
 		}
 
-		Assert.assertNotNull(layoutPageTemplatesImporterResultEntries);
+		Assert.assertNotNull(layoutsImporterResultEntries);
 
 		Assert.assertEquals(
-			layoutPageTemplatesImporterResultEntries.toString(), 1,
-			layoutPageTemplatesImporterResultEntries.size());
+			layoutsImporterResultEntries.toString(), 1,
+			layoutsImporterResultEntries.size());
 
-		LayoutPageTemplatesImporterResultEntry layoutPageTemplateImportEntry =
-			layoutPageTemplatesImporterResultEntries.get(0);
+		LayoutsImporterResultEntry layoutPageTemplateImportEntry =
+			layoutsImporterResultEntries.get(0);
 
 		Assert.assertEquals(
-			LayoutPageTemplatesImporterResultEntry.Status.IMPORTED,
+			LayoutsImporterResultEntry.Status.IMPORTED,
 			layoutPageTemplateImportEntry.getStatus());
 
 		String layoutPageTemplateEntryKey = StringUtil.toLowerCase(
@@ -200,9 +193,9 @@ public class ExportImportMasterLayoutsTest {
 					layoutPageTemplateEntry2.getPlid());
 
 		LayoutStructure layoutStructure1 = LayoutStructure.of(
-			layoutPageTemplateStructure1.getData(0));
+			layoutPageTemplateStructure1.getDefaultSegmentsExperienceData());
 		LayoutStructure layoutStructure2 = LayoutStructure.of(
-			layoutPageTemplateStructure2.getData(0));
+			layoutPageTemplateStructure2.getDefaultSegmentsExperienceData());
 
 		DropZoneLayoutStructureItem dropZoneLayoutStructureItem1 =
 			_getDropZoneLayoutStructureItem(layoutStructure1);
@@ -292,16 +285,19 @@ public class ExportImportMasterLayoutsTest {
 		_layoutPageTemplateEntryLocalService;
 
 	@Inject
-	private LayoutPageTemplatesImporter _layoutPageTemplatesImporter;
-
-	@Inject
 	private LayoutPageTemplateStructureLocalService
 		_layoutPageTemplateStructureLocalService;
+
+	@Inject
+	private LayoutsImporter _layoutsImporter;
 
 	@Inject(
 		filter = "mvc.command.name=/layout_page_template_admin/export_master_layouts"
 	)
 	private MVCResourceCommand _mvcResourceCommand;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 	private ServiceContext _serviceContext1;
 	private ServiceContext _serviceContext2;

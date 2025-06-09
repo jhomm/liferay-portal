@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.engine.fixed.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.tax.engine.fixed.model.CommerceTaxFixedRateAddressRe
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,8 @@ import java.util.Date;
  * @generated
  */
 public class CommerceTaxFixedRateAddressRelCacheModel
-	implements CacheModel<CommerceTaxFixedRateAddressRel>, Externalizable {
+	implements CacheModel<CommerceTaxFixedRateAddressRel>, Externalizable,
+			   MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -49,9 +42,11 @@ public class CommerceTaxFixedRateAddressRelCacheModel
 			commerceTaxFixedRateAddressRelCacheModel =
 				(CommerceTaxFixedRateAddressRelCacheModel)object;
 
-		if (commerceTaxFixedRateAddressRelId ==
+		if ((commerceTaxFixedRateAddressRelId ==
 				commerceTaxFixedRateAddressRelCacheModel.
-					commerceTaxFixedRateAddressRelId) {
+					commerceTaxFixedRateAddressRelId) &&
+			(mvccVersion ==
+				commerceTaxFixedRateAddressRelCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -61,14 +56,28 @@ public class CommerceTaxFixedRateAddressRelCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceTaxFixedRateAddressRelId);
+		int hashCode = HashUtil.hash(0, commerceTaxFixedRateAddressRelId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(27);
+		StringBundler sb = new StringBundler(29);
 
-		sb.append("{commerceTaxFixedRateAddressRelId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", commerceTaxFixedRateAddressRelId=");
 		sb.append(commerceTaxFixedRateAddressRelId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -104,6 +113,7 @@ public class CommerceTaxFixedRateAddressRelCacheModel
 		CommerceTaxFixedRateAddressRelImpl commerceTaxFixedRateAddressRelImpl =
 			new CommerceTaxFixedRateAddressRelImpl();
 
+		commerceTaxFixedRateAddressRelImpl.setMvccVersion(mvccVersion);
 		commerceTaxFixedRateAddressRelImpl.setCommerceTaxFixedRateAddressRelId(
 			commerceTaxFixedRateAddressRelId);
 		commerceTaxFixedRateAddressRelImpl.setGroupId(groupId);
@@ -155,6 +165,8 @@ public class CommerceTaxFixedRateAddressRelCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
 		commerceTaxFixedRateAddressRelId = objectInput.readLong();
 
 		groupId = objectInput.readLong();
@@ -180,6 +192,8 @@ public class CommerceTaxFixedRateAddressRelCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(commerceTaxFixedRateAddressRelId);
 
 		objectOutput.writeLong(groupId);
@@ -216,6 +230,7 @@ public class CommerceTaxFixedRateAddressRelCacheModel
 		objectOutput.writeDouble(rate);
 	}
 
+	public long mvccVersion;
 	public long commerceTaxFixedRateAddressRelId;
 	public long groupId;
 	public long companyId;

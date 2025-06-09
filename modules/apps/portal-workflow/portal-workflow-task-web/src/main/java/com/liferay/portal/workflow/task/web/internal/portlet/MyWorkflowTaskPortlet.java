@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.task.web.internal.portlet;
 
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -29,32 +19,27 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowTask;
 import com.liferay.portal.kernel.workflow.WorkflowTaskManagerUtil;
-import com.liferay.portal.workflow.task.web.internal.configuration.WorkflowTaskWebConfiguration;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
+import com.liferay.portal.workflow.manager.WorkflowLogManager;
+import com.liferay.portal.workflow.security.permission.WorkflowTaskPermission;
 import com.liferay.portal.workflow.task.web.internal.display.context.WorkflowTaskDisplayContext;
-import com.liferay.portal.workflow.task.web.internal.permission.WorkflowTaskPermissionChecker;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 
-import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Leonardo Barros
  */
 @Component(
-	configurationPid = "com.liferay.portal.workflow.task.web.internal.configuration.WorkflowTaskWebConfiguration",
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-workflow-tasks",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -66,13 +51,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=My Workflow Tasks",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=My Workflow Tasks",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + PortletKeys.MY_WORKFLOW_TASK,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -99,9 +85,9 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 		throws IOException, PortletException {
 
 		try {
-			setWorkflowTaskDisplayContextRenderRequestAttribute(
+			_setWorkflowTaskDisplayContextRenderRequestAttribute(
 				renderRequest, renderResponse);
-			setWorkflowTaskRenderRequestAttribute(renderRequest);
+			_setWorkflowTaskRenderRequestAttribute(renderRequest);
 		}
 		catch (Exception exception) {
 			if (isSessionErrorException(exception)) {
@@ -115,25 +101,6 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 		}
 
 		super.render(renderRequest, renderResponse);
-	}
-
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		_workflowTaskWebConfiguration = ConfigurableUtil.createConfigurable(
-			WorkflowTaskWebConfiguration.class, properties);
-	}
-
-	protected void checkWorkflowTaskViewPermission(
-			WorkflowTask workflowTask, ThemeDisplay themeDisplay)
-		throws PortalException {
-
-		long groupId = MapUtil.getLong(
-			workflowTask.getOptionalAttributes(), "groupId",
-			themeDisplay.getSiteGroupId());
-
-		_workflowTaskPermissionChecker.check(
-			groupId, workflowTask, themeDisplay.getPermissionChecker());
 	}
 
 	@Override
@@ -166,7 +133,18 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 		return false;
 	}
 
-	protected void setWorkflowTaskDisplayContextRenderRequestAttribute(
+	private boolean _hasWorkflowTaskViewPermission(
+		ThemeDisplay themeDisplay, WorkflowTask workflowTask) {
+
+		long groupId = MapUtil.getLong(
+			workflowTask.getOptionalAttributes(), "groupId",
+			themeDisplay.getSiteGroupId());
+
+		return _workflowTaskPermission.contains(
+			themeDisplay.getPermissionChecker(), workflowTask, groupId);
+	}
+
+	private void _setWorkflowTaskDisplayContextRenderRequestAttribute(
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws PortalException {
 
@@ -174,10 +152,11 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 			WebKeys.PORTLET_DISPLAY_CONTEXT,
 			new WorkflowTaskDisplayContext(
 				_portal.getLiferayPortletRequest(renderRequest),
-				_portal.getLiferayPortletResponse(renderResponse)));
+				_portal.getLiferayPortletResponse(renderResponse),
+				_workflowComparatorFactory, _workflowLogManager));
 	}
 
-	protected void setWorkflowTaskRenderRequestAttribute(
+	private void _setWorkflowTaskRenderRequestAttribute(
 			RenderRequest renderRequest)
 		throws PortalException {
 
@@ -191,21 +170,23 @@ public class MyWorkflowTaskPortlet extends MVCPortlet {
 			WorkflowTask workflowTask = WorkflowTaskManagerUtil.getWorkflowTask(
 				themeDisplay.getCompanyId(), workflowTaskId);
 
-			checkWorkflowTaskViewPermission(workflowTask, themeDisplay);
-
 			renderRequest.setAttribute(WebKeys.WORKFLOW_TASK, workflowTask);
+			renderRequest.setAttribute(
+				WebKeys.WORKFLOW_TASK_READ_ONLY,
+				!_hasWorkflowTaskViewPermission(themeDisplay, workflowTask));
 		}
-
-		renderRequest.setAttribute(
-			WorkflowTaskWebConfiguration.class.getName(),
-			_workflowTaskWebConfiguration);
 	}
 
 	@Reference
 	private Portal _portal;
 
-	private final WorkflowTaskPermissionChecker _workflowTaskPermissionChecker =
-		new WorkflowTaskPermissionChecker();
-	private volatile WorkflowTaskWebConfiguration _workflowTaskWebConfiguration;
+	@Reference
+	private WorkflowComparatorFactory _workflowComparatorFactory;
+
+	@Reference
+	private WorkflowLogManager _workflowLogManager;
+
+	@Reference
+	private WorkflowTaskPermission _workflowTaskPermission;
 
 }

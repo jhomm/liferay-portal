@@ -1,6 +1,7 @@
 definition {
 
-	macro configureSetupPG {
+	@summary = "Default summary"
+	macro configureSetupPG(wikiNodeName = null, wikiPageName = null) {
 		Portlet.gotoPortletOptions(
 			portletName = "Wiki Display",
 			portletOption = "Configuration");
@@ -8,28 +9,26 @@ definition {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		Select(
-			locator1 = "WikiConfiguration#COMMUNICATION_SELECT_NODE_ID",
-			value1 = "${wikiNodeName}");
-
-		PortletEntry.save();
+			key_selectFieldLabel = "Node",
+			locator1 = "Select#ANY",
+			value1 = ${wikiNodeName});
 
 		AssertSelectedLabel(
-			locator1 = "WikiConfiguration#COMMUNICATION_SELECT_NODE_ID",
-			value1 = "${wikiNodeName}");
+			key_selectFieldLabel = "Node",
+			locator1 = "Select#ANY",
+			value1 = ${wikiNodeName});
 
 		Select(
-			locator1 = "WikiConfiguration#COMMUNICATION_SELECT_TITLE",
-			value1 = "${wikiPageName}");
-
-		Button.clickSave();
+			key_selectFieldLabel = "Page",
+			locator1 = "Select#ANY",
+			value1 = ${wikiPageName});
 
 		AssertSelectedLabel(
-			locator1 = "WikiConfiguration#COMMUNICATION_SELECT_TITLE",
-			value1 = "${wikiPageName}");
+			key_selectFieldLabel = "Page",
+			locator1 = "Select#ANY",
+			value1 = ${wikiPageName});
 
-		Alert.viewSuccessMessage();
-
-		SelectFrame(value1 = "relative=top");
+		PortletEntry.save();
 	}
 
 }

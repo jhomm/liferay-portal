@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.model.listener;
@@ -21,8 +12,10 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.capabilities.SearchCapabilities;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.query.TermsQuery;
@@ -31,24 +24,26 @@ import com.liferay.portal.search.script.ScriptType;
 import com.liferay.portal.search.script.Scripts;
 import com.liferay.portal.workflow.metrics.internal.petra.executor.WorkflowMetricsPortalExecutor;
 import com.liferay.portal.workflow.metrics.internal.search.index.WorkflowMetricsIndex;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Feliphe Marinho
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class UserModelListener extends BaseModelListener<User> {
 
 	@Override
 	public void onBeforeUpdate(User originalUser, User user)
 		throws ModelListenerException {
+
+		if (!_searchCapabilities.isWorkflowMetricsSupported()) {
+			return;
+		}
 
 		User currentUser = _userLocalService.fetchUserById(user.getUserId());
 
@@ -96,7 +91,10 @@ public class UserModelListener extends BaseModelListener<User> {
 								).scriptType(
 									ScriptType.INLINE
 								).build(),
-								_instanceWorkflowMetricsIndex.getIndexName(
+								WorkflowMetricsIndex.getIndexName(
+									_indexNameBuilder,
+									WorkflowMetricsIndexNameConstants.
+										SUFFIX_INSTANCE,
 									user.getCompanyId())));
 					});
 
@@ -104,22 +102,20 @@ public class UserModelListener extends BaseModelListener<User> {
 			});
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY,
-		target = "(search.engine.impl=Elasticsearch)"
-	)
-	protected volatile SearchEngineAdapter searchEngineAdapter;
+	@Reference
+	protected SearchEngineAdapter searchEngineAdapter;
 
-	@Reference(target = "(workflow.metrics.index.entity.name=instance)")
-	private WorkflowMetricsIndex _instanceWorkflowMetricsIndex;
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private Queries _queries;
 
 	@Reference
 	private Scripts _scripts;
+
+	@Reference
+	private SearchCapabilities _searchCapabilities;
 
 	@Reference
 	private UserLocalService _userLocalService;

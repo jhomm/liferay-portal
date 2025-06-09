@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools;
@@ -27,6 +18,7 @@ import com.liferay.portal.kernel.cache.PortalCacheManagerNames;
 import com.liferay.portal.kernel.cache.PortalCacheManagerProvider;
 import com.liferay.portal.kernel.cache.SingleVMPool;
 import com.liferay.portal.kernel.cache.key.CacheKeyGeneratorUtil;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
@@ -34,26 +26,20 @@ import com.liferay.portal.kernel.security.auth.DefaultFullNameGenerator;
 import com.liferay.portal.kernel.security.auth.FullNameGenerator;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
-import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.util.DigesterUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.model.DefaultModelHintsImpl;
 import com.liferay.portal.security.permission.ResourceActionsImpl;
 import com.liferay.portal.security.xml.SecureXMLFactoryProviderImpl;
-import com.liferay.portal.service.permission.PortletPermissionImpl;
 import com.liferay.portal.util.DigesterImpl;
 import com.liferay.portal.util.FastDateFormatFactoryImpl;
 import com.liferay.portal.util.FileImpl;
-import com.liferay.portal.util.FriendlyURLNormalizerImpl;
-import com.liferay.portal.util.HtmlImpl;
-import com.liferay.portal.util.HttpImpl;
 import com.liferay.portal.util.InitUtil;
 import com.liferay.portal.util.PortalImpl;
 import com.liferay.portal.xml.SAXReaderImpl;
@@ -85,7 +71,14 @@ public class ToolDependencies {
 		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
 		bundleContext.registerService(
-			FullNameGenerator.class, new DefaultFullNameGenerator(), null);
+			FriendlyURLNormalizer.class,
+			(FriendlyURLNormalizer)ProxyUtil.newProxyInstance(
+				ToolDependencies.class.getClassLoader(),
+				new Class<?>[] {FriendlyURLNormalizer.class},
+				(proxy, method, args) -> null),
+			null);
+		bundleContext.registerService(
+			FullNameGenerator.class, DefaultFullNameGenerator.INSTANCE, null);
 
 		CacheKeyGeneratorUtil cacheKeyGeneratorUtil =
 			new CacheKeyGeneratorUtil();
@@ -107,28 +100,9 @@ public class ToolDependencies {
 
 		fileUtil.setFile(new FileImpl());
 
-		FriendlyURLNormalizerUtil friendlyURLNormalizerUtil =
-			new FriendlyURLNormalizerUtil();
-
-		friendlyURLNormalizerUtil.setFriendlyURLNormalizer(
-			new FriendlyURLNormalizerImpl());
-
-		HtmlUtil htmlUtil = new HtmlUtil();
-
-		htmlUtil.setHtml(new HtmlImpl());
-
-		HttpUtil httpUtil = new HttpUtil();
-
-		httpUtil.setHttp(new HttpImpl());
-
 		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
 
 		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
-
-		PortletPermissionUtil portletPermissionUtil =
-			new PortletPermissionUtil();
-
-		portletPermissionUtil.setPortletPermission(new PortletPermissionImpl());
 
 		SAXReaderUtil saxReaderUtil = new SAXReaderUtil();
 
@@ -209,14 +183,9 @@ public class ToolDependencies {
 			return _portalCacheManager.getPortalCache(portalCacheName);
 		}
 
-		/**
-		 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-		 *             #getPortalCache(String)}
-		 */
-		@Deprecated
 		@Override
 		public PortalCache<? extends Serializable, ? extends Serializable>
-			getPortalCache(String portalCacheName, boolean blocking) {
+			getPortalCache(String portalCacheName, boolean mvcc) {
 
 			return getPortalCache(portalCacheName);
 		}
@@ -224,7 +193,7 @@ public class ToolDependencies {
 		@Override
 		public PortalCache<? extends Serializable, ? extends Serializable>
 			getPortalCache(
-				String portalCacheName, boolean blocking, boolean mvcc) {
+				String portalCacheName, boolean mvcc, boolean sharded) {
 
 			return getPortalCache(portalCacheName);
 		}
@@ -279,16 +248,12 @@ public class ToolDependencies {
 			return _portalCacheName;
 		}
 
-		/**
-		 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-		 */
-		@Deprecated
-		@Override
-		public boolean isBlocking() {
+		public boolean isMVCC() {
 			return false;
 		}
 
-		public boolean isMVCC() {
+		@Override
+		public boolean isSharded() {
 			return false;
 		}
 
@@ -403,25 +368,21 @@ public class ToolDependencies {
 		public PortalCache<K, V> getPortalCache(String portalCacheName)
 			throws PortalCacheException {
 
-			return getPortalCache(portalCacheName, false, false);
+			return getPortalCache(portalCacheName, false);
 		}
 
-		/**
-		 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-		 *             #getPortalCache(String)}
-		 */
-		@Deprecated
 		@Override
 		public PortalCache<K, V> getPortalCache(
-				String portalCacheName, boolean blocking)
+				String portalCacheName, boolean mvcc)
 			throws PortalCacheException {
 
-			return getPortalCache(portalCacheName);
+			return getPortalCache(
+				portalCacheName, mvcc, DBPartition.isPartitionEnabled());
 		}
 
 		@Override
 		public PortalCache<K, V> getPortalCache(
-				String portalCacheName, boolean blocking, boolean mvcc)
+				String portalCacheName, boolean mvcc, boolean sharded)
 			throws PortalCacheException {
 
 			PortalCache<K, V> portalCache = _portalCaches.get(portalCacheName);
@@ -455,20 +416,6 @@ public class ToolDependencies {
 		}
 
 		@Override
-		public boolean isClusterAware() {
-			return false;
-		}
-
-		/**
-		 * @deprecated As of Mueller (7.2.x), replaced by {@link
-		 *             #reconfigurePortalCaches(URL, ClassLoader)}
-		 */
-		@Deprecated
-		@Override
-		public void reconfigurePortalCaches(URL configurationURL) {
-		}
-
-		@Override
 		public void reconfigurePortalCaches(
 			URL configurationURL, ClassLoader classLoader) {
 		}
@@ -483,6 +430,10 @@ public class ToolDependencies {
 		@Override
 		public void removePortalCache(String portalCacheName) {
 			_portalCaches.remove(portalCacheName);
+		}
+
+		@Override
+		public void removePortalCaches(long companyId) {
 		}
 
 		@Override
@@ -518,18 +469,6 @@ public class ToolDependencies {
 			String portalCacheName) {
 
 			return _portalCacheManager.getPortalCache(portalCacheName);
-		}
-
-		/**
-		 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-		 *             #getPortalCache(String)}
-		 */
-		@Deprecated
-		@Override
-		public PortalCache<? extends Serializable, ?> getPortalCache(
-			String portalCacheName, boolean blocking) {
-
-			return getPortalCache(portalCacheName);
 		}
 
 		@Override

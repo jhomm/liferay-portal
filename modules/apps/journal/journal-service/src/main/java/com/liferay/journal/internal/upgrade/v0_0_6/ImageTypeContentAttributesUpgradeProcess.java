@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v0_0_6;
 
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.Validator;
@@ -35,10 +29,25 @@ import java.util.List;
  */
 public class ImageTypeContentAttributesUpgradeProcess extends UpgradeProcess {
 
-	protected String addImageContentAttributes(String content)
+	@Override
+	protected void doUpgrade() throws Exception {
+		_updateContentImages();
+	}
+
+	private String _addImageContentAttributes(long id, String content)
 		throws Exception {
 
-		Document document = SAXReaderUtil.read(content);
+		Document document = null;
+
+		try {
+			document = SAXReaderUtil.read(content);
+		}
+		catch (Exception exception) {
+			_log.error(
+				StringBundler.concat("ID: ", id, "\nContent: ", content));
+
+			throw exception;
+		}
 
 		document = document.clone();
 
@@ -53,34 +62,27 @@ public class ImageTypeContentAttributesUpgradeProcess extends UpgradeProcess {
 			List<Element> dynamicContentElements = imageElement.elements(
 				"dynamic-content");
 
-			String id = null;
+			String articleImageId = null;
 
 			for (Element dynamicContentElement : dynamicContentElements) {
-				id = dynamicContentElement.attributeValue("id");
+				articleImageId = dynamicContentElement.attributeValue("id");
 
 				dynamicContentElement.addAttribute("alt", StringPool.BLANK);
-				dynamicContentElement.addAttribute("name", id);
-				dynamicContentElement.addAttribute("title", id);
+				dynamicContentElement.addAttribute("name", articleImageId);
+				dynamicContentElement.addAttribute("title", articleImageId);
 				dynamicContentElement.addAttribute("type", "journal");
 			}
 
-			if (Validator.isNotNull(id)) {
+			if (Validator.isNotNull(articleImageId)) {
 				imageElement.addAttribute(
-					"instance-id", getImageInstanceId(id));
+					"instance-id", _getImageInstanceId(articleImageId));
 			}
 		}
 
 		return document.formattedString();
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		updateContentImages();
-	}
-
-	protected String getImageInstanceId(String articleImageId)
-		throws Exception {
-
+	private String _getImageInstanceId(String articleImageId) throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select elInstanceId from JournalArticleImage where " +
 					"articleImageId = ?")) {
@@ -97,35 +99,32 @@ public class ImageTypeContentAttributesUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateContentImages() throws Exception {
+	private void _updateContentImages() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select content, id_ from JournalArticle where content like " +
-					"?")) {
-
-			preparedStatement1.setString(1, "%type=\"image\"%");
-
+				"select id_, content from JournalArticle where content like " +
+					"'%type=\"image\"%'");
 			ResultSet resultSet = preparedStatement1.executeQuery();
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update JournalArticle set content = ? where id_ = ?")) {
 
 			while (resultSet.next()) {
-				String content = resultSet.getString(1);
-				long id = resultSet.getLong(2);
+				long id = resultSet.getLong(1);
 
-				String newContent = addImageContentAttributes(content);
+				preparedStatement2.setString(
+					1, _addImageContentAttributes(id, resultSet.getString(2)));
+				preparedStatement2.setLong(2, id);
 
-				try (PreparedStatement preparedStatement =
-						AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-							connection,
-							"update JournalArticle set content = ? where id_ " +
-								"= ?")) {
-
-					preparedStatement.setString(1, newContent);
-					preparedStatement.setLong(2, id);
-
-					preparedStatement.executeUpdate();
-				}
+				preparedStatement2.addBatch();
 			}
+
+			preparedStatement2.executeBatch();
 		}
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		ImageTypeContentAttributesUpgradeProcess.class);
 
 }

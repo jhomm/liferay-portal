@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -61,13 +53,14 @@ public class AccountRoleLocalServiceUtil {
 	}
 
 	public static AccountRole addAccountRole(
-			long userId, long accountEntryId, String name,
-			Map<java.util.Locale, String> titleMap,
+			String externalReferenceCode, long userId, long accountEntryId,
+			String name, Map<java.util.Locale, String> titleMap,
 			Map<java.util.Locale, String> descriptionMap)
 		throws PortalException {
 
 		return getService().addAccountRole(
-			userId, accountEntryId, name, titleMap, descriptionMap);
+			externalReferenceCode, userId, accountEntryId, name, titleMap,
+			descriptionMap);
 	}
 
 	public static void associateUser(
@@ -82,12 +75,6 @@ public class AccountRoleLocalServiceUtil {
 		throws PortalException {
 
 		getService().associateUser(accountEntryId, accountRoleIds, userId);
-	}
-
-	public static void checkCompanyAccountRoles(long companyId)
-		throws PortalException {
-
-		getService().checkCompanyAccountRoles(companyId);
 	}
 
 	/**
@@ -144,7 +131,9 @@ public class AccountRoleLocalServiceUtil {
 		return getService().deleteAccountRole(accountRoleId);
 	}
 
-	public static void deleteAccountRolesByCompanyId(long companyId) {
+	public static void deleteAccountRolesByCompanyId(long companyId)
+		throws PortalException {
+
 		getService().deleteAccountRolesByCompanyId(companyId);
 	}
 
@@ -247,6 +236,13 @@ public class AccountRoleLocalServiceUtil {
 		return getService().fetchAccountRole(accountRoleId);
 	}
 
+	public static AccountRole fetchAccountRoleByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchAccountRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static AccountRole fetchAccountRoleByRoleId(long roleId) {
 		return getService().fetchAccountRoleByRoleId(roleId);
 	}
@@ -262,6 +258,14 @@ public class AccountRoleLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getAccountRole(accountRoleId);
+	}
+
+	public static AccountRole getAccountRoleByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getAccountRoleByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static AccountRole getAccountRoleByRoleId(long roleId)
@@ -293,6 +297,13 @@ public class AccountRoleLocalServiceUtil {
 	}
 
 	public static List<AccountRole> getAccountRolesByAccountEntryIds(
+		long companyId, long[] accountEntryIds) {
+
+		return getService().getAccountRolesByAccountEntryIds(
+			companyId, accountEntryIds);
+	}
+
+	public static List<AccountRole> getAccountRolesByAccountEntryIds(
 		long[] accountEntryIds) {
 
 		return getService().getAccountRolesByAccountEntryIds(accountEntryIds);
@@ -318,6 +329,15 @@ public class AccountRoleLocalServiceUtil {
 			getIndexableActionableDynamicQuery() {
 
 		return getService().getIndexableActionableDynamicQuery();
+	}
+
+	public static AccountRole getOrAddIncompleteAccountRole(
+			String externalReferenceCode, long companyId, long userId,
+			long accountEntryId, String name)
+		throws Exception {
+
+		return getService().getOrAddIncompleteAccountRole(
+			externalReferenceCode, companyId, userId, accountEntryId, name);
 	}
 
 	/**
@@ -357,6 +377,14 @@ public class AccountRoleLocalServiceUtil {
 			orderByComparator);
 	}
 
+	public static void setUserAccountRoles(
+			long accountEntryId, long[] accountRoleIds, long userId)
+		throws PortalException {
+
+		getService().setUserAccountRoles(
+			accountEntryId, accountRoleIds, userId);
+	}
+
 	public static void unassociateUser(
 			long accountEntryId, long accountRoleId, long userId)
 		throws PortalException {
@@ -379,9 +407,11 @@ public class AccountRoleLocalServiceUtil {
 	}
 
 	public static AccountRoleLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile AccountRoleLocalService _service;
+	private static final Snapshot<AccountRoleLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			AccountRoleLocalServiceUtil.class, AccountRoleLocalService.class);
 
 }

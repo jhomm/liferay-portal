@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib;
@@ -21,12 +12,12 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
 
 /**
  * @author Kresimir Coko
@@ -123,7 +114,7 @@ public class SelectTag extends BaseContainerTag {
 		if ((!_disabled && (getAdditionalProps() != null)) ||
 			(getPropsTransformer() != null)) {
 
-			return "frontend-taglib-clay/Select";
+			return "{Select} from frontend-taglib-clay";
 		}
 
 		return null;
@@ -159,7 +150,15 @@ public class SelectTag extends BaseContainerTag {
 		JspWriter jspWriter = pageContext.getOut();
 
 		if (Validator.isNotNull(_label)) {
-			jspWriter.write("<label>");
+			jspWriter.write("<label");
+
+			if (Validator.isNotNull(getId())) {
+				jspWriter.write(" for=\"");
+				jspWriter.write(getId());
+				jspWriter.write("\"");
+			}
+
+			jspWriter.write(">");
 			jspWriter.write(getLabel());
 			jspWriter.write("</label>");
 		}

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,19 +11,18 @@
 long assetCategoryId = ParamUtil.getLong(request, "categoryId");
 String assetTagName = ParamUtil.getString(request, "tag");
 
-BlogEntriesDisplayContext blogEntriesDisplayContext = (BlogEntriesDisplayContext)request.getAttribute(BlogsWebKeys.BLOG_ENTRIES_DISPLAY_CONTEXT);
+BlogsViewEntriesDisplayContext blogsViewEntriesDisplayContext = (BlogsViewEntriesDisplayContext)request.getAttribute(BlogsViewEntriesDisplayContext.class.getName());
 
-String displayStyle = blogEntriesDisplayContext.getDisplayStyle();
+String displayStyle = blogsViewEntriesDisplayContext.getDisplayStyle();
 
-SearchContainer<BlogsEntry> entriesSearchContainer = blogEntriesDisplayContext.getSearchContainer();
+SearchContainer<BlogsEntry> entriesSearchContainer = blogsViewEntriesDisplayContext.getSearchContainer();
 
 PortletURL portletURL = entriesSearchContainer.getIteratorURL();
 %>
 
 <clay:management-toolbar
-	managementToolbarDisplayContext="<%= new BlogEntriesManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, entriesSearchContainer, trashHelper, displayStyle) %>"
-	propsTransformer="blogs_admin/js/BlogEntriesManagementToolbarPropsTransformer"
-	searchContainerId="blogEntries"
+	managementToolbarDisplayContext="<%= new BlogsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, entriesSearchContainer, trashHelper) %>"
+	propsTransformer="{BlogEntriesManagementToolbarPropsTransformer} from blogs-web"
 />
 
 <portlet:actionURL name="/blogs/edit_entry" var="restoreTrashEntriesURL">
@@ -43,8 +33,10 @@ PortletURL portletURL = entriesSearchContainer.getIteratorURL();
 	portletURL="<%= restoreTrashEntriesURL %>"
 />
 
-<clay:container-fluid>
-	<aui:form action="<%= portletURL.toString() %>" method="get" name="fm">
+<clay:container-fluid
+	size="xxxl"
+>
+	<aui:form action="<%= portletURL %>" method="get" name="fm">
 		<aui:input name="<%= Constants.CMD %>" type="hidden" />
 		<aui:input name="redirect" type="hidden" value="<%= portletURL.toString() %>" />
 		<aui:input name="deleteEntryIds" type="hidden" />
@@ -76,7 +68,7 @@ PortletURL portletURL = entriesSearchContainer.getIteratorURL();
 				<%
 				row.setData(
 					HashMapBuilder.<String, Object>put(
-						"actions", StringUtil.merge(blogEntriesDisplayContext.getAvailableActions(entry))
+						"actions", StringUtil.merge(blogsViewEntriesDisplayContext.getAvailableActions(entry))
 					).build());
 				%>
 
@@ -93,6 +85,6 @@ PortletURL portletURL = entriesSearchContainer.getIteratorURL();
 
 <liferay-frontend:component
 	componentId="<%= BlogsWebConstants.BLOGS_ELEMENTS_DEFAULT_EVENT_HANDLER %>"
-	context="<%= blogEntriesDisplayContext.getComponentContext() %>"
-	module="blogs_admin/js/ElementsDefaultEventHandler.es"
+	context="<%= blogsViewEntriesDisplayContext.getComponentContext() %>"
+	module="{ElementsDefaultEventHandler} from blogs-web"
 />

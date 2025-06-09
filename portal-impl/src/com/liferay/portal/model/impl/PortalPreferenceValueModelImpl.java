@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -91,7 +81,7 @@ public class PortalPreferenceValueModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table PortalPreferenceValue (mvccVersion LONG default 0 not null,portalPreferenceValueId LONG not null primary key,companyId LONG,portalPreferencesId LONG,index_ INTEGER,key_ VARCHAR(255) null,largeValue TEXT null,namespace VARCHAR(255) null,smallValue VARCHAR(255) null)";
+		"create table PortalPreferenceValue (mvccVersion LONG default 0 not null,portalPreferenceValueId LONG not null primary key,companyId LONG,portalPreferencesId LONG,index_ INTEGER,key_ VARCHAR(1024) null,largeValue TEXT null,namespace VARCHAR(255) null,smallValue VARCHAR(255) null)";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table PortalPreferenceValue";
@@ -237,117 +227,106 @@ public class PortalPreferenceValueModelImpl
 	public Map<String, Function<PortalPreferenceValue, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<PortalPreferenceValue, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, PortalPreferenceValue>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			PortalPreferenceValue.class.getClassLoader(),
-			PortalPreferenceValue.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<PortalPreferenceValue, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<PortalPreferenceValue> constructor =
-				(Constructor<PortalPreferenceValue>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<PortalPreferenceValue, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<PortalPreferenceValue, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", PortalPreferenceValue::getMvccVersion);
+			attributeGetterFunctions.put(
+				"portalPreferenceValueId",
+				PortalPreferenceValue::getPortalPreferenceValueId);
+			attributeGetterFunctions.put(
+				"companyId", PortalPreferenceValue::getCompanyId);
+			attributeGetterFunctions.put(
+				"portalPreferencesId",
+				PortalPreferenceValue::getPortalPreferencesId);
+			attributeGetterFunctions.put(
+				"index", PortalPreferenceValue::getIndex);
+			attributeGetterFunctions.put("key", PortalPreferenceValue::getKey);
+			attributeGetterFunctions.put(
+				"largeValue", PortalPreferenceValue::getLargeValue);
+			attributeGetterFunctions.put(
+				"namespace", PortalPreferenceValue::getNamespace);
+			attributeGetterFunctions.put(
+				"smallValue", PortalPreferenceValue::getSmallValue);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<PortalPreferenceValue, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<PortalPreferenceValue, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<PortalPreferenceValue, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<PortalPreferenceValue, Object>>();
-		Map<String, BiConsumer<PortalPreferenceValue, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<PortalPreferenceValue, ?>>();
+		private static final Map
+			<String, BiConsumer<PortalPreferenceValue, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", PortalPreferenceValue::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<PortalPreferenceValue, Long>)
-				PortalPreferenceValue::setMvccVersion);
-		attributeGetterFunctions.put(
-			"portalPreferenceValueId",
-			PortalPreferenceValue::getPortalPreferenceValueId);
-		attributeSetterBiConsumers.put(
-			"portalPreferenceValueId",
-			(BiConsumer<PortalPreferenceValue, Long>)
-				PortalPreferenceValue::setPortalPreferenceValueId);
-		attributeGetterFunctions.put(
-			"companyId", PortalPreferenceValue::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<PortalPreferenceValue, Long>)
-				PortalPreferenceValue::setCompanyId);
-		attributeGetterFunctions.put(
-			"portalPreferencesId",
-			PortalPreferenceValue::getPortalPreferencesId);
-		attributeSetterBiConsumers.put(
-			"portalPreferencesId",
-			(BiConsumer<PortalPreferenceValue, Long>)
-				PortalPreferenceValue::setPortalPreferencesId);
-		attributeGetterFunctions.put("index", PortalPreferenceValue::getIndex);
-		attributeSetterBiConsumers.put(
-			"index",
-			(BiConsumer<PortalPreferenceValue, Integer>)
-				PortalPreferenceValue::setIndex);
-		attributeGetterFunctions.put("key", PortalPreferenceValue::getKey);
-		attributeSetterBiConsumers.put(
-			"key",
-			(BiConsumer<PortalPreferenceValue, String>)
-				PortalPreferenceValue::setKey);
-		attributeGetterFunctions.put(
-			"largeValue", PortalPreferenceValue::getLargeValue);
-		attributeSetterBiConsumers.put(
-			"largeValue",
-			(BiConsumer<PortalPreferenceValue, String>)
-				PortalPreferenceValue::setLargeValue);
-		attributeGetterFunctions.put(
-			"namespace", PortalPreferenceValue::getNamespace);
-		attributeSetterBiConsumers.put(
-			"namespace",
-			(BiConsumer<PortalPreferenceValue, String>)
-				PortalPreferenceValue::setNamespace);
-		attributeGetterFunctions.put(
-			"smallValue", PortalPreferenceValue::getSmallValue);
-		attributeSetterBiConsumers.put(
-			"smallValue",
-			(BiConsumer<PortalPreferenceValue, String>)
-				PortalPreferenceValue::setSmallValue);
+		static {
+			Map<String, BiConsumer<PortalPreferenceValue, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<PortalPreferenceValue, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<PortalPreferenceValue, Long>)
+					PortalPreferenceValue::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"portalPreferenceValueId",
+				(BiConsumer<PortalPreferenceValue, Long>)
+					PortalPreferenceValue::setPortalPreferenceValueId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<PortalPreferenceValue, Long>)
+					PortalPreferenceValue::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"portalPreferencesId",
+				(BiConsumer<PortalPreferenceValue, Long>)
+					PortalPreferenceValue::setPortalPreferencesId);
+			attributeSetterBiConsumers.put(
+				"index",
+				(BiConsumer<PortalPreferenceValue, Integer>)
+					PortalPreferenceValue::setIndex);
+			attributeSetterBiConsumers.put(
+				"key",
+				(BiConsumer<PortalPreferenceValue, String>)
+					PortalPreferenceValue::setKey);
+			attributeSetterBiConsumers.put(
+				"largeValue",
+				(BiConsumer<PortalPreferenceValue, String>)
+					PortalPreferenceValue::setLargeValue);
+			attributeSetterBiConsumers.put(
+				"namespace",
+				(BiConsumer<PortalPreferenceValue, String>)
+					PortalPreferenceValue::setNamespace);
+			attributeSetterBiConsumers.put(
+				"smallValue",
+				(BiConsumer<PortalPreferenceValue, String>)
+					PortalPreferenceValue::setSmallValue);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -821,42 +800,12 @@ public class PortalPreferenceValueModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<PortalPreferenceValue, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<PortalPreferenceValue, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<PortalPreferenceValue, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((PortalPreferenceValue)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, PortalPreferenceValue>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					PortalPreferenceValue.class, ModelWrapper.class);
 
 	}
 
@@ -874,7 +823,8 @@ public class PortalPreferenceValueModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<PortalPreferenceValue, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

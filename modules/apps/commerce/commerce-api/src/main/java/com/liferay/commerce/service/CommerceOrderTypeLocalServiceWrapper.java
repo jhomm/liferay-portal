@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceOrderTypeLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceOrderTypeLocalServiceWrapper
 	implements CommerceOrderTypeLocalService,
 			   ServiceWrapper<CommerceOrderTypeLocalService> {
+
+	public CommerceOrderTypeLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceOrderTypeLocalServiceWrapper(
 		CommerceOrderTypeLocalService commerceOrderTypeLocalService) {
@@ -261,15 +257,6 @@ public class CommerceOrderTypeLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.model.CommerceOrderType
-		fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId) {
-
-		return _commerceOrderTypeLocalService.fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
-	@Override
 	public com.liferay.commerce.model.CommerceOrderType fetchCommerceOrderType(
 		long commerceOrderTypeId) {
 
@@ -277,35 +264,29 @@ public class CommerceOrderTypeLocalServiceWrapper
 			commerceOrderTypeId);
 	}
 
+	@Override
+	public com.liferay.commerce.model.CommerceOrderType
+		fetchCommerceOrderTypeByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _commerceOrderTypeLocalService.
+			fetchCommerceOrderTypeByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the commerce order type with the matching external reference code and company.
+	 * Returns the commerce order type with the matching UUID and company.
 	 *
+	 * @param uuid the commerce order type's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order type's external reference code
 	 * @return the matching commerce order type, or <code>null</code> if a matching commerce order type could not be found
 	 */
 	@Override
 	public com.liferay.commerce.model.CommerceOrderType
-		fetchCommerceOrderTypeByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+		fetchCommerceOrderTypeByUuidAndCompanyId(String uuid, long companyId) {
 
 		return _commerceOrderTypeLocalService.
-			fetchCommerceOrderTypeByExternalReferenceCode(
-				companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceOrderTypeByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.model.CommerceOrderType
-		fetchCommerceOrderTypeByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _commerceOrderTypeLocalService.
-			fetchCommerceOrderTypeByReferenceCode(
-				companyId, externalReferenceCode);
+			fetchCommerceOrderTypeByUuidAndCompanyId(uuid, companyId);
 	}
 
 	@Override
@@ -331,23 +312,32 @@ public class CommerceOrderTypeLocalServiceWrapper
 			commerceOrderTypeId);
 	}
 
+	@Override
+	public com.liferay.commerce.model.CommerceOrderType
+			getCommerceOrderTypeByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceOrderTypeLocalService.
+			getCommerceOrderTypeByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the commerce order type with the matching external reference code and company.
+	 * Returns the commerce order type with the matching UUID and company.
 	 *
+	 * @param uuid the commerce order type's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order type's external reference code
 	 * @return the matching commerce order type
 	 * @throws PortalException if a matching commerce order type could not be found
 	 */
 	@Override
 	public com.liferay.commerce.model.CommerceOrderType
-			getCommerceOrderTypeByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+			getCommerceOrderTypeByUuidAndCompanyId(String uuid, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceOrderTypeLocalService.
-			getCommerceOrderTypeByExternalReferenceCode(
-				companyId, externalReferenceCode);
+			getCommerceOrderTypeByUuidAndCompanyId(uuid, companyId);
 	}
 
 	/**
@@ -390,12 +380,28 @@ public class CommerceOrderTypeLocalServiceWrapper
 	}
 
 	@Override
+	public int getCommerceOrderTypesCount(long companyId, boolean active) {
+		return _commerceOrderTypeLocalService.getCommerceOrderTypesCount(
+			companyId, active);
+	}
+
+	@Override
 	public int getCommerceOrderTypesCount(
 			long companyId, String className, long classPK, boolean active)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceOrderTypeLocalService.getCommerceOrderTypesCount(
 			companyId, className, classPK, active);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return _commerceOrderTypeLocalService.getExportActionableDynamicQuery(
+			portletDataContext);
 	}
 
 	@Override
@@ -488,6 +494,11 @@ public class CommerceOrderTypeLocalServiceWrapper
 		return _commerceOrderTypeLocalService.updateStatus(
 			userId, commerceOrderTypeId, status, serviceContext,
 			workflowContext);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceOrderTypeLocalService.getBasePersistence();
 	}
 
 	@Override

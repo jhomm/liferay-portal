@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.monitoring.internal.servlet.filter;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -24,10 +16,7 @@ import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.monitoring.DataSampleFactory;
 import com.liferay.portal.kernel.monitoring.DataSampleThreadLocal;
-import com.liferay.portal.kernel.monitoring.PortalMonitoringControl;
-import com.liferay.portal.kernel.monitoring.PortletMonitoringControl;
 import com.liferay.portal.kernel.monitoring.RequestStatus;
-import com.liferay.portal.kernel.monitoring.ServiceMonitoringControl;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.servlet.BaseFilter;
 import com.liferay.portal.kernel.servlet.HttpHeaders;
@@ -35,117 +24,60 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.monitoring.internal.configuration.MonitoringConfiguration;
 import com.liferay.portal.monitoring.internal.statistics.portal.PortalRequestDataSample;
+
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Rajesh Thiagarajan
  * @author Michael C. Han
  */
 @Component(
-	enabled = false, immediate = true,
+	configurationPid = "com.liferay.portal.monitoring.internal.configuration.MonitoringConfiguration",
+	enabled = false,
 	property = {
 		"after-filter=Absolute Redirects Filter", "dispatcher=FORWARD",
 		"dispatcher=REQUEST", "servlet-context-name=",
 		"servlet-filter-name=Monitoring Filter", "url-pattern=/c/*",
 		"url-pattern=/group/*", "url-pattern=/user/*", "url-pattern=/web/*"
 	},
-	service = {Filter.class, PortalMonitoringControl.class}
+	service = Filter.class
 )
-public class MonitoringFilter
-	extends BaseFilter implements PortalMonitoringControl {
+public class MonitoringFilter extends BaseFilter {
 
-	@Override
-	public boolean isFilterEnabled() {
-		if (!super.isFilterEnabled()) {
-			return false;
-		}
+	@Activate
+	@Modified
+	protected void activate(Map<String, Object> properties) {
+		_monitoringConfiguration = ConfigurableUtil.createConfigurable(
+			MonitoringConfiguration.class, properties);
 
-		if (!_monitorPortalRequest &&
-			!_portletMonitoringControl.isMonitorPortletActionRequest() &&
-			!_portletMonitoringControl.isMonitorPortletEventRequest() &&
-			!_portletMonitoringControl.isMonitorPortletRenderRequest() &&
-			!_portletMonitoringControl.isMonitorPortletResourceRequest() &&
-			!_serviceMonitoringControl.isMonitorServiceRequest()) {
-
-			return false;
-		}
-
-		return true;
-	}
-
-	@Override
-	public boolean isMonitorPortalRequest() {
-		return _monitorPortalRequest;
-	}
-
-	@Override
-	public void setMonitorPortalRequest(boolean monitorPortalRequest) {
-		_monitorPortalRequest = monitorPortalRequest;
-	}
-
-	protected int decrementProcessFilterCount() {
-		AtomicInteger processFilterCount = _processFilterCount.get();
-
-		return processFilterCount.decrementAndGet();
-	}
-
-	protected long getGroupId(HttpServletRequest httpServletRequest) {
-		long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
-
-		if (groupId > 0) {
-			return groupId;
-		}
-
-		Layout layout = (Layout)httpServletRequest.getAttribute(WebKeys.LAYOUT);
-
-		if (layout != null) {
-			return layout.getGroupId();
-		}
-
-		long plid = ParamUtil.getLong(httpServletRequest, "p_l_id");
-
-		if ((plid > 0) && (_layoutLocalService != null)) {
-			try {
-				layout = _layoutLocalService.getLayout(plid);
-
-				groupId = layout.getGroupId();
-			}
-			catch (PortalException portalException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(
-						"Unable to retrieve layout " + plid, portalException);
-				}
-			}
-		}
-
-		return groupId;
+		setFilterEnabled(
+			_monitoringConfiguration.monitorPortalRequest() ||
+			_monitoringConfiguration.monitorPortletActionRequest() ||
+			_monitoringConfiguration.monitorPortletEventRequest() ||
+			_monitoringConfiguration.monitorPortletRenderRequest() ||
+			_monitoringConfiguration.monitorPortletResourceRequest() ||
+			_monitoringConfiguration.monitorServiceRequest());
 	}
 
 	@Override
 	protected Log getLog() {
 		return _log;
-	}
-
-	protected void incrementProcessFilterCount() {
-		AtomicInteger processFilterCount = _processFilterCount.get();
-
-		processFilterCount.incrementAndGet();
 	}
 
 	@Override
@@ -156,14 +88,14 @@ public class MonitoringFilter
 
 		PortalRequestDataSample portalRequestDataSample = null;
 
-		incrementProcessFilterCount();
+		_incrementProcessFilterCount();
 
-		if (_monitorPortalRequest) {
+		if (_monitoringConfiguration.monitorPortalRequest()) {
 			portalRequestDataSample =
 				(PortalRequestDataSample)
 					_dataSampleFactory.createPortalRequestDataSample(
 						_portal.getCompanyId(httpServletRequest),
-						getGroupId(httpServletRequest),
+						_getGroupId(httpServletRequest),
 						httpServletRequest.getHeader(HttpHeaders.REFERER),
 						httpServletRequest.getRemoteAddr(),
 						httpServletRequest.getRemoteUser(),
@@ -188,7 +120,7 @@ public class MonitoringFilter
 				portalRequestDataSample.capture(RequestStatus.SUCCESS);
 
 				portalRequestDataSample.setGroupId(
-					getGroupId(httpServletRequest));
+					_getGroupId(httpServletRequest));
 				portalRequestDataSample.setStatusCode(
 					httpServletResponse.getStatus());
 			}
@@ -204,17 +136,15 @@ public class MonitoringFilter
 			else if (exception instanceof ServletException) {
 				throw (ServletException)exception;
 			}
-			else {
-				throw new ServletException(
-					"Unable to execute request", exception);
-			}
+
+			throw new ServletException("Unable to execute request", exception);
 		}
 		finally {
 			if (portalRequestDataSample != null) {
 				DataSampleThreadLocal.addDataSample(portalRequestDataSample);
 			}
 
-			if (decrementProcessFilterCount() == 0) {
+			if (_decrementProcessFilterCount() == 0) {
 				Message message = new Message();
 
 				message.setPayload(DataSampleThreadLocal.getDataSamples());
@@ -226,23 +156,48 @@ public class MonitoringFilter
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setDataSampleFactory(DataSampleFactory dataSampleFactory) {
-		_dataSampleFactory = dataSampleFactory;
+	private int _decrementProcessFilterCount() {
+		AtomicInteger processFilterCount = _processFilterCount.get();
+
+		return processFilterCount.decrementAndGet();
 	}
 
-	@Reference(unbind = "-")
-	protected final void setPortletMonitoringControl(
-		PortletMonitoringControl portletMonitoringControl) {
+	private long _getGroupId(HttpServletRequest httpServletRequest) {
+		long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
-		_portletMonitoringControl = portletMonitoringControl;
+		if (groupId > 0) {
+			return groupId;
+		}
+
+		Layout layout = (Layout)httpServletRequest.getAttribute(WebKeys.LAYOUT);
+
+		if (layout != null) {
+			return layout.getGroupId();
+		}
+
+		long plid = ParamUtil.getLong(httpServletRequest, "p_l_id");
+
+		if (plid > 0) {
+			try {
+				layout = _layoutLocalService.getLayout(plid);
+
+				groupId = layout.getGroupId();
+			}
+			catch (PortalException portalException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Unable to retrieve layout " + plid, portalException);
+				}
+			}
+		}
+
+		return groupId;
 	}
 
-	@Reference(unbind = "-")
-	protected void setServiceMonitoringControl(
-		ServiceMonitoringControl serviceMonitoringControl) {
+	private void _incrementProcessFilterCount() {
+		AtomicInteger processFilterCount = _processFilterCount.get();
 
-		_serviceMonitoringControl = serviceMonitoringControl;
+		processFilterCount.incrementAndGet();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -253,24 +208,18 @@ public class MonitoringFilter
 			MonitoringFilter.class + "._processFilterCount",
 			AtomicInteger::new);
 
+	@Reference
 	private DataSampleFactory _dataSampleFactory;
 
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	private volatile LayoutLocalService _layoutLocalService;
+	@Reference
+	private LayoutLocalService _layoutLocalService;
 
 	@Reference
 	private MessageBus _messageBus;
 
-	private boolean _monitorPortalRequest;
+	private volatile MonitoringConfiguration _monitoringConfiguration;
 
 	@Reference
 	private Portal _portal;
-
-	private PortletMonitoringControl _portletMonitoringControl;
-	private ServiceMonitoringControl _serviceMonitoringControl;
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
 
 import com.liferay.commerce.model.CommerceShippingMethod;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -65,14 +57,14 @@ public class CommerceShippingMethodServiceUtil {
 
 	public static CommerceShippingMethod addCommerceShippingMethod(
 			long groupId, Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			java.io.File imageFile, String engineKey, double priority,
-			boolean active)
+			Map<java.util.Locale, String> descriptionMap, boolean active,
+			String engineKey, java.io.File imageFile, double priority,
+			String trackingURL)
 		throws PortalException {
 
 		return getService().addCommerceShippingMethod(
-			groupId, nameMap, descriptionMap, imageFile, engineKey, priority,
-			active);
+			groupId, nameMap, descriptionMap, active, engineKey, imageFile,
+			priority, trackingURL);
 	}
 
 	public static CommerceShippingMethod createCommerceShippingMethod(
@@ -141,17 +133,21 @@ public class CommerceShippingMethodServiceUtil {
 	}
 
 	public static List<CommerceShippingMethod> getCommerceShippingMethods(
-			long groupId)
+			long groupId, boolean active, int start, int end,
+			OrderByComparator<CommerceShippingMethod> orderByComparator)
 		throws PortalException {
 
-		return getService().getCommerceShippingMethods(groupId);
+		return getService().getCommerceShippingMethods(
+			groupId, active, start, end, orderByComparator);
 	}
 
 	public static List<CommerceShippingMethod> getCommerceShippingMethods(
-			long groupId, boolean active)
+			long groupId, int start, int end,
+			OrderByComparator<CommerceShippingMethod> orderByComparator)
 		throws PortalException {
 
-		return getService().getCommerceShippingMethods(groupId, active);
+		return getService().getCommerceShippingMethods(
+			groupId, start, end, orderByComparator);
 	}
 
 	public static List<CommerceShippingMethod> getCommerceShippingMethods(
@@ -162,11 +158,10 @@ public class CommerceShippingMethodServiceUtil {
 			groupId, countryId, active);
 	}
 
-	public static int getCommerceShippingMethodsCount(
-			long groupId, boolean active)
+	public static int getCommerceShippingMethodsCount(long groupId)
 		throws PortalException {
 
-		return getService().getCommerceShippingMethodsCount(groupId, active);
+		return getService().getCommerceShippingMethodsCount(groupId);
 	}
 
 	/**
@@ -186,21 +181,32 @@ public class CommerceShippingMethodServiceUtil {
 	}
 
 	public static CommerceShippingMethod updateCommerceShippingMethod(
-			long commerceShippingMethodId,
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			java.io.File imageFile, double priority, boolean active)
+			CommerceShippingMethod commerceShippingMethod)
 		throws PortalException {
 
 		return getService().updateCommerceShippingMethod(
-			commerceShippingMethodId, nameMap, descriptionMap, imageFile,
-			priority, active);
+			commerceShippingMethod);
+	}
+
+	public static CommerceShippingMethod updateCommerceShippingMethod(
+			long commerceShippingMethodId,
+			Map<java.util.Locale, String> nameMap,
+			Map<java.util.Locale, String> descriptionMap, boolean active,
+			java.io.File imageFile, double priority, String trackingURL)
+		throws PortalException {
+
+		return getService().updateCommerceShippingMethod(
+			commerceShippingMethodId, nameMap, descriptionMap, active,
+			imageFile, priority, trackingURL);
 	}
 
 	public static CommerceShippingMethodService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceShippingMethodService _service;
+	private static final Snapshot<CommerceShippingMethodService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceShippingMethodServiceUtil.class,
+			CommerceShippingMethodService.class);
 
 }

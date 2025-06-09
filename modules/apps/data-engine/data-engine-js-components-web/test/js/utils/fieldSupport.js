@@ -1,70 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {FIELD_TYPE_FIELDSET} from '../../../src/main/resources/META-INF/resources/js/utils/constants';
 import {
-	isFieldSetChild,
 	localizeField,
+	updateInputMaskProperties,
 } from '../../../src/main/resources/META-INF/resources/js/utils/fieldSupport';
 
 describe('Field Support Utilities', () => {
-	describe('isFieldSetChild', () => {
-		it('returns true when a field is a child of a FieldSet', () => {
-			const pages = [
-				{
-					rows: [
-						{
-							columns: [
-								{
-									fields: [
-										{
-											ddmStructureId: 123,
-											fieldName: 'myFieldSet',
-											nestedFields: [
-												{
-													fieldName: 'fieldSetChild',
-												},
-											],
-											type: FIELD_TYPE_FIELDSET,
-										},
-										{
-											fieldName: 'notAFieldSet',
-										},
-										{
-											fieldName: 'otherFieldset',
-											nestedFields: [
-												{
-													fieldName: 'sectionChild',
-												},
-											],
-											type: FIELD_TYPE_FIELDSET,
-										},
-									],
-								},
-							],
-						},
-					],
-				},
-			];
-
-			expect(isFieldSetChild(pages, 'fieldSetChild')).toBe(true);
-			expect(isFieldSetChild(pages, 'myFieldSet')).toBe(false);
-			expect(isFieldSetChild(pages, 'notAFieldSet')).toBe(false);
-			expect(isFieldSetChild(pages, 'sectionChild')).toBe(false);
-		});
-	});
-
 	describe('localizeField', () => {
 		it('adds a new entry in localized value with default language value', () => {
 			const localizedField = localizeField(
@@ -187,9 +131,8 @@ describe('Field Support Utilities', () => {
 
 			expect(firstOption.label).toBe('English Option');
 
-			const [firstLocalizedOption] = localizedField.localizedValue[
-				'pt-BR'
-			]['pt-BR'];
+			const [firstLocalizedOption] =
+				localizedField.localizedValue['pt-BR']['pt-BR'];
 
 			expect(firstLocalizedOption.label).toBe('English Option');
 		});
@@ -246,11 +189,86 @@ describe('Field Support Utilities', () => {
 
 			expect(firstOption.label).toBe('Portuguese Option');
 
-			const [firstLocalizedOption] = localizedField.localizedValue[
-				'pt-BR'
-			]['pt-BR'];
+			const [firstLocalizedOption] =
+				localizedField.localizedValue['pt-BR']['pt-BR'];
 
 			expect(firstLocalizedOption.label).toBe('Portuguese Option');
+		});
+	});
+
+	describe('updateInputMaskProperties', () => {
+		it('updates input mask properties for predefinedValue and validation fields', () => {
+			const field = {
+				fieldName: 'numeric',
+				settingsContext: {
+					pages: [
+						{
+							rows: [
+								{
+									columns: [
+										{
+											fields: [
+												{
+													fieldName:
+														'inputMaskFormat',
+													localizedValue: {
+														'en-US':
+															'(99) 9999-9999',
+														'pt-BR':
+															'999.999.999.99',
+													},
+												},
+												{
+													fieldName:
+														'numericInputMask',
+													localizedValue: {
+														'en-US':
+															'{"append":"%","appendType":"suffix"}',
+														'pt-BR':
+															'{"append":"R$","appendType":"prefix"}',
+													},
+												},
+												{
+													fieldName:
+														'predefinedValue',
+												},
+												{
+													fieldName: 'validation',
+												},
+											],
+											size: 12,
+										},
+									],
+								},
+							],
+						},
+					],
+				},
+				type: 'numeric',
+			};
+
+			updateInputMaskProperties('pt-BR', field);
+
+			expect(field.append).toBe('R$');
+			expect(field.appendType).toBe('prefix');
+			expect(field.inputMaskFormat).toBe('999.999.999.99');
+
+			const settingsContextFields =
+				field.settingsContext.pages[0].rows[0].columns[0].fields;
+
+			expect(settingsContextFields[2].append).toBe('R$');
+			expect(settingsContextFields[2].appendType).toBe('prefix');
+			expect(settingsContextFields[2].fieldName).toBe('predefinedValue');
+			expect(settingsContextFields[2].inputMaskFormat).toBe(
+				'999.999.999.99'
+			);
+
+			expect(settingsContextFields[3].append).toBe('R$');
+			expect(settingsContextFields[3].appendType).toBe('prefix');
+			expect(settingsContextFields[3].fieldName).toBe('validation');
+			expect(settingsContextFields[3].inputMaskFormat).toBe(
+				'999.999.999.99'
+			);
 		});
 	});
 });

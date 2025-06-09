@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.cmis.internal;
@@ -86,18 +77,14 @@ public class CMISWebServicesRepositoryDefiner
 		return _portalCapabilityLocator;
 	}
 
-	@Reference(
-		target = "(repository.target.class.name=" + CMISRepositoryConstants.CMIS_WEB_SERVICES_REPOSITORY_CLASS_NAME + ")",
-		unbind = "-"
-	)
-	protected void setRepositoryFactory(RepositoryFactory repositoryFactory) {
-		_repositoryFactory = repositoryFactory;
-	}
-
 	@Reference
 	private PortalCapabilityLocator _portalCapabilityLocator;
 
 	private final RepositoryConfiguration _repositoryConfiguration;
+
+	@Reference(
+		target = "(repository.target.class.name=" + CMISRepositoryConstants.CMIS_WEB_SERVICES_REPOSITORY_CLASS_NAME + ")"
+	)
 	private RepositoryFactory _repositoryFactory;
 
 }

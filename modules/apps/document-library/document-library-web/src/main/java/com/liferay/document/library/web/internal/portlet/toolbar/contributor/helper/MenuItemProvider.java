@@ -1,36 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.toolbar.contributor.helper;
 
-import com.liferay.depot.util.SiteConnectedGroupGroupProviderUtil;
+import com.liferay.ai.creator.openai.display.context.factory.AICreatorOpenAIMenuItemFactory;
+import com.liferay.depot.group.provider.SiteConnectedGroupGroupProvider;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.display.context.DLUIItemKeys;
+import com.liferay.document.library.icon.provider.DLFileEntryTypeIconProvider;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalServiceUtil;
-import com.liferay.document.library.kernel.service.DLFileEntryTypeServiceUtil;
-import com.liferay.document.library.web.internal.icon.provider.DLFileEntryTypeIconProviderUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryTypeService;
+import com.liferay.document.library.visibility.controller.DLFileEntryTypeVisibilityController;
 import com.liferay.document.library.web.internal.security.permission.resource.DLFolderPermission;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -39,21 +35,28 @@ import com.liferay.portal.kernel.servlet.taglib.ui.URLMenuItem;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adolfo Pérez
  */
+@Component(service = MenuItemProvider.class)
 public class MenuItemProvider {
 
 	public List<MenuItem> getAddDocumentTypesMenuItems(
@@ -100,10 +103,8 @@ public class MenuItemProvider {
 		urlMenuItem.setIcon("upload");
 		urlMenuItem.setKey(DLUIItemKeys.UPLOAD);
 		urlMenuItem.setLabel(
-			LanguageUtil.get(
-				PortalUtil.getHttpServletRequest(portletRequest),
-				"file-upload"));
-
+			_language.get(
+				_portal.getHttpServletRequest(portletRequest), "file-upload"));
 		urlMenuItem.setURL(
 			PortletURLBuilder.create(
 				_getPortletURL(themeDisplay, portletRequest)
@@ -112,7 +113,7 @@ public class MenuItemProvider {
 			).setCMD(
 				Constants.ADD
 			).setRedirect(
-				PortalUtil.getCurrentURL(portletRequest)
+				_portal.getCurrentURL(portletRequest)
 			).setPortletResource(
 				() -> {
 					PortletDisplay portletDisplay =
@@ -150,16 +151,15 @@ public class MenuItemProvider {
 		urlMenuItem.setIcon("folder");
 		urlMenuItem.setKey(DLUIItemKeys.ADD_FOLDER);
 		urlMenuItem.setLabel(
-			LanguageUtil.get(
-				PortalUtil.getHttpServletRequest(portletRequest), "folder"));
-
+			_language.get(
+				_portal.getHttpServletRequest(portletRequest), "folder"));
 		urlMenuItem.setURL(
 			PortletURLBuilder.create(
 				_getPortletURL(themeDisplay, portletRequest)
 			).setMVCRenderCommandName(
 				"/document_library/edit_folder"
 			).setRedirect(
-				PortalUtil.getCurrentURL(portletRequest)
+				_portal.getCurrentURL(portletRequest)
 			).setPortletResource(
 				() -> {
 					PortletDisplay portletDisplay =
@@ -204,7 +204,7 @@ public class MenuItemProvider {
 			"content.Language", themeDisplay.getLocale(), getClass());
 
 		urlMenuItem.setLabel(
-			LanguageUtil.get(resourceBundle, "multiple-files-upload"));
+			_language.get(resourceBundle, "multiple-files-upload"));
 
 		urlMenuItem.setURL(
 			PortletURLBuilder.create(
@@ -212,7 +212,7 @@ public class MenuItemProvider {
 			).setMVCRenderCommandName(
 				"/document_library/upload_multiple_file_entries"
 			).setRedirect(
-				PortalUtil.getCurrentURL(portletRequest)
+				_portal.getCurrentURL(portletRequest)
 			).setPortletResource(
 				() -> {
 					PortletDisplay portletDisplay =
@@ -247,17 +247,15 @@ public class MenuItemProvider {
 
 		urlMenuItem.setIcon("repository");
 		urlMenuItem.setLabel(
-			LanguageUtil.get(
-				PortalUtil.getHttpServletRequest(portletRequest),
-				"repository"));
-
+			_language.get(
+				_portal.getHttpServletRequest(portletRequest), "repository"));
 		urlMenuItem.setURL(
 			PortletURLBuilder.create(
 				_getPortletURL(themeDisplay, portletRequest)
 			).setMVCRenderCommandName(
 				"/document_library/edit_repository"
 			).setRedirect(
-				PortalUtil.getCurrentURL(portletRequest)
+				_portal.getCurrentURL(portletRequest)
 			).buildString());
 
 		return urlMenuItem;
@@ -285,16 +283,15 @@ public class MenuItemProvider {
 
 		urlMenuItem.setIcon("shortcut");
 		urlMenuItem.setLabel(
-			LanguageUtil.get(
-				PortalUtil.getHttpServletRequest(portletRequest), "shortcut"));
-
+			_language.get(
+				_portal.getHttpServletRequest(portletRequest), "shortcut"));
 		urlMenuItem.setURL(
 			PortletURLBuilder.create(
 				_getPortletURL(themeDisplay, portletRequest)
 			).setMVCRenderCommandName(
 				"/document_library/edit_file_shortcut"
 			).setRedirect(
-				PortalUtil.getCurrentURL(portletRequest)
+				_portal.getCurrentURL(portletRequest)
 			).setPortletResource(
 				() -> {
 					PortletDisplay portletDisplay =
@@ -311,9 +308,52 @@ public class MenuItemProvider {
 		return urlMenuItem;
 	}
 
+	public MenuItem getAICreatorMenuItem(
+		Folder folder, ThemeDisplay themeDisplay,
+		PortletRequest portletRequest) {
+
+		long folderId = _getFolderId(folder);
+
+		if (!_hasPermission(
+				themeDisplay.getPermissionChecker(),
+				themeDisplay.getScopeGroupId(), folderId,
+				ActionKeys.ADD_DOCUMENT)) {
+
+			return null;
+		}
+
+		return _aiCreatorOpenAIMenuItemFactory.
+			createAICreatorCreateImageMenuItem(
+				_getRepositoryId(folder, themeDisplay), folderId,
+				_getDefaultFileEntryTypeId(folderId), themeDisplay);
+	}
+
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, DLFileEntryTypeVisibilityController.class,
+			"dl.file.entry.type.key");
+
+		_dlFileEntryTypeIconProviderServiceTrackerMap =
+			ServiceTrackerMapFactory.openSingleValueMap(
+				bundleContext, DLFileEntryTypeIconProvider.class,
+				"file.entry.type.key");
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
+
+		_dlFileEntryTypeIconProviderServiceTrackerMap.close();
+
+		_serviceTrackerMap = null;
+
+		_dlFileEntryTypeLocalService = null;
+	}
+
 	private long _getDefaultFileEntryTypeId(long folderId) {
 		try {
-			return DLFileEntryTypeLocalServiceUtil.getDefaultFileEntryTypeId(
+			return _dlFileEntryTypeLocalService.getDefaultFileEntryTypeId(
 				folderId);
 		}
 		catch (PortalException portalException) {
@@ -336,20 +376,14 @@ public class MenuItemProvider {
 
 		URLMenuItem urlMenuItem = new URLMenuItem();
 
-		urlMenuItem.setIcon(
-			DLFileEntryTypeIconProviderUtil.getIcon(fileEntryType));
+		urlMenuItem.setIcon(_getIcon(fileEntryType));
 		urlMenuItem.setKey(
 			DLFileEntryType.class.getSimpleName() +
 				fileEntryType.getFileEntryTypeKey());
-
-		String label = LanguageUtil.get(
-			PortalUtil.getHttpServletRequest(portletRequest),
+		urlMenuItem.setLabel(
 			fileEntryType.getUnambiguousName(
 				fileEntryTypes, themeDisplay.getScopeGroupId(),
 				themeDisplay.getLocale()));
-
-		urlMenuItem.setLabel(label);
-
 		urlMenuItem.setURL(
 			PortletURLBuilder.create(
 				_getPortletURL(themeDisplay, portletRequest)
@@ -358,7 +392,7 @@ public class MenuItemProvider {
 			).setCMD(
 				Constants.ADD
 			).setRedirect(
-				PortalUtil.getCurrentURL(portletRequest)
+				_portal.getCurrentURL(portletRequest)
 			).setPortletResource(
 				() -> {
 					PortletDisplay portletDisplay =
@@ -400,9 +434,10 @@ public class MenuItemProvider {
 		}
 
 		try {
-			return DLFileEntryTypeServiceUtil.getFolderFileEntryTypes(
-				SiteConnectedGroupGroupProviderUtil.
-					getCurrentAndAncestorSiteAndDepotGroupIds(groupId, true),
+			return _dlFileEntryTypeService.getFolderFileEntryTypes(
+				_siteConnectedGroupGroupProvider.
+					getCurrentAndAncestorSiteAndDepotGroupIds(
+						groupId, false, true),
 				folderId, inherited);
 		}
 		catch (PortalException portalException) {
@@ -424,42 +459,55 @@ public class MenuItemProvider {
 		return folder.getFolderId();
 	}
 
+	private String _getIcon(DLFileEntryType fileEntryType) {
+		DLFileEntryTypeIconProvider dlFileEntryTypeIconProvider =
+			_dlFileEntryTypeIconProviderServiceTrackerMap.getService(
+				fileEntryType.getFileEntryTypeKey());
+
+		if (dlFileEntryTypeIconProvider != null) {
+			return dlFileEntryTypeIconProvider.getIcon();
+		}
+
+		return "file-template";
+	}
+
 	private List<MenuItem> _getPortletTitleAddDocumentTypeMenuItems(
 		Folder folder, ThemeDisplay themeDisplay,
 		PortletRequest portletRequest) {
 
-		List<MenuItem> menuItems = new ArrayList<>();
-
 		List<DLFileEntryType> fileEntryTypes = _getFileEntryTypes(
 			themeDisplay.getScopeGroupId(), folder);
 
-		for (DLFileEntryType fileEntryType : fileEntryTypes) {
-			try {
-				if (fileEntryType.getFileEntryTypeId() !=
-						DLFileEntryTypeConstants.COMPANY_ID_BASIC_DOCUMENT) {
+		return TransformUtil.transform(
+			fileEntryTypes,
+			fileEntryType -> {
+				try {
+					if ((fileEntryType.getFileEntryTypeId() !=
+							DLFileEntryTypeConstants.
+								COMPANY_ID_BASIC_DOCUMENT) &&
+						_isFileEntryTypeVisible(
+							themeDisplay.getUserId(), fileEntryType)) {
 
-					MenuItem urlMenuItem = _getFileEntryTypeMenuItem(
-						folder, fileEntryTypes, fileEntryType, themeDisplay,
-						portletRequest);
-
-					menuItems.add(urlMenuItem);
+						return _getFileEntryTypeMenuItem(
+							folder, fileEntryTypes, fileEntryType, themeDisplay,
+							portletRequest);
+					}
 				}
-			}
-			catch (PortalException portalException) {
-				_log.error(
-					"Unable to add menu item for file entry type " +
-						fileEntryType.getName(),
-					portalException);
-			}
-		}
+				catch (PortalException portalException) {
+					_log.error(
+						"Unable to add menu item for file entry type " +
+							fileEntryType.getName(),
+						portalException);
+				}
 
-		return menuItems;
+				return null;
+			});
 	}
 
 	private PortletURL _getPortletURL(
 		ThemeDisplay themeDisplay, PortletRequest portletRequest) {
 
-		PortletURL portletURL = PortalUtil.getControlPanelPortletURL(
+		PortletURL portletURL = _portal.getControlPanelPortletURL(
 			portletRequest, themeDisplay.getScopeGroup(),
 			DLPortletKeys.DOCUMENT_LIBRARY_ADMIN, 0, 0,
 			PortletRequest.RENDER_PHASE);
@@ -468,7 +516,7 @@ public class MenuItemProvider {
 			portletURL.setWindowState(portletRequest.getWindowState());
 		}
 		catch (WindowStateException windowStateException) {
-			_log.error(windowStateException, windowStateException);
+			_log.error(windowStateException);
 		}
 
 		return portletURL;
@@ -491,13 +539,63 @@ public class MenuItemProvider {
 				permissionChecker, groupId, folderId, actionId);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return false;
 		}
 	}
 
+	private boolean _isFileEntryTypeVisible(
+		long userId, DLFileEntryType fileEntryType) {
+
+		List<DLFileEntryTypeVisibilityController>
+			dlFileEntryTypeVisibilityControllers =
+				_serviceTrackerMap.getService(
+					fileEntryType.getFileEntryTypeKey());
+
+		if (dlFileEntryTypeVisibilityControllers == null) {
+			return true;
+		}
+
+		for (DLFileEntryTypeVisibilityController
+				dlFileEntryTypeVisibilityController :
+					dlFileEntryTypeVisibilityControllers) {
+
+			if (!dlFileEntryTypeVisibilityController.isVisible(
+					userId, fileEntryType)) {
+
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		MenuItemProvider.class);
+
+	private static ServiceTrackerMap<String, DLFileEntryTypeIconProvider>
+		_dlFileEntryTypeIconProviderServiceTrackerMap;
+
+	@Reference
+	private AICreatorOpenAIMenuItemFactory _aiCreatorOpenAIMenuItemFactory;
+
+	@Reference
+	private DLFileEntryTypeLocalService _dlFileEntryTypeLocalService;
+
+	@Reference
+	private DLFileEntryTypeService _dlFileEntryTypeService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private Portal _portal;
+
+	private ServiceTrackerMap<String, List<DLFileEntryTypeVisibilityController>>
+		_serviceTrackerMap;
+
+	@Reference
+	private SiteConnectedGroupGroupProvider _siteConnectedGroupGroupProvider;
 
 }

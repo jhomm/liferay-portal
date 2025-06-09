@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.shortcut.internal.spi.scope.finder;
@@ -19,13 +10,13 @@ import com.liferay.oauth2.provider.scope.spi.prefix.handler.PrefixHandler;
 import com.liferay.oauth2.provider.scope.spi.prefix.handler.PrefixHandlerFactory;
 import com.liferay.oauth2.provider.scope.spi.scope.finder.ScopeFinder;
 import com.liferay.oauth2.provider.scope.spi.scope.mapper.ScopeMapper;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.security.service.access.policy.model.SAPEntry;
 import com.liferay.portal.security.service.access.policy.service.SAPEntryLocalService;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,8 +51,8 @@ public class OAuth2ProviderShortcutScopeFinder
 			ResourceBundleUtil.getString(
 				ResourceBundleUtil.getBundle(
 					locale, OAuth2ProviderShortcutScopeFinder.class),
-				"liferay-json-web-services-analytics-name"),
-			"liferay-json-web-services-analytics-name");
+				"analytics"),
+			"analytics");
 	}
 
 	@Override
@@ -72,20 +63,18 @@ public class OAuth2ProviderShortcutScopeFinder
 			return _scopeAliasesList;
 		}
 
-		List<String> scopes = new ArrayList<>();
+		return TransformUtil.transform(
+			_scopeAliasesList,
+			scopeAlias -> {
+				SAPEntry sapEntry = _sapEntryLocalService.fetchSAPEntry(
+					companyId, "OAUTH2_" + scopeAlias);
 
-		for (String scopeAlias : _scopeAliasesList) {
-			String name = "OAUTH2_" + scopeAlias;
+				if ((sapEntry != null) && sapEntry.isEnabled()) {
+					return scopeAlias;
+				}
 
-			SAPEntry sapEntry = _sapEntryLocalService.fetchSAPEntry(
-				companyId, name);
-
-			if ((sapEntry != null) && sapEntry.isEnabled()) {
-				scopes.add(scopeAlias);
-			}
-		}
-
-		return scopes;
+				return null;
+			});
 	}
 
 	@Override

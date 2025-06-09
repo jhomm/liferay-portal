@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.test;
@@ -32,6 +23,7 @@ import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
+import com.liferay.portal.tools.service.builder.test.exception.DuplicateERCGroupEntryExternalReferenceCodeException;
 import com.liferay.portal.tools.service.builder.test.exception.NoSuchERCGroupEntryException;
 import com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry;
 import com.liferay.portal.tools.service.builder.test.service.ERCGroupEntryLocalServiceUtil;
@@ -124,6 +116,8 @@ public class ERCGroupEntryPersistenceTest {
 
 		ERCGroupEntry newERCGroupEntry = _persistence.create(pk);
 
+		newERCGroupEntry.setUuid(RandomTestUtil.randomString());
+
 		newERCGroupEntry.setExternalReferenceCode(
 			RandomTestUtil.randomString());
 
@@ -137,6 +131,8 @@ public class ERCGroupEntryPersistenceTest {
 			newERCGroupEntry.getPrimaryKey());
 
 		Assert.assertEquals(
+			existingERCGroupEntry.getUuid(), newERCGroupEntry.getUuid());
+		Assert.assertEquals(
 			existingERCGroupEntry.getExternalReferenceCode(),
 			newERCGroupEntry.getExternalReferenceCode());
 		Assert.assertEquals(
@@ -149,13 +145,60 @@ public class ERCGroupEntryPersistenceTest {
 			newERCGroupEntry.getCompanyId());
 	}
 
+	@Test(expected = DuplicateERCGroupEntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		ERCGroupEntry ercGroupEntry = addERCGroupEntry();
+
+		ERCGroupEntry newERCGroupEntry = addERCGroupEntry();
+
+		newERCGroupEntry.setGroupId(ercGroupEntry.getGroupId());
+
+		newERCGroupEntry = _persistence.update(newERCGroupEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newERCGroupEntry);
+
+		newERCGroupEntry.setExternalReferenceCode(
+			ercGroupEntry.getExternalReferenceCode());
+
+		_persistence.update(newERCGroupEntry);
+	}
+
 	@Test
-	public void testCountByG_ERC() throws Exception {
-		_persistence.countByG_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
 
-		_persistence.countByG_ERC(0L, "null");
+		_persistence.countByUuid("null");
 
-		_persistence.countByG_ERC(0L, (String)null);
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUUID_G() throws Exception {
+		_persistence.countByUUID_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByUUID_G("null", 0L);
+
+		_persistence.countByUUID_G((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -183,8 +226,8 @@ public class ERCGroupEntryPersistenceTest {
 
 	protected OrderByComparator<ERCGroupEntry> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"ERCGroupEntry", "externalReferenceCode", true, "ercGroupEntryId",
-			true, "groupId", true, "companyId", true);
+			"ERCGroupEntry", "uuid", true, "externalReferenceCode", true,
+			"ercGroupEntryId", true, "groupId", true, "companyId", true);
 	}
 
 	@Test
@@ -452,21 +495,34 @@ public class ERCGroupEntryPersistenceTest {
 
 	private void _assertOriginalValues(ERCGroupEntry ercGroupEntry) {
 		Assert.assertEquals(
+			ercGroupEntry.getUuid(),
+			ReflectionTestUtil.invoke(
+				ercGroupEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "uuid_"));
+		Assert.assertEquals(
 			Long.valueOf(ercGroupEntry.getGroupId()),
 			ReflectionTestUtil.<Long>invoke(
 				ercGroupEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "groupId"));
+
 		Assert.assertEquals(
 			ercGroupEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				ercGroupEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(ercGroupEntry.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				ercGroupEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected ERCGroupEntry addERCGroupEntry() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		ERCGroupEntry ercGroupEntry = _persistence.create(pk);
+
+		ercGroupEntry.setUuid(RandomTestUtil.randomString());
 
 		ercGroupEntry.setExternalReferenceCode(RandomTestUtil.randomString());
 

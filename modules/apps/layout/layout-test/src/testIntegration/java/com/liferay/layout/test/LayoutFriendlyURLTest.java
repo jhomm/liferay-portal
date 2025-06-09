@@ -1,28 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
+import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.layout.friendly.url.LayoutFriendlyURLEntryHelper;
+import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLException;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLsException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
+import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.model.LayoutSetPrototype;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -34,8 +34,15 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.sites.kernel.util.Sites;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +65,9 @@ public class LayoutFriendlyURLTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -315,6 +324,51 @@ public class LayoutFriendlyURLTest {
 	}
 
 	@Test
+	public void testMissingDefaultLocaleOnGroupDefaultLocaleChange()
+		throws Exception {
+
+		Map<Locale, String> friendlyURLMap = HashMapBuilder.put(
+			LocaleUtil.SPAIN, "/casa"
+		).put(
+			LocaleUtil.US, "/home"
+		).build();
+
+		Group group = GroupTestUtil.addGroup();
+
+		_groups.add(group);
+
+		Layout layout = addLayout(group.getGroupId(), false, friendlyURLMap);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			group.getTypeSettingsProperties();
+
+		typeSettingsUnicodeProperties.setProperty(
+			"inheritLocales", Boolean.toString(false));
+		typeSettingsUnicodeProperties.setProperty(
+			"languageId", LocaleUtil.toLanguageId(LocaleUtil.GERMANY));
+		typeSettingsUnicodeProperties.setProperty(
+			PropsKeys.LOCALES,
+			StringUtil.merge(
+				LocaleUtil.toLanguageIds(LanguageUtil.getAvailableLocales())));
+
+		Locale originalDefaultLocale = LocaleThreadLocal.getDefaultLocale();
+
+		try {
+			LocaleThreadLocal.setDefaultLocale(LocaleUtil.GERMANY);
+
+			GroupLocalServiceUtil.updateGroup(
+				group.getGroupId(), typeSettingsUnicodeProperties.toString());
+		}
+		finally {
+			LocaleThreadLocal.setDefaultLocale(originalDefaultLocale);
+		}
+
+		friendlyURLMap = layout.getFriendlyURLMap();
+
+		Assert.assertNull(friendlyURLMap.get(LocaleUtil.GERMANY));
+	}
+
+	@Test
 	public void testMultipleInvalidFriendlyURLMapperURL() throws Exception {
 		Map<Locale, String> friendlyURLMap = HashMapBuilder.put(
 			LocaleUtil.SPAIN, "/tags/dos"
@@ -347,22 +401,36 @@ public class LayoutFriendlyURLTest {
 	}
 
 	@Test
-	public void testSameFriendlyURLDifferentLocaleDifferentGroup()
-		throws Exception {
+	public void testPropagateLayoutSetPrototype() throws Exception {
+		LayoutSetPrototype layoutSetPrototype =
+			LayoutTestUtil.addLayoutSetPrototype(RandomTestUtil.randomString());
 
-		Map<Locale, String> friendlyURLMap = HashMapBuilder.put(
-			LocaleUtil.SPAIN, "/home"
-		).put(
-			LocaleUtil.US, "/home"
-		).build();
+		Group layoutSetPrototypeGroup = layoutSetPrototype.getGroup();
 
-		addLayout(_group.getGroupId(), false, friendlyURLMap);
+		Layout layoutSetPrototypeLayout = _layoutLocalService.addLayout(
+			null, TestPropsValues.getUserId(),
+			layoutSetPrototypeGroup.getGroupId(), true,
+			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
+			RandomTestUtil.randomString(), null, null,
+			LayoutConstants.TYPE_CONTENT, false, StringPool.BLANK,
+			ServiceContextTestUtil.getServiceContext(
+				layoutSetPrototypeGroup.getGroupId()));
 
-		Group group = GroupTestUtil.addGroup();
+		_sites.updateLayoutSetPrototypesLinks(
+			_group, layoutSetPrototype.getLayoutSetPrototypeId(), 0, true,
+			false);
 
-		_groups.add(group);
+		_testMergeLayoutSetPrototypeLayouts(
+			_group, _group.getPublicLayoutSet(), layoutSetPrototypeLayout);
 
-		addLayout(group.getGroupId(), false, friendlyURLMap);
+		Group curGroup = GroupTestUtil.addGroup();
+
+		_sites.updateLayoutSetPrototypesLinks(
+			curGroup, 0, layoutSetPrototype.getLayoutSetPrototypeId(), false,
+			true);
+
+		_testMergeLayoutSetPrototypeLayouts(
+			curGroup, curGroup.getPrivateLayoutSet(), layoutSetPrototypeLayout);
 	}
 
 	@Test
@@ -390,28 +458,26 @@ public class LayoutFriendlyURLTest {
 		}
 		catch (LayoutFriendlyURLsException layoutFriendlyURLsException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					layoutFriendlyURLsException, layoutFriendlyURLsException);
+				_log.debug(layoutFriendlyURLsException);
 			}
 		}
 	}
 
 	@Test
-	public void testSameFriendlyURLDifferentLocaleDifferentLayoutSet()
+	public void testSameFriendlyURLDifferentLocalePrivateLayout()
 		throws Exception {
 
-		Map<Locale, String> friendlyURLMap = HashMapBuilder.put(
-			LocaleUtil.SPAIN, "/home"
-		).put(
-			LocaleUtil.US, "/home"
-		).build();
-
-		addLayout(_group.getGroupId(), false, friendlyURLMap);
-		addLayout(_group.getGroupId(), true, friendlyURLMap);
+		addLayout(
+			_group.getGroupId(), true,
+			HashMapBuilder.put(
+				LocaleUtil.SPAIN, "/home"
+			).put(
+				LocaleUtil.US, "/home"
+			).build());
 	}
 
 	@Test
-	public void testSameFriendlyURLDifferentLocaleSameLayout()
+	public void testSameFriendlyURLDifferentLocalePublicLayout()
 		throws Exception {
 
 		addLayout(
@@ -448,8 +514,7 @@ public class LayoutFriendlyURLTest {
 		}
 		catch (LayoutFriendlyURLsException layoutFriendlyURLsException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					layoutFriendlyURLsException, layoutFriendlyURLsException);
+				_log.debug(layoutFriendlyURLsException);
 			}
 		}
 	}
@@ -530,7 +595,7 @@ public class LayoutFriendlyURLTest {
 			).build());
 	}
 
-	protected void addLayout(
+	protected Layout addLayout(
 			long groupId, boolean privateLayout,
 			Map<Locale, String> friendlyURLMap)
 		throws Exception {
@@ -538,8 +603,8 @@ public class LayoutFriendlyURLTest {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(groupId);
 
-		LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), groupId, privateLayout,
+		return LayoutLocalServiceUtil.addLayout(
+			null, TestPropsValues.getUserId(), groupId, privateLayout,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(),
@@ -550,12 +615,51 @@ public class LayoutFriendlyURLTest {
 			friendlyURLMap, serviceContext);
 	}
 
+	private void _testMergeLayoutSetPrototypeLayouts(
+			Group group, LayoutSet layoutSet, Layout layoutSetPrototypeLayout)
+		throws Exception {
+
+		_sites.mergeLayoutSetPrototypeLayouts(group, layoutSet);
+
+		Layout groupLayout = _layoutLocalService.fetchLayoutByUuidAndGroupId(
+			layoutSetPrototypeLayout.getUuid(), group.getGroupId(),
+			layoutSet.isPrivateLayout());
+
+		List<FriendlyURLEntry> friendlyURLEntries =
+			_friendlyURLEntryLocalService.getFriendlyURLEntries(
+				group.getGroupId(),
+				_layoutFriendlyURLEntryHelper.getClassNameId(
+					layoutSet.isPrivateLayout()),
+				groupLayout.getPlid());
+
+		Assert.assertEquals(
+			friendlyURLEntries.toString(), 1, friendlyURLEntries.size());
+
+		FriendlyURLEntry friendlyURLEntry = friendlyURLEntries.get(0);
+
+		Assert.assertEquals(
+			layoutSetPrototypeLayout.getFriendlyURL(),
+			friendlyURLEntry.getUrlTitle());
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutFriendlyURLTest.class);
+
+	@Inject
+	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
 
 	private Group _group;
 
 	@DeleteAfterTestRun
 	private final List<Group> _groups = new ArrayList<>();
+
+	@Inject
+	private LayoutFriendlyURLEntryHelper _layoutFriendlyURLEntryHelper;
+
+	@Inject
+	private LayoutLocalService _layoutLocalService;
+
+	@Inject
+	private Sites _sites;
 
 }

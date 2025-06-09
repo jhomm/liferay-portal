@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v1_0;
@@ -26,23 +17,22 @@ import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceService;
 import com.liferay.headless.commerce.admin.pricing.dto.v1_0.PriceEntry;
 import com.liferay.headless.commerce.admin.pricing.dto.v1_0.TierPrice;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v1_0.converter.PriceEntryDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v1_0.TierPriceUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v1_0.PriceEntryResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
+import jakarta.ws.rs.core.Response;
+
 import java.math.BigDecimal;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,7 +43,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/price-entry.properties",
 	scope = ServiceScope.PROTOTYPE, service = PriceEntryResource.class
 )
@@ -74,8 +63,9 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 		throws Exception {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceEntryService.
+				fetchCommercePriceEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceEntry == null) {
 			throw new NoSuchPriceEntryException(
@@ -105,8 +95,9 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 		throws Exception {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceEntryService.
+				fetchCommercePriceEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceEntry == null) {
 			throw new NoSuchPriceEntryException(
@@ -123,8 +114,9 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -137,12 +129,12 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 				commercePriceList.getCommercePriceListId(),
 				pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commercePriceEntryService.getCommercePriceEntriesCount(
 				commercePriceList.getCommercePriceListId());
 
 		return Page.of(
-			_toPriceEntries(commercePriceEntries), pagination, totalItems);
+			_toPriceEntries(commercePriceEntries), pagination, totalCount);
 	}
 
 	@Override
@@ -162,11 +154,11 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 			_commercePriceEntryService.getCommercePriceEntries(
 				id, pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commercePriceEntryService.getCommercePriceEntriesCount(id);
 
 		return Page.of(
-			_toPriceEntries(commercePriceEntries), pagination, totalItems);
+			_toPriceEntries(commercePriceEntries), pagination, totalCount);
 	}
 
 	@Override
@@ -187,8 +179,9 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 		throws Exception {
 
 		CommercePriceEntry commercePriceEntry =
-			_commercePriceEntryService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceEntryService.
+				fetchCommercePriceEntryByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceEntry == null) {
 			throw new NoSuchPriceEntryException(
@@ -209,8 +202,9 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -255,8 +249,9 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 			cpInstance = _cpInstanceService.fetchCPInstance(skuId);
 		}
 		else if (Validator.isNotNull(skuExternalReferenceCode)) {
-			cpInstance = _cpInstanceService.fetchByExternalReferenceCode(
-				skuExternalReferenceCode, serviceContext.getCompanyId());
+			cpInstance =
+				_cpInstanceService.fetchCPInstanceByExternalReferenceCode(
+					skuExternalReferenceCode, serviceContext.getCompanyId());
 		}
 
 		if (cpInstance != null) {
@@ -275,7 +270,7 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 				priceEntry.getPrice(),
 				(BigDecimal)GetterUtil.get(
 					priceEntry.getPromoPrice(), BigDecimal.ZERO),
-				priceEntry.getSkuExternalReferenceCode(), serviceContext);
+				priceEntry.getSkuExternalReferenceCode(), null, serviceContext);
 
 		// Update nested resources
 
@@ -288,14 +283,10 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 			List<CommercePriceEntry> commercePriceEntries)
 		throws Exception {
 
-		List<PriceEntry> priceEntries = new ArrayList<>();
-
-		for (CommercePriceEntry commercePriceEntry : commercePriceEntries) {
-			priceEntries.add(
-				_toPriceEntry(commercePriceEntry.getCommercePriceEntryId()));
-		}
-
-		return priceEntries;
+		return transform(
+			commercePriceEntries,
+			commercePriceEntry -> _toPriceEntry(
+				commercePriceEntry.getCommercePriceEntryId()));
 	}
 
 	private PriceEntry _toPriceEntry(Long commercePriceEntryId)
@@ -329,11 +320,11 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 
 		// Commerce price entry
 
-		commercePriceEntry =
-			_commercePriceEntryService.updateCommercePriceEntry(
-				commercePriceEntry.getCommercePriceEntryId(),
-				priceEntry.getPrice(), priceEntry.getPromoPrice(),
-				_serviceContextHelper.getServiceContext());
+		commercePriceEntry = _commercePriceEntryService.updatePricingInfo(
+			commercePriceEntry.getCommercePriceEntryId(),
+			commercePriceEntry.isBulkPricing(), priceEntry.getPrice(), false,
+			priceEntry.getPromoPrice(), null,
+			_serviceContextHelper.getServiceContext());
 
 		// Update nested resources
 
@@ -356,8 +347,11 @@ public class PriceEntryResourceImpl extends BasePriceEntryResourceImpl {
 	@Reference
 	private CPInstanceService _cpInstanceService;
 
-	@Reference
-	private PriceEntryDTOConverter _priceEntryDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v1_0.converter.PriceEntryDTOConverter)"
+	)
+	private DTOConverter<CommercePriceEntry, PriceEntry>
+		_priceEntryDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

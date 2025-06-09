@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -18,11 +9,14 @@ import com.liferay.jenkins.results.parser.test.clazz.group.AxisTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.BatchTestClassGroup;
 import com.liferay.jenkins.results.parser.test.clazz.group.SegmentTestClassGroup;
 
+import java.io.File;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -30,6 +24,8 @@ import java.util.Set;
 public interface Job {
 
 	public int getAxisCount();
+
+	public AxisTestClassGroup getAxisTestClassGroup(String axisName);
 
 	public List<AxisTestClassGroup> getAxisTestClassGroups();
 
@@ -41,7 +37,25 @@ public interface Job {
 
 	public BuildProfile getBuildProfile();
 
+	public String getCompanyDefaultLocale();
+
+	public List<AxisTestClassGroup> getDependentAxisTestClassGroups();
+
+	public Set<String> getDependentBatchNames();
+
+	public List<BatchTestClassGroup> getDependentBatchTestClassGroups();
+
+	public Set<String> getDependentSegmentNames();
+
+	public List<SegmentTestClassGroup> getDependentSegmentTestClassGroups();
+
 	public List<String> getDistNodes();
+
+	public List<String> getDistNodes(String networkName);
+
+	public Set<String> getDistRequiredBatchNames();
+
+	public Set<String> getDistRequiredSegmentNames();
 
 	public DistType getDistType();
 
@@ -49,25 +63,55 @@ public interface Job {
 
 	public Set<String> getDistTypesExcludingTomcat();
 
+	public Set<JenkinsCohort> getJenkinsCohorts();
+
+	public JobHistory getJobHistory();
+
 	public String getJobName();
 
-	public Properties getJobProperties();
+	public List<File> getJobPropertiesFiles();
 
-	public String getJobProperty(String key);
+	public List<String> getJobPropertyOptions();
 
 	public String getJobURL(JenkinsMaster jenkinsMaster);
+
+	public JSONObject getJSONObject();
+
+	public Set<String> getNetworkNames();
 
 	public Set<String> getSegmentNames();
 
 	public List<SegmentTestClassGroup> getSegmentTestClassGroups();
 
+	public Set<String> getStandaloneBatchNames();
+
+	public Set<String> getStandaloneSegmentNames();
+
 	public String getTestPropertiesContent();
+
+	public int getTimeoutMinutes(JenkinsMaster jenkinsMaster);
+
+	public boolean isDownstreamEnabled();
+
+	public boolean isJUnitTestsModifiedOnly();
 
 	public boolean isSegmentEnabled();
 
+	public boolean isStandaloneBatchEnabled();
+
 	public boolean isValidationRequired();
 
-	public void readJobProperties();
+	public boolean testAnalyticsCloud();
+
+	public boolean testHotfixChanges();
+
+	public boolean testJaCoCoCodeCoverage();
+
+	public boolean testReleaseBundle();
+
+	public boolean testRelevantChanges();
+
+	public boolean testRelevantChangesInStable();
 
 	public static enum BuildProfile {
 

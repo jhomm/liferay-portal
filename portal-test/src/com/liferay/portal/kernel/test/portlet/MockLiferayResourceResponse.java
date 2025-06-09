@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.test.portlet;
@@ -20,6 +11,16 @@ import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.servlet.URLEncoder;
 import com.liferay.portlet.test.MockActionURL;
 
+import jakarta.portlet.ActionURL;
+import jakarta.portlet.CacheControl;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderURL;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -28,16 +29,6 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionURL;
-import javax.portlet.CacheControl;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderURL;
-import javax.portlet.ResourceResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
 
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -150,7 +141,9 @@ public class MockLiferayResourceResponse
 
 	@Override
 	public <T extends PortletURL & RenderURL> T createRenderURL() {
-		return null;
+		MockLiferayPortletURL liferayPortletURL = new MockLiferayPortletURL();
+
+		return (T)liferayPortletURL;
 	}
 
 	@Override

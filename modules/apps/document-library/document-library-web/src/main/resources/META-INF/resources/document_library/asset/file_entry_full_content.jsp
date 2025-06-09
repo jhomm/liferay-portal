@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,9 +16,9 @@ DLViewFileVersionDisplayContext dlViewFileVersionDisplayContext = dlDisplayConte
 %>
 
 <liferay-util:html-top
-	outputKey="document_library_preview_css"
+	outputKey="com.liferay.document.library.web#/document_library/asset/file_entry_full_content.jsp"
 >
-	<link href="<%= PortalUtil.getStaticResourceURL(request, application.getContextPath() + "/document_library/css/document_library_preview.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/document_library/css/document_library_preview.css") %>' rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
 
 <c:choose>
@@ -37,9 +28,9 @@ DLViewFileVersionDisplayContext dlViewFileVersionDisplayContext = dlDisplayConte
 	<c:otherwise>
 
 		<%
-		DLAdminDisplayContextProvider dlAdminDisplayContextProvider = dlWebComponentProvider.getDlAdminDisplayContextProvider();
+		DLAdminDisplayContextProvider dlAdminDisplayContextProvider = DLWebComponentProvider.getDLAdminDisplayContextProvider();
 
-		renderRequest.setAttribute(DLViewFileEntryDisplayContext.class.getName(), new DLViewFileEntryDisplayContext(dlAdminDisplayContextProvider.getDLAdminDisplayContext(request, response), dlDisplayContextProvider, HtmlUtil.getHtml(), request, LanguageUtil.getLanguage(), PortalUtil.getPortal(), renderRequest, renderResponse));
+		renderRequest.setAttribute(DLViewFileEntryDisplayContext.class.getName(), new DLViewFileEntryDisplayContext(dlAdminDisplayContextProvider.getDLAdminDisplayContext(request, response), dlDisplayContextProvider, request, LanguageUtil.getLanguage(), PortalUtil.getPortal(), renderRequest, renderResponse));
 		%>
 
 		<liferay-util:include page="/document_library/view_file_entry.jsp" servletContext="<%= application %>">

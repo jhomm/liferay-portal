@@ -1,45 +1,25 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String notificationNavigationItem = ParamUtil.getString(request, "notificationNavigationItem", "view-all-notification-templates");
-
 CommerceNotificationQueueEntriesDisplayContext commerceNotificationQueueEntriesDisplayContext = (CommerceNotificationQueueEntriesDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 %>
 
-<clay:data-set-display
+<frontend-data-set:classic-display
 	contextParams='<%=
 		HashMapBuilder.<String, String>put(
 			"commerceChannelId", String.valueOf(commerceNotificationQueueEntriesDisplayContext.getCommerceChannelId())
 		).build()
 	%>'
 	creationMenu="<%= commerceNotificationQueueEntriesDisplayContext.getNotificationTemplateCreationMenu() %>"
-	dataProviderKey="<%= CommerceNotificationTemplateClayTable.NAME %>"
-	id="<%= CommerceNotificationTemplateClayTable.NAME %>"
+	dataProviderKey="<%= CommerceNotificationFDSNames.NOTIFICATION_TEMPLATES %>"
+	id="<%= CommerceNotificationFDSNames.NOTIFICATION_TEMPLATES %>"
 	itemsPerPage="<%= 10 %>"
-	namespace="<%= liferayPortletResponse.getNamespace() %>"
-	pageNumber="<%= 1 %>"
-	portletURL='<%=
-		PortletURLBuilder.create(
-			commerceNotificationQueueEntriesDisplayContext.getPortletURL()
-		).setParameter(
-			"notificationNavigationItem", notificationNavigationItem
-		).buildPortletURL()
-	%>'
 	showSearch="<%= false %>"
 />

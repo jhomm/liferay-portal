@@ -17,6 +17,10 @@
 			<matches>.*The web application \[.*\] appears to have started a thread.*\[Thread-[0-9]+\].*</matches>
 		</ignore-error>
 		<ignore-error description="">
+			<contains></contains>
+			<matches>Email .* will be ignored because it is included in mail.send.blacklist</matches>
+		</ignore-error>
+		<ignore-error description="">
 			<contains>[antelope:post]</contains>
 			<matches></matches>
 		</ignore-error>
@@ -49,11 +53,11 @@
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="">
-			<contains>Do NOT use sidecar in production</contains>
+			<contains>Do NOT use Hypersonic in production</contains>
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="">
-			<contains>Do NOT use Hypersonic in production</contains>
+			<contains>Do NOT use sidecar in production</contains>
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="">
@@ -64,8 +68,32 @@
 			<contains>No theme found for specified theme id userdashboard_WAR_userdashboardtheme</contains>
 			<matches></matches>
 		</ignore-error>
-		<ignore-error description="COMMERCE-5588 - temporarily ignore until fixed">
-			<contains>IX_1B108A04</contains>
+		<ignore-error description="">
+			<contains>Not all bytes were read from the S3ObjectInputStream</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="">
+			<contains>Skipping email because the sender is not specified</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPD-1949 - temporarily ignore until fixed">
+			<contains></contains>
+			<matches>Declarative Service Unsatisfied Component System Checker check result((.|\n)*)com_liferay_commerce((.|\n)*)</matches>
+		</ignore-error>
+		<ignore-error description="LPD-1949 - temporarily ignore until fixed">
+			<contains></contains>
+			<matches>Portlet com_liferay_commerce.* failed to initialize</matches>
+		</ignore-error>
+		<ignore-error description="LPD-1949 - temporarily ignore until fixed">
+			<contains>(IX_F2237D8E|ix_f2237d8e)</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPD-1949 - temporarily ignore until fixed">
+			<contains>ERROR: current transaction is aborted, commands ignored until end of transaction block</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPD-1949 - temporarily ignore until fixed">
+			<contains>insert into ResourcePermission</contains>
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="LPS-22821">
@@ -180,24 +208,16 @@
 			<contains>There are no actions associated with the resource com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion</contains>
 			<matches></matches>
 		</ignore-error>
-		<ignore-error description="LPS-88391, LPS-88417">
-			<contains></contains>
-			<matches>Attempting to upgrade table .* by recreating the table [\s\S]*</matches>
-		</ignore-error>
-		<ignore-error description="LPS-88391, LPS-88417">
-			<contains></contains>
-			<matches>Successfully recreated and upgraded table .*</matches>
-		</ignore-error>
 		<ignore-error description="LPS-88412 - temporarily ignore until fixed">
 			<contains>drop table if exists Kaleo</contains>
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="LPS-88418 - temporarily ignore until fixed">
-			<contains>There is already an index on table</contains>
+			<contains>SQLSTATE=42710</contains>
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="LPS-88418 - temporarily ignore until fixed">
-			<contains>SQLSTATE=42710</contains>
+			<contains>There is already an index on table</contains>
 			<matches></matches>
 		</ignore-error>
 		<ignore-error description="LPS-88431">
@@ -208,7 +228,7 @@
 			<contains></contains>
 			<matches>.*Unable to find class loader for com.liferay.portal.scheduler.quartz_.* class loader com.liferay.portal.scheduler.quartz_.*</matches>
 		</ignore-error>
-		<ignore-error description="LPS-88522 - temporarily ignore until fixed">
+		<ignore-error description="LPS-88522">
 			<contains>already has the column lastPublishDate</contains>
 			<matches></matches>
 		</ignore-error>
@@ -244,25 +264,69 @@
 			<contains>No default user was found for company</contains>
 			<matches></matches>
 		</ignore-error>
-		<ignore-error description="LPS-127275 - temporarily ignore until fixed">
-			<contains>com.liferay.analytics.message.sender.impl</contains>
-			<matches></matches>
-		</ignore-error>
-		<ignore-error description="LPS-127285 - temporarily ignore until fixed">
-			<contains>StyleBookEntryVersion</contains>
-			<matches></matches>
-		</ignore-error>
-		<ignore-error description="LPS-136151 - temporarily ignore until fixed">
+		<ignore-error description="LPS-134196">
 			<contains></contains>
-			<matches>bundle com.liferay.portal.properties.swapper.*The activate method has thrown an exception</matches>
+			<matches>Attempting to upgrade table .* by adding a temporary column [\s\S]*</matches>
 		</ignore-error>
-		<ignore-error description="LPS-136151 - temporarily ignore until fixed">
-			<contains>Store is not available</contains>
+		<ignore-error description="LPS-140679 - temporarily ignore until fixed">
+			<contains>Illegal 'domain' attribute "lax.liferay.com". Domain of origin: "localhost"</contains>
 			<matches></matches>
 		</ignore-error>
-		<ignore-error description="LPS-136151 - temporarily ignore until fixed">
-			<contains>Unable to register portal instance</contains>
+		<ignore-error description="LPS-141256 - temporarily ignore until fixed">
+			<contains>The following session is not valid</contains>
 			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-141846 - temporarily ignore until fixed">
+			<contains>/o/frontend-editor-ckeditor-web/ckeditor/skins/moono-lexicon/skin.js</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-143849 - temporarily ignore until fixed">
+			<contains>DB2 SQL Error: SQLCODE=-204, SQLSTATE=42704, SQLERRMC=ROOT.LAYOUT</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-145925 - temporarily ignore until fixed">
+			<contains>com.liferay.portal.kernel.repository.UndeployedExternalRepositoryException: Unable to load external repository class com.liferay.portal.repository.liferayrepository.LiferayRepository because its plugin is not deployed</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-150491 - temporarily ignore until fixed">
+			<contains>Unable to handle received message {destinationName=liferay/cache_replication, response=null, responseDestinationName=null, responseId=null, payload=</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-150714">
+			<contains></contains>
+			<matches>.*/o/frontend-js-aui-web/build/aui-skin-deprecated/images/common/state_default_bg.png.* uri=/o/frontend-js-aui-web/build/aui-skin-deprecated/images/common/state_default_bg.png.*</matches>
+		</ignore-error>
+		<ignore-error description="LPS-150714">
+			<contains></contains>
+			<matches>.*/o/frontend-js-aui-web/build/aui-skin-deprecated/images/loading_indicator.gif.* uri=/o/frontend-js-aui-web/build/aui-skin-deprecated/images/loading_indicator.gif.*</matches>
+		</ignore-error>
+		<ignore-error description="LPS-154189 - temporarily ignore until fixed">
+			<contains>java.sql.SQLIntegrityConstraintViolationException</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-163680">
+			<contains>The iframe tag contained an attribute that we could not process</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-168158">
+			<contains>Skip com_liferay_document_library_web_portlet_DLPortlet</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-170903 - temporarily ignore until fixed">
+			<contains>SAX Feature unsupported</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-170903 - temporarily ignore until fixed">
+			<contains>SAX Security Manager could not be setup</contains>
+			<matches></matches>
+		</ignore-error>
+		<ignore-error description="LPS-180463">
+			<contains></contains>
+			<matches>.*Ignored unknown user group: .*</matches>
+		</ignore-error>
+		<ignore-error description="LPS-182604 - temporarily ignore until fixed">
+			<contains></contains>
+			<matches>.*This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.*</matches>
 		</ignore-error>
 		<ignore-error description="LRQA-24859">
 			<contains>No binary licenses found</contains>

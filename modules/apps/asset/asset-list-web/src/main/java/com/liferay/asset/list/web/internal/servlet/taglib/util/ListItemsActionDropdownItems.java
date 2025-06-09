@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.servlet.taglib.util;
@@ -24,25 +15,28 @@ import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.info.display.url.provider.InfoEditURLProvider;
-import com.liferay.info.display.url.provider.InfoEditURLProviderTracker;
+import com.liferay.info.display.url.provider.InfoEditURLProviderRegistry;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemFieldValues;
+import com.liferay.info.item.InfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
+import com.liferay.info.search.InfoSearchClassMapperRegistry;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.repository.liferayrepository.model.LiferayFileEntry;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -52,19 +46,20 @@ public class ListItemsActionDropdownItems {
 	public ListItemsActionDropdownItems(
 		AssetDisplayPageFriendlyURLProvider assetDisplayPageFriendlyURLProvider,
 		DLAppService dlAppService,
-		InfoEditURLProviderTracker infoEditURLProviderTracker,
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoEditURLProviderRegistry infoEditURLProviderRegistry,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		InfoSearchClassMapperRegistry infoSearchClassMapperRegistry,
 		HttpServletRequest httpServletRequest) {
 
 		_assetDisplayPageFriendlyURLProvider =
 			assetDisplayPageFriendlyURLProvider;
 		_dlAppService = dlAppService;
-		_infoEditURLProviderTracker = infoEditURLProviderTracker;
-		_infoItemServiceTracker = infoItemServiceTracker;
-
+		_infoEditURLProviderRegistry = infoEditURLProviderRegistry;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
+		_infoSearchClassMapperRegistry = infoSearchClassMapperRegistry;
 		_httpServletRequest = httpServletRequest;
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -87,7 +82,7 @@ public class ListItemsActionDropdownItems {
 		}
 
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class, className);
 
 		InfoItemFieldValues infoItemFieldValues =
@@ -96,7 +91,7 @@ public class ListItemsActionDropdownItems {
 		InfoItemReference infoItemReference =
 			infoItemFieldValues.getInfoItemReference();
 
-		long classPK = infoItemReference.getClassPK();
+		long classPK = 0;
 
 		if (object instanceof AssetEntry) {
 			AssetEntry assetEntry = (AssetEntry)object;
@@ -105,16 +100,25 @@ public class ListItemsActionDropdownItems {
 			className = assetEntry.getClassName();
 		}
 
-		if (Objects.equals(className, DLFileEntryConstants.getClassName())) {
-			className = FileEntry.class.getName();
+		InfoItemIdentifier infoItemIdentifier =
+			infoItemReference.getInfoItemIdentifier();
+
+		if ((classPK == 0) &&
+			!(infoItemIdentifier instanceof ClassPKInfoItemIdentifier)) {
+
+			return null;
 		}
 
 		String viewDisplayPageURL =
 			_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-				className, classPK, _themeDisplay);
+				new InfoItemReference(
+					className, new ClassPKInfoItemIdentifier(classPK)),
+				_themeDisplay);
 
-		return HttpUtil.setParameter(
-			viewDisplayPageURL, "p_l_back_url", _getRedirect());
+		return HttpComponentsUtil.addParameters(
+			viewDisplayPageURL, "p_l_back_url", _getRedirect(),
+			"p_l_back_url_title",
+			ParamUtil.getString(_httpServletRequest, "backURLTitle"));
 	}
 
 	private Object _getAssetEntryObject(AssetEntry assetEntry)
@@ -173,7 +177,7 @@ public class ListItemsActionDropdownItems {
 		}
 
 		InfoEditURLProvider<Object> infoEditURLProvider =
-			_infoEditURLProviderTracker.getInfoEditURLProvider(className);
+			_infoEditURLProviderRegistry.getInfoEditURLProvider(className);
 
 		if (infoEditURLProvider == null) {
 			return null;
@@ -182,7 +186,7 @@ public class ListItemsActionDropdownItems {
 		String editContentURL = infoEditURLProvider.getURL(
 			object, _httpServletRequest);
 
-		return HttpUtil.setParameter(
+		return HttpComponentsUtil.setParameter(
 			editContentURL, "redirect", _getRedirect());
 	}
 
@@ -216,8 +220,9 @@ public class ListItemsActionDropdownItems {
 		_assetDisplayPageFriendlyURLProvider;
 	private final DLAppService _dlAppService;
 	private final HttpServletRequest _httpServletRequest;
-	private final InfoEditURLProviderTracker _infoEditURLProviderTracker;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final InfoEditURLProviderRegistry _infoEditURLProviderRegistry;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
+	private final InfoSearchClassMapperRegistry _infoSearchClassMapperRegistry;
 	private String _redirect;
 	private final ThemeDisplay _themeDisplay;
 

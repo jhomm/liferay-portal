@@ -1,18 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-kaleo-designer-dialogs',
 	(A) => {
-		var KaleoDesignerDialogs = {
+		const KaleoDesignerDialogs = {
 			_duplicationDialog: null,
 			_forms: {},
 
@@ -23,9 +17,9 @@ AUI.add(
 				randomId,
 				portletNamespace
 			) {
-				var instance = this;
+				const instance = this;
 
-				var form = A.one('#' + portletNamespace + randomId + 'form');
+				let form = A.one('#' + portletNamespace + randomId + 'form');
 
 				if (form && !instance._forms[randomId]) {
 					instance._forms[randomId] = form;
@@ -39,13 +33,13 @@ AUI.add(
 					form.setAttribute('method', 'POST');
 				}
 
-				var duplicationDialog = instance._duplicationDialog;
+				const duplicationDialog = instance._duplicationDialog;
 
 				if (duplicationDialog) {
 					duplicationDialog.destroy();
 				}
 
-				var dialog = Liferay.Util.Window.getWindow({
+				const dialog = Liferay.Util.Window.getWindow({
 					dialog: {
 						bodyContent: form,
 						height: 325,
@@ -86,8 +80,8 @@ AUI.add(
 									discardDefaultButtonCssClasses: true,
 									labelHTML:
 										'<svg class="lexicon-icon" focusable="false"><use href="' +
-										Liferay.ThemeDisplay.getPathThemeImages() +
-										'/clay/icons.svg#times" /><title>' +
+										Liferay.Icons.spritemap +
+										'#times" /><title>' +
 										Liferay.Language.get('close') +
 										'</title></svg>',
 									on: {
@@ -111,8 +105,8 @@ AUI.add(
 			},
 		};
 
-		var openConfirmDeleteDialog = function (title, message, actionUrl) {
-			var dialog = Liferay.Util.Window.getWindow({
+		const openConfirmDeleteDialog = function (title, message, actionUrl) {
+			const dialog = Liferay.Util.Window.getWindow({
 				dialog: {
 					bodyContent: message,
 					destroyOnHide: true,
@@ -147,8 +141,8 @@ AUI.add(
 								discardDefaultButtonCssClasses: true,
 								labelHTML:
 									'<svg class="lexicon-icon" focusable="false"><use href="' +
-									Liferay.ThemeDisplay.getPathThemeImages() +
-									'/clay/icons.svg#times" /><title>' +
+									Liferay.Icons.spritemap +
+									'#times" /><title>' +
 									Liferay.Language.get('close') +
 									'</title></svg>',
 								on: {
@@ -167,26 +161,26 @@ AUI.add(
 			});
 		};
 
-		var showActionUndoneSuccessMessage = function () {
+		const showActionUndoneSuccessMessage = function () {
 			Liferay.Util.openToast({
 				container: document.querySelector('.lfr-alert-container'),
 				message: Liferay.Language.get('action-undone'),
 			});
 		};
 
-		var showDefinitionImportSuccessMessage = function (namespace) {
-			var undo = Liferay.Language.get('undo');
+		const showDefinitionImportSuccessMessage = function (namespace) {
+			const undo = Liferay.Language.get('undo');
 
-			var undoEvent = "'" + namespace + "undoDefinition'";
+			const undoEvent = "'" + namespace + "undoDefinition'";
 
-			var undoLink =
-				'<a href="javascript:;" onclick=Liferay.fire(' +
+			const undoLink =
+				'<a href="javascript:void(0);" onclick=Liferay.fire(' +
 				undoEvent +
 				'); class="alert-link">' +
 				undo +
 				'</a>';
 
-			var message = Liferay.Language.get(
+			let message = Liferay.Language.get(
 				'definition-imported-successfully'
 			);
 
@@ -200,9 +194,11 @@ AUI.add(
 
 		KaleoDesignerDialogs.openConfirmDeleteDialog = openConfirmDeleteDialog;
 
-		KaleoDesignerDialogs.showActionUndoneSuccessMessage = showActionUndoneSuccessMessage;
+		KaleoDesignerDialogs.showActionUndoneSuccessMessage =
+			showActionUndoneSuccessMessage;
 
-		KaleoDesignerDialogs.showDefinitionImportSuccessMessage = showDefinitionImportSuccessMessage;
+		KaleoDesignerDialogs.showDefinitionImportSuccessMessage =
+			showDefinitionImportSuccessMessage;
 
 		Liferay.KaleoDesignerDialogs = KaleoDesignerDialogs;
 	},

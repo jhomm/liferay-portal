@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ERCCompanyEntryLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class ERCCompanyEntryLocalServiceWrapper
 	implements ERCCompanyEntryLocalService,
 			   ServiceWrapper<ERCCompanyEntryLocalService> {
+
+	public ERCCompanyEntryLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ERCCompanyEntryLocalServiceWrapper(
 		ERCCompanyEntryLocalService ercCompanyEntryLocalService) {
@@ -240,34 +236,29 @@ public class ERCCompanyEntryLocalServiceWrapper
 			ercCompanyEntryId);
 	}
 
+	@Override
+	public com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry
+		fetchERCCompanyEntryByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _ercCompanyEntryLocalService.
+			fetchERCCompanyEntryByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the erc company entry with the matching external reference code and company.
+	 * Returns the erc company entry with the matching UUID and company.
 	 *
+	 * @param uuid the erc company entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the erc company entry's external reference code
 	 * @return the matching erc company entry, or <code>null</code> if a matching erc company entry could not be found
 	 */
 	@Override
 	public com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry
-		fetchERCCompanyEntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+		fetchERCCompanyEntryByUuidAndCompanyId(String uuid, long companyId) {
 
 		return _ercCompanyEntryLocalService.
-			fetchERCCompanyEntryByExternalReferenceCode(
-				companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchERCCompanyEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry
-		fetchERCCompanyEntryByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _ercCompanyEntryLocalService.fetchERCCompanyEntryByReferenceCode(
-			companyId, externalReferenceCode);
+			fetchERCCompanyEntryByUuidAndCompanyId(uuid, companyId);
 	}
 
 	@Override
@@ -322,23 +313,32 @@ public class ERCCompanyEntryLocalServiceWrapper
 			ercCompanyEntryId);
 	}
 
+	@Override
+	public com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry
+			getERCCompanyEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ercCompanyEntryLocalService.
+			getERCCompanyEntryByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
-	 * Returns the erc company entry with the matching external reference code and company.
+	 * Returns the erc company entry with the matching UUID and company.
 	 *
+	 * @param uuid the erc company entry's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the erc company entry's external reference code
 	 * @return the matching erc company entry
 	 * @throws PortalException if a matching erc company entry could not be found
 	 */
 	@Override
 	public com.liferay.portal.tools.service.builder.test.model.ERCCompanyEntry
-			getERCCompanyEntryByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+			getERCCompanyEntryByUuidAndCompanyId(String uuid, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _ercCompanyEntryLocalService.
-			getERCCompanyEntryByExternalReferenceCode(
-				companyId, externalReferenceCode);
+			getERCCompanyEntryByUuidAndCompanyId(uuid, companyId);
 	}
 
 	@Override
@@ -388,6 +388,11 @@ public class ERCCompanyEntryLocalServiceWrapper
 
 		return _ercCompanyEntryLocalService.updateERCCompanyEntry(
 			ercCompanyEntry);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _ercCompanyEntryLocalService.getBasePersistence();
 	}
 
 	@Override

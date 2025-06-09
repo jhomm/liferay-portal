@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.search.spi.model.index.contributor;
@@ -20,14 +11,17 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.workflow.WorkflowHandler;
+import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
 import com.liferay.portal.workflow.kaleo.internal.search.KaleoTaskInstanceTokenField;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinition;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignmentInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken;
+import com.liferay.portal.workflow.kaleo.runtime.util.WorkflowContextUtil;
 import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalService;
 
 import java.util.HashSet;
@@ -41,7 +35,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rafael Praxedes
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.portal.workflow.kaleo.model.KaleoTaskInstanceToken",
 	service = ModelDocumentContributor.class
 )
@@ -111,10 +104,18 @@ public class KaleoTaskInstanceTokenModelDocumentContributor
 			document.addKeyword(
 				KaleoTaskInstanceTokenField.KALEO_DEFINITION_ID,
 				kaleoDefinition.getKaleoDefinitionId());
+
+			WorkflowHandler<?> workflowHandler =
+				WorkflowHandlerRegistryUtil.getWorkflowHandler(
+					kaleoTaskInstanceToken.getClassName());
+
+			workflowHandler.contributeWorkflowContext(
+				WorkflowContextUtil.convert(
+					kaleoTaskInstanceToken.getWorkflowContext()));
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(portalException, portalException);
+				_log.warn(portalException);
 			}
 		}
 
@@ -152,8 +153,7 @@ public class KaleoTaskInstanceTokenModelDocumentContributor
 	protected String[] getLanguageIds(
 		String defaultLanguageId, String content) {
 
-		String[] languageIds = LocalizationUtil.getAvailableLanguageIds(
-			content);
+		String[] languageIds = _localization.getAvailableLanguageIds(content);
 
 		if (languageIds.length == 0) {
 			languageIds = new String[] {defaultLanguageId};
@@ -174,5 +174,8 @@ public class KaleoTaskInstanceTokenModelDocumentContributor
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		KaleoTaskInstanceTokenModelDocumentContributor.class);
+
+	@Reference
+	private Localization _localization;
 
 }

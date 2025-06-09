@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.info.localized;
@@ -20,7 +11,6 @@ import com.liferay.info.localized.bundle.ResourceBundleInfoLocalizedValue;
 import com.liferay.petra.function.UnsafeBiConsumer;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.lang.HashUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
 import java.util.HashMap;
@@ -71,23 +61,21 @@ public interface InfoLocalizedValue<T> {
 
 	public T getValue(Locale locale);
 
+	public default Map<Locale, T> getValues() {
+		Map<Locale, T> values = new HashMap<>();
+
+		for (Locale locale : getAvailableLocales()) {
+			T value = getValue(locale);
+
+			if (value != null) {
+				values.put(locale, value);
+			}
+		}
+
+		return values;
+	}
+
 	public static class Builder<T> {
-
-		/**
-		 * @deprecated As of Athanasius (7.3.x)
-		 */
-		@Deprecated
-		public Builder<T> addValue(Locale locale, T value) {
-			return value(locale, value);
-		}
-
-		/**
-		 * @deprecated As of Athanasius (7.3.x)
-		 */
-		@Deprecated
-		public Builder<T> addValues(Map<Locale, T> values) {
-			return values(values);
-		}
 
 		public InfoLocalizedValue<T> build() {
 			return new BuilderInfoLocalizedValue<>(this);
@@ -165,7 +153,7 @@ public interface InfoLocalizedValue<T> {
 		@Override
 		public Locale getDefaultLocale() {
 			if (_builder._defaultLocale == null) {
-				return LocaleUtil.getDefault();
+				return LocaleUtil.getSiteDefault();
 			}
 
 			return _builder._defaultLocale;
@@ -184,11 +172,12 @@ public interface InfoLocalizedValue<T> {
 				value = _builder._values.get(getDefaultLocale());
 			}
 
-			if (value instanceof String) {
-				value = (T)LanguageUtil.get(locale, (String)value);
-			}
-
 			return value;
+		}
+
+		@Override
+		public Map<Locale, T> getValues() {
+			return _builder._values;
 		}
 
 		@Override

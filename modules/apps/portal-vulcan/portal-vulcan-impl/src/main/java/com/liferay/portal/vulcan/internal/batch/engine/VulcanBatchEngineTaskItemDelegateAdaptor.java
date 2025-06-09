@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.batch.engine;
@@ -17,6 +8,7 @@ package com.liferay.portal.vulcan.internal.batch.engine;
 import com.liferay.batch.engine.BatchEngineTaskItemDelegate;
 import com.liferay.batch.engine.pagination.Page;
 import com.liferay.batch.engine.pagination.Pagination;
+import com.liferay.batch.engine.strategy.BatchEngineImportStrategy;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
@@ -27,6 +19,8 @@ import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.batch.engine.VulcanBatchEngineTaskItemDelegate;
 import com.liferay.portal.vulcan.util.GroupUtil;
 
+import jakarta.ws.rs.core.UriInfo;
+
 import java.io.Serializable;
 
 import java.lang.reflect.ParameterizedType;
@@ -36,6 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Preston Crary
@@ -52,6 +47,9 @@ public class VulcanBatchEngineTaskItemDelegateAdaptor<T>
 		_depotEntryLocalService = depotEntryLocalService;
 		_groupLocalService = groupLocalService;
 		_vulcanBatchEngineTaskItemDelegate = vulcanBatchEngineTaskItemDelegate;
+
+		vulcanBatchEngineTaskItemDelegate.setGroupLocalService(
+			groupLocalService);
 	}
 
 	@Override
@@ -70,6 +68,18 @@ public class VulcanBatchEngineTaskItemDelegateAdaptor<T>
 
 		_vulcanBatchEngineTaskItemDelegate.delete(
 			items, _applyParamConverters(parameters));
+	}
+
+	@Override
+	public Set<String> getAvailableCreateStrategies() {
+		return _vulcanBatchEngineTaskItemDelegate.
+			getAvailableCreateStrategies();
+	}
+
+	@Override
+	public Set<String> getAvailableUpdateStrategies() {
+		return _vulcanBatchEngineTaskItemDelegate.
+			getAvailableUpdateStrategies();
 	}
 
 	@Override
@@ -99,6 +109,22 @@ public class VulcanBatchEngineTaskItemDelegateAdaptor<T>
 	}
 
 	@Override
+	public boolean hasCreateStrategy(String createStrategy) {
+		Set<String> createStrategies =
+			_vulcanBatchEngineTaskItemDelegate.getAvailableCreateStrategies();
+
+		return createStrategies.contains(createStrategy);
+	}
+
+	@Override
+	public boolean hasUpdateStrategy(String updateStrategy) {
+		Set<String> updateStrategies =
+			_vulcanBatchEngineTaskItemDelegate.getAvailableUpdateStrategies();
+
+		return updateStrategies.contains(updateStrategy);
+	}
+
+	@Override
 	public Page<T> read(
 			Filter filter, Pagination pagination, Sort[] sorts,
 			Map<String, Serializable> parameters, String search)
@@ -115,9 +141,23 @@ public class VulcanBatchEngineTaskItemDelegateAdaptor<T>
 	}
 
 	@Override
+	public void setBatchEngineImportStrategy(
+		BatchEngineImportStrategy batchEngineImportStrategy) {
+
+		_vulcanBatchEngineTaskItemDelegate.setContextBatchUnsafeBiConsumer(
+			(collection, unsafeFunction) -> batchEngineImportStrategy.apply(
+				this, collection, unsafeFunction));
+	}
+
+	@Override
 	public void setContextCompany(Company contextCompany) {
 		_company = contextCompany;
 		_vulcanBatchEngineTaskItemDelegate.setContextCompany(contextCompany);
+	}
+
+	@Override
+	public void setContextUriInfo(UriInfo uriInfo) {
+		_vulcanBatchEngineTaskItemDelegate.setContextUriInfo(uriInfo);
 	}
 
 	@Override

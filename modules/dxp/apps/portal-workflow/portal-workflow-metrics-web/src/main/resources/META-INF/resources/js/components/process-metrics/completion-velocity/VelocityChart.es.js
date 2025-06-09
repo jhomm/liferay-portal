@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useContext} from 'react';
@@ -43,7 +37,7 @@ function VelocityChart({timeRange, velocityData = {}, velocityUnit}) {
 	const {intervals, maxValue} = getAxisMeasuresFromData(dataValues);
 
 	const dataChart = histograms.map((data) => {
-		const date = moment.utc(data.key).toDate();
+		const date = moment(data.key).toDate();
 		data.name = formatXAxisDate(date, isAmPm, unitKey, timeRange);
 
 		return data;
@@ -51,7 +45,7 @@ function VelocityChart({timeRange, velocityData = {}, velocityUnit}) {
 
 	return (
 		<div className="velocity-chart">
-			{histograms.length > 0 && (
+			{!!histograms.length && (
 				<ResponsiveContainer height="100%" width="100%">
 					<LineChart
 						data={dataChart}
@@ -65,11 +59,14 @@ function VelocityChart({timeRange, velocityData = {}, velocityUnit}) {
 						width={1180}
 					>
 						<CartesianGrid strokeDasharray="3 3" />
+
 						<XAxis dataKey="name" interval="preserveStartEnd" />
+
 						<YAxis
 							domain={[intervals, maxValue]}
 							interval="preserveStartEnd"
 						/>
+
 						<Tooltip
 							content={
 								<CustomTooltip
@@ -80,6 +77,7 @@ function VelocityChart({timeRange, velocityData = {}, velocityUnit}) {
 								/>
 							}
 						/>
+
 						<Line
 							activeDot={{r: 8}}
 							dataKey="value"
@@ -98,7 +96,7 @@ const CustomTooltip = ({active, isAmPm, payload, timeRange, unit, unitKey}) => {
 	const formatTooltipDate = (date, isAmPm, timeRange, unitKey) => {
 		let datePattern = Liferay.Language.get('ddd-mmm-d');
 
-		const dateUTC = moment.utc(date);
+		const dateMoment = moment(date);
 
 		if (unitKey === HOURS) {
 			if (isAmPm) {
@@ -108,7 +106,7 @@ const CustomTooltip = ({active, isAmPm, payload, timeRange, unit, unitKey}) => {
 				datePattern = Liferay.Language.get('mmm-dd-hh-mm');
 			}
 
-			return dateUTC.format(datePattern);
+			return dateMoment.format(datePattern);
 		}
 		else if (unitKey === WEEKS) {
 			return formatWeekDateWithYear(date, timeRange);
@@ -120,7 +118,7 @@ const CustomTooltip = ({active, isAmPm, payload, timeRange, unit, unitKey}) => {
 			return formatYearDate(date, timeRange);
 		}
 
-		return dateUTC.format(datePattern);
+		return dateMoment.format(datePattern);
 	};
 
 	const getDateTitle = (date, isAmPm, timeRange, unitKey) => {
@@ -147,6 +145,7 @@ const CustomTooltip = ({active, isAmPm, payload, timeRange, unit, unitKey}) => {
 						{label}
 					</div>
 				</div>
+
 				<div className={`${CLASSNAME}-body`}>
 					<div className={`${CLASSNAME}-row`}>
 						<div

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.dto.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.delivery.client.dto.v1_0;
 import com.liferay.headless.delivery.client.function.UnsafeSupplier;
 import com.liferay.headless.delivery.client.serdes.v1_0.SitePageSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -122,16 +113,23 @@ public class SitePage implements Cloneable, Serializable {
 
 	protected Creator creator;
 
-	public CustomField[] getCustomFields() {
+	public com.liferay.headless.delivery.client.custom.field.CustomField[]
+		getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.headless.delivery.client.custom.field.CustomField[]
+			customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.delivery.client.custom.field.CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -141,7 +139,8 @@ public class SitePage implements Cloneable, Serializable {
 		}
 	}
 
-	protected CustomField[] customFields;
+	protected com.liferay.headless.delivery.client.custom.field.CustomField[]
+		customFields;
 
 	public Date getDateCreated() {
 		return dateCreated;
@@ -272,6 +271,25 @@ public class SitePage implements Cloneable, Serializable {
 
 	protected Map<String, String> friendlyUrlPath_i18n;
 
+	public Long getId() {
+		return id;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
+	}
+
+	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
+		try {
+			id = idUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long id;
+
 	public String[] getKeywords() {
 		return keywords;
 	}
@@ -315,6 +333,28 @@ public class SitePage implements Cloneable, Serializable {
 
 	protected PageDefinition pageDefinition;
 
+	public PagePermission[] getPagePermissions() {
+		return pagePermissions;
+	}
+
+	public void setPagePermissions(PagePermission[] pagePermissions) {
+		this.pagePermissions = pagePermissions;
+	}
+
+	public void setPagePermissions(
+		UnsafeSupplier<PagePermission[], Exception>
+			pagePermissionsUnsafeSupplier) {
+
+		try {
+			pagePermissions = pagePermissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected PagePermission[] pagePermissions;
+
 	public PageSettings getPageSettings() {
 		return pageSettings;
 	}
@@ -356,6 +396,28 @@ public class SitePage implements Cloneable, Serializable {
 	}
 
 	protected String pageType;
+
+	public ParentSitePage getParentSitePage() {
+		return parentSitePage;
+	}
+
+	public void setParentSitePage(ParentSitePage parentSitePage) {
+		this.parentSitePage = parentSitePage;
+	}
+
+	public void setParentSitePage(
+		UnsafeSupplier<ParentSitePage, Exception>
+			parentSitePageUnsafeSupplier) {
+
+		try {
+			parentSitePage = parentSitePageUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected ParentSitePage parentSitePage;
 
 	public RenderedPage getRenderedPage() {
 		return renderedPage;

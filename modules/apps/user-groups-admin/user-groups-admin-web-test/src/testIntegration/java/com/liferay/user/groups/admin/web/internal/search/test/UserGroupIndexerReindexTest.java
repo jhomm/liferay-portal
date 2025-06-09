@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.groups.admin.web.internal.search.test;
@@ -30,8 +21,8 @@ import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -80,45 +71,24 @@ public class UserGroupIndexerReindexTest {
 	}
 
 	@Test
-	public void testReindexing() throws Exception {
+	public void testReindex() throws Exception {
 		UserGroup userGroup = _userGroupFixture.createUserGroup();
 
 		String searchTerm = userGroup.getName();
 
-		assertFieldValue(Field.NAME, searchTerm, searchTerm);
+		_assertFieldValue(Field.NAME, searchTerm, searchTerm);
 
-		deleteDocument(userGroup.getCompanyId(), uidFactory.getUID(userGroup));
+		_deleteDocument(userGroup.getCompanyId(), uidFactory.getUID(userGroup));
 
-		assertNoHits(searchTerm);
+		_assertNoHits(searchTerm);
 
-		reindexAllIndexerModels();
+		_reindexAllIndexerModels();
 
-		assertFieldValue(Field.NAME, searchTerm, searchTerm);
+		_assertFieldValue(Field.NAME, searchTerm, searchTerm);
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
-
-	protected void assertFieldValue(
-		String fieldName, String fieldValue, String searchTerm) {
-
-		FieldValuesAssert.assertFieldValue(
-			fieldName, fieldValue, search(searchTerm));
-	}
-
-	protected void assertNoHits(String searchTerm) {
-		FieldValuesAssert.assertFieldValues(
-			Collections.emptyMap(), search(searchTerm));
-	}
-
-	protected void deleteDocument(long companyId, String uid) throws Exception {
-		indexWriterHelper.deleteDocument(
-			indexer.getSearchEngineId(), companyId, uid, true);
-	}
-
-	protected void reindexAllIndexerModels() throws Exception {
-		indexer.reindex(new String[] {String.valueOf(_group.getCompanyId())});
-	}
 
 	protected SearchResponse search(String searchTerm) {
 		return searcher.search(
@@ -156,6 +126,26 @@ public class UserGroupIndexerReindexTest {
 
 	@Inject
 	protected UserGroupLocalService userGroupLocalService;
+
+	private void _assertFieldValue(
+		String fieldName, String fieldValue, String searchTerm) {
+
+		FieldValuesAssert.assertFieldValue(
+			fieldName, fieldValue, search(searchTerm));
+	}
+
+	private void _assertNoHits(String searchTerm) {
+		FieldValuesAssert.assertFieldValues(
+			Collections.emptyMap(), search(searchTerm));
+	}
+
+	private void _deleteDocument(long companyId, String uid) throws Exception {
+		indexWriterHelper.deleteDocument(companyId, uid, true);
+	}
+
+	private void _reindexAllIndexerModels() throws Exception {
+		indexer.reindex(new String[] {String.valueOf(_group.getCompanyId())});
+	}
 
 	private Group _group;
 

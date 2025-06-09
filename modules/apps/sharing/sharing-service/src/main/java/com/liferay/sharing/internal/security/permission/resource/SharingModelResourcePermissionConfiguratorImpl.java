@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.internal.security.permission.resource;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermi
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionLogic;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.security.permission.contributor.PermissionSQLContributor;
@@ -53,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.sharing.internal.configuration.SharingSystemConfiguration",
-	immediate = true, service = SharingModelResourcePermissionConfigurator.class
+	service = SharingModelResourcePermissionConfigurator.class
 )
 public class SharingModelResourcePermissionConfiguratorImpl
 	implements SharingModelResourcePermissionConfigurator {
@@ -90,7 +82,7 @@ public class SharingModelResourcePermissionConfiguratorImpl
 				PermissionSQLContributor.class,
 				new SharingPermissionSQLContributor(
 					_classNameLocalService, _groupLocalService,
-					_sharingConfigurationFactory),
+					_sharingConfigurationFactory, _userGroupLocalService),
 				new HashMapDictionary<>());
 	}
 
@@ -132,6 +124,9 @@ public class SharingModelResourcePermissionConfiguratorImpl
 	private ServiceRegistration<PermissionSQLContributor>
 		_sharingPermissionSQLContributorServiceRegistration;
 	private SharingSystemConfiguration _sharingSystemConfiguration;
+
+	@Reference
+	private UserGroupLocalService _userGroupLocalService;
 
 	private class SharingModelResourcePermissionLogic<T extends GroupedModel>
 		implements ModelResourcePermissionLogic<T> {

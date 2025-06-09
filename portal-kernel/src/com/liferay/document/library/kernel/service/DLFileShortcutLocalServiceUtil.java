@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -62,14 +53,14 @@ public class DLFileShortcutLocalServiceUtil {
 	}
 
 	public static DLFileShortcut addFileShortcut(
-			long userId, long groupId, long repositoryId, long folderId,
-			long toFileEntryId,
+			String externalReferenceCode, long userId, long groupId,
+			long repositoryId, long folderId, long toFileEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFileShortcut(
-			userId, groupId, repositoryId, folderId, toFileEntryId,
-			serviceContext);
+			externalReferenceCode, userId, groupId, repositoryId, folderId,
+			toFileEntryId, serviceContext);
 	}
 
 	public static void addFileShortcutResources(
@@ -171,6 +162,13 @@ public class DLFileShortcutLocalServiceUtil {
 		throws PortalException {
 
 		getService().deleteFileShortcut(fileShortcutId);
+	}
+
+	public static void deleteFileShortcut(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		getService().deleteFileShortcut(externalReferenceCode, groupId);
 	}
 
 	public static void deleteFileShortcuts(long toFileEntryId)
@@ -306,6 +304,13 @@ public class DLFileShortcutLocalServiceUtil {
 		return getService().fetchDLFileShortcut(fileShortcutId);
 	}
 
+	public static DLFileShortcut fetchDLFileShortcutByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchDLFileShortcutByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the document library file shortcut matching the UUID and group.
 	 *
@@ -336,6 +341,14 @@ public class DLFileShortcutLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getDLFileShortcut(fileShortcutId);
+	}
+
+	public static DLFileShortcut getDLFileShortcutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getDLFileShortcutByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -428,6 +441,12 @@ public class DLFileShortcutLocalServiceUtil {
 	}
 
 	public static List<DLFileShortcut> getFileShortcuts(
+		long groupId, long folderId) {
+
+		return getService().getFileShortcuts(groupId, folderId);
+	}
+
+	public static List<DLFileShortcut> getFileShortcuts(
 		long groupId, long folderId, boolean active, int status, int start,
 		int end) {
 
@@ -440,6 +459,10 @@ public class DLFileShortcutLocalServiceUtil {
 
 		return getService().getFileShortcutsCount(
 			groupId, folderId, active, status);
+	}
+
+	public static List<DLFileShortcut> getGroupFileShortcuts(long groupId) {
+		return getService().getGroupFileShortcuts(groupId);
 	}
 
 	public static
@@ -536,6 +559,10 @@ public class DLFileShortcutLocalServiceUtil {
 
 	public static DLFileShortcutLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(DLFileShortcutLocalService service) {
+		_service = service;
 	}
 
 	private static volatile DLFileShortcutLocalService _service;

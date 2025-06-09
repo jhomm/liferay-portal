@@ -1,37 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.content.web.internal.portlet.action;
 
-import com.liferay.commerce.account.util.CommerceAccountHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.type.virtual.order.constants.CommerceVirtualOrderPortletKeys;
 import com.liferay.commerce.product.type.virtual.order.content.web.internal.display.context.CommerceVirtualOrderItemContentDisplayContext;
+import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItemFileEntry;
 import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemLocalService;
-import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingService;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,9 +33,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommerceVirtualOrderPortletKeys.COMMERCE_VIRTUAL_ORDER_ITEM_CONTENT,
+		"jakarta.portlet.name=" + CommerceVirtualOrderPortletKeys.COMMERCE_VIRTUAL_ORDER_ITEM_CONTENT,
 		"mvc.command.name=/commerce_virtual_order_item_content/view_commerce_virtual_order_item_terms_of_use"
 	},
 	service = MVCRenderCommand.class
@@ -61,8 +53,10 @@ public class ViewCommerceVirtualOrderItemTermsOfUseMVCRenderCommand
 					new CommerceVirtualOrderItemContentDisplayContext(
 						_commerceChannelLocalService,
 						_commerceVirtualOrderItemLocalService,
-						_cpDefinitionHelper, _commerceAccountHelper,
-						_cpDefinitionVirtualSettingService, _cpInstanceHelper,
+						_commerceVirtualOrderItemFileEntryModelResourcePermission,
+						_cpDefinitionHelper,
+						_cpDefinitionVirtualSettingLocalService,
+						_cpInstanceHelper, _groupLocalService,
 						_portal.getHttpServletRequest(renderRequest));
 
 			renderRequest.setAttribute(
@@ -70,7 +64,7 @@ public class ViewCommerceVirtualOrderItemTermsOfUseMVCRenderCommand
 				commerceVirtualOrderItemContentDisplayContext);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		return "/view_commerce_virtual_order_item_terms_of_use.jsp";
@@ -80,10 +74,13 @@ public class ViewCommerceVirtualOrderItemTermsOfUseMVCRenderCommand
 		ViewCommerceVirtualOrderItemTermsOfUseMVCRenderCommand.class);
 
 	@Reference
-	private CommerceAccountHelper _commerceAccountHelper;
-
-	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItemFileEntry)"
+	)
+	private ModelResourcePermission<CommerceVirtualOrderItemFileEntry>
+		_commerceVirtualOrderItemFileEntryModelResourcePermission;
 
 	@Reference
 	private CommerceVirtualOrderItemLocalService
@@ -93,11 +90,14 @@ public class ViewCommerceVirtualOrderItemTermsOfUseMVCRenderCommand
 	private CPDefinitionHelper _cpDefinitionHelper;
 
 	@Reference
-	private CPDefinitionVirtualSettingService
-		_cpDefinitionVirtualSettingService;
+	private CPDefinitionVirtualSettingLocalService
+		_cpDefinitionVirtualSettingLocalService;
 
 	@Reference
 	private CPInstanceHelper _cpInstanceHelper;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;

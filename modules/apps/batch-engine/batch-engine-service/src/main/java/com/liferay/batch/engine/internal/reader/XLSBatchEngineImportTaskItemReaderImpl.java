@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.reader;
@@ -22,6 +13,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
@@ -37,8 +29,13 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 public class XLSBatchEngineImportTaskItemReaderImpl
 	implements BatchEngineImportTaskItemReader {
 
-	public XLSBatchEngineImportTaskItemReaderImpl(InputStream inputStream)
+	public XLSBatchEngineImportTaskItemReaderImpl(
+			List<String> includeFieldNames, InputStream inputStream)
 		throws IOException {
+
+		if (!includeFieldNames.isEmpty()) {
+			_fieldNameFilter = new FieldNameFilterFunction(includeFieldNames);
+		}
 
 		_inputStream = inputStream;
 
@@ -97,30 +94,21 @@ public class XLSBatchEngineImportTaskItemReaderImpl
 				}
 			}
 			else {
-				String value = cell.getStringCellValue();
+				FieldNameValueMapHandlerFactory.FieldNameValueMapHandler
+					fieldNameValueMapHandler =
+						FieldNameValueMapHandlerFactory.
+							getFieldNameValueMapHandler(fieldName);
 
-				value = value.trim();
-
-				if (value.isEmpty()) {
-					value = null;
-				}
-
-				int lastDelimiterIndex = fieldName.lastIndexOf('_');
-
-				if (lastDelimiterIndex == -1) {
-					fieldNameValueMap.put(fieldName, value);
-				}
-				else {
-					BatchEngineImportTaskItemReaderUtil.handleMapField(
-						fieldName, fieldNameValueMap, lastDelimiterIndex,
-						value);
-				}
+				fieldNameValueMapHandler.handle(
+					fieldName, fieldNameValueMap, cell.getStringCellValue());
 			}
 		}
 
-		return fieldNameValueMap;
+		return _fieldNameFilter.apply(fieldNameValueMap);
 	}
 
+	private Function<Map<String, Object>, Map<String, Object>>
+		_fieldNameFilter = map -> map;
 	private final String[] _fieldNames;
 	private final InputStream _inputStream;
 	private final Iterator<Row> _iterator;

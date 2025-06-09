@@ -1,30 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayForm, {ClaySelectWithOption} from '@clayui/form';
 import {useIsMounted} from '@liferay/frontend-js-react-web';
+import {isNullOrUndefined} from '@liferay/layout-js-components-web';
+import classNames from 'classnames';
+import {useId} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 
 import {useGetFieldValue} from '../../app/contexts/CollectionItemContext';
 import {useGlobalContext} from '../../app/contexts/GlobalContext';
 import {useSelector} from '../../app/contexts/StoreContext';
 import selectLanguageId from '../../app/selectors/selectLanguageId';
 import ImageService from '../../app/services/ImageService';
-import isMapped from '../../app/utils/editable-value/isMapped';
-import resolveEditableValue from '../../app/utils/editable-value/resolveEditableValue';
-import {useId} from '../../app/utils/useId';
+import isMapped from '../../app/utils/editable_value/isMapped';
+import resolveEditableValue from '../../app/utils/editable_value/resolveEditableValue';
 
 export const DEFAULT_IMAGE_SIZE_ID = 'auto';
 
@@ -36,12 +29,17 @@ const DEFAULT_IMAGE_SIZE = {
 	width: null,
 };
 
-export const ImageSelectorSize = ({
+/**
+ * @param {object} props
+ * @param {number} [props.imageSizeLimit] Image size limit to show warnings, expressed in KB.
+ */
+export function ImageSelectorSize({
 	fieldValue,
 	getEditableElement = DEFAULT_GET_EDITABLE_ELEMENT,
 	imageSizeId,
+	imageSizeLimit,
 	onImageSizeIdChanged = null,
-}) => {
+}) {
 	const [fileEntryId, setFileEntryId] = useState(
 		fieldValue.fileEntryId || ''
 	);
@@ -55,6 +53,20 @@ export const ImageSelectorSize = ({
 	const selectedViewportSize = useSelector(
 		(state) => state.selectedViewportSize
 	);
+
+	const showImageSizeWarning = useMemo(() => {
+		if (isNullOrUndefined(imageSizeLimit)) {
+			return false;
+		}
+
+		const imageSizeValue = Number(imageSize.size);
+
+		if (isNaN(imageSizeValue)) {
+			return false;
+		}
+
+		return imageSizeValue >= imageSizeLimit;
+	}, [imageSize.size, imageSizeLimit]);
 
 	useEffect(() => {
 		if (fieldValue.fileEntryId) {
@@ -147,7 +159,6 @@ export const ImageSelectorSize = ({
 
 		ImageService.getAvailableImageConfigurations({
 			fileEntryId,
-			onNetworkStatus: () => {},
 		}).then((availableImageSizes) => {
 			setImageSizes(
 				[...availableImageSizes].sort(
@@ -158,13 +169,28 @@ export const ImageSelectorSize = ({
 		});
 	}, [fileEntryId]);
 
+	const warningText = `${Liferay.Language.get(
+		'big-image-file-size-used'
+	)} ${Liferay.Language.get(
+		'please-consider-configuring-adaptive-media-lazy-loading-or-reducing-the-image-size'
+	)}`;
+
 	return (
-		<ClayForm.Group className="mb-3">
+		<ClayForm.Group
+			className={classNames('mb-3', {
+				'has-warning': showImageSizeWarning,
+			})}
+		>
 			{onImageSizeIdChanged && (
 				<ClayForm.Group className="mb-2">
 					<label htmlFor={imageSizeSelectId}>
 						{Liferay.Language.get('resolution')}
+
+						{showImageSizeWarning ? (
+							<span className="sr-only">({warningText})</span>
+						) : null}
 					</label>
+
 					<ClaySelectWithOption
 						className="form-control form-control-sm"
 						id={imageSizeSelectId}
@@ -181,24 +207,36 @@ export const ImageSelectorSize = ({
 				</ClayForm.Group>
 			)}
 
-			{!!imageSize.width && (
-				<div className="small text-secondary">
-					<b>{Liferay.Language.get('width')}:</b>
-					<span className="ml-1">{imageSize.width}px</span>
-				</div>
-			)}
+			{imageSize.width ? (
+				<p className="m-0 text-2 text-secondary">
+					<strong>{Liferay.Language.get('width')}:</strong>
 
-			{!!imageSize.size && (
-				<div className="small text-secondary">
-					<b>{Liferay.Language.get('file-size')}:</b>
+					<span className="ml-1">{imageSize.width}px</span>
+				</p>
+			) : null}
+
+			{imageSize.size ? (
+				<p className="m-0 text-2 text-secondary">
+					<strong>{Liferay.Language.get('file-size')}:</strong>
+
 					<span className="ml-1">
 						{Number(imageSize.size).toFixed(2)}kB
 					</span>
-				</div>
-			)}
+				</p>
+			) : null}
+
+			{showImageSizeWarning ? (
+				<ClayForm.FeedbackGroup>
+					<ClayForm.FeedbackItem className="font-weight-normal text-2">
+						<ClayForm.FeedbackIndicator symbol="warning-full" />
+
+						{warningText}
+					</ClayForm.FeedbackItem>
+				</ClayForm.FeedbackGroup>
+			) : null}
 		</ClayForm.Group>
 	);
-};
+}
 
 ImageSelectorSize.propTypes = {
 	fieldValue: PropTypes.oneOfType([
@@ -216,5 +254,6 @@ ImageSelectorSize.propTypes = {
 	]).isRequired,
 	getEditableElement: PropTypes.func,
 	imageSizeId: PropTypes.string,
+	imageSizeLimit: PropTypes.number,
 	onImageSizeIdChanged: PropTypes.func,
 };

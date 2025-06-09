@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.index;
@@ -51,15 +42,15 @@ public class LiferayTypeMappingsDateDetectionEmptyStringTest {
 
 	@Test
 	public void testEmptyStringInSecondDocument() throws Exception {
-		String field1 = randomField();
-		String field2 = randomField();
-		String field3 = randomField();
-		String field4 = randomField();
-		String field5 = randomField();
-		String field6 = randomField();
-		String field7 = randomField();
-		String field8 = randomField();
-		String field9 = randomField();
+		String field1 = _randomField();
+		String field2 = _randomField();
+		String field3 = _randomField();
+		String field4 = _randomField();
+		String field5 = _randomField();
+		String field6 = _randomField();
+		String field7 = _randomField();
+		String field8 = _randomField();
+		String field9 = _randomField();
 
 		index(
 			HashMapBuilder.<String, Object>put(
@@ -138,16 +129,16 @@ public class LiferayTypeMappingsDateDetectionEmptyStringTest {
 	@Rule
 	public TestName testName = new TestName();
 
-	protected static String randomField() {
-		return "randomField__" + RandomTestUtil.randomString();
-	}
-
 	protected void assertType(String field, String type) throws Exception {
 		_liferayIndexFixture.assertType(field, type);
 	}
 
 	protected void index(Map<String, Object> map) {
 		_liferayIndexFixture.index(map);
+	}
+
+	private String _randomField() {
+		return "randomField__" + RandomTestUtil.randomString();
 	}
 
 	private LiferayIndexFixture _liferayIndexFixture;

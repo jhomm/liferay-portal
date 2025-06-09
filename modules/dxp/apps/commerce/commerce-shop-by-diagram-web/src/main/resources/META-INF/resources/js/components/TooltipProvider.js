@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ReactPortal} from '@liferay/frontend-js-react-web';
@@ -16,14 +10,14 @@ import React, {useLayoutEffect, useRef, useState} from 'react';
 import {calculateTooltipStyleFromTarget} from '../utilities/index';
 
 function TooltipProvider({children, closeTooltip, target}) {
-	const [tooltipStyle, updateTooltipStyle] = useState({});
+	const [tooltipStyle, setTooltipStyle] = useState({});
 	const tooltipRef = useRef();
 	const bodyRef = useRef(document.querySelector('body'));
 
 	useLayoutEffect(() => {
 		const style = calculateTooltipStyleFromTarget(target);
 
-		updateTooltipStyle(style);
+		setTooltipStyle(style);
 	}, [target]);
 
 	useLayoutEffect(() => {
@@ -46,12 +40,8 @@ function TooltipProvider({children, closeTooltip, target}) {
 
 	return (
 		<ReactPortal container={bodyRef.current}>
-			<div className="diagram-tooltip-wrapper">
-				<div
-					className="diagram-tooltip"
-					ref={tooltipRef}
-					style={tooltipStyle}
-				>
+			<div className="diagram-tooltip-wrapper" style={tooltipStyle}>
+				<div className="diagram-tooltip" ref={tooltipRef}>
 					{children}
 				</div>
 			</div>

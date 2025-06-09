@@ -1,49 +1,45 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {usePrevious} from '@liferay/frontend-js-react-web';
+import {isNullOrUndefined} from '@liferay/layout-js-components-web';
 import React, {useCallback, useContext, useEffect} from 'react';
 
+import batchRenderFragmentEntryContentRequest from '../../common/batchRenderFragmentEntryContentRequest';
 import {updateFragmentEntryLinkContent} from '../actions/index';
-import FragmentService from '../services/FragmentService';
+import {FRAGMENT_ENTRY_TYPES} from '../config/constants/fragmentEntryTypes';
 import InfoItemService from '../services/InfoItemService';
 import LayoutService from '../services/LayoutService';
-import isMappedToInfoItem from '../utils/editable-value/isMappedToInfoItem';
-import isMappedToLayout from '../utils/editable-value/isMappedToLayout';
-import isMappedToStructure from '../utils/editable-value/isMappedToStructure';
-import isNullOrUndefined from '../utils/isNullOrUndefined';
+import isMappedToInfoItem from '../utils/editable_value/isMappedToInfoItem';
+import isMappedToLayout from '../utils/editable_value/isMappedToLayout';
+import isMappedToStructure from '../utils/editable_value/isMappedToStructure';
+import getPortletId from '../utils/getPortletId';
 import {useDisplayPagePreviewItem} from './DisplayPagePreviewItemContext';
+import {useAddPendingItem} from './PortletContentContext';
 import {useDispatch} from './StoreContext';
-
-const defaultFromControlsId = (itemId) => itemId;
-const defaultToControlsId = (controlId) => controlId;
 
 export const INITIAL_STATE = {
 	collectionConfig: null,
 	collectionId: null,
 	collectionItem: null,
+	collectionItemId: null,
 	collectionItemIndex: null,
 	customCollectionSelectorURL: null,
-	fromControlsId: defaultFromControlsId,
-	parentToControlsId: defaultToControlsId,
+	isDisabled: false,
 	setCollectionItemContent: () => null,
-	toControlsId: defaultToControlsId,
 };
 
 const CollectionItemContext = React.createContext(INITIAL_STATE);
 
 const CollectionItemContextProvider = CollectionItemContext.Provider;
+
+const useCollectionItemId = () => {
+	const context = useContext(CollectionItemContext);
+
+	return context.collectionItemId;
+};
 
 const useCollectionItemIndex = () => {
 	const context = useContext(CollectionItemContext);
@@ -57,25 +53,23 @@ const useCustomCollectionSelectorURL = () => {
 	return context.customCollectionSelectorURL;
 };
 
-const useParentToControlsId = () => {
-	const context = useContext(CollectionItemContext);
-
-	return context.parentToControlsId;
-};
-
-const useToControlsId = () => {
-	const context = useContext(CollectionItemContext);
-
-	return context.toControlsId || defaultToControlsId;
-};
-
 const useCollectionConfig = () => {
 	const context = useContext(CollectionItemContext);
 
 	return context.collectionConfig;
 };
 
-const useGetContent = (fragmentEntryLink, languageId, segmentsExperienceId) => {
+const useIsDisabledCollectionItem = () => {
+	const context = useContext(CollectionItemContext);
+
+	return context.isDisabled;
+};
+
+const useGetContent = (
+	fragmentEntryLink = {},
+	languageId,
+	segmentsExperienceId
+) => {
 	const {
 		collectionContent = {},
 		content,
@@ -86,37 +80,54 @@ const useGetContent = (fragmentEntryLink, languageId, segmentsExperienceId) => {
 	const collectionItemContext = useContext(CollectionItemContext);
 	const dispatch = useDispatch();
 	const fieldSets = fragmentEntryLink.configuration?.fieldSets;
-	const toControlsId = useToControlsId();
 
-	const collectionContentId = toControlsId(fragmentEntryLinkId);
+	const addPendingItem = useAddPendingItem();
 
-	const {className: collectionItemClassName, classPK: collectionItemClassPK} =
-		collectionItemContext.collectionItem || {};
-	const {collectionItemIndex} = collectionItemContext;
+	const {
+		className: collectionItemClassName,
+		classPK: collectionItemClassPK,
+		externalReferenceCode: collectionItemExternalReferenceCode,
+	} = collectionItemContext.collectionItem || {};
+
+	const {collectionItemId} = collectionItemContext;
 
 	const {
 		className: displayPagePreviewItemClassName,
 		classPK: displayPagePreviewItemClassPK,
+		externalReferenceCode: displayPagePreviewItemExternalReferenceCode,
 	} = useDisplayPagePreviewItem()?.data || {};
 
 	const withinCollection = !isNullOrUndefined(
 		collectionItemContext.collectionItem
 	);
 
-	const [itemClassName, itemClassPK] = withinCollection
-		? [collectionItemClassName, collectionItemClassPK]
-		: [displayPagePreviewItemClassName, displayPagePreviewItemClassPK];
+	const [itemClassName, itemClassPK, itemExternalReferenceCode] =
+		withinCollection
+			? [
+					collectionItemClassName,
+					collectionItemClassPK,
+					collectionItemExternalReferenceCode,
+				]
+			: [
+					displayPagePreviewItemClassName,
+					displayPagePreviewItemClassPK,
+					displayPagePreviewItemExternalReferenceCode,
+				];
 
 	const previousEditableValues = usePrevious(editableValues);
 	const previousLanguageId = usePrevious(languageId);
 	const previousItemClassName = usePrevious(itemClassName);
 	const previousItemClassPK = usePrevious(itemClassPK);
+	const previousItemExternalReferenceCode = usePrevious(
+		itemExternalReferenceCode
+	);
 
 	useEffect(() => {
 		const hasLocalizable =
-			fieldSets?.some((fieldSet) =>
+			!!fieldSets?.some((fieldSet) =>
 				fieldSet.fields.some((field) => field.localizable)
-			) ?? false;
+			) ||
+			fragmentEntryLink.fragmentEntryType === FRAGMENT_ENTRY_TYPES.input;
 
 		if (
 			shouldRenderFragmentEntryLink({
@@ -124,53 +135,83 @@ const useGetContent = (fragmentEntryLink, languageId, segmentsExperienceId) => {
 				hasLocalizable,
 				itemClassName,
 				itemClassPK,
+				itemExternalReferenceCode,
 				languageId,
 				previousEditableValues,
 				previousItemClassName,
 				previousItemClassPK,
+				previousItemExternalReferenceCode,
 				previousLanguageId,
 				withinCollection,
 			})
 		) {
-			FragmentService.renderFragmentEntryLinkContent({
-				fragmentEntryLinkId,
-				itemClassName,
-				itemClassPK,
+			batchRenderFragmentEntryContentRequest(
 				languageId,
-				onNetworkStatus: dispatch,
 				segmentsExperienceId,
-			}).then(({content}) => {
-				dispatch(
-					updateFragmentEntryLinkContent({
-						collectionContentId,
-						content,
-						fragmentEntryLinkId,
-					})
-				);
-			});
+
+				{
+					fragmentEntryLinkId,
+					itemClassName,
+					itemClassPK,
+					itemExternalReferenceCode,
+				},
+
+				(content) => {
+					dispatch(
+						updateFragmentEntryLinkContent({
+							collectionItemId,
+							content,
+							fragmentEntryLinkId,
+						})
+					);
+				}
+			);
 		}
 	}, [
-		collectionContentId,
+		collectionItemId,
 		dispatch,
 		editableValues,
 		fieldSets,
 		fragmentEntryLinkId,
+		fragmentEntryLink.fragmentEntryType,
 		itemClassName,
 		itemClassPK,
+		itemExternalReferenceCode,
 		languageId,
 		previousEditableValues,
 		previousItemClassName,
 		previousItemClassPK,
+		previousItemExternalReferenceCode,
 		previousLanguageId,
 		segmentsExperienceId,
 		withinCollection,
 	]);
 
+	useEffect(() => {
+		const onRefreshPortlet = ({portletId}) => {
+			if (getPortletId(editableValues) !== portletId) {
+				return;
+			}
+
+			addPendingItem(fragmentEntryLinkId);
+		};
+
+		Liferay.on('refreshPortlet', onRefreshPortlet);
+
+		return () => Liferay.detach('refreshPortlet', onRefreshPortlet);
+	}, [addPendingItem, editableValues, fragmentEntryLinkId]);
+
 	return (
-		(!isNullOrUndefined(collectionItemIndex)
-			? collectionContent[collectionContentId]
+		(!isNullOrUndefined(collectionItemId)
+			? collectionContent[collectionItemId]
 			: null) || content
 	);
+};
+
+const useWithinCollection = () => {
+	const context = useContext(CollectionItemContext);
+
+	return !isNullOrUndefined(context.collectionItem);
 };
 
 const shouldRenderFragmentEntryLink = ({
@@ -178,10 +219,12 @@ const shouldRenderFragmentEntryLink = ({
 	hasLocalizable,
 	itemClassName,
 	itemClassPK,
+	itemExternalReferenceCode,
 	languageId,
 	previousEditableValues,
 	previousItemClassName,
 	previousItemClassPK,
+	previousItemExternalReferenceCode,
 	previousLanguageId,
 	withinCollection,
 }) => {
@@ -193,7 +236,7 @@ const shouldRenderFragmentEntryLink = ({
 		return true;
 	}
 
-	// For fragments inside a collection, we need to render when previousItemClassName or previousItemClassPK
+	// For fragments inside a collection, we need to render when previousItemClassName, previousItemClassPK or previousExternalReferenceCode
 	// is undefined. This happens when the collection is render at the first time or when changing the "preview with"
 	// to none. When setting the item to none the component is unmounted, which means that we cannot rely on
 	// the usePrevious hook values. Also we need to render when editable values change
@@ -201,7 +244,9 @@ const shouldRenderFragmentEntryLink = ({
 	if (
 		withinCollection &&
 		(isNullOrUndefined(previousItemClassName) ||
-			isNullOrUndefined(previousItemClassPK) ||
+			(itemClassPK && isNullOrUndefined(previousItemClassPK)) ||
+			(itemExternalReferenceCode &&
+				isNullOrUndefined(previousItemExternalReferenceCode)) ||
 			(!isNullOrUndefined(editableValues) &&
 				previousEditableValues !== editableValues))
 	) {
@@ -212,7 +257,8 @@ const shouldRenderFragmentEntryLink = ({
 
 	if (
 		previousItemClassName !== itemClassName &&
-		previousItemClassPK !== itemClassPK
+		(previousItemClassPK !== itemClassPK ||
+			previousItemExternalReferenceCode !== itemExternalReferenceCode)
 	) {
 		return true;
 	}
@@ -229,7 +275,6 @@ const useGetFieldValue = () => {
 			if (isMappedToInfoItem(editable)) {
 				return InfoItemService.getInfoItemFieldValue({
 					...editable,
-					onNetworkStatus: () => {},
 				}).then((response) => {
 					if (!response || !Object.keys(response).length) {
 						throw new Error('Field value does not exist');
@@ -249,9 +294,10 @@ const useGetFieldValue = () => {
 
 			if (isMappedToStructure(editable) && displayPagePreviewItem) {
 				return InfoItemService.getInfoItemFieldValue({
+					...editable,
 					...displayPagePreviewItem.data,
 					fieldId: editable.mappedField,
-					onNetworkStatus: () => {},
+					languageId: editable.languageId,
 				}).then((response) => {
 					if (!response || !Object.keys(response).length) {
 						throw new Error('Field value does not exist');
@@ -284,41 +330,15 @@ const useGetFieldValue = () => {
 	}
 };
 
-const useRenderFragmentContent = () => {
-	const collectionItemContext = useContext(CollectionItemContext);
-
-	const {className: collectionItemClassName, classPK: collectionItemClassPK} =
-		collectionItemContext.collectionItem || {};
-	const {collectionItemIndex} = collectionItemContext;
-
-	return useCallback(
-		({fragmentEntryLinkId, onNetworkStatus, segmentsExperienceId}) => {
-			return FragmentService.renderFragmentEntryLinkContent({
-				collectionItemClassName,
-				collectionItemClassPK,
-				fragmentEntryLinkId,
-				onNetworkStatus,
-				segmentsExperienceId,
-			}).then(({content}) => {
-				return {
-					collectionItemIndex,
-					content,
-				};
-			});
-		},
-		[collectionItemClassName, collectionItemClassPK, collectionItemIndex]
-	);
-};
-
 export {
 	CollectionItemContext,
 	CollectionItemContextProvider,
-	useRenderFragmentContent,
-	useGetContent,
 	useCollectionConfig,
+	useCollectionItemId,
 	useCollectionItemIndex,
 	useCustomCollectionSelectorURL,
-	useParentToControlsId,
-	useToControlsId,
+	useGetContent,
 	useGetFieldValue,
+	useIsDisabledCollectionItem,
+	useWithinCollection,
 };

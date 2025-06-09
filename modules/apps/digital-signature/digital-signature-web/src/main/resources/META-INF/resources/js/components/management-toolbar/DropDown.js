@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayDropDown from '@clayui/drop-down';
 import {ClayCheckbox, ClayRadio} from '@clayui/form';
 import React from 'react';
 
-export const CheckboxGroup = ({
+export function CheckboxGroup({
 	checked = [],
 	items = [],
 	label,
 	onAdd,
 	onRemove,
-}) => {
+}) {
 	return (
 		<ClayDropDown.Group header={label}>
 			<ClayDropDown.ItemList>
@@ -41,9 +32,9 @@ export const CheckboxGroup = ({
 			</ClayDropDown.ItemList>
 		</ClayDropDown.Group>
 	);
-};
+}
 
-export const ItemsGroup = ({checked, items = [], label, onClick}) => {
+export function ItemsGroup({checked, items = [], label, onClick}) {
 	return (
 		<ClayDropDown.Group header={label}>
 			<ClayDropDown.ItemList>
@@ -61,9 +52,9 @@ export const ItemsGroup = ({checked, items = [], label, onClick}) => {
 			</ClayDropDown.ItemList>
 		</ClayDropDown.Group>
 	);
-};
+}
 
-export const RadioGroup = ({checked, items = [], label, onChange}) => {
+export function RadioGroup({checked, items = [], label, onChange}) {
 	return (
 		<ClayDropDown.Group header={label}>
 			<ClayDropDown.ItemList>
@@ -80,9 +71,9 @@ export const RadioGroup = ({checked, items = [], label, onChange}) => {
 			</ClayDropDown.ItemList>
 		</ClayDropDown.Group>
 	);
-};
+}
 
-export default ({children, footerContent, ...otherProps}) => {
+export default function DropDown({children, footerContent, ...otherProps}) {
 	return (
 		<ClayDropDown {...otherProps}>
 			<ClayDropDown.ItemList className="dropdown-fixed-height inline-scroller">
@@ -96,4 +87,4 @@ export default ({children, footerContent, ...otherProps}) => {
 			)}
 		</ClayDropDown>
 	);
-};
+}

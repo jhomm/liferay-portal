@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.service;
 
 import com.liferay.knowledge.base.model.KBFolder;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -91,6 +83,14 @@ public class KBFolderServiceUtil {
 		return getService().getKBFolder(kbFolderId);
 	}
 
+	public static KBFolder getKBFolderByExternalReferenceCode(
+			long groupId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().getKBFolderByExternalReferenceCode(
+			groupId, externalReferenceCode);
+	}
+
 	public static KBFolder getKBFolderByUrlTitle(
 			long groupId, long parentKbFolderId, String urlTitle)
 		throws PortalException {
@@ -143,6 +143,12 @@ public class KBFolderServiceUtil {
 		getService().moveKBFolder(kbFolderId, parentKBFolderId);
 	}
 
+	public static KBFolder moveKBFolderToTrash(long kbFolderId)
+		throws PortalException {
+
+		return getService().moveKBFolderToTrash(kbFolderId);
+	}
+
 	public static KBFolder updateKBFolder(
 			long parentResourceClassNameId, long parentResourcePrimKey,
 			long kbFolderId, String name, String description,
@@ -155,9 +161,10 @@ public class KBFolderServiceUtil {
 	}
 
 	public static KBFolderService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile KBFolderService _service;
+	private static final Snapshot<KBFolderService> _serviceSnapshot =
+		new Snapshot<>(KBFolderServiceUtil.class, KBFolderService.class);
 
 }

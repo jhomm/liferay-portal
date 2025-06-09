@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.portlet.action;
@@ -24,21 +15,19 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.tuning.rankings.web.internal.constants.ResultRankingsConstants;
+import com.liferay.portal.search.tuning.rankings.constants.ResultRankingsConstants;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
 
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -54,12 +43,10 @@ public class EditRankingMVCActionCommandTest
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_editRankingMVCActionCommand = new EditRankingMVCActionCommand();
 
 		ReflectionTestUtil.setFieldValue(
-			_editRankingMVCActionCommand, "duplicateQueryStringsDetector",
+			_editRankingMVCActionCommand, "_duplicateQueryStringsDetector",
 			duplicateQueryStringsDetector);
 		ReflectionTestUtil.setFieldValue(
 			_editRankingMVCActionCommand, "indexNameBuilder", indexNameBuilder);
@@ -91,7 +78,7 @@ public class EditRankingMVCActionCommandTest
 		Mockito.verify(
 			_actionRequest, Mockito.times(1)
 		).setAttribute(
-			Mockito.anyString(), Mockito.anyObject()
+			Mockito.anyString(), Mockito.any()
 		);
 	}
 
@@ -102,7 +89,8 @@ public class EditRankingMVCActionCommandTest
 		setUpPortal();
 		setUpPortalUtil();
 		setUpPortletRequestParamValue(
-			_actionRequest, ResultRankingsConstants.ACTIVATE, Constants.CMD);
+			_actionRequest, ResultRankingsConstants.ACTION_ACTIVATE,
+			Constants.CMD);
 
 		_editRankingMVCActionCommand.doProcessAction(
 			_actionRequest, _actionResponse);
@@ -143,7 +131,8 @@ public class EditRankingMVCActionCommandTest
 		setUpPortal();
 		setUpPortalUtil();
 		setUpPortletRequestParamValue(
-			_actionRequest, ResultRankingsConstants.DEACTIVATE, Constants.CMD);
+			_actionRequest, ResultRankingsConstants.ACTION_DEACTIVATE,
+			Constants.CMD);
 
 		_editRankingMVCActionCommand.doProcessAction(
 			_actionRequest, _actionResponse);
@@ -195,6 +184,7 @@ public class EditRankingMVCActionCommandTest
 		).sendRedirect(
 			Mockito.anyString()
 		);
+
 		Mockito.verify(
 			_actionResponse, Mockito.times(1)
 		).setRenderParameter(
@@ -265,9 +255,8 @@ public class EditRankingMVCActionCommandTest
 				else if (argument.equals(JavaConstants.JAVAX_PORTLET_CONFIG)) {
 					return portletConfig;
 				}
-				else {
-					return "undefined";
-				}
+
+				return "undefined";
 			}
 		);
 	}
@@ -281,8 +270,8 @@ public class EditRankingMVCActionCommandTest
 		).when(
 			portletURLFactory
 		).create(
-			Matchers.any(PortletRequest.class), Matchers.anyString(),
-			Matchers.anyString()
+			Mockito.any(PortletRequest.class), Mockito.anyString(),
+			Mockito.anyString()
 		);
 
 		PortletURLFactoryUtil portletURLFactoryUtil =
@@ -291,12 +280,10 @@ public class EditRankingMVCActionCommandTest
 		portletURLFactoryUtil.setPortletURLFactory(portletURLFactory);
 	}
 
-	@Mock
-	private ActionRequest _actionRequest;
-
-	@Mock
-	private ActionResponse _actionResponse;
-
+	private final ActionRequest _actionRequest = Mockito.mock(
+		ActionRequest.class);
+	private final ActionResponse _actionResponse = Mockito.mock(
+		ActionResponse.class);
 	private EditRankingMVCActionCommand _editRankingMVCActionCommand;
 
 }

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
 import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 
 import java.net.MalformedURLException;
@@ -359,13 +351,8 @@ public class Validator {
 	 *         <code>false</code> otherwise
 	 */
 	public static boolean isContent(String s) {
-		if (isNotNull(
-				StringUtil.removeChars(s, CharPool.NEW_LINE, CharPool.TAB))) {
-
-			return true;
-		}
-
-		return false;
+		return isNotNull(
+			StringUtil.removeChars(s, CharPool.NEW_LINE, CharPool.TAB));
 	}
 
 	/**
@@ -617,11 +604,7 @@ public class Validator {
 	 * @see    #isNull(String)
 	 */
 	public static boolean isHex(String s) {
-		if (isNull(s)) {
-			return false;
-		}
-
-		return true;
+		return !isNull(s);
 	}
 
 	/**
@@ -703,6 +686,10 @@ public class Validator {
 	 *         <code>false</code> otherwise
 	 */
 	public static boolean isIPv4Address(String ipAddress) {
+		if (isNull(ipAddress)) {
+			return false;
+		}
+
 		Matcher matcher = _ipv4AddressPattern.matcher(ipAddress);
 
 		return matcher.matches();
@@ -1095,11 +1082,7 @@ public class Validator {
 
 		Matcher matcher = _variableNamePattern.matcher(variableName);
 
-		if (matcher.matches()) {
-			return true;
-		}
-
-		return false;
+		return matcher.matches();
 	}
 
 	/**
@@ -1199,7 +1182,8 @@ public class Validator {
 
 	private static final Pattern _emailAddressPattern = Pattern.compile(
 		"^[\\w!#$%&'*+/=?^_`{|}~-]+(?:\\.[\\w!#$%&'*+/=?^_`{|}~-]+)*@" +
-			"(?:\\w(?:[\\w-]*\\w)?\\.)+(\\w(?:[\\w-]*\\w))$");
+			"(?:[^\\W_](?:[0-9A-Za-z-]*[^\\W_])?\\.)+" +
+				"([^\\W_](?:[0-9A-Za-z-]*[^\\W_]))$");
 	private static final Pattern _ipv4AddressPattern;
 	private static final Pattern _ipv6AddressPattern;
 	private static final Pattern _variableNamePattern = Pattern.compile(

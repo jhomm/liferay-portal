@@ -1,58 +1,54 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.content.web.internal.display.context;
 
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.util.CommerceAccountHelper;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.model.CommerceOrderItem;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSetting;
-import com.liferay.commerce.product.type.virtual.order.content.web.internal.display.context.util.CommerceVirtualOrderItemContentRequestHelper;
+import com.liferay.commerce.product.type.virtual.order.content.web.internal.display.context.helper.CommerceVirtualOrderItemContentRequestHelper;
 import com.liferay.commerce.product.type.virtual.order.content.web.internal.portlet.configuration.CommerceVirtualOrderItemContentPortletInstanceConfiguration;
 import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
+import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItemFileEntry;
 import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemLocalService;
 import com.liferay.commerce.product.type.virtual.order.util.comparator.CommerceVirtualOrderItemCreateDateComparator;
-import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingService;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
-import com.liferay.commerce.product.util.CPInstanceHelper;
+import com.liferay.commerce.product.type.virtual.service.CPDefinitionVirtualSettingLocalService;
+import com.liferay.commerce.util.CommerceUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalArticleDisplay;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletRequestModel;
-import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -63,33 +59,38 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 			CommerceChannelLocalService commerceChannelLocalService,
 			CommerceVirtualOrderItemLocalService
 				commerceVirtualOrderItemLocalService,
+			ModelResourcePermission<CommerceVirtualOrderItemFileEntry>
+				commerceVirtualOrderItemFileEntryModelResourcePermission,
 			CPDefinitionHelper cpDefinitionHelper,
-			CommerceAccountHelper commerceAccountHelper,
-			CPDefinitionVirtualSettingService cpDefinitionVirtualSettingService,
+			CPDefinitionVirtualSettingLocalService
+				cpDefinitionVirtualSettingLocalService,
 			CPInstanceHelper cpInstanceHelper,
+			GroupLocalService groupLocalService,
 			HttpServletRequest httpServletRequest)
 		throws PortalException {
 
 		_commerceChannelLocalService = commerceChannelLocalService;
 		_commerceVirtualOrderItemLocalService =
 			commerceVirtualOrderItemLocalService;
+		_commerceVirtualOrderItemFileEntryModelResourcePermission =
+			commerceVirtualOrderItemFileEntryModelResourcePermission;
 		_cpDefinitionHelper = cpDefinitionHelper;
-		_commerceAccountHelper = commerceAccountHelper;
-		_cpDefinitionVirtualSettingService = cpDefinitionVirtualSettingService;
+		_cpDefinitionVirtualSettingLocalService =
+			cpDefinitionVirtualSettingLocalService;
 		_cpInstanceHelper = cpInstanceHelper;
+		_groupLocalService = groupLocalService;
 		_httpServletRequest = httpServletRequest;
 
 		_commerceVirtualOrderItemContentRequestHelper =
 			new CommerceVirtualOrderItemContentRequestHelper(
 				httpServletRequest);
 
-		PortletDisplay portletDisplay =
-			_commerceVirtualOrderItemContentRequestHelper.getPortletDisplay();
-
 		_commerceVirtualOrderItemContentPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
 				CommerceVirtualOrderItemContentPortletInstanceConfiguration.
-					class);
+					class,
+				_commerceVirtualOrderItemContentRequestHelper.
+					getThemeDisplay());
 	}
 
 	public JournalArticleDisplay getArticleDisplay() throws Exception {
@@ -133,6 +134,9 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 		throws Exception {
 
 		return _cpInstanceHelper.getCPInstanceThumbnailSrc(
+			CommerceUtil.getCommerceAccountId(
+				(CommerceContext)_httpServletRequest.getAttribute(
+					CommerceWebKeys.COMMERCE_CONTEXT)),
 			commerceOrderItem.getCPInstanceId());
 	}
 
@@ -148,15 +152,16 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 		throws PortalException {
 
 		CPDefinitionVirtualSetting cpDefinitionVirtualSetting =
-			_cpDefinitionVirtualSettingService.fetchCPDefinitionVirtualSetting(
-				CPInstance.class.getName(),
-				commerceOrderItem.getCPInstanceId());
+			_cpDefinitionVirtualSettingLocalService.
+				fetchCPDefinitionVirtualSetting(
+					CPInstance.class.getName(),
+					commerceOrderItem.getCPInstanceId());
 
 		if ((cpDefinitionVirtualSetting == null) ||
 			!cpDefinitionVirtualSetting.isOverride()) {
 
 			cpDefinitionVirtualSetting =
-				_cpDefinitionVirtualSettingService.
+				_cpDefinitionVirtualSettingLocalService.
 					fetchCPDefinitionVirtualSetting(
 						CPDefinition.class.getName(),
 						commerceOrderItem.getCPDefinitionId());
@@ -171,23 +176,69 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 	}
 
 	public long getDisplayStyleGroupId() {
-		if (_displayStyleGroupId > 0) {
+		if (_displayStyleGroupId != null) {
 			return _displayStyleGroupId;
 		}
 
-		_displayStyleGroupId =
+		String displayStyleGroupExternalReferenceCode =
 			_commerceVirtualOrderItemContentPortletInstanceConfiguration.
-				displayStyleGroupId();
+				displayStyleGroupExternalReferenceCode();
 
-		if (_displayStyleGroupId <= 0) {
-			_displayStyleGroupId =
-				_commerceVirtualOrderItemContentRequestHelper.getScopeGroupId();
+		ThemeDisplay themeDisplay =
+			_commerceVirtualOrderItemContentRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			_displayStyleGroupId = themeDisplay.getScopeGroupId();
 		}
 
 		return _displayStyleGroupId;
 	}
 
-	public ResourceURL getDownloadResourceURL(long commerceVirtualOrderItemId) {
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
+
+		String displayStyleGroupExternalReferenceCode =
+			_commerceVirtualOrderItemContentPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
+
+		ThemeDisplay themeDisplay =
+			_commerceVirtualOrderItemContentRequestHelper.getThemeDisplay();
+
+		Group group = themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = _groupLocalService.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
+	}
+
+	public ResourceURL getDownloadResourceURL(
+		long commerceVirtualOrderItemId,
+		long commerceVirtualOrderItemFileEntryId) {
+
 		LiferayPortletResponse liferayPortletResponse =
 			_commerceVirtualOrderItemContentRequestHelper.
 				getLiferayPortletResponse();
@@ -197,7 +248,9 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 		resourceURL.setParameter(
 			"commerceVirtualOrderItemId",
 			String.valueOf(commerceVirtualOrderItemId));
-
+		resourceURL.setParameter(
+			"commerceVirtualOrderItemFileEntryId",
+			String.valueOf(commerceVirtualOrderItemFileEntryId));
 		resourceURL.setResourceID(
 			"/commerce_virtual_order_item_content" +
 				"/download_commerce_virtual_order_item");
@@ -206,7 +259,8 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 	}
 
 	public String getDownloadURL(
-			CommerceVirtualOrderItem commerceVirtualOrderItem)
+			CommerceVirtualOrderItem commerceVirtualOrderItem,
+			long commerceVirtualOrderItemFileEntryId)
 		throws Exception {
 
 		CPDefinitionVirtualSetting cpDefinitionVirtualSetting =
@@ -218,15 +272,13 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 
 			return String.valueOf(
 				getDownloadResourceURL(
-					commerceVirtualOrderItem.getCommerceVirtualOrderItemId()));
+					commerceVirtualOrderItem.getCommerceVirtualOrderItemId(),
+					commerceVirtualOrderItemFileEntryId));
 		}
 
-		LiferayPortletResponse liferayPortletResponse =
-			_commerceVirtualOrderItemContentRequestHelper.
-				getLiferayPortletResponse();
-
 		PortletURL portletURL = PortletURLBuilder.createRenderURL(
-			liferayPortletResponse
+			_commerceVirtualOrderItemContentRequestHelper.
+				getLiferayPortletResponse()
 		).setMVCRenderCommandName(
 			"/commerce_virtual_order_item_content" +
 				"/view_commerce_virtual_order_item_terms_of_use"
@@ -310,21 +362,21 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 				_commerceVirtualOrderItemContentRequestHelper.
 					getScopeGroupId());
 
-		CommerceAccount commerceAccount = _getCommerceAccount();
+		long commerceAccountId = CommerceUtil.getCommerceAccountId(
+			(CommerceContext)_httpServletRequest.getAttribute(
+				CommerceWebKeys.COMMERCE_CONTEXT));
 
-		int total =
+		_searchContainer.setResultsAndTotal(
+			() ->
+				_commerceVirtualOrderItemLocalService.
+					getCommerceVirtualOrderItems(
+						commerceChannelGroupId, commerceAccountId,
+						_searchContainer.getStart(), _searchContainer.getEnd(),
+						CommerceVirtualOrderItemCreateDateComparator.
+							getInstance(false)),
 			_commerceVirtualOrderItemLocalService.
 				getCommerceVirtualOrderItemsCount(
-					commerceChannelGroupId,
-					commerceAccount.getCommerceAccountId());
-		List<CommerceVirtualOrderItem> results =
-			_commerceVirtualOrderItemLocalService.getCommerceVirtualOrderItems(
-				commerceChannelGroupId, commerceAccount.getCommerceAccountId(),
-				_searchContainer.getStart(), _searchContainer.getEnd(),
-				new CommerceVirtualOrderItemCreateDateComparator());
-
-		_searchContainer.setTotal(total);
-		_searchContainer.setResults(results);
+					commerceChannelGroupId, commerceAccountId));
 
 		return _searchContainer;
 	}
@@ -337,6 +389,10 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 			(CommerceContext)httpServletRequest.getAttribute(
 				CommerceWebKeys.COMMERCE_CONTEXT);
 
+		if (commerceContext == null) {
+			return false;
+		}
+
 		long commerceChannelId = commerceContext.getCommerceChannelId();
 
 		if (commerceChannelId > 0) {
@@ -346,27 +402,34 @@ public class CommerceVirtualOrderItemContentDisplayContext {
 		return false;
 	}
 
-	private CommerceAccount _getCommerceAccount() throws PortalException {
-		return _commerceAccountHelper.getCurrentCommerceAccount(
-			_commerceChannelLocalService.getCommerceChannelGroupIdBySiteGroupId(
-				_commerceVirtualOrderItemContentRequestHelper.getSiteGroupId()),
-			_httpServletRequest);
+	public boolean hasPermission(
+			PermissionChecker permissionChecker,
+			CommerceVirtualOrderItemFileEntry commerceVirtualOrderItemFileEntry,
+			String actionId)
+		throws PortalException {
+
+		return _commerceVirtualOrderItemFileEntryModelResourcePermission.
+			contains(
+				permissionChecker, commerceVirtualOrderItemFileEntry, actionId);
 	}
 
 	private JournalArticleDisplay _articleDisplay;
-	private final CommerceAccountHelper _commerceAccountHelper;
 	private final CommerceChannelLocalService _commerceChannelLocalService;
 	private final CommerceVirtualOrderItemContentPortletInstanceConfiguration
 		_commerceVirtualOrderItemContentPortletInstanceConfiguration;
 	private final CommerceVirtualOrderItemContentRequestHelper
 		_commerceVirtualOrderItemContentRequestHelper;
+	private final ModelResourcePermission<CommerceVirtualOrderItemFileEntry>
+		_commerceVirtualOrderItemFileEntryModelResourcePermission;
 	private final CommerceVirtualOrderItemLocalService
 		_commerceVirtualOrderItemLocalService;
 	private final CPDefinitionHelper _cpDefinitionHelper;
-	private final CPDefinitionVirtualSettingService
-		_cpDefinitionVirtualSettingService;
+	private final CPDefinitionVirtualSettingLocalService
+		_cpDefinitionVirtualSettingLocalService;
 	private final CPInstanceHelper _cpInstanceHelper;
-	private long _displayStyleGroupId;
+	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
+	private final GroupLocalService _groupLocalService;
 	private final HttpServletRequest _httpServletRequest;
 	private SearchContainer<CommerceVirtualOrderItem> _searchContainer;
 

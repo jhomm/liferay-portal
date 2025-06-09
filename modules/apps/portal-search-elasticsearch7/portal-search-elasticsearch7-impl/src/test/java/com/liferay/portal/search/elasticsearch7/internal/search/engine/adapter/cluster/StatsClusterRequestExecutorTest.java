@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.cluster;
 
+import com.liferay.portal.json.JSONFactoryImpl;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionFixture;
 import com.liferay.portal.search.engine.adapter.cluster.StatsClusterRequest;
 import com.liferay.portal.search.engine.adapter.cluster.StatsClusterResponse;
@@ -58,24 +51,29 @@ public class StatsClusterRequestExecutorTest {
 			new String[] {_NODE_ID});
 
 		StatsClusterRequestExecutorImpl statsClusterRequestExecutorImpl =
-			new StatsClusterRequestExecutorImpl() {
-				{
-					setElasticsearchClientResolver(
-						_elasticsearchConnectionFixture);
-					setClusterHealthStatusTranslator(
-						new ClusterHealthStatusTranslatorImpl());
-				}
-			};
+			new StatsClusterRequestExecutorImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			statsClusterRequestExecutorImpl, "_clusterHealthStatusTranslator",
+			new ClusterHealthStatusTranslatorImpl());
+		ReflectionTestUtil.setFieldValue(
+			statsClusterRequestExecutorImpl, "_elasticsearchClientResolver",
+			_elasticsearchConnectionFixture);
+		ReflectionTestUtil.setFieldValue(
+			statsClusterRequestExecutorImpl, "_jsonFactory",
+			new JSONFactoryImpl());
 
 		StatsClusterResponse statsClusterResponse =
 			statsClusterRequestExecutorImpl.execute(statsClusterRequest);
 
 		Assert.assertNotNull(statsClusterResponse);
-
+		Assert.assertNotEquals(
+			0, statsClusterResponse.getAvailableSpaceInBytes());
 		Assert.assertNotNull(statsClusterResponse.getClusterHealthStatus());
+		Assert.assertNotEquals(0, statsClusterResponse.getUsedSpaceInBytes());
 	}
 
-	private static final String _NODE_ID = "liferay";
+	private static final String _NODE_ID = "liferay_sidecar";
 
 	private ElasticsearchConnectionFixture _elasticsearchConnectionFixture;
 

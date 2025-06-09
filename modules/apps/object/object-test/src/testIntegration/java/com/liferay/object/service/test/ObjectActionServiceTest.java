@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.test;
@@ -17,13 +8,13 @@ package com.liferay.object.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.object.constants.ObjectActionExecutorConstants;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
-import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.model.ObjectAction;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectActionService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
-import com.liferay.object.util.LocalizedMapUtil;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
@@ -35,9 +26,10 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -60,20 +52,14 @@ public class ObjectActionServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_defaultUser = _userLocalService.getDefaultUser(
+		_guestUser = _userLocalService.getGuestUser(
 			TestPropsValues.getCompanyId());
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
 		_originalName = PrincipalThreadLocal.getName();
 		_originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 		_user = TestPropsValues.getUser();
-
-		_objectDefinition =
-			_objectDefinitionLocalService.addCustomObjectDefinition(
-				TestPropsValues.getUserId(),
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null, null,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				ObjectDefinitionConstants.SCOPE_COMPANY, null);
 	}
 
 	@After
@@ -86,7 +72,7 @@ public class ObjectActionServiceTest {
 	@Test
 	public void testAddObjectAction() throws Exception {
 		try {
-			_testAddObjectAction(_defaultUser);
+			_testAddObjectAction(_guestUser);
 
 			Assert.fail();
 		}
@@ -95,7 +81,7 @@ public class ObjectActionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
@@ -105,7 +91,7 @@ public class ObjectActionServiceTest {
 	@Test
 	public void testDeleteObjectAction() throws Exception {
 		try {
-			_testDeleteObjectAction(_defaultUser);
+			_testDeleteObjectAction(_guestUser);
 
 			Assert.fail();
 		}
@@ -114,7 +100,7 @@ public class ObjectActionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
@@ -124,14 +110,14 @@ public class ObjectActionServiceTest {
 	@Test
 	public void testGetObjectAction() throws Exception {
 		try {
-			_testGetObjectAction(_defaultUser);
+			_testGetObjectAction(_guestUser);
 		}
 		catch (PrincipalException.MustHavePermission principalException) {
 			String message = principalException.getMessage();
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have VIEW permission for"));
 		}
 
@@ -141,7 +127,7 @@ public class ObjectActionServiceTest {
 	@Test
 	public void testUpdateObjectAction() throws Exception {
 		try {
-			_testUpdateObjectAction(_defaultUser);
+			_testUpdateObjectAction(_guestUser);
 
 			Assert.fail();
 		}
@@ -150,7 +136,7 @@ public class ObjectActionServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
@@ -159,11 +145,18 @@ public class ObjectActionServiceTest {
 
 	private ObjectAction _addObjectAction(User user) throws Exception {
 		return _objectActionLocalService.addObjectAction(
-			user.getUserId(), _objectDefinition.getObjectDefinitionId(), true,
+			RandomTestUtil.randomString(), user.getUserId(),
+			_objectDefinition.getObjectDefinitionId(), true, StringPool.BLANK,
+			RandomTestUtil.randomString(),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 			RandomTestUtil.randomString(),
 			ObjectActionExecutorConstants.KEY_WEBHOOK,
 			ObjectActionTriggerConstants.KEY_ON_AFTER_ADD,
-			new UnicodeProperties());
+			UnicodePropertiesBuilder.put(
+				"url", RandomTestUtil.randomString()
+			).build(),
+			false);
 	}
 
 	private void _setUser(User user) {
@@ -180,11 +173,18 @@ public class ObjectActionServiceTest {
 			_setUser(user);
 
 			objectAction = _objectActionService.addObjectAction(
+				RandomTestUtil.randomString(),
 				_objectDefinition.getObjectDefinitionId(), true,
+				StringPool.BLANK, RandomTestUtil.randomString(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
 				RandomTestUtil.randomString(),
 				ObjectActionExecutorConstants.KEY_WEBHOOK,
 				ObjectActionTriggerConstants.KEY_ON_AFTER_ADD,
-				new UnicodeProperties());
+				UnicodePropertiesBuilder.put(
+					"url", RandomTestUtil.randomString()
+				).build(),
+				false);
 		}
 		finally {
 			if (objectAction != null) {
@@ -239,8 +239,18 @@ public class ObjectActionServiceTest {
 			objectAction = _addObjectAction(user);
 
 			objectAction = _objectActionService.updateObjectAction(
-				objectAction.getObjectActionId(), true,
-				RandomTestUtil.randomString(), new UnicodeProperties());
+				RandomTestUtil.randomString(), objectAction.getObjectActionId(),
+				true, StringPool.BLANK, RandomTestUtil.randomString(),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				RandomTestUtil.randomString(),
+				ObjectActionExecutorConstants.KEY_WEBHOOK,
+				ObjectActionTriggerConstants.KEY_ON_AFTER_UPDATE,
+				UnicodePropertiesBuilder.put(
+					"secret", "standalone"
+				).put(
+					"url", "https://standalone.com"
+				).build());
 		}
 		finally {
 			if (objectAction != null) {
@@ -249,7 +259,7 @@ public class ObjectActionServiceTest {
 		}
 	}
 
-	private User _defaultUser;
+	private User _guestUser;
 
 	@Inject
 	private ObjectActionLocalService _objectActionLocalService;

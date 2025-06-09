@@ -1,167 +1,252 @@
-@component-name = "portal-wcm"
+@component-name = "portal-content-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Web Content Administration";
+	property test.smtp.server.enabled = "true";
+	property testray.main.component.name = "Web Content";
 
 	setUp {
-		TestCase.setUpPortalInstance();
+		task ("Set up instance and sign in") {
+			TestCase.setUpPortalInstance();
 
-		User.firstLoginPG();
-
-		JSONUser.addUser(
-			userEmailAddress = "userea@liferay.com",
-			userFirstName = "userfn",
-			userLastName = "userln",
-			userScreenName = "usersn");
-
-		JSONUser.setFirstPassword(
-			agreeToTermsAndAnswerReminderQuery = "true",
-			requireReset = "false",
-			userEmailAddress = "userea@liferay.com");
-
-		JSONRole.assignRoleToUser(
-			roleTitle = "Administrator",
-			userEmailAddress = "userea@liferay.com");
-	}
-
-	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
-
-		if ("${testPortalInstance}" == "true") {
-			PortalInstances.tearDownCP();
-		}
-		else {
 			User.firstLoginPG();
+		}
 
-			WebContent.tearDownCP();
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = "Test Site Name");
+		}
 
-			WebContentTemplates.tearDownCP();
+		task ("Add a new user") {
+			JSONUser.addUser(
+				userEmailAddress = "userea@liferay.com",
+				userFirstName = "userfn",
+				userLastName = "userln",
+				userScreenName = "usersn");
 
-			WebContentStructures.tearDownCP();
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "userea@liferay.com");
+		}
 
-			WebContentStructures.tearDownCP(siteScopeName = "${globalSiteName}");
+		task ("Assign the administrator role to new user") {
+			JSONRole.assignRoleToUser(
+				roleTitle = "Administrator",
+				userEmailAddress = "userea@liferay.com");
+		}
 
-			Page.tearDownCP();
+		task ("Assign the user to site") {
+			JSONUser.addUserToSite(
+				groupName = "Test Site Name",
+				userEmailAddress = "userea@liferay.com");
 		}
 	}
 
-	@priority = "4"
-	test ViewArticleEmailNotification {
-		property test.smtp.server.enabled = "true";
-		property testray.component.names = "Web Content Administration";
+	@description = "When a new user subscribes a web content they should receive an email notification when the web content has a modification."
+	@priority = 4
+	test ViewEditWebContentEmailNotification {
+		task ("Given a user has subscribed a web content") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
 
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "userea@liferay.com",
-			userLoginFullName = "userfn userln");
+			User.logoutAndLoginPG(userLoginEmailAddress = "userea@liferay.com");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
-		WebContent.subscribeToCurrentFolderCP();
+			WebContent.subscribeToSpecificArticle(webContentTitle = "Web Content Title");
+		}
 
-		User.logoutPG();
+		task ("When the Web Content admin makes some changes on web content") {
+			User.logoutAndLoginPG(userLoginEmailAddress = "test@liferay.com");
 
-		User.loginUserPG(
-			password = "test",
-			userEmailAddress = "test@liferay.com");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+			WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
-		WebContent.addArticleCP(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
+			WebContent.editCP(webContentTitleEdit = "Web Content Title Edit");
+		}
 
-		MockMock.viewMail(
-			asset = "Web Content",
-			content = "WC WebContent Content",
-			recipient = "userfn userln",
-			sender = "Joe Bloggs",
-			subject = "WC WebContent Title");
+		task ("Then the user should receive an email notification") {
+			MockMock.viewMail(
+				asset = "Web Content",
+				content = "Web Content Content",
+				recipient = "userfn userln",
+				sender = "Joe Bloggs",
+				subject = "Web Content Title Edit");
+		}
 	}
 
-	@priority = "4"
-	test ViewEditArticleEmailNotification {
-		property test.smtp.server.enabled = "true";
-		property testray.component.names = "Web Content Administration";
+	@description = "When a new user subscribes a folder they should receive an email notification when the folder has a modification."
+	@priority = 4
+	test ViewFolderEmailNotification {
+		task ("Given a user has subscribed a folder") {
+			User.logoutAndLoginPG(userLoginEmailAddress = "userea@liferay.com");
 
-		JSONWebcontent.addWebContent(
-			content = "WC WebContent Content",
-			groupName = "Guest",
-			title = "WC WebContent Title");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "userea@liferay.com",
-			userLoginFullName = "userfn userln");
+			WebContent.subscribeToCurrentFolderCP();
+		}
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+		task ("When the Web Content admin adds a new web content") {
+			User.logoutAndLoginPG(userLoginEmailAddress = "test@liferay.com");
 
-		WebContent.subscribeToSpecificArticle(webContentTitle = "WC WebContent Title");
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
-		User.logoutPG();
+			WebContentNavigator.gotoAddCP();
 
-		User.loginUserPG(
-			password = "test",
-			userEmailAddress = "test@liferay.com");
+			WebContent.addCP(
+				webContentContent = "Web Content Content",
+				webContentTitle = "Web Content Title");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+			WebContent.publishWithPermissions();
+		}
 
-		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
-
-		WebContent.editCP(
-			webContentTitle = "WC WebContent Title",
-			webContentTitleEdit = "WC WebContent Title Edit");
-
-		MockMock.viewMail(
-			asset = "Web Content",
-			content = "WC WebContent Content",
-			recipient = "userfn userln",
-			sender = "Joe Bloggs",
-			subject = "WC WebContent Title Edit");
+		task ("Then the user should receive an email notification") {
+			MockMock.viewMail(
+				asset = "Web Content",
+				content = "Web Content Content",
+				recipient = "userfn userln",
+				sender = "Joe Bloggs",
+				subject = "Web Content Title");
+		}
 	}
 
-	@priority = "4"
-	test ViewMoveArticleEmailNotification {
-		property test.smtp.server.enabled = "true";
-		property testray.component.names = "Web Content Administration";
+	@description = "This is a test for LPS-151781. When a new user subscribes a web content folder, the Granted email should show the article diffs."
+	@priority = 4
+	test ViewGrantedEmailNotificationWithArticleDiffs {
+		task ("Given a user has subscribed a folder with Granted Email enabled") {
+			task ("Add a folder") {
+				JSONWebcontent.addFolder(
+					folderName = "WC Folder Name",
+					groupName = "Test Site Name");
+			}
 
-		JSONWebcontent.addWebContent(
-			content = "WC WebContent Content",
-			groupName = "Guest",
-			title = "WC WebContent Title");
+			task ("Add a web content under folder") {
+				JSONWebcontent.addWebContent(
+					content = "Web Content Content",
+					folderName = "WC Folder Name",
+					groupName = "Test Site Name",
+					title = "Web Content Title");
+			}
 
-		User.logoutAndLoginPG(
-			userLoginEmailAddress = "userea@liferay.com",
-			userLoginFullName = "userfn userln");
+			task ("Add Single Approver as default workflow on folder") {
+				WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+				WebContentFolder.configureWorkflowCP(
+					folderName = "WC Folder Name",
+					workflowDefinition = "Single Approver",
+					workflowRestriction = "Default Workflow");
+			}
 
-		WebContent.subscribeToSpecificArticle(webContentTitle = "WC WebContent Title");
+			task ("Enable Granted Email with Article diffs") {
+				LexiconEntry.gotoHeaderMenuItem(menuItem = "Configuration");
 
-		User.logoutPG();
+				WebContentAdmin.configureEmailNotifications(
+					enabled = "true",
+					fieldName = "Granted",
+					navTab = "Web Content Granted",
+					notificationsBody = "Article diff is [$ARTICLE_DIFFS$]");
+			}
 
-		User.loginUserPG(
-			password = "test",
-			userEmailAddress = "test@liferay.com");
+			task ("Subscribe the folder as new user") {
+				User.logoutAndLoginPG(userLoginEmailAddress = "userea@liferay.com");
 
-		JSONWebcontent.addFolder(
-			folderDescription = "WC Folder Description",
-			folderName = "WC Folder Name",
-			groupName = "Guest");
+				WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 
-		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
+				WebContentFolder.gotoCP(
+					folderName = "WC Folder Name",
+					webContentTitle = "WC Folder Name");
 
-		WebContent.moveToFolderCP(
-			folderName = "WC Folder Name",
-			webContentTitle = "WC WebContent Title");
+				WebContent.subscribeToCurrentFolderCP();
+			}
 
-		MockMock.viewMail(
-			asset = "Web Content",
-			content = "WC WebContent Content",
-			recipient = "userfn userln",
-			sender = "Joe Bloggs",
-			subject = "WC WebContent Title was moved");
+			task ("Sign in as Test Test") {
+				User.logoutAndLoginPG(userLoginEmailAddress = "test@liferay.com");
+			}
+
+			task ("Edit the web content") {
+				WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+				WebContentFolder.gotoCP(
+					folderName = "WC Folder Name",
+					webContentTitle = "WC Folder Name");
+
+				WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
+
+				WebContent.addCP(webContentContent = "Where does it come from?");
+
+				WebContent.submitForWorkflow();
+			}
+		}
+
+		task ("When the web content creator approves the changes on workflow tasks") {
+			UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+			Workflow.assignToMeTaskByActions(
+				workflowAssetTitle = "Web Content Title",
+				workflowAssetType = "Web Content Article",
+				workflowTask = "Review");
+
+			Workflow.approveTaskByActions(
+				workflowAssetTitle = "Web Content Title",
+				workflowAssetType = "Web Content Article",
+				workflowTask = "Review");
+		}
+
+		task ("Then the web content creator could view the article diffs on granted email notification") {
+			MockMock.viewFormattedHTMLTextDiffs(
+				asset = "Web Content: Article Approval Granted",
+				newContent = "Where does it come from?",
+				oldContent = "Web Content Content",
+				recipient = "Test Test",
+				sender = "Joe Bloggs");
+		}
+	}
+
+	@description = "When a new user subscribes a web content they should receive an email notification when the web content is moved to a new folder."
+	@priority = 4
+	test ViewMoveWebContentEmailNotification {
+		task ("Given a user has subscribed a web content") {
+			JSONWebcontent.addWebContent(
+				content = "Web Content Content",
+				groupName = "Test Site Name",
+				title = "Web Content Title");
+
+			User.logoutAndLoginPG(userLoginEmailAddress = "userea@liferay.com");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContent.subscribeToSpecificArticle(webContentTitle = "Web Content Title");
+		}
+
+		task ("When the Web Content admin moves the web content to a new folder") {
+			User.logoutAndLoginPG(userLoginEmailAddress = "test@liferay.com");
+
+			JSONWebcontent.addFolder(
+				folderDescription = "WC Folder Description",
+				folderName = "WC Folder Name",
+				groupName = "Test Site Name");
+
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			WebContent.moveToFolderCP(
+				folderName = "WC Folder Name",
+				webContentTitle = "Web Content Title");
+		}
+
+		task ("Then the user should receive an email notification") {
+			MockMock.viewMail(
+				asset = "Web Content",
+				content = "Web Content Content",
+				recipient = "userfn userln",
+				sender = "Joe Bloggs",
+				subject = "Web Content Title was moved");
+		}
 	}
 
 }

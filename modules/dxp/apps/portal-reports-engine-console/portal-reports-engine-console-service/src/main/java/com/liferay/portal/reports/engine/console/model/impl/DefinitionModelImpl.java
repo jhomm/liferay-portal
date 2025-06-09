@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.model.impl;
@@ -38,22 +29,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.reports.engine.console.model.Definition;
 import com.liferay.portal.reports.engine.console.model.DefinitionModel;
-import com.liferay.portal.reports.engine.console.model.DefinitionSoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -125,6 +112,9 @@ public class DefinitionModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY Reports_Definition.modifiedDate ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY definition.modifiedDate ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -168,61 +158,6 @@ public class DefinitionModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static Definition toModel(DefinitionSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		Definition model = new DefinitionImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setDefinitionId(soapModel.getDefinitionId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setSourceId(soapModel.getSourceId());
-		model.setReportName(soapModel.getReportName());
-		model.setReportParameters(soapModel.getReportParameters());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<Definition> toModels(DefinitionSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<Definition> models = new ArrayList<Definition>(soapModels.length);
-
-		for (DefinitionSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public DefinitionModelImpl() {
@@ -300,114 +235,106 @@ public class DefinitionModelImpl
 	public Map<String, Function<Definition, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Definition, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Definition>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Definition.class.getClassLoader(), Definition.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<Definition, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Definition> constructor =
-				(Constructor<Definition>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Definition, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Definition, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("uuid", Definition::getUuid);
+			attributeGetterFunctions.put(
+				"definitionId", Definition::getDefinitionId);
+			attributeGetterFunctions.put("groupId", Definition::getGroupId);
+			attributeGetterFunctions.put("companyId", Definition::getCompanyId);
+			attributeGetterFunctions.put("userId", Definition::getUserId);
+			attributeGetterFunctions.put("userName", Definition::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", Definition::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", Definition::getModifiedDate);
+			attributeGetterFunctions.put("name", Definition::getName);
+			attributeGetterFunctions.put(
+				"description", Definition::getDescription);
+			attributeGetterFunctions.put("sourceId", Definition::getSourceId);
+			attributeGetterFunctions.put(
+				"reportName", Definition::getReportName);
+			attributeGetterFunctions.put(
+				"reportParameters", Definition::getReportParameters);
+			attributeGetterFunctions.put(
+				"lastPublishDate", Definition::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Definition, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Definition, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Definition, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Definition, Object>>();
-		Map<String, BiConsumer<Definition, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Definition, ?>>();
+		private static final Map<String, BiConsumer<Definition, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", Definition::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<Definition, String>)Definition::setUuid);
-		attributeGetterFunctions.put(
-			"definitionId", Definition::getDefinitionId);
-		attributeSetterBiConsumers.put(
-			"definitionId",
-			(BiConsumer<Definition, Long>)Definition::setDefinitionId);
-		attributeGetterFunctions.put("groupId", Definition::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<Definition, Long>)Definition::setGroupId);
-		attributeGetterFunctions.put("companyId", Definition::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<Definition, Long>)Definition::setCompanyId);
-		attributeGetterFunctions.put("userId", Definition::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<Definition, Long>)Definition::setUserId);
-		attributeGetterFunctions.put("userName", Definition::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<Definition, String>)Definition::setUserName);
-		attributeGetterFunctions.put("createDate", Definition::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<Definition, Date>)Definition::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", Definition::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<Definition, Date>)Definition::setModifiedDate);
-		attributeGetterFunctions.put("name", Definition::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<Definition, String>)Definition::setName);
-		attributeGetterFunctions.put("description", Definition::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<Definition, String>)Definition::setDescription);
-		attributeGetterFunctions.put("sourceId", Definition::getSourceId);
-		attributeSetterBiConsumers.put(
-			"sourceId", (BiConsumer<Definition, Long>)Definition::setSourceId);
-		attributeGetterFunctions.put("reportName", Definition::getReportName);
-		attributeSetterBiConsumers.put(
-			"reportName",
-			(BiConsumer<Definition, String>)Definition::setReportName);
-		attributeGetterFunctions.put(
-			"reportParameters", Definition::getReportParameters);
-		attributeSetterBiConsumers.put(
-			"reportParameters",
-			(BiConsumer<Definition, String>)Definition::setReportParameters);
-		attributeGetterFunctions.put(
-			"lastPublishDate", Definition::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<Definition, Date>)Definition::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<Definition, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Definition, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<Definition, String>)Definition::setUuid);
+			attributeSetterBiConsumers.put(
+				"definitionId",
+				(BiConsumer<Definition, Long>)Definition::setDefinitionId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<Definition, Long>)Definition::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<Definition, Long>)Definition::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<Definition, Long>)Definition::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<Definition, String>)Definition::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<Definition, Date>)Definition::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Definition, Date>)Definition::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<Definition, String>)Definition::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<Definition, String>)Definition::setDescription);
+			attributeSetterBiConsumers.put(
+				"sourceId",
+				(BiConsumer<Definition, Long>)Definition::setSourceId);
+			attributeSetterBiConsumers.put(
+				"reportName",
+				(BiConsumer<Definition, String>)Definition::setReportName);
+			attributeSetterBiConsumers.put(
+				"reportParameters",
+				(BiConsumer<Definition, String>)
+					Definition::setReportParameters);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<Definition, Date>)Definition::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1290,41 +1217,12 @@ public class DefinitionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Definition, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Definition, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Definition, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Definition)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Definition>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Definition.class, ModelWrapper.class);
 
 	}
 
@@ -1349,8 +1247,9 @@ public class DefinitionModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<Definition, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Definition, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

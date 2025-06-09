@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -18,11 +9,13 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Address;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.permission.CommonPermissionUtil;
 import com.liferay.portal.service.base.AddressServiceBaseImpl;
+import com.liferay.portal.service.permission.CommonPermissionUtil;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -32,27 +25,49 @@ public class AddressServiceImpl extends AddressServiceBaseImpl {
 
 	@Override
 	public Address addAddress(
-			String className, long classPK, String street1, String street2,
-			String street3, String city, String zip, long regionId,
-			long countryId, long typeId, boolean mailing, boolean primary,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			long countryId, long listTypeId, long regionId, String city,
+			String description, boolean mailing, String name, boolean primary,
+			String street1, String street2, String street3, String subtype,
+			String zip, String phoneNumber, ServiceContext serviceContext)
 		throws PortalException {
 
+		PermissionChecker permissionChecker = getPermissionChecker();
+
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				className, "com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
-			getPermissionChecker(), className, classPK, ActionKeys.UPDATE);
+			permissionChecker, className, classPK, actionId);
 
 		return addressLocalService.addAddress(
-			getUserId(), className, classPK, street1, street2, street3, city,
-			zip, regionId, countryId, typeId, mailing, primary, serviceContext);
+			externalReferenceCode, permissionChecker.getUserId(), className,
+			classPK, countryId, listTypeId, regionId, city, description,
+			mailing, name, primary, street1, street2, street3, subtype, zip,
+			phoneNumber, serviceContext);
 	}
 
 	@Override
 	public void deleteAddress(long addressId) throws PortalException {
 		Address address = addressPersistence.findByPrimaryKey(addressId);
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				address.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
 			getPermissionChecker(), address.getClassNameId(),
-			address.getClassPK(), ActionKeys.UPDATE);
+			address.getClassPK(), actionId);
 
 		addressLocalService.deleteAddress(address);
 	}
@@ -82,21 +97,79 @@ public class AddressServiceImpl extends AddressServiceBaseImpl {
 	}
 
 	@Override
+	public List<Address> getListTypeAddresses(
+			String className, long classPK, long[] listTypeIds)
+		throws PortalException {
+
+		CommonPermissionUtil.check(
+			getPermissionChecker(), className, classPK, ActionKeys.VIEW);
+
+		User user = getUser();
+
+		return addressLocalService.getListTypeAddresses(
+			user.getCompanyId(), className, classPK, listTypeIds);
+	}
+
+	@Override
 	public Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId, long typeId,
-			boolean mailing, boolean primary)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws PortalException {
 
 		Address address = addressPersistence.findByPrimaryKey(addressId);
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				address.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
 			getPermissionChecker(), address.getClassNameId(),
-			address.getClassPK(), ActionKeys.UPDATE);
+			address.getClassPK(), actionId);
 
 		return addressLocalService.updateAddress(
-			addressId, street1, street2, street3, city, zip, regionId,
-			countryId, typeId, mailing, primary);
+			externalReferenceCode, addressId, countryId, listTypeId, regionId,
+			city, description, mailing, name, primary, street1, street2,
+			street3, subtype, zip, phoneNumber);
+	}
+
+	@Override
+	public Address updateExternalReferenceCode(
+			Address address, String externalReferenceCode)
+		throws PortalException {
+
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				address.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
+		CommonPermissionUtil.check(
+			getPermissionChecker(), address.getClassNameId(),
+			address.getClassPK(), actionId);
+
+		return addressLocalService.updateExternalReferenceCode(
+			address, externalReferenceCode);
+	}
+
+	@Override
+	public Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
+		throws PortalException {
+
+		return updateExternalReferenceCode(
+			addressPersistence.findByPrimaryKey(addressId),
+			externalReferenceCode);
 	}
 
 }

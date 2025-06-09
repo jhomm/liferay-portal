@@ -1,6 +1,6 @@
 <#include "../init.ftl">
 
-<style type="text/css">
+<style ${nonceAttribute} type="text/css">
 	pre.lfr-ddm-readonly-textarea {
 		font-family: inherit;
 		font-size: inherit;
@@ -25,6 +25,6 @@
 			/>
 		</#if>
 
-		<pre class="lfr-ddm-readonly-textarea">${fieldValue}</pre>
+		<pre class="lfr-ddm-readonly-textarea">${escape(fieldValue)}</pre>
 	</#if>
 </div>

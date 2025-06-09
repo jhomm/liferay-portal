@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.search.spi.model.index.contributor;
@@ -21,8 +12,9 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -44,7 +36,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Lucas Marques
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.asset.kernel.model.AssetCategory",
 	service = ModelDocumentContributor.class
 )
@@ -56,7 +47,7 @@ public class AssetCategoryModelDocumentContributor
 		document.addKeyword(
 			Field.ASSET_CATEGORY_ID, assetCategory.getCategoryId());
 
-		addSearchAssetCategoryTitles(
+		_addSearchAssetCategoryTitles(
 			document, Field.ASSET_CATEGORY_TITLE,
 			Collections.singletonList(assetCategory));
 
@@ -66,11 +57,23 @@ public class AssetCategoryModelDocumentContributor
 		document.addKeyword(
 			Field.ASSET_VOCABULARY_ID, assetCategory.getVocabularyId());
 
+		String[] availableLanguageIds = _localization.getAvailableLanguageIds(
+			assetCategory.getDescription());
+
+		for (String availableLanguageId : availableLanguageIds) {
+			document.addText(
+				_localization.getLocalizedName(
+					Field.DESCRIPTION, availableLanguageId),
+				HtmlUtil.stripHtml(
+					assetCategory.getDescription(availableLanguageId)));
+		}
+
 		Locale siteDefaultLocale = getSiteDefaultLocale(assetCategory);
 
-		_searchLocalizationHelper.addLocalizedField(
-			document, Field.DESCRIPTION, siteDefaultLocale,
-			assetCategory.getDescriptionMap());
+		document.addText(
+			Field.DESCRIPTION,
+			HtmlUtil.stripHtml(
+				assetCategory.getDescription(siteDefaultLocale)));
 
 		document.addText(Field.NAME, assetCategory.getName());
 
@@ -81,14 +84,26 @@ public class AssetCategoryModelDocumentContributor
 		document.addKeyword("treePath", assetCategory.getTreePath());
 		document.addLocalizedKeyword(
 			"localized_title",
-			LocalizationUtil.populateLocalizationMap(
+			_localization.populateLocalizationMap(
 				assetCategory.getTitleMap(),
 				assetCategory.getDefaultLanguageId(),
 				assetCategory.getGroupId()),
 			true, true);
 	}
 
-	protected void addSearchAssetCategoryTitles(
+	protected Locale getSiteDefaultLocale(AssetCategory assetCategory) {
+		try {
+			return portal.getSiteDefaultLocale(assetCategory.getGroupId());
+		}
+		catch (PortalException portalException) {
+			throw new SystemException(portalException);
+		}
+	}
+
+	@Reference
+	protected Portal portal;
+
+	private void _addSearchAssetCategoryTitles(
 		Document document, String field, List<AssetCategory> assetCategories) {
 
 		Map<Locale, List<String>> assetCategoryTitles = new HashMap<>();
@@ -133,23 +148,13 @@ public class AssetCategoryModelDocumentContributor
 			}
 
 			document.addText(
-				StringBundler.concat(
-					field, StringPool.UNDERLINE, locale.toString()),
+				StringBundler.concat(field, StringPool.UNDERLINE, locale),
 				titlesArray);
 		}
 	}
 
-	protected Locale getSiteDefaultLocale(AssetCategory assetCategory) {
-		try {
-			return portal.getSiteDefaultLocale(assetCategory.getGroupId());
-		}
-		catch (PortalException portalException) {
-			throw new SystemException(portalException);
-		}
-	}
-
 	@Reference
-	protected Portal portal;
+	private Localization _localization;
 
 	@Reference
 	private SearchLocalizationHelper _searchLocalizationHelper;

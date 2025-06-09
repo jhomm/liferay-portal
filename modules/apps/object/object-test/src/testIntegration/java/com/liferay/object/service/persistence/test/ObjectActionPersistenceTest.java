@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.persistence.test;
@@ -26,6 +17,8 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -126,6 +119,8 @@ public class ObjectActionPersistenceTest {
 
 		newObjectAction.setUuid(RandomTestUtil.randomString());
 
+		newObjectAction.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newObjectAction.setCompanyId(RandomTestUtil.nextLong());
 
 		newObjectAction.setUserId(RandomTestUtil.nextLong());
@@ -140,6 +135,14 @@ public class ObjectActionPersistenceTest {
 
 		newObjectAction.setActive(RandomTestUtil.randomBoolean());
 
+		newObjectAction.setConditionExpression(RandomTestUtil.randomString());
+
+		newObjectAction.setDescription(RandomTestUtil.randomString());
+
+		newObjectAction.setErrorMessage(RandomTestUtil.randomString());
+
+		newObjectAction.setLabel(RandomTestUtil.randomString());
+
 		newObjectAction.setName(RandomTestUtil.randomString());
 
 		newObjectAction.setObjectActionExecutorKey(
@@ -149,6 +152,10 @@ public class ObjectActionPersistenceTest {
 			RandomTestUtil.randomString());
 
 		newObjectAction.setParameters(RandomTestUtil.randomString());
+
+		newObjectAction.setSystem(RandomTestUtil.randomBoolean());
+
+		newObjectAction.setStatus(RandomTestUtil.nextInt());
 
 		_objectActions.add(_persistence.update(newObjectAction));
 
@@ -160,6 +167,9 @@ public class ObjectActionPersistenceTest {
 			newObjectAction.getMvccVersion());
 		Assert.assertEquals(
 			existingObjectAction.getUuid(), newObjectAction.getUuid());
+		Assert.assertEquals(
+			existingObjectAction.getExternalReferenceCode(),
+			newObjectAction.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingObjectAction.getObjectActionId(),
 			newObjectAction.getObjectActionId());
@@ -182,6 +192,17 @@ public class ObjectActionPersistenceTest {
 		Assert.assertEquals(
 			existingObjectAction.isActive(), newObjectAction.isActive());
 		Assert.assertEquals(
+			existingObjectAction.getConditionExpression(),
+			newObjectAction.getConditionExpression());
+		Assert.assertEquals(
+			existingObjectAction.getDescription(),
+			newObjectAction.getDescription());
+		Assert.assertEquals(
+			existingObjectAction.getErrorMessage(),
+			newObjectAction.getErrorMessage());
+		Assert.assertEquals(
+			existingObjectAction.getLabel(), newObjectAction.getLabel());
+		Assert.assertEquals(
 			existingObjectAction.getName(), newObjectAction.getName());
 		Assert.assertEquals(
 			existingObjectAction.getObjectActionExecutorKey(),
@@ -192,6 +213,10 @@ public class ObjectActionPersistenceTest {
 		Assert.assertEquals(
 			existingObjectAction.getParameters(),
 			newObjectAction.getParameters());
+		Assert.assertEquals(
+			existingObjectAction.isSystem(), newObjectAction.isSystem());
+		Assert.assertEquals(
+			existingObjectAction.getStatus(), newObjectAction.getStatus());
 	}
 
 	@Test
@@ -213,6 +238,54 @@ public class ObjectActionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByObjectDefinitionId() throws Exception {
+		_persistence.countByObjectDefinitionId(RandomTestUtil.nextLong());
+
+		_persistence.countByObjectDefinitionId(0L);
+	}
+
+	@Test
+	public void testCountByODI_N() throws Exception {
+		_persistence.countByODI_N(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByODI_N(0L, "null");
+
+		_persistence.countByODI_N(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByA_OAEK() throws Exception {
+		_persistence.countByA_OAEK(RandomTestUtil.randomBoolean(), "");
+
+		_persistence.countByA_OAEK(RandomTestUtil.randomBoolean(), "null");
+
+		_persistence.countByA_OAEK(
+			RandomTestUtil.randomBoolean(), (String)null);
+	}
+
+	@Test
+	public void testCountByERC_C_ODI() throws Exception {
+		_persistence.countByERC_C_ODI(
+			"", RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C_ODI("null", 0L, 0L);
+
+		_persistence.countByERC_C_ODI((String)null, 0L, 0L);
+	}
+
+	@Test
+	public void testCountByC_A_OATK() throws Exception {
+		_persistence.countByC_A_OATK(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
+
+		_persistence.countByC_A_OATK(
+			0L, RandomTestUtil.randomBoolean(), "null");
+
+		_persistence.countByC_A_OATK(
+			0L, RandomTestUtil.randomBoolean(), (String)null);
+	}
+
+	@Test
 	public void testCountByO_A_OATK() throws Exception {
 		_persistence.countByO_A_OATK(
 			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "");
@@ -222,6 +295,18 @@ public class ObjectActionPersistenceTest {
 
 		_persistence.countByO_A_OATK(
 			0L, RandomTestUtil.randomBoolean(), (String)null);
+	}
+
+	@Test
+	public void testCountByODI_A_N_OATK() throws Exception {
+		_persistence.countByODI_A_N_OATK(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean(), "", "");
+
+		_persistence.countByODI_A_N_OATK(
+			0L, RandomTestUtil.randomBoolean(), "null", "null");
+
+		_persistence.countByODI_A_N_OATK(
+			0L, RandomTestUtil.randomBoolean(), (String)null, (String)null);
 	}
 
 	@Test
@@ -249,11 +334,13 @@ public class ObjectActionPersistenceTest {
 
 	protected OrderByComparator<ObjectAction> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"ObjectAction", "mvccVersion", true, "uuid", true, "objectActionId",
-			true, "companyId", true, "userId", true, "userName", true,
-			"createDate", true, "modifiedDate", true, "objectDefinitionId",
-			true, "active", true, "name", true, "objectActionExecutorKey", true,
-			"objectActionTriggerKey", true);
+			"ObjectAction", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "objectActionId", true, "companyId",
+			true, "userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "objectDefinitionId", true, "active", true,
+			"description", true, "errorMessage", true, "label", true, "name",
+			true, "objectActionExecutorKey", true, "objectActionTriggerKey",
+			true, "system", true, "status", true);
 	}
 
 	@Test
@@ -469,6 +556,106 @@ public class ObjectActionPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		ObjectAction newObjectAction = addObjectAction();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(newObjectAction.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		ObjectAction newObjectAction = addObjectAction();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			ObjectAction.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq(
+				"objectActionId", newObjectAction.getObjectActionId()));
+
+		List<ObjectAction> result = _persistence.findWithDynamicQuery(
+			dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(ObjectAction objectAction) {
+		Assert.assertEquals(
+			Long.valueOf(objectAction.getObjectDefinitionId()),
+			ReflectionTestUtil.<Long>invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "objectDefinitionId"));
+		Assert.assertEquals(
+			objectAction.getName(),
+			ReflectionTestUtil.invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "name"));
+
+		Assert.assertEquals(
+			objectAction.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(objectAction.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+		Assert.assertEquals(
+			Long.valueOf(objectAction.getObjectDefinitionId()),
+			ReflectionTestUtil.<Long>invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "objectDefinitionId"));
+
+		Assert.assertEquals(
+			Long.valueOf(objectAction.getObjectDefinitionId()),
+			ReflectionTestUtil.<Long>invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "objectDefinitionId"));
+		Assert.assertEquals(
+			Boolean.valueOf(objectAction.getActive()),
+			ReflectionTestUtil.<Boolean>invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "active_"));
+		Assert.assertEquals(
+			objectAction.getName(),
+			ReflectionTestUtil.invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "name"));
+		Assert.assertEquals(
+			objectAction.getObjectActionTriggerKey(),
+			ReflectionTestUtil.invoke(
+				objectAction, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "objectActionTriggerKey"));
+	}
+
 	protected ObjectAction addObjectAction() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
@@ -477,6 +664,8 @@ public class ObjectActionPersistenceTest {
 		objectAction.setMvccVersion(RandomTestUtil.nextLong());
 
 		objectAction.setUuid(RandomTestUtil.randomString());
+
+		objectAction.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		objectAction.setCompanyId(RandomTestUtil.nextLong());
 
@@ -492,6 +681,14 @@ public class ObjectActionPersistenceTest {
 
 		objectAction.setActive(RandomTestUtil.randomBoolean());
 
+		objectAction.setConditionExpression(RandomTestUtil.randomString());
+
+		objectAction.setDescription(RandomTestUtil.randomString());
+
+		objectAction.setErrorMessage(RandomTestUtil.randomString());
+
+		objectAction.setLabel(RandomTestUtil.randomString());
+
 		objectAction.setName(RandomTestUtil.randomString());
 
 		objectAction.setObjectActionExecutorKey(RandomTestUtil.randomString());
@@ -499,6 +696,10 @@ public class ObjectActionPersistenceTest {
 		objectAction.setObjectActionTriggerKey(RandomTestUtil.randomString());
 
 		objectAction.setParameters(RandomTestUtil.randomString());
+
+		objectAction.setSystem(RandomTestUtil.randomBoolean());
+
+		objectAction.setStatus(RandomTestUtil.nextInt());
 
 		_objectActions.add(_persistence.update(objectAction));
 

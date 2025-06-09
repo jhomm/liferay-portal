@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.item.selector.web.internal.display.context;
@@ -19,13 +10,10 @@ import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.search.BaseModelSearchResult;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.util.OrderByComparator;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -53,30 +41,21 @@ public class CPOptionItemSelectorViewDisplayContext
 		}
 
 		searchContainer = new SearchContainer<>(
-			liferayPortletRequest, getPortletURL(), null, null);
-
-		searchContainer.setEmptyResultsMessage("no-options-were-found");
-
-		OrderByComparator<CPOption> orderByComparator =
-			CPItemSelectorViewUtil.getCPOptionOrderByComparator(
-				getOrderByCol(), getOrderByType());
+			liferayPortletRequest, getPortletURL(), null,
+			"no-options-were-found");
 
 		searchContainer.setOrderByCol(getOrderByCol());
-		searchContainer.setOrderByComparator(orderByComparator);
+		searchContainer.setOrderByComparator(
+			CPItemSelectorViewUtil.getCPOptionOrderByComparator(
+				getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
-		searchContainer.setRowChecker(getRowChecker());
-
-		Sort sort = CPItemSelectorViewUtil.getCPOptionSort(
-			getOrderByCol(), getOrderByType());
-
-		BaseModelSearchResult<CPOption> cpOptionBaseModelSearchResult =
+		searchContainer.setResultsAndTotal(
 			_cpOptionService.searchCPOptions(
 				cpRequestHelper.getCompanyId(), getKeywords(),
-				searchContainer.getStart(), searchContainer.getEnd(), sort);
-
-		searchContainer.setTotal(cpOptionBaseModelSearchResult.getLength());
-		searchContainer.setResults(
-			cpOptionBaseModelSearchResult.getBaseModels());
+				searchContainer.getStart(), searchContainer.getEnd(),
+				CPItemSelectorViewUtil.getCPOptionSort(
+					getOrderByCol(), getOrderByType())));
+		searchContainer.setRowChecker(getRowChecker());
 
 		return searchContainer;
 	}

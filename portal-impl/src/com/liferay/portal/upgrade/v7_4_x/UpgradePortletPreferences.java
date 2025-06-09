@@ -1,33 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_4_x;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.dao.orm.common.SQLTransformer;
-import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.model.PortletConstants;
 import com.liferay.portal.kernel.model.PortletPreferenceValue;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.model.impl.PortletPreferenceValueImpl;
-import com.liferay.portal.upgrade.v7_4_x.util.PortletPreferencesTable;
 import com.liferay.portlet.PortletPreferencesFactoryImpl;
 import com.liferay.portlet.Preference;
 
 import java.sql.PreparedStatement;
 
+import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Preston Crary
@@ -50,17 +44,21 @@ public class UpgradePortletPreferences extends UpgradeProcess {
 			SQLTransformer.transform(
 				StringBundler.concat(
 					"select ctCollectionId, portletPreferencesId, companyId, ",
-					"preferences from PortletPreferences where ",
-					"CAST_CLOB_TEXT(preferences) != '",
-					PortletConstants.DEFAULT_PREFERENCES,
-					"' and preferences is not null")),
+					"preferences from PortletPreferences where preferences ",
+					"not like '", PortletConstants.DEFAULT_PREFERENCES,
+					"%' and preferences is not null")),
+			StringBundler.concat(
+				"insert into PortletPreferenceValue (mvccVersion, ",
+				"ctCollectionId, portletPreferenceValueId, companyId, ",
+				"portletPreferencesId, index_, largeValue, name, readOnly, ",
+				"smallValue) values (0, ?, ?, ?, ?, ?, ?, ?, ?, ?)"),
 			resultSet -> new Object[] {
 				resultSet.getLong("ctCollectionId"),
 				resultSet.getLong("portletPreferencesId"),
 				resultSet.getLong("companyId"),
 				resultSet.getString("preferences")
 			},
-			values -> {
+			(values, preparedStatement) -> {
 				long ctCollectionId = (Long)values[0];
 				long portletPreferencesId = (Long)values[1];
 				long companyId = (Long)values[2];
@@ -68,18 +66,22 @@ public class UpgradePortletPreferences extends UpgradeProcess {
 
 				_upgradePortletPreferences(
 					ctCollectionId, portletPreferencesId, companyId,
-					preferences);
+					preferences, preparedStatement);
 			},
 			null);
+	}
 
-		alter(
-			PortletPreferencesTable.class,
-			new AlterTableDropColumn("preferences"));
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.dropColumns(
+				"PortletPreferences", "preferences")
+		};
 	}
 
 	private void _upgradePortletPreferences(
 			long ctCollectionId, long portletPreferencesId, long companyId,
-			String preferences)
+			String preferences, PreparedStatement preparedStatement)
 		throws Exception {
 
 		if (preferences.isEmpty()) {
@@ -93,50 +95,40 @@ public class UpgradePortletPreferences extends UpgradeProcess {
 			return;
 		}
 
-		try (PreparedStatement preparedStatement =
-				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						StringBundler.concat(
-							"insert into PortletPreferenceValue (mvccVersion, ",
-							"ctCollectionId, portletPreferenceValueId, ",
-							"companyId, portletPreferencesId, index_, ",
-							"largeValue, name, readOnly, smallValue) values ",
-							"(0, ?, ?, ?, ?, ?, ?, ?, ?, ?)")))) {
+		for (Preference preference : preferenceMap.values()) {
+			int index = 0;
 
-			for (Preference preference : preferenceMap.values()) {
-				String[] values = preference.getValues();
+			Set<String> valuesSet = new LinkedHashSet<>(
+				Arrays.asList(preference.getValues()));
 
-				for (int i = 0; i < values.length; i++) {
-					String value = values[i];
+			for (String value : valuesSet) {
+				String largeValue = null;
+				String smallValue = null;
 
-					String largeValue = null;
-					String smallValue = null;
+				if (value.length() >
+						PortletPreferenceValueImpl.SMALL_VALUE_MAX_LENGTH) {
 
-					if (value.length() >
-							PortletPreferenceValueImpl.SMALL_VALUE_MAX_LENGTH) {
-
-						largeValue = value;
-					}
-					else {
-						smallValue = value;
-					}
-
-					preparedStatement.setLong(1, ctCollectionId);
-					preparedStatement.setLong(
-						2, increment(PortletPreferenceValue.class.getName()));
-					preparedStatement.setLong(3, companyId);
-					preparedStatement.setLong(4, portletPreferencesId);
-					preparedStatement.setInt(5, i);
-					preparedStatement.setString(6, largeValue);
-					preparedStatement.setString(7, preference.getName());
-					preparedStatement.setBoolean(8, preference.isReadOnly());
-					preparedStatement.setString(9, smallValue);
-
-					preparedStatement.addBatch();
+					largeValue = value;
 				}
-			}
+				else {
+					smallValue = value;
+				}
 
-			preparedStatement.executeBatch();
+				preparedStatement.setLong(1, ctCollectionId);
+				preparedStatement.setLong(
+					2, increment(PortletPreferenceValue.class.getName()));
+				preparedStatement.setLong(3, companyId);
+				preparedStatement.setLong(4, portletPreferencesId);
+				preparedStatement.setInt(5, index);
+				preparedStatement.setString(6, largeValue);
+				preparedStatement.setString(7, preference.getName());
+				preparedStatement.setBoolean(8, preference.isReadOnly());
+				preparedStatement.setString(9, smallValue);
+
+				preparedStatement.addBatch();
+
+				index++;
+			}
 		}
 	}
 

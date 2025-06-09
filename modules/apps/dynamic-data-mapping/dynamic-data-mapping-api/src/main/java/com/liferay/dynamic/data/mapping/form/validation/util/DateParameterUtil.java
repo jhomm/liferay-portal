@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.validation.util;
@@ -29,12 +20,17 @@ import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Carolina Barbosa
@@ -46,8 +42,47 @@ public class DateParameterUtil {
 			return null;
 		}
 
+		Matcher matcher = _pattern.matcher(dateString);
+
+		if (!matcher.find()) {
+			return null;
+		}
+
 		return LocalDate.parse(
-			dateString, DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+			matcher.group(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+	}
+
+	public static LocalDateTime getLocalDateTime(String dateTimeString) {
+		if (Validator.isNull(dateTimeString)) {
+			return null;
+		}
+
+		String parseException = null;
+
+		for (String dateTimePattern : _dateTimePatterns) {
+			try {
+				return LocalDateTime.parse(
+					dateTimeString,
+					DateTimeFormatter.ofPattern(dateTimePattern));
+			}
+			catch (DateTimeParseException dateTimeParseException) {
+				parseException = String.valueOf(dateTimeParseException);
+			}
+		}
+
+		if ((parseException != null) && _log.isWarnEnabled()) {
+			_log.warn(
+				dateTimeString + " could not be parsed by patterns: " +
+					_dateTimePatterns);
+		}
+
+		LocalDate localDate = getLocalDate(dateTimeString);
+
+		if (localDate == null) {
+			return null;
+		}
+
+		return localDate.atStartOfDay();
 	}
 
 	public static String getParameter(
@@ -61,7 +96,7 @@ public class DateParameterUtil {
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 
 			return StringPool.BLANK;
@@ -153,24 +188,34 @@ public class DateParameterUtil {
 	private static String _getDateFieldValue(
 		String dateFieldName, DDMFormValues ddmFormValues) {
 
+		if (ddmFormValues == null) {
+			return null;
+		}
+
 		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
 			ddmFormValues.getDDMFormFieldValuesMap(true);
 
 		List<DDMFormFieldValue> ddmFormFieldValues = ddmFormFieldValuesMap.get(
 			dateFieldName);
 
-		if (ListUtil.isNotEmpty(ddmFormFieldValues)) {
-			DDMFormFieldValue ddmFormFieldValue = ddmFormFieldValues.get(0);
-
-			Value value = ddmFormFieldValue.getValue();
-
-			return value.getString(ddmFormValues.getDefaultLocale());
+		if (ListUtil.isEmpty(ddmFormFieldValues)) {
+			return null;
 		}
 
-		return null;
+		DDMFormFieldValue ddmFormFieldValue = ddmFormFieldValues.get(0);
+
+		Value value = ddmFormFieldValue.getValue();
+
+		return value.getString(ddmFormValues.getDefaultLocale());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DateParameterUtil.class);
+
+	private static final List<String> _dateTimePatterns = Arrays.asList(
+		"yyyy-MM-dd H:mm", "yyyy-MM-dd HH:mm:ss",
+		"EEE MMM dd HH:mm:ss zzz yyyy");
+	private static final Pattern _pattern = Pattern.compile(
+		"^\\d{4}-\\d{2}-\\d{2}");
 
 }

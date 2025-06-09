@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.portlet.action;
@@ -21,13 +12,11 @@ import com.liferay.dynamic.data.mapping.service.DDMTemplateService;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
-import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.util.ContentTypes;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -36,9 +25,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
 		"mvc.command.name=/dynamic_data_mapping/get_template"
 	},
 	service = MVCResourceCommand.class
@@ -56,21 +44,12 @@ public class GetTemplateMVCResourceCommand extends BaseMVCResourceCommand {
 
 		String script = template.getScript();
 
-		String contentType = null;
+		String contentType = ContentTypes.TEXT_PLAIN_UTF8;
 
 		String type = template.getType();
 
-		String language = GetterUtil.getString(
-			template.getLanguage(), TemplateConstants.LANG_TYPE_VM);
-
 		if (type.equals(DDMTemplateConstants.TEMPLATE_TYPE_FORM)) {
 			contentType = ContentTypes.APPLICATION_JSON;
-		}
-		else if (language.equals(TemplateConstants.LANG_TYPE_XSL)) {
-			contentType = ContentTypes.TEXT_XML_UTF8;
-		}
-		else {
-			contentType = ContentTypes.TEXT_PLAIN_UTF8;
 		}
 
 		PortletResponseUtil.sendFile(
@@ -78,13 +57,7 @@ public class GetTemplateMVCResourceCommand extends BaseMVCResourceCommand {
 			contentType);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMTemplateService(
-		DDMTemplateService ddmTemplateService) {
-
-		_ddmTemplateService = ddmTemplateService;
-	}
-
+	@Reference
 	private DDMTemplateService _ddmTemplateService;
 
 }

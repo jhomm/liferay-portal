@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -31,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 
 import org.junit.Assert;
@@ -99,28 +91,6 @@ public class StringUtilTest {
 	}
 
 	@Test
-	public void testBytesToHexString() {
-		Random random = new Random();
-
-		byte[] data = new byte[1024];
-
-		random.nextBytes(data);
-
-		String hexString = StringUtil.bytesToHexString(data);
-
-		Assert.assertEquals(data.length * 2, hexString.length());
-
-		for (int i = 0; i < data.length; i++) {
-			Assert.assertEquals(
-				hexString.charAt(i * 2),
-				StringUtil.HEX_DIGITS[(data[i] & 0xFF) >> 4]);
-			Assert.assertEquals(
-				hexString.charAt((i * 2) + 1),
-				StringUtil.HEX_DIGITS[data[i] & 0x0F]);
-		}
-	}
-
-	@Test
 	public void testContainsIgnoreCase() {
 		Assert.assertFalse(StringUtil.containsIgnoreCase(null, null));
 		Assert.assertFalse(StringUtil.containsIgnoreCase("one,two", null));
@@ -184,6 +154,52 @@ public class StringUtilTest {
 		Assert.assertFalse(StringUtil.equalsIgnoreCase("Hello \n World", ""));
 		Assert.assertFalse(StringUtil.equalsIgnoreCase("Hello \n World", null));
 		Assert.assertFalse(StringUtil.equalsIgnoreCase("!", "A"));
+	}
+
+	@Test
+	public void testGetTitleCase() {
+		Assert.assertTrue(
+			Objects.equals(
+				StringUtil.getTitleCase(
+					"a cat is going up with a letter a", false, ""),
+				"A Cat Is Going up With a Letter A"));
+		Assert.assertTrue(
+			Objects.equals(
+				StringUtil.getTitleCase("this is a title test", false, ""),
+				"This Is a Title Test"));
+		Assert.assertTrue(
+			Objects.equals(
+				StringUtil.getTitleCase(
+					"this is a dxp title test", false, "DXP"),
+				"This Is a DXP Title Test"));
+		Assert.assertTrue(
+			Objects.equals(
+				StringUtil.getTitleCase("this is a title-test", true, ""),
+				"This Is a Title-test"));
+	}
+
+	@Test
+	public void testHexCodec() {
+		Random random = new Random();
+
+		byte[] data = new byte[1024];
+
+		random.nextBytes(data);
+
+		String hexString = StringUtil.bytesToHexString(data);
+
+		Assert.assertEquals(data.length * 2, hexString.length());
+
+		for (int i = 0; i < data.length; i++) {
+			Assert.assertEquals(
+				hexString.charAt(i * 2),
+				StringUtil.HEX_DIGITS[(data[i] & 0xFF) >> 4]);
+			Assert.assertEquals(
+				hexString.charAt((i * 2) + 1),
+				StringUtil.HEX_DIGITS[data[i] & 0x0F]);
+		}
+
+		Assert.assertArrayEquals(data, StringUtil.hexStringToBytes(hexString));
 	}
 
 	@Test
@@ -1094,6 +1110,14 @@ public class StringUtilTest {
 		Assert.assertEquals(
 			"Hello World", StringUtil.unquote("\"Hello World\""));
 		Assert.assertEquals("Hello World", StringUtil.unquote("Hello World"));
+	}
+
+	@Test
+	public void testUpperCaseFirstLetter() {
+		Assert.assertEquals("", StringUtil.upperCaseFirstLetter(""));
+		Assert.assertEquals(
+			"Hello World", StringUtil.upperCaseFirstLetter("hello World"));
+		Assert.assertNull(StringUtil.upperCaseFirstLetter(null));
 	}
 
 	@Test

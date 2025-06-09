@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -43,7 +34,7 @@ User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 		>
 			<clay:content-col>
 				<div class="list-group-card-icon">
-					<liferay-ui:user-portrait
+					<liferay-user:user-portrait
 						userId="<%= !message.isAnonymous() ? message.getUserId() : 0 %>"
 					/>
 				</div>
@@ -54,24 +45,14 @@ User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 			>
 
 				<%
-				String messageUserName = "anonymous";
-
-				if (!message.isAnonymous()) {
-					messageUserName = message.getUserName();
-				}
-
-				Date modifiedDate = message.getModifiedDate();
-
-				String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - modifiedDate.getTime(), true);
-
-				String userDisplayText = LanguageUtil.format(request, "x-modified-x-ago", new Object[] {messageUserName, modifiedDateDescription});
+				String userDisplayText = mbDisplayContext.getModifiedLabel(message);
 				%>
 
 				<span class="message-user-display text-default" title="<%= HtmlUtil.escapeAttribute(userDisplayText) %>">
 					<%= HtmlUtil.escape(userDisplayText) %>
 				</span>
 
-				<h4 title="<%= HtmlUtil.escape(message.getSubject()) %>">
+				<div class="h4" title="<%= HtmlUtil.escape(message.getSubject()) %>">
 					<c:choose>
 						<c:when test="<%= showPermanentLink %>">
 							<a href="#<portlet:namespace />message_<%= message.getMessageId() %>" title="<liferay-ui:message key="permanent-link-to-this-item" />">
@@ -84,9 +65,9 @@ User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 					</c:choose>
 
 					<c:if test="<%= message.isAnswer() %>">
-						(<liferay-ui:message key="answer" />)
+						(<liferay-ui:message key="answer[noun]" />)
 					</c:if>
-				</h4>
+				</div>
 
 				<%
 				int messageCount = 0;
@@ -99,12 +80,12 @@ User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 
 				String[] ranks = {StringPool.BLANK, StringPool.BLANK};
 
-				if (!message.isAnonymous()) {
+				if (!message.isAnonymous() && (messageUser != null)) {
 					ranks = MBStatsUserLocalServiceUtil.getUserRank(themeDisplay.getSiteGroupId(), themeDisplay.getLanguageId(), message.getUserId());
 				}
 				%>
 
-				<c:if test="<%= (messageUser != null) && !messageUser.isDefaultUser() %>">
+				<c:if test="<%= (messageUser != null) && !messageUser.isGuestUser() %>">
 					<c:if test="<%= Validator.isNotNull(ranks[1]) %>">
 						<span class="h5 text-default" title="<%= HtmlUtil.escape(ranks[1]) %>">
 							<%= HtmlUtil.escape(ranks[1]) %>
@@ -130,7 +111,7 @@ User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 
 					<c:if test="<%= !message.isAnonymous() %>">
 						<span class="h5 text-default">
-							<span><liferay-ui:message key="join-date" />:</span> <%= dateFormatDate.format(messageUser.getCreateDate()) %>
+							<span><liferay-ui:message key="join-date" />:</span> <%= dateFormat.format(messageUser.getCreateDate()) %>
 						</span>
 					</c:if>
 
@@ -152,12 +133,15 @@ User messageUser = UserLocalServiceUtil.fetchUser(message.getUserId());
 							/>
 						</span>
 					</c:if>
+				</c:if>
 
-					<c:if test="<%= !message.isApproved() %>">
-						<span class="h5 text-default">
-							<aui:workflow-status markupView="lexicon" showIcon="<%= false %>" showLabel="<%= false %>" status="<%= message.getStatus() %>" />
-						</span>
-					</c:if>
+				<c:if test="<%= !message.isApproved() %>">
+					<span class="h5 text-default">
+						<liferay-portal-workflow:status
+							showStatusLabel="<%= false %>"
+							status="<%= message.getStatus() %>"
+						/>
+					</span>
 				</c:if>
 
 				<c:if test="<%= enableFlags || enableRatings %>">

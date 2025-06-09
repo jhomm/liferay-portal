@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.internal.test;
@@ -82,20 +73,38 @@ public class AssetAutoTaggerTest extends BaseAssetAutoTaggerTestCase {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
 			RandomTestUtil.randomString(), StringUtil.randomString(),
-			StringUtil.randomString(), new byte[0], null, null, serviceContext);
+			StringUtil.randomString(), StringUtil.randomString(), new byte[0],
+			null, null, null, serviceContext);
 
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
 		DLAppServiceUtil.updateFileEntry(
 			fileEntry.getFileEntryId(), fileEntry.getFileName(),
 			fileEntry.getMimeType(), fileEntry.getTitle(),
-			fileEntry.getDescription(), RandomTestUtil.randomString(),
-			DLVersionNumberIncrease.MAJOR, fileEntry.getContentStream(),
-			fileEntry.getSize(), fileEntry.getExpirationDate(),
+			StringUtil.randomString(), fileEntry.getDescription(),
+			RandomTestUtil.randomString(), DLVersionNumberIncrease.MAJOR,
+			fileEntry.getContentStream(), fileEntry.getSize(),
+			fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
 			fileEntry.getReviewDate(), serviceContext);
 
 		AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
 			DLFileEntryConstants.getClassName(), fileEntry.getFileEntryId());
+
+		assertContainsAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
+	}
+
+	@Test
+	public void testAutoTagsAssetOnUpdateIfEnabled() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(group.getGroupId(), 0);
+
+		FileEntry fileEntry = addFileEntry(serviceContext);
+
+		serviceContext.setAssetTagNames(new String[0]);
+		serviceContext.setAttribute("updateAutoTags", Boolean.TRUE);
+
+		AssetEntry assetEntry = updateFileEntryAssetEntry(
+			fileEntry, serviceContext);
 
 		assertContainsAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
 	}
@@ -148,6 +157,22 @@ public class AssetAutoTaggerTest extends BaseAssetAutoTaggerTestCase {
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_SAVE_DRAFT);
 
 		AssetEntry assetEntry = addFileEntryAssetEntry(serviceContext);
+
+		assertDoesNotContainAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
+	}
+
+	@Test
+	public void testDoesNotAutoTagAssetOnUpdateIfDisabled() throws Exception {
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(group.getGroupId(), 0);
+
+		FileEntry fileEntry = addFileEntry(serviceContext);
+
+		serviceContext.setAssetTagNames(new String[0]);
+		serviceContext.setAttribute("updateAutoTags", Boolean.FALSE);
+
+		AssetEntry assetEntry = updateFileEntryAssetEntry(
+			fileEntry, serviceContext);
 
 		assertDoesNotContainAssetTagName(assetEntry, ASSET_TAG_NAME_AUTO);
 	}

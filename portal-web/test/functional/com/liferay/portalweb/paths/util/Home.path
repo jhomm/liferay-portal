@@ -97,7 +97,7 @@
 </tr>
 <tr>
 	<td>SITE_NAME</td>
-	<td>//a[contains(@class,'logo')]//h2</td>
+	<td>//a[contains(@class,'logo')]//h1</td>
 	<td></td>
 </tr>
 <tr>
@@ -121,11 +121,6 @@
 	<td></td>
 </tr>
 <tr>
-	<td>EMBEDDED_SITE_LIFERAY_BANNER_LOGO</td>
-	<td>//div[@class='banner-content']//img[@alt='Liferay']</td>
-	<td></td>
-</tr>
-<tr>
 	<td>STATUS_MESSAGE</td>
 	<td>//div[contains(.,'This ${key_resource} is inactive. Please contact the administrator.')]</td>
 	<td></td>
@@ -137,22 +132,12 @@
 </tr>
 <tr>
 	<td>ERROR_MESSAGE_ALERT_ERROR</td>
-	<td>//section[@id='content']//h3[contains(@class, 'alert-danger')] | //div[@class='portlet-content']/h3[contains(@class, 'alert-danger')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>ERROR_MESSAGE_RESOURCE_NOT_FOUND</td>
-	<td>//div[@class='portlet-content']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>URL_ERROR_MESSAGE</td>
-	<td>//code[@class='lfr-url-error']</td>
+	<td>//div[@id='content']//*[contains(@class, 'alert-danger')] | //div[@class='portlet-content']/h3[contains(@class, 'alert-danger')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NODE_NAME</td>
-	<td>//section[@id='content']/div[contains(.,'${key_nodePort}')]</td>
+	<td>//div[@id='content']/div[contains(.,'${key_nodePort}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -177,7 +162,7 @@
 </tr>
 <tr>
 	<td>LOADING_ANIMATION</td>
-	<td>//div[contains(@class,'loading-animation')]</td>
+	<td>xpath=(//div | //span)[contains(@class,'loading-animation')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -190,7 +175,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SCOPE_SELECTOR_MENULIST-->
+
 <tr>
 	<td>SCOPE_SELECTOR_MENULIST_ITEM</td>
 	<td>//ul[contains(@aria-labelledby,'controlPanelSiteSelector')]/li/a[contains(.,'${key_siteScopeName}')]</td>
@@ -206,7 +193,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--CONTENT_SCOPE_SELECTOR_MENULIST-->
+
 <tr>
 	<td>CONTENT_SCOPE_SELECTOR_MENULIST_ITEM</td>
 	<td>//ul[contains(@class,'lfr-menu-list')]/li/a[contains(.,'${key_contentScopeName}')]</td>
@@ -217,7 +206,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PAGE-->
+
 <tr>
 	<td>PAGE</td>
 	<td>//div[contains(@id,'navbar')]/ul/li/a[normalize-space()='${key_pageName}']</td>
@@ -226,6 +217,11 @@
 <tr>
 	<td>PAGE_HREF</td>
 	<td>//div[contains(@id,'navbar')]/ul/li/a[contains(.,'${key_pageName}')][@href='${key_href}']</td>
+	<td>Page</td>
+</tr>
+<tr>
+	<td>PAGE_HREF_BLANK</td>
+	<td>//div[contains(@id,'navbar')]/ul/li/a[contains(.,'${key_pageName}')][@href='${key_href}'][@target='_blank']</td>
 	<td>Page</td>
 </tr>
 <tr>
@@ -348,7 +344,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--BREADCRUMB-->
+
 <tr>
 	<td>BREADCRUMB_1</td>
 	<td>xpath=(//div[contains(@class,'breadcrumb') and contains(@class,'breadcrumb-horizontal')]/ul/li/a)[1]</td>
@@ -369,45 +367,17 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PAGE_COLUMN-->
+
 <tr>
-	<td>PAGE_COLUMN_1</td>
-	<td>//div[@id='layout-column_column-1']</td>
+	<td>PAGE_COLUMN</td>
+	<td>//div[contains(@id,'main-content')]//div[contains(@class,'portlet-dropzone') and contains(@id,'layout-column_column-${key_pageColumnId}')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PAGE_COLUMN_2</td>
-	<td>//div[@id='layout-column_column-2']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_3</td>
-	<td>//div[@id='layout-column_column-3']</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_1_LAYOUT_1_COLUMN</td>
-	<td>//div[contains(@class,'portlet-layout')]/div[@id='column-1' and contains(@class,'col-md-12')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_1_LAYOUT_2_COLUMNS_30_SPLIT</td>
-	<td>//div[contains(@class,'portlet-layout')]/div[@id='column-1' and contains(@class,'col-md-4')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_2_LAYOUT_2_COLUMNS_70_SPLIT</td>
-	<td>//div[contains(@class,'portlet-layout')]/div[@id='column-2' and contains(@class,'col-md-8')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_1_LAYOUT_2_COLUMNS_50_SPLIT</td>
-	<td>//div[contains(@class,'portlet-layout')]/div[@id='column-1' and contains(@class,'col-md-6')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_2_LAYOUT_2_COLUMNS_50_SPLIT</td>
-	<td>//div[contains(@class,'portlet-layout')]/div[@id='column-2' and contains(@class,'col-md-6')]</td>
+	<td>PAGE_COLUMN_LAYOUT</td>
+	<td>//div[contains(@id,'main-content')]//div[contains(@class,'col-md-${key_span}') and contains(@id,'column-${key_pageColumnId}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -415,67 +385,12 @@
 	<td></td>
 	<td></td>
 </tr>
-<!--PAGE_COLUMN_PORTLET-->
-<tr>
-	<td>PAGE_COLUMN_PORTLET_COLUMN_1_PORTLET_TITLE</td>
-	<td>//div[@id='column-1']//h2[contains(.,'${key_portletTitleName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_PORTLET_COLUMN_2_PORTLET_TITLE</td>
-	<td>//div[@id='column-2']//h2[contains(.,'${key_portletTitleName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_PORTLET_COLUMN_3_PORTLET_TITLE</td>
-	<td>//div[@id='column-3']//h2[contains(.,'${key_portletTitleName}')]</td>
-	//div[@id='layout-column_column-3']
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_PORTLET_COLUMN_1_PORTLET_HEADER</td>
-	<td>//div[@id='column-1']//header[contains(.,'${key_portletTitleName}')]/div/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_PORTLET_COLUMN_2_PORTLET_HEADER</td>
-	<td>//div[@id='column-2']//header[contains(.,'${key_portletTitleName}')]/div/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_PORTLET_COLUMN_3_PORTLET_HEADER</td>
-	<td>//div[@id='column-3']//header[contains(.,'${key_portletTitleName}')]/div/span</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_COLUMN_PORTLET_HEADER_ELLIPSIS</td>
-	<td>//div[@id='column-${key_columnNumber}']//header[contains(@class,'portlet-topper') and contains(.,'${key_portletName}')]//div[contains(@class,'portlet-options')]/a</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
+
 <!--PAGE_CUSTOMIZATION-->
+
 <tr>
 	<td>PAGE_CUSTOMIZATION_MESSAGE_INFO</td>
-	<td>//li[contains(@class,'control-menu') and contains(@class,'nav-item')]/span[contains(.,'You can customize this page')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_CUSTOMIZATION_VIEW_DEFAULT_PAGE</td>
-	<td>//li/a[contains(.,'View Page without my customizations')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_CUSTOMIZATION_RESET_MY_CUSTOMIZATIONS</td>
-	<td>//li/a[contains(.,'Reset My Customizations')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PAGE_CUSTOMIZATION_VIEW_MY_CUSTOMIZED_PAGE</td>
-	<td>//li/a[contains(.,'View My Customized')]</td>
+	<td>//div[contains(@id,'customizationBar')]//li[contains(@class,'control-menu')]/span[@class='text-info']</td>
 	<td></td>
 </tr>
 <tr>
@@ -483,33 +398,9 @@
 	<td></td>
 	<td></td>
 </tr>
-<!--PORTLET_COLUMN-->
-<tr>
-	<td>PORTLET_COLUMN_1</td>
-	<td>//div[contains(@class,'col-md-6 portlet-column portlet-column-first')]/div</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PORTLET_COLUMN_2</td>
-	<td>//div[contains(@class,'col-md-6 portlet-column portlet-column-last')]/div</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PORTLET_COLUMN_1_NESTED_PORTLET_TITLE</td>
-	<td>//section[contains(@id,'NestedPortlets')]//div[contains(@id,'column-1')]//h2[contains(@class,'portlet-title') and contains(.,'${key_portletTitleName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PORTLET_COLUMN_2_NESTED_PORTLET_TITLE</td>
-	<td>//section[contains(@id,'NestedPortlets')]//div[contains(@id,'column-2')]//h2[contains(@class,'portlet-title') and contains(.,'${key_portletTitleName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td></td>
-	<td></td>
-	<td></td>
-</tr>
+
 <!--NEW_PAGE-->
+
 <tr>
 	<td>NEW_PAGE_SAVE</td>
 	<td>//button[contains(@id,'Save')]</td>
@@ -525,7 +416,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PORTLET-->
+
 <tr>
 	<td>PORTLET_LOADING_ANIMATION</td>
 	<td>//div[contains(@class,'loading-animation') and contains(@class,'portlet-boundary')]</td>
@@ -534,21 +427,6 @@
 <tr>
 	<td>PORTLET</td>
 	<td>//section[contains(@class,'portlet')]//h2[contains(.,'${key_portletName}')] | //div[contains(@class,'portlet-borderless')]/span[contains(.,'${key_portletName}')]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PORTLET_1</td>
-	<td>xpath=(//section)[1]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PORTLET_2</td>
-	<td>xpath=(//section)[2]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PORTLET_3</td>
-	<td>xpath=(//section)[3]</td>
 	<td></td>
 </tr>
 <tr>
@@ -581,7 +459,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--CONTROL_PANEL-->
+
 <tr>
 	<td>CONTROL_PANEL_INFO_MESSAGE</td>
 	<td>//div[contains(@class,'alert') and contains(@class,'alert-info')]</td>
@@ -617,7 +497,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SITE_ADMINISTRATION-->
+
 <tr>
 	<td>SITE_ADMINISTRATION_CATEGORY_COLLAPSED</td>
 	<td>//div[contains(@class,'toggler-header-collapsed')]/div[contains(.,'${key_portletCategoryName}')]</td>
@@ -663,7 +545,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SITE_LOCALIZATION-->
+
 <tr>
 	<td>PORTAL_LOCALIZATION_DEFAULT_LANGUAGE_MESSAGE</td>
 	<td>//div[contains(@class,'alert-info')]//div[1]/a[contains(.,'${key_pageLocale}')]</td>

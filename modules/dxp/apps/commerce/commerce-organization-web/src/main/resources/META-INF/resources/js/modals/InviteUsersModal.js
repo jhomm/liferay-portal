@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -15,7 +9,8 @@ import ClayIcon from '@clayui/icon';
 import ClayModal from '@clayui/modal';
 import ClayMultiSelect from '@clayui/multi-select';
 import classNames from 'classnames';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {sub} from 'frontend-js-web';
 import React, {useContext, useEffect, useState} from 'react';
 
 import ChartContext from '../ChartContext';
@@ -25,6 +20,7 @@ import {
 	getAccountRoles,
 	getOrganizationRoles,
 } from '../data/users';
+import {MODEL_TYPE_MAP} from '../utils/constants';
 
 export default function InviteUserModal({closeModal, observer, parentData}) {
 	const [emailsQuery, setEmailsQuery] = useState('');
@@ -38,7 +34,7 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 	useEffect(() => {
 		if (parentData) {
 			const getRoles =
-				parentData.type === 'organization'
+				parentData.type === MODEL_TYPE_MAP.organization
 					? getOrganizationRoles()
 					: getAccountRoles(parentData.id);
 
@@ -56,7 +52,7 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 		}
 
 		const inviteUser =
-			parentData.type === 'organization'
+			parentData.type === MODEL_TYPE_MAP.organization
 				? addUserEmailsToOrganization
 				: addUserEmailsToAccount;
 
@@ -64,22 +60,26 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 			.then((users) => {
 				const message =
 					users.length === 1
-						? Liferay.Util.sub(
+						? sub(
 								Liferay.Language.get('1-user-was-added-to-x'),
 								parentData.name
-						  )
-						: Liferay.Util.sub(
+							)
+						: sub(
 								Liferay.Language.get('x-users-were-added-to-x'),
 								users.length,
 								parentData.name
-						  );
+							);
 
 				openToast({
 					message,
 					type: 'success',
 				});
 
-				chartInstanceRef.current.addNodes(users, 'user', parentData);
+				chartInstanceRef.current.addNodes(
+					users,
+					MODEL_TYPE_MAP.user,
+					parentData
+				);
 
 				chartInstanceRef.current.updateNodeContent({
 					...parentData,
@@ -116,7 +116,6 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 						<ClayInput.GroupItem>
 							<ClayMultiSelect
 								id="inviteUsersEmailInput"
-								inputValue={emailsQuery}
 								items={selectedEmails}
 								locator={{
 									label: 'emailAddress',
@@ -127,6 +126,7 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 								placeholder={Liferay.Language.get(
 									'users-emails'
 								)}
+								value={emailsQuery}
 							/>
 						</ClayInput.GroupItem>
 					</ClayInput.Group>
@@ -137,6 +137,7 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 				>
 					<label htmlFor="inviteUsersRoleInput">
 						{Liferay.Language.get('roles')}
+
 						<ClayIcon
 							className="ml-1 reference-mark"
 							symbol="asterisk"
@@ -162,6 +163,7 @@ export default function InviteUserModal({closeModal, observer, parentData}) {
 									{errors.map((error, i) => (
 										<ClayForm.FeedbackItem key={i}>
 											<ClayForm.FeedbackIndicator symbol="info-circle" />
+
 											{error}
 										</ClayForm.FeedbackItem>
 									))}

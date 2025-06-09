@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.base;
@@ -17,24 +8,17 @@ package com.liferay.segments.service.base;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.service.BaseServiceImpl;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.segments.model.SegmentsExperimentRel;
 import com.liferay.segments.service.SegmentsExperimentRelService;
-import com.liferay.segments.service.SegmentsExperimentRelServiceUtil;
-import com.liferay.segments.service.persistence.SegmentsEntryPersistence;
-import com.liferay.segments.service.persistence.SegmentsEntryRelPersistence;
-import com.liferay.segments.service.persistence.SegmentsEntryRolePersistence;
-import com.liferay.segments.service.persistence.SegmentsExperiencePersistence;
-import com.liferay.segments.service.persistence.SegmentsExperimentFinder;
-import com.liferay.segments.service.persistence.SegmentsExperimentPersistence;
 import com.liferay.segments.service.persistence.SegmentsExperimentRelPersistence;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import javax.sql.DataSource;
 
@@ -60,11 +44,10 @@ public abstract class SegmentsExperimentRelServiceBaseImpl
 	/*
 	 * NOTE FOR DEVELOPERS:
 	 *
-	 * Never modify or reference this class directly. Use <code>SegmentsExperimentRelService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>SegmentsExperimentRelServiceUtil</code>.
+	 * Never modify or reference this class directly. Use <code>SegmentsExperimentRelService</code> via injection or a <code>org.osgi.util.tracker.ServiceTracker</code> or use <code>com.liferay.segments.service.SegmentsExperimentRelServiceUtil</code>.
 	 */
 	@Deactivate
 	protected void deactivate() {
-		_setServiceUtilService(null);
 	}
 
 	@Override
@@ -77,8 +60,6 @@ public abstract class SegmentsExperimentRelServiceBaseImpl
 	@Override
 	public void setAopProxy(Object aopProxy) {
 		segmentsExperimentRelService = (SegmentsExperimentRelService)aopProxy;
-
-		_setServiceUtilService(segmentsExperimentRelService);
 	}
 
 	/**
@@ -105,59 +86,29 @@ public abstract class SegmentsExperimentRelServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource =
+			segmentsExperimentRelPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource =
-				segmentsExperimentRelPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
 		}
 	}
-
-	private void _setServiceUtilService(
-		SegmentsExperimentRelService segmentsExperimentRelService) {
-
-		try {
-			Field field =
-				SegmentsExperimentRelServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, segmentsExperimentRelService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
-	}
-
-	@Reference
-	protected SegmentsEntryPersistence segmentsEntryPersistence;
-
-	@Reference
-	protected SegmentsEntryRelPersistence segmentsEntryRelPersistence;
-
-	@Reference
-	protected SegmentsEntryRolePersistence segmentsEntryRolePersistence;
-
-	@Reference
-	protected SegmentsExperiencePersistence segmentsExperiencePersistence;
-
-	@Reference
-	protected SegmentsExperimentPersistence segmentsExperimentPersistence;
-
-	@Reference
-	protected SegmentsExperimentFinder segmentsExperimentFinder;
 
 	@Reference
 	protected com.liferay.segments.service.SegmentsExperimentRelLocalService
@@ -172,23 +123,7 @@ public abstract class SegmentsExperimentRelServiceBaseImpl
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameLocalService
-		classNameLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ClassNameService
-		classNameService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.ResourceLocalService
-		resourceLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserLocalService
-		userLocalService;
-
-	@Reference
-	protected com.liferay.portal.kernel.service.UserService userService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		SegmentsExperimentRelServiceBaseImpl.class);
 
 }

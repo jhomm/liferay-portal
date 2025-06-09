@@ -1,9 +1,24 @@
-@import 'variables';
-
 .codemirror-editor-wrapper {
 	.CodeMirror {
 		height: 100%;
 	}
 
-	height: calc(100% - #{$toolbarHeight});
+	.CodeMirror-warning {
+		text-align: center;
+		width: 20px;
+	}
+
+	.CodeMirror-warning .warning-icon {
+		cursor: pointer;
+		display: inline-block;
+		height: 16px;
+		line-height: 16px;
+		vertical-align: middle;
+		width: 16px;
+	}
+
+	.warning-icon {
+		color: #b95000;
+		margin-left: 4px;
+	}
 }

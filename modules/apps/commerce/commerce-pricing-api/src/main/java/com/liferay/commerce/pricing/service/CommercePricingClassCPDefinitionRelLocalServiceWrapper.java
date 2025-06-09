@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service;
 
+import com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link CommercePricingClassCPDefinitionRelLocalService}.
@@ -26,6 +21,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	implements CommercePricingClassCPDefinitionRelLocalService,
 			   ServiceWrapper<CommercePricingClassCPDefinitionRelLocalService> {
+
+	public CommercePricingClassCPDefinitionRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommercePricingClassCPDefinitionRelLocalServiceWrapper(
 		CommercePricingClassCPDefinitionRelLocalService
@@ -46,12 +45,10 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @return the commerce pricing class cp definition rel that was added
 	 */
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-			addCommercePricingClassCPDefinitionRel(
-				com.liferay.commerce.pricing.model.
-					CommercePricingClassCPDefinitionRel
-						commercePricingClassCPDefinitionRel) {
+	public CommercePricingClassCPDefinitionRel
+		addCommercePricingClassCPDefinitionRel(
+			CommercePricingClassCPDefinitionRel
+				commercePricingClassCPDefinitionRel) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			addCommercePricingClassCPDefinitionRel(
@@ -59,13 +56,11 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				addCommercePricingClassCPDefinitionRel(
-					long commercePricingClassId, long cpDefinitionId,
-					com.liferay.portal.kernel.service.ServiceContext
-						serviceContext)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			addCommercePricingClassCPDefinitionRel(
+				long commercePricingClassId, long cpDefinitionId,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			addCommercePricingClassCPDefinitionRel(
@@ -79,10 +74,9 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @return the new commerce pricing class cp definition rel
 	 */
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-			createCommercePricingClassCPDefinitionRel(
-				long CommercePricingClassCPDefinitionRelId) {
+	public CommercePricingClassCPDefinitionRel
+		createCommercePricingClassCPDefinitionRel(
+			long CommercePricingClassCPDefinitionRelId) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			createCommercePricingClassCPDefinitionRel(
@@ -113,13 +107,11 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @throws PortalException
 	 */
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				deleteCommercePricingClassCPDefinitionRel(
-					com.liferay.commerce.pricing.model.
-						CommercePricingClassCPDefinitionRel
-							commercePricingClassCPDefinitionRel)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			deleteCommercePricingClassCPDefinitionRel(
+				CommercePricingClassCPDefinitionRel
+					commercePricingClassCPDefinitionRel)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			deleteCommercePricingClassCPDefinitionRel(
@@ -138,11 +130,10 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @throws PortalException if a commerce pricing class cp definition rel with the primary key could not be found
 	 */
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				deleteCommercePricingClassCPDefinitionRel(
-					long CommercePricingClassCPDefinitionRelId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			deleteCommercePricingClassCPDefinitionRel(
+				long CommercePricingClassCPDefinitionRelId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			deleteCommercePricingClassCPDefinitionRel(
@@ -278,10 +269,9 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-			fetchCommercePricingClassCPDefinitionRel(
-				long CommercePricingClassCPDefinitionRelId) {
+	public CommercePricingClassCPDefinitionRel
+		fetchCommercePricingClassCPDefinitionRel(
+			long CommercePricingClassCPDefinitionRelId) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			fetchCommercePricingClassCPDefinitionRel(
@@ -289,10 +279,9 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	}
 
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-			fetchCommercePricingClassCPDefinitionRel(
-				long commercePricingClassId, long cpDefinitionId) {
+	public CommercePricingClassCPDefinitionRel
+		fetchCommercePricingClassCPDefinitionRel(
+			long commercePricingClassId, long cpDefinitionId) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			fetchCommercePricingClassCPDefinitionRel(
@@ -308,9 +297,8 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-			getCommercePricingClassByCPDefinitionId(long cpDefinitionId) {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+		getCommercePricingClassByCPDefinitionId(long cpDefinitionId) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			getCommercePricingClassByCPDefinitionId(cpDefinitionId);
@@ -324,11 +312,10 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @throws PortalException if a commerce pricing class cp definition rel with the primary key could not be found
 	 */
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-				getCommercePricingClassCPDefinitionRel(
-					long CommercePricingClassCPDefinitionRelId)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public CommercePricingClassCPDefinitionRel
+			getCommercePricingClassCPDefinitionRel(
+				long CommercePricingClassCPDefinitionRelId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			getCommercePricingClassCPDefinitionRel(
@@ -347,33 +334,27 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @return the range of commerce pricing class cp definition rels
 	 */
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-			getCommercePricingClassCPDefinitionRels(int start, int end) {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+		getCommercePricingClassCPDefinitionRels(int start, int end) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			getCommercePricingClassCPDefinitionRels(start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-			getCommercePricingClassCPDefinitionRels(
-				long commercePricingClassId) {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+		getCommercePricingClassCPDefinitionRels(long commercePricingClassId) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			getCommercePricingClassCPDefinitionRels(commercePricingClassId);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-			getCommercePricingClassCPDefinitionRels(
-				long commercePricingClassId, int start, int end,
-				com.liferay.portal.kernel.util.OrderByComparator
-					<com.liferay.commerce.pricing.model.
-						CommercePricingClassCPDefinitionRel>
-							orderByComparator) {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+		getCommercePricingClassCPDefinitionRels(
+			long commercePricingClassId, int start, int end,
+			com.liferay.portal.kernel.util.OrderByComparator
+				<CommercePricingClassCPDefinitionRel> orderByComparator) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			getCommercePricingClassCPDefinitionRels(
@@ -447,11 +428,10 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel>
-			searchByCommercePricingClassId(
-				long commercePricingClassId, String name, String languageId,
-				int start, int end) {
+	public java.util.List<CommercePricingClassCPDefinitionRel>
+		searchByCommercePricingClassId(
+			long commercePricingClassId, String name, String languageId,
+			int start, int end) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			searchByCommercePricingClassId(
@@ -469,16 +449,44 @@ public class CommercePricingClassCPDefinitionRelLocalServiceWrapper
 	 * @return the commerce pricing class cp definition rel that was updated
 	 */
 	@Override
-	public
-		com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel
-			updateCommercePricingClassCPDefinitionRel(
-				com.liferay.commerce.pricing.model.
-					CommercePricingClassCPDefinitionRel
-						commercePricingClassCPDefinitionRel) {
+	public CommercePricingClassCPDefinitionRel
+		updateCommercePricingClassCPDefinitionRel(
+			CommercePricingClassCPDefinitionRel
+				commercePricingClassCPDefinitionRel) {
 
 		return _commercePricingClassCPDefinitionRelLocalService.
 			updateCommercePricingClassCPDefinitionRel(
 				commercePricingClassCPDefinitionRel);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commercePricingClassCPDefinitionRelLocalService.
+			getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<CommercePricingClassCPDefinitionRel>
+		getCTPersistence() {
+
+		return _commercePricingClassCPDefinitionRelLocalService.
+			getCTPersistence();
+	}
+
+	@Override
+	public Class<CommercePricingClassCPDefinitionRel> getModelClass() {
+		return _commercePricingClassCPDefinitionRelLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction
+				<CTPersistence<CommercePricingClassCPDefinitionRel>, R, E>
+					updateUnsafeFunction)
+		throws E {
+
+		return _commercePricingClassCPDefinitionRelLocalService.
+			updateWithUnsafeFunction(updateUnsafeFunction);
 	}
 
 	@Override

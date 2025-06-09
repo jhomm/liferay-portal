@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.service.persistence.test;
@@ -125,6 +116,8 @@ public class CommerceTaxMethodPersistenceTest {
 
 		CommerceTaxMethod newCommerceTaxMethod = _persistence.create(pk);
 
+		newCommerceTaxMethod.setMvccVersion(RandomTestUtil.nextLong());
+
 		newCommerceTaxMethod.setGroupId(RandomTestUtil.nextLong());
 
 		newCommerceTaxMethod.setCompanyId(RandomTestUtil.nextLong());
@@ -147,11 +140,16 @@ public class CommerceTaxMethodPersistenceTest {
 
 		newCommerceTaxMethod.setActive(RandomTestUtil.randomBoolean());
 
+		newCommerceTaxMethod.setTypeSettings(RandomTestUtil.randomString());
+
 		_commerceTaxMethods.add(_persistence.update(newCommerceTaxMethod));
 
 		CommerceTaxMethod existingCommerceTaxMethod =
 			_persistence.findByPrimaryKey(newCommerceTaxMethod.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommerceTaxMethod.getMvccVersion(),
+			newCommerceTaxMethod.getMvccVersion());
 		Assert.assertEquals(
 			existingCommerceTaxMethod.getCommerceTaxMethodId(),
 			newCommerceTaxMethod.getCommerceTaxMethodId());
@@ -188,6 +186,9 @@ public class CommerceTaxMethodPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceTaxMethod.isActive(),
 			newCommerceTaxMethod.isActive());
+		Assert.assertEquals(
+			existingCommerceTaxMethod.getTypeSettings(),
+			newCommerceTaxMethod.getTypeSettings());
 	}
 
 	@Test
@@ -239,10 +240,11 @@ public class CommerceTaxMethodPersistenceTest {
 
 	protected OrderByComparator<CommerceTaxMethod> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceTaxMethod", "commerceTaxMethodId", true, "groupId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "name", true, "description", true,
-			"engineKey", true, "percentage", true, "active", true);
+			"CommerceTaxMethod", "mvccVersion", true, "commerceTaxMethodId",
+			true, "groupId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true, "name",
+			true, "description", true, "engineKey", true, "percentage", true,
+			"active", true);
 	}
 
 	@Test
@@ -535,6 +537,8 @@ public class CommerceTaxMethodPersistenceTest {
 
 		CommerceTaxMethod commerceTaxMethod = _persistence.create(pk);
 
+		commerceTaxMethod.setMvccVersion(RandomTestUtil.nextLong());
+
 		commerceTaxMethod.setGroupId(RandomTestUtil.nextLong());
 
 		commerceTaxMethod.setCompanyId(RandomTestUtil.nextLong());
@@ -556,6 +560,8 @@ public class CommerceTaxMethodPersistenceTest {
 		commerceTaxMethod.setPercentage(RandomTestUtil.randomBoolean());
 
 		commerceTaxMethod.setActive(RandomTestUtil.randomBoolean());
+
+		commerceTaxMethod.setTypeSettings(RandomTestUtil.randomString());
 
 		_commerceTaxMethods.add(_persistence.update(commerceTaxMethod));
 

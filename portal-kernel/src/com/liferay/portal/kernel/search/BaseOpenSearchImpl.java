@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.search;
@@ -26,7 +17,7 @@ import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -37,14 +28,14 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Charles May
@@ -106,19 +97,19 @@ public abstract class BaseOpenSearchImpl implements OpenSearch {
 			long userId = PortalUtil.getUserId(httpServletRequest);
 
 			if (userId == 0) {
-				userId = UserLocalServiceUtil.getDefaultUserId(
+				userId = UserLocalServiceUtil.getGuestUserId(
 					PortalUtil.getCompanyId(httpServletRequest));
 			}
 
 			String keywords = GetterUtil.getString(
-				HttpUtil.getParameter(url, "keywords", false));
+				HttpComponentsUtil.getParameter(url, "keywords", false));
 			int startPage = GetterUtil.getInteger(
-				HttpUtil.getParameter(url, "p", false), 1);
+				HttpComponentsUtil.getParameter(url, "p", false), 1);
 			int itemsPerPage = GetterUtil.getInteger(
-				HttpUtil.getParameter(url, "c", false),
+				HttpComponentsUtil.getParameter(url, "c", false),
 				SearchContainer.DEFAULT_DELTA);
 			String format = GetterUtil.getString(
-				HttpUtil.getParameter(url, "format", false));
+				HttpComponentsUtil.getParameter(url, "format", false));
 
 			return search(
 				httpServletRequest, userId, keywords, startPage, itemsPerPage,

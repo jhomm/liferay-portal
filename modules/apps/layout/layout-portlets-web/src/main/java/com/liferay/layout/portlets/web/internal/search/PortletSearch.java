@@ -1,30 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.portlets.web.internal.search;
 
+import com.liferay.layout.portlets.web.internal.constants.LayoutsPortletsPortletKeys;
 import com.liferay.layout.portlets.web.internal.util.comparator.PortletDisplayNameComparator;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.ParamUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Jorge Ferrer
@@ -56,20 +48,19 @@ public class PortletSearch extends SearchContainer<Portlet> {
 		iteratorURL.setParameter(
 			PortletDisplayTerms.NAME, displayTerms.getName());
 
-		String orderByCol = ParamUtil.getString(
-			portletRequest, "orderByCol", "name");
-		String orderByType = ParamUtil.getString(
-			portletRequest, "orderByType", "asc");
-
-		OrderByComparator<Portlet> orderByComparator = getOrderByComparator(
-			orderByCol, orderByType);
+		String orderByCol = SearchOrderByUtil.getOrderByCol(
+			portletRequest, LayoutsPortletsPortletKeys.LAYOUT_PORTLETS, "name");
 
 		setOrderByCol(orderByCol);
+
+		String orderByType = SearchOrderByUtil.getOrderByType(
+			portletRequest, LayoutsPortletsPortletKeys.LAYOUT_PORTLETS, "asc");
+
+		setOrderByComparator(_getOrderByComparator(orderByCol, orderByType));
 		setOrderByType(orderByType);
-		setOrderByComparator(orderByComparator);
 	}
 
-	protected static OrderByComparator<Portlet> getOrderByComparator(
+	private OrderByComparator<Portlet> _getOrderByComparator(
 		String orderByCol, String orderByType) {
 
 		OrderByComparator<Portlet> orderByComparator = null;
@@ -81,7 +72,8 @@ public class PortletSearch extends SearchContainer<Portlet> {
 		}
 
 		if (orderByCol.equals("name")) {
-			orderByComparator = new PortletDisplayNameComparator(orderByAsc);
+			orderByComparator = PortletDisplayNameComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;

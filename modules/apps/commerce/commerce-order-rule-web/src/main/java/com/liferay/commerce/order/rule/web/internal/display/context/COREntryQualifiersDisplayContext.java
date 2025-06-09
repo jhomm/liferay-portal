@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.web.internal.display.context;
@@ -23,22 +14,22 @@ import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.service.COREntryRelService;
 import com.liferay.commerce.order.rule.service.COREntryService;
 import com.liferay.commerce.product.model.CommerceChannel;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -61,11 +52,15 @@ public class COREntryQualifiersDisplayContext extends COREntryDisplayContext {
 		_corEntryRelService = corEntryRelService;
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getAccountEntryClayDataSetActionDropdownItems()
+	public String getAccountEntryCOREntriesAPIURL() throws PortalException {
+		return "/o/headless-commerce-admin-order/v1.0/order-rules/" +
+			getCOREntryId() + "/order-rule-accounts?nestedFields=account";
+	}
+
+	public List<FDSActionDropdownItem> getAccountEntryFDSActionDropdownItems()
 		throws PortalException {
 
-		return _getClayDataSetActionTemplates(
+		return _getFDSActionTemplates(
 			PortletURLBuilder.create(
 				portal.getControlPanelPortletURL(
 					httpServletRequest,
@@ -81,26 +76,20 @@ public class COREntryQualifiersDisplayContext extends COREntryDisplayContext {
 			false);
 	}
 
-	public String getAccountEntryCOREntriesAPIURL() throws PortalException {
-		return "/o/headless-commerce-admin-order/v1.0/order-rules/" +
-			getCOREntryId() + "/order-rule-accounts?nestedFields=account";
-	}
-
-	public List<ClayDataSetActionDropdownItem>
-			getAccountGroupClayDataSetActionDropdownItems()
-		throws PortalException {
-
-		return ListUtil.fromArray(
-			new ClayDataSetActionDropdownItem(
-				null, "trash", "remove",
-				LanguageUtil.get(httpServletRequest, "remove"), "delete",
-				"delete", "headless"));
-	}
-
 	public String getAccountGroupCOREntriesAPIURL() throws PortalException {
 		return "/o/headless-commerce-admin-order/v1.0/order-rules/" +
 			getCOREntryId() +
 				"/order-rule-account-groups?nestedFields=accountGroup";
+	}
+
+	public List<FDSActionDropdownItem> getAccountGroupFDSActionDropdownItems()
+		throws PortalException {
+
+		return ListUtil.fromArray(
+			new FDSActionDropdownItem(
+				null, "trash", "remove",
+				LanguageUtil.get(httpServletRequest, "remove"), "delete",
+				"delete", "headless"));
 	}
 
 	public String getActiveAccountEligibility() throws PortalException {
@@ -152,11 +141,11 @@ public class COREntryQualifiersDisplayContext extends COREntryDisplayContext {
 			getCOREntryId() + "/order-rule-channels?nestedFields=channel";
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getCommerceChannelCOREntryClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem>
+			getCommerceChannelCOREntryFDSActionDropdownItems()
 		throws PortalException {
 
-		return _getClayHeadlessDataSetActionTemplates(
+		return _getHeadlessFDSActionTemplates(
 			PortletURLBuilder.create(
 				PortletProviderUtil.getPortletURL(
 					httpServletRequest, CommerceChannel.class.getName(),
@@ -171,11 +160,18 @@ public class COREntryQualifiersDisplayContext extends COREntryDisplayContext {
 			false);
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getCommerceOrderTypeClayDataSetActionDropdownItems()
+	public String getCommerceOrderTypeCOREntriesAPIURL()
 		throws PortalException {
 
-		return _getClayDataSetActionTemplates(
+		return "/o/headless-commerce-admin-order/v1.0/order-rules/" +
+			getCOREntryId() + "/order-rule-order-types?nestedFields=orderType";
+	}
+
+	public List<FDSActionDropdownItem>
+			getCommerceOrderTypeFDSActionDropdownItems()
+		throws PortalException {
+
+		return _getFDSActionTemplates(
 			PortletURLBuilder.create(
 				PortletProviderUtil.getPortletURL(
 					httpServletRequest, CommerceOrderType.class.getName(),
@@ -190,66 +186,52 @@ public class COREntryQualifiersDisplayContext extends COREntryDisplayContext {
 			false);
 	}
 
-	public String getCommerceOrderTypeCOREntriesAPIURL()
-		throws PortalException {
-
-		return "/o/headless-commerce-admin-order/v1.0/order-rules/" +
-			getCOREntryId() + "/order-rule-order-types?nestedFields=orderType";
-	}
-
-	private List<ClayDataSetActionDropdownItem> _getClayDataSetActionTemplates(
+	private List<FDSActionDropdownItem> _getFDSActionTemplates(
 		String portletURL, boolean sidePanel) {
 
-		List<ClayDataSetActionDropdownItem> clayDataSetActionDropdownItems =
-			new ArrayList<>();
+		List<FDSActionDropdownItem> fdsActionDropdownItems = new ArrayList<>();
 
-		ClayDataSetActionDropdownItem clayDataSetActionDropdownItem =
-			new ClayDataSetActionDropdownItem(
-				portletURL, "pencil", "edit",
-				LanguageUtil.get(httpServletRequest, "edit"), "get", null,
-				null);
+		FDSActionDropdownItem fdsActionDropdownItem = new FDSActionDropdownItem(
+			portletURL, "pencil", "edit",
+			LanguageUtil.get(httpServletRequest, "edit"), "get", null, null);
 
 		if (sidePanel) {
-			clayDataSetActionDropdownItem.setTarget("sidePanel");
+			fdsActionDropdownItem.setTarget("sidePanel");
 		}
 
-		clayDataSetActionDropdownItems.add(clayDataSetActionDropdownItem);
+		fdsActionDropdownItems.add(fdsActionDropdownItem);
 
-		clayDataSetActionDropdownItems.add(
-			new ClayDataSetActionDropdownItem(
+		fdsActionDropdownItems.add(
+			new FDSActionDropdownItem(
 				null, "trash", "remove",
 				LanguageUtil.get(httpServletRequest, "remove"), "delete",
 				"delete", "headless"));
 
-		return clayDataSetActionDropdownItems;
+		return fdsActionDropdownItems;
 	}
 
-	private List<ClayDataSetActionDropdownItem>
-		_getClayHeadlessDataSetActionTemplates(
-			String portletURL, boolean sidePanel) {
+	private List<FDSActionDropdownItem> _getHeadlessFDSActionTemplates(
+		String portletURL, boolean sidePanel) {
 
-		List<ClayDataSetActionDropdownItem> clayDataSetActionDropdownItems =
-			new ArrayList<>();
+		List<FDSActionDropdownItem> fdsActionDropdownItems = new ArrayList<>();
 
-		ClayDataSetActionDropdownItem clayDataSetActionDropdownItem =
-			new ClayDataSetActionDropdownItem(
-				portletURL, "pencil", "edit",
-				LanguageUtil.get(httpServletRequest, "edit"), "get", null,
-				null);
+		FDSActionDropdownItem fdsActionDropdownItem = new FDSActionDropdownItem(
+			portletURL, "pencil", "edit",
+			LanguageUtil.get(httpServletRequest, "edit"), "get", null, null);
 
 		if (sidePanel) {
-			clayDataSetActionDropdownItem.setTarget("sidePanel");
+			fdsActionDropdownItem.setTarget("sidePanel");
 		}
 
-		clayDataSetActionDropdownItems.add(clayDataSetActionDropdownItem);
+		fdsActionDropdownItems.add(fdsActionDropdownItem);
 
-		clayDataSetActionDropdownItems.add(
-			new ClayDataSetActionDropdownItem(
+		fdsActionDropdownItems.add(
+			new FDSActionDropdownItem(
 				null, "trash", "remove",
 				LanguageUtil.get(httpServletRequest, "remove"), "delete",
 				"delete", "headless"));
 
-		return clayDataSetActionDropdownItems;
+		return fdsActionDropdownItems;
 	}
 
 	private final COREntryRelService _corEntryRelService;

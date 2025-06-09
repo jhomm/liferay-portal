@@ -2,13 +2,7 @@
 @summary = "Selecting all text at '${locator1}'"
 definition {
 
-	function selectFieldText {
-		Click();
-
-		selenium.selectFieldText();
-	}
-
-	function selectFieldTextNoError {
+	function selectFieldText() {
 		Click();
 
 		selenium.selectFieldText();

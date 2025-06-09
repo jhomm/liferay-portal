@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.internal.dto.v1_0.converter;
 
+import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.product.catalog.CPCatalogEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
+import java.util.HashMap;
 import java.util.Locale;
 
 /**
@@ -26,22 +19,30 @@ import java.util.Locale;
 public class ProductDTOConverterContext extends DefaultDTOConverterContext {
 
 	public ProductDTOConverterContext(
-		Locale locale, long resourcePrimKey, CPCatalogEntry cpCatalogEntry) {
+		CommerceContext commerceContext, CPCatalogEntry cpCatalogEntry,
+		Object id, Locale locale) {
 
-		super(resourcePrimKey, locale);
+		super(false, new HashMap<>(), null, id, locale, null, null);
 
+		_commerceContext = commerceContext;
 		_cpCatalogEntry = cpCatalogEntry;
 	}
 
 	public ProductDTOConverterContext(
-		Locale locale, long resourcePrimKey, CPDefinition cpDefinition) {
+		CommerceContext commerceContext, CPDefinition cpDefinition, Object id,
+		Locale locale) {
 
-		super(resourcePrimKey, locale);
+		super(false, new HashMap<>(), null, id, locale, null, null);
 
+		_commerceContext = commerceContext;
 		_cpDefinition = cpDefinition;
 	}
 
-	public CPCatalogEntry getCpCatalogEntry() {
+	public CommerceContext getCommerceContext() {
+		return _commerceContext;
+	}
+
+	public CPCatalogEntry getCPCatalogEntry() {
 		return _cpCatalogEntry;
 	}
 
@@ -49,6 +50,7 @@ public class ProductDTOConverterContext extends DefaultDTOConverterContext {
 		return _cpDefinition;
 	}
 
+	private final CommerceContext _commerceContext;
 	private CPCatalogEntry _cpCatalogEntry;
 	private CPDefinition _cpDefinition;
 

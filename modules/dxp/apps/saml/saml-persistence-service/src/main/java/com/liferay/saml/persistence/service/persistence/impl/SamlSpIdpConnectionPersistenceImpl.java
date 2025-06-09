@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service.persistence.impl;
@@ -29,7 +20,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -48,7 +38,6 @@ import com.liferay.saml.persistence.service.persistence.impl.constants.SamlPersi
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -75,9 +64,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mika Koivisto
  * @generated
  */
-@Component(
-	service = {SamlSpIdpConnectionPersistence.class, BasePersistence.class}
-)
+@Component(service = SamlSpIdpConnectionPersistence.class)
 public class SamlSpIdpConnectionPersistenceImpl
 	extends BasePersistenceImpl<SamlSpIdpConnection>
 	implements SamlSpIdpConnectionPersistence {
@@ -197,7 +184,7 @@ public class SamlSpIdpConnectionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<SamlSpIdpConnection>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (SamlSpIdpConnection samlSpIdpConnection : list) {
@@ -565,7 +552,7 @@ public class SamlSpIdpConnectionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -606,7 +593,6 @@ public class SamlSpIdpConnectionPersistenceImpl
 		"samlSpIdpConnection.companyId = ?";
 
 	private FinderPath _finderPathFetchByC_SIEI;
-	private FinderPath _finderPathCountByC_SIEI;
 
 	/**
 	 * Returns the saml sp idp connection where companyId = &#63; and samlIdpEntityId = &#63; or throws a <code>NoSuchSpIdpConnectionException</code> if it could not be found.
@@ -685,7 +671,7 @@ public class SamlSpIdpConnectionPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByC_SIEI, finderArgs);
+				_finderPathFetchByC_SIEI, finderArgs, this);
 		}
 
 		if (result instanceof SamlSpIdpConnection) {
@@ -812,62 +798,14 @@ public class SamlSpIdpConnectionPersistenceImpl
 	 */
 	@Override
 	public int countByC_SIEI(long companyId, String samlIdpEntityId) {
-		samlIdpEntityId = Objects.toString(samlIdpEntityId, "");
+		SamlSpIdpConnection samlSpIdpConnection = fetchByC_SIEI(
+			companyId, samlIdpEntityId);
 
-		FinderPath finderPath = _finderPathCountByC_SIEI;
-
-		Object[] finderArgs = new Object[] {companyId, samlIdpEntityId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_SAMLSPIDPCONNECTION_WHERE);
-
-			sb.append(_FINDER_COLUMN_C_SIEI_COMPANYID_2);
-
-			boolean bindSamlIdpEntityId = false;
-
-			if (samlIdpEntityId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_SIEI_SAMLIDPENTITYID_3);
-			}
-			else {
-				bindSamlIdpEntityId = true;
-
-				sb.append(_FINDER_COLUMN_C_SIEI_SAMLIDPENTITYID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindSamlIdpEntityId) {
-					queryPos.add(samlIdpEntityId);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (samlSpIdpConnection == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_SIEI_COMPANYID_2 =
@@ -987,7 +925,6 @@ public class SamlSpIdpConnectionPersistenceImpl
 			samlSpIdpConnectionModelImpl.getSamlIdpEntityId()
 		};
 
-		finderCache.putResult(_finderPathCountByC_SIEI, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByC_SIEI, args, samlSpIdpConnectionModelImpl);
 	}
@@ -1320,7 +1257,7 @@ public class SamlSpIdpConnectionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<SamlSpIdpConnection>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1390,7 +1327,7 @@ public class SamlSpIdpConnectionPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1480,35 +1417,14 @@ public class SamlSpIdpConnectionPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "samlIdpEntityId"}, true);
 
-		_finderPathCountByC_SIEI = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_SIEI",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "samlIdpEntityId"}, false);
-
-		_setSamlSpIdpConnectionUtilPersistence(this);
+		SamlSpIdpConnectionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setSamlSpIdpConnectionUtilPersistence(null);
+		SamlSpIdpConnectionUtil.setPersistence(null);
 
 		entityCache.removeCache(SamlSpIdpConnectionImpl.class.getName());
-	}
-
-	private void _setSamlSpIdpConnectionUtilPersistence(
-		SamlSpIdpConnectionPersistence samlSpIdpConnectionPersistence) {
-
-		try {
-			Field field = SamlSpIdpConnectionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, samlSpIdpConnectionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1570,9 +1486,5 @@ public class SamlSpIdpConnectionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private SamlSpIdpConnectionModelArgumentsResolver
-		_samlSpIdpConnectionModelArgumentsResolver;
 
 }

@@ -3,21 +3,33 @@
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"additionalProperties": false,
 	"definitions": {
+		"dependency": {
+			"additionalProperties": {
+				"additionalProperties": false,
+				"properties": {
+					"type": {
+						"enum": [
+							"equal",
+							"not-equal"
+						],
+						"type": "string"
+					},
+					"value": {
+						"type": "string"
+					}
+				},
+				"required": [
+					"type",
+					"value"
+				],
+				"type": "object"
+			},
+			"title": "The Dependency Schema",
+			"type": "object"
+		},
 		"field": {
 			"additionalProperties": false,
 			"allOf": [
-				{
-					"if": {
-						"properties": {
-							"type": {
-								"const": "select"
-							}
-						}
-					},
-					"then": {
-						"$ref": "#/definitions/fieldSelect"
-					}
-				},
 				{
 					"if": {
 						"properties": {
@@ -28,6 +40,18 @@
 					},
 					"then": {
 						"$ref": "#/definitions/fieldCheckbox"
+					}
+				},
+				{
+					"if": {
+						"properties": {
+							"type": {
+								"const": "collectionSelector"
+							}
+						}
+					},
+					"then": {
+						"$ref": "#/definitions/fieldCollectionSelector"
 					}
 				},
 				{
@@ -58,24 +82,36 @@
 					"if": {
 						"properties": {
 							"type": {
-								"const": "collectionSelector"
-							}
-						}
-					},
-					"then": {
-						"$ref": "#/definitions/fieldCollectionSelector"
-					}
-				},
-				{
-					"if": {
-						"properties": {
-							"type": {
 								"const": "itemSelector"
 							}
 						}
 					},
 					"then": {
 						"$ref": "#/definitions/fieldItemSelector"
+					}
+				},
+				{
+					"if": {
+						"properties": {
+							"type": {
+								"const": "length"
+							}
+						}
+					},
+					"then": {
+						"$ref": "#/definitions/fieldLength"
+					}
+				},
+				{
+					"if": {
+						"properties": {
+							"type": {
+								"const": "select"
+							}
+						}
+					},
+					"then": {
+						"$ref": "#/definitions/fieldSelect"
 					}
 				},
 				{
@@ -141,15 +177,22 @@
 						"colorPicker",
 						"collectionSelector",
 						"itemSelector",
+						"length",
 						"navigationMenuSelector",
 						"select",
 						"text",
+						"url",
 						"videoSelector"
 					],
 					"title": "The Type Schema",
 					"type": "string"
 				},
 				"typeOptions": {
+					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						}
+					},
 					"title": "The TypeOptions Schema",
 					"type": "object"
 				}
@@ -175,6 +218,24 @@
 						"boolean",
 						"string"
 					]
+				},
+				"typeOptions": {
+					"additionalProperties": false,
+					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
+						"displayType": {
+							"enum": [
+								"checkbox",
+								"toggle"
+							],
+							"title": "The DisplayType Schema",
+							"type": "string"
+						}
+					},
+					"title": "The Typeoptions Schema",
+					"type": "object"
 				}
 			}
 		},
@@ -183,6 +244,9 @@
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"itemSubtype": {
 							"title": "The ItemSubtype Schema",
 							"type": "string"
@@ -190,6 +254,11 @@
 						"itemType": {
 							"title": "The ItemType Schema",
 							"type": "string"
+						},
+						"numberOfItems": {
+							"minimum": 1,
+							"title": "The numberOfItems Schema",
+							"type": "integer"
 						}
 					},
 					"title": "The Typeoptions Schema",
@@ -275,6 +344,9 @@
 							"title": "The ClassName Schema",
 							"type": "string"
 						},
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"enableSelectTemplate": {
 							"title": "The EnableSelectTemplate Schema",
 							"type": "boolean"
@@ -297,11 +369,28 @@
 				}
 			}
 		},
+		"fieldLength": {
+			"properties": {
+				"typeOptions": {
+					"additionalProperties": false,
+					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						}
+					},
+					"title": "The Typeoptions Schema",
+					"type": "object"
+				}
+			}
+		},
 		"fieldSelect": {
 			"properties": {
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"validValues": {
 							"items": {
 								"additionalProperties": false,
@@ -348,6 +437,7 @@
 				"configurationRole": {
 					"default": "",
 					"enum": [
+						"advanced",
 						"style"
 					],
 					"title": "The Configuration Role Schema",
@@ -377,6 +467,9 @@
 				"typeOptions": {
 					"additionalProperties": false,
 					"properties": {
+						"dependency": {
+							"$ref": "#/definitions/dependency"
+						},
 						"placeholder": {
 							"title": "The Placeholder Schema",
 							"type": "string"

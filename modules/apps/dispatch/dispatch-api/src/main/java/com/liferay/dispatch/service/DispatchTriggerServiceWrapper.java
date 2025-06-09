@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.service;
@@ -26,6 +17,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class DispatchTriggerServiceWrapper
 	implements DispatchTriggerService, ServiceWrapper<DispatchTriggerService> {
 
+	public DispatchTriggerServiceWrapper() {
+		this(null);
+	}
+
 	public DispatchTriggerServiceWrapper(
 		DispatchTriggerService dispatchTriggerService) {
 
@@ -34,14 +29,15 @@ public class DispatchTriggerServiceWrapper
 
 	@Override
 	public com.liferay.dispatch.model.DispatchTrigger addDispatchTrigger(
-			long userId, String dispatchTaskExecutorType,
+			String externalReferenceCode, long userId,
+			String dispatchTaskExecutorType,
 			com.liferay.portal.kernel.util.UnicodeProperties
 				dispatchTaskSettingsUnicodeProperties,
 			String name)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dispatchTriggerService.addDispatchTrigger(
-			userId, dispatchTaskExecutorType,
+			externalReferenceCode, userId, dispatchTaskExecutorType,
 			dispatchTaskSettingsUnicodeProperties, name);
 	}
 
@@ -50,6 +46,14 @@ public class DispatchTriggerServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_dispatchTriggerService.deleteDispatchTrigger(dispatchTriggerId);
+	}
+
+	@Override
+	public com.liferay.dispatch.model.DispatchTrigger getDispatchTrigger(
+			long dispatchTriggerId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _dispatchTriggerService.getDispatchTrigger(dispatchTriggerId);
 	}
 
 	@Override
@@ -85,14 +89,14 @@ public class DispatchTriggerServiceWrapper
 			int endDateMonth, int endDateDay, int endDateYear, int endDateHour,
 			int endDateMinute, boolean neverEnd, boolean overlapAllowed,
 			int startDateMonth, int startDateDay, int startDateYear,
-			int startDateHour, int startDateMinute)
+			int startDateHour, int startDateMinute, String timeZoneId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _dispatchTriggerService.updateDispatchTrigger(
 			dispatchTriggerId, active, cronExpression, dispatchTaskClusterMode,
 			endDateMonth, endDateDay, endDateYear, endDateHour, endDateMinute,
 			neverEnd, overlapAllowed, startDateMonth, startDateDay,
-			startDateYear, startDateHour, startDateMinute);
+			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
 	@Override

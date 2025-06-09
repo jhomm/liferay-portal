@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.service.access.policy.configuration;
@@ -17,6 +8,8 @@ package com.liferay.portal.security.service.access.policy.configuration;
 import aQute.bnd.annotation.metatype.Meta;
 
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
+
+import org.osgi.annotation.versioning.ProviderType;
 
 /**
  * @author Mika Koivisto
@@ -26,6 +19,7 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 	id = "com.liferay.portal.security.service.access.policy.configuration.SAPConfiguration",
 	localization = "content/Language", name = "sap-configuration-name"
 )
+@ProviderType
 public interface SAPConfiguration {
 
 	@Meta.AD(deflt = "true", name = "use-system-sap-entries", required = false)
@@ -48,6 +42,27 @@ public interface SAPConfiguration {
 		name = "system-default-sap-entry-service-signatures", required = false
 	)
 	public String systemDefaultSAPEntryServiceSignatures();
+
+	@Meta.AD(
+		deflt = "SYSTEM_REST_CLIENT_TEMPLATE_OBJECT",
+		name = "system-rest-client-template-object-sap-entry-name",
+		required = false
+	)
+	public String systemRESTClientTemplateObjectSAPEntryName();
+
+	@Meta.AD(
+		deflt = "System Service Access Policy for REST Client Template Requests",
+		name = "system-rest-client-template-object-sap-entry-description",
+		required = false
+	)
+	public String systemRESTClientTemplateObjectSAPEntryDescription();
+
+	@Meta.AD(
+		deflt = "*",
+		name = "system-rest-client-template-object-sap-entry-service-signatures",
+		required = false
+	)
+	public String systemRESTClientTemplateObjectSAPEntryServiceSignatures();
 
 	@Meta.AD(
 		deflt = "SYSTEM_USER_PASSWORD",

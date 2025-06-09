@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.internal;
@@ -17,26 +8,26 @@ package com.liferay.segments.internal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.segments.SegmentsEntryRetriever;
+import com.liferay.segments.configuration.provider.SegmentsConfigurationProvider;
 import com.liferay.segments.constants.SegmentsEntryConstants;
-import com.liferay.segments.constants.SegmentsWebKeys;
 import com.liferay.segments.context.Context;
 import com.liferay.segments.provider.SegmentsEntryProviderRegistry;
-import com.liferay.segments.simulator.SegmentsEntrySimulator;
 
-import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Cristina González
@@ -46,82 +37,101 @@ public class SegmentsEntryRetrieverImpl implements SegmentsEntryRetriever {
 
 	@Override
 	public long[] getSegmentsEntryIds(
-		long groupId, long userId, Context context) {
+		long groupId, long userId, Context context, long[] segmentEntryIds) {
 
-		Optional<long[]> segmentsEntryIdsOptional =
-			_getSegmentsEntryIdsOptional();
+		try {
+			if (!_segmentsConfigurationProvider.isSegmentationEnabled(
+					_getCompanyId(groupId))) {
 
-		long[] segmentsEntryIds = ArrayUtil.append(
-			segmentsEntryIdsOptional.orElseGet(
-				() -> {
-					if ((_segmentsEntrySimulator != null) &&
-						_segmentsEntrySimulator.isSimulationActive(userId)) {
+				return new long[] {SegmentsEntryConstants.ID_DEFAULT};
+			}
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+		}
 
-						return _segmentsEntrySimulator.
-							getSimulatedSegmentsEntryIds(userId);
-					}
-
-					try {
-						return _segmentsEntryProviderRegistry.
-							getSegmentsEntryIds(
-								groupId, User.class.getName(), userId, context);
-					}
-					catch (PortalException portalException) {
-						if (_log.isWarnEnabled()) {
-							_log.warn(portalException.getMessage());
-						}
-
-						return new long[0];
-					}
-				}),
-			SegmentsEntryConstants.ID_DEFAULT);
-
-		Optional<HttpServletRequest> httpServletRequestOptional =
-			_getHttpServletRequestOptional();
-
-		httpServletRequestOptional.ifPresent(
-			httpServletRequest -> httpServletRequest.setAttribute(
-				SegmentsWebKeys.SEGMENTS_ENTRY_IDS, segmentsEntryIds));
-
-		return segmentsEntryIds;
+		return ArrayUtil.toLongArray(
+			SetUtil.fromArray(
+				ArrayUtil.append(
+					_getSegmentEntryIds(
+						groupId, userId, context, segmentEntryIds),
+					SegmentsEntryConstants.ID_DEFAULT)));
 	}
 
-	private Optional<HttpServletRequest> _getHttpServletRequestOptional() {
+	private long _getCompanyId(long groupId) throws PortalException {
+		if (groupId == 0) {
+			return _portal.getDefaultCompanyId();
+		}
+
+		Group group = _groupLocalService.fetchGroup(groupId);
+
+		if (group == null) {
+			return _portal.getDefaultCompanyId();
+		}
+
+		return group.getCompanyId();
+	}
+
+	private long[] _getSegmentEntryIds(
+		long groupId, long userId, Context context, long[] segmentEntryIds) {
+
+		long segmentsEntryId = _getSegmentsEntryId();
+
+		if (segmentsEntryId >= 0) {
+			return new long[] {segmentsEntryId};
+		}
+
+		try {
+			return _segmentsEntryProviderRegistry.getSegmentsEntryIds(
+				groupId, User.class.getName(), userId, context,
+				segmentEntryIds);
+		}
+		catch (PortalException portalException) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(portalException);
+			}
+
+			return new long[0];
+		}
+	}
+
+	private long _getSegmentsEntryId() {
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
 		if (serviceContext == null) {
-			return Optional.empty();
+			return -1;
 		}
 
-		return Optional.ofNullable(serviceContext.getRequest());
-	}
+		HttpServletRequest httpServletRequest = serviceContext.getRequest();
 
-	private Optional<long[]> _getSegmentsEntryIdsOptional() {
-		Optional<HttpServletRequest> httpServletRequestOptional =
-			_getHttpServletRequestOptional();
+		if (httpServletRequest == null) {
+			return -1;
+		}
 
-		return Optional.ofNullable(
-			httpServletRequestOptional.map(
-				httpServletRequest -> (long[])httpServletRequest.getAttribute(
-					SegmentsWebKeys.SEGMENTS_ENTRY_IDS)
-			).orElse(
-				null
-			));
+		String layoutMode = ParamUtil.getString(
+			httpServletRequest, "p_l_mode", Constants.VIEW);
+
+		if (!layoutMode.equals(Constants.PREVIEW)) {
+			return -1;
+		}
+
+		return ParamUtil.getLong(httpServletRequest, "segmentsEntryId", -1);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SegmentsEntryRetrieverImpl.class);
 
 	@Reference
-	private SegmentsEntryProviderRegistry _segmentsEntryProviderRegistry;
+	private GroupLocalService _groupLocalService;
 
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY,
-		target = "(model.class.name=com.liferay.portal.kernel.model.User)"
-	)
-	private volatile SegmentsEntrySimulator _segmentsEntrySimulator;
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private SegmentsConfigurationProvider _segmentsConfigurationProvider;
+
+	@Reference
+	private SegmentsEntryProviderRegistry _segmentsEntryProviderRegistry;
 
 }

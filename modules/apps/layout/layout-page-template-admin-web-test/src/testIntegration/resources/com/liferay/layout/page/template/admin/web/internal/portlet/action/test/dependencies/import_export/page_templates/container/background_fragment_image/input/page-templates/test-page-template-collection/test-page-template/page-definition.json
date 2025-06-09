@@ -1,5 +1,6 @@
 {
 	"pageElement": {
+		"id": "item1",
 		"pageElements": [
 			{
 				"definition": {
@@ -16,7 +17,6 @@
 						"maxWidth": "none",
 						"minHeight": "auto",
 						"minWidth": "auto",
-						"opacity": "100",
 						"overflow": "visible",
 						"shadow": "shadow-none",
 						"textAlign": "none",
@@ -37,6 +37,7 @@
 						"widthType": "Fluid"
 					}
 				},
+				"id": "item2",
 				"pageElements": [
 					{
 						"definition": {
@@ -57,7 +58,6 @@
 								"maxWidth": "none",
 								"minHeight": "auto",
 								"minWidth": "auto",
-								"opacity": "100",
 								"overflow": "visible",
 								"shadow": "shadow-none",
 								"textAlign": "none",
@@ -78,6 +78,7 @@
 								"widthType": "Fluid"
 							}
 						},
+						"id": "item3",
 						"type": "Section"
 					},
 					{
@@ -108,7 +109,6 @@
 								"maxWidth": "none",
 								"minHeight": "auto",
 								"minWidth": "auto",
-								"opacity": "100",
 								"overflow": "visible",
 								"shadow": "shadow-none",
 								"textAlign": "none",
@@ -129,6 +129,7 @@
 								"widthType": "Fluid"
 							}
 						},
+						"id": "item4",
 						"type": "Section"
 					}
 				],

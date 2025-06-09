@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,7 +11,11 @@
 	<portlet:param name="redirect" value="<%= currentURL.toString() %>" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteBackgroundTasksURL %>" cssClass="<%= processListListViewCss %>" method="get" name="fm">
+<%
+ProcessListDisplayContext processListDisplayContext = new ProcessListDisplayContext(groupId, request, liferayPortletResponse, liveGroup);
+%>
+
+<aui:form action="<%= deleteBackgroundTasksURL %>" cssClass="<%= processListDisplayContext.getProcessListListViewCss() %>" method="get" name="fm">
 	<aui:input name="<%= Constants.CMD %>" type="hidden" />
 	<aui:input name="redirect" type="hidden" value="<%= currentURL.toString() %>" />
 	<aui:input name="deleteBackgroundTaskIds" type="hidden" />
@@ -32,64 +27,20 @@
 	/>
 
 	<liferay-ui:search-container
-		emptyResultsMessage="no-publish-processes-were-found"
-		id="<%= searchContainerId %>"
-		iteratorURL="<%= renderURL %>"
-		orderByCol="<%= orderByCol %>"
-		orderByComparator="<%= orderByComparator %>"
-		orderByType="<%= orderByType %>"
-		rowChecker="<%= new EmptyOnClickRowChecker(liferayPortletResponse) %>"
+		id='<%= HtmlUtil.escapeJS(ParamUtil.getString(request, "searchContainerId")) %>'
+		searchContainer="<%= processListDisplayContext.getSearchContainer() %>"
 	>
-		<liferay-ui:search-container-results>
-
-			<%
-			int backgroundTasksCount = 0;
-			List<BackgroundTask> backgroundTasks = null;
-
-			if (navigation.equals("all")) {
-				backgroundTasksCount = BackgroundTaskManagerUtil.getBackgroundTasksCount(new long[] {groupId, liveGroupId}, taskExecutorClassName);
-
-				if (orderByCol.equals("duration")) {
-					backgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasksByDuration(new long[] {groupId, liveGroupId}, new String[] {taskExecutorClassName}, searchContainer.getStart(), searchContainer.getEnd(), StringUtil.equalsIgnoreCase("asc", orderByType));
-				}
-				else {
-					backgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasks(new long[] {groupId, liveGroupId}, taskExecutorClassName, searchContainer.getStart(), searchContainer.getEnd(), searchContainer.getOrderByComparator());
-				}
-			}
-			else {
-				boolean completed = false;
-
-				if (navigation.equals("completed")) {
-					completed = true;
-				}
-
-				backgroundTasksCount = BackgroundTaskManagerUtil.getBackgroundTasksCount(new long[] {groupId, liveGroupId}, taskExecutorClassName, completed);
-
-				if (orderByCol.equals("duration")) {
-					backgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasksByDuration(new long[] {groupId, liveGroupId}, new String[] {taskExecutorClassName}, completed, searchContainer.getStart(), searchContainer.getEnd(), StringUtil.equalsIgnoreCase("asc", orderByType));
-				}
-				else {
-					backgroundTasks = BackgroundTaskManagerUtil.getBackgroundTasks(new long[] {groupId, liveGroupId}, taskExecutorClassName, completed, searchContainer.getStart(), searchContainer.getEnd(), searchContainer.getOrderByComparator());
-				}
-			}
-
-			searchContainer.setResults(backgroundTasks);
-			searchContainer.setTotal(backgroundTasksCount);
-			%>
-
-		</liferay-ui:search-container-results>
-
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.kernel.backgroundtask.BackgroundTask"
 			keyProperty="backgroundTaskId"
 			modelVar="backgroundTask"
 		>
 			<c:choose>
-				<c:when test='<%= displayStyle.equals("descriptive") %>'>
+				<c:when test='<%= Objects.equals(processListDisplayContext.getDisplayStyle(), "descriptive") %>'>
 					<liferay-ui:search-container-column-text
 						valign="top"
 					>
-						<liferay-ui:user-portrait
+						<liferay-user:user-portrait
 							userId="<%= backgroundTask.getUserId() %>"
 						/>
 					</liferay-ui:search-container-column-text>
@@ -108,12 +59,12 @@
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:when>
-				<c:when test='<%= displayStyle.equals("list") %>'>
+				<c:when test='<%= Objects.equals(processListDisplayContext.getDisplayStyle(), "list") %>'>
 					<liferay-ui:search-container-column-text
 						cssClass="table-cell-expand table-cell-minw-200 table-title"
 						name="title"
 					>
-						<liferay-ui:user-portrait
+						<liferay-user:user-portrait
 							userId="<%= backgroundTask.getUserId() %>"
 						/>
 
@@ -162,15 +113,15 @@
 				<liferay-staging:process-list-menu
 					backgroundTask="<%= backgroundTask %>"
 					deleteMenu="<%= deleteMenu %>"
-					localPublishing="<%= localPublishing %>"
+					localPublishing="<%= processListDisplayContext.isLocalPublishing() %>"
 					relaunchMenu="<%= relaunchMenu %>"
-					summaryMenu="<%= summaryMenu && !(backgroundTask.getStatus() == BackgroundTaskConstants.STATUS_FAILED) %>"
+					summaryMenu="<%= summaryMenu %>"
 				/>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>
 
 		<liferay-ui:search-iterator
-			displayStyle="<%= displayStyle %>"
+			displayStyle="<%= processListDisplayContext.getDisplayStyle() %>"
 			markupView="lexicon"
 			resultRowSplitter="<%= resultRowSplitter %>"
 		/>
@@ -178,5 +129,5 @@
 </aui:form>
 
 <liferay-staging:incomplete-process-message
-	localPublishing="<%= localPublishing %>"
+	localPublishing="<%= processListDisplayContext.isLocalPublishing() %>"
 />

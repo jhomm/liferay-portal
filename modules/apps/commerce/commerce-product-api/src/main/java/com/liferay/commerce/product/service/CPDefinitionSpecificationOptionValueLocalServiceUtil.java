@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -67,15 +59,16 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 	public static CPDefinitionSpecificationOptionValue
 			addCPDefinitionSpecificationOptionValue(
-				long cpDefinitionId, long cpSpecificationOptionId,
-				long cpOptionCategoryId, Map<java.util.Locale, String> valueMap,
-				double priority,
+				String externalReferenceCode, long cpDefinitionId,
+				long cpSpecificationOptionId, long cpOptionCategoryId,
+				double priority, Map<java.util.Locale, String> valueMap,
+				boolean visible,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionSpecificationOptionValue(
-			cpDefinitionId, cpSpecificationOptionId, cpOptionCategoryId,
-			valueMap, priority, serviceContext);
+			externalReferenceCode, cpDefinitionId, cpSpecificationOptionId,
+			cpOptionCategoryId, priority, valueMap, visible, serviceContext);
 	}
 
 	/**
@@ -123,6 +116,17 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 			cpDefinitionSpecificationOptionValue);
 	}
 
+	public static CPDefinitionSpecificationOptionValue
+			deleteCPDefinitionSpecificationOptionValue(
+				CPDefinitionSpecificationOptionValue
+					cpDefinitionSpecificationOptionValue,
+				boolean makeCopy)
+		throws PortalException {
+
+		return getService().deleteCPDefinitionSpecificationOptionValue(
+			cpDefinitionSpecificationOptionValue, makeCopy);
+	}
+
 	/**
 	 * Deletes the cp definition specification option value with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -149,6 +153,14 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 		getService().deleteCPDefinitionSpecificationOptionValues(
 			cpDefinitionId);
+	}
+
+	public static void deleteCPDefinitionSpecificationOptionValues(
+			long cpDefinitionId, boolean makeCopy)
+		throws PortalException {
+
+		getService().deleteCPDefinitionSpecificationOptionValues(
+			cpDefinitionId, makeCopy);
 	}
 
 	public static void deleteCPSpecificationOptionDefinitionValues(
@@ -270,6 +282,23 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 			cpDefinitionId, cpDefinitionSpecificationOptionValueId);
 	}
 
+	public static CPDefinitionSpecificationOptionValue
+		fetchCPDefinitionSpecificationOptionValue(
+			long cpDefinitionId, String key) {
+
+		return getService().fetchCPDefinitionSpecificationOptionValue(
+			cpDefinitionId, key);
+	}
+
+	public static CPDefinitionSpecificationOptionValue
+		fetchCPDefinitionSpecificationOptionValueByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().
+			fetchCPDefinitionSpecificationOptionValueByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the cp definition specification option value matching the UUID and group.
 	 *
@@ -306,6 +335,16 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 		return getService().getCPDefinitionSpecificationOptionValue(
 			CPDefinitionSpecificationOptionValueId);
+	}
+
+	public static CPDefinitionSpecificationOptionValue
+			getCPDefinitionSpecificationOptionValueByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().
+			getCPDefinitionSpecificationOptionValueByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	/**
@@ -353,6 +392,16 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 	public static List<CPDefinitionSpecificationOptionValue>
 		getCPDefinitionSpecificationOptionValues(
+			long cpDefinitionId, Boolean visible, int start, int end,
+			OrderByComparator<CPDefinitionSpecificationOptionValue>
+				orderByComparator) {
+
+		return getService().getCPDefinitionSpecificationOptionValues(
+			cpDefinitionId, visible, start, end, orderByComparator);
+	}
+
+	public static List<CPDefinitionSpecificationOptionValue>
+		getCPDefinitionSpecificationOptionValues(
 			long cpSpecificationOptionId, int start, int end) {
 
 		return getService().getCPDefinitionSpecificationOptionValues(
@@ -361,20 +410,10 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 	public static List<CPDefinitionSpecificationOptionValue>
 		getCPDefinitionSpecificationOptionValues(
-			long cpDefinitionId, int start, int end,
-			OrderByComparator<CPDefinitionSpecificationOptionValue>
-				orderByComparator) {
+			long cpDefinitionId, long cpOptionCategoryId, Boolean visible) {
 
 		return getService().getCPDefinitionSpecificationOptionValues(
-			cpDefinitionId, start, end, orderByComparator);
-	}
-
-	public static List<CPDefinitionSpecificationOptionValue>
-		getCPDefinitionSpecificationOptionValues(
-			long cpDefinitionId, long cpOptionCategoryId) {
-
-		return getService().getCPDefinitionSpecificationOptionValues(
-			cpDefinitionId, cpOptionCategoryId);
+			cpDefinitionId, cpOptionCategoryId, visible);
 	}
 
 	public static List<CPDefinitionSpecificationOptionValue>
@@ -432,10 +471,10 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 	}
 
 	public static int getCPDefinitionSpecificationOptionValuesCount(
-		long cpDefinitionId) {
+		long cpDefinitionId, Boolean visible) {
 
 		return getService().getCPDefinitionSpecificationOptionValuesCount(
-			cpDefinitionId);
+			cpDefinitionId, visible);
 	}
 
 	public static int getCPSpecificationOptionDefinitionValuesCount(
@@ -499,15 +538,17 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 
 	public static CPDefinitionSpecificationOptionValue
 			updateCPDefinitionSpecificationOptionValue(
+				String externalReferenceCode,
 				long cpDefinitionSpecificationOptionValueId,
-				long cpOptionCategoryId, Map<java.util.Locale, String> valueMap,
-				double priority,
+				long cpOptionCategoryId, String key, double priority,
+				Map<java.util.Locale, String> valueMap, boolean visible,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPDefinitionSpecificationOptionValue(
-			cpDefinitionSpecificationOptionValueId, cpOptionCategoryId,
-			valueMap, priority, serviceContext);
+			externalReferenceCode, cpDefinitionSpecificationOptionValueId,
+			cpOptionCategoryId, key, priority, valueMap, visible,
+			serviceContext);
 	}
 
 	public static CPDefinitionSpecificationOptionValue updateCPOptionCategoryId(
@@ -522,10 +563,13 @@ public class CPDefinitionSpecificationOptionValueLocalServiceUtil {
 	public static CPDefinitionSpecificationOptionValueLocalService
 		getService() {
 
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPDefinitionSpecificationOptionValueLocalService
-		_service;
+	private static final Snapshot
+		<CPDefinitionSpecificationOptionValueLocalService> _serviceSnapshot =
+			new Snapshot<>(
+				CPDefinitionSpecificationOptionValueLocalServiceUtil.class,
+				CPDefinitionSpecificationOptionValueLocalService.class);
 
 }

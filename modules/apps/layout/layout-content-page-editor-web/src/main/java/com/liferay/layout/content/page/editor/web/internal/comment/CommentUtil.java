@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.comment;
@@ -26,18 +17,18 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ActionRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Date;
 import java.util.function.Function;
-
-import javax.portlet.ActionRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -47,18 +38,6 @@ public class CommentUtil {
 	public static JSONObject getCommentJSONObject(
 			Comment comment, HttpServletRequest httpServletRequest)
 		throws PortalException {
-
-		User commentUser = comment.getUser();
-
-		String portraitURL = StringPool.BLANK;
-
-		if (commentUser.getPortraitId() > 0) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			portraitURL = commentUser.getPortraitURL(themeDisplay);
-		}
 
 		Date createDate = comment.getCreateDate();
 
@@ -77,14 +56,7 @@ public class CommentUtil {
 				System.currentTimeMillis() - modifiedDate.getTime(), true));
 
 		return JSONUtil.put(
-			"author",
-			JSONUtil.put(
-				"fullName", commentUser.getFullName()
-			).put(
-				"portraitURL", portraitURL
-			).put(
-				"userId", commentUser.getUserId()
-			)
+			"author", _getAuthorJSONObject(comment, httpServletRequest)
 		).put(
 			"body", comment.getBody()
 		).put(
@@ -108,7 +80,7 @@ public class CommentUtil {
 			WorkflowUtil.getServiceContextFunction(
 				_getWorkflowAction(actionRequest), actionRequest);
 
-		String notificationRedirect = HttpUtil.setParameter(
+		String notificationRedirect = HttpComponentsUtil.setParameter(
 			PortalUtil.getLayoutFullURL(themeDisplay), "p_l_mode",
 			Constants.EDIT);
 
@@ -119,6 +91,41 @@ public class CommentUtil {
 
 				return serviceContext;
 			});
+	}
+
+	private static JSONObject _getAuthorJSONObject(
+			Comment comment, HttpServletRequest httpServletRequest)
+		throws PortalException {
+
+		User commentUser = comment.getUser();
+
+		if (commentUser == null) {
+			return JSONUtil.put(
+				"fullName", LanguageUtil.get(httpServletRequest, "deleted-user")
+			).put(
+				"portraitURL", StringPool.BLANK
+			).put(
+				"userId", 0L
+			);
+		}
+
+		String portraitURL = StringPool.BLANK;
+
+		if (commentUser.getPortraitId() > 0) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			portraitURL = commentUser.getPortraitURL(themeDisplay);
+		}
+
+		return JSONUtil.put(
+			"fullName", commentUser.getFullName()
+		).put(
+			"portraitURL", portraitURL
+		).put(
+			"userId", commentUser.getUserId()
+		);
 	}
 
 	private static int _getWorkflowAction(ActionRequest actionRequest) {

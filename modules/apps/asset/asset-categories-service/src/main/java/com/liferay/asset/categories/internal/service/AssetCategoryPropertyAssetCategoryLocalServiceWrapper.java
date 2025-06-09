@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.service;
@@ -20,14 +11,12 @@ import com.liferay.asset.category.property.service.AssetCategoryPropertyLocalSer
 import com.liferay.asset.kernel.exception.AssetCategoryLimitException;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
-import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceWrapper;
-import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -47,19 +36,9 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eudaldo Alonso
  */
-@Component(immediate = true, service = ServiceWrapper.class)
+@Component(service = ServiceWrapper.class)
 public class AssetCategoryPropertyAssetCategoryLocalServiceWrapper
 	extends AssetCategoryLocalServiceWrapper {
-
-	public AssetCategoryPropertyAssetCategoryLocalServiceWrapper() {
-		super(null);
-	}
-
-	public AssetCategoryPropertyAssetCategoryLocalServiceWrapper(
-		AssetCategoryLocalService assetCategoryLocalService) {
-
-		super(assetCategoryLocalService);
-	}
 
 	@Override
 	public AssetCategory addCategory(
@@ -141,11 +120,13 @@ public class AssetCategoryPropertyAssetCategoryLocalServiceWrapper
 	public AssetCategory mergeCategories(long fromCategoryId, long toCategoryId)
 		throws PortalException {
 
-		List<AssetCategoryProperty> categoryProperties =
+		List<AssetCategoryProperty> assetCategoryProperties =
 			_assetCategoryPropertyLocalService.getCategoryProperties(
 				fromCategoryId);
 
-		for (AssetCategoryProperty fromCategoryProperty : categoryProperties) {
+		for (AssetCategoryProperty fromCategoryProperty :
+				assetCategoryProperties) {
+
 			AssetCategoryProperty toCategoryProperty =
 				_assetCategoryPropertyLocalService.fetchCategoryProperty(
 					toCategoryId, fromCategoryProperty.getKey());
@@ -169,11 +150,11 @@ public class AssetCategoryPropertyAssetCategoryLocalServiceWrapper
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		List<AssetCategoryProperty> oldCategoryProperties =
+		List<AssetCategoryProperty> assetCategoryProperties =
 			_assetCategoryPropertyLocalService.getCategoryProperties(
 				categoryId);
 
-		oldCategoryProperties = ListUtil.copy(oldCategoryProperties);
+		assetCategoryProperties = ListUtil.copy(assetCategoryProperties);
 
 		if (categoryProperties != null) {
 			for (String categoryProperty : categoryProperties) {
@@ -207,7 +188,7 @@ public class AssetCategoryPropertyAssetCategoryLocalServiceWrapper
 				AssetCategoryProperty oldCategoryProperty = null;
 
 				Iterator<AssetCategoryProperty> iterator =
-					oldCategoryProperties.iterator();
+					assetCategoryProperties.iterator();
 
 				while (iterator.hasNext()) {
 					oldCategoryProperty = iterator.next();
@@ -238,7 +219,7 @@ public class AssetCategoryPropertyAssetCategoryLocalServiceWrapper
 			}
 		}
 
-		for (AssetCategoryProperty categoryProperty : oldCategoryProperties) {
+		for (AssetCategoryProperty categoryProperty : assetCategoryProperties) {
 			_assetCategoryPropertyLocalService.deleteAssetCategoryProperty(
 				categoryProperty);
 		}
@@ -251,9 +232,6 @@ public class AssetCategoryPropertyAssetCategoryLocalServiceWrapper
 	@Reference
 	private AssetCategoryPropertyLocalService
 		_assetCategoryPropertyLocalService;
-
-	@Reference
-	private AssetVocabularyLocalService _assetVocabularyLocalService;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;

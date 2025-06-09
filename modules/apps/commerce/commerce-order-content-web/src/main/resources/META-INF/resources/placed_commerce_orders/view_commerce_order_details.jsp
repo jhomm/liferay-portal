@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -43,10 +34,10 @@ if (priceDisplayType.equals(CommercePricingConstants.TAX_INCLUDED_IN_PRICE)) {
 	totalOrderCommerceMoney = commerceOrderPrice.getTotalWithTaxAmount();
 }
 
-CommerceAccount commerceAccount = commerceOrderContentDisplayContext.getCommerceAccount();
+AccountEntry accountEntry = commerceOrderContentDisplayContext.getAccountEntry();
 
 if (commerceOrder != null) {
-	commerceAccount = commerceOrder.getCommerceAccount();
+	accountEntry = commerceOrder.getAccountEntry();
 }
 %>
 
@@ -75,8 +66,8 @@ if (commerceOrder != null) {
 	<div class="commerce-panel__content">
 		<div class="align-items-center row">
 			<div class="col-md-3">
-				<div class="commerce-order-title">
-					<%= HtmlUtil.escape(commerceAccount.getName()) %>
+				<div class="autofit-col-expand commerce-order-title">
+					<%= HtmlUtil.escape(accountEntry.getName()) %>
 				</div>
 			</div>
 
@@ -109,7 +100,7 @@ if (commerceOrder != null) {
 			<div class="col-md-3">
 				<dl class="commerce-list">
 					<dt><liferay-ui:message key="account-id" /></dt>
-					<dd><%= commerceAccount.getCommerceAccountId() %></dd>
+					<dd><%= accountEntry.getAccountEntryId() %></dd>
 				</dl>
 			</div>
 
@@ -132,55 +123,124 @@ if (commerceOrder != null) {
 					<dt><liferay-ui:message key="order-date" /></dt>
 					<dd>
 						<%= commerceOrderContentDisplayContext.getCommerceOrderDate(commerceOrder) %>
-						<%= commerceOrderContentDisplayContext.getCommerceOrderTime(commerceOrder) %>
+
+						<c:if test="<%= commerceOrderContentDisplayContext.isShowCommerceOrderCreateTime() %>">
+							<%= commerceOrderContentDisplayContext.getCommerceOrderTime(commerceOrder) %>
+						</c:if>
 					</dd>
+				</dl>
+			</div>
+		</div>
+	</div>
+
+	<div class="commerce-panel__content">
+		<div class="align-items-center row">
+			<div class="col-md-3">
+				<dl class="commerce-list">
+					<dt><liferay-ui:message key="erc" /></dt>
+					<dd><%= HtmlUtil.escape(commerceOrder.getExternalReferenceCode()) %></dd>
+				</dl>
+			</div>
+
+			<div class="col-md-3">
+				<dl class="commerce-list">
+					<dt><liferay-ui:message key="order-status" /></dt>
+					<dd><%= commerceOrderContentDisplayContext.getCommerceOrderStatusLabel(commerceOrder) %></dd>
 				</dl>
 			</div>
 		</div>
 	</div>
 </div>
 
-<c:if test="<%= commerceOrderContentDisplayContext.isShowPurchaseOrderNumber() %>">
-	<div class="row">
-		<div class="col-md-12">
-			<div class="commerce-panel">
-				<div class="commerce-panel__title"><liferay-ui:message key="purchase-order-number" /></div>
-				<div class="commerce-panel__content">
-					<div class="row">
-						<div class="col-md-6">
-							<dl class="commerce-list">
-								<%= HtmlUtil.escape(commerceOrder.getPurchaseOrderNumber()) %>
-							</dl>
-						</div>
+<c:choose>
+	<c:when test="<%= commerceOrderContentDisplayContext.isShowPurchaseOrderNumber() %>">
+		<div class="row">
+			<div class="col-md-6">
+				<div class="commerce-panel">
+					<div class="commerce-panel__title"><liferay-ui:message key="name" /></div>
+					<div class="commerce-panel__content">
+						<dl class="commerce-list">
+							<%= HtmlUtil.escape(commerceOrder.getName()) %>
+						</dl>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-md-6">
+				<div class="commerce-panel">
+					<div class="commerce-panel__title"><liferay-ui:message key="purchase-order-number" /></div>
+					<div class="commerce-panel__content">
+						<dl class="commerce-list">
+							<%= HtmlUtil.escape(commerceOrder.getPurchaseOrderNumber()) %>
+						</dl>
 					</div>
 				</div>
 			</div>
 		</div>
-	</div>
-</c:if>
+	</c:when>
+	<c:otherwise>
+		<div class="row">
+			<div class="col-md-12">
+				<div class="commerce-panel">
+					<div class="commerce-panel__title"><liferay-ui:message key="name" /></div>
+					<div class="commerce-panel__content">
+						<dl class="commerce-list">
+							<%= HtmlUtil.escape(commerceOrder.getName()) %>
+						</dl>
+					</div>
+				</div>
+			</div>
+		</div>
+	</c:otherwise>
+</c:choose>
 
 <div class="row">
 	<div class="col-md-6">
 		<div class="commerce-panel">
 			<div class="commerce-panel__title"><liferay-ui:message key="billing-address" /></div>
-			<div class="commerce-panel__content">
-				<div class="row">
-					<div class="col-md-12">
-						<c:if test="<%= billingCommerceAddress != null %>">
-							<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet1()) %></p>
+			<div class="commerce-panel__content" data-qa-id="commerceBillingAddress">
+				<c:if test="<%= commerceOrderContentDisplayContext.hasViewBillingAddressPermission(permissionChecker, accountEntry) && (billingCommerceAddress != null) %>">
+					<p><%= HtmlUtil.escape(billingCommerceAddress.getName()) %></p>
 
-							<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet2()) %>">
-								<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet2()) %></p>
+					<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getSubtype()) %>">
+						<p><%= HtmlUtil.escape(billingCommerceAddress.getSubtype(locale)) %></p>
+					</c:if>
+
+					<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet1()) %></p>
+
+					<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet2()) %>">
+						<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet2()) %></p>
+					</c:if>
+
+					<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet3()) %>">
+						<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet3()) %></p>
+					</c:if>
+
+					<p><%= HtmlUtil.escape(billingCommerceAddress.getCity() + StringPool.SPACE + billingCommerceAddress.getZip()) %></p>
+
+					<c:if test="<%= commerceOrderContentDisplayContext.isShowCommerceOrderFullAddress() %>">
+						<p>
+
+							<%
+							Region region = billingCommerceAddress.getRegion();
+							%>
+
+							<c:if test="<%= region != null %>">
+								<%= HtmlUtil.escape(region.getTitle() + StringPool.SPACE) %>
 							</c:if>
 
-							<c:if test="<%= !Validator.isBlank(billingCommerceAddress.getStreet3()) %>">
-								<p><%= HtmlUtil.escape(billingCommerceAddress.getStreet3()) %></p>
-							</c:if>
+							<%
+							Country country = billingCommerceAddress.getCountry();
+							%>
 
-							<p><%= HtmlUtil.escape(billingCommerceAddress.getCity() + StringPool.SPACE + billingCommerceAddress.getZip()) %></p>
-						</c:if>
-					</div>
-				</div>
+							<%= HtmlUtil.escape(country.getName(locale)) %>
+						</p>
+					</c:if>
+
+					<c:if test="<%= commerceOrderContentDisplayContext.isShowCommerceOrderPhoneNumber() %>">
+						<p><%= HtmlUtil.escape(billingCommerceAddress.getPhoneNumber()) %></p>
+					</c:if>
+				</c:if>
 			</div>
 		</div>
 	</div>
@@ -188,24 +248,101 @@ if (commerceOrder != null) {
 	<div class="col-md-6">
 		<div class="commerce-panel">
 			<div class="commerce-panel__title"><liferay-ui:message key="shipping-address" /></div>
+			<div class="commerce-panel__content" data-qa-id="commerceShippingAddress">
+				<c:if test="<%= shippingCommerceAddress != null %>">
+					<p><%= HtmlUtil.escape(shippingCommerceAddress.getName()) %></p>
+
+					<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getSubtype()) %>">
+						<p><%= HtmlUtil.escape(shippingCommerceAddress.getSubtype(locale)) %></p>
+					</c:if>
+
+					<p><%= HtmlUtil.escape(shippingCommerceAddress.getStreet1()) %></p>
+
+					<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getStreet2()) %>">
+						<p><%= HtmlUtil.escape(shippingCommerceAddress.getStreet2()) %></p>
+					</c:if>
+
+					<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getStreet3()) %>">
+						<p><%= HtmlUtil.escape(shippingCommerceAddress.getStreet3()) %></p>
+					</c:if>
+
+					<p><%= HtmlUtil.escape(shippingCommerceAddress.getCity() + StringPool.SPACE + shippingCommerceAddress.getZip()) %></p>
+
+					<c:if test="<%= commerceOrderContentDisplayContext.isShowCommerceOrderFullAddress() %>">
+						<p>
+
+							<%
+							Region region = shippingCommerceAddress.getRegion();
+							%>
+
+							<c:if test="<%= region != null %>">
+								<%= HtmlUtil.escape(region.getTitle() + StringPool.SPACE) %>
+							</c:if>
+
+							<%
+							Country country = shippingCommerceAddress.getCountry();
+							%>
+
+							<%= HtmlUtil.escape(country.getName(locale)) %>
+						</p>
+					</c:if>
+
+					<c:if test="<%= commerceOrderContentDisplayContext.isShowCommerceOrderPhoneNumber() %>">
+						<p><%= HtmlUtil.escape(shippingCommerceAddress.getPhoneNumber()) %></p>
+					</c:if>
+				</c:if>
+			</div>
+		</div>
+	</div>
+
+	<div class="col-md-6">
+		<div class="commerce-panel">
+			<div class="commerce-panel__title"><liferay-ui:message key="delivery-terms" /></div>
 			<div class="commerce-panel__content">
-				<div class="row">
-					<div class="col-md-12">
-						<c:if test="<%= shippingCommerceAddress != null %>">
-							<p><%= HtmlUtil.escape(shippingCommerceAddress.getStreet1()) %></p>
+				<p>
+					<c:if test="<%= commerceOrder.getDeliveryCommerceTermEntryId() != 0 %>">
+						<a href="#" id="<%= commerceOrder.getDeliveryCommerceTermEntryId() %>"><%= HtmlUtil.escape(commerceOrder.getDeliveryCommerceTermEntryName()) %></a>
 
-							<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getStreet2()) %>">
-								<p><%= HtmlUtil.escape(shippingCommerceAddress.getStreet2()) %></p>
-							</c:if>
+						<liferay-frontend:component
+							context='<%=
+								HashMapBuilder.<String, Object>put(
+									"HTMLElementId", commerceOrder.getDeliveryCommerceTermEntryId()
+								).put(
+									"modalContent", commerceOrder.getDeliveryCommerceTermEntryDescription()
+								).put(
+									"modalTitle", commerceOrder.getDeliveryCommerceTermEntryName()
+								).build()
+							%>'
+							module="{attachModalToHTMLElement} from commerce-order-content-web"
+						/>
+					</c:if>
+				</p>
+			</div>
+		</div>
+	</div>
 
-							<c:if test="<%= !Validator.isBlank(shippingCommerceAddress.getStreet3()) %>">
-								<p><%= HtmlUtil.escape(shippingCommerceAddress.getStreet3()) %></p>
-							</c:if>
+	<div class="col-md-6">
+		<div class="commerce-panel">
+			<div class="commerce-panel__title"><liferay-ui:message key="payment-terms" /></div>
+			<div class="commerce-panel__content">
+				<p>
+					<c:if test="<%= commerceOrder.getPaymentCommerceTermEntryId() != 0 %>">
+						<a href="#" id="<%= commerceOrder.getPaymentCommerceTermEntryId() %>"><%= HtmlUtil.escape(commerceOrder.getPaymentCommerceTermEntryName()) %></a>
 
-							<p><%= HtmlUtil.escape(shippingCommerceAddress.getCity() + StringPool.SPACE + shippingCommerceAddress.getZip()) %></p>
-						</c:if>
-					</div>
-				</div>
+						<liferay-frontend:component
+							context='<%=
+								HashMapBuilder.<String, Object>put(
+									"HTMLElementId", commerceOrder.getPaymentCommerceTermEntryId()
+								).put(
+									"modalContent", commerceOrder.getPaymentCommerceTermEntryDescription()
+								).put(
+									"modalTitle", commerceOrder.getPaymentCommerceTermEntryName()
+								).build()
+							%>'
+							module="{attachModalToHTMLElement} from commerce-order-content-web"
+						/>
+					</c:if>
+				</p>
 			</div>
 		</div>
 	</div>
@@ -221,7 +358,19 @@ if (commerceOrder != null) {
 		<aui:input name="commerceOrderId" type="hidden" value="<%= String.valueOf(commerceOrder.getCommerceOrderId()) %>" />
 	</aui:form>
 
-	<aui:button cssClass="btn btn-lg btn-secondary" onClick='<%= liferayPortletResponse.getNamespace() + "reorderCommerceOrder();" %>' value="reorder" />
+	<c:if test="<%= commerceOrderContentDisplayContext.isShowProcessQuote() %>">
+		<aui:button cssClass="btn-lg" onClick='<%= liferayPortletResponse.getNamespace() + "handleCTA(null, 'processQuote', null);" %>' value="process-quote" />
+	</c:if>
+
+	<c:if test='<%= FeatureFlagManagerUtil.isEnabled("LPD-10562") && (commerceOrder.getOrderStatus() == CommerceOrderConstants.ORDER_STATUS_COMPLETED) %>'>
+		<aui:button cssClass="btn-lg" onClick='<%= liferayPortletResponse.getNamespace() + "handleCTA(null, 'makeReturn', null);" %>' value="make-a-return" />
+	</c:if>
+
+	<aui:button cssClass="btn-lg" onClick='<%= liferayPortletResponse.getNamespace() + "handleCTA(null, 'reorder', null);" %>' value="reorder" />
+
+	<c:if test="<%= commerceOrderContentDisplayContext.isShowRetryPayment() %>">
+		<aui:button cssClass="btn-lg" href="<%= commerceOrderContentDisplayContext.getRetryPaymentURL() %>" primary="<%= true %>" value="retry-payment" />
+	</c:if>
 
 	<liferay-util:dynamic-include key="com.liferay.commerce.order.content.web#/place_order_detail_cta#" />
 </div>
@@ -235,16 +384,14 @@ if (commerceOrder != null) {
 		contextParams.put("commerceOrderId", String.valueOf(commerceOrder.getCommerceOrderId()));
 		%>
 
-		<clay:data-set-display
+		<frontend-data-set:classic-display
 			contextParams="<%= contextParams %>"
-			dataProviderKey="<%= CommerceOrderDataSetConstants.COMMERCE_DATA_SET_KEY_PLACED_ORDER_ITEMS %>"
-			id="<%= CommerceOrderDataSetConstants.COMMERCE_DATA_SET_KEY_PLACED_ORDER_ITEMS %>"
+			dataProviderKey="<%= CommerceOrderFDSNames.PLACED_ORDER_ITEMS %>"
+			id="<%= CommerceOrderFDSNames.PLACED_ORDER_ITEMS %>"
 			itemsPerPage="<%= 10 %>"
-			namespace="<%= liferayPortletResponse.getNamespace() %>"
 			nestedItemsKey="orderItemId"
 			nestedItemsReferenceKey="orderItems"
-			pageNumber="<%= 1 %>"
-			portletURL="<%= commerceOrderContentDisplayContext.getPortletURL() %>"
+			propsTransformer="{PlacedOrderItemClassicFDSPropsTransformer} from commerce-order-content-web"
 			style="stacked"
 		/>
 	</div>
@@ -254,6 +401,22 @@ if (commerceOrder != null) {
 	<div class="col-md-9">
 	</div>
 
+	<liferay-ui:icon-menu
+		direction="right"
+		icon="<%= StringPool.BLANK %>"
+		markupView="lexicon"
+		message="<%= StringPool.BLANK %>"
+		showWhenSingleIcon="<%= true %>"
+		triggerCssClass="btn btn-lg btn-monospaced btn-primary position-fixed thumb-menu"
+	>
+		<liferay-ui:icon
+			icon="print"
+			message="print"
+			target="_blank"
+			url="<%= commerceOrderContentDisplayContext.getExportCommerceOrderReportURL() %>"
+		/>
+	</liferay-ui:icon-menu>
+
 	<div class="col-md-3">
 		<div class="commerce-panel">
 			<div class="commerce-panel__content">
@@ -262,12 +425,12 @@ if (commerceOrder != null) {
 					<dd class="text-right"><%= HtmlUtil.escape(subtotalCommerceMoney.format(locale)) %></dd>
 
 					<c:if test="<%= (subtotalCommerceDiscountValue != null) && (BigDecimal.ZERO.compareTo(subtotalCommerceDiscountValue.getDiscountPercentage()) < 0) %>">
+						<dt><liferay-ui:message key="subtotal-discount" /></dt>
 
 						<%
 						CommerceMoney subtotalDiscountAmountCommerceMoney = subtotalCommerceDiscountValue.getDiscountAmount();
 						%>
 
-						<dt><liferay-ui:message key="subtotal-discount" /></dt>
 						<dd class="text-right"><%= HtmlUtil.escape(subtotalDiscountAmountCommerceMoney.format(locale)) %></dd>
 						<dt></dt>
 						<dd class="text-right"><%= HtmlUtil.escape(commerceOrderContentDisplayContext.getLocalizedPercentage(subtotalCommerceDiscountValue.getDiscountPercentage(), locale)) %></dd>
@@ -277,15 +440,20 @@ if (commerceOrder != null) {
 					<dd class="text-right"><%= HtmlUtil.escape(shippingValueCommerceMoney.format(locale)) %></dd>
 
 					<c:if test="<%= (shippingCommerceDiscountValue != null) && (BigDecimal.ZERO.compareTo(shippingCommerceDiscountValue.getDiscountPercentage()) < 0) %>">
+						<dt><liferay-ui:message key="delivery-discount" /></dt>
 
 						<%
 						CommerceMoney shippingDiscountAmountCommerceMoney = shippingCommerceDiscountValue.getDiscountAmount();
 						%>
 
-						<dt><liferay-ui:message key="delivery-discount" /></dt>
 						<dd class="text-right"><%= HtmlUtil.escape(shippingDiscountAmountCommerceMoney.format(locale)) %></dd>
 						<dt></dt>
-						<dd class="text-right"><%= HtmlUtil.escape(commerceOrderContentDisplayContext.getLocalizedPercentage(shippingCommerceDiscountValue.getDiscountPercentage(), locale)) %></dd>
+
+						<%
+						CommerceDiscountValue shippingDiscountValueWithTaxAmount = commerceOrderPrice.getShippingDiscountValueWithTaxAmount();
+						%>
+
+						<dd class="text-right"><%= HtmlUtil.escape(commerceOrderContentDisplayContext.getLocalizedPercentage(shippingDiscountValueWithTaxAmount.getDiscountPercentage(), locale)) %></dd>
 					</c:if>
 
 					<c:if test="<%= priceDisplayType.equals(CommercePricingConstants.TAX_EXCLUDED_FROM_PRICE) %>">
@@ -294,12 +462,12 @@ if (commerceOrder != null) {
 					</c:if>
 
 					<c:if test="<%= (totalCommerceDiscountValue != null) && (BigDecimal.ZERO.compareTo(totalCommerceDiscountValue.getDiscountPercentage()) < 0) %>">
+						<dt><liferay-ui:message key="total-discount" /></dt>
 
 						<%
 						CommerceMoney totalDiscountAmountCommerceMoney = totalCommerceDiscountValue.getDiscountAmount();
 						%>
 
-						<dt><liferay-ui:message key="total-discount" /></dt>
 						<dd class="text-right"><%= HtmlUtil.escape(totalDiscountAmountCommerceMoney.format(locale)) %></dd>
 						<dt></dt>
 						<dd class="text-right"><%= HtmlUtil.escape(commerceOrderContentDisplayContext.getLocalizedPercentage(totalCommerceDiscountValue.getDiscountPercentage(), locale)) %></dd>
@@ -319,25 +487,30 @@ if (commerceOrder != null) {
 
 <aui:script>
 	function <portlet:namespace />viewCommerceOrderShipments(uri) {
-		Liferay.Util.openWindow({
-			dialog: {
-				centered: true,
-				destroyOnClose: true,
-				modal: true,
-			},
-			dialogIframe: {
-				bodyCssClass: 'dialog',
-			},
+		Liferay.Util.openModal({
+			containerProps: {},
 			id: 'viewCommerceOrderShipmentsDialog',
+			iframeBodyCssClass: 'dialog',
 			title: '',
-			uri: uri,
+			url: uri,
 		});
 	}
-
-	function <portlet:namespace />reorderCommerceOrder() {
-		document.<portlet:namespace />fm.<portlet:namespace /><%= Constants.CMD %>.value =
-			'reorder';
-
-		submitForm(document.<portlet:namespace />fm);
-	}
 </aui:script>
+
+<portlet:renderURL var="viewReturnableOrderItemsURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
+	<portlet:param name="mvcRenderCommandName" value="/commerce_order_content/view_returnable_commerce_order_items" />
+	<portlet:param name="commerceOrderId" value="<%= String.valueOf(commerceOrder.getCommerceOrderId()) %>" />
+</portlet:renderURL>
+
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"namespace", liferayPortletResponse.getNamespace()
+		).put(
+			"returnableOrderItemsContextParams", commerceOrderContentDisplayContext.getReturnableOrderItemsContextParams()
+		).put(
+			"viewReturnableOrderItemsURL", viewReturnableOrderItemsURL
+		).build()
+	%>'
+	module="{viewCommerceOrderDetailsCTAs} from commerce-order-content-web"
+/>

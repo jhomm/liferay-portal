@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.configuration;
@@ -41,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConfiguration",
-	immediate = true, service = ElasticsearchConfigurationWrapper.class
+	service = ElasticsearchConfigurationWrapper.class
 )
 public class ElasticsearchConfigurationWrapper
 	implements Comparator<ElasticsearchConfigurationObserver> {
@@ -114,6 +105,10 @@ public class ElasticsearchConfigurationWrapper
 		return _elasticsearchConfiguration.httpSSLEnabled();
 	}
 
+	public int indexMaxResultWindow() {
+		return _elasticsearchConfiguration.indexMaxResultWindow();
+	}
+
 	public String indexNamePrefix() {
 		return _elasticsearchConfiguration.indexNamePrefix();
 	}
@@ -126,8 +121,38 @@ public class ElasticsearchConfigurationWrapper
 		return _elasticsearchConfiguration.indexNumberOfShards();
 	}
 
+	public boolean isDevelopmentModeEnabled() {
+		return !isProductionModeEnabled();
+	}
+
+	public boolean isProductionModeEnabled() {
+		if (productionModeEnabled()) {
+			return true;
+		}
+
+		OperationMode operationMode = operationMode();
+
+		if (operationMode == OperationMode.REMOTE) {
+			return true;
+		}
+
+		return false;
+	}
+
 	public boolean logExceptionsOnly() {
 		return _elasticsearchConfiguration.logExceptionsOnly();
+	}
+
+	public int maxConnections() {
+		return _elasticsearchConfiguration.maxConnections();
+	}
+
+	public int maxConnectionsPerRoute() {
+		return _elasticsearchConfiguration.maxConnectionsPerRoute();
+	}
+
+	public String minimumRequiredNodeVersion() {
+		return _elasticsearchConfiguration.minimumRequiredNodeVersion();
 	}
 
 	public String networkBindHost() {
@@ -287,11 +312,6 @@ public class ElasticsearchConfigurationWrapper
 		_elasticsearchConfiguration = elasticsearchConfiguration;
 	}
 
-	@Reference(unbind = "-")
-	protected void setProps(Props props) {
-		_props = props;
-	}
-
 	private Map<String, Object> _getPropsMap(
 		String[] keys, Class<?> clazz, Props props) {
 
@@ -325,7 +345,10 @@ public class ElasticsearchConfigurationWrapper
 	private volatile ElasticsearchConfiguration _elasticsearchConfiguration;
 	private final Set<ElasticsearchConfigurationObserver>
 		_elasticsearchConfigurationObservers = new ConcurrentSkipListSet<>();
+
+	@Reference
 	private Props _props;
+
 	private volatile ElasticsearchConfiguration
 		_propsElasticsearchConfiguration;
 	private volatile Map<String, Object> _propsMap = Collections.emptyMap();

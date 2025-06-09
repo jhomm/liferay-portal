@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -46,17 +37,6 @@ public class RegionServiceUtil {
 
 		return getService().addRegion(
 			countryId, active, name, position, regionCode, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
-	public static Region addRegion(
-			long countryId, String regionCode, String name, boolean active)
-		throws PortalException {
-
-		return getService().addRegion(countryId, regionCode, name, active);
 	}
 
 	public static void deleteRegion(long regionId) throws PortalException {
@@ -137,6 +117,17 @@ public class RegionServiceUtil {
 		return getService().getRegionsCount(countryId, active);
 	}
 
+	public static com.liferay.portal.kernel.search.BaseModelSearchResult<Region>
+			searchRegions(
+				long companyId, Boolean active, String keywords,
+				java.util.LinkedHashMap<String, Object> params, int start,
+				int end, OrderByComparator<Region> orderByComparator)
+		throws PortalException {
+
+		return getService().searchRegions(
+			companyId, active, keywords, params, start, end, orderByComparator);
+	}
+
 	public static Region updateActive(long regionId, boolean active)
 		throws PortalException {
 
@@ -154,6 +145,10 @@ public class RegionServiceUtil {
 
 	public static RegionService getService() {
 		return _service;
+	}
+
+	public static void setService(RegionService service) {
+		_service = service;
 	}
 
 	private static volatile RegionService _service;

@@ -1,42 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.asset.model;
 
 import com.liferay.asset.kernel.model.BaseJSPAssetRenderer;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Eduardo García
@@ -59,7 +45,7 @@ public class LayoutAssetRenderer extends BaseJSPAssetRenderer<Layout> {
 
 	@Override
 	public long getClassPK() {
-		return _layout.getLayoutId();
+		return _layout.getPlid();
 	}
 
 	@Override
@@ -84,20 +70,17 @@ public class LayoutAssetRenderer extends BaseJSPAssetRenderer<Layout> {
 
 		Locale locale = getLocale(portletRequest);
 
-		StringBundler sb = new StringBundler(4);
-
-		sb.append("<strong>");
-		sb.append(LanguageUtil.get(locale, "page"));
-		sb.append(":</strong> ");
-		sb.append(_layout.getHTMLTitle(locale));
+		String summary = StringBundler.concat(
+			LanguageUtil.get(locale, "page"), ": ",
+			_layout.getHTMLTitle(locale));
 
 		if (_layout.isTypeContent() &&
-			(_layout.getStatus() == WorkflowConstants.STATUS_PENDING)) {
+			(_layout.isDenied() || _layout.isPending())) {
 
-			return HtmlUtil.stripHtml(sb.toString());
+			return HtmlUtil.stripHtml(summary);
 		}
 
-		return sb.toString();
+		return summary;
 	}
 
 	@Override
@@ -107,32 +90,24 @@ public class LayoutAssetRenderer extends BaseJSPAssetRenderer<Layout> {
 
 	@Override
 	public String getURLViewInContext(
-		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse,
-		String noSuchEntryRedirect) {
+			LiferayPortletRequest liferayPortletRequest,
+			LiferayPortletResponse liferayPortletResponse,
+			String noSuchEntryRedirect)
+		throws Exception {
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		try {
-			if (_layout.getStatus() != WorkflowConstants.STATUS_PENDING) {
-				return PortalUtil.getLayoutFriendlyURL(_layout, themeDisplay);
-			}
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
 
-			String previewURL = PortalUtil.getLayoutFriendlyURL(
-				_layout.fetchDraftLayout(), themeDisplay);
+	@Override
+	public String getURLViewInContext(
+			ThemeDisplay themeDisplay, String noSuchEntryRedirect)
+		throws Exception {
 
-			return HttpUtil.addParameter(
-				previewURL, "p_l_back_url", themeDisplay.getURLCurrent());
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-
-			return StringPool.BLANK;
-		}
+		return PortalUtil.getLayoutFriendlyURL(_layout, themeDisplay);
 	}
 
 	@Override
@@ -169,9 +144,6 @@ public class LayoutAssetRenderer extends BaseJSPAssetRenderer<Layout> {
 
 		return super.isPreviewInContext();
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		LayoutAssetRenderer.class);
 
 	private final Layout _layout;
 

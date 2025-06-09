@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import classNames from 'classnames';
+import {useId} from 'frontend-js-components-web';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, {useMemo} from 'react';
 
 import {config} from '../../app/config/index';
-import {useId} from '../../app/utils/useId';
 
 export default function ColorPalette({
 	label,
@@ -28,32 +19,41 @@ export default function ColorPalette({
 }) {
 	const colorPaletteId = useId();
 
+	const themeColors = useMemo(() => {
+		return config.themeColorsCssClasses.map((color) => {
+			return {
+				color,
+				cssClass: color,
+				rgbValue: getRgbValue(color),
+			};
+		});
+	}, []);
+
 	return (
 		<div className="page-editor__color-palette">
 			{label && <label htmlFor={colorPaletteId}>{label}</label>}
 
-			<div className="palette-container" id={colorPaletteId}>
-				<ul className="list-unstyled palette-items-container">
-					{config.themeColorsCssClasses.map((color) => (
+			<div className="mb-1" id={colorPaletteId}>
+				<ul className="d-flex flex-wrap list-unstyled">
+					{themeColors.map((color) => (
 						<li
 							className={classNames('palette-item', {
 								'palette-item-selected':
-									color === selectedColor,
+									color.rgbValue === selectedColor ||
+									color.cssClass === selectedColor,
 							})}
-							key={color}
+							key={color.cssClass}
 						>
 							<ClayButton
 								block
-								className={classNames(
-									`bg-${color}`,
-									'palette-item-inner',
-									'p-1',
-									'rounded-circle'
-								)}
+								className="border-0 overflow-hidden p-1 palette-item-inner rounded-circle"
 								displayType="unstyled"
-								onClick={(event) => onColorSelect(color, event)}
-								small
-								title={color}
+								onClick={() => onColorSelect(color)}
+								size="sm"
+								style={{
+									backgroundColor: color.rgbValue,
+								}}
+								title={color.cssClass}
 							/>
 						</li>
 					))}
@@ -65,7 +65,7 @@ export default function ColorPalette({
 					disabled={!selectedColor}
 					displayType="secondary"
 					onClick={onClear}
-					small
+					size="sm"
 				>
 					{Liferay.Language.get('clear')}
 				</ClayButton>
@@ -80,3 +80,18 @@ ColorPalette.propTypes = {
 	onColorSelect: PropTypes.func.isRequired,
 	selectedColor: PropTypes.string,
 };
+
+function getRgbValue(className) {
+	const node = document.createElement('div');
+
+	node.classList.add(`bg-${className}`);
+	node.style.display = 'none';
+
+	document.body.append(node);
+
+	const rgbValue = getComputedStyle(node).backgroundColor;
+
+	document.body.removeChild(node);
+
+	return rgbValue;
+}

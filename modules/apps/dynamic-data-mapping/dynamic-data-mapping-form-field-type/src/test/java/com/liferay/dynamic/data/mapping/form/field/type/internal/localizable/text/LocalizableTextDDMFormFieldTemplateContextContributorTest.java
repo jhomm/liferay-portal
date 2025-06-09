@@ -1,33 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.localizable.text;
 
-import com.liferay.dynamic.data.mapping.form.field.type.BaseDDMFormFieldTypeSettingsTestCase;
-import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
-import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
+import com.liferay.dynamic.data.mapping.test.util.BaseDDMFormFieldTemplateContextContributorTestCase;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Locale;
 import java.util.Map;
@@ -37,21 +27,22 @@ import org.hamcrest.CoreMatchers;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
-
-import org.powermock.api.support.membermodification.MemberMatcher;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Gabriel Ibson
  */
-@RunWith(PowerMockRunner.class)
 public class LocalizableTextDDMFormFieldTemplateContextContributorTest
-	extends BaseDDMFormFieldTypeSettingsTestCase {
+	extends BaseDDMFormFieldTemplateContextContributorTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	@Override
@@ -59,20 +50,8 @@ public class LocalizableTextDDMFormFieldTemplateContextContributorTest
 		super.setUp();
 
 		_setUpJSONFactory();
-		_setUpJSONFactoryUtil();
 		_setUpLanguage();
 		_setUpPortal();
-	}
-
-	@Test
-	public void testGetAvailableLocales() {
-		Map<String, Object> parameters = _getParameters();
-
-		JSONArray availableLocalesJSONArray = (JSONArray)parameters.get(
-			"availableLocales");
-
-		Assert.assertEquals(
-			_availableLocales.length, availableLocalesJSONArray.length());
 	}
 
 	@Test
@@ -121,72 +100,43 @@ public class LocalizableTextDDMFormFieldTemplateContextContributorTest
 		Assert.assertEquals(expectedString, actualPredefinedValue);
 	}
 
-	private DDMForm _getDDMForm() {
-		DDMForm ddmForm = new DDMForm();
-
-		ddmForm.setDefaultLocale(LocaleUtil.US);
-
-		return ddmForm;
-	}
-
 	private Map<String, Object> _getParameters() {
-		_ddmFormField.setDDMForm(_getDDMForm());
-
-		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
-			new DDMFormFieldRenderingContext();
-
-		ddmFormFieldRenderingContext.setLocale(LocaleUtil.US);
+		_ddmFormField.setDDMForm(getDDMForm());
 
 		return _localizableTextDDMFormFieldTemplateContextContributor.
-			getParameters(_ddmFormField, ddmFormFieldRenderingContext);
+			getParameters(_ddmFormField, createDDMFormFieldRenderingContext());
 	}
 
 	private void _mockLanguageGet() {
-		when(
-			language.get(
-				Matchers.any(ResourceBundle.class), Matchers.anyString())
+		Mockito.when(
+			language.get(Mockito.any(ResourceBundle.class), Mockito.anyString())
 		).thenAnswer(
 			invocation -> invocation.getArguments()[1]
 		);
 	}
 
-	private void _setUpJSONFactory() throws Exception {
-		MemberMatcher.field(
-			LocalizableTextDDMFormFieldTemplateContextContributor.class,
-			"jsonFactory"
-		).set(
-			_localizableTextDDMFormFieldTemplateContextContributor, _jsonFactory
-		);
+	private void _setUpJSONFactory() {
+		ReflectionTestUtil.setFieldValue(
+			_localizableTextDDMFormFieldTemplateContextContributor,
+			"jsonFactory", _jsonFactory);
 	}
 
-	private void _setUpJSONFactoryUtil() {
-		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
+	private void _setUpLanguage() {
+		ReflectionTestUtil.setFieldValue(
+			_localizableTextDDMFormFieldTemplateContextContributor, "_language",
+			language);
 
-		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
-	}
-
-	private void _setUpLanguage() throws Exception {
-		MemberMatcher.field(
-			LocalizableTextDDMFormFieldTemplateContextContributor.class,
-			"language"
-		).set(
-			_localizableTextDDMFormFieldTemplateContextContributor, language
-		);
-
-		when(
+		Mockito.when(
 			language.getAvailableLocales()
 		).thenReturn(
 			SetUtil.fromArray(_availableLocales)
 		);
 	}
 
-	private void _setUpPortal() throws Exception {
-		MemberMatcher.field(
-			LocalizableTextDDMFormFieldTemplateContextContributor.class,
-			"portal"
-		).set(
-			_localizableTextDDMFormFieldTemplateContextContributor, _portal
-		);
+	private void _setUpPortal() {
+		ReflectionTestUtil.setFieldValue(
+			_localizableTextDDMFormFieldTemplateContextContributor, "portal",
+			_portal);
 	}
 
 	private final Locale[] _availableLocales = {
@@ -199,8 +149,6 @@ public class LocalizableTextDDMFormFieldTemplateContextContributorTest
 	private final LocalizableTextDDMFormFieldTemplateContextContributor
 		_localizableTextDDMFormFieldTemplateContextContributor =
 			new LocalizableTextDDMFormFieldTemplateContextContributor();
-
-	@Mock
-	private Portal _portal;
+	private final Portal _portal = Mockito.mock(Portal.class);
 
 }

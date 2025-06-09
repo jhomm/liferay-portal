@@ -1,30 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.map.google.maps.internal;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.map.BaseJSPMapProvider;
 import com.liferay.map.MapProvider;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,7 +22,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = MapProvider.class)
+@Component(service = MapProvider.class)
 public class GoogleMapsMapProvider extends BaseJSPMapProvider {
 
 	@Override
@@ -60,29 +50,22 @@ public class GoogleMapsMapProvider extends BaseJSPMapProvider {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "google-maps");
+		return _language.get(resourceBundle, "google-maps");
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.map.google.maps)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	protected ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
 	protected void prepareRequest(HttpServletRequest httpServletRequest) {
-		String resolvedModuleName = _npmResolver.resolveModuleName(
-			"@liferay/map-google-maps/js/MapGoogleMaps.es");
-
-		httpServletRequest.setAttribute(
-			"liferay-map:map:bootstrapRequire",
-			resolvedModuleName + " as MapGoogleMaps");
 	}
 
 	@Reference
-	private NPMResolver _npmResolver;
+	private Language _language;
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.map.google.maps)")
+	private ServletContext _servletContext;
 
 }

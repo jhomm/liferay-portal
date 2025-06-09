@@ -1,38 +1,90 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.avalara.connector.internal;
 
 import com.liferay.commerce.avalara.connector.CommerceAvalaraConnector;
-import com.liferay.commerce.avalara.connector.constants.CommerceAvalaraConstants;
+import com.liferay.commerce.avalara.connector.configuration.CommerceAvalaraConnectorConfiguration;
 import com.liferay.commerce.avalara.connector.exception.CommerceAvalaraConnectionException;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.util.Base64;
 
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import net.avalara.avatax.rest.client.AvaTaxClient;
+import net.avalara.avatax.rest.client.FetchResult;
+import net.avalara.avatax.rest.client.models.CompanyModel;
 import net.avalara.avatax.rest.client.models.PingResultModel;
+import net.avalara.avatax.rest.client.models.TaxCodeModel;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Calvin Keum
+ * @author Katie Nesterovich
+ * @author Riccardo Alberti
  */
-@Component(
-	enabled = false, immediate = true, service = CommerceAvalaraConnector.class
-)
+@Component(service = CommerceAvalaraConnector.class)
 public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
+
+	@Override
+	public Map<String, String> getCompanyCodes() throws Exception {
+		Map<String, String> companyCodes = new HashMap<>();
+
+		AvaTaxClient avaTaxClient = _getAvaTaxClient();
+
+		FetchResult<CompanyModel> companyModelFetchResult =
+			avaTaxClient.queryCompanies(null, null, 0, 0, null);
+
+		for (CompanyModel companyModel : companyModelFetchResult.getValue()) {
+			companyCodes.put(
+				companyModel.getName(), companyModel.getCompanyCode());
+		}
+
+		return companyCodes;
+	}
+
+	@Override
+	public List<TaxCodeModel> getTaxCodeModels() throws Exception {
+		AvaTaxClient avaTaxClient = _getAvaTaxClient();
+
+		FetchResult<TaxCodeModel> taxCodeModelFetchResult =
+			avaTaxClient.listTaxCodes("isActive eq true", 0, 0, null);
+
+		return taxCodeModelFetchResult.getValue();
+	}
+
+	@Override
+	public String getTaxRateByZipCode() throws Exception {
+		AvaTaxClient avaTaxClient = _getAvaTaxClient();
+
+		return avaTaxClient.downloadTaxRatesByZipCode(
+			new Date() {
+
+				@Override
+				public String toString() {
+					SimpleDateFormat simpleDateFormat = new SimpleDateFormat(
+						"yyyy-MM-dd");
+
+					return simpleDateFormat.format(this);
+				}
+
+			},
+			null);
+	}
 
 	@Override
 	public void verifyConnection(
@@ -54,22 +106,35 @@ public class CommerceAvalaraConnectorImpl implements CommerceAvalaraConnector {
 		}
 	}
 
+	private AvaTaxClient _getAvaTaxClient() throws PortalException {
+		CommerceAvalaraConnectorConfiguration
+			commerceAvalaraConnectorConfiguration =
+				_configurationProvider.getConfiguration(
+					CommerceAvalaraConnectorConfiguration.class,
+					new CompanyServiceSettingsLocator(
+						CompanyThreadLocal.getCompanyId(),
+						CommerceAvalaraConnectorConfiguration.class.getName()));
+
+		return _getAvaTaxClient(
+			commerceAvalaraConnectorConfiguration.accountNumber(),
+			commerceAvalaraConnectorConfiguration.licenseKey(),
+			commerceAvalaraConnectorConfiguration.serviceURL());
+	}
+
 	private AvaTaxClient _getAvaTaxClient(
 		String accountNumber, String licenseKey, String serviceURL) {
 
 		AvaTaxClient avaTaxClient = new AvaTaxClient(
-			CommerceAvalaraConstants.APP_MACHINE,
-			CommerceAvalaraConstants.APP_VERSION,
-			CommerceAvalaraConstants.MACHINE_NAME, serviceURL);
+			"LiferayCommerceAvalaraConnector", "1.0", "Liferay", serviceURL);
 
 		String securityHeader = StringBundler.concat(
 			accountNumber, StringPool.COLON, licenseKey);
 
-		byte[] securityHeaderBytes = securityHeader.getBytes();
-
-		String encodedSecurityHeader = Base64.encode(securityHeaderBytes);
-
-		return avaTaxClient.withSecurity(encodedSecurityHeader);
+		return avaTaxClient.withSecurity(
+			Base64.encode(securityHeader.getBytes()));
 	}
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 }

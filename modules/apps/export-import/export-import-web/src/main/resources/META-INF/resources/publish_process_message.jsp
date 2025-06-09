@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,9 +13,9 @@ ResultRow row = (ResultRow)request.getAttribute(WebKeys.SEARCH_CONTAINER_RESULT_
 BackgroundTask backgroundTask = (BackgroundTask)row.getObject();
 %>
 
-<h5 class="background-task-status-<%= BackgroundTaskConstants.getStatusLabel(backgroundTask.getStatus()) %> <%= BackgroundTaskConstants.getStatusCssClass(backgroundTask.getStatus()) %>">
+<div class="background-task-status-<%= BackgroundTaskConstants.getStatusLabel(backgroundTask.getStatus()) %> <%= BackgroundTaskConstants.getStatusCssClass(backgroundTask.getStatus()) %> h5">
 	<liferay-ui:message key="<%= backgroundTask.getStatusLabel() %>" />
-</h5>
+</div>
 
 <c:if test="<%= backgroundTask.isInProgress() %>">
 
@@ -60,13 +51,13 @@ BackgroundTask backgroundTask = (BackgroundTask)row.getObject();
 		}
 		%>
 
-		<div class="active progress">
-			<div class="progress-bar" style="width: <%= percentage %>%;">
-				<c:if test="<%= (allProgressBarCountersTotal > 0) && (!Objects.equals(cmd, Constants.PUBLISH_TO_REMOTE) || (percentage < 100)) %>">
-					<%= percentage + StringPool.PERCENT %>
-				</c:if>
-			</div>
-		</div>
+		<c:if test="<%= (allProgressBarCountersTotal > 0) && (!Objects.equals(cmd, Constants.PUBLISH_TO_REMOTE) || (percentage < 100)) %>">
+			<clay:progressbar
+				maxValue="<%= 100 %>"
+				minValue="<%= 0 %>"
+				value="<%= percentage %>"
+			/>
+		</c:if>
 
 		<%
 		String stagedModelName = (String)backgroundTaskStatus.getAttribute("stagedModelName");
@@ -101,11 +92,11 @@ BackgroundTask backgroundTask = (BackgroundTask)row.getObject();
 </c:if>
 
 <c:if test="<%= Validator.isNotNull(backgroundTask.getStatusMessage()) %>">
-	<h5>
+	<div class="h5">
 		<a class="table-link" href="javascript:Liferay.fire('<portlet:namespace />viewBackgroundTaskDetails', {nodeId: 'backgroundTaskStatusMessage<%= backgroundTask.getBackgroundTaskId() %>'}); void(0);">
 			<liferay-ui:message key="see-more-details" />
 		</a>
-	</h5>
+	</div>
 
 	<div class="background-task-status-message hide" id="<portlet:namespace />backgroundTaskStatusMessage<%= backgroundTask.getBackgroundTaskId() %>">
 		<liferay-util:include page="/publish_process_message_task_details.jsp" servletContext="<%= application %>">

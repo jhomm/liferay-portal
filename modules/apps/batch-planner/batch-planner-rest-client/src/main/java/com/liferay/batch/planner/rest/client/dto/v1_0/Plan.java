@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.rest.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.batch.planner.rest.client.dto.v1_0;
 import com.liferay.batch.planner.rest.client.function.UnsafeSupplier;
 import com.liferay.batch.planner.rest.client.serdes.v1_0.PlanSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Matija Petanjek
@@ -158,6 +149,27 @@ public class Plan implements Cloneable, Serializable {
 
 	protected String internalClassName;
 
+	public String getInternalClassNameKey() {
+		return internalClassNameKey;
+	}
+
+	public void setInternalClassNameKey(String internalClassNameKey) {
+		this.internalClassNameKey = internalClassNameKey;
+	}
+
+	public void setInternalClassNameKey(
+		UnsafeSupplier<String, Exception> internalClassNameKeyUnsafeSupplier) {
+
+		try {
+			internalClassNameKey = internalClassNameKeyUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String internalClassNameKey;
+
 	public Mapping[] getMappings() {
 		return mappings;
 	}
@@ -219,6 +231,46 @@ public class Plan implements Cloneable, Serializable {
 
 	protected Policy[] policies;
 
+	public Integer getSize() {
+		return size;
+	}
+
+	public void setSize(Integer size) {
+		this.size = size;
+	}
+
+	public void setSize(UnsafeSupplier<Integer, Exception> sizeUnsafeSupplier) {
+		try {
+			size = sizeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Integer size;
+
+	public Integer getStatus() {
+		return status;
+	}
+
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+
+	public void setStatus(
+		UnsafeSupplier<Integer, Exception> statusUnsafeSupplier) {
+
+		try {
+			status = statusUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Integer status;
+
 	public String getTaskItemDelegateName() {
 		return taskItemDelegateName;
 	}
@@ -239,6 +291,48 @@ public class Plan implements Cloneable, Serializable {
 	}
 
 	protected String taskItemDelegateName;
+
+	public Boolean getTemplate() {
+		return template;
+	}
+
+	public void setTemplate(Boolean template) {
+		this.template = template;
+	}
+
+	public void setTemplate(
+		UnsafeSupplier<Boolean, Exception> templateUnsafeSupplier) {
+
+		try {
+			template = templateUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean template;
+
+	public Integer getTotal() {
+		return total;
+	}
+
+	public void setTotal(Integer total) {
+		this.total = total;
+	}
+
+	public void setTotal(
+		UnsafeSupplier<Integer, Exception> totalUnsafeSupplier) {
+
+		try {
+			total = totalUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Integer total;
 
 	@Override
 	public Plan clone() throws CloneNotSupportedException {

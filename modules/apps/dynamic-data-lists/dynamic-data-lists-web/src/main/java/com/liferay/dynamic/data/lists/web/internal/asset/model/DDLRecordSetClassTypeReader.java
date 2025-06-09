@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.web.internal.asset.model;
@@ -20,10 +11,10 @@ import com.liferay.dynamic.data.lists.constants.DDLRecordSetConstants;
 import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetServiceUtil;
 import com.liferay.dynamic.data.lists.web.internal.asset.DDLRecordSetClassType;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.LocaleUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -36,23 +27,19 @@ public class DDLRecordSetClassTypeReader implements ClassTypeReader {
 	public List<ClassType> getAvailableClassTypes(
 		long[] groupIds, Locale locale) {
 
-		List<ClassType> classTypes = new ArrayList<>();
+		return TransformUtil.transform(
+			DDLRecordSetServiceUtil.getRecordSets(groupIds),
+			recordSet -> {
+				if (recordSet.getScope() !=
+						DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS) {
 
-		List<DDLRecordSet> recordSets = DDLRecordSetServiceUtil.getRecordSets(
-			groupIds);
+					return null;
+				}
 
-		for (DDLRecordSet recordSet : recordSets) {
-			if (recordSet.getScope() ==
-					DDLRecordSetConstants.SCOPE_DYNAMIC_DATA_LISTS) {
-
-				classTypes.add(
-					new DDLRecordSetClassType(
-						recordSet.getRecordSetId(), recordSet.getName(locale),
-						LocaleUtil.toLanguageId(locale)));
-			}
-		}
-
-		return classTypes;
+				return new DDLRecordSetClassType(
+					recordSet.getRecordSetId(), recordSet.getName(locale),
+					LocaleUtil.toLanguageId(locale));
+			});
 	}
 
 	@Override

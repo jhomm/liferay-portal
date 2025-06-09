@@ -1,43 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.site.map.web.internal.display.context;
 
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
+import com.liferay.layout.item.selector.criterion.LayoutItemSelectorCriterion;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutType;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
-import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.util.LayoutDescription;
-import com.liferay.portal.util.LayoutListUtil;
 import com.liferay.site.navigation.site.map.web.internal.configuration.SiteNavigationSiteMapPortletInstanceConfiguration;
 
-import java.util.List;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 /**
  * @author Juergen Kappler
@@ -45,19 +41,23 @@ import javax.servlet.http.HttpServletRequest;
 public class SiteNavigationSiteMapDisplayContext {
 
 	public SiteNavigationSiteMapDisplayContext(
-			HttpServletRequest httpServletRequest)
+			HttpServletRequest httpServletRequest,
+			RenderResponse renderResponse)
 		throws ConfigurationException {
 
 		_httpServletRequest = httpServletRequest;
+		_renderResponse = renderResponse;
+
+		_itemSelector = (ItemSelector)httpServletRequest.getAttribute(
+			ItemSelector.class.getName());
 
 		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
-
 		_siteNavigationSiteMapPortletInstanceConfiguration =
-			portletDisplay.getPortletInstanceConfiguration(
-				SiteNavigationSiteMapPortletInstanceConfiguration.class);
+			ConfigurationProviderUtil.getPortletInstanceConfiguration(
+				SiteNavigationSiteMapPortletInstanceConfiguration.class,
+				_themeDisplay);
 	}
 
 	public String buildSiteMap() throws Exception {
@@ -77,33 +77,75 @@ public class SiteNavigationSiteMapDisplayContext {
 		return sb.toString();
 	}
 
-	public Long getDisplayStyleGroupId() {
+	public long getDisplayStyleGroupId() {
 		if (_displayStyleGroupId != null) {
 			return _displayStyleGroupId;
 		}
 
-		_displayStyleGroupId =
+		String displayStyleGroupExternalReferenceCode =
 			_siteNavigationSiteMapPortletInstanceConfiguration.
-				displayStyleGroupId();
+				displayStyleGroupExternalReferenceCode();
 
-		Group displayStyleGroup = GroupLocalServiceUtil.fetchGroup(
-			_displayStyleGroupId);
+		Group group = _themeDisplay.getScopeGroup();
 
-		if (displayStyleGroup == null) {
-			_displayStyleGroupId = _themeDisplay.getSiteGroupId();
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = GroupLocalServiceUtil.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupId = group.getGroupId();
+		}
+		else {
+			_displayStyleGroupId = _themeDisplay.getScopeGroupId();
 		}
 
 		return _displayStyleGroupId;
 	}
 
-	public List<LayoutDescription> getLayoutDescriptions() {
-		Layout layout = _themeDisplay.getLayout();
+	public String getDisplayStyleGroupKey() {
+		if (Validator.isNotNull(_displayStyleGroupKey)) {
+			return _displayStyleGroupKey;
+		}
 
-		String rootNodeName = StringPool.BLANK;
+		String displayStyleGroupExternalReferenceCode =
+			_siteNavigationSiteMapPortletInstanceConfiguration.
+				displayStyleGroupExternalReferenceCode();
 
-		return LayoutListUtil.getLayoutDescriptions(
-			layout.getGroupId(), layout.isPrivateLayout(), rootNodeName,
-			_themeDisplay.getLocale());
+		Group group = _themeDisplay.getScopeGroup();
+
+		if (Validator.isNotNull(displayStyleGroupExternalReferenceCode)) {
+			group = GroupLocalServiceUtil.fetchGroupByExternalReferenceCode(
+				displayStyleGroupExternalReferenceCode,
+				_themeDisplay.getCompanyId());
+		}
+
+		if (group != null) {
+			_displayStyleGroupKey = group.getGroupKey();
+		}
+		else {
+			_displayStyleGroupKey = StringPool.BLANK;
+		}
+
+		return _displayStyleGroupKey;
+	}
+
+	public String getItemSelectorURL() {
+		LayoutItemSelectorCriterion layoutItemSelectorCriterion =
+			new LayoutItemSelectorCriterion();
+
+		layoutItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new UUIDItemSelectorReturnType());
+		layoutItemSelectorCriterion.setShowBreadcrumb(false);
+		layoutItemSelectorCriterion.setMultiSelection(false);
+
+		return PortletURLBuilder.create(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				_renderResponse.getNamespace() + "selectLayout",
+				layoutItemSelectorCriterion)
+		).buildString();
 	}
 
 	public Layout getRootLayout() {
@@ -299,8 +341,11 @@ public class SiteNavigationSiteMapDisplayContext {
 	}
 
 	private Long _displayStyleGroupId;
+	private String _displayStyleGroupKey;
 	private final HttpServletRequest _httpServletRequest;
 	private Boolean _includeRootInTree;
+	private final ItemSelector _itemSelector;
+	private final RenderResponse _renderResponse;
 	private Layout _rootLayout;
 	private Long _rootLayoutId;
 	private final SiteNavigationSiteMapPortletInstanceConfiguration

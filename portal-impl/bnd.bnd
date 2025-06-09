@@ -1,17 +1,20 @@
 Bundle-Name: ${manifest.bundle.name}
 Bundle-SymbolicName: ${manifest.bundle.symbolic.name}
-Bundle-Version: 10.0.1
+Bundle-Version: 113.1.0
+CPE-Name: ${cpe.name}
 Export-Package:\
-	com.liferay.portal.asm,\
 	com.liferay.portal.bean,\
 	com.liferay.portal.dao.orm.hibernate,\
 	com.liferay.portal.deploy.hot,\
 	com.liferay.portal.events,\
+	com.liferay.portal.format.util,\
 	com.liferay.portal.freemarker,\
+	com.liferay.portal.log4j,\
 	com.liferay.portal.minifier,\
 	com.liferay.portal.plugin,\
 	com.liferay.portal.security.auth,\
 	com.liferay.portal.security.lang,\
+	com.liferay.portal.service,\
 	com.liferay.portal.service.http,\
 	com.liferay.portal.service.permission,\
 	com.liferay.portal.service.persistence.constants,\
@@ -34,16 +37,10 @@ Export-Package:\
 	com.liferay.portlet.asset.service.permission,\
 	com.liferay.portlet.asset.util,\
 	com.liferay.portlet.documentlibrary,\
-	com.liferay.portlet.documentlibrary.asset,\
 	com.liferay.portlet.documentlibrary.lar,\
-	com.liferay.portlet.documentlibrary.service.permission,\
 	com.liferay.portlet.documentlibrary.store,\
 	com.liferay.portlet.documentlibrary.util,\
 	com.liferay.portlet.expando.model.impl,\
-	com.liferay.portlet.expando.util,\
-	com.liferay.portlet.layoutsadmin.display.context,\
-	com.liferay.portlet.trash,\
-	com.liferay.portlet.trash.util,\
 	com.liferay.portlet.usersadmin.search
 Import-Package: *
 Include-Resource: classes
@@ -51,3 +48,8 @@ Liferay-Service: true
 Private-Package: com.liferay.*.dependencies
 -donotcopy: (log4j\.properties|logging\.properties|portal-.*\.properties|system-.*\.properties|\.touch)
 -include ../common.bnd
+-removeheaders:\
+	Bnd-LastModified,\
+	DSTAMP,\
+	TODAY,\
+	TSTAMP

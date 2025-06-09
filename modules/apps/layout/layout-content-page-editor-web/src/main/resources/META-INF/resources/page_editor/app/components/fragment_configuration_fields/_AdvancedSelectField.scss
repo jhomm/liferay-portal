@@ -1,0 +1,56 @@
+@import 'atlas-variables';
+
+$prefix: '.page-editor__single-select-with-icon';
+
+html#{$cadmin-selector} .cadmin .page-editor__select-field {
+	&:not(:hover):not(.custom)
+		.page-editor__select-field__action-button:not(:focus) {
+		opacity: 0;
+	}
+
+	#{$prefix} {
+		display: grid;
+		gap: 4px;
+		grid-template-columns: 32px auto;
+		place-items: stretch;
+	}
+
+	#{$prefix}__label-icon {
+		grid-area: 1 / 1 / 2 / 2;
+	}
+
+	label.page-editor__input-with-icon__label-icon,
+	#{$prefix} label#{$prefix}__label-icon {
+		font-size: $font-size-sm;
+	}
+
+	#{$prefix}__select,
+	#{$prefix}__label {
+		align-items: center;
+		grid-area: 1 / 2 / 2 / 3;
+
+		.inherited {
+			background-color: $cadmin-blue;
+			border-radius: 50%;
+			flex-shrink: 0;
+			height: 6px;
+			margin-left: 8px;
+			width: 6px;
+			z-index: 1;
+		}
+	}
+
+	#{$prefix}__select {
+		opacity: 0;
+		z-index: 1;
+	}
+
+	#{$prefix}:hover,
+	#{$prefix}:focus-within {
+		background-color: $cadmin-gray-100;
+	}
+
+	#{$prefix}:focus-within {
+		box-shadow: $btn-focus-box-shadow;
+	}
+}

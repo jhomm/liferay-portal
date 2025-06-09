@@ -1,10 +1,10 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Document Management";
+	property testray.main.component.name = "Documents and Media";
 
 	var pageName = "Documents and Media Page";
 	var portletName = "Documents and Media";
@@ -19,14 +19,12 @@ definition {
 			layoutName = "Documents and Media Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Documents and Media Page",
 			widgetName = "Documents and Media");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
-
-		DMDocument.enableActionsMenuOnPortlet();
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -45,15 +43,15 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			DMDocument.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			NotificationsPortlet.tearDownUserDeliveries();
 
@@ -62,10 +60,11 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-51280"
-	@priority = "5"
-	@refactorneeded
+	@priority = 4
+	@refactordone
 	test CanReceiveEmailNotificationForNewComment {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property custom.properties = "dl.actions.visible=true${line.separator}jsonws.web.service.paths.excludes=";
+		property portal.acceptance = "true";
 		property test.smtp.server.enabled = "true";
 
 		JSONUser.addUser(
@@ -79,15 +78,12 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		Navigator.gotoPage(pageName = "Documents and Media Page");
-
-		DMFolder.addPG(
+		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "DM Folder Name");
+			dmFolderName = "DM Folder Name",
+			groupName = "Guest");
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Documents and Media");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		DMNavigator.gotoDocumentPermissionsCP(dmDocumentTitle = "DM Folder Name");
 
@@ -139,22 +135,55 @@ definition {
 	}
 
 	@description = "This is a test for LPS-136816. It checks that custom fields can be rendered properly when a DM notification email is sent."
-	@ignore = "true"
-	@priority = "4"
+	@priority = 3
 	test CanViewCustomFieldsInEmail {
-		property portal.acceptance = "false";
-
-		// TODO LPS-136816 CanViewCustomFieldsInEmail pending implementation
-
-	}
-
-	@priority = "5"
-	@refactorneeded
-	test CanViewEmailNotificationForNewDocumentInFolder {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property custom.properties = "dl.actions.visible=true${line.separator}jsonws.web.service.paths.excludes=";
 		property test.smtp.server.enabled = "true";
 
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		DMDocument.configureDocumentEmailTemplate(
+			bodyContent = '''Hi [$TO_NAME$],
+The DM file [$DOCUMENT_TITLE$] has been added to Home folder.
+[$FROM_ADDRESS$]''',
+			navTab = "Document Added Email",
+			siteURLKey = "guest");
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea@liferay.com",
+			userLoginFullName = "userfn userln");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMFolder.subscribePG();
+
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "test@liferay.com",
+			userLoginFullName = "Test Test");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.addPG(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.doc",
+			dmDocumentTitle = "Document_1.doc");
+
+		MockMock.viewMail(
+			asset = "New Basic Document: Document_1.doc",
+			content = "The DM file Document_1.doc has been added to Home folder.",
+			fromAddress = "test@liferay.com",
+			recipient = "userfn userln",
+			sender = "Joe Bloggs",
+			subject = "New Basic Document: Document_1.doc",
+			toName = "userfn userln");
+	}
+
+	@priority = 4
+	@refactordone
+	test CanViewEmailNotificationForNewDocumentInFolder {
+		property custom.properties = "dl.actions.visible=true${line.separator}jsonws.web.service.paths.excludes=";
+		property portal.acceptance = "quarantine";
+		property test.smtp.server.enabled = "true";
+
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -167,32 +196,22 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		JSONGroup.assignUserToGroup(
+			groupName = "Guest",
+			userEmailAddress = "userea@liferay.com");
 
-		User.editUserSiteCP(
-			siteName = "${siteName}",
-			userScreenName = "usersn");
-
-		Navigator.gotoPage(pageName = "Documents and Media Page");
-
-		DMFolder.addPG(
+		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",
-			dmFolderName = "DM Folder Name");
+			dmFolderName = "DM Folder Name",
+			groupName = "Guest");
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			portlet = "Documents and Media");
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
 
 		DMNavigator.gotoDocumentPermissionsCP(dmDocumentTitle = "DM Folder Name");
 
 		PermissionsInline.addOrRemoveAccessPermissionFromAllRoles(
 			addOrRemoveViewPermission = "Add",
 			roleList = "guest");
-
-		Navigator.gotoPage(pageName = "Documents and Media Page");
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "userea@liferay.com",
@@ -210,7 +229,7 @@ definition {
 
 		DMNavigator.gotoFolder(dmFolderName = "DM Folder Name");
 
-		Click(locator1 = "Icon#INFO");
+		Click(locator1 = "Icon#INFO_DM");
 
 		AssertTextEquals(
 			locator1 = "Link#UNSUBSCRIBE",
@@ -258,9 +277,11 @@ definition {
 			subject = "Basic Document Updated for ${dmDocumentTitle}");
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewWebsiteNotificationForNewDocumentInFolder {
+		property portal.acceptance = "true";
+
 		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",
 			dmFolderName = "DM Folder Name",
@@ -290,7 +311,7 @@ definition {
 			userLoginEmailAddress = "test@liferay.com",
 			userLoginFullName = "Test Test");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -303,12 +324,14 @@ definition {
 
 		DMDocument.viewDocumentTitleCmdPG(dmDocumentTitle = "DM Document Title");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewWebsiteNotificationForUpdatedDocumentInFolder {
+		property portal.acceptance = "true";
+
 		JSONFolder.addFolder(
 			dmFolderDescription = "DM Folder Description",
 			dmFolderName = "DM Folder Name",
@@ -341,7 +364,7 @@ definition {
 			userLoginEmailAddress = "test@liferay.com",
 			userLoginFullName = "Test Test");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -354,12 +377,14 @@ definition {
 
 		DMDocument.viewDocumentTitleCmdPG(dmDocumentTitle = "DM Document Title Edit");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test NoWebsiteNotificationAppearsForNewDocumentInFolder {
+		property portal.acceptance = "true";
+
 		Navigator.gotoNotifications();
 
 		Portlet.gotoPortletOptions(portletOption = "Configuration");
@@ -396,18 +421,20 @@ definition {
 
 		Button.clickPublish();
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "test@liferay.com",
 			userLoginFullName = "Test Test");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test NoWebsiteNotificationAppearsForUpdatedDocumentInFolder {
+		property portal.acceptance = "true";
+
 		Navigator.gotoNotifications();
 
 		Portlet.gotoPortletOptions(portletOption = "Configuration");
@@ -447,13 +474,13 @@ definition {
 			groupName = "Guest",
 			siteURLKey = "guest");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "test@liferay.com",
 			userLoginFullName = "Test Test");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.converter;
@@ -31,7 +22,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "dto.class.name=com.liferay.wiki.model.WikiNode",
-	service = {DTOConverter.class, WikiNodeDTOConverter.class}
+	service = DTOConverter.class
 )
 public class WikiNodeDTOConverter
 	implements DTOConverter<com.liferay.wiki.model.WikiNode, WikiNode> {
@@ -49,23 +40,27 @@ public class WikiNodeDTOConverter
 
 		return new WikiNode() {
 			{
-				actions = dtoConverterContext.getActions();
-				creator = CreatorUtil.toCreator(
-					_portal, dtoConverterContext.getUriInfoOptional(),
-					_userLocalService.fetchUser(wikiNode.getUserId()));
-				dateCreated = wikiNode.getCreateDate();
-				dateModified = wikiNode.getModifiedDate();
-				description = wikiNode.getDescription();
-				externalReferenceCode = wikiNode.getExternalReferenceCode();
-				id = wikiNode.getNodeId();
-				name = wikiNode.getName();
-				numberOfWikiPages = _wikiPageService.getPagesCount(
-					wikiNode.getGroupId(), wikiNode.getNodeId(), true);
-				siteId = wikiNode.getGroupId();
-				subscribed = _subscriptionLocalService.isSubscribed(
-					wikiNode.getCompanyId(), dtoConverterContext.getUserId(),
-					com.liferay.wiki.model.WikiNode.class.getName(),
-					wikiNode.getNodeId());
+				setActions(dtoConverterContext::getActions);
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						dtoConverterContext, _portal,
+						_userLocalService.fetchUser(wikiNode.getUserId())));
+				setDateCreated(wikiNode::getCreateDate);
+				setDateModified(wikiNode::getModifiedDate);
+				setDescription(wikiNode::getDescription);
+				setExternalReferenceCode(wikiNode::getExternalReferenceCode);
+				setId(wikiNode::getNodeId);
+				setName(wikiNode::getName);
+				setNumberOfWikiPages(
+					() -> _wikiPageService.getPagesCount(
+						wikiNode.getGroupId(), wikiNode.getNodeId(), true));
+				setSiteId(wikiNode::getGroupId);
+				setSubscribed(
+					() -> _subscriptionLocalService.isSubscribed(
+						wikiNode.getCompanyId(),
+						dtoConverterContext.getUserId(),
+						com.liferay.wiki.model.WikiNode.class.getName(),
+						wikiNode.getNodeId()));
 			}
 		};
 	}

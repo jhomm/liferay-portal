@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.groupby;
 
+import com.liferay.portal.kernel.search.Document;
+import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.GroupBy;
+import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.search.elasticsearch7.internal.LiferayElasticsearchIndexingFixtureFactory;
+import com.liferay.portal.search.elasticsearch7.internal.indexing.LiferayElasticsearchIndexingFixtureFactory;
 import com.liferay.portal.search.groupby.GroupByRequest;
 import com.liferay.portal.search.groupby.GroupByResponse;
 import com.liferay.portal.search.test.util.groupby.BaseGroupByTestCase;
@@ -26,8 +20,11 @@ import com.liferay.portal.search.test.util.indexing.IndexingFixture;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -94,7 +91,7 @@ public class GroupByTest extends BaseGroupByTestCase {
 		orderedResults.add("two|2|2");
 		orderedResults.add("three|3|3");
 
-		assertGroupByTermsSortsCountDescKeyDesc(orderedResults, false, false);
+		_assertGroupByTermsSortsCountDescKeyDesc(orderedResults, false, false);
 	}
 
 	@Test
@@ -105,7 +102,7 @@ public class GroupByTest extends BaseGroupByTestCase {
 		orderedResults.add("one|2|2");
 		orderedResults.add("three|3|3");
 
-		assertGroupByTermsSortsCountDescKeyDesc(orderedResults, false, true);
+		_assertGroupByTermsSortsCountDescKeyDesc(orderedResults, false, true);
 	}
 
 	@Test
@@ -116,7 +113,7 @@ public class GroupByTest extends BaseGroupByTestCase {
 		orderedResults.add("one|2|2");
 		orderedResults.add("two|2|2");
 
-		assertGroupByTermsSortsCountDescKeyDesc(orderedResults, true, false);
+		_assertGroupByTermsSortsCountDescKeyDesc(orderedResults, true, false);
 	}
 
 	@Test
@@ -127,7 +124,7 @@ public class GroupByTest extends BaseGroupByTestCase {
 		orderedResults.add("two|2|2");
 		orderedResults.add("one|2|2");
 
-		assertGroupByTermsSortsCountDescKeyDesc(orderedResults, true, true);
+		_assertGroupByTermsSortsCountDescKeyDesc(orderedResults, true, true);
 	}
 
 	@Test
@@ -138,7 +135,7 @@ public class GroupByTest extends BaseGroupByTestCase {
 		orderedResults.add("one|2|2");
 		orderedResults.add("two|2|2");
 
-		indexTermsSortsDuplicates();
+		_indexTermsSortsDuplicates();
 
 		assertSearch(
 			indexingTestHelper -> {
@@ -202,11 +199,38 @@ public class GroupByTest extends BaseGroupByTestCase {
 			});
 	}
 
-	protected void assertGroupByTermsSortsCountDescKeyDesc(
+	@Override
+	protected IndexingFixture createIndexingFixture() {
+		return LiferayElasticsearchIndexingFixtureFactory.getInstance();
+	}
+
+	@Override
+	protected Collection<String> getFieldNames(Hits hits) {
+		Set<String> fieldNames = new HashSet<>();
+
+		Assert.assertNotEquals(0, hits.getLength());
+
+		Document document = hits.doc(0);
+
+		Map<String, Field> fields = document.getFields();
+
+		Assert.assertFalse(fields.isEmpty());
+
+		fields.forEach(
+			(k, v) -> {
+				if (!k.contains(".")) {
+					fieldNames.add(k);
+				}
+			});
+
+		return fieldNames;
+	}
+
+	private void _assertGroupByTermsSortsCountDescKeyDesc(
 			List<String> orderedResults, boolean countDesc, boolean keyDesc)
 		throws Exception {
 
-		indexTermsSortsDuplicates();
+		_indexTermsSortsDuplicates();
 
 		assertSearch(
 			indexingTestHelper -> {
@@ -252,12 +276,7 @@ public class GroupByTest extends BaseGroupByTestCase {
 			});
 	}
 
-	@Override
-	protected IndexingFixture createIndexingFixture() {
-		return LiferayElasticsearchIndexingFixtureFactory.getInstance();
-	}
-
-	protected void indexTermsSortsDuplicates() {
+	private void _indexTermsSortsDuplicates() {
 		indexDuplicates("one", 2);
 		indexDuplicates("two", 2);
 		indexDuplicates("three", 3);

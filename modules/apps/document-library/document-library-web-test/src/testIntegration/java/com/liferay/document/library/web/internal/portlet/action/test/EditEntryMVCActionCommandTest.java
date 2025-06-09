@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.action.test;
@@ -28,6 +19,7 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.test.portlet.MockActionResponse;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -38,20 +30,17 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionResponse;
 
-import java.util.AbstractMap;
+import jakarta.portlet.PortletException;
+
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletException;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -86,42 +75,31 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		_dlAppService.checkOutFileEntry(
 			initialFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext());
 
-		Map<String, String[]> parameters = Stream.of(
-			new AbstractMap.SimpleEntry<>(
-				"changeLog", new String[] {"New Version"}),
-			new AbstractMap.SimpleEntry<>(
-				Constants.CMD, new String[] {Constants.CHECKIN}),
-			new AbstractMap.SimpleEntry<>(
-				"folderId",
-				new String[] {String.valueOf(initialFileEntry.getFolderId())}),
-			new AbstractMap.SimpleEntry<>(
-				"repositoryId",
-				new String[] {
-					String.valueOf(initialFileEntry.getRepositoryId())
-				}),
-			new AbstractMap.SimpleEntry<>(
-				"rowIdsFileEntry",
-				new String[] {
-					String.valueOf(initialFileEntry.getFileEntryId())
-				}),
-			new AbstractMap.SimpleEntry<>(
-				"versionIncrease",
-				new String[] {String.valueOf(DLVersionNumberIncrease.MAJOR)})
-		).collect(
-			Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-		);
-
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
 		_mvcActionCommand.processAction(
-			new MockActionRequest(company, _group, parameters),
+			new MockActionRequest(
+				company, _group,
+				HashMapBuilder.putAll(
+					_getParameters(initialFileEntry, Constants.CHECKIN)
+				).put(
+					"changeLog", new String[] {"New Version"}
+				).put(
+					"rowIdsFileEntry",
+					new String[] {
+						String.valueOf(initialFileEntry.getFileEntryId())
+					}
+				).put(
+					"versionIncrease",
+					new String[] {String.valueOf(DLVersionNumberIncrease.MAJOR)}
+				).build()),
 			new MockActionResponse());
 
 		FileEntry actualFileEntry = _dlAppLocalService.getFileEntry(
@@ -138,39 +116,28 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		_dlAppService.checkOutFileEntry(
 			initialFileEntry.getFileEntryId(),
 			ServiceContextTestUtil.getServiceContext());
 
-		Map<String, String[]> parameters = Stream.of(
-			new AbstractMap.SimpleEntry<>(
-				"changeLog", new String[] {"New Version"}),
-			new AbstractMap.SimpleEntry<>(
-				Constants.CMD, new String[] {Constants.CHECKIN}),
-			new AbstractMap.SimpleEntry<>(
-				"folderId",
-				new String[] {String.valueOf(initialFileEntry.getFolderId())}),
-			new AbstractMap.SimpleEntry<>(
-				"repositoryId",
-				new String[] {
-					String.valueOf(initialFileEntry.getRepositoryId())
-				}),
-			new AbstractMap.SimpleEntry<>(
-				"selectAll", new String[] {String.valueOf(Boolean.TRUE)}),
-			new AbstractMap.SimpleEntry<>(
-				"versionIncrease",
-				new String[] {String.valueOf(DLVersionNumberIncrease.MAJOR)})
-		).collect(
-			Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-		);
-
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
 		_mvcActionCommand.processAction(
-			new MockActionRequest(company, _group, parameters),
+			new MockActionRequest(
+				company, _group,
+				HashMapBuilder.putAll(
+					_getParameters(initialFileEntry, Constants.CHECKIN)
+				).put(
+					"changeLog", new String[] {"New Version"}
+				).put(
+					"selectAll", new String[] {String.valueOf(Boolean.TRUE)}
+				).put(
+					"versionIncrease",
+					new String[] {String.valueOf(DLVersionNumberIncrease.MAJOR)}
+				).build()),
 			new MockActionResponse());
 
 		FileEntry actualFileEntry = _dlAppLocalService.getFileEntry(
@@ -187,33 +154,22 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
-
-		Map<String, String[]> parameters = Stream.of(
-			new AbstractMap.SimpleEntry<>(
-				Constants.CMD, new String[] {Constants.CHECKOUT}),
-			new AbstractMap.SimpleEntry<>(
-				"folderId",
-				new String[] {String.valueOf(initialFileEntry.getFolderId())}),
-			new AbstractMap.SimpleEntry<>(
-				"repositoryId",
-				new String[] {
-					String.valueOf(initialFileEntry.getRepositoryId())
-				}),
-			new AbstractMap.SimpleEntry<>(
-				"rowIdsFileEntry",
-				new String[] {
-					String.valueOf(initialFileEntry.getFileEntryId())
-				})
-		).collect(
-			Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-		);
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
 		_mvcActionCommand.processAction(
-			new MockActionRequest(company, _group, parameters),
+			new MockActionRequest(
+				company, _group,
+				HashMapBuilder.putAll(
+					_getParameters(initialFileEntry, Constants.CHECKOUT)
+				).put(
+					"rowIdsFileEntry",
+					new String[] {
+						String.valueOf(initialFileEntry.getFileEntryId())
+					}
+				).build()),
 			new MockActionResponse());
 
 		FileEntry actualFileEntry = _dlAppLocalService.getFileEntry(
@@ -228,36 +184,39 @@ public class EditEntryMVCActionCommandTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN, null, null,
-			null, ServiceContextTestUtil.getServiceContext());
-
-		Map<String, String[]> parameters = Stream.of(
-			new AbstractMap.SimpleEntry<>(
-				Constants.CMD, new String[] {Constants.CHECKOUT}),
-			new AbstractMap.SimpleEntry<>(
-				"folderId",
-				new String[] {String.valueOf(initialFileEntry.getFolderId())}),
-			new AbstractMap.SimpleEntry<>(
-				"repositoryId",
-				new String[] {
-					String.valueOf(initialFileEntry.getRepositoryId())
-				}),
-			new AbstractMap.SimpleEntry<>(
-				"selectAll", new String[] {String.valueOf(Boolean.TRUE)})
-		).collect(
-			Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)
-		);
+			null, null, ServiceContextTestUtil.getServiceContext());
 
 		Company company = _companyLocalService.getCompany(
 			TestPropsValues.getCompanyId());
 
 		_mvcActionCommand.processAction(
-			new MockActionRequest(company, _group, parameters),
+			new MockActionRequest(
+				company, _group,
+				HashMapBuilder.putAll(
+					_getParameters(initialFileEntry, Constants.CHECKOUT)
+				).put(
+					"selectAll", new String[] {String.valueOf(Boolean.TRUE)}
+				).build()),
 			new MockActionResponse());
 
 		FileEntry actualFileEntry = _dlAppLocalService.getFileEntry(
 			initialFileEntry.getFileEntryId());
 
 		Assert.assertTrue(actualFileEntry.isCheckedOut());
+	}
+
+	private Map<String, String[]> _getParameters(
+		FileEntry tempFileEntry, String cmd) {
+
+		return HashMapBuilder.put(
+			Constants.CMD, new String[] {cmd}
+		).put(
+			"folderId",
+			new String[] {String.valueOf(tempFileEntry.getFolderId())}
+		).put(
+			"repositoryId",
+			new String[] {String.valueOf(tempFileEntry.getRepositoryId())}
+		).build();
 	}
 
 	@Inject

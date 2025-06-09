@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,9 +15,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 String backURL = ParamUtil.getString(request, "backURL", redirect);
 
 if (Validator.isNull(backURL)) {
-	PortletURL renderURL = renderResponse.createRenderURL();
-
-	backURL = renderURL.toString();
+	backURL = request.getHeader(WebKeys.REFERER);
 }
 
 String languageId = LanguageUtil.getLanguageId(request);
@@ -71,16 +60,20 @@ renderResponse.setTitle(workflowTaskDisplayContext.getHeaderTitle(workflowTask))
 
 		<liferay-ui:error exception="<%= WorkflowTaskDueDateException.class %>" message="please-enter-a-valid-due-date" />
 
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
+		<clay:sheet
+			size="full"
+		>
+			<clay:sheet-section>
 
 				<%
 				request.removeAttribute(WebKeys.SEARCH_CONTAINER_RESULT_ROW);
 				%>
 
-				<liferay-util:include page="/workflow_task_action.jsp" servletContext="<%= application %>">
-					<liferay-util:param name="mvcPath" value="/edit_workflow_task.jsp" />
-				</liferay-util:include>
+				<c:if test="<%= !workflowTaskDisplayContext.isReadOnly() %>">
+					<liferay-util:include page="/workflow_task_action.jsp" servletContext="<%= application %>">
+						<liferay-util:param name="mvcPath" value="/edit_workflow_task.jsp" />
+					</liferay-util:include>
+				</c:if>
 
 				<clay:col
 					md="6"
@@ -92,7 +85,7 @@ renderResponse.setTitle(workflowTaskDisplayContext.getHeaderTitle(workflowTask))
 									<c:when test="<%= workflowTask.isAssignedToSingleUser() %>">
 										<div class="card-col-field mr-2">
 											<div class="list-group-card-icon">
-												<liferay-ui:user-portrait
+												<liferay-user:user-portrait
 													userId="<%= workflowTask.getAssigneeUserId() %>"
 												/>
 											</div>
@@ -116,9 +109,9 @@ renderResponse.setTitle(workflowTaskDisplayContext.getHeaderTitle(workflowTask))
 						</aui:fieldset>
 					</aui:field-wrapper>
 
-					<aui:field-wrapper label="state">
+					<aui:field-wrapper label="task-name">
 						<aui:fieldset>
-							<%= workflowTaskDisplayContext.getState(workflowTask) %>
+							<%= workflowTask.getLabel(workflowTaskDisplayContext.getTaskContentLocale()) %>
 						</aui:fieldset>
 					</aui:field-wrapper>
 				</clay:col>
@@ -148,30 +141,26 @@ renderResponse.setTitle(workflowTaskDisplayContext.getHeaderTitle(workflowTask))
 						</aui:field-wrapper>
 					</clay:col>
 				</c:if>
-			</aui:fieldset>
+			</clay:sheet-section>
 
-			<liferay-ui:panel-container
-				cssClass="task-panel-container"
-				extended="<%= false %>"
-			>
+			<clay:panel-group>
 				<c:if test="<%= assetRenderer != null %>">
-					<liferay-ui:panel
-						extended="<%= true %>"
-						markupView="lexicon"
-						title="<%= workflowTaskDisplayContext.getPreviewOfTitle(workflowTask) %>"
+					<clay:panel
+						displayTitle="<%= workflowTaskDisplayContext.getPreviewOfTitle(workflowTask) %>"
+						expanded="<%= true %>"
 					>
-						<c:if test="<%= assetRenderer.isLocalizable() %>">
-							<div class="locale-actions">
-								<liferay-ui:language
-									formAction="<%= currentURL %>"
-									languageId="<%= languageId %>"
-									languageIds="<%= assetRenderer.getAvailableLanguageIds() %>"
-								/>
-							</div>
-						</c:if>
+						<div class="panel-body">
+							<c:if test="<%= assetRenderer.isLocalizable() %>">
+								<div class="locale-actions">
+									<liferay-site-navigation:language
+										formAction="<%= currentURL %>"
+										languageId="<%= languageId %>"
+										languageIds="<%= assetRenderer.getAvailableLanguageIds() %>"
+									/>
+								</div>
+							</c:if>
 
-						<div class="task-content-actions">
-							<liferay-ui:icon-list>
+							<div class="task-content-actions">
 								<c:if test="<%= assetRenderer.hasViewPermission(permissionChecker) %>">
 									<portlet:renderURL var="viewFullContentURL">
 										<portlet:param name="mvcPath" value="/view_content.jsp" />
@@ -191,125 +180,162 @@ renderResponse.setTitle(workflowTaskDisplayContext.getHeaderTitle(workflowTask))
 										<portlet:param name="workflowTaskId" value="<%= String.valueOf(workflowTask.getWorkflowTaskId()) %>" />
 									</portlet:renderURL>
 
-									<liferay-frontend:management-bar-button
-										href="<%= assetRenderer.isPreviewInContext() ? assetRenderer.getURLViewInContext(liferayPortletRequest, liferayPortletResponse, null) : viewFullContentURL.toString() %>"
-										icon="view"
-										label="view[action]"
-									/>
+									<c:if test="<%= !workflowTaskDisplayContext.isReadOnly() %>">
 
-									<c:if test="<%= workflowTaskDisplayContext.hasViewDiffsPortletURL(workflowTask) %>">
-										<liferay-frontend:management-bar-button
-											href="<%= workflowTaskDisplayContext.getTaglibViewDiffsURL(workflowTask) %>"
-											icon="paste"
-											label="diffs"
-										/>
-									</c:if>
+										<%
+										String viewTaskContentAriaLabel = LanguageUtil.get(request, "view[action]");
+										%>
 
-									<c:if test="<%= assetEntry != null %>">
-										<portlet:renderURL var="viewLayoutClassedModelUsagesURL">
-											<portlet:param name="mvcPath" value="/view_layout_classed_model_usages.jsp" />
-											<portlet:param name="redirect" value="<%= currentURL %>" />
-											<portlet:param name="className" value="<%= assetEntry.getClassName() %>" />
-											<portlet:param name="classPK" value="<%= String.valueOf(assetEntry.getClassPK()) %>" />
-											<portlet:param name="workflowTaskId" value="<%= String.valueOf(workflowTask.getWorkflowTaskId()) %>" />
-										</portlet:renderURL>
+										<span class="lfr-portal-tooltip" title="<%= viewTaskContentAriaLabel %>">
+											<clay:link
+												aria-label="<%= viewTaskContentAriaLabel %>"
+												cssClass="btn btn-monospaced btn-outline-secondary lfr-icon-item taglib-icon"
+												href="<%= assetRenderer.isPreviewInContext() ? workflowHandler.getURLViewInContext(assetRenderer.getClassPK(), liferayPortletRequest, liferayPortletResponse, null) : viewFullContentURL.toString() %>"
+												icon="view"
+												id='<%= liferayPortletResponse.getNamespace() + "view" %>'
+												target="_blank"
+												title='<%= LanguageUtil.get(request, "view") %>'
+											/>
+										</span>
 
-										<liferay-frontend:management-bar-button
-											href="<%= viewLayoutClassedModelUsagesURL %>"
-											icon="list"
-											label="view-usages"
-										/>
+										<c:if test="<%= workflowTaskDisplayContext.hasViewDiffsPortletURL(workflowTask) %>">
+
+											<%
+											String diffsTaskContentsAriaLabel = LanguageUtil.get(request, "diffs");
+											%>
+
+											<span class="lfr-portal-tooltip" title="<%= diffsTaskContentsAriaLabel %>">
+												<clay:link
+													aria-label="<%= diffsTaskContentsAriaLabel %>"
+													cssClass="btn btn-monospaced btn-outline-secondary lfr-icon-item taglib-icon"
+													href="<%= workflowTaskDisplayContext.getTaglibViewDiffsURL(workflowTask) %>"
+													icon="paste"
+													id='<%= liferayPortletResponse.getNamespace() + "diffs" %>'
+												/>
+											</span>
+										</c:if>
+
+										<c:if test="<%= assetEntry != null %>">
+											<portlet:renderURL var="viewLayoutClassedModelUsagesURL">
+												<portlet:param name="mvcPath" value="/view_layout_classed_model_usages.jsp" />
+												<portlet:param name="redirect" value="<%= currentURL %>" />
+												<portlet:param name="className" value="<%= assetEntry.getClassName() %>" />
+												<portlet:param name="classPK" value="<%= String.valueOf(assetEntry.getClassPK()) %>" />
+												<portlet:param name="workflowTaskId" value="<%= String.valueOf(workflowTask.getWorkflowTaskId()) %>" />
+											</portlet:renderURL>
+
+											<%
+											String viewUsagesTaskContentAriaLabel = LanguageUtil.get(request, "view-usages");
+											%>
+
+											<span class="lfr-portal-tooltip" title="<%= viewUsagesTaskContentAriaLabel %>">
+												<clay:link
+													aria-label="<%= viewUsagesTaskContentAriaLabel %>"
+													cssClass="btn btn-monospaced btn-outline-secondary lfr-icon-item taglib-icon"
+													href="<%= viewLayoutClassedModelUsagesURL %>"
+													icon="list"
+													id='<%= liferayPortletResponse.getNamespace() + "viewUsages" %>'
+												/>
+											</span>
+										</c:if>
 									</c:if>
 								</c:if>
 
 								<c:if test="<%= workflowTaskDisplayContext.hasEditPortletURL(workflowTask) %>">
 									<c:choose>
 										<c:when test="<%= assetRenderer.hasEditPermission(permissionChecker) && workflowTaskDisplayContext.isShowEditURL(workflowTask) %>">
-											<liferay-frontend:management-bar-button
-												href="<%= workflowTaskDisplayContext.getTaglibEditURL(workflowTask) %>"
-												icon="pencil"
-												label="edit"
-											/>
+
+											<%
+											String editTaskContentAriaLabel = LanguageUtil.get(request, "edit");
+											%>
+
+											<span class="lfr-portal-tooltip" title="<%= editTaskContentAriaLabel %>">
+												<clay:link
+													aria-label="<%= editTaskContentAriaLabel %>"
+													cssClass="btn btn-monospaced btn-outline-secondary lfr-icon-item taglib-icon"
+													href="<%= workflowTaskDisplayContext.getTaglibEditURL(workflowTask) %>"
+													icon="pencil"
+													id='<%= liferayPortletResponse.getNamespace() + "edit" %>'
+												/>
+											</span>
 										</c:when>
 										<c:when test="<%= assetRenderer.hasEditPermission(permissionChecker) && !workflowTaskDisplayContext.isShowEditURL(workflowTask) && !workflowTask.isCompleted() %>">
-											<liferay-frontend:management-bar-button
-												href=""
-												icon="question-circle-full"
-												label="please-assign-the-task-to-yourself-to-be-able-to-edit-the-content"
-											/>
+											<span class="lfr-portal-tooltip" title="<%= LanguageUtil.get(request, "please-assign-the-task-to-yourself-to-be-able-to-edit-the-content") %>">
+												<span class="btn btn-monospaced btn-outline-secondary">
+													<clay:icon
+														symbol="question-circle-full"
+													/>
+												</span>
+											</span>
 										</c:when>
 									</c:choose>
 								</c:if>
-							</liferay-ui:icon-list>
+							</div>
+
+							<span class="h3 task-content-title">
+								<span>
+									<clay:icon
+										symbol="<%= workflowHandler.getIconCssClass() %>"
+									/>
+
+									<span class="taglib-text">
+										<%= HtmlUtil.escape(workflowTaskDisplayContext.getAssetTitle(workflowTask)) %>
+									</span>
+								</span>
+							</span>
+
+							<liferay-asset:asset-display
+								assetRenderer="<%= assetRenderer %>"
+								template="<%= AssetRenderer.TEMPLATE_ABSTRACT %>"
+							/>
+
+							<c:if test="<%= assetEntry != null %>">
+								<span class="h4 task-content-author">
+									<liferay-ui:message key="author" />
+								</span>
+
+								<liferay-asset:asset-metadata
+									className="<%= assetEntry.getClassName() %>"
+									classPK="<%= assetEntry.getClassPK() %>"
+									metadataFields='<%= new String[] {"author", "categories", "tags"} %>'
+								/>
+							</c:if>
 						</div>
+					</clay:panel>
 
-						<h3 class="task-content-title">
-							<liferay-ui:icon
-								icon="<%= workflowHandler.getIconCssClass() %>"
-								label="<%= true %>"
-								markupView="lexicon"
-								message="<%= HtmlUtil.escape(workflowTaskDisplayContext.getAssetTitle(workflowTask)) %>"
-							/>
-						</h3>
+					<c:if test="<%= (assetEntry != null) && workflowHandler.isCommentable() %>">
 
-						<liferay-asset:asset-display
-							assetRenderer="<%= assetRenderer %>"
-							template="<%= AssetRenderer.TEMPLATE_ABSTRACT %>"
-						/>
+						<%
+						long discussionClassPK = workflowHandler.getDiscussionClassPK(workflowTask.getOptionalAttributes());
+						%>
 
-						<c:if test="<%= assetEntry != null %>">
-							<h4 class="task-content-author">
-								<liferay-ui:message key="author" />
-							</h4>
-
-							<liferay-asset:asset-metadata
-								className="<%= assetEntry.getClassName() %>"
-								classPK="<%= assetEntry.getClassPK() %>"
-								metadataFields='<%= new String[] {"author", "categories", "tags"} %>'
-							/>
-						</c:if>
-					</liferay-ui:panel>
-
-					<c:if test="<%= assetEntry != null %>">
-						<liferay-ui:panel
-							extended="<%= true %>"
-							markupView="lexicon"
-							title="comments"
+						<clay:panel
+							displayTitle='<%= LanguageUtil.get(request, "comments") %>'
 						>
-							<liferay-comment:discussion
-								assetEntryVisible="<%= false %>"
-								className="<%= assetRenderer.getClassName() %>"
-								classPK="<%= classPK %>"
-								formName='<%= "fm" + classPK %>'
-								ratingsEnabled="<%= false %>"
-								redirect="<%= currentURL %>"
-								userId="<%= user.getUserId() %>"
-							/>
-						</liferay-ui:panel>
+							<div class="panel-body">
+								<liferay-comment:discussion
+									assetEntryVisible="<%= false %>"
+									className="<%= assetRenderer.getClassName() %>"
+									classPK="<%= discussionClassPK %>"
+									formName='<%= "fm" + discussionClassPK %>'
+									ratingsEnabled="<%= false %>"
+									redirect="<%= currentURL %>"
+									refreshPageOnReply="<%= true %>"
+									userId="<%= user.getUserId() %>"
+								/>
+							</div>
+						</clay:panel>
 					</c:if>
 				</c:if>
 
-				<liferay-ui:panel
-					markupView="lexicon"
-					title="activities"
+				<clay:panel
+					displayTitle='<%= LanguageUtil.get(request, "activities") %>'
 				>
-
-					<%
-					List<WorkflowLog> workflowLogs = workflowTaskDisplayContext.getWorkflowLogs(workflowTask);
-					%>
-
-					<%@ include file="/workflow_logs.jspf" %>
-				</liferay-ui:panel>
-			</liferay-ui:panel-container>
-		</aui:fieldset-group>
+					<div class="panel-body">
+						<%@ include file="/workflow_logs.jspf" %>
+					</div>
+				</clay:panel>
+			</clay:panel-group>
+		</clay:sheet>
 	</clay:col>
 </clay:container-fluid>
-
-<aui:script use="liferay-workflow-tasks">
-	var onTaskClickFn = A.rbind('onTaskClick', Liferay.WorkflowTasks, '');
-
-	Liferay.delegateClick(
-		'<portlet:namespace /><%= randomId %>taskAssignLink',
-		onTaskClickFn
-	);
-</aui:script>

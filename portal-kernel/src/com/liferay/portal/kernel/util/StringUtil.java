@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -320,11 +311,7 @@ public class StringUtil {
 		if (pos == -1) {
 			String td = text.concat(delimiter);
 
-			if (s.startsWith(td)) {
-				return true;
-			}
-
-			return false;
+			return s.startsWith(td);
 		}
 
 		return true;
@@ -480,11 +467,7 @@ public class StringUtil {
 
 		String temp = s.substring(s.length() - end.length());
 
-		if (equalsIgnoreCase(temp, end)) {
-			return true;
-		}
-
-		return false;
+		return equalsIgnoreCase(temp, end);
 	}
 
 	/**
@@ -776,6 +759,91 @@ public class StringUtil {
 		}
 
 		return sb.toString();
+	}
+
+	public static String getTitleCase(
+		String s, boolean allowDash, String... exceptions) {
+
+		if (!allowDash) {
+			s = replace(s, CharPool.DASH, CharPool.SPACE);
+		}
+
+		String[] words = s.split("\\s+");
+
+		if (ArrayUtil.isEmpty(words)) {
+			return s;
+		}
+
+		StringBundler sb = new StringBundler(words.length * 2);
+
+		outerLoop:
+		for (int i = 0; i < words.length; i++) {
+			String word = words[i];
+
+			if (Validator.isNull(word)) {
+				continue;
+			}
+
+			for (String exception : exceptions) {
+				if (equalsIgnoreCase(exception, word)) {
+					sb.append(exception);
+					sb.append(CharPool.SPACE);
+
+					continue outerLoop;
+				}
+			}
+
+			if ((i != 0) && (i != (words.length - 1))) {
+				String lowerCaseWord = toLowerCase(word);
+
+				if (ArrayUtil.contains(_ARTICLES, lowerCaseWord) ||
+					ArrayUtil.contains(_CONJUNCTIONS, lowerCaseWord) ||
+					ArrayUtil.contains(_PREPOSITIONS, lowerCaseWord)) {
+
+					sb.append(lowerCaseWord);
+					sb.append(CharPool.SPACE);
+
+					continue;
+				}
+			}
+
+			if (Character.isUpperCase(word.charAt(0))) {
+				sb.append(word);
+			}
+			else {
+				sb.append(upperCaseFirstLetter(word));
+			}
+
+			sb.append(CharPool.SPACE);
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		return sb.toString();
+	}
+
+	public static byte[] hexStringToBytes(String hexString) {
+		if ((hexString.length() % 2) != 0) {
+			throw new IllegalArgumentException("Odd number of characters");
+		}
+
+		byte[] bytes = new byte[hexString.length() / 2];
+
+		for (int i = 0; i < hexString.length(); i = i + 2) {
+			String s = hexString.substring(i, i + 2);
+
+			try {
+				bytes[i / 2] = (byte)Integer.parseInt(s, 16);
+			}
+			catch (NumberFormatException numberFormatException) {
+				throw new IllegalArgumentException(
+					StringBundler.concat(
+						"Illegal hexadecimal characters ", s, " at index ", i),
+					numberFormatException);
+			}
+		}
+
+		return bytes;
 	}
 
 	/**
@@ -1683,36 +1751,36 @@ public class StringUtil {
 	 * Merges the elements of the collection by returning a string representing
 	 * a comma delimited list of its values.
 	 *
-	 * @param  col the collection of objects
+	 * @param  collection the collection of objects
 	 * @return the merged collection elements, or <code>null</code> if the
 	 *         collection is <code>null</code>
 	 */
-	public static String merge(Collection<?> col) {
-		return merge(col, StringPool.COMMA);
+	public static String merge(Collection<?> collection) {
+		return merge(collection, StringPool.COMMA);
 	}
 
 	/**
 	 * Merges the elements of the collection by returning a string representing
 	 * a delimited list of its values.
 	 *
-	 * @param  col the collection of objects
+	 * @param  collection the collection of objects
 	 * @param  delimiter the string whose last index in the string marks where
 	 *         to begin the substring
 	 * @return the merged collection elements, or <code>null</code> if the
 	 *         collection is <code>null</code>
 	 */
-	public static String merge(Collection<?> col, String delimiter) {
-		if (col == null) {
+	public static String merge(Collection<?> collection, String delimiter) {
+		if (collection == null) {
 			return null;
 		}
 
-		if (col.isEmpty()) {
+		if (collection.isEmpty()) {
 			return StringPool.BLANK;
 		}
 
-		StringBundler sb = new StringBundler(2 * col.size());
+		StringBundler sb = new StringBundler(2 * collection.size());
 
-		for (Object object : col) {
+		for (Object object : collection) {
 			String objectString = String.valueOf(object);
 
 			sb.append(objectString.trim());
@@ -2270,7 +2338,7 @@ public class StringUtil {
 			return s;
 		}
 
-		StringBundler sb = new StringBundler(s.length());
+		StringBuilder sb = new StringBuilder(s.length());
 
 		iterate:
 		for (int i = 0; i < s.length(); i++) {
@@ -2747,6 +2815,22 @@ public class StringUtil {
 		StringBundler sb = replaceToStringBundler(s, begin, end, values);
 
 		return sb.toString();
+	}
+
+	public static String replace(String s, String[] oldSubs, Object[] newSubs) {
+		if ((s == null) || (oldSubs == null) || (newSubs == null)) {
+			return null;
+		}
+
+		if (oldSubs.length != newSubs.length) {
+			return s;
+		}
+
+		for (int i = 0; i < oldSubs.length; i++) {
+			s = replace(s, oldSubs[i], String.valueOf(newSubs[i]));
+		}
+
+		return s;
 	}
 
 	/**
@@ -3440,7 +3524,7 @@ public class StringUtil {
 	 * <p>
 	 * <pre>
 	 * <code>
-	 * splitLines("First;Second;Third", ';') returns {"First","Second","Third"}
+	 * split("First;Second;Third", ';') returns {"First","Second","Third"}
 	 * </code>
 	 * </pre></p>
 	 *
@@ -3555,7 +3639,7 @@ public class StringUtil {
 	 * <p>
 	 * <pre>
 	 * <code>
-	 * splitLines("oneandtwoandthreeandfour", "and") returns {"one","two","three","four"}
+	 * split("oneandtwoandthreeandfour", "and") returns {"one","two","three","four"}
 	 * </code>
 	 * </pre></p>
 	 *
@@ -4671,6 +4755,10 @@ public class StringUtil {
 	 * @return the string, with its first character converted to upper-case
 	 */
 	public static String upperCaseFirstLetter(String s) {
+		if ((s == null) || s.isEmpty()) {
+			return s;
+		}
+
 		char[] chars = s.toCharArray();
 
 		if ((chars[0] >= 97) && (chars[0] <= 122)) {
@@ -4957,7 +5045,18 @@ public class StringUtil {
 		}
 	}
 
+	private static final String[] _ARTICLES = {"a", "an", "the"};
+
+	private static final String[] _CONJUNCTIONS = {
+		"and", "but", "for", "nor", "or", "yet"
+	};
+
 	private static final String[] _EMPTY_STRING_ARRAY = new String[0];
+
+	private static final String[] _PREPOSITIONS = {
+		"a", "an", "as", "at", "but", "by", "for", "in", "of", "off", "on",
+		"per", "to", "up", "via", "vs"
+	};
 
 	private static final char[] _RANDOM_STRING_CHAR_TABLE = {
 		'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',

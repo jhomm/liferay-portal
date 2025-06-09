@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CommerceChannelRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -46,6 +38,15 @@ public class CommerceChannelRelServiceUtil {
 
 		return getService().addCommerceChannelRel(
 			className, classPK, commerceChannelId, serviceContext);
+	}
+
+	public static List<CommerceChannelRel> addCommerceChannelRels(
+			String className, long[] classPKs, long commerceChannelId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addCommerceChannelRels(
+			className, classPKs, commerceChannelId, serviceContext);
 	}
 
 	public static void deleteCommerceChannelRel(long commerceChannelRelId)
@@ -84,35 +85,12 @@ public class CommerceChannelRelServiceUtil {
 			commerceChannelId, start, end, orderByComparator);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
 	public static List<CommerceChannelRel> getCommerceChannelRels(
-		String className, long classPK, int start, int end,
-		OrderByComparator<CommerceChannelRel> orderByComparator) {
-
-		return getService().getCommerceChannelRels(
-			className, classPK, start, end, orderByComparator);
-	}
-
-	public static List<CommerceChannelRel> getCommerceChannelRels(
-		String className, long classPK, String name, int start, int end) {
+			String className, long classPK, String name, int start, int end)
+		throws PortalException {
 
 		return getService().getCommerceChannelRels(
 			className, classPK, name, start, end);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static List<CommerceChannelRel> getCommerceChannelRels(
-		String className, long classPK, String classPKField, String name,
-		int start, int end) {
-
-		return getService().getCommerceChannelRels(
-			className, classPK, classPKField, name, start, end);
 	}
 
 	public static int getCommerceChannelRelsCount(long commerceChannelId)
@@ -122,27 +100,51 @@ public class CommerceChannelRelServiceUtil {
 	}
 
 	public static int getCommerceChannelRelsCount(
-		String className, long classPK) {
+			String className, long classPK)
+		throws PortalException {
 
 		return getService().getCommerceChannelRelsCount(className, classPK);
 	}
 
 	public static int getCommerceChannelRelsCount(
-		String className, long classPK, String name) {
+			String className, long classPK, String name)
+		throws PortalException {
 
 		return getService().getCommerceChannelRelsCount(
 			className, classPK, name);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public static int getCommerceChannelRelsCount(
-		String className, long classPK, String classPKField, String name) {
+	public static List<CommerceChannelRel>
+			getCommerceCurrencyCommerceChannelRels(
+				long commerceChannelId, String name, int start, int end)
+		throws PortalException {
 
-		return getService().getCommerceChannelRelsCount(
-			className, classPK, classPKField, name);
+		return getService().getCommerceCurrencyCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	public static int getCommerceCurrencyCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws PortalException {
+
+		return getService().getCommerceCurrencyCommerceChannelRelsCount(
+			commerceChannelId, name);
+	}
+
+	public static List<CommerceChannelRel> getCountryCommerceChannelRels(
+			long commerceChannelId, String name, int start, int end)
+		throws PortalException {
+
+		return getService().getCountryCommerceChannelRels(
+			commerceChannelId, name, start, end);
+	}
+
+	public static int getCountryCommerceChannelRelsCount(
+			long commerceChannelId, String name)
+		throws PortalException {
+
+		return getService().getCountryCommerceChannelRelsCount(
+			commerceChannelId, name);
 	}
 
 	/**
@@ -155,9 +157,12 @@ public class CommerceChannelRelServiceUtil {
 	}
 
 	public static CommerceChannelRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceChannelRelService _service;
+	private static final Snapshot<CommerceChannelRelService> _serviceSnapshot =
+		new Snapshot<>(
+			CommerceChannelRelServiceUtil.class,
+			CommerceChannelRelService.class);
 
 }

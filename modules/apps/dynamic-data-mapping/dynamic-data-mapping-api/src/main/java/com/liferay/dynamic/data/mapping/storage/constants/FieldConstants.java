@@ -1,26 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.storage.constants;
 
 import com.liferay.dynamic.data.mapping.util.NumberUtil;
 import com.liferay.dynamic.data.mapping.util.NumericDDMFormFieldUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.Accessor;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -46,6 +40,8 @@ public class FieldConstants {
 	public static final String DATA_TYPE = "dataType";
 
 	public static final String DATE = "date";
+
+	public static final String DATETIME = "datetime";
 
 	public static final String DOCUMENT_LIBRARY = "document-library";
 
@@ -116,11 +112,7 @@ public class FieldConstants {
 				Number number = decimalFormat.parse(
 					GetterUtil.getString(value));
 
-				String formattedValue = String.valueOf(number);
-
-				if ((number.doubleValue() > Integer.MAX_VALUE) ||
-					formattedValue.matches(_SCIENTIFIC_NOTATION_PATTERN)) {
-
+				if (number.doubleValue() > Integer.MAX_VALUE) {
 					return value;
 				}
 
@@ -140,6 +132,8 @@ public class FieldConstants {
 					}
 				}
 
+				String formattedValue = String.valueOf(number);
+
 				if (!NumberUtil.hasDecimalSeparator(formattedValue) &&
 					NumberUtil.hasDecimalSeparator(value)) {
 
@@ -149,11 +143,17 @@ public class FieldConstants {
 							NumberUtil.getDecimalSeparatorIndex(value) + 1));
 				}
 
+				if ((formattedValue.charAt(0) != CharPool.MINUS) &&
+					(value.charAt(0) == CharPool.MINUS)) {
+
+					formattedValue = StringPool.MINUS + formattedValue;
+				}
+
 				serializable = getSerializable(type, formattedValue);
 			}
 			catch (ParseException parseException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(parseException, parseException);
+					_log.debug(parseException);
 				}
 
 				serializable = getSerializable(type, value);
@@ -187,14 +187,32 @@ public class FieldConstants {
 		else if (type.equals(FieldConstants.DATE)) {
 			return values.toArray(new String[0]);
 		}
-		else if (type.equals(FieldConstants.DOUBLE)) {
-			return values.toArray(new Double[0]);
+		else if (type.equals(FieldConstants.DOUBLE) ||
+				 type.equals(FieldConstants.INTEGER)) {
+
+			return ListUtil.toArray(
+				values,
+				new Accessor<Object, Number>() {
+
+					@Override
+					public Number get(Object value) {
+						return GetterUtil.getNumber(value);
+					}
+
+					@Override
+					public Class<Number> getAttributeClass() {
+						return Number.class;
+					}
+
+					@Override
+					public Class<Object> getTypeClass() {
+						return Object.class;
+					}
+
+				});
 		}
 		else if (type.equals(FieldConstants.FLOAT)) {
 			return values.toArray(new Float[0]);
-		}
-		else if (type.equals(FieldConstants.INTEGER)) {
-			return values.toArray(new Integer[0]);
 		}
 		else if (type.equals(FieldConstants.LONG)) {
 			return values.toArray(new Long[0]);
@@ -267,9 +285,6 @@ public class FieldConstants {
 
 		return false;
 	}
-
-	private static final String _SCIENTIFIC_NOTATION_PATTERN =
-		"^[+-]?\\d+(?:\\.\\d*(?:[eE][+-]?\\d+)+)+$";
 
 	private static final Log _log = LogFactoryUtil.getLog(FieldConstants.class);
 

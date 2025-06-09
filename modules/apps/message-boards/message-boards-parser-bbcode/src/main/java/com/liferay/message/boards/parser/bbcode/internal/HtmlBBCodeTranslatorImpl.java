@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.parser.bbcode.internal;
@@ -189,7 +180,93 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		return sb.toString();
 	}
 
-	protected String escapeQuote(String quote) {
+	protected void handleData(
+		StringBundler sb, List<BBCodeItem> bbCodeItems, Stack<String> tags,
+		IntegerWrapper marker, BBCodeItem bbCodeItem) {
+
+		String value = HtmlUtil.escape(bbCodeItem.getValue());
+
+		value = _handleNewLine(bbCodeItems, marker, value);
+
+		for (String[] emoticon : _EMOTICONS) {
+			value = StringUtil.replace(value, emoticon[1], emoticon[0]);
+		}
+
+		sb.append(value);
+	}
+
+	protected void handleTagEnd(StringBundler sb, Stack<String> tags) {
+		sb.append(tags.pop());
+	}
+
+	protected void handleTagStart(
+		StringBundler sb, List<BBCodeItem> bbCodeItems, Stack<String> tags,
+		IntegerWrapper marker, BBCodeItem bbCodeItem) {
+
+		String tag = bbCodeItem.getValue();
+
+		if (tag.equals("b")) {
+			_handleBold(sb, tags);
+		}
+		else if (tag.equals("center") || tag.equals("justify") ||
+				 tag.equals("left") || tag.equals("right")) {
+
+			_handleTextAlign(sb, tags, bbCodeItem);
+		}
+		else if (tag.equals("code")) {
+			_handleCode(sb, bbCodeItems, marker);
+		}
+		else if (tag.equals("color") || tag.equals("colour")) {
+			_handleColor(sb, tags, bbCodeItem);
+		}
+		else if (tag.equals("email")) {
+			_handleEmail(sb, bbCodeItems, tags, marker, bbCodeItem);
+		}
+		else if (tag.equals("font")) {
+			_handleFontFamily(sb, tags, bbCodeItem);
+		}
+		else if (tag.equals("i")) {
+			_handleItalic(sb, tags);
+		}
+		else if (tag.equals("img")) {
+			_handleImage(sb, tags, bbCodeItems, marker);
+		}
+		else if (tag.equals("li") || tag.equals("*")) {
+			_handleListItem(sb, tags);
+		}
+		else if (tag.equals("list")) {
+			_handleList(sb, tags, bbCodeItem);
+		}
+		else if (tag.equals("q") || tag.equals("quote")) {
+			_handleQuote(sb, tags, bbCodeItem);
+		}
+		else if (tag.equals("s")) {
+			_handleStrikeThrough(sb, tags);
+		}
+		else if (tag.equals("size")) {
+			_handleFontSize(sb, tags, bbCodeItem);
+		}
+		else if (tag.equals("table")) {
+			_handleTable(sb, tags);
+		}
+		else if (tag.equals("td")) {
+			_handleTableCell(sb, tags);
+		}
+		else if (tag.equals("th")) {
+			_handleTableHeader(sb, tags);
+		}
+		else if (tag.equals("tr")) {
+			_handleTableRow(sb, tags);
+		}
+		else if (tag.equals("url")) {
+			_handleURL(sb, bbCodeItems, tags, marker, bbCodeItem);
+		}
+		else {
+			_handleSimpleTag(sb, tags, bbCodeItem);
+		}
+	}
+
+	private String _escapeQuote(String quote) {
 		StringBundler sb = new StringBundler();
 
 		int index = 0;
@@ -239,7 +316,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		return sb.toString();
 	}
 
-	protected String extractData(
+	private String _extractData(
 		List<BBCodeItem> bbCodeItems, IntegerWrapper marker, String tag,
 		int type, boolean consume) {
 
@@ -266,16 +343,16 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		return sb.toString();
 	}
 
-	protected void handleBold(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "strong");
+	private void _handleBold(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "strong");
 	}
 
-	protected void handleCode(
+	private void _handleCode(
 		StringBundler sb, List<BBCodeItem> bbCodeItems, IntegerWrapper marker) {
 
 		sb.append("<div class=\"lfr-code\"><table><tbody>");
 
-		String code = extractData(
+		String code = _extractData(
 			bbCodeItems, marker, "code", BBCodeParser.TYPE_DATA, true);
 
 		code = HtmlUtil.escape(code);
@@ -310,7 +387,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		sb.append("</tbody></table></div>");
 	}
 
-	protected void handleColor(
+	private void _handleColor(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
 		sb.append("<span style=\"color: ");
@@ -335,22 +412,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</span>");
 	}
 
-	protected void handleData(
-		StringBundler sb, List<BBCodeItem> bbCodeItems, Stack<String> tags,
-		IntegerWrapper marker, BBCodeItem bbCodeItem) {
-
-		String value = HtmlUtil.escape(bbCodeItem.getValue());
-
-		value = handleNewLine(bbCodeItems, tags, marker, value);
-
-		for (String[] emoticon : _EMOTICONS) {
-			value = StringUtil.replace(value, emoticon[1], emoticon[0]);
-		}
-
-		sb.append(value);
-	}
-
-	protected void handleEmail(
+	private void _handleEmail(
 		StringBundler sb, List<BBCodeItem> bbCodeItems, Stack<String> tags,
 		IntegerWrapper marker, BBCodeItem bbCodeItem) {
 
@@ -359,7 +421,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		String href = bbCodeItem.getAttribute();
 
 		if (href == null) {
-			href = extractData(
+			href = _extractData(
 				bbCodeItems, marker, "email", BBCodeParser.TYPE_DATA, false);
 		}
 
@@ -374,7 +436,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</a>");
 	}
 
-	protected void handleFontFamily(
+	private void _handleFontFamily(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
 		sb.append("<span style=\"font-family: ");
@@ -384,7 +446,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</span>");
 	}
 
-	protected void handleFontSize(
+	private void _handleFontSize(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
 		sb.append("<span style=\"font-size: ");
@@ -403,7 +465,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</span>");
 	}
 
-	protected void handleImage(
+	private void _handleImage(
 		StringBundler sb, Stack<String> tags, List<BBCodeItem> bbCodeItems,
 		IntegerWrapper marker) {
 
@@ -411,12 +473,12 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 
 		int pos = marker.getValue();
 
-		String src = extractData(
+		String src = _extractData(
 			bbCodeItems, marker, "img", BBCodeParser.TYPE_DATA, true);
 
 		Matcher matcher = _imagePattern.matcher(src);
 
-		if (matcher.matches()) {
+		if (src.startsWith("data:image/") || matcher.matches()) {
 			sb.append(HtmlUtil.escapeAttribute(src));
 		}
 
@@ -429,7 +491,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		if (Validator.isNotNull(attributes)) {
 			sb.append(StringPool.SPACE);
 
-			handleImageAttributes(sb, attributes);
+			_handleImageAttributes(sb, attributes);
 		}
 
 		sb.append(" />");
@@ -437,7 +499,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push(StringPool.BLANK);
 	}
 
-	protected void handleImageAttributes(StringBundler sb, String attributes) {
+	private void _handleImageAttributes(StringBundler sb, String attributes) {
 		Matcher matcher = _attributesPattern.matcher(attributes);
 
 		while (matcher.find()) {
@@ -459,11 +521,11 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		}
 	}
 
-	protected void handleItalic(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "em");
+	private void _handleItalic(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "em");
 	}
 
-	protected void handleList(
+	private void _handleList(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
 		String tag = "ul";
@@ -513,13 +575,12 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</" + tag + ">");
 	}
 
-	protected void handleListItem(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "li");
+	private void _handleListItem(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "li");
 	}
 
-	protected String handleNewLine(
-		List<BBCodeItem> bbCodeItems, Stack<String> tags, IntegerWrapper marker,
-		String data) {
+	private String _handleNewLine(
+		List<BBCodeItem> bbCodeItems, IntegerWrapper marker, String data) {
 
 		if ((marker.getValue() + 1) < bbCodeItems.size()) {
 			BBCodeItem bbCodeItem = null;
@@ -566,14 +627,14 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		return data;
 	}
 
-	protected void handleQuote(
+	private void _handleQuote(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
 		String quote = bbCodeItem.getAttribute();
 
 		if ((quote != null) && (quote.length() > 0)) {
 			sb.append("<div class=\"quote-title\">");
-			sb.append(escapeQuote(quote));
+			sb.append(_escapeQuote(quote));
 			sb.append(":</div>");
 		}
 
@@ -582,13 +643,13 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</div></div>");
 	}
 
-	protected void handleSimpleTag(
+	private void _handleSimpleTag(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
-		handleSimpleTag(sb, tags, bbCodeItem.getValue());
+		_handleSimpleTag(sb, tags, bbCodeItem.getValue());
 	}
 
-	protected void handleSimpleTag(
+	private void _handleSimpleTag(
 		StringBundler sb, Stack<String> tags, String tag) {
 
 		sb.append("<");
@@ -598,98 +659,27 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</" + tag + ">");
 	}
 
-	protected void handleStrikeThrough(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "strike");
+	private void _handleStrikeThrough(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "strike");
 	}
 
-	protected void handleTable(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "table");
+	private void _handleTable(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "table");
 	}
 
-	protected void handleTableCell(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "td");
+	private void _handleTableCell(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "td");
 	}
 
-	protected void handleTableHeader(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "th");
+	private void _handleTableHeader(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "th");
 	}
 
-	protected void handleTableRow(StringBundler sb, Stack<String> tags) {
-		handleSimpleTag(sb, tags, "tr");
+	private void _handleTableRow(StringBundler sb, Stack<String> tags) {
+		_handleSimpleTag(sb, tags, "tr");
 	}
 
-	protected void handleTagEnd(StringBundler sb, Stack<String> tags) {
-		sb.append(tags.pop());
-	}
-
-	protected void handleTagStart(
-		StringBundler sb, List<BBCodeItem> bbCodeItems, Stack<String> tags,
-		IntegerWrapper marker, BBCodeItem bbCodeItem) {
-
-		String tag = bbCodeItem.getValue();
-
-		if (tag.equals("b")) {
-			handleBold(sb, tags);
-		}
-		else if (tag.equals("center") || tag.equals("justify") ||
-				 tag.equals("left") || tag.equals("right")) {
-
-			handleTextAlign(sb, tags, bbCodeItem);
-		}
-		else if (tag.equals("code")) {
-			handleCode(sb, bbCodeItems, marker);
-		}
-		else if (tag.equals("color") || tag.equals("colour")) {
-			handleColor(sb, tags, bbCodeItem);
-		}
-		else if (tag.equals("email")) {
-			handleEmail(sb, bbCodeItems, tags, marker, bbCodeItem);
-		}
-		else if (tag.equals("font")) {
-			handleFontFamily(sb, tags, bbCodeItem);
-		}
-		else if (tag.equals("i")) {
-			handleItalic(sb, tags);
-		}
-		else if (tag.equals("img")) {
-			handleImage(sb, tags, bbCodeItems, marker);
-		}
-		else if (tag.equals("li") || tag.equals("*")) {
-			handleListItem(sb, tags);
-		}
-		else if (tag.equals("list")) {
-			handleList(sb, tags, bbCodeItem);
-		}
-		else if (tag.equals("q") || tag.equals("quote")) {
-			handleQuote(sb, tags, bbCodeItem);
-		}
-		else if (tag.equals("s")) {
-			handleStrikeThrough(sb, tags);
-		}
-		else if (tag.equals("size")) {
-			handleFontSize(sb, tags, bbCodeItem);
-		}
-		else if (tag.equals("table")) {
-			handleTable(sb, tags);
-		}
-		else if (tag.equals("td")) {
-			handleTableCell(sb, tags);
-		}
-		else if (tag.equals("th")) {
-			handleTableHeader(sb, tags);
-		}
-		else if (tag.equals("tr")) {
-			handleTableRow(sb, tags);
-		}
-		else if (tag.equals("url")) {
-			handleURL(sb, bbCodeItems, tags, marker, bbCodeItem);
-		}
-		else {
-			handleSimpleTag(sb, tags, bbCodeItem);
-		}
-	}
-
-	protected void handleTextAlign(
+	private void _handleTextAlign(
 		StringBundler sb, Stack<String> tags, BBCodeItem bbCodeItem) {
 
 		sb.append("<p style=\"text-align: ");
@@ -699,7 +689,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		tags.push("</p>");
 	}
 
-	protected void handleURL(
+	private void _handleURL(
 		StringBundler sb, List<BBCodeItem> bbCodeItems, Stack<String> tags,
 		IntegerWrapper marker, BBCodeItem bbCodeItem) {
 
@@ -708,7 +698,7 @@ public class HtmlBBCodeTranslatorImpl implements BBCodeTranslator {
 		String href = bbCodeItem.getAttribute();
 
 		if (href == null) {
-			href = extractData(
+			href = _extractData(
 				bbCodeItems, marker, "url", BBCodeParser.TYPE_DATA, false);
 		}
 

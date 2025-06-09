@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.util.test;
@@ -17,29 +8,37 @@ package com.liferay.calendar.util.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.model.CalendarBooking;
+import com.liferay.calendar.model.CalendarResource;
 import com.liferay.calendar.recurrence.Recurrence;
 import com.liferay.calendar.recurrence.RecurrenceSerializer;
 import com.liferay.calendar.service.CalendarBookingLocalService;
+import com.liferay.calendar.service.CalendarLocalService;
+import com.liferay.calendar.service.CalendarResourceLocalService;
+import com.liferay.calendar.service.CalendarResourceService;
 import com.liferay.calendar.test.util.CalendarBookingTestUtil;
 import com.liferay.calendar.test.util.CalendarTestUtil;
 import com.liferay.calendar.test.util.RecurrenceTestUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.util.BundleUtil;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
@@ -64,7 +63,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.wiring.BundleWiring;
 
@@ -85,19 +83,8 @@ public class CalendarUtilTest {
 	public static void setUpClass() throws Exception {
 		Bundle testBundle = FrameworkUtil.getBundle(CalendarUtilTest.class);
 
-		BundleContext bundleContext = testBundle.getBundleContext();
-
-		Bundle calendarWebBundle = null;
-
-		for (Bundle bundle : bundleContext.getBundles()) {
-			String symbolicName = bundle.getSymbolicName();
-
-			if (symbolicName.equals("com.liferay.calendar.web")) {
-				calendarWebBundle = bundle;
-
-				break;
-			}
-		}
+		Bundle calendarWebBundle = BundleUtil.getBundle(
+			testBundle.getBundleContext(), "com.liferay.calendar.web");
 
 		BundleWiring bundleWiring = calendarWebBundle.adapt(BundleWiring.class);
 
@@ -129,7 +116,7 @@ public class CalendarUtilTest {
 		throws Exception {
 
 		CalendarBooking calendarBookingInstance =
-			getCalendarBookingChildAllFollowingInstnace();
+			getCalendarBookingChildAllFollowingInstance();
 
 		Method method = _calendarUtilClass.getMethod(
 			"toCalendarBookingJSONObject", ThemeDisplay.class,
@@ -151,7 +138,7 @@ public class CalendarUtilTest {
 		throws Exception {
 
 		CalendarBooking calendarBookingInstance =
-			getCalendarBookingChildAllFollowingInstnace();
+			getCalendarBookingChildAllFollowingInstance();
 
 		CalendarBooking calendarBooking =
 			_calendarBookingLocalService.fetchCalendarBooking(
@@ -219,6 +206,50 @@ public class CalendarUtilTest {
 	}
 
 	@Test
+	public void testToCalendarBookingJSONObjectVulnerabilities()
+		throws Exception {
+
+		ServiceContext serviceContext = createServiceContext();
+
+		CalendarResource calendarResource =
+			_calendarResourceLocalService.addCalendarResource(
+				_user.getUserId(), TestPropsValues.getGroupId(),
+				_classNameLocalService.getClassNameId(CalendarResource.class),
+				0, null, null,
+				HashMapBuilder.put(
+					LocaleUtil.getDefault(),
+					"lp'\"></option>" +
+						"<img onerror=alert(document.location) src=x>"
+				).build(),
+				RandomTestUtil.randomLocaleStringMap(), true, serviceContext);
+
+		Calendar calendar = _calendarLocalService.addCalendar(
+			_user.getUserId(), TestPropsValues.getGroupId(),
+			calendarResource.getCalendarResourceId(),
+			RandomTestUtil.randomLocaleStringMap(),
+			RandomTestUtil.randomLocaleStringMap(), StringPool.UTC, 0, false,
+			false, false, serviceContext);
+
+		CalendarBooking calendarBookingInstance =
+			CalendarBookingTestUtil.addRecurringCalendarBooking(
+				_user, calendar, RecurrenceTestUtil.getDailyRecurrence(),
+				serviceContext);
+
+		Method method = _calendarUtilClass.getMethod(
+			"toCalendarBookingJSONObject", ThemeDisplay.class,
+			CalendarBooking.class, TimeZone.class);
+
+		JSONObject jsonObject = (JSONObject)method.invoke(
+			null, createThemeDisplay(), calendarBookingInstance,
+			calendarBookingInstance.getTimeZone());
+
+		Assert.assertEquals(
+			"lp&#39;&#34;&gt;&lt;/option&gt;&lt;" +
+				"img onerror=alert(document.location) src=x&gt;",
+			jsonObject.get("calendarResourceName"));
+	}
+
+	@Test
 	public void testToCalendarBookingJSONObjectWorksWithoutManageBookingsPermission()
 		throws Exception {
 
@@ -270,14 +301,52 @@ public class CalendarUtilTest {
 
 		Set<Long> actualCalendarBookingIds = getCalendarBookingIds(jsonArray);
 
-		Set<Long> excpectedCalendarBookingIds = getCalendarBookingIds(
+		Set<Long> expectedCalendarBookingIds = getCalendarBookingIds(
 			calendarBookings);
 
-		excpectedCalendarBookingIds.remove(
+		expectedCalendarBookingIds.remove(
 			anotherUserDraft.getCalendarBookingId());
 
 		Assert.assertEquals(
-			excpectedCalendarBookingIds, actualCalendarBookingIds);
+			expectedCalendarBookingIds, actualCalendarBookingIds);
+	}
+
+	@Test
+	public void testToCalendarJSONObject() throws Exception {
+		String maliciousScript = "'\"></option><img onerror=alert(123) src=x>";
+
+		CalendarResource calendarResource =
+			_calendarResourceLocalService.addCalendarResource(
+				TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+				_classNameLocalService.getClassNameId(CalendarResource.class),
+				0, null, null,
+				HashMapBuilder.put(
+					LocaleUtil.getDefault(), maliciousScript
+				).build(),
+				RandomTestUtil.randomLocaleStringMap(), true,
+				new ServiceContext());
+
+		Calendar calendar = _calendarLocalService.addCalendar(
+			TestPropsValues.getUserId(), TestPropsValues.getGroupId(),
+			calendarResource.getCalendarResourceId(),
+			HashMapBuilder.put(
+				LocaleUtil.getDefault(), maliciousScript
+			).build(),
+			RandomTestUtil.randomLocaleStringMap(), StringPool.UTC, 0, false,
+			false, false, new ServiceContext());
+
+		Method method = _calendarUtilClass.getMethod(
+			"toCalendarJSONObject", ThemeDisplay.class, Calendar.class);
+
+		JSONObject jsonObject = (JSONObject)method.invoke(
+			null, createThemeDisplay(), calendar);
+
+		String escapedMaliciousScript =
+			"&#39;&#34;&gt;&lt;/option&gt;&lt;img onerror=alert(123) src=x&gt;";
+
+		Assert.assertEquals(
+			escapedMaliciousScript, jsonObject.get("calendarResourceName"));
+		Assert.assertEquals(escapedMaliciousScript, jsonObject.get("name"));
 	}
 
 	protected void assertRepeatsForever(Recurrence recurrence) {
@@ -301,24 +370,18 @@ public class CalendarUtilTest {
 	protected ThemeDisplay createThemeDisplay() throws PortalException {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
-		Company company = _companyLocalService.getCompany(
-			_group.getCompanyId());
-
-		themeDisplay.setCompany(company);
-
+		themeDisplay.setCompany(
+			_companyLocalService.getCompany(_group.getCompanyId()));
 		themeDisplay.setLocale(LocaleUtil.getSiteDefault());
-
-		themeDisplay.setScopeGroupId(_group.getGroupId());
-
 		themeDisplay.setPermissionChecker(
 			PermissionThreadLocal.getPermissionChecker());
-
+		themeDisplay.setScopeGroupId(_group.getGroupId());
 		themeDisplay.setUser(_user);
 
 		return themeDisplay;
 	}
 
-	protected CalendarBooking getCalendarBookingChildAllFollowingInstnace()
+	protected CalendarBooking getCalendarBookingChildAllFollowingInstance()
 		throws PortalException {
 
 		ServiceContext serviceContext = createServiceContext();
@@ -381,6 +444,18 @@ public class CalendarUtilTest {
 
 	@Inject
 	private CalendarBookingLocalService _calendarBookingLocalService;
+
+	@Inject
+	private CalendarLocalService _calendarLocalService;
+
+	@Inject
+	private CalendarResourceLocalService _calendarResourceLocalService;
+
+	@Inject
+	private CalendarResourceService _calendarResourceService;
+
+	@Inject
+	private ClassNameLocalService _classNameLocalService;
 
 	@Inject
 	private CompanyLocalService _companyLocalService;

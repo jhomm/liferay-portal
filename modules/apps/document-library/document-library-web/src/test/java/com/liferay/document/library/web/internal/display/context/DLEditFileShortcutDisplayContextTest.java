@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
@@ -17,29 +8,27 @@ package com.liferay.document.library.web.internal.display.context;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.web.internal.display.context.util.MockHttpServletRequestBuilder;
 import com.liferay.item.selector.ItemSelector;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.bean.BeanPropertiesImpl;
 import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletRenderRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletRenderResponse;
+import com.liferay.portal.kernel.test.portlet.MockPortletURL;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.language.LanguageResources;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portlet.internal.PortalContextImpl;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletURL;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.assertj.core.api.AbstractUriAssert;
 import org.assertj.core.api.Assertions;
@@ -73,10 +62,6 @@ public class DLEditFileShortcutDisplayContextTest {
 		_itemSelector = Mockito.mock(ItemSelector.class);
 
 		_language = Mockito.mock(Language.class);
-
-		LanguageResources languageResources = new LanguageResources();
-
-		languageResources.setConfig(StringPool.BLANK);
 	}
 
 	@Test
@@ -87,7 +72,8 @@ public class DLEditFileShortcutDisplayContextTest {
 
 		DLEditFileShortcutDisplayContext dlEditFileShortcutDisplayContext =
 			_getDLEditFileShortcutDisplayContext(
-				new MockHttpServletRequestBuilder().withAttribute(
+				new MockHttpServletRequestBuilder(
+				).withAttribute(
 					WebKeys.DOCUMENT_LIBRARY_FILE_SHORTCUT, fileShortcut
 				).build());
 
@@ -116,7 +102,8 @@ public class DLEditFileShortcutDisplayContextTest {
 
 		DLEditFileShortcutDisplayContext dlEditFileShortcutDisplayContext =
 			_getDLEditFileShortcutDisplayContext(
-				new MockHttpServletRequestBuilder().withAttribute(
+				new MockHttpServletRequestBuilder(
+				).withAttribute(
 					WebKeys.DOCUMENT_LIBRARY_FILE_SHORTCUT, fileShortcut
 				).build());
 
@@ -154,7 +141,8 @@ public class DLEditFileShortcutDisplayContextTest {
 
 		DLEditFileShortcutDisplayContext dlEditFileShortcutDisplayContext =
 			_getDLEditFileShortcutDisplayContext(
-				new MockHttpServletRequestBuilder().withAttribute(
+				new MockHttpServletRequestBuilder(
+				).withAttribute(
 					WebKeys.DOCUMENT_LIBRARY_FILE_SHORTCUT, fileShortcut
 				).withParameter(
 					"fileShortcutId", "12356"
@@ -180,7 +168,8 @@ public class DLEditFileShortcutDisplayContextTest {
 	public void testGetFieldsWithParametersAndWithoutAttributes() {
 		DLEditFileShortcutDisplayContext dlEditFileShortcutDisplayContext =
 			_getDLEditFileShortcutDisplayContext(
-				new MockHttpServletRequestBuilder().withParameter(
+				new MockHttpServletRequestBuilder(
+				).withParameter(
 					"fileShortcutId", "12356"
 				).withParameter(
 					"folderId", "23567"
@@ -206,14 +195,15 @@ public class DLEditFileShortcutDisplayContextTest {
 
 		DLEditFileShortcutDisplayContext dlEditFileShortcutDisplayContext =
 			_getDLEditFileShortcutDisplayContext(
-				new MockHttpServletRequestBuilder().withAttribute(
+				new MockHttpServletRequestBuilder(
+				).withAttribute(
 					WebKeys.DOCUMENT_LIBRARY_FILE_SHORTCUT, fileShortcut
 				).build());
 
 		Mockito.when(
 			_language.format(
-				Mockito.any(HttpServletRequest.class),
-				Mockito.eq("shortcut-to-x"), Mockito.anyString(),
+				Mockito.nullable(HttpServletRequest.class),
+				Mockito.eq("shortcut-to-x"), Mockito.nullable(String.class),
 				Mockito.anyBoolean())
 		).thenReturn(
 			"Short Cut To X"

@@ -1,18 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import {ClaySelect} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React, {useMemo} from 'react';
 
 import {ZOOM_STEP, ZOOM_VALUES} from '../utilities/constants';
@@ -26,6 +20,7 @@ function DiagramFooter({
 }) {
 	function _handleZoomUpdate(value) {
 		chartInstance.current?.updateZoom(value);
+
 		updateCurrentZoom(value);
 	}
 
@@ -36,10 +31,10 @@ function DiagramFooter({
 	}, [currentZoom]);
 
 	return (
-		<ClayManagementToolbar className="py-2">
+		<ManagementToolbar.Container className="py-2">
 			<div className="d-flex flex-grow-1 justify-content-end">
-				<ClayManagementToolbar.ItemList>
-					<ClayManagementToolbar.Item>
+				<ManagementToolbar.ItemList>
+					<ManagementToolbar.Item>
 						<ClayButton
 							className="ml-1"
 							displayType="secondary"
@@ -51,11 +46,13 @@ function DiagramFooter({
 								/>
 							</span>
 
-							{Liferay.Language.get('expand')}
+							{expanded
+								? Liferay.Language.get('compress')
+								: Liferay.Language.get('expand')}
 						</ClayButton>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 
-					<ClayManagementToolbar.Item>
+					<ManagementToolbar.Item>
 						<ClayButtonWithIcon
 							className="ml-1"
 							disabled={currentZoom <= ZOOM_VALUES[0]}
@@ -75,9 +72,9 @@ function DiagramFooter({
 							}}
 							symbol="hr"
 						/>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 
-					<ClayManagementToolbar.Item>
+					<ManagementToolbar.Item>
 						<ClaySelect
 							className="ml-1"
 							onChange={(event) => {
@@ -93,9 +90,9 @@ function DiagramFooter({
 								/>
 							))}
 						</ClaySelect>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 
-					<ClayManagementToolbar.Item>
+					<ManagementToolbar.Item>
 						<ClayButtonWithIcon
 							className="ml-1"
 							disabled={
@@ -118,10 +115,10 @@ function DiagramFooter({
 							}}
 							symbol="plus"
 						/>
-					</ClayManagementToolbar.Item>
-				</ClayManagementToolbar.ItemList>
+					</ManagementToolbar.Item>
+				</ManagementToolbar.ItemList>
 			</div>
-		</ClayManagementToolbar>
+		</ManagementToolbar.Container>
 	);
 }
 

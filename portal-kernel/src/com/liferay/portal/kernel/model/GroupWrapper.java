@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
 
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -44,9 +36,11 @@ public class GroupWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("creatorUserId", getCreatorUserId());
+		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
 		attributes.put("parentGroupId", getParentGroupId());
@@ -88,6 +82,13 @@ public class GroupWrapper
 			setUuid(uuid);
 		}
 
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
+		}
+
 		Long groupId = (Long)attributes.get("groupId");
 
 		if (groupId != null) {
@@ -104,6 +105,12 @@ public class GroupWrapper
 
 		if (creatorUserId != null) {
 			setCreatorUserId(creatorUserId);
+		}
+
+		Date modifiedDate = (Date)attributes.get("modifiedDate");
+
+		if (modifiedDate != null) {
+			setModifiedDate(modifiedDate);
 		}
 
 		Long classNameId = (Long)attributes.get("classNameId");
@@ -449,6 +456,13 @@ public class GroupWrapper
 	}
 
 	@Override
+	public Map<java.util.Locale, String> getDescriptiveNameMap()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getDescriptiveNameMap();
+	}
+
+	@Override
 	public String getDisplayURL(
 		com.liferay.portal.kernel.theme.ThemeDisplay themeDisplay) {
 
@@ -469,6 +483,16 @@ public class GroupWrapper
 		boolean privateLayout, boolean controlPanel) {
 
 		return model.getDisplayURL(themeDisplay, privateLayout, controlPanel);
+	}
+
+	/**
+	 * Returns the external reference code of this group.
+	 *
+	 * @return the external reference code of this group
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -576,6 +600,16 @@ public class GroupWrapper
 	@Override
 	public int getMembershipRestriction() {
 		return model.getMembershipRestriction();
+	}
+
+	/**
+	 * Returns the modified date of this group.
+	 *
+	 * @return the modified date of this group
+	 */
+	@Override
+	public Date getModifiedDate() {
+		return model.getModifiedDate();
 	}
 
 	/**
@@ -884,6 +918,11 @@ public class GroupWrapper
 	}
 
 	@Override
+	public boolean isCMS() {
+		return model.isCMS();
+	}
+
+	@Override
 	public boolean isCompany() {
 		return model.isCompany();
 	}
@@ -891,6 +930,11 @@ public class GroupWrapper
 	@Override
 	public boolean isCompanyStagingGroup() {
 		return model.isCompanyStagingGroup();
+	}
+
+	@Override
+	public boolean isContentSharingWithChildrenEnabled() {
+		return model.isContentSharingWithChildrenEnabled();
 	}
 
 	@Override
@@ -956,6 +1000,11 @@ public class GroupWrapper
 	@Override
 	public boolean isOrganization() {
 		return model.isOrganization();
+	}
+
+	@Override
+	public boolean isPrivateLayoutsEnabled() {
+		return model.isPrivateLayoutsEnabled();
 	}
 
 	@Override
@@ -1186,6 +1235,16 @@ public class GroupWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this group.
+	 *
+	 * @param externalReferenceCode the external reference code of this group
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the friendly url of this group.
 	 *
 	 * @param friendlyURL the friendly url of this group
@@ -1253,6 +1312,16 @@ public class GroupWrapper
 	@Override
 	public void setMembershipRestriction(int membershipRestriction) {
 		model.setMembershipRestriction(membershipRestriction);
+	}
+
+	/**
+	 * Sets the modified date of this group.
+	 *
+	 * @param modifiedDate the modified date of this group
+	 */
+	@Override
+	public void setModifiedDate(Date modifiedDate) {
+		model.setModifiedDate(modifiedDate);
 	}
 
 	/**
@@ -1414,6 +1483,11 @@ public class GroupWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.web.internal.portlet.action;
@@ -25,10 +16,12 @@ import com.liferay.saml.constants.SamlPortletKeys;
 import com.liferay.saml.persistence.model.SamlIdpSpConnection;
 import com.liferay.saml.persistence.service.SamlIdpSpConnectionLocalService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.io.InputStream;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,9 +30,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
+		"jakarta.portlet.name=" + SamlPortletKeys.SAML_ADMIN,
 		"mvc.command.name=/admin/update_service_provider_connection"
 	},
 	service = MVCActionCommand.class
@@ -69,10 +61,24 @@ public class UpdateServiceProviderConnectionMVCActionCommand
 		boolean enabled = ParamUtil.getBoolean(uploadPortletRequest, "enabled");
 		boolean encryptionForced = ParamUtil.getBoolean(
 			uploadPortletRequest, "encryptionForced");
-		String metadataUrl = ParamUtil.getString(
-			uploadPortletRequest, "metadataUrl");
-		InputStream metadataXmlInputStream =
-			uploadPortletRequest.getFileAsStream("metadataXml");
+
+		String metadataUrl = null;
+		InputStream metadataXmlInputStream = null;
+
+		if (Objects.equals(
+				ParamUtil.getString(uploadPortletRequest, "metadataDelivery"),
+				"metadataXml")) {
+
+			metadataUrl = null;
+			metadataXmlInputStream = uploadPortletRequest.getFileAsStream(
+				"metadataXml");
+		}
+		else {
+			metadataUrl = ParamUtil.getString(
+				uploadPortletRequest, "metadataUrl");
+			metadataXmlInputStream = null;
+		}
+
 		String name = ParamUtil.getString(uploadPortletRequest, "name");
 		String nameIdAttribute = ParamUtil.getString(
 			uploadPortletRequest, "nameIdAttribute");

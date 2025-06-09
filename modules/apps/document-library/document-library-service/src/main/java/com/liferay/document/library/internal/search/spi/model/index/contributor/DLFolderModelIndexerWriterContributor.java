@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.search.spi.model.index.contributor;
@@ -23,18 +14,21 @@ import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactor
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Michael C. Han
  */
-@Component(
-	property = "indexer.class.name=com.liferay.document.library.kernel.model.DLFolder",
-	service = ModelIndexerWriterContributor.class
-)
 public class DLFolderModelIndexerWriterContributor
 	implements ModelIndexerWriterContributor<DLFolder> {
+
+	public DLFolderModelIndexerWriterContributor(
+		DLFolderLocalService dlFolderLocalService,
+		DynamicQueryBatchIndexingActionableFactory
+			dynamicQueryBatchIndexingActionableFactory) {
+
+		_dlFolderLocalService = dlFolderLocalService;
+		_dynamicQueryBatchIndexingActionableFactory =
+			dynamicQueryBatchIndexingActionableFactory;
+	}
 
 	@Override
 	public void customize(
@@ -47,7 +41,6 @@ public class DLFolderModelIndexerWriterContributor
 
 				dynamicQuery.add(property.eq(false));
 			});
-
 		batchIndexingActionable.setPerformActionMethod(
 			(DLFolder dlFolder) -> batchIndexingActionable.addDocuments(
 				modelIndexerWriterDocumentHelper.getDocument(dlFolder)));
@@ -55,9 +48,9 @@ public class DLFolderModelIndexerWriterContributor
 
 	@Override
 	public BatchIndexingActionable getBatchIndexingActionable() {
-		return dynamicQueryBatchIndexingActionableFactory.
+		return _dynamicQueryBatchIndexingActionableFactory.
 			getBatchIndexingActionable(
-				dlFolderLocalService.getIndexableActionableDynamicQuery());
+				_dlFolderLocalService.getIndexableActionableDynamicQuery());
 	}
 
 	@Override
@@ -65,11 +58,8 @@ public class DLFolderModelIndexerWriterContributor
 		return dlFolder.getCompanyId();
 	}
 
-	@Reference
-	protected DLFolderLocalService dlFolderLocalService;
-
-	@Reference
-	protected DynamicQueryBatchIndexingActionableFactory
-		dynamicQueryBatchIndexingActionableFactory;
+	private final DLFolderLocalService _dlFolderLocalService;
+	private final DynamicQueryBatchIndexingActionableFactory
+		_dynamicQueryBatchIndexingActionableFactory;
 
 }

@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -28,8 +22,9 @@ class List extends PureComponent {
 	static propTypes = {
 		dataLoading: PropTypes.bool,
 		dataMap: PropTypes.object,
+		disabled: PropTypes.bool,
 		displayError: PropTypes.bool,
-		fetchDocumentsSearchUrl: PropTypes.string,
+		fetchDocumentsSearchURL: PropTypes.string,
 		onAddResultSubmit: PropTypes.func,
 		onClickHide: PropTypes.func,
 		onClickPin: PropTypes.func,
@@ -42,6 +37,7 @@ class List extends PureComponent {
 
 	static defaultProps = {
 		dataLoading: false,
+		disabled: false,
 		resultIds: [],
 	};
 
@@ -81,7 +77,7 @@ class List extends PureComponent {
 
 		const pinLength = resultIdsPinned ? resultIdsPinned.length : 0;
 
-		if (event.key === KEY_CODES.SPACE || event.key == KEY_CODES.ENTER) {
+		if (event.key === KEY_CODES.SPACE || event.key === KEY_CODES.ENTER) {
 			event.preventDefault();
 
 			this._handleReorder(!reorder && focusIndex < pinLength);
@@ -179,7 +175,7 @@ class List extends PureComponent {
 	 * @param {number} index The item's position in the list.
 	 */
 	_renderItem = (id, index) => {
-		const {dataMap, onClickHide, onMove} = this.props;
+		const {dataMap, disabled, onClickHide, onMove} = this.props;
 
 		const {focusIndex, reorder, selectedIds} = this.state;
 
@@ -193,6 +189,7 @@ class List extends PureComponent {
 				date={item.date}
 				deleted={item.deleted}
 				description={item.description}
+				disabled={disabled}
 				focus={index === focusIndex}
 				hidden={item.hidden}
 				icon={item.icon}
@@ -220,8 +217,9 @@ class List extends PureComponent {
 		const {
 			dataLoading,
 			dataMap,
+			disabled,
 			displayError,
-			fetchDocumentsSearchUrl,
+			fetchDocumentsSearchURL,
 			onAddResultSubmit,
 			onClickHide,
 			onClickPin,
@@ -238,7 +236,8 @@ class List extends PureComponent {
 
 					<SearchBar
 						dataMap={dataMap}
-						fetchDocumentsSearchUrl={fetchDocumentsSearchUrl}
+						disabled={disabled}
+						fetchDocumentsSearchURL={fetchDocumentsSearchURL}
 						onAddResultSubmit={onAddResultSubmit}
 						onClickHide={onClickHide}
 						onClickPin={onClickPin}
@@ -270,7 +269,14 @@ class List extends PureComponent {
 						{!dataLoading && (
 							<>
 								{!displayError && !resultIds.length && (
-									<ClayEmptyState />
+									<ClayEmptyState
+										description={Liferay.Language.get(
+											'sorry,-no-results-were-found'
+										)}
+										title={Liferay.Language.get(
+											'no-results-found'
+										)}
+									/>
 								)}
 
 								{displayError && (

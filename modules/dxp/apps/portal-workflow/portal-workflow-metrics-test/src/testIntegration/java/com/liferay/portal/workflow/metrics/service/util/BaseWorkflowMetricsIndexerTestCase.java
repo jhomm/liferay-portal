@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.service.util;
@@ -48,6 +39,7 @@ import com.liferay.portal.workflow.kaleo.service.KaleoNodeLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTaskInstanceTokenLocalService;
 import com.liferay.portal.workflow.kaleo.service.KaleoTaskLocalService;
 import com.liferay.portal.workflow.metrics.search.index.reindexer.WorkflowMetricsReindexer;
+import com.liferay.portal.workflow.metrics.search.index.reindexer.WorkflowMetricsReindexerRegistry;
 
 import java.io.Serializable;
 
@@ -59,7 +51,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
-import java.util.stream.Stream;
 
 import org.junit.Before;
 
@@ -193,12 +184,11 @@ public abstract class BaseWorkflowMetricsIndexerTestCase
 			String[] indexNames, String[] indexTypes, Object... parameters)
 		throws Exception {
 
-		Map<String, Integer> indexNamesMap = Stream.of(
-			indexNames
-		).collect(
-			LinkedHashMap::new, (map, indexName) -> map.put(indexName, 1),
-			Map::putAll
-		);
+		Map<String, Integer> indexNamesMap = new LinkedHashMap<>();
+
+		for (String indexName : indexNames) {
+			indexNamesMap.put(indexName, 1);
+		}
 
 		assertReindex(indexNamesMap, indexTypes, parameters);
 	}
@@ -216,12 +206,11 @@ public abstract class BaseWorkflowMetricsIndexerTestCase
 			String[] indexNames, String[] indexTypes, Object... parameters)
 		throws Exception {
 
-		Map<String, Integer> indexNamesMap = Stream.of(
-			indexNames
-		).collect(
-			LinkedHashMap::new, (map, indexName) -> map.put(indexName, 1),
-			Map::putAll
-		);
+		Map<String, Integer> indexNamesMap = new LinkedHashMap<>();
+
+		for (String indexName : indexNames) {
+			indexNamesMap.put(indexName, 1);
+		}
 
 		assertSLAReindex(indexNamesMap, indexTypes, parameters);
 	}
@@ -477,17 +466,24 @@ public abstract class BaseWorkflowMetricsIndexerTestCase
 		}
 	}
 
+	private void _reindex(long companyId, String key) throws Exception {
+		WorkflowMetricsReindexer reindexer =
+			_workflowMetricsReindexerRegistry.getWorkflowMetricsReindexer(key);
+
+		reindexer.reindex(companyId);
+	}
+
 	private void _reindexMetricIndexes(long companyId) throws Exception {
-		_instanceWorkflowMetricsReindexer.reindex(companyId);
-		_nodeWorkflowMetricsReindexer.reindex(companyId);
-		_processWorkflowMetricsReindexer.reindex(companyId);
-		_taskWorkflowMetricsReindexer.reindex(companyId);
-		_transitionWorkflowMetricsReindexer.reindex(companyId);
+		_reindex(companyId, "instance");
+		_reindex(companyId, "node");
+		_reindex(companyId, "process");
+		_reindex(companyId, "task");
+		_reindex(companyId, "transition");
 	}
 
 	private void _reindexSLAIndexes(long companyId) throws Exception {
-		_slaInstanceResultWorkflowMetricsReindexer.reindex(companyId);
-		_slaTaskResultWorkflowMetricsReindexer.reindex(companyId);
+		_reindex(companyId, "sla-instance-result");
+		_reindex(companyId, "sla-task-result");
 	}
 
 	private final List<BlogsEntry> _blogsEntries = new ArrayList<>();
@@ -497,9 +493,6 @@ public abstract class BaseWorkflowMetricsIndexerTestCase
 
 	@Inject
 	private DocumentBuilderFactory _documentBuilderFactory;
-
-	@Inject(filter = "workflow.metrics.index.entity.name=instance")
-	private WorkflowMetricsReindexer _instanceWorkflowMetricsReindexer;
 
 	private KaleoDefinition _kaleoDefinition;
 
@@ -531,29 +524,14 @@ public abstract class BaseWorkflowMetricsIndexerTestCase
 
 	private final List<KaleoTask> _kaleoTasks = new ArrayList<>();
 
-	@Inject(filter = "workflow.metrics.index.entity.name=node")
-	private WorkflowMetricsReindexer _nodeWorkflowMetricsReindexer;
-
-	@Inject(filter = "workflow.metrics.index.entity.name=process")
-	private WorkflowMetricsReindexer _processWorkflowMetricsReindexer;
-
-	@Inject(filter = "workflow.metrics.index.entity.name=sla-instance-result")
-	private WorkflowMetricsReindexer _slaInstanceResultWorkflowMetricsReindexer;
-
-	@Inject(filter = "workflow.metrics.index.entity.name=sla-task-result")
-	private WorkflowMetricsReindexer _slaTaskResultWorkflowMetricsReindexer;
-
-	@Inject(filter = "workflow.metrics.index.entity.name=task")
-	private WorkflowMetricsReindexer _taskWorkflowMetricsReindexer;
-
-	@Inject(filter = "workflow.metrics.index.entity.name=transition")
-	private WorkflowMetricsReindexer _transitionWorkflowMetricsReindexer;
-
 	@Inject
 	private WorkflowDefinitionLinkLocalService
 		_workflowDefinitionLinkLocalService;
 
 	@Inject
 	private WorkflowInstanceLinkLocalService _workflowInstanceLinkLocalService;
+
+	@Inject
+	private WorkflowMetricsReindexerRegistry _workflowMetricsReindexerRegistry;
 
 }

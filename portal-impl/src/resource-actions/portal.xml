@@ -7,6 +7,7 @@
 		<permissions>
 			<supports>
 				<action-key>ADD_ACCOUNT_ENTRY</action-key>
+				<action-key>ADD_ACCOUNT_GROUP</action-key>
 				<action-key>ADD_COMMUNITY</action-key>
 				<action-key>ADD_GENERAL_ANNOUNCEMENTS</action-key>
 				<action-key>ADD_LAYOUT_PROTOTYPE</action-key>
@@ -21,6 +22,7 @@
 				<action-key>EXPORT_USER</action-key>
 				<action-key>IMPERSONATE</action-key>
 				<action-key>MANAGE_COUNTRIES</action-key>
+				<action-key>MANAGE_LANGUAGE_OVERRIDES</action-key>
 				<action-key>UNLINK_LAYOUT_SET_PROTOTYPE</action-key>
 				<action-key>VIEW_CONTROL_PANEL</action-key>
 			</supports>
@@ -46,6 +48,8 @@
 				<action-key>ADD_LAYOUT</action-key>
 				<action-key>ADD_LAYOUT_BRANCH</action-key>
 				<action-key>ADD_LAYOUT_SET_BRANCH</action-key>
+				<action-key>ADD_LAYOUT_UTILITY_PAGE_ENTRY</action-key>
+				<action-key>ASSIGN_DEFAULT_LAYOUT_UTILITY_PAGE_ENTRY</action-key>
 				<action-key>ASSIGN_MEMBERS</action-key>
 				<action-key>ASSIGN_USER_ROLES</action-key>
 				<action-key>CONFIGURE_PORTLETS</action-key>
@@ -75,8 +79,11 @@
 				<action-key>ADD_LAYOUT</action-key>
 				<action-key>ADD_LAYOUT_BRANCH</action-key>
 				<action-key>ADD_LAYOUT_SET_BRANCH</action-key>
+				<action-key>ADD_LAYOUT_UTILITY_PAGE_ENTRY</action-key>
+				<action-key>ASSIGN_DEFAULT_LAYOUT_UTILITY_PAGE_ENTRY</action-key>
 				<action-key>ASSIGN_MEMBERS</action-key>
 				<action-key>ASSIGN_USER_ROLES</action-key>
+				<action-key>CONFIGURE_PORTLETS</action-key>
 				<action-key>DELETE</action-key>
 				<action-key>EXPORT_IMPORT_LAYOUTS</action-key>
 				<action-key>EXPORT_IMPORT_PORTLET_INFO</action-key>
@@ -93,6 +100,7 @@
 				<action-key>UPDATE</action-key>
 				<action-key>VIEW</action-key>
 				<action-key>VIEW_MEMBERS</action-key>
+				<action-key>VIEW_SITE_ADMINISTRATION</action-key>
 				<action-key>VIEW_STAGING</action-key>
 			</guest-unsupported>
 		</permissions>
@@ -209,6 +217,7 @@
 				<action-key>MANAGE_USERS</action-key>
 				<action-key>PERMISSIONS</action-key>
 				<action-key>UPDATE</action-key>
+				<action-key>UPDATE_SUBORGANIZATIONS</action-key>
 				<action-key>VIEW</action-key>
 				<action-key>VIEW_MEMBERS</action-key>
 			</supports>
@@ -224,6 +233,7 @@
 				<action-key>MANAGE_USERS</action-key>
 				<action-key>PERMISSIONS</action-key>
 				<action-key>UPDATE</action-key>
+				<action-key>UPDATE_SUBORGANIZATIONS</action-key>
 				<action-key>VIEW</action-key>
 				<action-key>VIEW_MEMBERS</action-key>
 			</guest-unsupported>
@@ -291,6 +301,8 @@
 		<weight>1</weight>
 		<permissions>
 			<supports>
+				<action-key>ACTIVATE</action-key>
+				<action-key>DEACTIVATE</action-key>
 				<action-key>DELETE</action-key>
 				<action-key>IMPERSONATE</action-key>
 				<action-key>PERMISSIONS</action-key>
@@ -300,6 +312,8 @@
 			<site-member-defaults />
 			<guest-defaults />
 			<guest-unsupported>
+				<action-key>ACTIVATE</action-key>
+				<action-key>DEACTIVATE</action-key>
 				<action-key>DELETE</action-key>
 				<action-key>IMPERSONATE</action-key>
 				<action-key>PERMISSIONS</action-key>

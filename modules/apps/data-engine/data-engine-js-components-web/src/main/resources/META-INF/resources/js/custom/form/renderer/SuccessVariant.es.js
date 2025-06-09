@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
@@ -21,9 +12,22 @@ import React, {useEffect, useState} from 'react';
 import {EVENT_TYPES as CORE_EVENT_TYPES} from '../../../core/actions/eventTypes.es';
 import {useForm, useFormState} from '../../../core/hooks/useForm.es';
 import {setValue} from '../../../utils/i18n.es';
-import {EVENT_TYPES} from '../eventTypes.es';
+import {EVENT_TYPES} from '../eventTypes';
 
-export const Container = ({children, pages, strings = {}}) => {
+const getValue = (defaultLanguageId, editingLanguageId, localizedValue) => {
+	if (!localizedValue) {
+		return '';
+	}
+
+	return (
+		localizedValue[editingLanguageId] ||
+		localizedValue[defaultLanguageId] ||
+		localizedValue[Liferay.ThemeDisplay.getLanguageId()] ||
+		''
+	);
+};
+
+export function Container({children, pages, strings = {}}) {
 	const {editingLanguageId} = useFormState();
 	const dispatch = useForm();
 
@@ -31,10 +35,10 @@ export const Container = ({children, pages, strings = {}}) => {
 		<div className="page">
 			<ClayLayout.Sheet className="ddm-page-success-layout simple-page">
 				<div className="form-builder-layout">
-					<h5 className="pagination">
+					<div className="h5 pagination">
 						{strings['success-page'] ??
 							Liferay.Language.get('success-page')}
-					</h5>
+					</div>
 
 					{children}
 				</div>
@@ -73,11 +77,11 @@ export const Container = ({children, pages, strings = {}}) => {
 			</div>
 		</div>
 	);
-};
+}
 
 Container.displayName = 'SuccessVariant.Container';
 
-export const Page = ({page: {successPageSettings}}) => {
+export function Page({page: {successPageSettings}}) {
 	const {defaultLanguageId, editingLanguageId} = useFormState();
 
 	const dispatch = useForm();
@@ -85,16 +89,16 @@ export const Page = ({page: {successPageSettings}}) => {
 	const prevEditingLanguageId = usePrevious(editingLanguageId);
 
 	const {initialBody, initialTitle} = {
-		initialBody:
-			(successPageSettings.body &&
-				(successPageSettings.body[editingLanguageId] ||
-					successPageSettings.body[defaultLanguageId])) ||
-			'',
-		initialTitle:
-			(successPageSettings.title &&
-				(successPageSettings.title[editingLanguageId] ||
-					successPageSettings.title[defaultLanguageId])) ||
-			'',
+		initialBody: getValue(
+			defaultLanguageId,
+			editingLanguageId,
+			successPageSettings.body
+		),
+		initialTitle: getValue(
+			defaultLanguageId,
+			editingLanguageId,
+			successPageSettings.title
+		),
 	};
 
 	const [body, setBody] = useState(initialBody);
@@ -123,7 +127,7 @@ export const Page = ({page: {successPageSettings}}) => {
 		<div className="active ddm-form-page form-builder-success-page lfr-ddm-form-page">
 			<input
 				className="form-builder-page-header-title form-control p-0"
-				maxLength="120"
+				maxLength="255"
 				onChange={(event) => {
 					setTitle(event.target.value);
 					onChange(event, 'title');
@@ -134,7 +138,7 @@ export const Page = ({page: {successPageSettings}}) => {
 
 			<input
 				className="form-builder-page-header-description form-control p-0"
-				maxLength="120"
+				maxLength="255"
 				onChange={(event) => {
 					setBody(event.target.value);
 					onChange(event, 'body');
@@ -144,6 +148,6 @@ export const Page = ({page: {successPageSettings}}) => {
 			/>
 		</div>
 	);
-};
+}
 
 Page.displayName = 'SuccessVariant.Page';

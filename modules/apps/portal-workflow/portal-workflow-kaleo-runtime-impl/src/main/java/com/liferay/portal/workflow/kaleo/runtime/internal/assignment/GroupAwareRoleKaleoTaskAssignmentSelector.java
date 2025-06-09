@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.runtime.internal.assignment;
 
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
+import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Organization;
@@ -34,17 +28,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Michael C. Han
  */
 @Component(
-	immediate = true,
 	property = "assignee.class.name=com.liferay.portal.kernel.model.Role",
 	service = KaleoTaskAssignmentSelector.class
 )
@@ -60,24 +53,24 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 		KaleoInstanceToken kaleoInstanceToken =
 			executionContext.getKaleoInstanceToken();
 
-		Role role = _roleLocalService.getRole(
-			kaleoTaskAssignment.getAssigneeClassPK());
-
-		return createKaleoTaskAssigments(kaleoInstanceToken.getGroupId(), role);
+		return _createKaleoTaskAssigments(
+			kaleoInstanceToken.getGroupId(),
+			_roleLocalService.getRole(
+				kaleoTaskAssignment.getAssigneeClassPK()));
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.MULTIPLE,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void addGroupAwareRoleValidator(
-		GroupAwareRoleValidator groupAwareRoleValidator) {
-
-		_groupAwareRoleValidators.add(groupAwareRoleValidator);
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerList = ServiceTrackerListFactory.open(
+			bundleContext, GroupAwareRoleValidator.class);
 	}
 
-	protected List<KaleoTaskAssignment> createKaleoTaskAssigments(
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerList.close();
+	}
+
+	private List<KaleoTaskAssignment> _createKaleoTaskAssigments(
 			long groupId, Role role)
 		throws PortalException {
 
@@ -89,11 +82,11 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 			group = _groupLocalService.getGroup(groupId);
 
 			if (group.isOrganization()) {
-				groupIds.addAll(getAncestorOrganizationGroupIds(group, role));
+				groupIds.addAll(_getAncestorOrganizationGroupIds(group, role));
 			}
 
 			if (group.isSite()) {
-				groupIds.addAll(getAncestorGroupIds(group, role));
+				groupIds.addAll(_getAncestorGroupIds(group, role));
 			}
 
 			if (group.isLayout()) {
@@ -101,27 +94,22 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 			}
 		}
 
-		if (isValidAssignment(group, role)) {
+		if (_isValidAssignment(group, role)) {
 			groupIds.add(groupId);
 		}
 
-		return createKaleoTaskAssigments(role, groupIds);
+		return _createKaleoTaskAssigments(role, groupIds);
 	}
 
-	protected List<KaleoTaskAssignment> createKaleoTaskAssigments(
+	private List<KaleoTaskAssignment> _createKaleoTaskAssigments(
 			Role role, List<Long> groupIds)
 		throws PortalException {
 
-		List<KaleoTaskAssignment> kaleoTaskAssignments = new ArrayList<>();
-
-		for (Long groupId : groupIds) {
-			kaleoTaskAssignments.add(createKaleoTaskAssignment(role, groupId));
-		}
-
-		return kaleoTaskAssignments;
+		return TransformUtil.transform(
+			groupIds, groupId -> _createKaleoTaskAssignment(role, groupId));
 	}
 
-	protected KaleoTaskAssignment createKaleoTaskAssignment(
+	private KaleoTaskAssignment _createKaleoTaskAssignment(
 		Role role, long groupId) {
 
 		KaleoTaskAssignment kaleoTaskAssignment =
@@ -134,13 +122,13 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 		return kaleoTaskAssignment;
 	}
 
-	protected List<Long> getAncestorGroupIds(Group group, Role role)
+	private List<Long> _getAncestorGroupIds(Group group, Role role)
 		throws PortalException {
 
 		List<Long> groupIds = new ArrayList<>();
 
 		for (Group ancestorGroup : group.getAncestors()) {
-			if (isValidAssignment(group, role)) {
+			if (_isValidAssignment(group, role)) {
 				groupIds.add(ancestorGroup.getGroupId());
 			}
 		}
@@ -148,7 +136,7 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 		return groupIds;
 	}
 
-	protected List<Long> getAncestorOrganizationGroupIds(Group group, Role role)
+	private List<Long> _getAncestorOrganizationGroupIds(Group group, Role role)
 		throws PortalException {
 
 		List<Long> groupIds = new ArrayList<>();
@@ -157,7 +145,7 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 			group.getOrganizationId());
 
 		for (Organization ancestorOrganization : organization.getAncestors()) {
-			if (isValidAssignment(group, role)) {
+			if (_isValidAssignment(group, role)) {
 				groupIds.add(ancestorOrganization.getGroupId());
 			}
 		}
@@ -165,7 +153,7 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 		return groupIds;
 	}
 
-	protected boolean isValidAssignment(Group group, Role role)
+	private boolean _isValidAssignment(Group group, Role role)
 		throws PortalException {
 
 		if ((group != null) && group.isDepot() &&
@@ -188,7 +176,7 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 		}
 
 		for (GroupAwareRoleValidator groupAwareRoleValidator :
-				_groupAwareRoleValidators) {
+				_serviceTrackerList) {
 
 			if (groupAwareRoleValidator.isValidGroup(group, role)) {
 				return true;
@@ -197,15 +185,6 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 
 		return false;
 	}
-
-	protected void removeGroupAwareRoleValidator(
-		GroupAwareRoleValidator groupAwareRoleValidator) {
-
-		_groupAwareRoleValidators.remove(groupAwareRoleValidator);
-	}
-
-	private final List<GroupAwareRoleValidator> _groupAwareRoleValidators =
-		new ArrayList<>();
 
 	@Reference
 	private GroupLocalService _groupLocalService;
@@ -218,5 +197,7 @@ public class GroupAwareRoleKaleoTaskAssignmentSelector
 
 	@Reference
 	private RoleLocalService _roleLocalService;
+
+	private ServiceTrackerList<GroupAwareRoleValidator> _serviceTrackerList;
 
 }

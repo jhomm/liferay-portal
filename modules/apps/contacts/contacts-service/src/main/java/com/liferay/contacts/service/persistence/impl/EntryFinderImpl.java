@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.contacts.service.persistence.impl;
@@ -30,6 +21,7 @@ import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.comparator.UserLastNameComparator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -66,7 +58,8 @@ public class EntryFinderImpl
 			return count;
 		}
 
-		int count = _userLocalService.getUsersCount(companyId, false, 0);
+		int count = _userLocalService.getUsersCount(
+			companyId, WorkflowConstants.STATUS_APPROVED);
 
 		count += EntryUtil.countByUserId(userId);
 
@@ -89,16 +82,16 @@ public class EntryFinderImpl
 	public List<BaseModel<?>> findByKeywords(
 		long companyId, long userId, String keywords, int start, int end) {
 
-		List<BaseModel<?>> models = new ArrayList<>();
+		List<BaseModel<?>> baseModels = new ArrayList<>();
 
 		if (Validator.isNotNull(keywords)) {
-			models.addAll(
+			baseModels.addAll(
 				_userLocalService.search(
 					companyId, keywords, keywords, keywords, keywords, keywords,
 					0, null, false, start, end,
-					new UserLastNameComparator(true)));
+					UserLastNameComparator.getInstance(true)));
 
-			if (models.size() < (end - start)) {
+			if (baseModels.size() < (end - start)) {
 				int count = _userLocalService.searchCount(
 					companyId, keywords, keywords, keywords, keywords, keywords,
 					0, null, false);
@@ -109,29 +102,29 @@ public class EntryFinderImpl
 				String[] fullNames = _customSQL.keywords(keywords);
 				String[] emailAddresses = _customSQL.keywords(keywords);
 
-				models.addAll(
+				baseModels.addAll(
 					findByU_FN_EA(
 						userId, fullNames, emailAddresses, start, end));
 			}
 		}
 		else {
-			models.addAll(
+			baseModels.addAll(
 				_userLocalService.getUsers(
-					companyId, false, 0, start, end,
-					new UserLastNameComparator(true)));
+					companyId, WorkflowConstants.STATUS_APPROVED, start, end,
+					UserLastNameComparator.getInstance(true)));
 
-			if (models.size() < (end - start)) {
+			if (baseModels.size() < (end - start)) {
 				int count = _userLocalService.getUsersCount(
-					companyId, false, 0);
+					companyId, WorkflowConstants.STATUS_APPROVED);
 
 				start -= count;
 				end -= count;
 
-				models.addAll(EntryUtil.findByUserId(userId, start, end));
+				baseModels.addAll(EntryUtil.findByUserId(userId, start, end));
 			}
 		}
 
-		return models;
+		return baseModels;
 	}
 
 	@Override

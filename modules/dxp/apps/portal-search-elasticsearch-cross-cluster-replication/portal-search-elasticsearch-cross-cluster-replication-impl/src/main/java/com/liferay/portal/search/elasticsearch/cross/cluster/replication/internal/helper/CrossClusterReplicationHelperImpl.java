@@ -1,26 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch.cross.cluster.replication.internal.helper;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.search.ccr.CrossClusterReplicationConfigurationHelper;
 import com.liferay.portal.search.ccr.CrossClusterReplicationHelper;
-import com.liferay.portal.search.elasticsearch.cross.cluster.replication.internal.configuration.CrossClusterReplicationConfigurationWrapper;
+import com.liferay.portal.search.elasticsearch.cross.cluster.replication.internal.configuration.CrossClusterReplicationConfiguration;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.ccr.FollowInfoCCRRequest;
 import com.liferay.portal.search.engine.adapter.ccr.FollowInfoCCRResponse;
@@ -32,15 +24,19 @@ import com.liferay.portal.search.engine.adapter.cluster.UpdateSettingsClusterReq
 import com.liferay.portal.search.engine.adapter.index.CloseIndexRequest;
 import com.liferay.portal.search.engine.adapter.index.DeleteIndexRequest;
 
+import java.util.Map;
+
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Bryan Engler
  */
 @Component(
-	enabled = false, immediate = true,
-	service = CrossClusterReplicationHelper.class
+	configurationPid = "com.liferay.portal.search.elasticsearch.cross.cluster.replication.internal.configuration.CrossClusterReplicationConfiguration",
+	enabled = false, service = CrossClusterReplicationHelper.class
 )
 public class CrossClusterReplicationHelperImpl
 	implements CrossClusterReplicationHelper {
@@ -113,8 +109,7 @@ public class CrossClusterReplicationHelperImpl
 					getLocalClusterConnectionIds()) {
 
 			follow(
-				crossClusterReplicationConfigurationWrapper.
-					getRemoteClusterAlias(),
+				_crossClusterReplicationConfiguration.remoteClusterAlias(),
 				indexName, localClusterConnectionId);
 		}
 	}
@@ -205,13 +200,17 @@ public class CrossClusterReplicationHelperImpl
 		}
 	}
 
+	@Activate
+	@Modified
+	protected void activate(Map<String, Object> properties) {
+		_crossClusterReplicationConfiguration =
+			ConfigurableUtil.createConfigurable(
+				CrossClusterReplicationConfiguration.class, properties);
+	}
+
 	@Reference
 	protected CrossClusterReplicationConfigurationHelper
 		crossClusterReplicationConfigurationHelper;
-
-	@Reference
-	protected volatile CrossClusterReplicationConfigurationWrapper
-		crossClusterReplicationConfigurationWrapper;
 
 	@Reference
 	protected SearchEngineAdapter searchEngineAdapter;
@@ -252,7 +251,7 @@ public class CrossClusterReplicationHelperImpl
 		}
 		catch (RuntimeException runtimeException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(runtimeException, runtimeException);
+				_log.debug(runtimeException);
 			}
 		}
 
@@ -308,5 +307,8 @@ public class CrossClusterReplicationHelperImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CrossClusterReplicationHelperImpl.class);
+
+	private volatile CrossClusterReplicationConfiguration
+		_crossClusterReplicationConfiguration;
 
 }

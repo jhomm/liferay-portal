@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,7 +10,6 @@
 <%
 String redirect = ParamUtil.getString(request, "redirect");
 
-String openId = ParamUtil.getString(request, "openId");
 boolean male = ParamUtil.getBoolean(request, "male", true);
 
 Calendar birthdayCalendar = CalendarFactoryUtil.getCalendar();
@@ -31,13 +21,7 @@ birthdayCalendar.set(Calendar.YEAR, 1970);
 renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 %>
 
-<c:if test="<%= Validator.isNotNull(openId) %>">
-	<div class="alert alert-info">
-		<liferay-ui:message arguments="<%= HtmlUtil.escape(openId) %>" key="you-are-about-to-create-an-account-with-openid-x" translateArguments="<%= false %>" />
-	</div>
-</c:if>
-
-<portlet:actionURL name="/login/create_account" secure="<%= PropsValues.COMPANY_SECURITY_AUTH_REQUIRES_HTTPS || request.isSecure() %>" var="createAccountURL" windowState="<%= LiferayWindowState.MAXIMIZED.toString() %>">
+<portlet:actionURL name="/login/create_account" secure="<%= request.isSecure() %>" var="createAccountURL" windowState="<%= LiferayWindowState.MAXIMIZED.toString() %>">
 	<portlet:param name="mvcRenderCommandName" value="/login/create_account" />
 </portlet:actionURL>
 
@@ -45,7 +29,6 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 	<aui:input name="saveLastPath" type="hidden" value="<%= false %>" />
 	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.ADD %>" />
 	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
-	<aui:input name="openId" type="hidden" value="<%= openId %>" />
 
 	<liferay-ui:error exception="<%= AddressCityException.class %>" message="please-enter-a-valid-city" />
 	<liferay-ui:error exception="<%= AddressStreetException.class %>" message="please-enter-a-valid-street" />
@@ -58,7 +41,6 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 	<liferay-ui:error exception="<%= ContactNameException.MustHaveFirstName.class %>" message="please-enter-a-valid-first-name" />
 	<liferay-ui:error exception="<%= ContactNameException.MustHaveLastName.class %>" message="please-enter-a-valid-last-name" />
 	<liferay-ui:error exception="<%= ContactNameException.MustHaveValidFullName.class %>" message="please-enter-a-valid-first-middle-and-last-name" />
-	<liferay-ui:error exception="<%= DuplicateOpenIdException.class %>" message="a-user-with-that-openid-already-exists" />
 	<liferay-ui:error exception="<%= EmailAddressException.class %>" message="please-enter-a-valid-email-address" />
 
 	<liferay-ui:error exception="<%= GroupFriendlyURLException.class %>">
@@ -79,7 +61,6 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 	<liferay-ui:error exception="<%= PhoneNumberExtensionException.class %>" message="please-enter-a-valid-phone-number-extension" />
 	<liferay-ui:error exception="<%= RequiredFieldException.class %>" message="please-fill-out-all-required-fields" />
 	<liferay-ui:error exception="<%= TermsOfUseException.class %>" message="you-must-agree-to-the-terms-of-use" />
-	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeDuplicate.class %>" message="the-email-address-you-requested-is-already-taken" />
 	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeNull.class %>" message="please-enter-an-email-address" />
 	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBePOP3User.class %>" message="the-email-address-you-requested-is-reserved" />
 	<liferay-ui:error exception="<%= UserEmailAddressException.MustNotBeReserved.class %>" message="the-email-address-you-requested-is-reserved" />
@@ -108,6 +89,51 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 		<liferay-ui:message arguments="<%= HtmlUtil.escape(upe.regex) %>" key="that-password-does-not-comply-with-the-regular-expression" translateArguments="<%= false %>" />
 	</liferay-ui:error>
 
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreAlphanumeric.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreAlphanumeric upe = (UserPasswordException.MustHaveMoreAlphanumeric)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minAlphanumeric) %>" key="that-password-must-contain-at-least-x-alphanumeric-characters" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreLowercase.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreLowercase upe = (UserPasswordException.MustHaveMoreLowercase)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minLowercase) %>" key="that-password-must-contain-at-least-x-lowercase-characters" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreNumbers.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreNumbers upe = (UserPasswordException.MustHaveMoreNumbers)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minNumbers) %>" key="that-password-must-contain-at-least-x-numbers" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreSymbols.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreSymbols upe = (UserPasswordException.MustHaveMoreSymbols)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minSymbols) %>" key="that-password-must-contain-at-least-x-symbols" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
+	<liferay-ui:error exception="<%= UserPasswordException.MustHaveMoreUppercase.class %>">
+
+		<%
+		UserPasswordException.MustHaveMoreUppercase upe = (UserPasswordException.MustHaveMoreUppercase)errorException;
+		%>
+
+		<liferay-ui:message arguments="<%= String.valueOf(upe.minUppercase) %>" key="that-password-must-contain-at-least-x-uppercase-characters" translateArguments="<%= false %>" />
+	</liferay-ui:error>
+
 	<liferay-ui:error exception="<%= UserPasswordException.MustMatch.class %>" message="the-passwords-you-entered-do-not-match" />
 	<liferay-ui:error exception="<%= UserPasswordException.MustNotBeNull.class %>" message="the-password-cannot-be-blank" />
 	<liferay-ui:error exception="<%= UserPasswordException.MustNotBeTrivial.class %>" message="that-password-uses-common-words-please-enter-a-password-that-is-harder-to-guess-i-e-contains-a-mix-of-numbers-and-letters" />
@@ -131,91 +157,117 @@ renderResponse.setTitle(LanguageUtil.get(request, "create-account"));
 
 	<liferay-ui:error exception="<%= WebsiteURLException.class %>" message="please-enter-a-valid-url" />
 
-	<c:if test='<%= SessionMessages.contains(request, "openIdUserInformationMissing") %>'>
-		<div class="alert alert-info">
-			<liferay-ui:message key="you-have-successfully-authenticated-please-provide-the-following-required-information-to-access-the-portal" />
-		</div>
-	</c:if>
-
 	<aui:model-context model="<%= Contact.class %>" />
 
-	<aui:fieldset column="<%= true %>">
-		<clay:col
-			md="6"
-		>
+	<clay:sheet>
+		<clay:sheet-section>
+			<div class="form-group">
+				<h3 class="sheet-subtitle"><liferay-ui:message key="user-display-data" /></h3>
 
-			<%
-			Boolean autoGenerateScreenName = PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_SCREEN_NAME_ALWAYS_AUTOGENERATE);
-			%>
+				<clay:row>
+					<clay:col
+						md="6"
+					>
 
-			<c:if test="<%= !autoGenerateScreenName %>">
-				<aui:input autoFocus="<%= true %>" model="<%= User.class %>" name="screenName">
+						<%
+						Boolean autoGenerateScreenName = PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_SCREEN_NAME_ALWAYS_AUTOGENERATE);
+						%>
 
-					<%
-					ScreenNameValidator screenNameValidator = ScreenNameValidatorFactory.getInstance();
-					%>
+						<c:if test="<%= !autoGenerateScreenName %>">
+							<aui:input model="<%= User.class %>" name="screenName">
 
-					<c:if test="<%= Validator.isNotNull(screenNameValidator.getAUIValidatorJS()) %>">
-						<aui:validator errorMessage="<%= screenNameValidator.getDescription(locale) %>" name="custom">
-							<%= screenNameValidator.getAUIValidatorJS() %>
-						</aui:validator>
-					</c:if>
-				</aui:input>
-			</c:if>
+								<%
+								ScreenNameValidator screenNameValidator = ScreenNameValidatorFactory.getInstance();
+								%>
 
-			<aui:input autoFocus="<%= autoGenerateScreenName %>" model="<%= User.class %>" name="emailAddress">
-				<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_EMAIL_ADDRESS_REQUIRED) %>">
-					<aui:validator name="required" />
-				</c:if>
-			</aui:input>
+								<c:if test="<%= Validator.isNotNull(screenNameValidator.getAUIValidatorJS()) %>">
+									<aui:validator errorMessage="<%= screenNameValidator.getDescription(locale) %>" name="custom">
+										<%= screenNameValidator.getAUIValidatorJS() %>
+									</aui:validator>
+								</c:if>
+							</aui:input>
+						</c:if>
 
-			<liferay-ui:user-name-fields />
-		</clay:col>
+						<aui:input model="<%= User.class %>" name="emailAddress" required="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.USERS_EMAIL_ADDRESS_REQUIRED) %>" />
+					</clay:col>
+				</clay:row>
+			</div>
 
-		<clay:col
-			md="6"
-		>
-			<c:if test="<%= PropsValues.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD %>">
-				<aui:input label="password" name="password1" size="30" type="password" value="">
-					<aui:validator name="required" />
-				</aui:input>
+			<div class="form-group">
+				<h3 class="sheet-subtitle"><liferay-ui:message key="personal-information" /></h3>
 
-				<aui:input label="enter-again" name="password2" size="30" type="password" value="">
-					<aui:validator name="equalTo">
-						'#<portlet:namespace />password1'
-					</aui:validator>
+				<clay:row>
+					<clay:col
+						md="6"
+					>
+						<liferay-user:user-name-fields />
+					</clay:col>
 
-					<aui:validator name="required" />
-				</aui:input>
-			</c:if>
+					<clay:col
+						md="5"
+					>
+						<c:choose>
+							<c:when test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_CONTACT_BIRTHDAY) %>">
+								<aui:input name="birthday" value="<%= birthdayCalendar %>" />
+							</c:when>
+							<c:otherwise>
+								<aui:input name="birthdayMonth" type="hidden" value="<%= Calendar.JANUARY %>" />
+								<aui:input name="birthdayDay" type="hidden" value="1" />
+								<aui:input name="birthdayYear" type="hidden" value="1970" />
+							</c:otherwise>
+						</c:choose>
 
-			<c:choose>
-				<c:when test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_CONTACT_BIRTHDAY) %>">
-					<aui:input name="birthday" value="<%= birthdayCalendar %>" />
-				</c:when>
-				<c:otherwise>
-					<aui:input name="birthdayMonth" type="hidden" value="<%= Calendar.JANUARY %>" />
-					<aui:input name="birthdayDay" type="hidden" value="1" />
-					<aui:input name="birthdayYear" type="hidden" value="1970" />
-				</c:otherwise>
-			</c:choose>
+						<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_CONTACT_MALE) %>">
+							<aui:select label="gender" name="male">
+								<aui:option label="male" value="1" />
+								<aui:option label="female" selected="<%= !male %>" value="0" />
+							</aui:select>
+						</c:if>
+					</clay:col>
+				</clay:row>
+			</div>
 
-			<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_CONTACT_MALE) %>">
-				<aui:select label="gender" name="male">
-					<aui:option label="male" value="1" />
-					<aui:option label="female" selected="<%= !male %>" value="0" />
-				</aui:select>
+			<c:if test="<%= PrefsPropsUtil.getBoolean(company.getCompanyId(), PropsKeys.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD, PropsValues.LOGIN_CREATE_ACCOUNT_ALLOW_CUSTOM_PASSWORD) %>">
+				<div class="form-group">
+					<h3 class="sheet-subtitle"><liferay-ui:message key="password" /></h3>
+
+					<clay:row>
+						<clay:col
+							md="6"
+						>
+							<aui:input label="password" name="password1" required="<%= true %>" size="30" type="password" value="" />
+
+							<aui:input label="reenter-password" name="password2" required="<%= true %>" size="30" type="password" value="">
+								<aui:validator name="equalTo">
+									'#<portlet:namespace />password1'
+								</aui:validator>
+							</aui:input>
+						</clay:col>
+					</clay:row>
+				</div>
 			</c:if>
 
 			<c:if test="<%= captchaConfiguration.createAccountCaptchaEnabled() %>">
-				<liferay-captcha:captcha />
+				<div class="form-group">
+					<h3 class="mb-2 sheet-subtitle"><liferay-ui:message key="verification" /></h3>
+
+					<clay:row>
+						<clay:col
+							md="6"
+						>
+							<liferay-captcha:captcha />
+						</clay:col>
+					</clay:row>
+				</div>
 			</c:if>
-		</clay:col>
-	</aui:fieldset>
 
-	<aui:button-row>
-		<aui:button type="submit" />
-	</aui:button-row>
+			<div class="form-group">
+				<aui:button-row>
+					<aui:button type="submit" />
+				</aui:button-row>
+
+				<%@ include file="/navigation.jspf" %>
+			</div>
+		</clay:sheet-section>
+	</clay:sheet>
 </aui:form>
-
-<%@ include file="/navigation.jspf" %>

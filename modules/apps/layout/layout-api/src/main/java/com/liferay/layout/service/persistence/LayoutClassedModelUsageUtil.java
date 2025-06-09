@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.service.persistence;
@@ -201,12 +192,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param uuid the uuid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByUuid_First(
 			String uuid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUuid_First(uuid, orderByComparator);
 	}
@@ -231,12 +223,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param uuid the uuid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByUuid_Last(
 			String uuid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUuid_Last(uuid, orderByComparator);
 	}
@@ -262,12 +255,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param uuid the uuid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
 	public static LayoutClassedModelUsage[] findByUuid_PrevAndNext(
 			long layoutClassedModelUsageId, String uuid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUuid_PrevAndNext(
 			layoutClassedModelUsageId, uuid, orderByComparator);
@@ -293,16 +287,17 @@ public class LayoutClassedModelUsageUtil {
 	}
 
 	/**
-	 * Returns the layout classed model usage where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchClassedModelUsageException</code> if it could not be found.
+	 * Returns the layout classed model usage where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchLayoutClassedModelUsageException</code> if it could not be found.
 	 *
 	 * @param uuid the uuid
 	 * @param groupId the group ID
 	 * @return the matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByUUID_G(
 			String uuid, long groupId)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUUID_G(uuid, groupId);
 	}
@@ -343,7 +338,8 @@ public class LayoutClassedModelUsageUtil {
 	 */
 	public static LayoutClassedModelUsage removeByUUID_G(
 			String uuid, long groupId)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().removeByUUID_G(uuid, groupId);
 	}
@@ -444,12 +440,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param companyId the company ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByUuid_C_First(
 			String uuid, long companyId,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUuid_C_First(
 			uuid, companyId, orderByComparator);
@@ -478,12 +475,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param companyId the company ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByUuid_C_Last(
 			String uuid, long companyId,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUuid_C_Last(
 			uuid, companyId, orderByComparator);
@@ -513,12 +511,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param companyId the company ID
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
 	public static LayoutClassedModelUsage[] findByUuid_C_PrevAndNext(
 			long layoutClassedModelUsageId, String uuid, long companyId,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByUuid_C_PrevAndNext(
 			layoutClassedModelUsageId, uuid, companyId, orderByComparator);
@@ -622,12 +621,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param plid the plid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByPlid_First(
 			long plid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByPlid_First(plid, orderByComparator);
 	}
@@ -652,12 +652,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param plid the plid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByPlid_Last(
 			long plid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByPlid_Last(plid, orderByComparator);
 	}
@@ -683,12 +684,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param plid the plid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
 	public static LayoutClassedModelUsage[] findByPlid_PrevAndNext(
 			long layoutClassedModelUsageId, long plid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByPlid_PrevAndNext(
 			layoutClassedModelUsageId, plid, orderByComparator);
@@ -714,16 +716,207 @@ public class LayoutClassedModelUsageUtil {
 	}
 
 	/**
+	 * Returns all the layout classed model usages where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN(
+		long companyId, long classNameId) {
+
+		return getPersistence().findByC_CN(companyId, classNameId);
+	}
+
+	/**
+	 * Returns a range of all the layout classed model usages where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @return the range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN(
+		long companyId, long classNameId, int start, int end) {
+
+		return getPersistence().findByC_CN(companyId, classNameId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().findByC_CN(
+			companyId, classNameId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_CN(
+			companyId, classNameId, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_First(
+			long companyId, long classNameId,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_First(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_First(
+		long companyId, long classNameId,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_First(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_Last(
+			long companyId, long classNameId,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_Last(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_Last(
+		long companyId, long classNameId,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_Last(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the layout classed model usages before and after the current layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param layoutClassedModelUsageId the primary key of the current layout classed model usage
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 */
+	public static LayoutClassedModelUsage[] findByC_CN_PrevAndNext(
+			long layoutClassedModelUsageId, long companyId, long classNameId,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_PrevAndNext(
+			layoutClassedModelUsageId, companyId, classNameId,
+			orderByComparator);
+	}
+
+	/**
+	 * Removes all the layout classed model usages where companyId = &#63; and classNameId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 */
+	public static void removeByC_CN(long companyId, long classNameId) {
+		getPersistence().removeByC_CN(companyId, classNameId);
+	}
+
+	/**
+	 * Returns the number of layout classed model usages where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the number of matching layout classed model usages
+	 */
+	public static int countByC_CN(long companyId, long classNameId) {
+		return getPersistence().countByC_CN(companyId, classNameId);
+	}
+
+	/**
 	 * Returns all the layout classed model usages where classNameId = &#63; and classPK = &#63;.
 	 *
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
 	 * @return the matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C(
+	public static List<LayoutClassedModelUsage> findByCN_CPK(
 		long classNameId, long classPK) {
 
-		return getPersistence().findByC_C(classNameId, classPK);
+		return getPersistence().findByCN_CPK(classNameId, classPK);
 	}
 
 	/**
@@ -739,10 +932,10 @@ public class LayoutClassedModelUsageUtil {
 	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
 	 * @return the range of matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C(
+	public static List<LayoutClassedModelUsage> findByCN_CPK(
 		long classNameId, long classPK, int start, int end) {
 
-		return getPersistence().findByC_C(classNameId, classPK, start, end);
+		return getPersistence().findByCN_CPK(classNameId, classPK, start, end);
 	}
 
 	/**
@@ -759,11 +952,11 @@ public class LayoutClassedModelUsageUtil {
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @return the ordered range of matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C(
+	public static List<LayoutClassedModelUsage> findByCN_CPK(
 		long classNameId, long classPK, int start, int end,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
 
-		return getPersistence().findByC_C(
+		return getPersistence().findByCN_CPK(
 			classNameId, classPK, start, end, orderByComparator);
 	}
 
@@ -782,12 +975,12 @@ public class LayoutClassedModelUsageUtil {
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the ordered range of matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C(
+	public static List<LayoutClassedModelUsage> findByCN_CPK(
 		long classNameId, long classPK, int start, int end,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator,
 		boolean useFinderCache) {
 
-		return getPersistence().findByC_C(
+		return getPersistence().findByCN_CPK(
 			classNameId, classPK, start, end, orderByComparator,
 			useFinderCache);
 	}
@@ -799,14 +992,15 @@ public class LayoutClassedModelUsageUtil {
 	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage findByC_C_First(
+	public static LayoutClassedModelUsage findByCN_CPK_First(
 			long classNameId, long classPK,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_First(
+		return getPersistence().findByCN_CPK_First(
 			classNameId, classPK, orderByComparator);
 	}
 
@@ -818,11 +1012,11 @@ public class LayoutClassedModelUsageUtil {
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage fetchByC_C_First(
+	public static LayoutClassedModelUsage fetchByCN_CPK_First(
 		long classNameId, long classPK,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
 
-		return getPersistence().fetchByC_C_First(
+		return getPersistence().fetchByCN_CPK_First(
 			classNameId, classPK, orderByComparator);
 	}
 
@@ -833,14 +1027,15 @@ public class LayoutClassedModelUsageUtil {
 	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage findByC_C_Last(
+	public static LayoutClassedModelUsage findByCN_CPK_Last(
 			long classNameId, long classPK,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_Last(
+		return getPersistence().findByCN_CPK_Last(
 			classNameId, classPK, orderByComparator);
 	}
 
@@ -852,11 +1047,11 @@ public class LayoutClassedModelUsageUtil {
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage fetchByC_C_Last(
+	public static LayoutClassedModelUsage fetchByCN_CPK_Last(
 		long classNameId, long classPK,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
 
-		return getPersistence().fetchByC_C_Last(
+		return getPersistence().fetchByCN_CPK_Last(
 			classNameId, classPK, orderByComparator);
 	}
 
@@ -868,14 +1063,15 @@ public class LayoutClassedModelUsageUtil {
 	 * @param classPK the class pk
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
-	public static LayoutClassedModelUsage[] findByC_C_PrevAndNext(
+	public static LayoutClassedModelUsage[] findByCN_CPK_PrevAndNext(
 			long layoutClassedModelUsageId, long classNameId, long classPK,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_PrevAndNext(
+		return getPersistence().findByCN_CPK_PrevAndNext(
 			layoutClassedModelUsageId, classNameId, classPK, orderByComparator);
 	}
 
@@ -885,8 +1081,8 @@ public class LayoutClassedModelUsageUtil {
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
 	 */
-	public static void removeByC_C(long classNameId, long classPK) {
-		getPersistence().removeByC_C(classNameId, classPK);
+	public static void removeByCN_CPK(long classNameId, long classPK) {
+		getPersistence().removeByCN_CPK(classNameId, classPK);
 	}
 
 	/**
@@ -896,8 +1092,447 @@ public class LayoutClassedModelUsageUtil {
 	 * @param classPK the class pk
 	 * @return the number of matching layout classed model usages
 	 */
-	public static int countByC_C(long classNameId, long classPK) {
-		return getPersistence().countByC_C(classNameId, classPK);
+	public static int countByCN_CPK(long classNameId, long classPK) {
+		return getPersistence().countByCN_CPK(classNameId, classPK);
+	}
+
+	/**
+	 * Returns all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @return the matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode) {
+
+		return getPersistence().findByC_CN_CMERC(
+			companyId, classNameId, classedModelExternalReferenceCode);
+	}
+
+	/**
+	 * Returns a range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @return the range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int start, int end) {
+
+		return getPersistence().findByC_CN_CMERC(
+			companyId, classNameId, classedModelExternalReferenceCode, start,
+			end);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int start, int end,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().findByC_CN_CMERC(
+			companyId, classNameId, classedModelExternalReferenceCode, start,
+			end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int start, int end,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_CN_CMERC(
+			companyId, classNameId, classedModelExternalReferenceCode, start,
+			end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_CMERC_First(
+			long companyId, long classNameId,
+			String classedModelExternalReferenceCode,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CMERC_First(
+			companyId, classNameId, classedModelExternalReferenceCode,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_CMERC_First(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_CMERC_First(
+			companyId, classNameId, classedModelExternalReferenceCode,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_CMERC_Last(
+			long companyId, long classNameId,
+			String classedModelExternalReferenceCode,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CMERC_Last(
+			companyId, classNameId, classedModelExternalReferenceCode,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_CMERC_Last(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_CMERC_Last(
+			companyId, classNameId, classedModelExternalReferenceCode,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the layout classed model usages before and after the current layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param layoutClassedModelUsageId the primary key of the current layout classed model usage
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 */
+	public static LayoutClassedModelUsage[] findByC_CN_CMERC_PrevAndNext(
+			long layoutClassedModelUsageId, long companyId, long classNameId,
+			String classedModelExternalReferenceCode,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CMERC_PrevAndNext(
+			layoutClassedModelUsageId, companyId, classNameId,
+			classedModelExternalReferenceCode, orderByComparator);
+	}
+
+	/**
+	 * Removes all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 */
+	public static void removeByC_CN_CMERC(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode) {
+
+		getPersistence().removeByC_CN_CMERC(
+			companyId, classNameId, classedModelExternalReferenceCode);
+	}
+
+	/**
+	 * Returns the number of layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @return the number of matching layout classed model usages
+	 */
+	public static int countByC_CN_CMERC(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode) {
+
+		return getPersistence().countByC_CN_CMERC(
+			companyId, classNameId, classedModelExternalReferenceCode);
+	}
+
+	/**
+	 * Returns all the layout classed model usages where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @return the matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CT(
+		long companyId, long classNameId, long containerType) {
+
+		return getPersistence().findByC_CN_CT(
+			companyId, classNameId, containerType);
+	}
+
+	/**
+	 * Returns a range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @return the range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CT(
+		long companyId, long classNameId, long containerType, int start,
+		int end) {
+
+		return getPersistence().findByC_CN_CT(
+			companyId, classNameId, containerType, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CT(
+		long companyId, long classNameId, long containerType, int start,
+		int end, OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().findByC_CN_CT(
+			companyId, classNameId, containerType, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CT(
+		long companyId, long classNameId, long containerType, int start,
+		int end, OrderByComparator<LayoutClassedModelUsage> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_CN_CT(
+			companyId, classNameId, containerType, start, end,
+			orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_CT_First(
+			long companyId, long classNameId, long containerType,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CT_First(
+			companyId, classNameId, containerType, orderByComparator);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_CT_First(
+		long companyId, long classNameId, long containerType,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_CT_First(
+			companyId, classNameId, containerType, orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_CT_Last(
+			long companyId, long classNameId, long containerType,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CT_Last(
+			companyId, classNameId, containerType, orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_CT_Last(
+		long companyId, long classNameId, long containerType,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_CT_Last(
+			companyId, classNameId, containerType, orderByComparator);
+	}
+
+	/**
+	 * Returns the layout classed model usages before and after the current layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param layoutClassedModelUsageId the primary key of the current layout classed model usage
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 */
+	public static LayoutClassedModelUsage[] findByC_CN_CT_PrevAndNext(
+			long layoutClassedModelUsageId, long companyId, long classNameId,
+			long containerType,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CT_PrevAndNext(
+			layoutClassedModelUsageId, companyId, classNameId, containerType,
+			orderByComparator);
+	}
+
+	/**
+	 * Removes all the layout classed model usages where companyId = &#63; and classNameId = &#63; and containerType = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 */
+	public static void removeByC_CN_CT(
+		long companyId, long classNameId, long containerType) {
+
+		getPersistence().removeByC_CN_CT(companyId, classNameId, containerType);
+	}
+
+	/**
+	 * Returns the number of layout classed model usages where companyId = &#63; and classNameId = &#63; and containerType = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param containerType the container type
+	 * @return the number of matching layout classed model usages
+	 */
+	public static int countByC_CN_CT(
+		long companyId, long classNameId, long containerType) {
+
+		return getPersistence().countByC_CN_CT(
+			companyId, classNameId, containerType);
 	}
 
 	/**
@@ -908,10 +1543,10 @@ public class LayoutClassedModelUsageUtil {
 	 * @param type the type
 	 * @return the matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C_T(
+	public static List<LayoutClassedModelUsage> findByCN_CPK_T(
 		long classNameId, long classPK, int type) {
 
-		return getPersistence().findByC_C_T(classNameId, classPK, type);
+		return getPersistence().findByCN_CPK_T(classNameId, classPK, type);
 	}
 
 	/**
@@ -928,10 +1563,10 @@ public class LayoutClassedModelUsageUtil {
 	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
 	 * @return the range of matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C_T(
+	public static List<LayoutClassedModelUsage> findByCN_CPK_T(
 		long classNameId, long classPK, int type, int start, int end) {
 
-		return getPersistence().findByC_C_T(
+		return getPersistence().findByCN_CPK_T(
 			classNameId, classPK, type, start, end);
 	}
 
@@ -950,11 +1585,11 @@ public class LayoutClassedModelUsageUtil {
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @return the ordered range of matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C_T(
+	public static List<LayoutClassedModelUsage> findByCN_CPK_T(
 		long classNameId, long classPK, int type, int start, int end,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
 
-		return getPersistence().findByC_C_T(
+		return getPersistence().findByCN_CPK_T(
 			classNameId, classPK, type, start, end, orderByComparator);
 	}
 
@@ -974,12 +1609,12 @@ public class LayoutClassedModelUsageUtil {
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the ordered range of matching layout classed model usages
 	 */
-	public static List<LayoutClassedModelUsage> findByC_C_T(
+	public static List<LayoutClassedModelUsage> findByCN_CPK_T(
 		long classNameId, long classPK, int type, int start, int end,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator,
 		boolean useFinderCache) {
 
-		return getPersistence().findByC_C_T(
+		return getPersistence().findByCN_CPK_T(
 			classNameId, classPK, type, start, end, orderByComparator,
 			useFinderCache);
 	}
@@ -992,14 +1627,15 @@ public class LayoutClassedModelUsageUtil {
 	 * @param type the type
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage findByC_C_T_First(
+	public static LayoutClassedModelUsage findByCN_CPK_T_First(
 			long classNameId, long classPK, int type,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_T_First(
+		return getPersistence().findByCN_CPK_T_First(
 			classNameId, classPK, type, orderByComparator);
 	}
 
@@ -1012,11 +1648,11 @@ public class LayoutClassedModelUsageUtil {
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage fetchByC_C_T_First(
+	public static LayoutClassedModelUsage fetchByCN_CPK_T_First(
 		long classNameId, long classPK, int type,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
 
-		return getPersistence().fetchByC_C_T_First(
+		return getPersistence().fetchByCN_CPK_T_First(
 			classNameId, classPK, type, orderByComparator);
 	}
 
@@ -1028,14 +1664,15 @@ public class LayoutClassedModelUsageUtil {
 	 * @param type the type
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage findByC_C_T_Last(
+	public static LayoutClassedModelUsage findByCN_CPK_T_Last(
 			long classNameId, long classPK, int type,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_T_Last(
+		return getPersistence().findByCN_CPK_T_Last(
 			classNameId, classPK, type, orderByComparator);
 	}
 
@@ -1048,11 +1685,11 @@ public class LayoutClassedModelUsageUtil {
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage fetchByC_C_T_Last(
+	public static LayoutClassedModelUsage fetchByCN_CPK_T_Last(
 		long classNameId, long classPK, int type,
 		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
 
-		return getPersistence().fetchByC_C_T_Last(
+		return getPersistence().fetchByCN_CPK_T_Last(
 			classNameId, classPK, type, orderByComparator);
 	}
 
@@ -1065,15 +1702,16 @@ public class LayoutClassedModelUsageUtil {
 	 * @param type the type
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
-	public static LayoutClassedModelUsage[] findByC_C_T_PrevAndNext(
+	public static LayoutClassedModelUsage[] findByCN_CPK_T_PrevAndNext(
 			long layoutClassedModelUsageId, long classNameId, long classPK,
 			int type,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_T_PrevAndNext(
+		return getPersistence().findByCN_CPK_T_PrevAndNext(
 			layoutClassedModelUsageId, classNameId, classPK, type,
 			orderByComparator);
 	}
@@ -1085,8 +1723,10 @@ public class LayoutClassedModelUsageUtil {
 	 * @param classPK the class pk
 	 * @param type the type
 	 */
-	public static void removeByC_C_T(long classNameId, long classPK, int type) {
-		getPersistence().removeByC_C_T(classNameId, classPK, type);
+	public static void removeByCN_CPK_T(
+		long classNameId, long classPK, int type) {
+
+		getPersistence().removeByCN_CPK_T(classNameId, classPK, type);
 	}
 
 	/**
@@ -1097,8 +1737,10 @@ public class LayoutClassedModelUsageUtil {
 	 * @param type the type
 	 * @return the number of matching layout classed model usages
 	 */
-	public static int countByC_C_T(long classNameId, long classPK, int type) {
-		return getPersistence().countByC_C_T(classNameId, classPK, type);
+	public static int countByCN_CPK_T(
+		long classNameId, long classPK, int type) {
+
+		return getPersistence().countByCN_CPK_T(classNameId, classPK, type);
 	}
 
 	/**
@@ -1195,12 +1837,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param plid the plid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the first matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByCK_CT_P_First(
 			String containerKey, long containerType, long plid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByCK_CT_P_First(
 			containerKey, containerType, plid, orderByComparator);
@@ -1231,12 +1874,13 @@ public class LayoutClassedModelUsageUtil {
 	 * @param plid the plid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the last matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
 	public static LayoutClassedModelUsage findByCK_CT_P_Last(
 			String containerKey, long containerType, long plid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByCK_CT_P_Last(
 			containerKey, containerType, plid, orderByComparator);
@@ -1268,13 +1912,14 @@ public class LayoutClassedModelUsageUtil {
 	 * @param plid the plid
 	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
 	 * @return the previous, current, and next layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
 	public static LayoutClassedModelUsage[] findByCK_CT_P_PrevAndNext(
 			long layoutClassedModelUsageId, String containerKey,
 			long containerType, long plid,
 			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByCK_CT_P_PrevAndNext(
 			layoutClassedModelUsageId, containerKey, containerType, plid,
@@ -1310,98 +1955,358 @@ public class LayoutClassedModelUsageUtil {
 	}
 
 	/**
-	 * Returns the layout classed model usage where classNameId = &#63; and classPK = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; or throws a <code>NoSuchClassedModelUsageException</code> if it could not be found.
+	 * Returns all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
 	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @return the matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC_T(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type) {
+
+		return getPersistence().findByC_CN_CMERC_T(
+			companyId, classNameId, classedModelExternalReferenceCode, type);
+	}
+
+	/**
+	 * Returns a range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @return the range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC_T(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type, int start,
+		int end) {
+
+		return getPersistence().findByC_CN_CMERC_T(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC_T(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type, int start, int end,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().findByC_CN_CMERC_T(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>LayoutClassedModelUsageModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param start the lower bound of the range of layout classed model usages
+	 * @param end the upper bound of the range of layout classed model usages (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching layout classed model usages
+	 */
+	public static List<LayoutClassedModelUsage> findByC_CN_CMERC_T(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type, int start, int end,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_CN_CMERC_T(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_CMERC_T_First(
+			long companyId, long classNameId,
+			String classedModelExternalReferenceCode, int type,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CMERC_T_First(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the first layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_CMERC_T_First(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_CMERC_T_First(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage findByC_CN_CMERC_T_Last(
+			long companyId, long classNameId,
+			String classedModelExternalReferenceCode, int type,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CMERC_T_Last(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the last layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
+	 */
+	public static LayoutClassedModelUsage fetchByC_CN_CMERC_T_Last(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type,
+		OrderByComparator<LayoutClassedModelUsage> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_CMERC_T_Last(
+			companyId, classNameId, classedModelExternalReferenceCode, type,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns the layout classed model usages before and after the current layout classed model usage in the ordered set where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * @param layoutClassedModelUsageId the primary key of the current layout classed model usage
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next layout classed model usage
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 */
+	public static LayoutClassedModelUsage[] findByC_CN_CMERC_T_PrevAndNext(
+			long layoutClassedModelUsageId, long companyId, long classNameId,
+			String classedModelExternalReferenceCode, int type,
+			OrderByComparator<LayoutClassedModelUsage> orderByComparator)
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
+
+		return getPersistence().findByC_CN_CMERC_T_PrevAndNext(
+			layoutClassedModelUsageId, companyId, classNameId,
+			classedModelExternalReferenceCode, type, orderByComparator);
+	}
+
+	/**
+	 * Removes all the layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 */
+	public static void removeByC_CN_CMERC_T(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type) {
+
+		getPersistence().removeByC_CN_CMERC_T(
+			companyId, classNameId, classedModelExternalReferenceCode, type);
+	}
+
+	/**
+	 * Returns the number of layout classed model usages where companyId = &#63; and classNameId = &#63; and classedModelExternalReferenceCode = &#63; and type = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param classedModelExternalReferenceCode the classed model external reference code
+	 * @param type the type
+	 * @return the number of matching layout classed model usages
+	 */
+	public static int countByC_CN_CMERC_T(
+		long companyId, long classNameId,
+		String classedModelExternalReferenceCode, int type) {
+
+		return getPersistence().countByC_CN_CMERC_T(
+			companyId, classNameId, classedModelExternalReferenceCode, type);
+	}
+
+	/**
+	 * Returns the layout classed model usage where groupId = &#63; and classNameId = &#63; and classPK = &#63; and classedModelExternalReferenceCode = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; or throws a <code>NoSuchLayoutClassedModelUsageException</code> if it could not be found.
+	 *
+	 * @param groupId the group ID
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
+	 * @param classedModelExternalReferenceCode the classed model external reference code
 	 * @param containerKey the container key
 	 * @param containerType the container type
 	 * @param plid the plid
 	 * @return the matching layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a matching layout classed model usage could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage findByC_C_CK_CT_P(
-			long classNameId, long classPK, String containerKey,
+	public static LayoutClassedModelUsage findByG_CN_CPK_CMERC_CK_CT_P(
+			long groupId, long classNameId, long classPK,
+			String classedModelExternalReferenceCode, String containerKey,
 			long containerType, long plid)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().findByC_C_CK_CT_P(
-			classNameId, classPK, containerKey, containerType, plid);
+		return getPersistence().findByG_CN_CPK_CMERC_CK_CT_P(
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid);
 	}
 
 	/**
-	 * Returns the layout classed model usage where classNameId = &#63; and classPK = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the layout classed model usage where groupId = &#63; and classNameId = &#63; and classPK = &#63; and classedModelExternalReferenceCode = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
+	 * @param groupId the group ID
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
+	 * @param classedModelExternalReferenceCode the classed model external reference code
 	 * @param containerKey the container key
 	 * @param containerType the container type
 	 * @param plid the plid
 	 * @return the matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage fetchByC_C_CK_CT_P(
-		long classNameId, long classPK, String containerKey, long containerType,
-		long plid) {
+	public static LayoutClassedModelUsage fetchByG_CN_CPK_CMERC_CK_CT_P(
+		long groupId, long classNameId, long classPK,
+		String classedModelExternalReferenceCode, String containerKey,
+		long containerType, long plid) {
 
-		return getPersistence().fetchByC_C_CK_CT_P(
-			classNameId, classPK, containerKey, containerType, plid);
+		return getPersistence().fetchByG_CN_CPK_CMERC_CK_CT_P(
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid);
 	}
 
 	/**
-	 * Returns the layout classed model usage where classNameId = &#63; and classPK = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the layout classed model usage where groupId = &#63; and classNameId = &#63; and classPK = &#63; and classedModelExternalReferenceCode = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
+	 * @param groupId the group ID
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
+	 * @param classedModelExternalReferenceCode the classed model external reference code
 	 * @param containerKey the container key
 	 * @param containerType the container type
 	 * @param plid the plid
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching layout classed model usage, or <code>null</code> if a matching layout classed model usage could not be found
 	 */
-	public static LayoutClassedModelUsage fetchByC_C_CK_CT_P(
-		long classNameId, long classPK, String containerKey, long containerType,
-		long plid, boolean useFinderCache) {
+	public static LayoutClassedModelUsage fetchByG_CN_CPK_CMERC_CK_CT_P(
+		long groupId, long classNameId, long classPK,
+		String classedModelExternalReferenceCode, String containerKey,
+		long containerType, long plid, boolean useFinderCache) {
 
-		return getPersistence().fetchByC_C_CK_CT_P(
-			classNameId, classPK, containerKey, containerType, plid,
-			useFinderCache);
+		return getPersistence().fetchByG_CN_CPK_CMERC_CK_CT_P(
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid, useFinderCache);
 	}
 
 	/**
-	 * Removes the layout classed model usage where classNameId = &#63; and classPK = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; from the database.
+	 * Removes the layout classed model usage where groupId = &#63; and classNameId = &#63; and classPK = &#63; and classedModelExternalReferenceCode = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63; from the database.
 	 *
+	 * @param groupId the group ID
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
+	 * @param classedModelExternalReferenceCode the classed model external reference code
 	 * @param containerKey the container key
 	 * @param containerType the container type
 	 * @param plid the plid
 	 * @return the layout classed model usage that was removed
 	 */
-	public static LayoutClassedModelUsage removeByC_C_CK_CT_P(
-			long classNameId, long classPK, String containerKey,
+	public static LayoutClassedModelUsage removeByG_CN_CPK_CMERC_CK_CT_P(
+			long groupId, long classNameId, long classPK,
+			String classedModelExternalReferenceCode, String containerKey,
 			long containerType, long plid)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
-		return getPersistence().removeByC_C_CK_CT_P(
-			classNameId, classPK, containerKey, containerType, plid);
+		return getPersistence().removeByG_CN_CPK_CMERC_CK_CT_P(
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid);
 	}
 
 	/**
-	 * Returns the number of layout classed model usages where classNameId = &#63; and classPK = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63;.
+	 * Returns the number of layout classed model usages where groupId = &#63; and classNameId = &#63; and classPK = &#63; and classedModelExternalReferenceCode = &#63; and containerKey = &#63; and containerType = &#63; and plid = &#63;.
 	 *
+	 * @param groupId the group ID
 	 * @param classNameId the class name ID
 	 * @param classPK the class pk
+	 * @param classedModelExternalReferenceCode the classed model external reference code
 	 * @param containerKey the container key
 	 * @param containerType the container type
 	 * @param plid the plid
 	 * @return the number of matching layout classed model usages
 	 */
-	public static int countByC_C_CK_CT_P(
-		long classNameId, long classPK, String containerKey, long containerType,
-		long plid) {
+	public static int countByG_CN_CPK_CMERC_CK_CT_P(
+		long groupId, long classNameId, long classPK,
+		String classedModelExternalReferenceCode, String containerKey,
+		long containerType, long plid) {
 
-		return getPersistence().countByC_C_CK_CT_P(
-			classNameId, classPK, containerKey, containerType, plid);
+		return getPersistence().countByG_CN_CPK_CMERC_CK_CT_P(
+			groupId, classNameId, classPK, classedModelExternalReferenceCode,
+			containerKey, containerType, plid);
 	}
 
 	/**
@@ -1443,10 +2348,11 @@ public class LayoutClassedModelUsageUtil {
 	 *
 	 * @param layoutClassedModelUsageId the primary key of the layout classed model usage
 	 * @return the layout classed model usage that was removed
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
 	public static LayoutClassedModelUsage remove(long layoutClassedModelUsageId)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().remove(layoutClassedModelUsageId);
 	}
@@ -1458,15 +2364,16 @@ public class LayoutClassedModelUsageUtil {
 	}
 
 	/**
-	 * Returns the layout classed model usage with the primary key or throws a <code>NoSuchClassedModelUsageException</code> if it could not be found.
+	 * Returns the layout classed model usage with the primary key or throws a <code>NoSuchLayoutClassedModelUsageException</code> if it could not be found.
 	 *
 	 * @param layoutClassedModelUsageId the primary key of the layout classed model usage
 	 * @return the layout classed model usage
-	 * @throws NoSuchClassedModelUsageException if a layout classed model usage with the primary key could not be found
+	 * @throws NoSuchLayoutClassedModelUsageException if a layout classed model usage with the primary key could not be found
 	 */
 	public static LayoutClassedModelUsage findByPrimaryKey(
 			long layoutClassedModelUsageId)
-		throws com.liferay.layout.exception.NoSuchClassedModelUsageException {
+		throws com.liferay.layout.exception.
+			NoSuchLayoutClassedModelUsageException {
 
 		return getPersistence().findByPrimaryKey(layoutClassedModelUsageId);
 	}
@@ -1566,6 +2473,12 @@ public class LayoutClassedModelUsageUtil {
 
 	public static LayoutClassedModelUsagePersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(
+		LayoutClassedModelUsagePersistence persistence) {
+
+		_persistence = persistence;
 	}
 
 	private static volatile LayoutClassedModelUsagePersistence _persistence;

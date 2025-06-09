@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.internal.resource.v2_0;
@@ -17,12 +8,10 @@ package com.liferay.data.engine.rest.internal.resource.v2_0;
 import com.liferay.data.engine.constants.DataActionKeys;
 import com.liferay.data.engine.model.DEDataListView;
 import com.liferay.data.engine.rest.dto.v2_0.DataRecord;
-import com.liferay.data.engine.rest.internal.content.type.DataDefinitionContentTypeTracker;
 import com.liferay.data.engine.rest.internal.odata.entity.v2_0.DataRecordEntityModel;
-import com.liferay.data.engine.rest.internal.security.permission.resource.DataRecordCollectionModelResourcePermission;
-import com.liferay.data.engine.rest.internal.security.permission.resource.DataRecordModelResourcePermission;
+import com.liferay.data.engine.rest.internal.security.permission.resource.util.DataRecordCollectionPermissionUtil;
+import com.liferay.data.engine.rest.internal.security.permission.resource.util.DataRecordPermissionUtil;
 import com.liferay.data.engine.rest.internal.storage.DataRecordExporter;
-import com.liferay.data.engine.rest.internal.storage.DataStorageTracker;
 import com.liferay.data.engine.rest.resource.v2_0.DataRecordResource;
 import com.liferay.data.engine.service.DEDataListViewLocalService;
 import com.liferay.data.engine.storage.DataStorage;
@@ -31,7 +20,7 @@ import com.liferay.dynamic.data.lists.model.DDLRecordSet;
 import com.liferay.dynamic.data.lists.model.DDLRecordSetVersion;
 import com.liferay.dynamic.data.lists.service.DDLRecordLocalService;
 import com.liferay.dynamic.data.lists.service.DDLRecordSetLocalService;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
 import com.liferay.dynamic.data.mapping.service.DDMStorageLinkLocalService;
@@ -39,16 +28,17 @@ import com.liferay.dynamic.data.mapping.service.DDMStructureLayoutLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.spi.converter.SPIDDMFormRuleConverter;
 import com.liferay.dynamic.data.mapping.util.DDMIndexer;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
@@ -67,14 +57,15 @@ import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.odata.entity.StringEntityField;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
-import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.sort.FieldSort;
 import com.liferay.portal.search.sort.SortOrder;
-import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
+
+import jakarta.validation.ValidationException;
+
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -82,11 +73,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import javax.validation.ValidationException;
-
-import javax.ws.rs.core.MultivaluedMap;
-
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ServiceScope;
 
@@ -98,13 +88,13 @@ import org.osgi.service.component.annotations.ServiceScope;
 	scope = ServiceScope.PROTOTYPE, service = DataRecordResource.class
 )
 @CTAware
-public class DataRecordResourceImpl
-	extends BaseDataRecordResourceImpl implements EntityModelResource {
+public class DataRecordResourceImpl extends BaseDataRecordResourceImpl {
 
 	@Override
 	public void deleteDataRecord(Long dataRecordId) throws Exception {
-		_dataRecordModelResourcePermission.check(
-			PermissionThreadLocal.getPermissionChecker(), dataRecordId,
+		DataRecordPermissionUtil.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			_ddlRecordLocalService.getDDLRecord(dataRecordId),
 			DataActionKeys.DELETE_DATA_RECORD);
 
 		DDLRecord ddlRecord = _ddlRecordLocalService.getDDLRecord(dataRecordId);
@@ -137,8 +127,9 @@ public class DataRecordResourceImpl
 
 	@Override
 	public DataRecord getDataRecord(Long dataRecordId) throws Exception {
-		_dataRecordModelResourcePermission.check(
-			PermissionThreadLocal.getPermissionChecker(), dataRecordId,
+		DataRecordPermissionUtil.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			_ddlRecordLocalService.getDDLRecord(dataRecordId),
 			DataActionKeys.VIEW_DATA_RECORD);
 
 		return _toDataRecord(_ddlRecordLocalService.getDDLRecord(dataRecordId));
@@ -149,20 +140,14 @@ public class DataRecordResourceImpl
 			Long dataRecordCollectionId, Pagination pagination)
 		throws Exception {
 
-		if (pagination.getPageSize() > 250) {
-			throw new ValidationException(
-				LanguageUtil.format(
-					contextAcceptLanguage.getPreferredLocale(),
-					"page-size-is-greater-than-x", 250));
-		}
-
-		_dataRecordCollectionModelResourcePermission.check(
+		DataRecordCollectionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
-			dataRecordCollectionId, DataActionKeys.EXPORT_DATA_RECORDS);
+			_ddlRecordSetLocalService.getDDLRecordSet(dataRecordCollectionId),
+			DataActionKeys.EXPORT_DATA_RECORDS);
 
 		DataRecordExporter dataRecordExporter = new DataRecordExporter(
-			_dataDefinitionContentTypeTracker, _ddlRecordSetLocalService,
-			_ddmFormFieldTypeServicesTracker, _ddmStructureLayoutLocalService,
+			_ddlRecordSetLocalService, _ddmFormFieldTypeServicesRegistry,
+			_ddmStructureLayoutLocalService, _ddmStructureLocalService,
 			_spiDDMFormRuleConverter);
 
 		return dataRecordExporter.export(
@@ -179,16 +164,10 @@ public class DataRecordResourceImpl
 			Pagination pagination, Sort[] sorts)
 		throws Exception {
 
-		if (pagination.getPageSize() > 250) {
-			throw new ValidationException(
-				LanguageUtil.format(
-					contextAcceptLanguage.getPreferredLocale(),
-					"page-size-is-greater-than-x", 250));
-		}
-
-		_dataRecordCollectionModelResourcePermission.check(
+		DataRecordCollectionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
-			dataRecordCollectionId, DataActionKeys.VIEW_DATA_RECORD);
+			_ddlRecordSetLocalService.getDDLRecordSet(dataRecordCollectionId),
+			DataActionKeys.VIEW_DATA_RECORD);
 
 		DDLRecordSet ddlRecordSet = _ddlRecordSetLocalService.getDDLRecordSet(
 			dataRecordCollectionId);
@@ -297,14 +276,15 @@ public class DataRecordResourceImpl
 			Long dataRecordCollectionId, DataRecord dataRecord)
 		throws Exception {
 
-		_dataRecordCollectionModelResourcePermission.check(
+		DataRecordCollectionPermissionUtil.check(
 			PermissionThreadLocal.getPermissionChecker(),
-			dataRecordCollectionId, DataActionKeys.ADD_DATA_RECORD);
+			_ddlRecordSetLocalService.getDDLRecordSet(dataRecordCollectionId),
+			DataActionKeys.ADD_DATA_RECORD);
 
 		DDLRecordSet ddlRecordSet = _ddlRecordSetLocalService.getRecordSet(
 			dataRecordCollectionId);
 
-		dataRecord.setDataRecordCollectionId(dataRecordCollectionId);
+		dataRecord.setDataRecordCollectionId(() -> dataRecordCollectionId);
 
 		DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
 
@@ -336,17 +316,18 @@ public class DataRecordResourceImpl
 	public DataRecord putDataRecord(Long dataRecordId, DataRecord dataRecord)
 		throws Exception {
 
-		_dataRecordModelResourcePermission.check(
-			PermissionThreadLocal.getPermissionChecker(), dataRecordId,
+		DataRecordPermissionUtil.check(
+			PermissionThreadLocal.getPermissionChecker(),
+			_ddlRecordLocalService.getDDLRecord(dataRecordId),
 			DataActionKeys.UPDATE_DATA_RECORD);
 
 		DDLRecord ddlRecord = _ddlRecordLocalService.getRecord(dataRecordId);
 
 		DDLRecordSet ddlRecordSet = ddlRecord.getRecordSet();
 
-		dataRecord.setDataRecordCollectionId(ddlRecordSet.getRecordSetId());
+		dataRecord.setDataRecordCollectionId(ddlRecordSet::getRecordSetId);
 
-		dataRecord.setId(dataRecordId);
+		dataRecord.setId(() -> dataRecordId);
 
 		DDMStructure ddmStructure = ddlRecordSet.getDDMStructure();
 
@@ -376,6 +357,17 @@ public class DataRecordResourceImpl
 			});
 
 		return dataRecord;
+	}
+
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, DataStorage.class, "data.storage.type");
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
 	}
 
 	@Override
@@ -411,11 +403,11 @@ public class DataRecordResourceImpl
 		DEDataListView deDataListView =
 			_deDataListViewLocalService.getDEDataListView(dataListViewId);
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			deDataListView.getAppliedFilters());
 
 		String[] fieldNames = JSONUtil.toStringArray(
-			JSONFactoryUtil.createJSONArray(deDataListView.getFieldNames()));
+			_jsonFactory.createJSONArray(deDataListView.getFieldNames()));
 
 		for (String fieldName : fieldNames) {
 			JSONArray jsonArray = (JSONArray)jsonObject.get(fieldName);
@@ -457,7 +449,7 @@ public class DataRecordResourceImpl
 			throw new ValidationException("Data storage type is null");
 		}
 
-		DataStorage dataStorage = _dataStorageTracker.getDataStorage(
+		DataStorage dataStorage = _serviceTrackerMap.getService(
 			dataStorageType);
 
 		if (dataStorage == null) {
@@ -519,28 +511,16 @@ public class DataRecordResourceImpl
 
 		return new DataRecord() {
 			{
-				dataRecordCollectionId = ddlRecordSet.getRecordSetId();
-				dataRecordValues = dataStorage.get(
-					ddmStructure.getStructureId(), ddlRecord.getDDMStorageId());
-				id = ddlRecord.getRecordId();
-				status = ddlRecord.getStatus();
+				setDataRecordCollectionId(ddlRecordSet::getRecordSetId);
+				setDataRecordValues(
+					() -> dataStorage.get(
+						ddmStructure.getStructureId(),
+						ddlRecord.getDDMStorageId()));
+				setId(ddlRecord::getRecordId);
+				setStatus(ddlRecord::getStatus);
 			}
 		};
 	}
-
-	@Reference
-	private DataDefinitionContentTypeTracker _dataDefinitionContentTypeTracker;
-
-	@Reference
-	private DataRecordCollectionModelResourcePermission
-		_dataRecordCollectionModelResourcePermission;
-
-	@Reference
-	private DataRecordModelResourcePermission
-		_dataRecordModelResourcePermission;
-
-	@Reference
-	private DataStorageTracker _dataStorageTracker;
 
 	@Reference
 	private DDLRecordLocalService _ddlRecordLocalService;
@@ -549,7 +529,7 @@ public class DataRecordResourceImpl
 	private DDLRecordSetLocalService _ddlRecordSetLocalService;
 
 	@Reference
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
 
 	@Reference
 	private DDMIndexer _ddmIndexer;
@@ -567,19 +547,18 @@ public class DataRecordResourceImpl
 	private DEDataListViewLocalService _deDataListViewLocalService;
 
 	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private Language _language;
 
 	@Reference
 	private Portal _portal;
 
 	@Reference
-	private Queries _queries;
-
-	@Reference
 	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
-	@Reference
-	private Sorts _sorts;
+	private ServiceTrackerMap<String, DataStorage> _serviceTrackerMap;
 
 	@Reference
 	private SPIDDMFormRuleConverter _spiDDMFormRuleConverter;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.login.web.internal.servlet.taglib.include;
@@ -20,12 +11,12 @@ import com.liferay.taglib.include.PageInclude;
 import com.liferay.taglib.portlet.RenderURLTag;
 import com.liferay.taglib.ui.IconTag;
 
-import javax.portlet.PortletConfig;
-import javax.portlet.WindowState;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.WindowState;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -33,7 +24,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Shuyang Zhou
  */
 @Component(
-	immediate = true,
 	property = {
 		"login.web.navigation.position=pre", "service.ranking:Integer=200"
 	},
@@ -81,6 +71,7 @@ public class AnonymousNavigationPrePageInclude implements PageInclude {
 
 		IconTag iconTag = new IconTag();
 
+		iconTag.setCssClass("text-4");
 		iconTag.setMessage("guest");
 		iconTag.setUrl(anonymousURL);
 

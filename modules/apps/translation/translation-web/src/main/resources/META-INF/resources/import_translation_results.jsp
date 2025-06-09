@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,14 +18,14 @@ renderResponse.setTitle(LanguageUtil.get(resourceBundle, "import-translation"));
 
 <div class="translation">
 	<div class="translation-import">
-		<nav class="component-tbar subnav-tbar-light tbar">
+		<nav class="management-bar management-bar-light navbar navbar-expand-md">
 			<clay:container-fluid>
 				<ul class="tbar-nav">
 					<li class="tbar-item tbar-item-expand">
 						<div class="pl-2 tbar-section text-left">
-							<h2 class="h4 mb-0 text-truncate-inline" title="<%= HtmlUtil.escapeAttribute(importTranslationResultsDisplayContext.getTitle()) %>">
+							<div class="h4 mb-0 text-truncate-inline" title="<%= HtmlUtil.escapeAttribute(importTranslationResultsDisplayContext.getTitle()) %>">
 								<span class="text-truncate"><%= HtmlUtil.escape(importTranslationResultsDisplayContext.getTitle()) %></span>
-							</h2>
+							</div>
 						</div>
 					</li>
 					<li class="tbar-item">
@@ -54,110 +45,174 @@ renderResponse.setTitle(LanguageUtil.get(resourceBundle, "import-translation"));
 
 		<clay:container-fluid
 			cssClass="container-view"
+			size="lg"
 		>
-			<clay:sheet
-				cssClass="translation-import-body-form"
-			>
-				<h3 class="mb-4"><%= importTranslationResultsDisplayContext.getFileName() %></h3>
+			<div>
+
+				<%
+				boolean importTranslationResultsErrors = false;
+
+				if (importTranslationResultsDisplayContext.getFailureMessagesCount() > 0) {
+					importTranslationResultsErrors = true;
+				}
+				%>
 
 				<c:if test="<%= importTranslationResultsDisplayContext.getSuccessMessagesCount() > 0 %>">
-					<h4 class="text-success">
-						<span class="mr-2">
-							<clay:icon
-								symbol="check-circle-full"
-							/>
-						</span>
-
-						<c:choose>
-							<c:when test="<%= (importTranslationResultsDisplayContext.getSuccessMessagesCount() > 1) && (importTranslationResultsDisplayContext.getFailureMessagesCount() == 0) %>">
-								<liferay-ui:message key="all-files-published" />
-							</c:when>
-							<c:otherwise>
-								<liferay-ui:message arguments="<%= importTranslationResultsDisplayContext.getSuccessMessagesCount() %>" key='<%= (importTranslationResultsDisplayContext.getSuccessMessagesCount() == 1) ? "x-file-published" : "x-files-published" %>' />
-							</c:otherwise>
-						</c:choose>
-					</h4>
-
-					<ul class="list-group list-group-no-bordered list-group-sm">
-
-						<%
-						for (String successMessage : importTranslationResultsDisplayContext.getSuccessMessages()) {
-						%>
-
-							<li class="align-items-center list-group-item list-group-item-flex">
-								<div class="autofit-col autofit-col-expand">
-									<section class="autofit-section">
-										<div class="list-group-title"><%= successMessage %></div>
-									</section>
-								</div>
-
-								<div class="autofit-col text-right text-success">
-									<div class="list-group-icon">
-										<clay:icon
-											symbol="check-circle-full"
-										/>
+					<div>
+						<div class="panel panel-secondary" role="tablist">
+							<button aria-expanded="<%= !importTranslationResultsErrors %>" class="<%= importTranslationResultsErrors ? "collapsed" : StringPool.BLANK %> btn btn-unstyled collapse-icon collapse-icon-middle panel-header panel-header-link" role="tab" type="button">
+								<liferay-util:whitespace-remover>
+									<div class="h4 mb-0 text-success">
+										<span class="mr-2">
+											<clay:icon
+												symbol="check-circle-full"
+											/>
+										</span>
+										<%= importTranslationResultsDisplayContext.getSuccessMessageLabel(locale) %>
 									</div>
+								</liferay-util:whitespace-remover>
+
+								<span class="collapse-icon-closed">
+									<clay:icon
+										symbol="angle-right"
+									/>
+								</span>
+								<span class="collapse-icon-open">
+									<clay:icon
+										symbol="angle-down"
+									/>
+								</span>
+							</button>
+
+							<div class="<%= importTranslationResultsErrors ? "collapse" : StringPool.BLANK %> panel-collapse" role="tabpanel">
+								<div class="panel-body">
+									<ul class="list-group list-group-no-bordered mb-0">
+
+										<%
+										for (String successMessage : importTranslationResultsDisplayContext.getSuccessMessages()) {
+										%>
+
+											<li class="align-items-center list-group-item">
+												<div class="list-group-title"><%= successMessage %></div>
+											</li>
+
+										<%
+										}
+										%>
+
+									</ul>
 								</div>
-							</li>
+							</div>
+						</div>
 
-						<%
-						}
-						%>
-
-					</ul>
+						<react:component
+							module="{ImportTranslationResultsPanelSuccess} from translation-web"
+							props='<%=
+								HashMapBuilder.<String, Object>put(
+									"defaultExpanded", !importTranslationResultsErrors
+								).put(
+									"files", importTranslationResultsDisplayContext.getSuccessMessages()
+								).put(
+									"title", importTranslationResultsDisplayContext.getSuccessMessageLabel(locale)
+								).build()
+							%>'
+						/>
+					</div>
 				</c:if>
 
 				<c:if test="<%= importTranslationResultsDisplayContext.getFailureMessagesCount() > 0 %>">
-					<h4 class="text-danger">
-						<span class="mr-2">
-							<clay:icon
-								symbol="exclamation-full"
-							/>
-						</span>
+					<clay:sheet
+						size="full"
+					>
+						<clay:content-row
+							noGutters="true"
+						>
+							<clay:content-col
+								cssClass="align-self-center"
+								expand="<%= true %>"
+							>
+								<liferay-util:whitespace-remover>
+									<div class="h4 mb-0 text-danger">
+										<span class="mr-2">
+											<clay:icon
+												symbol="exclamation-full"
+											/>
+										</span>
 
-						<liferay-ui:message arguments="<%= importTranslationResultsDisplayContext.getFailureMessagesCount() %>" key='<%= (importTranslationResultsDisplayContext.getFailureMessagesCount() == 1) ? "x-error" : "x-errors" %>' />
+										<liferay-ui:message arguments="<%= importTranslationResultsDisplayContext.getFailureMessagesCount() %>" key="<%= importTranslationResultsDisplayContext.getFailureMessageKey() %>" />
+									</div>
+								</liferay-util:whitespace-remover>
+							</clay:content-col>
 
-						<small><liferay-ui:message key="some-files-could-not-be-published-check-them-and-upload-another-file" /></small>
-					</h4>
+							<clay:content-col>
+								<div class="btn-group" role="group">
+									<div class="btn-group-item">
+										<clay:link
+											displayType="secondary"
+											href="<%= importTranslationResultsDisplayContext.getImportTranslationURL(request, liferayPortletResponse) %>"
+											label="upload-another-file"
+											small="<%= true %>"
+											type="button"
+										/>
+									</div>
 
-					<ul class="list-group list-group-no-bordered">
-
-						<%
-						Map<String, String> failureMessages = importTranslationResultsDisplayContext.getFailureMessages();
-
-						for (Map.Entry<String, String> entry : failureMessages.entrySet()) {
-						%>
-
-							<li class="align-items-center list-group-item list-group-item-flex">
-								<div class="autofit-col autofit-col-expand">
-									<div class="list-group-title"><%= entry.getKey() %></div>
-									<div class="text-danger"><%= entry.getValue() %></div>
-								</div>
-
-								<div class="autofit-col text-danger text-right">
-									<div class="list-group-icon">
-										<clay:icon
-											symbol="exclamation-full"
+									<div class="btn-group-item">
+										<clay:link
+											displayType="secondary"
+											download='<%= StringUtil.randomString() + ".csv" %>'
+											href="<%= importTranslationResultsDisplayContext.getFailureMessagesCSVDataURL(locale) %>"
+											label="download-csv-error-report"
+											small="<%= true %>"
+											target="_blank"
+											type="button"
 										/>
 									</div>
 								</div>
-							</li>
+							</clay:content-col>
+						</clay:content-row>
 
-						<%
-						}
-						%>
+						<ul class="list-group list-group-no-bordered">
 
-					</ul>
+							<%
+							for (Map<String, String> failureMessage : importTranslationResultsDisplayContext.getFailureMessages()) {
+							%>
 
-					<clay:link
-						displayType="secondary"
-						href="<%= importTranslationResultsDisplayContext.getImportTranslationURL(request, liferayPortletResponse) %>"
-						label="upload-another-file"
-						small="<%= true %>"
-						type="button"
-					/>
+								<li class="list-group-item">
+									<clay:content-row
+										cssClass="mb-2"
+									>
+										<clay:content-col
+											cssClass="lfr-portal-tooltip list-group-title mt-0"
+											expand="<%= true %>"
+										>
+											<div class="text-truncate" data-title="<%= failureMessage.get("fileName") %>">
+												<%= failureMessage.get("fileName") %>
+											</div>
+										</clay:content-col>
+
+										<c:if test='<%= Validator.isNotNull(failureMessage.get("container")) %>'>
+											<clay:content-col
+												cssClass="lfr-portal-tooltip ml-2 text-right"
+												expand="<%= true %>"
+											>
+												<div class="text-truncate" data-title="<%= failureMessage.get("container") %>">
+													<%= failureMessage.get("container") %>
+												</div>
+											</clay:content-col>
+										</c:if>
+									</clay:content-row>
+
+									<div class="text-danger"><%= failureMessage.get("errorMessage") %></div>
+								</li>
+
+							<%
+							}
+							%>
+
+						</ul>
+					</clay:sheet>
 				</c:if>
-			</clay:sheet>
+			</div>
 		</clay:container-fluid>
 	</div>
 </div>

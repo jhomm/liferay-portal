@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.rich.text;
@@ -20,7 +11,8 @@ import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.util.HtmlParser;
+import com.liferay.portal.kernel.util.HtmlUtil;
 
 import java.util.Locale;
 
@@ -31,11 +23,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcela Cunha
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.RICH_TEXT,
-	service = {
-		DDMFormFieldValueRenderer.class, RichTextDDMFormFieldValueRenderer.class
-	}
+	service = DDMFormFieldValueRenderer.class
 )
 public class RichTextDDMFormFieldValueRenderer
 	implements DDMFormFieldValueRenderer {
@@ -48,10 +37,11 @@ public class RichTextDDMFormFieldValueRenderer
 			return StringPool.BLANK;
 		}
 
-		return GetterUtil.getString(_html.extractText(value.getString(locale)));
+		return GetterUtil.getString(
+			HtmlUtil.escape(_htmlParser.extractText(value.getString(locale))));
 	}
 
 	@Reference
-	private Html _html;
+	private HtmlParser _htmlParser;
 
 }

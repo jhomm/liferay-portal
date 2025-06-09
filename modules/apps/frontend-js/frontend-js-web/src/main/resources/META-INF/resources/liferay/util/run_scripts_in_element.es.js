@@ -1,21 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-function runJSFromText(text, next, appendFn) {
+function runJSFromText(sourceScriptElement, next, appendFn) {
+	const {text, type} = sourceScriptElement;
 	const scriptElement = document.createElement('script');
 
+	if (Liferay.CSP.nonce) {
+		scriptElement.setAttribute('nonce', Liferay.CSP.nonce);
+	}
+
 	scriptElement.text = text;
+	scriptElement.type = type;
 
 	if (appendFn) {
 		appendFn(scriptElement);
@@ -29,10 +26,16 @@ function runJSFromText(text, next, appendFn) {
 	next();
 }
 
-function runJSFromFile(src, next, appendFn) {
+function runJSFromFile(sourceScriptElement, next, appendFn) {
+	const {src, type} = sourceScriptElement;
 	const scriptElement = document.createElement('script');
 
+	if (Liferay.CSP.nonce) {
+		scriptElement.setAttribute('nonce', Liferay.CSP.nonce);
+	}
+
 	scriptElement.src = src;
+	scriptElement.type = type;
 
 	const callback = function () {
 		scriptElement.remove();
@@ -66,17 +69,22 @@ function runScriptsInOrder(scripts, i, defaultFn, appendFn) {
 	if (!scriptElement) {
 		return;
 	}
-	else if (scriptElement.type && scriptElement.type !== 'text/javascript') {
+	else if (
+		scriptElement.type &&
+		scriptElement.type !== 'text/javascript' &&
+		scriptElement.type !== 'module' &&
+		scriptElement.type !== 'module-shim'
+	) {
 		runNextScript();
 	}
 	else {
 		scriptElement.remove();
 
 		if (scriptElement.src) {
-			runJSFromFile(scriptElement.src, runNextScript, appendFn);
+			runJSFromFile(scriptElement, runNextScript, appendFn);
 		}
 		else {
-			runJSFromText(scriptElement.text, runNextScript, appendFn);
+			runJSFromText(scriptElement, runNextScript, appendFn);
 		}
 	}
 }

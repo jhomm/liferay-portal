@@ -1,0 +1,380 @@
+@component-name = "portal-content-management"
+definition {
+
+	property ci.retries.disabled = "true";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Knowledge Base";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		HeadlessSite.addSite(siteName = "Test Site Name");
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Site.tearDownCP();
+		}
+	}
+
+	@description = "This test covers LPS-166740. It validates that the display page template can be deleted after removing the related article."
+	@priority = 4
+	test CanDeleteDisplayPageTemplateAfterRemovingReferencedArticle {
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Test Site Name",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+			contentType = "Knowledge Base Article",
+			displayPageTemplateEntryName = "Display Page Name",
+			groupName = "Test Site Name");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+		DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+		PageEditor.addFragment(
+			collectionName = "Basic Components",
+			fragmentName = "Heading");
+
+		PageEditor.publish();
+
+		KBArticle.selectDisplayPageTemplate(
+			entryTitle = "Knowledge Base Article Title",
+			groupName = "Test Site Name",
+			pageName = "Display Page Name",
+			siteURLKey = "test-site-name");
+
+		JSONKnowledgeBase.removeKBArticle(
+			groupName = "Test Site Name",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+		DisplayPageTemplatesAdmin.deleteDisplayPage(displayPageName = "Display Page Name");
+
+		LexiconCard.viewCardNotPresent(card = "Display Page Name");
+	}
+
+	@description = "This test ensures that the Max Nesting settings can be configured in the KB navigation fragment for a display page."
+	@priority = 5
+	test CanUpdateMaxNestingForArticleNavigation {
+		property portal.acceptance = "true";
+
+		var portalURL = PropsUtil.get("portal.url");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Content",
+			kbArticleTitle = "KB parent article");
+
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB parent article",
+			kbChildArticleContent = "Content",
+			kbChildArticleTitle = "2nd tier article");
+
+		JSONKnowledgeBase.addkBGrandchildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB parent article",
+			kbChildArticleTitle = "2nd tier article",
+			kbGrandchildArticleContent = "Grandchild Content",
+			kbGrandchildArticleTitle = "3rd tier article");
+
+		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+			contentType = "Knowledge Base Article",
+			displayPageTemplateEntryName = "Display Page Name",
+			groupName = "Guest");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "guest");
+
+		DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+		PageEditor.addFragment(
+			collectionName = "Menu Display",
+			fragmentName = "Knowledge Base Navigation");
+
+		PageEditor.editKBArticleNavigationMaxNestingLevel(maxNestingLevel = 2);
+
+		PageEditor.publish();
+
+		DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+
+		Navigator.openSpecificURL(url = "${portalURL}/web/guest/k/3rd-tier-article");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB parent article",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_TOP_LEVEL_HIERARCHY");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "2nd tier article",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SECOND_LEVEL_HIERARCHY");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "3rd tier article",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SELECTED_SECOND_LEVEL_HIERARCHY");
+	}
+
+	@description = "This test covers LPS-170320. It ensures that KB article navigation fragment can display article siblings."
+	@priority = 4
+	test CanViewArticlesSiblingsViaKBNavigation {
+		property custom.properties = "virtual.hosts.default.site.name=Guest";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		var portalURL = PropsUtil.get("portal.url");
+
+		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+			contentType = "Knowledge Base Article",
+			displayPageTemplateEntryName = "Display Page Template Name",
+			groupName = "Guest");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "guest");
+
+		DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Template Name");
+
+		PageEditor.addFragment(
+			collectionName = "Menu Display",
+			fragmentName = "Knowledge Base Navigation");
+
+		PageEditor.publish();
+
+		DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Template Name");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "KB Parent Article Content1",
+			kbArticleTitle = "KB Parent Article1");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "KB Parent Article Content2",
+			kbArticleTitle = "KB Parent Article2");
+
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB Parent Article1",
+			kbChildArticleContent = "KB Child Article Content1",
+			kbChildArticleTitle = "KB Child Article1");
+
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB Parent Article2",
+			kbChildArticleContent = "KB Child Article Content2",
+			kbChildArticleTitle = "KB Child Article2");
+
+		Navigator.openSpecificURL(url = "${portalURL}/web/guest/k/kb-parent-article1");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Parent Article1",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_TEXT");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Child Article1",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SELECTED_SECOND_LEVEL_HIERARCHY");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Parent Article2",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_TEXT");
+
+		AssertElementNotPresent(
+			key_kbArticleTitle = "KB Child Article2",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SELECTED_SECOND_LEVEL_HIERARCHY");
+
+		Navigator.openSpecificURL(url = "${portalURL}/web/guest/k/kb-parent-article2");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Parent Article2",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_TEXT");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Child Article2",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SELECTED_SECOND_LEVEL_HIERARCHY");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Parent Article1",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_TEXT");
+
+		AssertElementNotPresent(
+			key_kbArticleTitle = "KB Child Article1",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SELECTED_SECOND_LEVEL_HIERARCHY");
+	}
+
+	@description = "This test ensures that when viewing a KB article in the navigation fragment, the corresponding KB article content is displayed in another fragment that selects to display KB content."
+	@priority = 5
+	test CanViewArticlesViaKBNavigation {
+		property custom.properties = "virtual.hosts.default.site.name=Guest";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		var portalURL = PropsUtil.get("portal.url");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "KB Parent Article Content",
+			kbArticleTitle = "KB Parent Article");
+
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB Parent Article",
+			kbChildArticleContent = "KB Child Article1 Content",
+			kbChildArticleTitle = "KB Child Article1");
+
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB Parent Article",
+			kbChildArticleContent = "KB Child Article2 Content",
+			kbChildArticleTitle = "KB Child Article2");
+
+		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+			contentType = "Knowledge Base Article",
+			displayPageTemplateEntryName = "Display Page Template Name",
+			groupName = "Guest");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "guest");
+
+		DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Template Name");
+
+		PageEditor.addFragment(
+			collectionName = "Menu Display",
+			fragmentName = "Knowledge Base Navigation");
+
+		PageEditor.addFragment(
+			collectionName = "Basic Components",
+			fragmentName = "HTML",
+			targetFragmentName = "Knowledge Base Navigation");
+
+		PageEditorMapping.mapEditableTextToField(
+			field = "Content",
+			fragmentName = "HTML",
+			id = "element-html");
+
+		PageEditor.publish();
+
+		KBArticle.selectDisplayPageTemplate(
+			entryTitle = "KB Parent Article",
+			groupName = "Guest",
+			pageName = "Display Page Template Name",
+			siteURLKey = "guest");
+
+		for (var kbChildArticleTitle : list "KB Child Article1,KB Child Article2") {
+			KBArticle.selectDisplayPageTemplate(
+				entryTitle = "KB Parent Article",
+				groupName = "Guest",
+				kbChildArticleTitle = ${kbChildArticleTitle},
+				pageName = "Display Page Template Name",
+				siteURLKey = "guest");
+		}
+
+		Navigator.openSpecificURL(url = "${portalURL}/web/guest/k/kb-parent-article");
+
+		AssertElementPresent(
+			key_kbArticleTitle = "KB Parent Article",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_TEXT");
+
+		ContentPages.viewFragmentText(
+			fragmentName = "html",
+			id = "element-html",
+			text = "KB Parent Article Content");
+
+		Click(
+			key_kbArticleTitle = "KB Child Article2",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SECOND_LEVEL_HIERARCHY");
+
+		ContentPages.viewFragmentText(
+			fragmentName = "html",
+			id = "element-html",
+			text = "KB Child Article2 Content");
+	}
+
+	@description = "This test ensures that a KB article is displayed with the default template when accessing the KB display page URL."
+	@priority = 4
+	test CanViewArticleWithDefaultTemplate {
+		var portalURL = PropsUtil.get("portal.url");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Test Site Name",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+			contentType = "Knowledge Base Article",
+			displayPageTemplateEntryName = "Display Page Name",
+			groupName = "Test Site Name");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name");
+
+		DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+		PageEditor.addFragment(
+			collectionName = "Menu Display",
+			fragmentName = "Knowledge Base Navigation");
+
+		PageEditor.publish();
+
+		DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+
+		Navigator.openSpecificURL(url = "${portalURL}/web/test-site-name/k/knowledge-base-article-title");
+
+		AssertTextEquals.assertPartialText(
+			key_kbArticleTitle = "Knowledge Base Article Title",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_TEXT",
+			value1 = "Knowledge Base Article Title");
+	}
+
+	@description = "This test covers LPS-166627. It ensures that child article can be viewed after setting nesting level with minimum."
+	@priority = 4
+	test CanViewChildArticleAfterSettingNestingLevelWithMinimum {
+		var portalURL = PropsUtil.get("portal.url");
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Content",
+			kbArticleTitle = "KB Parent Article");
+
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "KB Parent Article",
+			kbChildArticleContent = "KB Child Article Content",
+			kbChildArticleTitle = "KB Child Article");
+
+		JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
+			contentType = "Knowledge Base Article",
+			displayPageTemplateEntryName = "Display Page Name",
+			groupName = "Guest");
+
+		DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "guest");
+
+		DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
+		PageEditor.addFragment(
+			collectionName = "Menu Display",
+			fragmentName = "Knowledge Base Navigation");
+
+		PageEditor.editKBArticleNavigationMaxNestingLevel(maxNestingLevel = 1);
+
+		PageEditor.publish();
+
+		DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
+
+		Navigator.openSpecificURL(url = "${portalURL}/web/guest/k/kb-child-article");
+
+		AssertVisible(
+			key_kbArticleTitle = "KB Parent Article",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_TOP_LEVEL_HIERARCHY");
+
+		AssertVisible(
+			key_kbArticleTitle = "KB Child Article",
+			locator1 = "Fragment#KNOWLEDGE_BASE_FRAGMENT_NAVIGATION_SELECTED_SECOND_LEVEL_HIERARCHY");
+	}
+
+}

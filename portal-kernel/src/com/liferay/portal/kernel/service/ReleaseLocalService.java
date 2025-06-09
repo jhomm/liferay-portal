@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -25,17 +16,16 @@ import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
-import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Properties;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -49,6 +39,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see ReleaseLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Release"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -94,12 +87,6 @@ public interface ReleaseLocalService
 	 */
 	@Transactional(enabled = false)
 	public Release createRelease(long releaseId);
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public void createTablesAndPopulate();
 
 	/**
 	 * @throws PortalException
@@ -216,13 +203,6 @@ public interface ReleaseLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional
-	public int getBuildNumberOrCreate() throws PortalException;
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
@@ -291,27 +271,7 @@ public interface ReleaseLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Release updateRelease(Release release);
 
-	public void updateRelease(
-			String servletContextName, List<UpgradeProcess> upgradeProcesses,
-			int buildNumber, int previousBuildNumber)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateRelease(String, List, int, int)}
-	 */
-	@Deprecated
-	public void updateRelease(
-			String servletContextName, List<UpgradeProcess> upgradeProcesses,
-			int buildNumber, int previousBuildNumber, boolean indexOnUpgrade)
-		throws PortalException;
-
-	public void updateRelease(
-			String servletContextName, List<UpgradeProcess> upgradeProcesses,
-			Properties unfilteredPortalProperties)
-		throws Exception;
-
-	public void updateRelease(
+	public Release updateRelease(
 		String servletContextName, String schemaVersion,
 		String previousSchemaVersion);
 

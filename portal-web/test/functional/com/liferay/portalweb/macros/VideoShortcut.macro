@@ -1,27 +1,57 @@
 definition {
 
-	macro addCP {
+	@summary = "Default summary"
+	macro addCP(videoShortcutTitle = null, localizedPublish = null, vocabularyName = null, tagNameList = null, categoryName = null, localizedDocumentTypeName = null, localizedVideoURL = null, videoURL = null, extractedVideoShortcutTitle = null, videoShortcutPreview = null, videoShortcutDescription = null) {
 		if (!(isSet(skipNavigation))) {
-			DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "External Video Shortcut");
+			if (isSet(localizedDocumentTypeName)) {
+				DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = ${localizedDocumentTypeName});
+			}
+			else {
+				DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "External Video Shortcut");
+			}
 		}
 
-		Type(
-			key_text = "Video URL",
-			locator1 = "TextInput#ANY",
-			value1 = "${videoURL}");
+		if (isSet(localizedVideoURL)) {
+			Type(
+				key_text = ${localizedVideoURL},
+				locator1 = "TextInput#ANY",
+				value1 = ${videoURL});
 
-		Pause(locator1 = "5000");
+			AssertTextEquals(
+				key_text = ${localizedVideoURL},
+				locator1 = "TextInput#ANY",
+				value1 = ${videoURL});
+		}
+		else {
+			WaitForEditable(
+				key_text = "Video URL",
+				locator1 = "TextInput#ANY");
+
+			Type(
+				key_text = "Video URL",
+				locator1 = "TextInput#ANY",
+				value1 = ${videoURL});
+
+			AssertTextEquals(
+				key_text = "Video URL",
+				locator1 = "TextInput#ANY",
+				value1 = ${videoURL});
+		}
 
 		if (isSet(videoShortcutPreview)) {
+			WaitForElementPresent(
+				key_videoShortcutPreview = ${videoShortcutPreview},
+				locator1 = "DocumentsAndMediaDocument#VIDEO_SHORTCUT_PREVIEW");
+
 			AssertVisible(
-				key_videoShortcutPreview = "${videoShortcutPreview}",
+				key_videoShortcutPreview = ${videoShortcutPreview},
 				locator1 = "DocumentsAndMediaDocument#VIDEO_SHORTCUT_PREVIEW");
 		}
 
 		if (isSet(extractedVideoShortcutTitle)) {
 			var titleText = selenium.getElementValue("TextInput#TITLE");
 
-			if ("${extractedVideoShortcutTitle}" == "${titleText}") {
+			if (${extractedVideoShortcutTitle} == ${titleText}) {
 				echo("This is a correct title.");
 			}
 			else {
@@ -30,56 +60,67 @@ definition {
 		}
 
 		if (isSet(videoShortcutTitle)) {
-			PortletEntry.inputTitle(title = "${videoShortcutTitle}");
+			PortletEntry.inputTitle(title = ${videoShortcutTitle});
 		}
 
 		if (isSet(videoShortcutDescription)) {
-			PortletEntry.inputDescription(description = "${videoShortcutDescription}");
+			PortletEntry.inputDescription(description = ${videoShortcutDescription});
 		}
 
 		if (isSet(categoryName)) {
-			var key_categoryName = "${categoryName}";
+			var key_categoryName = ${categoryName};
 
 			Panel.expandPanel(panel = "Categorization");
 
 			AssetCategorization.addCategory(
-				categoryName = "${categoryName}",
-				vocabularyName = "${vocabularyName}");
+				categoryName = ${categoryName},
+				vocabularyName = ${vocabularyName});
 		}
 
 		if (isSet(tagNameList)) {
 			Panel.expandPanel(panel = "Categorization");
 
-			for (var tagName : list "${tagNameList}") {
-				AssetCategorization.addTag(tagName = "${tagName}");
+			for (var tagName : list ${tagNameList}) {
+				AssetCategorization.addTag(tagName = ${tagName});
 			}
 		}
 
-		PortletEntry.publish();
+		if (isSet(localizedPublish)) {
+			Button.click(button = ${localizedPublish});
+
+			Alert.viewSuccessMessage();
+		}
+		else {
+			PortletEntry.publish();
+		}
 	}
 
-	macro addPG {
+	@summary = "Default summary"
+	macro addPG(videoShortcutTitle = null, contentPage = null, videoURL = null, extractedVideoShortcutTitle = null, videoShortcutPreview = null, videoShortcutDescription = null) {
 		DMNavigator.gotoAddDocumentTypePG(
-			contentPage = "${contentPage}",
+			contentPage = ${contentPage},
 			dmDocumentTypeName = "External Video Shortcut");
 
 		Type(
 			key_text = "Video URL",
 			locator1 = "TextInput#ANY",
-			value1 = "${videoURL}");
+			value1 = ${videoURL});
 
-		Pause(locator1 = "5000");
+		AssertTextEquals(
+			key_text = "Video URL",
+			locator1 = "TextInput#ANY",
+			value1 = ${videoURL});
 
 		if (isSet(videoShortcutPreview)) {
 			AssertVisible(
-				key_videoShortcutPreview = "${videoShortcutPreview}",
+				key_videoShortcutPreview = ${videoShortcutPreview},
 				locator1 = "DocumentsAndMediaDocument#VIDEO_SHORTCUT_PREVIEW");
 		}
 
 		if (isSet(extractedVideoShortcutTitle)) {
 			var titleText = selenium.getElementValue("TextInput#TITLE");
 
-			if ("${extractedVideoShortcutTitle}" == "${titleText}") {
+			if (${extractedVideoShortcutTitle} == ${titleText}) {
 				echo("This is a correct title.");
 			}
 			else {
@@ -88,11 +129,11 @@ definition {
 		}
 
 		if (isSet(videoShortcutTitle)) {
-			PortletEntry.inputTitle(title = "${videoShortcutTitle}");
+			PortletEntry.inputTitle(title = ${videoShortcutTitle});
 		}
 
 		if (isSet(videoShortcutDescription)) {
-			PortletEntry.inputDescription(description = "${videoShortcutDescription}");
+			PortletEntry.inputDescription(description = ${videoShortcutDescription});
 		}
 
 		AssertClick(
@@ -100,54 +141,62 @@ definition {
 			value1 = "Publish");
 	}
 
-	macro editCP {
+	@summary = "Default summary"
+	macro editCP(videoShortcutTitle = null, videoShortcutPreviousDescription = null, videoShortcutDescriptionEdit = null, videoShortcutPreviousTitle = null, videoShortcutTitleEdit = null, videoShortcutPreview = null, videoURLEdit = null) {
 		LexiconEntry.gotoEntryMenuItem(
 			menuItem = "Edit",
-			rowEntry = "${videoShortcutTitle}");
+			rowEntry = ${videoShortcutTitle});
 
 		if (isSet(videoShortcutPreviousTitle)) {
 			AssertTextEquals(
 				locator1 = "TextInput#TITLE",
-				value1 = "${videoShortcutPreviousTitle}");
+				value1 = ${videoShortcutPreviousTitle});
 		}
 
 		if (isSet(videoShortcutPreviousDescription)) {
 			AssertTextEquals(
 				locator1 = "TextArea#DESCRIPTION",
-				value1 = "${videoShortcutPreviousDescription}");
+				value1 = ${videoShortcutPreviousDescription});
 		}
 
 		Type(
 			key_text = "Video URL",
 			locator1 = "TextInput#ANY",
-			value1 = "${videoURLEdit}");
+			value1 = ${videoURLEdit});
 
-		Pause(locator1 = "5000");
+		AssertTextEquals(
+			key_text = "Video URL",
+			locator1 = "TextInput#ANY",
+			value1 = ${videoURLEdit});
 
 		if (isSet(videoShortcutPreview)) {
 			AssertVisible(
-				key_videoShortcutPreview = "${videoShortcutPreview}",
+				key_videoShortcutPreview = ${videoShortcutPreview},
 				locator1 = "DocumentsAndMediaDocument#VIDEO_SHORTCUT_PREVIEW");
 		}
 
 		if (isSet(videoShortcutTitleEdit)) {
-			PortletEntry.inputTitle(title = "${videoShortcutTitleEdit}");
+			PortletEntry.inputTitle(title = ${videoShortcutTitleEdit});
 		}
 
 		if (isSet(videoShortcutDescriptionEdit)) {
-			PortletEntry.inputDescription(description = "${videoShortcutDescriptionEdit}");
+			PortletEntry.inputDescription(description = ${videoShortcutDescriptionEdit});
 		}
 
 		PortletEntry.publish();
 	}
 
-	macro validateURL {
+	@summary = "Default summary"
+	macro validateURL(invalidURL = null) {
 		Type(
 			key_text = "Video URL",
 			locator1 = "TextInput#ANY",
-			value1 = "${invalidURL}");
+			value1 = ${invalidURL});
 
-		Pause(locator1 = "5000");
+		AssertTextEquals(
+			key_text = "Video URL",
+			locator1 = "TextInput#ANY",
+			value1 = ${invalidURL});
 
 		if (isSet(youtube)) {
 			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
@@ -158,7 +207,6 @@ definition {
 				locator1 = "Message#ERROR_INVALID_YOUTUBE_VIDEO",
 				value1 = "An error occurred. Please try again later.");
 		}
-
 		else if (isSet(facebook)) {
 			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
 
@@ -166,15 +214,13 @@ definition {
 				locator1 = "Message#ERROR_INVALID_FACEBOOK_VIDEO",
 				value1 = "Video Unavailable");
 		}
-
 		else if (isSet(vimeo)) {
 			SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "Message#ERROR_INVALID_VIMEO_VIDEO",
-				value1 = "The embed code for this video is not valid.");
+				value1 = "This video does not exist");
 		}
-
 		else {
 			AssertTextEquals(
 				locator1 = "Message#INFO_EXTERNAL_VIDEO_PREVIEW",
@@ -182,44 +228,47 @@ definition {
 		}
 	}
 
-	macro viewCP {
+	@summary = "Default summary"
+	macro viewCP(videoShortcutTitle = null) {
 		LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
-		LexiconEntry.gotoEntry(rowEntry = "${videoShortcutTitle}");
+		LexiconEntry.gotoEntry(rowEntry = ${videoShortcutTitle});
 
 		AssertTextEquals(
-			key_dmDocumentTitle = "${videoShortcutTitle}",
+			key_dmDocumentTitle = ${videoShortcutTitle},
 			locator1 = "DocumentsAndMediaDocument#DOCUMENT_INFO_TITLE",
-			value1 = "${videoShortcutTitle}");
+			value1 = ${videoShortcutTitle});
 	}
 
-	macro viewPG {
+	@summary = "Default summary"
+	macro viewPG(videoShortcutTitle = null, videoShortcutDescription = null) {
 		LexiconEntry.changeDisplayStyle(displayStyle = "list");
 
 		AssertClick(
-			key_dmDocumentTitle = "${videoShortcutTitle}",
+			key_dmDocumentTitle = ${videoShortcutTitle},
 			locator1 = "DocumentsAndMedia#DESCRIPTIVE_LIST_DOCUMENT_TITLE",
-			value1 = "${videoShortcutTitle}");
+			value1 = ${videoShortcutTitle});
 
 		DMDocument.expandInfo();
 
-		DMDocument.viewDocumentTitleCmdPG(dmDocumentTitle = "${videoShortcutTitle}");
+		DMDocument.viewDocumentInfoTitleCmdPG(dmDocumentTitle = ${videoShortcutTitle});
 
 		if (isSet(videoShortcutDescription)) {
-			var key_dmDocumentDescription = "${videoShortcutDescription}";
+			var key_dmDocumentDescription = ${videoShortcutDescription};
 
 			ScrollWebElementIntoView(locator1 = "DocumentsAndMediaDocument#DOCUMENT_INFO_DESCRIPTION");
 
 			AssertTextEquals(
 				locator1 = "DocumentsAndMediaDocument#DOCUMENT_INFO_DESCRIPTION",
-				value1 = "${videoShortcutDescription}");
+				value1 = ${videoShortcutDescription});
 		}
 	}
 
-	macro viewPlayedVideo {
-		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
+	@summary = "Default summary"
+	macro viewPlayedVideo() {
+		WaitForElementPresent(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
 
-		Pause(locator1 = "5000");
+		SelectFrame.selectFrameNoLoading(locator1 = "IFrame#EXTERNAL_VIDEO_IFRAME");
 
 		if (IsElementPresent(locator1 = "Button#TWITCH_PLAY")) {
 			Click(locator1 = "Button#TWITCH_PLAY");

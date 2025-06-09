@@ -1,33 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.web.internal.upgrade.v1_0_0;
 
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.portletdisplaytemplate.PortletDisplayTemplateManager;
 import com.liferay.portal.kernel.upgrade.BasePortletPreferencesUpgradeProcess;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.util.PropsUtil;
-import com.liferay.site.navigation.menu.web.internal.constants.SiteNavigationMenuPortletKeys;
+import com.liferay.portlet.display.template.constants.PortletDisplayTemplateConstants;
+import com.liferay.site.navigation.constants.SiteNavigationMenuPortletKeys;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.Arrays;
 import java.util.List;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
 
 /**
  * @author Eduardo García
@@ -42,35 +32,6 @@ public class UpgradePortletPreferences
 		};
 	}
 
-	protected void upgradeDisplayStyle(PortletPreferences portletPreferences)
-		throws ReadOnlyException {
-
-		String displayStyle = GetterUtil.getString(
-			portletPreferences.getValue("displayStyle", null));
-
-		List<String> displayStyleOutOfTheBox = Arrays.asList(
-			"relative-with-breadcrumb", "from-level-2-with-title",
-			"from-level-1-with-title,from-level-1",
-			"from-level-1-to-all-sublevels", "from-level-0");
-
-		if (Validator.isNull(displayStyle) ||
-			displayStyle.startsWith(
-				PortletDisplayTemplateManager.DISPLAY_STYLE_PREFIX) ||
-			!displayStyleOutOfTheBox.contains(displayStyle)) {
-
-			return;
-		}
-
-		portletPreferences.setValue(
-			"displayStyle",
-			PortletDisplayTemplateManager.DISPLAY_STYLE_PREFIX +
-				"list-menu-ftl");
-
-		_persistSupportedProperties(portletPreferences, displayStyle);
-
-		_removeUnsupportedPreferences(portletPreferences);
-	}
-
 	@Override
 	protected String upgradePreferences(
 			long companyId, long ownerId, int ownerType, long plid,
@@ -81,14 +42,14 @@ public class UpgradePortletPreferences
 			PortletPreferencesFactoryUtil.fromXML(
 				companyId, ownerId, ownerType, plid, portletId, xml);
 
-		upgradeDisplayStyle(portletPreferences);
+		_upgradeDisplayStyle(portletPreferences);
 
 		return PortletPreferencesFactoryUtil.toXML(portletPreferences);
 	}
 
 	private void _persistSupportedProperties(
 			PortletPreferences portletPreferences, String displayStyle)
-		throws ReadOnlyException {
+		throws Exception {
 
 		String includedLayouts = "auto";
 		String rootLayoutLevel = "1";
@@ -137,11 +98,40 @@ public class UpgradePortletPreferences
 
 	private void _removeUnsupportedPreferences(
 			PortletPreferences portletPreferences)
-		throws ReadOnlyException {
+		throws Exception {
 
 		portletPreferences.reset("bulletStyle");
 		portletPreferences.reset("headerType");
 		portletPreferences.reset("nestedChildren");
+	}
+
+	private void _upgradeDisplayStyle(PortletPreferences portletPreferences)
+		throws Exception {
+
+		String displayStyle = GetterUtil.getString(
+			portletPreferences.getValue("displayStyle", null));
+
+		List<String> displayStyleOutOfTheBox = Arrays.asList(
+			"[custom]", "relative-with-breadcrumb", "from-level-2-with-title",
+			"from-level-1-with-title", "from-level-1",
+			"from-level-1-to-all-sublevels", "from-level-0");
+
+		if (Validator.isNull(displayStyle) ||
+			displayStyle.startsWith(
+				PortletDisplayTemplateConstants.DISPLAY_STYLE_PREFIX) ||
+			!displayStyleOutOfTheBox.contains(displayStyle)) {
+
+			return;
+		}
+
+		portletPreferences.setValue(
+			"displayStyle",
+			PortletDisplayTemplateConstants.DISPLAY_STYLE_PREFIX +
+				"list-menu-ftl");
+
+		_persistSupportedProperties(portletPreferences, displayStyle);
+
+		_removeUnsupportedPreferences(portletPreferences);
 	}
 
 }

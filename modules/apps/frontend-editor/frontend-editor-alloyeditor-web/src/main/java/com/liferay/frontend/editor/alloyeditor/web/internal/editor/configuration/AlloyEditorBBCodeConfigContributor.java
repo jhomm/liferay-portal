@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.editor.alloyeditor.web.internal.editor.configuration;
@@ -20,7 +11,7 @@ import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.parsers.bbcode.BBCodeTranslatorUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -31,6 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Ambrín Chaudhary
@@ -67,7 +59,7 @@ public class AlloyEditorBBCodeConfigContributor
 		).put(
 			"format_tags", "p;pre"
 		).put(
-			"lang", getLangJSONObject(inputEditorTaglibAttributes)
+			"lang", _getLangJSONObject(inputEditorTaglibAttributes)
 		).put(
 			"newThreadURL", MBThreadConstants.NEW_THREAD_URL
 		);
@@ -96,15 +88,6 @@ public class AlloyEditorBBCodeConfigContributor
 		);
 	}
 
-	protected JSONObject getLangJSONObject(
-		Map<String, Object> inputEditorTaglibAttributes) {
-
-		return JSONUtil.put(
-			"code",
-			LanguageUtil.get(
-				getContentsLocale(inputEditorTaglibAttributes), "code"));
-	}
-
 	protected JSONObject getStyleFormatJSONObject(
 		String styleFormatName, String element, String cssClass, int type) {
 
@@ -118,13 +101,13 @@ public class AlloyEditorBBCodeConfigContributor
 	protected JSONArray getStyleFormatsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
 			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "normal"), "p", null,
+				_language.get(locale, "normal"), "p", null,
 				_CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "cited-work"), "cite", null,
+				_language.get(locale, "cited-work"), "cite", null,
 				_CKEDITOR_STYLE_INLINE),
 			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "computer-code"), "code", null,
+				_language.get(locale, "computer-code"), "code", null,
 				_CKEDITOR_STYLE_INLINE));
 	}
 
@@ -210,8 +193,20 @@ public class AlloyEditorBBCodeConfigContributor
 		);
 	}
 
+	private JSONObject _getLangJSONObject(
+		Map<String, Object> inputEditorTaglibAttributes) {
+
+		return JSONUtil.put(
+			"code",
+			_language.get(
+				getContentsLocale(inputEditorTaglibAttributes), "code"));
+	}
+
 	private static final int _CKEDITOR_STYLE_BLOCK = 1;
 
 	private static final int _CKEDITOR_STYLE_INLINE = 2;
+
+	@Reference
+	private Language _language;
 
 }

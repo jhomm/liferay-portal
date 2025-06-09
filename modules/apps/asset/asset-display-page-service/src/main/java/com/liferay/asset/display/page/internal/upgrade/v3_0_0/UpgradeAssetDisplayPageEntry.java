@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.display.page.internal.upgrade.v3_0_0;
@@ -54,41 +45,48 @@ public class UpgradeAssetDisplayPageEntry
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				StringBundler.concat(
-					"select groupId, companyId, userId, userName, fileEntryId ",
-					"from DLFileEntry where fileEntryId not in (select ",
-					"classPK from AssetDisplayPageEntry where classNameId in (",
-					dlFileEntryClassNameId, ", ", fileEntryClassNameId, "))"));
+					"select distinct DLFileEntry.ctCollectionId, ",
+					"DLFileEntry.groupId, DLFileEntry.companyId, ",
+					"DLFileEntry.userId, DLFileEntry.userName, ",
+					"DLFileEntry.fileEntryId from DLFileEntry where ",
+					"DLFileEntry.fileEntryId not in (select classPK from ",
+					"AssetDisplayPageEntry where classNameId in (",
+					dlFileEntryClassNameId, ", ", fileEntryClassNameId,
+					")) and ctCollectionId = DLFileEntry.ctCollectionId"));
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					StringBundler.concat(
-						"insert into AssetDisplayPageEntry (uuid_, ",
-						"assetDisplayPageEntryId, groupId, companyId, userId, ",
-						"userName, createDate, modifiedDate, classNameId, ",
-						"classPK, layoutPageTemplateEntryId, type_, plid) ",
-						"values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"))) {
+						"insert into AssetDisplayPageEntry (ctCollectionId, ",
+						"uuid_, assetDisplayPageEntryId, groupId, companyId, ",
+						"userId, userName, createDate, modifiedDate, ",
+						"classNameId, classPK, layoutPageTemplateEntryId, ",
+						"type_, plid) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ",
+						"?, ?, ?)"))) {
 
 			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
 				while (resultSet.next()) {
 					Timestamp now = new Timestamp(System.currentTimeMillis());
 
-					preparedStatement2.setString(1, PortalUUIDUtil.generate());
-					preparedStatement2.setLong(2, increment());
-					preparedStatement2.setLong(3, resultSet.getLong("groupId"));
 					preparedStatement2.setLong(
-						4, resultSet.getLong("companyId"));
-					preparedStatement2.setLong(5, resultSet.getLong("userId"));
+						1, resultSet.getLong("ctCollectionId"));
+					preparedStatement2.setString(2, PortalUUIDUtil.generate());
+					preparedStatement2.setLong(3, increment());
+					preparedStatement2.setLong(4, resultSet.getLong("groupId"));
+					preparedStatement2.setLong(
+						5, resultSet.getLong("companyId"));
+					preparedStatement2.setLong(6, resultSet.getLong("userId"));
 					preparedStatement2.setString(
-						6, resultSet.getString("userName"));
-					preparedStatement2.setTimestamp(7, now);
+						7, resultSet.getString("userName"));
 					preparedStatement2.setTimestamp(8, now);
-					preparedStatement2.setLong(9, fileEntryClassNameId);
+					preparedStatement2.setTimestamp(9, now);
+					preparedStatement2.setLong(10, fileEntryClassNameId);
 					preparedStatement2.setLong(
-						10, resultSet.getLong("fileEntryId"));
-					preparedStatement2.setLong(11, 0);
+						11, resultSet.getLong("fileEntryId"));
+					preparedStatement2.setLong(12, 0);
 					preparedStatement2.setLong(
-						12, AssetDisplayPageConstants.TYPE_NONE);
-					preparedStatement2.setLong(13, 0);
+						13, AssetDisplayPageConstants.TYPE_NONE);
+					preparedStatement2.setLong(14, 0);
 
 					preparedStatement2.addBatch();
 				}

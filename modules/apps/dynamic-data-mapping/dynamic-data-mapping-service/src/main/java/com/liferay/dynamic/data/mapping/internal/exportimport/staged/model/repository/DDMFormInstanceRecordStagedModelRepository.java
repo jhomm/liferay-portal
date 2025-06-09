@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.exportimport.staged.model.repository;
@@ -18,8 +9,6 @@ import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecordVersion;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
-import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordVersionLocalService;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
@@ -35,10 +24,8 @@ import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.service.ServiceContext;
 
 import java.util.List;
-import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,12 +34,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Tamas Molnar
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord",
-	service = {
-		DDMFormInstanceRecordStagedModelRepository.class,
-		StagedModelRepository.class
-	}
+	service = StagedModelRepository.class
 )
 public class DDMFormInstanceRecordStagedModelRepository
 	implements StagedModelRepository<DDMFormInstanceRecord> {
@@ -64,36 +47,6 @@ public class DDMFormInstanceRecordStagedModelRepository
 		throws PortalException {
 
 		throw new UnsupportedOperationException();
-	}
-
-	public DDMFormInstanceRecord addStagedModel(
-			PortletDataContext portletDataContext,
-			DDMFormInstanceRecord ddmFormInstanceRecord,
-			DDMFormValues ddmFormValues)
-		throws PortalException {
-
-		long userId = portletDataContext.getUserId(
-			ddmFormInstanceRecord.getUserUuid());
-
-		ServiceContext serviceContext = portletDataContext.createServiceContext(
-			ddmFormInstanceRecord);
-
-		serviceContext.setAttribute("validateDDMFormValues", Boolean.FALSE);
-
-		if (portletDataContext.isDataStrategyMirror()) {
-			serviceContext.setUuid(ddmFormInstanceRecord.getUuid());
-		}
-
-		DDMFormInstanceRecord importedDDMFormInstanceRecord =
-			_ddmFormInstanceRecordLocalService.addFormInstanceRecord(
-				userId, ddmFormInstanceRecord.getGroupId(),
-				ddmFormInstanceRecord.getFormInstanceId(), ddmFormValues,
-				serviceContext);
-
-		updateVersions(
-			importedDDMFormInstanceRecord, ddmFormInstanceRecord.getVersion());
-
-		return importedDDMFormInstanceRecord;
 	}
 
 	@Override
@@ -159,7 +112,7 @@ public class DDMFormInstanceRecordStagedModelRepository
 					PropertyFactoryUtil.forName("formInstanceRecordId");
 
 				DynamicQuery formInstanceRecordVersionDynamicQuery =
-					getRecordVersionDynamicQuery();
+					_getRecordVersionDynamicQuery();
 
 				dynamicQuery.add(
 					formInstanceRecordIdProperty.in(
@@ -169,7 +122,7 @@ public class DDMFormInstanceRecordStagedModelRepository
 					"formInstanceId");
 
 				dynamicQuery.add(
-					formInstanceIdProperty.in(getFormInstanceDynamicQuery()));
+					formInstanceIdProperty.in(_getFormInstanceDynamicQuery()));
 			});
 
 		return exportActionableDynamicQuery;
@@ -201,32 +154,7 @@ public class DDMFormInstanceRecordStagedModelRepository
 		throw new UnsupportedOperationException();
 	}
 
-	public DDMFormInstanceRecord updateStagedModel(
-			PortletDataContext portletDataContext,
-			DDMFormInstanceRecord ddmFormInstanceRecord,
-			DDMFormValues ddmFormValues)
-		throws PortalException {
-
-		long userId = portletDataContext.getUserId(
-			ddmFormInstanceRecord.getUserUuid());
-
-		ServiceContext serviceContext = portletDataContext.createServiceContext(
-			ddmFormInstanceRecord);
-
-		serviceContext.setAttribute("validateDDMFormValues", Boolean.FALSE);
-
-		DDMFormInstanceRecord importedDDMFormInstanceRecord =
-			_ddmFormInstanceRecordLocalService.updateFormInstanceRecord(
-				userId, ddmFormInstanceRecord.getFormInstanceRecordId(), false,
-				ddmFormValues, serviceContext);
-
-		updateVersions(
-			importedDDMFormInstanceRecord, ddmFormInstanceRecord.getVersion());
-
-		return importedDDMFormInstanceRecord;
-	}
-
-	protected DynamicQuery getFormInstanceDynamicQuery() {
+	private DynamicQuery _getFormInstanceDynamicQuery() {
 		StagedModelDataHandler<?> stagedModelDataHandler =
 			StagedModelDataHandlerRegistryUtil.getStagedModelDataHandler(
 				DDMFormInstanceRecord.class.getName());
@@ -247,7 +175,7 @@ public class DDMFormInstanceRecordStagedModelRepository
 		return formInstanceDynamicQuery;
 	}
 
-	protected DynamicQuery getRecordVersionDynamicQuery() {
+	private DynamicQuery _getRecordVersionDynamicQuery() {
 		StagedModelDataHandler<?> stagedModelDataHandler =
 			StagedModelDataHandlerRegistryUtil.getStagedModelDataHandler(
 				DDMFormInstanceRecord.class.getName());
@@ -278,37 +206,8 @@ public class DDMFormInstanceRecordStagedModelRepository
 		return formInstanceRecordVersionDynamicQuery;
 	}
 
-	protected void updateVersions(
-			DDMFormInstanceRecord importedDDMFormInstanceRecord, String version)
-		throws PortalException {
-
-		if (Objects.equals(
-				importedDDMFormInstanceRecord.getVersion(), version)) {
-
-			return;
-		}
-
-		DDMFormInstanceRecordVersion importedDDMFormInstanceRecordVersion =
-			importedDDMFormInstanceRecord.getFormInstanceRecordVersion();
-
-		importedDDMFormInstanceRecordVersion.setVersion(version);
-
-		_ddmFormInstanceRecordVersionLocalService.
-			updateDDMFormInstanceRecordVersion(
-				importedDDMFormInstanceRecordVersion);
-
-		importedDDMFormInstanceRecord.setVersion(version);
-
-		_ddmFormInstanceRecordLocalService.updateDDMFormInstanceRecord(
-			importedDDMFormInstanceRecord);
-	}
-
 	@Reference
 	private DDMFormInstanceRecordLocalService
 		_ddmFormInstanceRecordLocalService;
-
-	@Reference
-	private DDMFormInstanceRecordVersionLocalService
-		_ddmFormInstanceRecordVersionLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context.test;
@@ -17,6 +8,7 @@ package com.liferay.document.library.web.internal.display.context.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.test.util.DLAppTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -46,19 +38,20 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import jakarta.portlet.MutableRenderParameters;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.annotations.PortletSerializable;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Writer;
 
+import java.util.List;
 import java.util.Map;
-
-import javax.portlet.MutableRenderParameters;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderURL;
-import javax.portlet.WindowState;
-import javax.portlet.annotations.PortletSerializable;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -87,7 +80,7 @@ public class DLAdminDisplayContextTest {
 		_group = GroupTestUtil.addGroup();
 
 		_company = _companyLocalService.getCompany(_group.getCompanyId());
-		_layout = LayoutTestUtil.addLayout(_group);
+		_layout = LayoutTestUtil.addTypePortletLayout(_group);
 	}
 
 	@Test
@@ -114,6 +107,25 @@ public class DLAdminDisplayContextTest {
 		Assert.assertEquals(25, searchContainer.getTotal());
 	}
 
+	@Test
+	public void testSearchContainerContainsFolderWithNavigationMine()
+		throws Exception {
+
+		DLAppTestUtil.addFolder(_group.getGroupId());
+
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
+			_getMockLiferayPortletActionRequest();
+
+		mockLiferayPortletActionRequest.setParameter("navigation", "mine");
+
+		SearchContainer<Object> searchContainer = _getSearchContainer(
+			mockLiferayPortletActionRequest);
+
+		List<Object> results = searchContainer.getResults();
+
+		Assert.assertEquals(results.toString(), 1, results.size());
+	}
+
 	private FileEntry _addDLFileEntry(String fileName, String content)
 		throws Exception {
 
@@ -124,8 +136,8 @@ public class DLAdminDisplayContextTest {
 			null, TestPropsValues.getUserId(), serviceContext.getScopeGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, fileName,
 			ContentTypes.TEXT_PLAIN, RandomTestUtil.randomString(),
-			StringPool.BLANK, StringPool.BLANK, content.getBytes(), null, null,
-			serviceContext);
+			StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
+			content.getBytes(), null, null, null, serviceContext);
 	}
 
 	private MockLiferayPortletActionRequest
@@ -185,6 +197,7 @@ public class DLAdminDisplayContextTest {
 			PermissionThreadLocal.getPermissionChecker());
 		themeDisplay.setRealUser(TestPropsValues.getUser());
 		themeDisplay.setScopeGroupId(_layout.getGroupId());
+		themeDisplay.setSiteGroupId(_layout.getGroupId());
 		themeDisplay.setUser(TestPropsValues.getUser());
 
 		return themeDisplay;

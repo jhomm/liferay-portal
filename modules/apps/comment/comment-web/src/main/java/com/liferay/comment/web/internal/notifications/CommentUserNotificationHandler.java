@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.comment.web.internal.notifications;
@@ -23,13 +14,15 @@ import com.liferay.message.boards.service.MBDiscussionLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseModelUserNotificationHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 
@@ -41,8 +34,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + CommentPortletKeys.COMMENT,
+	property = "jakarta.portlet.name=" + CommentPortletKeys.COMMENT,
 	service = UserNotificationHandler.class
 )
 public class CommentUserNotificationHandler
@@ -52,27 +44,9 @@ public class CommentUserNotificationHandler
 		setPortletId(CommentPortletKeys.COMMENT);
 	}
 
-	protected MBDiscussion fetchDiscussion(JSONObject jsonObject) {
-		long classPK = jsonObject.getLong("classPK");
-
-		try {
-			return _mbDiscussionLocalService.fetchDiscussion(classPK);
-		}
-		catch (SystemException systemException) {
-
-			// LPS-52675
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(systemException, systemException);
-			}
-
-			return null;
-		}
-	}
-
 	@Override
 	protected AssetRenderer<?> getAssetRenderer(JSONObject jsonObject) {
-		MBDiscussion mbDiscussion = fetchDiscussion(jsonObject);
+		MBDiscussion mbDiscussion = _fetchDiscussion(jsonObject);
 
 		if (mbDiscussion == null) {
 			return null;
@@ -94,7 +68,7 @@ public class CommentUserNotificationHandler
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -104,15 +78,16 @@ public class CommentUserNotificationHandler
 
 	@Override
 	protected String getBodyContent(JSONObject jsonObject) {
-		return HtmlUtil.extractText(super.getBodyContent(jsonObject));
+		return _htmlParser.extractText(super.getBodyContent(jsonObject));
 	}
 
 	@Override
 	protected String getTitle(
 		JSONObject jsonObject, AssetRenderer<?> assetRenderer,
+		UserNotificationEvent userNotificationEvent,
 		ServiceContext serviceContext) {
 
-		MBDiscussion mbDiscussion = fetchDiscussion(jsonObject);
+		MBDiscussion mbDiscussion = _fetchDiscussion(jsonObject);
 
 		if (mbDiscussion == null) {
 			return null;
@@ -144,7 +119,7 @@ public class CommentUserNotificationHandler
 		}
 
 		if (assetRenderer != null) {
-			message = LanguageUtil.format(
+			message = _language.format(
 				serviceContext.getLocale(), message,
 				new String[] {
 					HtmlUtil.escape(
@@ -156,7 +131,7 @@ public class CommentUserNotificationHandler
 				false);
 		}
 		else {
-			message = LanguageUtil.format(
+			message = _language.format(
 				serviceContext.getLocale(), message,
 				new String[] {
 					HtmlUtil.escape(
@@ -169,8 +144,32 @@ public class CommentUserNotificationHandler
 		return message;
 	}
 
+	private MBDiscussion _fetchDiscussion(JSONObject jsonObject) {
+		long classPK = jsonObject.getLong("classPK");
+
+		try {
+			return _mbDiscussionLocalService.fetchDiscussion(classPK);
+		}
+		catch (SystemException systemException) {
+
+			// LPS-52675
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(systemException);
+			}
+
+			return null;
+		}
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommentUserNotificationHandler.class);
+
+	@Reference
+	private HtmlParser _htmlParser;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private MBDiscussionLocalService _mbDiscussionLocalService;

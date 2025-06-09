@@ -1,23 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render} from '@testing-library/react';
+import {act, cleanup, fireEvent, render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Text from '../../../src/main/resources/META-INF/resources/Text/Text.es';
+import Text from '../../../src/main/resources/META-INF/resources/js/Text/Text.es';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -35,10 +27,12 @@ const TextWithProvider = (props) => (
 );
 
 describe('Field Text', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -53,6 +47,7 @@ describe('Field Text', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 
@@ -183,6 +178,35 @@ describe('Field Text', () => {
 		expect(container).toMatchSnapshot();
 	});
 
+	it('does not render html autocomplete attribute', () => {
+		const {container} = render(<TextWithProvider {...defaultTextConfig} />);
+
+		act(() => {
+			jest.runAllTimers();
+		});
+
+		const textInputTag = container.querySelector('.ddm-field-text');
+
+		expect(textInputTag.hasAttribute('autocomplete')).toBe(false);
+	});
+
+	it('renders html autocomplete attribute', () => {
+		const {container} = render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				htmlAutocompleteAttribute="name"
+			/>
+		);
+
+		act(() => {
+			jest.runAllTimers();
+		});
+
+		const textInputTag = container.querySelector('.ddm-field-text');
+
+		expect(textInputTag.getAttribute('autocomplete')).toBe('name');
+	});
+
 	it('renders autocomplete dropdown menu', () => {
 		const onChange = jest.fn();
 
@@ -302,7 +326,7 @@ describe('Field Text', () => {
 
 		const body = document.body;
 
-		fireEvent.mouseDown(body);
+		userEvent.click(body);
 
 		act(() => {
 			jest.runAllTimers();
@@ -381,10 +405,6 @@ describe('Field Text', () => {
 			},
 		});
 
-		act(() => {
-			jest.runAllTimers();
-		});
-
 		expect(input.value).toEqual('FieldReference');
 	});
 
@@ -408,11 +428,61 @@ describe('Field Text', () => {
 			},
 		});
 
-		act(() => {
-			jest.runAllTimers();
-		});
-
 		expect(input.value).toEqual('+9 (9) 99-9999');
+	});
+
+	it('renders a counter when show counter is true, there is a maxLength and value is empty', () => {
+		const {getByText} = render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				maxLength={10}
+				showCounter={true}
+				valid={true}
+				value=""
+			/>
+		);
+
+		expect(getByText('0/10 characters')).toBeInTheDocument();
+	});
+
+	it('renders a counter when show counter is true, there is a maxLength and value is different from empty', () => {
+		const {getByText} = render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				maxLength={10}
+				showCounter={true}
+				valid={true}
+				value="test"
+			/>
+		);
+
+		expect(getByText('4/10 characters')).toBeInTheDocument();
+	});
+
+	it('does not render a counter when show counter is false, there is a maxLength and value is different from empty', () => {
+		const {queryByText} = render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				maxLength={10}
+				value="test"
+			/>
+		);
+
+		expect(queryByText('4/10 characters')).not.toBeInTheDocument();
+	});
+
+	it('renders a counter when show counter is true, there is a maxLength and value length is greater than the maximum lenght', () => {
+		render(
+			<TextWithProvider
+				{...defaultTextConfig}
+				maxLength={2}
+				showCounter={true}
+				valid={true}
+				value="test"
+			/>
+		);
+		const error = screen.queryAllByText('4/2 characters')[0];
+		expect(error).toHaveClass('form-feedback-item');
 	});
 
 	describe('Confirmation Field', () => {

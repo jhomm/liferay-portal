@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.internal.search.index.reindexer;
 
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactory;
-import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalRunMode;
+import com.liferay.portal.search.capabilities.SearchCapabilities;
+import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.document.BulkDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.IndexDocumentRequest;
@@ -29,73 +20,51 @@ import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
 import com.liferay.portal.search.hits.SearchHit;
 import com.liferay.portal.search.hits.SearchHits;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.Queries;
-import com.liferay.portal.workflow.metrics.internal.messaging.WorkflowMetricsSLAProcessMessageListener;
+import com.liferay.portal.workflow.metrics.internal.background.task.WorkflowMetricsSLAProcessBackgroundTaskHelper;
 import com.liferay.portal.workflow.metrics.internal.search.index.SLAInstanceResultWorkflowMetricsIndexer;
-import com.liferay.portal.workflow.metrics.search.index.name.WorkflowMetricsIndexNameBuilder;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.search.index.reindexer.WorkflowMetricsReindexer;
-
-import java.util.List;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Rafael Praxedes
  */
-@Component(
-	immediate = true,
-	property = "workflow.metrics.index.entity.name=sla-instance-result",
-	service = WorkflowMetricsReindexer.class
-)
+@Component(service = WorkflowMetricsReindexer.class)
 public class SLAInstanceResultWorkflowMetricsReindexer
 	implements WorkflowMetricsReindexer {
+
+	@Override
+	public String getKey() {
+		return "sla-instance-result";
+	}
 
 	@Override
 	public void reindex(long companyId) throws PortalException {
 		_creatDefaultDocuments(companyId);
 
-		if (workflowMetricsSLAProcessMessageListener == null) {
-			return;
+		WorkflowMetricsSLAProcessBackgroundTaskHelper
+			workflowMetricsSLAProcessBackgroundTaskHelper =
+				_workflowMetricsSLAProcessBackgroundTaskHelperSnapshot.get();
+
+		if (workflowMetricsSLAProcessBackgroundTaskHelper != null) {
+			workflowMetricsSLAProcessBackgroundTaskHelper.addBackgroundTasks(
+				true);
 		}
-
-		Message message = new Message();
-
-		JSONObject payloadJSONObject = _jsonFactory.createJSONObject();
-
-		payloadJSONObject.put("reindex", Boolean.TRUE);
-
-		message.setPayload(payloadJSONObject);
-
-		workflowMetricsSLAProcessMessageListener.receive(message);
 	}
 
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY,
-		target = "(search.engine.impl=Elasticsearch)"
-	)
-	protected volatile SearchEngineAdapter searchEngineAdapter;
-
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected volatile WorkflowMetricsSLAProcessMessageListener
-		workflowMetricsSLAProcessMessageListener;
+	@Reference
+	protected SearchEngineAdapter searchEngineAdapter;
 
 	private void _creatDefaultDocuments(long companyId) {
-		if ((searchEngineAdapter == null) ||
+		if (!_searchCapabilities.isWorkflowMetricsSupported() ||
 			!_hasIndex(
-				_processWorkflowMetricsIndexNameBuilder.getIndexName(
-					companyId))) {
+				_indexNameBuilder.getIndexName(companyId) +
+					WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS)) {
 
 			return;
 		}
@@ -103,7 +72,8 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 		SearchSearchRequest searchSearchRequest = new SearchSearchRequest();
 
 		searchSearchRequest.setIndexNames(
-			_processWorkflowMetricsIndexNameBuilder.getIndexName(companyId));
+			_indexNameBuilder.getIndexName(companyId) +
+				WorkflowMetricsIndexNameConstants.SUFFIX_PROCESS);
 
 		BooleanQuery booleanQuery = _queries.booleanQuery();
 
@@ -126,31 +96,17 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 
 		BulkDocumentRequest bulkDocumentRequest = new BulkDocumentRequest();
 
-		Stream.of(
-			searchHits.getSearchHits()
-		).flatMap(
-			List::stream
-		).map(
-			SearchHit::getDocument
-		).map(
-			document ->
-				_slaInstanceResultWorkflowMetricsIndexer.creatDefaultDocument(
-					companyId, document.getLong("processId"))
-		).map(
-			document -> new IndexDocumentRequest(
-				_slaInstanceResultWorkflowMetricsIndexer.getIndexName(
-					companyId),
-				document) {
+		for (SearchHit searchHit : searchHits.getSearchHits()) {
+			Document document = searchHit.getDocument();
 
-				{
-					setType(
-						_slaInstanceResultWorkflowMetricsIndexer.
-							getIndexType());
-				}
-			}
-		).forEach(
-			bulkDocumentRequest::addBulkableDocumentRequest
-		);
+			bulkDocumentRequest.addBulkableDocumentRequest(
+				new IndexDocumentRequest(
+					_slaInstanceResultWorkflowMetricsIndexer.getIndexName(
+						companyId),
+					_slaInstanceResultWorkflowMetricsIndexer.
+						creatDefaultDocument(
+							companyId, document.getLong("processId"))));
+		}
 
 		if (ListUtil.isNotEmpty(
 				bulkDocumentRequest.getBulkableDocumentRequests())) {
@@ -164,10 +120,6 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 	}
 
 	private boolean _hasIndex(String indexName) {
-		if (searchEngineAdapter == null) {
-			return false;
-		}
-
 		IndicesExistsIndexRequest indicesExistsIndexRequest =
 			new IndicesExistsIndexRequest(indexName);
 
@@ -177,15 +129,19 @@ public class SLAInstanceResultWorkflowMetricsReindexer
 		return indicesExistsIndexResponse.isExists();
 	}
 
-	@Reference
-	private JSONFactory _jsonFactory;
+	private static final Snapshot<WorkflowMetricsSLAProcessBackgroundTaskHelper>
+		_workflowMetricsSLAProcessBackgroundTaskHelperSnapshot = new Snapshot<>(
+			SLAInstanceResultWorkflowMetricsReindexer.class,
+			WorkflowMetricsSLAProcessBackgroundTaskHelper.class, null, true);
 
-	@Reference(target = "(workflow.metrics.index.entity.name=process)")
-	private WorkflowMetricsIndexNameBuilder
-		_processWorkflowMetricsIndexNameBuilder;
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private Queries _queries;
+
+	@Reference
+	private SearchCapabilities _searchCapabilities;
 
 	@Reference
 	private SLAInstanceResultWorkflowMetricsIndexer

@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
+
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ClassNameLocalService}.
@@ -23,6 +16,10 @@ package com.liferay.portal.kernel.service;
  */
 public class ClassNameLocalServiceWrapper
 	implements ClassNameLocalService, ServiceWrapper<ClassNameLocalService> {
+
+	public ClassNameLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ClassNameLocalServiceWrapper(
 		ClassNameLocalService classNameLocalService) {
@@ -49,7 +46,7 @@ public class ClassNameLocalServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.ClassName addClassName(
-		java.lang.String value) {
+		String value) {
 
 		return _classNameLocalService.addClassName(value);
 	}
@@ -248,7 +245,7 @@ public class ClassNameLocalServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.ClassName fetchClassName(
-		java.lang.String value) {
+		String value) {
 
 		return _classNameLocalService.fetchClassName(value);
 	}
@@ -277,19 +274,33 @@ public class ClassNameLocalServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.model.ClassName getClassName(
-		java.lang.String value) {
+		String value) {
 
 		return _classNameLocalService.getClassName(value);
 	}
 
 	@Override
-	public long getClassNameId(java.lang.Class<?> clazz) {
+	public long getClassNameId(Class<?> clazz) {
 		return _classNameLocalService.getClassNameId(clazz);
 	}
 
 	@Override
-	public long getClassNameId(java.lang.String value) {
+	public long getClassNameId(String value) {
 		return _classNameLocalService.getClassNameId(value);
+	}
+
+	@Override
+	public java.util.function.Supplier<long[]> getClassNameIdsSupplier(
+		String[] classNames) {
+
+		return _classNameLocalService.getClassNameIdsSupplier(classNames);
+	}
+
+	@Override
+	public java.util.function.Supplier<Long> getClassNameIdSupplier(
+		String className) {
+
+		return _classNameLocalService.getClassNameIdSupplier(className);
 	}
 
 	/**
@@ -333,7 +344,7 @@ public class ClassNameLocalServiceWrapper
 	 * @return the OSGi service identifier
 	 */
 	@Override
-	public java.lang.String getOSGiServiceIdentifier() {
+	public String getOSGiServiceIdentifier() {
 		return _classNameLocalService.getOSGiServiceIdentifier();
 	}
 
@@ -349,7 +360,7 @@ public class ClassNameLocalServiceWrapper
 	}
 
 	@Override
-	public java.lang.String getRegistryName() {
+	public String getRegistryName() {
 		return _classNameLocalService.getRegistryName();
 	}
 
@@ -373,6 +384,11 @@ public class ClassNameLocalServiceWrapper
 		com.liferay.portal.kernel.model.ClassName className) {
 
 		return _classNameLocalService.updateClassName(className);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _classNameLocalService.getBasePersistence();
 	}
 
 	@Override

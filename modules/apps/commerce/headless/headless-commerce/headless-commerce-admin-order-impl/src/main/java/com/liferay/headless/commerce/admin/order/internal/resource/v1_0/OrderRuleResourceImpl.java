@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.order.internal.resource.v1_0;
 
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountGroup;
-import com.liferay.commerce.account.service.CommerceAccountGroupService;
-import com.liferay.commerce.account.service.CommerceAccountService;
+import com.liferay.account.service.AccountEntryService;
+import com.liferay.account.service.AccountGroupService;
 import com.liferay.commerce.model.CommerceOrderType;
 import com.liferay.commerce.order.rule.exception.NoSuchCOREntryException;
 import com.liferay.commerce.order.rule.model.COREntry;
@@ -32,18 +23,15 @@ import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleAccount;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleAccountGroup;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleChannel;
 import com.liferay.headless.commerce.admin.order.dto.v1_0.OrderRuleOrderType;
-import com.liferay.headless.commerce.admin.order.internal.dto.v1_0.converter.OrderRuleDTOConverter;
 import com.liferay.headless.commerce.admin.order.internal.odata.entity.v1_0.OrderRuleEntityModel;
 import com.liferay.headless.commerce.admin.order.internal.util.v1_0.OrderRuleAccountGroupUtil;
 import com.liferay.headless.commerce.admin.order.internal.util.v1_0.OrderRuleAccountUtil;
 import com.liferay.headless.commerce.admin.order.internal.util.v1_0.OrderRuleChannelUtil;
 import com.liferay.headless.commerce.admin.order.internal.util.v1_0.OrderRuleOrderTypeUtil;
 import com.liferay.headless.commerce.admin.order.resource.v1_0.OrderRuleResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.DateConfig;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -52,15 +40,16 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Map;
+import jakarta.ws.rs.core.MultivaluedMap;
 
-import javax.ws.rs.core.MultivaluedMap;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -70,7 +59,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Marco Leo
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/order-rule.properties",
 	scope = ServiceScope.PROTOTYPE, service = OrderRuleResource.class
 )
@@ -86,8 +74,9 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 			String externalReferenceCode)
 		throws Exception {
 
-		COREntry corEntry = _corEntryService.fetchByExternalReferenceCode(
-			contextCompany.getCompanyId(), externalReferenceCode);
+		COREntry corEntry =
+			_corEntryService.fetchCOREntryByExternalReferenceCode(
+				contextCompany.getCompanyId(), externalReferenceCode);
 
 		if (corEntry == null) {
 			throw new NoSuchCOREntryException(
@@ -115,8 +104,9 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 			String externalReferenceCode)
 		throws Exception {
 
-		COREntry corEntry = _corEntryService.fetchByExternalReferenceCode(
-			contextCompany.getCompanyId(), externalReferenceCode);
+		COREntry corEntry =
+			_corEntryService.fetchCOREntryByExternalReferenceCode(
+				contextCompany.getCompanyId(), externalReferenceCode);
 
 		if (corEntry == null) {
 			throw new NoSuchCOREntryException(
@@ -137,16 +127,10 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 			COREntry.class.getName(), search, pagination,
 			queryConfig -> queryConfig.setSelectedFieldNames(
 				Field.ENTRY_CLASS_PK),
-			new UnsafeConsumer() {
-
-				public void accept(Object object) throws Exception {
-					SearchContext searchContext = (SearchContext)object;
-
-					searchContext.setAttribute(
-						"status", WorkflowConstants.STATUS_ANY);
-					searchContext.setCompanyId(contextCompany.getCompanyId());
-				}
-
+			searchContext -> {
+				searchContext.setAttribute(
+					"status", WorkflowConstants.STATUS_ANY);
+				searchContext.setCompanyId(contextCompany.getCompanyId());
 			},
 			sorts,
 			document -> _toOrderRule(
@@ -166,8 +150,9 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 			String externalReferenceCode, OrderRule orderRule)
 		throws Exception {
 
-		COREntry corEntry = _corEntryService.fetchByExternalReferenceCode(
-			contextCompany.getCompanyId(), externalReferenceCode);
+		COREntry corEntry =
+			_corEntryService.fetchCOREntryByExternalReferenceCode(
+				contextCompany.getCompanyId(), externalReferenceCode);
 
 		if (corEntry == null) {
 			throw new NoSuchCOREntryException(
@@ -180,12 +165,56 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 
 	@Override
 	public OrderRule postOrderRule(OrderRule orderRule) throws Exception {
-		COREntry corEntry = _addCOREntry(orderRule);
+		COREntry corEntry = _addCOREntry(
+			orderRule.getExternalReferenceCode(), orderRule);
 
 		return _toOrderRule(corEntry.getCOREntryId());
 	}
 
-	private COREntry _addCOREntry(OrderRule orderRule) throws Exception {
+	@Override
+	public OrderRule putOrderRuleByExternalReferenceCode(
+			String externalReferenceCode, OrderRule orderRule)
+		throws Exception {
+
+		COREntry corEntry =
+			_corEntryService.fetchCOREntryByExternalReferenceCode(
+				contextCompany.getCompanyId(), externalReferenceCode);
+
+		if (corEntry == null) {
+			corEntry = _addCOREntry(externalReferenceCode, orderRule);
+
+			return _toOrderRule(corEntry.getCOREntryId());
+		}
+
+		ServiceContext serviceContext =
+			_serviceContextHelper.getServiceContext();
+
+		DateConfig displayDateConfig = DateConfig.toDisplayDateConfig(
+			orderRule.getDisplayDate(), serviceContext.getTimeZone());
+		DateConfig expirationDateConfig = DateConfig.toExpirationDateConfig(
+			orderRule.getExpirationDate(), serviceContext.getTimeZone());
+
+		corEntry = _corEntryService.updateCOREntry(
+			corEntry.getCOREntryId(),
+			GetterUtil.getBoolean(orderRule.getActive()),
+			GetterUtil.getString(orderRule.getDescription()),
+			displayDateConfig.getMonth(), displayDateConfig.getDay(),
+			displayDateConfig.getYear(), displayDateConfig.getHour(),
+			displayDateConfig.getMinute(), expirationDateConfig.getMonth(),
+			expirationDateConfig.getDay(), expirationDateConfig.getYear(),
+			expirationDateConfig.getHour(), expirationDateConfig.getMinute(),
+			GetterUtil.getBoolean(orderRule.getNeverExpire()),
+			GetterUtil.getString(orderRule.getName()),
+			GetterUtil.getInteger(orderRule.getPriority()),
+			GetterUtil.getString(orderRule.getTypeSettings()), serviceContext);
+
+		return _toOrderRule(_updateNestedResources(corEntry, orderRule));
+	}
+
+	private COREntry _addCOREntry(
+			String externalReferenceCode, OrderRule orderRule)
+		throws Exception {
+
 		ServiceContext serviceContext =
 			_serviceContextHelper.getServiceContext();
 
@@ -195,8 +224,7 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 			orderRule.getExpirationDate(), serviceContext.getTimeZone());
 
 		COREntry corEntry = _corEntryService.addCOREntry(
-			orderRule.getExternalReferenceCode(),
-			GetterUtil.getBoolean(orderRule.getActive()),
+			externalReferenceCode, GetterUtil.getBoolean(orderRule.getActive()),
 			orderRule.getDescription(), displayDateConfig.getMonth(),
 			displayDateConfig.getDay(), displayDateConfig.getYear(),
 			displayDateConfig.getHour(), displayDateConfig.getMinute(),
@@ -273,8 +301,8 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 					continue;
 				}
 
-				OrderRuleAccountGroupUtil.addCOREntryCommerceAccountGroupRel(
-					_commerceAccountGroupService, _corEntryRelService, corEntry,
+				OrderRuleAccountGroupUtil.addCOREntryAccountGroupRel(
+					_accountGroupService, _corEntryRelService, corEntry,
 					orderRuleAccountGroup);
 			}
 		}
@@ -293,8 +321,8 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 					continue;
 				}
 
-				OrderRuleAccountUtil.addCOREntryCommerceAccountRel(
-					_commerceAccountService, _corEntryRelService, corEntry,
+				OrderRuleAccountUtil.addCOREntryAccountRel(
+					_accountEntryService, _corEntryRelService, corEntry,
 					orderRuleAccount);
 			}
 		}
@@ -379,10 +407,10 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 	private static final EntityModel _entityModel = new OrderRuleEntityModel();
 
 	@Reference
-	private CommerceAccountGroupService _commerceAccountGroupService;
+	private AccountEntryService _accountEntryService;
 
 	@Reference
-	private CommerceAccountService _commerceAccountService;
+	private AccountGroupService _accountGroupService;
 
 	@Reference
 	private CommerceChannelService _commerceChannelService;
@@ -404,8 +432,10 @@ public class OrderRuleResourceImpl extends BaseOrderRuleResourceImpl {
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
 
-	@Reference
-	private OrderRuleDTOConverter _orderRuleDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.order.internal.dto.v1_0.converter.OrderRuleDTOConverter)"
+	)
+	private DTOConverter<COREntry, OrderRule> _orderRuleDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

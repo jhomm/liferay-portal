@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.internal.upgrade.v2_2_1;
 
 import com.liferay.commerce.product.model.CommerceChannel;
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -45,32 +37,30 @@ public class CommerceNotificationTemplateGroupIdUpgradeProcess
 
 			ResultSet resultSet = s.executeQuery(
 				"select commerceNotificationTemplateId, groupId from " +
-					"CommerceNotificationTemplate")) {
-
-			PreparedStatement preparedStatement = null;
+					"CommerceNotificationTemplate");
+			PreparedStatement preparedStatement =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update CommerceNotificationTemplate set groupId = ? " +
+						"where commerceNotificationTemplateId = ?")) {
 
 			while (resultSet.next()) {
-				long groupId = resultSet.getLong("groupId");
-
 				long commerceChannelGroupId =
-					_getCommerceChannelGroupIdBySiteGroupId(groupId);
+					_getCommerceChannelGroupIdBySiteGroupId(
+						resultSet.getLong("groupId"));
 
 				if (commerceChannelGroupId == 0) {
 					continue;
 				}
 
-				long commerceNotificationTemplateId = resultSet.getLong(
-					"commerceNotificationTemplateId");
-
-				preparedStatement = connection.prepareStatement(
-					"update CommerceNotificationTemplate set groupId = ? " +
-						"where commerceNotificationTemplateId = ?");
-
 				preparedStatement.setLong(1, commerceChannelGroupId);
-				preparedStatement.setLong(2, commerceNotificationTemplateId);
+				preparedStatement.setLong(
+					2, resultSet.getLong("commerceNotificationTemplateId"));
 
-				preparedStatement.executeUpdate();
+				preparedStatement.addBatch();
 			}
+
+			preparedStatement.executeBatch();
 		}
 	}
 
@@ -94,11 +84,11 @@ public class CommerceNotificationTemplateGroupIdUpgradeProcess
 			}
 		}
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			CommerceChannel.class.getName());
-
 		Group group = _groupLocalService.fetchGroup(
-			companyId, classNameId, commerceChannelId);
+			companyId,
+			_classNameLocalService.getClassNameId(
+				CommerceChannel.class.getName()),
+			commerceChannelId);
 
 		if (group != null) {
 			return group.getGroupId();

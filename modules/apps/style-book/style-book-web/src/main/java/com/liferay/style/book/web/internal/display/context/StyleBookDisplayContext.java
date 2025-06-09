@@ -1,41 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.web.internal.display.context;
 
+import com.liferay.frontend.token.definition.FrontendTokenDefinition;
+import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.style.book.constants.StyleBookActionKeys;
+import com.liferay.style.book.constants.StyleBookPortletKeys;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalServiceUtil;
+import com.liferay.style.book.util.StyleBookUtil;
 import com.liferay.style.book.util.comparator.StyleBookEntryCreateDateComparator;
 import com.liferay.style.book.util.comparator.StyleBookEntryNameComparator;
 import com.liferay.style.book.web.internal.security.permissions.resource.StyleBookPermission;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -43,10 +41,12 @@ import javax.servlet.http.HttpServletRequest;
 public class StyleBookDisplayContext {
 
 	public StyleBookDisplayContext(
+		FrontendTokenDefinitionRegistry frontendTokenDefinitionRegistry,
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse) {
 
+		_frontendTokenDefinitionRegistry = frontendTokenDefinitionRegistry;
 		_httpServletRequest = httpServletRequest;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
@@ -93,13 +93,59 @@ public class StyleBookDisplayContext {
 				"there-are-no-style-books");
 
 		styleBookEntriesSearchContainer.setOrderByCol(_getOrderByCol());
-
-		OrderByComparator<StyleBookEntry> orderByComparator =
-			_getStyleBookEntryOrderByComparator();
-
-		styleBookEntriesSearchContainer.setOrderByComparator(orderByComparator);
-
+		styleBookEntriesSearchContainer.setOrderByComparator(
+			_getStyleBookEntryOrderByComparator());
 		styleBookEntriesSearchContainer.setOrderByType(_getOrderByType());
+
+		if (_isSearch()) {
+			styleBookEntriesSearchContainer.setResultsAndTotal(
+				() -> StyleBookEntryLocalServiceUtil.getStyleBookEntries(
+					themeDisplay.getScopeGroupId(), _getKeywords(),
+					styleBookEntriesSearchContainer.getStart(),
+					styleBookEntriesSearchContainer.getEnd(),
+					styleBookEntriesSearchContainer.getOrderByComparator()),
+				StyleBookEntryLocalServiceUtil.getStyleBookEntriesCount(
+					themeDisplay.getScopeGroupId(), _getKeywords()));
+		}
+		else {
+			List<StyleBookEntry> styleBookEntries = new ArrayList<>();
+
+			int styleBookEntriesCount =
+				StyleBookEntryLocalServiceUtil.getStyleBookEntriesCount(
+					themeDisplay.getScopeGroupId());
+
+			int start = styleBookEntriesSearchContainer.getStart();
+			int end = styleBookEntriesSearchContainer.getEnd();
+
+			if (start == 0) {
+				end -= 1;
+
+				if (FeatureFlagManagerUtil.isEnabled(
+						themeDisplay.getCompanyId(), "LPD-30204")) {
+
+					styleBookEntries.addAll(
+						_getStyleFromThemeStyleBookEntries(
+							themeDisplay.getScopeGroupId()));
+				}
+				else {
+					styleBookEntries.add(
+						StyleBookUtil.getStyleFromThemeStyleBookEntry(
+							themeDisplay.getLayout(),
+							themeDisplay.getLocale()));
+				}
+			}
+			else {
+				start -= 1;
+			}
+
+			styleBookEntries.addAll(
+				StyleBookEntryLocalServiceUtil.getStyleBookEntries(
+					themeDisplay.getScopeGroupId(), start, end,
+					styleBookEntriesSearchContainer.getOrderByComparator()));
+
+			styleBookEntriesSearchContainer.setResultsAndTotal(
+				() -> styleBookEntries, styleBookEntriesCount + 1);
+		}
 
 		if (StyleBookPermission.contains(
 				themeDisplay.getPermissionChecker(),
@@ -109,37 +155,6 @@ public class StyleBookDisplayContext {
 			styleBookEntriesSearchContainer.setRowChecker(
 				new EmptyOnClickRowChecker(_liferayPortletResponse));
 		}
-
-		List<StyleBookEntry> styleBookEntries = null;
-		int styleBookEntriesCount = 0;
-
-		if (_isSearch()) {
-			styleBookEntries =
-				StyleBookEntryLocalServiceUtil.getStyleBookEntries(
-					themeDisplay.getScopeGroupId(), _getKeywords(),
-					styleBookEntriesSearchContainer.getStart(),
-					styleBookEntriesSearchContainer.getEnd(),
-					orderByComparator);
-
-			styleBookEntriesCount =
-				StyleBookEntryLocalServiceUtil.getStyleBookEntriesCount(
-					themeDisplay.getScopeGroupId(), _getKeywords());
-		}
-		else {
-			styleBookEntries =
-				StyleBookEntryLocalServiceUtil.getStyleBookEntries(
-					themeDisplay.getScopeGroupId(),
-					styleBookEntriesSearchContainer.getStart(),
-					styleBookEntriesSearchContainer.getEnd(),
-					orderByComparator);
-
-			styleBookEntriesCount =
-				StyleBookEntryLocalServiceUtil.getStyleBookEntriesCount(
-					themeDisplay.getScopeGroupId());
-		}
-
-		styleBookEntriesSearchContainer.setResults(styleBookEntries);
-		styleBookEntriesSearchContainer.setTotal(styleBookEntriesCount);
 
 		_styleBookEntriesSearchContainer = styleBookEntriesSearchContainer;
 
@@ -161,8 +176,9 @@ public class StyleBookDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "create-date");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, StyleBookPortletKeys.STYLE_BOOK,
+			"create-date");
 
 		return _orderByCol;
 	}
@@ -172,8 +188,8 @@ public class StyleBookDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, StyleBookPortletKeys.STYLE_BOOK, "asc");
 
 		return _orderByType;
 	}
@@ -190,24 +206,45 @@ public class StyleBookDisplayContext {
 		OrderByComparator<StyleBookEntry> orderByComparator = null;
 
 		if (Objects.equals(_getOrderByCol(), "create-date")) {
-			orderByComparator = new StyleBookEntryCreateDateComparator(
+			orderByComparator = StyleBookEntryCreateDateComparator.getInstance(
 				orderByAsc);
 		}
 		else if (Objects.equals(_getOrderByCol(), "name")) {
-			orderByComparator = new StyleBookEntryNameComparator(orderByAsc);
+			orderByComparator = StyleBookEntryNameComparator.getInstance(
+				orderByAsc);
 		}
 
 		return orderByComparator;
 	}
 
-	private boolean _isSearch() {
-		if (Validator.isNotNull(_getKeywords())) {
-			return true;
+	private List<StyleBookEntry> _getStyleFromThemeStyleBookEntries(
+		long groupId) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)_httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		List<StyleBookEntry> styleFromThemeStyleBookEntries = new ArrayList<>();
+
+		for (FrontendTokenDefinition frontendTokenDefinition :
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinitions(
+					themeDisplay.getCompanyId())) {
+
+			styleFromThemeStyleBookEntries.add(
+				StyleBookUtil.getStyleFromThemeStyleBookEntry(
+					frontendTokenDefinition, groupId,
+					themeDisplay.getLocale()));
 		}
 
-		return false;
+		return styleFromThemeStyleBookEntries;
 	}
 
+	private boolean _isSearch() {
+		return Validator.isNotNull(_getKeywords());
+	}
+
+	private final FrontendTokenDefinitionRegistry
+		_frontendTokenDefinitionRegistry;
 	private final HttpServletRequest _httpServletRequest;
 	private String _keywords;
 	private final LiferayPortletRequest _liferayPortletRequest;

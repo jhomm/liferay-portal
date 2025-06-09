@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -30,6 +23,9 @@ import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -53,13 +49,17 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see AddressLocalServiceUtil
  * @generated
  */
+@CTAware
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Address"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface AddressLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<Address>, PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -80,31 +80,18 @@ public interface AddressLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Address addAddress(Address address);
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addAddress(String, long, String, long, String, String,
-	 String, String, String, String, String, long, long, long,
-	 boolean, boolean, String, ServiceContext)}
-	 */
-	@Deprecated
-	public Address addAddress(
-			long userId, String className, long classPK, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long typeId, boolean mailing,
-			boolean primary, ServiceContext serviceContext)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public Address addAddress(
 			String externalReferenceCode, long userId, String className,
-			long classPK, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long typeId, boolean mailing,
-			boolean primary, String phoneNumber, ServiceContext serviceContext)
+			long classPK, long countryId, long listTypeId, long regionId,
+			String city, String description, boolean mailing, String name,
+			boolean primary, String street1, String street2, String street3,
+			String subtype, String zip, String phoneNumber,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public Address copyAddress(
-			long addressId, String className, long classPK,
+			long sourceAddressId, String className, long classPK,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -242,24 +229,9 @@ public interface AddressLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Address fetchAddress(long addressId);
 
-	/**
-	 * Returns the address with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the address's external reference code
-	 * @return the matching address, or <code>null</code> if a matching address could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Address fetchAddressByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAddressByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Address fetchAddressByReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the address with the matching UUID and company.
@@ -284,17 +256,9 @@ public interface AddressLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Address getAddress(long addressId) throws PortalException;
 
-	/**
-	 * Returns the address with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the address's external reference code
-	 * @return the matching address
-	 * @throws PortalException if a matching address could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Address getAddressByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -354,6 +318,21 @@ public interface AddressLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Address> getListTypeAddresses(
+		long companyId, String className, long classPK, long[] listTypeIds);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Address> getListTypeAddresses(
+		long companyId, String className, long classPK, long[] listTypeIds,
+		int start, int end, OrderByComparator<Address> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Address getOrAddIncompleteAddress(
+			String externalReferenceCode, long companyId, long userId,
+			String className, long classPK)
+		throws Exception;
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -368,15 +347,6 @@ public interface AddressLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Address> getTypeAddresses(
-		long companyId, String className, long classPK, long[] typeIds);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Address> getTypeAddresses(
-		long companyId, String className, long classPK, long[] typeIds,
-		int start, int end, OrderByComparator<Address> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<Address> searchAddresses(
@@ -397,18 +367,35 @@ public interface AddressLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public Address updateAddress(Address address);
 
-	public Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId, long typeId,
-			boolean mailing, boolean primary)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public Address updateAddress(
-			long addressId, String name, String description, String street1,
-			String street2, String street3, String city, String zip,
-			long regionId, long countryId, long typeId, boolean mailing,
-			boolean primary, String phoneNumber)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws PortalException;
+
+	public Address updateExternalReferenceCode(
+			Address address, String externalReferenceCode)
+		throws PortalException;
+
+	public Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
+		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<Address> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<Address> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<Address>, R, E> updateUnsafeFunction)
+		throws E;
 
 }

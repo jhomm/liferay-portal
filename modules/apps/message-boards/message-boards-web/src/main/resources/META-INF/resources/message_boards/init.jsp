@@ -1,20 +1,11 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -26,13 +17,16 @@ taglib uri="http://liferay.com/tld/editor" prefix="liferay-editor" %><%@
 taglib uri="http://liferay.com/tld/expando" prefix="liferay-expando" %><%@
 taglib uri="http://liferay.com/tld/flags" prefix="liferay-flags" %><%@
 taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
+taglib uri="http://liferay.com/tld/portal-workflow" prefix="liferay-portal-workflow" %><%@
 taglib uri="http://liferay.com/tld/portlet" prefix="liferay-portlet" %><%@
 taglib uri="http://liferay.com/tld/ratings" prefix="liferay-ratings" %><%@
 taglib uri="http://liferay.com/tld/rss" prefix="liferay-rss" %><%@
 taglib uri="http://liferay.com/tld/security" prefix="liferay-security" %><%@
+taglib uri="http://liferay.com/tld/site-navigation" prefix="liferay-site-navigation" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/trash" prefix="liferay-trash" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
+taglib uri="http://liferay.com/tld/user" prefix="liferay-user" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
 <%@ page import="com.liferay.asset.constants.AssetWebKeys" %><%@
@@ -45,8 +39,8 @@ page import="com.liferay.asset.kernel.model.AssetVocabularyConstants" %><%@
 page import="com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil" %><%@
 page import="com.liferay.asset.kernel.service.AssetEntryServiceUtil" %><%@
 page import="com.liferay.asset.kernel.service.AssetTagLocalServiceUtil" %><%@
-page import="com.liferay.asset.kernel.service.persistence.AssetEntryQuery" %><%@
 page import="com.liferay.asset.util.AssetHelper" %><%@
+page import="com.liferay.asset.util.LinkedAssetEntryIdsUtil" %><%@
 page import="com.liferay.captcha.configuration.CaptchaConfiguration" %><%@
 page import="com.liferay.document.library.configuration.DLConfiguration" %><%@
 page import="com.liferay.document.library.kernel.antivirus.AntivirusScannerException" %><%@
@@ -56,6 +50,7 @@ page import="com.liferay.document.library.kernel.exception.FileNameException" %>
 page import="com.liferay.document.library.kernel.exception.FileSizeException" %><%@
 page import="com.liferay.document.library.kernel.model.DLFileEntry" %><%@
 page import="com.liferay.document.library.kernel.util.DLValidatorUtil" %><%@
+page import="com.liferay.frontend.taglib.servlet.taglib.util.EmptyResultMessageKeys" %><%@
 page import="com.liferay.message.boards.constants.MBCategoryConstants" %><%@
 page import="com.liferay.message.boards.constants.MBConstants" %><%@
 page import="com.liferay.message.boards.constants.MBMessageConstants" %><%@
@@ -95,35 +90,37 @@ page import="com.liferay.message.boards.service.MBMessageServiceUtil" %><%@
 page import="com.liferay.message.boards.service.MBStatsUserLocalServiceUtil" %><%@
 page import="com.liferay.message.boards.service.MBThreadFlagLocalServiceUtil" %><%@
 page import="com.liferay.message.boards.service.MBThreadLocalServiceUtil" %><%@
-page import="com.liferay.message.boards.service.MBThreadServiceUtil" %><%@
 page import="com.liferay.message.boards.settings.MBGroupServiceSettings" %><%@
 page import="com.liferay.message.boards.util.comparator.CategoryTitleComparator" %><%@
 page import="com.liferay.message.boards.util.comparator.ThreadModifiedDateComparator" %><%@
 page import="com.liferay.message.boards.web.internal.dao.search.MBResultRowSplitter" %><%@
 page import="com.liferay.message.boards.web.internal.display.MBCategoryDisplay" %><%@
 page import="com.liferay.message.boards.web.internal.display.context.MBBannedUsersManagementToolbarDisplayContext" %><%@
-page import="com.liferay.message.boards.web.internal.display.context.MBDisplayContextProvider" %><%@
+page import="com.liferay.message.boards.web.internal.display.context.MBConfigurationDisplayContext" %><%@
+page import="com.liferay.message.boards.web.internal.display.context.MBDisplayContext" %><%@
 page import="com.liferay.message.boards.web.internal.display.context.MBEditMessageDisplayContext" %><%@
 page import="com.liferay.message.boards.web.internal.display.context.MBEntriesManagementToolbarDisplayContext" %><%@
 page import="com.liferay.message.boards.web.internal.display.context.MBNavigationDisplayContext" %><%@
+page import="com.liferay.message.boards.web.internal.display.context.MBThreadsDisplayContext" %><%@
 page import="com.liferay.message.boards.web.internal.display.context.MBViewStatisticsDisplayContext" %><%@
-page import="com.liferay.message.boards.web.internal.display.context.util.MBRequestHelper" %><%@
+page import="com.liferay.message.boards.web.internal.display.context.helper.MBRequestHelper" %><%@
 page import="com.liferay.message.boards.web.internal.portlet.action.ActionUtil" %><%@
 page import="com.liferay.message.boards.web.internal.search.EntriesChecker" %><%@
 page import="com.liferay.message.boards.web.internal.security.permission.MBCategoryPermission" %><%@
 page import="com.liferay.message.boards.web.internal.security.permission.MBMessagePermission" %><%@
 page import="com.liferay.message.boards.web.internal.security.permission.MBResourcePermission" %><%@
 page import="com.liferay.message.boards.web.internal.util.MBBreadcrumbUtil" %><%@
+page import="com.liferay.message.boards.web.internal.util.MBDisplayContextUtil" %><%@
 page import="com.liferay.message.boards.web.internal.util.MBMailUtil" %><%@
 page import="com.liferay.message.boards.web.internal.util.MBMessageIterator" %><%@
 page import="com.liferay.message.boards.web.internal.util.MBRSSUtil" %><%@
+page import="com.liferay.message.boards.web.internal.util.MBRequestUtil" %><%@
 page import="com.liferay.message.boards.web.internal.util.MBSubscriptionUtil" %><%@
 page import="com.liferay.message.boards.web.internal.util.MBUtil" %><%@
-page import="com.liferay.message.boards.web.internal.util.MBWebComponentProvider" %><%@
-page import="com.liferay.petra.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.petra.string.CharPool" %><%@
 page import="com.liferay.petra.string.StringBundler" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
+page import="com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
 page import="com.liferay.portal.kernel.bean.BeanPropertiesUtil" %><%@
 page import="com.liferay.portal.kernel.captcha.CaptchaConfigurationException" %><%@
@@ -137,10 +134,10 @@ page import="com.liferay.portal.kernel.log.Log" %><%@
 page import="com.liferay.portal.kernel.log.LogFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.model.ModelHintsConstants" %><%@
 page import="com.liferay.portal.kernel.model.User" %><%@
-page import="com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletURLFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletURLUtil" %><%@
+page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil" %><%@
 page import="com.liferay.portal.kernel.repository.model.FileEntry" %><%@
 page import="com.liferay.portal.kernel.search.SearchResult" %><%@
@@ -150,9 +147,10 @@ page import="com.liferay.portal.kernel.service.ServiceContext" %><%@
 page import="com.liferay.portal.kernel.service.UserLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil" %><%@
 page import="com.liferay.portal.kernel.theme.ThemeDisplay" %><%@
+page import="com.liferay.portal.kernel.upload.FileItem" %><%@
 page import="com.liferay.portal.kernel.upload.LiferayFileItemException" %><%@
 page import="com.liferay.portal.kernel.upload.UploadRequestSizeException" %><%@
-page import="com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil" %><%@
+page import="com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
 page import="com.liferay.portal.kernel.util.FastDateFormatFactoryUtil" %><%@
 page import="com.liferay.portal.kernel.util.GetterUtil" %><%@
@@ -171,11 +169,14 @@ page import="com.liferay.portal.kernel.util.Time" %><%@
 page import="com.liferay.portal.kernel.util.Validator" %><%@
 page import="com.liferay.portal.kernel.util.WebKeys" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
-page import="com.liferay.portal.upload.LiferayFileItem" %><%@
 page import="com.liferay.portal.util.PropsValues" %><%@
+page import="com.liferay.site.navigation.taglib.servlet.taglib.util.BreadcrumbEntriesUtil" %><%@
 page import="com.liferay.subscription.service.SubscriptionLocalServiceUtil" %><%@
 page import="com.liferay.taglib.search.ResultRow" %><%@
 page import="com.liferay.taglib.ui.InputEditorTag" %>
+
+<%@ page import="jakarta.portlet.PortletRequest" %><%@
+page import="jakarta.portlet.PortletURL" %>
 
 <%@ page import="java.text.DecimalFormatSymbols" %><%@
 page import="java.text.Format" %><%@
@@ -189,10 +190,6 @@ page import="java.util.Locale" %><%@
 page import="java.util.Map" %><%@
 page import="java.util.Objects" %><%@
 page import="java.util.Set" %>
-
-<%@ page import="javax.portlet.PortletRequest" %><%@
-page import="javax.portlet.PortletURL" %><%@
-page import="javax.portlet.WindowState" %>
 
 <liferay-frontend:defineObjects />
 
@@ -213,9 +210,9 @@ Locale defaultLocale = themeDisplay.getSiteDefaultLocale();
 
 String defaultLanguageId = LocaleUtil.toLanguageId(defaultLocale);
 
-CaptchaConfiguration captchaConfiguration = (CaptchaConfiguration)ConfigurationProviderUtil.getSystemConfiguration(CaptchaConfiguration.class);
+CaptchaConfiguration captchaConfiguration = MBRequestUtil.getCaptchaConfiguration(request);
 
-MBGroupServiceSettings mbGroupServiceSettings = MBGroupServiceSettings.getInstance(themeDisplay.getSiteGroupId());
+MBGroupServiceSettings mbGroupServiceSettings = MBRequestUtil.getMBGroupServiceSettings(request, themeDisplay.getSiteGroupId());
 
 String[] priorities = mbGroupServiceSettings.getPriorities(currentLanguageId);
 
@@ -231,14 +228,12 @@ int rssDelta = mbGroupServiceSettings.getRSSDelta();
 String rssDisplayStyle = mbGroupServiceSettings.getRSSDisplayStyle();
 String rssFeedType = mbGroupServiceSettings.getRSSFeedType();
 
-MBWebComponentProvider mbWebComponentProvider = MBWebComponentProvider.getMBWebComponentProvider();
-
-MBDisplayContextProvider mbDisplayContextProvider = mbWebComponentProvider.getMBDisplayContextProvider();
-
-Format dateFormatDate = FastDateFormatFactoryUtil.getDate(locale, timeZone);
-Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
+Format dateFormat = FastDateFormatFactoryUtil.getDate(locale, timeZone);
+Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 
 NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
+
+MBDisplayContext mbDisplayContext = new MBDisplayContext(request);
 %>
 
 <%@ include file="/message_boards/init-ext.jsp" %>

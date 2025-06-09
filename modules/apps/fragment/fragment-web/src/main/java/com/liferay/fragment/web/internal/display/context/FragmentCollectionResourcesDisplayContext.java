@@ -1,38 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.display.context;
 
+import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Repository;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -44,62 +36,15 @@ public class FragmentCollectionResourcesDisplayContext {
 		RenderResponse renderResponse,
 		FragmentDisplayContext fragmentDisplayContext) {
 
-		_httpServletRequest = httpServletRequest;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 		_fragmentDisplayContext = fragmentDisplayContext;
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
-	public SearchContainer<FileEntry> getSearchContainer()
-		throws PortalException {
-
-		if (_searchContainer != null) {
-			return _searchContainer;
-		}
-
-		PortletURL portletURL = PortletURLBuilder.createRenderURL(
-			_renderResponse
-		).setMVCRenderCommandName(
-			"/fragment/view"
-		).setRedirect(
-			_fragmentDisplayContext.getRedirect()
-		).setTabs1(
-			"resources"
-		).setParameter(
-			"fragmentCollectionId",
-			_fragmentDisplayContext.getFragmentCollectionId()
-		).buildPortletURL();
-
-		SearchContainer<FileEntry> searchContainer = new SearchContainer(
-			_renderRequest, portletURL, null, "there-are-no-resources");
-
-		searchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(_renderResponse));
-
-		int fileEntriesCount =
-			PortletFileRepositoryUtil.getPortletFileEntriesCount(
-				_themeDisplay.getScopeGroupId(), _getFolderId());
-
-		searchContainer.setTotal(fileEntriesCount);
-
-		List<FileEntry> fileEntries =
-			PortletFileRepositoryUtil.getPortletFileEntries(
-				_themeDisplay.getScopeGroupId(), _getFolderId(),
-				WorkflowConstants.STATUS_ANY, searchContainer.getStart(),
-				searchContainer.getEnd(),
-				searchContainer.getOrderByComparator());
-
-		searchContainer.setResults(fileEntries);
-
-		_searchContainer = searchContainer;
-
-		return _searchContainer;
-	}
-
-	private long _getFolderId() throws PortalException {
+	public long getFolderId() throws PortalException {
 		if (_folderId != null) {
 			return _folderId;
 		}
@@ -113,11 +58,76 @@ public class FragmentCollectionResourcesDisplayContext {
 		return _folderId;
 	}
 
+	public long getRepositoryId() throws PortalException {
+		if (_repositoryId != null) {
+			return _repositoryId;
+		}
+
+		FragmentCollection fragmentCollection =
+			_fragmentDisplayContext.getFragmentCollection();
+
+		Repository repository =
+			PortletFileRepositoryUtil.fetchPortletRepository(
+				fragmentCollection.getGroupId(), FragmentPortletKeys.FRAGMENT);
+
+		if (repository == null) {
+			ServiceContext serviceContext = new ServiceContext();
+
+			serviceContext.setAddGroupPermissions(true);
+			serviceContext.setAddGuestPermissions(true);
+
+			repository = PortletFileRepositoryUtil.addPortletRepository(
+				fragmentCollection.getGroupId(), FragmentPortletKeys.FRAGMENT,
+				serviceContext);
+		}
+
+		_repositoryId = repository.getRepositoryId();
+
+		return _repositoryId;
+	}
+
+	public SearchContainer<FileEntry> getSearchContainer()
+		throws PortalException {
+
+		if (_searchContainer != null) {
+			return _searchContainer;
+		}
+
+		PortletURL portletURL = PortletURLBuilder.createRenderURL(
+			_renderResponse
+		).setRedirect(
+			_fragmentDisplayContext.getRedirect()
+		).setTabs1(
+			"resources"
+		).setParameter(
+			"fragmentCollectionId",
+			_fragmentDisplayContext.getFragmentCollectionId()
+		).buildPortletURL();
+
+		SearchContainer<FileEntry> searchContainer = new SearchContainer(
+			_renderRequest, portletURL, null, "there-are-no-resources");
+
+		searchContainer.setResultsAndTotal(
+			() -> PortletFileRepositoryUtil.getPortletFileEntries(
+				_themeDisplay.getScopeGroupId(), getFolderId(),
+				WorkflowConstants.STATUS_ANY, searchContainer.getStart(),
+				searchContainer.getEnd(),
+				searchContainer.getOrderByComparator()),
+			PortletFileRepositoryUtil.getPortletFileEntriesCount(
+				_themeDisplay.getScopeGroupId(), getFolderId()));
+		searchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(_renderResponse));
+
+		_searchContainer = searchContainer;
+
+		return _searchContainer;
+	}
+
 	private Long _folderId;
 	private final FragmentDisplayContext _fragmentDisplayContext;
-	private final HttpServletRequest _httpServletRequest;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
+	private Long _repositoryId;
 	private SearchContainer<FileEntry> _searchContainer;
 	private final ThemeDisplay _themeDisplay;
 

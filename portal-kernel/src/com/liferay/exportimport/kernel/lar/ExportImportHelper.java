@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.kernel.lar;
@@ -24,12 +15,12 @@ import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.zip.ZipWriter;
 
+import jakarta.portlet.PortletRequest;
+
 import java.io.File;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -47,12 +38,22 @@ public interface ExportImportHelper {
 	public Map<Long, Boolean> getAllLayoutIdsMap(
 		long groupId, boolean privateLayout);
 
+	public List<Portlet> getDataSiteAndInstanceLevelPortlets(long companyId)
+		throws Exception;
+
+	public List<Portlet> getDataSiteAndInstanceLevelPortlets(
+			long companyId, boolean excludeDataAlwaysStaged)
+		throws Exception;
+
 	public List<Portlet> getDataSiteLevelPortlets(long companyId)
 		throws Exception;
 
 	public List<Portlet> getDataSiteLevelPortlets(
 			long companyId, boolean excludeDataAlwaysStaged)
 		throws Exception;
+
+	public List<Portlet> getExportablePortlets(
+		long companyId, boolean excludeDataAlwaysStaged, long groupId);
 
 	public String getExportableRootPortletId(long companyId, String portletId)
 		throws Exception;
@@ -151,6 +152,9 @@ public interface ExportImportHelper {
 	public boolean isExportPortletData(PortletDataContext portletDataContext);
 
 	public boolean isLayoutRevisionInReview(Layout layout);
+
+	public boolean isPublishDisplayedContent(
+		PortletDataContext portletDataContext, Portlet portlet);
 
 	public boolean isReferenceWithinExportScope(
 		PortletDataContext portletDataContext, StagedModel stagedModel);

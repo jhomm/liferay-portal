@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.asset.model;
 
+import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
@@ -21,25 +13,24 @@ import com.liferay.asset.kernel.model.BaseAssetRendererFactory;
 import com.liferay.knowledge.base.constants.KBActionKeys;
 import com.liferay.knowledge.base.constants.KBConstants;
 import com.liferay.knowledge.base.constants.KBPortletKeys;
-import com.liferay.knowledge.base.exception.NoSuchArticleException;
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.service.KBArticleLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
+import com.liferay.trash.TrashHelper;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,8 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Peter Shin
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
+	property = "jakarta.portlet.name=" + KBPortletKeys.KNOWLEDGE_BASE_ADMIN,
 	service = AssetRendererFactory.class
 )
 public class KBArticleAssetRendererFactory
@@ -63,36 +53,40 @@ public class KBArticleAssetRendererFactory
 	}
 
 	@Override
+	public AssetEntry getAssetEntry(KBArticle kbArticle)
+		throws PortalException {
+
+		return super.getAssetEntry(getClassName(), kbArticle.getClassPK());
+	}
+
+	@Override
 	public AssetEntry getAssetEntry(String className, long classPK)
 		throws PortalException {
 
-		KBArticle kbArticle = getKBArticle(
-			classPK, WorkflowConstants.STATUS_ANY);
+		return getAssetEntry(_getKBArticle(classPK, TYPE_LATEST));
+	}
 
-		return super.getAssetEntry(className, kbArticle.getClassPK());
+	@Override
+	public AssetRenderer<KBArticle> getAssetRenderer(
+			KBArticle kbArticle, int type)
+		throws PortalException {
+
+		KBArticleAssetRenderer kbArticleAssetRenderer =
+			new KBArticleAssetRenderer(
+				_assetDisplayPageFriendlyURLProvider, _htmlParser, kbArticle,
+				_trashHelper);
+
+		kbArticleAssetRenderer.setAssetRendererType(type);
+		kbArticleAssetRenderer.setServletContext(_servletContext);
+
+		return kbArticleAssetRenderer;
 	}
 
 	@Override
 	public AssetRenderer<KBArticle> getAssetRenderer(long classPK, int type)
 		throws PortalException {
 
-		KBArticle kbArticle = null;
-
-		if (type == TYPE_LATEST_APPROVED) {
-			kbArticle = getKBArticle(
-				classPK, WorkflowConstants.STATUS_APPROVED);
-		}
-		else {
-			kbArticle = getKBArticle(classPK, WorkflowConstants.STATUS_ANY);
-		}
-
-		KBArticleAssetRenderer kbArticleAssetRenderer =
-			new KBArticleAssetRenderer(kbArticle);
-
-		kbArticleAssetRenderer.setAssetRendererType(type);
-		kbArticleAssetRenderer.setServletContext(_servletContext);
-
-		return kbArticleAssetRenderer;
+		return getAssetRenderer(_getKBArticle(classPK, type), type);
 	}
 
 	@Override
@@ -127,7 +121,7 @@ public class KBArticleAssetRendererFactory
 				KBPortletKeys.KNOWLEDGE_BASE_ADMIN, 0, 0,
 				PortletRequest.RENDER_PHASE)
 		).setMVCPath(
-			"/admin/edit_article.jsp"
+			"/admin/common/edit_kb_article.jsp"
 		).buildPortletURL();
 	}
 
@@ -148,44 +142,47 @@ public class KBArticleAssetRendererFactory
 			permissionChecker, classPK, actionId);
 	}
 
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.knowledge.base.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		_servletContext = servletContext;
-	}
-
-	protected KBArticle getKBArticle(long classPK, int status)
+	private KBArticle _getKBArticle(long classPK, int type)
 		throws PortalException {
 
-		KBArticle kbArticle = null;
+		KBArticle kbArticle = _kbArticleLocalService.fetchKBArticle(classPK);
 
-		try {
-			kbArticle = _kbArticleLocalService.getKBArticle(classPK);
+		if (kbArticle != null) {
+			return kbArticle;
 		}
-		catch (NoSuchArticleException noSuchArticleException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchArticleException, noSuchArticleException);
+
+		if (type == TYPE_LATEST_APPROVED) {
+			kbArticle = _kbArticleLocalService.fetchLatestKBArticle(
+				classPK, WorkflowConstants.STATUS_APPROVED);
+
+			if (kbArticle != null) {
+				return kbArticle;
 			}
 
-			kbArticle = _kbArticleLocalService.getLatestKBArticle(
-				classPK, status);
+			kbArticle = _kbArticleLocalService.fetchLatestKBArticle(
+				classPK, WorkflowConstants.STATUS_EXPIRED);
+		}
+		else {
+			kbArticle = _kbArticleLocalService.fetchLatestKBArticle(
+				classPK, WorkflowConstants.STATUS_ANY);
 		}
 
-		return kbArticle;
+		if (kbArticle != null) {
+			return kbArticle;
+		}
+
+		return _kbArticleLocalService.getLatestKBArticle(
+			classPK, WorkflowConstants.STATUS_IN_TRASH);
 	}
 
-	@Reference(unbind = "-")
-	protected void setKBArticleLocalService(
-		KBArticleLocalService kbArticleLocalService) {
+	@Reference
+	private AssetDisplayPageFriendlyURLProvider
+		_assetDisplayPageFriendlyURLProvider;
 
-		_kbArticleLocalService = kbArticleLocalService;
-	}
+	@Reference
+	private HtmlParser _htmlParser;
 
-	private static final Log _log = LogFactoryUtil.getLog(
-		KBArticleAssetRendererFactory.class);
-
+	@Reference
 	private KBArticleLocalService _kbArticleLocalService;
 
 	@Reference(
@@ -202,6 +199,12 @@ public class KBArticleAssetRendererFactory
 	)
 	private PortletResourcePermission _portletResourcePermission;
 
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.knowledge.base.web)"
+	)
 	private ServletContext _servletContext;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

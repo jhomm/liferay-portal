@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.model.impl;
@@ -31,22 +22,18 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.reports.engine.console.model.Entry;
 import com.liferay.portal.reports.engine.console.model.EntryModel;
-import com.liferay.portal.reports.engine.console.model.EntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -152,68 +139,6 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static Entry toModel(EntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		Entry model = new EntryImpl();
-
-		model.setEntryId(soapModel.getEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setDefinitionId(soapModel.getDefinitionId());
-		model.setFormat(soapModel.getFormat());
-		model.setScheduleRequest(soapModel.isScheduleRequest());
-		model.setStartDate(soapModel.getStartDate());
-		model.setEndDate(soapModel.getEndDate());
-		model.setRepeating(soapModel.isRepeating());
-		model.setRecurrence(soapModel.getRecurrence());
-		model.setEmailNotifications(soapModel.getEmailNotifications());
-		model.setEmailDelivery(soapModel.getEmailDelivery());
-		model.setPortletId(soapModel.getPortletId());
-		model.setPageURL(soapModel.getPageURL());
-		model.setReportParameters(soapModel.getReportParameters());
-		model.setErrorMessage(soapModel.getErrorMessage());
-		model.setStatus(soapModel.getStatus());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<Entry> toModels(EntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<Entry> models = new ArrayList<Entry>(soapModels.length);
-
-		for (EntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public EntryModelImpl() {
 	}
 
@@ -285,128 +210,122 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 	}
 
 	public Map<String, Function<Entry, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<Entry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, Entry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			Entry.class.getClassLoader(), Entry.class, ModelWrapper.class);
+		private static final Map<String, Function<Entry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<Entry> constructor =
-				(Constructor<Entry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<Entry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<Entry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("entryId", Entry::getEntryId);
+			attributeGetterFunctions.put("groupId", Entry::getGroupId);
+			attributeGetterFunctions.put("companyId", Entry::getCompanyId);
+			attributeGetterFunctions.put("userId", Entry::getUserId);
+			attributeGetterFunctions.put("userName", Entry::getUserName);
+			attributeGetterFunctions.put("createDate", Entry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", Entry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"definitionId", Entry::getDefinitionId);
+			attributeGetterFunctions.put("format", Entry::getFormat);
+			attributeGetterFunctions.put(
+				"scheduleRequest", Entry::getScheduleRequest);
+			attributeGetterFunctions.put("startDate", Entry::getStartDate);
+			attributeGetterFunctions.put("endDate", Entry::getEndDate);
+			attributeGetterFunctions.put("repeating", Entry::getRepeating);
+			attributeGetterFunctions.put("recurrence", Entry::getRecurrence);
+			attributeGetterFunctions.put(
+				"emailNotifications", Entry::getEmailNotifications);
+			attributeGetterFunctions.put(
+				"emailDelivery", Entry::getEmailDelivery);
+			attributeGetterFunctions.put("portletId", Entry::getPortletId);
+			attributeGetterFunctions.put("pageURL", Entry::getPageURL);
+			attributeGetterFunctions.put(
+				"reportParameters", Entry::getReportParameters);
+			attributeGetterFunctions.put(
+				"errorMessage", Entry::getErrorMessage);
+			attributeGetterFunctions.put("status", Entry::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<Entry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<Entry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<Entry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<Entry, Object>>();
-		Map<String, BiConsumer<Entry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<Entry, ?>>();
+		private static final Map<String, BiConsumer<Entry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("entryId", Entry::getEntryId);
-		attributeSetterBiConsumers.put(
-			"entryId", (BiConsumer<Entry, Long>)Entry::setEntryId);
-		attributeGetterFunctions.put("groupId", Entry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<Entry, Long>)Entry::setGroupId);
-		attributeGetterFunctions.put("companyId", Entry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<Entry, Long>)Entry::setCompanyId);
-		attributeGetterFunctions.put("userId", Entry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<Entry, Long>)Entry::setUserId);
-		attributeGetterFunctions.put("userName", Entry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<Entry, String>)Entry::setUserName);
-		attributeGetterFunctions.put("createDate", Entry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<Entry, Date>)Entry::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", Entry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate", (BiConsumer<Entry, Date>)Entry::setModifiedDate);
-		attributeGetterFunctions.put("definitionId", Entry::getDefinitionId);
-		attributeSetterBiConsumers.put(
-			"definitionId", (BiConsumer<Entry, Long>)Entry::setDefinitionId);
-		attributeGetterFunctions.put("format", Entry::getFormat);
-		attributeSetterBiConsumers.put(
-			"format", (BiConsumer<Entry, String>)Entry::setFormat);
-		attributeGetterFunctions.put(
-			"scheduleRequest", Entry::getScheduleRequest);
-		attributeSetterBiConsumers.put(
-			"scheduleRequest",
-			(BiConsumer<Entry, Boolean>)Entry::setScheduleRequest);
-		attributeGetterFunctions.put("startDate", Entry::getStartDate);
-		attributeSetterBiConsumers.put(
-			"startDate", (BiConsumer<Entry, Date>)Entry::setStartDate);
-		attributeGetterFunctions.put("endDate", Entry::getEndDate);
-		attributeSetterBiConsumers.put(
-			"endDate", (BiConsumer<Entry, Date>)Entry::setEndDate);
-		attributeGetterFunctions.put("repeating", Entry::getRepeating);
-		attributeSetterBiConsumers.put(
-			"repeating", (BiConsumer<Entry, Boolean>)Entry::setRepeating);
-		attributeGetterFunctions.put("recurrence", Entry::getRecurrence);
-		attributeSetterBiConsumers.put(
-			"recurrence", (BiConsumer<Entry, String>)Entry::setRecurrence);
-		attributeGetterFunctions.put(
-			"emailNotifications", Entry::getEmailNotifications);
-		attributeSetterBiConsumers.put(
-			"emailNotifications",
-			(BiConsumer<Entry, String>)Entry::setEmailNotifications);
-		attributeGetterFunctions.put("emailDelivery", Entry::getEmailDelivery);
-		attributeSetterBiConsumers.put(
-			"emailDelivery",
-			(BiConsumer<Entry, String>)Entry::setEmailDelivery);
-		attributeGetterFunctions.put("portletId", Entry::getPortletId);
-		attributeSetterBiConsumers.put(
-			"portletId", (BiConsumer<Entry, String>)Entry::setPortletId);
-		attributeGetterFunctions.put("pageURL", Entry::getPageURL);
-		attributeSetterBiConsumers.put(
-			"pageURL", (BiConsumer<Entry, String>)Entry::setPageURL);
-		attributeGetterFunctions.put(
-			"reportParameters", Entry::getReportParameters);
-		attributeSetterBiConsumers.put(
-			"reportParameters",
-			(BiConsumer<Entry, String>)Entry::setReportParameters);
-		attributeGetterFunctions.put("errorMessage", Entry::getErrorMessage);
-		attributeSetterBiConsumers.put(
-			"errorMessage", (BiConsumer<Entry, String>)Entry::setErrorMessage);
-		attributeGetterFunctions.put("status", Entry::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<Entry, String>)Entry::setStatus);
+		static {
+			Map<String, BiConsumer<Entry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<Entry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"entryId", (BiConsumer<Entry, Long>)Entry::setEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<Entry, Long>)Entry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<Entry, Long>)Entry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<Entry, Long>)Entry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName", (BiConsumer<Entry, String>)Entry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate", (BiConsumer<Entry, Date>)Entry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<Entry, Date>)Entry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"definitionId",
+				(BiConsumer<Entry, Long>)Entry::setDefinitionId);
+			attributeSetterBiConsumers.put(
+				"format", (BiConsumer<Entry, String>)Entry::setFormat);
+			attributeSetterBiConsumers.put(
+				"scheduleRequest",
+				(BiConsumer<Entry, Boolean>)Entry::setScheduleRequest);
+			attributeSetterBiConsumers.put(
+				"startDate", (BiConsumer<Entry, Date>)Entry::setStartDate);
+			attributeSetterBiConsumers.put(
+				"endDate", (BiConsumer<Entry, Date>)Entry::setEndDate);
+			attributeSetterBiConsumers.put(
+				"repeating", (BiConsumer<Entry, Boolean>)Entry::setRepeating);
+			attributeSetterBiConsumers.put(
+				"recurrence", (BiConsumer<Entry, String>)Entry::setRecurrence);
+			attributeSetterBiConsumers.put(
+				"emailNotifications",
+				(BiConsumer<Entry, String>)Entry::setEmailNotifications);
+			attributeSetterBiConsumers.put(
+				"emailDelivery",
+				(BiConsumer<Entry, String>)Entry::setEmailDelivery);
+			attributeSetterBiConsumers.put(
+				"portletId", (BiConsumer<Entry, String>)Entry::setPortletId);
+			attributeSetterBiConsumers.put(
+				"pageURL", (BiConsumer<Entry, String>)Entry::setPageURL);
+			attributeSetterBiConsumers.put(
+				"reportParameters",
+				(BiConsumer<Entry, String>)Entry::setReportParameters);
+			attributeSetterBiConsumers.put(
+				"errorMessage",
+				(BiConsumer<Entry, String>)Entry::setErrorMessage);
+			attributeSetterBiConsumers.put(
+				"status", (BiConsumer<Entry, String>)Entry::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1185,40 +1104,12 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<Entry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<Entry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<Entry, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((Entry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, Entry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					Entry.class, ModelWrapper.class);
 
 	}
 
@@ -1246,8 +1137,9 @@ public class EntryModelImpl extends BaseModelImpl<Entry> implements EntryModel {
 	private String _status;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<Entry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<Entry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

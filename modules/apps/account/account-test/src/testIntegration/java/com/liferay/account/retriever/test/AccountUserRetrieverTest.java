@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.retriever.test;
@@ -18,9 +9,9 @@ import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.retriever.AccountUserRetriever;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
+import com.liferay.account.service.test.util.AccountEntryArgs;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringPool;
@@ -39,7 +30,7 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -67,8 +58,7 @@ public class AccountUserRetrieverTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry = AccountEntryTestUtil.addAccountEntry();
 	}
 
 	@Test
@@ -137,18 +127,12 @@ public class AccountUserRetrieverTest {
 		User user1 = UserTestUtil.addUser();
 
 		AccountEntry accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry1.getAccountEntryId(), user1.getUserId());
+			AccountEntryArgs.withUsers(user1));
 
 		User user2 = UserTestUtil.addUser();
 
 		AccountEntry accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry2.getAccountEntryId(), user2.getUserId());
+			AccountEntryArgs.withUsers(user2));
 
 		BaseModelSearchResult<User> baseModelSearchResult = _searchAccountUsers(
 			new long[] {
@@ -271,8 +255,9 @@ public class AccountUserRetrieverTest {
 		}
 
 		AccountRole accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_accountEntry.getAccountEntryId(), RandomTestUtil.randomString(),
+			null, null);
 
 		_resourcePermissionLocalService.addResourcePermission(
 			TestPropsValues.getCompanyId(), AccountEntry.class.getName(),
@@ -322,8 +307,8 @@ public class AccountUserRetrieverTest {
 		throws Exception {
 
 		return _accountUserRetriever.searchAccountUsers(
-			accountEntryIds, keywords, WorkflowConstants.STATUS_APPROVED, cur,
-			delta, sortField, reverse);
+			accountEntryIds, keywords, null, WorkflowConstants.STATUS_APPROVED,
+			cur, delta, sortField, reverse);
 	}
 
 	private BaseModelSearchResult<User> _searchAccountUsers(
@@ -339,14 +324,11 @@ public class AccountUserRetrieverTest {
 		throws Exception {
 
 		return _accountUserRetriever.searchAccountUsers(
-			_accountEntry.getAccountEntryId(), keywords,
+			new long[] {_accountEntry.getAccountEntryId()}, keywords, null,
 			WorkflowConstants.STATUS_APPROVED, cur, delta, sortField, reverse);
 	}
 
 	private AccountEntry _accountEntry;
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;

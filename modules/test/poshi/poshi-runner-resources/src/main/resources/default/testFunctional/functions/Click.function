@@ -2,64 +2,76 @@
 @summary = "Click on '${locator1}'"
 definition {
 
-	function click {
-		selenium.waitForVisible();
+	function click(locator1) {
+		selenium.waitForVisible(${locator1}, "true");
 
-		selenium.mouseOver();
+		selenium.mouseOver(${locator1});
 
-		selenium.click();
+		selenium.click(${locator1});
 	}
 
-	function clickAt {
-		selenium.waitForVisible();
+	function clickAt(locator1, value1) {
+		selenium.waitForVisible(${locator1}, "true");
 
-		selenium.mouseOver();
+		selenium.mouseOver(${locator1});
 
-		selenium.clickAt();
+		selenium.clickAt(${locator1}, ${value1});
 	}
 
-	function clickNoMouseOver {
-		selenium.waitForVisible();
+	function clickAtNotVisible(locator1, value1) {
+		selenium.waitForElementPresent(${locator1}, "true");
 
-		selenium.click();
+		selenium.mouseOver(${locator1});
+
+		selenium.clickAt(${locator1}, ${value1});
 	}
 
-	function clickNoWaitForVisible {
-		selenium.mouseOver();
+	function clickNoMouseOver(locator1) {
+		selenium.waitForVisible(${locator1}, "true");
 
-		selenium.click();
+		selenium.click(${locator1});
 	}
 
-	function makeVisibleClickAt {
-		selenium.waitForElementPresent();
-
-		selenium.mouseOver();
-
-		selenium.makeVisible();
-
-		selenium.waitForVisible();
-
-		selenium.clickAt();
+	function clickNoMouseOverNoWaitForVisible(locator1) {
+		selenium.click(${locator1});
 	}
 
-	function mouseOverClick {
-		selenium.waitForElementPresent();
+	function clickNoWaitForVisible(locator1) {
+		selenium.mouseOver(${locator1});
 
-		selenium.mouseOver();
-
-		selenium.waitForVisible();
-
-		selenium.click();
+		selenium.click(${locator1});
 	}
 
-	function pauseClickAt {
-		selenium.mouseOver();
+	function javaScriptClick(locator1) {
+		selenium.javaScriptClick(${locator1});
+	}
+
+	function mouseDownMouseUp(locator1) {
+		selenium.waitForElementPresent(${locator1}, "true");
+
+		selenium.waitForVisible(${locator1}, "true");
+
+		selenium.mouseDown(${locator1});
+
+		selenium.mouseUp(${locator1});
+	}
+
+	function mouseOverClick(locator1) {
+		selenium.waitForElementPresent(${locator1}, "true");
+
+		selenium.mouseOver(${locator1});
+
+		selenium.waitForVisible(${locator1}, "true");
+
+		selenium.click(${locator1});
+	}
+
+	function pauseClickAt(locator1) {
+		selenium.pause(1000);
+
+		selenium.mouseOver(${locator1});
 
 		Click.clickAt();
-	}
-
-	function pauseMakeVisibleClickAt {
-		Click.makeVisibleClickAt();
 	}
 
 }

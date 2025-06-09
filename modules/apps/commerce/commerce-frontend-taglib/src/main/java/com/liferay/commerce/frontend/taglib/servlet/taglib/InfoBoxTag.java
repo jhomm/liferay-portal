@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.taglib.servlet.taglib;
@@ -17,9 +8,11 @@ package com.liferay.commerce.frontend.taglib.servlet.taglib;
 import com.liferay.commerce.frontend.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
+import java.util.Map;
 
 /**
  * @author Fabio Diego Mastrorilli
@@ -27,29 +20,29 @@ import javax.servlet.jsp.PageContext;
 public class InfoBoxTag extends IncludeTag {
 
 	@Override
-	public int doEndTag() throws JspException {
-		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
-
-		return super.doEndTag();
-	}
-
-	@Override
 	public int doStartTag() throws JspException {
-		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
-
 		HttpServletRequest httpServletRequest = getRequest();
 
-		setNamespacedAttribute(httpServletRequest, "actionLabel", _actionLabel);
-		setNamespacedAttribute(
-			httpServletRequest, "actionTargetId", _actionTargetId);
-		setNamespacedAttribute(httpServletRequest, "actionUrl", _actionUrl);
-		setNamespacedAttribute(
-			httpServletRequest, "elementClasses", _elementClasses);
-		setNamespacedAttribute(httpServletRequest, "title", _title);
+		httpServletRequest.setAttribute(
+			"liferay-commerce:info-box:actionContext", getActionContext());
+		httpServletRequest.setAttribute(
+			"liferay-commerce:info-box:actionLabel", getActionLabel());
+		httpServletRequest.setAttribute(
+			"liferay-commerce:info-box:actionTargetId", getActionTargetId());
+		httpServletRequest.setAttribute(
+			"liferay-commerce:info-box:actionUrl", getActionUrl());
+		httpServletRequest.setAttribute(
+			"liferay-commerce:info-box:elementClasses", getElementClasses());
+		httpServletRequest.setAttribute(
+			"liferay-commerce:info-box:title", getTitle());
 
 		super.doStartTag();
 
 		return EVAL_BODY_INCLUDE;
+	}
+
+	public Map<String, Object> getActionContext() {
+		return _actionContext;
 	}
 
 	public String getActionLabel() {
@@ -70,6 +63,10 @@ public class InfoBoxTag extends IncludeTag {
 
 	public String getTitle() {
 		return _title;
+	}
+
+	public void setActionContext(Map<String, Object> actionContext) {
+		_actionContext = actionContext;
 	}
 
 	public void setActionLabel(String actionLabel) {
@@ -103,6 +100,7 @@ public class InfoBoxTag extends IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_actionContext = null;
 		_actionLabel = null;
 		_actionTargetId = null;
 		_actionUrl = null;
@@ -120,13 +118,11 @@ public class InfoBoxTag extends IncludeTag {
 		return _START_PAGE;
 	}
 
-	private static final String _ATTRIBUTE_NAMESPACE =
-		"liferay-commerce:info-box:";
-
 	private static final String _END_PAGE = "/info_box/end.jsp";
 
 	private static final String _START_PAGE = "/info_box/start.jsp";
 
+	private Map<String, Object> _actionContext;
 	private String _actionLabel;
 	private String _actionTargetId;
 	private String _actionUrl;

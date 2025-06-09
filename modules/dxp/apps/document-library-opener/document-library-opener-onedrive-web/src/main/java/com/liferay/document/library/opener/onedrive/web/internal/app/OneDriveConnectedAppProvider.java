@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.app;
@@ -22,16 +13,15 @@ import com.liferay.document.library.opener.onedrive.web.internal.oauth.OAuth2Man
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Locale;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import jakarta.servlet.ServletContext;
 
-import javax.servlet.ServletContext;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,56 +38,54 @@ public class OneDriveConnectedAppProvider implements ConnectedAppProvider {
 			return null;
 		}
 
-		Optional<AccessToken> accessTokenOptional =
-			_oAuth2Manager.getAccessTokenOptional(
-				user.getCompanyId(), user.getUserId());
+		AccessToken accessToken = _oAuth2Manager.getAccessToken(
+			user.getCompanyId(), user.getUserId());
 
-		return accessTokenOptional.map(
-			accessToken -> new ConnectedApp() {
+		if (accessToken == null) {
+			return null;
+		}
 
-				@Override
-				public String getImageURL() {
-					return _servletContext.getContextPath() +
-						"/images/onedrive.png";
-				}
+		return new ConnectedApp() {
 
-				@Override
-				public String getKey() {
-					return "onedrive";
-				}
-
-				@Override
-				public String getName(Locale locale) {
-					ResourceBundle resourceBundle =
-						ResourceBundleUtil.getBundle(locale, getClass());
-
-					StringBundler sb = new StringBundler(5);
-
-					sb.append(LanguageUtil.get(resourceBundle, "onedrive"));
-
-					String emailAddress = _getOneDriveUserEmailAddress(
-						accessToken);
-
-					if (Validator.isNotNull(emailAddress)) {
-						sb.append(StringPool.SPACE);
-						sb.append(StringPool.OPEN_PARENTHESIS);
-						sb.append(emailAddress);
-						sb.append(StringPool.CLOSE_PARENTHESIS);
-					}
-
-					return sb.toString();
-				}
-
-				@Override
-				public void revoke() {
-					_oAuth2Manager.revokeOAuth2AccessToken(
-						user.getCompanyId(), user.getUserId());
-				}
-
+			@Override
+			public String getImageURL() {
+				return _servletContext.getContextPath() +
+					"/images/onedrive.png";
 			}
-		).orElse(
-			null
-		);
+
+			@Override
+			public String getKey() {
+				return "onedrive";
+			}
+
+			@Override
+			public String getName(Locale locale) {
+				ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+					locale, getClass());
+
+				StringBundler sb = new StringBundler(5);
+
+				sb.append(_language.get(resourceBundle, "onedrive"));
+
+				String emailAddress = _getOneDriveUserEmailAddress(accessToken);
+
+				if (Validator.isNotNull(emailAddress)) {
+					sb.append(StringPool.SPACE);
+					sb.append(StringPool.OPEN_PARENTHESIS);
+					sb.append(emailAddress);
+					sb.append(StringPool.CLOSE_PARENTHESIS);
+				}
+
+				return sb.toString();
+			}
+
+			@Override
+			public void revoke() {
+				_oAuth2Manager.revokeOAuth2AccessToken(
+					user.getCompanyId(), user.getUserId());
+			}
+
+		};
 	}
 
 	private String _getOneDriveUserEmailAddress(AccessToken accessToken) {
@@ -109,6 +97,9 @@ public class OneDriveConnectedAppProvider implements ConnectedAppProvider {
 
 	@Reference
 	private DLOpenerOneDriveManager _dlOpenerOneDriveManager;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private OAuth2Manager _oAuth2Manager;

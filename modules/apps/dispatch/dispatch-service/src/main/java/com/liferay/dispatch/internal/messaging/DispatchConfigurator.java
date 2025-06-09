@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.internal.messaging;
@@ -20,6 +11,9 @@ import com.liferay.dispatch.executor.DispatchTaskClusterMode;
 import com.liferay.dispatch.internal.helper.DispatchTriggerHelper;
 import com.liferay.dispatch.model.DispatchTrigger;
 import com.liferay.dispatch.service.DispatchTriggerLocalService;
+import com.liferay.portal.kernel.cluster.BaseClusterMasterTokenTransitionListener;
+import com.liferay.portal.kernel.cluster.ClusterMasterExecutor;
+import com.liferay.portal.kernel.cluster.ClusterMasterTokenTransitionListener;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.Destination;
@@ -27,9 +21,6 @@ import com.liferay.portal.kernel.messaging.DestinationConfiguration;
 import com.liferay.portal.kernel.messaging.DestinationFactory;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 
-import java.util.Dictionary;
-import java.util.List;
-import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import org.osgi.framework.BundleContext;
@@ -42,19 +33,26 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Matija Petanjek
  */
-@Component(immediate = true, service = {})
+@Component(service = {})
 public class DispatchConfigurator {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
+		if (_clusterMasterExecutor.isEnabled()) {
+			_dispatchClusterMasterTokenTransitionListener =
+				new DispatchClusterMasterTokenTransitionListener();
+
+			_clusterMasterExecutor.addClusterMasterTokenTransitionListener(
+				_dispatchClusterMasterTokenTransitionListener);
+		}
+
 		DestinationConfiguration destinationConfiguration =
 			new DestinationConfiguration(
 				DestinationConfiguration.DESTINATION_TYPE_PARALLEL,
 				DispatchConstants.EXECUTOR_DESTINATION_NAME);
 
 		destinationConfiguration.setMaximumQueueSize(_MAXIMUM_QUEUE_SIZE);
-
-		RejectedExecutionHandler rejectedExecutionHandler =
+		destinationConfiguration.setRejectedExecutionHandler(
 			new ThreadPoolExecutor.CallerRunsPolicy() {
 
 				@Override
@@ -71,81 +69,88 @@ public class DispatchConfigurator {
 					super.rejectedExecution(runnable, threadPoolExecutor);
 				}
 
-			};
-
-		destinationConfiguration.setRejectedExecutionHandler(
-			rejectedExecutionHandler);
+			});
 
 		Destination destination = _destinationFactory.createDestination(
 			destinationConfiguration);
 
-		Dictionary<String, Object> properties =
+		_serviceRegistration = bundleContext.registerService(
+			Destination.class, destination,
 			HashMapDictionaryBuilder.<String, Object>put(
 				"destination.name", destination.getName()
-			).build();
+			).build());
 
-		_serviceRegistration = bundleContext.registerService(
-			Destination.class, destination, properties);
-
-		_scheduleMemorySchedulerJobs();
+		_addScheduledJobs();
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_unscheduleMemorySchedulerJobs();
+		_deleteScheduledJobs();
 
 		_serviceRegistration.unregister();
+
+		if (_clusterMasterExecutor.isEnabled()) {
+			_clusterMasterExecutor.removeClusterMasterTokenTransitionListener(
+				_dispatchClusterMasterTokenTransitionListener);
+		}
 	}
 
-	private void _scheduleMemorySchedulerJobs() {
-		DispatchTaskClusterMode dispatchTaskClusterMode =
-			DispatchTaskClusterMode.ALL_NODES;
+	private void _addScheduledJobs() {
+		for (DispatchTrigger dispatchTrigger :
+				_dispatchTriggerLocalService.getDispatchTriggers(true)) {
 
-		List<DispatchTrigger> dispatchTriggers =
-			_dispatchTriggerLocalService.getDispatchTriggers(
-				true, dispatchTaskClusterMode);
+			DispatchTaskClusterMode dispatchTaskClusterMode =
+				DispatchTaskClusterMode.valueOf(
+					dispatchTrigger.getDispatchTaskClusterMode());
 
-		for (DispatchTrigger dispatchTrigger : dispatchTriggers) {
+			if (!_isSchedulable(dispatchTaskClusterMode)) {
+				continue;
+			}
+
 			try {
 				_dispatchTriggerHelper.addSchedulerJob(
-					dispatchTrigger.getDispatchTriggerId(),
-					dispatchTrigger.getCronExpression(),
-					dispatchTrigger.getStartDate(),
-					dispatchTrigger.getEndDate(),
-					dispatchTaskClusterMode.getStorageType());
+					dispatchTrigger, dispatchTaskClusterMode.getStorageType(),
+					dispatchTrigger.getTimeZoneId());
 			}
 			catch (DispatchTriggerSchedulerException
 						dispatchTriggerSchedulerException) {
 
-				_log.error(
-					dispatchTriggerSchedulerException.getMessage(),
-					dispatchTriggerSchedulerException);
+				_log.error(dispatchTriggerSchedulerException);
 			}
 		}
 	}
 
-	private void _unscheduleMemorySchedulerJobs() {
-		DispatchTaskClusterMode dispatchTaskClusterMode =
-			DispatchTaskClusterMode.ALL_NODES;
+	private void _deleteScheduledJobs() {
+		for (DispatchTrigger dispatchTrigger :
+				_dispatchTriggerLocalService.getDispatchTriggers(true)) {
 
-		List<DispatchTrigger> dispatchTriggers =
-			_dispatchTriggerLocalService.getDispatchTriggers(
-				true, dispatchTaskClusterMode);
+			DispatchTaskClusterMode dispatchTaskClusterMode =
+				DispatchTaskClusterMode.valueOf(
+					dispatchTrigger.getDispatchTaskClusterMode());
 
-		for (DispatchTrigger dispatchTrigger : dispatchTriggers) {
-			try {
-				_dispatchTriggerHelper.unscheduleSchedulerJob(
-					dispatchTrigger.getDispatchTriggerId(),
-					dispatchTaskClusterMode.getStorageType());
+			if (!_isSchedulable(dispatchTaskClusterMode)) {
+				continue;
 			}
-			catch (DispatchTriggerSchedulerException
-						dispatchTriggerSchedulerException) {
 
-				_log.error(
-					dispatchTriggerSchedulerException.getMessage(),
-					dispatchTriggerSchedulerException);
-			}
+			_dispatchTriggerHelper.deleteSchedulerJob(
+				dispatchTrigger, dispatchTaskClusterMode.getStorageType());
 		}
+	}
+
+	private boolean _isSchedulable(
+		DispatchTaskClusterMode dispatchTaskClusterMode) {
+
+		if ((dispatchTaskClusterMode == DispatchTaskClusterMode.ALL_NODES) ||
+			(_clusterMasterExecutor.isMaster() &&
+			 ((dispatchTaskClusterMode ==
+				 DispatchTaskClusterMode.SINGLE_NODE_MEMORY_CLUSTERED) ||
+			  (dispatchTaskClusterMode ==
+				  DispatchTaskClusterMode.SINGLE_NODE_PERSISTED)))) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	private static final int _MAXIMUM_QUEUE_SIZE = 100;
@@ -154,7 +159,13 @@ public class DispatchConfigurator {
 		DispatchConfigurator.class);
 
 	@Reference
+	private ClusterMasterExecutor _clusterMasterExecutor;
+
+	@Reference
 	private DestinationFactory _destinationFactory;
+
+	private ClusterMasterTokenTransitionListener
+		_dispatchClusterMasterTokenTransitionListener;
 
 	@Reference
 	private DispatchTriggerHelper _dispatchTriggerHelper;
@@ -163,5 +174,20 @@ public class DispatchConfigurator {
 	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
 	private ServiceRegistration<Destination> _serviceRegistration;
+
+	private class DispatchClusterMasterTokenTransitionListener
+		extends BaseClusterMasterTokenTransitionListener {
+
+		@Override
+		protected void doMasterTokenAcquired() throws Exception {
+			_addScheduledJobs();
+		}
+
+		@Override
+		protected void doMasterTokenReleased() throws Exception {
+			_addScheduledJobs();
+		}
+
+	}
 
 }

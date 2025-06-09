@@ -2,10 +2,10 @@
 
 <suppressions>
 	<checkstyle>
-		<suppress checks="StaticVariableNameCheck" files="journal-api/src/main/java/com/liferay/journal/configuration/JournalServiceConfigurationValues\.java" />
+		<suppress checks="AccessModifierCheck" files="journal-service/src/main/java/com/liferay/journal/service/impl/JournalArticleLocalServiceImpl\.java" />
+		<suppress checks="UpgradeProcessCheck" files="journal-service/src/main/java/com/liferay/journal/internal/upgrade/v6_1_0/JournalArticleSmallImageSourceUpgradeProcess\.java" />
 	</checkstyle>
 	<source-check>
-		<suppress checks="JavaAPISignatureCheck" files="journal-service/src/main/java/com/liferay/journal/internal/transformer/JournalTransformer\.java" />
-		<suppress checks="JavaAPISignatureCheck" files="journal-service/src/main/java/com/liferay/journal/internal/util/JournalUtil\.java" />
+		<suppress checks="JavaCompanyScopedIdsCheck" files="journal-service/src/main/java/com/liferay/journal/internal/upgrade/v1_1_6/AssetDisplayPageEntryUpgradeProcess\.java" />
 	</source-check>
 </suppressions>

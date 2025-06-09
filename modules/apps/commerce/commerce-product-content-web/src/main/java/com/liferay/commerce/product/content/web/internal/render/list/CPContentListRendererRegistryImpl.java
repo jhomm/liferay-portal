@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.render.list;
@@ -42,10 +33,7 @@ import org.osgi.service.component.annotations.Deactivate;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CPContentListRendererRegistry.class
-)
+@Component(service = CPContentListRendererRegistry.class)
 public class CPContentListRendererRegistryImpl
 	implements CPContentListRendererRegistry {
 
@@ -56,8 +44,8 @@ public class CPContentListRendererRegistryImpl
 		}
 
 		ServiceWrapper<CPContentListRenderer>
-			cpContentListRendererServiceWrapper =
-				_cpContentListRendererServiceTrackerMap.getService(key);
+			cpContentListRendererServiceWrapper = _serviceTrackerMap.getService(
+				key);
 
 		if (cpContentListRendererServiceWrapper == null) {
 			if (_log.isDebugEnabled()) {
@@ -79,7 +67,7 @@ public class CPContentListRendererRegistryImpl
 
 		List<ServiceWrapper<CPContentListRenderer>>
 			cpContentListRendererServiceWrappers = ListUtil.fromCollection(
-				_cpContentListRendererServiceTrackerMap.values());
+				_serviceTrackerMap.values());
 
 		Collections.sort(
 			cpContentListRendererServiceWrappers,
@@ -121,26 +109,25 @@ public class CPContentListRendererRegistryImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_cpContentListRendererServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, CPContentListRenderer.class,
-				"commerce.product.content.list.renderer.key",
-				ServiceTrackerCustomizerFactory.
-					<CPContentListRenderer>serviceWrapper(bundleContext));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, CPContentListRenderer.class,
+			"commerce.product.content.list.renderer.key",
+			ServiceTrackerCustomizerFactory.
+				<CPContentListRenderer>serviceWrapper(bundleContext));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_cpContentListRendererServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CPContentListRendererRegistryImpl.class);
 
-	private ServiceTrackerMap<String, ServiceWrapper<CPContentListRenderer>>
-		_cpContentListRendererServiceTrackerMap;
 	private final Comparator<ServiceWrapper<CPContentListRenderer>>
 		_cpContentListRendererServiceWrapperOrderComparator =
 			new CPContentListRendererServiceWrapperOrderComparator();
+	private ServiceTrackerMap<String, ServiceWrapper<CPContentListRenderer>>
+		_serviceTrackerMap;
 
 }

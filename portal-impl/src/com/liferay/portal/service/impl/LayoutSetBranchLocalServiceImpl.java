@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
 
 import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
@@ -414,7 +406,7 @@ public class LayoutSetBranchLocalServiceImpl
 
 		return layoutSetBranchPersistence.findByG_P(
 			groupId, privateLayout, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new LayoutSetBranchCreateDateComparator(true));
+			LayoutSetBranchCreateDateComparator.getInstance(true));
 	}
 
 	@Override
@@ -471,10 +463,9 @@ public class LayoutSetBranchLocalServiceImpl
 
 		Locale locale = serviceContext.getLocale();
 
-		Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(
-			locale);
+		Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale);
 
-		String nowString = dateFormatDateTime.format(new Date());
+		String nowString = dateTimeFormat.format(new Date());
 
 		serviceContext.setWorkflowAction(WorkflowConstants.STATUS_DRAFT);
 
@@ -603,9 +594,7 @@ public class LayoutSetBranchLocalServiceImpl
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchLayoutSetBranchException,
-					noSuchLayoutSetBranchException);
+				_log.debug(noSuchLayoutSetBranchException);
 			}
 		}
 
@@ -630,9 +619,7 @@ public class LayoutSetBranchLocalServiceImpl
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchLayoutSetBranchException,
-					noSuchLayoutSetBranchException);
+				_log.debug(noSuchLayoutSetBranchException);
 			}
 		}
 	}
@@ -669,17 +656,10 @@ public class LayoutSetBranchLocalServiceImpl
 	}
 
 	private List<Long> _getRelatedPlids(long layoutSetBranchId) {
-		List<Long> relatedPlids = new ArrayList<>();
-
-		List<LayoutBranch> layoutBranches =
+		return TransformUtil.transform(
 			_layoutBranchLocalService.getLayoutSetBranchLayoutBranches(
-				layoutSetBranchId);
-
-		for (LayoutBranch layoutBranch : layoutBranches) {
-			relatedPlids.add(layoutBranch.getPlid());
-		}
-
-		return relatedPlids;
+				layoutSetBranchId),
+			layoutBranch -> layoutBranch.getPlid());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

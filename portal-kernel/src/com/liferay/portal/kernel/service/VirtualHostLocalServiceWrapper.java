@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.VirtualHost;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -28,6 +20,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class VirtualHostLocalServiceWrapper
 	implements ServiceWrapper<VirtualHostLocalService>,
 			   VirtualHostLocalService {
+
+	public VirtualHostLocalServiceWrapper() {
+		this(null);
+	}
 
 	public VirtualHostLocalServiceWrapper(
 		VirtualHostLocalService virtualHostLocalService) {
@@ -219,19 +215,14 @@ public class VirtualHostLocalServiceWrapper
 	}
 
 	@Override
-	public VirtualHost fetchVirtualHost(long virtualHostId) {
-		return _virtualHostLocalService.fetchVirtualHost(virtualHostId);
+	public VirtualHost fetchCompanyDefaultVirtualHost(long companyId) {
+		return _virtualHostLocalService.fetchCompanyDefaultVirtualHost(
+			companyId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
 	@Override
-	public VirtualHost fetchVirtualHost(long companyId, long layoutSetId) {
-		return _virtualHostLocalService.fetchVirtualHost(
-			companyId, layoutSetId);
+	public VirtualHost fetchVirtualHost(long virtualHostId) {
+		return _virtualHostLocalService.fetchVirtualHost(virtualHostId);
 	}
 
 	@Override
@@ -288,18 +279,6 @@ public class VirtualHostLocalServiceWrapper
 		return _virtualHostLocalService.getVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	@Override
-	public VirtualHost getVirtualHost(long companyId, long layoutSetId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _virtualHostLocalService.getVirtualHost(companyId, layoutSetId);
-	}
-
 	@Override
 	public VirtualHost getVirtualHost(String hostname)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -324,9 +303,13 @@ public class VirtualHostLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<VirtualHost> getVirtualHosts(long companyId) {
+		return _virtualHostLocalService.getVirtualHosts(companyId);
+	}
+
+	@Override
 	public java.util.List<VirtualHost> getVirtualHosts(
-			long companyId, long layoutSetId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		long companyId, long layoutSetId) {
 
 		return _virtualHostLocalService.getVirtualHosts(companyId, layoutSetId);
 	}
@@ -341,17 +324,12 @@ public class VirtualHostLocalServiceWrapper
 		return _virtualHostLocalService.getVirtualHostsCount();
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
 	@Override
-	public VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname) {
+	public long getVirtualHostsCount(
+		long excludedLayoutSetId, String[] virtualHostNames) {
 
-		return _virtualHostLocalService.updateVirtualHost(
-			companyId, layoutSetId, hostname);
+		return _virtualHostLocalService.getVirtualHostsCount(
+			excludedLayoutSetId, virtualHostNames);
 	}
 
 	/**
@@ -376,6 +354,11 @@ public class VirtualHostLocalServiceWrapper
 
 		return _virtualHostLocalService.updateVirtualHosts(
 			companyId, layoutSetId, hostnames);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _virtualHostLocalService.getBasePersistence();
 	}
 
 	@Override

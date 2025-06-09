@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.model.impl;
@@ -32,7 +23,6 @@ import com.liferay.saml.persistence.model.SamlIdpSsoSessionModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -214,102 +204,93 @@ public class SamlIdpSsoSessionModelImpl
 	public Map<String, Function<SamlIdpSsoSession, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SamlIdpSsoSession, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SamlIdpSsoSession>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SamlIdpSsoSession.class.getClassLoader(), SamlIdpSsoSession.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SamlIdpSsoSession, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SamlIdpSsoSession> constructor =
-				(Constructor<SamlIdpSsoSession>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SamlIdpSsoSession, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SamlIdpSsoSession, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"samlIdpSsoSessionId",
+				SamlIdpSsoSession::getSamlIdpSsoSessionId);
+			attributeGetterFunctions.put(
+				"companyId", SamlIdpSsoSession::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", SamlIdpSsoSession::getUserId);
+			attributeGetterFunctions.put(
+				"userName", SamlIdpSsoSession::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", SamlIdpSsoSession::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SamlIdpSsoSession::getModifiedDate);
+			attributeGetterFunctions.put(
+				"samlIdpSsoSessionKey",
+				SamlIdpSsoSession::getSamlIdpSsoSessionKey);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SamlIdpSsoSession, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SamlIdpSsoSession, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SamlIdpSsoSession, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<SamlIdpSsoSession, Object>>();
-		Map<String, BiConsumer<SamlIdpSsoSession, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<SamlIdpSsoSession, ?>>();
+		private static final Map<String, BiConsumer<SamlIdpSsoSession, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"samlIdpSsoSessionId", SamlIdpSsoSession::getSamlIdpSsoSessionId);
-		attributeSetterBiConsumers.put(
-			"samlIdpSsoSessionId",
-			(BiConsumer<SamlIdpSsoSession, Long>)
-				SamlIdpSsoSession::setSamlIdpSsoSessionId);
-		attributeGetterFunctions.put(
-			"companyId", SamlIdpSsoSession::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SamlIdpSsoSession, Long>)
-				SamlIdpSsoSession::setCompanyId);
-		attributeGetterFunctions.put("userId", SamlIdpSsoSession::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SamlIdpSsoSession, Long>)SamlIdpSsoSession::setUserId);
-		attributeGetterFunctions.put(
-			"userName", SamlIdpSsoSession::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<SamlIdpSsoSession, String>)
-				SamlIdpSsoSession::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", SamlIdpSsoSession::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SamlIdpSsoSession, Date>)
-				SamlIdpSsoSession::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SamlIdpSsoSession::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SamlIdpSsoSession, Date>)
-				SamlIdpSsoSession::setModifiedDate);
-		attributeGetterFunctions.put(
-			"samlIdpSsoSessionKey", SamlIdpSsoSession::getSamlIdpSsoSessionKey);
-		attributeSetterBiConsumers.put(
-			"samlIdpSsoSessionKey",
-			(BiConsumer<SamlIdpSsoSession, String>)
-				SamlIdpSsoSession::setSamlIdpSsoSessionKey);
+		static {
+			Map<String, BiConsumer<SamlIdpSsoSession, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<SamlIdpSsoSession, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"samlIdpSsoSessionId",
+				(BiConsumer<SamlIdpSsoSession, Long>)
+					SamlIdpSsoSession::setSamlIdpSsoSessionId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SamlIdpSsoSession, Long>)
+					SamlIdpSsoSession::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SamlIdpSsoSession, Long>)
+					SamlIdpSsoSession::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<SamlIdpSsoSession, String>)
+					SamlIdpSsoSession::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SamlIdpSsoSession, Date>)
+					SamlIdpSsoSession::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SamlIdpSsoSession, Date>)
+					SamlIdpSsoSession::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"samlIdpSsoSessionKey",
+				(BiConsumer<SamlIdpSsoSession, String>)
+					SamlIdpSsoSession::setSamlIdpSsoSessionKey);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -726,41 +707,12 @@ public class SamlIdpSsoSessionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SamlIdpSsoSession, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SamlIdpSsoSession, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SamlIdpSsoSession, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SamlIdpSsoSession)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SamlIdpSsoSession>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SamlIdpSsoSession.class, ModelWrapper.class);
 
 	}
 
@@ -775,7 +727,8 @@ public class SamlIdpSsoSessionModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<SamlIdpSsoSession, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

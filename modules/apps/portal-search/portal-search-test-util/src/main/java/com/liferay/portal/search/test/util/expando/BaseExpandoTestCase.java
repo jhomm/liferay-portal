@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.test.util.expando;
@@ -19,7 +10,7 @@ import com.liferay.expando.kernel.model.ExpandoColumn;
 import com.liferay.expando.kernel.model.ExpandoColumnConstants;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactory;
-import com.liferay.expando.kernel.util.ExpandoBridgeIndexer;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.module.util.SystemBundleUtil;
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
@@ -27,15 +18,17 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.search.query.FieldQueryFactory;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.search.analysis.FieldQueryBuilderFactory;
+import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
 import com.liferay.portal.search.internal.analysis.DescriptionFieldQueryBuilder;
 import com.liferay.portal.search.internal.analysis.SimpleKeywordTokenizer;
 import com.liferay.portal.search.internal.analysis.SubstringFieldQueryBuilder;
 import com.liferay.portal.search.internal.expando.ExpandoFieldQueryBuilderFactory;
-import com.liferay.portal.search.internal.expando.ExpandoQueryContributorHelper;
-import com.liferay.portal.search.internal.expando.ExpandoQueryContributorHelperImpl;
+import com.liferay.portal.search.internal.expando.helper.ExpandoQueryContributorHelper;
+import com.liferay.portal.search.internal.expando.helper.ExpandoQueryContributorHelperImpl;
 import com.liferay.portal.search.internal.query.FieldQueryFactoryImpl;
 import com.liferay.portal.search.test.util.DocumentsAssert;
 import com.liferay.portal.search.test.util.IdempotentRetryAssert;
@@ -44,14 +37,13 @@ import com.liferay.portal.search.test.util.indexing.DocumentCreationHelper;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import org.mockito.Matchers;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import org.osgi.framework.BundleContext;
@@ -66,29 +58,37 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 	public static void setUpClassBaseExpandoTestCase() {
 		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
-		_serviceRegistration = bundleContext.registerService(
-			FieldQueryFactory.class,
-			createFieldQueryFactory(createExpandoFieldQueryBuilderFactory()),
+		_fieldQueryBuilderFactoryServiceRegistration =
+			bundleContext.registerService(
+				FieldQueryBuilderFactory.class,
+				createExpandoFieldQueryBuilderFactory(), null);
+
+		_fieldQueryFactoryServiceRegistration = bundleContext.registerService(
+			FieldQueryFactory.class, createFieldQueryFactory(bundleContext),
 			null);
 	}
 
 	@AfterClass
 	public static void tearDownClassBaseExpandoTestCase() {
-		_serviceRegistration.unregister();
+		ReflectionTestUtil.invoke(
+			_fieldQueryFactoryImpl, "deactivate", new Class<?>[0], null);
+
+		_fieldQueryBuilderFactoryServiceRegistration.unregister();
+
+		_fieldQueryFactoryServiceRegistration.unregister();
 	}
 
 	@Test
 	public void testMultipleClassNames() throws Exception {
-		List<String> duplicates = Arrays.asList(
-			"alpha", "alpha", "alpha bravo", "charlie", "delta");
+		String[] duplicates = {
+			"alpha", "alpha", "alpha bravo", "charlie", "delta"
+		};
 
 		addDocuments(this::addKeyword, duplicates);
 
-		addDocuments(this::addKeyword, Arrays.asList("keyword"));
-
+		addDocuments(this::addKeyword, "keyword");
 		addDocuments(this::addText, duplicates);
-
-		addDocuments(this::addText, Arrays.asList("text"));
+		addDocuments(this::addText, "text");
 
 		assertSearch("alpha", 6);
 		assertSearch("bravo", 2);
@@ -124,16 +124,19 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 	}
 
 	protected static FieldQueryFactoryImpl createFieldQueryFactory(
-		FieldQueryBuilderFactory fieldQueryBuilderFactory) {
+		BundleContext bundleContext) {
 
-		return new FieldQueryFactoryImpl() {
-			{
-				descriptionFieldQueryBuilder =
-					createDescriptionFieldQueryBuilder();
+		_fieldQueryFactoryImpl = new FieldQueryFactoryImpl();
 
-				addFieldQueryBuilderFactory(fieldQueryBuilderFactory);
-			}
-		};
+		ReflectionTestUtil.setFieldValue(
+			_fieldQueryFactoryImpl, "_descriptionFieldQueryBuilder",
+			createDescriptionFieldQueryBuilder());
+
+		ReflectionTestUtil.invoke(
+			_fieldQueryFactoryImpl, "activate",
+			new Class<?>[] {BundleContext.class}, bundleContext);
+
+		return _fieldQueryFactoryImpl;
 	}
 
 	protected DocumentCreationHelper addKeyword(String value) {
@@ -175,7 +178,7 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		).when(
 			expandoBridge
 		).getAttributeProperties(
-			Mockito.anyString()
+			Mockito.nullable(String.class)
 		);
 
 		return expandoBridge;
@@ -191,7 +194,7 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		).when(
 			expandoBridgeFactory
 		).getExpandoBridge(
-			Mockito.anyLong(), Matchers.eq(_CLASS_NAME_KEYWORD)
+			Mockito.anyLong(), Mockito.eq(_CLASS_NAME_KEYWORD)
 		);
 
 		Mockito.doReturn(
@@ -200,7 +203,7 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		).when(
 			expandoBridgeFactory
 		).getExpandoBridge(
-			Mockito.anyLong(), Matchers.eq(_CLASS_NAME_TEXT)
+			Mockito.anyLong(), Mockito.eq(_CLASS_NAME_TEXT)
 		);
 
 		return expandoBridgeFactory;
@@ -215,8 +218,7 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		).when(
 			expandoBridgeIndexer
 		).encodeFieldName(
-			Mockito.anyString(),
-			Matchers.eq(ExpandoColumnConstants.INDEX_TYPE_KEYWORD)
+			Mockito.eq(_indexTypeKeywordExpandoColumn)
 		);
 
 		Mockito.doReturn(
@@ -224,8 +226,15 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 		).when(
 			expandoBridgeIndexer
 		).encodeFieldName(
-			Mockito.anyString(),
-			Matchers.eq(ExpandoColumnConstants.INDEX_TYPE_TEXT)
+			Mockito.eq(_indexTypeTextExpandoColumn)
+		);
+
+		Mockito.doReturn(
+			StringPool.BLANK
+		).when(
+			expandoBridgeIndexer
+		).getNumericSuffix(
+			Mockito.anyInt()
 		);
 
 		return expandoBridgeIndexer;
@@ -254,20 +263,21 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 			ExpandoColumnLocalService.class);
 
 		Mockito.doReturn(
-			createExpandoColumn(ExpandoColumnConstants.INDEX_TYPE_KEYWORD)
+			_indexTypeKeywordExpandoColumn
 		).when(
 			expandoColumnLocalService
 		).getDefaultTableColumn(
-			Mockito.anyLong(), Mockito.anyString(),
+			Mockito.anyLong(), Mockito.nullable(String.class),
 			Mockito.eq(_ATTRIBUTE_KEYWORD)
 		);
 
 		Mockito.doReturn(
-			createExpandoColumn(ExpandoColumnConstants.INDEX_TYPE_TEXT)
+			_indexTypeTextExpandoColumn
 		).when(
 			expandoColumnLocalService
 		).getDefaultTableColumn(
-			Mockito.anyLong(), Mockito.anyString(), Mockito.eq(_ATTRIBUTE_TEXT)
+			Mockito.anyLong(), Mockito.nullable(String.class),
+			Mockito.eq(_ATTRIBUTE_TEXT)
 		);
 
 		return expandoColumnLocalService;
@@ -276,13 +286,20 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 	protected ExpandoQueryContributorHelper
 		createExpandoQueryContributorHelper() {
 
-		return new ExpandoQueryContributorHelperImpl() {
-			{
-				setExpandoBridgeFactory(createExpandoBridgeFactory());
-				setExpandoBridgeIndexer(createExpandoBridgeIndexer());
-				setExpandoColumnLocalService(createExpandoColumnLocalService());
-			}
-		};
+		ExpandoQueryContributorHelperImpl expandoQueryContributorHelperImpl =
+			new ExpandoQueryContributorHelperImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			expandoQueryContributorHelperImpl, "_expandoBridgeFactory",
+			createExpandoBridgeFactory());
+		ReflectionTestUtil.setFieldValue(
+			expandoQueryContributorHelperImpl, "_expandoBridgeIndexer",
+			createExpandoBridgeIndexer());
+		ReflectionTestUtil.setFieldValue(
+			expandoQueryContributorHelperImpl, "_expandoColumnLocalService",
+			createExpandoColumnLocalService());
+
+		return expandoQueryContributorHelperImpl;
 	}
 
 	protected UnicodeProperties createUnicodeProperties(int indexType) {
@@ -341,6 +358,17 @@ public abstract class BaseExpandoTestCase extends BaseIndexingTestCase {
 	private static final String _FIELD_TEXT =
 		"expando__custom_fields__testColumnName";
 
-	private static ServiceRegistration<?> _serviceRegistration;
+	private static ServiceRegistration<FieldQueryBuilderFactory>
+		_fieldQueryBuilderFactoryServiceRegistration;
+	private static FieldQueryFactoryImpl _fieldQueryFactoryImpl;
+	private static ServiceRegistration<?> _fieldQueryFactoryServiceRegistration;
+
+	@Mock
+	private ExpandoColumn _indexTypeKeywordExpandoColumn = createExpandoColumn(
+		ExpandoColumnConstants.INDEX_TYPE_KEYWORD);
+
+	@Mock
+	private ExpandoColumn _indexTypeTextExpandoColumn = createExpandoColumn(
+		ExpandoColumnConstants.INDEX_TYPE_TEXT);
 
 }

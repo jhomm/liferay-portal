@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
@@ -34,7 +25,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -118,24 +108,6 @@ public class CommerceOrderPaymentModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -148,9 +120,19 @@ public class CommerceOrderPaymentModelImpl
 	@Deprecated
 	public static final long CREATEDATE_COLUMN_BITMASK = 2L;
 
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.model.CommerceOrderPayment"));
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
+	}
 
 	public CommerceOrderPaymentModelImpl() {
 	}
@@ -228,135 +210,124 @@ public class CommerceOrderPaymentModelImpl
 	public Map<String, Function<CommerceOrderPayment, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceOrderPayment, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceOrderPayment>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceOrderPayment.class.getClassLoader(),
-			CommerceOrderPayment.class, ModelWrapper.class);
+		private static final Map<String, Function<CommerceOrderPayment, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceOrderPayment> constructor =
-				(Constructor<CommerceOrderPayment>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceOrderPayment, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CommerceOrderPayment, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceOrderPayment::getMvccVersion);
+			attributeGetterFunctions.put(
+				"commerceOrderPaymentId",
+				CommerceOrderPayment::getCommerceOrderPaymentId);
+			attributeGetterFunctions.put(
+				"groupId", CommerceOrderPayment::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceOrderPayment::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceOrderPayment::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceOrderPayment::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceOrderPayment::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommerceOrderPayment::getModifiedDate);
+			attributeGetterFunctions.put(
+				"commerceOrderId", CommerceOrderPayment::getCommerceOrderId);
+			attributeGetterFunctions.put(
+				"commercePaymentMethodKey",
+				CommerceOrderPayment::getCommercePaymentMethodKey);
+			attributeGetterFunctions.put(
+				"content", CommerceOrderPayment::getContent);
+			attributeGetterFunctions.put(
+				"status", CommerceOrderPayment::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CommerceOrderPayment, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CommerceOrderPayment, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CommerceOrderPayment, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CommerceOrderPayment, Object>>();
-		Map<String, BiConsumer<CommerceOrderPayment, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommerceOrderPayment, ?>>();
+		private static final Map
+			<String, BiConsumer<CommerceOrderPayment, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CommerceOrderPayment::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CommerceOrderPayment, Long>)
-				CommerceOrderPayment::setMvccVersion);
-		attributeGetterFunctions.put(
-			"commerceOrderPaymentId",
-			CommerceOrderPayment::getCommerceOrderPaymentId);
-		attributeSetterBiConsumers.put(
-			"commerceOrderPaymentId",
-			(BiConsumer<CommerceOrderPayment, Long>)
-				CommerceOrderPayment::setCommerceOrderPaymentId);
-		attributeGetterFunctions.put(
-			"groupId", CommerceOrderPayment::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CommerceOrderPayment, Long>)
-				CommerceOrderPayment::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceOrderPayment::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceOrderPayment, Long>)
-				CommerceOrderPayment::setCompanyId);
-		attributeGetterFunctions.put("userId", CommerceOrderPayment::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceOrderPayment, Long>)
-				CommerceOrderPayment::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceOrderPayment::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceOrderPayment, String>)
-				CommerceOrderPayment::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceOrderPayment::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceOrderPayment, Date>)
-				CommerceOrderPayment::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceOrderPayment::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceOrderPayment, Date>)
-				CommerceOrderPayment::setModifiedDate);
-		attributeGetterFunctions.put(
-			"commerceOrderId", CommerceOrderPayment::getCommerceOrderId);
-		attributeSetterBiConsumers.put(
-			"commerceOrderId",
-			(BiConsumer<CommerceOrderPayment, Long>)
-				CommerceOrderPayment::setCommerceOrderId);
-		attributeGetterFunctions.put(
-			"commercePaymentMethodKey",
-			CommerceOrderPayment::getCommercePaymentMethodKey);
-		attributeSetterBiConsumers.put(
-			"commercePaymentMethodKey",
-			(BiConsumer<CommerceOrderPayment, String>)
-				CommerceOrderPayment::setCommercePaymentMethodKey);
-		attributeGetterFunctions.put(
-			"content", CommerceOrderPayment::getContent);
-		attributeSetterBiConsumers.put(
-			"content",
-			(BiConsumer<CommerceOrderPayment, String>)
-				CommerceOrderPayment::setContent);
-		attributeGetterFunctions.put("status", CommerceOrderPayment::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<CommerceOrderPayment, Integer>)
-				CommerceOrderPayment::setStatus);
+		static {
+			Map<String, BiConsumer<CommerceOrderPayment, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CommerceOrderPayment, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceOrderPayment, Long>)
+					CommerceOrderPayment::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"commerceOrderPaymentId",
+				(BiConsumer<CommerceOrderPayment, Long>)
+					CommerceOrderPayment::setCommerceOrderPaymentId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CommerceOrderPayment, Long>)
+					CommerceOrderPayment::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceOrderPayment, Long>)
+					CommerceOrderPayment::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceOrderPayment, Long>)
+					CommerceOrderPayment::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceOrderPayment, String>)
+					CommerceOrderPayment::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceOrderPayment, Date>)
+					CommerceOrderPayment::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceOrderPayment, Date>)
+					CommerceOrderPayment::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"commerceOrderId",
+				(BiConsumer<CommerceOrderPayment, Long>)
+					CommerceOrderPayment::setCommerceOrderId);
+			attributeSetterBiConsumers.put(
+				"commercePaymentMethodKey",
+				(BiConsumer<CommerceOrderPayment, String>)
+					CommerceOrderPayment::setCommercePaymentMethodKey);
+			attributeSetterBiConsumers.put(
+				"content",
+				(BiConsumer<CommerceOrderPayment, String>)
+					CommerceOrderPayment::setContent);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<CommerceOrderPayment, Integer>)
+					CommerceOrderPayment::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -735,7 +706,7 @@ public class CommerceOrderPaymentModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -744,7 +715,7 @@ public class CommerceOrderPaymentModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -876,42 +847,12 @@ public class CommerceOrderPaymentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceOrderPayment, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceOrderPayment, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceOrderPayment, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((CommerceOrderPayment)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CommerceOrderPayment>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CommerceOrderPayment.class, ModelWrapper.class);
 
 	}
 
@@ -931,7 +872,8 @@ public class CommerceOrderPaymentModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<CommerceOrderPayment, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

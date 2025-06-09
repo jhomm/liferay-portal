@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.sample.sql.builder;
@@ -23,6 +14,12 @@ public interface BenchmarksPropsKeys {
 		"sample.sql.commerce.layout.excluded.portlets";
 
 	public static final String DB_TYPE = "sample.sql.db.type";
+
+	public static final String MAX_ACCOUNT_ENTRY_COMMERCE_ORDER_COUNT =
+		"sample.sql.max.account.entry.commerce.order.count";
+
+	public static final String MAX_ACCOUNT_ENTRY_COUNT =
+		"sample.sql.max.account.entry.count";
 
 	public static final String MAX_ASSET_CATEGORY_COUNT =
 		"sample.sql.max.asset.category.count";
@@ -47,9 +44,6 @@ public interface BenchmarksPropsKeys {
 
 	public static final String MAX_BLOGS_ENTRY_COUNT =
 		"sample.sql.max.blogs.entry.count";
-
-	public static final String MAX_COMMERCE_ACCOUNT_ENTRY_COUNT =
-		"sample.sql.max.commerce.account.entry.count";
 
 	public static final String MAX_COMMERCE_CATALOG_COUNT =
 		"sample.sql.max.commerce.catalog.count";
@@ -86,6 +80,12 @@ public interface BenchmarksPropsKeys {
 
 	public static final String MAX_COMMERCE_PRODUCT_OPTION_CATEGORY_COUNT =
 		"sample.sql.max.commerce.product.option.category.count";
+
+	public static final String MAX_COMPANY_COUNT =
+		"sample.sql.max.company.count";
+
+	public static final String MAX_COMPANY_USER_COUNT =
+		"sample.sql.max.company.user.count";
 
 	public static final String MAX_CONTENT_LAYOUT_COUNT =
 		"sample.sql.max.content.layout.count";
@@ -124,6 +124,9 @@ public interface BenchmarksPropsKeys {
 	public static final String MAX_DL_FOLDER_DEPTH =
 		"sample.sql.max.dl.folder.depth";
 
+	public static final String MAX_FRAGMENT_ENTRY_LINK_COUNT =
+		"sample.sql.max.fragment.entry.link.count";
+
 	public static final String MAX_GROUP_COUNT = "sample.sql.max.group.count";
 
 	public static final String MAX_JOURNAL_ARTICLE_COUNT =
@@ -138,6 +141,12 @@ public interface BenchmarksPropsKeys {
 	public static final String MAX_JOURNAL_ARTICLE_VERSION_COUNT =
 		"sample.sql.max.journal.article.version.count";
 
+	public static final String MAX_LIST_TYPE_DEFINITION_COUNT =
+		"sample.sql.max.list.type.definition.count";
+
+	public static final String MAX_LIST_TYPE_ENTRY_COUNT =
+		"sample.sql.max.list.type.entry.count";
+
 	public static final String MAX_MB_CATEGORY_COUNT =
 		"sample.sql.max.mb.category.count";
 
@@ -147,30 +156,26 @@ public interface BenchmarksPropsKeys {
 	public static final String MAX_MB_THREAD_COUNT =
 		"sample.sql.max.mb.thread.count";
 
+	public static final String MAX_OBJECT_ENTRY_COUNT =
+		"sample.sql.max.object.entry.count";
+
+	public static final String MAX_OBJECT_ENTRY_PAGE_COUNT =
+		"sample.sql.max.object.entry.page.count";
+
 	public static final String MAX_SEGMENTS_ENTRY_COUNT =
 		"sample.sql.max.segments.entry.count";
 
-	public static final String MAX_USER_COUNT = "sample.sql.max.user.count";
+	public static final String MAX_SEGMENTS_ENTRY_SEGMENTS_EXPERIENCE_COUNT =
+		"sample.sql.max.segments.entry.segments.experience.count";
 
 	public static final String MAX_USER_TO_GROUP_COUNT =
 		"sample.sql.max.user.to.group.count";
-
-	public static final String MAX_WIKI_NODE_COUNT =
-		"sample.sql.max.wiki.node.count";
-
-	public static final String MAX_WIKI_PAGE_COMMENT_COUNT =
-		"sample.sql.max.wiki.page.comment.count";
-
-	public static final String MAX_WIKI_PAGE_COUNT =
-		"sample.sql.max.wiki.page.count";
 
 	public static final String OPTIMIZE_BUFFER_SIZE =
 		"sample.sql.optimize.buffer.size";
 
 	public static final String OUTPUT_CSV_FILE_NAMES =
 		"sample.sql.output.csv.file.names";
-
-	public static final String OUTPUT_DIR = "sample.sql.output.dir";
 
 	public static final String OUTPUT_MERGE = "sample.sql.output.merge";
 
@@ -179,7 +184,10 @@ public interface BenchmarksPropsKeys {
 	public static final String SEARCH_BAR_ENABLED =
 		"sample.sql.search.bar.enabled";
 
-	public static final String VIRTUAL_HOST_NAME =
-		"sample.sql.virtual.hostname";
+	public static final String VIRTUAL_HOSTNAME_ADMIN_INSTANCE =
+		"sample.sql.virtual.hostname.admin.instance";
+
+	public static final String VIRTUAL_HOSTNAME_PREFIX =
+		"sample.sql.virtual.hostname.prefix";
 
 }

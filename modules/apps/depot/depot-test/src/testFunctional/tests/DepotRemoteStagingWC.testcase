@@ -1,18 +1,22 @@
-@component-name = "portal-document-management"
+@component-name = "portal-content-management"
 definition {
 
 	property app.server.bundles.size = "1";
-	property custom.properties = "tunneling.servlet.shared.secret=1234567890123456${line.separator}auth.verifier.TunnelAuthVerifier.hosts.allowed=";
+	property custom.properties = "auth.verifier.TunnelAuthVerifier.hosts.allowed=${line.separator}tunneling.servlet.shared.secret=1234567890123456";
 	property databases.size = "1";
 	property minimum.slave.ram = "24";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Depot";
+	property testray.main.component.name = "Asset Libraries";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		JSONDepot.addDepot(
 			depotDescription = "This is the description of a depot",
@@ -20,10 +24,10 @@ definition {
 
 		Depot.remoteStagingSetUpViaJson(
 			groupName = "Test Depot Name",
-			remotePort = "9080",
+			remotePort = 9080,
 			site = "false");
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
@@ -31,7 +35,7 @@ definition {
 
 		Staging.remoteStagingSetUpViaJson(
 			groupName = "Site Name",
-			remotePort = "9080");
+			remotePort = 9080);
 
 		JSONDepot.connectSite(
 			depotName = "Test Depot Name",
@@ -39,9 +43,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -58,10 +62,11 @@ definition {
 	}
 
 	@description = "This ensures that image in basic article in depot can be deleted and republished in staging site when enabling remote staging."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanDeleteWCInlineImage {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanDeleteWCInlineImage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
@@ -90,7 +95,7 @@ definition {
 			depotName = "Test Depot Name",
 			imageFileName = "Document_2.jpg");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.openSitePage(
 			pageName = "Test Page",
@@ -103,7 +108,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -118,12 +123,12 @@ definition {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		AssertElementPresent(
-			key_imageTitle = "Document_2.jpg",
+			key_imageTitle = "document_2-jpg",
 			locator1 = "WCPreview#PREVIEW_IMAGE");
 
 		User.loginPG(
-			nodePort = "8080",
-			password = "test",
+			nodePort = 8080,
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
@@ -149,7 +154,7 @@ definition {
 
 		SelectFrame(value1 = "relative=top");
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
 
@@ -160,7 +165,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -175,22 +180,23 @@ definition {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		AssertElementNotPresent(
-			key_imageTitle = "Document_2.jpg",
+			key_imageTitle = "document_2-jpg",
 			locator1 = "WCPreview#PREVIEW_IMAGE");
 	}
 
 	@description = "This ensures that friendly URL in basic article in depot can be edited and republished in staging site when enabling remote staging."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanEditFriendlyURL {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanEditFriendlyURL";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
 
 		WebContentNavigator.gotoAddCP();
 
 		WebContent.addWithFriendlyURL(
-			friendlyUrl = "friendlyurl",
+			friendlyURL = "friendlyurl",
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
@@ -219,10 +225,9 @@ definition {
 			menuItem = "Edit Web Content",
 			webContentTitle = "Web Content Title");
 
-		Panel.expandPanel(panel = "Friendly URL");
-
 		AssertTextEquals(
-			locator1 = "TextInput#FRIENDLY_URL",
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#INPUT_ID",
 			value1 = "friendlyurl");
 
 		Navigator.openSitePage(
@@ -236,7 +241,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -245,11 +250,13 @@ definition {
 			pageName = "Test Page",
 			siteName = "Remote Site");
 
-		WebContent.viewPGViaWCD(webContentContent = "Web Content Content");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "Web Content Content",
+			webContentTitle = "Web Content Title");
 
 		User.loginPG(
-			nodePort = "8080",
-			password = "test",
+			nodePort = 8080,
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
@@ -258,7 +265,7 @@ definition {
 
 		WebContent.editFriendlyURL(webContentFriendlyURL = "friendlyUrledit");
 
-		PortletEntry.publish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
 
@@ -272,10 +279,9 @@ definition {
 			menuItem = "Edit Web Content",
 			webContentTitle = "Web Content Title");
 
-		Panel.expandPanel(panel = "Friendly URL");
-
 		AssertTextEquals(
-			locator1 = "TextInput#FRIENDLY_URL",
+			inputFieldId = "friendlyURL",
+			locator1 = "TextInput#INPUT_ID",
 			value1 = "friendlyurledit");
 
 		Navigator.openSitePage(
@@ -289,7 +295,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -298,15 +304,18 @@ definition {
 			pageName = "Test Page",
 			siteName = "Remote Site");
 
-		WebContent.viewPGViaWCD(webContentContent = "Web Content Content");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "Web Content Content",
+			webContentTitle = "Web Content Title");
 	}
 
 	@description = "This ensures that image in basic article in depot can be edited and republished in staging site when enabling remote staging."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanEditWCInlineImage {
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanEditWCInlineImage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
@@ -335,7 +344,7 @@ definition {
 			depotName = "Test Depot Name",
 			imageFileName = "Document_2.jpg");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.openSitePage(
 			pageName = "Test Page",
@@ -348,7 +357,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -363,12 +372,12 @@ definition {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		AssertElementPresent(
-			key_imageTitle = "Document_2.jpg",
+			key_imageTitle = "document_2",
 			locator1 = "WCPreview#PREVIEW_IMAGE");
 
 		User.loginPG(
-			nodePort = "8080",
-			password = "test",
+			nodePort = 8080,
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
@@ -392,7 +401,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -407,15 +416,16 @@ definition {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		AssertElementPresent(
-			key_imageTitle = "Document_3.jpg",
+			key_imageTitle = "document_2",
 			locator1 = "WCPreview#PREVIEW_IMAGE");
 	}
 
 	@description = "This ensures that an article using a structure stored in depot can be deleted and republished in remote staging site."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanPublishDeletedWCCustomization {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanPublishDeletedWCCustomization";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DepotNavigator.openDepotAdmin();
 
@@ -464,7 +474,7 @@ definition {
 			webContentText = "Text",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.openSitePage(
 			pageName = "Test Page",
@@ -491,7 +501,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -503,10 +513,11 @@ definition {
 	}
 
 	@description = "This ensures that an article using a structure stored in depot can be edited and republished in remote staging site."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanPublishEditedWCCustomization {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanPublishEditedWCCustomization";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DepotNavigator.openDepotAdmin();
 
@@ -556,7 +567,7 @@ definition {
 			webContentText = "Text",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Navigator.openSitePage(
 			pageName = "Test Page",
@@ -569,7 +580,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -582,8 +593,8 @@ definition {
 			webContentTitle = "Web Content Title");
 
 		User.loginPG(
-			nodePort = "8080",
-			password = "test",
+			nodePort = 8080,
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		WebContentNavigator.openToEditWCInSite(
@@ -604,7 +615,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -618,10 +629,11 @@ definition {
 	}
 
 	@description = "This ensures that a web content folder with an article in depot can be published in AP through widget config manual selection when enabling remote staging."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanPublishWCFolder {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanPublishWCFolder";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
 
@@ -639,7 +651,7 @@ definition {
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
 
@@ -676,7 +688,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -693,10 +705,11 @@ definition {
 	}
 
 	@description = "This test covers LPS-122790. It ensures that web content with a category in depot can be published in remote staging site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanPublishWCWithCategory {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanPublishWCWithCategory";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DepotNavigator.openDepotCategoriesAdmin(depotName = "Test Depot Name");
 
@@ -747,7 +760,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 
@@ -762,26 +775,23 @@ definition {
 	}
 
 	@description = "This test ensures that a depot WC with an embedded video added from the item selector can be published on a connected remote staging site."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanPublishWCWithEmbeddedVideo {
-		property test.name.skip.portal.instance = "DepotRemoteStagingWC#CanPublishWCWithEmbeddedVideo";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
 
 		WebContentNavigator.gotoAddCP();
 
 		WebContent.addCP(
-			embedVideo = "true",
-			extractedVideoShortcutTitle = "Liferay Digital Experience Platform",
-			videoShortcutDescription = "Video Shortcut Description",
-			videoShortcutPreview = "https://www.youtube.com",
-			videoShortcutTitle = "Test YouTube Video",
-			videoURL = "https://youtu.be/HOdbzGCI5ME",
+			embedVideo = "https://youtu.be/HOdbzGCI5ME",
+			navTab = "URL",
 			webContentContent = "WC WebContent Content",
 			webContentTitle = "WC WebContent Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		DepotNavigator.openDepotWebContentAdmin(depotName = "Test Depot Name");
 
@@ -802,6 +812,8 @@ definition {
 			depotName = "Test Depot Name",
 			webContentTitle = "WC WebContent Title");
 
+		Refresh();
+
 		Navigator.openSitePage(
 			pageName = "Test Page",
 			siteName = "Site Name");
@@ -815,7 +827,7 @@ definition {
 		User.logoutPG();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://localhost:9080",
 			userEmailAddress = "test@liferay.com");
 

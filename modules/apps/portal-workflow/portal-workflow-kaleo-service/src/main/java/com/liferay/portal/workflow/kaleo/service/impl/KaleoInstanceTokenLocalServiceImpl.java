@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.impl;
@@ -29,6 +20,7 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.workflow.kaleo.constants.KaleoInstanceTokenConstants;
@@ -37,6 +29,7 @@ import com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken;
 import com.liferay.portal.workflow.kaleo.model.KaleoNode;
 import com.liferay.portal.workflow.kaleo.service.KaleoNodeLocalService;
 import com.liferay.portal.workflow.kaleo.service.base.KaleoInstanceTokenLocalServiceBaseImpl;
+import com.liferay.portal.workflow.kaleo.service.persistence.KaleoInstancePersistence;
 import com.liferay.portal.workflow.kaleo.service.persistence.KaleoInstanceTokenQuery;
 
 import java.io.Serializable;
@@ -68,7 +61,8 @@ public class KaleoInstanceTokenLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(serviceContext.getGuestOrUserId());
+		User user = _userLocalService.getUser(
+			serviceContext.getGuestOrUserId());
 		Date date = new Date();
 
 		long kaleoInstanceTokenId = counterLocalService.increment();
@@ -76,11 +70,8 @@ public class KaleoInstanceTokenLocalServiceImpl
 		KaleoInstanceToken kaleoInstanceToken =
 			kaleoInstanceTokenPersistence.create(kaleoInstanceTokenId);
 
-		long groupId = _staging.getLiveGroupId(
-			serviceContext.getScopeGroupId());
-
-		kaleoInstanceToken.setGroupId(groupId);
-
+		kaleoInstanceToken.setGroupId(
+			_staging.getLiveGroupId(serviceContext.getScopeGroupId()));
 		kaleoInstanceToken.setCompanyId(user.getCompanyId());
 		kaleoInstanceToken.setUserId(user.getUserId());
 		kaleoInstanceToken.setUserName(user.getFullName());
@@ -94,7 +85,7 @@ public class KaleoInstanceTokenLocalServiceImpl
 			parentKaleoInstanceTokenId);
 
 		if (currentKaleoNodeId > 0) {
-			setCurrentKaleoNode(kaleoInstanceToken, currentKaleoNodeId);
+			_setCurrentKaleoNode(kaleoInstanceToken, currentKaleoNodeId);
 		}
 
 		kaleoInstanceToken.setClassName(
@@ -235,8 +226,8 @@ public class KaleoInstanceTokenLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		KaleoInstance kaleoInstance = kaleoInstancePersistence.findByPrimaryKey(
-			kaleoInstanceId);
+		KaleoInstance kaleoInstance =
+			_kaleoInstancePersistence.findByPrimaryKey(kaleoInstanceId);
 
 		long rootKaleoInstanceTokenId =
 			kaleoInstance.getRootKaleoInstanceTokenId();
@@ -262,7 +253,7 @@ public class KaleoInstanceTokenLocalServiceImpl
 		kaleoInstance.setRootKaleoInstanceTokenId(
 			kaleoInstanceToken.getKaleoInstanceTokenId());
 
-		kaleoInstancePersistence.update(kaleoInstance);
+		_kaleoInstancePersistence.update(kaleoInstance);
 
 		return kaleoInstanceToken;
 	}
@@ -294,7 +285,7 @@ public class KaleoInstanceTokenLocalServiceImpl
 				IndexerRegistryUtil.nullSafeGetIndexer(
 					KaleoInstanceToken.class);
 
-			SearchContext searchContext = buildSearchContext(
+			SearchContext searchContext = _buildSearchContext(
 				kaleoInstanceTokenQuery, start, end, sorts, serviceContext);
 
 			return indexer.search(searchContext);
@@ -329,7 +320,7 @@ public class KaleoInstanceTokenLocalServiceImpl
 				IndexerRegistryUtil.nullSafeGetIndexer(
 					KaleoInstanceToken.class);
 
-			SearchContext searchContext = buildSearchContext(
+			SearchContext searchContext = _buildSearchContext(
 				kaleoInstanceTokenQuery, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
 				null, serviceContext);
 
@@ -350,12 +341,12 @@ public class KaleoInstanceTokenLocalServiceImpl
 			kaleoInstanceTokenPersistence.findByPrimaryKey(
 				kaleoInstanceTokenId);
 
-		setCurrentKaleoNode(kaleoInstanceToken, currentKaleoNodeId);
+		_setCurrentKaleoNode(kaleoInstanceToken, currentKaleoNodeId);
 
 		return kaleoInstanceTokenPersistence.update(kaleoInstanceToken);
 	}
 
-	protected SearchContext buildSearchContext(
+	private SearchContext _buildSearchContext(
 		KaleoInstanceTokenQuery kaleoInstanceTokenQuery, int start, int end,
 		Sort[] sorts, ServiceContext serviceContext) {
 
@@ -377,7 +368,7 @@ public class KaleoInstanceTokenLocalServiceImpl
 		return searchContext;
 	}
 
-	protected void setCurrentKaleoNode(
+	private void _setCurrentKaleoNode(
 			KaleoInstanceToken kaleoInstanceToken, long currentKaleoNodeId)
 		throws PortalException {
 
@@ -390,9 +381,15 @@ public class KaleoInstanceTokenLocalServiceImpl
 	}
 
 	@Reference
+	private KaleoInstancePersistence _kaleoInstancePersistence;
+
+	@Reference
 	private KaleoNodeLocalService _kaleoNodeLocalService;
 
 	@Reference
 	private Staging _staging;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

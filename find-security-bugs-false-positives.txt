@@ -48,9 +48,6 @@ com/liferay/commerce/account/admin/web/internal/frontend/taglib/servlet/taglib/C
 com/liferay/commerce/account/admin/web/internal/frontend/taglib/servlet/taglib/CommerceAccountUserRelScreenNavigationEntry.getScreenNavigationKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/account/admin/web/internal/portlet/CommerceAccountPortletProvider.getPortletName()Ljava/lang/String;:SAFE
 com/liferay/commerce/account/admin/web/internal/portlet/action/EditCommerceAccountMVCRenderCommand.render(Ljavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;)Ljava/lang/String;:SAFE
-com/liferay/commerce/account/constants/CommerceAccountConstants.getAccountGroupTypeLabel(I)Ljava/lang/String;:SAFE
-com/liferay/commerce/account/constants/CommerceAccountConstants.getAccountTypeLabel(I)Ljava/lang/String;:SAFE
-com/liferay/commerce/account/constants/CommerceAccountConstants.getSiteTypeLabel(I)Ljava/lang/String;:SAFE
 com/liferay/commerce/account/group/admin/web/internal/application/list/CommerceAccountGroupPanelApp.getPortletId()Ljava/lang/String;:SAFE
 com/liferay/commerce/account/group/admin/web/internal/display/context/CommerceAccountGroupAdminDisplayContext.getItemSelectorUrl()Ljava/lang/String;:SAFE
 com/liferay/commerce/account/group/admin/web/internal/display/context/CommerceAccountGroupAdminDisplayContext.getPortletURL()Ljavax/portlet/PortletURL;:SAFE
@@ -72,8 +69,6 @@ com/liferay/commerce/account/internal/security/permission/resource/CommerceAccou
 com/liferay/commerce/account/internal/security/permission/resource/CommerceAccountGroupModelResourcePermission.getPortletResourcePermission()Lcom/liferay/portal/kernel/security/permission/resource/PortletResourcePermission;:NULL
 com/liferay/commerce/account/internal/security/permission/resource/CommerceAccountModelResourcePermission.getModelName()Ljava/lang/String;:SAFE
 com/liferay/commerce/account/internal/security/permission/resource/CommerceAccountModelResourcePermission.getPortletResourcePermission()Lcom/liferay/portal/kernel/security/permission/resource/PortletResourcePermission;:NULL
-com/liferay/commerce/account/internal/settings/definition/CommerceAccountGroupServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/account/internal/settings/definition/CommerceAccountServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/account/internal/util/CommerceAccountHelperImpl.getUserCommerceAccountIds(JJ)[J:SAFE
 com/liferay/commerce/account/internal/workflow/CommerceAccountWorkflowHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/account/internal/workflow/CommerceAccountWorkflowHandler.getType(Ljava/util/Locale;)Ljava/lang/String;:SAFE
@@ -323,7 +318,6 @@ com/liferay/commerce/address/content/web/internal/portlet/action/CommerceAddress
 com/liferay/commerce/address/content/web/internal/portlet/template/CommerceAddressContentPortletDisplayTemplateHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/address/content/web/internal/portlet/template/CommerceAddressContentPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
 com/liferay/commerce/address/content/web/internal/portlet/template/CommerceAddressContentPortletDisplayTemplateHandler.getTemplatesConfigPath()Ljava/lang/String;:SAFE
-com/liferay/commerce/address/content/web/internal/settings/definition/CommerceAddressContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/address/web/internal/application/list/CommerceCountryPanelApp.getPortletId()Ljava/lang/String;:SAFE
 com/liferay/commerce/address/web/internal/display/context/BaseCommerceCountriesDisplayContext.getNavigation()Ljava/lang/String;:SAFE
 com/liferay/commerce/address/web/internal/display/context/BaseCommerceCountriesDisplayContext.getPortletURL()Ljavax/portlet/PortletURL;:SAFE
@@ -636,9 +630,6 @@ com/liferay/commerce/cart/content/web/internal/portlet/template/CommerceCartCont
 com/liferay/commerce/cart/content/web/internal/portlet/template/CommerceCartContentTotalPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
 com/liferay/commerce/cart/content/web/internal/portlet/template/CommerceCartContentTotalPortletDisplayTemplateHandler.getTemplatesConfigPath()Ljava/lang/String;:SAFE
 com/liferay/commerce/cart/content/web/internal/servlet/taglib/AddToCartButtonJSPDynamicInclude.getJspPath()Ljava/lang/String;:SAFE
-com/liferay/commerce/cart/content/web/internal/settings/definition/CommerceCartContentMiniPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/cart/content/web/internal/settings/definition/CommerceCartContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/cart/content/web/internal/settings/definition/CommerceCartContentTotalPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/cart/taglib/servlet/taglib/AddToCartTag._getURI()Ljava/lang/String;:SAFE
 com/liferay/commerce/cart/taglib/servlet/taglib/AddToCartTag.getModule()Ljava/lang/String;:SAFE
 com/liferay/commerce/cart/taglib/servlet/taglib/QuantityControlTag.getPage()Ljava/lang/String;:SAFE
@@ -758,8 +749,6 @@ com/liferay/commerce/currency/internal/model/CommerceMoneyFactoryImpl.create(Lco
 com/liferay/commerce/currency/internal/model/CommerceMoneyFactoryImpl.create(Lcom/liferay/commerce/currency/model/CommerceCurrency;Ljava/math/BigDecimal;Lcom/liferay/commerce/currency/util/PriceFormat;)Lcom/liferay/commerce/currency/model/CommerceMoney;:SAFE
 com/liferay/commerce/currency/internal/model/CommerceMoneyImpl.format(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/currency/internal/model/CommerceMoneyImpl.getPrice()Ljava/math/BigDecimal;:SAFE
-com/liferay/commerce/currency/internal/settings/definition/CommerceCurrencyConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/currency/internal/settings/definition/RoundingTypeConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/currency/internal/util/CommercePriceFormatterImpl.format(Lcom/liferay/commerce/currency/model/CommerceCurrency;Ljava/math/BigDecimal;Ljava/util/Locale;)Ljava/lang/String;:1
 com/liferay/commerce/currency/internal/util/CommercePriceFormatterImpl.format(Ljava/math/BigDecimal;Ljava/util/Locale;)Ljava/lang/String;:1
 com/liferay/commerce/currency/internal/util/CommercePriceFormatterImpl.formatAsRelative(Lcom/liferay/commerce/currency/model/CommerceCurrency;Ljava/math/BigDecimal;Ljava/util/Locale;)Ljava/lang/String;:1,SAFE
@@ -828,7 +817,6 @@ com/liferay/commerce/currency/web/internal/frontend/taglib/servlet/taglib/Commer
 com/liferay/commerce/currency/web/internal/frontend/taglib/servlet/taglib/CommerceCurrencyExchangeRateScreenNavigationCategory.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/currency/web/internal/frontend/taglib/servlet/taglib/CommerceCurrencyExchangeRateScreenNavigationCategory.getScreenNavigationKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/currency/web/internal/portlet/action/EditCommerceCurrencyMVCRenderCommand.render(Ljavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;)Ljava/lang/String;:SAFE
-com/liferay/commerce/dashboard/web/internal/configuration/definition/CommerceDashboardForecastPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/data/integration/internal/configuration/CommerceDataIntegrationConfigurationCategory.getBundleSymbolicName()Ljava/lang/String;:SAFE
 com/liferay/commerce/data/integration/internal/configuration/CommerceDataIntegrationConfigurationCategory.getCategoryKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/data/integration/internal/configuration/CommerceDataIntegrationConfigurationCategory.getCategorySection()Ljava/lang/String;:SAFE
@@ -1422,12 +1410,6 @@ com/liferay/commerce/internal/search/CommerceSearcher.getSearchClassNames()[Ljav
 com/liferay/commerce/internal/search/CommerceShipmentIndexer.doGetSummary(Lcom/liferay/portal/kernel/search/Document;Ljava/util/Locale;Ljava/lang/String;Ljavax/portlet/PortletRequest;Ljavax/portlet/PortletResponse;)Lcom/liferay/portal/kernel/search/Summary;:NULL
 com/liferay/commerce/internal/search/CommerceShipmentIndexer.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/internal/search/CommerceSubscriptionEntryIndexer.getClassName()Ljava/lang/String;:SAFE
-com/liferay/commerce/internal/settings/definition/CommerceOrderCheckoutConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/internal/settings/definition/CommerceOrderConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/internal/settings/definition/CommerceOrderFieldsConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/internal/settings/definition/CommercePriceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/internal/settings/definition/CommerceShippingGroupServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/internal/settings/definition/CommerceSubscriptionConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/internal/starter/ArgentinaCommerceRegionsStarter.getFilePath()Ljava/lang/String;:SAFE
 com/liferay/commerce/internal/starter/ArgentinaCommerceRegionsStarter.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/internal/starter/AustraliaCommerceRegionsStarter.getFilePath()Ljava/lang/String;:SAFE
@@ -1830,7 +1812,6 @@ com/liferay/commerce/machine/learning/internal/recommendation/search/index/Produ
 com/liferay/commerce/machine/learning/internal/recommendation/search/index/UserCommerceMLRecommendationIndexer.getDocumentType()Ljava/lang/String;:SAFE
 com/liferay/commerce/media/internal/configuration/definition/CommerceMediaDefaultImageConfigurationPidMapping.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/media/internal/configuration/definition/CommerceMediaDefaultImageConfigurationPidMapping.getConfigurationPid()Ljava/lang/String;:SAFE
-com/liferay/commerce/media/internal/settings/definition/CommerceMediaDefaultImageConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/model/CPDAvailabilityEstimate$1.get(Lcom/liferay/commerce/model/CPDAvailabilityEstimate;)Ljava/lang/Long;:SAFE
 com/liferay/commerce/model/CPDAvailabilityEstimate$1.get(Ljava/lang/Object;)Ljava/lang/Object;:SAFE
 com/liferay/commerce/model/CPDAvailabilityEstimate$1.getAttributeClass()Ljava/lang/Class;:SAFE
@@ -2322,7 +2303,6 @@ com/liferay/commerce/model/impl/CommerceSubscriptionEntryModelImpl.toModels([Lco
 com/liferay/commerce/notification/internal/configuration/definition/CommerceNotificationQueueEntryServiceConfigurationPidMapping.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/notification/internal/configuration/definition/CommerceNotificationQueueEntryServiceConfigurationPidMapping.getConfigurationPid()Ljava/lang/String;:SAFE
 com/liferay/commerce/notification/internal/security/permission/resource/CommerceNotificationPortletResourcePermissionDefinition.getResourceName()Ljava/lang/String;:SAFE
-com/liferay/commerce/notification/internal/settings/definition/CommerceNotificationQueueEntryConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/notification/model/CommerceNotificationAttachment$1.get(Lcom/liferay/commerce/notification/model/CommerceNotificationAttachment;)Ljava/lang/Long;:SAFE
 com/liferay/commerce/notification/model/CommerceNotificationAttachment$1.get(Ljava/lang/Object;)Ljava/lang/Object;:SAFE
 com/liferay/commerce/notification/model/CommerceNotificationAttachment$1.getAttributeClass()Ljava/lang/Class;:SAFE
@@ -2499,8 +2479,6 @@ com/liferay/commerce/order/content/web/internal/portlet/template/CommerceOpenOrd
 com/liferay/commerce/order/content/web/internal/portlet/template/CommerceOpenOrderContentPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
 com/liferay/commerce/order/content/web/internal/portlet/template/CommerceOrderContentPortletDisplayTemplateHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/order/content/web/internal/portlet/template/CommerceOrderContentPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
-com/liferay/commerce/order/content/web/internal/settings/definition/CommerceOpenOrderContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/order/content/web/internal/settings/definition/CommerceOrderContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/order/web/internal/application/list/CommerceOrderPanelApp.getPortletId()Ljava/lang/String;:SAFE
 com/liferay/commerce/order/web/internal/asset/CommerceOrderAssetRenderer.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/order/web/internal/asset/CommerceOrderAssetRenderer.getJspPath(Ljavax/servlet/http/HttpServletRequest;Ljava/lang/String;)Ljava/lang/String;:SAFE
@@ -2683,7 +2661,6 @@ com/liferay/commerce/payment/method/money/order/internal/frontend/taglib/servlet
 com/liferay/commerce/payment/method/money/order/internal/frontend/taglib/servlet/taglib/MoneyOrderCommercePaymentEngineMethodConfigurationScreenNavigationEntry.getEntryKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/payment/method/money/order/internal/frontend/taglib/servlet/taglib/MoneyOrderCommercePaymentEngineMethodConfigurationScreenNavigationEntry.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/payment/method/money/order/internal/frontend/taglib/servlet/taglib/MoneyOrderCommercePaymentEngineMethodConfigurationScreenNavigationEntry.getScreenNavigationKey()Ljava/lang/String;:SAFE
-com/liferay/commerce/payment/method/money/order/internal/settings/definition/MoneyOrderCommercePaymentEngineGroupServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/payment/method/money/order/internal/util/MoneyOrderCommerceCheckoutStep.getName()Ljava/lang/String;:SAFE
 com/liferay/commerce/payment/method/paypal/internal/PayPalCommercePaymentMethod._getResource(Ljava/util/Locale;Ljava/lang/String;)Ljava/lang/String;:0
 com/liferay/commerce/payment/method/paypal/internal/PayPalCommercePaymentMethod.authorizePayment(Lcom/liferay/commerce/payment/request/CommercePaymentRequest;)Lcom/liferay/commerce/payment/result/CommercePaymentResult;:NULL
@@ -3153,7 +3130,6 @@ com/liferay/commerce/pricing/internal/modifier/CommercePriceModifierHelperImpl.a
 com/liferay/commerce/pricing/internal/search/CommercePricingClassIndexer.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/pricing/internal/security/permission/resource/CommercePricingClassModelResourcePermission.getModelName()Ljava/lang/String;:SAFE
 com/liferay/commerce/pricing/internal/security/permission/resource/CommercePricingClassModelResourcePermission.getPortletResourcePermission()Lcom/liferay/portal/kernel/security/permission/resource/PortletResourcePermission;:NULL
-com/liferay/commerce/pricing/internal/settings/definition/CommercePricingConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/pricing/internal/type/FixedAmountCommercePriceModifierTypeImpl.evaluate(Ljava/math/BigDecimal;Lcom/liferay/commerce/pricing/model/CommercePriceModifier;)Ljava/math/BigDecimal;:SAFE
 com/liferay/commerce/pricing/internal/type/FixedAmountCommercePriceModifierTypeImpl.getKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/pricing/internal/type/FixedAmountCommercePriceModifierTypeImpl.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
@@ -3495,7 +3471,6 @@ com/liferay/commerce/product/asset/categories/navigation/web/internal/display/co
 com/liferay/commerce/product/asset/categories/navigation/web/internal/portlet/action/CPAssetCategoriesNavigationConfigurationAction.getJspPath(Ljavax/servlet/http/HttpServletRequest;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/asset/categories/navigation/web/internal/portlet/template/CPAssetCategoriesNavigationPortletDisplayTemplateHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/asset/categories/navigation/web/internal/portlet/template/CPAssetCategoriesNavigationPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
-com/liferay/commerce/product/asset/categories/navigation/web/internal/settings/definition/CPAssetCategoriesNavigationPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/product/asset/categories/web/internal/display/context/CategoryCPAttachmentFileEntriesDisplayContext.getImageExtensions()[Ljava/lang/String;:SAFE
 com/liferay/commerce/product/asset/categories/web/internal/display/context/CategoryCPAttachmentFileEntriesDisplayContext.getItemSelectorUrl()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/asset/categories/web/internal/display/context/CategoryCPDisplayLayoutDisplayContext.getAddCategoryDisplayPageURL()Ljava/lang/String;:SAFE
@@ -3550,11 +3525,11 @@ com/liferay/commerce/product/constants/CPConstants.SEPARATOR_PRODUCT_URL:SAFE
 com/liferay/commerce/product/constants/CPConstants.SERVICE_NAME:SAFE
 com/liferay/commerce/product/constants/CPConstants.WEEKLY_SUBSCRIPTION_TYPE:SAFE
 com/liferay/commerce/product/constants/CPConstants.YEARLY_SUBSCRIPTION_TYPE:SAFE
+com/liferay/commerce/product/constants/CommerceChannelConstants.getSiteTypeLabel(I)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/category/web/internal/portlet/action/CPCategoryContentConfigurationAction.getJspPath(Ljavax/servlet/http/HttpServletRequest;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/category/web/internal/portlet/template/CPCategoryContentPortletDisplayTemplateHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/category/web/internal/portlet/template/CPCategoryContentPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/category/web/internal/portlet/template/CPCategoryContentPortletDisplayTemplateHandler.getTemplatesConfigPath()Ljava/lang/String;:SAFE
-com/liferay/commerce/product/content/category/web/internal/settings/definition/CPCategoryContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/product/content/render/CPContentRenderer.getKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/render/list/CPContentListRenderer.getKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/render/list/CPContentListRenderer.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
@@ -3605,8 +3580,6 @@ com/liferay/commerce/product/content/search/web/internal/portlet/template/CPSear
 com/liferay/commerce/product/content/search/web/internal/portlet/template/CPSearchResultsPortletDisplayTemplateHandler.getTemplatesConfigPath()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/search/web/internal/render/list/SearchResultsCPContentListRenderer.getKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/search/web/internal/render/list/SearchResultsCPContentListRenderer.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
-com/liferay/commerce/product/content/search/web/internal/settings/definition/CPPriceRangeFacetsPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/product/content/search/web/internal/settings/definition/CPSearchResultsPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/product/content/search/web/internal/util/CPOptionFacetsUtil.getIndexFieldName(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;:0,1,SAFE
 com/liferay/commerce/product/content/search/web/internal/util/CPSpecificationOptionFacetsUtil.getIndexFieldName(Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;:0,1,SAFE
 com/liferay/commerce/product/content/util/CPContentHelper.getViewAttachmentURL(Lcom/liferay/portal/kernel/portlet/LiferayPortletRequest;Lcom/liferay/portal/kernel/portlet/LiferayPortletResponse;)Ljavax/portlet/ResourceURL;:SAFE
@@ -3617,6 +3590,12 @@ com/liferay/commerce/product/content/web/internal/display/context/CPPublisherCon
 com/liferay/commerce/product/content/web/internal/display/context/CPPublisherConfigurationDisplayContext.getItemSelectorUrl()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/display/context/CPPublisherConfigurationDisplayContext.getTagSelectorURL()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/display/context/CPPublisherDisplayContext.getPortletURL()Ljavax/portlet/PortletURL;:SAFE
+com/liferay/commerce/product/content/web/internal/helper/CPCompareContentHelperImpl.getClearCompareProductsURL(Ljavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;)Ljava/lang/String;:SAFE
+com/liferay/commerce/product/content/web/internal/helper/CPCompareContentHelperImpl.getCompareProductsURL(Lcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/lang/String;:SAFE
+com/liferay/commerce/product/content/web/internal/helper/CPCompareContentHelperImpl.getDeleteCompareProductURL(JLjavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;)Ljava/lang/String;:SAFE
+com/liferay/commerce/product/content/web/internal/helper/CPContentHelperImpl._filterByInventoryAvailability(Ljava/util/Map;)Ljava/util/Map;:0
+com/liferay/commerce/product/content/web/internal/helper/CPContentHelperImpl.getCPAttachmentFileEntries(JLcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/util/List;:SAFE
+com/liferay/commerce/product/content/web/internal/helper/CPContentHelperImpl.getFriendlyURL(Lcom/liferay/commerce/product/catalog/CPCatalogEntry;Lcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/portlet/action/CPContentConfigurationAction.getJspPath(Ljavax/servlet/http/HttpServletRequest;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/portlet/template/CPCompareContentMiniPortletDisplayTemplateHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/portlet/template/CPCompareContentMiniPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
@@ -3755,16 +3734,6 @@ com/liferay/commerce/product/content/web/internal/render/list/CompareProductsMin
 com/liferay/commerce/product/content/web/internal/render/list/CompareProductsMiniCPContentListRenderer.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/render/list/ProductPublisherCPContentListRenderer.getKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/content/web/internal/render/list/ProductPublisherCPContentListRenderer.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
-com/liferay/commerce/product/content/web/internal/settings/definition/CPCompareContentMiniPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/product/content/web/internal/settings/definition/CPCompareContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/product/content/web/internal/settings/definition/CPContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/product/content/web/internal/settings/definition/CPPublisherPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/product/content/web/internal/util/CPCompareContentHelperImpl.getClearCompareProductsURL(Ljavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;)Ljava/lang/String;:SAFE
-com/liferay/commerce/product/content/web/internal/util/CPCompareContentHelperImpl.getCompareProductsURL(Lcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/lang/String;:SAFE
-com/liferay/commerce/product/content/web/internal/util/CPCompareContentHelperImpl.getDeleteCompareProductURL(JLjavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;)Ljava/lang/String;:SAFE
-com/liferay/commerce/product/content/web/internal/util/CPContentHelperImpl._filterByInventoryAvailability(Ljava/util/Map;)Ljava/util/Map;:0
-com/liferay/commerce/product/content/web/internal/util/CPContentHelperImpl.getCPAttachmentFileEntries(JLcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/util/List;:SAFE
-com/liferay/commerce/product/content/web/internal/util/CPContentHelperImpl.getFriendlyURL(Lcom/liferay/commerce/product/catalog/CPCatalogEntry;Lcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/data/source/CPDataSource.getName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/ddm/DDMHelper.renderCPAttachmentFileEntryOptions(JLjava/lang/String;Ljavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;Ljava/util/Map;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/ddm/DDMHelper.renderCPInstanceOptions(JLjava/lang/String;ZLjavax/portlet/RenderRequest;Ljavax/portlet/RenderResponse;Ljava/util/Map;)Ljava/lang/String;:SAFE
@@ -3970,8 +3939,6 @@ com/liferay/commerce/product/internal/security/permission/resource/CommerceCatal
 com/liferay/commerce/product/internal/security/permission/resource/CommerceChannelModelResourcePermission.getModelName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/internal/security/permission/resource/CommerceChannelModelResourcePermission.getPortletResourcePermission()Lcom/liferay/portal/kernel/security/permission/resource/PortletResourcePermission;:NULL
 com/liferay/commerce/product/internal/security/permission/resource/definition/CPPortletResourcePermissionDefinition.getResourceName()Ljava/lang/String;:SAFE
-com/liferay/commerce/product/internal/settings/definition/CPOptionConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/product/internal/settings/definition/CProductVersionConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/product/internal/util/CPCompareHelperImpl._getSessionAttributeKey(J)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/internal/util/CPDefinitionHelperImpl._getCPDefinitionSearcher(JLcom/liferay/portal/kernel/search/SearchContext;Lcom/liferay/commerce/product/catalog/CPQuery;II)Lcom/liferay/commerce/product/internal/search/CPDefinitionSearcher;:SAFE
 com/liferay/commerce/product/internal/util/CPDefinitionHelperImpl._getOrderByCol(Ljava/lang/String;)Ljava/lang/String;:0,SAFE
@@ -3981,11 +3948,6 @@ com/liferay/commerce/product/internal/util/CPInstanceHelperImpl.getDefaultCPSku(
 com/liferay/commerce/product/internal/util/DDMFormValuesHelperImpl._toJSONObject(Lcom/liferay/dynamic/data/mapping/storage/DDMFormFieldValue;)Lcom/liferay/portal/kernel/json/JSONObject;:SAFE
 com/liferay/commerce/product/internal/util/DDMFormValuesHelperImpl.cleanDDMFormValuesJSON(Ljava/lang/String;)Ljava/lang/String;:0
 com/liferay/commerce/product/internal/util/DDMFormValuesHelperImpl.serialize(Lcom/liferay/dynamic/data/mapping/storage/DDMFormValues;)Ljava/lang/String;:SAFE
-com/liferay/commerce/product/internal/util/JsonHelperImpl._toJSONArray(Ljava/lang/String;)Lcom/liferay/portal/kernel/json/JSONArray;:SAFE
-com/liferay/commerce/product/internal/util/JsonHelperImpl.getFirstElementStringValue(Ljava/lang/String;)Ljava/lang/String;:0
-com/liferay/commerce/product/internal/util/JsonHelperImpl.getJSONArray(Ljava/lang/String;)Lcom/liferay/portal/kernel/json/JSONArray;:SAFE
-com/liferay/commerce/product/internal/util/JsonHelperImpl.getValueAsJSONArray(Ljava/lang/String;Lcom/liferay/portal/kernel/json/JSONObject;)Lcom/liferay/portal/kernel/json/JSONArray;:SAFE
-com/liferay/commerce/product/internal/util/JsonHelperImpl.toJSONArray(Ljava/util/Map;)Lcom/liferay/portal/kernel/json/JSONArray;:SAFE
 com/liferay/commerce/product/item/selector/web/internal/CPDefinitionItemSelectorView.getItemSelectorCriterionClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/product/item/selector/web/internal/CPDefinitionItemSelectorView.getTitle(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/item/selector/web/internal/CPInstanceItemSelectorView.getItemSelectorCriterionClass()Ljava/lang/Class;:SAFE
@@ -4837,7 +4799,6 @@ com/liferay/commerce/product/type/virtual/order/content/web/internal/display/con
 com/liferay/commerce/product/type/virtual/order/content/web/internal/portlet/action/CommerceVirtualOrderItemContentConfigurationAction.getJspPath(Ljavax/servlet/http/HttpServletRequest;)Ljava/lang/String;:SAFE
 com/liferay/commerce/product/type/virtual/order/content/web/internal/portlet/template/CommerceVirtualOrderItemContentPortletDisplayTemplateHandler.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/product/type/virtual/order/content/web/internal/portlet/template/CommerceVirtualOrderItemContentPortletDisplayTemplateHandler.getResourceName()Ljava/lang/String;:SAFE
-com/liferay/commerce/product/type/virtual/order/content/web/internal/settings/definition/CommerceVirtualOrderItemContentPortletInstanceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/product/type/virtual/order/model/CommerceVirtualOrderItem$1.get(Lcom/liferay/commerce/product/type/virtual/order/model/CommerceVirtualOrderItem;)Ljava/lang/Long;:SAFE
 com/liferay/commerce/product/type/virtual/order/model/CommerceVirtualOrderItem$1.get(Ljava/lang/Object;)Ljava/lang/Object;:SAFE
 com/liferay/commerce/product/type/virtual/order/model/CommerceVirtualOrderItem$1.getAttributeClass()Ljava/lang/Class;:SAFE
@@ -5001,11 +4962,9 @@ com/liferay/commerce/punchout/helper/PunchOut2GoReturnServiceImpl._buildRegionJS
 com/liferay/commerce/punchout/helper/PunchOut2GoReturnServiceImpl._buildShippingAddressJSONObject(J)Lcom/liferay/portal/kernel/json/JSONObject;:SAFE
 com/liferay/commerce/punchout/internal/configuration/definition/PunchOutCompanyServiceConfigurationPidMapping.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/punchout/internal/configuration/definition/PunchOutCompanyServiceConfigurationPidMapping.getConfigurationPid()Ljava/lang/String;:SAFE
-com/liferay/commerce/punchout/internal/settings/definition/PunchOutCompanyServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/punchout/portal/security/auto/login/internal/events/PunchOutLoginPostAction._getThemeDisplay()Lcom/liferay/portal/kernel/theme/ThemeDisplay;:SAFE
 com/liferay/commerce/punchout/portal/security/auto/login/internal/module/configuration/definition/PunchOutAccessTokenAutoLoginCompanyServiceConfigurationPidMapping.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/punchout/portal/security/auto/login/internal/module/configuration/definition/PunchOutAccessTokenAutoLoginCompanyServiceConfigurationPidMapping.getConfigurationPid()Ljava/lang/String;:SAFE
-com/liferay/commerce/punchout/portal/security/auto/login/internal/module/settings/definition/PunchOutAccessTokenAutoLoginCompanyServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/punchout/web/internal/checkout/PunchOutCommerceCheckoutStep.getName()Ljava/lang/String;:SAFE
 com/liferay/commerce/punchout/web/internal/frontend/taglib/servlet/taglib/CommerceChannelPunchOutScreenNavigationEntry.getCategoryKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/punchout/web/internal/frontend/taglib/servlet/taglib/CommerceChannelPunchOutScreenNavigationEntry.getEntryKey()Ljava/lang/String;:SAFE
@@ -5179,7 +5138,7 @@ com/liferay/commerce/shipment/web/internal/application/list/CommerceShipmentPane
 com/liferay/commerce/shipment/web/internal/display/context/BaseCommerceShipmentDisplayContext.getKeywords()Ljava/lang/String;:SAFE
 com/liferay/commerce/shipment/web/internal/display/context/BaseCommerceShipmentDisplayContext.getPortletURL()Ljavax/portlet/PortletURL;:SAFE
 com/liferay/commerce/shipment/web/internal/display/context/CommerceShipmentDisplayContext.getCommerceAccountThumbnailURL(Lcom/liferay/commerce/account/model/CommerceAccount;Ljava/lang/String;)Ljava/lang/String;:0
-com/liferay/commerce/shipment/web/internal/display/context/CommerceShipmentDisplayContext.getDatasetView()Ljava/lang/String;:SAFE
+com/liferay/commerce/shipment/web/internal/display/context/CommerceShipmentDisplayContext.getFDSName()Ljava/lang/String;:SAFE
 com/liferay/commerce/shipment/web/internal/display/context/CommerceShipmentDisplayContext.getNavigation()Ljava/lang/String;:SAFE
 com/liferay/commerce/shipment/web/internal/display/context/CommerceShipmentDisplayContext.getPortletURL()Ljavax/portlet/PortletURL;:SAFE
 com/liferay/commerce/shipment/web/internal/display/context/CommerceShipmentDisplayContext.getShipmentItemBulkActions()Ljava/util/List;:SAFE
@@ -5209,10 +5168,9 @@ com/liferay/commerce/shipping/engine/fedex/internal/frontend/taglib/servlet/tagl
 com/liferay/commerce/shipping/engine/fedex/internal/frontend/taglib/servlet/taglib/CommerceShippingMethodFedExConfigurationScreenNavigationCategory.getEntryKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/shipping/engine/fedex/internal/frontend/taglib/servlet/taglib/CommerceShippingMethodFedExConfigurationScreenNavigationCategory.getLabel(Ljava/util/Locale;)Ljava/lang/String;:SAFE
 com/liferay/commerce/shipping/engine/fedex/internal/frontend/taglib/servlet/taglib/CommerceShippingMethodFedExConfigurationScreenNavigationCategory.getScreenNavigationKey()Ljava/lang/String;:SAFE
-com/liferay/commerce/shipping/engine/fedex/internal/settings/definition/FedExCommerceShippingEngineGroupServiceConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
-com/liferay/commerce/shipping/engine/fedex/internal/util/FedExCommerceShippingOptionHelper._getAmount(Lcom/fedex/ws/rate/v22/Money;)Ljava/math/BigDecimal;:SAFE
-com/liferay/commerce/shipping/engine/fedex/internal/util/FedExCommerceShippingOptionHelper._getPrice(JI)Ljava/math/BigDecimal;:SAFE
-com/liferay/commerce/shipping/engine/fedex/internal/util/FedExCommerceShippingOptionHelper._getPrice(Ljava/util/List;)Ljava/math/BigDecimal;:SAFE
+com/liferay/commerce/shipping/engine/fedex/internal/helper/FedExCommerceShippingOptionHelper._getAmount(Lcom/fedex/ws/rate/v22/Money;)Ljava/math/BigDecimal;:SAFE
+com/liferay/commerce/shipping/engine/fedex/internal/helper/FedExCommerceShippingOptionHelper._getPrice(JI)Ljava/math/BigDecimal;:SAFE
+com/liferay/commerce/shipping/engine/fedex/internal/helper/FedExCommerceShippingOptionHelper._getPrice(Ljava/util/List;)Ljava/math/BigDecimal;:SAFE
 com/liferay/commerce/shipping/engine/fixed/internal/search/CommerceShippingFixedOptionIndexer.doGetSummary(Lcom/liferay/portal/kernel/search/Document;Ljava/util/Locale;Ljava/lang/String;Ljavax/portlet/PortletRequest;Ljavax/portlet/PortletResponse;)Lcom/liferay/portal/kernel/search/Summary;:NULL
 com/liferay/commerce/shipping/engine/fixed/internal/search/CommerceShippingFixedOptionIndexer.getClassName()Ljava/lang/String;:SAFE
 com/liferay/commerce/shipping/engine/fixed/model/CommerceShippingFixedOption$1.get(Lcom/liferay/commerce/shipping/engine/fixed/model/CommerceShippingFixedOption;)Ljava/lang/Long;:SAFE
@@ -5330,9 +5288,9 @@ com/liferay/commerce/subscription/web/internal/display/context/CommerceSubscript
 com/liferay/commerce/subscription/web/internal/display/context/CommerceSubscriptionEntryDisplayContext.getNavigation()Ljava/lang/String;:SAFE
 com/liferay/commerce/subscription/web/internal/display/context/CommerceSubscriptionEntryDisplayContext.getPortletURL()Ljavax/portlet/PortletURL;:SAFE
 com/liferay/commerce/subscription/web/internal/display/context/CommerceSubscriptionEntryDisplayContext.getTransitionOrderPortletURL()Ljavax/portlet/PortletURL;:SAFE
-com/liferay/commerce/subscription/web/internal/display/context/util/CommerceSubscriptionDisplayContextHelper._getActionURL(Ljava/lang/String;)Ljavax/portlet/PortletURL;:SAFE
-com/liferay/commerce/subscription/web/internal/display/context/util/CommerceSubscriptionDisplayContextHelper._getDropdownItem(Ljava/lang/String;)Lcom/liferay/frontend/taglib/clay/servlet/taglib/util/DropdownItem;:SAFE
-com/liferay/commerce/subscription/web/internal/display/context/util/CommerceSubscriptionDisplayContextHelper.getCommerceSubscriptionEntryActionItemList()Lcom/liferay/frontend/taglib/clay/servlet/taglib/util/DropdownItemList;:SAFE
+com/liferay/commerce/subscription/web/internal/display/context/helper/CommerceSubscriptionDisplayContextHelper._getActionURL(Ljava/lang/String;)Ljavax/portlet/PortletURL;:SAFE
+com/liferay/commerce/subscription/web/internal/display/context/helper/CommerceSubscriptionDisplayContextHelper._getDropdownItem(Ljava/lang/String;)Lcom/liferay/frontend/taglib/clay/servlet/taglib/util/DropdownItem;:SAFE
+com/liferay/commerce/subscription/web/internal/display/context/helper/CommerceSubscriptionDisplayContextHelper.getCommerceSubscriptionEntryActionItemList()Lcom/liferay/frontend/taglib/clay/servlet/taglib/util/DropdownItemList;:SAFE
 com/liferay/commerce/subscription/web/internal/frontend/CommerceSubscriptionEntryClayDataSetActionProvider.lambda$getDropdownItems$0()Ljava/lang/Boolean;:SAFE
 com/liferay/commerce/subscription/web/internal/frontend/CommerceSubscriptionEntryClayDataSetActionProvider.lambda$getDropdownItems$2()Ljava/lang/Boolean;:SAFE
 com/liferay/commerce/subscription/web/internal/frontend/CommerceSubscriptionEntryDataSetDataProvider._getSubscriptionStatus(Lcom/liferay/commerce/model/CommerceSubscriptionEntry;)Lcom/liferay/commerce/subscription/web/internal/model/Label;:SAFE
@@ -5443,7 +5401,7 @@ com/liferay/commerce/tax/engine/fixed/web/internal/display/context/BaseCommerceT
 com/liferay/commerce/tax/engine/fixed/web/internal/display/context/BaseCommerceTaxFixedRateDisplayContext.getSelectedScreenNavigationCategoryKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRateAddressRelsDisplayContext.getAddTaxRateSettingURL()Ljava/lang/String;:SAFE
 com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRateAddressRelsDisplayContext.getCreationMenu()Lcom/liferay/frontend/taglib/clay/servlet/taglib/util/CreationMenu;:SAFE
-com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRateAddressRelsDisplayContext.getDatasetView()Ljava/lang/String;:SAFE
+com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRateAddressRelsDisplayContext.getFDSName()Ljava/lang/String;:SAFE
 com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRateAddressRelsDisplayContext.getScreenNavigationCategoryKey()Ljava/lang/String;:SAFE
 com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRatesDisplayContext.getAddTaxRateURL()Ljava/lang/String;:SAFE
 com/liferay/commerce/tax/engine/fixed/web/internal/display/context/CommerceTaxFixedRatesDisplayContext.getCreationMenu()Lcom/liferay/frontend/taglib/clay/servlet/taglib/util/CreationMenu;:SAFE
@@ -5624,7 +5582,6 @@ com/liferay/commerce/wish/list/internal/configuration/category/WishListsConfigur
 com/liferay/commerce/wish/list/internal/configuration/category/WishListsConfigurationCategory.getCategorySection()Ljava/lang/String;:SAFE
 com/liferay/commerce/wish/list/internal/configuration/definition/CommerceWishListConfigurationPidMapping.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/wish/list/internal/configuration/definition/CommerceWishListConfigurationPidMapping.getConfigurationPid()Ljava/lang/String;:SAFE
-com/liferay/commerce/wish/list/internal/settings/definition/CommerceWishListConfigurationBeanDeclaration.getConfigurationBeanClass()Ljava/lang/Class;:SAFE
 com/liferay/commerce/wish/list/internal/util/CommerceWishListHttpHelperImpl._getCookieName(J)Ljava/lang/String;:SAFE
 com/liferay/commerce/wish/list/model/CommerceWishList$1.get(Lcom/liferay/commerce/wish/list/model/CommerceWishList;)Ljava/lang/Long;:SAFE
 com/liferay/commerce/wish/list/model/CommerceWishList$1.get(Ljava/lang/Object;)Ljava/lang/Object;:SAFE
@@ -10702,7 +10659,6 @@ com/liferay/journal/model/JournalArticleDisplay.getContent()Ljava/lang/String;:S
 com/liferay/knowledge/base/model/KBArticleModel.getContent()Ljava/lang/String;:SAFE
 com/liferay/knowledge/base/model/KBTemplateModel.getContent()Ljava/lang/String;:SAFE
 com/liferay/knowledge/base/web/internal/util/KBArticleAssetEntriesUtil.getURL(Ljavax/servlet/http/HttpServletRequest;Lcom/liferay/portal/kernel/theme/ThemeDisplay;Lcom/liferay/asset/kernel/model/AssetRendererFactory;Lcom/liferay/asset/kernel/model/AssetRenderer;)Ljava/lang/String;:SAFE
-com/liferay/petra/log4j/Levels.ALL_LEVELS:SAFE
 com/liferay/petra/string/StringBundler.toString():SAFE@com.liferay.portal.workflow.kaleo.designer.web.internal.upgrade.v1_0_2.UpgradeKaleoDefinition
 com/liferay/polls/model/PollsChoice.getDescription(Ljava/util/Locale;)Ljava/lang/String;:1
 com/liferay/polls/model/PollsChoice.getName()Ljava/lang/String;:0
@@ -10726,7 +10682,6 @@ com/liferay/portal/kernel/json/JSONSerializer.serializeDeep(Ljava/lang/Object;)L
 com/liferay/portal/kernel/model/Group.getScopeDescriptiveName(Lcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/lang/String;:SAFE
 com/liferay/portal/kernel/model/Group.getScopeLabel(Lcom/liferay/portal/kernel/theme/ThemeDisplay;)Ljava/lang/String;:SAFE
 com/liferay/portal/kernel/model/Portlet.getPortletName()Ljava/lang/String;:SAFE
-com/liferay/portal/kernel/patcher/PatcherUtil.getInstalledPatches()[Ljava/lang/String;:SAFE
 com/liferay/portal/kernel/scripting/ScriptingUtil.getSupportedLanguages()Ljava/util/Set;:SAFE
 com/liferay/portal/kernel/search/facet/Facet.getFieldId()Ljava/lang/String;:SAFE
 com/liferay/portal/kernel/security/permission/InlineSQLHelperUtil.replacePermissionCheck(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;[J)Ljava/lang/String;:3
@@ -10749,6 +10704,7 @@ com/liferay/portal/kernel/util/StringUtil.toLowerCase(Ljava/lang/String;)Ljava/l
 com/liferay/portal/kernel/util/StringUtil.upperCaseFirstLetter(Ljava/lang/String;)Ljava/lang/String;:0
 com/liferay/portal/kernel/workflow/WorkflowConstants.getStatusLabel(I)Ljava/lang/String;:SAFE
 com/liferay/portal/kernel/workflow/WorkflowHandler.getIconCssClass()Ljava/lang/String;:SAFE
+com/liferay/portal/log4j/Levels.ALL_LEVELS:SAFE
 com/liferay/portal/workflow/kaleo/definition/exception/KaleoDefinitionValidationException$EmptyNotificationTemplate.getNode()Ljava/lang/String;:SAFE
 com/liferay/portal/workflow/kaleo/definition/exception/KaleoDefinitionValidationException$MultipleInitialStateNodes.getState1()Ljava/lang/String;:SAFE
 com/liferay/portal/workflow/kaleo/definition/exception/KaleoDefinitionValidationException$MultipleInitialStateNodes.getState2()Ljava/lang/String;:SAFE

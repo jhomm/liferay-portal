@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.tags.internal.exportimport.data.handler;
@@ -31,7 +22,6 @@ import com.liferay.portal.kernel.xml.Element;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Daniel Kocsis
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class AssetTagStagedModelDataHandler
 	extends BaseStagedModelDataHandler<AssetTag> {
 
@@ -96,18 +86,6 @@ public class AssetTagStagedModelDataHandler
 		return assetTag.getName();
 	}
 
-	protected ServiceContext createServiceContext(
-		PortletDataContext portletDataContext, AssetTag assetTag) {
-
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setCreateDate(assetTag.getCreateDate());
-		serviceContext.setModifiedDate(assetTag.getModifiedDate());
-		serviceContext.setScopeGroupId(portletDataContext.getScopeGroupId());
-
-		return serviceContext;
-	}
-
 	@Override
 	protected void doExportStagedModel(
 			PortletDataContext portletDataContext, AssetTag assetTag)
@@ -147,11 +125,18 @@ public class AssetTagStagedModelDataHandler
 
 		long userId = portletDataContext.getUserId(assetTag.getUserUuid());
 
-		ServiceContext serviceContext = createServiceContext(
+		ServiceContext serviceContext = _createServiceContext(
 			portletDataContext, assetTag);
 
-		AssetTag existingAssetTag = fetchStagedModelByUuidAndGroupId(
-			assetTag.getUuid(), portletDataContext.getScopeGroupId());
+		AssetTag existingAssetTag =
+			_assetTagLocalService.fetchAssetTagByExternalReferenceCode(
+				assetTag.getExternalReferenceCode(),
+				portletDataContext.getScopeGroupId());
+
+		if (existingAssetTag == null) {
+			existingAssetTag = fetchStagedModelByUuidAndGroupId(
+				assetTag.getUuid(), portletDataContext.getScopeGroupId());
+		}
 
 		Map<String, String[]> parameterMap =
 			portletDataContext.getParameterMap();
@@ -166,12 +151,12 @@ public class AssetTagStagedModelDataHandler
 			(!hasMergeParameter &&
 			 AssetTagsServiceConfigurationValues.STAGING_MERGE_TAGS_BY_NAME)) {
 
-			existingAssetTag = Optional.ofNullable(
-				_assetTagLocalService.fetchTag(
-					portletDataContext.getScopeGroupId(), assetTag.getName())
-			).orElse(
-				existingAssetTag
-			);
+			AssetTag fetchedAssetTag = _assetTagLocalService.fetchTag(
+				portletDataContext.getScopeGroupId(), assetTag.getName());
+
+			if (fetchedAssetTag != null) {
+				existingAssetTag = fetchedAssetTag;
+			}
 		}
 
 		AssetTag importedAssetTag = null;
@@ -181,37 +166,53 @@ public class AssetTagStagedModelDataHandler
 
 			try {
 				importedAssetTag = _assetTagLocalService.addTag(
-					userId, portletDataContext.getScopeGroupId(),
-					assetTag.getName(), serviceContext);
+					assetTag.getExternalReferenceCode(), userId,
+					portletDataContext.getScopeGroupId(), assetTag.getName(),
+					serviceContext);
 			}
 			catch (DuplicateTagException duplicateTagException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(duplicateTagException, duplicateTagException);
+					_log.debug(duplicateTagException);
 				}
 
 				importedAssetTag = _assetTagLocalService.addTag(
-					userId, portletDataContext.getScopeGroupId(),
+					assetTag.getExternalReferenceCode(), userId,
+					portletDataContext.getScopeGroupId(),
 					assetTag.getName() + " (Duplicate)", serviceContext);
 			}
 		}
 		else {
 			try {
 				importedAssetTag = _assetTagLocalService.updateTag(
-					userId, existingAssetTag.getTagId(), assetTag.getName(),
+					existingAssetTag.getExternalReferenceCode(), userId,
+					existingAssetTag.getTagId(), assetTag.getName(),
 					serviceContext);
 			}
 			catch (DuplicateTagException duplicateTagException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(duplicateTagException, duplicateTagException);
+					_log.debug(duplicateTagException);
 				}
 
 				importedAssetTag = _assetTagLocalService.updateTag(
-					userId, existingAssetTag.getTagId(),
+					existingAssetTag.getExternalReferenceCode(), userId,
+					existingAssetTag.getTagId(),
 					assetTag.getName() + " (Duplicate)", serviceContext);
 			}
 		}
 
 		portletDataContext.importClassedModel(assetTag, importedAssetTag);
+	}
+
+	private ServiceContext _createServiceContext(
+		PortletDataContext portletDataContext, AssetTag assetTag) {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setCreateDate(assetTag.getCreateDate());
+		serviceContext.setModifiedDate(assetTag.getModifiedDate());
+		serviceContext.setScopeGroupId(portletDataContext.getScopeGroupId());
+
+		return serviceContext;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

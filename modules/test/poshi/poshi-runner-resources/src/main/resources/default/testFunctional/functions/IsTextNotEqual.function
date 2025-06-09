@@ -1,26 +1,20 @@
 @default = "isTextNotEqual"
 definition {
 
-	function isNotPartialText {
-		selenium.waitForElementPresent();
+	function isNotText(locator1, value1) {
+		selenium.waitForElementPresent(${locator1}, "true");
 
-		selenium.isNotPartialText();
+		selenium.isNotText(${locator1}, ${value1});
 	}
 
-	function isNotText {
-		selenium.waitForElementPresent();
+	function isNotValue(locator1, value1) {
+		selenium.waitForElementPresent(${locator1}, "true");
 
-		selenium.isNotText();
+		selenium.isNotValue(${locator1}, ${value1});
 	}
 
-	function isNotValue {
-		selenium.waitForElementPresent();
-
-		selenium.isNotValue();
-	}
-
-	function isTextNotEqual {
-		if (contains("${locator1}", "/input")) {
+	function isTextNotEqual(locator1) {
+		if (contains(${locator1}, "/input")) {
 			IsTextNotEqual.isNotValue();
 		}
 		else {

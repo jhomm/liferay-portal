@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
@@ -35,6 +26,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionURL;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderURL;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.Writer;
 
 import java.lang.reflect.Constructor;
@@ -47,18 +50,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.portlet.ActionURL;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderURL;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -294,15 +285,16 @@ public abstract class PortletResponseImpl implements LiferayPortletResponse {
 
 		Layout layout = getLayout(portletRequestImpl, themeDisplay);
 
-		if (_portletSetup == null) {
-			_portletSetup = getPortletSetup(themeDisplay, layout, portletName);
+		if (_portletPreferences == null) {
+			_portletPreferences = getPortletPreferences(
+				themeDisplay, layout, portletName);
 		}
 
 		LiferayPortletURLPrivilegedAction liferayPortletURLPrivilegedAction =
 			new LiferayPortletURLPrivilegedAction(
 				plid, portletName, lifecycle, copy, includeLinkToLayoutUuid,
-				layout, getPortlet(), _portletSetup, portletRequestImpl, this,
-				_plid, _constructors);
+				layout, getPortlet(), _portletPreferences, portletRequestImpl,
+				this, _plid, _constructors);
 
 		return liferayPortletURLPrivilegedAction.run();
 	}
@@ -615,7 +607,7 @@ public abstract class PortletResponseImpl implements LiferayPortletResponse {
 				Writer writer = new UnsyncStringWriter();
 
 				TransformerFactory transformerFactory =
-					TransformerFactory.newInstance();
+					SecureXMLFactoryProviderUtil.newTransformerFactory();
 
 				Transformer transformer = transformerFactory.newTransformer();
 
@@ -629,10 +621,15 @@ public abstract class PortletResponseImpl implements LiferayPortletResponse {
 			}
 			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(exception, exception);
+					_log.warn(exception);
 				}
 			}
 		}
+	}
+
+	protected void clearHeaders() {
+		_headers.clear();
+		_markupHeadElements.clear();
 	}
 
 	protected Layout getLayout(
@@ -647,7 +644,7 @@ public abstract class PortletResponseImpl implements LiferayPortletResponse {
 		return layout;
 	}
 
-	protected PortletPreferences getPortletSetup(
+	protected PortletPreferences getPortletPreferences(
 		ThemeDisplay themeDisplay, Layout layout, String portletName) {
 
 		if (themeDisplay == null) {
@@ -675,7 +672,7 @@ public abstract class PortletResponseImpl implements LiferayPortletResponse {
 	private String _namespace;
 	private long _plid;
 	private Portlet _portlet;
-	private PortletPreferences _portletSetup;
+	private PortletPreferences _portletPreferences;
 	private URLEncoder _urlEncoder;
 
 }

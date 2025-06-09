@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.organizations.service.test;
@@ -17,16 +8,27 @@ package com.liferay.organizations.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
+import com.liferay.object.constants.ObjectValidationRuleConstants;
+import com.liferay.object.exception.ObjectValidationRuleEngineException;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.service.ObjectDefinitionLocalService;
+import com.liferay.object.service.ObjectValidationRuleLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTestUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.exception.NoSuchOrganizationException;
 import com.liferay.portal.kernel.exception.OrganizationParentException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.ListTypeConstants;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
+import com.liferay.portal.kernel.model.SystemEvent;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Document;
@@ -36,9 +38,12 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.SortFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.ListTypeLocalService;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.SystemEventLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
@@ -47,12 +52,15 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -357,6 +365,31 @@ public class OrganizationLocalServiceTest {
 	}
 
 	@Test
+	public void testDeleteOrganization() throws Exception {
+		Organization organization = OrganizationTestUtil.addOrganization();
+
+		_organizationLocalService.deleteOrganization(
+			organization.getOrganizationId());
+
+		Assert.assertNull(
+			_organizationLocalService.fetchOrganization(
+				organization.getOrganizationId()));
+
+		List<SystemEvent> systemEvents =
+			_systemEventLocalService.getSystemEvents(
+				0, _portal.getClassNameId(organization.getModelClassName()),
+				organization.getPrimaryKey());
+
+		SystemEvent systemEvent = systemEvents.get(0);
+
+		Assert.assertEquals(
+			organization.getExternalReferenceCode(),
+			systemEvent.getClassExternalReferenceCode());
+		Assert.assertEquals(
+			SystemEventConstants.TYPE_DELETE, systemEvent.getType());
+	}
+
+	@Test
 	public void testGetNoAssetOrganizations() throws Exception {
 		for (Organization organization :
 				_organizationLocalService.getNoAssetOrganizations()) {
@@ -364,20 +397,23 @@ public class OrganizationLocalServiceTest {
 			_organizationLocalService.deleteOrganization(organization);
 		}
 
+		long listTypeId = _listTypeLocalService.getListTypeId(
+			TestPropsValues.getCompanyId(),
+			ListTypeConstants.ORGANIZATION_STATUS_DEFAULT,
+			ListTypeConstants.ORGANIZATION_STATUS);
+
 		Organization organizationA = _organizationLocalService.addOrganization(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID,
 			RandomTestUtil.randomString(),
-			OrganizationConstants.TYPE_ORGANIZATION, 0, 0,
-			ListTypeConstants.ORGANIZATION_STATUS_DEFAULT, StringPool.BLANK,
-			false, new ServiceContext());
+			OrganizationConstants.TYPE_ORGANIZATION, 0, 0, listTypeId,
+			StringPool.BLANK, false, new ServiceContext());
 
 		Organization organizationB = _organizationLocalService.addOrganization(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID, "Test2",
-			OrganizationConstants.TYPE_ORGANIZATION, 0, 0,
-			ListTypeConstants.ORGANIZATION_STATUS_DEFAULT, StringPool.BLANK,
-			false, new ServiceContext());
+			OrganizationConstants.TYPE_ORGANIZATION, 0, 0, listTypeId,
+			StringPool.BLANK, false, new ServiceContext());
 
 		_organizations.add(organizationB);
 
@@ -395,6 +431,38 @@ public class OrganizationLocalServiceTest {
 
 		Assert.assertEquals(organizations.toString(), 1, organizations.size());
 		Assert.assertEquals(organizationB, organizations.get(0));
+	}
+
+	@Test
+	public void testGetOrAddIncompleteOrganization() throws Exception {
+
+		// Lazy referencing disabled
+
+		try {
+			_organizationLocalService.getOrAddIncompleteOrganization(
+				RandomTestUtil.randomString(), TestPropsValues.getCompanyId(),
+				TestPropsValues.getUserId(), RandomTestUtil.randomString());
+
+			Assert.fail();
+		}
+		catch (NoSuchOrganizationException noSuchOrganizationException) {
+			Assert.assertNotNull(noSuchOrganizationException);
+		}
+
+		// Lazy referencing enabled
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			Organization organization =
+				_organizationLocalService.getOrAddIncompleteOrganization(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_INCOMPLETE, organization.getStatus());
+		}
 	}
 
 	@Test
@@ -559,10 +627,11 @@ public class OrganizationLocalServiceTest {
 			"Organization B", false);
 
 		organizationAA = _organizationLocalService.updateOrganization(
-			organizationAA.getCompanyId(), organizationAA.getOrganizationId(),
+			null, organizationAA.getCompanyId(),
+			organizationAA.getOrganizationId(),
 			organizationB.getOrganizationId(), organizationAA.getName(),
 			organizationAA.getType(), organizationAA.getRegionId(),
-			organizationAA.getCountryId(), organizationAA.getStatusId(),
+			organizationAA.getCountryId(), organizationAA.getStatusListTypeId(),
 			organizationAA.getComments(), false, null, true, null);
 
 		_organizations.add(organizationAA);
@@ -596,10 +665,11 @@ public class OrganizationLocalServiceTest {
 			"Organization B", true);
 
 		organizationAA = _organizationLocalService.updateOrganization(
-			organizationAA.getCompanyId(), organizationAA.getOrganizationId(),
+			null, organizationAA.getCompanyId(),
+			organizationAA.getOrganizationId(),
 			organizationB.getOrganizationId(), organizationAA.getName(),
 			organizationAA.getType(), organizationAA.getRegionId(),
-			organizationAA.getCountryId(), organizationAA.getStatusId(),
+			organizationAA.getCountryId(), organizationAA.getStatusListTypeId(),
 			organizationAA.getComments(), false, null, true, null);
 
 		_organizations.add(organizationAA);
@@ -633,10 +703,11 @@ public class OrganizationLocalServiceTest {
 			"Organization B", false);
 
 		organizationAA = _organizationLocalService.updateOrganization(
-			organizationAA.getCompanyId(), organizationAA.getOrganizationId(),
+			null, organizationAA.getCompanyId(),
+			organizationAA.getOrganizationId(),
 			organizationB.getOrganizationId(), organizationAA.getName(),
 			organizationAA.getType(), organizationAA.getRegionId(),
-			organizationAA.getCountryId(), organizationAA.getStatusId(),
+			organizationAA.getCountryId(), organizationAA.getStatusListTypeId(),
 			organizationAA.getComments(), false, null, true, null);
 
 		_organizations.add(organizationAA);
@@ -670,10 +741,11 @@ public class OrganizationLocalServiceTest {
 			"Organization B", true);
 
 		organizationAA = _organizationLocalService.updateOrganization(
-			organizationAA.getCompanyId(), organizationAA.getOrganizationId(),
+			null, organizationAA.getCompanyId(),
+			organizationAA.getOrganizationId(),
 			organizationB.getOrganizationId(), organizationAA.getName(),
 			organizationAA.getType(), organizationAA.getRegionId(),
-			organizationAA.getCountryId(), organizationAA.getStatusId(),
+			organizationAA.getCountryId(), organizationAA.getStatusListTypeId(),
 			organizationAA.getComments(), false, null, true, null);
 
 		_organizations.add(organizationAA);
@@ -716,6 +788,33 @@ public class OrganizationLocalServiceTest {
 			organizationAAAA.getOrganizationId());
 
 		_updateOrganization(organizationA);
+	}
+
+	@Test
+	public void testOrganizationObjectValidationRule() throws Exception {
+		ObjectDefinition objectDefinition =
+			_objectDefinitionLocalService.fetchObjectDefinitionByClassName(
+				TestPropsValues.getCompanyId(), Organization.class.getName());
+
+		_objectValidationRuleLocalService.addObjectValidationRule(
+			StringPool.BLANK, TestPropsValues.getUserId(),
+			objectDefinition.getObjectDefinitionId(), true,
+			ObjectValidationRuleConstants.ENGINE_TYPE_DDM,
+			LocalizedMapUtil.getLocalizedMap("This name is invalid."),
+			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+			ObjectValidationRuleConstants.OUTPUT_TYPE_FULL_VALIDATION,
+			"name != 'Invalid Name'", false, Collections.emptyList());
+
+		User user = TestPropsValues.getUser();
+
+		AssertUtils.assertFailure(
+			ModelListenerException.class,
+			ObjectValidationRuleEngineException.class.getName() +
+				": This name is invalid.",
+			() -> _organizationLocalService.addOrganization(
+				user.getUserId(),
+				OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID,
+				"Invalid Name", false));
 	}
 
 	@Test
@@ -958,6 +1057,36 @@ public class OrganizationLocalServiceTest {
 		_testSearchOrganizationsByType(expectedOrganizations, "desc");
 	}
 
+	@Test
+	public void testUpdateOrganizationWithLazyReferencingEnabled()
+		throws Exception {
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setEnabledWithSafeCloseable(true)) {
+
+			Organization organization =
+				_organizationLocalService.getOrAddIncompleteOrganization(
+					RandomTestUtil.randomString(),
+					TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+					RandomTestUtil.randomString());
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_INCOMPLETE, organization.getStatus());
+
+			organization = _organizationLocalService.updateOrganization(
+				organization.getExternalReferenceCode(),
+				organization.getCompanyId(), organization.getOrganizationId(),
+				OrganizationConstants.DEFAULT_PARENT_ORGANIZATION_ID,
+				organization.getName(), organization.getType(),
+				organization.getRegionId(), organization.getCountryId(),
+				organization.getStatusListTypeId(), organization.getComments(),
+				false, null, true, null);
+
+			Assert.assertEquals(
+				WorkflowConstants.STATUS_APPROVED, organization.getStatus());
+		}
+	}
+
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
@@ -1053,10 +1182,10 @@ public class OrganizationLocalServiceTest {
 		Group organizationGroup = organization.getGroup();
 
 		return _organizationLocalService.updateOrganization(
-			organization.getCompanyId(), organization.getOrganizationId(),
+			null, organization.getCompanyId(), organization.getOrganizationId(),
 			organization.getParentOrganizationId(), organization.getName(),
 			organization.getType(), organization.getRegionId(),
-			organization.getCountryId(), organization.getStatusId(),
+			organization.getCountryId(), organization.getStatusListTypeId(),
 			organization.getComments(), false, null, organizationGroup.isSite(),
 			null);
 	}
@@ -1065,11 +1194,27 @@ public class OrganizationLocalServiceTest {
 	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Inject
+	private ListTypeLocalService _listTypeLocalService;
+
+	@Inject
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
+
+	@Inject
+	private ObjectValidationRuleLocalService _objectValidationRuleLocalService;
+
+	@Inject
 	private OrganizationLocalService _organizationLocalService;
 
 	private final List<Organization> _organizations = new ArrayList<>();
 	private PermissionChecker _originalPermissionChecker;
 	private final List<String> _pids = new ArrayList<>();
+
+	@Inject
+	private Portal _portal;
+
+	@Inject
+	private SystemEventLocalService _systemEventLocalService;
+
 	private User _user;
 
 	@Inject

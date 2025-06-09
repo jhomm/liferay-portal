@@ -1,25 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayForm from '@clayui/form';
 import ClayIcon from '@clayui/icon';
 import ClayTabs from '@clayui/tabs';
 import {useIsMounted, usePrevious} from '@liferay/frontend-js-react-web';
-import {cancelDebounce, debounce, fetch, openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
+import {debounce, fetch, navigate, sub} from 'frontend-js-web';
 import React, {useCallback, useEffect, useState} from 'react';
 
 import CodeMirrorEditor from './CodeMirrorEditor';
+import EmbeddedWidgetsModal from './EmbeddedWidgetsModal';
+import {FieldTypeSelector} from './FieldTypeSelector';
 import FragmentPreview from './FragmentPreview';
+import createFile from './createFile';
 
 const CHANGES_STATUS = {
 	saved: Liferay.Language.get('changes-saved'),
@@ -35,34 +31,46 @@ const FragmentEditor = ({
 			draft: false,
 		},
 		autocompleteTags,
-		cacheable,
 		dataAttributes,
+		fieldTypes: availableFieldTypes,
 		fragmentCollectionId,
+		fragmentConfigurationURL,
 		fragmentEntryId,
 		htmlEditorCustomEntities,
 		initialCSS,
 		initialConfiguration,
+		initialFieldTypes,
 		initialHTML,
 		initialJS,
+		learnMessageHTML,
 		name,
 		propagationEnabled,
 		readOnly,
+		showFieldTypes,
+		status,
 		urls,
 	},
 }) => {
 	const [activeTabKeyValue, setActiveTabKeyValue] = useState(0);
-	const [isCacheable, setIsCacheable] = useState(cacheable);
 	const [changesStatus, setChangesStatus] = useState(null);
 	const [configuration, setConfiguration] = useState(initialConfiguration);
 	const [css, setCss] = useState(initialCSS);
 	const [html, setHtml] = useState(initialHTML);
 	const [js, setJs] = useState(initialJS);
-
+	const [fieldTypes, setFieldTypes] = useState(initialFieldTypes);
 	const previousConfiguration =
 		usePrevious(configuration) || initialConfiguration;
 	const previousCss = usePrevious(css) || initialCSS;
+	const previousFieldTypes = usePrevious(fieldTypes) || initialFieldTypes;
 	const previousHtml = usePrevious(html) || initialHTML;
 	const previousJs = usePrevious(js) || initialJS;
+
+	const [previewData, setPreviewData] = useState({
+		configuration: initialConfiguration,
+		css: initialCSS,
+		html: initialHTML,
+		js: initialJS,
+	});
 
 	const isMounted = useIsMounted();
 
@@ -70,22 +78,37 @@ const FragmentEditor = ({
 		return (
 			previousConfiguration !== configuration ||
 			previousCss !== css ||
+			previousFieldTypes.length !== fieldTypes.length ||
 			previousHtml !== html ||
-			previousJs !== js ||
-			cacheable !== isCacheable
+			previousJs !== js
 		);
 	}, [
-		cacheable,
 		configuration,
 		css,
+		fieldTypes,
 		html,
 		previousCss,
 		previousConfiguration,
+		previousFieldTypes,
 		previousHtml,
 		previousJs,
-		isCacheable,
 		js,
 	]);
+
+	const widgetRegex = new RegExp('<lfr-widget(?:-[^>]+)?>', 'g');
+
+	const handlePublishClick = () => {
+		if (
+			Liferay.FeatureFlags['LPD-40535'] &&
+			(widgetRegex.test(html) ||
+				html.includes('[@liferay_portlet["runtime"]'))
+		) {
+			EmbeddedWidgetsModal({learnMessageHTML, onPublish: publish});
+		}
+		else {
+			publish();
+		}
+	};
 
 	const publish = () => {
 		const formData = new FormData();
@@ -107,7 +130,7 @@ const FragmentEditor = ({
 			.then((response) => {
 				const redirectURL = response.redirect || urls.redirect;
 
-				Liferay.Util.navigate(redirectURL);
+				navigate(redirectURL);
 			})
 			.catch((error) => {
 				if (isMounted()) {
@@ -126,82 +149,49 @@ const FragmentEditor = ({
 			});
 	};
 
-	/* eslint-disable-next-line react-hooks/exhaustive-deps */
-	const saveDraft = useCallback(
-		debounce(() => {
-			setChangesStatus(CHANGES_STATUS.saving);
-
-			const formData = new FormData();
-
-			formData.append(`${namespace}cacheable`, isCacheable);
-			formData.append(`${namespace}configurationContent`, configuration);
-			formData.append(`${namespace}cssContent`, css);
-			formData.append(`${namespace}htmlContent`, html);
-			formData.append(
-				`${namespace}fragmentCollectionId`,
-				fragmentCollectionId
-			);
-			formData.append(`${namespace}fragmentEntryId`, fragmentEntryId);
-			formData.append(`${namespace}jsContent`, js);
-			formData.append(`${namespace}name`, name);
-			formData.append(`${namespace}status`, allowedStatus.draft);
-
-			fetch(urls.edit, {
-				body: formData,
-				method: 'POST',
-			})
-				.then((response) => response.json())
-				.then((response) => {
-					if (response.error) {
-						throw response.error;
-					}
-
-					return response;
-				})
-				.then(() => {
-					setChangesStatus(CHANGES_STATUS.saved);
-				})
-				.catch((error) => {
-					if (isMounted()) {
-						setChangesStatus(CHANGES_STATUS.unsaved);
-					}
-
-					const message =
-						typeof error === 'string'
-							? error
-							: Liferay.Language.get('error');
-
-					openToast({
-						message,
-						type: 'danger',
-					});
-				});
-		}, 500),
-		[configuration, css, html, isCacheable, js]
-	);
-
-	const previousSaveDraft = usePrevious(saveDraft);
-
-	useEffect(() => {
-		if (previousSaveDraft && previousSaveDraft !== saveDraft) {
-			cancelDebounce(previousSaveDraft);
-		}
-	}, [previousSaveDraft, saveDraft]);
-
 	useEffect(() => {
 		if (contentHasChanged()) {
 			setChangesStatus(CHANGES_STATUS.unsaved);
-			saveDraft();
+			debouncedSaveDraft({
+				allowedStatusDraft: allowedStatus.draft,
+				configuration,
+				css,
+				editUrl: urls.edit,
+				fieldTypes,
+				fragmentCollectionId,
+				fragmentEntryId,
+				html,
+				isMounted,
+				js,
+				name,
+				namespace,
+				setChangesStatus,
+				setPreviewData,
+			});
 		}
-	}, [contentHasChanged, saveDraft]);
+	}, [
+		allowedStatus.draft,
+		configuration,
+		contentHasChanged,
+		css,
+		fieldTypes,
+		fragmentCollectionId,
+		fragmentEntryId,
+		html,
+		isMounted,
+		js,
+		name,
+		namespace,
+		urls.edit,
+	]);
 
 	return (
 		<div className="fragment-editor-container">
 			<div className="fragment-editor__toolbar nav-bar-container">
 				<div className="navbar navbar-expand navbar-underline navigation-bar navigation-bar-light">
-					<div className="container-fluid container-fluid-max-xl">
+					<div className="container-fluid">
 						<div className="navbar-nav">
-							<ClayTabs modern>
+							<ClayTabs>
 								<ClayTabs.Item
 									active={activeTabKeyValue === 0}
 									innerProps={{
@@ -226,10 +216,13 @@ const FragmentEditor = ({
 							</ClayTabs>
 						</div>
 
-						<div className="btn-group btn-group-nowrap float-right mt-1">
+						<div className="align-items-center btn-group btn-group-nowrap d-flex float-right">
 							{readOnly ? (
-								<span className="pr-3 pt-1 text-info">
-									<ClayIcon symbol="exclamation-circle" />
+								<span className="pr-3 text-info">
+									<ClayIcon
+										className="mr-2"
+										symbol="exclamation-circle"
+									/>
 
 									<span>
 										{Liferay.Language.get('read-only-view')}
@@ -239,12 +232,15 @@ const FragmentEditor = ({
 								<>
 									{propagationEnabled && (
 										<span
-											className="lfr-portal-tooltip pr-3 pt-1 text-info"
+											className="align-items-center d-flex lfr-portal-tooltip pr-3 text-info"
 											data-title={Liferay.Language.get(
 												'automatic-propagation-enabled-help'
 											)}
 										>
-											<ClayIcon symbol="exclamation-circle" />
+											<ClayIcon
+												className="mr-2"
+												symbol="exclamation-circle"
+											/>
 
 											<span>
 												{Liferay.Language.get(
@@ -260,37 +256,6 @@ const FragmentEditor = ({
 										</span>
 									</div>
 
-									<div className="btn-group-item custom-checkbox custom-control mb-1 mr-4 mt-1">
-										<label
-											className="lfr-portal-tooltip"
-											data-title={Liferay.Language.get(
-												'cacheable-fragment-help'
-											)}
-										>
-											<input
-												checked={isCacheable}
-												className="custom-control-input toggle-switch-check"
-												name="cacheable"
-												onChange={(event) =>
-													setIsCacheable(
-														event.currentTarget
-															.checked
-													)
-												}
-												type="checkbox"
-												value="true"
-											/>
-
-											<span className="custom-control-label">
-												<span className="custom-control-label-text">
-													{Liferay.Language.get(
-														'cacheable'
-													)}
-												</span>
-											</span>
-										</label>
-									</div>
-
 									<div className="btn-group-item">
 										<button
 											className="btn btn-primary btn-sm"
@@ -298,7 +263,7 @@ const FragmentEditor = ({
 												changesStatus ===
 												CHANGES_STATUS.saving
 											}
-											onClick={publish}
+											onClick={handlePublishClick}
 											type="button"
 										>
 											<span className="lfr-btn-label">
@@ -341,14 +306,18 @@ const FragmentEditor = ({
 
 						<div className="javascript source-editor">
 							<CodeMirrorEditor
-								codeFooterText="}"
-								codeHeaderHelpText={Liferay.Util.sub(
+								codeFooterText="</script>"
+								codeHeaderHelpText={sub(
 									Liferay.Language.get(
 										'parameter-x-provides-access-to-the-current-fragment-node-use-it-to-manipulate-fragment-components'
 									),
 									['fragmentElement']
 								)}
-								codeHeaderText="function(fragmentElement, configuration) {"
+								codeHeaderTexts={[
+									'<script type="module">',
+									'const fragmentElement = ...;',
+									'const configuration = ...;',
+								]}
 								content={initialJS}
 								mode="javascript"
 								onChange={setJs}
@@ -357,29 +326,146 @@ const FragmentEditor = ({
 						</div>
 
 						<FragmentPreview
-							configuration={configuration}
-							css={css}
-							html={html}
-							js={js}
-							namespace={namespace}
+							configuration={previewData.configuration}
+							css={previewData.css}
+							html={previewData.html}
+							js={previewData.js}
 							urls={urls}
 						/>
 					</div>
 				</ClayTabs.TabPane>
 
 				<ClayTabs.TabPane aria-labelledby="configuration">
-					<div className="fragment-editor">
-						<CodeMirrorEditor
-							content={initialConfiguration}
-							mode="json"
-							onChange={setConfiguration}
-							readOnly={readOnly}
-						/>
+					<div className="fragment-editor fragment-editor__configuration">
+						<div className="sheet sheet-lg">
+							{showFieldTypes && (
+								<>
+									<FieldTypeSelector
+										availableFieldTypes={
+											availableFieldTypes
+										}
+										description={Liferay.Language.get(
+											'specify-which-field-types-this-fragment-supports'
+										)}
+										fieldTypes={fieldTypes}
+										fragmentConfigurationURL={
+											fragmentConfigurationURL
+										}
+										onChangeFieldTypes={setFieldTypes}
+										readOnly={readOnly}
+										showFragmentConfigurationLink={
+											status !== allowedStatus.draft
+										}
+										title={Liferay.Language.get(
+											'field-types'
+										)}
+									/>
+								</>
+							)}
+
+							<ClayForm.Group>
+								<div className="sheet-section">
+									<h2 className="sheet-subtitle">json</h2>
+
+									{!readOnly && (
+										<p>
+											{Liferay.Language.get(
+												'add-the-json-configuration'
+											)}
+										</p>
+									)}
+
+									<CodeMirrorEditor
+										content={initialConfiguration}
+										mode="json"
+										onChange={setConfiguration}
+										readOnly={readOnly}
+										showHeader={false}
+									/>
+								</div>
+							</ClayForm.Group>
+						</div>
 					</div>
 				</ClayTabs.TabPane>
 			</ClayTabs.Content>
 		</div>
 	);
 };
+
+const debouncedSaveDraft = debounce(
+	({
+		allowedStatusDraft,
+		configuration,
+		css,
+		editUrl,
+		fieldTypes,
+		fragmentCollectionId,
+		fragmentEntryId,
+		html,
+		isMounted,
+		js,
+		name,
+		namespace,
+		setChangesStatus,
+		setPreviewData,
+	}) => {
+		setChangesStatus(CHANGES_STATUS.saving);
+
+		const formData = new FormData();
+
+		formData.append(`${namespace}configurationContent`, configuration);
+		formData.append(
+			`${namespace}cssContent`,
+			createFile('cssContent', css)
+		);
+		formData.append(`${namespace}fieldTypes`, fieldTypes);
+		formData.append(
+			`${namespace}fragmentCollectionId`,
+			fragmentCollectionId
+		);
+		formData.append(`${namespace}fragmentEntryId`, fragmentEntryId);
+		formData.append(
+			`${namespace}htmlContent`,
+			createFile('htmlContent', html)
+		);
+		formData.append(`${namespace}jsContent`, createFile('jsContent', js));
+		formData.append(`${namespace}name`, name);
+		formData.append(`${namespace}status`, allowedStatusDraft);
+
+		fetch(editUrl, {
+			body: formData,
+			method: 'POST',
+		})
+			.then((response) => response.json())
+			.then((response) => {
+				if (response.error) {
+					throw response.error;
+				}
+
+				return response;
+			})
+			.then(() => {
+				setPreviewData({configuration, css, html, js});
+
+				setChangesStatus(CHANGES_STATUS.saved);
+			})
+			.catch((error) => {
+				if (isMounted()) {
+					setChangesStatus(CHANGES_STATUS.unsaved);
+				}
+
+				const message =
+					typeof error === 'string'
+						? error
+						: Liferay.Language.get('error');
+
+				openToast({
+					message,
+					type: 'danger',
+				});
+			});
+	},
+	500
+);
 
 export default FragmentEditor;

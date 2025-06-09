@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.model;
@@ -17,6 +8,7 @@ package com.liferay.search.experiences.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -42,8 +34,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface SXPBlueprintModel
-	extends BaseModel<SXPBlueprint>, LocalizedModel, MVCCModel, ShardedModel,
-			StagedAuditedModel, WorkflowedModel {
+	extends BaseModel<SXPBlueprint>, ExternalReferenceCodeModel, LocalizedModel,
+			MVCCModel, ShardedModel, StagedAuditedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -97,6 +89,23 @@ public interface SXPBlueprintModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this sxp blueprint.
+	 *
+	 * @return the external reference code of this sxp blueprint
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this sxp blueprint.
+	 *
+	 * @param externalReferenceCode the external reference code of this sxp blueprint
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the sxp blueprint ID of this sxp blueprint.
@@ -341,6 +350,21 @@ public interface SXPBlueprintModel
 	public void setElementInstancesJSON(String elementInstancesJSON);
 
 	/**
+	 * Returns the schema version of this sxp blueprint.
+	 *
+	 * @return the schema version of this sxp blueprint
+	 */
+	@AutoEscape
+	public String getSchemaVersion();
+
+	/**
+	 * Sets the schema version of this sxp blueprint.
+	 *
+	 * @param schemaVersion the schema version of this sxp blueprint
+	 */
+	public void setSchemaVersion(String schemaVersion);
+
+	/**
 	 * Returns the title of this sxp blueprint.
 	 *
 	 * @return the title of this sxp blueprint
@@ -438,6 +462,21 @@ public interface SXPBlueprintModel
 	 * @param defaultLocale the default locale
 	 */
 	public void setTitleMap(Map<Locale, String> titleMap, Locale defaultLocale);
+
+	/**
+	 * Returns the version of this sxp blueprint.
+	 *
+	 * @return the version of this sxp blueprint
+	 */
+	@AutoEscape
+	public String getVersion();
+
+	/**
+	 * Sets the version of this sxp blueprint.
+	 *
+	 * @param version the version of this sxp blueprint
+	 */
+	public void setVersion(String version);
 
 	/**
 	 * Returns the status of this sxp blueprint.
@@ -599,5 +638,9 @@ public interface SXPBlueprintModel
 
 	@Override
 	public SXPBlueprint cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

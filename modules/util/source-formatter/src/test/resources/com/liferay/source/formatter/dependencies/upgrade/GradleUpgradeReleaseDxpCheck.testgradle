@@ -1,0 +1,19 @@
+dependencies {
+	compileOnly group: "com.liferay.portal", name: "com.liferay.portal.kernel", version: "3.0.0"
+	compileOnly group: "com.liferay.portal", name: "release.dxp.api", version: "7.4.13.u27"
+	compileOnly group: "org.osgi", name: "org.osgi.core", version: "6.0.0"
+
+	cssBuilder group: "com.liferay", name: "com.liferay.css.builder", version: "3.1.4"
+
+	testImplementation group: "com.liferay.portal", name: "release.dxp.api", version: "7.4.13.u27"
+	testImplementation group: "junit", name: "junit", version: "4.12"
+	testImplementation group: "org.mockito", name: "mockito-all", version: "1.10.19"
+	testImplementation group: "com.liferay.portal", name: "com.liferay.portal.kernel", version: "3.6.2"
+	testImplementation group: "com.liferay", name: "com.liferay.journal.api", version: "3.0.2"
+	testImplementation group: "com.liferay", name: "com.liferay.dynamic.data.mapping.api", version: "4.8.3"
+	testImplementation group: "com.liferay", name: "com.liferay.petra.lang", version: "3.0.0"
+}
+
+buildService {
+	apiDir = "../sample-api/src/main/java"
+}

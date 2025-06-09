@@ -1,7 +1,8 @@
-@component-name = "portal-web-forms-and-data-lists"
+@component-name = "portal-bpm"
 definition {
 
-	property custom.properties = "minifier.enabled=true";
+	property osgi.module.configuration.file.names = "com.liferay.frontend.js.loader.modules.extender.internal.configuration.Details.config";
+	property osgi.module.configurations = "waitTimeout=\"15\"";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Forms";
@@ -13,37 +14,37 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			Navigator.openURL();
 
 			ProductMenu.gotoPortlet(
-				category = "Content &amp; Data",
+				category = "Content & Data",
 				portlet = "Forms");
 
 			FormsAdmin.teardownForms();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
 	@description = "Verify that a Rich Text Field can be created"
-	@priority = "5"
+	@priority = 5
 	test CanBeCreated {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text",
-			formPageNumber = "0");
+			formPageNumber = 0);
 
 		Form.save();
 
@@ -55,25 +56,25 @@ definition {
 	}
 
 	@description = "Verify that a Rich Text Field can be deleted"
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text",
-			formPageNumber = "0");
+			formPageNumber = 0);
 
 		Form.closeSidebar();
 
 		Form.gotoAddField(
-			fieldPositionNumber = "1",
+			fieldPositionNumber = 1,
 			fieldType = "Numeric",
-			formPageNumber = "0");
+			formPageNumber = 0);
 
 		Form.closeSidebar();
 
@@ -93,17 +94,16 @@ definition {
 	}
 
 	@description = "Verify that a Rich Text Field can be duplicated"
-	@priority = "5"
+	@priority = 5
 	test CanBeDuplicated {
-		property forms.functional = "true";
-		property portal.upstream = "quarantine";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		FormFields.editHelpText(
@@ -118,7 +118,7 @@ definition {
 
 		Type(
 			locator1 = "FormFields#PREDEFINED_VALUE_BODY",
-			value1 = "Rich Text Test");
+			value1 = "R");
 
 		SelectFrame(value1 = "relative=top");
 
@@ -134,11 +134,11 @@ definition {
 
 		FormFields.viewRichTextValue(
 			fieldName = "Predefined Value",
-			fieldValue = "Rich Text Test");
+			fieldValue = "R");
 
 		FormFields.viewRichTextValue(
 			fieldName = "Field",
-			fieldValue = "Rich Text Test");
+			fieldValue = "R");
 
 		FormFields.viewFieldHelpText(
 			fieldHelpText = "Help Text Test",
@@ -150,16 +150,16 @@ definition {
 	}
 
 	@description = "Verify that a Rich Text Field can be edited"
-	@priority = "5"
+	@priority = 5
 	test CanBeEdited {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		Form.save();
@@ -186,16 +186,16 @@ definition {
 	}
 
 	@description = "Verify that a Rich Text Field can be required"
-	@priority = "5"
+	@priority = 5
 	test CanBeRequired {
-		property forms.functional = "true";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		FormViewBuilder.setFieldRequired();
@@ -220,16 +220,14 @@ definition {
 	}
 
 	@description = "Verify that a Rich Text Field can be set to repeatable"
-	@priority = "5"
+	@priority = 5
 	test CanBeSetToRepeatable {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		Form.gotoAdvancedTab();
@@ -255,7 +253,7 @@ definition {
 			fieldLabel = "Rich Text");
 
 		SelectFrame.selectFrameNoLoading(
-			index = "2",
+			index = 2,
 			key_fieldLabel = "Rich Text",
 			locator1 = "CKEditor#ANY_BODY_FIELD_IFRAME_WEB_CONTENT_ARTICLE");
 
@@ -269,16 +267,14 @@ definition {
 	}
 
 	@description = "Verify that a Form can be submitted with the Rich Text Field"
-	@priority = "5"
+	@priority = 5
 	test CanBeSubmitted {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		Form.save();
@@ -296,12 +292,12 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdminNavigator.gotoViewEntries(formName = "Form1");
 
-		FormsAdminNavigator.gotoView(rowIndexNumber = "1");
+		FormsAdminNavigator.gotoView(rowIndexNumber = 1);
 
 		FormViewBuilder.validateFieldLabel(fieldLabel = "Rich Text");
 
@@ -312,66 +308,54 @@ definition {
 
 	@description = "Verify that changes to the Field can be canceled"
 	@ignore = "Test Stub"
-	@priority = "4"
+	@priority = 4
 	test ChangesCanBeCanceled {
-		property forms.functional = "false";
 		property portal.acceptance = "false";
 
 		// TODO LPS-133116 ChangesCanBeCanceled pending implementation
 
 	}
 
-	@description = "Verify that a help text can be added to a Rich Text Field"
-	@priority = "5"
-	test HelpTextCanBeAdded {
-		property forms.functional = "true";
+	@description = "Verify if the source option of the rich text field is working correctly."
+	@priority = 4
+	test CheckSourceOptionAtRichTextField {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
-
-		FormFields.editHelpText(
-			fieldHelpText = "Rich Text Help Text",
-			fieldName = "tip");
-
-		FormViewBuilder.assertHelpTextPresent(
-			fieldName = "Rich Text",
-			fieldValue = "Rich Text Help Text");
-
-		Form.save();
 
 		Form.publishForm();
 
 		FormsAdminNavigator.gotoPublishedForm();
 
-		FormViewBuilder.assertHelpTextPresent(
-			fieldName = "Rich Text",
-			fieldValue = "Rich Text Help Text");
+		Click(locator1 = "Form#SOURCE_FORM_BUTTON");
 
-		FormFields.editFrameField(
-			fieldLabel = "Rich Text",
-			fielName = "Test");
+		Type.typeCodeMirrorEditorNoError(
+			locator1 = "Form#SOURCE_FORM_EDITOR",
+			value1 = "<strong> Test </strong>");
 
-		FormPortlet.submitSuccessfullyAndViewSuccessPage();
+		Click(locator1 = "Form#SOURCE_FORM_BUTTON");
+
+		Form.viewRichTextPublished(text = "Test");
 	}
 
 	@description = "Verify that the Field Label can be changed"
-	@priority = "5"
+	@priority = 5
 	test LabelCanBeEdited {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text",
-			formPageNumber = "0");
+			formPageNumber = 0);
 
 		Form.editFieldLabelMetal(fieldValue = "Test Rich Text");
 
@@ -387,15 +371,14 @@ definition {
 	}
 
 	@description = "Verify that the Field Label can be hidden"
-	@priority = "5"
+	@priority = 5
 	test LabelCanBeHidden {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
+
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		Form.gotoAdvancedTab();
@@ -412,28 +395,27 @@ definition {
 	}
 
 	@description = "Verify that a Predefined Value can be set for the Rich Text Field"
-	@priority = "5"
+	@priority = 5
 	test PredefinedValueCanBeAdded {
-		property forms.functional = "true";
-		property portal.upstream = "quarantine";
+		property portal.acceptance = "true";
 
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		Form.gotoAdvancedTab();
 
 		CKEditor.addContentInWebContent(
-			content = "Rich Text Test",
+			content = "R",
 			fieldLabel = "Predefined Value");
 
 		FormFields.viewRichTextValue(
 			fieldName = "Rich Text",
-			fieldValue = "Rich Text Test");
+			fieldValue = "R");
 
 		Form.save();
 
@@ -443,7 +425,7 @@ definition {
 
 		FormFields.viewRichTextValue(
 			fieldName = "Rich Text",
-			fieldValue = "Rich Text Test");
+			fieldValue = "R");
 
 		FormPortlet.submitSuccessfully();
 
@@ -453,16 +435,14 @@ definition {
 	}
 
 	@description = "Verify that the Field Reference can be changed"
-	@priority = "5"
+	@priority = 5
 	test ReferenceCanBeEdited {
-		property forms.functional = "true";
-
 		FormsAdmin.addForm();
 
 		Form.editName(formName = "Form 1");
 
 		Form.gotoAddField(
-			fieldPositionNumber = "0",
+			fieldPositionNumber = 0,
 			fieldType = "Rich Text");
 
 		Form.gotoAdvancedTab();
@@ -472,7 +452,7 @@ definition {
 		Form.save();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Forms");
 
 		FormsAdminNavigator.gotoEditFormByName(formName = "Form 1");
@@ -484,9 +464,8 @@ definition {
 
 	@description = "Verify that the Field Type can be changed"
 	@ignore = "Test Stub"
-	@priority = "5"
+	@priority = 5
 	test TypeCanBeChanged {
-		property forms.functional = "false";
 		property portal.acceptance = "false";
 
 		// TODO LPS-133115 TypeCanBeChanged pending implementation

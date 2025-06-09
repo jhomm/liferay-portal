@@ -1,36 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+/* eslint-disable @liferay/aui/no-one */
+
 (function () {
-	var A = AUI();
+	const A = AUI();
 
-	var AArray = A.Array;
-	var KeyMap = A.Event.KeyMap;
-	var Lang = A.Lang;
+	// eslint-disable-next-line @liferay/aui/no-array
+	const AArray = A.Array;
+	const KeyMap = A.Event.KeyMap;
+	const Lang = A.Lang;
 
-	var BR_TAG = 'BR';
+	const BR_TAG = 'BR';
 
-	var CSS_LFR_AC_CONTENT = 'lfr-ac-content';
+	const CSS_LFR_AC_CONTENT = 'lfr-ac-content';
 
-	var STR_EDITOR = 'editor';
+	const STR_EDITOR = 'editor';
 
-	var STR_SPACE = ' ';
+	const STR_SPACE = ' ';
 
-	var TPL_REPLACE_HTML =
+	const TPL_REPLACE_HTML =
 		'<span class="' + CSS_LFR_AC_CONTENT + '">{html}</span>';
 
-	var AutoCompleteCKEditor = function () {};
+	const AutoCompleteCKEditor = function () {};
 
 	AutoCompleteCKEditor.ATTRS = {
 		editor: {
@@ -46,20 +40,20 @@
 
 	AutoCompleteCKEditor.prototype = {
 		_bindUIACCKEditor() {
-			var instance = this;
+			const instance = this;
 
 			instance._processCaret = A.bind('_processCaretPosition', instance);
 
 			instance._processCaretTask = A.debounce(instance._processCaret, 50);
 
-			var editor = instance.get(STR_EDITOR);
+			const editor = instance.get(STR_EDITOR);
 
 			instance._eventHandles = [
 				editor.on('key', A.bind('_onEditorKey', instance)),
 			];
 
 			editor.once('instanceReady', (event) => {
-				var editorBody = A.one(event.editor.element.$);
+				const editorBody = A.one(event.editor.element.$);
 
 				instance._eventHandles.push(
 					editorBody.on(
@@ -71,12 +65,12 @@
 		},
 
 		_getACPositionBase() {
-			var instance = this;
+			const instance = this;
 
-			var inline = this.get(STR_EDITOR).editable().isInline();
+			const inline = this.get(STR_EDITOR).editable().isInline();
 
 			if (!instance._contentsContainer) {
-				var inputElement = instance._getInputElement();
+				const inputElement = instance._getInputElement();
 
 				instance._contentsContainer =
 					inputElement.siblings('.cke').one('.cke_contents') ||
@@ -87,29 +81,28 @@
 		},
 
 		_getACPositionOffset() {
-			var instance = this;
+			const instance = this;
 
-			var caretContainer = instance._getCaretContainer();
+			const caretContainer = instance._getCaretContainer();
 
-			var containerAscendantElement = instance._getContainerAscendant(
-				caretContainer
-			);
+			const containerAscendantElement =
+				instance._getContainerAscendant(caretContainer);
 
-			var containerAscendantNode = A.one(containerAscendantElement.$);
+			const containerAscendantNode = A.one(containerAscendantElement.$);
 
 			return [0, Lang.toInt(containerAscendantNode.getStyle('fontSize'))];
 		},
 
 		_getCaretContainer() {
-			var instance = this;
+			const instance = this;
 
 			return instance._getCaretRange().startContainer;
 		},
 
 		_getCaretIndex() {
-			var instance = this;
+			const instance = this;
 
-			var range = instance._getCaretRange();
+			const range = instance._getCaretRange();
 
 			return {
 				end: range.endOffset,
@@ -118,17 +111,17 @@
 		},
 
 		_getCaretOffset() {
-			var instance = this;
+			const instance = this;
 
-			var editor = instance.get(STR_EDITOR);
+			const editor = instance.get(STR_EDITOR);
 
-			var bookmarks = editor.getSelection().createBookmarks();
+			const bookmarks = editor.getSelection().createBookmarks();
 
-			var bookmarkNode = A.one(bookmarks[0].startNode.$);
+			const bookmarkNode = A.one(bookmarks[0].startNode.$);
 
 			bookmarkNode.setStyle('display', 'inline-block');
 
-			var bookmarkXY = bookmarkNode.getXY();
+			const bookmarkXY = bookmarkNode.getXY();
 
 			bookmarkNode.remove();
 
@@ -139,9 +132,9 @@
 		},
 
 		_getCaretRange() {
-			var instance = this;
+			const instance = this;
 
-			var editor = instance.get(STR_EDITOR);
+			const editor = instance.get(STR_EDITOR);
 
 			return editor.getSelection().getRanges()[0];
 		},
@@ -155,29 +148,29 @@
 		},
 
 		_getInputElement() {
-			var instance = this;
+			const instance = this;
 
 			return A.one(instance.get(STR_EDITOR).element.$);
 		},
 
 		_getPrevTriggerPosition() {
-			var instance = this;
+			const instance = this;
 
-			var caretContainer = instance._getCaretContainer();
-			var caretIndex = instance._getCaretIndex();
+			const caretContainer = instance._getCaretContainer();
+			const caretIndex = instance._getCaretIndex();
 
-			var query = caretContainer.getText().substring(0, caretIndex.start);
+			let query = caretContainer.getText().substring(0, caretIndex.start);
 
-			var triggerContainer = caretContainer;
+			let triggerContainer = caretContainer;
 
-			var triggerIndex = -1;
+			let triggerIndex = -1;
 
-			var trigger = null;
+			let trigger = null;
 
-			var triggers = instance._getTriggers();
+			const triggers = instance._getTriggers();
 
 			AArray.each(triggers, (item) => {
-				var triggerPosition = query.lastIndexOf(item);
+				const triggerPosition = query.lastIndexOf(item);
 
 				if (triggerPosition !== -1 && triggerPosition > triggerIndex) {
 					trigger = item;
@@ -207,19 +200,19 @@
 			// has no additional characters.
 
 			if (triggerIndex === -1) {
-				var triggerWalker = instance._getWalker(triggerContainer);
+				const triggerWalker = instance._getWalker(triggerContainer);
 
 				triggerWalker.guard = function (node) {
-					var hasTrigger = false;
+					let hasTrigger = false;
 
 					if (
 						node.type === CKEDITOR.NODE_TEXT &&
 						node.$ !== caretContainer.$
 					) {
-						var nodeText = node.getText();
+						const nodeText = node.getText();
 
 						AArray.each(triggers, (item) => {
-							var triggerPosition = nodeText.lastIndexOf(item);
+							const triggerPosition = nodeText.lastIndexOf(item);
 
 							if (
 								triggerPosition !== -1 &&
@@ -268,11 +261,11 @@
 		},
 
 		_getQuery() {
-			var instance = this;
+			const instance = this;
 
-			var prevTriggerPosition = instance._getPrevTriggerPosition();
+			const prevTriggerPosition = instance._getPrevTriggerPosition();
 
-			var query = prevTriggerPosition.query;
+			let query = prevTriggerPosition.query;
 
 			if (
 				query &&
@@ -283,11 +276,11 @@
 				query = null;
 			}
 
-			var trigger = prevTriggerPosition.value;
+			const trigger = prevTriggerPosition.value;
 
-			var res = instance._getRegExp().exec(query);
+			const res = instance._getRegExp().exec(query);
 
-			var result;
+			let result;
 
 			if (res) {
 				if (
@@ -302,33 +295,33 @@
 		},
 
 		_getWalker(endContainer, startContainer) {
-			var instance = this;
+			const instance = this;
 
 			endContainer = endContainer || instance._getCaretContainer();
 
 			startContainer =
 				startContainer || instance._getContainerAscendant(endContainer);
 
-			var range = new CKEDITOR.dom.range(startContainer);
+			const range = new CKEDITOR.dom.range(startContainer);
 
 			range.setStart(startContainer, 0);
 			range.setEnd(endContainer, endContainer.getText().length);
 
-			var walker = new CKEDITOR.dom.walker(range);
+			const walker = new CKEDITOR.dom.walker(range);
 
 			return walker;
 		},
 
 		_isEmptySelection() {
-			var instance = this;
+			const instance = this;
 
-			var editor = instance.get(STR_EDITOR);
+			const editor = instance.get(STR_EDITOR);
 
-			var selection = editor.getSelection();
+			const selection = editor.getSelection();
 
-			var ranges = selection.getRanges();
+			const ranges = selection.getRanges();
 
-			var collapsedRange = ranges.length === 1 && ranges[0].collapsed;
+			const collapsedRange = ranges.length === 1 && ranges[0].collapsed;
 
 			return (
 				selection.getType() === CKEDITOR.SELECTION_NONE ||
@@ -346,8 +339,8 @@
 		},
 
 		_onEditorKey(event) {
-			var instance = this;
-			var editor = instance.get(STR_EDITOR);
+			const instance = this;
+			const editor = instance.get(STR_EDITOR);
 
 			if (editor.mode !== 'wysiwyg') {
 				return;
@@ -356,13 +349,13 @@
 			if (instance._isEmptySelection()) {
 				event = instance._normalizeCKEditorKeyEvent(event);
 
-				var acVisible = instance.get('visible');
+				const acVisible = instance.get('visible');
 
 				if (
 					acVisible &&
 					KeyMap.isKeyInSet(event.keyCode, 'down', 'enter', 'up')
 				) {
-					var inlineEditor = editor.editable().isInline();
+					const inlineEditor = editor.editable().isInline();
 
 					if (KeyMap.isKey(event.keyCode, 'enter') || !inlineEditor) {
 						instance._onInputKey(event);
@@ -378,17 +371,17 @@
 		},
 
 		_processCaretPosition() {
-			var instance = this;
+			const instance = this;
 
-			var query = instance._getQuery();
+			const query = instance._getQuery();
 
 			instance._processKeyUp(query);
 		},
 
 		_replaceHtml(text, prevTriggerPosition) {
-			var instance = this;
+			const instance = this;
 
-			var replaceContainer = instance._getContainerAscendant(
+			let replaceContainer = instance._getContainerAscendant(
 				prevTriggerPosition.container,
 				'span'
 			);
@@ -403,7 +396,7 @@
 				);
 			}
 
-			var newElement = CKEDITOR.dom.element.createFromHtml(
+			const newElement = CKEDITOR.dom.element.createFromHtml(
 				Lang.sub(TPL_REPLACE_HTML, {
 					html: text,
 				})
@@ -411,7 +404,7 @@
 
 			newElement.replace(replaceContainer);
 
-			var nextElement = newElement.getNext(function () {
+			let nextElement = newElement.getNext(function () {
 				return (
 					this.type !== CKEDITOR.NODE_TEXT || this.getText().trim()
 				);
@@ -422,23 +415,23 @@
 			}
 
 			if (nextElement) {
-				var containerAscendant = instance._getContainerAscendant(
+				const containerAscendant = instance._getContainerAscendant(
 					prevTriggerPosition.container
 				);
 
-				var updateWalker = instance._getWalker(
+				const updateWalker = instance._getWalker(
 					containerAscendant,
 					nextElement
 				);
 
-				var node = updateWalker.next();
+				let node = updateWalker.next();
 
-				var removeNodes = [];
+				const removeNodes = [];
 
 				while (node) {
-					var nodeText = node.getText();
+					const nodeText = node.getText();
 
-					var spaceIndex = nodeText.indexOf(STR_SPACE);
+					const spaceIndex = nodeText.indexOf(STR_SPACE);
 
 					if (spaceIndex !== -1) {
 						node.setText(nodeText.substring(spaceIndex));
@@ -471,11 +464,11 @@
 		},
 
 		_setCaretIndex(node, caretIndex) {
-			var instance = this;
+			const instance = this;
 
-			var editor = instance.get(STR_EDITOR);
+			const editor = instance.get(STR_EDITOR);
 
-			var caretRange = editor.createRange();
+			const caretRange = editor.createRange();
 
 			caretRange.setStart(node, caretIndex);
 			caretRange.setEnd(node, caretIndex);
@@ -485,24 +478,24 @@
 		},
 
 		_updateValue(value) {
-			var instance = this;
+			const instance = this;
 
-			var prevTriggerPosition = instance._getPrevTriggerPosition();
+			const prevTriggerPosition = instance._getPrevTriggerPosition();
 
-			var caretPosition = instance._replaceHtml(
+			const caretPosition = instance._replaceHtml(
 				value,
 				prevTriggerPosition
 			);
 
 			instance._setCaretIndex(caretPosition.node, caretPosition.index);
 
-			var editor = instance.get('editor');
+			const editor = instance.get('editor');
 
 			editor.fire('saveSnapshot');
 		},
 
 		initializer() {
-			var instance = this;
+			const instance = this;
 
 			instance._bindUIACCKEditor();
 		},
@@ -520,10 +513,290 @@
 		span: 1,
 	};
 
+	const REGEX_TRIGGER = /trigger/g;
+
+	const STR_PHRASE_MATCH = 'phraseMatch';
+
+	const STR_TRIGGER = 'trigger';
+
+	const STR_VISIBLE = 'visible';
+
+	const TRIGGER_CONFIG_DEFAULTS = {
+		activateFirstItem: true,
+		resultFilters: STR_PHRASE_MATCH,
+		resultHighlighter: STR_PHRASE_MATCH,
+	};
+
+	const AutoCompleteInputBase = function () {};
+
+	AutoCompleteInputBase.ATTRS = {
+		caretAtTerm: {
+			validator: Lang.isBoolean,
+			value: true,
+		},
+
+		inputNode: {
+			setter: A.one,
+			writeOnce: true,
+		},
+
+		offset: {
+			validator: '_validateOffset',
+			value: 10,
+		},
+
+		regExp: {
+			validator(newVal) {
+				return Lang.isRegExp(newVal) || Lang.isString(newVal);
+			},
+			value: '(?:\\strigger|^trigger)(\\w[\\s\\w]*)',
+		},
+
+		source: {},
+
+		tplReplace: {
+			validator: Lang.isString,
+		},
+
+		tplResults: {
+			validator: Lang.isString,
+		},
+
+		trigger: {
+			setter: AArray,
+			value: '@',
+		},
+	};
+
+	AutoCompleteInputBase.prototype = {
+		_acResultFormatter(query, results) {
+			const instance = this;
+
+			const tplResults = instance.get('tplResults');
+
+			return results.map((result) => {
+				return Lang.sub(tplResults, result.raw);
+			});
+		},
+
+		_adjustACPosition() {
+			const instance = this;
+
+			const xy = instance._getACPositionBase();
+
+			const caretXY = instance._getCaretOffset();
+
+			const offset = instance.get('offset');
+
+			let offsetX = 0;
+			let offsetY = 0;
+
+			if (Array.isArray(offset)) {
+				offsetX = offset[0];
+				offsetY = offset[1];
+			}
+			else if (Lang.isNumber(offset)) {
+				offsetY = offset;
+			}
+
+			const acOffset = instance._getACPositionOffset();
+
+			xy[0] += caretXY.x + offsetX + acOffset[0];
+			xy[1] += caretXY.y + offsetY + acOffset[1];
+
+			instance.get('boundingBox').setXY(xy);
+		},
+
+		_afterACVisibleChange(event) {
+			const instance = this;
+
+			if (event.newVal) {
+				instance._adjustACPosition();
+			}
+
+			instance._uiSetVisible(event.newVal);
+		},
+
+		_bindUIACIBase() {
+			const instance = this;
+
+			instance.on('query', instance._onACQuery, instance);
+
+			instance.after(
+				'visibleChange',
+				instance._afterACVisibleChange,
+				instance
+			);
+		},
+
+		_defSelectFn(event) {
+			const instance = this;
+
+			const tplReplace = instance.get('tplReplace');
+
+			let text = event.result.text;
+
+			const mentionsResult = document.getElementById(
+				'_com_liferay_mentions_web_portlet_MentionsPortlet_mentionsResult'
+			);
+
+			if (tplReplace) {
+				text = Lang.sub(tplReplace, event.result.raw);
+			}
+
+			mentionsResult.style.display = 'none';
+
+			instance._inputNode.focus();
+
+			instance._updateValue(text);
+
+			instance._ariaSay('item_selected', {
+				item: event.result.text,
+			});
+
+			instance.hide();
+		},
+
+		_getRegExp() {
+			const instance = this;
+
+			let regExp = instance.get('regExp');
+
+			if (Lang.isString(regExp)) {
+				const triggersExpr =
+					'[' + instance._getTriggers().join('|') + ']';
+
+				regExp = new RegExp(
+					regExp.replace(REGEX_TRIGGER, triggersExpr)
+				);
+			}
+
+			return regExp;
+		},
+
+		_getTriggers() {
+			const instance = this;
+
+			if (!instance._triggers) {
+				const triggers = [];
+
+				instance.get(STR_TRIGGER).forEach((item) => {
+					triggers.push(Lang.isString(item) ? item : item.term);
+				});
+
+				instance._triggers = triggers;
+			}
+
+			return instance._triggers;
+		},
+
+		_keyDown() {
+			const instance = this;
+
+			if (instance.get(STR_VISIBLE)) {
+				instance._activateNextItem();
+			}
+		},
+
+		_onACQuery(event) {
+			const instance = this;
+
+			const input = instance._getQuery(event.query);
+
+			if (input) {
+				instance._setTriggerConfig(input[0]);
+
+				event.query = input.substring(1);
+			}
+			else {
+				event.preventDefault();
+
+				if (instance.get(STR_VISIBLE)) {
+					instance.hide();
+				}
+			}
+		},
+
+		_processKeyUp(query) {
+			const instance = this;
+
+			if (query) {
+				instance._setTriggerConfig(query[0]);
+
+				query = query.substring(1);
+
+				instance.sendRequest(query);
+			}
+			else if (instance.get(STR_VISIBLE)) {
+				instance.hide();
+			}
+		},
+
+		_setTriggerConfig(trigger) {
+			const instance = this;
+
+			if (trigger !== instance._trigger) {
+				const triggers = instance._getTriggers();
+
+				const triggerConfig =
+					instance.get(STR_TRIGGER)[triggers.indexOf(trigger)];
+
+				instance.setAttrs({
+					...instance._triggerConfigDefaults,
+					...triggerConfig,
+				});
+
+				instance._trigger = trigger;
+			}
+		},
+
+		_syncUIPosAlign: Lang.emptyFn,
+
+		_validateOffset(value) {
+			return Array.isArray(value) || Lang.isNumber(value);
+		},
+
+		destructor() {
+			const instance = this;
+
+			new A.EventHandle(instance._eventHandles).detach();
+		},
+
+		initializer() {
+			const instance = this;
+
+			instance.get('boundingBox').addClass('lfr-autocomplete-input-list');
+
+			instance.set(
+				'resultFormatter',
+				A.bind('_acResultFormatter', instance)
+			);
+
+			instance._bindUIACIBase();
+
+			const autocompleteAttrs = Object.keys(A.AutoComplete.ATTRS).filter(
+				(item) => {
+					return item !== 'value';
+				}
+			);
+
+			instance._triggerConfigDefaults = TRIGGER_CONFIG_DEFAULTS;
+
+			// eslint-disable-next-line prefer-object-spread
+			Object.assign(
+				{},
+				instance._triggerConfigDefaults,
+				instance.getAttrs(),
+				false,
+				autocompleteAttrs
+			);
+		},
+	};
+
 	Liferay.AutoCompleteCKEditor = A.Base.create(
 		'liferayautocompleteckeditor',
 		A.AutoComplete,
-		[Liferay.AutoCompleteInputBase, AutoCompleteCKEditor],
+		[AutoCompleteInputBase, AutoCompleteCKEditor],
 		{},
 		{
 			CSS_PREFIX: A.ClassNameManager.getClassName('aclist'),

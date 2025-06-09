@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.repository.capabilities;
@@ -69,7 +60,18 @@ public class TemporaryFileEntriesCapabilityImpl
 			String fileName, String mimeType, InputStream inputStream)
 		throws PortalException {
 
-		Folder folder = addTempFolder(temporaryFileEntriesScope);
+		return addTemporaryFileEntry(
+			temporaryFileEntriesScope, null, fileName, mimeType, inputStream);
+	}
+
+	@Override
+	public FileEntry addTemporaryFileEntry(
+			TemporaryFileEntriesScope temporaryFileEntriesScope,
+			String externalReferenceCode, String fileName, String mimeType,
+			InputStream inputStream)
+		throws PortalException {
+
+		Folder folder = _addTempFolder(temporaryFileEntriesScope);
 
 		File file = null;
 
@@ -86,9 +88,9 @@ public class TemporaryFileEntriesCapabilityImpl
 			serviceContext.setAddGuestPermissions(true);
 
 			return _documentRepository.addFileEntry(
-				null, temporaryFileEntriesScope.getUserId(),
-				folder.getFolderId(), fileName, mimeType, fileName,
-				StringPool.BLANK, StringPool.BLANK, file, null, null,
+				externalReferenceCode, temporaryFileEntriesScope.getUserId(),
+				folder.getFolderId(), fileName, mimeType, fileName, fileName,
+				StringPool.BLANK, StringPool.BLANK, file, null, null, null,
 				serviceContext);
 		}
 		catch (IOException ioException) {
@@ -143,7 +145,7 @@ public class TemporaryFileEntriesCapabilityImpl
 					// LPS-52675
 
 					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchModelException, noSuchModelException);
+						_log.debug(noSuchModelException);
 					}
 				}
 
@@ -157,7 +159,7 @@ public class TemporaryFileEntriesCapabilityImpl
 		throws PortalException {
 
 		try {
-			Folder folder = addTempFolder(temporaryFileEntriesScope);
+			Folder folder = _addTempFolder(temporaryFileEntriesScope);
 
 			return _documentRepository.getRepositoryFileEntries(
 				temporaryFileEntriesScope.getUserId(), folder.getFolderId(),
@@ -168,7 +170,7 @@ public class TemporaryFileEntriesCapabilityImpl
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchModelException, noSuchModelException);
+				_log.debug(noSuchModelException);
 			}
 
 			return Collections.emptyList();
@@ -197,7 +199,7 @@ public class TemporaryFileEntriesCapabilityImpl
 			String fileName)
 		throws PortalException {
 
-		Folder folder = getTempFolder(temporaryFileEntriesScope);
+		Folder folder = _getTempFolder(temporaryFileEntriesScope);
 
 		return _documentRepository.getFileEntry(folder.getFolderId(), fileName);
 	}
@@ -214,7 +216,7 @@ public class TemporaryFileEntriesCapabilityImpl
 			String.valueOf(temporaryFileEntriesTimeout));
 	}
 
-	protected Folder addFolder(
+	private Folder _addFolder(
 			long userId, long parentFolderId, String folderName,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -227,16 +229,16 @@ public class TemporaryFileEntriesCapabilityImpl
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFolderException, noSuchFolderException);
+				_log.debug(noSuchFolderException);
 			}
 
 			return _documentRepository.addFolder(
-				userId, parentFolderId, folderName, StringPool.BLANK,
+				null, userId, parentFolderId, folderName, StringPool.BLANK,
 				serviceContext);
 		}
 	}
 
-	protected Folder addFolders(
+	private Folder _addFolders(
 			long userId, long folderId, String folderPath,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -246,7 +248,7 @@ public class TemporaryFileEntriesCapabilityImpl
 		String[] folderNames = StringUtil.split(folderPath, StringPool.SLASH);
 
 		for (String folderName : folderNames) {
-			folder = addFolder(userId, folderId, folderName, serviceContext);
+			folder = _addFolder(userId, folderId, folderName, serviceContext);
 
 			folderId = folder.getFolderId();
 		}
@@ -254,7 +256,7 @@ public class TemporaryFileEntriesCapabilityImpl
 		return folder;
 	}
 
-	protected Folder addTempFolder(
+	private Folder _addTempFolder(
 			TemporaryFileEntriesScope temporaryFileEntriesScope)
 		throws PortalException {
 
@@ -263,13 +265,13 @@ public class TemporaryFileEntriesCapabilityImpl
 		serviceContext.setAddGroupPermissions(true);
 		serviceContext.setAddGuestPermissions(true);
 
-		return addFolders(
+		return _addFolders(
 			temporaryFileEntriesScope.getUserId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			_getFolderPath(temporaryFileEntriesScope), serviceContext);
 	}
 
-	protected Folder getDeepestFolder(long parentFolderId, String folderPath)
+	private Folder _getDeepestFolder(long parentFolderId, String folderPath)
 		throws PortalException {
 
 		Folder folder = null;
@@ -285,20 +287,6 @@ public class TemporaryFileEntriesCapabilityImpl
 		return folder;
 	}
 
-	protected Folder getTempFolder(
-			TemporaryFileEntriesScope temporaryFileEntriesScope)
-		throws PortalException {
-
-		ServiceContext serviceContext = new ServiceContext();
-
-		serviceContext.setAddGroupPermissions(true);
-		serviceContext.setAddGuestPermissions(true);
-
-		return getDeepestFolder(
-			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
-			_getFolderPath(temporaryFileEntriesScope));
-	}
-
 	private String _getFolderPath(
 		TemporaryFileEntriesScope temporaryFileEntriesScope) {
 
@@ -307,6 +295,20 @@ public class TemporaryFileEntriesCapabilityImpl
 			temporaryFileEntriesScope.getCallerUuid(), StringPool.SLASH,
 			temporaryFileEntriesScope.getUserId(), StringPool.SLASH,
 			temporaryFileEntriesScope.getFolderPath());
+	}
+
+	private Folder _getTempFolder(
+			TemporaryFileEntriesScope temporaryFileEntriesScope)
+		throws PortalException {
+
+		ServiceContext serviceContext = new ServiceContext();
+
+		serviceContext.setAddGroupPermissions(true);
+		serviceContext.setAddGuestPermissions(true);
+
+		return _getDeepestFolder(
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			_getFolderPath(temporaryFileEntriesScope));
 	}
 
 	private void _runWithoutSystemEvents(

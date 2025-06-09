@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -205,19 +196,12 @@ public class VirtualHostLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static VirtualHost fetchVirtualHost(long virtualHostId) {
-		return getService().fetchVirtualHost(virtualHostId);
+	public static VirtualHost fetchCompanyDefaultVirtualHost(long companyId) {
+		return getService().fetchCompanyDefaultVirtualHost(companyId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	public static VirtualHost fetchVirtualHost(
-		long companyId, long layoutSetId) {
-
-		return getService().fetchVirtualHost(companyId, layoutSetId);
+	public static VirtualHost fetchVirtualHost(long virtualHostId) {
+		return getService().fetchVirtualHost(virtualHostId);
 	}
 
 	public static VirtualHost fetchVirtualHost(String hostname) {
@@ -268,17 +252,6 @@ public class VirtualHostLocalServiceUtil {
 		return getService().getVirtualHost(virtualHostId);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #getVirtualHosts(long, long)}
-	 */
-	@Deprecated
-	public static VirtualHost getVirtualHost(long companyId, long layoutSetId)
-		throws PortalException {
-
-		return getService().getVirtualHost(companyId, layoutSetId);
-	}
-
 	public static VirtualHost getVirtualHost(String hostname)
 		throws PortalException {
 
@@ -300,9 +273,12 @@ public class VirtualHostLocalServiceUtil {
 		return getService().getVirtualHosts(start, end);
 	}
 
+	public static List<VirtualHost> getVirtualHosts(long companyId) {
+		return getService().getVirtualHosts(companyId);
+	}
+
 	public static List<VirtualHost> getVirtualHosts(
-			long companyId, long layoutSetId)
-		throws PortalException {
+		long companyId, long layoutSetId) {
 
 		return getService().getVirtualHosts(companyId, layoutSetId);
 	}
@@ -316,15 +292,11 @@ public class VirtualHostLocalServiceUtil {
 		return getService().getVirtualHostsCount();
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 #updateVirtualHosts(long, long, TreeMap)}
-	 */
-	@Deprecated
-	public static VirtualHost updateVirtualHost(
-		long companyId, long layoutSetId, String hostname) {
+	public static long getVirtualHostsCount(
+		long excludedLayoutSetId, String[] virtualHostNames) {
 
-		return getService().updateVirtualHost(companyId, layoutSetId, hostname);
+		return getService().getVirtualHostsCount(
+			excludedLayoutSetId, virtualHostNames);
 	}
 
 	/**
@@ -351,6 +323,10 @@ public class VirtualHostLocalServiceUtil {
 
 	public static VirtualHostLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(VirtualHostLocalService service) {
+		_service = service;
 	}
 
 	private static volatile VirtualHostLocalService _service;

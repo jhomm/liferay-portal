@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v4_3_3;
@@ -51,7 +42,8 @@ public class DDMStructureLayoutUpgradeProcess extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				StringBundler.concat(
-					"select DDMStructureLayout.structureLayoutId, ",
+					"select DDMStructureLayout.ctCollectionId, ",
+					"DDMStructureLayout.structureLayoutId, ",
 					"DDMStructureLayout.definition from DDMStructureLayout ",
 					"inner join DDMStructureVersion on ",
 					"DDMStructureLayout.structureVersionId = ",
@@ -63,7 +55,7 @@ public class DDMStructureLayoutUpgradeProcess extends UpgradeProcess {
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructureLayout set definition = ? where " +
-						"structureLayoutId = ?")) {
+						"ctCollectionId = ? and structureLayoutId = ?")) {
 
 			preparedStatement1.setLong(
 				1, PortalUtil.getClassNameId(DDMFormInstance.class.getName()));
@@ -96,10 +88,10 @@ public class DDMStructureLayoutUpgradeProcess extends UpgradeProcess {
 						1,
 						ddmFormLayoutSerializerSerializeResponse.getContent());
 
-					long structureLayoutId = resultSet.getLong(
-						"structureLayoutId");
-
-					preparedStatement2.setLong(2, structureLayoutId);
+					preparedStatement2.setLong(
+						2, resultSet.getLong("ctCollectionId"));
+					preparedStatement2.setLong(
+						3, resultSet.getLong("structureLayoutId"));
 
 					preparedStatement2.addBatch();
 				}

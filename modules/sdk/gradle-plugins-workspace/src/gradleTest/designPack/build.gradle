@@ -1,0 +1,45 @@
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
+
+List<String> outputPaths = []
+
+task runGradleTest
+
+gradle.liferayWorkspace {
+	product = "dxp-2023.q4.6"
+}
+
+gradle.taskGraph.afterTask {
+	Task task, TaskState taskState ->
+
+	if ((task.name.contains("buildClientExtensionZip"))) {
+		outputPaths.add(task.archivePath)
+	}
+}
+
+runGradleTest {
+	dependsOn ":design-packs:fire:buildClientExtensionZip"
+
+	doLast {
+		outputPaths.each{
+			File outputFile = file(it)
+
+			assert outputFile.exists()
+
+			ZipFile zipFile = new ZipFile(outputFile)
+
+			zipFile.withCloseable {
+
+				for (String fileName in ["result/clay.css", "result/clay_rtl.css", "result/main.css", "result/main_rtl.css"]) {
+					File expectedFile = file(fileName)
+
+					String zipEntryName = "static/css/" + fileName.substring(fileName.indexOf('/') + 1)
+
+					ZipEntry zipEntry = zipFile.getEntry(zipEntryName)
+
+					assert zipEntry != null : zipEntryName
+				}
+			}
+		}
+	}
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.client.serdes.v1_0;
@@ -20,6 +11,8 @@ import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.SLAResult;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Transition;
 import com.liferay.portal.workflow.metrics.rest.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -28,9 +21,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Rafael Praxedes
@@ -61,7 +51,17 @@ public class InstanceSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
+		if (instance.getActive() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"active\": ");
+
+			sb.append(instance.getActive());
+		}
 
 		if (instance.getAssetTitle() != null) {
 			if (sb.length() > 1) {
@@ -308,11 +308,7 @@ public class InstanceSerDes {
 			sb.append("[");
 
 			for (int i = 0; i < instance.getTaskNames().length; i++) {
-				sb.append("\"");
-
-				sb.append(_escape(instance.getTaskNames()[i]));
-
-				sb.append("\"");
+				sb.append(_toJSON(instance.getTaskNames()[i]));
 
 				if ((i + 1) < instance.getTaskNames().length) {
 					sb.append(", ");
@@ -361,7 +357,14 @@ public class InstanceSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
+
+		if (instance.getActive() == null) {
+			map.put("active", null);
+		}
+		else {
+			map.put("active", String.valueOf(instance.getActive()));
+		}
 
 		if (instance.getAssetTitle() == null) {
 			map.put("assetTitle", null);
@@ -529,11 +532,85 @@ public class InstanceSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "assetTitle")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "assetTitle_i18n")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "assetType")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "assetType_i18n")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "assignees")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "className")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "classPK")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "completed")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "creator")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCompletion")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateCreated")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "dateModified")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "duration")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "processId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "processVersion")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "slaResults")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "slaStatus")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "taskNames")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "transitions")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Instance instance, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "assetTitle")) {
+			if (Objects.equals(jsonParserFieldName, "active")) {
+				if (jsonParserFieldValue != null) {
+					instance.setActive((Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "assetTitle")) {
 				if (jsonParserFieldValue != null) {
 					instance.setAssetTitle((String)jsonParserFieldValue);
 				}
@@ -541,8 +618,7 @@ public class InstanceSerDes {
 			else if (Objects.equals(jsonParserFieldName, "assetTitle_i18n")) {
 				if (jsonParserFieldValue != null) {
 					instance.setAssetTitle_i18n(
-						(Map)InstanceSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "assetType")) {
@@ -553,20 +629,23 @@ public class InstanceSerDes {
 			else if (Objects.equals(jsonParserFieldName, "assetType_i18n")) {
 				if (jsonParserFieldValue != null) {
 					instance.setAssetType_i18n(
-						(Map)InstanceSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "assignees")) {
 				if (jsonParserFieldValue != null) {
-					instance.setAssignees(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> AssigneeSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Assignee[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Assignee[] assigneesArray =
+						new Assignee[jsonParserFieldValues.length];
+
+					for (int i = 0; i < assigneesArray.length; i++) {
+						assigneesArray[i] = AssigneeSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					instance.setAssignees(assigneesArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "className")) {
@@ -633,14 +712,18 @@ public class InstanceSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "slaResults")) {
 				if (jsonParserFieldValue != null) {
-					instance.setSlaResults(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> SLAResultSerDes.toDTO((String)object)
-						).toArray(
-							size -> new SLAResult[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					SLAResult[] slaResultsArray =
+						new SLAResult[jsonParserFieldValues.length];
+
+					for (int i = 0; i < slaResultsArray.length; i++) {
+						slaResultsArray[i] = SLAResultSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					instance.setSlaResults(slaResultsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "slaStatus")) {
@@ -658,14 +741,18 @@ public class InstanceSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "transitions")) {
 				if (jsonParserFieldValue != null) {
-					instance.setTransitions(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> TransitionSerDes.toDTO((String)object)
-						).toArray(
-							size -> new Transition[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					Transition[] transitionsArray =
+						new Transition[jsonParserFieldValues.length];
+
+					for (int i = 0; i < transitionsArray.length; i++) {
+						transitionsArray[i] = TransitionSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					instance.setTransitions(transitionsArray);
 				}
 			}
 		}
@@ -700,36 +787,7 @@ public class InstanceSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -739,6 +797,42 @@ public class InstanceSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

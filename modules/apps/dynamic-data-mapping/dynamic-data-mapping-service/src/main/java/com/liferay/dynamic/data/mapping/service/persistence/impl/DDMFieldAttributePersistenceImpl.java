@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence.impl;
@@ -22,7 +13,9 @@ import com.liferay.dynamic.data.mapping.model.impl.DDMFieldAttributeModelImpl;
 import com.liferay.dynamic.data.mapping.service.persistence.DDMFieldAttributePersistence;
 import com.liferay.dynamic.data.mapping.service.persistence.DDMFieldAttributeUtil;
 import com.liferay.dynamic.data.mapping.service.persistence.impl.constants.DDMPersistenceConstants;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
@@ -36,18 +29,18 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -78,9 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {DDMFieldAttributePersistence.class, BasePersistence.class}
-)
+@Component(service = DDMFieldAttributePersistence.class)
 public class DDMFieldAttributePersistenceImpl
 	extends BasePersistenceImpl<DDMFieldAttribute>
 	implements DDMFieldAttributePersistence {
@@ -178,98 +169,100 @@ public class DDMFieldAttributePersistenceImpl
 		OrderByComparator<DDMFieldAttribute> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByStorageId;
-				finderArgs = new Object[] {storageId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByStorageId;
+					finderArgs = new Object[] {storageId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByStorageId;
-			finderArgs = new Object[] {
-				storageId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByStorageId;
+				finderArgs = new Object[] {
+					storageId, start, end, orderByComparator
+				};
+			}
 
-		List<DDMFieldAttribute> list = null;
+			List<DDMFieldAttribute> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDMFieldAttribute>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDMFieldAttribute>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDMFieldAttribute ddmFieldAttribute : list) {
-					if (storageId != ddmFieldAttribute.getStorageId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (DDMFieldAttribute ddmFieldAttribute : list) {
+						if (storageId != ddmFieldAttribute.getStorageId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
+				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
 
-			sb.append(_FINDER_COLUMN_STORAGEID_STORAGEID_2);
+				sb.append(_FINDER_COLUMN_STORAGEID_STORAGEID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(storageId);
+					queryPos.add(storageId);
 
-				list = (List<DDMFieldAttribute>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DDMFieldAttribute>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -565,65 +558,659 @@ public class DDMFieldAttributePersistenceImpl
 	 */
 	@Override
 	public int countByStorageId(long storageId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByStorageId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {storageId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByStorageId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {storageId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_STORAGEID_STORAGEID_2);
 
-			sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_STORAGEID_STORAGEID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(storageId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(storageId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_STORAGEID_STORAGEID_2 =
 		"ddmFieldAttribute.storageId = ?";
 
+	private FinderPath _finderPathWithPaginationFindByS_AN;
+	private FinderPath _finderPathWithoutPaginationFindByS_AN;
+	private FinderPath _finderPathCountByS_AN;
+
+	/**
+	 * Returns all the ddm field attributes where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @return the matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_AN(
+		long storageId, String attributeName) {
+
+		return findByS_AN(
+			storageId, attributeName, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			null);
+	}
+
+	/**
+	 * Returns a range of all the ddm field attributes where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param start the lower bound of the range of ddm field attributes
+	 * @param end the upper bound of the range of ddm field attributes (not inclusive)
+	 * @return the range of matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_AN(
+		long storageId, String attributeName, int start, int end) {
+
+		return findByS_AN(storageId, attributeName, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the ddm field attributes where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param start the lower bound of the range of ddm field attributes
+	 * @param end the upper bound of the range of ddm field attributes (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_AN(
+		long storageId, String attributeName, int start, int end,
+		OrderByComparator<DDMFieldAttribute> orderByComparator) {
+
+		return findByS_AN(
+			storageId, attributeName, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the ddm field attributes where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param start the lower bound of the range of ddm field attributes
+	 * @param end the upper bound of the range of ddm field attributes (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_AN(
+		long storageId, String attributeName, int start, int end,
+		OrderByComparator<DDMFieldAttribute> orderByComparator,
+		boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
+
+			attributeName = Objects.toString(attributeName, "");
+
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByS_AN;
+					finderArgs = new Object[] {storageId, attributeName};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByS_AN;
+				finderArgs = new Object[] {
+					storageId, attributeName, start, end, orderByComparator
+				};
+			}
+
+			List<DDMFieldAttribute> list = null;
+
+			if (useFinderCache) {
+				list = (List<DDMFieldAttribute>)finderCache.getResult(
+					finderPath, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (DDMFieldAttribute ddmFieldAttribute : list) {
+						if ((storageId != ddmFieldAttribute.getStorageId()) ||
+							!attributeName.equals(
+								ddmFieldAttribute.getAttributeName())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
+
+				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
+
+				sb.append(_FINDER_COLUMN_S_AN_STORAGEID_2);
+
+				boolean bindAttributeName = false;
+
+				if (attributeName.isEmpty()) {
+					sb.append(_FINDER_COLUMN_S_AN_ATTRIBUTENAME_3);
+				}
+				else {
+					bindAttributeName = true;
+
+					sb.append(_FINDER_COLUMN_S_AN_ATTRIBUTENAME_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(storageId);
+
+					if (bindAttributeName) {
+						queryPos.add(attributeName);
+					}
+
+					list = (List<DDMFieldAttribute>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
+	 * Returns the first ddm field attribute in the ordered set where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching ddm field attribute
+	 * @throws NoSuchFieldAttributeException if a matching ddm field attribute could not be found
+	 */
+	@Override
+	public DDMFieldAttribute findByS_AN_First(
+			long storageId, String attributeName,
+			OrderByComparator<DDMFieldAttribute> orderByComparator)
+		throws NoSuchFieldAttributeException {
+
+		DDMFieldAttribute ddmFieldAttribute = fetchByS_AN_First(
+			storageId, attributeName, orderByComparator);
+
+		if (ddmFieldAttribute != null) {
+			return ddmFieldAttribute;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("storageId=");
+		sb.append(storageId);
+
+		sb.append(", attributeName=");
+		sb.append(attributeName);
+
+		sb.append("}");
+
+		throw new NoSuchFieldAttributeException(sb.toString());
+	}
+
+	/**
+	 * Returns the first ddm field attribute in the ordered set where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching ddm field attribute, or <code>null</code> if a matching ddm field attribute could not be found
+	 */
+	@Override
+	public DDMFieldAttribute fetchByS_AN_First(
+		long storageId, String attributeName,
+		OrderByComparator<DDMFieldAttribute> orderByComparator) {
+
+		List<DDMFieldAttribute> list = findByS_AN(
+			storageId, attributeName, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last ddm field attribute in the ordered set where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching ddm field attribute
+	 * @throws NoSuchFieldAttributeException if a matching ddm field attribute could not be found
+	 */
+	@Override
+	public DDMFieldAttribute findByS_AN_Last(
+			long storageId, String attributeName,
+			OrderByComparator<DDMFieldAttribute> orderByComparator)
+		throws NoSuchFieldAttributeException {
+
+		DDMFieldAttribute ddmFieldAttribute = fetchByS_AN_Last(
+			storageId, attributeName, orderByComparator);
+
+		if (ddmFieldAttribute != null) {
+			return ddmFieldAttribute;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("storageId=");
+		sb.append(storageId);
+
+		sb.append(", attributeName=");
+		sb.append(attributeName);
+
+		sb.append("}");
+
+		throw new NoSuchFieldAttributeException(sb.toString());
+	}
+
+	/**
+	 * Returns the last ddm field attribute in the ordered set where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching ddm field attribute, or <code>null</code> if a matching ddm field attribute could not be found
+	 */
+	@Override
+	public DDMFieldAttribute fetchByS_AN_Last(
+		long storageId, String attributeName,
+		OrderByComparator<DDMFieldAttribute> orderByComparator) {
+
+		int count = countByS_AN(storageId, attributeName);
+
+		if (count == 0) {
+			return null;
+		}
+
+		List<DDMFieldAttribute> list = findByS_AN(
+			storageId, attributeName, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the ddm field attributes before and after the current ddm field attribute in the ordered set where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param fieldAttributeId the primary key of the current ddm field attribute
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next ddm field attribute
+	 * @throws NoSuchFieldAttributeException if a ddm field attribute with the primary key could not be found
+	 */
+	@Override
+	public DDMFieldAttribute[] findByS_AN_PrevAndNext(
+			long fieldAttributeId, long storageId, String attributeName,
+			OrderByComparator<DDMFieldAttribute> orderByComparator)
+		throws NoSuchFieldAttributeException {
+
+		attributeName = Objects.toString(attributeName, "");
+
+		DDMFieldAttribute ddmFieldAttribute = findByPrimaryKey(
+			fieldAttributeId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			DDMFieldAttribute[] array = new DDMFieldAttributeImpl[3];
+
+			array[0] = getByS_AN_PrevAndNext(
+				session, ddmFieldAttribute, storageId, attributeName,
+				orderByComparator, true);
+
+			array[1] = ddmFieldAttribute;
+
+			array[2] = getByS_AN_PrevAndNext(
+				session, ddmFieldAttribute, storageId, attributeName,
+				orderByComparator, false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected DDMFieldAttribute getByS_AN_PrevAndNext(
+		Session session, DDMFieldAttribute ddmFieldAttribute, long storageId,
+		String attributeName,
+		OrderByComparator<DDMFieldAttribute> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(4);
+		}
+
+		sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
+
+		sb.append(_FINDER_COLUMN_S_AN_STORAGEID_2);
+
+		boolean bindAttributeName = false;
+
+		if (attributeName.isEmpty()) {
+			sb.append(_FINDER_COLUMN_S_AN_ATTRIBUTENAME_3);
+		}
+		else {
+			bindAttributeName = true;
+
+			sb.append(_FINDER_COLUMN_S_AN_ATTRIBUTENAME_2);
+		}
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(storageId);
+
+		if (bindAttributeName) {
+			queryPos.add(attributeName);
+		}
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						ddmFieldAttribute)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<DDMFieldAttribute> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the ddm field attributes where storageId = &#63; and attributeName = &#63; from the database.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 */
+	@Override
+	public void removeByS_AN(long storageId, String attributeName) {
+		for (DDMFieldAttribute ddmFieldAttribute :
+				findByS_AN(
+					storageId, attributeName, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, null)) {
+
+			remove(ddmFieldAttribute);
+		}
+	}
+
+	/**
+	 * Returns the number of ddm field attributes where storageId = &#63; and attributeName = &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param attributeName the attribute name
+	 * @return the number of matching ddm field attributes
+	 */
+	@Override
+	public int countByS_AN(long storageId, String attributeName) {
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
+
+			attributeName = Objects.toString(attributeName, "");
+
+			FinderPath finderPath = _finderPathCountByS_AN;
+
+			Object[] finderArgs = new Object[] {storageId, attributeName};
+
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
+
+				sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
+
+				sb.append(_FINDER_COLUMN_S_AN_STORAGEID_2);
+
+				boolean bindAttributeName = false;
+
+				if (attributeName.isEmpty()) {
+					sb.append(_FINDER_COLUMN_S_AN_ATTRIBUTENAME_3);
+				}
+				else {
+					bindAttributeName = true;
+
+					sb.append(_FINDER_COLUMN_S_AN_ATTRIBUTENAME_2);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(storageId);
+
+					if (bindAttributeName) {
+						queryPos.add(attributeName);
+					}
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(finderPath, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
+	}
+
+	private static final String _FINDER_COLUMN_S_AN_STORAGEID_2 =
+		"ddmFieldAttribute.storageId = ? AND ";
+
+	private static final String _FINDER_COLUMN_S_AN_ATTRIBUTENAME_2 =
+		"ddmFieldAttribute.attributeName = ?";
+
+	private static final String _FINDER_COLUMN_S_AN_ATTRIBUTENAME_3 =
+		"(ddmFieldAttribute.attributeName IS NULL OR ddmFieldAttribute.attributeName = '')";
+
 	private FinderPath _finderPathWithPaginationFindByS_L;
 	private FinderPath _finderPathWithoutPaginationFindByS_L;
 	private FinderPath _finderPathCountByS_L;
+	private FinderPath _finderPathWithPaginationCountByS_L;
 
 	/**
 	 * Returns all the ddm field attributes where storageId = &#63; and languageId = &#63;.
@@ -704,117 +1291,120 @@ public class DDMFieldAttributePersistenceImpl
 		OrderByComparator<DDMFieldAttribute> orderByComparator,
 		boolean useFinderCache) {
 
-		languageId = Objects.toString(languageId, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+			languageId = Objects.toString(languageId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByS_L;
-				finderArgs = new Object[] {storageId, languageId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByS_L;
+					finderArgs = new Object[] {storageId, languageId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByS_L;
-			finderArgs = new Object[] {
-				storageId, languageId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByS_L;
+				finderArgs = new Object[] {
+					storageId, languageId, start, end, orderByComparator
+				};
+			}
 
-		List<DDMFieldAttribute> list = null;
+			List<DDMFieldAttribute> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDMFieldAttribute>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDMFieldAttribute>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDMFieldAttribute ddmFieldAttribute : list) {
-					if ((storageId != ddmFieldAttribute.getStorageId()) ||
-						!languageId.equals(ddmFieldAttribute.getLanguageId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DDMFieldAttribute ddmFieldAttribute : list) {
+						if ((storageId != ddmFieldAttribute.getStorageId()) ||
+							!languageId.equals(
+								ddmFieldAttribute.getLanguageId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
-
-			sb.append(_FINDER_COLUMN_S_L_STORAGEID_2);
-
-			boolean bindLanguageId = false;
-
-			if (languageId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_3);
-			}
-			else {
-				bindLanguageId = true;
-
-				sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(storageId);
-
-				if (bindLanguageId) {
-					queryPos.add(languageId);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<DDMFieldAttribute>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_S_L_STORAGEID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindLanguageId = false;
+
+				if (languageId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_3);
+				}
+				else {
+					bindLanguageId = true;
+
+					sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(storageId);
+
+					if (bindLanguageId) {
+						queryPos.add(languageId);
+					}
+
+					list = (List<DDMFieldAttribute>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1118,6 +1708,230 @@ public class DDMFieldAttributePersistenceImpl
 	}
 
 	/**
+	 * Returns all the ddm field attributes where storageId = &#63; and languageId = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param languageIds the language IDs
+	 * @return the matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_L(
+		long storageId, String[] languageIds) {
+
+		return findByS_L(
+			storageId, languageIds, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the ddm field attributes where storageId = &#63; and languageId = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param languageIds the language IDs
+	 * @param start the lower bound of the range of ddm field attributes
+	 * @param end the upper bound of the range of ddm field attributes (not inclusive)
+	 * @return the range of matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_L(
+		long storageId, String[] languageIds, int start, int end) {
+
+		return findByS_L(storageId, languageIds, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the ddm field attributes where storageId = &#63; and languageId = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param languageIds the language IDs
+	 * @param start the lower bound of the range of ddm field attributes
+	 * @param end the upper bound of the range of ddm field attributes (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_L(
+		long storageId, String[] languageIds, int start, int end,
+		OrderByComparator<DDMFieldAttribute> orderByComparator) {
+
+		return findByS_L(
+			storageId, languageIds, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the ddm field attributes where storageId = &#63; and languageId = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFieldAttributeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param storageId the storage ID
+	 * @param languageIds the language IDs
+	 * @param start the lower bound of the range of ddm field attributes
+	 * @param end the upper bound of the range of ddm field attributes (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching ddm field attributes
+	 */
+	@Override
+	public List<DDMFieldAttribute> findByS_L(
+		long storageId, String[] languageIds, int start, int end,
+		OrderByComparator<DDMFieldAttribute> orderByComparator,
+		boolean useFinderCache) {
+
+		if (languageIds == null) {
+			languageIds = new String[0];
+		}
+		else if (languageIds.length > 1) {
+			for (int i = 0; i < languageIds.length; i++) {
+				languageIds[i] = Objects.toString(languageIds[i], "");
+			}
+
+			languageIds = ArrayUtil.sortedUnique(languageIds);
+		}
+
+		if (languageIds.length == 1) {
+			return findByS_L(
+				storageId, languageIds[0], start, end, orderByComparator);
+		}
+
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
+
+			Object[] finderArgs = null;
+
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
+
+				if (useFinderCache) {
+					finderArgs = new Object[] {
+						storageId, StringUtil.merge(languageIds)
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderArgs = new Object[] {
+					storageId, StringUtil.merge(languageIds), start, end,
+					orderByComparator
+				};
+			}
+
+			List<DDMFieldAttribute> list = null;
+
+			if (useFinderCache) {
+				list = (List<DDMFieldAttribute>)finderCache.getResult(
+					_finderPathWithPaginationFindByS_L, finderArgs, this);
+
+				if ((list != null) && !list.isEmpty()) {
+					for (DDMFieldAttribute ddmFieldAttribute : list) {
+						if ((storageId != ddmFieldAttribute.getStorageId()) ||
+							!ArrayUtil.contains(
+								languageIds,
+								ddmFieldAttribute.getLanguageId())) {
+
+							list = null;
+
+							break;
+						}
+					}
+				}
+			}
+
+			if (list == null) {
+				StringBundler sb = new StringBundler();
+
+				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
+
+				sb.append(_FINDER_COLUMN_S_L_STORAGEID_2);
+
+				if (languageIds.length > 0) {
+					sb.append("(");
+
+					for (int i = 0; i < languageIds.length; i++) {
+						String languageId = languageIds[i];
+
+						if (languageId.isEmpty()) {
+							sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_3);
+						}
+						else {
+							sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_2);
+						}
+
+						if ((i + 1) < languageIds.length) {
+							sb.append(WHERE_OR);
+						}
+					}
+
+					sb.append(")");
+				}
+
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(storageId);
+
+					for (String languageId : languageIds) {
+						if ((languageId != null) && !languageId.isEmpty()) {
+							queryPos.add(languageId);
+						}
+					}
+
+					list = (List<DDMFieldAttribute>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(
+							_finderPathWithPaginationFindByS_L, finderArgs,
+							list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
+	}
+
+	/**
 	 * Removes all the ddm field attributes where storageId = &#63; and languageId = &#63; from the database.
 	 *
 	 * @param storageId the storage ID
@@ -1143,74 +1957,167 @@ public class DDMFieldAttributePersistenceImpl
 	 */
 	@Override
 	public int countByS_L(long storageId, String languageId) {
-		languageId = Objects.toString(languageId, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+			languageId = Objects.toString(languageId, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByS_L;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {storageId, languageId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByS_L;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {storageId, languageId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_S_L_STORAGEID_2);
 
-			sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
+				boolean bindLanguageId = false;
 
-			sb.append(_FINDER_COLUMN_S_L_STORAGEID_2);
+				if (languageId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_3);
+				}
+				else {
+					bindLanguageId = true;
 
-			boolean bindLanguageId = false;
-
-			if (languageId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_3);
-			}
-			else {
-				bindLanguageId = true;
-
-				sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(storageId);
-
-				if (bindLanguageId) {
-					queryPos.add(languageId);
+					sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(storageId);
+
+					if (bindLanguageId) {
+						queryPos.add(languageId);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+
+			return count.intValue();
+		}
+	}
+
+	/**
+	 * Returns the number of ddm field attributes where storageId = &#63; and languageId = any &#63;.
+	 *
+	 * @param storageId the storage ID
+	 * @param languageIds the language IDs
+	 * @return the number of matching ddm field attributes
+	 */
+	@Override
+	public int countByS_L(long storageId, String[] languageIds) {
+		if (languageIds == null) {
+			languageIds = new String[0];
+		}
+		else if (languageIds.length > 1) {
+			for (int i = 0; i < languageIds.length; i++) {
+				languageIds[i] = Objects.toString(languageIds[i], "");
 			}
-			finally {
-				closeSession(session);
-			}
+
+			languageIds = ArrayUtil.sortedUnique(languageIds);
 		}
 
-		return count.intValue();
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
+
+			Object[] finderArgs = new Object[] {
+				storageId, StringUtil.merge(languageIds)
+			};
+
+			Long count = (Long)finderCache.getResult(
+				_finderPathWithPaginationCountByS_L, finderArgs, this);
+
+			if (count == null) {
+				StringBundler sb = new StringBundler();
+
+				sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
+
+				sb.append(_FINDER_COLUMN_S_L_STORAGEID_2);
+
+				if (languageIds.length > 0) {
+					sb.append("(");
+
+					for (int i = 0; i < languageIds.length; i++) {
+						String languageId = languageIds[i];
+
+						if (languageId.isEmpty()) {
+							sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_3);
+						}
+						else {
+							sb.append(_FINDER_COLUMN_S_L_LANGUAGEID_2);
+						}
+
+						if ((i + 1) < languageIds.length) {
+							sb.append(WHERE_OR);
+						}
+					}
+
+					sb.append(")");
+				}
+
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(storageId);
+
+					for (String languageId : languageIds) {
+						if ((languageId != null) && !languageId.isEmpty()) {
+							queryPos.add(languageId);
+						}
+					}
+
+					count = (Long)query.uniqueResult();
+
+					finderCache.putResult(
+						_finderPathWithPaginationCountByS_L, finderArgs, count);
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_S_L_STORAGEID_2 =
@@ -1308,132 +2215,136 @@ public class DDMFieldAttributePersistenceImpl
 		OrderByComparator<DDMFieldAttribute> orderByComparator,
 		boolean useFinderCache) {
 
-		attributeName = Objects.toString(attributeName, "");
-		smallAttributeValue = Objects.toString(smallAttributeValue, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+			attributeName = Objects.toString(attributeName, "");
+			smallAttributeValue = Objects.toString(smallAttributeValue, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByAN_SAV;
-				finderArgs = new Object[] {attributeName, smallAttributeValue};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByAN_SAV;
+					finderArgs = new Object[] {
+						attributeName, smallAttributeValue
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByAN_SAV;
-			finderArgs = new Object[] {
-				attributeName, smallAttributeValue, start, end,
-				orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByAN_SAV;
+				finderArgs = new Object[] {
+					attributeName, smallAttributeValue, start, end,
+					orderByComparator
+				};
+			}
 
-		List<DDMFieldAttribute> list = null;
+			List<DDMFieldAttribute> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDMFieldAttribute>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDMFieldAttribute>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDMFieldAttribute ddmFieldAttribute : list) {
-					if (!attributeName.equals(
-							ddmFieldAttribute.getAttributeName()) ||
-						!smallAttributeValue.equals(
-							ddmFieldAttribute.getSmallAttributeValue())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DDMFieldAttribute ddmFieldAttribute : list) {
+						if (!attributeName.equals(
+								ddmFieldAttribute.getAttributeName()) ||
+							!smallAttributeValue.equals(
+								ddmFieldAttribute.getSmallAttributeValue())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
+
+			if (list == null) {
+				StringBundler sb = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
+
+				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
+
+				boolean bindAttributeName = false;
+
+				if (attributeName.isEmpty()) {
+					sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_3);
+				}
+				else {
+					bindAttributeName = true;
+
+					sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_2);
+				}
+
+				boolean bindSmallAttributeValue = false;
+
+				if (smallAttributeValue.isEmpty()) {
+					sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_3);
+				}
+				else {
+					bindSmallAttributeValue = true;
+
+					sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindAttributeName) {
+						queryPos.add(attributeName);
+					}
+
+					if (bindSmallAttributeValue) {
+						queryPos.add(smallAttributeValue);
+					}
+
+					list = (List<DDMFieldAttribute>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
 		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
-
-			boolean bindAttributeName = false;
-
-			if (attributeName.isEmpty()) {
-				sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_3);
-			}
-			else {
-				bindAttributeName = true;
-
-				sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_2);
-			}
-
-			boolean bindSmallAttributeValue = false;
-
-			if (smallAttributeValue.isEmpty()) {
-				sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_3);
-			}
-			else {
-				bindSmallAttributeValue = true;
-
-				sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindAttributeName) {
-					queryPos.add(attributeName);
-				}
-
-				if (bindSmallAttributeValue) {
-					queryPos.add(smallAttributeValue);
-				}
-
-				list = (List<DDMFieldAttribute>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
 	}
 
 	/**
@@ -1778,86 +2689,82 @@ public class DDMFieldAttributePersistenceImpl
 	 */
 	@Override
 	public int countByAN_SAV(String attributeName, String smallAttributeValue) {
-		attributeName = Objects.toString(attributeName, "");
-		smallAttributeValue = Objects.toString(smallAttributeValue, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+			attributeName = Objects.toString(attributeName, "");
+			smallAttributeValue = Objects.toString(smallAttributeValue, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByAN_SAV;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				attributeName, smallAttributeValue
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByAN_SAV;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {attributeName, smallAttributeValue};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindAttributeName = false;
 
-			sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
+				if (attributeName.isEmpty()) {
+					sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_3);
+				}
+				else {
+					bindAttributeName = true;
 
-			boolean bindAttributeName = false;
-
-			if (attributeName.isEmpty()) {
-				sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_3);
-			}
-			else {
-				bindAttributeName = true;
-
-				sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_2);
-			}
-
-			boolean bindSmallAttributeValue = false;
-
-			if (smallAttributeValue.isEmpty()) {
-				sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_3);
-			}
-			else {
-				bindSmallAttributeValue = true;
-
-				sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindAttributeName) {
-					queryPos.add(attributeName);
+					sb.append(_FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_2);
 				}
 
-				if (bindSmallAttributeValue) {
-					queryPos.add(smallAttributeValue);
+				boolean bindSmallAttributeValue = false;
+
+				if (smallAttributeValue.isEmpty()) {
+					sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_3);
+				}
+				else {
+					bindSmallAttributeValue = true;
+
+					sb.append(_FINDER_COLUMN_AN_SAV_SMALLATTRIBUTEVALUE_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindAttributeName) {
+						queryPos.add(attributeName);
+					}
+
+					if (bindSmallAttributeValue) {
+						queryPos.add(smallAttributeValue);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_AN_SAV_ATTRIBUTENAME_2 =
@@ -1873,7 +2780,6 @@ public class DDMFieldAttributePersistenceImpl
 		"(ddmFieldAttribute.smallAttributeValue IS NULL OR ddmFieldAttribute.smallAttributeValue = '')";
 
 	private FinderPath _finderPathFetchByF_AN_L;
-	private FinderPath _finderPathCountByF_AN_L;
 
 	/**
 	 * Returns the ddm field attribute where fieldId = &#63; and attributeName = &#63; and languageId = &#63; or throws a <code>NoSuchFieldAttributeException</code> if it could not be found.
@@ -1947,117 +2853,119 @@ public class DDMFieldAttributePersistenceImpl
 		long fieldId, String attributeName, String languageId,
 		boolean useFinderCache) {
 
-		attributeName = Objects.toString(attributeName, "");
-		languageId = Objects.toString(languageId, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+			attributeName = Objects.toString(attributeName, "");
+			languageId = Objects.toString(languageId, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {fieldId, attributeName, languageId};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(
-				_finderPathFetchByF_AN_L, finderArgs);
-		}
-
-		if (result instanceof DDMFieldAttribute) {
-			DDMFieldAttribute ddmFieldAttribute = (DDMFieldAttribute)result;
-
-			if ((fieldId != ddmFieldAttribute.getFieldId()) ||
-				!Objects.equals(
-					attributeName, ddmFieldAttribute.getAttributeName()) ||
-				!Objects.equals(
-					languageId, ddmFieldAttribute.getLanguageId())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
-
-			sb.append(_FINDER_COLUMN_F_AN_L_FIELDID_2);
-
-			boolean bindAttributeName = false;
-
-			if (attributeName.isEmpty()) {
-				sb.append(_FINDER_COLUMN_F_AN_L_ATTRIBUTENAME_3);
-			}
-			else {
-				bindAttributeName = true;
-
-				sb.append(_FINDER_COLUMN_F_AN_L_ATTRIBUTENAME_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {fieldId, attributeName, languageId};
 			}
 
-			boolean bindLanguageId = false;
+			Object result = null;
 
-			if (languageId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_F_AN_L_LANGUAGEID_3);
-			}
-			else {
-				bindLanguageId = true;
-
-				sb.append(_FINDER_COLUMN_F_AN_L_LANGUAGEID_2);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByF_AN_L, finderArgs, this);
 			}
 
-			String sql = sb.toString();
+			if (result instanceof DDMFieldAttribute) {
+				DDMFieldAttribute ddmFieldAttribute = (DDMFieldAttribute)result;
 
-			Session session = null;
+				if ((fieldId != ddmFieldAttribute.getFieldId()) ||
+					!Objects.equals(
+						attributeName, ddmFieldAttribute.getAttributeName()) ||
+					!Objects.equals(
+						languageId, ddmFieldAttribute.getLanguageId())) {
 
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(fieldId);
-
-				if (bindAttributeName) {
-					queryPos.add(attributeName);
+					result = null;
 				}
+			}
 
-				if (bindLanguageId) {
-					queryPos.add(languageId);
-				}
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
 
-				List<DDMFieldAttribute> list = query.list();
+				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE_WHERE);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByF_AN_L, finderArgs, list);
-					}
+				sb.append(_FINDER_COLUMN_F_AN_L_FIELDID_2);
+
+				boolean bindAttributeName = false;
+
+				if (attributeName.isEmpty()) {
+					sb.append(_FINDER_COLUMN_F_AN_L_ATTRIBUTENAME_3);
 				}
 				else {
-					DDMFieldAttribute ddmFieldAttribute = list.get(0);
+					bindAttributeName = true;
 
-					result = ddmFieldAttribute;
+					sb.append(_FINDER_COLUMN_F_AN_L_ATTRIBUTENAME_2);
+				}
 
-					cacheResult(ddmFieldAttribute);
+				boolean bindLanguageId = false;
+
+				if (languageId.isEmpty()) {
+					sb.append(_FINDER_COLUMN_F_AN_L_LANGUAGEID_3);
+				}
+				else {
+					bindLanguageId = true;
+
+					sb.append(_FINDER_COLUMN_F_AN_L_LANGUAGEID_2);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(fieldId);
+
+					if (bindAttributeName) {
+						queryPos.add(attributeName);
+					}
+
+					if (bindLanguageId) {
+						queryPos.add(languageId);
+					}
+
+					List<DDMFieldAttribute> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByF_AN_L, finderArgs, list);
+						}
+					}
+					else {
+						DDMFieldAttribute ddmFieldAttribute = list.get(0);
+
+						result = ddmFieldAttribute;
+
+						cacheResult(ddmFieldAttribute);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (DDMFieldAttribute)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DDMFieldAttribute)result;
+			}
 		}
 	}
 
@@ -2092,90 +3000,14 @@ public class DDMFieldAttributePersistenceImpl
 	public int countByF_AN_L(
 		long fieldId, String attributeName, String languageId) {
 
-		attributeName = Objects.toString(attributeName, "");
-		languageId = Objects.toString(languageId, "");
+		DDMFieldAttribute ddmFieldAttribute = fetchByF_AN_L(
+			fieldId, attributeName, languageId);
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByF_AN_L;
-
-			finderArgs = new Object[] {fieldId, attributeName, languageId};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (ddmFieldAttribute == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_DDMFIELDATTRIBUTE_WHERE);
-
-			sb.append(_FINDER_COLUMN_F_AN_L_FIELDID_2);
-
-			boolean bindAttributeName = false;
-
-			if (attributeName.isEmpty()) {
-				sb.append(_FINDER_COLUMN_F_AN_L_ATTRIBUTENAME_3);
-			}
-			else {
-				bindAttributeName = true;
-
-				sb.append(_FINDER_COLUMN_F_AN_L_ATTRIBUTENAME_2);
-			}
-
-			boolean bindLanguageId = false;
-
-			if (languageId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_F_AN_L_LANGUAGEID_3);
-			}
-			else {
-				bindLanguageId = true;
-
-				sb.append(_FINDER_COLUMN_F_AN_L_LANGUAGEID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(fieldId);
-
-				if (bindAttributeName) {
-					queryPos.add(attributeName);
-				}
-
-				if (bindLanguageId) {
-					queryPos.add(languageId);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_F_AN_L_FIELDID_2 =
@@ -2209,22 +3041,23 @@ public class DDMFieldAttributePersistenceImpl
 	 */
 	@Override
 	public void cacheResult(DDMFieldAttribute ddmFieldAttribute) {
-		if (ddmFieldAttribute.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ddmFieldAttribute.getCtCollectionId())) {
+
+			entityCache.putResult(
+				DDMFieldAttributeImpl.class, ddmFieldAttribute.getPrimaryKey(),
+				ddmFieldAttribute);
+
+			finderCache.putResult(
+				_finderPathFetchByF_AN_L,
+				new Object[] {
+					ddmFieldAttribute.getFieldId(),
+					ddmFieldAttribute.getAttributeName(),
+					ddmFieldAttribute.getLanguageId()
+				},
+				ddmFieldAttribute);
 		}
-
-		entityCache.putResult(
-			DDMFieldAttributeImpl.class, ddmFieldAttribute.getPrimaryKey(),
-			ddmFieldAttribute);
-
-		finderCache.putResult(
-			_finderPathFetchByF_AN_L,
-			new Object[] {
-				ddmFieldAttribute.getFieldId(),
-				ddmFieldAttribute.getAttributeName(),
-				ddmFieldAttribute.getLanguageId()
-			},
-			ddmFieldAttribute);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -2245,15 +3078,16 @@ public class DDMFieldAttributePersistenceImpl
 		}
 
 		for (DDMFieldAttribute ddmFieldAttribute : ddmFieldAttributes) {
-			if (ddmFieldAttribute.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						ddmFieldAttribute.getCtCollectionId())) {
 
-			if (entityCache.getResult(
-					DDMFieldAttributeImpl.class,
-					ddmFieldAttribute.getPrimaryKey()) == null) {
+				if (entityCache.getResult(
+						DDMFieldAttributeImpl.class,
+						ddmFieldAttribute.getPrimaryKey()) == null) {
 
-				cacheResult(ddmFieldAttribute);
+					cacheResult(ddmFieldAttribute);
+				}
 			}
 		}
 	}
@@ -2305,15 +3139,19 @@ public class DDMFieldAttributePersistenceImpl
 	protected void cacheUniqueFindersCache(
 		DDMFieldAttributeModelImpl ddmFieldAttributeModelImpl) {
 
-		Object[] args = new Object[] {
-			ddmFieldAttributeModelImpl.getFieldId(),
-			ddmFieldAttributeModelImpl.getAttributeName(),
-			ddmFieldAttributeModelImpl.getLanguageId()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ddmFieldAttributeModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(_finderPathCountByF_AN_L, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByF_AN_L, args, ddmFieldAttributeModelImpl);
+			Object[] args = new Object[] {
+				ddmFieldAttributeModelImpl.getFieldId(),
+				ddmFieldAttributeModelImpl.getAttributeName(),
+				ddmFieldAttributeModelImpl.getLanguageId()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByF_AN_L, args, ddmFieldAttributeModelImpl);
+		}
 	}
 
 	/**
@@ -2475,16 +3313,6 @@ public class DDMFieldAttributePersistenceImpl
 			closeSession(session);
 		}
 
-		if (ddmFieldAttribute.getCtCollectionId() != 0) {
-			if (isNew) {
-				ddmFieldAttribute.setNew(false);
-			}
-
-			ddmFieldAttribute.resetOriginalValues();
-
-			return ddmFieldAttribute;
-		}
-
 		entityCache.putResult(
 			DDMFieldAttributeImpl.class, ddmFieldAttributeModelImpl, false,
 			true);
@@ -2547,11 +3375,24 @@ public class DDMFieldAttributePersistenceImpl
 	 */
 	@Override
 	public DDMFieldAttribute fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDMFieldAttribute.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (ctPersistenceHelper.isProductionMode(
+				DDMFieldAttribute.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		DDMFieldAttribute ddmFieldAttribute = null;
+		DDMFieldAttribute ddmFieldAttribute =
+			(DDMFieldAttribute)entityCache.getResult(
+				DDMFieldAttributeImpl.class, primaryKey);
+
+		if (ddmFieldAttribute != null) {
+			return ddmFieldAttribute;
+		}
 
 		Session session = null;
 
@@ -2591,7 +3432,12 @@ public class DDMFieldAttributePersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (ctPersistenceHelper.isProductionMode(DDMFieldAttribute.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -2612,6 +3458,34 @@ public class DDMFieldAttributePersistenceImpl
 				map.put(primaryKey, ddmFieldAttribute);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						DDMFieldAttribute.class, primaryKey)) {
+
+				DDMFieldAttribute ddmFieldAttribute =
+					(DDMFieldAttribute)entityCache.getResult(
+						DDMFieldAttributeImpl.class, primaryKey);
+
+				if (ddmFieldAttribute == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, ddmFieldAttribute);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -2745,78 +3619,80 @@ public class DDMFieldAttributePersistenceImpl
 		OrderByComparator<DDMFieldAttribute> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<DDMFieldAttribute> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<DDMFieldAttribute>)finderCache.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_DDMFIELDATTRIBUTE;
-
-				sql = sql.concat(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<DDMFieldAttribute>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<DDMFieldAttribute> list = null;
+
+			if (useFinderCache) {
+				list = (List<DDMFieldAttribute>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_DDMFIELDATTRIBUTE);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_DDMFIELDATTRIBUTE;
+
+					sql = sql.concat(DDMFieldAttributeModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<DDMFieldAttribute>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -2837,40 +3713,37 @@ public class DDMFieldAttributePersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDMFieldAttribute.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDMFieldAttribute.class)) {
 
-		Long count = null;
+			Long count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(
+						_SQL_COUNT_DDMFIELDATTRIBUTE);
 
-				Query query = session.createQuery(_SQL_COUNT_DDMFIELDATTRIBUTE);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -2926,20 +3799,22 @@ public class DDMFieldAttributePersistenceImpl
 
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("companyId");
-		ctStrictColumnNames.add("fieldId");
-		ctStrictColumnNames.add("storageId");
-		ctStrictColumnNames.add("attributeName");
-		ctStrictColumnNames.add("languageId");
-		ctStrictColumnNames.add("largeAttributeValue");
-		ctStrictColumnNames.add("smallAttributeValue");
+		ctMergeColumnNames.add("fieldId");
+		ctMergeColumnNames.add("storageId");
+		ctMergeColumnNames.add("attributeName");
+		ctMergeColumnNames.add("languageId");
+		ctMergeColumnNames.add("largeAttributeValue");
+		ctMergeColumnNames.add("smallAttributeValue");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("fieldAttributeId"));
@@ -2988,6 +3863,25 @@ public class DDMFieldAttributePersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"storageId"},
 			false);
 
+		_finderPathWithPaginationFindByS_AN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByS_AN",
+			new String[] {
+				Long.class.getName(), String.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {"storageId", "attributeName"}, true);
+
+		_finderPathWithoutPaginationFindByS_AN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByS_AN",
+			new String[] {Long.class.getName(), String.class.getName()},
+			new String[] {"storageId", "attributeName"}, true);
+
+		_finderPathCountByS_AN = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByS_AN",
+			new String[] {Long.class.getName(), String.class.getName()},
+			new String[] {"storageId", "attributeName"}, false);
+
 		_finderPathWithPaginationFindByS_L = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByS_L",
 			new String[] {
@@ -3004,6 +3898,11 @@ public class DDMFieldAttributePersistenceImpl
 
 		_finderPathCountByS_L = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByS_L",
+			new String[] {Long.class.getName(), String.class.getName()},
+			new String[] {"storageId", "languageId"}, false);
+
+		_finderPathWithPaginationCountByS_L = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByS_L",
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"storageId", "languageId"}, false);
 
@@ -3034,38 +3933,14 @@ public class DDMFieldAttributePersistenceImpl
 			},
 			new String[] {"fieldId", "attributeName", "languageId"}, true);
 
-		_finderPathCountByF_AN_L = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByF_AN_L",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				String.class.getName()
-			},
-			new String[] {"fieldId", "attributeName", "languageId"}, false);
-
-		_setDDMFieldAttributeUtilPersistence(this);
+		DDMFieldAttributeUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDMFieldAttributeUtilPersistence(null);
+		DDMFieldAttributeUtil.setPersistence(null);
 
 		entityCache.removeCache(DDMFieldAttributeImpl.class.getName());
-	}
-
-	private void _setDDMFieldAttributeUtilPersistence(
-		DDMFieldAttributePersistence ddmFieldAttributePersistence) {
-
-		try {
-			Field field = DDMFieldAttributeUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddmFieldAttributePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3130,9 +4005,5 @@ public class DDMFieldAttributePersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDMFieldAttributeModelArgumentsResolver
-		_ddmFieldAttributeModelArgumentsResolver;
 
 }

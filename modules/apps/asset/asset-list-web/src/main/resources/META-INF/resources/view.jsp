@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,6 +11,8 @@
 AssetListManagementToolbarDisplayContext assetListManagementToolbarDisplayContext = new AssetListManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, assetListDisplayContext);
 %>
 
+<liferay-ui:error exception="<%= RequiredAssetListEntryException.class %>" message="you-cannot-delete-collections-that-are-used-by-one-or-more-items.-please-view-the-usages-and-try-to-unassign-them" />
+
 <clay:navigation-bar
 	inverted="<%= true %>"
 	navigationItems='<%= assetListDisplayContext.getNavigationItems("collections") %>'
@@ -27,7 +20,7 @@ AssetListManagementToolbarDisplayContext assetListManagementToolbarDisplayContex
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= assetListManagementToolbarDisplayContext %>"
-	propsTransformer="js/ManagementToolbarPropsTransformer"
+	propsTransformer="{ManagementToolbarPropsTransformer} from asset-list-web"
 />
 
 <portlet:actionURL name="/asset_list/delete_asset_list_entries" var="deleteAssetListEntryURL">
@@ -35,8 +28,8 @@ AssetListManagementToolbarDisplayContext assetListManagementToolbarDisplayContex
 </portlet:actionURL>
 
 <aui:form action="<%= deleteAssetListEntryURL %>" cssClass="container-fluid container-fluid-max-xl" name="fm">
-	<liferay-ui:breadcrumb
-		showLayout="<%= false %>"
+	<liferay-site-navigation:breadcrumb
+		breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, true, false, false, true, true) %>"
 	/>
 
 	<c:choose>
@@ -52,89 +45,144 @@ AssetListManagementToolbarDisplayContext assetListManagementToolbarDisplayContex
 				>
 
 					<%
-					String editURL = StringPool.BLANK;
-
-					if (AssetListEntryPermission.contains(permissionChecker, assetListEntry, ActionKeys.UPDATE) || AssetListEntryPermission.contains(permissionChecker, assetListEntry, ActionKeys.VIEW)) {
-						editURL = PortletURLBuilder.createRenderURL(
-							liferayPortletResponse
-						).setMVCPath(
-							"/edit_asset_list_entry.jsp"
-						).setRedirect(
-							currentURL
-						).setParameter(
-							"assetListEntryId", assetListEntry.getAssetListEntryId()
-						).buildString();
-					}
-
 					row.setData(
 						HashMapBuilder.<String, Object>put(
 							"actions", assetListManagementToolbarDisplayContext.getAvailableActions(assetListEntry)
 						).build());
+
+					int assetListEntrySegmentsEntryRelsCount = assetListDisplayContext.getAssetListEntrySegmentsEntryRelsCount(assetListEntry);
+					Date createDate = assetListEntry.getCreateDate();
 					%>
 
-					<liferay-ui:search-container-column-icon
-						icon="list"
-					/>
+					<c:choose>
+						<c:when test='<%= Objects.equals(assetListDisplayContext.getDisplayStyle(), "descriptive") %>'>
+							<liferay-ui:search-container-column-text>
+								<div class="lfr-portal-tooltip sticker sticker-secondary" title="<%= assetListDisplayContext.getAssetListEntryTypeLabel(assetListEntry) %>">
+									<clay:icon
+										cssClass="mr-2 text-secondary"
+										symbol='<%= (assetListEntry.getType() == AssetListEntryTypeConstants.TYPE_DYNAMIC) ? "bolt" : "list" %>'
+									/>
+								</div>
+							</liferay-ui:search-container-column-text>
 
-					<liferay-ui:search-container-column-text
-						colspan="<%= 2 %>"
-					>
-						<h5>
-							<aui:a href="<%= editURL %>">
-								<%= HtmlUtil.escape(assetListEntry.getTitle()) %>
-							</aui:a>
-						</h5>
+							<liferay-ui:search-container-column-text
+								colspan="<%= 2 %>"
+							>
+								<div class="h5">
+									<aui:a href="<%= assetListDisplayContext.getEditURL(assetListEntry) %>">
+										<strong><%= HtmlUtil.escape(assetListEntry.getTitle()) %></strong>
+									</aui:a>
+								</div>
 
-						<h6 class="text-default">
-							<strong><liferay-ui:message key="<%= HtmlUtil.escape(assetListEntry.getTypeLabel()) %>" /></strong>
-						</h6>
+								<div class="h6 text-default">
+									<%= assetListDisplayContext.getAssetEntrySubtypeLabel(assetListEntry) %>
+								</div>
 
-						<c:if test="<%= Validator.isNotNull(assetListEntry.getAssetEntryType()) %>">
+								<div class="h6 text-default">
+									<liferay-ui:message arguments="<%= assetListDisplayContext.getAssetListEntryUsageCount(assetListEntry) %>" key="x-usages" translateArguments="<%= false %>" />
+								</div>
 
-							<%
-							String assetEntryTypeLabel = ResourceActionsUtil.getModelResource(locale, assetListEntry.getAssetEntryType());
+								<c:choose>
+									<c:when test="<%= assetListEntrySegmentsEntryRelsCount > 0 %>">
+										<clay:label
+											cssClass="mr-auto"
+											displayType="info"
+											label='<%= LanguageUtil.format(locale, "x-variations", new String[] {String.valueOf(assetListEntrySegmentsEntryRelsCount)}) %>'
+										/>
+									</c:when>
+									<c:otherwise>
+										<clay:label
+											cssClass="mr-auto"
+											label="no-variations"
+										/>
+									</c:otherwise>
+								</c:choose>
+							</liferay-ui:search-container-column-text>
 
-							long classTypeId = GetterUtil.getLong(assetListEntry.getAssetEntrySubtype(), -1);
+							<liferay-ui:search-container-column-text>
+								<clay:dropdown-actions
+									aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+									dropdownItems="<%= assetListDisplayContext.getActionDropdownItems(assetListEntry) %>"
+									propsTransformer="{AssetEntryListDropdownDefaultPropsTransformer} from asset-list-web"
+								/>
+							</liferay-ui:search-container-column-text>
+						</c:when>
+						<c:when test='<%= Objects.equals(assetListDisplayContext.getDisplayStyle(), "icon") %>'>
+							<liferay-ui:search-container-column-text>
+								<clay:vertical-card
+									propsTransformer="{AssetEntryListDropdownDefaultPropsTransformer} from asset-list-web"
+									verticalCard="<%= new AssetListEntryVerticalCard(assetListDisplayContext, assetListEntry, renderRequest, searchContainer.getRowChecker()) %>"
+								/>
+							</liferay-ui:search-container-column-text>
+						</c:when>
+						<c:otherwise>
+							<liferay-ui:search-container-column-text
+								cssClass="table-cell-expand text-truncate"
+								name="name"
+							>
+								<span class="lfr-portal-tooltip" title="<%= assetListDisplayContext.getAssetListEntryTypeLabel(assetListEntry) %>">
+									<clay:icon
+										cssClass="mr-2 text-secondary"
+										symbol='<%= (assetListEntry.getType() == AssetListEntryTypeConstants.TYPE_DYNAMIC) ? "bolt" : "list" %>'
+									/>
+								</span>
 
-							if (classTypeId >= 0) {
-								AssetRendererFactory<?> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(assetListEntry.getAssetEntryType());
+								<aui:a href="<%= assetListDisplayContext.getEditURL(assetListEntry) %>">
+									<%= HtmlUtil.escape(assetListEntry.getTitle()) %>
+								</aui:a>
+							</liferay-ui:search-container-column-text>
 
-								if ((assetRendererFactory != null) && assetRendererFactory.isSupportsClassTypes()) {
-									ClassType classType = assetListDisplayContext.getClassType(assetRendererFactory.getClassTypeReader(), classTypeId);
+							<liferay-ui:search-container-column-text
+								cssClass="text-truncate"
+								name="type"
+							>
+								<liferay-ui:message key="<%= HtmlUtil.escape(assetListEntry.getTypeLabel()) %>" />
+							</liferay-ui:search-container-column-text>
 
-									if (classType != null) {
-										assetEntryTypeLabel = assetEntryTypeLabel + " - " + classType.getName();
-									}
-								}
-							}
-							%>
+							<liferay-ui:search-container-column-text
+								cssClass="table-cell-expand text-truncate"
+								name="item-type"
+								value="<%= assetListDisplayContext.getAssetEntryTypeLabel(assetListEntry) %>"
+							/>
 
-							<h6 class="text-default">
-								<strong><%= HtmlUtil.escape(assetEntryTypeLabel) %></strong>
-							</h6>
-						</c:if>
+							<liferay-ui:search-container-column-text
+								cssClass="table-cell-expand text-truncate"
+								name="subtype"
+								value="<%= assetListDisplayContext.getClassTypeLabel(assetListEntry) %>"
+							/>
 
-						<%
-						Date statusDate = assetListEntry.getCreateDate();
-						%>
+							<liferay-ui:search-container-column-text
+								cssClass="text-truncate"
+								name="variations"
+								value="<%= String.valueOf(assetListEntrySegmentsEntryRelsCount) %>"
+							/>
 
-						<liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - statusDate.getTime(), true) %>" key="x-ago" translateArguments="<%= false %>" />
-					</liferay-ui:search-container-column-text>
+							<liferay-ui:search-container-column-text
+								cssClass="text-truncate"
+								name="usages"
+								value="<%= String.valueOf(assetListDisplayContext.getAssetListEntryUsageCount(assetListEntry)) %>"
+							/>
 
-					<%
-					AssetEntryListActionDropdownItems assetEntryListActionDropdownItems = new AssetEntryListActionDropdownItems(assetListEntry, liferayPortletRequest, liferayPortletResponse);
-					%>
+							<liferay-ui:search-container-column-text
+								cssClass="table-cell-expand text-truncate"
+								name="modified"
+							>
+								<liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - createDate.getTime(), true) %>" key="x-ago" translateArguments="<%= false %>" />
+							</liferay-ui:search-container-column-text>
 
-					<liferay-ui:search-container-column-text>
-						<clay:dropdown-actions
-							dropdownItems="<%= assetEntryListActionDropdownItems.getActionDropdownItems() %>"
-							propsTransformer="js/AssetEntryListDropdownDefaultPropsTransformer"
-						/>
-					</liferay-ui:search-container-column-text>
+							<liferay-ui:search-container-column-text>
+								<clay:dropdown-actions
+									aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
+									dropdownItems="<%= assetListDisplayContext.getActionDropdownItems(assetListEntry) %>"
+									propsTransformer="{AssetEntryListDropdownDefaultPropsTransformer} from asset-list-web"
+								/>
+							</liferay-ui:search-container-column-text>
+						</c:otherwise>
+					</c:choose>
 				</liferay-ui:search-container-row>
 
 				<liferay-ui:search-iterator
-					displayStyle="descriptive"
+					displayStyle="<%= assetListDisplayContext.getDisplayStyle() %>"
 					markupView="lexicon"
 				/>
 			</liferay-ui:search-container>
@@ -142,9 +190,10 @@ AssetListManagementToolbarDisplayContext assetListManagementToolbarDisplayContex
 		<c:otherwise>
 			<liferay-frontend:empty-result-message
 				actionDropdownItems="<%= assetListDisplayContext.isShowAddAssetListEntryAction() ? assetListDisplayContext.getAddAssetListEntryDropdownItems() : null %>"
+				buttonCssClass="secondary"
 				description="<%= assetListDisplayContext.getEmptyResultMessageDescription() %>"
 				elementType='<%= LanguageUtil.get(request, "collections") %>'
-				propsTransformer="js/EmptyResultMessagePropsTransformer"
+				propsTransformer="{EmptyResultMessagePropsTransformer} from asset-list-web"
 				propsTransformerServletContext="<%= application %>"
 			/>
 		</c:otherwise>

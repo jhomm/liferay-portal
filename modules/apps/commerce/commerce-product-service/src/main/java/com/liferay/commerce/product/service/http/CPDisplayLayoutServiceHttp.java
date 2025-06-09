@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Marco Leo
- * @see CPDisplayLayoutServiceSoap
  * @generated
  */
 public class CPDisplayLayoutServiceHttp {
@@ -54,7 +44,8 @@ public class CPDisplayLayoutServiceHttp {
 	public static com.liferay.commerce.product.model.CPDisplayLayout
 			addCPDisplayLayout(
 				HttpPrincipal httpPrincipal, long groupId, Class<?> clazz,
-				long classPK, String layoutUuid)
+				long classPK, String layoutPageTemplateEntryUuid,
+				String layoutUuid)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
@@ -63,7 +54,8 @@ public class CPDisplayLayoutServiceHttp {
 				_addCPDisplayLayoutParameterTypes0);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, groupId, clazz, classPK, layoutUuid);
+				methodKey, groupId, clazz, classPK, layoutPageTemplateEntryUuid,
+				layoutUuid);
 
 			Object returnObj = null;
 
@@ -172,22 +164,64 @@ public class CPDisplayLayoutServiceHttp {
 		}
 	}
 
+	public static com.liferay.commerce.product.model.CPDisplayLayout
+			getCPDisplayLayout(
+				HttpPrincipal httpPrincipal, long cpDisplayLayoutId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CPDisplayLayoutServiceUtil.class, "getCPDisplayLayout",
+				_getCPDisplayLayoutParameterTypes3);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, cpDisplayLayoutId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.product.model.CPDisplayLayout)
+				returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<com.liferay.commerce.product.model.CPDisplayLayout>
 				searchCPDisplayLayout(
 					HttpPrincipal httpPrincipal, long companyId, long groupId,
-					String className, String keywords, int start, int end,
-					com.liferay.portal.kernel.search.Sort sort)
+					String className, Integer type, String keywords, int start,
+					int end, com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CPDisplayLayoutServiceUtil.class, "searchCPDisplayLayout",
-				_searchCPDisplayLayoutParameterTypes3);
+				_searchCPDisplayLayoutParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, companyId, groupId, className, keywords, start, end,
-				sort);
+				methodKey, companyId, groupId, className, type, keywords, start,
+				end, sort);
 
 			Object returnObj = null;
 
@@ -221,16 +255,18 @@ public class CPDisplayLayoutServiceHttp {
 	public static com.liferay.commerce.product.model.CPDisplayLayout
 			updateCPDisplayLayout(
 				HttpPrincipal httpPrincipal, long cpDisplayLayoutId,
-				long classPK, String layoutUuid)
+				long classPK, String layoutPageTemplateEntryUuid,
+				String layoutUuid)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CPDisplayLayoutServiceUtil.class, "updateCPDisplayLayout",
-				_updateCPDisplayLayoutParameterTypes4);
+				_updateCPDisplayLayoutParameterTypes5);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, cpDisplayLayoutId, classPK, layoutUuid);
+				methodKey, cpDisplayLayoutId, classPK,
+				layoutPageTemplateEntryUuid, layoutUuid);
 
 			Object returnObj = null;
 
@@ -265,17 +301,21 @@ public class CPDisplayLayoutServiceHttp {
 		CPDisplayLayoutServiceHttp.class);
 
 	private static final Class<?>[] _addCPDisplayLayoutParameterTypes0 =
-		new Class[] {long.class, Class.class, long.class, String.class};
+		new Class[] {
+			long.class, Class.class, long.class, String.class, String.class
+		};
 	private static final Class<?>[] _deleteCPDisplayLayoutParameterTypes1 =
 		new Class[] {long.class};
 	private static final Class<?>[] _fetchCPDisplayLayoutParameterTypes2 =
 		new Class[] {long.class};
-	private static final Class<?>[] _searchCPDisplayLayoutParameterTypes3 =
+	private static final Class<?>[] _getCPDisplayLayoutParameterTypes3 =
+		new Class[] {long.class};
+	private static final Class<?>[] _searchCPDisplayLayoutParameterTypes4 =
 		new Class[] {
-			long.class, long.class, String.class, String.class, int.class,
-			int.class, com.liferay.portal.kernel.search.Sort.class
+			long.class, long.class, String.class, Integer.class, String.class,
+			int.class, int.class, com.liferay.portal.kernel.search.Sort.class
 		};
-	private static final Class<?>[] _updateCPDisplayLayoutParameterTypes4 =
-		new Class[] {long.class, long.class, String.class};
+	private static final Class<?>[] _updateCPDisplayLayoutParameterTypes5 =
+		new Class[] {long.class, long.class, String.class, String.class};
 
 }

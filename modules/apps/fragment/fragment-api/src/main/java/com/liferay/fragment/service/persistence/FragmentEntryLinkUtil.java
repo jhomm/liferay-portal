@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence;
@@ -860,6 +851,85 @@ public class FragmentEntryLinkUtil {
 	}
 
 	/**
+	 * Returns all the fragment entry links where fragmentEntryId = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByFragmentEntryId(
+		long[] fragmentEntryIds) {
+
+		return getPersistence().findByFragmentEntryId(fragmentEntryIds);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where fragmentEntryId = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByFragmentEntryId(
+		long[] fragmentEntryIds, int start, int end) {
+
+		return getPersistence().findByFragmentEntryId(
+			fragmentEntryIds, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where fragmentEntryId = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByFragmentEntryId(
+		long[] fragmentEntryIds, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByFragmentEntryId(
+			fragmentEntryIds, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where fragmentEntryId = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByFragmentEntryId(
+		long[] fragmentEntryIds, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByFragmentEntryId(
+			fragmentEntryIds, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
 	 * Removes all the fragment entry links where fragmentEntryId = &#63; from the database.
 	 *
 	 * @param fragmentEntryId the fragment entry ID
@@ -876,6 +946,16 @@ public class FragmentEntryLinkUtil {
 	 */
 	public static int countByFragmentEntryId(long fragmentEntryId) {
 		return getPersistence().countByFragmentEntryId(fragmentEntryId);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where fragmentEntryId = any &#63;.
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByFragmentEntryId(long[] fragmentEntryIds) {
+		return getPersistence().countByFragmentEntryId(fragmentEntryIds);
 	}
 
 	/**
@@ -1425,6 +1505,779 @@ public class FragmentEntryLinkUtil {
 	}
 
 	/**
+	 * Returns all the fragment entry links where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String rendererKey) {
+
+		return getPersistence().findByC_R(companyId, rendererKey);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String rendererKey, int start, int end) {
+
+		return getPersistence().findByC_R(companyId, rendererKey, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String rendererKey, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByC_R(
+			companyId, rendererKey, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String rendererKey, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_R(
+			companyId, rendererKey, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByC_R_First(
+			long companyId, String rendererKey,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByC_R_First(
+			companyId, rendererKey, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByC_R_First(
+		long companyId, String rendererKey,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByC_R_First(
+			companyId, rendererKey, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByC_R_Last(
+			long companyId, String rendererKey,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByC_R_Last(
+			companyId, rendererKey, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByC_R_Last(
+		long companyId, String rendererKey,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByC_R_Last(
+			companyId, rendererKey, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry links before and after the current fragment entry link in the ordered set where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param fragmentEntryLinkId the primary key of the current fragment entry link
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry link
+	 * @throws NoSuchEntryLinkException if a fragment entry link with the primary key could not be found
+	 */
+	public static FragmentEntryLink[] findByC_R_PrevAndNext(
+			long fragmentEntryLinkId, long companyId, String rendererKey,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByC_R_PrevAndNext(
+			fragmentEntryLinkId, companyId, rendererKey, orderByComparator);
+	}
+
+	/**
+	 * Returns all the fragment entry links where companyId = &#63; and rendererKey = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKeys the renderer keys
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String[] rendererKeys) {
+
+		return getPersistence().findByC_R(companyId, rendererKeys);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where companyId = &#63; and rendererKey = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKeys the renderer keys
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String[] rendererKeys, int start, int end) {
+
+		return getPersistence().findByC_R(companyId, rendererKeys, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where companyId = &#63; and rendererKey = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKeys the renderer keys
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String[] rendererKeys, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByC_R(
+			companyId, rendererKeys, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where companyId = &#63; and rendererKey = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKeys the renderer keys
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByC_R(
+		long companyId, String[] rendererKeys, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_R(
+			companyId, rendererKeys, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Removes all the fragment entry links where companyId = &#63; and rendererKey = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 */
+	public static void removeByC_R(long companyId, String rendererKey) {
+		getPersistence().removeByC_R(companyId, rendererKey);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where companyId = &#63; and rendererKey = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKey the renderer key
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByC_R(long companyId, String rendererKey) {
+		return getPersistence().countByC_R(companyId, rendererKey);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where companyId = &#63; and rendererKey = any &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param rendererKeys the renderer keys
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByC_R(long companyId, String[] rendererKeys) {
+		return getPersistence().countByC_R(companyId, rendererKeys);
+	}
+
+	/**
+	 * Returns all the fragment entry links where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long fragmentEntryId, boolean deleted) {
+
+		return getPersistence().findByF_D(fragmentEntryId, deleted);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long fragmentEntryId, boolean deleted, int start, int end) {
+
+		return getPersistence().findByF_D(fragmentEntryId, deleted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long fragmentEntryId, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByF_D(
+			fragmentEntryId, deleted, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long fragmentEntryId, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByF_D(
+			fragmentEntryId, deleted, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByF_D_First(
+			long fragmentEntryId, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByF_D_First(
+			fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByF_D_First(
+		long fragmentEntryId, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByF_D_First(
+			fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByF_D_Last(
+			long fragmentEntryId, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByF_D_Last(
+			fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByF_D_Last(
+		long fragmentEntryId, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByF_D_Last(
+			fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry links before and after the current fragment entry link in the ordered set where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryLinkId the primary key of the current fragment entry link
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry link
+	 * @throws NoSuchEntryLinkException if a fragment entry link with the primary key could not be found
+	 */
+	public static FragmentEntryLink[] findByF_D_PrevAndNext(
+			long fragmentEntryLinkId, long fragmentEntryId, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByF_D_PrevAndNext(
+			fragmentEntryLinkId, fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns all the fragment entry links where fragmentEntryId = any &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param deleted the deleted
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long[] fragmentEntryIds, boolean deleted) {
+
+		return getPersistence().findByF_D(fragmentEntryIds, deleted);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where fragmentEntryId = any &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long[] fragmentEntryIds, boolean deleted, int start, int end) {
+
+		return getPersistence().findByF_D(
+			fragmentEntryIds, deleted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where fragmentEntryId = any &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long[] fragmentEntryIds, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByF_D(
+			fragmentEntryIds, deleted, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where fragmentEntryId = &#63; and deleted = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByF_D(
+		long[] fragmentEntryIds, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByF_D(
+			fragmentEntryIds, deleted, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Removes all the fragment entry links where fragmentEntryId = &#63; and deleted = &#63; from the database.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 */
+	public static void removeByF_D(long fragmentEntryId, boolean deleted) {
+		getPersistence().removeByF_D(fragmentEntryId, deleted);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByF_D(long fragmentEntryId, boolean deleted) {
+		return getPersistence().countByF_D(fragmentEntryId, deleted);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where fragmentEntryId = any &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryIds the fragment entry IDs
+	 * @param deleted the deleted
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByF_D(long[] fragmentEntryIds, boolean deleted) {
+		return getPersistence().countByF_D(fragmentEntryIds, deleted);
+	}
+
+	/**
+	 * Returns all the fragment entry links where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_OFELI_P(
+		long groupId, long originalFragmentEntryLinkId, long plid) {
+
+		return getPersistence().findByG_OFELI_P(
+			groupId, originalFragmentEntryLinkId, plid);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_OFELI_P(
+		long groupId, long originalFragmentEntryLinkId, long plid, int start,
+		int end) {
+
+		return getPersistence().findByG_OFELI_P(
+			groupId, originalFragmentEntryLinkId, plid, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_OFELI_P(
+		long groupId, long originalFragmentEntryLinkId, long plid, int start,
+		int end, OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByG_OFELI_P(
+			groupId, originalFragmentEntryLinkId, plid, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_OFELI_P(
+		long groupId, long originalFragmentEntryLinkId, long plid, int start,
+		int end, OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByG_OFELI_P(
+			groupId, originalFragmentEntryLinkId, plid, start, end,
+			orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_OFELI_P_First(
+			long groupId, long originalFragmentEntryLinkId, long plid,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_OFELI_P_First(
+			groupId, originalFragmentEntryLinkId, plid, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_OFELI_P_First(
+		long groupId, long originalFragmentEntryLinkId, long plid,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_OFELI_P_First(
+			groupId, originalFragmentEntryLinkId, plid, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_OFELI_P_Last(
+			long groupId, long originalFragmentEntryLinkId, long plid,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_OFELI_P_Last(
+			groupId, originalFragmentEntryLinkId, plid, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_OFELI_P_Last(
+		long groupId, long originalFragmentEntryLinkId, long plid,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_OFELI_P_Last(
+			groupId, originalFragmentEntryLinkId, plid, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry links before and after the current fragment entry link in the ordered set where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param fragmentEntryLinkId the primary key of the current fragment entry link
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry link
+	 * @throws NoSuchEntryLinkException if a fragment entry link with the primary key could not be found
+	 */
+	public static FragmentEntryLink[] findByG_OFELI_P_PrevAndNext(
+			long fragmentEntryLinkId, long groupId,
+			long originalFragmentEntryLinkId, long plid,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_OFELI_P_PrevAndNext(
+			fragmentEntryLinkId, groupId, originalFragmentEntryLinkId, plid,
+			orderByComparator);
+	}
+
+	/**
+	 * Removes all the fragment entry links where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 */
+	public static void removeByG_OFELI_P(
+		long groupId, long originalFragmentEntryLinkId, long plid) {
+
+		getPersistence().removeByG_OFELI_P(
+			groupId, originalFragmentEntryLinkId, plid);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where groupId = &#63; and originalFragmentEntryLinkId = &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param originalFragmentEntryLinkId the original fragment entry link ID
+	 * @param plid the plid
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByG_OFELI_P(
+		long groupId, long originalFragmentEntryLinkId, long plid) {
+
+		return getPersistence().countByG_OFELI_P(
+			groupId, originalFragmentEntryLinkId, plid);
+	}
+
+	/**
 	 * Returns all the fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and classNameId = &#63;.
 	 *
 	 * @param groupId the group ID
@@ -1838,6 +2691,212 @@ public class FragmentEntryLinkUtil {
 	}
 
 	/**
+	 * Returns all the fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_F_D(
+		long groupId, long fragmentEntryId, boolean deleted) {
+
+		return getPersistence().findByG_F_D(groupId, fragmentEntryId, deleted);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_F_D(
+		long groupId, long fragmentEntryId, boolean deleted, int start,
+		int end) {
+
+		return getPersistence().findByG_F_D(
+			groupId, fragmentEntryId, deleted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_F_D(
+		long groupId, long fragmentEntryId, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByG_F_D(
+			groupId, fragmentEntryId, deleted, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_F_D(
+		long groupId, long fragmentEntryId, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByG_F_D(
+			groupId, fragmentEntryId, deleted, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_F_D_First(
+			long groupId, long fragmentEntryId, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_F_D_First(
+			groupId, fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_F_D_First(
+		long groupId, long fragmentEntryId, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_F_D_First(
+			groupId, fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_F_D_Last(
+			long groupId, long fragmentEntryId, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_F_D_Last(
+			groupId, fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_F_D_Last(
+		long groupId, long fragmentEntryId, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_F_D_Last(
+			groupId, fragmentEntryId, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry links before and after the current fragment entry link in the ordered set where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryLinkId the primary key of the current fragment entry link
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry link
+	 * @throws NoSuchEntryLinkException if a fragment entry link with the primary key could not be found
+	 */
+	public static FragmentEntryLink[] findByG_F_D_PrevAndNext(
+			long fragmentEntryLinkId, long groupId, long fragmentEntryId,
+			boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_F_D_PrevAndNext(
+			fragmentEntryLinkId, groupId, fragmentEntryId, deleted,
+			orderByComparator);
+	}
+
+	/**
+	 * Removes all the fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 */
+	public static void removeByG_F_D(
+		long groupId, long fragmentEntryId, boolean deleted) {
+
+		getPersistence().removeByG_F_D(groupId, fragmentEntryId, deleted);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where groupId = &#63; and fragmentEntryId = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param fragmentEntryId the fragment entry ID
+	 * @param deleted the deleted
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByG_F_D(
+		long groupId, long fragmentEntryId, boolean deleted) {
+
+		return getPersistence().countByG_F_D(groupId, fragmentEntryId, deleted);
+	}
+
+	/**
 	 * Returns all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63;.
 	 *
 	 * @param groupId the group ID
@@ -2017,6 +3076,97 @@ public class FragmentEntryLinkUtil {
 	}
 
 	/**
+	 * Returns all the fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P(
+		long groupId, long[] segmentsExperienceIds, long plid) {
+
+		return getPersistence().findByG_S_P(
+			groupId, segmentsExperienceIds, plid);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P(
+		long groupId, long[] segmentsExperienceIds, long plid, int start,
+		int end) {
+
+		return getPersistence().findByG_S_P(
+			groupId, segmentsExperienceIds, plid, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P(
+		long groupId, long[] segmentsExperienceIds, long plid, int start,
+		int end, OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByG_S_P(
+			groupId, segmentsExperienceIds, plid, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P(
+		long groupId, long[] segmentsExperienceIds, long plid, int start,
+		int end, OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByG_S_P(
+			groupId, segmentsExperienceIds, plid, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
 	 * Removes all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; from the database.
 	 *
 	 * @param groupId the group ID
@@ -2042,6 +3192,21 @@ public class FragmentEntryLinkUtil {
 
 		return getPersistence().countByG_S_P(
 			groupId, segmentsExperienceId, plid);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByG_S_P(
+		long groupId, long[] segmentsExperienceIds, long plid) {
+
+		return getPersistence().countByG_S_P(
+			groupId, segmentsExperienceIds, plid);
 	}
 
 	/**
@@ -2247,6 +3412,204 @@ public class FragmentEntryLinkUtil {
 		long groupId, long classNameId, long classPK) {
 
 		return getPersistence().countByG_C_C(groupId, classNameId, classPK);
+	}
+
+	/**
+	 * Returns all the fragment entry links where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_P_D(
+		long groupId, long plid, boolean deleted) {
+
+		return getPersistence().findByG_P_D(groupId, plid, deleted);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_P_D(
+		long groupId, long plid, boolean deleted, int start, int end) {
+
+		return getPersistence().findByG_P_D(groupId, plid, deleted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_P_D(
+		long groupId, long plid, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByG_P_D(
+			groupId, plid, deleted, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_P_D(
+		long groupId, long plid, boolean deleted, int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByG_P_D(
+			groupId, plid, deleted, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_P_D_First(
+			long groupId, long plid, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_P_D_First(
+			groupId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_P_D_First(
+		long groupId, long plid, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_P_D_First(
+			groupId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_P_D_Last(
+			long groupId, long plid, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_P_D_Last(
+			groupId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_P_D_Last(
+		long groupId, long plid, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_P_D_Last(
+			groupId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry links before and after the current fragment entry link in the ordered set where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryLinkId the primary key of the current fragment entry link
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry link
+	 * @throws NoSuchEntryLinkException if a fragment entry link with the primary key could not be found
+	 */
+	public static FragmentEntryLink[] findByG_P_D_PrevAndNext(
+			long fragmentEntryLinkId, long groupId, long plid, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_P_D_PrevAndNext(
+			fragmentEntryLinkId, groupId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Removes all the fragment entry links where groupId = &#63; and plid = &#63; and deleted = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 */
+	public static void removeByG_P_D(long groupId, long plid, boolean deleted) {
+		getPersistence().removeByG_P_D(groupId, plid, deleted);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where groupId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByG_P_D(long groupId, long plid, boolean deleted) {
+		return getPersistence().countByG_P_D(groupId, plid, deleted);
 	}
 
 	/**
@@ -2705,6 +4068,344 @@ public class FragmentEntryLinkUtil {
 	}
 
 	/**
+	 * Returns all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceId, plid, deleted);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted,
+		int start, int end) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceId, plid, deleted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted,
+		int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceId, plid, deleted, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted,
+		int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceId, plid, deleted, start, end,
+			orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_S_P_D_First(
+			long groupId, long segmentsExperienceId, long plid, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_S_P_D_First(
+			groupId, segmentsExperienceId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry link in the ordered set where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_S_P_D_First(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_S_P_D_First(
+			groupId, segmentsExperienceId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByG_S_P_D_Last(
+			long groupId, long segmentsExperienceId, long plid, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_S_P_D_Last(
+			groupId, segmentsExperienceId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry link in the ordered set where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByG_S_P_D_Last(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().fetchByG_S_P_D_Last(
+			groupId, segmentsExperienceId, plid, deleted, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry links before and after the current fragment entry link in the ordered set where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param fragmentEntryLinkId the primary key of the current fragment entry link
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry link
+	 * @throws NoSuchEntryLinkException if a fragment entry link with the primary key could not be found
+	 */
+	public static FragmentEntryLink[] findByG_S_P_D_PrevAndNext(
+			long fragmentEntryLinkId, long groupId, long segmentsExperienceId,
+			long plid, boolean deleted,
+			OrderByComparator<FragmentEntryLink> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByG_S_P_D_PrevAndNext(
+			fragmentEntryLinkId, groupId, segmentsExperienceId, plid, deleted,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns all the fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @return the matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long[] segmentsExperienceIds, long plid,
+		boolean deleted) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceIds, plid, deleted);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @return the range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long[] segmentsExperienceIds, long plid, boolean deleted,
+		int start, int end) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceIds, plid, deleted, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long[] segmentsExperienceIds, long plid, boolean deleted,
+		int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceIds, plid, deleted, start, end,
+			orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryLinkModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @param start the lower bound of the range of fragment entry links
+	 * @param end the upper bound of the range of fragment entry links (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry links
+	 */
+	public static List<FragmentEntryLink> findByG_S_P_D(
+		long groupId, long[] segmentsExperienceIds, long plid, boolean deleted,
+		int start, int end,
+		OrderByComparator<FragmentEntryLink> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByG_S_P_D(
+			groupId, segmentsExperienceIds, plid, deleted, start, end,
+			orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Removes all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 */
+	public static void removeByG_S_P_D(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted) {
+
+		getPersistence().removeByG_S_P_D(
+			groupId, segmentsExperienceId, plid, deleted);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByG_S_P_D(
+		long groupId, long segmentsExperienceId, long plid, boolean deleted) {
+
+		return getPersistence().countByG_S_P_D(
+			groupId, segmentsExperienceId, plid, deleted);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where groupId = &#63; and segmentsExperienceId = any &#63; and plid = &#63; and deleted = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param segmentsExperienceIds the segments experience IDs
+	 * @param plid the plid
+	 * @param deleted the deleted
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByG_S_P_D(
+		long groupId, long[] segmentsExperienceIds, long plid,
+		boolean deleted) {
+
+		return getPersistence().countByG_S_P_D(
+			groupId, segmentsExperienceIds, plid, deleted);
+	}
+
+	/**
 	 * Returns all the fragment entry links where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; and rendererKey = &#63;.
 	 *
 	 * @param groupId the group ID
@@ -2937,6 +4638,74 @@ public class FragmentEntryLinkUtil {
 	}
 
 	/**
+	 * Returns the fragment entry link where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchEntryLinkException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching fragment entry link
+	 * @throws NoSuchEntryLinkException if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink findByERC_G(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().findByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
+	 * Returns the fragment entry link where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByERC_G(
+		String externalReferenceCode, long groupId) {
+
+		return getPersistence().fetchByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
+	 * Returns the fragment entry link where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching fragment entry link, or <code>null</code> if a matching fragment entry link could not be found
+	 */
+	public static FragmentEntryLink fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache) {
+
+		return getPersistence().fetchByERC_G(
+			externalReferenceCode, groupId, useFinderCache);
+	}
+
+	/**
+	 * Removes the fragment entry link where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the fragment entry link that was removed
+	 */
+	public static FragmentEntryLink removeByERC_G(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.fragment.exception.NoSuchEntryLinkException {
+
+		return getPersistence().removeByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
+	 * Returns the number of fragment entry links where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching fragment entry links
+	 */
+	public static int countByERC_G(String externalReferenceCode, long groupId) {
+		return getPersistence().countByERC_G(externalReferenceCode, groupId);
+	}
+
+	/**
 	 * Caches the fragment entry link in the entity cache if it is enabled.
 	 *
 	 * @param fragmentEntryLink the fragment entry link
@@ -3091,6 +4860,12 @@ public class FragmentEntryLinkUtil {
 
 	public static FragmentEntryLinkPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(
+		FragmentEntryLinkPersistence persistence) {
+
+		_persistence = persistence;
 	}
 
 	private static volatile FragmentEntryLinkPersistence _persistence;

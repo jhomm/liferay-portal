@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.theme.builder;
@@ -85,7 +76,8 @@ public class ThemeBuilder {
 
 	public ThemeBuilder(
 		File diffsDir, String name, File outputDir, File parentDir,
-		String parentName, String templateExtension, File unstyledDir) {
+		String parentName, String templateExtension, Integer thumbnailHeight,
+		Integer thumbnailWidth, File unstyledDir) {
 
 		if (Validator.isNull(name)) {
 			name = ThemeBuilderArgs.DEFAULT_NAME;
@@ -127,12 +119,22 @@ public class ThemeBuilder {
 			templateExtension = templateExtension.toLowerCase();
 		}
 
+		if (thumbnailHeight == null) {
+			thumbnailHeight = ThemeBuilderArgs.DEFAULT_THUMBNAIL_HEIGHT;
+		}
+
+		if (thumbnailWidth == null) {
+			thumbnailWidth = ThemeBuilderArgs.DEFAULT_THUMBNAIL_WIDTH;
+		}
+
 		_diffsDir = diffsDir;
 		_name = name;
 		_outputDir = outputDir;
 		_parentDir = parentDir;
 		_parentName = parentName;
 		_templateExtension = templateExtension;
+		_thumbnailHeight = thumbnailHeight;
+		_thumbnailWidth = thumbnailWidth;
 		_unstyledDir = unstyledDir;
 
 		System.setProperty("java.awt.headless", "true");
@@ -144,6 +146,8 @@ public class ThemeBuilder {
 			themeBuilderArgs.getOutputDir(), themeBuilderArgs.getParentDir(),
 			themeBuilderArgs.getParentName(),
 			themeBuilderArgs.getTemplateExtension(),
+			themeBuilderArgs.getThumbnailHeight(),
+			themeBuilderArgs.getThumbnailWidth(),
 			themeBuilderArgs.getUnstyledDir());
 	}
 
@@ -162,7 +166,7 @@ public class ThemeBuilder {
 			_copyTheme(_diffsDir.toPath());
 		}
 
-		_writeScreenshotThumbnail();
+		_writeScreenshotThumbnail(_thumbnailHeight, _thumbnailWidth);
 	}
 
 	private static void _printHelp(JCommander jCommander) throws Exception {
@@ -278,7 +282,10 @@ public class ThemeBuilder {
 		Files.write(path, content.getBytes(StandardCharsets.UTF_8));
 	}
 
-	private void _writeScreenshotThumbnail() throws Exception {
+	private void _writeScreenshotThumbnail(
+			int thumbnailHeight, int thumbnailWidth)
+		throws Exception {
+
 		File file = new File(_outputDir, "images/screenshot.png");
 
 		if (!file.exists()) {
@@ -288,7 +295,7 @@ public class ThemeBuilder {
 		Thumbnails.Builder<File> thumbnailBuilder = Thumbnails.of(file);
 
 		thumbnailBuilder.outputFormat("png");
-		thumbnailBuilder.size(160, 120);
+		thumbnailBuilder.size(thumbnailWidth, thumbnailHeight);
 
 		thumbnailBuilder.toFile(new File(_outputDir, "images/thumbnail.png"));
 	}
@@ -299,6 +306,8 @@ public class ThemeBuilder {
 	private final File _parentDir;
 	private final String _parentName;
 	private final String _templateExtension;
+	private final int _thumbnailHeight;
+	private final int _thumbnailWidth;
 	private final File _unstyledDir;
 
 }

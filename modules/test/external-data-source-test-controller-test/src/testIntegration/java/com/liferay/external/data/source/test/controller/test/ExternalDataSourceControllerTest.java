@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.external.data.source.test.controller.test;
@@ -17,31 +8,22 @@ package com.liferay.external.data.source.test.controller.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.db.DBType;
-import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncPrintWriter;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.rule.AssumeTestRule;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StreamUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.InputStream;
 
-import java.net.URL;
-
-import java.sql.Connection;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarInputStream;
@@ -52,7 +34,6 @@ import java.util.zip.ZipEntry;
 import org.hsqldb.jdbc.JDBCDriver;
 
 import org.junit.After;
-import org.junit.Assume;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -65,6 +46,9 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.runtime.ServiceComponentRuntime;
+import org.osgi.service.component.runtime.dto.ComponentDescriptionDTO;
+import org.osgi.util.promise.Promise;
 
 /**
  * @author Preston Crary
@@ -75,14 +59,7 @@ public class ExternalDataSourceControllerTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new AggregateTestRule(
-			new AssumeTestRule("assume"), new LiferayIntegrationTestRule());
-
-	public static void assume() {
-		DB db = DBManagerUtil.getDB();
-
-		Assume.assumeTrue(DBType.HYPERSONIC.equals(db.getDBType()));
-	}
+		new LiferayIntegrationTestRule();
 
 	@Before
 	public void setUp() throws Exception {
@@ -101,25 +78,32 @@ public class ExternalDataSourceControllerTest {
 			"/com.liferay.external.data.source.test.api.jar");
 		_serviceBundle = _installServiceBundle();
 
-		DB db = DBManagerUtil.getDB(DBType.HYPERSONIC, null);
-
-		Properties properties = new Properties();
-
-		properties.put("password", "");
-		properties.put("user", "sa");
-
-		URL resource = _serviceBundle.getResource("/META-INF/sql/tables.sql");
-
-		try (Connection connection = JDBCDriver.getConnection(
-				_JDBC_URL, properties);
-			InputStream inputStream = resource.openStream()) {
-
-			db.runSQL(connection, StringUtil.read(inputStream));
-		}
-
 		_apiBundle.start();
 
-		_serviceBundle.start();
+		String originalUpgradeDatabaseAutoRun = PropsUtil.get(
+			PropsKeys.UPGRADE_DATABASE_AUTO_RUN);
+
+		try {
+			PropsUtil.set(PropsKeys.UPGRADE_DATABASE_AUTO_RUN, "true");
+
+			_serviceBundle.start();
+
+			ComponentDescriptionDTO componentDescriptionDTO =
+				_serviceComponentRuntime.getComponentDescriptionDTO(
+					_serviceBundle,
+					"com.liferay.external.data.source.test.internal.upgrade." +
+						"registry.TestEntityUpgradeStepRegistrator");
+
+			Promise<Void> promise = _serviceComponentRuntime.enableComponent(
+				componentDescriptionDTO);
+
+			promise.getValue();
+		}
+		finally {
+			PropsUtil.set(
+				PropsKeys.UPGRADE_DATABASE_AUTO_RUN,
+				originalUpgradeDatabaseAutoRun);
+		}
 	}
 
 	@After
@@ -129,12 +113,6 @@ public class ExternalDataSourceControllerTest {
 		_apiBundle.uninstall();
 
 		FileUtil.deltree(_HYPERSONIC_TEMP_DIR_NAME);
-
-		DB portalDB = DBManagerUtil.getDB();
-
-		try (Connection connection = DataAccess.getConnection()) {
-			portalDB.runSQL(connection, "drop table TestEntity");
-		}
 	}
 
 	@Test
@@ -247,6 +225,9 @@ public class ExternalDataSourceControllerTest {
 	private Bundle _apiBundle;
 	private BundleContext _bundleContext;
 	private Bundle _serviceBundle;
+
+	@Inject
+	private ServiceComponentRuntime _serviceComponentRuntime;
 
 	/**
 	 * A carrier Throwable to overcome Arquillian Exception serialization

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.exportimport.data.handler;
@@ -29,7 +20,6 @@ import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -62,7 +52,7 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * @author Zsolt Berentey
  * @author Roberto Díaz
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class BlogsEntryStagedModelDataHandler
 	extends BaseStagedModelDataHandler<BlogsEntry> {
 
@@ -297,10 +287,9 @@ public class BlogsEntryStagedModelDataHandler
 				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
 					FileEntry.class);
 
-			long coverImageFileEntryId = MapUtil.getLong(
-				fileEntryIds, entry.getCoverImageFileEntryId(), 0);
-
-			importedEntry.setCoverImageFileEntryId(coverImageFileEntryId);
+			importedEntry.setCoverImageFileEntryId(
+				MapUtil.getLong(
+					fileEntryIds, entry.getCoverImageFileEntryId(), 0));
 
 			importedEntry = _blogsEntryLocalService.updateBlogsEntry(
 				importedEntry);
@@ -322,7 +311,6 @@ public class BlogsEntryStagedModelDataHandler
 			}
 
 			importedEntry.setSmallImageFileEntryId(smallImageFileEntryId);
-
 			importedEntry.setSmallImageURL(entry.getSmallImageURL());
 
 			if ((smallImageFileEntryId == 0) &&
@@ -385,7 +373,10 @@ public class BlogsEntryStagedModelDataHandler
 
 	@Override
 	protected String[] getSkipImportReferenceStagedModelNames() {
-		return new String[] {AssetDisplayPageEntry.class.getName()};
+		return new String[] {
+			AssetDisplayPageEntry.class.getName(),
+			FriendlyURLEntry.class.getName()
+		};
 	}
 
 	private void _exportAssetDisplayPage(
@@ -419,7 +410,7 @@ public class BlogsEntryStagedModelDataHandler
 				portletDataContext, friendlyURLEntry);
 
 			StagedModelDataHandlerUtil.exportReferenceStagedModel(
-				portletDataContext, friendlyURLEntry, blogsEntry,
+				portletDataContext, blogsEntry, friendlyURLEntry,
 				PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
 		}
 	}
@@ -545,9 +536,6 @@ public class BlogsEntryStagedModelDataHandler
 
 	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
-
-	@Reference
-	private CommentManager _commentManager;
 
 	@Reference(
 		policy = ReferencePolicy.DYNAMIC,

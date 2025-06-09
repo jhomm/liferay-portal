@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
@@ -23,7 +15,6 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -45,14 +36,8 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @AccessControlled
+@CTAware
 @JSONWebService
-@OSGiBeanProperties(
-	property = {
-		"json.web.service.context.name=commerce",
-		"json.web.service.context.path=CPDefinitionOptionRel"
-	},
-	service = CPDefinitionOptionRelService.class
-)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -67,7 +52,7 @@ public interface CPDefinitionOptionRelService extends BaseService {
 	 */
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			double priority, boolean facetable, boolean required,
 			boolean skuContributor, boolean importOptionValue,
 			ServiceContext serviceContext)
@@ -75,10 +60,11 @@ public interface CPDefinitionOptionRelService extends BaseService {
 
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
-			double priority, boolean facetable, boolean required,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
+			String infoItemServiceKey, double priority,
+			boolean definedExternally, boolean facetable, boolean required,
 			boolean skuContributor, boolean importOptionValue, String priceType,
-			ServiceContext serviceContext)
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
@@ -147,28 +133,6 @@ public interface CPDefinitionOptionRelService extends BaseService {
 	 */
 	public String getOSGiServiceIdentifier();
 
-	/**
-	 * @param companyId
-	 * @param groupId
-	 * @param cpDefinitionId
-	 * @param keywords
-	 * @param start
-	 * @param end
-	 * @param sort
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchCPDefinitionOptionRels(long, long, long, String, int,
-	 int, Sort[])}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public BaseModelSearchResult<CPDefinitionOptionRel>
-			searchCPDefinitionOptionRels(
-				long companyId, long groupId, long cpDefinitionId,
-				String keywords, int start, int end, Sort sort)
-		throws PortalException;
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<CPDefinitionOptionRel>
 			searchCPDefinitionOptionRels(
@@ -184,7 +148,7 @@ public interface CPDefinitionOptionRelService extends BaseService {
 	public CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, double priority, boolean facetable,
 			boolean required, boolean skuContributor,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -192,9 +156,10 @@ public interface CPDefinitionOptionRelService extends BaseService {
 	public CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, String infoItemServiceKey,
+			double priority, boolean definedExternally, boolean facetable,
 			boolean required, boolean skuContributor, String priceType,
-			ServiceContext serviceContext)
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0;
@@ -19,24 +10,6 @@ import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.LoggingTimer;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoActionTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoConditionTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoDefinitionVersionTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoInstanceTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoInstanceTokenTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoLogTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoNodeTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoNotificationRecipientTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoNotificationTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTaskAssignmentInstanceTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTaskAssignmentTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTaskFormInstanceTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTaskFormTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTaskInstanceTokenTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTaskTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTimerInstanceTokenTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTimerTable;
-import com.liferay.portal.workflow.kaleo.internal.upgrade.v3_0_0.util.KaleoTransitionTable;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -50,7 +23,14 @@ import java.util.List;
  */
 public class SchemaUpgradeProcess extends UpgradeProcess {
 
-	protected void addBatch(
+	@Override
+	protected void doUpgrade() throws Exception {
+		_addKaleoDefinitionId();
+
+		_upgradeKaleoDefinitionId();
+	}
+
+	private void _addBatch(
 			PreparedStatement preparedStatement, long kaleoDefinitionId,
 			long kaleoDefinitionVersionId)
 		throws SQLException {
@@ -61,128 +41,56 @@ public class SchemaUpgradeProcess extends UpgradeProcess {
 		preparedStatement.addBatch();
 	}
 
-	protected void addKaleoDefinitionId() throws Exception {
+	private void _addKaleoDefinitionId() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
-			if (!hasColumn("KaleoAction", "kaleoDefinitionId")) {
-				alter(
-					KaleoActionTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoAction", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoCondition", "kaleoDefinitionId")) {
-				alter(
-					KaleoConditionTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoCondition", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoDefinitionVersion", "kaleoDefinitionId")) {
-				alter(
-					KaleoDefinitionVersionTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoDefinitionVersion", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoInstance", "kaleoDefinitionId")) {
-				alter(
-					KaleoInstanceTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoInstance", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoInstanceToken", "kaleoDefinitionId")) {
-				alter(
-					KaleoInstanceTokenTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoInstanceToken", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoLog", "kaleoDefinitionId")) {
-				alter(
-					KaleoLogTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoLog", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoNode", "kaleoDefinitionId")) {
-				alter(
-					KaleoNodeTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoNode", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoNotification", "kaleoDefinitionId")) {
-				alter(
-					KaleoNotificationTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoNotification", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoNotificationRecipient", "kaleoDefinitionId")) {
-				alter(
-					KaleoNotificationRecipientTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoNotificationRecipient", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTask", "kaleoDefinitionId")) {
-				alter(
-					KaleoTaskTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoTask", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTaskAssignment", "kaleoDefinitionId")) {
-				alter(
-					KaleoTaskAssignmentTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoTaskAssignment", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn(
-					"KaleoTaskAssignmentInstance", "kaleoDefinitionId")) {
+			alterTableAddColumn(
+				"KaleoTaskAssignmentInstance", "kaleoDefinitionId", "LONG");
 
-				alter(
-					KaleoTaskAssignmentInstanceTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoTaskForm", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTaskForm", "kaleoDefinitionId")) {
-				alter(
-					KaleoTaskFormTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoTaskFormInstance", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTaskFormInstance", "kaleoDefinitionId")) {
-				alter(
-					KaleoTaskFormInstanceTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoTaskInstanceToken", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTaskInstanceToken", "kaleoDefinitionId")) {
-				alter(
-					KaleoTaskInstanceTokenTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoTimer", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTimer", "kaleoDefinitionId")) {
-				alter(
-					KaleoTimerTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn(
+				"KaleoTimerInstanceToken", "kaleoDefinitionId", "LONG");
 
-			if (!hasColumn("KaleoTimerInstanceToken", "kaleoDefinitionId")) {
-				alter(
-					KaleoTimerInstanceTokenTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
-
-			if (!hasColumn("KaleoTransition", "kaleoDefinitionId")) {
-				alter(
-					KaleoTransitionTable.class,
-					new AlterTableAddColumn("kaleoDefinitionId", "LONG"));
-			}
+			alterTableAddColumn("KaleoTransition", "kaleoDefinitionId", "LONG");
 		}
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		addKaleoDefinitionId();
-
-		upgradeKaleoDefinitionId();
-	}
-
-	protected void upgradeKaleoDefinitionId() throws Exception {
+	private void _upgradeKaleoDefinitionId() throws Exception {
 		List<PreparedStatement> preparedStatements = new ArrayList<>(18);
 
 		try (LoggingTimer loggingTimer = new LoggingTimer();
@@ -214,7 +122,7 @@ public class SchemaUpgradeProcess extends UpgradeProcess {
 				for (PreparedStatement curPreparedStatement :
 						preparedStatements) {
 
-					addBatch(
+					_addBatch(
 						curPreparedStatement, kaleoDefinitionId,
 						kaleoDefinitionVersionId);
 				}

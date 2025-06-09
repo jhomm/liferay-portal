@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.model.impl;
@@ -77,7 +68,7 @@ public class SegmentsEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(37);
+		StringBundler sb = new StringBundler(35);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -111,8 +102,6 @@ public class SegmentsEntryCacheModel
 		sb.append(criteria);
 		sb.append(", source=");
 		sb.append(source);
-		sb.append(", type=");
-		sb.append(type);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append("}");
@@ -197,13 +186,6 @@ public class SegmentsEntryCacheModel
 			segmentsEntryImpl.setSource(source);
 		}
 
-		if (type == null) {
-			segmentsEntryImpl.setType("");
-		}
-		else {
-			segmentsEntryImpl.setType(type);
-		}
-
 		if (lastPublishDate == Long.MIN_VALUE) {
 			segmentsEntryImpl.setLastPublishDate(null);
 		}
@@ -242,7 +224,6 @@ public class SegmentsEntryCacheModel
 		active = objectInput.readBoolean();
 		criteria = (String)objectInput.readObject();
 		source = objectInput.readUTF();
-		type = objectInput.readUTF();
 		lastPublishDate = objectInput.readLong();
 	}
 
@@ -314,13 +295,6 @@ public class SegmentsEntryCacheModel
 			objectOutput.writeUTF(source);
 		}
 
-		if (type == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(type);
-		}
-
 		objectOutput.writeLong(lastPublishDate);
 	}
 
@@ -340,7 +314,6 @@ public class SegmentsEntryCacheModel
 	public boolean active;
 	public String criteria;
 	public String source;
-	public String type;
 	public long lastPublishDate;
 
 }

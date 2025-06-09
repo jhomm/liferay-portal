@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence;
@@ -667,7 +658,7 @@ public interface DDMStructurePersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMStructureModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param start the lower bound of the range of ddm structures
 	 * @param end the upper bound of the range of ddm structures (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -1531,7 +1522,7 @@ public interface DDMStructurePersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMStructureModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param classNameId the class name ID
 	 * @param start the lower bound of the range of ddm structures
 	 * @param end the upper bound of the range of ddm structures (not inclusive)
@@ -1743,6 +1734,66 @@ public interface DDMStructurePersistence
 	 * @return the number of matching ddm structures
 	 */
 	public int countByC_C(long companyId, long classNameId);
+
+	/**
+	 * Returns the ddm structure where externalReferenceCode = &#63; and groupId = &#63; and classNameId = &#63; or throws a <code>NoSuchStructureException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @return the matching ddm structure
+	 * @throws NoSuchStructureException if a matching ddm structure could not be found
+	 */
+	public DDMStructure findByERC_G_C(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws NoSuchStructureException;
+
+	/**
+	 * Returns the ddm structure where externalReferenceCode = &#63; and groupId = &#63; and classNameId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @return the matching ddm structure, or <code>null</code> if a matching ddm structure could not be found
+	 */
+	public DDMStructure fetchByERC_G_C(
+		String externalReferenceCode, long groupId, long classNameId);
+
+	/**
+	 * Returns the ddm structure where externalReferenceCode = &#63; and groupId = &#63; and classNameId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching ddm structure, or <code>null</code> if a matching ddm structure could not be found
+	 */
+	public DDMStructure fetchByERC_G_C(
+		String externalReferenceCode, long groupId, long classNameId,
+		boolean useFinderCache);
+
+	/**
+	 * Removes the ddm structure where externalReferenceCode = &#63; and groupId = &#63; and classNameId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @return the ddm structure that was removed
+	 */
+	public DDMStructure removeByERC_G_C(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws NoSuchStructureException;
+
+	/**
+	 * Returns the number of ddm structures where externalReferenceCode = &#63; and groupId = &#63; and classNameId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param classNameId the class name ID
+	 * @return the number of matching ddm structures
+	 */
+	public int countByERC_G_C(
+		String externalReferenceCode, long groupId, long classNameId);
 
 	/**
 	 * Returns the ddm structure where groupId = &#63; and classNameId = &#63; and structureKey = &#63; or throws a <code>NoSuchStructureException</code> if it could not be found.
@@ -2395,7 +2446,7 @@ public interface DDMStructurePersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMStructureModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param classNameId the class name ID
 	 * @param name the name
 	 * @param description the description

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.learning.to.rank.internal.searcher;
@@ -40,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.search.learning.to.rank.configuration.LearningToRankConfiguration",
-	enabled = false, immediate = true,
+	enabled = false,
 	property = "search.request.contributor.id=com.liferay.portal.search.learning.to.rank",
 	service = SearchRequestContributor.class
 )
@@ -56,7 +47,7 @@ public class LearningToRankSearchRequestContributor
 		SearchRequestBuilder searchRequestBuilder =
 			searchRequestBuilderFactory.builder(searchRequest);
 
-		searchRequestBuilder.rescores(getRescores(searchRequest));
+		searchRequestBuilder.rescores(_getRescores(searchRequest));
 
 		return searchRequestBuilder.build();
 	}
@@ -72,7 +63,16 @@ public class LearningToRankSearchRequestContributor
 		_model = learningToRankConfiguration.model();
 	}
 
-	protected Query getRescoreQuery(String model, String keywords) {
+	@Reference
+	protected Queries queries;
+
+	@Reference
+	protected RescoreBuilderFactory rescoreBuilderFactory;
+
+	@Reference
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
+
+	private Query _getRescoreQuery(String model, String keywords) {
 		return queries.wrapper(
 			JSONUtil.put(
 				"sltr",
@@ -84,23 +84,14 @@ public class LearningToRankSearchRequestContributor
 			).toString());
 	}
 
-	protected List<Rescore> getRescores(SearchRequest searchRequest) {
+	private List<Rescore> _getRescores(SearchRequest searchRequest) {
 		return Arrays.asList(
 			rescoreBuilderFactory.builder(
-				getRescoreQuery(_model, searchRequest.getQueryString())
+				_getRescoreQuery(_model, searchRequest.getQueryString())
 			).windowSize(
 				1000
 			).build());
 	}
-
-	@Reference
-	protected Queries queries;
-
-	@Reference
-	protected RescoreBuilderFactory rescoreBuilderFactory;
-
-	@Reference
-	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
 
 	private volatile boolean _enabled;
 	private volatile String _model;

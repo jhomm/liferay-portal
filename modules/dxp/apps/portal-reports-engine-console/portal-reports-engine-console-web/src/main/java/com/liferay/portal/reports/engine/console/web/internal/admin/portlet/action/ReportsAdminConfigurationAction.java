@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.web.internal.admin.portlet.action;
@@ -21,11 +12,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.reports.engine.console.constants.ReportsEngineConsolePortletKeys;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -34,8 +25,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Peter Shin
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
+	property = "jakarta.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
 	service = ConfigurationAction.class
 )
 public class ReportsAdminConfigurationAction
@@ -55,19 +45,19 @@ public class ReportsAdminConfigurationAction
 		String tabs2 = ParamUtil.getString(actionRequest, "tabs2");
 
 		if (tabs2.equals("delivery-email")) {
-			validateEmailDelivery(actionRequest);
+			_validateEmailDelivery(actionRequest);
 		}
 		else if (tabs2.equals("email-from")) {
 			validateEmailFrom(actionRequest);
 		}
 		else if (tabs2.equals("notifications-email")) {
-			validateEmailNotifications(actionRequest);
+			_validateEmailNotifications(actionRequest);
 		}
 
 		super.processAction(portletConfig, actionRequest, actionResponse);
 	}
 
-	protected void validateEmailDelivery(ActionRequest actionRequest)
+	private void _validateEmailDelivery(ActionRequest actionRequest)
 		throws Exception {
 
 		String emailDeliverySubject = getParameter(
@@ -83,7 +73,7 @@ public class ReportsAdminConfigurationAction
 		}
 	}
 
-	protected void validateEmailNotifications(ActionRequest actionRequest)
+	private void _validateEmailNotifications(ActionRequest actionRequest)
 		throws Exception {
 
 		String emailNotificationsSubject = getParameter(

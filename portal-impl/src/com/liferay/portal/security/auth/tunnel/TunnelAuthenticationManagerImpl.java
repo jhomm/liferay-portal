@@ -1,27 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.auth.tunnel;
 
-import com.liferay.petra.encryptor.Encryptor;
-import com.liferay.petra.encryptor.EncryptorException;
+import com.liferay.portal.kernel.encryptor.EncryptorException;
+import com.liferay.portal.kernel.encryptor.EncryptorUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.AuthException;
 import com.liferay.portal.kernel.security.auth.RemoteAuthException;
-import com.liferay.portal.kernel.security.auth.http.HttpAuthManagerUtil;
 import com.liferay.portal.kernel.security.auth.http.HttpAuthorizationHeader;
 import com.liferay.portal.kernel.security.auth.tunnel.TunnelAuthenticationManager;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
@@ -30,8 +20,11 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.auth.http.HttpAuthManagerUtil;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.net.HttpURLConnection;
 
@@ -40,11 +33,6 @@ import java.security.Key;
 import java.util.Objects;
 
 import javax.crypto.spec.SecretKeySpec;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.codec.DecoderException;
-import org.apache.commons.codec.binary.Hex;
 
 /**
  * @author Tomas Polesovsky
@@ -82,7 +70,8 @@ public class TunnelAuthenticationManagerImpl
 			HttpAuthorizationHeader.AUTH_PARAMETER_NAME_USERNAME);
 
 		try {
-			expectedPassword = Encryptor.encrypt(getSharedSecretKey(), login);
+			expectedPassword = EncryptorUtil.encrypt(
+				getSharedSecretKey(), login);
 		}
 		catch (EncryptorException encryptorException) {
 			AuthException authException = new RemoteAuthException(
@@ -150,7 +139,7 @@ public class TunnelAuthenticationManagerImpl
 		HttpAuthorizationHeader httpAuthorizationHeader =
 			new HttpAuthorizationHeader(HttpAuthorizationHeader.SCHEME_BASIC);
 
-		String password = Encryptor.encrypt(getSharedSecretKey(), login);
+		String password = EncryptorUtil.encrypt(getSharedSecretKey(), login);
 
 		httpAuthorizationHeader.setAuthParameter(
 			HttpAuthorizationHeader.AUTH_PARAMETER_NAME_PASSWORD, password);
@@ -184,11 +173,11 @@ public class TunnelAuthenticationManagerImpl
 
 		if (PropsValues.TUNNELING_SERVLET_SHARED_SECRET_HEX) {
 			try {
-				key = Hex.decodeHex(sharedSecret.toCharArray());
+				key = StringUtil.hexStringToBytes(sharedSecret);
 			}
-			catch (DecoderException decoderException) {
+			catch (IllegalArgumentException illegalArgumentException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(decoderException, decoderException);
+					_log.warn(illegalArgumentException);
 				}
 
 				AuthException authException = new AuthException();

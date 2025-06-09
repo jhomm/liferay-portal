@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 AUI.add(
 	'liferay-kaleo-designer-xml-definition',
 	(A) => {
-		var Lang = A.Lang;
+		const Lang = A.Lang;
 
-		var isNumber = Lang.isNumber;
-		var isString = Lang.isString;
+		const isNumber = Lang.isNumber;
+		const isString = Lang.isString;
 
-		var COL_TYPES_FIELD = [
+		const COL_TYPES_FIELD = [
 			'condition',
 			'fork',
 			'join',
@@ -26,10 +20,10 @@ AUI.add(
 			'task',
 		];
 
-		var STR_BLANK = '';
-		var XMLUtil = Liferay.XMLUtil;
+		const STR_BLANK = '';
+		const XMLUtil = Liferay.XMLUtil;
 
-		var XMLDefinition = A.Component.create({
+		const XMLDefinition = A.Component.create({
 			ATTRS: {
 				description: {
 					validator: isString,
@@ -232,7 +226,7 @@ AUI.add(
 					assignmentKey,
 					assignmentTagName
 				) {
-					var instance = this;
+					const instance = this;
 
 					assignmentKey = assignmentKey || 'recipients';
 					assignmentTagName = assignmentTagName || 'recipients';
@@ -284,7 +278,7 @@ AUI.add(
 				},
 
 				_getSchemaTaskTimers(key, tagNode) {
-					var instance = this;
+					const instance = this;
 
 					return {
 						key: key || 'taskTimers',
@@ -376,7 +370,7 @@ AUI.add(
 				},
 
 				_sanitizeDefinitionXML(val) {
-					var instance = this;
+					const instance = this;
 
 					val = decodeURIComponent(val);
 
@@ -392,20 +386,22 @@ AUI.add(
 				},
 
 				_updateXMLNamespace(definition) {
-					var instance = this;
+					const instance = this;
 
-					var workflowDefinition = /(<workflow-definition)[^>]*(>)/.exec(
-						definition
-					);
+					const workflowDefinition =
+						/(<workflow-definition)[^>]*(>)/.exec(definition);
 
 					if (workflowDefinition) {
-						var xmlns = /xmlns="([^"]*)"/.exec(workflowDefinition);
-						var xmlnsXsi = /xmlns:xsi="([^"]*)"/.exec(
+						const xmlns = /xmlns="([^"]*)"/.exec(
 							workflowDefinition
 						);
-						var xsiSchemaLocation = /xsi:schemaLocation="([^"]*)"/.exec(
+						const xmlnsXsi = /xmlns:xsi="([^"]*)"/.exec(
 							workflowDefinition
 						);
+						const xsiSchemaLocation =
+							/xsi:schemaLocation="([^"]*)"/.exec(
+								workflowDefinition
+							);
 
 						if (xmlns && xmlnsXsi && xsiSchemaLocation) {
 							instance.set('xmlNamespace', {
@@ -418,10 +414,10 @@ AUI.add(
 				},
 
 				forEachField(fn) {
-					var instance = this;
+					const instance = this;
 
 					COL_TYPES_FIELD.forEach((item) => {
-						var fieldData = instance.translate(item);
+						const fieldData = instance.translate(item);
 
 						if (fn && !fieldData.error) {
 							fn.call(instance, item, fieldData);
@@ -430,9 +426,9 @@ AUI.add(
 				},
 
 				getDefinitionMetadata() {
-					var instance = this;
+					const instance = this;
 
-					var output = A.DataSchema.XML.apply(
+					const output = A.DataSchema.XML.apply(
 						{
 							metaFields: {
 								description:
@@ -448,15 +444,15 @@ AUI.add(
 				},
 
 				initializer(config) {
-					var instance = this;
+					const instance = this;
 
-					var val = instance._sanitizeDefinitionXML(config.value);
+					const val = instance._sanitizeDefinitionXML(config.value);
 
 					if (!val || XMLUtil.validateDefinition(val)) {
 						instance.definitionDoc = A.DataType.XML.parse(val);
 					}
 
-					var metadata = instance.getDefinitionMetadata();
+					const metadata = instance.getDefinitionMetadata();
 
 					if (metadata) {
 						instance.setAttrs(metadata);
@@ -464,9 +460,9 @@ AUI.add(
 				},
 
 				translate(tagName) {
-					var instance = this;
+					const instance = this;
 
-					var schema = {
+					const schema = {
 						resultFields: [
 							'description',
 							'initial',

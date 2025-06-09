@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -31,6 +26,8 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -53,13 +50,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CommerceCatalogLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CommerceCatalogLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CommerceCatalog>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -82,7 +81,7 @@ public interface CommerceCatalogLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceCatalog addCommerceCatalog(
-			String externalReferenceCode, String name,
+			String externalReferenceCode, long accountEntryId, String name,
 			String commerceCurrencyCode, String catalogDefaultLanguageId,
 			boolean system, ServiceContext serviceContext)
 		throws PortalException;
@@ -225,33 +224,25 @@ public interface CommerceCatalogLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceCatalog fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceCatalog fetchCommerceCatalog(long commerceCatalogId);
 
-	/**
-	 * Returns the commerce catalog with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce catalog's external reference code
-	 * @return the matching commerce catalog, or <code>null</code> if a matching commerce catalog could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceCatalog fetchCommerceCatalogByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceCatalog fetchCommerceCatalogByGroupId(long groupId);
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceCatalogByExternalReferenceCode(long, String)}
+	 * Returns the commerce catalog with the matching UUID and company.
+	 *
+	 * @param uuid the commerce catalog's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce catalog, or <code>null</code> if a matching commerce catalog could not be found
 	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceCatalog fetchCommerceCatalogByReferenceCode(
-		long companyId, String externalReferenceCode);
+	public CommerceCatalog fetchCommerceCatalogByUuidAndCompanyId(
+		String uuid, long companyId);
 
 	@Indexable(type = IndexableType.DELETE)
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
@@ -273,17 +264,22 @@ public interface CommerceCatalogLocalService
 	public CommerceCatalog getCommerceCatalog(long commerceCatalogId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceCatalog getCommerceCatalogByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
-	 * Returns the commerce catalog with the matching external reference code and company.
+	 * Returns the commerce catalog with the matching UUID and company.
 	 *
+	 * @param uuid the commerce catalog's UUID
 	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce catalog's external reference code
 	 * @return the matching commerce catalog
 	 * @throws PortalException if a matching commerce catalog could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceCatalog getCommerceCatalogByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+	public CommerceCatalog getCommerceCatalogByUuidAndCompanyId(
+			String uuid, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -305,8 +301,15 @@ public interface CommerceCatalogLocalService
 	public List<CommerceCatalog> getCommerceCatalogs(int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceCatalog> getCommerceCatalogs(long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceCatalog> getCommerceCatalogs(
 		long companyId, boolean system);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceCatalog> getCommerceCatalogsByAccountEntryId(
+		long accountEntryId);
 
 	/**
 	 * Returns the number of commerce catalogs.
@@ -315,6 +318,10 @@ public interface CommerceCatalogLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceCatalogsCount();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -362,13 +369,28 @@ public interface CommerceCatalogLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceCatalog updateCommerceCatalog(
-			long commerceCatalogId, String name, String commerceCurrencyCode,
-			String catalogDefaultLanguageId)
+			long commerceCatalogId, long accountEntryId, String name,
+			String commerceCurrencyCode, String catalogDefaultLanguageId)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceCatalog updateCommerceCatalogExternalReferenceCode(
 			String externalReferenceCode, long commerceCatalogId)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CommerceCatalog> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CommerceCatalog> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CommerceCatalog>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

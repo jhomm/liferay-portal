@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,7 +17,7 @@ Group liveGroup = (Group)request.getAttribute("site.liveGroup");
 
 <liferay-asset:asset-tags-error />
 
-<h4 class="sheet-subtitle"><liferay-ui:message key="categories" /></h4>
+<div class="sheet-subtitle"><liferay-ui:message key="categories" /></div>
 
 <liferay-asset:asset-categories-selector
 	className="<%= Group.class.getName() %>"
@@ -34,7 +25,7 @@ Group liveGroup = (Group)request.getAttribute("site.liveGroup");
 	visibilityTypes="<%= AssetVocabularyConstants.VISIBILITY_TYPES %>"
 />
 
-<h4 class="sheet-subtitle"><liferay-ui:message key="tags" /></h4>
+<div class="sheet-subtitle"><liferay-ui:message key="tags" /></div>
 
 <liferay-asset:asset-tags-selector
 	className="<%= Group.class.getName() %>"

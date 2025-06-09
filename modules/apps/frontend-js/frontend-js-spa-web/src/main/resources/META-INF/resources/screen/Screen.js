@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {runScriptsInElement} from 'frontend-js-web';
@@ -145,11 +136,11 @@ class Screen extends Cacheable {
 	 *     navigation until it is resolved.
 	 */
 	flip(surfaces) {
-		var transitions = [];
+		const transitions = [];
 
 		Object.keys(surfaces).forEach((sId) => {
-			var surface = surfaces[sId];
-			var deferred = surface.show(this.id);
+			const surface = surfaces[sId];
+			const deferred = surface.show(this.id);
 			transitions.push(deferred);
 		});
 
@@ -213,6 +204,17 @@ class Screen extends Cacheable {
 	 */
 	makeId_(id) {
 		return 'screen_' + id;
+	}
+
+	/**
+	 * Allows a screen to preload CSS stylesheets before flipping so that the UI
+	 * transition is smooth.
+	 * @param {!object} surfaces Map of surfaces to flip keyed by surface id.
+	 * @return {!Promise} This returns a promise, which will pause the
+	 *     navigation until it is resolved.
+	 */
+	preloadStyles() {
+		return Promise.resolve();
 	}
 
 	/**

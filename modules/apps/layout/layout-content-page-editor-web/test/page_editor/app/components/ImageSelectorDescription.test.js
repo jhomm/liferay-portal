@@ -1,85 +1,54 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {cleanup, render} from '@testing-library/react';
+import {fireEvent, render, screen} from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import {StoreAPIContextProvider} from '../../../../src/main/resources/META-INF/resources/page_editor/app/contexts/StoreContext';
 import {ImageSelectorDescription} from '../../../../src/main/resources/META-INF/resources/page_editor/common/components/ImageSelectorDescription';
-
-jest.mock(
-	'../../../../src/main/resources/META-INF/resources/page_editor/app/config',
-	() => ({
-		config: {
-			availableLanguages: {
-				en_US: {
-					default: false,
-					displayName: 'English (United States)',
-					languageIcon: 'en-us',
-					languageId: 'en_US',
-					w3cLanguageId: 'en-US',
-				},
-			},
-		},
-	})
-);
+import StoreMother from '../../../../src/main/resources/META-INF/resources/page_editor/test_utils/StoreMother';
 
 describe('ImageSelectorDescription', () => {
-	afterEach(() => {
-		cleanup();
-	});
-
 	it('synchronizes imageDescription prop with input value', () => {
-		const {getByLabelText} = render(
-			<StoreAPIContextProvider
-				getState={() => ({
-					languageId: 'en_US',
-				})}
-			>
+		render(
+			<StoreMother.Component>
 				<ImageSelectorDescription
 					imageDescription="Random description"
 					onImageDescriptionChanged={() => {}}
 				/>
-			</StoreAPIContextProvider>
+			</StoreMother.Component>
 		);
 
-		expect(getByLabelText('image-description').value).toBe(
-			'Random description'
-		);
+		expect(
+			screen.getByLabelText('image-description', {
+				selector: 'input',
+			}).value
+		).toBe('Random description');
 	});
 
-	it('call onImageDescriptionChanged on blur', () => {
+	it('call onImageDescriptionChanged on blur', async () => {
 		const onImageDescriptionChanged = jest.fn();
 
-		const {getByLabelText} = render(
-			<StoreAPIContextProvider
-				getState={() => ({
-					languageId: 'en_US',
-				})}
-			>
+		render(
+			<StoreMother.Component>
 				<ImageSelectorDescription
 					imageDescription=""
 					onImageDescriptionChanged={onImageDescriptionChanged}
 				/>
-			</StoreAPIContextProvider>
+			</StoreMother.Component>
 		);
 
-		const input = getByLabelText('image-description');
+		const input = screen.getByLabelText('image-description', {
+			selector: 'input',
+		});
 
-		input.value = 'Some other thing';
-		input.dispatchEvent(new FocusEvent('blur'));
+		await userEvent.clear(input);
+		await userEvent.type(input, 'Some other thing');
+
+		fireEvent.blur(input);
 
 		expect(onImageDescriptionChanged).toHaveBeenCalledWith(
 			'Some other thing'

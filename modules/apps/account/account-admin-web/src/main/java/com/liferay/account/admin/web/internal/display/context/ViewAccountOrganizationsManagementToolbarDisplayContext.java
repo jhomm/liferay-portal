@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.display.context;
 
 import com.liferay.account.admin.web.internal.security.permission.resource.AccountEntryPermission;
-import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryLocalServiceUtil;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalServiceUtil;
@@ -25,26 +15,21 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -65,7 +50,7 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 
 	@Override
 	public List<DropdownItem> getActionDropdownItems() {
-		if (!_hasManageOrganizationsPermission()) {
+		if (!_hasEditOrManageOrganizationsPermission()) {
 			return null;
 		}
 
@@ -145,13 +130,6 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 	}
 
 	@Override
-	public String getSearchActionURL() {
-		PortletURL searchActionURL = getPortletURL();
-
-		return searchActionURL.toString();
-	}
-
-	@Override
 	public Boolean isDisabled() {
 		long count =
 			AccountEntryOrganizationRelLocalServiceUtil.
@@ -166,12 +144,12 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 
 	@Override
 	public Boolean isSelectable() {
-		return _hasManageOrganizationsPermission();
+		return _hasEditOrManageOrganizationsPermission();
 	}
 
 	@Override
 	public Boolean isShowCreationMenu() {
-		return _hasManageOrganizationsPermission();
+		return _hasEditOrManageOrganizationsPermission();
 	}
 
 	@Override
@@ -189,29 +167,13 @@ public class ViewAccountOrganizationsManagementToolbarDisplayContext
 		return ParamUtil.getLong(liferayPortletRequest, "accountEntryId");
 	}
 
-	private boolean _hasManageOrganizationsPermission() {
+	private boolean _hasEditOrManageOrganizationsPermission() {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		try {
-			if (AccountEntryPermission.contains(
-					themeDisplay.getPermissionChecker(), _getAccountEntryId(),
-					AccountActionKeys.MANAGE_ORGANIZATIONS)) {
-
-				return true;
-			}
-		}
-		catch (PortalException portalException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
-			}
-		}
-
-		return false;
+		return AccountEntryPermission.hasEditOrManageOrganizationsPermission(
+			themeDisplay.getPermissionChecker(), _getAccountEntryId());
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		ViewAccountOrganizationsManagementToolbarDisplayContext.class);
 
 }

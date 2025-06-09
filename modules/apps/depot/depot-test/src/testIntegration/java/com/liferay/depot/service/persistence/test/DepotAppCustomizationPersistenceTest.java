@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service.persistence.test;
@@ -129,6 +120,8 @@ public class DepotAppCustomizationPersistenceTest {
 
 		newDepotAppCustomization.setMvccVersion(RandomTestUtil.nextLong());
 
+		newDepotAppCustomization.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newDepotAppCustomization.setCompanyId(RandomTestUtil.nextLong());
 
 		newDepotAppCustomization.setDepotEntryId(RandomTestUtil.nextLong());
@@ -147,6 +140,9 @@ public class DepotAppCustomizationPersistenceTest {
 		Assert.assertEquals(
 			existingDepotAppCustomization.getMvccVersion(),
 			newDepotAppCustomization.getMvccVersion());
+		Assert.assertEquals(
+			existingDepotAppCustomization.getCtCollectionId(),
+			newDepotAppCustomization.getCtCollectionId());
 		Assert.assertEquals(
 			existingDepotAppCustomization.getDepotAppCustomizationId(),
 			newDepotAppCustomization.getDepotAppCustomizationId());
@@ -216,9 +212,9 @@ public class DepotAppCustomizationPersistenceTest {
 
 	protected OrderByComparator<DepotAppCustomization> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"DepotAppCustomization", "mvccVersion", true,
-			"depotAppCustomizationId", true, "companyId", true, "depotEntryId",
-			true, "enabled", true, "portletId", true);
+			"DepotAppCustomization", "mvccVersion", true, "ctCollectionId",
+			true, "depotAppCustomizationId", true, "companyId", true,
+			"depotEntryId", true, "enabled", true, "portletId", true);
 	}
 
 	@Test
@@ -545,6 +541,8 @@ public class DepotAppCustomizationPersistenceTest {
 		DepotAppCustomization depotAppCustomization = _persistence.create(pk);
 
 		depotAppCustomization.setMvccVersion(RandomTestUtil.nextLong());
+
+		depotAppCustomization.setCtCollectionId(RandomTestUtil.nextLong());
 
 		depotAppCustomization.setCompanyId(RandomTestUtil.nextLong());
 

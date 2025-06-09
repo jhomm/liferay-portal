@@ -1,22 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/html/taglib/init.jsp" %>
 
 <%
+List<String> activeLanguageIds = (List<String>)request.getAttribute("liferay-ui:input-field:activeLanguageIds");
+boolean adminMode = GetterUtil.getBoolean(String.valueOf(request.getAttribute("liferay-ui:input-field:adminMode")));
 String autoComplete = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-field:autoComplete"));
 boolean autoFocus = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-field:autoFocus"));
 boolean autoSize = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-field:autoSize"));
@@ -34,6 +27,7 @@ String formName = (String)request.getAttribute("liferay-ui:input-field:formName"
 String id = GetterUtil.getString((String)request.getAttribute("liferay-ui:input-field:id"));
 boolean ignoreRequestValue = GetterUtil.getBoolean((String)request.getAttribute("liferay-ui:input-field:ignoreRequestValue"));
 String languageId = (String)request.getAttribute("liferay-ui:input-field:languageId");
+String languagesDropdownDirection = (String)request.getAttribute("liferay-ui:input-field:languagesDropdownDirection");
 String model = (String)request.getAttribute("liferay-ui:input-field:model");
 String placeholder = (String)request.getAttribute("liferay-ui:input-field:placeholder");
 
@@ -47,6 +41,22 @@ if (hints != null) {
 	type = GetterUtil.getString(hints.get("type"), type);
 }
 %>
+
+<liferay-util:buffer
+	var="infoHTML"
+>
+	<svg class="lexicon-icon lexicon-icon-exclamation-full">
+		<use xlink:href="<%= themeDisplay.getPathThemeSpritemap() %>#exclamation-full"></use>
+	</svg>
+</liferay-util:buffer>
+
+<liferay-util:buffer
+	var="successHTML"
+>
+	<svg class="lexicon-icon lexicon-icon-check">
+		<use xlink:href="<%= themeDisplay.getPathThemeSpritemap() %>#check"></use>
+	</svg>
+</liferay-util:buffer>
 
 <c:if test="<%= type != null %>">
 	<c:choose>
@@ -269,7 +279,7 @@ if (hints != null) {
 					if (checkbox) {
 						checkbox.once(
 							'click',
-							function() {
+							function () {
 								Liferay.component('<portlet:namespace /><%= fieldParam %>DatePicker');
 							}
 						);
@@ -435,6 +445,8 @@ if (hints != null) {
 					<c:choose>
 						<c:when test="<%= localized %>">
 							<liferay-ui:input-localized
+								activeLanguageIds="<%= activeLanguageIds %>"
+								adminMode="<%= adminMode %>"
 								autoFocus="<%= autoFocus %>"
 								availableLocales="<%= availableLocales %>"
 								cssClass="<%= cssClass %>"
@@ -444,6 +456,7 @@ if (hints != null) {
 								id="<%= id %>"
 								ignoreRequestValue="<%= ignoreRequestValue %>"
 								languageId="<%= languageId %>"
+								languagesDropdownDirection="<%= languagesDropdownDirection %>"
 								maxLength="<%= maxLength %>"
 								name="<%= fieldParam %>"
 								placeholder="<%= placeholder %>"
@@ -480,6 +493,8 @@ if (hints != null) {
 					<c:choose>
 						<c:when test="<%= localized %>">
 							<liferay-ui:input-localized
+								activeLanguageIds="<%= activeLanguageIds %>"
+								adminMode="<%= adminMode %>"
 								autoFocus="<%= autoFocus %>"
 								availableLocales="<%= availableLocales %>"
 								cssClass='<%= cssClass + " lfr-input-text" %>'
@@ -489,6 +504,7 @@ if (hints != null) {
 								id="<%= id %>"
 								ignoreRequestValue="<%= ignoreRequestValue %>"
 								languageId="<%= languageId %>"
+								languagesDropdownDirection="<%= languagesDropdownDirection %>"
 								maxLength="<%= maxLength %>"
 								name="<%= fieldParam %>"
 								placeholder="<%= placeholder %>"
@@ -497,7 +513,9 @@ if (hints != null) {
 							/>
 						</c:when>
 						<c:otherwise>
-							<input <%= Validator.isNotNull(autoComplete) ? "autocomplete=\"" + autoComplete + "\"" : StringPool.BLANK %> class="<%= cssClass %> lfr-input-text" <%= disabled ? "disabled=\"disabled\"" : StringPool.BLANK %> id="<%= namespace %><%= id %>" name="<%= namespace %><%= fieldParam %>" <%= Validator.isNotNull(placeholder) ? "placeholder=\"" + LanguageUtil.get(resourceBundle, placeholder) + "\"" : StringPool.BLANK %> style="<%= upperCase ? "text-transform: uppercase;" : StringPool.BLANK %>" type="<%= secret ? "password" : "text" %>" value="<%= autoEscape ? HtmlUtil.escape(value) : value %>" />
+							<liferay-ui:csp>
+								<input <%= Validator.isNotNull(autoComplete) ? "autocomplete=\"" + autoComplete + "\"" : StringPool.BLANK %> class="<%= cssClass %> lfr-input-text" <%= disabled ? "disabled=\"disabled\"" : StringPool.BLANK %> id="<%= namespace %><%= id %>" name="<%= namespace %><%= fieldParam %>" <%= Validator.isNotNull(placeholder) ? "placeholder=\"" + LanguageUtil.get(resourceBundle, placeholder) + "\"" : StringPool.BLANK %> style="<%= upperCase ? "text-transform: uppercase;" : StringPool.BLANK %>" maxLength="<%= maxLength %>" type="<%= secret ? "password" : "text" %>" value="<%= autoEscape ? HtmlUtil.escape(value) : value %>" />
+							</liferay-ui:csp>
 						</c:otherwise>
 					</c:choose>
 				</c:when>
@@ -505,6 +523,8 @@ if (hints != null) {
 					<c:choose>
 						<c:when test="<%= localized %>">
 							<liferay-ui:input-localized
+								activeLanguageIds="<%= activeLanguageIds %>"
+								adminMode="<%= adminMode %>"
 								autoFocus="<%= autoFocus %>"
 								autoSize="<%= autoSize %>"
 								availableLocales="<%= availableLocales %>"
@@ -515,9 +535,10 @@ if (hints != null) {
 								id="<%= id %>"
 								ignoreRequestValue="<%= ignoreRequestValue %>"
 								languageId="<%= languageId %>"
+								languagesDropdownDirection="<%= languagesDropdownDirection %>"
 								maxLength="<%= maxLength %>"
 								name="<%= fieldParam %>"
-								onKeyDown='<%= (checkTab ? "Liferay.Util.checkTab(this); " : StringPool.BLANK) + "Liferay.Util.disableEsc();" %>'
+								onKeyDown="Liferay.Util.disableEsc();"
 								placeholder="<%= placeholder %>"
 								style='<%= !autoSize ? "height: " + displayHeight + (Validator.isDigit(displayHeight) ? "px" : StringPool.BLANK) + ";" : StringPool.BLANK %>'
 								type="textarea"
@@ -526,9 +547,27 @@ if (hints != null) {
 							/>
 						</c:when>
 						<c:otherwise>
-							<textarea class="<%= cssClass %> lfr-textarea" <%= disabled ? "disabled=\"disabled\"" : StringPool.BLANK %> id="<%= namespace %><%= id %>" name="<%= namespace %><%= fieldParam %>" onKeyDown="<%= checkTab ? "Liferay.Util.checkTab(this); " : StringPool.BLANK %> Liferay.Util.disableEsc();" <%= Validator.isNotNull(placeholder) ? "placeholder=\"" + LanguageUtil.get(resourceBundle, placeholder) + "\"" : StringPool.BLANK %> style="<%= !autoSize ? "height: " + displayHeight + (Validator.isDigit(displayHeight) ? "px" : StringPool.BLANK) + ";" : StringPool.BLANK %>" wrap="soft"><%= autoEscape ? HtmlUtil.escape(value) : value %></textarea>
+							<liferay-ui:csp>
+								<textarea maxLength="<%= maxLength %>" aria-labelledby="<%= namespace + id %> <%= namespace + id %>_maxCharacters" class="<%= cssClass %> lfr-textarea" <%= disabled ? "disabled=\"disabled\"" : StringPool.BLANK %> id="<%= namespace %><%= id %>" name="<%= namespace %><%= fieldParam %>" onKeyDown="Liferay.Util.disableEsc();" <%= Validator.isNotNull(placeholder) ? "placeholder=\"" + LanguageUtil.get(resourceBundle, placeholder) + "\"" : StringPool.BLANK %> style="<%= !autoSize ? "height: " + displayHeight + (Validator.isDigit(displayHeight) ? "px" : StringPool.BLANK) + ";" : StringPool.BLANK %>" wrap="soft"><%= autoEscape ? HtmlUtil.escape(value) : value %></textarea>
+							</liferay-ui:csp>
+
+							<span class="sr-only" id="<%= namespace + id %>_maxCharacters">
+								<liferay-ui:message key="characters-maximum" />: <%= maxLength %>
+							</span>
 						</c:otherwise>
 					</c:choose>
+
+					<c:if test="<%= Validator.isNotNull(maxLength) %>">
+						<div class="form-feedback-item">
+							<span class="label-secondary" id="<%= namespace + id %>_counterWrapper">
+								<span class="form-feedback-indicator"></span>
+								<span aria-live="polite" class="form-feedback-message"></span>
+								<span class="form-feedback-counter">
+									0/<%= maxLength %>
+								</span>
+							</span>
+						</div>
+					</c:if>
 
 					<c:if test="<%= autoSize && !localized %>">
 						<aui:script use="aui-autosize">
@@ -551,16 +590,75 @@ if (hints != null) {
 						Liferay.Util.focusFormField('#<%= namespace %><%= id %>');
 					</aui:script>
 				</c:if>
-
-				<aui:script use="aui-char-counter">
-					new A.CharCounter(
-						{
-							input: '#<%= namespace %><%= id %>',
-							maxLength: <%= maxLength %>
-						}
-					);
-				</aui:script>
 			</c:if>
 		</c:when>
 	</c:choose>
 </c:if>
+
+<aui:script sandbox="<%= true %>">
+	var state = null;
+	var textarea = document.querySelector('textarea#<portlet:namespace /><%= id %>')
+	var counterWrapper = document.querySelector('#<portlet:namespace /><%= id %>_counterWrapper')
+
+	var setCounter = (textarea) => {
+		var counter = counterWrapper.querySelector('.form-feedback-counter')
+
+		counter.innerHTML = textarea.value.length + "/" + maxLength;
+	}
+
+	if (textarea) {
+		var maxLength = parseInt(textarea.getAttribute('maxLength'));
+
+		setCounter(textarea);
+	}
+
+	var onKeydownHandler = Liferay.Util.delegate(
+		document.body,
+		'keyup',
+		'textarea[id=<portlet:namespace /><%= id %>]',
+		({target}) => {
+			var indicator = counterWrapper.querySelector('.form-feedback-indicator');
+			var message = counterWrapper.querySelector('.form-feedback-message');
+
+			var feedback = {
+				success: {
+					message: "<%= LanguageUtil.get(resourceBundle, "the-characters-are-under-the-limit") %>",
+					indicator: "<%= UnicodeFormatter.toString(successHTML) %>"
+				},
+				info: {
+					message: "<%= LanguageUtil.get(resourceBundle, "the-character-limit-has-been-reached-you-cannot-continue-typing") %>",
+					indicator: "<%= UnicodeFormatter.toString(infoHTML) %>"
+				},
+			}
+
+			var setStatus = (nextState) => {
+				if (state !== nextState) {
+					counterWrapper.removeAttribute('class')
+					counterWrapper.classList.add('label-' + nextState);
+
+					indicator.innerHTML = feedback[nextState].indicator;
+					message.innerHTML = feedback[nextState].message;
+
+					state = nextState;
+				}
+			}
+
+			if (state !== 'info' && target.value.length === maxLength) {
+				setStatus('info');
+			}
+			else if (state === 'info' && target.value.length < maxLength) {
+				setStatus('success');
+			}
+
+			setCounter(target);
+		}
+	);
+
+	const onDestroyPortlet = () => {
+		onKeydownHandler.dispose();
+
+		Liferay.detach('destroyPortlet', onDestroyPortlet);
+	};
+
+	Liferay.once('destroyPortlet', onDestroyPortlet);
+</aui:script>

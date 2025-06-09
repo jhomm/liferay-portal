@@ -1,35 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -69,7 +63,7 @@ public class ExportImportIndexedFieldsTest {
 
 		setUpExportImportIndexerFixture();
 
-		setUpIndexedFieldsFixture();
+		_setUpIndexedFieldsFixture();
 	}
 
 	@Test
@@ -85,7 +79,9 @@ public class ExportImportIndexedFieldsTest {
 		indexedFieldsFixture.postProcessDocument(document);
 
 		FieldValuesAssert.assertFieldValues(
-			_expectedFieldValues(exportImportConfiguration), document,
+			document, _expectedFieldValues(exportImportConfiguration),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
 			searchTerm);
 	}
 
@@ -102,11 +98,6 @@ public class ExportImportIndexedFieldsTest {
 	protected void setUpExportImportIndexerFixture() {
 		exportImportIndexerFixture = new IndexerFixture<>(
 			ExportImportConfiguration.class);
-	}
-
-	protected void setUpIndexedFieldsFixture() {
-		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService);
 	}
 
 	protected void setUpUserSearchFixture() throws Exception {
@@ -129,6 +120,9 @@ public class ExportImportIndexedFieldsTest {
 	@Inject
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
 	protected UserSearchFixture userSearchFixture;
 
 	private HashMap<String, Serializable> _addGroupAttribute() {
@@ -138,10 +132,12 @@ public class ExportImportIndexedFieldsTest {
 	}
 
 	private Map<String, String> _expectedFieldValues(
-		ExportImportConfiguration exportImportConfiguration) {
+			ExportImportConfiguration exportImportConfiguration)
+		throws Exception {
 
 		Map<String, Serializable> setttingMap =
 			exportImportConfiguration.getSettingsMap();
+		User user = TestPropsValues.getUser();
 
 		Map<String, String> map = HashMapBuilder.put(
 			Field.COMPANY_ID,
@@ -182,8 +178,12 @@ public class ExportImportIndexedFieldsTest {
 			String.valueOf(
 				exportImportConfiguration.getExportImportConfigurationId())
 		).put(
+			"groupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
 			"name_sortable",
 			StringUtil.lowerCase(exportImportConfiguration.getName())
+		).put(
+			"scopeGroupExternalReferenceCode", _group.getExternalReferenceCode()
 		).put(
 			"setting_locale", String.valueOf(setttingMap.get("locale"))
 		).put(
@@ -196,6 +196,13 @@ public class ExportImportIndexedFieldsTest {
 			String.valueOf(setttingMap.get("targetGroupId"))
 		).put(
 			"setting_userId", String.valueOf(setttingMap.get("userId"))
+		).put(
+			"statusByUserExternalReferenceCode", user.getExternalReferenceCode()
+		).put(
+			"statusByUserId",
+			String.valueOf(exportImportConfiguration.getStatusByUserId())
+		).put(
+			"userExternalReferenceCode", user.getExternalReferenceCode()
 		).build();
 
 		_populateDates(exportImportConfiguration, map);
@@ -217,6 +224,11 @@ public class ExportImportIndexedFieldsTest {
 		indexedFieldsFixture.populateDate(
 			Field.MODIFIED_DATE, exportImportConfiguration.getModifiedDate(),
 			map);
+	}
+
+	private void _setUpIndexedFieldsFixture() {
+		indexedFieldsFixture = new IndexedFieldsFixture(
+			resourcePermissionLocalService, searchEngineHelper);
 	}
 
 	@DeleteAfterTestRun

@@ -1,0 +1,90 @@
+{
+	"description_i18n": {
+		"en_US": "boost-freshness-description"
+	},
+	"elementDefinition": {
+		"category": "boost",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "should",
+								"query": {
+									"function_score": {
+										"boost": "${configuration.boost}",
+										"gauss": {
+											"modified": {
+												"decay": "${configuration.decay}",
+												"offset": "${configuration.offset}",
+												"origin": "${time.current_date|date_format=yyyyMMddHHmmss}",
+												"scale": "${configuration.scale}"
+											}
+										}
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "thumbs-up",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"defaultValue": 0.5,
+							"label": "decay",
+							"name": "decay",
+							"type": "slider",
+							"typeOptions": {
+								"max": 0.99,
+								"min": 0.01,
+								"step": 0.01
+							}
+						},
+						{
+							"defaultValue": 0,
+							"label": "offset",
+							"name": "offset",
+							"type": "number",
+							"typeOptions": {
+								"min": 0,
+								"unit": "days",
+								"unitSuffix": "d"
+							}
+						},
+						{
+							"defaultValue": 10,
+							"label": "scale",
+							"name": "scale",
+							"type": "number",
+							"typeOptions": {
+								"min": 0,
+								"unit": "days",
+								"unitSuffix": "d"
+							}
+						},
+						{
+							"defaultValue": 2,
+							"label": "boost",
+							"name": "boost",
+							"type": "number",
+							"typeOptions": {
+								"min": 0
+							}
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "BOOST_FRESHNESS",
+	"title_i18n": {
+		"en_US": "boost-freshness"
+	}
+}

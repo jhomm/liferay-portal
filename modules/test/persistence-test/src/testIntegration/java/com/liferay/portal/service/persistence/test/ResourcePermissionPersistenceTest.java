@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -227,6 +218,16 @@ public class ResourcePermissionPersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_N_S() throws Exception {
+		_persistence.countByC_N_S(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt());
+
+		_persistence.countByC_N_S(0L, "null", 0);
+
+		_persistence.countByC_N_S(0L, (String)null, 0);
+	}
+
+	@Test
 	public void testCountByC_S_P() throws Exception {
 		_persistence.countByC_S_P(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt(), "");
@@ -244,6 +245,16 @@ public class ResourcePermissionPersistenceTest {
 		_persistence.countByC_N_S_P(0L, "null", 0, "null");
 
 		_persistence.countByC_N_S_P(0L, (String)null, 0, (String)null);
+	}
+
+	@Test
+	public void testCountByC_N_S_PArrayable() throws Exception {
+		_persistence.countByC_N_S_P(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+			RandomTestUtil.nextInt(),
+			new String[] {
+				RandomTestUtil.randomString(), "", "null", null, null
+			});
 	}
 
 	@Test
@@ -274,6 +285,28 @@ public class ResourcePermissionPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
 			RandomTestUtil.nextInt(), RandomTestUtil.randomString(),
 			new long[] {RandomTestUtil.nextLong(), 0L});
+	}
+
+	@Test
+	public void testCountByC_N_S_R_V() throws Exception {
+		_persistence.countByC_N_S_R_V(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt(),
+			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
+
+		_persistence.countByC_N_S_R_V(
+			0L, "null", 0, 0L, RandomTestUtil.randomBoolean());
+
+		_persistence.countByC_N_S_R_V(
+			0L, (String)null, 0, 0L, RandomTestUtil.randomBoolean());
+	}
+
+	@Test
+	public void testCountByC_N_S_R_VArrayable() throws Exception {
+		_persistence.countByC_N_S_R_V(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+			RandomTestUtil.nextInt(),
+			new long[] {RandomTestUtil.nextLong(), 0L},
+			RandomTestUtil.randomBoolean());
 	}
 
 	@Test

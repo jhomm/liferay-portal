@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.multi.factor.authentication.timebased.otp.web.internal.configuration;
@@ -17,6 +8,7 @@ package com.liferay.multi.factor.authentication.timebased.otp.web.internal.confi
 import aQute.bnd.annotation.metatype.Meta;
 
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
+import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 
 /**
  * @author Tomas Polesovsky
@@ -24,7 +16,8 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
  */
 @ExtendedObjectClassDefinition(
 	category = "multi-factor-authentication",
-	scope = ExtendedObjectClassDefinition.Scope.COMPANY
+	scope = ExtendedObjectClassDefinition.Scope.COMPANY,
+	visibilityControllerKey = "multi-factor-authentication"
 )
 @Meta.OCD(
 	id = "com.liferay.multi.factor.authentication.timebased.otp.web.internal.configuration.MFATimeBasedOTPConfiguration",
@@ -56,5 +49,30 @@ public interface MFATimeBasedOTPConfiguration {
 		name = "algorithm-key-size", required = false
 	)
 	public int algorithmKeySize();
+
+	@Meta.AD(
+		deflt = "${server-property://com.liferay.portal/admin.email.from.address}",
+		description = "set-the-sender-address-on-the-totp-reuse-attempt-warning-email",
+		name = "email-totp-reuse-attempt-warning-from-address", required = false
+	)
+	public String emailTOTPReuseAttemptWarningFromAddress();
+
+	@Meta.AD(
+		deflt = "${server-property://com.liferay.portal/admin.email.from.name}",
+		name = "email-totp-reuse-attempt-warning-from-name", required = false
+	)
+	public String emailTOTPReuseAttemptWarningFromName();
+
+	@Meta.AD(
+		deflt = "${resource:com/liferay/multi/factor/authentication/timebased/otp/configuration/dependencies/email_totp_reuse_attempt_warning_body.tmpl}",
+		name = "email-totp-reuse-attempt-warning-body", required = false
+	)
+	public LocalizedValuesMap emailTOTPReuseAttemptWarningBody();
+
+	@Meta.AD(
+		deflt = "${resource:com/liferay/multi/factor/authentication/timebased/otp/configuration/dependencies/email_totp_reuse_attempt_warning_subject.tmpl}",
+		name = "email-totp-reuse-attempt-warning-subject", required = false
+	)
+	public LocalizedValuesMap emailTOTPReuseAttemptWarningSubject();
 
 }

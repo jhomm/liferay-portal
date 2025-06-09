@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.item.selector.web.internal;
@@ -19,20 +10,28 @@ import com.liferay.item.selector.ItemSelectorView;
 import com.liferay.item.selector.ItemSelectorViewDescriptor;
 import com.liferay.item.selector.ItemSelectorViewDescriptorRenderer;
 import com.liferay.item.selector.criteria.UUIDItemSelectorReturnType;
-import com.liferay.layout.page.template.item.selector.criterion.LayoutPageTemplateCollectionItemSelectorCriterion;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
+import com.liferay.layout.page.template.item.selector.LayoutPageTemplateCollectionItemSelectorCriterion;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionLocalService;
 import com.liferay.layout.page.template.util.comparator.LayoutPageTemplateCollectionNameComparator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -40,16 +39,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,7 +46,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = ItemSelectorView.class)
+@Component(service = ItemSelectorView.class)
 public class LayoutPageTemplateCollectionsItemSelectorView
 	implements ItemSelectorView
 		<LayoutPageTemplateCollectionItemSelectorCriterion> {
@@ -76,11 +65,7 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 
 	@Override
 	public String getTitle(Locale locale) {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			locale, LayoutPageTemplateCollectionsItemSelectorView.class);
-
-		return ResourceBundleUtil.getString(
-			resourceBundle, "page-template-collections");
+		return _language.get(locale, "page-template-collections");
 	}
 
 	@Override
@@ -109,29 +94,20 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 			_itemSelectorViewDescriptorRenderer;
 
 	@Reference
+	private Language _language;
+
+	@Reference
 	private LayoutPageTemplateCollectionLocalService
 		_layoutPageTemplateCollectionLocalService;
 
-	@Reference
-	private Portal _portal;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.layout.page.template.item.selector.web)"
-	)
-	private ServletContext _servletContext;
-
-	private class LayoutPageTemplateCollectionItemDescriptor
+	private static class LayoutPageTemplateCollectionItemDescriptor
 		implements ItemSelectorViewDescriptor.ItemDescriptor {
 
 		public LayoutPageTemplateCollectionItemDescriptor(
 			HttpServletRequest httpServletRequest,
 			LayoutPageTemplateCollection layoutPageTemplateCollection) {
 
-			_httpServletRequest = httpServletRequest;
 			_layoutPageTemplateCollection = layoutPageTemplateCollection;
-
-			_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
 		}
 
 		@Override
@@ -183,10 +159,8 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 			return true;
 		}
 
-		private HttpServletRequest _httpServletRequest;
 		private final LayoutPageTemplateCollection
 			_layoutPageTemplateCollection;
-		private final ThemeDisplay _themeDisplay;
 
 	}
 
@@ -199,10 +173,9 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 			_httpServletRequest = httpServletRequest;
 			_portletURL = portletURL;
 
-			_portletRequest = (PortletRequest)_httpServletRequest.getAttribute(
+			_portletRequest = (PortletRequest)httpServletRequest.getAttribute(
 				JavaConstants.JAVAX_PORTLET_REQUEST);
-
-			_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+			_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 		}
 
@@ -233,6 +206,9 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 					_portletRequest, _portletURL, null,
 					"no-entries-were-found");
 
+			searchContainer.setOrderByCol(
+				ParamUtil.getString(_httpServletRequest, "orderByCol", "name"));
+
 			boolean orderByAsc = true;
 
 			String orderByType = ParamUtil.getString(
@@ -243,43 +219,42 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 			}
 
 			searchContainer.setOrderByComparator(
-				new LayoutPageTemplateCollectionNameComparator(orderByAsc));
-
-			String orderByCol = ParamUtil.getString(
-				_httpServletRequest, "orderByCol", "name");
-
-			searchContainer.setOrderByCol(orderByCol);
-
+				LayoutPageTemplateCollectionNameComparator.getInstance(
+					orderByAsc));
 			searchContainer.setOrderByType(orderByType);
 
 			String keywords = ParamUtil.getString(
 				_httpServletRequest, "keywords");
 
 			if (Validator.isNull(keywords)) {
-				searchContainer.setResults(
-					_layoutPageTemplateCollectionLocalService.
-						getLayoutPageTemplateCollections(
-							_themeDisplay.getScopeGroupId(),
-							searchContainer.getStart(),
-							searchContainer.getEnd(),
-							searchContainer.getOrderByComparator()));
-				searchContainer.setTotal(
+				searchContainer.setResultsAndTotal(
+					() ->
+						_layoutPageTemplateCollectionLocalService.
+							getLayoutPageTemplateCollections(
+								_themeDisplay.getScopeGroupId(),
+								LayoutPageTemplateEntryTypeConstants.BASIC,
+								searchContainer.getStart(),
+								searchContainer.getEnd(),
+								searchContainer.getOrderByComparator()),
 					_layoutPageTemplateCollectionLocalService.
 						getLayoutPageTemplateCollectionsCount(
-							_themeDisplay.getScopeGroupId()));
+							_themeDisplay.getScopeGroupId(),
+							LayoutPageTemplateEntryTypeConstants.BASIC));
 			}
 			else {
-				searchContainer.setResults(
-					_layoutPageTemplateCollectionLocalService.
-						getLayoutPageTemplateCollections(
-							_themeDisplay.getScopeGroupId(), keywords,
-							searchContainer.getStart(),
-							searchContainer.getEnd(),
-							searchContainer.getOrderByComparator()));
-				searchContainer.setTotal(
+				searchContainer.setResultsAndTotal(
+					() ->
+						_layoutPageTemplateCollectionLocalService.
+							getLayoutPageTemplateCollections(
+								_themeDisplay.getScopeGroupId(), keywords,
+								LayoutPageTemplateEntryTypeConstants.BASIC,
+								searchContainer.getStart(),
+								searchContainer.getEnd(),
+								searchContainer.getOrderByComparator()),
 					_layoutPageTemplateCollectionLocalService.
 						getLayoutPageTemplateCollectionsCount(
-							_themeDisplay.getScopeGroupId(), keywords));
+							_themeDisplay.getScopeGroupId(), keywords,
+							LayoutPageTemplateEntryTypeConstants.BASIC));
 			}
 
 			return searchContainer;
@@ -300,7 +275,7 @@ public class LayoutPageTemplateCollectionsItemSelectorView
 			return true;
 		}
 
-		private HttpServletRequest _httpServletRequest;
+		private final HttpServletRequest _httpServletRequest;
 		private final PortletRequest _portletRequest;
 		private final PortletURL _portletURL;
 		private final ThemeDisplay _themeDisplay;

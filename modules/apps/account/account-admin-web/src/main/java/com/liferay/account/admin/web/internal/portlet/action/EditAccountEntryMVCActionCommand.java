@@ -1,50 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.portlet.action;
 
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.constants.AccountPortletKeys;
+import com.liferay.account.exception.AccountEntryDomainsException;
 import com.liferay.account.exception.DuplicateAccountEntryExternalReferenceCodeException;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.service.AccountEntryService;
 import com.liferay.account.service.AccountEntryUserRelService;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.portal.kernel.exception.ModelListenerException;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
+import com.liferay.portal.kernel.portlet.bridges.mvc.BaseTransactionalMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.transaction.Propagation;
-import com.liferay.portal.kernel.transaction.TransactionConfig;
-import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.File;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.Objects;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,85 +44,48 @@ import org.osgi.service.component.annotations.Reference;
  * @author Albert Lee
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
 		"mvc.command.name=/account_admin/edit_account_entry"
 	},
 	service = MVCActionCommand.class
 )
-public class EditAccountEntryMVCActionCommand extends BaseMVCActionCommand {
-
-	protected AccountEntry addAccountEntry(ActionRequest actionRequest)
-		throws Exception {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		String name = ParamUtil.getString(actionRequest, "name");
-		String description = ParamUtil.getString(actionRequest, "description");
-		String[] domains = new String[0];
-		String emailAddress = ParamUtil.getString(
-			actionRequest, "emailAddress");
-		String taxIdNumber = ParamUtil.getString(actionRequest, "taxIdNumber");
-
-		String type = ParamUtil.getString(
-			actionRequest, "type",
-			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
-
-		if (Objects.equals(
-				AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, type)) {
-
-			domains = ParamUtil.getStringValues(actionRequest, "domains");
-		}
-
-		AccountEntry accountEntry = _accountEntryService.addAccountEntry(
-			themeDisplay.getUserId(), AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
-			name, description, domains, emailAddress,
-			_getLogoBytes(actionRequest), taxIdNumber, type,
-			_getStatus(actionRequest),
-			ServiceContextFactory.getInstance(
-				AccountEntry.class.getName(), actionRequest));
-
-		return _accountEntryService.updateExternalReferenceCode(
-			accountEntry.getAccountEntryId(),
-			ParamUtil.getString(actionRequest, "externalReferenceCode"));
-	}
+public class EditAccountEntryMVCActionCommand
+	extends BaseTransactionalMVCActionCommand {
 
 	@Override
-	protected void doProcessAction(
+	protected void doTransactionalCommand(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
 		try {
-			TransactionInvokerUtil.invoke(
-				_transactionConfig,
-				() -> {
-					String redirect = ParamUtil.getString(
-						actionRequest, "redirect");
+			AccountEntry accountEntry = null;
 
-					if (cmd.equals(Constants.ADD)) {
-						AccountEntry accountEntry = addAccountEntry(
-							actionRequest);
+			if (cmd.equals(Constants.ADD)) {
+				accountEntry = _addAccountEntry(actionRequest);
 
-						redirect = _http.setParameter(
-							redirect,
-							actionResponse.getNamespace() + "accountEntryId",
-							accountEntry.getAccountEntryId());
-					}
-					else if (cmd.equals(Constants.UPDATE)) {
-						updateAccountEntry(actionRequest);
-					}
+				actionRequest.setAttribute(
+					WebKeys.REDIRECT,
+					HttpComponentsUtil.setParameter(
+						ParamUtil.getString(actionRequest, "redirect"),
+						actionResponse.getNamespace() + "accountEntryId",
+						accountEntry.getAccountEntryId()));
+			}
+			else if (cmd.equals(Constants.UPDATE)) {
+				accountEntry = updateAccountEntry(actionRequest);
+			}
 
-					if (Validator.isNotNull(redirect)) {
-						sendRedirect(actionRequest, actionResponse, redirect);
-					}
+			if (accountEntry != null) {
+				accountEntry.setRestrictMembership(
+					ParamUtil.getBoolean(
+						actionRequest, "restrictMembership",
+						accountEntry.isRestrictMembership()));
 
-					return null;
-				});
+				_accountEntryService.updateAccountEntry(accountEntry);
+			}
 		}
 		catch (Exception exception) {
 			if (exception instanceof PrincipalException) {
@@ -140,27 +94,26 @@ public class EditAccountEntryMVCActionCommand extends BaseMVCActionCommand {
 				actionResponse.setRenderParameter(
 					"mvcPath", "/account_entries_admin/error.jsp");
 			}
-			else if (exception instanceof
-						DuplicateAccountEntryExternalReferenceCodeException) {
-
-				SessionErrors.add(actionRequest, exception.getClass());
+			else if (exception instanceof AccountEntryDomainsException ||
+					 exception instanceof
+						 DuplicateAccountEntryExternalReferenceCodeException) {
 
 				hideDefaultErrorMessage(actionRequest);
+				hideDefaultSuccessMessage(actionRequest);
 
-				actionResponse.setRenderParameter(
-					"mvcRenderCommandName",
-					"/account_admin/edit_account_entry");
+				sendRedirect(actionRequest, actionResponse);
 			}
-			else {
-				throw exception;
+			else if ((exception instanceof ModelListenerException) &&
+					 (exception.getCause() instanceof PortalException)) {
+
+				throw (PortalException)exception.getCause();
 			}
-		}
-		catch (Throwable throwable) {
-			throw new Exception(throwable);
+
+			throw new PortletException(exception);
 		}
 	}
 
-	protected void updateAccountEntry(ActionRequest actionRequest)
+	protected AccountEntry updateAccountEntry(ActionRequest actionRequest)
 		throws Exception {
 
 		long accountEntryId = ParamUtil.getLong(
@@ -169,25 +122,24 @@ public class EditAccountEntryMVCActionCommand extends BaseMVCActionCommand {
 		AccountEntry accountEntry = _accountEntryService.getAccountEntry(
 			accountEntryId);
 
-		String name = ParamUtil.getString(actionRequest, "name");
-		String description = ParamUtil.getString(actionRequest, "description");
-		boolean deleteLogo = ParamUtil.getBoolean(actionRequest, "deleteLogo");
-		String[] domains = ParamUtil.getStringValues(actionRequest, "domains");
-		String emailAddress = ParamUtil.getString(
-			actionRequest, "emailAddress");
-		String taxIdNumber = ParamUtil.getString(actionRequest, "taxIdNumber");
+		String[] domains = accountEntry.getDomainsArray();
+
+		if (_isAllowUpdateDomains(accountEntry.getType())) {
+			domains = ParamUtil.getStringValues(actionRequest, "domains");
+		}
 
 		accountEntry = _accountEntryService.updateAccountEntry(
-			accountEntryId, accountEntry.getParentAccountEntryId(), name,
-			description, deleteLogo, domains, emailAddress,
-			_getLogoBytes(actionRequest), taxIdNumber,
-			_getStatus(actionRequest),
+			ParamUtil.getString(actionRequest, "externalReferenceCode"),
+			accountEntryId, accountEntry.getParentAccountEntryId(),
+			ParamUtil.getString(actionRequest, "name"),
+			ParamUtil.getString(actionRequest, "description"),
+			ParamUtil.getBoolean(actionRequest, "deleteLogo"), domains,
+			ParamUtil.getString(actionRequest, "emailAddress"),
+			_getLogoBytes(actionRequest),
+			ParamUtil.getString(actionRequest, "taxIdNumber"),
+			accountEntry.getStatus(),
 			ServiceContextFactory.getInstance(
 				AccountEntry.class.getName(), actionRequest));
-
-		accountEntry = _accountEntryService.updateExternalReferenceCode(
-			accountEntry.getAccountEntryId(),
-			ParamUtil.getString(actionRequest, "externalReferenceCode"));
 
 		if (Objects.equals(
 				AccountConstants.ACCOUNT_ENTRY_TYPE_PERSON,
@@ -206,6 +158,37 @@ public class EditAccountEntryMVCActionCommand extends BaseMVCActionCommand {
 						accountEntryId);
 			}
 		}
+
+		return accountEntry;
+	}
+
+	private AccountEntry _addAccountEntry(ActionRequest actionRequest)
+		throws Exception {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		String[] domains = new String[0];
+
+		String type = ParamUtil.getString(
+			actionRequest, "type",
+			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS);
+
+		if (_isAllowUpdateDomains(type)) {
+			domains = ParamUtil.getStringValues(actionRequest, "domains");
+		}
+
+		return _accountEntryService.addAccountEntry(
+			ParamUtil.getString(actionRequest, "externalReferenceCode"),
+			themeDisplay.getUserId(), AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT,
+			ParamUtil.getString(actionRequest, "name"),
+			ParamUtil.getString(actionRequest, "description"), domains,
+			ParamUtil.getString(actionRequest, "emailAddress"),
+			_getLogoBytes(actionRequest),
+			ParamUtil.getString(actionRequest, "taxIdNumber"), type,
+			WorkflowConstants.STATUS_APPROVED,
+			ServiceContextFactory.getInstance(
+				AccountEntry.class.getName(), actionRequest));
 	}
 
 	private byte[] _getLogoBytes(ActionRequest actionRequest) throws Exception {
@@ -217,25 +200,16 @@ public class EditAccountEntryMVCActionCommand extends BaseMVCActionCommand {
 
 		FileEntry fileEntry = _dlAppLocalService.getFileEntry(fileEntryId);
 
-		return FileUtil.getBytes(fileEntry.getContentStream());
+		return _file.getBytes(fileEntry.getContentStream());
 	}
 
-	private int _getStatus(ActionRequest actionRequest) {
-		boolean active = ParamUtil.getBoolean(actionRequest, "active");
-
-		if (active) {
-			return WorkflowConstants.STATUS_APPROVED;
-		}
-
-		return WorkflowConstants.STATUS_INACTIVE;
+	private boolean _isAllowUpdateDomains(String type) {
+		return Objects.equals(
+			AccountConstants.ACCOUNT_ENTRY_TYPE_BUSINESS, type);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditAccountEntryMVCActionCommand.class);
-
-	private static final TransactionConfig _transactionConfig =
-		TransactionConfig.Factory.create(
-			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
 	private AccountEntryService _accountEntryService;
@@ -247,6 +221,6 @@ public class EditAccountEntryMVCActionCommand extends BaseMVCActionCommand {
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
-	private Http _http;
+	private File _file;
 
 }

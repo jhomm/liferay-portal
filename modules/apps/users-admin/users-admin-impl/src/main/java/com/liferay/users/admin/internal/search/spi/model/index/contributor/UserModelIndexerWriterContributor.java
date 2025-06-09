@@ -1,40 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.internal.search.spi.model.index.contributor;
 
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.search.batch.BatchIndexingActionable;
 import com.liferay.portal.search.batch.DynamicQueryBatchIndexingActionableFactory;
+import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
 import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterContributor;
 import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
-import com.liferay.users.admin.internal.search.ContactBatchReindexer;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Luan Maoski
  */
-@Component(
-	immediate = true,
-	property = "indexer.class.name=com.liferay.portal.kernel.model.User",
-	service = ModelIndexerWriterContributor.class
-)
 public class UserModelIndexerWriterContributor
 	implements ModelIndexerWriterContributor<User> {
+
+	public UserModelIndexerWriterContributor(
+		IndexerDocumentBuilder indexerDocumentBuilder,
+		IndexWriterHelper indexWriterHelper,
+		DynamicQueryBatchIndexingActionableFactory
+			dynamicQueryBatchIndexingActionableFactory,
+		UserLocalService userLocalService) {
+
+		_indexerDocumentBuilder = indexerDocumentBuilder;
+		_indexWriterHelper = indexWriterHelper;
+		_dynamicQueryBatchIndexingActionableFactory =
+			dynamicQueryBatchIndexingActionableFactory;
+		_userLocalService = userLocalService;
+	}
 
 	@Override
 	public void customize(
@@ -43,7 +43,7 @@ public class UserModelIndexerWriterContributor
 
 		batchIndexingActionable.setPerformActionMethod(
 			(User user) -> {
-				if (!user.isDefaultUser()) {
+				if (!user.isGuestUser()) {
 					batchIndexingActionable.addDocuments(
 						modelIndexerWriterDocumentHelper.getDocument(user));
 				}
@@ -52,9 +52,9 @@ public class UserModelIndexerWriterContributor
 
 	@Override
 	public BatchIndexingActionable getBatchIndexingActionable() {
-		return dynamicQueryBatchIndexingActionableFactory.
+		return _dynamicQueryBatchIndexingActionableFactory.
 			getBatchIndexingActionable(
-				userLocalService.getIndexableActionableDynamicQuery());
+				_userLocalService.getIndexableActionableDynamicQuery());
 	}
 
 	@Override
@@ -64,17 +64,26 @@ public class UserModelIndexerWriterContributor
 
 	@Override
 	public void modelIndexed(User user) {
-		contactBatchReindexer.reindex(user.getUserId(), user.getCompanyId());
+		Contact contact = user.fetchContact();
+
+		if (contact == null) {
+			return;
+		}
+
+		try {
+			_indexWriterHelper.updateDocument(
+				user.getCompanyId(),
+				_indexerDocumentBuilder.getDocument(contact));
+		}
+		catch (PortalException portalException) {
+			throw new RuntimeException(portalException);
+		}
 	}
 
-	@Reference
-	protected ContactBatchReindexer contactBatchReindexer;
-
-	@Reference
-	protected DynamicQueryBatchIndexingActionableFactory
-		dynamicQueryBatchIndexingActionableFactory;
-
-	@Reference
-	protected UserLocalService userLocalService;
+	private final DynamicQueryBatchIndexingActionableFactory
+		_dynamicQueryBatchIndexingActionableFactory;
+	private final IndexerDocumentBuilder _indexerDocumentBuilder;
+	private final IndexWriterHelper _indexWriterHelper;
+	private final UserLocalService _userLocalService;
 
 }

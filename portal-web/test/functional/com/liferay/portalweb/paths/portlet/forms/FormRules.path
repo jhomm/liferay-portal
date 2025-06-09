@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!--RULE_BUILDER-->
+
 <tr>
 	<td>RULE_BUILDER_ADD_RULE_BUTTON</td>
 	<td>//button[contains(@class,'ddm-add-rule')] | //button[contains(@id,'addFieldButton')]</td>
@@ -18,7 +20,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_ROW_VERTICAL_ELLIPSIS</td>
-	<td>//div[contains(@class,'form-rule-list')]//li[contains(@class,'list-group-item')][${key_ruleNumber}]//button[contains(@class,'dropdown-toggle')]</td>
+	<td>//div[contains(@class,'form-rule-list')]//*[contains(@class,'list-group-item')][${key_ruleNumber}]//button[contains(@class,'dropdown-toggle')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -33,7 +35,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_BROKEN</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'form-rule-list-invalid-rule')]//div[contains(text(), 'Broken Rule')]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'form-rule-list-invalid-rule')]//div[contains(text(), 'Broken Rule')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -43,7 +45,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_CONDITION_FIELD_PARAMETERS_EXTENDED</td>
-	<td>//ul[contains(@class, 'timeline')][1]//li[@class='timeline-item'][1+${key_conditionRowNumber}]//div[@class='panel-body']/div[@class='form-group-autofit' and //div[@class='option-selected' and text()='${key_conditionField}'] and //div[@class='option-selected' and text()='${key_conditionOperator}'] and //div[@class='option-selected' and text()='${key_conditionValueType}'] and //input[@type='text' and @value='${key_conditionFieldValue}']]</td>
+	<td>//ul[contains(@class, 'timeline')][1]//li[@class='timeline-item'][1+${key_conditionRowNumber}]//div[@class='panel-body']//div//descendant::div//button[text()='${key_conditionField}']/../../../../following-sibling::div//descendant::div//button[text()='${key_conditionOperator}']/../../../../following-sibling::div//descendant::div//button[text()='${key_conditionValueType}']/../../../../following-sibling::div//descendant::div//input[@value='${key_conditionFieldValue}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -63,7 +65,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_CONDITION_FIELD</td>
-	<td>//ul[contains(@class, 'timeline')][1]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_conditionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_fieldColumnNumber}]//div[contains(@class,'select-field-trigger')]</td>
+	<td>//ul[contains(@class, 'timeline')][1]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_conditionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_fieldColumnNumber}]//div[contains(@class,'ddm-field')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -73,7 +75,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_ACTION_FIELD</td>
-	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_fieldColumnNumber}]//div[contains(@class,'select-field-trigger')]</td>
+	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_fieldColumnNumber}]//div[contains(@class,'ddm-field')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -83,7 +85,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_CONDITION_VALUE_FIELD</td>
-	<td>//ul[contains(@class, 'timeline')][1]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_conditionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_fieldColumnNumber}]//div[contains(@class,'option-selected')]</td>
+	<td>//ul[contains(@class, 'timeline')][1]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_conditionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_fieldColumnNumber}]//button[contains(@class, 'select')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -111,15 +113,17 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--RULE_BUILDER_AUTOFILL-->
+
 <tr>
-	<td>RULE_BUILDER_AUTOFILL_OUTPUT_FIELD</td>
-	<td>//div[contains(@class,'action-rule-data-provider')]//div[contains(@class,'data-provider-parameter-container')]//div[contains(@class,'field-trigger')]</td>
+	<td>RULE_BUILDER_AUTOFILL_FROM_DATA_PROVIDER</td>
+	<td>//span[contains(., '${key_dataProviderParameterName}')]/../following-sibling::div//descendant::button[contains(@class, 'select')]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>RULE_BUILDER_AUTOFILL_SELECT_OUTPUT_FIELD</td>
-	<td>//div[contains(@class, 'dropdown-menu') and contains(@class, 'show')]//button[contains(text(),'${key_dataProviderOutput}')]</td>
+	<td>RULE_BUILDER_AUTOFILL_SELECT_OPTION_FIELD</td>
+	<td>//div[contains(@class, 'dropdown-menu') and contains(@class, 'show')]//button[contains(text(),'${key_dataProviderOption}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -127,7 +131,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--RULE_BUILDER_CALCULATE-->
+
 <tr>
 	<td>RULE_BUILDER_CALCULATE_OPERATOR</td>
 	<td>//div[contains(@class,'calculator-buttons-operators')]//button[contains(., '${key_calculateOperator}') and contains(@class, 'calculator-button')]</td>
@@ -140,7 +146,7 @@
 </tr>
 <tr>
 	<td>RULE_BUILDER_CALCULATE_ADD_FIELD_LIST</td>
-	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//li[contains(.,'${key_calculateFieldOption}')]</td>
+	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//*//li[contains(.,'${key_calculateFieldOption}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -168,40 +174,42 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--RULE_BUILDER_SUMMARY-->
+
 <tr>
 	<td>RULE_BUILDER_SUMMARY_CONDITION</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand') and //div[text()='${key_conditionField}'] and //em[text()='${key_conditionOperator}']]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand') and //div[text()='${key_conditionField}'] and //em[text()='${key_conditionOperator}']]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_BUILDER_SUMMARY_CONDITION_FIELD</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//span[contains(@class,'inline-item')]//div[contains(text(),'${key_conditionField}')]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//span[contains(@class,'inline-item')]//div[contains(text(),'${key_conditionField}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_BUILDER_SUMMARY_CONDITION_FIELD_CONSTANT</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class, 'text-lowercase')]/following-sibling::span//div[contains(text(),'${key_conditionFieldConstant}')]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class, 'text-lowercase')]/following-sibling::span//div[contains(text(),'${key_conditionFieldConstant}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_BUILDER_SUMMARY_CONDITION_OPERATOR</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class,'inline-item')]//em[contains(text(),'${key_conditionOperator}')]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class,'inline-item')]//em[contains(text(),'${key_conditionOperator}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_BUILDER_SUMMARY_ACTION</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class, 'text-lowercase')]/following-sibling::span[contains(.,'${key_action}')]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class, 'text-lowercase')]/following-sibling::span[contains(.,'${key_action}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_BUILDER_SUMMARY_ACTION_TARGET</td>
-	<td>//li[contains(@class, 'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class, 'text-lowercase')]/following-sibling::span[contains(.,'${key_action}')]//div[contains(text(), '${key_actionTarget}')]</td>
+	<td>//*[contains(@class,'list-group-item')][${key_ruleNumber}]//div[contains(@class,'autofit-col-expand')]//b[contains(@class, 'text-lowercase')]/following-sibling::span[contains(.,'${key_action}')]//div[contains(text(), '${key_actionTarget}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_DELETE_ACTION_FIELD</td>
-	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][${key_actionRowNumber}]//div[contains(@class,'select-field-trigger')]//..//..//..//..//..//..//..//..//button[@type="button"]//*[name()='svg'][contains(@class,'lexicon-icon-trash')]</td>
+	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]/div[@class='container-trash']/button</td>
 	<td></td>
 </tr>
 <tr>
@@ -211,17 +219,17 @@
 </tr>
 <tr>
 	<td>RULE_ACTION_FIELD_VALUE</td>
-	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][1]//div[contains(@class,'select-field-trigger')]//div[contains(text(),"${key_selectActionValue}")]</td>
+	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][1]//div//descendant::button[text()='${key_selectActionValue}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RULE_ACTION_TARGET_FIELD_VALUE</td>
-	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][2]//div[contains(@class,'select-field-trigger')]//div[contains(text(),"${key_selectActionTargetValue}")]</td>
+	<td>//ul[contains(@class, 'timeline')][2]//li[contains(@class,'timeline-item')]/following-sibling::li[contains(@class, 'timeline-item')][${key_actionRowNumber}]//div[contains(@class,'form-group-item') and not(contains(@class, 'form-group-item-label'))][2]//div//descendant::button[text()='${key_selectActionTargetValue}']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>VIEW_RULE_BUILDER_ACTION_CONDITION</td>
-	<td>//div[@class='form-group-item'][${key_positionNumber}]//div[contains(@class,'form-control results-chosen select-field-trigger')]//div[text()='${key_value}']</td>
+	<td>xpath=(//*[@class='form-group-autofit'])[${key_positionNumber}]//descendant::button[text()='${key_value}']</td>
 	<td></td>
 </tr>
 </tbody>

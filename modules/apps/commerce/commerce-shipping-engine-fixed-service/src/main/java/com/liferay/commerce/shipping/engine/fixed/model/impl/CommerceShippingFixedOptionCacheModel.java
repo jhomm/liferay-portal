@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOpt
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -35,7 +27,8 @@ import java.util.Date;
  * @generated
  */
 public class CommerceShippingFixedOptionCacheModel
-	implements CacheModel<CommerceShippingFixedOption>, Externalizable {
+	implements CacheModel<CommerceShippingFixedOption>, Externalizable,
+			   MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -51,9 +44,11 @@ public class CommerceShippingFixedOptionCacheModel
 			commerceShippingFixedOptionCacheModel =
 				(CommerceShippingFixedOptionCacheModel)object;
 
-		if (commerceShippingFixedOptionId ==
+		if ((commerceShippingFixedOptionId ==
 				commerceShippingFixedOptionCacheModel.
-					commerceShippingFixedOptionId) {
+					commerceShippingFixedOptionId) &&
+			(mvccVersion ==
+				commerceShippingFixedOptionCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -63,14 +58,28 @@ public class CommerceShippingFixedOptionCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceShippingFixedOptionId);
+		int hashCode = HashUtil.hash(0, commerceShippingFixedOptionId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(29);
 
-		sb.append("{commerceShippingFixedOptionId=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", commerceShippingFixedOptionId=");
 		sb.append(commerceShippingFixedOptionId);
 		sb.append(", groupId=");
 		sb.append(groupId);
@@ -86,12 +95,14 @@ public class CommerceShippingFixedOptionCacheModel
 		sb.append(modifiedDate);
 		sb.append(", commerceShippingMethodId=");
 		sb.append(commerceShippingMethodId);
-		sb.append(", name=");
-		sb.append(name);
-		sb.append(", description=");
-		sb.append(description);
 		sb.append(", amount=");
 		sb.append(amount);
+		sb.append(", description=");
+		sb.append(description);
+		sb.append(", key=");
+		sb.append(key);
+		sb.append(", name=");
+		sb.append(name);
 		sb.append(", priority=");
 		sb.append(priority);
 		sb.append("}");
@@ -104,6 +115,7 @@ public class CommerceShippingFixedOptionCacheModel
 		CommerceShippingFixedOptionImpl commerceShippingFixedOptionImpl =
 			new CommerceShippingFixedOptionImpl();
 
+		commerceShippingFixedOptionImpl.setMvccVersion(mvccVersion);
 		commerceShippingFixedOptionImpl.setCommerceShippingFixedOptionId(
 			commerceShippingFixedOptionId);
 		commerceShippingFixedOptionImpl.setGroupId(groupId);
@@ -134,13 +146,7 @@ public class CommerceShippingFixedOptionCacheModel
 
 		commerceShippingFixedOptionImpl.setCommerceShippingMethodId(
 			commerceShippingMethodId);
-
-		if (name == null) {
-			commerceShippingFixedOptionImpl.setName("");
-		}
-		else {
-			commerceShippingFixedOptionImpl.setName(name);
-		}
+		commerceShippingFixedOptionImpl.setAmount(amount);
 
 		if (description == null) {
 			commerceShippingFixedOptionImpl.setDescription("");
@@ -149,7 +155,20 @@ public class CommerceShippingFixedOptionCacheModel
 			commerceShippingFixedOptionImpl.setDescription(description);
 		}
 
-		commerceShippingFixedOptionImpl.setAmount(amount);
+		if (key == null) {
+			commerceShippingFixedOptionImpl.setKey("");
+		}
+		else {
+			commerceShippingFixedOptionImpl.setKey(key);
+		}
+
+		if (name == null) {
+			commerceShippingFixedOptionImpl.setName("");
+		}
+		else {
+			commerceShippingFixedOptionImpl.setName(name);
+		}
+
 		commerceShippingFixedOptionImpl.setPriority(priority);
 
 		commerceShippingFixedOptionImpl.resetOriginalValues();
@@ -160,6 +179,8 @@ public class CommerceShippingFixedOptionCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput)
 		throws ClassNotFoundException, IOException {
+
+		mvccVersion = objectInput.readLong();
 
 		commerceShippingFixedOptionId = objectInput.readLong();
 
@@ -173,15 +194,18 @@ public class CommerceShippingFixedOptionCacheModel
 		modifiedDate = objectInput.readLong();
 
 		commerceShippingMethodId = objectInput.readLong();
-		name = objectInput.readUTF();
-		description = objectInput.readUTF();
 		amount = (BigDecimal)objectInput.readObject();
+		description = objectInput.readUTF();
+		key = objectInput.readUTF();
+		name = objectInput.readUTF();
 
 		priority = objectInput.readDouble();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		objectOutput.writeLong(commerceShippingFixedOptionId);
 
 		objectOutput.writeLong(groupId);
@@ -201,13 +225,7 @@ public class CommerceShippingFixedOptionCacheModel
 		objectOutput.writeLong(modifiedDate);
 
 		objectOutput.writeLong(commerceShippingMethodId);
-
-		if (name == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(name);
-		}
+		objectOutput.writeObject(amount);
 
 		if (description == null) {
 			objectOutput.writeUTF("");
@@ -216,11 +234,24 @@ public class CommerceShippingFixedOptionCacheModel
 			objectOutput.writeUTF(description);
 		}
 
-		objectOutput.writeObject(amount);
+		if (key == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(key);
+		}
+
+		if (name == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(name);
+		}
 
 		objectOutput.writeDouble(priority);
 	}
 
+	public long mvccVersion;
 	public long commerceShippingFixedOptionId;
 	public long groupId;
 	public long companyId;
@@ -229,9 +260,10 @@ public class CommerceShippingFixedOptionCacheModel
 	public long createDate;
 	public long modifiedDate;
 	public long commerceShippingMethodId;
-	public String name;
-	public String description;
 	public BigDecimal amount;
+	public String description;
+	public String key;
+	public String name;
 	public double priority;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.portlet.action;
@@ -40,11 +31,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Locale;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,8 +46,8 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"auth.token.ignore.mvc.action=true",
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 		"mvc.command.name=/document_library/edit_in_one_drive"
 	},
 	service = MVCActionCommand.class
@@ -185,7 +176,6 @@ public class EditInOneDriveMVCActionCommand extends BaseMVCActionCommand {
 			PortletRequest.ACTION_PHASE);
 
 		liferayPortletURL.setParameters(portletRequest.getParameterMap());
-
 		liferayPortletURL.setParameter(
 			ActionRequest.ACTION_NAME,
 			"/document_library/edit_in_one_drive_and_redirect");

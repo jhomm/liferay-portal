@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {Disposable, buildFragment} from 'frontend-js-web';
@@ -128,7 +119,7 @@ class Surface extends Disposable {
 	 * @return {Element}
 	 */
 	createChild(screenId) {
-		var child = document.createElement('div');
+		const child = document.createElement('div');
 		child.setAttribute('id', this.makeId_(screenId));
 
 		return child;
@@ -192,12 +183,43 @@ class Surface extends Disposable {
 	 * inside the default child will be replaced by navigation.
 	 */
 	maybeWrapContentAsDefault_() {
-		var element = this.getElement();
+		const element = this.getElement();
 		if (element && !this.defaultChild) {
-			var fragment = document.createDocumentFragment();
-			while (element.firstChild) {
-				fragment.appendChild(element.firstChild);
-			}
+			const childNodesToWrap = [];
+
+			element.childNodes.forEach((childNode) => {
+
+				/*
+				 * Some child nodes must be kept out of the Senna surface.
+				 *
+				 * We don't have any good mechanism to do it and we don't want
+				 * to put anything in place given all this is more or less
+				 * legacy.
+				 *
+				 * Thus, we simply skip some nodes that are known to us and
+				 * leave them as direct children of <body>, outside the default
+				 * Senna surface.
+				 *
+				 * See LPS-151462 for more information.
+				 */
+				if (childNode.classList) {
+					if (
+						childNode.classList.contains('yui3-dd-proxy') ||
+						childNode.classList.contains('yui3-dd-shim')
+					) {
+						return;
+					}
+				}
+
+				childNodesToWrap.push(childNode);
+			});
+
+			const fragment = document.createDocumentFragment();
+
+			childNodesToWrap.forEach((childNode) => {
+				fragment.appendChild(childNode);
+			});
+
 			this.defaultChild = this.addContent(Surface.DEFAULT, fragment);
 			this.transition(null, this.defaultChild);
 		}
@@ -226,8 +248,8 @@ class Surface extends Disposable {
 	 * @return {Promise} Pauses the navigation until it is resolved.
 	 */
 	show(screenId) {
-		var from = this.activeChild;
-		var to = this.getChild(screenId);
+		const from = this.activeChild;
+		let to = this.getChild(screenId);
 		if (!to) {
 			to = this.defaultChild;
 		}
@@ -245,7 +267,7 @@ class Surface extends Disposable {
 	 * @param {!string} screenId The screen id to remove.
 	 */
 	remove(screenId) {
-		var child = this.getChild(screenId);
+		const child = this.getChild(screenId);
 		if (child) {
 			child.remove();
 		}
@@ -266,7 +288,7 @@ class Surface extends Disposable {
 	 *     navigation until it is resolved.
 	 */
 	transition(from, to) {
-		var transitionFn = this.transitionFn || Surface.defaultTransition;
+		const transitionFn = this.transitionFn || Surface.defaultTransition;
 
 		return Promise.resolve(transitionFn.call(this, from, to));
 	}

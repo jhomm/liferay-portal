@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
@@ -27,12 +20,18 @@ import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.SQLQuery;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateRoleExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchRoleException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.RoleTable;
+import com.liferay.portal.kernel.sanitizer.Sanitizer;
+import com.liferay.portal.kernel.sanitizer.SanitizerException;
+import com.liferay.portal.kernel.sanitizer.SanitizerUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
@@ -45,6 +44,7 @@ import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.service.persistence.impl.TableMapper;
 import com.liferay.portal.kernel.service.persistence.impl.TableMapperFactory;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -60,7 +60,6 @@ import com.liferay.portal.model.impl.RoleModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -177,109 +176,111 @@ public class RolePersistenceImpl
 		String uuid, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid;
+					finderArgs = new Object[] {uuid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid;
+				finderArgs = new Object[] {uuid, start, end, orderByComparator};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if (!uuid.equals(role.getUuid())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if (!uuid.equals(role.getUuid())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_ROLE__WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-				cacheResult(list);
+				boolean bindUuid = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
+
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -649,7 +650,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -851,7 +852,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -920,70 +921,64 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -1138,117 +1133,119 @@ public class RolePersistenceImpl
 		String uuid, long companyId, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_C;
+					finderArgs = new Object[] {uuid, companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C;
+				finderArgs = new Object[] {
+					uuid, companyId, start, end, orderByComparator
+				};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if (!uuid.equals(role.getUuid()) ||
-						(companyId != role.getCompanyId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if (!uuid.equals(role.getUuid()) ||
+							(companyId != role.getCompanyId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_ROLE__WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1647,7 +1644,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -1856,7 +1853,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -1931,74 +1928,68 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -2155,98 +2146,100 @@ public class RolePersistenceImpl
 		long companyId, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByCompanyId;
-				finderArgs = new Object[] {companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByCompanyId;
+					finderArgs = new Object[] {companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByCompanyId;
-			finderArgs = new Object[] {
-				companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByCompanyId;
+				finderArgs = new Object[] {
+					companyId, start, end, orderByComparator
+				};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if (companyId != role.getCompanyId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if (companyId != role.getCompanyId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2596,7 +2589,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -2787,7 +2780,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -2855,57 +2848,51 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByCompanyId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByCompanyId;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -3031,109 +3018,111 @@ public class RolePersistenceImpl
 		String name, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByName;
-				finderArgs = new Object[] {name};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByName;
+					finderArgs = new Object[] {name};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByName;
-			finderArgs = new Object[] {name, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByName;
+				finderArgs = new Object[] {name, start, end, orderByComparator};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if (!name.equals(role.getName())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if (!name.equals(role.getName())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_ROLE__WHERE);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_NAME_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_NAME_NAME_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindName) {
-					queryPos.add(name);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-				cacheResult(list);
+				boolean bindName = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_NAME_NAME_3);
+				}
+				else {
+					bindName = true;
+
+					sb.append(_FINDER_COLUMN_NAME_NAME_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -3503,7 +3492,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -3705,7 +3694,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -3774,70 +3763,64 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByName(String name) {
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			name = Objects.toString(name, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByName;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {name};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByName;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {name};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindName = false;
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_NAME_NAME_3);
+				}
+				else {
+					bindName = true;
 
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_NAME_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_NAME_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindName) {
-					queryPos.add(name);
+					sb.append(_FINDER_COLUMN_NAME_NAME_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindName) {
+						queryPos.add(name);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -3978,96 +3961,98 @@ public class RolePersistenceImpl
 		int type, int start, int end, OrderByComparator<Role> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByType;
-				finderArgs = new Object[] {type};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByType;
+					finderArgs = new Object[] {type};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByType;
-			finderArgs = new Object[] {type, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByType;
+				finderArgs = new Object[] {type, start, end, orderByComparator};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if (type != role.getType()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if (type != role.getType()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
+				sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -4413,7 +4398,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -4602,7 +4587,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -4669,57 +4654,51 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByType(int type) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByType;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {type};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByType;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {type};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_TYPE_TYPE_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(type);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(type);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -4848,109 +4827,113 @@ public class RolePersistenceImpl
 		String subtype, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		subtype = Objects.toString(subtype, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			subtype = Objects.toString(subtype, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindBySubtype;
-				finderArgs = new Object[] {subtype};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindBySubtype;
+					finderArgs = new Object[] {subtype};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindBySubtype;
-			finderArgs = new Object[] {subtype, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindBySubtype;
+				finderArgs = new Object[] {
+					subtype, start, end, orderByComparator
+				};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if (!subtype.equals(role.getSubtype())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if (!subtype.equals(role.getSubtype())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_ROLE__WHERE);
-
-			boolean bindSubtype = false;
-
-			if (subtype.isEmpty()) {
-				sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_3);
-			}
-			else {
-				bindSubtype = true;
-
-				sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindSubtype) {
-					queryPos.add(subtype);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-				cacheResult(list);
+				boolean bindSubtype = false;
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (subtype.isEmpty()) {
+					sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_3);
+				}
+				else {
+					bindSubtype = true;
+
+					sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindSubtype) {
+						queryPos.add(subtype);
+					}
+
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -5322,7 +5305,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -5526,7 +5509,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -5596,70 +5579,64 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countBySubtype(String subtype) {
-		subtype = Objects.toString(subtype, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			subtype = Objects.toString(subtype, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountBySubtype;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {subtype};
 
-		if (productionMode) {
-			finderPath = _finderPathCountBySubtype;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {subtype};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindSubtype = false;
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				if (subtype.isEmpty()) {
+					sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_3);
+				}
+				else {
+					bindSubtype = true;
 
-			boolean bindSubtype = false;
-
-			if (subtype.isEmpty()) {
-				sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_3);
-			}
-			else {
-				bindSubtype = true;
-
-				sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindSubtype) {
-					queryPos.add(subtype);
+					sb.append(_FINDER_COLUMN_SUBTYPE_SUBTYPE_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindSubtype) {
+						queryPos.add(subtype);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -5730,7 +5707,6 @@ public class RolePersistenceImpl
 		"(role_.subtype IS NULL OR role_.subtype = '')";
 
 	private FinderPath _finderPathFetchByC_N;
-	private FinderPath _finderPathCountByC_N;
 
 	/**
 	 * Returns the role where companyId = &#63; and name = &#63; or throws a <code>NoSuchRoleException</code> if it could not be found.
@@ -5793,98 +5769,100 @@ public class RolePersistenceImpl
 	public Role fetchByC_N(
 		long companyId, String name, boolean useFinderCache) {
 
-		name = Objects.toString(name, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			name = Objects.toString(name, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {companyId, name};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_N, finderArgs);
-		}
-
-		if (result instanceof Role) {
-			Role role = (Role)result;
-
-			if ((companyId != role.getCompanyId()) ||
-				!Objects.equals(name, role.getName())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_ROLE__WHERE);
-
-			sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_C_N_NAME_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {companyId, name};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_N, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof Role) {
+				Role role = (Role)result;
 
-				Query query = session.createQuery(sql);
+				if ((companyId != role.getCompanyId()) ||
+					!Objects.equals(name, role.getName())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindName) {
-					queryPos.add(StringUtil.toLowerCase(name));
+					result = null;
 				}
+			}
 
-				List<Role> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_N, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_ROLE__WHERE);
+
+				sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
+
+				boolean bindName = false;
+
+				if (name.isEmpty()) {
+					sb.append(_FINDER_COLUMN_C_N_NAME_3);
 				}
 				else {
-					Role role = list.get(0);
+					bindName = true;
 
-					result = role;
+					sb.append(_FINDER_COLUMN_C_N_NAME_2);
+				}
 
-					cacheResult(role);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					if (bindName) {
+						queryPos.add(StringUtil.toLowerCase(name));
+					}
+
+					List<Role> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_N, finderArgs, list);
+						}
+					}
+					else {
+						Role role = list.get(0);
+
+						result = role;
+
+						cacheResult(role);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Role)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Role)result;
+			}
 		}
 	}
 
@@ -5913,74 +5891,13 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByC_N(long companyId, String name) {
-		name = Objects.toString(name, "");
+		Role role = fetchByC_N(companyId, name);
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByC_N;
-
-			finderArgs = new Object[] {companyId, name};
-
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		if (role == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_ROLE__WHERE);
-
-			sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_N_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_C_N_NAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				if (bindName) {
-					queryPos.add(StringUtil.toLowerCase(name));
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_N_COMPANYID_2 =
@@ -6070,104 +5987,106 @@ public class RolePersistenceImpl
 		long companyId, int type, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByC_T;
-				finderArgs = new Object[] {companyId, type};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByC_T;
+					finderArgs = new Object[] {companyId, type};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByC_T;
-			finderArgs = new Object[] {
-				companyId, type, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByC_T;
+				finderArgs = new Object[] {
+					companyId, type, start, end, orderByComparator
+				};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if ((companyId != role.getCompanyId()) ||
-						(type != role.getType())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if ((companyId != role.getCompanyId()) ||
+							(type != role.getType())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_T_TYPE_2);
+				sb.append(_FINDER_COLUMN_C_T_TYPE_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -6537,7 +6456,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -6733,7 +6652,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -6885,7 +6804,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -6992,7 +6911,7 @@ public class RolePersistenceImpl
 	 * </p>
 	 *
 	 * @param companyId the company ID
-	 * @param type the type
+	 * @param types the types
 	 * @param start the lower bound of the range of roles
 	 * @param end the upper bound of the range of roles (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -7016,106 +6935,112 @@ public class RolePersistenceImpl
 				companyId, types[0], start, end, orderByComparator);
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderArgs = new Object[] {companyId, StringUtil.merge(types)};
+				if (useFinderCache) {
+					finderArgs = new Object[] {
+						companyId, StringUtil.merge(types)
+					};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				companyId, StringUtil.merge(types), start, end,
-				orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderArgs = new Object[] {
+					companyId, StringUtil.merge(types), start, end,
+					orderByComparator
+				};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_T, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					_finderPathWithPaginationFindByC_T, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if ((companyId != role.getCompanyId()) ||
-						!ArrayUtil.contains(types, role.getType())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if ((companyId != role.getCompanyId()) ||
+							!ArrayUtil.contains(types, role.getType())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = new StringBundler();
+			if (list == null) {
+				StringBundler sb = new StringBundler();
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
 
-			if (types.length > 0) {
-				sb.append("(");
+				if (types.length > 0) {
+					sb.append("(");
 
-				sb.append(_FINDER_COLUMN_C_T_TYPE_7);
+					sb.append(_FINDER_COLUMN_C_T_TYPE_7);
 
-				sb.append(StringUtil.merge(types));
+					sb.append(StringUtil.merge(types));
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(")");
-			}
+					sb.append(")");
+				}
 
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathWithPaginationFindByC_T, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(
+							_finderPathWithPaginationFindByC_T, finderArgs,
+							list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -7144,61 +7069,55 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByC_T(long companyId, int type) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_T;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {companyId, type};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_T;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId, type};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				sb.append(_FINDER_COLUMN_C_T_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_C_T_TYPE_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(type);
 
-				queryPos.add(companyId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(type);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -7217,71 +7136,68 @@ public class RolePersistenceImpl
 			types = ArrayUtil.sortedUnique(types);
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = new Object[] {
+				companyId, StringUtil.merge(types)
+			};
 
-		Long count = null;
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathWithPaginationCountByC_T, finderArgs, this);
 
-		if (productionMode) {
-			finderArgs = new Object[] {companyId, StringUtil.merge(types)};
+			if (count == null) {
+				StringBundler sb = new StringBundler();
 
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_T, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler();
+				sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				if (types.length > 0) {
+					sb.append("(");
 
-			sb.append(_FINDER_COLUMN_C_T_COMPANYID_2);
+					sb.append(_FINDER_COLUMN_C_T_TYPE_7);
 
-			if (types.length > 0) {
-				sb.append("(");
+					sb.append(StringUtil.merge(types));
 
-				sb.append(_FINDER_COLUMN_C_T_TYPE_7);
+					sb.append(")");
 
-				sb.append(StringUtil.merge(types));
+					sb.append(")");
+				}
 
-				sb.append(")");
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
 
-				sb.append(")");
-			}
+				String sql = sb.toString();
 
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathWithPaginationCountByC_T, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -7498,117 +7414,119 @@ public class RolePersistenceImpl
 		int type, String subtype, int start, int end,
 		OrderByComparator<Role> orderByComparator, boolean useFinderCache) {
 
-		subtype = Objects.toString(subtype, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			subtype = Objects.toString(subtype, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByT_S;
-				finderArgs = new Object[] {type, subtype};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByT_S;
+					finderArgs = new Object[] {type, subtype};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByT_S;
-			finderArgs = new Object[] {
-				type, subtype, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByT_S;
+				finderArgs = new Object[] {
+					type, subtype, start, end, orderByComparator
+				};
+			}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if ((type != role.getType()) ||
-						!subtype.equals(role.getSubtype())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if ((type != role.getType()) ||
+							!subtype.equals(role.getSubtype())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_ROLE__WHERE);
-
-			sb.append(_FINDER_COLUMN_T_S_TYPE_2);
-
-			boolean bindSubtype = false;
-
-			if (subtype.isEmpty()) {
-				sb.append(_FINDER_COLUMN_T_S_SUBTYPE_3);
-			}
-			else {
-				bindSubtype = true;
-
-				sb.append(_FINDER_COLUMN_T_S_SUBTYPE_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(type);
-
-				if (bindSubtype) {
-					queryPos.add(subtype);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_T_S_TYPE_2);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				boolean bindSubtype = false;
+
+				if (subtype.isEmpty()) {
+					sb.append(_FINDER_COLUMN_T_S_SUBTYPE_3);
+				}
+				else {
+					bindSubtype = true;
+
+					sb.append(_FINDER_COLUMN_T_S_SUBTYPE_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(type);
+
+					if (bindSubtype) {
+						queryPos.add(subtype);
+					}
+
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -8002,7 +7920,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -8211,7 +8129,7 @@ public class RolePersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				sb.append(RoleModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(RoleModelImpl.ORDER_BY_SQL);
@@ -8286,74 +8204,68 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByT_S(int type, String subtype) {
-		subtype = Objects.toString(subtype, "");
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+			subtype = Objects.toString(subtype, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByT_S;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {type, subtype};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByT_S;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {type, subtype};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_T_S_TYPE_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				boolean bindSubtype = false;
 
-			sb.append(_FINDER_COLUMN_T_S_TYPE_2);
+				if (subtype.isEmpty()) {
+					sb.append(_FINDER_COLUMN_T_S_SUBTYPE_3);
+				}
+				else {
+					bindSubtype = true;
 
-			boolean bindSubtype = false;
-
-			if (subtype.isEmpty()) {
-				sb.append(_FINDER_COLUMN_T_S_SUBTYPE_3);
-			}
-			else {
-				bindSubtype = true;
-
-				sb.append(_FINDER_COLUMN_T_S_SUBTYPE_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(type);
-
-				if (bindSubtype) {
-					queryPos.add(subtype);
+					sb.append(_FINDER_COLUMN_T_S_SUBTYPE_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(type);
+
+					if (bindSubtype) {
+						queryPos.add(subtype);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -8516,7 +8428,7 @@ public class RolePersistenceImpl
 	 *
 	 * @param companyId the company ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class pk
+	 * @param classPKs the class pks
 	 * @param start the lower bound of the range of roles
 	 * @param end the upper bound of the range of roles (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -8550,113 +8462,117 @@ public class RolePersistenceImpl
 			}
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
+				if (useFinderCache) {
+					finderArgs = new Object[] {
+						companyId, classNameId, StringUtil.merge(classPKs)
+					};
+				}
+			}
+			else if (useFinderCache) {
 				finderArgs = new Object[] {
-					companyId, classNameId, StringUtil.merge(classPKs)
+					companyId, classNameId, StringUtil.merge(classPKs), start,
+					end, orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				companyId, classNameId, StringUtil.merge(classPKs), start, end,
-				orderByComparator
-			};
-		}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_C_C, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					_finderPathWithPaginationFindByC_C_C, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if ((companyId != role.getCompanyId()) ||
-						(classNameId != role.getClassNameId()) ||
-						!ArrayUtil.contains(classPKs, role.getClassPK())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if ((companyId != role.getCompanyId()) ||
+							(classNameId != role.getClassNameId()) ||
+							!ArrayUtil.contains(classPKs, role.getClassPK())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = new StringBundler();
+			if (list == null) {
+				StringBundler sb = new StringBundler();
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
 
-			if (classPKs.length > 0) {
-				sb.append("(");
+				if (classPKs.length > 0) {
+					sb.append("(");
 
-				sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_7);
+					sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_7);
 
-				sb.append(StringUtil.merge(classPKs));
+					sb.append(StringUtil.merge(classPKs));
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(")");
-			}
+					sb.append(")");
+				}
 
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(classNameId);
+					queryPos.add(classNameId);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathWithPaginationFindByC_C_C, finderArgs, list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(
+							_finderPathWithPaginationFindByC_C_C, finderArgs,
+							list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -8727,90 +8643,92 @@ public class RolePersistenceImpl
 		long companyId, long classNameId, long classPK,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {companyId, classNameId, classPK};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C_C, finderArgs);
-		}
-
-		if (result instanceof Role) {
-			Role role = (Role)result;
-
-			if ((companyId != role.getCompanyId()) ||
-				(classNameId != role.getClassNameId()) ||
-				(classPK != role.getClassPK())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {companyId, classNameId, classPK};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(5);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_C_C, finderArgs, this);
+			}
 
-			sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
+			if (result instanceof Role) {
+				Role role = (Role)result;
 
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
+				if ((companyId != role.getCompanyId()) ||
+					(classNameId != role.getClassNameId()) ||
+					(classPK != role.getClassPK())) {
 
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_2);
+					result = null;
+				}
+			}
 
-			String sql = sb.toString();
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
 
-			Session session = null;
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			try {
-				session = openSession();
+				sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
 
-				Query query = session.createQuery(sql);
+				sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+				sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_2);
 
-				queryPos.add(companyId);
+				String sql = sb.toString();
 
-				queryPos.add(classNameId);
+				Session session = null;
 
-				queryPos.add(classPK);
+				try {
+					session = openSession();
 
-				List<Role> list = query.list();
+					Query query = session.createQuery(sql);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_C_C, finderArgs, list);
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(companyId);
+
+					queryPos.add(classNameId);
+
+					queryPos.add(classPK);
+
+					List<Role> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_C_C, finderArgs, list);
+						}
+					}
+					else {
+						Role role = list.get(0);
+
+						result = role;
+
+						cacheResult(role);
 					}
 				}
-				else {
-					Role role = list.get(0);
-
-					result = role;
-
-					cacheResult(role);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Role)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Role)result;
+			}
 		}
 	}
 
@@ -8841,65 +8759,61 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countByC_C_C(long companyId, long classNameId, long classPK) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_C_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				companyId, classNameId, classPK
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_C_C;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId, classNameId, classPK};
+			if (count == null) {
+				StringBundler sb = new StringBundler(4);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
+				sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(classNameId);
 
-				queryPos.add(companyId);
+					queryPos.add(classPK);
 
-				queryPos.add(classNameId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -8919,78 +8833,73 @@ public class RolePersistenceImpl
 			classPKs = ArrayUtil.sortedUnique(classPKs);
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				companyId, classNameId, StringUtil.merge(classPKs)
 			};
 
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_C_C, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathWithPaginationCountByC_C_C, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler();
+			if (count == null) {
+				StringBundler sb = new StringBundler();
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_CLASSNAMEID_2);
 
-			if (classPKs.length > 0) {
-				sb.append("(");
+				if (classPKs.length > 0) {
+					sb.append("(");
 
-				sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_7);
+					sb.append(_FINDER_COLUMN_C_C_C_CLASSPK_7);
 
-				sb.append(StringUtil.merge(classPKs));
+					sb.append(StringUtil.merge(classPKs));
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(")");
-			}
+					sb.append(")");
+				}
 
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(classNameId);
+					queryPos.add(classNameId);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathWithPaginationCountByC_C_C, finderArgs,
 						count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -9230,7 +9139,7 @@ public class RolePersistenceImpl
 	 *
 	 * @param companyId the company ID
 	 * @param classNameId the class name ID
-	 * @param classPK the class pk
+	 * @param classPKs the class pks
 	 * @param type the type
 	 * @param start the lower bound of the range of roles
 	 * @param end the upper bound of the range of roles (not inclusive)
@@ -9267,121 +9176,124 @@ public class RolePersistenceImpl
 			}
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
+				if (useFinderCache) {
+					finderArgs = new Object[] {
+						companyId, classNameId, StringUtil.merge(classPKs), type
+					};
+				}
+			}
+			else if (useFinderCache) {
 				finderArgs = new Object[] {
-					companyId, classNameId, StringUtil.merge(classPKs), type
+					companyId, classNameId, StringUtil.merge(classPKs), type,
+					start, end, orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				companyId, classNameId, StringUtil.merge(classPKs), type, start,
-				end, orderByComparator
-			};
-		}
 
-		List<Role> list = null;
+			List<Role> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_C_C_T, finderArgs);
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					_finderPathWithPaginationFindByC_C_C_T, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (Role role : list) {
-					if ((companyId != role.getCompanyId()) ||
-						(classNameId != role.getClassNameId()) ||
-						!ArrayUtil.contains(classPKs, role.getClassPK()) ||
-						(type != role.getType())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (Role role : list) {
+						if ((companyId != role.getCompanyId()) ||
+							(classNameId != role.getClassNameId()) ||
+							!ArrayUtil.contains(classPKs, role.getClassPK()) ||
+							(type != role.getType())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = new StringBundler();
+			if (list == null) {
+				StringBundler sb = new StringBundler();
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
 
-			if (classPKs.length > 0) {
-				sb.append("(");
+				if (classPKs.length > 0) {
+					sb.append("(");
 
-				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_7);
+					sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_7);
 
-				sb.append(StringUtil.merge(classPKs));
+					sb.append(StringUtil.merge(classPKs));
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(WHERE_AND);
-			}
+					sb.append(WHERE_AND);
+				}
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
 
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(RoleModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(RoleModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(classNameId);
+					queryPos.add(classNameId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathWithPaginationFindByC_C_C_T, finderArgs,
-						list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(
+							_finderPathWithPaginationFindByC_C_C_T, finderArgs,
+							list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -9461,94 +9373,99 @@ public class RolePersistenceImpl
 		long companyId, long classNameId, long classPK, int type,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {companyId, classNameId, classPK, type};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C_C_T, finderArgs);
-		}
-
-		if (result instanceof Role) {
-			Role role = (Role)result;
-
-			if ((companyId != role.getCompanyId()) ||
-				(classNameId != role.getClassNameId()) ||
-				(classPK != role.getClassPK()) || (type != role.getType())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {
+					companyId, classNameId, classPK, type
+				};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(6);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_ROLE__WHERE);
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_C_C_T, finderArgs, this);
+			}
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
+			if (result instanceof Role) {
+				Role role = (Role)result;
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
+				if ((companyId != role.getCompanyId()) ||
+					(classNameId != role.getClassNameId()) ||
+					(classPK != role.getClassPK()) ||
+					(type != role.getType())) {
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_2);
+					result = null;
+				}
+			}
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
+			if (result == null) {
+				StringBundler sb = new StringBundler(6);
 
-			String sql = sb.toString();
+				sb.append(_SQL_SELECT_ROLE__WHERE);
 
-			Session session = null;
+				sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
 
-			try {
-				session = openSession();
+				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
 
-				Query query = session.createQuery(sql);
+				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_2);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+				sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
 
-				queryPos.add(companyId);
+				String sql = sb.toString();
 
-				queryPos.add(classNameId);
+				Session session = null;
 
-				queryPos.add(classPK);
+				try {
+					session = openSession();
 
-				queryPos.add(type);
+					Query query = session.createQuery(sql);
 
-				List<Role> list = query.list();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_C_C_T, finderArgs, list);
+					queryPos.add(companyId);
+
+					queryPos.add(classNameId);
+
+					queryPos.add(classPK);
+
+					queryPos.add(type);
+
+					List<Role> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_C_C_T, finderArgs, list);
+						}
+					}
+					else {
+						Role role = list.get(0);
+
+						result = role;
+
+						cacheResult(role);
 					}
 				}
-				else {
-					Role role = list.get(0);
-
-					result = role;
-
-					cacheResult(role);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (Role)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Role)result;
+			}
 		}
 	}
 
@@ -9584,69 +9501,65 @@ public class RolePersistenceImpl
 	public int countByC_C_C_T(
 		long companyId, long classNameId, long classPK, int type) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_C_C_T;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {
+				companyId, classNameId, classPK, type
+			};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_C_C_T;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {companyId, classNameId, classPK, type};
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+				sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(companyId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(classNameId);
 
-				queryPos.add(companyId);
+					queryPos.add(classPK);
 
-				queryPos.add(classNameId);
+					queryPos.add(type);
 
-				queryPos.add(classPK);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(type);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -9669,84 +9582,79 @@ public class RolePersistenceImpl
 			classPKs = ArrayUtil.sortedUnique(classPKs);
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				companyId, classNameId, StringUtil.merge(classPKs), type
 			};
 
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_C_C_T, finderArgs);
-		}
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathWithPaginationCountByC_C_C_T, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler();
+			if (count == null) {
+				StringBundler sb = new StringBundler();
 
-			sb.append(_SQL_COUNT_ROLE__WHERE);
+				sb.append(_SQL_COUNT_ROLE__WHERE);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_COMPANYID_2);
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSNAMEID_2);
 
-			if (classPKs.length > 0) {
-				sb.append("(");
+				if (classPKs.length > 0) {
+					sb.append("(");
 
-				sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_7);
+					sb.append(_FINDER_COLUMN_C_C_C_T_CLASSPK_7);
 
-				sb.append(StringUtil.merge(classPKs));
+					sb.append(StringUtil.merge(classPKs));
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(")");
+					sb.append(")");
 
-				sb.append(WHERE_AND);
-			}
+					sb.append(WHERE_AND);
+				}
 
-			sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
+				sb.append(_FINDER_COLUMN_C_C_C_T_TYPE_2);
 
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
+				sb.setStringAt(
+					removeConjunction(sb.stringAt(sb.index() - 1)),
+					sb.index() - 1);
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(companyId);
+					queryPos.add(companyId);
 
-				queryPos.add(classNameId);
+					queryPos.add(classNameId);
 
-				queryPos.add(type);
+					queryPos.add(type);
 
-				count = (Long)query.uniqueResult();
+					count = (Long)query.uniqueResult();
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathWithPaginationCountByC_C_C_T, finderArgs,
 						count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -9917,6 +9825,211 @@ public class RolePersistenceImpl
 	private static final String _FINDER_COLUMN_C_C_C_T_TYPE_2_SQL =
 		"role_.type_ = ?";
 
+	private FinderPath _finderPathFetchByERC_C;
+
+	/**
+	 * Returns the role where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchRoleException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching role
+	 * @throws NoSuchRoleException if a matching role could not be found
+	 */
+	@Override
+	public Role findByERC_C(String externalReferenceCode, long companyId)
+		throws NoSuchRoleException {
+
+		Role role = fetchByERC_C(externalReferenceCode, companyId);
+
+		if (role == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("externalReferenceCode=");
+			sb.append(externalReferenceCode);
+
+			sb.append(", companyId=");
+			sb.append(companyId);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchRoleException(sb.toString());
+		}
+
+		return role;
+	}
+
+	/**
+	 * Returns the role where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching role, or <code>null</code> if a matching role could not be found
+	 */
+	@Override
+	public Role fetchByERC_C(String externalReferenceCode, long companyId) {
+		return fetchByERC_C(externalReferenceCode, companyId, true);
+	}
+
+	/**
+	 * Returns the role where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching role, or <code>null</code> if a matching role could not be found
+	 */
+	@Override
+	public Role fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
+
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
+
+			externalReferenceCode = Objects.toString(externalReferenceCode, "");
+
+			Object[] finderArgs = null;
+
+			if (useFinderCache) {
+				finderArgs = new Object[] {externalReferenceCode, companyId};
+			}
+
+			Object result = null;
+
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByERC_C, finderArgs, this);
+			}
+
+			if (result instanceof Role) {
+				Role role = (Role)result;
+
+				if (!Objects.equals(
+						externalReferenceCode,
+						role.getExternalReferenceCode()) ||
+					(companyId != role.getCompanyId())) {
+
+					result = null;
+				}
+			}
+
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
+
+				sb.append(_SQL_SELECT_ROLE__WHERE);
+
+				boolean bindExternalReferenceCode = false;
+
+				if (externalReferenceCode.isEmpty()) {
+					sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3);
+				}
+				else {
+					bindExternalReferenceCode = true;
+
+					sb.append(_FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2);
+				}
+
+				sb.append(_FINDER_COLUMN_ERC_C_COMPANYID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindExternalReferenceCode) {
+						queryPos.add(externalReferenceCode);
+					}
+
+					queryPos.add(companyId);
+
+					List<Role> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByERC_C, finderArgs, list);
+						}
+					}
+					else {
+						Role role = list.get(0);
+
+						result = role;
+
+						cacheResult(role);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (Role)result;
+			}
+		}
+	}
+
+	/**
+	 * Removes the role where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the role that was removed
+	 */
+	@Override
+	public Role removeByERC_C(String externalReferenceCode, long companyId)
+		throws NoSuchRoleException {
+
+		Role role = findByERC_C(externalReferenceCode, companyId);
+
+		return remove(role);
+	}
+
+	/**
+	 * Returns the number of roles where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching roles
+	 */
+	@Override
+	public int countByERC_C(String externalReferenceCode, long companyId) {
+		Role role = fetchByERC_C(externalReferenceCode, companyId);
+
+		if (role == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_2 =
+		"role_.externalReferenceCode = ? AND ";
+
+	private static final String _FINDER_COLUMN_ERC_C_EXTERNALREFERENCECODE_3 =
+		"(role_.externalReferenceCode IS NULL OR role_.externalReferenceCode = '') AND ";
+
+	private static final String _FINDER_COLUMN_ERC_C_COMPANYID_2 =
+		"role_.companyId = ?";
+
 	public RolePersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
@@ -9941,30 +10054,40 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public void cacheResult(Role role) {
-		if (role.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					role.getCtCollectionId())) {
+
+			EntityCacheUtil.putResult(
+				RoleImpl.class, role.getPrimaryKey(), role);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_N,
+				new Object[] {role.getCompanyId(), role.getName()}, role);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_C_C,
+				new Object[] {
+					role.getCompanyId(), role.getClassNameId(),
+					role.getClassPK()
+				},
+				role);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_C_C_T,
+				new Object[] {
+					role.getCompanyId(), role.getClassNameId(),
+					role.getClassPK(), role.getType()
+				},
+				role);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByERC_C,
+				new Object[] {
+					role.getExternalReferenceCode(), role.getCompanyId()
+				},
+				role);
 		}
-
-		EntityCacheUtil.putResult(RoleImpl.class, role.getPrimaryKey(), role);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_N,
-			new Object[] {role.getCompanyId(), role.getName()}, role);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C_C,
-			new Object[] {
-				role.getCompanyId(), role.getClassNameId(), role.getClassPK()
-			},
-			role);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C_C_T,
-			new Object[] {
-				role.getCompanyId(), role.getClassNameId(), role.getClassPK(),
-				role.getType()
-			},
-			role);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -9984,14 +10107,15 @@ public class RolePersistenceImpl
 		}
 
 		for (Role role : roles) {
-			if (role.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						role.getCtCollectionId())) {
 
-			if (EntityCacheUtil.getResult(
-					RoleImpl.class, role.getPrimaryKey()) == null) {
+				if (EntityCacheUtil.getResult(
+						RoleImpl.class, role.getPrimaryKey()) == null) {
 
-				cacheResult(role);
+					cacheResult(role);
+				}
 			}
 		}
 	}
@@ -10039,31 +10163,41 @@ public class RolePersistenceImpl
 	}
 
 	protected void cacheUniqueFindersCache(RoleModelImpl roleModelImpl) {
-		Object[] args = new Object[] {
-			roleModelImpl.getCompanyId(), roleModelImpl.getName()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					roleModelImpl.getCtCollectionId())) {
 
-		FinderCacheUtil.putResult(_finderPathCountByC_N, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(_finderPathFetchByC_N, args, roleModelImpl);
+			Object[] args = new Object[] {
+				roleModelImpl.getCompanyId(), roleModelImpl.getName()
+			};
 
-		args = new Object[] {
-			roleModelImpl.getCompanyId(), roleModelImpl.getClassNameId(),
-			roleModelImpl.getClassPK()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_N, args, roleModelImpl);
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_C_C, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(_finderPathFetchByC_C_C, args, roleModelImpl);
+			args = new Object[] {
+				roleModelImpl.getCompanyId(), roleModelImpl.getClassNameId(),
+				roleModelImpl.getClassPK()
+			};
 
-		args = new Object[] {
-			roleModelImpl.getCompanyId(), roleModelImpl.getClassNameId(),
-			roleModelImpl.getClassPK(), roleModelImpl.getType()
-		};
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_C_C, args, roleModelImpl);
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByC_C_C_T, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C_C_T, args, roleModelImpl);
+			args = new Object[] {
+				roleModelImpl.getCompanyId(), roleModelImpl.getClassNameId(),
+				roleModelImpl.getClassPK(), roleModelImpl.getType()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_C_C_T, args, roleModelImpl);
+
+			args = new Object[] {
+				roleModelImpl.getExternalReferenceCode(),
+				roleModelImpl.getCompanyId()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByERC_C, args, roleModelImpl);
+		}
 	}
 
 	/**
@@ -10202,6 +10336,66 @@ public class RolePersistenceImpl
 			role.setUuid(uuid);
 		}
 
+		if (Validator.isNull(role.getExternalReferenceCode())) {
+			role.setExternalReferenceCode(role.getUuid());
+		}
+		else {
+			if (!Objects.equals(
+					roleModelImpl.getColumnOriginalValue(
+						"externalReferenceCode"),
+					role.getExternalReferenceCode())) {
+
+				long userId = GetterUtil.getLong(
+					PrincipalThreadLocal.getName());
+
+				if (userId > 0) {
+					long companyId = role.getCompanyId();
+
+					long groupId = 0;
+
+					long classPK = 0;
+
+					if (!isNew) {
+						classPK = role.getPrimaryKey();
+					}
+
+					try {
+						role.setExternalReferenceCode(
+							SanitizerUtil.sanitize(
+								companyId, groupId, userId,
+								Role.class.getName(), classPK,
+								ContentTypes.TEXT_HTML, Sanitizer.MODE_ALL,
+								role.getExternalReferenceCode(), null));
+					}
+					catch (SanitizerException sanitizerException) {
+						throw new SystemException(sanitizerException);
+					}
+				}
+			}
+
+			Role ercRole = fetchByERC_C(
+				role.getExternalReferenceCode(), role.getCompanyId());
+
+			if (isNew) {
+				if (ercRole != null) {
+					throw new DuplicateRoleExternalReferenceCodeException(
+						"Duplicate role with external reference code " +
+							role.getExternalReferenceCode() + " and company " +
+								role.getCompanyId());
+				}
+			}
+			else {
+				if ((ercRole != null) &&
+					(role.getRoleId() != ercRole.getRoleId())) {
+
+					throw new DuplicateRoleExternalReferenceCodeException(
+						"Duplicate role with external reference code " +
+							role.getExternalReferenceCode() + " and company " +
+								role.getCompanyId());
+				}
+			}
+		}
+
 		ServiceContext serviceContext =
 			ServiceContextThreadLocal.getServiceContext();
 
@@ -10246,16 +10440,6 @@ public class RolePersistenceImpl
 		}
 		finally {
 			closeSession(session);
-		}
-
-		if (role.getCtCollectionId() != 0) {
-			if (isNew) {
-				role.setNew(false);
-			}
-
-			role.resetOriginalValues();
-
-			return role;
 		}
 
 		EntityCacheUtil.putResult(RoleImpl.class, roleModelImpl, false, true);
@@ -10316,11 +10500,20 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public Role fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(Role.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (CTPersistenceHelperUtil.isProductionMode(Role.class, primaryKey)) {
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		Role role = null;
+		Role role = (Role)EntityCacheUtil.getResult(RoleImpl.class, primaryKey);
+
+		if (role != null) {
+			return role;
+		}
 
 		Session session = null;
 
@@ -10359,7 +10552,12 @@ public class RolePersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (CTPersistenceHelperUtil.isProductionMode(Role.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -10379,6 +10577,33 @@ public class RolePersistenceImpl
 				map.put(primaryKey, role);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+						Role.class, primaryKey)) {
+
+				Role role = (Role)EntityCacheUtil.getResult(
+					RoleImpl.class, primaryKey);
+
+				if (role == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, role);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -10507,78 +10732,80 @@ public class RolePersistenceImpl
 		int start, int end, OrderByComparator<Role> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<Role> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<Role>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_ROLE_);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_ROLE_;
-
-				sql = sql.concat(RoleModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<Role>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<Role> list = null;
+
+			if (useFinderCache) {
+				list = (List<Role>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_ROLE_);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_ROLE_;
+
+					sql = sql.concat(RoleModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<Role>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -10599,40 +10826,36 @@ public class RolePersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			Role.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					Role.class)) {
 
-		Long count = null;
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(_SQL_COUNT_ROLE_);
 
-				Query query = session.createQuery(_SQL_COUNT_ROLE_);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -10747,17 +10970,18 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param groupPK the primary key of the group
+	 * @return <code>true</code> if an association between the role and the group was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addGroup(long pk, long groupPK) {
+	public boolean addGroup(long pk, long groupPK) {
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, groupPK);
 		}
 		else {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				role.getCompanyId(), pk, groupPK);
 		}
 	}
@@ -10767,17 +10991,20 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param group the group
+	 * @return <code>true</code> if an association between the role and the group was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addGroup(long pk, com.liferay.portal.kernel.model.Group group) {
+	public boolean addGroup(
+		long pk, com.liferay.portal.kernel.model.Group group) {
+
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, group.getPrimaryKey());
 		}
 		else {
-			roleToGroupTableMapper.addTableMapping(
+			return roleToGroupTableMapper.addTableMapping(
 				role.getCompanyId(), pk, group.getPrimaryKey());
 		}
 	}
@@ -10787,9 +11014,10 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param groupPKs the primary keys of the groups
+	 * @return <code>true</code> if at least one association between the role and the groups was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addGroups(long pk, long[] groupPKs) {
+	public boolean addGroups(long pk, long[] groupPKs) {
 		long companyId = 0;
 
 		Role role = fetchByPrimaryKey(pk);
@@ -10801,7 +11029,14 @@ public class RolePersistenceImpl
 			companyId = role.getCompanyId();
 		}
 
-		roleToGroupTableMapper.addTableMappings(companyId, pk, groupPKs);
+		long[] addedKeys = roleToGroupTableMapper.addTableMappings(
+			companyId, pk, groupPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -10809,12 +11044,13 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param groups the groups
+	 * @return <code>true</code> if at least one association between the role and the groups was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addGroups(
+	public boolean addGroups(
 		long pk, List<com.liferay.portal.kernel.model.Group> groups) {
 
-		addGroups(
+		return addGroups(
 			pk,
 			ListUtil.toLongArray(
 				groups,
@@ -11057,17 +11293,18 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param userPK the primary key of the user
+	 * @return <code>true</code> if an association between the role and the user was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUser(long pk, long userPK) {
+	public boolean addUser(long pk, long userPK) {
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, userPK);
 		}
 		else {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				role.getCompanyId(), pk, userPK);
 		}
 	}
@@ -11077,17 +11314,18 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param user the user
+	 * @return <code>true</code> if an association between the role and the user was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addUser(long pk, com.liferay.portal.kernel.model.User user) {
+	public boolean addUser(long pk, com.liferay.portal.kernel.model.User user) {
 		Role role = fetchByPrimaryKey(pk);
 
 		if (role == null) {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, user.getPrimaryKey());
 		}
 		else {
-			roleToUserTableMapper.addTableMapping(
+			return roleToUserTableMapper.addTableMapping(
 				role.getCompanyId(), pk, user.getPrimaryKey());
 		}
 	}
@@ -11097,9 +11335,10 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param userPKs the primary keys of the users
+	 * @return <code>true</code> if at least one association between the role and the users was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUsers(long pk, long[] userPKs) {
+	public boolean addUsers(long pk, long[] userPKs) {
 		long companyId = 0;
 
 		Role role = fetchByPrimaryKey(pk);
@@ -11111,7 +11350,14 @@ public class RolePersistenceImpl
 			companyId = role.getCompanyId();
 		}
 
-		roleToUserTableMapper.addTableMappings(companyId, pk, userPKs);
+		long[] addedKeys = roleToUserTableMapper.addTableMappings(
+			companyId, pk, userPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -11119,12 +11365,13 @@ public class RolePersistenceImpl
 	 *
 	 * @param pk the primary key of the role
 	 * @param users the users
+	 * @return <code>true</code> if at least one association between the role and the users was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addUsers(
+	public boolean addUsers(
 		long pk, List<com.liferay.portal.kernel.model.User> users) {
 
-		addUsers(
+		return addUsers(
 			pk,
 			ListUtil.toLongArray(
 				users, com.liferay.portal.kernel.model.User.USER_ID_ACCESSOR));
@@ -11310,11 +11557,13 @@ public class RolePersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
 		ctControlColumnNames.add("ctCollectionId");
 		ctStrictColumnNames.add("uuid_");
+		ctStrictColumnNames.add("externalReferenceCode");
 		ctStrictColumnNames.add("companyId");
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
@@ -11322,18 +11571,20 @@ public class RolePersistenceImpl
 		ctIgnoreColumnNames.add("modifiedDate");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("title");
-		ctStrictColumnNames.add("description");
-		ctStrictColumnNames.add("type_");
-		ctStrictColumnNames.add("subtype");
-		ctStrictColumnNames.add("groups_");
-		ctStrictColumnNames.add("users");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("title");
+		ctMergeColumnNames.add("description");
+		ctMergeColumnNames.add("type_");
+		ctMergeColumnNames.add("subtype");
+		ctMergeColumnNames.add("status");
+		ctMergeColumnNames.add("groups_");
+		ctMergeColumnNames.add("users");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK, Collections.singleton("roleId"));
 		_ctColumnNamesMap.put(
@@ -11349,6 +11600,9 @@ public class RolePersistenceImpl
 
 		_uniqueIndexColumnNames.add(
 			new String[] {"companyId", "classNameId", "classPK", "type_"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"externalReferenceCode", "companyId"});
 	}
 
 	/**
@@ -11491,10 +11745,7 @@ public class RolePersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "name"}, true);
 
-		_finderPathCountByC_N = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_N",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"companyId", "name"}, false);
+		_finderPathFetchByC_N.touch();
 
 		_finderPathWithPaginationFindByC_T = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_T",
@@ -11623,29 +11874,21 @@ public class RolePersistenceImpl
 			new String[] {"companyId", "classNameId", "classPK", "type_"},
 			false);
 
-		_setRoleUtilPersistence(this);
+		_finderPathFetchByERC_C = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByERC_C",
+			new String[] {String.class.getName(), Long.class.getName()},
+			new String[] {"externalReferenceCode", "companyId"}, true);
+
+		RoleUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setRoleUtilPersistence(null);
+		RoleUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(RoleImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("Groups_Roles");
 		TableMapperFactory.removeTableMapper("Users_Roles");
-	}
-
-	private void _setRoleUtilPersistence(RolePersistence rolePersistence) {
-		try {
-			Field field = RoleUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, rolePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@BeanReference(type = GroupPersistence.class)

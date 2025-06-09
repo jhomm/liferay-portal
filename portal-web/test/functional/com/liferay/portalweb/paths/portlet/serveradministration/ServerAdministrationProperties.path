@@ -10,15 +10,22 @@
 </thead>
 
 <tbody>
+
 <!--ACTIONS_TABLE-->
+
 <tr>
 	<td>PORTAL_SYSTEM_PROPERTY_TITLE</td>
-	<td>//a[contains(text(),'${key_propertyTitle}')]</td>
+	<td>//a[contains(@class,'nav-link')]//span[contains(text(),'${key_propertyTitle}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PORTAL_SYSTEM_PROPERTY_NAME</td>
 	<td>//tr[@data-qa-id="row" and contains(.,'${key_propertyName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PORTAL_SYSTEM_PROPERTY_VALUE</td>
+	<td>//tr[@data-qa-id="row" and contains(.,'${key_propertyName}')]//td[contains(@class,'value-column')]</td>
 	<td></td>
 </tr>
 </tbody>

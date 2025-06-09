@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -68,20 +59,29 @@ long commerceWishListId = commerceWishListDisplayContext.getCommerceWishListId()
 
 						<liferay-ui:search-container-column-image
 							name="product"
-							src="<%= cpDefinition.getDefaultImageThumbnailSrc() %>"
+							src="<%= cpDefinition.getDefaultImageThumbnailSrc(commerceWishListDisplayContext.getCommerceAccountId()) %>"
 						/>
 
 						<liferay-ui:search-container-column-text
 							cssClass="table-cell-expand"
 							name="description"
 						>
-							<a class="font-weight-bold" href="<%= commerceWishListDisplayContext.getCPDefinitionURL(cpDefinition.getCPDefinitionId(), themeDisplay) %>">
-								<%= HtmlUtil.escape(cpDefinition.getName(themeDisplay.getLanguageId())) %>
-							</a>
+							<c:choose>
+								<c:when test="<%= commerceWishListDisplayContext.isProductVisibleToAccount(cpDefinition.getCPDefinitionId()) %>">
+									<a class="font-weight-bold" href="<%= commerceWishListDisplayContext.getCPDefinitionURL(cpDefinition.getCPDefinitionId(), themeDisplay) %>">
+										<%= HtmlUtil.escape(cpDefinition.getName(themeDisplay.getLanguageId())) %>
+									</a>
+								</c:when>
+								<c:otherwise>
+									<span class="font-weight-bold">
+										<%= HtmlUtil.escape(cpDefinition.getName(themeDisplay.getLanguageId())) %>
+									</span>
+								</c:otherwise>
+							</c:choose>
 
-							<h6 class="text-default">
+							<div class="h6 text-default">
 								<%= HtmlUtil.escape(commerceWishListDisplayContext.getCommerceWishListItemDescription(commerceWishListItem)) %>
-							</h6>
+							</div>
 						</liferay-ui:search-container-column-text>
 
 						<liferay-ui:search-container-column-text

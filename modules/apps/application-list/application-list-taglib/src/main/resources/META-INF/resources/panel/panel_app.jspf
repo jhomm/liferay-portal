@@ -1,0 +1,48 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<%@ include file="/panel/init.jsp" %>
+
+<c:if test="<%= !panelApp.include(request, response) %>">
+
+	<%
+	String url = PanelAppUtil.getURL(request, panelApp);
+	%>
+
+	<c:if test="<%= Validator.isNotNull(url) %>">
+
+		<%
+		String label = PanelAppUtil.getLabel(request, panelApp);
+		%>
+
+		<li class="<%= PanelAppUtil.isActive(request, panelApp) ? "active" : StringPool.BLANK %> nav-item" role="presentation">
+			<aui:a
+				ariaRole="menuitem"
+				cssClass="nav-link"
+				data='<%=
+					HashMapBuilder.<String, Object>put(
+						"qa-id", "app"
+					).put(
+						"title", label
+					).build()
+				%>'
+				href="<%= url %>"
+				id='<%= "portlet_" + panelApp.getPortletId() %>'
+			>
+				<%= label %>
+
+				<c:if test="<%= panelApp.getNotificationsCount(user) > 0 %>">
+					<clay:badge
+						cssClass="float-right"
+						displayType="danger"
+						label="<%= String.valueOf(panelApp.getNotificationsCount(user)) %>"
+					/>
+				</c:if>
+			</aui:a>
+		</li>
+	</c:if>
+</c:if>

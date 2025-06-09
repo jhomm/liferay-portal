@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ant.bnd.resource.bundle;
@@ -46,15 +37,20 @@ public class ProvidesResourceBundleLoaderAnalyzerPlugin
 		attrs.put("bundle.symbolic.name", analyzer.getBsn());
 		attrs.put("resource.bundle.base.name", "content.Language");
 
-		parameters.add(
-			ResourceBundleLoaderAnalyzerPlugin.LIFERAY_RESOURCE_BUNDLE, attrs);
+		String headerName = ResourceBundleLoaderAnalyzerPlugin.getHeaderName(
+			analyzer);
 
-		if (provideCapabilityHeaders.containsKey(
-				ResourceBundleLoaderAnalyzerPlugin.LIFERAY_RESOURCE_BUNDLE)) {
+		if (headerName.equals(
+				ResourceBundleLoaderAnalyzerPlugin.
+					HEADER_NAME_LIFERAY_LANGUAGE_RESOURCES)) {
 
-			provideCapabilityHeaders.add(
-				ResourceBundleLoaderAnalyzerPlugin.LIFERAY_RESOURCE_BUNDLE,
-				attrs);
+			attrs.put("module.only", "true");
+		}
+
+		parameters.add(headerName, attrs);
+
+		if (provideCapabilityHeaders.containsKey(headerName)) {
+			provideCapabilityHeaders.add(headerName, attrs);
 		}
 		else {
 			provideCapabilityHeaders.mergeWith(parameters, false);

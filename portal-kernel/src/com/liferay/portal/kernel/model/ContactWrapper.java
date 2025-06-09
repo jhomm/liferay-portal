@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -55,8 +46,8 @@ public class ContactWrapper
 		attributes.put("firstName", getFirstName());
 		attributes.put("middleName", getMiddleName());
 		attributes.put("lastName", getLastName());
-		attributes.put("prefixId", getPrefixId());
-		attributes.put("suffixId", getSuffixId());
+		attributes.put("prefixListTypeId", getPrefixListTypeId());
+		attributes.put("suffixListTypeId", getSuffixListTypeId());
 		attributes.put("male", isMale());
 		attributes.put("birthday", getBirthday());
 		attributes.put("smsSn", getSmsSn());
@@ -159,16 +150,16 @@ public class ContactWrapper
 			setLastName(lastName);
 		}
 
-		Long prefixId = (Long)attributes.get("prefixId");
+		Long prefixListTypeId = (Long)attributes.get("prefixListTypeId");
 
-		if (prefixId != null) {
-			setPrefixId(prefixId);
+		if (prefixListTypeId != null) {
+			setPrefixListTypeId(prefixListTypeId);
 		}
 
-		Long suffixId = (Long)attributes.get("suffixId");
+		Long suffixListTypeId = (Long)attributes.get("suffixListTypeId");
 
-		if (suffixId != null) {
-			setSuffixId(suffixId);
+		if (suffixListTypeId != null) {
+			setSuffixListTypeId(suffixListTypeId);
 		}
 
 		Boolean male = (Boolean)attributes.get("male");
@@ -475,13 +466,13 @@ public class ContactWrapper
 	}
 
 	/**
-	 * Returns the prefix ID of this contact.
+	 * Returns the prefix list type ID of this contact.
 	 *
-	 * @return the prefix ID of this contact
+	 * @return the prefix list type ID of this contact
 	 */
 	@Override
-	public long getPrefixId() {
-		return model.getPrefixId();
+	public long getPrefixListTypeId() {
+		return model.getPrefixListTypeId();
 	}
 
 	/**
@@ -515,13 +506,13 @@ public class ContactWrapper
 	}
 
 	/**
-	 * Returns the suffix ID of this contact.
+	 * Returns the suffix list type ID of this contact.
 	 *
-	 * @return the suffix ID of this contact
+	 * @return the suffix list type ID of this contact
 	 */
 	@Override
-	public long getSuffixId() {
-		return model.getSuffixId();
+	public long getSuffixListTypeId() {
+		return model.getSuffixListTypeId();
 	}
 
 	/**
@@ -800,13 +791,13 @@ public class ContactWrapper
 	}
 
 	/**
-	 * Sets the prefix ID of this contact.
+	 * Sets the prefix list type ID of this contact.
 	 *
-	 * @param prefixId the prefix ID of this contact
+	 * @param prefixListTypeId the prefix list type ID of this contact
 	 */
 	@Override
-	public void setPrefixId(long prefixId) {
-		model.setPrefixId(prefixId);
+	public void setPrefixListTypeId(long prefixListTypeId) {
+		model.setPrefixListTypeId(prefixListTypeId);
 	}
 
 	/**
@@ -840,13 +831,13 @@ public class ContactWrapper
 	}
 
 	/**
-	 * Sets the suffix ID of this contact.
+	 * Sets the suffix list type ID of this contact.
 	 *
-	 * @param suffixId the suffix ID of this contact
+	 * @param suffixListTypeId the suffix list type ID of this contact
 	 */
 	@Override
-	public void setSuffixId(long suffixId) {
-		model.setSuffixId(suffixId);
+	public void setSuffixListTypeId(long suffixListTypeId) {
+		model.setSuffixListTypeId(suffixListTypeId);
 	}
 
 	/**
@@ -887,6 +878,11 @@ public class ContactWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

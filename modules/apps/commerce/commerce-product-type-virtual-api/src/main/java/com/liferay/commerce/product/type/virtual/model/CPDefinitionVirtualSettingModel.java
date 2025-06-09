@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.model;
@@ -19,6 +10,7 @@ import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.AttachedModel;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedGroupedModel;
 
@@ -42,7 +34,7 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface CPDefinitionVirtualSettingModel
 	extends AttachedModel, BaseModel<CPDefinitionVirtualSetting>,
-			LocalizedModel, ShardedModel, StagedGroupedModel {
+			LocalizedModel, MVCCModel, ShardedModel, StagedGroupedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -63,6 +55,22 @@ public interface CPDefinitionVirtualSettingModel
 	 * @param primaryKey the primary key of this cp definition virtual setting
 	 */
 	public void setPrimaryKey(long primaryKey);
+
+	/**
+	 * Returns the mvcc version of this cp definition virtual setting.
+	 *
+	 * @return the mvcc version of this cp definition virtual setting
+	 */
+	@Override
+	public long getMvccVersion();
+
+	/**
+	 * Sets the mvcc version of this cp definition virtual setting.
+	 *
+	 * @param mvccVersion the mvcc version of this cp definition virtual setting
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion);
 
 	/**
 	 * Returns the uuid of this cp definition virtual setting.
@@ -252,35 +260,6 @@ public interface CPDefinitionVirtualSettingModel
 	public void setClassPK(long classPK);
 
 	/**
-	 * Returns the file entry ID of this cp definition virtual setting.
-	 *
-	 * @return the file entry ID of this cp definition virtual setting
-	 */
-	public long getFileEntryId();
-
-	/**
-	 * Sets the file entry ID of this cp definition virtual setting.
-	 *
-	 * @param fileEntryId the file entry ID of this cp definition virtual setting
-	 */
-	public void setFileEntryId(long fileEntryId);
-
-	/**
-	 * Returns the url of this cp definition virtual setting.
-	 *
-	 * @return the url of this cp definition virtual setting
-	 */
-	@AutoEscape
-	public String getUrl();
-
-	/**
-	 * Sets the url of this cp definition virtual setting.
-	 *
-	 * @param url the url of this cp definition virtual setting
-	 */
-	public void setUrl(String url);
-
-	/**
 	 * Returns the activation status of this cp definition virtual setting.
 	 *
 	 * @return the activation status of this cp definition virtual setting
@@ -363,14 +342,14 @@ public interface CPDefinitionVirtualSettingModel
 	 * @return the sample url of this cp definition virtual setting
 	 */
 	@AutoEscape
-	public String getSampleUrl();
+	public String getSampleURL();
 
 	/**
 	 * Sets the sample url of this cp definition virtual setting.
 	 *
-	 * @param sampleUrl the sample url of this cp definition virtual setting
+	 * @param sampleURL the sample url of this cp definition virtual setting
 	 */
-	public void setSampleUrl(String sampleUrl);
+	public void setSampleURL(String sampleURL);
 
 	/**
 	 * Returns the terms of use required of this cp definition virtual setting.
@@ -562,5 +541,9 @@ public interface CPDefinitionVirtualSettingModel
 
 	@Override
 	public CPDefinitionVirtualSetting cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

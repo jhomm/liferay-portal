@@ -1,9 +1,12 @@
-@component-name = "portal-segmentation"
+@component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property property.group = "analytics.cloud.profile";
 	property testray.main.component.name = "Segmentation";
 
 	setUp {
@@ -11,7 +14,7 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		task ("Add segment in Test Site Name") {
 			JSONSegmentsentry.addSegment(
@@ -24,11 +27,11 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		Navigator.openURL();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -36,8 +39,178 @@ definition {
 		}
 	}
 
+	@description = "LPS-103102 Bug: Segmentation is not working after remove the user section"
+	@priority = 4
+	test AddExperienceAfterRemovingCriteria {
+		task ("Add a Organization via JSONWS") {
+			JSONOrganization.addOrganization(organizationName = "Organization Name");
+		}
+
+		task ("Assign user to organization created") {
+			JSONOrganization.assignUserToOrganization(
+				organizationName = "Organization Name",
+				userEmailAddress = "test@liferay.com");
+		}
+
+		task ("Add Segment with user and organization criteria") {
+			Segmentation.openSegmentsAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.gotoAdd();
+
+			Segmentation.fillTitle(titleField = "Segment Name");
+
+			Segmentation.addProperties(propertyOption = "First Name");
+
+			Segmentation.fillProperty(criterionValue = "Test");
+
+			Segmentation.gotoSidebar(fieldType = "Organization");
+
+			Segmentation.addProperties(
+				indexNumber = 2,
+				propertyOption = "Hierarchy Path");
+
+			Segmentation.fillProperty(
+				criterionValue = "Organization Name",
+				indexNumber = 2);
+
+			Button.clickSave();
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("Change conjuntion to OR") {
+			Segmentation.editSegment(entry = "Segment Name");
+
+			Segmentation.changeCriterionConjunction(criterionConjunctionItem = "Or");
+		}
+
+		task ("Delete the user criteria") {
+			Segmentation.deleteProperty();
+
+			Button.clickSave();
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("Create an experience for each segment in the Content Page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Experience Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Experience Content Page",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Basic Components",
+				fragmentName = "Heading");
+
+			PageEditor.editFragmentText(
+				fragmentName = "Heading",
+				id = "element-text",
+				text = "Default Heading");
+
+			PageEditor.addExperience(
+				experienceName = "Experience Name",
+				segmentName = "Segment Name");
+
+			PageEditor.editFragmentText(
+				fragmentName = "Heading",
+				id = "element-text",
+				text = "Experience Heading");
+
+			PageEditor.prioritizeExperience(experienceName = "Experience Name");
+
+			PageEditor.publish();
+		}
+
+		task ("Check heading for experience") {
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/experience-content-page");
+
+			AssertTextEquals(
+				locator1 = "Experience#FRAGMENT_HEADING",
+				value1 = "Experience Heading");
+		}
+
+		task ("Check heading for default experience") {
+			User.logoutPG();
+
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/test-site-name/experience-content-page");
+
+			AssertTextEquals(
+				locator1 = "Experience#FRAGMENT_HEADING",
+				value1 = "Default Heading");
+		}
+	}
+
+	@description = "LPS-94874 Bug: Can't edit segment if the segment has a select input"
+	@priority = 5
+	@uitest
+	test CanEditSegmentIfHaveASelectInput {
+		property portal.acceptance = "true";
+
+		task ("Go to segments portlet") {
+			Segmentation.openSegmentsAdmin(siteURLKey = "test-site-name");
+		}
+
+		task ("Edit the segment with a select input") {
+			Segmentation.editSegment(entry = "EditSegment Test");
+
+			AssertVisible(
+				ariaLabel = "Enter View Mode",
+				locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+			Segmentation.deleteProperty();
+
+			Segmentation.addProperties(propertyOption = "Regular Role");
+
+			Segmentation.fillProperty(selectCheckbox = "Administrator");
+
+			Segmentation.fillTitle(titleField = "EditSegmentIfHaveASelectInput Test");
+
+			Segmentation.viewMembers(memberName = "Test Test");
+
+			Button.clickSave();
+		}
+
+		task ("Assert segment edited") {
+			Segmentation.editSegment(entry = "EditSegmentIfHaveASelectInput Test");
+
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = "Administrator");
+
+			Segmentation.fillProperty(selectCheckbox = "Power User");
+
+			Button.clickSave();
+
+			Segmentation.editSegment(entry = "EditSegmentIfHaveASelectInput Test");
+
+			AssertVisible(
+				ariaLabel = "Enter View Mode",
+				locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = "Power User");
+		}
+
+		task ("Assert the segment cannot be edited with the toggle off") {
+			Click(
+				key_text = "cog",
+				locator1 = "Icon#ANY");
+
+			AssertVisible(
+				ariaLabel = "Enter Edit Mode",
+				locator1 = "Button#ANY_WITH_ARIA_LABEL");
+
+			AssertElementNotPresent(locator1 = "Button#SELECT");
+		}
+	}
+
 	@description = "LPS-102740 Validate if the user can edit a segment with Properties Country"
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test EditSegmentUserByOrganizationCountry {
 		property portal.acceptance = "true";
@@ -51,7 +224,7 @@ definition {
 
 			Segmentation.fillTitle(titleField = "EditSegmentUserByCountry Test");
 
-			Segmentation.deleteProperties();
+			Segmentation.deleteProperty();
 
 			Segmentation.gotoSidebar(fieldType = "Organization");
 
@@ -67,14 +240,14 @@ definition {
 		task ("Assert segment edited") {
 			Segmentation.editSegment(entry = "EditSegmentUserByCountry Test");
 
-			Segmentation.viewSegment(
-				criterion = "options",
-				value = "china");
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = "china");
 		}
 	}
 
 	@description = "LPS-102740 Validate if the user can edit a segment with Properties Region"
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test EditSegmentUserByOrganizationRegion {
 		property portal.acceptance = "true";
@@ -86,7 +259,7 @@ definition {
 		task ("Edit the segment") {
 			Segmentation.editSegment(entry = "EditSegment Test");
 
-			Segmentation.deleteProperties();
+			Segmentation.deleteProperty();
 
 			Segmentation.gotoSidebar(fieldType = "Organization");
 
@@ -104,14 +277,14 @@ definition {
 		task ("Assert segment edited") {
 			Segmentation.editSegment(entry = "EditSegmentUserByRegion Test");
 
-			Segmentation.viewSegment(
-				criterion = "options",
-				value = "madrid");
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = "madrid");
 		}
 	}
 
 	@description = "LPS-102743 Validate if the user can edit a segment with Properties Session URL"
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test EditSegmentUserBySessionURL {
 		property portal.acceptance = "true";
@@ -125,13 +298,13 @@ definition {
 
 			Segmentation.fillTitle(titleField = "EditSegmentUserBySessionURL Test");
 
-			Segmentation.deleteProperties();
+			Segmentation.deleteProperty();
 
 			Segmentation.gotoSidebar(fieldType = "Session");
 
 			Segmentation.addProperties(propertyOption = "URL");
 
-			Segmentation.fillProperty(propertyField = "http://localhost:8080");
+			Segmentation.fillProperty(criterionValue = "http://localhost:8080");
 
 			Button.clickSave();
 		}
@@ -139,12 +312,14 @@ definition {
 		task ("Assert segment edited") {
 			Segmentation.editSegment(entry = "EditSegmentUserBySessionURL Test");
 
-			Segmentation.viewSegment(propertyField = "http://localhost:8080");
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = "http://localhost:8080");
 		}
 	}
 
-	@description = "Validate if the user can edit a segment with User Tag"
-	@priority = "5"
+	@description = "LPS-102742 Validate if the user can edit a segment with User Tag"
+	@priority = 5
 	@uitest
 	test EditSegmentUserByUserTag {
 		property portal.acceptance = "true";
@@ -165,11 +340,11 @@ definition {
 		task ("Edit the segment") {
 			Segmentation.editSegment(entry = "EditSegment Test");
 
-			Segmentation.deleteProperties();
+			Segmentation.deleteProperty();
 
 			Segmentation.addProperties(propertyOption = "Tag");
 
-			Segmentation.fillProperty(selectLink = "tagname");
+			Segmentation.fillProperty(selectEntry = "tagname");
 
 			Segmentation.fillTitle(titleField = "EditSegmentUserByUserTag Test");
 
@@ -181,14 +356,14 @@ definition {
 		task ("Assert segment edited") {
 			Segmentation.editSegment(entry = "EditSegmentUserByUserTag Test");
 
-			Segmentation.viewSegment(
-				criterion = "select-input",
-				value = "tagname");
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_INPUT_ANY",
+				value1 = "tagname");
 		}
 	}
 
 	@description = "Validate if the user can edit a segment with Properties User and Email Segment with Contains to Equals Option"
-	@priority = "5"
+	@priority = 5
 	@uitest
 	test EditSegmentUserEmailAddressContainsToEquals {
 		property portal.acceptance = "true";
@@ -210,7 +385,27 @@ definition {
 		task ("Assert segment edited") {
 			Segmentation.editSegment(entry = "EditSegmentUserEmailAddressContainsToEquals Test");
 
-			Segmentation.viewSegment(criterionInputOption = "eq");
+			AssertValue(
+				locator1 = "Segmentation#CRITERION_OPERATOR",
+				value1 = "eq");
+		}
+	}
+
+	@description = "This is a test for LPS-149468. The kebab menu next to a segment must have icons next to the menu items."
+	@priority = 3
+	test ViewIconsOfSegmentsActions {
+		task ("When the user opens the dropdown menu of a segment") {
+			Segmentation.openSegmentsAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.openEntryMenu(rowEntry = "EditSegment Test");
+		}
+
+		task ("Then there should be icons next to the menu items") {
+			for (var icon : list "pencil,users,password-policies,trash") {
+				AssertVisible(
+					key_text = ${icon},
+					locator1 = "Icon#ANY");
+			}
 		}
 	}
 

@@ -1,53 +1,110 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
-import React, {useContext} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 
+import {PERFORM_SIGN_IN} from '../../utilities/eventsDefinitions';
 import {liferayNavigate} from '../../utilities/index';
+import GuestModal from './GuestModal';
 import MiniCartContext from './MiniCartContext';
 import {
+	PROCEED_AS_GUEST,
 	REVIEW_ORDER,
+	SIGN_IN_TO_CHECKOUT,
 	SUBMIT_ORDER,
-	WORKFLOW_STATUS_APPROVED,
 } from './util/constants';
-import {hasErrors} from './util/index';
+import {storeImmediateCheckout} from './util/guestModal';
+import {canSubmit} from './util/index';
 
-function OrderButton() {
-	const {actionURLs, cartState, labels} = useContext(MiniCartContext);
-
-	const {checkoutURL, orderDetailURL} = actionURLs;
-	const {cartItems = [], workflowStatusInfo = {}} = cartState;
-
+function OrderButton({disabled = false}) {
 	const {
-		code: workflowStatus = WORKFLOW_STATUS_APPROVED,
-	} = workflowStatusInfo;
+		actionURLs: {checkoutURL, orderDetailURL, signInURL},
+		cartState,
+		closeCart,
+		guestOrderEnabled,
+		labels,
+	} = useContext(MiniCartContext);
 
-	const canSubmit =
-		!hasErrors(cartItems) && workflowStatus === WORKFLOW_STATUS_APPROVED;
+	const [guestSignInVisible, setGuestSignInVisible] = useState(false);
+
+	useEffect(() => {
+		const toggleModal = () => {
+			if (!guestSignInVisible) {
+				setGuestSignInVisible(true);
+			}
+		};
+
+		if (guestOrderEnabled) {
+			Liferay.on(PERFORM_SIGN_IN, toggleModal);
+		}
+
+		return () => {
+			if (guestOrderEnabled) {
+				Liferay.detach(PERFORM_SIGN_IN, toggleModal);
+			}
+		};
+	}, [guestOrderEnabled, guestSignInVisible, setGuestSignInVisible]);
 
 	return (
 		<div className="mini-cart-submit">
-			<ClayButton
-				block
-				disabled={!cartItems.length}
-				onClick={() => {
-					liferayNavigate(canSubmit ? checkoutURL : orderDetailURL);
-				}}
-			>
-				{canSubmit ? labels[SUBMIT_ORDER] : labels[REVIEW_ORDER]}
-			</ClayButton>
+			{guestOrderEnabled && signInURL ? (
+				<>
+					<ClayButton
+						block
+						disabled={disabled}
+						displayType="primary"
+						onClick={() => {
+							closeCart();
+
+							storeImmediateCheckout(true);
+
+							setGuestSignInVisible(true);
+						}}
+					>
+						{labels[SIGN_IN_TO_CHECKOUT]}
+					</ClayButton>
+
+					<ClayButton
+						block
+						disabled={disabled}
+						displayType="secondary"
+						onClick={() => {
+							liferayNavigate(checkoutURL);
+						}}
+					>
+						{labels[PROCEED_AS_GUEST]}
+					</ClayButton>
+
+					{guestSignInVisible ? (
+						<GuestModal
+							isVisible={guestSignInVisible}
+							setIsVisible={setGuestSignInVisible}
+							signInURL={signInURL}
+						/>
+					) : null}
+				</>
+			) : (
+				<ClayButton
+					block
+					disabled={disabled}
+					onClick={() => {
+						if (!disabled) {
+							liferayNavigate(
+								canSubmit(cartState)
+									? checkoutURL
+									: orderDetailURL
+							);
+						}
+					}}
+				>
+					{canSubmit(cartState) || disabled
+						? labels[SUBMIT_ORDER]
+						: labels[REVIEW_ORDER]}
+				</ClayButton>
+			)}
 		</div>
 	);
 }

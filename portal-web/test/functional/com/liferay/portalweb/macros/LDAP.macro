@@ -1,19 +1,197 @@
 definition {
 
 	@description = "Add Apache DS server and test the connection between it and Liferay DXP"
-	macro addLDAPServerAndTestConnection {
-		PortalSettings.addLDAPServer(LDAPServerName = "${LDAPServerName}");
+	@summary = "Default summary"
+	macro addLDAPServerAndTestConnection(baseURL = null, ldapServerName = null, userCustomMappings = null) {
+		PortalSettings.addLDAPServer(
+			baseURL = ${baseURL},
+			ldapServerName = ${ldapServerName},
+			userCustomMappings = ${userCustomMappings});
 
-		PortalSettings.editLDAPServer(LDAPServerName = "${LDAPServerName}");
+		PortalSettings.editLDAPServer(
+			baseURL = ${baseURL},
+			ldapServerName = ${ldapServerName});
 
 		PortalSettings.testLDAPConnection();
 	}
 
-	@description = "Enable various LDAP related settings"
-	macro enableLDAPSettings {
-		PortalSettings.configureLDAPSetting(enableSettingList = "${enableSettingList}");
+	@description = "Assert no pagination display in the LDAP connection page"
+	@summary = "Default summary"
+	macro assertNoPagination(ldapServerName = null) {
+		PortalSettings.editLDAPServer(ldapServerName = ${ldapServerName});
 
-		PortalSettings.viewEnabledLDAPSetting(enableSettingList = "${enableSettingList}");
+		AssertClick(
+			locator1 = "PortalSettingsAuthentication#LDAP_SERVER_TEST_LDAP_USERS_BUTTON",
+			value1 = "Test LDAP Users");
+
+		AssertElementNotPresent(locator1 = "Pagination#PAGE_ITERATOR");
+
+		Click(
+			key_modalTitle = "LDAP",
+			locator1 = "Button#CLOSE_MODAL");
+	}
+
+	@description = "Enable LDAP debug logs"
+	@summary = "Default summary"
+	macro enableLDAPDebugLogs(baseURL = null) {
+		ServerAdministration.openServerAdmin(baseURL = ${baseURL});
+
+		ServerAdministration.addCategoryLogLevels(
+			categoryLevel = "DEBUG",
+			categoryName = "com.liferay.portal.security.ldap.internal.DefaultPortalLDAP");
+
+		ServerAdministration.addCategoryLogLevels(
+			categoryLevel = "DEBUG",
+			categoryName = "com.liferay.portal.security.ldap.internal.authenticator.LDAPAuth");
+
+		ServerAdministration.addCategoryLogLevels(
+			categoryLevel = "DEBUG",
+			categoryName = "com.liferay.portal.security.ldap.internal.exportimport");
+	}
+
+	@description = "Enable various LDAP related settings"
+	@summary = "Default summary"
+	macro enableLDAPSettings(baseURL = null, enableSettingList = null) {
+		PortalSettings.configureLDAPSetting(
+			baseURL = ${baseURL},
+			enableSettingList = ${enableSettingList});
+
+		PortalSettings.viewEnabledLDAPSetting(
+			baseURL = ${baseURL},
+			enableSettingList = ${enableSettingList});
+	}
+
+	@description = "Import an LDIF file on LDAP then trigger the import manually with a groovy script"
+	@summary = "Default summary"
+	macro importLDIFOnLDAPAndTriggerSync(ldifName = null) {
+		LDAP.updateLDAPDatabaseWithLDIFFile(ldifName = ${ldifName});
+
+		if (!(isSet(nodePort))) {
+			var nodePort = 8080;
+		}
+
+		Groovy.runScriptViaGogoShell(
+			nodePort = ${nodePort},
+			scriptFile = "groovy-script-invoke-ldap-user-import-on-master.groovy");
+	}
+
+	@description = "Install openldap util to be able to use ldap commands on command line"
+	@summary = "Default summary"
+	macro installLDAPCommandUtil() {
+		AntCommands.runCommand("build-test-apacheds.xml", "get-apacheds-commands");
+	}
+
+	@description = "List the contents of the LDAP database"
+	@summary = "Default summary"
+	macro searchLDAPDatabaseForUsersAndGroups() {
+		AntCommands.runCommand("build-test-apacheds.xml", "search-apacheds");
+	}
+
+	@summary = "Default summary"
+	macro setGeneralMethod(generalMethod = null) {
+		Variables.assertDefined(parameterList = ${generalMethod});
+
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "LDAP",
+			configurationName = "General",
+			configurationScope = "Virtual Instance Scope");
+
+		Select(
+			locator1 = "Select#SELECT_ID",
+			selectFieldId = "method",
+			value1 = ${generalMethod});
+
+		PortletEntry.save();
+	}
+
+	@summary = "Default summary"
+	macro setPasswordEncryption(passwordEncryption = null) {
+		Variables.assertDefined(parameterList = ${passwordEncryption});
+
+		PortalSettings.gotoConfiguration(
+			configurationCategory = "LDAP",
+			configurationName = "General",
+			configurationScope = "Virtual Instance Scope");
+
+		Select(
+			locator1 = "Select#SELECT_ID",
+			selectFieldId = "passwordEncryptionAlgorithm",
+			value1 = ${passwordEncryption});
+
+		PortletEntry.save();
+	}
+
+	@description = "Update LDAP database through LDIF file"
+	@summary = "Default summary"
+	macro updateLDAPDatabaseWithLDIFFile(ldifName = null) {
+		AntCommands.runCommand("build-test-apacheds.xml", "update-apacheds -DldifName=${ldifName}");
+	}
+
+	@description = "Verify that the group is imported on localhost after LDAP sync"
+	@summary = "Default summary"
+	macro verifyLDAPUserGroupIsImported(userGroupName = null) {
+		UserGroup.openUserGroupsAdmin();
+
+		AssertElementPresent(
+			key_userGroupName = ${userGroupName},
+			locator1 = "UserGroups#USER_GROUP_TABLE_CHECKBOX");
+	}
+
+	@description = "Verify that the user is removed from group on localhost after LDAP sync"
+	@summary = "Default summary"
+	macro verifyLDAPUserIsRemovedFromGroup(userGroupName = null, userFirstName = null) {
+		UserGroup.openUserGroupsAdmin();
+
+		UserGroup.viewRemoveMemberCP(
+			userFirstName = ${userFirstName},
+			userGroupName = ${userGroupName});
+	}
+
+	@description = "Verify that the user's first name has changed in the LDAP database after sync"
+	@summary = "Default summary"
+	macro verifyUserFirstNameIsChangedInLDAP(userFirstName = null) {
+		Variables.assertDefined(parameterList = ${userFirstName});
+
+		LDAP.searchLDAPDatabaseForUsersAndGroups();
+
+		var projectDir = PropsUtil.get("project.dir");
+
+		var result = FileUtil.read("${projectDir}/LDAPSearchResult.txt");
+
+		if (!(contains(${result}, ${userFirstName}))) {
+			echo(${result});
+
+			fail("Failed to find LDAP contact in LDAP database");
+		}
+		else {
+			echo("Contact found in LDAP database.");
+		}
+	}
+
+	@description = "Verify that the user is imported on localhost after LDAP sync, after a specified interval time."
+	@summary = "Default summary"
+	macro verifyUserImportAfterImportIntervalTime(userScreenName = null) {
+		if (!(isSet(intervalTime))) {
+			var intervalTime = 60000;
+		}
+
+		// Wait for the amount of the import interval time. Needed for LRQA-75138.
+
+		Pause(value1 = ${intervalTime});
+
+		User.openUsersAdmin();
+
+		Search.searchCP(searchTerm = ${userScreenName});
+	}
+
+	@description = "Verify that the user is imported on localhost after LDAP sync"
+	@summary = "Default summary"
+	macro verifyUserIsImported(userScreenName = null) {
+		User.openUsersAdmin();
+
+		Search.searchCP(searchTerm = ${userScreenName});
+
+		AssertElementPresent(locator1 = "ContentRow#ENTRY_CONTENT_ROW_1");
 	}
 
 }

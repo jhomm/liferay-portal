@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.engine.fixed.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.tax.engine.fixed.model.impl.CommerceTaxFixedRateAddr
 import com.liferay.commerce.tax.engine.fixed.model.impl.CommerceTaxFixedRateAddressRelModelImpl;
 import com.liferay.commerce.tax.engine.fixed.service.persistence.CommerceTaxFixedRateAddressRelPersistence;
 import com.liferay.commerce.tax.engine.fixed.service.persistence.CommerceTaxFixedRateAddressRelUtil;
+import com.liferay.commerce.tax.engine.fixed.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -41,11 +35,9 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -53,6 +45,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce tax fixed rate address rel service.
@@ -64,6 +63,7 @@ import java.util.Set;
  * @author Alessio Antonio Rendina
  * @generated
  */
+@Component(service = CommerceTaxFixedRateAddressRelPersistence.class)
 public class CommerceTaxFixedRateAddressRelPersistenceImpl
 	extends BasePersistenceImpl<CommerceTaxFixedRateAddressRel>
 	implements CommerceTaxFixedRateAddressRelPersistence {
@@ -187,7 +187,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxFixedRateAddressRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceTaxFixedRateAddressRel
@@ -569,7 +569,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {commerceTaxMethodId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -711,7 +711,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxFixedRateAddressRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceTaxFixedRateAddressRel
@@ -1088,7 +1088,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {CPTaxCategoryId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1229,7 +1229,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxFixedRateAddressRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceTaxFixedRateAddressRel
@@ -1604,7 +1604,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		Object[] finderArgs = new Object[] {countryId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2105,7 +2105,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxFixedRateAddressRel>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2178,7 +2178,7 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2233,7 +2233,8 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 	/**
 	 * Initializes the commerce tax fixed rate address rel persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -2303,38 +2304,47 @@ public class CommerceTaxFixedRateAddressRelPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"countryId"},
 			false);
 
-		_setCommerceTaxFixedRateAddressRelUtilPersistence(this);
+		CommerceTaxFixedRateAddressRelUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceTaxFixedRateAddressRelUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceTaxFixedRateAddressRelUtil.setPersistence(null);
 
 		entityCache.removeCache(
 			CommerceTaxFixedRateAddressRelImpl.class.getName());
 	}
 
-	private void _setCommerceTaxFixedRateAddressRelUtilPersistence(
-		CommerceTaxFixedRateAddressRelPersistence
-			commerceTaxFixedRateAddressRelPersistence) {
-
-		try {
-			Field field =
-				CommerceTaxFixedRateAddressRelUtil.class.getDeclaredField(
-					"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceTaxFixedRateAddressRelPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCETAXFIXEDRATEADDRESSREL =

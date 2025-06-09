@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.social;
@@ -24,7 +15,7 @@ import com.liferay.journal.exception.NoSuchArticleException;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalArticleLocalService;
-import com.liferay.petra.string.StringBundler;
+import com.liferay.journal.util.JournalHelper;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
@@ -35,7 +26,7 @@ import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.social.kernel.model.BaseSocialActivityInterpreter;
 import com.liferay.social.kernel.model.SocialActivity;
@@ -50,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Zsolt Berentey
  */
 @Component(
-	property = "javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+	property = "jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 	service = SocialActivityInterpreter.class
 )
 public class JournalArticleActivityInterpreter
@@ -95,22 +86,19 @@ public class JournalArticleActivityInterpreter
 
 			Layout layout = article.getLayout();
 
-			if (layout != null) {
-				String groupFriendlyURL = _portal.getGroupFriendlyURL(
-					layout.getLayoutSet(), serviceContext.getThemeDisplay(),
-					false, false);
-
-				return StringBundler.concat(
-					groupFriendlyURL,
-					JournalArticleConstants.CANONICAL_URL_SEPARATOR,
-					article.getUrlTitle());
+			if (layout == null) {
+				return null;
 			}
 
-			return null;
+			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+			return _journalHelper.createURLPattern(
+				article, themeDisplay.getLocale(), layout.isPrivateLayout(),
+				JournalArticleConstants.CANONICAL_URL_SEPARATOR, themeDisplay);
 		}
 		catch (NoSuchArticleException noSuchArticleException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchArticleException, noSuchArticleException);
+				_log.debug(noSuchArticleException);
 			}
 
 			return null;
@@ -213,13 +201,6 @@ public class JournalArticleActivityInterpreter
 			permissionChecker, activity.getClassPK(), actionId);
 	}
 
-	@Reference(unbind = "-")
-	protected void setJournalArticleLocalService(
-		JournalArticleLocalService journalArticleLocalService) {
-
-		_journalArticleLocalService = journalArticleLocalService;
-	}
-
 	private static final String[] _CLASS_NAMES = {
 		JournalArticle.class.getName()
 	};
@@ -227,6 +208,7 @@ public class JournalArticleActivityInterpreter
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalArticleActivityInterpreter.class);
 
+	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
 
 	@Reference(
@@ -242,6 +224,6 @@ public class JournalArticleActivityInterpreter
 		_journalFolderModelResourcePermission;
 
 	@Reference
-	private Portal _portal;
+	private JournalHelper _journalHelper;
 
 }

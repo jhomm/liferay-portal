@@ -1,0 +1,154 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"fragment": {
+						"key": "liferay-online-navbar"
+					},
+					"fragmentConfig": {
+						"position": "static"
+					},
+					"fragmentFields": [
+						{
+							"id": "imageLogo",
+							"value": {
+							}
+						}
+					]
+				},
+				"type": "Fragment"
+			},
+			{
+				"definition": {
+					"fragmentStyle": {
+						"backgroundColor": "gray100Color",
+						"paddingBottom": "7",
+						"paddingTop": "7"
+					},
+					"layout": {
+						"paddingBottom": 8,
+						"paddingTop": 8
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"layout": {
+								"widthType": "Fixed"
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+								},
+								"type": "DropZone"
+							}
+						],
+						"type": "Section"
+					}
+				],
+				"type": "Section"
+			},
+			{
+				"definition": {
+					"fragment": {
+						"key": "liferay-online-footer"
+					},
+					"fragmentFields": [
+						{
+							"id": "socialLinkin",
+							"value": {
+							}
+						},
+						{
+							"id": "socialFacebook",
+							"value": {
+							}
+						},
+						{
+							"id": "footerText",
+							"value": {
+							}
+						},
+						{
+							"id": "socialInstagram",
+							"value": {
+							}
+						},
+						{
+							"id": "socialLinkinLink",
+							"value": {
+								"fragmentLink": {
+									"value": {
+										"href": {
+											"value": "#"
+										}
+									}
+								}
+							}
+						},
+						{
+							"id": "socialYoutubeLink",
+							"value": {
+								"fragmentLink": {
+									"value": {
+										"href": {
+											"value": "#"
+										}
+									}
+								}
+							}
+						},
+						{
+							"id": "socialFacebookLink",
+							"value": {
+								"fragmentLink": {
+									"value": {
+										"href": {
+											"value": "#"
+										}
+									}
+								}
+							}
+						},
+						{
+							"id": "socialYoutube",
+							"value": {
+							}
+						},
+						{
+							"id": "socialInstagramLink",
+							"value": {
+								"fragmentLink": {
+									"value": {
+										"href": {
+											"value": "#"
+										}
+									}
+								}
+							}
+						}
+					],
+					"widgetInstances": [
+						{
+							"widgetConfig": {
+								"displayDepth": "0",
+								"displayStyle": "ddmTemplate_NAVBAR-BLANK-FTL",
+								"displayStyleGroupId": "[$GROUP_ID$]",
+								"expandedLevels": "auto",
+								"rootMenuItemLevel": "0",
+								"rootMenuItemType": "absolute",
+								"siteNavigationMenuName": "Footer Navigation",
+								"siteNavigationMenuType": "-1"
+							},
+							"widgetName": "com_liferay_site_navigation_menu_web_portlet_SiteNavigationMenuPortlet"
+						}
+					]
+				},
+				"type": "Fragment"
+			}
+		],
+		"type": "Root"
+	}
+}

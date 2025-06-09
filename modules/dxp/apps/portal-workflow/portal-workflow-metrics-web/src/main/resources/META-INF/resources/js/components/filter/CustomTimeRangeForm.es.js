@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -23,6 +17,16 @@ import {
 import {getMaskByDateFormat} from '../../shared/util/date.es';
 import {sub} from '../../shared/util/lang.es';
 import {useCustomTimeRange} from './hooks/useCustomTimeRange.es';
+
+let MaskedInputDefault = MaskedInput;
+
+// `react-text-mask` provides both a commonjs and ESM version.
+// We need this logic here so that both work. Unit tests rely on commonjs and
+// our DXP runtime uses ESM.
+
+if (MaskedInputDefault.default) {
+	MaskedInputDefault = MaskedInputDefault.default;
+}
 
 export default function CustomTimeRangeForm({
 	handleSelectFilter,
@@ -59,9 +63,11 @@ export default function CustomTimeRangeForm({
 		setFormVisible(false);
 	};
 
-	const onChange = (setter) => ({target: {value}}) => {
-		setter(value);
-	};
+	const onChange =
+		(setter) =>
+		({target: {value}}) => {
+			setter(value);
+		};
 
 	const onApply = () => {
 		const {dateEnd: dateEndError, dateStart: dateStartError} = errors || {};
@@ -86,7 +92,9 @@ export default function CustomTimeRangeForm({
 	return (
 		<div className="custom-range-wrapper" ref={wrapperRef}>
 			<ClayForm className="custom-range-form">
-				<h4 className="mb-2">{Liferay.Language.get('custom-range')}</h4>
+				<div className="h4 mb-2">
+					{Liferay.Language.get('custom-range')}
+				</div>
 
 				<span className="form-text mb-3 text-semi-bold">
 					{sub(Liferay.Language.get('default-date-format-is-x'), [
@@ -100,7 +108,7 @@ export default function CustomTimeRangeForm({
 							{Liferay.Language.get('from')}
 						</label>
 
-						<MaskedInput
+						<MaskedInputDefault
 							className="form-control"
 							defaultValue={dateStart}
 							mask={dateMask}
@@ -116,7 +124,7 @@ export default function CustomTimeRangeForm({
 							{Liferay.Language.get('to')}
 						</label>
 
-						<MaskedInput
+						<MaskedInputDefault
 							className="form-control"
 							defaultValue={dateEnd}
 							mask={dateMask}
@@ -128,7 +136,9 @@ export default function CustomTimeRangeForm({
 					</FormGroupItem>
 				</ClayForm.Group>
 			</ClayForm>
+
 			<div className="dropdown-divider" />
+
 			<div className="custom-range-footer">
 				<ClayButton displayType="secondary" onMouseDown={onCancel}>
 					{Liferay.Language.get('cancel')}

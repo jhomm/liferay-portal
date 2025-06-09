@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.initializer.util;
 
-import com.liferay.commerce.account.exception.NoSuchAccountGroupException;
-import com.liferay.commerce.account.model.CommerceAccountGroup;
-import com.liferay.commerce.account.service.CommerceAccountGroupLocalService;
+import com.liferay.account.exception.NoSuchGroupException;
+import com.liferay.account.model.AccountGroup;
+import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
@@ -33,7 +24,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Calendar;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alec Sloan
  */
-@Component(enabled = false, service = CommercePriceListsImporter.class)
+@Component(service = CommercePriceListsImporter.class)
 public class CommercePriceListsImporter {
 
 	public void importCommercePriceLists(
@@ -85,13 +76,13 @@ public class CommercePriceListsImporter {
 		String parentPriceListName = jsonObject.getString("parentPriceList");
 
 		if (!Validator.isBlank(parentPriceListName)) {
-			String externalReferenceCode = FriendlyURLNormalizerUtil.normalize(
+			String externalReferenceCode = _friendlyURLNormalizer.normalize(
 				parentPriceListName);
 
 			CommercePriceList parentPriceList =
 				_commercePriceListLocalService.
-					fetchCommercePriceListByReferenceCode(
-						serviceContext.getCompanyId(), externalReferenceCode);
+					fetchCommercePriceListByExternalReferenceCode(
+						externalReferenceCode, serviceContext.getCompanyId());
 
 			parentPriceListId = parentPriceList.getParentCommercePriceListId();
 		}
@@ -163,13 +154,13 @@ public class CommercePriceListsImporter {
 				_commerceCurrencyLocalService.getCommerceCurrency(
 					serviceContext.getCompanyId(), currencyCode);
 
-			String externalReferenceCode = FriendlyURLNormalizerUtil.normalize(
+			String externalReferenceCode = _friendlyURLNormalizer.normalize(
 				name);
 
 			CommercePriceList commercePriceList =
 				_commercePriceListLocalService.addOrUpdateCommercePriceList(
-					externalReferenceCode, catalogGroupId, user.getUserId(), 0,
-					commerceCurrency.getCommerceCurrencyId(), true,
+					externalReferenceCode, user.getUserId(), catalogGroupId, 0,
+					commerceCurrency.getCode(), true,
 					CommercePriceListConstants.TYPE_PRICE_LIST,
 					parentPriceListId, false, name, priority, displayDateMonth,
 					displayDateDay, displayDateYear, displayDateHour,
@@ -180,17 +171,17 @@ public class CommercePriceListsImporter {
 			for (int i = 0; i < accountGroupsJSONArray.length(); i++) {
 				try {
 					String accountGroupExternalReferenceCode =
-						FriendlyURLNormalizerUtil.normalize(
+						_friendlyURLNormalizer.normalize(
 							accountGroupsJSONArray.getString(i));
 
-					CommerceAccountGroup commerceAccountGroup =
-						_commerceAccountGroupLocalService.
-							fetchByExternalReferenceCode(
-								serviceContext.getCompanyId(),
-								accountGroupExternalReferenceCode);
+					AccountGroup accountGroup =
+						_accountGroupLocalService.
+							fetchAccountGroupByExternalReferenceCode(
+								accountGroupExternalReferenceCode,
+								serviceContext.getCompanyId());
 
-					if (commerceAccountGroup == null) {
-						throw new NoSuchAccountGroupException();
+					if (accountGroup == null) {
+						throw new NoSuchGroupException();
 					}
 
 					CommercePriceListCommerceAccountGroupRel
@@ -198,25 +189,19 @@ public class CommercePriceListsImporter {
 							_commercePriceListCommerceAccountGroupRelLocalService.
 								fetchCommercePriceListCommerceAccountGroupRel(
 									commercePriceList.getCommercePriceListId(),
-									commerceAccountGroup.
-										getCommerceAccountGroupId());
+									accountGroup.getAccountGroupId());
 
 					if (commercePriceListCommerceAccountGroupRel == null) {
 						_commercePriceListCommerceAccountGroupRelLocalService.
 							addCommercePriceListCommerceAccountGroupRel(
 								serviceContext.getUserId(),
 								commercePriceList.getCommercePriceListId(),
-								commerceAccountGroup.
-									getCommerceAccountGroupId(),
-								0, serviceContext);
+								accountGroup.getAccountGroupId(), 0,
+								serviceContext);
 					}
 				}
-				catch (NoSuchAccountGroupException
-							noSuchAccountGroupException) {
-
-					_log.error(
-						noSuchAccountGroupException,
-						noSuchAccountGroupException);
+				catch (NoSuchGroupException noSuchGroupException) {
+					_log.error(noSuchGroupException);
 				}
 			}
 		}
@@ -226,7 +211,7 @@ public class CommercePriceListsImporter {
 		CommercePriceListsImporter.class);
 
 	@Reference
-	private CommerceAccountGroupLocalService _commerceAccountGroupLocalService;
+	private AccountGroupLocalService _accountGroupLocalService;
 
 	@Reference
 	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
@@ -237,6 +222,9 @@ public class CommercePriceListsImporter {
 
 	@Reference
 	private CommercePriceListLocalService _commercePriceListLocalService;
+
+	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
 
 	@Reference
 	private UserLocalService _userLocalService;

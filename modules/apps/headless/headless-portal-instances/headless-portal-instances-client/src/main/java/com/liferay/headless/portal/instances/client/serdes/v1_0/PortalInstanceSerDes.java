@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.portal.instances.client.serdes.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.portal.instances.client.serdes.v1_0;
 import com.liferay.headless.portal.instances.client.dto.v1_0.PortalInstance;
 import com.liferay.headless.portal.instances.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alberto Chaparro
@@ -63,6 +54,16 @@ public class PortalInstanceSerDes {
 			sb.append("\"active\": ");
 
 			sb.append(portalInstance.getActive());
+		}
+
+		if (portalInstance.getAdmin() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"admin\": ");
+
+			sb.append(String.valueOf(portalInstance.getAdmin()));
 		}
 
 		if (portalInstance.getCompanyId() != null) {
@@ -157,6 +158,13 @@ public class PortalInstanceSerDes {
 			map.put("active", String.valueOf(portalInstance.getActive()));
 		}
 
+		if (portalInstance.getAdmin() == null) {
+			map.put("admin", null);
+		}
+		else {
+			map.put("admin", String.valueOf(portalInstance.getAdmin()));
+		}
+
 		if (portalInstance.getCompanyId() == null) {
 			map.put("companyId", null);
 		}
@@ -214,6 +222,35 @@ public class PortalInstanceSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "admin")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "companyId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "domain")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "portalInstanceId")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "siteInitializerKey")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "virtualHost")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PortalInstance portalInstance, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -221,6 +258,12 @@ public class PortalInstanceSerDes {
 			if (Objects.equals(jsonParserFieldName, "active")) {
 				if (jsonParserFieldValue != null) {
 					portalInstance.setActive((Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "admin")) {
+				if (jsonParserFieldValue != null) {
+					portalInstance.setAdmin(
+						AdminSerDes.toDTO((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "companyId")) {
@@ -285,36 +328,7 @@ public class PortalInstanceSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -324,6 +338,42 @@ public class PortalInstanceSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

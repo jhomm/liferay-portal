@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import AJAX from '../../../utilities/AJAX/index';
 
-const CARTS_PATH = '/carts',
-	CART_ITEMS_PATH = '/cart-items',
-	ITEMS_PATH = '/items';
+const CARTS_PATH = '/carts';
+const CART_ITEMS_PATH = '/cart-items';
+const ITEMS_PATH = '/items';
 
 const VERSION = 'v1.0';
 
@@ -28,20 +19,34 @@ function resolveCartItemsPath(basePath = '', itemId) {
 	return `${basePath}${VERSION}${CART_ITEMS_PATH}/${itemId}`;
 }
 
-export default (basePath) => ({
-	createItemByCartId: (cartId, json) =>
-		AJAX.POST(resolveItemsPath(basePath, cartId), json),
+function resolveCartItemsBatchPath(basePath = '') {
+	return `${basePath}${VERSION}${CART_ITEMS_PATH}/batch`;
+}
 
-	deleteItemById: (itemId) =>
-		AJAX.DELETE(resolveCartItemsPath(basePath, itemId)),
+export default function CartItem(basePath) {
+	return {
+		createItemByCartId: (cartId, json) =>
+			AJAX.POST(resolveItemsPath(basePath, cartId), json),
 
-	getItemById: (itemId) => AJAX.GET(resolveCartItemsPath(basePath, itemId)),
+		deleteItemById: (itemId) =>
+			AJAX.DELETE(resolveCartItemsPath(basePath, itemId)),
 
-	getItemsByCartId: (cartId) => AJAX.GET(resolveItemsPath(basePath, cartId)),
+		deleteItemsById: (items) =>
+			AJAX.DELETE(resolveCartItemsBatchPath(basePath), {
+				body: JSON.stringify(items),
+			}),
 
-	replaceItemById: (itemId, json) =>
-		AJAX.PUT(resolveCartItemsPath(basePath, itemId), json),
+		getItemById: (itemId) =>
+			AJAX.GET(resolveCartItemsPath(basePath, itemId)),
 
-	updateItemById: (itemId, jsonProps) =>
-		AJAX.PATCH(resolveCartItemsPath(basePath, itemId), jsonProps),
-});
+		getItemsByCartId: (cartId, params) => {
+			return AJAX.GET(resolveItemsPath(basePath, cartId), {}, params);
+		},
+
+		replaceItemById: (itemId, json) =>
+			AJAX.PUT(resolveCartItemsPath(basePath, itemId), json),
+
+		updateItemById: (itemId, jsonProps) =>
+			AJAX.PATCH(resolveCartItemsPath(basePath, itemId), jsonProps),
+	};
+}

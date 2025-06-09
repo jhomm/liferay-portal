@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.search.spi.model.permission.test;
@@ -17,12 +8,11 @@ package com.liferay.account.internal.search.spi.model.permission.test;
 import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.retriever.AccountUserRetriever;
-import com.liferay.account.service.AccountEntryLocalService;
-import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
-import com.liferay.account.service.AccountEntryUserRelLocalService;
+import com.liferay.account.service.test.util.AccountEntryArgs;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.OrganizationConstants;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -43,11 +33,12 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.util.LinkedHashMap;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -78,17 +69,8 @@ public class UserSearchPermissionFilterContributorTest {
 		User userA = _addOrganizationUser(organization);
 
 		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-
-		_accountEntryUserRelLocalService.addAccountEntryUserRel(
-			accountEntry.getAccountEntryId(), TestPropsValues.getUserId(),
-			RandomTestUtil.randomString(),
-			RandomTestUtil.randomString() + "@liferay.com",
-			LocaleUtil.getDefault(), RandomTestUtil.randomString(),
-			RandomTestUtil.randomString(), RandomTestUtil.randomString(), 0, 0);
-
-		_accountEntryOrganizationRelLocalService.addAccountEntryOrganizationRel(
-			accountEntry.getAccountEntryId(), organization.getOrganizationId());
+			AccountEntryArgs.withOrganizations(organization),
+			AccountEntryArgs.withUsers(UserTestUtil.addUser()));
 
 		Assert.assertEquals(
 			0,
@@ -111,6 +93,53 @@ public class UserSearchPermissionFilterContributorTest {
 		Assert.assertEquals(
 			1,
 			_performUserSearchCount(accountEntry.getAccountEntryId(), userA));
+	}
+
+	@Test
+	public void testWhenHasOrganizationManageSuborganizationPermissionSearch()
+		throws Exception {
+
+		Organization organization = OrganizationTestUtil.addOrganization();
+
+		Organization suborganization = OrganizationTestUtil.addOrganization(
+			organization.getOrganizationId(), RandomTestUtil.randomString(),
+			false);
+
+		User suborganizationUser = _addOrganizationUser(suborganization);
+
+		AccountEntry accountEntry = AccountEntryTestUtil.addAccountEntry(
+			AccountEntryArgs.withOrganizations(suborganization),
+			AccountEntryArgs.withUsers(suborganizationUser));
+
+		User organizationUser = _addOrganizationUser(organization);
+
+		Assert.assertEquals(
+			0,
+			_performUserSearchCount(
+				accountEntry.getAccountEntryId(), organizationUser));
+
+		Role organizationRole = RoleTestUtil.addRole(
+			RoleConstants.TYPE_ORGANIZATION);
+
+		RoleTestUtil.addResourcePermission(
+			organizationRole, AccountEntry.class.getName(),
+			ResourceConstants.SCOPE_GROUP_TEMPLATE,
+			String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID),
+			AccountActionKeys.VIEW_USERS);
+		RoleTestUtil.addResourcePermission(
+			organizationRole, Organization.class.getName(),
+			ResourceConstants.SCOPE_GROUP_TEMPLATE,
+			String.valueOf(GroupConstants.DEFAULT_PARENT_GROUP_ID),
+			AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS);
+
+		_userGroupRoleLocalService.addUserGroupRole(
+			organizationUser.getUserId(), organization.getGroupId(),
+			organizationRole.getRoleId());
+
+		Assert.assertEquals(
+			1,
+			_performUserSearchCount(
+				accountEntry.getAccountEntryId(), organizationUser));
 	}
 
 	private User _addOrganizationUser(Organization organization)
@@ -136,8 +165,9 @@ public class UserSearchPermissionFilterContributorTest {
 
 			BaseModelSearchResult<User> userBaseModelSearchResult =
 				_accountUserRetriever.searchAccountUsers(
-					accountEntryId, null, WorkflowConstants.STATUS_APPROVED,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, "screen-name", false);
+					new long[] {accountEntryId}, null, new LinkedHashMap<>(),
+					WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS, "screen-name", false);
 
 			return userBaseModelSearchResult.getLength();
 		}
@@ -146,16 +176,6 @@ public class UserSearchPermissionFilterContributorTest {
 				originalPermissionChecker);
 		}
 	}
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
-
-	@Inject
-	private AccountEntryOrganizationRelLocalService
-		_accountEntryOrganizationRelLocalService;
-
-	@Inject
-	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
 
 	@Inject
 	private AccountUserRetriever _accountUserRetriever;

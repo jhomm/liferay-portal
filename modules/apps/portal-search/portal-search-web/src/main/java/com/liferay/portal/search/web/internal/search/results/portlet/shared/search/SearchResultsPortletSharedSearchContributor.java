@@ -1,30 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.results.portlet.shared.search;
 
+import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
-import com.liferay.portal.search.web.internal.search.results.constants.SearchResultsPortletKeys;
+import com.liferay.portal.search.web.constants.SearchResultsPortletKeys;
 import com.liferay.portal.search.web.internal.search.results.portlet.SearchResultsPortletPreferences;
 import com.liferay.portal.search.web.internal.search.results.portlet.SearchResultsPortletPreferencesImpl;
-import com.liferay.portal.search.web.internal.util.SearchOptionalUtil;
 import com.liferay.portal.search.web.internal.util.SearchStringUtil;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchContributor;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchSettings;
 
-import java.util.Optional;
+import java.util.function.Function;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -33,8 +26,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author André de Oliveira
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
+	property = "jakarta.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
 	service = PortletSharedSearchContributor.class
 )
 public class SearchResultsPortletSharedSearchContributor
@@ -46,14 +38,13 @@ public class SearchResultsPortletSharedSearchContributor
 
 		SearchResultsPortletPreferences searchResultsPortletPreferences =
 			new SearchResultsPortletPreferencesImpl(
-				portletSharedSearchSettings.getPortletPreferencesOptional());
+				portletSharedSearchSettings.getPortletPreferences());
 
 		SearchRequestBuilder searchRequestBuilder =
 			portletSharedSearchSettings.getFederatedSearchRequestBuilder(
-				searchResultsPortletPreferences.
-					getFederatedSearchKeyOptional());
+				searchResultsPortletPreferences.getFederatedSearchKey());
 
-		paginate(
+		_paginate(
 			searchResultsPortletPreferences, portletSharedSearchSettings,
 			searchRequestBuilder);
 
@@ -61,13 +52,16 @@ public class SearchResultsPortletSharedSearchContributor
 			searchRequestBuilder.highlightEnabled(true);
 
 			String[] fieldsToDisplay = SearchStringUtil.splitAndUnquote(
-				searchResultsPortletPreferences.getFieldsToDisplayOptional());
+				searchResultsPortletPreferences.getFieldsToDisplay());
 
 			searchRequestBuilder.highlightFields(fieldsToDisplay);
 		}
 	}
 
-	protected void paginate(
+	@Reference
+	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
+
+	private void _paginate(
 		SearchResultsPortletPreferences searchResultsPortletPreferences,
 		PortletSharedSearchSettings portletSharedSearchSettings,
 		SearchRequestBuilder searchRequestBuilder) {
@@ -80,37 +74,33 @@ public class SearchResultsPortletSharedSearchContributor
 		searchRequestBuilder.paginationStartParameterName(
 			paginationStartParameterName);
 
-		Optional<String> paginationStartParameterValueOptional =
-			portletSharedSearchSettings.getParameterOptional(
-				paginationStartParameterName);
-
-		SearchOptionalUtil.copy(
-			() -> paginationStartParameterValueOptional.map(Integer::valueOf),
-			portletSharedSearchSettings::setPaginationStart);
-
-		Optional<String> paginationDeltaParameterValueOptional =
-			portletSharedSearchSettings.getParameterOptional(
+		int paginationDelta = GetterUtil.getInteger(
+			portletSharedSearchSettings.getParameter(
 				searchResultsPortletPreferences.
-					getPaginationDeltaParameterName());
-
-		Optional<Integer> paginationDeltaOptional =
-			paginationDeltaParameterValueOptional.map(Integer::valueOf);
-
-		int paginationDelta = paginationDeltaOptional.orElse(
+					getPaginationDeltaParameterName()),
 			searchResultsPortletPreferences.getPaginationDelta());
 
 		portletSharedSearchSettings.setPaginationDelta(paginationDelta);
 		searchRequestBuilder.size(paginationDelta);
 
-		SearchOptionalUtil.copy(
-			() -> paginationStartParameterValueOptional.map(
-				paginationStartValue ->
-					(Integer.valueOf(paginationStartValue) - 1) *
-						paginationDelta),
-			searchRequestBuilder::from);
-	}
+		SearchContext searchContext = searchRequestBuilder.withSearchContextGet(
+			Function.identity());
 
-	@Reference
-	protected SearchRequestBuilderFactory searchRequestBuilderFactory;
+		int paginationStart = GetterUtil.getInteger(
+			portletSharedSearchSettings.getParameter(
+				paginationStartParameterName));
+
+		int[] startAndEnd = SearchPaginationUtil.calculateStartAndEnd(
+			paginationStart, paginationDelta);
+
+		searchContext.setEnd(startAndEnd[1]);
+		searchContext.setStart(startAndEnd[0]);
+
+		if (paginationStart > 0) {
+			portletSharedSearchSettings.setPaginationStart(paginationStart);
+
+			searchRequestBuilder.from((paginationStart - 1) * paginationDelta);
+		}
+	}
 
 }

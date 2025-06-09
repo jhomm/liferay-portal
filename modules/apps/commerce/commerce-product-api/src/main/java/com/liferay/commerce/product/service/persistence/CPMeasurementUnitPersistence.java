@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence;
@@ -17,6 +8,7 @@ package com.liferay.commerce.product.service.persistence;
 import com.liferay.commerce.product.exception.NoSuchCPMeasurementUnitException;
 import com.liferay.commerce.product.model.CPMeasurementUnit;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -33,7 +25,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CPMeasurementUnitPersistence
-	extends BasePersistence<CPMeasurementUnit> {
+	extends BasePersistence<CPMeasurementUnit>,
+			CTPersistence<CPMeasurementUnit> {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -533,6 +526,56 @@ public interface CPMeasurementUnitPersistence
 	public int countByCompanyId(long companyId);
 
 	/**
+	 * Returns the cp measurement unit where companyId = &#63; and key = &#63; or throws a <code>NoSuchCPMeasurementUnitException</code> if it could not be found.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the matching cp measurement unit
+	 * @throws NoSuchCPMeasurementUnitException if a matching cp measurement unit could not be found
+	 */
+	public CPMeasurementUnit findByC_K(long companyId, String key)
+		throws NoSuchCPMeasurementUnitException;
+
+	/**
+	 * Returns the cp measurement unit where companyId = &#63; and key = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the matching cp measurement unit, or <code>null</code> if a matching cp measurement unit could not be found
+	 */
+	public CPMeasurementUnit fetchByC_K(long companyId, String key);
+
+	/**
+	 * Returns the cp measurement unit where companyId = &#63; and key = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching cp measurement unit, or <code>null</code> if a matching cp measurement unit could not be found
+	 */
+	public CPMeasurementUnit fetchByC_K(
+		long companyId, String key, boolean useFinderCache);
+
+	/**
+	 * Removes the cp measurement unit where companyId = &#63; and key = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the cp measurement unit that was removed
+	 */
+	public CPMeasurementUnit removeByC_K(long companyId, String key)
+		throws NoSuchCPMeasurementUnitException;
+
+	/**
+	 * Returns the number of cp measurement units where companyId = &#63; and key = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the number of matching cp measurement units
+	 */
+	public int countByC_K(long companyId, String key);
+
+	/**
 	 * Returns all the cp measurement units where companyId = &#63; and type = &#63;.
 	 *
 	 * @param companyId the company ID
@@ -686,61 +729,6 @@ public interface CPMeasurementUnitPersistence
 	 * @return the number of matching cp measurement units
 	 */
 	public int countByC_T(long companyId, int type);
-
-	/**
-	 * Returns the cp measurement unit where companyId = &#63; and key = &#63; and type = &#63; or throws a <code>NoSuchCPMeasurementUnitException</code> if it could not be found.
-	 *
-	 * @param companyId the company ID
-	 * @param key the key
-	 * @param type the type
-	 * @return the matching cp measurement unit
-	 * @throws NoSuchCPMeasurementUnitException if a matching cp measurement unit could not be found
-	 */
-	public CPMeasurementUnit findByC_K_T(long companyId, String key, int type)
-		throws NoSuchCPMeasurementUnitException;
-
-	/**
-	 * Returns the cp measurement unit where companyId = &#63; and key = &#63; and type = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param companyId the company ID
-	 * @param key the key
-	 * @param type the type
-	 * @return the matching cp measurement unit, or <code>null</code> if a matching cp measurement unit could not be found
-	 */
-	public CPMeasurementUnit fetchByC_K_T(long companyId, String key, int type);
-
-	/**
-	 * Returns the cp measurement unit where companyId = &#63; and key = &#63; and type = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param companyId the company ID
-	 * @param key the key
-	 * @param type the type
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching cp measurement unit, or <code>null</code> if a matching cp measurement unit could not be found
-	 */
-	public CPMeasurementUnit fetchByC_K_T(
-		long companyId, String key, int type, boolean useFinderCache);
-
-	/**
-	 * Removes the cp measurement unit where companyId = &#63; and key = &#63; and type = &#63; from the database.
-	 *
-	 * @param companyId the company ID
-	 * @param key the key
-	 * @param type the type
-	 * @return the cp measurement unit that was removed
-	 */
-	public CPMeasurementUnit removeByC_K_T(long companyId, String key, int type)
-		throws NoSuchCPMeasurementUnitException;
-
-	/**
-	 * Returns the number of cp measurement units where companyId = &#63; and key = &#63; and type = &#63;.
-	 *
-	 * @param companyId the company ID
-	 * @param key the key
-	 * @param type the type
-	 * @return the number of matching cp measurement units
-	 */
-	public int countByC_K_T(long companyId, String key, int type);
 
 	/**
 	 * Returns all the cp measurement units where companyId = &#63; and primary = &#63; and type = &#63;.
@@ -907,6 +895,59 @@ public interface CPMeasurementUnitPersistence
 	 * @return the number of matching cp measurement units
 	 */
 	public int countByC_P_T(long companyId, boolean primary, int type);
+
+	/**
+	 * Returns the cp measurement unit where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchCPMeasurementUnitException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching cp measurement unit
+	 * @throws NoSuchCPMeasurementUnitException if a matching cp measurement unit could not be found
+	 */
+	public CPMeasurementUnit findByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchCPMeasurementUnitException;
+
+	/**
+	 * Returns the cp measurement unit where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the matching cp measurement unit, or <code>null</code> if a matching cp measurement unit could not be found
+	 */
+	public CPMeasurementUnit fetchByERC_C(
+		String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the cp measurement unit where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching cp measurement unit, or <code>null</code> if a matching cp measurement unit could not be found
+	 */
+	public CPMeasurementUnit fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache);
+
+	/**
+	 * Removes the cp measurement unit where externalReferenceCode = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the cp measurement unit that was removed
+	 */
+	public CPMeasurementUnit removeByERC_C(
+			String externalReferenceCode, long companyId)
+		throws NoSuchCPMeasurementUnitException;
+
+	/**
+	 * Returns the number of cp measurement units where externalReferenceCode = &#63; and companyId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
+	 * @return the number of matching cp measurement units
+	 */
+	public int countByERC_C(String externalReferenceCode, long companyId);
 
 	/**
 	 * Caches the cp measurement unit in the entity cache if it is enabled.

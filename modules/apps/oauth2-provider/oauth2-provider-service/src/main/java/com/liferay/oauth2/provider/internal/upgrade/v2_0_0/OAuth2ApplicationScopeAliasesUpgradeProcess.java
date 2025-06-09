@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.internal.upgrade.v2_0_0;
@@ -20,6 +11,8 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LoggingTimer;
 import com.liferay.portal.kernel.util.SetUtil;
@@ -54,53 +47,16 @@ public class OAuth2ApplicationScopeAliasesUpgradeProcess
 	@Override
 	protected void doUpgrade() throws Exception {
 		_companyLocalService.forEachCompanyId(
-			companyId -> upgradeCompany(companyId));
+			companyId -> _upgradeCompany(companyId));
 	}
 
-	protected void upgradeCompany(long companyId) throws Exception {
-		Map<LiferayOAuth2Scope, Set<String>> liferayOAuth2ScopeScopeAliases =
-			new HashMap<>();
-
-		List<String> scopeAliases = new ArrayList<>(
-			_scopeLocator.getScopeAliases(companyId));
-
-		for (String scopeAlias : scopeAliases) {
-			for (LiferayOAuth2Scope liferayOAuth2Scope :
-					_scopeLocator.getLiferayOAuth2Scopes(
-						companyId, scopeAlias)) {
-
-				Set<String> set =
-					liferayOAuth2ScopeScopeAliases.computeIfAbsent(
-						liferayOAuth2Scope, x -> new HashSet<>());
-
-				set.add(scopeAlias);
-			}
-		}
-
-		try (LoggingTimer loggingTimer = new LoggingTimer();
-			ResultSet applicationScopeAliasesResultSet =
-				_getApplicationScopeAliasesResultSet(companyId)) {
-
-			while (applicationScopeAliasesResultSet.next()) {
-				String scopeAliasesString =
-					applicationScopeAliasesResultSet.getString("scopeAliases");
-
-				if (Validator.isNull(scopeAliasesString)) {
-					continue;
-				}
-
-				long oAuth2ApplicationScopeAliasesId =
-					applicationScopeAliasesResultSet.getLong(
-						"oA2AScopeAliasesId");
-
-				Set<String> assignedScopeAliases = SetUtil.fromArray(
-					StringUtil.split(scopeAliasesString, StringPool.SPACE));
-
-				_upgradeOAuth2ScopeGrants(
-					oAuth2ApplicationScopeAliasesId, companyId,
-					liferayOAuth2ScopeScopeAliases, assignedScopeAliases);
-			}
-		}
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.dropColumns(
+				"OAuth2ApplicationScopeAliases", "scopeAliases",
+				"scopeAliasesHash")
+		};
 	}
 
 	private ResultSet _getApplicationScopeAliasesResultSet(long companyId)
@@ -152,6 +108,52 @@ public class OAuth2ApplicationScopeAliasesUpgradeProcess
 			preparedStatement.setLong(2, oAuth2ScopeGrantId);
 
 			preparedStatement.execute();
+		}
+	}
+
+	private void _upgradeCompany(long companyId) throws Exception {
+		Map<LiferayOAuth2Scope, Set<String>> liferayOAuth2ScopeScopeAliases =
+			new HashMap<>();
+
+		List<String> scopeAliases = new ArrayList<>(
+			_scopeLocator.getScopeAliases(companyId));
+
+		for (String scopeAlias : scopeAliases) {
+			for (LiferayOAuth2Scope liferayOAuth2Scope :
+					_scopeLocator.getLiferayOAuth2Scopes(
+						companyId, scopeAlias)) {
+
+				Set<String> set =
+					liferayOAuth2ScopeScopeAliases.computeIfAbsent(
+						liferayOAuth2Scope, x -> new HashSet<>());
+
+				set.add(scopeAlias);
+			}
+		}
+
+		try (LoggingTimer loggingTimer = new LoggingTimer();
+			ResultSet applicationScopeAliasesResultSet =
+				_getApplicationScopeAliasesResultSet(companyId)) {
+
+			while (applicationScopeAliasesResultSet.next()) {
+				String scopeAliasesString =
+					applicationScopeAliasesResultSet.getString("scopeAliases");
+
+				if (Validator.isNull(scopeAliasesString)) {
+					continue;
+				}
+
+				long oAuth2ApplicationScopeAliasesId =
+					applicationScopeAliasesResultSet.getLong(
+						"oA2AScopeAliasesId");
+
+				Set<String> assignedScopeAliases = SetUtil.fromArray(
+					StringUtil.split(scopeAliasesString, StringPool.SPACE));
+
+				_upgradeOAuth2ScopeGrants(
+					oAuth2ApplicationScopeAliasesId, companyId,
+					liferayOAuth2ScopeScopeAliases, assignedScopeAliases);
+			}
 		}
 	}
 

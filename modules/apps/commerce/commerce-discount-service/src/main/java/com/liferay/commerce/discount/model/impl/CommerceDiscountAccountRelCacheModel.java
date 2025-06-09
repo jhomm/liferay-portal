@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.discount.model.CommerceDiscountAccountRel;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,8 @@ import java.util.Date;
  * @generated
  */
 public class CommerceDiscountAccountRelCacheModel
-	implements CacheModel<CommerceDiscountAccountRel>, Externalizable {
+	implements CacheModel<CommerceDiscountAccountRel>, Externalizable,
+			   MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -49,9 +42,10 @@ public class CommerceDiscountAccountRelCacheModel
 			commerceDiscountAccountRelCacheModel =
 				(CommerceDiscountAccountRelCacheModel)object;
 
-		if (commerceDiscountAccountRelId ==
+		if ((commerceDiscountAccountRelId ==
 				commerceDiscountAccountRelCacheModel.
-					commerceDiscountAccountRelId) {
+					commerceDiscountAccountRelId) &&
+			(mvccVersion == commerceDiscountAccountRelCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -61,14 +55,28 @@ public class CommerceDiscountAccountRelCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commerceDiscountAccountRelId);
+		int hashCode = HashUtil.hash(0, commerceDiscountAccountRelId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(25);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", commerceDiscountAccountRelId=");
 		sb.append(commerceDiscountAccountRelId);
@@ -99,6 +107,8 @@ public class CommerceDiscountAccountRelCacheModel
 	public CommerceDiscountAccountRel toEntityModel() {
 		CommerceDiscountAccountRelImpl commerceDiscountAccountRelImpl =
 			new CommerceDiscountAccountRelImpl();
+
+		commerceDiscountAccountRelImpl.setMvccVersion(mvccVersion);
 
 		if (uuid == null) {
 			commerceDiscountAccountRelImpl.setUuid("");
@@ -154,6 +164,7 @@ public class CommerceDiscountAccountRelCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		commerceDiscountAccountRelId = objectInput.readLong();
@@ -175,6 +186,8 @@ public class CommerceDiscountAccountRelCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
@@ -206,6 +219,7 @@ public class CommerceDiscountAccountRelCacheModel
 		objectOutput.writeLong(lastPublishDate);
 	}
 
+	public long mvccVersion;
 	public String uuid;
 	public long commerceDiscountAccountRelId;
 	public long companyId;

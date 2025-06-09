@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service;
 
 import com.liferay.journal.model.JournalFeed;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 /**
  * Provides the remote service utility for JournalFeed. This utility wraps
@@ -38,7 +30,7 @@ public class JournalFeedServiceUtil {
 	 */
 	public static JournalFeed addFeed(
 			long groupId, String feedId, boolean autoFeedId, String name,
-			String description, String ddmStructureKey, String ddmTemplateKey,
+			String description, long ddmStructureId, String ddmTemplateKey,
 			String ddmRendererTemplateKey, int delta, String orderByCol,
 			String orderByType, String targetLayoutFriendlyUrl,
 			String targetPortletId, String contentField, String feedType,
@@ -47,7 +39,7 @@ public class JournalFeedServiceUtil {
 		throws PortalException {
 
 		return getService().addFeed(
-			groupId, feedId, autoFeedId, name, description, ddmStructureKey,
+			groupId, feedId, autoFeedId, name, description, ddmStructureId,
 			ddmTemplateKey, ddmRendererTemplateKey, delta, orderByCol,
 			orderByType, targetLayoutFriendlyUrl, targetPortletId, contentField,
 			feedType, feedVersion, serviceContext);
@@ -84,7 +76,7 @@ public class JournalFeedServiceUtil {
 
 	public static JournalFeed updateFeed(
 			long groupId, String feedId, String name, String description,
-			String ddmStructureKey, String ddmTemplateKey,
+			long ddmStructureId, String ddmTemplateKey,
 			String ddmRendererTemplateKey, int delta, String orderByCol,
 			String orderByType, String targetLayoutFriendlyUrl,
 			String targetPortletId, String contentField, String feedType,
@@ -93,16 +85,17 @@ public class JournalFeedServiceUtil {
 		throws PortalException {
 
 		return getService().updateFeed(
-			groupId, feedId, name, description, ddmStructureKey, ddmTemplateKey,
+			groupId, feedId, name, description, ddmStructureId, ddmTemplateKey,
 			ddmRendererTemplateKey, delta, orderByCol, orderByType,
 			targetLayoutFriendlyUrl, targetPortletId, contentField, feedType,
 			feedVersion, serviceContext);
 	}
 
 	public static JournalFeedService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile JournalFeedService _service;
+	private static final Snapshot<JournalFeedService> _serviceSnapshot =
+		new Snapshot<>(JournalFeedServiceUtil.class, JournalFeedService.class);
 
 }

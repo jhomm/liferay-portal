@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.search.spi.model.index.contributor;
@@ -28,19 +19,21 @@ import com.liferay.portal.search.spi.model.index.contributor.ModelIndexerWriterC
 import com.liferay.portal.search.spi.model.index.contributor.helper.IndexerWriterMode;
 import com.liferay.portal.search.spi.model.index.contributor.helper.ModelIndexerWriterDocumentHelper;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Javier Gamarra
  */
-@Component(
-	immediate = true,
-	property = "indexer.class.name=com.liferay.message.boards.model.MBCategory",
-	service = ModelIndexerWriterContributor.class
-)
 public class MBCategoryModelIndexerWriterContributor
 	implements ModelIndexerWriterContributor<MBCategory> {
+
+	public MBCategoryModelIndexerWriterContributor(
+		DynamicQueryBatchIndexingActionableFactory
+			dynamicQueryBatchIndexingActionableFactory,
+		MBCategoryLocalService mbCategoryLocalService) {
+
+		_dynamicQueryBatchIndexingActionableFactory =
+			dynamicQueryBatchIndexingActionableFactory;
+		_mbCategoryLocalService = mbCategoryLocalService;
+	}
 
 	@Override
 	public void customize(
@@ -101,11 +94,8 @@ public class MBCategoryModelIndexerWriterContributor
 	private static final Log _log = LogFactoryUtil.getLog(
 		MBCategoryModelIndexerWriterContributor.class);
 
-	@Reference
-	private DynamicQueryBatchIndexingActionableFactory
+	private final DynamicQueryBatchIndexingActionableFactory
 		_dynamicQueryBatchIndexingActionableFactory;
-
-	@Reference
-	private MBCategoryLocalService _mbCategoryLocalService;
+	private final MBCategoryLocalService _mbCategoryLocalService;
 
 }

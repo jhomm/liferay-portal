@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.manager;
@@ -19,11 +10,10 @@ import com.liferay.portal.kernel.service.EmailAddressLocalService;
 import com.liferay.portal.kernel.service.EmailAddressService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
+
+import jakarta.portlet.ActionRequest;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
 
 /**
  * @author Drew Brokke
@@ -34,13 +24,12 @@ public class EmailAddressContactInfoManager
 	public EmailAddressContactInfoManager(
 		String className, long classPK,
 		EmailAddressLocalService emailAddressLocalService,
-		EmailAddressService emailAddressService, UsersAdmin usersAdmin) {
+		EmailAddressService emailAddressService) {
 
 		_className = className;
 		_classPK = classPK;
 		_emailAddressLocalService = emailAddressLocalService;
 		_emailAddressService = emailAddressService;
-		_usersAdmin = usersAdmin;
 	}
 
 	@Override
@@ -51,7 +40,8 @@ public class EmailAddressContactInfoManager
 
 		String address = ParamUtil.getString(
 			actionRequest, "emailAddressAddress");
-		long typeId = ParamUtil.getLong(actionRequest, "emailAddressTypeId");
+		long listTypeId = ParamUtil.getLong(
+			actionRequest, "emailAddressTypeId");
 		boolean primary = ParamUtil.getBoolean(
 			actionRequest, "emailAddressPrimary");
 
@@ -59,7 +49,7 @@ public class EmailAddressContactInfoManager
 			_emailAddressLocalService.createEmailAddress(emailAddressId);
 
 		emailAddress.setAddress(address);
-		emailAddress.setTypeId(typeId);
+		emailAddress.setListTypeId(listTypeId);
 		emailAddress.setPrimary(primary);
 
 		return emailAddress;
@@ -68,9 +58,9 @@ public class EmailAddressContactInfoManager
 	@Override
 	protected EmailAddress doAdd(EmailAddress emailAddress) throws Exception {
 		return _emailAddressService.addEmailAddress(
-			_className, _classPK, emailAddress.getAddress(),
-			emailAddress.getTypeId(), emailAddress.isPrimary(),
-			new ServiceContext());
+			emailAddress.getExternalReferenceCode(), _className, _classPK,
+			emailAddress.getAddress(), emailAddress.getListTypeId(),
+			emailAddress.isPrimary(), new ServiceContext());
 	}
 
 	@Override
@@ -81,8 +71,9 @@ public class EmailAddressContactInfoManager
 	@Override
 	protected void doUpdate(EmailAddress emailAddress) throws Exception {
 		_emailAddressService.updateEmailAddress(
+			emailAddress.getExternalReferenceCode(),
 			emailAddress.getEmailAddressId(), emailAddress.getAddress(),
-			emailAddress.getTypeId(), emailAddress.isPrimary());
+			emailAddress.getListTypeId(), emailAddress.isPrimary());
 	}
 
 	@Override
@@ -114,6 +105,5 @@ public class EmailAddressContactInfoManager
 	private final long _classPK;
 	private final EmailAddressLocalService _emailAddressLocalService;
 	private final EmailAddressService _emailAddressService;
-	private final UsersAdmin _usersAdmin;
 
 }

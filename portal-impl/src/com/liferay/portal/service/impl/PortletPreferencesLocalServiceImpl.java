@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -17,15 +8,18 @@ package com.liferay.portal.service.impl;
 import com.liferay.exportimport.kernel.staging.LayoutStagingUtil;
 import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutRevision;
 import com.liferay.portal.kernel.model.LayoutStagingHandler;
@@ -94,6 +88,10 @@ public class PortletPreferencesLocalServiceImpl
 		PortletPreferences portletPreferences =
 			portletPreferencesPersistence.create(portletPreferencesId);
 
+		if (portletPreferences.getCompanyId() == CompanyConstants.SYSTEM) {
+			portletPreferences.setCompanyId(companyId);
+		}
+
 		portletPreferences.setOwnerId(ownerId);
 		portletPreferences.setOwnerType(ownerType);
 		portletPreferences.setPlid(plid);
@@ -110,7 +108,7 @@ public class PortletPreferencesLocalServiceImpl
 						portletId);
 
 				if (layoutPortletPreferences != null) {
-					javax.portlet.PortletPreferences jxPortletPreferences =
+					jakarta.portlet.PortletPreferences jxPortletPreferences =
 						_portletPreferenceValueLocalService.getPreferences(
 							layoutPortletPreferences);
 
@@ -175,6 +173,18 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
+	public PortletPreferences deletePortletPreferences(
+			long portletPreferencesId)
+		throws PortalException {
+
+		PortletPreferences portletPreferences =
+			portletPreferencesPersistence.findByPrimaryKey(
+				portletPreferencesId);
+
+		return deletePortletPreferences(portletPreferences);
+	}
+
+	@Override
 	public void deletePortletPreferences(
 		long ownerId, int ownerType, long plid) {
 
@@ -210,10 +220,17 @@ public class PortletPreferencesLocalServiceImpl
 			portletPreferencesPersistence.findByO_O_P_P(
 				ownerId, ownerType, plid, portletId);
 
+		deletePortletPreferences(portletPreferences);
+	}
+
+	@Override
+	public PortletPreferences deletePortletPreferences(
+		PortletPreferences portletPreferences) {
+
 		_portletPreferenceValuePersistence.removeByPortletPreferencesId(
 			portletPreferences.getPortletPreferencesId());
 
-		portletPreferencesPersistence.remove(portletPreferences);
+		return portletPreferencesPersistence.remove(portletPreferences);
 	}
 
 	@Override
@@ -258,7 +275,7 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences fetchPreferences(
+	public jakarta.portlet.PortletPreferences fetchPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -277,7 +294,7 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences fetchPreferences(
+	public jakarta.portlet.PortletPreferences fetchPreferences(
 		PortletPreferencesIds portletPreferencesIds) {
 
 		return fetchPreferences(
@@ -290,7 +307,7 @@ public class PortletPreferencesLocalServiceImpl
 
 	@Override
 	@Transactional(enabled = false)
-	public javax.portlet.PortletPreferences getDefaultPreferences(
+	public jakarta.portlet.PortletPreferences getDefaultPreferences(
 		long companyId, String portletId) {
 
 		Portlet portlet = _portletLocalService.getPortletById(
@@ -440,6 +457,13 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
+	public List<PortletPreferences> getPortletPreferencesByPortletId(
+		String portletId) {
+
+		return portletPreferencesFinder.findByPortletId(portletId);
+	}
+
+	@Override
 	public long getPortletPreferencesCount(
 		int ownerType, long plid, String portletId) {
 
@@ -483,6 +507,14 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
+	public int getPortletPreferencesCount(
+		long companyId, long ownerId, int ownerType, String portletId) {
+
+		return portletPreferencesPersistence.countByC_O_O_LikeP(
+			companyId, ownerId, ownerType, portletId);
+	}
+
+	@Override
 	@Retry(
 		acceptor = SQLStateAcceptor.class,
 		properties = {
@@ -492,7 +524,7 @@ public class PortletPreferencesLocalServiceImpl
 			)
 		}
 	)
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -510,7 +542,7 @@ public class PortletPreferencesLocalServiceImpl
 			)
 		}
 	)
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId, String defaultPreferences) {
 
@@ -524,10 +556,33 @@ public class PortletPreferencesLocalServiceImpl
 			Portlet portlet = _portletLocalService.fetchPortletById(
 				companyId, portletId);
 
-			portletPreferences =
-				portletPreferencesLocalService.addPortletPreferences(
-					companyId, ownerId, ownerType, plid, portletId, portlet,
-					defaultPreferences);
+			long ctCollectionId = CTCollectionThreadLocal.getCTCollectionId();
+
+			if (ctCollectionId !=
+					CTCollectionThreadLocal.CT_COLLECTION_ID_PRODUCTION) {
+
+				if (plid == PortletKeys.PREFS_PLID_SHARED) {
+					ctCollectionId =
+						CTCollectionThreadLocal.CT_COLLECTION_ID_PRODUCTION;
+				}
+				else {
+					Layout layout = _layoutPersistence.fetchByPrimaryKey(plid);
+
+					if (layout != null) {
+						ctCollectionId = layout.getCtCollectionId();
+					}
+				}
+			}
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						ctCollectionId)) {
+
+				portletPreferences =
+					portletPreferencesLocalService.addPortletPreferences(
+						companyId, ownerId, ownerType, plid, portletId, portlet,
+						defaultPreferences);
+			}
 		}
 
 		return _portletPreferenceValueLocalService.getPreferences(
@@ -544,7 +599,7 @@ public class PortletPreferencesLocalServiceImpl
 			)
 		}
 	)
-	public javax.portlet.PortletPreferences getPreferences(
+	public jakarta.portlet.PortletPreferences getPreferences(
 		PortletPreferencesIds portletPreferencesIds) {
 
 		return getPreferences(
@@ -556,14 +611,14 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
-	public Map<String, javax.portlet.PortletPreferences> getStrictPreferences(
+	public Map<String, jakarta.portlet.PortletPreferences> getStrictPreferences(
 		Layout layout, List<Portlet> portlets) {
 
 		long plid = layout.getPlid();
 
 		plid = _swapPlidForPreferences(plid);
 
-		Map<String, javax.portlet.PortletPreferences> portletPreferencesMap =
+		Map<String, jakarta.portlet.PortletPreferences> portletPreferencesMap =
 			new HashMap<>();
 
 		List<PortletPreferences> portletPreferencesList = new ArrayList<>();
@@ -595,7 +650,7 @@ public class PortletPreferencesLocalServiceImpl
 						ownerId, ownerType, plid, portletId);
 
 				if (portletPreferences != null) {
-					javax.portlet.PortletPreferences jxPortletPreferences =
+					jakarta.portlet.PortletPreferences jxPortletPreferences =
 						_portletPreferenceValueLocalService.getPreferences(
 							portletPreferences);
 
@@ -611,9 +666,10 @@ public class PortletPreferencesLocalServiceImpl
 						ownerId = portletPreferences.getOwnerId();
 						preferencesPlid = portletPreferences.getPlid();
 
-						javax.portlet.PortletPreferences jxPortletPreferences =
-							_portletPreferenceValueLocalService.getPreferences(
-								portletPreferences);
+						jakarta.portlet.PortletPreferences
+							jxPortletPreferences =
+								_portletPreferenceValueLocalService.
+									getPreferences(portletPreferences);
 
 						preferences = PortletPreferencesFactoryUtil.toXML(
 							jxPortletPreferences);
@@ -634,7 +690,7 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getStrictPreferences(
+	public jakarta.portlet.PortletPreferences getStrictPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -670,7 +726,7 @@ public class PortletPreferencesLocalServiceImpl
 	}
 
 	@Override
-	public javax.portlet.PortletPreferences getStrictPreferences(
+	public jakarta.portlet.PortletPreferences getStrictPreferences(
 		PortletPreferencesIds portletPreferencesIds) {
 
 		return getStrictPreferences(
@@ -684,7 +740,7 @@ public class PortletPreferencesLocalServiceImpl
 	@Override
 	public PortletPreferences updatePreferences(
 		long ownerId, int ownerType, long plid, String portletId,
-		javax.portlet.PortletPreferences portletPreferences) {
+		jakarta.portlet.PortletPreferences portletPreferences) {
 
 		if (portletPreferences instanceof PortletPreferencesImpl) {
 			PortletPreferencesImpl portletPreferencesImpl =
@@ -792,7 +848,7 @@ public class PortletPreferencesLocalServiceImpl
 			));
 	}
 
-	private javax.portlet.PortletPreferences _getStrictPreferences(
+	private jakarta.portlet.PortletPreferences _getStrictPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId, String defaultPreferences) {
 
@@ -838,7 +894,7 @@ public class PortletPreferencesLocalServiceImpl
 		User user = _userPersistence.fetchByPrimaryKey(
 			PrincipalThreadLocal.getUserId());
 
-		if ((user == null) || user.isDefaultUser()) {
+		if ((user == null) || user.isGuestUser()) {
 			return layoutRevision.getLayoutRevisionId();
 		}
 

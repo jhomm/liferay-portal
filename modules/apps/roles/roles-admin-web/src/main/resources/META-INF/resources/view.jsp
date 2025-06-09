@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -52,9 +43,9 @@ PortletURL portletURL = viewRolesManagementToolbarDisplayContext.getPortletURL()
 	%>'
 	clearResultsURL="<%= viewRolesManagementToolbarDisplayContext.getClearResultsURL() %>"
 	creationMenu="<%= viewRolesManagementToolbarDisplayContext.getCreationMenu() %>"
-	filterDropdownItems="<%= viewRolesManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 	itemsTotal="<%= searchContainer.getTotal() %>"
-	propsTransformer="js/ViewRolesManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= viewRolesManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
+	propsTransformer="{ViewRolesManagementToolbarPropsTransformer} from roles-admin-web"
 	searchActionURL="<%= viewRolesManagementToolbarDisplayContext.getSearchActionURL() %>"
 	searchContainerId="roleSearch"
 	searchFormName="searchFm"
@@ -66,7 +57,7 @@ PortletURL portletURL = viewRolesManagementToolbarDisplayContext.getPortletURL()
 	viewTypeItems="<%= viewRolesManagementToolbarDisplayContext.getViewTypeItems() %>"
 />
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl container-form-view" method="get" name="fm">
+<aui:form action="<%= portletURL %>" cssClass="container-fluid container-fluid-max-xl container-form-view" method="get" name="fm">
 	<liferay-ui:error exception="<%= RequiredRoleException.class %>" message="you-cannot-delete-a-system-role" />
 
 	<aui:input name="deleteRoleIds" type="hidden" />

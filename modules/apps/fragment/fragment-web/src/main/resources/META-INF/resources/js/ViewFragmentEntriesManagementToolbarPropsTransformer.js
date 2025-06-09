@@ -1,42 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal, openSimpleInputModal} from 'frontend-js-web';
+import {render} from '@liferay/frontend-js-react-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes} from 'frontend-js-web';
+
+import AddFragmentModal from './AddFragmentModal';
+import openDeleteFragmentModal from './openDeleteFragmentModal';
 
 export default function propsTransformer({
 	additionalProps: {
+		addFragmentEntryURL,
 		copyFragmentEntryURL,
 		deleteFragmentCompositionsAndFragmentEntriesURL,
 		exportFragmentCompositionsAndFragmentEntriesURL,
+		fieldTypes,
 		fragmentCollectionId,
+		fragmentTypes,
 		moveFragmentCompositionsAndFragmentEntriesURL,
 		selectFragmentCollectionURL,
 	},
 	portletNamespace,
 	...otherProps
 }) {
-	const addFragmentEntry = (itemData) => {
-		openSimpleInputModal({
-			dialogTitle: itemData?.title,
-			formSubmitURL: itemData?.addFragmentEntryURL,
-			mainFieldLabel: Liferay.Language.get('name'),
-			mainFieldName: 'name',
-			mainFieldPlaceholder: Liferay.Language.get('name'),
-			namespace: `${portletNamespace}`,
-		});
-	};
-
 	const copySelectedFragmentEntries = () => {
 		const form = document.getElementById(`${portletNamespace}fm`);
 
@@ -44,7 +32,7 @@ export default function propsTransformer({
 			return;
 		}
 
-		const fragmentEntryIds = Liferay.Util.listCheckedExcept(
+		const fragmentEntryIds = getCheckedCheckboxes(
 			form,
 			`${portletNamespace}allRowIds`
 		);
@@ -78,20 +66,19 @@ export default function propsTransformer({
 	};
 
 	const deleteFragmentCompositionsAndFragmentEntries = () => {
-		if (
-			confirm(
-				Liferay.Language.get('are-you-sure-you-want-to-delete-this')
-			)
-		) {
-			const form = document.getElementById(`${portletNamespace}fm`);
+		openDeleteFragmentModal({
+			multiple: true,
+			onDelete: () => {
+				const form = document.getElementById(`${portletNamespace}fm`);
 
-			if (form) {
-				submitForm(
-					form,
-					deleteFragmentCompositionsAndFragmentEntriesURL
-				);
-			}
-		}
+				if (form) {
+					submitForm(
+						form,
+						deleteFragmentCompositionsAndFragmentEntriesURL
+					);
+				}
+			},
+		});
 	};
 
 	const exportFragmentCompositionsAndFragmentEntries = () => {
@@ -109,13 +96,13 @@ export default function propsTransformer({
 			return;
 		}
 
-		const fragmentCompositionIds = Liferay.Util.listCheckedExcept(
+		const fragmentCompositionIds = getCheckedCheckboxes(
 			form,
 			`${portletNamespace}allRowIds`,
 			`${portletNamespace}rowIdsFragmentComposition`
 		);
 
-		const fragmentEntryIds = Liferay.Util.listCheckedExcept(
+		const fragmentEntryIds = getCheckedCheckboxes(
 			form,
 			`${portletNamespace}allRowIds`,
 			`${portletNamespace}rowIdsFragmentEntry`
@@ -125,6 +112,8 @@ export default function propsTransformer({
 			id: `${portletNamespace}selectFragmentCollection`,
 			onSelect(selectedItem) {
 				if (selectedItem) {
+					const itemValue = JSON.parse(selectedItem.value);
+
 					const form = document.getElementById(
 						`${portletNamespace}fragmentEntryFm`
 					);
@@ -140,13 +129,14 @@ export default function propsTransformer({
 					if (fragmentCollectionIdElement) {
 						fragmentCollectionIdElement.setAttribute(
 							'value',
-							selectedItem.id
+							itemValue.fragmentCollectionId
 						);
 					}
 
-					const fragmentCompositionIdsElement = document.getElementById(
-						`${portletNamespace}fragmentCompositionIds`
-					);
+					const fragmentCompositionIdsElement =
+						document.getElementById(
+							`${portletNamespace}fragmentCompositionIds`
+						);
 
 					if (fragmentCompositionIdsElement) {
 						fragmentCompositionIdsElement.setAttribute(
@@ -173,7 +163,7 @@ export default function propsTransformer({
 				}
 			},
 			selectEventName: `${portletNamespace}selectFragmentCollection`,
-			title: Liferay.Language.get('select-collection'),
+			title: Liferay.Language.get('select-fragment-set'),
 			url: selectFragmentCollectionURL,
 		});
 	};
@@ -202,14 +192,17 @@ export default function propsTransformer({
 				moveFragmentCompositionsAndFragmentEntries();
 			}
 		},
-		onCreateButtonClick(event, {item}) {
-			const data = item?.data;
-
-			const action = data?.action;
-
-			if (action === 'addFragmentEntry') {
-				addFragmentEntry(data);
-			}
+		onCreateButtonClick() {
+			render(
+				AddFragmentModal,
+				{
+					addFragmentEntryURL,
+					fieldTypes,
+					fragmentTypes,
+					namespace: portletNamespace,
+				},
+				document.createElement('div')
+			);
 		},
 	};
 }

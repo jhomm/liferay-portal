@@ -1,27 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.document.library;
 
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.search.similar.results.web.internal.builder.DestinationBuilderImpl;
 import com.liferay.portal.search.similar.results.web.internal.builder.RouteBuilderImpl;
-import com.liferay.portal.search.similar.results.web.internal.builder.TestHttp;
-import com.liferay.portal.search.similar.results.web.internal.util.http.HttpHelperImpl;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
+import com.liferay.portal.search.similar.results.web.internal.contributor.BaseSimilarResultsContributorTestCase;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.DestinationHelper;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -35,7 +24,8 @@ import org.mockito.Mockito;
 /**
  * @author André de Oliveira
  */
-public class DocumentLibrarySimilarResultsContributorTest {
+public class DocumentLibrarySimilarResultsContributorTest
+	extends BaseSimilarResultsContributorTestCase {
 
 	@ClassRule
 	@Rule
@@ -51,7 +41,9 @@ public class DocumentLibrarySimilarResultsContributorTest {
 
 		DocumentLibrarySimilarResultsContributor
 			documentLibrarySimilarResultsContributor =
-				createDocumentLibrarySimilarResultsContributor();
+				new DocumentLibrarySimilarResultsContributor(
+					assetEntryLocalService, dlFileEntryLocalService,
+					dlFolderLocalService);
 
 		documentLibrarySimilarResultsContributor.detectRoute(
 			new RouteBuilderImpl(), () -> urlString);
@@ -78,36 +70,17 @@ public class DocumentLibrarySimilarResultsContributorTest {
 				destinationHelper));
 	}
 
-	protected DocumentLibrarySimilarResultsContributor
-		createDocumentLibrarySimilarResultsContributor() {
-
-		DocumentLibrarySimilarResultsContributor
-			documentLibrarySimilarResultsContributor =
-				new DocumentLibrarySimilarResultsContributor();
-
-		documentLibrarySimilarResultsContributor.setHttpHelper(
-			new HttpHelperImpl() {
-				{
-					setHttp(TestHttp.getInstance());
-				}
-			});
-
-		return documentLibrarySimilarResultsContributor;
-	}
-
 	protected String writeDestination(
 		String urlString, SimilarResultsContributor similarResultsContributor,
 		DestinationHelper destinationHelper) {
 
 		DestinationBuilderImpl destinationBuilderImpl =
-			new DestinationBuilderImpl(urlString, _http);
+			new DestinationBuilderImpl(urlString);
 
 		similarResultsContributor.writeDestination(
 			destinationBuilderImpl, destinationHelper);
 
 		return destinationBuilderImpl.build();
 	}
-
-	private final Http _http = TestHttp.getInstance();
 
 }

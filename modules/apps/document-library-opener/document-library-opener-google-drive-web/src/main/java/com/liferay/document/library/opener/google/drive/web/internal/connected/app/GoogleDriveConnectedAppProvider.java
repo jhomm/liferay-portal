@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.google.drive.web.internal.connected.app;
@@ -28,12 +19,14 @@ import com.liferay.document.library.opener.google.drive.web.internal.oauth.OAuth
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.IOException;
 
@@ -41,8 +34,6 @@ import java.security.GeneralSecurityException;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -87,7 +78,7 @@ public class GoogleDriveConnectedAppProvider implements ConnectedAppProvider {
 
 				StringBundler sb = new StringBundler(5);
 
-				sb.append(LanguageUtil.get(resourceBundle, "google-drive"));
+				sb.append(_language.get(resourceBundle, "google-drive"));
 
 				String emailAddress = _getGoogleDriveUserEmailAddress(
 					credential);
@@ -136,7 +127,7 @@ public class GoogleDriveConnectedAppProvider implements ConnectedAppProvider {
 			return user.getEmailAddress();
 		}
 		catch (IOException ioException) {
-			_log.error(ioException, ioException);
+			_log.error(ioException);
 
 			return null;
 		}
@@ -149,6 +140,10 @@ public class GoogleDriveConnectedAppProvider implements ConnectedAppProvider {
 	private DLOpenerGoogleDriveManager _dlOpenerGoogleDriveManager;
 
 	private JacksonFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
+
 	private NetHttpTransport _netHttpTransport;
 
 	@Reference

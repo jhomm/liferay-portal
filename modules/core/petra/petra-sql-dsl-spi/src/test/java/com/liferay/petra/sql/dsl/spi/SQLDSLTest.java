@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.sql.dsl.spi;
@@ -24,6 +15,7 @@ import com.liferay.petra.sql.dsl.expression.Alias;
 import com.liferay.petra.sql.dsl.expression.ColumnAlias;
 import com.liferay.petra.sql.dsl.expression.Expression;
 import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.sql.dsl.expression.ScalarDSLQueryAlias;
 import com.liferay.petra.sql.dsl.expression.step.WhenThenStep;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.petra.sql.dsl.query.FromStep;
@@ -42,6 +34,7 @@ import com.liferay.petra.sql.dsl.spi.expression.DSLFunctionType;
 import com.liferay.petra.sql.dsl.spi.expression.DefaultAlias;
 import com.liferay.petra.sql.dsl.spi.expression.DefaultColumnAlias;
 import com.liferay.petra.sql.dsl.spi.expression.DefaultPredicate;
+import com.liferay.petra.sql.dsl.spi.expression.DefaultScalarDSLQueryAlias;
 import com.liferay.petra.sql.dsl.spi.expression.NullExpression;
 import com.liferay.petra.sql.dsl.spi.expression.Operand;
 import com.liferay.petra.sql.dsl.spi.expression.Scalar;
@@ -75,6 +68,7 @@ import java.sql.Types;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -113,6 +107,7 @@ public class SQLDSLTest {
 						assertClasses,
 						DefaultPredicate.class.getDeclaredClasses());
 
+					assertClasses.add(DefaultScalarDSLQueryAlias.class);
 					assertClasses.add(DSLFunction.class);
 					assertClasses.add(DSLFunctionType.class);
 					assertClasses.add(DSLFunctionFactoryUtil.class);
@@ -537,6 +532,18 @@ public class SQLDSLTest {
 					MainExampleTable.INSTANCE.mainExampleIdColumn,
 					ReferenceExampleTable.INSTANCE.referenceExampleIdColumn)));
 		Assert.assertEquals(
+			"CAST_FLOAT(MainExample.mainExampleId) / ?",
+			String.valueOf(
+				DSLFunctionFactoryUtil.floatDivide(
+					MainExampleTable.INSTANCE.mainExampleIdColumn, 2L)));
+		Assert.assertEquals(
+			"CAST_FLOAT(MainExample.mainExampleId) / ReferenceExample." +
+				"referenceExampleId",
+			String.valueOf(
+				DSLFunctionFactoryUtil.floatDivide(
+					MainExampleTable.INSTANCE.mainExampleIdColumn,
+					ReferenceExampleTable.INSTANCE.referenceExampleIdColumn)));
+		Assert.assertEquals(
 			"max(MainExample.mainExampleId)",
 			String.valueOf(
 				DSLFunctionFactoryUtil.max(
@@ -573,6 +580,14 @@ public class SQLDSLTest {
 			String.valueOf(
 				DSLFunctionFactoryUtil.sum(
 					MainExampleTable.INSTANCE.mainExampleIdColumn)));
+		Assert.assertEquals(
+			"(MainExample.mainExampleId + ReferenceExample.referenceExampleId)",
+			String.valueOf(
+				DSLFunctionFactoryUtil.withParentheses(
+					DSLFunctionFactoryUtil.add(
+						MainExampleTable.INSTANCE.mainExampleIdColumn,
+						ReferenceExampleTable.INSTANCE.
+							referenceExampleIdColumn))));
 	}
 
 	@Test
@@ -942,6 +957,53 @@ public class SQLDSLTest {
 	}
 
 	@Test
+	public void testPredicateNot() {
+		Predicate leftPredicate =
+			MainExampleTable.INSTANCE.mainExampleIdColumn.gte(1L);
+		Predicate rightPredicate =
+			MainExampleTable.INSTANCE.mainExampleIdColumn.lte(3L);
+
+		DefaultPredicate defaultPredicate = new DefaultPredicate(
+			leftPredicate, Operand.OR, rightPredicate);
+
+		Assert.assertEquals(
+			"MainExample.mainExampleId >= ?", String.valueOf(leftPredicate));
+
+		Assert.assertEquals(
+			"not (MainExample.mainExampleId >= ?)",
+			String.valueOf(leftPredicate.not()));
+
+		Assert.assertEquals(
+			"(MainExample.mainExampleId <= ?)",
+			String.valueOf(rightPredicate.withParentheses()));
+
+		Assert.assertEquals(
+			"not (MainExample.mainExampleId <= ?)",
+			String.valueOf(rightPredicate.not()));
+
+		Assert.assertSame(leftPredicate, defaultPredicate.getLeftExpression());
+		Assert.assertSame(Operand.OR, defaultPredicate.getOperand());
+		Assert.assertSame(
+			rightPredicate, defaultPredicate.getRightExpression());
+		Assert.assertFalse(defaultPredicate.isNot());
+		Assert.assertFalse(defaultPredicate.isWrapParentheses());
+
+		Assert.assertEquals(
+			"MainExample.mainExampleId >= ? or MainExample.mainExampleId <= ?",
+			String.valueOf(defaultPredicate));
+		Assert.assertEquals(
+			"not (MainExample.mainExampleId >= ? or " +
+				"MainExample.mainExampleId <= ?)",
+			String.valueOf(defaultPredicate.not()));
+
+		Predicate notPredicate = defaultPredicate.not();
+
+		Assert.assertEquals(
+			String.valueOf(defaultPredicate.not()),
+			String.valueOf(notPredicate.not()));
+	}
+
+	@Test
 	public void testPredicateParentheses() {
 		Predicate leftPredicate =
 			MainExampleTable.INSTANCE.mainExampleIdColumn.gte(1L);
@@ -988,25 +1050,113 @@ public class SQLDSLTest {
 
 	@Test
 	public void testQueryTable() {
-		Table<?> table1 = DSLQueryFactoryUtil.select(
-			new Scalar<>(1)
-		).as(
-			"alias"
-		);
+		FromStep fromStep1 = DSLQueryFactoryUtil.select(new Scalar<>(1));
+
+		Table<?> table1 = fromStep1.as("alias");
 
 		Assert.assertEquals("(select ?) alias", table1.toString());
 
 		Assert.assertEquals(System.identityHashCode(table1), table1.hashCode());
 
-		Table<?> table2 = DSLQueryFactoryUtil.select(
-			new Scalar<>(2)
-		).as(
-			"alias"
-		);
+		QueryTable queryTable = (QueryTable)table1;
+
+		Assert.assertSame(fromStep1, queryTable.getDslQuery());
+
+		FromStep fromStep2 = DSLQueryFactoryUtil.select(new Scalar<>(2));
+
+		Table<?> table2 = fromStep2.as("alias");
 
 		Assert.assertEquals(table1, table1);
 
 		Assert.assertNotEquals(table1, table2);
+
+		queryTable = (QueryTable)table2;
+
+		Assert.assertSame(fromStep2, queryTable.getDslQuery());
+
+		Table<?> table3 = fromStep2.as(
+			"alias",
+			Arrays.asList(
+				MainExampleTable.INSTANCE.nameColumn,
+				MainExampleTable.INSTANCE.descriptionColumn));
+
+		Collection<Column<?, ?>> columns =
+			(Collection<Column<?, ?>>)table3.getColumns();
+
+		Assert.assertEquals(columns.toString(), 2, columns.size());
+
+		Iterator<Column<?, ?>> iterator = columns.iterator();
+
+		Column<?, ?> column = iterator.next();
+
+		Assert.assertSame(table3, column.getTable());
+		Assert.assertEquals(
+			MainExampleTable.INSTANCE.nameColumn.getName(), column.getName());
+
+		column = iterator.next();
+
+		Assert.assertSame(table3, column.getTable());
+		Assert.assertEquals(
+			MainExampleTable.INSTANCE.descriptionColumn.getName(),
+			column.getName());
+
+		Table<?> table4 = fromStep2.as("alias", MainExampleTable.INSTANCE);
+
+		columns = (Collection<Column<?, ?>>)table4.getColumns();
+
+		Assert.assertEquals(columns.toString(), 4, columns.size());
+
+		iterator = columns.iterator();
+
+		column = iterator.next();
+
+		Assert.assertSame(table4, column.getTable());
+		Assert.assertEquals(
+			MainExampleTable.INSTANCE.descriptionColumn.getName(),
+			column.getName());
+
+		column = iterator.next();
+
+		Assert.assertSame(table4, column.getTable());
+		Assert.assertEquals(
+			MainExampleTable.INSTANCE.flagColumn.getName(), column.getName());
+
+		column = iterator.next();
+
+		Assert.assertSame(table4, column.getTable());
+		Assert.assertEquals(
+			MainExampleTable.INSTANCE.mainExampleIdColumn.getName(),
+			column.getName());
+
+		column = iterator.next();
+
+		Assert.assertSame(table4, column.getTable());
+		Assert.assertEquals(
+			MainExampleTable.INSTANCE.nameColumn.getName(), column.getName());
+	}
+
+	@Test
+	public void testScalarDSLQueryAlias() {
+		ScalarDSLQueryAlias scalarSubDSLQuery =
+			(ScalarDSLQueryAlias)DSLQueryFactoryUtil.scalarSubDSLQuery(
+				DSLQueryFactoryUtil.select(
+					DSLFunctionFactoryUtil.count(
+						MainExampleTable.INSTANCE.mainExampleIdColumn)
+				).from(
+					MainExampleTable.INSTANCE
+				),
+				Long.class, "mainExampleField", Types.BIGINT);
+
+		Assert.assertEquals(
+			"select count(MainExample.mainExampleId) from MainExample",
+			String.valueOf(scalarSubDSLQuery.getDSLQuery()));
+		Assert.assertEquals(Long.class, scalarSubDSLQuery.getJavaType());
+		Assert.assertEquals("mainExampleField", scalarSubDSLQuery.getName());
+		Assert.assertEquals(Types.BIGINT, scalarSubDSLQuery.getSQLType());
+		Assert.assertEquals(
+			"(select count(MainExample.mainExampleId) from MainExample" +
+				") as mainExampleField",
+			scalarSubDSLQuery.toString());
 	}
 
 	@Test
@@ -1391,6 +1541,10 @@ public class SQLDSLTest {
 		Assert.assertSame(MainExampleTable.INSTANCE, tableStar.getTable());
 
 		Assert.assertEquals("MainExample.*", tableStar.toString());
+
+		tableStar = new TableStar(MainExampleTable.INSTANCE.as("alias"));
+
+		Assert.assertEquals("alias.*", tableStar.toString());
 	}
 
 	@Test

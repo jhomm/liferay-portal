@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter;
 
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommercePriceListAccountRel;
 import com.liferay.commerce.price.list.service.CommercePriceListAccountRelService;
@@ -29,9 +20,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.price.list.model.CommercePriceListAccountRel",
-	service = {DTOConverter.class, PriceListAccountDTOConverter.class}
+	service = DTOConverter.class
 )
 public class PriceListAccountDTOConverter
 	implements DTOConverter<CommercePriceListAccountRel, PriceListAccount> {
@@ -49,24 +39,24 @@ public class PriceListAccountDTOConverter
 			_commercePriceListAccountRelService.getCommercePriceListAccountRel(
 				(Long)dtoConverterContext.getId());
 
-		CommerceAccount commerceAccount =
-			commercePriceListAccountRel.getCommerceAccount();
+		AccountEntry accountEntry =
+			commercePriceListAccountRel.getAccountEntry();
 		CommercePriceList commercePriceList =
 			commercePriceListAccountRel.getCommercePriceList();
 
 		return new PriceListAccount() {
 			{
-				accountExternalReferenceCode =
-					commerceAccount.getExternalReferenceCode();
-				accountId = commerceAccount.getCommerceAccountId();
-				actions = dtoConverterContext.getActions();
-				order = commercePriceListAccountRel.getOrder();
-				priceListAccountId =
-					commercePriceListAccountRel.
-						getCommercePriceListAccountRelId();
-				priceListExternalReferenceCode =
-					commercePriceList.getExternalReferenceCode();
-				priceListId = commercePriceList.getCommercePriceListId();
+				setAccountExternalReferenceCode(
+					accountEntry::getExternalReferenceCode);
+				setAccountId(accountEntry::getAccountEntryId);
+				setActions(dtoConverterContext::getActions);
+				setOrder(commercePriceListAccountRel::getOrder);
+				setPriceListAccountId(
+					commercePriceListAccountRel::
+						getCommercePriceListAccountRelId);
+				setPriceListExternalReferenceCode(
+					commercePriceList::getExternalReferenceCode);
+				setPriceListId(commercePriceList::getCommercePriceListId);
 			}
 		};
 	}

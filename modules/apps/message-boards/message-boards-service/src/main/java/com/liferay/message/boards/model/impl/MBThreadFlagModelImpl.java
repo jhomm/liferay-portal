@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -242,110 +232,104 @@ public class MBThreadFlagModelImpl
 	public Map<String, Function<MBThreadFlag, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<MBThreadFlag, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, MBThreadFlag>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			MBThreadFlag.class.getClassLoader(), MBThreadFlag.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<MBThreadFlag, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<MBThreadFlag> constructor =
-				(Constructor<MBThreadFlag>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<MBThreadFlag, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<MBThreadFlag, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", MBThreadFlag::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", MBThreadFlag::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", MBThreadFlag::getUuid);
+			attributeGetterFunctions.put(
+				"threadFlagId", MBThreadFlag::getThreadFlagId);
+			attributeGetterFunctions.put("groupId", MBThreadFlag::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", MBThreadFlag::getCompanyId);
+			attributeGetterFunctions.put("userId", MBThreadFlag::getUserId);
+			attributeGetterFunctions.put("userName", MBThreadFlag::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", MBThreadFlag::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", MBThreadFlag::getModifiedDate);
+			attributeGetterFunctions.put("threadId", MBThreadFlag::getThreadId);
+			attributeGetterFunctions.put(
+				"lastPublishDate", MBThreadFlag::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<MBThreadFlag, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<MBThreadFlag, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<MBThreadFlag, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<MBThreadFlag, Object>>();
-		Map<String, BiConsumer<MBThreadFlag, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<MBThreadFlag, ?>>();
+		private static final Map<String, BiConsumer<MBThreadFlag, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", MBThreadFlag::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", MBThreadFlag::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", MBThreadFlag::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<MBThreadFlag, String>)MBThreadFlag::setUuid);
-		attributeGetterFunctions.put(
-			"threadFlagId", MBThreadFlag::getThreadFlagId);
-		attributeSetterBiConsumers.put(
-			"threadFlagId",
-			(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setThreadFlagId);
-		attributeGetterFunctions.put("groupId", MBThreadFlag::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setGroupId);
-		attributeGetterFunctions.put("companyId", MBThreadFlag::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setCompanyId);
-		attributeGetterFunctions.put("userId", MBThreadFlag::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setUserId);
-		attributeGetterFunctions.put("userName", MBThreadFlag::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<MBThreadFlag, String>)MBThreadFlag::setUserName);
-		attributeGetterFunctions.put("createDate", MBThreadFlag::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<MBThreadFlag, Date>)MBThreadFlag::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", MBThreadFlag::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<MBThreadFlag, Date>)MBThreadFlag::setModifiedDate);
-		attributeGetterFunctions.put("threadId", MBThreadFlag::getThreadId);
-		attributeSetterBiConsumers.put(
-			"threadId",
-			(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setThreadId);
-		attributeGetterFunctions.put(
-			"lastPublishDate", MBThreadFlag::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<MBThreadFlag, Date>)MBThreadFlag::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<MBThreadFlag, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<MBThreadFlag, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<MBThreadFlag, Long>)
+					MBThreadFlag::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<MBThreadFlag, String>)MBThreadFlag::setUuid);
+			attributeSetterBiConsumers.put(
+				"threadFlagId",
+				(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setThreadFlagId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<MBThreadFlag, String>)MBThreadFlag::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<MBThreadFlag, Date>)MBThreadFlag::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<MBThreadFlag, Date>)MBThreadFlag::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"threadId",
+				(BiConsumer<MBThreadFlag, Long>)MBThreadFlag::setThreadId);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<MBThreadFlag, Date>)
+					MBThreadFlag::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -888,41 +872,12 @@ public class MBThreadFlagModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<MBThreadFlag, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<MBThreadFlag, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<MBThreadFlag, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((MBThreadFlag)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, MBThreadFlag>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					MBThreadFlag.class, ModelWrapper.class);
 
 	}
 
@@ -943,8 +898,9 @@ public class MBThreadFlagModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<MBThreadFlag, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<MBThreadFlag, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

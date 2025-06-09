@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {
 	generateInstanceId,
+	getField,
 	getFieldProperties,
 	localizeField,
+	updateInputMaskProperties,
 } from '../../utils/fieldSupport';
 import {generateName, getRepeatedIndex} from '../../utils/repeatable.es';
 import {PagesVisitor} from '../../utils/visitors.es';
@@ -70,7 +63,10 @@ const getLocalizedValue = ({
 	const defaultValue = localizedValue[defaultLanguageId];
 
 	if (localizedValue) {
-		if (localizedValue[editingLanguageId] != null) {
+		if (
+			localizedValue[editingLanguageId] !== null &&
+			localizedValue[editingLanguageId] !== undefined
+		) {
 			if (
 				Array.isArray(localizedValue[editingLanguageId]) &&
 				!localizedValue[editingLanguageId]?.length &&
@@ -88,8 +84,10 @@ const getLocalizedValue = ({
 	}
 
 	switch (type) {
+		case 'color':
+		case 'numeric':
 		case 'select':
-		case 'numeric': {
+		case 'text': {
 			return _value;
 		}
 		case 'image': {
@@ -226,7 +224,7 @@ const removeLanguageFromForm = (focusedField, pages, ...deletedLanguageIds) => {
  * NOTE: This is a literal copy of the old LayoutProvider logic. Small changes
  * were made only to adapt to the reducer.
  */
-export default (state, action) => {
+export default function languageReducer(state, action) {
 	switch (action.type) {
 		case EVENT_TYPES.LANGUAGE.CHANGE: {
 			const {
@@ -241,8 +239,6 @@ export default (state, action) => {
 			} = action.payload;
 
 			const visitor = new PagesVisitor(pages ?? state.pages);
-
-			let newFocusedField = focusedField;
 
 			const newPages = visitor.mapFields(
 				({
@@ -259,7 +255,7 @@ export default (state, action) => {
 					// the fields in the settingsContext structure.
 
 					if (field.settingsContext) {
-						let newField = {
+						const newField = {
 							...field,
 							...updateFieldLanguage({
 								...field,
@@ -270,36 +266,11 @@ export default (state, action) => {
 							value: previousValue,
 						};
 
-						if (field.numericInputMask) {
-							const visitor = new PagesVisitor(
-								field.settingsContext.pages
+						if (newField.inputMask) {
+							updateInputMaskProperties(
+								editingLanguageId,
+								newField
 							);
-							let numericInputMask = {};
-							visitor.mapFields((field) => {
-								if (field.fieldName === 'numericInputMask') {
-									numericInputMask =
-										field.localizedValue[editingLanguageId];
-									newField = {
-										...newField,
-										...numericInputMask,
-									};
-								}
-							});
-
-							field.settingsContext.pages = visitor.mapFields(
-								(field) => {
-									return field.fieldName === 'predefinedValue'
-										? {
-												...field,
-												...numericInputMask,
-										  }
-										: field;
-								}
-							);
-						}
-
-						if (field.fieldName === newFocusedField.fieldName) {
-							newFocusedField = newField;
 						}
 
 						return newField;
@@ -324,7 +295,8 @@ export default (state, action) => {
 			return {
 				defaultLanguageId,
 				editingLanguageId,
-				focusedField: newFocusedField,
+				focusedField:
+					getField(newPages, focusedField?.fieldName) ?? focusedField,
 				pages: newPages,
 			};
 		}
@@ -338,6 +310,42 @@ export default (state, action) => {
 
 			return {
 				availableLanguageIds: [...availableLanguageIds, languageId],
+			};
+		}
+		case EVENT_TYPES.LANGUAGE.LOCALES_DROPDOWN_CHANGE: {
+			const {defaultLanguageId, focusedField, pages} = state;
+
+			const {editingLanguageId} = action.payload;
+
+			const visitor = new PagesVisitor(pages);
+
+			const newPages = visitor.mapFields(
+				({localizedObjectField, value}) => {
+					if (localizedObjectField) {
+						const parsedValue =
+							typeof value === 'string' && value
+								? JSON.parse(value)
+								: value;
+
+						return {
+							value: {
+								...parsedValue,
+								[editingLanguageId]:
+									parsedValue[editingLanguageId] ??
+									parsedValue[defaultLanguageId],
+							},
+						};
+					}
+				},
+				true,
+				true
+			);
+
+			return {
+				editingLanguageId,
+				focusedField:
+					getField(newPages, focusedField?.fieldName) ?? focusedField,
+				pages: newPages,
 			};
 		}
 		case EVENT_TYPES.LANGUAGE.UPDATE: {
@@ -384,4 +392,4 @@ export default (state, action) => {
 		default:
 			return state;
 	}
-};
+}

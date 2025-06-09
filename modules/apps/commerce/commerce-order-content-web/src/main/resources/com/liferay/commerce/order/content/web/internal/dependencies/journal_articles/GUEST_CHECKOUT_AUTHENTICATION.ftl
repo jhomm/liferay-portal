@@ -2,7 +2,7 @@
 
 	<#-- Instant redirect, when the page is hit directly or refreshed -->
 
-	<script>
+	<script ${nonceAttribute}>
 		if (Liferay.ThemeDisplay.isSignedIn()) {
 			window.location.replace("${commerceOrderHttpHelper.getCommerceCheckoutPortletURL(request)}");
 		}
@@ -17,7 +17,7 @@
 	</@>
 
 	<#if validator.isNotNull(Title)>
-		<h3 style="font-weight: normal">${Title.getData()}</h3>
+		<h3 class="font-weight-normal">${Title.getData()}</h3>
 	</#if>
 
 	<#if validator.isNotNull(Description)>

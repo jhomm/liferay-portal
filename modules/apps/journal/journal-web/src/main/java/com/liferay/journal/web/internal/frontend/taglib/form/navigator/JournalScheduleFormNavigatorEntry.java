@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.frontend.taglib.form.navigator;
@@ -19,7 +10,7 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.util.PropsValues;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,25 +31,21 @@ public class JournalScheduleFormNavigatorEntry
 	}
 
 	@Override
-	public boolean isVisible(User user, JournalArticle article) {
-		if (!PropsValues.SCHEDULER_ENABLED || isEditDefaultValues(article)) {
-			return false;
-		}
-
-		return true;
+	public ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.journal.web)", unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	public boolean isVisible(User user, JournalArticle article) {
+		return PropsValues.SCHEDULER_ENABLED;
 	}
 
 	@Override
 	protected String getJspPath() {
 		return "/article/schedule.jsp";
 	}
+
+	@Reference(target = "(osgi.web.symbolicname=com.liferay.journal.web)")
+	private ServletContext _servletContext;
 
 }

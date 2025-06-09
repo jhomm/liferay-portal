@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton, {ClayButtonWithIcon} from '@clayui/button';
 import ClayIcon from '@clayui/icon';
-import ClayManagementToolbar from '@clayui/management-toolbar';
 import classNames from 'classnames';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React, {useContext, useState} from 'react';
 
 import DropDown, {CheckboxGroup, ItemsGroup, RadioGroup} from './DropDown';
@@ -37,11 +28,13 @@ const getSortable = (columns, sort = '', defaultSort) => {
 	return {};
 };
 
-export default ({columns = [], disabled, filters = []}) => {
-	const [
-		{filters: appliedFilters = {}, defaultSort, sort},
-		dispatch,
-	] = useContext(SearchContext);
+export default function ManagementToolbarFilterAndOrder({
+	columns = [],
+	disabled,
+	filters = [],
+}) {
+	const [{filters: appliedFilters = {}, defaultSort, sort}, dispatch] =
+		useContext(SearchContext);
 	const [localFilters, setLocalFilters] = useState(appliedFilters);
 	const [isDropDownActive, setDropDownActive] = useState(false);
 
@@ -106,7 +99,7 @@ export default ({columns = [], disabled, filters = []}) => {
 		}
 	);
 
-	const enableDoneButton = filterItems.length > 0;
+	const enableDoneButton = !!filterItems.length;
 
 	const onSortButtonClick = (asc, newColumn) => {
 		dispatch({
@@ -116,7 +109,7 @@ export default ({columns = [], disabled, filters = []}) => {
 	};
 
 	const orderByItems = () => {
-		if (sortableColumns.length === 0) {
+		if (!sortableColumns.length) {
 			return [];
 		}
 
@@ -167,9 +160,9 @@ export default ({columns = [], disabled, filters = []}) => {
 
 	return (
 		<>
-			{dropDownItems.length > 0 && (
-				<ClayManagementToolbar.ItemList>
-					<ClayManagementToolbar.Item>
+			{!!dropDownItems.length && (
+				<ManagementToolbar.ItemList>
+					<ManagementToolbar.Item>
 						<DropDown
 							active={isDropDownActive}
 							footerContent={
@@ -200,6 +193,7 @@ export default ({columns = [], disabled, filters = []}) => {
 											symbol="caret-bottom"
 										/>
 									</span>
+
 									<span className="navbar-breakpoint-d-none">
 										<ClayIcon
 											className="inline-item inline-item-after"
@@ -213,9 +207,9 @@ export default ({columns = [], disabled, filters = []}) => {
 								<div key={index}>{item}</div>
 							))}
 						</DropDown>
-					</ClayManagementToolbar.Item>
+					</ManagementToolbar.Item>
 
-					<ClayManagementToolbar.Item>
+					<ManagementToolbar.Item>
 						<ClayButtonWithIcon
 							className={classNames(
 								'nav-link',
@@ -233,9 +227,9 @@ export default ({columns = [], disabled, filters = []}) => {
 								'reverse-sort-direction'
 							)}
 						/>
-					</ClayManagementToolbar.Item>
-				</ClayManagementToolbar.ItemList>
+					</ManagementToolbar.Item>
+				</ManagementToolbar.ItemList>
 			)}
 		</>
 	);
-};
+}

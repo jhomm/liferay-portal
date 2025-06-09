@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.internal.util;
@@ -21,14 +12,23 @@ import com.liferay.mentions.constants.MentionsPortletKeys;
 import com.liferay.mentions.matcher.MentionsMatcher;
 import com.liferay.mentions.util.MentionsNotifier;
 import com.liferay.mentions.util.MentionsUserFinder;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
+import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.service.permission.LayoutPermission;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
@@ -41,7 +41,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -49,6 +52,25 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = MentionsNotifier.class)
 public class DefaultMentionsNotifier implements MentionsNotifier {
+
+	public MentionsMatcher getMentionsMatcher(String className) {
+		MentionsMatcher mentionsMatcher = _serviceTrackerMap.getService(
+			className);
+
+		if (mentionsMatcher != null) {
+			return mentionsMatcher;
+		}
+
+		MentionsMatcher defaultMentionsMatcher = _serviceTrackerMap.getService(
+			"*");
+
+		if (defaultMentionsMatcher == null) {
+			throw new IllegalStateException(
+				"Unable to get default mentions matcher");
+		}
+
+		return defaultMentionsMatcher;
+	}
 
 	@Override
 	public void notify(
@@ -59,7 +81,7 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		String[] mentionedUsersScreenNames = getMentionedUsersScreenNames(
+		String[] mentionedUsersScreenNames = _getMentionedUsersScreenNames(
 			userId, className, content);
 
 		if (ArrayUtil.isEmpty(mentionedUsersScreenNames)) {
@@ -81,10 +103,9 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
 		subscriptionSender.setLocalizedBodyMap(
-			LocalizationUtil.getMap(bodyLocalizedValuesMap));
+			_localization.getMap(bodyLocalizedValuesMap));
 		subscriptionSender.setClassName(className);
 		subscriptionSender.setClassPK(classPK);
-		subscriptionSender.setCompanyId(user.getCompanyId());
 		subscriptionSender.setContextAttribute("[$CONTENT$]", content, false);
 		subscriptionSender.setContextAttributes(
 			"[$USER_ADDRESS$]", messageUserEmailAddress, "[$USER_NAME$]",
@@ -96,7 +117,7 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 		subscriptionSender.setHtmlFormat(true);
 		subscriptionSender.setLocalizedContextAttributeWithFunction(
 			"[$ASSET_ENTRY_NAME$]",
-			locale -> getAssetEntryName(className, locale));
+			locale -> _getAssetEntryName(className, locale));
 		subscriptionSender.setMailId("mb_discussion", classPK);
 		subscriptionSender.setNotificationType(
 			MentionsConstants.NOTIFICATION_TYPE_MENTION);
@@ -104,7 +125,7 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 		subscriptionSender.setScopeGroupId(groupId);
 		subscriptionSender.setServiceContext(serviceContext);
 		subscriptionSender.setLocalizedSubjectMap(
-			LocalizationUtil.getMap(subjectLocalizedValuesMap));
+			_localization.getMap(subjectLocalizedValuesMap));
 
 		for (String mentionedUserScreenName : mentionedUsersScreenNames) {
 			User mentionedUser = _userLocalService.fetchUserByScreenName(
@@ -114,6 +135,26 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 				continue;
 			}
 
+			ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
+
+			if (themeDisplay != null) {
+				Layout layout = themeDisplay.getLayout();
+
+				if (layout != null) {
+					PermissionChecker permissionChecker =
+						_permissionCheckerFactory.create(mentionedUser);
+
+					if (!_layoutPermission.contains(
+							permissionChecker, layout, true, ActionKeys.VIEW) ||
+						!PortletPermissionUtil.contains(
+							permissionChecker, layout, themeDisplay.getPpid(),
+							ActionKeys.VIEW)) {
+
+						continue;
+					}
+				}
+			}
+
 			subscriptionSender.addRuntimeSubscribers(
 				mentionedUser.getEmailAddress(), mentionedUser.getFullName());
 		}
@@ -121,7 +162,18 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 		subscriptionSender.flushNotificationsAsync();
 	}
 
-	protected String getAssetEntryName(String className, Locale locale) {
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, MentionsMatcher.class, "model.class.name");
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceTrackerMap.close();
+	}
+
+	private String _getAssetEntryName(String className, Locale locale) {
 		AssetRendererFactory<?> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
 				className);
@@ -133,7 +185,7 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 		return StringPool.BLANK;
 	}
 
-	protected String[] getMentionedUsersScreenNames(
+	private String[] _getMentionedUsersScreenNames(
 			long userId, String className, String content)
 		throws PortalException {
 
@@ -146,8 +198,7 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 
 		Set<String> mentionedUsersScreenNames = new HashSet<>();
 
-		MentionsMatcher mentionsMatcher =
-			_mentionsMatcherRegistry.getMentionsMatcher(className);
+		MentionsMatcher mentionsMatcher = getMentionsMatcher(className);
 
 		for (String mentionedUserScreenName : mentionsMatcher.match(content)) {
 			List<User> users = _mentionsUserFinder.getUsers(
@@ -166,31 +217,24 @@ public class DefaultMentionsNotifier implements MentionsNotifier {
 		return mentionedUsersScreenNames.toArray(new String[0]);
 	}
 
-	@Reference(unbind = "-")
-	protected void setMentionsMatcherRegistry(
-		MentionsMatcherRegistry mentionsMatcherRegistry) {
+	@Reference
+	private LayoutPermission _layoutPermission;
 
-		_mentionsMatcherRegistry = mentionsMatcherRegistry;
-	}
+	@Reference
+	private Localization _localization;
 
-	@Reference(unbind = "-")
-	protected void setMentionsUserFinder(
-		MentionsUserFinder mentionsUserFinder) {
-
-		_mentionsUserFinder = mentionsUserFinder;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
-	private MentionsMatcherRegistry _mentionsMatcherRegistry;
+	@Reference
 	private MentionsUserFinder _mentionsUserFinder;
+
+	@Reference
+	private PermissionCheckerFactory _permissionCheckerFactory;
 
 	@Reference
 	private Portal _portal;
 
+	private ServiceTrackerMap<String, MentionsMatcher> _serviceTrackerMap;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

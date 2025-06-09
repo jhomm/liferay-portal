@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.util.configuration;
@@ -18,12 +9,13 @@ import com.liferay.fragment.constants.FragmentConfigurationFieldDataType;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
-import com.liferay.layout.display.page.LayoutDisplayPageProviderTracker;
+import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -47,6 +39,7 @@ public class FragmentConfigurationField {
 		_defaultValue = fieldJSONObject.getString("defaultValue");
 		_localizable = fieldJSONObject.getBoolean("localizable");
 		_type = fieldJSONObject.getString("type");
+		_typeOptionsJSONObject = fieldJSONObject.getJSONObject("typeOptions");
 	}
 
 	public FragmentConfigurationField(
@@ -58,6 +51,8 @@ public class FragmentConfigurationField {
 		_defaultValue = defaultValue;
 		_localizable = localizable;
 		_type = type;
+
+		_typeOptionsJSONObject = JSONFactoryUtil.createJSONObject();
 	}
 
 	/**
@@ -74,6 +69,7 @@ public class FragmentConfigurationField {
 		_type = type;
 
 		_localizable = false;
+		_typeOptionsJSONObject = JSONFactoryUtil.createJSONObject();
 	}
 
 	public String getDataType() {
@@ -81,16 +77,18 @@ public class FragmentConfigurationField {
 	}
 
 	public String getDefaultValue() {
-		if (Validator.isNotNull(_defaultValue) &&
-			!Objects.equals("itemSelector", _type)) {
-
-			return _defaultValue;
-		}
-		else if (Objects.equals("colorPalette", _type)) {
+		if (Objects.equals(_type, "colorPalette")) {
 			return _getColorPaletteDefaultValue();
 		}
-		else if (Objects.equals("itemSelector", _type)) {
+		else if (Objects.equals(_type, "itemSelector")) {
 			return _getItemSelectorDefaultValue();
+		}
+		else if (Objects.equals(_type, "text") && isLocalizable()) {
+			return _getTextDefaultValue();
+		}
+
+		if (Validator.isNotNull(_defaultValue)) {
+			return _defaultValue;
 		}
 
 		return StringPool.BLANK;
@@ -129,11 +127,19 @@ public class FragmentConfigurationField {
 		return _type;
 	}
 
+	public JSONObject getTypeOptionsJSONObject() {
+		return _typeOptionsJSONObject;
+	}
+
 	public boolean isLocalizable() {
 		return _localizable;
 	}
 
 	private String _getColorPaletteDefaultValue() {
+		if (Validator.isNotNull(_defaultValue)) {
+			return _defaultValue;
+		}
+
 		return JSONUtil.put(
 			"cssClass", StringPool.BLANK
 		).put(
@@ -156,12 +162,12 @@ public class FragmentConfigurationField {
 				String className = defaultValueJSONObject.getString(
 					"className");
 
-				LayoutDisplayPageProviderTracker
-					layoutDisplayPageProviderTracker =
+				LayoutDisplayPageProviderRegistry
+					layoutDisplayPageProviderRegistry =
 						_serviceTracker.getService();
 
 				LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-					layoutDisplayPageProviderTracker.
+					layoutDisplayPageProviderRegistry.
 						getLayoutDisplayPageProviderByClassName(className);
 
 				if (layoutDisplayPageProvider == null) {
@@ -195,11 +201,20 @@ public class FragmentConfigurationField {
 		return _defaultValue;
 	}
 
+	private String _getTextDefaultValue() {
+		if (Validator.isNull(_defaultValue)) {
+			return _defaultValue;
+		}
+
+		return LanguageUtil.get(
+			LocaleUtil.getMostRelevantLocale(), _defaultValue);
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		FragmentConfigurationField.class);
 
 	private static final ServiceTracker
-		<LayoutDisplayPageProviderTracker, LayoutDisplayPageProviderTracker>
+		<LayoutDisplayPageProviderRegistry, LayoutDisplayPageProviderRegistry>
 			_serviceTracker;
 
 	static {
@@ -207,7 +222,7 @@ public class FragmentConfigurationField {
 			FragmentConfigurationField.class);
 
 		_serviceTracker = new ServiceTracker<>(
-			bundle.getBundleContext(), LayoutDisplayPageProviderTracker.class,
+			bundle.getBundleContext(), LayoutDisplayPageProviderRegistry.class,
 			null);
 
 		_serviceTracker.open();
@@ -218,5 +233,6 @@ public class FragmentConfigurationField {
 	private final boolean _localizable;
 	private final String _name;
 	private final String _type;
+	private final JSONObject _typeOptionsJSONObject;
 
 }

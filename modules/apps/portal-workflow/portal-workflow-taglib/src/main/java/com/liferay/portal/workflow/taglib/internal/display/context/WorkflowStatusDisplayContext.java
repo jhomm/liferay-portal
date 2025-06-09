@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.taglib.internal.display.context;
@@ -29,11 +20,11 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.workflow.taglib.internal.constants.WorkflowStatusConstants;
 import com.liferay.taglib.util.TagResourceBundleUtil;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Feliphe Marinho
@@ -123,32 +114,33 @@ public class WorkflowStatusDisplayContext {
 
 	private Long _getInstanceId(HttpServletRequest httpServletRequest) {
 		Object bean = _getBean(httpServletRequest);
-		Class<?> model = _getModel(httpServletRequest);
+		Class<?> modelClass = _getModelClass(httpServletRequest);
 
-		if ((bean != null) && (model != null)) {
-			try {
-				WorkflowInstanceLink workflowInstanceLink =
-					WorkflowInstanceLinkLocalServiceUtil.
-						getWorkflowInstanceLink(
-							BeanPropertiesUtil.getLong(bean, "companyId"),
-							BeanPropertiesUtil.getLong(bean, "groupId"),
-							model.getName(),
-							BeanPropertiesUtil.getLong(bean, "primaryKey"));
-
-				return workflowInstanceLink.getWorkflowInstanceId();
-			}
-			catch (PortalException portalException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(portalException.getMessage(), portalException);
-				}
-			}
+		if ((bean == null) || (modelClass == null)) {
+			return null;
 		}
 
-		return null;
+		try {
+			WorkflowInstanceLink workflowInstanceLink =
+				WorkflowInstanceLinkLocalServiceUtil.getWorkflowInstanceLink(
+					BeanPropertiesUtil.getLong(bean, "companyId"),
+					BeanPropertiesUtil.getLong(bean, "groupId"),
+					modelClass.getName(),
+					BeanPropertiesUtil.getLong(bean, "primaryKey"));
+
+			return workflowInstanceLink.getWorkflowInstanceId();
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+
+			return null;
+		}
 	}
 
-	private Class<?> _getModel(HttpServletRequest httpServletRequest) {
-		return (Class<?>)_getAttribute("model", httpServletRequest);
+	private Class<?> _getModelClass(HttpServletRequest httpServletRequest) {
+		return (Class<?>)_getAttribute("modelClass", httpServletRequest);
 	}
 
 	private String _getVersion(HttpServletRequest httpServletRequest) {

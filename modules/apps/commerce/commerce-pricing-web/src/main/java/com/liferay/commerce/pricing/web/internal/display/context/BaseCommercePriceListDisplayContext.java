@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.display.context;
@@ -18,9 +9,10 @@ import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.commerce.pricing.constants.CommercePricingPortletKeys;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -29,10 +21,10 @@ import com.liferay.portal.kernel.security.permission.resource.PortletResourcePer
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -53,6 +45,8 @@ public abstract class BaseCommercePriceListDisplayContext
 		this.commercePriceListModelResourcePermission =
 			commercePriceListModelResourcePermission;
 		this.commercePriceListService = commercePriceListService;
+
+		cpRequestHelper = new CPRequestHelper(httpServletRequest);
 	}
 
 	public long getCommerceCatalogId() throws PortalException {
@@ -132,32 +126,28 @@ public abstract class BaseCommercePriceListDisplayContext
 			actionId);
 	}
 
-	protected List<ClayDataSetActionDropdownItem>
-		getClayDataSetActionDropdownItems(
-			String portletURL, boolean sidePanel) {
+	protected List<FDSActionDropdownItem> getFDSActionDropdownItems(
+		String portletURL, boolean sidePanel) {
 
-		List<ClayDataSetActionDropdownItem> clayDataSetActionDropdownItems =
-			new ArrayList<>();
+		List<FDSActionDropdownItem> fdsActionDropdownItems = new ArrayList<>();
 
-		ClayDataSetActionDropdownItem clayDataSetActionDropdownItem =
-			new ClayDataSetActionDropdownItem(
-				portletURL, "pencil", "edit",
-				LanguageUtil.get(httpServletRequest, "edit"), "get", null,
-				null);
+		FDSActionDropdownItem fdsActionDropdownItem = new FDSActionDropdownItem(
+			portletURL, "pencil", "edit",
+			LanguageUtil.get(httpServletRequest, "edit"), "get", null, null);
 
 		if (sidePanel) {
-			clayDataSetActionDropdownItem.setTarget("sidePanel");
+			fdsActionDropdownItem.setTarget("sidePanel");
 		}
 
-		clayDataSetActionDropdownItems.add(clayDataSetActionDropdownItem);
+		fdsActionDropdownItems.add(fdsActionDropdownItem);
 
-		clayDataSetActionDropdownItems.add(
-			new ClayDataSetActionDropdownItem(
+		fdsActionDropdownItems.add(
+			new FDSActionDropdownItem(
 				null, "trash", "delete",
 				LanguageUtil.get(httpServletRequest, "delete"), "delete",
 				"delete", "headless"));
 
-		return clayDataSetActionDropdownItems;
+		return fdsActionDropdownItems;
 	}
 
 	protected CommerceCatalogService commerceCatalogService;
@@ -165,5 +155,6 @@ public abstract class BaseCommercePriceListDisplayContext
 	protected final ModelResourcePermission<CommercePriceList>
 		commercePriceListModelResourcePermission;
 	protected CommercePriceListService commercePriceListService;
+	protected final CPRequestHelper cpRequestHelper;
 
 }

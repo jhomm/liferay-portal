@@ -1,5 +1,8 @@
 {
 	"articleId": "CLASSROOM-03",
+	"assetCategoryERCs": [
+		"MASCAT0003"
+	],
 	"ddmStructureKey": "CLASSROOM",
 	"ddmTemplateKey": "CLASSROOM",
 	"folder": "Classrooms",

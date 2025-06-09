@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,10 +13,10 @@ CommercePriceEntryDisplayContext commercePriceEntryDisplayContext = (CommercePri
 CommercePriceList commercePriceList = commercePriceEntryDisplayContext.getCommercePriceList();
 long commercePriceListId = commercePriceEntryDisplayContext.getCommercePriceListId();
 
-String datasetId = CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_LIST_ENTRIES;
+String dataSetId = CommercePricingFDSNames.PRICE_LIST_ENTRIES;
 
 if (CommercePriceListConstants.TYPE_PROMOTION.equals(commercePriceEntryDisplayContext.getCommercePriceListType(portletName))) {
-	datasetId = CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PROMOTION_ENTRIES;
+	dataSetId = CommercePricingFDSNames.PROMOTION_ENTRIES;
 }
 %>
 
@@ -34,66 +25,24 @@ if (CommercePriceListConstants.TYPE_PROMOTION.equals(commercePriceEntryDisplayCo
 		<div class="col-12">
 			<div id="item-finder-root"></div>
 
-			<aui:script require="commerce-frontend-js/components/item_finder/entry as itemFinder, commerce-frontend-js/utilities/slugify as slugify, commerce-frontend-js/utilities/eventsDefinitions as events, commerce-frontend-js/ServiceProvider/index as ServiceProvider">
-				var CommercePriceEntriesResource = ServiceProvider.default.AdminPricingAPI(
-					'v2'
-				);
-
-				var id = <%= commercePriceListId %>;
-				var priceListExternalReferenceCode =
-					'<%= HtmlUtil.escapeJS(commercePriceList.getExternalReferenceCode()) %>';
-
-				function selectItem(sku) {
-					var priceEntryData = {
-						price: '0.0',
-						priceListExternalReferenceCode: priceListExternalReferenceCode,
-						priceListId: id,
-						skuExternalReferenceCode: sku.externalReferenceCode,
-						skuId: sku.id,
-					};
-
-					return CommercePriceEntriesResource.addPriceEntry(id, priceEntryData)
-						.then(() => {
-							setTimeout(() => {
-								Liferay.fire(events.UPDATE_DATASET_DISPLAY, {
-									id: '<%= datasetId %>',
-								});
-							}, 500);
-						})
-						.catch((error) => {
-							return Promise.reject(error);
-						});
-				}
-
-				function getSelectedItems() {
-					return Promise.resolve([]);
-				}
-
-				itemFinder.default('itemFinder', 'item-finder-root', {
-					apiUrl:
-						'/o/headless-commerce-admin-catalog/v1.0/skus?filter=catalogId eq <%= commercePriceEntryDisplayContext.getCommerceCatalogId() %>',
-					getSelectedItems: getSelectedItems,
-					inputPlaceholder: '<%= LanguageUtil.get(request, "find-a-sku") %>',
-					itemSelectedMessage: '<%= LanguageUtil.get(request, "sku-selected") %>',
-					linkedDatasetsId: ['<%= datasetId %>'],
-					itemCreation: false,
-					itemsKey: 'id',
-					onItemSelected: selectItem,
-					pageSize: 10,
-					panelHeaderLabel: '<%= LanguageUtil.get(request, "add-skus") %>',
-					portletId: '<%= portletDisplay.getRootPortletId() %>',
-					schema: [
-						{
-							fieldName: 'sku',
-						},
-						{
-							fieldName: ['productName', 'LANG'],
-						},
-					],
-					spritemap: '<%= themeDisplay.getPathThemeImages() %>/lexicon/icons.svg',
-					titleLabel: '<%= LanguageUtil.get(request, "add-existing-sku") %>',
-				});
-			</aui:script>
+			<liferay-frontend:component
+				context='<%=
+					HashMapBuilder.<String, Object>put(
+						"commerceCatalogId", commercePriceEntryDisplayContext.getCommerceCatalogId()
+					).put(
+						"commercePriceListId", commercePriceListId
+					).put(
+						"dataSetId", dataSetId
+					).put(
+						"discountExternalReferenceCode", commercePriceList.getExternalReferenceCode()
+					).put(
+						"portletId", portletDisplay.getRootPortletId()
+					).put(
+						"spritemap", themeDisplay.getPathThemeSpritemap()
+					).build()
+				%>'
+				module="{pricingEntries} from commerce-pricing-web"
+			/>
 		</div>
 
 		<div class="col-12">
@@ -101,15 +50,12 @@ if (CommercePriceListConstants.TYPE_PROMOTION.equals(commercePriceEntryDisplayCo
 				bodyClasses="p-0"
 				title='<%= LanguageUtil.get(request, "entries") %>'
 			>
-				<clay:headless-data-set-display
+				<frontend-data-set:headless-display
 					apiURL="<%= commercePriceEntryDisplayContext.getPriceEntryApiURL() %>"
-					clayDataSetActionDropdownItems="<%= commercePriceEntryDisplayContext.getPriceEntriesClayDataSetActionDropdownItems() %>"
+					fdsActionDropdownItems="<%= commercePriceEntryDisplayContext.getPriceEntriesFDSActionDropdownItems() %>"
 					formName="fm"
-					id="<%= datasetId %>"
+					id="<%= dataSetId %>"
 					itemsPerPage="<%= 10 %>"
-					namespace="<%= liferayPortletResponse.getNamespace() %>"
-					pageNumber="<%= 1 %>"
-					portletURL="<%= currentURLObj %>"
 					selectedItemsKey="priceEntryId"
 				/>
 			</commerce-ui:panel>

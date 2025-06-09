@@ -1,0 +1,58 @@
+{
+	"description_i18n": {
+		"en_US": "hide-by-exact-term-match-description"
+	},
+	"elementDefinition": {
+		"category": "hide",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "filter",
+								"query": {
+									"bool": {
+										"must_not": [
+											{
+												"term": {
+													"${configuration.field}": {
+														"value": "${configuration.value}"
+													}
+												}
+											}
+										]
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "hidden",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"label": "field",
+							"name": "field",
+							"type": "fieldMapping"
+						},
+						{
+							"label": "value",
+							"name": "value",
+							"type": "text"
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "HIDE_BY_EXACT_TERM_MATCH",
+	"title_i18n": {
+		"en_US": "hide-by-exact-term-match"
+	}
+}

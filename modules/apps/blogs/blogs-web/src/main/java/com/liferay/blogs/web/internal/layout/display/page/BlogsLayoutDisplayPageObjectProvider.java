@@ -1,31 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.web.internal.layout.display.page;
 
-import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
-import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetRenderer;
-import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
-import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
+import com.liferay.asset.util.AssetHelper;
 import com.liferay.blogs.model.BlogsEntry;
+import com.liferay.friendly.url.info.item.provider.InfoItemFriendlyURLProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.Locale;
 
@@ -35,17 +20,25 @@ import java.util.Locale;
 public class BlogsLayoutDisplayPageObjectProvider
 	implements LayoutDisplayPageObjectProvider<BlogsEntry> {
 
-	public BlogsLayoutDisplayPageObjectProvider(BlogsEntry blogsEntry)
-		throws PortalException {
+	public BlogsLayoutDisplayPageObjectProvider(
+		AssetHelper assetHelper, BlogsEntry blogsEntry,
+		InfoItemFriendlyURLProvider<BlogsEntry> infoItemFriendlyURLProvider,
+		Language language) {
 
+		_assetHelper = assetHelper;
 		_blogsEntry = blogsEntry;
+		_infoItemFriendlyURLProvider = infoItemFriendlyURLProvider;
+		_language = language;
+	}
 
-		_assetEntry = _getAssetEntry(blogsEntry);
+	@Override
+	public String getClassName() {
+		return BlogsEntry.class.getName();
 	}
 
 	@Override
 	public long getClassNameId() {
-		return _assetEntry.getClassNameId();
+		return PortalUtil.getClassNameId(BlogsEntry.class.getName());
 	}
 
 	@Override
@@ -55,12 +48,12 @@ public class BlogsLayoutDisplayPageObjectProvider
 
 	@Override
 	public long getClassTypeId() {
-		return _assetEntry.getClassTypeId();
+		return 0;
 	}
 
 	@Override
 	public String getDescription(Locale locale) {
-		return _assetEntry.getDescription(locale);
+		return _blogsEntry.getDescription();
 	}
 
 	@Override
@@ -75,45 +68,25 @@ public class BlogsLayoutDisplayPageObjectProvider
 
 	@Override
 	public String getKeywords(Locale locale) {
-		String[] assetTagNames = AssetTagLocalServiceUtil.getTagNames(
-			_assetEntry.getClassName(), _assetEntry.getClassPK());
-		String[] assetCategoryNames =
-			AssetCategoryLocalServiceUtil.getCategoryNames(
-				_assetEntry.getClassName(), _assetEntry.getClassPK());
-
-		String[] keywords =
-			new String[assetTagNames.length + assetCategoryNames.length];
-
-		ArrayUtil.combine(assetTagNames, assetCategoryNames, keywords);
-
-		return StringUtil.merge(keywords);
+		return _assetHelper.getAssetKeywords(
+			BlogsEntry.class.getName(), _blogsEntry.getEntryId(), locale);
 	}
 
 	@Override
 	public String getTitle(Locale locale) {
-		return _assetEntry.getTitle(locale);
+		return _blogsEntry.getTitle();
 	}
 
 	@Override
 	public String getURLTitle(Locale locale) {
-		AssetRenderer<?> assetRenderer = _assetEntry.getAssetRenderer();
-
-		return assetRenderer.getUrlTitle(locale);
+		return _infoItemFriendlyURLProvider.getFriendlyURL(
+			_blogsEntry, _language.getLanguageId(locale));
 	}
 
-	private AssetEntry _getAssetEntry(BlogsEntry blogsEntry)
-		throws PortalException {
-
-		AssetRendererFactory<?> assetRendererFactory =
-			AssetRendererFactoryRegistryUtil.
-				getAssetRendererFactoryByClassNameId(
-					PortalUtil.getClassNameId(BlogsEntry.class));
-
-		return assetRendererFactory.getAssetEntry(
-			BlogsEntry.class.getName(), blogsEntry.getEntryId());
-	}
-
-	private final AssetEntry _assetEntry;
+	private final AssetHelper _assetHelper;
 	private final BlogsEntry _blogsEntry;
+	private final InfoItemFriendlyURLProvider<BlogsEntry>
+		_infoItemFriendlyURLProvider;
+	private final Language _language;
 
 }

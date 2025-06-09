@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ant.sync.dir;
@@ -40,6 +31,18 @@ public class SyncDirTask extends Task {
 	public void execute() throws BuildException {
 		_checkConfiguration();
 
+		File syncDirExecutedFile = new File(_toDir, ".sync-dir-executed");
+
+		if (syncDirExecutedFile.exists() &&
+			(System.getenv("JENKINS_HOME") != null)) {
+
+			log(
+				"Files have already been synchronized from " + _dir + " into " +
+					_toDir);
+
+			return;
+		}
+
 		log("Synchronizing " + _dir + " into " + _toDir);
 
 		long start = System.currentTimeMillis();
@@ -49,6 +52,15 @@ public class SyncDirTask extends Task {
 		log(
 			count + " files synchronized in " +
 				(System.currentTimeMillis() - start) + "ms");
+
+		if (System.getenv("JENKINS_HOME") != null) {
+			try {
+				syncDirExecutedFile.createNewFile();
+			}
+			catch (IOException ioException) {
+				log("Unable to create " + syncDirExecutedFile);
+			}
+		}
 	}
 
 	public void setDir(File dir) {

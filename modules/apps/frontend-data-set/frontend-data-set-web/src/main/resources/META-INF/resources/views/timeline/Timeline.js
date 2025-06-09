@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayList from '@clayui/list';
@@ -24,13 +15,16 @@ function TimelineEntry({date, description, title}) {
 				<div className="timeline-increment">
 					<span className="timeline-icon"></span>
 				</div>
+
 				<div className="panel-body">
 					<div className="mb-2 row">
 						<div className="col">
-							<h4 className="mb-0">{title}</h4>
+							<div className="h4 mb-0">{title}</div>
 						</div>
+
 						<div className="col-auto">{description}</div>
 					</div>
+
 					<small>{date}</small>
 				</div>
 			</div>
@@ -46,7 +40,11 @@ TimelineEntry.propTypes = {
 
 TimelineEntry.defaultProps = {};
 
-function Timeline({dataSetContext, items}) {
+function Timeline({frontendDataSetContext, items}) {
+	if (!items?.length) {
+		return null;
+	}
+
 	return (
 		<ClayList className={classNames('mb-0', 'timeline')}>
 			{items.map((item, i) => (
@@ -54,7 +52,7 @@ function Timeline({dataSetContext, items}) {
 					key={i}
 					{...item}
 					borderBottom={i !== items.length - 1}
-					dataSetContext={dataSetContext}
+					frontendDataSetContext={frontendDataSetContext}
 				/>
 			))}
 		</ClayList>
@@ -62,8 +60,7 @@ function Timeline({dataSetContext, items}) {
 }
 
 Timeline.propTypes = {
-	dataRenderers: PropTypes.object,
-	dataSetContext: PropTypes.any,
+	frontendDataSetContext: PropTypes.any,
 	items: PropTypes.array,
 };
 

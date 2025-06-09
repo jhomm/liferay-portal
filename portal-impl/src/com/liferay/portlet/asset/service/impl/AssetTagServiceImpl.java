@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.impl;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -35,10 +27,7 @@ import com.liferay.portlet.asset.service.permission.AssetTagsPermission;
 import com.liferay.portlet.asset.util.comparator.AssetTagNameComparator;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Provides the remote service for accessing, adding, checking, deleting,
@@ -55,14 +44,15 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 
 	@Override
 	public AssetTag addTag(
-			long groupId, String name, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String name,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		AssetTagsPermission.check(
 			getPermissionChecker(), groupId, ActionKeys.MANAGE_TAG);
 
 		return assetTagLocalService.addTag(
-			getUserId(), groupId, name, serviceContext);
+			externalReferenceCode, getUserId(), groupId, name, serviceContext);
 	}
 
 	@Override
@@ -84,14 +74,30 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 	}
 
 	@Override
+	public AssetTag fetchAssetTagByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return sanitize(
+			assetTagLocalService.fetchAssetTagByExternalReferenceCode(
+				externalReferenceCode, groupId));
+	}
+
+	@Override
+	public AssetTag getAssetTagByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return sanitize(
+			assetTagLocalService.getAssetTagByExternalReferenceCode(
+				externalReferenceCode, groupId));
+	}
+
+	@Override
 	public List<AssetTag> getGroupsTags(long[] groupIds) {
-		Set<AssetTag> groupsTags = new TreeSet<>(new AssetTagNameComparator());
-
-		for (long groupId : groupIds) {
-			groupsTags.addAll(getGroupTags(groupId));
-		}
-
-		return new ArrayList<>(groupsTags);
+		return sanitize(
+			assetTagPersistence.findByGroupId(
+				groupIds, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				new AssetTagNameComparator()));
 	}
 
 	@Override
@@ -232,11 +238,6 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 	}
 
 	@Override
-	public int getVisibleAssetsTagsCount(long groupId, String name) {
-		return assetTagFinder.countByG_N(groupId, name);
-	}
-
-	@Override
 	public void mergeTags(long fromTagId, long toTagId) throws PortalException {
 		AssetTag tag = assetTagLocalService.getTag(fromTagId);
 
@@ -260,6 +261,7 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 		return search(new long[] {groupId}, name, start, end);
 	}
 
+	@AccessControlled(guestAccessEnabled = true)
 	@Override
 	public JSONArray search(long[] groupIds, String name, int start, int end) {
 		return Autocomplete.arrayToJSONArray(
@@ -288,7 +290,8 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 
 	@Override
 	public AssetTag updateTag(
-			long tagId, String name, ServiceContext serviceContext)
+			String externalReferenceCode, long tagId, String name,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		AssetTag tag = assetTagLocalService.getTag(tagId);
@@ -297,7 +300,7 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 			getPermissionChecker(), tag.getGroupId(), ActionKeys.MANAGE_TAG);
 
 		return assetTagLocalService.updateTag(
-			getUserId(), tagId, name, serviceContext);
+			externalReferenceCode, getUserId(), tagId, name, serviceContext);
 	}
 
 	protected AssetTag sanitize(AssetTag tag) {
@@ -315,7 +318,7 @@ public class AssetTagServiceImpl extends AssetTagServiceBaseImpl {
 			}
 		}
 		catch (PrincipalException principalException) {
-			_log.error(principalException, principalException);
+			_log.error(principalException);
 		}
 
 		tag.setUserId(0);

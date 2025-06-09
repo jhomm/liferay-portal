@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -44,20 +35,19 @@ renderResponse.setTitle(LanguageUtil.format(request, "copy-x", ddmStructure.getN
 
 		<aui:model-context bean="<%= ddmStructure %>" model="<%= com.liferay.dynamic.data.mapping.model.DDMStructure.class %>" />
 
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<aui:input name="name" />
+		<liferay-frontend:fieldset>
+			<aui:input name="name" />
 
-				<aui:input name="description" />
+			<aui:input name="description" />
 
-				<aui:input label="copy-templates" name="copyTemplates" type="checkbox" />
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<aui:input label="copy-templates" name="copyTemplates" type="checkbox" />
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" value="copy" />
-
-		<aui:button href="<%= redirect %>" type="cancel" />
+		<liferay-frontend:edit-form-buttons
+			redirect="<%= redirect %>"
+			submitLabel="copy"
+		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

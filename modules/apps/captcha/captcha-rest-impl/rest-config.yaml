@@ -1,0 +1,14 @@
+apiDir: ../captcha-rest-api/src/main/java
+apiPackagePath: com.liferay.captcha.rest
+application:
+    baseURI: /captcha
+    className: CaptchaRESTApplication
+    name: Liferay.Captcha.REST
+author: Loc Pham
+clientDir: ../captcha-rest-client/src/main/java
+compatibilityVersion: 9
+forcePredictableOperationId: true
+generateBatch: false
+generateGraphQL: false
+javaEEPackage: jakarta
+testDir: ../captcha-rest-test/src/testIntegration/java

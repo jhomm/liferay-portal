@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.client.test;
@@ -18,9 +9,10 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.oauth2.provider.constants.GrantType;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 
 import java.util.Collections;
 
@@ -53,14 +45,16 @@ public class GrantedFlowsTest extends BaseClientTestCase {
 
 		String tokenString = getToken(
 			"oauthTestApplicationPassword", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
 
 		errorString = getToken(
 			"oauthTestApplicationClient", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
@@ -74,21 +68,26 @@ public class GrantedFlowsTest extends BaseClientTestCase {
 		errorString = getToken(
 			"oauthTestApplicationNoGrants", null,
 			getAuthorizationCodePKCEBiFunction(
-				"test@liferay.com", "test", null),
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
 
 		tokenString = getToken(
 			"oauthTestApplicationCode", null,
-			getAuthorizationCodeBiFunction("test@liferay.com", "test", null),
+			getAuthorizationCodeBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
 
 		errorString = getToken(
 			"oauthTestApplicationPassword", null,
-			getAuthorizationCodeBiFunction("test@liferay.com", "test", null),
+			getAuthorizationCodeBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseError);
 
 		Assert.assertEquals("unauthorized_client", errorString);
@@ -96,54 +95,57 @@ public class GrantedFlowsTest extends BaseClientTestCase {
 		tokenString = getToken(
 			"oauthTestApplicationCodePKCE", null,
 			getAuthorizationCodePKCEBiFunction(
-				"test@liferay.com", "test", null),
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				null),
 			this::parseTokenString);
 
 		Assert.assertNotNull(tokenString);
 	}
 
-	public static class AnnotatedApplicationTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new AnnotatedApplicationTestPreparatorBundleActivator();
+	}
+
+	private User _user;
+
+	private class AnnotatedApplicationTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			_user = UserTestUtil.getAdminUser(companyId);
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCode",
+				companyId, _user, "oauthTestApplicationCode",
 				Collections.singletonList(GrantType.AUTHORIZATION_CODE),
 				Collections.singletonList("everything"));
 
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationCodePKCE", null,
+			createOAuth2ApplicationWithNone(
+				companyId, _user, "oauthTestApplicationCodePKCE",
 				Collections.singletonList(GrantType.AUTHORIZATION_CODE_PKCE),
-				Collections.singletonList("http://redirecturi:8080"),
-				Collections.singletonList("everything"));
+				Collections.singletonList("http://redirecturi:8080"), false,
+				Collections.singletonList("everything"), false);
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationClient",
+				companyId, _user, "oauthTestApplicationClient",
 				Collections.singletonList(GrantType.CLIENT_CREDENTIALS),
 				Collections.singletonList("everything"));
 
-			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationNoGrants", null,
+			createOAuth2ApplicationWithNone(
+				companyId, _user, "oauthTestApplicationNoGrants",
 				Collections.emptyList(),
-				Collections.singletonList("http://redirecturi:8080"),
-				Collections.singletonList("everything"));
+				Collections.singletonList("http://redirecturi:8080"), false,
+				Collections.singletonList("everything"), false);
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationPassword",
+				companyId, _user, "oauthTestApplicationPassword",
 				Collections.singletonList(GrantType.RESOURCE_OWNER_PASSWORD),
 				Collections.singletonList("everything"));
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new AnnotatedApplicationTestPreparatorBundleActivator();
 	}
 
 }

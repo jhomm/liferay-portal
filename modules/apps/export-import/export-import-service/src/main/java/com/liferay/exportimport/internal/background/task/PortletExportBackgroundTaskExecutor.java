@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.background.task;
 
 import com.liferay.exportimport.internal.background.task.display.PortletExportImportBackgroundTaskDisplay;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
-import com.liferay.exportimport.kernel.service.ExportImportLocalServiceUtil;
+import com.liferay.exportimport.kernel.service.ExportImportLocalService;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
-import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManagerUtil;
+import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskResult;
 import com.liferay.portal.kernel.backgroundtask.display.BackgroundTaskDisplay;
 import com.liferay.portal.kernel.util.MapUtil;
@@ -29,11 +20,18 @@ import java.io.Serializable;
 
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Daniel Kocsis
  * @author Michael C. Han
  * @author Akos Thurzo
  */
+@Component(
+	property = "background.task.executor.class.name=com.liferay.exportimport.internal.background.task.PortletExportBackgroundTaskExecutor",
+	service = BackgroundTaskExecutor.class
+)
 public class PortletExportBackgroundTaskExecutor
 	extends BaseExportImportBackgroundTaskExecutor {
 
@@ -44,17 +42,7 @@ public class PortletExportBackgroundTaskExecutor
 
 	@Override
 	public BackgroundTaskExecutor clone() {
-		PortletExportBackgroundTaskExecutor
-			portletExportBackgroundTaskExecutor =
-				new PortletExportBackgroundTaskExecutor();
-
-		portletExportBackgroundTaskExecutor.
-			setBackgroundTaskStatusMessageTranslator(
-				getBackgroundTaskStatusMessageTranslator());
-		portletExportBackgroundTaskExecutor.setIsolationLevel(
-			getIsolationLevel());
-
-		return portletExportBackgroundTaskExecutor;
+		return this;
 	}
 
 	@Override
@@ -70,10 +58,10 @@ public class PortletExportBackgroundTaskExecutor
 		long userId = MapUtil.getLong(settingsMap, "userId");
 		String fileName = MapUtil.getString(settingsMap, "fileName");
 
-		File larFile = ExportImportLocalServiceUtil.exportPortletInfoAsFile(
+		File larFile = _exportImportLocalService.exportPortletInfoAsFile(
 			exportImportConfiguration);
 
-		BackgroundTaskManagerUtil.addBackgroundTaskAttachment(
+		_backgroundTaskManager.addBackgroundTaskAttachment(
 			userId, backgroundTask.getBackgroundTaskId(), fileName, larFile);
 
 		return BackgroundTaskResult.SUCCESS;
@@ -85,5 +73,11 @@ public class PortletExportBackgroundTaskExecutor
 
 		return new PortletExportImportBackgroundTaskDisplay(backgroundTask);
 	}
+
+	@Reference
+	private BackgroundTaskManager _backgroundTaskManager;
+
+	@Reference
+	private ExportImportLocalService _exportImportLocalService;
 
 }

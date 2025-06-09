@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.display.page.util;
 
 import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
-import com.liferay.asset.display.page.info.display.contributor.LayoutDisplayPageProviderTrackerUtil;
+import com.liferay.asset.display.page.info.display.contributor.LayoutDisplayPageProviderRegistryUtil;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalServiceUtil;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
-import com.liferay.layout.display.page.LayoutDisplayPageProviderTracker;
+import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
+import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalServiceUtil;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 /**
@@ -34,21 +25,20 @@ import com.liferay.portal.kernel.util.PortalUtil;
 public class AssetDisplayPageUtil {
 
 	public static LayoutPageTemplateEntry
-			getAssetDisplayPageLayoutPageTemplateEntry(
-				long groupId, long classNameId, long classPK, long classTypeId)
-		throws PortalException {
+		getAssetDisplayPageLayoutPageTemplateEntry(
+			long groupId, long classNameId, long classPK, long classTypeId) {
 
 		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry =
 			LayoutPageTemplateEntryServiceUtil.
 				fetchDefaultLayoutPageTemplateEntry(
 					groupId, classNameId, classTypeId);
 
-		LayoutDisplayPageProviderTracker layoutDisplayPageProviderTracker =
-			LayoutDisplayPageProviderTrackerUtil.
-				getLayoutDisplayPageProviderTracker();
+		LayoutDisplayPageProviderRegistry layoutDisplayPageProviderRegistry =
+			LayoutDisplayPageProviderRegistryUtil.
+				getLayoutDisplayPageProviderRegistry();
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			layoutDisplayPageProviderTracker.
+			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
 					PortalUtil.getClassName(classNameId));
 
@@ -58,8 +48,7 @@ public class AssetDisplayPageUtil {
 	}
 
 	public static boolean hasAssetDisplayPage(
-			long groupId, AssetEntry assetEntry)
-		throws PortalException {
+		long groupId, AssetEntry assetEntry) {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			getAssetDisplayPageLayoutPageTemplateEntry(
@@ -74,8 +63,7 @@ public class AssetDisplayPageUtil {
 	}
 
 	public static boolean hasAssetDisplayPage(
-			long groupId, long classNameId, long classPK, long classTypeId)
-		throws PortalException {
+		long groupId, long classNameId, long classPK, long classTypeId) {
 
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			getAssetDisplayPageLayoutPageTemplateEntry(
@@ -89,10 +77,9 @@ public class AssetDisplayPageUtil {
 	}
 
 	private static LayoutPageTemplateEntry _getAssetDisplayPage(
-			long groupId, long classNameId, long classPK,
-			LayoutPageTemplateEntry defaultLayoutPageTemplateEntry,
-			LayoutDisplayPageProvider<?> layoutDisplayPageProvider)
-		throws PortalException {
+		long groupId, long classNameId, long classPK,
+		LayoutPageTemplateEntry defaultLayoutPageTemplateEntry,
+		LayoutDisplayPageProvider<?> layoutDisplayPageProvider) {
 
 		AssetDisplayPageEntry assetDisplayPageEntry =
 			AssetDisplayPageEntryLocalServiceUtil.fetchAssetDisplayPageEntry(
@@ -132,7 +119,7 @@ public class AssetDisplayPageUtil {
 		if (assetDisplayPageEntry.getType() ==
 				AssetDisplayPageConstants.TYPE_SPECIFIC) {
 
-			return LayoutPageTemplateEntryServiceUtil.
+			return LayoutPageTemplateEntryLocalServiceUtil.
 				fetchLayoutPageTemplateEntry(
 					assetDisplayPageEntry.getLayoutPageTemplateEntryId());
 		}

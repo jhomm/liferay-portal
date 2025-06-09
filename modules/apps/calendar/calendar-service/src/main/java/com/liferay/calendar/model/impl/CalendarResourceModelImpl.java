@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.model.impl;
 
 import com.liferay.calendar.model.CalendarResource;
 import com.liferay.calendar.model.CalendarResourceModel;
-import com.liferay.calendar.model.CalendarResourceSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -130,6 +117,9 @@ public class CalendarResourceModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY CalendarResource.code_ ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY calendarResource.code_ ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -190,68 +180,6 @@ public class CalendarResourceModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static CalendarResource toModel(CalendarResourceSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		CalendarResource model = new CalendarResourceImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setCalendarResourceId(soapModel.getCalendarResourceId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setClassUuid(soapModel.getClassUuid());
-		model.setCode(soapModel.getCode());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setActive(soapModel.isActive());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<CalendarResource> toModels(
-		CalendarResourceSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CalendarResource> models = new ArrayList<CalendarResource>(
-			soapModels.length);
-
-		for (CalendarResourceSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public CalendarResourceModelImpl() {
@@ -330,153 +258,152 @@ public class CalendarResourceModelImpl
 	public Map<String, Function<CalendarResource, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CalendarResource, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CalendarResource>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CalendarResource.class.getClassLoader(), CalendarResource.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CalendarResource, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CalendarResource> constructor =
-				(Constructor<CalendarResource>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CalendarResource, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CalendarResource, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CalendarResource::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CalendarResource::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", CalendarResource::getUuid);
+			attributeGetterFunctions.put(
+				"calendarResourceId", CalendarResource::getCalendarResourceId);
+			attributeGetterFunctions.put(
+				"groupId", CalendarResource::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", CalendarResource::getCompanyId);
+			attributeGetterFunctions.put("userId", CalendarResource::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CalendarResource::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CalendarResource::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CalendarResource::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", CalendarResource::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", CalendarResource::getClassPK);
+			attributeGetterFunctions.put(
+				"classUuid", CalendarResource::getClassUuid);
+			attributeGetterFunctions.put("code", CalendarResource::getCode);
+			attributeGetterFunctions.put("name", CalendarResource::getName);
+			attributeGetterFunctions.put(
+				"description", CalendarResource::getDescription);
+			attributeGetterFunctions.put("active", CalendarResource::getActive);
+			attributeGetterFunctions.put(
+				"lastPublishDate", CalendarResource::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CalendarResource, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CalendarResource, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CalendarResource, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<CalendarResource, Object>>();
-		Map<String, BiConsumer<CalendarResource, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<CalendarResource, ?>>();
+		private static final Map<String, BiConsumer<CalendarResource, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CalendarResource::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CalendarResource, Long>)
-				CalendarResource::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", CalendarResource::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<CalendarResource, Long>)
-				CalendarResource::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", CalendarResource::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CalendarResource, String>)CalendarResource::setUuid);
-		attributeGetterFunctions.put(
-			"calendarResourceId", CalendarResource::getCalendarResourceId);
-		attributeSetterBiConsumers.put(
-			"calendarResourceId",
-			(BiConsumer<CalendarResource, Long>)
-				CalendarResource::setCalendarResourceId);
-		attributeGetterFunctions.put("groupId", CalendarResource::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<CalendarResource, Long>)CalendarResource::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", CalendarResource::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CalendarResource, Long>)CalendarResource::setCompanyId);
-		attributeGetterFunctions.put("userId", CalendarResource::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CalendarResource, Long>)CalendarResource::setUserId);
-		attributeGetterFunctions.put("userName", CalendarResource::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CalendarResource, String>)
-				CalendarResource::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CalendarResource::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CalendarResource, Date>)
-				CalendarResource::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CalendarResource::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CalendarResource, Date>)
-				CalendarResource::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", CalendarResource::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<CalendarResource, Long>)
-				CalendarResource::setClassNameId);
-		attributeGetterFunctions.put("classPK", CalendarResource::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<CalendarResource, Long>)CalendarResource::setClassPK);
-		attributeGetterFunctions.put(
-			"classUuid", CalendarResource::getClassUuid);
-		attributeSetterBiConsumers.put(
-			"classUuid",
-			(BiConsumer<CalendarResource, String>)
-				CalendarResource::setClassUuid);
-		attributeGetterFunctions.put("code", CalendarResource::getCode);
-		attributeSetterBiConsumers.put(
-			"code",
-			(BiConsumer<CalendarResource, String>)CalendarResource::setCode);
-		attributeGetterFunctions.put("name", CalendarResource::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<CalendarResource, String>)CalendarResource::setName);
-		attributeGetterFunctions.put(
-			"description", CalendarResource::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<CalendarResource, String>)
-				CalendarResource::setDescription);
-		attributeGetterFunctions.put("active", CalendarResource::getActive);
-		attributeSetterBiConsumers.put(
-			"active",
-			(BiConsumer<CalendarResource, Boolean>)CalendarResource::setActive);
-		attributeGetterFunctions.put(
-			"lastPublishDate", CalendarResource::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<CalendarResource, Date>)
-				CalendarResource::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<CalendarResource, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CalendarResource, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CalendarResource, String>)
+					CalendarResource::setUuid);
+			attributeSetterBiConsumers.put(
+				"calendarResourceId",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setCalendarResourceId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CalendarResource, String>)
+					CalendarResource::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CalendarResource, Date>)
+					CalendarResource::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CalendarResource, Date>)
+					CalendarResource::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<CalendarResource, Long>)
+					CalendarResource::setClassPK);
+			attributeSetterBiConsumers.put(
+				"classUuid",
+				(BiConsumer<CalendarResource, String>)
+					CalendarResource::setClassUuid);
+			attributeSetterBiConsumers.put(
+				"code",
+				(BiConsumer<CalendarResource, String>)
+					CalendarResource::setCode);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<CalendarResource, String>)
+					CalendarResource::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<CalendarResource, String>)
+					CalendarResource::setDescription);
+			attributeSetterBiConsumers.put(
+				"active",
+				(BiConsumer<CalendarResource, Boolean>)
+					CalendarResource::setActive);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CalendarResource, Date>)
+					CalendarResource::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1510,41 +1437,12 @@ public class CalendarResourceModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CalendarResource, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CalendarResource, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CalendarResource, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CalendarResource)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CalendarResource>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CalendarResource.class, ModelWrapper.class);
 
 	}
 
@@ -1574,7 +1472,8 @@ public class CalendarResourceModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CalendarResource, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

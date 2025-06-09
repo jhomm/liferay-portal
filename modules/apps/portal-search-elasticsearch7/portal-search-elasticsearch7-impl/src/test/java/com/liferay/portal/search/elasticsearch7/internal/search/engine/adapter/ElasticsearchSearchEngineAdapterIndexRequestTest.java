@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter;
@@ -19,6 +10,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
@@ -66,9 +58,6 @@ import java.util.Map;
 
 import org.apache.http.util.EntityUtils;
 
-import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
-import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.action.admin.indices.mapping.put.PutMappingRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
@@ -80,10 +69,12 @@ import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetMappingsRequest;
+import org.elasticsearch.client.indices.GetMappingsResponse;
+import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.cluster.metadata.IndexMetadata;
 import org.elasticsearch.cluster.metadata.MappingMetadata;
-import org.elasticsearch.common.collect.ImmutableOpenMap;
-import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.xcontent.XContentType;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -138,7 +129,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 		analyzeIndexRequest.setAnalyzer("stop");
 
-		assertExecuteAnalyzeIndexRequest(
+		_assertExecuteAnalyzeIndexRequest(
 			analyzeIndexRequest,
 			"quick,brown,foxes,jumped,over,lazy,dog,s,bone");
 	}
@@ -161,7 +152,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 		analyzeIndexRequest.setCharFilters(Collections.singleton("custom_cf"));
 
-		assertExecuteAnalyzeIndexRequest(
+		_assertExecuteAnalyzeIndexRequest(
 			analyzeIndexRequest,
 			"The 3 QUICK Brown+Foxes jumped over the lazy dog's bone.");
 	}
@@ -184,7 +175,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 		Assert.assertEquals("stop", detailsAnalyzer.getAnalyzerName());
 
-		assertAnalysisIndexResponseTokens(
+		_assertAnalysisIndexResponseTokens(
 			detailsAnalyzer.getAnalysisIndexResponseTokens(),
 			"quick,brown,foxes,jumped,over,lazy,dog,s,bone");
 	}
@@ -216,24 +207,23 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		Assert.assertEquals(
 			"uppercase", detailsTokenFilter.getTokenFilterName());
 
-		assertAnalysisIndexResponseTokens(
+		_assertAnalysisIndexResponseTokens(
 			detailsTokenFilter.getAnalysisIndexResponseTokens(),
 			"THE 2 QUICK BROWN-FOXES JUMPED OVER THE LAZY DOG'S BONE.");
 	}
 
 	@Test
 	public void testExecuteAnalyzeIndexRequestWithFieldName() {
-		String mappingName = "testAnalyze";
 		String mappingSource =
 			"{\"properties\":{\"keywordTestField\":{\"type\":\"keyword\"}}}";
 
-		_putMapping(mappingName, mappingSource);
+		_putMapping(mappingSource);
 
 		AnalyzeIndexRequest analyzeIndexRequest = new AnalyzeIndexRequest();
 
 		analyzeIndexRequest.setFieldName("keywordTestField");
 
-		assertExecuteAnalyzeIndexRequest(
+		_assertExecuteAnalyzeIndexRequest(
 			analyzeIndexRequest,
 			"The 2 QUICK Brown-Foxes jumped over the lazy dog's bone.");
 	}
@@ -259,7 +249,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		// Response contains tokens:
 		// "the,2,quick,brown,foxes,jumped,over,the,lazy,dog's,bone"
 
-		assertExecuteAnalyzeIndexRequest(
+		_assertExecuteAnalyzeIndexRequest(
 			analyzeIndexRequest,
 			"THE 2 QUICK BROWN-FOXES JUMPED OVER THE LAZY DOG'S BONE.");
 	}
@@ -270,7 +260,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 		analyzeIndexRequest.setTokenFilters(Collections.singleton("uppercase"));
 
-		assertExecuteAnalyzeIndexRequest(
+		_assertExecuteAnalyzeIndexRequest(
 			analyzeIndexRequest,
 			"THE 2 QUICK BROWN-FOXES JUMPED OVER THE LAZY DOG'S BONE.");
 	}
@@ -281,7 +271,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 		analyzeIndexRequest.setTokenizer("letter");
 
-		assertExecuteAnalyzeIndexRequest(
+		_assertExecuteAnalyzeIndexRequest(
 			analyzeIndexRequest,
 			"The,QUICK,Brown,Foxes,jumped,over,the,lazy,dog,s,bone");
 	}
@@ -304,7 +294,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 			"Close request not acknowledged",
 			closeIndexResponse.isAcknowledged());
 
-		assertIndexMetadataState(_INDEX_NAME, IndexMetadata.State.CLOSE);
+		_assertIndexMetadataState(_INDEX_NAME, IndexMetadata.State.CLOSE);
 	}
 
 	@Test
@@ -316,12 +306,10 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 			StringBundler.concat(
 				"{\n", "    \"settings\": {\n",
 				"        \"number_of_shards\": 1\n", "    },\n",
-				"    \"mappings\": {\n", "        \"type1\": {\n",
-				"            \"properties\": {\n",
+				"    \"mappings\": {\n", "            \"properties\": {\n",
 				"                \"field1\": {\n",
 				"                    \"type\": \"text\"\n",
-				"                }\n", "            }\n", "        }\n",
-				"    }\n", "}"));
+				"                }\n", "            }\n", "    }\n", "}"));
 
 		CreateIndexResponse createIndexResponse = _searchEngineAdapter.execute(
 			createIndexRequest);
@@ -363,18 +351,16 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 	@Test
 	public void testExecuteGetFieldMappingIndexRequest() throws Exception {
-		String mappingName = "testGetFieldMapping";
 		String mappingSource =
 			"{\"properties\":{\"testField\":{\"type\":\"keyword\"}, " +
 				"\"otherTestField\":{\"type\":\"keyword\"}}}";
 
-		_putMapping(mappingName, mappingSource);
+		_putMapping(mappingSource);
 
 		String[] fields = {"otherTestField"};
 
 		GetFieldMappingIndexRequest getFieldMappingIndexRequest =
-			new GetFieldMappingIndexRequest(
-				new String[] {_INDEX_NAME}, mappingName, fields);
+			new GetFieldMappingIndexRequest(new String[] {_INDEX_NAME}, fields);
 
 		GetFieldMappingIndexResponse getFieldMappingIndexResponse =
 			_searchEngineAdapter.execute(getFieldMappingIndexRequest);
@@ -394,11 +380,10 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 	@Test
 	public void testExecuteGetIndexIndexRequest() {
-		String mappingName = "testGetIndex";
 		String mappingSource =
 			"{\"properties\":{\"testField\":{\"type\":\"keyword\"}}}";
 
-		_putMapping(mappingName, mappingSource);
+		_putMapping(mappingSource);
 
 		GetIndexIndexRequest getIndexIndexRequest = new GetIndexIndexRequest(
 			_INDEX_NAME);
@@ -419,14 +404,13 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 	@Test
 	public void testExecuteGetMappingIndexRequest() {
-		String mappingName = "testGetMapping";
 		String mappingSource =
 			"{\"properties\":{\"testField\":{\"type\":\"keyword\"}}}";
 
-		_putMapping(mappingName, mappingSource);
+		_putMapping(mappingSource);
 
 		GetMappingIndexRequest getMappingIndexRequest =
-			new GetMappingIndexRequest(new String[] {_INDEX_NAME}, mappingName);
+			new GetMappingIndexRequest(new String[] {_INDEX_NAME});
 
 		GetMappingIndexResponse getMappingIndexResponse =
 			_searchEngineAdapter.execute(getMappingIndexRequest);
@@ -460,7 +444,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 	public void testExecuteOpenIndexRequest() {
 		_closeIndex(_INDEX_NAME);
 
-		assertIndexMetadataState(_INDEX_NAME, IndexMetadata.State.CLOSE);
+		_assertIndexMetadataState(_INDEX_NAME, IndexMetadata.State.CLOSE);
 
 		OpenIndexRequest openIndexRequest = new OpenIndexRequest(_INDEX_NAME);
 
@@ -477,18 +461,17 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 			"Open request not acknowledged",
 			openIndexResponse.isAcknowledged());
 
-		assertIndexMetadataState(_INDEX_NAME, IndexMetadata.State.OPEN);
+		_assertIndexMetadataState(_INDEX_NAME, IndexMetadata.State.OPEN);
 	}
 
 	@Test
 	public void testExecutePutMappingIndexRequest() {
-		String mappingName = "testPutMapping";
 		String mappingSource =
 			"{\"properties\":{\"testField\":{\"type\":\"keyword\"}}}";
 
 		PutMappingIndexRequest putMappingIndexRequest =
 			new PutMappingIndexRequest(
-				new String[] {_INDEX_NAME}, mappingName, mappingSource);
+				new String[] {_INDEX_NAME}, mappingSource);
 
 		PutMappingIndexResponse putMappingIndexResponse =
 			_searchEngineAdapter.execute(putMappingIndexRequest);
@@ -496,15 +479,11 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		Assert.assertTrue(putMappingIndexResponse.isAcknowledged());
 
 		GetMappingsResponse getMappingsResponse = _getGetMappingsResponse(
-			_INDEX_NAME, mappingName);
+			_INDEX_NAME);
 
-		ImmutableOpenMap<String, ImmutableOpenMap<String, MappingMetadata>>
-			immutableOpenMap1 = getMappingsResponse.getMappings();
+		Map<String, MappingMetadata> map = getMappingsResponse.mappings();
 
-		ImmutableOpenMap<String, MappingMetadata> immutableOpenMap2 =
-			immutableOpenMap1.get(_INDEX_NAME);
-
-		MappingMetadata mappingMetadata = immutableOpenMap2.get(mappingName);
+		MappingMetadata mappingMetadata = map.get(_INDEX_NAME);
 
 		String mappingMetadataSource = String.valueOf(mappingMetadata.source());
 
@@ -550,7 +529,20 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		_deleteIndex("test_index_2");
 	}
 
-	protected static IndexRequestExecutor createIndexRequestExecutor(
+	protected static SearchEngineAdapter createSearchEngineAdapter(
+		ElasticsearchClientResolver elasticsearchClientResolver) {
+
+		SearchEngineAdapter searchEngineAdapter =
+			new ElasticsearchSearchEngineAdapterImpl();
+
+		ReflectionTestUtil.setFieldValue(
+			searchEngineAdapter, "_indexRequestExecutor",
+			_createIndexRequestExecutor(elasticsearchClientResolver));
+
+		return searchEngineAdapter;
+	}
+
+	private static IndexRequestExecutor _createIndexRequestExecutor(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		IndexRequestExecutorFixture indexRequestExecutorFixture =
@@ -565,18 +557,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		return indexRequestExecutorFixture.getIndexRequestExecutor();
 	}
 
-	protected static SearchEngineAdapter createSearchEngineAdapter(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		return new ElasticsearchSearchEngineAdapterImpl() {
-			{
-				setIndexRequestExecutor(
-					createIndexRequestExecutor(elasticsearchClientResolver));
-			}
-		};
-	}
-
-	protected void assertAnalysisIndexResponseTokens(
+	private void _assertAnalysisIndexResponseTokens(
 		List<AnalysisIndexResponseToken> analysisIndexResponseTokens,
 		String expectedTokens) {
 
@@ -594,7 +575,7 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		Assert.assertEquals(expectedTokens, expectedTokens, actualTokens);
 	}
 
-	protected void assertExecuteAnalyzeIndexRequest(
+	private void _assertExecuteAnalyzeIndexRequest(
 		AnalyzeIndexRequest analyzeIndexRequest, String expectedTokens) {
 
 		analyzeIndexRequest.setIndexName(_INDEX_NAME);
@@ -604,12 +585,12 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		AnalyzeIndexResponse analyzeIndexResponse =
 			_searchEngineAdapter.execute(analyzeIndexRequest);
 
-		assertAnalysisIndexResponseTokens(
+		_assertAnalysisIndexResponseTokens(
 			analyzeIndexResponse.getAnalysisIndexResponseTokens(),
 			expectedTokens);
 	}
 
-	protected void assertIndexMetadataState(
+	private void _assertIndexMetadataState(
 		String indexName, IndexMetadata.State indexMetadataState) {
 
 		RestHighLevelClient restHighLevelClient =
@@ -639,23 +620,11 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 
 			String state = GetterUtil.getString(indexJSONObject.get("state"));
 
-			Assert.assertEquals(translateState(indexMetadataState), state);
+			Assert.assertEquals(_translateState(indexMetadataState), state);
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
 		}
-	}
-
-	protected String translateState(IndexMetadata.State state) {
-		if (state == IndexMetadata.State.OPEN) {
-			return "open";
-		}
-
-		if (state == IndexMetadata.State.CLOSE) {
-			return "close";
-		}
-
-		throw new IllegalArgumentException("Unknown state: " + state);
 	}
 
 	private void _closeIndex(String indexName) {
@@ -703,13 +672,10 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		}
 	}
 
-	private GetMappingsResponse _getGetMappingsResponse(
-		String indexName, String mappingName) {
-
+	private GetMappingsResponse _getGetMappingsResponse(String indexName) {
 		GetMappingsRequest getMappingsRequest = new GetMappingsRequest();
 
 		getMappingsRequest.indices(indexName);
-		getMappingsRequest.types(mappingName);
 
 		try {
 			return _indicesClient.getMapping(
@@ -761,12 +727,11 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		}
 	}
 
-	private void _putMapping(String mappingName, String mappingSource) {
+	private void _putMapping(String mappingSource) {
 		PutMappingRequest putMappingRequest = new PutMappingRequest(
 			_INDEX_NAME);
 
 		putMappingRequest.source(mappingSource, XContentType.JSON);
-		putMappingRequest.type(mappingName);
 
 		try {
 			_indicesClient.putMapping(
@@ -794,6 +759,18 @@ public class ElasticsearchSearchEngineAdapterIndexRequestTest {
 		}
 
 		_openIndex(_INDEX_NAME);
+	}
+
+	private String _translateState(IndexMetadata.State state) {
+		if (state == IndexMetadata.State.OPEN) {
+			return "open";
+		}
+
+		if (state == IndexMetadata.State.CLOSE) {
+			return "close";
+		}
+
+		throw new IllegalArgumentException("Unknown state: " + state);
 	}
 
 	private static final String _INDEX_NAME = "test_request_index";

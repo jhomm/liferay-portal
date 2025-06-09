@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 (function () {
-	var STR_DIV = 'div';
+	const STR_DIV = 'div';
 
 	CKEDITOR.plugins.add('media', {
 		TPL_SCRIPT_PREFIX_CONFIG: 'var mediaConfig = {',
@@ -35,33 +26,33 @@
 		TPL_SCRIPT_SUFFIX_RENDER: 'new A.{mediaAUI}(mediaConfig).render();',
 
 		afterInit(editor) {
-			var dataProcessor = editor.dataProcessor;
+			const dataProcessor = editor.dataProcessor;
 
-			var dataFilter = dataProcessor && dataProcessor.dataFilter;
-			var htmlFilter = dataProcessor && dataProcessor.htmlFilter;
+			const dataFilter = dataProcessor && dataProcessor.dataFilter;
+			const htmlFilter = dataProcessor && dataProcessor.htmlFilter;
 
 			if (dataFilter) {
 				dataFilter.addRules({
 					elements: {
 						div(realElement) {
-							var attributeClass =
+							const attributeClass =
 								realElement.attributes['class'];
 
-							var fakeElement;
+							let fakeElement;
 
-							var mediaPlugin = editor.plugins.media;
+							const mediaPlugin = editor.plugins.media;
 
-							var audio = mediaPlugin.hasClass(
+							const audio = mediaPlugin.hasClass(
 								attributeClass,
 								'liferayckeaudio'
 							);
-							var video = mediaPlugin.hasClass(
+							const video = mediaPlugin.hasClass(
 								attributeClass,
 								'liferayckevideo'
 							);
 
 							if (video || audio) {
-								var realChild =
+								const realChild =
 									realElement.children &&
 									realElement.children[0];
 
@@ -81,8 +72,8 @@
 									realChild.children[0].value = '';
 								}
 
-								var cssClass = 'liferay_cke_audio';
-								var element = 'audio';
+								let cssClass = 'liferay_cke_audio';
+								let element = 'audio';
 
 								if (video) {
 									cssClass = 'liferay_cke_video';
@@ -97,13 +88,13 @@
 								);
 
 								if (video) {
-									var attributes = realElement.attributes;
-									var fakeStyle =
+									const attributes = realElement.attributes;
+									let fakeStyle =
 										fakeElement.attributes.style || '';
 
-									var height = attributes['data-height'];
-									var poster = attributes['data-poster'];
-									var width = attributes['data-width'];
+									const height = attributes['data-height'];
+									const poster = attributes['data-poster'];
+									const width = attributes['data-width'];
 
 									if (poster) {
 										fakeStyle +=
@@ -111,25 +102,28 @@
 											poster +
 											');';
 
-										fakeElement.attributes.style = fakeStyle;
+										fakeElement.attributes.style =
+											fakeStyle;
 									}
 
-									if (typeof height != 'undefined') {
+									if (typeof height !== 'undefined') {
 										fakeStyle +=
 											'height:' +
 											CKEDITOR.tools.cssLength(height) +
 											';';
 
-										fakeElement.attributes.style = fakeStyle;
+										fakeElement.attributes.style =
+											fakeStyle;
 									}
 
-									if (typeof width != 'undefined') {
+									if (typeof width !== 'undefined') {
 										fakeStyle +=
 											'width:' +
 											CKEDITOR.tools.cssLength(width) +
 											';';
 
-										fakeElement.attributes.style = fakeStyle;
+										fakeElement.attributes.style =
+											fakeStyle;
 									}
 								}
 							}
@@ -143,10 +137,10 @@
 				htmlFilter.addRules({
 					elements: {
 						div(realElement) {
-							var attributeClass =
+							const attributeClass =
 								realElement.attributes['class'];
 
-							var mediaPlugin = editor.plugins.media;
+							const mediaPlugin = editor.plugins.media;
 
 							if (
 								(mediaPlugin.hasClass(
@@ -171,35 +165,35 @@
 		},
 
 		applyMediaScript(mediaNode, dialog, configText) {
-			var instance = this;
+			const instance = this;
 
-			var dialogReplace = {
+			const dialogReplace = {
 				dialog,
 			};
 
-			var mediaAUI = 'Audio';
+			let mediaAUI = 'Audio';
 
 			if (dialog === 'video') {
 				mediaAUI = 'Video';
 			}
 
-			var scriptUse = new CKEDITOR.template(
+			const scriptUse = new CKEDITOR.template(
 				instance.TPL_SCRIPT_PREFIX_USE
 			);
 
-			var textScriptUse = scriptUse.output(dialogReplace);
+			const textScriptUse = scriptUse.output(dialogReplace);
 
-			var scriptLogic = new CKEDITOR.template(
+			const scriptLogic = new CKEDITOR.template(
 				instance.TPL_SCRIPT_PREFIX_LOGIC
 			);
 
-			var textScriptLogic = scriptLogic.output(dialogReplace);
+			const textScriptLogic = scriptLogic.output(dialogReplace);
 
-			var scriptRender = new CKEDITOR.template(
+			const scriptRender = new CKEDITOR.template(
 				instance.TPL_SCRIPT_SUFFIX_RENDER
 			);
 
-			var textScriptRender = scriptRender.output({
+			const textScriptRender = scriptRender.output({
 				mediaAUI,
 			});
 
@@ -217,15 +211,15 @@
 		},
 
 		createDivStructure(editor, containerClass, boundingBoxClass) {
-			var divNode = editor.document.createElement(STR_DIV);
+			const divNode = editor.document.createElement(STR_DIV);
 
 			divNode.setAttribute('class', containerClass);
 
-			var boundingBoxTmp = editor.document.createElement(STR_DIV);
+			const boundingBoxTmp = editor.document.createElement(STR_DIV);
 
 			boundingBoxTmp.setAttribute('class', boundingBoxClass);
 
-			var scriptTmp = editor.document.createElement('script');
+			const scriptTmp = editor.document.createElement('script');
 
 			scriptTmp.setAttribute('type', 'text/javascript');
 
@@ -236,7 +230,7 @@
 		},
 
 		getPlaceholderCss() {
-			var instance = this;
+			const instance = this;
 
 			return (
 				'img.liferay_cke_audio {' +
@@ -261,11 +255,11 @@
 		},
 
 		hasClass(attributeClass, target) {
-			return attributeClass && attributeClass.indexOf(target) != -1;
+			return attributeClass && attributeClass.indexOf(target) !== -1;
 		},
 
 		init(editor) {
-			var instance = this;
+			const instance = this;
 
 			CKEDITOR.dialog.add('audio', instance.path + 'dialogs/audio.js');
 			CKEDITOR.dialog.add('video', instance.path + 'dialogs/video.js');
@@ -301,9 +295,9 @@
 			}
 
 			editor.on('doubleclick', (event) => {
-				var element = event.data.element;
+				const element = event.data.element;
 
-				var type;
+				let type;
 
 				if (instance.isElementType(element, 'audio')) {
 					type = 'audio';
@@ -319,10 +313,10 @@
 
 			if (editor.contextMenu) {
 				editor.contextMenu.addListener((element) => {
-					var value = {};
+					const value = {};
 
 					if (!element.isReadOnly()) {
-						var type;
+						let type;
 
 						if (instance.isElementType(element, 'audio')) {
 							type = 'audio';
@@ -353,7 +347,7 @@
 		},
 
 		onLoad() {
-			var instance = this;
+			const instance = this;
 
 			if (CKEDITOR.addCss) {
 				CKEDITOR.addCss(instance.getPlaceholderCss());
@@ -361,21 +355,21 @@
 		},
 
 		onOkCallback(callerInstance, editor, dialog) {
-			var instance = this;
+			const instance = this;
 
-			var extraStyles = {};
+			const extraStyles = {};
 
-			var video = dialog === 'video';
+			const video = dialog === 'video';
 
-			var containerCss = 'liferayckeaudio audio-container';
-			var nonProcessedClass = 'ckaudio-no-id';
+			let containerCss = 'liferayckeaudio audio-container';
+			let nonProcessedClass = 'ckaudio-no-id';
 
 			if (video) {
 				containerCss = 'liferayckevideo video-container';
 				nonProcessedClass = 'ckvideo-no-id';
 			}
 
-			var divNode = instance.createDivStructure(
+			const divNode = instance.createDivStructure(
 				editor,
 				containerCss,
 				nonProcessedClass
@@ -388,13 +382,13 @@
 				callerInstance.commitContent(divNode);
 			}
 
-			var fakeClass = 'liferay_cke_audio';
+			let fakeClass = 'liferay_cke_audio';
 
 			if (video) {
 				fakeClass = 'liferay_cke_video';
 			}
 
-			var newFakeImage = editor.createFakeElement(
+			const newFakeImage = editor.createFakeElement(
 				divNode,
 				fakeClass,
 				dialog,
@@ -418,19 +412,19 @@
 		onShowCallback(instance, editor, dialog) {
 			instance.fakeImage = null;
 
-			var fakeImage = instance.getSelectedElement();
+			const fakeImage = instance.getSelectedElement();
 
 			this.restoreElement(editor, instance, fakeImage, dialog);
 		},
 
 		replaceScriptContent(divNode, scriptContent) {
-			if (divNode.getChildCount() == 2) {
-				var scriptTmp = null;
+			if (divNode.getChildCount() === 2) {
+				let scriptTmp = null;
 
 				divNode.getChild(1).remove();
 
 				AUI().use('aui-node', (A) => {
-					var scriptNode = A.Node.create(
+					const scriptNode = A.Node.create(
 						'<script type="text/javascript">' +
 							scriptContent +
 							'</script>'
@@ -444,7 +438,7 @@
 		},
 
 		restoreElement(editor, instance, fakeImage, type) {
-			var content = null;
+			let content = null;
 
 			if (
 				fakeImage &&

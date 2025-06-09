@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.evaluator.internal.function;
@@ -32,6 +23,7 @@ import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -45,7 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * @author Leonardo Barros
@@ -78,10 +69,13 @@ public class CallFunction
 			DDMDataProviderRequest.Builder builder =
 				DDMDataProviderRequest.Builder.newBuilder();
 
-			builder = builder.withDDMDataProviderId(
-				ddmDataProviderInstanceUUID);
+			builder = builder.withCompanyId(
+				CompanyThreadLocal.getCompanyId()
+			).withDDMDataProviderId(
+				ddmDataProviderInstanceUUID
+			);
 
-			Map<String, String> parameterMap = extractParameters(
+			Map<String, String> parameterMap = _extractParameters(
 				paramsExpression);
 
 			for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
@@ -101,13 +95,14 @@ public class CallFunction
 			DDMDataProviderResponse ddmDataProviderResponse =
 				ddmDataProviderInvoker.invoke(ddmDataProviderRequest);
 
-			Map<String, String> resultMap = extractResults(resultMapExpression);
+			Map<String, String> resultMap = _extractResults(
+				resultMapExpression);
 
 			setDDMFormFieldValues(ddmDataProviderResponse, resultMap);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -131,67 +126,6 @@ public class CallFunction
 		DDMExpressionObserver ddmExpressionObserver) {
 
 		_ddmExpressionObserver = ddmExpressionObserver;
-	}
-
-	protected void extractDDMFormFieldValue(
-		String expression, Map<String, String> parameters) {
-
-		String[] tokens = StringUtil.split(expression, CharPool.EQUAL);
-
-		String parameterName = tokens[0];
-
-		String parameterValue = StringPool.BLANK;
-
-		if (tokens.length == 2) {
-			parameterValue = tokens[1];
-		}
-
-		if (_ddmExpressionFieldAccessor.isField(parameterValue)) {
-			parameterValue = getDDMFormFieldValue(parameterValue);
-		}
-
-		parameters.put(parameterName, parameterValue);
-	}
-
-	protected Map<String, String> extractParameters(String expression) {
-		if (Validator.isNull(expression)) {
-			return Collections.emptyMap();
-		}
-
-		Map<String, String> parameters = new HashMap<>();
-
-		String[] innerExpressions = StringUtil.split(
-			expression, CharPool.SEMICOLON);
-
-		if (innerExpressions.length == 0) {
-			extractDDMFormFieldValue(expression, parameters);
-		}
-		else {
-			for (String innerExpression : innerExpressions) {
-				extractDDMFormFieldValue(innerExpression, parameters);
-			}
-		}
-
-		return parameters;
-	}
-
-	protected Map<String, String> extractResults(String resultMapExpression) {
-		if (Validator.isNull(resultMapExpression)) {
-			return Collections.emptyMap();
-		}
-
-		Map<String, String> results = new HashMap<>();
-
-		String[] innerExpressions = StringUtil.split(
-			resultMapExpression, CharPool.SEMICOLON);
-
-		for (String innerExpression : innerExpressions) {
-			String[] tokens = StringUtil.split(innerExpression, CharPool.EQUAL);
-
-			results.put(tokens[0], tokens[1]);
-		}
-
-		return results;
 	}
 
 	protected String getDDMFormFieldValue(String ddmFormFieldName) {
@@ -222,11 +156,15 @@ public class CallFunction
 			JSONArray jsonArray = jsonFactory.createJSONArray(
 				String.valueOf(value));
 
-			return (String)jsonArray.get(0);
+			return jsonArray.join(
+				StringPool.COMMA_AND_SPACE
+			).replaceAll(
+				StringPool.QUOTE, StringPool.BLANK
+			);
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 
 			return String.valueOf(value);
@@ -234,19 +172,11 @@ public class CallFunction
 	}
 
 	protected void setDDMFormFieldOptions(
-		String field, List<KeyValuePair> options) {
+		String field, List<KeyValuePair> optionKeyValuePairs) {
 
 		UpdateFieldPropertyRequest.Builder builder =
 			UpdateFieldPropertyRequest.Builder.newBuilder(
-				field, "options", options);
-
-		_ddmExpressionObserver.updateFieldProperty(builder.build());
-	}
-
-	protected void setDDMFormFieldValue(String field, Object value) {
-		UpdateFieldPropertyRequest.Builder builder =
-			UpdateFieldPropertyRequest.Builder.newBuilder(
-				field, "value", value);
+				field, "options", optionKeyValuePairs);
 
 		_ddmExpressionObserver.updateFieldProperty(builder.build());
 	}
@@ -257,40 +187,116 @@ public class CallFunction
 
 		for (Map.Entry<String, String> entry : resultMap.entrySet()) {
 			String outputName = entry.getValue();
+			String ddmFormFieldName = entry.getKey();
 
 			if (!ddmDataProviderResponse.hasOutput(outputName)) {
+				setDDMFormFieldOptions(
+					ddmFormFieldName, Collections.emptyList());
+
 				continue;
 			}
 
-			String ddmFormFieldName = entry.getKey();
+			List<KeyValuePair> keyValuePairs =
+				ddmDataProviderResponse.getOutput(outputName, List.class);
 
-			Optional<List<KeyValuePair>> optionsOptional =
-				ddmDataProviderResponse.getOutputOptional(
-					outputName, List.class);
-
-			if (optionsOptional.isPresent()) {
-				setDDMFormFieldOptions(ddmFormFieldName, optionsOptional.get());
+			if (keyValuePairs != null) {
+				setDDMFormFieldOptions(ddmFormFieldName, keyValuePairs);
 			}
 			else {
-				Optional<Object> valueOptional =
-					ddmDataProviderResponse.getOutputOptional(
-						outputName, String.class);
+				Object output = ddmDataProviderResponse.getOutput(
+					outputName, String.class);
 
-				if (!valueOptional.isPresent()) {
-					valueOptional = ddmDataProviderResponse.getOutputOptional(
+				if (output == null) {
+					output = ddmDataProviderResponse.getOutput(
 						outputName, Number.class);
 
-					valueOptional = valueOptional.map(
-						value -> new BigDecimal(value.toString()));
+					if (output != null) {
+						output = new BigDecimal(output.toString());
+					}
 				}
 
-				setDDMFormFieldValue(ddmFormFieldName, valueOptional.get());
+				if (Validator.isNotNull(output)) {
+					_setDDMFormFieldValue(ddmFormFieldName, output);
+				}
 			}
 		}
 	}
 
 	protected DDMDataProviderInvoker ddmDataProviderInvoker;
 	protected JSONFactory jsonFactory;
+
+	private void _extractDDMFormFieldValue(
+		String expression, Map<String, String> parameters) {
+
+		if (Validator.isNull(expression)) {
+			return;
+		}
+
+		String[] tokens = StringUtil.split(expression, CharPool.EQUAL);
+
+		String parameterName = tokens[0];
+
+		String parameterValue = StringPool.BLANK;
+
+		if (tokens.length == 2) {
+			parameterValue = tokens[1];
+		}
+
+		if (_ddmExpressionFieldAccessor.isField(parameterValue)) {
+			parameterValue = getDDMFormFieldValue(parameterValue);
+		}
+
+		parameters.put(parameterName, parameterValue);
+	}
+
+	private Map<String, String> _extractParameters(String expression) {
+		if (Validator.isNull(expression)) {
+			return Collections.emptyMap();
+		}
+
+		Map<String, String> parameters = new HashMap<>();
+
+		String[] innerExpressions = StringUtil.split(
+			expression, CharPool.SEMICOLON);
+
+		if (innerExpressions.length == 0) {
+			_extractDDMFormFieldValue(expression, parameters);
+		}
+		else {
+			for (String innerExpression : innerExpressions) {
+				_extractDDMFormFieldValue(innerExpression, parameters);
+			}
+		}
+
+		return parameters;
+	}
+
+	private Map<String, String> _extractResults(String resultMapExpression) {
+		if (Validator.isNull(resultMapExpression)) {
+			return Collections.emptyMap();
+		}
+
+		Map<String, String> results = new HashMap<>();
+
+		String[] innerExpressions = StringUtil.split(
+			resultMapExpression, CharPool.SEMICOLON);
+
+		for (String innerExpression : innerExpressions) {
+			String[] tokens = StringUtil.split(innerExpression, CharPool.EQUAL);
+
+			results.put(tokens[0], tokens[1]);
+		}
+
+		return results;
+	}
+
+	private void _setDDMFormFieldValue(String field, Object value) {
+		UpdateFieldPropertyRequest.Builder builder =
+			UpdateFieldPropertyRequest.Builder.newBuilder(
+				field, "value", value);
+
+		_ddmExpressionObserver.updateFieldProperty(builder.build());
+	}
 
 	private static final Log _log = LogFactoryUtil.getLog(CallFunction.class);
 

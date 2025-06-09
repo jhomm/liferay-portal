@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
@@ -17,19 +8,18 @@ package com.liferay.jenkins.results.parser.test.clazz.group;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.PortalGitWorkingDirectory;
 import com.liferay.jenkins.results.parser.PortalTestClassJob;
+import com.liferay.jenkins.results.parser.test.clazz.TestClass;
+import com.liferay.jenkins.results.parser.test.clazz.TestClassFactory;
 
 import java.io.File;
 import java.io.IOException;
 
-import java.nio.file.FileVisitResult;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.PathMatcher;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
+import org.json.JSONObject;
 
 /**
  * @author Yi-Chen Tsai
@@ -39,7 +29,7 @@ public class RESTBuilderModulesBatchTestClassGroup
 
 	@Override
 	public int getAxisCount() {
-		if (!isStableTestSuiteBatch() && testRelevantIntegrationUnitOnly) {
+		if (ignore()) {
 			return 0;
 		}
 
@@ -54,81 +44,32 @@ public class RESTBuilderModulesBatchTestClassGroup
 		return _buildType;
 	}
 
+	@Override
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
+
+		jsonObject = super.getJSONObject();
+
+		jsonObject.put("build_type", _buildType);
+
+		return jsonObject;
+	}
+
 	public static enum BuildType {
 
 		FULL
 
 	}
 
-	public static class RESTBuilderModulesBatchTestClass
-		extends ModulesBatchTestClass {
+	protected RESTBuilderModulesBatchTestClassGroup(
+		JSONObject jsonObject, PortalTestClassJob portalTestClassJob) {
 
-		protected static RESTBuilderModulesBatchTestClass getInstance(
-			File moduleBaseDir, File modulesDir,
-			List<File> modulesProjectDirs) {
+		super(jsonObject, portalTestClassJob);
 
-			return new RESTBuilderModulesBatchTestClass(
-				new File(
-					JenkinsResultsParserUtil.getCanonicalPath(moduleBaseDir)),
-				modulesDir, modulesProjectDirs);
-		}
-
-		protected RESTBuilderModulesBatchTestClass(
-			File testClassFile, File modulesDir,
-			List<File> modulesProjectDirs) {
-
-			super(testClassFile);
-
-			initTestClassMethods(modulesProjectDirs, modulesDir, "buildREST");
-		}
-
-	}
-
-	protected static List<File> getModulesProjectDirs(File moduleBaseDir) {
-		final List<File> modulesProjectDirs = new ArrayList<>();
-		Path moduleBaseDirPath = moduleBaseDir.toPath();
-
-		try {
-			Files.walkFileTree(
-				moduleBaseDirPath,
-				new SimpleFileVisitor<Path>() {
-
-					@Override
-					public FileVisitResult preVisitDirectory(
-						Path filePath,
-						BasicFileAttributes basicFileAttributes) {
-
-						File currentDirectory = filePath.toFile();
-						String filePathString = filePath.toString();
-
-						if (filePathString.endsWith("-impl")) {
-							File restConfigYAMLFile = new File(
-								currentDirectory, "rest-config.yaml");
-							File restOpenAPIYAMLFile = new File(
-								currentDirectory, "rest-openapi.yaml");
-
-							if (restConfigYAMLFile.exists() &&
-								restOpenAPIYAMLFile.exists()) {
-
-								modulesProjectDirs.add(currentDirectory);
-
-								return FileVisitResult.SKIP_SUBTREE;
-							}
-						}
-
-						return FileVisitResult.CONTINUE;
-					}
-
-				});
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(
-				"Unable to get module marker files from " +
-					moduleBaseDir.getPath(),
-				ioException);
-		}
-
-		return modulesProjectDirs;
+		_buildType = BuildType.valueOf(
+			jsonObject.optString("build_type", "FULL"));
 	}
 
 	protected RESTBuilderModulesBatchTestClassGroup(
@@ -161,6 +102,10 @@ public class RESTBuilderModulesBatchTestClassGroup
 		File portalModulesBaseDir = new File(
 			portalGitWorkingDirectory.getWorkingDirectory(), "modules");
 
+		List<PathMatcher> excludesPathMatchers = getPathMatchers(
+			getExcludesJobProperties());
+		List<PathMatcher> includesPathMatchers = getIncludesPathMatchers();
+
 		if (testRelevantChanges &&
 			!(includeStableTestSuite && isStableTestSuiteBatch())) {
 
@@ -188,17 +133,20 @@ public class RESTBuilderModulesBatchTestClassGroup
 		else {
 			_buildType = BuildType.FULL;
 
-			return;
+			moduleDirsList.addAll(
+				portalGitWorkingDirectory.getModuleDirsList(
+					excludesPathMatchers, includesPathMatchers));
 		}
 
 		for (File moduleDir : moduleDirsList) {
-			List<File> modulesProjectDirs = getModulesProjectDirs(moduleDir);
+			TestClass testClass = TestClassFactory.newTestClass(
+				this, moduleDir);
 
-			if (!modulesProjectDirs.isEmpty()) {
-				testClasses.add(
-					RESTBuilderModulesBatchTestClass.getInstance(
-						moduleDir, portalModulesBaseDir, modulesProjectDirs));
+			if (!testClass.hasTestClassMethods()) {
+				continue;
 			}
+
+			testClasses.add(testClass);
 		}
 
 		Collections.sort(testClasses);

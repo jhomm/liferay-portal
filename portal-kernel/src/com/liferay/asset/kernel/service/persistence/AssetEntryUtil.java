@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service.persistence;
@@ -1195,6 +1186,193 @@ public class AssetEntryUtil {
 	}
 
 	/**
+	 * Returns all the asset entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the matching asset entries
+	 */
+	public static List<AssetEntry> findByC_CN(
+		long companyId, long classNameId) {
+
+		return getPersistence().findByC_CN(companyId, classNameId);
+	}
+
+	/**
+	 * Returns a range of all the asset entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of asset entries
+	 * @param end the upper bound of the range of asset entries (not inclusive)
+	 * @return the range of matching asset entries
+	 */
+	public static List<AssetEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end) {
+
+		return getPersistence().findByC_CN(companyId, classNameId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the asset entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of asset entries
+	 * @param end the upper bound of the range of asset entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching asset entries
+	 */
+	public static List<AssetEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<AssetEntry> orderByComparator) {
+
+		return getPersistence().findByC_CN(
+			companyId, classNameId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the asset entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>AssetEntryModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param start the lower bound of the range of asset entries
+	 * @param end the upper bound of the range of asset entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching asset entries
+	 */
+	public static List<AssetEntry> findByC_CN(
+		long companyId, long classNameId, int start, int end,
+		OrderByComparator<AssetEntry> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByC_CN(
+			companyId, classNameId, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Returns the first asset entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching asset entry
+	 * @throws NoSuchEntryException if a matching asset entry could not be found
+	 */
+	public static AssetEntry findByC_CN_First(
+			long companyId, long classNameId,
+			OrderByComparator<AssetEntry> orderByComparator)
+		throws com.liferay.asset.kernel.exception.NoSuchEntryException {
+
+		return getPersistence().findByC_CN_First(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the first asset entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching asset entry, or <code>null</code> if a matching asset entry could not be found
+	 */
+	public static AssetEntry fetchByC_CN_First(
+		long companyId, long classNameId,
+		OrderByComparator<AssetEntry> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_First(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last asset entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching asset entry
+	 * @throws NoSuchEntryException if a matching asset entry could not be found
+	 */
+	public static AssetEntry findByC_CN_Last(
+			long companyId, long classNameId,
+			OrderByComparator<AssetEntry> orderByComparator)
+		throws com.liferay.asset.kernel.exception.NoSuchEntryException {
+
+		return getPersistence().findByC_CN_Last(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last asset entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching asset entry, or <code>null</code> if a matching asset entry could not be found
+	 */
+	public static AssetEntry fetchByC_CN_Last(
+		long companyId, long classNameId,
+		OrderByComparator<AssetEntry> orderByComparator) {
+
+		return getPersistence().fetchByC_CN_Last(
+			companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Returns the asset entries before and after the current asset entry in the ordered set where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param entryId the primary key of the current asset entry
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next asset entry
+	 * @throws NoSuchEntryException if a asset entry with the primary key could not be found
+	 */
+	public static AssetEntry[] findByC_CN_PrevAndNext(
+			long entryId, long companyId, long classNameId,
+			OrderByComparator<AssetEntry> orderByComparator)
+		throws com.liferay.asset.kernel.exception.NoSuchEntryException {
+
+		return getPersistence().findByC_CN_PrevAndNext(
+			entryId, companyId, classNameId, orderByComparator);
+	}
+
+	/**
+	 * Removes all the asset entries where companyId = &#63; and classNameId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 */
+	public static void removeByC_CN(long companyId, long classNameId) {
+		getPersistence().removeByC_CN(companyId, classNameId);
+	}
+
+	/**
+	 * Returns the number of asset entries where companyId = &#63; and classNameId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param classNameId the class name ID
+	 * @return the number of matching asset entries
+	 */
+	public static int countByC_CN(long companyId, long classNameId) {
+		return getPersistence().countByC_CN(companyId, classNameId);
+	}
+
+	/**
 	 * Returns the asset entry where classNameId = &#63; and classPK = &#63; or throws a <code>NoSuchEntryException</code> if it could not be found.
 	 *
 	 * @param classNameId the class name ID
@@ -1932,9 +2110,10 @@ public class AssetEntryUtil {
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTagPK the primary key of the asset tag
+	 * @return <code>true</code> if an association between the asset entry and the asset tag was added; <code>false</code> if they were already associated
 	 */
-	public static void addAssetTag(long pk, long assetTagPK) {
-		getPersistence().addAssetTag(pk, assetTagPK);
+	public static boolean addAssetTag(long pk, long assetTagPK) {
+		return getPersistence().addAssetTag(pk, assetTagPK);
 	}
 
 	/**
@@ -1942,11 +2121,12 @@ public class AssetEntryUtil {
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTag the asset tag
+	 * @return <code>true</code> if an association between the asset entry and the asset tag was added; <code>false</code> if they were already associated
 	 */
-	public static void addAssetTag(
+	public static boolean addAssetTag(
 		long pk, com.liferay.asset.kernel.model.AssetTag assetTag) {
 
-		getPersistence().addAssetTag(pk, assetTag);
+		return getPersistence().addAssetTag(pk, assetTag);
 	}
 
 	/**
@@ -1954,9 +2134,10 @@ public class AssetEntryUtil {
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTagPKs the primary keys of the asset tags
+	 * @return <code>true</code> if at least one association between the asset entry and the asset tags was added; <code>false</code> if they were all already associated
 	 */
-	public static void addAssetTags(long pk, long[] assetTagPKs) {
-		getPersistence().addAssetTags(pk, assetTagPKs);
+	public static boolean addAssetTags(long pk, long[] assetTagPKs) {
+		return getPersistence().addAssetTags(pk, assetTagPKs);
 	}
 
 	/**
@@ -1964,11 +2145,12 @@ public class AssetEntryUtil {
 	 *
 	 * @param pk the primary key of the asset entry
 	 * @param assetTags the asset tags
+	 * @return <code>true</code> if at least one association between the asset entry and the asset tags was added; <code>false</code> if they were all already associated
 	 */
-	public static void addAssetTags(
+	public static boolean addAssetTags(
 		long pk, List<com.liferay.asset.kernel.model.AssetTag> assetTags) {
 
-		getPersistence().addAssetTags(pk, assetTags);
+		return getPersistence().addAssetTags(pk, assetTags);
 	}
 
 	/**
@@ -2048,6 +2230,10 @@ public class AssetEntryUtil {
 
 	public static AssetEntryPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(AssetEntryPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile AssetEntryPersistence _persistence;

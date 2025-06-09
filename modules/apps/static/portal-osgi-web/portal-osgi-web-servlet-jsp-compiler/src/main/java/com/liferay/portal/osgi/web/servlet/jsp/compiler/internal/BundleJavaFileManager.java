@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.servlet.jsp.compiler.internal;
@@ -23,12 +14,16 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.IOException;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
 import javax.tools.JavaFileManager;
 import javax.tools.JavaFileObject;
@@ -53,21 +48,57 @@ public class BundleJavaFileManager
 		_javaFileObjectResolvers = javaFileObjectResolvers;
 	}
 
+	public List<BytecodeJavaFileObject> getBytecodeJavaFileObjects() {
+		return _bytecodeJavaFileObjects;
+	}
+
 	@Override
 	public ClassLoader getClassLoader(Location location) {
 		if (location != StandardLocation.CLASS_PATH) {
-			return fileManager.getClassLoader(location);
+			return super.getClassLoader(location);
 		}
 
 		return _classLoader;
 	}
 
 	@Override
-	public String inferBinaryName(Location location, JavaFileObject file) {
-		if ((location == StandardLocation.CLASS_PATH) &&
-			(file instanceof BaseJavaFileObject)) {
+	public JavaFileObject getJavaFileForOutput(
+		Location location, String className, JavaFileObject.Kind kind,
+		FileObject sibling) {
 
-			BaseJavaFileObject baseJavaFileObject = (BaseJavaFileObject)file;
+		String packageName = className.substring(
+			0, className.lastIndexOf(CharPool.PERIOD));
+
+		Map<String, JavaFileObject> javaFileObjects =
+			_javaFileObjectsMap.computeIfAbsent(
+				packageName, key -> new ConcurrentHashMap<>());
+
+		BytecodeJavaFileObject bytecodeJavaFileObject =
+			new BytecodeJavaFileObject(className);
+
+		javaFileObjects.put(className, bytecodeJavaFileObject);
+
+		_bytecodeJavaFileObjects.add(bytecodeJavaFileObject);
+
+		return bytecodeJavaFileObject;
+	}
+
+	@Override
+	public String inferBinaryName(
+		Location location, JavaFileObject javaFileObject) {
+
+		if (javaFileObject instanceof BytecodeJavaFileObject) {
+			BytecodeJavaFileObject bytecodeJavaFileObject =
+				(BytecodeJavaFileObject)javaFileObject;
+
+			return bytecodeJavaFileObject.getClassName();
+		}
+
+		if ((location == StandardLocation.CLASS_PATH) &&
+			(javaFileObject instanceof BaseJavaFileObject)) {
+
+			BaseJavaFileObject baseJavaFileObject =
+				(BaseJavaFileObject)javaFileObject;
 
 			if (_log.isInfoEnabled()) {
 				_log.info("Inferring binary name from " + baseJavaFileObject);
@@ -76,7 +107,7 @@ public class BundleJavaFileManager
 			return baseJavaFileObject.getClassName();
 		}
 
-		return fileManager.inferBinaryName(location, file);
+		return super.inferBinaryName(location, javaFileObject);
 	}
 
 	@Override
@@ -84,6 +115,17 @@ public class BundleJavaFileManager
 			Location location, String packageName,
 			Set<JavaFileObject.Kind> kinds, boolean recurse)
 		throws IOException {
+
+		if ((location == StandardLocation.CLASS_PATH) &&
+			packageName.startsWith("org.apache.jsp")) {
+
+			Map<String, JavaFileObject> javaFileObjects =
+				_javaFileObjectsMap.get(packageName);
+
+			if (javaFileObjects != null) {
+				return javaFileObjects.values();
+			}
+		}
 
 		if (!kinds.contains(JavaFileObject.Kind.CLASS)) {
 			return Collections.emptyList();
@@ -115,7 +157,7 @@ public class BundleJavaFileManager
 			}
 		}
 
-		return fileManager.list(location, packagePath, _kinds, recurse);
+		return super.list(location, packagePath, _kinds, recurse);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -124,7 +166,11 @@ public class BundleJavaFileManager
 	private static final Set<JavaFileObject.Kind> _kinds = EnumSet.of(
 		JavaFileObject.Kind.CLASS);
 
+	private final List<BytecodeJavaFileObject> _bytecodeJavaFileObjects =
+		new ArrayList<>();
 	private final ClassLoader _classLoader;
 	private final List<JavaFileObjectResolver> _javaFileObjectResolvers;
+	private final Map<String, Map<String, JavaFileObject>> _javaFileObjectsMap =
+		new ConcurrentHashMap<>();
 
 }

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.parser;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.rest.builder.internal.freemarker.tool.java.JavaMethodParameter;
@@ -25,6 +17,7 @@ import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Info;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.OpenAPIYAML;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Operation;
 import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.RequestBody;
+import com.liferay.portal.tools.rest.builder.internal.yaml.openapi.Schema;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,39 +32,29 @@ public class ResourceTestCaseOpenAPIParser {
 	public static List<JavaMethodSignature> getJavaMethodSignatures(
 		ConfigYAML configYAML, OpenAPIYAML openAPIYAML, String schemaName) {
 
-		List<JavaMethodSignature> javaMethodSignatures = new ArrayList<>();
-
-		List<JavaMethodSignature> resourceJavaMethodSignatures =
+		return TransformUtil.transform(
 			ResourceOpenAPIParser.getJavaMethodSignatures(
-				configYAML, openAPIYAML, schemaName);
-
-		for (JavaMethodSignature resourceJavaMethodSignature :
-				resourceJavaMethodSignatures) {
-
-			javaMethodSignatures.add(
-				new JavaMethodSignature(
-					resourceJavaMethodSignature.getPath(),
-					resourceJavaMethodSignature.getPathItem(),
-					resourceJavaMethodSignature.getOperation(),
-					resourceJavaMethodSignature.getRequestBodyMediaTypes(),
-					resourceJavaMethodSignature.getSchemaName(),
-					resourceJavaMethodSignature.getJavaMethodParameters(),
-					_getMethodName(resourceJavaMethodSignature),
-					_getReturnType(
-						configYAML.getApiPackagePath(),
-						resourceJavaMethodSignature.getReturnType(),
-						_getVersion(openAPIYAML))));
-		}
-
-		return javaMethodSignatures;
+				configYAML, openAPIYAML, schemaName),
+			javaMethodSignature -> new JavaMethodSignature(
+				javaMethodSignature.getPath(),
+				javaMethodSignature.getPathItem(),
+				javaMethodSignature.getOperation(),
+				javaMethodSignature.getRequestBodyMediaTypes(),
+				javaMethodSignature.getSchemaName(),
+				javaMethodSignature.getJavaMethodParameters(),
+				_getMethodName(javaMethodSignature),
+				_getReturnType(
+					configYAML, javaMethodSignature.getReturnType(),
+					_getVersion(openAPIYAML)),
+				javaMethodSignature.getParentSchemaName()));
 	}
 
 	public static String getParameters(
-		List<JavaMethodParameter> javaMethodParameters, OpenAPIYAML openAPIYAML,
-		Operation operation, boolean annotation) {
+		ConfigYAML configYAML, List<JavaMethodParameter> javaMethodParameters,
+		Operation operation, Map<String, Schema> schemas, boolean annotation) {
 
 		return ResourceOpenAPIParser.getParameters(
-			javaMethodParameters, openAPIYAML, operation, annotation);
+			configYAML, javaMethodParameters, operation, schemas, annotation);
 	}
 
 	private static String _getMethodName(
@@ -132,7 +115,9 @@ public class ResourceTestCaseOpenAPIParser {
 	}
 
 	private static String _getReturnType(
-		String apiPackage, String returnType, String version) {
+		ConfigYAML configYAML, String returnType, String version) {
+
+		String apiPackage = configYAML.getApiPackagePath();
 
 		String versionPackage = StringUtil.replace(version, '.', '_');
 
@@ -156,7 +141,8 @@ public class ResourceTestCaseOpenAPIParser {
 		}
 		else if (returnType.contains(".") &&
 				 !returnType.equals("com.liferay.portal.vulcan") &&
-				 !returnType.equals("javax.ws.rs.core.Response") &&
+				 !returnType.equals(
+					 configYAML.getJavaEEPackage() + ".ws.rs.core.Response") &&
 				 !returnType.startsWith("java.lang") &&
 				 !returnType.startsWith("java.util") &&
 				 !returnType.startsWith(apiPackage)) {

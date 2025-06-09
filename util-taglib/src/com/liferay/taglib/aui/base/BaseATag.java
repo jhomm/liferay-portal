@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.aui.base;
 
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspException;
 
 /**
  * @author Eduardo Lundgren
@@ -30,6 +21,10 @@ public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 		setAttributeNamespace(_ATTRIBUTE_NAMESPACE);
 
 		return super.doStartTag();
+	}
+
+	public java.lang.String getAriaLabel() {
+		return _ariaLabel;
 	}
 
 	public java.lang.String getAriaRole() {
@@ -50,6 +45,10 @@ public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 
 	public java.lang.String getIconCssClass() {
 		return _iconCssClass;
+	}
+
+	public java.lang.String getIcon() {
+		return _icon;
 	}
 
 	public java.lang.String getId() {
@@ -80,6 +79,10 @@ public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 		return _title;
 	}
 
+	public void setAriaLabel(java.lang.String ariaLabel) {
+		_ariaLabel = ariaLabel;
+	}
+
 	public void setAriaRole(java.lang.String ariaRole) {
 		_ariaRole = ariaRole;
 	}
@@ -98,6 +101,10 @@ public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 
 	public void setIconCssClass(java.lang.String iconCssClass) {
 		_iconCssClass = iconCssClass;
+	}
+
+	public void setIcon(java.lang.String icon) {
+		_icon = icon;
 	}
 
 	public void setId(java.lang.String id) {
@@ -132,6 +139,7 @@ public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_ariaLabel = null;
 		_ariaRole = null;
 		_cssClass = null;
 		_data = null;
@@ -164,11 +172,13 @@ public abstract class BaseATag extends com.liferay.taglib.util.IncludeTag {
 	private static final String _START_PAGE =
 		"/html/taglib/aui/a/start.jsp";
 
+	private java.lang.String _ariaLabel = null;
 	private java.lang.String _ariaRole = null;
 	private java.lang.String _cssClass = null;
 	private java.util.Map<java.lang.String, java.lang.Object> _data = null;
 	private java.lang.String _href = null;
 	private java.lang.String _iconCssClass = null;
+	private java.lang.String _icon = null;
 	private java.lang.String _id = null;
 	private java.lang.String _label = null;
 	private java.lang.String _lang = null;

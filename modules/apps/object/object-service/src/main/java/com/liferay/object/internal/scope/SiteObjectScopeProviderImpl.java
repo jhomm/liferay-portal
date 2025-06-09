@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.internal.scope;
@@ -18,14 +9,17 @@ import com.liferay.application.list.constants.PanelCategoryKeys;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.scope.ObjectScopeProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Locale;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,7 +28,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	immediate = true,
 	property = "object.scope.provider.key=" + ObjectDefinitionConstants.SCOPE_SITE,
 	service = ObjectScopeProvider.class
 )
@@ -44,7 +37,22 @@ public class SiteObjectScopeProviderImpl implements ObjectScopeProvider {
 	public long getGroupId(HttpServletRequest httpServletRequest)
 		throws PortalException {
 
-		return _portal.getScopeGroupId(httpServletRequest);
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (themeDisplay != null) {
+			return themeDisplay.getScopeGroupId();
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		if (serviceContext == null) {
+			return 0;
+		}
+
+		return serviceContext.getScopeGroupId();
 	}
 
 	@Override
@@ -54,7 +62,7 @@ public class SiteObjectScopeProviderImpl implements ObjectScopeProvider {
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "site");
+		return _language.get(locale, "site");
 	}
 
 	@Override
@@ -71,7 +79,9 @@ public class SiteObjectScopeProviderImpl implements ObjectScopeProvider {
 	public boolean isValidGroupId(long groupId) {
 		Group group = _groupLocalService.fetchGroup(groupId);
 
-		if ((group != null) && group.isSite()) {
+		if ((group != null) &&
+			(group.isSite() || group.isStagingGroup() || group.isUserGroup())) {
+
 			return true;
 		}
 
@@ -82,6 +92,6 @@ public class SiteObjectScopeProviderImpl implements ObjectScopeProvider {
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private Portal _portal;
+	private Language _language;
 
 }

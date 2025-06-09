@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
@@ -32,17 +25,14 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
-import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.segments.exception.NoSuchExperimentException;
@@ -56,7 +46,6 @@ import com.liferay.segments.service.persistence.impl.constants.SegmentsPersisten
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -88,9 +77,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo Garcia
  * @generated
  */
-@Component(
-	service = {SegmentsExperimentPersistence.class, BasePersistence.class}
-)
+@Component(service = SegmentsExperimentPersistence.class)
 public class SegmentsExperimentPersistenceImpl
 	extends BasePersistenceImpl<SegmentsExperiment>
 	implements SegmentsExperimentPersistence {
@@ -187,109 +174,111 @@ public class SegmentsExperimentPersistenceImpl
 		OrderByComparator<SegmentsExperiment> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid;
-				finderArgs = new Object[] {uuid};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid;
+					finderArgs = new Object[] {uuid};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid;
-			finderArgs = new Object[] {uuid, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid;
+				finderArgs = new Object[] {uuid, start, end, orderByComparator};
+			}
 
-		List<SegmentsExperiment> list = null;
+			List<SegmentsExperiment> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<SegmentsExperiment>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if (!uuid.equals(segmentsExperiment.getUuid())) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (SegmentsExperiment segmentsExperiment : list) {
+						if (!uuid.equals(segmentsExperiment.getUuid())) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
 
-				cacheResult(list);
+				boolean bindUuid = false;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
+
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					list = (List<SegmentsExperiment>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -594,70 +583,64 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countByUuid(String uuid) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_UUID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_UUID_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_UUID_2 =
@@ -667,7 +650,6 @@ public class SegmentsExperimentPersistenceImpl
 		"(segmentsExperiment.uuid IS NULL OR segmentsExperiment.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the segments experiment where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchExperimentException</code> if it could not be found.
@@ -730,98 +712,101 @@ public class SegmentsExperimentPersistenceImpl
 	public SegmentsExperiment fetchByUUID_G(
 		String uuid, long groupId, boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			uuid = Objects.toString(uuid, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {uuid, groupId};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
-		}
-
-		if (result instanceof SegmentsExperiment) {
-			SegmentsExperiment segmentsExperiment = (SegmentsExperiment)result;
-
-			if (!Objects.equals(uuid, segmentsExperiment.getUuid()) ||
-				(groupId != segmentsExperiment.getGroupId())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {uuid, groupId};
 			}
 
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+			Object result = null;
 
-			String sql = sb.toString();
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByUUID_G, finderArgs, this);
+			}
 
-			Session session = null;
+			if (result instanceof SegmentsExperiment) {
+				SegmentsExperiment segmentsExperiment =
+					(SegmentsExperiment)result;
 
-			try {
-				session = openSession();
+				if (!Objects.equals(uuid, segmentsExperiment.getUuid()) ||
+					(groupId != segmentsExperiment.getGroupId())) {
 
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					result = null;
 				}
+			}
 
-				queryPos.add(groupId);
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				List<SegmentsExperiment> list = query.list();
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByUUID_G, finderArgs, list);
-					}
+				boolean bindUuid = false;
+
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
 				}
 				else {
-					SegmentsExperiment segmentsExperiment = list.get(0);
+					bindUuid = true;
 
-					result = segmentsExperiment;
+					sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
+				}
 
-					cacheResult(segmentsExperiment);
+				sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(groupId);
+
+					List<SegmentsExperiment> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByUUID_G, finderArgs, list);
+						}
+					}
+					else {
+						SegmentsExperiment segmentsExperiment = list.get(0);
+
+						result = segmentsExperiment;
+
+						cacheResult(segmentsExperiment);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (SegmentsExperiment)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (SegmentsExperiment)result;
+			}
 		}
 	}
 
@@ -850,74 +835,13 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		SegmentsExperiment segmentsExperiment = fetchByUUID_G(uuid, groupId);
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByUUID_G;
-
-			finderArgs = new Object[] {uuid, groupId};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (segmentsExperiment == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -1010,117 +934,119 @@ public class SegmentsExperimentPersistenceImpl
 		OrderByComparator<SegmentsExperiment> orderByComparator,
 		boolean useFinderCache) {
 
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByUuid_C;
-				finderArgs = new Object[] {uuid, companyId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByUuid_C;
+					finderArgs = new Object[] {uuid, companyId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByUuid_C;
-			finderArgs = new Object[] {
-				uuid, companyId, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByUuid_C;
+				finderArgs = new Object[] {
+					uuid, companyId, start, end, orderByComparator
+				};
+			}
 
-		List<SegmentsExperiment> list = null;
+			List<SegmentsExperiment> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<SegmentsExperiment>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if (!uuid.equals(segmentsExperiment.getUuid()) ||
-						(companyId != segmentsExperiment.getCompanyId())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (SegmentsExperiment segmentsExperiment : list) {
+						if (!uuid.equals(segmentsExperiment.getUuid()) ||
+							(companyId != segmentsExperiment.getCompanyId())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
 
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
+				boolean bindUuid = false;
 
-				cacheResult(list);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
+				}
+
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					list = (List<SegmentsExperiment>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1448,74 +1374,68 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countByUuid_C(String uuid, long companyId) {
-		uuid = Objects.toString(uuid, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			uuid = Objects.toString(uuid, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByUuid_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {uuid, companyId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByUuid_C;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {uuid, companyId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				boolean bindUuid = false;
 
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
+				if (uuid.isEmpty()) {
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
+				}
+				else {
+					bindUuid = true;
 
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
+					sb.append(_FINDER_COLUMN_UUID_C_UUID_2);
 				}
 
-				queryPos.add(companyId);
+				sb.append(_FINDER_COLUMN_UUID_C_COMPANYID_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindUuid) {
+						queryPos.add(uuid);
+					}
+
+					queryPos.add(companyId);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_UUID_C_UUID_2 =
@@ -1603,96 +1523,100 @@ public class SegmentsExperimentPersistenceImpl
 		OrderByComparator<SegmentsExperiment> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByGroupId;
-				finderArgs = new Object[] {groupId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByGroupId;
+					finderArgs = new Object[] {groupId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByGroupId;
-			finderArgs = new Object[] {groupId, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByGroupId;
+				finderArgs = new Object[] {
+					groupId, start, end, orderByComparator
+				};
+			}
 
-		List<SegmentsExperiment> list = null;
+			List<SegmentsExperiment> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<SegmentsExperiment>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if (groupId != segmentsExperiment.getGroupId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (SegmentsExperiment segmentsExperiment : list) {
+						if (groupId != segmentsExperiment.getGroupId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(groupId);
+					queryPos.add(groupId);
 
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<SegmentsExperiment>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2052,7 +1976,8 @@ public class SegmentsExperimentPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperimentModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperimentModelImpl.ORDER_BY_SQL);
@@ -2249,7 +2174,8 @@ public class SegmentsExperimentPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					SegmentsExperimentModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(SegmentsExperimentModelImpl.ORDER_BY_SQL);
@@ -2320,57 +2246,51 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countByGroupId(long groupId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByGroupId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {groupId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByGroupId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {groupId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
 
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_GROUPID_GROUPID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(groupId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -2504,116 +2424,120 @@ public class SegmentsExperimentPersistenceImpl
 		OrderByComparator<SegmentsExperiment> orderByComparator,
 		boolean useFinderCache) {
 
-		segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath =
-					_finderPathWithoutPaginationFindBySegmentsExperimentKey;
-				finderArgs = new Object[] {segmentsExperimentKey};
+				if (useFinderCache) {
+					finderPath =
+						_finderPathWithoutPaginationFindBySegmentsExperimentKey;
+					finderArgs = new Object[] {segmentsExperimentKey};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindBySegmentsExperimentKey;
-			finderArgs = new Object[] {
-				segmentsExperimentKey, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath =
+					_finderPathWithPaginationFindBySegmentsExperimentKey;
+				finderArgs = new Object[] {
+					segmentsExperimentKey, start, end, orderByComparator
+				};
+			}
 
-		List<SegmentsExperiment> list = null;
+			List<SegmentsExperiment> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<SegmentsExperiment>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if (!segmentsExperimentKey.equals(
-							segmentsExperiment.getSegmentsExperimentKey())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (SegmentsExperiment segmentsExperiment : list) {
+						if (!segmentsExperimentKey.equals(
+								segmentsExperiment.
+									getSegmentsExperimentKey())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			boolean bindSegmentsExperimentKey = false;
-
-			if (segmentsExperimentKey.isEmpty()) {
-				sb.append(
-					_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_3);
-			}
-			else {
-				bindSegmentsExperimentKey = true;
-
-				sb.append(
-					_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindSegmentsExperimentKey) {
-					queryPos.add(segmentsExperimentKey);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
 				}
 
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
 
-				cacheResult(list);
+				boolean bindSegmentsExperimentKey = false;
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (segmentsExperimentKey.isEmpty()) {
+					sb.append(
+						_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_3);
+				}
+				else {
+					bindSegmentsExperimentKey = true;
+
+					sb.append(
+						_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindSegmentsExperimentKey) {
+						queryPos.add(segmentsExperimentKey);
+					}
+
+					list = (List<SegmentsExperiment>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2929,72 +2853,66 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countBySegmentsExperimentKey(String segmentsExperimentKey) {
-		segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountBySegmentsExperimentKey;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {segmentsExperimentKey};
 
-		if (productionMode) {
-			finderPath = _finderPathCountBySegmentsExperimentKey;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {segmentsExperimentKey};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				boolean bindSegmentsExperimentKey = false;
 
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
+				if (segmentsExperimentKey.isEmpty()) {
+					sb.append(
+						_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_3);
+				}
+				else {
+					bindSegmentsExperimentKey = true;
 
-			boolean bindSegmentsExperimentKey = false;
-
-			if (segmentsExperimentKey.isEmpty()) {
-				sb.append(
-					_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_3);
-			}
-			else {
-				bindSegmentsExperimentKey = true;
-
-				sb.append(
-					_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindSegmentsExperimentKey) {
-					queryPos.add(segmentsExperimentKey);
+					sb.append(
+						_FINDER_COLUMN_SEGMENTSEXPERIMENTKEY_SEGMENTSEXPERIMENTKEY_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					if (bindSegmentsExperimentKey) {
+						queryPos.add(segmentsExperimentKey);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String
@@ -3006,7 +2924,6 @@ public class SegmentsExperimentPersistenceImpl
 			"(segmentsExperiment.segmentsExperimentKey IS NULL OR segmentsExperiment.segmentsExperimentKey = '')";
 
 	private FinderPath _finderPathFetchByG_S;
-	private FinderPath _finderPathCountByG_S;
 
 	/**
 	 * Returns the segments experiment where groupId = &#63; and segmentsExperimentKey = &#63; or throws a <code>NoSuchExperimentException</code> if it could not be found.
@@ -3073,99 +2990,103 @@ public class SegmentsExperimentPersistenceImpl
 	public SegmentsExperiment fetchByG_S(
 		long groupId, String segmentsExperimentKey, boolean useFinderCache) {
 
-		segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+			segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {groupId, segmentsExperimentKey};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByG_S, finderArgs);
-		}
-
-		if (result instanceof SegmentsExperiment) {
-			SegmentsExperiment segmentsExperiment = (SegmentsExperiment)result;
-
-			if ((groupId != segmentsExperiment.getGroupId()) ||
-				!Objects.equals(
-					segmentsExperimentKey,
-					segmentsExperiment.getSegmentsExperimentKey())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_S_GROUPID_2);
-
-			boolean bindSegmentsExperimentKey = false;
-
-			if (segmentsExperimentKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_3);
-			}
-			else {
-				bindSegmentsExperimentKey = true;
-
-				sb.append(_FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {groupId, segmentsExperimentKey};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByG_S, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof SegmentsExperiment) {
+				SegmentsExperiment segmentsExperiment =
+					(SegmentsExperiment)result;
 
-				Query query = session.createQuery(sql);
+				if ((groupId != segmentsExperiment.getGroupId()) ||
+					!Objects.equals(
+						segmentsExperimentKey,
+						segmentsExperiment.getSegmentsExperimentKey())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindSegmentsExperimentKey) {
-					queryPos.add(segmentsExperimentKey);
+					result = null;
 				}
+			}
 
-				List<SegmentsExperiment> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByG_S, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
+
+				sb.append(_FINDER_COLUMN_G_S_GROUPID_2);
+
+				boolean bindSegmentsExperimentKey = false;
+
+				if (segmentsExperimentKey.isEmpty()) {
+					sb.append(_FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_3);
 				}
 				else {
-					SegmentsExperiment segmentsExperiment = list.get(0);
+					bindSegmentsExperimentKey = true;
 
-					result = segmentsExperiment;
+					sb.append(_FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_2);
+				}
 
-					cacheResult(segmentsExperiment);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					if (bindSegmentsExperimentKey) {
+						queryPos.add(segmentsExperimentKey);
+					}
+
+					List<SegmentsExperiment> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByG_S, finderArgs, list);
+						}
+					}
+					else {
+						SegmentsExperiment segmentsExperiment = list.get(0);
+
+						result = segmentsExperiment;
+
+						cacheResult(segmentsExperiment);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (SegmentsExperiment)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (SegmentsExperiment)result;
+			}
 		}
 	}
 
@@ -3196,74 +3117,14 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countByG_S(long groupId, String segmentsExperimentKey) {
-		segmentsExperimentKey = Objects.toString(segmentsExperimentKey, "");
+		SegmentsExperiment segmentsExperiment = fetchByG_S(
+			groupId, segmentsExperimentKey);
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_S;
-
-			finderArgs = new Object[] {groupId, segmentsExperimentKey};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (segmentsExperiment == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_S_GROUPID_2);
-
-			boolean bindSegmentsExperimentKey = false;
-
-			if (segmentsExperimentKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_3);
-			}
-			else {
-				bindSegmentsExperimentKey = true;
-
-				sb.append(_FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindSegmentsExperimentKey) {
-					queryPos.add(segmentsExperimentKey);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_S_GROUPID_2 =
@@ -3275,2659 +3136,220 @@ public class SegmentsExperimentPersistenceImpl
 	private static final String _FINDER_COLUMN_G_S_SEGMENTSEXPERIMENTKEY_3 =
 		"(segmentsExperiment.segmentsExperimentKey IS NULL OR segmentsExperiment.segmentsExperimentKey = '')";
 
-	private FinderPath _finderPathWithPaginationFindByG_C_C;
-	private FinderPath _finderPathWithoutPaginationFindByG_C_C;
-	private FinderPath _finderPathCountByG_C_C;
+	private FinderPath _finderPathFetchByG_S_P;
 
 	/**
-	 * Returns all the segments experiments where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
+	 * Returns the segments experiment where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; or throws a <code>NoSuchExperimentException</code> if it could not be found.
 	 *
 	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the matching segments experiments
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @return the matching segments experiment
+	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
 	 */
 	@Override
-	public List<SegmentsExperiment> findByG_C_C(
-		long groupId, long classNameId, long classPK) {
+	public SegmentsExperiment findByG_S_P(
+			long groupId, long segmentsExperienceId, long plid)
+		throws NoSuchExperimentException {
 
-		return findByG_C_C(
-			groupId, classNameId, classPK, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			null);
+		SegmentsExperiment segmentsExperiment = fetchByG_S_P(
+			groupId, segmentsExperienceId, plid);
+
+		if (segmentsExperiment == null) {
+			StringBundler sb = new StringBundler(8);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("groupId=");
+			sb.append(groupId);
+
+			sb.append(", segmentsExperienceId=");
+			sb.append(segmentsExperienceId);
+
+			sb.append(", plid=");
+			sb.append(plid);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchExperimentException(sb.toString());
+		}
+
+		return segmentsExperiment;
 	}
 
 	/**
-	 * Returns a range of all the segments experiments where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
+	 * Returns the segments experiment where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
 	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @return the range of matching segments experiments
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @return the matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
 	 */
 	@Override
-	public List<SegmentsExperiment> findByG_C_C(
-		long groupId, long classNameId, long classPK, int start, int end) {
+	public SegmentsExperiment fetchByG_S_P(
+		long groupId, long segmentsExperienceId, long plid) {
 
-		return findByG_C_C(groupId, classNameId, classPK, start, end, null);
+		return fetchByG_S_P(groupId, segmentsExperienceId, plid, true);
 	}
 
 	/**
-	 * Returns an ordered range of all the segments experiments where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
+	 * Returns the segments experiment where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
 	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByG_C_C(
-		long groupId, long classNameId, long classPK, int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		return findByG_C_C(
-			groupId, classNameId, classPK, start, end, orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
 	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching segments experiments
+	 * @return the matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
 	 */
 	@Override
-	public List<SegmentsExperiment> findByG_C_C(
-		long groupId, long classNameId, long classPK, int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
+	public SegmentsExperiment fetchByG_S_P(
+		long groupId, long segmentsExperienceId, long plid,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByG_C_C;
-				finderArgs = new Object[] {groupId, classNameId, classPK};
+			if (useFinderCache) {
+				finderArgs = new Object[] {groupId, segmentsExperienceId, plid};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByG_C_C;
-			finderArgs = new Object[] {
-				groupId, classNameId, classPK, start, end, orderByComparator
-			};
-		}
 
-		List<SegmentsExperiment> list = null;
+			Object result = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByG_S_P, finderArgs, this);
+			}
 
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if ((groupId != segmentsExperiment.getGroupId()) ||
-						(classNameId != segmentsExperiment.getClassNameId()) ||
-						(classPK != segmentsExperiment.getClassPK())) {
+			if (result instanceof SegmentsExperiment) {
+				SegmentsExperiment segmentsExperiment =
+					(SegmentsExperiment)result;
 
-						list = null;
+				if ((groupId != segmentsExperiment.getGroupId()) ||
+					(segmentsExperienceId !=
+						segmentsExperiment.getSegmentsExperienceId()) ||
+					(plid != segmentsExperiment.getPlid())) {
 
-						break;
+					result = null;
+				}
+			}
+
+			if (result == null) {
+				StringBundler sb = new StringBundler(5);
+
+				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
+
+				sb.append(_FINDER_COLUMN_G_S_P_GROUPID_2);
+
+				sb.append(_FINDER_COLUMN_G_S_P_SEGMENTSEXPERIENCEID_2);
+
+				sb.append(_FINDER_COLUMN_G_S_P_PLID_2);
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(groupId);
+
+					queryPos.add(segmentsExperienceId);
+
+					queryPos.add(plid);
+
+					List<SegmentsExperiment> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByG_S_P, finderArgs, list);
+						}
+					}
+					else {
+						SegmentsExperiment segmentsExperiment = list.get(0);
+
+						result = segmentsExperiment;
+
+						cacheResult(segmentsExperiment);
 					}
 				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+
+			if (result instanceof List<?>) {
+				return null;
 			}
-			finally {
-				closeSession(session);
+			else {
+				return (SegmentsExperiment)result;
 			}
 		}
-
-		return list;
 	}
 
 	/**
-	 * Returns the first segments experiment in the ordered set where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
+	 * Removes the segments experiment where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63; from the database.
 	 *
 	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching segments experiment
-	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
+	 * @return the segments experiment that was removed
 	 */
 	@Override
-	public SegmentsExperiment findByG_C_C_First(
-			long groupId, long classNameId, long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
+	public SegmentsExperiment removeByG_S_P(
+			long groupId, long segmentsExperienceId, long plid)
 		throws NoSuchExperimentException {
 
-		SegmentsExperiment segmentsExperiment = fetchByG_C_C_First(
-			groupId, classNameId, classPK, orderByComparator);
+		SegmentsExperiment segmentsExperiment = findByG_S_P(
+			groupId, segmentsExperienceId, plid);
 
-		if (segmentsExperiment != null) {
-			return segmentsExperiment;
-		}
-
-		StringBundler sb = new StringBundler(8);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("groupId=");
-		sb.append(groupId);
-
-		sb.append(", classNameId=");
-		sb.append(classNameId);
-
-		sb.append(", classPK=");
-		sb.append(classPK);
-
-		sb.append("}");
-
-		throw new NoSuchExperimentException(sb.toString());
+		return remove(segmentsExperiment);
 	}
 
 	/**
-	 * Returns the first segments experiment in the ordered set where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
+	 * Returns the number of segments experiments where groupId = &#63; and segmentsExperienceId = &#63; and plid = &#63;.
 	 *
 	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment fetchByG_C_C_First(
-		long groupId, long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		List<SegmentsExperiment> list = findByG_C_C(
-			groupId, classNameId, classPK, 0, 1, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last segments experiment in the ordered set where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching segments experiment
-	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment findByG_C_C_Last(
-			long groupId, long classNameId, long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = fetchByG_C_C_Last(
-			groupId, classNameId, classPK, orderByComparator);
-
-		if (segmentsExperiment != null) {
-			return segmentsExperiment;
-		}
-
-		StringBundler sb = new StringBundler(8);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("groupId=");
-		sb.append(groupId);
-
-		sb.append(", classNameId=");
-		sb.append(classNameId);
-
-		sb.append(", classPK=");
-		sb.append(classPK);
-
-		sb.append("}");
-
-		throw new NoSuchExperimentException(sb.toString());
-	}
-
-	/**
-	 * Returns the last segments experiment in the ordered set where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment fetchByG_C_C_Last(
-		long groupId, long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		int count = countByG_C_C(groupId, classNameId, classPK);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<SegmentsExperiment> list = findByG_C_C(
-			groupId, classNameId, classPK, count - 1, count, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the segments experiments before and after the current segments experiment in the ordered set where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperimentId the primary key of the current segments experiment
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next segments experiment
-	 * @throws NoSuchExperimentException if a segments experiment with the primary key could not be found
-	 */
-	@Override
-	public SegmentsExperiment[] findByG_C_C_PrevAndNext(
-			long segmentsExperimentId, long groupId, long classNameId,
-			long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = findByPrimaryKey(
-			segmentsExperimentId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			SegmentsExperiment[] array = new SegmentsExperimentImpl[3];
-
-			array[0] = getByG_C_C_PrevAndNext(
-				session, segmentsExperiment, groupId, classNameId, classPK,
-				orderByComparator, true);
-
-			array[1] = segmentsExperiment;
-
-			array[2] = getByG_C_C_PrevAndNext(
-				session, segmentsExperiment, groupId, classNameId, classPK,
-				orderByComparator, false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected SegmentsExperiment getByG_C_C_PrevAndNext(
-		Session session, SegmentsExperiment segmentsExperiment, long groupId,
-		long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				6 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(5);
-		}
-
-		sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-		sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		queryPos.add(groupId);
-
-		queryPos.add(classNameId);
-
-		queryPos.add(classPK);
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						segmentsExperiment)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<SegmentsExperiment> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
-	}
-
-	/**
-	 * Returns all the segments experiments that the user has permission to view where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the matching segments experiments that the user has permission to view
-	 */
-	@Override
-	public List<SegmentsExperiment> filterFindByG_C_C(
-		long groupId, long classNameId, long classPK) {
-
-		return filterFindByG_C_C(
-			groupId, classNameId, classPK, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			null);
-	}
-
-	/**
-	 * Returns a range of all the segments experiments that the user has permission to view where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @return the range of matching segments experiments that the user has permission to view
-	 */
-	@Override
-	public List<SegmentsExperiment> filterFindByG_C_C(
-		long groupId, long classNameId, long classPK, int start, int end) {
-
-		return filterFindByG_C_C(
-			groupId, classNameId, classPK, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments that the user has permissions to view where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching segments experiments that the user has permission to view
-	 */
-	@Override
-	public List<SegmentsExperiment> filterFindByG_C_C(
-		long groupId, long classNameId, long classPK, int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		if (!InlineSQLHelperUtil.isEnabled(groupId)) {
-			return findByG_C_C(
-				groupId, classNameId, classPK, start, end, orderByComparator);
-		}
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				5 + (orderByComparator.getOrderByFields().length * 2));
-		}
-		else {
-			sb = new StringBundler(6);
-		}
-
-		if (getDB().isSupportsInlineDistinct()) {
-			sb.append(_FILTER_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-		}
-		else {
-			sb.append(
-				_FILTER_SQL_SELECT_SEGMENTSEXPERIMENT_NO_INLINE_DISTINCT_WHERE_1);
-		}
-
-		sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-		if (!getDB().isSupportsInlineDistinct()) {
-			sb.append(
-				_FILTER_SQL_SELECT_SEGMENTSEXPERIMENT_NO_INLINE_DISTINCT_WHERE_2);
-		}
-
-		if (orderByComparator != null) {
-			if (getDB().isSupportsInlineDistinct()) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator, true);
-			}
-			else {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_TABLE, orderByComparator, true);
-			}
-		}
-		else {
-			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_SQL);
-			}
-		}
-
-		String sql = InlineSQLHelperUtil.replacePermissionCheck(
-			sb.toString(), SegmentsExperiment.class.getName(),
-			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN, groupId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
-
-			if (getDB().isSupportsInlineDistinct()) {
-				sqlQuery.addEntity(
-					_FILTER_ENTITY_ALIAS, SegmentsExperimentImpl.class);
-			}
-			else {
-				sqlQuery.addEntity(
-					_FILTER_ENTITY_TABLE, SegmentsExperimentImpl.class);
-			}
-
-			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
-
-			queryPos.add(groupId);
-
-			queryPos.add(classNameId);
-
-			queryPos.add(classPK);
-
-			return (List<SegmentsExperiment>)QueryUtil.list(
-				sqlQuery, getDialect(), start, end);
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	/**
-	 * Returns the segments experiments before and after the current segments experiment in the ordered set of segments experiments that the user has permission to view where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperimentId the primary key of the current segments experiment
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next segments experiment
-	 * @throws NoSuchExperimentException if a segments experiment with the primary key could not be found
-	 */
-	@Override
-	public SegmentsExperiment[] filterFindByG_C_C_PrevAndNext(
-			long segmentsExperimentId, long groupId, long classNameId,
-			long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		if (!InlineSQLHelperUtil.isEnabled(groupId)) {
-			return findByG_C_C_PrevAndNext(
-				segmentsExperimentId, groupId, classNameId, classPK,
-				orderByComparator);
-		}
-
-		SegmentsExperiment segmentsExperiment = findByPrimaryKey(
-			segmentsExperimentId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			SegmentsExperiment[] array = new SegmentsExperimentImpl[3];
-
-			array[0] = filterGetByG_C_C_PrevAndNext(
-				session, segmentsExperiment, groupId, classNameId, classPK,
-				orderByComparator, true);
-
-			array[1] = segmentsExperiment;
-
-			array[2] = filterGetByG_C_C_PrevAndNext(
-				session, segmentsExperiment, groupId, classNameId, classPK,
-				orderByComparator, false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected SegmentsExperiment filterGetByG_C_C_PrevAndNext(
-		Session session, SegmentsExperiment segmentsExperiment, long groupId,
-		long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				7 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(6);
-		}
-
-		if (getDB().isSupportsInlineDistinct()) {
-			sb.append(_FILTER_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-		}
-		else {
-			sb.append(
-				_FILTER_SQL_SELECT_SEGMENTSEXPERIMENT_NO_INLINE_DISTINCT_WHERE_1);
-		}
-
-		sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-		if (!getDB().isSupportsInlineDistinct()) {
-			sb.append(
-				_FILTER_SQL_SELECT_SEGMENTSEXPERIMENT_NO_INLINE_DISTINCT_WHERE_2);
-		}
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				if (getDB().isSupportsInlineDistinct()) {
-					sb.append(
-						getColumnName(
-							_ORDER_BY_ENTITY_ALIAS, orderByConditionFields[i],
-							true));
-				}
-				else {
-					sb.append(
-						getColumnName(
-							_ORDER_BY_ENTITY_TABLE, orderByConditionFields[i],
-							true));
-				}
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				if (getDB().isSupportsInlineDistinct()) {
-					sb.append(
-						getColumnName(
-							_ORDER_BY_ENTITY_ALIAS, orderByFields[i], true));
-				}
-				else {
-					sb.append(
-						getColumnName(
-							_ORDER_BY_ENTITY_TABLE, orderByFields[i], true));
-				}
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_SQL);
-			}
-		}
-
-		String sql = InlineSQLHelperUtil.replacePermissionCheck(
-			sb.toString(), SegmentsExperiment.class.getName(),
-			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN, groupId);
-
-		SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
-
-		sqlQuery.setFirstResult(0);
-		sqlQuery.setMaxResults(2);
-
-		if (getDB().isSupportsInlineDistinct()) {
-			sqlQuery.addEntity(
-				_FILTER_ENTITY_ALIAS, SegmentsExperimentImpl.class);
-		}
-		else {
-			sqlQuery.addEntity(
-				_FILTER_ENTITY_TABLE, SegmentsExperimentImpl.class);
-		}
-
-		QueryPos queryPos = QueryPos.getInstance(sqlQuery);
-
-		queryPos.add(groupId);
-
-		queryPos.add(classNameId);
-
-		queryPos.add(classPK);
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						segmentsExperiment)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<SegmentsExperiment> list = sqlQuery.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
-	}
-
-	/**
-	 * Removes all the segments experiments where groupId = &#63; and classNameId = &#63; and classPK = &#63; from the database.
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 */
-	@Override
-	public void removeByG_C_C(long groupId, long classNameId, long classPK) {
-		for (SegmentsExperiment segmentsExperiment :
-				findByG_C_C(
-					groupId, classNameId, classPK, QueryUtil.ALL_POS,
-					QueryUtil.ALL_POS, null)) {
-
-			remove(segmentsExperiment);
-		}
-	}
-
-	/**
-	 * Returns the number of segments experiments where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
+	 * @param segmentsExperienceId the segments experience ID
+	 * @param plid the plid
 	 * @return the number of matching segments experiments
 	 */
 	@Override
-	public int countByG_C_C(long groupId, long classNameId, long classPK) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+	public int countByG_S_P(
+		long groupId, long segmentsExperienceId, long plid) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+		SegmentsExperiment segmentsExperiment = fetchByG_S_P(
+			groupId, segmentsExperienceId, plid);
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByG_C_C;
-
-			finderArgs = new Object[] {groupId, classNameId, classPK};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (segmentsExperiment == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
-	/**
-	 * Returns the number of segments experiments that the user has permission to view where groupId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the number of matching segments experiments that the user has permission to view
-	 */
-	@Override
-	public int filterCountByG_C_C(
-		long groupId, long classNameId, long classPK) {
-
-		if (!InlineSQLHelperUtil.isEnabled(groupId)) {
-			return countByG_C_C(groupId, classNameId, classPK);
-		}
-
-		StringBundler sb = new StringBundler(4);
-
-		sb.append(_FILTER_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-		sb.append(_FINDER_COLUMN_G_C_C_GROUPID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSNAMEID_2);
-
-		sb.append(_FINDER_COLUMN_G_C_C_CLASSPK_2);
-
-		String sql = InlineSQLHelperUtil.replacePermissionCheck(
-			sb.toString(), SegmentsExperiment.class.getName(),
-			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN, groupId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
-
-			sqlQuery.addScalar(
-				COUNT_COLUMN_NAME, com.liferay.portal.kernel.dao.orm.Type.LONG);
-
-			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
-
-			queryPos.add(groupId);
-
-			queryPos.add(classNameId);
-
-			queryPos.add(classPK);
-
-			Long count = (Long)sqlQuery.uniqueResult();
-
-			return count.intValue();
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	private static final String _FINDER_COLUMN_G_C_C_GROUPID_2 =
+	private static final String _FINDER_COLUMN_G_S_P_GROUPID_2 =
 		"segmentsExperiment.groupId = ? AND ";
 
-	private static final String _FINDER_COLUMN_G_C_C_CLASSNAMEID_2 =
-		"segmentsExperiment.classNameId = ? AND ";
-
-	private static final String _FINDER_COLUMN_G_C_C_CLASSPK_2 =
-		"segmentsExperiment.classPK = ?";
-
-	private FinderPath _finderPathWithPaginationFindByS_C_C;
-	private FinderPath _finderPathWithoutPaginationFindByS_C_C;
-	private FinderPath _finderPathCountByS_C_C;
-
-	/**
-	 * Returns all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C(
-		long segmentsExperienceId, long classNameId, long classPK) {
-
-		return findByS_C_C(
-			segmentsExperienceId, classNameId, classPK, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @return the range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C(
-		long segmentsExperienceId, long classNameId, long classPK, int start,
-		int end) {
-
-		return findByS_C_C(
-			segmentsExperienceId, classNameId, classPK, start, end, null);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C(
-		long segmentsExperienceId, long classNameId, long classPK, int start,
-		int end, OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		return findByS_C_C(
-			segmentsExperienceId, classNameId, classPK, start, end,
-			orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C(
-		long segmentsExperienceId, long classNameId, long classPK, int start,
-		int end, OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean useFinderCache) {
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByS_C_C;
-				finderArgs = new Object[] {
-					segmentsExperienceId, classNameId, classPK
-				};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByS_C_C;
-			finderArgs = new Object[] {
-				segmentsExperienceId, classNameId, classPK, start, end,
-				orderByComparator
-			};
-		}
-
-		List<SegmentsExperiment> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if ((segmentsExperienceId !=
-							segmentsExperiment.getSegmentsExperienceId()) ||
-						(classNameId != segmentsExperiment.getClassNameId()) ||
-						(classPK != segmentsExperiment.getClassPK())) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					5 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(5);
-			}
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_S_C_C_SEGMENTSEXPERIENCEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_CLASSPK_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(segmentsExperienceId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
-	}
-
-	/**
-	 * Returns the first segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching segments experiment
-	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment findByS_C_C_First(
-			long segmentsExperienceId, long classNameId, long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = fetchByS_C_C_First(
-			segmentsExperienceId, classNameId, classPK, orderByComparator);
-
-		if (segmentsExperiment != null) {
-			return segmentsExperiment;
-		}
-
-		StringBundler sb = new StringBundler(8);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("segmentsExperienceId=");
-		sb.append(segmentsExperienceId);
-
-		sb.append(", classNameId=");
-		sb.append(classNameId);
-
-		sb.append(", classPK=");
-		sb.append(classPK);
-
-		sb.append("}");
-
-		throw new NoSuchExperimentException(sb.toString());
-	}
-
-	/**
-	 * Returns the first segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment fetchByS_C_C_First(
-		long segmentsExperienceId, long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		List<SegmentsExperiment> list = findByS_C_C(
-			segmentsExperienceId, classNameId, classPK, 0, 1,
-			orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching segments experiment
-	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment findByS_C_C_Last(
-			long segmentsExperienceId, long classNameId, long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = fetchByS_C_C_Last(
-			segmentsExperienceId, classNameId, classPK, orderByComparator);
-
-		if (segmentsExperiment != null) {
-			return segmentsExperiment;
-		}
-
-		StringBundler sb = new StringBundler(8);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("segmentsExperienceId=");
-		sb.append(segmentsExperienceId);
-
-		sb.append(", classNameId=");
-		sb.append(classNameId);
-
-		sb.append(", classPK=");
-		sb.append(classPK);
-
-		sb.append("}");
-
-		throw new NoSuchExperimentException(sb.toString());
-	}
-
-	/**
-	 * Returns the last segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment fetchByS_C_C_Last(
-		long segmentsExperienceId, long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		int count = countByS_C_C(segmentsExperienceId, classNameId, classPK);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<SegmentsExperiment> list = findByS_C_C(
-			segmentsExperienceId, classNameId, classPK, count - 1, count,
-			orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the segments experiments before and after the current segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperimentId the primary key of the current segments experiment
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next segments experiment
-	 * @throws NoSuchExperimentException if a segments experiment with the primary key could not be found
-	 */
-	@Override
-	public SegmentsExperiment[] findByS_C_C_PrevAndNext(
-			long segmentsExperimentId, long segmentsExperienceId,
-			long classNameId, long classPK,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = findByPrimaryKey(
-			segmentsExperimentId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			SegmentsExperiment[] array = new SegmentsExperimentImpl[3];
-
-			array[0] = getByS_C_C_PrevAndNext(
-				session, segmentsExperiment, segmentsExperienceId, classNameId,
-				classPK, orderByComparator, true);
-
-			array[1] = segmentsExperiment;
-
-			array[2] = getByS_C_C_PrevAndNext(
-				session, segmentsExperiment, segmentsExperienceId, classNameId,
-				classPK, orderByComparator, false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected SegmentsExperiment getByS_C_C_PrevAndNext(
-		Session session, SegmentsExperiment segmentsExperiment,
-		long segmentsExperienceId, long classNameId, long classPK,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				6 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(5);
-		}
-
-		sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-		sb.append(_FINDER_COLUMN_S_C_C_SEGMENTSEXPERIENCEID_2);
-
-		sb.append(_FINDER_COLUMN_S_C_C_CLASSNAMEID_2);
-
-		sb.append(_FINDER_COLUMN_S_C_C_CLASSPK_2);
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		queryPos.add(segmentsExperienceId);
-
-		queryPos.add(classNameId);
-
-		queryPos.add(classPK);
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						segmentsExperiment)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<SegmentsExperiment> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
-	}
-
-	/**
-	 * Removes all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; from the database.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 */
-	@Override
-	public void removeByS_C_C(
-		long segmentsExperienceId, long classNameId, long classPK) {
-
-		for (SegmentsExperiment segmentsExperiment :
-				findByS_C_C(
-					segmentsExperienceId, classNameId, classPK,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
-
-			remove(segmentsExperiment);
-		}
-	}
-
-	/**
-	 * Returns the number of segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @return the number of matching segments experiments
-	 */
-	@Override
-	public int countByS_C_C(
-		long segmentsExperienceId, long classNameId, long classPK) {
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByS_C_C;
-
-			finderArgs = new Object[] {
-				segmentsExperienceId, classNameId, classPK
-			};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_S_C_C_SEGMENTSEXPERIENCEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_CLASSPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(segmentsExperienceId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
-	}
-
-	private static final String _FINDER_COLUMN_S_C_C_SEGMENTSEXPERIENCEID_2 =
+	private static final String _FINDER_COLUMN_G_S_P_SEGMENTSEXPERIENCEID_2 =
 		"segmentsExperiment.segmentsExperienceId = ? AND ";
 
-	private static final String _FINDER_COLUMN_S_C_C_CLASSNAMEID_2 =
-		"segmentsExperiment.classNameId = ? AND ";
-
-	private static final String _FINDER_COLUMN_S_C_C_CLASSPK_2 =
-		"segmentsExperiment.classPK = ?";
-
-	private FinderPath _finderPathWithPaginationFindByS_C_C_S;
-	private FinderPath _finderPathWithoutPaginationFindByS_C_C_S;
-	private FinderPath _finderPathCountByS_C_C_S;
-	private FinderPath _finderPathWithPaginationCountByS_C_C_S;
-
-	/**
-	 * Returns all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @return the matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long segmentsExperienceId, long classNameId, long classPK, int status) {
-
-		return findByS_C_C_S(
-			segmentsExperienceId, classNameId, classPK, status,
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @return the range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long segmentsExperienceId, long classNameId, long classPK, int status,
-		int start, int end) {
-
-		return findByS_C_C_S(
-			segmentsExperienceId, classNameId, classPK, status, start, end,
-			null);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long segmentsExperienceId, long classNameId, long classPK, int status,
-		int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		return findByS_C_C_S(
-			segmentsExperienceId, classNameId, classPK, status, start, end,
-			orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long segmentsExperienceId, long classNameId, long classPK, int status,
-		int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean useFinderCache) {
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByS_C_C_S;
-				finderArgs = new Object[] {
-					segmentsExperienceId, classNameId, classPK, status
-				};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByS_C_C_S;
-			finderArgs = new Object[] {
-				segmentsExperienceId, classNameId, classPK, status, start, end,
-				orderByComparator
-			};
-		}
-
-		List<SegmentsExperiment> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if ((segmentsExperienceId !=
-							segmentsExperiment.getSegmentsExperienceId()) ||
-						(classNameId != segmentsExperiment.getClassNameId()) ||
-						(classPK != segmentsExperiment.getClassPK()) ||
-						(status != segmentsExperiment.getStatus())) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSPK_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_STATUS_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(segmentsExperienceId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				queryPos.add(status);
-
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
-	}
-
-	/**
-	 * Returns the first segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching segments experiment
-	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment findByS_C_C_S_First(
-			long segmentsExperienceId, long classNameId, long classPK,
-			int status, OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = fetchByS_C_C_S_First(
-			segmentsExperienceId, classNameId, classPK, status,
-			orderByComparator);
-
-		if (segmentsExperiment != null) {
-			return segmentsExperiment;
-		}
-
-		StringBundler sb = new StringBundler(10);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("segmentsExperienceId=");
-		sb.append(segmentsExperienceId);
-
-		sb.append(", classNameId=");
-		sb.append(classNameId);
-
-		sb.append(", classPK=");
-		sb.append(classPK);
-
-		sb.append(", status=");
-		sb.append(status);
-
-		sb.append("}");
-
-		throw new NoSuchExperimentException(sb.toString());
-	}
-
-	/**
-	 * Returns the first segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the first matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment fetchByS_C_C_S_First(
-		long segmentsExperienceId, long classNameId, long classPK, int status,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		List<SegmentsExperiment> list = findByS_C_C_S(
-			segmentsExperienceId, classNameId, classPK, status, 0, 1,
-			orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the last segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching segments experiment
-	 * @throws NoSuchExperimentException if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment findByS_C_C_S_Last(
-			long segmentsExperienceId, long classNameId, long classPK,
-			int status, OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = fetchByS_C_C_S_Last(
-			segmentsExperienceId, classNameId, classPK, status,
-			orderByComparator);
-
-		if (segmentsExperiment != null) {
-			return segmentsExperiment;
-		}
-
-		StringBundler sb = new StringBundler(10);
-
-		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-		sb.append("segmentsExperienceId=");
-		sb.append(segmentsExperienceId);
-
-		sb.append(", classNameId=");
-		sb.append(classNameId);
-
-		sb.append(", classPK=");
-		sb.append(classPK);
-
-		sb.append(", status=");
-		sb.append(status);
-
-		sb.append("}");
-
-		throw new NoSuchExperimentException(sb.toString());
-	}
-
-	/**
-	 * Returns the last segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the last matching segments experiment, or <code>null</code> if a matching segments experiment could not be found
-	 */
-	@Override
-	public SegmentsExperiment fetchByS_C_C_S_Last(
-		long segmentsExperienceId, long classNameId, long classPK, int status,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		int count = countByS_C_C_S(
-			segmentsExperienceId, classNameId, classPK, status);
-
-		if (count == 0) {
-			return null;
-		}
-
-		List<SegmentsExperiment> list = findByS_C_C_S(
-			segmentsExperienceId, classNameId, classPK, status, count - 1,
-			count, orderByComparator);
-
-		if (!list.isEmpty()) {
-			return list.get(0);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Returns the segments experiments before and after the current segments experiment in the ordered set where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperimentId the primary key of the current segments experiment
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
-	 * @return the previous, current, and next segments experiment
-	 * @throws NoSuchExperimentException if a segments experiment with the primary key could not be found
-	 */
-	@Override
-	public SegmentsExperiment[] findByS_C_C_S_PrevAndNext(
-			long segmentsExperimentId, long segmentsExperienceId,
-			long classNameId, long classPK, int status,
-			OrderByComparator<SegmentsExperiment> orderByComparator)
-		throws NoSuchExperimentException {
-
-		SegmentsExperiment segmentsExperiment = findByPrimaryKey(
-			segmentsExperimentId);
-
-		Session session = null;
-
-		try {
-			session = openSession();
-
-			SegmentsExperiment[] array = new SegmentsExperimentImpl[3];
-
-			array[0] = getByS_C_C_S_PrevAndNext(
-				session, segmentsExperiment, segmentsExperienceId, classNameId,
-				classPK, status, orderByComparator, true);
-
-			array[1] = segmentsExperiment;
-
-			array[2] = getByS_C_C_S_PrevAndNext(
-				session, segmentsExperiment, segmentsExperienceId, classNameId,
-				classPK, status, orderByComparator, false);
-
-			return array;
-		}
-		catch (Exception exception) {
-			throw processException(exception);
-		}
-		finally {
-			closeSession(session);
-		}
-	}
-
-	protected SegmentsExperiment getByS_C_C_S_PrevAndNext(
-		Session session, SegmentsExperiment segmentsExperiment,
-		long segmentsExperienceId, long classNameId, long classPK, int status,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean previous) {
-
-		StringBundler sb = null;
-
-		if (orderByComparator != null) {
-			sb = new StringBundler(
-				7 + (orderByComparator.getOrderByConditionFields().length * 3) +
-					(orderByComparator.getOrderByFields().length * 3));
-		}
-		else {
-			sb = new StringBundler(6);
-		}
-
-		sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-		sb.append(_FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_2);
-
-		sb.append(_FINDER_COLUMN_S_C_C_S_CLASSNAMEID_2);
-
-		sb.append(_FINDER_COLUMN_S_C_C_S_CLASSPK_2);
-
-		sb.append(_FINDER_COLUMN_S_C_C_S_STATUS_2);
-
-		if (orderByComparator != null) {
-			String[] orderByConditionFields =
-				orderByComparator.getOrderByConditionFields();
-
-			if (orderByConditionFields.length > 0) {
-				sb.append(WHERE_AND);
-			}
-
-			for (int i = 0; i < orderByConditionFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByConditionFields[i]);
-
-				if ((i + 1) < orderByConditionFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(WHERE_GREATER_THAN);
-					}
-					else {
-						sb.append(WHERE_LESSER_THAN);
-					}
-				}
-			}
-
-			sb.append(ORDER_BY_CLAUSE);
-
-			String[] orderByFields = orderByComparator.getOrderByFields();
-
-			for (int i = 0; i < orderByFields.length; i++) {
-				sb.append(_ORDER_BY_ENTITY_ALIAS);
-				sb.append(orderByFields[i]);
-
-				if ((i + 1) < orderByFields.length) {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC_HAS_NEXT);
-					}
-					else {
-						sb.append(ORDER_BY_DESC_HAS_NEXT);
-					}
-				}
-				else {
-					if (orderByComparator.isAscending() ^ previous) {
-						sb.append(ORDER_BY_ASC);
-					}
-					else {
-						sb.append(ORDER_BY_DESC);
-					}
-				}
-			}
-		}
-		else {
-			sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-		}
-
-		String sql = sb.toString();
-
-		Query query = session.createQuery(sql);
-
-		query.setFirstResult(0);
-		query.setMaxResults(2);
-
-		QueryPos queryPos = QueryPos.getInstance(query);
-
-		queryPos.add(segmentsExperienceId);
-
-		queryPos.add(classNameId);
-
-		queryPos.add(classPK);
-
-		queryPos.add(status);
-
-		if (orderByComparator != null) {
-			for (Object orderByConditionValue :
-					orderByComparator.getOrderByConditionValues(
-						segmentsExperiment)) {
-
-				queryPos.add(orderByConditionValue);
-			}
-		}
-
-		List<SegmentsExperiment> list = query.list();
-
-		if (list.size() == 2) {
-			return list.get(1);
-		}
-		else {
-			return null;
-		}
-	}
-
-	/**
-	 * Returns all the segments experiments where segmentsExperienceId = any &#63; and classNameId = &#63; and classPK = &#63; and status = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceIds the segments experience IDs
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param statuses the statuses
-	 * @return the matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long[] segmentsExperienceIds, long classNameId, long classPK,
-		int[] statuses) {
-
-		return findByS_C_C_S(
-			segmentsExperienceIds, classNameId, classPK, statuses,
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
-	}
-
-	/**
-	 * Returns a range of all the segments experiments where segmentsExperienceId = any &#63; and classNameId = &#63; and classPK = &#63; and status = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceIds the segments experience IDs
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param statuses the statuses
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @return the range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long[] segmentsExperienceIds, long classNameId, long classPK,
-		int[] statuses, int start, int end) {
-
-		return findByS_C_C_S(
-			segmentsExperienceIds, classNameId, classPK, statuses, start, end,
-			null);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where segmentsExperienceId = any &#63; and classNameId = &#63; and classPK = &#63; and status = any &#63;.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceIds the segments experience IDs
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param statuses the statuses
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long[] segmentsExperienceIds, long classNameId, long classPK,
-		int[] statuses, int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator) {
-
-		return findByS_C_C_S(
-			segmentsExperienceIds, classNameId, classPK, statuses, start, end,
-			orderByComparator, true);
-	}
-
-	/**
-	 * Returns an ordered range of all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;, optionally using the finder cache.
-	 *
-	 * <p>
-	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>SegmentsExperimentModelImpl</code>.
-	 * </p>
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @param start the lower bound of the range of segments experiments
-	 * @param end the upper bound of the range of segments experiments (not inclusive)
-	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the ordered range of matching segments experiments
-	 */
-	@Override
-	public List<SegmentsExperiment> findByS_C_C_S(
-		long[] segmentsExperienceIds, long classNameId, long classPK,
-		int[] statuses, int start, int end,
-		OrderByComparator<SegmentsExperiment> orderByComparator,
-		boolean useFinderCache) {
-
-		if (segmentsExperienceIds == null) {
-			segmentsExperienceIds = new long[0];
-		}
-		else if (segmentsExperienceIds.length > 1) {
-			segmentsExperienceIds = ArrayUtil.sortedUnique(
-				segmentsExperienceIds);
-		}
-
-		if (statuses == null) {
-			statuses = new int[0];
-		}
-		else if (statuses.length > 1) {
-			statuses = ArrayUtil.sortedUnique(statuses);
-		}
-
-		if ((segmentsExperienceIds.length == 1) && (statuses.length == 1)) {
-			return findByS_C_C_S(
-				segmentsExperienceIds[0], classNameId, classPK, statuses[0],
-				start, end, orderByComparator);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		Object[] finderArgs = null;
-
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
-
-			if (useFinderCache && productionMode) {
-				finderArgs = new Object[] {
-					StringUtil.merge(segmentsExperienceIds), classNameId,
-					classPK, StringUtil.merge(statuses)
-				};
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				StringUtil.merge(segmentsExperienceIds), classNameId, classPK,
-				StringUtil.merge(statuses), start, end, orderByComparator
-			};
-		}
-
-		List<SegmentsExperiment> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				_finderPathWithPaginationFindByS_C_C_S, finderArgs);
-
-			if ((list != null) && !list.isEmpty()) {
-				for (SegmentsExperiment segmentsExperiment : list) {
-					if (!ArrayUtil.contains(
-							segmentsExperienceIds,
-							segmentsExperiment.getSegmentsExperienceId()) ||
-						(classNameId != segmentsExperiment.getClassNameId()) ||
-						(classPK != segmentsExperiment.getClassPK()) ||
-						!ArrayUtil.contains(
-							statuses, segmentsExperiment.getStatus())) {
-
-						list = null;
-
-						break;
-					}
-				}
-			}
-		}
-
-		if (list == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT_WHERE);
-
-			if (segmentsExperienceIds.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_7);
-
-				sb.append(StringUtil.merge(segmentsExperienceIds));
-
-				sb.append(")");
-
-				sb.append(")");
-
-				sb.append(WHERE_AND);
-			}
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSPK_2);
-
-			if (statuses.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_S_C_C_S_STATUS_7);
-
-				sb.append(StringUtil.merge(statuses));
-
-				sb.append(")");
-
-				sb.append(")");
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(
-						_finderPathWithPaginationFindByS_C_C_S, finderArgs,
-						list);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return list;
-	}
-
-	/**
-	 * Removes all the segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63; from the database.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 */
-	@Override
-	public void removeByS_C_C_S(
-		long segmentsExperienceId, long classNameId, long classPK, int status) {
-
-		for (SegmentsExperiment segmentsExperiment :
-				findByS_C_C_S(
-					segmentsExperienceId, classNameId, classPK, status,
-					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
-
-			remove(segmentsExperiment);
-		}
-	}
-
-	/**
-	 * Returns the number of segments experiments where segmentsExperienceId = &#63; and classNameId = &#63; and classPK = &#63; and status = &#63;.
-	 *
-	 * @param segmentsExperienceId the segments experience ID
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param status the status
-	 * @return the number of matching segments experiments
-	 */
-	@Override
-	public int countByS_C_C_S(
-		long segmentsExperienceId, long classNameId, long classPK, int status) {
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByS_C_C_S;
-
-			finderArgs = new Object[] {
-				segmentsExperienceId, classNameId, classPK, status
-			};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSPK_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_STATUS_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(segmentsExperienceId);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				queryPos.add(status);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
-	}
-
-	/**
-	 * Returns the number of segments experiments where segmentsExperienceId = any &#63; and classNameId = &#63; and classPK = &#63; and status = any &#63;.
-	 *
-	 * @param segmentsExperienceIds the segments experience IDs
-	 * @param classNameId the class name ID
-	 * @param classPK the class pk
-	 * @param statuses the statuses
-	 * @return the number of matching segments experiments
-	 */
-	@Override
-	public int countByS_C_C_S(
-		long[] segmentsExperienceIds, long classNameId, long classPK,
-		int[] statuses) {
-
-		if (segmentsExperienceIds == null) {
-			segmentsExperienceIds = new long[0];
-		}
-		else if (segmentsExperienceIds.length > 1) {
-			segmentsExperienceIds = ArrayUtil.sortedUnique(
-				segmentsExperienceIds);
-		}
-
-		if (statuses == null) {
-			statuses = new int[0];
-		}
-		else if (statuses.length > 1) {
-			statuses = ArrayUtil.sortedUnique(statuses);
-		}
-
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
-
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderArgs = new Object[] {
-				StringUtil.merge(segmentsExperienceIds), classNameId, classPK,
-				StringUtil.merge(statuses)
-			};
-
-			count = (Long)finderCache.getResult(
-				_finderPathWithPaginationCountByS_C_C_S, finderArgs);
-		}
-
-		if (count == null) {
-			StringBundler sb = new StringBundler();
-
-			sb.append(_SQL_COUNT_SEGMENTSEXPERIMENT_WHERE);
-
-			if (segmentsExperienceIds.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_7);
-
-				sb.append(StringUtil.merge(segmentsExperienceIds));
-
-				sb.append(")");
-
-				sb.append(")");
-
-				sb.append(WHERE_AND);
-			}
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSNAMEID_2);
-
-			sb.append(_FINDER_COLUMN_S_C_C_S_CLASSPK_2);
-
-			if (statuses.length > 0) {
-				sb.append("(");
-
-				sb.append(_FINDER_COLUMN_S_C_C_S_STATUS_7);
-
-				sb.append(StringUtil.merge(statuses));
-
-				sb.append(")");
-
-				sb.append(")");
-			}
-
-			sb.setStringAt(
-				removeConjunction(sb.stringAt(sb.index() - 1)), sb.index() - 1);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(classNameId);
-
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(
-						_finderPathWithPaginationCountByS_C_C_S, finderArgs,
-						count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
-	}
-
-	private static final String _FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_2 =
-		"segmentsExperiment.segmentsExperienceId = ? AND ";
-
-	private static final String _FINDER_COLUMN_S_C_C_S_SEGMENTSEXPERIENCEID_7 =
-		"segmentsExperiment.segmentsExperienceId IN (";
-
-	private static final String _FINDER_COLUMN_S_C_C_S_CLASSNAMEID_2 =
-		"segmentsExperiment.classNameId = ? AND ";
-
-	private static final String _FINDER_COLUMN_S_C_C_S_CLASSPK_2 =
-		"segmentsExperiment.classPK = ? AND ";
-
-	private static final String _FINDER_COLUMN_S_C_C_S_STATUS_2 =
-		"segmentsExperiment.status = ?";
-
-	private static final String _FINDER_COLUMN_S_C_C_S_STATUS_7 =
-		"segmentsExperiment.status IN (";
+	private static final String _FINDER_COLUMN_G_S_P_PLID_2 =
+		"segmentsExperiment.plid = ?";
 
 	public SegmentsExperimentPersistenceImpl() {
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
@@ -5951,28 +3373,39 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(SegmentsExperiment segmentsExperiment) {
-		if (segmentsExperiment.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					segmentsExperiment.getCtCollectionId())) {
+
+			entityCache.putResult(
+				SegmentsExperimentImpl.class,
+				segmentsExperiment.getPrimaryKey(), segmentsExperiment);
+
+			finderCache.putResult(
+				_finderPathFetchByUUID_G,
+				new Object[] {
+					segmentsExperiment.getUuid(),
+					segmentsExperiment.getGroupId()
+				},
+				segmentsExperiment);
+
+			finderCache.putResult(
+				_finderPathFetchByG_S,
+				new Object[] {
+					segmentsExperiment.getGroupId(),
+					segmentsExperiment.getSegmentsExperimentKey()
+				},
+				segmentsExperiment);
+
+			finderCache.putResult(
+				_finderPathFetchByG_S_P,
+				new Object[] {
+					segmentsExperiment.getGroupId(),
+					segmentsExperiment.getSegmentsExperienceId(),
+					segmentsExperiment.getPlid()
+				},
+				segmentsExperiment);
 		}
-
-		entityCache.putResult(
-			SegmentsExperimentImpl.class, segmentsExperiment.getPrimaryKey(),
-			segmentsExperiment);
-
-		finderCache.putResult(
-			_finderPathFetchByUUID_G,
-			new Object[] {
-				segmentsExperiment.getUuid(), segmentsExperiment.getGroupId()
-			},
-			segmentsExperiment);
-
-		finderCache.putResult(
-			_finderPathFetchByG_S,
-			new Object[] {
-				segmentsExperiment.getGroupId(),
-				segmentsExperiment.getSegmentsExperimentKey()
-			},
-			segmentsExperiment);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -5993,15 +3426,16 @@ public class SegmentsExperimentPersistenceImpl
 		}
 
 		for (SegmentsExperiment segmentsExperiment : segmentsExperiments) {
-			if (segmentsExperiment.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						segmentsExperiment.getCtCollectionId())) {
 
-			if (entityCache.getResult(
-					SegmentsExperimentImpl.class,
-					segmentsExperiment.getPrimaryKey()) == null) {
+				if (entityCache.getResult(
+						SegmentsExperimentImpl.class,
+						segmentsExperiment.getPrimaryKey()) == null) {
 
-				cacheResult(segmentsExperiment);
+					cacheResult(segmentsExperiment);
+				}
 			}
 		}
 	}
@@ -6053,23 +3487,35 @@ public class SegmentsExperimentPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		SegmentsExperimentModelImpl segmentsExperimentModelImpl) {
 
-		Object[] args = new Object[] {
-			segmentsExperimentModelImpl.getUuid(),
-			segmentsExperimentModelImpl.getGroupId()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					segmentsExperimentModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(_finderPathCountByUUID_G, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByUUID_G, args, segmentsExperimentModelImpl);
+			Object[] args = new Object[] {
+				segmentsExperimentModelImpl.getUuid(),
+				segmentsExperimentModelImpl.getGroupId()
+			};
 
-		args = new Object[] {
-			segmentsExperimentModelImpl.getGroupId(),
-			segmentsExperimentModelImpl.getSegmentsExperimentKey()
-		};
+			finderCache.putResult(
+				_finderPathFetchByUUID_G, args, segmentsExperimentModelImpl);
 
-		finderCache.putResult(_finderPathCountByG_S, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByG_S, args, segmentsExperimentModelImpl);
+			args = new Object[] {
+				segmentsExperimentModelImpl.getGroupId(),
+				segmentsExperimentModelImpl.getSegmentsExperimentKey()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByG_S, args, segmentsExperimentModelImpl);
+
+			args = new Object[] {
+				segmentsExperimentModelImpl.getGroupId(),
+				segmentsExperimentModelImpl.getSegmentsExperienceId(),
+				segmentsExperimentModelImpl.getPlid()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByG_S_P, args, segmentsExperimentModelImpl);
+		}
 	}
 
 	/**
@@ -6268,16 +3714,6 @@ public class SegmentsExperimentPersistenceImpl
 			closeSession(session);
 		}
 
-		if (segmentsExperiment.getCtCollectionId() != 0) {
-			if (isNew) {
-				segmentsExperiment.setNew(false);
-			}
-
-			segmentsExperiment.resetOriginalValues();
-
-			return segmentsExperiment;
-		}
-
 		entityCache.putResult(
 			SegmentsExperimentImpl.class, segmentsExperimentModelImpl, false,
 			true);
@@ -6340,11 +3776,24 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public SegmentsExperiment fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(SegmentsExperiment.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (ctPersistenceHelper.isProductionMode(
+				SegmentsExperiment.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		SegmentsExperiment segmentsExperiment = null;
+		SegmentsExperiment segmentsExperiment =
+			(SegmentsExperiment)entityCache.getResult(
+				SegmentsExperimentImpl.class, primaryKey);
+
+		if (segmentsExperiment != null) {
+			return segmentsExperiment;
+		}
 
 		Session session = null;
 
@@ -6384,7 +3833,12 @@ public class SegmentsExperimentPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (ctPersistenceHelper.isProductionMode(SegmentsExperiment.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -6406,6 +3860,34 @@ public class SegmentsExperimentPersistenceImpl
 				map.put(primaryKey, segmentsExperiment);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						SegmentsExperiment.class, primaryKey)) {
+
+				SegmentsExperiment segmentsExperiment =
+					(SegmentsExperiment)entityCache.getResult(
+						SegmentsExperimentImpl.class, primaryKey);
+
+				if (segmentsExperiment == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, segmentsExperiment);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -6539,78 +4021,80 @@ public class SegmentsExperimentPersistenceImpl
 		OrderByComparator<SegmentsExperiment> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<SegmentsExperiment> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<SegmentsExperiment>)finderCache.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_SEGMENTSEXPERIMENT;
-
-				sql = sql.concat(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<SegmentsExperiment>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<SegmentsExperiment> list = null;
+
+			if (useFinderCache) {
+				list = (List<SegmentsExperiment>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_SEGMENTSEXPERIMENT);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_SEGMENTSEXPERIMENT;
+
+					sql = sql.concat(SegmentsExperimentModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<SegmentsExperiment>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -6631,41 +4115,37 @@ public class SegmentsExperimentPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			SegmentsExperiment.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					SegmentsExperiment.class)) {
 
-		Long count = null;
+			Long count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(
+						_SQL_COUNT_SEGMENTSEXPERIMENT);
 
-				Query query = session.createQuery(
-					_SQL_COUNT_SEGMENTSEXPERIMENT);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -6727,6 +4207,7 @@ public class SegmentsExperimentPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -6738,20 +4219,20 @@ public class SegmentsExperimentPersistenceImpl
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
 		ctIgnoreColumnNames.add("modifiedDate");
-		ctStrictColumnNames.add("segmentsEntryId");
-		ctStrictColumnNames.add("segmentsExperienceId");
-		ctStrictColumnNames.add("segmentsExperimentKey");
-		ctStrictColumnNames.add("classNameId");
-		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("name");
-		ctStrictColumnNames.add("description");
-		ctStrictColumnNames.add("typeSettings");
-		ctStrictColumnNames.add("status");
+		ctMergeColumnNames.add("segmentsEntryId");
+		ctMergeColumnNames.add("segmentsExperienceId");
+		ctMergeColumnNames.add("segmentsExperimentKey");
+		ctMergeColumnNames.add("plid");
+		ctMergeColumnNames.add("name");
+		ctMergeColumnNames.add("description");
+		ctMergeColumnNames.add("typeSettings");
+		ctMergeColumnNames.add("status");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("segmentsExperimentId"));
@@ -6762,6 +4243,9 @@ public class SegmentsExperimentPersistenceImpl
 
 		_uniqueIndexColumnNames.add(
 			new String[] {"groupId", "segmentsExperimentKey"});
+
+		_uniqueIndexColumnNames.add(
+			new String[] {"groupId", "segmentsExperienceId", "plid"});
 	}
 
 	/**
@@ -6806,11 +4290,6 @@ public class SegmentsExperimentPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -6876,130 +4355,21 @@ public class SegmentsExperimentPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"groupId", "segmentsExperimentKey"}, true);
 
-		_finderPathCountByG_S = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_S",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "segmentsExperimentKey"}, false);
-
-		_finderPathWithPaginationFindByG_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName(),
-				Integer.class.getName(), OrderByComparator.class.getName()
-			},
-			new String[] {"groupId", "classNameId", "classPK"}, true);
-
-		_finderPathWithoutPaginationFindByG_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByG_C_C",
+		_finderPathFetchByG_S_P = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByG_S_P",
 			new String[] {
 				Long.class.getName(), Long.class.getName(), Long.class.getName()
 			},
-			new String[] {"groupId", "classNameId", "classPK"}, true);
+			new String[] {"groupId", "segmentsExperienceId", "plid"}, true);
 
-		_finderPathCountByG_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName()
-			},
-			new String[] {"groupId", "classNameId", "classPK"}, false);
-
-		_finderPathWithPaginationFindByS_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByS_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName(),
-				Integer.class.getName(), OrderByComparator.class.getName()
-			},
-			new String[] {"segmentsExperienceId", "classNameId", "classPK"},
-			true);
-
-		_finderPathWithoutPaginationFindByS_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByS_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName()
-			},
-			new String[] {"segmentsExperienceId", "classNameId", "classPK"},
-			true);
-
-		_finderPathCountByS_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByS_C_C",
-			new String[] {
-				Long.class.getName(), Long.class.getName(), Long.class.getName()
-			},
-			new String[] {"segmentsExperienceId", "classNameId", "classPK"},
-			false);
-
-		_finderPathWithPaginationFindByS_C_C_S = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByS_C_C_S",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName(),
-				Integer.class.getName(), Integer.class.getName(),
-				OrderByComparator.class.getName()
-			},
-			new String[] {
-				"segmentsExperienceId", "classNameId", "classPK", "status"
-			},
-			true);
-
-		_finderPathWithoutPaginationFindByS_C_C_S = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByS_C_C_S",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName()
-			},
-			new String[] {
-				"segmentsExperienceId", "classNameId", "classPK", "status"
-			},
-			true);
-
-		_finderPathCountByS_C_C_S = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByS_C_C_S",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName()
-			},
-			new String[] {
-				"segmentsExperienceId", "classNameId", "classPK", "status"
-			},
-			false);
-
-		_finderPathWithPaginationCountByS_C_C_S = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "countByS_C_C_S",
-			new String[] {
-				Long.class.getName(), Long.class.getName(),
-				Long.class.getName(), Integer.class.getName()
-			},
-			new String[] {
-				"segmentsExperienceId", "classNameId", "classPK", "status"
-			},
-			false);
-
-		_setSegmentsExperimentUtilPersistence(this);
+		SegmentsExperimentUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setSegmentsExperimentUtilPersistence(null);
+		SegmentsExperimentUtil.setPersistence(null);
 
 		entityCache.removeCache(SegmentsExperimentImpl.class.getName());
-	}
-
-	private void _setSegmentsExperimentUtilPersistence(
-		SegmentsExperimentPersistence segmentsExperimentPersistence) {
-
-		try {
-			Field field = SegmentsExperimentUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, segmentsExperimentPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -7090,9 +4460,5 @@ public class SegmentsExperimentPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private SegmentsExperimentModelArgumentsResolver
-		_segmentsExperimentModelArgumentsResolver;
 
 }

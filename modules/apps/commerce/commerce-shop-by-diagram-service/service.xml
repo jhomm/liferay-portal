@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <!DOCTYPE service-builder PUBLIC "-//Liferay//DTD Service Builder 7.4.0//EN" "http://www.liferay.com/dtd/liferay-service-builder_7_4_0.dtd">
 
-<service-builder auto-namespace-tables="false" mvcc-enabled="false" package-path="com.liferay.commerce.shop.by.diagram">
+<service-builder auto-import-default-references="false" auto-namespace-tables="false" change-tracking-enabled="true" mvcc-enabled="true" package-path="com.liferay.commerce.shop.by.diagram">
 	<author>Alessio Antonio Rendina</author>
 	<namespace>Commerce</namespace>
 	<entity local-service="true" name="CSDiagramEntry" remote-service="true">
@@ -38,6 +38,12 @@
 
 		<finder name="CPDefinitionId" return-type="Collection">
 			<finder-column name="CPDefinitionId" />
+		</finder>
+		<finder name="CPInstanceId" return-type="Collection">
+			<finder-column name="CPInstanceId" />
+		</finder>
+		<finder name="CProductId" return-type="Collection">
+			<finder-column name="CProductId" />
 		</finder>
 		<finder name="CPDI_S" return-type="CSDiagramEntry" unique="true">
 			<finder-column name="CPDefinitionId" />

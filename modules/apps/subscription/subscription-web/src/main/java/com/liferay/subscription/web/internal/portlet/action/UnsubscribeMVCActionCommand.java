@@ -1,31 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.subscription.web.internal.portlet.action;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.NoSuchTicketException;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Ticket;
+import com.liferay.portal.kernel.model.TicketConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.TicketLocalService;
@@ -36,17 +28,16 @@ import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.subscription.exception.NoSuchSubscriptionException;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.service.SubscriptionLocalService;
-import com.liferay.subscription.web.internal.constants.SubscriptionConstants;
 import com.liferay.subscription.web.internal.constants.SubscriptionPortletKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,9 +46,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SubscriptionPortletKeys.UNSUBSCRIBE,
+		"jakarta.portlet.name=" + SubscriptionPortletKeys.UNSUBSCRIBE,
 		"mvc.command.name=/subscription/unsubscribe"
 	},
 	service = MVCActionCommand.class
@@ -98,8 +88,7 @@ public class UnsubscribeMVCActionCommand extends BaseMVCActionCommand {
 			actionResponse.sendRedirect(portletURL.toString());
 		}
 		catch (NoSuchSubscriptionException noSuchSubscriptionException) {
-			_log.error(
-				noSuchSubscriptionException, noSuchSubscriptionException);
+			_log.error(noSuchSubscriptionException);
 
 			actionResponse.sendRedirect(portletURL.toString());
 		}
@@ -133,7 +122,7 @@ public class UnsubscribeMVCActionCommand extends BaseMVCActionCommand {
 	private Ticket _getTicket(String key) throws PortalException {
 		Ticket ticket = _ticketLocalService.getTicket(key);
 
-		if (ticket.getType() != SubscriptionConstants.TICKET_TYPE) {
+		if (ticket.getType() != TicketConstants.TYPE_SUBSCRIPTION) {
 			throw new NoSuchTicketException("Invalid type " + ticket.getType());
 		}
 
@@ -154,7 +143,7 @@ public class UnsubscribeMVCActionCommand extends BaseMVCActionCommand {
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.format(
+		return _language.format(
 			resourceBundle, "blog-at-x", group.getDescriptiveName(locale));
 	}
 
@@ -186,6 +175,9 @@ public class UnsubscribeMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

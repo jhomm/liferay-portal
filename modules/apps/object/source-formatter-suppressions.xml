@@ -2,7 +2,7 @@
 
 <suppressions>
 	<checkstyle>
-		<suppress checks="GenericTypeCheck" files="object-api/src/main/java/com/liferay/object/system/model/listener/SystemObjectDefinitionMetadataModelListener\.java" />
+		<suppress checks="PersistenceCallCheck" files="object-service/src/main/java/com/liferay/object/service/impl/ObjectDefinitionLocalServiceImpl\.java" />
 	</checkstyle>
 	<source-check>
 		<suppress checks="JavaAPISignatureCheck" files="object-api/src/main/java/com/liferay/object/scope/ObjectScopeProvider\.java" />

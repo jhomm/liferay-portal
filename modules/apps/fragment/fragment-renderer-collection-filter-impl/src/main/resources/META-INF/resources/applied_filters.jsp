@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,8 +13,14 @@ CollectionAppliedFiltersFragmentRendererDisplayContext collectionAppliedFiltersF
 List<Map<String, String>> appliedFilters = collectionAppliedFiltersFragmentRendererDisplayContext.getAppliedFilters();
 %>
 
+<aui:style type="text/css">
+	.applied-filters-show-more-button {
+		line-height: 1.3125;
+	}
+</aui:style>
+
 <div class="align-items-sm-start align-items-stretch d-flex flex-column flex-sm-row py-1" id="<%= collectionAppliedFiltersFragmentRendererDisplayContext.getFragmentEntryLinkNamespace() %>">
-	<div class="flex-grow-1 overflow-hidden" id="<%= collectionAppliedFiltersFragmentRendererDisplayContext.getFragmentEntryLinkNamespace() %>_filterList" style="max-height: 4em;">
+	<div class="flex-grow-1 overflow-hidden" id="<%= collectionAppliedFiltersFragmentRendererDisplayContext.getFragmentEntryLinkNamespace() %>_filterList">
 		<c:choose>
 			<c:when test="<%= appliedFilters.isEmpty() && collectionAppliedFiltersFragmentRendererDisplayContext.isEditMode() %>">
 				<span class="text-secondary">
@@ -60,7 +57,13 @@ List<Map<String, String>> appliedFilters = collectionAppliedFiltersFragmentRende
 	</div>
 
 	<div class="d-flex flex-grow-1 flex-shrink-0 flex-sm-column-reverse flex-sm-grow-0 justify-content-between justify-content-sm-start ml-sm-2 mt-2 mt-sm-0">
-		<button class="btn btn-link btn-sm d-none flex-shrink-0 mt-0 mt-sm-2 p-0 text-right text-secondary" data-show-less-label="<liferay-ui:message key="show-less" />" data-show-more-label="<liferay-ui:message key="show-more" />" id="<%= collectionAppliedFiltersFragmentRendererDisplayContext.getFragmentEntryLinkNamespace() %>_toggleExpand" style="line-height: 1.3125;" type="button">
+		<clay:button
+			cssClass="applied-filters-show-more-button border-0 btn btn-link btn-sm d-none flex-shrink-0 mt-0 mt-sm-2 p-0 text-right text-secondary"
+			data-show-less-label='<%= LanguageUtil.get(request, "show-less") %>'
+			data-show-more-label='<%= LanguageUtil.get(request, "show-more") %>'
+			displayType="secondary"
+			id='<%= collectionAppliedFiltersFragmentRendererDisplayContext.getFragmentEntryLinkNamespace() + "_toggleExpand" %>'
+		>
 			<span class="inline-item-expand">
 				<liferay-ui:message key="show-more" />
 			</span>
@@ -74,7 +77,7 @@ List<Map<String, String>> appliedFilters = collectionAppliedFiltersFragmentRende
 					symbol="angle-up-small"
 				/>
 			</span>
-		</button>
+		</clay:button>
 
 		<c:if test="<%= (!appliedFilters.isEmpty() || collectionAppliedFiltersFragmentRendererDisplayContext.isEditMode()) && collectionAppliedFiltersFragmentRendererDisplayContext.showClearFiltersButton() %>">
 			<button class="btn btn-link btn-sm flex-shrink-0 ml-2 mt-0 mt-sm-1 p-0 text-right text-secondary" id="<%= collectionAppliedFiltersFragmentRendererDisplayContext.getFragmentEntryLinkNamespace() %>_removeAllFilters" type="button">
@@ -86,5 +89,5 @@ List<Map<String, String>> appliedFilters = collectionAppliedFiltersFragmentRende
 
 <liferay-frontend:component
 	context="<%= collectionAppliedFiltersFragmentRendererDisplayContext.getCollectionAppliedFiltersProps() %>"
-	module="js/CollectionAppliedFilters"
+	module="{CollectionAppliedFilters} from fragment-renderer-collection-filter-impl"
 />

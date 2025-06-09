@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -1874,14 +1865,6 @@ public class ArrayUtil {
 		return newArray;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public static String[] toArray(String[] array) {
-		return array.clone();
-	}
-
 	public static <T, A> A[] toArray(T[] list, Accessor<T, A> accessor) {
 		A[] aArray = (A[])Array.newInstance(
 			accessor.getAttributeClass(), list.length);
@@ -1891,6 +1874,33 @@ public class ArrayUtil {
 		}
 
 		return aArray;
+	}
+
+	public static boolean[] toBooleanArray(Collection<Boolean> collection) {
+		boolean[] newArray = new boolean[collection.size()];
+
+		if (collection instanceof List) {
+			List<Boolean> list = (List<Boolean>)collection;
+
+			for (int i = 0; i < list.size(); i++) {
+				Boolean value = list.get(i);
+
+				newArray[i] = value.booleanValue();
+			}
+		}
+		else {
+			int i = 0;
+
+			Iterator<Boolean> iterator = collection.iterator();
+
+			while (iterator.hasNext()) {
+				Boolean value = iterator.next();
+
+				newArray[i++] = value.booleanValue();
+			}
+		}
+
+		return newArray;
 	}
 
 	public static double[] toDoubleArray(
@@ -2035,14 +2045,16 @@ public class ArrayUtil {
 		return newArray;
 	}
 
-	public static short[] toShortArray(Collection<Short> collection) {
+	public static short[] toShortArray(
+		Collection<? extends Number> collection) {
+
 		short[] newArray = new short[collection.size()];
 
 		if (collection instanceof List) {
-			List<Short> list = (List<Short>)collection;
+			List<Number> list = (List<Number>)collection;
 
 			for (int i = 0; i < list.size(); i++) {
-				Short value = list.get(i);
+				Number value = list.get(i);
 
 				newArray[i] = value.shortValue();
 			}
@@ -2050,10 +2062,10 @@ public class ArrayUtil {
 		else {
 			int i = 0;
 
-			Iterator<Short> iterator = collection.iterator();
+			Iterator<? extends Number> iterator = collection.iterator();
 
 			while (iterator.hasNext()) {
-				Short value = iterator.next();
+				Number value = iterator.next();
 
 				newArray[i++] = value.shortValue();
 			}

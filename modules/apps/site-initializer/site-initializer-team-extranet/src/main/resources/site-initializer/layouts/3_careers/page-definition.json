@@ -1,0 +1,530 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"fragmentStyle": {
+						"backgroundColor": "brandColor1",
+						"paddingBottom": "7",
+						"paddingTop": "7"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "5",
+								"paddingTop": "3"
+							},
+							"id": "tablet"
+						}
+					],
+					"layout": {
+						"paddingBottom": 8,
+						"paddingTop": 8
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"fragmentStyle": {
+								"textColor": "whiteColor"
+							},
+							"layout": {
+								"widthType": "Fixed"
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "text-block"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Careers"
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"fontSize": "fontSizeLg",
+										"marginBottom": "2",
+										"textColor": "brandColor3"
+									}
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "heading"
+									},
+									"fragmentConfig": {
+										"displayLevel": "4",
+										"headingLevel": "h1"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Take a look at all our open job positions."
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"marginBottom": "3",
+										"maxWidth": "100%",
+										"width": "540px"
+									},
+									"fragmentViewports": [
+										{
+											"fragmentViewportStyle": {
+												"marginBottom": "2"
+											},
+											"id": "tablet"
+										}
+									]
+								},
+								"type": "Fragment"
+							},
+							{
+								"definition": {
+									"fragment": {
+										"key": "text-block"
+									},
+									"fragmentFields": [
+										{
+											"id": "element-text",
+											"value": {
+												"text": {
+													"value_i18n": {
+														"en_US": "Lorem ipsum dolor sit amet, consectetur adipiscing elit ut at magna eros."
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"fontSize": "fontSizeLg",
+										"maxWidth": "100%",
+										"width": "420px"
+									}
+								},
+								"type": "Fragment"
+							}
+						],
+						"type": "Section"
+					}
+				],
+				"type": "Section"
+			},
+			{
+				"definition": {
+					"fragment": {
+						"key": "class-container"
+					},
+					"fragmentConfig": {
+						"classContainerName": "filter-bar"
+					},
+					"fragmentFields": [
+					],
+					"fragmentStyle": {
+						"backgroundColor": "gray200Color",
+						"paddingBottom": "6",
+						"paddingTop": "6"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "1",
+								"paddingTop": "3"
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "4",
+								"paddingTop": "4"
+							},
+							"id": "tablet"
+						}
+					]
+				},
+				"pageElements": [
+					{
+						"pageElements": [
+							{
+								"definition": {
+									"layout": {
+										"widthType": "Fixed"
+									}
+								},
+								"pageElements": [
+									{
+										"definition": {
+											"fragmentStyle": {
+												"marginBottom": "1",
+												"overflow": "visible"
+											},
+											"gutters": true,
+											"modulesPerRow": 4,
+											"numberOfColumns": 4,
+											"rowViewports": [
+												{
+													"id": "tablet",
+													"rowViewportDefinition": {
+														"modulesPerRow": 1
+													}
+												}
+											],
+											"verticalAlignment": "middle"
+										},
+										"pageElements": [
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															}
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															}
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															},
+															"fragmentStyle": {
+																"marginTop": "4"
+															}
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											}
+										],
+										"type": "Row"
+									}
+								],
+								"type": "Section"
+							}
+						],
+						"type": "FragmentDropZone"
+					}
+				],
+				"type": "Fragment"
+			},
+			{
+				"definition": {
+					"fragmentStyle": {
+						"backgroundColor": "gray200Color",
+						"paddingBottom": "8"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"paddingBottom": "4",
+								"paddingTop": "3"
+							},
+							"id": "tablet"
+						}
+					],
+					"layout": {
+						"paddingBottom": 10
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"layout": {
+								"widthType": "Fixed"
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"collectionConfig": {
+										"collectionReference": {
+											"className": "com.liferay.asset.list.model.AssetListEntry",
+											"classPK": "[$ASSET_LIST_ENTRY_ID:JOB-POSITIONS$]"
+										},
+										"collectionType": "Collection"
+									},
+									"numberOfColumns": 3,
+									"numberOfItems": 9,
+									"numberOfItemsPerPage": 9
+								},
+								"pageElements": [
+									{
+										"definition": {
+											"collectionItemConfig": {
+											}
+										},
+										"pageElements": [
+											{
+												"definition": {
+													"fragment": {
+														"key": "job-card"
+													},
+													"fragmentFields": [
+														{
+															"id": "date",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"mapping": {
+																				"fieldKey": "displayPageURL",
+																				"itemReference": {
+																					"contextSource": "CollectionItem"
+																				}
+																			}
+																		}
+																	},
+																	"value_i18n": {
+																	}
+																},
+																"text": {
+																	"mapping": {
+																		"fieldKey": "publishDate",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "socialTwitterLink",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"value": "https://twitter.com/"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "socialLinkedinLink",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"value": "https://www.linkedin.com/"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "shortDescription",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"mapping": {
+																				"fieldKey": "displayPageURL",
+																				"itemReference": {
+																					"contextSource": "CollectionItem"
+																				}
+																			}
+																		}
+																	}
+																},
+																"text": {
+																	"mapping": {
+																		"fieldKey": "ShortDescription",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "title",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"mapping": {
+																				"fieldKey": "displayPageURL",
+																				"itemReference": {
+																					"contextSource": "CollectionItem"
+																				}
+																			}
+																		}
+																	}
+																},
+																"text": {
+																	"mapping": {
+																		"fieldKey": "Title",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "region",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"mapping": {
+																				"fieldKey": "displayPageURL",
+																				"itemReference": {
+																					"contextSource": "CollectionItem"
+																				}
+																			}
+																		}
+																	}
+																},
+																"text": {
+																	"mapping": {
+																		"fieldKey": "regions",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "socialFacebookLink",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"value": "https://www.facebook.com/"
+																		}
+																	}
+																}
+															}
+														},
+														{
+															"id": "socialInstagramLink",
+															"value": {
+																"fragmentLink": {
+																	"value": {
+																		"href": {
+																			"value": "https://www.instagram.com/"
+																		}
+																	}
+																}
+															}
+														}
+													],
+													"fragmentStyle": {
+														"marginBottom": "4"
+													},
+													"fragmentViewports": [
+														{
+															"fragmentViewportStyle": {
+																"marginBottom": "3"
+															},
+															"id": "tablet"
+														}
+													]
+												},
+												"type": "Fragment"
+											}
+										],
+										"type": "CollectionItem"
+									}
+								],
+								"type": "Collection"
+							}
+						],
+						"type": "Section"
+					}
+				],
+				"type": "Section"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"masterPage": {
+			"key": "master"
+		}
+	}
+}

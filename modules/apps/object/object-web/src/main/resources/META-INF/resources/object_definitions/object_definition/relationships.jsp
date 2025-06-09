@@ -1,54 +1,71 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String backURL = ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL()));
-
 ObjectDefinition objectDefinition = (ObjectDefinition)request.getAttribute(ObjectWebKeys.OBJECT_DEFINITION);
 
 ObjectDefinitionsRelationshipsDisplayContext objectDefinitionsRelationshipsDisplayContext = (ObjectDefinitionsRelationshipsDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 portletDisplay.setShowBackIcon(true);
-portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBack(
+	ParamUtil.getString(
+		request, "backURL",
+		URLBuilder.create(
+			String.valueOf(renderResponse.createRenderURL())
+		).setParameter(
+			"objectFolderName", objectDefinitionsRelationshipsDisplayContext.getObjectFolderName()
+		).build()));
 
 renderResponse.setTitle(objectDefinition.getLabel(locale, true));
 %>
 
-<clay:headless-data-set-display
-	apiURL="<%= objectDefinitionsRelationshipsDisplayContext.getAPIURL() %>"
-	clayDataSetActionDropdownItems="<%= objectDefinitionsRelationshipsDisplayContext.getClayDataSetActionDropdownItems() %>"
-	creationMenu="<%= objectDefinitionsRelationshipsDisplayContext.getCreationMenu() %>"
-	formName="fm"
-	id="<%= ObjectDefinitionsClayDataSetDisplayNames.OBJECT_RELATIONSHIPS %>"
-	itemsPerPage="<%= 20 %>"
-	namespace="<%= liferayPortletResponse.getNamespace() %>"
-	pageNumber="<%= 1 %>"
-	portletURL="<%= liferayPortletResponse.createRenderURL() %>"
-	style="fluid"
-/>
+<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" var="baseResourceURL" />
 
-<div id="<portlet:namespace />AddObjectRelationship">
+<div>
 	<react:component
-		module="js/components/ModalAddObjectRelationship"
+		module="{Relationships} from object-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"apiURL", objectDefinitionsRelationshipsDisplayContext.getAPIURL()
+			).put(
+				"backURL", portletDisplay.getURLBack()
+			).put(
+				"baseResourceURL", String.valueOf(baseResourceURL)
+			).put(
+				"creationMenu", objectDefinitionsRelationshipsDisplayContext.getCreationMenu()
+			).put(
+				"formName", "fm"
+			).put(
+				"id", ObjectDefinitionsFDSNames.OBJECT_RELATIONSHIPS
+			).put(
+				"isApproved", objectDefinition.isApproved()
+			).put(
+				"items", objectDefinitionsRelationshipsDisplayContext.getFDSActionDropdownItems()
+			).put(
+				"learnResources", LearnMessageUtil.getReactDataJSONObject("object-web")
+			).put(
+				"objectDefinitionExternalReferenceCode", objectDefinition.getExternalReferenceCode()
+			).put(
+				"objectDefinitionId", objectDefinition.getObjectDefinitionId()
+			).put(
+				"parameterRequired", objectDefinitionsRelationshipsDisplayContext.isParameterRequired(objectDefinition)
+			).put(
+				"style", "fluid"
+			).put(
+				"url", objectDefinitionsRelationshipsDisplayContext.getEditObjectRelationshipURL()
 			).build()
 		%>'
+	/>
+</div>
+
+<div>
+	<react:component
+		module="{ModalDisableInheritance} from object-web"
 	/>
 </div>

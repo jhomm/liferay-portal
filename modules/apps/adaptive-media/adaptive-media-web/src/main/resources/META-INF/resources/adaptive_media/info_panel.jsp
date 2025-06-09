@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -35,13 +26,13 @@ if (ListUtil.isNotEmpty(selectedAMImageConfigurationEntries)) {
 		<c:when test="<%= selectedConfigurationEntriesSize == 1 %>">
 			<div class="autofit-row sidebar-section">
 				<div class="autofit-col autofit-col-expand">
-					<h4 class="component-title">
+					<div class="component-title">
 						<%= HtmlUtil.escape(amImageConfigurationEntry.getName()) %>
-					</h4>
+					</div>
 
-					<h5 class="component-subtitle">
+					<div class="component-subtitle">
 						<liferay-ui:message key="image-resolution" />
-					</h5>
+					</div>
 				</div>
 
 				<div class="autofit-col">
@@ -57,14 +48,14 @@ if (ListUtil.isNotEmpty(selectedAMImageConfigurationEntries)) {
 		<c:when test="<%= selectedConfigurationEntriesSize > 1 %>">
 			<div class="autofit-row sidebar-section">
 				<div class="autofit-col autofit-col-expand">
-					<h4 class="component-title"><liferay-ui:message arguments="<%= selectedConfigurationEntriesSize %>" key="x-items-are-selected" /></h4>
+					<div class="component-title"><liferay-ui:message arguments="<%= selectedConfigurationEntriesSize %>" key="x-items-are-selected" /></div>
 				</div>
 			</div>
 		</c:when>
 		<c:otherwise>
 			<div class="autofit-row sidebar-section">
 				<div class="autofit-col autofit-col-expand">
-					<h4 class="component-title"><liferay-ui:message key="adaptive-media" /></h4>
+					<div class="component-title"><liferay-ui:message key="adaptive-media" /></div>
 				</div>
 			</div>
 		</c:otherwise>
@@ -101,11 +92,10 @@ if (ListUtil.isNotEmpty(selectedAMImageConfigurationEntries)) {
 
 							<%
 							int adaptedImages = AMImageEntryLocalServiceUtil.getAMImageEntriesCount(themeDisplay.getCompanyId(), amImageConfigurationEntry.getUUID());
-
-							int totalImages = AMImageEntryLocalServiceUtil.getExpectedAMImageEntriesCount(themeDisplay.getCompanyId());
+							int totalImages = GetterUtil.getInteger(request.getAttribute(AMWebKeys.TOTAL_IMAGES));
 							%>
 
-							<%= Math.min(adaptedImages, totalImages) + "/" + totalImages %>
+							<%= Math.min(adaptedImages, totalImages) %>/<%= totalImages %>
 						</dd>
 
 						<%

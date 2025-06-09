@@ -1,32 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.numeric.input.mask;
 
-import com.liferay.dynamic.data.mapping.form.field.type.BaseDDMFormFieldTypeSettingsTestCase;
-import com.liferay.dynamic.data.mapping.form.field.type.internal.configuration.FFDecimalPlacesSettings;
+import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
+import com.liferay.dynamic.data.mapping.test.util.BaseDDMFormFieldTemplateContextContributorTestCase;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.List;
 import java.util.Map;
@@ -34,40 +26,63 @@ import java.util.ResourceBundle;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Carolina Barbosa
  */
-@RunWith(PowerMockRunner.class)
 public class NumericInputMaskDDMFormFieldTemplateContextContributorTest
-	extends BaseDDMFormFieldTypeSettingsTestCase {
+	extends BaseDDMFormFieldTemplateContextContributorTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	@Override
 	public void setUp() throws Exception {
 		super.setUp();
 
-		_setUpFFDecimalPlacesSettings();
 		_setUpJSONFactory();
 		_setUpJSONFactoryUtil();
-		_setUpLanguageUtil();
+
+		_setUpLanguage();
+
 		_setUpPortal();
 	}
 
 	@Test
 	public void testGetParameters() {
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
+			createDDMFormFieldRenderingContext();
+
+		ddmFormFieldRenderingContext.setValue(
+			JSONUtil.put(
+				"append", "$"
+			).put(
+				"appendType", "prefix"
+			).put(
+				"decimalPlaces", 2
+			).put(
+				"symbols",
+				JSONUtil.put(
+					"decimalSymbol", ","
+				).put(
+					"thousandsSeparator", "\'"
+				)
+			).toString());
+
 		Map<String, Object> parameters =
 			_numericInputMaskDDMFormFieldTemplateContextContributor.
 				getParameters(
-					new DDMFormField("field", "numeric"),
-					_createDDMFormFieldRenderingContext());
+					new DDMFormField(
+						"field", DDMFormFieldTypeConstants.NUMERIC),
+					ddmFormFieldRenderingContext);
 
 		Assert.assertEquals("$", parameters.get("append"));
 		Assert.assertEquals("prefix", parameters.get("appendType"));
@@ -155,51 +170,10 @@ public class NumericInputMaskDDMFormFieldTemplateContextContributorTest
 			thousandsSeparators.get(4));
 	}
 
-	private DDMFormFieldRenderingContext _createDDMFormFieldRenderingContext() {
-		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
-			new DDMFormFieldRenderingContext();
-
-		ddmFormFieldRenderingContext.setLocale(LocaleUtil.US);
-		ddmFormFieldRenderingContext.setValue(
-			JSONUtil.put(
-				"append", "$"
-			).put(
-				"appendType", "prefix"
-			).put(
-				"decimalPlaces", 2
-			).put(
-				"symbols",
-				JSONUtil.put(
-					"decimalSymbol", ","
-				).put(
-					"thousandsSeparator", "\'"
-				)
-			).toString());
-
-		return ddmFormFieldRenderingContext;
-	}
-
-	private void _setUpFFDecimalPlacesSettings() throws Exception {
-		FFDecimalPlacesSettings ffDecimalPlacesSettings = PowerMockito.mock(
-			FFDecimalPlacesSettings.class);
-
-		PowerMockito.field(
-			NumericInputMaskDDMFormFieldTemplateContextContributor.class,
-			"_ffDecimalPlacesSettings"
-		).set(
+	private void _setUpJSONFactory() {
+		ReflectionTestUtil.setFieldValue(
 			_numericInputMaskDDMFormFieldTemplateContextContributor,
-			ffDecimalPlacesSettings
-		);
-	}
-
-	private void _setUpJSONFactory() throws Exception {
-		PowerMockito.field(
-			NumericInputMaskDDMFormFieldTemplateContextContributor.class,
-			"_jsonFactory"
-		).set(
-			_numericInputMaskDDMFormFieldTemplateContextContributor,
-			new JSONFactoryImpl()
-		);
+			"_jsonFactory", new JSONFactoryImpl());
 	}
 
 	private void _setUpJSONFactoryUtil() {
@@ -208,42 +182,38 @@ public class NumericInputMaskDDMFormFieldTemplateContextContributorTest
 		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
 	}
 
-	private void _setUpLanguageUtil() {
-		LanguageUtil languageUtil = new LanguageUtil();
+	private void _setUpLanguage() {
+		language = Mockito.mock(Language.class);
 
-		Language language = mock(Language.class);
-
-		when(
-			language.get(
-				Matchers.any(ResourceBundle.class), Matchers.eq("none"))
+		Mockito.when(
+			language.get(Mockito.any(ResourceBundle.class), Mockito.eq("none"))
 		).thenReturn(
 			"None"
 		);
 
-		when(
+		Mockito.when(
 			language.getAvailableLocales()
 		).thenReturn(
 			SetUtil.fromArray(LocaleUtil.US)
 		);
 
-		when(
+		Mockito.when(
 			language.getLanguageId(LocaleUtil.US)
 		).thenReturn(
 			"en_US"
 		);
 
-		languageUtil.setLanguage(language);
+		ReflectionTestUtil.setFieldValue(
+			_numericInputMaskDDMFormFieldTemplateContextContributor,
+			"_language", language);
 	}
 
-	private void _setUpPortal() throws Exception {
-		Portal portal = mock(Portal.class);
+	private void _setUpPortal() {
+		Portal portal = Mockito.mock(Portal.class);
 
-		PowerMockito.field(
-			NumericInputMaskDDMFormFieldTemplateContextContributor.class,
-			"_portal"
-		).set(
-			_numericInputMaskDDMFormFieldTemplateContextContributor, portal
-		);
+		ReflectionTestUtil.setFieldValue(
+			_numericInputMaskDDMFormFieldTemplateContextContributor, "_portal",
+			portal);
 	}
 
 	private final NumericInputMaskDDMFormFieldTemplateContextContributor

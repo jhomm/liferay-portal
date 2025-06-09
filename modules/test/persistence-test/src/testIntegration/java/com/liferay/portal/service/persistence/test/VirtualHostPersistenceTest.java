@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -166,6 +157,13 @@ public class VirtualHostPersistenceTest {
 	}
 
 	@Test
+	public void testCountByCompanyId() throws Exception {
+		_persistence.countByCompanyId(RandomTestUtil.nextLong());
+
+		_persistence.countByCompanyId(0L);
+	}
+
+	@Test
 	public void testCountByHostname() throws Exception {
 		_persistence.countByHostname("");
 
@@ -183,12 +181,21 @@ public class VirtualHostPersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_L_D() throws Exception {
-		_persistence.countByC_L_D(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.randomBoolean());
+	public void testCountByNotL_H() throws Exception {
+		_persistence.countByNotL_H(RandomTestUtil.nextLong(), "");
 
-		_persistence.countByC_L_D(0L, 0L, RandomTestUtil.randomBoolean());
+		_persistence.countByNotL_H(0L, "null");
+
+		_persistence.countByNotL_H(0L, (String)null);
+	}
+
+	@Test
+	public void testCountByNotL_HArrayable() throws Exception {
+		_persistence.countByNotL_H(
+			RandomTestUtil.nextLong(),
+			new String[] {
+				RandomTestUtil.randomString(), "", "null", null, null
+			});
 	}
 
 	@Test
@@ -486,22 +493,6 @@ public class VirtualHostPersistenceTest {
 			ReflectionTestUtil.invoke(
 				virtualHost, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "hostname"));
-
-		Assert.assertEquals(
-			Long.valueOf(virtualHost.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				virtualHost, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Long.valueOf(virtualHost.getLayoutSetId()),
-			ReflectionTestUtil.<Long>invoke(
-				virtualHost, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "layoutSetId"));
-		Assert.assertEquals(
-			Boolean.valueOf(virtualHost.getDefaultVirtualHost()),
-			ReflectionTestUtil.<Boolean>invoke(
-				virtualHost, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "defaultVirtualHost"));
 	}
 
 	protected VirtualHost addVirtualHost() throws Exception {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.impl;
@@ -24,19 +15,19 @@ import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.model.SegmentsEntryRole;
 import com.liferay.segments.service.base.SegmentsEntryRoleLocalServiceBaseImpl;
+import com.liferay.segments.service.persistence.SegmentsEntryPersistence;
 
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -59,9 +50,9 @@ public class SegmentsEntryRoleLocalServiceImpl
 		// Segments entry role
 
 		_roleLocalService.getRole(roleId);
-		segmentsEntryPersistence.findByPrimaryKey(segmentsEntryId);
+		_segmentsEntryPersistence.findByPrimaryKey(segmentsEntryId);
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
 		long segmentsEntryRoleId = counterLocalService.increment();
 
@@ -205,27 +196,26 @@ public class SegmentsEntryRoleLocalServiceImpl
 	}
 
 	private Set<Long> _getSiteRoleIdsSet(long segmentsEntryId) {
+		Set<Long> roleIds = new HashSet<>();
+
 		List<SegmentsEntryRole> segmentsEntryRoles = getSegmentsEntryRoles(
 			segmentsEntryId);
 
-		Stream<SegmentsEntryRole> segmentsEntryRolesStream =
-			segmentsEntryRoles.stream();
+		for (SegmentsEntryRole segmentsEntryRole : segmentsEntryRoles) {
+			Role role = _roleLocalService.fetchRole(
+				segmentsEntryRole.getRoleId());
 
-		return segmentsEntryRolesStream.map(
-			segmentsEntryRole -> _roleLocalService.fetchRole(
-				segmentsEntryRole.getRoleId())
-		).filter(
-			role -> Objects.equals(role.getType(), RoleConstants.TYPE_SITE)
-		).map(
-			Role::getRoleId
-		).collect(
-			Collectors.toSet()
-		);
+			if (Objects.equals(role.getType(), RoleConstants.TYPE_SITE)) {
+				roleIds.add(role.getRoleId());
+			}
+		}
+
+		return roleIds;
 	}
 
 	private void _reindex(long segmentsEntryId) throws PortalException {
 		SegmentsEntry segmentsEntry =
-			segmentsEntryPersistence.fetchByPrimaryKey(segmentsEntryId);
+			_segmentsEntryPersistence.fetchByPrimaryKey(segmentsEntryId);
 
 		if (segmentsEntry == null) {
 			return;
@@ -249,5 +239,11 @@ public class SegmentsEntryRoleLocalServiceImpl
 
 	@Reference
 	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private SegmentsEntryPersistence _segmentsEntryPersistence;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

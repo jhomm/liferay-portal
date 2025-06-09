@@ -1,22 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.toolbar.contributor;
 
 import com.liferay.document.library.constants.DLPortletKeys;
-import com.liferay.document.library.web.internal.portlet.toolbar.contributor.helper.DLPortletToolbarContributorHelper;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.web.internal.portlet.toolbar.contributor.helper.MenuItemProvider;
+import com.liferay.document.library.web.internal.portlet.toolbar.contributor.util.DLPortletToolbarContributorUtil;
 import com.liferay.portal.kernel.portlet.toolbar.contributor.BasePortletToolbarContributor;
 import com.liferay.portal.kernel.portlet.toolbar.contributor.PortletToolbarContributor;
 import com.liferay.portal.kernel.repository.model.Folder;
@@ -24,11 +16,11 @@ import com.liferay.portal.kernel.servlet.taglib.ui.MenuItem;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.render.command.name=-",
 		"mvc.render.command.name=/image_gallery_display/view"
 	},
@@ -53,14 +45,14 @@ public class IGPortletToolbarContributor extends BasePortletToolbarContributor {
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		if (!_dlPortletToolbarContributorHelper.isShowActionsEnabled(
-				themeDisplay, portletRequest)) {
+		if (!DLPortletToolbarContributorUtil.isShowActionsEnabled(
+				themeDisplay)) {
 
 			return null;
 		}
 
-		Folder folder = _dlPortletToolbarContributorHelper.getFolder(
-			themeDisplay, portletRequest);
+		Folder folder = DLPortletToolbarContributorUtil.getFolder(
+			_dlAppLocalService, themeDisplay, portletRequest);
 
 		List<MenuItem> menuItems = new ArrayList<>();
 
@@ -94,9 +86,9 @@ public class IGPortletToolbarContributor extends BasePortletToolbarContributor {
 	}
 
 	@Reference
-	private DLPortletToolbarContributorHelper
-		_dlPortletToolbarContributorHelper;
+	private DLAppLocalService _dlAppLocalService;
 
-	private final MenuItemProvider _menuItemProvider = new MenuItemProvider();
+	@Reference
+	private MenuItemProvider _menuItemProvider;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.definition.util;
@@ -23,7 +14,10 @@ import com.liferay.portal.workflow.kaleo.definition.LogType;
 public class KaleoLogUtil {
 
 	public static String convert(int type) {
-		if (type == WorkflowLog.NODE_ENTRY) {
+		if (type == WorkflowLog.INSTANCE_FAIL) {
+			return LogType.INSTANCE_FAIL.name();
+		}
+		else if (type == WorkflowLog.NODE_ENTRY) {
 			return LogType.NODE_ENTRY.name();
 		}
 		else if (type == WorkflowLog.TASK_ASSIGN) {
@@ -45,7 +39,10 @@ public class KaleoLogUtil {
 	public static int convert(String type) {
 		LogType logType = LogType.valueOf(type);
 
-		if (logType.equals(LogType.NODE_ENTRY)) {
+		if (logType.equals(LogType.INSTANCE_FAIL)) {
+			return WorkflowLog.INSTANCE_FAIL;
+		}
+		else if (logType.equals(LogType.NODE_ENTRY)) {
 			return WorkflowLog.NODE_ENTRY;
 		}
 		else if (logType.equals(LogType.NODE_EXIT)) {

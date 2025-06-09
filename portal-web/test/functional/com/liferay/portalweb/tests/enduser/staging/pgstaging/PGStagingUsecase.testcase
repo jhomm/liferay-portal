@@ -1,6 +1,7 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Staging";
@@ -12,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -24,37 +25,31 @@ definition {
 		}
 	}
 
-	@priority = "3"
+	@description = "Check the actions of organizational users with different identities in the workflow of publishing Blogs in local staging."
+	@priority = 3
 	test BlogsOrganizationWorkflowStaging {
-		property test.name.skip.portal.instance = "PGStagingUsecase#BlogsOrganizationWorkflowStaging";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		Role.openRolesAdmin();
-
-		Role.definePermissionCP(
-			permissionDefinitionKey = "SITE_ADMIN_CONTENT_BLOGS_RESOURCE_PERMISSIONS_BLOGS_ENTRIES_ADD_ENTRY_CHECKBOX",
-			permissionDefinitionValue = "Add Entry",
-			permissionNavigationKey = "SITE_ADMIN_CONTENT_BLOGS",
-			permissionNavigationValue = "Blogs",
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "ADD_ENTRY",
+			resourceName = "com.liferay.blogs",
 			roleTitle = "Organization User",
-			roleType = "Organization");
+			roleType = "organization");
 
-		Role.openRolesAdmin();
-
-		Role.definePermissionCP(
-			permissionDefinitionKey = "SITE_ADMIN_PAGES_SITE_PAGES_RESOURCE_PERMISSIONS_SITE_MANAGE_PAGES_CHECKBOX",
-			permissionDefinitionValue = "Manage Pages",
-			permissionNavigationKey = "SITE_ADMIN_PAGES_SITE_PAGES",
-			permissionNavigationValue = "Site Pages",
+		Permissions.definePermissionViaJSONAPI(
+			resourceAction = "MANAGE_LAYOUTS",
+			resourceName = "com.liferay.portal.kernel.model.Group",
 			roleTitle = "Organization User",
-			roleType = "Organization");
+			roleType = "organization");
 
 		JSONOrganization.addOrganization(
 			organizationName = "Staging Organization Name",
 			organizationSite = "true");
 
-		SitePages.openPagesAdmin(siteURLKey = "Staging Organization Name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "Staging Organization Name");
 
-		SitePages.addPublicPage(pageName = "Staging Test Page");
+		PagesAdmin.addPage(pageName = "Staging Test Page");
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -138,14 +133,14 @@ definition {
 
 		User.logoutPG();
 
-		SitePages.openPagesAdmin(siteURLKey = "Staging Organization Name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "Staging Organization Name");
 
 		AssertElementNotPresent(
 			key_portletName = "Blogs",
 			locator1 = "Portlet#TITLE");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "usereaoa@liferay.com");
 
 		Navigator.openStagingSiteURL(siteName = "Staging Organization Name");
@@ -163,7 +158,7 @@ definition {
 			locator1 = "Portlet#TITLE");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.openStagingSiteURL(siteName = "Staging Organization Name");
@@ -174,14 +169,14 @@ definition {
 
 		User.logoutPG();
 
-		SitePages.openPagesAdmin(siteURLKey = "Staging Organization Name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "Staging Organization Name");
 
 		AssertElementNotPresent(
 			key_entryTitle = "Blogs Entry Title",
 			locator1 = "BlogsEntry#TITLE");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "usereacr@liferay.com");
 
 		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
@@ -198,14 +193,14 @@ definition {
 
 		User.logoutPG();
 
-		SitePages.openPagesAdmin(siteURLKey = "Staging Organization Name");
+		PagesAdmin.openPagesAdmin(siteURLKey = "Staging Organization Name");
 
 		AssertElementNotPresent(
 			key_entryTitle = "Blogs Entry Title",
 			locator1 = "BlogsEntry#TITLE");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "usereaoa@liferay.com");
 
 		Navigator.openStagingSiteURL(siteName = "Staging Organization Name");
@@ -223,18 +218,23 @@ definition {
 			locator1 = "BlogsEntry#TITLE");
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Role.openRolesAdmin();
 
-		Role.removePermissionCP(
-			permissionDefinitionKey = "SITE_ADMIN_CONTENT_BLOGS_RESOURCE_PERMISSIONS_BLOGS_ENTRIES_ADD_ENTRY_CHECKBOX",
-			permissionDefinitionValue = "Add Entry",
-			permissionNavigationKey = "SITE_ADMIN_CONTENT_BLOGS",
-			permissionNavigationValue = "Blogs",
+		Permissions.removePermissionViaAPI(
+			resourceAction = "ADD_ENTRY",
+			resourceName = "com.liferay.blogs",
 			roleTitle = "Organization User",
-			roleType = "Organization");
+			roleType = "organization");
+
+		var key_permissionDefinitionValue = "Add Entry";
+		var key_permissionNavigationValue = "Blogs";
+
+		AssertElementNotPresent(locator1 = "RolesPermissionsSummary#PERMISSION_TABLE_PERMISSIONS");
+
+		AssertElementNotPresent(locator1 = "RolesPermissionsSummary#PERMISSION_TABLE_REMOVE");
 	}
 
 }

@@ -1,14 +1,16 @@
 definition {
 
 	@description = "Deploy the fragments zip into Liferay Portal"
-	macro deployZipOnLiferayPortal {
+	@summary = "Default summary"
+	macro deployZipOnLiferayPortal(fragmentsZip = null) {
 		var liferayHome = PropsUtil.get("liferay.home.dir.name");
-		var testBaseDirName = PropsUtil.get("test.base.dir.name");
-		var testDependenciesDirName = PropsUtil.get("test.dependencies.dir.name");
+		var dependencyFilePath = TestCase.getDependenciesDirPath(fileName = ${fragmentsZip});
 
-		ArchiveUtil.archive("${testBaseDirName}tests/enduser/wem/fragment/${testDependenciesDirName}/${fragmentsZip}", "${liferayHome}/deploy/${fragmentsZip}");
+		ArchiveUtil.archive(${dependencyFilePath}, "${liferayHome}/deploy/${fragmentsZip}");
 
-		Pause(locator1 = "10000");
+		// We need this pause to make sure fragment zip finish deployment
+
+		Pause(value1 = 10000);
 	}
 
 }

@@ -1,26 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import classNames from 'classnames';
 import React, {useEffect, useRef, useState} from 'react';
+import {useDragLayer} from 'react-dnd';
 
-import debounceRAF from '../../core/debounceRAF';
+import debounceRAF from '../../common/debounceRAF';
 import {VIEWPORT_SIZES} from '../config/constants/viewportSizes';
 import {config} from '../config/index';
 import {useSelectItem} from '../contexts/ControlsContext';
 import {GlobalContextFrame} from '../contexts/GlobalContext';
 import {useSelector} from '../contexts/StoreContext';
+import selectItemConfigurationOpen from '../selectors/selectItemConfigurationOpen';
+import selectSidebarIsOpened from '../selectors/selectSidebarIsOpened';
 import DisabledArea from './DisabledArea';
 import Layout from './Layout';
 import MasterLayout from './MasterLayout';
@@ -38,9 +32,13 @@ export default function LayoutViewport() {
 	const selectedViewportSize = useSelector(
 		(state) => state.selectedViewportSize
 	);
-	const sidebarOpen = useSelector(
-		(state) => state.sidebar.panelId && state.sidebar.open
-	);
+
+	const sidebarOpen = useSelector(selectSidebarIsOpened);
+	const itemConfigurationOpen = useSelector(selectItemConfigurationOpen);
+
+	const {isDragging} = useDragLayer((monitor) => ({
+		isDragging: monitor.isDragging(),
+	}));
 
 	useEffect(() => {
 		const handleViewport = handleRef.current;
@@ -51,9 +49,8 @@ export default function LayoutViewport() {
 		setLayoutWidth(undefined);
 
 		const onDrag = debounceRAF((event) => {
-			const {maxWidth, minWidth} = config.availableViewportSizes[
-				selectedViewportSize
-			];
+			const {maxWidth, minWidth} =
+				config.availableViewportSizes[selectedViewportSize];
 
 			setLayoutWidth(
 				Math.min(
@@ -61,7 +58,7 @@ export default function LayoutViewport() {
 						initialWidth + (event.clientX - initialX) * 2,
 						minWidth
 					),
-					maxWidth + 1
+					maxWidth
 				)
 			);
 		});
@@ -110,8 +107,12 @@ export default function LayoutViewport() {
 				'page-editor__layout-viewport',
 				`page-editor__layout-viewport--size-${selectedViewportSize}`,
 				{
+					'cadmin': selectedViewportSize !== VIEWPORT_SIZES.desktop,
 					'page-editor__layout-viewport__resizing': resizing,
-					'page-editor__layout-viewport--with-sidebar-open': sidebarOpen,
+					'page-editor__layout-viewport--with-item-configuration-open':
+						itemConfigurationOpen,
+					'page-editor__layout-viewport--with-sidebar-open':
+						sidebarOpen,
 				}
 			)}
 		>
@@ -129,7 +130,7 @@ export default function LayoutViewport() {
 				<GlobalContextFrame
 					useIframe={selectedViewportSize !== VIEWPORT_SIZES.desktop}
 				>
-					<DisabledArea />
+					{!isDragging && <DisabledArea />}
 
 					{masterLayoutData ? (
 						<MasterLayout />

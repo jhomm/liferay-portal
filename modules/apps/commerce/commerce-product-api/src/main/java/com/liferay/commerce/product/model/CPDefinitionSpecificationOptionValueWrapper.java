@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -47,7 +40,10 @@ public class CPDefinitionSpecificationOptionValueWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put(
 			"CPDefinitionSpecificationOptionValueId",
 			getCPDefinitionSpecificationOptionValueId());
@@ -60,8 +56,10 @@ public class CPDefinitionSpecificationOptionValueWrapper
 		attributes.put("CPDefinitionId", getCPDefinitionId());
 		attributes.put("CPSpecificationOptionId", getCPSpecificationOptionId());
 		attributes.put("CPOptionCategoryId", getCPOptionCategoryId());
-		attributes.put("value", getValue());
+		attributes.put("key", getKey());
 		attributes.put("priority", getPriority());
+		attributes.put("value", getValue());
+		attributes.put("visible", isVisible());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
 		return attributes;
@@ -69,10 +67,29 @@ public class CPDefinitionSpecificationOptionValueWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long CPDefinitionSpecificationOptionValueId = (Long)attributes.get(
@@ -138,16 +155,28 @@ public class CPDefinitionSpecificationOptionValueWrapper
 			setCPOptionCategoryId(CPOptionCategoryId);
 		}
 
-		String value = (String)attributes.get("value");
+		String key = (String)attributes.get("key");
 
-		if (value != null) {
-			setValue(value);
+		if (key != null) {
+			setKey(key);
 		}
 
 		Double priority = (Double)attributes.get("priority");
 
 		if (priority != null) {
 			setPriority(priority);
+		}
+
+		String value = (String)attributes.get("value");
+
+		if (value != null) {
+			setValue(value);
+		}
+
+		Boolean visible = (Boolean)attributes.get("visible");
+
+		if (visible != null) {
+			setVisible(visible);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -248,9 +277,29 @@ public class CPDefinitionSpecificationOptionValueWrapper
 		return model.getCreateDate();
 	}
 
+	/**
+	 * Returns the ct collection ID of this cp definition specification option value.
+	 *
+	 * @return the ct collection ID of this cp definition specification option value
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
 	@Override
 	public String getDefaultLanguageId() {
 		return model.getDefaultLanguageId();
+	}
+
+	/**
+	 * Returns the external reference code of this cp definition specification option value.
+	 *
+	 * @return the external reference code of this cp definition specification option value
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -261,6 +310,16 @@ public class CPDefinitionSpecificationOptionValueWrapper
 	@Override
 	public long getGroupId() {
 		return model.getGroupId();
+	}
+
+	/**
+	 * Returns the key of this cp definition specification option value.
+	 *
+	 * @return the key of this cp definition specification option value
+	 */
+	@Override
+	public String getKey() {
+		return model.getKey();
 	}
 
 	/**
@@ -281,6 +340,16 @@ public class CPDefinitionSpecificationOptionValueWrapper
 	@Override
 	public Date getModifiedDate() {
 		return model.getModifiedDate();
+	}
+
+	/**
+	 * Returns the mvcc version of this cp definition specification option value.
+	 *
+	 * @return the mvcc version of this cp definition specification option value
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
 	}
 
 	/**
@@ -419,6 +488,26 @@ public class CPDefinitionSpecificationOptionValueWrapper
 		return model.getValueMap();
 	}
 
+	/**
+	 * Returns the visible of this cp definition specification option value.
+	 *
+	 * @return the visible of this cp definition specification option value
+	 */
+	@Override
+	public boolean getVisible() {
+		return model.getVisible();
+	}
+
+	/**
+	 * Returns <code>true</code> if this cp definition specification option value is visible.
+	 *
+	 * @return <code>true</code> if this cp definition specification option value is visible; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isVisible() {
+		return model.isVisible();
+	}
+
 	@Override
 	public void persist() {
 		model.persist();
@@ -503,6 +592,26 @@ public class CPDefinitionSpecificationOptionValueWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this cp definition specification option value.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition specification option value
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
+	 * Sets the external reference code of this cp definition specification option value.
+	 *
+	 * @param externalReferenceCode the external reference code of this cp definition specification option value
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the group ID of this cp definition specification option value.
 	 *
 	 * @param groupId the group ID of this cp definition specification option value
@@ -510,6 +619,16 @@ public class CPDefinitionSpecificationOptionValueWrapper
 	@Override
 	public void setGroupId(long groupId) {
 		model.setGroupId(groupId);
+	}
+
+	/**
+	 * Sets the key of this cp definition specification option value.
+	 *
+	 * @param key the key of this cp definition specification option value
+	 */
+	@Override
+	public void setKey(String key) {
+		model.setKey(key);
 	}
 
 	/**
@@ -530,6 +649,16 @@ public class CPDefinitionSpecificationOptionValueWrapper
 	@Override
 	public void setModifiedDate(Date modifiedDate) {
 		model.setModifiedDate(modifiedDate);
+	}
+
+	/**
+	 * Sets the mvcc version of this cp definition specification option value.
+	 *
+	 * @param mvccVersion the mvcc version of this cp definition specification option value
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
 	}
 
 	/**
@@ -654,6 +783,35 @@ public class CPDefinitionSpecificationOptionValueWrapper
 		java.util.Locale defaultLocale) {
 
 		model.setValueMap(valueMap, defaultLocale);
+	}
+
+	/**
+	 * Sets whether this cp definition specification option value is visible.
+	 *
+	 * @param visible the visible of this cp definition specification option value
+	 */
+	@Override
+	public void setVisible(boolean visible) {
+		model.setVisible(visible);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CPDefinitionSpecificationOptionValue, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CPDefinitionSpecificationOptionValue, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

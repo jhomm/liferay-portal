@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useState} from 'react';
@@ -26,12 +20,13 @@ const useSLANodes = (processId) => {
 			if (node.type === 'STATE') {
 				const newNode = {
 					...node,
+
 					// eslint-disable-next-line @liferay/no-abbreviations
 					desc: node.initial
 						? Liferay.Language.get('process-begins')
 						: `${Liferay.Language.get('process-ends')} ${
 								node.label
-						  }`,
+							}`,
 					executionType: node.initial ? 'begin' : 'end',
 				};
 
@@ -45,6 +40,7 @@ const useSLANodes = (processId) => {
 			else if (node.type === 'TASK') {
 				nodeEnters.push({
 					...node,
+
 					// eslint-disable-next-line @liferay/no-abbreviations
 					desc: `${Liferay.Language.get('enters-task')} ${
 						node.label
@@ -54,6 +50,7 @@ const useSLANodes = (processId) => {
 
 				nodeLeaves.push({
 					...node,
+
 					// eslint-disable-next-line @liferay/no-abbreviations
 					desc: `${Liferay.Language.get('leaves-task')} ${
 						node.label
@@ -99,11 +96,12 @@ const useSLANodes = (processId) => {
 			.filter(({id}) => !selectedNodes.includes(`${id}`))
 			.filter(
 				(node, index, self) =>
-					self.findIndex(({id}) => id == node.id) === index
+					self.findIndex(({id}) => id === node.id) === index
 			)
 			.map((node) => ({
 				...node,
 				compositeId: `${node.id}:on`,
+
 				// eslint-disable-next-line @liferay/no-abbreviations
 				desc: `${onTaskString} ${node.label}`,
 				executionType: 'on',

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.exportimport.data.handler;
@@ -37,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Sergio González
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class LayoutFriendlyURLStagedModelDataHandler
 	extends BaseStagedModelDataHandler<LayoutFriendlyURL> {
 
@@ -121,11 +112,19 @@ public class LayoutFriendlyURLStagedModelDataHandler
 		LayoutFriendlyURL importedLayoutFriendlyURL = null;
 
 		LayoutFriendlyURL existingLayoutFriendlyURL =
-			fetchExistingLayoutFriendlyURL(
+			_fetchExistingLayoutFriendlyURL(
 				portletDataContext, layoutFriendlyURL, plid);
 
-		layoutFriendlyURL = getUniqueLayoutFriendlyURL(
+		layoutFriendlyURL = _getUniqueLayoutFriendlyURL(
 			portletDataContext, layoutFriendlyURL, existingLayoutFriendlyURL);
+
+		boolean privateLayout = portletDataContext.isPrivateLayout();
+
+		Layout layout = _layoutLocalService.fetchLayout(plid);
+
+		if (layout != null) {
+			privateLayout = layout.isPrivateLayout();
+		}
 
 		if (existingLayoutFriendlyURL == null) {
 			serviceContext.setUuid(layoutFriendlyURL.getUuid());
@@ -133,8 +132,7 @@ public class LayoutFriendlyURLStagedModelDataHandler
 			importedLayoutFriendlyURL =
 				_layoutFriendlyURLLocalService.addLayoutFriendlyURL(
 					userId, portletDataContext.getCompanyId(),
-					portletDataContext.getScopeGroupId(), plid,
-					portletDataContext.isPrivateLayout(),
+					portletDataContext.getScopeGroupId(), plid, privateLayout,
 					layoutFriendlyURL.getFriendlyURL(),
 					layoutFriendlyURL.getLanguageId(), serviceContext);
 		}
@@ -142,8 +140,7 @@ public class LayoutFriendlyURLStagedModelDataHandler
 			importedLayoutFriendlyURL =
 				_layoutFriendlyURLLocalService.updateLayoutFriendlyURL(
 					userId, portletDataContext.getCompanyId(),
-					portletDataContext.getScopeGroupId(), plid,
-					portletDataContext.isPrivateLayout(),
+					portletDataContext.getScopeGroupId(), plid, privateLayout,
 					layoutFriendlyURL.getFriendlyURL(),
 					layoutFriendlyURL.getLanguageId(), serviceContext);
 		}
@@ -152,7 +149,7 @@ public class LayoutFriendlyURLStagedModelDataHandler
 			layoutFriendlyURL, importedLayoutFriendlyURL);
 	}
 
-	protected LayoutFriendlyURL fetchExistingLayoutFriendlyURL(
+	private LayoutFriendlyURL _fetchExistingLayoutFriendlyURL(
 		PortletDataContext portletDataContext,
 		LayoutFriendlyURL layoutFriendlyURL, long plid) {
 
@@ -170,7 +167,7 @@ public class LayoutFriendlyURLStagedModelDataHandler
 		return existingLayoutFriendlyURL;
 	}
 
-	protected LayoutFriendlyURL getUniqueLayoutFriendlyURL(
+	private LayoutFriendlyURL _getUniqueLayoutFriendlyURL(
 			PortletDataContext portletDataContext,
 			LayoutFriendlyURL layoutFriendlyURL,
 			LayoutFriendlyURL existingLayoutFriendlyURL)
@@ -178,7 +175,7 @@ public class LayoutFriendlyURLStagedModelDataHandler
 
 		String friendlyURL = layoutFriendlyURL.getFriendlyURL();
 
-		boolean privateLayout = layoutFriendlyURL.isPrivateLayout();
+		boolean privateLayout = portletDataContext.isPrivateLayout();
 
 		if (existingLayoutFriendlyURL != null) {
 			privateLayout = existingLayoutFriendlyURL.isPrivateLayout();
@@ -205,21 +202,10 @@ public class LayoutFriendlyURLStagedModelDataHandler
 		return layoutFriendlyURL;
 	}
 
-	@Reference(unbind = "-")
-	protected void setLayoutFriendlyURLLocalService(
-		LayoutFriendlyURLLocalService layoutFriendlyURLLocalService) {
-
-		_layoutFriendlyURLLocalService = layoutFriendlyURLLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setLayoutLocalService(
-		LayoutLocalService layoutLocalService) {
-
-		_layoutLocalService = layoutLocalService;
-	}
-
+	@Reference
 	private LayoutFriendlyURLLocalService _layoutFriendlyURLLocalService;
+
+	@Reference
 	private LayoutLocalService _layoutLocalService;
 
 }

@@ -1,0 +1,25 @@
+definition {
+
+	@summary = "Add JVM arguments via environment variables"
+	macro addJVMArguments(arguments = null) {
+		Variables.assertDefined(parameterList = ${arguments});
+
+		var tomcatBinDir = PropsUtil.get("app.server.bin.dir");
+
+		var setenvFile = "${tomcatBinDir}/setenv.sh";
+
+		var originalFileContent = FileUtil.read(${setenvFile});
+		var argumentsList = "";
+
+		for (var argument : list ${arguments}) {
+			var argumentsList = ''' -D${argument}${argumentsList}''';
+		}
+
+		var newFileContent = '''${originalFileContent}
+
+CATALINA_OPTS="$CATALINA_OPTS${argumentsList}"''';
+
+		FileUtil.write(${setenvFile}, ${newFileContent});
+	}
+
+}

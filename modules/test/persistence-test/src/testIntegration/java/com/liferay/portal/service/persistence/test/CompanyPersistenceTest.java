@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -141,8 +132,6 @@ public class CompanyPersistenceTest {
 
 		newCompany.setLogoId(RandomTestUtil.nextLong());
 
-		newCompany.setSystem(RandomTestUtil.randomBoolean());
-
 		newCompany.setMaxUsers(RandomTestUtil.nextInt());
 
 		newCompany.setActive(RandomTestUtil.randomBoolean());
@@ -164,6 +153,10 @@ public class CompanyPersistenceTest {
 		newCompany.setType(RandomTestUtil.randomString());
 
 		newCompany.setSize(RandomTestUtil.randomString());
+
+		newCompany.setIndexNameCurrent(RandomTestUtil.randomString());
+
+		newCompany.setIndexNameNext(RandomTestUtil.randomString());
 
 		_companies.add(_persistence.update(newCompany));
 
@@ -190,7 +183,6 @@ public class CompanyPersistenceTest {
 			existingCompany.getHomeURL(), newCompany.getHomeURL());
 		Assert.assertEquals(
 			existingCompany.getLogoId(), newCompany.getLogoId());
-		Assert.assertEquals(existingCompany.isSystem(), newCompany.isSystem());
 		Assert.assertEquals(
 			existingCompany.getMaxUsers(), newCompany.getMaxUsers());
 		Assert.assertEquals(existingCompany.isActive(), newCompany.isActive());
@@ -209,6 +201,11 @@ public class CompanyPersistenceTest {
 			existingCompany.getIndustry(), newCompany.getIndustry());
 		Assert.assertEquals(existingCompany.getType(), newCompany.getType());
 		Assert.assertEquals(existingCompany.getSize(), newCompany.getSize());
+		Assert.assertEquals(
+			existingCompany.getIndexNameCurrent(),
+			newCompany.getIndexNameCurrent());
+		Assert.assertEquals(
+			existingCompany.getIndexNameNext(), newCompany.getIndexNameNext());
 	}
 
 	@Test
@@ -221,26 +218,10 @@ public class CompanyPersistenceTest {
 	}
 
 	@Test
-	public void testCountByMx() throws Exception {
-		_persistence.countByMx("");
-
-		_persistence.countByMx("null");
-
-		_persistence.countByMx((String)null);
-	}
-
-	@Test
 	public void testCountByLogoId() throws Exception {
 		_persistence.countByLogoId(RandomTestUtil.nextLong());
 
 		_persistence.countByLogoId(0L);
-	}
-
-	@Test
-	public void testCountBySystem() throws Exception {
-		_persistence.countBySystem(RandomTestUtil.randomBoolean());
-
-		_persistence.countBySystem(RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -270,10 +251,11 @@ public class CompanyPersistenceTest {
 		return OrderByComparatorFactoryUtil.create(
 			"Company", "mvccVersion", true, "companyId", true, "userId", true,
 			"userName", true, "createDate", true, "modifiedDate", true, "webId",
-			true, "mx", true, "homeURL", true, "logoId", true, "system", true,
-			"maxUsers", true, "active", true, "name", true, "legalName", true,
-			"legalId", true, "legalType", true, "sicCode", true, "tickerSymbol",
-			true, "industry", true, "type", true, "size", true);
+			true, "mx", true, "homeURL", true, "logoId", true, "maxUsers", true,
+			"active", true, "name", true, "legalName", true, "legalId", true,
+			"legalType", true, "sicCode", true, "tickerSymbol", true,
+			"industry", true, "type", true, "size", true, "indexNameCurrent",
+			true, "indexNameNext", true);
 	}
 
 	@Test
@@ -533,18 +515,6 @@ public class CompanyPersistenceTest {
 			ReflectionTestUtil.invoke(
 				company, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "webId"));
-
-		Assert.assertEquals(
-			company.getMx(),
-			ReflectionTestUtil.invoke(
-				company, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "mx"));
-
-		Assert.assertEquals(
-			Long.valueOf(company.getLogoId()),
-			ReflectionTestUtil.<Long>invoke(
-				company, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "logoId"));
 	}
 
 	protected Company addCompany() throws Exception {
@@ -570,8 +540,6 @@ public class CompanyPersistenceTest {
 
 		company.setLogoId(RandomTestUtil.nextLong());
 
-		company.setSystem(RandomTestUtil.randomBoolean());
-
 		company.setMaxUsers(RandomTestUtil.nextInt());
 
 		company.setActive(RandomTestUtil.randomBoolean());
@@ -593,6 +561,10 @@ public class CompanyPersistenceTest {
 		company.setType(RandomTestUtil.randomString());
 
 		company.setSize(RandomTestUtil.randomString());
+
+		company.setIndexNameCurrent(RandomTestUtil.randomString());
+
+		company.setIndexNameNext(RandomTestUtil.randomString());
 
 		_companies.add(_persistence.update(company));
 

@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.exportimport.service.impl;
 
 import com.liferay.exportimport.kernel.lar.MissingReferences;
 import com.liferay.exportimport.kernel.model.ExportImportConfiguration;
+import com.liferay.exportimport.kernel.service.ExportImportConfigurationLocalService;
+import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
@@ -30,6 +24,7 @@ import java.io.InputStream;
  */
 public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 
+	@CTAware
 	@Override
 	public File exportLayoutsAsFile(
 			ExportImportConfiguration exportImportConfiguration)
@@ -46,6 +41,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration);
 	}
 
+	@CTAware
 	@Override
 	public long exportLayoutsAsFileInBackground(
 			ExportImportConfiguration exportImportConfiguration)
@@ -62,13 +58,14 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfiguration);
 	}
 
+	@CTAware
 	@Override
 	public long exportLayoutsAsFileInBackground(
 			long exportImportConfigurationId)
 		throws PortalException {
 
 		ExportImportConfiguration exportImportConfiguration =
-			exportImportConfigurationLocalService.getExportImportConfiguration(
+			_exportImportConfigurationLocalService.getExportImportConfiguration(
 				exportImportConfigurationId);
 
 		long sourceGroupId = MapUtil.getLong(
@@ -82,6 +79,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfigurationId);
 	}
 
+	@CTAware
 	@Override
 	public File exportPortletInfoAsFile(
 			ExportImportConfiguration exportImportConfiguration)
@@ -98,6 +96,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration);
 	}
 
+	@CTAware
 	@Override
 	public long exportPortletInfoAsFileInBackground(
 			ExportImportConfiguration exportImportConfiguration)
@@ -114,6 +113,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfiguration);
 	}
 
+	@CTAware
 	@Override
 	public void importLayouts(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -129,6 +129,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 		exportImportLocalService.importLayouts(exportImportConfiguration, file);
 	}
 
+	@CTAware
 	@Override
 	public void importLayouts(
 			ExportImportConfiguration exportImportConfiguration,
@@ -146,6 +147,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration, inputStream);
 	}
 
+	@CTAware
 	@Override
 	public long importLayoutsInBackground(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -162,6 +164,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfiguration, file);
 	}
 
+	@CTAware
 	@Override
 	public long importLayoutsInBackground(
 			ExportImportConfiguration exportImportConfiguration,
@@ -179,6 +182,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfiguration, inputStream);
 	}
 
+	@CTAware
 	@Override
 	public void importPortletInfo(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -195,6 +199,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration, file);
 	}
 
+	@CTAware
 	@Override
 	public void importPortletInfo(
 			ExportImportConfiguration exportImportConfiguration,
@@ -212,6 +217,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration, inputStream);
 	}
 
+	@CTAware
 	@Override
 	public long importPortletInfoInBackground(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -228,6 +234,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfiguration, file);
 	}
 
+	@CTAware
 	@Override
 	public long importPortletInfoInBackground(
 			ExportImportConfiguration exportImportConfiguration,
@@ -245,6 +252,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			getUserId(), exportImportConfiguration, inputStream);
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportLayoutsFile(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -261,6 +269,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration, file);
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportLayoutsFile(
 			ExportImportConfiguration exportImportConfiguration,
@@ -278,6 +287,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration, inputStream);
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportPortletInfo(
 			ExportImportConfiguration exportImportConfiguration, File file)
@@ -294,6 +304,7 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 			exportImportConfiguration, file);
 	}
 
+	@CTAware
 	@Override
 	public MissingReferences validateImportPortletInfo(
 			ExportImportConfiguration exportImportConfiguration,
@@ -310,5 +321,9 @@ public class ExportImportServiceImpl extends ExportImportServiceBaseImpl {
 		return exportImportLocalService.validateImportPortletInfo(
 			exportImportConfiguration, inputStream);
 	}
+
+	@BeanReference(type = ExportImportConfigurationLocalService.class)
+	private ExportImportConfigurationLocalService
+		_exportImportConfigurationLocalService;
 
 }

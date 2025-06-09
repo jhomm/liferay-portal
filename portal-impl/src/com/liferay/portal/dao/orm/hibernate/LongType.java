@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.hibernate;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 
 import java.io.Serializable;
@@ -22,22 +15,19 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import org.hibernate.engine.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.type.StandardBasicTypes;
-import org.hibernate.type.Type;
-import org.hibernate.usertype.CompositeUserType;
+import org.hibernate.usertype.UserType;
 
 /**
  * @author Brian Wing Shun Chan
  */
-public class LongType implements CompositeUserType, Serializable {
+public class LongType implements Serializable, UserType {
 
 	public static final Long DEFAULT_VALUE = Long.valueOf(0);
 
 	@Override
-	public Object assemble(
-		Serializable cached, SessionImplementor session, Object owner) {
-
+	public Object assemble(Serializable cached, Object owner) {
 		return cached;
 	}
 
@@ -47,7 +37,7 @@ public class LongType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public Serializable disassemble(Object value, SessionImplementor session) {
+	public Serializable disassemble(Object value) {
 		return (Serializable)value;
 	}
 
@@ -64,21 +54,6 @@ public class LongType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public String[] getPropertyNames() {
-		return new String[0];
-	}
-
-	@Override
-	public Type[] getPropertyTypes() {
-		return new Type[] {StandardBasicTypes.LONG};
-	}
-
-	@Override
-	public Object getPropertyValue(Object component, int property) {
-		return component;
-	}
-
-	@Override
 	public int hashCode(Object x) {
 		return x.hashCode();
 	}
@@ -90,7 +65,8 @@ public class LongType implements CompositeUserType, Serializable {
 
 	@Override
 	public Object nullSafeGet(
-			ResultSet resultSet, String[] names, SessionImplementor session,
+			ResultSet resultSet, String[] names,
+			SharedSessionContractImplementor sharedSessionContractImplementor,
 			Object owner)
 		throws SQLException {
 
@@ -98,9 +74,12 @@ public class LongType implements CompositeUserType, Serializable {
 
 		try {
 			value = StandardBasicTypes.LONG.nullSafeGet(
-				resultSet, names[0], session);
+				resultSet, names[0], sharedSessionContractImplementor);
 		}
 		catch (SQLException sqlException1) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(sqlException1);
+			}
 
 			// Some JDBC drivers do not know how to convert a VARCHAR column
 			// with a blank entry into a BIGINT
@@ -109,10 +88,11 @@ public class LongType implements CompositeUserType, Serializable {
 				value = Long.valueOf(
 					GetterUtil.getLong(
 						StandardBasicTypes.STRING.nullSafeGet(
-							resultSet, names[0], session)));
+							resultSet, names[0],
+							sharedSessionContractImplementor)));
 			}
 			catch (SQLException sqlException2) {
-				throw sqlException1;
+				throw sqlException2;
 			}
 		}
 
@@ -126,7 +106,7 @@ public class LongType implements CompositeUserType, Serializable {
 	@Override
 	public void nullSafeSet(
 			PreparedStatement preparedStatement, Object target, int index,
-			SessionImplementor session)
+			SharedSessionContractImplementor sharedSessionContractImplementor)
 		throws SQLException {
 
 		if (target == null) {
@@ -137,10 +117,7 @@ public class LongType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public Object replace(
-		Object original, Object target, SessionImplementor session,
-		Object owner) {
-
+	public Object replace(Object original, Object target, Object owner) {
 		return original;
 	}
 
@@ -150,7 +127,10 @@ public class LongType implements CompositeUserType, Serializable {
 	}
 
 	@Override
-	public void setPropertyValue(Object component, int property, Object value) {
+	public int[] sqlTypes() {
+		return new int[] {StandardBasicTypes.LONG.sqlType()};
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(LongType.class);
 
 }

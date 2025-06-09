@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.search;
@@ -36,7 +27,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Roberto Díaz
@@ -73,82 +64,68 @@ public class EntriesChecker extends EmptyOnClickRowChecker {
 		HttpServletRequest httpServletRequest, boolean checked,
 		boolean disabled, String primaryKey) {
 
-		KBArticle kbArticle = null;
-		KBFolder kbFolder = null;
-
-		long entryId = GetterUtil.getLong(primaryKey);
-
 		try {
-			kbArticle = KBArticleServiceUtil.getLatestKBArticle(
-				entryId, WorkflowConstants.STATUS_ANY);
-		}
-		catch (Exception exception1) {
-			if (exception1 instanceof NoSuchArticleException) {
-				try {
-					kbFolder = KBFolderServiceUtil.getKBFolder(entryId);
+			KBArticle kbArticle = null;
+			KBFolder kbFolder = null;
+
+			long entryId = GetterUtil.getLong(primaryKey);
+
+			try {
+				kbArticle = KBArticleServiceUtil.getLatestKBArticle(
+					entryId, WorkflowConstants.STATUS_ANY);
+			}
+			catch (NoSuchArticleException noSuchArticleException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(noSuchArticleException);
 				}
-				catch (Exception exception2) {
+
+				kbFolder = KBFolderServiceUtil.getKBFolder(entryId);
+			}
+
+			String name = null;
+
+			if (kbArticle != null) {
+				name = KBArticle.class.getSimpleName();
+
+				if (!KBArticlePermission.contains(
+						_permissionChecker, kbArticle, ActionKeys.DELETE)) {
+
 					return StringPool.BLANK;
 				}
 			}
 			else {
-				return StringPool.BLANK;
-			}
-		}
+				name = KBFolder.class.getSimpleName();
 
-		boolean showInput = false;
-
-		String name = null;
-
-		if (kbArticle != null) {
-			name = KBArticle.class.getSimpleName();
-
-			try {
-				if (KBArticlePermission.contains(
-						_permissionChecker, kbArticle, ActionKeys.DELETE)) {
-
-					showInput = true;
-				}
-			}
-			catch (Exception exception) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
-				}
-			}
-		}
-		else {
-			name = KBFolder.class.getSimpleName();
-
-			try {
-				if (KBFolderPermission.contains(
+				if (!KBFolderPermission.contains(
 						_permissionChecker, kbFolder, ActionKeys.DELETE)) {
 
-					showInput = true;
+					return StringPool.BLANK;
 				}
 			}
-			catch (Exception exception) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
-				}
-			}
-		}
 
-		if (!showInput) {
+			String checkBoxRowIds = _getEntryRowIds();
+			String checkBoxAllRowIds = "'#" + getAllRowIds() + "'";
+			String checkBoxPostOnClick =
+				_liferayPortletResponse.getNamespace() +
+					"toggleActionsButton();";
+
+			return getRowCheckBox(
+				httpServletRequest, checked, disabled,
+				_liferayPortletResponse.getNamespace() + RowChecker.ROW_IDS +
+					name,
+				primaryKey, checkBoxRowIds, checkBoxAllRowIds,
+				checkBoxPostOnClick);
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			return StringPool.BLANK;
 		}
-
-		String checkBoxRowIds = getEntryRowIds();
-		String checkBoxAllRowIds = "'#" + getAllRowIds() + "'";
-		String checkBoxPostOnClick =
-			_liferayPortletResponse.getNamespace() + "toggleActionsButton();";
-
-		return getRowCheckBox(
-			httpServletRequest, checked, disabled,
-			_liferayPortletResponse.getNamespace() + RowChecker.ROW_IDS + name,
-			primaryKey, checkBoxRowIds, checkBoxAllRowIds, checkBoxPostOnClick);
 	}
 
-	protected String getEntryRowIds() {
+	private String _getEntryRowIds() {
 		return StringBundler.concat(
 			"['", _liferayPortletResponse.getNamespace(), RowChecker.ROW_IDS,
 			KBArticle.class.getSimpleName(), "', '",

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -39,15 +30,17 @@ public class AddressServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.AddressServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static Address addAddress(
-			String className, long classPK, String street1, String street2,
-			String street3, String city, String zip, long regionId,
-			long countryId, long typeId, boolean mailing, boolean primary,
-			ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			long countryId, long listTypeId, long regionId, String city,
+			String description, boolean mailing, String name, boolean primary,
+			String street1, String street2, String street3, String subtype,
+			String zip, String phoneNumber, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addAddress(
-			className, classPK, street1, street2, street3, city, zip, regionId,
-			countryId, typeId, mailing, primary, serviceContext);
+			externalReferenceCode, className, classPK, countryId, listTypeId,
+			regionId, city, description, mailing, name, primary, street1,
+			street2, street3, subtype, zip, phoneNumber, serviceContext);
 	}
 
 	public static void deleteAddress(long addressId) throws PortalException {
@@ -64,6 +57,14 @@ public class AddressServiceUtil {
 		return getService().getAddresses(className, classPK);
 	}
 
+	public static List<Address> getListTypeAddresses(
+			String className, long classPK, long[] listTypeIds)
+		throws PortalException {
+
+		return getService().getListTypeAddresses(
+			className, classPK, listTypeIds);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -74,18 +75,41 @@ public class AddressServiceUtil {
 	}
 
 	public static Address updateAddress(
-			long addressId, String street1, String street2, String street3,
-			String city, String zip, long regionId, long countryId, long typeId,
-			boolean mailing, boolean primary)
+			String externalReferenceCode, long addressId, long countryId,
+			long listTypeId, long regionId, String city, String description,
+			boolean mailing, String name, boolean primary, String street1,
+			String street2, String street3, String subtype, String zip,
+			String phoneNumber)
 		throws PortalException {
 
 		return getService().updateAddress(
-			addressId, street1, street2, street3, city, zip, regionId,
-			countryId, typeId, mailing, primary);
+			externalReferenceCode, addressId, countryId, listTypeId, regionId,
+			city, description, mailing, name, primary, street1, street2,
+			street3, subtype, zip, phoneNumber);
+	}
+
+	public static Address updateExternalReferenceCode(
+			Address address, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			address, externalReferenceCode);
+	}
+
+	public static Address updateExternalReferenceCode(
+			long addressId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			addressId, externalReferenceCode);
 	}
 
 	public static AddressService getService() {
 		return _service;
+	}
+
+	public static void setService(AddressService service) {
+		_service = service;
 	}
 
 	private static volatile AddressService _service;

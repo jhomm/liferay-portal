@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.expando.kernel.service;
@@ -17,6 +8,7 @@ package com.liferay.expando.kernel.service;
 import com.liferay.expando.kernel.model.ExpandoColumn;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class ExpandoColumnLocalServiceWrapper
 	implements ExpandoColumnLocalService,
 			   ServiceWrapper<ExpandoColumnLocalService> {
+
+	public ExpandoColumnLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ExpandoColumnLocalServiceWrapper(
 		ExpandoColumnLocalService expandoColumnLocalService) {
@@ -90,7 +86,9 @@ public class ExpandoColumnLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteColumn(ExpandoColumn column) {
+	public void deleteColumn(ExpandoColumn column)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_expandoColumnLocalService.deleteColumn(column);
 	}
 
@@ -111,7 +109,9 @@ public class ExpandoColumnLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteColumn(long tableId, String name) {
+	public void deleteColumn(long tableId, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_expandoColumnLocalService.deleteColumn(tableId, name);
 	}
 
@@ -125,7 +125,9 @@ public class ExpandoColumnLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteColumns(long tableId) {
+	public void deleteColumns(long tableId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		_expandoColumnLocalService.deleteColumns(tableId);
 	}
 
@@ -295,6 +297,19 @@ public class ExpandoColumnLocalServiceWrapper
 	}
 
 	@Override
+	public ExpandoColumn fetchColumn(
+		long companyId, long classNameId, String tableName, String name) {
+
+		return _expandoColumnLocalService.fetchColumn(
+			companyId, classNameId, tableName, name);
+	}
+
+	@Override
+	public ExpandoColumn fetchColumn(long tableId, String name) {
+		return _expandoColumnLocalService.fetchColumn(tableId, name);
+	}
+
+	@Override
 	public ExpandoColumn fetchExpandoColumn(long columnId) {
 		return _expandoColumnLocalService.fetchExpandoColumn(columnId);
 	}
@@ -315,14 +330,17 @@ public class ExpandoColumnLocalServiceWrapper
 
 	@Override
 	public ExpandoColumn getColumn(
-		long companyId, long classNameId, String tableName, String name) {
+			long companyId, long classNameId, String tableName, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _expandoColumnLocalService.getColumn(
 			companyId, classNameId, tableName, name);
 	}
 
 	@Override
-	public ExpandoColumn getColumn(long tableId, String name) {
+	public ExpandoColumn getColumn(long tableId, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
 		return _expandoColumnLocalService.getColumn(tableId, name);
 	}
 
@@ -550,6 +568,11 @@ public class ExpandoColumnLocalServiceWrapper
 
 		return _expandoColumnLocalService.updateTypeSettings(
 			columnId, typeSettings);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _expandoColumnLocalService.getBasePersistence();
 	}
 
 	@Override

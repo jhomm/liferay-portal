@@ -1,31 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.internal.workflow;
 
+import com.liferay.asset.kernel.model.AssetRenderer;
+import com.liferay.layout.constants.LayoutTypeSettingsConstants;
 import com.liferay.layout.internal.configuration.LayoutWorkflowHandlerConfiguration;
-import com.liferay.layout.util.LayoutCopyHelper;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.WorkflowDefinitionLink;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.BaseWorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
@@ -57,7 +58,37 @@ public class LayoutWorkflowHandler extends BaseWorkflowHandler<Layout> {
 
 	@Override
 	public String getType(Locale locale) {
-		return LanguageUtil.get(locale, "content-page");
+		return _language.get(locale, "content-page");
+	}
+
+	@Override
+	public String getURLViewInContext(
+		long classPK, LiferayPortletRequest liferayPortletRequest,
+		LiferayPortletResponse liferayPortletResponse,
+		String noSuchEntryRedirect) {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		try {
+			AssetRenderer<Layout> assetRenderer = getAssetRenderer(classPK);
+
+			Layout layout = assetRenderer.getAssetObject();
+
+			String previewURL = _portal.getLayoutFullURL(
+				layout.fetchDraftLayout(), themeDisplay);
+
+			return HttpComponentsUtil.addParameter(
+				previewURL, "p_l_back_url", themeDisplay.getURLCurrent());
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
+			return StringPool.BLANK;
+		}
 	}
 
 	@Override
@@ -67,7 +98,7 @@ public class LayoutWorkflowHandler extends BaseWorkflowHandler<Layout> {
 
 		Layout layout = _layoutLocalService.getLayout(classPK);
 
-		if (layout.isHidden() || layout.isSystem() || !layout.isTypeContent()) {
+		if (layout.isSystem() || !layout.isTypeContent()) {
 			return null;
 		}
 
@@ -76,7 +107,7 @@ public class LayoutWorkflowHandler extends BaseWorkflowHandler<Layout> {
 
 	@Override
 	public boolean isVisible() {
-		return _layoutConverterConfiguration.enabled();
+		return _layoutWorkflowHandlerConfiguration.enabled();
 	}
 
 	@Override
@@ -97,56 +128,68 @@ public class LayoutWorkflowHandler extends BaseWorkflowHandler<Layout> {
 			return layout;
 		}
 
-		ServiceContext serviceContext = (ServiceContext)workflowContext.get(
+		ServiceContext serviceContext1 = (ServiceContext)workflowContext.get(
 			"serviceContext");
 
 		if (status != WorkflowConstants.STATUS_APPROVED) {
 			return _layoutLocalService.updateStatus(
-				userId, classPK, status, serviceContext);
+				userId, classPK, status, serviceContext1);
 		}
 
 		Layout draftLayout = layout.fetchDraftLayout();
 
-		try {
-			_layoutCopyHelper.copyLayout(draftLayout, layout);
-		}
-		catch (Exception exception) {
-			throw new PortalException(exception);
-		}
-
 		UnicodeProperties typeSettingsUnicodeProperties =
 			draftLayout.getTypeSettingsProperties();
 
-		typeSettingsUnicodeProperties.setProperty("published", "true");
+		typeSettingsUnicodeProperties.remove(
+			LayoutTypeSettingsConstants.KEY_DESIGN_CONFIGURATION_MODIFIED);
 
 		draftLayout = _layoutLocalService.updateLayout(
 			draftLayout.getGroupId(), draftLayout.isPrivateLayout(),
 			draftLayout.getLayoutId(),
 			typeSettingsUnicodeProperties.toString());
 
-		draftLayout.setStatus(WorkflowConstants.STATUS_APPROVED);
+		long originalUserId = PrincipalThreadLocal.getUserId();
 
-		_layoutLocalService.updateLayout(draftLayout);
+		try {
+			PrincipalThreadLocal.setName(userId);
+
+			_layoutLocalService.copyLayoutContent(draftLayout, layout);
+		}
+		catch (Exception exception) {
+			throw new PortalException(exception);
+		}
+		finally {
+			PrincipalThreadLocal.setName(originalUserId);
+		}
+
+		_layoutLocalService.updateStatus(
+			userId, draftLayout.getPlid(), WorkflowConstants.STATUS_APPROVED,
+			serviceContext1);
 
 		return _layoutLocalService.updateStatus(
-			userId, classPK, status, serviceContext);
+			userId, classPK, status, serviceContext1);
 	}
 
 	@Activate
 	@Modified
 	protected void activate(Map<String, Object> properties) {
-		_layoutConverterConfiguration = ConfigurableUtil.createConfigurable(
-			LayoutWorkflowHandlerConfiguration.class, properties);
+		_layoutWorkflowHandlerConfiguration =
+			ConfigurableUtil.createConfigurable(
+				LayoutWorkflowHandlerConfiguration.class, properties);
 	}
 
-	private volatile LayoutWorkflowHandlerConfiguration
-		_layoutConverterConfiguration;
+	private static final Log _log = LogFactoryUtil.getLog(
+		LayoutWorkflowHandler.class);
 
 	@Reference
-	private LayoutCopyHelper _layoutCopyHelper;
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
+
+	private volatile LayoutWorkflowHandlerConfiguration
+		_layoutWorkflowHandlerConfiguration;
 
 	@Reference
 	private Portal _portal;

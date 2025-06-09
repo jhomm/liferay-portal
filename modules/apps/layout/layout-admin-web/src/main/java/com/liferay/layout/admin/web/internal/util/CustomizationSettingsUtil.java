@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.util;
 
-import com.liferay.portal.kernel.layoutconfiguration.util.RuntimePageUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.LayoutTemplate;
@@ -24,12 +16,13 @@ import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.layoutconfiguration.util.RuntimePageUtil;
 import com.liferay.taglib.util.DummyVelocityTaglib;
 import com.liferay.taglib.util.VelocityTaglib;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * @author Shuyang Zhou
@@ -61,31 +54,16 @@ public class CustomizationSettingsUtil {
 			}
 		}
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				pluginClassLoader)) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		try {
-			if ((pluginClassLoader != null) &&
-				(pluginClassLoader != contextClassLoader)) {
-
-				currentThread.setContextClassLoader(pluginClassLoader);
-			}
-
-			doProcessCustomizationSettings(
+			_processCustomizationSettings(
 				httpServletRequest, httpServletResponse, templateResource,
 				langType);
 		}
-		finally {
-			if ((pluginClassLoader != null) &&
-				(pluginClassLoader != contextClassLoader)) {
-
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
-		}
 	}
 
-	protected static void doProcessCustomizationSettings(
+	private static void _processCustomizationSettings(
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse,
 			TemplateResource templateResource, String langType)
@@ -115,7 +93,7 @@ public class CustomizationSettingsUtil {
 			template.processTemplate(httpServletResponse.getWriter());
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw exception;
 		}

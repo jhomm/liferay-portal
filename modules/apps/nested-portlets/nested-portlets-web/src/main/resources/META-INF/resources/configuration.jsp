@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,55 +21,57 @@
 	<aui:input name="oldLayoutTemplateId" type="hidden" value="<%= nestedPortletsDisplayContext.getLayoutTemplateId() %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset
-				cssClass="display-style-icon"
-			>
-				<h4><liferay-ui:message key="layout-template" /></h4>
+		<liferay-frontend:fieldset
+			cssClass="display-style-icon"
+		>
+			<div class="h4"><liferay-ui:message key="layout-template" /></div>
 
-				<clay:row>
+			<clay:row>
 
-					<%
-					String layoutTemplateId = nestedPortletsDisplayContext.getLayoutTemplateId();
+				<%
+				String layoutTemplateId = nestedPortletsDisplayContext.getLayoutTemplateId();
 
-					for (LayoutTemplate layoutTemplate : nestedPortletsDisplayContext.getLayoutTemplates()) {
-					%>
+				for (LayoutTemplate layoutTemplate : nestedPortletsDisplayContext.getLayoutTemplates()) {
+				%>
 
-						<clay:col
-							md="3"
-							size="6"
-							sm="4"
-						>
-							<div class="radio radio-card radio-top-left">
-								<label>
-									<aui:input checked="<%= layoutTemplateId.equals(layoutTemplate.getLayoutTemplateId()) %>" label="" name="preferences--layoutTemplateId--" type="radio" value="<%= layoutTemplate.getLayoutTemplateId() %>" />
+					<clay:col
+						md="3"
+						size="6"
+						sm="4"
+					>
+						<div class="radio radio-card radio-top-left">
+							<label>
+								<aui:input checked="<%= layoutTemplateId.equals(layoutTemplate.getLayoutTemplateId()) %>" label="" name="preferences--layoutTemplateId--" type="radio" value="<%= layoutTemplate.getLayoutTemplateId() %>" />
 
-									<div class="card">
-										<div class="aspect-ratio aspect-ratio-bg-cover" style="background-image: url('<%= layoutTemplate.getStaticResourcePath() + HtmlUtil.escapeAttribute(layoutTemplate.getThumbnailPath()) %>');">
-										</div>
+								<aui:style>
+									.card-background-image-<%= layoutTemplate.getLayoutTemplateId() %> {
+										background-image: url('<%= layoutTemplate.getStaticResourcePath() + HtmlUtil.escapeAttribute(layoutTemplate.getThumbnailPath()) %>') !important;
+									}
+								</aui:style>
 
-										<div class="card-body">
-											<div class="card-col-field">
-												<%= layoutTemplate.getName(locale) %>
-											</div>
+								<div class="card">
+									<div class="aspect-ratio aspect-ratio-bg-cover card-background-image-<%= layoutTemplate.getLayoutTemplateId() %>">
+									</div>
+
+									<div class="card-body">
+										<div class="card-col-field">
+											<%= layoutTemplate.getName(locale) %>
 										</div>
 									</div>
-								</label>
-							</div>
-						</clay:col>
+								</div>
+							</label>
+						</div>
+					</clay:col>
 
-					<%
-					}
-					%>
+				<%
+				}
+				%>
 
-				</clay:row>
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			</clay:row>
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

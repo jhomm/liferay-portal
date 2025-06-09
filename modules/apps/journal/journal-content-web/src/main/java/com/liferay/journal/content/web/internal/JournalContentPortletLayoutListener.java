@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.content.web.internal;
@@ -20,7 +11,6 @@ import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
 import com.liferay.journal.constants.JournalContentPortletKeys;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
-import com.liferay.journal.service.JournalContentSearchLocalService;
 import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.service.LayoutClassedModelUsageLocalService;
 import com.liferay.petra.string.StringBundler;
@@ -46,12 +36,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portal.layoutconfiguration.util.xml.PortletLogic;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,8 +50,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Raymond Augé
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
+	property = "jakarta.portlet.name=" + JournalContentPortletKeys.JOURNAL_CONTENT,
 	service = PortletLayoutListener.class
 )
 public class JournalContentPortletLayoutListener
@@ -87,10 +75,6 @@ public class JournalContentPortletLayoutListener
 			}
 
 			_addLayoutClassedModelUsage(layout, portletId, article);
-
-			_journalContentSearchLocalService.updateContentSearch(
-				layout.getGroupId(), layout.isPrivateLayout(),
-				layout.getLayoutId(), portletId, article.getArticleId(), true);
 		}
 		catch (Exception exception) {
 			throw new PortletLayoutListenerException(exception);
@@ -129,11 +113,7 @@ public class JournalContentPortletLayoutListener
 			_layoutClassedModelUsageLocalService.deleteLayoutClassedModelUsages(
 				portletId, _portal.getClassNameId(Portlet.class), plid);
 
-			_journalContentSearchLocalService.deleteArticleContentSearch(
-				layout.getGroupId(), layout.isPrivateLayout(),
-				layout.getLayoutId(), portletId, article.getArticleId());
-
-			String[] runtimePortletIds = getRuntimePortletIds(
+			String[] runtimePortletIds = _getRuntimePortletIds(
 				layout.getCompanyId(), layout.getGroupId(),
 				article.getArticleId());
 
@@ -163,19 +143,10 @@ public class JournalContentPortletLayoutListener
 			_layoutClassedModelUsageLocalService.deleteLayoutClassedModelUsages(
 				portletId, _portal.getClassNameId(Portlet.class), plid);
 
-			_journalContentSearchLocalService.deleteArticleContentSearch(
-				layout.getGroupId(), layout.isPrivateLayout(),
-				layout.getLayoutId(), portletId);
-
 			JournalArticle article = _getArticle(layout, portletId);
 
 			if (article != null) {
 				_addLayoutClassedModelUsage(layout, portletId, article);
-
-				_journalContentSearchLocalService.updateContentSearch(
-					layout.getGroupId(), layout.isPrivateLayout(),
-					layout.getLayoutId(), portletId, article.getArticleId(),
-					true);
 			}
 		}
 		catch (Exception exception) {
@@ -189,100 +160,14 @@ public class JournalContentPortletLayoutListener
 		throws PortletLayoutListenerException {
 	}
 
-	protected String getRuntimePortletId(String xml) throws Exception {
-		Document document = SAXReaderUtil.read(xml);
-
-		Element rootElement = document.getRootElement();
-
-		String portletName = rootElement.attributeValue("name");
-		String instanceId = rootElement.attributeValue("instance");
-
-		return PortletIdCodec.encode(portletName, 0, instanceId);
-	}
-
-	protected String[] getRuntimePortletIds(
-			long companyId, long scopeGroupId, String articleId)
-		throws Exception {
-
-		JournalArticle article =
-			_journalArticleLocalService.fetchDisplayArticle(
-				scopeGroupId, articleId);
-
-		if (article == null) {
-			Group group = _groupLocalService.fetchGroup(companyId);
-
-			if (group == null) {
-				return new String[0];
-			}
-
-			article = _journalArticleLocalService.fetchDisplayArticle(
-				group.getGroupId(), articleId);
-
-			if (article == null) {
-				return new String[0];
-			}
-		}
-
-		Set<String> portletIds = getRuntimePortletIds(article.getContent());
-
-		if (Validator.isNotNull(article.getDDMTemplateKey())) {
-			DDMTemplate ddmTemplate = _ddmTemplateLocalService.fetchTemplate(
-				scopeGroupId, _portal.getClassNameId(DDMStructure.class),
-				article.getDDMTemplateKey(), true);
-
-			if (ddmTemplate != null) {
-				portletIds.addAll(
-					getRuntimePortletIds(ddmTemplate.getScript()));
-			}
-		}
-
-		return portletIds.toArray(new String[0]);
-	}
-
-	protected Set<String> getRuntimePortletIds(String content)
-		throws Exception {
-
-		Set<String> portletIds = new LinkedHashSet<>();
-
-		for (int index = 0;;) {
-			index = content.indexOf(PortletLogic.OPEN_TAG, index);
-
-			if (index == -1) {
-				break;
-			}
-
-			int close1 = content.indexOf(PortletLogic.CLOSE_1_TAG, index);
-			int close2 = content.indexOf(PortletLogic.CLOSE_2_TAG, index);
-
-			int closeIndex = -1;
-
-			if ((close2 == -1) || ((close1 != -1) && (close1 < close2))) {
-				closeIndex = close1 + PortletLogic.CLOSE_1_TAG.length();
-			}
-			else {
-				closeIndex = close2 + PortletLogic.CLOSE_2_TAG.length();
-			}
-
-			if (closeIndex == -1) {
-				break;
-			}
-
-			portletIds.add(
-				getRuntimePortletId(content.substring(index, closeIndex)));
-
-			index = closeIndex;
-		}
-
-		return portletIds;
-	}
-
 	private void _addLayoutClassedModelUsage(
 		Layout layout, String portletId, JournalArticle article) {
 
 		LayoutClassedModelUsage layoutClassedModelUsage =
 			_layoutClassedModelUsageLocalService.fetchLayoutClassedModelUsage(
+				layout.getGroupId(),
 				_portal.getClassNameId(JournalArticle.class),
-				article.getResourcePrimKey(), portletId,
+				article.getResourcePrimKey(), StringPool.BLANK, portletId,
 				_portal.getClassNameId(Portlet.class), layout.getPlid());
 
 		if (layoutClassedModelUsage != null) {
@@ -291,7 +176,7 @@ public class JournalContentPortletLayoutListener
 
 		_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
 			layout.getGroupId(), _portal.getClassNameId(JournalArticle.class),
-			article.getResourcePrimKey(), portletId,
+			article.getResourcePrimKey(), StringPool.BLANK, portletId,
 			_portal.getClassNameId(Portlet.class), layout.getPlid(),
 			ServiceContextThreadLocal.getServiceContext());
 	}
@@ -315,12 +200,128 @@ public class JournalContentPortletLayoutListener
 			return null;
 		}
 
-		long groupId = GetterUtil.getLong(
-			portletPreferences.getValue("groupId", null));
-		String articleId = portletPreferences.getValue("articleId", null);
+		String groupExternalReferenceCode = GetterUtil.getString(
+			portletPreferences.getValue("groupExternalReferenceCode", null));
 
-		return _journalArticleLocalService.fetchArticle(groupId, articleId);
+		if (Validator.isNull(groupExternalReferenceCode)) {
+			return null;
+		}
+
+		Group group = _groupLocalService.fetchGroupByExternalReferenceCode(
+			groupExternalReferenceCode, layout.getCompanyId());
+
+		long groupId = 0;
+
+		if (group != null) {
+			groupId = group.getGroupId();
+		}
+
+		if (groupId <= 0) {
+			return null;
+		}
+
+		String articleExternalReferenceCode = portletPreferences.getValue(
+			"articleExternalReferenceCode", null);
+
+		if (articleExternalReferenceCode == null) {
+			return null;
+		}
+
+		return _journalArticleLocalService.
+			fetchLatestArticleByExternalReferenceCode(
+				groupId, articleExternalReferenceCode);
 	}
+
+	private String _getRuntimePortletId(String xml) throws Exception {
+		Document document = SAXReaderUtil.read(xml);
+
+		Element rootElement = document.getRootElement();
+
+		String portletName = rootElement.attributeValue("name");
+		String instanceId = rootElement.attributeValue("instance");
+
+		return PortletIdCodec.encode(portletName, 0, instanceId);
+	}
+
+	private String[] _getRuntimePortletIds(
+			long companyId, long scopeGroupId, String articleId)
+		throws Exception {
+
+		JournalArticle article =
+			_journalArticleLocalService.fetchDisplayArticle(
+				scopeGroupId, articleId);
+
+		if (article == null) {
+			Group group = _groupLocalService.fetchGroup(companyId);
+
+			if (group == null) {
+				return new String[0];
+			}
+
+			article = _journalArticleLocalService.fetchDisplayArticle(
+				group.getGroupId(), articleId);
+
+			if (article == null) {
+				return new String[0];
+			}
+		}
+
+		Set<String> portletIds = _getRuntimePortletIds(article.getContent());
+
+		if (Validator.isNotNull(article.getDDMTemplateKey())) {
+			DDMTemplate ddmTemplate = _ddmTemplateLocalService.fetchTemplate(
+				scopeGroupId, _portal.getClassNameId(DDMStructure.class),
+				article.getDDMTemplateKey(), true);
+
+			if (ddmTemplate != null) {
+				portletIds.addAll(
+					_getRuntimePortletIds(ddmTemplate.getScript()));
+			}
+		}
+
+		return portletIds.toArray(new String[0]);
+	}
+
+	private Set<String> _getRuntimePortletIds(String content) throws Exception {
+		Set<String> portletIds = new LinkedHashSet<>();
+
+		for (int index = 0;;) {
+			index = content.indexOf(_OPEN_TAG, index);
+
+			if (index == -1) {
+				break;
+			}
+
+			int close1 = content.indexOf(_CLOSE_1_TAG, index);
+			int close2 = content.indexOf(_CLOSE_2_TAG, index);
+
+			int closeIndex = -1;
+
+			if ((close2 == -1) || ((close1 != -1) && (close1 < close2))) {
+				closeIndex = close1 + _CLOSE_1_TAG.length();
+			}
+			else {
+				closeIndex = close2 + _CLOSE_2_TAG.length();
+			}
+
+			if (closeIndex == -1) {
+				break;
+			}
+
+			portletIds.add(
+				_getRuntimePortletId(content.substring(index, closeIndex)));
+
+			index = closeIndex;
+		}
+
+		return portletIds;
+	}
+
+	private static final String _CLOSE_1_TAG = "</runtime-portlet>";
+
+	private static final String _CLOSE_2_TAG = "/>";
+
+	private static final String _OPEN_TAG = "<runtime-portlet";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalContentPortletLayoutListener.class);
@@ -333,9 +334,6 @@ public class JournalContentPortletLayoutListener
 
 	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
-
-	@Reference
-	private JournalContentSearchLocalService _journalContentSearchLocalService;
 
 	@Reference
 	private LayoutClassedModelUsageLocalService

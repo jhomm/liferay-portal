@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,6 +16,8 @@ long cpDefinitionId = cpDefinitionsDisplayContext.getCPDefinitionId();
 
 Map<String, String> contextParams = HashMapBuilder.<String, String>put(
 	"cpDefinitionId", String.valueOf(cpDefinitionId)
+).put(
+	"permissionUserId", String.valueOf(themeDisplay.getUserId())
 ).build();
 %>
 
@@ -36,26 +29,26 @@ Map<String, String> contextParams = HashMapBuilder.<String, String>put(
 	<aui:input name="cpDefinitionId" type="hidden" value="<%= String.valueOf(cpDefinitionId) %>" />
 	<aui:input name="commerceAccountGroupIds" type="hidden" value="" />
 	<aui:input name="commerceChannelIds" type="hidden" value="" />
+	<aui:input name="workflowAction" type="hidden" value="<%= WorkflowConstants.ACTION_SAVE_DRAFT %>" />
 
-	<commerce-ui:panel
-		bodyClasses="p-0"
-		collapsed="<%= !cpDefinition.isChannelFilterEnabled() %>"
-		collapseLabel='<%= LanguageUtil.get(request, "filter") %>'
-		collapseSwitchName='<%= liferayPortletResponse.getNamespace() + "channelFilterEnabled" %>'
-		title='<%= LanguageUtil.get(request, "channels") %>'
-	>
-		<clay:data-set-display
-			contextParams="<%= contextParams %>"
-			creationMenu="<%= cpDefinitionsDisplayContext.getChannelsCreationMenu() %>"
-			dataProviderKey="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_CHANNELS %>"
-			formName="fm"
-			id="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_CHANNELS %>"
-			itemsPerPage="<%= 10 %>"
-			namespace="<%= liferayPortletResponse.getNamespace() %>"
-			pageNumber="<%= 1 %>"
-			portletURL="<%= currentURLObj %>"
-		/>
-	</commerce-ui:panel>
+	<c:if test="<%= cpDefinitionsDisplayContext.hasManageCommerceProductChannelVisibility() %>">
+		<commerce-ui:panel
+			bodyClasses="p-0"
+			collapsed="<%= !cpDefinition.isChannelFilterEnabled() %>"
+			collapseLabel='<%= LanguageUtil.get(request, "filter") %>'
+			collapseSwitchName='<%= liferayPortletResponse.getNamespace() + "channelFilterEnabled" %>'
+			title='<%= LanguageUtil.get(request, "channels") %>'
+		>
+			<frontend-data-set:classic-display
+				contextParams="<%= contextParams %>"
+				creationMenu="<%= cpDefinitionsDisplayContext.getChannelsCreationMenu() %>"
+				dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_CHANNELS %>"
+				formName="fm"
+				id="<%= CommerceProductFDSNames.PRODUCT_CHANNELS %>"
+				itemsPerPage="<%= 10 %>"
+			/>
+		</commerce-ui:panel>
+	</c:if>
 
 	<commerce-ui:panel
 		bodyClasses="p-0"
@@ -64,104 +57,32 @@ Map<String, String> contextParams = HashMapBuilder.<String, String>put(
 		collapseSwitchName='<%= liferayPortletResponse.getNamespace() + "accountGroupFilterEnabled" %>'
 		title='<%= LanguageUtil.get(request, "account-groups") %>'
 	>
-		<clay:data-set-display
+		<frontend-data-set:classic-display
 			contextParams="<%= contextParams %>"
 			creationMenu="<%= cpDefinitionsDisplayContext.getAccountGroupsCreationMenu() %>"
-			dataProviderKey="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_ACCOUNT_GROUPS %>"
+			dataProviderKey="<%= CommerceProductFDSNames.PRODUCT_ACCOUNT_GROUPS %>"
 			formName="fm"
-			id="<%= CommerceProductDataSetConstants.COMMERCE_DATA_SET_KEY_PRODUCT_ACCOUNT_GROUPS %>"
+			id="<%= CommerceProductFDSNames.PRODUCT_ACCOUNT_GROUPS %>"
 			itemsPerPage="<%= 10 %>"
-			namespace="<%= liferayPortletResponse.getNamespace() %>"
-			pageNumber="<%= 1 %>"
-			portletURL="<%= currentURLObj %>"
 		/>
 	</commerce-ui:panel>
 </aui:form>
 
-<aui:script sandbox="<%= true %>">
-	const eventHandlers = [];
-
-	const selectCommerceAccountGroupHandler = Liferay.on(
-		'<portlet:namespace />selectCommerceAccountGroup',
-		() => {
-			Liferay.Util.openSelectionModal({
-				multiple: true,
-				onSelect: (selectedItems) => {
-					if (!selectedItems || !selectedItems.length) {
-						return;
-					}
-
-					const commerceAccountGroupIds = [];
-
-					selectedItems.map((item) => {
-						commerceAccountGroupIds.push(item.commerceAccountGroupId);
-					});
-
-					const commerceAccountGroupIdsInput = document.getElementById(
-						'<portlet:namespace />commerceAccountGroupIds'
-					);
-
-					if (commerceAccountGroupIdsInput) {
-						commerceAccountGroupIdsInput.value = commerceAccountGroupIds;
-					}
-
-					const form = document.getElementById('<portlet:namespace />fm');
-
-					if (form) {
-						submitForm(form);
-					}
-				},
-				title: '<liferay-ui:message key="select-account-group" />',
-				url:
-					'<%= cpDefinitionsDisplayContext.getAccountGroupItemSelectorUrl() %>',
-			});
-		}
-	);
-
-	eventHandlers.push(selectCommerceAccountGroupHandler);
-
-	const selectCommerceChannelHandler = Liferay.on(
-		'<portlet:namespace />selectCommerceChannel',
-		() => {
-			Liferay.Util.openSelectionModal({
-				multiple: true,
-				onSelect: (selectedItems) => {
-					if (!selectedItems || !selectedItems.length) {
-						return;
-					}
-
-					const commerceChannelIds = [];
-
-					selectedItems.map((item) => {
-						commerceChannelIds.push(item.commerceChannelId);
-					});
-
-					const commerceChannelIdsInput = document.getElementById(
-						'<portlet:namespace />commerceChannelIds'
-					);
-
-					if (commerceChannelIdsInput) {
-						commerceChannelIdsInput.value = commerceChannelIds;
-					}
-
-					const form = document.getElementById('<portlet:namespace />fm');
-
-					if (form) {
-						submitForm(form);
-					}
-				},
-				title: '<liferay-ui:message key="select-channel" />',
-				url:
-					'<%= cpDefinitionsDisplayContext.getChannelItemSelectorUrl() %>',
-			});
-		}
-	);
-
-	eventHandlers.push(selectCommerceChannelHandler);
-
-	Liferay.on('destroyPortlet', () => {
-		eventHandlers.forEach((eventHandler) => {
-			eventHandler.detach();
-		});
-	});
-</aui:script>
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"accountGroupItemSelectorURL", cpDefinitionsDisplayContext.getAccountGroupItemSelectorUrl()
+		).put(
+			"channelDataSetId", CommerceProductFDSNames.PRODUCT_CHANNELS
+		).put(
+			"channelItemSelectorURL", cpDefinitionsDisplayContext.getChannelItemSelectorUrl()
+		).put(
+			"checkedAccountGroupIds", cpDefinitionsDisplayContext.getCheckedCommerceAccountGroupIds()
+		).put(
+			"checkedCommerceChannelIds", cpDefinitionsDisplayContext.getCheckedCommerceChannelIds()
+		).put(
+			"productId", cpDefinition.getCProductId()
+		).build()
+	%>'
+	module="{editCpDefinitionVisibility} from commerce-product-definitions-web"
+/>

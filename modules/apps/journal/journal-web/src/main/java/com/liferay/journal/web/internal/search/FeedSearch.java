@@ -1,31 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.search;
 
+import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalFeed;
 import com.liferay.journal.util.comparator.FeedIDComparator;
 import com.liferay.journal.util.comparator.FeedNameComparator;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.ParamUtil;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 /**
  * @author Raymond Augé
@@ -58,20 +50,22 @@ public class FeedSearch extends SearchContainer<JournalFeed> {
 			FeedDisplayTerms.GROUP_ID,
 			String.valueOf(displayTerms.getGroupId()));
 
-		String orderByCol = ParamUtil.getString(
-			portletRequest, "orderByCol", "name");
-		String orderByType = ParamUtil.getString(
-			portletRequest, "orderByType", "asc");
-
-		OrderByComparator<JournalFeed> orderByComparator =
-			getOrganizationOrderByComparator(orderByCol, orderByType);
+		String orderByCol = SearchOrderByUtil.getOrderByCol(
+			portletRequest, JournalPortletKeys.JOURNAL,
+			"feed-search-order-by-col", "name");
 
 		setOrderByCol(orderByCol);
+
+		String orderByType = SearchOrderByUtil.getOrderByType(
+			portletRequest, JournalPortletKeys.JOURNAL,
+			"feed-search-order-by-type", "asc");
+
+		setOrderByComparator(
+			_getOrganizationOrderByComparator(orderByCol, orderByType));
 		setOrderByType(orderByType);
-		setOrderByComparator(orderByComparator);
 	}
 
-	protected OrderByComparator<JournalFeed> getOrganizationOrderByComparator(
+	private OrderByComparator<JournalFeed> _getOrganizationOrderByComparator(
 		String orderByCol, String orderByType) {
 
 		boolean orderByAsc = false;
@@ -83,10 +77,10 @@ public class FeedSearch extends SearchContainer<JournalFeed> {
 		OrderByComparator<JournalFeed> orderByComparator = null;
 
 		if (orderByCol.equals("name")) {
-			orderByComparator = new FeedNameComparator(orderByAsc);
+			orderByComparator = FeedNameComparator.getInstance(orderByAsc);
 		}
 		else {
-			orderByComparator = new FeedIDComparator(orderByAsc);
+			orderByComparator = FeedIDComparator.getInstance(orderByAsc);
 		}
 
 		return orderByComparator;

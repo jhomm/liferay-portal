@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.internal.exportimport.portlet.preferences.processor;
@@ -38,9 +29,9 @@ import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiNodeLocalService;
 import com.liferay.wiki.service.WikiPageLocalService;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	immediate = true, property = "javax.portlet.name=" + WikiPortletKeys.WIKI,
+	property = "jakarta.portlet.name=" + WikiPortletKeys.WIKI,
 	service = ExportImportPortletPreferencesProcessor.class
 )
 public class WikiExportImportPortletPreferencesProcessor
@@ -140,14 +131,14 @@ public class WikiExportImportPortletPreferencesProcessor
 			"hiddenNodes", null);
 
 		for (String hiddenNodeName : StringUtil.split(hiddenNodeNames)) {
-			exportNode(portletDataContext, group, hiddenNodeName);
+			_exportNode(portletDataContext, group, hiddenNodeName);
 		}
 
 		String visibleNodeNames = portletPreferences.getValue(
 			"visibleNodes", null);
 
 		for (String visibleNodeName : StringUtil.split(visibleNodeNames)) {
-			exportNode(portletDataContext, group, visibleNodeName);
+			_exportNode(portletDataContext, group, visibleNodeName);
 		}
 
 		return portletPreferences;
@@ -203,7 +194,7 @@ public class WikiExportImportPortletPreferencesProcessor
 		return portletPreferences;
 	}
 
-	protected void exportNode(
+	private void _exportNode(
 			PortletDataContext portletDataContext, Group group, String nodeName)
 		throws PortletDataException {
 
@@ -228,31 +219,13 @@ public class WikiExportImportPortletPreferencesProcessor
 			portletDataContext, portletDataContext.getPortletId(), node);
 	}
 
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWikiNodeLocalService(
-		WikiNodeLocalService wikiNodeLocalService) {
-
-		_wikiNodeLocalService = wikiNodeLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWikiPageLocalService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		_wikiPageLocalService = wikiPageLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		WikiExportImportPortletPreferencesProcessor.class);
 
 	@Reference
 	private ExportImportHelper _exportImportHelper;
 
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference(target = "(name=PortletDisplayTemplateExporter)")
@@ -264,14 +237,18 @@ public class WikiExportImportPortletPreferencesProcessor
 	@Reference(target = "(name=ReferencedStagedModelImporter)")
 	private Capability _referencedStagedModelImporter;
 
-	@Reference
-	private WikiCommentsAndRatingsExporterImporterCapability
-		_wikiCommentsAndRatingsExporterImporterCapability;
+	@Reference(
+		target = "(component.name=com.liferay.wiki.internal.exportimport.portlet.preferences.processor.WikiCommentsAndRatingsExporterImporterCapability)"
+	)
+	private Capability _wikiCommentsAndRatingsExporterImporterCapability;
 
+	@Reference
 	private WikiNodeLocalService _wikiNodeLocalService;
+
+	@Reference
 	private WikiPageLocalService _wikiPageLocalService;
 
-	@Reference(target = "(javax.portlet.name=" + WikiPortletKeys.WIKI + ")")
+	@Reference(target = "(jakarta.portlet.name=" + WikiPortletKeys.WIKI + ")")
 	private PortletDataHandler _wikiPortletDataHandler;
 
 }

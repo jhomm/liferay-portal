@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.remote.cors.internal.jaxrs.feature;
@@ -25,20 +16,20 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.remote.cors.annotation.CORS;
 import com.liferay.portal.remote.cors.internal.CORSSupport;
 
-import java.io.IOException;
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.ContainerResponseContext;
+import jakarta.ws.rs.container.ContainerResponseFilter;
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.container.PreMatching;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.container.PreMatching;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ServiceScope;
@@ -58,10 +49,10 @@ public class CORSAnnotationDynamicFeature implements DynamicFeature {
 
 	@Override
 	public void configure(ResourceInfo resourceInfo, FeatureContext context) {
-		CORS cors = getCORS(resourceInfo);
+		CORS cors = _getCORS(resourceInfo);
 
 		if (cors != null) {
-			CORSSupport corsSupport = getCORSSupport(cors);
+			CORSSupport corsSupport = _getCORSSupport(cors);
 
 			context.register(
 				new CORSPreflighContainerRequestFilter(corsSupport));
@@ -70,13 +61,13 @@ public class CORSAnnotationDynamicFeature implements DynamicFeature {
 		}
 	}
 
-	protected CORS getCORS(ResourceInfo resourceInfo) {
+	private CORS _getCORS(ResourceInfo resourceInfo) {
 		return AnnotationLocator.locate(
 			resourceInfo.getResourceMethod(), resourceInfo.getResourceClass(),
 			CORS.class);
 	}
 
-	protected CORSSupport getCORSSupport(CORS cors) {
+	private CORSSupport _getCORSSupport(CORS cors) {
 		CORSSupport corsSupport = new CORSSupport();
 
 		corsSupport.setCORSHeaders(
@@ -146,7 +137,7 @@ public class CORSAnnotationDynamicFeature implements DynamicFeature {
 
 			User user = permissionChecker.getUser();
 
-			return user.isDefaultUser();
+			return user.isGuestUser();
 		}
 
 		private final CORSSupport _corsSupport;

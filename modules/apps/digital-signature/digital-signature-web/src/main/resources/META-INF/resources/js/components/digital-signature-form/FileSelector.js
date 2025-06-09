@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {createPortletURL} from 'frontend-js-web';
 import React, {useContext} from 'react';
 
 import {AppContext} from '../../AppContext';
@@ -25,15 +18,14 @@ const getDocumentLibrarySelectorURL = (portletNamespace) => {
 
 	const documentLibrarySelectorParameters = {
 		'0_json': JSON.stringify(criterionJSON),
-		'criteria':
-			'com.liferay.item.selector.criteria.file.criterion.FileItemSelectorCriterion',
+		'criteria': 'file',
 		'itemSelectedEventName': `${portletNamespace}selectDocumentLibrary`,
 		'p_p_id': Liferay.PortletKeys.ITEM_SELECTOR,
 		'p_p_state': 'pop_up',
 		'refererGroupId': Liferay.ThemeDisplay.getSiteGroupId(),
 	};
 
-	const documentLibrarySelectorURL = Liferay.Util.PortletURL.createPortletURL(
+	const documentLibrarySelectorURL = createPortletURL(
 		themeDisplay.getLayoutRelativeControlPanelURL(),
 		documentLibrarySelectorParameters
 	);
@@ -51,7 +43,7 @@ const FileSelector = ({disabled, onChange}) => {
 	};
 
 	const handleSelectButtonClicked = () => {
-		Liferay.Util.openSelectionModal({
+		openSelectionModal({
 			onSelect: handleFieldChanged,
 			selectEventName: `${portletNamespace}selectDocumentLibrary`,
 			title: Liferay.Language.get('select-document'),

@@ -1,29 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.spi.contributor.helper;
 
-import org.osgi.annotation.versioning.ProviderType;
-
 /**
  * @author André de Oliveira
  */
-@ProviderType
 public interface CriteriaBuilder {
 
+	/**
+	 * Specifies the className of the similar result.
+	 *
+	 * @param  className The fully qualified class name of the content type.
+	 * @return This {@link CriteriaBuilder} instance.
+	 */
 	public CriteriaBuilder type(String className);
 
+	/**
+	 * Specifies the unique identifier (UID) of the similar result.
+	 *
+	 * @param  uid The unique identifier of the similar result.
+	 * @return This {@link CriteriaBuilder} instance.
+	 */
 	public CriteriaBuilder uid(String uid);
 
 }

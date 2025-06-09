@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -35,8 +26,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.service.base.ContactLocalServiceBaseImpl;
 
+import java.io.Serializable;
+
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
@@ -60,10 +55,11 @@ public class ContactLocalServiceImpl extends ContactLocalServiceBaseImpl {
 	@Override
 	public Contact addContact(
 			long userId, String className, long classPK, String emailAddress,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String smsSn, String facebookSn, String jabberSn,
-			String skypeSn, String twitterSn, String jobTitle)
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
+			String facebookSn, String jabberSn, String skypeSn,
+			String twitterSn, String jobTitle)
 		throws PortalException {
 
 		User user = _userPersistence.findByPrimaryKey(userId);
@@ -88,8 +84,8 @@ public class ContactLocalServiceImpl extends ContactLocalServiceBaseImpl {
 		contact.setFirstName(firstName);
 		contact.setMiddleName(middleName);
 		contact.setLastName(lastName);
-		contact.setPrefixId(prefixId);
-		contact.setSuffixId(suffixId);
+		contact.setPrefixListTypeId(prefixListTypeId);
+		contact.setSuffixListTypeId(suffixListTypeId);
 		contact.setMale(male);
 		contact.setBirthday(birthday);
 		contact.setSmsSn(smsSn);
@@ -151,6 +147,13 @@ public class ContactLocalServiceImpl extends ContactLocalServiceBaseImpl {
 	}
 
 	@Override
+	public Map<Serializable, Contact> fetchContacts(
+		Set<Serializable> primaryKeys) {
+
+		return contactPersistence.fetchByPrimaryKeys(primaryKeys);
+	}
+
+	@Override
 	public List<Contact> getCompanyContacts(
 		long companyId, int start, int end) {
 
@@ -193,10 +196,10 @@ public class ContactLocalServiceImpl extends ContactLocalServiceBaseImpl {
 	@Override
 	public Contact updateContact(
 			long contactId, String emailAddress, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle)
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle)
 		throws PortalException {
 
 		Date birthday = PortalUtil.getDate(
@@ -211,8 +214,8 @@ public class ContactLocalServiceImpl extends ContactLocalServiceBaseImpl {
 		contact.setFirstName(firstName);
 		contact.setMiddleName(middleName);
 		contact.setLastName(lastName);
-		contact.setPrefixId(prefixId);
-		contact.setSuffixId(suffixId);
+		contact.setPrefixListTypeId(prefixListTypeId);
+		contact.setSuffixListTypeId(suffixListTypeId);
 		contact.setMale(male);
 		contact.setBirthday(birthday);
 		contact.setSmsSn(smsSn);

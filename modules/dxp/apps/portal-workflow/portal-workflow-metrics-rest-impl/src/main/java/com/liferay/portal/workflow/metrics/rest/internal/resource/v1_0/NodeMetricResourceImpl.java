@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.internal.resource.v1_0;
 
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
@@ -33,6 +25,7 @@ import com.liferay.portal.search.aggregation.metrics.ValueCountAggregationResult
 import com.liferay.portal.search.engine.adapter.search.SearchRequestExecutor;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
+import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.query.TermsQuery;
@@ -42,25 +35,24 @@ import com.liferay.portal.search.sort.SortOrder;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.Node;
 import com.liferay.portal.workflow.metrics.rest.dto.v1_0.NodeMetric;
 import com.liferay.portal.workflow.metrics.rest.internal.odata.entity.v1_0.NodeMetricEntityModel;
 import com.liferay.portal.workflow.metrics.rest.internal.resource.helper.ResourceHelper;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.NodeMetricResource;
-import com.liferay.portal.workflow.metrics.search.index.name.WorkflowMetricsIndexNameBuilder;
+import com.liferay.portal.workflow.metrics.search.index.constants.WorkflowMetricsIndexNameConstants;
 import com.liferay.portal.workflow.metrics.sla.processor.WorkflowMetricsSLAStatus;
+
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -73,8 +65,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/node-metric.properties",
 	scope = ServiceScope.PROTOTYPE, service = NodeMetricResource.class
 )
-public class NodeMetricResourceImpl
-	extends BaseNodeMetricResourceImpl implements EntityModelResource {
+public class NodeMetricResourceImpl extends BaseNodeMetricResourceImpl {
 
 	@Override
 	public EntityModel getEntityModel(MultivaluedMap multivaluedMap)
@@ -131,8 +122,8 @@ public class NodeMetricResourceImpl
 		slaTaskResultsBooleanQuery.addFilterQueryClauses(
 			_queries.term(
 				"_index",
-				_slaTaskResultWorkflowMetricsIndexNameBuilder.getIndexName(
-					contextCompany.getCompanyId())));
+				_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
+					WorkflowMetricsIndexNameConstants.SUFFIX_SLA_TASK_RESULT));
 		slaTaskResultsBooleanQuery.addMustQueryClauses(
 			_createSLATaskResultsBooleanQuery(
 				completed, dateEnd, dateStart, processId, taskNames));
@@ -142,8 +133,8 @@ public class NodeMetricResourceImpl
 		tasksBooleanQuery.addFilterQueryClauses(
 			_queries.term(
 				"_index",
-				_taskWorkflowMetricsIndexNameBuilder.getIndexName(
-					contextCompany.getCompanyId())));
+				_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
+					WorkflowMetricsIndexNameConstants.SUFFIX_TASK));
 		tasksBooleanQuery.addMustQueryClauses(
 			_createTasksBooleanQuery(
 				completed, dateEnd, dateStart, processId, taskNames));
@@ -195,16 +186,20 @@ public class NodeMetricResourceImpl
 	private NodeMetric _createNodeMetric(String nodeName) {
 		return new NodeMetric() {
 			{
-				node = new Node() {
-					{
-						label = _language.get(
-							ResourceBundleUtil.getModuleAndPortalResourceBundle(
-								contextAcceptLanguage.getPreferredLocale(),
-								NodeMetricResourceImpl.class),
-							nodeName);
-						name = nodeName;
-					}
-				};
+				setNode(
+					() -> new Node() {
+						{
+							setLabel(
+								() -> _language.get(
+									ResourceBundleUtil.
+										getModuleAndPortalResourceBundle(
+											contextAcceptLanguage.
+												getPreferredLocale(),
+											NodeMetricResourceImpl.class),
+									nodeName));
+							setName(() -> nodeName);
+						}
+					});
 			}
 		};
 	}
@@ -217,7 +212,9 @@ public class NodeMetricResourceImpl
 
 		if (Validator.isNotNull(key)) {
 			filterBooleanQuery.addMustQueryClauses(
-				_queries.wildcard("name", "*" + key + "*"));
+				_queries.wildcard(
+					Field.getSortableFieldName("name"),
+					"*" + StringUtil.toLowerCase(key) + "*"));
 		}
 
 		TermsQuery termsQuery = _queries.terms("name");
@@ -301,6 +298,7 @@ public class NodeMetricResourceImpl
 		}
 
 		return booleanQuery.addMustQueryClauses(
+			_queries.term("active", true),
 			_queries.term("companyId", contextCompany.getCompanyId()),
 			_queries.term("completed", completed),
 			_queries.term("deleted", Boolean.FALSE),
@@ -316,7 +314,9 @@ public class NodeMetricResourceImpl
 
 		if (Validator.isNotNull(key)) {
 			filterBooleanQuery.addMustQueryClauses(
-				_queries.wildcard("name", "*" + key + "*"));
+				_queries.wildcard(
+					Field.getSortableFieldName("name"),
+					"*" + StringUtil.toLowerCase(key) + "*"));
 		}
 
 		BooleanQuery booleanQuery = _queries.booleanQuery();
@@ -340,8 +340,19 @@ public class NodeMetricResourceImpl
 		booleanQuery.addFilterQueryClauses(filterBooleanQuery);
 
 		return booleanQuery.addMustQueryClauses(
+			_queries.term("active", Boolean.TRUE),
 			_queries.term("companyId", contextCompany.getCompanyId()),
 			_queries.term("deleted", Boolean.FALSE));
+	}
+
+	private double _getAvgAggregationResultValue(
+		AvgAggregationResult avgAggregationResult) {
+
+		if (Double.isInfinite(avgAggregationResult.getValue())) {
+			return 0D;
+		}
+
+		return avgAggregationResult.getValue();
 	}
 
 	private Collection<NodeMetric> _getNodeMetrics(
@@ -407,27 +418,26 @@ public class NodeMetricResourceImpl
 		searchSearchRequest.addAggregation(termsAggregation);
 
 		searchSearchRequest.setIndexNames(
-			_taskWorkflowMetricsIndexNameBuilder.getIndexName(
-				contextCompany.getCompanyId()),
-			_slaTaskResultWorkflowMetricsIndexNameBuilder.getIndexName(
-				contextCompany.getCompanyId()));
+			_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
+				WorkflowMetricsIndexNameConstants.SUFFIX_TASK,
+			_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
+				WorkflowMetricsIndexNameConstants.SUFFIX_SLA_TASK_RESULT);
 		searchSearchRequest.setQuery(
 			_createBooleanQuery(
 				completed, dateEnd, dateStart, processId,
 				nodeMetrics.keySet()));
 
-		return Stream.of(
-			_searchRequestExecutor.executeSearchRequest(searchSearchRequest)
-		).map(
-			SearchSearchResponse::getAggregationResultsMap
-		).map(
-			aggregationResultsMap ->
-				(TermsAggregationResult)aggregationResultsMap.get("taskName")
-		).map(
-			TermsAggregationResult::getBuckets
-		).flatMap(
-			Collection::stream
-		).map(
+		SearchSearchResponse searchSearchResponse =
+			_searchRequestExecutor.executeSearchRequest(searchSearchRequest);
+
+		Map<String, AggregationResult> aggregationResultsMap =
+			searchSearchResponse.getAggregationResultsMap();
+
+		TermsAggregationResult termsAggregationResult =
+			(TermsAggregationResult)aggregationResultsMap.get("taskName");
+
+		return transform(
+			termsAggregationResult.getBuckets(),
 			bucket -> {
 				NodeMetric nodeMetric = nodeMetrics.remove(bucket.getKey());
 
@@ -437,16 +447,15 @@ public class NodeMetricResourceImpl
 				_setInstanceCount(bucket, nodeMetric);
 
 				return nodeMetric;
-			}
-		).collect(
-			Collectors.toList()
-		);
+			});
 	}
 
 	private Map<String, NodeMetric> _getNodeMetrics(
 		String key, String latestProcessVersion, long processId,
 		String processVersion, Set<String> taskNames) {
 
+		Map<String, NodeMetric> nodeMetricsMap = new LinkedHashMap<>();
+
 		SearchSearchRequest searchSearchRequest = new SearchSearchRequest();
 
 		TermsAggregation termsAggregation = _aggregations.terms("name", "name");
@@ -456,52 +465,68 @@ public class NodeMetricResourceImpl
 		searchSearchRequest.addAggregation(termsAggregation);
 
 		searchSearchRequest.setIndexNames(
-			_nodeWorkflowMetricsIndexNameBuilder.getIndexName(
-				contextCompany.getCompanyId()));
+			_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
+				WorkflowMetricsIndexNameConstants.SUFFIX_NODE);
 
 		searchSearchRequest.setQuery(
 			_createNodesBooleanQuery(
 				key, latestProcessVersion, processId, processVersion,
 				taskNames));
 
-		return Stream.of(
-			_searchRequestExecutor.executeSearchRequest(searchSearchRequest)
-		).map(
-			SearchSearchResponse::getAggregationResultsMap
-		).map(
-			aggregationResultsMap ->
-				(TermsAggregationResult)aggregationResultsMap.get("name")
-		).map(
-			TermsAggregationResult::getBuckets
-		).flatMap(
-			Collection::stream
-		).map(
-			Bucket::getKey
-		).map(
-			this::_createNodeMetric
-		).sorted(
-			(nodeMetric1, nodeMetric2) -> {
-				Node node1 = nodeMetric1.getNode();
-				Node node2 = nodeMetric2.getNode();
+		SearchSearchResponse searchSearchResponse =
+			_searchRequestExecutor.executeSearchRequest(searchSearchRequest);
 
-				String nodeName1 = node1.getName();
+		Map<String, AggregationResult> aggregationResultsMap =
+			searchSearchResponse.getAggregationResultsMap();
 
-				return nodeName1.compareTo(node2.getName());
-			}
-		).collect(
-			LinkedHashMap::new,
-			(map, nodeMetric) -> {
-				Node node = nodeMetric.getNode();
+		TermsAggregationResult termsAggregationResult =
+			(TermsAggregationResult)aggregationResultsMap.get("name");
 
-				map.put(node.getName(), nodeMetric);
-			},
-			Map::putAll
-		);
+		List<NodeMetric> nodeMetrics = transform(
+			termsAggregationResult.getBuckets(),
+			bucket -> _createNodeMetric(bucket.getKey()));
+
+		nodeMetrics.sort(
+			new Comparator<NodeMetric>() {
+
+				@Override
+				public int compare(
+					NodeMetric nodeMetric1, NodeMetric nodeMetric2) {
+
+					Node node1 = nodeMetric1.getNode();
+					Node node2 = nodeMetric2.getNode();
+
+					String nodeName1 = node1.getName();
+
+					return nodeName1.compareTo(node2.getName());
+				}
+
+			});
+
+		for (NodeMetric nodeMetric : nodeMetrics) {
+			Node node = nodeMetric.getNode();
+
+			nodeMetricsMap.put(node.getName(), nodeMetric);
+		}
+
+		return nodeMetricsMap;
+	}
+
+	private Sort _getSort(String fieldName, boolean reverse, Sort[] sorts) {
+		Sort sort = new Sort(fieldName, reverse);
+
+		if (sorts != null) {
+			sort = sorts[0];
+		}
+
+		return sort;
 	}
 
 	private Map<String, Bucket> _getTaskBuckets(
 		boolean completed, String key, String latestProcessVersion,
 		long processId, String processVersion) {
+
+		Map<String, Bucket> taskBucketsMap = new LinkedHashMap<>();
 
 		SearchSearchRequest searchSearchRequest = new SearchSearchRequest();
 
@@ -512,8 +537,8 @@ public class NodeMetricResourceImpl
 		searchSearchRequest.addAggregation(termsAggregation);
 
 		searchSearchRequest.setIndexNames(
-			_taskWorkflowMetricsIndexNameBuilder.getIndexName(
-				contextCompany.getCompanyId()));
+			_indexNameBuilder.getIndexName(contextCompany.getCompanyId()) +
+				WorkflowMetricsIndexNameConstants.SUFFIX_TASK);
 
 		searchSearchRequest.setQuery(
 			_createTasksBooleanQuery(
@@ -529,13 +554,11 @@ public class NodeMetricResourceImpl
 		TermsAggregationResult termsAggregationResult =
 			(TermsAggregationResult)aggregationResultsMap.get("name");
 
-		Collection<Bucket> buckets = termsAggregationResult.getBuckets();
+		for (Bucket bucket : termsAggregationResult.getBuckets()) {
+			taskBucketsMap.put(bucket.getKey(), bucket);
+		}
 
-		Stream<Bucket> stream = buckets.stream();
-
-		return stream.collect(
-			LinkedHashMap::new,
-			(map, bucket) -> map.put(bucket.getKey(), bucket), Map::putAll);
+		return taskBucketsMap;
 	}
 
 	private boolean _isOrderByDurationAvg(String fieldName) {
@@ -599,7 +622,7 @@ public class NodeMetricResourceImpl
 		}
 
 		nodeMetric.setBreachedInstanceCount(
-			_resourceHelper.getBreachedInstanceCount(bucket));
+			() -> _resourceHelper.getBreachedInstanceCount(bucket));
 	}
 
 	private void _setBreachedInstancePercentage(
@@ -610,7 +633,7 @@ public class NodeMetricResourceImpl
 		}
 
 		nodeMetric.setBreachedInstancePercentage(
-			_resourceHelper.getBreachedInstancePercentage(bucket));
+			() -> _resourceHelper.getBreachedInstancePercentage(bucket));
 	}
 
 	private void _setDurationAvg(Bucket bucket, NodeMetric nodeMetric) {
@@ -627,13 +650,9 @@ public class NodeMetricResourceImpl
 				filterAggregationResult.getChildAggregationResult(
 					"durationAvg");
 
-		double value = avgAggregationResult.getValue();
-
-		if (Double.isInfinite(value)) {
-			value = 0D;
-		}
-
-		nodeMetric.setDurationAvg(GetterUtil.getLong(value));
+		nodeMetric.setDurationAvg(
+			() -> GetterUtil.getLong(
+				_getAvgAggregationResultValue(avgAggregationResult)));
 	}
 
 	private void _setInstanceCount(Bucket bucket, NodeMetric nodeMetric) {
@@ -651,7 +670,7 @@ public class NodeMetricResourceImpl
 					"instanceCount");
 
 		nodeMetric.setInstanceCount(
-			GetterUtil.getLong(valueCountAggregationResult.getValue()));
+			() -> GetterUtil.getLong(valueCountAggregationResult.getValue()));
 	}
 
 	private void _setOnTimeInstanceCount(Bucket bucket, NodeMetric nodeMetric) {
@@ -660,7 +679,7 @@ public class NodeMetricResourceImpl
 		}
 
 		nodeMetric.setOnTimeInstanceCount(
-			_resourceHelper.getOnTimeInstanceCount(bucket));
+			() -> _resourceHelper.getOnTimeInstanceCount(bucket));
 	}
 
 	private void _setOverdueInstanceCount(
@@ -671,15 +690,11 @@ public class NodeMetricResourceImpl
 		}
 
 		nodeMetric.setOverdueInstanceCount(
-			_resourceHelper.getOverdueInstanceCount(bucket));
+			() -> _resourceHelper.getOverdueInstanceCount(bucket));
 	}
 
 	private FieldSort _toFieldSort(Sort[] sorts) {
-		Sort sort = new Sort("instanceCount", false);
-
-		if (sorts != null) {
-			sort = sorts[0];
-		}
+		Sort sort = _getSort("instanceCount", false, sorts);
 
 		String fieldName = sort.getFieldName();
 
@@ -711,11 +726,10 @@ public class NodeMetricResourceImpl
 	private Aggregations _aggregations;
 
 	@Reference
-	private Language _language;
+	private IndexNameBuilder _indexNameBuilder;
 
-	@Reference(target = "(workflow.metrics.index.entity.name=node)")
-	private WorkflowMetricsIndexNameBuilder
-		_nodeWorkflowMetricsIndexNameBuilder;
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Queries _queries;
@@ -729,15 +743,7 @@ public class NodeMetricResourceImpl
 	@Reference
 	private SearchRequestExecutor _searchRequestExecutor;
 
-	@Reference(target = "(workflow.metrics.index.entity.name=sla-task-result)")
-	private WorkflowMetricsIndexNameBuilder
-		_slaTaskResultWorkflowMetricsIndexNameBuilder;
-
 	@Reference
 	private Sorts _sorts;
-
-	@Reference(target = "(workflow.metrics.index.entity.name=task)")
-	private WorkflowMetricsIndexNameBuilder
-		_taskWorkflowMetricsIndexNameBuilder;
 
 }

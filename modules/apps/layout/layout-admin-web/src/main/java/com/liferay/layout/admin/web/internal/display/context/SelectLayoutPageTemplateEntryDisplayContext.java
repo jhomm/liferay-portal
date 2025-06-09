@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.display.context;
 
-import com.liferay.exportimport.kernel.staging.StagingUtil;
 import com.liferay.layout.admin.web.internal.util.LayoutPageTemplatePortletUtil;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
@@ -24,7 +14,13 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutTypeController;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.LiferayPortletURL;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -32,15 +28,13 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.LayoutTypeControllerTracker;
-import com.liferay.style.book.model.StyleBookEntry;
-import com.liferay.style.book.service.StyleBookEntryLocalServiceUtil;
-import com.liferay.style.book.util.comparator.StyleBookEntryNameComparator;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -48,11 +42,13 @@ import javax.servlet.http.HttpServletRequest;
 public class SelectLayoutPageTemplateEntryDisplayContext {
 
 	public SelectLayoutPageTemplateEntryDisplayContext(
-		HttpServletRequest httpServletRequest) {
+		HttpServletRequest httpServletRequest,
+		LiferayPortletResponse liferayPortletResponse) {
 
 		_httpServletRequest = httpServletRequest;
+		_liferayPortletResponse = liferayPortletResponse;
 
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -72,6 +68,22 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 		return _backURL;
 	}
 
+	public Map<String, Object> getComponentContext() {
+		return HashMapBuilder.<String, Object>put(
+			"eventName",
+			() -> {
+				String eventName = ParamUtil.getString(
+					_httpServletRequest, "eventName",
+					_liferayPortletResponse.getNamespace() +
+						"selectMasterLayout");
+
+				return HtmlUtil.escape(eventName);
+			}
+		).put(
+			"selector", ".select-master-layout-option"
+		).build();
+	}
+
 	public List<LayoutPageTemplateEntry> getGlobalLayoutPageTemplateEntries() {
 		OrderByComparator<LayoutPageTemplateEntry> orderByComparator =
 			LayoutPageTemplatePortletUtil.
@@ -79,7 +91,7 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 
 		return LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
 			_themeDisplay.getCompanyGroupId(),
-			LayoutPageTemplateEntryTypeConstants.TYPE_WIDGET_PAGE,
+			LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE,
 			WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS, orderByComparator);
 	}
@@ -88,7 +100,7 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 		return LayoutPageTemplateEntryServiceUtil.
 			getLayoutPageTemplateEntriesCount(
 				_themeDisplay.getCompanyGroupId(),
-				LayoutPageTemplateEntryTypeConstants.TYPE_WIDGET_PAGE,
+				LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE,
 				WorkflowConstants.STATUS_APPROVED);
 	}
 
@@ -120,6 +132,55 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 				WorkflowConstants.STATUS_APPROVED);
 	}
 
+	public Map<String, Object> getLayoutPageTemplateEntryCardProps(
+		LayoutPageTemplateEntry layoutPageTemplateEntry) {
+
+		return HashMapBuilder.<String, Object>put(
+			"addLayoutURL",
+			_getLayoutPageTemplateEntryAddLayoutURL(layoutPageTemplateEntry)
+		).put(
+			"getLayoutPageTemplateEntryListURL",
+			() -> {
+				LiferayPortletURL getLayoutPageTemplateEntryListURL =
+					(LiferayPortletURL)
+						_liferayPortletResponse.createResourceURL();
+
+				getLayoutPageTemplateEntryListURL.
+					setCopyCurrentRenderParameters(false);
+				getLayoutPageTemplateEntryListURL.setParameter(
+					"layoutPageTemplateCollectionId",
+					String.valueOf(getLayoutPageTemplateCollectionId()));
+				getLayoutPageTemplateEntryListURL.setResourceID(
+					"/layout_admin/get_layout_page_template_entry_list");
+
+				return getLayoutPageTemplateEntryListURL.toString();
+			}
+		).put(
+			"layoutPageTemplateEntryId",
+			String.valueOf(
+				layoutPageTemplateEntry.getLayoutPageTemplateEntryId())
+		).put(
+			"subtitle",
+			() -> {
+				if (Objects.equals(
+						layoutPageTemplateEntry.getType(),
+						LayoutPageTemplateEntryTypeConstants.WIDGET_PAGE)) {
+
+					return LanguageUtil.get(
+						_httpServletRequest, "widget-page-template");
+				}
+
+				return LanguageUtil.get(
+					_httpServletRequest, "content-page-template");
+			}
+		).put(
+			"thumbnailURL",
+			layoutPageTemplateEntry.getImagePreviewURL(_themeDisplay)
+		).put(
+			"title", HtmlUtil.escape(layoutPageTemplateEntry.getName())
+		).build();
+	}
+
 	public List<LayoutPageTemplateEntry> getMasterLayoutPageTemplateEntries() {
 		List<LayoutPageTemplateEntry> masterLayoutPageTemplateEntries =
 			new ArrayList<>();
@@ -149,11 +210,22 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 		masterLayoutPageTemplateEntries.addAll(
 			LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntries(
 				scopeGroupId,
-				LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT,
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
 				WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS, null));
 
 		return masterLayoutPageTemplateEntries;
+	}
+
+	public long getMasterLayoutPlid() {
+		if (_masterLayoutPlid != null) {
+			return _masterLayoutPlid;
+		}
+
+		_masterLayoutPlid = ParamUtil.getLong(
+			_httpServletRequest, "masterLayoutPlid");
+
+		return _masterLayoutPlid;
 	}
 
 	public String getRedirect() {
@@ -177,11 +249,14 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 		return _selectedTab;
 	}
 
-	public List<StyleBookEntry> getStyleBookEntries() {
-		return StyleBookEntryLocalServiceUtil.getStyleBookEntries(
-			StagingUtil.getLiveGroupId(_themeDisplay.getScopeGroupId()),
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new StyleBookEntryNameComparator(true));
+	public String getType() {
+		if (_type != null) {
+			return _type;
+		}
+
+		_type = ParamUtil.getString(_httpServletRequest, "type");
+
+		return _type;
 	}
 
 	public List<String> getTypes() {
@@ -236,12 +311,37 @@ public class SelectLayoutPageTemplateEntryDisplayContext {
 		return true;
 	}
 
+	private String _getLayoutPageTemplateEntryAddLayoutURL(
+		LayoutPageTemplateEntry layoutPageTemplateEntry) {
+
+		return PortletURLBuilder.createRenderURL(
+			_liferayPortletResponse
+		).setMVCRenderCommandName(
+			"/layout_admin/add_layout"
+		).setBackURL(
+			ParamUtil.getString(_httpServletRequest, "redirect")
+		).setParameter(
+			"layoutPageTemplateEntryId",
+			layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
+		).setParameter(
+			"privateLayout",
+			ParamUtil.getBoolean(_httpServletRequest, "privateLayout")
+		).setParameter(
+			"selPlid", ParamUtil.getLong(_httpServletRequest, "selPlid")
+		).setWindowState(
+			LiferayWindowState.POP_UP
+		).buildString();
+	}
+
 	private String _backURL;
 	private final HttpServletRequest _httpServletRequest;
 	private Long _layoutPageTemplateCollectionId;
+	private final LiferayPortletResponse _liferayPortletResponse;
+	private Long _masterLayoutPlid;
 	private String _redirect;
 	private String _selectedTab;
 	private final ThemeDisplay _themeDisplay;
+	private String _type;
 	private List<String> _types;
 
 }

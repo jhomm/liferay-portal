@@ -1,23 +1,16 @@
 {
 	"definition": {
+		"indexed": true,
 		"layout": {
-			"borderWidth": 0,
-			"marginBottom": 0,
-			"marginLeft": 0,
-			"marginRight": 0,
-			"marginTop": 0,
-			"paddingBottom": 0,
-			"paddingLeft": 0,
-			"paddingRight": 0,
-			"paddingTop": 0,
-			"widthType": "Fluid"
 		}
 	},
+	"id": "item1",
 	"pageElements": [
 		{
 			"definition": {
 				"fragment": {
-					"key": "${FRAGMENT_ENTRY_KEY}"
+					"key": "${FRAGMENT_ENTRY_KEY}",
+					"siteKey": "${SITE_KEY}"
 				},
 				"fragmentConfig": {
 					"buttonAlign": "left",
@@ -44,8 +37,6 @@
 										}
 									},
 									"target": "Self"
-								},
-								"value_i18n": {
 								}
 							},
 							"text": {
@@ -62,8 +53,10 @@
 							}
 						}
 					}
-				]
+				],
+				"indexed": true
 			},
+			"id": "item2",
 			"type": "Fragment"
 		}
 	],

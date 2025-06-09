@@ -1,37 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.auto.login.remember.me;
 
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
+import com.liferay.portal.kernel.model.RememberMeToken;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auto.login.AutoLogin;
 import com.liferay.portal.kernel.security.auto.login.AutoLoginException;
 import com.liferay.portal.kernel.security.auto.login.BaseAutoLogin;
+import com.liferay.portal.kernel.service.RememberMeTokenLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Brian Wing Shun Chan
  */
-@Component(immediate = true, service = AutoLogin.class)
+@Component(service = AutoLogin.class)
 public class RememberMeAutoLogin extends BaseAutoLogin {
 
 	@Override
@@ -49,7 +40,7 @@ public class RememberMeAutoLogin extends BaseAutoLogin {
 		throws AutoLoginException {
 
 		if (_log.isDebugEnabled()) {
-			_log.debug(exception, exception);
+			_log.debug(exception);
 		}
 
 		removeCookies(httpServletRequest, httpServletResponse);
@@ -63,65 +54,74 @@ public class RememberMeAutoLogin extends BaseAutoLogin {
 			HttpServletResponse httpServletResponse)
 		throws Exception {
 
-		String autoUserId = CookieKeys.getCookie(
-			httpServletRequest, CookieKeys.ID, false);
-		String autoPassword = CookieKeys.getCookie(
-			httpServletRequest, CookieKeys.PASSWORD, false);
-		String rememberMe = CookieKeys.getCookie(
-			httpServletRequest, CookieKeys.REMEMBER_ME, false);
+		RememberMeToken rememberMeToken = null;
+
+		String rememberMeTokenId = CookiesManagerUtil.getCookieValue(
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_ID, httpServletRequest,
+			false);
+		String rememberMeTokenValue = CookiesManagerUtil.getCookieValue(
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_VALUE, httpServletRequest,
+			false);
+
+		if (Validator.isNotNull(rememberMeTokenId) &&
+			Validator.isNotNull(rememberMeTokenValue)) {
+
+			rememberMeToken = _rememberMeTokenLocalService.fetchRememberMeToken(
+				GetterUtil.getLong(rememberMeTokenId), rememberMeTokenValue);
+		}
+
+		// LPS-11218
+
+		if (rememberMeToken == null) {
+			removeCookies(httpServletRequest, httpServletResponse);
+
+			return null;
+		}
+
+		User user = _userLocalService.fetchUserById(
+			rememberMeToken.getUserId());
+
+		Company company = _portal.getCompany(httpServletRequest);
+
+		User guestUser = _userLocalService.getGuestUser(company.getCompanyId());
 
 		// LEP-5188
+
+		boolean rememberMe = GetterUtil.getBoolean(
+			CookiesManagerUtil.getCookieValue(
+				CookiesConstants.NAME_REMEMBER_ME, httpServletRequest, false));
 
 		String proxyPath = _portal.getPathProxy();
 		String contextPath = _portal.getPathContext();
 
 		if (proxyPath.equals(contextPath)) {
 			if (Validator.isNotNull(httpServletRequest.getContextPath())) {
-				rememberMe = Boolean.TRUE.toString();
+				rememberMe = true;
 			}
 		}
 		else {
 			if (!contextPath.equals(httpServletRequest.getContextPath())) {
-				rememberMe = Boolean.TRUE.toString();
+				rememberMe = false;
 			}
 		}
 
-		String[] credentials = null;
+		if (!company.isAutoLogin() || (user == null) ||
+			(guestUser.getUserId() == user.getUserId()) || !user.isActive() ||
+			!rememberMe || rememberMeToken.isExpired()) {
 
-		if (Validator.isNotNull(autoUserId) &&
-			Validator.isNotNull(autoPassword) &&
-			Validator.isNotNull(rememberMe)) {
+			removeCookies(httpServletRequest, httpServletResponse);
 
-			Company company = _portal.getCompany(httpServletRequest);
+			_rememberMeTokenLocalService.deleteRememberMeToken(
+				rememberMeToken.getRememberMeTokenId());
 
-			if (company.isAutoLogin()) {
-				KeyValuePair kvp = _userLocalService.decryptUserId(
-					company.getCompanyId(), autoUserId, autoPassword);
-
-				credentials = new String[3];
-
-				credentials[0] = kvp.getKey();
-				credentials[1] = kvp.getValue();
-				credentials[2] = Boolean.FALSE.toString();
-			}
+			return null;
 		}
 
-		// LPS-11218
+		String[] credentials = new String[3];
 
-		if (credentials != null) {
-			Company company = _portal.getCompany(httpServletRequest);
-
-			User defaultUser = _userLocalService.getDefaultUser(
-				company.getCompanyId());
-
-			long userId = GetterUtil.getLong(credentials[0]);
-
-			if (defaultUser.getUserId() == userId) {
-				removeCookies(httpServletRequest, httpServletResponse);
-
-				return null;
-			}
-		}
+		credentials[0] = String.valueOf(user.getUserId());
+		credentials[1] = user.getPassword();
+		credentials[2] = String.valueOf(user.isPasswordEncrypted());
 
 		return credentials;
 	}
@@ -130,24 +130,14 @@ public class RememberMeAutoLogin extends BaseAutoLogin {
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
 
-		Cookie cookie = new Cookie(CookieKeys.ID, StringPool.BLANK);
+		String domain = CookiesManagerUtil.getDomain(httpServletRequest);
 
-		cookie.setMaxAge(0);
-		cookie.setPath(StringPool.SLASH);
-
-		CookieKeys.addCookie(httpServletRequest, httpServletResponse, cookie);
-
-		cookie = new Cookie(CookieKeys.PASSWORD, StringPool.BLANK);
-
-		cookie.setMaxAge(0);
-		cookie.setPath(StringPool.SLASH);
-
-		CookieKeys.addCookie(httpServletRequest, httpServletResponse, cookie);
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
+		CookiesManagerUtil.deleteCookies(
+			domain, httpServletRequest, httpServletResponse,
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_ID);
+		CookiesManagerUtil.deleteCookies(
+			domain, httpServletRequest, httpServletResponse,
+			CookiesConstants.NAME_REMEMBER_ME_TOKEN_VALUE);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -156,6 +146,10 @@ public class RememberMeAutoLogin extends BaseAutoLogin {
 	@Reference
 	private Portal _portal;
 
+	@Reference
+	private RememberMeTokenLocalService _rememberMeTokenLocalService;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

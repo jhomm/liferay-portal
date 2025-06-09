@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.message.boards.model.MBBan;
 import com.liferay.message.boards.model.MBBanModel;
-import com.liferay.message.boards.model.MBBanSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -168,59 +155,6 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static MBBan toModel(MBBanSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		MBBan model = new MBBanImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setBanId(soapModel.getBanId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setBanUserId(soapModel.getBanUserId());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<MBBan> toModels(MBBanSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<MBBan> models = new ArrayList<MBBan>(soapModels.length);
-
-		for (MBBanSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public MBBanModelImpl() {
 	}
 
@@ -292,98 +226,87 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 	}
 
 	public Map<String, Function<MBBan, Object>> getAttributeGetterFunctions() {
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<MBBan, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, MBBan>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			MBBan.class.getClassLoader(), MBBan.class, ModelWrapper.class);
+		private static final Map<String, Function<MBBan, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<MBBan> constructor =
-				(Constructor<MBBan>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<MBBan, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<MBBan, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("mvccVersion", MBBan::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", MBBan::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", MBBan::getUuid);
+			attributeGetterFunctions.put("banId", MBBan::getBanId);
+			attributeGetterFunctions.put("groupId", MBBan::getGroupId);
+			attributeGetterFunctions.put("companyId", MBBan::getCompanyId);
+			attributeGetterFunctions.put("userId", MBBan::getUserId);
+			attributeGetterFunctions.put("userName", MBBan::getUserName);
+			attributeGetterFunctions.put("createDate", MBBan::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", MBBan::getModifiedDate);
+			attributeGetterFunctions.put("banUserId", MBBan::getBanUserId);
+			attributeGetterFunctions.put(
+				"lastPublishDate", MBBan::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<MBBan, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<MBBan, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<MBBan, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<MBBan, Object>>();
-		Map<String, BiConsumer<MBBan, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<MBBan, ?>>();
+		private static final Map<String, BiConsumer<MBBan, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", MBBan::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion", (BiConsumer<MBBan, Long>)MBBan::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", MBBan::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<MBBan, Long>)MBBan::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", MBBan::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<MBBan, String>)MBBan::setUuid);
-		attributeGetterFunctions.put("banId", MBBan::getBanId);
-		attributeSetterBiConsumers.put(
-			"banId", (BiConsumer<MBBan, Long>)MBBan::setBanId);
-		attributeGetterFunctions.put("groupId", MBBan::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<MBBan, Long>)MBBan::setGroupId);
-		attributeGetterFunctions.put("companyId", MBBan::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<MBBan, Long>)MBBan::setCompanyId);
-		attributeGetterFunctions.put("userId", MBBan::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<MBBan, Long>)MBBan::setUserId);
-		attributeGetterFunctions.put("userName", MBBan::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<MBBan, String>)MBBan::setUserName);
-		attributeGetterFunctions.put("createDate", MBBan::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<MBBan, Date>)MBBan::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", MBBan::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate", (BiConsumer<MBBan, Date>)MBBan::setModifiedDate);
-		attributeGetterFunctions.put("banUserId", MBBan::getBanUserId);
-		attributeSetterBiConsumers.put(
-			"banUserId", (BiConsumer<MBBan, Long>)MBBan::setBanUserId);
-		attributeGetterFunctions.put(
-			"lastPublishDate", MBBan::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<MBBan, Date>)MBBan::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<MBBan, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<MBBan, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion", (BiConsumer<MBBan, Long>)MBBan::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<MBBan, Long>)MBBan::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<MBBan, String>)MBBan::setUuid);
+			attributeSetterBiConsumers.put(
+				"banId", (BiConsumer<MBBan, Long>)MBBan::setBanId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<MBBan, Long>)MBBan::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId", (BiConsumer<MBBan, Long>)MBBan::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<MBBan, Long>)MBBan::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName", (BiConsumer<MBBan, String>)MBBan::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate", (BiConsumer<MBBan, Date>)MBBan::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<MBBan, Date>)MBBan::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"banUserId", (BiConsumer<MBBan, Long>)MBBan::setBanUserId);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<MBBan, Date>)MBBan::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -947,40 +870,12 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<MBBan, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<MBBan, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<MBBan, Object> attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((MBBan)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, MBBan>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					MBBan.class, ModelWrapper.class);
 
 	}
 
@@ -1001,8 +896,9 @@ public class MBBanModelImpl extends BaseModelImpl<MBBan> implements MBBanModel {
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<MBBan, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<MBBan, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

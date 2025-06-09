@@ -1,0 +1,51 @@
+<html>
+<head>
+<title>ObjectNotifications</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">ObjectNotifications</td></tr>
+</thead>
+
+<tbody>
+	<tr>
+		<td>NOTIFICATION_STATUS</td>
+		<td>//td//strong[contains(.,'${key_statusName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DELETE_NOTIFICATION_IN_QUEUE</td>
+		<td>//td[contains(.,'${key_text}')]//following-sibling::td//*[contains(@class, 'icon-trash')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FIELD_ATTACHMENTS_OBJECT</td>
+		<td>//div[@class='input-group-item']//div[@class="form-control form-control-tag-group input-group"]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FIELD_ATTACHMENTS_OBJECT_SELECT_FIELD</td>
+		<td>//span[@class='custom-control-label']//span[@class="custom-control-label-text" and contains(text(),'${key_fieldLabel}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DELETE_ATTACHMENT_BUTTON</td>
+		<td>//*[@class='lexicon-icon lexicon-icon-times-small']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_NOTIFICATION_ENTRIES</td>
+		<td>//tbody//*[contains(text(),'${key_entryLabel}')]/ancestor::div//tbody//*[contains(text(),'${key_entryStatus}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ENTITY_TERMS</td>
+		<td>//td[contains(text(),'${key_termName}')]</td>
+		<td></td>
+	</tr>
+</tbody>
+</table>
+</body>
+</html>

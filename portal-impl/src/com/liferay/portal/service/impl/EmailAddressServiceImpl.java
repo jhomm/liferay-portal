@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -19,10 +10,11 @@ import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.permission.CommonPermissionUtil;
 import com.liferay.portal.service.base.EmailAddressServiceBaseImpl;
+import com.liferay.portal.service.permission.CommonPermissionUtil;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -32,16 +24,25 @@ public class EmailAddressServiceImpl extends EmailAddressServiceBaseImpl {
 
 	@Override
 	public EmailAddress addEmailAddress(
-			String className, long classPK, String address, long typeId,
-			boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			String address, long typeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException {
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				className, "com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
-			getPermissionChecker(), className, classPK, ActionKeys.UPDATE);
+			getPermissionChecker(), className, classPK, actionId);
 
 		return emailAddressLocalService.addEmailAddress(
-			getUserId(), className, classPK, address, typeId, primary,
-			serviceContext);
+			externalReferenceCode, getUserId(), className, classPK, address,
+			typeId, primary, serviceContext);
 	}
 
 	@Override
@@ -49,9 +50,18 @@ public class EmailAddressServiceImpl extends EmailAddressServiceBaseImpl {
 		EmailAddress emailAddress = emailAddressPersistence.findByPrimaryKey(
 			emailAddressId);
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				emailAddress.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
 			getPermissionChecker(), emailAddress.getClassNameId(),
-			emailAddress.getClassPK(), ActionKeys.UPDATE);
+			emailAddress.getClassPK(), actionId);
 
 		emailAddressLocalService.deleteEmailAddress(emailAddress);
 	}
@@ -70,6 +80,24 @@ public class EmailAddressServiceImpl extends EmailAddressServiceBaseImpl {
 
 		EmailAddress emailAddress = emailAddressPersistence.fetchByPrimaryKey(
 			emailAddressId);
+
+		if (emailAddress != null) {
+			CommonPermissionUtil.check(
+				getPermissionChecker(), emailAddress.getClassNameId(),
+				emailAddress.getClassPK(), ActionKeys.VIEW);
+		}
+
+		return emailAddress;
+	}
+
+	@Override
+	public EmailAddress fetchEmailAddressByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		EmailAddress emailAddress =
+			emailAddressLocalService.fetchEmailAddressByExternalReferenceCode(
+				externalReferenceCode, companyId);
 
 		if (emailAddress != null) {
 			CommonPermissionUtil.check(
@@ -109,18 +137,28 @@ public class EmailAddressServiceImpl extends EmailAddressServiceBaseImpl {
 
 	@Override
 	public EmailAddress updateEmailAddress(
-			long emailAddressId, String address, long typeId, boolean primary)
+			String externalReferenceCode, long emailAddressId, String address,
+			long typeId, boolean primary)
 		throws PortalException {
 
 		EmailAddress emailAddress = emailAddressPersistence.findByPrimaryKey(
 			emailAddressId);
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				emailAddress.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
 			getPermissionChecker(), emailAddress.getClassNameId(),
-			emailAddress.getClassPK(), ActionKeys.UPDATE);
+			emailAddress.getClassPK(), actionId);
 
 		return emailAddressLocalService.updateEmailAddress(
-			emailAddressId, address, typeId, primary);
+			externalReferenceCode, emailAddressId, address, typeId, primary);
 	}
 
 }

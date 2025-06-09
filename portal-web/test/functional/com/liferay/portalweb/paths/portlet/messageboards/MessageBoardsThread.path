@@ -20,7 +20,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--THREAD-->
+
 <tr>
 	<td>THREAD_BODY</td>
 	<td>//div[contains(@class,'message-content') and contains(.,'${key_threadBody}')]</td>
@@ -42,6 +44,16 @@
 	<td></td>
 </tr>
 <tr>
+	<td>THREAD_FORMAT_SELECT</td>
+	<td>//select[contains(@id,'PortletConfigurationPortlet') and contains(@id,'messageFormat')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>THREAD_PRIORITY_SELECT</td>
+	<td>//select[contains(@id,'MBPortlet') and contains(@id,'priority')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>THREAD_PUBLISH_BUTTON</td>
 	<td>//div[@class='card panel']//button[span[contains(.,'Publish')]]</td>
 	<td></td>
@@ -53,17 +65,22 @@
 </tr>
 <tr>
 	<td>THREAD_REPLY_SUBJECT</td>
-	<td>//div[contains(@class,'autofit-col')]//h4[contains(.,'${key_threadSubject}')]</td>
+	<td>//div[contains(@class,'autofit-col')]//div[contains(@class,'h4') and contains(.,'${key_threadSubject}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>THREAD_SUBJECT</td>
-	<td>//div[@class='panel-heading' and contains(.,'${key_threadSubject}')]//h4[contains(.,'${key_threadSubject}')]</td>
+	<td>//div[@class='panel-heading' and contains(.,'${key_threadSubject}')]//div[contains(@class,'h4') and contains(.,'${key_threadSubject}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>THREAD_SUBJECT_2</td>
-	<td>xpath=(//div[@class='panel-heading' and contains(.,'${key_threadSubject}')]//h4[contains(.,'${key_threadSubject}')])[2]</td>
+	<td>xpath=(//div[@class='panel-heading' and contains(.,'${key_threadSubject}')]//div[contains(@class,'h4') and contains(.,'${key_threadSubject}')])[2]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>THREAD_TAG</td>
+	<td>//span/a[contains(.,'${key_tagName}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -81,10 +98,12 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--MESSAGE-->
+
 <tr>
 	<td>MESSAGE_WORKFLOW_STATUS_1</td>
-	<td>//span[@class='taglib-workflow-status']/span[contains(@class,'workflow-status')]</td>
+	<td>//span[@class='taglib-workflow-status']/span[contains(@class,'workflow-status')] | //span[@class='label label-info']//*[contains(.,'${value1}')] | //span[contains(@class, 'label-item-expand') and contains(.,'${value1}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -104,7 +123,7 @@
 </tr>
 <tr>
 	<td>MESSAGE_ANSWER_1</td>
-	<td>//h4[contains(.,'Answer')]</td>
+	<td>//div[contains(@class,'h4') and contains(.,'Answer')]</td>
 	<td></td>
 </tr>
 <tr>

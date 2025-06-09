@@ -1,34 +1,34 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.util;
 
-import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
+import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
-import org.osgi.service.component.annotations.Component;
+import java.util.Set;
 
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = AssetPublisherCustomizer.class)
 public class RelatedAssetPublisherCustomizer
 	extends DefaultAssetPublisherCustomizer {
+
+	public RelatedAssetPublisherCustomizer(
+		AssetPublisherHelper assetPublisherHelper,
+		AssetPublisherWebConfiguration assetPublisherWebConfiguration) {
+
+		super(assetPublisherHelper, assetPublisherWebConfiguration);
+	}
 
 	@Override
 	public String getPortletId() {
@@ -85,13 +85,13 @@ public class RelatedAssetPublisherCustomizer
 		AssetEntryQuery assetEntryQuery,
 		HttpServletRequest httpServletRequest) {
 
-		AssetEntry layoutAssetEntry =
-			(AssetEntry)httpServletRequest.getAttribute(
-				WebKeys.LAYOUT_ASSET_ENTRY);
+		Set<Long> linkedAssetEntryIds =
+			(Set<Long>)httpServletRequest.getAttribute(
+				WebKeys.LINKED_ASSET_ENTRY_IDS);
 
-		if (layoutAssetEntry != null) {
-			assetEntryQuery.setLinkedAssetEntryId(
-				layoutAssetEntry.getEntryId());
+		if (SetUtil.isNotEmpty(linkedAssetEntryIds)) {
+			assetEntryQuery.setLinkedAssetEntryIds(
+				ArrayUtil.toLongArray(linkedAssetEntryIds));
 		}
 	}
 

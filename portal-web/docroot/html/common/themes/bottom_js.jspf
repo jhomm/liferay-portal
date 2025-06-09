@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -37,7 +28,7 @@
 				{
 					doc: document,
 					win: window,
-					windowName: Liferay.Util.getWindowName()
+					windowName: window.name
 				}
 			);
 		</c:when>
@@ -72,10 +63,8 @@
 	}
 </aui:script>
 
-<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
-	var delegate = delegateModule.default;
-
-	delegate(
+<aui:script sandbox="<%= true %>">
+	Liferay.Util.delegate(
 		document,
 		'focusin',
 		'.portlet',
@@ -84,7 +73,7 @@
 		}
 	);
 
-	delegate(
+	Liferay.Util.delegate(
 		document,
 		'focusout',
 		'.portlet',
@@ -92,12 +81,6 @@
 			event.delegateTarget.closest('.portlet').classList.remove('open');
 		}
 	);
-</aui:script>
-
-<aui:script use="aui-base">
-	if (A.UA.mobile) {
-		Liferay.Util.addInputCancel();
-	}
 </aui:script>
 
 <%
@@ -148,17 +131,6 @@ if (layout != null) {
 	<aui:script use="event-move,liferay-navigation">
 		var navBlock = A.one(Liferay.Data.NAV_SELECTOR);
 
-		Liferay.once(
-			'initNavigation',
-			function() {
-				new Liferay.Navigation(
-					{
-						navBlock: navBlock
-					}
-				);
-			}
-		);
-
 		if (navBlock) {
 			if (A.UA.touchMobile) {
 				var panel = document.querySelector(Liferay.Data.NAV_SELECTOR_MOBILE);
@@ -176,7 +148,7 @@ if (layout != null) {
 			else {
 				navBlock.once(
 					['gesturemovestart', 'mousemove'],
-					function() {
+					function () {
 						Liferay.fire('initNavigation');
 					}
 				);
@@ -185,7 +157,7 @@ if (layout != null) {
 
 		A.on(
 			'io:complete',
-			function() {
+			function () {
 				Liferay.fire('io:complete');
 			}
 		);
@@ -203,7 +175,7 @@ if (layout != null) {
 
 </aui:script>
 
-<script type="text/javascript">
+<aui:script type="text/javascript">
 	// <![CDATA[
 
 		<%
@@ -214,39 +186,39 @@ if (layout != null) {
 		Liferay.currentURLEncoded = '<%= HtmlUtil.escapeJS(URLCodec.encodeURL(currentURL)) %>';
 
 	// ]]>
-</script>
+</aui:script>
 
-<c:if test="<%= layout != null %>">
+<c:if test="<%= (layout != null) && !layout.isTypeControlPanel() %>">
 
 	<%-- User Inputted Layout and LayoutSet JavaScript --%>
 
 	<%
-	LayoutSet layoutSet = themeDisplay.getLayoutSet();
-
-	UnicodeProperties layoutSetSettings = layoutSet.getSettingsProperties();
-
-	UnicodeProperties masterLayoutTypeSettings = new UnicodeProperties();
+	UnicodeProperties masterLayoutTypeSettingsUnicodeProperties = new UnicodeProperties();
 
 	if (layout.getMasterLayoutPlid() > 0) {
 		Layout masterLayout = LayoutLocalServiceUtil.fetchLayout(layout.getMasterLayoutPlid());
 
 		if (masterLayout != null) {
-			masterLayoutTypeSettings = masterLayout.getTypeSettingsProperties();
+			masterLayoutTypeSettingsUnicodeProperties = masterLayout.getTypeSettingsProperties();
 		}
 	}
 
-	UnicodeProperties layoutTypeSettings = layout.getTypeSettingsProperties();
+	LayoutSet layoutSet = themeDisplay.getLayoutSet();
+
+	UnicodeProperties layoutSetSettingsUnicodeProperties = layoutSet.getSettingsProperties();
+
+	UnicodeProperties layoutTypeSettingsUnicodeProperties = layout.getTypeSettingsProperties();
 	%>
 
-	<script type="text/javascript">
-		// <![CDATA[
-			<c:if test="<%= !layout.isTypeControlPanel() %>">
-				<%= GetterUtil.getString(layoutSetSettings.getProperty("javascript")) %>
+	<liferay-util:include page="/html/common/themes/bottom_js_script.jsp">
+		<liferay-util:param name="snippet" value='<%= GetterUtil.getString(layoutSetSettingsUnicodeProperties.getProperty("javascript")) %>' />
+	</liferay-util:include>
 
-				<%= GetterUtil.getString(masterLayoutTypeSettings.getProperty("javascript")) %>
+	<liferay-util:include page="/html/common/themes/bottom_js_script.jsp">
+		<liferay-util:param name="snippet" value='<%= GetterUtil.getString(masterLayoutTypeSettingsUnicodeProperties.getProperty("javascript")) %>' />
+	</liferay-util:include>
 
-				<%= GetterUtil.getString(layoutTypeSettings.getProperty("javascript")) %>
-			</c:if>
-		// ]]>
-	</script>
+	<liferay-util:include page="/html/common/themes/bottom_js_script.jsp">
+		<liferay-util:param name="snippet" value='<%= GetterUtil.getString(layoutTypeSettingsUnicodeProperties.getProperty("javascript")) %>' />
+	</liferay-util:include>
 </c:if>

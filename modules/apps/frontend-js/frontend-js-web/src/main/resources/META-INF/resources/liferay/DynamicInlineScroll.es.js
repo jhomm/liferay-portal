@@ -1,27 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import PortletBase from './PortletBase.es';
 import delegate from './delegate/delegate.es';
-
-function isBoolean(val) {
-	return typeof val === 'boolean';
-}
-
-function isString(val) {
-	return typeof val === 'string';
-}
 
 /**
  * Appends list item elements to dropdown menus with inline-scrollers on scroll
@@ -37,7 +20,7 @@ class DynamicInlineScroll extends PortletBase {
 	attached() {
 		let {rootNode} = this;
 
-		rootNode = rootNode || document;
+		rootNode = rootNode || document.body;
 
 		this.inlineScrollEventHandler_ = delegate(
 			rootNode,
@@ -50,7 +33,19 @@ class DynamicInlineScroll extends PortletBase {
 	/**
 	 * @inheritDoc
 	 */
-	created() {
+	created(props) {
+		this.cur = Number(props.cur);
+		this.curParam = props.curParam;
+		this.forcePost = props.forcePost;
+		this.formName = props.formName;
+		this.initialPages = Number(props.initialPages);
+		this.jsCall = props.jsCall;
+		this.namespace = props.namespace;
+		this.pages = Number(props.pages);
+		this.randomNamespace = props.randomNamespace;
+		this.url = props.url;
+		this.urlAnchor = props.urlAnchor;
+
 		this.handleListItemClick_ = this.handleListItemClick_.bind(this);
 	}
 
@@ -77,7 +72,10 @@ class DynamicInlineScroll extends PortletBase {
 	addListItem_(listElement, pageIndex) {
 		const listItem = document.createElement('li');
 
-		listItem.innerHTML = `<a class="dropdown-item" href="${this.getHREF_(
+		listItem.innerHTML = `<a aria-label="${Liferay.Util.sub(
+			Liferay.Language.get('page-x'),
+			[pageIndex]
+		)}" class="dropdown-item" href="${this.getHREF_(
 			pageIndex
 		)}">${pageIndex}</a>`;
 
@@ -97,12 +95,12 @@ class DynamicInlineScroll extends PortletBase {
 	 * @return {string} The <code>href</code> value as a string.
 	 */
 	getHREF_(pageIndex) {
-		const {curParam, formName, jsCall, namespace, url, urlAnchor} = this;
+		const {curParam, formName, jsCall, url, urlAnchor} = this;
 
-		let href = `javascript:document.${formName}.${namespace}${curParam}.value = "${pageIndex}; ${jsCall}`;
+		let href = `javascript:document.${formName}.${curParam}.value = "${pageIndex}; ${jsCall}`;
 
 		if (this.url !== null) {
-			href = `${url}&${namespace}${curParam}=${pageIndex}${urlAnchor}`;
+			href = `${url}&${curParam}=${pageIndex}${urlAnchor}`;
 		}
 
 		return href;
@@ -116,7 +114,7 @@ class DynamicInlineScroll extends PortletBase {
 	 * @return {number} The parameter's numberical value.
 	 */
 	getNumber_(val) {
-		return Number(val);
+		return Number(val ?? 0);
 	}
 
 	/**
@@ -156,14 +154,16 @@ class DynamicInlineScroll extends PortletBase {
 		const {cur, initialPages, pages} = this;
 		const {target} = event;
 
-		let pageIndex = this.getNumber_(target.getAttribute('data-page-index'));
-		let pageIndexMax = this.getNumber_(
-			target.getAttribute('data-max-index')
-		);
+		if (target.nodeName !== 'UL') {
+			return;
+		}
+
+		let pageIndex = this.getNumber_(target.dataset.pageIndex);
+		let pageIndexMax = this.getNumber_(target.dataset.maxIndex);
 
 		if (pageIndex === 0) {
 			const pageIndexCurrent = this.getNumber_(
-				target.getAttribute('data-current-index')
+				target.dataset.currentIndex
 			);
 
 			if (pageIndexCurrent === 0) {
@@ -181,147 +181,11 @@ class DynamicInlineScroll extends PortletBase {
 		if (
 			cur <= pages &&
 			pageIndex < pageIndexMax &&
-			target.getAttribute('scrollTop') >=
-				target.getAttribute('scrollHeight') - 300
+			target.scrollTop >= target.scrollHeight - 300
 		) {
 			this.addListItem_(target, pageIndex);
 		}
 	}
 }
-
-/**
- * State definition.
- *
- * @ignore
- * @static
- * @type {!Object}
- */
-DynamicInlineScroll.STATE = {
-
-	/**
-	 * Current page index.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	cur: {
-		setter: 'getNumber_',
-		validator: isString,
-	},
-
-	/**
-	 * URL parameter of the current page.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	curParam: {
-		validator: isString,
-	},
-
-	/**
-	 * Forces a form post when a page on the dropdown menu is clicked.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {boolean}
-	 */
-	forcePost: {
-		validator: isBoolean,
-	},
-
-	/**
-	 * Form name.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	formName: {
-		validator: isString,
-	},
-
-	/**
-	 * Number of pages loaded to the inline-scroll dropdown menu for the first
-	 * page load.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	initialPages: {
-		setter: 'getNumber_',
-		validator: isString,
-	},
-
-	/**
-	 * JavaScript call.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	jsCall: {
-		validator: isString,
-	},
-
-	/**
-	 * Namespace.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	namespace: {
-		validator: isString,
-	},
-
-	/**
-	 * Total number of pages.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	pages: {
-		setter: 'getNumber_',
-		validator: isString,
-	},
-
-	/**
-	 * Random namespace.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	randomNamespace: {
-		validator: isString,
-	},
-
-	/**
-	 * URL.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	url: {
-		validator: isString,
-	},
-
-	/**
-	 * URL anchor.
-	 *
-	 * @instance
-	 * @memberof DynamicInlineScroll
-	 * @type {string}
-	 */
-	urlAnchor: {
-		validator: isString,
-	},
-};
 
 export default DynamicInlineScroll;

@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.model.impl;
 
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.model.COREntryModel;
-import com.liferay.commerce.order.rule.model.COREntrySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -30,24 +21,22 @@ import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -76,6 +65,7 @@ public class COREntryModelImpl
 	public static final String TABLE_NAME = "COREntry";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
 		{"externalReferenceCode", Types.VARCHAR}, {"COREntryId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
 		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
@@ -92,6 +82,8 @@ public class COREntryModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("COREntryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -115,7 +107,7 @@ public class COREntryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table COREntry (externalReferenceCode VARCHAR(75) null,COREntryId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,active_ BOOLEAN,description VARCHAR(75) null,displayDate DATE null,expirationDate DATE null,name VARCHAR(75) null,priority INTEGER,type_ VARCHAR(75) null,typeSettings TEXT null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
+		"create table COREntry (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,COREntryId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,active_ BOOLEAN,description VARCHAR(75) null,displayDate DATE null,expirationDate DATE null,name VARCHAR(75) null,priority INTEGER,type_ VARCHAR(75) null,typeSettings TEXT null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null)";
 
 	public static final String TABLE_SQL_DROP = "drop table COREntry";
 
@@ -124,6 +116,9 @@ public class COREntryModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY COREntry.priority DESC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY corEntry.priority DESC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -174,11 +169,17 @@ public class COREntryModelImpl
 	public static final long TYPE_COLUMN_BITMASK = 64L;
 
 	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
+
+	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PRIORITY_COLUMN_BITMASK = 128L;
+	public static final long PRIORITY_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -192,67 +193,6 @@ public class COREntryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static COREntry toModel(COREntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		COREntry model = new COREntryImpl();
-
-		model.setExternalReferenceCode(soapModel.getExternalReferenceCode());
-		model.setCOREntryId(soapModel.getCOREntryId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setActive(soapModel.isActive());
-		model.setDescription(soapModel.getDescription());
-		model.setDisplayDate(soapModel.getDisplayDate());
-		model.setExpirationDate(soapModel.getExpirationDate());
-		model.setName(soapModel.getName());
-		model.setPriority(soapModel.getPriority());
-		model.setType(soapModel.getType());
-		model.setTypeSettings(soapModel.getTypeSettings());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<COREntry> toModels(COREntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<COREntry> models = new ArrayList<COREntry>(soapModels.length);
-
-		for (COREntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public COREntryModelImpl() {
@@ -330,133 +270,182 @@ public class COREntryModelImpl
 	public Map<String, Function<COREntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<COREntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, COREntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			COREntry.class.getClassLoader(), COREntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<COREntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<COREntry> constructor =
-				(Constructor<COREntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<COREntry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<COREntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", COREntry::getMvccVersion);
+			attributeGetterFunctions.put("uuid", COREntry::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", COREntry::getExternalReferenceCode);
+			attributeGetterFunctions.put("COREntryId", COREntry::getCOREntryId);
+			attributeGetterFunctions.put("companyId", COREntry::getCompanyId);
+			attributeGetterFunctions.put("userId", COREntry::getUserId);
+			attributeGetterFunctions.put("userName", COREntry::getUserName);
+			attributeGetterFunctions.put("createDate", COREntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", COREntry::getModifiedDate);
+			attributeGetterFunctions.put("active", COREntry::getActive);
+			attributeGetterFunctions.put(
+				"description", COREntry::getDescription);
+			attributeGetterFunctions.put(
+				"displayDate", COREntry::getDisplayDate);
+			attributeGetterFunctions.put(
+				"expirationDate", COREntry::getExpirationDate);
+			attributeGetterFunctions.put("name", COREntry::getName);
+			attributeGetterFunctions.put("priority", COREntry::getPriority);
+			attributeGetterFunctions.put("type", COREntry::getType);
+			attributeGetterFunctions.put(
+				"typeSettings", COREntry::getTypeSettings);
+			attributeGetterFunctions.put(
+				"lastPublishDate", COREntry::getLastPublishDate);
+			attributeGetterFunctions.put("status", COREntry::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", COREntry::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", COREntry::getStatusByUserName);
+			attributeGetterFunctions.put("statusDate", COREntry::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map<String, BiConsumer<COREntry, Object>>
+			_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<COREntry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<COREntry, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<COREntry, Long>)COREntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<COREntry, String>)COREntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<COREntry, String>)
+					COREntry::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"COREntryId",
+				(BiConsumer<COREntry, Long>)COREntry::setCOREntryId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<COREntry, Long>)COREntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<COREntry, Long>)COREntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<COREntry, String>)COREntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<COREntry, Date>)COREntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<COREntry, Date>)COREntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"active", (BiConsumer<COREntry, Boolean>)COREntry::setActive);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<COREntry, String>)COREntry::setDescription);
+			attributeSetterBiConsumers.put(
+				"displayDate",
+				(BiConsumer<COREntry, Date>)COREntry::setDisplayDate);
+			attributeSetterBiConsumers.put(
+				"expirationDate",
+				(BiConsumer<COREntry, Date>)COREntry::setExpirationDate);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<COREntry, String>)COREntry::setName);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<COREntry, Integer>)COREntry::setPriority);
+			attributeSetterBiConsumers.put(
+				"type", (BiConsumer<COREntry, String>)COREntry::setType);
+			attributeSetterBiConsumers.put(
+				"typeSettings",
+				(BiConsumer<COREntry, String>)COREntry::setTypeSettings);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<COREntry, Date>)COREntry::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status", (BiConsumer<COREntry, Integer>)COREntry::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<COREntry, Long>)COREntry::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<COREntry, String>)COREntry::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<COREntry, Date>)COREntry::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public String getUuid() {
+		if (_uuid == null) {
+			return "";
+		}
+		else {
+			return _uuid;
 		}
 	}
 
-	private static final Map<String, Function<COREntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<COREntry, Object>>
-		_attributeSetterBiConsumers;
+	@Override
+	public void setUuid(String uuid) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
 
-	static {
-		Map<String, Function<COREntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<COREntry, Object>>();
-		Map<String, BiConsumer<COREntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<COREntry, ?>>();
+		_uuid = uuid;
+	}
 
-		attributeGetterFunctions.put(
-			"externalReferenceCode", COREntry::getExternalReferenceCode);
-		attributeSetterBiConsumers.put(
-			"externalReferenceCode",
-			(BiConsumer<COREntry, String>)COREntry::setExternalReferenceCode);
-		attributeGetterFunctions.put("COREntryId", COREntry::getCOREntryId);
-		attributeSetterBiConsumers.put(
-			"COREntryId", (BiConsumer<COREntry, Long>)COREntry::setCOREntryId);
-		attributeGetterFunctions.put("companyId", COREntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<COREntry, Long>)COREntry::setCompanyId);
-		attributeGetterFunctions.put("userId", COREntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<COREntry, Long>)COREntry::setUserId);
-		attributeGetterFunctions.put("userName", COREntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<COREntry, String>)COREntry::setUserName);
-		attributeGetterFunctions.put("createDate", COREntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<COREntry, Date>)COREntry::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", COREntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<COREntry, Date>)COREntry::setModifiedDate);
-		attributeGetterFunctions.put("active", COREntry::getActive);
-		attributeSetterBiConsumers.put(
-			"active", (BiConsumer<COREntry, Boolean>)COREntry::setActive);
-		attributeGetterFunctions.put("description", COREntry::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<COREntry, String>)COREntry::setDescription);
-		attributeGetterFunctions.put("displayDate", COREntry::getDisplayDate);
-		attributeSetterBiConsumers.put(
-			"displayDate",
-			(BiConsumer<COREntry, Date>)COREntry::setDisplayDate);
-		attributeGetterFunctions.put(
-			"expirationDate", COREntry::getExpirationDate);
-		attributeSetterBiConsumers.put(
-			"expirationDate",
-			(BiConsumer<COREntry, Date>)COREntry::setExpirationDate);
-		attributeGetterFunctions.put("name", COREntry::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<COREntry, String>)COREntry::setName);
-		attributeGetterFunctions.put("priority", COREntry::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority", (BiConsumer<COREntry, Integer>)COREntry::setPriority);
-		attributeGetterFunctions.put("type", COREntry::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<COREntry, String>)COREntry::setType);
-		attributeGetterFunctions.put("typeSettings", COREntry::getTypeSettings);
-		attributeSetterBiConsumers.put(
-			"typeSettings",
-			(BiConsumer<COREntry, String>)COREntry::setTypeSettings);
-		attributeGetterFunctions.put(
-			"lastPublishDate", COREntry::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<COREntry, Date>)COREntry::setLastPublishDate);
-		attributeGetterFunctions.put("status", COREntry::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<COREntry, Integer>)COREntry::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", COREntry::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<COREntry, Long>)COREntry::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", COREntry::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<COREntry, String>)COREntry::setStatusByUserName);
-		attributeGetterFunctions.put("statusDate", COREntry::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate", (BiConsumer<COREntry, Date>)COREntry::setStatusDate);
-
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalUuid() {
+		return getColumnOriginalValue("uuid_");
 	}
 
 	@JSON
@@ -905,6 +894,12 @@ public class COREntryModelImpl
 	}
 
 	@Override
+	public StagedModelType getStagedModelType() {
+		return new StagedModelType(
+			PortalUtil.getClassNameId(COREntry.class.getName()));
+	}
+
+	@Override
 	public boolean isApproved() {
 		if (getStatus() == WorkflowConstants.STATUS_APPROVED) {
 			return true;
@@ -1040,6 +1035,8 @@ public class COREntryModelImpl
 	public Object clone() {
 		COREntryImpl corEntryImpl = new COREntryImpl();
 
+		corEntryImpl.setMvccVersion(getMvccVersion());
+		corEntryImpl.setUuid(getUuid());
 		corEntryImpl.setExternalReferenceCode(getExternalReferenceCode());
 		corEntryImpl.setCOREntryId(getCOREntryId());
 		corEntryImpl.setCompanyId(getCompanyId());
@@ -1070,6 +1067,9 @@ public class COREntryModelImpl
 	public COREntry cloneWithOriginalValues() {
 		COREntryImpl corEntryImpl = new COREntryImpl();
 
+		corEntryImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		corEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		corEntryImpl.setExternalReferenceCode(
 			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		corEntryImpl.setCOREntryId(
@@ -1189,6 +1189,16 @@ public class COREntryModelImpl
 	@Override
 	public CacheModel<COREntry> toCacheModel() {
 		COREntryCacheModel corEntryCacheModel = new COREntryCacheModel();
+
+		corEntryCacheModel.mvccVersion = getMvccVersion();
+
+		corEntryCacheModel.uuid = getUuid();
+
+		String uuid = corEntryCacheModel.uuid;
+
+		if ((uuid != null) && (uuid.length() == 0)) {
+			corEntryCacheModel.uuid = null;
+		}
 
 		corEntryCacheModel.externalReferenceCode = getExternalReferenceCode();
 
@@ -1368,44 +1378,17 @@ public class COREntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<COREntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<COREntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<COREntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((COREntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, COREntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					COREntry.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private String _uuid;
 	private String _externalReferenceCode;
 	private long _COREntryId;
 	private long _companyId;
@@ -1431,8 +1414,9 @@ public class COREntryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<COREntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<COREntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1457,6 +1441,8 @@ public class COREntryModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
 			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("COREntryId", _COREntryId);
@@ -1485,6 +1471,7 @@ public class COREntryModelImpl
 	static {
 		Map<String, String> attributeNames = new HashMap<>();
 
+		attributeNames.put("uuid_", "uuid");
 		attributeNames.put("active_", "active");
 		attributeNames.put("type_", "type");
 
@@ -1502,45 +1489,49 @@ public class COREntryModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("externalReferenceCode", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("COREntryId", 2L);
+		columnBitmasks.put("uuid_", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("externalReferenceCode", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("COREntryId", 8L);
 
-		columnBitmasks.put("userName", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("createDate", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("modifiedDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("active_", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("description", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("displayDate", 512L);
+		columnBitmasks.put("active_", 512L);
 
-		columnBitmasks.put("expirationDate", 1024L);
+		columnBitmasks.put("description", 1024L);
 
-		columnBitmasks.put("name", 2048L);
+		columnBitmasks.put("displayDate", 2048L);
 
-		columnBitmasks.put("priority", 4096L);
+		columnBitmasks.put("expirationDate", 4096L);
 
-		columnBitmasks.put("type_", 8192L);
+		columnBitmasks.put("name", 8192L);
 
-		columnBitmasks.put("typeSettings", 16384L);
+		columnBitmasks.put("priority", 16384L);
 
-		columnBitmasks.put("lastPublishDate", 32768L);
+		columnBitmasks.put("type_", 32768L);
 
-		columnBitmasks.put("status", 65536L);
+		columnBitmasks.put("typeSettings", 65536L);
 
-		columnBitmasks.put("statusByUserId", 131072L);
+		columnBitmasks.put("lastPublishDate", 131072L);
 
-		columnBitmasks.put("statusByUserName", 262144L);
+		columnBitmasks.put("status", 262144L);
 
-		columnBitmasks.put("statusDate", 524288L);
+		columnBitmasks.put("statusByUserId", 524288L);
+
+		columnBitmasks.put("statusByUserName", 1048576L);
+
+		columnBitmasks.put("statusDate", 2097152L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

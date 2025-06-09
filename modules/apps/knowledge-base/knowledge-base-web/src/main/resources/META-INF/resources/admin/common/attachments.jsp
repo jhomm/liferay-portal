@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -42,7 +33,7 @@ if (kbArticle != null) {
 	<div class="hide selected" id="<portlet:namespace />selectedFileNameMetadataContainer"></div>
 
 	<c:if test="<%= !attachmentsFileEntries.isEmpty() %>">
-		<h4><liferay-ui:message key="saved-attachments" /></h4>
+		<div class="h4"><liferay-ui:message key="saved-attachments" /></div>
 
 		<div id="<portlet:namespace />existingAttachmentsContainer">
 
@@ -65,7 +56,8 @@ if (kbArticle != null) {
 					%>
 
 					<liferay-ui:icon-delete
-						label="<%= true %>"
+						icon="trash"
+						showIcon="<%= true %>"
 						url="<%= taglibURL %>"
 					/>
 				</div>
@@ -80,35 +72,38 @@ if (kbArticle != null) {
 
 <aui:script use="liferay-upload">
 	new Liferay.Upload({
-		boundingBox: '#<portlet:namespace />fileUpload',
-		deleteFile:
-			'<liferay-portlet:actionURL name="deleteTempAttachment"><portlet:param name="resourcePrimKey" value="<%= String.valueOf(resourcePrimKey) %>" /></liferay-portlet:actionURL>',
+		'boundingBox': '#<portlet:namespace />fileUpload',
+		'deleteFile':
+			'<liferay-portlet:actionURL name="/knowledge_base/delete_temp_attachment"><portlet:param name="resourcePrimKey" value="<%= String.valueOf(resourcePrimKey) %>" /></liferay-portlet:actionURL>',
 
 		<%
 		DLConfiguration dlConfiguration = ConfigurationProviderUtil.getSystemConfiguration(DLConfiguration.class);
 		%>
 
-		fileDescription:
+		'fileDescription':
 			'<%= StringUtil.merge(dlConfiguration.fileExtensions()) %>',
-		maxFileSize: '<%= dlConfiguration.fileMaxSize() %> B',
-		metadataContainer:
+		'maxFileSize':
+			'<%= DLValidatorUtil.getMaxAllowableSize(themeDisplay.getScopeGroupId(), null) %> B',
+		'metadataContainer':
 			'#<portlet:namespace />selectedFileNameMetadataContainer',
-		metadataExplanationContainer:
+		'metadataExplanationContainer':
 			'#<portlet:namespace />metadataExplanationContainer',
-		namespace: '<portlet:namespace />',
-		tempFileURL: {
+		'namespace': '<portlet:namespace />',
+		'tempFileURL': {
 			method: Liferay.Service.bind('/kb.kbarticle/get-temp-attachment-names'),
 			params: {
 				groupId: <%= scopeGroupId %>,
 				tempFolderName: '<%= KBWebKeys.TEMP_FOLDER_NAME %>',
 			},
 		},
-		uploadFile:
-			'<liferay-portlet:actionURL name="addTempAttachment"><portlet:param name="resourcePrimKey" value="<%= String.valueOf(resourcePrimKey) %>" /></liferay-portlet:actionURL>',
+		'strings.dropFilesText':
+			'<liferay-ui:message key="drag-and-drop-to-upload" />',
+		'uploadFile':
+			'<liferay-portlet:actionURL name="/knowledge_base/add_temp_attachment"><portlet:param name="resourcePrimKey" value="<%= String.valueOf(resourcePrimKey) %>" /></liferay-portlet:actionURL>',
 	});
 </aui:script>
 
-<script>
+<aui:script>
 	window['<portlet:namespace />deleteFileEntry'] = function (fileEntryId) {
 		var removeFileEntryIdsInput = document.getElementById(
 			'<portlet:namespace />removeFileEntryIds'
@@ -132,4 +127,4 @@ if (kbArticle != null) {
 			fileEntryIdWrapper.style.display = 'none';
 		}
 	};
-</script>
+</aui:script>

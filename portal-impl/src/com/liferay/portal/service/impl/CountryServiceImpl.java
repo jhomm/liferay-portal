@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
@@ -24,7 +18,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.service.base.CountryServiceBaseImpl;
-import com.liferay.portal.util.PortalInstances;
 
 import java.util.List;
 
@@ -95,7 +88,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country fetchCountryByA2(String a2) {
-		return fetchCountryByA2(PortalInstances.getDefaultCompanyId(), a2);
+		return fetchCountryByA2(PortalInstancePool.getDefaultCompanyId(), a2);
 	}
 
 	@Override
@@ -109,7 +102,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country fetchCountryByA3(String a3) {
-		return fetchCountryByA3(PortalInstances.getDefaultCompanyId(), a3);
+		return fetchCountryByA3(PortalInstancePool.getDefaultCompanyId(), a3);
 	}
 
 	@Override
@@ -157,7 +150,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public List<Country> getCountries() {
-		return getCompanyCountries(PortalInstances.getDefaultCompanyId());
+		return getCompanyCountries(PortalInstancePool.getDefaultCompanyId());
 	}
 
 	/**
@@ -168,7 +161,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Override
 	public List<Country> getCountries(boolean active) {
 		return getCompanyCountries(
-			PortalInstances.getDefaultCompanyId(), active);
+			PortalInstancePool.getDefaultCompanyId(), active);
 	}
 
 	@Override
@@ -189,7 +182,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country getCountryByA2(String a2) throws PortalException {
-		return getCountryByA2(PortalInstances.getDefaultCompanyId(), a2);
+		return getCountryByA2(PortalInstancePool.getDefaultCompanyId(), a2);
 	}
 
 	@Override
@@ -205,7 +198,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country getCountryByA3(String a3) throws PortalException {
-		return getCountryByA3(PortalInstances.getDefaultCompanyId(), a3);
+		return getCountryByA3(PortalInstancePool.getDefaultCompanyId(), a3);
 	}
 
 	@Override
@@ -221,7 +214,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 	@Deprecated
 	@Override
 	public Country getCountryByName(String name) throws PortalException {
-		return getCountryByName(PortalInstances.getDefaultCompanyId(), name);
+		return getCountryByName(PortalInstancePool.getDefaultCompanyId(), name);
 	}
 
 	@Override
@@ -231,6 +224,7 @@ public class CountryServiceImpl extends CountryServiceBaseImpl {
 		return countryLocalService.getCountryByNumber(companyId, number);
 	}
 
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	@Override
 	public BaseModelSearchResult<Country> searchCountries(
 			long companyId, Boolean active, String keywords, int start, int end,

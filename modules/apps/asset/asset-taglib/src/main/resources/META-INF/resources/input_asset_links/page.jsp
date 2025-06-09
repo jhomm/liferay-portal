@@ -1,57 +1,39 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/input_asset_links/init.jsp" %>
 
-<liferay-ui:icon-menu
-	cssClass="select-existing-selector"
-	direction="right"
-	id='<%= inputAssetLinksDisplayContext.getRandomNamespace() + "inputAssetLinks" %>'
-	message="select"
-	showArrow="<%= false %>"
-	showWhenSingleIcon="<%= true %>"
->
-
-	<%
-	for (Map<String, Object> selectorEntry : inputAssetLinksDisplayContext.getSelectorEntries()) {
-	%>
-
-		<liferay-ui:icon
-			cssClass="asset-selector"
-			data='<%= (Map<String, Object>)selectorEntry.get("data") %>'
-			id='<%= (String)selectorEntry.get("id") %>'
-			message='<%= HtmlUtil.escape((String)selectorEntry.get("message")) %>'
-			url="javascript:;"
-		/>
-
-	<%
-	}
-	%>
-
-</liferay-ui:icon-menu>
-
 <liferay-util:buffer
 	var="removeLinkIcon"
 >
-	<liferay-ui:icon
-		icon="times-circle"
-		markupView="lexicon"
-		message="remove"
+	<clay:icon
+		symbol="times-circle"
 	/>
 </liferay-util:buffer>
+
+<%
+List<DropdownItem> dropdownItems = inputAssetLinksDisplayContext.getActionDropdownItems();
+%>
+
+<clay:dropdown-menu
+	additionalProps='<%=
+		HashMapBuilder.<String, Object>put(
+			"removeIcon", removeLinkIcon
+		).build()
+	%>'
+	alignmentByViewport="<%= true %>"
+	alignmentPosition="<%= 6 %>"
+	aria-label='<%= LanguageUtil.get(request, "select-items") %>'
+	cssClass="btn btn-secondary"
+	dropdownItems="<%= dropdownItems %>"
+	label='<%= LanguageUtil.get(request, "select") %>'
+	propsTransformer="{InputAssetLinkDropdownDefaultPropsTransformer} from asset-taglib"
+	searchable="<%= dropdownItems.size() > 7 %>"
+/>
 
 <liferay-ui:search-container
 	compactEmptyResultsMessage="<%= true %>"
@@ -64,7 +46,7 @@
 	/>
 
 	<liferay-ui:search-container-row
-		className="com.liferay.asset.kernel.model.AssetLink"
+		className="com.liferay.asset.link.model.AssetLink"
 		keyProperty="entryId2"
 		modelVar="assetLink"
 	>
@@ -76,9 +58,9 @@
 		<liferay-ui:search-container-column-text
 			name="title"
 		>
-			<h4 class="list-group-title">
+			<div class="list-group-title">
 				<%= HtmlUtil.escape(assetLinkEntry.getTitle(locale)) %>
-			</h4>
+			</div>
 
 			<p class="list-group-subtitle">
 				<%= inputAssetLinksDisplayContext.getAssetType(assetLinkEntry) %>
@@ -89,10 +71,17 @@
 			</p>
 		</liferay-ui:search-container-column-text>
 
-		<liferay-ui:search-container-column-text
-			cssClass="text-right"
-		>
-			<a class="modify-link" data-rowId="<%= assetLinkEntry.getEntryId() %>" href="javascript:;"><%= removeLinkIcon %></a>
+		<liferay-ui:search-container-column-text>
+			<clay:button
+				aria-label='<%= LanguageUtil.get(request, "remove") %>'
+				borderless="<%= true %>"
+				cssClass="float-right lfr-portal-tooltip modify-link"
+				data-rowId="<%= assetLinkEntry.getEntryId() %>"
+				displayType="secondary"
+				icon="times-circle"
+				title="remove"
+				type="button"
+			/>
 		</liferay-ui:search-container-column-text>
 	</liferay-ui:search-container-row>
 
@@ -110,86 +99,6 @@
 </c:if>
 
 <aui:input name="assetLinkEntryIds" type="hidden" />
-
-<aui:script use="aui-base,liferay-search-container">
-	var assetSelectorHandle = A.getBody().delegate(
-		'click',
-		(event) => {
-			event.preventDefault();
-
-			var searchContainerName =
-				'<portlet:namespace />assetLinksSearchContainer';
-
-			var searchContainer = Liferay.SearchContainer.get(searchContainerName);
-
-			var searchContainerData = searchContainer.getData();
-
-			if (searchContainerData) {
-				searchContainerData = searchContainerData.split(',');
-			}
-			else {
-				searchContainerData = [];
-			}
-
-			Liferay.Util.openSelectionModal({
-				buttonAddLabel: '<liferay-ui:message key="done" />',
-				multiple: true,
-				onSelect: function (assetEntryIds) {
-					if (assetEntryIds) {
-						Array.prototype.forEach.call(
-							assetEntryIds,
-							(assetEntry) => {
-								var entityId = assetEntry.entityid;
-
-								if (searchContainerData.indexOf(entityId) == -1) {
-									var entryLink =
-										'<div class="text-right"><a class="modify-link" data-rowId="' +
-										entityId +
-										'" href="javascript:;"><%= UnicodeFormatter.toString(removeLinkIcon) %></a></div>';
-
-									var entryHtml =
-										'<h4 class="list-group-title">' +
-										Liferay.Util.escapeHTML(
-											assetEntry.assettitle
-										) +
-										'</h4><p class="list-group-subtitle">' +
-										Liferay.Util.escapeHTML(
-											assetEntry.assettype
-										) +
-										'</p><p class="list-group-subtitle"><liferay-ui:message key="scope" />: ' +
-										Liferay.Util.escapeHTML(
-											assetEntry.groupdescriptivename
-										) +
-										'</p>';
-
-									searchContainer.addRow(
-										[entryHtml, entryLink],
-										entityId
-									);
-
-									searchContainer.updateDataStore();
-								}
-							}
-						);
-					}
-				},
-				title: event.currentTarget.attr('data-title'),
-				url: event.currentTarget.attr('data-href'),
-			});
-		},
-		'.asset-selector a'
-	);
-
-	var clearAssetSelectorHandle = function (event) {
-		if (event.portletId === '<%= portletDisplay.getId() %>') {
-			assetSelectorHandle.detach();
-
-			Liferay.detach('destroyPortlet', clearAssetSelectorHandle);
-		}
-	};
-
-	Liferay.on('destroyPortlet', clearAssetSelectorHandle);
-</aui:script>
 
 <aui:script use="liferay-search-container">
 	var searchContainer = Liferay.SearchContainer.get(

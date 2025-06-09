@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.provider;
@@ -104,6 +95,31 @@ public interface SegmentsEntryProvider {
 		throws PortalException {
 
 		return getSegmentsEntryIds(groupId, className, classPK, context);
+	}
+
+	/**
+	 * Returns IDs of the group's active segments entries that are related to
+	 * the entity under the given context.
+	 *
+	 * @param  groupId the primary key of the group
+	 * @param  className the entity's class name
+	 * @param  classPK the primary key of the entity
+	 * @param  context the context
+	 * @param  filterSegmentsEntryIds the IDs of the segments entries that could
+	 *         be returned
+	 * @param  segmentsEntryIds the IDs of the group's active segments entries
+	 *         that are currently related to the entity under the given context
+	 * @return the IDs of the active segments entries related to the entity
+	 * @throws PortalException if a portal exception occurred
+	 * @review
+	 */
+	public default long[] getSegmentsEntryIds(
+			long groupId, String className, long classPK, Context context,
+			long[] filterSegmentsEntryIds, long[] segmentsEntryIds)
+		throws PortalException {
+
+		return getSegmentsEntryIds(
+			groupId, className, classPK, context, segmentsEntryIds);
 	}
 
 }

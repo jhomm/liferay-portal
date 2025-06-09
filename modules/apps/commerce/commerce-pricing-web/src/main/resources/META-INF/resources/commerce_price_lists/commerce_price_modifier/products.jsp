@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -28,69 +19,26 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 		<div class="col-12">
 			<div id="item-finder-root"></div>
 
-			<aui:script require="commerce-frontend-js/components/item_finder/entry as itemFinder, commerce-frontend-js/utilities/slugify as slugify, commerce-frontend-js/utilities/eventsDefinitions as events, commerce-frontend-js/ServiceProvider/index as ServiceProvider">
-				var CommercePriceModifierProductsResource = ServiceProvider.default.AdminPricingAPI(
-					'v2'
-				);
-
-				var id = <%= commercePriceModifierId %>;
-				var priceModifierExternalReferenceCode =
-					'<%= HtmlUtil.escapeJS(commercePriceModifier.getExternalReferenceCode()) %>';
-
-				function selectItem(product) {
-					var productData = {
-						productExternalReferenceCode: product.externalReferenceCode,
-						productId: product.id,
-						priceModifierExternalReferenceCode: priceModifierExternalReferenceCode,
-						priceModifierId: id,
-					};
-
-					return CommercePriceModifierProductsResource.addPriceModifierProduct(
-						id,
-						productData
-					)
-						.then(() => {
-							Liferay.fire(events.UPDATE_DATASET_DISPLAY, {
-								id:
-									'<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_PRODUCT_DEFINITIONS %>',
-							});
-						})
-						.catch((error) => {
-							return Promise.reject(error);
-						});
-				}
-
-				function getSelectedItems() {
-					return Promise.resolve([]);
-				}
-
-				itemFinder.default('itemFinder', 'item-finder-root', {
-					apiUrl:
-						'/o/headless-commerce-admin-catalog/v1.0/products?filter=catalogId eq <%= commercePriceListDisplayContext.getCommerceCatalogId() %>',
-					getSelectedItems: getSelectedItems,
-					inputPlaceholder: '<%= LanguageUtil.get(request, "find-a-product") %>',
-					itemSelectedMessage: '<%= LanguageUtil.get(request, "product-selected") %>',
-					linkedDatasetsId: [
-						'<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_PRODUCT_DEFINITIONS %>',
-					],
-					itemCreation: false,
-					itemsKey: 'id',
-					onItemSelected: selectItem,
-					pageSize: 10,
-					panelHeaderLabel: '<%= LanguageUtil.get(request, "add-products") %>',
-					portletId: '<%= portletDisplay.getRootPortletId() %>',
-					schema: [
-						{
-							fieldName: ['name', 'LANG'],
-						},
-						{
-							fieldName: 'productId',
-						},
-					],
-					spritemap: '<%= themeDisplay.getPathThemeImages() %>/lexicon/icons.svg',
-					titleLabel: '<%= LanguageUtil.get(request, "add-existing-product") %>',
-				});
-			</aui:script>
+			<liferay-frontend:component
+				context='<%=
+					HashMapBuilder.<String, Object>put(
+						"catalogId", commercePriceListDisplayContext.getCommerceCatalogId()
+					).put(
+						"commercePriceModifierId", commercePriceModifierId
+					).put(
+						"namespace", liferayPortletResponse.getNamespace()
+					).put(
+						"portletId", portletDisplay.getRootPortletId()
+					).put(
+						"priceModifierExternalReferenceCode", commercePriceModifier.getExternalReferenceCode()
+					).put(
+						"pricingFDSName", CommercePricingFDSNames.DISCOUNT_QUALIFIER_ACCOUNTS
+					).put(
+						"spritemap", themeDisplay.getPathThemeSpritemap()
+					).build()
+				%>'
+				module="{priceModifierProducts} from commerce-pricing-web"
+			/>
 		</div>
 
 		<div class="col-12">
@@ -98,15 +46,12 @@ long commercePriceModifierId = commercePriceListDisplayContext.getCommercePriceM
 				bodyClasses="p-0"
 				title='<%= LanguageUtil.get(request, "products") %>'
 			>
-				<clay:headless-data-set-display
-					apiURL="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionApiUrl() %>"
-					clayDataSetActionDropdownItems="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionClayDataSetActionDropdownItems() %>"
+				<frontend-data-set:headless-display
+					apiURL="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionAPIURL() %>"
+					fdsActionDropdownItems="<%= commercePriceListDisplayContext.getPriceModifierCPDefinitionFDSActionDropdownItems() %>"
 					formName="fm"
-					id="<%= CommercePricingDataSetConstants.COMMERCE_DATA_SET_KEY_PRICE_MODIFIER_PRODUCT_DEFINITIONS %>"
+					id="<%= CommercePricingFDSNames.PRICE_MODIFIER_PRODUCT_DEFINITIONS %>"
 					itemsPerPage="<%= 10 %>"
-					namespace="<%= liferayPortletResponse.getNamespace() %>"
-					pageNumber="<%= 1 %>"
-					portletURL="<%= currentURLObj %>"
 				/>
 			</commerce-ui:panel>
 		</div>

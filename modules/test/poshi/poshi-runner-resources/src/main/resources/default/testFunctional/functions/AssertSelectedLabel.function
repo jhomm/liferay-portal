@@ -1,19 +1,10 @@
 @default = "assertSelectedLabel"
 definition {
 
-	function assertPartialSelectedLabel {
-		selenium.waitForVisible();
+	function assertSelectedLabel(locator1, value1) {
+		selenium.waitForVisible(${locator1}, "true");
 
-		selenium.assertPartialText(
-			"xpath=(${locator1})/option[@selected='']",
-			"${value1}"
-		);
-	}
-
-	function assertSelectedLabel {
-		selenium.waitForVisible();
-
-		selenium.assertSelectedLabel();
+		selenium.assertSelectedLabel(${locator1}, ${value1});
 	}
 
 }

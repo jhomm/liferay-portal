@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence.test;
@@ -132,6 +123,9 @@ public class FragmentEntryVersionPersistenceTest {
 
 		newFragmentEntryVersion.setUuid(RandomTestUtil.randomString());
 
+		newFragmentEntryVersion.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newFragmentEntryVersion.setFragmentEntryId(RandomTestUtil.nextLong());
 
 		newFragmentEntryVersion.setGroupId(RandomTestUtil.nextLong());
@@ -164,12 +158,18 @@ public class FragmentEntryVersionPersistenceTest {
 
 		newFragmentEntryVersion.setConfiguration(RandomTestUtil.randomString());
 
+		newFragmentEntryVersion.setIcon(RandomTestUtil.randomString());
+
 		newFragmentEntryVersion.setPreviewFileEntryId(
 			RandomTestUtil.nextLong());
+
+		newFragmentEntryVersion.setMarketplace(RandomTestUtil.randomBoolean());
 
 		newFragmentEntryVersion.setReadOnly(RandomTestUtil.randomBoolean());
 
 		newFragmentEntryVersion.setType(RandomTestUtil.nextInt());
+
+		newFragmentEntryVersion.setTypeOptions(RandomTestUtil.randomString());
 
 		newFragmentEntryVersion.setLastPublishDate(RandomTestUtil.nextDate());
 
@@ -204,6 +204,9 @@ public class FragmentEntryVersionPersistenceTest {
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getUuid(),
 			newFragmentEntryVersion.getUuid());
+		Assert.assertEquals(
+			existingFragmentEntryVersion.getExternalReferenceCode(),
+			newFragmentEntryVersion.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getFragmentEntryId(),
 			newFragmentEntryVersion.getFragmentEntryId());
@@ -252,14 +255,23 @@ public class FragmentEntryVersionPersistenceTest {
 			existingFragmentEntryVersion.getConfiguration(),
 			newFragmentEntryVersion.getConfiguration());
 		Assert.assertEquals(
+			existingFragmentEntryVersion.getIcon(),
+			newFragmentEntryVersion.getIcon());
+		Assert.assertEquals(
 			existingFragmentEntryVersion.getPreviewFileEntryId(),
 			newFragmentEntryVersion.getPreviewFileEntryId());
+		Assert.assertEquals(
+			existingFragmentEntryVersion.isMarketplace(),
+			newFragmentEntryVersion.isMarketplace());
 		Assert.assertEquals(
 			existingFragmentEntryVersion.isReadOnly(),
 			newFragmentEntryVersion.isReadOnly());
 		Assert.assertEquals(
 			existingFragmentEntryVersion.getType(),
 			newFragmentEntryVersion.getType());
+		Assert.assertEquals(
+			existingFragmentEntryVersion.getTypeOptions(),
+			newFragmentEntryVersion.getTypeOptions());
 		Assert.assertEquals(
 			Time.getShortTimestamp(
 				existingFragmentEntryVersion.getLastPublishDate()),
@@ -379,6 +391,21 @@ public class FragmentEntryVersionPersistenceTest {
 			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
 		_persistence.countByFragmentCollectionId_Version(0L, 0);
+	}
+
+	@Test
+	public void testCountByType() throws Exception {
+		_persistence.countByType(RandomTestUtil.nextInt());
+
+		_persistence.countByType(0);
+	}
+
+	@Test
+	public void testCountByType_Version() throws Exception {
+		_persistence.countByType_Version(
+			RandomTestUtil.nextInt(), RandomTestUtil.nextInt());
+
+		_persistence.countByType_Version(0, 0);
 	}
 
 	@Test
@@ -545,13 +572,14 @@ public class FragmentEntryVersionPersistenceTest {
 		return OrderByComparatorFactoryUtil.create(
 			"FragmentEntryVersion", "mvccVersion", true, "ctCollectionId", true,
 			"fragmentEntryVersionId", true, "version", true, "uuid", true,
-			"fragmentEntryId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "fragmentCollectionId", true,
-			"fragmentEntryKey", true, "name", true, "cacheable", true,
-			"previewFileEntryId", true, "readOnly", true, "type", true,
-			"lastPublishDate", true, "status", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true);
+			"externalReferenceCode", true, "fragmentEntryId", true, "groupId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "fragmentCollectionId",
+			true, "fragmentEntryKey", true, "name", true, "cacheable", true,
+			"icon", true, "previewFileEntryId", true, "marketplace", true,
+			"readOnly", true, "type", true, "lastPublishDate", true, "status",
+			true, "statusByUserId", true, "statusByUserName", true,
+			"statusDate", true);
 	}
 
 	@Test
@@ -875,6 +903,9 @@ public class FragmentEntryVersionPersistenceTest {
 
 		fragmentEntryVersion.setUuid(RandomTestUtil.randomString());
 
+		fragmentEntryVersion.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		fragmentEntryVersion.setFragmentEntryId(RandomTestUtil.nextLong());
 
 		fragmentEntryVersion.setGroupId(RandomTestUtil.nextLong());
@@ -905,11 +936,17 @@ public class FragmentEntryVersionPersistenceTest {
 
 		fragmentEntryVersion.setConfiguration(RandomTestUtil.randomString());
 
+		fragmentEntryVersion.setIcon(RandomTestUtil.randomString());
+
 		fragmentEntryVersion.setPreviewFileEntryId(RandomTestUtil.nextLong());
+
+		fragmentEntryVersion.setMarketplace(RandomTestUtil.randomBoolean());
 
 		fragmentEntryVersion.setReadOnly(RandomTestUtil.randomBoolean());
 
 		fragmentEntryVersion.setType(RandomTestUtil.nextInt());
+
+		fragmentEntryVersion.setTypeOptions(RandomTestUtil.randomString());
 
 		fragmentEntryVersion.setLastPublishDate(RandomTestUtil.nextDate());
 

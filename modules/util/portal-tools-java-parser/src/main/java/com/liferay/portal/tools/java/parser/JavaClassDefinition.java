@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser;
@@ -25,13 +16,13 @@ import java.util.List;
 public class JavaClassDefinition extends BaseJavaTerm {
 
 	public JavaClassDefinition(
-		String type, List<JavaAnnotation> javaAnnotations,
-		List<JavaSimpleValue> modifiers, JavaType classJavaType) {
+		JavaType classJavaType, List<JavaAnnotation> javaAnnotations,
+		List<JavaSimpleValue> modifiers, String type) {
 
-		_type = type;
+		_classJavaType = classJavaType;
 		_javaAnnotations = javaAnnotations;
 		_modifiers = modifiers;
-		_classJavaType = classJavaType;
+		_type = type;
 	}
 
 	public void setExtendedClassJavaTypes(
@@ -44,6 +35,18 @@ public class JavaClassDefinition extends BaseJavaTerm {
 		List<JavaType> implementedClassJavaTypes) {
 
 		_implementedClassJavaTypes = implementedClassJavaTypes;
+	}
+
+	public void setJavaRecordComponent(
+		List<JavaRecordComponent> javaRecordComponents) {
+
+		_javaRecordComponents = javaRecordComponents;
+	}
+
+	public void setPermittedClassJavaTypes(
+		List<JavaType> permittedClassJavaTypes) {
+
+		_permittedClassJavaTypes = permittedClassJavaTypes;
 	}
 
 	@Override
@@ -87,6 +90,11 @@ public class JavaClassDefinition extends BaseJavaTerm {
 			sb, _classJavaType, StringBundler.concat(prefix, _type, " "), "",
 			NO_MAX_LINE_LENGTH);
 
+		if (_javaRecordComponents != null) {
+			appendSingleLine(
+				sb, _javaRecordComponents, "(", ")", NO_MAX_LINE_LENGTH);
+		}
+
 		if (_extendedClassJavaTypes != null) {
 			appendSingleLine(
 				sb, _extendedClassJavaTypes, " extends ", "",
@@ -96,6 +104,12 @@ public class JavaClassDefinition extends BaseJavaTerm {
 		if (_implementedClassJavaTypes != null) {
 			appendSingleLine(
 				sb, _implementedClassJavaTypes, " implements ", "",
+				NO_MAX_LINE_LENGTH);
+		}
+
+		if (_permittedClassJavaTypes != null) {
+			appendSingleLine(
+				sb, _permittedClassJavaTypes, " permits ", "",
 				NO_MAX_LINE_LENGTH);
 		}
 
@@ -126,14 +140,35 @@ public class JavaClassDefinition extends BaseJavaTerm {
 				appendNewLine(
 					sb, _extendedClassJavaTypes, indent, "extends ", " ",
 					maxLineLength);
-				append(
-					sb, _implementedClassJavaTypes, indent, "implements ",
-					suffix, maxLineLength);
+
+				if (_permittedClassJavaTypes != null) {
+					append(
+						sb, _implementedClassJavaTypes, indent, "implements ",
+						" ", maxLineLength);
+					append(
+						sb, _permittedClassJavaTypes, indent, "permits ",
+						suffix, maxLineLength);
+				}
+				else {
+					append(
+						sb, _implementedClassJavaTypes, indent, "implements ",
+						suffix, maxLineLength);
+				}
 			}
 			else {
-				appendNewLine(
-					sb, _extendedClassJavaTypes, indent, "extends ", suffix,
-					maxLineLength);
+				if (_permittedClassJavaTypes != null) {
+					appendNewLine(
+						sb, _extendedClassJavaTypes, indent, "extends ", " ",
+						maxLineLength);
+					append(
+						sb, _permittedClassJavaTypes, indent, "permits ",
+						suffix, maxLineLength);
+				}
+				else {
+					appendNewLine(
+						sb, _extendedClassJavaTypes, indent, "extends ", suffix,
+						maxLineLength);
+				}
 			}
 
 			return sb.toString();
@@ -142,8 +177,28 @@ public class JavaClassDefinition extends BaseJavaTerm {
 		if (_implementedClassJavaTypes != null) {
 			indent = append(sb, _classJavaType, indent, maxLineLength, false);
 
+			if (_permittedClassJavaTypes != null) {
+				appendNewLine(
+					sb, _implementedClassJavaTypes, indent, "implements ", " ",
+					maxLineLength);
+				append(
+					sb, _permittedClassJavaTypes, indent, "permits ", suffix,
+					maxLineLength);
+			}
+			else {
+				appendNewLine(
+					sb, _implementedClassJavaTypes, indent, "implements ",
+					suffix, maxLineLength);
+			}
+
+			return sb.toString();
+		}
+
+		if (_permittedClassJavaTypes != null) {
+			indent = append(sb, _classJavaType, indent, maxLineLength, false);
+
 			appendNewLine(
-				sb, _implementedClassJavaTypes, indent, "implements ", suffix,
+				sb, _permittedClassJavaTypes, indent, "permits ", suffix,
 				maxLineLength);
 		}
 		else {
@@ -158,7 +213,9 @@ public class JavaClassDefinition extends BaseJavaTerm {
 	private List<JavaType> _extendedClassJavaTypes;
 	private List<JavaType> _implementedClassJavaTypes;
 	private final List<JavaAnnotation> _javaAnnotations;
+	private List<JavaRecordComponent> _javaRecordComponents;
 	private final List<JavaSimpleValue> _modifiers;
+	private List<JavaType> _permittedClassJavaTypes;
 	private final String _type;
 
 }

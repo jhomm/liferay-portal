@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.list.service;
 import com.liferay.asset.list.model.AssetListEntryAssetEntryRel;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class AssetListEntryAssetEntryRelLocalServiceWrapper
 	implements AssetListEntryAssetEntryRelLocalService,
 			   ServiceWrapper<AssetListEntryAssetEntryRelLocalService> {
+
+	public AssetListEntryAssetEntryRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AssetListEntryAssetEntryRelLocalServiceWrapper(
 		AssetListEntryAssetEntryRelLocalService
@@ -116,10 +112,12 @@ public class AssetListEntryAssetEntryRelLocalServiceWrapper
 	 *
 	 * @param assetListEntryAssetEntryRel the asset list entry asset entry rel
 	 * @return the asset list entry asset entry rel that was removed
+	 * @throws PortalException
 	 */
 	@Override
 	public AssetListEntryAssetEntryRel deleteAssetListEntryAssetEntryRel(
-		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel) {
+			AssetListEntryAssetEntryRel assetListEntryAssetEntryRel)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryAssetEntryRelLocalService.
 			deleteAssetListEntryAssetEntryRel(assetListEntryAssetEntryRel);
@@ -153,6 +151,15 @@ public class AssetListEntryAssetEntryRelLocalServiceWrapper
 		return _assetListEntryAssetEntryRelLocalService.
 			deleteAssetListEntryAssetEntryRel(
 				assetListEntryId, segmentsEntryId, position);
+	}
+
+	@Override
+	public void deleteAssetListEntryAssetEntryRelByAssetEntryId(
+			long assetEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_assetListEntryAssetEntryRelLocalService.
+			deleteAssetListEntryAssetEntryRelByAssetEntryId(assetEntryId);
 	}
 
 	@Override
@@ -329,6 +336,14 @@ public class AssetListEntryAssetEntryRelLocalServiceWrapper
 			getAssetListEntryAssetEntryRel(assetListEntryAssetEntryRelId);
 	}
 
+	@Override
+	public java.util.List<AssetListEntryAssetEntryRel>
+		getAssetListEntryAssetEntryRelByAssetEntryId(long assetEntryId) {
+
+		return _assetListEntryAssetEntryRelLocalService.
+			getAssetListEntryAssetEntryRelByAssetEntryId(assetEntryId);
+	}
+
 	/**
 	 * Returns the asset list entry asset entry rel matching the UUID and group.
 	 *
@@ -397,22 +412,6 @@ public class AssetListEntryAssetEntryRelLocalServiceWrapper
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public java.util.List<AssetListEntryAssetEntryRel>
-		getAssetListEntryAssetEntryRels(
-			long assetListEntryId, long[] segmentsEntryIds,
-			long[][] assetCategoryIds, int start, int end) {
-
-		return _assetListEntryAssetEntryRelLocalService.
-			getAssetListEntryAssetEntryRels(
-				assetListEntryId, segmentsEntryIds, assetCategoryIds, start,
-				end);
-	}
-
-	/**
 	 * Returns all the asset list entry asset entry rels matching the UUID and company.
 	 *
 	 * @param uuid the UUID of the asset list entry asset entry rels
@@ -478,34 +477,11 @@ public class AssetListEntryAssetEntryRelLocalServiceWrapper
 
 	@Override
 	public int getAssetListEntryAssetEntryRelsCount(
-		long assetLIstEntryId, long segmentsEntryId, boolean visible) {
-
-		return _assetListEntryAssetEntryRelLocalService.
-			getAssetListEntryAssetEntryRelsCount(
-				assetLIstEntryId, segmentsEntryId, visible);
-	}
-
-	@Override
-	public int getAssetListEntryAssetEntryRelsCount(
 		long assetListEntryId, long[] segmentsEntryIds) {
 
 		return _assetListEntryAssetEntryRelLocalService.
 			getAssetListEntryAssetEntryRelsCount(
 				assetListEntryId, segmentsEntryIds);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public int getAssetListEntryAssetEntryRelsCount(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds) {
-
-		return _assetListEntryAssetEntryRelLocalService.
-			getAssetListEntryAssetEntryRelsCount(
-				assetListEntryId, segmentsEntryIds, assetCategoryIds);
 	}
 
 	@Override
@@ -588,6 +564,11 @@ public class AssetListEntryAssetEntryRelLocalServiceWrapper
 			updateAssetListEntryAssetEntryRel(
 				assetListEntryAssetEntryRelId, assetListEntryId, assetEntryId,
 				segmentsEntryId, position);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _assetListEntryAssetEntryRelLocalService.getBasePersistence();
 	}
 
 	@Override

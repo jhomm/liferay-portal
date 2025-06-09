@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.client.dto.v1_0;
@@ -17,12 +8,12 @@ package com.liferay.headless.admin.user.client.dto.v1_0;
 import com.liferay.headless.admin.user.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.user.client.serdes.v1_0.SiteSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -119,6 +110,51 @@ public class Site implements Cloneable, Serializable {
 	}
 
 	protected Map<String, String> description_i18n;
+
+	public String getDescriptiveName() {
+		return descriptiveName;
+	}
+
+	public void setDescriptiveName(String descriptiveName) {
+		this.descriptiveName = descriptiveName;
+	}
+
+	public void setDescriptiveName(
+		UnsafeSupplier<String, Exception> descriptiveNameUnsafeSupplier) {
+
+		try {
+			descriptiveName = descriptiveNameUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String descriptiveName;
+
+	public Map<String, String> getDescriptiveName_i18n() {
+		return descriptiveName_i18n;
+	}
+
+	public void setDescriptiveName_i18n(
+		Map<String, String> descriptiveName_i18n) {
+
+		this.descriptiveName_i18n = descriptiveName_i18n;
+	}
+
+	public void setDescriptiveName_i18n(
+		UnsafeSupplier<Map<String, String>, Exception>
+			descriptiveName_i18nUnsafeSupplier) {
+
+		try {
+			descriptiveName_i18n = descriptiveName_i18nUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Map<String, String> descriptiveName_i18n;
 
 	public String getFriendlyUrlPath() {
 		return friendlyUrlPath;

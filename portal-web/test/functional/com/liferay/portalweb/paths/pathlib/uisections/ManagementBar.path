@@ -12,12 +12,32 @@
 <tbody>
 <tr>
 	<td>ANY_ICON</td>
-	<td>//nav[contains(@class,'management-bar')]//*[*[name()='svg'][contains(@class,'icon-${key_text}')]]</td>
+	<td>//nav[contains(@class,'management-bar')]//button[contains(@class,'inline')][.//*[name()='svg'][contains(@class,'icon-${key_text}')]]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>FILTER_AND_ORDER</td>
-	<td>//nav[contains(@class,'management-bar')]//*[*[normalize-space(text())='Filter and Order']]</td>
+	<td>ELLIPSIS</td>
+	<td>//nav[contains(@class,'management-bar')]//button[contains(@class,'monospaced')][.//*[name()='svg'][contains(@class,'icon-ellipsis-v')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FILTER</td>
+	<td>//nav[contains(@class,'management-bar')]//*[self::button or self::a][.//*[normalize-space(text())='Filter']]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER</td>
+	<td>//nav[contains(@class,'management-bar')]//*[self::button or self::a][.//*[normalize-space(text())='Order']]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FILTER_DISABLED</td>
+	<td>//nav[contains(@class,'management-bar')]//button[@disabled]//*[*[normalize-space(text())='Filter and Order']]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER_DISABLED</td>
+	<td>//nav[contains(@class,'management-bar')]//button[@disabled]//*[*[normalize-space(text())='Filter and Order']]</td>
 	<td></td>
 </tr>
 <tr>
@@ -56,6 +76,16 @@
 	<td></td>
 </tr>
 <tr>
+	<td>ORDER_ICON_GENERIC_BUTTON</td>
+	<td>//*[contains(@class, 'lexicon-icon lexicon-icon-order')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER_ICON_GENERIC_BUTTON_DISABLED</td>
+	<td>//button[@disabled]//*[contains(@class, 'lexicon-icon lexicon-icon-order')]</td>
+	<td></td>
+</tr>
+<tr>
 	<td>ORDER_ICON_SPECIFIC</td>
 	<td>//nav[contains(@class,'management-bar')]//a[@title='Reverse Sort Direction']//*[contains(@class,'${key_order}')]</td>
 	<td></td>
@@ -71,8 +101,81 @@
 	<td></td>
 </tr>
 <tr>
+	<td>SEARCH_FILTER_LABEL_X</td>
+	<td>//span[contains(@class,'label-item') and contains(.,'${key_filter}')]/..//button</td>
+	<td></td>
+</tr>
+<tr>
 	<td>SEARCH_RESULT_SUMMARY</td>
 	<td>//nav[contains(@class,'subnav-tbar')]//span[@class='text-truncate']</td>
+	<td></td>
+</tr>
+
+<!--FEATURE FLAG CONFIGURATIONS-->
+
+<tr>
+	<td>ACTION_INFO_BUTTON_SEPARATOR</td>
+	<td>//nav[contains(@class,'management-bar')]//*[contains(@class,'info')]//preceding::*[contains(@class,'ellipsis')]//following::*[contains(@class, 'separator-left')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ACTIVE_DROPDOWN_ITEM</td>
+	<td>//div[contains(@class,'dropdown-menu') and contains(@class,'show')]//li//*[contains(@class,'dropdown-item') and contains(.,'${key_item}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CLEAR_BUTTON</td>
+	<td>//nav[contains(@class,'management-bar')]//*[contains(@aria-label, 'Clear')]//*[contains(.,'Clear')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CLEAR_BUTTON_MOBILE</td>
+	<td>//nav[contains(@class,'management-bar')]//*[contains(@aria-label, 'Clear')]//*[contains(@class,'icon-times-circle')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CLEAR_FILTER</td>
+	<td>//*[contains(@class,'component-link tbar-link') and contains(text(),'Clear')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FILTER_OR_ORDER</td>
+	<td>//nav[contains(@class,'management-bar')]//*[*[contains(@title,'${key_filter}')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FILTER_OR_ORDER_MOBILE</td>
+	<td>//nav[contains(@class,'management-bar')]//*[contains(@title,'${key_title}')]//*[name()='svg'][contains(@class,'icon-${key_icon}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ICON_AND_TEXT_ACTION_BUTTON</td>
+	<td>//nav[contains(@class,'management-bar')]//*[*[name()='svg'][contains(@class,'icon-${key_icon}')]]//following-sibling::span[text()='${key_action}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>ORDER_TOGGLE_BUTTON</td>
+	<td>//nav[contains(@class,'management-bar')]//*[*[name()='svg'][contains(@class,'icon-${key_icon}')] and contains(@title,'Reverse Order Direction')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MORE_ACTIONS_ELLIPSIS</td>
+	<td>//nav[contains(@class,'management-bar')]//button[contains(@class, 'dropdown-toggle')][*[name()='svg'][contains(@class,'icon-ellipsis')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NEW_BUTTON</td>
+	<td>//nav[contains(@class,'management-bar')]//button[contains(@aria-label, 'New')]//*[contains(.,'New')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NEW_BUTTON_MOBILE</td>
+	<td>//nav[contains(@class,'management-bar')]//button[contains(@aria-label, 'New')]//*[contains(@class,'icon-plus')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>VIEW_BUTTON</td>
+	<td>//nav[contains(@class,'management-bar')]//button[contains(@aria-label,'Select View')]//*[contains(@class,'icon-${key_text}')]</td>
 	<td></td>
 </tr>
 </tbody>

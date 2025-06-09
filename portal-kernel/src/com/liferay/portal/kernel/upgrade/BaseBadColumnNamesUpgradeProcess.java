@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.upgrade;
@@ -18,6 +9,8 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBInspector;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -52,8 +45,7 @@ public abstract class BaseBadColumnNamesUpgradeProcess extends UpgradeProcess {
 
 		Map<String, String> columnSQLs = _getTableColumnSQLs(tableClass);
 
-		List<AlterColumnName> alterColumnNames = new ArrayList<>(
-			columnNames.length);
+		List<String[]> alterColumnNames = new ArrayList<>(columnNames.length);
 
 		for (String columnName : columnNames) {
 			String newColumnName = columnName.concat(StringPool.UNDERLINE);
@@ -99,10 +91,24 @@ public abstract class BaseBadColumnNamesUpgradeProcess extends UpgradeProcess {
 				continue;
 			}
 
-			alterColumnNames.add(new AlterColumnName(columnName, columnSQL));
+			alterColumnNames.add(new String[] {columnName, columnSQL});
 		}
 
-		alter(tableClass, alterColumnNames.toArray(new AlterColumnName[0]));
+		for (String[] alterColumnName : alterColumnNames) {
+
+			// Special alter for reserved words like SYSTEM in MySQL
+
+			if (DBManagerUtil.getDBType() == DBType.MYSQL) {
+				runSQL(
+					StringBundler.concat(
+						"alter table ", tableName, " change column `",
+						alterColumnName[0], "` ", alterColumnName[1]));
+
+				continue;
+			}
+
+			alterColumnName(tableName, alterColumnName[0], alterColumnName[1]);
+		}
 	}
 
 	private Map<String, String> _getTableColumnSQLs(Class<?> tableClass)

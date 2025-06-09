@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPDefinitionLink;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -31,6 +24,8 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -40,6 +35,7 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import java.io.Serializable;
 
 import java.util.List;
+import java.util.Map;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -53,13 +49,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CPDefinitionLinkLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CPDefinitionLinkLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CPDefinitionLink>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -81,19 +79,17 @@ public interface CPDefinitionLinkLocalService
 	public CPDefinitionLink addCPDefinitionLink(
 		CPDefinitionLink cpDefinitionLink);
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	public CPDefinitionLink addCPDefinitionLink(
-			long cpDefinitionId1, long cpDefinitionId2, double priority,
-			String type, ServiceContext serviceContext)
-		throws PortalException;
-
 	public CPDefinitionLink addCPDefinitionLinkByCProductId(
-			long cpDefinitionId, long cProductId, double priority, String type,
+			long cpDefinitionId, long cProductId, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire, double priority, String type,
 			ServiceContext serviceContext)
 		throws PortalException;
+
+	public void checkCPDefinitionLinks() throws PortalException;
 
 	/**
 	 * Creates a new cp definition link with the primary key. Does not add the cp definition link to the database.
@@ -140,13 +136,6 @@ public interface CPDefinitionLinkLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public CPDefinitionLink deleteCPDefinitionLink(long CPDefinitionLinkId)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	public void deleteCPDefinitionLinks(long cpDefinitionId)
 		throws PortalException;
 
 	public void deleteCPDefinitionLinksByCPDefinitionId(long cpDefinitionId)
@@ -237,6 +226,10 @@ public interface CPDefinitionLinkLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPDefinitionLink fetchCPDefinitionLink(long CPDefinitionLinkId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinitionLink fetchCPDefinitionLink(
+		long cpDefinitionId, long cProductId, String type);
+
 	/**
 	 * Returns the cp definition link matching the UUID and group.
 	 *
@@ -294,11 +287,28 @@ public interface CPDefinitionLinkLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CPDefinitionLink> getCPDefinitionLinks(
+		long cpDefinitionId, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionLink> getCPDefinitionLinks(
 		long cpDefinitionId, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CPDefinitionLink> getCPDefinitionLinks(
+		long cpDefinitionId, int status, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionLink> getCPDefinitionLinks(
 		long cpDefinitionId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionLink> getCPDefinitionLinks(
+		long cpDefinitionId, String type, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionLink> getCPDefinitionLinks(
+		long cpDefinitionId, String type, int status, int start, int end,
+		OrderByComparator<CPDefinitionLink> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CPDefinitionLink> getCPDefinitionLinks(
@@ -343,7 +353,14 @@ public interface CPDefinitionLinkLocalService
 	public int getCPDefinitionLinksCount(long cpDefinitionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCPDefinitionLinksCount(long cpDefinitionId, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCPDefinitionLinksCount(long cpDefinitionId, String type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCPDefinitionLinksCount(
+		long cpDefinitionId, String type, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
@@ -371,6 +388,10 @@ public interface CPDefinitionLinkLocalService
 	public List<CPDefinitionLink> getReverseCPDefinitionLinks(
 		long cProductId, String type);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionLink> getReverseCPDefinitionLinks(
+		long cProductId, String type, int status);
+
 	/**
 	 * Updates the cp definition link in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -386,8 +407,12 @@ public interface CPDefinitionLinkLocalService
 		CPDefinitionLink cpDefinitionLink);
 
 	public CPDefinitionLink updateCPDefinitionLink(
-			long cpDefinitionLinkId, double priority,
-			ServiceContext serviceContext)
+			long userId, long cpDefinitionLinkId, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire, double priority, ServiceContext serviceContext)
 		throws PortalException;
 
 	public void updateCPDefinitionLinkCProductIds(
@@ -395,13 +420,25 @@ public interface CPDefinitionLinkLocalService
 			ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	public void updateCPDefinitionLinks(
-			long cpDefinitionId1, long[] cpDefinitionIds2, String type,
-			ServiceContext serviceContext)
+	public CPDefinitionLink updateStatus(
+			long userId, long cpDefinitionLinkId, int status,
+			ServiceContext serviceContext,
+			Map<String, Serializable> workflowContext)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CPDefinitionLink> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CPDefinitionLink> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CPDefinitionLink>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

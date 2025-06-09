@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.organizations.search.test;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.CountryService;
+import com.liferay.portal.kernel.service.ListTypeService;
 import com.liferay.portal.kernel.service.OrganizationService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
@@ -35,8 +27,8 @@ import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -74,7 +66,8 @@ public class OrganizationIndexerReindexTest {
 		Group group = groupSearchFixture.addGroup(new GroupBlueprint());
 
 		OrganizationFixture organizationFixture = new OrganizationFixture(
-			organizationService, countryService, regionService, language);
+			countryService, language, listTypeService, organizationService,
+			regionService);
 
 		organizationFixture.setUp();
 
@@ -122,8 +115,7 @@ public class OrganizationIndexerReindexTest {
 	}
 
 	protected void deleteDocument(long companyId, String uid) throws Exception {
-		indexWriterHelper.deleteDocument(
-			indexer.getSearchEngineId(), companyId, uid, true);
+		indexWriterHelper.deleteDocument(companyId, uid, true);
 	}
 
 	protected void reindexAllIndexerModels() throws Exception {
@@ -157,6 +149,9 @@ public class OrganizationIndexerReindexTest {
 
 	@Inject
 	protected Language language;
+
+	@Inject
+	protected ListTypeService listTypeService;
 
 	@Inject
 	protected OrganizationService organizationService;

@@ -4,12 +4,15 @@
 	<model name="com.liferay.batch.engine.model.BatchEngineExportTask">
 		<field name="mvccVersion" type="long" />
 		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="batchEngineExportTaskId" type="long" />
 		<field name="companyId" type="long" />
 		<field name="userId" type="long" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
-		<field name="callbackURL" type="String" />
+		<field name="callbackURL" type="String">
+			<hint name="max-length">255</hint>
+		</field>
 		<field name="className" type="String">
 			<hint name="max-length">255</hint>
 		</field>
@@ -20,7 +23,7 @@
 			<hint-collection name="CLOB" />
 		</field>
 		<field name="fieldNames" type="String">
-			<hint name="max-length">1000</hint>
+			<hint name="max-length">4000</hint>
 		</field>
 		<field name="executeStatus" type="String" />
 		<field name="parameters" type="Map" />
@@ -32,13 +35,16 @@
 	<model name="com.liferay.batch.engine.model.BatchEngineImportTask">
 		<field name="mvccVersion" type="long" />
 		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="batchEngineImportTaskId" type="long" />
 		<field name="companyId" type="long" />
 		<field name="userId" type="long" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
 		<field name="batchSize" type="long" />
-		<field name="callbackURL" type="String" />
+		<field name="callbackURL" type="String">
+			<hint name="max-length">255</hint>
+		</field>
 		<field name="className" type="String">
 			<hint name="max-length">255</hint>
 		</field>
@@ -50,11 +56,28 @@
 		</field>
 		<field name="executeStatus" type="String" />
 		<field name="fieldNameMapping" type="Map" />
+		<field name="importStrategy" type="int" />
 		<field name="operation" type="String" />
 		<field name="parameters" type="Map" />
 		<field name="processedItemsCount" type="int" />
 		<field name="startTime" type="Date" />
 		<field name="taskItemDelegateName" type="String" />
 		<field name="totalItemsCount" type="int" />
+	</model>
+	<model name="com.liferay.batch.engine.model.BatchEngineImportTaskError">
+		<field name="mvccVersion" type="long" />
+		<field name="batchEngineImportTaskErrorId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="batchEngineImportTaskId" type="long" />
+		<field name="item" type="String">
+			<hint-collection name="CLOB" />
+		</field>
+		<field name="itemIndex" type="int" />
+		<field name="message" type="String">
+			<hint-collection name="CLOB" />
+		</field>
 	</model>
 </model-hints>

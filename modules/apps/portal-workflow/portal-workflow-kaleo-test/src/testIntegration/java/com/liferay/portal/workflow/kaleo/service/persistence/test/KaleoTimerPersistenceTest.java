@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -126,6 +117,8 @@ public class KaleoTimerPersistenceTest {
 
 		newKaleoTimer.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoTimer.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoTimer.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoTimer.setCompanyId(RandomTestUtil.nextLong());
@@ -168,6 +161,9 @@ public class KaleoTimerPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoTimer.getMvccVersion(),
 			newKaleoTimer.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoTimer.getCtCollectionId(),
+			newKaleoTimer.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoTimer.getKaleoTimerId(),
 			newKaleoTimer.getKaleoTimerId());
@@ -262,12 +258,12 @@ public class KaleoTimerPersistenceTest {
 
 	protected OrderByComparator<KaleoTimer> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoTimer", "mvccVersion", true, "kaleoTimerId", true, "groupId",
-			true, "companyId", true, "userId", true, "userName", true,
-			"createDate", true, "modifiedDate", true, "kaleoClassName", true,
-			"kaleoClassPK", true, "kaleoDefinitionId", true,
-			"kaleoDefinitionVersionId", true, "name", true, "blocking", true,
-			"description", true, "duration", true, "scale", true,
+			"KaleoTimer", "mvccVersion", true, "ctCollectionId", true,
+			"kaleoTimerId", true, "groupId", true, "companyId", true, "userId",
+			true, "userName", true, "createDate", true, "modifiedDate", true,
+			"kaleoClassName", true, "kaleoClassPK", true, "kaleoDefinitionId",
+			true, "kaleoDefinitionVersionId", true, "name", true, "blocking",
+			true, "description", true, "duration", true, "scale", true,
 			"recurrenceDuration", true, "recurrenceScale", true);
 	}
 
@@ -486,6 +482,8 @@ public class KaleoTimerPersistenceTest {
 		KaleoTimer kaleoTimer = _persistence.create(pk);
 
 		kaleoTimer.setMvccVersion(RandomTestUtil.nextLong());
+
+		kaleoTimer.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoTimer.setGroupId(RandomTestUtil.nextLong());
 

@@ -1,50 +1,58 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.web.internal.display.context;
 
+import com.liferay.application.list.constants.ApplicationListWebKeys;
+import com.liferay.application.list.constants.PanelCategoryKeys;
+import com.liferay.application.list.display.context.logic.PanelCategoryHelper;
+import com.liferay.application.list.display.context.logic.PersonalMenuEntryHelper;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemList;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Permission;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
+import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleServiceUtil;
 import com.liferay.portal.kernel.service.permission.RolePermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
 import com.liferay.roles.admin.web.internal.role.type.contributor.util.RoleTypeContributorRetrieverUtil;
+import com.liferay.segments.service.SegmentsEntryRoleLocalServiceUtil;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Pei-Jung Lan
@@ -60,6 +68,82 @@ public class RoleDisplayContext {
 		_currentRoleTypeContributor =
 			RoleTypeContributorRetrieverUtil.getCurrentRoleTypeContributor(
 				httpServletRequest);
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+	}
+
+	public String getActionLabel(String resourceName, String actionId) {
+		String actionLabel = null;
+
+		if (actionId.equals(ActionKeys.ACCESS_IN_CONTROL_PANEL)) {
+			PanelCategoryHelper panelCategoryHelper =
+				(PanelCategoryHelper)_httpServletRequest.getAttribute(
+					ApplicationListWebKeys.PANEL_CATEGORY_HELPER);
+			PersonalMenuEntryHelper personalMenuEntryHelper =
+				(PersonalMenuEntryHelper)_httpServletRequest.getAttribute(
+					ApplicationListWebKeys.PERSONAL_MENU_ENTRY_HELPER);
+
+			Portlet portlet = PortletLocalServiceUtil.getPortletById(
+				_themeDisplay.getCompanyId(), resourceName);
+
+			if (panelCategoryHelper.containsPortlet(
+					portlet.getPortletId(),
+					PanelCategoryKeys.SITE_ADMINISTRATION)) {
+
+				actionLabel = LanguageUtil.get(
+					_httpServletRequest, "access-in-site-administration");
+			}
+			else if (panelCategoryHelper.containsPortlet(
+						portlet.getPortletId(), PanelCategoryKeys.USER)) {
+
+				actionLabel = LanguageUtil.get(
+					_httpServletRequest, "access-in-my-account");
+			}
+			else if (personalMenuEntryHelper.hasPersonalMenuEntry(
+						portlet.getPortletId())) {
+
+				actionLabel = LanguageUtil.get(
+					_httpServletRequest, "access-in-personal-menu");
+			}
+		}
+
+		if (actionId.equals("ADD_STRUCTURE") &&
+			resourceName.equals("com.liferay.document.library")) {
+
+			actionLabel = LanguageUtil.get(
+				_httpServletRequest, "add-metadata-set");
+		}
+
+		if (actionLabel == null) {
+			actionLabel = ResourceActionsUtil.getAction(
+				_httpServletRequest, actionId);
+		}
+
+		return actionLabel;
+	}
+
+	public String getAssigneesMessage(Role role) throws Exception {
+		if (isAutomaticallyAssigned(role)) {
+			return LanguageUtil.get(
+				_httpServletRequest, "this-role-is-automatically-assigned");
+		}
+
+		int count = getAssigneesTotal(role.getRoleId());
+
+		if (count == 1) {
+			return LanguageUtil.get(_httpServletRequest, "one-assignee");
+		}
+
+		return LanguageUtil.format(_httpServletRequest, "x-assignees", count);
+	}
+
+	public int getAssigneesTotal(long roleId) throws Exception {
+		int segmentsEntryRolesCountByRoleId =
+			SegmentsEntryRoleLocalServiceUtil.
+				getSegmentsEntryRolesCountByRoleId(roleId);
+
+		return RoleLocalServiceUtil.getAssigneesTotal(roleId) +
+			segmentsEntryRolesCountByRoleId;
 	}
 
 	public List<NavigationItem> getEditRoleNavigationItems() throws Exception {
@@ -92,47 +176,48 @@ public class RoleDisplayContext {
 		return "define-permissions";
 	}
 
+	public StringBundler getResourceHtmlId(String resource) {
+		StringBundler sb = new StringBundler(2);
+
+		sb.append("resource_");
+		sb.append(StringUtil.replace(resource, '.', '_'));
+
+		return sb;
+	}
+
 	public List<NavigationItem> getRoleAssignmentsNavigationItems(
 			PortletURL portletURL)
 		throws Exception {
+
+		Role role = _getSelectedRole();
+
+		if (role == null) {
+			return Collections.emptyList();
+		}
 
 		String tabs2 = ParamUtil.getString(
 			_httpServletRequest, "tabs2", "users");
 
 		return new NavigationItemList() {
 			{
-				for (String assigneeTypeName : _ASSIGNEE_TYPE_NAMES) {
-					add(
-						navigationItem -> {
-							navigationItem.setActive(
-								assigneeTypeName.equals(tabs2));
-							navigationItem.setHref(
-								portletURL, "tabs2", assigneeTypeName);
-							navigationItem.setLabel(
-								LanguageUtil.get(
-									_httpServletRequest, assigneeTypeName));
-						});
+				for (String assigneeTypeName :
+						_getAssigneeTypeNamesByRoleId(portletURL)) {
+
+					if (_isAssigneeTypeVisible(role, assigneeTypeName)) {
+						add(
+							navigationItem -> {
+								navigationItem.setActive(
+									assigneeTypeName.equals(tabs2));
+								navigationItem.setHref(
+									portletURL, "tabs2", assigneeTypeName);
+								navigationItem.setLabel(
+									LanguageUtil.get(
+										_httpServletRequest, assigneeTypeName));
+							});
+					}
 				}
 			}
 		};
-	}
-
-	public List<NavigationItem> getSelectAssigneesNavigationItems(
-			PortletURL portletURL)
-		throws Exception {
-
-		return NavigationItemListBuilder.add(
-			navigationItem -> {
-				navigationItem.setActive(true);
-				navigationItem.setHref(portletURL, "tabs2", "users");
-
-				String tabs2 = ParamUtil.getString(
-					_httpServletRequest, "tabs2", "users");
-
-				navigationItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, tabs2));
-			}
-		).build();
 	}
 
 	public List<NavigationItem> getViewRoleNavigationItems(
@@ -216,16 +301,57 @@ public class RoleDisplayContext {
 		return false;
 	}
 
+	public boolean isShowScope(
+		Role role, String currentModelResource, String currentPortletResource) {
+
+		boolean showScope = true;
+
+		if (currentPortletResource.equals(PortletKeys.PORTAL)) {
+			showScope = false;
+		}
+		else if (!isAllowGroupScope()) {
+			showScope = false;
+		}
+		else if (Validator.isNotNull(currentPortletResource)) {
+			Portlet currentPortlet = PortletLocalServiceUtil.getPortletById(
+				role.getCompanyId(), currentPortletResource);
+
+			if (currentPortlet != null) {
+				PanelCategoryHelper panelCategoryHelper =
+					(PanelCategoryHelper)_httpServletRequest.getAttribute(
+						ApplicationListWebKeys.PANEL_CATEGORY_HELPER);
+
+				if (panelCategoryHelper.hasPanelApp(
+						currentPortlet.getPortletId()) &&
+					!panelCategoryHelper.containsPortlet(
+						currentPortlet.getPortletId(),
+						PanelCategoryKeys.SITE_ADMINISTRATION)) {
+
+					showScope = false;
+				}
+			}
+		}
+
+		if (Validator.isNotNull(currentModelResource) &&
+			currentModelResource.equals(Group.class.getName())) {
+
+			showScope = true;
+		}
+
+		return showScope;
+	}
+
 	public boolean isValidPermission(Role role, Permission permission) {
 		if (role.getType() != RoleConstants.TYPE_ACCOUNT) {
 			return true;
 		}
 
-		if (isAccountRoleGroupScope() &&
-			((permission.getScope() == ResourceConstants.SCOPE_COMPANY) ||
-			 (permission.getScope() == ResourceConstants.SCOPE_GROUP))) {
+		if (isAccountRoleGroupScope()) {
+			if ((permission.getScope() == ResourceConstants.SCOPE_COMPANY) ||
+				(permission.getScope() == ResourceConstants.SCOPE_GROUP)) {
 
-			return true;
+				return true;
+			}
 		}
 		else if (permission.getScope() ==
 					ResourceConstants.SCOPE_GROUP_TEMPLATE) {
@@ -234,6 +360,42 @@ public class RoleDisplayContext {
 		}
 
 		return false;
+	}
+
+	private String[] _getAssigneeTypeNamesByRoleId(PortletURL portletURL)
+		throws Exception {
+
+		String[] assigneeTypeNames = _ASSIGNEE_TYPE_NAMES;
+
+		Map<String, String[]> parameterMap = portletURL.getParameterMap();
+
+		String[] roleIds = parameterMap.get("roleId");
+
+		if (roleIds.length > 0) {
+			long roleId = GetterUtil.getLong(roleIds[0]);
+
+			Role role = RoleServiceUtil.fetchRole(roleId);
+
+			if ((role != null) &&
+				Objects.equals(RoleConstants.ADMINISTRATOR, role.getName())) {
+
+				assigneeTypeNames = ArrayUtil.filter(
+					assigneeTypeNames, name -> !name.equals("segments"));
+			}
+		}
+
+		return assigneeTypeNames;
+	}
+
+	private Role _getSelectedRole() throws Exception {
+		if (_role != null) {
+			return _role;
+		}
+
+		_role = RoleServiceUtil.fetchRole(
+			ParamUtil.getLong(_httpServletRequest, "roleId"));
+
+		return _role;
 	}
 
 	private List<String> _getTabsNames() throws Exception {
@@ -246,9 +408,7 @@ public class RoleDisplayContext {
 		PermissionChecker permissionChecker =
 			themeDisplay.getPermissionChecker();
 
-		long roleId = ParamUtil.getLong(_httpServletRequest, "roleId");
-
-		Role role = RoleServiceUtil.fetchRole(roleId);
+		Role role = _getSelectedRole();
 
 		if (RolePermissionUtil.contains(
 				permissionChecker, role.getRoleId(), ActionKeys.UPDATE)) {
@@ -285,9 +445,7 @@ public class RoleDisplayContext {
 		String backURL = ParamUtil.getString(
 			_httpServletRequest, "backURL", redirect);
 
-		long roleId = ParamUtil.getLong(_httpServletRequest, "roleId");
-
-		Role role = RoleServiceUtil.fetchRole(roleId);
+		Role role = _getSelectedRole();
 
 		return HashMapBuilder.put(
 			"assignees",
@@ -358,6 +516,16 @@ public class RoleDisplayContext {
 		).build();
 	}
 
+	private boolean _isAssigneeTypeVisible(Role role, String assigneeTypeName) {
+		if (StringUtil.equals("segments", assigneeTypeName) &&
+			StringUtil.equals(RoleConstants.ADMINISTRATOR, role.getName())) {
+
+			return false;
+		}
+
+		return true;
+	}
+
 	private static final String[] _ASSIGNEE_TYPE_NAMES = {
 		"users", "sites", "organizations", "user-groups", "segments"
 	};
@@ -367,5 +535,7 @@ public class RoleDisplayContext {
 	private final RoleTypeContributor _currentRoleTypeContributor;
 	private final HttpServletRequest _httpServletRequest;
 	private final RenderResponse _renderResponse;
+	private Role _role;
+	private final ThemeDisplay _themeDisplay;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,61 +11,54 @@
 DLAccessFromDesktopDisplayContext dlAccessFromDesktopDisplayContext = new DLAccessFromDesktopDisplayContext(request);
 %>
 
-<liferay-ui:icon
-	cssClass='<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() + "-webdav-action" %>'
-	message="access-from-desktop"
-	url="javascript:;"
-/>
-
-<div id="<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDav" style="display: none;">
+<div class="hide" id="<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDav">
 	<div class="portlet-document-library">
 		<liferay-ui:message key="<%= dlAccessFromDesktopDisplayContext.getWebDAVHelpMessage() %>" />
+
+		<liferay-learn:message
+			key="webdav"
+			resource="document-library-web"
+		/>
 
 		<br /><br />
 
 		<aui:input cssClass="webdav-url-resource" id='<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() + "webDavURL" %>' name="webDavURL" type="resource" value="<%= dlAccessFromDesktopDisplayContext.getWebDAVURL() %>" />
+
+		<div class="alert alert-info">
+			<liferay-ui:message arguments='<%= "<a href=" + PersonalApplicationURLUtil.getPersonalApplicationURL(request, PortletKeys.MY_ACCOUNT) + ">" + LanguageUtil.get(resourceBundle, "my-account") + "</a>" %>' key="webdav-access-requires-generation-of-a-webdav-specific-password-at-x" />
+		</div>
 	</div>
 </div>
 
 <aui:script>
-	(function () {
-		var webdavContentContainer = document.getElementById(
-			'<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDav'
-		);
+	Liferay.Util.setPortletConfigurationIconAction(
+		'<portlet:namespace />accessFromDesktop',
+		() => {
+			var webdavContentContainer = document.getElementById(
+				'<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDav'
+			);
 
-		var html = '';
+			var html = '';
 
-		if (webdavContentContainer) {
-			html = webdavContentContainer.innerHTML;
+			if (webdavContentContainer) {
+				html = webdavContentContainer.innerHTML;
 
-			webdavContentContainer.remove();
+				webdavContentContainer.remove();
+
+				Liferay.Util.openModal({
+					bodyHTML: html,
+					onOpen: function (event) {
+						var webdavURLInput = document.getElementById(
+							'<portlet:namespace /><%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDavURL'
+						);
+
+						if (webdavURLInput) {
+							webdavURLInput.focus();
+						}
+					},
+					title: '<%= UnicodeLanguageUtil.get(request, "access-from-desktop") %>',
+				});
+			}
 		}
-
-		var webdavActionLink = document.querySelector(
-			'.<%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>-webdav-action'
-		);
-
-		if (webdavActionLink) {
-			webdavActionLink.addEventListener('click', (event) => {
-				event.preventDefault();
-
-				if (webdavContentContainer) {
-					Liferay.Util.openModal({
-						bodyHTML: html,
-						onOpen: function (event) {
-							var webdavURLInput = document.getElementById(
-								'<portlet:namespace /><%= dlAccessFromDesktopDisplayContext.getRandomNamespace() %>webDavURL'
-							);
-
-							if (webdavURLInput) {
-								webdavURLInput.focus();
-							}
-						},
-						title:
-							'<%= UnicodeLanguageUtil.get(request, "access-from-desktop") %>',
-					});
-				}
-			});
-		}
-	})();
+	);
 </aui:script>

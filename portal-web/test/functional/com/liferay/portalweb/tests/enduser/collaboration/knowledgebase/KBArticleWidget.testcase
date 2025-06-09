@@ -1,4 +1,4 @@
-@component-name = "portal-knowledge-base"
+@component-name = "portal-content-management"
 definition {
 
 	property portal.release = "true";
@@ -15,7 +15,7 @@ definition {
 			layoutName = "Knowledge Base Article Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Knowledge Base Article Page",
 			widgetName = "Knowledge Base Article");
@@ -24,30 +24,157 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			KBArticle.tearDownCP();
 		}
 	}
 
-	@priority = "3"
-	@refactorneeded
-	test DeleteKBArticleViaKBArticle {
-		KBAdmin.openKBAdmin(siteURLKey = "guest");
+	@description = "This test ensures that a user can select a child article to display from the widget configuration."
+	@priority = 5
+	test CanSelectChildArticleToDisplay {
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
 
-		KBArticle.addCP(
+		JSONKnowledgeBase.addkBChildArticle(
+			groupName = "Guest",
+			kbArticleTitle = "Knowledge Base Article Title",
+			kbChildArticleContent = "KB Child Article Content",
+			kbChildArticleTitle = "KB Child Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.selectArticlesToDisplayOnWidget(
+			childArticles = "1 Child Articles",
+			kbArticle = "true",
+			kbArticleTitle = "KB Child Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.viewPG(
+			kbArticleContent = "KB Child Article Content",
+			kbArticleTitle = "KB Child Article Title");
+	}
+
+	@description = "This test ensures that a user can select an article in a folder to display from the widget configuration."
+	@priority = 5
+	test CanSelectFolderArticleToDisplay {
+		JSONKnowledgeBase.addkBFolder(
+			groupName = "Guest",
+			kbFolderDescription = "KB Folder Description",
+			kbFolderName = "KB Folder");
+
+		JSONKnowledgeBase.addkBArticle(
+			folderName = "KB Folder",
+			groupName = "Guest",
 			kbArticleContent = "Knowledge Base Article Content",
 			kbArticleTitle = "Knowledge Base Article Title");
 
 		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
 
-		KBArticle.selectPGViaKBArticle(
+		KBArticle.selectArticlesToDisplayOnWidget(
+			kbArticle = "true",
+			kbArticleTitle = "Knowledge Base Article Title",
+			kbFolderName = "KB Folder",
+			viewExpandedSectionsInModal = "true");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.viewPG(
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+	}
+
+	@description = "This test ensures that the article can be viewed after restoring."
+	@priority = 3
+	test CanViewArticleAfterRestoring {
+		property custom.properties = "feature.flag.LPS-188058=true";
+
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.selectArticlesToDisplayOnWidget(
+			kbArticle = "true",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Delete");
+
+		VerifyVisible(
+			key_alertMessage = "Error:The selected article no longer exists.",
+			locator1 = "Message#ERROR_ENTER_ANY");
+
+		RecycleBin.openRecycleBinAdmin(siteURLKey = "guest");
+
+		RecycleBin.restoreCP(
+			assetName = "Knowledge Base Article Title",
+			assetType = "Knowledge Base Article");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.viewPG(
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+	}
+
+	@description = "This test ensures that the description can be displayed on the KB article widget after enabling it in the configuration."
+	@priority = 4
+	test CanViewDescriptionAfterEnablingInConfiguration {
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "KB Article Content",
+			kbArticleTitle = "KB Article Title",
+			kbDescription = "KB Article Description");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.selectArticlesToDisplayOnWidget(
+			kbArticle = "true",
+			kbArticleTitle = "KB Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.viewPG(
+			description = "Disabled",
+			kbArticleContent = "KB Article Content",
+			kbArticleTitle = "KB Article Title",
+			kbDescription = "KB Article Description");
+
+		KBArticle.enableDescriptionOnPortlet(portletName = "Knowledge Base Article");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.viewPG(
+			kbArticleContent = "KB Article Content",
+			kbArticleTitle = "KB Article Title",
+			kbDescription = "KB Article Description");
+	}
+
+	@priority = 3
+	@refactordone
+	test DeleteKBArticleViaKBArticle {
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
+			kbArticleContent = "Knowledge Base Article Content",
+			kbArticleTitle = "Knowledge Base Article Title");
+
+		Navigator.gotoPage(pageName = "Knowledge Base Article Page");
+
+		KBArticle.selectArticlesToDisplayOnWidget(
+			kbArticle = "true",
 			kbArticleTitle = "Knowledge Base Article Title",
 			pageName = "Knowledge Base Article Page");
 
@@ -58,7 +185,7 @@ definition {
 			kbArticleTitle = "Knowledge Base Article Title");
 
 		KBArticle.deletePG(
-			deleteViaKBArticle = "true",
+			deleteViaKbArticle = "true",
 			kbArticleTitle = "Knowledge Base Article Title");
 
 		KBAdmin.openKBAdmin(siteURLKey = "guest");

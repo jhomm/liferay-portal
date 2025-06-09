@@ -117,7 +117,7 @@
 </tr>
 <tr>
 	<td>NEXT_PAGINATION_BUTTON</td>
-	<td>//div[@class='modal-body']//button[contains(@aria-label,'Next')]</td>
+	<td>//div[@class='modal-footer']//button[contains(text(),'Next')] | //div[@class='modal-body']//a[contains(@aria-label,'next')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -127,12 +127,7 @@
 </tr>
 <tr>
 	<td>ITEM_CHECKBOX_CHECKED</td>
-	<td>//div[@class='modal-body']//td[contains(text(),"${key_itemName}")]//parent::tr//input[@type='checkbox' and @checked]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>PREVIOUS_PAGINATION_BUTTON</td>
-	<td>//div[@class='modal-body']//button[contains(@aria-label,'Previous')]</td>
+	<td>//div[@class='modal-body']//td[contains(text(),"${key_itemName}")]//parent::tr[contains(@class, 'table-active')]</td>
 	<td></td>
 </tr>
 </tbody>

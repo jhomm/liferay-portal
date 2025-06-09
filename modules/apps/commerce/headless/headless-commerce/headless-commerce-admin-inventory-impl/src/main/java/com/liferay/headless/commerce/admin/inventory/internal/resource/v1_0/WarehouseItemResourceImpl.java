@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.inventory.internal.resource.v1_0;
@@ -24,21 +15,22 @@ import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemServ
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseService;
 import com.liferay.headless.commerce.admin.inventory.dto.v1_0.Warehouse;
 import com.liferay.headless.commerce.admin.inventory.dto.v1_0.WarehouseItem;
-import com.liferay.headless.commerce.admin.inventory.internal.dto.v1_0.WarehouseItemDTOConverter;
 import com.liferay.headless.commerce.admin.inventory.resource.v1_0.WarehouseItemResource;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
-import java.util.ArrayList;
+import jakarta.ws.rs.core.Response;
+
+import java.math.BigDecimal;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,26 +40,20 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/warehouse-item.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {NestedFieldSupport.class, WarehouseItemResource.class}
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = WarehouseItemResource.class
 )
-public class WarehouseItemResourceImpl
-	extends BaseWarehouseItemResourceImpl implements NestedFieldSupport {
+public class WarehouseItemResourceImpl extends BaseWarehouseItemResourceImpl {
 
 	@Override
-	public Response deleteWarehouseItem(Long id) throws Exception {
+	public void deleteWarehouseItem(Long id) throws Exception {
 		_commerceInventoryWarehouseItemService.
 			deleteCommerceInventoryWarehouseItem(id);
-
-		Response.ResponseBuilder responseBuilder = Response.ok();
-
-		return responseBuilder.build();
 	}
 
 	@Override
-	public Response deleteWarehouseItemByExternalReferenceCode(
+	public void deleteWarehouseItemByExternalReferenceCode(
 			String externalReferenceCode)
 		throws Exception {
 
@@ -86,21 +72,18 @@ public class WarehouseItemResourceImpl
 			deleteCommerceInventoryWarehouseItem(
 				commerceInventoryWarehouseItem.
 					getCommerceInventoryWarehouseItemId());
-
-		Response.ResponseBuilder responseBuilder = Response.noContent();
-
-		return responseBuilder.build();
 	}
 
 	@Override
 	public Page<WarehouseItem>
-			getWarehousByExternalReferenceCodeWarehouseItemsPage(
+			getWarehouseByExternalReferenceCodeWarehouseItemsPage(
 				String externalReferenceCode, Pagination pagination)
 		throws Exception {
 
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
-			_commerceInventoryWarehouseService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceInventoryWarehouseService.
+				fetchCommerceInventoryWarehouseByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceInventoryWarehouse == null) {
 			throw new NoSuchInventoryWarehouseException(
@@ -115,7 +98,7 @@ public class WarehouseItemResourceImpl
 						getCommerceInventoryWarehouseId(),
 					pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commerceInventoryWarehouseItemService.
 				getCommerceInventoryWarehouseItemsCount(
 					commerceInventoryWarehouse.
@@ -123,7 +106,28 @@ public class WarehouseItemResourceImpl
 
 		return Page.of(
 			_toWarehouseItems(commerceInventoryWarehouseItems), pagination,
-			totalItems);
+			totalCount);
+	}
+
+	@NestedField(parentClass = Warehouse.class, value = "items")
+	@Override
+	public Page<WarehouseItem> getWarehouseIdWarehouseItemsPage(
+			Long id, Pagination pagination)
+		throws Exception {
+
+		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
+			_commerceInventoryWarehouseItemService.
+				getCommerceInventoryWarehouseItems(
+					id, pagination.getStartPosition(),
+					pagination.getEndPosition());
+
+		int totalCount =
+			_commerceInventoryWarehouseItemService.
+				getCommerceInventoryWarehouseItemsCount(id);
+
+		return Page.of(
+			_toWarehouseItems(commerceInventoryWarehouseItems), pagination,
+			totalCount);
 	}
 
 	@Override
@@ -155,76 +159,61 @@ public class WarehouseItemResourceImpl
 
 	@Override
 	public Page<WarehouseItem> getWarehouseItemsUpdatedPage(
-			Date end, Date start, Pagination pagination)
+			Date endDate, Date startDate, Pagination pagination)
 		throws Exception {
 
-		if ((start != null) && (end != null) && (start.compareTo(end) > 0)) {
+		if ((startDate != null) && (endDate != null) &&
+			(startDate.compareTo(endDate) > 0)) {
+
 			throw new CommerceInventoryInvalidDateException(
 				"End date should be after start date");
 		}
 
-		if ((start == null) && (end == null)) {
-			start = new Date();
+		if ((startDate == null) && (endDate == null)) {
+			endDate = new Date();
 		}
 
-		if (start == null) {
-			start = _addDaysToDate(end, -_DEFAULT_INCREMENT_DAYS);
+		if (startDate == null) {
+			startDate = _addDaysToDate(endDate, -_DEFAULT_INCREMENT_DAYS);
 		}
 
-		if (end == null) {
-			end = _addDaysToDate(start, _DEFAULT_INCREMENT_DAYS);
+		if (endDate == null) {
+			endDate = _addDaysToDate(startDate, _DEFAULT_INCREMENT_DAYS);
 		}
 
 		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
 			_commerceInventoryWarehouseItemService.
 				getCommerceInventoryWarehouseItemsCountByModifiedDate(
-					contextCompany.getCompanyId(), start, end,
+					contextCompany.getCompanyId(), startDate, endDate,
 					pagination.getStartPosition(), pagination.getEndPosition());
 
-		int totalItems =
+		int totalCount =
 			_commerceInventoryWarehouseItemService.
 				getCommerceInventoryWarehouseItemsCountByModifiedDate(
-					contextCompany.getCompanyId(), start, end);
+					contextCompany.getCompanyId(), startDate, endDate);
 
 		return Page.of(
 			_toWarehouseItems(commerceInventoryWarehouseItems), pagination,
-			totalItems);
-	}
-
-	@NestedField(parentClass = Warehouse.class, value = "items")
-	@Override
-	public Page<WarehouseItem> getWarehousIdWarehouseItemsPage(
-			Long id, Pagination pagination)
-		throws Exception {
-
-		List<CommerceInventoryWarehouseItem> commerceInventoryWarehouseItems =
-			_commerceInventoryWarehouseItemService.
-				getCommerceInventoryWarehouseItems(
-					id, pagination.getStartPosition(),
-					pagination.getEndPosition());
-
-		int totalItems =
-			_commerceInventoryWarehouseItemService.
-				getCommerceInventoryWarehouseItemsCount(id);
-
-		return Page.of(
-			_toWarehouseItems(commerceInventoryWarehouseItems), pagination,
-			totalItems);
+			totalCount);
 	}
 
 	@Override
 	public Response patchWarehouseItem(Long id, WarehouseItem warehouseItem)
 		throws Exception {
 
-		CommerceInventoryWarehouse commerceInventoryWarehouse =
-			_commerceInventoryWarehouseService.getCommerceInventoryWarehouse(
-				id);
+		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
+			_commerceInventoryWarehouseItemService.
+				getCommerceInventoryWarehouseItem(id);
 
 		_commerceInventoryWarehouseItemService.
 			updateCommerceInventoryWarehouseItem(
-				commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				GetterUtil.getInteger(warehouseItem.getQuantity()),
-				commerceInventoryWarehouse.getMvccVersion());
+				id, commerceInventoryWarehouseItem.getMvccVersion(),
+				BigDecimalUtil.get(
+					warehouseItem.getQuantity(),
+					commerceInventoryWarehouseItem.getQuantity()),
+				GetterUtil.get(
+					warehouseItem.getUnitOfMeasureKey(),
+					commerceInventoryWarehouseItem.getUnitOfMeasureKey()));
 
 		Response.ResponseBuilder responseBuilder = Response.ok();
 
@@ -251,8 +240,13 @@ public class WarehouseItemResourceImpl
 			updateCommerceInventoryWarehouseItem(
 				commerceInventoryWarehouseItem.
 					getCommerceInventoryWarehouseItemId(),
-				GetterUtil.getInteger(warehouseItem.getQuantity()),
-				commerceInventoryWarehouseItem.getMvccVersion());
+				commerceInventoryWarehouseItem.getMvccVersion(),
+				BigDecimalUtil.get(
+					warehouseItem.getQuantity(),
+					commerceInventoryWarehouseItem.getQuantity()),
+				GetterUtil.get(
+					warehouseItem.getUnitOfMeasureKey(),
+					commerceInventoryWarehouseItem.getUnitOfMeasureKey()));
 
 		Response.ResponseBuilder responseBuilder = Response.noContent();
 
@@ -260,13 +254,14 @@ public class WarehouseItemResourceImpl
 	}
 
 	@Override
-	public WarehouseItem postWarehousByExternalReferenceCodeWarehouseItem(
+	public WarehouseItem postWarehouseByExternalReferenceCodeWarehouseItem(
 			String externalReferenceCode, WarehouseItem warehouseItem)
 		throws Exception {
 
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
-			_commerceInventoryWarehouseService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commerceInventoryWarehouseService.
+				fetchCommerceInventoryWarehouseByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commerceInventoryWarehouse == null) {
 			throw new NoSuchInventoryWarehouseException(
@@ -274,26 +269,43 @@ public class WarehouseItemResourceImpl
 					externalReferenceCode);
 		}
 
-		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem = null;
+		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
+			_commerceInventoryWarehouseItemService.
+				addCommerceInventoryWarehouseItem(
+					warehouseItem.getExternalReferenceCode(),
+					commerceInventoryWarehouse.
+						getCommerceInventoryWarehouseId(),
+					BigDecimalUtil.get(
+						warehouseItem.getQuantity(), BigDecimal.ZERO),
+					warehouseItem.getSku(),
+					warehouseItem.getUnitOfMeasureKey());
 
-		if (warehouseItem.getExternalReferenceCode() != null) {
-			commerceInventoryWarehouseItem =
-				_commerceInventoryWarehouseItemService.
-					addOrUpdateCommerceInventoryWarehouseItem(
-						warehouseItem.getExternalReferenceCode(),
-						contextUser.getCompanyId(),
-						commerceInventoryWarehouse.
-							getCommerceInventoryWarehouseId(),
-						warehouseItem.getSku(), warehouseItem.getQuantity());
-		}
-		else {
-			commerceInventoryWarehouseItem =
-				_commerceInventoryWarehouseItemService.
-					addOrUpdateCommerceInventoryWarehouseItem(
-						commerceInventoryWarehouse.
-							getCommerceInventoryWarehouseId(),
-						warehouseItem.getSku(), warehouseItem.getQuantity());
-		}
+		return _warehouseItemDTOConverter.toDTO(
+			new DefaultDTOConverterContext(
+				commerceInventoryWarehouseItem.
+					getCommerceInventoryWarehouseItemId(),
+				contextAcceptLanguage.getPreferredLocale()));
+	}
+
+	@Override
+	public WarehouseItem postWarehouseIdWarehouseItem(
+			Long id, WarehouseItem warehouseItem)
+		throws Exception {
+
+		CommerceInventoryWarehouse commerceInventoryWarehouse =
+			_commerceInventoryWarehouseService.getCommerceInventoryWarehouse(
+				id);
+
+		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
+			_commerceInventoryWarehouseItemService.
+				addCommerceInventoryWarehouseItem(
+					warehouseItem.getExternalReferenceCode(),
+					commerceInventoryWarehouse.
+						getCommerceInventoryWarehouseId(),
+					BigDecimalUtil.get(
+						warehouseItem.getQuantity(), BigDecimal.ZERO),
+					warehouseItem.getSku(),
+					warehouseItem.getUnitOfMeasureKey());
 
 		return _warehouseItemDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -317,9 +329,10 @@ public class WarehouseItemResourceImpl
 		}
 		else if (warehouseItem.getWarehouseExternalReferenceCode() != null) {
 			commerceInventoryWarehouse =
-				_commerceInventoryWarehouseService.fetchByExternalReferenceCode(
-					warehouseItem.getWarehouseExternalReferenceCode(),
-					contextUser.getCompanyId());
+				_commerceInventoryWarehouseService.
+					fetchCommerceInventoryWarehouseByExternalReferenceCode(
+						warehouseItem.getWarehouseExternalReferenceCode(),
+						contextUser.getCompanyId());
 		}
 
 		if (commerceInventoryWarehouse == null) {
@@ -344,7 +357,10 @@ public class WarehouseItemResourceImpl
 					externalReferenceCode,
 					commerceInventoryWarehouse.
 						getCommerceInventoryWarehouseId(),
-					warehouseItem.getSku(), warehouseItem.getQuantity());
+					BigDecimalUtil.get(
+						warehouseItem.getQuantity(), BigDecimal.ZERO),
+					warehouseItem.getSku(),
+					warehouseItem.getUnitOfMeasureKey());
 
 		return _warehouseItemDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -354,21 +370,33 @@ public class WarehouseItemResourceImpl
 	}
 
 	@Override
-	public WarehouseItem postWarehousIdWarehouseItem(
-			Long id, WarehouseItem warehouseItem)
+	public WarehouseItem putWarehouseItemByExternalReferenceCode(
+			String externalReferenceCode, WarehouseItem warehouseItem)
 		throws Exception {
 
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
-			_commerceInventoryWarehouseService.getCommerceInventoryWarehouse(
-				id);
+			_commerceInventoryWarehouseService.
+				fetchCommerceInventoryWarehouseByExternalReferenceCode(
+					GetterUtil.getString(
+						warehouseItem.getWarehouseExternalReferenceCode()),
+					contextCompany.getCompanyId());
+
+		if (commerceInventoryWarehouse == null) {
+			throw new NoSuchInventoryWarehouseException(
+				"Unable to find warehouse with external reference code " +
+					warehouseItem.getWarehouseExternalReferenceCode());
+		}
 
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
 			_commerceInventoryWarehouseItemService.
-				addCommerceInventoryWarehouseItem(
-					warehouseItem.getExternalReferenceCode(),
+				addOrUpdateCommerceInventoryWarehouseItem(
+					externalReferenceCode, contextCompany.getCompanyId(),
 					commerceInventoryWarehouse.
 						getCommerceInventoryWarehouseId(),
-					warehouseItem.getSku(), warehouseItem.getQuantity());
+					BigDecimalUtil.get(
+						warehouseItem.getQuantity(), BigDecimal.ONE),
+					GetterUtil.getString(warehouseItem.getSku()),
+					GetterUtil.getString(warehouseItem.getUnitOfMeasureKey()));
 
 		return _warehouseItemDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -378,13 +406,13 @@ public class WarehouseItemResourceImpl
 	}
 
 	private Date _addDaysToDate(Date date, int increment) {
-		Calendar cal = Calendar.getInstance();
+		Calendar calendar = Calendar.getInstance();
 
-		cal.setTime(date);
+		calendar.setTime(date);
 
-		cal.add(Calendar.DATE, increment);
+		calendar.add(Calendar.DATE, increment);
 
-		return cal.getTime();
+		return calendar.getTime();
 	}
 
 	private WarehouseItem _toWarehouseItem(
@@ -403,20 +431,13 @@ public class WarehouseItemResourceImpl
 				commerceInventoryWarehouseItems)
 		throws Exception {
 
-		List<WarehouseItem> warehouseItems = new ArrayList<>();
-
-		for (CommerceInventoryWarehouseItem commerceInventoryWarehouseItem :
-				commerceInventoryWarehouseItems) {
-
-			warehouseItems.add(
-				_warehouseItemDTOConverter.toDTO(
-					new DefaultDTOConverterContext(
-						commerceInventoryWarehouseItem.
-							getCommerceInventoryWarehouseItemId(),
-						contextAcceptLanguage.getPreferredLocale())));
-		}
-
-		return warehouseItems;
+		return transform(
+			commerceInventoryWarehouseItems,
+			commerceInventoryWarehouseItem -> _warehouseItemDTOConverter.toDTO(
+				new DefaultDTOConverterContext(
+					commerceInventoryWarehouseItem.
+						getCommerceInventoryWarehouseItemId(),
+					contextAcceptLanguage.getPreferredLocale())));
 	}
 
 	private static final int _DEFAULT_INCREMENT_DAYS = 30;
@@ -429,7 +450,10 @@ public class WarehouseItemResourceImpl
 	private CommerceInventoryWarehouseService
 		_commerceInventoryWarehouseService;
 
-	@Reference
-	private WarehouseItemDTOConverter _warehouseItemDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.inventory.internal.dto.v1_0.converter.WarehouseItemDTOConverter)"
+	)
+	private DTOConverter<CommerceInventoryWarehouseItem, WarehouseItem>
+		_warehouseItemDTOConverter;
 
 }

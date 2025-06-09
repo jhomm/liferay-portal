@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.comment.taglib.internal.context;
 
 import com.liferay.comment.constants.CommentConstants;
-import com.liferay.comment.taglib.internal.context.util.DiscussionRequestHelper;
-import com.liferay.comment.taglib.internal.context.util.DiscussionTaglibHelper;
+import com.liferay.comment.taglib.internal.context.helper.DiscussionRequestHelper;
+import com.liferay.comment.taglib.internal.context.helper.DiscussionTaglibHelper;
 import com.liferay.portal.kernel.comment.DiscussionComment;
 import com.liferay.portal.kernel.comment.DiscussionPermission;
 import com.liferay.portal.kernel.comment.WorkflowableComment;
@@ -60,11 +51,10 @@ public class DefaultCommentTreeDisplayContext
 				_discussionRequestHelper.getCompanyId(),
 				_discussionRequestHelper.getScopeGroupId(),
 				CommentConstants.getDiscussionClassName()) &&
-			!isCommentPending()) {
+			!_isCommentPending()) {
 
 			publishButtonLabel = LanguageUtil.get(
-				_discussionRequestHelper.getRequest(),
-				"submit-for-publication");
+				_discussionRequestHelper.getRequest(), "submit-for-workflow");
 		}
 
 		return publishButtonLabel;
@@ -88,13 +78,14 @@ public class DefaultCommentTreeDisplayContext
 		}
 
 		return _discussionPermission.hasPermission(
-			_discussionComment, ActionKeys.DELETE_DISCUSSION);
+			_discussionRequestHelper.getPermissionChecker(), _discussionComment,
+			ActionKeys.DELETE_DISCUSSION);
 	}
 
 	@Override
 	public boolean isDiscussionVisible() throws PortalException {
-		if (!isCommentApproved() && !isCommentAuthor() &&
-			!isContentReviewer() && !isGroupAdmin()) {
+		if (!_isCommentApproved() && !_isCommentAuthor() &&
+			!_isContentReviewer() && !_isGroupAdmin()) {
 
 			return false;
 		}
@@ -104,7 +95,7 @@ public class DefaultCommentTreeDisplayContext
 
 	@Override
 	public boolean isEditActionControlVisible() throws PortalException {
-		if (!hasUpdatePermission() || _isStagingGroup()) {
+		if (!_hasUpdatePermission() || _isStagingGroup()) {
 			return false;
 		}
 
@@ -117,7 +108,7 @@ public class DefaultCommentTreeDisplayContext
 			return false;
 		}
 
-		return hasUpdatePermission();
+		return _hasUpdatePermission();
 	}
 
 	@Override
@@ -138,6 +129,7 @@ public class DefaultCommentTreeDisplayContext
 		}
 
 		return _discussionPermission.hasAddPermission(
+			_discussionRequestHelper.getPermissionChecker(),
 			_discussionRequestHelper.getCompanyId(),
 			_discussionRequestHelper.getScopeGroupId(),
 			_discussionTaglibHelper.getClassName(),
@@ -146,7 +138,7 @@ public class DefaultCommentTreeDisplayContext
 
 	@Override
 	public boolean isWorkflowStatusVisible() {
-		if ((_discussionComment != null) && !isCommentApproved()) {
+		if ((_discussionComment != null) && !_isCommentApproved()) {
 			return true;
 		}
 
@@ -158,38 +150,40 @@ public class DefaultCommentTreeDisplayContext
 		return _discussionRequestHelper.getThemeDisplay();
 	}
 
-	protected User getUser() {
-		ThemeDisplay themeDisplay = _discussionRequestHelper.getThemeDisplay();
-
-		return themeDisplay.getUser();
-	}
-
-	protected boolean hasUpdatePermission() throws PortalException {
-		if (_discussionPermission == null) {
-			return false;
-		}
-
-		if (_hasUpdatePermission == null) {
-			_hasUpdatePermission = _discussionPermission.hasPermission(
-				_discussionComment, ActionKeys.UPDATE_DISCUSSION);
-		}
-
-		return _hasUpdatePermission;
-	}
-
 	protected boolean hasViewPermission() throws PortalException {
 		if (_discussionPermission == null) {
 			return false;
 		}
 
 		return _discussionPermission.hasViewPermission(
+			_discussionRequestHelper.getPermissionChecker(),
 			_discussionRequestHelper.getCompanyId(),
 			_discussionRequestHelper.getScopeGroupId(),
 			_discussionTaglibHelper.getClassName(),
 			_discussionTaglibHelper.getClassPK());
 	}
 
-	protected boolean isCommentApproved() {
+	private User _getUser() {
+		ThemeDisplay themeDisplay = _discussionRequestHelper.getThemeDisplay();
+
+		return themeDisplay.getUser();
+	}
+
+	private boolean _hasUpdatePermission() throws PortalException {
+		if (_discussionPermission == null) {
+			return false;
+		}
+
+		if (_hasUpdatePermission == null) {
+			_hasUpdatePermission = _discussionPermission.hasPermission(
+				_discussionRequestHelper.getPermissionChecker(),
+				_discussionComment, ActionKeys.UPDATE_DISCUSSION);
+		}
+
+		return _hasUpdatePermission;
+	}
+
+	private boolean _isCommentApproved() {
 		boolean approved = true;
 
 		if (_discussionComment instanceof WorkflowableComment) {
@@ -209,12 +203,12 @@ public class DefaultCommentTreeDisplayContext
 		return approved;
 	}
 
-	protected boolean isCommentAuthor() {
-		User user = getUser();
+	private boolean _isCommentAuthor() {
+		User user = _getUser();
 
 		if ((_discussionComment != null) &&
 			(_discussionComment.getUserId() == user.getUserId()) &&
-			!user.isDefaultUser()) {
+			!user.isGuestUser()) {
 
 			return true;
 		}
@@ -222,7 +216,7 @@ public class DefaultCommentTreeDisplayContext
 		return false;
 	}
 
-	protected boolean isCommentPending() {
+	private boolean _isCommentPending() {
 		boolean pending = false;
 
 		if (_discussionComment instanceof WorkflowableComment) {
@@ -242,7 +236,7 @@ public class DefaultCommentTreeDisplayContext
 		return pending;
 	}
 
-	protected boolean isContentReviewer() {
+	private boolean _isContentReviewer() {
 		PermissionChecker permissionChecker =
 			_discussionRequestHelper.getPermissionChecker();
 
@@ -251,7 +245,7 @@ public class DefaultCommentTreeDisplayContext
 			_discussionRequestHelper.getScopeGroupId());
 	}
 
-	protected boolean isGroupAdmin() {
+	private boolean _isGroupAdmin() {
 		PermissionChecker permissionChecker =
 			_discussionRequestHelper.getPermissionChecker();
 

@@ -1,23 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.frontend.taglib.form.navigator;
 
 import com.liferay.asset.publisher.constants.AssetPublisherConstants;
+import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
 import com.liferay.asset.publisher.web.internal.util.AssetPublisherCustomizer;
 import com.liferay.asset.publisher.web.internal.util.AssetPublisherCustomizerRegistry;
 import com.liferay.frontend.taglib.form.navigator.FormNavigatorEntry;
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.PortletLocalService;
@@ -26,15 +20,20 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
+import java.util.Map;
+
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
 @Component(
+	configurationPid = "com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration",
 	property = "form.navigator.entry.order:Integer=50",
 	service = FormNavigatorEntry.class
 )
@@ -49,6 +48,11 @@ public class GroupingFormNavigatorEntry
 	@Override
 	public String getKey() {
 		return "grouping";
+	}
+
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
 	}
 
 	@Override
@@ -68,7 +72,7 @@ public class GroupingFormNavigatorEntry
 			themeDisplay.getCompanyId(), portletDisplay.getPortletResource());
 
 		AssetPublisherCustomizer assetPublisherCustomizer =
-			assetPublisherCustomizerRegistry.getAssetPublisherCustomizer(
+			_assetPublisherCustomizerRegistry.getAssetPublisherCustomizer(
 				portlet.getRootPortletId());
 
 		if (assetPublisherCustomizer == null) {
@@ -79,13 +83,14 @@ public class GroupingFormNavigatorEntry
 			serviceContext.getRequest());
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.asset.publisher.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
+	@Activate
+	@Modified
+	protected void activate(Map<String, Object> properties) {
+		_assetPublisherCustomizerRegistry =
+			new AssetPublisherCustomizerRegistry(
+				_assetPublisherHelper,
+				ConfigurableUtil.createConfigurable(
+					AssetPublisherWebConfiguration.class, properties));
 	}
 
 	@Override
@@ -93,10 +98,18 @@ public class GroupingFormNavigatorEntry
 		return "/configuration/grouping.jsp";
 	}
 
+	private volatile AssetPublisherCustomizerRegistry
+		_assetPublisherCustomizerRegistry;
+
 	@Reference
-	protected AssetPublisherCustomizerRegistry assetPublisherCustomizerRegistry;
+	private AssetPublisherHelper _assetPublisherHelper;
 
 	@Reference
 	private PortletLocalService _portletLocalService;
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.asset.publisher.web)"
+	)
+	private ServletContext _servletContext;
 
 }

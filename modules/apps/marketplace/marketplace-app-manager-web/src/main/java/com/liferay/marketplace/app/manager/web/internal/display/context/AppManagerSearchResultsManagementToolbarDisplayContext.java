@@ -1,35 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.app.manager.web.internal.display.context;
 
-import com.liferay.marketplace.app.manager.web.internal.util.BundleManagerUtil;
 import com.liferay.marketplace.app.manager.web.internal.util.MarketplaceAppManagerSearchUtil;
 import com.liferay.marketplace.app.manager.web.internal.util.comparator.MarketplaceAppManagerComparator;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.marketplace.util.BundleManagerUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -56,6 +45,10 @@ public class AppManagerSearchResultsManagementToolbarDisplayContext
 			liferayPortletResponse
 		).setMVCPath(
 			"/view_search_results.jsp"
+		).setRedirect(
+			ParamUtil.getString(
+				httpServletRequest, "redirect",
+				String.valueOf(liferayPortletResponse.createRenderURL()))
 		).setKeywords(
 			() -> {
 				if (Validator.isNotNull(getKeywords())) {
@@ -71,12 +64,6 @@ public class AppManagerSearchResultsManagementToolbarDisplayContext
 		).setParameter(
 			"state", getState()
 		).buildPortletURL();
-
-		String redirect = ParamUtil.getString(
-			httpServletRequest, "redirect",
-			String.valueOf(liferayPortletResponse.createRenderURL()));
-
-		portletURL.setParameter("redirect", redirect);
 
 		if (_searchContainer != null) {
 			portletURL.setParameter(
@@ -102,24 +89,12 @@ public class AppManagerSearchResultsManagementToolbarDisplayContext
 
 		searchContainer.setOrderByCol(getOrderByCol());
 		searchContainer.setOrderByType(getOrderByType());
-
-		List<Object> results = MarketplaceAppManagerSearchUtil.getResults(
-			BundleManagerUtil.getBundles(), getKeywords(),
-			httpServletRequest.getLocale());
-
-		results = ListUtil.sort(
-			results, new MarketplaceAppManagerComparator(getOrderByType()));
-
-		int end = searchContainer.getEnd();
-
-		if (end > results.size()) {
-			end = results.size();
-		}
-
-		searchContainer.setResults(
-			results.subList(searchContainer.getStart(), end));
-
-		searchContainer.setTotal(results.size());
+		searchContainer.setResultsAndTotal(
+			ListUtil.sort(
+				MarketplaceAppManagerSearchUtil.getResults(
+					BundleManagerUtil.getBundles(), getKeywords(),
+					httpServletRequest.getLocale()),
+				new MarketplaceAppManagerComparator(getOrderByType())));
 
 		_searchContainer = searchContainer;
 

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
+import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -27,6 +19,10 @@ public class CPSpecificationOptionServiceWrapper
 	implements CPSpecificationOptionService,
 			   ServiceWrapper<CPSpecificationOptionService> {
 
+	public CPSpecificationOptionServiceWrapper() {
+		this(null);
+	}
+
 	public CPSpecificationOptionServiceWrapper(
 		CPSpecificationOptionService cpSpecificationOptionService) {
 
@@ -34,17 +30,18 @@ public class CPSpecificationOptionServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPSpecificationOption
-			addCPSpecificationOption(
-				long cpOptionCategoryId,
-				java.util.Map<java.util.Locale, String> titleMap,
-				java.util.Map<java.util.Locale, String> descriptionMap,
-				boolean facetable, String key,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CPSpecificationOption addCPSpecificationOption(
+			String externalReferenceCode, long cpOptionCategoryId,
+			long[] listTypeDefinitionIds,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap,
+			boolean facetable, String key, double priority, boolean visible,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionService.addCPSpecificationOption(
-			cpOptionCategoryId, titleMap, descriptionMap, facetable, key,
+			externalReferenceCode, cpOptionCategoryId, listTypeDefinitionIds,
+			titleMap, descriptionMap, facetable, key, priority, visible,
 			serviceContext);
 	}
 
@@ -57,8 +54,8 @@ public class CPSpecificationOptionServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPSpecificationOption
-			fetchCPSpecificationOption(long companyId, String key)
+	public CPSpecificationOption fetchCPSpecificationOption(
+			long companyId, String key)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionService.fetchCPSpecificationOption(
@@ -66,8 +63,19 @@ public class CPSpecificationOptionServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPSpecificationOption
-			getCPSpecificationOption(long cpSpecificationOptionId)
+	public CPSpecificationOption
+			fetchCPSpecificationOptionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpSpecificationOptionService.
+			fetchCPSpecificationOptionByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	@Override
+	public CPSpecificationOption getCPSpecificationOption(
+			long cpSpecificationOptionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionService.getCPSpecificationOption(
@@ -75,8 +83,8 @@ public class CPSpecificationOptionServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPSpecificationOption
-			getCPSpecificationOption(long companyId, String key)
+	public CPSpecificationOption getCPSpecificationOption(
+			long companyId, String key)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionService.getCPSpecificationOption(
@@ -95,30 +103,30 @@ public class CPSpecificationOptionServiceWrapper
 
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<com.liferay.commerce.product.model.CPSpecificationOption>
-				searchCPSpecificationOptions(
-					long companyId, Boolean facetable, String keywords,
-					int start, int end,
-					com.liferay.portal.kernel.search.Sort sort)
+		<CPSpecificationOption> searchCPSpecificationOptions(
+				long companyId, Boolean facetable, Boolean visible,
+				String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionService.searchCPSpecificationOptions(
-			companyId, facetable, keywords, start, end, sort);
+			companyId, facetable, visible, keywords, start, end, sort);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPSpecificationOption
-			updateCPSpecificationOption(
-				long cpSpecificationOptionId, long cpOptionCategoryId,
-				java.util.Map<java.util.Locale, String> titleMap,
-				java.util.Map<java.util.Locale, String> descriptionMap,
-				boolean facetable, String key,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CPSpecificationOption updateCPSpecificationOption(
+			String externalReferenceCode, long cpSpecificationOptionId,
+			long cpOptionCategoryId, long[] listTypeDefinitionIds,
+			java.util.Map<java.util.Locale, String> titleMap,
+			java.util.Map<java.util.Locale, String> descriptionMap,
+			boolean facetable, String key, double priority, boolean visible,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpSpecificationOptionService.updateCPSpecificationOption(
-			cpSpecificationOptionId, cpOptionCategoryId, titleMap,
-			descriptionMap, facetable, key, serviceContext);
+			externalReferenceCode, cpSpecificationOptionId, cpOptionCategoryId,
+			listTypeDefinitionIds, titleMap, descriptionMap, facetable, key,
+			priority, visible, serviceContext);
 	}
 
 	@Override

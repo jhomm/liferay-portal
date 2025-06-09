@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v4_0_0;
 
+import com.liferay.dynamic.data.mapping.constants.DDMStructureConstants;
 import com.liferay.dynamic.data.mapping.util.DDMDataDefinitionConverter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -76,7 +69,8 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructure set parentStructureId = 0, " +
-						"definition = ? where structureId = ?")) {
+						"definition = ? where ctCollectionId = ? and " +
+							"structureId = ?")) {
 
 			preparedStatement1.setLong(
 				1,
@@ -105,7 +99,9 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 								parentStructureLayoutId,
 								resultSet.getLong("structureId")));
 					preparedStatement2.setLong(
-						2, resultSet.getLong("structureId"));
+						2, resultSet.getLong("ctCollectionId"));
+					preparedStatement2.setLong(
+						3, resultSet.getLong("structureId"));
 
 					preparedStatement2.addBatch();
 				}
@@ -120,7 +116,10 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 				StringBundler.concat(
 					"select DDMStructure.structureId, ",
 					"DDMStructure.parentStructureId, DDMStructure.classNameId ",
-					", DDMStructure.structureKey, DDMStructureLayout.groupId, ",
+					", DDMStructure.structureKey, DDMStructure.version, ",
+					"DDMStructureLayout.ctCollectionId as ",
+					"structureLayoutCtCollectionId, ",
+					"DDMStructureLayout.groupId, ",
 					"DDMStructureLayout.structureLayoutId, ",
 					"DDMStructureLayout.definition as ",
 					"structureLayoutDefinition, ",
@@ -139,7 +138,7 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 					connection,
 					"update DDMStructureLayout set definition = ?, " +
 						"classNameId = ?, structureLayoutKey = ? where " +
-							"structureLayoutId = ?")) {
+							"ctCollectionId = ? and structureLayoutId = ?")) {
 
 			preparedStatement1.setLong(
 				1,
@@ -166,10 +165,22 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 
 					preparedStatement2.setLong(
 						2, resultSet.getLong("classNameId"));
-					preparedStatement2.setString(
-						3, resultSet.getString("structureKey"));
+
+					String structureLayoutKey = resultSet.getString(
+						"structureKey");
+
+					if (!StringUtil.equals(
+							resultSet.getString("version"),
+							DDMStructureConstants.VERSION_DEFAULT)) {
+
+						structureLayoutKey = String.valueOf(increment());
+					}
+
+					preparedStatement2.setString(3, structureLayoutKey);
 					preparedStatement2.setLong(
-						4, resultSet.getLong("structureLayoutId"));
+						4, resultSet.getLong("structureLayoutCtCollectionId"));
+					preparedStatement2.setLong(
+						5, resultSet.getLong("structureLayoutId"));
 
 					preparedStatement2.addBatch();
 				}
@@ -182,8 +193,13 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 	private void _upgradeStructureVersionDefinition() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				StringBundler.concat(
-					"select DDMStructure.structureKey, DDMStructureVersion.* ",
-					"from DDMStructureVersion inner join DDMStructure on ",
+					"select DDMStructure.structureKey, ",
+					"DDMStructureVersion.ctCollectionId as ",
+					"ddmStructureVersionCtCollectionId, ",
+					"DDMStructureVersion.structureVersionId, ",
+					"DDMStructureVersion.definition, ",
+					"DDMStructureVersion.parentStructureId from ",
+					"DDMStructureVersion inner join DDMStructure on ",
 					"DDMStructure.structureId = ",
 					"DDMStructureVersion.structureId where ",
 					"DDMStructure.classNameId = ? or DDMStructure.classNameId ",
@@ -192,7 +208,8 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructureVersion set parentStructureId = 0, " +
-						"definition = ? where structureVersionId = ?")) {
+						"definition = ? where ctCollectionId = ? and " +
+							"structureVersionId = ?")) {
 
 			preparedStatement1.setLong(
 				1,
@@ -218,9 +235,12 @@ public class DDMStructureUpgradeProcess extends UpgradeProcess {
 							convertDDMFormDataDefinition(
 								resultSet.getString("definition"),
 								parentStructureId, parentStructureLayoutId));
-
 					preparedStatement2.setLong(
-						2, resultSet.getLong("structureVersionId"));
+						2,
+						resultSet.getLong("ddmStructureVersionCtCollectionId"));
+					preparedStatement2.setLong(
+						3, resultSet.getLong("structureVersionId"));
+
 					preparedStatement2.addBatch();
 				}
 

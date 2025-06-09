@@ -1,27 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.redirect.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexer;
@@ -32,6 +25,7 @@ import com.liferay.portal.kernel.search.SearchResult;
 import com.liferay.portal.kernel.search.SearchResultUtil;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -42,10 +36,13 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.redirect.model.RedirectNotFoundEntry;
 import com.liferay.redirect.service.RedirectNotFoundEntryLocalService;
 import com.liferay.redirect.web.internal.search.RedirectNotFoundEntrySearch;
-import com.liferay.redirect.web.internal.security.permission.resource.RedirectPermission;
 import com.liferay.redirect.web.internal.util.RedirectUtil;
 import com.liferay.staging.StagingGroupHelper;
 import com.liferay.staging.StagingGroupHelperUtil;
+
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -53,12 +50,6 @@ import java.time.Instant;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -68,16 +59,17 @@ public class RedirectNotFoundEntriesDisplayContext {
 	public RedirectNotFoundEntriesDisplayContext(
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse) {
+		LiferayPortletResponse liferayPortletResponse,
+		PortletResourcePermission portletResourcePermission,
+		RedirectNotFoundEntryLocalService redirectNotFoundEntryLocalService) {
 
 		_httpServletRequest = httpServletRequest;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
+		_portletResourcePermission = portletResourcePermission;
+		_redirectNotFoundEntryLocalService = redirectNotFoundEntryLocalService;
 
-		_redirectNotFoundEntryLocalService =
-			(RedirectNotFoundEntryLocalService)_httpServletRequest.getAttribute(
-				RedirectNotFoundEntryLocalService.class.getName());
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -114,7 +106,7 @@ public class RedirectNotFoundEntriesDisplayContext {
 				StagingGroupHelper stagingGroupHelper =
 					StagingGroupHelperUtil.getStagingGroupHelper();
 
-				return RedirectPermission.contains(
+				return _portletResourcePermission.contains(
 					_themeDisplay.getPermissionChecker(),
 					_themeDisplay.getScopeGroupId(), ActionKeys.ADD_ENTRY) &&
 					   !(stagingGroupHelper.isLocalStagingGroup(
@@ -133,18 +125,47 @@ public class RedirectNotFoundEntriesDisplayContext {
 					).setParameter(
 						"sourceURL", redirectNotFoundEntry.getUrl()
 					).buildRenderURL());
-
 				dropdownItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "create-redirect"));
 			}
 		).build();
 	}
 
-	public String getSearchContainerId() {
-		return "redirectNotFoundEntries";
+	public String getActionURL() throws Exception {
+		SearchContainer<RedirectNotFoundEntry> searchContainer =
+			getSearchContainer();
+
+		return String.valueOf(searchContainer.getIteratorURL());
 	}
 
-	public SearchContainer<RedirectNotFoundEntry> searchContainer()
+	public String getAvailableActions(
+		RedirectNotFoundEntry redirectNotFoundEntry) {
+
+		if (redirectNotFoundEntry.isIgnored()) {
+			return "unignoreSelectedRedirectNotFoundEntries";
+		}
+
+		return "ignoreSelectedRedirectNotFoundEntries";
+	}
+
+	public String getEmptyResultsMessage() throws Exception {
+		SearchContainer<RedirectNotFoundEntry> searchContainer =
+			getSearchContainer();
+
+		return searchContainer.getEmptyResultsMessage();
+	}
+
+	public RedirectNotFoundEntriesManagementToolbarDisplayContext
+			getRedirectNotFoundEntriesManagementToolbarDisplayContext()
+		throws Exception {
+
+		return new RedirectNotFoundEntriesManagementToolbarDisplayContext(
+			_httpServletRequest, _liferayPortletRequest,
+			_liferayPortletResponse, _redirectNotFoundEntryLocalService,
+			getSearchContainer());
+	}
+
+	public SearchContainer<RedirectNotFoundEntry> getSearchContainer()
 		throws Exception {
 
 		if (_redirectNotFoundEntrySearch != null) {
@@ -158,6 +179,26 @@ public class RedirectNotFoundEntriesDisplayContext {
 		_populateWithSearchIndex(_redirectNotFoundEntrySearch);
 
 		return _redirectNotFoundEntrySearch;
+	}
+
+	public String getSearchContainerId() {
+		return "redirectNotFoundEntries";
+	}
+
+	public String getURL(RedirectNotFoundEntry redirectNotFoundEntry) {
+		return RedirectUtil.getGroupBaseURL(_themeDisplay) + StringPool.SLASH +
+			redirectNotFoundEntry.getUrl();
+	}
+
+	public boolean hasResults() throws Exception {
+		SearchContainer<RedirectNotFoundEntry> searchContainer =
+			getSearchContainer();
+
+		if (searchContainer.getTotal() == 0) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private Boolean _getIgnored() {
@@ -192,21 +233,20 @@ public class RedirectNotFoundEntriesDisplayContext {
 	}
 
 	private Sort _getSorts() {
-		boolean orderByAsc = StringUtil.equals(
-			_redirectNotFoundEntrySearch.getOrderByType(), "asc");
-
 		if (Objects.equals(
 				_redirectNotFoundEntrySearch.getOrderByCol(),
 				"modified-date")) {
 
 			return new Sort(
 				Field.getSortableFieldName(Field.MODIFIED_DATE), Sort.LONG_TYPE,
-				orderByAsc);
+				StringUtil.equals(
+					_redirectNotFoundEntrySearch.getOrderByType(), "asc"));
 		}
 
 		return new Sort(
 			Field.getSortableFieldName("requestCount"), Sort.LONG_TYPE,
-			orderByAsc);
+			StringUtil.equals(
+				_redirectNotFoundEntrySearch.getOrderByType(), "asc"));
 	}
 
 	private void _populateWithSearchIndex(
@@ -233,23 +273,19 @@ public class RedirectNotFoundEntriesDisplayContext {
 		List<SearchResult> searchResults = SearchResultUtil.getSearchResults(
 			hits, LocaleUtil.getDefault());
 
-		Stream<SearchResult> stream = searchResults.stream();
-
-		redirectNotFoundEntrySearch.setResults(
-			stream.map(
-				SearchResult::getClassPK
-			).map(
-				_redirectNotFoundEntryLocalService::fetchRedirectNotFoundEntry
-			).collect(
-				Collectors.toList()
-			));
-
-		redirectNotFoundEntrySearch.setTotal(hits.getLength());
+		redirectNotFoundEntrySearch.setResultsAndTotal(
+			() -> TransformUtil.transform(
+				searchResults,
+				searchResult ->
+					_redirectNotFoundEntryLocalService.
+						fetchRedirectNotFoundEntry(searchResult.getClassPK())),
+			hits.getLength());
 	}
 
 	private final HttpServletRequest _httpServletRequest;
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
+	private final PortletResourcePermission _portletResourcePermission;
 	private final RedirectNotFoundEntryLocalService
 		_redirectNotFoundEntryLocalService;
 	private RedirectNotFoundEntrySearch _redirectNotFoundEntrySearch;

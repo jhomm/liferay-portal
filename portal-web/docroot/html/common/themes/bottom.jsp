@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,7 +10,7 @@
 <liferay-util:dynamic-include key="/html/common/themes/bottom.jsp#pre" />
 
 <%
-List<Portlet> portlets = (List<Portlet>)request.getAttribute(WebKeys.LAYOUT_PORTLETS);
+PortletTreeSet portletTreeSet = (PortletTreeSet)request.getAttribute(WebKeys.LAYOUT_PORTLETS);
 %>
 
 <%-- Portlet CSS References --%>
@@ -60,7 +51,7 @@ com.liferay.petra.string.StringBundler pageBottomSB = OutputTag.getDataSB(reques
 
 <%-- Theme JavaScript --%>
 
-<script src="<%= HtmlUtil.escape(PortalUtil.getStaticResourceURL(request, themeDisplay.getPathThemeJavaScript() + "/main.js")) %>" type="text/javascript"></script>
+<aui:script src="<%= HtmlUtil.escape(themeDisplay.getMainJSURL()) %>" type="text/javascript"></aui:script>
 
 <liferay-util:include page="/html/common/themes/bottom-ext.jsp" />
 <liferay-util:include page="/html/common/themes/bottom-test.jsp" />

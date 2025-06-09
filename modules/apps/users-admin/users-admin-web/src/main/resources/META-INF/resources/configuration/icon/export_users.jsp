@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,17 +15,22 @@ int status = GetterUtil.getInteger(request.getAttribute(UsersAdminWebKeys.STATUS
 	<liferay-portlet:param name="status" value="<%= String.valueOf(status) %>" />
 </liferay-portlet:resourceURL>
 
-<liferay-util:buffer
-	var="onClickFn"
->
-	if (confirm('<liferay-ui:message key="warning-this-csv-file-contains-user-supplied-inputs" unicode="<%= true %>" />')) {
-		submitForm(document.hrefFm, '<%= exportURL + "&compress=0&etag=0&strip=0" %>');
-	}
-</liferay-util:buffer>
-
-<liferay-ui:icon
-	message="export-users"
-	method="get"
-	onClick="<%= onClickFn %>"
-	url="javascript:;"
-/>
+<aui:script>
+	Liferay.Util.setPortletConfigurationIconAction(
+		'<portlet:namespace />exportUsers',
+		() => {
+			Liferay.Util.openConfirmModal({
+				message:
+					'<liferay-ui:message key="warning-this-csv-file-contains-user-supplied-inputs" unicode="<%= true %>" />',
+				onConfirm: (isConfirmed) => {
+					if (isConfirmed) {
+						submitForm(
+							document.hrefFm,
+							'<%= exportURL + "&compress=0&etag=0&strip=0" %>'
+						);
+					}
+				},
+			});
+		}
+	);
+</aui:script>

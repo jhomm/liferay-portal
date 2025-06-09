@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test.util.lar;
 
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetLink;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
-import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
+import com.liferay.asset.link.model.AssetLink;
+import com.liferay.asset.link.service.AssetLinkLocalServiceUtil;
 import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationSettingsMapFactoryUtil;
 import com.liferay.exportimport.kernel.configuration.constants.ExportImportConfigurationConstants;
 import com.liferay.exportimport.kernel.lar.ExportImportClassedModelUtil;
@@ -98,14 +89,14 @@ public abstract class BaseExportImportTestCase {
 		group = GroupTestUtil.addGroup();
 		importedGroup = GroupTestUtil.addGroup();
 
-		layout = LayoutTestUtil.addLayout(group);
+		layout = LayoutTestUtil.addTypePortletLayout(group);
 
 		// Delete and readd to ensure a different layout ID (not ID or UUID).
 		// See LPS-32132.
 
 		LayoutLocalServiceUtil.deleteLayout(layout, new ServiceContext());
 
-		layout = LayoutTestUtil.addLayout(group);
+		layout = LayoutTestUtil.addTypePortletLayout(group);
 	}
 
 	@After

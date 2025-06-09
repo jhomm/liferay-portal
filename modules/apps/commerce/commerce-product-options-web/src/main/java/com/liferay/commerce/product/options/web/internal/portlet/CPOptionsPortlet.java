@@ -1,36 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.options.web.internal.portlet;
 
-import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.product.option.CommerceOptionTypeRegistry;
 import com.liferay.commerce.product.options.web.internal.display.context.CPOptionDisplayContext;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +27,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-commerce-product-options",
@@ -52,14 +39,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Product Options",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.CP_OPTIONS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=Product Options",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.CP_OPTIONS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {CPOptionsPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CPOptionsPortlet extends MVCPortlet {
 
@@ -71,15 +59,11 @@ public class CPOptionsPortlet extends MVCPortlet {
 		try {
 			CPOptionDisplayContext cpOptionDisplayContext =
 				new CPOptionDisplayContext(
-					_configurationProvider, null,
-					_ddmFormFieldTypeServicesTracker,
-					_portletResourcePermission,
+					_commerceOptionTypeRegistry, _configurationProvider, null,
 					_portal.getHttpServletRequest(renderRequest));
 
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT, cpOptionDisplayContext);
-
-			renderRequest.setAttribute("NPMResolver", _npmResolver);
 		}
 		catch (Exception exception) {
 			throw new PortletException(exception);
@@ -89,20 +73,12 @@ public class CPOptionsPortlet extends MVCPortlet {
 	}
 
 	@Reference
+	private CommerceOptionTypeRegistry _commerceOptionTypeRegistry;
+
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
-
-	@Reference
-	private NPMResolver _npmResolver;
-
-	@Reference
 	private Portal _portal;
-
-	@Reference(
-		target = "(resource.name=" + CPConstants.RESOURCE_NAME_PRODUCT + ")"
-	)
-	private PortletResourcePermission _portletResourcePermission;
 
 }

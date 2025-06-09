@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.taglib.servlet.taglib;
 
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
@@ -29,18 +20,18 @@ import com.liferay.commerce.price.list.util.comparator.CommerceTierPriceEntryMin
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceLocalServiceUtil;
 import com.liferay.commerce.taglib.servlet.taglib.internal.servlet.ServletContextUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.taglib.util.IncludeTag;
 
-import java.util.List;
-import java.util.Optional;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import java.util.List;
 
 /**
  * @author Marco Leo
@@ -56,28 +47,32 @@ public class TierPriceTag extends IncludeTag {
 				(CommerceContext)httpServletRequest.getAttribute(
 					CommerceWebKeys.COMMERCE_CONTEXT);
 
-			Optional<CommercePriceList> commercePriceListOptional =
-				_getPriceList(_cpInstanceId, commerceContext);
+			if ((commerceContext == null) ||
+				(commerceContext.getCommerceChannelId() == 0)) {
 
-			if (commercePriceListOptional.isPresent()) {
-				CommercePriceList commercePriceList =
-					commercePriceListOptional.get();
+				return SKIP_BODY;
+			}
 
+			CommercePriceList commercePriceList = _getPriceList(
+				_cpInstanceId, commerceContext);
+
+			if (commercePriceList != null) {
 				CommercePriceEntry commercePriceEntry =
 					CommercePriceEntryLocalServiceUtil.fetchCommercePriceEntry(
-						_cpInstanceId,
-						commercePriceList.getCommercePriceListId());
+						commercePriceList.getCommercePriceListId(),
+						_cpInstance.getCPInstanceUuid(), StringPool.BLANK);
 
 				if ((commercePriceEntry != null) &&
-					commercePriceEntry.isHasTierPrice()) {
+					commercePriceEntry.isHasTierPrice() &&
+					!commercePriceEntry.isPriceOnApplication()) {
 
 					_commerceTierPriceEntries =
 						CommerceTierPriceEntryLocalServiceUtil.
 							getCommerceTierPriceEntries(
 								commercePriceEntry.getCommercePriceEntryId(),
 								QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-								new CommerceTierPriceEntryMinQuantityComparator(
-									true));
+								CommerceTierPriceEntryMinQuantityComparator.
+									getInstance(true));
 				}
 			}
 
@@ -93,7 +88,7 @@ public class TierPriceTag extends IncludeTag {
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return SKIP_BODY;
@@ -144,6 +139,7 @@ public class TierPriceTag extends IncludeTag {
 		_commerceCurrencyId = 0;
 		_commercePriceListLocalService = null;
 		_commerceTierPriceEntries = null;
+		_cpInstance = null;
 		_cpInstanceId = 0;
 		_taglibQuantityInputId = null;
 	}
@@ -175,22 +171,20 @@ public class TierPriceTag extends IncludeTag {
 
 	protected CommercePriceFormatter commercePriceFormatter;
 
-	private Optional<CommercePriceList> _getPriceList(
+	private CommercePriceList _getPriceList(
 			long cpInstanceId, CommerceContext commerceContext)
 		throws PortalException {
 
-		CommerceAccount commerceAccount = commerceContext.getCommerceAccount();
+		AccountEntry accountEntry = commerceContext.getAccountEntry();
 
-		if (commerceAccount == null) {
-			return Optional.empty();
+		if (accountEntry == null) {
+			return null;
 		}
 
-		CPInstance cpInstance = CPInstanceLocalServiceUtil.getCPInstance(
-			cpInstanceId);
+		_cpInstance = CPInstanceLocalServiceUtil.getCPInstance(cpInstanceId);
 
 		return _commercePriceListLocalService.getCommercePriceList(
-			commerceAccount.getCompanyId(), cpInstance.getGroupId(),
-			commerceAccount.getCommerceAccountId(),
+			_cpInstance.getGroupId(), accountEntry.getAccountEntryId(),
 			commerceContext.getCommerceAccountGroupIds());
 	}
 
@@ -201,6 +195,7 @@ public class TierPriceTag extends IncludeTag {
 	private long _commerceCurrencyId;
 	private CommercePriceListLocalService _commercePriceListLocalService;
 	private List<CommerceTierPriceEntry> _commerceTierPriceEntries;
+	private CPInstance _cpInstance;
 	private long _cpInstanceId;
 	private String _taglibQuantityInputId;
 

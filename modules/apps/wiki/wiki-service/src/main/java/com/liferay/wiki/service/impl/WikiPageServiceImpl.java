@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service.impl;
@@ -17,18 +8,18 @@ package com.liferay.wiki.service.impl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.QueryDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
-import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
@@ -102,9 +93,9 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * #addPage(String, long, String, String, String, boolean, String, String,
-	 * String, ServiceContext)}
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #addPage(String,
+	 *             long, String, String, String, boolean, String, String,
+	 *             String, ServiceContext)}
 	 */
 	@Deprecated
 	@Override
@@ -121,6 +112,20 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			getUserId(), nodeId, title, WikiPageConstants.VERSION_DEFAULT,
 			content, summary, minorEdit, format, true, parentTitle,
 			redirectTitle, serviceContext);
+	}
+
+	@Override
+	public WikiPage addPage(
+			String externalReferenceCode, long nodeId, String title,
+			double version, String content, String summary, boolean minorEdit,
+			String format, boolean head, String parentTitle,
+			String redirectTitle, ServiceContext serviceContext)
+		throws PortalException {
+
+		return wikiPageLocalService.addPage(
+			externalReferenceCode, getUserId(), nodeId, title, version, content,
+			summary, minorEdit, format, head, parentTitle, redirectTitle,
+			serviceContext);
 	}
 
 	@Override
@@ -318,8 +323,8 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 	 * Returns the latest wiki page matching the group and the external
 	 * reference code
 	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param  groupId the primary key of the group
+	 * @param  externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 *         matching wiki page could be found
 	 */
@@ -383,8 +388,8 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 	 * Returns the latest wiki page matching the group and the external
 	 * reference code
 	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param  groupId the primary key of the group
+	 * @param  externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -449,7 +454,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 
 		List<WikiPage> pages = getNodePages(nodeId, max);
 
-		return exportToRSS(
+		return _exportToRSS(
 			node.getName(), node.getDescription(), type, version, displayStyle,
 			feedURL, entryURL, attachmentURLPrefix, pages, false, null);
 	}
@@ -526,6 +531,16 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 	}
 
 	@Override
+	public WikiPage getPageByPageId(long pageId) throws PortalException {
+		WikiPage page = wikiPageLocalService.getPageByPageId(pageId);
+
+		_wikiPageModelResourcePermission.check(
+			getPermissionChecker(), page, ActionKeys.VIEW);
+
+		return page;
+	}
+
+	@Override
 	public List<WikiPage> getPages(
 			long groupId, long nodeId, boolean head, int status, int start,
 			int end, OrderByComparator<WikiPage> orderByComparator)
@@ -576,12 +591,12 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 		if (userId > 0) {
 			return wikiPagePersistence.filterFindByG_U_N_S(
 				groupId, userId, nodeId, status, start, end,
-				new PageCreateDateComparator(false));
+				PageCreateDateComparator.getInstance(false));
 		}
 
 		return wikiPagePersistence.filterFindByG_N_S(
 			groupId, nodeId, status, start, end,
-			new PageCreateDateComparator(false));
+			PageCreateDateComparator.getInstance(false));
 	}
 
 	@Override
@@ -645,9 +660,9 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 		}
 
 		List<WikiPage> pages = wikiPageLocalService.getPages(
-			nodeId, title, 0, max, new PageCreateDateComparator(true));
+			nodeId, title, 0, max, PageCreateDateComparator.getInstance(true));
 
-		return exportToRSS(
+		return _exportToRSS(
 			title, title, type, version, displayStyle, feedURL, entryURL,
 			attachmentURLPrefix, pages, true, locale);
 	}
@@ -745,10 +760,9 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		WikiPage page = wikiPageLocalService.fetchPage(nodeId, title);
-
 		_wikiPageModelResourcePermission.check(
-			getPermissionChecker(), page, ActionKeys.UPDATE);
+			getPermissionChecker(),
+			wikiPageLocalService.fetchPage(nodeId, title), ActionKeys.UPDATE);
 
 		_wikiNodeModelResourcePermission.check(
 			getPermissionChecker(), nodeId, ActionKeys.ADD_PAGE);
@@ -847,7 +861,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			format, parentTitle, redirectTitle, serviceContext);
 	}
 
-	protected String exportToRSS(
+	private String _exportToRSS(
 			String name, String description, String type, double version,
 			String displayStyle, String feedURL, String entryURL,
 			String attachmentURLPrefix, List<WikiPage> pages, boolean diff,
@@ -934,7 +948,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 									WikiConstants.SERVICE_NAME));
 
 					value = StringUtil.shorten(
-						HtmlUtil.extractText(page.getContent()),
+						_htmlParser.extractText(page.getContent()),
 						wikiGroupServiceOverriddenConfiguration.
 							rssAbstractLength(),
 						StringPool.BLANK);
@@ -963,7 +977,7 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 			if (page.isMinorEdit()) {
 				title += StringBundler.concat(
 					StringPool.SPACE, StringPool.OPEN_PARENTHESIS,
-					LanguageUtil.get(locale, "minor-edit"),
+					_language.get(locale, "minor-edit"),
 					StringPool.CLOSE_PARENTHESIS);
 			}
 
@@ -997,6 +1011,12 @@ public class WikiPageServiceImpl extends WikiPageServiceBaseImpl {
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private HtmlParser _htmlParser;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

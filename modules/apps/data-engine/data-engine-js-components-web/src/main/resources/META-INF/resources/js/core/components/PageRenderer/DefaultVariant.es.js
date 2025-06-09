@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLayout from '@clayui/layout';
@@ -21,26 +12,26 @@ import {useFormState} from '../../hooks/useForm.es';
 const DDM_FORM_ADMIN_PORTLET_NAMESPACE =
 	'com_liferay_dynamic_data_mapping_form_web_portlet_DDMFormAdminPortlet';
 
-export const Container = ({
-	activePage,
-	children,
-	isBuilder = true,
-	pageIndex,
-}) => (
-	<div
-		className={classnames('fade tab-pane', {
-			'active show': activePage === pageIndex,
-			'hide': activePage !== pageIndex,
-		})}
-		role="tabpanel"
-	>
-		{isBuilder ? (
-			<div className="form-builder-layout">{children}</div>
-		) : (
-			children
-		)}
-	</div>
-);
+const JOURNAL_WEB_PORTLET_NAMESPACE =
+	'com_liferay_journal_web_portlet_JournalPortlet';
+
+export function Container({activePage, children, isBuilder = true, pageIndex}) {
+	return (
+		<div
+			className={classnames('fade tab-pane', {
+				'active show': activePage === pageIndex,
+				'hide': activePage !== pageIndex,
+			})}
+			role="tabpanel"
+		>
+			{isBuilder ? (
+				<div className="form-builder-layout">{children}</div>
+			) : (
+				children
+			)}
+		</div>
+	);
+}
 
 Container.displayName = 'DefaultVariant.Container';
 
@@ -84,7 +75,7 @@ export const Column = forwardRef(
 				onMouseOver={onMouseOver}
 				ref={ref}
 			>
-				{column.fields.length > 0 && (
+				{!!column.fields.length && (
 					<div
 						className={classnames(
 							'ddm-field-container ddm-target h-100',
@@ -119,52 +110,66 @@ export const Column = forwardRef(
 
 Column.displayName = 'DefaultVariant.Column';
 
-export const Page = ({
+export function Page({
 	children,
 	forceAriaUpdate,
 	header: Header,
 	invalidFormMessage,
 	pageIndex,
-}) => (
-	<div
-		className="active ddm-form-page lfr-ddm-form-page"
-		data-ddm-page={pageIndex}
-	>
-		{invalidFormMessage && (
-			<span aria-atomic="true" aria-live="polite" className="sr-only">
-				{invalidFormMessage}
-				<span aria-hidden="true">{forceAriaUpdate}</span>
-			</span>
-		)}
+}) {
+	return (
+		<div
+			className="active ddm-form-page lfr-ddm-form-page"
+			data-ddm-page={pageIndex}
+		>
+			{invalidFormMessage && (
+				<span aria-atomic="true" aria-live="polite" className="sr-only">
+					{invalidFormMessage}
 
-		{Header}
+					<span aria-hidden="true">{forceAriaUpdate}</span>
+				</span>
+			)}
 
-		{children}
-	</div>
-);
+			{Header}
+
+			{children}
+		</div>
+	);
+}
 
 Page.displayName = 'DefaultVariant.Page';
 
-export const PageHeader = ({description, title}) => (
-	<>
-		{title && <h2 className="lfr-ddm-form-page-title">{title}</h2>}
-		{description && (
-			<h3 className="lfr-ddm-form-page-description">{description}</h3>
-		)}
-	</>
-);
+export function PageHeader({description, title}) {
+	const {portletId} = useFormState();
+	const isWebContentPortlet = portletId.includes(
+		JOURNAL_WEB_PORTLET_NAMESPACE
+	);
+
+	return (
+		<>
+			{title && <div className="lfr-ddm-form-page-title">{title}</div>}
+			{!isWebContentPortlet && description && (
+				<div className="lfr-ddm-form-page-description">
+					{description}
+				</div>
+			)}
+		</>
+	);
+}
 
 PageHeader.displayName = 'DefaultVariant.PageHeader';
 
-export const Row = ({children, index, row}) => (
-	<div className="position-relative row" key={index}>
-		{row.columns.map((column, index) => children({column, index}))}
-	</div>
-);
+export function Row({children, index, row}) {
+	return (
+		<div className="position-relative row" key={index}>
+			{row.columns.map((column, index) => children({column, index}))}
+		</div>
+	);
+}
 
 Row.displayName = 'DefaultVariant.Row';
 
-export const Rows = ({children, rows}) => {
+export function Rows({children, rows}) {
 	if (!rows) {
 		return null;
 	}
@@ -174,6 +179,6 @@ export const Rows = ({children, rows}) => {
 			{children({index, row})}
 		</div>
 	));
-};
+}
 
 Rows.displayName = 'DefaultVariant.Rows';

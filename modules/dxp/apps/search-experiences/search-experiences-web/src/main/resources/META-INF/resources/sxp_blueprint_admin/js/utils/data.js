@@ -1,60 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import HIDE_COMMENTS from '../sxp_elements/hideComments';
-import HIDE_DEFAULT_USER from '../sxp_elements/hideDefaultUser';
-import HIDE_HIDDEN_CONTENTS from '../sxp_elements/hideHiddenContents';
-import LIMIT_SEARCH_TO_HEAD_VERSION from '../sxp_elements/limitSearchToHeadVersion';
-import LIMIT_SEARCH_TO_PUBLISHED_CONTENTS from '../sxp_elements/limitSearchToPublishedContents';
-import SCHEDULING_AWARE from '../sxp_elements/schedulingAware';
-import STAGING_AWARE from '../sxp_elements/stagingAware';
-import TEXT_MATCH_OVER_MULTIPLE_FIELDS from '../sxp_elements/textMatchOverMultipleFields';
-
-export const CUSTOM_JSON_SXP_ELEMENT = {
-	sxpElementTemplateJSON: {
-		category: 'custom',
-		clauses: [],
-		conditions: {},
-		description: Liferay.Language.get('editable-json-text-area'),
-		enabled: true,
-		icon: 'custom-field',
-		title: Liferay.Language.get('custom-json-element'),
-	},
-};
-
-export const DEFAULT_ADVANCED_CONFIGURATION = {};
-
-export const DEFAULT_BASELINE_SXP_ELEMENTS = [
-	TEXT_MATCH_OVER_MULTIPLE_FIELDS,
-	STAGING_AWARE,
-	SCHEDULING_AWARE,
-	LIMIT_SEARCH_TO_HEAD_VERSION,
-	LIMIT_SEARCH_TO_PUBLISHED_CONTENTS,
-	HIDE_HIDDEN_CONTENTS,
-	HIDE_COMMENTS,
-	HIDE_DEFAULT_USER,
-];
-
-export const DEFAULT_EDIT_SXP_ELEMENT = TEXT_MATCH_OVER_MULTIPLE_FIELDS;
-
-export const DEFAULT_SXP_ELEMENT_ICON = 'code';
-
-export const DEFAULT_HIGHLIGHT_CONFIGURATION = {};
-
-export const DEFAULT_PARAMETER_CONFIGURATION = {};
-
-export const DEFAULT_SORT_CONFIGURATION = [];
-
+/**
+ * This variable is not currently being used, but it used to be used for
+ * applying the baseline clauses. This has been removed for the moment to avoid
+ * confusion. Leaving this value as-is in case it gets implemented again in
+ * some type of form.
+ */
 export const BASELINE_CLAUSE_CONTRIBUTORS_CONFIGURATION = {
-	excludes: [
+	clauseContributorsExcludes: [
 		'com.liferay.account.internal.search.spi.model.query.contributor.AccountEntryKeywordQueryContributor',
 		'com.liferay.account.internal.search.spi.model.query.contributor.AccountGroupKeywordQueryContributor',
 		'com.liferay.address.internal.search.spi.model.query.contributor.AddressKeywordQueryContributor',
@@ -113,7 +69,7 @@ export const BASELINE_CLAUSE_CONTRIBUTORS_CONFIGURATION = {
 		'com.liferay.segments.internal.search.spi.model.query.contributor.SegmentsEntryModelPreFilterContributor',
 		'com.liferay.segments.internal.search.spi.model.query.contributor.UserModelPreFilterContributor',
 	],
-	includes: [
+	clauseContributorsIncludes: [
 		'com.liferay.blogs.internal.search.spi.model.query.contributor.BlogsEntryModelPreFilterContributor',
 		'com.liferay.bookmarks.internal.search.spi.model.query.contributor.BookmarksEntryModelPreFilterContributor',
 		'com.liferay.bookmarks.internal.search.spi.model.query.contributor.BookmarksFolderModelPreFilterContributor',
@@ -137,3 +93,33 @@ export const BASELINE_CLAUSE_CONTRIBUTORS_CONFIGURATION = {
 		'com.liferay.portal.search.internal.spi.model.query.contributor.UserIdQueryPreFilterContributor',
 	],
 };
+
+export const CUSTOM_JSON_SXP_ELEMENT = {
+	description_i18n: {
+		[Liferay.ThemeDisplay.getDefaultLanguageId()]: Liferay.Language.get(
+			'editable-json-text-area'
+		),
+	},
+	elementDefinition: {
+		category: 'custom',
+		configuration: {},
+		icon: 'custom-field',
+	},
+	title_i18n: {
+		[Liferay.ThemeDisplay.getDefaultLanguageId()]: Liferay.Language.get(
+			'custom-json-element'
+		),
+	},
+};
+
+export const DEFAULT_ADVANCED_CONFIGURATION = {};
+
+export const DEFAULT_BASELINE_SXP_ELEMENTS = [];
+
+export const DEFAULT_HIGHLIGHT_CONFIGURATION = {};
+
+export const DEFAULT_PARAMETER_CONFIGURATION = {};
+
+export const DEFAULT_SORT_CONFIGURATION = {};
+
+export const DEFAULT_SXP_ELEMENT_ICON = 'code';

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.style.book.model.StyleBookEntry;
 
 /**
@@ -37,38 +29,49 @@ public class StyleBookEntryServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static StyleBookEntry addStyleBookEntry(
-			long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long groupId, String name,
+			String styleBookEntryKey, String themeId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addStyleBookEntry(
-			groupId, name, styleBookEntryKey, serviceContext);
-	}
-
-	public static StyleBookEntry addStyleBookEntry(
-			long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addStyleBookEntry(
-			groupId, frontendTokensValues, name, styleBookEntryKey,
+			externalReferenceCode, groupId, name, styleBookEntryKey, themeId,
 			serviceContext);
 	}
 
+	public static StyleBookEntry addStyleBookEntry(
+			String externalReferenceCode, long groupId,
+			String frontendTokensValues, String name, String styleBookEntryKey,
+			String themeId,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addStyleBookEntry(
+			externalReferenceCode, groupId, frontendTokensValues, name,
+			styleBookEntryKey, themeId, serviceContext);
+	}
+
 	public static StyleBookEntry copyStyleBookEntry(
-			long groupId, long styleBookEntryId,
+			long groupId, long sourceStyleBookEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyStyleBookEntry(
-			groupId, styleBookEntryId, serviceContext);
+			groupId, sourceStyleBookEntryId, serviceContext);
 	}
 
 	public static StyleBookEntry deleteStyleBookEntry(long styleBookEntryId)
 		throws PortalException {
 
 		return getService().deleteStyleBookEntry(styleBookEntryId);
+	}
+
+	public static StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteStyleBookEntry(
+			externalReferenceCode, groupId);
 	}
 
 	public static StyleBookEntry deleteStyleBookEntry(
@@ -92,6 +95,14 @@ public class StyleBookEntryServiceUtil {
 	 */
 	public static String getOSGiServiceIdentifier() {
 		return getService().getOSGiServiceIdentifier();
+	}
+
+	public static StyleBookEntry getStyleBookEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getStyleBookEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	public static StyleBookEntry publishDraft(long styleBookEntryId)
@@ -139,9 +150,11 @@ public class StyleBookEntryServiceUtil {
 	}
 
 	public static StyleBookEntryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile StyleBookEntryService _service;
+	private static final Snapshot<StyleBookEntryService> _serviceSnapshot =
+		new Snapshot<>(
+			StyleBookEntryServiceUtil.class, StyleBookEntryService.class);
 
 }

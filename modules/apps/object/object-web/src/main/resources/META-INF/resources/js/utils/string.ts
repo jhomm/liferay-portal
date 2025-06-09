@@ -1,56 +1,77 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-type TStringFn = (str: string) => string;
-
-/**
- * Format string removing spaces and special characters
- */
-export const removeAllSpecialCharacters: TStringFn = (str) => {
-	return str.replace(/[^A-Z0-9]/gi, '');
-};
+import {stringUtils} from '@liferay/object-js-components-web';
 
 /**
  * Transform first letter in lowercase
  */
-export const firstLetterLowercase: TStringFn = (str) => {
+export function firstLetterLowercase(str: string): string {
 	return str.charAt(0).toLowerCase() + str.slice(1);
-};
+}
 
 /**
- * Transform first letter in uppercase
+ *
+ * Check if the first letter of a string is uppercase
  */
-export const firstLetterUppercase: TStringFn = (str) => {
-	return str.charAt(0).toUpperCase() + str.slice(1);
-};
+
+export function checkIfFirstLetterIsUppercase(str: string) {
+	return str.charAt(0) === str.charAt(0).toUpperCase();
+}
 
 /**
  * Normalize languageId to be used in the
  * frontend with themeDisplay.getDefaultLanguageId()
  */
-export const normalizeLanguageId: TStringFn = (languageId) =>
-	languageId.replace('_', '-');
+export function normalizeLanguageId(languageId: string): string {
+	return languageId.replace(/_/g, '-');
+}
+
+/**
+ * Separate CamelCase string
+ */
+export function separateCamelCase(str: string): string {
+	const separatedCamelCaseString = str.replace(/([a-z])([A-Z])/g, '$1 $2');
+
+	return separatedCamelCaseString;
+}
+
+/**
+ * Verify if string contains any special characters
+ */
+export function specialCharactersInString(str: string) {
+	const replaceString = stringUtils.removeAllSpecialCharacters(str);
+
+	if (replaceString.normalize() === str.normalize()) {
+		return false;
+	}
+
+	return true;
+}
 
 /**
  * Normalize string in camel case pattern.
  */
-export const toCamelCase: TStringFn = (str) => {
+export function toCamelCase(
+	str: string,
+	removeSpecialCharacters?: boolean,
+	keepFirstLetterCase?: boolean
+): string {
 	const split = str.split(' ');
-	const capitalizeFirstLetters = split.map((str: string) =>
-		firstLetterUppercase(str)
-	);
-	const join = capitalizeFirstLetters.join('');
+	const capitalizeFirstLetters = split.map((str: string, index: number) => {
+		if (keepFirstLetterCase && index === 0) {
+			return str;
+		}
 
-	return firstLetterLowercase(removeAllSpecialCharacters(join));
-};
+		return stringUtils.firstLetterUppercase(str);
+	});
+	let text = capitalizeFirstLetters.join('');
+
+	if (removeSpecialCharacters) {
+		text = stringUtils.removeAllSpecialCharacters(text);
+	}
+
+	return keepFirstLetterCase ? text : firstLetterLowercase(text);
+}

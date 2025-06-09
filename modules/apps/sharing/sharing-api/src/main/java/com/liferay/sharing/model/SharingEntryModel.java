@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.model;
@@ -17,6 +8,7 @@ package com.liferay.sharing.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.AttachedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedAuditedModel;
@@ -38,8 +30,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface SharingEntryModel
-	extends AttachedModel, BaseModel<SharingEntry>, GroupedModel, ShardedModel,
-			StagedAuditedModel {
+	extends AttachedModel, BaseModel<SharingEntry>, ExternalReferenceCodeModel,
+			GroupedModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -77,6 +69,23 @@ public interface SharingEntryModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this sharing entry.
+	 *
+	 * @return the external reference code of this sharing entry
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this sharing entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this sharing entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the sharing entry ID of this sharing entry.
@@ -206,6 +215,20 @@ public interface SharingEntryModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
+	 * Returns the to user group ID of this sharing entry.
+	 *
+	 * @return the to user group ID of this sharing entry
+	 */
+	public long getToUserGroupId();
+
+	/**
+	 * Sets the to user group ID of this sharing entry.
+	 *
+	 * @param toUserGroupId the to user group ID of this sharing entry
+	 */
+	public void setToUserGroupId(long toUserGroupId);
+
+	/**
 	 * Returns the to user ID of this sharing entry.
 	 *
 	 * @return the to user ID of this sharing entry
@@ -326,5 +349,9 @@ public interface SharingEntryModel
 
 	@Override
 	public SharingEntry cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

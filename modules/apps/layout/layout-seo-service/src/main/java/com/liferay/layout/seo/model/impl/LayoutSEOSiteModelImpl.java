@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.layout.seo.model.LayoutSEOSite;
 import com.liferay.layout.seo.model.LayoutSEOSiteModel;
-import com.liferay.layout.seo.model.LayoutSEOSiteSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.LocaleException;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -169,62 +156,6 @@ public class LayoutSEOSiteModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static LayoutSEOSite toModel(LayoutSEOSiteSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		LayoutSEOSite model = new LayoutSEOSiteImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setLayoutSEOSiteId(soapModel.getLayoutSEOSiteId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setOpenGraphEnabled(soapModel.isOpenGraphEnabled());
-		model.setOpenGraphImageAlt(soapModel.getOpenGraphImageAlt());
-		model.setOpenGraphImageFileEntryId(
-			soapModel.getOpenGraphImageFileEntryId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<LayoutSEOSite> toModels(LayoutSEOSiteSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<LayoutSEOSite> models = new ArrayList<LayoutSEOSite>(
-			soapModels.length);
-
-		for (LayoutSEOSiteSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public LayoutSEOSiteModelImpl() {
 	}
 
@@ -301,122 +232,117 @@ public class LayoutSEOSiteModelImpl
 	public Map<String, Function<LayoutSEOSite, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<LayoutSEOSite, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, LayoutSEOSite>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			LayoutSEOSite.class.getClassLoader(), LayoutSEOSite.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<LayoutSEOSite, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<LayoutSEOSite> constructor =
-				(Constructor<LayoutSEOSite>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<LayoutSEOSite, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<LayoutSEOSite, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", LayoutSEOSite::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", LayoutSEOSite::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", LayoutSEOSite::getUuid);
+			attributeGetterFunctions.put(
+				"layoutSEOSiteId", LayoutSEOSite::getLayoutSEOSiteId);
+			attributeGetterFunctions.put("groupId", LayoutSEOSite::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", LayoutSEOSite::getCompanyId);
+			attributeGetterFunctions.put("userId", LayoutSEOSite::getUserId);
+			attributeGetterFunctions.put(
+				"userName", LayoutSEOSite::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", LayoutSEOSite::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", LayoutSEOSite::getModifiedDate);
+			attributeGetterFunctions.put(
+				"openGraphEnabled", LayoutSEOSite::getOpenGraphEnabled);
+			attributeGetterFunctions.put(
+				"openGraphImageAlt", LayoutSEOSite::getOpenGraphImageAlt);
+			attributeGetterFunctions.put(
+				"openGraphImageFileEntryId",
+				LayoutSEOSite::getOpenGraphImageFileEntryId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<LayoutSEOSite, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<LayoutSEOSite, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<LayoutSEOSite, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<LayoutSEOSite, Object>>();
-		Map<String, BiConsumer<LayoutSEOSite, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<LayoutSEOSite, ?>>();
+		private static final Map<String, BiConsumer<LayoutSEOSite, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", LayoutSEOSite::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", LayoutSEOSite::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", LayoutSEOSite::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<LayoutSEOSite, String>)LayoutSEOSite::setUuid);
-		attributeGetterFunctions.put(
-			"layoutSEOSiteId", LayoutSEOSite::getLayoutSEOSiteId);
-		attributeSetterBiConsumers.put(
-			"layoutSEOSiteId",
-			(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setLayoutSEOSiteId);
-		attributeGetterFunctions.put("groupId", LayoutSEOSite::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setGroupId);
-		attributeGetterFunctions.put("companyId", LayoutSEOSite::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setCompanyId);
-		attributeGetterFunctions.put("userId", LayoutSEOSite::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setUserId);
-		attributeGetterFunctions.put("userName", LayoutSEOSite::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<LayoutSEOSite, String>)LayoutSEOSite::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", LayoutSEOSite::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<LayoutSEOSite, Date>)LayoutSEOSite::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", LayoutSEOSite::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<LayoutSEOSite, Date>)LayoutSEOSite::setModifiedDate);
-		attributeGetterFunctions.put(
-			"openGraphEnabled", LayoutSEOSite::getOpenGraphEnabled);
-		attributeSetterBiConsumers.put(
-			"openGraphEnabled",
-			(BiConsumer<LayoutSEOSite, Boolean>)
-				LayoutSEOSite::setOpenGraphEnabled);
-		attributeGetterFunctions.put(
-			"openGraphImageAlt", LayoutSEOSite::getOpenGraphImageAlt);
-		attributeSetterBiConsumers.put(
-			"openGraphImageAlt",
-			(BiConsumer<LayoutSEOSite, String>)
-				LayoutSEOSite::setOpenGraphImageAlt);
-		attributeGetterFunctions.put(
-			"openGraphImageFileEntryId",
-			LayoutSEOSite::getOpenGraphImageFileEntryId);
-		attributeSetterBiConsumers.put(
-			"openGraphImageFileEntryId",
-			(BiConsumer<LayoutSEOSite, Long>)
-				LayoutSEOSite::setOpenGraphImageFileEntryId);
+		static {
+			Map<String, BiConsumer<LayoutSEOSite, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<LayoutSEOSite, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<LayoutSEOSite, Long>)
+					LayoutSEOSite::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<LayoutSEOSite, String>)LayoutSEOSite::setUuid);
+			attributeSetterBiConsumers.put(
+				"layoutSEOSiteId",
+				(BiConsumer<LayoutSEOSite, Long>)
+					LayoutSEOSite::setLayoutSEOSiteId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<LayoutSEOSite, Long>)LayoutSEOSite::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<LayoutSEOSite, String>)LayoutSEOSite::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<LayoutSEOSite, Date>)LayoutSEOSite::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<LayoutSEOSite, Date>)
+					LayoutSEOSite::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"openGraphEnabled",
+				(BiConsumer<LayoutSEOSite, Boolean>)
+					LayoutSEOSite::setOpenGraphEnabled);
+			attributeSetterBiConsumers.put(
+				"openGraphImageAlt",
+				(BiConsumer<LayoutSEOSite, String>)
+					LayoutSEOSite::setOpenGraphImageAlt);
+			attributeSetterBiConsumers.put(
+				"openGraphImageFileEntryId",
+				(BiConsumer<LayoutSEOSite, Long>)
+					LayoutSEOSite::setOpenGraphImageFileEntryId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1153,41 +1079,12 @@ public class LayoutSEOSiteModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<LayoutSEOSite, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<LayoutSEOSite, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<LayoutSEOSite, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((LayoutSEOSite)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, LayoutSEOSite>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					LayoutSEOSite.class, ModelWrapper.class);
 
 	}
 
@@ -1211,7 +1108,8 @@ public class LayoutSEOSiteModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<LayoutSEOSite, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

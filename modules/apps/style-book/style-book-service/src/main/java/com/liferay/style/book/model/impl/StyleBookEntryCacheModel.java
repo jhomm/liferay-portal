@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.model.impl;
@@ -77,7 +68,7 @@ public class StyleBookEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(33);
+		StringBundler sb = new StringBundler(37);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -85,6 +76,8 @@ public class StyleBookEntryCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", headId=");
 		sb.append(headId);
 		sb.append(", styleBookEntryId=");
@@ -111,6 +104,8 @@ public class StyleBookEntryCacheModel
 		sb.append(previewFileEntryId);
 		sb.append(", styleBookEntryKey=");
 		sb.append(styleBookEntryKey);
+		sb.append(", themeId=");
+		sb.append(themeId);
 		sb.append("}");
 
 		return sb.toString();
@@ -128,6 +123,13 @@ public class StyleBookEntryCacheModel
 		}
 		else {
 			styleBookEntryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			styleBookEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			styleBookEntryImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		styleBookEntryImpl.setHeadId(headId);
@@ -183,6 +185,13 @@ public class StyleBookEntryCacheModel
 			styleBookEntryImpl.setStyleBookEntryKey(styleBookEntryKey);
 		}
 
+		if (themeId == null) {
+			styleBookEntryImpl.setThemeId("");
+		}
+		else {
+			styleBookEntryImpl.setThemeId(themeId);
+		}
+
 		styleBookEntryImpl.resetOriginalValues();
 
 		return styleBookEntryImpl;
@@ -196,6 +205,7 @@ public class StyleBookEntryCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		headId = objectInput.readLong();
 
@@ -218,6 +228,7 @@ public class StyleBookEntryCacheModel
 
 		previewFileEntryId = objectInput.readLong();
 		styleBookEntryKey = objectInput.readUTF();
+		themeId = objectInput.readUTF();
 	}
 
 	@Override
@@ -231,6 +242,13 @@ public class StyleBookEntryCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(headId);
@@ -279,11 +297,19 @@ public class StyleBookEntryCacheModel
 		else {
 			objectOutput.writeUTF(styleBookEntryKey);
 		}
+
+		if (themeId == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(themeId);
+		}
 	}
 
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long headId;
 	public boolean head;
 	public long styleBookEntryId;
@@ -298,5 +324,6 @@ public class StyleBookEntryCacheModel
 	public String name;
 	public long previewFileEntryId;
 	public String styleBookEntryKey;
+	public String themeId;
 
 }

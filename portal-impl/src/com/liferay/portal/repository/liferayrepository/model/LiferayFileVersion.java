@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.repository.liferayrepository.model;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.RepositoryModelOperation;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.InputStream;
 import java.io.Serializable;
@@ -66,11 +58,8 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 
 		LiferayFileVersion liferayFileVersion = (LiferayFileVersion)object;
 
-		if (Objects.equals(_dlFileVersion, liferayFileVersion._dlFileVersion)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			_dlFileVersion, liferayFileVersion._dlFileVersion);
 	}
 
 	@Override
@@ -110,7 +99,7 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 				incrementCounter);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return inputStream;
@@ -122,8 +111,22 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 	}
 
 	@Override
+	public long getCtCollectionId() {
+		return _dlFileVersion.getCtCollectionId();
+	}
+
+	public long getCTCollectionId() {
+		return _dlFileVersion.getCtCollectionId();
+	}
+
+	@Override
 	public String getDescription() {
 		return _dlFileVersion.getDescription();
+	}
+
+	@Override
+	public Date getDisplayDate() {
+		return _dlFileVersion.getDisplayDate();
 	}
 
 	@Override
@@ -328,6 +331,15 @@ public class LiferayFileVersion extends LiferayModel implements FileVersion {
 	@Override
 	public boolean isPending() {
 		return _dlFileVersion.isPending();
+	}
+
+	@Override
+	public boolean isScheduled() {
+		if (getStatus() == WorkflowConstants.STATUS_SCHEDULED) {
+			return true;
+		}
+
+		return false;
 	}
 
 	@Override

@@ -1,0 +1,216 @@
+{
+	"pageElement": {
+		"id": "item1",
+		"pageElements": [
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 100,
+					"numberOfItemsPerPage": 10,
+					"paginationType": "Numeric",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item2",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item3",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 100,
+					"numberOfItemsPerPage": 10,
+					"paginationType": "Simple",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item4",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item5",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 100,
+					"numberOfItemsPerPage": 5,
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item6",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item7",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 5,
+					"numberOfItemsPerPage": 22,
+					"paginationType": "Numeric",
+					"showAllItems": true,
+					"templateKey": ""
+				},
+				"id": "item8",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item9",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 200,
+					"numberOfItemsPerPage": 5,
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item10",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item11",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"numberOfColumns": 1,
+					"numberOfItems": 5,
+					"numberOfItemsPerPage": 5,
+					"showAllItems": false
+				},
+				"id": "item12",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item13",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 5,
+					"numberOfItemsPerPage": 5,
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item14",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item15",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"colorSchemeName": "01",
+		"themeName": "Classic"
+	},
+	"version": 1.1
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.servlet.taglib;
@@ -19,7 +10,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -27,8 +18,13 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alicia García García
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class OneDriveViewErrorsJSPDynamicInclude extends BaseJSPDynamicInclude {
+
+	@Override
+	public ServletContext getServletContext() {
+		return _servletContext;
+	}
 
 	@Override
 	public void register(DynamicIncludeRegistry dynamicIncludeRegistry) {
@@ -47,16 +43,12 @@ public class OneDriveViewErrorsJSPDynamicInclude extends BaseJSPDynamicInclude {
 		return _log;
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.document.library.opener.onedrive.web)",
-		unbind = "-"
-	)
-	protected void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		OneDriveViewErrorsJSPDynamicInclude.class);
+
+	@Reference(
+		target = "(osgi.web.symbolicname=com.liferay.document.library.opener.onedrive.web)"
+	)
+	private ServletContext _servletContext;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.trash;
@@ -34,12 +25,13 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
-import com.liferay.trash.kernel.exception.RestoreEntryException;
+import com.liferay.trash.constants.TrashEntryConstants;
+import com.liferay.trash.exception.RestoreEntryException;
 import com.liferay.trash.kernel.model.TrashEntry;
-import com.liferay.trash.kernel.model.TrashEntryConstants;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -95,7 +87,7 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 	public ContainerModel getParentContainerModel(long classPK)
 		throws PortalException {
 
-		JournalFolder folder = getJournalFolder(classPK);
+		JournalFolder folder = _getJournalFolder(classPK);
 
 		long parentFolderId = folder.getParentFolderId();
 
@@ -182,7 +174,7 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 
 	@Override
 	public boolean isMovable(long classPK) throws PortalException {
-		JournalFolder folder = getJournalFolder(classPK);
+		JournalFolder folder = _getJournalFolder(classPK);
 
 		if (folder.getParentFolderId() > 0) {
 			JournalFolder parentFolder = _journalFolderLocalService.fetchFolder(
@@ -198,7 +190,7 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 
 	@Override
 	public boolean isRestorable(long classPK) throws PortalException {
-		JournalFolder folder = getJournalFolder(classPK);
+		JournalFolder folder = _getJournalFolder(classPK);
 
 		if (folder.getParentFolderId() > 0) {
 			JournalFolder parentFolder = _journalFolderLocalService.fetchFolder(
@@ -216,7 +208,7 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 			return false;
 		}
 
-		return !folder.isInTrashContainer();
+		return !_trashHelper.isInTrashContainer(folder);
 	}
 
 	@Override
@@ -318,12 +310,6 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 		return folder.getGroupId();
 	}
 
-	protected JournalFolder getJournalFolder(long classPK)
-		throws PortalException {
-
-		return _journalFolderLocalService.getFolder(classPK);
-	}
-
 	@Override
 	protected boolean hasPermission(
 			PermissionChecker permissionChecker, long classPK, String actionId)
@@ -333,13 +319,13 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 			permissionChecker, classPK, actionId);
 	}
 
-	@Reference(unbind = "-")
-	protected void setJournalFolderLocalService(
-		JournalFolderLocalService journalFolderLocalService) {
+	private JournalFolder _getJournalFolder(long classPK)
+		throws PortalException {
 
-		_journalFolderLocalService = journalFolderLocalService;
+		return _journalFolderLocalService.getFolder(classPK);
 	}
 
+	@Reference
 	private JournalFolderLocalService _journalFolderLocalService;
 
 	@Reference(
@@ -350,5 +336,8 @@ public class JournalFolderTrashHandler extends BaseJournalTrashHandler {
 
 	@Reference
 	private JournalHelper _journalHelper;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

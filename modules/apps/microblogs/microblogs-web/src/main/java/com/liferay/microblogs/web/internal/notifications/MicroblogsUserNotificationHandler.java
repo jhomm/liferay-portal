@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.microblogs.web.internal.notifications;
@@ -22,6 +13,7 @@ import com.liferay.microblogs.service.MicroblogsEntryLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseModelUserNotificationHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -39,8 +31,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jonathan Lee
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + MicroblogsPortletKeys.MICROBLOGS,
+	property = "jakarta.portlet.name=" + MicroblogsPortletKeys.MICROBLOGS,
 	service = UserNotificationHandler.class
 )
 public class MicroblogsUserNotificationHandler
@@ -58,6 +49,7 @@ public class MicroblogsUserNotificationHandler
 	@Override
 	protected String getTitle(
 		JSONObject jsonObject, AssetRenderer<?> assetRenderer,
+		UserNotificationEvent userNotificationEvent,
 		ServiceContext serviceContext) {
 
 		String title = StringPool.BLANK;
@@ -85,11 +77,8 @@ public class MicroblogsUserNotificationHandler
 					MicroblogsEntryConstants.
 						NOTIFICATION_TYPE_REPLY_TO_REPLIED) {
 
-			long parentMicroblogsEntryUserId =
-				microblogsEntry.fetchParentMicroblogsEntryUserId();
-
 			User user = _userLocalService.fetchUser(
-				parentMicroblogsEntryUserId);
+				microblogsEntry.fetchParentMicroblogsEntryUserId());
 
 			if (user != null) {
 				title = ResourceBundleUtil.getString(
@@ -115,23 +104,13 @@ public class MicroblogsUserNotificationHandler
 		return title;
 	}
 
-	@Reference(unbind = "-")
-	protected void setMicroblogsEntryLocalService(
-		MicroblogsEntryLocalService microblogsEntryLocalService) {
-
-		_microblogsEntryLocalService = microblogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
+	@Reference
 	private MicroblogsEntryLocalService _microblogsEntryLocalService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

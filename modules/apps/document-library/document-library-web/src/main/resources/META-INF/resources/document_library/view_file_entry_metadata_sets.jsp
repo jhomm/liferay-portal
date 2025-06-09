@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,22 +14,24 @@ DLViewFileEntryMetadataSetsDisplayContext dLViewFileEntryMetadataSetsDisplayCont
 <liferay-util:include page="/document_library/navigation.jsp" servletContext="<%= application %>" />
 
 <clay:management-toolbar
-	managementToolbarDisplayContext="<%= new DLViewFileEntryMetadataSetsManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, dLViewFileEntryMetadataSetsDisplayContext) %>"
-	propsTransformer="document_library/js/DDMStructuresManagementToolbarPropsTransformer"
+	managementToolbarDisplayContext="<%= new DLViewFileEntryMetadataSetsManagementToolbarDisplayContext(dLViewFileEntryMetadataSetsDisplayContext, request, liferayPortletRequest, liferayPortletResponse) %>"
+	propsTransformer="{DDMStructuresManagementToolbarPropsTransformer} from document-library-web"
 />
 
 <portlet:actionURL copyCurrentRenderParameters="<%= true %>" name="/document_library/delete_data_definition" var="deleteDataDefinitionURL" />
 
-<aui:form action="<%= deleteDataDefinitionURL %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+<aui:form action="<%= deleteDataDefinitionURL %>" cssClass="container-fluid container-fluid-max-xxxl" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 
-	<clay:container-fluid>
+	<clay:container-fluid
+		size="xxxl"
+	>
 		<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByStructureLinks.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-structure-links" />
 		<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByTemplates.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-templates" />
 		<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureThatHasChild.class %>" message="the-structure-cannot-be-deleted-because-it-has-one-or-more-substructures" />
 
-		<liferay-ui:breadcrumb
-			showLayout="<%= false %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, true, false, false, true, true) %>"
 		/>
 
 		<liferay-ui:search-container

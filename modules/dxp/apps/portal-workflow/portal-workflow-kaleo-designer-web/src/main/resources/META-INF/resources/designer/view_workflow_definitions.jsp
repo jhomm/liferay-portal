@@ -1,32 +1,19 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/designer/init.jsp" %>
 
-<%
-KaleoDefinitionVersionSearch kaleoDefinitionVersionSearch = kaleoDesignerDisplayContext.getKaleoDefinitionVersionSearch(displayedStatus);
-%>
-
 <liferay-ui:success key='<%= KaleoDesignerPortletKeys.KALEO_DESIGNER + "requestProcessed" %>' message='<%= (String)MultiSessionMessages.get(renderRequest, KaleoDesignerPortletKeys.KALEO_DESIGNER + "requestProcessed") %>' translateMessage="<%= false %>" />
 
-<liferay-util:include page="/designer/management_bar.jsp" servletContext="<%= application %>" />
+<clay:management-toolbar
+	managementToolbarDisplayContext="<%= new KaleoDesignerManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, displayedStatus, kaleoDesignerDisplayContext) %>"
+/>
 
-<clay:container-fluid
-	cssClass="workflow-definition-container"
->
+<clay:container-fluid>
 	<liferay-ui:error exception="<%= RequiredWorkflowDefinitionException.class %>">
 		<liferay-ui:message arguments="<%= kaleoDesignerDisplayContext.getMessageArguments((RequiredWorkflowDefinitionException)errorException) %>" key="<%= kaleoDesignerDisplayContext.getMessageKey((RequiredWorkflowDefinitionException)errorException) %>" translateArguments="<%= false %>" />
 	</liferay-ui:error>
@@ -37,14 +24,8 @@ KaleoDefinitionVersionSearch kaleoDefinitionVersionSearch = kaleoDesignerDisplay
 
 	<liferay-ui:search-container
 		emptyResultsMessage="no-workflow-definitions-are-defined"
-		id="<%= kaleoDesignerDisplayContext.getSearchContainerId() %>"
-		searchContainer="<%= kaleoDefinitionVersionSearch %>"
+		searchContainer="<%= kaleoDesignerDisplayContext.getKaleoDefinitionVersionSearch(displayedStatus) %>"
 	>
-
-		<%
-		request.setAttribute(WebKeys.SEARCH_CONTAINER, searchContainer);
-		%>
-
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion"
 			escapedModel="<%= false %>"
@@ -52,7 +33,7 @@ KaleoDefinitionVersionSearch kaleoDefinitionVersionSearch = kaleoDesignerDisplay
 			modelVar="kaleoDefinitionVersion"
 		>
 			<liferay-portlet:renderURL portletName="<%= KaleoDesignerPortletKeys.KALEO_DESIGNER %>" var="rowURL">
-				<portlet:param name="mvcPath" value="<%= KaleoDesignerUtil.getEditJspPath() %>" />
+				<portlet:param name="mvcPath" value="/designer/edit_workflow_definition.jsp" />
 				<portlet:param name="redirect" value="<%= currentURL %>" />
 				<portlet:param name="name" value="<%= kaleoDefinitionVersion.getName() %>" />
 				<portlet:param name="draftVersion" value="<%= kaleoDefinitionVersion.getVersion() %>" />
@@ -85,10 +66,8 @@ KaleoDefinitionVersionSearch kaleoDefinitionVersionSearch = kaleoDesignerDisplay
 		</liferay-ui:search-container-row>
 
 		<liferay-ui:search-iterator
-			displayStyle="list"
 			markupView="lexicon"
 			resultRowSplitter="<%= new KaleoDefinitionVersionResultRowSplitter() %>"
-			searchContainer="<%= kaleoDefinitionVersionSearch %>"
 		/>
 	</liferay-ui:search-container>
 </clay:container-fluid>

@@ -1,28 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.portlet.action;
 
 import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.list.exception.AssetListEntryTitleException;
+import com.liferay.asset.list.exception.DuplicateAssetListEntryTitleException;
+import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.service.AssetListEntryService;
 import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.asset.publisher.web.internal.constants.AssetPublisherSelectionStyleConstants;
-import com.liferay.asset.publisher.web.internal.handler.AssetListExceptionRequestHandler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -31,6 +28,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -38,13 +36,14 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletPreferences;
+
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletPreferences;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,9 +52,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
+		"jakarta.portlet.name=" + AssetPublisherPortletKeys.ASSET_PUBLISHER,
 		"mvc.command.name=/asset_publisher/add_asset_list"
 	},
 	service = MVCActionCommand.class
@@ -70,119 +68,177 @@ public class AddAssetListMVCActionCommand extends BaseMVCActionCommand {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		String title = ParamUtil.getString(actionRequest, "title");
-
-		String portletResource = ParamUtil.getString(
-			actionRequest, "portletResource");
-
-		String redirect = ParamUtil.getString(actionRequest, "redirect");
-
-		PortletPreferences portletPreferences =
-			PortletPreferencesFactoryUtil.getExistingPortletSetup(
-				themeDisplay.getLayout(), portletResource);
-
-		String selectionStyle = portletPreferences.getValue(
-			"selectionStyle", "dynamic");
-
 		try {
-			if (Objects.equals(
-					selectionStyle,
-					AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC)) {
+			String portletResource = ParamUtil.getString(
+				actionRequest, "portletResource");
 
-				_saveDynamicAssetList(actionRequest, title, portletPreferences);
+			PortletPreferences portletPreferences =
+				PortletPreferencesFactoryUtil.getExistingPortletSetup(
+					themeDisplay.getLayout(), portletResource);
+
+			AssetListEntry assetListEntry = _getAssetListEntry(
+				actionRequest, portletPreferences, themeDisplay);
+
+			if (assetListEntry != null) {
+				portletPreferences.setValue(
+					"assetListEntryExternalReferenceCode",
+					assetListEntry.getExternalReferenceCode());
+				portletPreferences.setValue(
+					"selectionStyle",
+					AssetPublisherSelectionStyleConstants.TYPE_ASSET_LIST);
+
+				portletPreferences.store();
 			}
-			else if (Objects.equals(
-						selectionStyle,
-						AssetPublisherSelectionStyleConstants.TYPE_MANUAL)) {
 
-				_saveManualAssetList(actionRequest, title, portletPreferences);
-			}
-
-			JSONObject jsonObject = JSONUtil.put("redirectURL", redirect);
+			JSONPortletResponseUtil.writeJSON(
+				actionRequest, actionResponse,
+				JSONUtil.put(
+					"redirectURL",
+					ParamUtil.getString(actionRequest, "redirect")));
 
 			hideDefaultSuccessMessage(actionRequest);
 
 			MultiSessionMessages.add(
 				actionRequest, portletResource + "requestProcessed");
-
-			JSONPortletResponseUtil.writeJSON(
-				actionRequest, actionResponse, jsonObject);
 		}
 		catch (PortalException portalException) {
 			hideDefaultErrorMessage(actionRequest);
 
-			_assetListExceptionRequestHandler.handlePortalException(
-				actionRequest, actionResponse, portalException);
+			_handlePortalException(
+				actionRequest, actionResponse, portalException, themeDisplay);
 		}
 	}
 
-	private void _saveDynamicAssetList(
-			ActionRequest actionRequest, String title,
-			PortletPreferences portletPreferences)
+	private AssetListEntry _getAssetListEntry(
+			ActionRequest actionRequest, PortletPreferences portletPreferences,
+			ThemeDisplay themeDisplay)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		String selectionStyle = portletPreferences.getValue(
+			"selectionStyle", "dynamic");
+		String title = ParamUtil.getString(actionRequest, "title");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			actionRequest);
 
-		UnicodeProperties unicodeProperties = new UnicodeProperties(true);
+		if (Objects.equals(
+				selectionStyle,
+				AssetPublisherSelectionStyleConstants.TYPE_DYNAMIC)) {
 
-		Enumeration<String> enumeration = portletPreferences.getNames();
+			UnicodeProperties unicodeProperties = new UnicodeProperties(true);
 
-		while (enumeration.hasMoreElements()) {
-			String name = enumeration.nextElement();
+			Enumeration<String> enumeration = portletPreferences.getNames();
 
-			String value = StringUtil.merge(
-				portletPreferences.getValues(name, null));
+			while (enumeration.hasMoreElements()) {
+				String name = enumeration.nextElement();
 
-			if (Validator.isNull(value)) {
-				continue;
+				String value = StringUtil.merge(
+					portletPreferences.getValues(name, null));
+
+				if (Validator.isNull(value)) {
+					continue;
+				}
+
+				if (!name.equals("scopeIds")) {
+					unicodeProperties.put(name, value);
+
+					continue;
+				}
+
+				List<Long> groupIds = new ArrayList<>();
+
+				String[] parts = value.split(StringPool.COMMA);
+
+				for (String part : parts) {
+					if (part.equals("Group_default")) {
+						groupIds.add(serviceContext.getScopeGroupId());
+					}
+					else if (part.startsWith("Group_")) {
+						long groupId = GetterUtil.getLong(
+							StringUtil.removeSubstring(part, "Group_"), -1);
+
+						if (groupId != -1) {
+							groupIds.add(groupId);
+						}
+					}
+				}
+
+				if (groupIds.isEmpty()) {
+					continue;
+				}
+
+				name = "groupIds";
+				value = ListUtil.toString(groupIds, StringPool.BLANK);
+
+				unicodeProperties.put(name, value);
 			}
 
-			unicodeProperties.put(name, value);
+			return _assetListEntryService.addDynamicAssetListEntry(
+				null, themeDisplay.getScopeGroupId(), title,
+				unicodeProperties.toString(), serviceContext);
 		}
 
-		_assetListEntryService.addDynamicAssetListEntry(
-			themeDisplay.getUserId(), themeDisplay.getScopeGroupId(), title,
-			unicodeProperties.toString(), serviceContext);
+		if (!Objects.equals(
+				selectionStyle,
+				AssetPublisherSelectionStyleConstants.TYPE_MANUAL)) {
+
+			return null;
+		}
+
+		return _assetListEntryService.addManualAssetListEntry(
+			null, themeDisplay.getScopeGroupId(), title,
+			ListUtil.toLongArray(
+				_assetPublisherHelper.getAssetEntries(
+					actionRequest, portletPreferences,
+					themeDisplay.getPermissionChecker(),
+					_assetPublisherHelper.getGroupIds(
+						portletPreferences, themeDisplay.getScopeGroupId(),
+						themeDisplay.getLayout()),
+					true, true),
+				AssetEntry::getEntryId),
+			serviceContext);
 	}
 
-	private void _saveManualAssetList(
-			ActionRequest actionRequest, String title,
-			PortletPreferences portletPreferences)
+	private void _handlePortalException(
+			ActionRequest actionRequest, ActionResponse actionResponse,
+			PortalException portalException, ThemeDisplay themeDisplay)
 		throws Exception {
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+		if (_log.isDebugEnabled()) {
+			_log.debug(portalException);
+		}
 
-		ServiceContext serviceContext = ServiceContextFactory.getInstance(
-			actionRequest);
+		String errorMessage = "an-unexpected-error-occurred";
 
-		long[] groupIds = _assetPublisherHelper.getGroupIds(
-			portletPreferences, themeDisplay.getScopeGroupId(),
-			themeDisplay.getLayout());
+		if (portalException instanceof AssetListEntryTitleException) {
+			errorMessage = "please-enter-a-valid-title";
+		}
+		else if (portalException instanceof
+					DuplicateAssetListEntryTitleException) {
 
-		List<AssetEntry> assetEntries = _assetPublisherHelper.getAssetEntries(
-			actionRequest, portletPreferences,
-			themeDisplay.getPermissionChecker(), groupIds, true, true);
+			errorMessage = "a-collection-with-that-title-already-exists";
+		}
+		else {
+			_log.error(portalException);
+		}
 
-		long[] assetEntryIds = ListUtil.toLongArray(
-			assetEntries, AssetEntry::getEntryId);
+		JSONObject jsonObject = JSONUtil.put(
+			"error", _language.get(themeDisplay.getRequest(), errorMessage));
 
-		_assetListEntryService.addManualAssetListEntry(
-			themeDisplay.getUserId(), themeDisplay.getScopeGroupId(), title,
-			assetEntryIds, serviceContext);
+		JSONPortletResponseUtil.writeJSON(
+			actionRequest, actionResponse, jsonObject);
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		AddAssetListMVCActionCommand.class);
 
 	@Reference
 	private AssetListEntryService _assetListEntryService;
 
 	@Reference
-	private AssetListExceptionRequestHandler _assetListExceptionRequestHandler;
+	private AssetPublisherHelper _assetPublisherHelper;
 
 	@Reference
-	private AssetPublisherHelper _assetPublisherHelper;
+	private Language _language;
 
 }

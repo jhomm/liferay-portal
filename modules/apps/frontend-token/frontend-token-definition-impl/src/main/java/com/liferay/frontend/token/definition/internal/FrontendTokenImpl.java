@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.token.definition.internal;
@@ -23,9 +14,10 @@ import com.liferay.portal.kernel.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Map;
 
 /**
  * @author Iván Zaera
@@ -43,6 +35,8 @@ public class FrontendTokenImpl implements FrontendToken {
 		_jsonLocalizer = frontendTokenDefinitionImpl.createJSONLocalizer(
 			jsonObject);
 
+		_name = jsonObject.getString("name");
+
 		_type = Type.parse(jsonObject.getString("type"));
 
 		if (_type == Type.BOOLEAN) {
@@ -59,7 +53,7 @@ public class FrontendTokenImpl implements FrontendToken {
 		}
 		else {
 			throw new RuntimeException(
-				"Unsupported frontend token type " + _type.toString());
+				"Unsupported frontend token type " + _type);
 		}
 
 		JSONArray mappingsJSONArray = jsonObject.getJSONArray("mappings");
@@ -69,9 +63,17 @@ public class FrontendTokenImpl implements FrontendToken {
 		}
 
 		for (int i = 0; i < mappingsJSONArray.length(); i++) {
-			_frontendTokenMappings.add(
+			FrontendTokenMapping frontendTokenMapping =
 				new FrontendTokenMappingImpl(
-					this, mappingsJSONArray.getJSONObject(i)));
+					this, mappingsJSONArray.getJSONObject(i));
+
+			_frontendTokenMappings.add(frontendTokenMapping);
+
+			List<FrontendTokenMapping> frontendTokenMappings =
+				_frontendTokenMappingsMap.computeIfAbsent(
+					frontendTokenMapping.getType(), type -> new ArrayList<>());
+
+			frontendTokenMappings.add(frontendTokenMapping);
 		}
 	}
 
@@ -89,13 +91,7 @@ public class FrontendTokenImpl implements FrontendToken {
 	public Collection<FrontendTokenMapping> getFrontendTokenMappings(
 		String type) {
 
-		Stream<FrontendTokenMapping> stream = _frontendTokenMappings.stream();
-
-		return stream.filter(
-			frontendTokenMapping -> type.equals(frontendTokenMapping.getType())
-		).collect(
-			Collectors.toList()
-		);
+		return _frontendTokenMappingsMap.get(type);
 	}
 
 	@Override
@@ -104,8 +100,13 @@ public class FrontendTokenImpl implements FrontendToken {
 	}
 
 	@Override
-	public String getJSON(Locale locale) {
-		return _jsonLocalizer.getJSON(locale);
+	public JSONObject getJSONObject(Locale locale) {
+		return _jsonLocalizer.getJSONObject(locale);
+	}
+
+	@Override
+	public String getName() {
+		return _name;
 	}
 
 	@Override
@@ -120,8 +121,11 @@ public class FrontendTokenImpl implements FrontendToken {
 	private final Object _defaultValue;
 	private final Collection<FrontendTokenMapping> _frontendTokenMappings =
 		new ArrayList<>();
+	private final Map<String, List<FrontendTokenMapping>>
+		_frontendTokenMappingsMap = new HashMap<>();
 	private final FrontendTokenSetImpl _frontendTokenSetImpl;
 	private final JSONLocalizer _jsonLocalizer;
+	private final String _name;
 	private final Type _type;
 
 }

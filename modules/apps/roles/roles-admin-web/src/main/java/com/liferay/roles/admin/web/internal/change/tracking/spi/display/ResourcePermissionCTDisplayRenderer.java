@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.web.internal.change.tracking.spi.display;
@@ -18,7 +9,7 @@ import com.liferay.change.tracking.spi.display.BaseCTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
 import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -113,7 +104,7 @@ public class ResourcePermissionCTDisplayRenderer
 
 			if (scope == ResourceConstants.SCOPE_COMPANY) {
 				arguments.add(
-					LanguageUtil.get(locale, "all-sites-and-asset-libraries"));
+					_language.get(locale, "all-sites-and-asset-libraries"));
 			}
 			else if (scope == ResourceConstants.SCOPE_GROUP) {
 				try {
@@ -124,32 +115,31 @@ public class ResourcePermissionCTDisplayRenderer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(portalException, portalException);
+						_log.warn(portalException);
 					}
 				}
 			}
 		}
 
 		if (arguments.size() == 1) {
-			return LanguageUtil.format(
+			return _language.format(
 				locale, "x-permissions", arguments.toArray(new String[0]),
 				false);
 		}
 		else if (arguments.size() == 2) {
-			return LanguageUtil.format(
+			return _language.format(
 				locale, "x-permissions-for-x", arguments.toArray(new String[0]),
 				false);
 		}
 		else if (arguments.size() == 3) {
-			return LanguageUtil.format(
+			return _language.format(
 				locale, "x-permissions-for-x-x",
 				arguments.toArray(new String[0]), false);
 		}
-		else {
-			return LanguageUtil.format(
-				locale, "x-permissions-for-x-x-x",
-				arguments.toArray(new String[0]), false);
-		}
+
+		return _language.format(
+			locale, "x-permissions-for-x-x-x", arguments.toArray(new String[0]),
+			false);
 	}
 
 	@Override
@@ -175,9 +165,8 @@ public class ResourcePermissionCTDisplayRenderer
 			resourceActionMap.put(actionLabel, resourceAction);
 		}
 
-		String granted = LanguageUtil.get(
-			displayBuilder.getLocale(), "granted");
-		String notGranted = LanguageUtil.get(
+		String granted = _language.get(displayBuilder.getLocale(), "granted");
+		String notGranted = _language.get(
 			displayBuilder.getLocale(), "not-granted");
 
 		for (Map.Entry<String, ResourceAction> entry :
@@ -200,6 +189,9 @@ public class ResourcePermissionCTDisplayRenderer
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

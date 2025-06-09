@@ -1,38 +1,105 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayIcon from '@clayui/icon';
+import ClayLabel from '@clayui/label';
+import ClayPanel from '@clayui/panel';
+import {ClayTooltipProvider} from '@clayui/tooltip';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, {useState} from 'react';
 
-function ItemInfoViewOptions({options}) {
-	return (
-		<div className="item-info-extra mt-3">
-			<h6 className="options">{options}</h6>
-		</div>
-	);
-}
+import {parseValue} from '../util/index';
 
-function ItemInfoViewBundle({childItems}) {
-	return (
+function ItemInfoViewBundle({childItems, options}) {
+	const [expanded, setExpanded] = useState(false);
+
+	return options.length >= 1 ? (
+		<ClayPanel
+			className="item-info-collapse mb-0"
+			collapsable
+			displayTitle={sub(
+				Liferay.Language.get('x-options'),
+				expanded
+					? Liferay.Language.get('hide')
+					: Liferay.Language.get('show')
+			)}
+			displayType="secondary"
+			expanded={expanded}
+			onExpandedChange={(expanded) => {
+				setExpanded(expanded);
+			}}
+			showCollapseIcon
+		>
+			<ClayPanel.Body>
+				<div className="child-items">
+					{options.map((option, index) => {
+						const {
+							skuId,
+							skuOptionName,
+							skuOptionValueNames,
+							value,
+						} = option;
+
+						const childItem = (childItems || []).find(
+							(childItem) =>
+								childItem.skuId === parseInt(skuId, 10)
+						);
+
+						const {name, quantity, skuUnitOfMeasure} =
+							childItem || {};
+
+						return name ? (
+							<div className="item-info-extra pt-2" key={index}>
+								<div className="h6 item-name">
+									{skuOptionName}
+								</div>
+
+								<p className="item-sku">
+									<span>
+										<span>
+											{parseValue(skuOptionValueNames) ||
+												parseValue(value)}
+										</span>
+
+										<span className="pl-2">
+											{`(${quantity} \u00D7 ${name} ${
+												skuUnitOfMeasure?.key || ''
+											})`}
+										</span>
+									</span>
+								</p>
+							</div>
+						) : (
+							<div className="item-info-extra pt-2" key={index}>
+								<div className="h6 item-name">
+									{skuOptionName}
+								</div>
+
+								<p className="item-sku">
+									{parseValue(skuOptionValueNames) ||
+										parseValue(value)}
+								</p>
+							</div>
+						);
+					})}
+				</div>
+			</ClayPanel.Body>
+		</ClayPanel>
+	) : (
 		<div className="child-items">
 			{childItems.map((item, index) => {
-				const {name, quantity} = item;
+				const {name, quantity, skuUnitOfMeasure} = item;
 
 				return (
 					<div className="child-item" key={index}>
 						<span>
-							{quantity} &times; {name}
+							<>
+								{quantity} &times; {name}
+							</>
+							<> {skuUnitOfMeasure?.key || ''}</>
 						</span>
 					</div>
 				);
@@ -41,26 +108,50 @@ function ItemInfoViewBundle({childItems}) {
 	);
 }
 
+function ItemInfoViewReplacement({replacedSku}) {
+	return (
+		<div className="item-info-replacement">
+			<ClayLabel displayType="info">
+				{Liferay.Language.get('replacement')}
+			</ClayLabel>
+
+			<ClayTooltipProvider>
+				<span
+					data-tooltip-align="left"
+					title={sub(
+						Liferay.Language.get('replacement-product-for-x'),
+						replacedSku
+					)}
+				>
+					<ClayIcon aria-label="Info" symbol="info-circle" />
+				</span>
+			</ClayTooltipProvider>
+		</div>
+	);
+}
+
 function ItemInfoViewBase({name, sku}) {
 	return (
 		<div className="item-info-base">
-			<h5 className="item-name">{name}</h5>
+			<div className="h5 item-name">{name}</div>
+
 			<p className="item-sku">{sku}</p>
 		</div>
 	);
 }
 
-function ItemInfoView({childItems = [], name, options = '', sku}) {
-	const isBundle = childItems.length > 0,
-		hasOptions = !!options;
+function ItemInfoView({childItems = [], name, options = [], replacedSku, sku}) {
+	const hasReplacement = !!replacedSku;
 
 	return (
 		<>
 			<ItemInfoViewBase name={name} sku={sku} />
 
-			{isBundle && <ItemInfoViewBundle childItems={childItems} />}
+			{hasReplacement && (
+				<ItemInfoViewReplacement replacedSku={replacedSku} />
+			)}
 
-			{hasOptions && <ItemInfoViewOptions options={options} />}
+			<ItemInfoViewBundle childItems={childItems} options={options} />
 		</>
 	);
 }
@@ -68,7 +159,7 @@ function ItemInfoView({childItems = [], name, options = '', sku}) {
 ItemInfoView.propTypes = {
 	childItems: PropTypes.array,
 	name: PropTypes.string.isRequired,
-	options: PropTypes.string,
+	options: PropTypes.array,
 	sku: PropTypes.string.isRequired,
 };
 

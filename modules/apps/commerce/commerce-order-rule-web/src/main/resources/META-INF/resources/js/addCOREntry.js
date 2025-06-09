@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ServiceProvider from 'commerce-frontend-js/ServiceProvider/index';
-import {CLOSE_MODAL} from 'commerce-frontend-js/utilities/eventsDefinitions';
+import {CommerceServiceProvider, commerceEvents} from 'commerce-frontend-js';
 import {createPortletURL} from 'frontend-js-web';
 
 export default function ({editCOREntryPortletURL, namespace}) {
-	const orderRuleResource = ServiceProvider.AdminOrderAPI('v1');
+	const orderRuleResource = CommerceServiceProvider.AdminOrderAPI('v1');
 
 	const form = document.getElementById(`${namespace}fm`);
 
 	form.addEventListener('submit', (event) => {
 		event.preventDefault();
 
-		const description = form.querySelector(`#${namespace}description`)
-			.value;
+		const description = form.querySelector(
+			`#${namespace}description`
+		).value;
 		const name = form.querySelector(`#${namespace}name`).value;
 		const type = form.querySelector(`#${namespace}type`).value;
 
@@ -46,7 +37,7 @@ export default function ({editCOREntryPortletURL, namespace}) {
 				);
 				redirectURL.searchParams.append('p_auth', Liferay.authToken);
 
-				window.parent.Liferay.fire(CLOSE_MODAL, {
+				window.parent.Liferay.fire(commerceEvents.CLOSE_MODAL, {
 					redirectURL: redirectURL.toString(),
 					successNotification: {
 						message: Liferay.Language.get(

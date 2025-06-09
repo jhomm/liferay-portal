@@ -1,34 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.portlet.action;
 
+import com.liferay.change.tracking.constants.CTConstants;
 import com.liferay.change.tracking.constants.CTPortletKeys;
+import com.liferay.change.tracking.constants.PublicationRoleConstants;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
-import com.liferay.change.tracking.web.internal.constants.PublicationRoleConstants;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.RoleTable;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.UserGroupRoleTable;
 import com.liferay.portal.kernel.model.UserTable;
@@ -44,16 +37,16 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -62,9 +55,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Samuel Trong Tran
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + CTPortletKeys.PUBLICATIONS,
+		"jakarta.portlet.name=" + CTPortletKeys.PUBLICATIONS,
 		"mvc.command.name=/change_tracking/get_collaborators"
 	},
 	service = MVCResourceCommand.class
@@ -76,52 +68,65 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws IOException, PortalException {
 
-		CTCollection ctCollection = _ctCollectionLocalService.fetchCTCollection(
-			ParamUtil.getLong(resourceRequest, "ctCollectionId"));
+		long ctCollectionId = ParamUtil.getLong(
+			resourceRequest, "ctCollectionId");
 
-		if (ctCollection == null) {
+		CTCollection ctCollection = _ctCollectionLocalService.fetchCTCollection(
+			ctCollectionId);
+
+		if ((ctCollection == null) &&
+			(ctCollectionId != CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+
 			JSONPortletResponseUtil.writeJSON(
 				resourceRequest, resourceResponse,
-				JSONFactoryUtil.createJSONArray());
+				_jsonFactory.createJSONArray());
 
 			return;
 		}
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)resourceRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		User owner = _userLocalService.fetchUser(ctCollection.getUserId());
+		User user = null;
 
-		if (owner != null) {
+		if (ctCollectionId != CTConstants.CT_COLLECTION_ID_PRODUCTION) {
+			user = _userLocalService.fetchUser(ctCollection.getUserId());
+		}
+
+		if (user != null) {
 			String portraitURL = StringPool.BLANK;
 
-			if (owner.getPortraitId() > 0) {
-				portraitURL = owner.getPortraitURL(themeDisplay);
+			if (user.getPortraitId() > 0) {
+				portraitURL = user.getPortraitURL(themeDisplay);
 			}
 
 			jsonArray.put(
 				JSONUtil.put(
-					"emailAddress", owner.getEmailAddress()
+					"emailAddress", user.getEmailAddress()
 				).put(
-					"fullName", owner.getFullName()
+					"fullName", user.getFullName()
 				).put(
 					"isCurrentUser",
-					owner.getUserId() == themeDisplay.getUserId()
+					user.getUserId() == themeDisplay.getUserId()
 				).put(
 					"isOwner", true
 				).put(
 					"portraitURL", portraitURL
 				).put(
-					"userId", owner.getUserId()
+					"userId", user.getUserId()
 				));
 		}
 
-		Group group = _groupLocalService.fetchGroup(
-			ctCollection.getCompanyId(),
-			_portal.getClassNameId(CTCollection.class),
-			ctCollection.getCtCollectionId());
+		Group group = null;
+
+		if (ctCollectionId != CTConstants.CT_COLLECTION_ID_PRODUCTION) {
+			group = _groupLocalService.fetchGroup(
+				ctCollection.getCompanyId(),
+				_portal.getClassNameId(CTCollection.class),
+				ctCollection.getCtCollectionId());
+		}
 
 		if (group == null) {
 			JSONPortletResponseUtil.writeJSON(
@@ -130,7 +135,7 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 			return;
 		}
 
-		Map<Long, Role> roleMap = new HashMap<>();
+		Map<Long, Role> roles = new HashMap<>();
 
 		for (Role role :
 				_roleLocalService.<List<Role>>dslQuery(
@@ -147,12 +152,12 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 							group.getGroupId())
 					))) {
 
-			roleMap.put(role.getRoleId(), role);
+			roles.put(role.getRoleId(), role);
 		}
 
-		Map<Long, User> userMap = new HashMap<>();
+		Map<Long, User> users = new HashMap<>();
 
-		for (User user :
+		for (User curUser :
 				_userLocalService.<List<User>>dslQuery(
 					DSLQueryFactoryUtil.select(
 						UserTable.INSTANCE
@@ -164,10 +169,14 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 							UserTable.INSTANCE.userId)
 					).where(
 						UserGroupRoleTable.INSTANCE.groupId.eq(
-							group.getGroupId())
+							group.getGroupId()
+						).and(
+							UserTable.INSTANCE.type.neq(
+								UserConstants.TYPE_ON_DEMAND_USER)
+						)
 					))) {
 
-			userMap.put(user.getUserId(), user);
+			users.put(curUser.getUserId(), curUser);
 		}
 
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
@@ -177,29 +186,29 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 				_userGroupRoleLocalService.getUserGroupRolesByGroup(
 					group.getGroupId())) {
 
-			Role role = roleMap.get(userGroupRole.getRoleId());
-			User user = userMap.get(userGroupRole.getUserId());
+			Role role = roles.get(userGroupRole.getRoleId());
+			User roleUser = users.get(userGroupRole.getUserId());
 
-			if ((role == null) || (user == null) ||
-				(user.getUserId() == ctCollection.getUserId())) {
+			if ((role == null) || (roleUser == null) ||
+				(roleUser.getUserId() == user.getUserId())) {
 
 				continue;
 			}
 
 			String portraitURL = StringPool.BLANK;
 
-			if (user.getPortraitId() > 0) {
-				portraitURL = user.getPortraitURL(themeDisplay);
+			if (roleUser.getPortraitId() > 0) {
+				portraitURL = roleUser.getPortraitURL(themeDisplay);
 			}
 
 			jsonArray.put(
 				JSONUtil.put(
-					"emailAddress", user.getEmailAddress()
+					"emailAddress", roleUser.getEmailAddress()
 				).put(
-					"fullName", user.getFullName()
+					"fullName", roleUser.getFullName()
 				).put(
 					"isCurrentUser",
-					user.getUserId() == themeDisplay.getUserId()
+					roleUser.getUserId() == themeDisplay.getUserId()
 				).put(
 					"isOwner", false
 				).put(
@@ -207,13 +216,11 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 				).put(
 					"roleLabel",
 					_language.get(
-						httpServletRequest,
-						PublicationRoleConstants.getNameLabel(role.getName()))
+						httpServletRequest, _getNameLabel(role.getName()))
 				).put(
-					"roleValue",
-					PublicationRoleConstants.getNameRole(role.getName())
+					"roleValue", _getNameRole(role.getName())
 				).put(
-					"userId", user.getUserId()
+					"userId", roleUser.getUserId()
 				));
 		}
 
@@ -221,11 +228,42 @@ public class GetCollaboratorsMVCResourceCommand extends BaseMVCResourceCommand {
 			resourceRequest, resourceResponse, jsonArray);
 	}
 
+	private String _getNameLabel(String name) {
+		if (name.equals(PublicationRoleConstants.NAME_ADMIN)) {
+			return PublicationRoleConstants.LABEL_ADMIN;
+		}
+		else if (name.equals(PublicationRoleConstants.NAME_EDITOR)) {
+			return PublicationRoleConstants.LABEL_EDITOR;
+		}
+		else if (name.equals(PublicationRoleConstants.NAME_PUBLISHER)) {
+			return PublicationRoleConstants.LABEL_PUBLISHER;
+		}
+
+		return PublicationRoleConstants.LABEL_VIEWER;
+	}
+
+	private int _getNameRole(String name) {
+		if (name.equals(PublicationRoleConstants.NAME_ADMIN)) {
+			return PublicationRoleConstants.ROLE_ADMIN;
+		}
+		else if (name.equals(PublicationRoleConstants.NAME_EDITOR)) {
+			return PublicationRoleConstants.ROLE_EDITOR;
+		}
+		else if (name.equals(PublicationRoleConstants.NAME_PUBLISHER)) {
+			return PublicationRoleConstants.ROLE_PUBLISHER;
+		}
+
+		return PublicationRoleConstants.ROLE_VIEWER;
+	}
+
 	@Reference
 	private CTCollectionLocalService _ctCollectionLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Language _language;

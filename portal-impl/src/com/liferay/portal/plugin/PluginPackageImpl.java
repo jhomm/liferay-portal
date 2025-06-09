@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.plugin;
@@ -18,9 +9,7 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.plugin.License;
 import com.liferay.portal.kernel.plugin.PluginPackage;
-import com.liferay.portal.kernel.plugin.RemotePluginPackageRepository;
 import com.liferay.portal.kernel.plugin.Screenshot;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
@@ -29,35 +18,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
-
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
 
 /**
  * @author Jorge Ferrer
  */
 public class PluginPackageImpl
 	implements Comparable<PluginPackage>, PluginPackage, Serializable {
-
-	public static final String STATUS_ALL = "all";
-
-	public static final String STATUS_INSTALLATION_IN_PROCESS =
-		"installationInProcess";
-
-	public static final String STATUS_NEWER_VERSION_INSTALLED =
-		"newerVersionInstalled";
-
-	public static final String STATUS_NOT_INSTALLED = "notInstalled";
-
-	public static final String STATUS_NOT_INSTALLED_OR_OLDER_VERSION_INSTALLED =
-		"notInstalledOrOlderVersionInstalled";
-
-	public static final String STATUS_OLDER_VERSION_INSTALLED =
-		"olderVersionInstalled";
-
-	public static final String STATUS_SAME_VERSION_INSTALLED =
-		"sameVersionInstalled";
 
 	public PluginPackageImpl(String moduleId) {
 		_moduleId = ModuleId.getInstance(moduleId);
@@ -80,23 +48,12 @@ public class PluginPackageImpl
 
 		PluginPackage pluginPackage = (PluginPackage)object;
 
-		EqualsBuilder equalsBuilder = new EqualsBuilder();
-
-		equalsBuilder.append(getModuleId(), pluginPackage.getModuleId());
-		equalsBuilder.append(
-			getRepositoryURL(), pluginPackage.getRepositoryURL());
-
-		return equalsBuilder.isEquals();
+		return Objects.equals(getModuleId(), pluginPackage.getModuleId());
 	}
 
 	@Override
 	public String getArtifactId() {
 		return _moduleId.getArtifactId();
-	}
-
-	@Override
-	public String getArtifactURL() {
-		return getRepositoryURL() + _moduleId.getArtifactPath();
 	}
 
 	@Override
@@ -117,29 +74,6 @@ public class PluginPackageImpl
 	@Override
 	public Properties getDeploymentSettings() {
 		return _deploymentSettings;
-	}
-
-	@Override
-	public String getDownloadURL() {
-		RemotePluginPackageRepository remotePluginPackageRepository =
-			getRepository();
-
-		if (remotePluginPackageRepository != null) {
-			Properties settings = remotePluginPackageRepository.getSettings();
-
-			String useDownloadURL = settings.getProperty(
-				RemotePluginPackageRepository.SETTING_USE_DOWNLOAD_URL);
-
-			if (!GetterUtil.getBoolean(useDownloadURL, true)) {
-				return getArtifactURL();
-			}
-		}
-
-		if (Validator.isNotNull(_downloadURL)) {
-			return _downloadURL;
-		}
-
-		return getArtifactURL();
 	}
 
 	@Override
@@ -199,20 +133,6 @@ public class PluginPackageImpl
 	}
 
 	@Override
-	public RemotePluginPackageRepository getRepository() {
-		return _repository;
-	}
-
-	@Override
-	public String getRepositoryURL() {
-		if (_repository != null) {
-			return _repository.getRepositoryURL();
-		}
-
-		return RemotePluginPackageRepository.LOCAL_URL;
-	}
-
-	@Override
 	public List<String> getRequiredDeploymentContexts() {
 		return _requiredDeploymentContexts;
 	}
@@ -244,12 +164,9 @@ public class PluginPackageImpl
 
 	@Override
 	public int hashCode() {
-		HashCodeBuilder hashCodeBuilder = new HashCodeBuilder();
+		String moduleId = getModuleId();
 
-		hashCodeBuilder.append(getModuleId());
-		hashCodeBuilder.append(getRepositoryURL());
-
-		return hashCodeBuilder.hashCode();
+		return moduleId.hashCode();
 	}
 
 	@Override
@@ -285,11 +202,6 @@ public class PluginPackageImpl
 	@Override
 	public void setDeploymentSettings(Properties deploymentSettings) {
 		_deploymentSettings = deploymentSettings;
-	}
-
-	@Override
-	public void setDownloadURL(String downloadURL) {
-		_downloadURL = downloadURL;
 	}
 
 	@Override
@@ -330,11 +242,6 @@ public class PluginPackageImpl
 	}
 
 	@Override
-	public void setRepository(RemotePluginPackageRepository repository) {
-		_repository = repository;
-	}
-
-	@Override
 	public void setRequiredDeploymentContexts(
 		List<String> requiredDeploymentContexts) {
 
@@ -371,7 +278,6 @@ public class PluginPackageImpl
 	private String _changeLog = StringPool.BLANK;
 	private String _context;
 	private Properties _deploymentSettings;
-	private String _downloadURL;
 	private List<License> _licenses = new ArrayList<>();
 	private List<String> _liferayVersions = new ArrayList<>();
 	private String _longDescription = StringPool.BLANK;
@@ -380,7 +286,6 @@ public class PluginPackageImpl
 	private String _name;
 	private String _pageURL;
 	private String _recommendedDeploymentContext;
-	private RemotePluginPackageRepository _repository;
 	private List<String> _requiredDeploymentContexts = Collections.emptyList();
 	private List<Screenshot> _screenshots = new ArrayList<>();
 	private String _shortDescription = StringPool.BLANK;

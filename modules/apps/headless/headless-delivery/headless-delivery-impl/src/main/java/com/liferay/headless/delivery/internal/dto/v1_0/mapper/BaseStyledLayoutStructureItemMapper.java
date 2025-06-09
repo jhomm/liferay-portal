@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.mapper;
@@ -24,7 +15,7 @@ import com.liferay.headless.delivery.dto.v1_0.Mapping;
 import com.liferay.headless.delivery.internal.dto.v1_0.mapper.util.FragmentMappedValueUtil;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
 import com.liferay.layout.responsive.ViewportSize;
@@ -43,13 +34,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Pavel Savinov
  */
 public abstract class BaseStyledLayoutStructureItemMapper
 	implements LayoutStructureItemMapper {
+
+	public BaseStyledLayoutStructureItemMapper(
+		InfoItemServiceRegistry infoItemServiceRegistry, Portal portal) {
+
+		this.infoItemServiceRegistry = infoItemServiceRegistry;
+		this.portal = portal;
+	}
 
 	protected FragmentViewport[] getFragmentViewPorts(JSONObject jsonObject) {
 		if ((jsonObject == null) || (jsonObject.length() == 0)) {
@@ -86,61 +82,6 @@ public abstract class BaseStyledLayoutStructureItemMapper
 		return fragmentViewports.toArray(new FragmentViewport[0]);
 	}
 
-	protected Function<Object, String> getImageURLTransformerFunction() {
-		return object -> {
-			if (object instanceof JSONObject) {
-				JSONObject jsonObject = (JSONObject)object;
-
-				return jsonObject.getString("url");
-			}
-
-			if (object instanceof String) {
-				return (String)object;
-			}
-
-			return StringPool.BLANK;
-		};
-	}
-
-	protected FragmentImage toBackgroundFragmentImage(
-		JSONObject jsonObject, boolean saveMappingConfiguration) {
-
-		if (jsonObject == null) {
-			return null;
-		}
-
-		String urlValue = jsonObject.getString("url");
-
-		return new FragmentImage() {
-			{
-				title = toTitleFragmentInlineValue(jsonObject, urlValue);
-
-				setUrl(
-					() -> {
-						if (FragmentMappedValueUtil.isSaveFragmentMappedValue(
-								jsonObject, saveMappingConfiguration)) {
-
-							return toFragmentMappedValue(
-								toDefaultMappingValue(
-									jsonObject,
-									getImageURLTransformerFunction()),
-								jsonObject);
-						}
-
-						if (Validator.isNull(urlValue)) {
-							return null;
-						}
-
-						return new FragmentInlineValue() {
-							{
-								value = urlValue;
-							}
-						};
-					});
-			}
-		};
-	}
-
 	protected FragmentInlineValue toDefaultMappingValue(
 		JSONObject jsonObject, Function<Object, String> transformerFunction) {
 
@@ -168,12 +109,13 @@ public abstract class BaseStyledLayoutStructureItemMapper
 		}
 
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			infoItemServiceTracker.getFirstInfoItemService(
+			infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class, className);
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
-			infoItemServiceTracker.getFirstInfoItemService(
-				InfoItemObjectProvider.class, className);
+			infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemObjectProvider.class, className,
+				ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
 		if ((infoItemFieldValuesProvider == null) ||
 			(infoItemObjectProvider == null)) {
@@ -215,7 +157,7 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 			return new FragmentInlineValue() {
 				{
-					value = valueString;
+					setValue(() -> valueString);
 				}
 			};
 		}
@@ -231,15 +173,18 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 		return new FragmentMappedValue() {
 			{
-				mapping = new Mapping() {
-					{
-						defaultFragmentInlineValue = fragmentInlineValue;
-						fieldKey = FragmentMappedValueUtil.getFieldKey(
-							jsonObject);
-						itemReference = FragmentMappedValueUtil.toItemReference(
-							jsonObject);
-					}
-				};
+				setDefaultFragmentInlineValue(() -> fragmentInlineValue);
+				setMapping(
+					() -> new Mapping() {
+						{
+							setFieldKey(
+								() -> FragmentMappedValueUtil.getFieldKey(
+									jsonObject));
+							setItemReference(
+								() -> FragmentMappedValueUtil.toItemReference(
+									jsonObject));
+						}
+					});
 			}
 		};
 	}
@@ -253,33 +198,8 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 		return new FragmentStyle() {
 			{
-				backgroundColor = jsonObject.getString("backgroundColor", null);
-				borderColor = jsonObject.getString("borderColor", null);
-				borderRadius = jsonObject.getString("borderRadius", null);
-				borderWidth = jsonObject.getString("borderWidth", null);
-				fontFamily = jsonObject.getString("fontFamily", null);
-				fontSize = jsonObject.getString("fontSize", null);
-				fontWeight = jsonObject.getString("fontWeight", null);
-				height = jsonObject.getString("height", null);
-				marginBottom = jsonObject.getString("marginBottom", null);
-				marginLeft = jsonObject.getString("marginLeft", null);
-				marginRight = jsonObject.getString("marginRight", null);
-				marginTop = jsonObject.getString("marginTop", null);
-				maxHeight = jsonObject.getString("maxHeight", null);
-				maxWidth = jsonObject.getString("maxWidth", null);
-				minHeight = jsonObject.getString("minHeight", null);
-				minWidth = jsonObject.getString("minWidth", null);
-				opacity = jsonObject.getString("opacity", null);
-				overflow = jsonObject.getString("overflow", null);
-				paddingBottom = jsonObject.getString("paddingBottom", null);
-				paddingLeft = jsonObject.getString("paddingLeft", null);
-				paddingRight = jsonObject.getString("paddingRight", null);
-				paddingTop = jsonObject.getString("paddingTop", null);
-				shadow = jsonObject.getString("shadow", null);
-				textAlign = jsonObject.getString("textAlign", null);
-				textColor = jsonObject.getString("textColor", null);
-				width = jsonObject.getString("width", null);
-
+				setBackgroundColor(
+					() -> jsonObject.getString("backgroundColor", null));
 				setBackgroundFragmentImage(
 					() -> {
 						Object backgroundImage = jsonObject.get(
@@ -292,11 +212,18 @@ public abstract class BaseStyledLayoutStructureItemMapper
 						JSONObject backgroundImageJSONObject =
 							(JSONObject)backgroundImage;
 
-						return toBackgroundFragmentImage(
+						return _toBackgroundFragmentImage(
 							backgroundImageJSONObject,
 							saveMappingConfiguration);
 					});
-
+				setBorderColor(() -> jsonObject.getString("borderColor", null));
+				setBorderRadius(
+					() -> jsonObject.getString("borderRadius", null));
+				setBorderWidth(() -> jsonObject.getString("borderWidth", null));
+				setFontFamily(() -> jsonObject.getString("fontFamily", null));
+				setFontSize(() -> jsonObject.getString("fontSize", null));
+				setFontWeight(() -> jsonObject.getString("fontWeight", null));
+				setHeight(() -> jsonObject.getString("height", null));
 				setHidden(
 					() -> {
 						if (Objects.equals(
@@ -313,31 +240,88 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 						return null;
 					});
+				setMarginBottom(
+					() -> jsonObject.getString("marginBottom", null));
+				setMarginLeft(() -> jsonObject.getString("marginLeft", null));
+				setMarginRight(() -> jsonObject.getString("marginRight", null));
+				setMarginTop(() -> jsonObject.getString("marginTop", null));
+				setMaxHeight(() -> jsonObject.getString("maxHeight", null));
+				setMaxWidth(() -> jsonObject.getString("maxWidth", null));
+				setMinHeight(() -> jsonObject.getString("minHeight", null));
+				setMinWidth(() -> jsonObject.getString("minWidth", null));
+				setOpacity(() -> jsonObject.getString("opacity", null));
+				setOverflow(() -> jsonObject.getString("overflow", null));
+				setPaddingBottom(
+					() -> jsonObject.getString("paddingBottom", null));
+				setPaddingLeft(() -> jsonObject.getString("paddingLeft", null));
+				setPaddingRight(
+					() -> jsonObject.getString("paddingRight", null));
+				setPaddingTop(() -> jsonObject.getString("paddingTop", null));
+				setShadow(() -> jsonObject.getString("shadow", null));
+				setTextAlign(() -> jsonObject.getString("textAlign", null));
+				setTextColor(() -> jsonObject.getString("textColor", null));
+				setWidth(() -> jsonObject.getString("width", null));
 			}
 		};
 	}
 
-	protected FragmentInlineValue toTitleFragmentInlineValue(
-		JSONObject jsonObject, String urlValue) {
+	protected final InfoItemServiceRegistry infoItemServiceRegistry;
+	protected final Portal portal;
 
-		String title = jsonObject.getString("title");
+	private Function<Object, String> _getImageURLTransformerFunction() {
+		return object -> {
+			if (object instanceof JSONObject) {
+				JSONObject jsonObject = (JSONObject)object;
 
-		if (Validator.isNull(title) || title.equals(urlValue)) {
+				return jsonObject.getString("url");
+			}
+
+			if (object instanceof String) {
+				return (String)object;
+			}
+
+			return StringPool.BLANK;
+		};
+	}
+
+	private FragmentImage _toBackgroundFragmentImage(
+		JSONObject jsonObject, boolean saveMappingConfiguration) {
+
+		if (jsonObject == null) {
 			return null;
 		}
 
-		return new FragmentInlineValue() {
+		String urlValue = jsonObject.getString("url");
+
+		return new FragmentImage() {
 			{
-				value = title;
+				setTitle(
+					() -> _toTitleFragmentInlineValue(jsonObject, urlValue));
+				setUrl(
+					() -> {
+						if (FragmentMappedValueUtil.isSaveFragmentMappedValue(
+								jsonObject, saveMappingConfiguration)) {
+
+							return toFragmentMappedValue(
+								toDefaultMappingValue(
+									jsonObject,
+									_getImageURLTransformerFunction()),
+								jsonObject);
+						}
+
+						if (Validator.isNull(urlValue)) {
+							return null;
+						}
+
+						return new FragmentInlineValue() {
+							{
+								setValue(() -> urlValue);
+							}
+						};
+					});
 			}
 		};
 	}
-
-	@Reference
-	protected InfoItemServiceTracker infoItemServiceTracker;
-
-	@Reference
-	protected Portal portal;
 
 	private FragmentViewport _toFragmentViewportStyle(
 		JSONObject jsonObject, ViewportSize viewportSize) {
@@ -359,27 +343,33 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 		return new FragmentViewport() {
 			{
-				setId(viewportSize.getViewportSizeId());
 				setFragmentViewportStyle(
 					() -> new FragmentViewportStyle() {
 						{
-							marginBottom = styleJSONObject.getString(
-								"marginBottom", null);
-							marginLeft = styleJSONObject.getString(
-								"marginLeft", null);
-							marginRight = styleJSONObject.getString(
-								"marginRight", null);
-							marginTop = styleJSONObject.getString(
-								"marginTop", null);
-							paddingBottom = styleJSONObject.getString(
-								"paddingBottom", null);
-							paddingLeft = styleJSONObject.getString(
-								"paddingLeft", null);
-							paddingRight = styleJSONObject.getString(
-								"paddingRight", null);
-							paddingTop = styleJSONObject.getString(
-								"paddingTop", null);
-
+							setBackgroundColor(
+								() -> styleJSONObject.getString(
+									"backgroundColor", null));
+							setBorderColor(
+								() -> styleJSONObject.getString(
+									"borderColor", null));
+							setBorderRadius(
+								() -> styleJSONObject.getString(
+									"borderRadius", null));
+							setBorderWidth(
+								() -> styleJSONObject.getString(
+									"borderWidth", null));
+							setFontFamily(
+								() -> styleJSONObject.getString(
+									"fontFamily", null));
+							setFontSize(
+								() -> styleJSONObject.getString(
+									"fontSize", null));
+							setFontWeight(
+								() -> styleJSONObject.getString(
+									"fontWeight", null));
+							setHeight(
+								() -> styleJSONObject.getString(
+									"height", null));
 							setHidden(
 								() -> {
 									if (Objects.equals(
@@ -400,8 +390,78 @@ public abstract class BaseStyledLayoutStructureItemMapper
 
 									return null;
 								});
+							setMarginBottom(
+								() -> styleJSONObject.getString(
+									"marginBottom", null));
+							setMarginLeft(
+								() -> styleJSONObject.getString(
+									"marginLeft", null));
+							setMarginRight(
+								() -> styleJSONObject.getString(
+									"marginRight", null));
+							setMarginTop(
+								() -> styleJSONObject.getString(
+									"marginTop", null));
+							setMaxHeight(
+								() -> styleJSONObject.getString(
+									"maxHeight", null));
+							setMaxWidth(
+								() -> styleJSONObject.getString(
+									"maxWidth", null));
+							setMinHeight(
+								() -> styleJSONObject.getString(
+									"minHeight", null));
+							setMinWidth(
+								() -> styleJSONObject.getString(
+									"minWidth", null));
+							setOpacity(
+								() -> styleJSONObject.getString(
+									"opacity", null));
+							setOverflow(
+								() -> styleJSONObject.getString(
+									"overflow", null));
+							setPaddingBottom(
+								() -> styleJSONObject.getString(
+									"paddingBottom", null));
+							setPaddingLeft(
+								() -> styleJSONObject.getString(
+									"paddingLeft", null));
+							setPaddingRight(
+								() -> styleJSONObject.getString(
+									"paddingRight", null));
+							setPaddingTop(
+								() -> styleJSONObject.getString(
+									"paddingTop", null));
+							setShadow(
+								() -> styleJSONObject.getString(
+									"shadow", null));
+							setTextAlign(
+								() -> styleJSONObject.getString(
+									"textAlign", null));
+							setTextColor(
+								() -> styleJSONObject.getString(
+									"textColor", null));
+							setWidth(
+								() -> styleJSONObject.getString("width", null));
 						}
 					});
+				setId(viewportSize::getViewportSizeId);
+			}
+		};
+	}
+
+	private FragmentInlineValue _toTitleFragmentInlineValue(
+		JSONObject jsonObject, String urlValue) {
+
+		String title = jsonObject.getString("title");
+
+		if (Validator.isNull(title) || title.equals(urlValue)) {
+			return null;
+		}
+
+		return new FragmentInlineValue() {
+			{
+				setValue(() -> title);
 			}
 		};
 	}

@@ -1,6 +1,7 @@
-@component-name = "portal-smoke"
+@component-name = "portal-core-infra"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.smoke = "true";
@@ -10,18 +11,16 @@ definition {
 
 	setUp {
 		TestCase.setUpPortalInstance();
-
-		SignIn.signInTestSetup();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			Site.tearDownCP();
 
@@ -30,62 +29,146 @@ definition {
 	}
 
 	@description = "Ensure that the super admin can add pages, add portlets, navigate to the product menu, use the WYSIWYG editor, and view alert messages."
-	@priority = "5"
+	@priority = 5
 	test Smoke {
-		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
 		property database.bare.enabled = "true";
-		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
 		property environment.acceptance = "true";
+		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
 		property portal.acceptance = "false";
-		property testray.component.names = "Training";
+
+		SignIn.signInTestSetup();
 
 		Smoke.viewWelcomeContentPage();
 
 		Smoke.runSmoke();
+
+		// LPS-178114 Assert Toggle Controls (eye icon) is in the correct location and can be toggled
+
+		Navigator.gotoSitePage(
+			pageName = "Test Page2",
+			siteName = "Site Name");
+
+		Click(
+			key_status = "view",
+			locator1 = "ControlMenu#TOGGLE_CONTROLS");
+
+		AssertVisible(
+			key_status = "hidden",
+			locator1 = "ControlMenu#TOGGLE_CONTROLS");
 
 		// Assert all bundles installed
 
 		AssertConsoleTextNotPresent(value1 = "The portal instance needs to be restarted to complete the installation");
+
+		// LPS-153203 Assert no warnings or errors in log4j configuration
+
+		AssertConsoleTextPresent(value1 = "Starting dynamic bundles");
+
+		AssertConsoleTextNotPresent(value1 = "log4j:WARN");
+
+		AssertConsoleTextNotPresent(value1 = "log4j:ERROR");
 	}
 
-	@priority = "5"
+	@priority = 5
 	test SmokeWithDeveloperProperties {
 		property custom.properties = "include-and-override=portal-developer.properties";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
 		property osgi.module.configuration.file.names = "com.liferay.document.library.document.conversion.configuration.OpenOfficeConfiguration";
-		property osgi.module.configurations = "cacheEnabled=&quot;false&quot;";
+		property osgi.module.configurations = "cacheEnabled=\"false\"";
 		property portal.smoke = "false";
+
+		SignIn.signInTestSetup();
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+
+		var databaseType = PropsUtil.get("database.type");
+
+		if (${databaseType} == "hypersonic") {
+			AssertConsoleTextNotPresent(value1 = "upgrade finished with result");
+
+			AssertConsoleTextNotPresent(value1 = "Upgrade process failed or upgrade dependencies are");
+
+			AssertConsoleTextNotPresent(value1 = "No pending upgrades to run");
+		}
+	}
+
+	@priority = 4
+	test SmokeWithEmbeddedHypersonic {
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property custom.properties = "passwords.default.policy.change.required=true";
+		property database.hypersonic.embedded = "true";
+		property database.types = "hypersonic";
+		property portal.smoke = "false";
+		property test.liferay.virtual.instance = "false";
+
+		User.firstLoginUI(
+			newPassword = "test2",
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		AssertElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE");
 
 		Smoke.viewWelcomeContentPage();
 
 		Smoke.runSmoke();
 	}
 
-	@priority = "4"
+	@priority = 4
 	test SmokeWithJNDI {
-		property app.server.types = "tomcat,wildfly,weblogic,websphere";
+		property app.server.types = "tomcat,wildfly,weblogic";
 		property database.jndi.enabled = "true";
-		property database.types = "mariadb,mysql";
+		property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
+		property environment.acceptance = "true";
 		property portal.smoke = "false";
+
+		SignIn.signInTestSetup();
+
+		Smoke.viewWelcomeContentPage();
+
+		Smoke.runSmoke();
+
+		Portlet.shutdownServer();
+
+		AntCommands.runCommand("build-test.xml", "wait-for-server-shutdown -Dapp.server.port.number=8080");
+	}
+
+	@priority = 5
+	test SmokeWithRewriteBatchedStatements {
+		property database.types = "mariadb,mysql,postgresql,sqlserver";
+		property portal.smoke = "false";
+		property rewrite.batch.statements = "true";
+
+		SignIn.signInTestSetup();
+
+		Navigator.openURL();
 
 		Smoke.viewWelcomeContentPage();
 
 		Smoke.runSmoke();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test SmokeWithRuntimeJSPCompile {
 		property delete.precompiled.jsps = "true";
 		property portal.smoke = "false";
 
+		SignIn.signInTestSetup();
+
 		Smoke.viewWelcomeContentPage();
 
 		Smoke.runSmoke();
 	}
 
-	@priority = "5"
+	@priority = 5
 	test SmokeWithSPADisabled {
 		property custom.properties = "javascript.single.page.application.enabled=false";
 		property portal.smoke = "false";
+
+		SignIn.signInTestSetup();
 
 		Smoke.viewWelcomeContentPage();
 

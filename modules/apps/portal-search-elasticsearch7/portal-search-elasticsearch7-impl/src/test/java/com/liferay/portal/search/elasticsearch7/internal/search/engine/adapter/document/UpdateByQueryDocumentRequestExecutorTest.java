@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.document;
 
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchFixture;
 import com.liferay.portal.search.elasticsearch7.internal.query.ElasticsearchQueryTranslatorFixture;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
@@ -76,31 +68,33 @@ public class UpdateByQueryDocumentRequestExecutorTest {
 
 		UpdateByQueryDocumentRequestExecutorImpl
 			updateByQueryDocumentRequestExecutorImpl =
-				new UpdateByQueryDocumentRequestExecutorImpl() {
-					{
-						setElasticsearchClientResolver(_elasticsearchFixture);
+				new UpdateByQueryDocumentRequestExecutorImpl();
 
-						com.liferay.portal.search.elasticsearch7.internal.
-							legacy.query.ElasticsearchQueryTranslatorFixture
-								lecacyElasticsearchQueryTranslatorFixture =
-									new com.liferay.portal.search.
-										elasticsearch7.internal.legacy.query.ElasticsearchQueryTranslatorFixture();
+		com.liferay.portal.search.elasticsearch7.internal.legacy.query.
+			ElasticsearchQueryTranslatorFixture
+				lecacyElasticsearchQueryTranslatorFixture =
+					new com.liferay.portal.search.elasticsearch7.internal.
+						legacy.query.ElasticsearchQueryTranslatorFixture();
 
-						setLegacyQueryTranslator(
-							lecacyElasticsearchQueryTranslatorFixture.
-								getElasticsearchQueryTranslator());
+		ReflectionTestUtil.setFieldValue(
+			updateByQueryDocumentRequestExecutorImpl,
+			"_elasticsearchClientResolver", _elasticsearchFixture);
+		ReflectionTestUtil.setFieldValue(
+			updateByQueryDocumentRequestExecutorImpl, "_legacyQueryTranslator",
+			lecacyElasticsearchQueryTranslatorFixture.
+				getElasticsearchQueryTranslator());
 
-						ElasticsearchQueryTranslatorFixture
-							elasticsearchQueryTranslatorFixture =
-								new ElasticsearchQueryTranslatorFixture();
+		ElasticsearchQueryTranslatorFixture
+			elasticsearchQueryTranslatorFixture =
+				new ElasticsearchQueryTranslatorFixture();
 
-						setQueryTranslator(
-							elasticsearchQueryTranslatorFixture.
-								getElasticsearchQueryTranslator());
+		ReflectionTestUtil.setFieldValue(
+			updateByQueryDocumentRequestExecutorImpl, "_queryTranslator",
+			elasticsearchQueryTranslatorFixture.
+				getElasticsearchQueryTranslator());
 
-						setScripts(_scripts);
-					}
-				};
+		ReflectionTestUtil.setFieldValue(
+			updateByQueryDocumentRequestExecutorImpl, "_scripts", _scripts);
 
 		UpdateByQueryRequest updateByQueryRequest =
 			updateByQueryDocumentRequestExecutorImpl.createUpdateByQueryRequest(

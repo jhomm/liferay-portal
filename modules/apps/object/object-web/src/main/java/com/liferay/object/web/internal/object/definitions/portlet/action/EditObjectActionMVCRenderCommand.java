@@ -1,28 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.web.internal.object.definitions.portlet.action;
 
-import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
+import com.liferay.notification.service.NotificationTemplateLocalService;
 import com.liferay.object.action.executor.ObjectActionExecutorRegistry;
 import com.liferay.object.action.trigger.ObjectActionTriggerRegistry;
 import com.liferay.object.constants.ObjectPortletKeys;
+import com.liferay.object.constants.ObjectWebKeys;
 import com.liferay.object.model.ObjectAction;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectActionService;
+import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectDefinitionService;
-import com.liferay.object.web.internal.constants.ObjectWebKeys;
+import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFolderLocalService;
 import com.liferay.object.web.internal.object.definitions.display.context.ObjectDefinitionsActionsDisplayContext;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
@@ -32,10 +26,11 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.security.script.management.configuration.helper.ScriptManagementConfigurationHelper;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
+		"jakarta.portlet.name=" + ObjectPortletKeys.OBJECT_DEFINITIONS,
 		"mvc.command.name=/object_definitions/edit_object_action"
 	},
 	service = MVCRenderCommand.class
@@ -71,10 +66,13 @@ public class EditObjectActionMVCRenderCommand implements MVCRenderCommand {
 			renderRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
 				new ObjectDefinitionsActionsDisplayContext(
-					_ddmFormRenderer,
-					_portal.getHttpServletRequest(renderRequest),
+					_portal.getHttpServletRequest(renderRequest), _jsonFactory,
+					_notificationTemplateLocalService,
 					_objectActionExecutorRegistry, _objectActionTriggerRegistry,
-					_objectDefinitionModelResourcePermission, _jsonFactory));
+					_objectDefinitionLocalService,
+					_objectDefinitionModelResourcePermission,
+					_objectFieldLocalService, _objectFolderLocalService,
+					_scriptManagementConfigurationHelper));
 		}
 		catch (PortalException portalException) {
 			SessionErrors.add(renderRequest, portalException.getClass());
@@ -84,10 +82,10 @@ public class EditObjectActionMVCRenderCommand implements MVCRenderCommand {
 	}
 
 	@Reference
-	private DDMFormRenderer _ddmFormRenderer;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private JSONFactory _jsonFactory;
+	private NotificationTemplateLocalService _notificationTemplateLocalService;
 
 	@Reference
 	private ObjectActionExecutorRegistry _objectActionExecutorRegistry;
@@ -97,6 +95,9 @@ public class EditObjectActionMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private ObjectActionTriggerRegistry _objectActionTriggerRegistry;
+
+	@Reference
+	private ObjectDefinitionLocalService _objectDefinitionLocalService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.object.model.ObjectDefinition)"
@@ -108,6 +109,16 @@ public class EditObjectActionMVCRenderCommand implements MVCRenderCommand {
 	private ObjectDefinitionService _objectDefinitionService;
 
 	@Reference
+	private ObjectFieldLocalService _objectFieldLocalService;
+
+	@Reference
+	private ObjectFolderLocalService _objectFolderLocalService;
+
+	@Reference
 	private Portal _portal;
+
+	@Reference
+	private ScriptManagementConfigurationHelper
+		_scriptManagementConfigurationHelper;
 
 }

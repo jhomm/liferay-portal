@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.internal.notification;
@@ -24,21 +15,20 @@ import com.liferay.calendar.notification.NotificationSenderException;
 import com.liferay.calendar.notification.NotificationTemplateContext;
 import com.liferay.calendar.notification.NotificationUtil;
 import com.liferay.calendar.service.impl.CalendarBookingLocalServiceImpl;
+import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 
-import java.io.File;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eduardo Lundgren
  */
 @Component(
-	immediate = true, property = "notification.type=email",
-	service = NotificationSender.class
+	property = "notification.type=email", service = NotificationSender.class
 )
 public class EmailNotificationSender implements NotificationSender {
 
@@ -85,8 +75,14 @@ public class EmailNotificationSender implements NotificationSender {
 		try {
 			SubscriptionSender subscriptionSender = new SubscriptionSender();
 
-			subscriptionSender.addFileAttachment(
-				(File)notificationTemplateContext.getAttribute("icsFile"));
+			byte[] icsFile = (byte[])notificationTemplateContext.getAttribute(
+				"icsFile");
+
+			if (icsFile != null) {
+				subscriptionSender.addFileAttachment(
+					new UnsyncByteArrayInputStream(icsFile));
+			}
+
 			subscriptionSender.addRuntimeSubscribers(
 				notificationRecipient.getEmailAddress(),
 				notificationRecipient.getName());
@@ -94,8 +90,6 @@ public class EmailNotificationSender implements NotificationSender {
 				CalendarBookingLocalServiceImpl.class.getName());
 			subscriptionSender.setClassPK(
 				notificationTemplateContext.getCalendarId());
-			subscriptionSender.setCompanyId(
-				notificationTemplateContext.getCompanyId());
 			subscriptionSender.setContextAttributes(
 				"[$CALENDAR_NAME$]",
 				notificationTemplateContext.getAttribute("calendarName"),
@@ -141,10 +135,10 @@ public class EmailNotificationSender implements NotificationSender {
 				subscriptionSender.setCreatorUserId(
 					calendarNotificationTemplate.getUserId());
 				subscriptionSender.setLocalizedBodyMap(
-					LocalizationUtil.getLocalizationMap(
+					_localization.getLocalizationMap(
 						calendarNotificationTemplate.getBody()));
 				subscriptionSender.setLocalizedSubjectMap(
-					LocalizationUtil.getLocalizationMap(
+					_localization.getLocalizationMap(
 						calendarNotificationTemplate.getSubject()));
 			}
 			else {
@@ -165,5 +159,8 @@ public class EmailNotificationSender implements NotificationSender {
 				"Unable to send mail message", exception);
 		}
 	}
+
+	@Reference
+	private Localization _localization;
 
 }

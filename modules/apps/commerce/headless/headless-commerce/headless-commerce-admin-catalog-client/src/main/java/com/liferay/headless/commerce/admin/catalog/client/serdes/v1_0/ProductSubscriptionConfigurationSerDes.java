@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.dto.v1_0.ProductSubscriptionConfiguration;
 import com.liferay.headless.commerce.admin.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -58,6 +49,80 @@ public class ProductSubscriptionConfigurationSerDes {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("{");
+
+		if (productSubscriptionConfiguration.getDeliverySubscriptionEnable() !=
+				null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliverySubscriptionEnable\": ");
+
+			sb.append(
+				productSubscriptionConfiguration.
+					getDeliverySubscriptionEnable());
+		}
+
+		if (productSubscriptionConfiguration.getDeliverySubscriptionLength() !=
+				null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliverySubscriptionLength\": ");
+
+			sb.append(
+				productSubscriptionConfiguration.
+					getDeliverySubscriptionLength());
+		}
+
+		if (productSubscriptionConfiguration.
+				getDeliverySubscriptionNumberOfLength() != null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliverySubscriptionNumberOfLength\": ");
+
+			sb.append(
+				productSubscriptionConfiguration.
+					getDeliverySubscriptionNumberOfLength());
+		}
+
+		if (productSubscriptionConfiguration.getDeliverySubscriptionType() !=
+				null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliverySubscriptionType\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				productSubscriptionConfiguration.getDeliverySubscriptionType());
+
+			sb.append("\"");
+		}
+
+		if (productSubscriptionConfiguration.
+				getDeliverySubscriptionTypeSettings() != null) {
+
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deliverySubscriptionTypeSettings\": ");
+
+			sb.append(
+				_toJSON(
+					productSubscriptionConfiguration.
+						getDeliverySubscriptionTypeSettings()));
+		}
 
 		if (productSubscriptionConfiguration.getEnable() != null) {
 			if (sb.length() > 1) {
@@ -140,6 +205,71 @@ public class ProductSubscriptionConfigurationSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		if (productSubscriptionConfiguration.getDeliverySubscriptionEnable() ==
+				null) {
+
+			map.put("deliverySubscriptionEnable", null);
+		}
+		else {
+			map.put(
+				"deliverySubscriptionEnable",
+				String.valueOf(
+					productSubscriptionConfiguration.
+						getDeliverySubscriptionEnable()));
+		}
+
+		if (productSubscriptionConfiguration.getDeliverySubscriptionLength() ==
+				null) {
+
+			map.put("deliverySubscriptionLength", null);
+		}
+		else {
+			map.put(
+				"deliverySubscriptionLength",
+				String.valueOf(
+					productSubscriptionConfiguration.
+						getDeliverySubscriptionLength()));
+		}
+
+		if (productSubscriptionConfiguration.
+				getDeliverySubscriptionNumberOfLength() == null) {
+
+			map.put("deliverySubscriptionNumberOfLength", null);
+		}
+		else {
+			map.put(
+				"deliverySubscriptionNumberOfLength",
+				String.valueOf(
+					productSubscriptionConfiguration.
+						getDeliverySubscriptionNumberOfLength()));
+		}
+
+		if (productSubscriptionConfiguration.getDeliverySubscriptionType() ==
+				null) {
+
+			map.put("deliverySubscriptionType", null);
+		}
+		else {
+			map.put(
+				"deliverySubscriptionType",
+				String.valueOf(
+					productSubscriptionConfiguration.
+						getDeliverySubscriptionType()));
+		}
+
+		if (productSubscriptionConfiguration.
+				getDeliverySubscriptionTypeSettings() == null) {
+
+			map.put("deliverySubscriptionTypeSettings", null);
+		}
+		else {
+			map.put(
+				"deliverySubscriptionTypeSettings",
+				String.valueOf(
+					productSubscriptionConfiguration.
+						getDeliverySubscriptionTypeSettings()));
+		}
+
 		if (productSubscriptionConfiguration.getEnable() == null) {
 			map.put("enable", null);
 		}
@@ -208,11 +338,110 @@ public class ProductSubscriptionConfigurationSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(
+					jsonParserFieldName, "deliverySubscriptionEnable")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "deliverySubscriptionLength")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"deliverySubscriptionNumberOfLength")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "deliverySubscriptionType")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"deliverySubscriptionTypeSettings")) {
+
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "enable")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "length")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "numberOfLength")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "subscriptionType")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "subscriptionTypeSettings")) {
+
+				return true;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ProductSubscriptionConfiguration productSubscriptionConfiguration,
 			String jsonParserFieldName, Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "enable")) {
+			if (Objects.equals(
+					jsonParserFieldName, "deliverySubscriptionEnable")) {
+
+				if (jsonParserFieldValue != null) {
+					productSubscriptionConfiguration.
+						setDeliverySubscriptionEnable(
+							(Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "deliverySubscriptionLength")) {
+
+				if (jsonParserFieldValue != null) {
+					productSubscriptionConfiguration.
+						setDeliverySubscriptionLength(
+							Integer.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"deliverySubscriptionNumberOfLength")) {
+
+				if (jsonParserFieldValue != null) {
+					productSubscriptionConfiguration.
+						setDeliverySubscriptionNumberOfLength(
+							Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "deliverySubscriptionType")) {
+
+				if (jsonParserFieldValue != null) {
+					productSubscriptionConfiguration.
+						setDeliverySubscriptionType(
+							ProductSubscriptionConfiguration.
+								DeliverySubscriptionType.create(
+									(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"deliverySubscriptionTypeSettings")) {
+
+				if (jsonParserFieldValue != null) {
+					productSubscriptionConfiguration.
+						setDeliverySubscriptionTypeSettings(
+							(Map<String, String>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "enable")) {
 				if (jsonParserFieldValue != null) {
 					productSubscriptionConfiguration.setEnable(
 						(Boolean)jsonParserFieldValue);
@@ -243,8 +472,7 @@ public class ProductSubscriptionConfigurationSerDes {
 				if (jsonParserFieldValue != null) {
 					productSubscriptionConfiguration.
 						setSubscriptionTypeSettings(
-							(Map)ProductSubscriptionConfigurationSerDes.toMap(
-								(String)jsonParserFieldValue));
+							(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 		}
@@ -279,36 +507,7 @@ public class ProductSubscriptionConfigurationSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -318,6 +517,42 @@ public class ProductSubscriptionConfigurationSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

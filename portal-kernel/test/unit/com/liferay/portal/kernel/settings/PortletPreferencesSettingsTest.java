@@ -1,29 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.settings;
 
-import javax.portlet.PortletPreferences;
+import jakarta.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.mockito.Matchers;
 import org.mockito.Mockito;
-
-import org.powermock.api.mockito.PowerMockito;
 
 /**
  * @author Iván Zaera
@@ -32,20 +20,19 @@ public class PortletPreferencesSettingsTest {
 
 	@Before
 	public void setUp() {
-		_portletPreferences = PowerMockito.mock(PortletPreferences.class);
+		_portletPreferences = Mockito.mock(PortletPreferences.class);
 
 		Mockito.when(
 			_portletPreferences.getValue(
-				Matchers.eq(_PORTLET_PREFERENCES_SINGLE_KEY),
-				Matchers.anyString())
+				Mockito.eq(_PORTLET_PREFERENCES_SINGLE_KEY),
+				Mockito.nullable(String.class))
 		).thenReturn(
 			_PORTLET_PREFERENCES_SINGLE_VALUE
 		);
 
 		Mockito.when(
 			_portletPreferences.getValues(
-				Matchers.eq(_PORTLET_PREFERENCES_MULTIPLE_KEY),
-				(String[])Matchers.any())
+				Mockito.eq(_PORTLET_PREFERENCES_MULTIPLE_KEY), Mockito.any())
 		).thenReturn(
 			_PORTLET_PREFERENCES_MULTIPLE_VALUES
 		);
@@ -115,9 +102,11 @@ public class PortletPreferencesSettingsTest {
 
 		_portletPreferencesSettings.setValue("key", "value");
 
-		Mockito.verify(_portletPreferences);
-
-		_portletPreferences.setValue("key", "value");
+		Mockito.verify(
+			_portletPreferences
+		).setValue(
+			"key", "value"
+		);
 	}
 
 	@Test
@@ -128,18 +117,20 @@ public class PortletPreferencesSettingsTest {
 
 		_portletPreferencesSettings.setValues("key", values);
 
-		Mockito.verify(_portletPreferences);
-
-		_portletPreferences.setValues("key", values);
+		Mockito.verify(
+			_portletPreferences
+		).setValues(
+			"key", values
+		);
 	}
 
 	@Test
 	public void testStoreIsPerformedOnPortletPreferences() throws Exception {
 		_portletPreferencesSettings.store();
 
-		Mockito.verify(_portletPreferences);
-
-		_portletPreferences.store();
+		Mockito.verify(
+			_portletPreferences
+		).store();
 	}
 
 	private static final String _DEFAULT_SETTINGS_MULTIPLE_KEY = "defaultKeys";

@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service;
 
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.workflow.kaleo.model.KaleoAction;
 
 /**
  * Provides a wrapper for {@link KaleoActionLocalService}.
@@ -26,6 +21,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class KaleoActionLocalServiceWrapper
 	implements KaleoActionLocalService,
 			   ServiceWrapper<KaleoActionLocalService> {
+
+	public KaleoActionLocalServiceWrapper() {
+		this(null);
+	}
 
 	public KaleoActionLocalServiceWrapper(
 		KaleoActionLocalService kaleoActionLocalService) {
@@ -44,14 +43,12 @@ public class KaleoActionLocalServiceWrapper
 	 * @return the kaleo action that was added
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction addKaleoAction(
-		com.liferay.portal.workflow.kaleo.model.KaleoAction kaleoAction) {
-
+	public KaleoAction addKaleoAction(KaleoAction kaleoAction) {
 		return _kaleoActionLocalService.addKaleoAction(kaleoAction);
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction addKaleoAction(
+	public KaleoAction addKaleoAction(
 			String kaleoClassName, long kaleoClassPK, long kaleoDefinitionId,
 			long kaleoDefinitionVersionId, String kaleoNodeName,
 			com.liferay.portal.workflow.kaleo.definition.Action action,
@@ -70,9 +67,7 @@ public class KaleoActionLocalServiceWrapper
 	 * @return the new kaleo action
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction
-		createKaleoAction(long kaleoActionId) {
-
+	public KaleoAction createKaleoAction(long kaleoActionId) {
 		return _kaleoActionLocalService.createKaleoAction(kaleoActionId);
 	}
 
@@ -103,10 +98,7 @@ public class KaleoActionLocalServiceWrapper
 	 * @return the kaleo action that was removed
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction
-		deleteKaleoAction(
-			com.liferay.portal.workflow.kaleo.model.KaleoAction kaleoAction) {
-
+	public KaleoAction deleteKaleoAction(KaleoAction kaleoAction) {
 		return _kaleoActionLocalService.deleteKaleoAction(kaleoAction);
 	}
 
@@ -122,8 +114,7 @@ public class KaleoActionLocalServiceWrapper
 	 * @throws PortalException if a kaleo action with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction
-			deleteKaleoAction(long kaleoActionId)
+	public KaleoAction deleteKaleoAction(long kaleoActionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoActionLocalService.deleteKaleoAction(kaleoActionId);
@@ -251,9 +242,7 @@ public class KaleoActionLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction fetchKaleoAction(
-		long kaleoActionId) {
-
+	public KaleoAction fetchKaleoAction(long kaleoActionId) {
 		return _kaleoActionLocalService.fetchKaleoAction(kaleoActionId);
 	}
 
@@ -279,8 +268,7 @@ public class KaleoActionLocalServiceWrapper
 	 * @throws PortalException if a kaleo action with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction getKaleoAction(
-			long kaleoActionId)
+	public KaleoAction getKaleoAction(long kaleoActionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoActionLocalService.getKaleoAction(kaleoActionId);
@@ -298,26 +286,22 @@ public class KaleoActionLocalServiceWrapper
 	 * @return the range of kaleo actions
 	 */
 	@Override
-	public java.util.List<com.liferay.portal.workflow.kaleo.model.KaleoAction>
-		getKaleoActions(int start, int end) {
-
+	public java.util.List<KaleoAction> getKaleoActions(int start, int end) {
 		return _kaleoActionLocalService.getKaleoActions(start, end);
 	}
 
 	@Override
-	public java.util.List<com.liferay.portal.workflow.kaleo.model.KaleoAction>
-		getKaleoActions(
-			long companyId, String kaleoClassName, long kaleoClassPK) {
+	public java.util.List<KaleoAction> getKaleoActions(
+		long companyId, String kaleoClassName, long kaleoClassPK) {
 
 		return _kaleoActionLocalService.getKaleoActions(
 			companyId, kaleoClassName, kaleoClassPK);
 	}
 
 	@Override
-	public java.util.List<com.liferay.portal.workflow.kaleo.model.KaleoAction>
-		getKaleoActions(
-			long companyId, String kaleoClassName, long kaleoClassPK,
-			String executionType) {
+	public java.util.List<KaleoAction> getKaleoActions(
+		long companyId, String kaleoClassName, long kaleoClassPK,
+		String executionType) {
 
 		return _kaleoActionLocalService.getKaleoActions(
 			companyId, kaleoClassName, kaleoClassPK, executionType);
@@ -365,11 +349,33 @@ public class KaleoActionLocalServiceWrapper
 	 * @return the kaleo action that was updated
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoAction
-		updateKaleoAction(
-			com.liferay.portal.workflow.kaleo.model.KaleoAction kaleoAction) {
-
+	public KaleoAction updateKaleoAction(KaleoAction kaleoAction) {
 		return _kaleoActionLocalService.updateKaleoAction(kaleoAction);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _kaleoActionLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<KaleoAction> getCTPersistence() {
+		return _kaleoActionLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<KaleoAction> getModelClass() {
+		return _kaleoActionLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<KaleoAction>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _kaleoActionLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

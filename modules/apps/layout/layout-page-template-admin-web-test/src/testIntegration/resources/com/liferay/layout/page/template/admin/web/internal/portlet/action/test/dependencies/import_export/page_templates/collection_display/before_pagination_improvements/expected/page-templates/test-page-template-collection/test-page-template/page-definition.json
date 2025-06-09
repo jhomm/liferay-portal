@@ -1,0 +1,360 @@
+{
+	"pageElement": {
+		"id": "item1",
+		"pageElements": [
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": false,
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 100,
+					"numberOfItemsPerPage": 10,
+					"numberOfPages": 10,
+					"paginationType": "Numeric",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item2",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item3",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": false,
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 100,
+					"numberOfItemsPerPage": 10,
+					"numberOfPages": 10,
+					"paginationType": "Simple",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item4",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item5",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": false,
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 100,
+					"numberOfItemsPerPage": 5,
+					"numberOfPages": 20,
+					"paginationType": "None",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item6",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item7",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": true,
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 5,
+					"numberOfItemsPerPage": 22,
+					"numberOfPages": 1,
+					"paginationType": "Numeric",
+					"showAllItems": true,
+					"templateKey": ""
+				},
+				"id": "item8",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item9",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": false,
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 200,
+					"numberOfItemsPerPage": 5,
+					"numberOfPages": 40,
+					"paginationType": "None",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item10",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item11",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": false,
+					"numberOfColumns": 1,
+					"numberOfItems": 5,
+					"numberOfItemsPerPage": 5,
+					"numberOfPages": 1,
+					"paginationType": "None",
+					"showAllItems": false
+				},
+				"id": "item12",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item13",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "${CLASS_PK}"
+						},
+						"collectionType": "Collection"
+					},
+					"collectionViewports": [
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "landscapeMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "portraitMobile"
+						},
+						{
+							"collectionViewportDefinition": {
+							},
+							"id": "tablet"
+						}
+					],
+					"displayAllItems": false,
+					"displayAllPages": false,
+					"listItemStyle": "",
+					"listStyle": "",
+					"numberOfColumns": 1,
+					"numberOfItems": 5,
+					"numberOfItemsPerPage": 5,
+					"numberOfPages": 1,
+					"paginationType": "None",
+					"showAllItems": false,
+					"templateKey": ""
+				},
+				"id": "item14",
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"id": "item15",
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"colorSchemeName": "01",
+		"themeName": "Classic"
+	},
+	"version": 1.1
+}

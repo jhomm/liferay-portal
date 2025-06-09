@@ -1,46 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.script;
+
+import java.net.URL;
 
 /**
  * @author Kenji Heigel
  */
 public class UnbalancedCodeException extends PoshiScriptParserException {
 
-	public UnbalancedCodeException(String msg, int index, String code) {
-		super(msg);
+	public UnbalancedCodeException(
+		String msg, int index, String code, URL filePathURL) {
 
-		_processLine(index, code);
+		super(
+			msg, _getErrorLineNumber(index, code),
+			_getErrorSnippet(index, code), filePathURL);
 	}
 
-	@Override
-	public String getErrorSnippet() {
-		return _errorSnippet;
+	private static int _getErrorLineNumber(int index, String code) {
+		int lineNumber = 1;
+
+		for (int i = 0; i < index; i++) {
+			if (code.charAt(i) == '\n') {
+				lineNumber++;
+			}
+		}
+
+		return lineNumber;
 	}
 
-	public void setErrorSnippet(String errorSnippet) {
-		_errorSnippet = errorSnippet;
-	}
-
-	private String _getLine(int lineNumber, String code) {
-		String[] lines = code.split("\n");
-
-		return lines[lineNumber - 1].replace("\t", "    ");
-	}
-
-	private void _processLine(int index, String code) {
+	private static String _getErrorSnippet(int index, String code) {
 		int lineNumber = 1;
 
 		int newLineIndex = -1;
@@ -52,8 +44,6 @@ public class UnbalancedCodeException extends PoshiScriptParserException {
 				newLineIndex = i;
 			}
 		}
-
-		setErrorLineNumber(lineNumber);
 
 		int column = 1;
 
@@ -78,9 +68,13 @@ public class UnbalancedCodeException extends PoshiScriptParserException {
 
 		sb.append("^");
 
-		setErrorSnippet(sb.toString());
+		return sb.toString();
 	}
 
-	private String _errorSnippet = "";
+	private static String _getLine(int lineNumber, String code) {
+		String[] lines = code.split("\n");
+
+		return lines[lineNumber - 1].replace("\t", "    ");
+	}
 
 }

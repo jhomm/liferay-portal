@@ -1,31 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.portlet.container.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.AuthToken;
 import com.liferay.portal.kernel.security.auth.AuthTokenWhitelist;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.osgi.web.portlet.container.test.util.PortletContainerTestUtil;
@@ -37,19 +27,18 @@ import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portlet.SecurityPortletContainerWrapper;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -147,7 +136,7 @@ public class ActionRequestPortletContainerTest
 		setUpPortlet(
 			testPortlet,
 			HashMapDictionaryBuilder.<String, Object>put(
-				"javax.portlet.init-param.check-auth-token",
+				"jakarta.portlet.init-param.check-auth-token",
 				Boolean.FALSE.toString()
 			).build(),
 			TEST_PORTLET_ID);
@@ -189,13 +178,12 @@ public class ActionRequestPortletContainerTest
 
 			LogEntry logEntry = logEntries.get(0);
 
+			Throwable throwable = logEntry.getThrowable();
+
 			Assert.assertEquals(
-				StringBundler.concat(
-					"com.liferay.portal.kernel.security.auth.",
-					"PrincipalException$MustHaveSessionCSRFToken: User 0 ",
-					"session does not have a CSRF token for ",
-					"com.liferay.portlet.SecurityPortletContainerWrapper"),
-				logEntry.getMessage());
+				"User 0 session does not have a CSRF token for " +
+					"com.liferay.portlet.SecurityPortletContainerWrapper",
+				throwable.getMessage());
 
 			Assert.assertEquals(403, response.getCode());
 			Assert.assertFalse(testPortlet.isCalledAction());
@@ -226,7 +214,8 @@ public class ActionRequestPortletContainerTest
 				httpServletRequest, TEST_PORTLET_ID, layout.getPlid(),
 				PortletRequest.ACTION_PHASE));
 
-		url = HttpUtil.setParameter(url, "p_auth", response.getBody());
+		url = HttpComponentsUtil.setParameter(
+			url, "p_auth", response.getBody());
 
 		response = PortletContainerTestUtil.request(
 			url, Collections.singletonMap("Cookie", response.getCookies()));
@@ -317,7 +306,7 @@ public class ActionRequestPortletContainerTest
 				httpServletRequest, TEST_PORTLET_ID, layout.getPlid(),
 				PortletRequest.ACTION_PHASE));
 
-		url = HttpUtil.removeParameter(url, "p_auth");
+		url = HttpComponentsUtil.removeParameter(url, "p_auth");
 
 		response = PortletContainerTestUtil.request(
 			url,
@@ -346,11 +335,10 @@ public class ActionRequestPortletContainerTest
 
 			PortletURL portletURL = resourceResponse.createActionURL();
 
-			Map<String, String[]> parameterMap = HttpUtil.getParameterMap(
-				HttpUtil.getQueryString(portletURL.toString()));
-
 			String portalAuthenticationToken = MapUtil.getString(
-				parameterMap, "p_auth");
+				HttpComponentsUtil.getParameterMap(
+					HttpComponentsUtil.getQueryString(portletURL.toString())),
+				"p_auth");
 
 			printWriter.write(portalAuthenticationToken);
 		}
@@ -377,11 +365,7 @@ public class ActionRequestPortletContainerTest
 
 		@Override
 		public boolean isValidSharedSecret(String sharedSecret) {
-			if (_SHARED_SECRET.equals(sharedSecret)) {
-				return true;
-			}
-
-			return false;
+			return _SHARED_SECRET.equals(sharedSecret);
 		}
 
 	}

@@ -1,16 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+/* eslint-disable @liferay/no-get-data-attribute */
 
 if (!CKEDITOR.plugins.get('videoembed')) {
 	const REGEX_HTTP = /^https?/;
@@ -225,7 +218,7 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 
 				if (wrapperElement) {
 					const elementList = wrapperElement.$;
-					if (elementList.length > 0) {
+					if (elementList.length) {
 						const lastElement = new CKEDITOR.dom.element(
 							elementList[elementList.length - 1]
 						);
@@ -256,12 +249,11 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 
 	let currentAlignment = null;
 	let currentElement = null;
-	let resizer = null;
 
 	// CSS is added in a compressed form
 
 	CKEDITOR.addCss(
-		'img::selection{color:rgba(0,0,0,0)}img.ckimgrsz{outline:1px dashed #000}#ckimgrsz{position:absolute;width:0;height:0;cursor:default;z-index:10001}#ckimgrsz span{display:none;position:absolute;top:0;left:0;width:0;height:0;background-size:100% 100%;opacity:.65;outline:1px dashed #000}#ckimgrsz i{position:absolute;display:block;width:5px;height:5px;background:#fff;border:1px solid #000}#ckimgrsz i.active,#ckimgrsz i:hover{background:#000}#ckimgrsz i.br,#ckimgrsz i.tl{cursor:nwse-resize}#ckimgrsz i.bm,#ckimgrsz i.tm{cursor:ns-resize}#ckimgrsz i.bl,#ckimgrsz i.tr{cursor:nesw-resize}#ckimgrsz i.lm,#ckimgrsz i.rm{cursor:ew-resize}body.dragging-br,body.dragging-br *,body.dragging-tl,body.dragging-tl *{cursor:nwse-resize!important}body.dragging-bm,body.dragging-bm *,body.dragging-tm,body.dragging-tm *{cursor:ns-resize!important}body.dragging-bl,body.dragging-bl *,body.dragging-tr,body.dragging-tr *{cursor:nesw-resize!important}body.dragging-lm,body.dragging-lm *,body.dragging-rm,body.dragging-rm *{cursor:ew-resize!important}'
+		'img::selection{color:rgba(0,0,0,0)}img.ckimgrsz{outline:1px dashed #000}.ckimgrszwrapper{position:absolute;width:0;height:0;cursor:default;z-index:10001}.ckimgrszwrapper span{display:none;position:absolute;top:0;left:0;width:0;height:0;background-size:100% 100%;opacity:.65;outline:1px dashed #000}.ckimgrszwrapper i{position:absolute;display:block;width:5px;height:5px;background:#fff;border:1px solid #000}.ckimgrszwrapper i.active,.ckimgrszwrapper i:hover{background:#000}.ckimgrszwrapper i.br,.ckimgrszwrapper i.tl{cursor:nwse-resize}.ckimgrszwrapper i.bm,.ckimgrszwrapper i.tm{cursor:ns-resize}.ckimgrszwrapper i.bl,.ckimgrszwrapper i.tr{cursor:nesw-resize}.ckimgrszwrapper i.lm,.ckimgrszwrapper i.rm{cursor:ew-resize}body.dragging-br,body.dragging-br *,body.dragging-tl,body.dragging-tl *{cursor:nwse-resize!important}body.dragging-bm,body.dragging-bm *,body.dragging-tm,body.dragging-tm *{cursor:ns-resize!important}body.dragging-bl,body.dragging-bl *,body.dragging-tr,body.dragging-tr *{cursor:nesw-resize!important}body.dragging-lm,body.dragging-lm *,body.dragging-rm,body.dragging-rm *{cursor:ew-resize!important}'
 	);
 
 	/**
@@ -301,9 +293,8 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 					element.getOuterHtml()
 				);
 
-				const widgetFragment = new CKEDITOR.htmlParser.fragment.fromHtml(
-					embedContent
-				);
+				const widgetFragment =
+					new CKEDITOR.htmlParser.fragment.fromHtml(embedContent);
 
 				upcastWidget = widgetFragment.children[0];
 
@@ -364,14 +355,16 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 
 				editor.focus();
 
-				resizer.hide();
+				editor.resizer.hide();
 			}, 0);
 		},
 
 		afterInit(editor) {
 			editor.on('resize', () => {
-				resizer.hide();
-				selectWidget(editor);
+				if (editor.resizer) {
+					editor.resizer.hide();
+					selectWidget(editor);
+				}
 			});
 
 			ALIGN_VALUES.forEach((alignValue) => {
@@ -394,9 +387,8 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 							);
 
 							if (selectedEmbed) {
-								const embedAlignment = getEmbedAlignment(
-									selectedElement
-								);
+								const embedAlignment =
+									getEmbedAlignment(selectedElement);
 
 								if (embedAlignment === alignValue) {
 									removeEmbedAlignment(
@@ -412,23 +404,22 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 								}
 
 								currentElement = selectedElement;
-								currentAlignment = getEmbedAlignment(
-									selectedElement
-								);
+								currentAlignment =
+									getEmbedAlignment(selectedElement);
 
-								const imageElement = selectedElement.findOne(
-									'img'
-								);
+								const imageElement =
+									selectedElement.findOne('img');
 
 								if (imageElement) {
-									resizer.show(imageElement.$);
+									editor.resizer.show(imageElement.$);
 								}
 
 								event.cancel();
 
-								const elementPath = new CKEDITOR.dom.elementPath(
-									selectedElement
-								);
+								const elementPath =
+									new CKEDITOR.dom.elementPath(
+										selectedElement
+									);
 
 								ALIGN_VALUES.forEach((alignValue) => {
 									const command = editor.getCommand(
@@ -453,9 +444,8 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 							) &&
 							lastElement.findOne('[data-widget] [data-embed-id]')
 						) {
-							const embedAlignment = getEmbedAlignment(
-								lastElement
-							);
+							const embedAlignment =
+								getEmbedAlignment(lastElement);
 
 							event.sender.setState(
 								embedAlignment === alignValue
@@ -494,16 +484,16 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 				data(event) {
 					const instance = this;
 
-					const stylesJSON = instance.element.getAttribute(
-						'data-styles'
-					);
+					const stylesJSON =
+						instance.element.getAttribute('data-styles');
 
 					let styles = stylesJSON ? JSON.parse(stylesJSON) : null;
 
 					if (!styles) {
 						const iframe = instance.wrapper.findOne('iframe');
 
-						const bounds = instance.wrapper.$.getBoundingClientRect();
+						const bounds =
+							instance.wrapper.$.getBoundingClientRect();
 						const width = iframe.getAttribute('width');
 
 						const pwidth =
@@ -529,8 +519,8 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 						currentAlignment = result.alignment;
 						currentElement = result.element;
 
-						if (resizer.isHandle(event.target)) {
-							resizer.initDrag(event);
+						if (editor.resizer.isHandle(event.target)) {
+							editor.resizer.initDrag(event);
 						}
 					}
 
@@ -600,7 +590,7 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 			window.addEventListener(
 				'resize',
 				() => {
-					resizer.hide();
+					editor.resizer.hide();
 					selectWidget(editor);
 				},
 				false
@@ -642,25 +632,19 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 						);
 
 						if (imageElement) {
-							resizer.show(imageElement.$);
+							editor.resizer.show(imageElement.$);
 						}
 					}
 					else {
-						resizer.hide();
+						if (editor.resizer) {
+							editor.resizer.hide();
+						}
 					}
-				}
-			});
-
-			editor.on('destroy', () => {
-				const resizeElement = document.getElementById('ckimgrsz');
-
-				if (resizeElement) {
-					resizeElement.remove();
 				}
 			});
 
 			editor.on('blur', () => {
-				resizer.hide();
+				editor.resizer.hide();
 			});
 
 			editor.filter.addElementCallback((element) => {
@@ -669,23 +653,28 @@ if (!CKEDITOR.plugins.get('videoembed')) {
 				}
 			});
 
-			var path = instance.path;
+			const path = instance.path;
 
-			var dependencies = [
+			const dependencies = [
 				CKEDITOR.getUrl(path + 'DragEvent.es.js'),
 				CKEDITOR.getUrl(path + 'Resizer.es.js'),
 			];
 
-			CKEDITOR.scriptLoader.load(dependencies, () => {
-				resizer = new Liferay.ResizerCKEditor(editor, {
-					onComplete(element, width, height) {
-						resizeElement(element, width, height);
+			editor.on('dataReady', () => {
+				CKEDITOR.scriptLoader.load(dependencies, () => {
+					editor.resizer = new Liferay.ResizerCKEditor(editor, {
+						onComplete(element, width, height) {
+							resizeElement(element, width, height);
 
-						if (currentAlignment && currentElement) {
-							setEmbedAlignment(currentElement, currentAlignment);
-						}
-						selectWidget(editor);
-					},
+							if (currentAlignment && currentElement) {
+								setEmbedAlignment(
+									currentElement,
+									currentAlignment
+								);
+							}
+							selectWidget(editor);
+						},
+					});
 				});
 			});
 		},

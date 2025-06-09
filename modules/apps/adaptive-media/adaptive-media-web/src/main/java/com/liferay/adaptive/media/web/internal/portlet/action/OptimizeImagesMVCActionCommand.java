@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.web.internal.portlet.action;
@@ -18,9 +9,9 @@ import com.liferay.adaptive.media.constants.AMOptimizeImagesBackgroundTaskConsta
 import com.liferay.adaptive.media.web.internal.background.task.OptimizeImagesAllConfigurationsBackgroundTaskExecutor;
 import com.liferay.adaptive.media.web.internal.background.task.OptimizeImagesSingleConfigurationBackgroundTaskExecutor;
 import com.liferay.adaptive.media.web.internal.constants.AMPortletKeys;
-import com.liferay.portal.background.task.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskManager;
+import com.liferay.portal.kernel.backgroundtask.constants.BackgroundTaskContextMapConstants;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
@@ -31,14 +22,14 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.uuid.PortalUUID;
+import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.io.Serializable;
 
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,9 +38,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
+		"jakarta.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
 		"mvc.command.name=/adaptive_media/optimize_images"
 	},
 	service = MVCActionCommand.class
@@ -66,29 +56,24 @@ public class OptimizeImagesMVCActionCommand extends BaseMVCActionCommand {
 
 		String entryUuid = ParamUtil.getString(actionRequest, "entryUuid");
 
-		String jobName = "optimizeImages-".concat(_portalUUID.generate());
+		String jobName = "optimizeImages-".concat(PortalUUIDUtil.generate());
 
 		if (Validator.isNotNull(entryUuid)) {
 			_optimizeImagesSingleConfiguration(
-				themeDisplay.getUserId(), themeDisplay.getCompanyId(), jobName,
-				entryUuid);
+				themeDisplay.getUserId(), jobName, entryUuid);
 		}
 		else {
-			_optimizeImages(
-				themeDisplay.getUserId(), themeDisplay.getCompanyId(), jobName);
+			_optimizeImages(themeDisplay.getUserId(), jobName);
 		}
 
 		SessionMessages.add(actionRequest, "optimizeImages");
 	}
 
-	private BackgroundTask _optimizeImages(
-			long userId, long companyId, String jobName)
+	private BackgroundTask _optimizeImages(long userId, String jobName)
 		throws Exception {
 
 		Map<String, Serializable> taskContextMap =
 			HashMapBuilder.<String, Serializable>put(
-				AMOptimizeImagesBackgroundTaskConstants.COMPANY_ID, companyId
-			).put(
 				BackgroundTaskContextMapConstants.DELETE_ON_SUCCESS, true
 			).build();
 
@@ -107,14 +92,11 @@ public class OptimizeImagesMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	private BackgroundTask _optimizeImagesSingleConfiguration(
-			long userId, long companyId, String jobName,
-			String configurationEntryUuid)
+			long userId, String jobName, String configurationEntryUuid)
 		throws Exception {
 
 		Map<String, Serializable> taskContextMap =
 			HashMapBuilder.<String, Serializable>put(
-				AMOptimizeImagesBackgroundTaskConstants.COMPANY_ID, companyId
-			).put(
 				AMOptimizeImagesBackgroundTaskConstants.
 					CONFIGURATION_ENTRY_UUID,
 				configurationEntryUuid
@@ -139,8 +121,5 @@ public class OptimizeImagesMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private BackgroundTaskManager _backgroundTaskManager;
-
-	@Reference
-	private PortalUUID _portalUUID;
 
 }

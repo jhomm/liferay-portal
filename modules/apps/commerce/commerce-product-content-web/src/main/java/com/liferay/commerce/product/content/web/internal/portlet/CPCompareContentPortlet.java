@@ -1,43 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.portlet;
 
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.content.constants.CPContentWebKeys;
+import com.liferay.commerce.product.content.helper.CPCompareContentHelper;
+import com.liferay.commerce.product.content.helper.CPContentHelper;
 import com.liferay.commerce.product.content.render.list.CPContentListRendererRegistry;
 import com.liferay.commerce.product.content.render.list.entry.CPContentListEntryRendererRegistry;
-import com.liferay.commerce.product.content.util.CPCompareContentHelper;
 import com.liferay.commerce.product.content.web.internal.display.context.CPCompareContentDisplayContext;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
-import com.liferay.commerce.product.util.CPCompareHelper;
-import com.liferay.commerce.product.util.CPDefinitionHelper;
+import com.liferay.commerce.product.helper.CPCompareHelper;
+import com.liferay.commerce.product.helper.CPDefinitionHelper;
+import com.liferay.commerce.product.type.CPTypeRegistry;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +40,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-commerce-product-compare-content",
@@ -57,14 +50,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Product Comparison Table",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/compare_products/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.CP_COMPARE_CONTENT_WEB,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=Product Comparison Table",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/compare_products/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.CP_COMPARE_CONTENT_WEB,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {CPCompareContentPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CPCompareContentPortlet extends MVCPortlet {
 
@@ -83,17 +77,21 @@ public class CPCompareContentPortlet extends MVCPortlet {
 
 			CPCompareContentDisplayContext cpCompareContentDisplayContext =
 				new CPCompareContentDisplayContext(
-					_cpCompareHelper, _cpContentListEntryRendererRegistry,
+					_configurationProvider, _cpCompareHelper,
+					_cpContentListEntryRendererRegistry,
 					_cpContentListRendererRegistry, _cpDefinitionHelper,
-					_cpTypeServicesTracker, httpServletRequest);
+					_cpTypeRegistry, _groupLocalService, httpServletRequest);
 
 			httpServletRequest.setAttribute(
 				WebKeys.PORTLET_DISPLAY_CONTEXT,
 				cpCompareContentDisplayContext);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
+
+		renderRequest.setAttribute(
+			CPContentWebKeys.CP_CONTENT_HELPER, _cpContentHelper);
 
 		super.render(renderRequest, renderResponse);
 	}
@@ -102,10 +100,16 @@ public class CPCompareContentPortlet extends MVCPortlet {
 		CPCompareContentPortlet.class);
 
 	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
 	private CPCompareContentHelper _cpCompareContentHelper;
 
 	@Reference
 	private CPCompareHelper _cpCompareHelper;
+
+	@Reference
+	private CPContentHelper _cpContentHelper;
 
 	@Reference
 	private CPContentListEntryRendererRegistry
@@ -118,7 +122,10 @@ public class CPCompareContentPortlet extends MVCPortlet {
 	private CPDefinitionHelper _cpDefinitionHelper;
 
 	@Reference
-	private CPTypeServicesTracker _cpTypeServicesTracker;
+	private CPTypeRegistry _cpTypeRegistry;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private Portal _portal;

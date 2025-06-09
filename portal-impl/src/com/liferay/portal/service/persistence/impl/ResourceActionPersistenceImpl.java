@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -42,7 +33,6 @@ import com.liferay.portal.model.impl.ResourceActionModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -176,7 +166,7 @@ public class ResourceActionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ResourceAction>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ResourceAction resourceAction : list) {
@@ -559,7 +549,8 @@ public class ResourceActionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {name};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -614,7 +605,6 @@ public class ResourceActionPersistenceImpl
 		"(resourceAction.name IS NULL OR resourceAction.name = '')";
 
 	private FinderPath _finderPathFetchByN_A;
-	private FinderPath _finderPathCountByN_A;
 
 	/**
 	 * Returns the resource action where name = &#63; and actionId = &#63; or throws a <code>NoSuchResourceActionException</code> if it could not be found.
@@ -690,7 +680,7 @@ public class ResourceActionPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByN_A, finderArgs);
+				_finderPathFetchByN_A, finderArgs, this);
 		}
 
 		if (result instanceof ResourceAction) {
@@ -806,74 +796,13 @@ public class ResourceActionPersistenceImpl
 	 */
 	@Override
 	public int countByN_A(String name, String actionId) {
-		name = Objects.toString(name, "");
-		actionId = Objects.toString(actionId, "");
+		ResourceAction resourceAction = fetchByN_A(name, actionId);
 
-		FinderPath finderPath = _finderPathCountByN_A;
-
-		Object[] finderArgs = new Object[] {name, actionId};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_RESOURCEACTION_WHERE);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_N_A_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_N_A_NAME_2);
-			}
-
-			boolean bindActionId = false;
-
-			if (actionId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_N_A_ACTIONID_3);
-			}
-			else {
-				bindActionId = true;
-
-				sb.append(_FINDER_COLUMN_N_A_ACTIONID_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindName) {
-					queryPos.add(name);
-				}
-
-				if (bindActionId) {
-					queryPos.add(actionId);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (resourceAction == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_N_A_NAME_2 =
@@ -993,7 +922,6 @@ public class ResourceActionPersistenceImpl
 			resourceActionModelImpl.getActionId()
 		};
 
-		FinderCacheUtil.putResult(_finderPathCountByN_A, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByN_A, args, resourceActionModelImpl);
 	}
@@ -1291,7 +1219,7 @@ public class ResourceActionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ResourceAction>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1361,7 +1289,7 @@ public class ResourceActionPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1448,34 +1376,13 @@ public class ResourceActionPersistenceImpl
 			new String[] {String.class.getName(), String.class.getName()},
 			new String[] {"name", "actionId"}, true);
 
-		_finderPathCountByN_A = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByN_A",
-			new String[] {String.class.getName(), String.class.getName()},
-			new String[] {"name", "actionId"}, false);
-
-		_setResourceActionUtilPersistence(this);
+		ResourceActionUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setResourceActionUtilPersistence(null);
+		ResourceActionUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(ResourceActionImpl.class.getName());
-	}
-
-	private void _setResourceActionUtilPersistence(
-		ResourceActionPersistence resourceActionPersistence) {
-
-		try {
-			Field field = ResourceActionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, resourceActionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_RESOURCEACTION =

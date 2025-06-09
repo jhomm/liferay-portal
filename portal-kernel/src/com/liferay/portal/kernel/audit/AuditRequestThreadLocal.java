@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.audit;
@@ -22,20 +13,19 @@ import com.liferay.petra.lang.CentralizedThreadLocal;
 public class AuditRequestThreadLocal {
 
 	public static AuditRequestThreadLocal getAuditThreadLocal() {
-		AuditRequestThreadLocal auditRequestThreadLocal =
-			_auditRequestThreadLocal.get();
+		AuditRequestThreadLocal auditRequestThreadLocal = _auditRequest.get();
 
 		if (auditRequestThreadLocal == null) {
 			auditRequestThreadLocal = new AuditRequestThreadLocal();
 
-			_auditRequestThreadLocal.set(auditRequestThreadLocal);
+			_auditRequest.set(auditRequestThreadLocal);
 		}
 
 		return auditRequestThreadLocal;
 	}
 
 	public static void removeAuditThreadLocal() {
-		_auditRequestThreadLocal.remove();
+		_auditRequest.remove();
 	}
 
 	public String getClientHost() {
@@ -50,8 +40,16 @@ public class AuditRequestThreadLocal {
 		return _queryString;
 	}
 
+	public String getRealUserEmailAddress() {
+		return _realUserEmailAddress;
+	}
+
 	public long getRealUserId() {
 		return _realUserId;
+	}
+
+	public String getRealUserLogin() {
+		return _realUserLogin;
 	}
 
 	public String getRequestURL() {
@@ -82,8 +80,16 @@ public class AuditRequestThreadLocal {
 		_queryString = queryString;
 	}
 
+	public void setRealUserEmailAddress(String realUserEmailAddress) {
+		_realUserEmailAddress = realUserEmailAddress;
+	}
+
 	public void setRealUserId(long realUserId) {
 		_realUserId = realUserId;
+	}
+
+	public void setRealUserLogin(String realUserLogin) {
+		_realUserLogin = realUserLogin;
 	}
 
 	public void setRequestURL(String requestURL) {
@@ -102,14 +108,16 @@ public class AuditRequestThreadLocal {
 		_sessionID = sessionID;
 	}
 
-	private static final ThreadLocal<AuditRequestThreadLocal>
-		_auditRequestThreadLocal = new CentralizedThreadLocal<>(
-			AuditRequestThreadLocal.class + "._auditRequestThreadLocal");
+	private static final ThreadLocal<AuditRequestThreadLocal> _auditRequest =
+		new CentralizedThreadLocal<>(
+			AuditRequestThreadLocal.class + "._auditRequest");
 
 	private String _clientHost;
 	private String _clientIP;
 	private String _queryString;
+	private String _realUserEmailAddress;
 	private long _realUserId;
+	private String _realUserLogin;
 	private String _requestURL;
 	private String _serverName;
 	private int _serverPort;

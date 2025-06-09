@@ -1,9 +1,10 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Export/Import Framework";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -12,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -22,12 +23,10 @@ definition {
 		}
 	}
 
-	@priority = "4"
+	@priority = 3
 	test Import6210buildNumber {
 		LAR.importSiteCP(
 			cannotImport = "true",
-			compressedFile = "true",
-			filePath = "enduser/exportimport",
 			import6210buildNumber = "true",
 			importFail = "true",
 			larFileName = "6210buildNumber.lar",

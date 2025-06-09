@@ -1,11 +1,10 @@
 let content = null;
 let errorMessage = null;
 let loadingIndicator = null;
-let resizeIntervalId = null;
 let videoContainer = null;
 let videoMask = null;
 
-const editMode = document.body.classList.contains('has-edit-mode-menu');
+const editMode = layoutMode === 'edit';
 
 const height = configuration.videoHeight
 	? configuration.videoHeight.replace('px', '')
@@ -15,20 +14,7 @@ const width = configuration.videoWidth
 	? configuration.videoWidth.replace('px', '')
 	: configuration.videoWidth;
 
-function debounce(fn, timeout) {
-	let timeoutId = null;
-
-	return function () {
-		clearTimeout(timeoutId);
-
-		timeoutId = setTimeout(fn, timeout);
-	};
-}
-
 function main() {
-	clearInterval(resizeIntervalId);
-	window.removeEventListener('resize', resize);
-
 	if (!document.body.contains(fragmentElement)) {
 		return;
 	}
@@ -66,44 +52,19 @@ function main() {
 	}
 }
 
-const resize = debounce(function () {
-	if (!document.body.contains(fragmentElement)) {
-		clearInterval(resizeIntervalId);
-		window.removeEventListener('resize', resize);
-
-		return;
-	}
-
-	const scrollPosition = {
-		left: window.scrollX,
-		top: window.scrollY,
-	};
-
+function resize() {
 	content.style.height = '';
 	content.style.width = '';
 
-	requestAnimationFrame(function () {
-		try {
-			const boundingClientRect = content.getBoundingClientRect();
+	const contentWidth = width;
+	const contentHeight = height || contentWidth * 0.5625;
 
-			const contentWidth = width || boundingClientRect.width;
-
-			const contentHeight = height || contentWidth * 0.5625;
-
-			content.style.height = contentHeight + 'px';
-			content.style.width = contentWidth + 'px';
-
-			window.scrollTo(scrollPosition);
-		}
-		catch (error) {
-			clearInterval(resizeIntervalId);
-			window.removeEventListener('resize', resize);
-		}
-	});
-}, 300);
+	content.style.height = contentHeight + 'px';
+	content.style.width = contentWidth + 'px';
+}
 
 function showError() {
-	if (document.body.classList.contains('has-edit-mode-menu')) {
+	if (editMode) {
 		errorMessage.removeAttribute('hidden');
 		loadingIndicator.parentElement.removeChild(loadingIndicator);
 		videoContainer.parentElement.removeChild(videoContainer);
@@ -118,17 +79,15 @@ function showVideo() {
 	loadingIndicator.parentElement.removeChild(loadingIndicator);
 	videoContainer.removeAttribute('aria-hidden');
 
-	if (!document.body.classList.contains('has-edit-mode-menu')) {
+	if (!editMode) {
 		videoMask.parentElement.removeChild(videoMask);
 	}
 
-	window.addEventListener('resize', resize);
+	if (width || height) {
+		content.classList.remove('aspect-ratio', 'aspect-ratio-16-to-9');
 
-	if (editMode) {
-		resizeIntervalId = setInterval(resize, 2000);
+		resize();
 	}
-
-	resize();
 }
 
 main();

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.category.property.service;
@@ -17,6 +8,7 @@ package com.liferay.asset.category.property.service;
 import com.liferay.asset.category.property.model.AssetCategoryProperty;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -29,6 +21,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
 public class AssetCategoryPropertyLocalServiceWrapper
 	implements AssetCategoryPropertyLocalService,
 			   ServiceWrapper<AssetCategoryPropertyLocalService> {
+
+	public AssetCategoryPropertyLocalServiceWrapper() {
+		this(null);
+	}
 
 	public AssetCategoryPropertyLocalServiceWrapper(
 		AssetCategoryPropertyLocalService assetCategoryPropertyLocalService) {
@@ -271,6 +267,16 @@ public class AssetCategoryPropertyLocalServiceWrapper
 	}
 
 	@Override
+	public AssetCategoryProperty
+		fetchAssetCategoryPropertyByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return _assetCategoryPropertyLocalService.
+			fetchAssetCategoryPropertyByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	@Override
 	public AssetCategoryProperty fetchCategoryProperty(
 		long categoryId, String key) {
 
@@ -329,6 +335,17 @@ public class AssetCategoryPropertyLocalServiceWrapper
 
 		return _assetCategoryPropertyLocalService.getAssetCategoryProperty(
 			categoryPropertyId);
+	}
+
+	@Override
+	public AssetCategoryProperty
+			getAssetCategoryPropertyByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetCategoryPropertyLocalService.
+			getAssetCategoryPropertyByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -433,6 +450,11 @@ public class AssetCategoryPropertyLocalServiceWrapper
 
 		return _assetCategoryPropertyLocalService.updateCategoryProperty(
 			categoryPropertyId, key, value);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _assetCategoryPropertyLocalService.getBasePersistence();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.model.impl;
@@ -34,22 +25,18 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.trash.model.TrashEntry;
 import com.liferay.trash.model.TrashEntryModel;
-import com.liferay.trash.model.TrashEntrySoap;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -167,60 +154,6 @@ public class TrashEntryModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static TrashEntry toModel(TrashEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		TrashEntry model = new TrashEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setEntryId(soapModel.getEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setClassNameId(soapModel.getClassNameId());
-		model.setClassPK(soapModel.getClassPK());
-		model.setSystemEventSetKey(soapModel.getSystemEventSetKey());
-		model.setTypeSettings(soapModel.getTypeSettings());
-		model.setStatus(soapModel.getStatus());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<TrashEntry> toModels(TrashEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<TrashEntry> models = new ArrayList<TrashEntry>(soapModels.length);
-
-		for (TrashEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public TrashEntryModelImpl() {
 	}
 
@@ -296,109 +229,102 @@ public class TrashEntryModelImpl
 	public Map<String, Function<TrashEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<TrashEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, TrashEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			TrashEntry.class.getClassLoader(), TrashEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<TrashEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<TrashEntry> constructor =
-				(Constructor<TrashEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<TrashEntry, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<TrashEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", TrashEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", TrashEntry::getCtCollectionId);
+			attributeGetterFunctions.put("entryId", TrashEntry::getEntryId);
+			attributeGetterFunctions.put("groupId", TrashEntry::getGroupId);
+			attributeGetterFunctions.put("companyId", TrashEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", TrashEntry::getUserId);
+			attributeGetterFunctions.put("userName", TrashEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", TrashEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"classNameId", TrashEntry::getClassNameId);
+			attributeGetterFunctions.put("classPK", TrashEntry::getClassPK);
+			attributeGetterFunctions.put(
+				"systemEventSetKey", TrashEntry::getSystemEventSetKey);
+			attributeGetterFunctions.put(
+				"typeSettings", TrashEntry::getTypeSettings);
+			attributeGetterFunctions.put("status", TrashEntry::getStatus);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<TrashEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<TrashEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<TrashEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<TrashEntry, Object>>();
-		Map<String, BiConsumer<TrashEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<TrashEntry, ?>>();
+		private static final Map<String, BiConsumer<TrashEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", TrashEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<TrashEntry, Long>)TrashEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", TrashEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<TrashEntry, Long>)TrashEntry::setCtCollectionId);
-		attributeGetterFunctions.put("entryId", TrashEntry::getEntryId);
-		attributeSetterBiConsumers.put(
-			"entryId", (BiConsumer<TrashEntry, Long>)TrashEntry::setEntryId);
-		attributeGetterFunctions.put("groupId", TrashEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<TrashEntry, Long>)TrashEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", TrashEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<TrashEntry, Long>)TrashEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", TrashEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<TrashEntry, Long>)TrashEntry::setUserId);
-		attributeGetterFunctions.put("userName", TrashEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<TrashEntry, String>)TrashEntry::setUserName);
-		attributeGetterFunctions.put("createDate", TrashEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<TrashEntry, Date>)TrashEntry::setCreateDate);
-		attributeGetterFunctions.put("classNameId", TrashEntry::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<TrashEntry, Long>)TrashEntry::setClassNameId);
-		attributeGetterFunctions.put("classPK", TrashEntry::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK", (BiConsumer<TrashEntry, Long>)TrashEntry::setClassPK);
-		attributeGetterFunctions.put(
-			"systemEventSetKey", TrashEntry::getSystemEventSetKey);
-		attributeSetterBiConsumers.put(
-			"systemEventSetKey",
-			(BiConsumer<TrashEntry, Long>)TrashEntry::setSystemEventSetKey);
-		attributeGetterFunctions.put(
-			"typeSettings", TrashEntry::getTypeSettings);
-		attributeSetterBiConsumers.put(
-			"typeSettings",
-			(BiConsumer<TrashEntry, String>)TrashEntry::setTypeSettings);
-		attributeGetterFunctions.put("status", TrashEntry::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<TrashEntry, Integer>)TrashEntry::setStatus);
+		static {
+			Map<String, BiConsumer<TrashEntry, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<TrashEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"entryId",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<TrashEntry, Long>)TrashEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<TrashEntry, String>)TrashEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<TrashEntry, Date>)TrashEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setClassPK);
+			attributeSetterBiConsumers.put(
+				"systemEventSetKey",
+				(BiConsumer<TrashEntry, Long>)TrashEntry::setSystemEventSetKey);
+			attributeSetterBiConsumers.put(
+				"typeSettings",
+				(BiConsumer<TrashEntry, String>)TrashEntry::setTypeSettings);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<TrashEntry, Integer>)TrashEntry::setStatus);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -962,41 +888,12 @@ public class TrashEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<TrashEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<TrashEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<TrashEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((TrashEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, TrashEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					TrashEntry.class, ModelWrapper.class);
 
 	}
 
@@ -1015,8 +912,9 @@ public class TrashEntryModelImpl
 	private int _status;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<TrashEntry, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<TrashEntry, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

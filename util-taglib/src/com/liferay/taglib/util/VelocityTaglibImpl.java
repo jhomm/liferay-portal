@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.util;
@@ -22,7 +13,7 @@ import com.liferay.portal.kernel.servlet.DirectRequestDispatcherFactoryUtil;
 import com.liferay.portal.kernel.servlet.JSPSupportServlet;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.TagSupport;
 import com.liferay.taglib.portlet.ActionURLTag;
@@ -34,27 +25,26 @@ import com.liferay.taglib.security.PermissionsURLTag;
 import com.liferay.taglib.servlet.PageContextWrapper;
 import com.liferay.taglib.theme.MetaTagsTag;
 import com.liferay.taglib.theme.WrapPortletTag;
-import com.liferay.taglib.ui.BreadcrumbTag;
 import com.liferay.taglib.ui.IconHelpTag;
 import com.liferay.taglib.ui.IconTag;
 import com.liferay.taglib.ui.LanguageTag;
+
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspFactory;
+import jakarta.servlet.jsp.PageContext;
 
 import java.io.Writer;
 
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspFactory;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -75,8 +65,8 @@ public class VelocityTaglibImpl implements VelocityTaglib {
 		JspFactory jspFactory = JspFactory.getDefaultFactory();
 
 		_pageContext = jspFactory.getPageContext(
-			new JSPSupportServlet(_servletContext), _httpServletRequest,
-			_httpServletResponse, null, false, 0, false);
+			new JSPSupportServlet(_servletContext), httpServletRequest,
+			httpServletResponse, null, false, 0, false);
 	}
 
 	@Override
@@ -109,8 +99,8 @@ public class VelocityTaglibImpl implements VelocityTaglib {
 
 		String resourceID = null;
 		String cacheability = null;
-		Map<String, String[]> parameterMap = HttpUtil.parameterMapFromString(
-			queryString);
+		Map<String, String[]> parameterMap =
+			HttpComponentsUtil.parameterMapFromString(queryString);
 		Set<String> removedParameterNames = null;
 
 		PortletURL portletURL = ActionURLTag.doTag(
@@ -158,47 +148,8 @@ public class VelocityTaglibImpl implements VelocityTaglib {
 	}
 
 	@Override
-	public void breadcrumb() throws Exception {
-		BreadcrumbTag breadcrumbTag = new BreadcrumbTag();
-
-		setUp(breadcrumbTag);
-
-		breadcrumbTag.runTag();
-	}
-
-	@Override
-	public void breadcrumb(
-			long ddmTemplateGroupId, String ddmTemplateKey,
-			boolean showGuestGroup, boolean showParentGroups,
-			boolean showLayout, boolean showPortletBreadcrumb)
-		throws Exception {
-
-		BreadcrumbTag breadcrumbTag = new BreadcrumbTag();
-
-		setUp(breadcrumbTag);
-
-		breadcrumbTag.setDdmTemplateGroupId(ddmTemplateGroupId);
-		breadcrumbTag.setDdmTemplateKey(ddmTemplateKey);
-		breadcrumbTag.setShowGuestGroup(showGuestGroup);
-		breadcrumbTag.setShowLayout(showLayout);
-		breadcrumbTag.setShowParentGroups(showParentGroups);
-		breadcrumbTag.setShowPortletBreadcrumb(showPortletBreadcrumb);
-
-		breadcrumbTag.runTag();
-	}
-
-	@Override
 	public void doAsURL(long doAsUserId) throws Exception {
 		DoAsURLTag.doTag(doAsUserId, _httpServletRequest);
-	}
-
-	@Override
-	public BreadcrumbTag getBreadcrumbTag() throws Exception {
-		BreadcrumbTag breadcrumbTag = new BreadcrumbTag();
-
-		setUp(breadcrumbTag);
-
-		return breadcrumbTag;
 	}
 
 	@Override
@@ -413,8 +364,8 @@ public class VelocityTaglibImpl implements VelocityTaglib {
 		String name = null;
 		String resourceID = null;
 		String cacheability = null;
-		Map<String, String[]> parameterMap = HttpUtil.parameterMapFromString(
-			queryString);
+		Map<String, String[]> parameterMap =
+			HttpComponentsUtil.parameterMapFromString(queryString);
 		Set<String> removedParameterNames = null;
 
 		PortletURL portletURL = ActionURLTag.doTag(

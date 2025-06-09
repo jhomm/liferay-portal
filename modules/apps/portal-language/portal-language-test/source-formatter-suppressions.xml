@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<suppressions>
+	<checkstyle>
+		<suppress checks="ContractionsCheck" files="src/testIntegration/java/com/liferay/portal/language/test/ResourceBundleUtilTest\.java" />
+	</checkstyle>
+	<source-check>
+		<suppress checks="ResourceBundleCheck" files="src/testIntegration/java/com/liferay/portal/language/test/LanguageResourcesExtenderTest\.java" />
+	</source-check>
+</suppressions>

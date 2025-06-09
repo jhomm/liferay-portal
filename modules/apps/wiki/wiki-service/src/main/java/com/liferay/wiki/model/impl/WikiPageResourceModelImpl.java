@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.wiki.model.WikiPageResourceModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -67,10 +57,10 @@ public class WikiPageResourceModelImpl
 	public static final String TABLE_NAME = "WikiPageResource";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
-		{"resourcePrimKey", Types.BIGINT}, {"groupId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"nodeId", Types.BIGINT},
-		{"title", Types.VARCHAR}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"resourcePrimKey", Types.BIGINT},
+		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"nodeId", Types.BIGINT}, {"title", Types.VARCHAR}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -78,6 +68,7 @@ public class WikiPageResourceModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("resourcePrimKey", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
@@ -87,7 +78,7 @@ public class WikiPageResourceModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table WikiPageResource (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,resourcePrimKey LONG not null primary key,groupId LONG,companyId LONG,nodeId LONG,title VARCHAR(255) null)";
+		"create table WikiPageResource (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,resourcePrimKey LONG not null,groupId LONG,companyId LONG,nodeId LONG,title VARCHAR(255) null,primary key (resourcePrimKey, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table WikiPageResource";
 
@@ -230,94 +221,94 @@ public class WikiPageResourceModelImpl
 	public Map<String, Function<WikiPageResource, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<WikiPageResource, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, WikiPageResource>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			WikiPageResource.class.getClassLoader(), WikiPageResource.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<WikiPageResource, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<WikiPageResource> constructor =
-				(Constructor<WikiPageResource>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<WikiPageResource, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<WikiPageResource, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", WikiPageResource::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", WikiPageResource::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", WikiPageResource::getUuid);
+			attributeGetterFunctions.put(
+				"resourcePrimKey", WikiPageResource::getResourcePrimKey);
+			attributeGetterFunctions.put(
+				"groupId", WikiPageResource::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", WikiPageResource::getCompanyId);
+			attributeGetterFunctions.put("nodeId", WikiPageResource::getNodeId);
+			attributeGetterFunctions.put("title", WikiPageResource::getTitle);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<WikiPageResource, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<WikiPageResource, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<WikiPageResource, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<WikiPageResource, Object>>();
-		Map<String, BiConsumer<WikiPageResource, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<WikiPageResource, ?>>();
+		private static final Map<String, BiConsumer<WikiPageResource, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", WikiPageResource::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<WikiPageResource, Long>)
-				WikiPageResource::setMvccVersion);
-		attributeGetterFunctions.put("uuid", WikiPageResource::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<WikiPageResource, String>)WikiPageResource::setUuid);
-		attributeGetterFunctions.put(
-			"resourcePrimKey", WikiPageResource::getResourcePrimKey);
-		attributeSetterBiConsumers.put(
-			"resourcePrimKey",
-			(BiConsumer<WikiPageResource, Long>)
-				WikiPageResource::setResourcePrimKey);
-		attributeGetterFunctions.put("groupId", WikiPageResource::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<WikiPageResource, Long>)WikiPageResource::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", WikiPageResource::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<WikiPageResource, Long>)WikiPageResource::setCompanyId);
-		attributeGetterFunctions.put("nodeId", WikiPageResource::getNodeId);
-		attributeSetterBiConsumers.put(
-			"nodeId",
-			(BiConsumer<WikiPageResource, Long>)WikiPageResource::setNodeId);
-		attributeGetterFunctions.put("title", WikiPageResource::getTitle);
-		attributeSetterBiConsumers.put(
-			"title",
-			(BiConsumer<WikiPageResource, String>)WikiPageResource::setTitle);
+		static {
+			Map<String, BiConsumer<WikiPageResource, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<WikiPageResource, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<WikiPageResource, Long>)
+					WikiPageResource::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<WikiPageResource, Long>)
+					WikiPageResource::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<WikiPageResource, String>)
+					WikiPageResource::setUuid);
+			attributeSetterBiConsumers.put(
+				"resourcePrimKey",
+				(BiConsumer<WikiPageResource, Long>)
+					WikiPageResource::setResourcePrimKey);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<WikiPageResource, Long>)
+					WikiPageResource::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<WikiPageResource, Long>)
+					WikiPageResource::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"nodeId",
+				(BiConsumer<WikiPageResource, Long>)
+					WikiPageResource::setNodeId);
+			attributeSetterBiConsumers.put(
+				"title",
+				(BiConsumer<WikiPageResource, String>)
+					WikiPageResource::setTitle);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -332,6 +323,20 @@ public class WikiPageResourceModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@Override
@@ -531,6 +536,7 @@ public class WikiPageResourceModelImpl
 		WikiPageResourceImpl wikiPageResourceImpl = new WikiPageResourceImpl();
 
 		wikiPageResourceImpl.setMvccVersion(getMvccVersion());
+		wikiPageResourceImpl.setCtCollectionId(getCtCollectionId());
 		wikiPageResourceImpl.setUuid(getUuid());
 		wikiPageResourceImpl.setResourcePrimKey(getResourcePrimKey());
 		wikiPageResourceImpl.setGroupId(getGroupId());
@@ -549,6 +555,8 @@ public class WikiPageResourceModelImpl
 
 		wikiPageResourceImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		wikiPageResourceImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		wikiPageResourceImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
 		wikiPageResourceImpl.setResourcePrimKey(
@@ -639,6 +647,8 @@ public class WikiPageResourceModelImpl
 
 		wikiPageResourceCacheModel.mvccVersion = getMvccVersion();
 
+		wikiPageResourceCacheModel.ctCollectionId = getCtCollectionId();
+
 		wikiPageResourceCacheModel.uuid = getUuid();
 
 		String uuid = wikiPageResourceCacheModel.uuid;
@@ -716,45 +726,17 @@ public class WikiPageResourceModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<WikiPageResource, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<WikiPageResource, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<WikiPageResource, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((WikiPageResource)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, WikiPageResource>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					WikiPageResource.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _resourcePrimKey;
 	private long _groupId;
@@ -766,7 +748,8 @@ public class WikiPageResourceModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<WikiPageResource, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -792,6 +775,7 @@ public class WikiPageResourceModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("resourcePrimKey", _resourcePrimKey);
 		_columnOriginalValues.put("groupId", _groupId);
@@ -823,17 +807,19 @@ public class WikiPageResourceModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("uuid_", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("resourcePrimKey", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("groupId", 8L);
+		columnBitmasks.put("resourcePrimKey", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("groupId", 16L);
 
-		columnBitmasks.put("nodeId", 32L);
+		columnBitmasks.put("companyId", 32L);
 
-		columnBitmasks.put("title", 64L);
+		columnBitmasks.put("nodeId", 64L);
+
+		columnBitmasks.put("title", 128L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

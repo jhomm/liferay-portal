@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -50,7 +41,7 @@ List<Folder> folders = dlInfoPanelDisplayContext.getFolders();
 				<div class="autofit-col">
 					<ul class="autofit-padded-no-gutters autofit-row">
 						<li class="autofit-col">
-							<liferay-util:include page="/document_library/subscribe.jsp" servletContext="<%= application %>" />
+							<liferay-util:include page="/document_library/subscribe_folder.jsp" servletContext="<%= application %>" />
 						</li>
 
 						<%
@@ -84,7 +75,7 @@ List<Folder> folders = dlInfoPanelDisplayContext.getFolders();
 
 						<c:if test="<%= folder != null %>">
 							<dt class="sidebar-dt">
-								<liferay-ui:message key="created" />
+								<liferay-ui:message key="created-by" />
 							</dt>
 							<dd class="sidebar-dd">
 								<%= HtmlUtil.escape(folder.getUserName()) %>
@@ -95,6 +86,32 @@ List<Folder> folders = dlInfoPanelDisplayContext.getFolders();
 							%>
 
 							<liferay-util:include page="/document_library/info_panel_location.jsp" servletContext="<%= application %>" />
+
+							<%
+							DLPortletInstanceSettings dlPortletInstanceSettings = dlRequestHelper.getDLPortletInstanceSettings();
+							%>
+
+							<c:if test="<%= dlPortletInstanceSettings.isEnableRatings() && folder.isSupportsSocial() %>">
+
+								<%
+								RatingsType ratingsType = PortletRatingsDefinitionUtil.getRatingsType(themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(), DLFileEntry.class.getName());
+
+								if (ratingsType == null) {
+									ratingsType = RatingsType.STARS;
+								}
+								%>
+
+								<dt class="sidebar-dt">
+									<liferay-ui:message key="ratings" />
+								</dt>
+								<dd class="sidebar-dd">
+									<liferay-ratings:ratings
+										className="<%= DLFolderConstants.getClassName() %>"
+										classPK="<%= folder.getFolderId() %>"
+										type="<%= ratingsType.toString() %>"
+									/>
+								</dd>
+							</c:if>
 						</c:if>
 					</dl>
 				</liferay-ui:section>
@@ -134,9 +151,16 @@ List<Folder> folders = dlInfoPanelDisplayContext.getFolders();
 
 				<div class="autofit-col">
 					<ul class="autofit-padded-no-gutters autofit-row">
-						<li class="autofit-col">
-							<liferay-util:include page="/document_library/file_entry_action.jsp" servletContext="<%= application %>" />
-						</li>
+
+						<%
+						DLPortletInstanceSettingsHelper dlPortletInstanceSettingsHelper = new DLPortletInstanceSettingsHelper(dlRequestHelper);
+						%>
+
+						<c:if test="<%= dlPortletInstanceSettingsHelper.isShowActions() %>">
+							<li class="autofit-col">
+								<liferay-util:include page="/document_library/file_entry_action.jsp" servletContext="<%= application %>" />
+							</li>
+						</c:if>
 					</ul>
 				</div>
 			</div>
@@ -232,6 +256,37 @@ List<Folder> folders = dlInfoPanelDisplayContext.getFolders();
 						<dd class="sidebar-dd">
 							<%= HtmlUtil.escape(fileEntry.getMimeType()) %>
 						</dd>
+
+						<liferay-asset:asset-tags-available
+							className="<%= DLFileShortcutConstants.getClassName() %>"
+							classPK="<%= fileShortcut.getFileShortcutId() %>"
+						>
+							<dt class="sidebar-dt">
+								<liferay-ui:message key="tags" />
+							</dt>
+							<dd class="sidebar-dd">
+								<liferay-asset:asset-tags-summary
+									className="<%= DLFileShortcutConstants.getClassName() %>"
+									classPK="<%= fileShortcut.getFileShortcutId() %>"
+								/>
+							</dd>
+						</liferay-asset:asset-tags-available>
+
+						<liferay-asset:asset-categories-available
+							className="<%= DLFileShortcutConstants.getClassName() %>"
+							classPK="<%= fileShortcut.getFileShortcutId() %>"
+						>
+							<dt class="sidebar-dt">
+								<liferay-ui:message key="categories" />
+							</dt>
+							<dd class="sidebar-dd">
+								<liferay-asset:asset-categories-summary
+									className="<%= DLFileShortcutConstants.getClassName() %>"
+									classPK="<%= fileShortcut.getFileShortcutId() %>"
+									displayStyle="simple-category"
+								/>
+							</dd>
+						</liferay-asset:asset-categories-available>
 					</dl>
 				</liferay-ui:section>
 			</liferay-ui:tabs>

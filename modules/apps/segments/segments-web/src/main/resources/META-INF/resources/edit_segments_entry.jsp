@@ -1,29 +1,21 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-EditSegmentsEntryDisplayContext editSegmentsEntryDisplayContext = (EditSegmentsEntryDisplayContext)request.getAttribute(SegmentsWebKeys.EDIT_SEGMENTS_ENTRY_DISPLAY_CONTEXT);
+EditSegmentsEntryDisplayContext editSegmentsEntryDisplayContext = (EditSegmentsEntryDisplayContext)request.getAttribute(EditSegmentsEntryDisplayContext.class.getName());
 
 String backURL = editSegmentsEntryDisplayContext.getBackURL();
 
 if (Validator.isNotNull(backURL)) {
 	portletDisplay.setShowBackIcon(true);
 	portletDisplay.setURLBack(backURL);
+	portletDisplay.setURLBackTitle(editSegmentsEntryDisplayContext.getBackURLTitle());
 }
 
 renderResponse.setTitle(editSegmentsEntryDisplayContext.getTitle(locale));
@@ -35,28 +27,21 @@ renderResponse.setTitle(editSegmentsEntryDisplayContext.getTitle(locale));
 
 <portlet:actionURL name="/segments/update_segments_entry" var="updateSegmentsEntryActionURL" />
 
-<aui:form action="<%= updateSegmentsEntryActionURL %>" method="post" name="editSegmentFm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "saveSegmentsEntry();" %>'>
+<aui:form action="<%= updateSegmentsEntryActionURL %>" method="post" name="editSegmentFm">
 	<aui:input name="redirect" type="hidden" value="<%= editSegmentsEntryDisplayContext.getRedirect() %>" />
-	<aui:input name="segmentsEntryId" type="hidden" value="<%= editSegmentsEntryDisplayContext.getSegmentsEntryId() %>" />
 	<aui:input name="groupId" type="hidden" value="<%= editSegmentsEntryDisplayContext.getGroupId() %>" />
+	<aui:input name="segmentsEntryId" type="hidden" value="<%= editSegmentsEntryDisplayContext.getSegmentsEntryId() %>" />
 	<aui:input name="segmentsEntryKey" type="hidden" value="<%= editSegmentsEntryDisplayContext.getSegmentsEntryKey() %>" />
-	<aui:input name="type" type="hidden" value="<%= editSegmentsEntryDisplayContext.getType() %>" />
 	<aui:input name="dynamic" type="hidden" value="<%= true %>" />
 
-	<div id="<%= liferayPortletResponse.getNamespace() + "-segment-edit-root" %>">
+	<div id="<%= liferayPortletResponse.getNamespace() %>-segment-edit-root">
 		<div class="inline-item my-5 p-5 w-100">
 			<span aria-hidden="true" class="loading-animation"></span>
 		</div>
 
 		<react:component
-			module="js/SegmentsApp.es"
+			module="{SegmentsApp} from segments-web"
 			props="<%= editSegmentsEntryDisplayContext.getData() %>"
 		/>
 	</div>
 </aui:form>
-
-<aui:script>
-	function <portlet:namespace />saveSegmentsEntry() {
-		submitForm(document.<portlet:namespace />editSegmentFm);
-	}
-</aui:script>

@@ -1,53 +1,46 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
 
-import com.liferay.commerce.product.exception.DuplicateCProductException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CProduct;
+import com.liferay.commerce.product.service.CPDefinitionLinkLocalService;
 import com.liferay.commerce.product.service.base.CProductLocalServiceBaseImpl;
+import com.liferay.commerce.product.service.persistence.CPInstancePersistence;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
-import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.workflow.WorkflowConstants;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Ethan Bustad
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.product.model.CProduct",
+	service = AopService.class
+)
 public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 
 	@Override
 	public CProduct addCProduct(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
-		validate(externalReferenceCode, user.getCompanyId());
+		User user = _userLocalService.getUser(userId);
 
 		CProduct cProduct = cProductLocalService.createCProduct(
 			counterLocalService.increment());
@@ -57,7 +50,6 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 		cProduct.setCompanyId(user.getCompanyId());
 		cProduct.setUserId(user.getUserId());
 		cProduct.setUserName(user.getFullName());
-
 		cProduct.setLatestVersion(1);
 
 		return cProductPersistence.update(cProduct);
@@ -66,20 +58,10 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CProduct deleteCProduct(CProduct cProduct) throws PortalException {
+		cProduct = cProductPersistence.remove(cProduct);
 
-		// Commerce product definitions
-
-		cpDefinitionLocalService.deleteCPDefinitions(
-			cProduct.getCProductId(), WorkflowConstants.STATUS_ANY);
-
-		// Commerce product definition links
-
-		cpDefinitionLinkLocalService.deleteCPDefinitionLinksByCProductId(
+		_cpDefinitionLinkLocalService.deleteCPDefinitionLinksByCProductId(
 			cProduct.getCProductId());
-
-		// Commerce product
-
-		cProductPersistence.remove(cProduct);
 
 		return cProduct;
 	}
@@ -126,13 +108,11 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 			return cProduct;
 		}
 
-		validate(externalReferenceCode, cProduct.getCompanyId());
-
 		cProduct.setExternalReferenceCode(externalReferenceCode);
 
 		cProduct = cProductPersistence.update(cProduct);
 
-		reindexCPDefinition(cProduct.getPublishedCPDefinitionId());
+		_reindexCPDefinition(cProduct.getPublishedCPDefinitionId());
 
 		return cProduct;
 	}
@@ -155,13 +135,16 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 
 		cProduct = cProductPersistence.update(cProduct);
 
-		reindexCPDefinition(originalPublishedCPDefinitionId);
-		reindexCPDefinition(publishedCPDefinitionId);
+		_reindexCPDefinition(originalPublishedCPDefinitionId);
+		_reindexCPDefinition(publishedCPDefinitionId);
 
 		return cProduct;
 	}
 
-	protected void reindexCPDefinition(long cpDefinitionId)
+	@Reference
+	protected CPInstancePersistence cpInstancePersistence;
+
+	private void _reindexCPDefinition(long cpDefinitionId)
 		throws PortalException {
 
 		Indexer<CPDefinition> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
@@ -170,21 +153,10 @@ public class CProductLocalServiceImpl extends CProductLocalServiceBaseImpl {
 		indexer.reindex(CPDefinition.class.getName(), cpDefinitionId);
 	}
 
-	protected void validate(String externalReferenceCode, long companyId)
-		throws PortalException {
+	@Reference
+	private CPDefinitionLinkLocalService _cpDefinitionLinkLocalService;
 
-		if (Validator.isNull(externalReferenceCode)) {
-			return;
-		}
-
-		CProduct cProduct = cProductPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
-
-		if (cProduct != null) {
-			throw new DuplicateCProductException(
-				"There is another commerce product with external reference " +
-					"code " + externalReferenceCode);
-		}
-	}
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

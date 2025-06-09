@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -17,22 +8,20 @@ package com.liferay.portal.service.impl;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
+import com.liferay.portal.kernel.jsonwebservice.JSONWebServiceMode;
 import com.liferay.portal.kernel.model.Region;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
-import com.liferay.portal.model.impl.RegionModelImpl;
 import com.liferay.portal.service.base.RegionServiceBaseImpl;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * @author Brian Wing Shun Chan
@@ -50,26 +39,6 @@ public class RegionServiceImpl extends RegionServiceBaseImpl {
 
 		return regionLocalService.addRegion(
 			countryId, active, name, position, regionCode, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x)
-	 */
-	@Deprecated
-	@Override
-	public Region addRegion(
-			long countryId, String regionCode, String name, boolean active)
-		throws PortalException {
-
-		ServiceContext serviceContext = new ServiceContext();
-
-		PermissionChecker permissionChecker = getPermissionChecker();
-
-		serviceContext.setCompanyId(permissionChecker.getCompanyId());
-		serviceContext.setUserId(permissionChecker.getUserId());
-
-		return addRegion(
-			countryId, active, name, 0, regionCode, serviceContext);
 	}
 
 	@Override
@@ -115,16 +84,14 @@ public class RegionServiceImpl extends RegionServiceBaseImpl {
 	@Override
 	public List<Region> getRegions(long countryId) {
 		return regionPersistence.findByCountryId(
-			countryId, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			_getOrderByComparator(countryId));
+			countryId, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 	}
 
 	@AccessControlled(guestAccessEnabled = true)
 	@Override
 	public List<Region> getRegions(long countryId, boolean active) {
 		return regionPersistence.findByC_A(
-			countryId, active, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			_getOrderByComparator(countryId));
+			countryId, active, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 	}
 
 	@Override
@@ -162,6 +129,18 @@ public class RegionServiceImpl extends RegionServiceBaseImpl {
 		return regionLocalService.getRegionsCount(countryId, active);
 	}
 
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	@Override
+	public BaseModelSearchResult<Region> searchRegions(
+			long companyId, Boolean active, String keywords,
+			LinkedHashMap<String, Object> params, int start, int end,
+			OrderByComparator<Region> orderByComparator)
+		throws PortalException {
+
+		return regionLocalService.searchRegions(
+			companyId, active, keywords, params, start, end, orderByComparator);
+	}
+
 	@Override
 	public Region updateActive(long regionId, boolean active)
 		throws PortalException {
@@ -184,24 +163,6 @@ public class RegionServiceImpl extends RegionServiceBaseImpl {
 		return regionLocalService.updateRegion(
 			regionId, active, name, position, regionCode);
 	}
-
-	private OrderByComparator<Region> _getOrderByComparator(long countryId) {
-		Country country = _countryService.fetchCountry(countryId);
-
-		if (country == null) {
-			return null;
-		}
-
-		return _orderByComparators.get(country.getA2());
-	}
-
-	private static final Map<String, OrderByComparator<Region>>
-		_orderByComparators =
-			HashMapBuilder.<String, OrderByComparator<Region>>put(
-				"JP",
-				OrderByComparatorFactoryUtil.create(
-					RegionModelImpl.TABLE_NAME, "regionCode", true)
-			).build();
 
 	@BeanReference(type = CountryService.class)
 	private CountryService _countryService;

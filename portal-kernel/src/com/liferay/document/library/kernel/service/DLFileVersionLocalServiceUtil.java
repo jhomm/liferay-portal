@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -231,6 +222,13 @@ public class DLFileVersionLocalServiceUtil {
 			fileEntryId, excludeWorkingCopy);
 	}
 
+	public static DLFileVersion fetchLatestFileVersion(
+		long fileEntryId, boolean excludeWorkingCopy, int status) {
+
+		return getService().fetchLatestFileVersion(
+			fileEntryId, excludeWorkingCopy, status);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -353,8 +351,18 @@ public class DLFileVersionLocalServiceUtil {
 		return getService().getFileVersions(fileEntryId, status);
 	}
 
+	public static List<DLFileVersion> getFileVersions(
+		long fileEntryId, int status, int start, int end) {
+
+		return getService().getFileVersions(fileEntryId, status, start, end);
+	}
+
 	public static int getFileVersionsCount(long fileEntryId, int status) {
 		return getService().getFileVersionsCount(fileEntryId, status);
+	}
+
+	public static int getFileVersionsCount(long companyId, String storeUUID) {
+		return getService().getFileVersionsCount(companyId, storeUUID);
 	}
 
 	public static
@@ -425,6 +433,10 @@ public class DLFileVersionLocalServiceUtil {
 
 	public static DLFileVersionLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(DLFileVersionLocalService service) {
+		_service = service;
 	}
 
 	private static volatile DLFileVersionLocalService _service;

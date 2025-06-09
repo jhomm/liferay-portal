@@ -1,39 +1,31 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
+
+<%@ taglib uri="http://liferay.com/tld/portal-workflow" prefix="liferay-portal-workflow" %>
 
 <%@ page import="com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil" %><%@
 page import="com.liferay.asset.kernel.model.AssetRenderer" %><%@
 page import="com.liferay.asset.kernel.model.AssetRendererFactory" %><%@
 page import="com.liferay.document.library.configuration.DLConfiguration" %><%@
 page import="com.liferay.document.library.kernel.model.DLFileEntry" %><%@
+page import="com.liferay.document.library.kernel.util.DLValidatorUtil" %><%@
+page import="com.liferay.frontend.taglib.clay.servlet.taglib.util.NavigationItemListBuilder" %><%@
+page import="com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil" %><%@
 page import="com.liferay.portal.kernel.comment.Comment" %><%@
 page import="com.liferay.portal.kernel.dao.orm.QueryUtil" %><%@
-page import="com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil" %><%@
-page import="com.liferay.portal.kernel.search.QueryConfig" %><%@
 page import="com.liferay.portal.kernel.search.RelatedSearchResult" %><%@
 page import="com.liferay.portal.kernel.servlet.HttpHeaders" %><%@
-page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.TempFileEntryUtil" %><%@
+page import="com.liferay.trash.TrashHelper" %><%@
+page import="com.liferay.trash.util.TrashWebKeys" %><%@
 page import="com.liferay.wiki.configuration.WikiGroupServiceConfiguration" %><%@
 page import="com.liferay.wiki.configuration.WikiGroupServiceOverriddenConfiguration" %><%@
-page import="com.liferay.wiki.display.context.WikiListPagesDisplayContext" %><%@
-page import="com.liferay.wiki.display.context.WikiNodeInfoPanelDisplayContext" %><%@
-page import="com.liferay.wiki.display.context.WikiPageInfoPanelDisplayContext" %><%@
 page import="com.liferay.wiki.engine.WikiEngineRenderer" %><%@
 page import="com.liferay.wiki.exception.DuplicateNodeNameException" %><%@
 page import="com.liferay.wiki.exception.DuplicatePageException" %><%@
@@ -50,15 +42,16 @@ page import="com.liferay.wiki.social.WikiActivityKeys" %><%@
 page import="com.liferay.wiki.util.comparator.PageVersionComparator" %><%@
 page import="com.liferay.wiki.validator.WikiPageTitleValidator" %><%@
 page import="com.liferay.wiki.web.internal.configuration.WikiPortletInstanceConfiguration" %><%@
-page import="com.liferay.wiki.web.internal.display.context.WikiDisplayContextProvider" %><%@
-page import="com.liferay.wiki.web.internal.display.context.logic.MailTemplatesHelper" %><%@
-page import="com.liferay.wiki.web.internal.display.context.logic.WikiPortletInstanceSettingsHelper" %><%@
-page import="com.liferay.wiki.web.internal.display.context.logic.WikiVisualizationHelper" %><%@
-page import="com.liferay.wiki.web.internal.display.context.util.WikiRequestHelper" %><%@
-page import="com.liferay.wiki.web.internal.display.context.util.WikiSocialActivityHelper" %><%@
-page import="com.liferay.wiki.web.internal.display.context.util.WikiURLHelper" %><%@
-page import="com.liferay.wiki.web.internal.importer.MediaWikiImporter" %><%@
-page import="com.liferay.wiki.web.internal.importer.WikiImporterTracker" %><%@
+page import="com.liferay.wiki.web.internal.display.context.WikiListPagesDisplayContext" %><%@
+page import="com.liferay.wiki.web.internal.display.context.WikiNodeInfoPanelDisplayContext" %><%@
+page import="com.liferay.wiki.web.internal.display.context.WikiPageInfoPanelDisplayContext" %><%@
+page import="com.liferay.wiki.web.internal.display.context.helper.MailTemplatesHelper" %><%@
+page import="com.liferay.wiki.web.internal.display.context.helper.WikiPortletInstanceSettingsHelper" %><%@
+page import="com.liferay.wiki.web.internal.display.context.helper.WikiRequestHelper" %><%@
+page import="com.liferay.wiki.web.internal.display.context.helper.WikiSocialActivityHelper" %><%@
+page import="com.liferay.wiki.web.internal.display.context.helper.WikiURLHelper" %><%@
+page import="com.liferay.wiki.web.internal.display.context.helper.WikiVisualizationHelper" %><%@
+page import="com.liferay.wiki.web.internal.frontend.taglib.clay.servlet.taglib.WikiPageAttachmentHorizontalCard" %><%@
 page import="com.liferay.wiki.web.internal.security.permission.resource.WikiNodePermission" %><%@
 page import="com.liferay.wiki.web.internal.security.permission.resource.WikiPagePermission" %><%@
 page import="com.liferay.wiki.web.internal.util.WikiPageAttachmentsUtil" %><%@
@@ -78,11 +71,9 @@ WikiPortletInstanceSettingsHelper wikiPortletInstanceSettingsHelper = new WikiPo
 
 WikiWebComponentProvider wikiWebComponentProvider = WikiWebComponentProvider.getWikiWebComponentProvider();
 
-WikiDisplayContextProvider wikiDisplayContextProvider = wikiWebComponentProvider.getWikiDisplayContextProvider();
-
 WikiGroupServiceConfiguration wikiGroupServiceConfiguration = wikiWebComponentProvider.getWikiGroupServiceConfiguration();
 
-Format dateFormatDateTime = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
+Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(locale, timeZone);
 %>
 
 <%@ include file="/wiki/init-ext.jsp" %>

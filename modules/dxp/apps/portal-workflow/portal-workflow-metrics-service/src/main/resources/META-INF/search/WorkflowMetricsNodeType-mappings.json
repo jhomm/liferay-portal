@@ -1,0 +1,70 @@
+{
+	"date_detection": false,
+	"dynamic_templates": [
+		{
+			"template_long_sortable": {
+				"mapping": {
+					"type": "long"
+				},
+				"match": "*_sortable",
+				"match_mapping_type": "long"
+			}
+		},
+		{
+			"template_string_sortable": {
+				"mapping": {
+					"normalizer": "keyword_lowercase",
+					"type": "keyword"
+				},
+				"match": "*_sortable",
+				"match_mapping_type": "string"
+			}
+		}
+	],
+	"properties": {
+		"companyId": {
+			"type": "long"
+		},
+		"createDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"deleted": {
+			"type": "boolean"
+		},
+		"id": {
+			"type": "long"
+		},
+		"initial": {
+			"type": "boolean"
+		},
+		"modifiedDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"name": {
+			"type": "keyword"
+		},
+		"nodeId": {
+			"type": "long"
+		},
+		"processId": {
+			"type": "long"
+		},
+		"terminal": {
+			"type": "boolean"
+		},
+		"type": {
+			"type": "keyword"
+		},
+		"uid": {
+			"type": "keyword"
+		},
+		"userId": {
+			"type": "long"
+		},
+		"version": {
+			"type": "keyword"
+		}
+	}
+}

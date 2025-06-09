@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.form.dto.v1_0;
@@ -20,11 +11,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -59,14 +50,24 @@ public class FormContext implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(FormContext.class, json);
 	}
 
-	@Schema(description = "https://www.schema.org/FormFieldValue")
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "https://www.schema.org/FormFieldValue"
+	)
 	@Valid
 	public FormFieldValue[] getFormFieldValues() {
+		if (_formFieldValuesSupplier != null) {
+			formFieldValues = _formFieldValuesSupplier.get();
+
+			_formFieldValuesSupplier = null;
+		}
+
 		return formFieldValues;
 	}
 
 	public void setFormFieldValues(FormFieldValue[] formFieldValues) {
 		this.formFieldValues = formFieldValues;
+
+		_formFieldValuesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -74,29 +75,44 @@ public class FormContext implements Serializable {
 		UnsafeSupplier<FormFieldValue[], Exception>
 			formFieldValuesUnsafeSupplier) {
 
-		try {
-			formFieldValues = formFieldValuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formFieldValuesSupplier = () -> {
+			try {
+				return formFieldValuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "https://www.schema.org/FormFieldValue")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FormFieldValue[] formFieldValues;
 
-	@Schema(description = "https://www.schema.org/FormPageContext")
+	@JsonIgnore
+	private Supplier<FormFieldValue[]> _formFieldValuesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		description = "https://www.schema.org/FormPageContext"
+	)
 	@Valid
 	public FormPageContext[] getFormPageContexts() {
+		if (_formPageContextsSupplier != null) {
+			formPageContexts = _formPageContextsSupplier.get();
+
+			_formPageContextsSupplier = null;
+		}
+
 		return formPageContexts;
 	}
 
 	public void setFormPageContexts(FormPageContext[] formPageContexts) {
 		this.formPageContexts = formPageContexts;
+
+		_formPageContextsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -104,51 +120,76 @@ public class FormContext implements Serializable {
 		UnsafeSupplier<FormPageContext[], Exception>
 			formPageContextsUnsafeSupplier) {
 
-		try {
-			formPageContexts = formPageContextsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_formPageContextsSupplier = () -> {
+			try {
+				return formPageContextsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField(description = "https://www.schema.org/FormPageContext")
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected FormPageContext[] formPageContexts;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<FormPageContext[]> _formPageContextsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getReadOnly() {
+		if (_readOnlySupplier != null) {
+			readOnly = _readOnlySupplier.get();
+
+			_readOnlySupplier = null;
+		}
+
 		return readOnly;
 	}
 
 	public void setReadOnly(Boolean readOnly) {
 		this.readOnly = readOnly;
+
+		_readOnlySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReadOnly(
 		UnsafeSupplier<Boolean, Exception> readOnlyUnsafeSupplier) {
 
-		try {
-			readOnly = readOnlyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_readOnlySupplier = () -> {
+			try {
+				return readOnlyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean readOnly;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _readOnlySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getShowRequiredFieldsWarning() {
+		if (_showRequiredFieldsWarningSupplier != null) {
+			showRequiredFieldsWarning =
+				_showRequiredFieldsWarningSupplier.get();
+
+			_showRequiredFieldsWarningSupplier = null;
+		}
+
 		return showRequiredFieldsWarning;
 	}
 
@@ -156,6 +197,8 @@ public class FormContext implements Serializable {
 		Boolean showRequiredFieldsWarning) {
 
 		this.showRequiredFieldsWarning = showRequiredFieldsWarning;
+
+		_showRequiredFieldsWarningSupplier = null;
 	}
 
 	@JsonIgnore
@@ -163,49 +206,66 @@ public class FormContext implements Serializable {
 		UnsafeSupplier<Boolean, Exception>
 			showRequiredFieldsWarningUnsafeSupplier) {
 
-		try {
-			showRequiredFieldsWarning =
-				showRequiredFieldsWarningUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_showRequiredFieldsWarningSupplier = () -> {
+			try {
+				return showRequiredFieldsWarningUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean showRequiredFieldsWarning;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _showRequiredFieldsWarningSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getShowSubmitButton() {
+		if (_showSubmitButtonSupplier != null) {
+			showSubmitButton = _showSubmitButtonSupplier.get();
+
+			_showSubmitButtonSupplier = null;
+		}
+
 		return showSubmitButton;
 	}
 
 	public void setShowSubmitButton(Boolean showSubmitButton) {
 		this.showSubmitButton = showSubmitButton;
+
+		_showSubmitButtonSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setShowSubmitButton(
 		UnsafeSupplier<Boolean, Exception> showSubmitButtonUnsafeSupplier) {
 
-		try {
-			showSubmitButton = showSubmitButtonUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_showSubmitButtonSupplier = () -> {
+			try {
+				return showSubmitButtonUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean showSubmitButton;
+
+	@JsonIgnore
+	private Supplier<Boolean> _showSubmitButtonSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -234,6 +294,8 @@ public class FormContext implements Serializable {
 
 		sb.append("{");
 
+		FormFieldValue[] formFieldValues = getFormFieldValues();
+
 		if (formFieldValues != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -253,6 +315,8 @@ public class FormContext implements Serializable {
 
 			sb.append("]");
 		}
+
+		FormPageContext[] formPageContexts = getFormPageContexts();
 
 		if (formPageContexts != null) {
 			if (sb.length() > 1) {
@@ -274,6 +338,8 @@ public class FormContext implements Serializable {
 			sb.append("]");
 		}
 
+		Boolean readOnly = getReadOnly();
+
 		if (readOnly != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -284,6 +350,8 @@ public class FormContext implements Serializable {
 			sb.append(readOnly);
 		}
 
+		Boolean showRequiredFieldsWarning = getShowRequiredFieldsWarning();
+
 		if (showRequiredFieldsWarning != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -293,6 +361,8 @@ public class FormContext implements Serializable {
 
 			sb.append(showRequiredFieldsWarning);
 		}
+
+		Boolean showSubmitButton = getShowSubmitButton();
 
 		if (showSubmitButton != null) {
 			if (sb.length() > 1) {
@@ -309,17 +379,17 @@ public class FormContext implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.form.dto.v1_0.FormContext",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -345,7 +415,7 @@ public class FormContext implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -356,7 +426,10 @@ public class FormContext implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -377,7 +450,7 @@ public class FormContext implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -393,5 +466,12 @@ public class FormContext implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

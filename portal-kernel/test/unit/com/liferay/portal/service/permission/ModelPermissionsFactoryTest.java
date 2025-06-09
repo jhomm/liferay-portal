@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.permission;
@@ -18,6 +9,7 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.RoleWrapper;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceWrapper;
@@ -26,9 +18,13 @@ import com.liferay.portal.kernel.service.permission.ModelPermissionsFactory;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Props;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.kernel.util.ProxyFactory;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -38,26 +34,21 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 import org.springframework.mock.web.MockHttpServletRequest;
 
 /**
  * @author Jorge Ferrer
  */
-@PrepareForTest(ResourceActionsUtil.class)
-@RunWith(PowerMockRunner.class)
-public class ModelPermissionsFactoryTest extends PowerMockito {
+public class ModelPermissionsFactoryTest {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
 		ReflectionTestUtil.setFieldValue(
 			RoleLocalServiceUtil.class, "_service",
-			new RoleLocalServiceWrapper(null) {
+			new RoleLocalServiceWrapper() {
 
 				@Override
 				public Role getDefaultGroupRole(long groupId) {
@@ -84,6 +75,8 @@ public class ModelPermissionsFactoryTest extends PowerMockito {
 				}
 
 			});
+
+		PropsUtil.setProps(ProxyFactory.newDummyInstance(Props.class));
 	}
 
 	@Test
@@ -189,18 +182,22 @@ public class ModelPermissionsFactoryTest extends PowerMockito {
 
 		String className = RandomTestUtil.randomString();
 
-		mockStatic(ResourceActionsUtil.class);
+		ResourceActionsUtil resourceActionsUtil = new ResourceActionsUtil();
 
-		when(
-			ResourceActionsUtil.getModelResourceGroupDefaultActions(className)
+		ResourceActions resourceActions = Mockito.mock(ResourceActions.class);
+
+		resourceActionsUtil.setResourceActions(resourceActions);
+
+		Mockito.when(
+			resourceActions.getModelResourceGroupDefaultActions(className)
 		).thenReturn(
-			Arrays.asList(ActionKeys.VIEW)
+			Collections.singletonList(ActionKeys.VIEW)
 		);
 
-		when(
-			ResourceActionsUtil.getModelResourceGuestDefaultActions(className)
+		Mockito.when(
+			resourceActions.getModelResourceGuestDefaultActions(className)
 		).thenReturn(
-			Arrays.asList(ActionKeys.VIEW)
+			Collections.singletonList(ActionKeys.VIEW)
 		);
 
 		ModelPermissions modelPermissions = ModelPermissionsFactory.create(

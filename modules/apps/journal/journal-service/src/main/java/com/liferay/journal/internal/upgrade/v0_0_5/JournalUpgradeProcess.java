@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v0_0_5;
@@ -23,8 +14,9 @@ import com.liferay.dynamic.data.mapping.util.DefaultDDMStructureHelper;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
@@ -38,6 +30,7 @@ import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.util.UpgradeProcessUtil;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -66,8 +59,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * @author Gergely Mathe
@@ -99,14 +90,22 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		_userLocalService = userLocalService;
 	}
 
-	protected String addBasicWebContentStructureAndTemplate(long companyId)
+	@Override
+	protected void doUpgrade() throws Exception {
+		_updateJournalArticles();
+
+		_addDDMStorageLinks();
+		_addDDMTemplateLinks();
+	}
+
+	private String _addBasicWebContentStructureAndTemplate(long companyId)
 		throws Exception {
 
-		initJournalDDMCompositeModelsResourceActions();
+		_initJournalDDMCompositeModelsResourceActions();
 
 		Group group = _groupLocalService.getCompanyGroup(companyId);
 
-		long defaultUserId = _userLocalService.getDefaultUserId(companyId);
+		long guestUserId = _userLocalService.getGuestUserId(companyId);
 
 		Class<?> clazz = getClass();
 
@@ -119,7 +118,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 		try {
 			_defaultDDMStructureHelper.addDDMStructures(
-				defaultUserId, group.getGroupId(),
+				guestUserId, group.getGroupId(),
 				PortalUtil.getClassNameId(JournalArticle.class),
 				clazz.getClassLoader(),
 				"com/liferay/journal/internal/upgrade/v1_0_0/dependencies" +
@@ -130,16 +129,16 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 			LocaleThreadLocal.setSiteDefaultLocale(oldSiteDefaultLocale);
 		}
 
-		addDefaultResourcePermissions(group.getGroupId());
+		_addDefaultResourcePermissions(group.getGroupId());
 
-		List<Element> structureElements = getDDMStructures(siteDefaultLocale);
+		List<Element> structureElements = _getDDMStructures(siteDefaultLocale);
 
 		Element structureElement = structureElements.get(0);
 
 		return StringUtil.toUpperCase(structureElement.elementText("name"));
 	}
 
-	protected void addDDMStorageLink(Map<Long, List<Long>> ddmStructureIdsMap)
+	private void _addDDMStorageLink(Map<Long, List<Long>> ddmStructureIdsMap)
 		throws Exception {
 
 		long journalArticleClassNameId = PortalUtil.getClassNameId(
@@ -148,11 +147,8 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		for (Map.Entry<Long, List<Long>> entry :
 				ddmStructureIdsMap.entrySet()) {
 
-			long ddmStructureId = getDDMStructureId(
-				entry.getKey(), entry.getValue());
-
 			DDMStructure ddmStructure = _ddmStructureLocalService.getStructure(
-				ddmStructureId);
+				_getDDMStructureId(entry.getKey(), entry.getValue()));
 
 			DDMStructureVersion ddmStructureVersion =
 				ddmStructure.getStructureVersion();
@@ -164,7 +160,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void addDDMStorageLinks() throws Exception {
+	private void _addDDMStorageLinks() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			try (PreparedStatement preparedStatement =
 					connection.prepareStatement(
@@ -204,13 +200,13 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 						ddmStructureIdsMap.put(id, ddmStructureIds);
 					}
 
-					addDDMStorageLink(ddmStructureIdsMap);
+					_addDDMStorageLink(ddmStructureIdsMap);
 				}
 			}
 		}
 	}
 
-	protected void addDDMTemplateLinks() throws Exception {
+	private void _addDDMTemplateLinks() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			long ddmStructureClassNameId = PortalUtil.getClassNameId(
 				DDMStructure.class.getName());
@@ -246,9 +242,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void addDefaultResourcePermissions(long groupId)
-		throws Exception {
-
+	private void _addDefaultResourcePermissions(long groupId) throws Exception {
 		String modelResource = _resourceActions.getCompositeModelName(
 			DDMStructure.class.getName(), JournalArticle.class.getName());
 
@@ -261,7 +255,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 			ddmStructure.getStructureId(), false, false, true);
 	}
 
-	protected boolean containsDateFieldType(String content) {
+	private boolean _containsDateFieldType(String content) {
 		if (content.indexOf(_TYPE_ATTRIBUTE_DDM_DATE) != -1) {
 			return true;
 		}
@@ -269,7 +263,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return false;
 	}
 
-	protected String convertStaticContentToDynamic(long groupId, String content)
+	private String _convertStaticContentToDynamic(long groupId, String content)
 		throws Exception {
 
 		Document document = SAXReaderUtil.read(content);
@@ -320,18 +314,61 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 			dynamicElementElement.add(dynamicContentElement);
 		}
 
-		return XMLUtil.formatXML(newDocument);
+		return newDocument.formattedString(StringPool.DOUBLE_SPACE);
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		updateJournalArticles();
+	private String _fixStaticContent(
+			long id, String content, DocumentException documentException)
+		throws Exception {
 
-		addDDMStorageLinks();
-		addDDMTemplateLinks();
+		// LPS-23332 and LPS-26009
+
+		if (_log.isWarnEnabled()) {
+			_log.warn("Detected invalid content in journal article " + id);
+		}
+
+		if (!content.contains("<static-content ") &&
+			!content.contains("</static-content>")) {
+
+			_log.error(
+				"Journal article " + id + " does not have static content");
+
+			throw documentException;
+		}
+
+		String message = documentException.getMessage();
+
+		if (!message.contains(
+				"The entity \"reg\" was referenced, but not declared.")) {
+
+			_log.error(
+				"Journal article " + id +
+					" does not have invalid content due to LPS-23332");
+
+			throw documentException;
+		}
+
+		content = HtmlUtil.unescape(content);
+
+		int index = content.indexOf("<static-content ");
+
+		index = content.indexOf(">", index);
+
+		content =
+			content.substring(0, index + 1) + "<![CDATA[" +
+				content.substring(index + 1);
+
+		content = StringUtil.replace(
+			content, "</static-content>", "]]></static-content>");
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Fixed static content: " + content);
+		}
+
+		return content;
 	}
 
-	protected Set<String> getArticleDynamicElements(Element rootElement) {
+	private Set<String> _getArticleDynamicElements(Element rootElement) {
 		List<String> dynamicElementNames = new ArrayList<>();
 
 		List<Element> dynamicElementElements = rootElement.elements(
@@ -340,15 +377,13 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		for (Element element : dynamicElementElements) {
 			dynamicElementNames.add(element.attributeValue("name"));
 
-			dynamicElementNames.addAll(getArticleDynamicElements(element));
+			dynamicElementNames.addAll(_getArticleDynamicElements(element));
 		}
 
 		return SetUtil.fromList(dynamicElementNames);
 	}
 
-	protected Set<String> getArticleFieldNames(long articleId)
-		throws Exception {
-
+	private Set<String> _getArticleFieldNames(long articleId) throws Exception {
 		Set<String> articleFieldNames = new HashSet<>();
 
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
@@ -367,7 +402,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 						Document document = SAXReaderUtil.read(content);
 
-						articleFieldNames = getArticleDynamicElements(
+						articleFieldNames = _getArticleDynamicElements(
 							document.getRootElement());
 					}
 				}
@@ -377,7 +412,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return articleFieldNames;
 	}
 
-	protected long getBestDDMStructureIdMatch(
+	private long _getBestDDMStructureIdMatch(
 			long id, long ddmStructureId1, long ddmStructureId2)
 		throws Exception {
 
@@ -386,7 +421,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 		Set<String> fieldNames1 = ddmStructure1.getFieldNames();
 
-		Set<String> articleFieldNames = getArticleFieldNames(id);
+		Set<String> articleFieldNames = _getArticleFieldNames(id);
 
 		fieldNames1.removeAll(articleFieldNames);
 
@@ -404,20 +439,18 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return ddmStructure2.getStructureId();
 	}
 
-	protected long getDDMStructureId(long id, List<Long> ddmStructureIds)
+	private long _getDDMStructureId(long id, List<Long> ddmStructureIds)
 		throws Exception {
 
 		if (ddmStructureIds.size() == 1) {
 			return ddmStructureIds.get(0);
 		}
 
-		return getBestDDMStructureIdMatch(
+		return _getBestDDMStructureIdMatch(
 			id, ddmStructureIds.get(0), ddmStructureIds.get(1));
 	}
 
-	protected List<Element> getDDMStructures(Locale locale)
-		throws DocumentException {
-
+	private List<Element> _getDDMStructures(Locale locale) throws Exception {
 		String xml = StringUtil.replace(
 			_BASIC_WEB_CONTENT_STRUCTURE, "[$LOCALE_DEFAULT$]",
 			locale.toString());
@@ -429,15 +462,35 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return rootElement.elements("structure");
 	}
 
-	protected Map<String, String> getInvalidDDMFormFieldNamesMap(
-		String content) {
+	private String _getDefaultLanguageId(long groupId) throws Exception {
+		String defaultLanguageId = _defaultLanguageIds.get(groupId);
+
+		if (defaultLanguageId == null) {
+			Locale defaultLocale = PortalUtil.getSiteDefaultLocale(groupId);
+
+			defaultLanguageId = LanguageUtil.getLanguageId(defaultLocale);
+
+			_defaultLanguageIds.put(groupId, defaultLanguageId);
+		}
+
+		return defaultLanguageId;
+	}
+
+	private Map<String, String> _getInvalidDDMFormFieldNamesMap(String content)
+		throws Exception {
 
 		Map<String, String> invalidDDMFormFieldNamesMap = new HashMap<>();
 
-		Matcher matcher = _nameAttributePattern.matcher(content);
+		Document document = SAXReaderUtil.read(content);
 
-		while (matcher.find()) {
-			String oldFieldName = matcher.group(1);
+		Element rootElement = document.getRootElement();
+
+		List<Element> dynamicElementElements = rootElement.elements(
+			"dynamic-element");
+
+		for (Element dynamicElementElement : dynamicElementElements) {
+			String oldFieldName = GetterUtil.getString(
+				dynamicElementElement.attributeValue("name"));
 
 			String newFieldName = oldFieldName.replaceAll(
 				_INVALID_FIELD_NAME_CHARS_REGEX, StringPool.BLANK);
@@ -450,7 +503,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return invalidDDMFormFieldNamesMap;
 	}
 
-	protected void initJournalDDMCompositeModelsResourceActions()
+	private void _initJournalDDMCompositeModelsResourceActions()
 		throws Exception {
 
 		_resourceActions.populateModelResources(
@@ -458,7 +511,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 			"/resource-actions/journal_ddm_composite_models.xml");
 	}
 
-	protected void transformDateFieldValue(Element dynamicContentElement) {
+	private void _transformDateFieldValue(Element dynamicContentElement) {
 		String value = dynamicContentElement.getText();
 
 		if (!Validator.isNumber(value)) {
@@ -472,7 +525,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		dynamicContentElement.addCDATA(_dateFormat.format(date));
 	}
 
-	protected void transformDateFieldValues(
+	private void _transformDateFieldValues(
 		List<Element> dynamicElementElements) {
 
 		if (ListUtil.isEmpty(dynamicElementElements)) {
@@ -488,19 +541,19 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 					dynamicElementElement.elements("dynamic-content");
 
 				for (Element dynamicContentElement : dynamicContentElements) {
-					transformDateFieldValue(dynamicContentElement);
+					_transformDateFieldValue(dynamicContentElement);
 				}
 			}
 
 			List<Element> childDynamicElementElements =
 				dynamicElementElement.elements("dynamic-element");
 
-			transformDateFieldValues(childDynamicElementElements);
+			_transformDateFieldValues(childDynamicElementElements);
 		}
 	}
 
-	protected String transformDateFieldValues(String content) throws Exception {
-		if (!containsDateFieldType(content)) {
+	private String _transformDateFieldValues(String content) throws Exception {
+		if (!_containsDateFieldType(content)) {
 			return content;
 		}
 
@@ -511,14 +564,14 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		List<Element> dynamicElementElements = rootElement.elements(
 			"dynamic-element");
 
-		transformDateFieldValues(dynamicElementElements);
+		_transformDateFieldValues(dynamicElementElements);
 
-		return XMLUtil.formatXML(document);
+		return document.formattedString(StringPool.DOUBLE_SPACE);
 	}
 
-	protected String transformFieldNames(String content) {
+	private String _transformFieldNames(String content) throws Exception {
 		Map<String, String> invalidDDMFormFieldNamesMap =
-			getInvalidDDMFormFieldNamesMap(content);
+			_getInvalidDDMFormFieldNamesMap(content);
 
 		for (Map.Entry<String, String> entry :
 				invalidDDMFormFieldNamesMap.entrySet()) {
@@ -531,7 +584,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		return content;
 	}
 
-	protected void updateJournalArticle(
+	private void _updateJournalArticle(
 			long id, String ddmStructureKey, String ddmTemplateKey,
 			String content)
 		throws Exception {
@@ -549,7 +602,7 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateJournalArticleContent(long id, String content)
+	private void _updateJournalArticleContent(long id, String content)
 		throws Exception {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -562,20 +615,20 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateJournalArticles() throws Exception {
+	private void _updateJournalArticles() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			_companyLocalService.forEachCompanyId(
-				companyId -> updateJournalArticles(companyId));
+				companyId -> _updateJournalArticles(companyId));
 		}
 	}
 
-	protected void updateJournalArticles(long companyId) throws Exception {
+	private void _updateJournalArticles(long companyId) throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select id_, groupId, content, DDMStructureKey from " +
 					"JournalArticle where companyId = " + companyId);
 			ResultSet resultSet = preparedStatement.executeQuery()) {
 
-			String name = addBasicWebContentStructureAndTemplate(companyId);
+			String name = _addBasicWebContentStructureAndTemplate(companyId);
 
 			while (resultSet.next()) {
 				long id = resultSet.getLong("id_");
@@ -586,36 +639,40 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 				if (Validator.isNull(ddmStructureKey)) {
 					long groupId = resultSet.getLong("groupId");
 
-					content = convertStaticContentToDynamic(groupId, content);
+					try {
+						content = _convertStaticContentToDynamic(
+							groupId, content);
+					}
+					catch (DocumentException documentException) {
+						content = _fixStaticContent(
+							id, content, documentException);
 
-					updateJournalArticle(id, name, name, content);
+						content = _convertStaticContentToDynamic(
+							groupId, content);
+					}
+					catch (Exception exception) {
+						_log.error(
+							StringBundler.concat(
+								"ID: ", id, "\nGroup ID: ", groupId,
+								"\nContent: ", content));
+
+						throw exception;
+					}
+
+					_updateJournalArticle(id, name, name, content);
 
 					continue;
 				}
 
-				String updatedContent = transformDateFieldValues(content);
+				String updatedContent = _transformDateFieldValues(content);
 
-				updatedContent = transformFieldNames(updatedContent);
+				updatedContent = _transformFieldNames(updatedContent);
 
 				if (!content.equals(updatedContent)) {
-					updateJournalArticleContent(id, updatedContent);
+					_updateJournalArticleContent(id, updatedContent);
 				}
 			}
 		}
-	}
-
-	private String _getDefaultLanguageId(long groupId) throws Exception {
-		String defaultLanguageId = _defaultLanguageIds.get(groupId);
-
-		if (defaultLanguageId == null) {
-			Locale defaultLocale = PortalUtil.getSiteDefaultLocale(groupId);
-
-			defaultLanguageId = LanguageUtil.getLanguageId(defaultLocale);
-
-			_defaultLanguageIds.put(groupId, defaultLanguageId);
-		}
-
-		return defaultLanguageId;
 	}
 
 	private static final String _BASIC_WEB_CONTENT_STRUCTURE;
@@ -625,10 +682,11 @@ public class JournalUpgradeProcess extends UpgradeProcess {
 
 	private static final String _TYPE_ATTRIBUTE_DDM_DATE = "type=\"ddm-date\"";
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		JournalUpgradeProcess.class);
+
 	private static final DateFormat _dateFormat =
 		DateFormatFactoryUtil.getSimpleDateFormat("yyyy-MM-dd");
-	private static final Pattern _nameAttributePattern = Pattern.compile(
-		"name=\"([^\"]+)\"");
 
 	static {
 		try {

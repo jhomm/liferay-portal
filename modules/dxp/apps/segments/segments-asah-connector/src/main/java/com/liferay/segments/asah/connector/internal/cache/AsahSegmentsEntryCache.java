@@ -1,40 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.asah.connector.internal.cache;
 
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.cache.MultiVMPool;
 import com.liferay.portal.kernel.cache.PortalCache;
-import com.liferay.segments.asah.connector.internal.configuration.SegmentsAsahConfiguration;
-
-import java.util.Map;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.configuration.ConfigurationException;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.segments.asah.connector.internal.configuration.provider.SegmentsAsahConfigurationProvider;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
-import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author David Arques
  */
-@Component(
-	configurationPid = "com.liferay.segments.asah.connector.internal.configuration.SegmentsAsahConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
-	service = AsahSegmentsEntryCache.class
-)
+@Component(service = AsahSegmentsEntryCache.class)
 public class AsahSegmentsEntryCache {
 
 	public long[] getSegmentsEntryIds(String userId) {
@@ -42,27 +29,32 @@ public class AsahSegmentsEntryCache {
 	}
 
 	public void putSegmentsEntryIds(String userId, long[] segmentsEntryIds) {
+		int anonymousTimeToLiveInSeconds = PortalCache.DEFAULT_TIME_TO_LIVE;
+
+		try {
+			anonymousTimeToLiveInSeconds =
+				_segmentsAsahConfigurationProvider.
+					getAnonymousUserSegmentsCacheExpirationTime(
+						CompanyThreadLocal.getCompanyId());
+		}
+		catch (ConfigurationException configurationException) {
+			_log.error(configurationException);
+		}
+
 		_portalCache.put(
 			_generateCacheKey(userId), segmentsEntryIds,
-			_anonymousTimeToLiveInSeconds);
+			anonymousTimeToLiveInSeconds);
 	}
 
 	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		SegmentsAsahConfiguration segmentsAsahConfiguration =
-			ConfigurableUtil.createConfigurable(
-				SegmentsAsahConfiguration.class, properties);
-
-		_anonymousTimeToLiveInSeconds =
-			segmentsAsahConfiguration.
-				anonymousUserSegmentsCacheExpirationTime();
+	protected void activate() {
+		_portalCache = (PortalCache<String, long[]>)_multiVMPool.getPortalCache(
+			AsahSegmentsEntryCache.class.getName());
 	}
 
-	@Reference(unbind = "-")
-	protected void setMultiVMPool(MultiVMPool multiVMPool) {
-		_portalCache = (PortalCache<String, long[]>)multiVMPool.getPortalCache(
-			AsahSegmentsEntryCache.class.getName());
+	@Deactivate
+	protected void deactivate() {
+		_multiVMPool.removePortalCache(AsahSegmentsEntryCache.class.getName());
 	}
 
 	private String _generateCacheKey(String userId) {
@@ -71,8 +63,16 @@ public class AsahSegmentsEntryCache {
 
 	private static final String _CACHE_PREFIX = "segments-";
 
-	private volatile int _anonymousTimeToLiveInSeconds =
-		PortalCache.DEFAULT_TIME_TO_LIVE;
+	private static final Log _log = LogFactoryUtil.getLog(
+		AsahSegmentsEntryCache.class);
+
+	@Reference
+	private MultiVMPool _multiVMPool;
+
 	private PortalCache<String, long[]> _portalCache;
+
+	@Reference
+	private SegmentsAsahConfigurationProvider
+		_segmentsAsahConfigurationProvider;
 
 }

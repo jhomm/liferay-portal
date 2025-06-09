@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.impl;
@@ -21,15 +12,26 @@ import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.service.base.CPDefinitionInventoryServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
-import com.liferay.portal.spring.extender.service.ServiceReference;
+
+import java.math.BigDecimal;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CPDefinitionInventory"
+	},
+	service = AopService.class
+)
 public class CPDefinitionInventoryServiceImpl
 	extends CPDefinitionInventoryServiceBaseImpl {
 
@@ -37,9 +39,10 @@ public class CPDefinitionInventoryServiceImpl
 	public CPDefinitionInventory addCPDefinitionInventory(
 			long cpDefinitionId, String cpDefinitionInventoryEngine,
 			String lowStockActivity, boolean displayAvailability,
-			boolean displayStockQuantity, int minStockQuantity,
-			boolean backOrders, int minOrderQuantity, int maxOrderQuantity,
-			String allowedOrderQuantities, int multipleOrderQuantity)
+			boolean displayStockQuantity, BigDecimal minStockQuantity,
+			boolean backOrders, BigDecimal minOrderQuantity,
+			BigDecimal maxOrderQuantity, String allowedOrderQuantities,
+			BigDecimal multipleOrderQuantity)
 		throws PortalException {
 
 		_checkCommerceCatalog(cpDefinitionId, ActionKeys.UPDATE);
@@ -83,41 +86,14 @@ public class CPDefinitionInventoryServiceImpl
 		return cpDefinitionInventory;
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public CPDefinitionInventory updateCPDefinitionInventory(
-			long groupId, long cpDefinitionInventoryId,
-			String cpDefinitionInventoryEngine, String lowStockActivity,
-			boolean displayAvailability, boolean displayStockQuantity,
-			int minStockQuantity, boolean backOrders, int minOrderQuantity,
-			int maxOrderQuantity, String allowedOrderQuantities,
-			int multipleOrderQuantity)
-		throws PortalException {
-
-		CPDefinitionInventory cpDefinitionInventory =
-			cpDefinitionInventoryLocalService.getCPDefinitionInventory(
-				cpDefinitionInventoryId);
-
-		_checkCommerceCatalog(
-			cpDefinitionInventory.getCPDefinitionId(), ActionKeys.UPDATE);
-
-		return cpDefinitionInventoryLocalService.updateCPDefinitionInventory(
-			cpDefinitionInventoryId, cpDefinitionInventoryEngine,
-			lowStockActivity, displayAvailability, displayStockQuantity,
-			minStockQuantity, backOrders, minOrderQuantity, maxOrderQuantity,
-			allowedOrderQuantities, multipleOrderQuantity);
-	}
-
 	@Override
 	public CPDefinitionInventory updateCPDefinitionInventory(
 			long cpDefinitionInventoryId, String cpDefinitionInventoryEngine,
 			String lowStockActivity, boolean displayAvailability,
-			boolean displayStockQuantity, int minStockQuantity,
-			boolean backOrders, int minOrderQuantity, int maxOrderQuantity,
-			String allowedOrderQuantities, int multipleOrderQuantity)
+			boolean displayStockQuantity, BigDecimal minStockQuantity,
+			boolean backOrders, BigDecimal minOrderQuantity,
+			BigDecimal maxOrderQuantity, String allowedOrderQuantities,
+			BigDecimal multipleOrderQuantity)
 		throws PortalException {
 
 		CPDefinitionInventory cpDefinitionInventory =
@@ -152,17 +128,16 @@ public class CPDefinitionInventoryServiceImpl
 			getPermissionChecker(), commerceCatalog, actionId);
 	}
 
-	private static volatile ModelResourcePermission<CommerceCatalog>
-		_commerceCatalogModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CPDefinitionInventoryServiceImpl.class,
-				"_commerceCatalogModelResourcePermission",
-				CommerceCatalog.class);
-
-	@ServiceReference(type = CommerceCatalogLocalService.class)
+	@Reference
 	private CommerceCatalogLocalService _commerceCatalogLocalService;
 
-	@ServiceReference(type = CPDefinitionLocalService.class)
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceCatalog)"
+	)
+	private ModelResourcePermission<CommerceCatalog>
+		_commerceCatalogModelResourcePermission;
+
+	@Reference
 	private CPDefinitionLocalService _cpDefinitionLocalService;
 
 }

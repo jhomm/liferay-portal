@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence;
@@ -17,6 +8,7 @@ package com.liferay.commerce.product.service.persistence;
 import com.liferay.commerce.product.exception.NoSuchCPDefinitionException;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 import java.util.Date;
 
@@ -34,7 +26,8 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @ProviderType
-public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
+public interface CPDefinitionPersistence
+	extends BasePersistence<CPDefinition>, CTPersistence<CPDefinition> {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -519,6 +512,62 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 		throws NoSuchCPDefinitionException;
 
 	/**
+	 * Returns all the cp definitions that the user has permission to view where groupId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @return the matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByGroupId(long groupId);
+
+	/**
+	 * Returns a range of all the cp definitions that the user has permission to view where groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @return the range of matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByGroupId(
+		long groupId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the cp definitions that the user has permissions to view where groupId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByGroupId(
+		long groupId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator);
+
+	/**
+	 * Returns the cp definitions before and after the current cp definition in the ordered set of cp definitions that the user has permission to view where groupId = &#63;.
+	 *
+	 * @param CPDefinitionId the primary key of the current cp definition
+	 * @param groupId the group ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp definition
+	 * @throws NoSuchCPDefinitionException if a cp definition with the primary key could not be found
+	 */
+	public CPDefinition[] filterFindByGroupId_PrevAndNext(
+			long CPDefinitionId, long groupId,
+			com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+				orderByComparator)
+		throws NoSuchCPDefinitionException;
+
+	/**
 	 * Removes all the cp definitions where groupId = &#63; from the database.
 	 *
 	 * @param groupId the group ID
@@ -532,6 +581,14 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 	 * @return the number of matching cp definitions
 	 */
 	public int countByGroupId(long groupId);
+
+	/**
+	 * Returns the number of cp definitions that the user has permission to view where groupId = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @return the number of matching cp definitions that the user has permission to view
+	 */
+	public int filterCountByGroupId(long groupId);
 
 	/**
 	 * Returns all the cp definitions where companyId = &#63;.
@@ -675,6 +732,149 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 	 * @return the number of matching cp definitions
 	 */
 	public int countByCompanyId(long companyId);
+
+	/**
+	 * Returns all the cp definitions where CProductId = &#63;.
+	 *
+	 * @param CProductId the c product ID
+	 * @return the matching cp definitions
+	 */
+	public java.util.List<CPDefinition> findByCProductId(long CProductId);
+
+	/**
+	 * Returns a range of all the cp definitions where CProductId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param CProductId the c product ID
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @return the range of matching cp definitions
+	 */
+	public java.util.List<CPDefinition> findByCProductId(
+		long CProductId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the cp definitions where CProductId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param CProductId the c product ID
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp definitions
+	 */
+	public java.util.List<CPDefinition> findByCProductId(
+		long CProductId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the cp definitions where CProductId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param CProductId the c product ID
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching cp definitions
+	 */
+	public java.util.List<CPDefinition> findByCProductId(
+		long CProductId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first cp definition in the ordered set where CProductId = &#63;.
+	 *
+	 * @param CProductId the c product ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp definition
+	 * @throws NoSuchCPDefinitionException if a matching cp definition could not be found
+	 */
+	public CPDefinition findByCProductId_First(
+			long CProductId,
+			com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+				orderByComparator)
+		throws NoSuchCPDefinitionException;
+
+	/**
+	 * Returns the first cp definition in the ordered set where CProductId = &#63;.
+	 *
+	 * @param CProductId the c product ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching cp definition, or <code>null</code> if a matching cp definition could not be found
+	 */
+	public CPDefinition fetchByCProductId_First(
+		long CProductId,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator);
+
+	/**
+	 * Returns the last cp definition in the ordered set where CProductId = &#63;.
+	 *
+	 * @param CProductId the c product ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp definition
+	 * @throws NoSuchCPDefinitionException if a matching cp definition could not be found
+	 */
+	public CPDefinition findByCProductId_Last(
+			long CProductId,
+			com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+				orderByComparator)
+		throws NoSuchCPDefinitionException;
+
+	/**
+	 * Returns the last cp definition in the ordered set where CProductId = &#63;.
+	 *
+	 * @param CProductId the c product ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching cp definition, or <code>null</code> if a matching cp definition could not be found
+	 */
+	public CPDefinition fetchByCProductId_Last(
+		long CProductId,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator);
+
+	/**
+	 * Returns the cp definitions before and after the current cp definition in the ordered set where CProductId = &#63;.
+	 *
+	 * @param CPDefinitionId the primary key of the current cp definition
+	 * @param CProductId the c product ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp definition
+	 * @throws NoSuchCPDefinitionException if a cp definition with the primary key could not be found
+	 */
+	public CPDefinition[] findByCProductId_PrevAndNext(
+			long CPDefinitionId, long CProductId,
+			com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+				orderByComparator)
+		throws NoSuchCPDefinitionException;
+
+	/**
+	 * Removes all the cp definitions where CProductId = &#63; from the database.
+	 *
+	 * @param CProductId the c product ID
+	 */
+	public void removeByCProductId(long CProductId);
+
+	/**
+	 * Returns the number of cp definitions where CProductId = &#63;.
+	 *
+	 * @param CProductId the c product ID
+	 * @return the number of matching cp definitions
+	 */
+	public int countByCProductId(long CProductId);
 
 	/**
 	 * Returns all the cp definitions where CPTaxCategoryId = &#63;.
@@ -959,6 +1159,67 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 		throws NoSuchCPDefinitionException;
 
 	/**
+	 * Returns all the cp definitions that the user has permission to view where groupId = &#63; and subscriptionEnabled = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param subscriptionEnabled the subscription enabled
+	 * @return the matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByG_SE(
+		long groupId, boolean subscriptionEnabled);
+
+	/**
+	 * Returns a range of all the cp definitions that the user has permission to view where groupId = &#63; and subscriptionEnabled = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param subscriptionEnabled the subscription enabled
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @return the range of matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByG_SE(
+		long groupId, boolean subscriptionEnabled, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the cp definitions that the user has permissions to view where groupId = &#63; and subscriptionEnabled = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param subscriptionEnabled the subscription enabled
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByG_SE(
+		long groupId, boolean subscriptionEnabled, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator);
+
+	/**
+	 * Returns the cp definitions before and after the current cp definition in the ordered set of cp definitions that the user has permission to view where groupId = &#63; and subscriptionEnabled = &#63;.
+	 *
+	 * @param CPDefinitionId the primary key of the current cp definition
+	 * @param groupId the group ID
+	 * @param subscriptionEnabled the subscription enabled
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp definition
+	 * @throws NoSuchCPDefinitionException if a cp definition with the primary key could not be found
+	 */
+	public CPDefinition[] filterFindByG_SE_PrevAndNext(
+			long CPDefinitionId, long groupId, boolean subscriptionEnabled,
+			com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+				orderByComparator)
+		throws NoSuchCPDefinitionException;
+
+	/**
 	 * Removes all the cp definitions where groupId = &#63; and subscriptionEnabled = &#63; from the database.
 	 *
 	 * @param groupId the group ID
@@ -974,6 +1235,15 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 	 * @return the number of matching cp definitions
 	 */
 	public int countByG_SE(long groupId, boolean subscriptionEnabled);
+
+	/**
+	 * Returns the number of cp definitions that the user has permission to view where groupId = &#63; and subscriptionEnabled = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param subscriptionEnabled the subscription enabled
+	 * @return the number of matching cp definitions that the user has permission to view
+	 */
+	public int filterCountByG_SE(long groupId, boolean subscriptionEnabled);
 
 	/**
 	 * Returns all the cp definitions where groupId = &#63; and status = &#63;.
@@ -1113,6 +1383,67 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 		throws NoSuchCPDefinitionException;
 
 	/**
+	 * Returns all the cp definitions that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @return the matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByG_S(
+		long groupId, int status);
+
+	/**
+	 * Returns a range of all the cp definitions that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @return the range of matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByG_S(
+		long groupId, int status, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the cp definitions that the user has permissions to view where groupId = &#63; and status = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CPDefinitionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @param start the lower bound of the range of cp definitions
+	 * @param end the upper bound of the range of cp definitions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching cp definitions that the user has permission to view
+	 */
+	public java.util.List<CPDefinition> filterFindByG_S(
+		long groupId, int status, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+			orderByComparator);
+
+	/**
+	 * Returns the cp definitions before and after the current cp definition in the ordered set of cp definitions that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * @param CPDefinitionId the primary key of the current cp definition
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next cp definition
+	 * @throws NoSuchCPDefinitionException if a cp definition with the primary key could not be found
+	 */
+	public CPDefinition[] filterFindByG_S_PrevAndNext(
+			long CPDefinitionId, long groupId, int status,
+			com.liferay.portal.kernel.util.OrderByComparator<CPDefinition>
+				orderByComparator)
+		throws NoSuchCPDefinitionException;
+
+	/**
 	 * Removes all the cp definitions where groupId = &#63; and status = &#63; from the database.
 	 *
 	 * @param groupId the group ID
@@ -1128,6 +1459,15 @@ public interface CPDefinitionPersistence extends BasePersistence<CPDefinition> {
 	 * @return the number of matching cp definitions
 	 */
 	public int countByG_S(long groupId, int status);
+
+	/**
+	 * Returns the number of cp definitions that the user has permission to view where groupId = &#63; and status = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param status the status
+	 * @return the number of matching cp definitions that the user has permission to view
+	 */
+	public int filterCountByG_S(long groupId, int status);
 
 	/**
 	 * Returns the cp definition where CProductId = &#63; and version = &#63; or throws a <code>NoSuchCPDefinitionException</code> if it could not be found.

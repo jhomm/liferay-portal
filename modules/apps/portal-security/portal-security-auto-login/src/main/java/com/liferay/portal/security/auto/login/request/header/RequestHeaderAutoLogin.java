@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.auto.login.request.header;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.security.auto.login.AutoLogin;
 import com.liferay.portal.kernel.security.auto.login.BaseAutoLogin;
@@ -31,13 +22,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auto.login.internal.request.header.configuration.RequestHeaderAutoLoginConfiguration;
 import com.liferay.portal.security.auto.login.internal.request.header.constants.RequestHeaderAutoLoginConstants;
-import com.liferay.portal.security.exportimport.UserImporter;
+import com.liferay.portal.security.ldap.exportimport.LDAPUserImporter;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.security.auto.login.internal.request.header.configuration.RequestHeaderAutoLoginConfiguration",
-	immediate = true, service = AutoLogin.class
+	service = AutoLogin.class
 )
 public class RequestHeaderAutoLogin extends BaseAutoLogin {
 
@@ -90,12 +81,12 @@ public class RequestHeaderAutoLogin extends BaseAutoLogin {
 
 		if (isLDAPImportEnabled(companyId)) {
 			try {
-				user = _userImporter.importUser(
+				user = _ldapUserImporter.importUser(
 					companyId, StringPool.BLANK, screenName);
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -161,23 +152,6 @@ public class RequestHeaderAutoLogin extends BaseAutoLogin {
 		return requestHeaderAutoLoginConfiguration.importFromLDAP();
 	}
 
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserImporter(UserImporter userImporter) {
-		_userImporter = userImporter;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
 	private RequestHeaderAutoLoginConfiguration
 		_getRequestHeaderAutoLoginConfiguration(long companyId) {
 
@@ -199,12 +173,16 @@ public class RequestHeaderAutoLogin extends BaseAutoLogin {
 	private static final Log _log = LogFactoryUtil.getLog(
 		RequestHeaderAutoLogin.class);
 
+	@Reference
 	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private LDAPUserImporter _ldapUserImporter;
 
 	@Reference
 	private Portal _portal;
 
-	private UserImporter _userImporter;
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.elements;
@@ -65,13 +56,18 @@ public class DefinitionPoshiElement extends PoshiElement {
 
 	@Override
 	public String getFileExtension() {
-		URL url = getURL();
+		URL filePathURL = getFilePathURL();
 
-		String filePath = url.getPath();
+		String filePath = filePathURL.getPath();
 
 		int index = filePath.lastIndexOf(".");
 
 		return filePath.substring(index + 1);
+	}
+
+	@Override
+	public URL getFilePathURL() {
+		return _filePathURL;
 	}
 
 	@Override
@@ -80,24 +76,19 @@ public class DefinitionPoshiElement extends PoshiElement {
 	}
 
 	@Override
-	public URL getURL() {
-		return _url;
-	}
-
-	@Override
 	public boolean isValidPoshiXML() throws PoshiScriptParserException {
 		if (_validPoshiXML == null) {
 			_validPoshiXML = false;
 
-			URL url = getURL();
+			URL filePathURL = getFilePathURL();
 
 			PoshiNode<?, ?> poshiNode = PoshiNodeFactory.newPoshiNodeFromFile(
-				url);
+				filePathURL);
 
 			String poshiScript = poshiNode.toPoshiScript();
 
 			PoshiNode<?, ?> generatedPoshiNode = PoshiNodeFactory.newPoshiNode(
-				poshiScript, url);
+				poshiScript, filePathURL);
 
 			if (Dom4JUtil.elementsEqual(poshiNode, generatedPoshiNode)) {
 				_validPoshiXML = true;
@@ -128,6 +119,11 @@ public class DefinitionPoshiElement extends PoshiElement {
 		for (String poshiScriptSnippet : getPoshiScriptSnippets(blockContent)) {
 			add(PoshiNodeFactory.newPoshiNode(this, poshiScriptSnippet));
 		}
+	}
+
+	@Override
+	public void setFilePathURL(URL filePathURL) {
+		_filePathURL = filePathURL;
 	}
 
 	@Override
@@ -205,11 +201,6 @@ public class DefinitionPoshiElement extends PoshiElement {
 		return isValidPoshiScriptBlock(_blockNamePattern, poshiScript);
 	}
 
-	@Override
-	protected void setFilePath(URL url) {
-		_url = url;
-	}
-
 	private static final String _ELEMENT_NAME = "definition";
 
 	private static final String _POSHI_SCRIPT_KEYWORD = _ELEMENT_NAME;
@@ -218,7 +209,7 @@ public class DefinitionPoshiElement extends PoshiElement {
 		"^" + BLOCK_NAME_ANNOTATION_REGEX + _POSHI_SCRIPT_KEYWORD,
 		Pattern.DOTALL);
 
-	private URL _url;
+	private URL _filePathURL;
 	private Boolean _validPoshiXML;
 
 }

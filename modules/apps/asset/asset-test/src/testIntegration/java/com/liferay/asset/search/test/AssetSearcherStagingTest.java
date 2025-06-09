@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.asset.kernel.search.AssetSearcherFactory;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
-import com.liferay.journal.model.JournalArticle;
-import com.liferay.journal.service.JournalArticleLocalService;
+import com.liferay.journal.constants.JournalFolderConstants;
+import com.liferay.journal.test.util.JournalTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ResourceConstants;
@@ -25,6 +18,7 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.search.BaseSearcher;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Hits;
@@ -32,7 +26,6 @@ import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -40,16 +33,15 @@ import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portlet.asset.util.AssetSearcher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -75,13 +67,6 @@ public class AssetSearcherStagingTest {
 	@Before
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
-
-		_journalArticleFixture.setGroup(_group);
-
-		_journalArticleFixture.setJournalArticleLocalService(
-			_journalArticleLocalService);
-
-		_journalArticles = _journalArticleFixture.getJournalArticles();
 	}
 
 	@Test
@@ -100,7 +85,9 @@ public class AssetSearcherStagingTest {
 
 		addUserGroupRole(user, role);
 
-		addJournalArticle();
+		JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 		UserTestUtil.setUser(TestPropsValues.getUser());
 
@@ -137,10 +124,6 @@ public class AssetSearcherStagingTest {
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
-
-	protected JournalArticle addJournalArticle() throws Exception {
-		return _journalArticleFixture.addJournalArticle();
-	}
 
 	protected Role addRole(int roleType) throws Exception {
 		Role role = RoleTestUtil.addRole(roleType);
@@ -182,11 +165,8 @@ public class AssetSearcherStagingTest {
 	}
 
 	protected long[] getClassNameIds(String... classNames) {
-		return Stream.of(
-			classNames
-		).mapToLong(
-			PortalUtil::getClassNameId
-		).toArray();
+		return TransformUtil.transformToLongArray(
+			Arrays.asList(classNames), PortalUtil::getClassNameId);
 	}
 
 	protected SearchContext getSearchContext() {
@@ -201,30 +181,20 @@ public class AssetSearcherStagingTest {
 			AssetEntryQuery assetEntryQuery, SearchContext searchContext)
 		throws Exception {
 
-		AssetSearcher assetSearcher = new AssetSearcher();
+		BaseSearcher baseSearcher = _assetSearcherFactory.createBaseSearcher(
+			assetEntryQuery);
 
-		assetSearcher.setAssetEntryQuery(assetEntryQuery);
-
-		return assetSearcher.search(searchContext);
+		return baseSearcher.search(searchContext);
 	}
 
 	@Inject
-	private static JournalArticleLocalService _journalArticleLocalService;
+	private static AssetSearcherFactory _assetSearcherFactory;
 
 	@Inject
 	private static UserGroupRoleLocalService _userGroupRoleLocalService;
 
-	@Inject
-	private static UserLocalService _userLocalService;
-
 	@DeleteAfterTestRun
 	private Group _group;
-
-	private final JournalArticleFixture _journalArticleFixture =
-		new JournalArticleFixture();
-
-	@DeleteAfterTestRun
-	private List<JournalArticle> _journalArticles;
 
 	@DeleteAfterTestRun
 	private final List<Role> _roles = new ArrayList<>();

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.definitions.web.internal.model;
@@ -23,7 +14,8 @@ public class Sku {
 
 	public Sku(
 		long cpInstanceId, String sku, String options, String price,
-		String productName, int availableQuantity, LabelField status) {
+		String productName, String availableQuantity, LabelField status,
+		String discontinued) {
 
 		_cpInstanceId = cpInstanceId;
 		_sku = sku;
@@ -32,14 +24,19 @@ public class Sku {
 		_productName = productName;
 		_availableQuantity = availableQuantity;
 		_status = status;
+		_discontinued = discontinued;
 	}
 
-	public int getAvailableQuantity() {
+	public String getAvailableQuantity() {
 		return _availableQuantity;
 	}
 
 	public long getCPInstanceId() {
 		return _cpInstanceId;
+	}
+
+	public String getDiscontinued() {
+		return _discontinued;
 	}
 
 	public String getOptions() {
@@ -62,8 +59,9 @@ public class Sku {
 		return _status;
 	}
 
-	private final int _availableQuantity;
+	private final String _availableQuantity;
 	private final long _cpInstanceId;
+	private final String _discontinued;
 	private final String _options;
 	private final String _price;
 	private final String _productName;

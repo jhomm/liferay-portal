@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.admin.web.internal.info.collection.provider;
@@ -24,14 +15,13 @@ import com.liferay.info.collection.provider.RelatedInfoItemCollectionProvider;
 import com.liferay.info.pagination.InfoPage;
 import com.liferay.info.pagination.Pagination;
 import com.liferay.info.sort.Sort;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = RelatedInfoItemCollectionProvider.class)
+@Component(service = RelatedInfoItemCollectionProvider.class)
 public class AssetCategoriesForAssetEntryRelatedInfoItemCollectionProvider
 	implements RelatedInfoItemCollectionProvider<AssetEntry, AssetCategory> {
 
@@ -47,10 +37,7 @@ public class AssetCategoriesForAssetEntryRelatedInfoItemCollectionProvider
 	public InfoPage<AssetCategory> getCollectionInfoPage(
 		CollectionQuery collectionQuery) {
 
-		Optional<Object> relatedItemOptional =
-			collectionQuery.getRelatedItemObjectOptional();
-
-		Object relatedItem = relatedItemOptional.orElse(null);
+		Object relatedItem = collectionQuery.getRelatedItem();
 
 		if (!(relatedItem instanceof AssetEntry)) {
 			return InfoPage.of(
@@ -95,25 +82,18 @@ public class AssetCategoriesForAssetEntryRelatedInfoItemCollectionProvider
 
 						@Override
 						public boolean isAscending() {
-							Optional<Sort> sortOptional =
-								collectionQuery.getSortOptional();
+							Sort sort = collectionQuery.getSort();
 
-							if (!sortOptional.isPresent()) {
+							if (sort == null) {
 								return true;
 							}
 
-							Sort sort = sortOptional.get();
-
-							if (sort.isReverse()) {
-								return false;
-							}
-
-							return true;
+							return !sort.isReverse();
 						}
 
 					});
 
-		List<AssetCategory> categories = new ArrayList<>();
+		List<AssetCategory> assetCategories = new ArrayList<>();
 
 		for (AssetEntryAssetCategoryRel assetEntryAssetCategoryRel :
 				assetEntryAssetCategoryRels) {
@@ -122,12 +102,12 @@ public class AssetCategoriesForAssetEntryRelatedInfoItemCollectionProvider
 				assetEntryAssetCategoryRel.getAssetCategoryId());
 
 			if (category != null) {
-				categories.add(category);
+				assetCategories.add(category);
 			}
 		}
 
 		return InfoPage.of(
-			categories, pagination,
+			assetCategories, pagination,
 			() ->
 				_assetEntryAssetCategoryRelLocalService.
 					getAssetEntryAssetCategoryRelsCount(
@@ -136,7 +116,7 @@ public class AssetCategoriesForAssetEntryRelatedInfoItemCollectionProvider
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(locale, "categories-for-this-item");
+		return _language.get(locale, "categories-for-this-item");
 	}
 
 	@Reference
@@ -145,5 +125,8 @@ public class AssetCategoriesForAssetEntryRelatedInfoItemCollectionProvider
 	@Reference
 	private AssetEntryAssetCategoryRelLocalService
 		_assetEntryAssetCategoryRelLocalService;
+
+	@Reference
+	private Language _language;
 
 }

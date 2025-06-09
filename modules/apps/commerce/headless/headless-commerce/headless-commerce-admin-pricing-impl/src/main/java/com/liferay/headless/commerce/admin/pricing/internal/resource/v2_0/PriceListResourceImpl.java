@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.internal.resource.v2_0;
 
+import com.liferay.account.service.AccountEntryService;
+import com.liferay.account.service.AccountGroupService;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
-import com.liferay.commerce.account.service.CommerceAccountGroupService;
-import com.liferay.commerce.account.service.CommerceAccountService;
+import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
 import com.liferay.commerce.currency.model.CommerceCurrency;
-import com.liferay.commerce.currency.service.CommerceCurrencyService;
 import com.liferay.commerce.discount.service.CommerceDiscountService;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
@@ -55,7 +46,6 @@ import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceListDiscount;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceListOrderType;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.PriceModifier;
 import com.liferay.headless.commerce.admin.pricing.dto.v2_0.TierPrice;
-import com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.PriceListDTOConverter;
 import com.liferay.headless.commerce.admin.pricing.internal.odata.entity.v2_0.PriceListEntityModel;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceListAccountGroupUtil;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceListAccountUtil;
@@ -65,30 +55,33 @@ import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceListO
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.PriceModifierUtil;
 import com.liferay.headless.commerce.admin.pricing.internal.util.v2_0.TierPriceUtil;
 import com.liferay.headless.commerce.admin.pricing.resource.v2_0.PriceListResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
+import com.liferay.headless.commerce.core.util.CommerceCurrencyUtil;
 import com.liferay.headless.commerce.core.util.DateConfig;
 import com.liferay.headless.commerce.core.util.ExpandoUtil;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
 import java.math.BigDecimal;
 
 import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -98,7 +91,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Riccardo Alberti
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v2_0/price-list.properties",
 	scope = ServiceScope.PROTOTYPE, service = PriceListResource.class
 )
@@ -115,8 +107,9 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -146,8 +139,9 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -168,16 +162,10 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 			CommercePriceList.class.getName(), search, pagination,
 			queryConfig -> queryConfig.setSelectedFieldNames(
 				Field.ENTRY_CLASS_PK),
-			new UnsafeConsumer() {
-
-				public void accept(Object object) throws Exception {
-					SearchContext searchContext = (SearchContext)object;
-
-					searchContext.setAttribute(
-						"status", WorkflowConstants.STATUS_ANY);
-					searchContext.setCompanyId(contextCompany.getCompanyId());
-				}
-
+			searchContext -> {
+				searchContext.setAttribute(
+					"status", WorkflowConstants.STATUS_ANY);
+				searchContext.setCompanyId(contextCompany.getCompanyId());
 			},
 			sorts,
 			document -> _toPriceList(
@@ -199,8 +187,9 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 		throws Exception {
 
 		CommercePriceList commercePriceList =
-			_commercePriceListService.fetchByExternalReferenceCode(
-				externalReferenceCode, contextCompany.getCompanyId());
+			_commercePriceListService.
+				fetchCommercePriceListByExternalReferenceCode(
+					externalReferenceCode, contextCompany.getCompanyId());
 
 		if (commercePriceList == null) {
 			throw new NoSuchPriceListException(
@@ -213,20 +202,36 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 
 	@Override
 	public PriceList postPriceList(PriceList priceList) throws Exception {
-		CommercePriceList commercePriceList = _addOrUpdatePriceList(priceList);
+		CommercePriceList commercePriceList = _addOrUpdatePriceList(
+			priceList.getExternalReferenceCode(), priceList);
 
 		return _toPriceList(commercePriceList.getCommercePriceListId());
 	}
 
-	private CommercePriceList _addOrUpdatePriceList(PriceList priceList)
+	@Override
+	public PriceList putPriceListByExternalReferenceCode(
+			String externalReferenceCode, PriceList priceList)
+		throws Exception {
+
+		CommercePriceList commercePriceList = _addOrUpdatePriceList(
+			externalReferenceCode, priceList);
+
+		return _toPriceList(commercePriceList.getCommercePriceListId());
+	}
+
+	private CommercePriceList _addOrUpdatePriceList(
+			String externalReferenceCode, PriceList priceList)
 		throws Exception {
 
 		CommerceCatalog commerceCatalog =
 			_commerceCatalogService.getCommerceCatalog(
 				priceList.getCatalogId());
+
 		CommerceCurrency commerceCurrency =
-			_commerceCurrencyService.getCommerceCurrency(
-				contextCompany.getCompanyId(), priceList.getCurrencyCode());
+			CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), priceList.getCurrencyCode(),
+				priceList.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(priceList.getCurrencyId()));
 
 		ServiceContext serviceContext =
 			_serviceContextHelper.getServiceContext();
@@ -238,9 +243,8 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 
 		CommercePriceList commercePriceList =
 			_commercePriceListService.addOrUpdateCommercePriceList(
-				priceList.getExternalReferenceCode(),
-				commerceCatalog.getGroupId(), 0L,
-				commerceCurrency.getCommerceCurrencyId(),
+				externalReferenceCode, commerceCatalog.getGroupId(), 0L,
+				commerceCurrency.getCode(),
 				GetterUtil.get(priceList.getNetPrice(), true),
 				GetterUtil.get(
 					priceList.getTypeAsString(),
@@ -280,32 +284,31 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 
 		return HashMapBuilder.<String, Map<String, String>>put(
 			"delete",
-			addAction(
-				"DELETE", commercePriceList.getCommercePriceListId(),
-				"deletePriceList", commercePriceList.getUserId(),
-				"com.liferay.commerce.price.list.model.CommercePriceList",
-				commercePriceList.getGroupId())
+			() -> {
+				if (commercePriceList.isCatalogBasePriceList()) {
+					return null;
+				}
+
+				return addAction(
+					"DELETE", commercePriceList.getCommercePriceListId(),
+					"deletePriceList",
+					_commercePriceListModelResourcePermission);
+			}
 		).put(
 			"get",
 			addAction(
 				"VIEW", commercePriceList.getCommercePriceListId(),
-				"getPriceList", commercePriceList.getUserId(),
-				"com.liferay.commerce.price.list.model.CommercePriceList",
-				commercePriceList.getGroupId())
+				"getPriceList", _commercePriceListModelResourcePermission)
 		).put(
 			"permissions",
 			addAction(
 				"PERMISSIONS", commercePriceList.getCommercePriceListId(),
-				"patchPriceList", commercePriceList.getUserId(),
-				"com.liferay.commerce.price.list.model.CommercePriceList",
-				commercePriceList.getGroupId())
+				"patchPriceList", _commercePriceListModelResourcePermission)
 		).put(
 			"update",
 			addAction(
 				"UPDATE", commercePriceList.getCommercePriceListId(),
-				"patchPriceList", commercePriceList.getUserId(),
-				"com.liferay.commerce.price.list.model.CommercePriceList",
-				commercePriceList.getGroupId())
+				"patchPriceList", _commercePriceListModelResourcePermission)
 		).build();
 	}
 
@@ -352,12 +355,11 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 					continue;
 				}
 
-				PriceListAccountGroupUtil.
-					addCommercePriceListCommerceAccountGroupRel(
-						_commerceAccountGroupService,
-						_commercePriceListCommerceAccountGroupRelService,
-						priceListAccountGroup, commercePriceList,
-						_serviceContextHelper);
+				PriceListAccountGroupUtil.addCommercePriceListAccountGroupRel(
+					_accountGroupService,
+					_commercePriceListCommerceAccountGroupRelService,
+					priceListAccountGroup, commercePriceList,
+					_serviceContextHelper);
 			}
 		}
 
@@ -378,9 +380,8 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 				}
 
 				PriceListAccountUtil.addCommercePriceListAccountRel(
-					_commerceAccountService,
-					_commercePriceListAccountRelService, priceListAccount,
-					commercePriceList, _serviceContextHelper);
+					_accountEntryService, _commercePriceListAccountRelService,
+					priceListAccount, commercePriceList, _serviceContextHelper);
 			}
 		}
 
@@ -497,10 +498,10 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 							serviceContext);
 
 				PriceModifierUtil.addOrUpdateCommercePriceModifierRels(
-					_assetCategoryLocalService, _commercePricingClassService,
-					_cProductLocalService, _commercePriceModifierRelService,
-					priceModifier, commercePriceModifier,
-					_serviceContextHelper);
+					contextCompany.getGroupId(), _assetCategoryLocalService,
+					_commercePricingClassService, _cProductLocalService,
+					_commercePriceModifierRelService, priceModifier,
+					commercePriceModifier, _serviceContextHelper);
 			}
 		}
 
@@ -523,7 +524,6 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 						GetterUtil.getLong(priceEntry.getPriceEntryId()),
 						GetterUtil.getLong(priceEntry.getSkuId()), null,
 						commercePriceList.getCommercePriceListId(),
-						BigDecimal.valueOf(priceEntry.getPrice()),
 						priceEntry.getDiscountDiscovery(),
 						priceEntry.getDiscountLevel1(),
 						priceEntry.getDiscountLevel2(),
@@ -540,7 +540,10 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 						expirationDateConfig.getMinute(),
 						GetterUtil.getBoolean(
 							priceEntry.getNeverExpire(), true),
-						priceEntry.getSkuExternalReferenceCode(),
+						BigDecimal.valueOf(priceEntry.getPrice()),
+						GetterUtil.getBoolean(
+							priceEntry.getPriceOnApplication()),
+						priceEntry.getSkuExternalReferenceCode(), null,
 						serviceContext);
 
 				TierPrice[] tierPrices = priceEntry.getTierPrices();
@@ -565,11 +568,17 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 		CommerceCurrency commerceCurrency =
 			commercePriceList.getCommerceCurrency();
 
-		CommerceCurrency updatedCommerceCurrency =
-			_commerceCurrencyService.getCommerceCurrency(
-				contextCompany.getCompanyId(),
-				GetterUtil.get(
-					priceList.getCurrencyCode(), commerceCurrency.getCode()));
+		try {
+			commerceCurrency = CommerceCurrencyUtil.getCommerceCurrency(
+				contextCompany.getCompanyId(), priceList.getCurrencyCode(),
+				priceList.getCurrencyExternalReferenceCode(),
+				GetterUtil.getLong(priceList.getCurrencyId()));
+		}
+		catch (NoSuchCurrencyException noSuchCurrencyException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchCurrencyException);
+			}
+		}
 
 		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
 			commercePriceList.getGroupId());
@@ -581,7 +590,7 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 
 		commercePriceList = _commercePriceListService.updateCommercePriceList(
 			commercePriceList.getCommercePriceListId(),
-			updatedCommerceCurrency.getCommerceCurrencyId(),
+			commerceCurrency.getCode(),
 			GetterUtil.get(
 				priceList.getNetPrice(), commercePriceList.isNetPrice()),
 			GetterUtil.get(
@@ -614,25 +623,25 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 			priceList, commercePriceList, serviceContext);
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		PriceListResourceImpl.class);
+
 	private static final EntityModel _entityModel = new PriceListEntityModel();
 
 	@Reference
+	private AccountEntryService _accountEntryService;
+
+	@Reference
+	private AccountGroupService _accountGroupService;
+
+	@Reference
 	private AssetCategoryLocalService _assetCategoryLocalService;
-
-	@Reference
-	private CommerceAccountGroupService _commerceAccountGroupService;
-
-	@Reference
-	private CommerceAccountService _commerceAccountService;
 
 	@Reference
 	private CommerceCatalogService _commerceCatalogService;
 
 	@Reference
 	private CommerceChannelService _commerceChannelService;
-
-	@Reference
-	private CommerceCurrencyService _commerceCurrencyService;
 
 	@Reference
 	private CommerceDiscountService _commerceDiscountService;
@@ -659,6 +668,12 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 	private CommercePriceListDiscountRelService
 		_commercePriceListDiscountRelService;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.price.list.model.CommercePriceList)"
+	)
+	private ModelResourcePermission<CommercePriceList>
+		_commercePriceListModelResourcePermission;
+
 	@Reference
 	private CommercePriceListOrderTypeRelService
 		_commercePriceListOrderTypeRelService;
@@ -684,8 +699,10 @@ public class PriceListResourceImpl extends BasePriceListResourceImpl {
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
 
-	@Reference
-	private PriceListDTOConverter _priceListDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.pricing.internal.dto.v2_0.converter.PriceListDTOConverter)"
+	)
+	private DTOConverter<CommercePriceList, PriceList> _priceListDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

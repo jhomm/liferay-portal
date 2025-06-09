@@ -1,16 +1,24 @@
 @default = "waitForPageLoad"
 definition {
 
-	function waitForPageLoad {
+	function waitForPageLoad() {
+		if (!(isSet(locator1))) {
+			var locator1 = 0;
+		}
+
 		var javascript = '''
-			return document.readyState === "complete";
+			window.addEventListener(
+				'load',
+				() => {
+					setTimeout(() => {
+						console.log("Page is fully loaded");
+					}, "${locator1}");
+				},
+				{once: true}
+			);
 		''';
 
-		var message = '''Page is still loading.''';
-
-		selenium.waitForJavaScriptNoError("${javascript}", "${message}", "");
-
-		selenium.verifyJavaScript("${javascript}", "${message}", "");
+		ExecuteJavaScript(value1 = ${javascript});
 	}
 
 }

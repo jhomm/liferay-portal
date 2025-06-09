@@ -1,23 +1,15 @@
-.side-panel-iframe {
-	& &-content {
-		padding: 0 !important;
-	}
+@import 'atlas-variables';
 
-	& &-header {
-		background-color: #fff !important;
-	}
+@import 'management-toolbar';
 
-	&__tabs {
-		padding: 0.5rem 1rem 0;
-
-		.nav-link {
-			padding: 1rem;
-		}
+.lfr-objects__side-panel-content {
+	.nav-tabs + .tab-content .tab-pane {
+		padding: 0;
 	}
 }
 
 .side-panel-content {
-	background-color: #f1f2f5;
+	background-color: $light;
 	display: flex;
 	flex-direction: column;
 	justify-content: space-between;
@@ -27,13 +19,9 @@
 	&__footer {
 		padding: 1.5rem;
 	}
-
-	&--layout {
-		height: calc(100vh - 118px);
-	}
 }
 
 .text-small {
-	color: #a7a9bc !important;
+	color: $secondary-l1 !important;
 	font-size: 0.75rem;
 }

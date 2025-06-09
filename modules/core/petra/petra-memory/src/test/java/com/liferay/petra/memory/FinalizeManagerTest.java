@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.memory;
@@ -197,7 +188,7 @@ public class FinalizeManagerTest {
 			referenceFactory = FinalizeManager.SOFT_REFERENCE_FACTORY;
 		}
 
-		Reference<FinalizeRecorder> reference = FinalizeManager.register(
+		FinalizeManager.register(
 			finalizeRecorder, markFinalizeAction, referenceFactory);
 
 		Assert.assertFalse(markFinalizeAction.isMarked());
@@ -229,17 +220,6 @@ public class FinalizeManagerTest {
 		_waitUntilMarked(markFinalizeAction);
 
 		Assert.assertTrue(markFinalizeAction.isMarked());
-
-		if (referenceType == ReferenceType.PHANTOM) {
-			Assert.assertEquals(id, markFinalizeAction.getId());
-		}
-		else {
-			Assert.assertNull(markFinalizeAction.getId());
-		}
-
-		if (referenceType != ReferenceType.PHANTOM) {
-			Assert.assertNull(_getReferent(reference));
-		}
 
 		_checkThreadState();
 	}
@@ -280,10 +260,6 @@ public class FinalizeManagerTest {
 				"Timeout on waiting finialize thread to enter waiting state",
 				(System.currentTimeMillis() - startTime) <= 10000);
 		}
-	}
-
-	private <T> T _getReferent(Reference<T> reference) {
-		return ReflectionTestUtil.getFieldValue(reference, "referent");
 	}
 
 	private Object _newIdentityKey(Reference<?> reference) throws Exception {
@@ -342,26 +318,13 @@ public class FinalizeManagerTest {
 
 		@Override
 		public void doFinalize(Reference<?> reference) {
-			Object referent = _getReferent(reference);
-
-			if (referent instanceof FinalizeRecorder) {
-				FinalizeRecorder finalizeRecorder = (FinalizeRecorder)referent;
-
-				_id = finalizeRecorder._id;
-			}
-
 			_marked = true;
-		}
-
-		public String getId() {
-			return _id;
 		}
 
 		public boolean isMarked() {
 			return _marked;
 		}
 
-		private volatile String _id;
 		private volatile boolean _marked;
 
 	}

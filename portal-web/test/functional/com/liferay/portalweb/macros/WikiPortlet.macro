@@ -1,10 +1,11 @@
 definition {
 
-	macro configureDisplaySettings {
+	@summary = "Default summary"
+	macro configureDisplaySettings(uncheckSetting = null) {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		for (var SettingName : list "${uncheckSetting}") {
-			Uncheck(locator1 = "Checkbox#${SettingName}");
+		for (var settingName : list ${uncheckSetting}) {
+			Uncheck(locator1 = "Checkbox#${settingName}");
 		}
 
 		Click(locator1 = "Button#SAVE");
@@ -14,10 +15,9 @@ definition {
 		SelectFrame(value1 = "relative=top");
 	}
 
-	macro configureEmailCP {
+	@summary = "Default summary"
+	macro configureEmailCP(bodyContent = null) {
 		Portlet.gotoPortletOptions(portletOption = "Configuration");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		if (isSet(pageAddedEmail)) {
 			AssertClick(
@@ -28,50 +28,59 @@ definition {
 
 			Type(
 				locator1 = "CKEditor#BODY",
-				value1 = "${bodyContent}");
+				value1 = ${bodyContent});
 
 			SelectFrame(value1 = "relative=top");
-
-			SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 			PortletEntry.save();
 		}
 	}
 
-	macro configureSharingAllowUsersToAddWikiToAnyWebsite {
-		SelectFrame(locator1 = "IFrame#CONFIGURATION");
+	@summary = "Default summary"
+	macro enableWiki() {
+		ApplicationsMenu.gotoPortlet(
+			category = "Configuration",
+			panel = "Control Panel",
+			portlet = "Instance Settings");
 
-		Navigator.gotoNavItem(navItem = "Sharing");
+		SystemSettings.gotoConfiguration(
+			configurationCategory = "Feature Flags",
+			configurationName = "Deprecation",
+			configurationScope = "Virtual Instance Scope");
 
-		if ("${enabled}" == "true") {
-			Check.checkToggleSwitch(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
+		if (IsElementPresent(locator1 = "FeatureFlag#TOGGLE_ROW", title_row = "Wiki", toggle_state = "Disabled")) {
+			Check.checkToggleSwitch(
+				locator1 = "FeatureFlag#TOGGLE_ROW",
+				title_row = "Wiki",
+				toggle_state = "Disabled");
 		}
-		else {
-			Uncheck.uncheckToggleSwitch(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
-		}
 
-		Button.clickSave();
-
-		SelectFrame(value1 = "relative=top");
+		Navigator.openURL();
 	}
 
-	macro subscribeToNodeCP {
-		var key_wikiNodeName = "${wikiNodeName}";
+	@summary = "Default summary"
+	macro subscribeToNodeCP(wikiNodeName = null) {
+		var key_wikiNodeName = ${wikiNodeName};
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Subscribe");
+		Click.waitForMenuToggleJSClick(locator1 = "Wiki#NODE_TABLE_ACTIONS_DROPDOWN");
+
+		WaitForLiferayEvent.initializeLiferayEventLog();
+
+		MenuItem.click(menuItem = "Subscribe");
 
 		Alert.viewSuccessMessage();
 
-		Click.waitForMenuToggleJSClick(locator1 = "Icon#BODY_VERTICAL_ELLIPSIS");
+		Click.waitForMenuToggleJSClick(locator1 = "Wiki#NODE_TABLE_ACTIONS_DROPDOWN");
 
 		MenuItem.viewPresent(menuItem = "Unsubscribe");
 	}
 
-	macro tearDownCP {
+	@summary = "Default summary"
+	macro tearDownCP() {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Wiki");
 
 		LexiconEntry.openEntryMenu(rowEntry = "Main");
@@ -85,47 +94,33 @@ definition {
 		MenuItem.viewPresent(menuItem = "Subscribe");
 	}
 
-	macro viewConfigurationTabs {
+	@summary = "Default summary"
+	macro viewConfigurationTabs() {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		for (var isPresent : list "${isPresent}") {
+		for (var isPresent : list ${isPresent}) {
 			AssertElementPresent(locator1 = "Configuration#${isPresent}");
 		}
 
-		for (var isNotPresent : list "${isNotPresent}") {
+		for (var isNotPresent : list ${isNotPresent}) {
 			AssertElementNotPresent(locator1 = "Configuration#${isNotPresent}");
 		}
 
 		SelectFrame(value1 = "relative=top");
 	}
 
-	macro viewConfigureSharingAllowUsersToAddWikiToAnyWebsite {
-		SelectFrame(locator1 = "IFrame#CONFIGURATION");
-
-		Navigator.gotoNavItem(navItem = "Sharing");
-
-		if ("${enabled}" == "true") {
-			AssertChecked.assertCheckedNotVisible(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
-		}
-		else {
-			AssertNotChecked.assertNotCheckedNotVisible(locator1 = "WikiConfiguration#ALLOW_USERS_TO_ADD_WIKI_TO_ANY_WEBSITE_CHECKBOX");
-		}
-
-		SelectFrame(value1 = "relative=top");
-	}
-
-	macro viewDisplaySettings {
+	@summary = "Default summary"
+	macro viewDisplaySettings(uncheckedSetting = null) {
 		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
-		for (var SettingName : list "${uncheckedSetting}") {
-			AssertNotChecked(locator1 = "Checkbox#${SettingName}");
+		for (var settingName : list ${uncheckedSetting}) {
+			AssertNotChecked(locator1 = "Checkbox#${settingName}");
 		}
 	}
 
-	macro viewEmailCP {
+	@summary = "Default summary"
+	macro viewEmailCP(bodyContent = null) {
 		Portlet.gotoPortletOptions(portletOption = "Configuration");
-
-		SelectFrame(locator1 = "IFrame#MODAL_BODY");
 
 		if (isSet(pageAddedEmail)) {
 			AssertClick(
@@ -136,13 +131,12 @@ definition {
 
 			AssertTextEquals.assertPartialText(
 				locator1 = "CKEditor#BODY",
-				value1 = "${bodyContent}");
-
-			SelectFrame(value1 = "relative=top");
+				value1 = ${bodyContent});
 		}
 	}
 
-	macro viewNoPermissionCP {
+	@summary = "Default summary"
+	macro viewNoPermissionCP() {
 		SiteAdmin.viewPortletTitle(portletTitle = "Wiki");
 
 		AssertElementNotPresent(locator1 = "Button#ADD_WIKI");

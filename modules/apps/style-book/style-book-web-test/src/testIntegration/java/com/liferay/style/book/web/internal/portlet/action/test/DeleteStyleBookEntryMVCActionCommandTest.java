@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.web.internal.portlet.action.test;
@@ -23,6 +14,7 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.test.portlet.MockActionResponse;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -34,7 +26,6 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockActionResponse;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 
@@ -72,20 +63,22 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 	public void testDeleteStyleBookEntries() throws Exception {
 		StyleBookEntry styleBookEntry1 =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), StringPool.BLANK,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, RandomTestUtil.randomString(),
+				StringPool.BLANK, RandomTestUtil.randomString(),
 				_serviceContext);
 
 		StyleBookEntry styleBookEntry2 =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), StringPool.BLANK,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, RandomTestUtil.randomString(),
+				StringPool.BLANK, RandomTestUtil.randomString(),
 				_serviceContext);
 
-		MockLiferayPortletActionRequest actionRequest =
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
 
-		actionRequest.addParameter(
+		mockLiferayPortletActionRequest.addParameter(
 			"rowIds",
 			new String[] {
 				String.valueOf(styleBookEntry1.getStyleBookEntryId()),
@@ -93,7 +86,7 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 			});
 
 		_deleteStyleBookEntryMVCActionCommandTest.processAction(
-			actionRequest, new MockActionResponse());
+			mockLiferayPortletActionRequest, new MockActionResponse());
 
 		Assert.assertEquals(
 			0,
@@ -107,18 +100,19 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 
 		StyleBookEntry styleBookEntry =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(), name,
-				StringPool.BLANK, _serviceContext);
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, name, StringPool.BLANK,
+				RandomTestUtil.randomString(), _serviceContext);
 
-		MockLiferayPortletActionRequest actionRequest =
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
 
-		actionRequest.addParameter(
+		mockLiferayPortletActionRequest.addParameter(
 			"styleBookEntryId",
 			String.valueOf(styleBookEntry.getStyleBookEntryId()));
 
 		_deleteStyleBookEntryMVCActionCommandTest.processAction(
-			actionRequest, new MockActionResponse());
+			mockLiferayPortletActionRequest, new MockActionResponse());
 
 		Assert.assertEquals(
 			0,
@@ -136,8 +130,9 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 
 		StyleBookEntry styleBookEntry =
 			_styleBookEntryLocalService.addStyleBookEntry(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), StringPool.BLANK,
+				null, TestPropsValues.getUserId(), _group.getGroupId(), false,
+				StringPool.BLANK, RandomTestUtil.randomString(),
+				StringPool.BLANK, RandomTestUtil.randomString(),
 				_serviceContext);
 
 		FileEntry fileEntry = _addFileEntry(styleBookEntry);
@@ -145,15 +140,15 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 		styleBookEntry = _styleBookEntryLocalService.updatePreviewFileEntryId(
 			styleBookEntry.getStyleBookEntryId(), fileEntry.getFileEntryId());
 
-		MockLiferayPortletActionRequest actionRequest =
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
 			new MockLiferayPortletActionRequest();
 
-		actionRequest.addParameter(
+		mockLiferayPortletActionRequest.addParameter(
 			"styleBookEntryId",
 			String.valueOf(styleBookEntry.getStyleBookEntryId()));
 
 		_deleteStyleBookEntryMVCActionCommandTest.processAction(
-			actionRequest, new MockActionResponse());
+			mockLiferayPortletActionRequest, new MockActionResponse());
 
 		PortletFileRepositoryUtil.getPortletFileEntry(
 			styleBookEntry.getPreviewFileEntryId());
@@ -172,7 +167,7 @@ public class DeleteStyleBookEntryMVCActionCommandTest {
 		Class<?> clazz = getClass();
 
 		return PortletFileRepositoryUtil.addPortletFileEntry(
-			_group.getGroupId(), TestPropsValues.getUserId(),
+			null, _group.getGroupId(), TestPropsValues.getUserId(),
 			StyleBookEntry.class.getName(),
 			styleBookEntry.getStyleBookEntryId(), RandomTestUtil.randomString(),
 			repository.getDlFolderId(),

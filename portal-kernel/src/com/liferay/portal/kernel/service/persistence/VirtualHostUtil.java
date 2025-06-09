@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -117,6 +108,175 @@ public class VirtualHostUtil {
 		VirtualHost virtualHost, ServiceContext serviceContext) {
 
 		return getPersistence().update(virtualHost, serviceContext);
+	}
+
+	/**
+	 * Returns all the virtual hosts where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @return the matching virtual hosts
+	 */
+	public static List<VirtualHost> findByCompanyId(long companyId) {
+		return getPersistence().findByCompanyId(companyId);
+	}
+
+	/**
+	 * Returns a range of all the virtual hosts where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @return the range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByCompanyId(
+		long companyId, int start, int end) {
+
+		return getPersistence().findByCompanyId(companyId, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the virtual hosts where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByCompanyId(
+		long companyId, int start, int end,
+		OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().findByCompanyId(
+			companyId, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the virtual hosts where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByCompanyId(
+		long companyId, int start, int end,
+		OrderByComparator<VirtualHost> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByCompanyId(
+			companyId, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first virtual host in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching virtual host
+	 * @throws NoSuchVirtualHostException if a matching virtual host could not be found
+	 */
+	public static VirtualHost findByCompanyId_First(
+			long companyId, OrderByComparator<VirtualHost> orderByComparator)
+		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
+
+		return getPersistence().findByCompanyId_First(
+			companyId, orderByComparator);
+	}
+
+	/**
+	 * Returns the first virtual host in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching virtual host, or <code>null</code> if a matching virtual host could not be found
+	 */
+	public static VirtualHost fetchByCompanyId_First(
+		long companyId, OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().fetchByCompanyId_First(
+			companyId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last virtual host in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching virtual host
+	 * @throws NoSuchVirtualHostException if a matching virtual host could not be found
+	 */
+	public static VirtualHost findByCompanyId_Last(
+			long companyId, OrderByComparator<VirtualHost> orderByComparator)
+		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
+
+		return getPersistence().findByCompanyId_Last(
+			companyId, orderByComparator);
+	}
+
+	/**
+	 * Returns the last virtual host in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching virtual host, or <code>null</code> if a matching virtual host could not be found
+	 */
+	public static VirtualHost fetchByCompanyId_Last(
+		long companyId, OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().fetchByCompanyId_Last(
+			companyId, orderByComparator);
+	}
+
+	/**
+	 * Returns the virtual hosts before and after the current virtual host in the ordered set where companyId = &#63;.
+	 *
+	 * @param virtualHostId the primary key of the current virtual host
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next virtual host
+	 * @throws NoSuchVirtualHostException if a virtual host with the primary key could not be found
+	 */
+	public static VirtualHost[] findByCompanyId_PrevAndNext(
+			long virtualHostId, long companyId,
+			OrderByComparator<VirtualHost> orderByComparator)
+		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
+
+		return getPersistence().findByCompanyId_PrevAndNext(
+			virtualHostId, companyId, orderByComparator);
+	}
+
+	/**
+	 * Removes all the virtual hosts where companyId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 */
+	public static void removeByCompanyId(long companyId) {
+		getPersistence().removeByCompanyId(companyId);
+	}
+
+	/**
+	 * Returns the number of virtual hosts where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @return the number of matching virtual hosts
+	 */
+	public static int countByCompanyId(long companyId) {
+		return getPersistence().countByCompanyId(companyId);
 	}
 
 	/**
@@ -365,83 +525,285 @@ public class VirtualHostUtil {
 	}
 
 	/**
-	 * Returns the virtual host where companyId = &#63; and layoutSetId = &#63; and defaultVirtualHost = &#63; or throws a <code>NoSuchVirtualHostException</code> if it could not be found.
+	 * Returns all the virtual hosts where layoutSetId &ne; &#63; and hostname = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param layoutSetId the layout set ID
-	 * @param defaultVirtualHost the default virtual host
-	 * @return the matching virtual host
-	 * @throws NoSuchVirtualHostException if a matching virtual host could not be found
+	 * @param hostname the hostname
+	 * @return the matching virtual hosts
 	 */
-	public static VirtualHost findByC_L_D(
-			long companyId, long layoutSetId, boolean defaultVirtualHost)
-		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String hostname) {
 
-		return getPersistence().findByC_L_D(
-			companyId, layoutSetId, defaultVirtualHost);
+		return getPersistence().findByNotL_H(layoutSetId, hostname);
 	}
 
 	/**
-	 * Returns the virtual host where companyId = &#63; and layoutSetId = &#63; and defaultVirtualHost = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns a range of all the virtual hosts where layoutSetId &ne; &#63; and hostname = &#63;.
 	 *
-	 * @param companyId the company ID
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
 	 * @param layoutSetId the layout set ID
-	 * @param defaultVirtualHost the default virtual host
-	 * @return the matching virtual host, or <code>null</code> if a matching virtual host could not be found
+	 * @param hostname the hostname
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @return the range of matching virtual hosts
 	 */
-	public static VirtualHost fetchByC_L_D(
-		long companyId, long layoutSetId, boolean defaultVirtualHost) {
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String hostname, int start, int end) {
 
-		return getPersistence().fetchByC_L_D(
-			companyId, layoutSetId, defaultVirtualHost);
+		return getPersistence().findByNotL_H(layoutSetId, hostname, start, end);
 	}
 
 	/**
-	 * Returns the virtual host where companyId = &#63; and layoutSetId = &#63; and defaultVirtualHost = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns an ordered range of all the virtual hosts where layoutSetId &ne; &#63; and hostname = &#63;.
 	 *
-	 * @param companyId the company ID
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
 	 * @param layoutSetId the layout set ID
-	 * @param defaultVirtualHost the default virtual host
+	 * @param hostname the hostname
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String hostname, int start, int end,
+		OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().findByNotL_H(
+			layoutSetId, hostname, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the virtual hosts where layoutSetId &ne; &#63; and hostname = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostname the hostname
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching virtual host, or <code>null</code> if a matching virtual host could not be found
+	 * @return the ordered range of matching virtual hosts
 	 */
-	public static VirtualHost fetchByC_L_D(
-		long companyId, long layoutSetId, boolean defaultVirtualHost,
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String hostname, int start, int end,
+		OrderByComparator<VirtualHost> orderByComparator,
 		boolean useFinderCache) {
 
-		return getPersistence().fetchByC_L_D(
-			companyId, layoutSetId, defaultVirtualHost, useFinderCache);
+		return getPersistence().findByNotL_H(
+			layoutSetId, hostname, start, end, orderByComparator,
+			useFinderCache);
 	}
 
 	/**
-	 * Removes the virtual host where companyId = &#63; and layoutSetId = &#63; and defaultVirtualHost = &#63; from the database.
+	 * Returns the first virtual host in the ordered set where layoutSetId &ne; &#63; and hostname = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param layoutSetId the layout set ID
-	 * @param defaultVirtualHost the default virtual host
-	 * @return the virtual host that was removed
+	 * @param hostname the hostname
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching virtual host
+	 * @throws NoSuchVirtualHostException if a matching virtual host could not be found
 	 */
-	public static VirtualHost removeByC_L_D(
-			long companyId, long layoutSetId, boolean defaultVirtualHost)
+	public static VirtualHost findByNotL_H_First(
+			long layoutSetId, String hostname,
+			OrderByComparator<VirtualHost> orderByComparator)
 		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
 
-		return getPersistence().removeByC_L_D(
-			companyId, layoutSetId, defaultVirtualHost);
+		return getPersistence().findByNotL_H_First(
+			layoutSetId, hostname, orderByComparator);
 	}
 
 	/**
-	 * Returns the number of virtual hosts where companyId = &#63; and layoutSetId = &#63; and defaultVirtualHost = &#63;.
+	 * Returns the first virtual host in the ordered set where layoutSetId &ne; &#63; and hostname = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param layoutSetId the layout set ID
-	 * @param defaultVirtualHost the default virtual host
+	 * @param hostname the hostname
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching virtual host, or <code>null</code> if a matching virtual host could not be found
+	 */
+	public static VirtualHost fetchByNotL_H_First(
+		long layoutSetId, String hostname,
+		OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().fetchByNotL_H_First(
+			layoutSetId, hostname, orderByComparator);
+	}
+
+	/**
+	 * Returns the last virtual host in the ordered set where layoutSetId &ne; &#63; and hostname = &#63;.
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostname the hostname
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching virtual host
+	 * @throws NoSuchVirtualHostException if a matching virtual host could not be found
+	 */
+	public static VirtualHost findByNotL_H_Last(
+			long layoutSetId, String hostname,
+			OrderByComparator<VirtualHost> orderByComparator)
+		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
+
+		return getPersistence().findByNotL_H_Last(
+			layoutSetId, hostname, orderByComparator);
+	}
+
+	/**
+	 * Returns the last virtual host in the ordered set where layoutSetId &ne; &#63; and hostname = &#63;.
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostname the hostname
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching virtual host, or <code>null</code> if a matching virtual host could not be found
+	 */
+	public static VirtualHost fetchByNotL_H_Last(
+		long layoutSetId, String hostname,
+		OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().fetchByNotL_H_Last(
+			layoutSetId, hostname, orderByComparator);
+	}
+
+	/**
+	 * Returns the virtual hosts before and after the current virtual host in the ordered set where layoutSetId &ne; &#63; and hostname = &#63;.
+	 *
+	 * @param virtualHostId the primary key of the current virtual host
+	 * @param layoutSetId the layout set ID
+	 * @param hostname the hostname
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next virtual host
+	 * @throws NoSuchVirtualHostException if a virtual host with the primary key could not be found
+	 */
+	public static VirtualHost[] findByNotL_H_PrevAndNext(
+			long virtualHostId, long layoutSetId, String hostname,
+			OrderByComparator<VirtualHost> orderByComparator)
+		throws com.liferay.portal.kernel.exception.NoSuchVirtualHostException {
+
+		return getPersistence().findByNotL_H_PrevAndNext(
+			virtualHostId, layoutSetId, hostname, orderByComparator);
+	}
+
+	/**
+	 * Returns all the virtual hosts where layoutSetId &ne; &#63; and hostname = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostnames the hostnames
+	 * @return the matching virtual hosts
+	 */
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String[] hostnames) {
+
+		return getPersistence().findByNotL_H(layoutSetId, hostnames);
+	}
+
+	/**
+	 * Returns a range of all the virtual hosts where layoutSetId &ne; &#63; and hostname = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostnames the hostnames
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @return the range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String[] hostnames, int start, int end) {
+
+		return getPersistence().findByNotL_H(
+			layoutSetId, hostnames, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the virtual hosts where layoutSetId &ne; &#63; and hostname = any &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostnames the hostnames
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String[] hostnames, int start, int end,
+		OrderByComparator<VirtualHost> orderByComparator) {
+
+		return getPersistence().findByNotL_H(
+			layoutSetId, hostnames, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the virtual hosts where layoutSetId &ne; &#63; and hostname = &#63;, optionally using the finder cache.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>VirtualHostModelImpl</code>.
+	 * </p>
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostnames the hostnames
+	 * @param start the lower bound of the range of virtual hosts
+	 * @param end the upper bound of the range of virtual hosts (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching virtual hosts
+	 */
+	public static List<VirtualHost> findByNotL_H(
+		long layoutSetId, String[] hostnames, int start, int end,
+		OrderByComparator<VirtualHost> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByNotL_H(
+			layoutSetId, hostnames, start, end, orderByComparator,
+			useFinderCache);
+	}
+
+	/**
+	 * Removes all the virtual hosts where layoutSetId &ne; &#63; and hostname = &#63; from the database.
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostname the hostname
+	 */
+	public static void removeByNotL_H(long layoutSetId, String hostname) {
+		getPersistence().removeByNotL_H(layoutSetId, hostname);
+	}
+
+	/**
+	 * Returns the number of virtual hosts where layoutSetId &ne; &#63; and hostname = &#63;.
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostname the hostname
 	 * @return the number of matching virtual hosts
 	 */
-	public static int countByC_L_D(
-		long companyId, long layoutSetId, boolean defaultVirtualHost) {
+	public static int countByNotL_H(long layoutSetId, String hostname) {
+		return getPersistence().countByNotL_H(layoutSetId, hostname);
+	}
 
-		return getPersistence().countByC_L_D(
-			companyId, layoutSetId, defaultVirtualHost);
+	/**
+	 * Returns the number of virtual hosts where layoutSetId &ne; &#63; and hostname = any &#63;.
+	 *
+	 * @param layoutSetId the layout set ID
+	 * @param hostnames the hostnames
+	 * @return the number of matching virtual hosts
+	 */
+	public static int countByNotL_H(long layoutSetId, String[] hostnames) {
+		return getPersistence().countByNotL_H(layoutSetId, hostnames);
 	}
 
 	/**
@@ -593,6 +955,10 @@ public class VirtualHostUtil {
 
 	public static VirtualHostPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(VirtualHostPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile VirtualHostPersistence _persistence;

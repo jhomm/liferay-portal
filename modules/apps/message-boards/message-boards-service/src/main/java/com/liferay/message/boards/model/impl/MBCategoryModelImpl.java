@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.model.impl;
@@ -19,16 +10,12 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.message.boards.model.MBCategory;
 import com.liferay.message.boards.model.MBCategoryModel;
-import com.liferay.message.boards.model.MBCategorySoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
-import com.liferay.portal.kernel.exception.NoSuchModelException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
-import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
-import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -37,23 +24,19 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -83,12 +66,13 @@ public class MBCategoryModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"categoryId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"parentCategoryId", Types.BIGINT}, {"name", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"displayStyle", Types.VARCHAR},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"categoryId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"parentCategoryId", Types.BIGINT},
+		{"name", Types.VARCHAR}, {"description", Types.VARCHAR},
+		{"displayStyle", Types.VARCHAR}, {"friendlyURL", Types.VARCHAR},
 		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER},
 		{"statusByUserId", Types.BIGINT}, {"statusByUserName", Types.VARCHAR},
 		{"statusDate", Types.TIMESTAMP}
@@ -101,6 +85,7 @@ public class MBCategoryModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("categoryId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -112,6 +97,7 @@ public class MBCategoryModelImpl
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("description", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("displayStyle", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("friendlyURL", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("statusByUserId", Types.BIGINT);
@@ -120,7 +106,7 @@ public class MBCategoryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table MBCategory (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,categoryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentCategoryId LONG,name VARCHAR(75) null,description STRING null,displayStyle VARCHAR(75) null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (categoryId, ctCollectionId))";
+		"create table MBCategory (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,categoryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,parentCategoryId LONG,name VARCHAR(255) null,description STRING null,displayStyle VARCHAR(75) null,friendlyURL VARCHAR(255) null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (categoryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table MBCategory";
 
@@ -129,6 +115,9 @@ public class MBCategoryModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY MBCategory.parentCategoryId ASC, MBCategory.name ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY mbCategory.parentCategoryId ASC, mbCategory.name ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -152,32 +141,44 @@ public class MBCategoryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 4L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long PARENTCATEGORYID_COLUMN_BITMASK = 8L;
+	public static final long FRIENDLYURL_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 16L;
+	public static final long GROUPID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 32L;
+	public static final long PARENTCATEGORYID_COLUMN_BITMASK = 32L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long STATUS_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 64L;
+	public static final long NAME_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -191,66 +192,6 @@ public class MBCategoryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static MBCategory toModel(MBCategorySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		MBCategory model = new MBCategoryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setCategoryId(soapModel.getCategoryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setParentCategoryId(soapModel.getParentCategoryId());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setDisplayStyle(soapModel.getDisplayStyle());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<MBCategory> toModels(MBCategorySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<MBCategory> models = new ArrayList<MBCategory>(soapModels.length);
-
-		for (MBCategorySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public MBCategoryModelImpl() {
@@ -328,137 +269,142 @@ public class MBCategoryModelImpl
 	public Map<String, Function<MBCategory, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<MBCategory, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, MBCategory>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			MBCategory.class.getClassLoader(), MBCategory.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<MBCategory, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<MBCategory> constructor =
-				(Constructor<MBCategory>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<MBCategory, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<MBCategory, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", MBCategory::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", MBCategory::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", MBCategory::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", MBCategory::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"categoryId", MBCategory::getCategoryId);
+			attributeGetterFunctions.put("groupId", MBCategory::getGroupId);
+			attributeGetterFunctions.put("companyId", MBCategory::getCompanyId);
+			attributeGetterFunctions.put("userId", MBCategory::getUserId);
+			attributeGetterFunctions.put("userName", MBCategory::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", MBCategory::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", MBCategory::getModifiedDate);
+			attributeGetterFunctions.put(
+				"parentCategoryId", MBCategory::getParentCategoryId);
+			attributeGetterFunctions.put("name", MBCategory::getName);
+			attributeGetterFunctions.put(
+				"description", MBCategory::getDescription);
+			attributeGetterFunctions.put(
+				"displayStyle", MBCategory::getDisplayStyle);
+			attributeGetterFunctions.put(
+				"friendlyURL", MBCategory::getFriendlyURL);
+			attributeGetterFunctions.put(
+				"lastPublishDate", MBCategory::getLastPublishDate);
+			attributeGetterFunctions.put("status", MBCategory::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", MBCategory::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", MBCategory::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", MBCategory::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<MBCategory, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<MBCategory, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<MBCategory, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<MBCategory, Object>>();
-		Map<String, BiConsumer<MBCategory, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<MBCategory, ?>>();
+		private static final Map<String, BiConsumer<MBCategory, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", MBCategory::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<MBCategory, Long>)MBCategory::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", MBCategory::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<MBCategory, Long>)MBCategory::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", MBCategory::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<MBCategory, String>)MBCategory::setUuid);
-		attributeGetterFunctions.put("categoryId", MBCategory::getCategoryId);
-		attributeSetterBiConsumers.put(
-			"categoryId",
-			(BiConsumer<MBCategory, Long>)MBCategory::setCategoryId);
-		attributeGetterFunctions.put("groupId", MBCategory::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<MBCategory, Long>)MBCategory::setGroupId);
-		attributeGetterFunctions.put("companyId", MBCategory::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<MBCategory, Long>)MBCategory::setCompanyId);
-		attributeGetterFunctions.put("userId", MBCategory::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<MBCategory, Long>)MBCategory::setUserId);
-		attributeGetterFunctions.put("userName", MBCategory::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<MBCategory, String>)MBCategory::setUserName);
-		attributeGetterFunctions.put("createDate", MBCategory::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<MBCategory, Date>)MBCategory::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", MBCategory::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<MBCategory, Date>)MBCategory::setModifiedDate);
-		attributeGetterFunctions.put(
-			"parentCategoryId", MBCategory::getParentCategoryId);
-		attributeSetterBiConsumers.put(
-			"parentCategoryId",
-			(BiConsumer<MBCategory, Long>)MBCategory::setParentCategoryId);
-		attributeGetterFunctions.put("name", MBCategory::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<MBCategory, String>)MBCategory::setName);
-		attributeGetterFunctions.put("description", MBCategory::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<MBCategory, String>)MBCategory::setDescription);
-		attributeGetterFunctions.put(
-			"displayStyle", MBCategory::getDisplayStyle);
-		attributeSetterBiConsumers.put(
-			"displayStyle",
-			(BiConsumer<MBCategory, String>)MBCategory::setDisplayStyle);
-		attributeGetterFunctions.put(
-			"lastPublishDate", MBCategory::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<MBCategory, Date>)MBCategory::setLastPublishDate);
-		attributeGetterFunctions.put("status", MBCategory::getStatus);
-		attributeSetterBiConsumers.put(
-			"status", (BiConsumer<MBCategory, Integer>)MBCategory::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", MBCategory::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<MBCategory, Long>)MBCategory::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", MBCategory::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<MBCategory, String>)MBCategory::setStatusByUserName);
-		attributeGetterFunctions.put("statusDate", MBCategory::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<MBCategory, Date>)MBCategory::setStatusDate);
+		static {
+			Map<String, BiConsumer<MBCategory, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<MBCategory, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<MBCategory, Long>)MBCategory::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<MBCategory, Long>)MBCategory::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<MBCategory, String>)MBCategory::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<MBCategory, String>)
+					MBCategory::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"categoryId",
+				(BiConsumer<MBCategory, Long>)MBCategory::setCategoryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<MBCategory, Long>)MBCategory::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<MBCategory, Long>)MBCategory::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<MBCategory, Long>)MBCategory::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<MBCategory, String>)MBCategory::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<MBCategory, Date>)MBCategory::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<MBCategory, Date>)MBCategory::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"parentCategoryId",
+				(BiConsumer<MBCategory, Long>)MBCategory::setParentCategoryId);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<MBCategory, String>)MBCategory::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<MBCategory, String>)MBCategory::setDescription);
+			attributeSetterBiConsumers.put(
+				"displayStyle",
+				(BiConsumer<MBCategory, String>)MBCategory::setDisplayStyle);
+			attributeSetterBiConsumers.put(
+				"friendlyURL",
+				(BiConsumer<MBCategory, String>)MBCategory::setFriendlyURL);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<MBCategory, Date>)MBCategory::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<MBCategory, Integer>)MBCategory::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<MBCategory, Long>)MBCategory::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<MBCategory, String>)
+					MBCategory::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<MBCategory, Date>)MBCategory::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -518,6 +464,35 @@ public class MBCategoryModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -768,6 +743,35 @@ public class MBCategoryModelImpl
 
 	@JSON
 	@Override
+	public String getFriendlyURL() {
+		if (_friendlyURL == null) {
+			return "";
+		}
+		else {
+			return _friendlyURL;
+		}
+	}
+
+	@Override
+	public void setFriendlyURL(String friendlyURL) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_friendlyURL = friendlyURL;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalFriendlyURL() {
+		return getColumnOriginalValue("friendlyURL");
+	}
+
+	@JSON
+	@Override
 	public Date getLastPublishDate() {
 		return _lastPublishDate;
 	}
@@ -904,74 +908,8 @@ public class MBCategoryModelImpl
 	}
 
 	@Override
-	public com.liferay.trash.kernel.model.TrashEntry getTrashEntry()
-		throws PortalException {
-
-		if (!isInTrash()) {
-			return null;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return trashEntry;
-		}
-
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if (Validator.isNotNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			ContainerModel containerModel = null;
-
-			try {
-				containerModel = trashHandler.getParentContainerModel(this);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-				return null;
-			}
-
-			while (containerModel != null) {
-				if (containerModel instanceof TrashedModel) {
-					TrashedModel trashedModel = (TrashedModel)containerModel;
-
-					return trashedModel.getTrashEntry();
-				}
-
-				trashHandler =
-					com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-						getTrashHandler(
-							trashHandler.getContainerModelClassName(
-								containerModel.getContainerModelId()));
-
-				if (trashHandler == null) {
-					return null;
-				}
-
-				containerModel = trashHandler.getContainerModel(
-					containerModel.getParentContainerModelId());
-			}
-		}
-
-		return null;
-	}
-
-	@Override
 	public long getTrashEntryClassPK() {
 		return getPrimaryKey();
-	}
-
-	/**
-	 * @deprecated As of Judson (7.1.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.kernel.trash.TrashHandler getTrashHandler() {
-		return com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil.
-			getTrashHandler(getModelClassName());
 	}
 
 	@Override
@@ -982,70 +920,6 @@ public class MBCategoryModelImpl
 		else {
 			return false;
 		}
-	}
-
-	@Override
-	public boolean isInTrashContainer() {
-		com.liferay.portal.kernel.trash.TrashHandler trashHandler =
-			getTrashHandler();
-
-		if ((trashHandler == null) ||
-			Validator.isNull(
-				trashHandler.getContainerModelClassName(getPrimaryKey()))) {
-
-			return false;
-		}
-
-		try {
-			ContainerModel containerModel =
-				trashHandler.getParentContainerModel(this);
-
-			if (containerModel == null) {
-				return false;
-			}
-
-			if (containerModel instanceof TrashedModel) {
-				return ((TrashedModel)containerModel).isInTrash();
-			}
-		}
-		catch (Exception exception) {
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashExplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashImplicitly() {
-		if (!isInTrash()) {
-			return false;
-		}
-
-		com.liferay.trash.kernel.model.TrashEntry trashEntry =
-			com.liferay.trash.kernel.service.TrashEntryLocalServiceUtil.
-				fetchEntry(getModelClassName(), getTrashEntryClassPK());
-
-		if (trashEntry != null) {
-			return false;
-		}
-
-		return true;
 	}
 
 	@Override
@@ -1187,6 +1061,7 @@ public class MBCategoryModelImpl
 		mbCategoryImpl.setMvccVersion(getMvccVersion());
 		mbCategoryImpl.setCtCollectionId(getCtCollectionId());
 		mbCategoryImpl.setUuid(getUuid());
+		mbCategoryImpl.setExternalReferenceCode(getExternalReferenceCode());
 		mbCategoryImpl.setCategoryId(getCategoryId());
 		mbCategoryImpl.setGroupId(getGroupId());
 		mbCategoryImpl.setCompanyId(getCompanyId());
@@ -1198,6 +1073,7 @@ public class MBCategoryModelImpl
 		mbCategoryImpl.setName(getName());
 		mbCategoryImpl.setDescription(getDescription());
 		mbCategoryImpl.setDisplayStyle(getDisplayStyle());
+		mbCategoryImpl.setFriendlyURL(getFriendlyURL());
 		mbCategoryImpl.setLastPublishDate(getLastPublishDate());
 		mbCategoryImpl.setStatus(getStatus());
 		mbCategoryImpl.setStatusByUserId(getStatusByUserId());
@@ -1218,6 +1094,8 @@ public class MBCategoryModelImpl
 		mbCategoryImpl.setCtCollectionId(
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		mbCategoryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		mbCategoryImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		mbCategoryImpl.setCategoryId(
 			this.<Long>getColumnOriginalValue("categoryId"));
 		mbCategoryImpl.setGroupId(this.<Long>getColumnOriginalValue("groupId"));
@@ -1237,6 +1115,8 @@ public class MBCategoryModelImpl
 			this.<String>getColumnOriginalValue("description"));
 		mbCategoryImpl.setDisplayStyle(
 			this.<String>getColumnOriginalValue("displayStyle"));
+		mbCategoryImpl.setFriendlyURL(
+			this.<String>getColumnOriginalValue("friendlyURL"));
 		mbCategoryImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
 		mbCategoryImpl.setStatus(
@@ -1348,6 +1228,17 @@ public class MBCategoryModelImpl
 			mbCategoryCacheModel.uuid = null;
 		}
 
+		mbCategoryCacheModel.externalReferenceCode = getExternalReferenceCode();
+
+		String externalReferenceCode =
+			mbCategoryCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			mbCategoryCacheModel.externalReferenceCode = null;
+		}
+
 		mbCategoryCacheModel.categoryId = getCategoryId();
 
 		mbCategoryCacheModel.groupId = getGroupId();
@@ -1406,6 +1297,14 @@ public class MBCategoryModelImpl
 
 		if ((displayStyle != null) && (displayStyle.length() == 0)) {
 			mbCategoryCacheModel.displayStyle = null;
+		}
+
+		mbCategoryCacheModel.friendlyURL = getFriendlyURL();
+
+		String friendlyURL = mbCategoryCacheModel.friendlyURL;
+
+		if ((friendlyURL != null) && (friendlyURL.length() == 0)) {
+			mbCategoryCacheModel.friendlyURL = null;
 		}
 
 		Date lastPublishDate = getLastPublishDate();
@@ -1490,47 +1389,19 @@ public class MBCategoryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<MBCategory, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<MBCategory, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<MBCategory, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((MBCategory)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, MBCategory>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					MBCategory.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _categoryId;
 	private long _groupId;
 	private long _companyId;
@@ -1543,6 +1414,7 @@ public class MBCategoryModelImpl
 	private String _name;
 	private String _description;
 	private String _displayStyle;
+	private String _friendlyURL;
 	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
@@ -1552,8 +1424,9 @@ public class MBCategoryModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<MBCategory, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<MBCategory, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1581,6 +1454,8 @@ public class MBCategoryModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("categoryId", _categoryId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1592,6 +1467,7 @@ public class MBCategoryModelImpl
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("description", _description);
 		_columnOriginalValues.put("displayStyle", _displayStyle);
+		_columnOriginalValues.put("friendlyURL", _friendlyURL);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 		_columnOriginalValues.put("status", _status);
 		_columnOriginalValues.put("statusByUserId", _statusByUserId);
@@ -1626,37 +1502,41 @@ public class MBCategoryModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("categoryId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("groupId", 16L);
+		columnBitmasks.put("categoryId", 16L);
 
-		columnBitmasks.put("companyId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userId", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("userName", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("createDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("modifiedDate", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("parentCategoryId", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("name", 2048L);
+		columnBitmasks.put("parentCategoryId", 2048L);
 
-		columnBitmasks.put("description", 4096L);
+		columnBitmasks.put("name", 4096L);
 
-		columnBitmasks.put("displayStyle", 8192L);
+		columnBitmasks.put("description", 8192L);
 
-		columnBitmasks.put("lastPublishDate", 16384L);
+		columnBitmasks.put("displayStyle", 16384L);
 
-		columnBitmasks.put("status", 32768L);
+		columnBitmasks.put("friendlyURL", 32768L);
 
-		columnBitmasks.put("statusByUserId", 65536L);
+		columnBitmasks.put("lastPublishDate", 65536L);
 
-		columnBitmasks.put("statusByUserName", 131072L);
+		columnBitmasks.put("status", 131072L);
 
-		columnBitmasks.put("statusDate", 262144L);
+		columnBitmasks.put("statusByUserId", 262144L);
+
+		columnBitmasks.put("statusByUserName", 524288L);
+
+		columnBitmasks.put("statusDate", 1048576L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

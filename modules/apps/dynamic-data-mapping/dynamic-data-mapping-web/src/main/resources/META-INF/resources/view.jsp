@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -39,10 +30,6 @@ List<DDMDisplayTabItem> ddmDisplayTabItems = ddmDisplay.getTabItems();
 
 </c:if>
 
-<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByStructureLinks.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-structure-links" />
-<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByTemplates.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-templates" />
-<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureThatHasChild.class %>" message="the-structure-cannot-be-deleted-because-it-has-one-or-more-substructures" />
-
 <liferay-ui:success key='<%= DDMPortletKeys.DYNAMIC_DATA_MAPPING + "requestProcessed" %>' message="your-request-completed-successfully" />
 
 <liferay-util:include page="/navigation_bar.jsp" servletContext="<%= application %>" />
@@ -56,10 +43,16 @@ List<DDMDisplayTabItem> ddmDisplayTabItems = ddmDisplay.getTabItems();
 	<clay:container-fluid
 		id='<%= liferayPortletResponse.getNamespace() + "entriesContainer" %>'
 	>
+		<div class="mb-n4 mt-3">
+			<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByStructureLinks.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-structure-links" />
+			<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureReferencedByTemplates.class %>" message="the-structure-cannot-be-deleted-because-it-is-required-by-one-or-more-templates" />
+			<liferay-ui:error exception="<%= RequiredStructureException.MustNotDeleteStructureThatHasChild.class %>" message="the-structure-cannot-be-deleted-because-it-has-one-or-more-substructures" />
+		</div>
+
 		<liferay-ui:search-container
 			id="ddmStructures"
 			rowChecker="<%= new DDMStructureRowChecker(renderResponse) %>"
-			searchContainer="<%= ddmDisplayContext.getStructureSearch() %>"
+			searchContainer="<%= ddmDisplayContext.getDDMStructureSearchContainer() %>"
 		>
 			<liferay-ui:search-container-row
 				className="com.liferay.dynamic.data.mapping.model.DDMStructure"

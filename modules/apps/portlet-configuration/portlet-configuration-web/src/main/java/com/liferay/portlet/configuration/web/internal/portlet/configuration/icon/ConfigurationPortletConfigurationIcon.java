@@ -1,35 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.configuration.web.internal.portlet.configuration.icon;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.portlet.PortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.configuration.icon.BasePortletConfigurationIcon;
 import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfigurationIcon;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portlet.configuration.kernel.util.PortletConfigurationApplicationType;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Eudaldo Alonso
  */
-@Component(immediate = true, service = PortletConfigurationIcon.class)
+@Component(service = PortletConfigurationIcon.class)
 public class ConfigurationPortletConfigurationIcon
 	extends BasePortletConfigurationIcon {
 
@@ -45,25 +48,7 @@ public class ConfigurationPortletConfigurationIcon
 
 	@Override
 	public String getMessage(PortletRequest portletRequest) {
-		return LanguageUtil.get(
-			getResourceBundle(getLocale(portletRequest)), "configuration");
-	}
-
-	@Override
-	public String getMethod() {
-		return "get";
-	}
-
-	@Override
-	public String getOnClick(
-		PortletRequest portletRequest, PortletResponse portletResponse) {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
-
-		return portletDisplay.getURLConfigurationJS();
+		return _language.get(getLocale(portletRequest), "configuration");
 	}
 
 	@Override
@@ -75,12 +60,55 @@ public class ConfigurationPortletConfigurationIcon
 
 		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
 
-		return portletDisplay.getURLConfiguration();
+		try {
+			return PortletURLBuilder.create(
+				PortletProviderUtil.getPortletURL(
+					portletRequest,
+					PortletConfigurationApplicationType.PortletConfiguration.
+						CLASS_NAME,
+					PortletProvider.Action.VIEW)
+			).setMVCPath(
+				"/edit_configuration.jsp"
+			).setRedirect(
+				themeDisplay.getURLCurrent()
+			).setPortletResource(
+				portletDisplay.getId()
+			).setParameter(
+				"portletConfiguration", true
+			).setParameter(
+				"resourcePrimKey",
+				() -> {
+					Portlet portlet = (Portlet)portletRequest.getAttribute(
+						WebKeys.RENDER_PORTLET);
+
+					return PortletPermissionUtil.getPrimaryKey(
+						themeDisplay.getPlid(), portlet.getPortletId());
+				}
+			).setParameter(
+				"returnToFullPageURL", themeDisplay.getURLCurrent()
+			).setParameter(
+				"settingsScope",
+				() -> {
+					String settingsScope = (String)portletRequest.getAttribute(
+						WebKeys.SETTINGS_SCOPE);
+
+					return ParamUtil.get(
+						portletRequest, "settingsScope", settingsScope);
+				}
+			).buildString();
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return null;
 	}
 
 	@Override
 	public double getWeight() {
-		return 14.0;
+		return 16.0;
 	}
 
 	@Override
@@ -88,7 +116,11 @@ public class ConfigurationPortletConfigurationIcon
 		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		if (isEmbeddedPersonalApplicationLayout(themeDisplay.getLayout())) {
+		Layout layout = themeDisplay.getLayout();
+
+		if (layout.isEmbeddedPersonalApplication() ||
+			!layout.isTypeControlPanel()) {
+
 			return false;
 		}
 
@@ -102,9 +134,10 @@ public class ConfigurationPortletConfigurationIcon
 		return true;
 	}
 
-	@Override
-	public boolean isToolTip() {
-		return false;
-	}
+	private static final Log _log = LogFactoryUtil.getLog(
+		ConfigurationPortletConfigurationIcon.class);
+
+	@Reference
+	private Language _language;
 
 }

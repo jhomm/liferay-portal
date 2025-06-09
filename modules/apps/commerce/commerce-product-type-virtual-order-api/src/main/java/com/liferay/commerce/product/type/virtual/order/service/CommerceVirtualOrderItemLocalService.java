@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.service;
 
+import com.liferay.commerce.product.type.virtual.model.CPDVirtualSettingFileEntry;
 import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
@@ -81,8 +73,9 @@ public interface CommerceVirtualOrderItemLocalService
 		CommerceVirtualOrderItem commerceVirtualOrderItem);
 
 	public CommerceVirtualOrderItem addCommerceVirtualOrderItem(
-			long commerceOrderItemId, long fileEntryId, String url,
-			int activationStatus, long duration, int usages, int maxUsages,
+			long commerceOrderItemId,
+			List<CPDVirtualSettingFileEntry> cpdVirtualSettingFileEntries,
+			int activationStatus, long duration, int maxUsages,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -229,6 +222,11 @@ public interface CommerceVirtualOrderItemLocalService
 		fetchCommerceVirtualOrderItemByCommerceOrderItemId(
 			long commerceOrderItemId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceVirtualOrderItem
+		fetchCommerceVirtualOrderItemByCommerceOrderItemId(
+			long commerceOrderItemId, boolean useFinderCache);
+
 	/**
 	 * Returns the commerce virtual order item matching the UUID and group.
 	 *
@@ -334,7 +332,10 @@ public interface CommerceVirtualOrderItemLocalService
 		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public File getFile(long commerceVirtualOrderItemId) throws Exception;
+	public File getFile(
+			long commerceVirtualOrderItemId,
+			long commerceVirtualOrderItemFileEntryId)
+		throws Exception;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -352,10 +353,6 @@ public interface CommerceVirtualOrderItemLocalService
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
-		throws PortalException;
-
-	public CommerceVirtualOrderItem incrementCommerceVirtualOrderItemUsages(
-			long commerceVirtualOrderItemId)
 		throws PortalException;
 
 	public void setActive(long commerceVirtualOrderItemId, boolean active)
@@ -376,9 +373,8 @@ public interface CommerceVirtualOrderItemLocalService
 		CommerceVirtualOrderItem commerceVirtualOrderItem);
 
 	public CommerceVirtualOrderItem updateCommerceVirtualOrderItem(
-			long commerceVirtualOrderItemId, long fileEntryId, String url,
-			int activationStatus, long duration, int usages, int maxUsages,
-			boolean active)
+			long commerceVirtualOrderItemId, int activationStatus,
+			long duration, int maxUsages, boolean active)
 		throws PortalException;
 
 	public CommerceVirtualOrderItem updateCommerceVirtualOrderItemDates(

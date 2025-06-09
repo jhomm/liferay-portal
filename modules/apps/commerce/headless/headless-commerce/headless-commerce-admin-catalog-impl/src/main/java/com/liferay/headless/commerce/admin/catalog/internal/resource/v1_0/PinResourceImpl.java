@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
@@ -26,25 +17,23 @@ import com.liferay.commerce.shop.by.diagram.service.CSDiagramPinService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.MappedProduct;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Pin;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.PinDTOConverter;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.MappedProductUtil;
 import com.liferay.headless.commerce.admin.catalog.internal.util.v1_0.PinUtil;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.PinResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.fields.NestedField;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.util.TransformUtil;
-
-import java.io.Serializable;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,16 +43,36 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, properties = "OSGI-INF/liferay/rest/v1_0/pin.properties",
-	scope = ServiceScope.PROTOTYPE,
-	service = {NestedFieldSupport.class, PinResource.class}
+	properties = "OSGI-INF/liferay/rest/v1_0/pin.properties",
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = PinResource.class
 )
-public class PinResourceImpl
-	extends BasePinResourceImpl implements NestedFieldSupport {
+@CTAware
+public class PinResourceImpl extends BasePinResourceImpl {
 
 	@Override
 	public void deletePin(Long pinId) throws Exception {
-		_csDiagramPinService.deleteCSDiagramPin(pinId);
+		CSDiagramPin csDiagramPin = _csDiagramPinService.getCSDiagramPin(pinId);
+
+		CSDiagramEntry csDiagramEntry =
+			_csDiagramEntryService.fetchCSDiagramEntry(
+				csDiagramPin.getCPDefinitionId(), csDiagramPin.getSequence());
+
+		if ((csDiagramEntry != null) &&
+			!ListUtil.exists(
+				_csDiagramPinService.getCSDiagramPins(
+					csDiagramPin.getCPDefinitionId(), -1, -1),
+				curCSDiagramPin ->
+					(csDiagramPin.getCSDiagramPinId() !=
+						curCSDiagramPin.getCSDiagramPinId()) &&
+					Objects.equals(
+						csDiagramPin.getSequence(),
+						curCSDiagramPin.getSequence()))) {
+
+			_csDiagramEntryService.deleteCSDiagramEntry(csDiagramEntry);
+		}
+
+		_csDiagramPinService.deleteCSDiagramPin(csDiagramPin);
 	}
 
 	@Override
@@ -177,7 +186,7 @@ public class PinResourceImpl
 			long skuId = GetterUtil.getLong(mappedProduct.getSkuId());
 
 			CPInstance cpInstance =
-				_cpInstanceService.fetchByExternalReferenceCode(
+				_cpInstanceService.fetchCPInstanceByExternalReferenceCode(
 					mappedProduct.getSkuExternalReferenceCode(),
 					contextCompany.getCompanyId());
 
@@ -200,15 +209,10 @@ public class PinResourceImpl
 			ServiceContext serviceContext =
 				_serviceContextHelper.getServiceContext(groupId);
 
-			Map<String, Serializable> expandoBridgeAttributes =
+			serviceContext.setExpandoBridgeAttributes(
 				MappedProductUtil.getExpandoBridgeAttributes(
 					contextCompany.getCompanyId(),
-					contextAcceptLanguage.getPreferredLocale(), mappedProduct);
-
-			if (expandoBridgeAttributes != null) {
-				serviceContext.setExpandoBridgeAttributes(
-					expandoBridgeAttributes);
-			}
+					contextAcceptLanguage.getPreferredLocale(), mappedProduct));
 
 			CSDiagramEntry csDiagramEntry =
 				_csDiagramEntryService.fetchCSDiagramEntry(
@@ -253,7 +257,7 @@ public class PinResourceImpl
 	}
 
 	private List<Pin> _toPins(List<CSDiagramPin> csDiagramPins) {
-		return TransformUtil.transform(
+		return transform(
 			csDiagramPins,
 			csDiagramPin -> _toPin(csDiagramPin.getCSDiagramPinId()));
 	}
@@ -270,8 +274,10 @@ public class PinResourceImpl
 	@Reference
 	private CSDiagramPinService _csDiagramPinService;
 
-	@Reference
-	private PinDTOConverter _pinDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.PinDTOConverter)"
+	)
+	private DTOConverter<CSDiagramEntry, Pin> _pinDTOConverter;
 
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;

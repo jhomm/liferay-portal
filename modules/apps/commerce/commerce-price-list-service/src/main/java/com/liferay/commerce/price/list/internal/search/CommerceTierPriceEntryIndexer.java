@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.internal.search;
@@ -32,11 +23,11 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.LinkedHashMap;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(enabled = false, immediate = true, service = Indexer.class)
+@Component(service = Indexer.class)
 public class CommerceTierPriceEntryIndexer
 	extends BaseIndexer<CommerceTierPriceEntry> {
 
@@ -121,7 +112,8 @@ public class CommerceTierPriceEntryIndexer
 		throws Exception {
 
 		if (_log.isDebugEnabled()) {
-			_log.debug("Indexing tier price entry " + commerceTierPriceEntry);
+			_log.debug(
+				"Indexing commerce tier price entry " + commerceTierPriceEntry);
 		}
 
 		Document document = getBaseModelDocument(
@@ -132,11 +124,12 @@ public class CommerceTierPriceEntryIndexer
 			commerceTierPriceEntry.getCommercePriceEntryId());
 		document.addKeyword(
 			FIELD_EXTERNAL_REFERENCE_CODE,
-			commerceTierPriceEntry.getExternalReferenceCode());
+			commerceTierPriceEntry.getExternalReferenceCode(), true);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
-				"Document " + commerceTierPriceEntry + " indexed successfully");
+				"Commerce tier price entry " + commerceTierPriceEntry +
+					" indexed successfully");
 		}
 
 		return document;
@@ -161,8 +154,8 @@ public class CommerceTierPriceEntryIndexer
 		throws Exception {
 
 		_indexWriterHelper.updateDocument(
-			getSearchEngineId(), commerceTierPriceEntry.getCompanyId(),
-			getDocument(commerceTierPriceEntry), isCommitImmediately());
+			commerceTierPriceEntry.getCompanyId(),
+			getDocument(commerceTierPriceEntry));
 	}
 
 	@Override
@@ -176,11 +169,11 @@ public class CommerceTierPriceEntryIndexer
 	protected void doReindex(String[] ids) throws Exception {
 		long companyId = GetterUtil.getLong(ids[0]);
 
-		reindexCommerceTierPriceEntries(companyId);
+		_reindexCommerceTierPriceEntries(companyId);
 	}
 
-	protected void reindexCommerceTierPriceEntries(long companyId)
-		throws PortalException {
+	private void _reindexCommerceTierPriceEntries(long companyId)
+		throws Exception {
 
 		IndexableActionableDynamicQuery indexableActionableDynamicQuery =
 			_commerceTierPriceEntryLocalService.
@@ -195,18 +188,13 @@ public class CommerceTierPriceEntryIndexer
 				}
 				catch (PortalException portalException) {
 					if (_log.isWarnEnabled()) {
-						long commerceTierPriceEntryId =
-							commerceTierPriceEntry.
-								getCommerceTierPriceEntryId();
-
 						_log.warn(
 							"Unable to index commerce tier price entry " +
-								commerceTierPriceEntryId,
+								commerceTierPriceEntry,
 							portalException);
 					}
 				}
 			});
-		indexableActionableDynamicQuery.setSearchEngineId(getSearchEngineId());
 
 		indexableActionableDynamicQuery.performActions();
 	}

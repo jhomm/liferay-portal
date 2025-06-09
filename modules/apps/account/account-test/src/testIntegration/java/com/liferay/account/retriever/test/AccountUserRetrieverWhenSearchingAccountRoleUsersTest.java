@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.retriever.test;
@@ -18,7 +9,6 @@ import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.retriever.AccountUserRetriever;
-import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.account.service.test.util.AccountEntryTestUtil;
@@ -33,7 +23,7 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.comparator.UserIdComparator;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
@@ -60,14 +50,13 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_accountEntry1 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
-		_accountEntry2 = AccountEntryTestUtil.addAccountEntry(
-			_accountEntryLocalService);
+		_accountEntry1 = AccountEntryTestUtil.addAccountEntry();
+		_accountEntry2 = AccountEntryTestUtil.addAccountEntry();
 
 		_accountRole = _accountRoleLocalService.addAccountRole(
-			TestPropsValues.getUserId(), _accountEntry1.getAccountEntryId(),
-			RandomTestUtil.randomString(), null, null);
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(),
+			_accountEntry1.getAccountEntryId(), RandomTestUtil.randomString(),
+			null, null);
 	}
 
 	@Test
@@ -129,18 +118,20 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 			_accountUserRetriever.searchAccountRoleUsers(
 				_accountEntry1.getAccountEntryId(),
 				_accountRole.getAccountRoleId(), StringPool.BLANK,
-				QueryUtil.ALL_POS, QueryUtil.ALL_POS, new UserIdComparator());
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				UserIdComparator.getInstance(false));
 
 		Assert.assertEquals(
 			accountRoleUsers.size(), baseModelSearchResult.getLength());
 		Assert.assertEquals(
-			ListUtil.sort(accountRoleUsers, new UserIdComparator()),
+			ListUtil.sort(
+				accountRoleUsers, UserIdComparator.getInstance(false)),
 			baseModelSearchResult.getBaseModels());
 
 		baseModelSearchResult = _accountUserRetriever.searchAccountRoleUsers(
 			_accountEntry1.getAccountEntryId(), _accountRole.getAccountRoleId(),
 			keywords, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new UserIdComparator());
+			UserIdComparator.getInstance(false));
 
 		Assert.assertEquals(1, baseModelSearchResult.getLength());
 
@@ -165,7 +156,7 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 			_accountUserRetriever.searchAccountRoleUsers(
 				_accountEntry1.getAccountEntryId(),
 				_accountRole.getAccountRoleId(), keywords, 1, 2,
-				new UserIdComparator(true));
+				UserIdComparator.getInstance(true));
 
 		Assert.assertEquals(_users.size(), baseModelSearchResult.getLength());
 
@@ -177,10 +168,10 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 		baseModelSearchResult = _accountUserRetriever.searchAccountRoleUsers(
 			_accountEntry1.getAccountEntryId(), _accountRole.getAccountRoleId(),
 			keywords, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new UserIdComparator(false));
+			UserIdComparator.getInstance(false));
 
 		Assert.assertEquals(
-			ListUtil.sort(_users, new UserIdComparator(false)),
+			ListUtil.sort(_users, UserIdComparator.getInstance(false)),
 			baseModelSearchResult.getBaseModels());
 	}
 
@@ -228,9 +219,6 @@ public class AccountUserRetrieverWhenSearchingAccountRoleUsersTest {
 
 	@DeleteAfterTestRun
 	private AccountEntry _accountEntry2;
-
-	@Inject
-	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Inject
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;

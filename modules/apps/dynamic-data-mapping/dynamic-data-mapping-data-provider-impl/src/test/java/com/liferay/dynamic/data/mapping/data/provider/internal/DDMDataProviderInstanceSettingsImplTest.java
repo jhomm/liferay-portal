@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.data.provider.internal;
 
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProvider;
-import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderTracker;
+import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRegistry;
 import com.liferay.dynamic.data.mapping.data.provider.internal.rest.DDMRESTDataProviderSettings;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializerDeserializeResponse;
@@ -31,20 +22,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
 
 /**
  * @author Leonardo Barros
  */
-@RunWith(MockitoJUnitRunner.class)
-public class DDMDataProviderInstanceSettingsImplTest extends PowerMockito {
+public class DDMDataProviderInstanceSettingsImplTest {
 
 	@ClassRule
 	@Rule
@@ -52,25 +36,26 @@ public class DDMDataProviderInstanceSettingsImplTest extends PowerMockito {
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	public void setUp() throws Exception {
+	public void setUp() {
 		_ddmDataProviderInstanceSettingsImpl =
 			new DDMDataProviderInstanceSettingsImpl();
 
-		_ddmDataProviderInstanceSettingsImpl.ddmDataProviderTracker =
-			_ddmDataProviderTracker;
+		_ddmDataProviderInstanceSettingsImpl.ddmDataProviderRegistry =
+			_ddmDataProviderRegistry;
 		_ddmDataProviderInstanceSettingsImpl.jsonDDMFormValuesDeserializer =
 			_ddmFormValuesDeserializer;
 	}
 
 	@Test
-	public void testGetSettings() throws Exception {
-		when(
-			_ddmDataProviderTracker.getDDMDataProvider(Matchers.anyString())
+	public void testGetSettings() {
+		Mockito.when(
+			_ddmDataProviderRegistry.getDDMDataProvider(
+				Mockito.nullable(String.class))
 		).thenReturn(
 			_ddmDataProvider
 		);
 
-		when(
+		Mockito.when(
 			_ddmDataProvider.getSettings()
 		).thenReturn(
 			(Class)TestDataProviderInstanceSettings.class
@@ -84,7 +69,7 @@ public class DDMDataProviderInstanceSettingsImplTest extends PowerMockito {
 					ddmFormValues
 				).build();
 
-		when(
+		Mockito.when(
 			_ddmFormValuesDeserializer.deserialize(Mockito.any())
 		).thenReturn(
 			ddmFormValuesDeserializerDeserializeResponse
@@ -103,9 +88,10 @@ public class DDMDataProviderInstanceSettingsImplTest extends PowerMockito {
 	}
 
 	@Test(expected = IllegalStateException.class)
-	public void testGetSettingsCatchException() throws Exception {
-		when(
-			_ddmDataProviderTracker.getDDMDataProvider(Matchers.anyString())
+	public void testGetSettingsCatchException() {
+		Mockito.when(
+			_ddmDataProviderRegistry.getDDMDataProvider(
+				Mockito.nullable(String.class))
 		).thenThrow(
 			IllegalStateException.class
 		);
@@ -136,19 +122,15 @@ public class DDMDataProviderInstanceSettingsImplTest extends PowerMockito {
 		return ddmFormValues;
 	}
 
-	@Mock
-	private DDMDataProvider _ddmDataProvider;
-
-	@Mock
-	private DDMDataProviderInstance _ddmDataProviderInstance;
-
+	private final DDMDataProvider _ddmDataProvider = Mockito.mock(
+		DDMDataProvider.class);
+	private final DDMDataProviderInstance _ddmDataProviderInstance =
+		Mockito.mock(DDMDataProviderInstance.class);
 	private DDMDataProviderInstanceSettingsImpl
 		_ddmDataProviderInstanceSettingsImpl;
-
-	@Mock
-	private DDMDataProviderTracker _ddmDataProviderTracker;
-
-	@Mock
-	private DDMFormValuesDeserializer _ddmFormValuesDeserializer;
+	private final DDMDataProviderRegistry _ddmDataProviderRegistry =
+		Mockito.mock(DDMDataProviderRegistry.class);
+	private final DDMFormValuesDeserializer _ddmFormValuesDeserializer =
+		Mockito.mock(DDMFormValuesDeserializer.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -38,70 +29,102 @@ export default withRouter(
 		const [addUpdateMessage] = useMutation(updateMessageQuery);
 
 		const [data, setData] = useState();
-		const editor = useRef('');
-		const [isUpdateButtonDisabled, setIsUpdateButtonDisabled] = useState(
-			false
-		);
+		const editorRef = useRef('');
+		const [isUpdateButtonDisabled, setIsUpdateButtonDisabled] =
+			useState(false);
 
 		useEffect(() => {
-			editor.current.setContent(
+			editorRef.current.setContent(
 				data && data.messageBoardMessageByFriendlyUrlPath.articleBody
 			);
 		}, [data]);
+
+		const onInstanceReady = () => {
+			client
+				.request({
+					query: getMessageQuery,
+					variables: {
+						friendlyUrlPath: answerId,
+						siteKey: context.siteKey,
+					},
+				})
+				.then(({data}) => setData(data));
+		};
+
+		const handleClickMessage = () => {
+			addUpdateMessage({
+				fetchOptionsOverrides: getContextLink(
+					`${sectionTitle}/${questionId}`
+				),
+				variables: {
+					articleBody: editorRef.current.getContent(),
+					messageBoardMessageId:
+						data.messageBoardMessageByFriendlyUrlPath.id,
+				},
+			}).then(() => {
+				editorRef.current.clearContent();
+				history.goBack();
+			});
+		};
+
+		const isAReplyMessage = answerId.includes('re-re-');
 
 		return (
 			<section className="c-mt-5 questions-section questions-sections-answer">
 				<div className="questions-container row">
 					<div className="c-mx-auto col-xl-10">
-						<h1>{Liferay.Language.get('edit-answer')}</h1>
+						<h1>
+							{isAReplyMessage
+								? Liferay.Language.get('edit-comment')
+								: Liferay.Language.get('edit-answer')}
+						</h1>
+
 						<DefaultQuestionsEditor
-							label={Liferay.Language.get('your-answer')}
+							label={
+								isAReplyMessage
+									? Liferay.Language.get('your-comment')
+									: Liferay.Language.get('your-answer')
+							}
 							onContentLengthValid={setIsUpdateButtonDisabled}
-							onInstanceReady={() => {
-								client
-									.request({
-										query: getMessageQuery,
-										variables: {
-											friendlyUrlPath: answerId,
-											siteKey: context.siteKey,
-										},
-									})
-									.then(({data}) => setData(data));
-							}}
-							ref={editor}
+							onInstanceReady={onInstanceReady}
+							ref={editorRef}
 						/>
 
 						<div className="c-mt-4 d-flex flex-column-reverse flex-sm-row">
 							<ClayButton
+								aria-label={
+									context.trustedUser
+										? isAReplyMessage
+											? Liferay.Language.get(
+													'update-your-comment'
+												)
+											: Liferay.Language.get(
+													'update-your-answer'
+												)
+										: Liferay.Language.get(
+												'submit-for-publication'
+											)
+								}
 								className="c-mt-4 c-mt-sm-0"
 								disabled={isUpdateButtonDisabled}
 								displayType="primary"
-								onClick={() => {
-									addUpdateMessage({
-										fetchOptionsOverrides: getContextLink(
-											`${sectionTitle}/${questionId}`
-										),
-										variables: {
-											articleBody: editor.current.getContent(),
-											messageBoardMessageId:
-												data
-													.messageBoardMessageByFriendlyUrlPath
-													.id,
-										},
-									}).then(() => {
-										editor.current.clearContent();
-										history.goBack();
-									});
-								}}
+								onClick={handleClickMessage}
 							>
 								{context.trustedUser
-									? Liferay.Language.get('update-your-answer')
+									? isAReplyMessage
+										? Liferay.Language.get(
+												'update-your-comment'
+											)
+										: Liferay.Language.get(
+												'update-your-answer'
+											)
 									: Liferay.Language.get(
-											'submit-for-publication'
-									  )}
+											'submit-for-workflow'
+										)}
 							</ClayButton>
 
 							<ClayButton
+								aria-label={Liferay.Language.get('cancel')}
 								className="c-ml-sm-3"
 								displayType="secondary"
 								onClick={() => history.goBack()}

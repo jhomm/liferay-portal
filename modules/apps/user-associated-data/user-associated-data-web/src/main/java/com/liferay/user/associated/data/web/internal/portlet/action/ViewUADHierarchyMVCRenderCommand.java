@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.associated.data.web.internal.portlet.action;
@@ -28,15 +19,14 @@ import com.liferay.user.associated.data.web.internal.dao.search.UADHierarchyResu
 import com.liferay.user.associated.data.web.internal.display.UADHierarchyDisplay;
 import com.liferay.user.associated.data.web.internal.display.UADInfoPanelDisplay;
 import com.liferay.user.associated.data.web.internal.display.ViewUADEntitiesDisplay;
+import com.liferay.user.associated.data.web.internal.helper.SelectedUserHelper;
 import com.liferay.user.associated.data.web.internal.registry.UADRegistry;
 import com.liferay.user.associated.data.web.internal.util.GroupUtil;
-import com.liferay.user.associated.data.web.internal.util.SelectedUserHelper;
-import com.liferay.user.associated.data.web.internal.util.UADApplicationSummaryHelper;
-import com.liferay.user.associated.data.web.internal.util.UADSearchContainerBuilder;
+import com.liferay.user.associated.data.web.internal.util.UADSearchContainerBuilderUtil;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,9 +35,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Samuel Trong Tran
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
+		"jakarta.portlet.name=" + UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
 		"mvc.command.name=/user_associated_data/view_uad_hierarchy"
 	},
 	service = MVCRenderCommand.class
@@ -71,7 +60,8 @@ public class ViewUADHierarchyMVCRenderCommand implements MVCRenderCommand {
 
 			UADDisplay<Object> uadDisplay =
 				(UADDisplay<Object>)_uadRegistry.getUADDisplay(
-					ParamUtil.getString(renderRequest, "parentContainerClass"));
+					ParamUtil.getString(
+						renderRequest, "parentContainerTypeKey"));
 
 			renderRequest.setAttribute(
 				UADWebKeys.UAD_INFO_PANEL_DISPLAY,
@@ -132,16 +122,15 @@ public class ViewUADHierarchyMVCRenderCommand implements MVCRenderCommand {
 				uadHierarchyDisplay.getUADDisplays()));
 		viewUADEntitiesDisplay.setScope(scope);
 		viewUADEntitiesDisplay.setSearchContainer(
-			_uadSearchContainerBuilder.getHierarchyUADEntitySearchContainer(
+			UADSearchContainerBuilderUtil.getHierarchyUADEntitySearchContainer(
 				_portal.getLiferayPortletResponse(renderResponse),
 				renderRequest, applicationKey,
 				PortletURLUtil.getCurrent(renderRequest, renderResponse),
-				groupIds, uadDisplay.getTypeClass(),
+				groupIds, uadDisplay.getTypeKey(),
 				ParamUtil.getLong(renderRequest, "parentContainerId"),
 				_selectedUserHelper.getSelectedUser(renderRequest),
 				uadHierarchyDisplay));
-		viewUADEntitiesDisplay.setTypeClasses(
-			uadHierarchyDisplay.getTypeClasses());
+		viewUADEntitiesDisplay.setTypeKeys(uadHierarchyDisplay.getTypeKeys());
 
 		return viewUADEntitiesDisplay;
 	}
@@ -156,12 +145,6 @@ public class ViewUADHierarchyMVCRenderCommand implements MVCRenderCommand {
 	private SelectedUserHelper _selectedUserHelper;
 
 	@Reference
-	private UADApplicationSummaryHelper _uadApplicationSummaryHelper;
-
-	@Reference
 	private UADRegistry _uadRegistry;
-
-	@Reference
-	private UADSearchContainerBuilder _uadSearchContainerBuilder;
 
 }

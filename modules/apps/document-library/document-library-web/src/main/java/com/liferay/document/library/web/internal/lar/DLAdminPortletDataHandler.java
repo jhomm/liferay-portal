@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.lar;
 
+import com.liferay.data.engine.model.DEDataDefinitionFieldLink;
 import com.liferay.document.library.constants.DLPortletDataHandlerConstants;
 import com.liferay.document.library.constants.DLPortletKeys;
 import com.liferay.document.library.kernel.model.DLFileEntry;
@@ -33,12 +25,14 @@ import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataHandler;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerBoolean;
+import com.liferay.exportimport.kernel.lar.PortletDataHandlerChoice;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerControl;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.exportimport.kernel.staging.Staging;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepositoryRegistryUtil;
+import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -51,9 +45,9 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
 
-import java.util.List;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -68,7 +62,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gergely Mathe
  */
 @Component(
-	property = "javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+	property = "jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 	service = PortletDataHandler.class
 )
 public class DLAdminPortletDataHandler extends BasePortletDataHandler {
@@ -138,7 +132,17 @@ public class DLAdminPortletDataHandler extends BasePortletDataHandler {
 				NAMESPACE, "documents", true, false,
 				new PortletDataHandlerControl[] {
 					new PortletDataHandlerBoolean(
-						NAMESPACE, "previews-and-thumbnails")
+						NAMESPACE, "previews-and-thumbnails"),
+					new PortletDataHandlerBoolean(
+						getNamespace(), "referenced-content", true, false,
+						new PortletDataHandlerControl[] {
+							new PortletDataHandlerChoice(
+								getNamespace(), "referenced-content-behavior",
+								0,
+								new String[] {
+									"include-always", "include-if-modified"
+								})
+						})
 				},
 				DLFileEntryConstants.getClassName()),
 			new PortletDataHandlerBoolean(
@@ -186,7 +190,12 @@ public class DLAdminPortletDataHandler extends BasePortletDataHandler {
 		portletPreferences.setValue("fileEntryColumns", StringPool.BLANK);
 		portletPreferences.setValue("folderColumns", StringPool.BLANK);
 		portletPreferences.setValue("foldersPerPage", StringPool.BLANK);
-		portletPreferences.setValue("rootFolderId", StringPool.BLANK);
+		portletPreferences.setValue(
+			"rootFolderExternalReferenceCode", StringPool.BLANK);
+		portletPreferences.setValue(
+			"selectedGroupExternalReferenceCode", StringPool.BLANK);
+		portletPreferences.setValue(
+			"selectedRepositoryExternalReferenceCode", StringPool.BLANK);
 		portletPreferences.setValue("showFoldersSearch", StringPool.BLANK);
 		portletPreferences.setValue("showSubfolders", StringPool.BLANK);
 
@@ -359,6 +368,28 @@ public class DLAdminPortletDataHandler extends BasePortletDataHandler {
 				StagedModelDataHandlerUtil.importStagedModel(
 					portletDataContext, ddmStructureElement);
 			}
+
+			for (Element ddmStructureElement : ddmStructureElements) {
+				List<Element> deDataDefinitionFieldLinkElements =
+					portletDataContext.getReferenceDataElements(
+						ddmStructureElement, DEDataDefinitionFieldLink.class,
+						null);
+
+				for (Element deDataDefinitionFieldLinkElement :
+						deDataDefinitionFieldLinkElements) {
+
+					String path =
+						deDataDefinitionFieldLinkElement.attributeValue("path");
+
+					DEDataDefinitionFieldLink deDataDefinitionFieldLink =
+						(DEDataDefinitionFieldLink)
+							portletDataContext.getZipEntryAsObject(
+								deDataDefinitionFieldLinkElement, path);
+
+					StagedModelDataHandlerUtil.importStagedModel(
+						portletDataContext, deDataDefinitionFieldLink);
+				}
+			}
 		}
 
 		if (portletDataContext.getBooleanParameter(NAMESPACE, "repositories")) {
@@ -385,6 +416,18 @@ public class DLAdminPortletDataHandler extends BasePortletDataHandler {
 				StagedModelDataHandlerUtil.importStagedModel(
 					portletDataContext, fileShortcutElement);
 			}
+		}
+
+		Element friendlyURLEntriesElement =
+			portletDataContext.getImportDataGroupElement(
+				FriendlyURLEntry.class);
+
+		List<Element> friendlyURLEntryElements =
+			friendlyURLEntriesElement.elements();
+
+		for (Element friendlyURLEntryElement : friendlyURLEntryElements) {
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, friendlyURLEntryElement);
 		}
 
 		return portletPreferences;

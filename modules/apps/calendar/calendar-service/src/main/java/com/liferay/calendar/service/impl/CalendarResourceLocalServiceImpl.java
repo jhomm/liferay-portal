@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.service.impl;
@@ -23,6 +14,7 @@ import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.model.CalendarResource;
 import com.liferay.calendar.service.CalendarLocalService;
 import com.liferay.calendar.service.base.CalendarResourceLocalServiceBaseImpl;
+import com.liferay.calendar.service.persistence.CalendarPersistence;
 import com.liferay.calendar.util.comparator.CalendarResourceCodeComparator;
 import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.petra.string.CharPool;
@@ -33,7 +25,10 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -73,11 +68,11 @@ public class CalendarResourceLocalServiceImpl
 
 		// Calendar resource
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		long calendarResourceId = counterLocalService.increment();
 
-		if (classNameId == classNameLocalService.getClassNameId(
+		if (classNameId == _classNameLocalService.getClassNameId(
 				CalendarResource.class)) {
 
 			classPK = calendarResourceId;
@@ -95,7 +90,7 @@ public class CalendarResourceLocalServiceImpl
 
 		Date date = new Date();
 
-		validate(groupId, classNameId, classPK, code, nameMap);
+		_validate(groupId, classNameId, classPK, code, nameMap);
 
 		CalendarResource calendarResource = calendarResourcePersistence.create(
 			calendarResourceId);
@@ -119,7 +114,7 @@ public class CalendarResourceLocalServiceImpl
 
 		// Resources
 
-		resourceLocalService.addModelResources(
+		_resourceLocalService.addModelResources(
 			calendarResource, serviceContext);
 
 		// Calendar
@@ -163,12 +158,12 @@ public class CalendarResourceLocalServiceImpl
 
 		// Resources
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			calendarResource, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		// Calendars
 
-		List<Calendar> calendars = calendarPersistence.findByG_C(
+		List<Calendar> calendars = _calendarPersistence.findByG_C(
 			calendarResource.getGroupId(),
 			calendarResource.getCalendarResourceId());
 
@@ -213,7 +208,7 @@ public class CalendarResourceLocalServiceImpl
 	@Override
 	public CalendarResource fetchCalendarResource(long groupId, String code) {
 		return calendarResourcePersistence.fetchByG_C_First(
-			groupId, code, new CalendarResourceCodeComparator());
+			groupId, code, CalendarResourceCodeComparator.getInstance(false));
 	}
 
 	@Override
@@ -298,7 +293,7 @@ public class CalendarResourceLocalServiceImpl
 
 		// Calendar resource
 
-		validate(nameMap);
+		_validate(nameMap);
 
 		CalendarResource calendarResource =
 			calendarResourcePersistence.findByPrimaryKey(calendarResourceId);
@@ -312,7 +307,7 @@ public class CalendarResourceLocalServiceImpl
 
 		// Calendar
 
-		List<Calendar> calendars = calendarPersistence.findByG_C(
+		List<Calendar> calendars = _calendarPersistence.findByG_C(
 			calendarResource.getGroupId(),
 			calendarResource.getCalendarResourceId());
 
@@ -334,12 +329,12 @@ public class CalendarResourceLocalServiceImpl
 		return calendarResource;
 	}
 
-	protected void validate(
+	private void _validate(
 			long groupId, long classNameId, long classPK, String code,
 			Map<Locale, String> nameMap)
 		throws PortalException {
 
-		validate(nameMap);
+		_validate(nameMap);
 
 		if (Validator.isNull(code) || (code.indexOf(CharPool.SPACE) != -1)) {
 			throw new CalendarResourceCodeException();
@@ -357,9 +352,7 @@ public class CalendarResourceLocalServiceImpl
 		}
 	}
 
-	protected void validate(Map<Locale, String> nameMap)
-		throws PortalException {
-
+	private void _validate(Map<Locale, String> nameMap) throws PortalException {
 		Locale locale = LocaleUtil.getSiteDefault();
 
 		if (nameMap.isEmpty() || Validator.isNull(nameMap.get(locale))) {
@@ -372,5 +365,17 @@ public class CalendarResourceLocalServiceImpl
 
 	@Reference
 	private CalendarLocalService _calendarLocalService;
+
+	@Reference
+	private CalendarPersistence _calendarPersistence;
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -100,9 +92,19 @@ public class KBFolderLocalServiceUtil {
 	 *
 	 * @param kbFolder the kb folder
 	 * @return the kb folder that was removed
+	 * @throws PortalException
 	 */
-	public static KBFolder deleteKBFolder(KBFolder kbFolder) {
+	public static KBFolder deleteKBFolder(KBFolder kbFolder)
+		throws PortalException {
+
 		return getService().deleteKBFolder(kbFolder);
+	}
+
+	public static KBFolder deleteKBFolder(
+			KBFolder kbFolder, boolean includeTrashedEntries)
+		throws PortalException {
+
+		return getService().deleteKBFolder(kbFolder, includeTrashedEntries);
 	}
 
 	/**
@@ -120,6 +122,13 @@ public class KBFolderLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteKBFolder(kbFolderId);
+	}
+
+	public static KBFolder deleteKBFolder(
+			long kbFolderId, boolean includeTrashedEntries)
+		throws PortalException {
+
+		return getService().deleteKBFolder(kbFolderId, includeTrashedEntries);
 	}
 
 	public static void deleteKBFolders(long groupId) throws PortalException {
@@ -245,29 +254,11 @@ public class KBFolderLocalServiceUtil {
 		return getService().fetchKBFolder(uuid, groupId);
 	}
 
-	/**
-	 * Returns the kb folder with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the kb folder's external reference code
-	 * @return the matching kb folder, or <code>null</code> if a matching kb folder could not be found
-	 */
 	public static KBFolder fetchKBFolderByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return getService().fetchKBFolderByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchKBFolderByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static KBFolder fetchKBFolderByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return getService().fetchKBFolderByReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	public static KBFolder fetchKBFolderByUrlTitle(
@@ -323,20 +314,12 @@ public class KBFolderLocalServiceUtil {
 		return getService().getKBFolder(kbFolderId);
 	}
 
-	/**
-	 * Returns the kb folder with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the kb folder's external reference code
-	 * @return the matching kb folder
-	 * @throws PortalException if a matching kb folder could not be found
-	 */
 	public static KBFolder getKBFolderByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
 		return getService().getKBFolderByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	public static KBFolder getKBFolderByUrlTitle(
@@ -382,6 +365,20 @@ public class KBFolderLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getKBFolders(groupId, parentKBFolderId, start, end);
+	}
+
+	public static List<Object> getKBFoldersAndKBArticles(
+		long groupId, long parentResourcePrimKey) {
+
+		return getService().getKBFoldersAndKBArticles(
+			groupId, parentResourcePrimKey);
+	}
+
+	public static List<Object> getKBFoldersAndKBArticles(
+		long groupId, long parentResourcePrimKey, int status) {
+
+		return getService().getKBFoldersAndKBArticles(
+			groupId, parentResourcePrimKey, status);
 	}
 
 	public static List<Object> getKBFoldersAndKBArticles(
@@ -446,6 +443,14 @@ public class KBFolderLocalServiceUtil {
 		return getService().getKBFoldersCount(groupId, parentKBFolderId);
 	}
 
+	public static int getKBFoldersCount(
+			long groupId, long parentKBFolderId, int status)
+		throws PortalException {
+
+		return getService().getKBFoldersCount(
+			groupId, parentKBFolderId, status);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -464,10 +469,31 @@ public class KBFolderLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static void moveKBFolder(long kbFolderId, long parentKBFolderId)
+	public static KBFolder moveKBFolder(long kbFolderId, long parentKBFolderId)
 		throws PortalException {
 
-		getService().moveKBFolder(kbFolderId, parentKBFolderId);
+		return getService().moveKBFolder(kbFolderId, parentKBFolderId);
+	}
+
+	public static KBFolder moveKBFolderFromTrash(
+			long userId, long kbFolderId, long parentKBFolderId)
+		throws PortalException {
+
+		return getService().moveKBFolderFromTrash(
+			userId, kbFolderId, parentKBFolderId);
+	}
+
+	public static KBFolder moveKBFolderToTrash(long userId, long kbFolderId)
+		throws PortalException {
+
+		return getService().moveKBFolderToTrash(userId, kbFolderId);
+	}
+
+	public static KBFolder restoreKBFolderFromTrash(
+			long userId, long kbFolderId)
+		throws PortalException {
+
+		return getService().restoreKBFolderFromTrash(userId, kbFolderId);
 	}
 
 	/**
@@ -495,10 +521,19 @@ public class KBFolderLocalServiceUtil {
 			description, serviceContext);
 	}
 
-	public static KBFolderLocalService getService() {
-		return _service;
+	public static KBFolder updateStatus(
+			long userId, KBFolder kbFolder, int status)
+		throws PortalException {
+
+		return getService().updateStatus(userId, kbFolder, status);
 	}
 
-	private static volatile KBFolderLocalService _service;
+	public static KBFolderLocalService getService() {
+		return _serviceSnapshot.get();
+	}
+
+	private static final Snapshot<KBFolderLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			KBFolderLocalServiceUtil.class, KBFolderLocalService.class);
 
 }

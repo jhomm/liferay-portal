@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.navigation.web.internal.exportimport.portlet.preferences.processor;
@@ -34,11 +25,12 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,8 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Máté Thurzó
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + AssetCategoriesNavigationPortletKeys.ASSET_CATEGORIES_NAVIGATION,
+	property = "jakarta.portlet.name=" + AssetCategoriesNavigationPortletKeys.ASSET_CATEGORIES_NAVIGATION,
 	service = ExportImportPortletPreferencesProcessor.class
 )
 public class AssetCategoriesNavigationPortletPreferencesProcessor
@@ -71,7 +62,7 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 		throws PortletDataException {
 
 		try {
-			return updateExportPortletPreferences(
+			return _updateExportPortletPreferences(
 				portletDataContext, portletPreferences,
 				portletDataContext.getPortletId());
 		}
@@ -90,7 +81,7 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 		throws PortletDataException {
 
 		try {
-			return updateImportPortletPreferences(
+			return _updateImportPortletPreferences(
 				portletDataContext, portletPreferences);
 		}
 		catch (Exception exception) {
@@ -162,22 +153,24 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 				groupIds, GetterUtil.getLong(oldValues[1]));
 		}
 
-		if (className.equals(AssetVocabulary.class.getName())) {
-			String uuid = oldValues[0];
+		if (!className.equals(AssetVocabulary.class.getName())) {
+			return null;
+		}
 
-			AssetVocabulary assetVocabulary =
-				_assetVocabularyLocalService.
-					fetchAssetVocabularyByUuidAndGroupId(uuid, groupId);
+		String uuid = oldValues[0];
 
-			if (assetVocabulary != null) {
-				return assetVocabulary.getVocabularyId();
-			}
+		AssetVocabulary assetVocabulary =
+			_assetVocabularyLocalService.fetchAssetVocabularyByUuidAndGroupId(
+				uuid, groupId);
+
+		if (assetVocabulary != null) {
+			return assetVocabulary.getVocabularyId();
 		}
 
 		return null;
 	}
 
-	protected PortletPreferences updateExportPortletPreferences(
+	private PortletPreferences _updateExportPortletPreferences(
 			PortletDataContext portletDataContext,
 			PortletPreferences portletPreferences, String portletId)
 		throws Exception {
@@ -185,22 +178,13 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 		Portlet portlet = _portletLocalService.getPortletById(
 			portletDataContext.getCompanyId(), portletId);
 
-		Enumeration<String> enumeration = portletPreferences.getNames();
-
-		while (enumeration.hasMoreElements()) {
-			String name = enumeration.nextElement();
-
-			if (name.equals("assetVocabularyIds")) {
-				updateExportPortletPreferencesClassPKs(
-					portletDataContext, portlet, portletPreferences, name,
-					AssetVocabulary.class.getName());
-			}
-		}
+		_updatePortletPreferencesExternalReferenceCodes(
+			portlet, portletDataContext, portletPreferences);
 
 		return portletPreferences;
 	}
 
-	protected PortletPreferences updateImportPortletPreferences(
+	private PortletPreferences _updateImportPortletPreferences(
 			PortletDataContext portletDataContext,
 			PortletPreferences portletPreferences)
 		throws Exception {
@@ -223,6 +207,60 @@ public class AssetCategoriesNavigationPortletPreferencesProcessor
 		}
 
 		return portletPreferences;
+	}
+
+	private void _updatePortletPreferencesExternalReferenceCodes(
+			Portlet portlet, PortletDataContext portletDataContext,
+			PortletPreferences portletPreferences)
+		throws Exception {
+
+		String[] assetVocabularyGroupExternalReferenceCodes =
+			portletPreferences.getValues(
+				"assetVocabularyGroupExternalReferenceCodes", null);
+
+		updateExportPortletPreferencesExternalReferenceCodes(
+			portletDataContext, portlet, portletPreferences,
+			"assetVocabularyGroupExternalReferenceCodes",
+			Group.class.getName());
+
+		String[] newAssetVocabularyGroupExternalReferenceCodes =
+			portletPreferences.getValues(
+				"assetVocabularyGroupExternalReferenceCodes", null);
+
+		if (newAssetVocabularyGroupExternalReferenceCodes == null) {
+			return;
+		}
+
+		for (int i = 0; i < assetVocabularyGroupExternalReferenceCodes.length;
+			 i++) {
+
+			String assetVocabularyGroupExternalReferenceCode =
+				assetVocabularyGroupExternalReferenceCodes[i];
+			String newAssetVocabularyGroupExternalReferenceCode =
+				newAssetVocabularyGroupExternalReferenceCodes[i];
+
+			if (Objects.equals(
+					assetVocabularyGroupExternalReferenceCode,
+					newAssetVocabularyGroupExternalReferenceCode)) {
+
+				continue;
+			}
+
+			String[] assetVocabularyExternalReferenceCodesValues =
+				portletPreferences.getValues(
+					"assetVocabularyExternalReferenceCodes_" +
+						assetVocabularyGroupExternalReferenceCode,
+					null);
+
+			portletPreferences.setValues(
+				"assetVocabularyExternalReferenceCodes_" +
+					newAssetVocabularyGroupExternalReferenceCode,
+				assetVocabularyExternalReferenceCodesValues);
+
+			portletPreferences.reset(
+				"assetVocabularyExternalReferenceCodes_" +
+					assetVocabularyGroupExternalReferenceCode);
+		}
 	}
 
 	@Reference

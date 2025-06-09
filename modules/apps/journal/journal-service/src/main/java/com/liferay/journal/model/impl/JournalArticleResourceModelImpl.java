@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -227,104 +217,93 @@ public class JournalArticleResourceModelImpl
 	public Map<String, Function<JournalArticleResource, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<JournalArticleResource, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, JournalArticleResource>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			JournalArticleResource.class.getClassLoader(),
-			JournalArticleResource.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<JournalArticleResource, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<JournalArticleResource> constructor =
-				(Constructor<JournalArticleResource>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<JournalArticleResource, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<JournalArticleResource, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", JournalArticleResource::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", JournalArticleResource::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"uuid", JournalArticleResource::getUuid);
+			attributeGetterFunctions.put(
+				"resourcePrimKey", JournalArticleResource::getResourcePrimKey);
+			attributeGetterFunctions.put(
+				"groupId", JournalArticleResource::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", JournalArticleResource::getCompanyId);
+			attributeGetterFunctions.put(
+				"articleId", JournalArticleResource::getArticleId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<JournalArticleResource, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<JournalArticleResource, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<JournalArticleResource, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<JournalArticleResource, Object>>();
-		Map<String, BiConsumer<JournalArticleResource, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<JournalArticleResource, ?>>();
+		private static final Map
+			<String, BiConsumer<JournalArticleResource, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", JournalArticleResource::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<JournalArticleResource, Long>)
-				JournalArticleResource::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", JournalArticleResource::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<JournalArticleResource, Long>)
-				JournalArticleResource::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", JournalArticleResource::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<JournalArticleResource, String>)
-				JournalArticleResource::setUuid);
-		attributeGetterFunctions.put(
-			"resourcePrimKey", JournalArticleResource::getResourcePrimKey);
-		attributeSetterBiConsumers.put(
-			"resourcePrimKey",
-			(BiConsumer<JournalArticleResource, Long>)
-				JournalArticleResource::setResourcePrimKey);
-		attributeGetterFunctions.put(
-			"groupId", JournalArticleResource::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<JournalArticleResource, Long>)
-				JournalArticleResource::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", JournalArticleResource::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<JournalArticleResource, Long>)
-				JournalArticleResource::setCompanyId);
-		attributeGetterFunctions.put(
-			"articleId", JournalArticleResource::getArticleId);
-		attributeSetterBiConsumers.put(
-			"articleId",
-			(BiConsumer<JournalArticleResource, String>)
-				JournalArticleResource::setArticleId);
+		static {
+			Map<String, BiConsumer<JournalArticleResource, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<JournalArticleResource, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<JournalArticleResource, Long>)
+					JournalArticleResource::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<JournalArticleResource, Long>)
+					JournalArticleResource::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<JournalArticleResource, String>)
+					JournalArticleResource::setUuid);
+			attributeSetterBiConsumers.put(
+				"resourcePrimKey",
+				(BiConsumer<JournalArticleResource, Long>)
+					JournalArticleResource::setResourcePrimKey);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<JournalArticleResource, Long>)
+					JournalArticleResource::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<JournalArticleResource, Long>)
+					JournalArticleResource::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"articleId",
+				(BiConsumer<JournalArticleResource, String>)
+					JournalArticleResource::setArticleId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -718,42 +697,12 @@ public class JournalArticleResourceModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<JournalArticleResource, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<JournalArticleResource, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<JournalArticleResource, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply((JournalArticleResource)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, JournalArticleResource>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					JournalArticleResource.class, ModelWrapper.class);
 
 	}
 
@@ -769,7 +718,8 @@ public class JournalArticleResourceModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<JournalArticleResource, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

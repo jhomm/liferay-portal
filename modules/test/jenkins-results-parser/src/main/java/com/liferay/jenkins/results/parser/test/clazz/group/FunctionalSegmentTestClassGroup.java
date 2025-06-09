@@ -1,26 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+import com.liferay.jenkins.results.parser.Job;
+import com.liferay.jenkins.results.parser.PortalWorkspaceJob;
+import com.liferay.jenkins.results.parser.job.property.JobProperty;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -129,15 +125,63 @@ public class FunctionalSegmentTestClassGroup extends SegmentTestClassGroup {
 		sb.append(JenkinsResultsParserUtil.join(" ", axisGroupNames));
 		sb.append("\n");
 
+		String workspacePortalVersion = _getWorkspacePortalVersion();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(workspacePortalVersion)) {
+			sb.append("TEST_PORTAL_BUNDLE_VERSION=");
+			sb.append(workspacePortalVersion);
+			sb.append("\n");
+		}
+
+		String workspaceName = _getWorkspaceName();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(workspaceName)) {
+			sb.append("TEST_WORKSPACE_NAME=");
+			sb.append(workspaceName);
+			sb.append("\n");
+		}
+
 		return sb.toString();
 	}
 
+	@Override
+	public boolean testAnalyticsCloud() {
+		if (_testAnalyticsCloud != null) {
+			return _testAnalyticsCloud;
+		}
+
+		Properties poshiProperties = getPoshiProperties();
+
+		String analyticsCloudEnabled = poshiProperties.getProperty(
+			"analytics.cloud.enabled");
+
+		if ((analyticsCloudEnabled != null) &&
+			analyticsCloudEnabled.equals("true")) {
+
+			_testAnalyticsCloud = true;
+
+			return _testAnalyticsCloud;
+		}
+
+		_testAnalyticsCloud = false;
+
+		return _testAnalyticsCloud;
+	}
+
 	protected FunctionalSegmentTestClassGroup(
-		BatchTestClassGroup parentBatchTestClassGroup) {
+		BatchTestClassGroup batchTestClassGroup) {
 
-		super(parentBatchTestClassGroup);
+		super(batchTestClassGroup);
 
-		_parentBatchTestClassGroup = parentBatchTestClassGroup;
+		_batchTestClassGroup = batchTestClassGroup;
+	}
+
+	protected FunctionalSegmentTestClassGroup(
+		BatchTestClassGroup batchTestClassGroup, JSONObject jsonObject) {
+
+		super(batchTestClassGroup, jsonObject);
+
+		_batchTestClassGroup = batchTestClassGroup;
 	}
 
 	protected Map.Entry<String, String> getEnvironmentVariableEntry(
@@ -149,9 +193,9 @@ public class FunctionalSegmentTestClassGroup extends SegmentTestClassGroup {
 			return null;
 		}
 
-		String value = JenkinsResultsParserUtil.getProperty(
-			_parentBatchTestClassGroup.getJobProperties(), name,
-			_parentBatchTestClassGroup.getBatchName());
+		JobProperty jobProperty = _batchTestClassGroup.getJobProperty(name);
+
+		String value = jobProperty.getValue();
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(value)) {
 			return null;
@@ -160,6 +204,38 @@ public class FunctionalSegmentTestClassGroup extends SegmentTestClassGroup {
 		return new AbstractMap.SimpleEntry<>(key, value);
 	}
 
-	private final BatchTestClassGroup _parentBatchTestClassGroup;
+	private String _getWorkspaceName() {
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
+
+		if (!(batchTestClassGroup instanceof FunctionalBatchTestClassGroup)) {
+			return null;
+		}
+
+		FunctionalBatchTestClassGroup functionalBatchTestClassGroup =
+			(FunctionalBatchTestClassGroup)batchTestClassGroup;
+
+		return functionalBatchTestClassGroup.getWorkspaceName();
+	}
+
+	private String _getWorkspacePortalVersion() {
+		String batchName = getBatchName();
+
+		if (!batchName.startsWith("functional-workspaces-")) {
+			return null;
+		}
+
+		Job job = getJob();
+
+		if (!(job instanceof PortalWorkspaceJob)) {
+			return null;
+		}
+
+		PortalWorkspaceJob portalWorkspaceJob = (PortalWorkspaceJob)job;
+
+		return portalWorkspaceJob.getWorkspacePortalVersion();
+	}
+
+	private final BatchTestClassGroup _batchTestClassGroup;
+	private Boolean _testAnalyticsCloud;
 
 }

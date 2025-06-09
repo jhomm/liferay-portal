@@ -1,32 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.model.impl;
 
-import com.liferay.document.library.kernel.util.DLUtil;
-import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
-import com.liferay.petra.string.StringBundler;
+import com.liferay.document.library.util.DLURLHelperUtil;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-
-import java.util.List;
+import com.liferay.portal.kernel.util.PortalUtil;
 
 /**
  * @author Jürgen Kappler
@@ -34,30 +20,13 @@ import java.util.List;
 public class LayoutPageTemplateEntryImpl
 	extends LayoutPageTemplateEntryBaseImpl {
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
 	@Override
-	public String getContent() throws PortalException {
-		List<FragmentEntryLink> fragmentEntryLinks =
-			FragmentEntryLinkLocalServiceUtil.getFragmentEntryLinksByPlid(
-				getGroupId(), getPlid());
-
-		StringBundler cssSB = new StringBundler(fragmentEntryLinks.size());
-		StringBundler htmlSB = new StringBundler(fragmentEntryLinks.size());
-		StringBundler jsSB = new StringBundler(fragmentEntryLinks.size());
-
-		for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
-			cssSB.append(fragmentEntryLink.getCss());
-			htmlSB.append(fragmentEntryLink.getHtml());
-			jsSB.append(fragmentEntryLink.getJs());
+	public String getClassName() {
+		if (getClassNameId() <= 0) {
+			return StringPool.BLANK;
 		}
 
-		return StringBundler.concat(
-			"<html><head><style>", cssSB.toString(), "</style><script>",
-			jsSB.toString(), "</script></head><body>", htmlSB.toString(),
-			"</body></html>");
+		return PortalUtil.fetchClassName(getClassNameId());
 	}
 
 	@Override
@@ -74,10 +43,10 @@ public class LayoutPageTemplateEntryImpl
 				return StringPool.BLANK;
 			}
 
-			return DLUtil.getImagePreviewURL(fileEntry, themeDisplay);
+			return DLURLHelperUtil.getImagePreviewURL(fileEntry, themeDisplay);
 		}
 		catch (Exception exception) {
-			_log.error("Unable to get preview entry image URL", exception);
+			_log.error("Unable to get image preview URL", exception);
 		}
 
 		return StringPool.BLANK;

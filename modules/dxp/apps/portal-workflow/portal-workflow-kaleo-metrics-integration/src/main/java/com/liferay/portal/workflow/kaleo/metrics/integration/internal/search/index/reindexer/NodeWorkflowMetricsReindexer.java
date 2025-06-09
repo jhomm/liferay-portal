@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.metrics.integration.internal.search.index.reindexer;
@@ -19,6 +10,7 @@ import com.liferay.portal.kernel.dao.orm.Property;
 import com.liferay.portal.kernel.dao.orm.PropertyFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.workflow.kaleo.definition.NodeType;
+import com.liferay.portal.workflow.kaleo.metrics.integration.internal.helper.IndexerHelper;
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.portal.workflow.kaleo.model.KaleoNode;
 import com.liferay.portal.workflow.kaleo.model.KaleoTask;
@@ -38,11 +30,13 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Rafael Praxedes
  */
-@Component(
-	immediate = true, property = "workflow.metrics.index.entity.name=node",
-	service = WorkflowMetricsReindexer.class
-)
+@Component(service = WorkflowMetricsReindexer.class)
 public class NodeWorkflowMetricsReindexer implements WorkflowMetricsReindexer {
+
+	@Override
+	public String getKey() {
+		return "node";
+	}
 
 	@Override
 	public void reindex(long companyId) throws PortalException {
@@ -79,12 +73,8 @@ public class NodeWorkflowMetricsReindexer implements WorkflowMetricsReindexer {
 				}
 
 				_nodeWorkflowMetricsIndexer.addNode(
-					kaleoNode.getCompanyId(), kaleoNode.getCreateDate(),
-					kaleoNode.isInitial(), kaleoNode.getModifiedDate(),
-					kaleoNode.getName(), kaleoNode.getKaleoNodeId(),
-					kaleoNode.getKaleoDefinitionId(),
-					kaleoDefinitionVersion.getVersion(), kaleoNode.isTerminal(),
-					kaleoNode.getType());
+					_indexerHelper.createAddNodeRequest(
+						kaleoDefinitionVersion, kaleoNode));
 			});
 
 		actionableDynamicQuery.performActions();
@@ -120,12 +110,8 @@ public class NodeWorkflowMetricsReindexer implements WorkflowMetricsReindexer {
 				}
 
 				_nodeWorkflowMetricsIndexer.addNode(
-					kaleoTask.getCompanyId(), kaleoTask.getCreateDate(), false,
-					kaleoTask.getModifiedDate(), kaleoTask.getName(),
-					kaleoTask.getKaleoTaskId(),
-					kaleoTask.getKaleoDefinitionId(),
-					kaleoDefinitionVersion.getVersion(), false,
-					NodeType.TASK.name());
+					_indexerHelper.createAddNodeRequest(
+						kaleoDefinitionVersion, kaleoTask));
 
 				_workflowMetricsReindexStatusMessageSender.sendStatusMessage(
 					atomicCounter.incrementAndGet(), total, "node");
@@ -133,6 +119,9 @@ public class NodeWorkflowMetricsReindexer implements WorkflowMetricsReindexer {
 
 		actionableDynamicQuery.performActions();
 	}
+
+	@Reference
+	private IndexerHelper _indexerHelper;
 
 	@Reference
 	private KaleoDefinitionVersionLocalService

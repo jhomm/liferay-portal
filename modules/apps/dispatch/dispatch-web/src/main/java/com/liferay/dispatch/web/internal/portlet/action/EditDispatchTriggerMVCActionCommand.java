@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.web.internal.portlet.action;
@@ -17,7 +8,9 @@ package com.liferay.dispatch.web.internal.portlet.action;
 import com.liferay.dispatch.constants.DispatchConstants;
 import com.liferay.dispatch.constants.DispatchPortletKeys;
 import com.liferay.dispatch.executor.DispatchTaskClusterMode;
+import com.liferay.dispatch.executor.DispatchTaskExecutorRegistry;
 import com.liferay.dispatch.model.DispatchTrigger;
+import com.liferay.dispatch.service.DispatchTriggerLocalService;
 import com.liferay.dispatch.service.DispatchTriggerService;
 import com.liferay.dispatch.web.internal.security.permisison.resource.DispatchTriggerPermission;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -26,8 +19,8 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.Message;
+import com.liferay.portal.kernel.messaging.MessageBus;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -38,20 +31,19 @@ import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Calendar;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -61,35 +53,12 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DispatchPortletKeys.DISPATCH,
+		"jakarta.portlet.name=" + DispatchPortletKeys.DISPATCH,
 		"mvc.command.name=/dispatch/edit_dispatch_trigger"
 	},
 	service = MVCActionCommand.class
 )
 public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
-
-	protected void deleteDispatchTrigger(ActionRequest actionRequest)
-		throws PortalException {
-
-		long[] deleteDispatchTriggerIds = null;
-
-		long dispatchTriggerId = ParamUtil.getLong(
-			actionRequest, "dispatchTriggerId");
-
-		if (dispatchTriggerId > 0) {
-			deleteDispatchTriggerIds = new long[] {dispatchTriggerId};
-		}
-		else {
-			deleteDispatchTriggerIds = StringUtil.split(
-				ParamUtil.getString(actionRequest, "deleteDispatchTriggerIds"),
-				0L);
-		}
-
-		for (long deleteDispatchTriggerId : deleteDispatchTriggerIds) {
-			_dispatchTriggerService.deleteDispatchTrigger(
-				deleteDispatchTriggerId);
-		}
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -101,10 +70,10 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 			if (Objects.equals(cmd, Constants.ADD) ||
 				Objects.equals(cmd, Constants.UPDATE)) {
 
-				updateDispatchTrigger(actionRequest, actionResponse);
+				_updateDispatchTrigger(actionRequest);
 			}
 			else if (Objects.equals(cmd, Constants.DELETE)) {
-				deleteDispatchTrigger(actionRequest);
+				_deleteDispatchTrigger(actionRequest);
 			}
 			else if (Objects.equals(cmd, "runProcess")) {
 				HttpServletResponse httpServletResponse =
@@ -113,22 +82,73 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 				httpServletResponse.setContentType(
 					ContentTypes.APPLICATION_JSON);
 
-				writeJSON(actionResponse, runProcess(actionRequest));
+				_writeJSON(actionResponse, _runProcess(actionRequest));
 
 				hideDefaultSuccessMessage(actionRequest);
 			}
 			else if (Objects.equals(cmd, "schedule")) {
-				scheduleDispatchTrigger(actionRequest);
+				_scheduleDispatchTrigger(actionRequest);
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			SessionErrors.add(actionRequest, exception.getClass());
 		}
 	}
 
-	protected JSONObject runProcess(ActionRequest actionRequest)
+	private void _checkPermission(
+			ActionRequest actionRequest, long dispatchTriggerId)
+		throws PortalException {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		DispatchTriggerPermission.contains(
+			themeDisplay.getPermissionChecker(), dispatchTriggerId,
+			ActionKeys.UPDATE);
+	}
+
+	private void _deleteDispatchTrigger(ActionRequest actionRequest)
+		throws PortalException {
+
+		long[] deleteDispatchTriggerIds = null;
+
+		long dispatchTriggerId = ParamUtil.getLong(
+			actionRequest, "dispatchTriggerId");
+
+		if (dispatchTriggerId > 0) {
+			deleteDispatchTriggerIds = new long[] {dispatchTriggerId};
+		}
+		else {
+			deleteDispatchTriggerIds = ParamUtil.getLongValues(
+				actionRequest, "rowIds");
+		}
+
+		for (long deleteDispatchTriggerId : deleteDispatchTriggerIds) {
+			_dispatchTriggerService.deleteDispatchTrigger(
+				deleteDispatchTriggerId);
+		}
+	}
+
+	private DispatchTaskClusterMode _getDispatchTaskClusterMode(
+			long dispatchTaskId,
+			DispatchTaskClusterMode dispatchTaskClusterMode)
+		throws PortalException {
+
+		DispatchTrigger dispatchTrigger =
+			_dispatchTriggerLocalService.getDispatchTrigger(dispatchTaskId);
+
+		if (_dispatchTaskExecutorRegistry.isClusterModeSingle(
+				dispatchTrigger.getDispatchTaskExecutorType())) {
+
+			return DispatchTaskClusterMode.SINGLE_NODE_PERSISTED;
+		}
+
+		return dispatchTaskClusterMode;
+	}
+
+	private JSONObject _runProcess(ActionRequest actionRequest)
 		throws PortalException {
 
 		long dispatchTriggerId = ParamUtil.getLong(
@@ -144,7 +164,7 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		catch (Exception exception) {
 			hideDefaultErrorMessage(actionRequest);
 
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			jsonObject.put(
 				"error", exception.getMessage()
@@ -158,7 +178,7 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		return jsonObject;
 	}
 
-	protected void scheduleDispatchTrigger(ActionRequest actionRequest)
+	private void _scheduleDispatchTrigger(ActionRequest actionRequest)
 		throws PortalException {
 
 		long dispatchTriggerId = ParamUtil.getLong(
@@ -168,8 +188,11 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		String cronExpression = ParamUtil.getString(
 			actionRequest, "cronExpression");
 		DispatchTaskClusterMode dispatchTaskClusterMode =
-			DispatchTaskClusterMode.valueOf(
-				ParamUtil.getInteger(actionRequest, "dispatchTaskClusterMode"));
+			_getDispatchTaskClusterMode(
+				dispatchTriggerId,
+				DispatchTaskClusterMode.valueOf(
+					ParamUtil.getInteger(
+						actionRequest, "dispatchTaskClusterMode")));
 		int endDateMonth = ParamUtil.getInteger(actionRequest, "endDateMonth");
 		int endDateDay = ParamUtil.getInteger(actionRequest, "endDateDay");
 		int endDateYear = ParamUtil.getInteger(actionRequest, "endDateYear");
@@ -204,15 +227,28 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 			startDateHour += 12;
 		}
 
+		String timeZoneId = ParamUtil.getString(actionRequest, "timeZoneId");
+
 		_dispatchTriggerService.updateDispatchTrigger(
 			dispatchTriggerId, active, cronExpression, dispatchTaskClusterMode,
 			endDateMonth, endDateDay, endDateYear, endDateHour, endDateMinute,
 			neverEnd, overlapAllowed, startDateMonth, startDateDay,
-			startDateYear, startDateHour, startDateMinute);
+			startDateYear, startDateHour, startDateMinute, timeZoneId);
 	}
 
-	protected DispatchTrigger updateDispatchTrigger(
-			ActionRequest actionRequest, ActionResponse actionResponse)
+	private void _sendMessage(long dispatchTriggerId) {
+		Message message = new Message();
+
+		message.setPayload(
+			JSONUtil.put(
+				"dispatchTriggerId", dispatchTriggerId
+			).toString());
+
+		_messageBus.sendMessage(
+			DispatchConstants.EXECUTOR_DESTINATION_NAME, message);
+	}
+
+	private DispatchTrigger _updateDispatchTrigger(ActionRequest actionRequest)
 		throws Exception {
 
 		long dispatchTriggerId = ParamUtil.getLong(
@@ -238,14 +274,15 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 				actionRequest, "dispatchTaskExecutorType");
 
 			dispatchTrigger = _dispatchTriggerService.addDispatchTrigger(
-				_portal.getUserId(actionRequest), dispatchTaskExecutorType,
-				dispatchTaskSettingsUnicodeProperties, name);
+				null, _portal.getUserId(actionRequest),
+				dispatchTaskExecutorType, dispatchTaskSettingsUnicodeProperties,
+				name);
 		}
 
 		return dispatchTrigger;
 	}
 
-	protected void writeJSON(ActionResponse actionResponse, Object object)
+	private void _writeJSON(ActionResponse actionResponse, Object object)
 		throws IOException {
 
 		HttpServletResponse httpServletResponse =
@@ -258,41 +295,23 @@ public class EditDispatchTriggerMVCActionCommand extends BaseMVCActionCommand {
 		httpServletResponse.flushBuffer();
 	}
 
-	private void _checkPermission(
-			ActionRequest actionRequest, long dispatchTriggerId)
-		throws PortalException {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		DispatchTriggerPermission.contains(
-			themeDisplay.getPermissionChecker(), dispatchTriggerId,
-			ActionKeys.UPDATE);
-	}
-
-	private void _sendMessage(long dispatchTriggerId) {
-		Message message = new Message();
-
-		message.setPayload(
-			String.valueOf(
-				JSONUtil.put("dispatchTriggerId", dispatchTriggerId)));
-
-		_destination.send(message);
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditDispatchTriggerMVCActionCommand.class);
 
-	@Reference(
-		target = "(destination.name=" + DispatchConstants.EXECUTOR_DESTINATION_NAME + ")"
-	)
-	private Destination _destination;
+	@Reference
+	private DispatchTaskExecutorRegistry _dispatchTaskExecutorRegistry;
+
+	@Reference
+	private DispatchTriggerLocalService _dispatchTriggerLocalService;
 
 	@Reference
 	private DispatchTriggerService _dispatchTriggerService;
 
 	@Reference
 	private JSONFactory _jsonFactory;
+
+	@Reference
+	private MessageBus _messageBus;
 
 	@Reference
 	private Portal _portal;

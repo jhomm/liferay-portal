@@ -1,42 +1,41 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
+<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
+<liferay-ui:error exception="<%= CaptchaException.class %>" message="captcha-verification-failed" />
+<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
 <liferay-ui:error key="shutdownMinutes" message="please-enter-the-number-of-minutes" />
 
-<aui:button-row>
-	<c:choose>
-		<c:when test="<%= ShutdownUtil.isInProcess() %>">
-			<aui:button cssClass="save-server-button" data-cmd="shutdown" value="cancel-shutdown" />
-		</c:when>
-		<c:otherwise>
-			<aui:fieldset-group markupView="lexicon">
-				<aui:fieldset>
-					<aui:input label="number-of-minutes" name="minutes" size="3" type="text">
-						<aui:validator name="digits" />
-						<aui:validator name="min">1</aui:validator>
-						<aui:validator name="required" />
-					</aui:input>
+<c:choose>
+	<c:when test="<%= ShutdownUtil.isInProcess() %>">
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<liferay-captcha:captcha />
 
-					<aui:input cssClass="lfr-textarea-container" label="custom-message" name="message" type="textarea" />
-				</aui:fieldset>
-			</aui:fieldset-group>
+				<aui:button cssClass="save-server-button" data-cmd="shutdown" value="cancel-shutdown" />
+			</div>
+		</div>
+	</c:when>
+	<c:otherwise>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:input label="number-of-minutes" name="minutes" required="<%= true %>" size="3" type="text">
+					<aui:validator name="digits" />
+					<aui:validator name="min">1</aui:validator>
+				</aui:input>
 
-			<aui:button cssClass="save-server-button" data-cmd="shutdown" value="shutdown" />
-		</c:otherwise>
-	</c:choose>
-</aui:button-row>
+				<aui:input cssClass="lfr-textarea-container" label="custom-message" name="message" type="textarea" />
+
+				<liferay-captcha:captcha />
+
+				<aui:button cssClass="save-server-button" data-cmd="shutdown" primary="<%= true %>" value="shutdown" />
+			</div>
+		</div>
+	</c:otherwise>
+</c:choose>

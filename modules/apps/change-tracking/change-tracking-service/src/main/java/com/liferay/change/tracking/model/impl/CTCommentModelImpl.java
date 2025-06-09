@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -217,93 +207,84 @@ public class CTCommentModelImpl
 	public Map<String, Function<CTComment, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CTComment, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CTComment>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CTComment.class.getClassLoader(), CTComment.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CTComment, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CTComment> constructor =
-				(Constructor<CTComment>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CTComment, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<CTComment, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CTComment::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCommentId", CTComment::getCtCommentId);
+			attributeGetterFunctions.put("companyId", CTComment::getCompanyId);
+			attributeGetterFunctions.put("userId", CTComment::getUserId);
+			attributeGetterFunctions.put(
+				"createDate", CTComment::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CTComment::getModifiedDate);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CTComment::getCtCollectionId);
+			attributeGetterFunctions.put("ctEntryId", CTComment::getCtEntryId);
+			attributeGetterFunctions.put("value", CTComment::getValue);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CTComment, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CTComment, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CTComment, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CTComment, Object>>();
-		Map<String, BiConsumer<CTComment, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CTComment, ?>>();
+		private static final Map<String, BiConsumer<CTComment, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", CTComment::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CTComment, Long>)CTComment::setMvccVersion);
-		attributeGetterFunctions.put("ctCommentId", CTComment::getCtCommentId);
-		attributeSetterBiConsumers.put(
-			"ctCommentId",
-			(BiConsumer<CTComment, Long>)CTComment::setCtCommentId);
-		attributeGetterFunctions.put("companyId", CTComment::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<CTComment, Long>)CTComment::setCompanyId);
-		attributeGetterFunctions.put("userId", CTComment::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<CTComment, Long>)CTComment::setUserId);
-		attributeGetterFunctions.put("createDate", CTComment::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CTComment, Date>)CTComment::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CTComment::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CTComment, Date>)CTComment::setModifiedDate);
-		attributeGetterFunctions.put(
-			"ctCollectionId", CTComment::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<CTComment, Long>)CTComment::setCtCollectionId);
-		attributeGetterFunctions.put("ctEntryId", CTComment::getCtEntryId);
-		attributeSetterBiConsumers.put(
-			"ctEntryId", (BiConsumer<CTComment, Long>)CTComment::setCtEntryId);
-		attributeGetterFunctions.put("value", CTComment::getValue);
-		attributeSetterBiConsumers.put(
-			"value", (BiConsumer<CTComment, String>)CTComment::setValue);
+		static {
+			Map<String, BiConsumer<CTComment, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<CTComment, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CTComment, Long>)CTComment::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCommentId",
+				(BiConsumer<CTComment, Long>)CTComment::setCtCommentId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CTComment, Long>)CTComment::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<CTComment, Long>)CTComment::setUserId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CTComment, Date>)CTComment::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CTComment, Date>)CTComment::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CTComment, Long>)CTComment::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"ctEntryId",
+				(BiConsumer<CTComment, Long>)CTComment::setCtEntryId);
+			attributeSetterBiConsumers.put(
+				"value", (BiConsumer<CTComment, String>)CTComment::setValue);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -745,41 +726,12 @@ public class CTCommentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CTComment, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CTComment, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CTComment, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CTComment)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CTComment>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CTComment.class, ModelWrapper.class);
 
 	}
 
@@ -795,8 +747,9 @@ public class CTCommentModelImpl
 	private String _value;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<CTComment, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<CTComment, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

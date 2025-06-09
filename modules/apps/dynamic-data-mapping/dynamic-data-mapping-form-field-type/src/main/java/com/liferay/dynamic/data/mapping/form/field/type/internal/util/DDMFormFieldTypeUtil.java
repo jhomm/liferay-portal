@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.util;
@@ -17,6 +8,7 @@ package com.liferay.dynamic.data.mapping.form.field.type.internal.util;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
@@ -24,14 +16,35 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.Locale;
-import java.util.stream.Stream;
+import java.util.Map;
 
 /**
  * @author Marcela Cunha
  */
 public class DDMFormFieldTypeUtil {
+
+	public static Object getChangedPropertyValue(
+		DDMFormField ddmFormField,
+		DDMFormFieldRenderingContext ddmFormFieldRenderingContext,
+		String propertyName) {
+
+		Map<String, Object> changedProperties =
+			(Map<String, Object>)ddmFormFieldRenderingContext.getProperty(
+				"changedProperties");
+
+		if (MapUtil.isNotEmpty(changedProperties)) {
+			Object changedProperty = changedProperties.get(propertyName);
+
+			if (changedProperty != null) {
+				return changedProperty;
+			}
+		}
+
+		return ddmFormField.getProperty(propertyName);
+	}
 
 	public static String getPropertyValue(
 		DDMFormField ddmFormField, Locale locale, String propertyName) {
@@ -57,16 +70,14 @@ public class DDMFormFieldTypeUtil {
 	public static String[] getPropertyValues(
 		DDMFormField ddmFormField, Locale locale, String propertyName) {
 
-		return Stream.of(
-			(Object[])ddmFormField.getProperty(propertyName)
-		).map(
-			LocalizedValue.class::cast
-		).map(
-			localizedValue -> GetterUtil.getString(
-				localizedValue.getString(locale))
-		).toArray(
-			String[]::new
-		);
+		return TransformUtil.transform(
+			(Object[])ddmFormField.getProperty(propertyName),
+			object -> {
+				LocalizedValue localizedValue = (LocalizedValue)object;
+
+				return GetterUtil.getString(localizedValue.getString(locale));
+			},
+			String.class);
 	}
 
 	public static String getValue(String valueString) {
@@ -77,7 +88,7 @@ public class DDMFormFieldTypeUtil {
 		}
 		catch (JSONException jsonException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException, jsonException);
+				_log.debug(jsonException);
 			}
 		}
 

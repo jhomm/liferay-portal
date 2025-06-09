@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -63,10 +55,21 @@ public class ListTypeDefinitionLocalServiceUtil {
 	}
 
 	public static ListTypeDefinition addListTypeDefinition(
-			long userId, Map<java.util.Locale, String> nameMap)
+			String externalReferenceCode, long userId, boolean system)
 		throws PortalException {
 
-		return getService().addListTypeDefinition(userId, nameMap);
+		return getService().addListTypeDefinition(
+			externalReferenceCode, userId, system);
+	}
+
+	public static ListTypeDefinition addListTypeDefinition(
+			String externalReferenceCode, long userId,
+			Map<java.util.Locale, String> nameMap, boolean system,
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
+		throws PortalException {
+
+		return getService().addListTypeDefinition(
+			externalReferenceCode, userId, nameMap, system, listTypeEntries);
 	}
 
 	/**
@@ -228,6 +231,14 @@ public class ListTypeDefinitionLocalServiceUtil {
 		return getService().fetchListTypeDefinition(listTypeDefinitionId);
 	}
 
+	public static ListTypeDefinition
+		fetchListTypeDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId) {
+
+		return getService().fetchListTypeDefinitionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the list type definition with the matching UUID and company.
 	 *
@@ -275,6 +286,15 @@ public class ListTypeDefinitionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getListTypeDefinition(listTypeDefinitionId);
+	}
+
+	public static ListTypeDefinition
+			getListTypeDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getListTypeDefinitionByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -354,17 +374,30 @@ public class ListTypeDefinitionLocalServiceUtil {
 	}
 
 	public static ListTypeDefinition updateListTypeDefinition(
-			long listTypeDefinitionId, Map<java.util.Locale, String> nameMap)
+			String externalReferenceCode, long listTypeDefinitionId,
+			long userId, Map<java.util.Locale, String> nameMap,
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
 		throws PortalException {
 
 		return getService().updateListTypeDefinition(
-			listTypeDefinitionId, nameMap);
+			externalReferenceCode, listTypeDefinitionId, userId, nameMap,
+			listTypeEntries);
+	}
+
+	public static void updateUserId(
+			long companyId, long oldUserId, long newUserId)
+		throws PortalException {
+
+		getService().updateUserId(companyId, oldUserId, newUserId);
 	}
 
 	public static ListTypeDefinitionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile ListTypeDefinitionLocalService _service;
+	private static final Snapshot<ListTypeDefinitionLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			ListTypeDefinitionLocalServiceUtil.class,
+			ListTypeDefinitionLocalService.class);
 
 }

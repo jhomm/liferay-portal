@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.portlet.action;
@@ -34,11 +25,11 @@ import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.apache.commons.lang.text.StrMatcher;
 import org.apache.commons.lang.text.StrTokenizer;
@@ -50,9 +41,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
+		"jakarta.portlet.name=" + AssetListPortletKeys.ASSET_LIST,
 		"mvc.command.name=/asset_list/update_asset_list_entry_dynamic"
 	},
 	service = MVCActionCommand.class
@@ -86,7 +76,7 @@ public class UpdateAssetListEntryDynamicMVCActionCommand
 					assetListEntry.getTypeSettings(segmentsEntryId)
 				).build();
 
-			updateQueryLogic(actionRequest, unicodeProperties);
+			_updateQueryLogic(actionRequest, unicodeProperties);
 
 			UnicodeProperties typeSettingsUnicodeProperties =
 				PropertiesParamUtil.getProperties(
@@ -100,8 +90,7 @@ public class UpdateAssetListEntryDynamicMVCActionCommand
 		}
 		catch (DuplicateQueryRuleException duplicateQueryRuleException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(
-					duplicateQueryRuleException, duplicateQueryRuleException);
+				_log.debug(duplicateQueryRuleException);
 			}
 
 			SessionErrors.add(
@@ -110,7 +99,7 @@ public class UpdateAssetListEntryDynamicMVCActionCommand
 		}
 	}
 
-	protected AssetQueryRule getQueryRule(
+	private AssetQueryRule _getQueryRule(
 		ActionRequest actionRequest, int index) {
 
 		boolean contains = ParamUtil.getBoolean(
@@ -144,7 +133,7 @@ public class UpdateAssetListEntryDynamicMVCActionCommand
 		return new AssetQueryRule(contains, andOperator, name, values);
 	}
 
-	protected void updateQueryLogic(
+	private void _updateQueryLogic(
 			ActionRequest actionRequest, UnicodeProperties unicodeProperties)
 		throws Exception {
 
@@ -162,10 +151,10 @@ public class UpdateAssetListEntryDynamicMVCActionCommand
 		List<AssetQueryRule> queryRules = new ArrayList<>();
 
 		for (int queryRulesIndex : queryRulesIndexes) {
-			AssetQueryRule queryRule = getQueryRule(
+			AssetQueryRule queryRule = _getQueryRule(
 				actionRequest, queryRulesIndex);
 
-			validateQueryRule(userId, groupId, queryRules, queryRule);
+			_validateQueryRule(userId, groupId, queryRules, queryRule);
 
 			queryRules.add(queryRule);
 
@@ -197,7 +186,7 @@ public class UpdateAssetListEntryDynamicMVCActionCommand
 		}
 	}
 
-	protected void validateQueryRule(
+	private void _validateQueryRule(
 			long userId, long groupId, List<AssetQueryRule> queryRules,
 			AssetQueryRule queryRule)
 		throws Exception {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.change.tracking.test;
@@ -89,13 +80,14 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 			null, TestPropsValues.getUserId(), group.getGroupId(),
 			group.getGroupId(), DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.TEXT_PLAIN,
-			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			StringPool.BLANK, StringPool.BLANK,
 			DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT, null,
-			null, inputStream, bytes.length, null, null,
+			null, inputStream, bytes.length, null, null, null,
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 
 		_ddmStructure = _ddmStructureLocalService.addStructure(
-			group.getCreatorUserId(), group.getGroupId(),
+			null, group.getCreatorUserId(), group.getGroupId(),
 			DDMStructureConstants.DEFAULT_PARENT_STRUCTURE_ID,
 			PortalUtil.getClassNameId(DLFileEntryMetadata.class),
 			StringPool.BLANK,
@@ -107,7 +99,7 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
 
 		_dlFileEntryType = _dlFileEntryTypeLocalService.addFileEntryType(
-			group.getCreatorUserId(), group.getGroupId(),
+			null, group.getCreatorUserId(), group.getGroupId(),
 			_ddmStructure.getStructureId(),
 			DLFileEntryMetadataTableReferenceDefinitionTest.class.
 				getSimpleName(),
@@ -126,7 +118,7 @@ public class DLFileEntryMetadataTableReferenceDefinitionTest
 		DLFileVersion dlFileVersion = _dlFileEntry.getFileVersion();
 
 		_dlFileEntryMetadataLocalService.updateFileEntryMetadata(
-			_dlFileEntryType.getFileEntryTypeId(),
+			null, _dlFileEntryType.getFileEntryTypeId(),
 			_dlFileEntry.getFileEntryId(), dlFileVersion.getFileVersionId(),
 			_createDDMFormValuesMap(),
 			ServiceContextTestUtil.getServiceContext(group.getGroupId()));

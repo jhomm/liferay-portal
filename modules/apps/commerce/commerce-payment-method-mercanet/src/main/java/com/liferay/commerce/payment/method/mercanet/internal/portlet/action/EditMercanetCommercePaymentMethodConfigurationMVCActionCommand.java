@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.method.mercanet.internal.portlet.action;
@@ -20,15 +11,16 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,9 +29,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
 		"mvc.command.name=/commerce_payment_methods/edit_mercanet_commerce_payment_method_configuration"
 	},
 	service = MVCActionCommand.class
@@ -68,7 +59,7 @@ public class EditMercanetCommercePaymentMethodConfigurationMVCActionCommand
 		CommerceChannel commerceChannel =
 			_commerceChannelService.getCommerceChannel(commerceChannelId);
 
-		Settings settings = _settingsFactory.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
 				commerceChannel.getGroupId(),
 				MercanetCommercePaymentMethodConstants.SERVICE_NAME));
@@ -86,10 +77,12 @@ public class EditMercanetCommercePaymentMethodConfigurationMVCActionCommand
 
 		modifiableSettings.setValue("environment", environment);
 
-		String transactionKey = ParamUtil.getString(
+		String secretKey = ParamUtil.getString(
 			actionRequest, "settings--secretKey--");
 
-		modifiableSettings.setValue("secretKey", transactionKey);
+		if (!secretKey.equals(Portal.TEMP_OBFUSCATION_VALUE)) {
+			modifiableSettings.setValue("secretKey", secretKey);
+		}
 
 		String keyVersion = ParamUtil.getString(
 			actionRequest, "settings--keyVersion--");
@@ -101,8 +94,5 @@ public class EditMercanetCommercePaymentMethodConfigurationMVCActionCommand
 
 	@Reference
 	private CommerceChannelService _commerceChannelService;
-
-	@Reference
-	private SettingsFactory _settingsFactory;
 
 }

@@ -1,27 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.exportimport.content.processor;
 
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
-import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.model.Value;
-import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.dynamic.data.mapping.storage.Field;
 import com.liferay.dynamic.data.mapping.storage.Fields;
+import com.liferay.dynamic.data.mapping.util.DDMFormValuesToFieldsConverter;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesTransformer;
 import com.liferay.dynamic.data.mapping.util.FieldsToDDMFormValuesConverter;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
@@ -31,13 +22,18 @@ import com.liferay.exportimport.kernel.lar.ExportImportThreadLocal;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.journal.article.dynamic.data.mapping.form.field.type.constants.JournalArticleDDMFormFieldTypeConstants;
+import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.exception.NoSuchArticleException;
+import com.liferay.journal.internal.dynamic.data.mapping.util.ImageExportDDMFormFieldValueTransformer;
+import com.liferay.journal.internal.dynamic.data.mapping.util.ImageImportDDMFormFieldValueTransformer;
+import com.liferay.journal.internal.dynamic.data.mapping.util.JournalArticleImportDDMFormFieldValueTransformer;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.util.JournalConverter;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
@@ -50,7 +46,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.DocumentException;
@@ -59,11 +55,9 @@ import com.liferay.portal.kernel.xml.Node;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.XPath;
 
-import java.io.Serializable;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,10 +71,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = "model.class.name=com.liferay.journal.model.JournalArticle",
-	service = {
-		ExportImportContentProcessor.class,
-		JournalArticleExportImportContentProcessor.class
-	}
+	service = ExportImportContentProcessor.class
 )
 public class JournalArticleExportImportContentProcessor
 	implements ExportImportContentProcessor<String> {
@@ -102,14 +93,23 @@ public class JournalArticleExportImportContentProcessor
 			return content;
 		}
 
-		StringBundler sb = new StringBundler(3);
+		boolean journalArticleExportImportCacheEnabled =
+			_isJournalArticleExportImportProcessorCacheEnabled(
+				stagedModel.getCompanyId());
 
-		sb.append(stagedModel.getUuid());
-		sb.append(exportReferencedContent);
-		sb.append(escapeContent);
+		String processedContent = null;
+		StringBundler sb = null;
 
-		String processedContent = _journalArticleExportImportCache.get(
-			sb.toString());
+		if (journalArticleExportImportCacheEnabled) {
+			sb = new StringBundler(3);
+
+			sb.append(stagedModel.getUuid());
+			sb.append(exportReferencedContent);
+			sb.append(escapeContent);
+
+			processedContent = _journalArticleExportImportCache.get(
+				sb.toString());
+		}
 
 		String path = ExportImportPathUtil.getModelPath(stagedModel);
 
@@ -119,7 +119,9 @@ public class JournalArticleExportImportContentProcessor
 			Element entityElement = portletDataContext.getExportDataElement(
 				stagedModel);
 
-			entityElement.addAttribute("cached", "true");
+			if (Validator.isNull(entityElement.attributeValue("cached"))) {
+				entityElement.addAttribute("cached", "true");
+			}
 
 			return processedContent;
 		}
@@ -135,18 +137,14 @@ public class JournalArticleExportImportContentProcessor
 		DDMFormValuesTransformer ddmFormValuesTransformer =
 			new DDMFormValuesTransformer(ddmFormValues);
 
-		ImageExportDDMFormFieldValueTransformer
-			imageExportDDMFormFieldValueTransformer =
-				new ImageExportDDMFormFieldValueTransformer(
-					_dlAppService, exportReferencedContent, portletDataContext,
-					stagedModel);
-
 		ddmFormValuesTransformer.addTransformer(
-			imageExportDDMFormFieldValueTransformer);
+			new ImageExportDDMFormFieldValueTransformer(
+				_dlAppLocalService, exportReferencedContent, portletDataContext,
+				stagedModel));
 
 		ddmFormValuesTransformer.transform();
 
-		content = replaceExportJournalArticleReferences(
+		content = _replaceExportJournalArticleReferences(
 			portletDataContext, stagedModel, content, ddmStructure, fields,
 			exportReferencedContent);
 
@@ -156,7 +154,14 @@ public class JournalArticleExportImportContentProcessor
 					portletDataContext, stagedModel, content,
 					exportReferencedContent, escapeContent);
 
-		_journalArticleExportImportCache.put(sb.toString(), content);
+		if (journalArticleExportImportCacheEnabled) {
+			_journalArticleExportImportCache.put(sb.toString(), content);
+		}
+
+		Element entityElement = portletDataContext.getExportDataElement(
+			stagedModel);
+
+		entityElement.addAttribute("cached", "false");
 
 		return content;
 	}
@@ -184,46 +189,33 @@ public class JournalArticleExportImportContentProcessor
 		if (GetterUtil.getBoolean(entityElement.attributeValue("cached"))) {
 			portletDataContext.removePrimaryKey(
 				ExportImportPathUtil.getModelPath(stagedModel));
-
-			return content;
 		}
-
-		content = replaceImportJournalArticleReferences(
-			ddmStructure, fields, portletDataContext, stagedModel);
 
 		DDMFormValues ddmFormValues = _fieldsToDDMFormValuesConverter.convert(
 			ddmStructure, fields);
 
-		List<String> originalContents = _fetchContentsFromDDMFormValues(
-			ddmFormValues.getDDMFormFieldValues());
+		DDMFormValuesTransformer ddmFormValuesTransformer =
+			new DDMFormValuesTransformer(ddmFormValues);
+
+		ddmFormValuesTransformer.addTransformer(
+			new ImageImportDDMFormFieldValueTransformer(
+				_dlAppLocalService, portletDataContext, stagedModel));
+		ddmFormValuesTransformer.addTransformer(
+			new JournalArticleImportDDMFormFieldValueTransformer(
+				_journalArticleLocalService, portletDataContext, stagedModel));
+
+		ddmFormValuesTransformer.transform();
 
 		ddmFormValues =
 			_ddmFormValuesExportImportContentProcessor.
 				replaceImportContentReferences(
 					portletDataContext, stagedModel, ddmFormValues);
 
-		List<String> modifiedContents = _fetchContentsFromDDMFormValues(
-			ddmFormValues.getDDMFormFieldValues());
-
-		for (int i = 0; i < originalContents.size(); i++) {
-			content = StringUtil.replace(
-				content, originalContents.get(i), modifiedContents.get(i));
-		}
-
-		DDMFormValuesTransformer ddmFormValuesTransformer =
-			new DDMFormValuesTransformer(ddmFormValues);
-
-		ImageImportDDMFormFieldValueTransformer
-			imageImportDDMFormFieldValueTransformer =
-				new ImageImportDDMFormFieldValueTransformer(
-					content, _dlAppService, portletDataContext, stagedModel);
-
-		ddmFormValuesTransformer.addTransformer(
-			imageImportDDMFormFieldValueTransformer);
-
-		ddmFormValuesTransformer.transform();
-
-		content = imageImportDDMFormFieldValueTransformer.getContent();
+		content = _journalConverter.getContent(
+			ddmStructure,
+			_ddmFormValuesToFieldsConverter.convert(
+				ddmStructure, ddmFormValues),
+			ddmStructure.getGroupId());
 
 		return _defaultTextExportImportContentProcessor.
 			replaceImportContentReferences(
@@ -236,7 +228,7 @@ public class JournalArticleExportImportContentProcessor
 
 		content = _excludeHTMLComments(content);
 
-		validateJournalArticleReferences(content);
+		_validateJournalArticleReferences(content);
 
 		try {
 			_defaultTextExportImportContentProcessor.validateContentReferences(
@@ -279,7 +271,64 @@ public class JournalArticleExportImportContentProcessor
 		}
 	}
 
-	protected String replaceExportJournalArticleReferences(
+	private String _excludeHTMLComments(String content) {
+		Matcher matcher = _htmlCommentRegexPattern.matcher(content);
+
+		while (matcher.find()) {
+			content = matcher.replaceAll(StringPool.BLANK);
+
+			matcher = _htmlCommentRegexPattern.matcher(content);
+		}
+
+		return content;
+	}
+
+	private DDMStructure _fetchDDMStructure(
+		PortletDataContext portletDataContext, JournalArticle article) {
+
+		Map<Long, Long> ddmStructureIds =
+			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+				DDMStructure.class);
+
+		long ddmStructureId = MapUtil.getLong(
+			ddmStructureIds, article.getDDMStructureId(),
+			article.getDDMStructureId());
+
+		return _ddmStructureLocalService.fetchStructure(ddmStructureId);
+	}
+
+	private Fields _getDDMStructureFields(
+		DDMStructure ddmStructure, String content) {
+
+		if ((ddmStructure == null) || Validator.isNull(content)) {
+			return null;
+		}
+
+		try {
+			return _journalConverter.getDDMFields(ddmStructure, content);
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(exception);
+			}
+
+			return null;
+		}
+	}
+
+	private boolean _isJournalArticleExportImportProcessorCacheEnabled(
+			long companyId)
+		throws Exception {
+
+		JournalServiceConfiguration journalServiceConfiguration =
+			_configurationProvider.getCompanyConfiguration(
+				JournalServiceConfiguration.class, companyId);
+
+		return journalServiceConfiguration.
+			journalArticleExportImportProcessorCacheEnabled();
+	}
+
+	private String _replaceExportJournalArticleReferences(
 			PortletDataContext portletDataContext, StagedModel stagedModel,
 			String content, DDMStructure ddmStructure, Fields fields,
 			boolean exportReferencedContent)
@@ -349,10 +398,10 @@ public class JournalArticleExportImportContentProcessor
 					_log.debug(
 						StringBundler.concat(
 							"Replacing ", json, " with ",
-							newArticleJSONObject.toJSONString()));
+							newArticleJSONObject));
 				}
 
-				field.setValue(locale, newArticleJSONObject.toJSONString());
+				field.setValue(locale, newArticleJSONObject.toString());
 
 				if (exportReferencedContent) {
 					try {
@@ -396,83 +445,7 @@ public class JournalArticleExportImportContentProcessor
 			ddmStructure, fields, ddmStructure.getGroupId());
 	}
 
-	protected String replaceImportJournalArticleReferences(
-			DDMStructure ddmStructure, Fields fields,
-			PortletDataContext portletDataContext, StagedModel stagedModel)
-		throws Exception {
-
-		for (Field field : fields) {
-			if (!Objects.equals(
-					field.getType(),
-					JournalArticleDDMFormFieldTypeConstants.JOURNAL_ARTICLE)) {
-
-				continue;
-			}
-
-			for (Locale locale : field.getAvailableLocales()) {
-				JSONObject jsonObject = null;
-
-				Serializable serializable = field.getValue(locale);
-
-				try {
-					jsonObject = _jsonFactory.createJSONObject(
-						serializable.toString());
-				}
-				catch (JSONException jsonException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug("Unable to parse JSON", jsonException);
-					}
-
-					continue;
-				}
-
-				JournalArticle journalArticle = null;
-
-				long articlePrimaryKey = GetterUtil.getLong(
-					portletDataContext.getNewPrimaryKey(
-						JournalArticle.class + ".primaryKey",
-						jsonObject.getLong("articlePrimaryKey")));
-
-				if (articlePrimaryKey != 0) {
-					journalArticle =
-						_journalArticleLocalService.fetchJournalArticle(
-							articlePrimaryKey);
-				}
-
-				if (journalArticle == null) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"Unable to get journal article with primary key " +
-								articlePrimaryKey);
-					}
-
-					portletDataContext.removePrimaryKey(
-						ExportImportPathUtil.getModelPath(stagedModel));
-
-					continue;
-				}
-
-				JSONObject newArticleJSONObject = JSONUtil.put(
-					"className", JournalArticle.class.getName()
-				).put(
-					"classPK", journalArticle.getResourcePrimKey()
-				).put(
-					"title",
-					journalArticle.getTitle(
-						journalArticle.getDefaultLanguageId())
-				).put(
-					"titleMap", journalArticle.getTitleMap()
-				);
-
-				field.setValue(locale, newArticleJSONObject.toJSONString());
-			}
-		}
-
-		return _journalConverter.getContent(
-			ddmStructure, fields, ddmStructure.getGroupId());
-	}
-
-	protected void validateJournalArticleReferences(String content)
+	private void _validateJournalArticleReferences(String content)
 		throws PortalException {
 
 		Throwable throwable = null;
@@ -568,86 +541,14 @@ public class JournalArticleExportImportContentProcessor
 		}
 	}
 
-	private String _excludeHTMLComments(String content) {
-		Matcher matcher = _htmlCommentRegexPattern.matcher(content);
-
-		while (matcher.find()) {
-			content = matcher.replaceAll(StringPool.BLANK);
-
-			matcher = _htmlCommentRegexPattern.matcher(content);
-		}
-
-		return content;
-	}
-
-	private List<String> _fetchContentsFromDDMFormValues(
-		List<DDMFormFieldValue> ddmFormFieldValues) {
-
-		return _fetchContentsFromDDMFormValues(
-			new ArrayList<String>(), ddmFormFieldValues);
-	}
-
-	private List<String> _fetchContentsFromDDMFormValues(
-		List<String> contents, List<DDMFormFieldValue> ddmFormFieldValues) {
-
-		for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
-			contents = _fetchContentsFromDDMFormValues(
-				contents, ddmFormFieldValue.getNestedDDMFormFieldValues());
-
-			Value value = ddmFormFieldValue.getValue();
-
-			if (value == null) {
-				contents.add(StringPool.BLANK);
-
-				continue;
-			}
-
-			for (Locale locale : value.getAvailableLocales()) {
-				contents.add(value.getString(locale));
-			}
-		}
-
-		return contents;
-	}
-
-	private DDMStructure _fetchDDMStructure(
-		PortletDataContext portletDataContext, JournalArticle article) {
-
-		long formerGroupId = article.getGroupId();
-
-		article.setGroupId(portletDataContext.getScopeGroupId());
-
-		DDMStructure ddmStructure = article.getDDMStructure();
-
-		article.setGroupId(formerGroupId);
-
-		return ddmStructure;
-	}
-
-	private Fields _getDDMStructureFields(
-		DDMStructure ddmStructure, String content) {
-
-		if ((ddmStructure == null) || Validator.isNull(content)) {
-			return null;
-		}
-
-		try {
-			return _journalConverter.getDDMFields(ddmStructure, content);
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
-			}
-
-			return null;
-		}
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		JournalArticleExportImportContentProcessor.class);
 
 	private static final Pattern _htmlCommentRegexPattern = Pattern.compile(
 		"\\<!--([\\s\\S]*)--\\>");
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.dynamic.data.mapping.storage.DDMFormValues)"
@@ -655,12 +556,18 @@ public class JournalArticleExportImportContentProcessor
 	private ExportImportContentProcessor<DDMFormValues>
 		_ddmFormValuesExportImportContentProcessor;
 
+	@Reference
+	private DDMFormValuesToFieldsConverter _ddmFormValuesToFieldsConverter;
+
+	@Reference
+	private DDMStructureLocalService _ddmStructureLocalService;
+
 	@Reference(target = "(model.class.name=java.lang.String)")
 	private ExportImportContentProcessor<String>
 		_defaultTextExportImportContentProcessor;
 
 	@Reference
-	private DLAppService _dlAppService;
+	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
 	private FieldsToDDMFormValuesConverter _fieldsToDDMFormValuesConverter;

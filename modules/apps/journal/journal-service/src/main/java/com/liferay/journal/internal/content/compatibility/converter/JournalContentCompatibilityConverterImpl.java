@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.content.compatibility.converter;
@@ -20,10 +11,11 @@ import com.liferay.journal.content.compatibility.converter.JournalContentCompati
 import com.liferay.layout.dynamic.data.mapping.form.field.type.constants.LayoutDDMFormFieldTypeConstants;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -46,20 +38,22 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eudaldo Alonso
  */
-@Component(
-	immediate = true, service = JournalContentCompatibilityConverter.class
-)
+@Component(service = JournalContentCompatibilityConverter.class)
 public class JournalContentCompatibilityConverterImpl
 	implements JournalContentCompatibilityConverter {
 
 	@Override
 	public String convert(String content) {
 		try {
-			Document document = SAXReaderUtil.read(content);
+			Document document = _convert(SAXReaderUtil.read(content));
 
-			return XMLUtil.formatXML(_convert(document));
+			return document.formattedString(StringPool.DOUBLE_SPACE);
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			return content;
 		}
 	}
@@ -118,7 +112,7 @@ public class JournalContentCompatibilityConverterImpl
 
 	private String _convertDDMFieldType(String ddmFieldType) {
 		if (Objects.equals(ddmFieldType, "boolean")) {
-			return DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE;
+			return DDMFormFieldTypeConstants.CHECKBOX;
 		}
 
 		if (Objects.equals(ddmFieldType, "ddm-color")) {
@@ -191,6 +185,10 @@ public class JournalContentCompatibilityConverterImpl
 			"dynamic-content");
 
 		for (Element dynamicContentElement : dynamicContentElements) {
+			if (Objects.equals(ddmFieldType, "list")) {
+				continue;
+			}
+
 			String text = dynamicContentElement.getText();
 
 			dynamicContentElement.clearContent();
@@ -216,7 +214,7 @@ public class JournalContentCompatibilityConverterImpl
 	private String _convertLinkToLayoutValue(
 		Locale defaultLocale, String value) {
 
-		if (JSONUtil.isValid(value)) {
+		if (JSONUtil.isJSONObject(value)) {
 			return value;
 		}
 
@@ -226,7 +224,7 @@ public class JournalContentCompatibilityConverterImpl
 			return StringPool.BLANK;
 		}
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject();
+		JSONObject jsonObject = _jsonFactorys.createJSONObject();
 
 		long layoutId = GetterUtil.getLong(values[0]);
 		boolean privateLayout = !Objects.equals(values[1], "public");
@@ -256,7 +254,7 @@ public class JournalContentCompatibilityConverterImpl
 			"privateLayout", privateLayout
 		);
 
-		return jsonObject.toJSONString();
+		return jsonObject.toString();
 	}
 
 	private void _convertNestedFields(Element newElement, Element oldElement) {
@@ -337,6 +335,12 @@ public class JournalContentCompatibilityConverterImpl
 	}
 
 	private static final String _LATEST_CONTENT_VERSION = "1.0";
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		JournalContentCompatibilityConverterImpl.class);
+
+	@Reference
+	private JSONFactory _jsonFactorys;
 
 	@Reference(unbind = "-")
 	private LayoutLocalService _layoutLocalService;

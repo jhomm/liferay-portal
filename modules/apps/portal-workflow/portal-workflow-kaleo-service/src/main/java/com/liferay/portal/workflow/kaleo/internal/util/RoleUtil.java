@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.util;
@@ -17,6 +8,8 @@ package com.liferay.portal.workflow.kaleo.internal.util;
 import com.liferay.account.constants.AccountConstants;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountRoleLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.DuplicateRoleException;
 import com.liferay.portal.kernel.exception.NoSuchRoleException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -29,7 +22,6 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
 import com.liferay.roles.admin.role.type.contributor.provider.RoleTypeContributorProvider;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,20 +40,15 @@ public class RoleUtil {
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		Role role = null;
+		Role role = RoleLocalServiceUtil.fetchRole(
+			serviceContext.getCompanyId(), name);
 
-		try {
-			role = RoleLocalServiceUtil.getRole(
-				serviceContext.getCompanyId(), name);
-
-			if (role.getType() != roleType) {
-				throw new DuplicateRoleException(
-					"Role already exists with name " + name);
-			}
-		}
-		catch (NoSuchRoleException noSuchRoleException) {
+		if (role == null) {
 			if (!autoCreate) {
-				throw noSuchRoleException;
+				throw new NoSuchRoleException(
+					StringBundler.concat(
+						"No Role exists with the key {companyId=",
+						serviceContext.getCompanyId(), ", name=", name, "}"));
 			}
 
 			Map<Locale, String> descriptionMap = HashMapBuilder.put(
@@ -72,7 +59,7 @@ public class RoleUtil {
 			if (roleType == RoleConstants.TYPE_ACCOUNT) {
 				AccountRole accountRole =
 					AccountRoleLocalServiceUtil.addAccountRole(
-						serviceContext.getUserId(),
+						null, serviceContext.getUserId(),
 						AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, name, null,
 						descriptionMap);
 
@@ -80,25 +67,22 @@ public class RoleUtil {
 			}
 			else {
 				role = RoleLocalServiceUtil.addRole(
-					serviceContext.getUserId(), null, 0, name, null,
+					null, serviceContext.getUserId(), null, 0, name, null,
 					descriptionMap, roleType, null, null);
 			}
+		}
+		else if (role.getType() != roleType) {
+			throw new DuplicateRoleException(
+				"Role already exists with name " + name);
 		}
 
 		return role;
 	}
 
 	public static List<Long> getRoleIds(ServiceContext serviceContext) {
-		List<Role> roles = RoleLocalServiceUtil.getUserRoles(
-			serviceContext.getUserId());
-
-		List<Long> roleIds = new ArrayList<>(roles.size());
-
-		for (Role role : roles) {
-			roleIds.add(role.getRoleId());
-		}
-
-		return roleIds;
+		return TransformUtil.transform(
+			RoleLocalServiceUtil.getUserRoles(serviceContext.getUserId()),
+			role -> role.getRoleId());
 	}
 
 	public static int getRoleType(String roleType) {
@@ -117,7 +101,7 @@ public class RoleUtil {
 			return RoleConstants.TYPE_SITE;
 		}
 
-		return RoleConstants.TYPE_REGULAR;
+		return RoleConstants.getLabelType(roleType);
 	}
 
 	private static final String _LEGACY_TYPE_COMMUNITY_LABEL = "community";

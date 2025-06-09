@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.impl;
 
 import com.liferay.document.library.kernel.model.DLFileEntryType;
+import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeTable;
 import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
@@ -25,18 +17,16 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionRegistryUtil;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portlet.documentlibrary.constants.DLConstants;
 import com.liferay.portlet.documentlibrary.service.base.DLFileEntryTypeServiceBaseImpl;
+import com.liferay.portlet.documentlibrary.util.DLPortletResourcePermissionUtil;
 import com.liferay.util.dao.orm.CustomSQLUtil;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -52,86 +42,147 @@ public class DLFileEntryTypeServiceImpl extends DLFileEntryTypeServiceBaseImpl {
 
 	@Override
 	public DLFileEntryType addFileEntryType(
-			long groupId, long dataDefinitionId, String fileEntryTypeKey,
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, long dataDefinitionId,
+			String fileEntryTypeKey, Map<Locale, String> nameMap,
+			Map<Locale, String> descriptionMap, ServiceContext serviceContext)
 		throws PortalException {
 
-		_portletResourcePermission.check(
+		PortletResourcePermission portletResourcePermission =
+			DLPortletResourcePermissionUtil.getPortletResourcePermission();
+
+		portletResourcePermission.check(
 			getPermissionChecker(), groupId, ActionKeys.ADD_DOCUMENT_TYPE);
 
 		return dlFileEntryTypeLocalService.addFileEntryType(
-			getUserId(), groupId, dataDefinitionId, fileEntryTypeKey, nameMap,
-			descriptionMap, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #addFileEntryType(long, String, Map, Map, long,
-	 *             ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public DLFileEntryType addFileEntryType(
-			long groupId, String fileEntryTypeKey, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, long[] ddmStructureIds,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), groupId, ActionKeys.ADD_DOCUMENT_TYPE);
-
-		return dlFileEntryTypeLocalService.addFileEntryType(
-			getUserId(), groupId, fileEntryTypeKey, nameMap, descriptionMap,
-			ddmStructureIds, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #addFileEntryType(long, String, Map, Map, long,
-	 *             ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public DLFileEntryType addFileEntryType(
-			long groupId, String name, String description,
-			long[] ddmStructureIds, ServiceContext serviceContext)
-		throws PortalException {
-
-		return addFileEntryType(
-			groupId, null,
-			HashMapBuilder.put(
-				LocaleUtil.getSiteDefault(), name
-			).build(),
-			HashMapBuilder.put(
-				LocaleUtil.getSiteDefault(), description
-			).build(),
-			ddmStructureIds, serviceContext);
+			externalReferenceCode, getUserId(), groupId, dataDefinitionId,
+			fileEntryTypeKey, nameMap, descriptionMap, serviceContext);
 	}
 
 	@Override
 	public void deleteFileEntryType(long fileEntryTypeId)
 		throws PortalException {
 
-		_dlFileEntryTypeModelResourcePermission.check(
+		ModelResourcePermission<DLFileEntryType>
+			dlFileEntryTypeModelResourcePermission =
+				ModelResourcePermissionRegistryUtil.getModelResourcePermission(
+					DLFileEntryType.class.getName());
+
+		dlFileEntryTypeModelResourcePermission.check(
 			getPermissionChecker(), fileEntryTypeId, ActionKeys.DELETE);
 
 		dlFileEntryTypeLocalService.deleteFileEntryType(fileEntryTypeId);
 	}
 
 	@Override
+	public void deleteFileEntryTypeByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		ModelResourcePermission<DLFileEntryType>
+			dlFileEntryTypeModelResourcePermission =
+				ModelResourcePermissionRegistryUtil.getModelResourcePermission(
+					DLFileEntryType.class.getName());
+
+		DLFileEntryType dlFileEntryType =
+			dlFileEntryTypePersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		dlFileEntryTypeModelResourcePermission.check(
+			getPermissionChecker(), dlFileEntryType, ActionKeys.DELETE);
+
+		dlFileEntryTypeLocalService.deleteFileEntryType(dlFileEntryType);
+	}
+
+	@Override
+	public DLFileEntryType fetchFileEntryTypeByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		DLFileEntryType dlFileEntryType =
+			dlFileEntryTypePersistence.fetchByERC_G(
+				externalReferenceCode, groupId);
+
+		if (dlFileEntryType == null) {
+			return null;
+		}
+
+		if (dlFileEntryType.getFileEntryTypeId() ==
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT) {
+
+			return dlFileEntryType;
+		}
+
+		ModelResourcePermission<DLFileEntryType>
+			dlFileEntryTypeModelResourcePermission =
+				ModelResourcePermissionRegistryUtil.getModelResourcePermission(
+					DLFileEntryType.class.getName());
+
+		dlFileEntryTypeModelResourcePermission.check(
+			getPermissionChecker(), dlFileEntryType, ActionKeys.VIEW);
+
+		return dlFileEntryType;
+	}
+
+	@Override
 	public DLFileEntryType getFileEntryType(long fileEntryTypeId)
 		throws PortalException {
 
-		_dlFileEntryTypeModelResourcePermission.check(
-			getPermissionChecker(), fileEntryTypeId, ActionKeys.VIEW);
+		if (fileEntryTypeId !=
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT) {
+
+			ModelResourcePermission<DLFileEntryType>
+				dlFileEntryTypeModelResourcePermission =
+					ModelResourcePermissionRegistryUtil.
+						getModelResourcePermission(
+							DLFileEntryType.class.getName());
+
+			dlFileEntryTypeModelResourcePermission.check(
+				getPermissionChecker(), fileEntryTypeId, ActionKeys.VIEW);
+		}
 
 		return dlFileEntryTypeLocalService.getFileEntryType(fileEntryTypeId);
 	}
 
 	@Override
+	public DLFileEntryType getFileEntryTypeByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		DLFileEntryType dlFileEntryType =
+			dlFileEntryTypePersistence.findByERC_G(
+				externalReferenceCode, groupId);
+
+		if (dlFileEntryType.getFileEntryTypeId() ==
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT) {
+
+			return dlFileEntryType;
+		}
+
+		ModelResourcePermission<DLFileEntryType>
+			dlFileEntryTypeModelResourcePermission =
+				ModelResourcePermissionRegistryUtil.getModelResourcePermission(
+					DLFileEntryType.class.getName());
+
+		dlFileEntryTypeModelResourcePermission.check(
+			getPermissionChecker(), dlFileEntryType, ActionKeys.VIEW);
+
+		return dlFileEntryType;
+	}
+
+	@Override
 	public List<DLFileEntryType> getFileEntryTypes(long[] groupIds) {
-		return dlFileEntryTypePersistence.filterFindByGroupId(groupIds);
+		List<DLFileEntryType> dlFileEntryTypes = new ArrayList<>(
+			dlFileEntryTypePersistence.filterFindByGroupId(groupIds));
+
+		DLFileEntryType basicDocumentDLFileEntryType =
+			dlFileEntryTypeLocalService.fetchDLFileEntryType(
+				DLFileEntryTypeConstants.FILE_ENTRY_TYPE_ID_BASIC_DOCUMENT);
+
+		if (basicDocumentDLFileEntryType != null) {
+			dlFileEntryTypes.add(0, basicDocumentDLFileEntryType);
+		}
+
+		return dlFileEntryTypes;
 	}
 
 	@Override
@@ -236,53 +287,16 @@ public class DLFileEntryTypeServiceImpl extends DLFileEntryTypeServiceBaseImpl {
 			Map<Locale, String> descriptionMap)
 		throws PortalException {
 
-		_dlFileEntryTypeModelResourcePermission.check(
+		ModelResourcePermission<DLFileEntryType>
+			dlFileEntryTypeModelResourcePermission =
+				ModelResourcePermissionRegistryUtil.getModelResourcePermission(
+					DLFileEntryType.class.getName());
+
+		dlFileEntryTypeModelResourcePermission.check(
 			getPermissionChecker(), fileEntryTypeId, ActionKeys.UPDATE);
 
 		return dlFileEntryTypeLocalService.updateFileEntryType(
 			fileEntryTypeId, nameMap, descriptionMap);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #updateFileEntryType(long, Map, Map)}
-	 */
-	@Deprecated
-	@Override
-	public void updateFileEntryType(
-			long fileEntryTypeId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, long[] ddmStructureIds,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_dlFileEntryTypeModelResourcePermission.check(
-			getPermissionChecker(), fileEntryTypeId, ActionKeys.UPDATE);
-
-		dlFileEntryTypeLocalService.updateFileEntryType(
-			getUserId(), fileEntryTypeId, nameMap, descriptionMap,
-			ddmStructureIds, serviceContext);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #updateFileEntryType(long, Map, Map)}
-	 */
-	@Deprecated
-	@Override
-	public void updateFileEntryType(
-			long fileEntryTypeId, String name, String description,
-			long[] ddmStructureIds, ServiceContext serviceContext)
-		throws PortalException {
-
-		updateFileEntryType(
-			fileEntryTypeId,
-			HashMapBuilder.put(
-				LocaleUtil.getSiteDefault(), name
-			).build(),
-			HashMapBuilder.put(
-				LocaleUtil.getSiteDefault(), description
-			).build(),
-			ddmStructureIds, serviceContext);
 	}
 
 	protected List<DLFileEntryType> filterFileEntryTypes(
@@ -296,10 +310,16 @@ public class DLFileEntryTypeServiceImpl extends DLFileEntryTypeServiceBaseImpl {
 		Iterator<DLFileEntryType> iterator = fileEntryTypes.iterator();
 
 		while (iterator.hasNext()) {
+			ModelResourcePermission<DLFileEntryType>
+				dlFileEntryTypeModelResourcePermission =
+					ModelResourcePermissionRegistryUtil.
+						getModelResourcePermission(
+							DLFileEntryType.class.getName());
+
 			DLFileEntryType fileEntryType = iterator.next();
 
 			if ((fileEntryType.getFileEntryTypeId() > 0) &&
-				!_dlFileEntryTypeModelResourcePermission.contains(
+				!dlFileEntryTypeModelResourcePermission.contains(
 					permissionChecker, fileEntryType, ActionKeys.VIEW)) {
 
 				iterator.remove();
@@ -389,17 +409,5 @@ public class DLFileEntryTypeServiceImpl extends DLFileEntryTypeServiceBaseImpl {
 			}
 		);
 	}
-
-	private static volatile ModelResourcePermission<DLFileEntryType>
-		_dlFileEntryTypeModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				DLFileEntryTypeServiceImpl.class,
-				"_dlFileEntryTypeModelResourcePermission",
-				DLFileEntryType.class);
-	private static volatile PortletResourcePermission
-		_portletResourcePermission =
-			PortletResourcePermissionFactory.getInstance(
-				DLFileEntryTypeServiceImpl.class, "_portletResourcePermission",
-				DLConstants.RESOURCE_NAME);
 
 }

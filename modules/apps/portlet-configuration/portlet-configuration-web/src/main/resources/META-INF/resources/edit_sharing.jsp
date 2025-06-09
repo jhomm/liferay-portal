@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,7 +12,17 @@ String returnToFullPageURL = ParamUtil.getString(request, "returnToFullPageURL")
 
 Portlet portlet = PortletLocalServiceUtil.getPortletById(company.getCompanyId(), portletResource);
 
-String widgetURL = PortalUtil.getWidgetURL(portlet, themeDisplay);
+boolean portletPublished = true;
+
+Layout publishedLayout = null;
+
+if (layout.isDraftLayout()) {
+	publishedLayout = LayoutLocalServiceUtil.getLayout(layout.getClassPK());
+
+	LayoutTypePortlet publishedLayoutTypePortlet = (LayoutTypePortlet)publishedLayout.getLayoutType();
+
+	portletPublished = publishedLayoutTypePortlet.hasPortletId(portletResource);
+}
 %>
 
 <portlet:actionURL name="editSharing" var="editSharingURL">
@@ -33,113 +34,140 @@ String widgetURL = PortalUtil.getWidgetURL(portlet, themeDisplay);
 	<liferay-util:param name="tabs1" value="sharing" />
 </liferay-util:include>
 
-<div class="portlet-configuration-edit-sharing">
-	<liferay-frontend:edit-form
-		action="<%= editSharingURL %>"
-		method="post"
-		name="fm"
-	>
-		<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.SAVE %>" />
-		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
-		<aui:input name="returnToFullPageURL" type="hidden" value="<%= returnToFullPageURL %>" />
-		<aui:input name="portletResource" type="hidden" value="<%= portletResource %>" />
+<c:choose>
+	<c:when test="<%= portletPublished %>">
 
-		<liferay-frontend:edit-form-body>
-			<liferay-frontend:fieldset-group>
-				<liferay-frontend:fieldset
-					collapsed="<%= false %>"
-					collapsible="<%= true %>"
-					label="any-website"
-				>
-					<div class="alert alert-info">
-						<liferay-ui:message key="share-this-application-on-any-website" />
-					</div>
+		<%
+		if (publishedLayout != null) {
+			themeDisplay.setLayout(publishedLayout);
+		}
 
-					<liferay-util:buffer
-						var="textAreaContent"
+		String widgetURL = PortalUtil.getWidgetURL(portlet, themeDisplay);
+
+		String opensocialGadgetURL = PortalUtil.getGoogleGadgetURL(portlet, themeDisplay);
+
+		String netvibesWidgetURL = PortalUtil.getNetvibesURL(portlet, themeDisplay);
+
+		themeDisplay.setLayout(layout);
+		%>
+
+		<div class="cadmin portlet-configuration-edit-sharing">
+			<liferay-frontend:edit-form
+				action="<%= editSharingURL %>"
+				method="post"
+				name="fm"
+			>
+				<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.SAVE %>" />
+				<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
+				<aui:input name="returnToFullPageURL" type="hidden" value="<%= returnToFullPageURL %>" />
+				<aui:input name="portletResource" type="hidden" value="<%= portletResource %>" />
+
+				<liferay-frontend:edit-form-body>
+					<liferay-frontend:fieldset
+						collapsed="<%= false %>"
+						collapsible="<%= true %>"
+						label="any-website"
 					>
-						<iframe frameborder="0" height="100%" src="<%= HtmlUtil.escapeAttribute(widgetURL) %>" width="100%"></iframe>
-					</liferay-util:buffer>
-
-					<aui:field-wrapper label="code">
-						<textarea class="field form-control lfr-textarea" id="<portlet:namespace />widgetScript" onClick="this.select();" readonly="true"><%= HtmlUtil.escape(textAreaContent) %></textarea>
-					</aui:field-wrapper>
-
-					<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-any-website", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="widgetShowAddAppLink" type="toggle-switch" value='<%= GetterUtil.getBoolean(portletPreferences.getValue("lfrWidgetShowAddAppLink", null), PropsValues.THEME_PORTLET_SHARING_DEFAULT) %>' />
-				</liferay-frontend:fieldset>
-
-				<liferay-frontend:fieldset
-					collapsed="<%= true %>"
-					collapsible="<%= true %>"
-					label="facebook"
-				>
-
-					<%
-					String facebookAPIKey = GetterUtil.getString(portletPreferences.getValue("lfrFacebookApiKey", null));
-					String facebookCanvasPageURL = GetterUtil.getString(portletPreferences.getValue("lfrFacebookCanvasPageUrl", null));
-					%>
-
-					<div class="alert alert-info">
-						<aui:a href="http://developers.facebook.com" target="_blank"><liferay-ui:message key="get-the-api-key-and-canvas-page-url-from-facebook" /></aui:a>
-					</div>
-
-					<aui:input cssClass="lfr-input-text-container" label="api-key" name="facebookAPIKey" value="<%= HtmlUtil.toInputSafe(facebookAPIKey) %>" />
-
-					<aui:field-wrapper cssClass="form-group" label="canvas-page-url" name="facebookCanvasPageURLWrapper">
-						<div class="form-text">http://www.liferay.com/</div>
-
-						<aui:input cssClass="flexible lfr-input-text-container" label="" name="facebookCanvasPageURL" prefix="/" value="<%= HtmlUtil.toInputSafe(facebookCanvasPageURL) %>" />
-					</aui:field-wrapper>
-
-					<c:if test="<%= Validator.isNotNull(facebookCanvasPageURL) %>">
-						<br />
-
 						<div class="alert alert-info">
-							<liferay-ui:message key="copy-the-callback-url-and-specify-it-in-facebook" />
-
-							<liferay-ui:message key="this-application-is-exposed-to-facebook-via-an-iframe" />
+							<liferay-ui:message key="share-this-application-on-any-website" />
 						</div>
 
-						<aui:input name="callbackURL" type="resource" value="<%= widgetURL %>" />
+						<liferay-util:buffer
+							var="textAreaContent"
+						>
+							<iframe frameborder="0" height="100%" src="<%= HtmlUtil.escapeAttribute(widgetURL) %>" width="100%"></iframe>
+						</liferay-util:buffer>
 
-						<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-facebook", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="facebookShowAddAppLink" type="toggle-switch" value='<%= GetterUtil.getBoolean(portletPreferences.getValue("lfrFacebookShowAddAppLink", null), true) %>' />
-					</c:if>
-				</liferay-frontend:fieldset>
+						<aui:field-wrapper label="code">
+							<liferay-ui:csp>
+								<textarea aria-label="<%= LanguageUtil.get(request, "code") %>" class="field form-control lfr-textarea" id="<portlet:namespace />widgetScript" onClick="this.select();" readonly="true"><%= HtmlUtil.escape(textAreaContent) %></textarea>
+							</liferay-ui:csp>
+						</aui:field-wrapper>
 
-				<liferay-frontend:fieldset
-					collapsed="<%= true %>"
-					collapsible="<%= true %>"
-					label="opensocial-gadget"
-				>
-					<div class="alert alert-info">
-						<liferay-ui:message key="use-the-opensocial-gadget-url-to-create-an-opensocial-gadget" />
-					</div>
+						<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-any-website", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="widgetShowAddAppLink" type="toggle-switch" value='<%= GetterUtil.getBoolean(portletPreferences.getValue("lfrWidgetShowAddAppLink", null), PropsValues.THEME_PORTLET_SHARING_DEFAULT) %>' />
+					</liferay-frontend:fieldset>
 
-					<aui:input name="opensocialGadgetURL" type="resource" value="<%= PortalUtil.getGoogleGadgetURL(portlet, themeDisplay) %>" />
+					<liferay-frontend:fieldset
+						collapsed="<%= true %>"
+						collapsible="<%= true %>"
+						label="facebook"
+					>
 
-					<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-an-open-social-platform", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="iGoogleShowAddAppLink" type="toggle-switch" value='<%= PrefsParamUtil.getBoolean(portletPreferences, request, "lfrIgoogleShowAddAppLink") %>' />
-				</liferay-frontend:fieldset>
+						<%
+						String facebookAPIKey = GetterUtil.getString(portletPreferences.getValue("lfrFacebookApiKey", null));
+						String facebookCanvasPageURL = GetterUtil.getString(portletPreferences.getValue("lfrFacebookCanvasPageUrl", null));
+						%>
 
-				<liferay-frontend:fieldset
-					collapsed="<%= true %>"
-					collapsible="<%= true %>"
-					label="netvibes"
-				>
-					<div class="alert alert-info">
-						<liferay-ui:message key="use-the-netvibes-widget-url-to-create-a-netvibes-widget" />
-					</div>
+						<div class="alert alert-info">
+							<clay:link
+								href="http://developers.facebook.com"
+								icon="shortcut"
+								label="get-the-api-key-and-canvas-page-url-from-facebook"
+								target="_blank"
+							/>
+						</div>
 
-					<aui:input name="netvibesWidgetURL" type="resource" value="<%= PortalUtil.getNetvibesURL(portlet, themeDisplay) %>" />
+						<aui:input cssClass="lfr-input-text-container" label="api-key" name="facebookAPIKey" value="<%= HtmlUtil.toInputSafe(facebookAPIKey) %>" />
 
-					<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-netvibes-pages", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="netvibesShowAddAppLink" type="toggle-switch" value='<%= PrefsParamUtil.getBoolean(portletPreferences, request, "lfrNetvibesShowAddAppLink") %>' />
-				</liferay-frontend:fieldset>
-			</liferay-frontend:fieldset-group>
-		</liferay-frontend:edit-form-body>
+						<aui:field-wrapper cssClass="form-group" label="canvas-page-url" name="facebookCanvasPageURLWrapper">
+							<div class="form-text">http://www.liferay.com/</div>
 
-		<liferay-frontend:edit-form-footer>
-			<aui:button type="submit" />
+							<aui:input cssClass="flexible lfr-input-text-container" label="" name="facebookCanvasPageURL" prefix="/" value="<%= HtmlUtil.toInputSafe(facebookCanvasPageURL) %>" />
+						</aui:field-wrapper>
 
-			<aui:button type="cancel" />
-		</liferay-frontend:edit-form-footer>
-	</liferay-frontend:edit-form>
-</div>
+						<c:if test="<%= Validator.isNotNull(facebookCanvasPageURL) %>">
+							<br />
+
+							<div class="alert alert-info">
+								<liferay-ui:message key="copy-the-callback-url-and-specify-it-in-facebook" />
+
+								<liferay-ui:message key="this-application-is-exposed-to-facebook-via-an-iframe" />
+							</div>
+
+							<aui:input name="callbackURL" type="resource" value="<%= widgetURL %>" />
+
+							<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-facebook", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="facebookShowAddAppLink" type="toggle-switch" value='<%= GetterUtil.getBoolean(portletPreferences.getValue("lfrFacebookShowAddAppLink", null), true) %>' />
+						</c:if>
+					</liferay-frontend:fieldset>
+
+					<liferay-frontend:fieldset
+						collapsed="<%= true %>"
+						collapsible="<%= true %>"
+						label="opensocial-gadget"
+					>
+						<div class="alert alert-info">
+							<liferay-ui:message key="use-the-opensocial-gadget-url-to-create-an-opensocial-gadget" />
+						</div>
+
+						<aui:input name="opensocialGadgetURL" type="resource" value="<%= opensocialGadgetURL %>" />
+
+						<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-an-open-social-platform", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="iGoogleShowAddAppLink" type="toggle-switch" value='<%= PrefsParamUtil.getBoolean(portletPreferences, request, "lfrIgoogleShowAddAppLink") %>' />
+					</liferay-frontend:fieldset>
+
+					<liferay-frontend:fieldset
+						collapsed="<%= true %>"
+						collapsible="<%= true %>"
+						label="netvibes"
+					>
+						<div class="alert alert-info">
+							<liferay-ui:message key="use-the-netvibes-widget-url-to-create-a-netvibes-widget" />
+						</div>
+
+						<aui:input name="netvibesWidgetURL" type="resource" value="<%= netvibesWidgetURL %>" />
+
+						<aui:input inlineLabel="right" label='<%= LanguageUtil.format(request, "allow-users-to-add-x-to-netvibes-pages", HtmlUtil.escape(portletDisplay.getTitle()), false) %>' labelCssClass="simple-toggle-switch" name="netvibesShowAddAppLink" type="toggle-switch" value='<%= PrefsParamUtil.getBoolean(portletPreferences, request, "lfrNetvibesShowAddAppLink") %>' />
+					</liferay-frontend:fieldset>
+				</liferay-frontend:edit-form-body>
+
+				<liferay-frontend:edit-form-footer>
+					<liferay-frontend:edit-form-buttons />
+				</liferay-frontend:edit-form-footer>
+			</liferay-frontend:edit-form>
+		</div>
+	</c:when>
+	<c:otherwise>
+		<div class="alert alert-info">
+			<liferay-ui:message key="you-can-only-share-the-application-if-the-widget-is-in-the-published-layout" />
+		</div>
+	</c:otherwise>
+</c:choose>

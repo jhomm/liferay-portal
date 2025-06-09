@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -190,6 +181,16 @@ public class ResourceLocalServiceUtil {
 			addGroupPermissions, addGuestPermissions);
 	}
 
+	public static void addResources(
+			long companyId, long groupId, long userId, String name,
+			long primKey, boolean portletActions, ServiceContext serviceContext)
+		throws PortalException {
+
+		getService().addResources(
+			companyId, groupId, userId, name, primKey, portletActions,
+			serviceContext);
+	}
+
 	/**
 	 * Adds resources for the entity with the name and primary key string,
 	 * always creating a resource at the individual scope and only creating
@@ -219,6 +220,17 @@ public class ResourceLocalServiceUtil {
 			addGroupPermissions, addGuestPermissions);
 	}
 
+	public static void addResources(
+			long companyId, long groupId, long userId, String name,
+			String[] primKeys, boolean portletActions,
+			boolean addGroupPermissions, boolean addGuestPermissions)
+		throws PortalException {
+
+		getService().addResources(
+			companyId, groupId, userId, name, primKeys, portletActions,
+			addGroupPermissions, addGuestPermissions);
+	}
+
 	/**
 	 * Adds resources for the entity with the name. Use this method if the user
 	 * is unknown or irrelevant and there is no current entity instance.
@@ -238,11 +250,11 @@ public class ResourceLocalServiceUtil {
 	}
 
 	public static void copyModelResources(
-			long companyId, String name, long oldPrimKey, long newPrimKey)
+			long companyId, String name, long sourcePrimKey, long targetPrimKey)
 		throws PortalException {
 
 		getService().copyModelResources(
-			companyId, name, oldPrimKey, newPrimKey);
+			companyId, name, sourcePrimKey, targetPrimKey);
 	}
 
 	/**
@@ -344,6 +356,15 @@ public class ResourceLocalServiceUtil {
 
 		return getService().hasUserPermissions(
 			userId, resourceId, resources, actionId, roleIds);
+	}
+
+	public static void removeResource(
+			long companyId, String name, int scope, String primKey, long roleId,
+			String actionId)
+		throws PortalException {
+
+		getService().removeResource(
+			companyId, name, scope, primKey, roleId, actionId);
 	}
 
 	/**
@@ -471,6 +492,10 @@ public class ResourceLocalServiceUtil {
 
 	public static ResourceLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(ResourceLocalService service) {
+		_service = service;
 	}
 
 	private static volatile ResourceLocalService _service;

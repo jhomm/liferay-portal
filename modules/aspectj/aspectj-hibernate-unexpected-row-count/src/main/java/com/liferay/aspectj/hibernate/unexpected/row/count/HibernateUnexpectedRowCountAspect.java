@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.aspectj.hibernate.unexpected.row.count;
@@ -24,8 +15,7 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.SuppressAjWarnings;
 
-import org.hibernate.jdbc.AbstractBatcher;
-import org.hibernate.jdbc.BatchingBatcher;
+import org.hibernate.engine.jdbc.batch.internal.BatchingBatch;
 
 /**
  * @author Preston Crary
@@ -36,16 +26,16 @@ public class HibernateUnexpectedRowCountAspect {
 
 	@Before(
 		"handler(java.lang.RuntimeException) &&" +
-			"withincode(void org.hibernate.jdbc.BatchingBatcher." +
-				"doExecuteBatch(java.sql.PreparedStatement)) &&" +
-					"args(runtimeException) && this(batchingBatcher)"
+			"withincode(void org.hibernate.engine.jdbc.batch.internal.BatchingBatch." +
+				"doExecuteBatch()) && args(runtimeException) && this(batchingBatch)"
 	)
 	public void logUpdateSQL(
-		BatchingBatcher batchingBatcher, RuntimeException runtimeException) {
+		BatchingBatch batchingBatch, RuntimeException runtimeException) {
 
 		try {
 			_log.error(
-				"batchUpdateSQL = " + _batchUpdateSQLField.get(batchingBatcher),
+				"currentStatementSql = " +
+					_currentStatementSQLField.get(batchingBatch),
 				runtimeException);
 		}
 		catch (ReflectiveOperationException reflectiveOperationException) {
@@ -56,12 +46,12 @@ public class HibernateUnexpectedRowCountAspect {
 	private static final Log _log = LogFactoryUtil.getLog(
 		HibernateUnexpectedRowCountAspect.class);
 
-	private static final Field _batchUpdateSQLField;
+	private static final Field _currentStatementSQLField;
 
 	static {
 		try {
-			_batchUpdateSQLField = ReflectionUtil.getDeclaredField(
-				AbstractBatcher.class, "batchUpdateSQL");
+			_currentStatementSQLField = ReflectionUtil.getDeclaredField(
+				BatchingBatch.class, "currentStatementSql");
 		}
 		catch (Exception exception) {
 			throw new ExceptionInInitializerError(exception);

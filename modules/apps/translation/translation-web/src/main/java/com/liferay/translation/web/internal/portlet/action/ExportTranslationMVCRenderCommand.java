@@ -1,55 +1,44 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.web.internal.portlet.action;
 
 import com.liferay.info.field.InfoFieldValue;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.item.provider.InfoItemObjectProvider;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 import com.liferay.translation.constants.TranslationPortletKeys;
-import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporterTracker;
-import com.liferay.translation.web.internal.configuration.FFLayoutExperienceSelectorConfiguration;
+import com.liferay.translation.exporter.TranslationInfoItemFieldValuesExporterRegistry;
 import com.liferay.translation.web.internal.display.context.ExportTranslationDisplayContext;
+import com.liferay.translation.web.internal.helper.TranslationRequestHelper;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adolfo Pérez
  */
 @Component(
-	configurationPid = "com.liferay.translation.web.internal.configuration.FFLayoutExperienceSelectorConfiguration",
 	property = {
-		"javax.portlet.name=" + TranslationPortletKeys.TRANSLATION,
+		"jakarta.portlet.name=" + TranslationPortletKeys.TRANSLATION,
 		"mvc.command.name=/translation/export_translation"
 	},
 	service = MVCRenderCommand.class
@@ -65,25 +54,27 @@ public class ExportTranslationMVCRenderCommand implements MVCRenderCommand {
 			ThemeDisplay themeDisplay =
 				(ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
-			long classNameId = ParamUtil.getLong(renderRequest, "classNameId");
-			long classPK = ParamUtil.getLong(renderRequest, "classPK");
-			long groupId = ParamUtil.getLong(renderRequest, "groupId");
+			TranslationRequestHelper translationRequestHelper =
+				new TranslationRequestHelper(
+					_infoItemServiceRegistry, renderRequest,
+					_segmentsExperienceLocalService);
 
-			String className = _portal.getClassName(classNameId);
-
-			Object model = _getModel(className, classPK);
+			List<Object> models = _getModels(translationRequestHelper);
 
 			renderRequest.setAttribute(
 				ExportTranslationDisplayContext.class.getName(),
 				new ExportTranslationDisplayContext(
-					classNameId, classPK,
-					_ffLayoutExperienceSelectorConfiguration, groupId,
+					translationRequestHelper.getClassNameId(),
+					translationRequestHelper.getModelClassPKs(),
+					translationRequestHelper.getGroupId(),
 					_portal.getHttpServletRequest(renderRequest),
-					_infoItemServiceTracker,
+					_infoItemServiceRegistry,
 					_portal.getLiferayPortletRequest(renderRequest),
-					_portal.getLiferayPortletResponse(renderResponse), model,
-					_getTitle(className, model, themeDisplay.getLocale()),
-					_translationInfoItemFieldValuesExporterTracker));
+					_portal.getLiferayPortletResponse(renderResponse), models,
+					_getTitle(
+						translationRequestHelper.getModelClassName(),
+						models.get(0), themeDisplay.getLocale(), models.size()),
+					_translationInfoItemFieldValuesExporterRegistry));
 
 			return "/export_translation.jsp";
 		}
@@ -92,27 +83,38 @@ public class ExportTranslationMVCRenderCommand implements MVCRenderCommand {
 		}
 	}
 
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		_ffLayoutExperienceSelectorConfiguration =
-			ConfigurableUtil.createConfigurable(
-				FFLayoutExperienceSelectorConfiguration.class, properties);
-	}
-
-	private Object _getModel(String className, long classPK)
+	private List<Object> _getModels(
+			TranslationRequestHelper translationRequestHelper)
 		throws PortalException {
 
 		InfoItemObjectProvider<Object> infoItemObjectProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
-				InfoItemObjectProvider.class, className);
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemObjectProvider.class,
+				translationRequestHelper.getModelClassName(),
+				ClassPKInfoItemIdentifier.INFO_ITEM_SERVICE_FILTER);
 
-		return infoItemObjectProvider.getInfoItem(classPK);
+		long[] classPKs = translationRequestHelper.getModelClassPKs();
+
+		List<Object> models = new ArrayList<>(classPKs.length);
+
+		for (long classPK : classPKs) {
+			models.add(
+				infoItemObjectProvider.getInfoItem(
+					new ClassPKInfoItemIdentifier(classPK)));
+		}
+
+		return models;
 	}
 
-	private String _getTitle(String className, Object model, Locale locale) {
+	private String _getTitle(
+		String className, Object model, Locale locale, int size) {
+
+		if (size > 1) {
+			return _language.get(locale, "export-for-translation");
+		}
+
 		InfoItemFieldValuesProvider<Object> infoItemFieldValuesProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class, className);
 
 		InfoFieldValue<Object> infoFieldValue =
@@ -125,11 +127,8 @@ public class ExportTranslationMVCRenderCommand implements MVCRenderCommand {
 		return (String)infoFieldValue.getValue(locale);
 	}
 
-	private volatile FFLayoutExperienceSelectorConfiguration
-		_ffLayoutExperienceSelectorConfiguration;
-
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
 	private Language _language;
@@ -138,7 +137,10 @@ public class ExportTranslationMVCRenderCommand implements MVCRenderCommand {
 	private Portal _portal;
 
 	@Reference
-	private TranslationInfoItemFieldValuesExporterTracker
-		_translationInfoItemFieldValuesExporterTracker;
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
+
+	@Reference
+	private TranslationInfoItemFieldValuesExporterRegistry
+		_translationInfoItemFieldValuesExporterRegistry;
 
 }

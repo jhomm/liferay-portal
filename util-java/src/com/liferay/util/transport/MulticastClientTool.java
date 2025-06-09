@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.util.transport;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -35,13 +28,14 @@ public class MulticastClientTool {
 			new MulticastClientTool(args);
 		}
 		catch (Exception exception) {
-			exception.printStackTrace();
+			_log.error(exception);
 
 			System.err.println(
 				StringBundler.concat(
 					"Usage: java -classpath util-java.jar ",
 					MulticastClientTool.class.getName(),
-					"[-g] [-s] -h [multicastAddress] -p [port]"));
+					"[-g] [-s] -h [multicastAddress] -p [port] [-b] ",
+					"[bindAddress]"));
 
 			System.exit(1);
 		}
@@ -51,7 +45,8 @@ public class MulticastClientTool {
 		Map<String, Object> argsMap = _getArgsMap(args);
 
 		Integer port = (Integer)argsMap.get("port");
-		String host = (String)argsMap.get("host");
+		String multicastAddress = (String)argsMap.get("multicastAddress");
+		String bindAddress = (String)argsMap.get("bindAddress");
 
 		Boolean gzipData = (Boolean)argsMap.get("gzip");
 		Boolean shortData = (Boolean)argsMap.get("short");
@@ -60,7 +55,7 @@ public class MulticastClientTool {
 			gzipData.booleanValue(), shortData.booleanValue());
 
 		MulticastTransport multicastTransport = new MulticastTransport(
-			datagramHandler, host, port);
+			datagramHandler, multicastAddress, port, bindAddress);
 
 		if (shortData.booleanValue()) {
 			System.out.println("Truncating to 96 bytes.");
@@ -86,12 +81,17 @@ public class MulticastClientTool {
 				argsMap.put("short", Boolean.TRUE);
 			}
 			else if (args[i].equals("-h")) {
-				argsMap.put("host", args[i + 1]);
+				argsMap.put("multicastAddress", args[i + 1]);
 
 				i++;
 			}
 			else if (args[i].equals("-p")) {
 				argsMap.put("port", Integer.valueOf(args[i + 1]));
+
+				i++;
+			}
+			else if (args[i].equals("-b")) {
+				argsMap.put("bindAddress", args[i + 1]);
 
 				i++;
 			}
@@ -107,5 +107,8 @@ public class MulticastClientTool {
 
 		return argsMap;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		MulticastClientTool.class);
 
 }

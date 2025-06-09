@@ -1,48 +1,64 @@
 Bundle-Name: Liferay Portal Reports Engine Console Jasper
 Bundle-SymbolicName: com.liferay.portal.reports.engine.console.jasper
-Bundle-Version: 4.0.11
+Bundle-Version: 4.0.37
 DynamicImport-Package: *
 Import-Package:\
 	!antlr.*,\
 	\
 	!bsh,\
 	\
+	!com.adobe.xmp.*,\
+	\
 	!com.apple.mrj.*,\
 	\
+	!com.drew.*,\
+	\
 	!com.fasterxml.jackson.*,\
+	\
+	!com.github.kklisura.*,\
+	\
+	!com.graphbuilder.curve.*,\
+	!com.graphbuilder.geom.*,\
 	\
 	!com.keypoint.*,\
 	\
 	!com.lowagie.toolbox.*,\
 	\
-	!com.thoughtworks.*,\
-	\
-	!groovyjarjarasm.asm.tree.analysis.*,\
-	\
 	!javax.accessibility.*,\
+	\
+	!javax.annotation,\
 	\
 	!javax.crypto.*,\
 	\
 	!javax.imageio.*,\
 	\
+	!javax.persistence,\
+	\
 	!javax.print.*,\
 	\
-	!javax.swing.*,\
+	!javax.rmi.*,\
 	\
-	!jline.*,\
+	!javax.servlet.*,\
 	\
-	!junit.*,\
+	!javax.transaction.*,\
+	\
+	!javax.xml.soap,\
 	\
 	!mondrian.*,\
 	\
+	!net.sf.cglib.proxy.*,\
+	\
 	!net.sourceforge.barbecue.*,\
 	\
+	!org.apache.batik.anim.*,\
+	!org.apache.batik.bridge.*,\
+	!org.apache.batik.dom.*,\
+	!org.apache.batik.ext.*,\
+	!org.apache.batik.gvt.*,\
+	!org.apache.batik.util.*,\
 	!org.apache.bcel.*,\
-	!org.apache.bsf.*,\
-	!org.apache.commons.cli.*,\
 	!org.apache.commons.javaflow.*,\
 	!org.apache.commons.jci.*,\
-	!org.apache.ivy.*,\
 	!org.apache.log.*,\
 	!org.apache.oro.*,\
 	!org.apache.poi.hdgf.*,\
@@ -60,6 +76,16 @@ Import-Package:\
 	!org.apache.xerces.impl.xpath.regex.*,\
 	!org.apache.xml.resolver.*,\
 	!org.apache.xmlbeans.*,\
+	!org.apache.xpath.*,\
+	\
+	!org.bouncycastle.asn1.*,\
+	!org.bouncycastle.cert.*,\
+	!org.bouncycastle.cms.*,\
+	!org.bouncycastle.crypto.*,\
+	!org.bouncycastle.jce.provider.*,\
+	!org.bouncycastle.operator.bc.*,\
+	!org.bouncycastle.tsp.*,\
+	!org.bouncycastle.util.*,\
 	\
 	!org.dom4j.*,\
 	\
@@ -67,13 +93,9 @@ Import-Package:\
 	\
 	!org.exolab.castor.*,\
 	\
-	!org.fusesource.*,\
-	\
 	!org.hibernate.*,\
 	\
-	!org.jaxen.*,\
-	\
-	!org.junit.*,\
+	!org.kohsuke.groovy.sandbox.*,\
 	\
 	!org.krysalis.barcode4j.*,\
 	\

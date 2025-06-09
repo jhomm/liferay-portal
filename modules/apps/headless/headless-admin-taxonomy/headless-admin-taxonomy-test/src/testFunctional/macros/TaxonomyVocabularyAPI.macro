@@ -1,0 +1,197 @@
+definition {
+
+	@summary = "Default summary"
+	macro _curlTaxonomyKeywords(noSelenium = null, keywordId = null, depotName = null, groupName = null, parameter = null, parameterValue = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
+
+		if (isSet(depotName)) {
+			var assetLibraryId = JSONGroupAPI._getDepotIdByName(
+				depotName = ${depotName},
+				noSelenium = ${noSelenium});
+
+			var api = "asset-libraries/${assetLibraryId}/keywords";
+
+			if (isSet(exportBatch)) {
+				var api = StringUtil.add(${api}, "/export-batch", "");
+			}
+		}
+		else if (isSet(keywordId)) {
+			var api = "keywords/${keywordId}";
+		}
+		else {
+			var siteId = JSONGroupAPI._getGroupIdByName(
+				groupName = ${groupName},
+				site = "true");
+
+			var api = "sites/${siteId}/keywords";
+		}
+
+		if (isSet(parameter)) {
+			var api = StringUtil.add(${api}, "?${parameter}=${parameterValue}", "");
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-taxonomy/v1.0/${api} \
+				-u test@liferay.com:${userPassword} \
+				-H Content-Type: application/json \
+		''';
+
+		return ${curl};
+	}
+
+	@summary = "Default summary"
+	macro _curlTaxonomyVocabulary(depotName = null, groupName = null, filterValue = null, parameter = null, parameterValue = null, externalReferenceCode = null) {
+		var portalURL = JSONCompany.getPortalURL();
+		var userPassword = PropsUtil.get("default.admin.password");
+
+		if (isSet(depotName)) {
+			var assetLibraryId = JSONGroupAPI._getDepotIdByName(
+				depotName = ${depotName},
+				noSelenium = "true");
+
+			var api = "asset-libraries/${assetLibraryId}/taxonomy-vocabularies";
+		}
+		else {
+			var siteId = JSONGroupAPI._getGroupIdByNameNoSelenium(
+				groupName = ${groupName},
+				site = "true");
+
+			var api = "sites/${siteId}/taxonomy-vocabularies";
+		}
+
+		if (isSet(externalReferenceCode)) {
+			var apiWithErc = "by-external-reference-code/${externalReferenceCode}";
+
+			var api = '''${api}/${apiWithErc}''';
+		}
+
+		if (isSet(filterValue)) {
+			var api = StringUtil.add(${api}, "?filter=${filterValue}", "");
+		}
+
+		if (isSet(parameter)) {
+			var api = StringUtil.add(${api}, "?${parameter}=${parameterValue}", "");
+		}
+
+		var curl = '''
+			${portalURL}/o/headless-admin-taxonomy/v1.0/${api} \
+				-u test@liferay.com:${userPassword} \
+				-H Content-Type: application/json \
+		''';
+
+		return ${curl};
+	}
+
+	@summary = "Default summary"
+	macro createAssetLibraryWithKeyWords(noSelenium = null, depotName = null, exportBatch = null, name = null) {
+		Variables.assertDefined(parameterList = "${depotName},${name}");
+
+		var curl = TaxonomyVocabularyAPI._curlTaxonomyKeywords(
+			depotName = ${depotName},
+			exportBatch = ${exportBatch},
+			noSelenium = ${noSelenium});
+		var body = '''-d {"name": "${name}"}''';
+
+		var curl = StringUtil.add(${curl}, ${body}, " ");
+
+		var response = JSONCurlUtil.post(${curl});
+
+		return ${response};
+	}
+
+	@summary = "Default summary"
+	macro createTaxonomyVocabulary(depotName = null, groupName = null, name = null) {
+		Variables.assertDefined(parameterList = ${name});
+
+		if (!(isSet(externalReferenceCode))) {
+			var externalReferenceCode = "";
+		}
+
+		var curl = TaxonomyVocabularyAPI._curlTaxonomyVocabulary(
+			depotName = ${depotName},
+			groupName = ${groupName});
+		var body = '''-d {
+				"name": "${name}",
+				"externalReferenceCode": "${externalReferenceCode}"
+			}''';
+
+		var curl = StringUtil.add(${curl}, ${body}, " ");
+
+		var response = JSONCurlUtil.post(${curl});
+
+		return ${response};
+	}
+
+	@summary = "Default summary"
+	macro deleteAllKeywords(groupNameList = null, tagNameList = null) {
+		Variables.assertDefined(parameterList = "${groupNameList},${tagNameList}");
+
+		for (var groupName : list ${groupNameList}) {
+			var groupIdList = JSONAssettagSetter.setGroupId(groupName = ${groupName});
+
+			for (var tagName : list ${tagNameList}) {
+				var keywordId = JSONAssettagAPI._getTagId(
+					groupId = ${groupIdList},
+					tagName = ${tagName});
+
+				var curl = TaxonomyVocabularyAPI._curlTaxonomyKeywords(keywordId = ${keywordId});
+
+				JSONCurlUtil.delete(${curl});
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro deleteAllTaxonomyVocabulary(groupName = null, depotName = null) {
+		Variables.assertDefined(parameterList = ${groupName});
+
+		var response = TaxonomyVocabularyAPI.getTaxonomyVocabularyWithDifferentParameters(groupName = ${groupName});
+
+		var taxonomyVocabularyErcList = JSONUtil.getWithJSONPath(${response}, "$..items[*].externalReferenceCode");
+
+		for (var taxonomyVocabularyErc : list ${taxonomyVocabularyErcList}) {
+			var curl = TaxonomyVocabularyAPI._curlTaxonomyVocabulary(
+				depotName = ${depotName},
+				externalReferenceCode = ${taxonomyVocabularyErc},
+				groupName = ${groupName});
+
+			JSONCurlUtil.delete(${curl});
+		}
+	}
+
+	@summary = "Default summary"
+	macro deleteTaxonomyVocabularyByErc(depotName = null, groupName = null, externalReferenceCode = null) {
+		Variables.assertDefined(parameterList = ${externalReferenceCode});
+
+		var curl = TaxonomyVocabularyAPI._curlTaxonomyVocabulary(
+			depotName = ${depotName},
+			externalReferenceCode = ${externalReferenceCode},
+			groupName = ${groupName});
+
+		JSONCurlUtil.delete(${curl});
+	}
+
+	@summary = "Default summary"
+	macro getKeywordsByGroupName(groupName = null) {
+		var curl = TaxonomyVocabularyAPI._curlTaxonomyKeywords(groupName = ${groupName});
+
+		var response = JSONCurlUtil.get(${curl});
+
+		return ${response};
+	}
+
+	@summary = "Default summary"
+	macro getTaxonomyVocabularyWithDifferentParameters(depotName = null, groupName = null, parameter = null, parameterValue = null) {
+		var curl = TaxonomyVocabularyAPI._curlTaxonomyVocabulary(
+			depotName = ${depotName},
+			groupName = ${groupName},
+			parameter = ${parameter},
+			parameterValue = ${parameterValue});
+
+		var response = JSONCurlUtil.get(${curl});
+
+		return ${response};
+	}
+
+}

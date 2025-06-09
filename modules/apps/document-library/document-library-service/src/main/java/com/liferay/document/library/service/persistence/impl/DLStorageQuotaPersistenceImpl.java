@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.service.persistence.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -45,7 +35,6 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -69,7 +58,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {DLStorageQuotaPersistence.class, BasePersistence.class})
+@Component(service = DLStorageQuotaPersistence.class)
 public class DLStorageQuotaPersistenceImpl
 	extends BasePersistenceImpl<DLStorageQuota>
 	implements DLStorageQuotaPersistence {
@@ -92,7 +81,6 @@ public class DLStorageQuotaPersistenceImpl
 	private FinderPath _finderPathWithoutPaginationFindAll;
 	private FinderPath _finderPathCountAll;
 	private FinderPath _finderPathFetchByCompanyId;
-	private FinderPath _finderPathCountByCompanyId;
 
 	/**
 	 * Returns the dl storage quota where companyId = &#63; or throws a <code>NoSuchStorageQuotaException</code> if it could not be found.
@@ -159,7 +147,7 @@ public class DLStorageQuotaPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByCompanyId, finderArgs);
+				_finderPathFetchByCompanyId, finderArgs, this);
 		}
 
 		if (result instanceof DLStorageQuota) {
@@ -245,45 +233,13 @@ public class DLStorageQuotaPersistenceImpl
 	 */
 	@Override
 	public int countByCompanyId(long companyId) {
-		FinderPath finderPath = _finderPathCountByCompanyId;
+		DLStorageQuota dlStorageQuota = fetchByCompanyId(companyId);
 
-		Object[] finderArgs = new Object[] {companyId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_DLSTORAGEQUOTA_WHERE);
-
-			sb.append(_FINDER_COLUMN_COMPANYID_COMPANYID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(companyId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (dlStorageQuota == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_COMPANYID_COMPANYID_2 =
@@ -387,8 +343,6 @@ public class DLStorageQuotaPersistenceImpl
 
 		Object[] args = new Object[] {dlStorageQuotaModelImpl.getCompanyId()};
 
-		finderCache.putResult(
-			_finderPathCountByCompanyId, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByCompanyId, args, dlStorageQuotaModelImpl);
 	}
@@ -688,7 +642,7 @@ public class DLStorageQuotaPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<DLStorageQuota>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -758,7 +712,7 @@ public class DLStorageQuotaPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -829,35 +783,14 @@ public class DLStorageQuotaPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"companyId"},
 			true);
 
-		_finderPathCountByCompanyId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByCompanyId",
-			new String[] {Long.class.getName()}, new String[] {"companyId"},
-			false);
-
-		_setDLStorageQuotaUtilPersistence(this);
+		DLStorageQuotaUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDLStorageQuotaUtilPersistence(null);
+		DLStorageQuotaUtil.setPersistence(null);
 
 		entityCache.removeCache(DLStorageQuotaImpl.class.getName());
-	}
-
-	private void _setDLStorageQuotaUtilPersistence(
-		DLStorageQuotaPersistence dlStorageQuotaPersistence) {
-
-		try {
-			Field field = DLStorageQuotaUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, dlStorageQuotaPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -919,9 +852,5 @@ public class DLStorageQuotaPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DLStorageQuotaModelArgumentsResolver
-		_dlStorageQuotaModelArgumentsResolver;
 
 }

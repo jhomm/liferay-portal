@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.internal.dto.v2_0.util;
@@ -23,42 +14,65 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 /**
  * @author Mateus Santana
  */
-@RunWith(MockitoJUnitRunner.class)
-public class DataRecordCollectionUtilTest extends PowerMockito {
+public class DataRecordCollectionUtilTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
-		_setUpLanguageUtil();
+	@BeforeClass
+	public static void setUpClass() {
+		LanguageUtil languageUtil = new LanguageUtil();
+
+		Language language = Mockito.mock(Language.class);
+
+		Mockito.when(
+			language.isAvailableLocale(LocaleUtil.BRAZIL)
+		).thenReturn(
+			true
+		);
+
+		Mockito.when(
+			language.isAvailableLocale(LocaleUtil.US)
+		).thenReturn(
+			true
+		);
+
+		Mockito.when(
+			language.getLanguageId(LocaleUtil.BRAZIL)
+		).thenReturn(
+			"pt_BR"
+		);
+
+		Mockito.when(
+			language.getLanguageId(LocaleUtil.US)
+		).thenReturn(
+			"en_US"
+		);
+
+		languageUtil.setLanguage(language);
 	}
 
 	@Test
-	public void testToDataRecordCollectionEquals() throws Exception {
-		when(
+	public void testToDataRecordCollectionEquals() {
+		Mockito.when(
 			_ddlRecordSet.getDDMStructureId()
 		).thenReturn(
 			123L
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getDescriptionMap()
 		).thenReturn(
 			HashMapBuilder.put(
@@ -68,13 +82,13 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 			).build()
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getGroupId()
 		).thenReturn(
 			789L
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getNameMap()
 		).thenReturn(
 			HashMapBuilder.put(
@@ -84,13 +98,13 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 			).build()
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getRecordSetId()
 		).thenReturn(
 			456L
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getRecordSetKey()
 		).thenReturn(
 			"RecordSetId"
@@ -99,36 +113,34 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 		Assert.assertEquals(
 			new DataRecordCollection() {
 				{
-					setDataDefinitionId(123L);
-					setDataRecordCollectionKey("RecordSetId");
-					setDescription(
-						HashMapBuilder.<String, Object>put(
-							"en_US", "Description"
-						).put(
-							"pt_BR", "Descrição"
-						).build());
-					setId(456L);
-					setName(
-						HashMapBuilder.<String, Object>put(
-							"en_US", "Name"
-						).put(
-							"pt_BR", "Nome"
-						).build());
-					setSiteId(789L);
+					dataDefinitionId = 123L;
+					dataRecordCollectionKey = "RecordSetId";
+					description = HashMapBuilder.<String, Object>put(
+						"en_US", "Description"
+					).put(
+						"pt_BR", "Descrição"
+					).build();
+					id = 456L;
+					name = HashMapBuilder.<String, Object>put(
+						"en_US", "Name"
+					).put(
+						"pt_BR", "Nome"
+					).build();
+					siteId = 789L;
 				}
 			},
 			DataRecordCollectionUtil.toDataRecordCollection(_ddlRecordSet));
 	}
 
 	@Test
-	public void testToDataRecordCollectionNotEquals() throws Exception {
-		when(
+	public void testToDataRecordCollectionNotEquals() {
+		Mockito.when(
 			_ddlRecordSet.getDDMStructureId()
 		).thenReturn(
 			124L
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getDescriptionMap()
 		).thenReturn(
 			HashMapBuilder.put(
@@ -138,13 +150,13 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 			).build()
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getGroupId()
 		).thenReturn(
 			788L
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getNameMap()
 		).thenReturn(
 			HashMapBuilder.put(
@@ -154,13 +166,13 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 			).build()
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getRecordSetId()
 		).thenReturn(
 			457L
 		);
 
-		when(
+		Mockito.when(
 			_ddlRecordSet.getRecordSetKey()
 		).thenReturn(
 			"RecordSetId1"
@@ -169,22 +181,20 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 		Assert.assertNotEquals(
 			new DataRecordCollection() {
 				{
-					setDataDefinitionId(123L);
-					setDataRecordCollectionKey("RecordSetId");
-					setDescription(
-						HashMapBuilder.<String, Object>put(
-							"en_US", "Description"
-						).put(
-							"pt_BR", "Descrição"
-						).build());
-					setId(456L);
-					setName(
-						HashMapBuilder.<String, Object>put(
-							"en_US", "Name"
-						).put(
-							"pt_BR", "Nome"
-						).build());
-					setSiteId(789L);
+					dataDefinitionId = 123L;
+					dataRecordCollectionKey = "RecordSetId";
+					description = HashMapBuilder.<String, Object>put(
+						"en_US", "Description"
+					).put(
+						"pt_BR", "Descrição"
+					).build();
+					id = 456L;
+					name = HashMapBuilder.<String, Object>put(
+						"en_US", "Name"
+					).put(
+						"pt_BR", "Nome"
+					).build();
+					siteId = 789L;
 				}
 			},
 			DataRecordCollectionUtil.toDataRecordCollection(_ddlRecordSet));
@@ -197,39 +207,6 @@ public class DataRecordCollectionUtilTest extends PowerMockito {
 			DataRecordCollectionUtil.toDataRecordCollection(null));
 	}
 
-	private void _setUpLanguageUtil() {
-		LanguageUtil languageUtil = new LanguageUtil();
-
-		Language language = mock(Language.class);
-
-		when(
-			language.isAvailableLocale(LocaleUtil.BRAZIL)
-		).thenReturn(
-			true
-		);
-
-		when(
-			language.isAvailableLocale(LocaleUtil.US)
-		).thenReturn(
-			true
-		);
-
-		when(
-			language.getLanguageId(LocaleUtil.BRAZIL)
-		).thenReturn(
-			"pt_BR"
-		);
-
-		when(
-			language.getLanguageId(LocaleUtil.US)
-		).thenReturn(
-			"en_US"
-		);
-
-		languageUtil.setLanguage(language);
-	}
-
-	@Mock
-	private DDLRecordSet _ddlRecordSet;
+	private final DDLRecordSet _ddlRecordSet = Mockito.mock(DDLRecordSet.class);
 
 }

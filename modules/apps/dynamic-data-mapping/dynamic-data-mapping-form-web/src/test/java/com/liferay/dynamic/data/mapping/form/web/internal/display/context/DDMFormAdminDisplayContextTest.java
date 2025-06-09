@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
@@ -17,14 +8,13 @@ package com.liferay.dynamic.data.mapping.form.web.internal.display.context;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormBuilderContextFactory;
 import com.liferay.dynamic.data.mapping.form.builder.internal.context.DDMFormContextToDDMFormValues;
 import com.liferay.dynamic.data.mapping.form.builder.settings.DDMFormBuilderSettingsRetriever;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormTemplateContextFactory;
 import com.liferay.dynamic.data.mapping.form.values.factory.DDMFormValuesFactory;
 import com.liferay.dynamic.data.mapping.form.web.internal.configuration.DDMFormWebConfiguration;
-import com.liferay.dynamic.data.mapping.form.web.internal.instance.lifecycle.AddDefaultSharedFormLayoutPortalInstanceLifecycleListener;
 import com.liferay.dynamic.data.mapping.io.DDMFormFieldTypesSerializer;
-import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterTracker;
+import com.liferay.dynamic.data.mapping.io.exporter.DDMFormInstanceRecordWriterRegistry;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceSettings;
 import com.liferay.dynamic.data.mapping.model.UnlocalizedValue;
@@ -35,7 +25,7 @@ import com.liferay.dynamic.data.mapping.service.DDMFormInstanceVersionLocalServi
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterTracker;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterRegistry;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormTestUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
 import com.liferay.dynamic.data.mapping.util.DDMFormValuesMerger;
@@ -43,12 +33,12 @@ import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONFactoryImpl;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
@@ -59,58 +49,56 @@ import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.util.PropsImpl;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Adam Brandizzi
  */
-@PrepareForTest(
-	{LocaleUtil.class, ResourceBundleUtil.class, ResourceBundleLoaderUtil.class}
-)
-@RunWith(PowerMockRunner.class)
-public class DDMFormAdminDisplayContextTest extends PowerMockito {
+public class DDMFormAdminDisplayContextTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@BeforeClass
-	public static void setUpClass() throws Exception {
+	public static void setUpClass() {
 		PropsUtil.setProps(new PropsImpl());
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		setUpPortalUtil();
+		_setUpPortalUtil();
 
-		setUpLanguageUtil();
-		setUpResourceBundleUtil();
-		setUpResourceBundleLoaderUtil();
+		_setUpLanguageUtil();
+		_setUpResourceBundleLoaderUtil();
 
-		setUpDDMFormDisplayContext();
+		_setUpDDMFormDisplayContext();
 	}
 
 	@Test
 	public void testGetDDMFormRenderingContextDDMFormValues() throws Exception {
 		LocaleThreadLocal.setSiteDefaultLocale(LocaleUtil.US);
 
-		setRenderRequestParamenter(
+		_setRenderRequestParamenter(
 			"serializedSettingsContext",
 			_read("ddm-form-settings-values.json"));
 
@@ -133,30 +121,57 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		Assert.assertEquals(
 			getSharedFormURL() + _SHARED_FORM_INSTANCE_ID,
 			_ddmFormAdminDisplayContext.getPublishedFormURL(
-				mockDDMFormInstance(_SHARED_FORM_INSTANCE_ID, true, true)));
+				_mockDDMFormInstance(_SHARED_FORM_INSTANCE_ID, true, true)));
 		Assert.assertEquals(
 			getSharedFormURL() + _SHARED_FORM_INSTANCE_ID,
 			_ddmFormAdminDisplayContext.getPublishedFormURL(
-				mockDDMFormInstance(_SHARED_FORM_INSTANCE_ID, true, false)));
+				_mockDDMFormInstance(_SHARED_FORM_INSTANCE_ID, true, false)));
 		Assert.assertEquals(
 			StringPool.BLANK,
 			_ddmFormAdminDisplayContext.getPublishedFormURL(
-				mockDDMFormInstance(_SHARED_FORM_INSTANCE_ID, false, false)));
+				_mockDDMFormInstance(_SHARED_FORM_INSTANCE_ID, false, false)));
 	}
 
 	@Test
-	public void testGetSharedFormURL() throws Exception {
+	public void testGetSharedFormURL() {
 		Assert.assertEquals(
 			getSharedFormURL(), _ddmFormAdminDisplayContext.getSharedFormURL());
 	}
 
 	@Test
-	public void testGetSharedFormURLForSharedFormInstance() throws Exception {
-		setRenderRequestParamenter(
+	public void testGetSharedFormURLForSharedFormInstance() {
+		_setRenderRequestParamenter(
 			"formInstanceId", String.valueOf(_SHARED_FORM_INSTANCE_ID));
 
 		Assert.assertEquals(
 			getSharedFormURL(), _ddmFormAdminDisplayContext.getSharedFormURL());
+	}
+
+	@Test
+	public void testIsShowPartialResultsToRespondents() throws Exception {
+		Assert.assertFalse(
+			_ddmFormAdminDisplayContext.isShowPartialResultsToRespondents(
+				null));
+
+		DDMFormInstanceSettings ddmFormInstanceSettings = Mockito.mock(
+			DDMFormInstanceSettings.class);
+
+		DDMFormInstance ddmFormInstance = _mockDDMFormInstance(
+			ddmFormInstanceSettings);
+
+		Assert.assertFalse(
+			_ddmFormAdminDisplayContext.isShowPartialResultsToRespondents(
+				ddmFormInstance));
+
+		Mockito.when(
+			ddmFormInstanceSettings.showPartialResultsToRespondents()
+		).thenReturn(
+			true
+		);
+
+		Assert.assertTrue(
+			_ddmFormAdminDisplayContext.isShowPartialResultsToRespondents(
+				ddmFormInstance));
 	}
 
 	protected String getSharedFormURL() {
@@ -165,22 +180,48 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 			_PUBLIC_PAGE_FRIENDLY_URL_PATH, _FORM_APPLICATION_PATH);
 	}
 
-	protected DDMFormInstance mockDDMFormInstance(
+	private DDMFormContextToDDMFormValues _getDDMFormContextToDDMFormValues() {
+		DDMFormContextToDDMFormValues ddmFormContextToDDMFormValues =
+			new DDMFormContextToDDMFormValues();
+
+		ReflectionTestUtil.setFieldValue(
+			ddmFormContextToDDMFormValues, "jsonFactory",
+			new JSONFactoryImpl());
+
+		return ddmFormContextToDDMFormValues;
+	}
+
+	private DDMFormInstance _mockDDMFormInstance(
+			DDMFormInstanceSettings ddmFormInstanceSettings)
+		throws Exception {
+
+		DDMFormInstance ddmFormInstance = Mockito.mock(DDMFormInstance.class);
+
+		Mockito.when(
+			ddmFormInstance.getSettingsModel()
+		).thenReturn(
+			ddmFormInstanceSettings
+		);
+
+		return ddmFormInstance;
+	}
+
+	private DDMFormInstance _mockDDMFormInstance(
 			long formInstanceId, boolean requireAuthentication)
-		throws PortalException {
+		throws Exception {
 
-		DDMFormInstance formInstance = mock(DDMFormInstance.class);
+		DDMFormInstance formInstance = Mockito.mock(DDMFormInstance.class);
 
-		when(
+		Mockito.when(
 			formInstance.getFormInstanceId()
 		).thenReturn(
 			formInstanceId
 		);
 
-		DDMFormInstanceSettings settings = mockDDMFormInstanceSettings(
+		DDMFormInstanceSettings settings = _mockDDMFormInstanceSettings(
 			requireAuthentication);
 
-		when(
+		Mockito.when(
 			formInstance.getSettingsModel()
 		).thenReturn(
 			settings
@@ -189,18 +230,18 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		return formInstance;
 	}
 
-	protected DDMFormInstance mockDDMFormInstance(
+	private DDMFormInstance _mockDDMFormInstance(
 			long formInstanceId, boolean published,
 			boolean requireAuthentication)
-		throws PortalException {
+		throws Exception {
 
-		DDMFormInstance ddmFormInstance = mockDDMFormInstance(
+		DDMFormInstance ddmFormInstance = _mockDDMFormInstance(
 			formInstanceId, requireAuthentication);
 
 		DDMFormInstanceSettings ddmFormInstanceSettings =
 			ddmFormInstance.getSettingsModel();
 
-		when(
+		Mockito.when(
 			ddmFormInstanceSettings.published()
 		).thenReturn(
 			published
@@ -209,18 +250,18 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		return ddmFormInstance;
 	}
 
-	protected DDMFormInstanceService mockDDMFormInstanceService()
-		throws PortalException {
+	private DDMFormInstanceService _mockDDMFormInstanceService()
+		throws Exception {
 
-		DDMFormInstanceService ddmFormInstanceService = mock(
+		DDMFormInstanceService ddmFormInstanceService = Mockito.mock(
 			DDMFormInstanceService.class);
 
-		DDMFormInstance sharedDDMFormInstance = mockDDMFormInstance(
+		DDMFormInstance sharedDDMFormInstance = _mockDDMFormInstance(
 			_SHARED_FORM_INSTANCE_ID, false);
 
-		when(
+		Mockito.when(
 			ddmFormInstanceService.fetchFormInstance(
-				Matchers.eq(_SHARED_FORM_INSTANCE_ID))
+				Mockito.eq(_SHARED_FORM_INSTANCE_ID))
 		).thenReturn(
 			sharedDDMFormInstance
 		);
@@ -228,12 +269,13 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		return ddmFormInstanceService;
 	}
 
-	protected DDMFormInstanceSettings mockDDMFormInstanceSettings(
+	private DDMFormInstanceSettings _mockDDMFormInstanceSettings(
 		boolean requireAuthentication) {
 
-		DDMFormInstanceSettings settings = mock(DDMFormInstanceSettings.class);
+		DDMFormInstanceSettings settings = Mockito.mock(
+			DDMFormInstanceSettings.class);
 
-		when(
+		Mockito.when(
 			settings.requireAuthentication()
 		).thenReturn(
 			requireAuthentication
@@ -242,12 +284,13 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		return settings;
 	}
 
-	protected HttpServletRequest mockHttpServletRequest() {
-		ThemeDisplay themeDisplay = mockThemeDisplay();
+	private HttpServletRequest _mockHttpServletRequest() {
+		ThemeDisplay themeDisplay = _mockThemeDisplay();
 
-		HttpServletRequest httpServletRequest = mock(HttpServletRequest.class);
+		HttpServletRequest httpServletRequest = Mockito.mock(
+			HttpServletRequest.class);
 
-		when(
+		Mockito.when(
 			httpServletRequest.getAttribute(WebKeys.THEME_DISPLAY)
 		).thenReturn(
 			themeDisplay
@@ -256,16 +299,16 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		return httpServletRequest;
 	}
 
-	protected ThemeDisplay mockThemeDisplay() {
-		ThemeDisplay themeDisplay = mock(ThemeDisplay.class);
+	private ThemeDisplay _mockThemeDisplay() {
+		ThemeDisplay themeDisplay = Mockito.mock(ThemeDisplay.class);
 
-		when(
+		Mockito.when(
 			themeDisplay.getPathFriendlyURLPublic()
 		).thenReturn(
 			_PUBLIC_FRIENDLY_URL_PATH
 		);
 
-		when(
+		Mockito.when(
 			themeDisplay.getPortalURL()
 		).thenReturn(
 			_PORTAL_URL
@@ -274,56 +317,63 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		return themeDisplay;
 	}
 
-	protected void setRenderRequestParamenter(String parameter, String value) {
-		when(
-			_renderRequest.getParameter(Matchers.eq(parameter))
+	private String _read(String fileName) throws Exception {
+		Class<?> clazz = getClass();
+
+		return StringUtil.read(
+			clazz.getResourceAsStream("dependencies/" + fileName));
+	}
+
+	private void _setRenderRequestParamenter(String parameter, String value) {
+		Mockito.when(
+			_renderRequest.getParameter(Mockito.eq(parameter))
 		).thenReturn(
 			value
 		);
 	}
 
-	protected void setUpDDMFormDisplayContext() throws Exception {
-		_renderRequest = mock(RenderRequest.class);
+	private void _setUpDDMFormDisplayContext() throws Exception {
+		_renderRequest = Mockito.mock(RenderRequest.class);
 
 		_ddmFormAdminDisplayContext = new DDMFormAdminDisplayContext(
-			_renderRequest, mock(RenderResponse.class),
-			new AddDefaultSharedFormLayoutPortalInstanceLifecycleListener(),
-			mock(DDMFormBuilderContextFactory.class),
-			mock(DDMFormBuilderSettingsRetriever.class),
+			_renderRequest, Mockito.mock(RenderResponse.class),
+			Mockito.mock(DDMFormBuilderContextFactory.class),
+			Mockito.mock(DDMFormBuilderSettingsRetriever.class),
 			_getDDMFormContextToDDMFormValues(),
-			mock(DDMFormFieldTypeServicesTracker.class),
-			mock(DDMFormFieldTypesSerializer.class),
-			mock(DDMFormInstanceLocalService.class),
-			mock(DDMFormInstanceRecordLocalService.class),
-			mock(DDMFormInstanceRecordWriterTracker.class),
-			mockDDMFormInstanceService(),
-			mock(DDMFormInstanceVersionLocalService.class),
-			mock(DDMFormRenderer.class),
-			mock(DDMFormTemplateContextFactory.class),
-			mock(DDMFormValuesFactory.class), mock(DDMFormValuesMerger.class),
-			mock(DDMFormWebConfiguration.class),
-			mock(DDMStorageAdapterTracker.class),
-			mock(DDMStructureLocalService.class),
-			mock(DDMStructureService.class), Boolean.FALSE,
-			mock(JSONFactory.class), mock(NPMResolver.class), null,
-			mock(Portal.class));
+			Mockito.mock(DDMFormFieldTypeServicesRegistry.class),
+			Mockito.mock(DDMFormFieldTypesSerializer.class),
+			Mockito.mock(DDMFormInstanceLocalService.class),
+			Mockito.mock(DDMFormInstanceRecordLocalService.class),
+			Mockito.mock(DDMFormInstanceRecordWriterRegistry.class),
+			_mockDDMFormInstanceService(),
+			Mockito.mock(DDMFormInstanceVersionLocalService.class),
+			Mockito.mock(DDMFormRenderer.class),
+			Mockito.mock(DDMFormTemplateContextFactory.class),
+			Mockito.mock(DDMFormValuesFactory.class),
+			Mockito.mock(DDMFormValuesMerger.class),
+			Mockito.mock(DDMFormWebConfiguration.class),
+			Mockito.mock(DDMStorageAdapterRegistry.class),
+			Mockito.mock(DDMStructureLocalService.class),
+			Mockito.mock(DDMStructureService.class),
+			Mockito.mock(JSONFactory.class), Mockito.mock(NPMResolver.class),
+			null, Mockito.mock(Portal.class));
 	}
 
-	protected void setUpLanguageUtil() {
+	private void _setUpLanguageUtil() {
 		LanguageUtil languageUtil = new LanguageUtil();
 
-		languageUtil.setLanguage(mock(Language.class));
+		languageUtil.setLanguage(Mockito.mock(Language.class));
 	}
 
-	protected void setUpPortalUtil() {
+	private void _setUpPortalUtil() {
 		PortalUtil portalUtil = new PortalUtil();
 
-		Portal portal = mock(Portal.class);
+		Portal portal = Mockito.mock(Portal.class);
 
-		HttpServletRequest httpServletRequest = mockHttpServletRequest();
+		HttpServletRequest httpServletRequest = _mockHttpServletRequest();
 
-		when(
-			portal.getHttpServletRequest(Matchers.any(PortletRequest.class))
+		Mockito.when(
+			portal.getHttpServletRequest(Mockito.any(PortletRequest.class))
 		).thenReturn(
 			httpServletRequest
 		);
@@ -331,52 +381,18 @@ public class DDMFormAdminDisplayContextTest extends PowerMockito {
 		portalUtil.setPortal(portal);
 	}
 
-	protected void setUpResourceBundleLoaderUtil() {
-		ResourceBundleLoader resourceBundleLoader = mock(
+	private void _setUpResourceBundleLoaderUtil() {
+		ResourceBundleLoader resourceBundleLoader = Mockito.mock(
 			ResourceBundleLoader.class);
 
 		ResourceBundleLoaderUtil.setPortalResourceBundleLoader(
 			resourceBundleLoader);
 
-		when(
-			resourceBundleLoader.loadResourceBundle(Matchers.any(Locale.class))
+		Mockito.when(
+			resourceBundleLoader.loadResourceBundle(Mockito.any(Locale.class))
 		).thenReturn(
 			ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE
 		);
-	}
-
-	protected void setUpResourceBundleUtil() {
-		mockStatic(ResourceBundleUtil.class);
-
-		when(
-			ResourceBundleUtil.getBundle(
-				Matchers.anyString(), Matchers.any(Locale.class),
-				Matchers.any(ClassLoader.class))
-		).thenReturn(
-			ResourceBundleUtil.EMPTY_RESOURCE_BUNDLE
-		);
-	}
-
-	private DDMFormContextToDDMFormValues _getDDMFormContextToDDMFormValues()
-		throws Exception {
-
-		DDMFormContextToDDMFormValues ddmFormContextToDDMFormValues =
-			new DDMFormContextToDDMFormValues();
-
-		field(
-			DDMFormContextToDDMFormValues.class, "jsonFactory"
-		).set(
-			ddmFormContextToDDMFormValues, new JSONFactoryImpl()
-		);
-
-		return ddmFormContextToDDMFormValues;
-	}
-
-	private String _read(String fileName) throws Exception {
-		Class<?> clazz = getClass();
-
-		return StringUtil.read(
-			clazz.getResourceAsStream("dependencies/" + fileName));
 	}
 
 	private static final String _FORM_APPLICATION_PATH =

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -257,7 +248,7 @@ public class PortletPreferencesLocalServiceUtil {
 			ownerId, ownerType, plid, portletId);
 	}
 
-	public static javax.portlet.PortletPreferences fetchPreferences(
+	public static jakarta.portlet.PortletPreferences fetchPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -265,7 +256,7 @@ public class PortletPreferencesLocalServiceUtil {
 			companyId, ownerId, ownerType, plid, portletId);
 	}
 
-	public static javax.portlet.PortletPreferences fetchPreferences(
+	public static jakarta.portlet.PortletPreferences fetchPreferences(
 		com.liferay.portal.kernel.model.PortletPreferencesIds
 			portletPreferencesIds) {
 
@@ -278,7 +269,7 @@ public class PortletPreferencesLocalServiceUtil {
 		return getService().getActionableDynamicQuery();
 	}
 
-	public static javax.portlet.PortletPreferences getDefaultPreferences(
+	public static jakarta.portlet.PortletPreferences getDefaultPreferences(
 		long companyId, String portletId) {
 
 		return getService().getDefaultPreferences(companyId, portletId);
@@ -394,6 +385,12 @@ public class PortletPreferencesLocalServiceUtil {
 		return getService().getPortletPreferencesByPlid(plid);
 	}
 
+	public static List<PortletPreferences> getPortletPreferencesByPortletId(
+		String portletId) {
+
+		return getService().getPortletPreferencesByPortletId(portletId);
+	}
+
 	public static long getPortletPreferencesCount(
 		int ownerType, long plid, String portletId) {
 
@@ -424,6 +421,13 @@ public class PortletPreferencesLocalServiceUtil {
 			ownerId, ownerType, portletId, excludeDefaultPreferences);
 	}
 
+	public static int getPortletPreferencesCount(
+		long companyId, long ownerId, int ownerType, String portletId) {
+
+		return getService().getPortletPreferencesCount(
+			companyId, ownerId, ownerType, portletId);
+	}
+
 	/**
 	 * Returns a range of all the portlet preferenceses.
 	 *
@@ -450,7 +454,7 @@ public class PortletPreferencesLocalServiceUtil {
 		return getService().getPortletPreferencesesCount();
 	}
 
-	public static javax.portlet.PortletPreferences getPreferences(
+	public static jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -458,7 +462,7 @@ public class PortletPreferencesLocalServiceUtil {
 			companyId, ownerId, ownerType, plid, portletId);
 	}
 
-	public static javax.portlet.PortletPreferences getPreferences(
+	public static jakarta.portlet.PortletPreferences getPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId, String defaultPreferences) {
 
@@ -466,14 +470,14 @@ public class PortletPreferencesLocalServiceUtil {
 			companyId, ownerId, ownerType, plid, portletId, defaultPreferences);
 	}
 
-	public static javax.portlet.PortletPreferences getPreferences(
+	public static jakarta.portlet.PortletPreferences getPreferences(
 		com.liferay.portal.kernel.model.PortletPreferencesIds
 			portletPreferencesIds) {
 
 		return getService().getPreferences(portletPreferencesIds);
 	}
 
-	public static Map<String, javax.portlet.PortletPreferences>
+	public static Map<String, jakarta.portlet.PortletPreferences>
 		getStrictPreferences(
 			com.liferay.portal.kernel.model.Layout layout,
 			List<com.liferay.portal.kernel.model.Portlet> portlets) {
@@ -481,7 +485,7 @@ public class PortletPreferencesLocalServiceUtil {
 		return getService().getStrictPreferences(layout, portlets);
 	}
 
-	public static javax.portlet.PortletPreferences getStrictPreferences(
+	public static jakarta.portlet.PortletPreferences getStrictPreferences(
 		long companyId, long ownerId, int ownerType, long plid,
 		String portletId) {
 
@@ -489,7 +493,7 @@ public class PortletPreferencesLocalServiceUtil {
 			companyId, ownerId, ownerType, plid, portletId);
 	}
 
-	public static javax.portlet.PortletPreferences getStrictPreferences(
+	public static jakarta.portlet.PortletPreferences getStrictPreferences(
 		com.liferay.portal.kernel.model.PortletPreferencesIds
 			portletPreferencesIds) {
 
@@ -514,7 +518,7 @@ public class PortletPreferencesLocalServiceUtil {
 
 	public static PortletPreferences updatePreferences(
 		long ownerId, int ownerType, long plid, String portletId,
-		javax.portlet.PortletPreferences portletPreferences) {
+		jakarta.portlet.PortletPreferences portletPreferences) {
 
 		return getService().updatePreferences(
 			ownerId, ownerType, plid, portletId, portletPreferences);
@@ -529,6 +533,10 @@ public class PortletPreferencesLocalServiceUtil {
 
 	public static PortletPreferencesLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(PortletPreferencesLocalService service) {
+		_service = service;
 	}
 
 	private static volatile PortletPreferencesLocalService _service;

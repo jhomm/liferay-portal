@@ -1,9 +1,10 @@
-@component-name = "portal-wcm"
+@component-name = "portal-headless"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.main.component.name = "Site Administration";
+	property testray.main.component.name = "Export/Import";
 
 	setUp {
 		task ("Set up instance and sign in") {
@@ -14,16 +15,13 @@ definition {
 
 		task ("Add two sites via JSON") {
 			for (var n : list "1,2") {
-				JSONGroup.addGroup(groupName = "Test Site Name ${n}");
+				HeadlessSite.addSite(siteName = "Test Site Name ${n}");
 			}
 		}
 
 		task ("Activate local live staging for two sites") {
 			for (var n : list "1,2") {
-				JSONStaging.enableLocalStaging(
-					branchingPrivate = "false",
-					branchingPublic = "false",
-					groupName = "Test Site Name ${n}");
+				JSONStaging.enableLocalStaging(groupName = "Test Site Name ${n}");
 			}
 		}
 
@@ -34,9 +32,15 @@ definition {
 		}
 
 		task ("Add a page template collection and content page template to the first site") {
-			PageTemplatesAdmin.openPageTemplatesAdmin(siteURLKey = "test-site-name-1-staging");
+			var groupId = JSONGroupSetter.setGroupId(
+				groupName = "Test Site Name 1 (Staging)",
+				site = "false");
 
-			PageTemplatesAdmin.addCollection(collectionName = "Page Template Collection");
+			JSONLayoutpagetemplate.addLayoutPageTemplateCollection(
+				groupId = ${groupId},
+				layoutPageTemplateCollectionName = "Page Template Collection");
+
+			PageTemplatesAdmin.openPageTemplatesAdmin(siteURLKey = "test-site-name-1-staging");
 
 			Navigator.gotoNavNested(navNested = "Page Template Collection");
 
@@ -46,11 +50,11 @@ definition {
 				collectionName = "Collection Name",
 				fragmentName = "Button");
 
-			Button.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Add a content page from the page template to the first site") {
-			SitePages.openPagesAdmin(siteURLKey = "test-site-name-1-staging");
+			PagesAdmin.openPagesAdmin(siteURLKey = "test-site-name-1-staging");
 
 			ContentPages.addPage(
 				collectionName = "Page Template Collection",
@@ -59,13 +63,18 @@ definition {
 		}
 
 		task ("Publish the content page") {
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Add a content page with a Title fragment to the first site") {
-			SitePages.openPagesAdmin(siteURLKey = "test-site-name-1-staging");
+			JSONLayout.addPublicLayout(
+				groupId = ${groupId},
+				layoutName = "Test Regular Content Page",
+				type = "content");
 
-			ContentPages.addPage(pageName = "Test Regular Content Page");
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Regular Content Page",
+				siteName = "Test Site Name 1 Staging");
 
 			PageEditor.addFragment(
 				collectionName = "Collection Name",
@@ -73,26 +82,39 @@ definition {
 		}
 
 		task ("Publish the content page") {
-			PageEditor.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Add a navigation menu to the first site") {
-			NavigationMenusAdmin.openNavigationMenusAdmin(siteURLKey = "test-site-name-1-staging");
-
-			NavigationMenusAdmin.addMenu(menuName = "Test Navigation Menu Name");
+			JSONSitenavigation.addSiteNavigationMenu(
+				groupId = ${groupId},
+				siteNavigationMenuName = "Test Navigation Menu Name");
 		}
 
 		task ("Add both content pages to the navigation menu") {
-			NavigationMenusAdmin.addItem(
-				item = "Page",
-				pageNames = "Test Template Content Page,Test Regular Content Page");
+			JSONSitenavigation.addSiteNavigationMenuItem(
+				groupId = ${groupId},
+				privateLayout = "false",
+				siteNavigationMenuItemName = "Test Template Content Page",
+				siteNavigationMenuName = "Test Navigation Menu Name",
+				type = "layout");
+
+			JSONSitenavigation.addSiteNavigationMenuItem(
+				groupId = ${groupId},
+				privateLayout = "false",
+				siteNavigationMenuItemName = "Test Regular Content Page",
+				siteNavigationMenuName = "Test Navigation Menu Name",
+				type = "layout");
 		}
 
 		task ("Add a URL item to the navigation menu") {
-			NavigationMenusAdmin.addItem(
-				item = "URL",
+			JSONSitenavigation.addSiteNavigationMenuItem(
+				groupId = ${groupId},
+				siteNavigationMenuItemName = "Liferay",
+				siteNavigationMenuName = "Test Navigation Menu Name",
+				type = "url",
 				url = "https://www.liferay.com/",
-				urlName = "Liferay");
+				useNewTab = "false");
 		}
 
 		task ("Navigate to the Navigation Menu widget for the first site") {
@@ -108,15 +130,18 @@ definition {
 		}
 
 		task ("Add a display page to the first site") {
-			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name-1-staging");
-
-			DisplayPageTemplatesAdmin.addDisplayPage(
+			JSONLayoutpagetemplate.addDisplayPageTemplateEntry(
 				contentType = "Web Content Article",
-				displayPageName = "Display Page Name",
+				displayPageTemplateEntryName = "Display Page Name",
+				groupId = ${groupId},
 				subType = "Basic Web Content");
 		}
 
 		task ("Add a Title Fragment to the display page") {
+			DisplayPageTemplatesAdmin.openDisplayPagesAdmin(siteURLKey = "test-site-name-1-staging");
+
+			DisplayPageTemplatesAdmin.gotoDisplayPage(displayPageName = "Display Page Name");
+
 			PageEditor.addFragment(
 				collectionName = "Collection Name",
 				fragmentName = "Title");
@@ -146,7 +171,7 @@ definition {
 		}
 
 		task ("Publish the display page") {
-			Button.clickPublish();
+			PageEditor.publish();
 		}
 
 		task ("Add a web content article that uses the display page to the first site") {
@@ -162,7 +187,7 @@ definition {
 				pageName = "Display Page Name",
 				pageType = "Display Page Templates");
 
-			PortletEntry.publish();
+			WebContent.publishWithPermissions();
 		}
 
 		task ("Publish the first site to live") {
@@ -172,24 +197,11 @@ definition {
 		}
 	}
 
-	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
-
-		if ("${testPortalInstance}" == "true") {
-			PortalInstances.tearDownCP();
-		}
-		else {
-			JSONGroup.deleteGroupByName(groupName = "Test Site Name 1");
-
-			JSONGroup.deleteGroupByName(groupName = "Test Site Name 2");
-		}
-	}
-
 	@description = "Export a live site into a different staging site. This test is focused on modern site building features. The high level steps of this test are outlined in LRQA-44517."
-	@priority = "5"
+	@priority = 5
 	test ImportLiveSiteToStagingSite {
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "SitesExportImportWithStaging#ImportLiveSiteToStagingSite";
+		property timeout.explicit.wait = "30";
 
 		task ("Export the first site") {
 			LAR.openExportAdmin(siteScopeName = "test-site-name-1");
@@ -202,6 +214,13 @@ definition {
 		}
 
 		task ("Import the first site's lar into the staging site for the second site") {
+			for (var layoutUtilityPageName : list "404 Error,500 Error") {
+				JSONLayoututilitypage.deleteLayoutUtilityPage(
+					groupName = "Test Site Name 2 (Staging)",
+					layoutUtilityPageName = ${layoutUtilityPageName},
+					site = "false");
+			}
+
 			LAR.openImportAdmin(siteName = "test-site-name-2-staging");
 
 			LexiconEntry.gotoAdd();
@@ -212,23 +231,23 @@ definition {
 		task ("Assert the fragments from the first site survived the import") {
 			FragmentsAdminNavigator.openFragmentsAdmin(siteURLKey = "test-site-name-2-staging");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Content");
+			LexiconCard.viewCardPresent(card = "Content");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Image");
+			LexiconCard.viewCardPresent(card = "Image");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Button");
+			LexiconCard.viewCardPresent(card = "Button");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Multiple Editables");
+			LexiconCard.viewCardPresent(card = "Multiple Editables");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Static Text");
+			LexiconCard.viewCardPresent(card = "Static Text");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Image 2");
+			LexiconCard.viewCardPresent(card = "Image 2");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Rich Text");
+			LexiconCard.viewCardPresent(card = "Rich Text");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Title 2");
+			LexiconCard.viewCardPresent(card = "Title 2");
 
-			FragmentsAdmin.viewEntryPresent(entry = "Title");
+			LexiconCard.viewCardPresent(card = "Title");
 
 			FragmentsAdminNavigator.gotoEntryEllipsisItem(
 				entry = "Button",
@@ -248,14 +267,14 @@ definition {
 
 			PageTemplatesAdmin.gotoPageTemplate(pageTemplateName = "Page Template Name");
 
-			var n = "1";
+			var n = 1;
 
 			for (var text : list "Submit,Cancel") {
 				PageEditor.viewFragmentEditableText(
 					contributed = "false",
-					editableText = "${text}",
+					editableText = ${text},
 					fragmentName = "Button",
-					position = "${n}");
+					position = ${n});
 
 				var n = ${n} + 1;
 			}
@@ -268,14 +287,14 @@ definition {
 				key_pageName = "Test Template Content Page",
 				locator1 = "Home#PAGE");
 
-			var n = "1";
+			var n = 1;
 
 			for (var text : list "Submit,Cancel") {
 				ContentPages.viewFragmentText(
 					contributed = "false",
 					fragmentName = "button",
-					position = "${n}",
-					text = "${text}");
+					position = ${n},
+					text = ${text});
 
 				var n = ${n} + 1;
 			}

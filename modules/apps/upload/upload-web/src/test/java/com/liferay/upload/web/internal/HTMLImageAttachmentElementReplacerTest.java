@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.upload.web.internal;
@@ -18,6 +9,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepository;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileEntryWrapper;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -31,12 +23,10 @@ import org.junit.Test;
 
 import org.mockito.Mockito;
 
-import org.powermock.api.mockito.PowerMockito;
-
 /**
  * @author Alejandro Tardín
  */
-public class HTMLImageAttachmentElementReplacerTest extends PowerMockito {
+public class HTMLImageAttachmentElementReplacerTest {
 
 	@ClassRule
 	@Rule
@@ -54,11 +44,11 @@ public class HTMLImageAttachmentElementReplacerTest extends PowerMockito {
 
 		};
 
-		_portletFileRepository = mock(PortletFileRepository.class);
+		_portletFileRepository = Mockito.mock(PortletFileRepository.class);
 
-		when(
+		Mockito.when(
 			_portletFileRepository.getPortletFileEntryURL(
-				Mockito.isNull(ThemeDisplay.class), Mockito.eq(_fileEntry),
+				Mockito.nullable(ThemeDisplay.class), Mockito.eq(_fileEntry),
 				Mockito.eq(StringPool.BLANK))
 		).thenReturn(
 			_FILE_ENTRY_IMAGE_URL
@@ -67,7 +57,8 @@ public class HTMLImageAttachmentElementReplacerTest extends PowerMockito {
 		_htmlImageAttachmentElementReplacer =
 			new HTMLImageAttachmentElementReplacer();
 
-		_htmlImageAttachmentElementReplacer.setPortletFileRepository(
+		ReflectionTestUtil.setFieldValue(
+			_htmlImageAttachmentElementReplacer, "_portletFileRepository",
 			_portletFileRepository);
 	}
 

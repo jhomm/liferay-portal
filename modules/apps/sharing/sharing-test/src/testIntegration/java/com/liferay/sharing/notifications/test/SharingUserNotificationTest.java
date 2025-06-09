@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.notifications.test;
@@ -20,7 +11,6 @@ import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.UserNotificationEventLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -119,7 +109,7 @@ public class SharingUserNotificationTest extends BaseUserNotificationTestCase {
 	}
 
 	@Override
-	protected void subscribeToContainer() {
+	protected void subscribeToContainer() throws Exception {
 		MailServiceTestUtil.clearMessages();
 
 		_userNotificationEventLocalService.deleteUserNotificationEvents(
@@ -132,14 +122,11 @@ public class SharingUserNotificationTest extends BaseUserNotificationTestCase {
 
 		SharingEntry sharingEntry = (SharingEntry)baseModel;
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), TestPropsValues.getUserId());
-
 		return _sharingEntryLocalService.updateSharingEntry(
 			user.getUserId(), sharingEntry.getSharingEntryId(),
 			Arrays.asList(SharingEntryAction.VIEW), false, null,
-			serviceContext);
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	private String _getExpectedNotificationMessage(User fromUser) {
@@ -151,18 +138,15 @@ public class SharingUserNotificationTest extends BaseUserNotificationTestCase {
 	private SharingEntry _share(BaseModel<?> model, User fromUser, User toUser)
 		throws Exception {
 
-		long classNameId = _classNameLocalService.getClassNameId(
-			model.getModelClassName());
 		long classPK = (Long)model.getPrimaryKeyObj();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				group.getGroupId(), fromUser.getUserId());
-
 		return _sharingEntryLocalService.addOrUpdateSharingEntry(
-			fromUser.getUserId(), toUser.getUserId(), classNameId, classPK,
-			group.getGroupId(), true, Arrays.asList(SharingEntryAction.VIEW),
-			null, serviceContext);
+			null, fromUser.getUserId(), 0, toUser.getUserId(),
+			_classNameLocalService.getClassNameId(model.getModelClassName()),
+			classPK, group.getGroupId(), true,
+			Arrays.asList(SharingEntryAction.VIEW), null,
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), fromUser.getUserId()));
 	}
 
 	@Inject

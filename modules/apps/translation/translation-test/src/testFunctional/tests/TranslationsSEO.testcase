@@ -1,6 +1,7 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Translations Management";
@@ -10,13 +11,13 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,9 +28,10 @@ definition {
 	}
 
 	@description = "This ensures that all languages hreflang tag will be displayed after disabling OTH from SEO settings."
-	@priority = "4"
+	@priority = 4
 	test CanViewAllHreflangTagsAfterDisabling {
-		property test.name.skip.portal.instance = "TranslationsSEO#CanViewAllHreflangTagsAfterDisabling";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
 
@@ -45,9 +47,9 @@ definition {
 			portlet = "General",
 			siteURLKey = "test-site-name");
 
-		Page.addPageTranslations(
-			pageTranslation = "es_ES",
-			pageTranslationName = "Página de traducción");
+		PagesAdmin.addLocalizedName(
+			localeList = "es-ES",
+			localizedNameList = "Página de traducción");
 
 		TranslationsSEO.disableOnlyTranslatedHreflangs(configurationScope = "System Settings");
 
@@ -59,8 +61,10 @@ definition {
 	}
 
 	@description = "This ensures that all languages hreflang tag of an untranslated page can be viewed when the OTH is disabled."
-	@priority = "4"
+	@priority = 4
 	test CanViewPageDefaultHreflangTags {
+		property portal.release = "quarantine";
+
 		var portalURL = PropsUtil.get("portal.url");
 
 		JSONLayout.addPublicLayout(
@@ -71,6 +75,10 @@ definition {
 			groupName = "Test Site Name",
 			layoutName = "Translation Content Page",
 			type = "content");
+
+		JSONLayout.publishLayout(
+			groupName = "Test Site Name",
+			layoutName = "Translation Content Page");
 
 		Navigator.openSpecificURL(url = "${portalURL}/c/portal/logout");
 
@@ -84,9 +92,10 @@ definition {
 	}
 
 	@description = "This ensures that only translated page hreflang is tag displayed when a user accesses an untranslated content page."
-	@priority = "5"
+	@priority = 5
 	test CanViewTranslatedLanguageHreflangTagOnContentPage {
-		property test.name.skip.portal.instance = "TranslationsSEO#CanViewTranslatedLanguageHreflangTagOnContentPage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
 
@@ -114,7 +123,7 @@ definition {
 			id = "element-text",
 			text = "New editable fragment es-ES text");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
 		Navigator.openSpecificURL(url = "${portalURL}/c/portal/logout");
 
@@ -136,11 +145,16 @@ definition {
 	}
 
 	@description = "This ensures that only translated page hreflang tag is displayed when a user accesses an untranslated display page."
-	@priority = "5"
+	@priority = 5
 	test CanViewTranslatedLanguageHreflangTagOnDisplayPage {
-		property test.name.skip.portal.instance = "TranslationsSEO#CanViewTranslatedLanguageHreflangTagOnDisplayPage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
 
 		TranslationsSEO.enableOnlyTranslatedHreflangs(
 			configurationScope = "Site Settings",
@@ -183,7 +197,7 @@ definition {
 			id = "element-text",
 			text = "New editable fragment ja-JP text");
 
-		PageEditor.clickPublish();
+		PageEditor.publish();
 
 		DisplayPageTemplatesAdmin.markDisplayPageAsDefault(displayPageName = "Display Page Name");
 
@@ -211,9 +225,10 @@ definition {
 	}
 
 	@description = "This ensures that only translated page hreflang tag is displayed when a user accesses an untranslated widget page."
-	@priority = "5"
+	@priority = 5
 	test CanViewTranslatedLanguageHreflangTagOnWidgetPage {
-		property test.name.skip.portal.instance = "TranslationsSEO#CanViewTranslatedLanguageHreflangTagOnWidgetPage";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
 
@@ -229,9 +244,9 @@ definition {
 			portlet = "General",
 			siteURLKey = "test-site-name");
 
-		Page.addPageTranslations(
-			pageTranslation = "es_ES",
-			pageTranslationName = "Página de traducción");
+		PagesAdmin.addLocalizedName(
+			localeList = "es-ES",
+			localizedNameList = "Página de traducción");
 
 		Navigator.openSpecificURL(url = "${portalURL}/c/portal/logout");
 

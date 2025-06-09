@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service;
 
+import com.liferay.depot.model.DepotEntryGroupRel;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link DepotEntryGroupRelLocalService}.
@@ -27,6 +22,10 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	implements DepotEntryGroupRelLocalService,
 			   ServiceWrapper<DepotEntryGroupRelLocalService> {
 
+	public DepotEntryGroupRelLocalServiceWrapper() {
+		this(null);
+	}
+
 	public DepotEntryGroupRelLocalServiceWrapper(
 		DepotEntryGroupRelLocalService depotEntryGroupRelLocalService) {
 
@@ -34,9 +33,10 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel addDepotEntryGroupRel(
-		boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
-		boolean searchable) {
+	public DepotEntryGroupRel addDepotEntryGroupRel(
+			boolean ddmStructuresAvailable, long depotEntryId, long toGroupId,
+			boolean searchable)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.addDepotEntryGroupRel(
 			ddmStructuresAvailable, depotEntryId, toGroupId, searchable);
@@ -53,24 +53,26 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the depot entry group rel that was added
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel addDepotEntryGroupRel(
-		com.liferay.depot.model.DepotEntryGroupRel depotEntryGroupRel) {
+	public DepotEntryGroupRel addDepotEntryGroupRel(
+		DepotEntryGroupRel depotEntryGroupRel) {
 
 		return _depotEntryGroupRelLocalService.addDepotEntryGroupRel(
 			depotEntryGroupRel);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId) {
+	public DepotEntryGroupRel addDepotEntryGroupRel(
+			long depotEntryId, long toGroupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.addDepotEntryGroupRel(
 			depotEntryId, toGroupId);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel addDepotEntryGroupRel(
-		long depotEntryId, long toGroupId, boolean searchable) {
+	public DepotEntryGroupRel addDepotEntryGroupRel(
+			long depotEntryId, long toGroupId, boolean searchable)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.addDepotEntryGroupRel(
 			depotEntryId, toGroupId, searchable);
@@ -83,7 +85,7 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the new depot entry group rel
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel createDepotEntryGroupRel(
+	public DepotEntryGroupRel createDepotEntryGroupRel(
 		long depotEntryGroupRelId) {
 
 		return _depotEntryGroupRelLocalService.createDepotEntryGroupRel(
@@ -111,10 +113,12 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 *
 	 * @param depotEntryGroupRel the depot entry group rel
 	 * @return the depot entry group rel that was removed
+	 * @throws PortalException
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel deleteDepotEntryGroupRel(
-		com.liferay.depot.model.DepotEntryGroupRel depotEntryGroupRel) {
+	public DepotEntryGroupRel deleteDepotEntryGroupRel(
+			DepotEntryGroupRel depotEntryGroupRel)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.deleteDepotEntryGroupRel(
 			depotEntryGroupRel);
@@ -132,7 +136,7 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @throws PortalException if a depot entry group rel with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel deleteDepotEntryGroupRel(
+	public DepotEntryGroupRel deleteDepotEntryGroupRel(
 			long depotEntryGroupRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -262,7 +266,7 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel fetchDepotEntryGroupRel(
+	public DepotEntryGroupRel fetchDepotEntryGroupRel(
 		long depotEntryGroupRelId) {
 
 		return _depotEntryGroupRelLocalService.fetchDepotEntryGroupRel(
@@ -270,9 +274,8 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel
-		fetchDepotEntryGroupRelByDepotEntryIdToGroupId(
-			long depotEntryId, long toGroupId) {
+	public DepotEntryGroupRel fetchDepotEntryGroupRelByDepotEntryIdToGroupId(
+		long depotEntryId, long toGroupId) {
 
 		return _depotEntryGroupRelLocalService.
 			fetchDepotEntryGroupRelByDepotEntryIdToGroupId(
@@ -287,8 +290,8 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the matching depot entry group rel, or <code>null</code> if a matching depot entry group rel could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel
-		fetchDepotEntryGroupRelByUuidAndGroupId(String uuid, long groupId) {
+	public DepotEntryGroupRel fetchDepotEntryGroupRelByUuidAndGroupId(
+		String uuid, long groupId) {
 
 		return _depotEntryGroupRelLocalService.
 			fetchDepotEntryGroupRelByUuidAndGroupId(uuid, groupId);
@@ -309,12 +312,21 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @throws PortalException if a depot entry group rel with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel getDepotEntryGroupRel(
-			long depotEntryGroupRelId)
+	public DepotEntryGroupRel getDepotEntryGroupRel(long depotEntryGroupRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.getDepotEntryGroupRel(
 			depotEntryGroupRelId);
+	}
+
+	@Override
+	public DepotEntryGroupRel getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			long depotEntryId, long toGroupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _depotEntryGroupRelLocalService.
+			getDepotEntryGroupRelByDepotEntryIdToGroupId(
+				depotEntryId, toGroupId);
 	}
 
 	/**
@@ -326,8 +338,8 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @throws PortalException if a matching depot entry group rel could not be found
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel
-			getDepotEntryGroupRelByUuidAndGroupId(String uuid, long groupId)
+	public DepotEntryGroupRel getDepotEntryGroupRelByUuidAndGroupId(
+			String uuid, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.
@@ -335,11 +347,19 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntryGroupRel>
-		getDepotEntryGroupRels(com.liferay.depot.model.DepotEntry depotEntry) {
+	public java.util.List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		com.liferay.depot.model.DepotEntry depotEntry) {
 
 		return _depotEntryGroupRelLocalService.getDepotEntryGroupRels(
 			depotEntry);
+	}
+
+	@Override
+	public java.util.List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		com.liferay.depot.model.DepotEntry depotEntry, int start, int end) {
+
+		return _depotEntryGroupRelLocalService.getDepotEntryGroupRels(
+			depotEntry, start, end);
 	}
 
 	/**
@@ -354,16 +374,16 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the range of depot entry group rels
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntryGroupRel>
-		getDepotEntryGroupRels(int start, int end) {
+	public java.util.List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		int start, int end) {
 
 		return _depotEntryGroupRelLocalService.getDepotEntryGroupRels(
 			start, end);
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntryGroupRel>
-		getDepotEntryGroupRels(long groupId, int start, int end) {
+	public java.util.List<DepotEntryGroupRel> getDepotEntryGroupRels(
+		long groupId, int start, int end) {
 
 		return _depotEntryGroupRelLocalService.getDepotEntryGroupRels(
 			groupId, start, end);
@@ -377,7 +397,7 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the matching depot entry group rels, or an empty list if no matches were found
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntryGroupRel>
+	public java.util.List<DepotEntryGroupRel>
 		getDepotEntryGroupRelsByUuidAndCompanyId(String uuid, long companyId) {
 
 		return _depotEntryGroupRelLocalService.
@@ -395,12 +415,11 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the range of matching depot entry group rels, or an empty list if no matches were found
 	 */
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntryGroupRel>
+	public java.util.List<DepotEntryGroupRel>
 		getDepotEntryGroupRelsByUuidAndCompanyId(
 			String uuid, long companyId, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.depot.model.DepotEntryGroupRel>
-					orderByComparator) {
+			com.liferay.portal.kernel.util.OrderByComparator<DepotEntryGroupRel>
+				orderByComparator) {
 
 		return _depotEntryGroupRelLocalService.
 			getDepotEntryGroupRelsByUuidAndCompanyId(
@@ -471,8 +490,8 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.depot.model.DepotEntryGroupRel>
-		getSearchableDepotEntryGroupRels(long groupId, int start, int end) {
+	public java.util.List<DepotEntryGroupRel> getSearchableDepotEntryGroupRels(
+		long groupId, int start, int end) {
 
 		return _depotEntryGroupRelLocalService.getSearchableDepotEntryGroupRels(
 			groupId, start, end);
@@ -485,9 +504,8 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel
-			updateDDMStructuresAvailable(
-				long depotEntryGroupRelId, boolean ddmStructuresAvailable)
+	public DepotEntryGroupRel updateDDMStructuresAvailable(
+			long depotEntryGroupRelId, boolean ddmStructuresAvailable)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.updateDDMStructuresAvailable(
@@ -505,20 +523,45 @@ public class DepotEntryGroupRelLocalServiceWrapper
 	 * @return the depot entry group rel that was updated
 	 */
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel updateDepotEntryGroupRel(
-		com.liferay.depot.model.DepotEntryGroupRel depotEntryGroupRel) {
+	public DepotEntryGroupRel updateDepotEntryGroupRel(
+		DepotEntryGroupRel depotEntryGroupRel) {
 
 		return _depotEntryGroupRelLocalService.updateDepotEntryGroupRel(
 			depotEntryGroupRel);
 	}
 
 	@Override
-	public com.liferay.depot.model.DepotEntryGroupRel updateSearchable(
+	public DepotEntryGroupRel updateSearchable(
 			long depotEntryGroupRelId, boolean searchable)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _depotEntryGroupRelLocalService.updateSearchable(
 			depotEntryGroupRelId, searchable);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _depotEntryGroupRelLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<DepotEntryGroupRel> getCTPersistence() {
+		return _depotEntryGroupRelLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<DepotEntryGroupRel> getModelClass() {
+		return _depotEntryGroupRelLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<DepotEntryGroupRel>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _depotEntryGroupRelLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

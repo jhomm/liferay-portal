@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.util.bean;
@@ -27,19 +18,13 @@ import java.util.logging.Level;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Miguel Pastor
  */
-@RunWith(PowerMockRunner.class)
-public class PortalBeanLocatorUtilTest extends PowerMockito {
+public class PortalBeanLocatorUtilTest {
 
 	@After
 	public void tearDown() {
@@ -76,7 +61,7 @@ public class PortalBeanLocatorUtilTest extends PowerMockito {
 
 	@Test
 	public void testLocateExistingBean() {
-		when(
+		Mockito.when(
 			_beanLocator.locate("existingBean")
 		).thenReturn(
 			new String("existingBean")
@@ -89,12 +74,16 @@ public class PortalBeanLocatorUtilTest extends PowerMockito {
 		Assert.assertNotNull(bean);
 		Assert.assertEquals("existingBean", bean);
 
-		Mockito.verify(_beanLocator, Mockito.times(1));
+		Mockito.verify(
+			_beanLocator, Mockito.times(1)
+		).locate(
+			"existingBean"
+		);
 	}
 
 	@Test
 	public void testLocateNonexistingBean() {
-		when(
+		Mockito.when(
 			_beanLocator.locate("nonExistingBean")
 		).thenReturn(
 			null
@@ -106,10 +95,13 @@ public class PortalBeanLocatorUtilTest extends PowerMockito {
 
 		Assert.assertNull(bean);
 
-		Mockito.verify(_beanLocator, Mockito.times(1));
+		Mockito.verify(
+			_beanLocator, Mockito.times(1)
+		).locate(
+			"nonExistingBean"
+		);
 	}
 
-	@Mock
-	private BeanLocator _beanLocator;
+	private final BeanLocator _beanLocator = Mockito.mock(BeanLocator.class);
 
 }

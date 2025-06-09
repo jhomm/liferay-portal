@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.internal.resource.v1_0;
@@ -19,24 +10,25 @@ import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowInstance;
 import com.liferay.headless.admin.workflow.dto.v1_0.WorkflowInstanceSubmit;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.ObjectReviewedUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowInstanceResource;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.NoSuchModelException;
-import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.kernel.workflow.WorkflowInstanceManager;
+import com.liferay.portal.kernel.workflow.WorkflowNode;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 
 import java.io.Serializable;
 
-import java.util.Collection;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,6 +41,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/workflow-instance.properties",
 	scope = ServiceScope.PROTOTYPE, service = WorkflowInstanceResource.class
 )
+@CTAware
 public class WorkflowInstanceResourceImpl
 	extends BaseWorkflowInstanceResourceImpl {
 
@@ -87,6 +80,12 @@ public class WorkflowInstanceResourceImpl
 		throws Exception {
 
 		return Page.of(
+			HashMapBuilder.put(
+				"get",
+				addAction(
+					ActionKeys.VIEW, "getWorkflowInstancesPage",
+					WorkflowConstants.RESOURCE_NAME, null)
+			).build(),
 			transform(
 				_workflowInstanceManager.getWorkflowInstances(
 					contextCompany.getCompanyId(), contextUser.getUserId(),
@@ -136,16 +135,15 @@ public class WorkflowInstanceResourceImpl
 			Map<String, ?> context, long siteId)
 		throws Exception {
 
-		Map<String, Serializable> workflowContext = Stream.of(
-			context.entrySet()
-		).flatMap(
-			Collection::parallelStream
-		).filter(
-			entry -> entry.getValue() instanceof Serializable
-		).collect(
-			Collectors.toMap(
-				Map.Entry::getKey, entry -> (Serializable)entry.getValue())
-		);
+		Map<String, Serializable> workflowContext = new HashMap<>();
+
+		for (Map.Entry<String, ?> entry : context.entrySet()) {
+			Object value = entry.getValue();
+
+			if (value instanceof Serializable) {
+				workflowContext.put(entry.getKey(), (Serializable)value);
+			}
+		}
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			contextHttpServletRequest);
@@ -165,30 +163,47 @@ public class WorkflowInstanceResourceImpl
 
 		return new WorkflowInstance() {
 			{
-				completed = workflowInstance.isComplete();
-				currentNodeNames = Stream.of(
-					workflowInstance.getCurrentNodeNames()
-				).flatMap(
-					List::stream
-				).toArray(
-					String[]::new
-				);
-				dateCompletion = workflowInstance.getEndDate();
-				dateCreated = workflowInstance.getStartDate();
-				id = workflowInstance.getWorkflowInstanceId();
-				objectReviewed = ObjectReviewedUtil.toObjectReviewed(
-					contextAcceptLanguage.getPreferredLocale(),
-					workflowInstance.getWorkflowContext());
-				workflowDefinitionName =
-					workflowInstance.getWorkflowDefinitionName();
-				workflowDefinitionVersion = String.valueOf(
-					workflowInstance.getWorkflowDefinitionVersion());
+				setActions(
+					() -> HashMapBuilder.put(
+						"changeTransition",
+						addAction(
+							ActionKeys.UPDATE,
+							workflowInstance.getWorkflowInstanceId(),
+							"postWorkflowInstanceChangeTransition",
+							_kaleoInstanceModelResourcePermission)
+					).put(
+						"delete",
+						addAction(
+							ActionKeys.DELETE,
+							workflowInstance.getWorkflowInstanceId(),
+							"deleteWorkflowInstance",
+							_kaleoInstanceModelResourcePermission)
+					).build());
+				setCompleted(workflowInstance::isComplete);
+				setCurrentNodeNames(
+					() -> transformToArray(
+						workflowInstance.getCurrentWorkflowNodes(),
+						WorkflowNode::getName, String.class));
+				setDateCompletion(workflowInstance::getEndDate);
+				setDateCreated(workflowInstance::getStartDate);
+				setId(workflowInstance::getWorkflowInstanceId);
+				setObjectReviewed(
+					() -> ObjectReviewedUtil.toObjectReviewed(
+						contextAcceptLanguage.getPreferredLocale(),
+						workflowInstance.getWorkflowContext()));
+				setWorkflowDefinitionName(
+					workflowInstance::getWorkflowDefinitionName);
+				setWorkflowDefinitionVersion(
+					() -> String.valueOf(
+						workflowInstance.getWorkflowDefinitionVersion()));
 			}
 		};
 	}
 
-	@Reference
-	private Language _language;
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.workflow.kaleo.model.KaleoInstance)"
+	)
+	private ModelResourcePermission<?> _kaleoInstanceModelResourcePermission;
 
 	@Reference
 	private WorkflowInstanceManager _workflowInstanceManager;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -56,15 +48,15 @@ public class MBMessageLocalServiceUtil {
 	}
 
 	public static MBMessage addDiscussionMessage(
-			long userId, String userName, long groupId, String className,
-			long classPK, long threadId, long parentMessageId, String subject,
-			String body,
+			String externalReferenceCode, long userId, String userName,
+			long groupId, String className, long classPK, long threadId,
+			long parentMessageId, String subject, String body,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addDiscussionMessage(
-			userId, userName, groupId, className, classPK, threadId,
-			parentMessageId, subject, body, serviceContext);
+			externalReferenceCode, userId, userName, groupId, className,
+			classPK, threadId, parentMessageId, subject, body, serviceContext);
 	}
 
 	/**
@@ -452,29 +444,11 @@ public class MBMessageLocalServiceUtil {
 		return getService().fetchMBMessage(messageId);
 	}
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message, or <code>null</code> if a matching message-boards message could not be found
-	 */
 	public static MBMessage fetchMBMessageByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return getService().fetchMBMessageByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchMBMessageByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static MBMessage fetchMBMessageByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return getService().fetchMBMessageByReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	public static MBMessage fetchMBMessageByUrlSubject(
@@ -664,6 +638,20 @@ public class MBMessageLocalServiceUtil {
 		return getService().getGroupMessagesCount(groupId, userId, status);
 	}
 
+	public static List<MBMessage> getGroupUserMessageBoardMessagesActivity(
+		long groupId, long userId, int start, int end) {
+
+		return getService().getGroupUserMessageBoardMessagesActivity(
+			groupId, userId, start, end);
+	}
+
+	public static int getGroupUserMessageBoardMessagesActivityCount(
+		long groupId, long userId) {
+
+		return getService().getGroupUserMessageBoardMessagesActivityCount(
+			groupId, userId);
+	}
+
 	public static
 		com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 			getIndexableActionableDynamicQuery() {
@@ -690,20 +678,12 @@ public class MBMessageLocalServiceUtil {
 		return getService().getMBMessage(messageId);
 	}
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message
-	 * @throws PortalException if a matching message-boards message could not be found
-	 */
 	public static MBMessage getMBMessageByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
 		return getService().getMBMessageByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -983,18 +963,18 @@ public class MBMessageLocalServiceUtil {
 		getService().unsubscribeMessage(userId, messageId);
 	}
 
-	public static void updateAnswer(
+	public static MBMessage updateAnswer(
 			long messageId, boolean answer, boolean cascade)
 		throws PortalException {
 
-		getService().updateAnswer(messageId, answer, cascade);
+		return getService().updateAnswer(messageId, answer, cascade);
 	}
 
-	public static void updateAnswer(
+	public static MBMessage updateAnswer(
 			MBMessage message, boolean answer, boolean cascade)
 		throws PortalException {
 
-		getService().updateAnswer(message, answer, cascade);
+		return getService().updateAnswer(message, answer, cascade);
 	}
 
 	public static void updateAsset(
@@ -1070,9 +1050,11 @@ public class MBMessageLocalServiceUtil {
 	}
 
 	public static MBMessageLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile MBMessageLocalService _service;
+	private static final Snapshot<MBMessageLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			MBMessageLocalServiceUtil.class, MBMessageLocalService.class);
 
 }

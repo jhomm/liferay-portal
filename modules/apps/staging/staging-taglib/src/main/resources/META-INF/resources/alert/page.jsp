@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,27 +13,27 @@
 	<c:choose>
 		<c:when test="<%= type == AlertType.ERROR.getAlertCode() %>">
 			<svg aria-hidden="true" class="lexicon-icon lexicon-icon-exclamation-full">
-				<use xlink:href="<%= themeDisplayPath %>/clay/icons.svg#exclamation-full" />
+				<use xlink:href="<%= spritemap %>#exclamation-full" />
 			</svg>
 
-			<strong class="lead"><%= LanguageUtil.get(request, "alert-helper-error") %>: </strong>
+			<strong class="lead"><liferay-ui:message key="autosave-error" />: </strong>
 		</c:when>
 		<c:when test="<%= type == AlertType.INFO.getAlertCode() %>">
 			<svg aria-hidden="true" class="lexicon-icon lexicon-icon-info-circle">
-				<use xlink:href="<%= themeDisplayPath %>/clay/icons.svg#info-circle" />
+				<use xlink:href="<%= spritemap %>#info-circle" />
 			</svg>
 
-			<strong class="lead"><%= LanguageUtil.get(request, "alert-helper-info") %>: </strong>
+			<strong class="lead"><liferay-ui:message key="info" />: </strong>
 		</c:when>
 		<c:when test="<%= type == AlertType.SUCCESS.getAlertCode() %>">
 			<i class="icon-ok-sign"></i>
 
-			<strong class="lead"><%= LanguageUtil.get(request, "alert-helper-success") %>: </strong>
+			<strong class="lead"><liferay-ui:message key="success" />: </strong>
 		</c:when>
 		<c:when test="<%= type == AlertType.WARNING.getAlertCode() %>">
 			<i class="icon-warning-sign"></i>
 
-			<strong class="lead"><%= LanguageUtil.get(request, "alert-helper-warning") %>: </strong>
+			<strong class="lead"><liferay-ui:message key="warning" />: </strong>
 		</c:when>
 	</c:choose>
 </liferay-util:buffer>
@@ -51,13 +42,15 @@
 	var="close"
 >
 	<c:if test="<%= dismissible %>">
-		<button aria-label="<%= LanguageUtil.get(request, "close") %>" class="close" data-dismiss="liferay-alert" type="button">
-			<svg aria-hidden="true" class="icon-monospaced lexicon-icon lexicon-icon-times">
-				<use xlink:href="<%= themeDisplayPath %>/clay/icons.svg#times" />
-			</svg>
+		<liferay-ui:csp>
+			<button aria-label="<%= LanguageUtil.get(request, "close") %>" class="close" onclick="event.preventDefault();const container = event.delegateTarget.closest('.alert');if (container) {container.parentNode.removeChild(container);}" type="button">
+				<svg aria-hidden="true" class="icon-monospaced lexicon-icon lexicon-icon-times">
+					<use xlink:href="<%= spritemap %>#times" />
+				</svg>
 
-			<span class="sr-only"><%= LanguageUtil.get(request, "close") %></span>
-		</button>
+				<span class="sr-only"><liferay-ui:message key="close" /></span>
+			</button>
+		</liferay-ui:csp>
 	</c:if>
 </liferay-util:buffer>
 

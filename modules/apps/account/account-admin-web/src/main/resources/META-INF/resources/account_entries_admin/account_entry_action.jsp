@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -59,7 +50,7 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 		/>
 	</c:if>
 
-	<c:if test="<%= portletName.equals(AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT) && accountEntryDisplay.isActive() && !accountEntryDisplay.isSelectedAccountEntry(themeDisplay.getScopeGroupId(), user.getUserId()) %>">
+	<c:if test="<%= portletName.equals(AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT) && accountEntryDisplay.isApproved() && !accountEntryDisplay.isSelectedAccountEntry(themeDisplay.getScopeGroupId(), user.getUserId()) %>">
 		<portlet:actionURL name="/account_admin/select_account_entry" var="selectAccountURL">
 			<portlet:param name="redirect" value="<%= currentURL %>" />
 			<portlet:param name="accountEntryId" value="<%= String.valueOf(accountEntryId) %>" />
@@ -71,7 +62,7 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 		/>
 	</c:if>
 
-	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, AccountActionKeys.MANAGE_ORGANIZATIONS) %>">
+	<c:if test="<%= AccountEntryPermission.hasEditOrManageOrganizationsPermission(permissionChecker, accountEntryId) %>">
 		<portlet:renderURL var="manageOrganizationsURL">
 			<portlet:param name="mvcRenderCommandName" value="/account_admin/edit_account_entry" />
 			<portlet:param name="screenNavigationCategoryKey" value="<%= AccountScreenNavigationEntryConstants.CATEGORY_KEY_ORGANIZATIONS %>" />
@@ -85,8 +76,8 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 		/>
 	</c:if>
 
-	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, ActionKeys.DELETE) %>">
-		<c:if test='<%= Objects.equals(accountEntryDisplay.getStatusLabel(), "active") %>'>
+	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, ActionKeys.DEACTIVATE) %>">
+		<c:if test="<%= accountEntryDisplay.isApproved() %>">
 			<portlet:actionURL name="/account_admin/update_account_entry_status" var="deactivateAccountURL">
 				<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.DEACTIVATE %>" />
 				<portlet:param name="redirect" value="<%= currentURL %>" />
@@ -99,7 +90,7 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 			/>
 		</c:if>
 
-		<c:if test='<%= Objects.equals(accountEntryDisplay.getStatusLabel(), "inactive") %>'>
+		<c:if test="<%= accountEntryDisplay.isInactive() %>">
 			<portlet:actionURL name="/account_admin/update_account_entry_status" var="activateAccountURL">
 				<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.RESTORE %>" />
 				<portlet:param name="navigation" value="<%= navigation %>" />
@@ -111,7 +102,9 @@ long accountEntryId = accountEntryDisplay.getAccountEntryId();
 				url="<%= activateAccountURL %>"
 			/>
 		</c:if>
+	</c:if>
 
+	<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryId, ActionKeys.DELETE) %>">
 		<portlet:actionURL name="/account_admin/delete_account_entry" var="deleteAccountURL">
 			<portlet:param name="redirect" value="<%= currentURL %>" />
 			<portlet:param name="accountEntryIds" value="<%= String.valueOf(accountEntryId) %>" />

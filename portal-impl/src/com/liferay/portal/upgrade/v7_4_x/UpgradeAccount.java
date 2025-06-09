@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_4_x;
@@ -17,9 +8,9 @@ package com.liferay.portal.upgrade.v7_4_x;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.PortalUtil;
-import com.liferay.portal.upgrade.v7_4_x.util.CompanyTable;
-import com.liferay.portal.upgrade.v7_4_x.util.ContactTable;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,28 +23,6 @@ public class UpgradeAccount extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		_addColumnToCompanyTable("userId", "LONG");
-		_addColumnToCompanyTable("userName", "VARCHAR(75) null");
-		_addColumnToCompanyTable("createDate", "DATE null");
-		_addColumnToCompanyTable("modifiedDate", "DATE null");
-		_addColumnToCompanyTable("name", "VARCHAR(75) null");
-		_addColumnToCompanyTable("legalName", "VARCHAR(75) null");
-		_addColumnToCompanyTable("legalId", "VARCHAR(75) null");
-		_addColumnToCompanyTable("legalType", "VARCHAR(75) null");
-		_addColumnToCompanyTable("sicCode", "VARCHAR(75) null");
-		_addColumnToCompanyTable("tickerSymbol", "VARCHAR(75) null");
-		_addColumnToCompanyTable("industry", "VARCHAR(75) null");
-		_addColumnToCompanyTable("type_", "VARCHAR(75) null");
-		_addColumnToCompanyTable("size_", "VARCHAR(75) null");
-
-		if (hasColumn("Company", "accountId")) {
-			alter(CompanyTable.class, new AlterTableDropColumn("accountId"));
-		}
-
-		if (hasColumn("Contact", "accountId")) {
-			alter(ContactTable.class, new AlterTableDropColumn("accountId"));
-		}
-
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"update ListType set type_ = ? where type_ = ?")) {
 
@@ -165,18 +134,27 @@ public class UpgradeAccount extends UpgradeProcess {
 		runSQL(
 			"delete from ClassName_ where value = '" + _CLASS_NAME_ACCOUNT +
 				"'");
-
-		runSQL("drop table Account_");
 	}
 
-	private void _addColumnToCompanyTable(String columnName, String columnType)
-		throws Exception {
+	@Override
+	protected UpgradeStep[] getPostUpgradeSteps() {
+		return new UpgradeStep[] {UpgradeProcessFactory.dropTables("Account_")};
+	}
 
-		if (!hasColumn("Company", columnName)) {
-			alter(
-				CompanyTable.class,
-				new AlterTableAddColumn(columnName, columnType));
-		}
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.addColumns(
+				"Company", "userId LONG", "userName VARCHAR(75) null",
+				"createDate DATE null", "modifiedDate DATE null",
+				"name VARCHAR(75) null", "legalName VARCHAR(75) null",
+				"legalId VARCHAR(75) null", "legalType VARCHAR(75) null",
+				"sicCode VARCHAR(75) null", "tickerSymbol VARCHAR(75) null",
+				"industry VARCHAR(75) null", "type_ VARCHAR(75) null",
+				"size_ VARCHAR(75) null"),
+			UpgradeProcessFactory.dropColumns("Company", "accountId"),
+			UpgradeProcessFactory.dropColumns("Contact", "accountId")
+		};
 	}
 
 	private String _getUpdateClassNameIdClassPKSQL(String tableName) {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.spi.display;
@@ -26,7 +17,6 @@ import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.PortletPreferenceValueLocalService;
-import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -42,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author David Truong
  */
-@Component(immediate = true, service = CTDisplayRenderer.class)
+@Component(service = CTDisplayRenderer.class)
 public class PortletPreferencesCTDisplayRenderer
 	extends BaseCTDisplayRenderer<PortletPreferences> {
 
@@ -66,7 +56,7 @@ public class PortletPreferencesCTDisplayRenderer
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			arguments.add(portlet.getPortletName());
@@ -134,7 +124,7 @@ public class PortletPreferencesCTDisplayRenderer
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(exception, exception);
+						_log.warn(exception);
 					}
 
 					return portlet.getPortletName();
@@ -143,7 +133,7 @@ public class PortletPreferencesCTDisplayRenderer
 		).display(
 			"preferences",
 			() -> {
-				javax.portlet.PortletPreferences jxPortletPreferences =
+				jakarta.portlet.PortletPreferences jxPortletPreferences =
 					_portletPreferenceValueLocalService.getPreferences(
 						portletPreferences);
 
@@ -186,9 +176,6 @@ public class PortletPreferencesCTDisplayRenderer
 
 	@Reference
 	private PortletLocalService _portletLocalService;
-
-	@Reference
-	private PortletPreferencesLocalService _portletPreferencesLocalService;
 
 	@Reference
 	private PortletPreferenceValueLocalService

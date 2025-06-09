@@ -1,23 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.report;
 
 import com.liferay.dynamic.data.mapping.constants.DDMFormInstanceReportConstants;
+import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
-import com.liferay.dynamic.data.mapping.model.DDMFormFieldType;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
@@ -25,11 +16,13 @@ import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceRecordLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
@@ -38,18 +31,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 /**
  * @author Marcos Martins
  */
-@RunWith(MockitoJUnitRunner.class)
-public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
+public class GridDDMFormFieldTypeReportProcessorTest {
 
 	@ClassRule
 	@Rule
@@ -60,6 +48,10 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 	public void setUp() throws Exception {
 		_gridDDMFormFieldTypeReportProcessor.ddmFormInstanceRecordLocalService =
 			_ddmFormInstanceRecordLocalService;
+
+		ReflectionTestUtil.setFieldValue(
+			_gridDDMFormFieldTypeReportProcessor, "_jsonFactory",
+			new JSONFactoryImpl());
 
 		_mockDDMFormInstanceRecord();
 	}
@@ -75,7 +67,7 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 			_gridDDMFormFieldTypeReportProcessor.process(
 				ddmFormFieldValue,
 				JSONUtil.put(
-					"type", DDMFormFieldType.GRID
+					"type", DDMFormFieldTypeConstants.GRID
 				).put(
 					"values",
 					JSONFactoryUtil.createJSONObject(
@@ -109,7 +101,7 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 			_gridDDMFormFieldTypeReportProcessor.process(
 				ddmFormFieldValue,
 				JSONUtil.put(
-					"type", DDMFormFieldType.GRID
+					"type", DDMFormFieldTypeConstants.GRID
 				).put(
 					"values", JSONFactoryUtil.createJSONObject()
 				),
@@ -117,7 +109,8 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 				DDMFormInstanceReportConstants.EVENT_ADD_RECORD_VERSION);
 
 		Assert.assertEquals(
-			DDMFormFieldType.GRID, processedFieldJSONObject.getString("type"));
+			DDMFormFieldTypeConstants.GRID,
+			processedFieldJSONObject.getString("type"));
 
 		JSONObject valuesJSONObject = processedFieldJSONObject.getJSONObject(
 			"values");
@@ -143,7 +136,7 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 			_gridDDMFormFieldTypeReportProcessor.process(
 				ddmFormFieldValue,
 				JSONUtil.put(
-					"type", DDMFormFieldType.GRID
+					"type", DDMFormFieldTypeConstants.GRID
 				).put(
 					"values", JSONFactoryUtil.createJSONObject()
 				),
@@ -151,7 +144,8 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 				DDMFormInstanceReportConstants.EVENT_ADD_RECORD_VERSION);
 
 		Assert.assertEquals(
-			DDMFormFieldType.GRID, processedFieldJSONObject.getString("type"));
+			DDMFormFieldTypeConstants.GRID,
+			processedFieldJSONObject.getString("type"));
 
 		JSONObject valuesJSONObject = processedFieldJSONObject.getJSONObject(
 			"values");
@@ -175,7 +169,7 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 			_gridDDMFormFieldTypeReportProcessor.process(
 				ddmFormFieldValue,
 				JSONUtil.put(
-					"type", DDMFormFieldType.GRID
+					"type", DDMFormFieldTypeConstants.GRID
 				).put(
 					"values",
 					JSONFactoryUtil.createJSONObject(
@@ -225,18 +219,19 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 	private DDMFormFieldValue _mockDDMFormFieldValue(
 		String name, JSONObject valueJSONObject) {
 
-		DDMFormFieldValue ddmFormFieldValue = mock(DDMFormFieldValue.class);
+		DDMFormFieldValue ddmFormFieldValue = Mockito.mock(
+			DDMFormFieldValue.class);
 
-		when(
+		Mockito.when(
 			ddmFormFieldValue.getName()
 		).thenReturn(
 			name
 		);
 
-		when(
+		Mockito.when(
 			ddmFormFieldValue.getType()
 		).thenReturn(
-			DDMFormFieldType.GRID
+			DDMFormFieldTypeConstants.GRID
 		);
 
 		Value value = new LocalizedValue();
@@ -244,7 +239,7 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 		value.addString(value.getDefaultLocale(), valueJSONObject.toString());
 		value.setDefaultLocale(LocaleUtil.US);
 
-		when(
+		Mockito.when(
 			ddmFormFieldValue.getValue()
 		).thenReturn(
 			value
@@ -256,31 +251,31 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 	private DDMFormInstance _mockDDMFormInstance(String fieldName)
 		throws Exception {
 
-		DDMFormInstance ddmFormInstance = mock(DDMFormInstance.class);
+		DDMFormInstance ddmFormInstance = Mockito.mock(DDMFormInstance.class);
 
-		DDMStructure ddmStructure = mock(DDMStructure.class);
+		DDMStructure ddmStructure = Mockito.mock(DDMStructure.class);
 
-		DDMFormField ddmFormField = mock(DDMFormField.class);
+		DDMFormField ddmFormField = Mockito.mock(DDMFormField.class);
 
-		when(
+		Mockito.when(
 			ddmFormField.getProperty("columns")
 		).thenReturn(
 			_createDDMFormOptions()
 		);
 
-		when(
+		Mockito.when(
 			ddmFormField.getProperty("rows")
 		).thenReturn(
 			_createDDMFormOptions()
 		);
 
-		when(
+		Mockito.when(
 			ddmStructure.getDDMFormField(fieldName)
 		).thenReturn(
 			ddmFormField
 		);
 
-		when(
+		Mockito.when(
 			ddmFormInstance.getStructure()
 		).thenReturn(
 			ddmStructure
@@ -292,18 +287,18 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 	private void _mockDDMFormInstanceRecord()
 		throws Exception, PortalException {
 
-		DDMFormInstanceRecord ddmFormInstanceRecord = mock(
+		DDMFormInstanceRecord ddmFormInstanceRecord = Mockito.mock(
 			DDMFormInstanceRecord.class);
 
 		DDMFormInstance ddmFormInstance = _mockDDMFormInstance("field1");
 
-		when(
+		Mockito.when(
 			ddmFormInstanceRecord.getFormInstance()
 		).thenReturn(
 			ddmFormInstance
 		);
 
-		when(
+		Mockito.when(
 			_ddmFormInstanceRecordLocalService.getDDMFormInstanceRecord(
 				_FORM_INSTANCE_RECORD_ID)
 		).thenReturn(
@@ -313,10 +308,9 @@ public class GridDDMFormFieldTypeReportProcessorTest extends PowerMockito {
 
 	private static final long _FORM_INSTANCE_RECORD_ID = 0;
 
-	@Mock
-	private DDMFormInstanceRecordLocalService
-		_ddmFormInstanceRecordLocalService;
-
+	private final DDMFormInstanceRecordLocalService
+		_ddmFormInstanceRecordLocalService = Mockito.mock(
+			DDMFormInstanceRecordLocalService.class);
 	private final GridDDMFormFieldTypeReportProcessor
 		_gridDDMFormFieldTypeReportProcessor =
 			new GridDDMFormFieldTypeReportProcessor();

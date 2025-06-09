@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.action;
@@ -26,12 +17,12 @@ import com.liferay.document.library.web.internal.display.context.DLAdminDisplayC
 import com.liferay.document.library.web.internal.display.context.DLAdminManagementToolbarDisplayContext;
 import com.liferay.document.library.web.internal.display.context.DLViewFileEntryMetadataSetsDisplayContext;
 import com.liferay.document.library.web.internal.helper.DLTrashHelper;
-import com.liferay.document.library.web.internal.portlet.toolbar.contributor.DLPortletToolbarContributorRegistry;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLinkLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMStructureService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.constants.MVCRenderConstants;
+import com.liferay.portal.kernel.portlet.toolbar.contributor.PortletToolbarContributor;
 import com.liferay.portal.kernel.repository.Repository;
 import com.liferay.portal.kernel.repository.RepositoryProviderUtil;
 import com.liferay.portal.kernel.repository.model.Folder;
@@ -40,11 +31,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,8 +45,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 		"mvc.command.name=/", "mvc.command.name=/document_library/view",
 		"mvc.command.name=/document_library/view_folder"
 	},
@@ -75,15 +66,14 @@ public class DLViewMVCRenderCommand extends BaseFolderMVCRenderCommand {
 
 			renderRequest.setAttribute(
 				DLWebKeys.DOCUMENT_LIBRARY_PORTLET_TOOLBAR_CONTRIBUTOR,
-				_dlPortletToolbarContributorRegistry.
-					getDLPortletToolbarContributor());
+				_dlPortletToolbarContributor);
 			renderRequest.setAttribute(
 				DLWebKeys.
 					DOCUMENT_LIBRARY_VIEW_FILE_ENTRY_METADATA_SETS_DISPLAY_CONTEXT,
 				new DLViewFileEntryMetadataSetsDisplayContext(
+					_ddmStructureLinkLocalService, _ddmStructureService,
 					_portal.getLiferayPortletRequest(renderRequest),
 					_portal.getLiferayPortletResponse(renderResponse),
-					_ddmStructureLinkLocalService, _ddmStructureService,
 					_portal));
 			renderRequest.setAttribute(
 				WebKeys.DOCUMENT_LIBRARY_FOLDER, _getFolder(renderRequest));
@@ -95,7 +85,6 @@ public class DLViewMVCRenderCommand extends BaseFolderMVCRenderCommand {
 
 			renderRequest.setAttribute(
 				DLAdminDisplayContext.class.getName(), dlAdminDisplayContext);
-
 			renderRequest.setAttribute(
 				DLAdminManagementToolbarDisplayContext.class.getName(),
 				_dlAdminDisplayContextProvider.
@@ -196,9 +185,10 @@ public class DLViewMVCRenderCommand extends BaseFolderMVCRenderCommand {
 	@Reference
 	private DLFolderLocalService _dlFolderLocalService;
 
-	@Reference
-	private DLPortletToolbarContributorRegistry
-		_dlPortletToolbarContributorRegistry;
+	@Reference(
+		target = "(jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY + ")"
+	)
+	private PortletToolbarContributor _dlPortletToolbarContributor;
 
 	@Reference
 	private DLTrashHelper _dlTrashHelper;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.constants;
@@ -33,18 +24,29 @@ public class CommerceOrderPaymentConstants {
 
 	public static final int STATUS_FAILED = WorkflowConstants.STATUS_DENIED;
 
+	public static final int STATUS_NOT_REQUIRED = 23;
+
 	public static final int STATUS_PENDING = WorkflowConstants.STATUS_PENDING;
+
+	public static final int STATUS_REFUNDED = 17;
 
 	public static final int[] STATUSES = {
 		STATUS_AUTHORIZED, STATUS_CANCELLED, STATUS_COMPLETED, STATUS_FAILED,
-		STATUS_PENDING
+		STATUS_NOT_REQUIRED, STATUS_PENDING, STATUS_REFUNDED
+	};
+
+	public static final int[] STATUSES_RETRY_PAYMENT = {
+		STATUS_AUTHORIZED, STATUS_CANCELLED
 	};
 
 	public static String getOrderPaymentLabelStyle(int orderPaymentStatus) {
 		if (orderPaymentStatus == STATUS_AUTHORIZED) {
 			return "info";
 		}
-		else if (orderPaymentStatus == STATUS_COMPLETED) {
+		else if ((orderPaymentStatus == STATUS_COMPLETED) ||
+				 (orderPaymentStatus == STATUS_NOT_REQUIRED) ||
+				 (orderPaymentStatus == STATUS_REFUNDED)) {
+
 			return "success";
 		}
 		else if (orderPaymentStatus == STATUS_PENDING) {
@@ -72,8 +74,14 @@ public class CommerceOrderPaymentConstants {
 		else if (orderPaymentStatus == STATUS_FAILED) {
 			return "failed";
 		}
+		else if (orderPaymentStatus == STATUS_NOT_REQUIRED) {
+			return "not-required";
+		}
 		else if (orderPaymentStatus == STATUS_PENDING) {
 			return WorkflowConstants.LABEL_PENDING;
+		}
+		else if (orderPaymentStatus == STATUS_REFUNDED) {
+			return "refunded";
 		}
 
 		return null;

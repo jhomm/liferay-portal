@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -21,6 +12,8 @@ import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -45,7 +38,10 @@ public class CPSpecificationOptionWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("CPSpecificationOptionId", getCPSpecificationOptionId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -57,6 +53,8 @@ public class CPSpecificationOptionWrapper
 		attributes.put("description", getDescription());
 		attributes.put("facetable", isFacetable());
 		attributes.put("key", getKey());
+		attributes.put("priority", getPriority());
+		attributes.put("visible", isVisible());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
 		return attributes;
@@ -64,10 +62,29 @@ public class CPSpecificationOptionWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long CPSpecificationOptionId = (Long)attributes.get(
@@ -137,6 +154,18 @@ public class CPSpecificationOptionWrapper
 			setKey(key);
 		}
 
+		Double priority = (Double)attributes.get("priority");
+
+		if (priority != null) {
+			setPriority(priority);
+		}
+
+		Boolean visible = (Boolean)attributes.get("visible");
+
+		if (visible != null) {
+			setVisible(visible);
+		}
+
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
 
 		if (lastPublishDate != null) {
@@ -199,6 +228,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public Date getCreateDate() {
 		return model.getCreateDate();
+	}
+
+	/**
+	 * Returns the ct collection ID of this cp specification option.
+	 *
+	 * @return the ct collection ID of this cp specification option
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
 	}
 
 	@Override
@@ -283,6 +322,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this cp specification option.
+	 *
+	 * @return the external reference code of this cp specification option
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the facetable of this cp specification option.
 	 *
 	 * @return the facetable of this cp specification option
@@ -312,6 +361,21 @@ public class CPSpecificationOptionWrapper
 		return model.getLastPublishDate();
 	}
 
+	@Override
+	public java.util.List<com.liferay.list.type.model.ListTypeDefinition>
+			getListTypeDefinitions()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListTypeDefinitions();
+	}
+
+	@Override
+	public long getListTypeDefinitionsCount()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListTypeDefinitionsCount();
+	}
+
 	/**
 	 * Returns the modified date of this cp specification option.
 	 *
@@ -323,6 +387,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this cp specification option.
+	 *
+	 * @return the mvcc version of this cp specification option
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the primary key of this cp specification option.
 	 *
 	 * @return the primary key of this cp specification option
@@ -330,6 +404,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
+	}
+
+	/**
+	 * Returns the priority of this cp specification option.
+	 *
+	 * @return the priority of this cp specification option
+	 */
+	@Override
+	public double getPriority() {
+		return model.getPriority();
 	}
 
 	/**
@@ -449,6 +533,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Returns the visible of this cp specification option.
+	 *
+	 * @return the visible of this cp specification option
+	 */
+	@Override
+	public boolean getVisible() {
+		return model.getVisible();
+	}
+
+	/**
 	 * Returns <code>true</code> if this cp specification option is facetable.
 	 *
 	 * @return <code>true</code> if this cp specification option is facetable; <code>false</code> otherwise
@@ -456,6 +550,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public boolean isFacetable() {
 		return model.isFacetable();
+	}
+
+	/**
+	 * Returns <code>true</code> if this cp specification option is visible.
+	 *
+	 * @return <code>true</code> if this cp specification option is visible; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isVisible() {
+		return model.isVisible();
 	}
 
 	@Override
@@ -516,6 +620,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public void setCreateDate(Date createDate) {
 		model.setCreateDate(createDate);
+	}
+
+	/**
+	 * Sets the ct collection ID of this cp specification option.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp specification option
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
 	}
 
 	/**
@@ -586,6 +700,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this cp specification option.
+	 *
+	 * @param externalReferenceCode the external reference code of this cp specification option
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets whether this cp specification option is facetable.
 	 *
 	 * @param facetable the facetable of this cp specification option
@@ -626,6 +750,16 @@ public class CPSpecificationOptionWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this cp specification option.
+	 *
+	 * @param mvccVersion the mvcc version of this cp specification option
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the primary key of this cp specification option.
 	 *
 	 * @param primaryKey the primary key of this cp specification option
@@ -633,6 +767,16 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public void setPrimaryKey(long primaryKey) {
 		model.setPrimaryKey(primaryKey);
+	}
+
+	/**
+	 * Sets the priority of this cp specification option.
+	 *
+	 * @param priority the priority of this cp specification option
+	 */
+	@Override
+	public void setPriority(double priority) {
+		model.setPriority(priority);
 	}
 
 	/**
@@ -737,6 +881,35 @@ public class CPSpecificationOptionWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	/**
+	 * Sets whether this cp specification option is visible.
+	 *
+	 * @param visible the visible of this cp specification option
+	 */
+	@Override
+	public void setVisible(boolean visible) {
+		model.setVisible(visible);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CPSpecificationOption, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CPSpecificationOption, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

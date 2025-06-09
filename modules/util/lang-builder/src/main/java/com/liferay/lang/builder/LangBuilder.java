@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.lang.builder;
@@ -45,6 +36,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +53,8 @@ import org.apache.commons.io.FileUtils;
 public class LangBuilder {
 
 	public static void main(String[] args) throws Exception {
-		Map<String, String> arguments = ArgumentsUtil.parseArguments(args);
+		Map<String, String> arguments = new HashMap<>(
+			ArgumentsUtil.parseArguments(args));
 
 		System.setProperty("line.separator", StringPool.NEW_LINE);
 
@@ -118,7 +111,17 @@ public class LangBuilder {
 		_langDirName = langDirName;
 		_langFileName = langFileName;
 		_titleCapitalization = titleCapitalization;
-		_translate = translate;
+
+		if (Validator.isNull(translateSubscriptionKey)) {
+			System.out.println(
+				"Translation is disabled because credentials are not " +
+					"specified");
+
+			_translate = false;
+		}
+		else {
+			_translate = translate;
+		}
 
 		Translate.setSubscriptionKey(translateSubscriptionKey);
 
@@ -135,7 +138,7 @@ public class LangBuilder {
 
 		File propertiesFile = new File(
 			StringBundler.concat(
-				_langDirName, "/", _langFileName, ".properties"));
+				langDirName, "/", langFileName, ".properties"));
 
 		if (!propertiesFile.exists()) {
 			return;
@@ -150,34 +153,44 @@ public class LangBuilder {
 		_createProperties(content, "ar"); // Arabic
 		_createProperties(content, "eu"); // Basque
 		_createProperties(content, "bg"); // Bulgarian
+		_createProperties(content, "my"); // Burmese (Myanmar)
+		_createProperties(content, "km"); // Cambodian
 		_createProperties(content, "ca"); // Catalan
 		_createProperties(content, "zh_CN"); // Chinese (China)
 		_createProperties(content, "zh_TW"); // Chinese (Taiwan)
 		_createProperties(content, "hr"); // Croatian
+		_createProperties(content, "hr_BA"); // Croatian (Bosnia and Herzegovina)
 		_createProperties(content, "cs"); // Czech
 		_createProperties(content, "da"); // Danish
 		_createProperties(content, "nl"); // Dutch (Netherlands)
 		_createProperties(content, "nl_BE", "nl"); // Dutch (Belgium)
 		_createProperties(content, "en_AU"); // English (Australia)
+		_createProperties(content, "en_CA"); // English (Canada)
+		_createProperties(content, "en_IE"); // English (Ireland)
 		_createProperties(content, "en_GB"); // English (United Kingdom)
 		_createProperties(content, "et"); // Estonian
 		_createProperties(content, "fi"); // Finnish
 		_createProperties(content, "fr"); // French
+		_createProperties(content, "fr_BE", "fr"); // French (Belgium)
 		_createProperties(content, "fr_CA"); // French (Canada)
 		_createProperties(content, "gl"); // Galician
 		_createProperties(content, "de"); // German
+		_createProperties(content, "de_AT", "de"); // German (Austria)
 		_createProperties(content, "el"); // Greek
 		_createProperties(content, "iw"); // Hebrew
 		_createProperties(content, "hi_IN"); // Hindi (India)
 		_createProperties(content, "hu"); // Hungarian
 		_createProperties(content, "in"); // Indonesian
 		_createProperties(content, "it"); // Italian
+		_createProperties(content, "it_CH", "it"); // Italian (Switzerland)
 		_createProperties(content, "ja"); // Japanese
 		_createProperties(content, "kk"); // Kazakh
 		_createProperties(content, "ko"); // Korean
 		_createProperties(content, "lo"); // Lao
 		_createProperties(content, "lt"); // Lithuanian
+		_createProperties(content, "mk"); // Macedonian
 		_createProperties(content, "ms"); // Malay
+		_createProperties(content, "no", "nb"); // Norwegian
 		_createProperties(content, "nb"); // Norwegian Bokmål
 		_createProperties(content, "fa"); // Persian
 		_createProperties(content, "pl"); // Polish
@@ -190,7 +203,12 @@ public class LangBuilder {
 		_createProperties(content, "sk"); // Slovak
 		_createProperties(content, "sl"); // Slovene
 		_createProperties(content, "es"); // Spanish
+		_createProperties(content, "es_AR", "es"); // Spanish (Argentina)
+		_createProperties(content, "es_CO", "es"); // Spanish (Colombia)
+		_createProperties(content, "es_MX", "es"); // Spanish (Mexico)
 		_createProperties(content, "sv"); // Swedish
+		_createProperties(content, "fr_CH", "fr"); // Swiss French
+		_createProperties(content, "de_CH", "de"); // Swiss German
 		_createProperties(content, "ta_IN"); // Tamil
 		_createProperties(content, "th"); // Thai
 		_createProperties(content, "tr"); // Turkish
@@ -328,7 +346,17 @@ public class LangBuilder {
 					translatedText = null;
 				}
 
+				if ((translatedText != null) && (parentProperties != null) &&
+					translatedText.endsWith(
+						LanguageBuilderUtil.AUTOMATIC_COPY)) {
+
+					translatedText = null;
+				}
+
+				boolean inheritedFromParent = false;
+
 				if ((translatedText == null) && (parentProperties != null)) {
+					inheritedFromParent = true;
 					translatedText = parentProperties.getProperty(key);
 				}
 
@@ -341,6 +369,7 @@ public class LangBuilder {
 						if ((translatedText == null) &&
 							(parentProperties != null)) {
 
+							inheritedFromParent = true;
 							translatedText = parentProperties.getProperty(key);
 						}
 					}
@@ -348,7 +377,7 @@ public class LangBuilder {
 
 				boolean automaticCopy = false;
 
-				if ((translatedText != null) &&
+				if (!inheritedFromParent && (translatedText != null) &&
 					translatedText.endsWith(
 						LanguageBuilderUtil.AUTOMATIC_COPY)) {
 

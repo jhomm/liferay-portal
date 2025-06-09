@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.redirect.web.internal.display.context;
@@ -21,11 +12,11 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -34,10 +25,10 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.redirect.model.RedirectNotFoundEntry;
 import com.liferay.redirect.service.RedirectNotFoundEntryLocalService;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -49,15 +40,14 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 		HttpServletRequest httpServletRequest,
 		LiferayPortletRequest liferayPortletRequest,
 		LiferayPortletResponse liferayPortletResponse,
+		RedirectNotFoundEntryLocalService redirectNotFoundEntryLocalService,
 		SearchContainer<RedirectNotFoundEntry> searchContainer) {
 
 		super(
 			httpServletRequest, liferayPortletRequest, liferayPortletResponse,
 			searchContainer);
 
-		_redirectNotFoundEntryLocalService =
-			(RedirectNotFoundEntryLocalService)httpServletRequest.getAttribute(
-				RedirectNotFoundEntryLocalService.class.getName());
+		_redirectNotFoundEntryLocalService = redirectNotFoundEntryLocalService;
 	}
 
 	@Override
@@ -103,16 +93,6 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 		).build();
 	}
 
-	public String getAvailableActions(
-		RedirectNotFoundEntry redirectNotFoundEntry) {
-
-		if (redirectNotFoundEntry.isIgnored()) {
-			return "unignoreSelectedRedirectNotFoundEntries";
-		}
-
-		return "ignoreSelectedRedirectNotFoundEntries";
-	}
-
 	@Override
 	public String getClearResultsURL() {
 		return PortletURLBuilder.createRenderURL(
@@ -131,7 +111,6 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 	public List<DropdownItem> getFilterDropdownItems() {
 		List<DropdownItem> filterNavigationDropdownItems =
 			getFilterNavigationDropdownItems();
-		List<DropdownItem> orderByDropdownItems = getOrderByDropdownItems();
 
 		DropdownItemList filterDropdownItems = DropdownItemListBuilder.addGroup(
 			() -> filterNavigationDropdownItems != null,
@@ -147,12 +126,6 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 					_getFilterDateDropdownItems());
 				dropdownGroupItem.setLabel(
 					LanguageUtil.get(httpServletRequest, "filter-by-date"));
-			}
-		).addGroup(
-			() -> orderByDropdownItems != null,
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(orderByDropdownItems);
-				dropdownGroupItem.setLabel(getOrderByDropdownItemsLabel());
 			}
 		).build();
 
@@ -177,12 +150,10 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 					).buildString());
 
 				labelItem.setCloseable(true);
-
-				String label = String.format(
-					"%s: %s", LanguageUtil.get(httpServletRequest, "type"),
-					LanguageUtil.get(httpServletRequest, getNavigation()));
-
-				labelItem.setLabel(label);
+				labelItem.setLabel(
+					String.format(
+						"%s: %s", LanguageUtil.get(httpServletRequest, "type"),
+						LanguageUtil.get(httpServletRequest, getNavigation())));
 			}
 		).add(
 			() -> _getFilterDate() != 0,
@@ -196,12 +167,10 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 					).buildString());
 
 				labelItem.setCloseable(true);
-
-				String label = String.format(
-					"%s: %s", LanguageUtil.get(httpServletRequest, "date"),
-					_getFilterDateLabel(_getFilterDate()));
-
-				labelItem.setLabel(label);
+				labelItem.setLabel(
+					String.format(
+						"%s: %s", LanguageUtil.get(httpServletRequest, "date"),
+						_getFilterDateLabel(_getFilterDate())));
 			}
 		).build();
 	}
@@ -277,14 +246,12 @@ public class RedirectNotFoundEntriesManagementToolbarDisplayContext
 
 		return dropdownItem -> {
 			dropdownItem.setActive(days == _getFilterDate());
-
 			dropdownItem.setHref(
 				PortletURLBuilder.create(
 					getPortletURL()
 				).setParameter(
 					"filterDate", days
 				).buildPortletURL());
-
 			dropdownItem.setLabel(_getFilterDateLabel(days));
 		};
 	}

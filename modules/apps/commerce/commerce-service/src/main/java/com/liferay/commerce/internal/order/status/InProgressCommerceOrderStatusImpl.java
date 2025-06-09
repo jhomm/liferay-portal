@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.order.status;
@@ -19,10 +10,11 @@ import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.order.CommerceOrderValidatorRegistry;
 import com.liferay.commerce.order.status.CommerceOrderStatus;
+import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -42,7 +34,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.order.status.key=" + InProgressCommerceOrderStatusImpl.KEY,
 		"commerce.order.status.priority:Integer=" + InProgressCommerceOrderStatusImpl.PRIORITY
@@ -57,7 +48,8 @@ public class InProgressCommerceOrderStatusImpl implements CommerceOrderStatus {
 	public static final int PRIORITY = 20;
 
 	@Override
-	public CommerceOrder doTransition(CommerceOrder commerceOrder, long userId)
+	public CommerceOrder doTransition(
+			CommerceOrder commerceOrder, long userId, boolean secure)
 		throws PortalException {
 
 		ServiceContext serviceContext = new ServiceContext();
@@ -86,7 +78,16 @@ public class InProgressCommerceOrderStatusImpl implements CommerceOrderStatus {
 
 		commerceOrder.setOrderStatus(KEY);
 
-		return _commerceOrderService.updateCommerceOrder(commerceOrder);
+		if (secure) {
+			commerceOrder = _commerceOrderService.updateCommerceOrder(
+				commerceOrder);
+		}
+		else {
+			commerceOrder = _commerceOrderLocalService.updateCommerceOrder(
+				commerceOrder);
+		}
+
+		return commerceOrder;
 	}
 
 	@Override
@@ -96,7 +97,7 @@ public class InProgressCommerceOrderStatusImpl implements CommerceOrderStatus {
 
 	@Override
 	public String getLabel(Locale locale) {
-		return LanguageUtil.get(
+		return _language.get(
 			locale, CommerceOrderConstants.getOrderStatusLabel(KEY));
 	}
 
@@ -107,11 +108,14 @@ public class InProgressCommerceOrderStatusImpl implements CommerceOrderStatus {
 
 	@Override
 	public boolean isComplete(CommerceOrder commerceOrder) {
-		if (commerceOrder.isOpen()) {
-			return false;
-		}
+		return !commerceOrder.isOpen();
+	}
 
-		return true;
+	@Override
+	public boolean isEnabled(CommerceOrder commerceOrder)
+		throws PortalException {
+
+		return !commerceOrder.isQuote();
 	}
 
 	@Override
@@ -138,6 +142,9 @@ public class InProgressCommerceOrderStatusImpl implements CommerceOrderStatus {
 		return false;
 	}
 
+	@Reference
+	private volatile CommerceOrderLocalService _commerceOrderLocalService;
+
 	@Reference(
 		target = "(model.class.name=com.liferay.commerce.model.CommerceOrder)"
 	)
@@ -149,6 +156,9 @@ public class InProgressCommerceOrderStatusImpl implements CommerceOrderStatus {
 
 	@Reference
 	private CommerceOrderValidatorRegistry _commerceOrderValidatorRegistry;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private Portal _portal;

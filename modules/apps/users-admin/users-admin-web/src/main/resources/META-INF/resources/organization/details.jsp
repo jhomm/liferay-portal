@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -37,111 +28,118 @@ if (organization != null) {
 
 <aui:model-context bean="<%= organization %>" model="<%= Organization.class %>" />
 
-<clay:row>
-	<clay:col
-		md="7"
-	>
-		<liferay-ui:error exception="<%= DuplicateOrganizationException.class %>" message="the-organization-name-is-already-taken" />
+<liferay-ui:error exception="<%= DuplicateOrganizationException.class %>" message="the-organization-name-is-already-taken" />
 
-		<liferay-ui:error exception="<%= OrganizationNameException.class %>">
-			<liferay-ui:message arguments="<%= new String[] {OrganizationConstants.NAME_LABEL, OrganizationConstants.NAME_GENERAL_RESTRICTIONS, OrganizationConstants.NAME_RESERVED_WORDS} %>" key="the-x-cannot-be-x-or-a-reserved-word-such-as-x" />
-		</liferay-ui:error>
+<liferay-ui:error exception="<%= OrganizationNameException.class %>">
+	<liferay-ui:message arguments="<%= new String[] {OrganizationConstants.NAME_LABEL, OrganizationConstants.NAME_GENERAL_RESTRICTIONS, OrganizationConstants.NAME_RESERVED_WORDS} %>" key="the-x-cannot-be-x-or-a-reserved-word-such-as-x" />
+</liferay-ui:error>
 
-		<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) %>" name="name" />
+<liferay-frontend:logo-selector
+	currentLogoURL='<%= (organization != null) ? organization.getLogoURL() : themeDisplay.getPathImage() + "/organization_logo?img_id=0" %>'
+	defaultLogoURL='<%= themeDisplay.getPathImage() + "/organization_logo?img_id=0" %>'
+	label='<%= LanguageUtil.get(request, "image") %>'
+	type="organization_portrait"
+/>
 
-		<c:choose>
-			<c:when test="<%= PropsValues.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_ORGANIZATION_STATUS %>">
-				<liferay-ui:error key="<%= NoSuchListTypeException.class.getName() + Organization.class.getName() + ListTypeConstants.ORGANIZATION_STATUS %>" message="please-select-a-type" />
+<aui:input name="name" />
 
-				<aui:select label="status" listType="<%= ListTypeConstants.ORGANIZATION_STATUS %>" listTypeFieldName="statusId" name="statusId" showEmptyOption="<%= true %>" />
-			</c:when>
-			<c:otherwise>
-				<aui:input name="statusId" type="hidden" value="<%= (organization != null) ? organization.getStatusId() : ListTypeConstants.ORGANIZATION_STATUS_DEFAULT %>" />
-			</c:otherwise>
-		</c:choose>
+<c:choose>
+	<c:when test="<%= PropsValues.FIELD_ENABLE_COM_LIFERAY_PORTAL_KERNEL_MODEL_ORGANIZATION_STATUS %>">
+		<liferay-ui:error key="<%= NoSuchListTypeException.class.getName() + Organization.class.getName() + ListTypeConstants.ORGANIZATION_STATUS %>" message="please-select-a-type" />
 
-		<c:choose>
-			<c:when test="<%= (organization == null) && (organizationsTypes.length > 1) %>">
-				<aui:select name="type">
+		<aui:select label="status" listType="<%= ListTypeConstants.ORGANIZATION_STATUS %>" listTypeFieldName="statusListTypeId" name="statusId" showEmptyOption="<%= false %>" />
+	</c:when>
+	<c:otherwise>
+		<aui:input name="statusId" type="hidden" value="<%= (organization != null) ? organization.getStatusListTypeId() : ListTypeServiceUtil.getListTypeId(themeDisplay.getCompanyId(), ListTypeConstants.ORGANIZATION_STATUS_DEFAULT, ListTypeConstants.ORGANIZATION_STATUS) %>" />
+	</c:otherwise>
+</c:choose>
 
-					<%
-					for (String curType : organizationsTypes) {
-					%>
+<c:choose>
+	<c:when test="<%= (organization == null) && (organizationsTypes.length > 1) %>">
+		<aui:select name="type">
 
-						<aui:option label="<%= curType %>" selected="<%= type.equals(curType) %>" />
+			<%
+			for (String curType : organizationsTypes) {
+			%>
 
-					<%
-					}
-					%>
+				<aui:option label="<%= curType %>" selected="<%= type.equals(curType) %>" />
 
-				</aui:select>
-			</c:when>
-			<c:when test="<%= organization == null %>">
-				<aui:input name="type" type="hidden" value="<%= organizationsTypes[0] %>" />
-			</c:when>
-			<c:otherwise>
-				<aui:input name="typeLabel" type="resource" value="<%= LanguageUtil.get(request, organization.getType()) %>" />
+			<%
+			}
+			%>
 
-				<aui:input name="type" type="hidden" value="<%= organization.getType() %>" />
-			</c:otherwise>
-		</c:choose>
+		</aui:select>
+	</c:when>
+	<c:when test="<%= organization == null %>">
+		<aui:input name="type" type="hidden" value="<%= organizationsTypes[0] %>" />
+	</c:when>
+	<c:otherwise>
+		<aui:input name="typeLabel" type="resource" value="<%= LanguageUtil.get(request, organization.getType()) %>" />
 
-		<liferay-ui:error exception="<%= NoSuchCountryException.class %>" message="please-select-a-country" />
+		<aui:input name="type" type="hidden" value="<%= organization.getType() %>" />
+	</c:otherwise>
+</c:choose>
 
-		<div class="<%= OrganizationLocalServiceUtil.isCountryEnabled(type) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />countryDiv">
-			<aui:select label="country" name="countryId" />
+<liferay-ui:error exception="<%= NoSuchCountryException.class %>" message="please-select-a-country" />
 
-			<aui:select label="region" name="regionId" />
-		</div>
-	</clay:col>
+<div class="<%= OrganizationLocalServiceUtil.isCountryEnabled(type) ? StringPool.BLANK : "hide" %>" id="<portlet:namespace />countryDiv">
+	<aui:select label="country" name="countryId" required="<%= true %>">
+		<aui:validator errorMessage='<%= LanguageUtil.get(request, "this-field-is-required") %>' name="custom">
+			function(val) {
+				if (Number(val) !== 0) {
+					return true;
+				}
 
-	<clay:col
-		md="5"
-	>
-		<div align="middle">
-			<c:if test="<%= organization != null %>">
+				return false;
+			}
+		</aui:validator>
+	</aui:select>
 
-				<%
-				long logoId = organization.getLogoId();
+	<label class="control-label" for="<portlet:namespace />regionId">
+		<liferay-ui:message key="region" />
 
-				UserFileUploadsConfiguration userFileUploadsConfiguration = (UserFileUploadsConfiguration)request.getAttribute(UserFileUploadsConfiguration.class.getName());
-				%>
+		<span hidden id="<portlet:namespace />regionRequiredWrapper">
+			<clay:icon
+				cssClass="reference-mark text-warning"
+				symbol="asterisk"
+			/>
 
-				<label class="control-label"></label>
+			<span class="hide-accessible sr-only"><liferay-ui:message key="required" /></span>
+		</span>
+	</label>
 
-				<liferay-ui:logo-selector
-					currentLogoURL="<%= organization.getLogoURL() %>"
-					defaultLogo="<%= logoId == 0 %>"
-					defaultLogoURL='<%= themeDisplay.getPathImage() + "/organization_logo?img_id=0" %>'
-					logoDisplaySelector=".organization-logo"
-					maxFileSize="<%= userFileUploadsConfiguration.imageMaxSize() %>"
-					tempImageFileName="<%= String.valueOf(groupId) %>"
-				/>
-			</c:if>
-		</div>
-	</clay:col>
-</clay:row>
+	<aui:select label="" name="regionId">
+		<aui:validator errorMessage='<%= LanguageUtil.get(request, "this-field-is-required") %>' name="custom">
+			function(val, fieldNode) {
+				if (fieldNode.length === 1) {
+					return true;
+				}
 
-<script>
-	new Liferay.DynamicSelect([
-		{
-			select: '<portlet:namespace />countryId',
-			selectData: Liferay.Address.getCountries,
-			selectDesc: 'nameCurrentValue',
-			selectId: 'countryId',
-			selectSort: '<%= true %>',
-			selectVal: '<%= countryId %>',
-		},
-		{
-			select: '<portlet:namespace />regionId',
-			selectData: Liferay.Address.getRegions,
-			selectDesc: 'name',
-			selectDisableOnEmpty: true,
-			selectId: 'regionId',
-			selectVal: '<%= regionId %>',
-		},
-	]);
-</script>
+				if (Number(val) !== 0) {
+					return true;
+				}
+
+				return false;
+			}
+		</aui:validator>
+	</aui:select>
+</div>
+
+<liferay-frontend:component
+	componentId="CountryRegionDynamicSelect"
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"countrySelect", portletDisplay.getNamespace() + "countryId"
+		).put(
+			"countrySelectVal", countryId
+		).put(
+			"regionSelect", portletDisplay.getNamespace() + "regionId"
+		).put(
+			"regionSelectVal", regionId
+		).build()
+	%>'
+	module="{CountryRegionDynamicSelect} from users-admin-web"
+/>
 
 <c:if test="<%= organization == null %>">
 	<aui:script sandbox="<%= true %>">

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.model.listener;
@@ -25,20 +16,13 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
 
 /**
  * @author Marcos Martins
  */
-@RunWith(MockitoJUnitRunner.class)
-public class DDMFormInstanceRecordVersionModelListenerTest
-	extends PowerMockito {
+public class DDMFormInstanceRecordVersionModelListenerTest {
 
 	@ClassRule
 	@Rule
@@ -56,23 +40,23 @@ public class DDMFormInstanceRecordVersionModelListenerTest
 
 	@Test
 	public void testOnAfterUpdate() throws PortalException {
-		when(
+		Mockito.when(
 			_ddmFormInstanceReportLocalService.
 				getFormInstanceReportByFormInstanceId(Mockito.anyLong())
 		).thenThrow(
 			new NoSuchFormInstanceReportException()
 		);
 
-		DDMFormInstanceRecordVersion ddmFormInstanceRecordVersion = mock(
-			DDMFormInstanceRecordVersion.class);
+		DDMFormInstanceRecordVersion ddmFormInstanceRecordVersion =
+			Mockito.mock(DDMFormInstanceRecordVersion.class);
 
-		when(
+		Mockito.when(
 			ddmFormInstanceRecordVersion.getFormInstanceId()
 		).thenReturn(
 			0L
 		);
 
-		when(
+		Mockito.when(
 			ddmFormInstanceRecordVersion.getStatus()
 		).thenReturn(
 			WorkflowConstants.STATUS_APPROVED
@@ -84,23 +68,23 @@ public class DDMFormInstanceRecordVersionModelListenerTest
 
 	@Test
 	public void testOnBeforeUpdate() throws PortalException {
-		when(
+		Mockito.when(
 			_ddmFormInstanceReportLocalService.
 				getFormInstanceReportByFormInstanceId(Mockito.anyLong())
 		).thenThrow(
 			new NoSuchFormInstanceReportException()
 		);
 
-		DDMFormInstanceRecordVersion ddmFormInstanceRecordVersion = mock(
-			DDMFormInstanceRecordVersion.class);
+		DDMFormInstanceRecordVersion ddmFormInstanceRecordVersion =
+			Mockito.mock(DDMFormInstanceRecordVersion.class);
 
-		when(
+		Mockito.when(
 			ddmFormInstanceRecordVersion.getFormInstanceId()
 		).thenReturn(
 			0L
 		);
 
-		when(
+		Mockito.when(
 			ddmFormInstanceRecordVersion.getStatus()
 		).thenReturn(
 			WorkflowConstants.STATUS_APPROVED
@@ -117,9 +101,8 @@ public class DDMFormInstanceRecordVersionModelListenerTest
 
 	private DDMFormInstanceRecordVersionModelListener
 		_ddmFormInstanceRecordVersionModelListener;
-
-	@Mock
-	private DDMFormInstanceReportLocalService
-		_ddmFormInstanceReportLocalService;
+	private final DDMFormInstanceReportLocalService
+		_ddmFormInstanceReportLocalService = Mockito.mock(
+			DDMFormInstanceReportLocalService.class);
 
 }

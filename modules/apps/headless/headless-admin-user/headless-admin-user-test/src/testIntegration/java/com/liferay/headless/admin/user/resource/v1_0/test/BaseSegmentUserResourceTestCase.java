@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.user.resource.v1_0.test;
@@ -28,45 +19,47 @@ import com.liferay.headless.admin.user.client.pagination.Page;
 import com.liferay.headless.admin.user.client.pagination.Pagination;
 import com.liferay.headless.admin.user.client.resource.v1_0.SegmentUserResource;
 import com.liferay.headless.admin.user.client.serdes.v1_0.SegmentUserSerDes;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtilsBean;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -90,7 +83,7 @@ public abstract class BaseSegmentUserResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -104,10 +97,15 @@ public abstract class BaseSegmentUserResourceTestCase {
 
 		_segmentUserResource.setContextCompany(testCompany);
 
-		SegmentUserResource.Builder builder = SegmentUserResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		segmentUserResource = builder.authentication(
-			"test@liferay.com", "test"
+		segmentUserResource = SegmentUserResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -121,7 +119,32 @@ public abstract class BaseSegmentUserResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SegmentUser segmentUser1 = randomSegmentUser();
+
+		String json = objectMapper.writeValueAsString(segmentUser1);
+
+		SegmentUser segmentUser2 = SegmentUserSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(segmentUser1, segmentUser2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		SegmentUser segmentUser = randomSegmentUser();
+
+		String json1 = objectMapper.writeValueAsString(segmentUser);
+		String json2 = SegmentUserSerDes.toJSON(segmentUser);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -136,40 +159,6 @@ public abstract class BaseSegmentUserResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		SegmentUser segmentUser1 = randomSegmentUser();
-
-		String json = objectMapper.writeValueAsString(segmentUser1);
-
-		SegmentUser segmentUser2 = SegmentUserSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(segmentUser1, segmentUser2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		SegmentUser segmentUser = randomSegmentUser();
-
-		String json1 = objectMapper.writeValueAsString(segmentUser);
-		String json2 = SegmentUserSerDes.toJSON(segmentUser);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -200,7 +189,7 @@ public abstract class BaseSegmentUserResourceTestCase {
 		Page<SegmentUser> page = segmentUserResource.getSegmentUserAccountsPage(
 			segmentId, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantSegmentId != null) {
 			SegmentUser irrelevantSegmentUser =
@@ -208,14 +197,16 @@ public abstract class BaseSegmentUserResourceTestCase {
 					irrelevantSegmentId, randomIrrelevantSegmentUser());
 
 			page = segmentUserResource.getSegmentUserAccountsPage(
-				irrelevantSegmentId, Pagination.of(1, 2));
+				irrelevantSegmentId, Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantSegmentUser),
-				(List<SegmentUser>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantSegmentUser, (List<SegmentUser>)page.getItems());
+			assertValid(
+				page,
+				testGetSegmentUserAccountsPage_getExpectedActions(
+					irrelevantSegmentId));
 		}
 
 		SegmentUser segmentUser1 =
@@ -229,12 +220,21 @@ public abstract class BaseSegmentUserResourceTestCase {
 		page = segmentUserResource.getSegmentUserAccountsPage(
 			segmentId, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(segmentUser1, segmentUser2),
-			(List<SegmentUser>)page.getItems());
-		assertValid(page);
+		assertContains(segmentUser1, (List<SegmentUser>)page.getItems());
+		assertContains(segmentUser2, (List<SegmentUser>)page.getItems());
+		assertValid(
+			page, testGetSegmentUserAccountsPage_getExpectedActions(segmentId));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetSegmentUserAccountsPage_getExpectedActions(Long segmentId)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -242,6 +242,12 @@ public abstract class BaseSegmentUserResourceTestCase {
 		throws Exception {
 
 		Long segmentId = testGetSegmentUserAccountsPage_getSegmentId();
+
+		Page<SegmentUser> segmentUsersPage =
+			segmentUserResource.getSegmentUserAccountsPage(segmentId, null);
+
+		int totalCount = GetterUtil.getInteger(
+			segmentUsersPage.getTotalCount());
 
 		SegmentUser segmentUser1 =
 			testGetSegmentUserAccountsPage_addSegmentUser(
@@ -255,31 +261,71 @@ public abstract class BaseSegmentUserResourceTestCase {
 			testGetSegmentUserAccountsPage_addSegmentUser(
 				segmentId, randomSegmentUser());
 
-		Page<SegmentUser> page1 =
-			segmentUserResource.getSegmentUserAccountsPage(
-				segmentId, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<SegmentUser> segmentUsers1 = (List<SegmentUser>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(segmentUsers1.toString(), 2, segmentUsers1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<SegmentUser> page1 =
+				segmentUserResource.getSegmentUserAccountsPage(
+					segmentId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Page<SegmentUser> page2 =
-			segmentUserResource.getSegmentUserAccountsPage(
-				segmentId, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(segmentUser1, (List<SegmentUser>)page1.getItems());
 
-		List<SegmentUser> segmentUsers2 = (List<SegmentUser>)page2.getItems();
+			Page<SegmentUser> page2 =
+				segmentUserResource.getSegmentUserAccountsPage(
+					segmentId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		Assert.assertEquals(segmentUsers2.toString(), 1, segmentUsers2.size());
+			assertContains(segmentUser2, (List<SegmentUser>)page2.getItems());
 
-		Page<SegmentUser> page3 =
-			segmentUserResource.getSegmentUserAccountsPage(
-				segmentId, Pagination.of(1, 3));
+			Page<SegmentUser> page3 =
+				segmentUserResource.getSegmentUserAccountsPage(
+					segmentId,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(segmentUser1, segmentUser2, segmentUser3),
-			(List<SegmentUser>)page3.getItems());
+			assertContains(segmentUser3, (List<SegmentUser>)page3.getItems());
+		}
+		else {
+			Page<SegmentUser> page1 =
+				segmentUserResource.getSegmentUserAccountsPage(
+					segmentId, Pagination.of(1, totalCount + 2));
+
+			List<SegmentUser> segmentUsers1 =
+				(List<SegmentUser>)page1.getItems();
+
+			Assert.assertEquals(
+				segmentUsers1.toString(), totalCount + 2, segmentUsers1.size());
+
+			Page<SegmentUser> page2 =
+				segmentUserResource.getSegmentUserAccountsPage(
+					segmentId, Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<SegmentUser> segmentUsers2 =
+				(List<SegmentUser>)page2.getItems();
+
+			Assert.assertEquals(
+				segmentUsers2.toString(), 1, segmentUsers2.size());
+
+			Page<SegmentUser> page3 =
+				segmentUserResource.getSegmentUserAccountsPage(
+					segmentId, Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(segmentUser1, (List<SegmentUser>)page3.getItems());
+			assertContains(segmentUser2, (List<SegmentUser>)page3.getItems());
+			assertContains(segmentUser3, (List<SegmentUser>)page3.getItems());
+		}
 	}
 
 	protected SegmentUser testGetSegmentUserAccountsPage_addSegmentUser(
@@ -412,6 +458,13 @@ public abstract class BaseSegmentUserResourceTestCase {
 	}
 
 	protected void assertValid(Page<SegmentUser> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<SegmentUser> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<SegmentUser> segmentUsers = page.getItems();
@@ -426,6 +479,25 @@ public abstract class BaseSegmentUserResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -564,14 +636,20 @@ public abstract class BaseSegmentUserResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -588,6 +666,10 @@ public abstract class BaseSegmentUserResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -597,18 +679,18 @@ public abstract class BaseSegmentUserResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -625,9 +707,47 @@ public abstract class BaseSegmentUserResourceTestCase {
 		sb.append(" ");
 
 		if (entityFieldName.equals("emailAddress")) {
-			sb.append("'");
-			sb.append(String.valueOf(segmentUser.getEmailAddress()));
-			sb.append("'");
+			Object object = segmentUser.getEmailAddress();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -638,9 +758,47 @@ public abstract class BaseSegmentUserResourceTestCase {
 		}
 
 		if (entityFieldName.equals("name")) {
-			sb.append("'");
-			sb.append(String.valueOf(segmentUser.getName()));
-			sb.append("'");
+			Object object = segmentUser.getName();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -659,7 +817,8 @@ public abstract class BaseSegmentUserResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -709,9 +868,131 @@ public abstract class BaseSegmentUserResourceTestCase {
 	}
 
 	protected SegmentUserResource segmentUserResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -787,19 +1068,9 @@ public abstract class BaseSegmentUserResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseSegmentUserResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.admin.user.resource.v1_0.SegmentUserResource

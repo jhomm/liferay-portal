@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.persistence.test;
@@ -22,14 +13,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -151,9 +146,7 @@ public class SegmentsExperimentPersistenceTest {
 		newSegmentsExperiment.setSegmentsExperimentKey(
 			RandomTestUtil.randomString());
 
-		newSegmentsExperiment.setClassNameId(RandomTestUtil.nextLong());
-
-		newSegmentsExperiment.setClassPK(RandomTestUtil.nextLong());
+		newSegmentsExperiment.setPlid(RandomTestUtil.nextLong());
 
 		newSegmentsExperiment.setName(RandomTestUtil.randomString());
 
@@ -210,11 +203,8 @@ public class SegmentsExperimentPersistenceTest {
 			existingSegmentsExperiment.getSegmentsExperimentKey(),
 			newSegmentsExperiment.getSegmentsExperimentKey());
 		Assert.assertEquals(
-			existingSegmentsExperiment.getClassNameId(),
-			newSegmentsExperiment.getClassNameId());
-		Assert.assertEquals(
-			existingSegmentsExperiment.getClassPK(),
-			newSegmentsExperiment.getClassPK());
+			existingSegmentsExperiment.getPlid(),
+			newSegmentsExperiment.getPlid());
 		Assert.assertEquals(
 			existingSegmentsExperiment.getName(),
 			newSegmentsExperiment.getName());
@@ -282,38 +272,12 @@ public class SegmentsExperimentPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_C_C() throws Exception {
-		_persistence.countByG_C_C(
+	public void testCountByG_S_P() throws Exception {
+		_persistence.countByG_S_P(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
 			RandomTestUtil.nextLong());
 
-		_persistence.countByG_C_C(0L, 0L, 0L);
-	}
-
-	@Test
-	public void testCountByS_C_C() throws Exception {
-		_persistence.countByS_C_C(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong());
-
-		_persistence.countByS_C_C(0L, 0L, 0L);
-	}
-
-	@Test
-	public void testCountByS_C_C_S() throws Exception {
-		_persistence.countByS_C_C_S(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
-
-		_persistence.countByS_C_C_S(0L, 0L, 0L, 0);
-	}
-
-	@Test
-	public void testCountByS_C_C_SArrayable() throws Exception {
-		_persistence.countByS_C_C_S(
-			new long[] {RandomTestUtil.nextLong(), 0L},
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
-			new int[] {RandomTestUtil.nextInt(), 0});
+		_persistence.countByG_S_P(0L, 0L, 0L);
 	}
 
 	@Test
@@ -342,6 +306,24 @@ public class SegmentsExperimentPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -352,9 +334,8 @@ public class SegmentsExperimentPersistenceTest {
 			"uuid", true, "segmentsExperimentId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "segmentsEntryId", true,
-			"segmentsExperienceId", true, "segmentsExperimentKey", true,
-			"classNameId", true, "classPK", true, "name", true, "description",
-			true, "status", true);
+			"segmentsExperienceId", true, "segmentsExperimentKey", true, "plid",
+			true, "name", true, "description", true, "status", true);
 	}
 
 	@Test
@@ -654,6 +635,22 @@ public class SegmentsExperimentPersistenceTest {
 			ReflectionTestUtil.invoke(
 				segmentsExperiment, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "segmentsExperimentKey"));
+
+		Assert.assertEquals(
+			Long.valueOf(segmentsExperiment.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				segmentsExperiment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
+		Assert.assertEquals(
+			Long.valueOf(segmentsExperiment.getSegmentsExperienceId()),
+			ReflectionTestUtil.<Long>invoke(
+				segmentsExperiment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "segmentsExperienceId"));
+		Assert.assertEquals(
+			Long.valueOf(segmentsExperiment.getPlid()),
+			ReflectionTestUtil.<Long>invoke(
+				segmentsExperiment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "plid"));
 	}
 
 	protected SegmentsExperiment addSegmentsExperiment() throws Exception {
@@ -686,9 +683,7 @@ public class SegmentsExperimentPersistenceTest {
 		segmentsExperiment.setSegmentsExperimentKey(
 			RandomTestUtil.randomString());
 
-		segmentsExperiment.setClassNameId(RandomTestUtil.nextLong());
-
-		segmentsExperiment.setClassPK(RandomTestUtil.nextLong());
+		segmentsExperiment.setPlid(RandomTestUtil.nextLong());
 
 		segmentsExperiment.setName(RandomTestUtil.randomString());
 

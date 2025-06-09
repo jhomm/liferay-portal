@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -24,6 +17,7 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -35,6 +29,8 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -59,13 +55,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CPDefinitionOptionRelLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CPDefinitionOptionRelLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CPDefinitionOptionRel>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -94,7 +92,7 @@ public interface CPDefinitionOptionRelLocalService
 
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			double priority, boolean facetable, boolean required,
 			boolean skuContributor, boolean importOptionValue,
 			ServiceContext serviceContext)
@@ -103,10 +101,20 @@ public interface CPDefinitionOptionRelLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			double priority, boolean facetable, boolean required,
 			boolean skuContributor, boolean importOptionValue, String priceType,
 			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CPDefinitionOptionRel addCPDefinitionOptionRel(
+			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
+			String infoItemServiceKey, double priority,
+			boolean definedExternally, boolean facetable, boolean required,
+			boolean skuContributor, boolean importOptionValue, String priceType,
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
@@ -298,6 +306,13 @@ public interface CPDefinitionOptionRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Map<Long, List<Long>>
 			getCPDefinitionOptionRelCPDefinitionOptionValueRelIds(
+				long cpDefinitionId, boolean skuContributorsOnly,
+				JSONArray skuOptionJSONArray)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Map<Long, List<Long>>
+			getCPDefinitionOptionRelCPDefinitionOptionValueRelIds(
 				long cpDefinitionId, boolean skuContributorsOnly, String json)
 		throws PortalException;
 
@@ -389,6 +404,13 @@ public interface CPDefinitionOptionRelLocalService
 		long cpDefinitionId, boolean skuContributor);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinitionOptionRel> getCPOptionCPDefinitionOptionRels(
+		long cpOptionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCPOptionCPDefinitionOptionRelsCount(long cpOptionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
 		PortletDataContext portletDataContext);
 
@@ -425,28 +447,6 @@ public interface CPDefinitionOptionRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Hits search(SearchContext searchContext);
 
-	/**
-	 * @param companyId
-	 * @param groupId
-	 * @param cpDefinitionId
-	 * @param keywords
-	 * @param start
-	 * @param end
-	 * @param sort
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchCPDefinitionOptionRels(long, long, long, String, int,
-	 int, Sort[])}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public BaseModelSearchResult<CPDefinitionOptionRel>
-			searchCPDefinitionOptionRels(
-				long companyId, long groupId, long cpDefinitionId,
-				String keywords, int start, int end, Sort sort)
-		throws PortalException;
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<CPDefinitionOptionRel>
 			searchCPDefinitionOptionRels(
@@ -476,7 +476,7 @@ public interface CPDefinitionOptionRelLocalService
 	public CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, double priority, boolean facetable,
 			boolean required, boolean skuContributor,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -485,9 +485,25 @@ public interface CPDefinitionOptionRelLocalService
 	public CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, String infoItemServiceKey,
+			double priority, boolean definedExternally, boolean facetable,
 			boolean required, boolean skuContributor, String priceType,
-			ServiceContext serviceContext)
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CPDefinitionOptionRel> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CPDefinitionOptionRel> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CPDefinitionOptionRel>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

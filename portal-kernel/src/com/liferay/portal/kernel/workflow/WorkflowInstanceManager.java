@@ -1,21 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.workflow;
 
-import com.liferay.portal.kernel.messaging.proxy.MessagingProxy;
-import com.liferay.portal.kernel.messaging.proxy.ProxyMode;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.search.WorkflowModelSearchResult;
 
@@ -30,13 +19,16 @@ import java.util.Map;
  * @author Brian Wing Shun Chan
  * @author Marcellus Tavares
  */
-@MessagingProxy(mode = ProxyMode.SYNC)
 public interface WorkflowInstanceManager {
 
 	public void deleteWorkflowInstance(long companyId, long workflowInstanceId)
 		throws WorkflowException;
 
 	public List<String> getNextTransitionNames(
+			long companyId, long userId, long workflowInstanceId)
+		throws WorkflowException;
+
+	public List<WorkflowTransition> getNextWorkflowTransitions(
 			long companyId, long userId, long workflowInstanceId)
 		throws WorkflowException;
 
@@ -85,7 +77,7 @@ public interface WorkflowInstanceManager {
 		throws WorkflowException;
 
 	public default List<WorkflowInstance> search(
-			long companyId, Long userId, String assetClassName,
+			long companyId, Long userId, Boolean active, String assetClassName,
 			String assetTitle, String assetDescription, String nodeName,
 			String kaleoDefinitionName, Boolean completed, int start, int end,
 			OrderByComparator<WorkflowInstance> orderByComparator)
@@ -95,7 +87,7 @@ public interface WorkflowInstanceManager {
 	}
 
 	public default int searchCount(
-			long companyId, Long userId, String assetClassName,
+			long companyId, Long userId, Boolean active, String assetClassName,
 			String assetTitle, String assetDescription, String nodeName,
 			String kaleoDefinitionName, Boolean completed)
 		throws WorkflowException {
@@ -105,8 +97,9 @@ public interface WorkflowInstanceManager {
 
 	public default WorkflowModelSearchResult<WorkflowInstance>
 			searchWorkflowInstances(
-				long companyId, Long userId, String assetClassName,
-				String assetTitle, String assetDescription, String nodeName,
+				long companyId, Long userId, Boolean active,
+				String assetClassName, String assetTitle,
+				String assetDescription, String nodeName,
 				String kaleoDefinitionName, Boolean completed,
 				boolean searchByActiveWorkflowHandlers, int start, int end,
 				OrderByComparator<WorkflowInstance> orderByComparator)
@@ -155,6 +148,14 @@ public interface WorkflowInstanceManager {
 		return startWorkflowInstance(
 			companyId, groupId, userId, workflowDefinitionName,
 			workflowDefinitionVersion, transitionName, workflowContext);
+	}
+
+	public default WorkflowInstance updateActive(
+			long userId, long companyId, long workflowInstanceId,
+			boolean active)
+		throws WorkflowException {
+
+		throw new UnsupportedOperationException();
 	}
 
 	public WorkflowInstance updateWorkflowContext(

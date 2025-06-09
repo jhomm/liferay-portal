@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.internal.exportimport.data.handler;
@@ -32,7 +23,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.xml.Element;
 
@@ -49,8 +40,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Kocsis
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
+	property = "jakarta.portlet.name=" + CalendarPortletKeys.CALENDAR_ADMIN,
 	service = StagedModelDataHandler.class
 )
 public class CalendarStagedModelDataHandler
@@ -124,7 +114,7 @@ public class CalendarStagedModelDataHandler
 
 		String displayName = referenceElement.attributeValue("display-name");
 
-		return validateMissingReference(companyId, uuid, groupId, displayName);
+		return _validateMissingReference(companyId, uuid, groupId, displayName);
 	}
 
 	@Override
@@ -190,7 +180,7 @@ public class CalendarStagedModelDataHandler
 			calendarResourceIds, calendar.getCalendarResourceId(),
 			calendar.getCalendarResourceId());
 
-		Map<Locale, String> calendarNameMap = getCalendarNameMap(
+		Map<Locale, String> calendarNameMap = _getCalendarNameMap(
 			portletDataContext, calendar);
 
 		ServiceContext serviceContext = portletDataContext.createServiceContext(
@@ -235,14 +225,14 @@ public class CalendarStagedModelDataHandler
 		portletDataContext.importClassedModel(calendar, importedCalendar);
 	}
 
-	protected Calendar fetchExistingCalendar(
+	private Calendar _fetchExistingCalendar(
 		long companyId, long groupId, String name) {
 
 		return _calendarLocalService.fetchGroupCalendar(
 			companyId, groupId, name);
 	}
 
-	protected Map<Locale, String> getCalendarNameMap(
+	private Map<Locale, String> _getCalendarNameMap(
 			PortletDataContext portletDataContext, Calendar calendar)
 		throws Exception {
 
@@ -259,7 +249,7 @@ public class CalendarStagedModelDataHandler
 		Group scopeGroup = _groupLocalService.getGroup(
 			portletDataContext.getScopeGroupId());
 
-		return LocalizationUtil.populateLocalizationMap(
+		return _localization.populateLocalizationMap(
 			HashMapBuilder.put(
 				LocaleUtil.getSiteDefault(), scopeGroup.getDescriptiveName()
 			).build(),
@@ -267,13 +257,13 @@ public class CalendarStagedModelDataHandler
 			scopeGroup.getGroupId());
 	}
 
-	protected boolean validateMissingReference(
+	private boolean _validateMissingReference(
 		long companyId, String uuid, long groupId, String name) {
 
 		Calendar existingStagedModel = fetchMissingReference(uuid, groupId);
 
 		if (existingStagedModel == null) {
-			existingStagedModel = fetchExistingCalendar(
+			existingStagedModel = _fetchExistingCalendar(
 				companyId, groupId, name);
 		}
 
@@ -289,5 +279,8 @@ public class CalendarStagedModelDataHandler
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Localization _localization;
 
 }

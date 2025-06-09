@@ -1,31 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.internal.exportimport.data.handler;
 
+import com.liferay.asset.entry.rel.model.AssetEntryAssetCategoryRel;
+import com.liferay.asset.entry.rel.service.AssetEntryAssetCategoryRelLocalService;
+import com.liferay.asset.entry.rel.util.comparator.AssetEntryAssetCategoryRelAssetEntryAssetCategoryRelIdComparator;
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.exportimport.data.handler.base.BaseStagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.xml.Element;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -35,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Adolfo Pérez
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class FriendlyURLEntryStagedModelDataHandler
 	extends BaseStagedModelDataHandler<FriendlyURLEntry> {
 
@@ -73,14 +80,25 @@ public class FriendlyURLEntryStagedModelDataHandler
 		Element friendlyURLEntryElement =
 			portletDataContext.getExportDataElement(friendlyURLEntry);
 
+		_exportAssetCategories(portletDataContext, friendlyURLEntry);
+
 		friendlyURLEntryElement.addAttribute(
 			"resource-class-name", friendlyURLEntry.getClassName());
 
-		String modelPath = ExportImportPathUtil.getModelPath(
-			friendlyURLEntry, friendlyURLEntry.getUuid());
-
 		portletDataContext.addZipEntry(
-			modelPath, friendlyURLEntry.getUrlTitleMapAsXML());
+			ExportImportPathUtil.getModelPath(
+				friendlyURLEntry, friendlyURLEntry.getUuid()),
+			friendlyURLEntry.getUrlTitleMapAsXML());
+
+		FriendlyURLEntry mainFriendlyURLEntry =
+			_friendlyURLEntryLocalService.fetchMainFriendlyURLEntry(
+				friendlyURLEntry.getClassNameId(),
+				friendlyURLEntry.getClassPK());
+
+		if (mainFriendlyURLEntry == null) {
+			_friendlyURLEntryLocalService.setMainFriendlyURLEntry(
+				friendlyURLEntry);
+		}
 
 		if (friendlyURLEntry.isMain()) {
 			friendlyURLEntryElement.addAttribute(
@@ -111,40 +129,48 @@ public class FriendlyURLEntryStagedModelDataHandler
 		Map<Long, Long> newPrimaryKeysMap =
 			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(className);
 
+		if (!newPrimaryKeysMap.containsKey(friendlyURLEntry.getClassPK())) {
+			portletDataContext.removePrimaryKey(
+				ExportImportPathUtil.getModelPath(friendlyURLEntry));
+
+			return;
+		}
+
 		FriendlyURLEntry existingFriendlyURLEntry =
 			fetchStagedModelByUuidAndGroupId(
 				friendlyURLEntry.getUuid(),
 				portletDataContext.getScopeGroupId());
 
-		FriendlyURLEntry importedFriendlyURLEntry = null;
+		FriendlyURLEntry importedFriendlyURLEntry =
+			(FriendlyURLEntry)friendlyURLEntry.clone();
+
+		importedFriendlyURLEntry.setGroupId(
+			portletDataContext.getScopeGroupId());
+		importedFriendlyURLEntry.setCompanyId(
+			portletDataContext.getCompanyId());
+		importedFriendlyURLEntry.setClassNameId(classNameId);
+		importedFriendlyURLEntry.setClassPK(
+			MapUtil.getLong(
+				newPrimaryKeysMap, friendlyURLEntry.getClassPK(),
+				friendlyURLEntry.getClassPK()));
 
 		if ((existingFriendlyURLEntry == null) ||
 			!portletDataContext.isDataStrategyMirror()) {
 
-			importedFriendlyURLEntry =
-				(FriendlyURLEntry)friendlyURLEntry.clone();
-
-			importedFriendlyURLEntry.setGroupId(
-				portletDataContext.getScopeGroupId());
-			importedFriendlyURLEntry.setCompanyId(
-				portletDataContext.getCompanyId());
-			importedFriendlyURLEntry.setClassNameId(classNameId);
-
-			long classPK = MapUtil.getLong(
-				newPrimaryKeysMap, friendlyURLEntry.getClassPK(),
-				friendlyURLEntry.getClassPK());
-
-			importedFriendlyURLEntry.setClassPK(classPK);
-
-			importedFriendlyURLEntry.setDefaultLanguageId(
-				friendlyURLEntry.getDefaultLanguageId());
-
 			importedFriendlyURLEntry = _stagedModelRepository.addStagedModel(
 				portletDataContext, importedFriendlyURLEntry);
+
+			boolean mainEntry = GetterUtil.getBoolean(
+				friendlyURLEntryElement.attributeValue("mainEntry"));
+
+			if (mainEntry) {
+				_friendlyURLEntryLocalService.setMainFriendlyURLEntry(
+					importedFriendlyURLEntry);
+			}
 		}
 		else {
 			importedFriendlyURLEntry = _stagedModelRepository.updateStagedModel(
-				portletDataContext, existingFriendlyURLEntry);
+				portletDataContext, importedFriendlyURLEntry);
 
 			boolean mainEntry = GetterUtil.getBoolean(
 				friendlyURLEntryElement.attributeValue("mainEntry"));
@@ -154,6 +180,9 @@ public class FriendlyURLEntryStagedModelDataHandler
 					existingFriendlyURLEntry);
 			}
 		}
+
+		_importAssetCategories(
+			portletDataContext, friendlyURLEntry, importedFriendlyURLEntry);
 
 		portletDataContext.importClassedModel(
 			friendlyURLEntry, importedFriendlyURLEntry);
@@ -166,11 +195,118 @@ public class FriendlyURLEntryStagedModelDataHandler
 		return _stagedModelRepository;
 	}
 
+	private void _exportAssetCategories(
+			PortletDataContext portletDataContext,
+			FriendlyURLEntry friendlyURLEntry)
+		throws Exception {
+
+		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+			FriendlyURLEntry.class.getName(),
+			friendlyURLEntry.getFriendlyURLEntryId());
+
+		if (assetEntry == null) {
+			return;
+		}
+
+		List<AssetEntryAssetCategoryRel> assetEntryAssetCategoryRels =
+			_assetEntryAssetCategoryRelLocalService.
+				getAssetEntryAssetCategoryRelsByAssetEntryId(
+					assetEntry.getEntryId(), QueryUtil.ALL_POS,
+					QueryUtil.ALL_POS,
+					AssetEntryAssetCategoryRelAssetEntryAssetCategoryRelIdComparator.
+						getInstance(true));
+
+		for (AssetEntryAssetCategoryRel assetEntryAssetCategoryRel :
+				assetEntryAssetCategoryRels) {
+
+			AssetCategory assetCategory =
+				_assetCategoryLocalService.fetchCategory(
+					assetEntryAssetCategoryRel.getAssetCategoryId());
+
+			if (assetCategory != null) {
+				StagedModelDataHandlerUtil.exportReferenceStagedModel(
+					portletDataContext, friendlyURLEntry, assetCategory,
+					PortletDataContext.REFERENCE_TYPE_DEPENDENCY);
+			}
+		}
+	}
+
+	private void _importAssetCategories(
+			PortletDataContext portletDataContext,
+			FriendlyURLEntry friendlyURLEntry,
+			FriendlyURLEntry importedFriendlyURL)
+		throws Exception {
+
+		if (friendlyURLEntry.getClassNameId() == _portal.getClassNameId(
+				AssetCategory.class.getName())) {
+
+			return;
+		}
+
+		List<Element> assetCategoryElements =
+			portletDataContext.getReferenceDataElements(
+				friendlyURLEntry, AssetCategory.class);
+
+		if (ListUtil.isEmpty(assetCategoryElements)) {
+			return;
+		}
+
+		List<Long> assetCategoryIds = new ArrayList<>();
+
+		for (Element assetCategoryElement : assetCategoryElements) {
+			String assetCategoryPath = assetCategoryElement.attributeValue(
+				"path");
+
+			AssetCategory assetCategory =
+				(AssetCategory)portletDataContext.getZipEntryAsObject(
+					assetCategoryPath);
+
+			StagedModelDataHandlerUtil.importStagedModel(
+				portletDataContext, assetCategory);
+
+			Map<Long, Long> assetCategoryNewPrimaryKeys =
+				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+					AssetCategory.class);
+
+			assetCategoryIds.add(
+				MapUtil.getLong(
+					assetCategoryNewPrimaryKeys, assetCategory.getCategoryId(),
+					assetCategory.getCategoryId()));
+		}
+
+		ServiceContext serviceContext =
+			ServiceContextThreadLocal.getServiceContext();
+
+		_assetEntryLocalService.updateEntry(
+			serviceContext.getUserId(), importedFriendlyURL.getGroupId(),
+			importedFriendlyURL.getCreateDate(),
+			importedFriendlyURL.getModifiedDate(),
+			FriendlyURLEntry.class.getName(),
+			importedFriendlyURL.getFriendlyURLEntryId(),
+			importedFriendlyURL.getUuid(), 0,
+			ArrayUtil.toLongArray(assetCategoryIds), new String[0], true, false,
+			null, null, null, null, ContentTypes.TEXT_PLAIN, null, null, null,
+			null, null, 0, 0, serviceContext.getAssetPriority());
+	}
+
+	@Reference
+	private AssetCategoryLocalService _assetCategoryLocalService;
+
+	@Reference
+	private AssetEntryAssetCategoryRelLocalService
+		_assetEntryAssetCategoryRelLocalService;
+
+	@Reference
+	private AssetEntryLocalService _assetEntryLocalService;
+
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
 
 	@Reference
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
+
+	@Reference
+	private Portal _portal;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.friendly.url.model.FriendlyURLEntry)"

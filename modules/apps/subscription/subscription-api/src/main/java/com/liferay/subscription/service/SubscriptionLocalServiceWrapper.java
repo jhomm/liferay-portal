@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.subscription.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.subscription.model.Subscription;
 
@@ -29,6 +21,10 @@ import com.liferay.subscription.model.Subscription;
 public class SubscriptionLocalServiceWrapper
 	implements ServiceWrapper<SubscriptionLocalService>,
 			   SubscriptionLocalService {
+
+	public SubscriptionLocalServiceWrapper() {
+		this(null);
+	}
 
 	public SubscriptionLocalServiceWrapper(
 		SubscriptionLocalService subscriptionLocalService) {
@@ -596,6 +592,19 @@ public class SubscriptionLocalServiceWrapper
 	@Override
 	public Subscription updateSubscription(Subscription subscription) {
 		return _subscriptionLocalService.updateSubscription(subscription);
+	}
+
+	@Override
+	public void updateSubscriptions(
+		long companyId, long classNameId, long oldClassPK, long newClassPK) {
+
+		_subscriptionLocalService.updateSubscriptions(
+			companyId, classNameId, oldClassPK, newClassPK);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _subscriptionLocalService.getBasePersistence();
 	}
 
 	@Override

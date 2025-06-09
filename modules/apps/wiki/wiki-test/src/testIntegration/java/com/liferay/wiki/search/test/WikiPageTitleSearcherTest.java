@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.search.test;
@@ -23,7 +14,6 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchResult;
 import com.liferay.portal.kernel.search.SearchResultUtil;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -44,7 +34,6 @@ import com.liferay.wiki.service.WikiPageLocalService;
 import com.liferay.wiki.test.util.WikiTestUtil;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.junit.Assert;
@@ -131,20 +120,17 @@ public class WikiPageTitleSearcherTest {
 	protected void addPage(long nodeId, String title, String content)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), _user.getUserId());
-
 		WikiTestUtil.addPage(
-			_user.getUserId(), nodeId, title, content, true, serviceContext);
+			_user.getUserId(), nodeId, title, content, true,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), _user.getUserId()));
 	}
 
 	protected void addPage(String title, String content) throws Exception {
 		addPage(_node.getNodeId(), title, content);
 	}
 
-	protected void assertSearch(
-			String keywords, Collection<String> expectedValues)
+	protected void assertSearch(String keywords, List<String> expectedValues)
 		throws Exception {
 
 		Hits hits = search(keywords);

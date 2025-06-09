@@ -1,20 +1,14 @@
 @default = "mouseUp"
 definition {
 
-	function javaScriptMouseUp {
-		selenium.javaScriptMouseUp();
+	function mouseUp(locator1) {
+		selenium.mouseUp(${locator1});
 	}
 
-	function mouseRelease {
-		selenium.mouseRelease();
-	}
+	function mouseUpAt(locator1, value1) {
+		selenium.waitForVisible(${locator1}, "true");
 
-	function mouseUp {
-		selenium.mouseUp();
-	}
-
-	function mouseUpAt {
-		selenium.mouseUpAt();
+		selenium.mouseUpAt(${locator1}, ${value1});
 	}
 
 }

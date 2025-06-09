@@ -1,33 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.portal.instances.internal.resource.v1_0;
 
+import com.liferay.headless.portal.instances.dto.v1_0.Admin;
 import com.liferay.headless.portal.instances.dto.v1_0.PortalInstance;
 import com.liferay.headless.portal.instances.resource.v1_0.PortalInstanceResource;
-import com.liferay.petra.lang.SafeCloseable;
-import com.liferay.portal.instances.service.PortalInstancesLocalService;
+import com.liferay.portal.kernel.exception.UserEmailAddressException;
+import com.liferay.portal.kernel.exception.UserScreenNameException;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.security.auth.EmailAddressValidator;
+import com.liferay.portal.kernel.service.CompanyService;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.security.auth.EmailAddressValidatorFactory;
+import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.vulcan.pagination.Page;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,12 +38,9 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 
 	@Override
 	public void deletePortalInstance(String portalInstanceId) throws Exception {
-		Company company = _companyLocalService.getCompanyByWebId(
-			portalInstanceId);
+		Company company = _companyService.getCompanyByWebId(portalInstanceId);
 
-		_companyLocalService.deleteCompany(company.getCompanyId());
-
-		_portalInstancesLocalService.synchronizePortalInstances();
+		_companyService.deleteCompany(company.getCompanyId());
 	}
 
 	@Override
@@ -57,7 +48,7 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 		throws Exception {
 
 		return _toPortalInstance(
-			_companyLocalService.getCompanyByWebId(portalInstanceId));
+			_companyService.getCompanyByWebId(portalInstanceId));
 	}
 
 	@Override
@@ -68,10 +59,10 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 
 		List<PortalInstance> portalInstances = new ArrayList<>();
 
-		_companyLocalService.forEachCompany(
+		_companyService.forEachCompany(
 			company -> {
 				if (!finalSkipDefault ||
-					(_portalInstancesLocalService.getDefaultCompanyId() !=
+					(PortalInstancePool.getDefaultCompanyId() !=
 						company.getCompanyId())) {
 
 					portalInstances.add(_toPortalInstance(company));
@@ -86,8 +77,7 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 			String portalInstanceId, PortalInstance portalInstance)
 		throws Exception {
 
-		Company company = _companyLocalService.getCompanyByWebId(
-			portalInstanceId);
+		Company company = _companyService.getCompanyByWebId(portalInstanceId);
 
 		String virtualHostname = GetterUtil.getString(
 			portalInstance.getVirtualHost(), company.getVirtualHostname());
@@ -95,7 +85,7 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 			portalInstance.getDomain(), company.getMx());
 
 		return _toPortalInstance(
-			_companyLocalService.updateCompany(
+			_companyService.updateCompany(
 				company.getCompanyId(), virtualHostname, domain,
 				company.getMaxUsers(), company.isActive()));
 	}
@@ -104,33 +94,46 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 	public PortalInstance postPortalInstance(PortalInstance portalInstance)
 		throws Exception {
 
-		Company company = _companyLocalService.addCompany(
-			portalInstance.getCompanyId(), portalInstance.getPortalInstanceId(),
-			portalInstance.getVirtualHost(), portalInstance.getDomain(), false,
-			0, true);
+		Admin admin = portalInstance.getAdmin();
 
-		try (SafeCloseable safeCloseable =
-				CompanyThreadLocal.setWithSafeCloseable(
-					company.getCompanyId())) {
+		Long companyId = portalInstance.getCompanyId();
 
-			_portalInstancesLocalService.initializePortalInstance(
-				company.getCompanyId(), portalInstance.getSiteInitializerKey(),
-				_servletContext);
+		if (companyId == null) {
+			companyId = 0L;
 		}
 
-		_portalInstancesLocalService.synchronizePortalInstances();
+		long finalCompanyId = companyId;
 
-		return _toPortalInstance(company);
+		if (admin != null) {
+			_validateAdmin(admin);
+
+			return _toPortalInstance(
+				PortalInstances.addCompany(
+					portalInstance.getSiteInitializerKey(),
+					() -> _companyService.addCompany(
+						finalCompanyId, portalInstance.getPortalInstanceId(),
+						portalInstance.getVirtualHost(),
+						portalInstance.getDomain(), 0, true, null, null,
+						admin.getEmailAddress(), admin.getGivenName(), null,
+						admin.getFamilyName())));
+		}
+
+		return _toPortalInstance(
+			PortalInstances.addCompany(
+				portalInstance.getSiteInitializerKey(),
+				() -> _companyService.addCompany(
+					finalCompanyId, portalInstance.getPortalInstanceId(),
+					portalInstance.getVirtualHost(), portalInstance.getDomain(),
+					0, true)));
 	}
 
 	@Override
 	public void putPortalInstanceActivate(String portalInstanceId)
 		throws Exception {
 
-		Company company = _companyLocalService.getCompanyByWebId(
-			portalInstanceId);
+		Company company = _companyService.getCompanyByWebId(portalInstanceId);
 
-		_companyLocalService.updateCompany(
+		_companyService.updateCompany(
 			company.getCompanyId(), company.getVirtualHostname(),
 			company.getMx(), company.getMaxUsers(), true);
 	}
@@ -139,10 +142,9 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 	public void putPortalInstanceDeactivate(String portalInstanceId)
 		throws Exception {
 
-		Company company = _companyLocalService.getCompanyByWebId(
-			portalInstanceId);
+		Company company = _companyService.getCompanyByWebId(portalInstanceId);
 
-		_companyLocalService.updateCompany(
+		_companyService.updateCompany(
 			company.getCompanyId(), company.getVirtualHostname(),
 			company.getMx(), company.getMaxUsers(), false);
 	}
@@ -150,24 +152,33 @@ public class PortalInstanceResourceImpl extends BasePortalInstanceResourceImpl {
 	private PortalInstance _toPortalInstance(Company company) {
 		return new PortalInstance() {
 			{
-				active = company.isActive();
-				companyId = company.getCompanyId();
-				domain = company.getMx();
-				portalInstanceId = company.getWebId();
-				virtualHost = company.getVirtualHostname();
+				setActive(company::isActive);
+				setCompanyId(company::getCompanyId);
+				setDomain(company::getMx);
+				setPortalInstanceId(company::getWebId);
+				setVirtualHost(company::getVirtualHostname);
 			}
 		};
 	}
 
-	@Reference
-	private CompanyLocalService _companyLocalService;
+	private void _validateAdmin(Admin admin) throws Exception {
+		if (Validator.isNull(admin.getEmailAddress()) ||
+			Validator.isNull(admin.getFamilyName()) ||
+			Validator.isNull(admin.getGivenName())) {
+
+			throw new UserScreenNameException.MustNotBeNull();
+		}
+
+		EmailAddressValidator emailAddressValidator =
+			EmailAddressValidatorFactory.getInstance();
+
+		if (!emailAddressValidator.validate(0, admin.getEmailAddress())) {
+			throw new UserEmailAddressException.MustValidate(
+				admin.getEmailAddress(), emailAddressValidator);
+		}
+	}
 
 	@Reference
-	private PortalInstancesLocalService _portalInstancesLocalService;
-
-	@Reference(
-		target = "(&(original.bean=true)(bean.id=javax.servlet.ServletContext))"
-	)
-	private ServletContext _servletContext;
+	private CompanyService _companyService;
 
 }

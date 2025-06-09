@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -166,18 +157,27 @@ public class ResourcePermissionLocalServiceUtil {
 	 optionally an empty string if no instance exists
 	 * @param portletActions whether to associate portlet actions with the
 	 resource
-	 * @param addGroupPermissions whether to add group permissions
-	 * @param addGuestPermissions whether to add guest permissions
 	 */
 	public static void addResourcePermissions(
 			long companyId, long groupId, long userId, String name,
-			String primKey, boolean portletActions, boolean addGroupPermissions,
-			boolean addGuestPermissions)
+			String primKey, boolean portletActions,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		getService().addResourcePermissions(
 			companyId, groupId, userId, name, primKey, portletActions,
-			addGroupPermissions, addGuestPermissions);
+			serviceContext);
+	}
+
+	public static void addResourcePermissions(
+			long companyId, long groupId, long userId, String name,
+			String[] primKeys, boolean portletActions,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		getService().addResourcePermissions(
+			companyId, groupId, userId, name, primKeys, portletActions,
+			serviceContext);
 	}
 
 	/**
@@ -206,11 +206,11 @@ public class ResourcePermissionLocalServiceUtil {
 	}
 
 	public static void copyModelResourcePermissions(
-			long companyId, String name, long oldPrimKey, long newPrimKey)
+			long companyId, String name, long sourcePrimKey, long targetPrimKey)
 		throws PortalException {
 
 		getService().copyModelResourcePermissions(
-			companyId, name, oldPrimKey, newPrimKey);
+			companyId, name, sourcePrimKey, targetPrimKey);
 	}
 
 	/**
@@ -279,6 +279,13 @@ public class ResourcePermissionLocalServiceUtil {
 		return getService().deleteResourcePermission(resourcePermission);
 	}
 
+	public static void deleteResourcePermissions(
+			long companyId, String name, int scope)
+		throws PortalException {
+
+		getService().deleteResourcePermissions(companyId, name, scope);
+	}
+
 	/**
 	 * Deletes all resource permissions at the scope to resources of the type.
 	 * This method should not be confused with any of the
@@ -333,6 +340,10 @@ public class ResourcePermissionLocalServiceUtil {
 		throws PortalException {
 
 		getService().deleteResourcePermissions(companyId, name, scope, primKey);
+	}
+
+	public static void deleteResourcePermissions(String name) {
+		getService().deleteResourcePermissions(name);
 	}
 
 	public static <T> T dslQuery(DSLQuery dslQuery) {
@@ -552,6 +563,14 @@ public class ResourcePermissionLocalServiceUtil {
 		int start, int end) {
 
 		return getService().getResourcePermissions(start, end);
+	}
+
+	public static List<ResourcePermission> getResourcePermissions(
+		long companyId, String name, int scope, long roleId,
+		boolean viewActionId) {
+
+		return getService().getResourcePermissions(
+			companyId, name, scope, roleId, viewActionId);
 	}
 
 	/**
@@ -814,6 +833,14 @@ public class ResourcePermissionLocalServiceUtil {
 
 		return getService().hasScopeResourcePermission(
 			companyId, name, scope, roleId, actionId);
+	}
+
+	public static void initDefaultModelResourcePermissions(
+			long companyId, java.util.Collection<String> modelResources)
+		throws PortalException {
+
+		getService().initDefaultModelResourcePermissions(
+			companyId, modelResources);
 	}
 
 	public static void initPortletDefaultPermissions(
@@ -1088,6 +1115,10 @@ public class ResourcePermissionLocalServiceUtil {
 
 	public static ResourcePermissionLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(ResourcePermissionLocalService service) {
+		_service = service;
 	}
 
 	private static volatile ResourcePermissionLocalService _service;

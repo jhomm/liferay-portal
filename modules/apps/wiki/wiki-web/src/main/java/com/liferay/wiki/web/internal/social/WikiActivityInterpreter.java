@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.social;
@@ -48,7 +39,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Zsolt Berentey
  */
 @Component(
-	property = "javax.portlet.name=" + WikiPortletKeys.WIKI,
+	property = "jakarta.portlet.name=" + WikiPortletKeys.WIKI,
 	service = SocialActivityInterpreter.class
 )
 public class WikiActivityInterpreter extends BaseSocialActivityInterpreter {
@@ -56,58 +47,6 @@ public class WikiActivityInterpreter extends BaseSocialActivityInterpreter {
 	@Override
 	public String[] getClassNames() {
 		return _CLASS_NAMES;
-	}
-
-	protected String getAttachmentTitle(
-			SocialActivity activity, WikiPageResource pageResource,
-			ServiceContext serviceContext)
-		throws Exception {
-
-		int activityType = activity.getType();
-
-		if ((activityType == SocialActivityConstants.TYPE_ADD_ATTACHMENT) ||
-			(activityType ==
-				SocialActivityConstants.TYPE_MOVE_ATTACHMENT_TO_TRASH) ||
-			(activityType ==
-				SocialActivityConstants.TYPE_RESTORE_ATTACHMENT_FROM_TRASH)) {
-
-			String link = null;
-
-			FileEntry fileEntry = null;
-
-			try {
-				long fileEntryId = GetterUtil.getLong(
-					activity.getExtraDataValue("fileEntryId"));
-
-				fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
-					fileEntryId);
-			}
-			catch (NoSuchModelException noSuchModelException) {
-
-				// LPS-52675
-
-				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchModelException, noSuchModelException);
-				}
-			}
-
-			String fileEntryTitle = activity.getExtraDataValue(
-				"fileEntryTitle");
-
-			if ((fileEntry != null) && !fileEntry.isInTrash()) {
-				link = StringBundler.concat(
-					serviceContext.getPathMain(),
-					"/wiki/get_page_attachment?p_l_id=",
-					serviceContext.getPlid(), "&nodeId=",
-					pageResource.getNodeId(), "&title=",
-					URLCodec.encodeURL(pageResource.getTitle()), "&fileName=",
-					fileEntryTitle);
-			}
-
-			return wrapLink(link, fileEntryTitle);
-		}
-
-		return StringPool.BLANK;
 	}
 
 	@Override
@@ -138,7 +77,7 @@ public class WikiActivityInterpreter extends BaseSocialActivityInterpreter {
 
 		return new Object[] {
 			groupName, creatorUserName, title,
-			getAttachmentTitle(activity, pageResource, serviceContext)
+			_getAttachmentTitle(activity, pageResource, serviceContext)
 		};
 	}
 
@@ -252,6 +191,58 @@ public class WikiActivityInterpreter extends BaseSocialActivityInterpreter {
 		}
 
 		return true;
+	}
+
+	private String _getAttachmentTitle(
+			SocialActivity activity, WikiPageResource pageResource,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		int activityType = activity.getType();
+
+		if ((activityType == SocialActivityConstants.TYPE_ADD_ATTACHMENT) ||
+			(activityType ==
+				SocialActivityConstants.TYPE_MOVE_ATTACHMENT_TO_TRASH) ||
+			(activityType ==
+				SocialActivityConstants.TYPE_RESTORE_ATTACHMENT_FROM_TRASH)) {
+
+			String link = null;
+
+			FileEntry fileEntry = null;
+
+			try {
+				long fileEntryId = GetterUtil.getLong(
+					activity.getExtraDataValue("fileEntryId"));
+
+				fileEntry = PortletFileRepositoryUtil.getPortletFileEntry(
+					fileEntryId);
+			}
+			catch (NoSuchModelException noSuchModelException) {
+
+				// LPS-52675
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(noSuchModelException);
+				}
+			}
+
+			String fileEntryTitle = activity.getExtraDataValue(
+				"fileEntryTitle");
+
+			if ((fileEntry != null) && !fileEntry.isInTrash()) {
+				link = StringBundler.concat(
+					serviceContext.getPathMain(),
+					"/wiki/get_page_attachment?p_l_id=",
+					serviceContext.getPlid(), "&nodeId=",
+					pageResource.getNodeId(), "&title=",
+					URLCodec.encodeURL(pageResource.getTitle()), "&fileName=",
+					fileEntryTitle);
+			}
+
+			return wrapLink(link, fileEntryTitle);
+		}
+
+		return StringPool.BLANK;
 	}
 
 	private static final String[] _CLASS_NAMES = {WikiPage.class.getName()};

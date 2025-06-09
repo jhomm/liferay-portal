@@ -1,20 +1,11 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
+<%@ taglib uri="jakarta.tags.core" prefix="c" %>
 
 <%@ taglib uri="http://java.sun.com/portlet_2_0" prefix="portlet" %>
 
@@ -28,8 +19,7 @@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %><%@
 taglib uri="http://liferay.com/tld/util" prefix="liferay-util" %>
 
-<%@ page import="com.liferay.petra.portlet.url.builder.PortletURLBuilder" %><%@
-page import="com.liferay.petra.string.StringPool" %><%@
+<%@ page import="com.liferay.petra.string.StringPool" %><%@
 page import="com.liferay.portal.kernel.bean.BeanParamUtil" %><%@
 page import="com.liferay.portal.kernel.bean.BeanPropertiesUtil" %><%@
 page import="com.liferay.portal.kernel.dao.search.SearchContainer" %><%@
@@ -37,6 +27,7 @@ page import="com.liferay.portal.kernel.exception.NoSuchRoleException" %><%@
 page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.portlet.LiferayWindowState" %><%@
 page import="com.liferay.portal.kernel.portlet.PortletURLUtil" %><%@
+page import="com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder" %><%@
 page import="com.liferay.portal.kernel.security.permission.ActionKeys" %><%@
 page import="com.liferay.portal.kernel.servlet.MultiSessionMessages" %><%@
 page import="com.liferay.portal.kernel.util.DateUtil" %><%@
@@ -54,7 +45,6 @@ page import="com.liferay.portal.kernel.workflow.RequiredWorkflowDefinitionExcept
 page import="com.liferay.portal.kernel.workflow.WorkflowConstants" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowDefinitionFileException" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowDefinitionTitleException" %><%@
-page import="com.liferay.portal.kernel.workflow.WorkflowEngineManagerUtil" %><%@
 page import="com.liferay.portal.kernel.workflow.WorkflowException" %><%@
 page import="com.liferay.portal.workflow.constants.WorkflowWebKeys" %><%@
 page import="com.liferay.portal.workflow.exception.IncompleteWorkflowInstancesException" %><%@
@@ -64,20 +54,20 @@ page import="com.liferay.portal.workflow.kaleo.designer.web.internal.constants.K
 page import="com.liferay.portal.workflow.kaleo.designer.web.internal.dao.search.KaleoDefinitionVersionResultRowSplitter" %><%@
 page import="com.liferay.portal.workflow.kaleo.designer.web.internal.permission.KaleoDefinitionVersionPermission" %><%@
 page import="com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.display.context.KaleoDesignerDisplayContext" %><%@
-page import="com.liferay.portal.workflow.kaleo.designer.web.internal.search.KaleoDefinitionVersionSearch" %><%@
-page import="com.liferay.portal.workflow.kaleo.designer.web.internal.util.KaleoDesignerUtil" %><%@
+page import="com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.display.context.KaleoDesignerManagementToolbarDisplayContext" %><%@
 page import="com.liferay.portal.workflow.kaleo.model.KaleoDefinition" %><%@
 page import="com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion" %><%@
 page import="com.liferay.portal.workflow.kaleo.service.KaleoDefinitionVersionLocalServiceUtil" %><%@
 page import="com.liferay.taglib.search.ResultRow" %>
 
+<%@ page import="jakarta.portlet.PortletRequest" %><%@
+page import="jakarta.portlet.PortletURL" %><%@
+page import="jakarta.portlet.WindowState" %>
+
 <%@ page import="java.text.Format" %>
 
 <%@ page import="java.util.HashMap" %><%@
 page import="java.util.Objects" %>
-
-<%@ page import="javax.portlet.PortletRequest" %><%@
-page import="javax.portlet.PortletURL" %>
 
 <liferay-frontend:defineObjects />
 
@@ -101,13 +91,13 @@ else if (StringUtil.equals(navigation, "not-published")) {
 	displayedStatus = WorkflowConstants.STATUS_DRAFT;
 }
 
-Format dateFormatTime = null;
+Format displayDateFormat = null;
 
 if (DateUtil.isFormatAmPm(locale)) {
-	dateFormatTime = FastDateFormatFactoryUtil.getSimpleDateFormat(LanguageUtil.get(request, "mmm-d-yyyy-hh-mm-a"), locale, timeZone);
+	displayDateFormat = FastDateFormatFactoryUtil.getSimpleDateFormat(LanguageUtil.get(request, "mmm-d-yyyy-hh-mm-a"), locale, timeZone);
 }
 else {
-	dateFormatTime = FastDateFormatFactoryUtil.getSimpleDateFormat(LanguageUtil.get(request, "mmm-d-yyyy-hh-mm"), locale, timeZone);
+	displayDateFormat = FastDateFormatFactoryUtil.getSimpleDateFormat(LanguageUtil.get(request, "mmm-d-yyyy-hh-mm"), locale, timeZone);
 }
 %>
 

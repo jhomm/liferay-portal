@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -26,6 +17,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  */
 public class AssetListEntryServiceWrapper
 	implements AssetListEntryService, ServiceWrapper<AssetListEntryService> {
+
+	public AssetListEntryServiceWrapper() {
+		this(null);
+	}
 
 	public AssetListEntryServiceWrapper(
 		AssetListEntryService assetListEntryService) {
@@ -55,32 +50,36 @@ public class AssetListEntryServiceWrapper
 
 	@Override
 	public AssetListEntry addAssetListEntry(
-			long groupId, String title, int type,
+			String externalReferenceCode, long groupId, String title, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryService.addAssetListEntry(
-			groupId, title, type, serviceContext);
+			externalReferenceCode, groupId, title, type, serviceContext);
 	}
 
 	@Override
 	public AssetListEntry addDynamicAssetListEntry(
-			long userId, long groupId, String title, String typeSettings,
+			String externalReferenceCode, long groupId, String title,
+			String typeSettings,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryService.addDynamicAssetListEntry(
-			userId, groupId, title, typeSettings, serviceContext);
+			externalReferenceCode, groupId, title, typeSettings,
+			serviceContext);
 	}
 
 	@Override
 	public AssetListEntry addManualAssetListEntry(
-			long userId, long groupId, String title, long[] assetEntryIds,
+			String externalReferenceCode, long groupId, String title,
+			long[] assetEntryIds,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryService.addManualAssetListEntry(
-			userId, groupId, title, assetEntryIds, serviceContext);
+			externalReferenceCode, groupId, title, assetEntryIds,
+			serviceContext);
 	}
 
 	@Override
@@ -120,6 +119,16 @@ public class AssetListEntryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _assetListEntryService.fetchAssetListEntry(assetListEntryId);
+	}
+
+	@Override
+	public AssetListEntry fetchAssetListEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetListEntryService.
+			fetchAssetListEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -274,6 +283,15 @@ public class AssetListEntryServiceWrapper
 
 		return _assetListEntryService.getAssetListEntry(
 			groupId, assetListEntryKey);
+	}
+
+	@Override
+	public AssetListEntry getAssetListEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _assetListEntryService.getAssetListEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	@Override

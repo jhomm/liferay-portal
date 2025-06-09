@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.model;
@@ -62,6 +53,7 @@ public class AssetVocabularyWrapper
 		attributes.put("settings", getSettings());
 		attributes.put("visibilityType", getVisibilityType());
 		attributes.put("lastPublishDate", getLastPublishDate());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -169,6 +161,12 @@ public class AssetVocabularyWrapper
 
 		if (lastPublishDate != null) {
 			setLastPublishDate(lastPublishDate);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -399,6 +397,16 @@ public class AssetVocabularyWrapper
 	}
 
 	/**
+	 * Returns the status of this asset vocabulary.
+	 *
+	 * @return the status of this asset vocabulary
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
 	 * Returns the title of this asset vocabulary.
 	 *
 	 * @return the title of this asset vocabulary
@@ -561,6 +569,10 @@ public class AssetVocabularyWrapper
 			classNameId, classTypePK);
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #isMissingRequiredCategory(long, long, long[], long)}
+	 */
+	@Deprecated
 	@Override
 	public boolean isMissingRequiredCategory(
 		long classNameId, long classTypePK, long[] categoryIds) {
@@ -570,13 +582,32 @@ public class AssetVocabularyWrapper
 	}
 
 	@Override
+	public boolean isMissingRequiredCategory(
+		long classNameId, long classTypePK, long[] categoryIds, long groupId) {
+
+		return model.isMissingRequiredCategory(
+			classNameId, classTypePK, categoryIds, groupId);
+	}
+
+	@Override
 	public boolean isMultiValued() {
 		return model.isMultiValued();
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #isRequired(long, long, long)}
+	 */
+	@Deprecated
 	@Override
 	public boolean isRequired(long classNameId, long classTypePK) {
 		return model.isRequired(classNameId, classTypePK);
+	}
+
+	@Override
+	public boolean isRequired(
+		long classNameId, long classTypePK, long groupId) {
+
+		return model.isRequired(classNameId, classTypePK, groupId);
 	}
 
 	@Override
@@ -777,6 +808,16 @@ public class AssetVocabularyWrapper
 	}
 
 	/**
+	 * Sets the status of this asset vocabulary.
+	 *
+	 * @param status the status of this asset vocabulary
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets the title of this asset vocabulary.
 	 *
 	 * @param title the title of this asset vocabulary
@@ -898,6 +939,11 @@ public class AssetVocabularyWrapper
 	@Override
 	public void setVocabularyId(long vocabularyId) {
 		model.setVocabularyId(vocabularyId);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

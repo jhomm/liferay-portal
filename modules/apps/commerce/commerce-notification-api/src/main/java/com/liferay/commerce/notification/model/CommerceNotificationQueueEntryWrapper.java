@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.model;
@@ -28,8 +19,10 @@ import java.util.Map;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceNotificationQueueEntry
+ * @deprecated
  * @generated
  */
+@Deprecated
 public class CommerceNotificationQueueEntryWrapper
 	extends BaseModelWrapper<CommerceNotificationQueueEntry>
 	implements CommerceNotificationQueueEntry,
@@ -45,6 +38,7 @@ public class CommerceNotificationQueueEntryWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put(
 			"commerceNotificationQueueEntryId",
 			getCommerceNotificationQueueEntryId());
@@ -76,6 +70,12 @@ public class CommerceNotificationQueueEntryWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		Long commerceNotificationQueueEntryId = (Long)attributes.get(
 			"commerceNotificationQueueEntryId");
 
@@ -352,6 +352,16 @@ public class CommerceNotificationQueueEntryWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this commerce notification queue entry.
+	 *
+	 * @return the mvcc version of this commerce notification queue entry
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the primary key of this commerce notification queue entry.
 	 *
 	 * @return the primary key of this commerce notification queue entry
@@ -607,6 +617,16 @@ public class CommerceNotificationQueueEntryWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this commerce notification queue entry.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce notification queue entry
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the primary key of this commerce notification queue entry.
 	 *
 	 * @param primaryKey the primary key of this commerce notification queue entry
@@ -704,6 +724,11 @@ public class CommerceNotificationQueueEntryWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

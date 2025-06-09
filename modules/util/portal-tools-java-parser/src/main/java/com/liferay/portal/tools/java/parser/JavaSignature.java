@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser;
@@ -25,16 +16,18 @@ import java.util.Objects;
 public class JavaSignature extends BaseJavaTerm {
 
 	public JavaSignature(
-		String objectName, List<JavaSimpleValue> modifiers,
-		JavaType returnJavaType, List<JavaType> genericJavaTypes,
-		List<JavaParameter> javaParameters, List<JavaType> exceptionJavaTypes) {
+		boolean compactRecordConstructor, List<JavaType> exceptionJavaTypes,
+		List<JavaType> genericJavaTypes, List<JavaParameter> javaParameters,
+		List<JavaSimpleValue> modifiers, String objectName,
+		JavaType returnJavaType) {
 
-		_objectName = new JavaSimpleValue(objectName);
-		_modifiers = modifiers;
-		_returnJavaType = returnJavaType;
+		_compactRecordConstructor = compactRecordConstructor;
+		_exceptionJavaTypes = exceptionJavaTypes;
 		_genericJavaTypes = genericJavaTypes;
 		_javaParameters = javaParameters;
-		_exceptionJavaTypes = exceptionJavaTypes;
+		_modifiers = modifiers;
+		_objectName = new JavaSimpleValue(objectName);
+		_returnJavaType = returnJavaType;
 	}
 
 	public String getIndent() {
@@ -77,9 +70,13 @@ public class JavaSignature extends BaseJavaTerm {
 
 		if (_javaParameters.isEmpty()) {
 			if (_exceptionJavaTypes.isEmpty()) {
-				if ((_genericJavaTypes == null) &&
-					((_returnJavaType == null) ||
-					 Objects.equals(_returnJavaType.toString(), "void"))) {
+				if (_compactRecordConstructor) {
+					appendSingleLine(
+						sb, _objectName, "", "" + suffix, NO_MAX_LINE_LENGTH);
+				}
+				else if ((_genericJavaTypes == null) &&
+						 ((_returnJavaType == null) ||
+						  Objects.equals(_returnJavaType.toString(), "void"))) {
 
 					appendSingleLine(
 						sb, _objectName, "", "()" + suffix, NO_MAX_LINE_LENGTH);
@@ -189,6 +186,7 @@ public class JavaSignature extends BaseJavaTerm {
 		return sb.toString();
 	}
 
+	private final boolean _compactRecordConstructor;
 	private final List<JavaType> _exceptionJavaTypes;
 	private final List<JavaType> _genericJavaTypes;
 	private String _indent;

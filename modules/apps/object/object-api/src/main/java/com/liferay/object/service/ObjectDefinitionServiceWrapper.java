@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -27,6 +18,10 @@ public class ObjectDefinitionServiceWrapper
 	implements ObjectDefinitionService,
 			   ServiceWrapper<ObjectDefinitionService> {
 
+	public ObjectDefinitionServiceWrapper() {
+		this(null);
+	}
+
 	public ObjectDefinitionServiceWrapper(
 		ObjectDefinitionService objectDefinitionService) {
 
@@ -35,16 +30,61 @@ public class ObjectDefinitionServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectDefinition addCustomObjectDefinition(
+			long objectFolderId, String className, boolean enableComments,
+			boolean enableFriendlyURLCustomization, boolean enableIndexSearch,
+			boolean enableLocalization, boolean enableObjectEntryDraft,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
 			java.util.Map<java.util.Locale, String> labelMap, String name,
 			String panelAppOrder, String panelCategoryKey,
 			java.util.Map<java.util.Locale, String> pluralLabelMap,
-			String scope,
+			boolean portlet, String scope, String storageType,
+			java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings,
 			java.util.List<com.liferay.object.model.ObjectField> objectFields)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionService.addCustomObjectDefinition(
-			labelMap, name, panelAppOrder, panelCategoryKey, pluralLabelMap,
-			scope, objectFields);
+			objectFolderId, className, enableComments,
+			enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap, name,
+			panelAppOrder, panelCategoryKey, pluralLabelMap, portlet, scope,
+			storageType, objectDefinitionSettings, objectFields);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition addObjectDefinition(
+			String externalReferenceCode, long objectFolderId,
+			boolean modifiable, String scope, boolean system)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.addObjectDefinition(
+			externalReferenceCode, objectFolderId, modifiable, scope, system);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition addSystemObjectDefinition(
+			String externalReferenceCode, long userId, long objectFolderId,
+			String className, boolean enableComments,
+			boolean enableFriendlyURLCustomization, boolean enableIndexSearch,
+			boolean enableLocalization, boolean enableObjectEntryDraft,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
+			java.util.Map<java.util.Locale, String> labelMap, String name,
+			String panelAppOrder, String panelCategoryKey,
+			java.util.Map<java.util.Locale, String> pluralLabelMap,
+			boolean portlet, String scope,
+			java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings,
+			java.util.List<com.liferay.object.model.ObjectField> objectFields)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.addSystemObjectDefinition(
+			externalReferenceCode, userId, objectFolderId, className,
+			enableComments, enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap, name,
+			panelAppOrder, panelCategoryKey, pluralLabelMap, portlet, scope,
+			objectDefinitionSettings, objectFields);
 	}
 
 	@Override
@@ -57,11 +97,42 @@ public class ObjectDefinitionServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectDefinition
+			fetchObjectDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.
+			fetchObjectDefinitionByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectDefinition>
+		getCMSObjectDefinitions(
+			long companyId, String[] objectFolderExternalReferenceCodes) {
+
+		return _objectDefinitionService.getCMSObjectDefinitions(
+			companyId, objectFolderExternalReferenceCodes);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectDefinition getObjectDefinition(
 			long objectDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionService.getObjectDefinition(objectDefinitionId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			getObjectDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.
+			getObjectDefinitionByExternalReferenceCode(
+				externalReferenceCode, companyId);
 	}
 
 	@Override
@@ -114,19 +185,79 @@ public class ObjectDefinitionServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectDefinition
+			publishSystemObjectDefinition(long objectDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.publishSystemObjectDefinition(
+			objectDefinitionId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
 			updateCustomObjectDefinition(
-				Long objectDefinitionId, long descriptionObjectFieldId,
-				long titleObjectFieldId, boolean active,
+				String externalReferenceCode, long objectDefinitionId,
+				long accountEntryRestrictedObjectFieldId,
+				long descriptionObjectFieldId, long objectFolderId,
+				long titleObjectFieldId, boolean accountEntryRestricted,
+				boolean active, String className, boolean enableCategorization,
+				boolean enableComments, boolean enableFriendlyURLCustomization,
+				boolean enableIndexSearch, boolean enableLocalization,
+				boolean enableObjectEntryDraft,
+				boolean enableObjectEntryHistory,
+				boolean enableObjectEntryVersioning,
+				String friendlyURLSeparator,
 				java.util.Map<java.util.Locale, String> labelMap, String name,
-				String panelAppOrder, String panelCategoryKey,
+				String panelAppOrder, String panelCategoryKey, boolean portlet,
 				java.util.Map<java.util.Locale, String> pluralLabelMap,
-				String scope)
+				String scope, int status,
+				java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+					objectDefinitionSettings)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectDefinitionService.updateCustomObjectDefinition(
-			objectDefinitionId, descriptionObjectFieldId, titleObjectFieldId,
-			active, labelMap, name, panelAppOrder, panelCategoryKey,
-			pluralLabelMap, scope);
+			externalReferenceCode, objectDefinitionId,
+			accountEntryRestrictedObjectFieldId, descriptionObjectFieldId,
+			objectFolderId, titleObjectFieldId, accountEntryRestricted, active,
+			className, enableCategorization, enableComments,
+			enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryHistory, enableObjectEntryVersioning,
+			friendlyURLSeparator, labelMap, name, panelAppOrder,
+			panelCategoryKey, portlet, pluralLabelMap, scope, status,
+			objectDefinitionSettings);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			updateExternalReferenceCode(
+				long objectDefinitionId, String externalReferenceCode)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.updateExternalReferenceCode(
+			objectDefinitionId, externalReferenceCode);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition
+			updateSystemObjectDefinition(
+				String externalReferenceCode, long objectDefinitionId,
+				long objectFolderId, long titleObjectFieldId,
+				java.util.List<com.liferay.object.model.ObjectDefinitionSetting>
+					objectDefinitionSettings)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.updateSystemObjectDefinition(
+			externalReferenceCode, objectDefinitionId, objectFolderId,
+			titleObjectFieldId, objectDefinitionSettings);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectDefinition updateTitleObjectFieldId(
+			long objectDefinitionId, long titleObjectFieldId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectDefinitionService.updateTitleObjectFieldId(
+			objectDefinitionId, titleObjectFieldId);
 	}
 
 	@Override

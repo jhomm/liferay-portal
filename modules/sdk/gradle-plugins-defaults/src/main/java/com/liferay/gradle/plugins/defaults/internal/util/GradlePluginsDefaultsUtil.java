@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults.internal.util;
@@ -256,11 +247,7 @@ public class GradlePluginsDefaultsUtil {
 	public static boolean isSnapshot(Project project) {
 		String version = String.valueOf(project.getVersion());
 
-		if (version.endsWith(SNAPSHOT_VERSION_SUFFIX)) {
-			return true;
-		}
-
-		return false;
+		return version.endsWith(SNAPSHOT_VERSION_SUFFIX);
 	}
 
 	public static boolean isSnapshot(Project project, String... propertyNames) {
@@ -307,8 +294,11 @@ public class GradlePluginsDefaultsUtil {
 
 	public static boolean isTestProject(File dir) {
 		String dirName = dir.getName();
+		String dirPath = dir.getPath();
 
-		if (dirName.endsWith(_TEST_PROJECT_SUFFIX)) {
+		if (dirName.endsWith(_TEST_PROJECT_SUFFIX) &&
+			!dirPath.contains(_THIRD_PARTY_DIR_NAME)) {
+
 			return true;
 		}
 
@@ -316,9 +306,11 @@ public class GradlePluginsDefaultsUtil {
 	}
 
 	public static boolean isTestProject(Project project) {
-		String projectName = project.getName();
+		String projectPath = project.getPath();
 
-		if (projectName.endsWith(_TEST_PROJECT_SUFFIX)) {
+		if (projectPath.endsWith(_TEST_PROJECT_SUFFIX) &&
+			!projectPath.contains(_THIRD_PARTY_DIR_NAME)) {
+
 			return true;
 		}
 
@@ -340,5 +332,7 @@ public class GradlePluginsDefaultsUtil {
 	private static final String _BUILD_PROFILE_FILE_NAME_PREFIX = ".lfrbuild-";
 
 	private static final String _TEST_PROJECT_SUFFIX = "-test";
+
+	private static final String _THIRD_PARTY_DIR_NAME = "third-party";
 
 }

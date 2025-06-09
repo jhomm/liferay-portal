@@ -1,0 +1,47 @@
+task runGradleTest
+
+runGradleTest {
+	dependsOn ":sample-custom-element-1:createClientExtensionConfig"
+	dependsOn ":sample-iframe-1:buildClientExtensionZip"
+	dependsOn ":sample-theme-css-1:buildClientExtensionZip"
+	dependsOn ":sample-theme-favicon:buildClientExtensionZip"
+
+	doLast {
+		Project sampleCustomElement1Project = project(":sample-custom-element-1")
+
+		File clientExtensionConfigFile = new File(sampleCustomElement1Project.buildDir, "liferay-client-extension-build/sample-custom-element-1.client-extension-config.json")
+
+		assert clientExtensionConfigFile.exists()
+
+		Project sampleIFrame1Project = project(":sample-iframe-1")
+
+		FileTree sampleIFrame1DistZipFileTree = zipTree(sampleIFrame1Project.file("dist/sample-iframe-1.zip"))
+
+		File lcpJsonFile = sampleIFrame1DistZipFileTree.files.find {
+			it.name == "LCP.json"
+		}
+
+		assert !lcpJsonFile.text.contains("sample-iframe")
+		assert lcpJsonFile.text.contains("sampleiframe")
+
+		Project sampleThemeCSS1Project = project(":sample-theme-css-1")
+
+		FileTree sampleThemeCSS1ZipFileTree = zipTree(sampleThemeCSS1Project.file("dist/sample-theme-css-1.zip"))
+
+		assert !sampleThemeCSS1ZipFileTree.isEmpty()
+
+		Project sampleThemeFaviconProject = project(":sample-theme-favicon")
+
+		File sampleConfigFile = new File(sampleThemeFaviconProject.buildDir, "liferay-client-extension-build/sample-theme-favicon.client-extension-config.json")
+
+		assert sampleConfigFile.exists()
+
+		assert sampleConfigFile.text.contains("CETConfiguration")
+
+		Task createClientExtensionConfigTask = sampleThemeFaviconProject.tasks["createClientExtensionConfig"]
+
+		File clientExtensionYamlFile = sampleThemeFaviconProject.file("client-extension.yaml")
+
+		assert createClientExtensionConfigTask.inputs.files.asPath.contains(clientExtensionYamlFile.path)
+	}
+}

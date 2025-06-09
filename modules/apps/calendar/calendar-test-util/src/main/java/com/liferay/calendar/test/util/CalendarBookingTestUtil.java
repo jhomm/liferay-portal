@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.test.util;
@@ -24,10 +15,15 @@ import com.liferay.calendar.recurrence.RecurrenceSerializer;
 import com.liferay.calendar.service.CalendarBookingLocalServiceUtil;
 import com.liferay.calendar.util.CalendarResourceUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowThreadLocal;
@@ -40,6 +36,25 @@ import java.util.Map;
  * @author Adam Brandizzi
  */
 public class CalendarBookingTestUtil {
+
+	public static CalendarBooking addAllDayCalendarBooking(String timeZoneId)
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		User user = UserTestUtil.addUser(group.getGroupId());
+
+		user.setTimeZoneId(timeZoneId);
+
+		user = UserLocalServiceUtil.updateUser(user);
+
+		return addAllDayCalendarBooking(
+			user, CalendarTestUtil.addCalendar(group),
+			getCalendarTimeInMillis(1, 0, 0),
+			getCalendarTimeInMillis(1, 23, 59),
+			ServiceContextTestUtil.getServiceContext(
+				group.getGroupId(), user.getUserId()));
+	}
 
 	public static CalendarBooking addAllDayCalendarBooking(
 			User user, Calendar calendar, long startTime, long endTime,
@@ -420,6 +435,13 @@ public class CalendarBookingTestUtil {
 		serviceContext.setUserId(user.getUserId());
 
 		return serviceContext;
+	}
+
+	public static long getCalendarTimeInMillis(int day, int hour, int minute) {
+		java.util.Calendar jCalendar = CalendarFactoryUtil.getCalendar(
+			2022, java.util.Calendar.JANUARY, day, hour, minute);
+
+		return jCalendar.getTimeInMillis();
 	}
 
 	public static CalendarBooking getChildCalendarBooking(

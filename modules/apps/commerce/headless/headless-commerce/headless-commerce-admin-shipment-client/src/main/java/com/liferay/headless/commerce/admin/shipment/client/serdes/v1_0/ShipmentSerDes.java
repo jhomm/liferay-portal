@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.shipment.client.serdes.v1_0;
@@ -17,6 +8,8 @@ package com.liferay.headless.commerce.admin.shipment.client.serdes.v1_0;
 import com.liferay.headless.commerce.admin.shipment.client.dto.v1_0.Shipment;
 import com.liferay.headless.commerce.admin.shipment.client.dto.v1_0.ShipmentItem;
 import com.liferay.headless.commerce.admin.shipment.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -26,9 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -59,7 +49,7 @@ public class ShipmentSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (shipment.getAccountId() != null) {
 			if (sb.length() > 1) {
@@ -109,6 +99,26 @@ public class ShipmentSerDes {
 			sb.append("\"");
 		}
 
+		if (shipment.getCustomFields() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customFields\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < shipment.getCustomFields().length; i++) {
+				sb.append(shipment.getCustomFields()[i]);
+
+				if ((i + 1) < shipment.getCustomFields().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		if (shipment.getExpectedDate() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -120,6 +130,20 @@ public class ShipmentSerDes {
 
 			sb.append(
 				liferayToJSONDateFormat.format(shipment.getExpectedDate()));
+
+			sb.append("\"");
+		}
+
+		if (shipment.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipment.getExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -145,6 +169,20 @@ public class ShipmentSerDes {
 
 			sb.append(
 				liferayToJSONDateFormat.format(shipment.getModifiedDate()));
+
+			sb.append("\"");
+		}
+
+		if (shipment.getOrderExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"orderExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipment.getOrderExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -262,6 +300,20 @@ public class ShipmentSerDes {
 			sb.append("\"");
 		}
 
+		if (shipment.getTrackingURL() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"trackingURL\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipment.getTrackingURL()));
+
+			sb.append("\"");
+		}
+
 		if (shipment.getUserName() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -295,7 +347,7 @@ public class ShipmentSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (shipment.getAccountId() == null) {
 			map.put("accountId", null);
@@ -327,6 +379,13 @@ public class ShipmentSerDes {
 				liferayToJSONDateFormat.format(shipment.getCreateDate()));
 		}
 
+		if (shipment.getCustomFields() == null) {
+			map.put("customFields", null);
+		}
+		else {
+			map.put("customFields", String.valueOf(shipment.getCustomFields()));
+		}
+
 		if (shipment.getExpectedDate() == null) {
 			map.put("expectedDate", null);
 		}
@@ -334,6 +393,15 @@ public class ShipmentSerDes {
 			map.put(
 				"expectedDate",
 				liferayToJSONDateFormat.format(shipment.getExpectedDate()));
+		}
+
+		if (shipment.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(shipment.getExternalReferenceCode()));
 		}
 
 		if (shipment.getId() == null) {
@@ -350,6 +418,15 @@ public class ShipmentSerDes {
 			map.put(
 				"modifiedDate",
 				liferayToJSONDateFormat.format(shipment.getModifiedDate()));
+		}
+
+		if (shipment.getOrderExternalReferenceCode() == null) {
+			map.put("orderExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"orderExternalReferenceCode",
+				String.valueOf(shipment.getOrderExternalReferenceCode()));
 		}
 
 		if (shipment.getOrderId() == null) {
@@ -427,6 +504,13 @@ public class ShipmentSerDes {
 				"trackingNumber", String.valueOf(shipment.getTrackingNumber()));
 		}
 
+		if (shipment.getTrackingURL() == null) {
+			map.put("trackingURL", null);
+		}
+		else {
+			map.put("trackingURL", String.valueOf(shipment.getTrackingURL()));
+		}
+
 		if (shipment.getUserName() == null) {
 			map.put("userName", null);
 		}
@@ -450,6 +534,81 @@ public class ShipmentSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "accountId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "carrier")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "createDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expectedDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "modifiedDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "orderExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "orderId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shipmentItems")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingAddress")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingAddressId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shippingMethodId")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "shippingOptionName")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "status")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "trackingNumber")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "trackingURL")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "userName")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Shipment shipment, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -463,8 +622,7 @@ public class ShipmentSerDes {
 			else if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					shipment.setActions(
-						(Map)ShipmentSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "carrier")) {
@@ -478,10 +636,39 @@ public class ShipmentSerDes {
 						toDate((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					com.liferay.headless.commerce.admin.shipment.client.custom.
+						field.CustomField[] customFieldsArray = new
+						com.liferay.headless.commerce.admin.shipment.client.
+							custom.field.CustomField
+							[jsonParserFieldValues.length];
+
+					for (int i = 0; i < customFieldsArray.length; i++) {
+						customFieldsArray[i] =
+							com.liferay.headless.commerce.admin.shipment.client.
+								custom.field.CustomField.toDTO(
+									(String)jsonParserFieldValues[i]);
+					}
+
+					shipment.setCustomFields(customFieldsArray);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "expectedDate")) {
 				if (jsonParserFieldValue != null) {
 					shipment.setExpectedDate(
 						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					shipment.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -495,6 +682,14 @@ public class ShipmentSerDes {
 						toDate((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "orderExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					shipment.setOrderExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "orderId")) {
 				if (jsonParserFieldValue != null) {
 					shipment.setOrderId(
@@ -503,14 +698,18 @@ public class ShipmentSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "shipmentItems")) {
 				if (jsonParserFieldValue != null) {
-					shipment.setShipmentItems(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> ShipmentItemSerDes.toDTO((String)object)
-						).toArray(
-							size -> new ShipmentItem[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					ShipmentItem[] shipmentItemsArray =
+						new ShipmentItem[jsonParserFieldValues.length];
+
+					for (int i = 0; i < shipmentItemsArray.length; i++) {
+						shipmentItemsArray[i] = ShipmentItemSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					shipment.setShipmentItems(shipmentItemsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "shippingAddress")) {
@@ -557,6 +756,11 @@ public class ShipmentSerDes {
 					shipment.setTrackingNumber((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "trackingURL")) {
+				if (jsonParserFieldValue != null) {
+					shipment.setTrackingURL((String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "userName")) {
 				if (jsonParserFieldValue != null) {
 					shipment.setUserName((String)jsonParserFieldValue);
@@ -594,36 +798,7 @@ public class ShipmentSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -633,6 +808,42 @@ public class ShipmentSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

@@ -1,0 +1,177 @@
+definition {
+
+	@summary = "Default summary"
+	macro archiveAndDeleteOriginalFile(sourceFilePath = null, fileNameWithExtension = null) {
+		Variables.assertDefined(parameterList = "${sourceFilePath},${fileNameWithExtension}");
+
+		if (!(isSet(destinationPath))) {
+			var destinationPath = PropsUtil.get("liferay.home.dir.name");
+		}
+
+		var archivedFilePath = "${destinationPath}/${fileNameWithExtension}";
+
+		ArchiveUtil.archive(${sourceFilePath}, ${archivedFilePath});
+
+		FileUtil.delete(${sourceFilePath});
+
+		return ${archivedFilePath};
+	}
+
+	@summary = "Default summary"
+	macro assertExportedFileContainsCorrectElements(fileName = null, expectedValue = null, jsonObject = null) {
+		Variables.assertDefined(parameterList = "${fileName},${jsonObject},${expectedElements}");
+
+		var fileContent = TestCase.getTempFileContent(fileName = ${fileName});
+
+		var actualValue = JSONUtil.getWithJSONPath(${fileContent}, ${jsonObject});
+
+		for (var expectedValue : list ${expectedElements}) {
+			StringUtil.contains(${expectedValue}, ${actualValue}, "");
+		}
+	}
+
+	@summary = "Default summary"
+	macro assertExportedFileContainsCorrectObject(fileName = null, expectedValue = null, ignoreOrder = null, jsonObject = null) {
+		Variables.assertDefined(parameterList = "${fileName},${jsonObject},${expectedValue}");
+
+		var fileContent = TestCase.getTempFileContent(fileName = ${fileName});
+
+		var actualValue = JSONUtil.getWithJSONPath(${fileContent}, ${jsonObject});
+
+		if (isSet(ignoreOrder) && (${ignoreOrder} == "true")) {
+			var actualValue = ListUtil.sort(${actualValue});
+		}
+
+		TestUtils.assertEquals(
+			actual = ${actualValue},
+			expected = ${expectedValue});
+	}
+
+	@summary = "Default summary"
+	macro copyDependenciesDirToFolder(file = null) {
+		Variables.assertDefined(parameterList = ${file});
+
+		var filePath = TestCase.getDependenciesDirPath(fileName = ${file});
+
+		if (!(isSet(destinationDir))) {
+			var destinationDir = PropsUtil.get("liferay.home.dir.name");
+		}
+
+		var destinationFilePath = "${destinationDir}/${file}";
+
+		FileUtil.copyDirectory(${filePath}, ${destinationFilePath});
+
+		return ${destinationFilePath};
+	}
+
+	@summary = "Default summary"
+	macro deleteFileInModulesFolder(file = null) {
+		Variables.assertDefined(parameterList = ${file});
+
+		var homeDir = PropsUtil.get("liferay.home.dir.name");
+
+		var fileExists = FileUtil.exists("${homeDir}/osgi/modules/${file}");
+
+		if (${fileExists} == "true") {
+			FileUtil.delete("${homeDir}/osgi/modules/${file}");
+		}
+		else {
+			echo("The file ${file} doesn't exist in osgi modules folder.");
+		}
+	}
+
+	@summary = "Default summary"
+	macro moveFileToDeployFolder(fileName = null, sourceFilePath = null) {
+		Variables.assertDefined(parameterList = "${sourceFilePath},${fileName}");
+
+		if (!(isSet(destinationPath))) {
+			var liferayHome = PropsUtil.get("liferay.home.dir.name");
+
+			var deployFolder = "${liferayHome}/deploy";
+		}
+
+		AntCommands.runCommand("build-test.xml", "move-file -Dfile=${sourceFilePath} -Dtofile=${deployFolder}/${fileName}");
+
+		WaitForConsoleTextPresent(value1 = "Processing ${fileName}");
+	}
+
+	@summary = "Default summary"
+	macro moveFileToOSGIModulesFolder(fileName = null, appName = null, sourceFilePath = null) {
+		Variables.assertDefined(parameterList = "${sourceFilePath},${fileName},${appName}");
+
+		if (!(isSet(destinationPath))) {
+			var liferayHome = PropsUtil.get("liferay.home.dir.name");
+
+			var deployFolder = "${liferayHome}/osgi/modules";
+		}
+
+		AntCommands.runCommand("build-test.xml", "move-file -Dfile=${sourceFilePath} -Dtofile=${deployFolder}/${fileName}");
+
+		WaitForConsoleTextPresent(value1 = "STARTED ${appName}");
+	}
+
+	@summary = "Default summary"
+	macro setUpGlobalIds(portalURL = null) {
+		var companyId = JSONCompany.getCompanyId(portalURL = ${portalURL});
+		var siteId = JSONGroupAPI._getSiteIdByGroupKey(groupName = "Guest");
+		var userId = JSONUserAPI._getUserIdByEmailAddress(userEmailAddress = "test@liferay.com");
+		static var staticCompanyId = ${companyId};
+		static var staticSiteId = ${siteId};
+		static var staticUserId = ${userId};
+
+		return ${staticCompanyId};
+
+		return ${staticSiteId};
+
+		return ${staticUserId};
+	}
+
+	@summary = "Default summary"
+	macro waitUntilBlogsVisibleInUI() {
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
+			panel = "Site Administration",
+			portlet = "Blogs");
+
+		while ((IsVisible(locator1 = "Message#EMPTY_INFO", value1 = "No entries were found.")) && (maxIterations = "5")) {
+			Refresh();
+
+			WaitForSPARefresh();
+		}
+	}
+
+	@summary = "Default summary"
+	macro waitUntilObjectPresentInUI(labelName = null) {
+		ObjectPortlet.assertIsDisplayedOnControlPanel(itemMenu = "Objects");
+
+		ObjectAdmin.openObjectAdmin();
+
+		while ((IsElementNotPresent(key_labelName = ${labelName}, locator1 = "CreateObject#OBJECT_NAME")) && (maxIterations = "5")) {
+			Refresh();
+
+			WaitForSPARefresh();
+		}
+
+		AssertElementPresent(
+			key_labelName = "User",
+			locator1 = "CreateObject#OBJECT_NAME");
+	}
+
+	@summary = "Default summary"
+	macro waitUntilWebContentPresentInUI() {
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
+			portlet = "Web Content");
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+		LexiconEntry.viewActiveDisplayStyle(displayStyle = "list");
+
+		while ((IsElementNotPresent(locator1 = "WC#ENTRY_LIST_THUMBNAIL_GENERIC")) && (maxIterations = "5")) {
+			Refresh();
+
+			WaitForSPARefresh();
+		}
+	}
+
+}

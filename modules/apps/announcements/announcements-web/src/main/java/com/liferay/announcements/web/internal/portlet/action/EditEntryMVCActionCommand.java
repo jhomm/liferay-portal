@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.announcements.web.internal.portlet.action;
@@ -34,11 +25,11 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Calendar;
 import java.util.Date;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,16 +40,40 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + AnnouncementsPortletKeys.ALERTS,
-		"javax.portlet.name=" + AnnouncementsPortletKeys.ANNOUNCEMENTS,
-		"javax.portlet.name=" + AnnouncementsPortletKeys.ANNOUNCEMENTS_ADMIN,
+		"jakarta.portlet.name=" + AnnouncementsPortletKeys.ALERTS,
+		"jakarta.portlet.name=" + AnnouncementsPortletKeys.ANNOUNCEMENTS,
+		"jakarta.portlet.name=" + AnnouncementsPortletKeys.ANNOUNCEMENTS_ADMIN,
 		"mvc.command.name=/announcements/edit_entry"
 	},
 	service = MVCActionCommand.class
 )
 public class EditEntryMVCActionCommand extends BaseMVCActionCommand {
 
-	protected void deleteEntry(ActionRequest actionRequest) throws Exception {
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		try {
+			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
+				_updateEntry(actionRequest);
+			}
+			else if (cmd.equals(Constants.DELETE)) {
+				_deleteEntry(actionRequest);
+			}
+		}
+		catch (EntryContentException | EntryDisplayDateException |
+			   EntryExpirationDateException | EntryTitleException |
+			   EntryURLException | NoSuchEntryException | PrincipalException
+				   exception) {
+
+			SessionErrors.add(actionRequest, exception.getClass());
+		}
+	}
+
+	private void _deleteEntry(ActionRequest actionRequest) throws Exception {
 		long entryId = ParamUtil.getLong(actionRequest, "entryId");
 
 		long[] deleteEntryIds = null;
@@ -76,31 +91,7 @@ public class EditEntryMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		try {
-			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateEntry(actionRequest);
-			}
-			else if (cmd.equals(Constants.DELETE)) {
-				deleteEntry(actionRequest);
-			}
-		}
-		catch (EntryContentException | EntryDisplayDateException |
-			   EntryExpirationDateException | EntryTitleException |
-			   EntryURLException | NoSuchEntryException | PrincipalException
-				   exception) {
-
-			SessionErrors.add(actionRequest, exception.getClass());
-		}
-	}
-
-	protected void updateEntry(ActionRequest actionRequest) throws Exception {
+	private void _updateEntry(ActionRequest actionRequest) throws Exception {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 

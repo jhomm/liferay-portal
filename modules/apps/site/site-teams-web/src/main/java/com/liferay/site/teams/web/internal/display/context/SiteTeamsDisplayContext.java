@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.teams.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.Team;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.TeamServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -27,15 +19,14 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.teams.web.internal.constants.SiteTeamsPortletKeys;
 import com.liferay.site.teams.web.internal.search.TeamSearch;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -67,8 +58,8 @@ public class SiteTeamsDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_httpServletRequest, "orderByCol", "name");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, SiteTeamsPortletKeys.SITE_TEAMS, "name");
 
 		return _orderByCol;
 	}
@@ -78,8 +69,8 @@ public class SiteTeamsDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, SiteTeamsPortletKeys.SITE_TEAMS, "asc");
 
 		return _orderByType;
 	}
@@ -101,43 +92,30 @@ public class SiteTeamsDisplayContext {
 			_renderRequest, getPortletURL());
 
 		searchContainer.setEmptyResultsMessage("there-are-no-teams");
-
 		searchContainer.setId("teams");
 		searchContainer.setOrderByCol(getOrderByCol());
 		searchContainer.setOrderByType(getOrderByType());
+		searchContainer.setResultsAndTotal(
+			() -> TeamServiceUtil.search(
+				themeDisplay.getScopeGroupId(), getKeywords(), getKeywords(),
+				new LinkedHashMap<>(), searchContainer.getStart(),
+				searchContainer.getEnd(),
+				searchContainer.getOrderByComparator()),
+			TeamServiceUtil.searchCount(
+				themeDisplay.getScopeGroupId(), getKeywords(), getKeywords(),
+				new LinkedHashMap<>()));
 		searchContainer.setRowChecker(
 			new EmptyOnClickRowChecker(_renderResponse));
-
-		int total = TeamServiceUtil.searchCount(
-			themeDisplay.getScopeGroupId(), getKeywords(), getKeywords(),
-			new LinkedHashMap<>());
-
-		searchContainer.setTotal(total);
-
-		List<Team> results = TeamServiceUtil.search(
-			themeDisplay.getScopeGroupId(), getKeywords(), getKeywords(),
-			new LinkedHashMap<>(), searchContainer.getStart(),
-			searchContainer.getEnd(), searchContainer.getOrderByComparator());
-
-		searchContainer.setResults(results);
 
 		return searchContainer;
 	}
 
 	public boolean isDescriptiveView() {
-		if (Objects.equals(getDisplayStyle(), "descriptive")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getDisplayStyle(), "descriptive");
 	}
 
 	public boolean isListView() {
-		if (Objects.equals(getDisplayStyle(), "list")) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getDisplayStyle(), "list");
 	}
 
 	protected String getKeywords() {

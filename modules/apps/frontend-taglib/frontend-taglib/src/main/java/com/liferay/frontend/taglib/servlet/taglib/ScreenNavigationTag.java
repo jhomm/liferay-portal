@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.servlet.taglib;
@@ -25,15 +16,15 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Eudaldo Alonso
@@ -58,11 +49,8 @@ public class ScreenNavigationTag extends IncludeTag {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		ScreenNavigationRegistry screenNavigationRegistry =
-			ServletContextUtil.getScreenNavigationRegistry();
-
 		_screenNavigationCategories =
-			screenNavigationRegistry.getScreenNavigationCategories(
+			ScreenNavigationRegistryUtil.getScreenNavigationCategories(
 				_key, themeDisplay.getUser(), getModelContext());
 
 		return super.doStartTag();
@@ -110,6 +98,10 @@ public class ScreenNavigationTag extends IncludeTag {
 		}
 
 		return _context;
+	}
+
+	public String getNavBarCssClass() {
+		return _navBarCssClass;
 	}
 
 	public String getNavCssClass() {
@@ -164,6 +156,10 @@ public class ScreenNavigationTag extends IncludeTag {
 		_modelBean = modelBean;
 	}
 
+	public void setNavBarCssClass(String navBarCssClass) {
+		_navBarCssClass = navBarCssClass;
+	}
+
 	public void setNavCssClass(String navCssClass) {
 		_navCssClass = navCssClass;
 	}
@@ -194,6 +190,7 @@ public class ScreenNavigationTag extends IncludeTag {
 		_menubarCssClass =
 			"menubar menubar-transparent menubar-vertical-expand-md";
 		_modelBean = null;
+		_navBarCssClass = StringPool.BLANK;
 		_navCssClass = "col-md-3";
 		_portletURL = null;
 		_screenNavigationCategories = null;
@@ -254,6 +251,12 @@ public class ScreenNavigationTag extends IncludeTag {
 			"liferay-frontend:screen-navigation:menubarCssClass",
 			_menubarCssClass);
 		httpServletRequest.setAttribute(
+			"liferay-frontend:screen-navigation:modelContext",
+			getModelContext());
+		httpServletRequest.setAttribute(
+			"liferay-frontend:screen-navigation:navBarCssClass",
+			_navBarCssClass);
+		httpServletRequest.setAttribute(
 			"liferay-frontend:screen-navigation:navCssClass", _navCssClass);
 		httpServletRequest.setAttribute(
 			"liferay-frontend:screen-navigation:portletURL", _portletURL);
@@ -311,10 +314,7 @@ public class ScreenNavigationTag extends IncludeTag {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		ScreenNavigationRegistry screenNavigationRegistry =
-			ServletContextUtil.getScreenNavigationRegistry();
-
-		return screenNavigationRegistry.getScreenNavigationEntries(
+		return ScreenNavigationRegistryUtil.getScreenNavigationEntries(
 			selectedScreenNavigationCategory, themeDisplay.getUser(),
 			getModelContext());
 	}
@@ -382,6 +382,7 @@ public class ScreenNavigationTag extends IncludeTag {
 	private String _menubarCssClass =
 		"menubar menubar-transparent menubar-vertical-expand-md";
 	private Object _modelBean;
+	private String _navBarCssClass = StringPool.BLANK;
 	private String _navCssClass = "col-md-3";
 	private PortletURL _portletURL;
 	private List<ScreenNavigationCategory> _screenNavigationCategories;

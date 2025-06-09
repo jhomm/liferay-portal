@@ -1,49 +1,48 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
-<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
-
-<%@ taglib uri="http://liferay.com/tld/aui" prefix="aui" %><%@
+<%@ taglib uri="http://liferay.com/tld/frontend" prefix="liferay-frontend" %><%@
 taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %><%@
 taglib uri="http://liferay.com/tld/ui" prefix="liferay-ui" %>
 
 <%@ page import="com.liferay.commerce.frontend.model.ProductSettingsModel" %><%@
+page import="com.liferay.commerce.product.model.CPInstanceUnitOfMeasure" %><%@
 page import="com.liferay.petra.string.StringPool" %><%@
-page import="com.liferay.portal.kernel.json.JSONFactoryUtil" %><%@
-page import="com.liferay.portal.kernel.json.JSONSerializer" %><%@
 page import="com.liferay.portal.kernel.util.GetterUtil" %><%@
+page import="com.liferay.portal.kernel.util.HashMapBuilder" %><%@
 page import="com.liferay.portal.kernel.util.PortalUtil" %>
+
+<liferay-frontend:defineObjects />
 
 <liferay-theme:defineObjects />
 
 <%
-String block = (String)request.getAttribute("liferay-commerce:add-to-cart:block");
-String disabled = (String)request.getAttribute("liferay-commerce:add-to-cart:disabled");
-String commerceAccountId = (String)request.getAttribute("liferay-commerce:add-to-cart:commerceAccountId");
-String commerceChannelGroupId = (String)request.getAttribute("liferay-commerce:add-to-cart:commerceChannelGroupId");
-String commerceChannelId = (String)request.getAttribute("liferay-commerce:add-to-cart:commerceChannelId");
+String alignment = (String)request.getAttribute("liferay-commerce:add-to-cart:alignment");
+long commerceAccountId = (long)request.getAttribute("liferay-commerce:add-to-cart:commerceAccountId");
+long commerceChannelGroupId = (long)request.getAttribute("liferay-commerce:add-to-cart:commerceChannelGroupId");
+long commerceChannelId = (long)request.getAttribute("liferay-commerce:add-to-cart:commerceChannelId");
 String commerceCurrencyCode = (String)request.getAttribute("liferay-commerce:add-to-cart:commerceCurrencyCode");
-String commerceOrderId = (String)request.getAttribute("liferay-commerce:add-to-cart:commerceOrderId");
-String cpInstanceId = (String)request.getAttribute("liferay-commerce:add-to-cart:cpInstanceId");
-String inCart = (String)request.getAttribute("liferay-commerce:add-to-cart:inCart");
+long commerceOrderId = (long)request.getAttribute("liferay-commerce:add-to-cart:commerceOrderId");
+long cpInstanceId = (long)request.getAttribute("liferay-commerce:add-to-cart:cpInstanceId");
+CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure = (CPInstanceUnitOfMeasure)request.getAttribute("liferay-commerce:add-to-cart:cpInstanceUnitOfMeasure");
+boolean disabled = (boolean)request.getAttribute("liferay-commerce:add-to-cart:disabled");
+boolean guestOrderEnabled = (boolean)request.getAttribute("liferay-commerce:add-to-cart:guestOrderEnabled");
+boolean iconOnly = (boolean)request.getAttribute("liferay-commerce:add-to-cart:iconOnly");
+boolean inCart = (boolean)request.getAttribute("liferay-commerce:add-to-cart:inCart");
+boolean inline = (boolean)request.getAttribute("liferay-commerce:add-to-cart:inline");
 String namespace = (String)request.getAttribute("liferay-commerce:add-to-cart:namespace");
-String options = (String)request.getAttribute("liferay-commerce:add-to-cart:options");
+long productId = (long)request.getAttribute("liferay-commerce:add-to-cart:productId");
 ProductSettingsModel productSettingsModel = (ProductSettingsModel)request.getAttribute("liferay-commerce:add-to-cart:productSettingsModel");
-String spritemap = (String)request.getAttribute("liferay-commerce:add-to-cart:spritemap");
-String stockQuantity = (String)request.getAttribute("liferay-commerce:add-to-cart:stockQuantity");
+boolean published = (boolean)request.getAttribute("liferay-commerce:add-to-cart:published");
+boolean purchasable = (boolean)request.getAttribute("liferay-commerce:add-to-cart:purchasable");
+String size = (String)request.getAttribute("liferay-commerce:add-to-cart:size");
+boolean showUnitOfMeasureSelector = (boolean)request.getAttribute("liferay-commerce:add-to-cart:showUnitOfMeasureSelector");
+String skuOptions = (String)request.getAttribute("liferay-commerce:add-to-cart:skuOptions");
+int stockQuantity = (int)request.getAttribute("liferay-commerce:add-to-cart:stockQuantity");
 
 String randomNamespace = PortalUtil.generateRandomKey(request, "taglib") + StringPool.UNDERLINE;
 

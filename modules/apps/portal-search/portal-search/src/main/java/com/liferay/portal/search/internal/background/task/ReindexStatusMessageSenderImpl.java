@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.background.task;
@@ -29,7 +20,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Andrew Betts
  */
-@Component(immediate = true, service = ReindexStatusMessageSender.class)
+@Component(service = ReindexStatusMessageSender.class)
 public class ReindexStatusMessageSenderImpl
 	implements ReindexStatusMessageSender {
 
@@ -45,7 +36,7 @@ public class ReindexStatusMessageSenderImpl
 		message.put(ReindexBackgroundTaskConstants.TOTAL, total);
 		message.put("status", BackgroundTaskConstants.STATUS_IN_PROGRESS);
 
-		sendBackgroundTaskStatusMessage(message);
+		_sendBackgroundTaskStatusMessage(message);
 	}
 
 	@Override
@@ -62,10 +53,10 @@ public class ReindexStatusMessageSenderImpl
 		message.put(ReindexBackgroundTaskConstants.PHASE, phase);
 		message.put("status", BackgroundTaskConstants.STATUS_IN_PROGRESS);
 
-		sendBackgroundTaskStatusMessage(message);
+		_sendBackgroundTaskStatusMessage(message);
 	}
 
-	protected void sendBackgroundTaskStatusMessage(Message message) {
+	private void _sendBackgroundTaskStatusMessage(Message message) {
 		_backgroundTaskStatusMessageSender.sendBackgroundTaskStatusMessage(
 			message);
 

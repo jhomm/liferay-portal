@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {fetch} from 'frontend-js-web';
 
-import createOdataFilter from './odata';
+import {getProductMinQuantity} from './quantities';
 
 export const fetchHeaders = new Headers({
 	'Accept': 'application/json',
@@ -26,8 +17,8 @@ export const fetchParams = {
 	headers: fetchHeaders,
 };
 
-export function getData(apiUrl, query, page, pageSize) {
-	const url = new URL(apiUrl, Liferay.ThemeDisplay.getPortalURL());
+function callAPI(apiURL, query, page, pageSize) {
+	const url = new URL(apiURL, Liferay.ThemeDisplay.getPortalURL());
 
 	if (query) {
 		url.searchParams.append('search', query);
@@ -41,9 +32,21 @@ export function getData(apiUrl, query, page, pageSize) {
 		url.searchParams.append('pageSize', pageSize);
 	}
 
-	return fetch(url, {
+	return fetch(url.pathname + url.search, {
 		...fetchParams,
 	}).then((data) => data.json());
+}
+
+export function getData(apiURL, query, page, pageSize) {
+	if (Array.isArray(apiURL)) {
+		return Promise.all(
+			apiURL.map((currentURL) => {
+				return callAPI(currentURL, query, page, pageSize);
+			})
+		);
+	}
+
+	return callAPI(apiURL, query, page, pageSize);
 }
 
 export function liferayNavigate(url) {
@@ -100,41 +103,19 @@ export function getValueFromItem(item, fieldName) {
 	return item[fieldName];
 }
 
-export function gHash(string) {
-	let hash = 0;
-
-	if (string.length === 0) {
-		return hash;
-	}
-
-	[...string].forEach((char) => {
-		hash = (hash << 7) - hash + char.charCodeAt();
-		hash = hash & hash;
-	});
-
-	return hash;
+export function getLabelFromItem(item, itemsLabel, secondaryItemsLabel) {
+	return [
+		getValueFromItem(item, itemsLabel),
+		getValueFromItem(item, secondaryItemsLabel),
+	]
+		.filter(Boolean)
+		.join(' - ');
 }
 
-export function excludeFromList(matchingList, againstList) {
-	const matcher = JSON.stringify(matchingList);
+export function formatActionUrl(url, item, queryParams = {}) {
+	let regex = new RegExp('{(.*?)}', 'mg');
 
-	return againstList.filter(
-		(item) => !matcher.includes(JSON.stringify(item))
-	);
-}
-
-export function executeAsyncAction(url, method = 'GET', body = null) {
-	return fetch(url, {
-		...fetchParams,
-		body,
-		method,
-	});
-}
-
-export function formatActionUrl(url, item) {
-	var regex = new RegExp('{(.*?)}', 'mg');
-
-	var replacedUrl = url.replace(regex, (matched) =>
+	let replacedUrl = url.replace(regex, (matched) =>
 		getValueFromItem(
 			item,
 			matched.substring(1, matched.length - 1).split('.')
@@ -150,93 +131,23 @@ export function formatActionUrl(url, item) {
 		)
 	);
 
+	const queryParamsIterable = Object.entries(queryParams);
+
+	if (queryParamsIterable.length) {
+		replacedUrl = new URL(replacedUrl);
+
+		queryParamsIterable.forEach(([key, value]) => {
+			replacedUrl.searchParams.set(key, value);
+		});
+
+		replacedUrl = replacedUrl.toString();
+	}
+
 	return replacedUrl;
 }
 
 export function getRandomId() {
 	return Math.random().toString(36).substr(2, 9);
-}
-
-export function createSortingString(values) {
-	if (!values.length) {
-		return null;
-	}
-
-	return values
-		.map((value) => {
-			return `${
-				Array.isArray(value.fieldName)
-					? value.fieldName[0]
-					: value.fieldName
-			}:${value.direction}`;
-		})
-		.join(',');
-}
-
-export function getFiltersString(filters, providedFilters) {
-	let filtersString = '';
-
-	if (filters.length || providedFilters) {
-		filtersString = '&filter=';
-	}
-
-	if (providedFilters) {
-		filtersString += providedFilters;
-	}
-
-	if (providedFilters && filters.length) {
-		filtersString += ' and ';
-	}
-
-	if (filters.length) {
-		filtersString += createOdataFilter(filters);
-	}
-
-	return filtersString;
-}
-
-export function loadData(
-	apiUrl,
-	currentUrl,
-	delta,
-	filters,
-	page = 1,
-	searchQuery,
-	sorting = []
-) {
-	let formattedUrl = apiUrl;
-	let providedFilters = '';
-
-	const authParam = `p_auth=${window.Liferay.authToken}`;
-	const currentUrlParam = `&currentUrl=${encodeURIComponent(currentUrl)}`;
-	const pageSizeParam = `&pageSize=${delta}`;
-	const pageParam = `&page=${page}`;
-	const searchParam = searchQuery ? `&search=${searchQuery}` : '';
-	const sortingParam = sorting.length
-		? `&sort=${sorting
-				.map((item) => `${item.key}:${item.direction}`)
-				.join(',')}`
-		: ``;
-
-	const regex = new RegExp('[?|&]filter=(.*)[&.+]?', 'mg');
-
-	formattedUrl = formattedUrl.replace(regex, (matched) => {
-		providedFilters = matched.replace(/[?|&]filter=/, '');
-
-		return '';
-	});
-
-	const filtersParam = getFiltersString(filters, providedFilters);
-
-	const url = `${formattedUrl}${
-		formattedUrl.indexOf('?') > -1 ? '&' : '?'
-	}${authParam}${currentUrlParam}${pageSizeParam}${pageParam}${sortingParam}${searchParam}${filtersParam}`;
-
-	return executeAsyncAction(url, 'GET').then((response) => response.json());
-}
-
-export function serializeParameters(parameters) {
-	return Array.isArray(parameters) ? `?${parameters.join('&')}` : '';
 }
 
 export function sortByKey(items, keyName) {
@@ -270,4 +181,26 @@ export function sortByKey(items, keyName) {
 	];
 
 	return sortedItems;
+}
+
+export function isProductPurchasable(
+	availability,
+	productConfiguration,
+	purchasable
+) {
+	if (purchasable === false) {
+		return false;
+	}
+
+	if (productConfiguration.allowBackOrder) {
+		return true;
+	}
+
+	if (
+		availability.stockQuantity > getProductMinQuantity(productConfiguration)
+	) {
+		return true;
+	}
+
+	return false;
 }

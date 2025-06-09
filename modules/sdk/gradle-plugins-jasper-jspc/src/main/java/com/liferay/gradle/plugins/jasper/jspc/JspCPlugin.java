@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.jasper.jspc;
@@ -18,17 +9,17 @@ import com.liferay.gradle.util.GradleUtil;
 
 import java.io.File;
 
-import java.util.Collections;
 import java.util.concurrent.Callable;
 
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
-import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.file.ConfigurableFileCollection;
+import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.plugins.JavaBasePlugin;
+import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.PluginContainer;
 import org.gradle.api.plugins.WarPlugin;
@@ -52,7 +43,7 @@ public class JspCPlugin implements Plugin<Project> {
 
 	@Override
 	public void apply(Project project) {
-		GradleUtil.applyPlugin(project, JavaPlugin.class);
+		GradleUtil.applyPlugin(project, JavaLibraryPlugin.class);
 
 		Configuration jspCConfiguration = _addConfigurationJspC(project);
 
@@ -86,13 +77,17 @@ public class JspCPlugin implements Plugin<Project> {
 	}
 
 	private void _addDependenciesJspC(Project project) {
-		ModuleDependency moduleDependency =
-			(ModuleDependency)GradleUtil.addDependency(
-				project, CONFIGURATION_NAME, "com.liferay",
-				"com.liferay.portal.servlet.jsp.compiler", "latest.release");
-
-		moduleDependency.exclude(
-			Collections.singletonMap("group", "com.liferay.portal"));
+		GradleUtil.addDependency(
+			project, CONFIGURATION_NAME, "jakarta.servlet.jsp.jstl",
+			"jakarta.servlet.jsp.jstl-api", "3.0.2");
+		GradleUtil.addDependency(
+			project, CONFIGURATION_NAME, "org.apache.tomcat", "tomcat-jasper",
+			"10.1.40");
+		GradleUtil.addDependency(
+			project, CONFIGURATION_NAME, "org.glassfish.web",
+			"jakarta.servlet.jsp.jstl", "3.0.1", false);
+		GradleUtil.addDependency(
+			project, CONFIGURATION_NAME, "org.osgi", "osgi.core", "6.0.0");
 
 		DependencyHandler dependencyHandler = project.getDependencies();
 
@@ -115,11 +110,17 @@ public class JspCPlugin implements Plugin<Project> {
 
 		dependencyHandler.add(CONFIGURATION_NAME, configurableFileCollection);
 
+		Configuration configuration = GradleUtil.getConfiguration(
+			project, CONFIGURATION_NAME);
+
 		SourceSet sourceSet = GradleUtil.getSourceSet(
 			project, SourceSet.MAIN_SOURCE_SET_NAME);
 
-		dependencyHandler.add(
-			CONFIGURATION_NAME, sourceSet.getCompileClasspath());
+		Configuration compileClasspathConfiguration =
+			GradleUtil.getConfiguration(
+				project, sourceSet.getCompileClasspathConfigurationName());
+
+		configuration.extendsFrom(compileClasspathConfiguration);
 	}
 
 	private JavaCompile _addTaskCompileJSP(
@@ -197,8 +198,11 @@ public class JspCPlugin implements Plugin<Project> {
 
 		compileJSPTask.dependsOn(javaCompile);
 
-		if (compileJSPTask.getDestinationDir() == null) {
-			compileJSPTask.setDestinationDir(compileJSPTask.getTemporaryDir());
+		DirectoryProperty directoryProperty =
+			compileJSPTask.getDestinationDirectory();
+
+		if (directoryProperty.getOrNull() == null) {
+			directoryProperty.set(compileJSPTask.getTemporaryDir());
 		}
 	}
 

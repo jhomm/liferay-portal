@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.portlet.action;
@@ -30,13 +21,13 @@ import com.liferay.portal.kernel.service.UserService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Calendar;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,11 +36,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.SERVICE_ACCOUNTS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/update_memberships"
 	},
 	service = MVCActionCommand.class
@@ -70,8 +61,8 @@ public class UpdateMembershipsMVCActionCommand extends BaseMVCActionCommand {
 
 			birthdayCal.setTime(user.getBirthday());
 
-			long[] groupIds = _usersAdmin.getGroupIds(actionRequest);
-			long[] userGroupIds = _usersAdmin.getUserGroupIds(actionRequest);
+			long[] groupIds = UsersAdminUtil.getGroupIds(actionRequest);
+			long[] userGroupIds = UsersAdminUtil.getUserGroupIds(actionRequest);
 
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
 				User.class.getName(), actionRequest);
@@ -85,13 +76,14 @@ public class UpdateMembershipsMVCActionCommand extends BaseMVCActionCommand {
 				user.getEmailAddress(), user.getLanguageId(),
 				user.getTimeZoneId(), user.getGreeting(), user.getComments(),
 				user.getFirstName(), user.getMiddleName(), user.getLastName(),
-				contact.getPrefixId(), contact.getSuffixId(), user.isMale(),
-				birthdayCal.get(Calendar.MONTH), birthdayCal.get(Calendar.DATE),
-				birthdayCal.get(Calendar.YEAR), contact.getSmsSn(),
-				contact.getFacebookSn(), contact.getJabberSn(),
-				contact.getSkypeSn(), contact.getTwitterSn(),
-				user.getJobTitle(), groupIds, user.getOrganizationIds(), null,
-				null, userGroupIds, serviceContext);
+				contact.getPrefixListTypeId(), contact.getSuffixListTypeId(),
+				user.isMale(), birthdayCal.get(Calendar.MONTH),
+				birthdayCal.get(Calendar.DATE), birthdayCal.get(Calendar.YEAR),
+				contact.getSmsSn(), contact.getFacebookSn(),
+				contact.getJabberSn(), contact.getSkypeSn(),
+				contact.getTwitterSn(), user.getJobTitle(), groupIds,
+				user.getOrganizationIds(), null, null, userGroupIds,
+				serviceContext);
 		}
 		catch (Exception exception) {
 			if (exception instanceof ContactNameException ||
@@ -118,9 +110,6 @@ public class UpdateMembershipsMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private UsersAdmin _usersAdmin;
 
 	@Reference
 	private UserService _userService;

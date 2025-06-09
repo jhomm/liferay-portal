@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.persistence.test;
@@ -130,6 +121,12 @@ public class CommercePriceListDiscountRelPersistenceTest {
 		CommercePriceListDiscountRel newCommercePriceListDiscountRel =
 			_persistence.create(pk);
 
+		newCommercePriceListDiscountRel.setMvccVersion(
+			RandomTestUtil.nextLong());
+
+		newCommercePriceListDiscountRel.setCtCollectionId(
+			RandomTestUtil.nextLong());
+
 		newCommercePriceListDiscountRel.setUuid(RandomTestUtil.randomString());
 
 		newCommercePriceListDiscountRel.setCompanyId(RandomTestUtil.nextLong());
@@ -163,6 +160,12 @@ public class CommercePriceListDiscountRelPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommercePriceListDiscountRel.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommercePriceListDiscountRel.getMvccVersion(),
+			newCommercePriceListDiscountRel.getMvccVersion());
+		Assert.assertEquals(
+			existingCommercePriceListDiscountRel.getCtCollectionId(),
+			newCommercePriceListDiscountRel.getCtCollectionId());
 		Assert.assertEquals(
 			existingCommercePriceListDiscountRel.getUuid(),
 			newCommercePriceListDiscountRel.getUuid());
@@ -270,7 +273,8 @@ public class CommercePriceListDiscountRelPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CommercePriceListDiscountRel", "uuid", true,
+			"CommercePriceListDiscountRel", "mvccVersion", true,
+			"ctCollectionId", true, "uuid", true,
 			"commercePriceListDiscountRelId", true, "companyId", true, "userId",
 			true, "userName", true, "createDate", true, "modifiedDate", true,
 			"commerceDiscountId", true, "commercePriceListId", true, "order",
@@ -601,6 +605,11 @@ public class CommercePriceListDiscountRelPersistenceTest {
 
 		CommercePriceListDiscountRel commercePriceListDiscountRel =
 			_persistence.create(pk);
+
+		commercePriceListDiscountRel.setMvccVersion(RandomTestUtil.nextLong());
+
+		commercePriceListDiscountRel.setCtCollectionId(
+			RandomTestUtil.nextLong());
 
 		commercePriceListDiscountRel.setUuid(RandomTestUtil.randomString());
 

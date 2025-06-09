@@ -1,27 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayModalProvider} from '@clayui/modal';
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
-import * as DDMForm from 'dynamic-data-mapping-form-builder';
 import React from 'react';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 
-import FieldSetList from '../../../../../src/main/resources/META-INF/resources/data_layout_builder/js/components/field-sets/FieldSetList';
-import * as DataConverter from '../../../../../src/main/resources/META-INF/resources/data_layout_builder/js/utils/dataConverter.es';
-import * as toast from '../../../../../src/main/resources/META-INF/resources/data_layout_builder/js/utils/toast.es';
+import FieldSetList from '../../../../../src/main/resources/META-INF/resources/js/components/field-sets/FieldSetList';
+import * as DataConverter from '../../../../../src/main/resources/META-INF/resources/js/utils/dataConverter.es';
+import * as toast from '../../../../../src/main/resources/META-INF/resources/js/utils/toast.es';
 import {
 	DATA_DEFINITION_FIELDSET,
 	DATA_DEFINITION_RESPONSES,
@@ -51,11 +41,13 @@ let spySuccessToast;
 let spyErrorToast;
 let ddmFormSpy;
 
-export const FieldSetWrapper = ({children}) => (
-	<DndProvider backend={HTML5Backend}>
-		<ClayModalProvider>{children}</ClayModalProvider>
-	</DndProvider>
-);
+export function FieldSetWrapper({children}) {
+	return (
+		<DndProvider backend={HTML5Backend}>
+			<ClayModalProvider>{children}</ClayModalProvider>
+		</DndProvider>
+	);
+}
 
 describe('FieldSets', () => {
 	beforeEach(() => {
@@ -65,34 +57,6 @@ describe('FieldSets', () => {
 			name: 'Field53354166',
 			pages: FORM_VIEW.pages,
 		});
-
-		ddmFormSpy = jest
-			.spyOn(DDMForm, 'default')
-			.mockImplementation((props) => {
-				const state = {
-					...dataLayoutBuilder,
-					dispose: jest.fn(),
-					emit: jest.fn(),
-					formBuilderWithLayoutProvider: {
-						refs: {
-							layoutProvider: {
-								getRules: jest
-									.fn()
-									.mockImplementation(() => []),
-								on: jest.fn().mockImplementation(() => ({
-									removeListener: jest.fn(),
-								})),
-							},
-						},
-					},
-				};
-
-				props.layoutProviderProps.onLoad(state);
-
-				return state;
-			});
-
-		jest.useFakeTimers();
 
 		spySuccessToast = jest
 			.spyOn(toast, 'successToast')
@@ -405,10 +369,6 @@ describe('FieldSets', () => {
 			fieldSets: [fieldSet],
 		};
 
-		jest.spyOn(DataConverter, 'getDataDefinitionFieldSet').mockReturnValue({
-			fieldSet,
-		});
-
 		const {container} = render(
 			<DndProvider backend={HTML5Backend}>
 				<FieldSetWrapper state={state}>
@@ -425,7 +385,9 @@ describe('FieldSets', () => {
 				fieldSet: {name},
 				indexes,
 			},
-		] = dataLayoutBuilder.formBuilderWithLayoutProvider.refs.layoutProvider.dispatch.mock.calls[0];
+		] =
+			dataLayoutBuilder.formBuilderWithLayoutProvider.refs.layoutProvider
+				.dispatch.mock.calls[0];
 
 		expect(action).toBe('fieldSetAdded');
 		expect(name).toStrictEqual('Field53354166');

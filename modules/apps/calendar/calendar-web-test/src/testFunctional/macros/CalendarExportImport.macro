@@ -1,0 +1,114 @@
+definition {
+
+	@summary = "Default summary"
+	macro closeFrame() {
+		SelectFrame(value1 = "relative=top");
+
+		Click.mouseDownMouseUp(locator1 = "Modal#CLOSE_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro exportAndDownloadACalendarFile() {
+		var calendarSelected = selenium.getText("CalendarExportImport#CALENDAR_TO_BE_EXPORTED");
+
+		CalendarExportImport.exportCalendarFile();
+
+		AssertClick.assertPartialTextClickAt(
+			locator1 = "CalendarExportImport#EXPORTED_CALENDAR_FILE_NAME",
+			value1 = ${calendarSelected});
+	}
+
+	@summary = "Default summary"
+	macro exportCalendarFile() {
+		Button.click(button = "Export");
+	}
+
+	@summary = "Default summary"
+	macro gotoExportTab(subTab = null) {
+		if (isSet(subTab)) {
+			Navigator.gotoNavTab(navTab = "Export");
+
+			Navigator.gotoNavTab(navTab = ${subTab});
+		}
+		else {
+			Navigator.gotoNavTab(navTab = "Export");
+		}
+	}
+
+	@summary = "Default summary"
+	macro gotoImportTab(subTab = null) {
+		if (isSet(subTab)) {
+			Navigator.gotoNavTab(navTab = "Import");
+
+			Navigator.gotoNavTab(navTab = ${subTab});
+		}
+		else {
+			Navigator.gotoNavTab(navTab = "Import");
+		}
+	}
+
+	@summary = "Default summary"
+	macro gotoPortletExportImport() {
+		Portlet.gotoPortletOptions(
+			portletName = "Calendar",
+			portletOption = "Export / Import");
+	}
+
+	@summary = "Default summary"
+	macro importCalendarFile(importValidationErrorMessage = null, calendarFile = null) {
+		UploadDependencyFile.uploadArchiveFile(fileName = ${calendarFile});
+
+		if (isSet(importValidationErrorMessage)) {
+			AssertTextEquals.assertPartialText(
+				importValidationErrorMessage = ${importValidationErrorMessage},
+				locator1 = "ExportImport#VALIDATION_ERROR_MESSAGE_HEADER",
+				value1 = ${importValidationErrorMessage});
+		}
+		else {
+			Button.click(button = "Continue");
+
+			Button.click(button = "Import");
+		}
+	}
+
+	@summary = "Default summary"
+	macro removeWidgetCalendar() {
+		Portlet.gotoPortletOptions(portletName = "Calendar");
+
+		MenuItem.clickNoError(menuItem = "Remove");
+
+		AssertConfirm(value1 = "Are you sure you want to remove this component?");
+	}
+
+	@summary = "Default summary"
+	macro selectConfigurationIFrame() {
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+	}
+
+	@summary = "Default summary"
+	macro viewExportedCalendarFileName() {
+		var calendarSelected = selenium.getText("CalendarExportImport#CALENDAR_TO_BE_EXPORTED");
+
+		CalendarExportImport.gotoExportTab(subTab = "Current and Previous");
+
+		AssertTextEquals.assertPartialText(
+			locator1 = "CalendarExportImport#EXPORTED_CALENDAR_FILE_NAME",
+			value1 = ${calendarSelected});
+	}
+
+	@summary = "Default summary"
+	macro viewNoProcessesOnCurrentAndPreviousTab() {
+		AssertTextEquals.assertPartialText(
+			locator1 = "Message#EMPTY_INFO",
+			value1 = "processes were found.");
+	}
+
+	@summary = "Default summary"
+	macro viewSuccessStatusOnCurrentAndPreviousTab(key_larFileName = null) {
+		AssertTextEquals(
+			key_larFileName = "Successful",
+			locator1 = "ExportImport#CURRENT_AND_PREVIOUS_STATUS",
+			value1 = ${key_larFileName});
+	}
+
+}

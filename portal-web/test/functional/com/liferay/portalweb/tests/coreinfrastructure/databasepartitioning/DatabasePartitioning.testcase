@@ -1,10 +1,16 @@
-@component-name = "portal-database-partitioning"
+@component-name = "portal-db-infrastructure"
 definition {
 
+	property app.server.types = "tomcat";
+	property ci.retries.disabled = "true";
 	property database.partition.enabled = "true";
+	property database.types = "mysql, postgresql";
+	property liferay.online.properties = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property test.run.environment = "EE";
 	property testray.main.component.name = "Database Partitioning";
+	property timeout.explicit.wait = "180";
 
 	setUp {
 		TestCase.setUpPortalInstance();
@@ -16,11 +22,41 @@ definition {
 		PortalInstances.tearDownCP();
 	}
 
-	@priority = "4"
-	test AddMultipleCompanies {
-		property custom.properties = "database.partition.schema.name.prefix=testPartition";
-		property database.types = "mysql";
-		property test.name.skip.portal.instance = "DatabasePartitioning#AddMultipleCompanies";
+	@priority = 5
+	test CanAddCompanyWithCluster {
+		property app.server.bundles.size = "1";
+		property cluster.enabled = "true";
+		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property minimum.slave.ram = "24";
+		property portal.acceptance = "true";
+		property remote.elasticsearch.enabled = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Clustering.viewClusterStatusInConsole();
+
+		Page.assertNodePortPG(nodePort = 8080);
+
+		User.logoutPG(
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		User.loginPG(
+			nodePort = 9080,
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		Page.assertNodePortPG(nodePort = 9080);
+
+		User.logoutPG(
+			nodePort = 9080,
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		User.loginPG(
+			nodePort = 8080,
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
 
 		PortalInstances.openVirtualInstancesAdmin();
 
@@ -29,199 +65,207 @@ definition {
 			virtualHost = "www.able.com",
 			webId = "www.able.com");
 
-		PortalInstances.openVirtualInstancesAdmin();
-
-		PortalInstances.addCP(
-			mailDomain = "www.baker.com",
-			virtualHost = "www.baker.com",
-			webId = "www.baker.com");
-
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
 		Navigator.openSpecificURL(url = "http://www.able.com:8080");
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			panel = "Site Administration",
-			portlet = "Documents and Media");
-
-		DMDocument.addCP(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentFile = "Document_1.doc",
-			dmDocumentTitle = "DM Document Title");
-
-		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
-
-		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
-
-		User.firstLoginUI(
-			password = "test",
-			specificURL = "http://www.baker.com:8080",
-			userEmailAddress = "test@www.baker.com");
-
-		Navigator.openSpecificURL(url = "http://www.baker.com:8080");
-
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			panel = "Site Administration",
-			portlet = "Documents and Media");
-
-		DMDocument.addCP(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentFile = "Document_1.doc",
-			dmDocumentTitle = "DM Document Title");
-
-		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
-
-		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
-
 		SQL.assertDatabaseCount(
-			databaseFilter = "testPartition%",
-			databaseSubstring = "testPartition",
-			expectedCount = "2");
-
-		DBPartition.validateSchemas(schemaNamePrefix = "testPartition");
+			databaseFilter = "lpartition%",
+			databaseSubstring = "lpartition",
+			expectedCount = 1);
 	}
 
-	@priority = "5"
-	test AddNewCompany {
-		property custom.properties = "database.partition.schema.name.prefix=testPartition";
-		property database.types = "mysql";
+	@priority = 5
+	test CanAddCompanyWithClusterSecondNode {
+		property app.server.bundles.size = "1";
+		property cluster.enabled = "true";
+		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property minimum.slave.ram = "24";
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "DatabasePartitioning#AddNewCompany";
+		property remote.elasticsearch.enabled = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		PortalInstances.openVirtualInstancesAdmin();
+		Clustering.viewClusterStatusInConsole();
+
+		Page.assertNodePortPG(nodePort = 8080);
+
+		User.logoutPG(
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		User.loginPG(
+			nodePort = 9080,
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		Page.assertNodePortPG(nodePort = 9080);
+
+		PortalInstances.openVirtualInstancesAdmin(baseURL = "http://localhost:9080");
 
 		PortalInstances.addCP(
 			mailDomain = "www.able.com",
 			virtualHost = "www.able.com",
 			webId = "www.able.com");
+
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.able.com:9080",
+			userEmailAddress = "test@www.able.com");
+
+		Navigator.openSpecificURL(url = "http://www.able.com:9080");
+
+		SQL.assertDatabaseCount(
+			databaseFilter = "lpartition%",
+			databaseSubstring = "lpartition",
+			expectedCount = 1);
+	}
+
+	@description = "This is a use case for LPS-160064."
+	@priority = 4
+	test CanAddCompanyWithHeadlessAPI {
+		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.baker.com";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		HeadlessPortalInstanceAPI.addPortalInstance(
+			domain = "www.baker.com",
+			portalInstanceId = "www.baker.com",
+			virtualHost = "www.baker.com");
 
 		SignOut.signOut();
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.baker.com:8080",
+			userEmailAddress = "test@www.baker.com");
+
+		SQL.assertDatabaseCount(
+			databaseFilter = "lpartition%",
+			databaseSubstring = "lpartition",
+			expectedCount = 1);
+	}
+
+	@priority = 5
+	test CanDeleteCompany {
+		property custom.properties = "database.partition.schema.name.prefix=ltest_${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property portal.acceptance = "true";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		HeadlessPortalInstanceAPI.addPortalInstance(
+			domain = "www.able.com",
+			portalInstanceId = "www.able.com",
+			virtualHost = "www.able.com");
+
+		SignOut.signOut();
+
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			panel = "Site Administration",
-			portlet = "Documents and Media");
-
-		DMDocument.addCP(
-			dmDocumentDescription = "DM Document Description",
-			dmDocumentFile = "Document_1.doc",
-			dmDocumentTitle = "DM Document Title");
-
-		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
-
-		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
-
-		SQL.assertDatabaseCount(
-			databaseFilter = "testPartition%",
-			databaseSubstring = "testPartition",
-			expectedCount = "1");
-	}
-
-	@priority = "4"
-	test AddNewCompanyWithCluster {
-		property app.server.bundles.size = "1";
-		property cluster.enabled = "true";
-		property custom.properties = "database.partition.schema.name.prefix=testPartition";
-		property database.types = "mysql";
-		property minimum.slave.ram = "24";
-		property test.name.skip.portal.instance = "DatabasePartitioning#AddNewCompanyWithCluster";
-
-		Clustering.viewClusterStatusInConsole();
-
-		Page.assertNodePortPG(nodePort = "8080");
-
-		User.logoutPG(
-			password = "test",
-			userEmailAddress = "test@liferay.com");
-
-		User.loginPG(
-			nodePort = "9080",
-			password = "test",
-			userEmailAddress = "test@liferay.com");
-
-		Page.assertNodePortPG(nodePort = "9080");
-
-		User.logoutPG(
-			nodePort = "9080",
-			password = "test",
-			userEmailAddress = "test@liferay.com");
-
-		User.loginPG(
-			nodePort = "8080",
-			password = "test",
-			userEmailAddress = "test@liferay.com");
+		User.loginPG();
 
 		PortalInstances.openVirtualInstancesAdmin();
 
-		PortalInstances.addCP(
-			mailDomain = "www.able.com",
-			virtualHost = "www.able.com",
-			webId = "www.able.com");
+		PortalInstances.deleteCP(virtualHost = "www.able.com");
 
-		User.firstLoginUI(
-			password = "test",
-			specificURL = "http://www.able.com:8080",
-			userEmailAddress = "test@www.able.com");
+		SQL.assertDatabaseCount(
+			databaseFilter = "ltest_%",
+			databaseSubstring = "ltest_",
+			expectedCount = 0);
+	}
 
-		Navigator.openSpecificURL(url = "http://www.able.com:8080");
+	@description = "This is a use case for LPS-171480."
+	@priority = 3
+	test CanScheduleJobInVariousCompaniesWhenAutoUpgradeIsEnabled {
+		property custom.properties = "virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property database.auto.upgrade.enabled = "true";
+		property database.partition.enabled = "true";
+		property liferay.online.properties = "false";
+		property osgi.module.configuration.file.names = "com.liferay.journal.configuration.JournalServiceConfiguration.config";
+		property osgi.module.configurations = "checkInterval=I\"1\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			panel = "Site Administration",
-			portlet = "Web Content");
+		HeadlessPortalInstanceAPI.addPortalInstance(
+			domain = "www.able.com",
+			portalInstanceId = "www.able.com",
+			virtualHost = "www.able.com");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "Guest");
 
 		WebContentNavigator.gotoAddCP();
 
 		WebContent.addCP(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
+			webContentContent = "Web Content Content",
+			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.increaseDisplayDate(minuteIncrease = 2);
 
-		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+		TestUtils.hardRefresh();
 
-		WebContent.viewCP(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
+		AssertTextEquals(
+			key_webContentTitle = "Web Content Title",
+			locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+			value1 = "SCHEDULED");
 
 		User.firstLoginUI(
-			password = "test",
-			specificURL = "http://www.able.com:9080",
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
-		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
-			panel = "Site Administration",
-			portlet = "Web Content");
+		WebContentNavigator.openWebContentAdmin(
+			baseURL = "http://www.able.com:8080",
+			siteURLKey = "Guest");
 
-		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+		WebContentNavigator.gotoAddCP();
 
-		WebContent.viewCP(
-			webContentContent = "WC WebContent Content",
-			webContentTitle = "WC WebContent Title");
+		WebContent.addCP(
+			webContentContent = "Web Content Content",
+			webContentTitle = "Web Content Title");
 
-		SQL.assertDatabaseCount(
-			databaseFilter = "testPartition%",
-			databaseSubstring = "testPartition",
-			expectedCount = "1");
+		WebContent.increaseDisplayDate(minuteIncrease = 2);
+
+		TestUtils.hardRefresh();
+
+		AssertTextEquals(
+			key_webContentTitle = "Web Content Title",
+			locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+			value1 = "SCHEDULED");
+
+		// Pausing 210 seconds due to LRQA-75909
+
+		Pause(value1 = 210000);
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "Guest");
+
+		AssertTextEquals(
+			key_webContentTitle = "Web Content Title",
+			locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+			value1 = "APPROVED");
+
+		WebContentNavigator.openWebContentAdmin(
+			baseURL = "http://www.able.com:8080",
+			siteURLKey = "Guest");
+
+		AssertTextEquals(
+			key_webContentTitle = "Web Content Title",
+			locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+			value1 = "APPROVED");
 	}
 
-	@priority = "5"
-	test RestartPortal {
-		property custom.properties = "database.partition.schema.name.prefix=testPartition";
-		property database.types = "mysql";
+	@priority = 4
+	test CanSetVirtualHostViaPages {
 		property test.assert.warning.exceptions = "true";
-		property test.name.skip.portal.instance = "DatabasePartitioning#RestartPortal";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		HeadlessPortalInstanceAPI.addPortalInstance(
 			domain = "www.able.com",
@@ -229,12 +273,353 @@ definition {
 			virtualHost = "www.able.com");
 
 		User.firstLoginUI(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			specificURL = "http://www.able.com:8080",
 			userEmailAddress = "test@www.able.com");
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Configuration",
+			panel = "Site Administration",
+			portlet = "Site Settings");
+
+		Site.addVirtualHostsURLCP(
+			pageVirtualHosts = "true",
+			pageVirtualHostURL = "www.baker.com");
+
+		Navigator.gotoPage(
+			baseURL = "http://www.baker.com:8080",
+			pageName = "Home");
+
+		AssertLocation(value1 = "http://www.baker.com:8080/web/guest/home");
+
+		SignOut.signOut();
+
+		User.firstLoginPG();
+
+		ServerAdministration.openServerAdmin();
+
+		ServerAdministration.executeServerResourcesActions(actionsDescription = "Clear the database cache.");
+
+		Navigator.gotoPage(
+			baseURL = "http://www.baker.com:8080",
+			pageName = "Home");
+
+		AssertLocation(value1 = "http://www.baker.com:8080/web/guest/home");
+	}
+
+	@priority = 4
+	test ExecuteSchemaValidator {
+		property custom.properties = "database.partition.schema.name.prefix=ltest_${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com,www.baker.com";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		HeadlessPortalInstanceAPI.addPortalInstance(
+			domain = "www.able.com",
+			portalInstanceId = "www.able.com",
+			virtualHost = "www.able.com");
+
+		HeadlessPortalInstanceAPI.addPortalInstance(
+			domain = "www.baker.com",
+			portalInstanceId = "www.baker.com",
+			virtualHost = "www.baker.com");
+
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.able.com:8080",
+			userEmailAddress = "test@www.able.com");
+
+		Navigator.openSpecificURL(url = "http://www.able.com:8080");
+
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.doc",
+			dmDocumentTitle = "DM Document Title");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.baker.com:8080",
+			userEmailAddress = "test@www.baker.com");
+
+		Navigator.openSpecificURL(url = "http://www.baker.com:8080");
+
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
+			panel = "Site Administration",
+			portlet = "Documents and Media");
+
+		DMDocument.addCP(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_1.doc",
+			dmDocumentTitle = "DM Document Title");
+
+		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+
+		SQL.assertDatabaseCount(
+			databaseFilter = "ltest_%",
+			databaseSubstring = "ltest_",
+			expectedCount = 2);
+
+		DBPartition.validateSchemas(schemaNamePrefix = "ltest_");
+	}
+
+	@priority = 4
+	test ExportAndAddDBPartition {
+		property app.server.bundles.size = "1";
+		property cluster.enabled = "true";
+		property custom.properties = "feature.flag.LPD-11342=true${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+		property web.xml.timeout = "60";
+
+		task ("Add www.able.com with an asset") {
+			HeadlessPortalInstanceAPI.addPortalInstance(
+				domain = "www.able.com",
+				portalInstanceId = "www.able.com",
+				virtualHost = "www.able.com");
+
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media");
+
+			DMDocument.addCP(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentFile = "Document_1.doc",
+				dmDocumentTitle = "DM Document Title");
+
+			DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+			DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+
+			var partitionCompanyId = JSONCompany.getCompanyId(portalInstanceName = "www.able.com");
+
+			SignOut.signOutOfSpecificURL(url = "http://www.able.com:8080");
+		}
+
+		task ("Export www.able.com partition and shutdown the server") {
+			DBPartition.exportDBPartition(partitionCompanyId = ${partitionCompanyId});
+
+			Clustering.shutdownSpecificServer(nodePort = 8080);
+
+			Clustering.shutdownSpecificServer(nodePort = 9080);
+		}
+
+		task ("Removing the original schema") {
+			var databaseType = PropsUtil.get("database.type");
+
+			if (${databaseType} == "mysql") {
+				SQL.executeSQLStatement(sqlStatement = "drop schema if exists lpartition_${partitionCompanyId};");
+			}
+			else if (${databaseType} == "postgresql") {
+				SQL.executeSQLStatement(sqlStatement = "drop schema if exists lpartition_${partitionCompanyId} cascade;");
+			}
+		}
+
+		task ("Create an empty database") {
+			var databaseType = PropsUtil.get("database.type");
+
+			if (${databaseType} == "mysql") {
+				AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
+			}
+			else if (${databaseType} == "postgresql") {
+				SQL.executeSQLStatement(sqlStatement = "drop schema public cascade;");
+
+				SQL.executeSQLStatement(sqlStatement = "create schema public;");
+			}
+
+			Clustering.startSpecificServer(
+				deleteLiferayHome = "false",
+				nodePort = 8080);
+
+			Clustering.startSpecificServer(
+				deleteLiferayHome = "false",
+				nodePort = 9080);
+		}
+
+		task ("Add previously exported www.able.com partition into new database") {
+			DBPartition.importDBPartition(partitionCompanyId = ${partitionCompanyId});
+		}
+
+		task ("Ensure that portal main functionalities work correctly") {
+			SignIn.signInTestSetup();
+
+			Smoke.runSmoke();
+
+			SignOut.signOut();
+		}
+
+		task ("Ensure that www.able.com is accessible and its assets visible") {
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media");
+
+			DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+			DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+		}
+	}
+
+	test ExportNonPartitionedCompanyAndAddDBPartition {
+		property app.server.bundles.size = "1";
+		property cluster.enabled = "true";
+		property custom.properties = "database.partition.enabled=false${line.separator}database.partition.schema.name.prefix=ltest_${line.separator}feature.flag.LPD-11342=true${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property database.partition.enabled = "false";
+		property liferay.online.properties = "false";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+		property web.xml.timeout = "60";
+
+		task ("Add www.able.com with an asset") {
+			HeadlessPortalInstanceAPI.addPortalInstance(
+				domain = "www.able.com",
+				portalInstanceId = "www.able.com",
+				virtualHost = "www.able.com");
+
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media");
+
+			DMDocument.addCP(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentFile = "Document_1.doc",
+				dmDocumentTitle = "DM Document Title");
+
+			DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+			DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+
+			var partitionCompanyId = JSONCompany.getCompanyId(portalInstanceName = "www.able.com");
+
+			SignOut.signOutOfSpecificURL(url = "http://www.able.com:8080");
+		}
+
+		task ("Export www.able.com instance, delete instance and shutdown the servers") {
+			DBPartition.exportDBPartition(partitionCompanyId = ${partitionCompanyId});
+
+			User.firstLoginPG();
+
+			ServerAdministration.openServerAdmin();
+
+			PortalInstances.openVirtualInstancesAdmin();
+
+			PortalInstances.deleteCP(virtualHost = "www.able.com");
+
+			SignOut.signOut();
+
+			Clustering.shutdownSpecificServer(nodePort = 8080);
+
+			Clustering.shutdownSpecificServer(nodePort = 9080);
+		}
+
+		task ("Create and start an empty database with DBPartition enabled") {
+			var databaseType = PropsUtil.get("database.type");
+
+			if (${databaseType} == "mysql") {
+				AntCommands.runCommand("build-test.xml", "rebuild-database -Ddatabase.type=mysql -Dsql.dir=sql/create-bare/ -Dsql.file=create-bare-mysql.sql");
+			}
+			else if (${databaseType} == "postgresql") {
+				SQL.executeSQLStatement(sqlStatement = "drop schema public cascade;");
+
+				SQL.executeSQLStatement(sqlStatement = "create schema public;");
+			}
+
+			Clustering.updatePortalPropertiesOnSpecificServer(
+				nodePort = 8080,
+				propertiesOriginal = "database.partition.enabled=false",
+				propertiesUpdate = "database.partition.enabled=true");
+
+			Clustering.updatePortalPropertiesOnSpecificServer(
+				nodePort = 9080,
+				propertiesOriginal = "database.partition.enabled=false",
+				propertiesUpdate = "database.partition.enabled=true");
+
+			Clustering.startSpecificServer(
+				deleteLiferayHome = "false",
+				nodePort = 8080);
+
+			Clustering.startSpecificServer(
+				deleteLiferayHome = "false",
+				nodePort = 9080);
+		}
+
+		task ("Add previously exported www.able.com company into new database") {
+			DBPartition.importDBPartition(partitionCompanyId = ${partitionCompanyId});
+		}
+
+		task ("Ensure that portal main functionalities work correctly") {
+			SignIn.signInTestSetup();
+
+			Smoke.runSmoke();
+
+			SignOut.signOut();
+		}
+
+		task ("Ensure that www.able.com is accessible and its assets visible") {
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				panel = "Site Administration",
+				portlet = "Documents and Media");
+
+			DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
+
+			DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+		}
+	}
+
+	@priority = 3
+	test NewCompanyStillAccessibleAfterRestart {
+		property custom.properties = "database.partition.schema.name.prefix=ltest_${line.separator}virtual.hosts.valid.hosts=localhost,127.0.0.1,www.able.com";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		HeadlessPortalInstanceAPI.addPortalInstance(
+			domain = "www.able.com",
+			portalInstanceId = "www.able.com",
+			virtualHost = "www.able.com");
+
+		User.firstLoginUI(
+			password = PropsUtil.get("default.admin.password"),
+			specificURL = "http://www.able.com:8080",
+			userEmailAddress = "test@www.able.com");
+
+		ProductMenu.gotoPortlet(
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Documents and Media");
 
@@ -249,18 +634,255 @@ definition {
 
 		Portlet.shutdownServer();
 
-		Portlet.startServer(keepOSGiState = "true");
+		Portlet.startServer(deleteLiferayHome = "false");
 
 		Navigator.openSpecificURL(url = "http://www.able.com:8080");
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Documents and Media");
 
 		DMNavigator.gotoDocumentCP(dmDocumentTitle = "DM Document Title");
 
 		DMDocument.viewCP(dmDocumentTitle = "DM Document Title");
+	}
+
+	@description = "LPS-163671 - Scenario to cover creation of Virtual Instances with case insensitive DB and database partitioning enabled"
+	@priority = 3
+	test NewCompanyStillAccessibleAfterRestartWithCaseInsensitiveDatabase {
+		property database.lowercase.enabled = "true";
+		property database.types = "mysql";
+		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Verify if the lower_case_table_names is enabled") {
+			var variableQueryResult = SQL.executeSQLStatement(sqlStatement = "show variables where Variable_name='lower_case_table_names';");
+
+			if (!(contains(${variableQueryResult}, "lower_case_table_names,1"))) {
+				echo(${variableQueryResult});
+
+				fail("lower_case_table_names variable not set to 1, case insensitive not enabled.");
+			}
+		}
+
+		task ("Add new company") {
+			HeadlessPortalInstanceAPI.addPortalInstance(
+				domain = "www.able.com",
+				portalInstanceId = "www.able.com",
+				virtualHost = "www.able.com");
+		}
+
+		task ("Go to Control Panel > Virtual Instances and verify that the virtual instance is present in the UI") {
+			PortalInstances.openVirtualInstancesAdmin();
+
+			PortalInstances.viewCP(virtualHost = "www.able.com");
+		}
+
+		task ("Access the Virtual Instance and verify that the host name is available") {
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+
+			AssertConsoleTextNotPresent(value1 = "Invalid host name www.able.com");
+		}
+
+		task ("Restart server") {
+			Portlet.shutdownServer();
+
+			Portlet.startServer(deleteLiferayHome = "false");
+		}
+
+		task ("Access Virtual Instance and verify that is visible in the UI") {
+			Navigator.openSpecificURL(url = "http://www.able.com:8080");
+
+			Smoke.viewWelcomeContentPage();
+		}
+	}
+
+	@priority = 5
+	test PortalInstanceCreationDeletionUpdatesDBPartitionUtilWithCluster {
+		property app.server.bundles.size = "1";
+		property cluster.enabled = "true";
+		property minimum.slave.ram = "24";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Check current companies count") {
+			User.logoutPG(
+				password = PropsUtil.get("default.admin.password"),
+				userEmailAddress = "test@liferay.com");
+
+			User.loginPG(
+				nodePort = 9080,
+				password = PropsUtil.get("default.admin.password"),
+				userEmailAddress = "test@liferay.com");
+
+			ServerAdministration.openServerAdmin(baseURL = "http://localhost:9080");
+
+			var script = '''
+				import com.liferay.portal.db.partition.util.DBPartitionUtil;
+
+				import java.util.concurrent.atomic.AtomicInteger;
+
+				sleep(60000);
+
+				AtomicInteger total = new AtomicInteger();
+
+				DBPartitionUtil.forEachCompanyId({companyId -> total.incrementAndGet()});
+
+				out.println(total.get());
+			''';
+
+			ServerAdministration.executeScript(
+				language = "Groovy",
+				script = ${script});
+
+			AssertTextEquals(
+				locator1 = "ServerAdministrationScript#OUTPUT_FIELD",
+				value1 = 1);
+		}
+
+		task ("Add company and check companies count") {
+			HeadlessPortalInstanceAPI.addPortalInstance(
+				domain = "www.able.com",
+				portalInstanceId = "www.able.com",
+				virtualHost = "www.able.com");
+
+			ServerAdministration.executeScript(
+				language = "Groovy",
+				script = ${script});
+
+			AssertTextEquals(
+				locator1 = "ServerAdministrationScript#OUTPUT_FIELD",
+				value1 = 2);
+		}
+
+		task ("Delete added company and check companies count") {
+			HeadlessPortalInstanceAPI.deletePortalInstance(portalInstanceId = "www.able.com");
+
+			ServerAdministration.executeScript(
+				language = "Groovy",
+				script = ${script});
+
+			AssertTextEquals(
+				locator1 = "ServerAdministrationScript#OUTPUT_FIELD",
+				value1 = 1);
+		}
+	}
+
+	@priority = 3
+	test ScheduleWebContentChangesWithDBPartitioningActivatedAcrossVariousCompanies {
+		property database.partition.enabled = "true";
+		property liferay.online.properties = "false";
+		property osgi.module.configuration.file.names = "com.liferay.journal.configuration.JournalServiceConfiguration.config";
+		property osgi.module.configurations = "checkInterval=I\"1\"";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Add a new Company") {
+			HeadlessPortalInstanceAPI.addPortalInstance(
+				domain = "www.able.com",
+				portalInstanceId = "www.able.com",
+				virtualHost = "www.able.com");
+
+			User.firstLoginUI(
+				password = PropsUtil.get("default.admin.password"),
+				specificURL = "http://www.able.com:8080",
+				userEmailAddress = "test@www.able.com");
+		}
+
+		task ("Add a WebContent article on new Company") {
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				portlet = "Web Content");
+
+			WebContentNavigator.gotoAddCP();
+
+			WebContent.addCP(
+				webContentContent = "WC WebContent Content New Company",
+				webContentTitle = "WC WebContent Title New Company");
+
+			WebContent.increaseDisplayDate(minuteIncrease = 4);
+
+			TestUtils.hardRefresh();
+
+			AssertTextEquals(
+				key_webContentTitle = "WC WebContent Title New Company",
+				locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+				value1 = "SCHEDULED");
+		}
+
+		task ("Add a WebContent article on default Company") {
+			User.firstLoginPG();
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				portlet = "Web Content");
+
+			WebContentNavigator.gotoAddCP();
+
+			WebContent.addCP(
+				webContentContent = "WC WebContent Content Default Company",
+				webContentTitle = "WC WebContent Title Default Company");
+
+			WebContent.increaseDisplayDate(minuteIncrease = 2);
+
+			TestUtils.hardRefresh();
+
+			AssertTextEquals(
+				key_webContentTitle = "WC WebContent Title Default Company",
+				locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+				value1 = "SCHEDULED");
+		}
+
+		task ("View WebContent Article Publish on default Company") {
+
+			// Pausing 210 seconds due to LRQA-75909
+
+			Pause(value1 = 210000);
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				portlet = "Web Content");
+
+			AssertTextEquals(
+				key_webContentTitle = "WC WebContent Title Default Company",
+				locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+				value1 = "APPROVED");
+		}
+
+		task ("New Company publish it's WebContent Article") {
+			Navigator.openSpecificURL(url = "http://www.able.com:8080");
+
+			// Pausing 150 seconds due to LRQA-75909
+
+			Pause(value1 = 150000);
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				portlet = "Web Content");
+
+			AssertTextEquals(
+				key_webContentTitle = "WC WebContent Title New Company",
+				locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+				value1 = "APPROVED");
+		}
+
+		task ("WebContent Article not repulish on default Company") {
+			Navigator.openURL();
+
+			ProductMenu.gotoPortlet(
+				category = "Content & Data",
+				portlet = "Web Content");
+
+			AssertTextEquals(
+				key_webContentTitle = "WC WebContent Title Default Company",
+				locator1 = "WC#ENTRY_LIST_WORKFLOW_STATUS",
+				value1 = "APPROVED");
+		}
 	}
 
 }

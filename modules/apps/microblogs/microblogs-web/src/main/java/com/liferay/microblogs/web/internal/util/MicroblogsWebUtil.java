@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.microblogs.web.internal.util;
@@ -41,15 +32,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.comparator.UserFirstNameComparator;
 import com.liferay.social.kernel.model.SocialRelationConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+import jakarta.portlet.WindowStateException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-import javax.portlet.WindowStateException;
 
 /**
  * @author Jonathan Lee
@@ -84,9 +75,9 @@ public class MicroblogsWebUtil {
 			String content, ServiceContext serviceContext)
 		throws PortalException {
 
-		content = replaceHashtags(content, serviceContext);
+		content = _replaceHashtags(content, serviceContext);
 
-		content = replaceUserTags(content, serviceContext);
+		content = _replaceUserTags(content, serviceContext);
 
 		return content;
 	}
@@ -100,10 +91,10 @@ public class MicroblogsWebUtil {
 		List<User> users = UserLocalServiceUtil.getSocialUsers(
 			userId, SocialRelationConstants.TYPE_BI_CONNECTION,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new UserFirstNameComparator(true));
+			UserFirstNameComparator.getInstance(true));
 
 		for (User user : users) {
-			if (user.isDefaultUser() || (userId == user.getUserId())) {
+			if (user.isGuestUser() || (userId == user.getUserId())) {
 				continue;
 			}
 
@@ -143,7 +134,7 @@ public class MicroblogsWebUtil {
 		return screenNames;
 	}
 
-	protected static String replaceHashtags(
+	private static String _replaceHashtags(
 			String content, ServiceContext serviceContext)
 		throws PortalException {
 
@@ -180,7 +171,7 @@ public class MicroblogsWebUtil {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 			}
@@ -196,7 +187,7 @@ public class MicroblogsWebUtil {
 				}
 				catch (WindowStateException windowStateException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(windowStateException, windowStateException);
+						_log.debug(windowStateException);
 					}
 				}
 			}
@@ -223,7 +214,7 @@ public class MicroblogsWebUtil {
 		return escapedContent;
 	}
 
-	protected static String replaceUserTags(
+	private static String _replaceUserTags(
 			String content, ServiceContext serviceContext)
 		throws PortalException {
 
@@ -265,7 +256,7 @@ public class MicroblogsWebUtil {
 			}
 			catch (NoSuchUserException noSuchUserException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchUserException, noSuchUserException);
+					_log.debug(noSuchUserException);
 				}
 			}
 		}

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
+import com.liferay.expando.kernel.util.ExpandoUtil;
 import com.liferay.portal.kernel.exception.NoSuchUserException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.internal.service.permission.ModelPermissionsImpl;
@@ -26,10 +18,9 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.permission.ModelPermissionsFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.UploadPortletRequest;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -37,17 +28,19 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
@@ -82,7 +75,7 @@ public class ServiceContextFactory {
 
 		ServiceContext serviceContext = _getInstance(httpServletRequest);
 
-		if (className == null) {
+		if ((className == null) || (httpServletRequest == null)) {
 			return serviceContext;
 		}
 
@@ -102,7 +95,7 @@ public class ServiceContextFactory {
 		// Expando
 
 		Map<String, Serializable> expandoBridgeAttributes =
-			PortalUtil.getExpandoBridgeAttributes(
+			ExpandoUtil.getExpandoBridgeAttributes(
 				ExpandoBridgeFactoryUtil.getExpandoBridge(
 					serviceContext.getCompanyId(), className),
 				httpServletRequest);
@@ -138,7 +131,7 @@ public class ServiceContextFactory {
 		// Expando
 
 		Map<String, Serializable> expandoBridgeAttributes =
-			PortalUtil.getExpandoBridgeAttributes(
+			ExpandoUtil.getExpandoBridgeAttributes(
 				ExpandoBridgeFactoryUtil.getExpandoBridge(
 					serviceContext.getCompanyId(), className),
 				portletRequest);
@@ -146,13 +139,6 @@ public class ServiceContextFactory {
 		serviceContext.setExpandoBridgeAttributes(expandoBridgeAttributes);
 
 		return serviceContext;
-	}
-
-	public static ServiceContext getInstance(
-			String className, UploadPortletRequest uploadPortletRequest)
-		throws PortalException {
-
-		return getInstance(className, (HttpServletRequest)uploadPortletRequest);
 	}
 
 	private static void _ensureValidModelPermissions(
@@ -171,6 +157,10 @@ public class ServiceContextFactory {
 
 		ServiceContext serviceContext = new ServiceContext();
 
+		if (httpServletRequest == null) {
+			return serviceContext;
+		}
+
 		// Theme display
 
 		ThemeDisplay themeDisplay =
@@ -188,7 +178,7 @@ public class ServiceContextFactory {
 
 			String fullCanonicalURL = canonicalURL;
 
-			if (!HttpUtil.hasProtocol(layoutURL)) {
+			if (!HttpComponentsUtil.hasProtocol(layoutURL)) {
 				fullCanonicalURL = PortalUtil.getCanonicalURL(
 					PortalUtil.getPortalURL(themeDisplay) + layoutURL,
 					themeDisplay, themeDisplay.getLayout(), true);
@@ -223,12 +213,12 @@ public class ServiceContextFactory {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchUserException, noSuchUserException);
+					_log.debug(noSuchUserException);
 				}
 			}
 
 			if (user != null) {
-				serviceContext.setSignedIn(!user.isDefaultUser());
+				serviceContext.setSignedIn(!user.isGuestUser());
 				serviceContext.setUserId(user.getUserId());
 			}
 			else {
@@ -313,7 +303,7 @@ public class ServiceContextFactory {
 		Map<String, String[]> parameterMap =
 			httpServletRequest.getParameterMap();
 
-		List<Long> assetCategoryIdsList = new ArrayList<>();
+		Set<Long> assetCategoryIdsSet = new HashSet<>();
 
 		boolean updateAssetCategoryIds = false;
 
@@ -330,13 +320,13 @@ public class ServiceContextFactory {
 				httpServletRequest, name);
 
 			for (long assetCategoryId : assetVocabularyAssetCategoryIds) {
-				assetCategoryIdsList.add(assetCategoryId);
+				assetCategoryIdsSet.add(assetCategoryId);
 			}
 		}
 
 		if (updateAssetCategoryIds) {
 			assetCategoryIds = ArrayUtil.toArray(
-				assetCategoryIdsList.toArray(new Long[0]));
+				assetCategoryIdsSet.toArray(new Long[0]));
 		}
 
 		serviceContext.setAssetCategoryIds(assetCategoryIds);
@@ -355,11 +345,8 @@ public class ServiceContextFactory {
 
 		serviceContext.setAssetPriority(
 			ParamUtil.getDouble(httpServletRequest, "assetPriority"));
-
-		String[] assetTagNames = ParamUtil.getStringValues(
-			httpServletRequest, "assetTagNames");
-
-		serviceContext.setAssetTagNames(assetTagNames);
+		serviceContext.setAssetTagNames(
+			ParamUtil.getStringValues(httpServletRequest, "assetTagNames"));
 
 		// Workflow
 
@@ -518,11 +505,8 @@ public class ServiceContextFactory {
 
 		serviceContext.setAssetPriority(
 			ParamUtil.getDouble(httpServletRequest, "assetPriority"));
-
-		String[] assetTagNames = ParamUtil.getStringValues(
-			httpServletRequest, "assetTagNames");
-
-		serviceContext.setAssetTagNames(assetTagNames);
+		serviceContext.setAssetTagNames(
+			ParamUtil.getStringValues(httpServletRequest, "assetTagNames"));
 
 		// Workflow
 

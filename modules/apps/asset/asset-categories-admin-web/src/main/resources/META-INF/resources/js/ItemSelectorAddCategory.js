@@ -1,27 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {delegate, navigate} from 'frontend-js-web';
+import {delegate, getOpener, navigate} from 'frontend-js-web';
 
-const createButton = ({action, buttonClass, label, type = 'submit'}) => {
+const createButton = ({action, buttonClasses, label, type = 'submit'}) => {
 	const wrapper = document.createElement('div');
 
 	wrapper.classList.add('btn-group-item');
 
 	const button = document.createElement('button');
 
-	button.classList.add('add-category-toolbar-button', 'btn', buttonClass);
+	button.classList.add('add-category-toolbar-button', 'btn');
+
+	for (const buttonClass of buttonClasses) {
+		button.classList.add(buttonClass);
+	}
+
 	button.dataset.action = action;
 	button.textContent = label;
 	button.type = type;
@@ -32,11 +28,11 @@ const createButton = ({action, buttonClass, label, type = 'submit'}) => {
 };
 
 export default function ({currentURL, namespace, redirect}) {
-	const formSheet = document.querySelector('.lfr-form-content .sheet');
+	const formSheet = document.querySelector('.lfr-form-content div');
 
 	formSheet.classList.add('border-0');
 
-	const openerWindow = Liferay.Util.getOpener();
+	const openerWindow = getOpener();
 
 	const modalTitle = openerWindow.document.querySelector('.modal-title');
 
@@ -47,7 +43,7 @@ export default function ({currentURL, namespace, redirect}) {
 	} - ${Liferay.Language.get('add-new')}`;
 
 	const initialModalFooterButtons = openerWindow.document.querySelectorAll(
-		'.liferay-modal .modal-footer .btn-group-item'
+		'.liferay-modal .modal-footer button'
 	);
 
 	initialModalFooterButtons.forEach((item) => {
@@ -55,7 +51,7 @@ export default function ({currentURL, namespace, redirect}) {
 	});
 
 	const footer = openerWindow.document.querySelector(
-		'.modal-footer .btn-group'
+		'.modal-footer .btn-group-spaced'
 	);
 
 	const addCategoryButtons = footer.querySelectorAll(
@@ -65,32 +61,42 @@ export default function ({currentURL, namespace, redirect}) {
 	if (addCategoryButtons.length) {
 		addCategoryButtons.forEach((button) => {
 			button.parentElement.classList.remove('hide');
+			button.classList.remove('hide');
 		});
 	}
 	else {
 		const buttons = [
 			createButton({
 				action: 'cancel',
-				buttonClass: 'btn-link',
+				buttonClasses: [
+					'btn-outline-borderless',
+					'btn-outline-secondary',
+				],
 				label: Liferay.Language.get('cancel'),
 				type: 'button',
 			}),
 
 			createButton({
 				action: 'saveAndAddNew',
-				buttonClass: 'btn-secondary',
+				buttonClasses: ['btn-secondary'],
 				label: Liferay.Language.get('save-and-add-a-new-one'),
 			}),
 
 			createButton({
 				action: 'save',
-				buttonClass: 'btn-primary',
+				buttonClasses: ['btn-primary'],
 				label: Liferay.Language.get('save'),
 			}),
 		];
 
 		buttons.forEach((button) => footer.appendChild(button));
 	}
+
+	const hideAddCategoryButtons = () => {
+		footer
+			.querySelectorAll('.add-category-toolbar-button')
+			.forEach((button) => button.parentElement.classList.add('hide'));
+	};
 
 	const delegateHandler = delegate(
 		footer,
@@ -99,43 +105,34 @@ export default function ({currentURL, namespace, redirect}) {
 		(event) => {
 			const delegateTarget = event.delegateTarget;
 
-			modalTitle.textContent = initialModalTitle;
-
-			initialModalFooterButtons.forEach((item) => {
-				item.classList.remove('hide');
-			});
-
-			const hideAddCategoryButtons = () => {
-				footer
-					.querySelectorAll('.add-category-toolbar-button')
-					.forEach((button) =>
-						button.parentElement.classList.add('hide')
-					);
-			};
-
 			const action = delegateTarget.dataset.action;
 
 			if (action === 'cancel') {
-				hideAddCategoryButtons();
-
 				navigate(redirect);
 			}
 			else if (action === 'saveAndAddNew') {
-				document.getElementById(
-					`${namespace}redirect`
-				).value = currentURL;
+				document.getElementById(`${namespace}redirect`).value =
+					currentURL;
 
 				submitForm(document.getElementById(`${namespace}fm`));
 			}
 			else if (action === 'save') {
-				hideAddCategoryButtons();
-
 				submitForm(document.getElementById(`${namespace}fm`));
 			}
 		}
 	);
 
 	return {
-		dispose: () => delegateHandler.dispose(),
+		dispose: () => {
+			initialModalFooterButtons.forEach((item) => {
+				item.classList.remove('hide');
+			});
+
+			hideAddCategoryButtons();
+
+			modalTitle.textContent = initialModalTitle;
+
+			delegateHandler.dispose();
+		},
 	};
 }

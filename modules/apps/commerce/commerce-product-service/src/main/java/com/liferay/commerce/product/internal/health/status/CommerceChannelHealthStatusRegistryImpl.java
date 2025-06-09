@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.internal.health.status;
@@ -39,10 +30,7 @@ import org.osgi.service.component.annotations.Deactivate;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CommerceChannelHealthStatusRegistry.class
-)
+@Component(service = CommerceChannelHealthStatusRegistry.class)
 public class CommerceChannelHealthStatusRegistryImpl
 	implements CommerceChannelHealthStatusRegistry {
 
@@ -56,7 +44,7 @@ public class CommerceChannelHealthStatusRegistryImpl
 
 		ServiceWrapper<CommerceChannelHealthStatus>
 			commerceChannelHealthStatusServiceWrapper =
-				_commerceChannelHealthStatusRegistryMap.getService(key);
+				_serviceTrackerMap.getService(key);
 
 		if (commerceChannelHealthStatusServiceWrapper == null) {
 			if (_log.isDebugEnabled()) {
@@ -79,8 +67,7 @@ public class CommerceChannelHealthStatusRegistryImpl
 
 		List<ServiceWrapper<CommerceChannelHealthStatus>>
 			commerceChannelHealthStatusServiceWrappers =
-				ListUtil.fromCollection(
-					_commerceChannelHealthStatusRegistryMap.values());
+				ListUtil.fromCollection(_serviceTrackerMap.values());
 
 		Collections.sort(
 			commerceChannelHealthStatusServiceWrappers,
@@ -99,17 +86,16 @@ public class CommerceChannelHealthStatusRegistryImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_commerceChannelHealthStatusRegistryMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, CommerceChannelHealthStatus.class,
-				"commerce.channel.health.status.key",
-				ServiceTrackerCustomizerFactory.
-					<CommerceChannelHealthStatus>serviceWrapper(bundleContext));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, CommerceChannelHealthStatus.class,
+			"commerce.channel.health.status.key",
+			ServiceTrackerCustomizerFactory.
+				<CommerceChannelHealthStatus>serviceWrapper(bundleContext));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_commerceChannelHealthStatusRegistryMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -121,6 +107,6 @@ public class CommerceChannelHealthStatusRegistryImpl
 
 	private ServiceTrackerMap
 		<String, ServiceWrapper<CommerceChannelHealthStatus>>
-			_commerceChannelHealthStatusRegistryMap;
+			_serviceTrackerMap;
 
 }

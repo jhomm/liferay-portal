@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v1_1_8;
@@ -36,45 +27,38 @@ public class JournalArticleUpgradeProcess extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select id_, content from JournalArticle where content like " +
-					"?")) {
+					"'%type=\"radio\"%'");
+			ResultSet resultSet = preparedStatement1.executeQuery();
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update JournalArticle set content = ? where id_ = ?")) {
 
-			preparedStatement1.setString(1, "%type=\"radio\"%");
+			while (resultSet.next()) {
+				preparedStatement2.setString(
+					1,
+					_convertRadioDynamicElements(
+						resultSet.getString("content")));
+				preparedStatement2.setLong(2, resultSet.getLong("id_"));
 
-			ResultSet resultSet1 = preparedStatement1.executeQuery();
-
-			while (resultSet1.next()) {
-				long id = resultSet1.getLong("id_");
-
-				String content = resultSet1.getString("content");
-
-				content = _convertRadioDynamicElements(content);
-
-				try (PreparedStatement preparedStatement2 =
-						AutoBatchPreparedStatementUtil.concurrentAutoBatch(
-							connection,
-							"update JournalArticle set content = ? where id_ " +
-								"= ?")) {
-
-					preparedStatement2.setString(1, content);
-					preparedStatement2.setLong(2, id);
-
-					preparedStatement2.executeUpdate();
-				}
+				preparedStatement2.addBatch();
 			}
+
+			preparedStatement2.executeBatch();
 		}
 	}
 
 	private String _convertRadioDynamicElements(String content)
 		throws Exception {
 
-		Document contentDocument = SAXReaderUtil.read(content);
+		Document document = SAXReaderUtil.read(content);
 
-		contentDocument = contentDocument.clone();
+		document = document.clone();
 
 		XPath xPath = SAXReaderUtil.createXPath(
 			"//dynamic-element[@type='radio']");
 
-		List<Node> nodes = xPath.selectNodes(contentDocument);
+		List<Node> nodes = xPath.selectNodes(document);
 
 		for (Node node : nodes) {
 			Element element = (Element)node;
@@ -93,7 +77,7 @@ public class JournalArticleUpgradeProcess extends UpgradeProcess {
 			}
 		}
 
-		return contentDocument.formattedString();
+		return document.formattedString();
 	}
 
 	private String _removeUnusedChars(String data) {

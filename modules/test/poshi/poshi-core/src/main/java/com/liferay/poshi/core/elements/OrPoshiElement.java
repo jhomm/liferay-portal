@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.elements;
@@ -70,13 +61,36 @@ public class OrPoshiElement extends PoshiElement {
 	public String toPoshiScript() {
 		StringBuilder sb = new StringBuilder();
 
-		for (PoshiElement poshiElement : toPoshiElements(elements())) {
-			sb.append("(");
-			sb.append(poshiElement.toPoshiScript());
-			sb.append(") || ");
+		List<PoshiElement> poshiElements = toPoshiElements(elements());
+
+		for (PoshiElement poshiElement : poshiElements) {
+			String poshiScript = poshiElement.toPoshiScript();
+
+			if (poshiScript.startsWith("(") || poshiScript.startsWith("!(") ||
+				poshiScript.startsWith("isSet(") ||
+				poshiScript.startsWith("contains(")) {
+
+				sb.append(poshiScript);
+			}
+			else {
+				sb.append("(");
+				sb.append(poshiElement.toPoshiScript());
+				sb.append(")");
+			}
+
+			sb.append(" || ");
 		}
 
 		sb.setLength(sb.length() - 4);
+
+		PoshiElement parentPoshiElement = (PoshiElement)getParent();
+
+		if ((poshiElements.size() > 1) &&
+			!(parentPoshiElement instanceof NotPoshiElement)) {
+
+			sb.insert(0, "(");
+			sb.append(")");
+		}
 
 		return sb.toString();
 	}
@@ -125,6 +139,6 @@ public class OrPoshiElement extends PoshiElement {
 	private static final String _ELEMENT_NAME = "or";
 
 	private static final Pattern _conditionPattern = Pattern.compile(
-		"^(?!!|else)[\\s\\S]*\\|\\|[\\s\\S]*$");
+		"^(?!else)[\\s\\S]*\\|\\|[\\s\\S]*$");
 
 }

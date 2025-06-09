@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.blogs.web.internal.portlet.filter;
 
 import com.liferay.adaptive.media.content.transformer.ContentTransformerHandler;
-import com.liferay.adaptive.media.content.transformer.constants.ContentTransformerContentTypes;
 import com.liferay.blogs.constants.BlogsPortletKeys;
+import com.liferay.petra.io.unsync.UnsyncPrintWriter;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.io.WriterOutputStream;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -24,22 +15,21 @@ import com.liferay.portal.kernel.servlet.BufferCacheServletResponse;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.UnsyncPrintWriterPool;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.filter.FilterChain;
+import jakarta.portlet.filter.FilterConfig;
+import jakarta.portlet.filter.PortletFilter;
+import jakarta.portlet.filter.RenderFilter;
+import jakarta.portlet.filter.RenderResponseWrapper;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.filter.FilterChain;
-import javax.portlet.filter.FilterConfig;
-import javax.portlet.filter.PortletFilter;
-import javax.portlet.filter.RenderFilter;
-import javax.portlet.filter.RenderResponseWrapper;
-
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alejandro Tardín
  */
 @Component(
-	immediate = true, property = "javax.portlet.name=" + BlogsPortletKeys.BLOGS,
+	property = "jakarta.portlet.name=" + BlogsPortletKeys.BLOGS,
 	service = PortletFilter.class
 )
 public class BlogsPortletFilter implements RenderFilter {
@@ -115,7 +105,7 @@ public class BlogsPortletFilter implements RenderFilter {
 					return _printWriter;
 				}
 
-				_printWriter = UnsyncPrintWriterPool.borrow(unsyncStringWriter);
+				_printWriter = new UnsyncPrintWriter(unsyncStringWriter);
 
 				_calledGetWriter = true;
 
@@ -135,7 +125,6 @@ public class BlogsPortletFilter implements RenderFilter {
 
 		printWriter.write(
 			_contentTransformerHandler.transform(
-				ContentTransformerContentTypes.HTML,
 				unsyncStringWriter.toString()));
 	}
 
@@ -159,7 +148,6 @@ public class BlogsPortletFilter implements RenderFilter {
 		ServletResponseUtil.write(
 			httpServletResponse,
 			_contentTransformerHandler.transform(
-				ContentTransformerContentTypes.HTML,
 				bufferCacheServletResponse.getString()));
 	}
 

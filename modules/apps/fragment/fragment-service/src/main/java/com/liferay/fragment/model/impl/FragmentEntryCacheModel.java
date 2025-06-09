@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model.impl;
@@ -77,7 +68,7 @@ public class FragmentEntryCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(55);
+		StringBundler sb = new StringBundler(63);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -85,6 +76,8 @@ public class FragmentEntryCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", headId=");
 		sb.append(headId);
 		sb.append(", fragmentEntryId=");
@@ -117,12 +110,18 @@ public class FragmentEntryCacheModel
 		sb.append(cacheable);
 		sb.append(", configuration=");
 		sb.append(configuration);
+		sb.append(", icon=");
+		sb.append(icon);
 		sb.append(", previewFileEntryId=");
 		sb.append(previewFileEntryId);
+		sb.append(", marketplace=");
+		sb.append(marketplace);
 		sb.append(", readOnly=");
 		sb.append(readOnly);
 		sb.append(", type=");
 		sb.append(type);
+		sb.append(", typeOptions=");
+		sb.append(typeOptions);
 		sb.append(", lastPublishDate=");
 		sb.append(lastPublishDate);
 		sb.append(", status=");
@@ -150,6 +149,13 @@ public class FragmentEntryCacheModel
 		}
 		else {
 			fragmentEntryImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			fragmentEntryImpl.setExternalReferenceCode("");
+		}
+		else {
+			fragmentEntryImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		fragmentEntryImpl.setHeadId(headId);
@@ -226,9 +232,24 @@ public class FragmentEntryCacheModel
 			fragmentEntryImpl.setConfiguration(configuration);
 		}
 
+		if (icon == null) {
+			fragmentEntryImpl.setIcon("");
+		}
+		else {
+			fragmentEntryImpl.setIcon(icon);
+		}
+
 		fragmentEntryImpl.setPreviewFileEntryId(previewFileEntryId);
+		fragmentEntryImpl.setMarketplace(marketplace);
 		fragmentEntryImpl.setReadOnly(readOnly);
 		fragmentEntryImpl.setType(type);
+
+		if (typeOptions == null) {
+			fragmentEntryImpl.setTypeOptions("");
+		}
+		else {
+			fragmentEntryImpl.setTypeOptions(typeOptions);
+		}
 
 		if (lastPublishDate == Long.MIN_VALUE) {
 			fragmentEntryImpl.setLastPublishDate(null);
@@ -267,6 +288,7 @@ public class FragmentEntryCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		headId = objectInput.readLong();
 
@@ -292,12 +314,16 @@ public class FragmentEntryCacheModel
 
 		cacheable = objectInput.readBoolean();
 		configuration = (String)objectInput.readObject();
+		icon = objectInput.readUTF();
 
 		previewFileEntryId = objectInput.readLong();
+
+		marketplace = objectInput.readBoolean();
 
 		readOnly = objectInput.readBoolean();
 
 		type = objectInput.readInt();
+		typeOptions = (String)objectInput.readObject();
 		lastPublishDate = objectInput.readLong();
 
 		status = objectInput.readInt();
@@ -318,6 +344,13 @@ public class FragmentEntryCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(headId);
@@ -388,11 +421,28 @@ public class FragmentEntryCacheModel
 			objectOutput.writeObject(configuration);
 		}
 
+		if (icon == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(icon);
+		}
+
 		objectOutput.writeLong(previewFileEntryId);
+
+		objectOutput.writeBoolean(marketplace);
 
 		objectOutput.writeBoolean(readOnly);
 
 		objectOutput.writeInt(type);
+
+		if (typeOptions == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(typeOptions);
+		}
+
 		objectOutput.writeLong(lastPublishDate);
 
 		objectOutput.writeInt(status);
@@ -412,6 +462,7 @@ public class FragmentEntryCacheModel
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long headId;
 	public boolean head;
 	public long fragmentEntryId;
@@ -429,9 +480,12 @@ public class FragmentEntryCacheModel
 	public String js;
 	public boolean cacheable;
 	public String configuration;
+	public String icon;
 	public long previewFileEntryId;
+	public boolean marketplace;
 	public boolean readOnly;
 	public int type;
+	public String typeOptions;
 	public long lastPublishDate;
 	public int status;
 	public long statusByUserId;

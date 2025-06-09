@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service.persistence.test;
@@ -157,6 +148,8 @@ public class AssetListEntrySegmentsEntryRelPersistenceTest {
 		newAssetListEntrySegmentsEntryRel.setAssetListEntryId(
 			RandomTestUtil.nextLong());
 
+		newAssetListEntrySegmentsEntryRel.setPriority(RandomTestUtil.nextInt());
+
 		newAssetListEntrySegmentsEntryRel.setSegmentsEntryId(
 			RandomTestUtil.nextLong());
 
@@ -212,6 +205,9 @@ public class AssetListEntrySegmentsEntryRelPersistenceTest {
 		Assert.assertEquals(
 			existingAssetListEntrySegmentsEntryRel.getAssetListEntryId(),
 			newAssetListEntrySegmentsEntryRel.getAssetListEntryId());
+		Assert.assertEquals(
+			existingAssetListEntrySegmentsEntryRel.getPriority(),
+			newAssetListEntrySegmentsEntryRel.getPriority());
 		Assert.assertEquals(
 			existingAssetListEntrySegmentsEntryRel.getSegmentsEntryId(),
 			newAssetListEntrySegmentsEntryRel.getSegmentsEntryId());
@@ -275,6 +271,21 @@ public class AssetListEntrySegmentsEntryRelPersistenceTest {
 	}
 
 	@Test
+	public void testCountByA_S_C() throws Exception {
+		_persistence.countByA_S_C(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
+
+		_persistence.countByA_S_C(0L, 0L);
+	}
+
+	@Test
+	public void testCountByA_S_CArrayable() throws Exception {
+		_persistence.countByA_S_C(
+			RandomTestUtil.nextLong(),
+			new long[] {RandomTestUtil.nextLong(), 0L});
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		AssetListEntrySegmentsEntryRel newAssetListEntrySegmentsEntryRel =
 			addAssetListEntrySegmentsEntryRel();
@@ -309,8 +320,8 @@ public class AssetListEntrySegmentsEntryRelPersistenceTest {
 			"ctCollectionId", true, "uuid", true,
 			"assetListEntrySegmentsEntryRelId", true, "groupId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "assetListEntryId", true,
-			"segmentsEntryId", true, "lastPublishDate", true);
+			true, "modifiedDate", true, "assetListEntryId", true, "priority",
+			true, "segmentsEntryId", true, "lastPublishDate", true);
 	}
 
 	@Test
@@ -675,6 +686,8 @@ public class AssetListEntrySegmentsEntryRelPersistenceTest {
 
 		assetListEntrySegmentsEntryRel.setAssetListEntryId(
 			RandomTestUtil.nextLong());
+
+		assetListEntrySegmentsEntryRel.setPriority(RandomTestUtil.nextInt());
 
 		assetListEntrySegmentsEntryRel.setSegmentsEntryId(
 			RandomTestUtil.nextLong());

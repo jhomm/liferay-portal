@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.internal.util;
@@ -37,8 +28,6 @@ import com.liferay.portal.kernel.xml.Element;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = StagingAssetEntryHelper.class)
+@Component(service = StagingAssetEntryHelper.class)
 public class StagingAssetEntryHelperImpl implements StagingAssetEntryHelper {
 
 	@Override
@@ -66,7 +55,7 @@ public class StagingAssetEntryHelperImpl implements StagingAssetEntryHelper {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return;
@@ -140,13 +129,9 @@ public class StagingAssetEntryHelperImpl implements StagingAssetEntryHelper {
 
 		// Try to fetch the existing staged model from the company
 
-		Stream<AssetEntry> assetEntryStream = assetEntries.stream();
-
-		List<AssetEntry> companyAssetEntries = assetEntryStream.filter(
-			entry -> entry.getCompanyId() == group.getCompanyId()
-		).collect(
-			Collectors.toList()
-		);
+		List<AssetEntry> companyAssetEntries = ListUtil.filter(
+			assetEntries,
+			entry -> entry.getCompanyId() == group.getCompanyId());
 
 		if (ListUtil.isEmpty(companyAssetEntries)) {
 			return null;
@@ -160,7 +145,7 @@ public class StagingAssetEntryHelperImpl implements StagingAssetEntryHelper {
 			}
 			catch (PortalException portalException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -185,7 +170,7 @@ public class StagingAssetEntryHelperImpl implements StagingAssetEntryHelper {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return false;

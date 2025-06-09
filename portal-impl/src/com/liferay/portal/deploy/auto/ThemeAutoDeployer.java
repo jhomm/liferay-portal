@@ -1,68 +1,55 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.auto;
 
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.deploy.DeployUtil;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployException;
 import com.liferay.portal.kernel.deploy.auto.AutoDeployer;
 import com.liferay.portal.kernel.deploy.auto.context.AutoDeploymentContext;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.ServerDetector;
-import com.liferay.portal.tools.deploy.ThemeDeployer;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.model.Plugin;
+import com.liferay.portal.kernel.plugin.PluginPackage;
+import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.tools.deploy.BaseAutoDeployer;
 
 import java.io.File;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /**
  * @author Ivica Cardic
  * @author Brian Wing Shun Chan
  */
-public class ThemeAutoDeployer extends ThemeDeployer implements AutoDeployer {
+public class ThemeAutoDeployer
+	extends BaseAutoDeployer implements AutoDeployer {
 
 	public ThemeAutoDeployer() {
+		super(Plugin.TYPE_THEME);
+
 		try {
-			baseDir = PropsValues.AUTO_DEPLOY_DEPLOY_DIR;
-			destDir = DeployUtil.getAutoDeployDestDir();
-			appServerType = ServerDetector.getServerId();
 			themeTaglibDTD = DeployUtil.getResourcePath(
 				tempDirPaths, "liferay-theme.tld");
+
+			if (Validator.isNull(themeTaglibDTD)) {
+				throw new IllegalArgumentException(
+					"The system property deployer.theme.taglib.dtd is not set");
+			}
+
 			utilTaglibDTD = DeployUtil.getResourcePath(
 				tempDirPaths, "liferay-util.tld");
-			unpackWar = PropsValues.AUTO_DEPLOY_UNPACK_WAR;
-			filePattern = StringPool.BLANK;
-			jbossPrefix = PropsValues.AUTO_DEPLOY_JBOSS_PREFIX;
-			tomcatLibDir = PropsValues.AUTO_DEPLOY_TOMCAT_LIB_DIR;
-			wildflyPrefix = PropsValues.AUTO_DEPLOY_WILDFLY_PREFIX;
 
-			List<String> jars = new ArrayList<>();
-
-			addRequiredJar(jars, "util-bridges.jar");
-			addRequiredJar(jars, "util-java.jar");
-			addRequiredJar(jars, "util-taglib.jar");
-
-			this.jars = jars;
-
-			checkArguments();
+			if (Validator.isNull(utilTaglibDTD)) {
+				throw new IllegalArgumentException(
+					"The system property deployer.util.taglib.dtd is not set");
+			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -79,7 +66,7 @@ public class ThemeAutoDeployer extends ThemeDeployer implements AutoDeployer {
 				}
 
 				deployDirectory(
-					file, autoDeploymentContext.getContext(), false,
+					file, autoDeploymentContext.getContext(),
 					autoDeploymentContext.getPluginPackage());
 
 				if (_log.isInfoEnabled()) {
@@ -97,6 +84,42 @@ public class ThemeAutoDeployer extends ThemeDeployer implements AutoDeployer {
 		else {
 			return super.autoDeploy(autoDeploymentContext);
 		}
+	}
+
+	@Override
+	public Map<String, String> processPluginPackageProperties(
+			File srcFile, String displayName, PluginPackage pluginPackage)
+		throws Exception {
+
+		Map<String, String> filterMap = super.processPluginPackageProperties(
+			srcFile, displayName, pluginPackage);
+
+		if (filterMap == null) {
+			return null;
+		}
+
+		String moduleArtifactId = filterMap.get("module_artifact_id");
+
+		int pos = moduleArtifactId.indexOf("-theme");
+
+		String themeId = moduleArtifactId.substring(0, pos);
+
+		filterMap.put("theme_id", themeId);
+
+		String themeName = filterMap.get("plugin_name");
+
+		filterMap.put("theme_name", StringUtil.stripCDATA(themeName));
+
+		String liferayVersions = filterMap.get("liferay_versions");
+
+		filterMap.put(
+			"theme_versions",
+			StringUtil.replace(liferayVersions, "liferay-version", "version"));
+
+		copyDependencyXml(
+			"liferay-look-and-feel.xml", srcFile + "/WEB-INF", filterMap, true);
+
+		return filterMap;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

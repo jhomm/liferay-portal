@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test.util.exportimport.data.handler;
@@ -23,6 +14,7 @@ import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.test.util.internal.exportimport.staged.model.repository.DummyStagedModelRepository;
 import com.liferay.exportimport.test.util.model.Dummy;
 import com.liferay.exportimport.test.util.model.DummyFolder;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.xml.Element;
 
 import java.util.List;
@@ -33,12 +25,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Akos Thurzo
  */
-@Component(
-	immediate = true,
-	service = {
-		DummyFolderStagedModelDataHandler.class, StagedModelDataHandler.class
-	}
-)
+@Component(service = StagedModelDataHandler.class)
 public class DummyFolderStagedModelDataHandler
 	extends BaseStagedModelDataHandler<DummyFolder> {
 
@@ -47,6 +34,23 @@ public class DummyFolderStagedModelDataHandler
 	@Override
 	public String[] getClassNames() {
 		return CLASS_NAMES;
+	}
+
+	@Override
+	public boolean isEnabled(long companyId) {
+		return _enabled;
+	}
+
+	public void setEnabled(boolean enabled) {
+		_enabled = enabled;
+	}
+
+	public SafeCloseable setEnabledWithSafeCloseable(boolean enabled) {
+		boolean previousEnabled = _enabled;
+
+		setEnabled(enabled);
+
+		return () -> setEnabled(previousEnabled);
 	}
 
 	@Override
@@ -108,27 +112,16 @@ public class DummyFolderStagedModelDataHandler
 	}
 
 	@Reference(
-		target = "(model.class.name=com.liferay.exportimport.test.util.model.DummyFolder)",
-		unbind = "-"
+		target = "(model.class.name=com.liferay.exportimport.test.util.model.DummyFolder)"
 	)
-	protected void setDummyFolderStagedModelRepository(
-		StagedModelRepository<DummyFolder> dummyFolderStagedModelRepository) {
-
-		_dummyFolderStagedModelRepository = dummyFolderStagedModelRepository;
-	}
-
-	@Reference(
-		target = "(model.class.name=com.liferay.exportimport.test.util.model.Dummy)",
-		unbind = "-"
-	)
-	protected void setDummyStagedModelRepository(
-		StagedModelRepository<Dummy> dummyStagedModelRepository) {
-
-		_dummyStagedModelRepository = dummyStagedModelRepository;
-	}
-
 	private StagedModelRepository<DummyFolder>
 		_dummyFolderStagedModelRepository;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.exportimport.test.util.model.Dummy)"
+	)
 	private StagedModelRepository<Dummy> _dummyStagedModelRepository;
+
+	private boolean _enabled = true;
 
 }

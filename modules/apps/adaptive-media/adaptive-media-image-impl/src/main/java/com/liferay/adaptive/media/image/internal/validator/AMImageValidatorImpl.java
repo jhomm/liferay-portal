@@ -1,32 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.internal.validator;
 
+import com.liferay.adaptive.media.AMAttribute;
+import com.liferay.adaptive.media.AdaptiveMedia;
 import com.liferay.adaptive.media.image.mime.type.AMImageMimeTypeProvider;
-import com.liferay.adaptive.media.image.size.AMImageSizeProvider;
+import com.liferay.adaptive.media.image.service.AMImageEntryLocalService;
 import com.liferay.adaptive.media.image.validator.AMImageValidator;
+import com.liferay.document.library.configuration.DLFileEntryConfigurationProvider;
 import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
+import com.liferay.document.library.kernel.processor.RawMetadataProcessor;
 import com.liferay.document.library.kernel.service.DLFileEntryMetadataLocalService;
-import com.liferay.document.library.kernel.util.RawMetadataProcessor;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueValidationException;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructureManager;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.Value;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageEngineManager;
+import com.liferay.dynamic.data.mapping.util.comparator.StructureStructureKeyComparator;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -54,6 +49,23 @@ import org.osgi.service.component.annotations.Reference;
 public class AMImageValidatorImpl implements AMImageValidator {
 
 	@Override
+	public <T> boolean isProcessingRequired(
+		AdaptiveMedia<T> adaptiveMedia, FileVersion fileVersion) {
+
+		String configurationUuid = adaptiveMedia.getValue(
+			AMAttribute.getConfigurationUuidAMAttribute());
+
+		if ((configurationUuid != null) &&
+			_amImageEntryLocalService.hasAMImageEntryContent(
+				configurationUuid, fileVersion)) {
+
+			return false;
+		}
+
+		return isProcessingSupported(fileVersion);
+	}
+
+	@Override
 	public boolean isProcessingSupported(FileVersion fileVersion) {
 		if (!isValid(fileVersion) ||
 			Objects.equals(
@@ -67,20 +79,26 @@ public class AMImageValidatorImpl implements AMImageValidator {
 
 	@Override
 	public boolean isProcessingSupported(String mimeType) {
-		if (StringUtil.equalsIgnoreCase(mimeType, ContentTypes.IMAGE_SVG_XML)) {
-			return false;
-		}
-
-		return true;
+		return !StringUtil.equalsIgnoreCase(
+			mimeType, ContentTypes.IMAGE_SVG_XML);
 	}
 
 	@Override
 	public boolean isValid(FileVersion fileVersion) {
-		long imageMaxSize = _amImageSizeProvider.getImageMaxSize();
+		long previewableProcessorMaxSize =
+			_dlFileEntryConfigurationProvider.
+				getGroupPreviewableProcessorMaxSize(fileVersion.getGroupId());
 
-		if ((imageMaxSize != -1) &&
-			((imageMaxSize == 0) || (fileVersion.getSize() == 0) ||
-			 (fileVersion.getSize() >= imageMaxSize))) {
+		if ((previewableProcessorMaxSize != -1) &&
+			((previewableProcessorMaxSize == 0) ||
+			 (fileVersion.getSize() == 0) ||
+			 (fileVersion.getSize() >= previewableProcessorMaxSize))) {
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"File " + fileVersion.getFileName() +
+						" has an invalid size");
+			}
 
 			return false;
 		}
@@ -89,20 +107,32 @@ public class AMImageValidatorImpl implements AMImageValidator {
 				fileVersion.getMimeType()) ||
 			!_isFileVersionStoredMetadataSupported(fileVersion)) {
 
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"File " + fileVersion.getFileName() +
+						"has an invalid mime type or metada");
+			}
+
 			return false;
 		}
 
 		return true;
 	}
 
+	protected void setAMImageEntryLocalService(
+		AMImageEntryLocalService amImageEntryLocalService) {
+
+		_amImageEntryLocalService = amImageEntryLocalService;
+	}
+
 	private boolean _isFileVersionStoredMetadataSupported(
 		FileVersion fileVersion) {
 
 		List<DDMStructure> ddmStructures =
-			_ddmStructureManager.getClassStructures(
+			_ddmStructureLocalService.getClassStructures(
 				fileVersion.getCompanyId(),
 				_portal.getClassNameId(RawMetadataProcessor.class),
-				DDMStructureManager.STRUCTURE_COMPARATOR_STRUCTURE_KEY);
+				StructureStructureKeyComparator.getInstance(false));
 
 		for (DDMStructure ddmStructure : ddmStructures) {
 			DLFileEntryMetadata fileEntryMetadata =
@@ -115,8 +145,13 @@ public class AMImageValidatorImpl implements AMImageValidator {
 			}
 
 			try {
-				DDMFormValues ddmFormValues = _storageEngine.getDDMFormValues(
-					fileEntryMetadata.getDDMStorageId());
+				DDMFormValues ddmFormValues =
+					_ddmStorageEngineManager.getDDMFormValues(
+						fileEntryMetadata.getDDMStorageId());
+
+				if (ddmFormValues == null) {
+					continue;
+				}
 
 				Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
 					ddmFormValues.getDDMFormFieldValuesMap(true);
@@ -129,6 +164,11 @@ public class AMImageValidatorImpl implements AMImageValidator {
 							entry.getValue(),
 							PropsValues.IMAGE_TOOL_IMAGE_MAX_HEIGHT)) {
 
+						if (_log.isDebugEnabled()) {
+							_log.debug(
+								entry.getValue() + " has an invalid height");
+						}
+
 						return false;
 					}
 					else if (Objects.equals(
@@ -136,6 +176,11 @@ public class AMImageValidatorImpl implements AMImageValidator {
 							 !_isValidDimension(
 								 entry.getValue(),
 								 PropsValues.IMAGE_TOOL_IMAGE_MAX_WIDTH)) {
+
+						if (_log.isDebugEnabled()) {
+							_log.debug(
+								entry.getValue() + " has an invalid width");
+						}
 
 						return false;
 					}
@@ -152,9 +197,7 @@ public class AMImageValidatorImpl implements AMImageValidator {
 				}
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(
-						ddmFormFieldValueValidationException,
-						ddmFormFieldValueValidationException);
+					_log.debug(ddmFormFieldValueValidationException);
 				}
 			}
 			catch (PortalException portalException) {
@@ -167,7 +210,7 @@ public class AMImageValidatorImpl implements AMImageValidator {
 				}
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
+					_log.debug(portalException);
 				}
 			}
 		}
@@ -215,21 +258,24 @@ public class AMImageValidatorImpl implements AMImageValidator {
 		AMImageValidatorImpl.class);
 
 	@Reference
+	private AMImageEntryLocalService _amImageEntryLocalService;
+
+	@Reference
 	private AMImageMimeTypeProvider _amImageMimeTypeProvider;
 
 	@Reference
-	private AMImageSizeProvider _amImageSizeProvider;
+	private DDMStorageEngineManager _ddmStorageEngineManager;
 
 	@Reference
-	private DDMStructureManager _ddmStructureManager;
+	private DDMStructureLocalService _ddmStructureLocalService;
+
+	@Reference
+	private DLFileEntryConfigurationProvider _dlFileEntryConfigurationProvider;
 
 	@Reference
 	private DLFileEntryMetadataLocalService _dlFileEntryMetadataLocalService;
 
 	@Reference
 	private Portal _portal;
-
-	@Reference
-	private StorageEngine _storageEngine;
 
 }

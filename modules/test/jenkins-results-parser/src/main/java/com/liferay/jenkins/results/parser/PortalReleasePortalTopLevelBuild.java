@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
+import java.io.IOException;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,52 +71,65 @@ public class PortalReleasePortalTopLevelBuild
 
 		try {
 			if (JenkinsResultsParserUtil.isNullOrEmpty(tomcatURLString)) {
-				_portalRelease = new PortalRelease(
-					new URL(
-						JenkinsResultsParserUtil.combine(
-							String.valueOf(getUserContentURL()), "/bundles")),
-					getParameterValue("TEST_PORTAL_RELEASE_VERSION"));
+				try {
+					_portalRelease = new PortalRelease(
+						new URL(getUserContentURL() + "/bundles"),
+						JenkinsResultsParserUtil.getProperty(
+							JenkinsResultsParserUtil.getBuildProperties(),
+							"portal.latest.bundle.version",
+							getParameterValue("TEST_PORTAL_BRANCH_NAME")));
+				}
+				catch (IOException ioException) {
+					throw new RuntimeException(ioException);
+				}
 			}
 			else {
 				URL portalReleaseTomcatURL = new URL(tomcatURLString);
 
 				_portalRelease = new PortalRelease(portalReleaseTomcatURL);
+
+				_portalRelease.setPortalBundleTomcatURL(portalReleaseTomcatURL);
 			}
 
-			String dependenciesURLString = getParameterValue(
+			String portalDependenciesZipURLString = getParameterValue(
 				"TEST_PORTAL_RELEASE_DEPENDENCIES_URL");
 
-			if (_isURL(dependenciesURLString)) {
-				_portalRelease.setDependenciesURL(
-					new URL(dependenciesURLString));
+			if (JenkinsResultsParserUtil.isURL(
+					portalDependenciesZipURLString)) {
+
+				_portalRelease.setPortalDependenciesZipURL(
+					new URL(portalDependenciesZipURLString));
 			}
 
-			String osgiURLString = getParameterValue(
+			String portalOSGiZipURLString = getParameterValue(
 				"TEST_PORTAL_RELEASE_OSGI_URL");
 
-			if (_isURL(osgiURLString)) {
-				_portalRelease.setOSGiURL(new URL(osgiURLString));
+			if (JenkinsResultsParserUtil.isURL(portalOSGiZipURLString)) {
+				_portalRelease.setPortalOSGiZipURL(
+					new URL(portalOSGiZipURLString));
+			}
+
+			String portalSQLZipURLString = getParameterValue(
+				"TEST_PORTAL_RELEASE_SQL_URL");
+
+			if (JenkinsResultsParserUtil.isURL(portalSQLZipURLString)) {
+				_portalRelease.setPortalSQLZipURL(
+					new URL(portalSQLZipURLString));
+			}
+
+			String portalToolsZipURLString = getParameterValue(
+				"TEST_PORTAL_RELEASE_TOOLS_URL");
+
+			if (JenkinsResultsParserUtil.isURL(portalToolsZipURLString)) {
+				_portalRelease.setPortalToolsZipURL(
+					new URL(portalToolsZipURLString));
 			}
 
 			String portalWarURLString = getParameterValue(
 				"TEST_PORTAL_RELEASE_WAR_URL");
 
-			if (_isURL(portalWarURLString)) {
+			if (JenkinsResultsParserUtil.isURL(portalWarURLString)) {
 				_portalRelease.setPortalWarURL(new URL(portalWarURLString));
-			}
-
-			String sqlURLString = getParameterValue(
-				"TEST_PORTAL_RELEASE_SQL_URL");
-
-			if (_isURL(sqlURLString)) {
-				_portalRelease.setSQLURL(new URL(sqlURLString));
-			}
-
-			String toolsURLString = getParameterValue(
-				"TEST_PORTAL_RELEASE_TOOLS_URL");
-
-			if (_isURL(toolsURLString)) {
-				_portalRelease.setToolsURL(new URL(toolsURLString));
 			}
 		}
 		catch (MalformedURLException malformedURLException) {
@@ -172,6 +179,32 @@ public class PortalReleasePortalTopLevelBuild
 		return workspace;
 	}
 
+	@Override
+	protected String getReleaseRepositoryName() {
+		String portalRepositoryName = getParameterValue(
+			"TEST_PORTAL_REPOSITORY_NAME");
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(portalRepositoryName)) {
+			return portalRepositoryName;
+		}
+
+		String portalReleaseVersion = getParameterValue(
+			"TEST_PORTAL_RELEASE_VERSION");
+
+		if (PortalRelease.isQuarterlyRelease(portalReleaseVersion) ||
+			!Objects.equals(getBranchName(), "master")) {
+
+			return "liferay-portal-ee";
+		}
+
+		return "liferay-portal";
+	}
+
+	@Override
+	protected boolean isReleaseBuild() {
+		return true;
+	}
+
 	private String _getPortalGitCommit() {
 		return getParameterValue("TEST_PORTAL_RELEASE_GIT_ID");
 	}
@@ -185,35 +218,20 @@ public class PortalReleasePortalTopLevelBuild
 		if (JenkinsResultsParserUtil.isNullOrEmpty(portalBranchName) ||
 			JenkinsResultsParserUtil.isNullOrEmpty(portalBranchUsername)) {
 
-			return null;
+			portalBranchName = getBranchName();
+			portalBranchUsername = "liferay";
 		}
-
-		String branchName = getBranchName();
 
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("https://github.com/");
 		sb.append(portalBranchUsername);
-		sb.append("/liferay-portal");
-
-		if (!branchName.equals("master")) {
-			sb.append("-ee");
-		}
-
+		sb.append("/");
+		sb.append(getReleaseRepositoryName());
 		sb.append("/tree/");
 		sb.append(portalBranchName);
 
 		return sb.toString();
-	}
-
-	private boolean _isURL(String urlString) {
-		if (JenkinsResultsParserUtil.isNullOrEmpty(urlString) ||
-			!urlString.matches("https?://.+")) {
-
-			return false;
-		}
-
-		return true;
 	}
 
 	private static final Pattern _pattern = Pattern.compile(

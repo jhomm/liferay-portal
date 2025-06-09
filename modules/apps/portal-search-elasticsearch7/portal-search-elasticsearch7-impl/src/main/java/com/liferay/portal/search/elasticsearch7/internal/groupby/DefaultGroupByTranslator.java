@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.groupby;
 
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.GeoDistanceSort;
 import com.liferay.portal.kernel.search.Sort;
@@ -25,7 +15,6 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.groupby.GroupByRequest;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -54,7 +43,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Michael C. Han
  * @author Tibor Lipusz
  */
-@Component(immediate = true, service = GroupByTranslator.class)
+@Component(service = GroupByTranslator.class)
 public class DefaultGroupByTranslator implements GroupByTranslator {
 
 	@Override
@@ -78,26 +67,27 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 			termsAggregationBuilder.size(termsSize);
 		}
 
-		addTermsSorts(termsAggregationBuilder, groupByRequest);
+		_addTermsSorts(termsAggregationBuilder, groupByRequest);
 
 		int termsStart = GetterUtil.getInteger(groupByRequest.getTermsStart());
 
 		if ((termsSize > 0) || (termsStart > 0)) {
 			termsAggregationBuilder.subAggregation(
-				getBucketSortPipelineBuilder(termsStart, termsSize));
+				_getBucketSortPipelineBuilder(termsStart, termsSize));
 		}
 
-		TopHitsAggregationBuilder topHitsAggregationBuilder = getTopHitsBuilder(
-			groupByRequest, selectedFieldNames, locale, highlightFieldNames,
-			highlightEnabled, highlightRequireFieldMatch, highlightFragmentSize,
-			highlightSnippetSize);
+		TopHitsAggregationBuilder topHitsAggregationBuilder =
+			_getTopHitsBuilder(
+				groupByRequest, selectedFieldNames, locale, highlightFieldNames,
+				highlightEnabled, highlightRequireFieldMatch,
+				highlightFragmentSize, highlightSnippetSize);
 
 		termsAggregationBuilder.subAggregation(topHitsAggregationBuilder);
 
 		searchSourceBuilder.aggregation(termsAggregationBuilder);
 	}
 
-	protected void addDocsSorts(
+	private void _addDocsSorts(
 		TopHitsAggregationBuilder topHitsAggregationBuilder, Sort[] sorts) {
 
 		if (ArrayUtil.isEmpty(sorts)) {
@@ -177,7 +167,7 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 		}
 	}
 
-	protected void addHighlightedField(
+	private void _addHighlightedField(
 		TopHitsAggregationBuilder topHitsAggregationBuilder,
 		HighlightBuilder highlightBuilder, Locale locale, String fieldName,
 		int highlightFragmentSize, int highlightSnippetSize) {
@@ -193,7 +183,7 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 		topHitsAggregationBuilder.highlighter(highlightBuilder);
 	}
 
-	protected void addHighlights(
+	private void _addHighlights(
 		TopHitsAggregationBuilder topHitsAggregationBuilder, Locale locale,
 		String[] highlightFieldNames, int highlightFragmentSize,
 		int highlightSnippetSize, boolean highlightRequireFieldMatch) {
@@ -201,7 +191,7 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 		HighlightBuilder highlightBuilder = new HighlightBuilder();
 
 		for (String highlightFieldName : highlightFieldNames) {
-			addHighlightedField(
+			_addHighlightedField(
 				topHitsAggregationBuilder, highlightBuilder, locale,
 				highlightFieldName, highlightFragmentSize,
 				highlightSnippetSize);
@@ -214,20 +204,20 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 		topHitsAggregationBuilder.highlighter(highlightBuilder);
 	}
 
-	protected void addSelectedFields(
+	private void _addSelectedFields(
 		TopHitsAggregationBuilder topHitsAggregationBuilder,
 		String[] selectedFieldNames) {
 
 		if (ArrayUtil.isEmpty(selectedFieldNames)) {
-			topHitsAggregationBuilder.storedField(StringPool.STAR);
+			topHitsAggregationBuilder.fetchSource(true);
 		}
 		else {
-			topHitsAggregationBuilder.storedFields(
-				Arrays.asList(selectedFieldNames));
+			topHitsAggregationBuilder.fetchSource(
+				selectedFieldNames, new String[0]);
 		}
 	}
 
-	protected void addTermsSorts(
+	private void _addTermsSorts(
 		TermsAggregationBuilder termsAggregationBuilder,
 		GroupByRequest groupByRequest) {
 
@@ -267,7 +257,7 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 		}
 	}
 
-	protected BucketSortPipelineAggregationBuilder getBucketSortPipelineBuilder(
+	private BucketSortPipelineAggregationBuilder _getBucketSortPipelineBuilder(
 		int start, int size) {
 
 		BucketSortPipelineAggregationBuilder
@@ -286,7 +276,7 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 		return bucketSortPipelineAggregationBuilder;
 	}
 
-	protected TopHitsAggregationBuilder getTopHitsBuilder(
+	private TopHitsAggregationBuilder _getTopHitsBuilder(
 		GroupByRequest groupByRequest, String[] selectedFieldNames,
 		Locale locale, String[] highlightFieldNames, boolean highlightEnabled,
 		boolean highlightRequireFieldMatch, int highlightFragmentSize,
@@ -307,16 +297,16 @@ public class DefaultGroupByTranslator implements GroupByTranslator {
 			topHitsAggregationBuilder.size(docsSize);
 		}
 
-		addDocsSorts(topHitsAggregationBuilder, groupByRequest.getDocsSorts());
+		_addDocsSorts(topHitsAggregationBuilder, groupByRequest.getDocsSorts());
 
 		if (highlightEnabled) {
-			addHighlights(
+			_addHighlights(
 				topHitsAggregationBuilder, locale, highlightFieldNames,
 				highlightFragmentSize, highlightSnippetSize,
 				highlightRequireFieldMatch);
 		}
 
-		addSelectedFields(topHitsAggregationBuilder, selectedFieldNames);
+		_addSelectedFields(topHitsAggregationBuilder, selectedFieldNames);
 
 		return topHitsAggregationBuilder;
 	}

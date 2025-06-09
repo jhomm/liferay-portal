@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -23,7 +14,6 @@ import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.LayoutSetBranch;
 import com.liferay.portal.kernel.model.LayoutSetBranchModel;
-import com.liferay.portal.kernel.model.LayoutSetBranchSoap;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
@@ -35,18 +25,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -123,6 +110,9 @@ public class LayoutSetBranchModelImpl
 	public static final String ORDER_BY_SQL =
 		" ORDER BY LayoutSetBranch.name ASC";
 
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY layoutSetBranch.name ASC";
+
 	public static final String DATA_SOURCE = "liferayDataSource";
 
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
@@ -170,70 +160,6 @@ public class LayoutSetBranchModelImpl
 	 */
 	@Deprecated
 	public static final long PRIVATELAYOUT_COLUMN_BITMASK = 8L;
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static LayoutSetBranch toModel(LayoutSetBranchSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		LayoutSetBranch model = new LayoutSetBranchImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setLayoutSetBranchId(soapModel.getLayoutSetBranchId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setPrivateLayout(soapModel.isPrivateLayout());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setMaster(soapModel.isMaster());
-		model.setLogoId(soapModel.getLogoId());
-		model.setThemeId(soapModel.getThemeId());
-		model.setColorSchemeId(soapModel.getColorSchemeId());
-		model.setCss(soapModel.getCss());
-		model.setSettings(soapModel.getSettings());
-		model.setLayoutSetPrototypeUuid(soapModel.getLayoutSetPrototypeUuid());
-		model.setLayoutSetPrototypeLinkEnabled(
-			soapModel.isLayoutSetPrototypeLinkEnabled());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<LayoutSetBranch> toModels(
-		LayoutSetBranchSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<LayoutSetBranch> models = new ArrayList<LayoutSetBranch>(
-			soapModels.length);
-
-		for (LayoutSetBranchSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -315,155 +241,154 @@ public class LayoutSetBranchModelImpl
 	public Map<String, Function<LayoutSetBranch, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<LayoutSetBranch, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, LayoutSetBranch>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			LayoutSetBranch.class.getClassLoader(), LayoutSetBranch.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<LayoutSetBranch, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<LayoutSetBranch> constructor =
-				(Constructor<LayoutSetBranch>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<LayoutSetBranch, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<LayoutSetBranch, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", LayoutSetBranch::getMvccVersion);
+			attributeGetterFunctions.put(
+				"layoutSetBranchId", LayoutSetBranch::getLayoutSetBranchId);
+			attributeGetterFunctions.put(
+				"groupId", LayoutSetBranch::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", LayoutSetBranch::getCompanyId);
+			attributeGetterFunctions.put("userId", LayoutSetBranch::getUserId);
+			attributeGetterFunctions.put(
+				"userName", LayoutSetBranch::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", LayoutSetBranch::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", LayoutSetBranch::getModifiedDate);
+			attributeGetterFunctions.put(
+				"privateLayout", LayoutSetBranch::getPrivateLayout);
+			attributeGetterFunctions.put("name", LayoutSetBranch::getName);
+			attributeGetterFunctions.put(
+				"description", LayoutSetBranch::getDescription);
+			attributeGetterFunctions.put("master", LayoutSetBranch::getMaster);
+			attributeGetterFunctions.put("logoId", LayoutSetBranch::getLogoId);
+			attributeGetterFunctions.put(
+				"themeId", LayoutSetBranch::getThemeId);
+			attributeGetterFunctions.put(
+				"colorSchemeId", LayoutSetBranch::getColorSchemeId);
+			attributeGetterFunctions.put("css", LayoutSetBranch::getCss);
+			attributeGetterFunctions.put(
+				"settings", LayoutSetBranch::getSettings);
+			attributeGetterFunctions.put(
+				"layoutSetPrototypeUuid",
+				LayoutSetBranch::getLayoutSetPrototypeUuid);
+			attributeGetterFunctions.put(
+				"layoutSetPrototypeLinkEnabled",
+				LayoutSetBranch::getLayoutSetPrototypeLinkEnabled);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<LayoutSetBranch, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<LayoutSetBranch, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<LayoutSetBranch, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<LayoutSetBranch, Object>>();
-		Map<String, BiConsumer<LayoutSetBranch, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<LayoutSetBranch, ?>>();
+		private static final Map<String, BiConsumer<LayoutSetBranch, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", LayoutSetBranch::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setMvccVersion);
-		attributeGetterFunctions.put(
-			"layoutSetBranchId", LayoutSetBranch::getLayoutSetBranchId);
-		attributeSetterBiConsumers.put(
-			"layoutSetBranchId",
-			(BiConsumer<LayoutSetBranch, Long>)
-				LayoutSetBranch::setLayoutSetBranchId);
-		attributeGetterFunctions.put("groupId", LayoutSetBranch::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", LayoutSetBranch::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setCompanyId);
-		attributeGetterFunctions.put("userId", LayoutSetBranch::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setUserId);
-		attributeGetterFunctions.put("userName", LayoutSetBranch::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", LayoutSetBranch::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<LayoutSetBranch, Date>)LayoutSetBranch::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", LayoutSetBranch::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<LayoutSetBranch, Date>)
-				LayoutSetBranch::setModifiedDate);
-		attributeGetterFunctions.put(
-			"privateLayout", LayoutSetBranch::getPrivateLayout);
-		attributeSetterBiConsumers.put(
-			"privateLayout",
-			(BiConsumer<LayoutSetBranch, Boolean>)
-				LayoutSetBranch::setPrivateLayout);
-		attributeGetterFunctions.put("name", LayoutSetBranch::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setName);
-		attributeGetterFunctions.put(
-			"description", LayoutSetBranch::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<LayoutSetBranch, String>)
-				LayoutSetBranch::setDescription);
-		attributeGetterFunctions.put("master", LayoutSetBranch::getMaster);
-		attributeSetterBiConsumers.put(
-			"master",
-			(BiConsumer<LayoutSetBranch, Boolean>)LayoutSetBranch::setMaster);
-		attributeGetterFunctions.put("logoId", LayoutSetBranch::getLogoId);
-		attributeSetterBiConsumers.put(
-			"logoId",
-			(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setLogoId);
-		attributeGetterFunctions.put("themeId", LayoutSetBranch::getThemeId);
-		attributeSetterBiConsumers.put(
-			"themeId",
-			(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setThemeId);
-		attributeGetterFunctions.put(
-			"colorSchemeId", LayoutSetBranch::getColorSchemeId);
-		attributeSetterBiConsumers.put(
-			"colorSchemeId",
-			(BiConsumer<LayoutSetBranch, String>)
-				LayoutSetBranch::setColorSchemeId);
-		attributeGetterFunctions.put("css", LayoutSetBranch::getCss);
-		attributeSetterBiConsumers.put(
-			"css",
-			(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setCss);
-		attributeGetterFunctions.put("settings", LayoutSetBranch::getSettings);
-		attributeSetterBiConsumers.put(
-			"settings",
-			(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setSettings);
-		attributeGetterFunctions.put(
-			"layoutSetPrototypeUuid",
-			LayoutSetBranch::getLayoutSetPrototypeUuid);
-		attributeSetterBiConsumers.put(
-			"layoutSetPrototypeUuid",
-			(BiConsumer<LayoutSetBranch, String>)
-				LayoutSetBranch::setLayoutSetPrototypeUuid);
-		attributeGetterFunctions.put(
-			"layoutSetPrototypeLinkEnabled",
-			LayoutSetBranch::getLayoutSetPrototypeLinkEnabled);
-		attributeSetterBiConsumers.put(
-			"layoutSetPrototypeLinkEnabled",
-			(BiConsumer<LayoutSetBranch, Boolean>)
-				LayoutSetBranch::setLayoutSetPrototypeLinkEnabled);
+		static {
+			Map<String, BiConsumer<LayoutSetBranch, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<LayoutSetBranch, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<LayoutSetBranch, Long>)
+					LayoutSetBranch::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"layoutSetBranchId",
+				(BiConsumer<LayoutSetBranch, Long>)
+					LayoutSetBranch::setLayoutSetBranchId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<LayoutSetBranch, Long>)
+					LayoutSetBranch::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<LayoutSetBranch, String>)
+					LayoutSetBranch::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<LayoutSetBranch, Date>)
+					LayoutSetBranch::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<LayoutSetBranch, Date>)
+					LayoutSetBranch::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"privateLayout",
+				(BiConsumer<LayoutSetBranch, Boolean>)
+					LayoutSetBranch::setPrivateLayout);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<LayoutSetBranch, String>)
+					LayoutSetBranch::setDescription);
+			attributeSetterBiConsumers.put(
+				"master",
+				(BiConsumer<LayoutSetBranch, Boolean>)
+					LayoutSetBranch::setMaster);
+			attributeSetterBiConsumers.put(
+				"logoId",
+				(BiConsumer<LayoutSetBranch, Long>)LayoutSetBranch::setLogoId);
+			attributeSetterBiConsumers.put(
+				"themeId",
+				(BiConsumer<LayoutSetBranch, String>)
+					LayoutSetBranch::setThemeId);
+			attributeSetterBiConsumers.put(
+				"colorSchemeId",
+				(BiConsumer<LayoutSetBranch, String>)
+					LayoutSetBranch::setColorSchemeId);
+			attributeSetterBiConsumers.put(
+				"css",
+				(BiConsumer<LayoutSetBranch, String>)LayoutSetBranch::setCss);
+			attributeSetterBiConsumers.put(
+				"settings",
+				(BiConsumer<LayoutSetBranch, String>)
+					LayoutSetBranch::setSettings);
+			attributeSetterBiConsumers.put(
+				"layoutSetPrototypeUuid",
+				(BiConsumer<LayoutSetBranch, String>)
+					LayoutSetBranch::setLayoutSetPrototypeUuid);
+			attributeSetterBiConsumers.put(
+				"layoutSetPrototypeLinkEnabled",
+				(BiConsumer<LayoutSetBranch, Boolean>)
+					LayoutSetBranch::setLayoutSetPrototypeLinkEnabled);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -1229,41 +1154,12 @@ public class LayoutSetBranchModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<LayoutSetBranch, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<LayoutSetBranch, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<LayoutSetBranch, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((LayoutSetBranch)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, LayoutSetBranch>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					LayoutSetBranch.class, ModelWrapper.class);
 
 	}
 
@@ -1292,7 +1188,8 @@ public class LayoutSetBranchModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<LayoutSetBranch, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

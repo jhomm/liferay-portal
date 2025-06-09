@@ -1,37 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.product.navigation.applications.menu.web.internal.portlet.action;
 
 import com.liferay.petra.string.CharPool;
-import com.liferay.portal.image.ImageToolImpl;
+import com.liferay.portal.image.ImageToolUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCResourceCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.MimeTypesUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.util.PropsUtil;
 import com.liferay.product.navigation.applications.menu.web.internal.constants.ProductNavigationApplicationsMenuPortletKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.InputStream;
 
 import java.net.URL;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -42,9 +34,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ProductNavigationApplicationsMenuPortletKeys.PRODUCT_NAVIGATION_APPLICATIONS_MENU,
+		"jakarta.portlet.name=" + ProductNavigationApplicationsMenuPortletKeys.PRODUCT_NAVIGATION_APPLICATIONS_MENU,
 		"mvc.command.name=/applications_menu/liferay_logo"
 	},
 	service = MVCResourceCommand.class
@@ -62,38 +53,27 @@ public class ApplicationsMenuLiferayLogoMVCResourceCommand
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
-		InputStream inputStream =
-			_getApplicationsMenuDefaultLiferayLogoInputStream();
-
-		if (inputStream == null) {
-			return;
-		}
-
-		PortletResponseUtil.write(resourceResponse, inputStream);
-	}
-
-	private InputStream _getApplicationsMenuDefaultLiferayLogoInputStream() {
-		ClassLoader classLoader = ImageToolImpl.class.getClassLoader();
+		String applicationsMenuDefaultLiferayLogo =
+			_getApplicationsMenuDefaultLiferayLogo();
+		ClassLoader classLoader = ImageToolUtil.class.getClassLoader();
+		InputStream inputStream = null;
 
 		try {
-			InputStream inputStream = null;
-
-			String imageDefaultLiferayLogo =
-				_getApplicationsMenuDefualtLiferayLogo();
-
-			int index = imageDefaultLiferayLogo.indexOf(CharPool.SEMICOLON);
+			int index = applicationsMenuDefaultLiferayLogo.indexOf(
+				CharPool.SEMICOLON);
 
 			if (index == -1) {
 				inputStream = classLoader.getResourceAsStream(
-					_getApplicationsMenuDefualtLiferayLogo());
+					applicationsMenuDefaultLiferayLogo);
 			}
 			else {
-				String bundleIdString = imageDefaultLiferayLogo.substring(
-					0, index);
+				String bundleIdString =
+					applicationsMenuDefaultLiferayLogo.substring(0, index);
 
 				int bundleId = GetterUtil.getInteger(bundleIdString, -1);
 
-				String name = imageDefaultLiferayLogo.substring(index + 1);
+				String name = applicationsMenuDefaultLiferayLogo.substring(
+					index + 1);
 
 				if (bundleId < 0) {
 					if (_log.isDebugEnabled()) {
@@ -114,27 +94,33 @@ public class ApplicationsMenuLiferayLogoMVCResourceCommand
 					}
 				}
 			}
-
-			if (inputStream == null) {
-				if (_log.isDebugEnabled()) {
-					_log.debug("Default Liferay logo is not available");
-				}
-			}
-
-			return inputStream;
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
 				_log.debug(
 					"Unable to configure the default Liferay logo: " +
 						exception.getMessage());
+
+				return;
 			}
 		}
 
-		return null;
+		if (inputStream == null) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Default Liferay logo is not available");
+			}
+
+			return;
+		}
+
+		resourceResponse.setContentType(
+			MimeTypesUtil.getExtensionContentType(
+				applicationsMenuDefaultLiferayLogo));
+
+		PortletResponseUtil.write(resourceResponse, inputStream);
 	}
 
-	private String _getApplicationsMenuDefualtLiferayLogo() {
+	private String _getApplicationsMenuDefaultLiferayLogo() {
 		return GetterUtil.getString(
 			PropsUtil.get(PropsKeys.APPLICATIONS_MENU_DEFAULT_LIFERAY_LOGO),
 			"com/liferay/portal/dependencies/liferay_logo.png");

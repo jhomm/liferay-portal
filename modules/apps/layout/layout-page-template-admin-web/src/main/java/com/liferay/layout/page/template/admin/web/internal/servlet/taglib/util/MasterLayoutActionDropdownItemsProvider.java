@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.servlet.taglib.util;
 
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownContextItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.item.selector.ItemSelector;
@@ -28,34 +20,34 @@ import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeCon
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryServiceUtil;
 import com.liferay.petra.function.UnsafeConsumer;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.portlet.url.builder.ResourceURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.upload.UploadServletRequestConfigurationHelperUtil;
+import com.liferay.portal.kernel.upload.configuration.UploadServletRequestConfigurationProviderUtil;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.taglib.security.PermissionsURLTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -69,14 +61,15 @@ public class MasterLayoutActionDropdownItemsProvider {
 		_layoutPageTemplateEntry = layoutPageTemplateEntry;
 		_renderResponse = renderResponse;
 
+		_draftLayout = LayoutLocalServiceUtil.fetchDraftLayout(
+			layoutPageTemplateEntry.getPlid());
 		_httpServletRequest = PortalUtil.getHttpServletRequest(renderRequest);
 		_itemSelector = (ItemSelector)renderRequest.getAttribute(
 			LayoutPageTemplateAdminWebKeys.ITEM_SELECTOR);
+		_layout = LayoutLocalServiceUtil.fetchLayout(
+			layoutPageTemplateEntry.getPlid());
 		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
-
-		_draftLayout = LayoutLocalServiceUtil.fetchDraftLayout(
-			layoutPageTemplateEntry.getPlid());
 	}
 
 	public List<DropdownItem> getActionDropdownItems() throws Exception {
@@ -84,7 +77,7 @@ public class MasterLayoutActionDropdownItemsProvider {
 			LayoutPageTemplateEntryServiceUtil.
 				fetchDefaultLayoutPageTemplateEntry(
 					_themeDisplay.getScopeGroupId(),
-					LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT,
+					LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
 					WorkflowConstants.STATUS_APPROVED);
 		boolean hasUpdatePermission =
 			LayoutPageTemplateEntryPermission.contains(
@@ -133,7 +126,6 @@ public class MasterLayoutActionDropdownItemsProvider {
 					).add(
 						() ->
 							(layoutPageTemplateEntryId > 0) &&
-							_layoutPageTemplateEntry.isApproved() &&
 							!_layoutPageTemplateEntry.isDefaultTemplate() &&
 							hasUpdatePermission,
 						_getMarkAsDefaultMasterLayoutActionUnsafeConsumer()
@@ -166,11 +158,11 @@ public class MasterLayoutActionDropdownItemsProvider {
 		).addGroup(
 			dropdownGroupItem -> {
 				dropdownGroupItem.setDropdownItems(
-					DropdownItemListBuilder.add(
+					DropdownItemListBuilder.addContext(
 						() ->
 							(layoutPageTemplateEntryId > 0) &&
 							hasUpdatePermission,
-						_getCopyMasterLayoutActionUnsafeConsumer()
+						_getCopyMasterLayoutWithPermissionsActionUnsafeConsumer()
 					).build());
 				dropdownGroupItem.setSeparator(true);
 			}
@@ -204,30 +196,60 @@ public class MasterLayoutActionDropdownItemsProvider {
 		).build();
 	}
 
-	private UnsafeConsumer<DropdownItem, Exception>
-		_getCopyMasterLayoutActionUnsafeConsumer() {
+	private UnsafeConsumer<DropdownContextItem, Exception>
+		_getCopyMasterLayoutWithPermissionsActionUnsafeConsumer() {
 
-		return dropdownItem -> {
-			dropdownItem.putData("action", "copyMasterLayout");
-			dropdownItem.putData(
-				"copyMasterLayoutURL",
-				PortletURLBuilder.createActionURL(
-					_renderResponse
-				).setActionName(
-					"/layout_page_template_admin" +
-						"/copy_layout_page_template_entry"
-				).setRedirect(
-					_themeDisplay.getURLCurrent()
-				).setParameter(
-					"layoutPageTemplateCollectionId",
-					_layoutPageTemplateEntry.getLayoutPageTemplateCollectionId()
-				).setParameter(
-					"layoutPageTemplateEntryId",
-					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
-				).buildString());
-			dropdownItem.setLabel(
+		return dropdownContextItem -> {
+			if (_layoutPageTemplateEntry.isDraft()) {
+				dropdownContextItem.setDisabled(true);
+			}
+			else {
+				dropdownContextItem.setDropdownItems(
+					DropdownItemListBuilder.add(
+						dropdownItem -> {
+							dropdownItem.putData("action", "copyMasterLayout");
+							dropdownItem.putData(
+								"copyMasterLayoutURL", _getCopyURL(false));
+							dropdownItem.setLabel(
+								LanguageUtil.get(
+									_httpServletRequest, "master-page"));
+						}
+					).add(
+						dropdownItem -> {
+							dropdownItem.putData("action", "copyMasterLayout");
+							dropdownItem.putData(
+								"copyMasterLayoutURL", _getCopyURL(true));
+							dropdownItem.setLabel(
+								LanguageUtil.get(
+									_httpServletRequest,
+									"master-page-with-permissions"));
+						}
+					).build());
+			}
+
+			dropdownContextItem.setIcon("copy");
+			dropdownContextItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "make-a-copy"));
 		};
+	}
+
+	private String _getCopyURL(boolean copyPermissions) {
+		return PortletURLBuilder.createActionURL(
+			_renderResponse
+		).setActionName(
+			"/layout_page_template_admin/copy_layout_page_template_entries_" +
+				"and_layout_page_template_collections"
+		).setRedirect(
+			_themeDisplay.getURLCurrent()
+		).setParameter(
+			"copyPermissions", copyPermissions
+		).setParameter(
+			"layoutPageTemplateEntriesIds",
+			_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
+		).setParameter(
+			"layoutParentPageTemplateCollectionId",
+			_layoutPageTemplateEntry.getLayoutPageTemplateCollectionId()
+		).buildString();
 	}
 
 	private UnsafeConsumer<DropdownItem, Exception>
@@ -247,6 +269,7 @@ public class MasterLayoutActionDropdownItemsProvider {
 					"layoutPageTemplateEntryId",
 					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
 				).buildString());
+			dropdownItem.setIcon("trash");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "delete"));
 		};
@@ -313,17 +336,17 @@ public class MasterLayoutActionDropdownItemsProvider {
 			return null;
 		}
 
+		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
+
 		return dropdownItem -> {
-			String layoutFullURL = PortalUtil.getLayoutFullURL(
-				_draftLayout, _themeDisplay);
-
-			layoutFullURL = HttpUtil.setParameter(
-				layoutFullURL, "p_l_back_url", _themeDisplay.getURLCurrent());
-			layoutFullURL = HttpUtil.setParameter(
-				layoutFullURL, "p_l_mode", Constants.EDIT);
-
-			dropdownItem.setHref(layoutFullURL);
-
+			dropdownItem.setHref(
+				HttpComponentsUtil.addParameters(
+					PortalUtil.getLayoutFullURL(_draftLayout, _themeDisplay),
+					"p_l_back_url", _themeDisplay.getURLCurrent(),
+					"p_l_back_url_title",
+					portletDisplay.getPortletDisplayName(), "p_l_mode",
+					Constants.EDIT));
+			dropdownItem.setIcon("pencil");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "edit"));
 		};
@@ -332,18 +355,18 @@ public class MasterLayoutActionDropdownItemsProvider {
 	private UnsafeConsumer<DropdownItem, Exception>
 		_getExportMasterLayoutActionUnsafeConsumer() {
 
-		ResourceURL exportMasterLayoutURL = _renderResponse.createResourceURL();
-
-		exportMasterLayoutURL.setParameter(
-			"layoutPageTemplateEntryId",
-			String.valueOf(
-				_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()));
-		exportMasterLayoutURL.setResourceID(
-			"/layout_page_template_admin/export_master_layouts");
-
 		return dropdownItem -> {
-			dropdownItem.setDisabled(_layoutPageTemplateEntry.isDraft());
-			dropdownItem.setHref(exportMasterLayoutURL);
+			dropdownItem.setDisabled(!_layout.isPublished());
+			dropdownItem.setHref(
+				ResourceURLBuilder.createResourceURL(
+					_renderResponse
+				).setParameter(
+					"layoutPageTemplateEntryId",
+					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
+				).setResourceID(
+					"/layout_page_template_admin/export_master_layouts"
+				).buildString());
+			dropdownItem.setIcon("upload");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "export"));
 		};
@@ -351,8 +374,16 @@ public class MasterLayoutActionDropdownItemsProvider {
 
 	private String _getItemSelectorURL() {
 		ItemSelectorCriterion itemSelectorCriterion =
-			new UploadItemSelectorCriterion(
-				LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+			UploadItemSelectorCriterion.builder(
+			).desiredItemSelectorReturnTypes(
+				new FileEntryItemSelectorReturnType()
+			).maxFileSize(
+				UploadServletRequestConfigurationProviderUtil.getMaxSize()
+			).portletId(
+				LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES
+			).repositoryName(
+				LanguageUtil.get(_themeDisplay.getLocale(), "master-page")
+			).url(
 				PortletURLBuilder.createActionURL(
 					_renderResponse
 				).setActionName(
@@ -361,19 +392,14 @@ public class MasterLayoutActionDropdownItemsProvider {
 				).setParameter(
 					"layoutPageTemplateEntryId",
 					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
-				).buildString(),
-				LanguageUtil.get(_themeDisplay.getLocale(), "master-page"),
-				UploadServletRequestConfigurationHelperUtil.getMaxSize());
+				).buildString()
+			).build();
 
-		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
-			new FileEntryItemSelectorReturnType());
-
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
-			_renderResponse.getNamespace() + "changePreview",
-			itemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				_renderResponse.getNamespace() + "changePreview",
+				itemSelectorCriterion));
 	}
 
 	private UnsafeConsumer<DropdownItem, Exception>
@@ -437,6 +463,7 @@ public class MasterLayoutActionDropdownItemsProvider {
 					"layoutPageTemplateEntryId",
 					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()
 				).buildString());
+			dropdownItem.setDisabled(!_layout.isPublished());
 
 			String name = "Blank";
 
@@ -444,7 +471,7 @@ public class MasterLayoutActionDropdownItemsProvider {
 				LayoutPageTemplateEntryServiceUtil.
 					fetchDefaultLayoutPageTemplateEntry(
 						_layoutPageTemplateEntry.getGroupId(),
-						LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT,
+						LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT,
 						WorkflowConstants.STATUS_APPROVED);
 
 			if (defaultLayoutPageTemplateEntry != null) {
@@ -479,6 +506,7 @@ public class MasterLayoutActionDropdownItemsProvider {
 			dropdownItem.putData("action", "permissionsMasterLayout");
 			dropdownItem.putData(
 				"permissionsMasterLayoutURL", permissionsMasterLayoutURL);
+			dropdownItem.setIcon("password-policies");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "permissions"));
 		};
@@ -527,6 +555,7 @@ public class MasterLayoutActionDropdownItemsProvider {
 				"layoutPageTemplateEntryId",
 				String.valueOf(
 					_layoutPageTemplateEntry.getLayoutPageTemplateEntryId()));
+			dropdownItem.setIcon("change");
 			dropdownItem.setLabel(
 				LanguageUtil.get(_httpServletRequest, "change-thumbnail"));
 		};
@@ -537,16 +566,13 @@ public class MasterLayoutActionDropdownItemsProvider {
 			return false;
 		}
 
-		if (_draftLayout.getStatus() == WorkflowConstants.STATUS_DRAFT) {
-			return true;
-		}
-
-		return false;
+		return _draftLayout.isDraft();
 	}
 
 	private final Layout _draftLayout;
 	private final HttpServletRequest _httpServletRequest;
 	private final ItemSelector _itemSelector;
+	private final Layout _layout;
 	private final LayoutPageTemplateEntry _layoutPageTemplateEntry;
 	private final RenderResponse _renderResponse;
 	private final ThemeDisplay _themeDisplay;

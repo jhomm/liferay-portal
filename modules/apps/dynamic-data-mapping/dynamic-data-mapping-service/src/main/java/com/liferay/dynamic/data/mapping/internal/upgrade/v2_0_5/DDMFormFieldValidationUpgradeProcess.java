@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_5;
@@ -64,7 +55,7 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 					String definition = resultSet.getString("definition");
 
 					preparedStatement2.setString(
-						1, makeFieldsLocalizable(definition));
+						1, _makeFieldsLocalizable(definition));
 
 					long structureId = resultSet.getLong("structureId");
 
@@ -81,7 +72,7 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 							definition = resultSet2.getString("definition");
 
 							preparedStatement4.setString(
-								1, makeFieldsLocalizable(definition));
+								1, _makeFieldsLocalizable(definition));
 
 							long structureVersionId = resultSet2.getLong(
 								"structureVersionId");
@@ -105,7 +96,18 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 			"com.liferay.dynamic.data.mapping.model.DDMFormInstance");
 	}
 
-	protected void makeFieldsLocalizable(
+	private boolean _hasValidation(JSONObject fieldJSONObject) {
+		JSONObject validationJSONObject = fieldJSONObject.getJSONObject(
+			"validation");
+
+		if (validationJSONObject == null) {
+			return false;
+		}
+
+		return true;
+	}
+
+	private void _makeFieldsLocalizable(
 		JSONArray availableLanguageIdsJSONArray, JSONArray fieldsJSONArray) {
 
 		for (int i = 0; i < fieldsJSONArray.length(); i++) {
@@ -121,7 +123,7 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 			String originalValue = validationJSONObject.getString(
 				"errorMessage");
 
-			if (JSONUtil.isValid(originalValue)) {
+			if (JSONUtil.isJSONObject(originalValue)) {
 				continue;
 			}
 
@@ -138,13 +140,13 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 				"nestedFields");
 
 			if (nestedFieldsJSONArray != null) {
-				makeFieldsLocalizable(
+				_makeFieldsLocalizable(
 					availableLanguageIdsJSONArray, nestedFieldsJSONArray);
 			}
 		}
 	}
 
-	protected String makeFieldsLocalizable(String definition)
+	private String _makeFieldsLocalizable(String definition)
 		throws PortalException {
 
 		JSONObject jsonObject = _jsonFactory.createJSONObject(definition);
@@ -154,20 +156,9 @@ public class DDMFormFieldValidationUpgradeProcess extends UpgradeProcess {
 
 		JSONArray fieldsJSONArray = jsonObject.getJSONArray("fields");
 
-		makeFieldsLocalizable(availableLanguageIdsJSONArray, fieldsJSONArray);
+		_makeFieldsLocalizable(availableLanguageIdsJSONArray, fieldsJSONArray);
 
-		return jsonObject.toJSONString();
-	}
-
-	private boolean _hasValidation(JSONObject fieldJSONObject) {
-		JSONObject validationJSONObject = fieldJSONObject.getJSONObject(
-			"validation");
-
-		if (validationJSONObject == null) {
-			return false;
-		}
-
-		return true;
+		return jsonObject.toString();
 	}
 
 	private final JSONFactory _jsonFactory;

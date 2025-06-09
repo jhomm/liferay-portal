@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -297,19 +288,6 @@ public class PortletWrapper
 	}
 
 	/**
-	 * Returns the asset type instances of the portlet.
-	 *
-	 * @return the asset type instances of the portlet
-	 */
-	@Override
-	public java.util.List
-		<com.liferay.asset.kernel.model.AssetRendererFactory<?>>
-			getAssetRendererFactoryInstances() {
-
-		return model.getAssetRendererFactoryInstances();
-	}
-
-	/**
 	 * Returns the names of the parameters that will be automatically propagated
 	 * through the portlet.
 	 *
@@ -319,6 +297,16 @@ public class PortletWrapper
 	@Override
 	public java.util.Set<String> getAutopropagatedParameters() {
 		return model.getAutopropagatedParameters();
+	}
+
+	/**
+	 * Returns the category names of the portlet.
+	 *
+	 * @return the category names of the portlet
+	 */
+	@Override
+	public java.util.Set<String> getCategoryNames() {
+		return model.getCategoryNames();
 	}
 
 	/**
@@ -589,6 +577,11 @@ public class PortletWrapper
 	@Override
 	public String getFriendlyURLMapping() {
 		return model.getFriendlyURLMapping();
+	}
+
+	@Override
+	public String getFriendlyURLMapping(boolean lookUpFriendlyURLMapper) {
+		return model.getFriendlyURLMapping(lookUpFriendlyURLMapper);
 	}
 
 	/**
@@ -934,28 +927,6 @@ public class PortletWrapper
 	}
 
 	/**
-	 * Returns the name of the poller processor class of the portlet.
-	 *
-	 * @return the name of the poller processor class of the portlet
-	 */
-	@Override
-	public String getPollerProcessorClass() {
-		return model.getPollerProcessorClass();
-	}
-
-	/**
-	 * Returns the poller processor instance of the portlet.
-	 *
-	 * @return the poller processor instance of the portlet
-	 */
-	@Override
-	public com.liferay.portal.kernel.poller.PollerProcessor
-		getPollerProcessorInstance() {
-
-		return model.getPollerProcessorInstance();
-	}
-
-	/**
 	 * Returns the name of the POP message listener class of the portlet.
 	 *
 	 * @return the name of the POP message listener class of the portlet
@@ -1007,6 +978,18 @@ public class PortletWrapper
 	@Override
 	public String getPortletClass() {
 		return model.getPortletClass();
+	}
+
+	@Override
+	public String getPortletConfigurationListenerClass() {
+		return model.getPortletConfigurationListenerClass();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.portlet.PortletConfigurationListener
+		getPortletConfigurationListenerInstance() {
+
+		return model.getPortletConfigurationListenerInstance();
 	}
 
 	/**
@@ -1933,7 +1916,7 @@ public class PortletWrapper
 	 */
 	@Override
 	public boolean hasPortletMode(
-		String mimeType, javax.portlet.PortletMode portletMode) {
+		String mimeType, jakarta.portlet.PortletMode portletMode) {
 
 		return model.hasPortletMode(mimeType, portletMode);
 	}
@@ -1962,7 +1945,7 @@ public class PortletWrapper
 	 */
 	@Override
 	public boolean hasWindowState(
-		String mimeType, javax.portlet.WindowState windowState) {
+		String mimeType, jakarta.portlet.WindowState windowState) {
 
 		return model.hasWindowState(mimeType, windowState);
 	}
@@ -2117,9 +2100,9 @@ public class PortletWrapper
 
 	/**
 	 * Returns <code>true</code> if the CSS resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
+	 * <code>portlet.xml</code>, @{@link jakarta.portlet.annotations.Dependency},
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String,
+	 * String)}, or {@link jakarta.portlet.HeaderResponse#addDependency(String,
 	 * String, String, String)} are to be referenced in the page's header.
 	 *
 	 * @return <code>true</code> if the specified CSS resource dependencies are
@@ -2133,9 +2116,9 @@ public class PortletWrapper
 	/**
 	 * Returns <code>true</code> if the JavaScript resource dependencies
 	 * specified in <code>portlet.xml</code>, @{@link
-	 * javax.portlet.annotations.Dependency}, {@link
-	 * javax.portlet.HeaderResponse#addDependency(String, String, String)}, or
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String, String,
+	 * jakarta.portlet.annotations.Dependency}, {@link
+	 * jakarta.portlet.HeaderResponse#addDependency(String, String, String)}, or
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String, String,
 	 * String)} are to be referenced in the page's header.
 	 *
 	 * @return <code>true</code> if the specified JavaScript resource
@@ -2473,6 +2456,16 @@ public class PortletWrapper
 		java.util.Set<String> autopropagatedParameters) {
 
 		model.setAutopropagatedParameters(autopropagatedParameters);
+	}
+
+	/**
+	 * Sets the category names of the portlet.
+	 *
+	 * @param categoryNames the category names of the portlet
+	 */
+	@Override
+	public void setCategoryNames(java.util.Set<String> categoryNames) {
+		model.setCategoryNames(categoryNames);
 	}
 
 	/**
@@ -2982,17 +2975,6 @@ public class PortletWrapper
 	}
 
 	/**
-	 * Sets the name of the poller processor class of the portlet.
-	 *
-	 * @param pollerProcessorClass the name of the poller processor class of the
-	 portlet
-	 */
-	@Override
-	public void setPollerProcessorClass(String pollerProcessorClass) {
-		model.setPollerProcessorClass(pollerProcessorClass);
-	}
-
-	/**
 	 * Sets the name of the POP message listener class of the portlet.
 	 *
 	 * @param popMessageListenerClass the name of the POP message listener class
@@ -3035,6 +3017,14 @@ public class PortletWrapper
 		model.setPortletClass(portletClass);
 	}
 
+	@Override
+	public void setPortletConfigurationListenerClass(
+		String portletConfigurationListenerClass) {
+
+		model.setPortletConfigurationListenerClass(
+			portletConfigurationListenerClass);
+	}
+
 	/**
 	 * Sets the name of the portlet data handler class of the portlet.
 	 *
@@ -3048,9 +3038,9 @@ public class PortletWrapper
 
 	/**
 	 * Sets whether the CSS resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
+	 * <code>portlet.xml</code>, @{@link jakarta.portlet.annotations.Dependency},
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String,
+	 * String)}, or {@link jakarta.portlet.HeaderResponse#addDependency(String,
 	 * String, String, String)} are to be referenced in the page's header.
 	 *
 	 * @param portletDependencyCssEnabled whether the CSS resource dependencies
@@ -3065,17 +3055,17 @@ public class PortletWrapper
 
 	/**
 	 * Sets whether the JavaScript resource dependencies specified in
-	 * <code>portlet.xml</code>, @{@link javax.portlet.annotations.Dependency},
-	 * {@link javax.portlet.HeaderResponse#addDependency(String, String,
-	 * String)}, or {@link javax.portlet.HeaderResponse#addDependency(String,
+	 * <code>portlet.xml</code>, @{@link jakarta.portlet.annotations.Dependency},
+	 * {@link jakarta.portlet.HeaderResponse#addDependency(String, String,
+	 * String)}, or {@link jakarta.portlet.HeaderResponse#addDependency(String,
 	 * String, String, String)} are to be referenced in the page's header.
 	 *
 	 * @param portletDependencyJavaScriptEnabled whether the JavaScript resource
 	 dependencies specified in <code>portlet.xml</code>, @{@link
-	 javax.portlet.annotations.Dependency}, {@link
-	 javax.portlet.HeaderResponse#addDependency(String, String,
+	 jakarta.portlet.annotations.Dependency}, {@link
+	 jakarta.portlet.HeaderResponse#addDependency(String, String,
 	 String)}, or {@link
-	 javax.portlet.HeaderResponse#addDependency(String, String, String,
+	 jakarta.portlet.HeaderResponse#addDependency(String, String, String,
 	 String)} are to be referenced in the page's header
 	 */
 	@Override
@@ -3706,6 +3696,11 @@ public class PortletWrapper
 	@Override
 	public void setXmlRpcMethodClass(String xmlRpcMethodClass) {
 		model.setXmlRpcMethodClass(xmlRpcMethodClass);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

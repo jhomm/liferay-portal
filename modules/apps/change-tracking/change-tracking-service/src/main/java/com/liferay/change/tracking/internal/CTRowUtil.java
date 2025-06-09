@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal;
 
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+
+import java.io.Serializable;
 
 import java.sql.Blob;
 import java.sql.Connection;
@@ -29,6 +21,7 @@ import java.sql.Types;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Preston Crary
@@ -126,35 +119,78 @@ public class CTRowUtil {
 
 	public static String getConstraintConflictsSQL(
 		String tableName, String primaryColumnName,
-		String[] uniqueIndexColumnNames, long sourceCTCollectionId,
-		long targetCTCollectionId) {
+		String[] uniqueIndexColumnNames, long targetCTCollectionId) {
 
 		StringBundler sb = new StringBundler(
-			(4 * uniqueIndexColumnNames.length) + 17);
+			(3 * uniqueIndexColumnNames.length) + 9);
 
-		sb.append("select sourceTable.");
+		sb.append("select ");
 		sb.append(primaryColumnName);
-		sb.append(" as sourcePK, targetTable.");
-		sb.append(primaryColumnName);
-		sb.append(" as targetPK from ");
+		sb.append(" from ");
 		sb.append(tableName);
-		sb.append(" sourceTable inner join ");
-		sb.append(tableName);
-		sb.append(" targetTable on sourceTable.");
-		sb.append(primaryColumnName);
-		sb.append(" != targetTable.");
-		sb.append(primaryColumnName);
-		sb.append(" and sourceTable.ctCollectionId = ");
-		sb.append(sourceCTCollectionId);
-		sb.append(" and targetTable.ctCollectionId = ");
+		sb.append(" where ctCollectionId = ");
 		sb.append(targetCTCollectionId);
+		sb.append(" and ");
+		sb.append(primaryColumnName);
+		sb.append(" != ?");
 
 		for (String uniqueIndexColumnName : uniqueIndexColumnNames) {
-			sb.append(" and sourceTable.");
+			sb.append(" and ");
 			sb.append(uniqueIndexColumnName);
-			sb.append(" = targetTable.");
-			sb.append(uniqueIndexColumnName);
+			sb.append(" = ?");
 		}
+
+		return sb.toString();
+	}
+
+	public static String getConstraintEntitiesSQL(
+		String tableName, String primaryColumnName,
+		String[] uniqueIndexColumnNames, long ctCollectionId,
+		Set<Long> primaryKeys) {
+
+		StringBundler sb = new StringBundler();
+
+		sb.append("select ");
+		sb.append(primaryColumnName);
+		sb.append(", ");
+
+		for (String uniqueIndexColumnName : uniqueIndexColumnNames) {
+			sb.append(uniqueIndexColumnName);
+			sb.append(", ");
+		}
+
+		sb.setIndex(sb.index() - 1);
+
+		sb.append(" from ");
+		sb.append(tableName);
+		sb.append(" where ctCollectionId = ");
+		sb.append(ctCollectionId);
+		sb.append(" and (");
+		sb.append(primaryColumnName);
+		sb.append(" in (");
+
+		int i = 0;
+
+		for (Serializable primaryKey : primaryKeys) {
+			if (i == _BATCH_SIZE) {
+				sb.setStringAt(")", sb.index() - 1);
+
+				sb.append(" or ");
+				sb.append(primaryColumnName);
+				sb.append(" in (");
+
+				i = 0;
+			}
+
+			sb.append(primaryKey);
+			sb.append(", ");
+
+			i++;
+		}
+
+		sb.setStringAt(")", sb.index() - 1);
+
+		sb.append(")");
 
 		return sb.toString();
 	}
@@ -162,22 +198,18 @@ public class CTRowUtil {
 	private static boolean _isPostgresBlobTable(
 		Map<String, Integer> tableColumnsMap) {
 
-		DB db = DBManagerUtil.getDB();
-
-		if (db.getDBType() != DBType.POSTGRESQL) {
+		if (DBManagerUtil.getDBType() != DBType.POSTGRESQL) {
 			return false;
 		}
 
 		Collection<Integer> values = tableColumnsMap.values();
 
-		if (values.contains(Types.BLOB)) {
-			return true;
-		}
-
-		return false;
+		return values.contains(Types.BLOB);
 	}
 
 	private CTRowUtil() {
 	}
+
+	private static final int _BATCH_SIZE = 1000;
 
 }

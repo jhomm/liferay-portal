@@ -1,44 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.rest.internal.endpoint.authorize.message.body;
 
 import com.liferay.oauth2.provider.rest.internal.endpoint.authorize.configuration.AuthorizeScreenConfiguration;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.MessageBodyWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.MessageBodyWriter;
 
 import org.apache.cxf.jaxrs.ext.MessageContext;
 
@@ -70,7 +61,7 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 		String authorizeScreenURL = null;
 
 		try {
-			authorizeScreenURL = getAuthorizeScreenURL(
+			authorizeScreenURL = _getAuthorizeScreenURL(
 				portal.getCompanyId(httpServletRequest));
 		}
 		catch (ConfigurationException configurationException) {
@@ -84,7 +75,7 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 				).build());
 		}
 
-		if (!http.hasDomain(authorizeScreenURL)) {
+		if (!HttpComponentsUtil.hasDomain(authorizeScreenURL)) {
 			String portalURL = portal.getPortalURL(httpServletRequest);
 
 			authorizeScreenURL = portalURL + authorizeScreenURL;
@@ -105,7 +96,30 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 		}
 	}
 
-	protected String getAuthorizeScreenURL(long companyId)
+	protected String removeParameter(String url, String name) {
+		return HttpComponentsUtil.removeParameter(url, "oauth2_" + name);
+	}
+
+	protected String setParameter(String url, String name, String value) {
+		if (Validator.isBlank(value)) {
+			return url;
+		}
+
+		return HttpComponentsUtil.addParameter(url, "oauth2_" + name, value);
+	}
+
+	protected abstract String writeTo(T t, String authorizeScreenURL);
+
+	@Reference
+	protected ConfigurationProvider configurationProvider;
+
+	@Context
+	protected MessageContext messageContext;
+
+	@Reference
+	protected Portal portal;
+
+	private String _getAuthorizeScreenURL(long companyId)
 		throws ConfigurationException {
 
 		AuthorizeScreenConfiguration authorizeScreenConfiguration =
@@ -116,32 +130,6 @@ public abstract class BaseMessageBodyWriter<T> implements MessageBodyWriter<T> {
 
 		return authorizeScreenConfiguration.authorizeScreenURL();
 	}
-
-	protected String removeParameter(String url, String name) {
-		return http.removeParameter(url, "oauth2_" + name);
-	}
-
-	protected String setParameter(String url, String name, String value) {
-		if (Validator.isBlank(value)) {
-			return url;
-		}
-
-		return http.addParameter(url, "oauth2_" + name, value);
-	}
-
-	protected abstract String writeTo(T t, String authorizeScreenURL);
-
-	@Reference
-	protected ConfigurationProvider configurationProvider;
-
-	@Reference
-	protected Http http;
-
-	@Context
-	protected MessageContext messageContext;
-
-	@Reference
-	protected Portal portal;
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseMessageBodyWriter.class);

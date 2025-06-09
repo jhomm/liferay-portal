@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.util;
@@ -196,6 +187,24 @@ public class FileUtil {
 		return uri.toURL();
 	}
 
+	public static List<String> listFiles(String filePath) {
+		List<String> fileNames = new ArrayList<>();
+
+		File baseDir = new File(filePath);
+
+		if (baseDir.isDirectory()) {
+			File[] files = baseDir.listFiles();
+
+			for (File file : files) {
+				if (file.isDirectory() || file.isFile()) {
+					fileNames.add(file.getName());
+				}
+			}
+		}
+
+		return fileNames;
+	}
+
 	public static String read(File file) throws IOException {
 		return read(getURL(file));
 	}
@@ -226,12 +235,21 @@ public class FileUtil {
 		return sb.toString();
 	}
 
+	public static void replaceStringInFile(
+			String filePath, String oldSub, String newSub)
+		throws IOException {
+
+		String fileContent = read(filePath);
+
+		write(filePath, StringUtil.replace(fileContent, oldSub, newSub));
+	}
+
 	public static void write(File file, byte[] bytes) throws IOException {
 		FileUtils.writeByteArrayToFile(file, bytes);
 	}
 
 	public static void write(File file, String string) throws IOException {
-		FileUtils.writeStringToFile(file, string);
+		FileUtils.writeStringToFile(file, string, "UTF-8");
 	}
 
 	public static void write(String fileName, byte[] bytes) throws IOException {

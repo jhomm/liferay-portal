@@ -1,43 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.options.web.internal.display.context;
 
+import com.liferay.commerce.frontend.model.HeaderActionModel;
 import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.commerce.product.model.CPSpecificationOption;
-import com.liferay.commerce.product.options.web.internal.portlet.action.ActionHelper;
+import com.liferay.commerce.product.options.web.internal.portlet.action.helper.ActionHelper;
 import com.liferay.commerce.product.options.web.internal.util.CPOptionsPortletUtil;
 import com.liferay.commerce.product.service.CPOptionCategoryService;
 import com.liferay.commerce.product.service.CPSpecificationOptionService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
-import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Andrea Di Giorgi
@@ -57,10 +55,13 @@ public class CPSpecificationOptionDisplayContext
 			CPSpecificationOption.class.getSimpleName(),
 			portletResourcePermission);
 
-		setDefaultOrderByCol("label");
-
 		_cpOptionCategoryService = cpOptionCategoryService;
 		_cpSpecificationOptionService = cpSpecificationOptionService;
+
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		setDefaultOrderByCol("label");
 	}
 
 	public List<CPOptionCategory> getCPOptionCategories()
@@ -84,14 +85,75 @@ public class CPSpecificationOptionDisplayContext
 				cpSpecificationOption.getCPOptionCategoryId());
 
 		if (cpOptionCategory != null) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)httpServletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			return cpOptionCategory.getTitle(themeDisplay.getLocale());
+			return cpOptionCategory.getTitle(_themeDisplay.getLocale());
 		}
 
 		return StringPool.BLANK;
+	}
+
+	public CreationMenu getCreationMenu(
+		CPSpecificationOption cpSpecificationOption) {
+
+		if (cpSpecificationOption == null) {
+			return null;
+		}
+
+		return CreationMenuBuilder.addDropdownItem(
+			dropdownItem -> {
+				dropdownItem.setHref(
+					_getAddSpecificationOptionListTypeDefinitionRenderURL(
+						cpSpecificationOption, Constants.ADD));
+
+				dropdownItem.setLabel(
+					LanguageUtil.get(
+						cpRequestHelper.getRequest(), "create-a-new-picklist"));
+
+				dropdownItem.setTarget("modal");
+
+				dropdownItem.setData(
+					HashMapBuilder.<String, Object>put(
+						"size", "default"
+					).build());
+			}
+		).addDropdownItem(
+			dropdownItem -> {
+				dropdownItem.setHref(
+					_getAddSpecificationOptionListTypeDefinitionRenderURL(
+						cpSpecificationOption, Constants.ASSIGN));
+
+				dropdownItem.setLabel(
+					LanguageUtil.get(
+						cpRequestHelper.getRequest(),
+						"add-an-existing-picklist"));
+
+				dropdownItem.setTarget("modal");
+
+				dropdownItem.setData(
+					HashMapBuilder.<String, Object>put(
+						"size", "default"
+					).build());
+			}
+		).build();
+	}
+
+	public List<HeaderActionModel> getHeaderActionModels() {
+		List<HeaderActionModel> headerActionModels = new ArrayList<>();
+
+		LiferayPortletResponse liferayPortletResponse =
+			cpRequestHelper.getLiferayPortletResponse();
+
+		HeaderActionModel publishHeaderActionModel = new HeaderActionModel(
+			"btn-primary", liferayPortletResponse.getNamespace() + "fm",
+			PortletURLBuilder.createActionURL(
+				liferayPortletResponse
+			).setActionName(
+				"/cp_specification_options/edit_cp_specification_option"
+			).buildString(),
+			liferayPortletResponse.getNamespace() + "publishButton", "publish");
+
+		headerActionModels.add(publishHeaderActionModel);
+
+		return headerActionModels;
 	}
 
 	@Override
@@ -99,7 +161,7 @@ public class CPSpecificationOptionDisplayContext
 		return PortletURLBuilder.create(
 			super.getPortletURL()
 		).setNavigation(
-			getNavigation()
+			_getNavigation()
 		).buildPortletURL();
 	}
 
@@ -112,26 +174,18 @@ public class CPSpecificationOptionDisplayContext
 		}
 
 		searchContainer = new SearchContainer<>(
-			liferayPortletRequest, getPortletURL(), null, null);
-
-		searchContainer.setEmptyResultsMessage(
+			liferayPortletRequest, getPortletURL(), null,
 			"no-specification-labels-were-found");
 
-		OrderByComparator<CPSpecificationOption> orderByComparator =
-			CPOptionsPortletUtil.getCPSpecificationOptionOrderByComparator(
-				getOrderByCol(), getOrderByType());
-
 		searchContainer.setOrderByCol(getOrderByCol());
-		searchContainer.setOrderByComparator(orderByComparator);
+		searchContainer.setOrderByComparator(
+			CPOptionsPortletUtil.getCPSpecificationOptionOrderByComparator(
+				getOrderByCol(), getOrderByType()));
 		searchContainer.setOrderByType(getOrderByType());
-		searchContainer.setRowChecker(getRowChecker());
-
-		Sort sort = CPOptionsPortletUtil.getCPSpecificationOptionSort(
-			getOrderByCol(), getOrderByType());
 
 		Boolean facetable = null;
 
-		String navigation = getNavigation();
+		String navigation = _getNavigation();
 
 		if (navigation.equals("no")) {
 			facetable = false;
@@ -140,25 +194,44 @@ public class CPSpecificationOptionDisplayContext
 			facetable = true;
 		}
 
-		BaseModelSearchResult<CPSpecificationOption>
-			cpSpecificationOptionBaseModelSearchResult =
-				_cpSpecificationOptionService.searchCPSpecificationOptions(
-					cpRequestHelper.getCompanyId(), facetable, getKeywords(),
-					searchContainer.getStart(), searchContainer.getEnd(), sort);
-
-		searchContainer.setTotal(
-			cpSpecificationOptionBaseModelSearchResult.getLength());
-		searchContainer.setResults(
-			cpSpecificationOptionBaseModelSearchResult.getBaseModels());
+		searchContainer.setResultsAndTotal(
+			_cpSpecificationOptionService.searchCPSpecificationOptions(
+				cpRequestHelper.getCompanyId(), facetable, null, getKeywords(),
+				searchContainer.getStart(), searchContainer.getEnd(),
+				CPOptionsPortletUtil.getCPSpecificationOptionSort(
+					getOrderByCol(), getOrderByType())));
+		searchContainer.setRowChecker(getRowChecker());
 
 		return searchContainer;
 	}
 
-	protected String getNavigation() {
+	private String _getAddSpecificationOptionListTypeDefinitionRenderURL(
+		CPSpecificationOption cpSpecificationOption, String actionCommand) {
+
+		return PortletURLBuilder.createRenderURL(
+			cpRequestHelper.getLiferayPortletResponse()
+		).setMVCRenderCommandName(
+			"/cp_specification_options" +
+				"/add_cp_specification_option_list_type_definition"
+		).setCMD(
+			actionCommand
+		).setParameter(
+			"cpSpecificationOptionId",
+			cpSpecificationOption.getCPSpecificationOptionId()
+		).setParameter(
+			"cpSpecificationOptionTitle",
+			cpSpecificationOption.getTitle(_themeDisplay.getLocale())
+		).setWindowState(
+			LiferayWindowState.POP_UP
+		).buildString();
+	}
+
+	private String _getNavigation() {
 		return ParamUtil.getString(httpServletRequest, "navigation");
 	}
 
 	private final CPOptionCategoryService _cpOptionCategoryService;
 	private final CPSpecificationOptionService _cpSpecificationOptionService;
+	private final ThemeDisplay _themeDisplay;
 
 }

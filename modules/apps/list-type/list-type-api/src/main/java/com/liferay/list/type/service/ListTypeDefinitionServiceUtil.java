@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.service;
 
 import com.liferay.list.type.model.ListTypeDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 import java.util.Map;
@@ -40,10 +32,13 @@ public class ListTypeDefinitionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.list.type.service.impl.ListTypeDefinitionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static ListTypeDefinition addListTypeDefinition(
-			Map<java.util.Locale, String> nameMap)
+			String externalReferenceCode, Map<java.util.Locale, String> nameMap,
+			boolean system,
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
 		throws PortalException {
 
-		return getService().addListTypeDefinition(nameMap);
+		return getService().addListTypeDefinition(
+			externalReferenceCode, nameMap, system, listTypeEntries);
 	}
 
 	public static ListTypeDefinition deleteListTypeDefinition(
@@ -60,11 +55,29 @@ public class ListTypeDefinitionServiceUtil {
 		return getService().deleteListTypeDefinition(listTypeDefinitionId);
 	}
 
+	public static ListTypeDefinition
+			fetchListTypeDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchListTypeDefinitionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	public static ListTypeDefinition getListTypeDefinition(
 			long listTypeDefinitionId)
 		throws PortalException {
 
 		return getService().getListTypeDefinition(listTypeDefinitionId);
+	}
+
+	public static ListTypeDefinition
+			getListTypeDefinitionByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getListTypeDefinitionByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static List<ListTypeDefinition> getListTypeDefinitions(
@@ -87,17 +100,23 @@ public class ListTypeDefinitionServiceUtil {
 	}
 
 	public static ListTypeDefinition updateListTypeDefinition(
-			long listTypeDefinitionId, Map<java.util.Locale, String> nameMap)
+			String externalReferenceCode, long listTypeDefinitionId,
+			Map<java.util.Locale, String> nameMap,
+			List<com.liferay.list.type.model.ListTypeEntry> listTypeEntries)
 		throws PortalException {
 
 		return getService().updateListTypeDefinition(
-			listTypeDefinitionId, nameMap);
+			externalReferenceCode, listTypeDefinitionId, nameMap,
+			listTypeEntries);
 	}
 
 	public static ListTypeDefinitionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile ListTypeDefinitionService _service;
+	private static final Snapshot<ListTypeDefinitionService> _serviceSnapshot =
+		new Snapshot<>(
+			ListTypeDefinitionServiceUtil.class,
+			ListTypeDefinitionService.class);
 
 }

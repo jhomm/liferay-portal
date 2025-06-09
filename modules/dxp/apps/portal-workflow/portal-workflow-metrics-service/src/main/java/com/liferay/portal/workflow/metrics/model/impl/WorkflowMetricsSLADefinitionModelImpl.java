@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.model.impl;
@@ -37,7 +28,6 @@ import com.liferay.portal.workflow.metrics.model.WorkflowMetricsSLADefinitionMod
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -290,212 +280,204 @@ public class WorkflowMetricsSLADefinitionModelImpl
 	public Map<String, Function<WorkflowMetricsSLADefinition, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<WorkflowMetricsSLADefinition, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, WorkflowMetricsSLADefinition>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			WorkflowMetricsSLADefinition.class.getClassLoader(),
-			WorkflowMetricsSLADefinition.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<WorkflowMetricsSLADefinition, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<WorkflowMetricsSLADefinition> constructor =
-				(Constructor<WorkflowMetricsSLADefinition>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<WorkflowMetricsSLADefinition, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<WorkflowMetricsSLADefinition, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
-
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
-	}
-
-	private static final Map
-		<String, Function<WorkflowMetricsSLADefinition, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<WorkflowMetricsSLADefinition, Object>>
-			_attributeSetterBiConsumers;
-
-	static {
-		Map<String, Function<WorkflowMetricsSLADefinition, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<WorkflowMetricsSLADefinition, Object>>();
-		Map<String, BiConsumer<WorkflowMetricsSLADefinition, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<WorkflowMetricsSLADefinition, ?>>();
-
-		attributeGetterFunctions.put(
-			"mvccVersion", WorkflowMetricsSLADefinition::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setMvccVersion);
-		attributeGetterFunctions.put(
-			"uuid", WorkflowMetricsSLADefinition::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setUuid);
-		attributeGetterFunctions.put(
-			"workflowMetricsSLADefinitionId",
-			WorkflowMetricsSLADefinition::getWorkflowMetricsSLADefinitionId);
-		attributeSetterBiConsumers.put(
-			"workflowMetricsSLADefinitionId",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+			attributeGetterFunctions.put(
+				"mvccVersion", WorkflowMetricsSLADefinition::getMvccVersion);
+			attributeGetterFunctions.put(
+				"uuid", WorkflowMetricsSLADefinition::getUuid);
+			attributeGetterFunctions.put(
+				"workflowMetricsSLADefinitionId",
 				WorkflowMetricsSLADefinition::
-					setWorkflowMetricsSLADefinitionId);
-		attributeGetterFunctions.put(
-			"groupId", WorkflowMetricsSLADefinition::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", WorkflowMetricsSLADefinition::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", WorkflowMetricsSLADefinition::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setUserId);
-		attributeGetterFunctions.put(
-			"userName", WorkflowMetricsSLADefinition::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", WorkflowMetricsSLADefinition::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<WorkflowMetricsSLADefinition, Date>)
-				WorkflowMetricsSLADefinition::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", WorkflowMetricsSLADefinition::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<WorkflowMetricsSLADefinition, Date>)
-				WorkflowMetricsSLADefinition::setModifiedDate);
-		attributeGetterFunctions.put(
-			"active", WorkflowMetricsSLADefinition::getActive);
-		attributeSetterBiConsumers.put(
-			"active",
-			(BiConsumer<WorkflowMetricsSLADefinition, Boolean>)
-				WorkflowMetricsSLADefinition::setActive);
-		attributeGetterFunctions.put(
-			"calendarKey", WorkflowMetricsSLADefinition::getCalendarKey);
-		attributeSetterBiConsumers.put(
-			"calendarKey",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setCalendarKey);
-		attributeGetterFunctions.put(
-			"description", WorkflowMetricsSLADefinition::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setDescription);
-		attributeGetterFunctions.put(
-			"duration", WorkflowMetricsSLADefinition::getDuration);
-		attributeSetterBiConsumers.put(
-			"duration",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setDuration);
-		attributeGetterFunctions.put(
-			"name", WorkflowMetricsSLADefinition::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setName);
-		attributeGetterFunctions.put(
-			"pauseNodeKeys", WorkflowMetricsSLADefinition::getPauseNodeKeys);
-		attributeSetterBiConsumers.put(
-			"pauseNodeKeys",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setPauseNodeKeys);
-		attributeGetterFunctions.put(
-			"processId", WorkflowMetricsSLADefinition::getProcessId);
-		attributeSetterBiConsumers.put(
-			"processId",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setProcessId);
-		attributeGetterFunctions.put(
-			"processVersion", WorkflowMetricsSLADefinition::getProcessVersion);
-		attributeSetterBiConsumers.put(
-			"processVersion",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setProcessVersion);
-		attributeGetterFunctions.put(
-			"startNodeKeys", WorkflowMetricsSLADefinition::getStartNodeKeys);
-		attributeSetterBiConsumers.put(
-			"startNodeKeys",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setStartNodeKeys);
-		attributeGetterFunctions.put(
-			"stopNodeKeys", WorkflowMetricsSLADefinition::getStopNodeKeys);
-		attributeSetterBiConsumers.put(
-			"stopNodeKeys",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setStopNodeKeys);
-		attributeGetterFunctions.put(
-			"version", WorkflowMetricsSLADefinition::getVersion);
-		attributeSetterBiConsumers.put(
-			"version",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setVersion);
-		attributeGetterFunctions.put(
-			"status", WorkflowMetricsSLADefinition::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<WorkflowMetricsSLADefinition, Integer>)
-				WorkflowMetricsSLADefinition::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", WorkflowMetricsSLADefinition::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<WorkflowMetricsSLADefinition, Long>)
-				WorkflowMetricsSLADefinition::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName",
-			WorkflowMetricsSLADefinition::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<WorkflowMetricsSLADefinition, String>)
-				WorkflowMetricsSLADefinition::setStatusByUserName);
-		attributeGetterFunctions.put(
-			"statusDate", WorkflowMetricsSLADefinition::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<WorkflowMetricsSLADefinition, Date>)
-				WorkflowMetricsSLADefinition::setStatusDate);
+					getWorkflowMetricsSLADefinitionId);
+			attributeGetterFunctions.put(
+				"groupId", WorkflowMetricsSLADefinition::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", WorkflowMetricsSLADefinition::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", WorkflowMetricsSLADefinition::getUserId);
+			attributeGetterFunctions.put(
+				"userName", WorkflowMetricsSLADefinition::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", WorkflowMetricsSLADefinition::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", WorkflowMetricsSLADefinition::getModifiedDate);
+			attributeGetterFunctions.put(
+				"active", WorkflowMetricsSLADefinition::getActive);
+			attributeGetterFunctions.put(
+				"calendarKey", WorkflowMetricsSLADefinition::getCalendarKey);
+			attributeGetterFunctions.put(
+				"description", WorkflowMetricsSLADefinition::getDescription);
+			attributeGetterFunctions.put(
+				"duration", WorkflowMetricsSLADefinition::getDuration);
+			attributeGetterFunctions.put(
+				"name", WorkflowMetricsSLADefinition::getName);
+			attributeGetterFunctions.put(
+				"pauseNodeKeys",
+				WorkflowMetricsSLADefinition::getPauseNodeKeys);
+			attributeGetterFunctions.put(
+				"processId", WorkflowMetricsSLADefinition::getProcessId);
+			attributeGetterFunctions.put(
+				"processVersion",
+				WorkflowMetricsSLADefinition::getProcessVersion);
+			attributeGetterFunctions.put(
+				"startNodeKeys",
+				WorkflowMetricsSLADefinition::getStartNodeKeys);
+			attributeGetterFunctions.put(
+				"stopNodeKeys", WorkflowMetricsSLADefinition::getStopNodeKeys);
+			attributeGetterFunctions.put(
+				"version", WorkflowMetricsSLADefinition::getVersion);
+			attributeGetterFunctions.put(
+				"status", WorkflowMetricsSLADefinition::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId",
+				WorkflowMetricsSLADefinition::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName",
+				WorkflowMetricsSLADefinition::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", WorkflowMetricsSLADefinition::getStatusDate);
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
+		}
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map
+			<String, BiConsumer<WorkflowMetricsSLADefinition, Object>>
+				_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<WorkflowMetricsSLADefinition, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<WorkflowMetricsSLADefinition, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setUuid);
+			attributeSetterBiConsumers.put(
+				"workflowMetricsSLADefinitionId",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::
+						setWorkflowMetricsSLADefinitionId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<WorkflowMetricsSLADefinition, Date>)
+					WorkflowMetricsSLADefinition::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<WorkflowMetricsSLADefinition, Date>)
+					WorkflowMetricsSLADefinition::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"active",
+				(BiConsumer<WorkflowMetricsSLADefinition, Boolean>)
+					WorkflowMetricsSLADefinition::setActive);
+			attributeSetterBiConsumers.put(
+				"calendarKey",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setCalendarKey);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setDescription);
+			attributeSetterBiConsumers.put(
+				"duration",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setDuration);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setName);
+			attributeSetterBiConsumers.put(
+				"pauseNodeKeys",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setPauseNodeKeys);
+			attributeSetterBiConsumers.put(
+				"processId",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setProcessId);
+			attributeSetterBiConsumers.put(
+				"processVersion",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setProcessVersion);
+			attributeSetterBiConsumers.put(
+				"startNodeKeys",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setStartNodeKeys);
+			attributeSetterBiConsumers.put(
+				"stopNodeKeys",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setStopNodeKeys);
+			attributeSetterBiConsumers.put(
+				"version",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setVersion);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<WorkflowMetricsSLADefinition, Integer>)
+					WorkflowMetricsSLADefinition::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<WorkflowMetricsSLADefinition, Long>)
+					WorkflowMetricsSLADefinition::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<WorkflowMetricsSLADefinition, String>)
+					WorkflowMetricsSLADefinition::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<WorkflowMetricsSLADefinition, Date>)
+					WorkflowMetricsSLADefinition::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -1536,45 +1518,13 @@ public class WorkflowMetricsSLADefinitionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<WorkflowMetricsSLADefinition, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<WorkflowMetricsSLADefinition, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<WorkflowMetricsSLADefinition, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(WorkflowMetricsSLADefinition)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, WorkflowMetricsSLADefinition>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						WorkflowMetricsSLADefinition.class, ModelWrapper.class);
 
 	}
 
@@ -1608,7 +1558,8 @@ public class WorkflowMetricsSLADefinitionModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<WorkflowMetricsSLADefinition, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

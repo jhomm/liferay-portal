@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.cluster;
 
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.search.engine.adapter.cluster.ClusterRequestExecutor;
 import com.liferay.portal.search.engine.adapter.cluster.HealthClusterRequest;
@@ -26,9 +18,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Dylan Rebelak
@@ -42,15 +32,17 @@ public class ElasticsearchClusterRequestExecutorTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
+		_clusterRequestExecutor = new ElasticsearchClusterRequestExecutor();
 
-		_clusterRequestExecutor = new ElasticsearchClusterRequestExecutor() {
-			{
-				setHealthClusterRequestExecutor(_healthClusterRequestExecutor);
-				setStateClusterRequestExecutor(_stateClusterRequestExecutor);
-				setStatsClusterRequestExecutor(_statsClusterRequestExecutor);
-			}
-		};
+		ReflectionTestUtil.setFieldValue(
+			_clusterRequestExecutor, "_healthClusterRequestExecutor",
+			_healthClusterRequestExecutor);
+		ReflectionTestUtil.setFieldValue(
+			_clusterRequestExecutor, "_stateClusterRequestExecutor",
+			_stateClusterRequestExecutor);
+		ReflectionTestUtil.setFieldValue(
+			_clusterRequestExecutor, "_statsClusterRequestExecutor",
+			_statsClusterRequestExecutor);
 	}
 
 	@Test
@@ -96,14 +88,11 @@ public class ElasticsearchClusterRequestExecutorTest {
 	}
 
 	private ClusterRequestExecutor _clusterRequestExecutor;
-
-	@Mock
-	private HealthClusterRequestExecutor _healthClusterRequestExecutor;
-
-	@Mock
-	private StateClusterRequestExecutor _stateClusterRequestExecutor;
-
-	@Mock
-	private StatsClusterRequestExecutor _statsClusterRequestExecutor;
+	private final HealthClusterRequestExecutor _healthClusterRequestExecutor =
+		Mockito.mock(HealthClusterRequestExecutor.class);
+	private final StateClusterRequestExecutor _stateClusterRequestExecutor =
+		Mockito.mock(StateClusterRequestExecutor.class);
+	private final StatsClusterRequestExecutor _statsClusterRequestExecutor =
+		Mockito.mock(StatsClusterRequestExecutor.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.reader;
@@ -18,13 +9,16 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.Serializable;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -48,10 +42,10 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
-						StringPool.SEMICOLON,
+						true, StringPool.SEMICOLON, null,
 						new Object[][] {
 							{
 								createDateString, "sample description", 1,
@@ -68,7 +62,9 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 				).put(
 					"id1", "id"
 				).put(
-					"name1", "name"
+					"name1_i18n_en", "name"
+				).put(
+					"name1_i18n_hr", "name"
 				).build(),
 				csvBatchEngineImportTaskItemReaderImpl.read(),
 				HashMapBuilder.put(
@@ -80,15 +76,41 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 	}
 
 	@Test
+	public void testColumnMappingWithoutHeaders() throws Exception {
+		try (CSVBatchEngineImportTaskItemReaderImpl
+				csvBatchEngineImportTaskItemReaderImpl =
+					_getCSVBatchEngineImportTaskItemReader(
+						null, false, StringPool.SEMICOLON, null,
+						new Object[][] {
+							{
+								createDateString, "sample description", 1,
+								"sample name"
+							}
+						})) {
+
+			validate(
+				createDateString, "sample description", 1L,
+				HashMapBuilder.put(
+					"0", "createDate"
+				).put(
+					"1", "description"
+				).put(
+					"2", "id"
+				).build(),
+				csvBatchEngineImportTaskItemReaderImpl.read(), null);
+		}
+	}
+
+	@Test
 	public void testColumnMappingWithUndefinedColumn() throws Exception {
 		try (CSVBatchEngineImportTaskItemReaderImpl
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
-						StringPool.SEMICOLON,
+						true, StringPool.SEMICOLON, null,
 						new Object[][] {
 							{
 								createDateString, "sample description", 1,
@@ -115,10 +137,10 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
-						StringPool.SEMICOLON,
+						true, StringPool.SEMICOLON, null,
 						new Object[][] {
 							{
 								createDateString, "sample description", 1,
@@ -146,10 +168,10 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
-						StringPool.SEMICOLON,
+						true, StringPool.SEMICOLON, null,
 						new Object[][] {
 							{
 								createDateString, "sample description", 1,
@@ -188,7 +210,7 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 		try (CSVBatchEngineImportTaskItemReaderImpl
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
-						FIELD_NAMES, StringPool.COMMA,
+						FIELD_NAMES, true, null, null,
 						new Object[][] {
 							{
 								"", "sample description", 1, "sample name",
@@ -212,7 +234,7 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 		try (CSVBatchEngineImportTaskItemReaderImpl
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
-						FIELD_NAMES, StringPool.COMMA,
+						FIELD_NAMES, true, null, null,
 						new Object[][] {
 							{
 								createDateString, "sample description 1", 1,
@@ -229,7 +251,18 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 
 				validate(
 					createDateString, "sample description " + rowCount,
-					rowCount, Collections.emptyMap(),
+					rowCount,
+					HashMapBuilder.put(
+						"createDate", "createDate"
+					).put(
+						"description", "description"
+					).put(
+						"id", "id"
+					).put(
+						"name_i18n_en", "name"
+					).put(
+						"name_i18n_hr", "name"
+					).build(),
 					csvBatchEngineImportTaskItemReaderImpl.read(),
 					HashMapBuilder.put(
 						"en", "sample name " + rowCount
@@ -241,27 +274,12 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 	}
 
 	@Test
-	public void testReadRowsWithCommaInsideQuotes() throws Exception {
-		try (CSVBatchEngineImportTaskItemReaderImpl
-				csvBatchEngineImportTaskItemReaderImpl =
-					_getCSVBatchEngineImportTaskItemReader(
-						FIELD_NAMES, StringPool.SEMICOLON,
-						new Object[][] {
-							{
-								createDateString, "hey, here is comma inside",
-								1, "sample name", "naziv"
-							}
-						})) {
-
-			validate(
-				createDateString, "hey, here is comma inside", 1L,
-				Collections.emptyMap(),
-				csvBatchEngineImportTaskItemReaderImpl.read(),
-				HashMapBuilder.put(
-					"en", "sample name"
-				).put(
-					"hr", "naziv"
-				).build());
+	public void testReadRowsWithEnclosingCharacter() throws Exception {
+		for (String delimiter : _CSV_DELIMITERS) {
+			for (String enclosingCharacter : _CSV_ENCLOSING_CHARACTERS) {
+				_testReadRowsWithEnclosingCharacter(
+					delimiter, enclosingCharacter);
+			}
 		}
 	}
 
@@ -270,7 +288,7 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 		try (CSVBatchEngineImportTaskItemReaderImpl
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
-						FIELD_NAMES, StringPool.COMMA,
+						FIELD_NAMES, true, null, null,
 						new Object[][] {{"", "", 1}})) {
 
 			validate(
@@ -284,7 +302,7 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 		try (CSVBatchEngineImportTaskItemReaderImpl
 				csvBatchEngineImportTaskItemReaderImpl =
 					_getCSVBatchEngineImportTaskItemReader(
-						FIELD_NAMES, StringPool.COMMA,
+						FIELD_NAMES, true, null, null,
 						new Object[][] {
 							{createDateString, "", 1, "", "naziv 1"},
 							{
@@ -294,7 +312,18 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 						})) {
 
 			validate(
-				createDateString, null, 1L, Collections.emptyMap(),
+				createDateString, null, 1L,
+				HashMapBuilder.put(
+					"createDate", "createDate"
+				).put(
+					"description", "description"
+				).put(
+					"id", "id"
+				).put(
+					"name_i18n_en", "name"
+				).put(
+					"name_i18n_hr", "name"
+				).build(),
 				csvBatchEngineImportTaskItemReaderImpl.read(),
 				new HashMap<String, String>() {
 					{
@@ -305,7 +334,17 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 
 			validate(
 				createDateString, "sample description 2", 2L,
-				Collections.emptyMap(),
+				HashMapBuilder.put(
+					"createDate", "createDate"
+				).put(
+					"description", "description"
+				).put(
+					"id", "id"
+				).put(
+					"name_i18n_en", "name"
+				).put(
+					"name_i18n_hr", "name"
+				).build(),
 				csvBatchEngineImportTaskItemReaderImpl.read(),
 				HashMapBuilder.put(
 					"en", "sample name 2"
@@ -315,16 +354,41 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 		}
 	}
 
+	private Object[] _encloseWithCharacter(
+		String enclosingCharacter, Object[] rowValues) {
+
+		if (Validator.isNull(enclosingCharacter)) {
+			return rowValues;
+		}
+
+		for (int i = 0; i < rowValues.length; i++) {
+			rowValues[i] =
+				enclosingCharacter + rowValues[i] + enclosingCharacter;
+		}
+
+		return rowValues;
+	}
+
 	private byte[] _getContent(
-		String[] cellNames, String delimiter, Object[][] rowValues) {
+		String[] columnNames, boolean containsHeaders, String delimiter,
+		String enclosingCharacter, Object[][] rowValues) {
 
 		StringBundler sb = new StringBundler();
 
-		sb.append(StringUtil.merge(cellNames, delimiter));
-		sb.append("\n");
+		if (Validator.isNull(delimiter)) {
+			delimiter = StringPool.COMMA;
+		}
 
-		for (Object[] cellValues : rowValues) {
-			sb.append(StringUtil.merge(cellValues, delimiter));
+		if (containsHeaders) {
+			sb.append(StringUtil.merge(columnNames, delimiter));
+			sb.append("\n");
+		}
+
+		for (Object[] singleRowValues : rowValues) {
+			sb.append(
+				StringUtil.merge(
+					_encloseWithCharacter(enclosingCharacter, singleRowValues),
+					delimiter));
 			sb.append("\n");
 		}
 
@@ -335,13 +399,87 @@ public class CSVBatchEngineImportTaskItemReaderImplTest
 
 	private CSVBatchEngineImportTaskItemReaderImpl
 			_getCSVBatchEngineImportTaskItemReader(
-				String[] cellNames, String delimiter, Object[][] rowValues)
+				String[] columnNames, boolean containsHeaders, String delimiter,
+				String enclosingCharacter, Object[][] rowValues)
 		throws IOException {
 
 		return new CSVBatchEngineImportTaskItemReaderImpl(
-			delimiter,
+			StringPool.COMMA,
 			new ByteArrayInputStream(
-				_getContent(cellNames, delimiter, rowValues)));
+				_getContent(
+					columnNames, containsHeaders, delimiter, enclosingCharacter,
+					rowValues)),
+			_getProperties(containsHeaders, delimiter, enclosingCharacter));
 	}
+
+	private Map<String, Serializable> _getProperties(
+		boolean containsHeaders, String delimiter, String enclosingCharacter) {
+
+		Map<String, Serializable> map = new HashMap<>();
+
+		if (!containsHeaders) {
+			map.put("containsHeaders", StringPool.FALSE);
+		}
+
+		if (Validator.isNotNull(delimiter)) {
+			map.put("delimiter", delimiter);
+		}
+
+		if (Validator.isNotNull(enclosingCharacter)) {
+			map.put("enclosingCharacter", enclosingCharacter);
+		}
+
+		return map;
+	}
+
+	private void _testReadRowsWithEnclosingCharacter(
+			String delimiter, String enclosingCharacter)
+		throws Exception {
+
+		try (CSVBatchEngineImportTaskItemReaderImpl
+				csvBatchEngineImportTaskItemReaderImpl =
+					_getCSVBatchEngineImportTaskItemReader(
+						FIELD_NAMES, true, delimiter, enclosingCharacter,
+						new Object[][] {
+							{
+								createDateString, "hey, here is a comma inside",
+								1, "sample name", "naziv"
+							}
+						})) {
+
+			validate(
+				createDateString, "hey, here is a comma inside", 1L,
+				HashMapBuilder.put(
+					"createDate", "createDate"
+				).put(
+					"description", "description"
+				).put(
+					"id", "id"
+				).put(
+					"name_i18n_en", "name"
+				).put(
+					"name_i18n_hr", "name"
+				).build(),
+				csvBatchEngineImportTaskItemReaderImpl.read(),
+				HashMapBuilder.put(
+					"en", "sample name"
+				).put(
+					"hr", "naziv"
+				).build());
+		}
+	}
+
+	private static final String[] _CSV_DELIMITERS = {
+		StringPool.CARET, StringPool.CLOSE_BRACKET,
+		StringPool.CLOSE_CURLY_BRACE, StringPool.CLOSE_PARENTHESIS,
+		StringPool.DOLLAR, StringPool.EXCLAMATION, StringPool.OPEN_BRACKET,
+		StringPool.OPEN_CURLY_BRACE, StringPool.OPEN_PARENTHESIS,
+		StringPool.PERIOD, StringPool.PIPE, StringPool.PLUS,
+		StringPool.QUESTION, StringPool.STAR
+	};
+
+	private static final String[] _CSV_ENCLOSING_CHARACTERS = {
+		StringPool.QUOTE, StringPool.APOSTROPHE
+	};
 
 }

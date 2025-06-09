@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.memberships.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -23,28 +15,30 @@ import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.rolesadmin.search.RoleSearch;
-import com.liferay.portlet.rolesadmin.search.RoleSearchTerms;
-import com.liferay.portlet.sites.search.UserGroupRoleRoleChecker;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.roles.admin.search.RoleSearch;
+import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.site.memberships.constants.SiteMembershipsPortletKeys;
 import com.liferay.site.memberships.web.internal.util.DepotRolesUtil;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -85,6 +79,32 @@ public class UserRolesDisplayContext {
 		return _eventName;
 	}
 
+	public String getOrderByCol() {
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
+		}
+
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest,
+			SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
+			"order-by-col-roles", "title");
+
+		return _orderByCol;
+	}
+
+	public String getOrderByType() {
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
+		}
+
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest,
+			SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
+			"order-by-type-roles", "asc");
+
+		return _orderByType;
+	}
+
 	public SearchContainer<Role> getRoleSearchSearchContainer()
 		throws PortalException {
 
@@ -101,11 +121,6 @@ public class UserRolesDisplayContext {
 
 		Group group = GroupLocalServiceUtil.fetchGroup(_getGroupId());
 
-		roleSearch.setRowChecker(
-			new UserGroupRoleRoleChecker(
-				_renderResponse,
-				PortalUtil.getSelectedUser(_httpServletRequest, false), group));
-
 		RoleSearchTerms searchTerms =
 			(RoleSearchTerms)roleSearch.getSearchTerms();
 
@@ -113,6 +128,14 @@ public class UserRolesDisplayContext {
 			themeDisplay.getCompanyId(), searchTerms.getKeywords(),
 			new Integer[] {_getRoleType()}, QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS, roleSearch.getOrderByComparator());
+
+		List<Role> selectedRoles = _getSelectedRoles();
+
+		roles = ListUtil.filter(
+			roles,
+			role ->
+				(_isAssignRoles() && !selectedRoles.contains(role)) ||
+				(!_isAssignRoles() && selectedRoles.contains(role)));
 
 		if (group.isDepot()) {
 			roles = DepotRolesUtil.filterGroupRoles(
@@ -123,14 +146,8 @@ public class UserRolesDisplayContext {
 				themeDisplay.getPermissionChecker(), _getGroupId(), roles);
 		}
 
-		int rolesCount = roles.size();
-
-		roleSearch.setTotal(rolesCount);
-
-		roles = ListUtil.subList(
-			roles, roleSearch.getStart(), roleSearch.getEnd());
-
-		roleSearch.setResults(roles);
+		roleSearch.setResultsAndTotal(roles);
+		roleSearch.setRowChecker(new EmptyOnClickRowChecker(_renderResponse));
 
 		_roleSearch = roleSearch;
 
@@ -183,8 +200,7 @@ public class UserRolesDisplayContext {
 		).setParameter(
 			"orderByCol",
 			() -> {
-				String orderByCol = ParamUtil.getString(
-					_renderRequest, "orderByCol", "title");
+				String orderByCol = getOrderByCol();
 
 				if (Validator.isNotNull(orderByCol)) {
 					return orderByCol;
@@ -195,8 +211,7 @@ public class UserRolesDisplayContext {
 		).setParameter(
 			"orderByType",
 			() -> {
-				String orderByType = ParamUtil.getString(
-					_renderRequest, "orderByType", "asc");
+				String orderByType = getOrderByType();
 
 				if (Validator.isNotNull(orderByType)) {
 					return orderByType;
@@ -231,6 +246,14 @@ public class UserRolesDisplayContext {
 		return _roleType;
 	}
 
+	private List<Role> _getSelectedRoles() throws PortalException {
+		return TransformUtil.transform(
+			UserGroupRoleLocalServiceUtil.getUserGroupRoles(
+				_getUserId(), _getGroupId()),
+			userGroupRole -> RoleLocalServiceUtil.fetchRole(
+				userGroupRole.getRoleId()));
+	}
+
 	private long _getUserId() throws PortalException {
 		User selUser = PortalUtil.getSelectedUser(_httpServletRequest, false);
 
@@ -241,10 +264,24 @@ public class UserRolesDisplayContext {
 		return 0;
 	}
 
+	private boolean _isAssignRoles() {
+		if (_assignRoles != null) {
+			return _assignRoles;
+		}
+
+		_assignRoles = ParamUtil.getBoolean(
+			_httpServletRequest, "assignRoles", true);
+
+		return _assignRoles;
+	}
+
+	private Boolean _assignRoles;
 	private String _displayStyle;
 	private String _eventName;
 	private Long _groupId;
 	private final HttpServletRequest _httpServletRequest;
+	private String _orderByCol;
+	private String _orderByType;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private RoleSearch _roleSearch;

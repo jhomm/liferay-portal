@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -76,7 +67,7 @@ public class LayoutSetCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(31);
+		StringBundler sb = new StringBundler(33);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -100,6 +91,8 @@ public class LayoutSetCacheModel
 		sb.append(themeId);
 		sb.append(", colorSchemeId=");
 		sb.append(colorSchemeId);
+		sb.append(", faviconFileEntryId=");
+		sb.append(faviconFileEntryId);
 		sb.append(", css=");
 		sb.append(css);
 		sb.append(", settings=");
@@ -153,6 +146,8 @@ public class LayoutSetCacheModel
 		else {
 			layoutSetImpl.setColorSchemeId(colorSchemeId);
 		}
+
+		layoutSetImpl.setFaviconFileEntryId(faviconFileEntryId);
 
 		if (css == null) {
 			layoutSetImpl.setCss("");
@@ -209,6 +204,8 @@ public class LayoutSetCacheModel
 		logoId = objectInput.readLong();
 		themeId = objectInput.readUTF();
 		colorSchemeId = objectInput.readUTF();
+
+		faviconFileEntryId = objectInput.readLong();
 		css = (String)objectInput.readObject();
 		settings = (String)objectInput.readObject();
 		layoutSetPrototypeUuid = objectInput.readUTF();
@@ -251,6 +248,8 @@ public class LayoutSetCacheModel
 			objectOutput.writeUTF(colorSchemeId);
 		}
 
+		objectOutput.writeLong(faviconFileEntryId);
+
 		if (css == null) {
 			objectOutput.writeObject("");
 		}
@@ -289,6 +288,7 @@ public class LayoutSetCacheModel
 	public long logoId;
 	public String themeId;
 	public String colorSchemeId;
+	public long faviconFileEntryId;
 	public String css;
 	public String settings;
 	public String layoutSetPrototypeUuid;

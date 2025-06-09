@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.model.FragmentCollectionModel;
-import com.liferay.fragment.model.FragmentCollectionSoap;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -79,12 +66,14 @@ public class FragmentCollectionModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"fragmentCollectionId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"fragmentCollectionId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP},
 		{"fragmentCollectionKey", Types.VARCHAR}, {"name", Types.VARCHAR},
-		{"description", Types.VARCHAR}, {"lastPublishDate", Types.TIMESTAMP}
+		{"description", Types.VARCHAR}, {"marketplace", Types.BOOLEAN},
+		{"lastPublishDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -94,6 +83,7 @@ public class FragmentCollectionModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("fragmentCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("groupId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -104,11 +94,12 @@ public class FragmentCollectionModelImpl
 		TABLE_COLUMNS_MAP.put("fragmentCollectionKey", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("name", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("description", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("marketplace", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table FragmentCollection (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,fragmentCollectionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,fragmentCollectionKey VARCHAR(75) null,name VARCHAR(75) null,description STRING null,lastPublishDate DATE null,primary key (fragmentCollectionId, ctCollectionId))";
+		"create table FragmentCollection (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,fragmentCollectionId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,fragmentCollectionKey VARCHAR(75) null,name VARCHAR(75) null,description STRING null,marketplace BOOLEAN,lastPublishDate DATE null,primary key (fragmentCollectionId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table FragmentCollection";
 
@@ -134,25 +125,37 @@ public class FragmentCollectionModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FRAGMENTCOLLECTIONKEY_COLUMN_BITMASK = 2L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 4L;
+	public static final long FRAGMENTCOLLECTIONKEY_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 8L;
+	public static final long GROUPID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 16L;
+	public static final long MARKETPLACE_COLUMN_BITMASK = 16L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long NAME_COLUMN_BITMASK = 32L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -166,64 +169,6 @@ public class FragmentCollectionModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static FragmentCollection toModel(FragmentCollectionSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		FragmentCollection model = new FragmentCollectionImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setFragmentCollectionId(soapModel.getFragmentCollectionId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setFragmentCollectionKey(soapModel.getFragmentCollectionKey());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<FragmentCollection> toModels(
-		FragmentCollectionSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<FragmentCollection> models = new ArrayList<FragmentCollection>(
-			soapModels.length);
-
-		for (FragmentCollectionSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public FragmentCollectionModelImpl() {
@@ -302,144 +247,146 @@ public class FragmentCollectionModelImpl
 	public Map<String, Function<FragmentCollection, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<FragmentCollection, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, FragmentCollection>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			FragmentCollection.class.getClassLoader(), FragmentCollection.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<FragmentCollection, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<FragmentCollection> constructor =
-				(Constructor<FragmentCollection>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<FragmentCollection, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<FragmentCollection, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", FragmentCollection::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", FragmentCollection::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", FragmentCollection::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				FragmentCollection::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"fragmentCollectionId",
+				FragmentCollection::getFragmentCollectionId);
+			attributeGetterFunctions.put(
+				"groupId", FragmentCollection::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", FragmentCollection::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", FragmentCollection::getUserId);
+			attributeGetterFunctions.put(
+				"userName", FragmentCollection::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", FragmentCollection::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", FragmentCollection::getModifiedDate);
+			attributeGetterFunctions.put(
+				"fragmentCollectionKey",
+				FragmentCollection::getFragmentCollectionKey);
+			attributeGetterFunctions.put("name", FragmentCollection::getName);
+			attributeGetterFunctions.put(
+				"description", FragmentCollection::getDescription);
+			attributeGetterFunctions.put(
+				"marketplace", FragmentCollection::getMarketplace);
+			attributeGetterFunctions.put(
+				"lastPublishDate", FragmentCollection::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<FragmentCollection, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<FragmentCollection, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<FragmentCollection, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<FragmentCollection, Object>>();
-		Map<String, BiConsumer<FragmentCollection, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<FragmentCollection, ?>>();
+		private static final Map<String, BiConsumer<FragmentCollection, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", FragmentCollection::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<FragmentCollection, Long>)
-				FragmentCollection::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", FragmentCollection::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<FragmentCollection, Long>)
-				FragmentCollection::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", FragmentCollection::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<FragmentCollection, String>)
-				FragmentCollection::setUuid);
-		attributeGetterFunctions.put(
-			"fragmentCollectionId",
-			FragmentCollection::getFragmentCollectionId);
-		attributeSetterBiConsumers.put(
-			"fragmentCollectionId",
-			(BiConsumer<FragmentCollection, Long>)
-				FragmentCollection::setFragmentCollectionId);
-		attributeGetterFunctions.put("groupId", FragmentCollection::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<FragmentCollection, Long>)
-				FragmentCollection::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", FragmentCollection::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<FragmentCollection, Long>)
-				FragmentCollection::setCompanyId);
-		attributeGetterFunctions.put("userId", FragmentCollection::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<FragmentCollection, Long>)
-				FragmentCollection::setUserId);
-		attributeGetterFunctions.put(
-			"userName", FragmentCollection::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<FragmentCollection, String>)
-				FragmentCollection::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", FragmentCollection::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<FragmentCollection, Date>)
-				FragmentCollection::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", FragmentCollection::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<FragmentCollection, Date>)
-				FragmentCollection::setModifiedDate);
-		attributeGetterFunctions.put(
-			"fragmentCollectionKey",
-			FragmentCollection::getFragmentCollectionKey);
-		attributeSetterBiConsumers.put(
-			"fragmentCollectionKey",
-			(BiConsumer<FragmentCollection, String>)
-				FragmentCollection::setFragmentCollectionKey);
-		attributeGetterFunctions.put("name", FragmentCollection::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<FragmentCollection, String>)
-				FragmentCollection::setName);
-		attributeGetterFunctions.put(
-			"description", FragmentCollection::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<FragmentCollection, String>)
-				FragmentCollection::setDescription);
-		attributeGetterFunctions.put(
-			"lastPublishDate", FragmentCollection::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<FragmentCollection, Date>)
-				FragmentCollection::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<FragmentCollection, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<FragmentCollection, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<FragmentCollection, Long>)
+					FragmentCollection::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<FragmentCollection, Long>)
+					FragmentCollection::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<FragmentCollection, String>)
+					FragmentCollection::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<FragmentCollection, String>)
+					FragmentCollection::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"fragmentCollectionId",
+				(BiConsumer<FragmentCollection, Long>)
+					FragmentCollection::setFragmentCollectionId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<FragmentCollection, Long>)
+					FragmentCollection::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<FragmentCollection, Long>)
+					FragmentCollection::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<FragmentCollection, Long>)
+					FragmentCollection::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<FragmentCollection, String>)
+					FragmentCollection::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<FragmentCollection, Date>)
+					FragmentCollection::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<FragmentCollection, Date>)
+					FragmentCollection::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"fragmentCollectionKey",
+				(BiConsumer<FragmentCollection, String>)
+					FragmentCollection::setFragmentCollectionKey);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<FragmentCollection, String>)
+					FragmentCollection::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<FragmentCollection, String>)
+					FragmentCollection::setDescription);
+			attributeSetterBiConsumers.put(
+				"marketplace",
+				(BiConsumer<FragmentCollection, Boolean>)
+					FragmentCollection::setMarketplace);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<FragmentCollection, Date>)
+					FragmentCollection::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -499,6 +446,35 @@ public class FragmentCollectionModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -732,6 +708,37 @@ public class FragmentCollectionModelImpl
 
 	@JSON
 	@Override
+	public boolean getMarketplace() {
+		return _marketplace;
+	}
+
+	@JSON
+	@Override
+	public boolean isMarketplace() {
+		return _marketplace;
+	}
+
+	@Override
+	public void setMarketplace(boolean marketplace) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_marketplace = marketplace;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public boolean getOriginalMarketplace() {
+		return GetterUtil.getBoolean(
+			this.<Boolean>getColumnOriginalValue("marketplace"));
+	}
+
+	@JSON
+	@Override
 	public Date getLastPublishDate() {
 		return _lastPublishDate;
 	}
@@ -812,6 +819,8 @@ public class FragmentCollectionModelImpl
 		fragmentCollectionImpl.setMvccVersion(getMvccVersion());
 		fragmentCollectionImpl.setCtCollectionId(getCtCollectionId());
 		fragmentCollectionImpl.setUuid(getUuid());
+		fragmentCollectionImpl.setExternalReferenceCode(
+			getExternalReferenceCode());
 		fragmentCollectionImpl.setFragmentCollectionId(
 			getFragmentCollectionId());
 		fragmentCollectionImpl.setGroupId(getGroupId());
@@ -824,6 +833,7 @@ public class FragmentCollectionModelImpl
 			getFragmentCollectionKey());
 		fragmentCollectionImpl.setName(getName());
 		fragmentCollectionImpl.setDescription(getDescription());
+		fragmentCollectionImpl.setMarketplace(isMarketplace());
 		fragmentCollectionImpl.setLastPublishDate(getLastPublishDate());
 
 		fragmentCollectionImpl.resetOriginalValues();
@@ -842,6 +852,8 @@ public class FragmentCollectionModelImpl
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		fragmentCollectionImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
+		fragmentCollectionImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		fragmentCollectionImpl.setFragmentCollectionId(
 			this.<Long>getColumnOriginalValue("fragmentCollectionId"));
 		fragmentCollectionImpl.setGroupId(
@@ -862,6 +874,8 @@ public class FragmentCollectionModelImpl
 			this.<String>getColumnOriginalValue("name"));
 		fragmentCollectionImpl.setDescription(
 			this.<String>getColumnOriginalValue("description"));
+		fragmentCollectionImpl.setMarketplace(
+			this.<Boolean>getColumnOriginalValue("marketplace"));
 		fragmentCollectionImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
 
@@ -952,6 +966,18 @@ public class FragmentCollectionModelImpl
 			fragmentCollectionCacheModel.uuid = null;
 		}
 
+		fragmentCollectionCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			fragmentCollectionCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			fragmentCollectionCacheModel.externalReferenceCode = null;
+		}
+
 		fragmentCollectionCacheModel.fragmentCollectionId =
 			getFragmentCollectionId();
 
@@ -1014,6 +1040,8 @@ public class FragmentCollectionModelImpl
 		if ((description != null) && (description.length() == 0)) {
 			fragmentCollectionCacheModel.description = null;
 		}
+
+		fragmentCollectionCacheModel.marketplace = isMarketplace();
 
 		Date lastPublishDate = getLastPublishDate();
 
@@ -1078,47 +1106,19 @@ public class FragmentCollectionModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<FragmentCollection, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<FragmentCollection, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<FragmentCollection, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((FragmentCollection)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, FragmentCollection>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					FragmentCollection.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _fragmentCollectionId;
 	private long _groupId;
 	private long _companyId;
@@ -1130,13 +1130,15 @@ public class FragmentCollectionModelImpl
 	private String _fragmentCollectionKey;
 	private String _name;
 	private String _description;
+	private boolean _marketplace;
 	private Date _lastPublishDate;
 
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<FragmentCollection, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1165,6 +1167,8 @@ public class FragmentCollectionModelImpl
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
+		_columnOriginalValues.put(
 			"fragmentCollectionId", _fragmentCollectionId);
 		_columnOriginalValues.put("groupId", _groupId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1176,6 +1180,7 @@ public class FragmentCollectionModelImpl
 			"fragmentCollectionKey", _fragmentCollectionKey);
 		_columnOriginalValues.put("name", _name);
 		_columnOriginalValues.put("description", _description);
+		_columnOriginalValues.put("marketplace", _marketplace);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 	}
 
@@ -1206,27 +1211,31 @@ public class FragmentCollectionModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("fragmentCollectionId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("groupId", 16L);
+		columnBitmasks.put("fragmentCollectionId", 16L);
 
-		columnBitmasks.put("companyId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userId", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("userName", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("createDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("modifiedDate", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("fragmentCollectionKey", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
 
-		columnBitmasks.put("name", 2048L);
+		columnBitmasks.put("fragmentCollectionKey", 2048L);
 
-		columnBitmasks.put("description", 4096L);
+		columnBitmasks.put("name", 4096L);
 
-		columnBitmasks.put("lastPublishDate", 8192L);
+		columnBitmasks.put("description", 8192L);
+
+		columnBitmasks.put("marketplace", 16384L);
+
+		columnBitmasks.put("lastPublishDate", 32768L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

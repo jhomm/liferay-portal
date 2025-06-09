@@ -1,10 +1,11 @@
-@component-name = "portal-upgrades"
+@component-name = "portal-publications"
 definition {
 
-	property app.server.types = "jboss,tomcat,weblogic,websphere,wildfly";
-	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+	property database.types = "db2,mariadb,mysql,oracle,postgresql,sqlserver";
 	property portal.release = "true";
 	property portal.upstream = "true";
+	property test.liferay.virtual.instance = "false";
+	property test.run.type = "single";
 	property testray.main.component.name = "Upgrades Publications";
 
 	setUp {
@@ -13,14 +14,225 @@ definition {
 		SearchAdministration.executeReindex();
 	}
 
-	@priority = "5"
-	test ViewOutOfDatePublicationsArchive7310 {
-		property data.archive.type = "data-archive-publications";
-		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+	@priority = 5
+	test AssertPublicationsHistoryRemainsAfterUpgradingArchive7413u73 {
+		property custom.properties = "feature.flag.LPD-20556=true";
+		property data.archive.type = "data-archive-publications-timeline";
+		property osgi.module.configuration.file.names = "com.liferay.change.tracking.configuration.CTSettingsConfiguration.config";
+		property osgi.module.configurations = "enabled=B\"true\"";
+		property portal.version = "7.4.13.u73";
+
+		task ("Go to Documents and Media admin and click edit in the present document") {
+			DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
+
+			LexiconEntry.gotoEntryMenuItem(
+				menuItem = "Edit",
+				rowEntry = "DM Document Title Edit Publication 2");
+		}
+
+		task ("Assert timeline is present") {
+			Publications.viewPublicationTimeline(publicationName = "Publication Name 2");
+		}
+
+		task ("Assert timeline is present for Publication Name 1") {
+			Publications.viewPublicationTimeline(publicationName = "Publication Name 1");
+		}
+	}
+
+	@priority = 5
+	test RemoveOrphanedPortletPreferences7310 {
+		property data.archive.type = "data-archive-publications-with-orphaned-portlet-preferences";
 		property portal.version = "7.3.10";
 		property test.run.environment = "EE";
 
-		Upgrade.viewOutOfDatePublications();
+		PublicationsNavigator.openPublicationsAdmin();
+
+		AssertTextEquals(
+			key_publicationName = "Publication Name",
+			locator1 = "Publications#OUT_OF_DATE_STATUS",
+			value1 = "Out of Date");
+	}
+
+	@priority = 5
+	test ViewAdminRoleNameArchive735 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,postgresql";
+		property portal.version = "7.3.5";
+
+		ValidatePublicationsUpgrade.viewAdminRoleName();
+	}
+
+	@priority = 5
+	test ViewAdminRoleNameArchive740 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,postgresql";
+		property portal.version = "7.4.0";
+
+		ValidatePublicationsUpgrade.viewAdminRoleName();
+	}
+
+	@priority = 5
+	test ViewAdminRoleNameArchive7310 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.3.10";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewAdminRoleName();
+	}
+
+	@priority = 5
+	test ViewAdminRoleNameArchive7413 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.4.13";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewAdminRoleName();
+	}
+
+	@priority = 5
+	test ViewAdminRoleNameArchive73101 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.3.10.1";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewAdminRoleName();
+	}
+
+	@priority = 5
+	test ViewNotOutOfDatePublicationsArchive740 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,postgresql";
+		property portal.version = "7.4.0";
+
+		PublicationsNavigator.openPublicationsAdmin();
+
+		AssertTextEquals(
+			key_publicationName = "Publication 2 Name",
+			locator1 = "Publications#IN_PROGRESS_STATUS",
+			value1 = "In Progress");
+	}
+
+	@priority = 5
+	test ViewNotOutOfDatePublicationsArchive7413 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.4.13";
+		property test.run.environment = "EE";
+
+		PublicationsNavigator.openPublicationsAdmin();
+
+		AssertTextEquals(
+			key_publicationName = "Publication 2 Name",
+			locator1 = "Publications#IN_PROGRESS_STATUS",
+			value1 = "In Progress");
+	}
+
+	@priority = 5
+	test ViewNotOutOfDatePublicationsArchiveAutoUpgrade7413 {
+		property data.archive.type = "data-archive-publications";
+		property database.auto.upgrade.enabled = "true";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.4.13";
+		property test.run.environment = "EE";
+
+		PublicationsNavigator.openPublicationsAdmin();
+
+		AssertTextEquals(
+			key_publicationName = "Publication 2 Name",
+			locator1 = "Publications#IN_PROGRESS_STATUS",
+			value1 = "In Progress");
+	}
+
+	@priority = 5
+	test ViewNoUnrelatedPreviewsArchive7310 {
+		property data.archive.type = "data-archive-publications-with-unrelated-previews-generated";
+		property database.types = "db2,mariadb,mysql";
+		property portal.version = "7.3.10";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewNoUnrelatedPreviews();
+	}
+
+	@priority = 5
+	test ViewPublicationsUserRolePermissionsArchive735 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,postgresql";
+		property portal.version = "7.3.5";
+
+		ValidatePublicationsUpgrade.viewPublicationsUserRolePermissions();
+	}
+
+	@priority = 5
+	test ViewPublicationsUserRolePermissionsArchive740 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,postgresql";
+		property portal.version = "7.4.0";
+
+		ValidatePublicationsUpgrade.viewPublicationsUserRolePermissions();
+	}
+
+	@priority = 5
+	test ViewPublicationsUserRolePermissionsArchive7310 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.3.10";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewPublicationsUserRolePermissions();
+	}
+
+	@priority = 5
+	test ViewPublicationsUserRolePermissionsArchive7413 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.4.13";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewPublicationsUserRolePermissions();
+	}
+
+	@priority = 5
+	test ViewPublicationsUserRolePermissionsArchive73101 {
+		property data.archive.type = "data-archive-publications";
+		property database.types = "mariadb,mysql,oracle,postgresql,sqlserver";
+		property portal.version = "7.3.10.1";
+		property test.run.environment = "EE";
+
+		ValidatePublicationsUpgrade.viewPublicationsUserRolePermissions();
+	}
+
+	@priority = 4
+	test ViewTemplateAndCreatePublicationWithItArchive7413u63 {
+		property data.archive.type = "data-archive-publications-with-template";
+		property osgi.module.configuration.file.names = "com.liferay.change.tracking.configuration.CTSettingsConfiguration.config";
+		property osgi.module.configurations = "enabled=B\"true\"";
+		property portal.version = "7.4.13.u63";
+		property test.run.environment = "EE";
+
+		PublicationsTemplate.viewPublicationTemplate(templateName = "Template Name");
+
+		Publications.createNewPublicationWithTemplate(
+			gotoPublicationsAdmin = "true",
+			publicationDescription = "Publications Description test",
+			publicationName = "Publication Name test",
+			templateName = "Template Name");
+
+		PublicationsNavigator.gotoReviewChanges();
+
+		WaitForElementPresent(locator1 = "PublicationsChanges#INVITE_USERS_ICON");
+
+		Click.javaScriptClick(locator1 = "PublicationsChanges#INVITE_USERS_ICON");
+
+		Publications.viewInvitedUser(
+			publicationRole = "Editor",
+			userInvite = "userea1@liferay.com");
+
+		Publications.viewInvitedUser(
+			publicationRole = "Viewer",
+			userInvite = "userea2@liferay.com");
 	}
 
 }

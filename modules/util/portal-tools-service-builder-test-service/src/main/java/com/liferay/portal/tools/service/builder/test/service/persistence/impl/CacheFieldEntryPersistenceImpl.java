@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.impl;
@@ -41,7 +32,6 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.CacheFi
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -175,7 +165,7 @@ public class CacheFieldEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CacheFieldEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CacheFieldEntry cacheFieldEntry : list) {
@@ -535,7 +525,7 @@ public class CacheFieldEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -969,7 +959,7 @@ public class CacheFieldEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CacheFieldEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1039,7 +1029,7 @@ public class CacheFieldEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1122,29 +1112,13 @@ public class CacheFieldEntryPersistenceImpl
 			new String[] {Long.class.getName()}, new String[] {"groupId"},
 			false);
 
-		_setCacheFieldEntryUtilPersistence(this);
+		CacheFieldEntryUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setCacheFieldEntryUtilPersistence(null);
+		CacheFieldEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(CacheFieldEntryImpl.class.getName());
-	}
-
-	private void _setCacheFieldEntryUtilPersistence(
-		CacheFieldEntryPersistence cacheFieldEntryPersistence) {
-
-		try {
-			Field field = CacheFieldEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, cacheFieldEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@ServiceReference(type = EntityCache.class)

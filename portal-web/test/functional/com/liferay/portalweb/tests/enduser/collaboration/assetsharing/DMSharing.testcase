@@ -1,7 +1,7 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
-	property custom.properties = "jsonws.web.service.paths.excludes=";
+	property custom.properties = "dl.actions.visible=true${line.separator}jsonws.web.service.paths.excludes=";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Asset Sharing";
@@ -27,20 +27,18 @@ definition {
 			layoutName = "Documents and Media Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Documents and Media Page",
 			widgetName = "Documents and Media");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
-
-		DMDocument.enableActionsMenuOnPortlet();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -53,7 +51,7 @@ definition {
 	}
 
 	@description = "This test asserts that a user can change the view permission to the comment permission via the manage collaborators."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanChangePermissionToCommentViaManageCollaborators {
 		JSONDocument.addFileWithUploadedFile(
@@ -83,10 +81,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "2");
+		Notifications.viewBadgeCount(notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -102,11 +100,9 @@ definition {
 	}
 
 	@description = "This test asserts that a user can change the view permission to the update permission via the manage collaborators"
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanChangePermissionToUpdateViaManageCollaborators {
-		property portal.acceptance = "true";
-
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
 			dmDocumentTitle = "DM Document Title",
@@ -134,10 +130,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "2");
+		Notifications.viewBadgeCount(notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -153,7 +149,7 @@ definition {
 	}
 
 	@description = "This test covers LPS-94284 and LPS-105038. It ensures that the invalid email cannot be added if it has space, also covers the input field that still contains the invalid email after pressing enter."
-	@priority = "4"
+	@priority = 3
 	@refactordone
 	test CannotShareWithInvalidAddress {
 		JSONDocument.addFileWithUploadedFile(
@@ -200,7 +196,7 @@ definition {
 	}
 
 	@description = "This test share an content to a user and disable the sharing option. This test asserts that a collaborator without sharing permissions will not be able to share this content."
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CannotShareWithoutPermissions {
 		property portal.acceptance = "true";
@@ -229,14 +225,14 @@ definition {
 		DMNavigator.gotoShare(dmDocumentTitle = "DM Document Title");
 
 		DMDocument.sharePG(
-			userEmailAddress = "userea@liferay.com",
-			userName = "userfn userln");
+			userEmailAddress = "userea1@liferay.com",
+			userName = "userfn1 userln1");
 
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
-			userEmailAddress = "userea@liferay.com");
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "userea1@liferay.com");
 
 		Asset.openTosharedContent(
 			navTab = "Shared with Me",
@@ -248,26 +244,15 @@ definition {
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
 
-		LexiconEntry.viewNoEntryMenuItem(
+		DMDocument.viewNoPermission(
 			menuItem = "Share",
 			rowEntry = "DM Document Title");
 	}
 
 	@description = "This test covers LPS-101927. It ensures that a user can reply to a comment on an image via shared content"
-	@priority = "4"
+	@priority = 3
 	@refactordone
 	test CanReplyToCommentViaSharedContent {
-		JSONUser.addUser(
-			userEmailAddress = "userea2@liferay.com",
-			userFirstName = "userfn2",
-			userLastName = "userln2",
-			userScreenName = "usersn2");
-
-		JSONUser.setFirstPassword(
-			agreeToTermsAndAnswerReminderQuery = "true",
-			requireReset = "false",
-			userEmailAddress = "userea2@liferay.com");
-
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
 			dmDocumentTitle = "DM Document Title",
@@ -285,6 +270,17 @@ definition {
 			userEmailAddress = "userea@liferay.com",
 			userName = "userfn userln");
 
+		JSONUser.addUser(
+			userEmailAddress = "userea2@liferay.com",
+			userFirstName = "userfn2",
+			userLastName = "userln2",
+			userScreenName = "usersn2");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea2@liferay.com");
+
 		Navigator.gotoPage(pageName = "Documents and Media Page");
 
 		DMNavigator.gotoShare(dmDocumentTitle = "DM Document Title");
@@ -297,10 +293,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -313,17 +309,17 @@ definition {
 		Comments.addPG(entryComment = "This is a comment");
 
 		Comments.viewPG(
-			commentCount = "1",
+			commentCount = 1,
 			entryComment = "This is a comment",
 			userFullName = "userfn userln");
 
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea2@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -336,26 +332,15 @@ definition {
 		Comments.replyToComment(commentReply = "This is a reply comment");
 
 		Comments.viewPG(
-			commentCount = "2",
+			commentCount = 2,
 			entryComment = "This is a reply comment",
 			userFullName = "userfn2 userln2");
 	}
 
 	@description = "This test covers LPS-94585. It ensures that users can share via Shared Content app."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanShareViaSharedContent {
-		JSONUser.addUser(
-			userEmailAddress = "userea2@liferay.com",
-			userFirstName = "userfn2",
-			userLastName = "userln2",
-			userScreenName = "usersn2");
-
-		JSONUser.setFirstPassword(
-			agreeToTermsAndAnswerReminderQuery = "true",
-			requireReset = "false",
-			userEmailAddress = "userea2@liferay.com");
-
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
 			dmDocumentTitle = "DM Document Title",
@@ -373,10 +358,21 @@ definition {
 			userEmailAddress = "userea@liferay.com",
 			userName = "userfn userln");
 
+		JSONUser.addUser(
+			userEmailAddress = "userea2@liferay.com",
+			userFirstName = "userfn2",
+			userLastName = "userln2",
+			userScreenName = "usersn2");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea2@liferay.com");
+
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Asset.openTosharedContent(
@@ -392,10 +388,10 @@ definition {
 		User.logoutPG();
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea2@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -408,7 +404,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		JSONDocument.moveToRecycleBin(
@@ -418,7 +414,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Asset.openTosharedContent(
@@ -429,7 +425,7 @@ definition {
 	}
 
 	@description = "This test covers LPS-94294. This test asserts that a user can comment on a document it is shared with him"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanShareWithCommentPermissions {
 		JSONDocument.addFileWithUploadedFile(
@@ -460,10 +456,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -480,13 +476,13 @@ definition {
 		Comments.addPG(entryComment = "test");
 
 		Comments.viewPG(
-			commentCount = "1",
+			commentCount = 1,
 			entryComment = "test",
 			userFullName = "userfn userln");
 	}
 
 	@description = "This test covers LPS-94661. It ensures that the user can share a document with an apostrophe in the title."
-	@priority = "3"
+	@priority = 3
 	@refactordone
 	test CanShareWithSpecialCharacter {
 		DMNavigator.openToAddEntry(
@@ -516,10 +512,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -531,7 +527,7 @@ definition {
 	}
 
 	@description = "This test asserts that a user can update a document once it is shared with him, also covers LPS-94448 and LPS-94294"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanShareWithUpdatePermissions {
 		JSONDocument.addFileWithUploadedFile(
@@ -562,10 +558,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -575,7 +571,7 @@ definition {
 			openNotification = "true",
 			ownerName = "Test Test");
 
-		NotificationsPortlet.configureNotificationPG(menuItem = "Edit");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Edit");
 
 		DMDocument.editCmd(dmDocumentTitleEdit = "DM Document Title Edit");
 
@@ -587,7 +583,7 @@ definition {
 	}
 
 	@description = "This test asserts that a user can only view a document once it is shared with him"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanShareWithViewPermissions {
 		JSONDocument.addFileWithUploadedFile(
@@ -618,10 +614,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -637,20 +633,9 @@ definition {
 	}
 
 	@description = "This test makes sure all collaborators will view all collaborators of the document that was shared to him. This usecase also tests that a user can successfully remove collaborators through Manage Collaborators and asserts that empty message displays when all collaborators are removed."
-	@priority = "5"
+	@priority = 4
 	@refactordone
 	test CanViewAndRemoveCollaborators {
-		JSONUser.addUser(
-			userEmailAddress = "userea2@liferay.com",
-			userFirstName = "userfn2",
-			userLastName = "userln2",
-			userScreenName = "usersn2");
-
-		JSONUser.setFirstPassword(
-			agreeToTermsAndAnswerReminderQuery = "true",
-			requireReset = "false",
-			userEmailAddress = "userea2@liferay.com");
-
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
 			dmDocumentTitle = "DM Document Title",
@@ -667,6 +652,17 @@ definition {
 			noAutocomplete = "true",
 			userEmailAddress = "userea@liferay.com",
 			userName = "userfn userln");
+
+		JSONUser.addUser(
+			userEmailAddress = "userea2@liferay.com",
+			userFirstName = "userfn2",
+			userLastName = "userln2",
+			userScreenName = "usersn2");
+
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea2@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
 
@@ -687,7 +683,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea2@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
@@ -706,7 +702,7 @@ definition {
 		User.logoutPG();
 
 		User.loginPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "test@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
@@ -722,7 +718,7 @@ definition {
 	}
 
 	@description = "This test covers LPS-94858. It asserts deleted entry displays in a user's Shared Content using share button from info panel."
-	@priority = "4"
+	@priority = 3
 	@refactordone
 	test CanViewDeletedEntryInSharedContent {
 		JSONDocument.addFileWithUploadedFile(
@@ -748,10 +744,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -781,66 +777,21 @@ definition {
 	}
 
 	@description = "This test ensures that users receives an email when a document is shared with them. This email contains a link that navigates user to Shared Content app."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewSharedContentViaEmail {
-		property custom.properties = "message.boards.message.formats.default=html${line.separator}pop.server.notifications.enabled=true${line.separator}pop.server.subdomain=${line.separator}mail.session.mail.smtp.auth=true${line.separator}mail.session.mail.store.protocol=pop3${line.separator}mail.session.mail.transport.protocol=smtp";
-		property test.name.skip.portal.instance = "DMSharing#CanViewSharedContentViaEmail";
-
-		var portalURL = PropsUtil.get("portal.url");
-
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
-
-		Gmail.login(
-			userEmailAddress = PropsUtil.get("email.address.4"),
-			userPassword = PropsUtil.get("email.password.4"));
-
-		Gmail.gotoHtmlMode();
-
-		Gmail.deleteSpecificMail(gmailMessageTitleList = "Test Test has shared DM Document Title with you for viewing.,Your New Account,Your New Password");
-
-		Navigator.openSpecificURL(url = "${portalURL}");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Server Administration");
-
-		ServerAdministration.configureMailServerSettings(
-			needsReply = "true",
-			userName = PropsUtil.get("email.address.2"),
-			userPassword = PropsUtil.get("email.password.2"));
-
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "System",
-			panel = "Control Panel",
-			portlet = "Virtual Instances");
-
-		PortalInstances.editCP(
-			mailDomain = "gmail.com",
-			virtualHost = "localhost");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		property test.smtp.server.enabled = "true";
 
 		JSONUser.addUser(
-			userEmailAddress = PropsUtil.get("email.address.4"),
-			userFirstName = "userfn1",
-			userLastName = "userln1",
-			userScreenName = "usersn1");
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
-
-		User.editPasswordCP(
-			userEmailAddress = PropsUtil.get("email.address.4"),
-			userScreenName = "usersn1");
+		JSONUser.setFirstPassword(
+			agreeToTermsAndAnswerReminderQuery = "true",
+			requireReset = "false",
+			userEmailAddress = "userea@liferay.com");
 
 		JSONDocument.addFileWithUploadedFile(
 			dmDocumentDescription = "DM Document Description",
@@ -855,38 +806,35 @@ definition {
 		DMNavigator.gotoShare(dmDocumentTitle = "DM Document Title");
 
 		DMDocument.sharePG(
-			userEmailAddress = PropsUtil.get("email.address.4"),
-			userName = "userfn1 userln1");
+			sharingPermissions = "Comment",
+			userEmailAddress = "userea@liferay.com",
+			userName = "userfn userln");
 
-		User.logoutPG();
+		User.logoutAndLoginPG(
+			userLoginEmailAddress = "userea@liferay.com",
+			userLoginFullName = "userfn userln");
 
-		User.loginUserPG(
-			password = "test",
-			userEmailAddress = PropsUtil.get("email.address.4"));
+		MockMock.viewMail(
+			asset = "Test Test has shared DM Document Title with you for commenting",
+			content = "Test Test has shared DM Document Title with you for commenting",
+			recipient = "userfn userln",
+			sender = "Joe Bloggs",
+			subject = "Test Test has shared DM Document Title with you for commenting");
 
-		Pause(locator1 = "30000");
+		MockMock.openMockMock();
 
-		Gmail.gotoHtmlMode();
-
-		Gmail.viewMail(
-			emailFromUserName = "Joe Bloggs",
-			gmailAssetType = "DM Document Title",
-			gmailMessageBody = "Test Test has shared DM Document Title with you for viewing.",
-			gmailMessageTitle = "Test Test has shared DM Document Title with you for viewing.");
-
-		AssertClick(
-			locator1 = "Sharing#EMAIL_VIEW_DOCUMENT_BUTTON",
-			value1 = "View Document");
-
-		SelectWindow(locator1 = "title=- ${siteName}");
+		MockMock.clickBodyLink(
+			asset = "Test Test has shared DM Document Title with you for commenting",
+			bodyLink = "DM Document Title",
+			recipient = "userfn userln");
 
 		DMDocumentSharing.viewDocumentViaSharedContent(
-			contentSharingPermission = "View",
+			contentSharingPermission = "Comment",
 			dmDocumentTitle = "DM Document Title");
 	}
 
 	@description = "This test asserts only one entry displays in a user's Shared Content app when multiple users share the same document to him."
-	@priority = "4"
+	@priority = 3
 	@refactordone
 	test CanViewSingleEntryAfterMultipleSharing {
 		JSONRole.assignRoleToUser(
@@ -923,7 +871,7 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea@liferay.com");
 
 		Navigator.gotoPage(pageName = "Documents and Media Page");
@@ -937,10 +885,10 @@ definition {
 		User.logoutPG();
 
 		User.loginUserPG(
-			password = "test",
+			password = PropsUtil.get("default.admin.password"),
 			userEmailAddress = "userea2@liferay.com");
 
-		Notifications.viewBadgeCount(notificationCount = "2");
+		Notifications.viewBadgeCount(notificationCount = 2);
 
 		Notifications.gotoNotifications();
 
@@ -952,7 +900,7 @@ definition {
 
 		Navigator.openURL();
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 

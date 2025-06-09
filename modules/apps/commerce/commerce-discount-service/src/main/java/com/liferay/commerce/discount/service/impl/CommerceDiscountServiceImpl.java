@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service.impl;
@@ -20,7 +11,9 @@ import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.service.base.CommerceDiscountServiceBaseImpl;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -29,21 +22,28 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.math.BigDecimal;
 
 import java.util.List;
-import java.util.stream.Stream;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Marco Leo
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceDiscount"
+	},
+	service = AopService.class
+)
 public class CommerceDiscountServiceImpl
 	extends CommerceDiscountServiceBaseImpl {
 
@@ -239,8 +239,8 @@ public class CommerceDiscountServiceImpl
 
 		if (!Validator.isBlank(externalReferenceCode)) {
 			CommerceDiscount commerceDiscount =
-				commerceDiscountPersistence.fetchByC_ERC(
-					serviceContext.getCompanyId(), externalReferenceCode);
+				commerceDiscountPersistence.fetchByERC_C(
+					externalReferenceCode, serviceContext.getCompanyId());
 
 			if (commerceDiscount != null) {
 				return updateCommerceDiscount(
@@ -279,27 +279,13 @@ public class CommerceDiscountServiceImpl
 		commerceDiscountLocalService.deleteCommerceDiscount(commerceDiscountId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
 	@Override
-	public CommerceDiscount fetchByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
-		throws PortalException {
-
-		return fetchByExternalReferenceCode(externalReferenceCode, companyId);
-	}
-
-	@Override
-	public CommerceDiscount fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	public CommerceDiscount fetchCommerceDiscount(long commerceDiscountId)
 		throws PortalException {
 
 		CommerceDiscount commerceDiscount =
-			commerceDiscountLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
+			commerceDiscountLocalService.fetchCommerceDiscount(
+				commerceDiscountId);
 
 		if (commerceDiscount != null) {
 			_commerceDiscountResourcePermission.check(
@@ -310,12 +296,14 @@ public class CommerceDiscountServiceImpl
 	}
 
 	@Override
-	public CommerceDiscount fetchCommerceDiscount(long commerceDiscountId)
+	public CommerceDiscount fetchCommerceDiscountByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		CommerceDiscount commerceDiscount =
-			commerceDiscountLocalService.fetchCommerceDiscount(
-				commerceDiscountId);
+			commerceDiscountLocalService.
+				fetchCommerceDiscountByExternalReferenceCode(
+					externalReferenceCode, companyId);
 
 		if (commerceDiscount != null) {
 			_commerceDiscountResourcePermission.check(
@@ -347,6 +335,22 @@ public class CommerceDiscountServiceImpl
 
 		return commerceDiscountPersistence.filterFindByC_C(
 			companyId, couponCode);
+	}
+
+	@Override
+	public List<CommerceDiscount> getCommerceDiscounts(
+			long companyId, String level, boolean active, int status)
+		throws PortalException {
+
+		PortletResourcePermission portletResourcePermission =
+			_commerceDiscountResourcePermission.getPortletResourcePermission();
+
+		portletResourcePermission.check(
+			getPermissionChecker(), null,
+			CommerceDiscountActionKeys.VIEW_COMMERCE_DISCOUNTS);
+
+		return commerceDiscountLocalService.getCommerceDiscounts(
+			companyId, level, active, status);
 	}
 
 	/**
@@ -385,18 +389,12 @@ public class CommerceDiscountServiceImpl
 			Sort sort)
 		throws PortalException {
 
-		List<CommerceChannel> commerceChannels = _commerceChannelService.search(
-			companyId);
-
-		Stream<CommerceChannel> stream = commerceChannels.stream();
-
-		long[] commerceChannelGroupIds = stream.mapToLong(
-			CommerceChannel::getGroupId
-		).toArray();
-
 		return commerceDiscountLocalService.searchCommerceDiscounts(
-			companyId, commerceChannelGroupIds, keywords, status, start, end,
-			sort);
+			companyId,
+			TransformUtil.transformToLongArray(
+				_commerceChannelService.search(companyId),
+				CommerceChannel::getGroupId),
+			keywords, status, start, end, sort);
 	}
 
 	@Override
@@ -514,13 +512,13 @@ public class CommerceDiscountServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceDiscountServiceImpl.class);
 
-	private static volatile ModelResourcePermission<CommerceDiscount>
-		_commerceDiscountResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommerceDiscountServiceImpl.class,
-				"_commerceDiscountResourcePermission", CommerceDiscount.class);
-
-	@ServiceReference(type = CommerceChannelService.class)
+	@Reference
 	private CommerceChannelService _commerceChannelService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.discount.model.CommerceDiscount)"
+	)
+	private ModelResourcePermission<CommerceDiscount>
+		_commerceDiscountResourcePermission;
 
 }

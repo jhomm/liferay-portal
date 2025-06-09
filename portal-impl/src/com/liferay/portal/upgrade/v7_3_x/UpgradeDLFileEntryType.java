@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_3_x;
@@ -18,6 +9,8 @@ import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.sql.PreparedStatement;
@@ -30,9 +23,15 @@ public class UpgradeDLFileEntryType extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		_upgradeSchema();
-
 		_populateFields();
+	}
+
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.addColumns(
+				"DLFileEntryType", "dataDefinitionId LONG")
+		};
 	}
 
 	private void _populateFields() throws Exception {
@@ -46,9 +45,9 @@ public class UpgradeDLFileEntryType extends UpgradeProcess {
 						"? OR structureKey = ? ) ");
 			PreparedStatement preparedStatement3 =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(
-						"update DLFileEntryType set dataDefinitionId = ? " +
-							"where fileEntryTypeId = ? "));
+					connection,
+					"update DLFileEntryType set dataDefinitionId = ? where " +
+						"fileEntryTypeId = ? ");
 			ResultSet resultSet1 = preparedStatement1.executeQuery()) {
 
 			long classNameId = PortalUtil.getClassNameId(
@@ -75,12 +74,6 @@ public class UpgradeDLFileEntryType extends UpgradeProcess {
 			}
 
 			preparedStatement3.executeBatch();
-		}
-	}
-
-	private void _upgradeSchema() throws Exception {
-		if (!hasColumn("DLFileEntryType", "dataDefinitionId")) {
-			runSQL("alter table DLFileEntryType add dataDefinitionId LONG ");
 		}
 	}
 

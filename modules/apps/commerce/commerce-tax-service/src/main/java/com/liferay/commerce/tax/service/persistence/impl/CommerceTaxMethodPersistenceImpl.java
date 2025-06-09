@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.tax.model.impl.CommerceTaxMethodImpl;
 import com.liferay.commerce.tax.model.impl.CommerceTaxMethodModelImpl;
 import com.liferay.commerce.tax.service.persistence.CommerceTaxMethodPersistence;
 import com.liferay.commerce.tax.service.persistence.CommerceTaxMethodUtil;
+import com.liferay.commerce.tax.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -41,11 +35,9 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -54,6 +46,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce tax method service.
@@ -65,6 +64,7 @@ import java.util.Set;
  * @author Marco Leo
  * @generated
  */
+@Component(service = CommerceTaxMethodPersistence.class)
 public class CommerceTaxMethodPersistenceImpl
 	extends BasePersistenceImpl<CommerceTaxMethod>
 	implements CommerceTaxMethodPersistence {
@@ -182,7 +182,7 @@ public class CommerceTaxMethodPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxMethod>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceTaxMethod commerceTaxMethod : list) {
@@ -545,7 +545,7 @@ public class CommerceTaxMethodPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -586,7 +586,6 @@ public class CommerceTaxMethodPersistenceImpl
 		"commerceTaxMethod.groupId = ?";
 
 	private FinderPath _finderPathFetchByG_E;
-	private FinderPath _finderPathCountByG_E;
 
 	/**
 	 * Returns the commerce tax method where groupId = &#63; and engineKey = &#63; or throws a <code>NoSuchTaxMethodException</code> if it could not be found.
@@ -660,7 +659,8 @@ public class CommerceTaxMethodPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_E, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByG_E, finderArgs, this);
 		}
 
 		if (result instanceof CommerceTaxMethod) {
@@ -765,62 +765,13 @@ public class CommerceTaxMethodPersistenceImpl
 	 */
 	@Override
 	public int countByG_E(long groupId, String engineKey) {
-		engineKey = Objects.toString(engineKey, "");
+		CommerceTaxMethod commerceTaxMethod = fetchByG_E(groupId, engineKey);
 
-		FinderPath finderPath = _finderPathCountByG_E;
-
-		Object[] finderArgs = new Object[] {groupId, engineKey};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COMMERCETAXMETHOD_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_E_GROUPID_2);
-
-			boolean bindEngineKey = false;
-
-			if (engineKey.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_E_ENGINEKEY_3);
-			}
-			else {
-				bindEngineKey = true;
-
-				sb.append(_FINDER_COLUMN_G_E_ENGINEKEY_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindEngineKey) {
-					queryPos.add(engineKey);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceTaxMethod == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_E_GROUPID_2 =
@@ -934,7 +885,7 @@ public class CommerceTaxMethodPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxMethod>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceTaxMethod commerceTaxMethod : list) {
@@ -1325,7 +1276,7 @@ public class CommerceTaxMethodPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, active};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1485,7 +1436,6 @@ public class CommerceTaxMethodPersistenceImpl
 			commerceTaxMethodModelImpl.getEngineKey()
 		};
 
-		finderCache.putResult(_finderPathCountByG_E, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByG_E, args, commerceTaxMethodModelImpl);
 	}
@@ -1816,7 +1766,7 @@ public class CommerceTaxMethodPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceTaxMethod>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1886,7 +1836,7 @@ public class CommerceTaxMethodPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1940,7 +1890,8 @@ public class CommerceTaxMethodPersistenceImpl
 	/**
 	 * Initializes the commerce tax method persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -1979,11 +1930,6 @@ public class CommerceTaxMethodPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"groupId", "engineKey"}, true);
 
-		_finderPathCountByG_E = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_E",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "engineKey"}, false);
-
 		_finderPathWithPaginationFindByG_A = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByG_A",
 			new String[] {
@@ -2003,35 +1949,46 @@ public class CommerceTaxMethodPersistenceImpl
 			new String[] {Long.class.getName(), Boolean.class.getName()},
 			new String[] {"groupId", "active_"}, false);
 
-		_setCommerceTaxMethodUtilPersistence(this);
+		CommerceTaxMethodUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceTaxMethodUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceTaxMethodUtil.setPersistence(null);
 
 		entityCache.removeCache(CommerceTaxMethodImpl.class.getName());
 	}
 
-	private void _setCommerceTaxMethodUtilPersistence(
-		CommerceTaxMethodPersistence commerceTaxMethodPersistence) {
-
-		try {
-			Field field = CommerceTaxMethodUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceTaxMethodPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCETAXMETHOD =

@@ -1,6 +1,7 @@
 package ${apiPackagePath}.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 <#if entity.isChangeTrackingEnabled()>
 	import ${apiPackagePath}.model.${entity.name};
@@ -24,6 +25,12 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 	@Deprecated
 </#if>
 public class ${entity.name}${sessionTypeName}ServiceWrapper implements ${entity.name}${sessionTypeName}Service, ServiceWrapper<${entity.name}${sessionTypeName}Service> {
+
+	<#if serviceBuilder.isVersionGTE_7_4_0()>
+		public ${entity.name}${sessionTypeName}ServiceWrapper() {
+			this(null);
+		}
+	</#if>
 
 	public ${entity.name}${sessionTypeName}ServiceWrapper(${entity.name}${sessionTypeName}Service ${entity.variableName}${sessionTypeName}Service) {
 		_${entity.variableName}${sessionTypeName}Service = ${entity.variableName}${sessionTypeName}Service;
@@ -84,21 +91,30 @@ public class ${entity.name}${sessionTypeName}ServiceWrapper implements ${entity.
 		</#if>
 	</#list>
 
-	<#if entity.hasPersistence() && entity.isChangeTrackingEnabled() && stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns()>
-		@Override
-		public CTPersistence<${entity.name}> getCTPersistence() {
-			return _${entity.variableName}LocalService.getCTPersistence();
-		}
+	<#if entity.hasPersistence() && stringUtil.equals(sessionTypeName, "Local") && entity.hasEntityColumns()>
+		<#if serviceBuilder.isVersionGTE_7_3_0()>
+			@Override
+			public BasePersistence<?> getBasePersistence() {
+				return _${entity.variableName}LocalService.getBasePersistence();
+			}
+		</#if>
 
-		@Override
-		public Class<${entity.name}> getModelClass() {
-			return _${entity.variableName}LocalService.getModelClass();
-		}
+		<#if entity.isChangeTrackingEnabled()>
+			@Override
+			public CTPersistence<${entity.name}> getCTPersistence() {
+				return _${entity.variableName}LocalService.getCTPersistence();
+			}
 
-		@Override
-		public <R, E extends Throwable> R updateWithUnsafeFunction(UnsafeFunction<CTPersistence<${entity.name}>, R, E> updateUnsafeFunction) throws E {
-			return _${entity.variableName}LocalService.updateWithUnsafeFunction(updateUnsafeFunction);
-		}
+			@Override
+			public Class<${entity.name}> getModelClass() {
+				return _${entity.variableName}LocalService.getModelClass();
+			}
+
+			@Override
+			public <R, E extends Throwable> R updateWithUnsafeFunction(UnsafeFunction<CTPersistence<${entity.name}>, R, E> updateUnsafeFunction) throws E {
+				return _${entity.variableName}LocalService.updateWithUnsafeFunction(updateUnsafeFunction);
+			}
+		</#if>
 	</#if>
 
 	@Override

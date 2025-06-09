@@ -1,54 +1,143 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
 import com.google.common.collect.Lists;
 
+import com.liferay.jenkins.results.parser.BatchHistory;
+import com.liferay.jenkins.results.parser.GitWorkingDirectory;
 import com.liferay.jenkins.results.parser.JenkinsMaster;
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
+import com.liferay.jenkins.results.parser.JobHistory;
 import com.liferay.jenkins.results.parser.PortalGitWorkingDirectory;
 import com.liferay.jenkins.results.parser.PortalTestClassJob;
+import com.liferay.jenkins.results.parser.RootCauseAnalysisToolJob;
+import com.liferay.jenkins.results.parser.TestHistory;
 import com.liferay.jenkins.results.parser.TestSuiteJob;
+import com.liferay.jenkins.results.parser.TestTaskHistory;
+import com.liferay.jenkins.results.parser.job.property.GlobJobProperty;
+import com.liferay.jenkins.results.parser.job.property.JobProperty;
+import com.liferay.jenkins.results.parser.job.property.JobPropertyFactory;
+import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 
 import java.io.File;
+import java.io.IOException;
 
 import java.nio.file.PathMatcher;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
  */
 public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 
-	public int getAxisCount() {
-		String axisCount = getFirstPropertyValue("test.batch.axis.count");
+	public void addAxisTestClassGroup(AxisTestClassGroup axisTestClassGroup) {
+		axisTestClassGroups.add(axisTestClassGroup);
+	}
 
-		if (axisCount != null) {
-			return Integer.parseInt(axisCount);
+	public void addSegmentTestClassGroup(
+		SegmentTestClassGroup segmentTestClassGroup) {
+
+		_segmentTestClassGroups.add(segmentTestClassGroup);
+	}
+
+	public long getAverageTestDuration(String testName) {
+		if (_averageTestDurations.containsKey(testName)) {
+			return _averageTestDurations.get(testName);
+		}
+
+		long averageTestDuration = _getDefaultTestDuration();
+
+		BatchHistory batchHistory = getBatchHistory();
+
+		if (batchHistory != null) {
+			TestHistory testHistory = batchHistory.getTestHistory(testName);
+
+			if (testHistory != null) {
+				averageTestDuration = testHistory.getAverageDuration();
+			}
+		}
+
+		_averageTestDurations.put(testName, averageTestDuration);
+
+		return averageTestDuration;
+	}
+
+	public long getAverageTestOverheadDuration(String testName) {
+		if (_averageTestOverheadDurations.containsKey(testName)) {
+			return _averageTestOverheadDurations.get(testName);
+		}
+
+		long averageTestOverheadDuration = _getDefaultTestOverheadDuration();
+
+		BatchHistory batchHistory = getBatchHistory();
+
+		if (batchHistory != null) {
+			TestHistory testHistory = batchHistory.getTestHistory(testName);
+
+			if (testHistory != null) {
+				averageTestOverheadDuration =
+					testHistory.getAverageOverheadDuration();
+			}
+		}
+
+		_averageTestOverheadDurations.put(
+			testName, averageTestOverheadDuration);
+
+		return averageTestOverheadDuration;
+	}
+
+	public long getAverageTestTaskDuration(String testName) {
+		TestTaskHistory testTaskHistory = _getTestTaskHistory(testName);
+
+		if (testTaskHistory == null) {
+			return _getDefaultTestTaskDuration();
+		}
+
+		long averageDuration = testTaskHistory.getAverageDuration();
+
+		if (averageDuration == 0) {
+			return _getDefaultTestTaskDuration();
+		}
+
+		return averageDuration;
+	}
+
+	public int getAxisCount() {
+		if (ignore()) {
+			return 0;
+		}
+
+		JobProperty jobProperty = getJobProperty("test.batch.axis.count");
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isInteger(jobPropertyValue)) {
+			recordJobProperty(jobProperty);
+
+			return Integer.parseInt(jobPropertyValue);
 		}
 
 		int testClassCount = testClasses.size();
@@ -75,18 +164,38 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		return axisTestClassGroups;
 	}
 
+	public BatchHistory getBatchHistory() {
+		if (_batchHistory != null) {
+			return _batchHistory;
+		}
+
+		Job job = getJob();
+
+		JobHistory jobHistory = job.getJobHistory();
+
+		if (jobHistory == null) {
+			return null;
+		}
+
+		_batchHistory = jobHistory.getBatchHistory(getBatchName());
+
+		return _batchHistory;
+	}
+
 	public String getBatchJobName() {
 		String topLevelJobName = portalTestClassJob.getJobName();
 
 		Matcher jobNameMatcher = _jobNamePattern.matcher(topLevelJobName);
 
+		String batchJobSuffix = "-batch";
+
 		if (jobNameMatcher.find()) {
 			return JenkinsResultsParserUtil.combine(
-				jobNameMatcher.group("jobBaseName"), "-batch",
+				jobNameMatcher.group("jobBaseName"), batchJobSuffix,
 				jobNameMatcher.group("jobVariant"));
 		}
 
-		return topLevelJobName + "-batch";
+		return topLevelJobName + batchJobSuffix;
 	}
 
 	public String getBatchName() {
@@ -94,19 +203,45 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 	}
 
 	public String getCohortName() {
-		String cohortName = getFirstPropertyValue("test.batch.cohort.name");
+		JobProperty jobProperty = getJobProperty("test.batch.cohort.name");
 
-		if (!JenkinsResultsParserUtil.isNullOrEmpty(cohortName)) {
-			return cohortName;
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			recordJobProperty(jobProperty);
+
+			return jobPropertyValue;
 		}
 
-		cohortName = JenkinsResultsParserUtil.getCohortName();
+		jobPropertyValue = JenkinsResultsParserUtil.getCohortName();
 
-		if (!JenkinsResultsParserUtil.isNullOrEmpty(cohortName)) {
-			return cohortName;
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return jobPropertyValue;
 		}
 
 		return "test-1";
+	}
+
+	public String getDownstreamJobName() {
+		String topLevelJobName = portalTestClassJob.getJobName();
+
+		Matcher jobNameMatcher = _jobNamePattern.matcher(topLevelJobName);
+
+		String batchJobSuffix = "-downstream";
+
+		String slaveLabel = getSlaveLabel();
+
+		if (slaveLabel.contains("win")) {
+			batchJobSuffix = "-windows-downstream";
+		}
+
+		if (jobNameMatcher.find()) {
+			return JenkinsResultsParserUtil.combine(
+				jobNameMatcher.group("jobBaseName"), batchJobSuffix,
+				jobNameMatcher.group("jobVariant"));
+		}
+
+		return topLevelJobName + batchJobSuffix;
 	}
 
 	@Override
@@ -114,30 +249,77 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		return portalTestClassJob;
 	}
 
-	public Properties getJobProperties() {
-		return jobProperties;
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
+
+		jsonObject = new JSONObject();
+
+		jsonObject.put(
+			"batch_name", getBatchName()
+		).put(
+			"include_stable_test_suite", includeStableTestSuite
+		).put(
+			"job_properties", _getJobPropertiesMap()
+		);
+
+		JSONArray segmentJSONArray = new JSONArray();
+
+		for (SegmentTestClassGroup segmentTestClassGroup :
+				getSegmentTestClassGroups()) {
+
+			segmentJSONArray.put(segmentTestClassGroup.getJSONObject());
+		}
+
+		jsonObject.put(
+			"segments", segmentJSONArray
+		).put(
+			"test_hotfix_changes", testHotfixChanges
+		).put(
+			"test_release_bundle", testReleaseBundle
+		).put(
+			"test_relevant_changes", testRelevantChanges
+		).put(
+			"test_relevant_changes_in_stable", testRelevantChangesInStable
+		).put(
+			"test_relevant_junit_tests_only", testRelevantJUnitTestsOnly
+		).put(
+			"test_relevant_junit_tests_only_in_stable",
+			testRelevantJUnitTestsOnlyInStable
+		);
+
+		return jsonObject;
 	}
 
 	public Integer getMaximumSlavesPerHost() {
-		String maximumSlavesPerHost = getFirstPropertyValue(
+		JobProperty jobProperty = getJobProperty(
 			"test.batch.maximum.slaves.per.host");
 
-		if (maximumSlavesPerHost == null) {
-			return JenkinsMaster.getSlavesPerHostDefault();
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isInteger(jobPropertyValue)) {
+			recordJobProperty(jobProperty);
+
+			return Integer.valueOf(jobPropertyValue);
 		}
 
-		return Integer.valueOf(maximumSlavesPerHost);
+		return JenkinsMaster.getSlavesPerHostDefault();
 	}
 
 	public Integer getMinimumSlaveRAM() {
-		String minimumSlaveRAM = getFirstPropertyValue(
+		JobProperty jobProperty = getJobProperty(
 			"test.batch.minimum.slave.ram");
 
-		if (minimumSlaveRAM == null) {
-			return JenkinsMaster.getSlaveRAMMinimumDefault();
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isInteger(jobPropertyValue)) {
+			recordJobProperty(jobProperty);
+
+			return Integer.valueOf(jobPropertyValue);
 		}
 
-		return Integer.valueOf(minimumSlaveRAM);
+		return JenkinsMaster.getSlaveRAMMinimumDefault();
 	}
 
 	public PortalGitWorkingDirectory getPortalGitWorkingDirectory() {
@@ -149,6 +331,10 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 	}
 
 	public SegmentTestClassGroup getSegmentTestClassGroup(int segmentId) {
+		if ((_segmentTestClassGroups.size() - 1) < segmentId) {
+			return null;
+		}
+
 		return _segmentTestClassGroups.get(segmentId);
 	}
 
@@ -157,7 +343,46 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 	}
 
 	public String getSlaveLabel() {
-		String slaveLabel = getFirstPropertyValue("test.batch.slave.label");
+		JobProperty jobProperty = getJobProperty("test.batch.slave.label");
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (jobPropertyValue != null) {
+			recordJobProperty(jobProperty);
+
+			return jobPropertyValue;
+		}
+
+		if (!JenkinsResultsParserUtil.isCloudCINode()) {
+			return SLAVE_LABEL_DEFAULT;
+		}
+
+		String slaveLabel = null;
+
+		try {
+			slaveLabel = JenkinsResultsParserUtil.getBuildProperty(
+				"jenkins.osb.jenkins.web.slave.label", getBatchJobName(),
+				getTestSuiteName());
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(slaveLabel)) {
+				slaveLabel = JenkinsResultsParserUtil.getBuildProperty(
+					"jenkins.osb.jenkins.web.slave.label.minimum.ram",
+					String.valueOf(getMinimumSlaveRAM()));
+			}
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(slaveLabel)) {
+				slaveLabel = JenkinsResultsParserUtil.getBuildProperty(
+					"cloud.fleet.primary.label");
+			}
+
+			if (JenkinsResultsParserUtil.isNullOrEmpty(slaveLabel)) {
+				slaveLabel = JenkinsResultsParserUtil.getBuildProperty(
+					"master.auto.scaling.group.name");
+			}
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
 
 		if (!JenkinsResultsParserUtil.isNullOrEmpty(slaveLabel)) {
 			return slaveLabel;
@@ -179,25 +404,79 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		return sb.toString();
 	}
 
-	public static class BatchTestClass extends BaseTestClass {
+	public String getTestTaskName(String testName) {
+		TestTaskHistory testTaskHistory = _getTestTaskHistory(testName);
 
-		protected static BatchTestClass getInstance(
-			String batchName,
-			PortalGitWorkingDirectory portalGitWorkingDirectory) {
-
-			File testClassFile = new File(
-				portalGitWorkingDirectory.getWorkingDirectory(),
-				"build-test-batch.xml");
-
-			return new BatchTestClass(batchName, testClassFile);
+		if (testTaskHistory == null) {
+			return null;
 		}
 
-		protected BatchTestClass(String batchName, File testClassFile) {
-			super(testClassFile);
+		return testTaskHistory.getTestTaskName();
+	}
 
-			addTestClassMethod(batchName);
+	public boolean testAnalyticsCloud() {
+		if (_testAnalyticsCloud != null) {
+			return _testAnalyticsCloud;
 		}
 
+		for (SegmentTestClassGroup segmentTestClassGroup :
+				getSegmentTestClassGroups()) {
+
+			if (segmentTestClassGroup.testAnalyticsCloud()) {
+				_testAnalyticsCloud = true;
+
+				return _testAnalyticsCloud;
+			}
+		}
+
+		_testAnalyticsCloud = false;
+
+		return _testAnalyticsCloud;
+	}
+
+	protected BatchTestClassGroup(
+		JSONObject jsonObject, PortalTestClassJob portalTestClassJob) {
+
+		this.jsonObject = jsonObject;
+		this.portalTestClassJob = portalTestClassJob;
+
+		batchName = jsonObject.getString("batch_name");
+
+		includeStableTestSuite = jsonObject.getBoolean(
+			"include_stable_test_suite");
+
+		portalGitWorkingDirectory =
+			portalTestClassJob.getPortalGitWorkingDirectory();
+
+		JSONArray segmentsJSONArray = jsonObject.optJSONArray("segments");
+
+		if ((segmentsJSONArray != null) && !segmentsJSONArray.isEmpty()) {
+			for (int i = 0; i < segmentsJSONArray.length(); i++) {
+				JSONObject segmentJSONObject = segmentsJSONArray.getJSONObject(
+					i);
+
+				_segmentTestClassGroups.add(
+					TestClassGroupFactory.newSegmentTestClassGroup(
+						this, segmentJSONObject));
+			}
+		}
+
+		testHotfixChanges = jsonObject.optBoolean("test_hotfix_changes");
+		testRelevantChanges = jsonObject.optBoolean("test_relevant_changes");
+		testReleaseBundle = jsonObject.optBoolean("test_release_bundle");
+		testRelevantJUnitTestsOnly = jsonObject.optBoolean(
+			"test_relevant_junit_tests_only");
+		testRelevantJUnitTestsOnlyInStable = jsonObject.optBoolean(
+			"test_relevant_junit_tests_only_in_stable");
+
+		if (portalTestClassJob instanceof TestSuiteJob) {
+			TestSuiteJob testSuiteJob = (TestSuiteJob)portalTestClassJob;
+
+			testSuiteName = testSuiteJob.getTestSuiteName();
+		}
+		else {
+			testSuiteName = null;
+		}
 	}
 
 	protected BatchTestClassGroup(
@@ -209,13 +488,6 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		portalGitWorkingDirectory =
 			portalTestClassJob.getPortalGitWorkingDirectory();
 
-		String portalBranchName =
-			portalGitWorkingDirectory.getUpstreamBranchName();
-
-		if (portalBranchName.endsWith("-private")) {
-			testPrivatePortalBranch = true;
-		}
-
 		if (portalTestClassJob instanceof TestSuiteJob) {
 			TestSuiteJob testSuiteJob = (TestSuiteJob)portalTestClassJob;
 
@@ -225,154 +497,214 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			testSuiteName = null;
 		}
 
-		jobProperties = portalTestClassJob.getJobProperties();
-
-		String stableTestSuiteBatchNamesFirstPropertyValue =
-			getFirstPropertyValue(
-				"test.batch.names", batchName, NAME_STABLE_TEST_SUITE);
-
-		if (stableTestSuiteBatchNamesFirstPropertyValue != null) {
-			Collections.addAll(
-				stableTestSuiteBatchNames,
-				stableTestSuiteBatchNamesFirstPropertyValue.split("\\s*,\\s*"));
-		}
-
+		_setTestHotfixChanges();
 		_setTestReleaseBundle();
 		_setTestRelevantChanges();
-		_setTestRelevantIntegrationUnitOnly();
+		_setTestRelevantChangesInStable();
+
+		_setTestRelevantJUnitTestsOnly();
+		_setTestRelevantJUnitTestsOnlyInStable();
 
 		_setIncludeStableTestSuite();
 	}
 
 	protected int getAxisMaxSize() {
-		String axisMaxSize = getFirstPropertyValue("test.batch.axis.max.size");
+		JobProperty jobProperty = getJobProperty("test.batch.axis.max.size");
 
-		if (axisMaxSize != null) {
-			return Integer.parseInt(axisMaxSize);
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isInteger(jobPropertyValue)) {
+			recordJobProperty(jobProperty);
+
+			return Integer.parseInt(jobPropertyValue);
 		}
 
-		return _AXES_SIZE_MAX_DEFAULT;
+		return AXES_SIZE_MAX_DEFAULT;
 	}
 
-	protected String getFirstMatchingPropertyName(
-		String basePropertyName, Properties properties, String testSuiteName) {
+	protected List<String> getGlobs(List<JobProperty> jobProperties) {
+		List<String> globs = new ArrayList<>();
 
-		return getFirstMatchingPropertyName(
-			basePropertyName, null, properties, testSuiteName);
-	}
-
-	protected String getFirstMatchingPropertyName(
-		String basePropertyName, String batchName, Properties properties,
-		String testSuiteName) {
-
-		if (batchName == null) {
-			batchName = this.batchName;
-		}
-
-		if (basePropertyName.contains("[") || basePropertyName.contains("]")) {
-			throw new RuntimeException(
-				"Invalid base property name " + basePropertyName);
-		}
-
-		Pattern pattern = Pattern.compile(
-			JenkinsResultsParserUtil.combine(
-				basePropertyName, "\\[(?<batchName>[^\\]]+)\\]",
-				"(\\[(?<testSuiteName>[^\\]]+)\\])?"));
-
-		for (String propertyName : properties.stringPropertyNames()) {
-			if (!propertyName.startsWith(basePropertyName)) {
+		for (JobProperty jobProperty : jobProperties) {
+			if (!(jobProperty instanceof GlobJobProperty)) {
 				continue;
 			}
 
-			Matcher matcher = pattern.matcher(propertyName);
+			GlobJobProperty globJobProperty = (GlobJobProperty)jobProperty;
 
-			if (matcher.find()) {
-				String batchNameRegex = matcher.group("batchName");
-
-				batchNameRegex = batchNameRegex.replace("*", ".+");
-
-				if (!batchName.matches(batchNameRegex)) {
+			for (String relativeGlob : globJobProperty.getRelativeGlobs()) {
+				if ((relativeGlob == null) || globs.contains(relativeGlob)) {
 					continue;
 				}
 
-				String targetTestSuiteName = matcher.group("testSuiteName");
-
-				if (Objects.equals(testSuiteName, targetTestSuiteName)) {
-					return propertyName;
-				}
+				globs.add(relativeGlob);
 			}
 		}
 
-		return null;
+		Collections.sort(globs);
+
+		return globs;
 	}
 
-	protected String getFirstPropertyValue(String basePropertyName) {
-		return getFirstPropertyValue(
-			basePropertyName, batchName, testSuiteName);
-	}
+	protected List<JobProperty> getJobProperties(
+		File file, String basePropertyName, JobProperty.Type jobType,
+		Set<File> traversedPropertyFileSet) {
 
-	protected String getFirstPropertyValue(
-		String basePropertyName, String batchName) {
+		List<JobProperty> jobPropertiesList = new ArrayList<>();
 
-		return getFirstPropertyValue(
-			basePropertyName, batchName, testSuiteName);
-	}
+		File modulesBaseDir = new File(
+			portalGitWorkingDirectory.getWorkingDirectory(), "modules");
 
-	protected String getFirstPropertyValue(
-		String basePropertyName, String batchName, String testSuiteName) {
+		if ((file == null) || file.equals(modulesBaseDir) ||
+			JenkinsResultsParserUtil.isPoshiFile(file)) {
 
-		if (basePropertyName.contains("[") || basePropertyName.contains("]")) {
-			throw new RuntimeException(
-				"Invalid base property name " + basePropertyName);
+			return jobPropertiesList;
 		}
 
-		List<String> propertyNames = new ArrayList<>();
-
-		if (testSuiteName != null) {
-			propertyNames.add(
-				JenkinsResultsParserUtil.combine(
-					basePropertyName, "[", batchName, "][", testSuiteName,
-					"]"));
-
-			propertyNames.add(
-				getFirstMatchingPropertyName(
-					basePropertyName, batchName, jobProperties, testSuiteName));
-
-			propertyNames.add(
-				JenkinsResultsParserUtil.combine(
-					basePropertyName, "[", testSuiteName, "]"));
+		if (!file.isDirectory()) {
+			file = file.getParentFile();
 		}
 
-		propertyNames.add(
-			JenkinsResultsParserUtil.combine(
-				basePropertyName, "[", batchName, "]"));
+		File testPropertiesFile = new File(file, "test.properties");
 
-		propertyNames.add(
-			getFirstMatchingPropertyName(
-				basePropertyName, batchName, jobProperties, null));
+		if (traversedPropertyFileSet == null) {
+			traversedPropertyFileSet = new HashSet<>();
+		}
 
-		propertyNames.add(basePropertyName);
+		if (testPropertiesFile.exists() &&
+			!traversedPropertyFileSet.contains(testPropertiesFile)) {
 
-		for (String propertyName : propertyNames) {
-			if (propertyName == null) {
+			JobProperty jobProperty = getJobProperty(
+				basePropertyName, file, jobType);
+
+			String jobPropertyValue = jobProperty.getValue();
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue) &&
+				!jobPropertiesList.contains(jobProperty)) {
+
+				jobPropertiesList.add(jobProperty);
+			}
+
+			traversedPropertyFileSet.add(testPropertiesFile);
+		}
+
+		JobProperty ignoreParentsJobProperty = getJobProperty(
+			"ignoreParents[" + getTestSuiteName() + "]", file,
+			JobProperty.Type.MODULE_TEST_DIR);
+
+		boolean ignoreParents = Boolean.valueOf(
+			ignoreParentsJobProperty.getValue());
+
+		if (ignoreParents) {
+			return jobPropertiesList;
+		}
+
+		jobPropertiesList.addAll(
+			getJobProperties(
+				file.getParentFile(), basePropertyName, jobType,
+				traversedPropertyFileSet));
+
+		return jobPropertiesList;
+	}
+
+	protected JobProperty getJobProperty(String basePropertyName) {
+		return _getJobProperty(basePropertyName, null, null, null, null, true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, File testBaseDir, JobProperty.Type type) {
+
+		return _getJobProperty(
+			basePropertyName, null, null, testBaseDir, type, true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, File testBaseDir, JobProperty.Type type,
+		boolean useBasePropertyName) {
+
+		return _getJobProperty(
+			basePropertyName, null, null, testBaseDir, type,
+			useBasePropertyName);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, JobProperty.Type type) {
+
+		return _getJobProperty(basePropertyName, null, null, null, type, true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, String testSuiteName, File testBaseDir,
+		JobProperty.Type type) {
+
+		return _getJobProperty(
+			basePropertyName, testSuiteName, null, testBaseDir, type, true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, String testSuiteName, String testBatchName) {
+
+		return _getJobProperty(
+			basePropertyName, testSuiteName, testBatchName, null, null, true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, String testSuiteName, String testBatchName,
+		File testBaseDir, JobProperty.Type type) {
+
+		return _getJobProperty(
+			basePropertyName, testSuiteName, testBatchName, testBaseDir, type,
+			true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, String testSuiteName, String testBatchName,
+		JobProperty.Type type) {
+
+		return _getJobProperty(
+			basePropertyName, testSuiteName, testBatchName, null, type, true);
+	}
+
+	protected JobProperty getJobProperty(
+		String basePropertyName, String testSuiteName, String testBatchName,
+		String ruleName, File testBaseDir, JobProperty.Type type) {
+
+		return _getJobProperty(
+			basePropertyName, testSuiteName, testBatchName, ruleName,
+			testBaseDir, type, true);
+	}
+
+	protected List<PathMatcher> getPathMatchers(
+		List<JobProperty> jobProperties) {
+
+		List<PathMatcher> pathMatchers = new ArrayList<>();
+
+		for (JobProperty jobProperty : jobProperties) {
+			if (!(jobProperty instanceof GlobJobProperty)) {
 				continue;
 			}
 
-			if (jobProperties.containsKey(propertyName)) {
-				String propertyValue = JenkinsResultsParserUtil.getProperty(
-					jobProperties, propertyName);
+			GlobJobProperty globJobProperty = (GlobJobProperty)jobProperty;
 
-				if ((propertyValue != null) && !propertyValue.isEmpty()) {
-					return propertyValue;
+			List<PathMatcher> globPathMatchers =
+				globJobProperty.getPathMatchers();
+
+			if (globPathMatchers == null) {
+				continue;
+			}
+
+			for (PathMatcher globPathMatcher : globPathMatchers) {
+				if ((globPathMatcher == null) ||
+					pathMatchers.contains(globPathMatcher)) {
+
+					continue;
 				}
+
+				pathMatchers.add(globPathMatcher);
 			}
 		}
 
-		return null;
-	}
-
-	protected String getJobName() {
-		return portalTestClassJob.getJobName();
+		return pathMatchers;
 	}
 
 	protected List<PathMatcher> getPathMatchers(
@@ -388,61 +720,32 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			JenkinsResultsParserUtil.getGlobsFromProperty(relativeGlobs));
 	}
 
-	protected List<String> getRelevantIntegrationUnitBatchList() {
-		List<String> relevantIntegrationUnitBatchList = new ArrayList<>();
+	protected List<String> getRelevantIntegrationUnitBatchNames() {
+		List<String> relevantIntegrationUnitBatchNames = new ArrayList<>();
 
-		if (testSuiteName.equals("relevant")) {
-			String relevantTestBatchNames = getFirstPropertyValue(
-				"test.batch.names");
+		if (!testSuiteName.equals("relevant")) {
+			return relevantIntegrationUnitBatchNames;
+		}
 
-			if (relevantTestBatchNames != null) {
-				for (String relevantTestBatchName :
-						relevantTestBatchNames.split(",")) {
+		JobProperty jobProperty = getJobProperty("test.batch.names");
 
-					if (relevantTestBatchName.startsWith("integration-") ||
-						relevantTestBatchName.startsWith(
-							"modules-integration") ||
-						relevantTestBatchName.startsWith("modules-unit") ||
-						relevantTestBatchName.startsWith("unit-")) {
+		String jobPropertyValue = jobProperty.getValue();
 
-						relevantIntegrationUnitBatchList.add(
-							relevantTestBatchName);
-					}
-				}
+		if (JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return relevantIntegrationUnitBatchNames;
+		}
+
+		for (String relevantTestBatchName : jobPropertyValue.split(",")) {
+			if (relevantTestBatchName.startsWith("integration-") ||
+				relevantTestBatchName.startsWith("modules-integration") ||
+				relevantTestBatchName.startsWith("modules-unit") ||
+				relevantTestBatchName.startsWith("unit-")) {
+
+				relevantIntegrationUnitBatchNames.add(relevantTestBatchName);
 			}
 		}
 
-		return relevantIntegrationUnitBatchList;
-	}
-
-	protected List<PathMatcher>
-		getRelevantIntegrationUnitIncludePathMatchers() {
-
-		List<PathMatcher> relevantIntegrationUnitIncludePathMatchers =
-			new ArrayList<>();
-
-		List<String> relevantIntegrationUnitBatchList =
-			getRelevantIntegrationUnitBatchList();
-
-		if (!relevantIntegrationUnitBatchList.isEmpty()) {
-			for (String relevantIntegrationUnitBatch :
-					relevantIntegrationUnitBatchList) {
-
-				String integrationUnitIncludesPropertyValue =
-					getFirstPropertyValue(
-						"test.batch.class.names.includes",
-						relevantIntegrationUnitBatch);
-
-				if (integrationUnitIncludesPropertyValue != null) {
-					relevantIntegrationUnitIncludePathMatchers.addAll(
-						getPathMatchers(
-							integrationUnitIncludesPropertyValue,
-							portalGitWorkingDirectory.getWorkingDirectory()));
-				}
-			}
-		}
-
-		return relevantIntegrationUnitIncludePathMatchers;
+		return relevantIntegrationUnitBatchNames;
 	}
 
 	protected List<File> getRequiredModuleDirs(List<File> moduleDirs) {
@@ -450,49 +753,115 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 	}
 
 	protected int getSegmentMaxChildren() {
-		String segmentMaxChildren = getFirstPropertyValue(
+		JobProperty jobProperty = getJobProperty(
 			"test.batch.segment.max.children");
 
-		if ((segmentMaxChildren == null) ||
-			!segmentMaxChildren.matches("\\d+")) {
+		String jobPropertyValue = jobProperty.getValue();
 
-			return _SEGMENT_MAX_CHILDREN_DEFAULT;
+		if (JenkinsResultsParserUtil.isInteger(jobPropertyValue)) {
+			recordJobProperty(jobProperty);
+
+			return Integer.valueOf(jobPropertyValue);
 		}
 
-		return Integer.valueOf(segmentMaxChildren);
+		return _SEGMENT_MAX_CHILDREN_DEFAULT;
+	}
+
+	protected long getTargetAxisDuration() {
+		if (_isIgnoreTargetAxisDuration()) {
+			return 0;
+		}
+
+		GitWorkingDirectory gitWorkingDirectory =
+			getPortalGitWorkingDirectory();
+
+		String upstreamBranchName = gitWorkingDirectory.getUpstreamBranchName();
+
+		if (!upstreamBranchName.equals("master")) {
+			return 0;
+		}
+
+		JobProperty targetAxisDurationJobProperty = getJobProperty(
+			"test.batch.target.axis.duration");
+
+		String targetAxisDurationString =
+			targetAxisDurationJobProperty.getValue();
+
+		if (!JenkinsResultsParserUtil.isInteger(targetAxisDurationString)) {
+			return 0;
+		}
+
+		recordJobProperty(targetAxisDurationJobProperty);
+
+		long targetAxisDuration = Long.parseLong(targetAxisDurationString);
+
+		JobProperty performanceModifierJobProperty = getJobProperty(
+			"test.batch.performance.modifier");
+
+		String performanceModifier = performanceModifierJobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isDouble(performanceModifier)) {
+			targetAxisDuration = Math.round(
+				targetAxisDuration * Double.parseDouble(performanceModifier));
+
+			recordJobProperty(performanceModifierJobProperty);
+		}
+
+		return targetAxisDuration;
 	}
 
 	protected String getTestSuiteName() {
 		return testSuiteName;
 	}
 
-	protected boolean isIntegrationUnitTestFileModifiedOnly() {
-		List<PathMatcher> relevantIntegrationUnitIncludePathMatchers =
-			getRelevantIntegrationUnitIncludePathMatchers();
-
-		List<File> modifiedFilesList =
-			portalGitWorkingDirectory.getModifiedFilesList();
-
-		if (relevantIntegrationUnitIncludePathMatchers.isEmpty() ||
-			modifiedFilesList.isEmpty()) {
-
-			return false;
+	protected boolean ignore() {
+		if (!isStableTestSuiteBatch() && testRelevantJUnitTestsOnly) {
+			return true;
 		}
 
-		for (File modifiedFile : modifiedFilesList) {
-			if (!JenkinsResultsParserUtil.isFileIncluded(
-					null, relevantIntegrationUnitIncludePathMatchers,
-					modifiedFile)) {
-
-				return false;
-			}
+		if (isStableTestSuiteBatch() && testRelevantJUnitTestsOnlyInStable) {
+			return true;
 		}
 
-		return true;
+		return false;
+	}
+
+	protected boolean isRootCauseAnalysis() {
+		return getJob() instanceof RootCauseAnalysisToolJob;
 	}
 
 	protected boolean isStableTestSuiteBatch() {
-		return stableTestSuiteBatchNames.contains(batchName);
+		return isStableTestSuiteBatch(batchName);
+	}
+
+	protected boolean isStableTestSuiteBatch(String batchName) {
+		List<String> testBatchNames = new ArrayList<>();
+
+		JobProperty jobProperty = getJobProperty("test.batch.names[stable]");
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (jobPropertyValue != null) {
+			Collections.addAll(testBatchNames, jobPropertyValue.split(","));
+		}
+
+		return testBatchNames.contains(batchName);
+	}
+
+	protected void recordJobProperties(List<JobProperty> jobProperties) {
+		for (JobProperty jobProperty : jobProperties) {
+			recordJobProperty(jobProperty);
+		}
+	}
+
+	protected void recordJobProperty(JobProperty jobProperty) {
+		if ((jobProperty == null) || (jobProperty.getValue() == null) ||
+			_jobProperties.contains(jobProperty)) {
+
+			return;
+		}
+
+		_jobProperties.add(jobProperty);
 	}
 
 	protected void setAxisTestClassGroups() {
@@ -556,6 +925,8 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		}
 	}
 
+	protected static final int AXES_SIZE_MAX_DEFAULT = 5000;
+
 	protected static final String NAME_STABLE_TEST_SUITE = "stable";
 
 	protected static final String SLAVE_LABEL_DEFAULT = "!master";
@@ -563,17 +934,16 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 	protected final List<AxisTestClassGroup> axisTestClassGroups =
 		new ArrayList<>();
 	protected final String batchName;
-	protected final List<PathMatcher> excludesPathMatchers = new ArrayList<>();
-	protected final List<PathMatcher> includesPathMatchers = new ArrayList<>();
 	protected boolean includeStableTestSuite;
-	protected final Properties jobProperties;
+	protected JSONObject jsonObject;
 	protected final PortalGitWorkingDirectory portalGitWorkingDirectory;
 	protected final PortalTestClassJob portalTestClassJob;
-	protected List<String> stableTestSuiteBatchNames = new ArrayList<>();
-	protected boolean testPrivatePortalBranch;
+	protected boolean testHotfixChanges;
 	protected boolean testReleaseBundle;
 	protected boolean testRelevantChanges;
-	protected boolean testRelevantIntegrationUnitOnly;
+	protected boolean testRelevantChangesInStable;
+	protected boolean testRelevantJUnitTestsOnly;
+	protected boolean testRelevantJUnitTestsOnlyInStable;
 	protected final String testSuiteName;
 
 	protected static final class CSVReport {
@@ -592,6 +962,10 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			if (csvReportRow.size() != headerRow.size()) {
 				throw new IllegalArgumentException(
 					"Row length does not match headers length");
+			}
+
+			if (_csvReportRows.contains(csvReportRow)) {
+				return;
 			}
 
 			_csvReportRows.add(csvReportRow);
@@ -627,6 +1001,28 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			}
 
 			@Override
+			public boolean equals(Object object) {
+				if (this == object) {
+					return true;
+				}
+
+				if (!(object instanceof Row) ||
+					!Objects.equals(toString(), object.toString())) {
+
+					return false;
+				}
+
+				return true;
+			}
+
+			@Override
+			public int hashCode() {
+				String string = toString();
+
+				return string.hashCode();
+			}
+
+			@Override
 			public String toString() {
 				return StringUtils.join(iterator(), ",");
 			}
@@ -637,27 +1033,181 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 
 	}
 
+	protected static class TestClassDurationComparator
+		implements Comparator<TestClass> {
+
+		@Override
+		public int compare(TestClass testClass1, TestClass testClass2) {
+			Long duration1 =
+				testClass1.getAverageDuration() +
+					testClass1.getAverageOverheadDuration();
+			Long duration2 =
+				testClass2.getAverageDuration() +
+					testClass2.getAverageOverheadDuration();
+
+			return duration2.compareTo(duration1);
+		}
+
+	}
+
+	private long _getDefaultTestDuration() {
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.default.test.duration");
+
+		if (jobProperty == null) {
+			return 0;
+		}
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return 0;
+		}
+
+		recordJobProperty(jobProperty);
+
+		return Long.valueOf(jobPropertyValue);
+	}
+
+	private long _getDefaultTestOverheadDuration() {
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.default.test.overhead.duration");
+
+		if (jobProperty == null) {
+			return 0;
+		}
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return 0;
+		}
+
+		recordJobProperty(jobProperty);
+
+		return Long.valueOf(jobPropertyValue);
+	}
+
+	private long _getDefaultTestTaskDuration() {
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.default.test.task.duration");
+
+		if (jobProperty == null) {
+			return 0;
+		}
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return 0;
+		}
+
+		recordJobProperty(jobProperty);
+
+		return Long.valueOf(jobPropertyValue);
+	}
+
+	private Map<String, Properties> _getJobPropertiesMap() {
+		Map<String, Properties> batchProperties = new TreeMap<>();
+
+		for (JobProperty jobProperty : _jobProperties) {
+			String jobPropertyValue = jobProperty.getValue();
+
+			if (jobPropertyValue == null) {
+				continue;
+			}
+
+			String propertiesFilePath = jobProperty.getPropertiesFilePath();
+
+			Properties properties = batchProperties.get(propertiesFilePath);
+
+			if (properties == null) {
+				properties = new Properties();
+			}
+
+			properties.setProperty(jobProperty.getName(), jobPropertyValue);
+
+			batchProperties.put(propertiesFilePath, properties);
+		}
+
+		return batchProperties;
+	}
+
+	private JobProperty _getJobProperty(
+		String basePropertyName, String testSuiteName, String testBatchName,
+		File testBaseDir, JobProperty.Type type, boolean useBasePropertyName) {
+
+		if (testBatchName == null) {
+			testBatchName = getBatchName();
+		}
+
+		return JobPropertyFactory.newJobProperty(
+			basePropertyName, testSuiteName, testBatchName, getJob(),
+			testBaseDir, type, useBasePropertyName);
+	}
+
+	private JobProperty _getJobProperty(
+		String basePropertyName, String testSuiteName, String testBatchName,
+		String ruleName, File testBaseDir, JobProperty.Type type,
+		boolean useBasePropertyName) {
+
+		if (testBatchName == null) {
+			testBatchName = getBatchName();
+		}
+
+		return JobPropertyFactory.newJobProperty(
+			basePropertyName, testSuiteName, testBatchName, ruleName, getJob(),
+			testBaseDir, type, useBasePropertyName);
+	}
+
 	private List<File> _getRequiredModuleDirs(
 		List<File> moduleDirs, List<File> requiredModuleDirs) {
+
+		List<File> modifiedPoshiModulesList = new ArrayList<>();
+		List<File> modifiedNonposhiModulesList = new ArrayList<>();
+
+		try {
+			modifiedPoshiModulesList =
+				portalGitWorkingDirectory.getModifiedPoshiModules();
+			modifiedNonposhiModulesList =
+				portalGitWorkingDirectory.getModifiedNonposhiModules();
+		}
+		catch (IOException ioException) {
+			File workingDirectory =
+				portalGitWorkingDirectory.getWorkingDirectory();
+
+			throw new RuntimeException(
+				JenkinsResultsParserUtil.combine(
+					"Unable to get modified modules with non poshi and poshi " +
+						"changes directories in ",
+					workingDirectory.getPath()),
+				ioException);
+		}
 
 		File modulesBaseDir = new File(
 			portalGitWorkingDirectory.getWorkingDirectory(), "modules");
 
 		for (File moduleDir : moduleDirs) {
-			Properties moduleDirTestProperties =
-				JenkinsResultsParserUtil.getProperties(
-					new File(moduleDir, "test.properties"));
+			if (testRelevantChanges &&
+				modifiedPoshiModulesList.contains(moduleDir) &&
+				!modifiedNonposhiModulesList.contains(moduleDir)) {
 
-			String requiredModuleDirPaths = moduleDirTestProperties.getProperty(
-				"modules.includes.required[" + testSuiteName + "]");
-
-			if (requiredModuleDirPaths == null) {
 				continue;
 			}
 
-			for (String requiredModuleDirPath :
-					requiredModuleDirPaths.split(",")) {
+			JobProperty jobProperty = getJobProperty(
+				"modules.includes.required[" + getTestSuiteName() + "]",
+				moduleDir, JobProperty.Type.MODULE_TEST_DIR);
 
+			String jobPropertyValue = jobProperty.getValue();
+
+			if (jobPropertyValue == null) {
+				continue;
+			}
+
+			recordJobProperty(jobProperty);
+
+			for (String requiredModuleDirPath : jobPropertyValue.split(",")) {
 				File requiredModuleDir = new File(
 					modulesBaseDir, requiredModuleDirPath);
 
@@ -671,7 +1221,44 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			}
 		}
 
-		return Lists.newArrayList(requiredModuleDirs);
+		return new ArrayList<>(requiredModuleDirs);
+	}
+
+	private TestTaskHistory _getTestTaskHistory(String testName) {
+		if (_testTaskHistories.containsKey(testName)) {
+			return _testTaskHistories.get(testName);
+		}
+
+		BatchHistory batchHistory = getBatchHistory();
+
+		if (batchHistory == null) {
+			return null;
+		}
+
+		TestHistory testHistory = batchHistory.getTestHistory(testName);
+
+		if (testHistory == null) {
+			return null;
+		}
+
+		_testTaskHistories.put(testName, testHistory.getTestTaskHistory());
+
+		return _testTaskHistories.get(testName);
+	}
+
+	private boolean _isIgnoreTargetAxisDuration() {
+		JobProperty jobProperty = getJobProperty(
+			"test.batch.ignore.target.axis.duration");
+
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return false;
+		}
+
+		recordJobProperty(jobProperty);
+
+		return Boolean.valueOf(jobPropertyValue);
 	}
 
 	private List<List<AxisTestClassGroup>> _partitionByMaxChildren(
@@ -800,52 +1387,68 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		includeStableTestSuite = testRelevantChanges;
 	}
 
+	private void _setTestHotfixChanges() {
+		Job job = getJob();
+
+		testHotfixChanges = job.testHotfixChanges();
+	}
+
 	private void _setTestReleaseBundle() {
-		String propertyValue = getFirstPropertyValue("test.release.bundle");
+		Job job = getJob();
 
-		if (propertyValue != null) {
-			testReleaseBundle = Boolean.parseBoolean(propertyValue);
-
-			return;
-		}
-
-		testReleaseBundle = _ENABLE_TEST_RELEASE_BUNDLE_DEFAULT;
+		testReleaseBundle = job.testReleaseBundle();
 	}
 
 	private void _setTestRelevantChanges() {
-		String propertyValue = getFirstPropertyValue("test.relevant.changes");
+		Job job = getJob();
 
-		if (propertyValue != null) {
-			testRelevantChanges = Boolean.parseBoolean(propertyValue);
+		testRelevantChanges = job.testRelevantChanges();
+	}
+
+	private void _setTestRelevantChangesInStable() {
+		Job job = getJob();
+
+		testRelevantChangesInStable = job.testRelevantChangesInStable();
+	}
+
+	private void _setTestRelevantJUnitTestsOnly() {
+		Job job = getJob();
+
+		if (testRelevantChanges && job.isJUnitTestsModifiedOnly()) {
+			testRelevantJUnitTestsOnly = true;
 
 			return;
 		}
 
-		testRelevantChanges = _ENABLE_TEST_RELEVANT_CHANGES_DEFAULT;
+		testRelevantJUnitTestsOnly = false;
 	}
 
-	private void _setTestRelevantIntegrationUnitOnly() {
-		if (testRelevantChanges && isIntegrationUnitTestFileModifiedOnly()) {
-			testRelevantIntegrationUnitOnly = true;
+	private void _setTestRelevantJUnitTestsOnlyInStable() {
+		Job job = getJob();
+
+		if (testRelevantChangesInStable && job.isJUnitTestsModifiedOnly()) {
+			testRelevantJUnitTestsOnlyInStable = true;
 
 			return;
 		}
 
-		testRelevantIntegrationUnitOnly = false;
+		testRelevantJUnitTestsOnlyInStable = false;
 	}
-
-	private static final int _AXES_SIZE_MAX_DEFAULT = 5000;
-
-	private static final boolean _ENABLE_TEST_RELEASE_BUNDLE_DEFAULT = false;
-
-	private static final boolean _ENABLE_TEST_RELEVANT_CHANGES_DEFAULT = false;
 
 	private static final int _SEGMENT_MAX_CHILDREN_DEFAULT = 25;
 
 	private static final Pattern _jobNamePattern = Pattern.compile(
 		"(?<jobBaseName>.*)(?<jobVariant>\\([^\\)]+\\))");
 
+	private final Map<String, Long> _averageTestDurations = new HashMap<>();
+	private final Map<String, Long> _averageTestOverheadDurations =
+		new HashMap<>();
+	private BatchHistory _batchHistory;
+	private final List<JobProperty> _jobProperties = new ArrayList<>();
 	private final List<SegmentTestClassGroup> _segmentTestClassGroups =
 		new ArrayList<>();
+	private Boolean _testAnalyticsCloud;
+	private final Map<String, TestTaskHistory> _testTaskHistories =
+		new HashMap<>();
 
 }

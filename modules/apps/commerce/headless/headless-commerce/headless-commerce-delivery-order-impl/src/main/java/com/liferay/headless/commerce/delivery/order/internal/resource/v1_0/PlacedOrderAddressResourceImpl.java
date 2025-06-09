@@ -1,0 +1,150 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.headless.commerce.delivery.order.internal.resource.v1_0;
+
+import com.liferay.commerce.exception.NoSuchOrderException;
+import com.liferay.commerce.model.CommerceAddress;
+import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.service.CommerceAddressService;
+import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.headless.commerce.delivery.order.dto.v1_0.PlacedOrder;
+import com.liferay.headless.commerce.delivery.order.dto.v1_0.PlacedOrderAddress;
+import com.liferay.headless.commerce.delivery.order.resource.v1_0.PlacedOrderAddressResource;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
+import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
+import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
+import com.liferay.portal.vulcan.fields.NestedField;
+import com.liferay.portal.vulcan.fields.NestedFieldId;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ServiceScope;
+
+/**
+ * @author Andrea Sbarra
+ */
+@Component(
+	properties = "OSGI-INF/liferay/rest/v1_0/placed-order-address.properties",
+	property = "nested.field.support=true", scope = ServiceScope.PROTOTYPE,
+	service = PlacedOrderAddressResource.class
+)
+public class PlacedOrderAddressResourceImpl
+	extends BasePlacedOrderAddressResourceImpl {
+
+	@Override
+	public PlacedOrderAddress
+			getPlacedOrderByExternalReferenceCodePlacedOrderBillingAddress(
+				String externalReferenceCode)
+		throws Exception {
+
+		CommerceOrder commerceOrder =
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrder == null) {
+			throw new NoSuchOrderException(
+				"Unable to find order with external reference code " +
+					externalReferenceCode);
+		}
+
+		return getPlacedOrderPlacedOrderBillingAddress(
+			commerceOrder.getCommerceOrderId());
+	}
+
+	@Override
+	public PlacedOrderAddress
+			getPlacedOrderByExternalReferenceCodePlacedOrderShippingAddress(
+				String externalReferenceCode)
+		throws Exception {
+
+		CommerceOrder commerceOrder =
+			_commerceOrderService.fetchCommerceOrderByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
+
+		if (commerceOrder == null) {
+			throw new NoSuchOrderException(
+				"Unable to find order with external reference code " +
+					externalReferenceCode);
+		}
+
+		return getPlacedOrderPlacedOrderShippingAddress(
+			commerceOrder.getCommerceOrderId());
+	}
+
+	@NestedField(
+		parentClass = PlacedOrder.class, value = "placedOrderBillingAddress"
+	)
+	@Override
+	public PlacedOrderAddress getPlacedOrderPlacedOrderBillingAddress(
+			@NestedFieldId(value = "id") Long placedOrderId)
+		throws Exception {
+
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			placedOrderId);
+
+		if (commerceOrder.isOpen()) {
+			throw new NoSuchOrderException();
+		}
+
+		long commerceAddressId = 0;
+
+		CommerceAddress commerceAddress =
+			_commerceAddressService.fetchCommerceAddress(
+				commerceOrder.getBillingAddressId());
+
+		if (commerceAddress != null) {
+			commerceAddressId = commerceAddress.getCommerceAddressId();
+		}
+
+		return _placedOrderAddressDTOConverter.toDTO(
+			new DefaultDTOConverterContext(
+				_dtoConverterRegistry, commerceAddressId,
+				contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
+				contextUser));
+	}
+
+	@NestedField(
+		parentClass = PlacedOrder.class, value = "placedOrderShippingAddress"
+	)
+	@Override
+	public PlacedOrderAddress getPlacedOrderPlacedOrderShippingAddress(
+			@NestedFieldId(value = "id") Long placedOrderId)
+		throws Exception {
+
+		CommerceOrder commerceOrder = _commerceOrderService.getCommerceOrder(
+			placedOrderId);
+
+		if (commerceOrder.isOpen()) {
+			throw new NoSuchOrderException();
+		}
+
+		CommerceAddress commerceAddress =
+			_commerceAddressService.getCommerceAddress(
+				commerceOrder.getShippingAddressId());
+
+		return _placedOrderAddressDTOConverter.toDTO(
+			new DefaultDTOConverterContext(
+				_dtoConverterRegistry, commerceAddress.getCommerceAddressId(),
+				contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
+				contextUser));
+	}
+
+	@Reference
+	private CommerceAddressService _commerceAddressService;
+
+	@Reference
+	private CommerceOrderService _commerceOrderService;
+
+	@Reference
+	private DTOConverterRegistry _dtoConverterRegistry;
+
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.delivery.order.internal.dto.v1_0.converter.PlacedOrderAddressDTOConverter)"
+	)
+	private DTOConverter<CommerceAddress, PlacedOrderAddress>
+		_placedOrderAddressDTOConverter;
+
+}

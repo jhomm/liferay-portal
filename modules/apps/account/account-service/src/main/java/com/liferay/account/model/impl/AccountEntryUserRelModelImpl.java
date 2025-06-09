@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.model.impl;
 
 import com.liferay.account.model.AccountEntryUserRel;
 import com.liferay.account.model.AccountEntryUserRelModel;
-import com.liferay.account.model.AccountEntryUserRelSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -35,18 +25,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -143,57 +130,6 @@ public class AccountEntryUserRelModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static AccountEntryUserRel toModel(
-		AccountEntryUserRelSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		AccountEntryUserRel model = new AccountEntryUserRelImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setAccountEntryUserRelId(soapModel.getAccountEntryUserRelId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setAccountEntryId(soapModel.getAccountEntryId());
-		model.setAccountUserId(soapModel.getAccountUserId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AccountEntryUserRel> toModels(
-		AccountEntryUserRelSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<AccountEntryUserRel> models = new ArrayList<AccountEntryUserRel>(
-			soapModels.length);
-
-		for (AccountEntryUserRelSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public AccountEntryUserRelModelImpl() {
 	}
 
@@ -270,93 +206,81 @@ public class AccountEntryUserRelModelImpl
 	public Map<String, Function<AccountEntryUserRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AccountEntryUserRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AccountEntryUserRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AccountEntryUserRel.class.getClassLoader(),
-			AccountEntryUserRel.class, ModelWrapper.class);
+		private static final Map<String, Function<AccountEntryUserRel, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AccountEntryUserRel> constructor =
-				(Constructor<AccountEntryUserRel>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AccountEntryUserRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<AccountEntryUserRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AccountEntryUserRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"accountEntryUserRelId",
+				AccountEntryUserRel::getAccountEntryUserRelId);
+			attributeGetterFunctions.put(
+				"companyId", AccountEntryUserRel::getCompanyId);
+			attributeGetterFunctions.put(
+				"accountEntryId", AccountEntryUserRel::getAccountEntryId);
+			attributeGetterFunctions.put(
+				"accountUserId", AccountEntryUserRel::getAccountUserId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AccountEntryUserRel, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AccountEntryUserRel, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AccountEntryUserRel, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<AccountEntryUserRel, Object>>();
-		Map<String, BiConsumer<AccountEntryUserRel, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<AccountEntryUserRel, ?>>();
+		private static final Map
+			<String, BiConsumer<AccountEntryUserRel, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AccountEntryUserRel::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AccountEntryUserRel, Long>)
-				AccountEntryUserRel::setMvccVersion);
-		attributeGetterFunctions.put(
-			"accountEntryUserRelId",
-			AccountEntryUserRel::getAccountEntryUserRelId);
-		attributeSetterBiConsumers.put(
-			"accountEntryUserRelId",
-			(BiConsumer<AccountEntryUserRel, Long>)
-				AccountEntryUserRel::setAccountEntryUserRelId);
-		attributeGetterFunctions.put(
-			"companyId", AccountEntryUserRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AccountEntryUserRel, Long>)
-				AccountEntryUserRel::setCompanyId);
-		attributeGetterFunctions.put(
-			"accountEntryId", AccountEntryUserRel::getAccountEntryId);
-		attributeSetterBiConsumers.put(
-			"accountEntryId",
-			(BiConsumer<AccountEntryUserRel, Long>)
-				AccountEntryUserRel::setAccountEntryId);
-		attributeGetterFunctions.put(
-			"accountUserId", AccountEntryUserRel::getAccountUserId);
-		attributeSetterBiConsumers.put(
-			"accountUserId",
-			(BiConsumer<AccountEntryUserRel, Long>)
-				AccountEntryUserRel::setAccountUserId);
+		static {
+			Map<String, BiConsumer<AccountEntryUserRel, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<AccountEntryUserRel, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AccountEntryUserRel, Long>)
+					AccountEntryUserRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"accountEntryUserRelId",
+				(BiConsumer<AccountEntryUserRel, Long>)
+					AccountEntryUserRel::setAccountEntryUserRelId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AccountEntryUserRel, Long>)
+					AccountEntryUserRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"accountEntryId",
+				(BiConsumer<AccountEntryUserRel, Long>)
+					AccountEntryUserRel::setAccountEntryId);
+			attributeSetterBiConsumers.put(
+				"accountUserId",
+				(BiConsumer<AccountEntryUserRel, Long>)
+					AccountEntryUserRel::setAccountUserId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -695,41 +619,12 @@ public class AccountEntryUserRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AccountEntryUserRel, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AccountEntryUserRel, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AccountEntryUserRel, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((AccountEntryUserRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AccountEntryUserRel>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AccountEntryUserRel.class, ModelWrapper.class);
 
 	}
 
@@ -741,7 +636,8 @@ public class AccountEntryUserRelModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<AccountEntryUserRel, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

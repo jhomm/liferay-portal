@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -129,47 +120,11 @@ boolean showMissingAttributeMessage = false;
 
 <liferay-ui:search-container
 	emptyResultsMessage="no-users-were-found"
-	iteratorURL='<%=
-		PortletURLBuilder.createRenderURL(
-			renderResponse
-		).setMVCRenderCommandName(
-			"/portal_settings_authentication_ldap/test_ldap_users"
-		).setParameter(
-			"baseDN", baseDN
-		).setParameter(
-			"baseProviderURL", baseProviderURL
-		).setParameter(
-			"credentials", credentials
-		).setParameter(
-			"importUserSearchFilter", userFilter
-		).setParameter(
-			"ldapServerId", ldapServerId
-		).setParameter(
-			"principal", principal
-		).setParameter(
-			"userMappingEmailAddress", ParamUtil.getString(request, "userMappingEmailAddress")
-		).setParameter(
-			"userMappingFirstName", ParamUtil.getString(request, "userMappingFirstName")
-		).setParameter(
-			"userMappingFullName", ParamUtil.getString(request, "userMappingFullName")
-		).setParameter(
-			"userMappingGroup", ParamUtil.getString(request, "userMappingGroup")
-		).setParameter(
-			"userMappingJobTitle", ParamUtil.getString(request, "userMappingJobTitle")
-		).setParameter(
-			"userMappingLastName", ParamUtil.getString(request, "userMappingLastName")
-		).setParameter(
-			"userMappingPassword", ParamUtil.getString(request, "userMappingPassword")
-		).setParameter(
-			"userMappingScreenName", ParamUtil.getString(request, "userMappingScreenName")
-		).setWindowState(
-			LiferayWindowState.POP_UP
-		).buildPortletURL()
-	%>'
 	total="<%= searchResults.size() %>"
 >
 	<liferay-ui:search-container-results
-		results="<%= ListUtil.subList(searchResults, searchContainer.getStart(), searchContainer.getEnd()) %>"
+		calculateStartAndEnd="<%= true %>"
+		results="<%= searchResults %>"
 	/>
 
 	<liferay-ui:search-container-row
@@ -223,7 +178,9 @@ boolean showMissingAttributeMessage = false;
 		/>
 	</liferay-ui:search-container-row>
 
-	<liferay-ui:search-iterator />
+	<liferay-ui:search-iterator
+		paginate="<%= false %>"
+	/>
 </liferay-ui:search-container>
 
 <c:if test="<%= showMissingAttributeMessage %>">

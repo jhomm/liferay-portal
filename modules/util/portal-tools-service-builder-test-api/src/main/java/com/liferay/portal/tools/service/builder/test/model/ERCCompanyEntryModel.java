@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 
 import org.osgi.annotation.versioning.ProviderType;
@@ -33,7 +25,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface ERCCompanyEntryModel
-	extends BaseModel<ERCCompanyEntry>, ShardedModel {
+	extends BaseModel<ERCCompanyEntry>, ExternalReferenceCodeModel,
+			ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -56,11 +49,27 @@ public interface ERCCompanyEntryModel
 	public void setPrimaryKey(long primaryKey);
 
 	/**
+	 * Returns the uuid of this erc company entry.
+	 *
+	 * @return the uuid of this erc company entry
+	 */
+	@AutoEscape
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this erc company entry.
+	 *
+	 * @param uuid the uuid of this erc company entry
+	 */
+	public void setUuid(String uuid);
+
+	/**
 	 * Returns the external reference code of this erc company entry.
 	 *
 	 * @return the external reference code of this erc company entry
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -68,6 +77,7 @@ public interface ERCCompanyEntryModel
 	 *
 	 * @param externalReferenceCode the external reference code of this erc company entry
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -100,7 +110,68 @@ public interface ERCCompanyEntryModel
 	@Override
 	public void setCompanyId(long companyId);
 
+	/**
+	 * Returns the user ID of this erc company entry.
+	 *
+	 * @return the user ID of this erc company entry
+	 */
+	public long getUserId();
+
+	/**
+	 * Sets the user ID of this erc company entry.
+	 *
+	 * @param userId the user ID of this erc company entry
+	 */
+	public void setUserId(long userId);
+
+	/**
+	 * Returns the user uuid of this erc company entry.
+	 *
+	 * @return the user uuid of this erc company entry
+	 */
+	public String getUserUuid();
+
+	/**
+	 * Sets the user uuid of this erc company entry.
+	 *
+	 * @param userUuid the user uuid of this erc company entry
+	 */
+	public void setUserUuid(String userUuid);
+
+	/**
+	 * Returns the user name of this erc company entry.
+	 *
+	 * @return the user name of this erc company entry
+	 */
+	@AutoEscape
+	public String getUserName();
+
+	/**
+	 * Sets the user name of this erc company entry.
+	 *
+	 * @param userName the user name of this erc company entry
+	 */
+	public void setUserName(String userName);
+
+	/**
+	 * Returns the column1 of this erc company entry.
+	 *
+	 * @return the column1 of this erc company entry
+	 */
+	public int getColumn1();
+
+	/**
+	 * Sets the column1 of this erc company entry.
+	 *
+	 * @param column1 the column1 of this erc company entry
+	 */
+	public void setColumn1(int column1);
+
 	@Override
 	public ERCCompanyEntry cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

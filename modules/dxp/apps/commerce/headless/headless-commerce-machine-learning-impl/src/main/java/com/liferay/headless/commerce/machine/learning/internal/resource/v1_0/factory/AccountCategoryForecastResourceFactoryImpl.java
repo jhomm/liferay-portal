@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.machine.learning.internal.resource.v1_0.factory;
 
+import com.liferay.headless.commerce.machine.learning.internal.security.permission.LiberalPermissionChecker;
 import com.liferay.headless.commerce.machine.learning.resource.v1_0.AccountCategoryForecastResource;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
@@ -33,24 +25,28 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.odata.filter.ExpressionConvert;
 import com.liferay.portal.odata.filter.FilterParserProvider;
+import com.liferay.portal.odata.sort.SortParserProvider;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.function.Function;
 
 import org.osgi.service.component.ComponentServiceObjects;
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceScope;
 
@@ -59,7 +55,7 @@ import org.osgi.service.component.annotations.ReferenceScope;
  * @generated
  */
 @Component(
-	enabled = false, immediate = true,
+	property = "resource.locator.key=/headless-commerce-machine-learning/v1.0/AccountCategoryForecast",
 	service = AccountCategoryForecastResource.Factory.class
 )
 @Generated("")
@@ -76,14 +72,17 @@ public class AccountCategoryForecastResourceFactoryImpl
 					throw new IllegalArgumentException("User is not set");
 				}
 
-				return (AccountCategoryForecastResource)
-					ProxyUtil.newProxyInstance(
-						AccountCategoryForecastResource.class.getClassLoader(),
-						new Class<?>[] {AccountCategoryForecastResource.class},
+				Function<InvocationHandler, AccountCategoryForecastResource>
+					accountCategoryForecastResourceProxyProviderFunction =
+						ResourceProxyProviderFunctionHolder.
+							_accountCategoryForecastResourceProxyProviderFunction;
+
+				return accountCategoryForecastResourceProxyProviderFunction.
+					apply(
 						(proxy, method, arguments) -> _invoke(
 							method, arguments, _checkPermissions,
 							_httpServletRequest, _httpServletResponse,
-							_preferredLocale, _user));
+							_preferredLocale, _uriInfo, _user));
 			}
 
 			@Override
@@ -123,6 +122,15 @@ public class AccountCategoryForecastResourceFactoryImpl
 			}
 
 			@Override
+			public AccountCategoryForecastResource.Builder uriInfo(
+				UriInfo uriInfo) {
+
+				_uriInfo = uriInfo;
+
+				return this;
+			}
+
+			@Override
 			public AccountCategoryForecastResource.Builder user(User user) {
 				_user = user;
 
@@ -133,26 +141,45 @@ public class AccountCategoryForecastResourceFactoryImpl
 			private HttpServletRequest _httpServletRequest;
 			private HttpServletResponse _httpServletResponse;
 			private Locale _preferredLocale;
+			private UriInfo _uriInfo;
 			private User _user;
 
 		};
 	}
 
-	@Activate
-	protected void activate() {
-		AccountCategoryForecastResource.FactoryHolder.factory = this;
-	}
+	private static Function<InvocationHandler, AccountCategoryForecastResource>
+		_getProxyProviderFunction() {
 
-	@Deactivate
-	protected void deactivate() {
-		AccountCategoryForecastResource.FactoryHolder.factory = null;
+		Class<?> proxyClass = ProxyUtil.getProxyClass(
+			AccountCategoryForecastResource.class.getClassLoader(),
+			AccountCategoryForecastResource.class);
+
+		try {
+			Constructor<AccountCategoryForecastResource> constructor =
+				(Constructor<AccountCategoryForecastResource>)
+					proxyClass.getConstructor(InvocationHandler.class);
+
+			return invocationHandler -> {
+				try {
+					return constructor.newInstance(invocationHandler);
+				}
+				catch (ReflectiveOperationException
+							reflectiveOperationException) {
+
+					throw new InternalError(reflectiveOperationException);
+				}
+			};
+		}
+		catch (NoSuchMethodException noSuchMethodException) {
+			throw new InternalError(noSuchMethodException);
+		}
 	}
 
 	private Object _invoke(
 			Method method, Object[] arguments, boolean checkPermissions,
 			HttpServletRequest httpServletRequest,
 			HttpServletResponse httpServletResponse, Locale preferredLocale,
-			User user)
+			UriInfo uriInfo, User user)
 		throws Throwable {
 
 		String name = PrincipalThreadLocal.getName();
@@ -168,7 +195,7 @@ public class AccountCategoryForecastResourceFactoryImpl
 		}
 		else {
 			PermissionThreadLocal.setPermissionChecker(
-				_liberalPermissionCheckerFactory.create(user));
+				new LiberalPermissionChecker(user));
 		}
 
 		AccountCategoryForecastResource accountCategoryForecastResource =
@@ -185,6 +212,7 @@ public class AccountCategoryForecastResourceFactoryImpl
 			httpServletRequest);
 		accountCategoryForecastResource.setContextHttpServletResponse(
 			httpServletResponse);
+		accountCategoryForecastResource.setContextUriInfo(uriInfo);
 		accountCategoryForecastResource.setContextUser(user);
 		accountCategoryForecastResource.setExpressionConvert(
 			_expressionConvert);
@@ -197,6 +225,8 @@ public class AccountCategoryForecastResourceFactoryImpl
 		accountCategoryForecastResource.setResourcePermissionLocalService(
 			_resourcePermissionLocalService);
 		accountCategoryForecastResource.setRoleLocalService(_roleLocalService);
+		accountCategoryForecastResource.setSortParserProvider(
+			_sortParserProvider);
 
 		try {
 			return method.invoke(accountCategoryForecastResource, arguments);
@@ -235,9 +265,6 @@ public class AccountCategoryForecastResourceFactoryImpl
 	@Reference
 	private GroupLocalService _groupLocalService;
 
-	@Reference(target = "(permission.checker.type=liberal)")
-	private PermissionCheckerFactory _liberalPermissionCheckerFactory;
-
 	@Reference
 	private ResourceActionLocalService _resourceActionLocalService;
 
@@ -248,7 +275,19 @@ public class AccountCategoryForecastResourceFactoryImpl
 	private RoleLocalService _roleLocalService;
 
 	@Reference
+	private SortParserProvider _sortParserProvider;
+
+	@Reference
 	private UserLocalService _userLocalService;
+
+	private static class ResourceProxyProviderFunctionHolder {
+
+		private static final Function
+			<InvocationHandler, AccountCategoryForecastResource>
+				_accountCategoryForecastResourceProxyProviderFunction =
+					_getProxyProviderFunction();
+
+	}
 
 	private class AcceptLanguageImpl implements AcceptLanguage {
 

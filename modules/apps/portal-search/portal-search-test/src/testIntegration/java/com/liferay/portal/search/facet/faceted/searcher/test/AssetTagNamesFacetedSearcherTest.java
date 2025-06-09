@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.facet.faceted.searcher.test;
@@ -27,7 +18,6 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.facet.Facet;
 import com.liferay.portal.search.facet.tag.AssetTagNamesFacetFactory;
 import com.liferay.portal.search.test.util.DocumentsAssert;
@@ -36,8 +26,8 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.ClassRule;
@@ -63,13 +53,10 @@ public class AssetTagNamesFacetedSearcherTest
 		String keyword = RandomTestUtil.randomString();
 
 		Group group = userSearchFixture.addGroup();
-		String title = keyword;
 
-		addJournalArticle(group, title);
+		addJournalArticle(group, keyword);
 
-		String tag = keyword;
-
-		addUser(group, tag);
+		addUser(group, keyword);
 
 		SearchContext searchContext = getSearchContext(keyword);
 
@@ -83,8 +70,7 @@ public class AssetTagNamesFacetedSearcherTest
 			Arrays.asList(JournalArticle.class.getName(), User.class.getName()),
 			hits, searchContext);
 
-		Map<String, Integer> frequencies = Collections.singletonMap(
-			StringUtil.toLowerCase(tag), 1);
+		Map<String, Integer> frequencies = Collections.singletonMap(keyword, 1);
 
 		FacetsAssert.assertFrequencies(
 			facet.getFieldName(), searchContext, hits, frequencies);
@@ -131,31 +117,26 @@ public class AssetTagNamesFacetedSearcherTest
 		String keyword = RandomTestUtil.randomString();
 
 		Group group = userSearchFixture.addGroup();
-		String title = keyword;
 
-		addJournalArticle(group, title);
+		addJournalArticle(group, keyword);
 
-		String tag = keyword;
-
-		addUser(group, tag);
+		addUser(group, keyword);
 
 		SearchContext searchContext = getSearchContext(keyword);
 
 		Facet facet = _assetTagNamesFacetFactory.newInstance(searchContext);
 
-		String tagToLowerCase = StringUtil.toLowerCase(tag);
-
-		facet.select(tagToLowerCase);
+		facet.select(keyword);
 
 		searchContext.addFacet(facet);
 
 		Hits hits = search(searchContext);
 
 		assertEntryClassNames(
-			Arrays.asList(User.class.getName()), hits, searchContext);
+			Collections.singletonList(User.class.getName()), hits,
+			searchContext);
 
-		Map<String, Integer> frequencies = Collections.singletonMap(
-			tagToLowerCase, 1);
+		Map<String, Integer> frequencies = Collections.singletonMap(keyword, 1);
 
 		FacetsAssert.assertFrequencies(
 			facet.getFieldName(), searchContext, hits, frequencies);
@@ -196,8 +177,7 @@ public class AssetTagNamesFacetedSearcherTest
 	}
 
 	protected void assertEntryClassNames(
-		Collection<String> entryClassNames, Hits hits,
-		SearchContext searchContext) {
+		List<String> entryClassNames, Hits hits, SearchContext searchContext) {
 
 		DocumentsAssert.assertValuesIgnoreRelevance(
 			(String)searchContext.getAttribute("queryString"), hits.getDocs(),

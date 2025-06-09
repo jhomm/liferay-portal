@@ -1,20 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.internal.model.listener;
 
+import com.liferay.depot.model.DepotAppCustomization;
 import com.liferay.depot.model.DepotEntry;
+import com.liferay.depot.model.DepotEntryGroupRel;
+import com.liferay.depot.service.DepotAppCustomizationLocalService;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.portal.kernel.exception.ModelListenerException;
@@ -28,6 +22,8 @@ import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import java.util.List;
+
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -36,6 +32,20 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(service = ModelListener.class)
 public class GroupModelListener extends BaseModelListener<Group> {
+
+	@Override
+	public void onAfterCreate(Group group) throws ModelListenerException {
+		if ((group != null) && group.isDepot() &&
+			_isStaging(ServiceContextThreadLocal.getServiceContext())) {
+
+			TransactionCommitCallbackUtil.registerCallback(
+				() -> {
+					_copyLiveDepotEntryGroupRelsToStaging(group);
+
+					return null;
+				});
+		}
+	}
 
 	@Override
 	public void onAfterRemove(Group group) throws ModelListenerException {
@@ -47,7 +57,8 @@ public class GroupModelListener extends BaseModelListener<Group> {
 							group.getGroupId());
 
 					if (depotEntry != null) {
-						_depotEntryLocalService.deleteDepotEntry(depotEntry);
+						_depotEntryLocalService.deleteDepotEntry(
+							depotEntry.getDepotEntryId());
 					}
 
 					return null;
@@ -66,6 +77,11 @@ public class GroupModelListener extends BaseModelListener<Group> {
 					group, serviceContext);
 
 				group.setClassPK(depotEntry.getDepotEntryId());
+
+				Group liveGroup = group.getLiveGroup();
+
+				_copyDepotAppCustomizations(
+					depotEntry.getDepotEntryId(), liveGroup.getClassPK());
 			}
 		}
 		catch (PortalException portalException) {
@@ -83,6 +99,69 @@ public class GroupModelListener extends BaseModelListener<Group> {
 			group.getGroupId());
 	}
 
+	private void _copyDepotAppCustomizations(
+			long newDepotEntryId, long oldDepotEntryId)
+		throws PortalException {
+
+		List<DepotAppCustomization> depotAppCustomizations =
+			_depotAppCustomizationLocalService.getDepotAppCustomizations(
+				oldDepotEntryId);
+
+		for (DepotAppCustomization depotAppCustomization :
+				depotAppCustomizations) {
+
+			_depotAppCustomizationLocalService.updateDepotAppCustomization(
+				newDepotEntryId, depotAppCustomization.isEnabled(),
+				depotAppCustomization.getPortletId());
+		}
+	}
+
+	private void _copyLiveDepotEntryGroupRelsToStaging(Group group)
+		throws PortalException {
+
+		Group liveGroup = group.getLiveGroup();
+
+		if (liveGroup == null) {
+			return;
+		}
+
+		DepotEntry liveDepotEntry =
+			_depotEntryLocalService.fetchGroupDepotEntry(
+				liveGroup.getGroupId());
+
+		if (liveDepotEntry == null) {
+			return;
+		}
+
+		List<DepotEntryGroupRel> depotEntryGroupRels =
+			_depotEntryGroupRelLocalService.getDepotEntryGroupRels(
+				liveDepotEntry);
+
+		for (DepotEntryGroupRel depotEntryGroupRel : depotEntryGroupRels) {
+			Group groupRel = _groupLocalService.getGroup(
+				depotEntryGroupRel.getGroupId());
+
+			if (groupRel.isStagingGroup()) {
+				DepotEntry depotEntry =
+					_depotEntryLocalService.fetchGroupDepotEntry(
+						group.getGroupId());
+
+				DepotEntryGroupRel stagedDepotEntryGroupRel =
+					_depotEntryGroupRelLocalService.addDepotEntryGroupRel(
+						depotEntry.getDepotEntryId(),
+						depotEntryGroupRel.getGroupId());
+
+				stagedDepotEntryGroupRel.setDdmStructuresAvailable(
+					depotEntryGroupRel.isDdmStructuresAvailable());
+				stagedDepotEntryGroupRel.setSearchable(
+					depotEntryGroupRel.isSearchable());
+
+				_depotEntryGroupRelLocalService.updateDepotEntryGroupRel(
+					stagedDepotEntryGroupRel);
+			}
+		}
+	}
+
 	private boolean _isStaging(ServiceContext serviceContext) {
 		if (serviceContext == null) {
 			return false;
@@ -90,6 +169,10 @@ public class GroupModelListener extends BaseModelListener<Group> {
 
 		return ParamUtil.getBoolean(serviceContext, "staging");
 	}
+
+	@Reference
+	private DepotAppCustomizationLocalService
+		_depotAppCustomizationLocalService;
 
 	@Reference
 	private DepotEntryGroupRelLocalService _depotEntryGroupRelLocalService;

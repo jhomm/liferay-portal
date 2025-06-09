@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -47,56 +38,30 @@ WikiURLHelper wikiURLHelper = new WikiURLHelper(wikiRequestHelper, renderRespons
 	/>
 
 	<div class="form-search">
-		<liferay-ui:input-search
-			autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) %>"
-			placeholder='<%= LanguageUtil.get(request, "keywords") %>'
-			title='<%= LanguageUtil.get(request, "search-pages") %>'
-		/>
+		<div class="input-group">
+			<div class="input-group-item">
+				<input aria-label="<%= LanguageUtil.get(request, "search-pages") %>" class="form-control input-group-inset input-group-inset-after search-query" data-qa-id="searchInput" id="<portlet:namespace />keywords" name="<portlet:namespace />keywords" placeholder="<%= LanguageUtil.get(request, "keywords") %>" title="<%= LanguageUtil.get(request, "search-pages") %>" type="text" value="<%= HtmlUtil.escapeAttribute(ParamUtil.getString(request, "keywords")) %>" />
+
+				<div class="input-group-inset-item input-group-inset-item-after">
+					<clay:button
+						data-qa-id="searchButton"
+						displayType="unstyled"
+						icon="search"
+						monospaced="<%= false %>"
+						type="submit"
+					/>
+				</div>
+			</div>
+		</div>
 	</div>
 
+	<%
+	WikiSearchDisplayContext wikiSearchDisplayContext = new WikiSearchDisplayContext(request, renderRequest, renderResponse, wikiPortletInstanceSettingsHelper);
+	%>
+
 	<liferay-ui:search-container
-		emptyResultsMessage='<%= LanguageUtil.format(request, "no-pages-were-found-that-matched-the-keywords-x", "<strong>" + HtmlUtil.escape(keywords) + "</strong>", false) %>'
-		iteratorURL='<%=
-			PortletURLBuilder.createRenderURL(
-				renderResponse
-			).setMVCRenderCommandName(
-				"/wiki/search"
-			).setRedirect(
-				redirect
-			).setKeywords(
-				keywords
-			).setParameter(
-				"nodeId", nodeId
-			).buildPortletURL()
-		%>'
+		searchContainer="<%= wikiSearchDisplayContext.getSearchContainer() %>"
 	>
-
-		<%
-		Indexer<WikiPage> indexer = IndexerRegistryUtil.getIndexer(WikiPage.class);
-
-		SearchContext searchContext = SearchContextFactory.getInstance(request);
-
-		QueryConfig queryConfig = searchContext.getQueryConfig();
-
-		queryConfig.setHighlightEnabled(wikiPortletInstanceSettingsHelper.isEnableHighlighting());
-
-		searchContext.setAttribute("paginationType", "more");
-		searchContext.setEnd(searchContainer.getEnd());
-		searchContext.setIncludeAttachments(true);
-		searchContext.setIncludeDiscussions(true);
-		searchContext.setKeywords(keywords);
-		searchContext.setNodeIds(nodeIds);
-		searchContext.setStart(searchContainer.getStart());
-
-		Hits hits = indexer.search(searchContext);
-
-		searchContainer.setTotal(hits.getLength());
-		%>
-
-		<liferay-ui:search-container-results
-			results="<%= SearchResultUtil.getSearchResults(hits, locale) %>"
-		/>
-
 		<liferay-ui:search-container-row
 			className="com.liferay.portal.kernel.search.SearchResult"
 			modelVar="searchResult"

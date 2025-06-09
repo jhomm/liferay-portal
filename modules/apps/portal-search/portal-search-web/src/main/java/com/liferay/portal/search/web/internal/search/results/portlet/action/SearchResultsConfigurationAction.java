@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.search.results.portlet.action;
 
 import com.liferay.portal.kernel.portlet.ConfigurationAction;
-import com.liferay.portal.kernel.portlet.DefaultConfigurationAction;
-import com.liferay.portal.search.web.internal.search.results.constants.SearchResultsPortletKeys;
+import com.liferay.portal.search.web.constants.SearchResultsPortletKeys;
+import com.liferay.portlet.display.template.portlet.action.BaseConfigurationAction;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -26,12 +17,10 @@ import org.osgi.service.component.annotations.Component;
  * @author Lino Alves
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
+	property = "jakarta.portlet.name=" + SearchResultsPortletKeys.SEARCH_RESULTS,
 	service = ConfigurationAction.class
 )
-public class SearchResultsConfigurationAction
-	extends DefaultConfigurationAction {
+public class SearchResultsConfigurationAction extends BaseConfigurationAction {
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {

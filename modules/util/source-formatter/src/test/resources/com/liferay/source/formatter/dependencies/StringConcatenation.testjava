@@ -1,0 +1,50 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies;
+
+import com.liferay.petra.string.StringBundler;
+
+/**
+ * @author Alan Huang
+ */
+public class StringConcatenation {
+
+	public void method1() {
+		System.out.print(
+			StringBundler.concat(
+				"update PortletPreferenceValue set name =",
+				" 'formInstanceId' where name = 'questionId' AND ",
+				"portletPreferencesId = ?"));
+
+		System.out.print(
+			StringBundler.concat(
+				"{\n", "    \"analysis\": {\n", "        \"analyzer\": {\n",
+				"            \"content\": {\n",
+				"                \"tokenizer\": \"whitespace\",\n",
+				"                \"type\": \"custom\"\n", "            }\n",
+				"        }\n", "    }\n", "}"));
+	}
+
+	public void method2() {
+		System.out.print(
+			"${elExpression0.test}${elExpression0.test}" +
+				"${elExpression1.test}${elExpression1.test}" +
+					"${elExpression2.test}${elExpression2.test}" +
+						"${elExpression3.test}${elExpression3.test}");
+	}
+
+	public void method3() {
+		System.out.print(
+			StringBundler.concat(
+				"${elExpression0.test}${elExpression0.test}",
+				"${elExpression1.test}${elExpression1.test}"));
+	}
+
+	public void method4(String... strings) {
+		System.out.print(StringBundler.concat(strings));
+	}
+
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -485,54 +477,17 @@ public class CommerceDiscountLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
-	public static CommerceDiscount fetchByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	public static CommerceDiscount fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CommerceDiscount fetchCommerceDiscount(
 		long commerceDiscountId) {
 
 		return getService().fetchCommerceDiscount(commerceDiscountId);
 	}
 
-	/**
-	 * Returns the commerce discount with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce discount's external reference code
-	 * @return the matching commerce discount, or <code>null</code> if a matching commerce discount could not be found
-	 */
 	public static CommerceDiscount fetchCommerceDiscountByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchCommerceDiscountByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceDiscountByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CommerceDiscount fetchCommerceDiscountByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchCommerceDiscountByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -549,14 +504,24 @@ public class CommerceDiscountLocalServiceUtil {
 			uuid, companyId);
 	}
 
+	public static CommerceDiscount fetchDefaultCommerceDiscount(
+		long commerceChannelAccountEntryRelId, long cpDefinitionId,
+		long cpInstanceId, String unitOfMeasureKey) {
+
+		return getService().fetchDefaultCommerceDiscount(
+			commerceChannelAccountEntryRelId, cpDefinitionId, cpInstanceId,
+			unitOfMeasureKey);
+	}
+
 	public static List<CommerceDiscount>
 		getAccountAndChannelAndOrderTypeCommerceDiscounts(
 			long commerceAccountId, long commerceChannelId,
-			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId) {
+			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId,
+			String unitOfMeasureKey) {
 
 		return getService().getAccountAndChannelAndOrderTypeCommerceDiscounts(
 			commerceAccountId, commerceChannelId, commerceOrderTypeId,
-			cpDefinitionId, cpInstanceId);
+			cpDefinitionId, cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount>
@@ -570,10 +535,11 @@ public class CommerceDiscountLocalServiceUtil {
 
 	public static List<CommerceDiscount> getAccountAndChannelCommerceDiscounts(
 		long commerceAccountId, long commerceChannelId, long cpDefinitionId,
-		long cpInstanceId) {
+		long cpInstanceId, String unitOfMeasureKey) {
 
 		return getService().getAccountAndChannelCommerceDiscounts(
-			commerceAccountId, commerceChannelId, cpDefinitionId, cpInstanceId);
+			commerceAccountId, commerceChannelId, cpDefinitionId, cpInstanceId,
+			unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getAccountAndChannelCommerceDiscounts(
@@ -594,18 +560,19 @@ public class CommerceDiscountLocalServiceUtil {
 	public static List<CommerceDiscount>
 		getAccountCommerceAndOrderTypeDiscounts(
 			long commerceAccountId, long commerceOrderTypeId,
-			long cpDefinitionId, long cpInstanceId) {
+			long cpDefinitionId, long cpInstanceId, String unitOfMeasureKey) {
 
 		return getService().getAccountCommerceAndOrderTypeDiscounts(
 			commerceAccountId, commerceOrderTypeId, cpDefinitionId,
-			cpInstanceId);
+			cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getAccountCommerceDiscounts(
-		long commerceAccountId, long cpDefinitionId, long cpInstanceId) {
+		long commerceAccountId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey) {
 
 		return getService().getAccountCommerceDiscounts(
-			commerceAccountId, cpDefinitionId, cpInstanceId);
+			commerceAccountId, cpDefinitionId, cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getAccountCommerceDiscounts(
@@ -618,12 +585,13 @@ public class CommerceDiscountLocalServiceUtil {
 	public static List<CommerceDiscount>
 		getAccountGroupAndChannelAndOrderTypeCommerceDiscount(
 			long[] commerceAccountGroupIds, long commerceChannelId,
-			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId) {
+			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId,
+			String unitOfMeasureKey) {
 
 		return getService().
 			getAccountGroupAndChannelAndOrderTypeCommerceDiscount(
 				commerceAccountGroupIds, commerceChannelId, commerceOrderTypeId,
-				cpDefinitionId, cpInstanceId);
+				cpDefinitionId, cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount>
@@ -640,11 +608,11 @@ public class CommerceDiscountLocalServiceUtil {
 	public static List<CommerceDiscount>
 		getAccountGroupAndChannelCommerceDiscount(
 			long[] commerceAccountGroupIds, long commerceChannelId,
-			long cpDefinitionId, long cpInstanceId) {
+			long cpDefinitionId, long cpInstanceId, String unitOfMeasureKey) {
 
 		return getService().getAccountGroupAndChannelCommerceDiscount(
 			commerceAccountGroupIds, commerceChannelId, cpDefinitionId,
-			cpInstanceId);
+			cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount>
@@ -659,11 +627,11 @@ public class CommerceDiscountLocalServiceUtil {
 	public static List<CommerceDiscount>
 		getAccountGroupAndOrderTypeCommerceDiscount(
 			long[] commerceAccountGroupIds, long commerceOrderTypeId,
-			long cpDefinitionId, long cpInstanceId) {
+			long cpDefinitionId, long cpInstanceId, String unitOfMeasureKey) {
 
 		return getService().getAccountGroupAndOrderTypeCommerceDiscount(
 			commerceAccountGroupIds, commerceOrderTypeId, cpDefinitionId,
-			cpInstanceId);
+			cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount>
@@ -676,11 +644,12 @@ public class CommerceDiscountLocalServiceUtil {
 	}
 
 	public static List<CommerceDiscount> getAccountGroupCommerceDiscount(
-		long[] commerceAccountGroupIds, long cpDefinitionId,
-		long cpInstanceId) {
+		long[] commerceAccountGroupIds, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey) {
 
 		return getService().getAccountGroupCommerceDiscount(
-			commerceAccountGroupIds, cpDefinitionId, cpInstanceId);
+			commerceAccountGroupIds, cpDefinitionId, cpInstanceId,
+			unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getAccountGroupCommerceDiscount(
@@ -714,11 +683,11 @@ public class CommerceDiscountLocalServiceUtil {
 	public static List<CommerceDiscount>
 		getChannelAndOrderTypeCommerceDiscounts(
 			long commerceChannelId, long commerceOrderTypeId,
-			long cpDefinitionId, long cpInstanceId) {
+			long cpDefinitionId, long cpInstanceId, String unitOfMeasureKey) {
 
 		return getService().getChannelAndOrderTypeCommerceDiscounts(
 			commerceChannelId, commerceOrderTypeId, cpDefinitionId,
-			cpInstanceId);
+			cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount>
@@ -730,10 +699,11 @@ public class CommerceDiscountLocalServiceUtil {
 	}
 
 	public static List<CommerceDiscount> getChannelCommerceDiscounts(
-		long commerceChannelId, long cpDefinitionId, long cpInstanceId) {
+		long commerceChannelId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey) {
 
 		return getService().getChannelCommerceDiscounts(
-			commerceChannelId, cpDefinitionId, cpInstanceId);
+			commerceChannelId, cpDefinitionId, cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getChannelCommerceDiscounts(
@@ -756,20 +726,12 @@ public class CommerceDiscountLocalServiceUtil {
 		return getService().getCommerceDiscount(commerceDiscountId);
 	}
 
-	/**
-	 * Returns the commerce discount with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce discount's external reference code
-	 * @return the matching commerce discount
-	 * @throws PortalException if a matching commerce discount could not be found
-	 */
 	public static CommerceDiscount getCommerceDiscountByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCommerceDiscountByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -815,6 +777,13 @@ public class CommerceDiscountLocalServiceUtil {
 		return getService().getCommerceDiscounts(companyId, couponCode);
 	}
 
+	public static List<CommerceDiscount> getCommerceDiscounts(
+		long companyId, String level, boolean active, int status) {
+
+		return getService().getCommerceDiscounts(
+			companyId, level, active, status);
+	}
+
 	/**
 	 * Returns the number of commerce discounts.
 	 *
@@ -857,10 +826,12 @@ public class CommerceDiscountLocalServiceUtil {
 	}
 
 	public static List<CommerceDiscount> getOrderTypeCommerceDiscounts(
-		long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId) {
+		long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey) {
 
 		return getService().getOrderTypeCommerceDiscounts(
-			commerceOrderTypeId, cpDefinitionId, cpInstanceId);
+			commerceOrderTypeId, cpDefinitionId, cpInstanceId,
+			unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getOrderTypeCommerceDiscounts(
@@ -896,16 +867,25 @@ public class CommerceDiscountLocalServiceUtil {
 	}
 
 	public static List<CommerceDiscount> getUnqualifiedCommerceDiscounts(
-		long companyId, long cpDefinitionId, long cpInstanceId) {
+		long companyId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey) {
 
 		return getService().getUnqualifiedCommerceDiscounts(
-			companyId, cpDefinitionId, cpInstanceId);
+			companyId, cpDefinitionId, cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static List<CommerceDiscount> getUnqualifiedCommerceDiscounts(
 		long companyId, String target) {
 
 		return getService().getUnqualifiedCommerceDiscounts(companyId, target);
+	}
+
+	public static int getValidCommerceDiscountsCount(
+		long commerceDiscountId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey) {
+
+		return getService().getValidCommerceDiscountsCount(
+			commerceDiscountId, cpDefinitionId, cpInstanceId, unitOfMeasureKey);
 	}
 
 	public static int getValidCommerceDiscountsCount(
@@ -1184,9 +1164,12 @@ public class CommerceDiscountLocalServiceUtil {
 	}
 
 	public static CommerceDiscountLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceDiscountLocalService _service;
+	private static final Snapshot<CommerceDiscountLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountLocalServiceUtil.class,
+			CommerceDiscountLocalService.class);
 
 }

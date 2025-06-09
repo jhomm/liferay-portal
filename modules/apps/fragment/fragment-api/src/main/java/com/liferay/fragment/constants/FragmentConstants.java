@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.constants;
@@ -30,6 +21,14 @@ public class FragmentConstants {
 
 	public static final String TYPE_COMPONENT_LABEL = "component";
 
+	public static final int TYPE_INPUT = 3;
+
+	public static final String TYPE_INPUT_LABEL = "input";
+
+	public static final int TYPE_PORTLET = 4;
+
+	public static final String TYPE_PORTLET_LABEL = "widget";
+
 	public static final int TYPE_REACT = 2;
 
 	public static final String TYPE_REACT_LABEL = "react";
@@ -43,6 +42,14 @@ public class FragmentConstants {
 			return TYPE_COMPONENT;
 		}
 
+		if (Objects.equals(TYPE_INPUT_LABEL, label)) {
+			return TYPE_INPUT;
+		}
+
+		if (Objects.equals(TYPE_PORTLET_LABEL, label)) {
+			return TYPE_PORTLET;
+		}
+
 		if (Objects.equals(TYPE_REACT_LABEL, label)) {
 			return TYPE_REACT;
 		}
@@ -53,6 +60,14 @@ public class FragmentConstants {
 	public static String getTypeLabel(int type) {
 		if (type == TYPE_COMPONENT) {
 			return TYPE_COMPONENT_LABEL;
+		}
+
+		if (type == TYPE_INPUT) {
+			return TYPE_INPUT_LABEL;
+		}
+
+		if (type == TYPE_PORTLET) {
+			return TYPE_PORTLET_LABEL;
 		}
 
 		if (type == TYPE_REACT) {

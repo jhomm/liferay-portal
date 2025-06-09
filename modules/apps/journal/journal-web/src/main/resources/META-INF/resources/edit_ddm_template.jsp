@@ -1,28 +1,26 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-JournalEditDDMTemplateDisplayContext journalEditDDMTemplateDisplayContext = new JournalEditDDMTemplateDisplayContext(request, renderResponse);
+JournalEditDDMTemplateDisplayContext journalEditDDMTemplateDisplayContext = (JournalEditDDMTemplateDisplayContext)request.getAttribute(JournalEditDDMTemplateDisplayContext.class.getName());
 
 DDMTemplate ddmTemplate = journalEditDDMTemplateDisplayContext.getDDMTemplate();
 
+if (ddmTemplate != null) {
+	String script = ddmTemplate.getScript();
+
+	ddmTemplate.setScript(Base64.encode(script.getBytes(StringPool.UTF8)));
+}
+
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(journalEditDDMTemplateDisplayContext.getRedirect());
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
 renderResponse.setTitle(journalEditDDMTemplateDisplayContext.getTitle());
 %>
@@ -45,40 +43,41 @@ renderResponse.setTitle(journalEditDDMTemplateDisplayContext.getTitle());
 	<aui:model-context bean="<%= ddmTemplate %>" model="<%= DDMTemplate.class %>" />
 
 	<nav class="component-tbar subnav-tbar-light tbar tbar-article">
-		<clay:container-fluid>
+		<clay:container-fluid
+			fullWidth="<%= true %>"
+		>
 			<ul class="tbar-nav">
 				<li class="tbar-item tbar-item-expand">
-					<aui:input cssClass="form-control-inline" defaultLanguageId="<%= (ddmTemplate == null) ? LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()): ddmTemplate.getDefaultLanguageId() %>" label="" name="name" placeholder='<%= LanguageUtil.format(request, "untitled-x", "template") %>' wrapperCssClass="article-content-title mb-0" />
+					<aui:input cssClass="form-control-inline" defaultLanguageId="<%= (ddmTemplate == null) ? LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault()): ddmTemplate.getDefaultLanguageId() %>" label='<%= LanguageUtil.get(request, "name") %>' labelCssClass="sr-only" name="name" placeholder='<%= LanguageUtil.format(request, "untitled-x", "template") %>' wrapperCssClass="article-content-title mb-0" />
 				</li>
 				<li class="tbar-item">
-					<div class="journal-article-button-row tbar-section text-right">
-						<aui:button cssClass="btn-secondary btn-sm mr-3" href="<%= journalEditDDMTemplateDisplayContext.getRedirect() %>" type="cancel" />
+					<div class="c-gap-3 c-mb-0 form-group-sm journal-article-button-row mb-0 tbar-section text-right">
+						<clay:link
+							borderless="<%= true %>"
+							displayType="secondary"
+							href="<%= journalEditDDMTemplateDisplayContext.getRedirect() %>"
+							label="cancel"
+							type="button"
+						/>
 
-						<%
-						String taglibOnClickSaveAndContinue = "Liferay.fire('" + liferayPortletResponse.getNamespace() + "saveAndContinue');";
-						%>
+						<clay:button
+							displayType="secondary"
+							id='<%= liferayPortletResponse.getNamespace() + "saveAndContinueButton" %>'
+							label="save-and-continue"
+							type="submit"
+						/>
 
-						<aui:button cssClass="btn-secondary btn-sm mr-3" onClick="<%= taglibOnClickSaveAndContinue %>" type="submit" value="save-and-continue" />
-
-						<%
-						String taglibOnClickSaveTemplate = "Liferay.fire('" + liferayPortletResponse.getNamespace() + "saveTemplate');";
-						%>
-
-						<aui:button cssClass="btn-sm mr-3" onClick="<%= taglibOnClickSaveTemplate %>" type="submit" value="save" />
+						<clay:button
+							displayType="primary"
+							id='<%= liferayPortletResponse.getNamespace() + "saveButton" %>'
+							label="save"
+							type="submit"
+						/>
 					</div>
 				</li>
 			</ul>
 		</clay:container-fluid>
 	</nav>
-
-	<liferay-ui:error exception="<%= TemplateNameException.class %>" message="please-enter-a-valid-name" />
-	<liferay-ui:error exception="<%= TemplateScriptException.class %>" message="please-enter-a-valid-script" />
-
-	<c:if test="<%= (ddmTemplate != null) && (journalEditDDMTemplateDisplayContext.getGroupId() != scopeGroupId) %>">
-		<div class="alert alert-warning">
-			<liferay-ui:message key="this-template-does-not-belong-to-this-site.-you-may-affect-other-sites-if-you-edit-this-template" />
-		</div>
-	</c:if>
 
 	<div>
 		<div id="<portlet:namespace />ddmTemplateEditor">
@@ -88,21 +87,9 @@ renderResponse.setTitle(journalEditDDMTemplateDisplayContext.getTitle());
 
 			<react:component
 				componentId="ddmTemplateEditor"
-				module="ddm_template_editor/components/TemplateEditor"
-				props="<%= journalEditDDMTemplateDisplayContext.getDDMTemplateEditorContext() %>"
+				module="{TemplateEditor} from template-web"
+				props="<%= journalEditDDMTemplateDisplayContext.getDDMTemplateEditorContext(scopeGroupId) %>"
 			/>
 		</div>
 	</div>
 </aui:form>
-
-<aui:script>
-	Liferay.after('<portlet:namespace />saveAndContinue', () => {
-		document.<portlet:namespace />fm.<portlet:namespace />saveAndContinue.value = true;
-
-		Liferay.fire('<portlet:namespace />saveTemplate');
-	});
-
-	Liferay.after('<portlet:namespace />saveTemplate', () => {
-		submitForm(document.<portlet:namespace />fm);
-	});
-</aui:script>

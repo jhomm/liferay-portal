@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,6 +17,8 @@ MBThread thread = messageDisplay.getThread();
 AssetEntry layoutAssetEntry = AssetEntryLocalServiceUtil.getEntry(MBMessage.class.getName(), message.getMessageId());
 
 request.setAttribute(WebKeys.LAYOUT_ASSET_ENTRY, layoutAssetEntry);
+
+LinkedAssetEntryIdsUtil.addLinkedAssetEntryId(request, layoutAssetEntry.getEntryId());
 
 AssetEntryServiceUtil.incrementViewCounter(layoutAssetEntry);
 
@@ -48,13 +41,10 @@ MBBreadcrumbUtil.addPortletBreadcrumbEntries(message, request, renderResponse);
 		<%@ include file="/message_boards/nav.jspf" %>
 	</c:if>
 
-	<div <%= !portletTitleBasedNavigation ? "class=\"main-content-body\"" : StringPool.BLANK %>>
+	<div <%= !portletTitleBasedNavigation ? "class=\"main-content-body mt-4\"" : StringPool.BLANK %>>
 		<c:if test="<%= !portletTitleBasedNavigation %>">
-			<liferay-ui:breadcrumb
-				showCurrentGroup="<%= false %>"
-				showGuestGroup="<%= false %>"
-				showLayout="<%= false %>"
-				showParentGroups="<%= false %>"
+			<liferay-site-navigation:breadcrumb
+				breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, false, true) %>"
 			/>
 		</c:if>
 
@@ -62,13 +52,27 @@ MBBreadcrumbUtil.addPortletBreadcrumbEntries(message, request, renderResponse);
 	</div>
 </div>
 
-<aui:script require="frontend-js-web/liferay/util/run_scripts_in_element.es as runScriptsInElement">
+<aui:script sandbox="<%= true %>">
 	window['<portlet:namespace />addReplyToMessage'] = function (messageId, quote) {
 		var addQuickReplyContainer = document.querySelector(
 			'#<portlet:namespace />addReplyToMessage' + messageId + ' .panel'
 		);
 
 		if (addQuickReplyContainer) {
+			var editorName = '<portlet:namespace />replyMessageBody' + messageId;
+
+			if (window[editorName]) {
+				addQuickReplyContainer.classList.remove('hide');
+				addQuickReplyContainer.scrollIntoView(true);
+
+				Liferay.Util.toggleDisabled(
+					'#<portlet:namespace />replyMessageButton' + messageId,
+					true
+				);
+
+				return;
+			}
+
 			<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="/message_boards/get_edit_message_quick" var="editMessageQuickURL">
 				<portlet:param name="redirect" value="<%= currentURL %>" />
 			</liferay-portlet:resourceURL>
@@ -101,7 +105,7 @@ MBBreadcrumbUtil.addPortletBreadcrumbEntries(message, request, renderResponse);
 				.then((response) => {
 					addQuickReplyContainer.innerHTML = response;
 
-					runScriptsInElement.default(addQuickReplyContainer);
+					Liferay.Util.runScriptsInElement(addQuickReplyContainer);
 
 					addQuickReplyContainer.classList.remove('hide');
 					addQuickReplyLoadingMask.classList.add('hide');
@@ -113,9 +117,6 @@ MBBreadcrumbUtil.addPortletBreadcrumbEntries(message, request, renderResponse);
 					if (parentMessageIdInput) {
 						parentMessageIdInput.value = messageId;
 					}
-
-					var editorName =
-						'<portlet:namespace />replyMessageBody' + messageId;
 
 					Liferay.componentReady(editorName).then((editor) => {
 						editor.focus();

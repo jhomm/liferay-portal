@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.background.task;
@@ -20,7 +11,9 @@ import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.search.background.task.ReindexBackgroundTaskConstants;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Set;
@@ -38,7 +31,7 @@ public class ReindexBackgroundTaskStatusMessageTranslator
 		String phase = message.getString(ReindexBackgroundTaskConstants.PHASE);
 
 		if (Validator.isNotNull(phase)) {
-			setPhaseAttributes(backgroundTaskStatus, message);
+			_setPhaseAttributes(backgroundTaskStatus, message);
 
 			return;
 		}
@@ -69,11 +62,11 @@ public class ReindexBackgroundTaskStatusMessageTranslator
 			backgroundTaskStatus.getAttribute(
 				ReindexBackgroundTaskConstants.COMPANY_IDS));
 
-		for (long companyId : companyIds) {
-			long currentCompanyId = GetterUtil.getLong(
-				backgroundTaskStatus.getAttribute(
-					ReindexBackgroundTaskConstants.COMPANY_ID));
+		long currentCompanyId = GetterUtil.getLong(
+			backgroundTaskStatus.getAttribute(
+				ReindexBackgroundTaskConstants.COMPANY_ID));
 
+		for (long companyId : companyIds) {
 			if (companyId == currentCompanyId) {
 				break;
 			}
@@ -84,28 +77,36 @@ public class ReindexBackgroundTaskStatusMessageTranslator
 		int percentage = 100;
 
 		if (phase.equals(ReindexBackgroundTaskConstants.PORTAL_START)) {
-			String lastIndexer = GetterUtil.getString(
-				backgroundTaskStatus.getAttribute("lastIndexer"));
+			String[] pastIndexers = GetterUtil.getStringValues(
+				backgroundTaskStatus.getAttribute(
+					"pastIndexers" + currentCompanyId));
 			int indexerCount = GetterUtil.getInteger(
-				backgroundTaskStatus.getAttribute("indexerCount"));
+				backgroundTaskStatus.getAttribute(
+					"indexerCount" + currentCompanyId));
 
-			if (Validator.isNull(lastIndexer)) {
-				backgroundTaskStatus.setAttribute("lastIndexer", className);
-			}
-			else if (!lastIndexer.equals(className)) {
+			Set<String> pastIndexersSet = SetUtil.fromArray(pastIndexers);
+
+			if (pastIndexersSet.isEmpty()) {
 				backgroundTaskStatus.setAttribute(
-					"indexerCount", ++indexerCount);
-				backgroundTaskStatus.setAttribute("lastIndexer", className);
+					"pastIndexers" + currentCompanyId,
+					new String[] {className});
+			}
+			else if (pastIndexersSet.add(className)) {
+				backgroundTaskStatus.setAttribute(
+					"indexerCount" + currentCompanyId, ++indexerCount);
+				backgroundTaskStatus.setAttribute(
+					"pastIndexers" + currentCompanyId,
+					ArrayUtil.toStringArray(pastIndexersSet));
 			}
 
 			Set<Indexer<?>> indexers = IndexerRegistryUtil.getIndexers();
 
-			percentage = getPercentage(
+			percentage = _getPercentage(
 				companyCount, companyIds.length, indexerCount, indexers.size(),
 				count, total);
 		}
 		else if (phase.equals(ReindexBackgroundTaskConstants.SINGLE_START)) {
-			percentage = getPercentage(
+			percentage = _getPercentage(
 				companyCount, companyIds.length, 0, 1, count, total);
 		}
 
@@ -113,7 +114,7 @@ public class ReindexBackgroundTaskStatusMessageTranslator
 			"percentage", String.valueOf(percentage));
 	}
 
-	protected int getPercentage(
+	private int _getPercentage(
 		int companyCount, int companyTotal, int indexerCount, int indexerTotal,
 		long documentCount, long documentTotal) {
 
@@ -136,7 +137,7 @@ public class ReindexBackgroundTaskStatusMessageTranslator
 		return (int)Math.min(Math.ceil(totalPercentage * 100), 100);
 	}
 
-	protected void setPhaseAttributes(
+	private void _setPhaseAttributes(
 		BackgroundTaskStatus backgroundTaskStatus, Message message) {
 
 		backgroundTaskStatus.setAttribute(

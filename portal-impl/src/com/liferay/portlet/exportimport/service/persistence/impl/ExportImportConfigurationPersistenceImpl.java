@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.exportimport.service.persistence.impl;
@@ -46,7 +37,6 @@ import com.liferay.portlet.exportimport.model.impl.ExportImportConfigurationMode
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -182,7 +172,7 @@ public class ExportImportConfigurationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ExportImportConfiguration>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ExportImportConfiguration exportImportConfiguration :
@@ -553,7 +543,8 @@ public class ExportImportConfigurationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -691,7 +682,7 @@ public class ExportImportConfigurationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ExportImportConfiguration>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ExportImportConfiguration exportImportConfiguration :
@@ -1062,7 +1053,8 @@ public class ExportImportConfigurationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1204,7 +1196,7 @@ public class ExportImportConfigurationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ExportImportConfiguration>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ExportImportConfiguration exportImportConfiguration :
@@ -1599,7 +1591,8 @@ public class ExportImportConfigurationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, type};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1748,7 +1741,7 @@ public class ExportImportConfigurationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ExportImportConfiguration>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ExportImportConfiguration exportImportConfiguration :
@@ -2143,7 +2136,8 @@ public class ExportImportConfigurationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, status};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2299,7 +2293,7 @@ public class ExportImportConfigurationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ExportImportConfiguration>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (ExportImportConfiguration exportImportConfiguration :
@@ -2717,7 +2711,8 @@ public class ExportImportConfigurationPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, type, status};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -3220,7 +3215,7 @@ public class ExportImportConfigurationPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<ExportImportConfiguration>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3291,7 +3286,7 @@ public class ExportImportConfigurationPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -3461,31 +3456,14 @@ public class ExportImportConfigurationPersistenceImpl
 			},
 			new String[] {"groupId", "type_", "status"}, false);
 
-		_setExportImportConfigurationUtilPersistence(this);
+		ExportImportConfigurationUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setExportImportConfigurationUtilPersistence(null);
+		ExportImportConfigurationUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(
 			ExportImportConfigurationImpl.class.getName());
-	}
-
-	private void _setExportImportConfigurationUtilPersistence(
-		ExportImportConfigurationPersistence
-			exportImportConfigurationPersistence) {
-
-		try {
-			Field field = ExportImportConfigurationUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, exportImportConfigurationPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_EXPORTIMPORTCONFIGURATION =

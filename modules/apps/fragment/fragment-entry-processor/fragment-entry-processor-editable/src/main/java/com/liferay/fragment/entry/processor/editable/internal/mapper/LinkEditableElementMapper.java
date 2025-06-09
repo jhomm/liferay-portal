@@ -1,30 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.entry.processor.editable.internal.mapper;
 
 import com.liferay.fragment.entry.processor.editable.mapper.EditableElementMapper;
-import com.liferay.fragment.entry.processor.editable.parser.util.EditableElementParserUtil;
 import com.liferay.fragment.entry.processor.helper.FragmentEntryProcessorHelper;
 import com.liferay.fragment.processor.FragmentEntryProcessorContext;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.HashMap;
 
@@ -37,10 +36,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(
-	immediate = true, property = "type=link",
-	service = EditableElementMapper.class
-)
+@Component(property = "type=link", service = EditableElementMapper.class)
 public class LinkEditableElementMapper implements EditableElementMapper {
 
 	@Override
@@ -49,46 +45,59 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 			FragmentEntryProcessorContext fragmentEntryProcessorContext)
 		throws PortalException {
 
+		boolean nofollow = false;
+		String href = null;
+
 		JSONObject hrefJSONObject = configJSONObject.getJSONObject("href");
 
-		boolean assetDisplayPage =
-			_fragmentEntryProcessorHelper.isAssetDisplayPage(
-				fragmentEntryProcessorContext.getMode());
-		boolean collectionMapped =
-			_fragmentEntryProcessorHelper.isMappedCollection(configJSONObject);
-		boolean layoutMapped = _fragmentEntryProcessorHelper.isMappedLayout(
-			configJSONObject);
-		boolean mapped = _fragmentEntryProcessorHelper.isMapped(
-			configJSONObject);
+		if (_fragmentEntryProcessorHelper.isMapped(configJSONObject) ||
+			_fragmentEntryProcessorHelper.isMappedCollection(
+				configJSONObject) ||
+			_fragmentEntryProcessorHelper.isMappedDisplayPage(
+				configJSONObject)) {
 
-		if ((hrefJSONObject == null) && !assetDisplayPage &&
-			!collectionMapped && !layoutMapped && !mapped) {
+			Object fieldValue = _fragmentEntryProcessorHelper.getFieldValue(
+				configJSONObject, new HashMap<>(),
+				fragmentEntryProcessorContext);
 
+			if (fieldValue instanceof JSONObject) {
+				JSONObject jsonObject = (JSONObject)fieldValue;
+
+				nofollow = jsonObject.getBoolean("nofollow");
+				href = jsonObject.getString("url");
+			}
+			else {
+				href = GetterUtil.getString(fieldValue);
+			}
+		}
+		else if (_isMappedLayout(configJSONObject)) {
+			href = GetterUtil.getString(
+				_getMappedLayoutValue(
+					configJSONObject, fragmentEntryProcessorContext));
+		}
+		else if (hrefJSONObject != null) {
+			String languageId = LocaleUtil.toLanguageId(
+				fragmentEntryProcessorContext.getLocale());
+
+			if (!hrefJSONObject.has(languageId)) {
+				languageId = LocaleUtil.toLanguageId(
+					LocaleUtil.getSiteDefault());
+			}
+
+			href = hrefJSONObject.getString(languageId);
+		}
+		else {
+			href = configJSONObject.getString("href");
+		}
+
+		if (Validator.isNull(href)) {
 			return;
 		}
 
-		String href = StringPool.BLANK;
+		String prefix = configJSONObject.getString("prefix");
 
-		if (collectionMapped) {
-			href = GetterUtil.getString(
-				_fragmentEntryProcessorHelper.getMappedCollectionValue(
-					configJSONObject, fragmentEntryProcessorContext));
-		}
-		else if (layoutMapped) {
-			href = GetterUtil.getString(
-				_fragmentEntryProcessorHelper.getMappedLayoutValue(
-					configJSONObject, fragmentEntryProcessorContext));
-		}
-		else if (mapped) {
-			href = GetterUtil.getString(
-				_fragmentEntryProcessorHelper.getMappedInfoItemFieldValue(
-					configJSONObject, new HashMap<>(),
-					fragmentEntryProcessorContext));
-		}
-		else if (hrefJSONObject != null) {
-			href = hrefJSONObject.getString(
-				LocaleUtil.toLanguageId(
-					fragmentEntryProcessorContext.getLocale()));
+		if (Validator.isNotNull(prefix)) {
+			href = prefix + href;
 		}
 
 		Element linkElement = new Element("a");
@@ -129,45 +138,76 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 			linkElement.attr("target", target);
 		}
 
-		String mappedField = configJSONObject.getString("mappedField");
-
-		if (Validator.isNotNull(href)) {
-			linkElement.attr("href", href);
-
-			_replaceLinkContent(
-				element, firstChildElement, linkElement, replaceLink);
-
-			if (((linkElement != element) || processEditableTag) &&
-				Validator.isNotNull(element.html())) {
-
-				element.html(linkElement.outerHtml());
-			}
-			else if ((linkElement != element) &&
-					 Validator.isNull(element.html())) {
-
-				element.replaceWith(linkElement);
-			}
+		if (Validator.isNull(href)) {
+			return;
 		}
-		else if (assetDisplayPage && Validator.isNotNull(mappedField)) {
-			linkElement.attr("href", "${" + mappedField + "}");
 
-			_replaceLinkContent(
-				element, firstChildElement, linkElement, replaceLink);
+		linkElement.attr("href", href);
 
-			if (processEditableTag) {
-				element.html(
-					_fragmentEntryProcessorHelper.processTemplate(
-						linkElement.outerHtml(),
-						fragmentEntryProcessorContext));
-			}
-			else {
-				element.replaceWith(
-					EditableElementParserUtil.getDocumentBody(
-						_fragmentEntryProcessorHelper.processTemplate(
-							linkElement.outerHtml(),
-							fragmentEntryProcessorContext)));
-			}
+		if (nofollow) {
+			linkElement.attr("rel", "nofollow");
 		}
+
+		_replaceLinkContent(
+			element, firstChildElement, linkElement, replaceLink);
+
+		if (((linkElement != element) || processEditableTag) &&
+			Validator.isNotNull(element.html())) {
+
+			element.html(linkElement.outerHtml());
+		}
+		else if ((linkElement != element) && Validator.isNull(element.html())) {
+			element.replaceWith(linkElement);
+		}
+	}
+
+	private Object _getMappedLayoutValue(
+			JSONObject jsonObject,
+			FragmentEntryProcessorContext fragmentEntryProcessorContext)
+		throws PortalException {
+
+		if (!_isMappedLayout(jsonObject)) {
+			return StringPool.BLANK;
+		}
+
+		HttpServletRequest httpServletRequest =
+			fragmentEntryProcessorContext.getHttpServletRequest();
+
+		if (httpServletRequest == null) {
+			return StringPool.BLANK;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (themeDisplay == null) {
+			return StringPool.BLANK;
+		}
+
+		JSONObject layoutJSONObject = jsonObject.getJSONObject("layout");
+
+		long groupId = layoutJSONObject.getLong("groupId");
+
+		Group group = _groupLocalService.fetchGroup(groupId);
+
+		if (group == null) {
+			return StringPool.POUND;
+		}
+
+		Layout layout = _layoutLocalService.fetchLayout(
+			groupId, layoutJSONObject.getBoolean("privateLayout"),
+			layoutJSONObject.getLong("layoutId"));
+
+		if (layout == null) {
+			return StringPool.POUND;
+		}
+
+		return _portal.getLayoutRelativeURL(layout, themeDisplay);
+	}
+
+	private boolean _isMappedLayout(JSONObject jsonObject) {
+		return jsonObject.has("layout");
 	}
 
 	private void _replaceLinkContent(
@@ -190,5 +230,14 @@ public class LinkEditableElementMapper implements EditableElementMapper {
 
 	@Reference
 	private FragmentEntryProcessorHelper _fragmentEntryProcessorHelper;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
+
+	@Reference
+	private Portal _portal;
 
 }

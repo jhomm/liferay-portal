@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -96,27 +87,21 @@
 					</div>
 				</div>
 
-				<script>
-					new Liferay.DynamicSelect([
-						{
-							select: '<portlet:namespace />addressCountryId<%= addressesIndex %>',
-							selectData: Liferay.Address.getCountries,
-							selectDesc: 'nameCurrentValue',
-							selectId: 'countryId',
-							selectSort: '<%= true %>',
-							selectVal:
-								'<%= ParamUtil.getLong(request, "addressCountryId" + addressesIndex, address.getCountryId()) %>',
-						},
-						{
-							select: '<portlet:namespace />addressRegionId<%= addressesIndex %>',
-							selectData: Liferay.Address.getRegions,
-							selectDesc: 'name',
-							selectId: 'regionId',
-							selectVal:
-								'<%= ParamUtil.getLong(request, "addressRegionId" + addressesIndex, address.getRegionId()) %>',
-						},
-					]);
-				</script>
+				<liferay-frontend:component
+					componentId="CountryRegionDynamicSelect"
+					context='<%=
+						HashMapBuilder.<String, Object>put(
+							"countrySelect", portletDisplay.getNamespace() + "addressCountryId" + addressesIndex
+						).put(
+							"countrySelectVal", ParamUtil.getLong(request, "addressCountryId" + addressesIndex, address.getCountryId())
+						).put(
+							"regionSelect", portletDisplay.getNamespace() + "addressRegionId" + addressesIndex
+						).put(
+							"regionSelectVal", ParamUtil.getLong(request, "addressRegionId" + addressesIndex, address.getRegionId())
+						).build()
+					%>'
+					module="{CountryRegionDynamicSelect} from portal-settings-web"
+				/>
 
 			<%
 			}
@@ -125,45 +110,14 @@
 			<aui:input name="addressesIndexes" type="hidden" value="<%= StringUtil.merge(addressesIndexes) %>" />
 		</aui:fieldset>
 
-		<aui:script use="liferay-auto-fields">
-			new Liferay.AutoFields({
-				contentBox: '#<portlet:namespace />addresses',
-				fieldIndexes: '<portlet:namespace />addressesIndexes',
-				namespace: '<portlet:namespace />',
-				on: {
-					clone: function (event) {
-						var guid = event.guid;
-						var row = event.row;
-
-						var dynamicSelects = row.one(
-							'select[data-componentType=dynamic_select]'
-						);
-
-						if (dynamicSelects) {
-							dynamicSelects.detach('change');
-						}
-
-						new Liferay.DynamicSelect([
-							{
-								select: '<portlet:namespace />addressCountryId' + guid,
-								selectData: Liferay.Address.getCountries,
-								selectDesc: 'nameCurrentValue',
-								selectId: 'countryId',
-								selectSort: '<%= true %>',
-								selectVal: '0',
-							},
-							{
-								select: '<portlet:namespace />addressRegionId' + guid,
-								selectData: Liferay.Address.getRegions,
-								selectDesc: 'name',
-								selectId: 'regionId',
-								selectVal: '0',
-							},
-						]);
-					},
-				},
-			}).render();
-		</aui:script>
+		<liferay-frontend:component
+			context='<%=
+				HashMapBuilder.<String, Object>put(
+					"namespace", portletDisplay.getNamespace()
+				).build()
+			%>'
+			module="{main} from portal-settings-web"
+		/>
 	</c:when>
 	<c:otherwise>
 		<div class="alert alert-info">

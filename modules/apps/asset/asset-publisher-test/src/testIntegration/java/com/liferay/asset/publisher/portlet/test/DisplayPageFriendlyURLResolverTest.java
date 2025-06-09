@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.portlet.test;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.webdav.methods.Method;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PortalInstances;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -79,8 +69,6 @@ public class DisplayPageFriendlyURLResolverTest {
 
 	@Before
 	public void setUp() throws Exception {
-		PortalInstances.addCompanyId(TestPropsValues.getCompanyId());
-
 		UserTestUtil.setUser(TestPropsValues.getUser());
 
 		_group = GroupTestUtil.addGroup();
@@ -89,13 +77,13 @@ public class DisplayPageFriendlyURLResolverTest {
 			ServiceContextTestUtil.getServiceContext();
 
 		LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, "Home", StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_PORTLET, false,
 			StringPool.BLANK, serviceContext);
 
 		Layout layout = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), _group.getGroupId(), false,
+			null, TestPropsValues.getUserId(), _group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID,
 			"Test " + RandomTestUtil.nextInt(), StringPool.BLANK,
 			StringPool.BLANK, LayoutConstants.TYPE_PORTLET, false,
@@ -133,22 +121,22 @@ public class DisplayPageFriendlyURLResolverTest {
 
 	@Test
 	public void testJournalArticleFriendlyURL() throws Exception {
-		String actualURL = PortalUtil.getActualURL(
-			_group.getGroupId(), false, Portal.PATH_MAIN,
-			"/-/test-journal-article", new HashMap<>(), _getRequestContext());
-
-		Assert.assertNotNull(actualURL);
+		Assert.assertNotNull(
+			PortalUtil.getActualURL(
+				_group.getGroupId(), false, Portal.PATH_MAIN,
+				"/-/test-journal-article", new HashMap<>(),
+				_getRequestContext()));
 	}
 
 	@Test
 	public void testJournalArticleFriendlyURLWithEndingSlash()
 		throws Exception {
 
-		String actualURL = PortalUtil.getActualURL(
-			_group.getGroupId(), false, Portal.PATH_MAIN,
-			"/-/test-journal-article/", new HashMap<>(), _getRequestContext());
-
-		Assert.assertNotNull(actualURL);
+		Assert.assertNotNull(
+			PortalUtil.getActualURL(
+				_group.getGroupId(), false, Portal.PATH_MAIN,
+				"/-/test-journal-article/", new HashMap<>(),
+				_getRequestContext()));
 	}
 
 	@Test

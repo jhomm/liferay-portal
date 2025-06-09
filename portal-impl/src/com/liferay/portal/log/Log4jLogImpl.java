@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.log;
@@ -44,7 +35,8 @@ public class Log4jLogImpl implements Log {
 	@Override
 	public void debug(Throwable throwable) {
 		_logger.logIfEnabled(
-			_logWrapperClassName, Level.DEBUG, null, (Object)null, throwable);
+			_logWrapperClassName, Level.DEBUG, null, throwable.getMessage(),
+			throwable);
 	}
 
 	@Override
@@ -62,7 +54,8 @@ public class Log4jLogImpl implements Log {
 	@Override
 	public void error(Throwable throwable) {
 		_logger.logIfEnabled(
-			_logWrapperClassName, Level.ERROR, null, (Object)null, throwable);
+			_logWrapperClassName, Level.ERROR, null, throwable.getMessage(),
+			throwable);
 	}
 
 	@Override
@@ -80,7 +73,8 @@ public class Log4jLogImpl implements Log {
 	@Override
 	public void fatal(Throwable throwable) {
 		_logger.logIfEnabled(
-			_logWrapperClassName, Level.FATAL, null, (Object)null, throwable);
+			_logWrapperClassName, Level.FATAL, null, throwable.getMessage(),
+			throwable);
 	}
 
 	@Override
@@ -97,7 +91,8 @@ public class Log4jLogImpl implements Log {
 	@Override
 	public void info(Throwable throwable) {
 		_logger.logIfEnabled(
-			_logWrapperClassName, Level.INFO, null, (Object)null, throwable);
+			_logWrapperClassName, Level.INFO, null, throwable.getMessage(),
+			throwable);
 	}
 
 	@Override
@@ -150,7 +145,8 @@ public class Log4jLogImpl implements Log {
 	@Override
 	public void trace(Throwable throwable) {
 		_logger.logIfEnabled(
-			_logWrapperClassName, Level.TRACE, null, (Object)null, throwable);
+			_logWrapperClassName, Level.TRACE, null, throwable.getMessage(),
+			throwable);
 	}
 
 	@Override
@@ -167,7 +163,8 @@ public class Log4jLogImpl implements Log {
 	@Override
 	public void warn(Throwable throwable) {
 		_logger.logIfEnabled(
-			_logWrapperClassName, Level.WARN, null, (Object)null, throwable);
+			_logWrapperClassName, Level.WARN, null, throwable.getMessage(),
+			throwable);
 	}
 
 	private final org.apache.logging.log4j.core.Logger _logger;

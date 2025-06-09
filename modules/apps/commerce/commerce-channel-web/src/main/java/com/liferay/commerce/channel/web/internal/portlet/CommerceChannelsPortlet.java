@@ -1,46 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.channel.web.internal.portlet;
 
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.commerce.channel.web.internal.display.context.CommerceChannelDisplayContext;
-import com.liferay.commerce.currency.service.CommerceCurrencyService;
-import com.liferay.commerce.payment.method.CommercePaymentMethodRegistry;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.product.channel.CommerceChannelHealthStatusRegistry;
 import com.liferay.commerce.product.channel.CommerceChannelTypeRegistry;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CPTaxCategoryLocalService;
 import com.liferay.commerce.product.service.CommerceChannelService;
-import com.liferay.portal.kernel.messaging.proxy.ProxyModeThreadLocal;
-import com.liferay.portal.kernel.messaging.proxy.ProxyModeThreadLocalCloseable;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManager;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,7 +38,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -60,30 +48,17 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Channels",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=Channels",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CHANNELS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {CommerceChannelsPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CommerceChannelsPortlet extends MVCPortlet {
-
-	@Override
-	public void processAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws IOException, PortletException {
-
-		try (ProxyModeThreadLocalCloseable proxyModeThreadLocalCloseable =
-				new ProxyModeThreadLocalCloseable()) {
-
-			ProxyModeThreadLocal.setForceSync(true);
-
-			super.processAction(actionRequest, actionResponse);
-		}
-	}
 
 	@Override
 	public void render(
@@ -92,19 +67,23 @@ public class CommerceChannelsPortlet extends MVCPortlet {
 
 		CommerceChannelDisplayContext commerceChannelDisplayContext =
 			new CommerceChannelDisplayContext(
+				_accountEntryService, _commerceChannelHealthStatusRegistry,
 				_commerceChannelModelResourcePermission,
-				_commerceChannelHealthStatusRegistry, _commerceChannelService,
-				_commerceChannelTypeRegistry, _commerceCurrencyService,
-				_commercePaymentMethodRegistry, _configurationProvider,
-				_portal.getHttpServletRequest(renderRequest), _portal,
-				_workflowDefinitionLinkLocalService, _workflowDefinitionManager,
-				_cpTaxCategoryLocalService);
+				_commerceChannelService, _commerceChannelTypeRegistry,
+				_commerceCurrencyLocalService, _configurationProvider,
+				_cpTaxCategoryLocalService, _dlAppLocalService,
+				_portal.getHttpServletRequest(renderRequest), _itemSelector,
+				_portal, _workflowDefinitionLinkLocalService,
+				_workflowDefinitionManager);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, commerceChannelDisplayContext);
 
 		super.render(renderRequest, renderResponse);
 	}
+
+	@Reference
+	private AccountEntryService _accountEntryService;
 
 	@Reference
 	private CommerceChannelHealthStatusRegistry
@@ -123,16 +102,19 @@ public class CommerceChannelsPortlet extends MVCPortlet {
 	private CommerceChannelTypeRegistry _commerceChannelTypeRegistry;
 
 	@Reference
-	private CommerceCurrencyService _commerceCurrencyService;
-
-	@Reference
-	private CommercePaymentMethodRegistry _commercePaymentMethodRegistry;
+	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private CPTaxCategoryLocalService _cpTaxCategoryLocalService;
+
+	@Reference
+	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
+	private ItemSelector _itemSelector;
 
 	@Reference
 	private Portal _portal;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,6 +8,7 @@ import ClayCard from '@clayui/card';
 import ClayEmptyState from '@clayui/empty-state';
 import ClayIcon from '@clayui/icon';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
+import classNames from 'classnames';
 import {useManualQuery} from 'graphql-hooks';
 import React, {useContext, useEffect, useState} from 'react';
 import {Helmet} from 'react-helmet';
@@ -36,7 +28,7 @@ import {
 	historyPushWithSlug,
 } from '../../utils/utils.es';
 
-export default withRouter(({history}) => {
+export default withRouter(({history, isHomePath}) => {
 	const context = useContext(AppContext);
 	const historyPushParser = historyPushWithSlug(history.push);
 	const [topicModalVisibility, setTopicModalVisibility] = useState(false);
@@ -69,7 +61,7 @@ export default withRouter(({history}) => {
 				: getSectionBySectionTitle().then((result) => ({
 						...result,
 						data: result.data.messageBoardSections.items[0],
-				  }));
+					}));
 
 		fn.then((result) => ({
 			...result,
@@ -105,6 +97,21 @@ export default withRouter(({history}) => {
 				<Redirect to={'/questions/' + context.rootTopicId} />
 			)}
 
+			<div className="d-flex justify-content-end pb-3">
+				<ClayButton
+					aria-label={Liferay.Language.get('all-questions')}
+					className={classNames('font-weight-bold', {
+						'text-white': isHomePath,
+					})}
+					displayType="unstyled"
+					onClick={() => history.push('/questions/all')}
+				>
+					{Liferay.Language.get('all-questions')}
+
+					<ClayIcon symbol="caret-right" />
+				</ClayButton>
+			</div>
+
 			<div className="questions-container row">
 				{!loading && (
 					<>
@@ -112,7 +119,7 @@ export default withRouter(({history}) => {
 							sections.actions &&
 							!!sections.actions.create &&
 							sections.items &&
-							sections.items.length > 0 && (
+							!!sections.items.length && (
 								<div className="c-mb-4 col-lg-4 col-md-6 col-xl-3">
 									<div className="questions-card text-decoration-none text-secondary">
 										<ClayCard
@@ -131,6 +138,7 @@ export default withRouter(({history}) => {
 													title=""
 												>
 													<ClayIcon symbol="plus" />
+
 													<span className="c-ml-3 text-truncate">
 														{Liferay.Language.get(
 															'new-topic'
@@ -144,7 +152,7 @@ export default withRouter(({history}) => {
 							)}
 
 						{(sections.items &&
-							sections.items.length > 0 &&
+							!!sections.items.length &&
 							sections.items.map((section) => (
 								<div
 									className="c-mb-4 col-lg-4 col-md-6 col-xl-3"
@@ -154,7 +162,7 @@ export default withRouter(({history}) => {
 										className="questions-card text-decoration-none text-secondary"
 										to={`/questions/${
 											context.useTopicNamesInURL
-												? section.title
+												? section.friendlyUrlPath
 												: section.id
 										}`}
 									>
@@ -192,6 +200,7 @@ export default withRouter(({history}) => {
 															]
 														)}
 													</span>
+
 													<button className="btn btn-link btn-sm d-xl-none float-right font-weight-bold p-0">
 														View Topic
 													</button>
@@ -217,6 +226,9 @@ export default withRouter(({history}) => {
 									sections.actions &&
 									!!sections.actions.create && (
 										<ClayButton
+											aria-label={Liferay.Language.get(
+												'new-topic'
+											)}
 											displayType="primary"
 											onClick={() =>
 												setTopicModalVisibility(true)
@@ -241,6 +253,7 @@ export default withRouter(({history}) => {
 					visible={topicModalVisibility}
 				/>
 			</div>
+
 			{loading && <ClayLoadingIndicator />}
 
 			<Alert info={error} />
@@ -248,6 +261,7 @@ export default withRouter(({history}) => {
 			{context.historyRouterBasePath && (
 				<Helmet>
 					<title>Questions</title>
+
 					<link
 						href={getBasePathWithHistoryRouter(
 							context.historyRouterBasePath

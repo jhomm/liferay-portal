@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service;
@@ -375,40 +366,12 @@ public interface CommerceDiscountLocalService
 	public long dynamicQueryCount(
 		DynamicQuery dynamicQuery, Projection projection);
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #fetchByExternalReferenceCode(String, long)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscount fetchByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscount fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscount fetchCommerceDiscount(long commerceDiscountId);
 
-	/**
-	 * Returns the commerce discount with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce discount's external reference code
-	 * @return the matching commerce discount, or <code>null</code> if a matching commerce discount could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscount fetchCommerceDiscountByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceDiscountByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceDiscount fetchCommerceDiscountByReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the commerce discount with the matching UUID and company.
@@ -422,10 +385,16 @@ public interface CommerceDiscountLocalService
 		String uuid, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceDiscount fetchDefaultCommerceDiscount(
+		long commerceChannelAccountEntryRelId, long cpDefinitionId,
+		long cpInstanceId, String unitOfMeasureKey);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount>
 		getAccountAndChannelAndOrderTypeCommerceDiscounts(
 			long commerceAccountId, long commerceChannelId,
-			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId);
+			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId,
+			String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount>
@@ -436,7 +405,7 @@ public interface CommerceDiscountLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountAndChannelCommerceDiscounts(
 		long commerceAccountId, long commerceChannelId, long cpDefinitionId,
-		long cpInstanceId);
+		long cpInstanceId, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountAndChannelCommerceDiscounts(
@@ -449,11 +418,12 @@ public interface CommerceDiscountLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountCommerceAndOrderTypeDiscounts(
 		long commerceAccountId, long commerceOrderTypeId, long cpDefinitionId,
-		long cpInstanceId);
+		long cpInstanceId, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountCommerceDiscounts(
-		long commerceAccountId, long cpDefinitionId, long cpInstanceId);
+		long commerceAccountId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountCommerceDiscounts(
@@ -463,7 +433,8 @@ public interface CommerceDiscountLocalService
 	public List<CommerceDiscount>
 		getAccountGroupAndChannelAndOrderTypeCommerceDiscount(
 			long[] commerceAccountGroupIds, long commerceChannelId,
-			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId);
+			long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId,
+			String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount>
@@ -474,7 +445,7 @@ public interface CommerceDiscountLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountGroupAndChannelCommerceDiscount(
 		long[] commerceAccountGroupIds, long commerceChannelId,
-		long cpDefinitionId, long cpInstanceId);
+		long cpDefinitionId, long cpInstanceId, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountGroupAndChannelCommerceDiscount(
@@ -483,7 +454,7 @@ public interface CommerceDiscountLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountGroupAndOrderTypeCommerceDiscount(
 		long[] commerceAccountGroupIds, long commerceOrderTypeId,
-		long cpDefinitionId, long cpInstanceId);
+		long cpDefinitionId, long cpInstanceId, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountGroupAndOrderTypeCommerceDiscount(
@@ -492,7 +463,8 @@ public interface CommerceDiscountLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountGroupCommerceDiscount(
-		long[] commerceAccountGroupIds, long cpDefinitionId, long cpInstanceId);
+		long[] commerceAccountGroupIds, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getAccountGroupCommerceDiscount(
@@ -513,7 +485,7 @@ public interface CommerceDiscountLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getChannelAndOrderTypeCommerceDiscounts(
 		long commerceChannelId, long commerceOrderTypeId, long cpDefinitionId,
-		long cpInstanceId);
+		long cpInstanceId, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getChannelAndOrderTypeCommerceDiscounts(
@@ -521,7 +493,8 @@ public interface CommerceDiscountLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getChannelCommerceDiscounts(
-		long commerceChannelId, long cpDefinitionId, long cpInstanceId);
+		long commerceChannelId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getChannelCommerceDiscounts(
@@ -538,17 +511,9 @@ public interface CommerceDiscountLocalService
 	public CommerceDiscount getCommerceDiscount(long commerceDiscountId)
 		throws PortalException;
 
-	/**
-	 * Returns the commerce discount with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce discount's external reference code
-	 * @return the matching commerce discount
-	 * @throws PortalException if a matching commerce discount could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceDiscount getCommerceDiscountByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -586,6 +551,10 @@ public interface CommerceDiscountLocalService
 	public List<CommerceDiscount> getCommerceDiscounts(
 		long companyId, String couponCode);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceDiscount> getCommerceDiscounts(
+		long companyId, String level, boolean active, int status);
+
 	/**
 	 * Returns the number of commerce discounts.
 	 *
@@ -614,7 +583,8 @@ public interface CommerceDiscountLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getOrderTypeCommerceDiscounts(
-		long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId);
+		long commerceOrderTypeId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getOrderTypeCommerceDiscounts(
@@ -641,11 +611,17 @@ public interface CommerceDiscountLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getUnqualifiedCommerceDiscounts(
-		long companyId, long cpDefinitionId, long cpInstanceId);
+		long companyId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscount> getUnqualifiedCommerceDiscounts(
 		long companyId, String target);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getValidCommerceDiscountsCount(
+		long commerceDiscountId, long cpDefinitionId, long cpInstanceId,
+		String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getValidCommerceDiscountsCount(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.web.internal.display.context;
@@ -20,15 +11,11 @@ import com.liferay.asset.kernel.model.ClassType;
 import com.liferay.asset.kernel.model.ClassTypeReader;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.util.DLURLHelper;
-import com.liferay.dynamic.data.mapping.exception.StorageException;
-import com.liferay.dynamic.data.mapping.model.DDMStructure;
-import com.liferay.dynamic.data.mapping.service.DDMStructureServiceUtil;
-import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
-import com.liferay.dynamic.data.mapping.storage.StorageEngine;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.SelectOption;
 import com.liferay.info.exception.NoSuchFormVariationException;
 import com.liferay.info.form.InfoForm;
 import com.liferay.info.item.InfoItemClassDetails;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemDetailsProvider;
 import com.liferay.info.item.provider.InfoItemFormProvider;
 import com.liferay.item.selector.ItemSelector;
@@ -36,6 +23,7 @@ import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.URLItemSelectorReturnType;
 import com.liferay.item.selector.criteria.image.criterion.ImageItemSelectorCriterion;
+import com.liferay.layout.admin.kernel.model.LayoutTypePortletConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.layout.seo.canonical.url.LayoutSEOCanonicalURLProvider;
@@ -44,9 +32,11 @@ import com.liferay.layout.seo.model.LayoutSEOEntry;
 import com.liferay.layout.seo.model.LayoutSEOSite;
 import com.liferay.layout.seo.service.LayoutSEOEntryLocalServiceUtil;
 import com.liferay.layout.seo.service.LayoutSEOSiteLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
@@ -55,34 +45,38 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
-import com.liferay.portal.kernel.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.URLCodec;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.display.template.PortletDisplayTemplate;
-import com.liferay.portlet.layoutsadmin.display.context.GroupDisplayContextHelper;
+import com.liferay.site.display.context.GroupDisplayContextHelper;
 
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 /**
  * @author Alicia García
@@ -91,20 +85,20 @@ public class LayoutsSEODisplayContext {
 
 	public LayoutsSEODisplayContext(
 		DLAppService dlAppService, DLURLHelper dlurlHelper,
-		InfoItemServiceTracker infoItemServiceTracker,
-		ItemSelector itemSelector,
+		InfoItemServiceRegistry infoItemServiceRegistry,
+		ItemSelector itemSelector, LayoutLocalService layoutLocalService,
 		LayoutPageTemplateEntryLocalService layoutPageTemplateEntryLocalService,
 		LayoutSEOCanonicalURLProvider layoutSEOCanonicalURLProvider,
 		LayoutSEOLinkManager layoutSEOLinkManager,
 		LayoutSEOSiteLocalService layoutSEOSiteLocalService,
 		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse,
-		StorageEngine storageEngine) {
+		LiferayPortletResponse liferayPortletResponse) {
 
 		_dlAppService = dlAppService;
 		_dlurlHelper = dlurlHelper;
-		_infoItemServiceTracker = infoItemServiceTracker;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
 		_itemSelector = itemSelector;
+		_layoutLocalService = layoutLocalService;
 		_layoutPageTemplateEntryLocalService =
 			layoutPageTemplateEntryLocalService;
 		_layoutSEOCanonicalURLProvider = layoutSEOCanonicalURLProvider;
@@ -112,10 +106,9 @@ public class LayoutsSEODisplayContext {
 		_layoutSEOSiteLocalService = layoutSEOSiteLocalService;
 		_liferayPortletRequest = liferayPortletRequest;
 		_liferayPortletResponse = liferayPortletResponse;
-		_storageEngine = storageEngine;
 
 		HttpServletRequest httpServletRequest =
-			PortalUtil.getHttpServletRequest(_liferayPortletRequest);
+			PortalUtil.getHttpServletRequest(liferayPortletRequest);
 
 		_groupDisplayContextHelper = new GroupDisplayContextHelper(
 			httpServletRequest);
@@ -126,38 +119,28 @@ public class LayoutsSEODisplayContext {
 			WebKeys.THEME_DISPLAY);
 	}
 
-	public DDMFormValues getDDMFormValues() throws StorageException {
-		LayoutSEOEntry selLayoutSEOEntry = getSelLayoutSEOEntry();
-
-		if ((selLayoutSEOEntry == null) ||
-			(selLayoutSEOEntry.getDDMStorageId() == 0)) {
-
-			return null;
+	public String getBackURL() throws PortalException {
+		if (Validator.isNotNull(_backURL)) {
+			return _backURL;
 		}
 
-		return _storageEngine.getDDMFormValues(
-			selLayoutSEOEntry.getDDMStorageId());
-	}
+		String backURL = ParamUtil.getString(
+			_httpServletRequest, "backURL", _getRedirect());
 
-	public long getDDMStructurePrimaryKey() throws PortalException {
-		if (_ddmStructure != null) {
-			return _ddmStructure.getPrimaryKey();
+		if (Validator.isNull(backURL)) {
+			backURL = PortalUtil.getLayoutFullURL(
+				getSelLayout(), _themeDisplay);
 		}
 
-		Company company = _themeDisplay.getCompany();
+		_backURL = backURL;
 
-		_ddmStructure = DDMStructureServiceUtil.getStructure(
-			company.getGroupId(),
-			ClassNameLocalServiceUtil.getClassNameId(
-				LayoutSEOEntry.class.getName()),
-			"custom-meta-tags");
-
-		return _ddmStructure.getPrimaryKey();
+		return _backURL;
 	}
 
 	public String getDefaultCanonicalURL() throws PortalException {
-		return _layoutSEOCanonicalURLProvider.getDefaultCanonicalURL(
-			_selLayout, _themeDisplay);
+		return URLCodec.decodeURL(
+			_layoutSEOCanonicalURLProvider.getDefaultCanonicalURL(
+				_selLayout, _themeDisplay));
 	}
 
 	public Map<Locale, String> getDefaultCanonicalURLMap()
@@ -190,7 +173,7 @@ public class LayoutsSEODisplayContext {
 			return _dlurlHelper.getImagePreviewURL(fileEntry, _themeDisplay);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return StringPool.BLANK;
 		}
@@ -215,22 +198,41 @@ public class LayoutsSEODisplayContext {
 			return defaultPageTitleMap;
 		}
 
-		Set<Map.Entry<Locale, String>> set = defaultPageTitleMap.entrySet();
+		Map<Locale, String> defaultPageTitleWithSuffixMap = new HashMap<>();
 
-		Stream<Map.Entry<Locale, String>> stream = set.stream();
+		for (Map.Entry<Locale, String> entry : defaultPageTitleMap.entrySet()) {
+			defaultPageTitleWithSuffixMap.put(
+				entry.getKey(), entry.getValue() + " - " + pageTitleSuffix);
+		}
 
-		return stream.collect(
-			Collectors.toMap(
-				Map.Entry::getKey,
-				entry -> entry.getValue() + " - " + pageTitleSuffix));
+		return defaultPageTitleWithSuffixMap;
 	}
 
 	public PortletURL getEditCustomMetaTagsURL() {
-		return _getPortletURL("/layout/edit_custom_meta_tags");
-	}
-
-	public PortletURL getEditOpenGraphURL() {
-		return _getPortletURL("/layout/edit_open_graph");
+		return PortletURLBuilder.createLiferayPortletURL(
+			_liferayPortletResponse, _liferayPortletRequest.getPlid(),
+			_liferayPortletRequest.getPortletName(),
+			PortletRequest.ACTION_PHASE, MimeResponse.Copy.ALL
+		).setActionName(
+			"/layout/edit_custom_meta_tags"
+		).setMVCRenderCommandName(
+			_liferayPortletRequest.getParameter("mvcRenderCommandName")
+		).setTabs1(
+			_liferayPortletRequest.getParameter("tabs1")
+		).setParameter(
+			"displayStyle", _liferayPortletRequest.getParameter("displayStyle")
+		).setParameter(
+			"privateLayout",
+			_liferayPortletRequest.getParameter("privateLayout")
+		).setParameter(
+			"screenNavigationCategoryKey",
+			_liferayPortletRequest.getParameter("screenNavigationCategoryKey")
+		).setParameter(
+			"screenNavigationEntryKey",
+			_liferayPortletRequest.getParameter("screenNavigationEntryKey")
+		).setParameter(
+			"selPlid", _liferayPortletRequest.getParameter("selPlid")
+		).buildPortletURL();
 	}
 
 	public long getGroupId() {
@@ -251,13 +253,12 @@ public class LayoutsSEODisplayContext {
 			new FileEntryItemSelectorReturnType(),
 			new URLItemSelectorReturnType());
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
-			_liferayPortletResponse.getNamespace() +
-				"openGraphImageSelectedItem",
-			imageItemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				_liferayPortletResponse.getNamespace() +
+					"openGraphImageSelectedItem",
+				imageItemSelectorCriterion));
 	}
 
 	public Long getLayoutId() {
@@ -296,7 +297,7 @@ public class LayoutsSEODisplayContext {
 			return fileEntry.getTitle();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return StringPool.BLANK;
 		}
@@ -322,7 +323,7 @@ public class LayoutsSEODisplayContext {
 			return _dlurlHelper.getImagePreviewURL(fileEntry, _themeDisplay);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			return StringPool.BLANK;
 		}
@@ -332,9 +333,7 @@ public class LayoutsSEODisplayContext {
 		throws PortalException {
 
 		return HashMapBuilder.<String, Object>putAll(
-			_getBaseSEOMappingData(
-				_getInfoForm(_getLayoutPageTemplateEntry()),
-				_getLayoutPageTemplateEntry())
+			_getBaseSEOMappingData()
 		).put(
 			"openGraphDescription",
 			_selLayout.getTypeSettingsProperty(
@@ -352,6 +351,47 @@ public class LayoutsSEODisplayContext {
 		).build();
 	}
 
+	public Map<String, Object> getOpenGraphPreviewSeoProperties()
+		throws Exception {
+
+		return HashMapBuilder.<String, Object>put(
+			"displayType", "og"
+		).put(
+			"targets",
+			HashMapBuilder.<String, Object>put(
+				"description",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue",
+					() -> {
+						Layout selLayout = getSelLayout();
+
+						return selLayout.getDescriptionMap();
+					}
+				).put(
+					"id", "openGraphDescription"
+				).build()
+			).put(
+				"imgUrl",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue", getDefaultOpenGraphImageURL()
+				).put(
+					"value", getOpenGraphImageURL()
+				).build()
+			).put(
+				"title",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue", getDefaultPageTitleWithSuffixMap()
+				).put(
+					"id", "openGraphTitle"
+				).build()
+			).put(
+				"url",
+				Collections.singletonMap(
+					"defaultValue", getDefaultCanonicalURLMap())
+			).build()
+		).build();
+	}
+
 	public String getPageTitleSuffix() throws PortalException {
 		Company company = _themeDisplay.getCompany();
 
@@ -360,33 +400,28 @@ public class LayoutsSEODisplayContext {
 	}
 
 	public PortletURL getRedirectURL() {
-		LiferayPortletURL liferayPortletURL =
-			_liferayPortletResponse.createLiferayPortletURL(
-				_liferayPortletRequest.getPlid(),
-				_liferayPortletRequest.getPortletName(),
-				PortletRequest.RENDER_PHASE, MimeResponse.Copy.ALL);
-
-		liferayPortletURL.setParameter(
-			"mvcRenderCommandName",
-			_liferayPortletRequest.getParameter("mvcRenderCommandName"));
-		liferayPortletURL.setParameter(
-			"tabs1", _liferayPortletRequest.getParameter("tabs1"));
-		liferayPortletURL.setParameter(
-			"screenNavigationCategoryKey",
-			_liferayPortletRequest.getParameter("screenNavigationCategoryKey"));
-		liferayPortletURL.setParameter(
-			"screenNavigationEntryKey",
-			_liferayPortletRequest.getParameter("screenNavigationEntryKey"));
-		liferayPortletURL.setParameter(
-			"selPlid", _liferayPortletRequest.getParameter("selPlid"));
-		liferayPortletURL.setParameter(
+		return PortletURLBuilder.createLiferayPortletURL(
+			_liferayPortletResponse, _liferayPortletRequest.getPlid(),
+			_liferayPortletRequest.getPortletName(),
+			PortletRequest.RENDER_PHASE, MimeResponse.Copy.ALL
+		).setMVCRenderCommandName(
+			_liferayPortletRequest.getParameter("mvcRenderCommandName")
+		).setTabs1(
+			_liferayPortletRequest.getParameter("tabs1")
+		).setParameter(
+			"displayStyle", _liferayPortletRequest.getParameter("displayStyle")
+		).setParameter(
 			"privateLayout",
-			_liferayPortletRequest.getParameter("privateLayout"));
-		liferayPortletURL.setParameter(
-			"displayStyle",
-			_liferayPortletRequest.getParameter("displayStyle"));
-
-		return liferayPortletURL;
+			_liferayPortletRequest.getParameter("privateLayout")
+		).setParameter(
+			"screenNavigationCategoryKey",
+			_liferayPortletRequest.getParameter("screenNavigationCategoryKey")
+		).setParameter(
+			"screenNavigationEntryKey",
+			_liferayPortletRequest.getParameter("screenNavigationEntryKey")
+		).setParameter(
+			"selPlid", _liferayPortletRequest.getParameter("selPlid")
+		).buildPortletURL();
 	}
 
 	public Group getSelGroup() {
@@ -417,11 +452,9 @@ public class LayoutsSEODisplayContext {
 			layout.getLayoutId());
 	}
 
-	public HashMap<String, Object> getSEOMappingData() throws PortalException {
+	public Map<String, Object> getSEOMappingData() throws PortalException {
 		return HashMapBuilder.<String, Object>putAll(
-			_getBaseSEOMappingData(
-				_getInfoForm(_getLayoutPageTemplateEntry()),
-				_getLayoutPageTemplateEntry())
+			_getBaseSEOMappingData()
 		).put(
 			"description",
 			_selLayout.getTypeSettingsProperty(
@@ -432,16 +465,113 @@ public class LayoutsSEODisplayContext {
 		).build();
 	}
 
+	public Map<String, Object> getSEOPreviewSeoProperties()
+		throws PortalException {
+
+		return HashMapBuilder.<String, Object>put(
+			"targets",
+			HashMapBuilder.<String, Object>put(
+				"description",
+				HashMapBuilder.put(
+					"defaultValue",
+					() -> {
+						Layout selLayout = getSelLayout();
+
+						return selLayout.getDescription(
+							_themeDisplay.getLocale());
+					}
+				).put(
+					"id", "descriptionSEO"
+				).build()
+			).put(
+				"title",
+				HashMapBuilder.<String, Object>put(
+					"defaultValue", getDefaultPageTitleMap()
+				).put(
+					"id", "title"
+				).build()
+			).put(
+				"url",
+				() -> {
+					if (isLayoutUtilityPageEntry()) {
+						return null;
+					}
+
+					return HashMapBuilder.<String, Object>put(
+						"defaultValue", getDefaultCanonicalURLMap()
+					).put(
+						"id", "canonicalURL"
+					).build();
+				}
+			).build()
+		).put(
+			"titleSuffix", getPageTitleSuffix()
+		).build();
+	}
+
+	public List<SelectOption> getSitemapChangeFrequencySelectOptions() {
+		Layout selLayout = getSelLayout();
+
+		UnicodeProperties layoutTypeSettingsUnicodeProperties =
+			selLayout.getTypeSettingsProperties();
+
+		String selectedSitemapChangeFrequencyOption =
+			layoutTypeSettingsUnicodeProperties.getProperty(
+				"sitemap-changefreq",
+				PropsValues.SITES_SITEMAP_DEFAULT_CHANGE_FREQUENCY);
+
+		return TransformUtil.transform(
+			Arrays.asList(
+				"always", "hourly", "daily", "weekly", "monthly", "yearly",
+				"never"),
+			sitemapChangeFrequencyOption -> new SelectOption(
+				LanguageUtil.get(
+					_httpServletRequest, sitemapChangeFrequencyOption),
+				sitemapChangeFrequencyOption,
+				Objects.equals(
+					sitemapChangeFrequencyOption,
+					selectedSitemapChangeFrequencyOption)));
+	}
+
+	public List<SelectOption> getSitemapIncludeSelectOptions() {
+		Layout selLayout = getSelLayout();
+
+		UnicodeProperties layoutTypeSettingsUnicodeProperties =
+			selLayout.getTypeSettingsProperties();
+
+		boolean sitemapInclude = GetterUtil.getBoolean(
+			layoutTypeSettingsUnicodeProperties.getProperty(
+				LayoutTypePortletConstants.SITEMAP_INCLUDE),
+			true);
+
+		return Arrays.asList(
+			new SelectOption(
+				LanguageUtil.get(_httpServletRequest, "yes"), "1",
+				sitemapInclude),
+			new SelectOption(
+				LanguageUtil.get(_httpServletRequest, "no"), "0",
+				!sitemapInclude));
+	}
+
+	public boolean isIncludeChildLayoutsInSitemap() {
+		Layout selLayout = getSelLayout();
+
+		UnicodeProperties layoutTypeSettingsUnicodeProperties =
+			selLayout.getTypeSettingsProperties();
+
+		return GetterUtil.getBoolean(
+			layoutTypeSettingsUnicodeProperties.getProperty(
+				"sitemap-include-child-layouts", Boolean.TRUE.toString()));
+	}
+
+	public boolean isLayoutUtilityPageEntry() {
+		Layout layout = getSelLayout();
+
+		return layout.isTypeUtility();
+	}
+
 	public boolean isPrivateLayout() {
 		if (_privateLayout != null) {
-			return _privateLayout;
-		}
-
-		Group selGroup = getSelGroup();
-
-		if (selGroup.isLayoutSetPrototype()) {
-			_privateLayout = true;
-
 			return _privateLayout;
 		}
 
@@ -467,99 +597,120 @@ public class LayoutsSEODisplayContext {
 		return _privateLayout;
 	}
 
-	private HashMap<String, Object> _getBaseSEOMappingData(
-			InfoForm infoForm, LayoutPageTemplateEntry layoutPageTemplateEntry)
+	public boolean showIncludeChildLayoutsInSitemap() {
+		Layout selLayout = getSelLayout();
+
+		return !selLayout.isTypeAssetDisplay();
+	}
+
+	private HashMap<String, Object> _getBaseSEOMappingData()
 		throws PortalException {
+
+		InfoForm infoForm = _getInfoForm();
 
 		return HashMapBuilder.<String, Object>put(
 			"defaultLanguageId", _selLayout.getDefaultLanguageId()
 		).put(
 			"fields",
-			infoForm.getAllInfoFields(
-			).stream(
-			).filter(
-				infoField -> !StringUtil.startsWith(
-					infoField.getName(),
-					PortletDisplayTemplate.DISPLAY_STYLE_PREFIX)
-			).map(
-				infoField -> JSONUtil.put(
-					"key", infoField.getName()
-				).put(
-					"label", infoField.getLabel(_themeDisplay.getLocale())
-				).put(
-					"type",
-					infoField.getInfoFieldType(
-					).getName()
-				)
-			).collect(
-				Collectors.toList()
-			)
+			TransformUtil.transform(
+				infoForm.getAllInfoFields(),
+				infoField -> {
+					if (StringUtil.startsWith(
+							infoField.getName(),
+							PortletDisplayTemplate.DISPLAY_STYLE_PREFIX)) {
+
+						return null;
+					}
+
+					return JSONUtil.put(
+						"key", infoField.getName()
+					).put(
+						"label", infoField.getLabel(_themeDisplay.getLocale())
+					).put(
+						"type",
+						infoField.getInfoFieldType(
+						).getName()
+					);
+				})
 		).put(
 			"selectedSource",
 			JSONUtil.put(
-				"className", layoutPageTemplateEntry.getClassName()
+				"className", _getClassName()
 			).put(
-				"classNameLabel",
-				_getTypeLabel(layoutPageTemplateEntry.getClassName())
+				"classNameLabel", _getTypeLabel()
 			).put(
-				"classTypeId", layoutPageTemplateEntry.getClassTypeId()
+				"classTypeId", _getClassTypeId()
 			).put(
-				"classTypeLabel",
-				_getSubtypeLabel(
-					layoutPageTemplateEntry.getClassName(),
-					layoutPageTemplateEntry.getClassTypeId())
+				"classTypeLabel", _getSubtypeLabel()
 			)
 		).build();
 	}
 
-	private InfoForm _getInfoForm(
-			LayoutPageTemplateEntry layoutPageTemplateEntry)
-		throws NoSuchFormVariationException {
+	private String _getClassName() {
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_getLayoutPageTemplateEntry();
 
+		return layoutPageTemplateEntry.getClassName();
+	}
+
+	private long _getClassTypeId() {
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_getLayoutPageTemplateEntry();
+
+		return layoutPageTemplateEntry.getClassTypeId();
+	}
+
+	private InfoForm _getInfoForm() throws NoSuchFormVariationException {
 		InfoItemFormProvider<?> infoItemFormProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
-				InfoItemFormProvider.class,
-				layoutPageTemplateEntry.getClassName());
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemFormProvider.class, _getClassName());
 
 		return infoItemFormProvider.getInfoForm(
-			String.valueOf(layoutPageTemplateEntry.getClassTypeId()));
+			String.valueOf(_getClassTypeId()), _themeDisplay.getScopeGroupId());
 	}
 
 	private LayoutPageTemplateEntry _getLayoutPageTemplateEntry() {
-		return _layoutPageTemplateEntryLocalService.
-			fetchLayoutPageTemplateEntryByPlid(_selPlid);
+		if (_layoutPageTemplateEntry != null) {
+			return _layoutPageTemplateEntry;
+		}
+
+		_layoutPageTemplateEntry =
+			_layoutPageTemplateEntryLocalService.
+				fetchLayoutPageTemplateEntryByPlid(_getSelPlid());
+
+		if (_layoutPageTemplateEntry != null) {
+			return _layoutPageTemplateEntry;
+		}
+
+		Layout layout = _layoutLocalService.fetchLayout(_getSelPlid());
+
+		if (layout.isDraftLayout()) {
+			_layoutPageTemplateEntry =
+				_layoutPageTemplateEntryLocalService.
+					fetchLayoutPageTemplateEntryByPlid(layout.getClassPK());
+		}
+		else {
+			Layout draftLayout = layout.fetchDraftLayout();
+
+			if (draftLayout != null) {
+				_layoutPageTemplateEntry =
+					_layoutPageTemplateEntryLocalService.
+						fetchLayoutPageTemplateEntryByPlid(
+							draftLayout.getPlid());
+			}
+		}
+
+		return _layoutPageTemplateEntry;
 	}
 
-	private PortletURL _getPortletURL(String actionName) {
-		LiferayPortletURL liferayPortletURL =
-			_liferayPortletResponse.createLiferayPortletURL(
-				_liferayPortletRequest.getPlid(),
-				_liferayPortletRequest.getPortletName(),
-				PortletRequest.ACTION_PHASE, MimeResponse.Copy.ALL);
+	private String _getRedirect() {
+		if (Validator.isNotNull(_redirect)) {
+			return _redirect;
+		}
 
-		liferayPortletURL.setParameter(ActionRequest.ACTION_NAME, actionName);
+		_redirect = ParamUtil.getString(_httpServletRequest, "redirect");
 
-		liferayPortletURL.setParameter(
-			"mvcRenderCommandName",
-			_liferayPortletRequest.getParameter("mvcRenderCommandName"));
-		liferayPortletURL.setParameter(
-			"tabs1", _liferayPortletRequest.getParameter("tabs1"));
-		liferayPortletURL.setParameter(
-			"screenNavigationCategoryKey",
-			_liferayPortletRequest.getParameter("screenNavigationCategoryKey"));
-		liferayPortletURL.setParameter(
-			"screenNavigationEntryKey",
-			_liferayPortletRequest.getParameter("screenNavigationEntryKey"));
-		liferayPortletURL.setParameter(
-			"selPlid", _liferayPortletRequest.getParameter("selPlid"));
-		liferayPortletURL.setParameter(
-			"privateLayout",
-			_liferayPortletRequest.getParameter("privateLayout"));
-		liferayPortletURL.setParameter(
-			"displayStyle",
-			_liferayPortletRequest.getParameter("displayStyle"));
-
-		return liferayPortletURL;
+		return _redirect;
 	}
 
 	private Long _getSelPlid() {
@@ -573,14 +724,12 @@ public class LayoutsSEODisplayContext {
 		return _selPlid;
 	}
 
-	private String _getSubtypeLabel(String className, long classTypeId)
-		throws PortalException {
-
+	private String _getSubtypeLabel() throws PortalException {
 		AssetRendererFactory<?> assetRendererFactory =
 			AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(
-				className);
+				_getClassName());
 
-		if ((assetRendererFactory == null) || (classTypeId <= 0)) {
+		if ((assetRendererFactory == null) || (_getClassTypeId() <= 0)) {
 			return StringPool.BLANK;
 		}
 
@@ -588,15 +737,15 @@ public class LayoutsSEODisplayContext {
 			assetRendererFactory.getClassTypeReader();
 
 		ClassType classType = classTypeReader.getClassType(
-			classTypeId, _themeDisplay.getLocale());
+			_getClassTypeId(), _themeDisplay.getLocale());
 
 		return classType.getName();
 	}
 
-	private String _getTypeLabel(String className) {
-		InfoItemDetailsProvider infoItemDetailsProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
-				InfoItemDetailsProvider.class, className);
+	private String _getTypeLabel() {
+		InfoItemDetailsProvider<?> infoItemDetailsProvider =
+			_infoItemServiceRegistry.getFirstInfoItemService(
+				InfoItemDetailsProvider.class, _getClassName());
 
 		if (infoItemDetailsProvider == null) {
 			return StringPool.BLANK;
@@ -611,14 +760,16 @@ public class LayoutsSEODisplayContext {
 	private static final Log _log = LogFactoryUtil.getLog(
 		LayoutsSEODisplayContext.class);
 
-	private DDMStructure _ddmStructure;
+	private String _backURL;
 	private final DLAppService _dlAppService;
 	private final DLURLHelper _dlurlHelper;
 	private final GroupDisplayContextHelper _groupDisplayContextHelper;
 	private final HttpServletRequest _httpServletRequest;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
 	private final ItemSelector _itemSelector;
 	private Long _layoutId;
+	private final LayoutLocalService _layoutLocalService;
+	private LayoutPageTemplateEntry _layoutPageTemplateEntry;
 	private final LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
 	private final LayoutSEOCanonicalURLProvider _layoutSEOCanonicalURLProvider;
@@ -627,9 +778,9 @@ public class LayoutsSEODisplayContext {
 	private final LiferayPortletRequest _liferayPortletRequest;
 	private final LiferayPortletResponse _liferayPortletResponse;
 	private Boolean _privateLayout;
+	private String _redirect;
 	private Layout _selLayout;
 	private Long _selPlid;
-	private final StorageEngine _storageEngine;
 	private final ThemeDisplay _themeDisplay;
 
 }

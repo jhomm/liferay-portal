@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -74,8 +65,8 @@ portletDisplay.setURLBack(redirect);
 renderResponse.setTitle(category.getTitle(locale));
 %>
 
-<portlet:actionURL name="editProperties" var="editPropertiesURL">
-	<portlet:param name="mvcPath" value="/edit_category.jsp" />
+<portlet:actionURL name="/asset_categories_admin/edit_asset_category_properties" var="editPropertiesURL">
+	<portlet:param name="mvcPath" value="/edit_asset_category.jsp" />
 	<portlet:param name="screenNavigationCategoryKey" value='<%= ParamUtil.getString(request, "screenNavigationCategoryKey") %>' />
 	<portlet:param name="vocabularyId" value="<%= String.valueOf(vocabularyId) %>" />
 </portlet:actionURL>
@@ -92,43 +83,41 @@ renderResponse.setTitle(category.getTitle(locale));
 		<liferay-ui:error exception="<%= CategoryPropertyValueException.class %>" message="please-enter-a-valid-property-value" />
 		<liferay-ui:error exception="<%= DuplicateCategoryPropertyException.class %>" message="please-enter-a-unique-property-key" />
 
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<div id="<portlet:namespace />categoryPropertiesId">
-					<p class="text-muted">
-						<liferay-ui:message key="properties-are-a-way-to-add-more-detailed-information-to-a-specific-category" />
-					</p>
+		<liferay-frontend:fieldset>
+			<div id="<portlet:namespace />categoryPropertiesId">
+				<p class="text-muted">
+					<liferay-ui:message key="properties-are-a-way-to-add-more-detailed-information-to-a-specific-category" />
+				</p>
 
-					<%
-					for (int i = 0; i < categoryPropertiesIndexes.length; i++) {
-						int categoryPropertiesIndex = categoryPropertiesIndexes[i];
-					%>
+				<%
+				for (int i = 0; i < categoryPropertiesIndexes.length; i++) {
+					int categoryPropertiesIndex = categoryPropertiesIndexes[i];
+				%>
 
-						<aui:model-context bean="<%= categoryProperties.get(i) %>" model="<%= AssetCategoryProperty.class %>" />
+					<aui:model-context bean="<%= categoryProperties.get(i) %>" model="<%= AssetCategoryProperty.class %>" />
 
-						<div class="lfr-form-row lfr-form-row-inline">
-							<div class="row-fields">
-								<aui:input fieldParam='<%= "key" + categoryPropertiesIndex %>' id='<%= "key" + categoryPropertiesIndex %>' name="key" />
+					<div class="lfr-form-row lfr-form-row-inline">
+						<div class="row-fields">
+							<aui:input fieldParam='<%= "key" + categoryPropertiesIndex %>' id='<%= "key" + categoryPropertiesIndex %>' name="key" />
 
-								<aui:input fieldParam='<%= "value" + categoryPropertiesIndex %>' id='<%= "value" + categoryPropertiesIndex %>' name="value" />
-							</div>
+							<aui:input fieldParam='<%= "value" + categoryPropertiesIndex %>' id='<%= "value" + categoryPropertiesIndex %>' name="value" />
 						</div>
+					</div>
 
-					<%
-					}
-					%>
+				<%
+				}
+				%>
 
-				</div>
+			</div>
 
-				<aui:input name="categoryPropertiesIndexes" type="hidden" value="<%= StringUtil.merge(categoryPropertiesIndexes) %>" />
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<aui:input name="categoryPropertiesIndexes" type="hidden" value="<%= StringUtil.merge(categoryPropertiesIndexes) %>" />
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button href="<%= redirect %>" type="cancel" />
+		<liferay-frontend:edit-form-buttons
+			redirect="<%= redirect %>"
+		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 

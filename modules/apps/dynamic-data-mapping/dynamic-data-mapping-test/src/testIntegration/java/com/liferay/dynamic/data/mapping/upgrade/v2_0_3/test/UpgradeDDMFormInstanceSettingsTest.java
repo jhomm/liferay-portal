@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.upgrade.v2_0_3.test;
@@ -71,21 +62,19 @@ public class UpgradeDDMFormInstanceSettingsTest {
 
 		DDMFormInstance formInstance = createFormInstance(settings);
 
-		JSONArray fieldValuesJSONArray = getFieldValuesJSONArray(
-			formInstance.getSettings());
-
 		Assert.assertFalse(
-			containsField(fieldValuesJSONArray, "requireAuthentication"));
+			containsField(
+				getFieldValuesJSONArray(formInstance.getSettings()),
+				"requireAuthentication"));
 
 		_ddmFormInstanceSettingsUpgradeProcess.upgrade();
 
 		formInstance = getRecordSet(formInstance);
 
-		fieldValuesJSONArray = getFieldValuesJSONArray(
-			formInstance.getSettings());
-
 		Assert.assertTrue(
-			containsField(fieldValuesJSONArray, "requireAuthentication"));
+			containsField(
+				getFieldValuesJSONArray(formInstance.getSettings()),
+				"requireAuthentication"));
 	}
 
 	@Test
@@ -94,21 +83,19 @@ public class UpgradeDDMFormInstanceSettingsTest {
 
 		DDMFormInstance formInstance = createFormInstance(settings);
 
-		JSONArray fieldValuesJSONArray = getFieldValuesJSONArray(
-			formInstance.getSettings());
-
 		Assert.assertFalse(
-			containsField(fieldValuesJSONArray, "autosaveEnabled"));
+			containsField(
+				getFieldValuesJSONArray(formInstance.getSettings()),
+				"autosaveEnabled"));
 
 		_ddmFormInstanceSettingsUpgradeProcess.upgrade();
 
 		formInstance = getRecordSet(formInstance);
 
-		fieldValuesJSONArray = getFieldValuesJSONArray(
-			formInstance.getSettings());
-
 		Assert.assertTrue(
-			containsField(fieldValuesJSONArray, "autosaveEnabled"));
+			containsField(
+				getFieldValuesJSONArray(formInstance.getSettings()),
+				"autosaveEnabled"));
 	}
 
 	protected boolean containsField(
@@ -174,7 +161,8 @@ public class UpgradeDDMFormInstanceSettingsTest {
 
 		ddmFormInstance.setSettings(settings);
 
-		DDMFormInstanceLocalServiceUtil.updateDDMFormInstance(ddmFormInstance);
+		ddmFormInstance = DDMFormInstanceLocalServiceUtil.updateDDMFormInstance(
+			ddmFormInstance);
 
 		return DDMFormInstanceLocalServiceUtil.getFormInstance(
 			ddmFormInstance.getFormInstanceId());
@@ -183,11 +171,8 @@ public class UpgradeDDMFormInstanceSettingsTest {
 	protected String createSettings(boolean hasSetting) {
 		JSONObject jsonObject = _jsonFactory.createJSONObject();
 
-		JSONArray availableLanguagesJSONArray = getAvailableLanguagesJSONArray(
-			"en_US");
-
 		jsonObject.put(
-			"availableLanguageIdss", availableLanguagesJSONArray
+			"availableLanguageIdss", getAvailableLanguagesJSONArray("en_US")
 		).put(
 			"defaultLanguageId", "en_US"
 		);
@@ -196,7 +181,7 @@ public class UpgradeDDMFormInstanceSettingsTest {
 
 		jsonObject.put("fieldValues", fieldValuesJSONArray);
 
-		return jsonObject.toJSONString();
+		return jsonObject.toString();
 	}
 
 	protected JSONArray getAvailableLanguagesJSONArray(String languageId) {
@@ -267,7 +252,7 @@ public class UpgradeDDMFormInstanceSettingsTest {
 			"DDMFormInstanceSettingsUpgradeProcess";
 
 	@Inject(
-		filter = "(&(objectClass=com.liferay.dynamic.data.mapping.internal.upgrade.DDMServiceUpgrade))"
+		filter = "(&(component.name=com.liferay.dynamic.data.mapping.internal.upgrade.registry.DDMServiceUpgradeStepRegistrator))"
 	)
 	private static UpgradeStepRegistrator _upgradeStepRegistrator;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -106,10 +97,10 @@ public class ContactCacheModel
 		sb.append(middleName);
 		sb.append(", lastName=");
 		sb.append(lastName);
-		sb.append(", prefixId=");
-		sb.append(prefixId);
-		sb.append(", suffixId=");
-		sb.append(suffixId);
+		sb.append(", prefixListTypeId=");
+		sb.append(prefixListTypeId);
+		sb.append(", suffixListTypeId=");
+		sb.append(suffixListTypeId);
 		sb.append(", male=");
 		sb.append(male);
 		sb.append(", birthday=");
@@ -201,8 +192,8 @@ public class ContactCacheModel
 			contactImpl.setLastName(lastName);
 		}
 
-		contactImpl.setPrefixId(prefixId);
-		contactImpl.setSuffixId(suffixId);
+		contactImpl.setPrefixListTypeId(prefixListTypeId);
+		contactImpl.setSuffixListTypeId(suffixListTypeId);
 		contactImpl.setMale(male);
 
 		if (birthday == Long.MIN_VALUE) {
@@ -310,9 +301,9 @@ public class ContactCacheModel
 		middleName = objectInput.readUTF();
 		lastName = objectInput.readUTF();
 
-		prefixId = objectInput.readLong();
+		prefixListTypeId = objectInput.readLong();
 
-		suffixId = objectInput.readLong();
+		suffixListTypeId = objectInput.readLong();
 
 		male = objectInput.readBoolean();
 		birthday = objectInput.readLong();
@@ -382,9 +373,9 @@ public class ContactCacheModel
 			objectOutput.writeUTF(lastName);
 		}
 
-		objectOutput.writeLong(prefixId);
+		objectOutput.writeLong(prefixListTypeId);
 
-		objectOutput.writeLong(suffixId);
+		objectOutput.writeLong(suffixListTypeId);
 
 		objectOutput.writeBoolean(male);
 		objectOutput.writeLong(birthday);
@@ -474,8 +465,8 @@ public class ContactCacheModel
 	public String firstName;
 	public String middleName;
 	public String lastName;
-	public long prefixId;
-	public long suffixId;
+	public long prefixListTypeId;
+	public long suffixListTypeId;
 	public boolean male;
 	public long birthday;
 	public String smsSn;

@@ -1,19 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.facet.category;
 
+import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.service.AssetCategoryLocalService;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.facet.config.FacetConfiguration;
@@ -23,6 +18,8 @@ import com.liferay.portal.search.facet.category.CategoryFacetFactory;
 import com.liferay.portal.search.facet.category.CategoryFacetSearchContributor;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.osgi.service.component.annotations.Component;
@@ -54,13 +51,10 @@ public class CategoryFacetSearchContributorImpl
 			facetContext -> facetContext.addFacet(facet));
 	}
 
-	@Reference(unbind = "-")
-	protected void setCategoryFacetFactory(
-		CategoryFacetFactory categoryFacetFactory) {
+	@Reference
+	private AssetCategoryLocalService _assetCategoryLocalService;
 
-		_categoryFacetFactory = categoryFacetFactory;
-	}
-
+	@Reference
 	private CategoryFacetFactory _categoryFacetFactory;
 
 	private class CategoryFacetBuilderImpl implements CategoryFacetBuilder {
@@ -80,10 +74,18 @@ public class CategoryFacetSearchContributorImpl
 			Facet facet = _categoryFacetFactory.newInstance(_searchContext);
 
 			facet.setAggregationName(_aggregationName);
-			facet.setFacetConfiguration(buildFacetConfiguration(facet));
+			facet.setFacetConfiguration(
+				buildFacetConfiguration(facet.getFieldName()));
 
 			if (_selectedCategoryIds != null) {
-				facet.select(ArrayUtil.toStringArray(_selectedCategoryIds));
+				String fieldName = facet.getFieldName();
+
+				if (fieldName.equals("assetVocabularyCategoryIds")) {
+					facet.select(_getSelections(_selectedCategoryIds));
+				}
+				else {
+					facet.select(ArrayUtil.toStringArray(_selectedCategoryIds));
+				}
 			}
 
 			return facet;
@@ -112,10 +114,17 @@ public class CategoryFacetSearchContributorImpl
 			return this;
 		}
 
-		protected FacetConfiguration buildFacetConfiguration(Facet facet) {
+		@Override
+		public CategoryFacetBuilder vocabularyIds(String[] vocabularyIds) {
+			_vocabularyIds = vocabularyIds;
+
+			return this;
+		}
+
+		protected FacetConfiguration buildFacetConfiguration(String fieldName) {
 			FacetConfiguration facetConfiguration = new FacetConfiguration();
 
-			facetConfiguration.setFieldName(facet.getFieldName());
+			facetConfiguration.setFieldName(fieldName);
 			facetConfiguration.setLabel("any-category");
 			facetConfiguration.setOrder("OrderHitsDesc");
 			facetConfiguration.setStatic(false);
@@ -126,10 +135,59 @@ public class CategoryFacetSearchContributorImpl
 			jsonObject.put(
 				"frequencyThreshold", _frequencyThreshold
 			).put(
+				"include", _getIncludeRegexString(fieldName)
+			).put(
 				"maxTerms", _maxTerms
 			);
 
 			return facetConfiguration;
+		}
+
+		private String _getIncludeRegexString(String fieldName) {
+			if (ArrayUtil.isEmpty(_vocabularyIds) ||
+				fieldName.equals("assetCategoryIds")) {
+
+				return null;
+			}
+
+			StringBundler sb = new StringBundler(_vocabularyIds.length * 5);
+
+			for (String vocabularyId : _vocabularyIds) {
+				sb.append(vocabularyId);
+				sb.append(StringPool.DASH);
+				sb.append(StringPool.PERIOD);
+				sb.append(StringPool.STAR);
+				sb.append(StringPool.PIPE);
+			}
+
+			if (sb.index() == 0) {
+				return null;
+			}
+
+			sb.setIndex(sb.index() - 1);
+
+			return sb.toString();
+		}
+
+		private String[] _getSelections(long[] selectedCategoryIds) {
+			List<String> selections = new ArrayList<>();
+
+			for (long selectedCategoryId : selectedCategoryIds) {
+				AssetCategory assetCategory =
+					_assetCategoryLocalService.fetchAssetCategory(
+						selectedCategoryId);
+
+				if (assetCategory != null) {
+					selections.add(
+						assetCategory.getVocabularyId() + StringPool.DASH +
+							assetCategory.getCategoryId());
+				}
+				else {
+					selections.add(String.valueOf(selectedCategoryId));
+				}
+			}
+
+			return ArrayUtil.toStringArray(selections);
 		}
 
 		private String _aggregationName;
@@ -137,6 +195,7 @@ public class CategoryFacetSearchContributorImpl
 		private int _maxTerms;
 		private final SearchContext _searchContext;
 		private long[] _selectedCategoryIds;
+		private String[] _vocabularyIds;
 
 	}
 

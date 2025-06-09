@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.serdes.v1_0;
 
+import com.liferay.headless.delivery.client.dto.v1_0.CustomCSSViewport;
 import com.liferay.headless.delivery.client.dto.v1_0.FragmentViewport;
 import com.liferay.headless.delivery.client.dto.v1_0.PageSectionDefinition;
 import com.liferay.headless.delivery.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -94,6 +85,83 @@ public class PageSectionDefinitionSerDes {
 				String.valueOf(pageSectionDefinition.getBackgroundImage()));
 		}
 
+		if (pageSectionDefinition.getContentVisibility() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"contentVisibility\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(pageSectionDefinition.getContentVisibility()));
+
+			sb.append("\"");
+		}
+
+		if (pageSectionDefinition.getCssClasses() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"cssClasses\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < pageSectionDefinition.getCssClasses().length;
+				 i++) {
+
+				sb.append(_toJSON(pageSectionDefinition.getCssClasses()[i]));
+
+				if ((i + 1) < pageSectionDefinition.getCssClasses().length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		if (pageSectionDefinition.getCustomCSS() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customCSS\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(pageSectionDefinition.getCustomCSS()));
+
+			sb.append("\"");
+		}
+
+		if (pageSectionDefinition.getCustomCSSViewports() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"customCSSViewports\": ");
+
+			sb.append("[");
+
+			for (int i = 0;
+				 i < pageSectionDefinition.getCustomCSSViewports().length;
+				 i++) {
+
+				sb.append(
+					String.valueOf(
+						pageSectionDefinition.getCustomCSSViewports()[i]));
+
+				if ((i + 1) <
+						pageSectionDefinition.getCustomCSSViewports().length) {
+
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
 		if (pageSectionDefinition.getFragmentLink() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -140,6 +208,27 @@ public class PageSectionDefinitionSerDes {
 			sb.append("]");
 		}
 
+		if (pageSectionDefinition.getHtmlProperties() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"htmlProperties\": ");
+
+			sb.append(
+				String.valueOf(pageSectionDefinition.getHtmlProperties()));
+		}
+
+		if (pageSectionDefinition.getIndexed() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"indexed\": ");
+
+			sb.append(pageSectionDefinition.getIndexed());
+		}
+
 		if (pageSectionDefinition.getLayout() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -148,6 +237,20 @@ public class PageSectionDefinitionSerDes {
 			sb.append("\"layout\": ");
 
 			sb.append(String.valueOf(pageSectionDefinition.getLayout()));
+		}
+
+		if (pageSectionDefinition.getName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"name\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(pageSectionDefinition.getName()));
+
+			sb.append("\"");
 		}
 
 		sb.append("}");
@@ -199,6 +302,42 @@ public class PageSectionDefinitionSerDes {
 				String.valueOf(pageSectionDefinition.getBackgroundImage()));
 		}
 
+		if (pageSectionDefinition.getContentVisibility() == null) {
+			map.put("contentVisibility", null);
+		}
+		else {
+			map.put(
+				"contentVisibility",
+				String.valueOf(pageSectionDefinition.getContentVisibility()));
+		}
+
+		if (pageSectionDefinition.getCssClasses() == null) {
+			map.put("cssClasses", null);
+		}
+		else {
+			map.put(
+				"cssClasses",
+				String.valueOf(pageSectionDefinition.getCssClasses()));
+		}
+
+		if (pageSectionDefinition.getCustomCSS() == null) {
+			map.put("customCSS", null);
+		}
+		else {
+			map.put(
+				"customCSS",
+				String.valueOf(pageSectionDefinition.getCustomCSS()));
+		}
+
+		if (pageSectionDefinition.getCustomCSSViewports() == null) {
+			map.put("customCSSViewports", null);
+		}
+		else {
+			map.put(
+				"customCSSViewports",
+				String.valueOf(pageSectionDefinition.getCustomCSSViewports()));
+		}
+
 		if (pageSectionDefinition.getFragmentLink() == null) {
 			map.put("fragmentLink", null);
 		}
@@ -226,12 +365,36 @@ public class PageSectionDefinitionSerDes {
 				String.valueOf(pageSectionDefinition.getFragmentViewports()));
 		}
 
+		if (pageSectionDefinition.getHtmlProperties() == null) {
+			map.put("htmlProperties", null);
+		}
+		else {
+			map.put(
+				"htmlProperties",
+				String.valueOf(pageSectionDefinition.getHtmlProperties()));
+		}
+
+		if (pageSectionDefinition.getIndexed() == null) {
+			map.put("indexed", null);
+		}
+		else {
+			map.put(
+				"indexed", String.valueOf(pageSectionDefinition.getIndexed()));
+		}
+
 		if (pageSectionDefinition.getLayout() == null) {
 			map.put("layout", null);
 		}
 		else {
 			map.put(
 				"layout", String.valueOf(pageSectionDefinition.getLayout()));
+		}
+
+		if (pageSectionDefinition.getName() == null) {
+			map.put("name", null);
+		}
+		else {
+			map.put("name", String.valueOf(pageSectionDefinition.getName()));
 		}
 
 		return map;
@@ -248,6 +411,58 @@ public class PageSectionDefinitionSerDes {
 		@Override
 		protected PageSectionDefinition[] createDTOArray(int size) {
 			return new PageSectionDefinition[size];
+		}
+
+		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "backgroundColor")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "backgroundFragmentImage")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "backgroundImage")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "contentVisibility")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "cssClasses")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customCSS")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "customCSSViewports")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fragmentLink")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fragmentStyle")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "fragmentViewports")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "htmlProperties")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "indexed")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "layout")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+
+			return false;
 		}
 
 		@Override
@@ -277,6 +492,44 @@ public class PageSectionDefinitionSerDes {
 							(String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "contentVisibility")) {
+				if (jsonParserFieldValue != null) {
+					pageSectionDefinition.setContentVisibility(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "cssClasses")) {
+				if (jsonParserFieldValue != null) {
+					pageSectionDefinition.setCssClasses(
+						toStrings((Object[])jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "customCSS")) {
+				if (jsonParserFieldValue != null) {
+					pageSectionDefinition.setCustomCSS(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "customCSSViewports")) {
+
+				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					CustomCSSViewport[] customCSSViewportsArray =
+						new CustomCSSViewport[jsonParserFieldValues.length];
+
+					for (int i = 0; i < customCSSViewportsArray.length; i++) {
+						customCSSViewportsArray[i] =
+							CustomCSSViewportSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					pageSectionDefinition.setCustomCSSViewports(
+						customCSSViewportsArray);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "fragmentLink")) {
 				if (jsonParserFieldValue != null) {
 					pageSectionDefinition.setFragmentLink(
@@ -292,21 +545,44 @@ public class PageSectionDefinitionSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "fragmentViewports")) {
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					FragmentViewport[] fragmentViewportsArray =
+						new FragmentViewport[jsonParserFieldValues.length];
+
+					for (int i = 0; i < fragmentViewportsArray.length; i++) {
+						fragmentViewportsArray[i] =
+							FragmentViewportSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					pageSectionDefinition.setFragmentViewports(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> FragmentViewportSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new FragmentViewport[size]
-						));
+						fragmentViewportsArray);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "htmlProperties")) {
+				if (jsonParserFieldValue != null) {
+					pageSectionDefinition.setHtmlProperties(
+						HtmlPropertiesSerDes.toDTO(
+							(String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "indexed")) {
+				if (jsonParserFieldValue != null) {
+					pageSectionDefinition.setIndexed(
+						(Boolean)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "layout")) {
 				if (jsonParserFieldValue != null) {
 					pageSectionDefinition.setLayout(
 						LayoutSerDes.toDTO((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				if (jsonParserFieldValue != null) {
+					pageSectionDefinition.setName((String)jsonParserFieldValue);
 				}
 			}
 		}
@@ -341,36 +617,7 @@ public class PageSectionDefinitionSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -380,6 +627,42 @@ public class PageSectionDefinitionSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

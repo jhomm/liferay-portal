@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CPDefinitionOptionRelCacheModel
-	implements CacheModel<CPDefinitionOptionRel>, Externalizable {
+	implements CacheModel<CPDefinitionOptionRel>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,8 +40,9 @@ public class CPDefinitionOptionRelCacheModel
 		CPDefinitionOptionRelCacheModel cpDefinitionOptionRelCacheModel =
 			(CPDefinitionOptionRelCacheModel)object;
 
-		if (CPDefinitionOptionRelId ==
-				cpDefinitionOptionRelCacheModel.CPDefinitionOptionRelId) {
+		if ((CPDefinitionOptionRelId ==
+				cpDefinitionOptionRelCacheModel.CPDefinitionOptionRelId) &&
+			(mvccVersion == cpDefinitionOptionRelCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -59,14 +52,30 @@ public class CPDefinitionOptionRelCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, CPDefinitionOptionRelId);
+		int hashCode = HashUtil.hash(0, CPDefinitionOptionRelId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(39);
+		StringBundler sb = new StringBundler(49);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", CPDefinitionOptionRelId=");
 		sb.append(CPDefinitionOptionRelId);
@@ -90,10 +99,14 @@ public class CPDefinitionOptionRelCacheModel
 		sb.append(name);
 		sb.append(", description=");
 		sb.append(description);
-		sb.append(", DDMFormFieldTypeName=");
-		sb.append(DDMFormFieldTypeName);
+		sb.append(", commerceOptionTypeKey=");
+		sb.append(commerceOptionTypeKey);
+		sb.append(", infoItemServiceKey=");
+		sb.append(infoItemServiceKey);
 		sb.append(", priority=");
 		sb.append(priority);
+		sb.append(", definedExternally=");
+		sb.append(definedExternally);
 		sb.append(", facetable=");
 		sb.append(facetable);
 		sb.append(", required=");
@@ -104,6 +117,8 @@ public class CPDefinitionOptionRelCacheModel
 		sb.append(key);
 		sb.append(", priceType=");
 		sb.append(priceType);
+		sb.append(", typeSettings=");
+		sb.append(typeSettings);
 		sb.append("}");
 
 		return sb.toString();
@@ -113,6 +128,9 @@ public class CPDefinitionOptionRelCacheModel
 	public CPDefinitionOptionRel toEntityModel() {
 		CPDefinitionOptionRelImpl cpDefinitionOptionRelImpl =
 			new CPDefinitionOptionRelImpl();
+
+		cpDefinitionOptionRelImpl.setMvccVersion(mvccVersion);
+		cpDefinitionOptionRelImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			cpDefinitionOptionRelImpl.setUuid("");
@@ -165,15 +183,23 @@ public class CPDefinitionOptionRelCacheModel
 			cpDefinitionOptionRelImpl.setDescription(description);
 		}
 
-		if (DDMFormFieldTypeName == null) {
-			cpDefinitionOptionRelImpl.setDDMFormFieldTypeName("");
+		if (commerceOptionTypeKey == null) {
+			cpDefinitionOptionRelImpl.setCommerceOptionTypeKey("");
 		}
 		else {
-			cpDefinitionOptionRelImpl.setDDMFormFieldTypeName(
-				DDMFormFieldTypeName);
+			cpDefinitionOptionRelImpl.setCommerceOptionTypeKey(
+				commerceOptionTypeKey);
+		}
+
+		if (infoItemServiceKey == null) {
+			cpDefinitionOptionRelImpl.setInfoItemServiceKey("");
+		}
+		else {
+			cpDefinitionOptionRelImpl.setInfoItemServiceKey(infoItemServiceKey);
 		}
 
 		cpDefinitionOptionRelImpl.setPriority(priority);
+		cpDefinitionOptionRelImpl.setDefinedExternally(definedExternally);
 		cpDefinitionOptionRelImpl.setFacetable(facetable);
 		cpDefinitionOptionRelImpl.setRequired(required);
 		cpDefinitionOptionRelImpl.setSkuContributor(skuContributor);
@@ -192,13 +218,25 @@ public class CPDefinitionOptionRelCacheModel
 			cpDefinitionOptionRelImpl.setPriceType(priceType);
 		}
 
+		if (typeSettings == null) {
+			cpDefinitionOptionRelImpl.setTypeSettings("");
+		}
+		else {
+			cpDefinitionOptionRelImpl.setTypeSettings(typeSettings);
+		}
+
 		cpDefinitionOptionRelImpl.resetOriginalValues();
 
 		return cpDefinitionOptionRelImpl;
 	}
 
 	@Override
-	public void readExternal(ObjectInput objectInput) throws IOException {
+	public void readExternal(ObjectInput objectInput)
+		throws ClassNotFoundException, IOException {
+
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
 
 		CPDefinitionOptionRelId = objectInput.readLong();
@@ -217,9 +255,12 @@ public class CPDefinitionOptionRelCacheModel
 		CPOptionId = objectInput.readLong();
 		name = objectInput.readUTF();
 		description = objectInput.readUTF();
-		DDMFormFieldTypeName = objectInput.readUTF();
+		commerceOptionTypeKey = objectInput.readUTF();
+		infoItemServiceKey = objectInput.readUTF();
 
 		priority = objectInput.readDouble();
+
+		definedExternally = objectInput.readBoolean();
 
 		facetable = objectInput.readBoolean();
 
@@ -228,10 +269,15 @@ public class CPDefinitionOptionRelCacheModel
 		skuContributor = objectInput.readBoolean();
 		key = objectInput.readUTF();
 		priceType = objectInput.readUTF();
+		typeSettings = (String)objectInput.readObject();
 	}
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
@@ -275,14 +321,23 @@ public class CPDefinitionOptionRelCacheModel
 			objectOutput.writeUTF(description);
 		}
 
-		if (DDMFormFieldTypeName == null) {
+		if (commerceOptionTypeKey == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
-			objectOutput.writeUTF(DDMFormFieldTypeName);
+			objectOutput.writeUTF(commerceOptionTypeKey);
+		}
+
+		if (infoItemServiceKey == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(infoItemServiceKey);
 		}
 
 		objectOutput.writeDouble(priority);
+
+		objectOutput.writeBoolean(definedExternally);
 
 		objectOutput.writeBoolean(facetable);
 
@@ -303,8 +358,17 @@ public class CPDefinitionOptionRelCacheModel
 		else {
 			objectOutput.writeUTF(priceType);
 		}
+
+		if (typeSettings == null) {
+			objectOutput.writeObject("");
+		}
+		else {
+			objectOutput.writeObject(typeSettings);
+		}
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public long CPDefinitionOptionRelId;
 	public long groupId;
@@ -317,12 +381,15 @@ public class CPDefinitionOptionRelCacheModel
 	public long CPOptionId;
 	public String name;
 	public String description;
-	public String DDMFormFieldTypeName;
+	public String commerceOptionTypeKey;
+	public String infoItemServiceKey;
 	public double priority;
+	public boolean definedExternally;
 	public boolean facetable;
 	public boolean required;
 	public boolean skuContributor;
 	public String key;
 	public String priceType;
+	public String typeSettings;
 
 }

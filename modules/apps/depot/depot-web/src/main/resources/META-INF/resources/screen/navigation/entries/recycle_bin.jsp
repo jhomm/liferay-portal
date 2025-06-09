@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,11 +12,10 @@ DepotEntry depotEntry = (DepotEntry)request.getAttribute(DepotAdminWebKeys.DEPOT
 
 Group group = depotEntry.getGroup();
 
-UnicodeProperties typeSettingsProperties = group.getTypeSettingsProperties();
+UnicodeProperties typeSettingsUnicodeProperties = group.getTypeSettingsProperties();
 
-boolean groupTrashEnabled = PropertiesParamUtil.getBoolean(typeSettingsProperties, request, "trashEnabled", true);
-
-int trashEntriesMaxAge = PropertiesParamUtil.getInteger(typeSettingsProperties, request, "trashEntriesMaxAge", PrefsPropsUtil.getInteger(depotEntry.getCompanyId(), PropsKeys.TRASH_ENTRIES_MAX_AGE));
+boolean groupTrashEnabled = PropertiesParamUtil.getBoolean(typeSettingsUnicodeProperties, request, "trashEnabled", true);
+int trashEntriesMaxAge = PropertiesParamUtil.getInteger(typeSettingsUnicodeProperties, request, "trashEntriesMaxAge", PrefsPropsUtil.getInteger(depotEntry.getCompanyId(), PropsKeys.TRASH_ENTRIES_MAX_AGE));
 %>
 
 <liferay-frontend:fieldset
@@ -41,7 +31,7 @@ int trashEntriesMaxAge = PropertiesParamUtil.getInteger(typeSettingsProperties, 
 		</aui:input>
 	</div>
 
-	<script>
+	<aui:script>
 		var trashEnabledCheckbox = document.getElementById(
 			'<portlet:namespace />trashEnabled'
 		);
@@ -53,25 +43,40 @@ int trashEntriesMaxAge = PropertiesParamUtil.getInteger(typeSettingsProperties, 
 				var trashEnabled = trashEnabledCheckbox.checked;
 
 				if (!trashEnabled && trashEnabledDefault) {
-					if (
-						!confirm(
-							'<%= HtmlUtil.escapeJS(LanguageUtil.get(request, "disabling-the-recycle-bin-prevents-the-restoring-of-content-that-has-been-moved-to-the-recycle-bin")) %>'
-						)
-					) {
-						trashEnabledCheckbox.checked = true;
+					var trashEntriesMaxAge = document.getElementById(
+						'<portlet:namespace />trashEntriesMaxAge'
+					);
 
-						trashEnabled = true;
-					}
+					Liferay.Util.openConfirmModal({
+						message:
+							'<%= HtmlUtil.escapeJS(LanguageUtil.get(request, "disabling-the-recycle-bin-prevents-the-restoring-of-content-that-has-been-moved-to-the-recycle-bin")) %>',
+						onConfirm: (isConfirmed) => {
+							if (isConfirmed) {
+								if (trashEntriesMaxAge) {
+									Liferay.Util.toggleDisabled(
+										trashEntriesMaxAge,
+										!trashEnabled
+									);
+								}
+							}
+							else {
+								trashEnabledCheckbox.checked = true;
+
+								trashEnabled = true;
+
+								if (trashEntriesMaxAge) {
+									Liferay.Util.toggleDisabled(
+										trashEntriesMaxAge,
+										!trashEnabled
+									);
+								}
+							}
+						},
+					});
 				}
-
-				var trashEntriesMaxAge = document.getElementById(
-					'<portlet:namespace />trashEntriesMaxAge'
-				);
-
-				if (trashEntriesMaxAge) {
-					Liferay.Util.toggleDisabled(trashEntriesMaxAge, !trashEnabled);
+				else {
 				}
 			});
 		}
-	</script>
+	</aui:script>
 </liferay-frontend:fieldset>

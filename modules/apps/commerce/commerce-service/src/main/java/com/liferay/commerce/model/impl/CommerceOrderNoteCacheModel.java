@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
@@ -78,10 +69,12 @@ public class CommerceOrderNoteCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(25);
+		StringBundler sb = new StringBundler(27);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", uuid=");
+		sb.append(uuid);
 		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
 		sb.append(", commerceOrderNoteId=");
@@ -115,6 +108,13 @@ public class CommerceOrderNoteCacheModel
 			new CommerceOrderNoteImpl();
 
 		commerceOrderNoteImpl.setMvccVersion(mvccVersion);
+
+		if (uuid == null) {
+			commerceOrderNoteImpl.setUuid("");
+		}
+		else {
+			commerceOrderNoteImpl.setUuid(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			commerceOrderNoteImpl.setExternalReferenceCode("");
@@ -169,6 +169,7 @@ public class CommerceOrderNoteCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
 		commerceOrderNoteId = objectInput.readLong();
@@ -191,6 +192,13 @@ public class CommerceOrderNoteCacheModel
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		if (uuid == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(uuid);
+		}
 
 		if (externalReferenceCode == null) {
 			objectOutput.writeUTF("");
@@ -230,6 +238,7 @@ public class CommerceOrderNoteCacheModel
 	}
 
 	public long mvccVersion;
+	public String uuid;
 	public String externalReferenceCode;
 	public long commerceOrderNoteId;
 	public long groupId;

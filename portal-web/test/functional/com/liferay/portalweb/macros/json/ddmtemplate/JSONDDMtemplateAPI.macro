@@ -1,22 +1,25 @@
 definition {
 
-	macro _addInformationTemplate {
-		Variables.assertDefined(parameterList = "${classNameId},${classPK},${groupId},${nameMap}");
+	@summary = "API to add a Widget Template through JSON"
+	macro _addWidgetTemplate(nameMap = null, groupId = null, descriptionMap = null, classNameId = null) {
+		Variables.assertDefined(parameterList = "${classNameId},${groupId},${nameMap}");
 
 		var portalURL = JSONCompany.getPortalURL();
 
 		if (!(isSet(script))) {
-			var script = "%3C%23--%0AAdd elements from the sidebar to define your template. Type %22%24%7B%22 to use the%0Aautocomplete feature.%0A--%3E";
+			var script = "%3C%23--%0AWidget templates can be used to modify the look of a%0Aspecific application.%0A%0APlease use the left panel to quickly add commonly used variables.%0AAutocomplete is also available and can be invoked by typing %22%24%7B%22.%0A--%3E";
 		}
 
-		var resourceClassNameId = JSONClassname._getClassNameId(value = "com.liferay.info.item.provider.InfoItemFormProvider");
+		var resourceClassNameId = JSONClassname._getClassNameId(value = "com.liferay.portlet.display.template.PortletDisplayTemplate");
+		var userLoginInfo = JSONUtil2.formatJSONUser();
 
 		var curl = '''
 			${portalURL}/api/jsonws/ddm.ddmtemplate/add-template \
-				-u test@liferay.com:test \
+				-u ${userLoginInfo} \
+				-d externalReferenceCode='' \
 				-d groupId=${groupId}
 				-d classNameId=${classNameId} \
-				-d classPK=${classPK} \
+				-d classPK=0 \
 				-d resourceClassNameId=${resourceClassNameId} \
 				-d nameMap=${nameMap} \
 				-d descriptionMap=${descriptionMap} \
@@ -26,9 +29,9 @@ definition {
 				-d script=${script}
 		''';
 
-		var templateKey = JSONCurlUtil.post("${curl}", "$..templateKey");
+		var templateKey = JSONCurlUtil.post(${curl}, "$..templateKey");
 
-		return "${templateKey}";
+		return ${templateKey};
 	}
 
 }

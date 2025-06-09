@@ -1,0 +1,65 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<div class="lfr-dynamic-uploader" id="<portlet:namespace />uploaderContainer">
+	<div class="lfr-upload-container" id="<portlet:namespace />fileUpload"></div>
+</div>
+
+<div class="hide" id="<portlet:namespace />metadataExplanationContainer"></div>
+
+<div class="hide selected" id="<portlet:namespace />selectedFileNameMetadataContainer"></div>
+
+<c:if test="<%= (message != null) && trashHelper.isTrashEnabled(scopeGroupId) %>">
+
+	<%
+	int deletedAttachmentsFileEntriesCount = 0;
+
+	if (message != null) {
+		deletedAttachmentsFileEntriesCount = message.getDeletedAttachmentsFileEntriesCount();
+	}
+	%>
+
+	<div align="right">
+		<liferay-ui:csp>
+			<a href="javascript:void(0);" id="view-removed-attachments-link" style='display: <%= (deletedAttachmentsFileEntriesCount > 0) ? "initial" : "none" %>;'>
+				<liferay-ui:message arguments="<%= deletedAttachmentsFileEntriesCount %>" key='<%= (deletedAttachmentsFileEntriesCount == 1) ? "x-recently-removed-attachment" : "x-recently-removed-attachments" %>' /> &raquo;
+			</a>
+		</liferay-ui:csp>
+	</div>
+</c:if>
+
+<aui:script use="liferay-upload">
+	var uploader = new Liferay.Upload({
+		boundingBox: '#<portlet:namespace />fileUpload',
+
+		<%
+		DecimalFormatSymbols decimalFormatSymbols = DecimalFormatSymbols.getInstance(locale);
+		%>
+
+		decimalSeparator: '<%= decimalFormatSymbols.getDecimalSeparator() %>',
+
+		deleteFile:
+			'<liferay-portlet:actionURL name="/message_boards/edit_message_attachments"><portlet:param name="<%= Constants.CMD %>" value="<%= Constants.DELETE_TEMP %>" /><portlet:param name="categoryId" value="<%= String.valueOf(categoryId) %>" /></liferay-portlet:actionURL>',
+		fallback: '#<portlet:namespace />fallback',
+		fileDescription:
+			'<%= StringUtil.merge(dlConfiguration.fileExtensions()) %>',
+		maxFileSize:
+			'<%= DLValidatorUtil.getMaxAllowableSize(themeDisplay.getScopeGroupId(), null) %> ',
+		namespace: '<portlet:namespace />',
+		rootElement: '#<portlet:namespace />uploaderContainer',
+		tempFileURL: {
+			method: Liferay.Service.bind('/mb.mbmessage/get-temp-attachment-names'),
+			params: {
+				groupId: <%= scopeGroupId %>,
+				folderName: '<%= MBMessageConstants.TEMP_FOLDER_NAME %>',
+			},
+		},
+		tempRandomSuffix: '<%= TempFileEntryUtil.TEMP_RANDOM_SUFFIX %>',
+		uploadFile:
+			'<liferay-portlet:actionURL name="/message_boards/edit_message_attachments"><portlet:param name="<%= Constants.CMD %>" value="<%= Constants.ADD_TEMP %>" /><portlet:param name="categoryId" value="<%= String.valueOf(categoryId) %>" /></liferay-portlet:actionURL>',
+	});
+</aui:script>

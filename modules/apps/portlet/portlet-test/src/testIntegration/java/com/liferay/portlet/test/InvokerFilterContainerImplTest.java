@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.test;
@@ -29,16 +20,16 @@ import com.liferay.portal.model.impl.PortletImpl;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.filter.ActionFilter;
+import jakarta.portlet.filter.EventFilter;
+import jakarta.portlet.filter.PortletFilter;
+import jakarta.portlet.filter.RenderFilter;
+import jakarta.portlet.filter.ResourceFilter;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.filter.ActionFilter;
-import javax.portlet.filter.EventFilter;
-import javax.portlet.filter.PortletFilter;
-import javax.portlet.filter.RenderFilter;
-import javax.portlet.filter.ResourceFilter;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -82,9 +73,9 @@ public class InvokerFilterContainerImplTest {
 
 		_portlet = new PortletImpl();
 
+		_portlet.setPortletId("InvokerFilterContainerImplTest");
 		_portlet.setPortletApp(portletAppImpl);
 		_portlet.setPortletClass(MVCPortlet.class.getName());
-		_portlet.setPortletId("InvokerFilterContainerImplTest");
 		_portlet.setInitParams(
 			Collections.singletonMap("template-path", "/META-INF/resources/"));
 
@@ -112,7 +103,7 @@ public class InvokerFilterContainerImplTest {
 
 		Assert.assertTrue(
 			"Target not found in " + eventFilters,
-			eventFilters.removeIf(filter -> eventFilter == filter));
+			_hasFilter(eventFilters, eventFilter));
 	}
 
 	@Test
@@ -124,7 +115,7 @@ public class InvokerFilterContainerImplTest {
 
 		Assert.assertTrue(
 			"Target not found in " + renderFilters,
-			renderFilters.removeIf(filter -> renderFilter == filter));
+			_hasFilter(renderFilters, renderFilter));
 	}
 
 	@Test
@@ -137,7 +128,7 @@ public class InvokerFilterContainerImplTest {
 
 		Assert.assertTrue(
 			"Target not found in " + resourceFilters,
-			resourceFilters.removeIf(filter -> resourceFilter == filter));
+			_hasFilter(resourceFilters, resourceFilter));
 	}
 
 	@Test
@@ -172,7 +163,20 @@ public class InvokerFilterContainerImplTest {
 
 		Assert.assertTrue(
 			"Target not found in " + actionFilters,
-			actionFilters.removeIf(filter -> filter == actionFilter));
+			_hasFilter(actionFilters, actionFilter));
+	}
+
+	private boolean _hasFilter(
+		List<? extends PortletFilter> portletFilters,
+		PortletFilter portletFilter) {
+
+		for (PortletFilter currentPortletFilter : portletFilters) {
+			if (currentPortletFilter == portletFilter) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	private <T> T _registerPortletFilter(Class<T> clazz) {
@@ -201,7 +205,7 @@ public class InvokerFilterContainerImplTest {
 		_serviceRegistration = _bundleContext.registerService(
 			PortletFilter.class, portletFilter,
 			HashMapDictionaryBuilder.<String, Object>put(
-				"javax.portlet.name", "InvokerFilterContainerImplTest"
+				"jakarta.portlet.name", "InvokerFilterContainerImplTest"
 			).put(
 				"preinitialized.filter", Boolean.valueOf(preinitialized)
 			).put(

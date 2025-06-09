@@ -1,7 +1,7 @@
 definition {
 
-	@summary = "This calls the JSON WS API to empty recycle bin"
-	macro emptyRecycleBin {
+	@summary = "Default summary"
+	macro emptyRecycleBin(grandParentGroupName = null, parentGroupName = null) {
 		var portalURL = JSONCompany.getPortalURL();
 
 		if (!(isSet(groupName))) {
@@ -17,18 +17,22 @@ definition {
 		}
 
 		if (!(isSet(userPassword))) {
-			var userPassword = "test";
+			var userPassword = PropsUtil.get("default.admin.password");
 		}
 
-		var groupId = JSONGroupAPI._getGroupIdByName(groupName = "${groupName}", site = "${site}", parentGroupName = "${parentGroupName}", grandParentGroupName = "${grandParentGroupName}");
+		var groupId = JSONGroupAPI._getGroupIdByName(
+			grandParentGroupName = ${grandParentGroupName},
+			groupName = ${groupName},
+			parentGroupName = ${parentGroupName},
+			site = ${site});
 
 		var curl = '''
 			${portalURL}/api/jsonws/trash.trashentry/delete-entries \
-			-u ${userEmailAddress}:${userPassword} \
-			-d groupId=${groupId}
+				-u ${userEmailAddress}:${userPassword} \
+				-d groupId=${groupId}
 		''';
 
-		JSONCurlUtil.post("${curl}");
+		JSONCurlUtil.post(${curl});
 	}
 
 }

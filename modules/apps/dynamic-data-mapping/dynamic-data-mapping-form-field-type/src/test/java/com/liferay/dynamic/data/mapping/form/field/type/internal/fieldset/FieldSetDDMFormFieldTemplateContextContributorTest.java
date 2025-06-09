@@ -1,28 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.fieldset;
 
-import com.liferay.dynamic.data.mapping.form.field.type.BaseDDMFormFieldTypeSettingsTestCase;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 import org.junit.Assert;
@@ -34,8 +22,7 @@ import org.junit.Test;
 /**
  * @author Leonardo Barros
  */
-public class FieldSetDDMFormFieldTemplateContextContributorTest
-	extends BaseDDMFormFieldTypeSettingsTestCase {
+public class FieldSetDDMFormFieldTemplateContextContributorTest {
 
 	@ClassRule
 	@Rule
@@ -43,16 +30,14 @@ public class FieldSetDDMFormFieldTemplateContextContributorTest
 		LiferayUnitTestRule.INSTANCE;
 
 	@Before
-	@Override
 	public void setUp() throws Exception {
-		super.setUp();
-
-		_setUpJSONFactoryUtil();
+		_fieldSetDDMFormFieldTemplateContextContributor.jsonFactory =
+			new JSONFactoryImpl();
 	}
 
 	@Test
 	public void testGetRows() throws Exception {
-		String ddmFormLayoutDefinition = read("ddm-structure-layout.json");
+		String ddmFormLayoutDefinition = _read("ddm-structure-layout.json");
 
 		JSONArray rowsJSONArray =
 			_fieldSetDDMFormFieldTemplateContextContributor.getRowsJSONArray(
@@ -118,19 +103,13 @@ public class FieldSetDDMFormFieldTemplateContextContributorTest
 		Assert.assertEquals(12, firstColumnJSONObject.getInt("size"));
 	}
 
-	protected String read(String fileName) throws IOException {
+	private String _read(String fileName) throws Exception {
 		Class<?> clazz = getClass();
 
 		InputStream inputStream = clazz.getResourceAsStream(
 			"dependencies/" + fileName);
 
 		return StringUtil.read(inputStream);
-	}
-
-	private void _setUpJSONFactoryUtil() {
-		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
-
-		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
 	}
 
 	private final FieldSetDDMFormFieldTemplateContextContributor

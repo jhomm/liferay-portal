@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -319,14 +310,6 @@ public class PasswordPolicyPersistenceTest {
 		_persistence.countByCompanyId(RandomTestUtil.nextLong());
 
 		_persistence.countByCompanyId(0L);
-	}
-
-	@Test
-	public void testCountByC_DP() throws Exception {
-		_persistence.countByC_DP(
-			RandomTestUtil.nextLong(), RandomTestUtil.randomBoolean());
-
-		_persistence.countByC_DP(0L, RandomTestUtil.randomBoolean());
 	}
 
 	@Test
@@ -643,17 +626,6 @@ public class PasswordPolicyPersistenceTest {
 	}
 
 	private void _assertOriginalValues(PasswordPolicy passwordPolicy) {
-		Assert.assertEquals(
-			Long.valueOf(passwordPolicy.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				passwordPolicy, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
-			Boolean.valueOf(passwordPolicy.getDefaultPolicy()),
-			ReflectionTestUtil.<Boolean>invoke(
-				passwordPolicy, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "defaultPolicy"));
-
 		Assert.assertEquals(
 			Long.valueOf(passwordPolicy.getCompanyId()),
 			ReflectionTestUtil.<Long>invoke(

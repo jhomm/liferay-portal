@@ -1,19 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.catalog.web.internal.portlet.action;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.exception.AccountEntryStatusException;
+import com.liferay.account.exception.AccountEntryTypeException;
+import com.liferay.commerce.inventory.constants.CommerceInventoryConstants;
 import com.liferay.commerce.media.constants.CommerceMediaConstants;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
@@ -26,32 +21,33 @@ import com.liferay.commerce.product.exception.CommerceCatalogSystemException;
 import com.liferay.commerce.product.exception.NoSuchCatalogException;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CommerceCatalogService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.PropertiesParamUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,36 +56,13 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
 		"mvc.command.name=/commerce_catalogs/edit_commerce_catalog"
 	},
 	service = MVCActionCommand.class
 )
 public class EditCommerceCatalogMVCActionCommand extends BaseMVCActionCommand {
-
-	protected void deleteCommerceCatalog(ActionRequest actionRequest)
-		throws Exception {
-
-		long[] commerceCatalogIds = null;
-
-		long commerceCatalogId = ParamUtil.getLong(
-			actionRequest, "commerceCatalogId");
-
-		if (commerceCatalogId > 0) {
-			commerceCatalogIds = new long[] {commerceCatalogId};
-		}
-		else {
-			commerceCatalogIds = ParamUtil.getLongValues(
-				actionRequest, "commerceCatalogIds");
-		}
-
-		for (long deleteCommerceCatalogId : commerceCatalogIds) {
-			_commerceCatalogService.deleteCommerceCatalog(
-				deleteCommerceCatalogId);
-		}
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -100,7 +73,7 @@ public class EditCommerceCatalogMVCActionCommand extends BaseMVCActionCommand {
 
 		try {
 			if (cmd.equals(Constants.DELETE)) {
-				deleteCommerceCatalog(actionRequest);
+				_deleteCommerceCatalog(actionRequest);
 			}
 			else if (cmd.equals(Constants.ADD) ||
 					 cmd.equals(Constants.UPDATE)) {
@@ -113,7 +86,9 @@ public class EditCommerceCatalogMVCActionCommand extends BaseMVCActionCommand {
 			}
 		}
 		catch (Throwable throwable) {
-			if (throwable instanceof CommerceCatalogProductsException ||
+			if (throwable instanceof AccountEntryStatusException ||
+				throwable instanceof AccountEntryTypeException ||
+				throwable instanceof CommerceCatalogProductsException ||
 				throwable instanceof CommerceCatalogSystemException ||
 				throwable instanceof NoSuchPriceListException) {
 
@@ -139,56 +114,26 @@ public class EditCommerceCatalogMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected CommerceCatalog updateCommerceCatalog(ActionRequest actionRequest)
+	private void _deleteCommerceCatalog(ActionRequest actionRequest)
 		throws Exception {
+
+		long[] commerceCatalogIds = null;
 
 		long commerceCatalogId = ParamUtil.getLong(
 			actionRequest, "commerceCatalogId");
 
-		String name = ParamUtil.getString(actionRequest, "name");
-		String commerceCurrencyCode = ParamUtil.getString(
-			actionRequest, "commerceCurrencyCode");
-		String catalogDefaultLanguageId = ParamUtil.getString(
-			actionRequest, "catalogDefaultLanguageId");
-
-		CommerceCatalog commerceCatalog = null;
-
-		if (commerceCatalogId <= 0) {
-			ServiceContext serviceContext = ServiceContextFactory.getInstance(
-				CommerceCatalog.class.getName(), actionRequest);
-
-			commerceCatalog = _commerceCatalogService.addCommerceCatalog(
-				null, name, commerceCurrencyCode, catalogDefaultLanguageId,
-				serviceContext);
+		if (commerceCatalogId > 0) {
+			commerceCatalogIds = new long[] {commerceCatalogId};
 		}
 		else {
-			commerceCatalog = _commerceCatalogService.updateCommerceCatalog(
-				commerceCatalogId, name, commerceCurrencyCode,
-				catalogDefaultLanguageId);
+			commerceCatalogIds = ParamUtil.getLongValues(
+				actionRequest, "commerceCatalogIds");
 		}
 
-		// Catalog default image
-
-		long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
-
-		Settings settings = _settingsFactory.getSettings(
-			new GroupServiceSettingsLocator(
-				commerceCatalog.getGroupId(),
-				CommerceMediaConstants.SERVICE_NAME));
-
-		ModifiableSettings modifiableSettings =
-			settings.getModifiableSettings();
-
-		modifiableSettings.setValue(
-			"defaultFileEntryId", String.valueOf(fileEntryId));
-
-		modifiableSettings.store();
-
-		// Base price list and promotion
-
-		_updateBasePriceListAndPromotion(actionRequest, commerceCatalog);
-
-		return commerceCatalog;
+		for (long deleteCommerceCatalogId : commerceCatalogIds) {
+			_commerceCatalogService.deleteCommerceCatalog(
+				deleteCommerceCatalogId);
+		}
 	}
 
 	private void _updateBasePriceListAndPromotion(
@@ -227,6 +172,83 @@ public class EditCommerceCatalogMVCActionCommand extends BaseMVCActionCommand {
 			CommercePriceListConstants.TYPE_PROMOTION);
 	}
 
+	private CommerceCatalog _updateCommerceCatalog(ActionRequest actionRequest)
+		throws Exception {
+
+		long commerceCatalogId = ParamUtil.getLong(
+			actionRequest, "commerceCatalogId");
+
+		String name = ParamUtil.getString(actionRequest, "name");
+		String commerceCurrencyCode = ParamUtil.getString(
+			actionRequest, "commerceCurrencyCode");
+		String catalogDefaultLanguageId = ParamUtil.getString(
+			actionRequest, "catalogDefaultLanguageId");
+
+		CommerceCatalog commerceCatalog =
+			_commerceCatalogService.fetchCommerceCatalog(commerceCatalogId);
+
+		if (commerceCatalog == null) {
+			ServiceContext serviceContext = ServiceContextFactory.getInstance(
+				CommerceCatalog.class.getName(), actionRequest);
+
+			commerceCatalog = _commerceCatalogService.addCommerceCatalog(
+				null, AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT, name,
+				commerceCurrencyCode, catalogDefaultLanguageId, serviceContext);
+		}
+		else {
+			commerceCatalog = _commerceCatalogService.updateCommerceCatalog(
+				commerceCatalog.getCommerceCatalogId(),
+				ParamUtil.getLong(
+					actionRequest, "accountEntryId",
+					AccountConstants.ACCOUNT_ENTRY_ID_DEFAULT),
+				name, commerceCurrencyCode, catalogDefaultLanguageId);
+		}
+
+		return commerceCatalog;
+	}
+
+	private void _updateDefaultImage(
+			ActionRequest actionRequest, CommerceCatalog commerceCatalog)
+		throws Exception {
+
+		long fileEntryId = ParamUtil.getLong(actionRequest, "fileEntryId");
+
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new GroupServiceSettingsLocator(
+				commerceCatalog.getGroupId(),
+				CommerceMediaConstants.SERVICE_NAME));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		modifiableSettings.setValue(
+			"defaultFileEntryId", String.valueOf(fileEntryId));
+
+		modifiableSettings.store();
+	}
+
+	private void _updateInventoryMethodKey(
+			ActionRequest actionRequest, CommerceCatalog commerceCatalog)
+		throws Exception {
+
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new GroupServiceSettingsLocator(
+				commerceCatalog.getGroupId(),
+				CommerceInventoryConstants.SERVICE_NAME));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		Map<String, String> parameterMap = PropertiesParamUtil.getProperties(
+			actionRequest, "inventorySettings--");
+
+		for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
+			modifiableSettings.setValue(entry.getKey(), entry.getValue());
+		}
+
+		modifiableSettings.store();
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditCommerceCatalogMVCActionCommand.class);
 
@@ -243,17 +265,16 @@ public class EditCommerceCatalogMVCActionCommand extends BaseMVCActionCommand {
 	@Reference
 	private ConfigurationProvider _configurationProvider;
 
-	@Reference
-	private Portal _portal;
-
-	@Reference
-	private SettingsFactory _settingsFactory;
-
 	private class CommerceCatalogCallable implements Callable<Object> {
 
 		@Override
 		public Object call() throws Exception {
-			updateCommerceCatalog(_actionRequest);
+			CommerceCatalog commerceCatalog = _updateCommerceCatalog(
+				_actionRequest);
+
+			_updateBasePriceListAndPromotion(_actionRequest, commerceCatalog);
+			_updateDefaultImage(_actionRequest, commerceCatalog);
+			_updateInventoryMethodKey(_actionRequest, commerceCatalog);
 
 			return null;
 		}

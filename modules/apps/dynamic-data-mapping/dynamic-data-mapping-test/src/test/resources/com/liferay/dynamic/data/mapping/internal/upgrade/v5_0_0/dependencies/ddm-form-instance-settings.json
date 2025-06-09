@@ -6,6 +6,16 @@
 			"value": "true"
 		},
 		{
+			"fieldReference": "convertedFromPolls",
+			"name": "convertedFromPolls",
+			"value": "true"
+		},
+		{
+			"fieldReference": "displayChartAsTable",
+			"name": "displayChartAsTable",
+			"value": "false"
+		},
+		{
 			"fieldReference": "emailFromAddress",
 			"name": "emailFromAddress",
 			"value": ""
@@ -26,9 +36,29 @@
 			"value": ""
 		},
 		{
+			"fieldReference": "expirationDate",
+			"name": "expirationDate",
+			"value": ""
+		},
+		{
 			"fieldReference": "limitToOneSubmissionPerUser",
 			"name": "limitToOneSubmissionPerUser",
 			"value": "false"
+		},
+		{
+			"fieldReference": "limitToOneSubmissionPerUserBody",
+			"name": "limitToOneSubmissionPerUserBody",
+			"value": ""
+		},
+		{
+			"fieldReference": "limitToOneSubmissionPerUserHeader",
+			"name": "limitToOneSubmissionPerUserHeader",
+			"value": ""
+		},
+		{
+			"fieldReference": "neverExpire",
+			"name": "neverExpire",
+			"value": "true"
 		},
 		{
 			"fieldReference": "objectDefinitionId",
@@ -58,6 +88,11 @@
 		{
 			"fieldReference": "sendEmailNotification",
 			"name": "sendEmailNotification",
+			"value": "false"
+		},
+		{
+			"fieldReference": "showPartialResultsToRespondents",
+			"name": "showPartialResultsToRespondents",
 			"value": "false"
 		},
 		{

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.index;
@@ -36,49 +27,49 @@ import org.junit.Assert;
 public class FieldMappingAssert {
 
 	public static void assertAnalyzer(
-			String expectedValue, String field, String type, String index,
+			String expectedValue, String field, String index,
 			IndicesClient indicesClient)
 		throws Exception {
 
 		assertFieldMappingMetadata(
-			expectedValue, "analyzer", field, type, index, indicesClient);
+			expectedValue, "analyzer", field, index, indicesClient);
 	}
 
 	public static void assertFieldMappingMetadata(
-			String expectedValue, String key, String field, String type,
-			String index, IndicesClient indicesClient)
+			String expectedValue, String key, String field, String index,
+			IndicesClient indicesClient)
 		throws Exception {
 
 		IdempotentRetryAssert.retryAssert(
 			10, TimeUnit.SECONDS,
-			() -> doAssertFieldMappingMetadata(
-				expectedValue, key, field, type, index, indicesClient));
+			() -> _assertFieldMappingMetadata(
+				expectedValue, key, field, index, indicesClient));
 	}
 
 	public static void assertType(
-			String expectedValue, String field, String type, String index,
+			String expectedValue, String field, String index,
 			IndicesClient indicesClient)
 		throws Exception {
 
 		assertFieldMappingMetadata(
-			expectedValue, "type", field, type, index, indicesClient);
+			expectedValue, "type", field, index, indicesClient);
 	}
 
-	protected static void doAssertFieldMappingMetadata(
-		String expectedValue, String key, String field, String type,
-		String index, IndicesClient indicesClient) {
+	private static void _assertFieldMappingMetadata(
+		String expectedValue, String key, String field, String index,
+		IndicesClient indicesClient) {
 
-		FieldMappingMetadata fieldMappingMetadata = getFieldMapping(
-			field, type, index, indicesClient);
+		FieldMappingMetadata fieldMappingMetadata = _getFieldMapping(
+			field, index, indicesClient);
 
-		String value = getFieldMappingMetadataValue(
+		String value = _getFieldMappingMetadataValue(
 			fieldMappingMetadata, field, key);
 
 		Assert.assertEquals(expectedValue, value);
 	}
 
-	protected static FieldMappingMetadata getFieldMapping(
-		String field, String type, String index, IndicesClient indicesClient) {
+	private static FieldMappingMetadata _getFieldMapping(
+		String field, String index, IndicesClient indicesClient) {
 
 		GetFieldMappingsRequest getFieldMappingsRequest =
 			new GetFieldMappingsRequest();
@@ -98,8 +89,12 @@ public class FieldMappingAssert {
 		}
 	}
 
-	protected static String getFieldMappingMetadataValue(
+	private static String _getFieldMappingMetadataValue(
 		FieldMappingMetadata fieldMappingMetadata, String field, String key) {
+
+		if (fieldMappingMetadata == null) {
+			return null;
+		}
 
 		Map<String, Object> mappings = fieldMappingMetadata.sourceAsMap();
 

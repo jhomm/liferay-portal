@@ -1,37 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.util.comparator;
 
 import com.liferay.commerce.model.CommerceShippingMethod;
 import com.liferay.portal.kernel.util.CollatorUtil;
-
-import java.io.Serializable;
+import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.text.Collator;
 
-import java.util.Comparator;
 import java.util.Locale;
 
 /**
  * @author Alessio Antonio Rendina
  */
 public class CommerceShippingMethodNameComparator
-	implements Comparator<CommerceShippingMethod>, Serializable {
+	extends OrderByComparator<CommerceShippingMethod> {
+
+	public static final String ORDER_BY_ASC = "CommerceShippingMethod.name ASC";
+
+	public static final String ORDER_BY_DESC =
+		"CommerceShippingMethod.name DESC";
+
+	public static final String[] ORDER_BY_FIELDS = {"name"};
+
+	public CommerceShippingMethodNameComparator(
+		boolean ascending, Locale locale) {
+
+		_ascending = ascending;
+		_locale = locale;
+	}
 
 	public CommerceShippingMethodNameComparator(Locale locale) {
-		_locale = locale;
+		this(false, locale);
 	}
 
 	@Override
@@ -44,9 +47,35 @@ public class CommerceShippingMethodNameComparator
 		String name1 = commerceShippingMethod1.getName(_locale);
 		String name2 = commerceShippingMethod2.getName(_locale);
 
-		return collator.compare(name1, name2);
+		int value = collator.compare(name1, name2);
+
+		if (_ascending) {
+			return value;
+		}
+
+		return Math.negateExact(value);
 	}
 
+	@Override
+	public String getOrderBy() {
+		if (_ascending) {
+			return ORDER_BY_ASC;
+		}
+
+		return ORDER_BY_DESC;
+	}
+
+	@Override
+	public String[] getOrderByFields() {
+		return ORDER_BY_FIELDS;
+	}
+
+	@Override
+	public boolean isAscending() {
+		return _ascending;
+	}
+
+	private final boolean _ascending;
 	private final Locale _locale;
 
 }

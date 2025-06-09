@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet;
@@ -26,7 +17,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -36,6 +27,14 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portlet.AsyncPortletServletRequest;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.IOException;
 
@@ -47,14 +46,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -121,7 +112,7 @@ public class I18nServlet extends HttpServlet {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			PortalUtil.sendError(
 				HttpServletResponse.SC_INTERNAL_SERVER_ERROR, exception,
@@ -136,7 +127,7 @@ public class I18nServlet extends HttpServlet {
 
 		int pos = i18nLanguageId.lastIndexOf(CharPool.SLASH);
 
-		i18nLanguageId = StringUtil.replaceFirst(
+		i18nLanguageId = StringUtil.replace(
 			i18nLanguageId.substring(pos + 1), CharPool.DASH,
 			CharPool.UNDERLINE);
 
@@ -156,7 +147,7 @@ public class I18nServlet extends HttpServlet {
 			i18nLanguageCode = i18nLanguageId.substring(0, pos);
 		}
 
-		Locale siteDefaultLocale = LanguageUtil.getLocale(i18nLanguageCode);
+		Locale targetLocale = LanguageUtil.getLocale(i18nLanguageCode);
 
 		Group siteGroup = null;
 
@@ -188,20 +179,26 @@ public class I18nServlet extends HttpServlet {
 					return null;
 				}
 
-				siteDefaultLocale = LanguageUtil.getLocale(
+				targetLocale = LanguageUtil.getLocale(
 					siteGroup.getGroupId(), i18nLanguageCode);
+
+				if ((targetLocale == null) &&
+					PortalUtil.isGroupControlPanelPath(path)) {
+
+					targetLocale = LanguageUtil.getLocale(i18nLanguageCode);
+				}
 			}
 		}
 
-		if (siteDefaultLocale == null) {
+		if (targetLocale == null) {
 			if (PropsValues.LOCALE_USE_DEFAULT_IF_NOT_AVAILABLE) {
-				siteDefaultLocale = PortalUtil.getSiteDefaultLocale(siteGroup);
+				targetLocale = PortalUtil.getSiteDefaultLocale(siteGroup);
 
-				i18nLanguageCode = siteDefaultLocale.getLanguage();
+				i18nLanguageCode = targetLocale.getLanguage();
 
 				i18nPath = StringPool.SLASH + i18nLanguageCode;
 
-				i18nLanguageId = LocaleUtil.toLanguageId(siteDefaultLocale);
+				i18nLanguageId = LocaleUtil.toLanguageId(targetLocale);
 			}
 			else {
 				return null;
@@ -209,7 +206,7 @@ public class I18nServlet extends HttpServlet {
 		}
 		else {
 			String siteDefaultLanguageId = LocaleUtil.toLanguageId(
-				siteDefaultLocale);
+				targetLocale);
 
 			if (siteDefaultLanguageId.startsWith(i18nLanguageId)) {
 				i18nPath = StringPool.SLASH + i18nLanguageCode;
@@ -220,8 +217,8 @@ public class I18nServlet extends HttpServlet {
 
 		String redirect = path;
 
-		if (path.equals(HttpUtil.decodePath(path))) {
-			redirect = HttpUtil.encodePath(path);
+		if (path.equals(HttpComponentsUtil.decodePath(path))) {
+			redirect = HttpComponentsUtil.encodePath(path);
 		}
 
 		if (_log.isDebugEnabled()) {

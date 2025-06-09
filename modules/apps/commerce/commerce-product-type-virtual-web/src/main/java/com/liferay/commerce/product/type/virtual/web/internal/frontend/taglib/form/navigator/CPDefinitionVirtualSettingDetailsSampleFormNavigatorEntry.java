@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.web.internal.frontend.taglib.form.navigator;
@@ -18,19 +9,19 @@ import com.liferay.commerce.product.type.virtual.model.CPDefinitionVirtualSettin
 import com.liferay.commerce.product.type.virtual.web.internal.servlet.taglib.ui.constants.CPDefinitionVirtualSettingFormNavigatorConstants;
 import com.liferay.frontend.taglib.form.navigator.BaseJSPFormNavigatorEntry;
 import com.liferay.frontend.taglib.form.navigator.FormNavigatorEntry;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, property = "form.navigator.entry.order:Integer=80",
+	property = "form.navigator.entry.order:Integer=80",
 	service = FormNavigatorEntry.class
 )
 public class CPDefinitionVirtualSettingDetailsSampleFormNavigatorEntry
@@ -67,7 +58,12 @@ public class CPDefinitionVirtualSettingDetailsSampleFormNavigatorEntry
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, "sample");
+		return _language.get(resourceBundle, "sample");
+	}
+
+	@Override
+	public ServletContext getServletContext() {
+		return _cpDefinitionVirtualSettingServletContext;
 	}
 
 	@Override
@@ -84,8 +80,7 @@ public class CPDefinitionVirtualSettingDetailsSampleFormNavigatorEntry
 			requestDispatcher.include(httpServletRequest, httpServletResponse);
 		}
 		catch (ServletException servletException) {
-			throw new IOException(
-				"Unable to include " + getJspPath(), servletException);
+			throw new IOException(servletException);
 		}
 	}
 
@@ -98,5 +93,8 @@ public class CPDefinitionVirtualSettingDetailsSampleFormNavigatorEntry
 		target = "(osgi.web.symbolicname=com.liferay.commerce.product.type.virtual.web)"
 	)
 	private ServletContext _cpDefinitionVirtualSettingServletContext;
+
+	@Reference
+	private Language _language;
 
 }

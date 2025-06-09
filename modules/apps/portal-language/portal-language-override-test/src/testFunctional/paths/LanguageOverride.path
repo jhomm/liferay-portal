@@ -1,0 +1,57 @@
+<html>
+<head>
+<title>LanguageOverride</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">LanguageOverride</td></tr>
+</thead>
+
+<tbody>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
+<!--FILTER_BY_OVERRIDE-->
+
+<tr>
+	<td>FILTER_BY_OVERRIDE_BOLD_LANGUAGE_WITH_OVERRIDE</td>
+	<td>//dd[contains(.,'${key_languageKey}')]//div/strong[contains (.,'${key_language}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FILTER_BY_OVERRIDE_LANGUAGES_WITH_OVERRIDE</td>
+	<td>//div[contains(@class,'autofit-col-expand')]//div[contains (.,'Languages With Override:')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>FILTER_BY_OVERRIDE_REMOVE_FILTER_SCOPE</td>
+	<td>//span/button[contains(@class,'close')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
+<!--IMPORT_TRANSLATIONS-->
+
+<tr>
+	<td>IMPORT_TRANSLATIONS_DESCRIPTION</td>
+	<td>//div[@class='sheet-text']</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

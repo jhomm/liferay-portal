@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ant.bnd.spring;
@@ -45,10 +36,8 @@ public class SpringDependencyAnalyzerPluginTest {
 	public void testDependenciesDefinedInFileAndAnnotation() throws Exception {
 		Jar jar = analyze(SampleBean.class, "1.0.0.1", "bar.foo.Dependency");
 
-		Resource resource = jar.getResource(
-			"OSGI-INF/context/context.dependencies");
-
-		String value = read(resource);
+		String value = read(
+			jar.getResource("OSGI-INF/context/context.dependencies"));
 
 		Assert.assertEquals(
 			"bar.foo.Dependency\n" + _RELEASE_INFO + "java.lang.String\n",
@@ -59,10 +48,8 @@ public class SpringDependencyAnalyzerPluginTest {
 	public void testDependenciesDefinedOnlyInAnnotation() throws Exception {
 		Jar jar = analyze(SampleBean.class, "1.0.0.1", null);
 
-		Resource resource = jar.getResource(
-			"OSGI-INF/context/context.dependencies");
-
-		String value = read(resource);
+		String value = read(
+			jar.getResource("OSGI-INF/context/context.dependencies"));
 
 		value = value.replace("\r\n", "\n");
 
@@ -75,10 +62,8 @@ public class SpringDependencyAnalyzerPluginTest {
 
 		Jar jar = analyze(FilterSampleBean.class, "1.0.0.1", null);
 
-		Resource resource = jar.getResource(
-			"OSGI-INF/context/context.dependencies");
-
-		String value = read(resource);
+		String value = read(
+			jar.getResource("OSGI-INF/context/context.dependencies"));
 
 		Assert.assertEquals(
 			_RELEASE_INFO + "java.lang.String (service.ranking=1)\n", value);
@@ -90,10 +75,8 @@ public class SpringDependencyAnalyzerPluginTest {
 
 		Jar jar = analyze(SampleBean.class, "[1.0.0,2.0.0)", null);
 
-		Resource resource = jar.getResource(
-			"OSGI-INF/context/context.dependencies");
-
-		String value = read(resource);
+		String value = read(
+			jar.getResource("OSGI-INF/context/context.dependencies"));
 
 		value = value.replace("\r\n", "\n");
 
@@ -104,10 +87,8 @@ public class SpringDependencyAnalyzerPluginTest {
 	public void testDependenciesDefinedOnlyInFile() throws Exception {
 		Jar jar = analyze(null, "1.0.0.1", "bar.foo.Dependency");
 
-		Resource resource = jar.getResource(
-			"OSGI-INF/context/context.dependencies");
-
-		String value = read(resource);
+		String value = read(
+			jar.getResource("OSGI-INF/context/context.dependencies"));
 
 		Assert.assertEquals("bar.foo.Dependency\n" + _RELEASE_INFO, value);
 	}
@@ -116,10 +97,8 @@ public class SpringDependencyAnalyzerPluginTest {
 	public void testEmptyDependencies() throws Exception {
 		Jar jar = analyze(null, "1.0.0.1", "");
 
-		Resource resource = jar.getResource(
-			"OSGI-INF/context/context.dependencies");
-
-		String value = read(resource);
+		String value = read(
+			jar.getResource("OSGI-INF/context/context.dependencies"));
 
 		Assert.assertEquals(_RELEASE_INFO, value);
 	}

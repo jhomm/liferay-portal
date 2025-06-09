@@ -1,38 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.menu.web.internal.exportimport.portlet.preferences.processor;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataException;
+import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
+import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
 import com.liferay.exportimport.portlet.preferences.processor.Capability;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.xml.Element;
 import com.liferay.site.navigation.constants.SiteNavigationConstants;
-import com.liferay.site.navigation.menu.web.internal.constants.SiteNavigationMenuPortletKeys;
+import com.liferay.site.navigation.constants.SiteNavigationMenuPortletKeys;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.service.SiteNavigationMenuLocalService;
 
-import java.util.List;
-import java.util.Map;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.ReadOnlyException;
 
-import javax.portlet.PortletPreferences;
-import javax.portlet.ReadOnlyException;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,8 +42,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SiteNavigationMenuPortletKeys.SITE_NAVIGATION_MENU,
+	property = "jakarta.portlet.name=" + SiteNavigationMenuPortletKeys.SITE_NAVIGATION_MENU,
 	service = ExportImportPortletPreferencesProcessor.class
 )
 public class SiteNavigationMenuExportImportPortletPreferencesProcessor
@@ -64,6 +64,14 @@ public class SiteNavigationMenuExportImportPortletPreferencesProcessor
 			PortletPreferences portletPreferences)
 		throws PortletDataException {
 
+		if (!MapUtil.getBoolean(
+				portletDataContext.getParameterMap(),
+				PortletDataHandlerKeys.PORTLET_DATA) &&
+			MergeLayoutPrototypesThreadLocal.isInProgress()) {
+
+			return portletPreferences;
+		}
+
 		try {
 			portletDataContext.addPortletPermissions(
 				SiteNavigationConstants.RESOURCE_NAME);
@@ -73,29 +81,13 @@ public class SiteNavigationMenuExportImportPortletPreferencesProcessor
 				"Unable to export portlet permissions", portalException);
 		}
 
-		long siteNavigationMenuId = GetterUtil.getLong(
-			portletPreferences.getValue("siteNavigationMenuId", null));
+		SiteNavigationMenu siteNavigationMenu = _getSiteNavigationMenu(
+			portletDataContext, portletPreferences);
 
-		if (siteNavigationMenuId > 0) {
-			SiteNavigationMenu siteNavigationMenu =
-				_siteNavigationMenuLocalService.fetchSiteNavigationMenu(
-					siteNavigationMenuId);
-
-			if (siteNavigationMenu != null) {
-				String siteNavigationMenuUuid = siteNavigationMenu.getUuid();
-
-				SiteNavigationMenu siteNavigationMenuToExport =
-					_siteNavigationMenuLocalService.
-						fetchSiteNavigationMenuByUuidAndGroupId(
-							siteNavigationMenuUuid,
-							portletDataContext.getScopeGroupId());
-
-				if (siteNavigationMenuToExport != null) {
-					StagedModelDataHandlerUtil.exportReferenceStagedModel(
-						portletDataContext, portletDataContext.getPortletId(),
-						siteNavigationMenuToExport);
-				}
-			}
+		if (siteNavigationMenu != null) {
+			StagedModelDataHandlerUtil.exportReferenceStagedModel(
+				portletDataContext, portletDataContext.getPortletId(),
+				siteNavigationMenu);
 		}
 
 		return portletPreferences;
@@ -116,45 +108,168 @@ public class SiteNavigationMenuExportImportPortletPreferencesProcessor
 				"Unable to import portlet permissions", portalException);
 		}
 
-		long importedSiteNavigationMenuId = GetterUtil.getLong(
-			portletPreferences.getValue("siteNavigationMenuId", null));
+		if (!MapUtil.getBoolean(
+				portletDataContext.getParameterMap(),
+				PortletDataHandlerKeys.PORTLET_DATA) &&
+			MergeLayoutPrototypesThreadLocal.isInProgress()) {
 
-		try {
-			if (importedSiteNavigationMenuId > 0) {
-				StagedModelDataHandlerUtil.importReferenceStagedModel(
-					portletDataContext, SiteNavigationMenu.class,
-					importedSiteNavigationMenuId);
+			String siteNavigationMenuExternalReferenceCode =
+				portletPreferences.getValue(
+					"siteNavigationMenuExternalReferenceCode",
+					StringPool.BLANK);
+			String siteNavigationMenuGroupExternalReferenceCode =
+				portletPreferences.getValue(
+					"siteNavigationMenuGroupExternalReferenceCode",
+					StringPool.BLANK);
 
-				Map<Long, Long> siteNavigationMenuIds =
-					(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
-						SiteNavigationMenu.class);
+			SiteNavigationMenu siteNavigationMenu = _getSiteNavigationMenu(
+				portletDataContext, portletPreferences);
 
-				long siteNavigationMenuId = MapUtil.getLong(
-					siteNavigationMenuIds, importedSiteNavigationMenuId,
-					importedSiteNavigationMenuId);
+			if ((siteNavigationMenu == null) &&
+				Validator.isNotNull(siteNavigationMenuExternalReferenceCode)) {
 
-				if (siteNavigationMenuId > 0) {
-					portletPreferences.setValue(
-						"siteNavigationMenuId",
-						String.valueOf(siteNavigationMenuId));
+				try {
+					Layout layout = _layoutLocalService.getLayout(
+						portletDataContext.getPlid());
+
+					PortletPreferences existingPortletPreferences = null;
+
+					if (layout.isPortletEmbedded(
+							portletDataContext.getPortletId(),
+							layout.getGroupId())) {
+
+						existingPortletPreferences =
+							PortletPreferencesFactoryUtil.getLayoutPortletSetup(
+								layout.getCompanyId(), layout.getGroupId(),
+								PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+								PortletKeys.PREFS_PLID_SHARED,
+								portletDataContext.getPortletId(), null);
+					}
+					else {
+						existingPortletPreferences =
+							PortletPreferencesFactoryUtil.getPortletSetup(
+								layout, portletDataContext.getPortletId(),
+								StringPool.BLANK);
+					}
+
+					siteNavigationMenuExternalReferenceCode =
+						existingPortletPreferences.getValue(
+							"siteNavigationMenuExternalReferenceCode",
+							StringPool.BLANK);
+
+					siteNavigationMenuGroupExternalReferenceCode =
+						existingPortletPreferences.getValue(
+							"siteNavigationMenuGroupExternalReferenceCode",
+							StringPool.BLANK);
+				}
+				catch (PortalException portalException) {
+					PortletDataException portletDataException =
+						new PortletDataException(portalException);
+
+					throw portletDataException;
 				}
 			}
-		}
-		catch (ReadOnlyException readOnlyException) {
-			PortletDataException portletDataException =
-				new PortletDataException(readOnlyException);
 
-			throw portletDataException;
+			try {
+				portletPreferences.setValue(
+					"siteNavigationMenuExternalReferenceCode",
+					siteNavigationMenuExternalReferenceCode);
+				portletPreferences.setValue(
+					"siteNavigationMenuGroupExternalReferenceCode",
+					siteNavigationMenuGroupExternalReferenceCode);
+			}
+			catch (ReadOnlyException readOnlyException) {
+				PortletDataException portletDataException =
+					new PortletDataException(readOnlyException);
+
+				throw portletDataException;
+			}
+
+			return portletPreferences;
 		}
+
+		_importSiteNavigationMenuReference(portletDataContext);
 
 		return portletPreferences;
 	}
 
-	@Reference(target = "(name=PortletDisplayTemplateExporter)")
+	private SiteNavigationMenu _getSiteNavigationMenu(
+		PortletDataContext portletDataContext,
+		PortletPreferences portletPreferences) {
+
+		String siteNavigationMenuExternalReferenceCode =
+			portletPreferences.getValue(
+				"siteNavigationMenuExternalReferenceCode", null);
+
+		if (Validator.isNull(siteNavigationMenuExternalReferenceCode)) {
+			return null;
+		}
+
+		String siteNavigationMenuGroupExternalReferenceCode =
+			portletPreferences.getValue(
+				"siteNavigationMenuGroupExternalReferenceCode", null);
+
+		if (Validator.isNull(siteNavigationMenuGroupExternalReferenceCode)) {
+			return _siteNavigationMenuLocalService.
+				fetchSiteNavigationMenuByExternalReferenceCode(
+					siteNavigationMenuExternalReferenceCode,
+					portletDataContext.getScopeGroupId());
+		}
+
+		Group group = _groupLocalService.fetchGroupByExternalReferenceCode(
+			siteNavigationMenuGroupExternalReferenceCode,
+			portletDataContext.getCompanyId());
+
+		if (group == null) {
+			return null;
+		}
+
+		return _siteNavigationMenuLocalService.
+			fetchSiteNavigationMenuByExternalReferenceCode(
+				siteNavigationMenuExternalReferenceCode, group.getGroupId());
+	}
+
+	private void _importSiteNavigationMenuReference(
+			PortletDataContext portletDataContext)
+		throws PortletDataException {
+
+		Element importDataRootElement =
+			portletDataContext.getImportDataRootElement();
+
+		Element referencesElement = importDataRootElement.element("references");
+
+		if (referencesElement == null) {
+			return;
+		}
+
+		List<Element> referenceElements = referencesElement.elements();
+
+		for (Element referenceElement : referenceElements) {
+			String className = referenceElement.attributeValue("class-name");
+
+			if (!className.equals(SiteNavigationMenu.class.getName())) {
+				continue;
+			}
+
+			long classPK = GetterUtil.getLong(
+				referenceElement.attributeValue("class-pk"));
+
+			StagedModelDataHandlerUtil.importReferenceStagedModel(
+				portletDataContext, className, Long.valueOf(classPK));
+		}
+	}
+
+	@Reference(target = "(name=CommonPortletDisplayTemplateExportCapability)")
 	private Capability _exportCapability;
 
-	@Reference(target = "(name=PortletDisplayTemplateImporter)")
+	@Reference(unbind = "-")
+	private GroupLocalService _groupLocalService;
+
+	@Reference(target = "(name=CommonPortletDisplayTemplateImportCapability)")
 	private Capability _importCapability;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
 
 	@Reference(unbind = "-")
 	private SiteNavigationMenuLocalService _siteNavigationMenuLocalService;

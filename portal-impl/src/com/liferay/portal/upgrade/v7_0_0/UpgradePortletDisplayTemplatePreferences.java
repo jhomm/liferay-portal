@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.v7_0_0;
 
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portletdisplaytemplate.PortletDisplayTemplateManager;
 import com.liferay.portal.kernel.upgrade.BasePortletPreferencesUpgradeProcess;
@@ -22,13 +14,13 @@ import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Eduardo García
@@ -47,7 +39,8 @@ public class UpgradePortletDisplayTemplatePreferences
 				"select groupId from Group_ where classNameId = ? and " +
 					"classPK = ?")) {
 
-			preparedStatement.setLong(1, _COMPANY_CLASS_NAME_ID);
+			preparedStatement.setLong(
+				1, PortalUtil.getClassNameId(Company.class));
 			preparedStatement.setLong(2, companyId);
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -125,7 +118,6 @@ public class UpgradePortletDisplayTemplatePreferences
 			portletPreferences.setValue(
 				"displayStyleGroupId",
 				String.valueOf(objectValuePair.getKey()));
-
 			portletPreferences.setValue(
 				"displayStyle",
 				PortletDisplayTemplateManager.DISPLAY_STYLE_PREFIX +
@@ -154,9 +146,6 @@ public class UpgradePortletDisplayTemplatePreferences
 
 	protected static final String UPDATE_PORTLET_PREFERENCES_WHERE_CLAUSE =
 		"(preferences like '%" + DISPLAY_STYLE_PREFIX_6_2 + "%')";
-
-	private static final Long _COMPANY_CLASS_NAME_ID =
-		PortalUtil.getClassNameId("com.liferay.portal.kernel.model.Company");
 
 	private long _companyGroupId = 0L;
 	private final Map<Long, Long> _companyGroupIds = new HashMap<>();

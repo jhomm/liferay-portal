@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
@@ -125,6 +116,10 @@ public class CommerceChannelRelPersistenceTest {
 
 		CommerceChannelRel newCommerceChannelRel = _persistence.create(pk);
 
+		newCommerceChannelRel.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCommerceChannelRel.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCommerceChannelRel.setCompanyId(RandomTestUtil.nextLong());
 
 		newCommerceChannelRel.setUserId(RandomTestUtil.nextLong());
@@ -147,6 +142,12 @@ public class CommerceChannelRelPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCommerceChannelRel.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCommerceChannelRel.getMvccVersion(),
+			newCommerceChannelRel.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceChannelRel.getCtCollectionId(),
+			newCommerceChannelRel.getCtCollectionId());
 		Assert.assertEquals(
 			existingCommerceChannelRel.getCommerceChannelRelId(),
 			newCommerceChannelRel.getCommerceChannelRelId());
@@ -227,10 +228,10 @@ public class CommerceChannelRelPersistenceTest {
 
 	protected OrderByComparator<CommerceChannelRel> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceChannelRel", "commerceChannelRelId", true, "companyId",
-			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "classNameId", true, "classPK", true,
-			"commerceChannelId", true);
+			"CommerceChannelRel", "mvccVersion", true, "ctCollectionId", true,
+			"commerceChannelRelId", true, "companyId", true, "userId", true,
+			"userName", true, "createDate", true, "modifiedDate", true,
+			"classNameId", true, "classPK", true, "commerceChannelId", true);
 	}
 
 	@Test
@@ -530,6 +531,10 @@ public class CommerceChannelRelPersistenceTest {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceChannelRel commerceChannelRel = _persistence.create(pk);
+
+		commerceChannelRel.setMvccVersion(RandomTestUtil.nextLong());
+
+		commerceChannelRel.setCtCollectionId(RandomTestUtil.nextLong());
 
 		commerceChannelRel.setCompanyId(RandomTestUtil.nextLong());
 

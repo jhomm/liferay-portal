@@ -1,28 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.object.constants.ObjectDefinitionConstants;
+import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.field.builder.TextObjectFieldBuilder;
+import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectFieldService;
-import com.liferay.object.util.LocalizedMapUtil;
+import com.liferay.object.test.util.ObjectDefinitionTestUtil;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -39,6 +34,7 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 
 import java.util.Collections;
 
@@ -63,29 +59,22 @@ public class ObjectFieldServiceTest {
 
 	@Before
 	public void setUp() throws Exception {
-		_defaultUser = _userLocalService.getDefaultUser(
+		_guestUser = _userLocalService.getGuestUser(
 			TestPropsValues.getCompanyId());
+		_objectDefinition =
+			ObjectDefinitionTestUtil.addCustomObjectDefinition();
+		_systemObjectDefinition =
+			ObjectDefinitionTestUtil.addUnmodifiableSystemObjectDefinition(
+				null, TestPropsValues.getUserId(), "Test", null,
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				"Test", null, null,
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
+				ObjectDefinitionConstants.SCOPE_COMPANY, null, 1,
+				Collections.<ObjectField>emptyList());
 		_originalName = PrincipalThreadLocal.getName();
 		_originalPermissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 		_user = TestPropsValues.getUser();
-
-		_objectDefinition =
-			_objectDefinitionLocalService.addCustomObjectDefinition(
-				TestPropsValues.getUserId(),
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"A" + RandomTestUtil.randomString(), null, null,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				ObjectDefinitionConstants.SCOPE_COMPANY, null);
-
-		_systemObjectDefinition =
-			_objectDefinitionLocalService.addSystemObjectDefinition(
-				TestPropsValues.getUserId(), "Test", null,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				"Test", null, null,
-				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				ObjectDefinitionConstants.SCOPE_COMPANY, 1,
-				Collections.<ObjectField>emptyList());
 	}
 
 	@After
@@ -99,7 +88,7 @@ public class ObjectFieldServiceTest {
 	public void testAddCustomObjectField() throws Exception {
 		try {
 			_testAddCustomObjectField(
-				_objectDefinition.getObjectDefinitionId(), _defaultUser);
+				_objectDefinition.getObjectDefinitionId(), _guestUser);
 
 			Assert.fail();
 		}
@@ -108,13 +97,13 @@ public class ObjectFieldServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
 		try {
 			_testAddCustomObjectField(
-				_systemObjectDefinition.getObjectDefinitionId(), _defaultUser);
+				_systemObjectDefinition.getObjectDefinitionId(), _guestUser);
 
 			Assert.fail();
 		}
@@ -124,7 +113,7 @@ public class ObjectFieldServiceTest {
 			Assert.assertTrue(
 				message.contains(
 					StringBundler.concat(
-						"User ", _defaultUser.getUserId(),
+						"User ", _guestUser.getUserId(),
 						" must have EXTEND_SYSTEM_OBJECT_DEFINITION ",
 						"permission for")));
 		}
@@ -136,7 +125,7 @@ public class ObjectFieldServiceTest {
 	@Test
 	public void testDeleteObjectField() throws Exception {
 		try {
-			_testDeleteObjectField(_defaultUser);
+			_testDeleteObjectField(_guestUser);
 
 			Assert.fail();
 		}
@@ -145,7 +134,7 @@ public class ObjectFieldServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
@@ -155,14 +144,14 @@ public class ObjectFieldServiceTest {
 	@Test
 	public void testGetObjectField() throws Exception {
 		try {
-			_testGetObjectField(_defaultUser);
+			_testGetObjectField(_guestUser);
 		}
 		catch (PrincipalException.MustHavePermission principalException) {
 			String message = principalException.getMessage();
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have VIEW permission for"));
 		}
 
@@ -170,9 +159,9 @@ public class ObjectFieldServiceTest {
 	}
 
 	@Test
-	public void testUpdateCustomObjectField() throws Exception {
+	public void testUpdateObjectField() throws Exception {
 		try {
-			_testUpdateCustomObjectField(_defaultUser);
+			_testUpdateObjectField(_guestUser);
 
 			Assert.fail();
 		}
@@ -181,19 +170,27 @@ public class ObjectFieldServiceTest {
 
 			Assert.assertTrue(
 				message.contains(
-					"User " + _defaultUser.getUserId() +
+					"User " + _guestUser.getUserId() +
 						" must have UPDATE permission for"));
 		}
 
-		_testUpdateCustomObjectField(_user);
+		_testUpdateObjectField(_user);
 	}
 
 	private ObjectField _addObjectField(User user) throws Exception {
-		return _objectFieldLocalService.addCustomObjectField(
-			user.getUserId(), 0, _objectDefinition.getObjectDefinitionId(),
-			false, false, null,
-			LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-			StringUtil.randomId(), true, "String");
+		return ObjectFieldUtil.addCustomObjectField(
+			new TextObjectFieldBuilder(
+			).userId(
+				user.getUserId()
+			).labelMap(
+				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString())
+			).name(
+				StringUtil.randomId()
+			).objectDefinitionId(
+				_objectDefinition.getObjectDefinitionId()
+			).required(
+				true
+			).build());
 	}
 
 	private void _setUser(User user) {
@@ -212,9 +209,13 @@ public class ObjectFieldServiceTest {
 			_setUser(user);
 
 			objectField = _objectFieldService.addCustomObjectField(
-				0, objectDefinitionId, false, false, null,
+				null, 0, objectDefinitionId,
+				ObjectFieldConstants.BUSINESS_TYPE_TEXT,
+				ObjectFieldConstants.DB_TYPE_STRING, false, false, null,
 				LocalizedMapUtil.getLocalizedMap(RandomTestUtil.randomString()),
-				StringUtil.randomId(), true, "String");
+				false, StringUtil.randomId(),
+				ObjectFieldConstants.READ_ONLY_FALSE, null, true, false,
+				Collections.emptyList());
 		}
 		finally {
 			if (objectField != null) {
@@ -259,7 +260,7 @@ public class ObjectFieldServiceTest {
 		}
 	}
 
-	private void _testUpdateCustomObjectField(User user) throws Exception {
+	private void _testUpdateObjectField(User user) throws Exception {
 		ObjectField objectField = null;
 
 		try {
@@ -267,11 +268,13 @@ public class ObjectFieldServiceTest {
 
 			objectField = _addObjectField(user);
 
-			objectField = _objectFieldService.updateCustomObjectField(
-				objectField.getObjectFieldId(), 0, true, false,
+			objectField = _objectFieldService.updateObjectField(
+				StringPool.BLANK, objectField.getObjectFieldId(), 0, "Text",
+				ObjectFieldConstants.DB_TYPE_STRING, true, false,
 				LanguageUtil.getLanguageId(LocaleUtil.getDefault()),
-				LocalizedMapUtil.getLocalizedMap("baker"), "baker", true,
-				"String");
+				LocalizedMapUtil.getLocalizedMap("baker"), false, "baker",
+				ObjectFieldConstants.READ_ONLY_FALSE, null, true, false,
+				Collections.emptyList());
 		}
 		finally {
 			if (objectField != null) {
@@ -280,7 +283,7 @@ public class ObjectFieldServiceTest {
 		}
 	}
 
-	private User _defaultUser;
+	private User _guestUser;
 
 	@DeleteAfterTestRun
 	private ObjectDefinition _objectDefinition;

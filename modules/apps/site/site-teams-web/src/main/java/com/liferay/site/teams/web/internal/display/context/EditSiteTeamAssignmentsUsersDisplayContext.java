@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.teams.web.internal.display.context;
@@ -18,26 +9,25 @@ import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.UserSearch;
-import com.liferay.portlet.usersadmin.search.UserSearchTerms;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.site.teams.web.internal.constants.SiteTeamsPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+import com.liferay.users.admin.search.UserSearch;
+import com.liferay.users.admin.search.UserSearchTerms;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -104,8 +94,9 @@ public class EditSiteTeamAssignmentsUsersDisplayContext
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			httpServletRequest, "orderByCol", "first-name");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			httpServletRequest, SiteTeamsPortletKeys.SITE_TEAMS,
+			"users-order-by-col", "first-name");
 
 		return _orderByCol;
 	}
@@ -115,8 +106,9 @@ public class EditSiteTeamAssignmentsUsersDisplayContext
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			httpServletRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			httpServletRequest, SiteTeamsPortletKeys.SITE_TEAMS,
+			"users-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -133,16 +125,11 @@ public class EditSiteTeamAssignmentsUsersDisplayContext
 		SearchContainer<User> userSearchContainer = new UserSearch(
 			renderRequest, getEditTeamAssignmentsURL());
 
-		OrderByComparator<User> orderByComparator =
-			UsersAdminUtil.getUserOrderByComparator(
-				getOrderByCol(), getOrderByType());
-
 		userSearchContainer.setOrderByCol(getOrderByCol());
-		userSearchContainer.setOrderByComparator(orderByComparator);
+		userSearchContainer.setOrderByComparator(
+			UsersAdminUtil.getUserOrderByComparator(
+				getOrderByCol(), getOrderByType()));
 		userSearchContainer.setOrderByType(getOrderByType());
-
-		userSearchContainer.setRowChecker(
-			new EmptyOnClickRowChecker(renderResponse));
 
 		UserSearchTerms searchTerms =
 			(UserSearchTerms)userSearchContainer.getSearchTerms();
@@ -154,19 +141,18 @@ public class EditSiteTeamAssignmentsUsersDisplayContext
 				"usersTeams", getTeamId()
 			).build();
 
-		int usersCount = UserLocalServiceUtil.searchCount(
-			themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-			searchTerms.getStatus(), userParams);
+		userSearchContainer.setResultsAndTotal(
+			() -> UserLocalServiceUtil.search(
+				themeDisplay.getCompanyId(), searchTerms.getKeywords(),
+				searchTerms.getStatus(), userParams,
+				userSearchContainer.getStart(), userSearchContainer.getEnd(),
+				userSearchContainer.getOrderByComparator()),
+			UserLocalServiceUtil.searchCount(
+				themeDisplay.getCompanyId(), searchTerms.getKeywords(),
+				searchTerms.getStatus(), userParams));
 
-		userSearchContainer.setTotal(usersCount);
-
-		List<User> users = UserLocalServiceUtil.search(
-			themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-			searchTerms.getStatus(), userParams, userSearchContainer.getStart(),
-			userSearchContainer.getEnd(),
-			userSearchContainer.getOrderByComparator());
-
-		userSearchContainer.setResults(users);
+		userSearchContainer.setRowChecker(
+			new EmptyOnClickRowChecker(renderResponse));
 
 		_userSearchContainer = userSearchContainer;
 

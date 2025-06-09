@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor;
@@ -17,16 +8,32 @@ package com.liferay.portal.vulcan.internal.jaxrs.writer.interceptor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.liferay.petra.lang.HashUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.fields.NestedField;
 import com.liferay.portal.vulcan.fields.NestedFieldId;
-import com.liferay.portal.vulcan.fields.NestedFieldSupport;
 import com.liferay.portal.vulcan.fields.NestedFieldsContext;
 import com.liferay.portal.vulcan.fields.NestedFieldsContextThreadLocal;
 import com.liferay.portal.vulcan.internal.fields.servlet.NestedFieldsHttpServletRequestWrapper;
+import com.liferay.portal.vulcan.internal.jaxrs.message.exchange.ExchangeWrapper;
 import com.liferay.portal.vulcan.pagination.Page;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
 
 import java.io.IOException;
 
@@ -38,7 +45,6 @@ import java.lang.reflect.Parameter;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -46,25 +52,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.servlet.http.HttpServletRequest;
-
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.ext.Provider;
-import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.ext.WriterInterceptorContext;
-
 import org.apache.cxf.jaxrs.ext.ContextProvider;
 import org.apache.cxf.jaxrs.impl.UriInfoImpl;
 import org.apache.cxf.jaxrs.provider.ProviderFactory;
+import org.apache.cxf.message.Exchange;
 import org.apache.cxf.message.Message;
 
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.Filter;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceObjects;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
@@ -87,7 +83,9 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 		NestedFieldsContext nestedFieldsContext =
 			NestedFieldsContextThreadLocal.getNestedFieldsContext();
 
-		if (nestedFieldsContext == null) {
+		if ((nestedFieldsContext == null) ||
+			ListUtil.isEmpty(nestedFieldsContext.getNestedFields())) {
+
 			writerInterceptorContext.proceed();
 
 			return;
@@ -96,10 +94,10 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 		try {
 			_setFieldValues(
 				writerInterceptorContext.getEntity(),
-				nestedFieldsContext.getFieldNames(), nestedFieldsContext);
+				nestedFieldsContext.getNestedFields(), nestedFieldsContext);
 		}
 		catch (Exception exception) {
-			_log.error(exception.getMessage(), exception);
+			_log.error(exception);
 
 			throw new WebApplicationException(exception);
 		}
@@ -124,9 +122,17 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 		_nestedFieldServiceTrackerCustomizer =
 			nestedFieldServiceTrackerCustomizer;
 
+		Filter filter = null;
+
+		try {
+			filter = bundleContext.createFilter("(nested.field.support=true)");
+		}
+		catch (InvalidSyntaxException invalidSyntaxException) {
+			ReflectionUtil.throwException(invalidSyntaxException);
+		}
+
 		_serviceTracker = new ServiceTracker<>(
-			bundleContext, NestedFieldSupport.class.getName(),
-			_nestedFieldServiceTrackerCustomizer);
+			bundleContext, filter, _nestedFieldServiceTrackerCustomizer);
 
 		_serviceTracker.open();
 	}
@@ -261,15 +267,17 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 
 		private Object[] _getMethodArgs(
 				String fieldName, Object item,
-				NestedFieldsContext nestedFieldsContext, Method resourceMethod,
+				NestedFieldsContext nestedFieldsContext, Object resource,
+				Method resourceMethod,
 				Map.Entry<String, Class<?>>[] resourceMethodArgNameTypeEntries)
 			throws Exception {
 
 			Object[] args = new Object[resourceMethod.getParameterCount()];
 
+			Message message = _handleNestedFieldMessage(
+				fieldName, nestedFieldsContext.getMessage(), resource);
 			MultivaluedMap<String, String> pathParameters =
 				nestedFieldsContext.getPathParameters();
-
 			MultivaluedMap<String, String> queryParameters =
 				nestedFieldsContext.getQueryParameters();
 
@@ -283,10 +291,12 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 
 				if (args[i] == null) {
 					args[i] = _getMethodArgValueFromRequest(
-						fieldName, nestedFieldsContext, pathParameters,
-						queryParameters, resourceMethodArgNameTypeEntries[i]);
+						fieldName, message, pathParameters, queryParameters,
+						resourceMethodArgNameTypeEntries[i]);
 				}
 			}
+
+			_resetNestedFieldMessage(message);
 
 			return args;
 		}
@@ -295,6 +305,11 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 				Object item,
 				Map.Entry<String, Class<?>> resourceMethodArgNameTypeEntry)
 			throws Exception {
+
+			String argName = resourceMethodArgNameTypeEntry.getKey();
+
+			String methodName =
+				"get" + StringUtil.upperCaseFirstLetter(argName);
 
 			List<Class<?>> itemClasses = new ArrayList<>();
 
@@ -305,19 +320,14 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			itemClasses.add(itemClass.getSuperclass());
 
 			for (Class<?> curItemClass : itemClasses) {
-				try {
-					Field itemField = curItemClass.getDeclaredField(
-						resourceMethodArgNameTypeEntry.getKey());
+				for (Method method : curItemClass.getMethods()) {
+					if (StringUtil.equals(method.getName(), methodName) &&
+						Objects.equals(
+							method.getReturnType(),
+							resourceMethodArgNameTypeEntry.getValue()) &&
+						(method.getParameterCount() == 0)) {
 
-					if (itemField != null) {
-						itemField.setAccessible(true);
-
-						return itemField.get(item);
-					}
-				}
-				catch (NoSuchFieldException noSuchFieldException) {
-					if (_log.isDebugEnabled()) {
-						_log.debug(noSuchFieldException.getMessage());
+						return method.invoke(item);
 					}
 				}
 			}
@@ -326,7 +336,7 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 		}
 
 		private Object _getMethodArgValueFromRequest(
-			String fieldName, NestedFieldsContext nestedFieldsContext,
+			String fieldName, Message message,
 			MultivaluedMap<String, String> pathParameters,
 			MultivaluedMap<String, String> queryParameters,
 			Map.Entry<String, Class<?>> resourceMethodArgNameTypeEntry) {
@@ -336,15 +346,10 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			Class<?> resourceMethodArgType =
 				resourceMethodArgNameTypeEntry.getValue();
 
-			Message message = _getNestedFieldsAwareMessage(
-				fieldName, nestedFieldsContext.getMessage());
-
 			Object context = _getContext(resourceMethodArgType, message);
 
 			if (context != null) {
 				argValue = context;
-
-				_resetNestedAwareMessage(message);
 			}
 			else {
 				argValue = _convert(
@@ -364,17 +369,6 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			return argValue;
 		}
 
-		private Message _getNestedFieldsAwareMessage(
-			String fieldName, Message message) {
-
-			message.put(
-				"HTTP.REQUEST",
-				new NestedFieldsHttpServletRequestWrapper(
-					fieldName, getHttpServletRequest(message)));
-
-			return message;
-		}
-
 		private Object _getNestedFieldValue(
 				String fieldName, Object item,
 				NestedFieldsContext nestedFieldsContext, Method resourceMethod,
@@ -389,8 +383,8 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 					nestedFieldsContext.getMessage(), resource);
 
 				Object[] args = _getMethodArgs(
-					fieldName, item, nestedFieldsContext, resourceMethod,
-					resourceMethodArgNameTypeEntries);
+					fieldName, item, nestedFieldsContext, resource,
+					resourceMethod, resourceMethodArgNameTypeEntries);
 
 				return resourceMethod.invoke(resource, args);
 			}
@@ -422,7 +416,7 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			}
 			catch (NoSuchMethodException noSuchMethodException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchMethodException.getMessage());
+					_log.debug(noSuchMethodException);
 				}
 			}
 
@@ -472,7 +466,20 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			return resourceMethodArgNameTypeEntries;
 		}
 
-		private void _resetNestedAwareMessage(Message message) {
+		private Message _handleNestedFieldMessage(
+			String fieldName, Message message, Object resource) {
+
+			message.put(
+				"HTTP.REQUEST",
+				new NestedFieldsHttpServletRequestWrapper(
+					fieldName, getHttpServletRequest(message)));
+			message.setExchange(
+				new ExchangeWrapper(message.getExchange(), resource));
+
+			return message;
+		}
+
+		private void _resetNestedFieldMessage(Message message) {
 			NestedFieldsHttpServletRequestWrapper
 				nestedFieldsHttpServletRequestWrapper =
 					(NestedFieldsHttpServletRequestWrapper)
@@ -481,6 +488,14 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			message.put(
 				"HTTP.REQUEST",
 				nestedFieldsHttpServletRequestWrapper.getRequest());
+
+			Exchange exchange = message.getExchange();
+
+			if (exchange instanceof ExchangeWrapper) {
+				ExchangeWrapper exchangeWrapper = (ExchangeWrapper)exchange;
+
+				message.setExchange(exchangeWrapper.getExchange());
+			}
 		}
 
 		private void _setContextFields(
@@ -568,21 +583,18 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 	}
 
 	private Field _getField(Class<?> entityClass, String fieldName) {
-		List<Field> fields = new ArrayList<>(
-			Arrays.asList(entityClass.getDeclaredFields()));
+		Class<?> clazz = entityClass;
 
-		Class<?> superClass = entityClass.getSuperclass();
+		while ((clazz != null) && (clazz != Object.class)) {
+			for (Field field : clazz.getDeclaredFields()) {
+				if (Objects.equals(field.getName(), fieldName) ||
+					Objects.equals(field.getName(), "_" + fieldName)) {
 
-		if (superClass != null) {
-			Collections.addAll(fields, superClass.getDeclaredFields());
-		}
-
-		for (Field field : fields) {
-			if (Objects.equals(field.getName(), fieldName) ||
-				Objects.equals(field.getName(), "_" + fieldName)) {
-
-				return field;
+					return field;
+				}
 			}
+
+			clazz = clazz.getSuperclass();
 		}
 
 		return null;
@@ -614,9 +626,15 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 			String fieldName, Class<?> itemClass,
 			NestedFieldsContext nestedFieldsContext) {
 
-		Class<?>[] parentClasses = new Class<?>[] {
-			Void.class, itemClass, itemClass.getSuperclass()
-		};
+		List<Class<?>> parentClasses = ListUtil.fromArray(Void.class);
+
+		Class<?> clazz = itemClass;
+
+		while ((clazz != null) && (clazz != Object.class)) {
+			parentClasses.add(clazz);
+
+			clazz = clazz.getSuperclass();
+		}
 
 		for (Class<?> parentClass : parentClasses) {
 			FactoryKey factoryKey = new FactoryKey(
@@ -643,27 +661,27 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 	}
 
 	private void _setFieldValues(
-			Object entity, List<String> fieldNames,
+			Object entity, List<String> nestedFields,
 			NestedFieldsContext nestedFieldsContext)
 		throws Exception {
 
 		List<Object> items = _getItems(entity);
 
-		for (String fieldName : fieldNames) {
-			String nestedField = null;
+		for (String nestedField : nestedFields) {
+			String childNestedField = null;
 
-			int index = fieldName.indexOf(".");
+			int index = nestedField.indexOf(".");
 
 			if (index != -1) {
-				nestedField = fieldName.substring(index + 1);
+				childNestedField = nestedField.substring(index + 1);
 
-				fieldName = fieldName.substring(0, index);
+				nestedField = nestedField.substring(0, index);
 			}
 
 			for (Object item : items) {
 				Class<?> itemClass = item.getClass();
 
-				Field field = _getField(itemClass, fieldName);
+				Field field = _getField(itemClass, nestedField);
 
 				if (field == null) {
 					continue;
@@ -673,7 +691,7 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 
 				UnsafeTriFunction<String, Object, NestedFieldsContext, Object>
 					unsafeTriFunction = _getUnsafeTriFunction(
-						fieldName, itemClass, nestedFieldsContext);
+						nestedField, itemClass, nestedFieldsContext);
 
 				if (unsafeTriFunction == null) {
 					continue;
@@ -682,13 +700,13 @@ public class NestedFieldsWriterInterceptor implements WriterInterceptor {
 				Object value = _adaptToFieldType(
 					field.getType(),
 					unsafeTriFunction.apply(
-						fieldName, item, nestedFieldsContext));
+						nestedField, item, nestedFieldsContext));
 
 				field.set(item, value);
 
-				if (nestedField != null) {
+				if (childNestedField != null) {
 					_setFieldValues(
-						value, Collections.singletonList(nestedField),
+						value, Collections.singletonList(childNestedField),
 						nestedFieldsContext);
 				}
 			}

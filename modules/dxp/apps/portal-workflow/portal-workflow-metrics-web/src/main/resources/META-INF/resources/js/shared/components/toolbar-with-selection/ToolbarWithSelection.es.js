@@ -1,17 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import {ClayCheckbox} from '@clayui/form';
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import React from 'react';
 
 import {sub} from '../../util/lang.es';
@@ -29,22 +23,22 @@ const ToolbarWithSelection = ({
 	totalCount,
 }) => {
 	return (
-		<ClayManagementToolbar
+		<ManagementToolbar.Container
 			active={active}
 			className="mb-0 show-quick-actions-on-hover"
 		>
-			<ClayManagementToolbar.ItemList expand>
-				<ClayManagementToolbar.Item className="ml-2">
+			<ManagementToolbar.ItemList expand>
+				<ManagementToolbar.Item className="ml-2">
 					<ClayCheckbox
 						checked={checked}
 						indeterminate={indeterminate}
 						onChange={handleCheck}
 					/>
-				</ClayManagementToolbar.Item>
+				</ManagementToolbar.Item>
 
 				{active && (
 					<>
-						<ClayManagementToolbar.Item>
+						<ManagementToolbar.Item>
 							<span className="ml-0 mr-0 navbar-text">
 								{selectAll
 									? Liferay.Language.get('all-selected')
@@ -53,11 +47,11 @@ const ToolbarWithSelection = ({
 												'x-of-x-selected'
 											),
 											[selectedCount, totalCount]
-									  )}
+										)}
 							</span>
-						</ClayManagementToolbar.Item>
+						</ManagementToolbar.Item>
 
-						<ClayManagementToolbar.Item>
+						<ManagementToolbar.Item>
 							<ClayButton
 								className="font-weight-bold nav-link"
 								displayType="unstyled"
@@ -66,10 +60,10 @@ const ToolbarWithSelection = ({
 							>
 								{Liferay.Language.get('clear')}
 							</ClayButton>
-						</ClayManagementToolbar.Item>
+						</ManagementToolbar.Item>
 
 						{!selectAll && checked && (
-							<ClayManagementToolbar.Item>
+							<ManagementToolbar.Item>
 								<ClayButton
 									className="font-weight-bold nav-link"
 									displayType="unstyled"
@@ -78,14 +72,14 @@ const ToolbarWithSelection = ({
 								>
 									{Liferay.Language.get('select-all')}
 								</ClayButton>
-							</ClayManagementToolbar.Item>
+							</ManagementToolbar.Item>
 						)}
 					</>
 				)}
 
 				{children}
-			</ClayManagementToolbar.ItemList>
-		</ClayManagementToolbar>
+			</ManagementToolbar.ItemList>
+		</ManagementToolbar.Container>
 	);
 };
 

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.service;
 
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.wiki.model.WikiPage;
 
@@ -52,8 +44,8 @@ public class WikiPageServiceUtil {
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addPage(String, long, String, String, String, boolean, String, String,
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #addPage(String,
+	 long, String, String, String, boolean, String, String,
 	 String, ServiceContext)}
 	 */
 	@Deprecated
@@ -67,6 +59,20 @@ public class WikiPageServiceUtil {
 		return getService().addPage(
 			nodeId, title, content, summary, minorEdit, format, parentTitle,
 			redirectTitle, serviceContext);
+	}
+
+	public static WikiPage addPage(
+			String externalReferenceCode, long nodeId, String title,
+			double version, String content, String summary, boolean minorEdit,
+			String format, boolean head, String parentTitle,
+			String redirectTitle,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addPage(
+			externalReferenceCode, nodeId, title, version, content, summary,
+			minorEdit, format, head, parentTitle, redirectTitle,
+			serviceContext);
 	}
 
 	public static WikiPage addPage(
@@ -183,7 +189,7 @@ public class WikiPageServiceUtil {
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page, or <code>null</code> if no
 	 matching wiki page could be found
 	 */
@@ -219,7 +225,7 @@ public class WikiPageServiceUtil {
 	 * reference code
 	 *
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the wiki page external reference code
+	 * @param externalReferenceCode the wiki page's external reference code
 	 * @return the latest matching wiki page
 	 * @throws PortalException if a portal exception occurred
 	 */
@@ -290,6 +296,10 @@ public class WikiPageServiceUtil {
 		throws PortalException {
 
 		return getService().getPage(nodeId, title, version);
+	}
+
+	public static WikiPage getPageByPageId(long pageId) throws PortalException {
+		return getService().getPageByPageId(pageId);
 	}
 
 	public static List<WikiPage> getPages(
@@ -448,9 +458,10 @@ public class WikiPageServiceUtil {
 	}
 
 	public static WikiPageService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile WikiPageService _service;
+	private static final Snapshot<WikiPageService> _serviceSnapshot =
+		new Snapshot<>(WikiPageServiceUtil.class, WikiPageService.class);
 
 }

@@ -1,0 +1,448 @@
+@component-name = "portal-application-security"
+definition {
+
+	property ci.retries.disabled = "true";
+	property osgi.module.configuration.file.names = "com.liferay.portal.security.audit.router.configuration.PersistentAuditMessageProcessorConfiguration.config";
+	property osgi.module.configurations = "bufferSize=\"0\"";
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property test.run.environment = "EE";
+	property testray.main.component.name = "Audit";
+	property testray.testcase.product.edition = "EE";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONUser.tearDownNonAdminUsers();
+
+			Role.tearDownCP();
+		}
+	}
+
+	@description = "This test Audit can capture events when assign, unassign user to user group or role, and event details contain the correct info."
+	@priority = 4
+	test CanCaptureEventsAboutAssignAndUnassignUserToUserGroupAndRole {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		UserGroup.openUserGroupsAdmin();
+
+		UserGroup.addCP(userGroupName = "User Group1");
+
+		UserGroup.assignMemberCP(
+			userGroupName = "User Group1",
+			userScreenName = "test");
+
+		Audit.openAuditAdmin();
+
+		var browserIPAddress = PropsUtil.get("browser.ip.address");
+
+		Audit.viewAuditDetails(
+			additionalInformation = "User Group1",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "ASSIGN",
+			key_resourceName = "User",
+			resourceAction = "ASSIGN",
+			resourceName = "User",
+			userName = "Test Test");
+
+		UserGroup.openUserGroupsAdmin();
+
+		UserGroup.removeMemberCP(
+			userGroupName = "User Group1",
+			userScreenName = "test");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "User Group1",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "UNASSIGN",
+			key_resourceName = "User",
+			resourceAction = "UNASSIGN",
+			resourceName = "User",
+			userName = "Test Test");
+
+		Role.openRolesAdmin();
+
+		Role.add(roleTitle = "Role1 Name");
+
+		Role.openRolesAdmin();
+
+		Role.addAssignee(
+			assigneeName = "Test Test",
+			assigneeType = "Users",
+			roleTitle = "Role1 Name");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "Role1 Name",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "ASSIGN",
+			key_resourceName = "User",
+			resourceAction = "ASSIGN",
+			resourceName = "User",
+			userName = "Test Test");
+
+		Role.openRolesAdmin();
+
+		Role.removeAssignee(
+			assigneeName = "Test Test",
+			assigneeType = "Users",
+			roleTitle = "Role1 Name");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "Role1 Name",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "UNASSIGN",
+			key_resourceName = "User",
+			resourceAction = "UNASSIGN",
+			resourceName = "User",
+			userName = "Test Test");
+	}
+
+	@description = "This test Audit can capture events when add, update, delete, impersonate user, and event details contain the correct info."
+	@priority = 4
+	test CanCaptureEventsAboutUserActions {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		User.openUsersAdmin();
+
+		User.addCP(
+			userEmailAddress = "test1@liferay.com",
+			userFirstName = "test1",
+			userLastName = "test1",
+			userScreenName = "test1");
+
+		Audit.openAuditAdmin();
+
+		var browserIPAddress = PropsUtil.get("browser.ip.address");
+
+		Audit.viewAuditDetails(
+			additionalInformation = "test1@liferay.com",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "ADD",
+			key_resourceName = "User",
+			resourceAction = "ADD",
+			resourceName = "User",
+			userName = "Test Test");
+
+		User.openUsersAdmin();
+
+		UserNavigator.gotoUser(userScreenName = "test1");
+
+		User.editUserInformation(userMiddleNameEdit = "test1");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "middleName",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "UPDATE",
+			key_resourceName = "User",
+			resourceAction = "UPDATE",
+			resourceName = "User",
+			userName = "Test Test");
+
+		User.openUsersAdmin();
+
+		User.impersonateCP(
+			siteName = ${siteName},
+			userScreenName = "test1");
+
+		Close.closeWindow(locator1 = "title=Home - ${siteName}");
+
+		Navigator.selectSpecificWindow(windowTitle = "Users - Users - Users and Organizations - Liferay DXP");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "test1 test1 test1",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "IMPERSONATE",
+			key_resourceName = "User",
+			resourceAction = "IMPERSONATE",
+			resourceName = "User",
+			userName = "Test Test");
+
+		User.openUsersAdmin();
+
+		User.deactivateCP(
+			deactivateType = "Actions",
+			userFirstName = "test1");
+
+		User.deleteCP(
+			deactivateType = "Actions",
+			userFirstName = "test1");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "test1@liferay.com",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "DELETE",
+			key_resourceName = "User",
+			resourceAction = "DELETE",
+			resourceName = "User",
+			userName = "Test Test");
+	}
+
+	@description = "This test Audit can capture events when assign, unassign user to user group or role, and event details contain the correct info."
+	@priority = 4
+	test CanCaptureEventsAboutUserGroupAndRole {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		UserGroup.openUserGroupsAdmin();
+
+		UserGroup.addCP(userGroupName = "User Group1");
+
+		Audit.openAuditAdmin();
+
+		var browserIPAddress = PropsUtil.get("browser.ip.address");
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "ADD",
+			key_resourceName = "UserGroup",
+			resourceAction = "ADD",
+			resourceName = "UserGroup",
+			userName = "Test Test");
+
+		UserGroup.openUserGroupsAdmin();
+
+		UserGroup.editCP(
+			userGroupDescriptionEdit = "This is only for test",
+			userGroupName = "User Group1");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "This is only for test",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "UPDATE",
+			key_resourceName = "UserGroup",
+			resourceAction = "UPDATE",
+			resourceName = "UserGroup",
+			userName = "Test Test");
+
+		UserGroup.openUserGroupsAdmin();
+
+		UserGroup.deleteCP(userGroupName = "User Group1");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "DELETE",
+			key_resourceName = "UserGroup",
+			resourceAction = "DELETE",
+			resourceName = "UserGroup",
+			userName = "Test Test");
+
+		Role.openRolesAdmin();
+
+		Role.add(roleTitle = "Role1 Name");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "ADD",
+			key_resourceName = "Role",
+			resourceAction = "ADD",
+			resourceName = "Role",
+			userName = "Test Test");
+
+		Role.openRolesAdmin();
+
+		Search.searchCP(searchTerm = "Role1 Name");
+
+		LexiconEntry.gotoEntry(rowEntry = "Role1 Name");
+
+		Type(
+			locator1 = "TextInput#KEY",
+			value1 = "Role2 Name");
+
+		AssertClick(
+			locator1 = "Button#SUBMIT",
+			value1 = "Save");
+
+		Alert.viewSuccessMessage();
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "Role2 Name",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "UPDATE",
+			key_resourceName = "Role",
+			resourceAction = "UPDATE",
+			resourceName = "Role",
+			userName = "Test Test");
+
+		Role.openRolesAdmin();
+
+		LexiconEntry.delete(rowEntry = "Role1 Name");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "DELETE",
+			key_resourceName = "Role",
+			resourceAction = "DELETE",
+			resourceName = "Role",
+			userName = "Test Test");
+	}
+
+	@description = "This test Audit can capture events when user login, logout, login fail, view pages, and event details contain the correct info."
+	@priority = 4
+	test CanCaptureEventsAboutUserLoginLogoutLoginFailAndViewPages {
+		property custom.properties = "audit.message.com.liferay.portal.kernel.model.Layout.VIEW=true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Audit.openAuditAdmin();
+
+		var browserIPAddress = PropsUtil.get("browser.ip.address");
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "LOGIN",
+			key_resourceName = "User",
+			resourceAction = "LOGIN",
+			resourceName = "User",
+			userName = "Test Test");
+
+		Navigator.openURL();
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "VIEW",
+			key_resourceName = "Layout",
+			resourceAction = "VIEW",
+			resourceName = "Layout",
+			userName = "Test Test");
+
+		User.logoutPG();
+
+		User.loginPG(
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "LOGOUT",
+			key_resourceName = "User",
+			resourceAction = "LOGOUT",
+			resourceName = "User",
+			userName = "Test Test");
+
+		User.logoutPG();
+
+		User.firstLoginUI(
+			password = "test2",
+			userEmailAddress = "test@liferay.com");
+
+		User.loginPG(
+			password = PropsUtil.get("default.admin.password"),
+			userEmailAddress = "test@liferay.com");
+
+		Audit.openAuditAdmin();
+
+		Audit.viewAuditDetails(
+			additionalInformation = "Failed to authenticate by email address",
+			clientIp = ${browserIPAddress},
+			key_resourceAction = "LOGIN_FAILURE",
+			key_resourceName = "User",
+			resourceAction = "LOGIN_FAILURE",
+			resourceName = "User",
+			userName = "Test Test");
+	}
+
+	@description = "This test Audit events can be searched with the Audit app's advanced search by various search criteria."
+	@priority = 4
+	test CanSearchEventsInAuditAdvancedSearch {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Audit.openAuditAdmin();
+
+		AssertTextEquals(
+			key_resourceAction = "LOGIN",
+			key_resourceName = "User",
+			locator1 = "AuditReports#REPORTS_TABLE_RESOURCE_ACTION",
+			value1 = "LOGIN");
+
+		Audit.openAuditAdmin();
+
+		Audit.searchCP(
+			match = "All",
+			resourceAction = "LOGIN",
+			searchTerm = "LOGIN",
+			userName = "Test Test");
+
+		AssertTextEquals(
+			key_resourceAction = "LOGIN",
+			key_resourceName = "User",
+			locator1 = "AuditReports#REPORTS_TABLE_RESOURCE_ACTION",
+			value1 = "LOGIN");
+
+		Audit.openAuditAdmin();
+
+		Audit.searchCP(
+			match = "Any",
+			resourceAction = "LOGIN",
+			resourceName = "com.liferay.portal.kernel.model.User",
+			searchTerm = "com.liferay.portal.kernel.model.User");
+
+		AssertTextEquals(
+			key_resourceAction = "LOGIN",
+			key_resourceName = "User",
+			locator1 = "AuditReports#REPORTS_TABLE_RESOURCE_ACTION",
+			value1 = "LOGIN");
+
+		Audit.openAuditAdmin();
+
+		Audit.searchCP(
+			match = "All",
+			resourceAction = "LOGIN",
+			resourceName = "com.liferay.portal.kernel.model.User",
+			searchTerm = "Test Test",
+			userName = "Test Test");
+
+		AssertTextEquals(
+			key_resourceAction = "LOGIN",
+			key_resourceName = "User",
+			locator1 = "AuditReports#REPORTS_TABLE_RESOURCE_ACTION",
+			value1 = "LOGIN");
+	}
+
+}

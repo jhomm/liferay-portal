@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.search.spi.model.result.contributor;
@@ -17,7 +8,7 @@ package com.liferay.dynamic.data.mapping.internal.search.spi.model.result.contri
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.service.DDMFormInstanceLocalService;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
@@ -31,19 +22,19 @@ import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContri
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Rafael Praxedes
  */
-@Component(
-	immediate = true,
-	property = "indexer.class.name=com.liferay.dynamic.data.mapping.model.DDMFormInstanceRecord",
-	service = ModelSummaryContributor.class
-)
 public class DDMFormInstanceRecordModelSummaryContributor
 	implements ModelSummaryContributor {
+
+	public DDMFormInstanceRecordModelSummaryContributor(
+		DDMFormInstanceLocalService ddmFormInstanceLocalService,
+		Language language) {
+
+		_ddmFormInstanceLocalService = ddmFormInstanceLocalService;
+		_language = language;
+	}
 
 	@Override
 	public Summary getSummary(
@@ -58,42 +49,42 @@ public class DDMFormInstanceRecordModelSummaryContributor
 			locale, prefix + Field.DESCRIPTION, Field.DESCRIPTION);
 
 		Summary summary = new Summary(
-			getTitle(ddmFormInstanceId, locale), description);
+			_getTitle(ddmFormInstanceId, locale), description);
 
 		summary.setMaxContentLength(200);
 
 		return summary;
 	}
 
-	protected ResourceBundle getResourceBundle(Locale defaultLocale) {
+	private ResourceBundle _getResourceBundle(Locale defaultLocale) {
 		ResourceBundleLoader portalResourceBundleLoader =
 			ResourceBundleLoaderUtil.getPortalResourceBundleLoader();
 
 		return portalResourceBundleLoader.loadResourceBundle(defaultLocale);
 	}
 
-	protected String getTitle(long ddmFormInstanceId, Locale locale) {
+	private String _getTitle(long ddmFormInstanceId, Locale locale) {
 		try {
 			DDMFormInstance ddmFormInstance =
-				ddmFormInstanceLocalService.getFormInstance(ddmFormInstanceId);
+				_ddmFormInstanceLocalService.getFormInstance(ddmFormInstanceId);
 
 			String ddmFormInstanceName = ddmFormInstance.getName(locale);
 
-			return LanguageUtil.format(
-				getResourceBundle(locale), "form-record-for-form-x",
+			return _language.format(
+				_getResourceBundle(locale), "form-record-for-form-x",
 				ddmFormInstanceName, false);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return StringPool.BLANK;
 	}
 
-	@Reference
-	protected DDMFormInstanceLocalService ddmFormInstanceLocalService;
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormInstanceRecordModelSummaryContributor.class);
+
+	private final DDMFormInstanceLocalService _ddmFormInstanceLocalService;
+	private final Language _language;
 
 }

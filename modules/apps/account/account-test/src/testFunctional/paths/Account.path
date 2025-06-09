@@ -17,7 +17,12 @@
 </tr>
 <tr>
 	<td>ACCOUNT_MANAGEMENT</td>
-	<td>//div[contains(@class, 'dnd-tbody')]</td>
+	<td>tbody</td>
+	<td></td>
+</tr>
+<tr>
+	<td>SELECT_ACCOUNT_ENTRY_CHECKMARK</td>
+	<td>//div[contains(@class,'table')]//tr[contains(.,'${key_entryName}')]//*[*[name()='svg'][contains(@class,'check')]]</td>
 	<td></td>
 </tr>
 <tr>
@@ -25,7 +30,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ASSIGN_USER-->
+
 <tr>
 	<td>ASSIGN_USER_CHOOSE_BUTTON</td>
 	<td>//tr[contains(.,'${key_accountUserName}')]//button[contains(.,'Choose')]</td>
@@ -36,7 +43,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--DEFAULT_ACCOUNT_ADDRESSES-->
+
 <tr>
 	<td>DEFAULT_ACCOUNT_ADDRESSES_HEADING</td>
 	<td>//div[contains(@class,'section')]//span[normalize-space(text())='Default Account Addresses']</td>
@@ -107,7 +116,130 @@
 	<td></td>
 	<td></td>
 </tr>
+
+<!--DEFAULT_ACCOUNT_TERMS_AND_CONDITION-->
+
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_ENTRY_DETAILS</td>
+	<td>//div[contains(@id,'${key_termType}')]//tr["${key_row}"]//td[contains(.,'${key_entryDetails}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DROPDOWN</td>
+	<td>//div[contains(@id,'${key_termType}')]//tr//td[contains(.,'${key_entryDetails}')]/..//button</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DROPDOWN_REMOVE</td>
+	<td>//div[contains(@class,'dropdown-menu show')]/ul//li/a[(normalize-space(text())='Delete')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_EMPTY_SEARCH_CONTAINER</td>
+	<td>//div[contains(@id,'${key_termType}')]//div[contains(@class,'empty-state-text')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DEFAULT_DELIVERY_ENTRY_INACTIVE_ICON</td>
+	<td>//a[@data-type='delivery-terms']/../../preceding-sibling::div[contains(@class,'h4')]/strong[contains(@style,'orange')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DEFAULT_DELIVERY_USE_PRIORITY_SETTINGS</td>
+	<td>//a[@data-type='delivery-terms']/../../preceding-sibling::span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DEFAULT_PAYMENT_ENTRY</td>
+	<td>//a[@data-type='payment-terms']/../../preceding-sibling::div[contains(@class,'h4')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DEFAULT_PAYMENT_ENTRY_INACTIVE_ICON</td>
+	<td>//a[@data-type='payment-terms']/../../preceding-sibling::div[contains(@class,'h4')]/strong[contains(@style,'orange')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_DEFAULT_PAYMENT_USE_PRIORITY_SETTINGS</td>
+	<td>//a[@data-type='payment-terms']/../../preceding-sibling::span</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_PAYMENT_TEXT</td>
+	<td>//a[@data-type='payment-terms']/../../preceding-sibling::div[normalize-space(text())='Payment']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_PLUS</td>
+	<td>//div[contains(@id,'${key_termType}')]//*[*[name()='svg'][contains(@class,'icon-plus')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_HEADING</td>
+	<td>//div[contains(@class,'section')]//span[normalize-space(text())='${key_termType} Terms and Conditions']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_REMOVE_DEFAULT_PAYMENT</td>
+	<td>//a[@data-type='payment-terms']/..//following-sibling::span//span[normalize-space(text())='Remove']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_SELECT_TERM_ENTRY_RADIO</td>
+	<td>//input[contains(@name,'selectCommerceTermEntry')]//following-sibling::span/span[normalize-space()='${key_termEntry}']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_SET_DEFAULT_DELIVERY</td>
+	<td>//a[@data-type='delivery-terms']//span[normalize-space(text())='Set Default Delivery Commerce Terms Entry']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_ACCOUNT_TERMS_AND_CONDITION_SET_DEFAULT_PAYMENT</td>
+	<td>//a[@data-type='payment-terms']//span[normalize-space(text())='Set Default Payment Commerce Terms Entry']</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
+<!--ORDER_DEFAULTS-->
+
+<tr>
+	<td>DEFAULT_ACCOUNT_ADDRESS_HEADING</td>
+	<td>//div[contains(@class,'section')]//span[normalize-space(text())='${key_addressType} Addresses']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_SETTINGS_HEADER</td>
+	<td>//div[contains(@id,'${key_settingHeader}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_SETTINGS_TABLE_ITEM</td>
+	<td>//div[contains(@id,'${key_settingHeader}')]//tr//td[contains(.,'${key_entryDetail}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_SETTINGS_TABLE_ACTION_BUTTON</td>
+	<td>//div[contains(@id,'${key_settingHeader}')]//tr//td[contains(.,'${key_currentDefault}')]//following-sibling::td//button[contains(@class,'dropdown-toggle')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DEFAULT_SETTING_ACTIVE_STATUS</td>
+	<td>//div[contains(@id,'${key_settingHeader}')]//tr//td[contains(.,'${key_currentDefault}')]//following-sibling::td[contains(.,'${key_activeStatus}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td></td>
+	<td></td>
+	<td></td>
+</tr>
+
 <!--USER-->
+
 <tr>
 	<td>USER_SELECT_BUTTON</td>
 	<td>//span[normalize-space(text())='User']//../following-sibling::span//*[normalize-space(text())='Select']</td>
@@ -119,11 +251,18 @@
 	<td></td>
 </tr>
 <tr>
+	<td>USER_TABLE_NAME_WITH_COLUMN_INDEX</td>
+	<td>//tr[contains(.,'${key_userName}')]/td[1]</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--VALID_DOMAINS-->
+
 <tr>
 	<td>VALID_DOMAINS_ADD_BUTTON</td>
 	<td>//a[contains(@id,'addDomains')]/span</td>
@@ -150,8 +289,13 @@
 	<td></td>
 </tr>
 <tr>
+	<td>WEBDAV_PASSWORD_FIELD</td>
+	<td>//*[@id='_com_liferay_my_account_web_portlet_MyAccountPortlet_webDAVPassword']</td>
 	<td></td>
-	<td></td>
+</tr>
+<tr>
+	<td>WEBDAV_PASSWORD_FIELD_VALUE</td>
+	<td>//*[@id='_com_liferay_my_account_web_portlet_MyAccountPortlet_webDAVPassword']@value</td>
 	<td></td>
 </tr>
 </tbody>

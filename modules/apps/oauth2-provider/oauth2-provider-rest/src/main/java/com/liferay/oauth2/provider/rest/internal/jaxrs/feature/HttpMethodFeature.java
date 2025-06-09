@@ -1,23 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.rest.internal.jaxrs.feature;
 
+import com.liferay.oauth2.provider.rest.internal.scope.util.HttpMethodScopeLogicUtil;
 import com.liferay.oauth2.provider.rest.spi.scope.checker.container.request.filter.BaseScopeCheckerContainerRequestFilter;
 import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.oauth2.provider.scope.spi.scope.finder.ScopeFinder;
-import com.liferay.osgi.util.StringPlus;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+
+import jakarta.annotation.Priority;
+
+import jakarta.ws.rs.HttpMethod;
+import jakarta.ws.rs.Priorities;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestFilter;
+import jakarta.ws.rs.container.DynamicFeature;
+import jakarta.ws.rs.container.ResourceInfo;
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Feature;
+import jakarta.ws.rs.core.FeatureContext;
+import jakarta.ws.rs.core.Request;
+import jakarta.ws.rs.ext.Provider;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -27,20 +35,7 @@ import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Set;
-
-import javax.annotation.Priority;
-
-import javax.ws.rs.HttpMethod;
-import javax.ws.rs.Priorities;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.DynamicFeature;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.Feature;
-import javax.ws.rs.core.FeatureContext;
-import javax.ws.rs.core.Request;
-import javax.ws.rs.ext.Provider;
+import java.util.function.Function;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -55,7 +50,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  */
 @Component(
 	property = {
-		"ignore.missing.scopes=HEAD", "ignore.missing.scopes=OPTIONS",
 		"osgi.jaxrs.application.select=(|(&(!(oauth2.scope.checker.type=*))(!(oauth2.scopechecker.type=*)))(|(oauth2.scope.checker.type=http.method)(oauth2.scopechecker.type=http.method)))",
 		"osgi.jaxrs.extension=true",
 		"osgi.jaxrs.extension.select=(osgi.jaxrs.name=Liferay.OAuth2)",
@@ -68,27 +62,20 @@ import org.osgi.service.component.annotations.ServiceScope;
 public class HttpMethodFeature implements Feature {
 
 	@Override
-	public boolean configure(FeatureContext context) {
-		Configuration configuration = context.getConfiguration();
+	public boolean configure(FeatureContext featureContext) {
+		featureContext.register((DynamicFeature)this::_collectHttpMethods);
+		featureContext.register(
+			new HttpScopeCheckerContainerRequestFilter(),
+			Collections.singletonMap(
+				ContainerRequestFilter.class, Priorities.AUTHORIZATION - 8));
+
+		Configuration configuration = featureContext.getConfiguration();
 
 		Map<String, Object> applicationProperties =
 			(Map<String, Object>)configuration.getProperty(
 				"osgi.jaxrs.application.serviceProperties");
 
-		Object ignoreMissingScopesObject = applicationProperties.get(
-			"ignore.missing.scopes");
-
-		if (ignoreMissingScopesObject != null) {
-			_ignoreMissingScopes = new HashSet<>(
-				StringPlus.asList(ignoreMissingScopesObject));
-		}
-
-		context.register((DynamicFeature)this::_collectHttpMethods);
-		context.register(
-			new HttpScopeCheckerContainerRequestFilter(),
-			Collections.singletonMap(
-				ContainerRequestFilter.class, Priorities.AUTHORIZATION - 8));
-
+		_propertyAccessorFunction = applicationProperties::get;
 		_serviceRegistration = _bundleContext.registerService(
 			ScopeFinder.class, new CollectionScopeFinder(_scopes),
 			new Hashtable<>(applicationProperties));
@@ -101,9 +88,6 @@ public class HttpMethodFeature implements Feature {
 		BundleContext bundleContext, Map<String, Object> properties) {
 
 		_bundleContext = bundleContext;
-
-		_ignoreMissingScopes = new HashSet<>(
-			StringPlus.asList(properties.get("ignore.missing.scopes")));
 	}
 
 	@Deactivate
@@ -151,12 +135,19 @@ public class HttpMethodFeature implements Feature {
 				method.getName(), method.getParameterTypes());
 		}
 		catch (NoSuchMethodException noSuchMethodException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchMethodException);
+			}
+
 			return null;
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		HttpMethodFeature.class);
+
 	private BundleContext _bundleContext;
-	private Set<String> _ignoreMissingScopes;
+	private Function<String, Object> _propertyAccessorFunction;
 
 	@Reference
 	private ScopeChecker _scopeChecker;
@@ -172,17 +163,13 @@ public class HttpMethodFeature implements Feature {
 
 			Request request = containerRequestContext.getRequest();
 
-			String requestMethod = request.getMethod();
-
-			if ((!_scopes.contains(requestMethod) &&
-				 _ignoreMissingScopes.contains(requestMethod)) ||
-				_scopeChecker.checkScope(requestMethod)) {
-
-				return true;
-			}
-
-			return false;
+			return HttpMethodScopeLogicUtil.check(
+				_bundleContext, _propertyAccessorFunction, _scopeChecker,
+				request.getMethod());
 		}
+
+		@Context
+		private ResourceInfo _resourceInfo;
 
 	}
 

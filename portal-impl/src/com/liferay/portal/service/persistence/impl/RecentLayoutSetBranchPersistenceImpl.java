@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -43,7 +34,6 @@ import com.liferay.portal.model.impl.RecentLayoutSetBranchModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.List;
@@ -177,7 +167,7 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RecentLayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RecentLayoutSetBranch recentLayoutSetBranch : list) {
@@ -545,7 +535,8 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -680,7 +671,7 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RecentLayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RecentLayoutSetBranch recentLayoutSetBranch : list) {
@@ -1047,7 +1038,8 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		Object[] finderArgs = new Object[] {userId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1189,7 +1181,7 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RecentLayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RecentLayoutSetBranch recentLayoutSetBranch : list) {
@@ -1561,7 +1553,8 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		Object[] finderArgs = new Object[] {layoutSetBranchId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1603,7 +1596,6 @@ public class RecentLayoutSetBranchPersistenceImpl
 			"recentLayoutSetBranch.layoutSetBranchId = ?";
 
 	private FinderPath _finderPathFetchByU_L;
-	private FinderPath _finderPathCountByU_L;
 
 	/**
 	 * Returns the recent layout set branch where userId = &#63; and layoutSetId = &#63; or throws a <code>NoSuchRecentLayoutSetBranchException</code> if it could not be found.
@@ -1677,7 +1669,7 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByU_L, finderArgs);
+				_finderPathFetchByU_L, finderArgs, this);
 		}
 
 		if (result instanceof RecentLayoutSetBranch) {
@@ -1773,49 +1765,14 @@ public class RecentLayoutSetBranchPersistenceImpl
 	 */
 	@Override
 	public int countByU_L(long userId, long layoutSetId) {
-		FinderPath finderPath = _finderPathCountByU_L;
+		RecentLayoutSetBranch recentLayoutSetBranch = fetchByU_L(
+			userId, layoutSetId);
 
-		Object[] finderArgs = new Object[] {userId, layoutSetId};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_RECENTLAYOUTSETBRANCH_WHERE);
-
-			sb.append(_FINDER_COLUMN_U_L_USERID_2);
-
-			sb.append(_FINDER_COLUMN_U_L_LAYOUTSETID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(userId);
-
-				queryPos.add(layoutSetId);
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (recentLayoutSetBranch == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_U_L_USERID_2 =
@@ -1939,7 +1896,6 @@ public class RecentLayoutSetBranchPersistenceImpl
 			recentLayoutSetBranchModelImpl.getLayoutSetId()
 		};
 
-		FinderCacheUtil.putResult(_finderPathCountByU_L, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByU_L, args, recentLayoutSetBranchModelImpl);
 	}
@@ -2253,7 +2209,7 @@ public class RecentLayoutSetBranchPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RecentLayoutSetBranch>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2323,7 +2279,7 @@ public class RecentLayoutSetBranchPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2447,34 +2403,13 @@ public class RecentLayoutSetBranchPersistenceImpl
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"userId", "layoutSetId"}, true);
 
-		_finderPathCountByU_L = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByU_L",
-			new String[] {Long.class.getName(), Long.class.getName()},
-			new String[] {"userId", "layoutSetId"}, false);
-
-		_setRecentLayoutSetBranchUtilPersistence(this);
+		RecentLayoutSetBranchUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setRecentLayoutSetBranchUtilPersistence(null);
+		RecentLayoutSetBranchUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(RecentLayoutSetBranchImpl.class.getName());
-	}
-
-	private void _setRecentLayoutSetBranchUtilPersistence(
-		RecentLayoutSetBranchPersistence recentLayoutSetBranchPersistence) {
-
-		try {
-			Field field = RecentLayoutSetBranchUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, recentLayoutSetBranchPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_RECENTLAYOUTSETBRANCH =

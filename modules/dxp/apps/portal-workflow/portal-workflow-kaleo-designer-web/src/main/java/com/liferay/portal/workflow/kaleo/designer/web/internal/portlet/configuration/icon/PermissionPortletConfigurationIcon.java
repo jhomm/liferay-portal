@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.portlet.configuration.icon;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
@@ -32,18 +23,18 @@ import com.liferay.portal.workflow.kaleo.designer.web.internal.permission.KaleoD
 import com.liferay.portal.workflow.kaleo.model.KaleoDefinitionVersion;
 import com.liferay.taglib.security.PermissionsURLTag;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jeyvison Nascimento
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
+		"jakarta.portlet.name=" + KaleoDesignerPortletKeys.KALEO_DESIGNER,
 		"path=/designer/edit_kaleo_definition_version.jsp"
 	},
 	service = PortletConfigurationIcon.class
@@ -53,7 +44,7 @@ public class PermissionPortletConfigurationIcon
 
 	@Override
 	public String getMessage(PortletRequest portletRequest) {
-		return LanguageUtil.get(getLocale(portletRequest), "permissions");
+		return _language.get(getLocale(portletRequest), "permissions");
 	}
 
 	@Override
@@ -80,7 +71,7 @@ public class PermissionPortletConfigurationIcon
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -104,7 +95,7 @@ public class PermissionPortletConfigurationIcon
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 		}
 
@@ -118,5 +109,8 @@ public class PermissionPortletConfigurationIcon
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PermissionPortletConfigurationIcon.class);
+
+	@Reference
+	private Language _language;
 
 }

@@ -1,43 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.fragment.constants.FragmentPortletKeys;
+import com.liferay.fragment.exception.DuplicateFragmentCollectionExternalReferenceCodeException;
 import com.liferay.fragment.exception.FragmentCollectionNameException;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionLocalService;
-import com.liferay.fragment.service.persistence.FragmentCollectionUtil;
-import com.liferay.fragment.util.FragmentEntryTestUtil;
-import com.liferay.fragment.util.FragmentTestUtil;
+import com.liferay.fragment.test.util.FragmentEntryTestUtil;
+import com.liferay.fragment.test.util.FragmentTestUtil;
 import com.liferay.fragment.util.comparator.FragmentCollectionCreateDateComparator;
 import com.liferay.fragment.util.comparator.FragmentCollectionNameComparator;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.transaction.Propagation;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portal.test.rule.PersistenceTestRule;
-import com.liferay.portal.test.rule.TransactionalTestRule;
 
 import java.sql.Timestamp;
 
@@ -64,10 +56,7 @@ public class FragmentCollectionLocalServiceTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
-			PermissionCheckerMethodTestRule.INSTANCE,
-			PersistenceTestRule.INSTANCE,
-			new TransactionalTestRule(
-				Propagation.REQUIRED, "com.liferay.fragment.service"));
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -80,20 +69,38 @@ public class FragmentCollectionLocalServiceTest {
 			FragmentTestUtil.addFragmentCollection(
 				_group.getGroupId(), "Fragment Collection");
 
-		FragmentCollection persistedFragmentCollection =
-			FragmentCollectionUtil.fetchByUUID_G(
-				fragmentCollection.getUuid(), fragmentCollection.getGroupId());
-
-		Assert.assertEquals(fragmentCollection, persistedFragmentCollection);
+		fragmentCollection =
+			_fragmentCollectionLocalService.
+				fetchFragmentCollectionByUuidAndGroupId(
+					fragmentCollection.getUuid(),
+					fragmentCollection.getGroupId());
 
 		Assert.assertEquals(
-			"Fragment Collection", persistedFragmentCollection.getName());
+			"Fragment Collection", fragmentCollection.getName());
 	}
 
 	@Test(expected = FragmentCollectionNameException.class)
 	public void testAddFragmentCollectionWithEmptyName() throws Exception {
 		FragmentTestUtil.addFragmentCollection(
 			_group.getGroupId(), StringPool.BLANK);
+	}
+
+	@Test(
+		expected = DuplicateFragmentCollectionExternalReferenceCodeException.class
+	)
+	public void testAddFragmentCollectionWithExistingExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = StringUtil.randomString();
+
+		_fragmentCollectionLocalService.addFragmentCollection(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), RandomTestUtil.randomString(), null,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+		_fragmentCollectionLocalService.addFragmentCollection(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), RandomTestUtil.randomString(), null,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 	}
 
 	@Test
@@ -105,15 +112,15 @@ public class FragmentCollectionLocalServiceTest {
 				_group.getGroupId(), RandomTestUtil.randomString(),
 				"FRAGMENTCOLLECTIONKEY");
 
-		FragmentCollection persistedFragmentCollection =
-			FragmentCollectionUtil.fetchByUUID_G(
-				fragmentCollection.getUuid(), fragmentCollection.getGroupId());
-
-		Assert.assertEquals(fragmentCollection, persistedFragmentCollection);
+		fragmentCollection =
+			_fragmentCollectionLocalService.
+				fetchFragmentCollectionByUuidAndGroupId(
+					fragmentCollection.getUuid(),
+					fragmentCollection.getGroupId());
 
 		Assert.assertEquals(
 			StringUtil.toLowerCase("FRAGMENTCOLLECTIONKEY"),
-			persistedFragmentCollection.getFragmentCollectionKey());
+			fragmentCollection.getFragmentCollectionKey());
 	}
 
 	@Test(expected = FragmentCollectionNameException.class)
@@ -149,6 +156,30 @@ public class FragmentCollectionLocalServiceTest {
 		Assert.assertNull(
 			_fragmentCollectionLocalService.fetchFragmentCollection(
 				fragmentCollection.getFragmentCollectionId()));
+
+		Assert.assertNull(
+			PortletFileRepositoryUtil.fetchPortletRepository(
+				_group.getGroupId(), FragmentPortletKeys.FRAGMENT));
+	}
+
+	@Test
+	public void testDeleteFragmentCollectionByExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = StringUtil.randomString();
+
+		_fragmentCollectionLocalService.addFragmentCollection(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), RandomTestUtil.randomString(), null,
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		_fragmentCollectionLocalService.deleteFragmentCollection(
+			externalReferenceCode, _group.getGroupId());
+
+		Assert.assertNull(
+			_fragmentCollectionLocalService.
+				fetchFragmentCollectionByExternalReferenceCode(
+					externalReferenceCode, _group.getGroupId()));
 	}
 
 	@Test
@@ -263,7 +294,7 @@ public class FragmentCollectionLocalServiceTest {
 
 		FragmentCollectionCreateDateComparator
 			fragmentCollectionCreateDateComparator =
-				new FragmentCollectionCreateDateComparator(true);
+				FragmentCollectionCreateDateComparator.getInstance(true);
 
 		List<FragmentCollection> fragmentCollections =
 			_fragmentCollectionLocalService.getFragmentCollections(
@@ -300,7 +331,7 @@ public class FragmentCollectionLocalServiceTest {
 
 		FragmentCollectionCreateDateComparator
 			fragmentCollectionCreateDateComparator =
-				new FragmentCollectionCreateDateComparator(false);
+				FragmentCollectionCreateDateComparator.getInstance(false);
 
 		List<FragmentCollection> fragmentCollections =
 			_fragmentCollectionLocalService.getFragmentCollections(
@@ -325,7 +356,7 @@ public class FragmentCollectionLocalServiceTest {
 			_group.getGroupId(), "AB Fragment Collection");
 
 		FragmentCollectionNameComparator fragmentCollectionNameComparator =
-			new FragmentCollectionNameComparator(true);
+			FragmentCollectionNameComparator.getInstance(true);
 
 		List<FragmentCollection> fragmentCollections =
 			_fragmentCollectionLocalService.getFragmentCollections(
@@ -351,7 +382,7 @@ public class FragmentCollectionLocalServiceTest {
 			_group.getGroupId(), "AB Fragment Collection");
 
 		FragmentCollectionNameComparator fragmentCollectionNameComparator =
-			new FragmentCollectionNameComparator(false);
+			FragmentCollectionNameComparator.getInstance(false);
 
 		List<FragmentCollection> fragmentCollections =
 			_fragmentCollectionLocalService.getFragmentCollections(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.searcher;
@@ -18,12 +9,12 @@ import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.facet.faceted.searcher.FacetedSearcher;
 import com.liferay.portal.kernel.search.facet.faceted.searcher.FacetedSearcherManager;
 import com.liferay.portal.kernel.util.Localization;
-import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.search.asset.SearchableAssetClassNamesProvider;
-import com.liferay.portal.search.internal.expando.ExpandoQueryContributorHelper;
-import com.liferay.portal.search.internal.indexer.AddSearchKeywordsQueryContributorHelper;
-import com.liferay.portal.search.internal.indexer.PostProcessSearchQueryContributorHelper;
-import com.liferay.portal.search.internal.indexer.PreFilterContributorHelper;
+import com.liferay.portal.search.internal.expando.helper.ExpandoQueryContributorHelper;
+import com.liferay.portal.search.internal.indexer.helper.AddSearchKeywordsQueryContributorHelper;
+import com.liferay.portal.search.internal.indexer.helper.PostProcessSearchQueryContributorHelper;
+import com.liferay.portal.search.internal.indexer.helper.PreFilterContributorHelper;
+import com.liferay.portal.search.internal.searcher.helper.IndexSearcherHelper;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 
 import org.osgi.service.component.annotations.Component;
@@ -32,7 +23,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author André de Oliveira
  */
-@Component(immediate = true, service = FacetedSearcherManager.class)
+@Component(service = FacetedSearcherManager.class)
 public class FacetedSearcherManagerImpl implements FacetedSearcherManager {
 
 	@Override
@@ -42,17 +33,6 @@ public class FacetedSearcherManagerImpl implements FacetedSearcherManager {
 			expandoQueryContributorHelper, indexerRegistry, indexSearcherHelper,
 			postProcessSearchQueryContributorHelper, preFilterContributorHelper,
 			searchableAssetClassNamesProvider, searchRequestBuilderFactory);
-	}
-
-	protected Localization getLocalization() {
-
-		// See LPS-72507
-
-		if (localization != null) {
-			return localization;
-		}
-
-		return LocalizationUtil.getLocalization();
 	}
 
 	@Reference

@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
 
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.internal.io.util.DDMFormFieldDeserializerUtil;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormDeserializerDeserializeRequest;
@@ -45,12 +36,13 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true, property = "ddm.form.deserializer.type=json",
+	property = "ddm.form.deserializer.type=json",
 	service = DDMFormDeserializer.class
 )
 public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 
-	public static DDMFormDeserializerDeserializeResponse internalDeserialize(
+	@Override
+	public DDMFormDeserializerDeserializeResponse deserialize(
 		DDMFormDeserializerDeserializeRequest
 			ddmFormDeserializerDeserializeRequest) {
 
@@ -70,22 +62,22 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 					jsonObject.getString("definitionSchemaVersion"));
 			}
 
-			setDDMFormAvailableLocales(
+			_setDDMFormAvailableLocales(
 				jsonObject.getJSONArray("availableLanguageIds"), ddmForm);
-			setDDMFormDefaultLocale(
+			_setDDMFormDefaultLocale(
 				jsonObject.getString("defaultLanguageId"), ddmForm);
-			setDDMFormFields(jsonObject.getJSONArray("fields"), ddmForm);
+			_setDDMFormFields(jsonObject.getJSONArray("fields"), ddmForm);
 
-			setDDMFormLocalizedValuesDefaultLocale(ddmForm);
-			setDDMFormRules(jsonObject.getJSONArray("rules"), ddmForm);
-			setDDMFormSuccessPageSettings(
+			_setDDMFormLocalizedValuesDefaultLocale(ddmForm);
+			_setDDMFormRules(jsonObject.getJSONArray("rules"), ddmForm);
+			_setDDMFormSuccessPageSettings(
 				jsonObject.getJSONObject("successPage"), ddmForm);
 
 			return builder.build();
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			builder = builder.exception(exception);
@@ -94,15 +86,7 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 		return builder.build();
 	}
 
-	@Override
-	public DDMFormDeserializerDeserializeResponse deserialize(
-		DDMFormDeserializerDeserializeRequest
-			ddmFormDeserializerDeserializeRequest) {
-
-		return internalDeserialize(ddmFormDeserializerDeserializeRequest);
-	}
-
-	protected static LocalizedValue deserializeLocalizedValue(
+	private LocalizedValue _deserializeLocalizedValue(
 			String value, Locale defaultLocale)
 		throws PortalException {
 
@@ -127,7 +111,9 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 		return localizedValue;
 	}
 
-	protected static Set<Locale> getAvailableLocales(JSONArray jsonArray) {
+	private void _setDDMFormAvailableLocales(
+		JSONArray jsonArray, DDMForm ddmForm) {
+
 		Set<Locale> availableLocales = new HashSet<>();
 
 		for (int i = 0; i < jsonArray.length(); i++) {
@@ -137,22 +123,16 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 			availableLocales.add(availableLocale);
 		}
 
-		return availableLocales;
+		ddmForm.setAvailableLocales(availableLocales);
 	}
 
-	protected static void setDDMFormAvailableLocales(
-		JSONArray jsonArray, DDMForm ddmForm) {
-
-		ddmForm.setAvailableLocales(getAvailableLocales(jsonArray));
-	}
-
-	protected static void setDDMFormDefaultLocale(
+	private void _setDDMFormDefaultLocale(
 		String defaultLanguageId, DDMForm ddmForm) {
 
 		ddmForm.setDefaultLocale(LocaleUtil.fromLanguageId(defaultLanguageId));
 	}
 
-	protected static void setDDMFormFieldLocalizedValueDefaultLocale(
+	private void _setDDMFormFieldLocalizedValueDefaultLocale(
 		LocalizedValue localizedValue, Locale defaultLocale) {
 
 		if (localizedValue == null) {
@@ -162,19 +142,19 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 		localizedValue.setDefaultLocale(defaultLocale);
 	}
 
-	protected static void setDDMFormFieldLocalizedValuesDefaultLocale(
+	private void _setDDMFormFieldLocalizedValuesDefaultLocale(
 		DDMFormField ddmFormField, Locale defaultLocale) {
 
-		setDDMFormFieldLocalizedValueDefaultLocale(
+		_setDDMFormFieldLocalizedValueDefaultLocale(
 			ddmFormField.getLabel(), defaultLocale);
 
-		setDDMFormFieldLocalizedValueDefaultLocale(
+		_setDDMFormFieldLocalizedValueDefaultLocale(
 			ddmFormField.getPredefinedValue(), defaultLocale);
 
-		setDDMFormFieldLocalizedValueDefaultLocale(
+		_setDDMFormFieldLocalizedValueDefaultLocale(
 			ddmFormField.getStyle(), defaultLocale);
 
-		setDDMFormFieldLocalizedValueDefaultLocale(
+		_setDDMFormFieldLocalizedValueDefaultLocale(
 			ddmFormField.getTip(), defaultLocale);
 
 		DDMFormFieldOptions ddmFormFieldOptions =
@@ -187,31 +167,27 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 		for (DDMFormField nestedDDMFormField :
 				ddmFormField.getNestedDDMFormFields()) {
 
-			setDDMFormFieldLocalizedValuesDefaultLocale(
+			_setDDMFormFieldLocalizedValuesDefaultLocale(
 				nestedDDMFormField, defaultLocale);
 		}
 	}
 
-	protected static void setDDMFormFields(JSONArray jsonArray, DDMForm ddmForm)
+	private void _setDDMFormFields(JSONArray jsonArray, DDMForm ddmForm)
 		throws PortalException {
 
 		ddmForm.setDDMFormFields(
 			DDMFormFieldDeserializerUtil.deserialize(
-				_ddmFormFieldTypeServicesTracker, jsonArray, _jsonFactory));
+				_ddmFormFieldTypeServicesRegistry, jsonArray, _jsonFactory));
 	}
 
-	protected static void setDDMFormLocalizedValuesDefaultLocale(
-		DDMForm ddmForm) {
-
+	private void _setDDMFormLocalizedValuesDefaultLocale(DDMForm ddmForm) {
 		for (DDMFormField ddmFormField : ddmForm.getDDMFormFields()) {
-			setDDMFormFieldLocalizedValuesDefaultLocale(
+			_setDDMFormFieldLocalizedValuesDefaultLocale(
 				ddmFormField, ddmForm.getDefaultLocale());
 		}
 	}
 
-	protected static void setDDMFormRules(
-		JSONArray jsonArray, DDMForm ddmForm) {
-
+	private void _setDDMFormRules(JSONArray jsonArray, DDMForm ddmForm) {
 		if ((jsonArray == null) || (jsonArray.length() == 0)) {
 			return;
 		}
@@ -220,7 +196,7 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 			DDMFormRuleJSONDeserializer.deserialize(jsonArray));
 	}
 
-	protected static void setDDMFormSuccessPageSettings(
+	private void _setDDMFormSuccessPageSettings(
 			JSONObject jsonObject, DDMForm ddmForm)
 		throws PortalException {
 
@@ -232,32 +208,22 @@ public class DDMFormJSONDeserializer implements DDMFormDeserializer {
 
 		DDMFormSuccessPageSettings ddmFormSuccessPageSettings =
 			new DDMFormSuccessPageSettings(
-				deserializeLocalizedValue(
+				_deserializeLocalizedValue(
 					jsonObject.getString("body"), defaultLocale),
-				deserializeLocalizedValue(
+				_deserializeLocalizedValue(
 					jsonObject.getString("title"), defaultLocale),
 				jsonObject.getBoolean("enabled"));
 
 		ddmForm.setDDMFormSuccessPageSettings(ddmFormSuccessPageSettings);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldTypeServicesTracker(
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker) {
-
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
-	}
-
-	@Reference(unbind = "-")
-	protected void setJSONFactory(JSONFactory jsonFactory) {
-		_jsonFactory = jsonFactory;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormJSONDeserializer.class);
 
-	private static DDMFormFieldTypeServicesTracker
-		_ddmFormFieldTypeServicesTracker;
-	private static JSONFactory _jsonFactory;
+	@Reference
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

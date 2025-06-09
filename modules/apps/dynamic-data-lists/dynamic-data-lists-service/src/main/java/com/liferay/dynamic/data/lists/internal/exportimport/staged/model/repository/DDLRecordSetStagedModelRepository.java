@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.exportimport.staged.model.repository;
@@ -45,11 +36,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Tamas Molnar
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.dynamic.data.lists.model.DDLRecordSet",
-	service = {
-		DDLRecordSetStagedModelRepository.class, StagedModelRepository.class
-	}
+	service = StagedModelRepository.class
 )
 public class DDLRecordSetStagedModelRepository
 	implements StagedModelRepository<DDLRecordSet> {
@@ -112,27 +100,27 @@ public class DDLRecordSetStagedModelRepository
 
 		Set<Long> recordSetDDMStructureIds = new HashSet<>();
 
-		List<DDLRecordSet> recordSets = _ddlRecordSetLocalService.search(
+		List<DDLRecordSet> ddlRecordSets = _ddlRecordSetLocalService.search(
 			portletDataContext.getCompanyId(),
 			portletDataContext.getScopeGroupId(), null, scope,
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new DDLRecordSetNameComparator());
+			DDLRecordSetNameComparator.getInstance(false));
 
-		for (DDLRecordSet recordSet : recordSets) {
+		for (DDLRecordSet ddlRecordSet : ddlRecordSets) {
 			DDMStructure ddmStructure =
 				_ddmStructureLocalService.fetchDDMStructure(
-					recordSet.getDDMStructureId());
+					ddlRecordSet.getDDMStructureId());
 
 			if ((ddmStructure != null) &&
-				(ddmStructure.getGroupId() == recordSet.getGroupId())) {
+				(ddmStructure.getGroupId() == ddlRecordSet.getGroupId())) {
 
-				recordSetDDMStructureIds.add(recordSet.getDDMStructureId());
+				recordSetDDMStructureIds.add(ddlRecordSet.getDDMStructureId());
 			}
 
-			_ddlRecordSetLocalService.deleteRecordSet(recordSet);
+			_ddlRecordSetLocalService.deleteRecordSet(ddlRecordSet);
 		}
 
-		deleteDDMStructures(recordSetDDMStructureIds);
+		_deleteDDMStructures(recordSetDDMStructureIds);
 	}
 
 	@Override
@@ -236,7 +224,7 @@ public class DDLRecordSetStagedModelRepository
 			ddlRecordSet.getMinDisplayRows(), serviceContext);
 	}
 
-	protected void deleteDDMStructures(Set<Long> ddmStructureIds)
+	private void _deleteDDMStructures(Set<Long> ddmStructureIds)
 		throws PortalException {
 
 		for (Long ddmStructureId : ddmStructureIds) {

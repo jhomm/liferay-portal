@@ -1,33 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.spi.display;
 
 import com.liferay.change.tracking.spi.display.context.DisplayContext;
 import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
-import com.liferay.portal.kernel.model.change.tracking.CTModel;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.CamelCaseUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -40,29 +35,15 @@ import java.text.Format;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.function.Function;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Preston Crary
  */
 public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 	implements CTDisplayRenderer<T> {
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getEditURL(HttpServletRequest, BaseModel)}
-	 */
-	@Deprecated
-	public String getEditURL(
-			HttpServletRequest httpServletRequest, CTModel<?> ctModel)
-		throws Exception {
-
-		return getEditURL(httpServletRequest, (T)ctModel);
-	}
 
 	@Override
 	public String getEditURL(HttpServletRequest httpServletRequest, T model)
@@ -74,17 +55,6 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 	@Override
 	public abstract Class<T> getModelClass();
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getTitle(Locale, BaseModel)}
-	 */
-	@Deprecated
-	public String getTitle(Locale locale, CTModel<?> ctModel)
-		throws PortalException {
-
-		return getTitle(locale, (T)ctModel);
-	}
-
 	@Override
 	public abstract String getTitle(Locale locale, T model)
 		throws PortalException;
@@ -94,17 +64,8 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 		Class<T> modelClass = getModelClass();
 
 		return LanguageUtil.get(
-			locale, "model.resource." + modelClass.getName(),
+			getResourceBundle(locale), "model.resource." + modelClass.getName(),
 			modelClass.getName());
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #isHideable(BaseModel)}
-	 */
-	@Deprecated
-	public boolean isHideable(CTModel<?> ctModel) {
-		return isHideable((T)ctModel);
 	}
 
 	@Override
@@ -130,12 +91,25 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			displayContext.getLocale(), getClass());
-
 		buildDisplay(
 			new DisplayBuilderImpl<>(
-				displayContext, resourceBundle, themeDisplay));
+				displayContext, getResourceBundle(displayContext.getLocale()),
+				themeDisplay));
+
+		PermissionChecker permissionChecker =
+			themeDisplay.getPermissionChecker();
+
+		if (permissionChecker.isCompanyAdmin(themeDisplay.getCompanyId())) {
+			boolean showAllData = (Boolean)httpServletRequest.getAttribute(
+				"showAllData");
+
+			if (showAllData) {
+				T model = displayContext.getModel();
+
+				_buildTableContent(
+					httpServletResponse, model.getModelAttributes());
+			}
+		}
 
 		writer.write("</table></div>");
 	}
@@ -159,9 +133,20 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 		}
 	}
 
+	protected ResourceBundle getResourceBundle(Locale locale) {
+		return ResourceBundleUtil.getBundle(locale, getClass());
+	}
+
 	protected interface DisplayBuilder<T> {
 
 		public DisplayBuilder<T> display(String languageKey, Object value);
+
+		public DisplayBuilder<T> display(
+			String languageKey, Object value, boolean escape);
+
+		public DisplayBuilder<T> display(
+			String languageKey, Object value, boolean escape,
+			boolean formatted);
 
 		public DisplayBuilder<T> display(
 			String languageKey, String value, boolean escape);
@@ -169,6 +154,15 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 		public DisplayBuilder<T> display(
 			String languageKey,
 			UnsafeSupplier<Object, Exception> unsafeSupplier);
+
+		public DisplayBuilder<T> display(
+			String languageKey,
+			UnsafeSupplier<Object, Exception> unsafeSupplier, boolean escape);
+
+		public DisplayBuilder<T> display(
+			String languageKey,
+			UnsafeSupplier<Object, Exception> unsafeSupplier, boolean escape,
+			boolean formatted);
 
 		public DisplayContext<T> getDisplayContext();
 
@@ -178,6 +172,38 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 
 	}
 
+	private void _buildTableContent(
+		HttpServletResponse httpServletResponse,
+		Map<String, Object> modelAttributes) {
+
+		try {
+			Writer writer = httpServletResponse.getWriter();
+
+			for (Map.Entry<String, Object> entry : modelAttributes.entrySet()) {
+				writer.write("<tr><td class=\"publications-key-td ");
+				writer.write("table-cell-expand-small\">");
+
+				writer.write(entry.getKey());
+
+				writer.write("</td><td class=\"table-cell-expand\">");
+
+				Object value = entry.getValue();
+
+				if (Objects.equals(value, StringPool.BLANK)) {
+					writer.write("null");
+				}
+				else {
+					writer.write(String.valueOf(value));
+				}
+
+				writer.write("</td></tr>");
+			}
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseCTDisplayRenderer.class);
 
@@ -185,6 +211,21 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 
 		@Override
 		public DisplayBuilder<T> display(String languageKey, Object value) {
+			return display(languageKey, value, true);
+		}
+
+		@Override
+		public DisplayBuilder<T> display(
+			String languageKey, Object value, boolean escape) {
+
+			return display(languageKey, value, escape, false);
+		}
+
+		@Override
+		public DisplayBuilder<T> display(
+			String languageKey, Object value, boolean escape,
+			boolean formatted) {
+
 			HttpServletResponse httpServletResponse =
 				_displayContext.getHttpServletResponse();
 
@@ -195,6 +236,10 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 				writer.write("table-cell-expand-small\">");
 				writer.write(LanguageUtil.get(_resourceBundle, languageKey));
 				writer.write("</td><td class=\"table-cell-expand\">");
+
+				if (formatted) {
+					writer.write("<pre>");
+				}
 
 				if (value instanceof Blob) {
 					String downloadURL = _displayContext.getDownloadURL(
@@ -221,7 +266,16 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 					writer.write(format.format(value));
 				}
 				else {
-					writer.write(HtmlUtil.escape(String.valueOf(value)));
+					if (escape) {
+						writer.write(HtmlUtil.escape(String.valueOf(value)));
+					}
+					else {
+						writer.write(String.valueOf(value));
+					}
+				}
+
+				if (formatted) {
+					writer.write("</pre>");
 				}
 
 				writer.write("</td></tr>");
@@ -237,30 +291,7 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 		public DisplayBuilder<T> display(
 			String languageKey, String value, boolean escape) {
 
-			HttpServletResponse httpServletResponse =
-				_displayContext.getHttpServletResponse();
-
-			try {
-				Writer writer = httpServletResponse.getWriter();
-
-				writer.write("<tr><td class=\"publications-key-td ");
-				writer.write("table-cell-expand-small\">");
-				writer.write(LanguageUtil.get(_resourceBundle, languageKey));
-				writer.write("</td><td class=\"table-cell-expand\">");
-
-				if (escape) {
-					value = HtmlUtil.escape(value);
-				}
-
-				writer.write(value);
-
-				writer.write("</td></tr>");
-			}
-			catch (IOException ioException) {
-				throw new UncheckedIOException(ioException);
-			}
-
-			return this;
+			return display(languageKey, value, escape, false);
 		}
 
 		@Override
@@ -268,16 +299,33 @@ public abstract class BaseCTDisplayRenderer<T extends BaseModel<T>>
 			String languageKey,
 			UnsafeSupplier<Object, Exception> unsafeSupplier) {
 
+			return display(languageKey, unsafeSupplier, true);
+		}
+
+		@Override
+		public DisplayBuilder<T> display(
+			String languageKey,
+			UnsafeSupplier<Object, Exception> unsafeSupplier, boolean escape) {
+
+			return display(languageKey, unsafeSupplier, escape, false);
+		}
+
+		@Override
+		public DisplayBuilder<T> display(
+			String languageKey,
+			UnsafeSupplier<Object, Exception> unsafeSupplier, boolean escape,
+			boolean formatted) {
+
 			try {
 				Object value = unsafeSupplier.get();
 
 				if (value != null) {
-					display(languageKey, value);
+					display(languageKey, value, escape, formatted);
 				}
 			}
 			catch (Exception exception) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(exception, exception);
+					_log.warn(exception);
 				}
 			}
 

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link BatchPlannerPlanLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class BatchPlannerPlanLocalServiceWrapper
 	implements BatchPlannerPlanLocalService,
 			   ServiceWrapper<BatchPlannerPlanLocalService> {
+
+	public BatchPlannerPlanLocalServiceWrapper() {
+		this(null);
+	}
 
 	public BatchPlannerPlanLocalServiceWrapper(
 		BatchPlannerPlanLocalService batchPlannerPlanLocalService) {
@@ -54,13 +50,13 @@ public class BatchPlannerPlanLocalServiceWrapper
 	@Override
 	public com.liferay.batch.planner.model.BatchPlannerPlan addBatchPlannerPlan(
 			long userId, boolean export, String externalType,
-			String externalURL, String internalClassName, String name,
+			String externalURL, String internalClassName, String name, int size,
 			String taskItemDelegateName, boolean template)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _batchPlannerPlanLocalService.addBatchPlannerPlan(
 			userId, export, externalType, externalURL, internalClassName, name,
-			taskItemDelegateName, template);
+			size, taskItemDelegateName, template);
 	}
 
 	/**
@@ -89,6 +85,12 @@ public class BatchPlannerPlanLocalServiceWrapper
 			primaryKeyObj);
 	}
 
+	@Override
+	public void deactivateBatchPlannerPlan(String batchEngineTaskERC) {
+		_batchPlannerPlanLocalService.deactivateBatchPlannerPlan(
+			batchEngineTaskERC);
+	}
+
 	/**
 	 * Deletes the batch planner plan from the database. Also notifies the appropriate model listeners.
 	 *
@@ -98,11 +100,14 @@ public class BatchPlannerPlanLocalServiceWrapper
 	 *
 	 * @param batchPlannerPlan the batch planner plan
 	 * @return the batch planner plan that was removed
+	 * @throws PortalException
 	 */
 	@Override
 	public com.liferay.batch.planner.model.BatchPlannerPlan
-		deleteBatchPlannerPlan(
-			com.liferay.batch.planner.model.BatchPlannerPlan batchPlannerPlan) {
+			deleteBatchPlannerPlan(
+				com.liferay.batch.planner.model.BatchPlannerPlan
+					batchPlannerPlan)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _batchPlannerPlanLocalService.deleteBatchPlannerPlan(
 			batchPlannerPlan);
@@ -331,15 +336,6 @@ public class BatchPlannerPlanLocalServiceWrapper
 		return _batchPlannerPlanLocalService.getPersistedModel(primaryKeyObj);
 	}
 
-	@Override
-	public com.liferay.batch.planner.model.BatchPlannerPlan updateActive(
-			long batchPlannerPlanId, boolean active)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _batchPlannerPlanLocalService.updateActive(
-			batchPlannerPlanId, active);
-	}
-
 	/**
 	 * Updates the batch planner plan in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -362,11 +358,26 @@ public class BatchPlannerPlanLocalServiceWrapper
 	@Override
 	public com.liferay.batch.planner.model.BatchPlannerPlan
 			updateBatchPlannerPlan(
-				long userId, long batchPlannerPlanId, String name)
+				long batchPlannerPlanId, String externalType,
+				String internalClassName, String name)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _batchPlannerPlanLocalService.updateBatchPlannerPlan(
-			userId, batchPlannerPlanId, name);
+			batchPlannerPlanId, externalType, internalClassName, name);
+	}
+
+	@Override
+	public com.liferay.batch.planner.model.BatchPlannerPlan updateStatus(
+			long batchPlannerPlanId, int status)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _batchPlannerPlanLocalService.updateStatus(
+			batchPlannerPlanId, status);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _batchPlannerPlanLocalService.getBasePersistence();
 	}
 
 	@Override

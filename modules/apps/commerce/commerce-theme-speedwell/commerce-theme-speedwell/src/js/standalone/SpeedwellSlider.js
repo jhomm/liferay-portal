@@ -1,40 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-function showNotification(message, type, closeable = true, duration = 500) {
-	if (!window.AUI) {
-		return;
-	}
-	AUI().use('liferay-notification', () => {
-		new Liferay.Notification({
-			closeable,
-			delay: {
-				hide: 5000,
-				show: 0,
-			},
-			duration,
-			message,
-			render: true,
-			title: '',
-			type,
-		});
-	});
-}
-
-const CURRENT = 'current',
-	NEXT = 'next',
-	WILL_BE_NEXT = 'will-be-next';
+const CURRENT = 'current';
+const NEXT = 'next';
+const WILL_BE_NEXT = 'will-be-next';
 
 const STATES_MAP = {
 	[CURRENT]: {
@@ -51,20 +22,20 @@ const STATES_MAP = {
 	},
 };
 
-const BACKWARDS = 'backwards',
-	FORWARDS = 'forwards';
+const BACKWARDS = 'backwards';
+const FORWARDS = 'forwards';
 
 function validateInterval(interval) {
 	const MIN = 4000;
 
-	switch (true) {
-		case interval > 0 && interval <= MIN:
-			return MIN;
-		case interval > MIN:
-			return interval;
-		default:
-			return null;
+	if (interval > 0 && interval <= MIN) {
+		return MIN;
 	}
+	else if (interval > MIN) {
+		return interval;
+	}
+
+	return null;
 }
 
 const SpeedwellSlider = function (
@@ -199,7 +170,11 @@ SpeedwellSlider.prototype = {
 					`Request code: ${error.statusCode.toString()}` ||
 					'API error';
 
-				showNotification(errorMessage, 'danger');
+				Liferay.Util.openToast({
+					message: errorMessage,
+					title: '',
+					type: 'danger',
+				});
 			});
 	},
 
@@ -247,9 +222,10 @@ SpeedwellSlider.prototype = {
 	setupData() {
 		return new Promise((resolve, reject) => {
 			try {
-				const ldJson = this.sliderWrapper.querySelector(
-					'.slider-dataset'
-				).innerText;
+				const ldJson =
+					this.sliderWrapper.querySelector(
+						'.slider-dataset'
+					).innerText;
 				this.dataset = this.validateDataset(JSON.parse(ldJson));
 
 				this.dataset.forEach((object, index) => {
@@ -267,19 +243,17 @@ SpeedwellSlider.prototype = {
 
 	setupSliders() {
 		return new Promise((resolve, reject) => {
-			switch (this.datasetSize) {
-				case 0:
-					reject(new Error('No dataset size.'));
-					break;
-				case 1:
-					this.oneSlideSetup();
-					break;
-				case 2:
-					this.twoSlidesSetup();
-					break;
-				default:
-					this.defaultSetup();
-					break;
+			if (this.datasetSize === 0) {
+				reject(new Error('No dataset size.'));
+			}
+			else if (this.datasetSize === 1) {
+				this.oneSlideSetup();
+			}
+			else if (this.datasetSize === 2) {
+				this.twoSlidesSetup();
+			}
+			else {
+				this.defaultSetup();
 			}
 
 			this.slides = Array.from(
@@ -294,14 +268,14 @@ SpeedwellSlider.prototype = {
 
 	throttleInteraction(event) {
 		const direction =
-				event instanceof Event &&
-				event.currentTarget.className.indexOf('prev') > -1
-					? BACKWARDS
-					: FORWARDS,
-			prepare =
-				direction === BACKWARDS
-					? this.prepareNow.bind(this)
-					: this.prepareLater;
+			event instanceof Event &&
+			event.currentTarget.className.indexOf('prev') > -1
+				? BACKWARDS
+				: FORWARDS;
+		const prepare =
+			direction === BACKWARDS
+				? this.prepareNow.bind(this)
+				: this.prepareLater;
 
 		this.toggleControls({isEnabled: false});
 
@@ -351,9 +325,8 @@ Liferay.component(
 	(function () {
 		return {
 			initialize(setupDOMSlideFn, renderSlideContentFn, interval) {
-				const sliderContainer = window.document.querySelector(
-					'[data-will-load]'
-				);
+				const sliderContainer =
+					window.document.querySelector('[data-will-load]');
 
 				sliderContainer.removeAttribute('data-will-load');
 

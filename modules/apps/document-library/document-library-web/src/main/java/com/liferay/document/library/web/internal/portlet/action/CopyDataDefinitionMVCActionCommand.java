@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.action;
@@ -22,22 +13,21 @@ import com.liferay.document.library.kernel.model.DLFileEntryMetadata;
 import com.liferay.dynamic.data.mapping.constants.DDMTemplateConstants;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateService;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseTransactionalMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,11 +37,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alicia García
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/copy_data_definition"
 	},
 	service = MVCActionCommand.class
@@ -70,9 +59,9 @@ public class CopyDataDefinitionMVCActionCommand
 		long ddmStructureId = ParamUtil.getLong(
 			actionRequest, "ddmStructureId");
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 
 		DataDefinitionResource.Builder dataDefinitionResourceBuilder =
@@ -84,17 +73,15 @@ public class CopyDataDefinitionMVCActionCommand
 			).build();
 
 		DataDefinition dataDefinition =
-			dataDefinitionResource.getDataDefinition(ddmStructureId);
+			dataDefinitionResource.postDataDefinitionCopy(ddmStructureId);
 
-		dataDefinition.setDataDefinitionKey(StringPool.BLANK);
 		dataDefinition.setDescription(
-			LocalizedValueUtil.toStringObjectMap(descriptionMap));
-		dataDefinition.setName(LocalizedValueUtil.toStringObjectMap(nameMap));
+			() -> LocalizedValueUtil.toStringObjectMap(descriptionMap));
+		dataDefinition.setName(
+			() -> LocalizedValueUtil.toStringObjectMap(nameMap));
 
-		dataDefinition =
-			dataDefinitionResource.postSiteDataDefinitionByContentType(
-				themeDisplay.getScopeGroupId(), "document-library",
-				dataDefinition);
+		dataDefinitionResource.putDataDefinition(
+			dataDefinition.getId(), dataDefinition);
 
 		boolean copyTemplates = ParamUtil.getBoolean(
 			actionRequest, "copyTemplates");
@@ -116,6 +103,9 @@ public class CopyDataDefinitionMVCActionCommand
 
 	@Reference
 	private DDMTemplateService _ddmTemplateService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

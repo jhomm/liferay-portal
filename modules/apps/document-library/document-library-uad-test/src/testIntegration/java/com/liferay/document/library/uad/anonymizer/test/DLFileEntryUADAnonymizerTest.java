@@ -1,31 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.uad.anonymizer.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetLink;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.asset.kernel.service.AssetLinkLocalService;
+import com.liferay.asset.link.model.AssetLink;
+import com.liferay.asset.link.service.AssetLinkLocalService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileVersion;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.kernel.service.DLFolderLocalService;
-import com.liferay.document.library.uad.test.DLFileEntryUADTestUtil;
+import com.liferay.document.library.uad.test.util.DLFileEntryUADTestUtil;
 import com.liferay.message.boards.constants.MBCategoryConstants;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBThreadLocalService;
@@ -44,8 +35,6 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.user.associated.data.anonymizer.UADAnonymizer;
 import com.liferay.user.associated.data.test.util.BaseHasAssetEntryUADAnonymizerTestCase;
-
-import java.io.InputStream;
 
 import java.util.List;
 
@@ -247,22 +236,15 @@ public class DLFileEntryUADAnonymizerTest
 		DLFileEntry dlFileEntry = _dlFileEntryLocalService.getDLFileEntry(
 			dlFileEntryId);
 
-		long userId = dlFileEntry.getUserId();
-
-		long fileEntryId = dlFileEntryId;
-		String sourceFileName = RandomTestUtil.randomString();
-		String contentType = ContentTypes.TEXT;
-		String title = RandomTestUtil.randomString();
-		String description = RandomTestUtil.randomString();
-		String changeLog = RandomTestUtil.randomString();
-		boolean majorVersion = true;
-		InputStream inputStream = dlFileEntry.getContentStream();
-
 		_dlAppLocalService.updateFileEntry(
-			userId, fileEntryId, sourceFileName, contentType, title,
-			description, changeLog,
-			DLVersionNumberIncrease.fromMajorVersion(majorVersion), inputStream,
-			dlFileEntry.getSize(), null, null,
+			dlFileEntry.getUserId(), dlFileEntryId,
+			RandomTestUtil.randomString(), ContentTypes.TEXT,
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			RandomTestUtil.randomString(), RandomTestUtil.randomString(),
+			DLVersionNumberIncrease.fromMajorVersion(true),
+			dlFileEntry.getContentStream(), dlFileEntry.getSize(),
+			dlFileEntry.getDisplayDate(), dlFileEntry.getExpirationDate(),
+			dlFileEntry.getReviewDate(),
 			ServiceContextTestUtil.getServiceContext());
 	}
 
@@ -287,7 +269,9 @@ public class DLFileEntryUADAnonymizerTest
 	@Inject
 	private MBThreadLocalService _mbThreadLocalService;
 
-	@Inject(filter = "component.name=*.DLFileEntryUADAnonymizer")
+	@Inject(
+		filter = "component.name=com.liferay.document.library.uad.anonymizer.DLFileEntryUADAnonymizer"
+	)
 	private UADAnonymizer<DLFileEntry> _uadAnonymizer;
 
 }

@@ -1,41 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.cdi.extension.internal.scope;
 
 import com.liferay.bean.portlet.extension.ScopedBean;
 
+import jakarta.enterprise.context.spi.CreationalContext;
+import jakarta.enterprise.inject.spi.Bean;
+
+import jakarta.mvc.RedirectScoped;
+
+import jakarta.portlet.MutableRenderParameters;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderParameters;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.StateAwareResponse;
+import jakarta.portlet.annotations.PortletRequestScoped;
+import jakarta.portlet.annotations.PortletSerializable;
+import jakarta.portlet.annotations.PortletSessionScoped;
+import jakarta.portlet.annotations.RenderStateScoped;
+
 import java.util.Enumeration;
 import java.util.Objects;
-
-import javax.enterprise.context.spi.CreationalContext;
-import javax.enterprise.inject.spi.Bean;
-
-import javax.mvc.RedirectScoped;
-
-import javax.portlet.MutableRenderParameters;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderParameters;
-import javax.portlet.RenderResponse;
-import javax.portlet.StateAwareResponse;
-import javax.portlet.annotations.PortletRequestScoped;
-import javax.portlet.annotations.PortletSerializable;
-import javax.portlet.annotations.PortletSessionScoped;
-import javax.portlet.annotations.RenderStateScoped;
 
 /**
  * @author Neil Griffin

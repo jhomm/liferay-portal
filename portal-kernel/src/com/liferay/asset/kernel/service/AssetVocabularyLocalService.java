@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.kernel.service;
@@ -39,6 +30,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -64,6 +56,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.asset.kernel.model.AssetVocabulary"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -110,17 +107,6 @@ public interface AssetVocabularyLocalService
 	public AssetVocabulary addVocabulary(
 			long userId, long groupId, String title,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #addVocabulary(String, long, long, String, String, Map, Map, String, int, ServiceContext)}
-	 */
-	@Deprecated
-	public AssetVocabulary addVocabulary(
-			long userId, long groupId, String name, String title,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			String settings, int visibilityType, ServiceContext serviceContext)
 		throws PortalException;
 
 	public AssetVocabulary addVocabulary(
@@ -284,24 +270,9 @@ public interface AssetVocabularyLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetVocabulary fetchAssetVocabulary(long vocabularyId);
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary, or <code>null</code> if a matching asset vocabulary could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetVocabulary fetchAssetVocabularyByExternalReferenceCode(
-		long groupId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAssetVocabularyByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public AssetVocabulary fetchAssetVocabularyByReferenceCode(
-		long groupId, String externalReferenceCode);
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the asset vocabulary matching the UUID and group.
@@ -379,17 +350,9 @@ public interface AssetVocabularyLocalService
 	public AssetVocabulary getAssetVocabulary(long vocabularyId)
 		throws PortalException;
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary
-	 * @throws PortalException if a matching asset vocabulary could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetVocabulary getAssetVocabularyByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -437,11 +400,6 @@ public interface AssetVocabularyLocalService
 		long groupId, int visibilityType);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<AssetVocabulary> getGroupVocabularies(
-		long groupId, String name, int start, int end,
-		OrderByComparator<AssetVocabulary> orderByComparator);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<AssetVocabulary> getGroupVocabularies(long[] groupIds);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -457,6 +415,11 @@ public interface AssetVocabularyLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetVocabulary getOrAddIncompleteVocabulary(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -487,13 +450,8 @@ public interface AssetVocabularyLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<AssetVocabulary> searchVocabularies(
-			long companyId, long groupId, String title, int start, int end)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public BaseModelSearchResult<AssetVocabulary> searchVocabularies(
-			long companyId, long groupId, String title, int start, int end,
-			Sort sort)
+			long companyId, long[] groupIds, String title,
+			int[] visibilityTypes, int start, int end, Sort sort)
 		throws PortalException;
 
 	/**
@@ -522,17 +480,11 @@ public interface AssetVocabularyLocalService
 			int visibilityType)
 		throws PortalException;
 
+	@Indexable(type = IndexableType.REINDEX)
 	public AssetVocabulary updateVocabulary(
 			long vocabularyId, String title, Map<Locale, String> titleMap,
 			Map<Locale, String> descriptionMap, String settings,
 			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public AssetVocabulary updateVocabulary(
-			long vocabularyId, String name, String title,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			String settings, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Override

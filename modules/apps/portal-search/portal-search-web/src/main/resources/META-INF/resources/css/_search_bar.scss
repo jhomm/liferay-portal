@@ -1,8 +1,4 @@
 .portlet-search-bar {
-	.alert {
-		margin-bottom: 0;
-	}
-
 	.search-bar {
 		.form-group.input-group-item {
 			margin-bottom: 0;
@@ -15,5 +11,35 @@
 
 	.search-bar-search-select-wrapper {
 		max-width: 9.375rem;
+	}
+}
+
+.search-bar-suggestions-dropdown-menu {
+	max-height: 25rem;
+	max-width: none;
+
+	.search-bar-suggestions-results-list {
+		.dropdown-subheader {
+			color: var(--gray-600, $secondary);
+		}
+
+		.suggestion-item-title {
+			color: var(--dark, $dark);
+
+			+ .suggestion-item-description {
+				color: var(--gray-600, $secondary);
+				font-size: 0.75rem;
+			}
+		}
+	}
+
+	.search-bar-suggestions-show-more {
+		color: var(--primary, $primary);
+
+		&:hover {
+			background-color: var(--white, $white);
+			color: var(--primary-d2, $primary-d2);
+			text-decoration: underline;
+		}
 	}
 }

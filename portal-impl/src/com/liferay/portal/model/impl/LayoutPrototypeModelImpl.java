@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -25,7 +16,6 @@ import com.liferay.portal.kernel.json.JSON;
 import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.LayoutPrototype;
 import com.liferay.portal.kernel.model.LayoutPrototypeModel;
-import com.liferay.portal.kernel.model.LayoutPrototypeSoap;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -84,12 +71,13 @@ public class LayoutPrototypeModelImpl
 	public static final String TABLE_NAME = "LayoutPrototype";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"uuid_", Types.VARCHAR},
-		{"layoutPrototypeId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
-		{"name", Types.CLOB}, {"description", Types.CLOB},
-		{"settings_", Types.VARCHAR}, {"active_", Types.BOOLEAN}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"uuid_", Types.VARCHAR}, {"layoutPrototypeId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP}, {"name", Types.CLOB},
+		{"description", Types.CLOB}, {"settings_", Types.VARCHAR},
+		{"active_", Types.BOOLEAN}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -97,6 +85,7 @@ public class LayoutPrototypeModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("layoutPrototypeId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -111,7 +100,7 @@ public class LayoutPrototypeModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table LayoutPrototype (mvccVersion LONG default 0 not null,uuid_ VARCHAR(75) null,layoutPrototypeId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name TEXT null,description TEXT null,settings_ STRING null,active_ BOOLEAN)";
+		"create table LayoutPrototype (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,layoutPrototypeId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,name TEXT null,description TEXT null,settings_ STRING null,active_ BOOLEAN,primary key (layoutPrototypeId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table LayoutPrototype";
 
@@ -120,6 +109,9 @@ public class LayoutPrototypeModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY LayoutPrototype.layoutPrototypeId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY layoutPrototype.layoutPrototypeId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -169,62 +161,6 @@ public class LayoutPrototypeModelImpl
 	 */
 	@Deprecated
 	public static final long LAYOUTPROTOTYPEID_COLUMN_BITMASK = 8L;
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static LayoutPrototype toModel(LayoutPrototypeSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		LayoutPrototype model = new LayoutPrototypeImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setLayoutPrototypeId(soapModel.getLayoutPrototypeId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setName(soapModel.getName());
-		model.setDescription(soapModel.getDescription());
-		model.setSettings(soapModel.getSettings());
-		model.setActive(soapModel.isActive());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<LayoutPrototype> toModels(
-		LayoutPrototypeSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<LayoutPrototype> models = new ArrayList<LayoutPrototype>(
-			soapModels.length);
-
-		for (LayoutPrototypeSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -306,117 +242,119 @@ public class LayoutPrototypeModelImpl
 	public Map<String, Function<LayoutPrototype, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<LayoutPrototype, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, LayoutPrototype>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			LayoutPrototype.class.getClassLoader(), LayoutPrototype.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<LayoutPrototype, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<LayoutPrototype> constructor =
-				(Constructor<LayoutPrototype>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<LayoutPrototype, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<LayoutPrototype, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", LayoutPrototype::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", LayoutPrototype::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", LayoutPrototype::getUuid);
+			attributeGetterFunctions.put(
+				"layoutPrototypeId", LayoutPrototype::getLayoutPrototypeId);
+			attributeGetterFunctions.put(
+				"companyId", LayoutPrototype::getCompanyId);
+			attributeGetterFunctions.put("userId", LayoutPrototype::getUserId);
+			attributeGetterFunctions.put(
+				"userName", LayoutPrototype::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", LayoutPrototype::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", LayoutPrototype::getModifiedDate);
+			attributeGetterFunctions.put("name", LayoutPrototype::getName);
+			attributeGetterFunctions.put(
+				"description", LayoutPrototype::getDescription);
+			attributeGetterFunctions.put(
+				"settings", LayoutPrototype::getSettings);
+			attributeGetterFunctions.put("active", LayoutPrototype::getActive);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<LayoutPrototype, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<LayoutPrototype, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<LayoutPrototype, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<LayoutPrototype, Object>>();
-		Map<String, BiConsumer<LayoutPrototype, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<LayoutPrototype, ?>>();
+		private static final Map<String, BiConsumer<LayoutPrototype, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", LayoutPrototype::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<LayoutPrototype, Long>)LayoutPrototype::setMvccVersion);
-		attributeGetterFunctions.put("uuid", LayoutPrototype::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<LayoutPrototype, String>)LayoutPrototype::setUuid);
-		attributeGetterFunctions.put(
-			"layoutPrototypeId", LayoutPrototype::getLayoutPrototypeId);
-		attributeSetterBiConsumers.put(
-			"layoutPrototypeId",
-			(BiConsumer<LayoutPrototype, Long>)
-				LayoutPrototype::setLayoutPrototypeId);
-		attributeGetterFunctions.put(
-			"companyId", LayoutPrototype::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<LayoutPrototype, Long>)LayoutPrototype::setCompanyId);
-		attributeGetterFunctions.put("userId", LayoutPrototype::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<LayoutPrototype, Long>)LayoutPrototype::setUserId);
-		attributeGetterFunctions.put("userName", LayoutPrototype::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<LayoutPrototype, String>)LayoutPrototype::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", LayoutPrototype::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<LayoutPrototype, Date>)LayoutPrototype::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", LayoutPrototype::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<LayoutPrototype, Date>)
-				LayoutPrototype::setModifiedDate);
-		attributeGetterFunctions.put("name", LayoutPrototype::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<LayoutPrototype, String>)LayoutPrototype::setName);
-		attributeGetterFunctions.put(
-			"description", LayoutPrototype::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<LayoutPrototype, String>)
-				LayoutPrototype::setDescription);
-		attributeGetterFunctions.put("settings", LayoutPrototype::getSettings);
-		attributeSetterBiConsumers.put(
-			"settings",
-			(BiConsumer<LayoutPrototype, String>)LayoutPrototype::setSettings);
-		attributeGetterFunctions.put("active", LayoutPrototype::getActive);
-		attributeSetterBiConsumers.put(
-			"active",
-			(BiConsumer<LayoutPrototype, Boolean>)LayoutPrototype::setActive);
+		static {
+			Map<String, BiConsumer<LayoutPrototype, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<LayoutPrototype, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<LayoutPrototype, Long>)
+					LayoutPrototype::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<LayoutPrototype, Long>)
+					LayoutPrototype::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<LayoutPrototype, String>)LayoutPrototype::setUuid);
+			attributeSetterBiConsumers.put(
+				"layoutPrototypeId",
+				(BiConsumer<LayoutPrototype, Long>)
+					LayoutPrototype::setLayoutPrototypeId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<LayoutPrototype, Long>)
+					LayoutPrototype::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<LayoutPrototype, Long>)LayoutPrototype::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<LayoutPrototype, String>)
+					LayoutPrototype::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<LayoutPrototype, Date>)
+					LayoutPrototype::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<LayoutPrototype, Date>)
+					LayoutPrototype::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<LayoutPrototype, String>)LayoutPrototype::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<LayoutPrototype, String>)
+					LayoutPrototype::setDescription);
+			attributeSetterBiConsumers.put(
+				"settings",
+				(BiConsumer<LayoutPrototype, String>)
+					LayoutPrototype::setSettings);
+			attributeSetterBiConsumers.put(
+				"active",
+				(BiConsumer<LayoutPrototype, Boolean>)
+					LayoutPrototype::setActive);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -432,6 +370,21 @@ public class LayoutPrototypeModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -1011,6 +964,7 @@ public class LayoutPrototypeModelImpl
 		LayoutPrototypeImpl layoutPrototypeImpl = new LayoutPrototypeImpl();
 
 		layoutPrototypeImpl.setMvccVersion(getMvccVersion());
+		layoutPrototypeImpl.setCtCollectionId(getCtCollectionId());
 		layoutPrototypeImpl.setUuid(getUuid());
 		layoutPrototypeImpl.setLayoutPrototypeId(getLayoutPrototypeId());
 		layoutPrototypeImpl.setCompanyId(getCompanyId());
@@ -1034,6 +988,8 @@ public class LayoutPrototypeModelImpl
 
 		layoutPrototypeImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		layoutPrototypeImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		layoutPrototypeImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
 		layoutPrototypeImpl.setLayoutPrototypeId(
@@ -1135,6 +1091,8 @@ public class LayoutPrototypeModelImpl
 			new LayoutPrototypeCacheModel();
 
 		layoutPrototypeCacheModel.mvccVersion = getMvccVersion();
+
+		layoutPrototypeCacheModel.ctCollectionId = getCtCollectionId();
 
 		layoutPrototypeCacheModel.uuid = getUuid();
 
@@ -1254,45 +1212,17 @@ public class LayoutPrototypeModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<LayoutPrototype, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<LayoutPrototype, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<LayoutPrototype, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((LayoutPrototype)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, LayoutPrototype>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					LayoutPrototype.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _layoutPrototypeId;
 	private long _companyId;
@@ -1312,7 +1242,8 @@ public class LayoutPrototypeModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<LayoutPrototype, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1338,6 +1269,7 @@ public class LayoutPrototypeModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put("layoutPrototypeId", _layoutPrototypeId);
 		_columnOriginalValues.put("companyId", _companyId);
@@ -1376,27 +1308,29 @@ public class LayoutPrototypeModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("uuid_", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("layoutPrototypeId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("companyId", 8L);
+		columnBitmasks.put("layoutPrototypeId", 8L);
 
-		columnBitmasks.put("userId", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("userName", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("createDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("modifiedDate", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("name", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("description", 512L);
+		columnBitmasks.put("name", 512L);
 
-		columnBitmasks.put("settings_", 1024L);
+		columnBitmasks.put("description", 1024L);
 
-		columnBitmasks.put("active_", 2048L);
+		columnBitmasks.put("settings_", 2048L);
+
+		columnBitmasks.put("active_", 4096L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

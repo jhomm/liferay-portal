@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.internal.strategy;
@@ -29,10 +20,9 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
-
-import org.apache.commons.lang.ClassUtils;
 
 /**
  * @author Rafael Praxedes
@@ -52,7 +42,15 @@ public interface MapToDDMFormValuesConverterStrategy {
 
 		if (locale == null) {
 			for (Map.Entry<String, ?> entry : localizedValues.entrySet()) {
-				if (entry.getValue() instanceof Map) {
+				if (entry.getValue() instanceof Collection) {
+					JSONArray jsonArray = JSONFactoryUtil.createJSONArray(
+						(Collection<?>)entry.getValue());
+
+					localizedValue.addString(
+						LocaleUtil.fromLanguageId(entry.getKey()),
+						jsonArray.toString());
+				}
+				else if (entry.getValue() instanceof Map) {
 					JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
 						(Map)entry.getValue());
 
@@ -79,13 +77,20 @@ public interface MapToDDMFormValuesConverterStrategy {
 		else {
 			String languageId = LanguageUtil.getLanguageId(locale);
 
-			if (!localizedValues.containsKey(languageId)) {
+			Object object = localizedValues.get(languageId);
+
+			if (object == null) {
 				return localizedValue;
 			}
 
-			if (localizedValues.get(languageId) instanceof Object[]) {
-				JSONArray jsonArray = JSONUtil.putAll(
-					(Object[])localizedValues.get(languageId));
+			if (object instanceof Collection) {
+				JSONArray jsonArray = JSONFactoryUtil.createJSONArray(
+					(Collection<?>)object);
+
+				localizedValue.addString(locale, jsonArray.toString());
+			}
+			else if (object instanceof Object[]) {
+				JSONArray jsonArray = JSONUtil.putAll((Object[])object);
 
 				localizedValue.addString(locale, jsonArray.toString());
 			}
@@ -103,16 +108,18 @@ public interface MapToDDMFormValuesConverterStrategy {
 		DDMFormField ddmFormField, Locale locale, Object value) {
 
 		if (value instanceof Object[]) {
-			value = String.valueOf(JSONUtil.putAll((Object[])value));
+			value = JSONUtil.putAll(
+				(Object[])value
+			).toString();
 		}
 
 		if (ddmFormField.isLocalizable()) {
 			return createLocalizedValue(locale, value);
 		}
 
-		if (!(value instanceof String) &&
-			(ClassUtils.wrapperToPrimitive(value.getClass()) == null)) {
+		Class<?> clazz = value.getClass();
 
+		if ((clazz != String.class) && !clazz.isPrimitive()) {
 			throw new IllegalArgumentException(
 				"Field's value must be a primitive value");
 		}

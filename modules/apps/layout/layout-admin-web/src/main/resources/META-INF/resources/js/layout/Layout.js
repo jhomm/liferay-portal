@@ -1,41 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {fetch, openToast} from 'frontend-js-web';
-import React, {useEffect, useRef, useState} from 'react';
+import {openToast} from 'frontend-js-components-web';
+import {fetch, navigate} from 'frontend-js-web';
+import React, {useContext, useEffect, useRef, useState} from 'react';
 
 import Breadcrumbs from '../breadcrumbs/Breadcrumbs';
 import MillerColumns from '../miller_columns/MillerColumns';
-import actionHandlers from './actionHandlers';
+import {
+	LayoutColumnsContext,
+	LayoutColumnsProvider,
+} from '../miller_columns/contexts/LayoutColumnsContext';
 
 const Layout = ({
+	createPageTemplateURL,
+	getItemActionsURL,
 	getItemChildrenURL,
+	getPageTemplateCollectionsURL,
 	initialBreadcrumbEntries,
-	initialLayoutColumns,
+	isSiteTemplate,
 	languageId,
 	moveItemURL,
 	namespace,
 	searchContainerId,
 }) => {
 	const layoutRef = useRef();
-	const searchContainer = useRef();
+	const searchContainerRef = useRef();
 
 	const [breadcrumbEntries, setBreadcrumbEntries] = useState(
 		initialBreadcrumbEntries
 	);
-	const [layoutColumns, setLayoutColumns] = useState(initialLayoutColumns);
 	const [searchContainerElement, setSearchContainerElement] = useState();
+
+	const {layoutColumns, setLayoutColumns} = useContext(LayoutColumnsContext);
 
 	useEffect(() => {
 		const A = new AUI();
@@ -53,17 +52,17 @@ const Layout = ({
 					},
 				];
 
-				if (searchContainer.current) {
-					searchContainer.current.destroy();
+				if (searchContainerRef.current) {
+					searchContainerRef.current.destroy();
 				}
 
-				searchContainer.current = new Liferay.SearchContainer({
+				searchContainerRef.current = new Liferay.SearchContainer({
 					contentBox: layoutRef.current,
 					id: `${namespace}${searchContainerId}`,
 					plugins,
 				});
 
-				setSearchContainerElement(searchContainer.current);
+				setSearchContainerElement(searchContainerRef.current);
 			}
 		);
 	}, [namespace, searchContainerId]);
@@ -73,7 +72,7 @@ const Layout = ({
 
 		formData.append(`${namespace}plid`, parentId);
 
-		fetch(getItemChildrenURL, {
+		return fetch(getItemChildrenURL, {
 			body: formData,
 			method: 'POST',
 		})
@@ -108,44 +107,45 @@ const Layout = ({
 					}
 				}
 
-				newLayoutColumns.push(children);
+				newLayoutColumns.push(
+					children.map((child) => ({...child, active: false}))
+				);
 
 				setLayoutColumns(newLayoutColumns);
 			})
 			.catch();
 	};
 
-	const saveData = (movedItems, parentItemId) => {
+	const saveData = (movedItems, parentItemId, redirectURL) => {
 		const formData = new FormData();
-
-		const activeItems = layoutColumns.reduce(
-			(acc, column) => [...acc, ...column.filter((item) => item.active)],
-			[]
-		);
-
-		const activeItem = activeItems[activeItems.length - 1];
 
 		formData.append(`${namespace}plids`, JSON.stringify(movedItems));
 		formData.append(`${namespace}parentPlid`, parentItemId);
-
-		if (activeItem) {
-			formData.append(`${namespace}selPlid`, activeItem.id);
-		}
 
 		fetch(moveItemURL, {
 			body: formData,
 			method: 'POST',
 		})
 			.then((response) => response.json())
-			.then(({errorMessage, layoutColumns: updatedLayoutColumns}) => {
+			.then(({errorMessage}) => {
 				if (errorMessage) {
 					openToast({
 						message: errorMessage,
 						type: 'danger',
 					});
 				}
-				if (updatedLayoutColumns) {
-					setLayoutColumns(updatedLayoutColumns);
+				else {
+					openToast({
+						message: Liferay.Language.get(
+							'your-request-processed-successfully'
+						),
+						toastProps: {
+							autoClose: 5000,
+						},
+						type: 'success',
+					});
+
+					navigate(redirectURL);
 				}
 			});
 	};
@@ -170,14 +170,17 @@ const Layout = ({
 	return (
 		<div ref={layoutRef}>
 			<Breadcrumbs entries={breadcrumbEntries} />
+
 			<MillerColumns
-				actionHandlers={actionHandlers}
-				initialColumns={layoutColumns}
+				createPageTemplateURL={createPageTemplateURL}
+				getItemActionsURL={getItemActionsURL}
+				getItemChildren={getItemChildren}
+				getPageTemplateCollectionsURL={getPageTemplateCollectionsURL}
+				isSiteTemplate={isSiteTemplate}
 				namespace={namespace}
 				onColumnsChange={updateBreadcrumbs}
-				onItemMove={saveData}
-				onItemStayHover={getItemChildren}
 				rtl={Liferay.Language.direction[languageId] === 'rtl'}
+				saveData={saveData}
 				searchContainer={searchContainerElement}
 			/>
 		</div>
@@ -188,7 +191,11 @@ export default function ({
 	context: {namespace},
 	props: {
 		breadcrumbEntries,
+		createLayoutPageTemplateEntryURL,
+		getItemActionsURL,
 		getItemChildrenURL,
+		getLayoutPageTemplateCollectionsURL,
+		isLayoutSetPrototype = false,
 		languageId,
 		layoutColumns,
 		moveItemURL,
@@ -196,14 +203,21 @@ export default function ({
 	},
 }) {
 	return (
-		<Layout
-			getItemChildrenURL={getItemChildrenURL}
-			initialBreadcrumbEntries={breadcrumbEntries}
-			initialLayoutColumns={layoutColumns}
-			languageId={languageId}
-			moveItemURL={moveItemURL}
-			namespace={namespace}
-			searchContainerId={searchContainerId}
-		/>
+		<LayoutColumnsProvider initialColumns={layoutColumns}>
+			<Layout
+				createPageTemplateURL={createLayoutPageTemplateEntryURL}
+				getItemActionsURL={getItemActionsURL}
+				getItemChildrenURL={getItemChildrenURL}
+				getPageTemplateCollectionsURL={
+					getLayoutPageTemplateCollectionsURL
+				}
+				initialBreadcrumbEntries={breadcrumbEntries}
+				isLayoutSetPrototype={isLayoutSetPrototype}
+				languageId={languageId}
+				moveItemURL={moveItemURL}
+				namespace={namespace}
+				searchContainerId={searchContainerId}
+			/>
+		</LayoutColumnsProvider>
 	);
 }

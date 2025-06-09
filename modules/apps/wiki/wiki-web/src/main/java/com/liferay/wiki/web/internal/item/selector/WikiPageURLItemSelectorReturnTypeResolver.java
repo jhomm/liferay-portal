@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.item.selector;
 
 import com.liferay.item.selector.ItemSelectorReturnTypeResolver;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
@@ -28,9 +19,9 @@ import com.liferay.wiki.escape.WikiEscapeUtil;
 import com.liferay.wiki.item.selector.WikiPageURLItemSelectorReturnType;
 import com.liferay.wiki.model.WikiPage;
 
-import java.net.URL;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.net.URL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Roberto Díaz
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=100",
+	property = "service.ranking:Integer=100",
 	service = ItemSelectorReturnTypeResolver.class
 )
 public class WikiPageURLItemSelectorReturnTypeResolver
@@ -84,7 +75,7 @@ public class WikiPageURLItemSelectorReturnTypeResolver
 			}
 		}
 
-		return _http.removeDomain(
+		return HttpComponentsUtil.removeDomain(
 			PortletURLBuilder.create(
 				_portal.getControlPanelPortletURL(
 					themeDisplay.getRequest(), WikiPortletKeys.WIKI_ADMIN,
@@ -97,9 +88,6 @@ public class WikiPageURLItemSelectorReturnTypeResolver
 				"title", page.getTitle()
 			).buildString());
 	}
-
-	@Reference
-	private Http _http;
 
 	@Reference
 	private Portal _portal;

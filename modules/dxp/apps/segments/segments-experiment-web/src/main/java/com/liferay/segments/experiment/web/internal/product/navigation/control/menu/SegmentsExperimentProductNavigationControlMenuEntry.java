@@ -1,75 +1,69 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.experiment.web.internal.product.navigation.control.menu;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
+import com.liferay.frontend.taglib.clay.servlet.taglib.ButtonTag;
+import com.liferay.frontend.taglib.clay.servlet.taglib.IconTag;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactory;
-import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Html;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
-import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.template.react.renderer.ComponentDescriptor;
+import com.liferay.portal.template.react.renderer.ReactRenderer;
 import com.liferay.product.navigation.control.menu.BaseProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
 import com.liferay.segments.constants.SegmentsPortletKeys;
-import com.liferay.segments.constants.SegmentsWebKeys;
-import com.liferay.segments.experiment.web.internal.util.SegmentsExperimentUtil;
-import com.liferay.taglib.aui.IconTag;
-import com.liferay.taglib.portletext.RuntimeTag;
+import com.liferay.segments.experiment.web.internal.constants.ProductNavigationControlMenuEntryConstants;
+import com.liferay.segments.manager.SegmentsExperienceManager;
+import com.liferay.segments.model.SegmentsExperience;
+import com.liferay.segments.model.SegmentsExperiment;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
+import com.liferay.segments.service.SegmentsExperimentService;
 import com.liferay.taglib.util.BodyBottomTag;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
 
 import java.io.IOException;
 import java.io.Writer;
 
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.ResourceBundle;
-import java.util.stream.LongStream;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -79,15 +73,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eduardo García
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.USER,
 		"product.navigation.control.menu.entry.order:Integer=500"
 	},
-	service = {
-		ProductNavigationControlMenuEntry.class,
-		SegmentsExperimentProductNavigationControlMenuEntry.class
-	}
+	service = ProductNavigationControlMenuEntry.class
 )
 public class SegmentsExperimentProductNavigationControlMenuEntry
 	extends BaseProductNavigationControlMenuEntry {
@@ -130,72 +120,61 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 			HttpServletResponse httpServletResponse)
 		throws IOException {
 
-		Map<String, String> values = new HashMap<>();
-
-		if (isPanelStateOpen(httpServletRequest)) {
-			values.put("cssClass", "active");
-			values.put("dataURL", StringPool.BLANK);
-		}
-		else {
-			values.put("cssClass", StringPool.BLANK);
-
-			PortletURL portletURL = PortletURLBuilder.create(
-				_portletURLFactory.create(
-					httpServletRequest, SegmentsPortletKeys.SEGMENTS_EXPERIMENT,
-					RenderRequest.RENDER_PHASE)
-			).setMVCPath(
-				"/segments_experiment_panel.jsp"
-			).buildPortletURL();
-
-			try {
-				portletURL.setWindowState(LiferayWindowState.EXCLUSIVE);
-			}
-			catch (WindowStateException windowStateException) {
-				ReflectionUtil.throwException(windowStateException);
-			}
-
-			String dataURL = _http.setParameter(
-				portletURL.toString(), "segmentsExperienceId",
-				_getSegmentsExperienceId(httpServletRequest));
-
-			values.put("dataURL", "data-url='" + dataURL + "'");
-		}
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			_portal.getLocale(httpServletRequest), getClass());
-
-		values.put(
-			"title", _html.escape(_language.get(resourceBundle, "ab-test")));
-
-		IconTag iconTag = new IconTag();
-
-		iconTag.setCssClass("icon-monospaced");
-		iconTag.setImage("test");
-		iconTag.setMarkupView("lexicon");
-
 		try {
-			values.put(
-				"iconTag",
-				iconTag.doTagAsString(httpServletRequest, httpServletResponse));
+			Writer writer = httpServletResponse.getWriter();
+
+			IconTag iconTag = new IconTag();
+
+			iconTag.setCssClass("icon-monospaced");
+			iconTag.setSymbol("test");
+
+			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+				_portal.getLocale(httpServletRequest), getClass());
+
+			writer.write(
+				StringUtil.replace(
+					_ICON_TMPL_CONTENT, "${", "}",
+					HashMapBuilder.put(
+						"cssClass",
+						() -> {
+							if (isPanelStateOpen(
+									httpServletRequest,
+									ProductNavigationControlMenuEntryConstants.
+										SESSION_CLICKS_KEY)) {
+
+								return "active";
+							}
+
+							return StringPool.BLANK;
+						}
+					).put(
+						"iconTag",
+						iconTag.doTagAsString(
+							httpServletRequest, httpServletResponse)
+					).put(
+						"nonceAttribute",
+						ContentSecurityPolicyNonceProviderUtil.
+							getNonceAttribute(httpServletRequest)
+					).put(
+						"portletNamespace", _portletNamespace
+					).put(
+						"title",
+						HtmlUtil.escape(
+							_language.get(resourceBundle, "ab-test"))
+					).build()));
 		}
 		catch (JspException jspException) {
-			ReflectionUtil.throwException(jspException);
+			throw new IOException(jspException);
 		}
-
-		values.put("portletNamespace", _portletNamespace);
-
-		Writer writer = httpServletResponse.getWriter();
-
-		writer.write(StringUtil.replace(_ICON_TMPL_CONTENT, "${", "}", values));
 
 		return true;
 	}
 
-	public boolean isPanelStateOpen(HttpServletRequest httpServletRequest) {
-		String segmentsExperimentPanelState = SessionClicks.get(
-			httpServletRequest, _SESSION_CLICKS_KEY, "closed");
+	@Override
+	public boolean isPanelStateOpen(
+		HttpServletRequest httpServletRequest, String key) {
 
-		if (Objects.equals(segmentsExperimentPanelState, "open")) {
+		if (super.isPanelStateOpen(httpServletRequest, key)) {
 			return true;
 		}
 
@@ -205,11 +184,7 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 		String segmentsExperimentKey = ParamUtil.getString(
 			originalHttpServletRequest, "segmentsExperimentKey");
 
-		if (Validator.isNotNull(segmentsExperimentKey)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(segmentsExperimentKey);
 	}
 
 	@Override
@@ -226,12 +201,10 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 
 		Layout layout = themeDisplay.getLayout();
 
-		if (layout.isTypeControlPanel() ||
-			isEmbeddedPersonalApplicationLayout(layout) ||
-			!layout.isTypeContent() ||
-			!LayoutPermissionUtil.contains(
-				themeDisplay.getPermissionChecker(), layout,
-				ActionKeys.UPDATE)) {
+		if (layout.isEmbeddedPersonalApplication() || !layout.isTypeContent() ||
+			layout.isTypeControlPanel() ||
+			!LayoutPermissionUtil.containsLayoutRestrictedUpdatePermission(
+				themeDisplay.getPermissionChecker(), layout)) {
 
 			return false;
 		}
@@ -251,9 +224,16 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 			portalPreferences.getValue(
 				SegmentsPortletKeys.SEGMENTS_EXPERIMENT, "hide-panel"));
 
-		if (!SegmentsExperimentUtil.isAnalyticsConnected(
-				themeDisplay.getCompanyId()) &&
-			hidePanel) {
+		try {
+			if (!_analyticsSettingsManager.isAnalyticsEnabled(
+					themeDisplay.getCompanyId()) &&
+				hidePanel) {
+
+				return false;
+			}
+		}
+		catch (Exception exception) {
+			_log.error(exception);
 
 			return false;
 		}
@@ -261,74 +241,225 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 		return super.isShow(httpServletRequest);
 	}
 
-	public void setPanelState(
-		HttpServletRequest httpServletRequest, String panelState) {
-
-		SessionClicks.put(httpServletRequest, _SESSION_CLICKS_KEY, panelState);
-	}
-
 	@Activate
-	protected void activate() {
+	protected void activate(Map<String, Object> properties) {
 		_portletNamespace = _portal.getPortletNamespace(
 			SegmentsPortletKeys.SEGMENTS_EXPERIMENT);
 	}
 
+	private Map<String, Object> _getData(
+			HttpServletRequest httpServletRequest, boolean panelStateOpen)
+		throws Exception {
+
+		return HashMapBuilder.<String, Object>put(
+			"context",
+			HashMapBuilder.<String, Object>put(
+				"isPanelStateOpen", panelStateOpen
+			).put(
+				"namespace",
+				_portal.getPortletNamespace(
+					SegmentsPortletKeys.SEGMENTS_EXPERIMENT)
+			).put(
+				"segmentExperimentDataURL",
+				_getSegmentExperimentDataURL(httpServletRequest)
+			).build()
+		).build();
+	}
+
+	private String _getRedirect(
+			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		Layout draftLayout = _layoutLocalService.fetchDraftLayout(
+			themeDisplay.getPlid());
+
+		if (draftLayout == null) {
+			return StringPool.BLANK;
+		}
+
+		String layoutFullURL = _portal.getLayoutFullURL(
+			draftLayout, themeDisplay);
+
+		String layoutURL = _portal.getLayoutURL(themeDisplay);
+
+		long segmentsExperienceId = _getSegmentsExperienceId(
+			httpServletRequest, themeDisplay);
+
+		if (segmentsExperienceId != -1) {
+			layoutURL = HttpComponentsUtil.setParameter(
+				layoutURL, "segmentsExperienceId", segmentsExperienceId);
+		}
+
+		layoutFullURL = HttpComponentsUtil.setParameter(
+			layoutFullURL, "p_l_back_url", layoutURL);
+
+		layoutFullURL = HttpComponentsUtil.setParameter(
+			layoutFullURL, "p_l_mode", Constants.EDIT);
+		layoutFullURL = HttpComponentsUtil.setParameter(
+			layoutFullURL, "redirect", layoutFullURL);
+
+		return layoutFullURL;
+	}
+
+	private String _getSegmentExperimentDataURL(
+			HttpServletRequest httpServletRequest)
+		throws Exception {
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		String layoutURL = _portal.getLayoutURL(themeDisplay);
+
+		long segmentsExperienceId = _getSegmentsExperienceId(
+			httpServletRequest, themeDisplay);
+
+		if (segmentsExperienceId != -1) {
+			layoutURL = HttpComponentsUtil.setParameter(
+				layoutURL, "segmentsExperienceId", segmentsExperienceId);
+		}
+
+		ResourceURL resourceURL = (ResourceURL)PortletURLBuilder.create(
+			_portletURLFactory.create(
+				httpServletRequest, SegmentsPortletKeys.SEGMENTS_EXPERIMENT,
+				PortletRequest.RESOURCE_PHASE)
+		).setRedirect(
+			_getRedirect(httpServletRequest, themeDisplay)
+		).setBackURL(
+			layoutURL
+		).setParameter(
+			"backURLTitle",
+			() -> {
+				Layout layout = themeDisplay.getLayout();
+
+				return layout.getName(themeDisplay.getLocale());
+			}
+		).setParameter(
+			"plid", themeDisplay.getPlid()
+		).setParameter(
+			"segmentsExperienceId",
+			_getSelectedSegmentsExperienceId(httpServletRequest)
+		).buildPortletURL();
+
+		resourceURL.setResourceID("/segments_experiment/get_data");
+
+		return resourceURL.toString();
+	}
+
 	private long _getSegmentsExperienceId(
+			HttpServletRequest httpServletRequest, ThemeDisplay themeDisplay)
+		throws Exception {
+
+		SegmentsExperience segmentsExperience =
+			_segmentsExperienceLocalService.fetchSegmentsExperience(
+				_getSelectedSegmentsExperienceId(httpServletRequest));
+
+		SegmentsExperiment segmentsExperiment =
+			_segmentsExperimentService.fetchSegmentsExperiment(
+				themeDisplay.getScopeGroupId(),
+				segmentsExperience.getSegmentsExperienceKey(),
+				themeDisplay.getPlid());
+
+		if (segmentsExperiment != null) {
+			return segmentsExperiment.getSegmentsExperienceId();
+		}
+
+		return segmentsExperience.getSegmentsExperienceId();
+	}
+
+	private long _getSelectedSegmentsExperienceId(
 		HttpServletRequest httpServletRequest) {
 
-		LongStream longStream = Arrays.stream(
-			GetterUtil.getLongValues(
-				httpServletRequest.getAttribute(
-					SegmentsWebKeys.SEGMENTS_EXPERIENCE_IDS)));
+		HttpServletRequest originalHttpServletRequest =
+			_portal.getOriginalServletRequest(httpServletRequest);
 
-		return longStream.findFirst(
-		).orElse(
-			SegmentsExperienceConstants.ID_DEFAULT
-		);
+		long segmentsExperienceId = ParamUtil.getLong(
+			originalHttpServletRequest, "segmentsExperienceId", -1);
+
+		if (segmentsExperienceId != -1) {
+			return segmentsExperienceId;
+		}
+
+		SegmentsExperienceManager segmentsExperienceManager =
+			new SegmentsExperienceManager(_segmentsExperienceLocalService);
+
+		return segmentsExperienceManager.getSegmentsExperienceId(
+			httpServletRequest);
 	}
 
 	private void _processBodyBottomTagBody(PageContext pageContext) {
+		HttpServletRequest httpServletRequest =
+			(HttpServletRequest)pageContext.getRequest();
+
+		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
+			_portal.getLocale(httpServletRequest), getClass());
+
+		pageContext.setAttribute("resourceBundle", resourceBundle);
+
+		JspWriter jspWriter = pageContext.getOut();
+
 		try {
-			HttpServletRequest httpServletRequest =
-				(HttpServletRequest)pageContext.getRequest();
+			StringBundler sb = new StringBundler(27);
 
-			ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-				_portal.getLocale(httpServletRequest), getClass());
+			sb.append("<div class=\"");
 
-			pageContext.setAttribute("resourceBundle", resourceBundle);
+			boolean panelStateOpen = isPanelStateOpen(
+				httpServletRequest,
+				ProductNavigationControlMenuEntryConstants.SESSION_CLICKS_KEY);
 
-			JspWriter jspWriter = pageContext.getOut();
-
-			jspWriter.write("<div class=\"");
-
-			if (isPanelStateOpen(httpServletRequest)) {
-				jspWriter.write(
-					"lfr-has-segments-experiment-panel open-admin-panel ");
+			if (panelStateOpen) {
+				sb.append(
+					"lfr-has-segments-experiment-panel open-admin-panel open ");
 			}
 
-			jspWriter.write(
-				StringBundler.concat(
-					"cadmin d-print-none lfr-admin-panel ",
-					"lfr-product-menu-panel lfr-segments-experiment-panel ",
-					"sidenav-fixed sidenav-menu-slider sidenav-right\" id=\""));
+			sb.append("cadmin d-print-none lfr-admin-panel ");
+			sb.append("lfr-product-menu-panel lfr-segments-experiment-panel ");
+			sb.append("sidenav-fixed sidenav-menu-slider sidenav-right\" ");
+			sb.append("id=\"");
+			sb.append(_portletNamespace);
+			sb.append("segmentsExperimentPanelId\" ");
+			sb.append("tabindex=\"-1\">");
+			sb.append("<div class=\"sidebar sidebar-light sidenav-menu ");
+			sb.append("sidebar-sm\">");
 
-			String portletNamespace = _portal.getPortletNamespace(
-				SegmentsPortletKeys.SEGMENTS_EXPERIMENT);
+			sb.append("<div class=\"lfr-segments-experiment-sidebar\" ");
+			sb.append("id=\"segmentsExperimentSidebar\">");
+			sb.append("<div class=\"d-flex justify-content-between p-3 ");
+			sb.append("sidebar-header\">");
+			sb.append("<h1 class=\"sr-only\">");
+			sb.append(_language.get(httpServletRequest, "tests-panel"));
+			sb.append("</h1>");
+			sb.append("<span class=\"font-weight-bold\">");
+			sb.append(_language.get(httpServletRequest, "tests"));
+			sb.append("</span>");
 
-			jspWriter.write(portletNamespace);
+			ButtonTag buttonTag = new ButtonTag();
 
-			jspWriter.write("segmentsExperimentPanelId\">");
-			jspWriter.write(
-				"<div class=\"sidebar sidebar-light sidenav-menu " +
-					"sidebar-sm\">");
+			buttonTag.setCssClass("close sidenav-close");
+			buttonTag.setDisplayType("unstyled");
+			buttonTag.setDynamicAttribute(
+				StringPool.BLANK, "aria-label",
+				_language.get(
+					(HttpServletRequest)pageContext.getRequest(), "close"));
+			buttonTag.setIcon("times");
 
-			RuntimeTag runtimeTag = new RuntimeTag();
+			sb.append(buttonTag.doTagAsString(pageContext));
 
-			runtimeTag.setPortletName(SegmentsPortletKeys.SEGMENTS_EXPERIMENT);
+			sb.append("</div>");
+			sb.append("<div class=\"sidebar-body\">");
+			sb.append("<span aria-hidden=\"true\" ");
+			sb.append("className=\"loading-animation ");
+			sb.append("loading-animation-sm\" />");
 
-			runtimeTag.doTag(pageContext);
+			jspWriter.write(sb.toString());
 
-			jspWriter.write("</div></div>");
+			_reactRenderer.renderReact(
+				new ComponentDescriptor(
+					"{SegmentsExperimentApp} from segments-experiment-web"),
+				_getData(httpServletRequest, panelStateOpen),
+				httpServletRequest, jspWriter);
+
+			jspWriter.write("</div></div></div></div>");
 		}
 		catch (Exception exception) {
 			ReflectionUtil.throwException(exception);
@@ -338,17 +469,17 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 	private static final String _ICON_TMPL_CONTENT = StringUtil.read(
 		SegmentsExperimentProductNavigationControlMenuEntry.class, "icon.tmpl");
 
-	private static final String _SESSION_CLICKS_KEY =
-		"com.liferay.segments.experiment.web_panelState";
+	private static final Log _log = LogFactoryUtil.getLog(
+		SegmentsExperimentProductNavigationControlMenuEntry.class);
 
 	@Reference
-	private Html _html;
-
-	@Reference
-	private Http _http;
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
 	private Language _language;
+
+	@Reference
+	private LayoutLocalService _layoutLocalService;
 
 	@Reference
 	private Portal _portal;
@@ -357,5 +488,14 @@ public class SegmentsExperimentProductNavigationControlMenuEntry
 
 	@Reference
 	private PortletURLFactory _portletURLFactory;
+
+	@Reference
+	private ReactRenderer _reactRenderer;
+
+	@Reference
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
+
+	@Reference
+	private SegmentsExperimentService _segmentsExperimentService;
 
 }

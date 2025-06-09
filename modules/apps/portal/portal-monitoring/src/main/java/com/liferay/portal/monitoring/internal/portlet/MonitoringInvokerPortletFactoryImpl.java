@@ -1,32 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.monitoring.internal.portlet;
 
+import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.monitoring.DataSampleFactory;
-import com.liferay.portal.kernel.monitoring.PortletMonitoringControl;
 import com.liferay.portal.kernel.portlet.InvokerFilterContainer;
 import com.liferay.portal.kernel.portlet.InvokerPortlet;
 import com.liferay.portal.kernel.portlet.InvokerPortletFactory;
+import com.liferay.portal.monitoring.internal.configuration.MonitoringConfiguration;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+
+import java.util.Map;
 
 import org.osgi.framework.Constants;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -35,8 +31,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Neil Griffin
  */
 @Component(
-	enabled = false, immediate = true,
-	property = Constants.SERVICE_RANKING + ":Integer=100",
+	configurationPid = "com.liferay.portal.monitoring.internal.configuration.MonitoringConfiguration",
+	enabled = false, property = Constants.SERVICE_RANKING + ":Integer=100",
 	service = InvokerPortletFactory.class
 )
 public class MonitoringInvokerPortletFactoryImpl
@@ -57,7 +53,7 @@ public class MonitoringInvokerPortletFactoryImpl
 			headerPortlet);
 
 		return new MonitoringInvokerPortlet(
-			invokerPortlet, _dataSampleFactory, _portletMonitoringControl);
+			_dataSampleFactory, invokerPortlet, _monitoringConfiguration);
 	}
 
 	@Override
@@ -71,7 +67,14 @@ public class MonitoringInvokerPortletFactoryImpl
 			portletModel, portlet, portletContext, invokerFilterContainer);
 
 		return new MonitoringInvokerPortlet(
-			invokerPortlet, _dataSampleFactory, _portletMonitoringControl);
+			_dataSampleFactory, invokerPortlet, _monitoringConfiguration);
+	}
+
+	@Activate
+	@Modified
+	protected void activate(Map<String, Object> properties) {
+		_monitoringConfiguration = ConfigurableUtil.createConfigurable(
+			MonitoringConfiguration.class, properties);
 	}
 
 	@Reference
@@ -80,7 +83,6 @@ public class MonitoringInvokerPortletFactoryImpl
 	@Reference(target = "(" + Constants.SERVICE_RANKING + "=1)")
 	private InvokerPortletFactory _invokerPortletFactory;
 
-	@Reference
-	private PortletMonitoringControl _portletMonitoringControl;
+	private volatile MonitoringConfiguration _monitoringConfiguration;
 
 }

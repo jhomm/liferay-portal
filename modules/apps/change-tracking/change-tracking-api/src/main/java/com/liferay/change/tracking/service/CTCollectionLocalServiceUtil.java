@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -61,11 +53,13 @@ public class CTCollectionLocalServiceUtil {
 	}
 
 	public static CTCollection addCTCollection(
-			long companyId, long userId, String name, String description)
+			String externalReferenceCode, long companyId, long userId,
+			long ctRemoteId, String name, String description)
 		throws PortalException {
 
 		return getService().addCTCollection(
-			companyId, userId, name, description);
+			externalReferenceCode, companyId, userId, ctRemoteId, name,
+			description);
 	}
 
 	public static Map
@@ -74,6 +68,33 @@ public class CTCollectionLocalServiceUtil {
 			throws PortalException {
 
 		return getService().checkConflicts(ctCollection);
+	}
+
+	public static Map
+		<Long, List<com.liferay.change.tracking.conflict.ConflictInfo>>
+				checkConflicts(
+					long companyId,
+					List<com.liferay.change.tracking.model.CTEntry> ctEntries,
+					long fromCTCollectionId, String fromCTCollectionName,
+					long toCTCollectionId, String toCTCollectionName)
+			throws PortalException {
+
+		return getService().checkConflicts(
+			companyId, ctEntries, fromCTCollectionId, fromCTCollectionName,
+			toCTCollectionId, toCTCollectionName);
+	}
+
+	public static Map
+		<Long, List<com.liferay.change.tracking.conflict.ConflictInfo>>
+				checkConflicts(
+					long companyId, long[] ctEntryIds, long fromCTCollectionId,
+					String fromCTCollectionName, long toCTCollectionId,
+					String toCTCollectionName)
+			throws PortalException {
+
+		return getService().checkConflicts(
+			companyId, ctEntryIds, fromCTCollectionId, fromCTCollectionName,
+			toCTCollectionId, toCTCollectionName);
 	}
 
 	/**
@@ -148,6 +169,24 @@ public class CTCollectionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deletePersistedModel(persistedModel);
+	}
+
+	public static void discardCTEntry(
+			long ctCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries,
+			boolean force)
+		throws PortalException {
+
+		getService().discardCTEntry(ctCollectionId, ctEntries, force);
+	}
+
+	public static void discardCTEntry(
+			long ctCollectionId, long modelClassNameId, long modelClassPK,
+			boolean force)
+		throws PortalException {
+
+		getService().discardCTEntry(
+			ctCollectionId, modelClassNameId, modelClassPK, force);
 	}
 
 	public static <T> T dslQuery(DSLQuery dslQuery) {
@@ -239,6 +278,27 @@ public class CTCollectionLocalServiceUtil {
 		return getService().fetchCTCollection(ctCollectionId);
 	}
 
+	public static CTCollection fetchCTCollectionByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchCTCollectionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the ct collection with the matching UUID and company.
+	 *
+	 * @param uuid the ct collection's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching ct collection, or <code>null</code> if a matching ct collection could not be found
+	 */
+	public static CTCollection fetchCTCollectionByUuidAndCompanyId(
+		String uuid, long companyId) {
+
+		return getService().fetchCTCollectionByUuidAndCompanyId(
+			uuid, companyId);
+	}
+
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -256,6 +316,29 @@ public class CTCollectionLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getCTCollection(ctCollectionId);
+	}
+
+	public static CTCollection getCTCollectionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getCTCollectionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the ct collection with the matching UUID and company.
+	 *
+	 * @param uuid the ct collection's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching ct collection
+	 * @throws PortalException if a matching ct collection could not be found
+	 */
+	public static CTCollection getCTCollectionByUuidAndCompanyId(
+			String uuid, long companyId)
+		throws PortalException {
+
+		return getService().getCTCollectionByUuidAndCompanyId(uuid, companyId);
 	}
 
 	/**
@@ -281,6 +364,14 @@ public class CTCollectionLocalServiceUtil {
 			companyId, status, start, end, orderByComparator);
 	}
 
+	public static List<CTCollection> getCTCollections(
+		long companyId, int[] statuses, int start, int end,
+		OrderByComparator<CTCollection> orderByComparator) {
+
+		return getService().getCTCollections(
+			companyId, statuses, start, end, orderByComparator);
+	}
+
 	/**
 	 * Returns the number of ct collections.
 	 *
@@ -290,12 +381,26 @@ public class CTCollectionLocalServiceUtil {
 		return getService().getCTCollectionsCount();
 	}
 
-	public static List<com.liferay.change.tracking.model.CTEntry>
-		getDiscardCTEntries(
-			long ctCollectionId, long modelClassNameId, long modelClassPK) {
+	public static List<com.liferay.change.tracking.mapping.CTMappingTableInfo>
+		getCTMappingTableInfos(long ctCollectionId) {
 
-		return getService().getDiscardCTEntries(
-			ctCollectionId, modelClassNameId, modelClassPK);
+		return getService().getCTMappingTableInfos(ctCollectionId);
+	}
+
+	public static List<CTCollection> getExclusivePublishedCTCollections(
+			long modelClassNameId, long modelClassPK)
+		throws PortalException {
+
+		return getService().getExclusivePublishedCTCollections(
+			modelClassNameId, modelClassPK);
+	}
+
+	public static com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return getService().getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	public static
@@ -323,11 +428,68 @@ public class CTCollectionLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static List<com.liferay.change.tracking.model.CTEntry>
+			getRelatedCTEntries(long ctCollectionId, long[] ctEntryIds)
+		throws PortalException {
+
+		return getService().getRelatedCTEntries(ctCollectionId, ctEntryIds);
+	}
+
+	public static Map<Long, List<com.liferay.change.tracking.model.CTEntry>>
+			getRelatedCTEntriesMap(
+				long ctCollectionId,
+				List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		return getService().getRelatedCTEntriesMap(ctCollectionId, ctEntries);
+	}
+
+	public static Map<Long, List<com.liferay.change.tracking.model.CTEntry>>
+			getRelatedCTEntriesMap(
+				long ctCollectionId, long modelClassNameId, long modelClassPK)
+		throws PortalException {
+
+		return getService().getRelatedCTEntriesMap(
+			ctCollectionId, modelClassNameId, modelClassPK);
+	}
+
+	public static Map<Long, List<com.liferay.change.tracking.model.CTEntry>>
+			getRelatedCTEntriesMap(long ctCollectionId, long[] ctEntryIds)
+		throws PortalException {
+
+		return getService().getRelatedCTEntriesMap(ctCollectionId, ctEntryIds);
+	}
+
+	public static boolean hasUnapprovedChanges(long ctCollectionId)
+		throws java.sql.SQLException {
+
+		return getService().hasUnapprovedChanges(ctCollectionId);
+	}
+
 	public static boolean isCTEntryEnclosed(
 		long ctCollectionId, long modelClassNameId, long modelClassPK) {
 
 		return getService().isCTEntryEnclosed(
 			ctCollectionId, modelClassNameId, modelClassPK);
+	}
+
+	public static void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		getService().moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
+	}
+
+	public static void moveCTEntry(
+			long fromCTCollectionId, long toCTCollectionId,
+			long modelClassNameId, long modelClassPK)
+		throws PortalException {
+
+		getService().moveCTEntry(
+			fromCTCollectionId, toCTCollectionId, modelClassNameId,
+			modelClassPK);
 	}
 
 	public static CTCollection undoCTCollection(
@@ -361,9 +523,11 @@ public class CTCollectionLocalServiceUtil {
 	}
 
 	public static CTCollectionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CTCollectionLocalService _service;
+	private static final Snapshot<CTCollectionLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CTCollectionLocalServiceUtil.class, CTCollectionLocalService.class);
 
 }

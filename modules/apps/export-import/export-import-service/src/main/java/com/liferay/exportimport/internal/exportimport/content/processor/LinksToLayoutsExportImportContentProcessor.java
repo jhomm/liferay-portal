@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.exportimport.content.processor;
@@ -22,12 +13,12 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.StagedModel;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
@@ -50,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gergely Mathe
  */
 @Component(
-	immediate = true, property = "content.processor.type=LinksToLayouts",
+	property = "content.processor.type=LinksToLayouts",
 	service = ExportImportContentProcessor.class
 )
 public class LinksToLayoutsExportImportContentProcessor
@@ -63,7 +54,7 @@ public class LinksToLayoutsExportImportContentProcessor
 			boolean escapeContent)
 		throws Exception {
 
-		return replaceExportLinksToLayouts(
+		return _replaceExportLinksToLayouts(
 			portletDataContext, stagedModel, content);
 	}
 
@@ -73,35 +64,35 @@ public class LinksToLayoutsExportImportContentProcessor
 			String content)
 		throws Exception {
 
-		return replaceImportLinksToLayouts(portletDataContext, content);
+		return _replaceImportLinksToLayouts(portletDataContext, content);
 	}
 
 	@Override
 	public void validateContentReferences(long groupId, String content)
 		throws PortalException {
 
-		if (isValidateLinksToLayoutsReferences()) {
-			validateLinksToLayoutsReferences(content);
+		if (_isValidateLinksToLayoutsReferences()) {
+			_validateLinksToLayoutsReferences(content);
 		}
 	}
 
-	protected boolean isValidateLinksToLayoutsReferences() {
+	private boolean _isValidateLinksToLayoutsReferences() {
 		try {
-			ExportImportServiceConfiguration configuration =
+			ExportImportServiceConfiguration exportImportServiceConfiguration =
 				_configurationProvider.getCompanyConfiguration(
 					ExportImportServiceConfiguration.class,
 					CompanyThreadLocal.getCompanyId());
 
-			return configuration.validateLayoutReferences();
+			return exportImportServiceConfiguration.validateLayoutReferences();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return true;
 	}
 
-	protected String replaceExportLinksToLayouts(
+	private String _replaceExportLinksToLayouts(
 			PortletDataContext portletDataContext, StagedModel stagedModel,
 			String content)
 		throws Exception {
@@ -168,7 +159,7 @@ public class LinksToLayoutsExportImportContentProcessor
 			ArrayUtil.toStringArray(newLinksToLayout.toArray()));
 	}
 
-	protected String replaceImportLinksToLayouts(
+	private String _replaceImportLinksToLayouts(
 			PortletDataContext portletDataContext, String content)
 		throws Exception {
 
@@ -281,14 +272,7 @@ public class LinksToLayoutsExportImportContentProcessor
 			ArrayUtil.toStringArray(newLinksToLayout.toArray()));
 	}
 
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
-	protected void validateLinksToLayoutsReferences(String content)
+	private void _validateLinksToLayoutsReferences(String content)
 		throws PortalException {
 
 		Matcher matcher = _exportLinksToLayoutPattern.matcher(content);
@@ -321,7 +305,6 @@ public class LinksToLayoutsExportImportContentProcessor
 						).put(
 							"privateLayout", String.valueOf(privateLayout)
 						).build());
-
 				exportImportContentValidationException.setType(
 					ExportImportContentValidationException.LAYOUT_NOT_FOUND);
 
@@ -338,6 +321,7 @@ public class LinksToLayoutsExportImportContentProcessor
 	private static final Pattern _importLinksToLayoutPattern = Pattern.compile(
 		"\\[([\\d]+)@(private(-group|-user)?|public)@([\\d]+)(@([\\d]+))?\\]");
 
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.application.list.display.context.logic;
@@ -17,11 +8,12 @@ package com.liferay.application.list.display.context.logic;
 import com.liferay.application.list.PanelApp;
 import com.liferay.application.list.PanelAppRegistry;
 import com.liferay.application.list.PanelCategory;
-import com.liferay.application.list.PanelCategoryRegistry;
 import com.liferay.application.list.constants.PanelCategoryKeys;
+import com.liferay.application.list.util.PanelCategoryRegistryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,17 +23,13 @@ import java.util.List;
  */
 public class PanelCategoryHelper {
 
-	public PanelCategoryHelper(
-		PanelAppRegistry panelAppRegistry,
-		PanelCategoryRegistry panelCategoryRegistry) {
-
+	public PanelCategoryHelper(PanelAppRegistry panelAppRegistry) {
 		_panelAppRegistry = panelAppRegistry;
-		_panelCategoryRegistry = panelCategoryRegistry;
 	}
 
 	public boolean containsPortlet(String portletId, String panelCategoryKey) {
 		for (PanelCategory curPanelCategory :
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey)) {
 
 			if (hasPortlet(portletId, curPanelCategory.getKey()) ||
@@ -59,7 +47,7 @@ public class PanelCategoryHelper {
 		PermissionChecker permissionChecker, Group group) {
 
 		for (PanelCategory curPanelCategory :
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey, permissionChecker, group)) {
 
 			if (hasPortlet(
@@ -83,13 +71,21 @@ public class PanelCategoryHelper {
 		panelApps.addAll(_panelAppRegistry.getPanelApps(panelCategoryKey));
 
 		for (PanelCategory childPanelCategory :
-				_panelCategoryRegistry.getChildPanelCategories(
+				PanelCategoryRegistryUtil.getChildPanelCategories(
 					panelCategoryKey)) {
 
 			panelApps.addAll(getAllPanelApps(childPanelCategory.getKey()));
 		}
 
 		return panelApps;
+	}
+
+	public List<PanelCategory> getChildPanelCategories(
+		String panelKey, ThemeDisplay themeDisplay) {
+
+		return PanelCategoryRegistryUtil.getChildPanelCategories(
+			panelKey, themeDisplay.getPermissionChecker(),
+			themeDisplay.getScopeGroup());
 	}
 
 	public String getFirstPortletId(
@@ -104,7 +100,7 @@ public class PanelCategoryHelper {
 		}
 
 		List<PanelCategory> panelCategories =
-			_panelCategoryRegistry.getChildPanelCategories(
+			PanelCategoryRegistryUtil.getChildPanelCategories(
 				panelCategoryKey, permissionChecker, group);
 
 		if (panelCategories.isEmpty()) {
@@ -128,7 +124,7 @@ public class PanelCategoryHelper {
 		Group group, User user) {
 
 		int count =
-			_panelCategoryRegistry.getChildPanelCategoriesNotificationsCount(
+			PanelCategoryRegistryUtil.getChildPanelCategoriesNotificationsCount(
 				this, panelCategoryKey, permissionChecker, group, user);
 
 		count += _panelAppRegistry.getPanelAppsNotificationsCount(
@@ -185,6 +181,5 @@ public class PanelCategoryHelper {
 	}
 
 	private final PanelAppRegistry _panelAppRegistry;
-	private final PanelCategoryRegistry _panelCategoryRegistry;
 
 }

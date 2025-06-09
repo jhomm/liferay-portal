@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.internal.search;
@@ -26,7 +17,7 @@ import com.liferay.portal.kernel.search.DocumentContributor;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.view.count.service.ViewCountEntryLocalService;
 
 import java.text.ParseException;
@@ -39,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Michael C. Han
  */
-@Component(immediate = true, service = DocumentContributor.class)
+@Component(service = DocumentContributor.class)
 public class AssetEntryDocumentContributor
 	implements DocumentContributor<AssetEntry> {
 
@@ -61,12 +52,14 @@ public class AssetEntryDocumentContributor
 
 		Date displayDate = new Date();
 
-		try {
-			displayDate = document.getDate(Field.DISPLAY_DATE);
-		}
-		catch (ParseException parseException) {
-			if (_log.isWarnEnabled()) {
-				_log.warn("Unable to parse data ", parseException);
+		if (document.hasField(Field.DISPLAY_DATE)) {
+			try {
+				displayDate = document.getDate(Field.DISPLAY_DATE);
+			}
+			catch (ParseException parseException) {
+				if (_log.isWarnEnabled()) {
+					_log.warn("Unable to parse data ", parseException);
+				}
 			}
 		}
 
@@ -117,7 +110,7 @@ public class AssetEntryDocumentContributor
 
 		document.addLocalizedKeyword(
 			"localized_title",
-			LocalizationUtil.populateLocalizationMap(
+			_localization.populateLocalizationMap(
 				assetEntry.getTitleMap(), assetEntry.getDefaultLanguageId(),
 				assetEntry.getGroupId()),
 			true, true);
@@ -141,6 +134,9 @@ public class AssetEntryDocumentContributor
 
 	@Reference
 	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private ViewCountEntryLocalService _viewCountEntryLocalService;

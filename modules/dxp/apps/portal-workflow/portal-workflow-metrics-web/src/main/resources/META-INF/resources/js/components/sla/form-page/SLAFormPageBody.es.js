@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -61,16 +55,14 @@ function Body({history, id, processId, query}) {
 
 	usePageTitle(id ? sla.name : Liferay.Language.get('new-sla'));
 
-	const handleErrors = (error) => {
-		const {data} = error.response || {};
-
-		if (Array.isArray(data)) {
-			data.forEach(({fieldName, message}) => {
+	const handleErrors = (dataError) => {
+		if (Array.isArray(dataError)) {
+			dataError.forEach(({fieldName, message}) => {
 				errors[fieldName || ALERT_MESSAGE] = message;
 			});
 
 			const nodeKeys = [PAUSE_NODE_KEYS, START_NODE_KEYS, STOP_NODE_KEYS];
-			const nodeErrors = data.filter(({fieldName}) =>
+			const nodeErrors = dataError.filter(({fieldName}) =>
 				nodeKeys.includes(fieldName)
 			);
 
@@ -142,18 +134,19 @@ function Body({history, id, processId, query}) {
 				})
 				.catch(handleErrors);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [id, processId, saveSLA, sla]);
 
-	const onChangeHandler = (validateFunction) => ({
-		target: {name, value = ''},
-	}) => {
-		changeValue(name, value);
+	const onChangeHandler =
+		(validateFunction) =>
+		({target: {name, value = ''}}) => {
+			changeValue(name, value);
 
-		if (typeof validateFunction === 'function') {
-			validateFunction(value);
-		}
-	};
+			if (typeof validateFunction === 'function') {
+				validateFunction(value);
+			}
+		};
 
 	const onNameChanged = (newName) => {
 		setErrors({

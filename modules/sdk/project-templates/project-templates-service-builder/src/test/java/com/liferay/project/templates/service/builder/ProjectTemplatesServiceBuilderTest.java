@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.service.builder;
@@ -38,6 +29,7 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -48,6 +40,7 @@ import org.w3c.dom.Element;
 /**
  * @author Gregory Amerson
  */
+@Ignore
 public class ProjectTemplatesServiceBuilderTest
 	implements BaseProjectTemplatesTestCase {
 
@@ -123,7 +116,19 @@ public class ProjectTemplatesServiceBuilderTest
 		throws Exception {
 
 		File gradleProjectDir = _buildTemplateWithGradle(
-			"service-builder", "foo-bar", "--liferay-version", "7.4.3.4");
+			"service-builder", "foo-bar", "--liferay-version", "7.4.3.36");
+
+		testContains(
+			gradleProjectDir, "foo-bar-service/service.xml",
+			"liferay-service-builder_7_4_0.dtd");
+	}
+
+	@Test
+	public void testBuildTemplateContentDTDVersionServiceBuilderQuarterly()
+		throws Exception {
+
+		File gradleProjectDir = _buildTemplateWithGradle(
+			"service-builder", "foo-bar", "--liferay-version", "2024.q1.1");
 
 		testContains(
 			gradleProjectDir, "foo-bar-service/service.xml",
@@ -141,12 +146,21 @@ public class ProjectTemplatesServiceBuilderTest
 			temporaryFolder, "gradle", "gradleWS", liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
+
 		File gradleWorkspaceModulesDir = new File(
 			gradleWorkspaceDir, "modules");
 
 		File gradleProjectDir = buildTemplateWithGradle(
-			gradleWorkspaceModulesDir, template, name, "--package-name",
-			packageName, "--liferay-version", liferayVersion);
+			gradleWorkspaceModulesDir, template, name, "--liferay-version",
+			liferayVersion, "--package-name", packageName);
 
 		File gradleServiceXml = new File(
 			new File(gradleProjectDir, name + "-service"), "service.xml");
@@ -166,8 +180,8 @@ public class ProjectTemplatesServiceBuilderTest
 
 		File mavenProjectDir = buildTemplateWithMaven(
 			mavenModulesDir, mavenModulesDir, template, name, "com.test",
-			mavenExecutor, "-Dpackage=" + packageName,
-			"-DliferayVersion=" + liferayVersion);
+			mavenExecutor, "-DliferayVersion=" + liferayVersion,
+			"-Dpackage=" + packageName);
 
 		File mavenServiceXml = new File(
 			new File(mavenProjectDir, name + "-service"), "service.xml");
@@ -214,6 +228,15 @@ public class ProjectTemplatesServiceBuilderTest
 			temporaryFolder, "gradle", "gradleWS", liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
+
 		File gradlePropertiesFile = new File(
 			gradleWorkspaceDir + "gradle.properties");
 
@@ -231,7 +254,7 @@ public class ProjectTemplatesServiceBuilderTest
 	@Test
 	public void testBuildTemplateServiceBuilderWorkspaceUAD() throws Exception {
 		String dependencyInjector = "ds";
-		String liferayVersion = "7.4.3.4";
+		String liferayVersion = "7.4.3.36";
 		String name = "guestbook";
 		String packageName = "com.test.guestbook";
 		String template = "service-builder";
@@ -240,16 +263,21 @@ public class ProjectTemplatesServiceBuilderTest
 			temporaryFolder, "gradle", "gradleWS", liferayVersion,
 			mavenExecutor);
 
-		writeGradlePropertiesInWorkspace(
-			gradleWorkspaceDir,
-			"liferay.workspace.target.platform.version=7.4.3.4");
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
 
 		File modulesDir = new File(gradleWorkspaceDir, "modules");
 
 		File gradleProjectDir = buildTemplateWithGradle(
-			modulesDir, template, name, "--liferay-version", liferayVersion,
-			"--package-name", packageName, "--dependency-injector",
-			dependencyInjector, "--add-ons", "true");
+			modulesDir, template, name, "--add-ons", "true",
+			"--dependency-injector", dependencyInjector, "--liferay-version",
+			liferayVersion, "--package-name", packageName);
 
 		File gradleUADModuleDir = new File(gradleProjectDir, name + "-uad");
 
@@ -263,9 +291,9 @@ public class ProjectTemplatesServiceBuilderTest
 
 		File mavenProjectDir = buildTemplateWithMaven(
 			mavenModulesDir, mavenModulesDir, template, name, "com.test",
-			mavenExecutor, "-Dpackage=" + packageName,
+			mavenExecutor, "-DaddOns=true",
 			"-DdependencyInjector=" + dependencyInjector,
-			"-DliferayVersion=" + liferayVersion, "-DaddOns=true");
+			"-DliferayVersion=" + liferayVersion, "-Dpackage=" + packageName);
 
 		File mavenUADModuleDir = new File(mavenProjectDir, name + "-uad");
 
@@ -325,9 +353,18 @@ public class ProjectTemplatesServiceBuilderTest
 			temporaryFolder, "gradle", "gradleWS", liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
+
 		buildTemplateWithGradle(
-			gradleWorkspaceDir, "service-builder", name, "--liferay-version",
-			liferayVersion, "--add-ons", "true");
+			gradleWorkspaceDir, "service-builder", name, "--add-ons", "true",
+			"--liferay-version", liferayVersion);
 	}
 
 	@Test
@@ -344,12 +381,21 @@ public class ProjectTemplatesServiceBuilderTest
 			temporaryFolder, "gradle", "gradleWS", liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
+
 		File gradleWorkspaceModulesDir = new File(
 			gradleWorkspaceDir, "modules");
 
 		buildTemplateWithGradle(
-			gradleWorkspaceModulesDir, template, name, "--package-name",
-			packageName, "--liferay-version", liferayVersion);
+			gradleWorkspaceModulesDir, template, name, "--liferay-version",
+			liferayVersion, "--package-name", packageName);
 
 		Optional<String> gradleResultOptional = executeGradle(
 			gradleWorkspaceDir, true, _gradleDistribution,

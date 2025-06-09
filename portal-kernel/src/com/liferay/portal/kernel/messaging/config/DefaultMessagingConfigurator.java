@@ -1,39 +1,150 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.messaging.config;
 
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.messaging.Destination;
+import com.liferay.portal.kernel.messaging.DestinationConfiguration;
+import com.liferay.portal.kernel.messaging.DestinationFactory;
+import com.liferay.portal.kernel.messaging.MessageBus;
+import com.liferay.portal.kernel.messaging.MessageListener;
+import com.liferay.portal.kernel.module.service.Snapshot;
+import com.liferay.portal.kernel.module.util.ServiceLatch;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
+
+import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+
 /**
  * @author Michael C. Han
  */
-public class DefaultMessagingConfigurator extends BaseMessagingConfigurator {
+public class DefaultMessagingConfigurator implements MessagingConfigurator {
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getOperatingClassLoader()}
-	 */
-	@Deprecated
-	@Override
-	protected ClassLoader getOperatingClassloader() {
-		return getOperatingClassLoader();
+	public void afterPropertiesSet() {
+		ServiceLatch serviceLatch = SystemBundleUtil.newServiceLatch();
+
+		serviceLatch.waitFor(DestinationFactory.class);
+		serviceLatch.waitFor(MessageBus.class);
+		serviceLatch.openOn(this::initialize);
 	}
 
 	@Override
-	protected ClassLoader getOperatingClassLoader() {
-		Thread currentThread = Thread.currentThread();
+	public void destroy() {
+		for (ServiceRegistration<?> serviceRegistration :
+				_serviceRegistrations) {
 
-		return currentThread.getContextClassLoader();
+			serviceRegistration.unregister();
+		}
+
+		_serviceRegistrations.clear();
+
+		_destinationConfigurations.clear();
+		_destinations.clear();
+		_messageListeners.clear();
 	}
+
+	@Override
+	public void setDestinationConfigurations(
+		Set<DestinationConfiguration> destinationConfigurations) {
+
+		_destinationConfigurations.addAll(destinationConfigurations);
+	}
+
+	@Override
+	public void setDestinations(List<Destination> destinations) {
+		_destinations.addAll(destinations);
+	}
+
+	@Override
+	public void setMessageListeners(
+		Map<String, List<MessageListener>> messageListeners) {
+
+		_messageListeners.putAll(messageListeners);
+	}
+
+	protected void initialize() {
+		registerDestinations();
+
+		for (Map.Entry<String, List<MessageListener>> messageListeners :
+				_messageListeners.entrySet()) {
+
+			String destinationName = messageListeners.getKey();
+
+			ServiceLatch serviceLatch = SystemBundleUtil.newServiceLatch();
+
+			serviceLatch.waitFor(
+				StringBundler.concat(
+					"(&(destination.name=", destinationName, ")(objectClass=",
+					Destination.class.getName(), "))"));
+
+			serviceLatch.openOn(
+				bundleContext -> {
+					Dictionary<String, Object> properties =
+						HashMapDictionaryBuilder.<String, Object>put(
+							"destination.name", destinationName
+						).build();
+
+					for (MessageListener messageListener :
+							messageListeners.getValue()) {
+
+						_serviceRegistrations.add(
+							bundleContext.registerService(
+								MessageListener.class, messageListener,
+								properties));
+					}
+				});
+		}
+	}
+
+	protected void registerDestinations() {
+		for (DestinationConfiguration destinationConfiguration :
+				_destinationConfigurations) {
+
+			DestinationFactory destinationFactory =
+				_destinationFactorySnapshot.get();
+
+			_destinations.add(
+				destinationFactory.createDestination(destinationConfiguration));
+		}
+
+		if (_destinations.isEmpty()) {
+			return;
+		}
+
+		BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+		for (Destination destination : _destinations) {
+			_serviceRegistrations.add(
+				bundleContext.registerService(
+					Destination.class, destination,
+					MapUtil.singletonDictionary(
+						"destination.name", destination.getName())));
+		}
+	}
+
+	private static final Snapshot<DestinationFactory>
+		_destinationFactorySnapshot = new Snapshot<>(
+			DefaultMessagingConfigurator.class, DestinationFactory.class);
+
+	private final Set<DestinationConfiguration> _destinationConfigurations =
+		new HashSet<>();
+	private final List<Destination> _destinations = new ArrayList<>();
+	private final Map<String, List<MessageListener>> _messageListeners =
+		new HashMap<>();
+	private final List<ServiceRegistration<?>> _serviceRegistrations =
+		new ArrayList<>();
 
 }

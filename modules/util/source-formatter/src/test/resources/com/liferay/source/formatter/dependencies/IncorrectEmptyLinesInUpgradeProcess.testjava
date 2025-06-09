@@ -1,0 +1,27 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies;
+
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+
+/**
+ * @author Qi Zhang
+ */
+public class IncorrectEmptyLinesInUpgradeProcess extends UpgradeProcess {
+
+	@Override
+	protected void doUpgrade() throws Exception {
+		runSQL("select count(0)");
+
+		alterTableAddColumn("TestTable1", "testCol1", "VARCHAR(255) null");
+
+		alterTableAddColumn("TestTable1", "testCol2", "VARCHAR(255) null");
+		alterTableAddColumn("TestTable2", "testCol3", "VARCHAR(255) null");
+
+		runSQL("select count(0)");
+	}
+
+}

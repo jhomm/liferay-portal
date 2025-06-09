@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.model.listener;
 
-import com.liferay.layout.content.page.editor.web.internal.util.ContentUtil;
+import com.liferay.layout.content.page.editor.web.internal.manager.ContentManager;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.model.LayoutClassedModelUsage;
 import com.liferay.layout.page.template.model.LayoutPageTemplateStructure;
@@ -28,7 +19,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
@@ -61,12 +51,12 @@ public class LayoutPageTemplateStructureRelModelListener
 		_layoutClassedModelUsageLocalService.deleteLayoutClassedModelUsages(
 			String.valueOf(
 				layoutPageTemplateStructure.getLayoutPageTemplateStructureId()),
-			_portal.getClassNameId(LayoutPageTemplateStructure.class),
+			_portal.getClassNameId(LayoutPageTemplateStructure.class.getName()),
 			layoutPageTemplateStructure.getPlid());
 
 		Set<LayoutDisplayPageObjectProvider<?>>
 			layoutDisplayPageObjectProviders =
-				ContentUtil.getLayoutMappedLayoutDisplayPageObjectProviders(
+				_contentManager.getLayoutMappedLayoutDisplayPageObjectProviders(
 					layoutPageTemplateStructureRel.getData());
 
 		for (LayoutDisplayPageObjectProvider<?>
@@ -76,36 +66,45 @@ public class LayoutPageTemplateStructureRelModelListener
 			LayoutClassedModelUsage layoutClassedModelUsage =
 				_layoutClassedModelUsageLocalService.
 					fetchLayoutClassedModelUsage(
+						layoutPageTemplateStructure.getGroupId(),
 						layoutDisplayPageObjectProvider.getClassNameId(),
 						layoutDisplayPageObjectProvider.getClassPK(),
+						layoutDisplayPageObjectProvider.
+							getExternalReferenceCode(),
 						String.valueOf(
 							layoutPageTemplateStructure.
 								getLayoutPageTemplateStructureId()),
 						_portal.getClassNameId(
-							LayoutPageTemplateStructure.class),
+							LayoutPageTemplateStructure.class.getName()),
 						layoutPageTemplateStructure.getPlid());
 
 			if (layoutClassedModelUsage != null) {
 				continue;
 			}
 
-			ServiceContext serviceContext = Optional.ofNullable(
-				ServiceContextThreadLocal.getServiceContext()
-			).orElse(
-				new ServiceContext()
-			);
+			ServiceContext serviceContext =
+				ServiceContextThreadLocal.getServiceContext();
+
+			if (serviceContext == null) {
+				serviceContext = new ServiceContext();
+			}
 
 			_layoutClassedModelUsageLocalService.addLayoutClassedModelUsage(
 				layoutPageTemplateStructure.getGroupId(),
 				layoutDisplayPageObjectProvider.getClassNameId(),
 				layoutDisplayPageObjectProvider.getClassPK(),
+				layoutDisplayPageObjectProvider.getExternalReferenceCode(),
 				String.valueOf(
 					layoutPageTemplateStructure.
 						getLayoutPageTemplateStructureId()),
-				_portal.getClassNameId(LayoutPageTemplateStructure.class),
+				_portal.getClassNameId(
+					LayoutPageTemplateStructure.class.getName()),
 				layoutPageTemplateStructure.getPlid(), serviceContext);
 		}
 	}
+
+	@Reference
+	private ContentManager _contentManager;
 
 	@Reference
 	private LayoutClassedModelUsageLocalService

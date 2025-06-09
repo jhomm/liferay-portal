@@ -1,6 +1,7 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Blogs";
@@ -9,12 +10,22 @@ definition {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Blogs Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Blogs Page",
+			widgetName = "Blogs");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -23,18 +34,8 @@ definition {
 	}
 
 	@description = "This is a test for LPS-136776. It checks that a blog can be properly displayed in Arabic in the Blogs widget."
-	@priority = "3"
+	@priority = 3
 	test CanViewBlogInArabic {
-		JSONLayout.addPublicLayout(
-			groupName = "Guest",
-			layoutName = "Blogs Page");
-
-		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
-			groupName = "Guest",
-			layoutName = "Blogs Page",
-			widgetName = "Blogs");
-
 		JSONBlog.addEntry(
 			entryContent = "محتوى دخول المدونات",
 			entryTitle = "عنوان إدخال المدونات");
@@ -47,28 +48,28 @@ definition {
 	}
 
 	@description = "This is a test for LPS-136774. It checks that a blog can be properly displayed in Arabic in the Blogs Aggregator."
-	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test CanViewBlogInArabicViaBlogsAggregator {
-		property portal.acceptance = "false";
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Blogs Page",
+			widgetName = "Blogs Aggregator");
 
-		// TODO LPS-136774 CanViewBlogInArabicViaBlogsAggregator pending implementation
+		JSONBlog.addEntry(
+			entryContent = "محتوى دخول المدونات",
+			entryTitle = "عنوان إدخال المدونات");
 
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsAggregatorPortlet.viewBlogsEntryViaBAPortletPG(
+			entryContent = "محتوى دخول المدونات",
+			entryTitle = "عنوان إدخال المدونات");
 	}
 
 	@description = "This is a test for LPS-136777. It checks that a blog can be properly displayed in Japanese in the Blogs widget."
-	@priority = "3"
+	@priority = 3
 	test CanViewBlogInJapanese {
-		JSONLayout.addPublicLayout(
-			groupName = "Guest",
-			layoutName = "Blogs Page");
-
-		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
-			groupName = "Guest",
-			layoutName = "Blogs Page",
-			widgetName = "Blogs");
-
 		JSONBlog.addEntry(
 			entryContent = "ブログエントリコンテンツ",
 			entryTitle = "ブログエントリタイトル");
@@ -81,23 +82,35 @@ definition {
 	}
 
 	@description = "This is a test for LPS-136775. It checks that a blog can be properly displayed in Japanese in the Blogs Aggregator."
-	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test CanViewBlogInJapaneseViaBlogsAggregator {
-		property portal.acceptance = "false";
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Blogs Page",
+			widgetName = "Blogs Aggregator");
 
-		// TODO LPS-136775 CanViewBlogInJapaneseViaBlogsAggregator pending implementation
+		JSONBlog.addEntry(
+			entryContent = "ブログエントリコンテンツ",
+			entryTitle = "ブログエントリタイトル");
 
+		Navigator.gotoPage(pageName = "Blogs Page");
+
+		BlogsAggregatorPortlet.viewBlogsEntryViaBAPortletPG(
+			entryContent = "ブログエントリコンテンツ",
+			entryTitle = "ブログエントリタイトル");
 	}
 
 	@description = "This is a test for LPS-136778. It checks that social bookmarks for a Blog can be viewed in Japanese."
-	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test CanViewSocialBookmarksInJapanese {
-		property portal.acceptance = "false";
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
 
-		// TODO LPS-136778 CanViewSocialBookmarksInJapanese pending implementation
+		Navigator.openWithAppendToBaseURL(urlAppend = "ja/web/guest/blogs-page");
 
+		SocialBookmarks.viewDefaultSharableBookmarks();
 	}
 
 }

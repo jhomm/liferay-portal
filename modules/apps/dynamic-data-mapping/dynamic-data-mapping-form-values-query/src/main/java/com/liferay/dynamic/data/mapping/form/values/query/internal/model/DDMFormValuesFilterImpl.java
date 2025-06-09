@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.values.query.internal.model;
@@ -39,7 +30,7 @@ public class DDMFormValuesFilterImpl implements DDMFormValuesFilter {
 		List<DDMFormFieldValue> ddmFormFieldValues) {
 
 		if (_greedy) {
-			addNestedDDMFormFieldValues(ddmFormFieldValues);
+			_addNestedDDMFormFieldValues(ddmFormFieldValues);
 		}
 
 		return ListUtil.filter(
@@ -65,7 +56,7 @@ public class DDMFormValuesFilterImpl implements DDMFormValuesFilter {
 		_greedy = greedy;
 	}
 
-	protected void addNestedDDMFormFieldValues(
+	private void _addNestedDDMFormFieldValues(
 		List<DDMFormFieldValue> ddmFormFieldValues) {
 
 		for (int i = 0; i < ddmFormFieldValues.size(); i++) {
@@ -76,7 +67,7 @@ public class DDMFormValuesFilterImpl implements DDMFormValuesFilter {
 		}
 	}
 
-	protected List<DDMFormFieldValue> getDDMFormFieldValues(
+	private List<DDMFormFieldValue> _getDDMFormFieldValues(
 		DDMFormFieldValue ddmFormFieldValue) {
 
 		List<DDMFormFieldValue> ddmFormFieldValues = new ArrayList<>();
@@ -85,20 +76,21 @@ public class DDMFormValuesFilterImpl implements DDMFormValuesFilter {
 
 		if (_greedy) {
 			ddmFormFieldValues.addAll(
-				getDDMFormFieldValues(
+				_getDDMFormFieldValues(
 					ddmFormFieldValue.getNestedDDMFormFieldValues()));
 		}
 
 		return ddmFormFieldValues;
 	}
 
-	protected List<DDMFormFieldValue> getDDMFormFieldValues(
+	private List<DDMFormFieldValue> _getDDMFormFieldValues(
 		List<DDMFormFieldValue> baseDDMFormFieldValues) {
 
 		List<DDMFormFieldValue> ddmFormFieldValues = new ArrayList<>();
 
 		for (DDMFormFieldValue ddmFormFieldValue : baseDDMFormFieldValues) {
-			ddmFormFieldValues.addAll(getDDMFormFieldValues(ddmFormFieldValue));
+			ddmFormFieldValues.addAll(
+				_getDDMFormFieldValues(ddmFormFieldValue));
 		}
 
 		return ddmFormFieldValues;

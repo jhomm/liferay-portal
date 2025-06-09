@@ -1,34 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.language;
 
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
-import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.function.Supplier;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -259,17 +248,6 @@ public class LanguageUtil {
 		return _language.getLocale(languageCode);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getResourceBundleLoader}
-	 */
-	@Deprecated
-	public static com.liferay.portal.kernel.util.ResourceBundleLoader
-		getPortalResourceBundleLoader() {
-
-		return _language.getPortalResourceBundleLoader();
-	}
-
 	public static ResourceBundleLoader getResourceBundleLoader() {
 		return _language.getResourceBundleLoader();
 	}
@@ -352,12 +330,6 @@ public class LanguageUtil {
 
 	public static boolean isSameLanguage(Locale locale1, Locale locale2) {
 		return _language.isSameLanguage(locale1, locale2);
-	}
-
-	public static boolean isValidLanguageKey(Locale locale, String key) {
-		String value = _language.get(locale, key, StringPool.BLANK);
-
-		return Validator.isNotNull(value);
 	}
 
 	public static String process(

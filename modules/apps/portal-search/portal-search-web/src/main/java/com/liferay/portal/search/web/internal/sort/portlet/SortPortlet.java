@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.sort.portlet;
@@ -22,19 +13,17 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.search.searcher.SearchRequest;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.internal.sort.constants.SortPortletKeys;
-import com.liferay.portal.search.web.internal.sort.display.context.SortDisplayBuilder;
 import com.liferay.portal.search.web.internal.sort.display.context.SortDisplayContext;
+import com.liferay.portal.search.web.internal.sort.display.context.builder.SortDisplayContextBuilder;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
-
-import java.util.Optional;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author André de Oliveira
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-sort",
@@ -57,12 +45,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Sort", "javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/sort/view.jsp",
-		"javax.portlet.name=" + SortPortletKeys.SORT,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"jakarta.portlet.display-name=Sort",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/sort/view.jsp",
+		"jakarta.portlet.name=" + SortPortletKeys.SORT,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -76,7 +66,7 @@ public class SortPortlet extends MVCPortlet {
 		PortletSharedSearchResponse portletSharedSearchResponse =
 			_portletSharedSearchRequest.search(renderRequest);
 
-		SortDisplayContext sortDisplayContext = buildDisplayContext(
+		SortDisplayContext sortDisplayContext = _buildDisplayContext(
 			portletSharedSearchResponse, renderRequest);
 
 		renderRequest.setAttribute(
@@ -90,7 +80,13 @@ public class SortPortlet extends MVCPortlet {
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected SortDisplayContext buildDisplayContext(
+	@Reference
+	protected Language language;
+
+	@Reference
+	protected Portal portal;
+
+	private SortDisplayContext _buildDisplayContext(
 		PortletSharedSearchResponse portletSharedSearchResponse,
 		RenderRequest renderRequest) {
 
@@ -101,27 +97,26 @@ public class SortPortlet extends MVCPortlet {
 
 		String parameterName = sortPortletPreferences.getParameterName();
 
-		Optional<String[]> parameterValuesOptional =
-			portletSharedSearchResponse.getParameterValues(
-				parameterName, renderRequest);
-
-		return createSortDisplayBuilder(
+		return _createSortDisplayContextBuilder(
 			renderRequest, sortPortletPreferences
+		).currentURL(
+			portal.getCurrentURL(renderRequest)
 		).parameterName(
 			parameterName
 		).parameterValues(
-			parameterValuesOptional.orElse(null)
+			portletSharedSearchResponse.getParameterValues(
+				parameterName, renderRequest)
 		).renderNothing(
-			isRenderNothing(portletSharedSearchResponse)
+			_isRenderNothing(portletSharedSearchResponse)
 		).build();
 	}
 
-	protected SortDisplayBuilder createSortDisplayBuilder(
+	private SortDisplayContextBuilder _createSortDisplayContextBuilder(
 		RenderRequest renderRequest,
 		SortPortletPreferences sortPortletPreferences) {
 
 		try {
-			return new SortDisplayBuilder(
+			return new SortDisplayContextBuilder(
 				language, portal, renderRequest, sortPortletPreferences);
 		}
 		catch (ConfigurationException configurationException) {
@@ -129,13 +124,10 @@ public class SortPortlet extends MVCPortlet {
 		}
 	}
 
-	protected boolean isRenderNothing(
+	private boolean _isRenderNothing(
 		PortletSharedSearchResponse portletSharedSearchResponse) {
 
-		Optional<String> keywordsOptional =
-			portletSharedSearchResponse.getKeywordsOptional();
-
-		if (keywordsOptional.isPresent()) {
+		if (portletSharedSearchResponse.getKeywords() != null) {
 			return false;
 		}
 
@@ -146,12 +138,6 @@ public class SortPortlet extends MVCPortlet {
 
 		return !searchRequest.isEmptySearchEnabled();
 	}
-
-	@Reference
-	protected Language language;
-
-	@Reference
-	protected Portal portal;
 
 	@Reference
 	private PortletSharedSearchRequest _portletSharedSearchRequest;

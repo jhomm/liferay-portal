@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.background.task.internal;
 
-import com.liferay.portal.background.task.internal.lock.BackgroundTaskLockHelper;
+import com.liferay.portal.background.task.internal.lock.helper.BackgroundTaskLockHelper;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTask;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskExecutor;
 import com.liferay.portal.kernel.backgroundtask.BackgroundTaskResult;
@@ -54,7 +45,7 @@ public class SerialBackgroundTaskExecutor
 
 		try {
 			if (isSerial()) {
-				lock = acquireLock(backgroundTask);
+				lock = _acquireLock(backgroundTask);
 			}
 
 			BackgroundTaskExecutor backgroundTaskExecutor =
@@ -69,7 +60,7 @@ public class SerialBackgroundTaskExecutor
 		}
 	}
 
-	protected Lock acquireLock(BackgroundTask backgroundTask)
+	private Lock _acquireLock(BackgroundTask backgroundTask)
 		throws DuplicateLockException {
 
 		Lock lock = _backgroundTaskLockHelper.lockBackgroundTask(

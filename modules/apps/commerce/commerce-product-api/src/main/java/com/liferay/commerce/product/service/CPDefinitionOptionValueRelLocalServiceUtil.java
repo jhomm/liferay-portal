@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -74,13 +66,26 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 	}
 
 	public static CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
-			long cpDefinitionOptionRelId, Map<java.util.Locale, String> nameMap,
-			double priority, String key,
+			long cpDefinitionOptionRelId, long cpInstanceId, String key,
+			Map<java.util.Locale, String> nameMap, boolean preselected,
+			java.math.BigDecimal deltaPrice, double priority,
+			java.math.BigDecimal quantity, String unitOfMeasureKey,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionOptionValueRel(
-			cpDefinitionOptionRelId, nameMap, priority, key, serviceContext);
+			cpDefinitionOptionRelId, cpInstanceId, key, nameMap, preselected,
+			deltaPrice, priority, quantity, unitOfMeasureKey, serviceContext);
+	}
+
+	public static CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
+			long cpDefinitionOptionRelId, String key,
+			Map<java.util.Locale, String> nameMap, double priority,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addCPDefinitionOptionValueRel(
+			cpDefinitionOptionRelId, key, nameMap, priority, serviceContext);
 	}
 
 	/**
@@ -251,6 +256,13 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 
 		return getService().fetchCPDefinitionOptionValueRel(
 			CPDefinitionOptionValueRelId);
+	}
+
+	public static CPDefinitionOptionValueRel fetchCPDefinitionOptionValueRel(
+		long cpDefinitionOptionRelId, long cpInstanceId) {
+
+		return getService().fetchCPDefinitionOptionValueRel(
+			cpDefinitionOptionRelId, cpInstanceId);
 	}
 
 	public static CPDefinitionOptionValueRel fetchCPDefinitionOptionValueRel(
@@ -511,7 +523,8 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 	}
 
 	public static void resetCPInstanceCPDefinitionOptionValueRels(
-		String cpInstanceUuid) {
+			String cpInstanceUuid)
+		throws PortalException {
 
 		getService().resetCPInstanceCPDefinitionOptionValueRels(cpInstanceUuid);
 	}
@@ -520,33 +533,6 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 		com.liferay.portal.kernel.search.SearchContext searchContext) {
 
 		return getService().search(searchContext);
-	}
-
-	/**
-	 * @param companyId
-	 * @param groupId
-	 * @param cpDefinitionOptionRelId
-	 * @param keywords
-	 * @param start
-	 * @param end
-	 * @param sort
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchCPDefinitionOptionValueRels(long, long, long, String,
-	 int, int, Sort[])}
-	 */
-	@Deprecated
-	public static com.liferay.portal.kernel.search.BaseModelSearchResult
-		<CPDefinitionOptionValueRel> searchCPDefinitionOptionValueRels(
-				long companyId, long groupId, long cpDefinitionOptionRelId,
-				String keywords, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
-			throws PortalException {
-
-		return getService().searchCPDefinitionOptionValueRels(
-			companyId, groupId, cpDefinitionOptionRelId, keywords, start, end,
-			sort);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
@@ -587,68 +573,17 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 			cpDefinitionOptionValueRel);
 	}
 
-	/**
-	 * @param cpDefinitionOptionValueRelId
-	 * @param nameMap
-	 * @param priority
-	 * @param key
-	 * @param cpInstanceId
-	 * @param quantity
-	 * @param price
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 #updateCPDefinitionOptionValueRel(long, Map, double, String,
-	 long, int, boolean, BigDecimal, ServiceContext)}
-	 */
-	@Deprecated
 	public static CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
-			long cpDefinitionOptionValueRelId,
-			Map<java.util.Locale, String> nameMap, double priority, String key,
-			long cpInstanceId, int quantity, java.math.BigDecimal price,
+			long cpDefinitionOptionValueRelId, long cpInstanceId, String key,
+			Map<java.util.Locale, String> nameMap, boolean preselected,
+			java.math.BigDecimal price, double priority,
+			java.math.BigDecimal quantity, String unitOfMeasureKey,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPDefinitionOptionValueRel(
-			cpDefinitionOptionValueRelId, nameMap, priority, key, cpInstanceId,
-			quantity, price, serviceContext);
-	}
-
-	public static CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
-			long cpDefinitionOptionValueRelId,
-			Map<java.util.Locale, String> nameMap, double priority, String key,
-			long cpInstanceId, int quantity, boolean preselected,
-			java.math.BigDecimal price,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateCPDefinitionOptionValueRel(
-			cpDefinitionOptionValueRelId, nameMap, priority, key, cpInstanceId,
-			quantity, preselected, price, serviceContext);
-	}
-
-	/**
-	 * @param cpDefinitionOptionValueRelId
-	 * @param nameMap
-	 * @param priority
-	 * @param key
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 #updateCPDefinitionOptionValueRel(long, Map, double, String,
-	 long, int, boolean, BigDecimal, ServiceContext)}
-	 */
-	@Deprecated
-	public static CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
-			long cpDefinitionOptionValueRelId,
-			Map<java.util.Locale, String> nameMap, double priority, String key,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateCPDefinitionOptionValueRel(
-			cpDefinitionOptionValueRelId, nameMap, priority, key,
+			cpDefinitionOptionValueRelId, cpInstanceId, key, nameMap,
+			preselected, price, priority, quantity, unitOfMeasureKey,
 			serviceContext);
 	}
 
@@ -661,9 +596,12 @@ public class CPDefinitionOptionValueRelLocalServiceUtil {
 	}
 
 	public static CPDefinitionOptionValueRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPDefinitionOptionValueRelLocalService _service;
+	private static final Snapshot<CPDefinitionOptionValueRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPDefinitionOptionValueRelLocalServiceUtil.class,
+			CPDefinitionOptionValueRelLocalService.class);
 
 }

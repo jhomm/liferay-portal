@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -50,6 +41,7 @@ public class UserLocalServiceUtil {
 	 * Adds a default admin user for the company.
 	 *
 	 * @param companyId the primary key of the user's company
+	 * @param password the password of the user
 	 * @param screenName the user's screen name
 	 * @param emailAddress the user's email address
 	 * @param locale the user's locale
@@ -59,14 +51,14 @@ public class UserLocalServiceUtil {
 	 * @return the new default admin user
 	 */
 	public static User addDefaultAdminUser(
-			long companyId, String screenName, String emailAddress,
-			java.util.Locale locale, String firstName, String middleName,
-			String lastName)
+			long companyId, String password, String screenName,
+			String emailAddress, java.util.Locale locale, String firstName,
+			String middleName, String lastName)
 		throws PortalException {
 
 		return getService().addDefaultAdminUser(
-			companyId, screenName, emailAddress, locale, firstName, middleName,
-			lastName);
+			companyId, password, screenName, emailAddress, locale, firstName,
+			middleName, lastName);
 	}
 
 	/**
@@ -97,6 +89,12 @@ public class UserLocalServiceUtil {
 		return getService().addDefaultRoles(userId);
 	}
 
+	public static User addDefaultServiceAccountUser(long companyId)
+		throws PortalException {
+
+		return getService().addDefaultServiceAccountUser(companyId);
+	}
+
 	/**
 	 * Adds the user to the default user groups, unless the user is already in
 	 * these user groups. The default user groups can be specified in
@@ -113,57 +111,60 @@ public class UserLocalServiceUtil {
 		return getService().addDefaultUserGroups(userId);
 	}
 
-	public static void addGroupUser(long groupId, long userId) {
-		getService().addGroupUser(groupId, userId);
+	public static boolean addGroupUser(long groupId, long userId) {
+		return getService().addGroupUser(groupId, userId);
 	}
 
-	public static void addGroupUser(long groupId, User user) {
-		getService().addGroupUser(groupId, user);
+	public static boolean addGroupUser(long groupId, User user) {
+		return getService().addGroupUser(groupId, user);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addGroupUsers(long groupId, List<User> users)
+	public static boolean addGroupUsers(long groupId, List<User> users)
 		throws PortalException {
 
-		getService().addGroupUsers(groupId, users);
+		return getService().addGroupUsers(groupId, users);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addGroupUsers(long groupId, long[] userIds)
+	public static boolean addGroupUsers(long groupId, long[] userIds)
 		throws PortalException {
 
-		getService().addGroupUsers(groupId, userIds);
+		return getService().addGroupUsers(groupId, userIds);
 	}
 
-	public static void addOrganizationUser(long organizationId, long userId) {
-		getService().addOrganizationUser(organizationId, userId);
+	public static boolean addOrganizationUser(
+		long organizationId, long userId) {
+
+		return getService().addOrganizationUser(organizationId, userId);
 	}
 
-	public static void addOrganizationUser(long organizationId, User user) {
-		getService().addOrganizationUser(organizationId, user);
+	public static boolean addOrganizationUser(long organizationId, User user) {
+		return getService().addOrganizationUser(organizationId, user);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addOrganizationUsers(
+	public static boolean addOrganizationUsers(
 			long organizationId, List<User> users)
 		throws PortalException {
 
-		getService().addOrganizationUsers(organizationId, users);
+		return getService().addOrganizationUsers(organizationId, users);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addOrganizationUsers(long organizationId, long[] userIds)
+	public static boolean addOrganizationUsers(
+			long organizationId, long[] userIds)
 		throws PortalException {
 
-		getService().addOrganizationUsers(organizationId, userIds);
+		return getService().addOrganizationUsers(organizationId, userIds);
 	}
 
 	public static User addOrUpdateUser(
@@ -171,17 +172,17 @@ public class UserLocalServiceUtil {
 			boolean autoPassword, String password1, String password2,
 			boolean autoScreenName, String screenName, String emailAddress,
 			java.util.Locale locale, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String lastName, long prefixListTypeId, long suffixListTypeId,
+			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
 			String jobTitle, boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addOrUpdateUser(
 			externalReferenceCode, creatorUserId, companyId, autoPassword,
 			password1, password2, autoScreenName, screenName, emailAddress,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, jobTitle, sendEmail,
-			serviceContext);
+			locale, firstName, middleName, lastName, prefixListTypeId,
+			suffixListTypeId, male, birthdayMonth, birthdayDay, birthdayYear,
+			jobTitle, sendEmail, serviceContext);
 	}
 
 	/**
@@ -197,56 +198,56 @@ public class UserLocalServiceUtil {
 		getService().addPasswordPolicyUsers(passwordPolicyId, userIds);
 	}
 
-	public static void addRoleUser(long roleId, long userId) {
-		getService().addRoleUser(roleId, userId);
+	public static boolean addRoleUser(long roleId, long userId) {
+		return getService().addRoleUser(roleId, userId);
 	}
 
-	public static void addRoleUser(long roleId, User user) {
-		getService().addRoleUser(roleId, user);
-	}
-
-	/**
-	 * @throws PortalException
-	 */
-	public static void addRoleUsers(long roleId, List<User> users)
-		throws PortalException {
-
-		getService().addRoleUsers(roleId, users);
+	public static boolean addRoleUser(long roleId, User user) {
+		return getService().addRoleUser(roleId, user);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addRoleUsers(long roleId, long[] userIds)
+	public static boolean addRoleUsers(long roleId, List<User> users)
 		throws PortalException {
 
-		getService().addRoleUsers(roleId, userIds);
-	}
-
-	public static void addTeamUser(long teamId, long userId) {
-		getService().addTeamUser(teamId, userId);
-	}
-
-	public static void addTeamUser(long teamId, User user) {
-		getService().addTeamUser(teamId, user);
+		return getService().addRoleUsers(roleId, users);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addTeamUsers(long teamId, List<User> users)
+	public static boolean addRoleUsers(long roleId, long[] userIds)
 		throws PortalException {
 
-		getService().addTeamUsers(teamId, users);
+		return getService().addRoleUsers(roleId, userIds);
+	}
+
+	public static boolean addTeamUser(long teamId, long userId) {
+		return getService().addTeamUser(teamId, userId);
+	}
+
+	public static boolean addTeamUser(long teamId, User user) {
+		return getService().addTeamUser(teamId, user);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addTeamUsers(long teamId, long[] userIds)
+	public static boolean addTeamUsers(long teamId, List<User> users)
 		throws PortalException {
 
-		getService().addTeamUsers(teamId, userIds);
+		return getService().addTeamUsers(teamId, users);
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	public static boolean addTeamUsers(long teamId, long[] userIds)
+		throws PortalException {
+
+		return getService().addTeamUsers(teamId, userIds);
 	}
 
 	/**
@@ -273,14 +274,15 @@ public class UserLocalServiceUtil {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
 	 * @param birthdayDay the user's birthday day
 	 * @param birthdayYear the user's birthday year
 	 * @param jobTitle the user's job title
+	 * @param type the user's type
 	 * @param groupIds the primary keys of the user's groups
 	 * @param organizationIds the primary keys of the user's organizations
 	 * @param roleIds the primary keys of the roles this user possesses
@@ -297,90 +299,19 @@ public class UserLocalServiceUtil {
 			long creatorUserId, long companyId, boolean autoPassword,
 			String password1, String password2, boolean autoScreenName,
 			String screenName, String emailAddress, java.util.Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addUser(
-			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-			roleIds, userGroupIds, sendEmail, serviceContext);
-	}
-
-	/**
-	 * Adds a user.
-	 *
-	 * <p>
-	 * This method handles the creation and bookkeeping of the user including
-	 * its resources, metadata, and internal data structures. It is not
-	 * necessary to make subsequent calls to any methods to setup default
-	 * groups, resources, etc.
-	 * </p>
-	 *
-	 * @param creatorUserId the primary key of the creator
-	 * @param companyId the primary key of the user's company
-	 * @param autoPassword whether a password should be automatically
-	 generated for the user
-	 * @param password1 the user's password
-	 * @param password2 the user's password confirmation
-	 * @param autoScreenName whether a screen name should be automatically
-	 generated for the user
-	 * @param screenName the user's screen name
-	 * @param emailAddress the user's email address
-	 * @param facebookId the user's facebook ID
-	 * @param openId the user's OpenID
-	 * @param locale the user's locale
-	 * @param firstName the user's first name
-	 * @param middleName the user's middle name
-	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
-	 * @param male whether the user is male
-	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
-	 for January)
-	 * @param birthdayDay the user's birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param jobTitle the user's job title
-	 * @param groupIds the primary keys of the user's groups
-	 * @param organizationIds the primary keys of the user's organizations
-	 * @param roleIds the primary keys of the roles this user possesses
-	 * @param userGroupIds the primary keys of the user's user groups
-	 * @param sendEmail whether to send the user an email notification
-	 about their new account
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the UUID (with the
-	 <code>uuid</code> attribute), asset category IDs, asset tag
-	 names, and expando bridge attributes for the user.
-	 * @return the new user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #addUser(long,
-	 long, boolean, String, String, boolean, String, String,
-	 Locale, String, String, String, long, long, boolean, int,
-	 int, int, String, long[], long[], long[], long[], boolean,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public static User addUser(
-			long creatorUserId, long companyId, boolean autoPassword,
-			String password1, String password2, boolean autoScreenName,
-			String screenName, String emailAddress, long facebookId,
-			String openId, java.util.Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, int type, long[] groupIds, long[] organizationIds,
 			long[] roleIds, long[] userGroupIds, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addUser(
 			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle, type, groupIds,
 			organizationIds, roleIds, userGroupIds, sendEmail, serviceContext);
 	}
 
@@ -398,30 +329,30 @@ public class UserLocalServiceUtil {
 		return getService().addUser(user);
 	}
 
-	public static void addUserGroupUser(long userGroupId, long userId) {
-		getService().addUserGroupUser(userGroupId, userId);
+	public static boolean addUserGroupUser(long userGroupId, long userId) {
+		return getService().addUserGroupUser(userGroupId, userId);
 	}
 
-	public static void addUserGroupUser(long userGroupId, User user) {
-		getService().addUserGroupUser(userGroupId, user);
-	}
-
-	/**
-	 * @throws PortalException
-	 */
-	public static void addUserGroupUsers(long userGroupId, List<User> users)
-		throws PortalException {
-
-		getService().addUserGroupUsers(userGroupId, users);
+	public static boolean addUserGroupUser(long userGroupId, User user) {
+		return getService().addUserGroupUser(userGroupId, user);
 	}
 
 	/**
 	 * @throws PortalException
 	 */
-	public static void addUserGroupUsers(long userGroupId, long[] userIds)
+	public static boolean addUserGroupUsers(long userGroupId, List<User> users)
 		throws PortalException {
 
-		getService().addUserGroupUsers(userGroupId, userIds);
+		return getService().addUserGroupUsers(userGroupId, users);
+	}
+
+	/**
+	 * @throws PortalException
+	 */
+	public static boolean addUserGroupUsers(long userGroupId, long[] userIds)
+		throws PortalException {
+
+		return getService().addUserGroupUsers(userGroupId, userIds);
 	}
 
 	/**
@@ -448,14 +379,15 @@ public class UserLocalServiceUtil {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
 	 * @param birthdayDay the user's birthday day
 	 * @param birthdayYear the user's birthday year
 	 * @param jobTitle the user's job title
+	 * @param type the user's type
 	 * @param groupIds the primary keys of the user's groups
 	 * @param organizationIds the primary keys of the user's organizations
 	 * @param roleIds the primary keys of the roles this user possesses
@@ -472,90 +404,19 @@ public class UserLocalServiceUtil {
 			long creatorUserId, long companyId, boolean autoPassword,
 			String password1, String password2, boolean autoScreenName,
 			String screenName, String emailAddress, java.util.Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addUserWithWorkflow(
-			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
-			roleIds, userGroupIds, sendEmail, serviceContext);
-	}
-
-	/**
-	 * Adds a user with workflow.
-	 *
-	 * <p>
-	 * This method handles the creation and bookkeeping of the user including
-	 * its resources, metadata, and internal data structures. It is not
-	 * necessary to make subsequent calls to any methods to setup default
-	 * groups, resources, etc.
-	 * </p>
-	 *
-	 * @param creatorUserId the primary key of the creator
-	 * @param companyId the primary key of the user's company
-	 * @param autoPassword whether a password should be automatically
-	 generated for the user
-	 * @param password1 the user's password
-	 * @param password2 the user's password confirmation
-	 * @param autoScreenName whether a screen name should be automatically
-	 generated for the user
-	 * @param screenName the user's screen name
-	 * @param emailAddress the user's email address
-	 * @param facebookId the user's facebook ID
-	 * @param openId the user's OpenID
-	 * @param locale the user's locale
-	 * @param firstName the user's first name
-	 * @param middleName the user's middle name
-	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
-	 * @param male whether the user is male
-	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
-	 for January)
-	 * @param birthdayDay the user's birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param jobTitle the user's job title
-	 * @param groupIds the primary keys of the user's groups
-	 * @param organizationIds the primary keys of the user's organizations
-	 * @param roleIds the primary keys of the roles this user possesses
-	 * @param userGroupIds the primary keys of the user's user groups
-	 * @param sendEmail whether to send the user an email notification
-	 about their new account
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the UUID (with the
-	 <code>uuid</code> attribute), asset category IDs, asset tag
-	 names, and expando bridge attributes for the user.
-	 * @return the new user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addUserWithWorkflow(long, long, boolean, String, String,
-	 boolean, String, String, Locale, String, String, String,
-	 long, long, boolean, int, int, int, String, long[], long[],
-	 long[], long[], boolean, ServiceContext)}
-	 */
-	@Deprecated
-	public static User addUserWithWorkflow(
-			long creatorUserId, long companyId, boolean autoPassword,
-			String password1, String password2, boolean autoScreenName,
-			String screenName, String emailAddress, long facebookId,
-			String openId, java.util.Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, int type, long[] groupIds, long[] organizationIds,
 			long[] roleIds, long[] userGroupIds, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addUserWithWorkflow(
 			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
-			birthdayMonth, birthdayDay, birthdayYear, jobTitle, groupIds,
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
+			birthdayMonth, birthdayDay, birthdayYear, jobTitle, type, groupIds,
 			organizationIds, roleIds, userGroupIds, sendEmail, serviceContext);
 	}
 
@@ -694,7 +555,6 @@ public class UserLocalServiceUtil {
 	 * authentication, without using the AuthPipeline. Primarily used for
 	 * authenticating users of <code>tunnel-web</code>.
 	 *
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 * @param companyId the primary key of the user's company
 	 * @param realm unused
 	 * @param nonce the number used once
@@ -703,6 +563,7 @@ public class UserLocalServiceUtil {
 	 * @param response the authentication response hash
 	 * @return the user's primary key if authentication is successful;
 	 <code>0</code> otherwise
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	public static long authenticateForDigest(
@@ -712,21 +573,6 @@ public class UserLocalServiceUtil {
 
 		return getService().authenticateForDigest(
 			companyId, userName, realm, nonce, method, uri, response);
-	}
-
-	/**
-	 * Attempts to authenticate the user using JAAS credentials, without using
-	 * the AuthPipeline.
-	 *
-	 * @param userId the primary key of the user
-	 * @param encPassword the encrypted password
-	 * @return <code>true</code> if authentication is successful;
-	 <code>false</code> otherwise
-	 * @deprecated As of Cavanaugh (7.4.x), with no replacement
-	 */
-	@Deprecated
-	public static boolean authenticateForJAAS(long userId, String encPassword) {
-		return getService().authenticateForJAAS(userId, encPassword);
 	}
 
 	/**
@@ -825,10 +671,8 @@ public class UserLocalServiceUtil {
 	 * the confirmation email.
 	 *
 	 * @param user the user
-	 * @param serviceContext the service context to be applied. You can specify
-	 an unencrypted custom password for the user via attribute
-	 <code>passwordUnencrypted</code>. You automatically generate a
-	 password for the user by setting attribute
+	 * @param serviceContext the service context to be applied. You
+	 automatically generate a password for the user by setting attribute
 	 <code>autoPassword</code> to <code>true</code>. You can send a
 	 confirmation email to the user by setting attribute
 	 <code>sendEmail</code> to <code>true</code>.
@@ -858,23 +702,6 @@ public class UserLocalServiceUtil {
 	 */
 	public static User createUser(long userId) {
 		return getService().createUser(userId);
-	}
-
-	/**
-	 * Decrypts the user's primary key and password from their encrypted forms.
-	 * Used for decrypting a user's credentials from the values stored in an
-	 * automatic login cookie.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param name the encrypted primary key of the user
-	 * @param password the encrypted password of the user
-	 * @return the user's primary key and password
-	 */
-	public static com.liferay.portal.kernel.util.KeyValuePair decryptUserId(
-			long companyId, String name, String password)
-		throws PortalException {
-
-		return getService().decryptUserId(companyId, name, password);
 	}
 
 	public static void deleteGroupUser(long groupId, long userId) {
@@ -1131,14 +958,14 @@ public class UserLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the default user for the company.
+	 * Returns the guest user for the company.
 	 *
 	 * @param companyId the primary key of the company
-	 * @return the default user for the company, or <code>null</code> if a user
+	 * @return the guest user for the company, or <code>null</code> if a user
 	 with the company key could not be found
 	 */
-	public static User fetchDefaultUser(long companyId) {
-		return getService().fetchDefaultUser(companyId);
+	public static User fetchGuestUser(long companyId) {
+		return getService().fetchGuestUser(companyId);
 	}
 
 	public static User fetchUser(long userId) {
@@ -1170,18 +997,11 @@ public class UserLocalServiceUtil {
 		return getService().fetchUserByEmailAddress(companyId, emailAddress);
 	}
 
-	/**
-	 * Returns the user with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the matching user, or <code>null</code> if a matching user could not be found
-	 */
 	public static User fetchUserByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -1191,25 +1011,9 @@ public class UserLocalServiceUtil {
 	 * @param facebookId the user's Facebook ID
 	 * @return the user with the Facebook ID, or <code>null</code> if a user
 	 with the Facebook ID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
-	@Deprecated
 	public static User fetchUserByFacebookId(long companyId, long facebookId) {
 		return getService().fetchUserByFacebookId(companyId, facebookId);
-	}
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID, or <code>null</code> if a user
-	 with the Google user ID could not be found
-	 */
-	public static User fetchUserByGoogleUserId(
-		long companyId, String googleUserId) {
-
-		return getService().fetchUserByGoogleUserId(companyId, googleUserId);
 	}
 
 	/**
@@ -1224,20 +1028,6 @@ public class UserLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID, or <code>null</code> if a user with
-	 the OpenID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User fetchUserByOpenId(long companyId, String openId) {
-		return getService().fetchUserByOpenId(companyId, openId);
-	}
-
-	/**
 	 * Returns the user with the portrait ID.
 	 *
 	 * @param portraitId the user's portrait ID
@@ -1246,17 +1036,6 @@ public class UserLocalServiceUtil {
 	 */
 	public static User fetchUserByPortraitId(long portraitId) {
 		return getService().fetchUserByPortraitId(portraitId);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchUserByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static User fetchUserByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchUserByReferenceCode(
-			companyId, externalReferenceCode);
 	}
 
 	/**
@@ -1326,21 +1105,19 @@ public class UserLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the default user for the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @return the default user for the company
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 #getGuestUser(long)}
 	 */
+	@Deprecated
 	public static User getDefaultUser(long companyId) throws PortalException {
 		return getService().getDefaultUser(companyId);
 	}
 
 	/**
-	 * Returns the primary key of the default user for the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @return the primary key of the default user for the company
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 #getGuestUserId(long)}
 	 */
+	@Deprecated
 	public static long getDefaultUserId(long companyId) throws PortalException {
 		return getService().getDefaultUserId(companyId);
 	}
@@ -1445,6 +1222,26 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getGroupUsersCount(groupId, status);
+	}
+
+	/**
+	 * Returns the guest user for the company.
+	 *
+	 * @param companyId the primary key of the company
+	 * @return the guest user for the company
+	 */
+	public static User getGuestUser(long companyId) throws PortalException {
+		return getService().getGuestUser(companyId);
+	}
+
+	/**
+	 * Returns the primary key of the guest user for the company.
+	 *
+	 * @param companyId the primary key of the company
+	 * @return the primary key of the guest user for the company
+	 */
+	public static long getGuestUserId(long companyId) throws PortalException {
+		return getService().getGuestUserId(companyId);
 	}
 
 	public static
@@ -1625,6 +1422,10 @@ public class UserLocalServiceUtil {
 	 */
 	public static long[] getRoleUserIds(long roleId) {
 		return getService().getRoleUserIds(roleId);
+	}
+
+	public static long[] getRoleUserIds(long roleId, long type) {
+		return getService().getRoleUserIds(roleId, type);
 	}
 
 	public static List<User> getRoleUsers(long roleId) {
@@ -1851,49 +1652,12 @@ public class UserLocalServiceUtil {
 		return getService().getUserByEmailAddress(companyId, emailAddress);
 	}
 
-	/**
-	 * Returns the user with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the matching user
-	 * @throws PortalException if a matching user could not be found
-	 */
 	public static User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getUserByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * Returns the user with the Facebook ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param facebookId the user's Facebook ID
-	 * @return the user with the Facebook ID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User getUserByFacebookId(long companyId, long facebookId)
-		throws PortalException {
-
-		return getService().getUserByFacebookId(companyId, facebookId);
-	}
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID
-	 */
-	public static User getUserByGoogleUserId(
-			long companyId, String googleUserId)
-		throws PortalException {
-
-		return getService().getUserByGoogleUserId(companyId, googleUserId);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -1917,33 +1681,6 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getUserById(companyId, userId);
-	}
-
-	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User getUserByOpenId(long companyId, String openId)
-		throws PortalException {
-
-		return getService().getUserByOpenId(companyId, openId);
-	}
-
-	/**
-	 * Returns the user with the portrait ID.
-	 *
-	 * @param portraitId the user's portrait ID
-	 * @return the user with the portrait ID
-	 */
-	public static User getUserByPortraitId(long portraitId)
-		throws PortalException {
-
-		return getService().getUserByPortraitId(portraitId);
 	}
 
 	/**
@@ -2061,11 +1798,24 @@ public class UserLocalServiceUtil {
 	}
 
 	public static List<User> getUsers(
-		long companyId, boolean defaultUser, int status, int start, int end,
+		long companyId, int status, int start, int end,
 		OrderByComparator<User> orderByComparator) {
 
 		return getService().getUsers(
-			companyId, defaultUser, status, start, end, orderByComparator);
+			companyId, status, start, end, orderByComparator);
+	}
+
+	public static List<User> getUsersByRoleId(long roleId, int start, int end)
+		throws PortalException {
+
+		return getService().getUsersByRoleId(roleId, start, end);
+	}
+
+	public static List<User> getUsersByRoleName(
+			long companyId, String roleName, int start, int end)
+		throws PortalException {
+
+		return getService().getUsersByRoleName(companyId, roleName, start, end);
 	}
 
 	/**
@@ -2077,10 +1827,8 @@ public class UserLocalServiceUtil {
 		return getService().getUsersCount();
 	}
 
-	public static int getUsersCount(
-		long companyId, boolean defaultUser, int status) {
-
-		return getService().getUsersCount(companyId, defaultUser, status);
+	public static int getUsersCount(long companyId, int status) {
+		return getService().getUsersCount(companyId, status);
 	}
 
 	public static boolean hasGroupUser(long groupId, long userId) {
@@ -2172,15 +1920,13 @@ public class UserLocalServiceUtil {
 	}
 
 	/**
-	 * Returns the default user for the company.
+	 * Returns the guest user for the company.
 	 *
 	 * @param companyId the primary key of the company
-	 * @return the default user for the company
+	 * @return the guest user for the company
 	 */
-	public static User loadGetDefaultUser(long companyId)
-		throws PortalException {
-
-		return getService().loadGetDefaultUser(companyId);
+	public static User loadGetGuestUser(long companyId) throws PortalException {
+		return getService().loadGetGuestUser(companyId);
 	}
 
 	/**
@@ -2382,18 +2128,20 @@ public class UserLocalServiceUtil {
 	}
 
 	public static List<User> searchBySocial(
-		long companyId, long[] groupIds, String keywords, int start, int end) {
+		long companyId, long[] groupIds, long[] userGroupIds, String keywords,
+		int start, int end) {
 
 		return getService().searchBySocial(
-			companyId, groupIds, keywords, start, end);
+			companyId, groupIds, userGroupIds, keywords, start, end);
 	}
 
 	public static List<User> searchBySocial(
-		long companyId, long[] groupIds, String keywords, int start, int end,
-		OrderByComparator<User> orderByComparator) {
+		long companyId, long[] groupIds, long[] userGroupIds, String keywords,
+		int start, int end, OrderByComparator<User> orderByComparator) {
 
 		return getService().searchBySocial(
-			companyId, groupIds, keywords, start, end, orderByComparator);
+			companyId, groupIds, userGroupIds, keywords, start, end,
+			orderByComparator);
 	}
 
 	public static List<User> searchBySocial(
@@ -2460,60 +2208,6 @@ public class UserLocalServiceUtil {
 		long companyId, int status, long[] groupIds) {
 
 		return getService().searchCounts(companyId, status, groupIds);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long, int[], String, int, int)}
-	 */
-	@Deprecated
-	public static List<User> searchSocial(
-			long userId, int[] socialRelationTypes, String keywords, int start,
-			int end)
-		throws PortalException {
-
-		return getService().searchSocial(
-			userId, socialRelationTypes, keywords, start, end);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long, long[], String, int, int)}
-	 */
-	@Deprecated
-	public static List<User> searchSocial(
-		long companyId, long[] groupIds, String keywords, int start, int end) {
-
-		return getService().searchSocial(
-			companyId, groupIds, keywords, start, end);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long, long[], String, int, int,
-	 OrderByComparator)}
-	 */
-	@Deprecated
-	public static List<User> searchSocial(
-		long companyId, long[] groupIds, String keywords, int start, int end,
-		OrderByComparator<User> orderByComparator) {
-
-		return getService().searchSocial(
-			companyId, groupIds, keywords, start, end, orderByComparator);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long[], long, int[], String, int, int)}
-	 */
-	@Deprecated
-	public static List<User> searchSocial(
-			long[] groupIds, long userId, int[] socialRelationTypes,
-			String keywords, int start, int end)
-		throws PortalException {
-
-		return getService().searchSocial(
-			groupIds, userId, socialRelationTypes, keywords, start, end);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult<User>
@@ -2583,22 +2277,17 @@ public class UserLocalServiceUtil {
 			user, emailAddress, serviceContext);
 	}
 
-	/**
-	 * Sends the password email to the user with the email address. The content
-	 * of this email can be specified in <code>portal.properties</code> with the
-	 * <code>admin.email.password</code> keys.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param emailAddress the user's email address
-	 * @param fromName the name of the individual that the email should be from
-	 * @param fromAddress the address of the individual that the email should be
-	 from
-	 * @param subject the email subject. If <code>null</code>, the subject
-	 specified in <code>portal.properties</code> will be used.
-	 * @param body the email body. If <code>null</code>, the body specified in
-	 <code>portal.properties</code> will be used.
-	 * @param serviceContext the service context to be applied
-	 */
+	public static boolean sendEmailUserCreationAttempt(
+			long companyId, String emailAddress, String fromName,
+			String fromAddress, String subject, String body,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().sendEmailUserCreationAttempt(
+			companyId, emailAddress, fromName, fromAddress, subject, body,
+			serviceContext);
+	}
+
 	public static boolean sendPassword(
 			long companyId, String emailAddress, String fromName,
 			String fromAddress, String subject, String body,
@@ -2685,6 +2374,17 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().sendPasswordByUserId(userId);
+	}
+
+	public static boolean sendPasswordLockout(
+			long companyId, String emailAddress, String fromName,
+			String fromAddress, String subject, String body,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().sendPasswordLockout(
+			companyId, emailAddress, fromName, fromAddress, subject, body,
+			serviceContext);
 	}
 
 	public static void setGroupUsers(long groupId, long[] userIds) {
@@ -2919,32 +2619,20 @@ public class UserLocalServiceUtil {
 			userId, emailAddressVerified);
 	}
 
-	/**
-	 * Updates the user's Facebook ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param facebookId the user's new Facebook ID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User updateFacebookId(long userId, long facebookId)
+	public static User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
 		throws PortalException {
 
-		return getService().updateFacebookId(userId, facebookId);
+		return getService().updateExternalReferenceCode(
+			userId, externalReferenceCode);
 	}
 
-	/**
-	 * Updates the user's Google user ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param googleUserId the new Google user ID
-	 * @return the user
-	 */
-	public static User updateGoogleUserId(long userId, String googleUserId)
+	public static User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
 		throws PortalException {
 
-		return getService().updateGoogleUserId(userId, googleUserId);
+		return getService().updateExternalReferenceCode(
+			user, externalReferenceCode);
 	}
 
 	/**
@@ -2981,8 +2669,8 @@ public class UserLocalServiceUtil {
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -3001,79 +2689,17 @@ public class UserLocalServiceUtil {
 			long creatorUserId, long companyId, boolean autoPassword,
 			String password1, String password2, boolean autoScreenName,
 			String screenName, String emailAddress, java.util.Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, boolean updateUserInformation,
-			boolean sendEmail, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateIncompleteUser(
-			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, updateUserInformation,
-			sendEmail, serviceContext);
-	}
-
-	/**
-	 * Updates a user account that was automatically created when a guest user
-	 * participated in an action (e.g. posting a comment) and only provided his
-	 * name and email address.
-	 *
-	 * @param creatorUserId the primary key of the creator
-	 * @param companyId the primary key of the user's company
-	 * @param autoPassword whether a password should be automatically
-	 generated for the user
-	 * @param password1 the user's password
-	 * @param password2 the user's password confirmation
-	 * @param autoScreenName whether a screen name should be automatically
-	 generated for the user
-	 * @param screenName the user's screen name
-	 * @param emailAddress the user's email address
-	 * @param facebookId the user's facebook ID
-	 * @param openId the user's OpenID
-	 * @param locale the user's locale
-	 * @param firstName the user's first name
-	 * @param middleName the user's middle name
-	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
-	 * @param male whether the user is male
-	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
-	 for January)
-	 * @param birthdayDay the user's birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param jobTitle the user's job title
-	 * @param updateUserInformation whether to update the user's
-	 information
-	 * @param sendEmail whether to send the user an email notification
-	 about their new account
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 user.
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateIncompleteUser(long, long, boolean, String, String,
-	 boolean, String, String, Locale, String, String, String,
-	 long, long, boolean, int, int, int, String, boolean, boolean,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public static User updateIncompleteUser(
-			long creatorUserId, long companyId, boolean autoPassword,
-			String password1, String password2, boolean autoScreenName,
-			String screenName, String emailAddress, long facebookId,
-			String openId, java.util.Locale locale, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
 			String jobTitle, boolean updateUserInformation, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateIncompleteUser(
 			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, facebookId, openId,
-			locale, firstName, middleName, lastName, prefixId, suffixId, male,
+			autoScreenName, screenName, emailAddress, locale, firstName,
+			middleName, lastName, prefixListTypeId, suffixListTypeId, male,
 			birthdayMonth, birthdayDay, birthdayYear, jobTitle,
 			updateUserInformation, sendEmail, serviceContext);
 	}
@@ -3091,6 +2717,12 @@ public class UserLocalServiceUtil {
 		return getService().updateJobTitle(userId, jobTitle);
 	}
 
+	public static User updateLanguageId(long userId, String languageId)
+		throws PortalException {
+
+		return getService().updateLanguageId(userId, languageId);
+	}
+
 	/**
 	 * Updates the user's last login with the current time and the IP address.
 	 *
@@ -3102,6 +2734,12 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateLastLogin(userId, loginIP);
+	}
+
+	public static User updateLastLogin(User user, String loginIP)
+		throws PortalException {
+
+		return getService().updateLastLogin(user, loginIP);
 	}
 
 	/**
@@ -3174,21 +2812,6 @@ public class UserLocalServiceUtil {
 		throws PortalException {
 
 		return getService().updateModifiedDate(userId, modifiedDate);
-	}
-
-	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static User updateOpenId(long userId, String openId)
-		throws PortalException {
-
-		return getService().updateOpenId(userId, openId);
 	}
 
 	/**
@@ -3345,6 +2968,13 @@ public class UserLocalServiceUtil {
 		return getService().updateStatus(userId, status, serviceContext);
 	}
 
+	public static User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateStatus(user, status, serviceContext);
+	}
+
 	/**
 	 * Updates the user.
 	 *
@@ -3369,8 +2999,8 @@ public class UserLocalServiceUtil {
 	 * @param firstName the user's new first name
 	 * @param middleName the user's new middle name
 	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
+	 * @param prefixListTypeId the user's new name prefix ID
+	 * @param suffixListTypeId the user's new name suffix ID
 	 * @param male whether user is male
 	 * @param birthdayMonth the user's new birthday month (0-based, meaning 0
 	 for January)
@@ -3400,11 +3030,11 @@ public class UserLocalServiceUtil {
 			String screenName, String emailAddress, boolean hasPortrait,
 			byte[] portraitBytes, String languageId, String timeZoneId,
 			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle,
+			long[] groupIds, long[] organizationIds, long[] roleIds,
 			List<com.liferay.portal.kernel.model.UserGroupRole> userGroupRoles,
 			long[] userGroupIds, ServiceContext serviceContext)
 		throws PortalException {
@@ -3413,97 +3043,11 @@ public class UserLocalServiceUtil {
 			userId, oldPassword, newPassword1, newPassword2, passwordReset,
 			reminderQueryQuestion, reminderQueryAnswer, screenName,
 			emailAddress, hasPortrait, portraitBytes, languageId, timeZoneId,
-			greeting, comments, firstName, middleName, lastName, prefixId,
-			suffixId, male, birthdayMonth, birthdayDay, birthdayYear, smsSn,
-			facebookSn, jabberSn, skypeSn, twitterSn, jobTitle, groupIds,
-			organizationIds, roleIds, userGroupRoles, userGroupIds,
-			serviceContext);
-	}
-
-	/**
-	 * Updates the user.
-	 *
-	 * @param userId the primary key of the user
-	 * @param oldPassword the user's old password
-	 * @param newPassword1 the user's new password (optionally
-	 <code>null</code>)
-	 * @param newPassword2 the user's new password confirmation (optionally
-	 <code>null</code>)
-	 * @param passwordReset whether the user should be asked to reset their
-	 password the next time they login
-	 * @param reminderQueryQuestion the user's new password reset question
-	 * @param reminderQueryAnswer the user's new password reset answer
-	 * @param screenName the user's new screen name
-	 * @param emailAddress the user's new email address
-	 * @param facebookId the user's new Facebook ID
-	 * @param openId the user's new OpenID
-	 * @param hasPortrait if the user has a custom portrait image
-	 * @param portraitBytes the new portrait image data
-	 * @param languageId the user's new language ID
-	 * @param timeZoneId the user's new time zone ID
-	 * @param greeting the user's new greeting
-	 * @param comments the user's new comments
-	 * @param firstName the user's new first name
-	 * @param middleName the user's new middle name
-	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
-	 * @param male whether user is male
-	 * @param birthdayMonth the user's new birthday month (0-based, meaning
-	 0 for January)
-	 * @param birthdayDay the user's new birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param smsSn the user's new SMS screen name
-	 * @param facebookSn the user's new Facebook screen name
-	 * @param jabberSn the user's new Jabber screen name
-	 * @param skypeSn the user's new Skype screen name
-	 * @param twitterSn the user's new Twitter screen name
-	 * @param jobTitle the user's new job title
-	 * @param groupIds the primary keys of the user's groups
-	 * @param organizationIds the primary keys of the user's organizations
-	 * @param roleIds the primary keys of the user's roles
-	 * @param userGroupRoles the user user's group roles
-	 * @param userGroupIds the primary keys of the user's user groups
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the UUID (with the
-	 <code>uuid</code> attribute), asset category IDs, asset tag
-	 names, and expando bridge attributes for the user.
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateUser(long, String, String, String, boolean, String,
-	 String, String, String, boolean, byte[], String, String,
-	 String, String, String, String, String, long, long, boolean,
-	 int, int, int, String, String, String, String, String,
-	 String, long[], long[], long[], List, long[], ServiceContext)
-	 }
-	 */
-	@Deprecated
-	public static User updateUser(
-			long userId, String oldPassword, String newPassword1,
-			String newPassword2, boolean passwordReset,
-			String reminderQueryQuestion, String reminderQueryAnswer,
-			String screenName, String emailAddress, long facebookId,
-			String openId, boolean hasPortrait, byte[] portraitBytes,
-			String languageId, String timeZoneId, String greeting,
-			String comments, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
-			String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
-			List<com.liferay.portal.kernel.model.UserGroupRole> userGroupRoles,
-			long[] userGroupIds, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().updateUser(
-			userId, oldPassword, newPassword1, newPassword2, passwordReset,
-			reminderQueryQuestion, reminderQueryAnswer, screenName,
-			emailAddress, facebookId, openId, hasPortrait, portraitBytes,
-			languageId, timeZoneId, greeting, comments, firstName, middleName,
-			lastName, prefixId, suffixId, male, birthdayMonth, birthdayDay,
-			birthdayYear, smsSn, facebookSn, jabberSn, skypeSn, twitterSn,
-			jobTitle, groupIds, organizationIds, roleIds, userGroupRoles,
-			userGroupIds, serviceContext);
+			greeting, comments, firstName, middleName, lastName,
+			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, smsSn, facebookSn, jabberSn, skypeSn,
+			twitterSn, jobTitle, groupIds, organizationIds, roleIds,
+			userGroupRoles, userGroupIds, serviceContext);
 	}
 
 	/**
@@ -3520,6 +3064,10 @@ public class UserLocalServiceUtil {
 		return getService().updateUser(user);
 	}
 
+	public static void validateMaxUsers(long companyId) throws PortalException {
+		getService().validateMaxUsers(companyId);
+	}
+
 	/**
 	 * Verifies the email address of the ticket.
 	 *
@@ -3533,6 +3081,10 @@ public class UserLocalServiceUtil {
 
 	public static UserLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(UserLocalService service) {
+		_service = service;
 	}
 
 	private static volatile UserLocalService _service;

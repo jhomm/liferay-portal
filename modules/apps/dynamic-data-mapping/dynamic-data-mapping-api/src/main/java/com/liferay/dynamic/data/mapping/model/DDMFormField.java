@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.model;
@@ -19,6 +10,8 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
@@ -48,8 +41,13 @@ public class DDMFormField implements Serializable {
 	public DDMFormField(DDMFormField ddmFormField) {
 		_properties = new LinkedHashMap<>(ddmFormField._properties);
 
-		setDDMFormFieldOptions(
-			new DDMFormFieldOptions(ddmFormField.getDDMFormFieldOptions()));
+		DDMFormFieldOptions ddmFormFieldOptions =
+			ddmFormField.getDDMFormFieldOptions();
+
+		if (ddmFormFieldOptions != null) {
+			setDDMFormFieldOptions(
+				new DDMFormFieldOptions(ddmFormFieldOptions));
+		}
 
 		_ddmFormFieldRules = new ArrayList<>(
 			ddmFormField._ddmFormFieldRules.size());
@@ -68,12 +66,35 @@ public class DDMFormField implements Serializable {
 				new DDMFormFieldValidation(ddmFormFieldValidation));
 		}
 
-		setFieldReference(ddmFormField.getFieldReference());
-		setLabel(new LocalizedValue(ddmFormField.getLabel()));
-		setPredefinedValue(
-			new LocalizedValue(ddmFormField.getPredefinedValue()));
-		setStyle(new LocalizedValue(ddmFormField.getStyle()));
-		setTip(new LocalizedValue(ddmFormField.getTip()));
+		String fieldReference = ddmFormField.getFieldReference();
+
+		if (fieldReference != null) {
+			setFieldReference(fieldReference);
+		}
+
+		LocalizedValue label = ddmFormField.getLabel();
+
+		if (label != null) {
+			setLabel(new LocalizedValue(label));
+		}
+
+		LocalizedValue predefinedValue = ddmFormField.getPredefinedValue();
+
+		if (predefinedValue != null) {
+			setPredefinedValue(new LocalizedValue(predefinedValue));
+		}
+
+		LocalizedValue style = ddmFormField.getStyle();
+
+		if (style != null) {
+			setStyle(new LocalizedValue(style));
+		}
+
+		LocalizedValue tip = ddmFormField.getTip();
+
+		if (tip != null) {
+			setTip(new LocalizedValue(tip));
+		}
 
 		_nestedDDMFormFields = new ArrayList<>(
 			ddmFormField._nestedDDMFormFields.size());
@@ -170,6 +191,10 @@ public class DDMFormField implements Serializable {
 						jsonArray.get(0), _DATA_SOURCE_TYPE_MANUAL);
 				}
 				catch (JSONException jsonException) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(jsonException);
+					}
+
 					return dataSourceType;
 				}
 			}
@@ -351,11 +376,7 @@ public class DDMFormField implements Serializable {
 	}
 
 	public boolean hasProperty(String propertyKey) {
-		if (_properties.containsKey(propertyKey)) {
-			return true;
-		}
-
-		return false;
+		return _properties.containsKey(propertyKey);
 	}
 
 	public boolean isLocalizable() {
@@ -392,11 +413,7 @@ public class DDMFormField implements Serializable {
 	 * @review
 	 */
 	public boolean isTransient() {
-		if (Validator.isNull(getDataType())) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNull(getDataType());
 	}
 
 	public boolean isVisualProperty() {
@@ -516,6 +533,8 @@ public class DDMFormField implements Serializable {
 	}
 
 	private static final String _DATA_SOURCE_TYPE_MANUAL = "manual";
+
+	private static final Log _log = LogFactoryUtil.getLog(DDMFormField.class);
 
 	private DDMForm _ddmForm;
 	private final List<DDMFormFieldRule> _ddmFormFieldRules;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.staged.model.repository;
@@ -18,12 +9,24 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelModifiedDateComparator;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepositoryHelper;
+import com.liferay.fragment.exception.RequiredFragmentEntryException;
 import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.service.LayoutService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 
 import java.util.List;
 
@@ -34,7 +37,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.fragment.model.FragmentEntry",
 	service = StagedModelRepository.class
 )
@@ -56,13 +58,16 @@ public class FragmentEntryStagedModelRepository
 		}
 
 		return _fragmentEntryLocalService.addFragmentEntry(
-			userId, fragmentEntry.getGroupId(),
-			fragmentEntry.getFragmentCollectionId(),
+			fragmentEntry.getExternalReferenceCode(), userId,
+			fragmentEntry.getGroupId(), fragmentEntry.getFragmentCollectionId(),
 			fragmentEntry.getFragmentEntryKey(), fragmentEntry.getName(),
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
-			fragmentEntry.getJs(), fragmentEntry.getConfiguration(),
-			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.getType(),
-			fragmentEntry.getStatus(), serviceContext);
+			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
+			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
+			fragmentEntry.getPreviewFileEntryId(), false,
+			fragmentEntry.isReadOnly(), fragmentEntry.getType(),
+			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus(),
+			serviceContext);
 	}
 
 	@Override
@@ -81,6 +86,8 @@ public class FragmentEntryStagedModelRepository
 			uuid, groupId);
 
 		if (fragmentEntry != null) {
+			_deleteFragmentEntryLinks(extraData, fragmentEntry, groupId);
+
 			deleteStagedModel(fragmentEntry);
 		}
 	}
@@ -145,12 +152,81 @@ public class FragmentEntryStagedModelRepository
 			fragmentEntry.getFragmentCollectionId(), fragmentEntry.getName(),
 			fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.isCacheable(),
-			fragmentEntry.getConfiguration(),
-			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.getStatus());
+			fragmentEntry.getConfiguration(), fragmentEntry.getIcon(),
+			fragmentEntry.getPreviewFileEntryId(), fragmentEntry.isReadOnly(),
+			fragmentEntry.getTypeOptions(), fragmentEntry.getStatus());
+	}
+
+	private void _deleteFragmentEntryLinks(
+			String extraData, FragmentEntry fragmentEntry, long groupId)
+		throws PortalException {
+
+		if (extraData.isEmpty()) {
+			return;
+		}
+
+		List<FragmentEntryLink> fragmentEntryLinks =
+			_fragmentEntryLinkLocalService.
+				getFragmentEntryLinksByFragmentEntryId(
+					fragmentEntry.getFragmentEntryId());
+
+		if (ListUtil.isEmpty(fragmentEntryLinks)) {
+			return;
+		}
+
+		long[] plids = new long[0];
+
+		JSONObject extraDataJSONObject = _jsonFactory.createJSONObject(
+			extraData);
+
+		boolean privateLayout = GetterUtil.getBoolean(
+			extraDataJSONObject.get("privateLayout"));
+
+		for (String layoutUUID :
+				JSONUtil.toStringArray(
+					(JSONArray)extraDataJSONObject.get("layoutUUIDs"))) {
+
+			Layout layout = _layoutService.getLayoutByUuidAndGroupId(
+				layoutUUID, groupId, privateLayout);
+
+			plids = ArrayUtil.append(plids, layout.getPlid());
+
+			Layout draftLayout = layout.fetchDraftLayout();
+
+			if (draftLayout != null) {
+				plids = ArrayUtil.append(plids, draftLayout.getPlid());
+			}
+		}
+
+		long[] fragmentEntryLinkIds = new long[fragmentEntryLinks.size()];
+
+		for (int i = 0; i < fragmentEntryLinks.size(); i++) {
+			FragmentEntryLink fragmentEntryLink = fragmentEntryLinks.get(i);
+
+			if (ArrayUtil.contains(plids, fragmentEntryLink.getPlid())) {
+				fragmentEntryLinkIds[i] =
+					fragmentEntryLink.getFragmentEntryLinkId();
+			}
+			else {
+				throw new RequiredFragmentEntryException();
+			}
+		}
+
+		_fragmentEntryLinkLocalService.deleteFragmentEntryLinks(
+			fragmentEntryLinkIds);
 	}
 
 	@Reference
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
+	@Reference
 	private FragmentEntryLocalService _fragmentEntryLocalService;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private LayoutService _layoutService;
 
 	@Reference
 	private StagedModelRepositoryHelper _stagedModelRepositoryHelper;

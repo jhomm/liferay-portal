@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.builder;
@@ -23,7 +14,6 @@ import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolder;
-import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.util.DLURLHelperUtil;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.petra.string.StringBundler;
@@ -35,24 +25,27 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
-import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.security.permission.ResourceActions;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatConstants;
 import com.liferay.portal.kernel.util.FastDateFormatFactory;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.document.Document;
 import com.liferay.portal.search.legacy.document.DocumentBuilderFactory;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.internal.display.context.SimilarResultsDocumentDisplayContext;
+import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferences;
+import com.liferay.portal.search.similar.results.web.internal.portlet.SimilarResultsPortletPreferencesImpl;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.DestinationHelper;
 import com.liferay.portal.search.summary.Summary;
 import com.liferay.portal.search.summary.SummaryBuilder;
 import com.liferay.portal.search.summary.SummaryBuilderFactory;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.text.DateFormat;
 import java.text.Format;
@@ -61,10 +54,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Objects;
 
 /**
  * @author Wade Cao
@@ -85,18 +75,21 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 				).build();
 			}
 
-			String className = getFieldValueString(Field.ENTRY_CLASS_NAME);
+			String className = _getFieldValueString(Field.ENTRY_CLASS_NAME);
 
-			long classPK = getEntryClassPK();
+			long classPK = _getEntryClassPK();
 
 			return build(className, classPK);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
+			}
+			else if (_log.isWarnEnabled()) {
+				_log.warn(exception.toString());
 			}
 
-			return buildTemporarilyUnavailable();
+			return _buildTemporarilyUnavailable();
 		}
 	}
 
@@ -146,12 +139,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		boolean highlightEnabled) {
 
 		_highlightEnabled = highlightEnabled;
-
-		return this;
-	}
-
-	public SimilarResultsDocumentDisplayContextBuilder setHttp(Http http) {
-		_http = http;
 
 		return this;
 	}
@@ -232,7 +219,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 
 		if (assetRendererFactory != null) {
 			long resourcePrimKey = GetterUtil.getLong(
-				getFieldValueString(Field.ROOT_ENTRY_CLASS_PK));
+				_getFieldValueString(Field.ROOT_ENTRY_CLASS_PK));
 
 			if (resourcePrimKey > 0) {
 				classPK = resourcePrimKey;
@@ -242,7 +229,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 				className, classPK, assetRendererFactory);
 		}
 
-		Summary summary = getSummary(className, assetRenderer);
+		Summary summary = _getSummary(className, assetRenderer);
 
 		if (summary == null) {
 			SummaryBuilder summaryBuilder =
@@ -274,27 +261,53 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
 			className, classPK);
 
-		buildCreationDateString(similarResultsDocumentDisplayContext);
-		buildCreatorUserName(similarResultsDocumentDisplayContext);
+		_buildCreationDateString(similarResultsDocumentDisplayContext);
+		_buildCreatorUserName(similarResultsDocumentDisplayContext);
 
-		buildImage(
+		_buildImage(
 			similarResultsDocumentDisplayContext, className, classPK,
 			assetRenderer);
 
-		buildModelResource(similarResultsDocumentDisplayContext, className);
+		_buildModelResource(similarResultsDocumentDisplayContext, className);
 
-		buildCategoriesString(similarResultsDocumentDisplayContext, assetEntry);
+		_buildCategoriesString(
+			similarResultsDocumentDisplayContext, assetEntry);
 
 		similarResultsDocumentDisplayContext.setTitle(
 			getTitle(assetEntry, summary));
-
 		similarResultsDocumentDisplayContext.setViewURL(
-			getViewURL(assetEntry, assetRenderer, className, classPK));
+			_getViewURL(assetEntry, assetRenderer, className, classPK));
 
 		return similarResultsDocumentDisplayContext;
 	}
 
-	protected void buildCategoriesString(
+	protected AssetRenderer<?> getAssetRenderer(
+		String className, long classPK,
+		AssetRendererFactory<?> assetRendererFactory) {
+
+		try {
+			return assetRendererFactory.getAssetRenderer(classPK);
+		}
+		catch (Exception exception) {
+			throw new IllegalStateException(
+				StringBundler.concat(
+					"Unable to get asset renderer for class ", className,
+					" with primary key ", classPK),
+				exception);
+		}
+	}
+
+	protected String getTitle(AssetEntry assetEntry, Summary summary) {
+		String title = summary.getTitle();
+
+		if (Validator.isBlank(title)) {
+			title = assetEntry.getTitle(_locale);
+		}
+
+		return title;
+	}
+
+	private void _buildCategoriesString(
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext,
 		AssetEntry assetEntry) {
@@ -324,26 +337,38 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			});
 	}
 
-	protected void buildCreationDateString(
+	private void _buildCreationDateString(
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext) {
 
-		Optional<String> dateStringOptional = SearchStringUtil.maybe(
-			getFieldValueString(Field.CREATE_DATE));
+		String dateString = SearchStringUtil.maybe(
+			_getFieldValueString(Field.CREATE_DATE));
 
-		Optional<Date> dateOptional = dateStringOptional.map(
-			this::parseDateStringFieldValue);
+		if (dateString == null) {
+			return;
+		}
 
-		dateOptional.ifPresent(
-			date -> similarResultsDocumentDisplayContext.setCreationDateString(
-				formatCreationDate(date)));
+		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
+
+		try {
+			Date date = dateFormat.parse(dateString);
+
+			if (date != null) {
+				similarResultsDocumentDisplayContext.setCreationDateString(
+					_formatCreationDate(date));
+			}
+		}
+		catch (Exception exception) {
+			throw new IllegalArgumentException(
+				"Unable to parse date string: " + dateString, exception);
+		}
 	}
 
-	protected void buildCreatorUserName(
+	private void _buildCreatorUserName(
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext) {
 
-		String creatorUserName = getFieldValueString(Field.USER_NAME);
+		String creatorUserName = _getFieldValueString(Field.USER_NAME);
 
 		if (!Validator.isBlank(creatorUserName)) {
 			similarResultsDocumentDisplayContext.setCreatorUserName(
@@ -355,7 +380,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		}
 	}
 
-	protected void buildImage(
+	private void _buildImage(
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext,
 		String className, long classPK, AssetRenderer<?> assetRenderer) {
@@ -459,7 +484,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		}
 	}
 
-	protected void buildModelResource(
+	private void _buildModelResource(
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext,
 		String className) {
@@ -473,8 +498,8 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		}
 	}
 
-	protected SimilarResultsDocumentDisplayContext
-		buildTemporarilyUnavailable() {
+	private SimilarResultsDocumentDisplayContext
+		_buildTemporarilyUnavailable() {
 
 		SimilarResultsDocumentDisplayContext
 			similarResultsDocumentDisplayContext =
@@ -485,7 +510,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return similarResultsDocumentDisplayContext;
 	}
 
-	protected String formatCreationDate(Date date) {
+	private String _formatCreationDate(Date date) {
 		Format format = _fastDateFormatFactory.getDateTime(
 			FastDateFormatConstants.MEDIUM, FastDateFormatConstants.SHORT,
 			_locale, _themeDisplay.getTimeZone());
@@ -493,34 +518,11 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return format.format(date);
 	}
 
-	protected AssetRenderer<?> getAssetRenderer(
-		String className, long classPK,
-		AssetRendererFactory<?> assetRendererFactory) {
-
-		try {
-			return assetRendererFactory.getAssetRenderer(classPK);
-		}
-		catch (Exception exception) {
-			throw new IllegalStateException(
-				StringBundler.concat(
-					"Unable to get asset renderer for class ", className,
-					" with primary key ", classPK),
-				exception);
-		}
+	private long _getEntryClassPK() {
+		return _getFieldValueLong(Field.ENTRY_CLASS_PK);
 	}
 
-	protected AssetRendererFactory<?> getAssetRendererFactoryByClassName(
-		String className) {
-
-		return AssetRendererFactoryRegistryUtil.
-			getAssetRendererFactoryByClassName(className);
-	}
-
-	protected long getEntryClassPK() {
-		return getFieldValueLong(Field.ENTRY_CLASS_PK);
-	}
-
-	protected long getFieldValueLong(String fieldName) {
+	private long _getFieldValueLong(String fieldName) {
 		if (_document != null) {
 			return GetterUtil.getLong(_document.getLong(fieldName));
 		}
@@ -528,7 +530,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return GetterUtil.getLong(_legacyDocument.get(fieldName));
 	}
 
-	protected String getFieldValueString(String fieldName) {
+	private String _getFieldValueString(String fieldName) {
 		if (_document != null) {
 			return _document.getString(fieldName);
 		}
@@ -536,25 +538,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return _legacyDocument.get(fieldName);
 	}
 
-	protected FileEntry getFileEntryByClassPK(long fileEntryId) {
-		FileEntry fileEntry = null;
-
-		try {
-			fileEntry = DLAppLocalServiceUtil.getFileEntry(fileEntryId);
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(
-					"Documents and Media search index is stale and contains " +
-						"file entry " + fileEntryId,
-					exception);
-			}
-		}
-
-		return fileEntry;
-	}
-
-	protected Indexer<Object> getIndexer(String className) {
+	private Indexer<Object> _getIndexer(String className) {
 		if (_indexerRegistry != null) {
 			return _indexerRegistry.getIndexer(className);
 		}
@@ -562,15 +546,15 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return IndexerRegistryUtil.getIndexer(className);
 	}
 
-	protected Summary getSummary(
+	private Summary _getSummary(
 			String className, AssetRenderer<?> assetRenderer)
-		throws SearchException {
+		throws Exception {
 
 		SummaryBuilder summaryBuilder = _summaryBuilderFactory.newInstance();
 
 		summaryBuilder.setHighlight(_highlightEnabled);
 
-		Indexer<?> indexer = getIndexer(className);
+		Indexer<?> indexer = _getIndexer(className);
 
 		if (indexer != null) {
 			String snippet = _document.getString(Field.SNIPPET);
@@ -608,19 +592,33 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return null;
 	}
 
-	protected String getTitle(AssetEntry assetEntry, Summary summary) {
-		String title = summary.getTitle();
-
-		if (Validator.isBlank(title)) {
-			title = assetEntry.getTitle(_locale);
-		}
-
-		return title;
-	}
-
-	protected String getViewURL(
+	private String _getViewURL(
 		AssetEntry assetEntry, AssetRenderer<?> assetRenderer, String className,
 		long classPK) {
+
+		SimilarResultsPortletPreferences similarResultsPortletPreferences =
+			new SimilarResultsPortletPreferencesImpl(
+				_renderRequest.getPreferences());
+
+		if (Objects.equals(
+				similarResultsPortletPreferences.getLinkBehavior(),
+				"view-in-context")) {
+
+			try {
+				String url = assetRenderer.getURLViewInContext(
+					_portal.getLiferayPortletRequest(_renderRequest),
+					_portal.getLiferayPortletResponse(_renderResponse), null);
+
+				if (!Validator.isBlank(url)) {
+					return url;
+				}
+			}
+			catch (Exception exception) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(exception);
+				}
+			}
+		}
 
 		String currentURL = _portal.getCurrentURL(_renderRequest);
 
@@ -632,7 +630,7 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			_similarResultsRoute.getContributor();
 
 		DestinationBuilderImpl destinationBuilderImpl =
-			new DestinationBuilderImpl(currentURL, _http);
+			new DestinationBuilderImpl(currentURL);
 
 		DestinationHelper destinationHelper = new DestinationHelper() {
 
@@ -644,6 +642,22 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			@Override
 			public AssetRenderer<?> getAssetRenderer() {
 				return assetRenderer;
+			}
+
+			@Override
+			public String getAssetViewURL() {
+				try {
+					return assetRenderer.getURLView(
+						_portal.getLiferayPortletResponse(_renderResponse),
+						_renderRequest.getWindowState());
+				}
+				catch (Exception exception) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(exception);
+					}
+				}
+
+				return null;
 			}
 
 			@Override
@@ -662,8 +676,13 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 			}
 
 			@Override
+			public long getScopeGroupId() {
+				return _themeDisplay.getScopeGroupId();
+			}
+
+			@Override
 			public String getUID() {
-				return getFieldValueString(Field.UID);
+				return _getFieldValueString(Field.UID);
 			}
 
 		};
@@ -674,19 +693,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 		return destinationBuilderImpl.build();
 	}
 
-	protected Date parseDateStringFieldValue(String dateStringFieldValue) {
-		DateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
-
-		try {
-			return dateFormat.parse(dateStringFieldValue);
-		}
-		catch (Exception exception) {
-			throw new IllegalArgumentException(
-				"Unable to parse date string: " + dateStringFieldValue,
-				exception);
-		}
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		SimilarResultsDocumentDisplayContextBuilder.class);
 
@@ -695,7 +701,6 @@ public class SimilarResultsDocumentDisplayContextBuilder {
 	private DocumentBuilderFactory _documentBuilderFactory;
 	private FastDateFormatFactory _fastDateFormatFactory;
 	private boolean _highlightEnabled;
-	private Http _http;
 	private IndexerRegistry _indexerRegistry;
 	private com.liferay.portal.kernel.search.Document _legacyDocument;
 	private Locale _locale;

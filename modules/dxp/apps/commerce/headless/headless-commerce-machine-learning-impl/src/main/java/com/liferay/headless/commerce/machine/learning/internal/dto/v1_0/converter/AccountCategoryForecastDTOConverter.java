@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.machine.learning.internal.dto.v1_0.converter;
@@ -30,9 +21,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Riccardo Ferrari
  */
 @Component(
-	enabled = false,
 	property = "model.class.name=com.liferay.commerce.machine.learning.forecast.model.AssetCategoryCommerceMLForecast",
-	service = {AccountCategoryForecastDTOConverter.class, DTOConverter.class}
+	service = DTOConverter.class
 )
 public class AccountCategoryForecastDTOConverter
 	implements DTOConverter
@@ -58,30 +48,35 @@ public class AccountCategoryForecastDTOConverter
 					compositeResourcePrimKey.getCompanyId(),
 					compositeResourcePrimKey.getForecastId());
 
-		AssetCategory assetCategory =
-			_assetCategoryLocalService.fetchAssetCategory(
-				assetCategoryCommerceMLForecast.getAssetCategoryId());
-
 		return new AccountCategoryForecast() {
 			{
-				account =
-					assetCategoryCommerceMLForecast.getCommerceAccountId();
-				actual = assetCategoryCommerceMLForecast.getActual();
-				category = assetCategoryCommerceMLForecast.getAssetCategoryId();
+				setAccount(
+					assetCategoryCommerceMLForecast::getCommerceAccountId);
+				setActual(assetCategoryCommerceMLForecast::getActual);
+				setCategory(
+					assetCategoryCommerceMLForecast::getAssetCategoryId);
+				setCategoryTitle(
+					() -> {
+						AssetCategory assetCategory =
+							_assetCategoryLocalService.fetchAssetCategory(
+								assetCategoryCommerceMLForecast.
+									getAssetCategoryId());
 
-				if (assetCategory != null) {
-					categoryTitle = assetCategory.getTitle(
-						LocaleUtil.toLanguageId(
-							dtoConverterContext.getLocale()));
-				}
+						if (assetCategory == null) {
+							return null;
+						}
 
-				forecast = assetCategoryCommerceMLForecast.getForecast();
-				forecastLowerBound =
-					assetCategoryCommerceMLForecast.getForecastLowerBound();
-				forecastUpperBound =
-					assetCategoryCommerceMLForecast.getForecastUpperBound();
-				timestamp = assetCategoryCommerceMLForecast.getTimestamp();
-				unit = assetCategoryCommerceMLForecast.getTarget();
+						return assetCategory.getTitle(
+							LocaleUtil.toLanguageId(
+								dtoConverterContext.getLocale()));
+					});
+				setForecast(assetCategoryCommerceMLForecast::getForecast);
+				setForecastLowerBound(
+					assetCategoryCommerceMLForecast::getForecastLowerBound);
+				setForecastUpperBound(
+					assetCategoryCommerceMLForecast::getForecastUpperBound);
+				setTimestamp(assetCategoryCommerceMLForecast::getTimestamp);
+				setUnit(assetCategoryCommerceMLForecast::getTarget);
 			}
 		};
 	}

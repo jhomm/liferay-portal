@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -63,6 +54,9 @@ if (!layout.isTypeControlPanel()) {
 				errorMessageKey = "this-widget-has-not-been-added-to-the-live-page-publish-the-page-first";
 			}
 		}
+		else if (stagingGroup.isStagedRemotely() && (remoteLayoutPlid == 0)) {
+			errorMessageKey = "this-widget-is-placed-in-a-page-that-does-not-exist-in-the-live-site-publish-the-page-first";
+		}
 	}
 }
 else if (group.isLayout()) {
@@ -91,7 +85,10 @@ if (!GroupPermissionUtil.contains(permissionChecker, themeDisplay.getScopeGroup(
 
 	<c:choose>
 		<c:when test="<%= Validator.isNotNull(errorMessageKey) %>">
-			<liferay-ui:message key="<%= errorMessageKey %>" />
+			<clay:stripe
+				displayType="warning"
+				message="<%= errorMessageKey %>"
+			/>
 		</c:when>
 		<c:when test="<%= (themeDisplay.getURLPublishToLive() != null) || layout.isTypeControlPanel() %>">
 			<c:choose>
@@ -144,18 +141,21 @@ if (!GroupPermissionUtil.contains(permissionChecker, themeDisplay.getScopeGroup(
 
 					var dateChecker = exportImport.getDateRangeChecker();
 
-					if (
-						dateChecker.validRange &&
-						confirm(
-							'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-copy-from-live-and-update-the-existing-staging-widget-information") %>'
-						)
-					) {
-						document.<portlet:namespace />fm1.<portlet:namespace /><%= Constants.CMD %>.value =
-							'copy_from_live';
+					if (dateChecker.validRange) {
+						Liferay.Util.openConfirmModal({
+							message:
+								'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-copy-from-live-and-update-the-existing-staging-widget-information") %>',
+							onConfirm: (isConfirmed) => {
+								if (isConfirmed) {
+									document.<portlet:namespace />fm1.<portlet:namespace /><%= Constants.CMD %>.value =
+										'copy_from_live';
 
-						submitForm(document.<portlet:namespace />fm1);
+									submitForm(document.<portlet:namespace />fm1);
+								}
+							},
+						});
 					}
-					else if (!dateChecker.validRange) {
+					else {
 						exportImport.showNotification(dateChecker);
 					}
 				}
@@ -167,15 +167,18 @@ if (!GroupPermissionUtil.contains(permissionChecker, themeDisplay.getScopeGroup(
 
 					var dateChecker = exportImport.getDateRangeChecker();
 
-					if (
-						dateChecker.validRange &&
-						confirm(
-							'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-publish-to-live-and-update-the-existing-application-data") %>'
-						)
-					) {
-						submitForm(document.<portlet:namespace />fm1);
+					if (dateChecker.validRange) {
+						Liferay.Util.openConfirmModal({
+							message:
+								'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-publish-to-live-and-update-the-existing-application-data") %>',
+							onConfirm: (isConfirmed) => {
+								if (isConfirmed) {
+									submitForm(document.<portlet:namespace />fm1);
+								}
+							},
+						});
 					}
-					else if (!dateChecker.validRange) {
+					else {
 						exportImport.showNotification(dateChecker);
 					}
 				}

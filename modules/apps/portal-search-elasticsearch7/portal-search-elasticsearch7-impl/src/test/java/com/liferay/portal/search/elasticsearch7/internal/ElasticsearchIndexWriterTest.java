@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.IndexWriter;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.generic.MatchQuery;
+import com.liferay.portal.search.elasticsearch7.internal.indexing.LiferayElasticsearchIndexingFixtureFactory;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
 import com.liferay.portal.search.test.util.indexing.DocumentFixture;
 import com.liferay.portal.search.test.util.indexing.IndexingFixture;
@@ -27,8 +20,6 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -58,15 +49,10 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 	@After
 	@Override
 	public void tearDown() throws SearchException {
-		Stream<Document> stream = _documents.stream();
-
 		_indexWriter.deleteDocuments(
-			getSearchContext(),
-			stream.map(
-				document -> document.get(Field.UID)
-			).collect(
-				Collectors.toList()
-			));
+			_getSearchContext(),
+			TransformUtil.transform(
+				_documents, document -> document.get(Field.UID)));
 
 		_documents.clear();
 	}
@@ -75,7 +61,7 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 	public void testAddDocument() {
 		addDocument(Field.TITLE, "text");
 
-		assertOnlyOne(Field.TITLE, "text");
+		_assertOnlyOne(Field.TITLE, "text");
 	}
 
 	@Test
@@ -83,9 +69,9 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 		Document document = addDocument(Field.TITLE, "text");
 
 		_indexWriter.deleteDocument(
-			getSearchContext(), document.get(Field.UID));
+			_getSearchContext(), document.get(Field.UID));
 
-		assertNone(Field.TITLE, "text");
+		_assertNone(Field.TITLE, "text");
 	}
 
 	@Test
@@ -97,10 +83,10 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 
 		_indexWriter.partiallyUpdateDocument(createSearchContext(), document);
 
-		assertNone(Field.TITLE, "text");
+		_assertNone(Field.TITLE, "text");
 
-		assertOnlyOne(Field.CONTENT, "example");
-		assertOnlyOne(Field.TITLE, "change");
+		_assertOnlyOne(Field.CONTENT, "example");
+		_assertOnlyOne(Field.TITLE, "change");
 	}
 
 	@Test
@@ -114,8 +100,23 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 
 		_indexWriter.partiallyUpdateDocument(createSearchContext(), document);
 
-		assertOnlyOne(Field.CONTENT, "example");
-		assertOnlyOne(Field.TITLE, "text");
+		_assertOnlyOne(Field.CONTENT, "example");
+		_assertOnlyOne(Field.TITLE, "text");
+	}
+
+	@Test
+	public void testPartiallyUpdateDocumentUpsertsMissingDocument()
+		throws SearchException {
+
+		Document document = createDocument(
+			Field.TITLE, "text", Field.CONTENT, "example");
+
+		_indexWriter.partiallyUpdateDocument(createSearchContext(), document);
+
+		_documents.add(document);
+
+		_assertOnlyOne(Field.CONTENT, "example");
+		_assertOnlyOne(Field.TITLE, "text");
 	}
 
 	@Test
@@ -126,9 +127,9 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 
 		_indexWriter.updateDocument(createSearchContext(), document);
 
-		assertNone(Field.TITLE, "text");
+		_assertNone(Field.TITLE, "text");
 
-		assertOnlyOne(Field.TITLE, "example");
+		_assertOnlyOne(Field.TITLE, "example");
 	}
 
 	@Test
@@ -140,9 +141,9 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 
 		_indexWriter.updateDocument(createSearchContext(), document);
 
-		assertNone(Field.CONTENT, "example");
+		_assertNone(Field.CONTENT, "example");
 
-		assertOnlyOne(Field.TITLE, "text");
+		_assertOnlyOne(Field.TITLE, "text");
 	}
 
 	protected Document addDocument(String fieldName, String fieldValue) {
@@ -167,30 +168,6 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 		_documents.add(document);
 
 		return document;
-	}
-
-	protected void assertNone(String field, String value) {
-		assertSearch(
-			indexingTestHelper -> {
-				indexingTestHelper.setQuery(new MatchQuery(field, value));
-
-				indexingTestHelper.search();
-
-				indexingTestHelper.verify(
-					hits -> Assert.assertEquals(0, hits.getLength()));
-			});
-	}
-
-	protected void assertOnlyOne(String field, String value) {
-		assertSearch(
-			indexingTestHelper -> {
-				indexingTestHelper.setQuery(new MatchQuery(field, value));
-
-				indexingTestHelper.search();
-
-				indexingTestHelper.verify(
-					hits -> Assert.assertEquals(1, hits.getLength()));
-			});
 	}
 
 	protected Document createDocument(String fieldName, String fieldValue) {
@@ -220,7 +197,31 @@ public class ElasticsearchIndexWriterTest extends BaseIndexingTestCase {
 		return LiferayElasticsearchIndexingFixtureFactory.getInstance();
 	}
 
-	protected SearchContext getSearchContext() {
+	private void _assertNone(String field, String value) {
+		assertSearch(
+			indexingTestHelper -> {
+				indexingTestHelper.setQuery(new MatchQuery(field, value));
+
+				indexingTestHelper.search();
+
+				indexingTestHelper.verify(
+					hits -> Assert.assertEquals(0, hits.getLength()));
+			});
+	}
+
+	private void _assertOnlyOne(String field, String value) {
+		assertSearch(
+			indexingTestHelper -> {
+				indexingTestHelper.setQuery(new MatchQuery(field, value));
+
+				indexingTestHelper.search();
+
+				indexingTestHelper.verify(
+					hits -> Assert.assertEquals(1, hits.getLength()));
+			});
+	}
+
+	private SearchContext _getSearchContext() {
 		SearchContext searchContext = new SearchContext();
 
 		searchContext.setCompanyId(getCompanyId());

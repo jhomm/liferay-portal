@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.openid.connect.persistence.model;
@@ -17,6 +8,7 @@ package com.liferay.portal.security.sso.openid.connect.persistence.model;
 import com.liferay.petra.sql.dsl.Column;
 import com.liferay.petra.sql.dsl.base.BaseTable;
 
+import java.sql.Clob;
 import java.sql.Types;
 
 import java.util.Date;
@@ -44,18 +36,27 @@ public class OpenIdConnectSessionTable
 	public final Column<OpenIdConnectSessionTable, Long> companyId =
 		createColumn(
 			"companyId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<OpenIdConnectSessionTable, Long> userId = createColumn(
+		"userId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
 	public final Column<OpenIdConnectSessionTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
-	public final Column<OpenIdConnectSessionTable, String> accessToken =
+	public final Column<OpenIdConnectSessionTable, Clob> accessToken =
 		createColumn(
-			"accessToken", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<OpenIdConnectSessionTable, String> idToken =
+			"accessToken", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
+	public final Column<OpenIdConnectSessionTable, Date>
+		accessTokenExpirationDate = createColumn(
+			"accessTokenExpirationDate", Date.class, Types.TIMESTAMP,
+			Column.FLAG_DEFAULT);
+	public final Column<OpenIdConnectSessionTable, String>
+		authServerWellKnownURI = createColumn(
+			"authServerWellKnownURI", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<OpenIdConnectSessionTable, String> clientId =
 		createColumn(
-			"idToken", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
-	public final Column<OpenIdConnectSessionTable, String> providerName =
-		createColumn(
-			"providerName", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+			"clientId", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OpenIdConnectSessionTable, Clob> idToken = createColumn(
+		"idToken", Clob.class, Types.CLOB, Column.FLAG_DEFAULT);
 	public final Column<OpenIdConnectSessionTable, String> refreshToken =
 		createColumn(
 			"refreshToken", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);

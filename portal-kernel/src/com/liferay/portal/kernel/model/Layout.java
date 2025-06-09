@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -113,6 +104,9 @@ public interface Layout extends LayoutModel, PersistedModel {
 	public java.util.List<Layout> getAncestors()
 		throws com.liferay.portal.kernel.exception.PortalException;
 
+	public String getBreadcrumb(java.util.Locale locale)
+		throws com.liferay.portal.kernel.exception.PortalException;
+
 	/**
 	 * Returns all child layouts of the current layout, independent of user
 	 * access permissions.
@@ -168,6 +162,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 
 	public java.util.List<Portlet> getEmbeddedPortlets(long groupId);
 
+	public String getFaviconURL();
+
 	/**
 	 * Returns the layout's friendly URL for the given locale.
 	 *
@@ -219,6 +215,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 */
 	public String getHTMLTitle(String localeLanguageId);
 
+	public String getIcon();
+
 	/**
 	 * Returns <code>true</code> if the current layout has a configured icon.
 	 *
@@ -233,6 +231,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 * @return the current layout's layout set
 	 */
 	public LayoutSet getLayoutSet();
+
+	public Layout getLayoutSetPrototypeLayout();
 
 	/**
 	 * Returns the current layout's {@link LayoutType}.
@@ -250,15 +250,15 @@ public interface Layout extends LayoutModel, PersistedModel {
 	public Layout getLinkedToLayout();
 
 	public String getRegularURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public String getResetLayoutURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public String getResetMaxStateURL(
-			javax.servlet.http.HttpServletRequest httpServletRequest)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest)
 		throws com.liferay.portal.kernel.exception.PortalException;
 
 	public Group getScopeGroup()
@@ -315,8 +315,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	public boolean hasSetModifiedDate();
 
 	public boolean includeLayoutContent(
-			javax.servlet.http.HttpServletRequest httpServletRequest,
-			javax.servlet.http.HttpServletResponse httpServletResponse)
+			jakarta.servlet.http.HttpServletRequest httpServletRequest,
+			jakarta.servlet.http.HttpServletResponse httpServletResponse)
 		throws Exception;
 
 	public boolean isChildSelected(boolean selectable, Layout layout)
@@ -339,6 +339,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	public boolean isCustomizable();
 
 	public boolean isDraftLayout();
+
+	public boolean isEmbeddedPersonalApplication();
 
 	/**
 	 * Returns <code>true</code> if the current layout is the first layout in
@@ -370,6 +372,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 */
 	public boolean isInheritLookAndFeel();
 
+	public boolean isLayoutDeleteable();
+
 	/**
 	 * Returns <code>true</code> if the current layout is built from a layout
 	 * template and still maintains an active connection to it.
@@ -379,6 +383,10 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 <code>false</code> otherwise
 	 */
 	public boolean isLayoutPrototypeLinkActive();
+
+	public boolean isLayoutSortable();
+
+	public boolean isLayoutUpdateable();
 
 	public boolean isPortletEmbedded(String portletId, long groupId);
 
@@ -395,6 +403,8 @@ public interface Layout extends LayoutModel, PersistedModel {
 	 layout set; <code>false</code> otherwise
 	 */
 	public boolean isPublicLayout();
+
+	public boolean isPublished();
 
 	/**
 	 * Returns <code>true</code> if the current layout is the root layout.
@@ -432,8 +442,12 @@ public interface Layout extends LayoutModel, PersistedModel {
 
 	public boolean isTypeURL();
 
+	public boolean isTypeUtility();
+
+	public boolean isUnlocked(String mode, long userId);
+
 	public boolean matches(
-		javax.servlet.http.HttpServletRequest httpServletRequest,
+		jakarta.servlet.http.HttpServletRequest httpServletRequest,
 		String friendlyURL);
 
 	public void setLayoutSet(LayoutSet layoutSet);

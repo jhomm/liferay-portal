@@ -1,20 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.web.internal.portlet.action;
 
-import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
@@ -24,10 +14,13 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
 import com.liferay.portal.kernel.workflow.WorkflowDefinitionFileException;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowException;
 import com.liferay.portal.workflow.constants.WorkflowPortletKeys;
 import com.liferay.portal.workflow.constants.WorkflowWebKeys;
+import com.liferay.portal.workflow.manager.WorkflowDefinitionManager;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.text.DateFormat;
 
@@ -35,18 +28,15 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.ResourceBundle;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Inácio Nery
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
+		"jakarta.portlet.name=" + WorkflowPortletKeys.CONTROL_PANEL_WORKFLOW,
 		"mvc.command.name=/portal_workflow/revert_workflow_definition"
 	},
 	service = MVCActionCommand.class
@@ -76,7 +66,7 @@ public class RevertWorkflowDefinitionMVCActionCommand
 			actionRequest, "previousVersion");
 
 		WorkflowDefinition previousWorkflowDefinition =
-			WorkflowDefinitionManagerUtil.getWorkflowDefinition(
+			_workflowDefinitionManager.liberalGetWorkflowDefinition(
 				themeDisplay.getCompanyId(), previousName, previousVersion);
 
 		actionRequest.setAttribute(
@@ -95,14 +85,14 @@ public class RevertWorkflowDefinitionMVCActionCommand
 
 			workflowDefinition =
 				workflowDefinitionManager.deployWorkflowDefinition(
-					themeDisplay.getCompanyId(), themeDisplay.getUserId(),
+					null, themeDisplay.getCompanyId(), themeDisplay.getUserId(),
 					previousWorkflowDefinition.getTitle(), previousName,
 					content.getBytes());
 		}
 		else {
 			workflowDefinition =
 				workflowDefinitionManager.saveWorkflowDefinition(
-					themeDisplay.getCompanyId(), themeDisplay.getUserId(),
+					null, themeDisplay.getCompanyId(), themeDisplay.getUserId(),
 					previousWorkflowDefinition.getTitle(), previousName,
 					content.getBytes());
 		}
@@ -130,7 +120,7 @@ public class RevertWorkflowDefinitionMVCActionCommand
 				WorkflowWebKeys.WORKFLOW_DEFINITION_MODIFIED_DATE),
 			dateFormat);
 
-		return LanguageUtil.format(
+		return language.format(
 			resourceBundle, "restored-to-revision-from-x",
 			dateFormat.format(workflowDefinitionModifiedDate));
 	}
@@ -146,7 +136,7 @@ public class RevertWorkflowDefinitionMVCActionCommand
 		catch (WorkflowException workflowException) {
 			DateFormat dateFormat = _getDateFormat(locale);
 
-			String message = LanguageUtil.format(
+			String message = language.format(
 				getResourceBundle(actionRequest),
 				"the-version-from-x-is-not-valid-for-publication",
 				dateFormat.format(previousDateModification));
@@ -165,5 +155,8 @@ public class RevertWorkflowDefinitionMVCActionCommand
 		return DateFormatFactoryUtil.getSimpleDateFormat(
 			"MMM d, yyyy, HH:mm", locale);
 	}
+
+	@Reference
+	private WorkflowDefinitionManager _workflowDefinitionManager;
 
 }

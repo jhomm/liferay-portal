@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.item.selector.taglib.internal.display.context;
@@ -19,24 +10,23 @@ import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.provider.GroupItemSelectorProvider;
 import com.liferay.item.selector.taglib.internal.servlet.item.selector.ItemSelectorUtil;
 import com.liferay.item.selector.taglib.internal.util.EntryURLUtil;
-import com.liferay.item.selector.taglib.internal.util.GroupItemSelectorTrackerUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.item.selector.taglib.internal.util.GroupItemSelectorProviderRegistryUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
+import com.liferay.site.search.GroupSearch;
+
+import jakarta.portlet.PortletURL;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
-
-import javax.portlet.PortletURL;
 
 /**
  * @author Cristina González
@@ -50,28 +40,40 @@ public class GroupSelectorDisplayContext {
 	}
 
 	public String getGroupItemSelectorIcon() {
-		Optional<GroupItemSelectorProvider> optional =
-			GroupItemSelectorTrackerUtil.getGroupItemSelectorProviderOptional(
+		GroupItemSelectorProvider groupItemSelectorProvider =
+			GroupItemSelectorProviderRegistryUtil.getGroupItemSelectorProvider(
 				_getGroupType());
 
-		return optional.map(
-			GroupItemSelectorProvider::getIcon
-		).orElse(
-			"folder"
-		);
+		if (groupItemSelectorProvider == null) {
+			return "folder";
+		}
+
+		String icon = groupItemSelectorProvider.getIcon();
+
+		if (icon == null) {
+			return "folder";
+		}
+
+		return icon;
 	}
 
 	public String getGroupItemSelectorLabel(String groupType) {
-		Optional<GroupItemSelectorProvider> optional =
-			GroupItemSelectorTrackerUtil.getGroupItemSelectorProviderOptional(
+		GroupItemSelectorProvider groupItemSelectorProvider =
+			GroupItemSelectorProviderRegistryUtil.getGroupItemSelectorProvider(
 				groupType);
 
-		return optional.map(
-			groupItemSelectorProvider -> groupItemSelectorProvider.getLabel(
-				_liferayPortletRequest.getLocale())
-		).orElse(
-			StringPool.BLANK
-		);
+		if (groupItemSelectorProvider == null) {
+			return StringPool.BLANK;
+		}
+
+		String label = groupItemSelectorProvider.getLabel(
+			_liferayPortletRequest.getLocale());
+
+		if (label == null) {
+			return StringPool.BLANK;
+		}
+
+		return label;
 	}
 
 	public PortletURL getGroupItemSelectorURL(String groupType) {
@@ -80,18 +82,17 @@ public class GroupSelectorDisplayContext {
 		).setParameter(
 			"groupType", groupType
 		).setParameter(
-			"scopeGroupType",
-			ParamUtil.getString(_liferayPortletRequest, "scopeGroupType")
+			"scopeGroupType", _isScopeGroupType()
 		).setParameter(
-			"selectedTab",
-			ParamUtil.getString(_liferayPortletRequest, "selectedTab")
+			"selectedTab", _getSelectedTab()
 		).setParameter(
 			"showGroupSelector", true
 		).buildPortletURL();
 	}
 
 	public Set<String> getGroupTypes() {
-		return GroupItemSelectorTrackerUtil.getGroupItemSelectorProviderTypes();
+		return GroupItemSelectorProviderRegistryUtil.
+			getGroupItemSelectorProviderTypes();
 	}
 
 	public SearchContainer<Group> getSearchContainer() {
@@ -99,17 +100,12 @@ public class GroupSelectorDisplayContext {
 			_liferayPortletRequest, _getIteratorURL());
 
 		searchContainer.setEmptyResultsMessage(_getEmptyResultsMessage());
-
-		List<Group> groups = (List<Group>)_liferayPortletRequest.getAttribute(
-			"liferay-item-selector:group-selector:groups");
-
-		searchContainer.setResults(groups);
-
-		int groupsCount = GetterUtil.getInteger(
-			_liferayPortletRequest.getAttribute(
-				"liferay-item-selector:group-selector:groupsCount"));
-
-		searchContainer.setTotal(groupsCount);
+		searchContainer.setResultsAndTotal(
+			() -> (List<Group>)_liferayPortletRequest.getAttribute(
+				"liferay-item-selector:group-selector:groups"),
+			GetterUtil.getInteger(
+				_liferayPortletRequest.getAttribute(
+					"liferay-item-selector:group-selector:groupsCount")));
 
 		return searchContainer;
 	}
@@ -118,15 +114,17 @@ public class GroupSelectorDisplayContext {
 		PortletURL portletURL = EntryURLUtil.getGroupPortletURL(
 			group, _liferayPortletRequest);
 
-		return portletURL.toString();
+		return PortletURLBuilder.create(
+			portletURL
+		).setParameter(
+			"groupType", _getGroupType()
+		).setParameter(
+			"scopeGroupType", _isScopeGroupType()
+		).buildString();
 	}
 
 	public boolean isGroupTypeActive(String groupType) {
-		if (groupType.equals(_getGroupType())) {
-			return true;
-		}
-
-		return false;
+		return groupType.equals(_getGroupType());
 	}
 
 	protected GroupSelectorDisplayContext(
@@ -137,21 +135,27 @@ public class GroupSelectorDisplayContext {
 	}
 
 	private String _getEmptyResultsMessage() {
+		GroupItemSelectorProvider groupItemSelectorProvider =
+			GroupItemSelectorProviderRegistryUtil.getGroupItemSelectorProvider(
+				_getGroupType());
+
+		if (groupItemSelectorProvider == null) {
+			return GroupSearch.EMPTY_RESULTS_MESSAGE;
+		}
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)_liferayPortletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		Optional<GroupItemSelectorProvider> optional =
-			GroupItemSelectorTrackerUtil.getGroupItemSelectorProviderOptional(
-				_getGroupType());
+		String emptyResultsMessage =
+			groupItemSelectorProvider.getEmptyResultsMessage(
+				themeDisplay.getLocale());
 
-		return optional.map(
-			groupItemSelectorProvider ->
-				groupItemSelectorProvider.getEmptyResultsMessage(
-					themeDisplay.getLocale())
-		).orElse(
-			GroupSearch.EMPTY_RESULTS_MESSAGE
-		);
+		if (emptyResultsMessage == null) {
+			return GroupSearch.EMPTY_RESULTS_MESSAGE;
+		}
+
+		return emptyResultsMessage;
 	}
 
 	private String _getGroupType() {
@@ -171,16 +175,14 @@ public class GroupSelectorDisplayContext {
 	private PortletURL _getItemSelectorURL() {
 		ItemSelector itemSelector = _getItemSelector();
 
-		String itemSelectedEventName = ParamUtil.getString(
-			_liferayPortletRequest, "itemSelectedEventName");
-
 		List<ItemSelectorCriterion> itemSelectorCriteria =
 			itemSelector.getItemSelectorCriteria(
 				_liferayPortletRequest.getParameterMap());
 
 		return itemSelector.getItemSelectorURL(
 			RequestBackedPortletURLFactoryUtil.create(_liferayPortletRequest),
-			itemSelectedEventName,
+			ParamUtil.getString(
+				_liferayPortletRequest, "itemSelectedEventName"),
 			itemSelectorCriteria.toArray(new ItemSelectorCriterion[0]));
 	}
 
@@ -190,14 +192,39 @@ public class GroupSelectorDisplayContext {
 		).setParameter(
 			"groupType", _getGroupType()
 		).setParameter(
-			"selectedTab",
-			ParamUtil.getString(_liferayPortletRequest, "selectedTab")
+			"scopeGroupType", _isScopeGroupType()
+		).setParameter(
+			"selectedTab", _getSelectedTab()
 		).setParameter(
 			"showGroupSelector", true
 		).buildPortletURL();
 	}
 
+	private String _getSelectedTab() {
+		if (_selectedTab != null) {
+			return _selectedTab;
+		}
+
+		_selectedTab = ParamUtil.getString(
+			_liferayPortletRequest, "selectedTab");
+
+		return _selectedTab;
+	}
+
+	private boolean _isScopeGroupType() {
+		if (_scopeGroupType != null) {
+			return _scopeGroupType;
+		}
+
+		_scopeGroupType = ParamUtil.getBoolean(
+			_liferayPortletRequest, "scopeGroupType");
+
+		return _scopeGroupType;
+	}
+
 	private String _groupType;
 	private final LiferayPortletRequest _liferayPortletRequest;
+	private Boolean _scopeGroupType;
+	private String _selectedTab;
 
 }

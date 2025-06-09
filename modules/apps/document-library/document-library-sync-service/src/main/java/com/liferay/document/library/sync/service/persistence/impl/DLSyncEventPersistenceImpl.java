@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.sync.service.persistence.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -46,7 +36,6 @@ import com.liferay.portal.kernel.util.SetUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.HashMap;
@@ -71,7 +60,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {DLSyncEventPersistence.class, BasePersistence.class})
+@Component(service = DLSyncEventPersistence.class)
 public class DLSyncEventPersistenceImpl
 	extends BasePersistenceImpl<DLSyncEvent> implements DLSyncEventPersistence {
 
@@ -178,7 +167,7 @@ public class DLSyncEventPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<DLSyncEvent>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (DLSyncEvent dlSyncEvent : list) {
@@ -536,7 +525,7 @@ public class DLSyncEventPersistenceImpl
 
 		Object[] finderArgs = new Object[] {modifiedTime};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -577,7 +566,6 @@ public class DLSyncEventPersistenceImpl
 		"dlSyncEvent.modifiedTime > ?";
 
 	private FinderPath _finderPathFetchByTypePK;
-	private FinderPath _finderPathCountByTypePK;
 
 	/**
 	 * Returns the dl sync event where typePK = &#63; or throws a <code>NoSuchEventException</code> if it could not be found.
@@ -640,7 +628,7 @@ public class DLSyncEventPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByTypePK, finderArgs);
+				_finderPathFetchByTypePK, finderArgs, this);
 		}
 
 		if (result instanceof DLSyncEvent) {
@@ -724,45 +712,13 @@ public class DLSyncEventPersistenceImpl
 	 */
 	@Override
 	public int countByTypePK(long typePK) {
-		FinderPath finderPath = _finderPathCountByTypePK;
+		DLSyncEvent dlSyncEvent = fetchByTypePK(typePK);
 
-		Object[] finderArgs = new Object[] {typePK};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_DLSYNCEVENT_WHERE);
-
-			sb.append(_FINDER_COLUMN_TYPEPK_TYPEPK_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(typePK);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (dlSyncEvent == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_TYPEPK_TYPEPK_2 =
@@ -871,7 +827,6 @@ public class DLSyncEventPersistenceImpl
 
 		Object[] args = new Object[] {dlSyncEventModelImpl.getTypePK()};
 
-		finderCache.putResult(_finderPathCountByTypePK, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByTypePK, args, dlSyncEventModelImpl);
 	}
@@ -1166,7 +1121,7 @@ public class DLSyncEventPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<DLSyncEvent>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1236,7 +1191,7 @@ public class DLSyncEventPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1324,35 +1279,14 @@ public class DLSyncEventPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByTypePK",
 			new String[] {Long.class.getName()}, new String[] {"typePK"}, true);
 
-		_finderPathCountByTypePK = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByTypePK",
-			new String[] {Long.class.getName()}, new String[] {"typePK"},
-			false);
-
-		_setDLSyncEventUtilPersistence(this);
+		DLSyncEventUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDLSyncEventUtilPersistence(null);
+		DLSyncEventUtil.setPersistence(null);
 
 		entityCache.removeCache(DLSyncEventImpl.class.getName());
-	}
-
-	private void _setDLSyncEventUtilPersistence(
-		DLSyncEventPersistence dlSyncEventPersistence) {
-
-		try {
-			Field field = DLSyncEventUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, dlSyncEventPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1417,9 +1351,5 @@ public class DLSyncEventPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DLSyncEventModelArgumentsResolver
-		_dlSyncEventModelArgumentsResolver;
 
 }

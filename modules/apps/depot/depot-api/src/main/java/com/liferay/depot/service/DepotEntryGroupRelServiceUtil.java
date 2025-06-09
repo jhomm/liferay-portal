@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service;
 
 import com.liferay.depot.model.DepotEntryGroupRel;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 
@@ -50,6 +42,22 @@ public class DepotEntryGroupRelServiceUtil {
 		throws PortalException {
 
 		return getService().deleteDepotEntryGroupRel(depotEntryGroupRelId);
+	}
+
+	public static DepotEntryGroupRel
+			getDepotEntryGroupRelByDepotEntryIdToGroupId(
+				long depotEntryId, long toGroupId)
+		throws PortalException {
+
+		return getService().getDepotEntryGroupRelByDepotEntryIdToGroupId(
+			depotEntryId, toGroupId);
+	}
+
+	public static List<DepotEntryGroupRel> getDepotEntryGroupRels(
+			com.liferay.depot.model.DepotEntry depotEntry, int start, int end)
+		throws PortalException {
+
+		return getService().getDepotEntryGroupRels(depotEntry, start, end);
 	}
 
 	public static List<DepotEntryGroupRel> getDepotEntryGroupRels(
@@ -97,9 +105,12 @@ public class DepotEntryGroupRelServiceUtil {
 	}
 
 	public static DepotEntryGroupRelService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile DepotEntryGroupRelService _service;
+	private static final Snapshot<DepotEntryGroupRelService> _serviceSnapshot =
+		new Snapshot<>(
+			DepotEntryGroupRelServiceUtil.class,
+			DepotEntryGroupRelService.class);
 
 }

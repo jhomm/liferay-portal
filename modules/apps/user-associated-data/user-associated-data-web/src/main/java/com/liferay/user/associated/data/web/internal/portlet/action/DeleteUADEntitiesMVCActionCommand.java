@@ -1,41 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.associated.data.web.internal.portlet.action;
 
 import com.liferay.portal.kernel.exception.NoSuchModelException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.servlet.SessionErrors;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.user.associated.data.anonymizer.UADAnonymizer;
 import com.liferay.user.associated.data.constants.UserAssociatedDataPortletKeys;
 import com.liferay.user.associated.data.display.UADDisplay;
 import com.liferay.user.associated.data.web.internal.display.UADHierarchyDisplay;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,9 +30,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Noah Sherrill
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
+		"jakarta.portlet.name=" + UserAssociatedDataPortletKeys.USER_ASSOCIATED_DATA,
 		"mvc.command.name=/user_associated_data/delete_uad_entities"
 	},
 	service = MVCActionCommand.class
@@ -60,8 +45,8 @@ public class DeleteUADEntitiesMVCActionCommand extends BaseUADMVCActionCommand {
 
 		String applicationKey = ParamUtil.getString(
 			actionRequest, "applicationKey");
-		String parentContainerClass = ParamUtil.getString(
-			actionRequest, "parentContainerClass");
+		String parentContainerTypeKey = ParamUtil.getString(
+			actionRequest, "parentContainerTypeKey");
 
 		UADHierarchyDisplay uadHierarchyDisplay =
 			uadRegistry.getUADHierarchyDisplay(applicationKey);
@@ -69,7 +54,7 @@ public class DeleteUADEntitiesMVCActionCommand extends BaseUADMVCActionCommand {
 		String redirect = null;
 
 		if ((uadHierarchyDisplay != null) &&
-			Validator.isNotNull(parentContainerClass)) {
+			Validator.isNotNull(parentContainerTypeKey)) {
 
 			redirect = uadHierarchyDisplay.getParentContainerURL(
 				actionRequest,
@@ -98,7 +83,7 @@ public class DeleteUADEntitiesMVCActionCommand extends BaseUADMVCActionCommand {
 				actionRequest, "parentContainerId");
 
 			UADDisplay<?> uadDisplay = uadRegistry.getUADDisplay(
-				parentContainerClass);
+				parentContainerTypeKey);
 
 			try {
 				uadDisplay.get(parentContainerId);
@@ -134,50 +119,28 @@ public class DeleteUADEntitiesMVCActionCommand extends BaseUADMVCActionCommand {
 					entityUADAnonymizer.delete(entity);
 				}
 				catch (Exception exception) {
-					ThemeDisplay themeDisplay =
-						(ThemeDisplay)actionRequest.getAttribute(
-							WebKeys.THEME_DISPLAY);
-
-					Map<Class<?>, String> exceptionMessageMap =
-						entityUADAnonymizer.getExceptionMessageMap(
-							themeDisplay.getLocale());
-
-					if (exceptionMessageMap.containsKey(exception.getClass())) {
-						SessionErrors.add(
-							actionRequest, "deleteUADEntityException",
-							exceptionMessageMap.get(exception.getClass()));
-
-						String redirect = ParamUtil.getString(
-							actionRequest, "redirect");
-
-						if (Validator.isNotNull(redirect)) {
-							sendRedirect(
-								actionRequest, actionResponse, redirect);
-						}
-					}
-					else {
-						throw exception;
-					}
+					handleExceptions(
+						actionRequest, actionResponse, exception,
+						entityUADAnonymizer);
 				}
 			}
 			else {
-				Map<Class<?>, List<Serializable>> containerItemPKsMap =
+				Map<String, List<Serializable>> containerItemPKsMap =
 					uadHierarchyDisplay.getContainerItemPKsMap(
-						entityUADDisplay.getTypeClass(),
+						entityUADDisplay.getTypeKey(),
 						uadHierarchyDisplay.getPrimaryKey(entity),
 						selectedUserId);
 
-				for (Map.Entry<Class<?>, List<Serializable>> entry :
+				for (Map.Entry<String, List<Serializable>> entry :
 						containerItemPKsMap.entrySet()) {
 
-					Class<?> containerItemClass = entry.getKey();
+					String typeKey = entry.getKey();
 
 					UADAnonymizer<Object> containerItemUADAnonymizer =
 						(UADAnonymizer<Object>)uadRegistry.getUADAnonymizer(
-							containerItemClass.getName());
+							typeKey);
 					UADDisplay<Object> containerItemUADDisplay =
-						(UADDisplay<Object>)uadRegistry.getUADDisplay(
-							containerItemClass.getName());
+						(UADDisplay<Object>)uadRegistry.getUADDisplay(typeKey);
 
 					doMultipleAction(
 						entry.getValue(),
@@ -190,12 +153,10 @@ public class DeleteUADEntitiesMVCActionCommand extends BaseUADMVCActionCommand {
 								containerItemUADAnonymizer.delete(
 									containerItem);
 							}
-							catch (NoSuchModelException noSuchModelException) {
-								if (_log.isDebugEnabled()) {
-									_log.debug(
-										noSuchModelException,
-										noSuchModelException);
-								}
+							catch (Exception exception) {
+								handleExceptions(
+									actionRequest, actionResponse, exception,
+									containerItemUADAnonymizer);
 							}
 						});
 				}
@@ -205,9 +166,6 @@ public class DeleteUADEntitiesMVCActionCommand extends BaseUADMVCActionCommand {
 			entityUADAnonymizer.delete(entity);
 		}
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		DeleteUADEntitiesMVCActionCommand.class);
 
 	@Reference
 	private Portal _portal;

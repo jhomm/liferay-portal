@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.currency.web.internal.portlet.action;
@@ -22,8 +13,8 @@ import com.liferay.commerce.currency.exception.CommerceCurrencyNameException;
 import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -31,18 +22,18 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,9 +42,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+		"jakarta.portlet.name=" + CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
 		"mvc.command.name=/commerce_currency/edit_exchange_rate"
 	},
 	service = MVCActionCommand.class
@@ -72,7 +62,7 @@ public class EditExchangeRateMVCActionCommand extends BaseMVCActionCommand {
 
 		try {
 			if (cmd.equals(Constants.UPDATE)) {
-				updateExchangeRateConfiguration(actionRequest, serviceContext);
+				_updateExchangeRateConfiguration(actionRequest, serviceContext);
 
 				updateExchangeRates(serviceContext);
 			}
@@ -103,28 +93,6 @@ public class EditExchangeRateMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void updateExchangeRateConfiguration(
-			ActionRequest actionRequest, ServiceContext serviceContext)
-		throws Exception {
-
-		Map<String, String> parameterMap = PropertiesParamUtil.getProperties(
-			actionRequest, "exchangeRateConfiguration--");
-
-		Settings settings = _settingsFactory.getSettings(
-			new CompanyServiceSettingsLocator(
-				serviceContext.getCompanyId(),
-				CommerceCurrencyExchangeRateConstants.SERVICE_NAME));
-
-		ModifiableSettings modifiableSettings =
-			settings.getModifiableSettings();
-
-		for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
-			modifiableSettings.setValue(entry.getKey(), entry.getValue());
-		}
-
-		modifiableSettings.store();
-	}
-
 	protected void updateExchangeRates(ServiceContext serviceContext)
 		throws Exception {
 
@@ -147,13 +115,32 @@ public class EditExchangeRateMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
+	private void _updateExchangeRateConfiguration(
+			ActionRequest actionRequest, ServiceContext serviceContext)
+		throws Exception {
+
+		Map<String, String> parameterMap = PropertiesParamUtil.getProperties(
+			actionRequest, "exchangeRateConfiguration--");
+
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
+			new CompanyServiceSettingsLocator(
+				serviceContext.getCompanyId(),
+				CommerceCurrencyExchangeRateConstants.SERVICE_NAME));
+
+		ModifiableSettings modifiableSettings =
+			settings.getModifiableSettings();
+
+		for (Map.Entry<String, String> entry : parameterMap.entrySet()) {
+			modifiableSettings.setValue(entry.getKey(), entry.getValue());
+		}
+
+		modifiableSettings.store();
+	}
+
 	@Reference
 	private CommerceCurrencyService _commerceCurrencyService;
 
 	@Reference
 	private ConfigurationProvider _configurationProvider;
-
-	@Reference
-	private SettingsFactory _settingsFactory;
 
 }

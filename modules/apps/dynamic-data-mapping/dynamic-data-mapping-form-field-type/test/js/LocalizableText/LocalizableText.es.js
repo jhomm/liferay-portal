@@ -1,90 +1,133 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {act, cleanup, fireEvent, render} from '@testing-library/react';
+
+import '@testing-library/jest-dom/extend-expect';
 import {
-	act,
-	cleanup,
-	fireEvent,
-	render,
-	waitForElement,
-} from '@testing-library/react';
-import {PageProvider} from 'data-engine-js-components-web';
+	FormProvider,
+	PageProvider,
+	languageReducer,
+} from 'data-engine-js-components-web';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import LocalizableText from '../../../src/main/resources/META-INF/resources/LocalizableText/LocalizableText.es';
+import LocalizableText from '../../../src/main/resources/META-INF/resources/js/LocalizableText/LocalizableText.es';
 
+const availableLocales = [
+	{
+		displayName: 'English (United States)',
+		icon: 'en-us',
+		localeId: 'en_US',
+	},
+	{displayName: 'العربية (السعودية)', icon: 'ar-sa', localeId: 'ar_SA'},
+	{displayName: 'català (Espanya)', icon: 'ca-es', localeId: 'ca_ES'},
+	{displayName: '中文 (中国)', icon: 'zh-cn', localeId: 'zh_CN'},
+	{
+		displayName: 'Nederlands (Nederland)',
+		icon: 'nl-nl',
+		localeId: 'nl_NL',
+	},
+	{displayName: 'suomi (Suomi)', icon: 'fi-fi', localeId: 'fi_FI'},
+	{displayName: 'français (France)', icon: 'fr-fr', localeId: 'fr_FR'},
+	{
+		displayName: 'Deutsch (Deutschland)',
+		icon: 'de-de',
+		localeId: 'de_DE',
+	},
+	{
+		displayName: 'magyar (Magyarország)',
+		icon: 'hu-hu',
+		localeId: 'hu_HU',
+	},
+	{displayName: '日本語 (日本)', icon: 'ja-jp', localeId: 'ja_JP'},
+	{displayName: 'português (Brasil)', icon: 'pt-br', localeId: 'pt_BR'},
+	{displayName: 'español (España)', icon: 'es-es', localeId: 'es_ES'},
+	{displayName: 'svenska (Sverige)', icon: 'sv-se', localeId: 'sv_SE'},
+];
+
+const focusedField = {
+	availableLocales,
+	instanceId: '12345678',
+	localizable: true,
+	value: {ca_ES: 'Teste ES', en_US: 'Test EUA', pt_BR: 'Teste BR'},
+};
+const globalLanguageDirection = Liferay.Language.direction;
+const pages = [
+	{
+		localizedDescription: {
+			en_US: 'description',
+			pt_BR: 'descrição',
+		},
+		localizedTitle: {en_US: 'title', pt_BR: 'título'},
+		rows: [{columns: [{fields: [focusedField]}]}],
+	},
+];
 const spritemap = 'icons.svg';
+const state = {
+	availableLanguageIds: ['en_US', 'pt_BR', 'ca_ES'],
+	focusedField,
+	pages,
+};
 
 const LocalizableTextWithProvider = (props) => (
 	<PageProvider value={{editingLanguageId: 'en_US'}}>
-		<LocalizableText {...props} />
+		<FormProvider
+			initialState={state}
+			reducers={[languageReducer]}
+			value={{
+				availableLocales,
+				defaultLanguageId: 'en_US',
+				editingLanguageId: 'en_US',
+			}}
+		>
+			<LocalizableText {...props} />
+		</FormProvider>
 	</PageProvider>
 );
 
+beforeAll(() => {
+	Liferay.Language.direction = {
+		en_US: 'ltr',
+	};
+});
+
+afterAll(() => {
+	Liferay.Language.direction = globalLanguageDirection;
+});
+
+afterEach(cleanup);
+
 const defaultLocalizableTextConfig = {
-	availableLocales: [
-		{
-			displayName: 'English (United States)',
-			icon: 'en-us',
-			localeId: 'en_US',
-		},
-		{displayName: 'العربية (السعودية)', icon: 'ar-sa', localeId: 'ar_SA'},
-		{displayName: 'català (Espanya)', icon: 'ca-es', localeId: 'ca_ES'},
-		{displayName: '中文 (中国)', icon: 'zh-cn', localeId: 'zh_CN'},
-		{
-			displayName: 'Nederlands (Nederland)',
-			icon: 'nl-nl',
-			localeId: 'nl_NL',
-		},
-		{displayName: 'suomi (Suomi)', icon: 'fi-fi', localeId: 'fi_FI'},
-		{displayName: 'français (France)', icon: 'fr-fr', localeId: 'fr_FR'},
-		{
-			displayName: 'Deutsch (Deutschland)',
-			icon: 'de-de',
-			localeId: 'de_DE',
-		},
-		{
-			displayName: 'magyar (Magyarország)',
-			icon: 'hu-hu',
-			localeId: 'hu_HU',
-		},
-		{displayName: '日本語 (日本)', icon: 'ja-jp', localeId: 'ja_JP'},
-		{displayName: 'português (Brasil)', icon: 'pt-br', localeId: 'pt_BR'},
-		{displayName: 'español (España)', icon: 'es-es', localeId: 'es_ES'},
-		{displayName: 'svenska (Sverige)', icon: 'sv-se', localeId: 'sv_SE'},
-	],
 	defaultLocale: {
 		displayName: 'English (United States)',
 		icon: 'en-us',
 		localeId: 'en_US',
 	},
-	name:
-		'_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US',
+	editingLocale: {
+		displayName: 'English (United States)',
+		icon: 'en-us',
+		localeId: 'en_US',
+	},
+	name: '_com_liferay_configuration_admin_web_portlet_SystemSettingsPortlet_ddm$$emailArticleAddedSubject$uoeJR4Me$0$$en_US',
 	spritemap,
 };
 
 describe('Field LocalizableText', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 	});
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -99,8 +142,6 @@ describe('Field LocalizableText', () => {
 			return element;
 		});
 	});
-
-	afterEach(cleanup);
 
 	beforeEach(() => {
 		jest.useFakeTimers();
@@ -146,6 +187,25 @@ describe('Field LocalizableText', () => {
 		});
 
 		expect(container).toMatchSnapshot();
+	});
+
+	it('has aria-label when the displayStyle is multiline', () => {
+		const {getByRole} = render(
+			<LocalizableTextWithProvider
+				{...defaultLocalizableTextConfig}
+				displayStyle="multiline"
+				label="label"
+				value={{
+					ca_ES: 'Teste ES',
+					en_US: 'Test EUA',
+					pt_BR: 'Teste BR',
+				}}
+			/>
+		);
+
+		const textarea = getByRole('textbox');
+
+		expect(textarea).toHaveAttribute('aria-label', 'label');
 	});
 
 	it('has a placeholder', () => {
@@ -284,7 +344,7 @@ describe('Field LocalizableText', () => {
 	});
 
 	it('fills with the selected language value when the selected language is translated', async () => {
-		const {container, getByTestId} = render(
+		const {container, findByTestId, getByTestId} = render(
 			<LocalizableTextWithProvider
 				{...defaultLocalizableTextConfig}
 				onChange={jest.fn()}
@@ -304,8 +364,8 @@ describe('Field LocalizableText', () => {
 			jest.runAllTimers();
 		});
 
-		const dropdownItem = await waitForElement(() =>
-			getByTestId('availableLocalesDropdownca_ES')
+		const dropdownItem = await findByTestId(
+			'availableLocalesDropdownca_ES'
 		);
 
 		fireEvent.click(dropdownItem);
@@ -314,9 +374,7 @@ describe('Field LocalizableText', () => {
 			jest.runAllTimers();
 		});
 
-		const inputElement = await waitForElement(() =>
-			getByTestId('visibleChangeInput')
-		);
+		const inputElement = await findByTestId('visibleChangeInput');
 
 		expect(inputElement.value).toEqual('Teste ES');
 
@@ -326,7 +384,7 @@ describe('Field LocalizableText', () => {
 	});
 
 	it('fills with the default language value when the selected language is not translated', async () => {
-		const {container, getByTestId} = render(
+		const {container, findByTestId, getByTestId} = render(
 			<LocalizableTextWithProvider
 				{...defaultLocalizableTextConfig}
 				onChange={jest.fn()}
@@ -348,8 +406,8 @@ describe('Field LocalizableText', () => {
 			jest.runAllTimers();
 		});
 
-		const dropdownItem = await waitForElement(() =>
-			getByTestId('availableLocalesDropdownja_JP')
+		const dropdownItem = await findByTestId(
+			'availableLocalesDropdownja_JP'
 		);
 
 		fireEvent.click(dropdownItem);
@@ -368,7 +426,7 @@ describe('Field LocalizableText', () => {
 	});
 
 	it('adds a new translation for an untranslated item', async () => {
-		const {container, getByTestId} = render(
+		const {container, findByTestId, getByTestId} = render(
 			<LocalizableTextWithProvider
 				{...defaultLocalizableTextConfig}
 				onChange={jest.fn()}
@@ -390,8 +448,8 @@ describe('Field LocalizableText', () => {
 			jest.runAllTimers();
 		});
 
-		const dropdownItem = await waitForElement(() =>
-			getByTestId('availableLocalesDropdownja_JP')
+		const dropdownItem = await findByTestId(
+			'availableLocalesDropdownja_JP'
 		);
 
 		fireEvent.click(dropdownItem);
@@ -420,7 +478,7 @@ describe('Field LocalizableText', () => {
 	});
 
 	it('removes the translation of an item already translated', async () => {
-		const {container, getByTestId} = render(
+		const {container, findByTestId, getByTestId} = render(
 			<LocalizableTextWithProvider
 				{...defaultLocalizableTextConfig}
 				onChange={jest.fn()}
@@ -440,8 +498,8 @@ describe('Field LocalizableText', () => {
 			jest.runAllTimers();
 		});
 
-		const dropdownItem = await waitForElement(() =>
-			getByTestId('availableLocalesDropdownpt_BR')
+		const dropdownItem = await findByTestId(
+			'availableLocalesDropdownpt_BR'
 		);
 
 		fireEvent.click(dropdownItem);
@@ -471,7 +529,7 @@ describe('Field LocalizableText', () => {
 
 	describe('Submit Button Label', () => {
 		it('changes the placeholder according to the current editing locale', async () => {
-			const {getByTestId} = render(
+			const {findByTestId, getByTestId} = render(
 				<LocalizableTextWithProvider
 					{...defaultLocalizableTextConfig}
 					fieldName="submitLabel"
@@ -492,8 +550,8 @@ describe('Field LocalizableText', () => {
 				jest.runAllTimers();
 			});
 
-			const dropdownItem = await waitForElement(() =>
-				getByTestId('availableLocalesDropdownde_DE')
+			const dropdownItem = await findByTestId(
+				'availableLocalesDropdownde_DE'
 			);
 
 			fireEvent.click(dropdownItem);
@@ -502,9 +560,7 @@ describe('Field LocalizableText', () => {
 				jest.runAllTimers();
 			});
 
-			const inputComponent = await waitForElement(() =>
-				getByTestId('visibleChangeInput')
-			);
+			const inputComponent = await findByTestId('visibleChangeInput');
 
 			expect(inputComponent.placeholder).toBe('Senden');
 		});
@@ -533,8 +589,6 @@ describe('Field LocalizableText', () => {
 			);
 
 			expect(queryAllByText('default')).toHaveLength(1);
-
-			const {availableLocales} = defaultLocalizableTextConfig;
 
 			expect(queryAllByText('not-translated')).toHaveLength(
 				availableLocales.length - 3
@@ -578,8 +632,6 @@ describe('Field LocalizableText', () => {
 			);
 
 			expect(queryAllByText('customized')).toHaveLength(2);
-
-			const {availableLocales} = defaultLocalizableTextConfig;
 
 			expect(queryAllByText('not-customized')).toHaveLength(
 				availableLocales.length - 2

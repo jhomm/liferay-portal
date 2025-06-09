@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.subscription.test.util;
@@ -18,10 +9,10 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.settings.FallbackKeysSettingsUtil;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.ModifiableSettings;
 import com.liferay.portal.kernel.settings.Settings;
-import com.liferay.portal.kernel.settings.SettingsFactory;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleThreadLocal;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -30,7 +21,6 @@ import com.liferay.portal.test.mail.MailMessage;
 import com.liferay.portal.test.mail.MailServiceTestUtil;
 import com.liferay.portal.test.rule.Inject;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -52,7 +42,7 @@ public abstract class BaseSubscriptionLocalizedContentTestCase
 		super.setUp();
 
 		defaultLocale = LocaleThreadLocal.getDefaultLocale();
-		layout = LayoutTestUtil.addLayout(group);
+		layout = LayoutTestUtil.addTypePortletLayout(group);
 	}
 
 	@After
@@ -64,13 +54,13 @@ public abstract class BaseSubscriptionLocalizedContentTestCase
 	public void testSubscriptionLocalizedContentWhenAddingBaseModel()
 		throws Exception {
 
-		Map<Locale, String> previousLocalizedContents = HashMapBuilder.putAll(
-			localizedContents
-		).build();
-
-		_initializeLocale(LocaleUtil.GERMANY, GERMAN_BODY);
+		user = _userLocalService.updateLanguageId(
+			user.getUserId(), LocaleUtil.toLanguageId(LocaleUtil.GERMANY));
 
 		setBaseModelSubscriptionBodyPreferences(
+			HashMapBuilder.put(
+				LocaleUtil.GERMANY, GERMAN_BODY
+			).build(),
 			getSubscriptionAddedBodyPreferenceName());
 
 		addSubscriptionContainerModel(getDefaultContainerModelId());
@@ -81,21 +71,19 @@ public abstract class BaseSubscriptionLocalizedContentTestCase
 			"Body", GERMAN_BODY);
 
 		Assert.assertEquals(messages.toString(), 1, messages.size());
-
-		localizedContents = previousLocalizedContents;
 	}
 
 	@Test
 	public void testSubscriptionLocalizedContentWhenUpdatingBaseModel()
 		throws Exception {
 
-		Map<Locale, String> previousLocalizedContents = HashMapBuilder.putAll(
-			localizedContents
-		).build();
-
-		_initializeLocale(LocaleUtil.SPAIN, SPANISH_BODY);
+		user = _userLocalService.updateLanguageId(
+			user.getUserId(), LocaleUtil.toLanguageId(LocaleUtil.SPAIN));
 
 		setBaseModelSubscriptionBodyPreferences(
+			HashMapBuilder.put(
+				LocaleUtil.SPAIN, SPANISH_BODY
+			).build(),
 			getSubscriptionUpdatedBodyPreferenceName());
 
 		long baseModelId = addBaseModel(
@@ -109,8 +97,6 @@ public abstract class BaseSubscriptionLocalizedContentTestCase
 			"Body", SPANISH_BODY);
 
 		Assert.assertEquals(messages.toString(), 1, messages.size());
-
-		localizedContents = previousLocalizedContents;
 	}
 
 	protected abstract void addSubscriptionContainerModel(long containerModelId)
@@ -131,10 +117,10 @@ public abstract class BaseSubscriptionLocalizedContentTestCase
 	protected abstract String getSubscriptionUpdatedBodyPreferenceName();
 
 	protected void setBaseModelSubscriptionBodyPreferences(
-			String bodyPreferenceName)
+			Map<Locale, String> localizedContents, String bodyPreferenceName)
 		throws Exception {
 
-		Settings settings = _settingsFactory.getSettings(
+		Settings settings = FallbackKeysSettingsUtil.getSettings(
 			new GroupServiceSettingsLocator(
 				group.getGroupId(), getServiceName()));
 
@@ -160,18 +146,6 @@ public abstract class BaseSubscriptionLocalizedContentTestCase
 
 	protected Locale defaultLocale;
 	protected Layout layout;
-	protected Map<Locale, String> localizedContents = new HashMap<>();
-
-	private void _initializeLocale(Locale locale, String body) {
-		user.setLanguageId(locale.toString());
-
-		user = _userLocalService.updateUser(user);
-
-		localizedContents.put(locale, body);
-	}
-
-	@Inject
-	private SettingsFactory _settingsFactory;
 
 	@Inject
 	private UserLocalService _userLocalService;

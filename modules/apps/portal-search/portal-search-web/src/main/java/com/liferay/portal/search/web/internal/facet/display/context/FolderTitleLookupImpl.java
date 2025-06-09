@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.facet.display.context;
@@ -22,11 +13,9 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchContextFactory;
 import com.liferay.portal.kernel.search.SearchException;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 /**
  * @author André de Oliveira
@@ -42,7 +31,7 @@ public class FolderTitleLookupImpl implements FolderTitleLookup {
 
 	@Override
 	public String getFolderTitle(long curFolderId) {
-		Hits results = searchFolder(curFolderId);
+		Hits results = _searchFolder(curFolderId);
 
 		if (results.getLength() == 0) {
 			return null;
@@ -52,23 +41,20 @@ public class FolderTitleLookupImpl implements FolderTitleLookup {
 
 		Map<String, Field> fieldsMap = document.getFields();
 
-		Set<Map.Entry<String, Field>> fieldsMapEntrySet = fieldsMap.entrySet();
+		for (Map.Entry<String, Field> entry : fieldsMap.entrySet()) {
+			if (!_isTitleFieldEntry(entry)) {
+				continue;
+			}
 
-		Stream<Map.Entry<String, Field>> stream = fieldsMapEntrySet.stream();
+			Field field = entry.getValue();
 
-		return stream.filter(
-			this::isTitleFieldEntry
-		).findAny(
-		).map(
-			Map.Entry::getValue
-		).map(
-			Field::getValue
-		).orElse(
-			null
-		);
+			return field.getValue();
+		}
+
+		return null;
 	}
 
-	protected SearchContext getSearchContext(long curFolderId) {
+	private SearchContext _getSearchContext(long curFolderId) {
 		SearchContext searchContext = SearchContextFactory.getInstance(
 			_httpServletRequest);
 
@@ -79,7 +65,7 @@ public class FolderTitleLookupImpl implements FolderTitleLookup {
 		return searchContext;
 	}
 
-	protected boolean isTitleFieldEntry(Map.Entry<String, Field> entry) {
+	private boolean _isTitleFieldEntry(Map.Entry<String, Field> entry) {
 		String key = entry.getKey();
 
 		if (!key.startsWith(Field.TITLE) || key.endsWith("_sortable")) {
@@ -89,9 +75,9 @@ public class FolderTitleLookupImpl implements FolderTitleLookup {
 		return true;
 	}
 
-	protected Hits searchFolder(long curFolderId) {
+	private Hits _searchFolder(long curFolderId) {
 		try {
-			return _folderSearcher.search(getSearchContext(curFolderId));
+			return _folderSearcher.search(_getSearchContext(curFolderId));
 		}
 		catch (SearchException searchException) {
 			throw new RuntimeException(searchException);

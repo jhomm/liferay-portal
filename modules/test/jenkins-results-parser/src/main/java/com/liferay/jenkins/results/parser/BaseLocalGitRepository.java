@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -62,7 +53,15 @@ public abstract class BaseLocalGitRepository
 
 	@Override
 	public File getDirectory() {
-		return getFile("directory");
+		String directoryPath = getString("directory");
+
+		if (JenkinsResultsParserUtil.isWindows() &&
+			directoryPath.startsWith("/")) {
+
+			directoryPath = "C:" + directoryPath;
+		}
+
+		return new File(directoryPath);
 	}
 
 	@Override
@@ -154,11 +153,34 @@ public abstract class BaseLocalGitRepository
 			JenkinsResultsParserUtil.getBaseGitRepositoryDir(),
 			getDirectoryName());
 
-		if (!directory.exists()) {
+		if (!directory.exists() && !JenkinsResultsParserUtil.isCloudCINode()) {
 			throw new IllegalArgumentException("Unable to find " + directory);
 		}
 
 		_setDirectory(directory);
+
+		validateKeys(_KEYS_REQUIRED);
+	}
+
+	protected BaseLocalGitRepository(
+		String name, String upstreamBranchName, File repositoryDir) {
+
+		super(name);
+
+		if (JenkinsResultsParserUtil.isNullOrEmpty(upstreamBranchName)) {
+			throw new IllegalArgumentException("Upstream branch name is null");
+		}
+
+		_setUpstreamBranchName(upstreamBranchName);
+
+		if (!repositoryDir.exists()) {
+			throw new IllegalArgumentException(
+				"Unable to find " + repositoryDir);
+		}
+
+		put("directory_name", repositoryDir.getName());
+
+		_setDirectory(repositoryDir);
 
 		validateKeys(_KEYS_REQUIRED);
 	}

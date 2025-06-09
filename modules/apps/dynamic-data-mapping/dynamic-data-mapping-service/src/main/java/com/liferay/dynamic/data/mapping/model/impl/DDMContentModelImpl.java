@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.model.impl;
@@ -40,7 +31,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -67,10 +57,8 @@ import java.util.function.Function;
  *
  * @author Brian Wing Shun Chan
  * @see DDMContentImpl
- * @deprecated
  * @generated
  */
-@Deprecated
 public class DDMContentModelImpl
 	extends BaseModelImpl<DDMContent> implements DDMContentModel {
 
@@ -241,108 +229,98 @@ public class DDMContentModelImpl
 	public Map<String, Function<DDMContent, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DDMContent, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DDMContent>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DDMContent.class.getClassLoader(), DDMContent.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DDMContent, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DDMContent> constructor =
-				(Constructor<DDMContent>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DDMContent, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<DDMContent, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DDMContent::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DDMContent::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", DDMContent::getUuid);
+			attributeGetterFunctions.put("contentId", DDMContent::getContentId);
+			attributeGetterFunctions.put("groupId", DDMContent::getGroupId);
+			attributeGetterFunctions.put("companyId", DDMContent::getCompanyId);
+			attributeGetterFunctions.put("userId", DDMContent::getUserId);
+			attributeGetterFunctions.put("userName", DDMContent::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", DDMContent::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", DDMContent::getModifiedDate);
+			attributeGetterFunctions.put("name", DDMContent::getName);
+			attributeGetterFunctions.put(
+				"description", DDMContent::getDescription);
+			attributeGetterFunctions.put("data", DDMContent::getData);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DDMContent, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DDMContent, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DDMContent, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<DDMContent, Object>>();
-		Map<String, BiConsumer<DDMContent, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DDMContent, ?>>();
+		private static final Map<String, BiConsumer<DDMContent, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", DDMContent::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DDMContent, Long>)DDMContent::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DDMContent::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DDMContent, Long>)DDMContent::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", DDMContent::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<DDMContent, String>)DDMContent::setUuid);
-		attributeGetterFunctions.put("contentId", DDMContent::getContentId);
-		attributeSetterBiConsumers.put(
-			"contentId",
-			(BiConsumer<DDMContent, Long>)DDMContent::setContentId);
-		attributeGetterFunctions.put("groupId", DDMContent::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<DDMContent, Long>)DDMContent::setGroupId);
-		attributeGetterFunctions.put("companyId", DDMContent::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<DDMContent, Long>)DDMContent::setCompanyId);
-		attributeGetterFunctions.put("userId", DDMContent::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<DDMContent, Long>)DDMContent::setUserId);
-		attributeGetterFunctions.put("userName", DDMContent::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<DDMContent, String>)DDMContent::setUserName);
-		attributeGetterFunctions.put("createDate", DDMContent::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<DDMContent, Date>)DDMContent::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", DDMContent::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<DDMContent, Date>)DDMContent::setModifiedDate);
-		attributeGetterFunctions.put("name", DDMContent::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<DDMContent, String>)DDMContent::setName);
-		attributeGetterFunctions.put("description", DDMContent::getDescription);
-		attributeSetterBiConsumers.put(
-			"description",
-			(BiConsumer<DDMContent, String>)DDMContent::setDescription);
-		attributeGetterFunctions.put("data", DDMContent::getData);
-		attributeSetterBiConsumers.put(
-			"data", (BiConsumer<DDMContent, String>)DDMContent::setData);
+		static {
+			Map<String, BiConsumer<DDMContent, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<DDMContent, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DDMContent, Long>)DDMContent::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DDMContent, Long>)DDMContent::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<DDMContent, String>)DDMContent::setUuid);
+			attributeSetterBiConsumers.put(
+				"contentId",
+				(BiConsumer<DDMContent, Long>)DDMContent::setContentId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<DDMContent, Long>)DDMContent::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DDMContent, Long>)DDMContent::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<DDMContent, Long>)DDMContent::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<DDMContent, String>)DDMContent::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<DDMContent, Date>)DDMContent::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<DDMContent, Date>)DDMContent::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"name", (BiConsumer<DDMContent, String>)DDMContent::setName);
+			attributeSetterBiConsumers.put(
+				"description",
+				(BiConsumer<DDMContent, String>)DDMContent::setDescription);
+			attributeSetterBiConsumers.put(
+				"data", (BiConsumer<DDMContent, String>)DDMContent::setData);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -1060,41 +1038,12 @@ public class DDMContentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<DDMContent, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<DDMContent, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<DDMContent, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((DDMContent)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DDMContent>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DDMContent.class, ModelWrapper.class);
 
 	}
 
@@ -1117,8 +1066,9 @@ public class DDMContentModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<DDMContent, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<DDMContent, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,19 +11,21 @@
 String portletNamespace = PortalUtil.getPortletNamespace(LayoutAdminPortletKeys.GROUP_PAGES);
 %>
 
-<div class="active control-menu-link customization-link d-block d-md-none">
-	<liferay-ui:icon
-		data='<%=
+<div class="control-menu-nav-item customization-link d-block d-md-none">
+	<clay:button
+		additionalProps='<%=
 			HashMapBuilder.<String, Object>put(
-				"qa-id", "customizations"
+				"portletNamespace", portletNamespace
 			).build()
 		%>'
+		aria-label='<%= LanguageUtil.get(request, "this-page-can-be-customized") %>'
+		cssClass="control-menu-nav-link"
+		data-qa-id="customizations"
+		displayType="unstyled"
 		icon="pencil"
 		id='<%= portletNamespace + "customizationButton" %>'
-		label="<%= false %>"
-		linkCssClass="btn btn-monospaced btn-sm control-menu-icon"
-		markupView="lexicon"
-		message="this-page-can-be-customized"
-		url="javascript:;"
+		propsTransformer="{CustomizationButtonPropsTransformer} from layout-admin-web"
+		small="<%= true %>"
+		title='<%= LanguageUtil.get(request, "this-page-can-be-customized") %>'
 	/>
 </div>

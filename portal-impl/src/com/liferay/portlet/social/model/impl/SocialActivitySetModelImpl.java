@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.social.model.impl;
@@ -35,7 +26,6 @@ import com.liferay.social.kernel.model.SocialActivitySetModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -252,132 +242,126 @@ public class SocialActivitySetModelImpl
 	public Map<String, Function<SocialActivitySet, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<SocialActivitySet, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, SocialActivitySet>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			SocialActivitySet.class.getClassLoader(), SocialActivitySet.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<SocialActivitySet, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<SocialActivitySet> constructor =
-				(Constructor<SocialActivitySet>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<SocialActivitySet, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<SocialActivitySet, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", SocialActivitySet::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", SocialActivitySet::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"activitySetId", SocialActivitySet::getActivitySetId);
+			attributeGetterFunctions.put(
+				"groupId", SocialActivitySet::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", SocialActivitySet::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", SocialActivitySet::getUserId);
+			attributeGetterFunctions.put(
+				"createDate", SocialActivitySet::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", SocialActivitySet::getModifiedDate);
+			attributeGetterFunctions.put(
+				"classNameId", SocialActivitySet::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", SocialActivitySet::getClassPK);
+			attributeGetterFunctions.put("type", SocialActivitySet::getType);
+			attributeGetterFunctions.put(
+				"extraData", SocialActivitySet::getExtraData);
+			attributeGetterFunctions.put(
+				"activityCount", SocialActivitySet::getActivityCount);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<SocialActivitySet, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<SocialActivitySet, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<SocialActivitySet, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<SocialActivitySet, Object>>();
-		Map<String, BiConsumer<SocialActivitySet, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<SocialActivitySet, ?>>();
+		private static final Map<String, BiConsumer<SocialActivitySet, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", SocialActivitySet::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", SocialActivitySet::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"activitySetId", SocialActivitySet::getActivitySetId);
-		attributeSetterBiConsumers.put(
-			"activitySetId",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setActivitySetId);
-		attributeGetterFunctions.put("groupId", SocialActivitySet::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<SocialActivitySet, Long>)SocialActivitySet::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", SocialActivitySet::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setCompanyId);
-		attributeGetterFunctions.put("userId", SocialActivitySet::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<SocialActivitySet, Long>)SocialActivitySet::setUserId);
-		attributeGetterFunctions.put(
-			"createDate", SocialActivitySet::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", SocialActivitySet::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setModifiedDate);
-		attributeGetterFunctions.put(
-			"classNameId", SocialActivitySet::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<SocialActivitySet, Long>)
-				SocialActivitySet::setClassNameId);
-		attributeGetterFunctions.put("classPK", SocialActivitySet::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<SocialActivitySet, Long>)SocialActivitySet::setClassPK);
-		attributeGetterFunctions.put("type", SocialActivitySet::getType);
-		attributeSetterBiConsumers.put(
-			"type",
-			(BiConsumer<SocialActivitySet, Integer>)SocialActivitySet::setType);
-		attributeGetterFunctions.put(
-			"extraData", SocialActivitySet::getExtraData);
-		attributeSetterBiConsumers.put(
-			"extraData",
-			(BiConsumer<SocialActivitySet, String>)
-				SocialActivitySet::setExtraData);
-		attributeGetterFunctions.put(
-			"activityCount", SocialActivitySet::getActivityCount);
-		attributeSetterBiConsumers.put(
-			"activityCount",
-			(BiConsumer<SocialActivitySet, Integer>)
-				SocialActivitySet::setActivityCount);
+		static {
+			Map<String, BiConsumer<SocialActivitySet, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<SocialActivitySet, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"activitySetId",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setActivitySetId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setUserId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<SocialActivitySet, Long>)
+					SocialActivitySet::setClassPK);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<SocialActivitySet, Integer>)
+					SocialActivitySet::setType);
+			attributeSetterBiConsumers.put(
+				"extraData",
+				(BiConsumer<SocialActivitySet, String>)
+					SocialActivitySet::setExtraData);
+			attributeSetterBiConsumers.put(
+				"activityCount",
+				(BiConsumer<SocialActivitySet, Integer>)
+					SocialActivitySet::setActivityCount);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -926,41 +910,12 @@ public class SocialActivitySetModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<SocialActivitySet, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<SocialActivitySet, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<SocialActivitySet, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((SocialActivitySet)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, SocialActivitySet>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					SocialActivitySet.class, ModelWrapper.class);
 
 	}
 
@@ -982,7 +937,8 @@ public class SocialActivitySetModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<SocialActivitySet, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

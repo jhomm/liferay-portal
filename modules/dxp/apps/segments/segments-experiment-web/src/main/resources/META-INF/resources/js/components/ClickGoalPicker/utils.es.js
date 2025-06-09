@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import PropTypes from 'prop-types';
@@ -46,7 +40,12 @@ export function getTargetableElements(element, selectedTarget) {
 
 	// Allowed targetable elements with id
 
-	const selector = ['a[id]', 'button[id]', 'input[type=submit][id]'];
+	const selector = [
+		'[id^=analytics-targetable-collection]',
+		'a[id]',
+		'button[id]',
+		'input[type=submit][id]',
+	];
 
 	// Other targetable element already selected
 
@@ -85,13 +84,8 @@ function _isVisible(element) {
  * Used here to get measurements for the "root" ("#content") element.
  */
 export function getRootElementGeometry(rootElement) {
-	const {
-		height,
-		left,
-		right,
-		top,
-		width,
-	} = rootElement.getBoundingClientRect();
+	const {height, left, right, top, width} =
+		rootElement.getBoundingClientRect();
 
 	return {
 		height: height + TARGET_OFFSET,
@@ -108,14 +102,8 @@ export function getRootElementGeometry(rootElement) {
  * Used here to get measurements for the "target" element.
  */
 export function getElementGeometry(element) {
-	const {
-		bottom,
-		height,
-		left,
-		right,
-		top,
-		width,
-	} = element.getBoundingClientRect();
+	const {bottom, height, left, right, top, width} =
+		element.getBoundingClientRect();
 
 	return {
 		bottom,

@@ -1,79 +1,99 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import ClayPanel from '@clayui/panel';
 import PropTypes from 'prop-types';
-import React, {useContext} from 'react';
+import React, {useCallback} from 'react';
 
-import Collapse from './Collapse';
-import {StyleBookContext} from './StyleBookContext';
 import {FRONTEND_TOKEN_TYPES} from './constants/frontendTokenTypes';
+import {
+	useFrontendTokensValues,
+	useSaveTokenValue,
+} from './contexts/StyleBookEditorContext';
 import BooleanFrontendToken from './frontend_tokens/BooleanFrontendToken';
 import ColorFrontendToken from './frontend_tokens/ColorFrontendToken';
+import LengthFrontendToken from './frontend_tokens/LengthFrontendToken';
 import SelectFrontendToken from './frontend_tokens/SelectFrontendToken';
 import TextFrontendToken from './frontend_tokens/TextFrontendToken';
 
-export default function FrontendTokenSet({frontendTokens, label}) {
-	const {frontendTokensValues = {}, setFrontendTokensValues} = useContext(
-		StyleBookContext
+export default function FrontendTokenSet({
+	frontendTokens,
+	label,
+	open,
+	tokenValues,
+}) {
+	const frontendTokensValues = useFrontendTokensValues();
+	const saveTokenValue = useSaveTokenValue();
+
+	const updateFrontendTokensValues = useCallback(
+		(frontendToken, value) => {
+			const {mappings = [], label, name} = frontendToken;
+
+			const cssVariableMapping = mappings.find(
+				(mapping) => mapping.type === 'cssVariable'
+			);
+
+			if (value) {
+				saveTokenValue({
+					label,
+					name,
+					value: {
+						cssVariableMapping: cssVariableMapping.value,
+						name: tokenValues[value]?.name,
+						value: tokenValues[value]?.value || value,
+					},
+				});
+			}
+		},
+		[saveTokenValue, tokenValues]
 	);
 
-	const updateFrontendTokensValues = (frontendToken, value) => {
-		const {mappings = [], name} = frontendToken;
-
-		const cssVariableMapping = mappings.find(
-			(mapping) => mapping.type === 'cssVariable'
-		);
-
-		if (value) {
-			setFrontendTokensValues({
-				...frontendTokensValues,
-				[name]: {
-					cssVariableMapping: cssVariableMapping.value,
-					value,
-				},
-			});
-		}
-	};
-
 	return (
-		<Collapse label={label}>
-			{frontendTokens.map((frontendToken) => {
-				const FrontendTokenComponent = getFrontendTokenComponent(
-					frontendToken
-				);
+		<ClayPanel
+			collapsable
+			defaultExpanded={open}
+			displayTitle={label}
+			displayType="unstyled"
+			showCollapseIcon
+		>
+			<ClayPanel.Body>
+				{frontendTokens.map((frontendToken) => {
+					const FrontendTokenComponent =
+						getFrontendTokenComponent(frontendToken);
 
-				return (
-					<FrontendTokenComponent
-						frontendToken={frontendToken}
-						key={frontendToken.name}
-						onValueSelect={(value) =>
-							updateFrontendTokensValues(frontendToken, value)
-						}
-						value={
+					const props = {
+						frontendToken,
+						frontendTokensValues,
+						onValueSelect: (value) =>
+							updateFrontendTokensValues(frontendToken, value),
+						tokenValues,
+						value:
+							frontendTokensValues[frontendToken.name]?.name ||
 							frontendTokensValues[frontendToken.name]?.value ||
-							frontendToken.defaultValue
-						}
-					/>
-				);
-			})}
-		</Collapse>
+							frontendToken.defaultValue,
+					};
+
+					return (
+						<FrontendTokenComponent
+							key={frontendToken.name}
+							{...props}
+						/>
+					);
+				})}
+			</ClayPanel.Body>
+		</ClayPanel>
 	);
 }
 
 function getFrontendTokenComponent(frontendToken) {
 	if (frontendToken.editorType === 'ColorPicker') {
 		return ColorFrontendToken;
+	}
+
+	if (frontendToken.editorType === 'Length') {
+		return LengthFrontendToken;
 	}
 
 	if (frontendToken.validValues) {
@@ -93,5 +113,5 @@ FrontendTokenSet.propTypes = {
 			name: PropTypes.string.isRequired,
 		})
 	),
-	name: PropTypes.string.isRequired,
+	name: PropTypes.string,
 };

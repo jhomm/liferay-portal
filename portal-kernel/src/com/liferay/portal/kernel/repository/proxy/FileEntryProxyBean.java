@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.repository.proxy;
@@ -25,13 +16,17 @@ import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.repository.model.RepositoryModelOperation;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.InputStream;
 import java.io.Serializable;
 
+import java.lang.reflect.InvocationHandler;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author Mika Koivisto
@@ -96,9 +91,14 @@ public class FileEntryProxyBean
 	}
 
 	@Override
+	public Date getDisplayDate() {
+		return _fileEntry.getDisplayDate();
+	}
+
+	@Override
 	public ExpandoBridge getExpandoBridge() {
-		return (ExpandoBridge)newProxyInstance(
-			_fileEntry.getExpandoBridge(), ExpandoBridge.class);
+		return newProxyInstance(
+			_fileEntry.getExpandoBridge(), _expandoBridgeProxyProviderFunction);
 	}
 
 	@Override
@@ -139,6 +139,12 @@ public class FileEntryProxyBean
 	@Override
 	public List<FileVersion> getFileVersions(int status) {
 		return toFileVersionProxyBeans(_fileEntry.getFileVersions(status));
+	}
+
+	@Override
+	public List<FileVersion> getFileVersions(int status, int start, int end) {
+		return toFileVersionProxyBeans(
+			_fileEntry.getFileVersions(status, start, end));
 	}
 
 	@Override
@@ -194,7 +200,8 @@ public class FileEntryProxyBean
 
 	@Override
 	public Lock getLock() {
-		return (Lock)newProxyInstance(_fileEntry.getLock(), Lock.class);
+		return newProxyInstance(
+			_fileEntry.getLock(), _lockProxyProviderFunction);
 	}
 
 	@Override
@@ -419,6 +426,13 @@ public class FileEntryProxyBean
 
 		return newFileEntryProxyBean(fileEntry);
 	}
+
+	private static final Function<InvocationHandler, ExpandoBridge>
+		_expandoBridgeProxyProviderFunction =
+			ProxyUtil.getProxyProviderFunction(ExpandoBridge.class);
+	private static final Function<InvocationHandler, Lock>
+		_lockProxyProviderFunction = ProxyUtil.getProxyProviderFunction(
+			Lock.class);
 
 	private final FileEntry _fileEntry;
 

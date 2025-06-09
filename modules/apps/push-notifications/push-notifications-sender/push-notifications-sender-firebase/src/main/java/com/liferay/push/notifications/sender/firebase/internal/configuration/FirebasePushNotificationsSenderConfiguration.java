@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.push.notifications.sender.firebase.internal.configuration;
 
 import aQute.bnd.annotation.metatype.Meta;
 
+import com.liferay.portal.configuration.metatype.annotations.ExtendedAttributeDefinition;
 import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClassDefinition;
 
 /**
@@ -30,9 +22,27 @@ import com.liferay.portal.configuration.metatype.annotations.ExtendedObjectClass
 public interface FirebasePushNotificationsSenderConfiguration {
 
 	@Meta.AD(
-		description = "firebase-api-key-description",
-		name = "firebase-api-key-name", required = false
+		deflt = "https://fcm.googleapis.com",
+		name = "firebase-cloud-messaging-url", required = false
 	)
-	public String apiKey();
+	public String firebaseCloudMessagingURL();
+
+	@ExtendedAttributeDefinition(
+		descriptionArguments = "https://firebase.google.com/docs/projects/learn-more#project-number"
+	)
+	@Meta.AD(
+		description = "project-number-help", name = "project-number",
+		required = false
+	)
+	public String projectNumber();
+
+	@ExtendedAttributeDefinition(
+		descriptionArguments = "https://cloud.google.com/iam/docs/creating-managing-service-account-keys"
+	)
+	@Meta.AD(
+		description = "service-account-key-help", name = "service-account-key",
+		required = false
+	)
+	public String serviceAccountKey();
 
 }

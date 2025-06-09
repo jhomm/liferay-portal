@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {hierarchy, tree as d3Tree} from 'd3';
@@ -21,6 +15,7 @@ import {
 	DX,
 	DY,
 	MAX_NAME_LENGTH,
+	MODEL_TYPE_MAP,
 	ORGANIZATIONS_PROPERTY_NAME,
 	RECT_SIZES,
 	USERS_PROPERTY_NAME_IN_ACCOUNT,
@@ -31,6 +26,7 @@ import {PERMISSION_CHECK_ON_HEADLESS_API_ACTIONS} from './flags';
 let chartNodesCounter = 0;
 
 export function formatItem(item, type) {
+	item.modelType = item.type;
 	item.type = type;
 	item.children = [];
 	item.chartNodeNumber = ++chartNodesCounter;
@@ -55,13 +51,19 @@ export function formatItem(item, type) {
 	return item;
 }
 
-export const formatAccountChild = (child) => formatChild(child, 'account');
-export const formatOrganizationChild = (child) =>
-	formatChild(child, 'organization');
-export const formatUserChild = (child) => formatChild(child, 'user');
+export function formatAccountChild(child) {
+	return formatChild(child, MODEL_TYPE_MAP.account);
+}
+export function formatOrganizationChild(child) {
+	return formatChild(child, MODEL_TYPE_MAP.organization);
+}
+export function formatUserChild(child) {
+	return formatChild(child, MODEL_TYPE_MAP.user);
+}
 
 export function formatChild(child, entityType = null) {
 	if (entityType) {
+		child.modelType = child.type;
 		child.type = entityType;
 	}
 	child.chartNodeNumber = ++chartNodesCounter;
@@ -113,6 +115,8 @@ export function insertChildrenIntoNode(children, parentNode) {
 
 		newNode.each((node) => {
 			node.depth = node.depth + parentNode.depth + 1;
+			node.data = {...node.data};
+			node.data.chartNodeNumber = ++chartNodesCounter;
 		});
 
 		parentNode.children.push(newNode);
@@ -159,7 +163,7 @@ export function insertAddButtons(root, selectedNodesIds) {
 	root.each((d) => {
 		if (
 			selectedNodesIds.has(d.data.chartNodeId) &&
-			d.data.type !== 'user' &&
+			d.data.type !== MODEL_TYPE_MAP.user &&
 			hasPermission(d.data, ACTION_KEYS[d.data.type].ADD_ENTITIES)
 		) {
 			showChildren(d);
@@ -199,7 +203,7 @@ export function insertAddButtons(root, selectedNodesIds) {
 
 export const tree = d3Tree().nodeSize([DX, DY]);
 
-export const getChartNodeId = (data) => {
+export function getChartNodeId(data) {
 	if (!(data.id || data.id === 0) || !data.type) {
 		throw new Error(
 			`type or id properties not defined in entity: ${JSON.stringify(
@@ -209,30 +213,29 @@ export const getChartNodeId = (data) => {
 	}
 
 	return `${data.type}_${data.id}`;
-};
+}
 
-export const formatRootData = (rootData) => {
-	if (Array.isArray(rootData)) {
-		const fakeRoot = {
-			[ORGANIZATIONS_PROPERTY_NAME]: rootData,
-			id: 0,
-		};
+export function formatRootData(rootData) {
+	const fakeRoot = {
+		[ORGANIZATIONS_PROPERTY_NAME]: rootData.map((data) => {
+			const item = formatItem(data, MODEL_TYPE_MAP.organization);
+			item.fetched = true;
 
-		formatItem(fakeRoot, 'fakeRoot');
-		fakeRoot.fetched = true;
+			return item;
+		}),
+		id: 0,
+	};
 
-		return fakeRoot;
-	}
+	formatItem(fakeRoot, 'fakeRoot');
 
-	formatItem(rootData, 'organization');
-	rootData.fetched = true;
+	fakeRoot.fetched = true;
 
-	return rootData;
-};
+	return fakeRoot;
+}
 
-export const formatAccountDescription = (d) => {
+export function formatAccountDescription(d) {
 	return `${d.data[COUNTER_KEYS_MAP.user]} ${Liferay.Language.get('users')}`;
-};
+}
 
 export function hasPermission(data, actionKey) {
 	if (!PERMISSION_CHECK_ON_HEADLESS_API_ACTIONS) {
@@ -249,12 +252,12 @@ export function hasPermission(data, actionKey) {
 
 export function hasPermissions(data, actionsKeys) {
 	return actionsKeys.reduce(
-		(result, key) => result && hasPermission(data, key),
-		true
+		(result, key) => result || hasPermission(data, key),
+		false
 	);
 }
 
-export const formatUserDescription = (d) => {
+export function formatUserDescription(d) {
 	const parentBriefsKey = BRIEFS_KEYS_MAP[d.parent.data.type];
 
 	const parentBrief = d.data[parentBriefsKey].find(
@@ -264,7 +267,10 @@ export const formatUserDescription = (d) => {
 	let description = Liferay.Language.get('guest');
 
 	if (parentBrief?.roleBriefs?.length) {
-		description = trimString(parentBrief.roleBriefs[0].name, 'user');
+		description = trimString(
+			parentBrief.roleBriefs[0].name,
+			MODEL_TYPE_MAP.user
+		);
 	}
 
 	if (parentBrief?.roleBriefs?.length > 1) {
@@ -272,18 +278,19 @@ export const formatUserDescription = (d) => {
 	}
 
 	return description;
-};
+}
 
-export const trimString = (string, nodeType) =>
-	string.length > MAX_NAME_LENGTH[nodeType]
+export function trimString(string, nodeType) {
+	return string.length > MAX_NAME_LENGTH[nodeType]
 		? string.slice(0, MAX_NAME_LENGTH[nodeType] - 1).trim() + '…'
 		: string;
+}
 
-export const formatItemName = (d) => {
+export function formatItemName(d) {
 	const name = d.data.name || d.data.emailAddress;
 
 	return trimString(name, d.data.type);
-};
+}
 
 export function getMinWidth(nodes) {
 	return nodes.reduce((maxWidth, node) => {
@@ -298,14 +305,14 @@ export function changeNodesParentOrganization(nodes, target) {
 
 	nodes.forEach((node) => {
 		switch (node.data.type) {
-			case 'organization':
+			case MODEL_TYPE_MAP.organization:
 				movings.push(
 					updateOrganization(node.data.id, {
 						parentOrganization: {id: Number(target.data.id)},
 					})
 				);
 				break;
-			case 'account':
+			case MODEL_TYPE_MAP.account:
 				movings.push(
 					changeOrganizationParent(
 						node.data.id,
@@ -333,4 +340,17 @@ export function changeNodesParentOrganization(nodes, target) {
 
 		return formatted;
 	});
+}
+
+export function localizeModelType(modelType) {
+	switch (modelType) {
+		case 'business':
+			return Liferay.Language.get('business');
+		case 'guest':
+			return Liferay.Language.get('guest');
+		case 'person':
+			return Liferay.Language.get('person');
+		default:
+			return modelType;
+	}
 }

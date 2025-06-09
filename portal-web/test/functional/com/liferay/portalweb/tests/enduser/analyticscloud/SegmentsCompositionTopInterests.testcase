@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property portal.release = "false";
 	property portal.upstream = "true";
 	property property.group = "analytics.cloud.profile";
@@ -26,11 +28,11 @@ definition {
 		task ("Add specific pages and web contents to Site as interest topics") {
 			var pageNameList = "sports,technology,science";
 
-			for (var layoutName : list "${pageNameList}") {
-				ACUtils.addPage(layoutName = "${layoutName}");
+			for (var layoutName : list ${pageNameList}) {
+				ACUtils.addPage(layoutName = ${layoutName});
 
 				ACUtils.createWCAndAddToPage(
-					layoutName = "${layoutName}",
+					layoutName = ${layoutName},
 					webContentTitle = "Web Content AC Title ${layoutName}");
 			}
 		}
@@ -58,47 +60,39 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
 		}
 
-		JSONUser.tearDownNonAdminUsers();
-
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8501 | Test Summary: Interest can be aggregated from multiple pages"
 	@ignore = "true"
-	@priority = "4"
+	@priority = 4
 	test InterestCanBeAggregatedFromMultiplePages {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: Interests in the segment take time to appear.
 		// AC Refactor ticket: LRAC-9168
 
 		var usernameList = "ac";
-
 		var pageNameList = "sports,technology,science";
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
 
 		task ("View new pages in site as new user") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "${usernameList}@liferay.com",
 				userLoginFullName = "${usernameList} ${usernameList}");
 
-			for (var pageName : list "${pageNameList}") {
+			for (var pageName : list ${pageNameList}) {
 				ACUtils.navigateToSitePage(
-					pageName = "${pageName}",
+					pageName = ${pageName},
 					siteName = "Site Name");
 			}
 		}
@@ -108,7 +102,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add a new static segment") {
@@ -118,7 +112,7 @@ definition {
 		}
 
 		task ("Type the segment name") {
-			ACSegments.nameSegment(segmentName = "Static Segment Test");
+			ACUtils.setItemName(itemName = "Static Segment Test");
 		}
 
 		task ("Add the new user as member") {
@@ -144,24 +138,22 @@ definition {
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8502 | Test Summary: Search the Details of a Segment's Interest"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test SearchDetailsOfSegmentsInterest {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: Interests in the segment take time to appear.
 		// AC Refactor ticket: LRAC-9169
 
 		var nameList = "ac ac,ac2 ac2,ac3 ac3";
-
 		var newUser = "ac2,ac3";
 
 		task ("Add 2 more new users") {
-			for (var name : list "${newUser}") {
+			for (var name : list ${newUser}) {
 				JSONUser.addUser(
 					userEmailAddress = "${name}@liferay.com",
-					userFirstName = "${name}",
-					userLastName = "${name}",
-					userScreenName = "${name}");
+					userFirstName = ${name},
+					userLastName = ${name},
+					userScreenName = ${name});
 
 				JSONUser.setFirstPassword(
 					agreeToTermsAndAnswerReminderQuery = "true",
@@ -172,10 +164,6 @@ definition {
 
 		task ("Sync the Contact Data") {
 			ACDXPSettings.syncNewContactData();
-		}
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
 		}
 
 		task ("View new pages in site as different users") {
@@ -200,7 +188,7 @@ definition {
 
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Add a new static segment") {
@@ -210,11 +198,11 @@ definition {
 		}
 
 		task ("Type the segment name") {
-			ACSegments.nameSegment(segmentName = "Static Segment Test");
+			ACUtils.setItemName(itemName = "Static Segment Test");
 		}
 
 		task ("Add the new user as member") {
-			ACSegments.addStaticMultiMember(tableMember = "${nameList}");
+			ACSegments.addStaticMultiMember(tableMember = ${nameList});
 		}
 
 		task ("Create the segment") {
@@ -232,7 +220,7 @@ definition {
 		}
 
 		task ("View individuals") {
-			ACUtils.viewNameList(nameList = "${nameList}");
+			ACUtils.viewNameList(nameList = ${nameList});
 		}
 
 		task ("Search Individual tab") {
@@ -241,108 +229,6 @@ definition {
 
 		task ("View individuals") {
 			ACUtils.viewNameList(nameList = "ac ac");
-		}
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8500 | Test Summary: List of interests appears as bar graphs with percentage of interested members"
-	@ignore = "true"
-	@priority = "5"
-	test ViewListInterestsAppearsBarGraphsWithPercentage {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: Interests in the segment take time to appear.
-		// AC Refactor ticket: LRAC-9167
-
-		var nameList = "ac ac,ac2 ac2";
-
-		var emailList = "ac@liferay.com,ac2@liferay.com";
-
-		task ("Add a new users") {
-			JSONUser.addUser(
-				userEmailAddress = "ac2@liferay.com",
-				userFirstName = "ac2",
-				userLastName = "ac2",
-				userScreenName = "ac2");
-
-			JSONUser.setFirstPassword(
-				agreeToTermsAndAnswerReminderQuery = "true",
-				requireReset = "false",
-				userEmailAddress = "ac2@liferay.com");
-		}
-
-		task ("Sync the Contact Data") {
-			ACDXPSettings.syncNewContactData();
-		}
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
-		task ("View new pages in site as new user") {
-			ACUtils.navigateToSitePageWithUser(
-				emailList = "${emailList}",
-				pageName = "sports",
-				siteName = "Site Name");
-
-			ACUtils.navigateToSitePageWithUser(
-				emailList = "ac@liferay.com",
-				pageName = "technology",
-				siteName = "Site Name");
-
-			ACUtils.navigateToSitePageWithUser(
-				emailList = "ac2@liferay.com",
-				pageName = "science",
-				siteName = "Site Name");
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.closeAllSessionsAndWait();
-
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-		}
-
-		task ("Add a new static segment") {
-			ACNavigation.goToSegments();
-
-			ACSegments.createStaticSegment();
-		}
-
-		task ("Type the segment name") {
-			ACSegments.nameSegment(segmentName = "Static Segment Test");
-		}
-
-		task ("Add the new user as member") {
-			ACSegments.addStaticMultiMember(tableMember = "${nameList}");
-		}
-
-		task ("Create the segment") {
-			ACSegments.saveSegment();
-		}
-
-		// AC Refactor: Interests in the segment take time to appear.
-
-		task ("View various segment top interest numbers under the top interests card") {
-			ACInterests.viewInterest(
-				interestTopic = "site",
-				membersCount = "2",
-				membersPercentage = "25%");
-
-			ACInterests.viewInterest(
-				interestTopic = "sports",
-				membersCount = "2",
-				membersPercentage = "25%");
-
-			ACInterests.viewInterest(
-				interestTopic = "technology",
-				membersCount = "1",
-				membersPercentage = "25%");
-
-			ACInterests.viewInterest(
-				interestTopic = "science",
-				membersCount = "1",
-				membersPercentage = "25%");
 		}
 	}
 

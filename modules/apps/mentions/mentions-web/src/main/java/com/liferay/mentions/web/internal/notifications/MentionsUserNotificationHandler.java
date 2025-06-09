@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.mentions.web.internal.notifications;
@@ -22,7 +13,8 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONObject;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.UserNotificationEvent;
 import com.liferay.portal.kernel.notifications.BaseModelUserNotificationHandler;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -41,8 +33,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + MentionsPortletKeys.MENTIONS,
+	property = "jakarta.portlet.name=" + MentionsPortletKeys.MENTIONS,
 	service = UserNotificationHandler.class
 )
 public class MentionsUserNotificationHandler
@@ -69,6 +60,7 @@ public class MentionsUserNotificationHandler
 	@Override
 	protected String getTitle(
 		JSONObject jsonObject, AssetRenderer<?> assetRenderer,
+		UserNotificationEvent userNotificationEvent,
 		ServiceContext serviceContext) {
 
 		MBMessage mbMessage = _mbMessageLocalService.fetchMBMessage(
@@ -85,7 +77,7 @@ public class MentionsUserNotificationHandler
 			"content.Language", serviceContext.getLocale(), getClass());
 
 		if ((mbMessage != null) && mbMessage.isDiscussion()) {
-			return LanguageUtil.format(
+			return _language.format(
 				resourceBundle, "x-mentioned-you-in-a-comment-in-a-x",
 				new String[] {
 					HtmlUtil.escape(
@@ -96,7 +88,7 @@ public class MentionsUserNotificationHandler
 				false);
 		}
 
-		return LanguageUtil.format(
+		return _language.format(
 			resourceBundle, "x-mentioned-you-in-a-x",
 			new String[] {
 				HtmlUtil.escape(
@@ -107,13 +99,10 @@ public class MentionsUserNotificationHandler
 			false);
 	}
 
-	@Reference(unbind = "-")
-	protected void setMBMessageLocalService(
-		MBMessageLocalService mbMessageLocalService) {
+	@Reference
+	private Language _language;
 
-		_mbMessageLocalService = mbMessageLocalService;
-	}
-
+	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
 
 	@Reference

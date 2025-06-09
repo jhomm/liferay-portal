@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.pwd;
@@ -71,11 +62,7 @@ public class PwdAuthenticator {
 				encryptedPassword = Base64.encode(
 					digester.digest(shardKey.getBytes(StringPool.UTF8)));
 
-				if (clearTextPassword.equals(encryptedPassword)) {
-					return true;
-				}
-
-				return false;
+				return clearTextPassword.equals(encryptedPassword);
 			}
 			catch (NoSuchAlgorithmException noSuchAlgorithmException) {
 				throw new SystemException(noSuchAlgorithmException);
@@ -88,7 +75,29 @@ public class PwdAuthenticator {
 		return false;
 	}
 
+	public static void pretendToAuthenticate() throws PwdEncryptorException {
+		authenticate(
+			_PRETENDED_LOGIN, _PRETENDED_CLEAR_TEXT_PASSWORD,
+			_PRETENDED_CURRENT_ENCRYPTED_PASSWORD);
+	}
+
+	private static final String _PRETENDED_CLEAR_TEXT_PASSWORD = "password";
+
+	private static final String _PRETENDED_CURRENT_ENCRYPTED_PASSWORD;
+
+	private static final String _PRETENDED_LOGIN = "login";
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		PwdAuthenticator.class.getName());
+
+	static {
+		try {
+			_PRETENDED_CURRENT_ENCRYPTED_PASSWORD =
+				PasswordEncryptorUtil.encrypt("currentPassword");
+		}
+		catch (PwdEncryptorException pwdEncryptorException) {
+			throw new RuntimeException(pwdEncryptorException);
+		}
+	}
 
 }

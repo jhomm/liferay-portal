@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.web.internal.admin.portlet.action;
@@ -19,18 +10,18 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.reports.engine.console.constants.ReportsEngineConsolePortletKeys;
 import com.liferay.portal.reports.engine.console.model.Source;
 import com.liferay.portal.reports.engine.console.service.SourceService;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,9 +30,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Gavin Wan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
+		"jakarta.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
 		"mvc.command.name=/reports_admin/edit_data_source"
 	},
 	service = MVCActionCommand.class
@@ -55,7 +45,7 @@ public class EditDataSourceMVCActionCommand extends BaseMVCActionCommand {
 
 		long sourceId = ParamUtil.getLong(actionRequest, "sourceId");
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 		String driverClassName = ParamUtil.getString(
 			actionRequest, "driverClassName");
@@ -82,6 +72,9 @@ public class EditDataSourceMVCActionCommand extends BaseMVCActionCommand {
 				driverPassword, serviceContext);
 		}
 	}
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private SourceService _sourceService;

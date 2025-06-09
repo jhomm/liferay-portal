@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.util.structure;
@@ -20,9 +11,12 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.language.LanguageResources;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -35,14 +29,14 @@ import java.util.ResourceBundle;
  */
 public class CommonStylesUtil {
 
-	public static List<String> getAvailableStyleNames() throws Exception {
+	public static List<String> getAvailableStyleNames() {
 		if (_availableStyleNames != null) {
 			return _availableStyleNames;
 		}
 
 		List<String> availableStyleNames = new ArrayList<>();
 
-		JSONArray jsonArray = getCommonStylesJSONArray(null);
+		JSONArray jsonArray = getCommonStylesJSONArray();
 
 		Iterator<JSONObject> iterator = jsonArray.iterator();
 
@@ -58,9 +52,21 @@ public class CommonStylesUtil {
 						styleJSONObject.getString("name")));
 			});
 
+		Collections.sort(availableStyleNames);
+
 		_availableStyleNames = availableStyleNames;
 
 		return _availableStyleNames;
+	}
+
+	public static JSONArray getCommonStylesJSONArray() {
+		try {
+			return getCommonStylesJSONArray(
+				LanguageResources.getResourceBundle(LocaleUtil.getDefault()));
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
 	}
 
 	public static JSONArray getCommonStylesJSONArray(
@@ -83,46 +89,57 @@ public class CommonStylesUtil {
 				FileUtil.getBytes(
 					CommonStylesUtil.class, "common-styles.json")));
 
-		Iterator<JSONObject> iterator = jsonArray.iterator();
+		Iterator<JSONObject> jsonArrayIterator = jsonArray.iterator();
 
-		iterator.forEachRemaining(
-			jsonObject -> {
-				jsonObject.put(
+		while (jsonArrayIterator.hasNext()) {
+			JSONObject jsonObject = jsonArrayIterator.next();
+
+			jsonObject.put(
+				"label",
+				LanguageUtil.get(
+					resourceBundle, jsonObject.getString("label")));
+
+			JSONArray stylesJSONArray = jsonObject.getJSONArray("styles");
+
+			Iterator<JSONObject> stylesJSONArrayIterator =
+				stylesJSONArray.iterator();
+
+			while (stylesJSONArrayIterator.hasNext()) {
+				JSONObject styleJSONObject = stylesJSONArrayIterator.next();
+
+				styleJSONObject.put(
 					"label",
 					LanguageUtil.get(
-						resourceBundle, jsonObject.getString("label")));
+						resourceBundle, styleJSONObject.getString("label")));
 
-				JSONArray stylesJSONArray = jsonObject.getJSONArray("styles");
+				JSONObject typeOptionsJSONObject =
+					styleJSONObject.getJSONObject("typeOptions");
 
-				Iterator<JSONObject> stylesIterator =
-					stylesJSONArray.iterator();
+				if (typeOptionsJSONObject == null) {
+					continue;
+				}
 
-				stylesIterator.forEachRemaining(
-					styleJSONObject -> {
-						styleJSONObject.put(
-							"label",
-							LanguageUtil.get(
-								resourceBundle,
-								styleJSONObject.getString("label")));
+				JSONArray validValuesJSONArray =
+					typeOptionsJSONObject.getJSONArray("validValues");
 
-						JSONArray validValuesJSONArray =
-							styleJSONObject.getJSONArray("validValues");
+				if (validValuesJSONArray == null) {
+					continue;
+				}
 
-						if (validValuesJSONArray != null) {
-							Iterator<JSONObject> validValuesIterator =
-								validValuesJSONArray.iterator();
+				Iterator<JSONObject> validValuesJSONArrayIterator =
+					validValuesJSONArray.iterator();
 
-							validValuesIterator.forEachRemaining(
-								validValueJSONObject ->
-									validValueJSONObject.put(
-										"label",
-										LanguageUtil.get(
-											resourceBundle,
-											validValueJSONObject.getString(
-												"label"))));
-						}
-					});
-			});
+				while (validValuesJSONArrayIterator.hasNext()) {
+					JSONObject validValueJSONObject =
+						validValuesJSONArrayIterator.next();
+
+					String label = validValueJSONObject.getString("label");
+
+					validValueJSONObject.put(
+						"label", LanguageUtil.get(resourceBundle, label));
+				}
+			}
+		}
 
 		if (resourceBundle != null) {
 			_commonStyles.put(resourceBundle.getLocale(), jsonArray);
@@ -131,30 +148,34 @@ public class CommonStylesUtil {
 		return jsonArray;
 	}
 
+	public static String getCSSTemplate(String propertyKey) {
+		if (_cssTemplates != null) {
+			return _cssTemplates.get(propertyKey);
+		}
+
+		_loadCSSTemplates();
+
+		return _cssTemplates.get(propertyKey);
+	}
+
 	public static Object getDefaultStyleValue(String name) {
 		if (_defaultValues != null) {
 			return _defaultValues.get(name);
 		}
 
-		try {
-			Map<String, Object> defaultValues = getDefaultStyleValues();
+		Map<String, Object> defaultValues = getDefaultStyleValues();
 
-			return defaultValues.get(name);
-		}
-		catch (Exception exception) {
-			throw new RuntimeException(
-				"Unable to get default value for style " + name, exception);
-		}
+		return defaultValues.get(name);
 	}
 
-	public static Map<String, Object> getDefaultStyleValues() throws Exception {
+	public static Map<String, Object> getDefaultStyleValues() {
 		if (_defaultValues != null) {
 			return _defaultValues;
 		}
 
 		Map<String, Object> defaultValues = new HashMap<>();
 
-		JSONArray jsonArray = getCommonStylesJSONArray(null);
+		JSONArray jsonArray = getCommonStylesJSONArray();
 
 		Iterator<JSONObject> iterator = jsonArray.iterator();
 
@@ -176,7 +197,7 @@ public class CommonStylesUtil {
 		return _defaultValues;
 	}
 
-	public static List<String> getResponsiveStyleNames() throws Exception {
+	public static List<String> getResponsiveStyleNames() {
 		if (_responsiveStyleNames != null) {
 			return _responsiveStyleNames;
 		}
@@ -194,9 +215,7 @@ public class CommonStylesUtil {
 		return _responsiveStyleNames;
 	}
 
-	public static String getResponsiveTemplate(String propertyKey)
-		throws Exception {
-
+	public static String getResponsiveTemplate(String propertyKey) {
 		if (_responsiveTemplates != null) {
 			return _responsiveTemplates.get(propertyKey);
 		}
@@ -206,7 +225,7 @@ public class CommonStylesUtil {
 		return _responsiveTemplates.get(propertyKey);
 	}
 
-	public static boolean isResponsive(String propertyKey) throws Exception {
+	public static boolean isResponsive(String propertyKey) {
 		if (_responsiveTemplates != null) {
 			return Validator.isNotNull(_responsiveTemplates.get(propertyKey));
 		}
@@ -216,10 +235,34 @@ public class CommonStylesUtil {
 		return Validator.isNotNull(_responsiveTemplates.get(propertyKey));
 	}
 
-	private static void _loadResponsiveTemplates() throws Exception {
+	private static void _loadCSSTemplates() {
+		Map<String, String> cssTemplates = new HashMap<>();
+
+		JSONArray jsonArray = getCommonStylesJSONArray();
+
+		Iterator<JSONObject> iterator = jsonArray.iterator();
+
+		iterator.forEachRemaining(
+			jsonObject -> {
+				JSONArray stylesJSONArray = jsonObject.getJSONArray("styles");
+
+				Iterator<JSONObject> stylesIterator =
+					stylesJSONArray.iterator();
+
+				stylesIterator.forEachRemaining(
+					styleJSONObject -> cssTemplates.put(
+						styleJSONObject.getString("name"),
+						styleJSONObject.getString(
+							"cssTemplate", StringPool.BLANK)));
+			});
+
+		_cssTemplates = cssTemplates;
+	}
+
+	private static void _loadResponsiveTemplates() {
 		Map<String, String> responsiveTemplates = new HashMap<>();
 
-		JSONArray jsonArray = getCommonStylesJSONArray(null);
+		JSONArray jsonArray = getCommonStylesJSONArray();
 
 		Iterator<JSONObject> iterator = jsonArray.iterator();
 
@@ -249,6 +292,7 @@ public class CommonStylesUtil {
 
 	private static List<String> _availableStyleNames;
 	private static final Map<Locale, JSONArray> _commonStyles = new HashMap<>();
+	private static Map<String, String> _cssTemplates;
 	private static Map<String, Object> _defaultValues;
 	private static List<String> _responsiveStyleNames;
 	private static Map<String, String> _responsiveTemplates;

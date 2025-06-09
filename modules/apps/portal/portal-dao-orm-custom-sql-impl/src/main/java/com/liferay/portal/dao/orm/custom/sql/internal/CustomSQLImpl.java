@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.custom.sql.internal;
@@ -91,12 +82,6 @@ public class CustomSQLImpl implements CustomSQL {
 		"IFNULL(?, '1') = '0'";
 
 	public static final String MYSQL_FUNCTION_IS_NULL = "IFNULL(?, '1') = '1'";
-
-	public static final String SYBASE_FUNCTION_IS_NOT_NULL =
-		"CONVERT(VARCHAR,?) IS NOT NULL";
-
-	public static final String SYBASE_FUNCTION_IS_NULL =
-		"CONVERT(VARCHAR,?) IS NULL";
 
 	@Override
 	public String appendCriteria(String sql, String criteria) {
@@ -217,7 +202,7 @@ public class CustomSQLImpl implements CustomSQL {
 		BiFunction<Expression<String>, String, Predicate> operatorBiFunction,
 		String[] values) {
 
-		if ((values == null) || (values.length == 0)) {
+		if (ArrayUtil.isEmpty(values)) {
 			return null;
 		}
 
@@ -314,16 +299,6 @@ public class CustomSQLImpl implements CustomSQL {
 		return _vendorPostgreSQL;
 	}
 
-	/**
-	 * Returns <code>true</code> if Hibernate is connecting to a Sybase
-	 * database.
-	 *
-	 * @return <code>true</code> if Hibernate is connecting to a Sybase database
-	 */
-	public boolean isVendorSybase() {
-		return _vendorSybase;
-	}
-
 	@Override
 	public String[] keywords(String keywords) {
 		return keywords(keywords, true, WildcardMode.SURROUND);
@@ -369,7 +344,7 @@ public class CustomSQLImpl implements CustomSQL {
 				if (i > pos) {
 					String keyword = keywords.substring(pos, i);
 
-					keywordsList.add(insertWildcard(keyword, wildcardMode));
+					keywordsList.add(_insertWildcard(keyword, wildcardMode));
 				}
 			}
 			else {
@@ -393,7 +368,7 @@ public class CustomSQLImpl implements CustomSQL {
 
 				String keyword = keywords.substring(pos, i);
 
-				keywordsList.add(insertWildcard(keyword, wildcardMode));
+				keywordsList.add(_insertWildcard(keyword, wildcardMode));
 			}
 		}
 
@@ -703,8 +678,6 @@ public class CustomSQLImpl implements CustomSQL {
 	protected void activate(BundleContext bundleContext) throws SQLException {
 		_bundleContext = bundleContext;
 
-		_portal.initCustomSQL();
-
 		String functionIsNull = _portal.getCustomSQLFunctionIsNull();
 		String functionIsNotNull = _portal.getCustomSQLFunctionIsNotNull();
 
@@ -769,16 +742,6 @@ public class CustomSQLImpl implements CustomSQL {
 							"Detected MySQL with database name " + dbName);
 					}
 				}
-				else if (dbName.startsWith("Sybase") || dbName.equals("ASE")) {
-					_vendorSybase = true;
-					_functionIsNull = SYBASE_FUNCTION_IS_NULL;
-					_functionIsNotNull = SYBASE_FUNCTION_IS_NOT_NULL;
-
-					if (_log.isInfoEnabled()) {
-						_log.info(
-							"Detected Sybase with database name " + dbName);
-					}
-				}
 				else if (dbName.startsWith("Oracle")) {
 					_vendorOracle = true;
 
@@ -804,7 +767,7 @@ public class CustomSQLImpl implements CustomSQL {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		_bundleContext.addBundleListener(_synchronousBundleListener);
@@ -813,57 +776,6 @@ public class CustomSQLImpl implements CustomSQL {
 	@Deactivate
 	protected void deactivate() {
 		_bundleContext.removeBundleListener(_synchronousBundleListener);
-	}
-
-	protected String insertWildcard(String keyword, WildcardMode wildcardMode) {
-		if (wildcardMode == WildcardMode.LEADING) {
-			return StringPool.PERCENT.concat(keyword);
-		}
-		else if (wildcardMode == WildcardMode.SURROUND) {
-			return StringUtil.quote(keyword, StringPool.PERCENT);
-		}
-		else if (wildcardMode == WildcardMode.TRAILING) {
-			return keyword.concat(StringPool.PERCENT);
-		}
-		else {
-			throw new IllegalArgumentException(
-				"Invalid wildcard mode " + wildcardMode);
-		}
-	}
-
-	protected String transform(String sql) {
-		sql = _portal.transformCustomSQL(sql);
-
-		StringBundler sb = new StringBundler();
-
-		try (UnsyncBufferedReader unsyncBufferedReader =
-				new UnsyncBufferedReader(new UnsyncStringReader(sql))) {
-
-			String line = null;
-
-			while ((line = unsyncBufferedReader.readLine()) != null) {
-				line = line.trim();
-
-				if (line.startsWith(StringPool.CLOSE_PARENTHESIS)) {
-					sb.setIndex(sb.index() - 1);
-				}
-
-				sb.append(line);
-
-				if (!line.endsWith(StringPool.OPEN_PARENTHESIS)) {
-					sb.append(StringPool.SPACE);
-				}
-			}
-		}
-		catch (IOException ioException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
-			}
-
-			return sql;
-		}
-
-		return sb.toString();
 	}
 
 	private String _escapeWildCards(String keywords) {
@@ -907,6 +819,21 @@ public class CustomSQLImpl implements CustomSQL {
 		return new CustomSQLContainer(classLoader, sourceURL);
 	}
 
+	private String _insertWildcard(String keyword, WildcardMode wildcardMode) {
+		if (wildcardMode == WildcardMode.LEADING) {
+			return StringPool.PERCENT.concat(keyword);
+		}
+		else if (wildcardMode == WildcardMode.SURROUND) {
+			return StringUtil.quote(keyword, StringPool.PERCENT);
+		}
+		else if (wildcardMode == WildcardMode.TRAILING) {
+			return keyword.concat(StringPool.PERCENT);
+		}
+
+		throw new IllegalArgumentException(
+			"Invalid wildcard mode " + wildcardMode);
+	}
+
 	private void _read(
 			ClassLoader classLoader, URL sourceURL, Map<String, String> sqls)
 		throws Exception {
@@ -931,7 +858,7 @@ public class CustomSQLImpl implements CustomSQL {
 				else {
 					String id = sqlElement.attributeValue("id");
 
-					String content = transform(sqlElement.getText());
+					String content = _transform(sqlElement.getText());
 
 					content = replaceIsNull(content);
 
@@ -939,6 +866,41 @@ public class CustomSQLImpl implements CustomSQL {
 				}
 			}
 		}
+	}
+
+	private String _transform(String sql) {
+		sql = _portal.transformCustomSQL(sql);
+
+		StringBundler sb = new StringBundler();
+
+		try (UnsyncBufferedReader unsyncBufferedReader =
+				new UnsyncBufferedReader(new UnsyncStringReader(sql))) {
+
+			String line = null;
+
+			while ((line = unsyncBufferedReader.readLine()) != null) {
+				line = line.trim();
+
+				if (line.startsWith(StringPool.CLOSE_PARENTHESIS)) {
+					sb.setIndex(sb.index() - 1);
+				}
+
+				sb.append(line);
+
+				if (!line.endsWith(StringPool.OPEN_PARENTHESIS)) {
+					sb.append(StringPool.SPACE);
+				}
+			}
+		}
+		catch (IOException ioException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(ioException);
+			}
+
+			return sql;
+		}
+
+		return sb.toString();
 	}
 
 	private static final boolean _CUSTOM_SQL_AUTO_ESCAPE_WILDCARDS_ENABLED =
@@ -993,7 +955,6 @@ public class CustomSQLImpl implements CustomSQL {
 	private boolean _vendorMySQL;
 	private boolean _vendorOracle;
 	private boolean _vendorPostgreSQL;
-	private boolean _vendorSybase;
 
 	private class CustomSQLContainer {
 
@@ -1011,7 +972,7 @@ public class CustomSQLImpl implements CustomSQL {
 				catch (Exception exception2) {
 					exception1 = exception2;
 
-					_log.error(exception2, exception2);
+					_log.error(exception2);
 				}
 
 				objectValuePair = new ObjectValuePair<>(sqlPool, exception1);
@@ -1022,7 +983,7 @@ public class CustomSQLImpl implements CustomSQL {
 			Exception exception = objectValuePair.getValue();
 
 			if (exception != null) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 
 			Map<String, String> sqlPool = objectValuePair.getKey();

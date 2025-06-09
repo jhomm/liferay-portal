@@ -1,23 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
 
 import java.io.File;
+import java.io.IOException;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -25,21 +22,7 @@ import java.util.regex.Pattern;
 public abstract class GitRepositoryJob extends BaseJob {
 
 	public String getBranchName() {
-		if (_branchName != null) {
-			return _branchName;
-		}
-
-		Matcher matcher = _jobNamePattern.matcher(getJobName());
-
-		if (matcher.find()) {
-			_branchName = matcher.group("branchName");
-
-			return _branchName;
-		}
-
-		_branchName = "master";
-
-		return _branchName;
+		return getUpstreamBranchName();
 	}
 
 	public GitWorkingDirectory getGitWorkingDirectory() {
@@ -56,26 +39,88 @@ public abstract class GitRepositoryJob extends BaseJob {
 		return gitWorkingDirectory;
 	}
 
-	public void setGitRepositoryDir(File gitRepositoryDir) {
-		if (this.gitRepositoryDir != null) {
-			throw new IllegalStateException(
-				"Repository directory is already set to " +
-					this.gitRepositoryDir.getPath());
+	@Override
+	public List<String> getJobPropertyOptions() {
+		List<String> jobPropertyOptions = super.getJobPropertyOptions();
+
+		jobPropertyOptions.add(getBranchName());
+
+		jobPropertyOptions.removeAll(Collections.singleton(null));
+
+		return jobPropertyOptions;
+	}
+
+	@Override
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
 		}
 
+		jsonObject = super.getJSONObject();
+
+		jsonObject.put("branch", _getBranchJSONObject());
+		jsonObject.put(
+			"git_repository_dir",
+			JenkinsResultsParserUtil.getCanonicalPath(gitRepositoryDir));
+		jsonObject.put("upstream_branch_name", _upstreamBranchName);
+
+		return jsonObject;
+	}
+
+	public String getRepositoryName() {
+		String gitRepositoryDirPath = JenkinsResultsParserUtil.getCanonicalPath(
+			gitRepositoryDir);
+
+		return JenkinsResultsParserUtil.getGitRepositoryName(
+			gitRepositoryDirPath.replaceAll(".*/([^/]+)", "$1"));
+	}
+
+	public String getUpstreamBranchName() {
+		return _upstreamBranchName;
+	}
+
+	public void setGitRepositoryDir(File gitRepositoryDir) {
 		this.gitRepositoryDir = gitRepositoryDir;
 	}
 
-	protected GitRepositoryJob(String jobName, BuildProfile buildProfile) {
-		super(jobName, buildProfile);
+	protected GitRepositoryJob(BuildProfile buildProfile, String jobName) {
+		this(buildProfile, jobName, null);
 	}
 
 	protected GitRepositoryJob(
-		String jobName, BuildProfile buildProfile, String branchName) {
+		BuildProfile buildProfile, String jobName, String upstreamBranchName) {
 
-		super(jobName, buildProfile);
+		super(buildProfile, jobName);
 
-		_branchName = branchName;
+		if (JenkinsResultsParserUtil.isNullOrEmpty(upstreamBranchName)) {
+			upstreamBranchName = "master";
+
+			Matcher matcher = _jobNamePattern.matcher(getJobName());
+
+			if (matcher.find()) {
+				upstreamBranchName = matcher.group("upstreamBranchName");
+			}
+		}
+
+		if (upstreamBranchName.equals("release")) {
+			String githubUpstreamBranchName = System.getenv(
+				"GITHUB_UPSTREAM_BRANCH_NAME");
+
+			if (!JenkinsResultsParserUtil.isNullOrEmpty(
+					githubUpstreamBranchName)) {
+
+				upstreamBranchName = githubUpstreamBranchName;
+			}
+		}
+
+		_upstreamBranchName = upstreamBranchName;
+	}
+
+	protected GitRepositoryJob(JSONObject jsonObject) {
+		super(jsonObject);
+
+		gitRepositoryDir = new File(jsonObject.getString("git_repository_dir"));
+		_upstreamBranchName = jsonObject.getString("upstream_branch_name");
 	}
 
 	protected void checkGitRepositoryDir() {
@@ -92,9 +137,77 @@ public abstract class GitRepositoryJob extends BaseJob {
 	protected File gitRepositoryDir;
 	protected GitWorkingDirectory gitWorkingDirectory;
 
-	private static final Pattern _jobNamePattern = Pattern.compile(
-		"[^\\(]+\\((?<branchName>[^\\)]+)\\)");
+	private JSONObject _getBranchJSONObject() {
+		if ((jsonObject != null) && jsonObject.has("branch")) {
+			return jsonObject.getJSONObject("branch");
+		}
 
-	private String _branchName;
+		JSONObject branchJSONObject = new JSONObject();
+
+		GitWorkingDirectory gitWorkingDirectory = getGitWorkingDirectory();
+
+		LocalGitBranch currentLocalGitBranch =
+			gitWorkingDirectory.getCurrentLocalGitBranch();
+
+		branchJSONObject.put(
+			"current_branch_name", currentLocalGitBranch.getName()
+		).put(
+			"current_branch_sha", currentLocalGitBranch.getSHA()
+		);
+
+		LocalGitBranch upstreamLocalGitBranch =
+			gitWorkingDirectory.getUpstreamLocalGitBranch();
+
+		branchJSONObject.put(
+			"merge_branch_sha",
+			gitWorkingDirectory.getMergeBaseCommitSHA(
+				currentLocalGitBranch, upstreamLocalGitBranch)
+		).put(
+			"upstream_branch_name", upstreamLocalGitBranch.getName()
+		).put(
+			"upstream_branch_sha", upstreamLocalGitBranch.getSHA()
+		);
+
+		File workingDirectory = gitWorkingDirectory.getWorkingDirectory();
+
+		List<String> modifiedFiles = new ArrayList<>();
+
+		for (File modifiedFile : gitWorkingDirectory.getModifiedFilesList()) {
+			modifiedFiles.add(
+				JenkinsResultsParserUtil.getPathRelativeTo(
+					modifiedFile, workingDirectory));
+		}
+
+		branchJSONObject.put("modified_files", modifiedFiles);
+
+		if (gitWorkingDirectory instanceof PortalGitWorkingDirectory) {
+			PortalGitWorkingDirectory portalGitWorkingDirectory =
+				(PortalGitWorkingDirectory)gitWorkingDirectory;
+
+			List<String> modifiedModuleDirs = new ArrayList<>();
+
+			try {
+				for (File modifiedModuleDir :
+						portalGitWorkingDirectory.getModifiedModuleDirsList()) {
+
+					modifiedModuleDirs.add(
+						JenkinsResultsParserUtil.getPathRelativeTo(
+							modifiedModuleDir, workingDirectory));
+				}
+
+				branchJSONObject.put("modified_modules", modifiedModuleDirs);
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
+		}
+
+		return branchJSONObject;
+	}
+
+	private static final Pattern _jobNamePattern = Pattern.compile(
+		"[^\\(]+\\((?<upstreamBranchName>[^\\)]+)\\)");
+
+	private final String _upstreamBranchName;
 
 }

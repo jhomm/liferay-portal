@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.ratings.service.persistence.impl;
 
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.EntityCacheUtil;
@@ -49,7 +42,6 @@ import com.liferay.ratings.kernel.service.persistence.RatingsStatsUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -168,7 +160,7 @@ public class RatingsStatsPersistenceImpl
 	 * </p>
 	 *
 	 * @param classNameId the class name ID
-	 * @param classPK the class pk
+	 * @param classPKs the class pks
 	 * @param start the lower bound of the range of ratings statses
 	 * @param end the upper bound of the range of ratings statses (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -199,88 +191,92 @@ public class RatingsStatsPersistenceImpl
 			}
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					RatingsStats.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
+				if (useFinderCache) {
+					finderArgs = new Object[] {
+						classNameId, StringUtil.merge(classPKs)
+					};
+				}
+			}
+			else if (useFinderCache) {
 				finderArgs = new Object[] {
-					classNameId, StringUtil.merge(classPKs)
+					classNameId, StringUtil.merge(classPKs), start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {
-				classNameId, StringUtil.merge(classPKs), start, end,
-				orderByComparator
-			};
-		}
 
-		List<RatingsStats> list = null;
+			List<RatingsStats> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<RatingsStats>)FinderCacheUtil.getResult(
-				_finderPathWithPaginationFindByC_C, finderArgs);
+			if (useFinderCache) {
+				list = (List<RatingsStats>)FinderCacheUtil.getResult(
+					_finderPathWithPaginationFindByC_C, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (RatingsStats ratingsStats : list) {
-					if ((classNameId != ratingsStats.getClassNameId()) ||
-						!ArrayUtil.contains(
-							classPKs, ratingsStats.getClassPK())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (RatingsStats ratingsStats : list) {
+						if ((classNameId != ratingsStats.getClassNameId()) ||
+							!ArrayUtil.contains(
+								classPKs, ratingsStats.getClassPK())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			try {
-				if ((start == QueryUtil.ALL_POS) &&
-					(end == QueryUtil.ALL_POS) &&
-					(databaseInMaxParameters > 0) &&
-					(classPKs.length > databaseInMaxParameters)) {
+			if (list == null) {
+				try {
+					if ((start == QueryUtil.ALL_POS) &&
+						(end == QueryUtil.ALL_POS) &&
+						(databaseInMaxParameters > 0) &&
+						(classPKs.length > databaseInMaxParameters)) {
 
-					list = new ArrayList<RatingsStats>();
+						list = new ArrayList<RatingsStats>();
 
-					long[][] classPKsPages = (long[][])ArrayUtil.split(
-						classPKs, databaseInMaxParameters);
+						long[][] classPKsPages = (long[][])ArrayUtil.split(
+							classPKs, databaseInMaxParameters);
 
-					for (long[] classPKsPage : classPKsPages) {
-						list.addAll(
-							_findByC_C(
-								classNameId, classPKsPage, start, end,
-								orderByComparator));
+						for (long[] classPKsPage : classPKsPages) {
+							list.addAll(
+								_findByC_C(
+									classNameId, classPKsPage, start, end,
+									orderByComparator));
+						}
+
+						Collections.sort(list, orderByComparator);
+
+						list = Collections.unmodifiableList(list);
+					}
+					else {
+						list = _findByC_C(
+							classNameId, classPKs, start, end,
+							orderByComparator);
 					}
 
-					Collections.sort(list, orderByComparator);
+					cacheResult(list);
 
-					list = Collections.unmodifiableList(list);
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(
+							_finderPathWithPaginationFindByC_C, finderArgs,
+							list);
+					}
 				}
-				else {
-					list = _findByC_C(
-						classNameId, classPKs, start, end, orderByComparator);
-				}
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(
-						_finderPathWithPaginationFindByC_C, finderArgs, list);
+				catch (Exception exception) {
+					throw processException(exception);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
+
+			return list;
 		}
-
-		return list;
 	}
 
 	private List<RatingsStats> _findByC_C(
@@ -405,85 +401,87 @@ public class RatingsStatsPersistenceImpl
 	public RatingsStats fetchByC_C(
 		long classNameId, long classPK, boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					RatingsStats.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {classNameId, classPK};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = FinderCacheUtil.getResult(
-				_finderPathFetchByC_C, finderArgs);
-		}
-
-		if (result instanceof RatingsStats) {
-			RatingsStats ratingsStats = (RatingsStats)result;
-
-			if ((classNameId != ratingsStats.getClassNameId()) ||
-				(classPK != ratingsStats.getClassPK())) {
-
-				result = null;
+			if (useFinderCache) {
+				finderArgs = new Object[] {classNameId, classPK};
 			}
-		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
+			Object result = null;
 
-			sb.append(_SQL_SELECT_RATINGSSTATS_WHERE);
+			if (useFinderCache) {
+				result = FinderCacheUtil.getResult(
+					_finderPathFetchByC_C, finderArgs, this);
+			}
 
-			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
+			if (result instanceof RatingsStats) {
+				RatingsStats ratingsStats = (RatingsStats)result;
 
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
+				if ((classNameId != ratingsStats.getClassNameId()) ||
+					(classPK != ratingsStats.getClassPK())) {
 
-			String sql = sb.toString();
+					result = null;
+				}
+			}
 
-			Session session = null;
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-			try {
-				session = openSession();
+				sb.append(_SQL_SELECT_RATINGSSTATS_WHERE);
 
-				Query query = session.createQuery(sql);
+				sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+				sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
 
-				queryPos.add(classNameId);
+				String sql = sb.toString();
 
-				queryPos.add(classPK);
+				Session session = null;
 
-				List<RatingsStats> list = query.list();
+				try {
+					session = openSession();
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						FinderCacheUtil.putResult(
-							_finderPathFetchByC_C, finderArgs, list);
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(classNameId);
+
+					queryPos.add(classPK);
+
+					List<RatingsStats> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							FinderCacheUtil.putResult(
+								_finderPathFetchByC_C, finderArgs, list);
+						}
+					}
+					else {
+						RatingsStats ratingsStats = list.get(0);
+
+						result = ratingsStats;
+
+						cacheResult(ratingsStats);
 					}
 				}
-				else {
-					RatingsStats ratingsStats = list.get(0);
-
-					result = ratingsStats;
-
-					cacheResult(ratingsStats);
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (RatingsStats)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (RatingsStats)result;
+			}
 		}
 	}
 
@@ -512,61 +510,55 @@ public class RatingsStatsPersistenceImpl
 	 */
 	@Override
 	public int countByC_C(long classNameId, long classPK) {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					RatingsStats.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByC_C;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {classNameId, classPK};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByC_C;
+			Long count = (Long)FinderCacheUtil.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {classNameId, classPK};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_RATINGSSTATS_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
 
-			sb.append(_SQL_COUNT_RATINGSSTATS_WHERE);
+				sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
 
-			sb.append(_FINDER_COLUMN_C_C_CLASSNAMEID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_C_C_CLASSPK_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(classNameId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(classPK);
 
-				queryPos.add(classNameId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(classPK);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	/**
@@ -585,50 +577,47 @@ public class RatingsStatsPersistenceImpl
 			classPKs = ArrayUtil.sortedUnique(classPKs);
 		}
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					RatingsStats.class)) {
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = new Object[] {
+				classNameId, StringUtil.merge(classPKs)
+			};
 
-		Long count = null;
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathWithPaginationCountByC_C, finderArgs, this);
 
-		if (productionMode) {
-			finderArgs = new Object[] {classNameId, StringUtil.merge(classPKs)};
+			if (count == null) {
+				try {
+					if ((databaseInMaxParameters > 0) &&
+						(classPKs.length > databaseInMaxParameters)) {
 
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathWithPaginationCountByC_C, finderArgs);
-		}
+						count = Long.valueOf(0);
 
-		if (count == null) {
-			try {
-				if ((databaseInMaxParameters > 0) &&
-					(classPKs.length > databaseInMaxParameters)) {
+						long[][] classPKsPages = (long[][])ArrayUtil.split(
+							classPKs, databaseInMaxParameters);
 
-					count = Long.valueOf(0);
-
-					long[][] classPKsPages = (long[][])ArrayUtil.split(
-						classPKs, databaseInMaxParameters);
-
-					for (long[] classPKsPage : classPKsPages) {
-						count += Long.valueOf(
-							_countByC_C(classNameId, classPKsPage));
+						for (long[] classPKsPage : classPKsPages) {
+							count += Long.valueOf(
+								_countByC_C(classNameId, classPKsPage));
+						}
 					}
-				}
-				else {
-					count = Long.valueOf(_countByC_C(classNameId, classPKs));
-				}
+					else {
+						count = Long.valueOf(
+							_countByC_C(classNameId, classPKs));
+					}
 
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathWithPaginationCountByC_C, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private int _countByC_C(long classNameId, long[] classPKs) {
@@ -705,19 +694,21 @@ public class RatingsStatsPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(RatingsStats ratingsStats) {
-		if (ratingsStats.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ratingsStats.getCtCollectionId())) {
+
+			EntityCacheUtil.putResult(
+				RatingsStatsImpl.class, ratingsStats.getPrimaryKey(),
+				ratingsStats);
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_C,
+				new Object[] {
+					ratingsStats.getClassNameId(), ratingsStats.getClassPK()
+				},
+				ratingsStats);
 		}
-
-		EntityCacheUtil.putResult(
-			RatingsStatsImpl.class, ratingsStats.getPrimaryKey(), ratingsStats);
-
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C,
-			new Object[] {
-				ratingsStats.getClassNameId(), ratingsStats.getClassPK()
-			},
-			ratingsStats);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -737,15 +728,16 @@ public class RatingsStatsPersistenceImpl
 		}
 
 		for (RatingsStats ratingsStats : ratingsStatses) {
-			if (ratingsStats.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						ratingsStats.getCtCollectionId())) {
 
-			if (EntityCacheUtil.getResult(
-					RatingsStatsImpl.class, ratingsStats.getPrimaryKey()) ==
-						null) {
+				if (EntityCacheUtil.getResult(
+						RatingsStatsImpl.class, ratingsStats.getPrimaryKey()) ==
+							null) {
 
-				cacheResult(ratingsStats);
+					cacheResult(ratingsStats);
+				}
 			}
 		}
 	}
@@ -795,14 +787,18 @@ public class RatingsStatsPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		RatingsStatsModelImpl ratingsStatsModelImpl) {
 
-		Object[] args = new Object[] {
-			ratingsStatsModelImpl.getClassNameId(),
-			ratingsStatsModelImpl.getClassPK()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ratingsStatsModelImpl.getCtCollectionId())) {
 
-		FinderCacheUtil.putResult(_finderPathCountByC_C, args, Long.valueOf(1));
-		FinderCacheUtil.putResult(
-			_finderPathFetchByC_C, args, ratingsStatsModelImpl);
+			Object[] args = new Object[] {
+				ratingsStatsModelImpl.getClassNameId(),
+				ratingsStatsModelImpl.getClassPK()
+			};
+
+			FinderCacheUtil.putResult(
+				_finderPathFetchByC_C, args, ratingsStatsModelImpl);
+		}
 	}
 
 	/**
@@ -981,16 +977,6 @@ public class RatingsStatsPersistenceImpl
 			closeSession(session);
 		}
 
-		if (ratingsStats.getCtCollectionId() != 0) {
-			if (isNew) {
-				ratingsStats.setNew(false);
-			}
-
-			ratingsStats.resetOriginalValues();
-
-			return ratingsStats;
-		}
-
 		EntityCacheUtil.putResult(
 			RatingsStatsImpl.class, ratingsStatsModelImpl, false, true);
 
@@ -1052,11 +1038,23 @@ public class RatingsStatsPersistenceImpl
 	 */
 	@Override
 	public RatingsStats fetchByPrimaryKey(Serializable primaryKey) {
-		if (CTPersistenceHelperUtil.isProductionMode(RatingsStats.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (CTPersistenceHelperUtil.isProductionMode(
+				RatingsStats.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		RatingsStats ratingsStats = null;
+		RatingsStats ratingsStats = (RatingsStats)EntityCacheUtil.getResult(
+			RatingsStatsImpl.class, primaryKey);
+
+		if (ratingsStats != null) {
+			return ratingsStats;
+		}
 
 		Session session = null;
 
@@ -1096,7 +1094,12 @@ public class RatingsStatsPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (CTPersistenceHelperUtil.isProductionMode(RatingsStats.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -1117,6 +1120,34 @@ public class RatingsStatsPersistenceImpl
 				map.put(primaryKey, ratingsStats);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+						RatingsStats.class, primaryKey)) {
+
+				RatingsStats ratingsStats =
+					(RatingsStats)EntityCacheUtil.getResult(
+						RatingsStatsImpl.class, primaryKey);
+
+				if (ratingsStats == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, ratingsStats);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -1245,78 +1276,80 @@ public class RatingsStatsPersistenceImpl
 		int start, int end, OrderByComparator<RatingsStats> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					RatingsStats.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<RatingsStats> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<RatingsStats>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_RATINGSSTATS);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_RATINGSSTATS;
-
-				sql = sql.concat(RatingsStatsModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<RatingsStats>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					FinderCacheUtil.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<RatingsStats> list = null;
+
+			if (useFinderCache) {
+				list = (List<RatingsStats>)FinderCacheUtil.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_RATINGSSTATS);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_RATINGSSTATS;
+
+					sql = sql.concat(RatingsStatsModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<RatingsStats>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						FinderCacheUtil.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -1337,40 +1370,36 @@ public class RatingsStatsPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = CTPersistenceHelperUtil.isProductionMode(
-			RatingsStats.class);
+		try (SafeCloseable safeCloseable =
+				CTPersistenceHelperUtil.setCTCollectionIdWithSafeCloseable(
+					RatingsStats.class)) {
 
-		Long count = null;
+			Long count = (Long)FinderCacheUtil.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)FinderCacheUtil.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(_SQL_COUNT_RATINGSSTATS);
 
-				Query query = session.createQuery(_SQL_COUNT_RATINGSSTATS);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					FinderCacheUtil.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -1427,6 +1456,7 @@ public class RatingsStatsPersistenceImpl
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
 		Set<String> ctIgnoreColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -1436,14 +1466,15 @@ public class RatingsStatsPersistenceImpl
 		ctIgnoreColumnNames.add("modifiedDate");
 		ctStrictColumnNames.add("classNameId");
 		ctStrictColumnNames.add("classPK");
-		ctStrictColumnNames.add("totalEntries");
-		ctStrictColumnNames.add("totalScore");
-		ctStrictColumnNames.add("averageScore");
+		ctMergeColumnNames.add("totalEntries");
+		ctMergeColumnNames.add("totalScore");
+		ctMergeColumnNames.add("averageScore");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.IGNORE, ctIgnoreColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK, Collections.singleton("statsId"));
 		_ctColumnNamesMap.put(
@@ -1500,29 +1531,13 @@ public class RatingsStatsPersistenceImpl
 			new String[] {Long.class.getName(), Long.class.getName()},
 			new String[] {"classNameId", "classPK"}, false);
 
-		_setRatingsStatsUtilPersistence(this);
+		RatingsStatsUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setRatingsStatsUtilPersistence(null);
+		RatingsStatsUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(RatingsStatsImpl.class.getName());
-	}
-
-	private void _setRatingsStatsUtilPersistence(
-		RatingsStatsPersistence ratingsStatsPersistence) {
-
-		try {
-			Field field = RatingsStatsUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ratingsStatsPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_RATINGSSTATS =

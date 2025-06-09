@@ -1,0 +1,469 @@
+{
+	"pageElement": {
+		"pageElements": [
+			{
+				"definition": {
+					"collectionConfig": {
+						"collectionReference": {
+							"className": "com.liferay.asset.list.model.AssetListEntry",
+							"classPK": "[$ASSET_LIST_ENTRY_ID:FEATURED-BLOG-ENTRIES$]"
+						},
+						"collectionType": "Collection"
+					},
+					"numberOfColumns": 1,
+					"numberOfItems": 1,
+					"numberOfItemsPerPage": 5
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"collectionItemConfig": {
+							}
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"fragment": {
+										"key": "blog-header"
+									},
+									"fragmentFields": [
+										{
+											"id": "entryCategory",
+											"value": {
+												"text": {
+													"mapping": {
+														"fieldKey": "roles",
+														"itemReference": {
+															"contextSource": "CollectionItem"
+														}
+													}
+												}
+											}
+										},
+										{
+											"id": "entrySubtitle",
+											"value": {
+												"text": {
+													"mapping": {
+														"fieldKey": "Subtitle",
+														"itemReference": {
+															"contextSource": "CollectionItem"
+														}
+													}
+												}
+											}
+										},
+										{
+											"id": "imageAuthor",
+											"value": {
+												"fragmentLink": {
+												}
+											}
+										},
+										{
+											"id": "link",
+											"value": {
+												"fragmentLink": {
+													"value": {
+														"href": {
+															"mapping": {
+																"fieldKey": "displayPageURL",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												}
+											}
+										},
+										{
+											"id": "entryImage",
+											"value": {
+												"fragmentImage": {
+													"url": {
+														"mapping": {
+															"fieldKey": "MainImage",
+															"itemReference": {
+																"contextSource": "CollectionItem"
+															}
+														}
+													}
+												},
+												"fragmentLink": {
+													"value": {
+														"href": {
+															"mapping": {
+																"fieldKey": "displayPageURL",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												}
+											}
+										},
+										{
+											"id": "entryTitle",
+											"value": {
+												"fragmentLink": {
+													"value": {
+														"href": {
+															"mapping": {
+																"fieldKey": "displayPageURL",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												},
+												"text": {
+													"mapping": {
+														"fieldKey": "Title",
+														"itemReference": {
+															"contextSource": "CollectionItem"
+														}
+													}
+												}
+											}
+										}
+									],
+									"fragmentStyle": {
+										"marginBottom": "7"
+									},
+									"fragmentViewports": [
+										{
+											"fragmentViewportStyle": {
+												"marginBottom": "7"
+											},
+											"id": "landscapeMobile"
+										},
+										{
+											"fragmentViewportStyle": {
+												"marginBottom": "7"
+											},
+											"id": "portraitMobile"
+										},
+										{
+											"fragmentViewportStyle": {
+												"marginBottom": "7"
+											},
+											"id": "tablet"
+										}
+									]
+								},
+								"type": "Fragment"
+							}
+						],
+						"type": "CollectionItem"
+					}
+				],
+				"type": "Collection"
+			},
+			{
+				"definition": {
+					"fragmentStyle": {
+						"marginBottom": "7"
+					},
+					"fragmentViewports": [
+						{
+							"fragmentViewportStyle": {
+								"marginBottom": "4"
+							},
+							"id": "tablet"
+						}
+					],
+					"layout": {
+						"marginBottom": 8,
+						"widthType": "Fixed"
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"fragment": {
+								"key": "class-container"
+							},
+							"fragmentConfig": {
+								"classContainerName": "filter-bar filter-bar-inv"
+							}
+						},
+						"pageElements": [
+							{
+								"pageElements": [
+									{
+										"definition": {
+											"fragmentStyle": {
+												"overflow": "visible"
+											},
+											"gutters": true,
+											"modulesPerRow": 2,
+											"numberOfColumns": 2,
+											"rowViewports": [
+												{
+													"id": "tablet",
+													"rowViewportDefinition": {
+														"modulesPerRow": 1
+													}
+												}
+											]
+										},
+										"pageElements": [
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 9
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "heading"
+															},
+															"fragmentConfig": {
+																"displayLevel": "0",
+																"headingLevel": "h4"
+															},
+															"fragmentFields": [
+																{
+																	"id": "element-text",
+																	"value": {
+																		"text": {
+																			"value_i18n": {
+																				"en_US": "All blog articles"
+																			}
+																		}
+																	}
+																}
+															],
+															"fragmentStyle": {
+																"marginBottom": "2"
+															}
+														},
+														"type": "Fragment"
+													},
+													{
+														"definition": {
+															"fragment": {
+																"key": "text-block"
+															},
+															"fragmentFields": [
+																{
+																	"id": "element-text",
+																	"value": {
+																		"text": {
+																			"value_i18n": {
+																				"en_US": "Lorem ipsum dolor sit amet, consectetur sed tristique neque eu lorem scelerisque."
+																			}
+																		}
+																	}
+																}
+															],
+															"fragmentStyle": {
+																"maxWidth": "100%",
+																"textColor": "gray600Color",
+																"width": "380px"
+															},
+															"fragmentViewports": [
+																{
+																	"fragmentViewportStyle": {
+																		"marginBottom": "3"
+																	},
+																	"id": "tablet"
+																}
+															]
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											},
+											{
+												"definition": {
+													"columnViewports": [
+														{
+															"columnViewportDefinition": {
+																"size": 12
+															},
+															"id": "tablet"
+														}
+													],
+													"size": 3
+												},
+												"pageElements": [
+													{
+														"definition": {
+															"fragment": {
+																"key": "com.liferay.fragment.renderer.collection.filter.internal.CollectionFilterFragmentRenderer"
+															}
+														},
+														"type": "Fragment"
+													}
+												],
+												"type": "Column"
+											}
+										],
+										"type": "Row"
+									}
+								],
+								"type": "FragmentDropZone"
+							}
+						],
+						"type": "Fragment"
+					}
+				],
+				"type": "Section"
+			},
+			{
+				"definition": {
+					"layout": {
+						"widthType": "Fixed"
+					}
+				},
+				"pageElements": [
+					{
+						"definition": {
+							"collectionConfig": {
+								"collectionReference": {
+									"className": "com.liferay.asset.list.model.AssetListEntry",
+									"classPK": "[$ASSET_LIST_ENTRY_ID:BLOG-ENTRIES$]"
+								},
+								"collectionType": "Collection"
+							},
+							"numberOfColumns": 3,
+							"numberOfItems": 9,
+							"numberOfItemsPerPage": 9
+						},
+						"pageElements": [
+							{
+								"definition": {
+									"collectionItemConfig": {
+									}
+								},
+								"pageElements": [
+									{
+										"definition": {
+											"fragment": {
+												"key": "entry-card"
+											},
+											"fragmentFields": [
+												{
+													"id": "image",
+													"value": {
+														"fragmentImage": {
+															"url": {
+																"mapping": {
+																	"fieldKey": "MainImage",
+																	"itemReference": {
+																		"contextSource": "CollectionItem"
+																	}
+																}
+															}
+														},
+														"fragmentLink": {
+															"value": {
+																"href": {
+																	"mapping": {
+																		"fieldKey": "displayPageURL",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "author",
+													"value": {
+														"text": {
+															"mapping": {
+																"fieldKey": "authorName",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "category",
+													"value": {
+														"text": {
+															"mapping": {
+																"fieldKey": "roles",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												},
+												{
+													"id": "title",
+													"value": {
+														"fragmentLink": {
+															"value": {
+																"href": {
+																	"mapping": {
+																		"fieldKey": "displayPageURL",
+																		"itemReference": {
+																			"contextSource": "CollectionItem"
+																		}
+																	}
+																}
+															}
+														},
+														"text": {
+															"mapping": {
+																"fieldKey": "Title",
+																"itemReference": {
+																	"contextSource": "CollectionItem"
+																}
+															}
+														}
+													}
+												}
+											],
+											"fragmentStyle": {
+												"marginBottom": "6"
+											},
+											"fragmentViewports": [
+												{
+													"fragmentViewportStyle": {
+														"marginBottom": "5"
+													},
+													"id": "tablet"
+												}
+											]
+										},
+										"type": "Fragment"
+									}
+								],
+								"type": "CollectionItem"
+							}
+						],
+						"type": "Collection"
+					}
+				],
+				"type": "Section"
+			}
+		],
+		"type": "Root"
+	},
+	"settings": {
+		"masterPage": {
+			"key": "master"
+		}
+	}
+}

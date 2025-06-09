@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -2000,84 +1991,6 @@ public class LayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns the layout revision where layoutSetBranchId = &#63; and head = &#63; and plid = &#63; or throws a <code>NoSuchLayoutRevisionException</code> if it could not be found.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the matching layout revision
-	 * @throws NoSuchLayoutRevisionException if a matching layout revision could not be found
-	 */
-	public static LayoutRevision findByL_H_P(
-			long layoutSetBranchId, boolean head, long plid)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutRevisionException {
-
-		return getPersistence().findByL_H_P(layoutSetBranchId, head, plid);
-	}
-
-	/**
-	 * Returns the layout revision where layoutSetBranchId = &#63; and head = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the matching layout revision, or <code>null</code> if a matching layout revision could not be found
-	 */
-	public static LayoutRevision fetchByL_H_P(
-		long layoutSetBranchId, boolean head, long plid) {
-
-		return getPersistence().fetchByL_H_P(layoutSetBranchId, head, plid);
-	}
-
-	/**
-	 * Returns the layout revision where layoutSetBranchId = &#63; and head = &#63; and plid = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching layout revision, or <code>null</code> if a matching layout revision could not be found
-	 */
-	public static LayoutRevision fetchByL_H_P(
-		long layoutSetBranchId, boolean head, long plid,
-		boolean useFinderCache) {
-
-		return getPersistence().fetchByL_H_P(
-			layoutSetBranchId, head, plid, useFinderCache);
-	}
-
-	/**
-	 * Removes the layout revision where layoutSetBranchId = &#63; and head = &#63; and plid = &#63; from the database.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the layout revision that was removed
-	 */
-	public static LayoutRevision removeByL_H_P(
-			long layoutSetBranchId, boolean head, long plid)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutRevisionException {
-
-		return getPersistence().removeByL_H_P(layoutSetBranchId, head, plid);
-	}
-
-	/**
-	 * Returns the number of layout revisions where layoutSetBranchId = &#63; and head = &#63; and plid = &#63;.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the number of matching layout revisions
-	 */
-	public static int countByL_H_P(
-		long layoutSetBranchId, boolean head, long plid) {
-
-		return getPersistence().countByL_H_P(layoutSetBranchId, head, plid);
-	}
-
-	/**
 	 * Returns all the layout revisions where layoutSetBranchId = &#63; and head = &#63; and plid = &#63;.
 	 *
 	 * @param layoutSetBranchId the layout set branch ID
@@ -2701,95 +2614,6 @@ public class LayoutRevisionUtil {
 	}
 
 	/**
-	 * Returns the layout revision where layoutSetBranchId = &#63; and layoutBranchId = &#63; and head = &#63; and plid = &#63; or throws a <code>NoSuchLayoutRevisionException</code> if it could not be found.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param layoutBranchId the layout branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the matching layout revision
-	 * @throws NoSuchLayoutRevisionException if a matching layout revision could not be found
-	 */
-	public static LayoutRevision findByL_L_H_P(
-			long layoutSetBranchId, long layoutBranchId, boolean head,
-			long plid)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutRevisionException {
-
-		return getPersistence().findByL_L_H_P(
-			layoutSetBranchId, layoutBranchId, head, plid);
-	}
-
-	/**
-	 * Returns the layout revision where layoutSetBranchId = &#63; and layoutBranchId = &#63; and head = &#63; and plid = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param layoutBranchId the layout branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the matching layout revision, or <code>null</code> if a matching layout revision could not be found
-	 */
-	public static LayoutRevision fetchByL_L_H_P(
-		long layoutSetBranchId, long layoutBranchId, boolean head, long plid) {
-
-		return getPersistence().fetchByL_L_H_P(
-			layoutSetBranchId, layoutBranchId, head, plid);
-	}
-
-	/**
-	 * Returns the layout revision where layoutSetBranchId = &#63; and layoutBranchId = &#63; and head = &#63; and plid = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param layoutBranchId the layout branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching layout revision, or <code>null</code> if a matching layout revision could not be found
-	 */
-	public static LayoutRevision fetchByL_L_H_P(
-		long layoutSetBranchId, long layoutBranchId, boolean head, long plid,
-		boolean useFinderCache) {
-
-		return getPersistence().fetchByL_L_H_P(
-			layoutSetBranchId, layoutBranchId, head, plid, useFinderCache);
-	}
-
-	/**
-	 * Removes the layout revision where layoutSetBranchId = &#63; and layoutBranchId = &#63; and head = &#63; and plid = &#63; from the database.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param layoutBranchId the layout branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the layout revision that was removed
-	 */
-	public static LayoutRevision removeByL_L_H_P(
-			long layoutSetBranchId, long layoutBranchId, boolean head,
-			long plid)
-		throws com.liferay.portal.kernel.exception.
-			NoSuchLayoutRevisionException {
-
-		return getPersistence().removeByL_L_H_P(
-			layoutSetBranchId, layoutBranchId, head, plid);
-	}
-
-	/**
-	 * Returns the number of layout revisions where layoutSetBranchId = &#63; and layoutBranchId = &#63; and head = &#63; and plid = &#63;.
-	 *
-	 * @param layoutSetBranchId the layout set branch ID
-	 * @param layoutBranchId the layout branch ID
-	 * @param head the head
-	 * @param plid the plid
-	 * @return the number of matching layout revisions
-	 */
-	public static int countByL_L_H_P(
-		long layoutSetBranchId, long layoutBranchId, boolean head, long plid) {
-
-		return getPersistence().countByL_L_H_P(
-			layoutSetBranchId, layoutBranchId, head, plid);
-	}
-
-	/**
 	 * Caches the layout revision in the entity cache if it is enabled.
 	 *
 	 * @param layoutRevision the layout revision
@@ -2941,6 +2765,10 @@ public class LayoutRevisionUtil {
 
 	public static LayoutRevisionPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(LayoutRevisionPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile LayoutRevisionPersistence _persistence;

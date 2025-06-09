@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.persistence;
@@ -1040,7 +1031,7 @@ public interface MBCategoryPersistence
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param parentCategoryId the parent category ID
+	 * @param parentCategoryIds the parent category IDs
 	 * @param start the lower bound of the range of message boards categories
 	 * @param end the upper bound of the range of message boards categories (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -1096,6 +1087,56 @@ public interface MBCategoryPersistence
 	 * @return the number of matching message boards categories that the user has permission to view
 	 */
 	public int filterCountByG_P(long groupId, long[] parentCategoryIds);
+
+	/**
+	 * Returns the message boards category where groupId = &#63; and friendlyURL = &#63; or throws a <code>NoSuchCategoryException</code> if it could not be found.
+	 *
+	 * @param groupId the group ID
+	 * @param friendlyURL the friendly url
+	 * @return the matching message boards category
+	 * @throws NoSuchCategoryException if a matching message boards category could not be found
+	 */
+	public MBCategory findByG_F(long groupId, String friendlyURL)
+		throws NoSuchCategoryException;
+
+	/**
+	 * Returns the message boards category where groupId = &#63; and friendlyURL = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param groupId the group ID
+	 * @param friendlyURL the friendly url
+	 * @return the matching message boards category, or <code>null</code> if a matching message boards category could not be found
+	 */
+	public MBCategory fetchByG_F(long groupId, String friendlyURL);
+
+	/**
+	 * Returns the message boards category where groupId = &#63; and friendlyURL = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param groupId the group ID
+	 * @param friendlyURL the friendly url
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching message boards category, or <code>null</code> if a matching message boards category could not be found
+	 */
+	public MBCategory fetchByG_F(
+		long groupId, String friendlyURL, boolean useFinderCache);
+
+	/**
+	 * Removes the message boards category where groupId = &#63; and friendlyURL = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param friendlyURL the friendly url
+	 * @return the message boards category that was removed
+	 */
+	public MBCategory removeByG_F(long groupId, String friendlyURL)
+		throws NoSuchCategoryException;
+
+	/**
+	 * Returns the number of message boards categories where groupId = &#63; and friendlyURL = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param friendlyURL the friendly url
+	 * @return the number of matching message boards categories
+	 */
+	public int countByG_F(long groupId, String friendlyURL);
 
 	/**
 	 * Returns all the message boards categories where groupId = &#63; and status = &#63;.
@@ -1768,9 +1809,9 @@ public interface MBCategoryPersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>MBCategoryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param categoryId the category ID
+	 * @param categoryIds the category IDs
 	 * @param groupId the group ID
-	 * @param parentCategoryId the parent category ID
+	 * @param parentCategoryIds the parent category IDs
 	 * @param start the lower bound of the range of message boards categories
 	 * @param end the upper bound of the range of message boards categories (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -2158,7 +2199,7 @@ public interface MBCategoryPersistence
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param parentCategoryId the parent category ID
+	 * @param parentCategoryIds the parent category IDs
 	 * @param status the status
 	 * @param start the lower bound of the range of message boards categories
 	 * @param end the upper bound of the range of message boards categories (not inclusive)
@@ -2543,7 +2584,7 @@ public interface MBCategoryPersistence
 	 * </p>
 	 *
 	 * @param groupId the group ID
-	 * @param parentCategoryId the parent category ID
+	 * @param parentCategoryIds the parent category IDs
 	 * @param status the status
 	 * @param start the lower bound of the range of message boards categories
 	 * @param end the upper bound of the range of message boards categories (not inclusive)
@@ -2921,9 +2962,9 @@ public interface MBCategoryPersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>MBCategoryModelImpl</code>.
 	 * </p>
 	 *
-	 * @param categoryId the category ID
+	 * @param categoryIds the category IDs
 	 * @param groupId the group ID
-	 * @param parentCategoryId the parent category ID
+	 * @param parentCategoryIds the parent category IDs
 	 * @param status the status
 	 * @param start the lower bound of the range of message boards categories
 	 * @param end the upper bound of the range of message boards categories (not inclusive)
@@ -2996,6 +3037,56 @@ public interface MBCategoryPersistence
 	 */
 	public int filterCountByNotC_G_P_S(
 		long[] categoryIds, long groupId, long[] parentCategoryIds, int status);
+
+	/**
+	 * Returns the message boards category where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchCategoryException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching message boards category
+	 * @throws NoSuchCategoryException if a matching message boards category could not be found
+	 */
+	public MBCategory findByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchCategoryException;
+
+	/**
+	 * Returns the message boards category where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching message boards category, or <code>null</code> if a matching message boards category could not be found
+	 */
+	public MBCategory fetchByERC_G(String externalReferenceCode, long groupId);
+
+	/**
+	 * Returns the message boards category where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching message boards category, or <code>null</code> if a matching message boards category could not be found
+	 */
+	public MBCategory fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache);
+
+	/**
+	 * Removes the message boards category where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the message boards category that was removed
+	 */
+	public MBCategory removeByERC_G(String externalReferenceCode, long groupId)
+		throws NoSuchCategoryException;
+
+	/**
+	 * Returns the number of message boards categories where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching message boards categories
+	 */
+	public int countByERC_G(String externalReferenceCode, long groupId);
 
 	/**
 	 * Caches the message boards category in the entity cache if it is enabled.

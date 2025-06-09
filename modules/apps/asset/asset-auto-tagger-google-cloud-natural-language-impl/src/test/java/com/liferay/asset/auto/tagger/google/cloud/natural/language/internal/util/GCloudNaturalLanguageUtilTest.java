@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.google.cloud.natural.language.internal.util;
@@ -28,13 +19,10 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Alicia García
@@ -44,11 +32,6 @@ public class GCloudNaturalLanguageUtilTest {
 	@ClassRule
 	public static LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
-
-	@Before
-	public void setUp() {
-		MockitoAnnotations.initMocks(this);
-	}
 
 	@Test
 	public void testGetDocumentPayload() throws Exception {
@@ -218,10 +201,7 @@ public class GCloudNaturalLanguageUtilTest {
 		return RandomTestUtil.randomInt(1, 100);
 	}
 
-	@Mock
-	private FileEntry _fileEntry;
-
-	@Mock
-	private FileVersion _fileVersion;
+	private final FileEntry _fileEntry = Mockito.mock(FileEntry.class);
+	private final FileVersion _fileVersion = Mockito.mock(FileVersion.class);
 
 }

@@ -1,0 +1,301 @@
+<html>
+<head>
+<title>ObjectCustomViews</title>
+</head>
+
+<body>
+<table border="1" cellpadding="1" cellspacing="1">
+<thead>
+<tr><td rowspan="1" colspan="3">ObjectCustomViews</td></tr>
+</thead>
+
+<tbody>
+	<tr>
+		<td>ADD_VIEW_NAME</td>
+		<td>//input[contains(@id,'listObjectCustomViewName')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OBJECT_VIEW_LABEL</td>
+		<td>//td[contains(., '${key_viewLabel}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OBJECT_VIEWS_TAB</td>
+		<td>//*[contains(@class,'nav-link')]//span[contains(text(),'Views')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_OBJECT_VIEWS</td>
+		<td>//a[contains(text(),'${key_label}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OBJECT_VIEWS_NAME</td>
+		<td>//label[contains(text(),'Name')]/..//input[contains(@class,'form-control')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>OBJECT_VIEW_KEBAB_MENU</td>
+		<td>//a[contains(text(),'${key_objectCustomViewLabel}')]/ancestor::tr//*[contains(@class,'lexicon-icon-ellipsis')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CUSTOM_VIEW_BOOLEAN_CHECKBOX</td>
+		<td>//input[contains(@class,'custom-control-input')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_BUILDER_TAB</td>
+		<td>//button[contains(text(), 'View Builder')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CHECKBOX_COLUMN_OPTION</td>
+		<td>//label[contains(.,'${key_columnOption}')]/input[@type='checkbox']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_BUILDER_DROPDOWN_SPECIFIC_COLUMN</td>
+		<td>//p[contains(@class,'list-group-title') and contains(text(),'${key_columnName}')]/../..//div[contains(@class,'dropdown')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_BUILDER_EMPTY_STATE_TEXT</td>
+		<td>//div[(@class='c-empty-state-title')]/..//*[contains(text(),'${key_text}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_BUILDER_SEARCH_BAR</td>
+		<td>//input[contains(@aria-label,'Search')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DEFAULT_SORT_SEARCH_BAR</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//input[contains(@aria-label,'Search')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_BUILDER_SEARCH_RESULT</td>
+		<td>//p[contains(@class,'list-group-title') and contains(text(),'${key_columnName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DEFAULT_SORT_SEARCH_RESULT</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//p[contains(@class,'list-group-title') and contains(text(),'${key_columnName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DEFAULT_SORT_SORTING_LABEL</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//p[contains(@class,'list-group-text') and contains(text(),'${key_sortingLabel}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ADD_COLUMNS_SEARCH_BAR</td>
+		<td>//div[contains(@class,'modal-body')]//input[contains(@aria-label,'Search')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ADD_COLUMN</td>
+		<td>//button[contains(text(),'Add Column')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ADD_COLUMNS_COLUMN_LABEL</td>
+		<td>//span[@class="custom-control-label-text" and contains(text(),'${key_columnName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_LIST_COLUMNS_BY_POSITION</td>
+		<td>//ul[@class='list-group show-quick-actions-on-hover']//li[@class='lfr-object__object-custom-view-builder-item list-group-item list-group-item-flex'][${key_position}]//p[contains(text(),'${key_columnName1}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>MARK_AS_DEFAULT</td>
+		<td>//input[contains(@class,'custom-control-input')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_COLUMN_ENTRIES</td>
+		<td>//th[contains(.,'${key_columnName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_PERMISSIONS_TO_REGULAR_ROLE</td>
+		<td>//input[@id='regular-role_ACTION_${key_permissionName}']</td>
+		<td></td>
+	</tr>
+	 <tr>
+		<td>SELECT_ANY_PERMISSIONS</td>
+		<td>//input[@id='${key_roleName}_ACTION_${key_permissionName}']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DEFAULT_SORT_TAB</td>
+		<td>//button[@class=('nav-link btn btn-unstyled') and contains(.,'Default Sort')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_AUTO_COMPLETE_OPTION</td>
+		<td>//button[(@class='dropdown-item') and contains(.,'${key_columnOption}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_SORTING_ON_DEFAULT_SORT</td>
+		<td>//input[@placeholder='Choose an Option' and contains(@value,'Ascending') or contains (@value,'Descending')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ADD_NEW_DEFAULT_SORT</td>
+		<td>//button[contains(text(),'New Default Sort')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DEFAULT_SORT_NO_COLUMN_OPTION</td>
+		<td>//span[(@class='dropdown-item') and contains(.,'There are no columns added in this view yet.')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SORT_OPTION</td>
+		<td>//button[contains(@class,'dropdown-item') and contains(.,'${key_sortOption}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DEFAULT_SORT_ADD_BUTTON</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//button[contains(@class,'btn btn-monospaced btn-primary')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>BUILDER_SEARCH_RESULT_COLUMN_LABEL</td>
+		<td>//p[contains(@class,'list-group-text') and contains(.,'${key_columnLabel}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_FIELD_NAME_BY_POSITION</td>
+		<td>//*[${key_position}]/td[contains(span,'${key_fieldName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SELECT_DROPDOWN_ON_LABEL</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='${key_cardName}']//../..//div[contains(@class,'dropdown')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>EDIT_SORTING</td>
+		<td>//input[(@placeholder='Choose an Option') and contains(@value,'${key_sorting}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_FIELDS_ENTRY_BY_POSITION</td>
+		<td>//tbody//tr[${key_position}]//span[contains(.,'${key_entryName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CUSTOM_FIELD_VALUE_ONE</td>
+		<td>//tbody/tr[1]/td[1]/span</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CUSTOM_FIELD_VALUE_TWO</td>
+		<td>//tbody/tr[2]/td[1]/span</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CHANGE_POSITION_DEFAULT_SORT_SEARCH_RESULT</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Default Sort']/../..//p[contains(@class,'list-group-title') and contains(text(),'${key_columnName1}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_LIST_COLUMNS_BY_POSITION_ON_DEFAULT_SORT</td>
+		<td>//li[@class='lfr-object__object-custom-view-builder-item list-group-item list-group-item-flex'][${key_position}]//p[contains(text(),'${key_columnName1}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_FIELDS_ON_DROPDOWN_ITEM</td>
+		<td>//*[contains(@class,'dropdown-item')]//*[contains(@class,'d-flex justify-content-between') and contains(.,'${key_columnName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_DROPDOWN_MENU_ON_MODAL_DEFAULT_SORT</td>
+		<td>//div[@class='dropdown-menu autocomplete-expand show']</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>VIEW_MODAL_CONTENT</td>
+		<td>//div[contains(@class,'modal-content')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FILTERS_TAB</td>
+		<td>//button[contains(text(),'Filters')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FILTER_BY_ON_NEW_FILTER</td>
+		<td>//div[@class='custom-select__content form-control']//span[contains(text(),'Choose an Option')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>ADD_NEW_FILTER</td>
+		<td>//button[contains(text(),'New Filter')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FILTER_ADD_BUTTON</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Filters']/../..//button[contains(@class,'btn btn-monospaced btn-primary')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>DROPDOWN_BUTTON_ON_OBJECT_VIEW</td>
+		<td>//span[contains(@class, 'navbar-text-truncate') and contains(.,'${key_buttonName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SIDEBAR_ELLIPSIS_ON_CUSTOM_VIEW</td>
+		<td>//h3[(@class='lfr-objects__card-title') and text()='Filters']//..//..//li[contains(@class,'custom-view-builder-item') and contains(.,'${key_filterName}')]//button[contains(@class,'dropdown-toggle btn btn-monospaced btn-unstyled')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CUSTOM_VIEW_MODAL</td>
+		<td>//div[contains(@class, 'portlet-body') and contains(., 'Custom View')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>CLEAR_FILTER</td>
+		<td>//button[contains(@type, 'button') and contains(@title, 'Clear All')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>SEARCH_DROPDOWN_MENU_FILTER</td>
+		<td>//div[contains(@class,'dropdown-section')]//input[contains(@class, 'input-group-inset')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FROM_DATE_INPUT</td>
+		<td>//div[contains(@class,'form-group')]//input[contains(@placeholder,'${key_fieldName}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>LABEL_SECTION_FILTER_ENTRY</td>
+		<td>//*[@class='tbar-section']//*[@class='label-section' and contains(.,'${key_filter}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>TOGGLE_SWITCH_EXCLUDE_STATUS</td>
+		<td>//div[contains(@id,'clay-dropdown-menu')]//input[contains(@class,'toggle-switch-check')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FIELD_VIEW_FILTER_DROPDOWN_OPTION</td>
+		<td>//div[(@id='clay-dropdown-menu-4')]/../..//button[contains(., '${key_picklistOption}')]</td>
+		<td></td>
+	</tr>
+	<tr>
+		<td>FIELD_VIEW_FILTER_DATE_INPUT</td>
+		<td>//div[@class='col-lg-6'][${key_dateIndex}]//div[contains(@class, 'input-group-item')]/input[contains(@placeholder,'__/__/____')]</td>
+		<td></td>
+	</tr>
+</tbody>
+</table>
+</body>
+</html>

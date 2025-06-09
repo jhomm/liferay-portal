@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.internal.messaging;
@@ -21,20 +12,31 @@ import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
 import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
+import com.liferay.commerce.product.discovery.CPConfigurationListDiscovery;
+import com.liferay.commerce.product.model.CPConfigurationEntry;
+import com.liferay.commerce.product.model.CPConfigurationList;
+import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CommerceChannel;
+import com.liferay.commerce.product.service.CPConfigurationEntryLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
 import com.liferay.commerce.product.type.virtual.order.service.CommerceVirtualOrderItemLocalService;
 import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.commerce.stock.activity.CommerceLowStockActivity;
 import com.liferay.commerce.stock.activity.CommerceLowStockActivityRegistry;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageListener;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 
@@ -45,7 +47,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = "destination.name=" + DestinationNames.COMMERCE_ORDER_STATUS,
 	service = MessageListener.class
 )
@@ -53,8 +54,7 @@ public class CommerceOrderStatusMessageListener extends BaseMessageListener {
 
 	@Override
 	protected void doReceive(Message message) throws Exception {
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
-			String.valueOf(message.getPayload()));
+		JSONObject jsonObject = (JSONObject)message.getPayload();
 
 		long commerceOrderId = jsonObject.getLong("commerceOrderId");
 
@@ -74,7 +74,7 @@ public class CommerceOrderStatusMessageListener extends BaseMessageListener {
 			CommerceVirtualOrderItem commerceVirtualOrderItem =
 				_commerceVirtualOrderItemLocalService.
 					fetchCommerceVirtualOrderItemByCommerceOrderItemId(
-						commerceOrderItem.getCommerceOrderItemId());
+						commerceOrderItem.getCommerceOrderItemId(), false);
 
 			if ((commerceVirtualOrderItem != null) &&
 				(orderStatus ==
@@ -112,19 +112,61 @@ public class CommerceOrderStatusMessageListener extends BaseMessageListener {
 			return;
 		}
 
-		int stockQuantity = _commerceInventoryEngine.getStockQuantity(
-			commerceOrderItem.getCompanyId(), commerceOrderItem.getSku());
+		BigDecimal stockQuantity = _commerceInventoryEngine.getStockQuantity(
+			commerceOrderItem.getCompanyId(), cpInstance.getGroupId(),
+			commerceOrderItem.getSku(),
+			commerceOrderItem.getUnitOfMeasureKey());
 
-		CPDefinitionInventoryEngine cpDefinitionInventoryEngine =
-			_cpDefinitionInventoryEngineRegistry.getCPDefinitionInventoryEngine(
-				cpDefinitionInventory);
+		long cpConfigurationListId = 0;
+		CPDefinitionInventoryEngine cpDefinitionInventoryEngine = null;
 
-		if (stockQuantity <= cpDefinitionInventoryEngine.getMinStockQuantity(
-				cpInstance)) {
+		if (FeatureFlagManagerUtil.isEnabled("LPD-10889")) {
+			CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
+
+			CommerceChannel commerceChannel =
+				_commerceChannelLocalService.getCommerceChannelByGroupId(
+					commerceOrder.getGroupId());
+
+			CPConfigurationList cpConfigurationList =
+				_cpConfigurationListDiscovery.getCPConfigurationList(
+					cpInstance.getCompanyId(), cpInstance.getGroupId(),
+					commerceOrder.getCommerceAccountId(),
+					commerceChannel.getCommerceChannelId(),
+					commerceOrder.getCommerceOrderTypeId());
+
+			cpConfigurationListId =
+				cpConfigurationList.getCPConfigurationListId();
+
+			CPConfigurationEntry cpConfigurationEntry =
+				_cpConfigurationEntryLocalService.fetchCPConfigurationEntry(
+					_classNameLocalService.getClassNameId(CPDefinition.class),
+					cpInstance.getCPDefinitionId(), cpConfigurationListId);
+
+			cpDefinitionInventoryEngine =
+				_cpDefinitionInventoryEngineRegistry.
+					getCPDefinitionInventoryEngine(
+						cpConfigurationEntry.getCPDefinitionInventoryEngine());
+		}
+		else {
+			cpDefinitionInventoryEngine =
+				_cpDefinitionInventoryEngineRegistry.
+					getCPDefinitionInventoryEngine(cpDefinitionInventory);
+		}
+
+		if (BigDecimalUtil.lte(
+				stockQuantity,
+				cpDefinitionInventoryEngine.getMinStockQuantity(
+					cpConfigurationListId, cpInstance))) {
 
 			commerceLowStockActivity.execute(cpInstance);
 		}
 	}
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private CommerceChannelLocalService _commerceChannelLocalService;
 
 	@Reference
 	private CommerceInventoryEngine _commerceInventoryEngine;
@@ -138,6 +180,12 @@ public class CommerceOrderStatusMessageListener extends BaseMessageListener {
 	@Reference
 	private CommerceVirtualOrderItemLocalService
 		_commerceVirtualOrderItemLocalService;
+
+	@Reference
+	private CPConfigurationEntryLocalService _cpConfigurationEntryLocalService;
+
+	@Reference
+	private CPConfigurationListDiscovery _cpConfigurationListDiscovery;
 
 	@Reference
 	private CPDefinitionInventoryEngineRegistry

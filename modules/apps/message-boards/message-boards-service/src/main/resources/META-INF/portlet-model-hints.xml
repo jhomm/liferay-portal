@@ -19,6 +19,7 @@
 		<field name="mvccVersion" type="long" />
 		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="categoryId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -28,12 +29,16 @@
 		<field name="modifiedDate" type="Date" />
 		<field name="parentCategoryId" type="long" />
 		<field name="name" type="String">
+			<hint name="max-length">255</hint>
 			<validator name="required" />
 		</field>
 		<field name="description" type="String">
 			<hint-collection name="TEXTAREA" />
 		</field>
 		<field name="displayStyle" type="String" />
+		<field name="friendlyURL" type="String">
+			<hint name="max-length">255</hint>
+		</field>
 		<field name="lastPublishDate" type="Date" />
 		<field name="status" type="int" />
 		<field name="statusByUserId" type="long" />
@@ -116,6 +121,7 @@
 			<hint name="max-length">4000</hint>
 		</field>
 		<field name="subject" type="String">
+			<hint name="max-length">255</hint>
 			<sanitize content-type="text/plain" modes="ALL" />
 			<validator name="required" />
 		</field>
@@ -137,6 +143,24 @@
 		<field name="statusByUserName" type="String" />
 		<field name="statusDate" type="Date" />
 	</model>
+	<model name="com.liferay.message.boards.model.MBSuspiciousActivity">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
+		<field name="uuid" type="String" />
+		<field name="suspiciousActivityId" type="long" />
+		<field name="groupId" type="long" />
+		<field name="companyId" type="long" />
+		<field name="userId" type="long" />
+		<field name="userName" type="String" />
+		<field name="createDate" type="Date" />
+		<field name="modifiedDate" type="Date" />
+		<field name="messageId" type="long" />
+		<field name="threadId" type="long" />
+		<field name="reason" type="String">
+			<hint name="max-length">255</hint>
+		</field>
+		<field name="validated" type="boolean" />
+	</model>
 	<model name="com.liferay.message.boards.model.MBThread">
 		<field name="mvccVersion" type="long" />
 		<field name="ctCollectionId" type="long" />
@@ -152,6 +176,7 @@
 		<field name="rootMessageId" type="long" />
 		<field name="rootMessageUserId" type="long" />
 		<field name="title" type="String">
+			<hint name="max-length">255</hint>
 			<sanitize content-type="text/plain" modes="ALL" />
 			<validator name="required" />
 		</field>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
@@ -17,12 +8,12 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.ProductSpecificationSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -34,6 +25,27 @@ public class ProductSpecification implements Cloneable, Serializable {
 	public static ProductSpecification toDTO(String json) {
 		return ProductSpecificationSerDes.toDTO(json);
 	}
+
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
 
 	public Long getId() {
 		return id;
@@ -53,6 +65,25 @@ public class ProductSpecification implements Cloneable, Serializable {
 	}
 
 	protected Long id;
+
+	public String getKey() {
+		return key;
+	}
+
+	public void setKey(String key) {
+		this.key = key;
+	}
+
+	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
+		try {
+			key = keyUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String key;
 
 	public Map<String, String> getLabel() {
 		return label;
@@ -74,6 +105,32 @@ public class ProductSpecification implements Cloneable, Serializable {
 	}
 
 	protected Map<String, String> label;
+
+	public String getOptionCategoryExternalReferenceCode() {
+		return optionCategoryExternalReferenceCode;
+	}
+
+	public void setOptionCategoryExternalReferenceCode(
+		String optionCategoryExternalReferenceCode) {
+
+		this.optionCategoryExternalReferenceCode =
+			optionCategoryExternalReferenceCode;
+	}
+
+	public void setOptionCategoryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			optionCategoryExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			optionCategoryExternalReferenceCode =
+				optionCategoryExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String optionCategoryExternalReferenceCode;
 
 	public Long getOptionCategoryId() {
 		return optionCategoryId;
@@ -138,6 +195,32 @@ public class ProductSpecification implements Cloneable, Serializable {
 
 	protected Long productId;
 
+	public String getSpecificationExternalReferenceCode() {
+		return specificationExternalReferenceCode;
+	}
+
+	public void setSpecificationExternalReferenceCode(
+		String specificationExternalReferenceCode) {
+
+		this.specificationExternalReferenceCode =
+			specificationExternalReferenceCode;
+	}
+
+	public void setSpecificationExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			specificationExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			specificationExternalReferenceCode =
+				specificationExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String specificationExternalReferenceCode;
+
 	public Long getSpecificationId() {
 		return specificationId;
 	}
@@ -180,6 +263,27 @@ public class ProductSpecification implements Cloneable, Serializable {
 
 	protected String specificationKey;
 
+	public Double getSpecificationPriority() {
+		return specificationPriority;
+	}
+
+	public void setSpecificationPriority(Double specificationPriority) {
+		this.specificationPriority = specificationPriority;
+	}
+
+	public void setSpecificationPriority(
+		UnsafeSupplier<Double, Exception> specificationPriorityUnsafeSupplier) {
+
+		try {
+			specificationPriority = specificationPriorityUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Double specificationPriority;
+
 	public Map<String, String> getValue() {
 		return value;
 	}
@@ -200,6 +304,27 @@ public class ProductSpecification implements Cloneable, Serializable {
 	}
 
 	protected Map<String, String> value;
+
+	public Boolean getVisible() {
+		return visible;
+	}
+
+	public void setVisible(Boolean visible) {
+		this.visible = visible;
+	}
+
+	public void setVisible(
+		UnsafeSupplier<Boolean, Exception> visibleUnsafeSupplier) {
+
+		try {
+			visible = visibleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean visible;
 
 	@Override
 	public ProductSpecification clone() throws CloneNotSupportedException {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence;
@@ -185,56 +176,6 @@ public interface CommerceShippingMethodPersistence
 	public int countByGroupId(long groupId);
 
 	/**
-	 * Returns the commerce shipping method where groupId = &#63; and engineKey = &#63; or throws a <code>NoSuchShippingMethodException</code> if it could not be found.
-	 *
-	 * @param groupId the group ID
-	 * @param engineKey the engine key
-	 * @return the matching commerce shipping method
-	 * @throws NoSuchShippingMethodException if a matching commerce shipping method could not be found
-	 */
-	public CommerceShippingMethod findByG_E(long groupId, String engineKey)
-		throws NoSuchShippingMethodException;
-
-	/**
-	 * Returns the commerce shipping method where groupId = &#63; and engineKey = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
-	 *
-	 * @param groupId the group ID
-	 * @param engineKey the engine key
-	 * @return the matching commerce shipping method, or <code>null</code> if a matching commerce shipping method could not be found
-	 */
-	public CommerceShippingMethod fetchByG_E(long groupId, String engineKey);
-
-	/**
-	 * Returns the commerce shipping method where groupId = &#63; and engineKey = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
-	 *
-	 * @param groupId the group ID
-	 * @param engineKey the engine key
-	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching commerce shipping method, or <code>null</code> if a matching commerce shipping method could not be found
-	 */
-	public CommerceShippingMethod fetchByG_E(
-		long groupId, String engineKey, boolean useFinderCache);
-
-	/**
-	 * Removes the commerce shipping method where groupId = &#63; and engineKey = &#63; from the database.
-	 *
-	 * @param groupId the group ID
-	 * @param engineKey the engine key
-	 * @return the commerce shipping method that was removed
-	 */
-	public CommerceShippingMethod removeByG_E(long groupId, String engineKey)
-		throws NoSuchShippingMethodException;
-
-	/**
-	 * Returns the number of commerce shipping methods where groupId = &#63; and engineKey = &#63;.
-	 *
-	 * @param groupId the group ID
-	 * @param engineKey the engine key
-	 * @return the number of matching commerce shipping methods
-	 */
-	public int countByG_E(long groupId, String engineKey);
-
-	/**
 	 * Returns all the commerce shipping methods where groupId = &#63; and active = &#63;.
 	 *
 	 * @param groupId the group ID
@@ -388,6 +329,56 @@ public interface CommerceShippingMethodPersistence
 	 * @return the number of matching commerce shipping methods
 	 */
 	public int countByG_A(long groupId, boolean active);
+
+	/**
+	 * Returns the commerce shipping method where groupId = &#63; and engineKey = &#63; or throws a <code>NoSuchShippingMethodException</code> if it could not be found.
+	 *
+	 * @param groupId the group ID
+	 * @param engineKey the engine key
+	 * @return the matching commerce shipping method
+	 * @throws NoSuchShippingMethodException if a matching commerce shipping method could not be found
+	 */
+	public CommerceShippingMethod findByG_E(long groupId, String engineKey)
+		throws NoSuchShippingMethodException;
+
+	/**
+	 * Returns the commerce shipping method where groupId = &#63; and engineKey = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param groupId the group ID
+	 * @param engineKey the engine key
+	 * @return the matching commerce shipping method, or <code>null</code> if a matching commerce shipping method could not be found
+	 */
+	public CommerceShippingMethod fetchByG_E(long groupId, String engineKey);
+
+	/**
+	 * Returns the commerce shipping method where groupId = &#63; and engineKey = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param groupId the group ID
+	 * @param engineKey the engine key
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching commerce shipping method, or <code>null</code> if a matching commerce shipping method could not be found
+	 */
+	public CommerceShippingMethod fetchByG_E(
+		long groupId, String engineKey, boolean useFinderCache);
+
+	/**
+	 * Removes the commerce shipping method where groupId = &#63; and engineKey = &#63; from the database.
+	 *
+	 * @param groupId the group ID
+	 * @param engineKey the engine key
+	 * @return the commerce shipping method that was removed
+	 */
+	public CommerceShippingMethod removeByG_E(long groupId, String engineKey)
+		throws NoSuchShippingMethodException;
+
+	/**
+	 * Returns the number of commerce shipping methods where groupId = &#63; and engineKey = &#63;.
+	 *
+	 * @param groupId the group ID
+	 * @param engineKey the engine key
+	 * @return the number of matching commerce shipping methods
+	 */
+	public int countByG_E(long groupId, String engineKey);
 
 	/**
 	 * Caches the commerce shipping method in the entity cache if it is enabled.

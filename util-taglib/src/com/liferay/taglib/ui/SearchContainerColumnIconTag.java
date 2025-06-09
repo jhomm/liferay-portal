@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -21,15 +12,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.search.IconSearchEntry;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspTagException;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspTagException;
 
 /**
  * @author Eudaldo Alonso
@@ -60,18 +50,14 @@ public class SearchContainerColumnIconTag<R> extends SearchContainerColumnTag {
 			iconSearchEntry.setAlign(getAlign());
 			iconSearchEntry.setColspan(getColspan());
 			iconSearchEntry.setCssClass(getCssClass());
+			iconSearchEntry.setIcon(_icon);
 			iconSearchEntry.setRequest(
 				(HttpServletRequest)pageContext.getRequest());
 			iconSearchEntry.setResponse(
 				(HttpServletResponse)pageContext.getResponse());
+			iconSearchEntry.setServletContext(
+				ServletContextPool.get(PortalUtil.getServletContextName()));
 			iconSearchEntry.setToggleRowChecker(isToggleRowChecker());
-
-			ServletContext servletContext = ServletContextPool.get(
-				PortalUtil.getServletContextName());
-
-			iconSearchEntry.setServletContext(servletContext);
-
-			iconSearchEntry.setIcon(_icon);
 			iconSearchEntry.setValign(getValign());
 
 			resultRow.addSearchEntry(index, iconSearchEntry);

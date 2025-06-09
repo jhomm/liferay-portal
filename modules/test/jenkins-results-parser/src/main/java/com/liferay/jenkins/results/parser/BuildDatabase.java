@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -18,6 +9,7 @@ import java.io.File;
 
 import java.net.URL;
 
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -29,7 +21,11 @@ import org.json.JSONObject;
  */
 public interface BuildDatabase {
 
-	public static final String FILE_NAME_BUILD_DATABASE = "build-database.json";
+	public static final String FILE_NAME_BUILD_DATABASE_JSON =
+		"build-database.json";
+
+	public static final String FILE_NAME_BUILD_DATABASE_JSON_SHA =
+		"build-database.json.sha512";
 
 	public File getBuildDatabaseFile();
 
@@ -37,17 +33,29 @@ public interface BuildDatabase {
 
 	public JSONObject getBuildDataJSONObject(URL buildURL);
 
+	public Job getJob(String key);
+
+	public List<Job> getJobs();
+
+	public JSONObject getJSONObject();
+
 	public Properties getProperties(String key);
 
 	public Properties getProperties(String key, Pattern pattern);
 
 	public PullRequest getPullRequest(String key);
 
+	public List<PullRequest> getPullRequests();
+
 	public Workspace getWorkspace(String key);
 
 	public WorkspaceGitRepository getWorkspaceGitRepository(String key);
 
+	public List<Workspace> getWorkspaces();
+
 	public boolean hasBuildData(String key);
+
+	public boolean hasJob(String key);
 
 	public boolean hasProperties(String key);
 
@@ -59,9 +67,24 @@ public interface BuildDatabase {
 
 	public void putBuildData(String key, BuildData buildData);
 
+	public void putJob(String key, Job job);
+
 	public void putProperties(String key, File propertiesFile);
 
+	public void putProperties(
+		String key, File propertiesFile, boolean writeFile);
+
 	public void putProperties(String key, Properties properties);
+
+	public void putProperties(
+		String key, Properties properties, boolean writeFile);
+
+	public void putProperty(
+		String key, String propertyName, String propertyValue);
+
+	public void putProperty(
+		String key, String propertyName, String propertyValue,
+		boolean writeFile);
 
 	public void putPullRequest(String key, PullRequest pullRequest);
 
@@ -69,6 +92,14 @@ public interface BuildDatabase {
 
 	public void putWorkspaceGitRepository(
 		String key, WorkspaceGitRepository workspaceGitRepository);
+
+	public FilePropagator rsyncBuildDatabaseFile(
+		List<String> distNodes, String distPath, String preDistCommand,
+		String postDistCommand, int threadCount);
+
+	public void uploadBuildDatabaseFileToCloudBucket();
+
+	public void uploadBuildDatabaseFileToCloudBucket(String path);
 
 	public void writeFilteredPropertiesToFile(
 		String destFilePath, Pattern pattern, String key);

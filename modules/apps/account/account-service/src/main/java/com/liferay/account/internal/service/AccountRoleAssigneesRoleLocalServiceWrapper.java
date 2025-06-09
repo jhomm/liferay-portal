@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.service;
@@ -18,11 +9,12 @@ import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.UserGroupRoleTable;
+import com.liferay.portal.kernel.model.UserTable;
 import com.liferay.portal.kernel.model.role.RoleConstants;
-import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.RoleLocalServiceWrapper;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,19 +23,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Bruno Queiroz
  * @author Erick Monteiro
  */
-@Component(immediate = true, service = ServiceWrapper.class)
+@Component(service = ServiceWrapper.class)
 public class AccountRoleAssigneesRoleLocalServiceWrapper
 	extends RoleLocalServiceWrapper {
-
-	public AccountRoleAssigneesRoleLocalServiceWrapper() {
-		super(null);
-	}
-
-	public AccountRoleAssigneesRoleLocalServiceWrapper(
-		RoleLocalService roleLocalService) {
-
-		super(roleLocalService);
-	}
 
 	@Override
 	public int getAssigneesTotal(long roleId) throws PortalException {
@@ -55,8 +37,17 @@ public class AccountRoleAssigneesRoleLocalServiceWrapper
 					UserGroupRoleTable.INSTANCE.userId
 				).from(
 					UserGroupRoleTable.INSTANCE
+				).innerJoinON(
+					UserTable.INSTANCE,
+					UserTable.INSTANCE.userId.eq(
+						UserGroupRoleTable.INSTANCE.userId)
 				).where(
-					UserGroupRoleTable.INSTANCE.roleId.eq(role.getRoleId())
+					UserGroupRoleTable.INSTANCE.roleId.eq(
+						role.getRoleId()
+					).and(
+						UserTable.INSTANCE.status.eq(
+							WorkflowConstants.STATUS_APPROVED)
+					)
 				));
 		}
 

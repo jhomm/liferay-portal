@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.odata.matcher.test;
@@ -349,96 +340,6 @@ public class ContextODataMatcherTest {
 					nextHourZonedDateTime.format(
 						DateTimeFormatter.ISO_OFFSET_DATE_TIME),
 					")"),
-				context));
-	}
-
-	@Test
-	public void testMatchesDoubleEquals() throws Exception {
-		Context context = new Context() {
-			{
-				put(Context.DEVICE_SCREEN_RESOLUTION_WIDTH, 1000D);
-			}
-		};
-
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " eq 1000.0)"),
-				context));
-		Assert.assertFalse(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " eq 1001.0)"),
-				context));
-	}
-
-	@Test
-	public void testMatchesDoubleGreater() throws Exception {
-		Context context = new Context() {
-			{
-				put(Context.DEVICE_SCREEN_RESOLUTION_WIDTH, 1000D);
-			}
-		};
-
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " gt 900.0)"),
-				context));
-	}
-
-	@Test
-	public void testMatchesDoubleGreaterOrEquals() throws Exception {
-		Context context = new Context() {
-			{
-				put(Context.DEVICE_SCREEN_RESOLUTION_WIDTH, 1000D);
-			}
-		};
-
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " ge 900.0)"),
-				context));
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " ge 1000.0)"),
-				context));
-	}
-
-	@Test
-	public void testMatchesDoubleLesser() throws Exception {
-		Context context = new Context() {
-			{
-				put(Context.DEVICE_SCREEN_RESOLUTION_WIDTH, 1000D);
-			}
-		};
-
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " lt 1100.0)"),
-				context));
-	}
-
-	@Test
-	public void testMatchesDoubleLesserOrEquals() throws Exception {
-		Context context = new Context() {
-			{
-				put(Context.DEVICE_SCREEN_RESOLUTION_WIDTH, 1000D);
-			}
-		};
-
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " le 1100.0)"),
-				context));
-		Assert.assertTrue(
-			_contextODataMatcher.matches(
-				StringBundler.concat(
-					"(", Context.DEVICE_SCREEN_RESOLUTION_WIDTH, " le 1000.0)"),
 				context));
 	}
 

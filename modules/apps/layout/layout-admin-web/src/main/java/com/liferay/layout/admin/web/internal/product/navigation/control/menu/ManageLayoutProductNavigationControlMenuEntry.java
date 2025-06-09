@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.product.navigation.control.menu;
@@ -19,19 +10,20 @@ import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminP
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.product.navigation.control.menu.BaseProductNavigationControlMenuEntry;
@@ -41,20 +33,20 @@ import com.liferay.taglib.aui.IconTag;
 import com.liferay.taglib.servlet.PageContextFactoryUtil;
 import com.liferay.taglib.ui.SuccessTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.IOException;
 import java.io.Writer;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.ResourceBundle;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -63,7 +55,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Julio Camarero
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.USER,
 		"product.navigation.control.menu.entry.order:Integer=100"
@@ -99,9 +90,6 @@ public class ManageLayoutProductNavigationControlMenuEntry
 			layout = _layoutLocalService.fetchLayout(layout.getClassPK());
 		}
 
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			"content.Language", themeDisplay.getLocale(), getClass());
-
 		PortletURL editPageURL = PortletURLBuilder.create(
 			_portal.getControlPanelPortletURL(
 				httpServletRequest, LayoutAdminPortletKeys.GROUP_PAGES,
@@ -125,11 +113,14 @@ public class ManageLayoutProductNavigationControlMenuEntry
 			"groupId", String.valueOf(layout.getGroupId()));
 		editPageURL.setParameter("selPlid", String.valueOf(layout.getPlid()));
 		editPageURL.setParameter(
+			"backURLTitle", layout.getName(themeDisplay.getLocale()));
+		editPageURL.setParameter(
 			"privateLayout", String.valueOf(layout.isPrivateLayout()));
 
 		Map<String, String> values = HashMapBuilder.put(
 			"configurePage",
-			_html.escape(_language.get(resourceBundle, "configure-page"))
+			HtmlUtil.escape(
+				_language.get(themeDisplay.getLocale(), "configure-page"))
 		).put(
 			"editPageURL", editPageURL.toString()
 		).build();
@@ -139,7 +130,6 @@ public class ManageLayoutProductNavigationControlMenuEntry
 
 			iconTag.setCssClass("icon-monospaced");
 			iconTag.setImage("cog");
-			iconTag.setMarkupView("lexicon");
 
 			PageContext pageContext = PageContextFactoryUtil.create(
 				httpServletRequest, httpServletResponse);
@@ -151,7 +141,8 @@ public class ManageLayoutProductNavigationControlMenuEntry
 			successTag.setKey("layoutUpdated");
 			successTag.setMessage(
 				_language.get(
-					resourceBundle, "the-page-was-updated-successfully"));
+					themeDisplay.getLocale(),
+					"changes-were-saved-successfully"));
 			successTag.setTargetNode("#controlMenuAlertsContainer");
 
 			values.put(
@@ -178,10 +169,23 @@ public class ManageLayoutProductNavigationControlMenuEntry
 
 		Layout layout = themeDisplay.getLayout();
 
-		if (layout.isTypeControlPanel() || _isMasterLayout(layout) ||
-			isEmbeddedPersonalApplicationLayout(layout) ||
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_getLayoutPageTemplateEntry(layout);
+
+		if (layout.isEmbeddedPersonalApplication() ||
+			layout.isTypeControlPanel() ||
+			_isMasterLayout(layout, layoutPageTemplateEntry) ||
 			!(themeDisplay.isShowLayoutTemplatesIcon() ||
 			  themeDisplay.isShowPageSettingsIcon())) {
+
+			return false;
+		}
+
+		String mode = ParamUtil.getString(
+			httpServletRequest, "p_l_mode", Constants.VIEW);
+
+		if ((layout.isTypeAssetDisplay() || layout.isTypeContent()) &&
+			Objects.equals(mode, Constants.EDIT)) {
 
 			return false;
 		}
@@ -196,11 +200,7 @@ public class ManageLayoutProductNavigationControlMenuEntry
 		return super.isShow(httpServletRequest);
 	}
 
-	private boolean _isMasterLayout(Layout layout) {
-		if (layout.getMasterLayoutPlid() > 0) {
-			return false;
-		}
-
+	private LayoutPageTemplateEntry _getLayoutPageTemplateEntry(Layout layout) {
 		LayoutPageTemplateEntry layoutPageTemplateEntry =
 			_layoutPageTemplateEntryLocalService.
 				fetchLayoutPageTemplateEntryByPlid(layout.getPlid());
@@ -211,9 +211,16 @@ public class ManageLayoutProductNavigationControlMenuEntry
 					fetchLayoutPageTemplateEntryByPlid(layout.getClassPK());
 		}
 
-		if ((layoutPageTemplateEntry == null) ||
+		return layoutPageTemplateEntry;
+	}
+
+	private boolean _isMasterLayout(
+		Layout layout, LayoutPageTemplateEntry layoutPageTemplateEntry) {
+
+		if ((layout.getMasterLayoutPlid() > 0) ||
+			(layoutPageTemplateEntry == null) ||
 			(layoutPageTemplateEntry.getType() !=
-				LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT)) {
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT)) {
 
 			return false;
 		}
@@ -225,9 +232,6 @@ public class ManageLayoutProductNavigationControlMenuEntry
 		ManageLayoutProductNavigationControlMenuEntry.class,
 		"/META-INF/resources/control/menu" +
 			"/edit_layout_control_menu_entry_icon.tmpl");
-
-	@Reference
-	private Html _html;
 
 	@Reference
 	private Language _language;

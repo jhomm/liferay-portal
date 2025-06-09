@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.validator.internal;
@@ -28,7 +19,9 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Locale;
+import java.util.Set;
 
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,7 +36,7 @@ public class DDMFormLayoutValidatorTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Test(expected = MustNotDuplicateFieldName.class)
+	@Test
 	public void testDuplicateFieldNames() throws Exception {
 		DDMFormLayoutColumn ddmFormLayoutColumn1 = _createDDMFormLayoutColumn(
 			6, "field1", "field2", "field3");
@@ -64,7 +57,19 @@ public class DDMFormLayoutValidatorTest {
 		DDMFormLayout ddmFormLayout = _createDDMFormLayout(
 			ddmFormLayoutPage, LocaleUtil.US);
 
-		_ddmFormLayoutValidator.validate(ddmFormLayout);
+		try {
+			_ddmFormLayoutValidator.validate(ddmFormLayout);
+
+			Assert.fail();
+		}
+		catch (MustNotDuplicateFieldName mustNotDuplicateFieldName) {
+			Set<String> duplicatedFieldNames =
+				mustNotDuplicateFieldName.getDuplicatedFieldNames();
+
+			Assert.assertTrue(duplicatedFieldNames.contains("field1"));
+			Assert.assertFalse(duplicatedFieldNames.contains("field2"));
+			Assert.assertTrue(duplicatedFieldNames.contains("field3"));
+		}
 	}
 
 	@Test(expected = InvalidRowSize.class)

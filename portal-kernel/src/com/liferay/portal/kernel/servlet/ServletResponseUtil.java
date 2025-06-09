@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
 
 import com.liferay.petra.nio.CharsetEncoderUtil;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
@@ -32,6 +24,10 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.URLCodec;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -48,11 +44,9 @@ import java.nio.channels.FileChannel;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Set;
 
 /**
  * @author Brian Wing Shun Chan
@@ -65,11 +59,7 @@ public class ServletResponseUtil {
 
 		String className = clazz.getName();
 
-		if (className.equals(_CLIENT_ABORT_EXCEPTION)) {
-			return true;
-		}
-
-		return false;
+		return className.equals(_CLIENT_ABORT_EXCEPTION);
 	}
 
 	public static void sendFile(
@@ -242,7 +232,7 @@ public class ServletResponseUtil {
 					contentLength = bytes.length;
 				}
 
-				httpServletResponse.setContentLength(contentLength);
+				setContentLength(httpServletResponse, contentLength);
 
 				httpServletResponse.flushBuffer();
 
@@ -383,7 +373,7 @@ public class ServletResponseUtil {
 				}
 				catch (IOException ioException) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(ioException, ioException);
+						_log.warn(ioException);
 					}
 				}
 			}
@@ -400,7 +390,8 @@ public class ServletResponseUtil {
 
 		try {
 			StreamUtil.transfer(
-				inputStream, httpServletResponse.getOutputStream());
+				inputStream, httpServletResponse.getOutputStream(),
+				contentLength);
 		}
 		catch (IOException ioException) {
 			_checkSocketException(ioException);
@@ -481,6 +472,21 @@ public class ServletResponseUtil {
 			String extension = GetterUtil.getString(
 				FileUtil.getExtension(fileName));
 
+			if (extension.isEmpty() && Validator.isNotNull(contentType)) {
+				Set<String> extensions = MimeTypesUtil.getExtensions(
+					contentType);
+
+				Iterator<String> iterator = extensions.iterator();
+
+				if (iterator.hasNext()) {
+					extension = iterator.next();
+
+					int index = extension.lastIndexOf(CharPool.PERIOD);
+
+					extension = extension.substring(index + 1);
+				}
+			}
+
 			extension = StringUtil.toLowerCase(extension);
 
 			String[] mimeTypesContentDispositionInline = null;
@@ -491,7 +497,7 @@ public class ServletResponseUtil {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 
 				mimeTypesContentDispositionInline = new String[0];
@@ -539,7 +545,6 @@ public class ServletResponseUtil {
 		if (range != null) {
 			httpServletResponse.setHeader(
 				HttpHeaders.CONTENT_RANGE, range.getContentRange());
-
 			httpServletResponse.setHeader(
 				HttpHeaders.CONTENT_LENGTH, String.valueOf(range.getLength()));
 		}
@@ -552,11 +557,11 @@ public class ServletResponseUtil {
 			isClientAbortException(ioException)) {
 
 			if (_log.isWarnEnabled()) {
-				_log.warn(ioException.getMessage());
+				_log.warn(ioException);
 			}
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 		}
 		else {

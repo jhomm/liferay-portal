@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -24,8 +15,36 @@ package com.liferay.portal.kernel.service;
 public class CompanyServiceWrapper
 	implements CompanyService, ServiceWrapper<CompanyService> {
 
+	public CompanyServiceWrapper() {
+		this(null);
+	}
+
 	public CompanyServiceWrapper(CompanyService companyService) {
 		_companyService = companyService;
+	}
+
+	/**
+	 * Adds a company.
+	 *
+	 * @param companyId the primary key of the company (optionally <code>null</code> or
+	 <code>0</code> to generate a key automatically)
+	 * @param webId the company's web domain
+	 * @param virtualHost the company's virtual host name
+	 * @param mx the company's mail domain
+	 * @param maxUsers the max number of company users (optionally
+	 <code>0</code>)
+	 * @param active whether the company is active
+	 * @return the company
+	 */
+	@Override
+	public com.liferay.portal.kernel.model.Company addCompany(
+			long companyId, java.lang.String webId,
+			java.lang.String virtualHost, java.lang.String mx, int maxUsers,
+			boolean active)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _companyService.addCompany(
+			companyId, webId, virtualHost, mx, maxUsers, active);
 	}
 
 	/**
@@ -34,7 +53,6 @@ public class CompanyServiceWrapper
 	 * @param webId the company's web domain
 	 * @param virtualHost the company's virtual host name
 	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e., the
 	 * @param maxUsers the max number of company users (optionally
 	 <code>0</code>)
 	 * @param active whether the company is active
@@ -42,12 +60,21 @@ public class CompanyServiceWrapper
 	 */
 	@Override
 	public com.liferay.portal.kernel.model.Company addCompany(
-			java.lang.String webId, java.lang.String virtualHost,
-			java.lang.String mx, boolean system, int maxUsers, boolean active)
+			java.lang.Long companyId, java.lang.String webId,
+			java.lang.String virtualHost, java.lang.String mx, int maxUsers,
+			boolean active, java.lang.String defaultAdminPassword,
+			java.lang.String defaultAdminScreenName,
+			java.lang.String defaultAdminEmailAddress,
+			java.lang.String defaultAdminFirstName,
+			java.lang.String defaultAdminMiddleName,
+			java.lang.String defaultAdminLastName)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyService.addCompany(
-			webId, virtualHost, mx, system, maxUsers, active);
+			companyId, webId, virtualHost, mx, maxUsers, active,
+			defaultAdminPassword, defaultAdminScreenName,
+			defaultAdminEmailAddress, defaultAdminFirstName,
+			defaultAdminMiddleName, defaultAdminLastName);
 	}
 
 	@Override
@@ -67,6 +94,16 @@ public class CompanyServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_companyService.deleteLogo(companyId);
+	}
+
+	@Override
+	public void forEachCompany(
+			com.liferay.petra.function.UnsafeConsumer
+				<com.liferay.portal.kernel.model.Company, java.lang.Exception>
+					unsafeConsumer)
+		throws java.lang.Exception {
+
+		_companyService.forEachCompany(unsafeConsumer);
 	}
 
 	/**
@@ -93,34 +130,6 @@ public class CompanyServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _companyService.getCompanyById(companyId);
-	}
-
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	@Override
-	public com.liferay.portal.kernel.model.Company getCompanyByLogoId(
-			long logoId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _companyService.getCompanyByLogoId(logoId);
-	}
-
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	@Override
-	public com.liferay.portal.kernel.model.Company getCompanyByMx(
-			java.lang.String mx)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _companyService.getCompanyByMx(mx);
 	}
 
 	/**

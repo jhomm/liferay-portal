@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -25,10 +16,16 @@ import java.lang.ref.WeakReference;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author Shuyang Zhou
@@ -104,7 +101,13 @@ public class ProxyUtil {
 			}
 		}
 
-		_constructorReferences.putIfAbsent(clazz, new ConstructorReference());
+		ConstructorReference constructorReference = _constructorReferences.get(
+			clazz);
+
+		if (constructorReference == null) {
+			_constructorReferences.putIfAbsent(
+				clazz, new ConstructorReference());
+		}
 
 		return clazz;
 	}
@@ -146,6 +149,25 @@ public class ProxyUtil {
 		}
 
 		return _constructorReferences.containsKey(clazz);
+	}
+
+	public static <T> T newDelegateProxyInstance(
+		ClassLoader classLoader, Class<T> interfaceClass, Object delegateObject,
+		T defaultObject) {
+
+		return (T)newProxyInstance(
+			classLoader, new Class<?>[] {interfaceClass},
+			new DelegateInvocationHandler(
+				interfaceClass, delegateObject, defaultObject));
+	}
+
+	public static <T> T newLazyDelegateProxyInstance(
+		ClassLoader classLoader, Class<T> interfaceClass,
+		Supplier<T> delegateObjectSupplier) {
+
+		return (T)newProxyInstance(
+			classLoader, new Class<?>[] {interfaceClass},
+			new LazyDelegateInvocationHandler(delegateObjectSupplier));
 	}
 
 	public static Object newProxyInstance(
@@ -212,6 +234,137 @@ public class ProxyUtil {
 		}
 
 		private volatile Reference<Constructor<?>> _reference;
+
+	}
+
+	private static class DelegateInvocationHandler
+		implements InvocationHandler {
+
+		@Override
+		public Object invoke(Object object, Method method, Object[] args)
+			throws Throwable {
+
+			Method delegateMethod = _delegateMethods.get(method);
+
+			try {
+				if (delegateMethod != null) {
+					return delegateMethod.invoke(_delegateObject, args);
+				}
+
+				return method.invoke(_defaultObject, args);
+			}
+			catch (InvocationTargetException invocationTargetException) {
+				throw invocationTargetException.getTargetException();
+			}
+		}
+
+		private DelegateInvocationHandler(
+			Class<?> interfaceClass, Object delegateObject,
+			Object defaultObject) {
+
+			Map<Method, Method> delegateMethods = new HashMap<>();
+
+			Class<?> delegateClass = delegateObject.getClass();
+
+			for (Method delegateMethod : delegateClass.getDeclaredMethods()) {
+				int modifiers = delegateMethod.getModifiers();
+
+				if (!Modifier.isPublic(modifiers) ||
+					Modifier.isStatic(modifiers)) {
+
+					continue;
+				}
+
+				Method objectMethod = _toObjectMethod(delegateMethod);
+
+				if (objectMethod == null) {
+					try {
+						Method interfaceMethod = interfaceClass.getMethod(
+							delegateMethod.getName(),
+							delegateMethod.getParameterTypes());
+
+						delegateMethod.setAccessible(true);
+
+						delegateMethods.put(interfaceMethod, delegateMethod);
+					}
+					catch (NoSuchMethodException noSuchMethodException) {
+					}
+				}
+				else {
+					delegateMethods.put(objectMethod, delegateMethod);
+				}
+			}
+
+			_delegateMethods = delegateMethods;
+
+			_delegateObject = delegateObject;
+			_defaultObject = defaultObject;
+		}
+
+		private Method _toObjectMethod(Method method) {
+			String name = method.getName();
+			Class<?>[] parameterTypes = method.getParameterTypes();
+
+			if (name.equals("equals") && (parameterTypes.length == 1) &&
+				(parameterTypes[0] == Object.class)) {
+
+				return _equalsMethod;
+			}
+
+			if (name.equals("hashCode") && (parameterTypes.length == 0)) {
+				return _hashCodeMethod;
+			}
+
+			if (name.equals("toString") && (parameterTypes.length == 0)) {
+				return _toStringMethod;
+			}
+
+			return null;
+		}
+
+		private static final Method _equalsMethod;
+		private static final Method _hashCodeMethod;
+		private static final Method _toStringMethod;
+
+		static {
+			try {
+				_equalsMethod = Object.class.getMethod("equals", Object.class);
+				_hashCodeMethod = Object.class.getMethod("hashCode");
+				_toStringMethod = Object.class.getMethod("toString");
+			}
+			catch (NoSuchMethodException noSuchMethodException) {
+				throw new ExceptionInInitializerError(noSuchMethodException);
+			}
+		}
+
+		private final Object _defaultObject;
+		private final Map<Method, Method> _delegateMethods;
+		private final Object _delegateObject;
+
+	}
+
+	private static class LazyDelegateInvocationHandler
+		implements InvocationHandler {
+
+		@Override
+		public Object invoke(Object proxy, Method method, Object[] args)
+			throws Throwable {
+
+			if (_delegateObject == null) {
+				_delegateObject = _delegateObjectSupplier.get();
+			}
+
+			return method.invoke(_delegateObject, args);
+		}
+
+		private LazyDelegateInvocationHandler(
+			Supplier<?> delegateObjectSupplier) {
+
+			_delegateObjectSupplier = delegateObjectSupplier;
+		}
+
+		private Object _delegateObject;
+		private final Supplier<?> _delegateObjectSupplier;
 
 	}
 

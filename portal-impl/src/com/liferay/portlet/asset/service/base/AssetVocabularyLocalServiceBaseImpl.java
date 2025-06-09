@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.base;
@@ -17,7 +8,6 @@ package com.liferay.portlet.asset.service.base;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
-import com.liferay.asset.kernel.service.persistence.AssetVocabularyFinder;
 import com.liferay.asset.kernel.service.persistence.AssetVocabularyPersistence;
 import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.lar.ManifestSummary;
@@ -29,8 +19,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -40,12 +29,13 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -54,7 +44,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -266,48 +256,21 @@ public abstract class AssetVocabularyLocalServiceBaseImpl
 		return assetVocabularyPersistence.fetchByUUID_G(uuid, groupId);
 	}
 
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary, or <code>null</code> if a matching asset vocabulary could not be found
-	 */
 	@Override
 	public AssetVocabulary fetchAssetVocabularyByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
-		return assetVocabularyPersistence.fetchByG_ERC(
-			groupId, externalReferenceCode);
+		return assetVocabularyPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchAssetVocabularyByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public AssetVocabulary fetchAssetVocabularyByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return fetchAssetVocabularyByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * Returns the asset vocabulary with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the asset vocabulary's external reference code
-	 * @return the matching asset vocabulary
-	 * @throws PortalException if a matching asset vocabulary could not be found
-	 */
 	@Override
 	public AssetVocabulary getAssetVocabularyByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
-		return assetVocabularyPersistence.findByG_ERC(
-			groupId, externalReferenceCode);
+		return assetVocabularyPersistence.findByERC_G(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -452,6 +415,11 @@ public abstract class AssetVocabularyLocalServiceBaseImpl
 	@Override
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
+
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement AssetVocabularyLocalServiceImpl#deleteAssetVocabulary(AssetVocabulary) to avoid orphaned data");
+		}
 
 		return assetVocabularyLocalService.deleteAssetVocabulary(
 			(AssetVocabulary)persistedModel);
@@ -606,26 +574,6 @@ public abstract class AssetVocabularyLocalServiceBaseImpl
 	}
 
 	/**
-	 * Returns the asset vocabulary finder.
-	 *
-	 * @return the asset vocabulary finder
-	 */
-	public AssetVocabularyFinder getAssetVocabularyFinder() {
-		return assetVocabularyFinder;
-	}
-
-	/**
-	 * Sets the asset vocabulary finder.
-	 *
-	 * @param assetVocabularyFinder the asset vocabulary finder
-	 */
-	public void setAssetVocabularyFinder(
-		AssetVocabularyFinder assetVocabularyFinder) {
-
-		this.assetVocabularyFinder = assetVocabularyFinder;
-	}
-
-	/**
 	 * Returns the counter local service.
 	 *
 	 * @return the counter local service
@@ -649,18 +597,11 @@ public abstract class AssetVocabularyLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.asset.kernel.model.AssetVocabulary",
-			assetVocabularyLocalService);
-
-		_setLocalServiceUtilService(assetVocabularyLocalService);
+		AssetVocabularyLocalServiceUtil.setService(assetVocabularyLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.asset.kernel.model.AssetVocabulary");
-
-		_setLocalServiceUtilService(null);
+		AssetVocabularyLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -702,38 +643,26 @@ public abstract class AssetVocabularyLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = assetVocabularyPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = assetVocabularyPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		AssetVocabularyLocalService assetVocabularyLocalService) {
-
-		try {
-			Field field =
-				AssetVocabularyLocalServiceUtil.class.getDeclaredField(
-					"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, assetVocabularyLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -743,17 +672,13 @@ public abstract class AssetVocabularyLocalServiceBaseImpl
 	@BeanReference(type = AssetVocabularyPersistence.class)
 	protected AssetVocabularyPersistence assetVocabularyPersistence;
 
-	@BeanReference(type = AssetVocabularyFinder.class)
-	protected AssetVocabularyFinder assetVocabularyFinder;
-
 	@BeanReference(
 		type = com.liferay.counter.kernel.service.CounterLocalService.class
 	)
 	protected com.liferay.counter.kernel.service.CounterLocalService
 		counterLocalService;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		AssetVocabularyLocalServiceBaseImpl.class);
 
 }

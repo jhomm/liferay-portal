@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.asset.service.impl;
@@ -18,14 +9,18 @@ import com.liferay.asset.kernel.exception.AssetCategoryNameException;
 import com.liferay.asset.kernel.exception.DuplicateCategoryException;
 import com.liferay.asset.kernel.exception.DuplicateCategoryExternalReferenceCodeException;
 import com.liferay.asset.kernel.exception.InvalidAssetCategoryException;
+import com.liferay.asset.kernel.exception.NoSuchCategoryException;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetCategoryConstants;
+import com.liferay.asset.kernel.model.AssetVocabularyConstants;
 import com.liferay.asset.kernel.service.persistence.AssetVocabularyPersistence;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCachable;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -55,9 +50,11 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portlet.asset.service.base.AssetCategoryLocalServiceBaseImpl;
 import com.liferay.portlet.asset.service.permission.AssetCategoryPermission;
 
@@ -65,6 +62,7 @@ import java.io.Serializable;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -80,24 +78,6 @@ import java.util.Map;
  */
 public class AssetCategoryLocalServiceImpl
 	extends AssetCategoryLocalServiceBaseImpl {
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * #addCategory(String, long, long, long, Map, Map, long, String[], ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public AssetCategory addCategory(
-			long userId, long groupId, long parentCategoryId,
-			Map<Locale, String> titleMap, Map<Locale, String> descriptionMap,
-			long vocabularyId, String[] categoryProperties,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		return addCategory(
-			null, userId, groupId, parentCategoryId, titleMap, descriptionMap,
-			vocabularyId, categoryProperties, serviceContext);
-	}
 
 	@Override
 	public AssetCategory addCategory(
@@ -132,16 +112,15 @@ public class AssetCategoryLocalServiceImpl
 
 		User user = _userLocalService.getUser(userId);
 
-		Locale defaultLocale = PortalUtil.getSiteDefaultLocale(groupId);
-
-		String name = titleMap.get(defaultLocale);
-
-		name = ModelHintsUtil.trimString(
-			AssetCategory.class.getName(), "name", name);
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
 
 		if (categoryProperties == null) {
 			categoryProperties = new String[0];
 		}
+
+		Locale defaultLocale = PortalUtil.getSiteDefaultLocale(groupId);
+
+		String name = trimmedTitleMap.get(defaultLocale);
 
 		validate(0, parentCategoryId, name, vocabularyId);
 
@@ -152,13 +131,11 @@ public class AssetCategoryLocalServiceImpl
 				parentCategoryId);
 		}
 
-		_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
+		if (vocabularyId != AssetVocabularyConstants.INCOMPLETE_VOCABULARY_ID) {
+			_assetVocabularyPersistence.findByPrimaryKey(vocabularyId);
+		}
 
 		long categoryId = counterLocalService.increment();
-
-		if (Validator.isNull(externalReferenceCode)) {
-			externalReferenceCode = String.valueOf(categoryId);
-		}
 
 		_validateExternalReferenceCode(externalReferenceCode, groupId);
 
@@ -181,9 +158,16 @@ public class AssetCategoryLocalServiceImpl
 		}
 
 		category.setName(name);
-		category.setTitleMap(titleMap);
+		category.setTitleMap(trimmedTitleMap);
 		category.setDescriptionMap(descriptionMap);
 		category.setVocabularyId(vocabularyId);
+
+		if (LazyReferencingThreadLocal.isIncompleteModel()) {
+			category.setStatus(WorkflowConstants.STATUS_INCOMPLETE);
+		}
+		else {
+			category.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		category = assetCategoryPersistence.update(category);
 
@@ -364,9 +348,21 @@ public class AssetCategoryLocalServiceImpl
 	}
 
 	@Override
+	public List<AssetCategory> getCategories(
+		long classNameId, long classPK, int start, int end) {
+
+		throw new UnsupportedOperationException();
+	}
+
+	@Override
 	public List<AssetCategory> getCategories(String className, long classPK) {
 		return assetCategoryLocalService.getCategories(
 			_classNameLocalService.getClassNameId(className), classPK);
+	}
+
+	@Override
+	public int getCategoriesCount(long classNameId, long classPK) {
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -432,6 +428,39 @@ public class AssetCategoryLocalServiceImpl
 	@Override
 	public List<AssetCategory> getEntryCategories(long entryId) {
 		return Collections.emptyList();
+	}
+
+	@Override
+	public AssetCategory getOrAddIncompleteCategory(
+			String externalReferenceCode, long userId, long groupId)
+		throws PortalException {
+
+		AssetCategory assetCategory = fetchAssetCategoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+
+		if (assetCategory != null) {
+			return assetCategory;
+		}
+
+		if (!LazyReferencingThreadLocal.isEnabled()) {
+			throw new NoSuchCategoryException(
+				StringBundler.concat(
+					"Unable to find asset category with external reference ",
+					"code ", externalReferenceCode, " and group ", groupId));
+		}
+
+		try (SafeCloseable safeCloseable =
+				LazyReferencingThreadLocal.setIncompleteModelWithSafeCloseable(
+					true)) {
+
+			return assetCategoryLocalService.addCategory(
+				externalReferenceCode, userId, groupId,
+				AssetCategoryConstants.INCOMPLETE_PARENT_CATEGORY_ID,
+				Collections.singletonMap(
+					LocaleUtil.getSiteDefault(), externalReferenceCode),
+				null, AssetVocabularyConstants.INCOMPLETE_VOCABULARY_ID,
+				new String[0], new ServiceContext());
+		}
 	}
 
 	@Override
@@ -577,8 +606,7 @@ public class AssetCategoryLocalServiceImpl
 		long groupId, String name, String[] categoryProperties, int start,
 		int end) {
 
-		return assetCategoryFinder.findByG_N_P(
-			groupId, name, categoryProperties, start, end);
+		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -645,19 +673,24 @@ public class AssetCategoryLocalServiceImpl
 		AssetCategory category = assetCategoryPersistence.findByPrimaryKey(
 			categoryId);
 
+		Map<Locale, String> trimmedTitleMap = _getTrimmedTitleMap(titleMap);
+
 		Locale defaultLocale = PortalUtil.getSiteDefaultLocale(
 			category.getGroupId());
 
-		String name = titleMap.get(defaultLocale);
-
-		name = ModelHintsUtil.trimString(
-			AssetCategory.class.getName(), "name", name);
+		String name = trimmedTitleMap.get(defaultLocale);
 
 		if (categoryProperties == null) {
 			categoryProperties = new String[0];
 		}
 
 		validate(categoryId, parentCategoryId, name, vocabularyId);
+
+		if (categoryId == parentCategoryId) {
+			throw new InvalidAssetCategoryException(
+				parentCategoryId,
+				InvalidAssetCategoryException.CANNOT_MOVE_INTO_ITSELF);
+		}
 
 		AssetCategory parentCategory = null;
 
@@ -684,8 +717,12 @@ public class AssetCategoryLocalServiceImpl
 		}
 
 		category.setName(name);
-		category.setTitleMap(titleMap);
+		category.setTitleMap(trimmedTitleMap);
 		category.setDescriptionMap(descriptionMap);
+
+		if (category.getStatus() == WorkflowConstants.STATUS_INCOMPLETE) {
+			category.setStatus(WorkflowConstants.STATUS_APPROVED);
+		}
 
 		return assetCategoryPersistence.update(category);
 	}
@@ -704,7 +741,6 @@ public class AssetCategoryLocalServiceImpl
 			).put(
 				Field.TITLE, title
 			).build());
-
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
 		searchContext.setGroupIds(groupIds);
@@ -788,6 +824,21 @@ public class AssetCategoryLocalServiceImpl
 		}
 	}
 
+	private Map<Locale, String> _getTrimmedTitleMap(
+		Map<Locale, String> titleMap) {
+
+		Map<Locale, String> trimmedTitleMap = new HashMap<>();
+
+		for (Map.Entry<Locale, String> entry : titleMap.entrySet()) {
+			trimmedTitleMap.put(
+				entry.getKey(),
+				ModelHintsUtil.trimString(
+					AssetCategory.class.getName(), "name", entry.getValue()));
+		}
+
+		return trimmedTitleMap;
+	}
+
 	private void _rebuildTreePath(
 		AssetCategory category, AssetCategory parentCategory) {
 
@@ -827,8 +878,12 @@ public class AssetCategoryLocalServiceImpl
 			String externalReferenceCode, long groupId)
 		throws PortalException {
 
-		AssetCategory assetCategory = assetCategoryPersistence.fetchByG_ERC(
-			groupId, externalReferenceCode);
+		if (Validator.isNull(externalReferenceCode)) {
+			return;
+		}
+
+		AssetCategory assetCategory = assetCategoryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
 
 		if (assetCategory != null) {
 			throw new DuplicateCategoryExternalReferenceCodeException(

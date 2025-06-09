@@ -1,30 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.test.util.context;
 
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
-import com.liferay.commerce.account.service.CommerceAccountService;
-import com.liferay.commerce.account.util.CommerceAccountHelper;
+import com.liferay.account.service.AccountEntryLocalService;
+import com.liferay.account.service.AccountGroupLocalService;
 import com.liferay.commerce.context.BaseCommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
+import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.product.discovery.CPConfigurationListDiscovery;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
+import com.liferay.commerce.product.service.CommerceChannelAccountEntryRelLocalService;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderService;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.util.Validator;
 
 /**
  * @author Alec Sloan
@@ -32,28 +27,47 @@ import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 public class TestCustomCommerceContext extends BaseCommerceContext {
 
 	public TestCustomCommerceContext(
-		long companyId, long commerceChannelGroupId, long orderId,
-		long commerceAccountId, CommerceAccountHelper commerceAccountHelper,
-		CommerceAccountLocalService commerceAccountLocalService,
-		CommerceAccountService commerceAccountService,
+		AccountEntryLocalService accountEntryLocalService,
+		AccountGroupLocalService accountGroupLocalService,
+		long commerceAccountId,
+		CommerceCatalogLocalService commerceCatalogLocalService,
+		CommerceChannelAccountEntryRelLocalService
+			commerceChannelAccountEntryRelLocalService,
+		long commerceChannelGroupId,
 		CommerceChannelLocalService commerceChannelLocalService,
+		String commerceCurrencyCode,
 		CommerceCurrencyLocalService commerceCurrencyLocalService,
-		CommerceOrderService commerceOrderService,
-		ConfigurationProvider configurationProvider) {
+		long commerceOrderId, CommerceOrderService commerceOrderService,
+		long companyId, ConfigurationProvider configurationProvider,
+		CPConfigurationListDiscovery cpConfigurationListDiscovery) {
 
 		super(
-			companyId, commerceChannelGroupId, orderId, commerceAccountId,
-			commerceAccountHelper, commerceAccountLocalService,
-			commerceAccountService, commerceChannelLocalService,
-			commerceCurrencyLocalService, commerceOrderService,
-			configurationProvider);
+			accountEntryLocalService, accountGroupLocalService,
+			commerceAccountId, commerceCatalogLocalService,
+			commerceChannelAccountEntryRelLocalService, commerceChannelGroupId,
+			commerceChannelLocalService, commerceCurrencyCode,
+			commerceCurrencyLocalService, commerceOrderId, commerceOrderService,
+			companyId, configurationProvider, cpConfigurationListDiscovery);
 
-		_companyId = companyId;
+		_commerceCurrencyCode = commerceCurrencyCode;
 		_commerceCurrencyLocalService = commerceCurrencyLocalService;
+		_companyId = companyId;
 	}
 
 	@Override
 	public CommerceCurrency getCommerceCurrency() throws PortalException {
+		CommerceOrder commerceOrder = getCommerceOrder();
+
+		if (commerceOrder != null) {
+			return commerceOrder.getCommerceCurrency();
+		}
+
+		if (!Validator.isBlank(_commerceCurrencyCode)) {
+			_commerceCurrency =
+				_commerceCurrencyLocalService.fetchCommerceCurrency(
+					_companyId, _commerceCurrencyCode);
+		}
+
 		if (_commerceCurrency != null) {
 			return _commerceCurrency;
 		}
@@ -70,6 +84,7 @@ public class TestCustomCommerceContext extends BaseCommerceContext {
 	}
 
 	private CommerceCurrency _commerceCurrency;
+	private final String _commerceCurrencyCode;
 	private final CommerceCurrencyLocalService _commerceCurrencyLocalService;
 	private final long _companyId;
 

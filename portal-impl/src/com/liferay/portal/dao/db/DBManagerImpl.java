@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.db;
@@ -19,14 +10,19 @@ import com.liferay.portal.dao.jdbc.util.DBInfo;
 import com.liferay.portal.dao.jdbc.util.DBInfoUtil;
 import com.liferay.portal.dao.orm.hibernate.DialectImpl;
 import com.liferay.portal.dao.orm.hibernate.MariaDBDialect;
+import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBFactory;
 import com.liferay.portal.kernel.dao.db.DBManager;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.InfrastructureUtil;
 import com.liferay.portal.kernel.util.InstanceFactory;
+import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.kernel.util.PropsUtil;
+import com.liferay.portal.spring.hibernate.DialectDetector;
 import com.liferay.portal.util.PropsValues;
 
 import java.util.EnumMap;
@@ -42,12 +38,8 @@ import org.hibernate.dialect.HSQLDialect;
 import org.hibernate.dialect.MySQLDialect;
 import org.hibernate.dialect.Oracle8iDialect;
 import org.hibernate.dialect.Oracle9Dialect;
-import org.hibernate.dialect.PostgreSQLDialect;
+import org.hibernate.dialect.PostgreSQL82Dialect;
 import org.hibernate.dialect.SQLServerDialect;
-import org.hibernate.dialect.Sybase11Dialect;
-import org.hibernate.dialect.SybaseASE15Dialect;
-import org.hibernate.dialect.SybaseAnywhereDialect;
-import org.hibernate.dialect.SybaseDialect;
 
 /**
  * @author Alexander Chow
@@ -82,7 +74,7 @@ public class DBManagerImpl implements DBManager {
 						InfrastructureUtil.getDataSource()));
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -106,6 +98,54 @@ public class DBManagerImpl implements DBManager {
 
 		return dbCreator.create(
 			dbInfo.getMajorVersion(), dbInfo.getMinorVersion());
+	}
+
+	@Override
+	public int getDBInMaxParameters() {
+		if (_databaseInMaxParameters != 0) {
+			return _databaseInMaxParameters;
+		}
+
+		DBType dbType = getDBType();
+
+		_databaseInMaxParameters = GetterUtil.getInteger(
+			PropsUtil.get(
+				PropsKeys.DATABASE_IN_MAX_PARAMETERS,
+				new Filter(dbType.getName())),
+			Integer.MAX_VALUE);
+
+		return _databaseInMaxParameters;
+	}
+
+	@Override
+	public int getDBMaxParameters() {
+		if (_databaseMaxParameters != 0) {
+			return _databaseMaxParameters;
+		}
+
+		DBType dbType = getDBType();
+
+		_databaseMaxParameters = GetterUtil.getInteger(
+			PropsUtil.get(
+				PropsKeys.DATABASE_MAX_PARAMETERS,
+				new Filter(dbType.getName())),
+			Integer.MAX_VALUE);
+
+		return _databaseMaxParameters;
+	}
+
+	@Override
+	public DBType getDBType() {
+		if (_db == null) {
+			getDB();
+		}
+
+		return _db.getDBType();
+	}
+
+	@Override
+	public DBType getDBType(DataSource dataSource) {
+		return getDBType(DialectDetector.getDialect(dataSource));
 	}
 
 	@Override
@@ -138,20 +178,12 @@ public class DBManagerImpl implements DBManager {
 			return DBType.ORACLE;
 		}
 
-		if (dialect instanceof PostgreSQLDialect) {
+		if (dialect instanceof PostgreSQL82Dialect) {
 			return DBType.POSTGRESQL;
 		}
 
 		if (dialect instanceof SQLServerDialect) {
 			return DBType.SQLSERVER;
-		}
-
-		if (dialect instanceof Sybase11Dialect ||
-			dialect instanceof SybaseAnywhereDialect ||
-			dialect instanceof SybaseASE15Dialect ||
-			dialect instanceof SybaseDialect) {
-
-			return DBType.SYBASE;
 		}
 
 		throw new IllegalArgumentException("Unknown dialect type " + dialect);
@@ -178,6 +210,8 @@ public class DBManagerImpl implements DBManager {
 
 	private static final Log _log = LogFactoryUtil.getLog(DBManagerImpl.class);
 
+	private int _databaseInMaxParameters;
+	private int _databaseMaxParameters;
 	private DB _db;
 	private final EnumMap<DBType, DBFactory> _dbFactories = new EnumMap<>(
 		DBType.class);

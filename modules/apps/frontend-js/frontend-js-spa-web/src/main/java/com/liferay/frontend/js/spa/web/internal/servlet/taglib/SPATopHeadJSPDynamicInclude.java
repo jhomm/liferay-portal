@@ -1,50 +1,47 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.js.spa.web.internal.servlet.taglib;
 
-import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
 import com.liferay.frontend.js.spa.web.internal.servlet.taglib.helper.SPAHelper;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.servlet.taglib.BaseJSPDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
+import com.liferay.portal.kernel.servlet.taglib.aui.JSFragment;
 import com.liferay.portal.kernel.servlet.taglib.aui.ScriptData;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Props;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.util.Arrays;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Bruno Basto
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class SPATopHeadJSPDynamicInclude extends BaseJSPDynamicInclude {
 
 	@Override
@@ -53,64 +50,85 @@ public class SPATopHeadJSPDynamicInclude extends BaseJSPDynamicInclude {
 			HttpServletResponse httpServletResponse, String key)
 		throws IOException {
 
+		SPAHelper spaHelper = _spaHelperSnapshot.get();
+
+		JSONArray excludedPathsJSONArray =
+			spaHelper.getExcludedPathsJSONArray();
+
+		String currentURL = _portal.getCurrentURL(httpServletRequest);
+
+		for (Object excludedPath : excludedPathsJSONArray) {
+			if (currentURL.equals(excludedPath)) {
+				return;
+			}
+		}
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
 		JSONObject configJSONObject = JSONUtil.put(
 			"cacheExpirationTime",
-			_spaHelper.getCacheExpirationTime(themeDisplay.getCompanyId())
+			spaHelper.getCacheExpirationTime(themeDisplay.getCompanyId())
 		).put(
 			"clearScreensCache",
-			_spaHelper.isClearScreensCache(
+			spaHelper.isClearScreensCache(
 				httpServletRequest, httpServletRequest.getSession())
 		).put(
-			"debugEnabled", _spaHelper.isDebugEnabled()
+			"debugEnabled", spaHelper.isDebugEnabled()
 		).put(
-			"excludedPaths", _spaHelper.getExcludedPathsJSONArray()
+			"excludedPaths", excludedPathsJSONArray
+		).put(
+			"excludedTargetPortlets",
+			spaHelper.getExcludedTargetPortletsJSONArray()
 		).put(
 			"loginRedirect",
-			_html.escapeJS(_spaHelper.getLoginRedirect(httpServletRequest))
+			HtmlUtil.escapeJS(spaHelper.getLoginRedirect(httpServletRequest))
 		).put(
 			"navigationExceptionSelectors",
-			_spaHelper.getNavigationExceptionSelectors()
+			spaHelper.getNavigationExceptionSelectors()
 		).put(
 			"portletsBlacklist",
-			_spaHelper.getPortletsBlacklistJSONArray(themeDisplay)
+			spaHelper.getPortletsBlacklistJSONArray(themeDisplay)
 		).put(
-			"requestTimeout", _spaHelper.getRequestTimeout()
+			"preloadCSS", spaHelper.isPreloadCSS()
+		).put(
+			"requestTimeout", spaHelper.getRequestTimeout()
 		).put(
 			"userNotification",
 			JSONUtil.put(
 				"message",
 				_language.get(
-					_spaHelper.getLanguageResourceBundle(
+					spaHelper.getLanguageResourceBundle(
 						"frontend-js-spa-web", themeDisplay.getLocale()),
 					"it-looks-like-this-is-taking-longer-than-expected")
 			).put(
-				"timeout", _spaHelper.getUserNotificationTimeout()
+				"timeout", spaHelper.getUserNotificationTimeout()
 			).put(
 				"title",
 				_language.get(
-					_spaHelper.getLanguageResourceBundle(
+					spaHelper.getLanguageResourceBundle(
 						"frontend-js-spa-web", themeDisplay.getLocale()),
 					"oops")
 			)
 		).put(
-			"validStatusCodes", _spaHelper.getValidStatusCodesJSONArray()
+			"validStatusCodes", spaHelper.getValidStatusCodesJSONArray()
 		);
-
-		String initModuleName = _npmResolver.resolveModuleName(
-			"frontend-js-spa-web/init");
 
 		ScriptData initScriptData = new ScriptData();
 
+		AbsolutePortalURLBuilder absolutePortalURLBuilder =
+			_absolutePortalURLBuilderFactory.getAbsolutePortalURLBuilder(
+				httpServletRequest);
+
 		initScriptData.append(
 			null,
-			"frontendJsSpaWebInit.default(" + configJSONObject.toJSONString() +
-				")",
-			initModuleName + " as frontendJsSpaWebInit",
-			ScriptData.ModulesType.ES6);
+			new JSFragment(
+				"init(" + configJSONObject.toString() + ");",
+				Arrays.asList(
+					ESImportUtil.getESImport(
+						absolutePortalURLBuilder,
+						"{init} from frontend-js-spa-web"))));
 
 		initScriptData.writeTo(httpServletResponse.getWriter());
 	}
@@ -136,23 +154,25 @@ public class SPATopHeadJSPDynamicInclude extends BaseJSPDynamicInclude {
 		return null;
 	}
 
+	@Override
+	protected ServletContext getServletContext() {
+		return null;
+	}
+
+	private static final Snapshot<SPAHelper> _spaHelperSnapshot =
+		new Snapshot<>(
+			SPATopHeadJSPDynamicInclude.class, SPAHelper.class, null, true);
+
 	@Reference
-	private Html _html;
+	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
 
 	@Reference
 	private Language _language;
 
 	@Reference
-	private NPMResolver _npmResolver;
+	private Portal _portal;
 
 	@Reference
 	private Props _props;
-
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	private volatile SPAHelper _spaHelper;
 
 }

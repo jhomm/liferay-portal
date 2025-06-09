@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.service;
 
 import com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -33,6 +26,8 @@ import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
+
+import java.math.BigDecimal;
 
 import java.util.Date;
 import java.util.List;
@@ -81,8 +76,9 @@ public interface CommerceInventoryReplenishmentItemLocalService
 
 	public CommerceInventoryReplenishmentItem
 			addCommerceInventoryReplenishmentItem(
-				long userId, long commerceInventoryWarehouseId, String sku,
-				Date availabilityDate, int quantity)
+				String externalReferenceCode, long userId,
+				long commerceInventoryWarehouseId, Date availabilityDate,
+				BigDecimal quantity, String sku, String unitOfMeasureKey)
 		throws PortalException;
 
 	/**
@@ -134,6 +130,12 @@ public interface CommerceInventoryReplenishmentItemLocalService
 			deleteCommerceInventoryReplenishmentItem(
 				long commerceInventoryReplenishmentItemId)
 		throws PortalException;
+
+	public void deleteCommerceInventoryReplenishmentItems(
+		long commerceInventoryWarehouseId);
+
+	public void deleteCommerceInventoryReplenishmentItems(
+		long companyId, String sku, String unitOfMeasureKey);
 
 	/**
 	 * @throws PortalException
@@ -220,6 +222,30 @@ public interface CommerceInventoryReplenishmentItemLocalService
 			long commerceInventoryReplenishmentItemId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceInventoryReplenishmentItem
+		fetchCommerceInventoryReplenishmentItem(
+			long companyId, String sku, String unitOfMeasureKey,
+			OrderByComparator<CommerceInventoryReplenishmentItem>
+				orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceInventoryReplenishmentItem
+		fetchCommerceInventoryReplenishmentItemByExternalReferenceCode(
+			String externalReferenceCode, long companyId);
+
+	/**
+	 * Returns the commerce inventory replenishment item with the matching UUID and company.
+	 *
+	 * @param uuid the commerce inventory replenishment item's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce inventory replenishment item, or <code>null</code> if a matching commerce inventory replenishment item could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceInventoryReplenishmentItem
+		fetchCommerceInventoryReplenishmentItemByUuidAndCompanyId(
+			String uuid, long companyId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	/**
@@ -233,6 +259,26 @@ public interface CommerceInventoryReplenishmentItemLocalService
 	public CommerceInventoryReplenishmentItem
 			getCommerceInventoryReplenishmentItem(
 				long commerceInventoryReplenishmentItemId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceInventoryReplenishmentItem
+			getCommerceInventoryReplenishmentItemByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	/**
+	 * Returns the commerce inventory replenishment item with the matching UUID and company.
+	 *
+	 * @param uuid the commerce inventory replenishment item's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce inventory replenishment item
+	 * @throws PortalException if a matching commerce inventory replenishment item could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceInventoryReplenishmentItem
+			getCommerceInventoryReplenishmentItemByUuidAndCompanyId(
+				String uuid, long companyId)
 		throws PortalException;
 
 	/**
@@ -252,8 +298,14 @@ public interface CommerceInventoryReplenishmentItemLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceInventoryReplenishmentItem>
-		getCommerceInventoryReplenishmentItemsByCompanyIdAndSku(
-			long companyId, String sku, int start, int end);
+		getCommerceInventoryReplenishmentItemsByCommerceInventoryWarehouseId(
+			long commerceInventoryWarehouseId, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceInventoryReplenishmentItem>
+		getCommerceInventoryReplenishmentItemsByCompanyIdSkuAndUnitOfMeasureKey(
+			long companyId, String sku, String unitOfMeasureKey, int start,
+			int end, boolean replacePermissionCheck);
 
 	/**
 	 * Returns the number of commerce inventory replenishment items.
@@ -264,12 +316,22 @@ public interface CommerceInventoryReplenishmentItemLocalService
 	public int getCommerceInventoryReplenishmentItemsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public long getCommerceInventoryReplenishmentItemsCount(
-		long commerceInventoryWarehouseId, String sku);
+	public BigDecimal getCommerceInventoryReplenishmentItemsCount(
+		long commerceInventoryWarehouseId, String sku, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceInventoryReplenishmentItemsCountByCompanyIdAndSku(
-		long companyId, String sku);
+	public int
+		getCommerceInventoryReplenishmentItemsCountByCommerceInventoryWarehouseId(
+			long commerceInventoryWarehouseId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int
+		getCommerceInventoryReplenishmentItemsCountByCompanyIdSkuAndUnitOfMeasureKey(
+			long companyId, String sku, String unitOfMeasureKey);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -307,8 +369,9 @@ public interface CommerceInventoryReplenishmentItemLocalService
 
 	public CommerceInventoryReplenishmentItem
 			updateCommerceInventoryReplenishmentItem(
+				String externalReferenceCode,
 				long commerceInventoryReplenishmentItemId,
-				Date availabilityDate, int quantity, long mvccVersion)
+				Date availabilityDate, BigDecimal quantity, long mvccVersion)
 		throws PortalException;
 
 }

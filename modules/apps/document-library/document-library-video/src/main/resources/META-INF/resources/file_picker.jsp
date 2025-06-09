@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,12 +13,12 @@ String onFilePickCallback = (String)request.getAttribute(DLVideoWebKeys.ON_FILE_
 %>
 
 <liferay-util:html-top
-	outputKey="document_library_video_css"
+	outputKey="com.liferay.document.library.video#/file_picker.jsp"
 >
-	<link href="<%= PortalUtil.getStaticResourceURL(request, application.getContextPath() + "/css/main.css") %>" rel="stylesheet" type="text/css" />
+	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>' rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
 
-<aui:input name="contentType" type="hidden" value="<%= DLContentTypes.VIDEO_EXTERNAL_SHORTCUT %>" />
+<aui:input name="contentType" type="hidden" value="<%= ContentTypes.APPLICATION_VND_LIFERAY_VIDEO_EXTERNAL_SHORTCUT_HTML %>" />
 
 <div class="form-group">
 	<aui:input disabled="<%= true %>" label="video-url" name="dlVideoExternalShortcutURL" value="<%= (dlVideoExternalShortcut != null) ? dlVideoExternalShortcut.getURL() : null %>" wrapperCssClass="mb-0" />
@@ -54,7 +45,7 @@ String onFilePickCallback = (String)request.getAttribute(DLVideoWebKeys.ON_FILE_
 	<liferay-portlet:resourceURL id="/document_library_video/get_dl_video_external_shortcut_fields" portletName="<%= DLVideoPortletKeys.DL_VIDEO %>" var="getDLVideoExternalShortcutFieldsURL" />
 
 	<react:component
-		module="js/DLVideoExternalShortcutDLFilePicker"
+		module="{DLVideoExternalShortcutDLFilePicker} from document-library-video"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"dlVideoExternalShortcutHTML", (dlVideoExternalShortcut != null) ? dlVideoExternalShortcut.renderHTML(request) : ""

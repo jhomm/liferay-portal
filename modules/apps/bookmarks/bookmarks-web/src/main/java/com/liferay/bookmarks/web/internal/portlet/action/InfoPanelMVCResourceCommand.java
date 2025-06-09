@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.web.internal.portlet.action;
@@ -21,8 +12,8 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.util.TrashWebKeys;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -31,10 +22,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + BookmarksPortletKeys.BOOKMARKS,
-		"javax.portlet.name=" + BookmarksPortletKeys.BOOKMARKS_ADMIN,
+		"jakarta.portlet.name=" + BookmarksPortletKeys.BOOKMARKS,
+		"jakarta.portlet.name=" + BookmarksPortletKeys.BOOKMARKS_ADMIN,
 		"mvc.command.name=/bookmarks/info_panel"
 	},
 	service = MVCResourceCommand.class
@@ -49,11 +39,9 @@ public class InfoPanelMVCResourceCommand extends BaseMVCResourceCommand {
 		resourceRequest.setAttribute(
 			BookmarksWebKeys.BOOKMARKS_ENTRIES,
 			ActionUtil.getEntries(resourceRequest));
-
 		resourceRequest.setAttribute(
 			BookmarksWebKeys.BOOKMARKS_FOLDERS,
 			ActionUtil.getFolders(resourceRequest));
-
 		resourceRequest.setAttribute(TrashWebKeys.TRASH_HELPER, _trashHelper);
 
 		include(resourceRequest, resourceResponse, "/bookmarks/info_panel.jsp");

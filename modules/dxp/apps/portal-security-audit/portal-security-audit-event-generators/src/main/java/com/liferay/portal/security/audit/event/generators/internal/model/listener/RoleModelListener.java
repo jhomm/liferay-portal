@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.audit.event.generators.internal.model.listener;
@@ -24,8 +15,13 @@ import com.liferay.portal.kernel.model.ModelListener;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.security.audit.event.generators.constants.EventTypes;
 import com.liferay.portal.security.audit.event.generators.util.Attribute;
 import com.liferay.portal.security.audit.event.generators.util.AttributesBuilder;
@@ -40,7 +36,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Mika Koivisto
  * @author Brian Wing Shun Chan
  */
-@Component(immediate = true, service = ModelListener.class)
+@Component(service = ModelListener.class)
 public class RoleModelListener extends BaseModelListener<Role> {
 
 	@Override
@@ -49,7 +45,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 			Object associationClassPK)
 		throws ModelListenerException {
 
-		auditOnAddorRemoveAssociation(
+		_auditOnAddOrRemoveAssociation(
 			EventTypes.ASSIGN, classPK, associationClassName,
 			associationClassPK);
 	}
@@ -68,7 +64,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 			Object associationClassPK)
 		throws ModelListenerException {
 
-		auditOnAddorRemoveAssociation(
+		_auditOnAddOrRemoveAssociation(
 			EventTypes.UNASSIGN, classPK, associationClassName,
 			associationClassPK);
 	}
@@ -77,7 +73,7 @@ public class RoleModelListener extends BaseModelListener<Role> {
 		throws ModelListenerException {
 
 		try {
-			List<Attribute> attributes = getModifiedAttributes(
+			List<Attribute> attributes = _getModifiedAttributes(
 				originalRole, role);
 
 			if (!attributes.isEmpty()) {
@@ -88,53 +84,6 @@ public class RoleModelListener extends BaseModelListener<Role> {
 
 				_auditRouter.route(auditMessage);
 			}
-		}
-		catch (Exception exception) {
-			throw new ModelListenerException(exception);
-		}
-	}
-
-	protected void auditOnAddorRemoveAssociation(
-			String eventType, Object classPK, String associationClassName,
-			Object associationClassPK)
-		throws ModelListenerException {
-
-		if (!associationClassName.equals(Group.class.getName()) &&
-			!associationClassName.equals(Organization.class.getName()) &&
-			!associationClassName.equals(User.class.getName())) {
-
-			return;
-		}
-
-		try {
-			AuditMessage auditMessage = null;
-
-			if (associationClassName.equals(Group.class.getName())) {
-				long groupId = (Long)associationClassPK;
-
-				Group group = _groupLocalService.getGroup(groupId);
-
-				auditMessage = AuditMessageBuilder.buildAuditMessage(
-					eventType, group.getClassName(), group.getClassPK(), null);
-			}
-			else {
-				auditMessage = AuditMessageBuilder.buildAuditMessage(
-					eventType, associationClassName, (Long)associationClassPK,
-					null);
-			}
-
-			JSONObject additionalInfoJSONObject =
-				auditMessage.getAdditionalInfo();
-
-			long roleId = (Long)classPK;
-
-			additionalInfoJSONObject.put("roleId", roleId);
-
-			Role role = _roleLocalService.getRole(roleId);
-
-			additionalInfoJSONObject.put("roleName", role.getName());
-
-			_auditRouter.route(auditMessage);
 		}
 		catch (Exception exception) {
 			throw new ModelListenerException(exception);
@@ -155,7 +104,93 @@ public class RoleModelListener extends BaseModelListener<Role> {
 		}
 	}
 
-	protected List<Attribute> getModifiedAttributes(
+	private void _auditOnAddOrRemoveAssociation(
+			String eventType, Object classPK, String associationClassName,
+			Object associationClassPK)
+		throws ModelListenerException {
+
+		if (!associationClassName.equals(Group.class.getName()) &&
+			!associationClassName.equals(Organization.class.getName()) &&
+			!associationClassName.equals(User.class.getName())) {
+
+			return;
+		}
+
+		try {
+			AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
+				eventType, associationClassName, (Long)associationClassPK,
+				null);
+
+			JSONObject additionalInfoJSONObject =
+				auditMessage.getAdditionalInfo();
+
+			long roleId = (Long)classPK;
+
+			additionalInfoJSONObject.put("roleId", roleId);
+
+			Role role = _roleLocalService.getRole(roleId);
+
+			additionalInfoJSONObject.put("roleName", role.getName());
+
+			if (associationClassName.equals(Group.class.getName())) {
+				long groupId = (Long)associationClassPK;
+
+				Group group = _groupLocalService.getGroup(groupId);
+
+				if (group.getClassNameId() == _classNameService.getClassNameId(
+						Organization.class.getName())) {
+
+					Organization organization =
+						_organizationLocalService.getOrganization(
+							group.getClassPK());
+
+					additionalInfoJSONObject.put(
+						"organizationId", organization.getOrganizationId()
+					).put(
+						"organizationName", organization.getName()
+					);
+				}
+				else if (group.getClassNameId() ==
+							_classNameService.getClassNameId(
+								UserGroup.class.getName())) {
+
+					UserGroup userGroup = _userGroupLocalService.getUserGroup(
+						group.getClassPK());
+
+					additionalInfoJSONObject.put(
+						"userGroupId", userGroup.getUserGroupId()
+					).put(
+						"userGroupName", userGroup.getName()
+					);
+				}
+				else {
+					additionalInfoJSONObject.put(
+						"groupId", groupId
+					).put(
+						"groupName", group.getNameCurrentValue()
+					);
+				}
+			}
+			else if (associationClassName.equals(User.class.getName())) {
+				long userId = (Long)associationClassPK;
+
+				User user = _userLocalService.getUser(userId);
+
+				additionalInfoJSONObject.put(
+					"userEmailAddress", user.getEmailAddress()
+				).put(
+					"userId", userId
+				);
+			}
+
+			_auditRouter.route(auditMessage);
+		}
+		catch (Exception exception) {
+			throw new ModelListenerException(exception);
+		}
+	}
+
+	private List<Attribute> _getModifiedAttributes(
 		Role originalRole, Role role) {
 
 		AttributesBuilder attributesBuilder = new AttributesBuilder(
@@ -173,9 +208,21 @@ public class RoleModelListener extends BaseModelListener<Role> {
 	private AuditRouter _auditRouter;
 
 	@Reference
+	private ClassNameLocalService _classNameService;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
+	private OrganizationLocalService _organizationLocalService;
+
+	@Reference
 	private RoleLocalService _roleLocalService;
+
+	@Reference
+	private UserGroupLocalService _userGroupLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

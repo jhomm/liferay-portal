@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,6 +22,8 @@ if (structure != null) {
 
 String structureKey = BeanParamUtil.getString(structure, request, "structureKey");
 
+JSONObject formBuilderContextJSONObject = ddmFormAdminDisplayContext.getFormBuilderContextJSONObject();
+
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(redirect);
 
@@ -44,6 +37,7 @@ renderResponse.setTitle((structure == null) ? LanguageUtil.get(request, "new-ele
 <div class="portlet-forms" id="<portlet:namespace />formContainer">
 	<div class="forms-navigation-bar">
 		<clay:navigation-bar
+			cssClass="container-fluid-max-xxxl"
 			inverted="<%= true %>"
 			navigationItems="<%= ddmFormAdminDisplayContext.getElementSetBuilderNavigationItems() %>"
 		/>
@@ -91,10 +85,12 @@ renderResponse.setTitle((structure == null) ? LanguageUtil.get(request, "new-ele
 
 		<div id="<portlet:namespace />-container">
 			<react:component
-				module="admin/js/App.es"
+				module="{App} from dynamic-data-mapping-form-web"
 				props='<%=
 					HashMapBuilder.<String, Object>put(
 						"availableLanguageIds", ddmFormAdminDisplayContext.getAvailableLanguageIdsJSONArray()
+					).put(
+						"availableLocales", ddmFormAdminDisplayContext.getAvailableLocalesJSONArray()
 					).put(
 						"context", formBuilderContextJSONObject
 					).put(
@@ -120,7 +116,7 @@ renderResponse.setTitle((structure == null) ? LanguageUtil.get(request, "new-ele
 					).put(
 						"redirectURL", HtmlUtil.escape(redirect)
 					).put(
-						"spritemap", themeDisplay.getPathThemeImages() + "/clay/icons.svg"
+						"spritemap", themeDisplay.getPathThemeSpritemap()
 					).put(
 						"view", "fieldSets"
 					).build()
@@ -132,7 +128,7 @@ renderResponse.setTitle((structure == null) ? LanguageUtil.get(request, "new-ele
 
 <div class="hide">
 	<react:component
-		module="admin/js/FormView.link.es"
+		module="{FormView} from dynamic-data-mapping-form-web"
 		props="<%= ddmFormAdminDisplayContext.getDDMFormSettingsContext(pageContext) %>"
 	/>
 </div>
@@ -141,7 +137,7 @@ renderResponse.setTitle((structure == null) ? LanguageUtil.get(request, "new-ele
 	Liferay.namespace('DDM').FormSettings = {
 		portletNamespace: '<portlet:namespace />',
 		showPagination: false,
-		spritemap: '<%= themeDisplay.getPathThemeImages() %>/clay/icons.svg',
+		spritemap: '<%= themeDisplay.getPathThemeSpritemap() %>',
 	};
 
 	var clearPortletHandlers = function (event) {

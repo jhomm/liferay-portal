@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.portlet.action;
@@ -17,22 +8,22 @@ package com.liferay.fragment.web.internal.portlet.action;
 import com.liferay.fragment.constants.FragmentPortletKeys;
 import com.liferay.fragment.model.FragmentCollection;
 import com.liferay.fragment.service.FragmentCollectionService;
-import com.liferay.fragment.web.internal.portlet.helper.ExportHelper;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.kernel.zip.ZipWriter;
+import com.liferay.portal.kernel.zip.ZipWriterFactory;
 
-import java.io.File;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
 import java.io.FileInputStream;
 
-import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletException;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,9 +32,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + FragmentPortletKeys.FRAGMENT,
+		"jakarta.portlet.name=" + FragmentPortletKeys.FRAGMENT,
 		"mvc.command.name=/fragment/export_fragment_collections"
 	},
 	service = MVCResourceCommand.class
@@ -70,25 +60,34 @@ public class ExportFragmentCollectionsMVCResourceCommand
 		}
 
 		try {
-			List<FragmentCollection> fragmentCollections = new ArrayList<>();
+			List<FragmentCollection> fragmentCollections =
+				TransformUtil.transformToList(
+					exportFragmentCollectionIds,
+					exportFragmentCollectionId -> {
+						FragmentCollection fragmentCollection =
+							_fragmentCollectionService.fetchFragmentCollection(
+								exportFragmentCollectionId);
 
-			for (long exportFragmentCollectionId :
-					exportFragmentCollectionIds) {
+						if ((fragmentCollection != null) &&
+							!fragmentCollection.isMarketplace()) {
 
-				FragmentCollection fragmentCollection =
-					_fragmentCollectionService.fetchFragmentCollection(
-						exportFragmentCollectionId);
+							return fragmentCollection;
+						}
 
-				fragmentCollections.add(fragmentCollection);
+						return null;
+					});
+
+			ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
+
+			for (FragmentCollection fragmentCollection : fragmentCollections) {
+				fragmentCollection.populateZipWriter(zipWriter);
 			}
-
-			File file = _exportHelper.exportFragmentCollections(
-				fragmentCollections);
 
 			PortletResponseUtil.sendFile(
 				resourceRequest, resourceResponse,
 				"collections-" + Time.getTimestamp() + ".zip",
-				new FileInputStream(file), ContentTypes.APPLICATION_ZIP);
+				new FileInputStream(zipWriter.getFile()),
+				ContentTypes.APPLICATION_ZIP);
 		}
 		catch (Exception exception) {
 			throw new PortletException(exception);
@@ -98,9 +97,9 @@ public class ExportFragmentCollectionsMVCResourceCommand
 	}
 
 	@Reference
-	private ExportHelper _exportHelper;
+	private FragmentCollectionService _fragmentCollectionService;
 
 	@Reference
-	private FragmentCollectionService _fragmentCollectionService;
+	private ZipWriterFactory _zipWriterFactory;
 
 }

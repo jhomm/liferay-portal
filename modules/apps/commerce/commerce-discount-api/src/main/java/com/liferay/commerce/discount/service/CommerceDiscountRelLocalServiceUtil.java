@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -63,11 +55,14 @@ public class CommerceDiscountRelLocalServiceUtil {
 
 	public static CommerceDiscountRel addCommerceDiscountRel(
 			long commerceDiscountId, String className, long classPK,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				typeSettingsUnicodeProperties,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCommerceDiscountRel(
-			commerceDiscountId, className, classPK, serviceContext);
+			commerceDiscountId, className, classPK,
+			typeSettingsUnicodeProperties, serviceContext);
 	}
 
 	/**
@@ -92,6 +87,16 @@ public class CommerceDiscountRelLocalServiceUtil {
 		return getService().createPersistedModel(primaryKeyObj);
 	}
 
+	public static CommerceDiscountRel deleteCommerceDiscountRel(
+			com.liferay.commerce.discount.model.CommerceDiscount
+				commerceDiscount,
+			CommerceDiscountRel commerceDiscountRel)
+		throws PortalException {
+
+		return getService().deleteCommerceDiscountRel(
+			commerceDiscount, commerceDiscountRel);
+	}
+
 	/**
 	 * Deletes the commerce discount rel from the database. Also notifies the appropriate model listeners.
 	 *
@@ -101,11 +106,9 @@ public class CommerceDiscountRelLocalServiceUtil {
 	 *
 	 * @param commerceDiscountRel the commerce discount rel
 	 * @return the commerce discount rel that was removed
-	 * @throws PortalException
 	 */
 	public static CommerceDiscountRel deleteCommerceDiscountRel(
-			CommerceDiscountRel commerceDiscountRel)
-		throws PortalException {
+		CommerceDiscountRel commerceDiscountRel) {
 
 		return getService().deleteCommerceDiscountRel(commerceDiscountRel);
 	}
@@ -128,10 +131,12 @@ public class CommerceDiscountRelLocalServiceUtil {
 		return getService().deleteCommerceDiscountRel(commerceDiscountRelId);
 	}
 
-	public static void deleteCommerceDiscountRels(long commerceDiscountId)
+	public static void deleteCommerceDiscountRels(
+			com.liferay.commerce.discount.model.CommerceDiscount
+				commerceDiscount)
 		throws PortalException {
 
-		getService().deleteCommerceDiscountRels(commerceDiscountId);
+		getService().deleteCommerceDiscountRels(commerceDiscount);
 	}
 
 	public static void deleteCommerceDiscountRels(
@@ -306,6 +311,19 @@ public class CommerceDiscountRelLocalServiceUtil {
 	}
 
 	public static List<CommerceDiscountRel> getCommerceDiscountRels(
+		long classNameId, long classPK) {
+
+		return getService().getCommerceDiscountRels(classNameId, classPK);
+	}
+
+	public static List<CommerceDiscountRel> getCommerceDiscountRels(
+		long classNameId, long classPK, String unitOfMeasureKey) {
+
+		return getService().getCommerceDiscountRels(
+			classNameId, classPK, unitOfMeasureKey);
+	}
+
+	public static List<CommerceDiscountRel> getCommerceDiscountRels(
 		long commerceDiscountId, String className) {
 
 		return getService().getCommerceDiscountRels(
@@ -423,9 +441,12 @@ public class CommerceDiscountRelLocalServiceUtil {
 	}
 
 	public static CommerceDiscountRelLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CommerceDiscountRelLocalService _service;
+	private static final Snapshot<CommerceDiscountRelLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CommerceDiscountRelLocalServiceUtil.class,
+			CommerceDiscountRelLocalService.class);
 
 }

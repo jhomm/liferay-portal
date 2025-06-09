@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.search.test;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Indexer;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -39,9 +31,9 @@ import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -102,7 +94,8 @@ public class BookmarksEntryIndexerIndexedFieldsTest {
 		_group = group;
 		_groups = groupSearchFixture.getGroups();
 		_indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, uidFactory, documentBuilderFactory);
+			resourcePermissionLocalService, searchEngineHelper, uidFactory,
+			documentBuilderFactory);
 		_users = userSearchFixture.getUsers();
 	}
 
@@ -121,11 +114,16 @@ public class BookmarksEntryIndexerIndexedFieldsTest {
 
 	protected void assertFieldValues(Map<String, ?> map, String searchTerm) {
 		FieldValuesAssert.assertFieldValues(
-			map, name -> !name.equals("score"),
+			map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("score") &&
+				!name.equals("timestamp"),
 			searcher.search(
 				searchRequestBuilderFactory.builder(
 				).companyId(
 					_group.getCompanyId()
+				).fetchSourceIncludes(
+					new String[] {"*_sortable"}
 				).fields(
 					StringPool.STAR
 				).groupIds(
@@ -157,6 +155,9 @@ public class BookmarksEntryIndexerIndexedFieldsTest {
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
 	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
+	@Inject
 	protected Searcher searcher;
 
 	@Inject
@@ -171,6 +172,8 @@ public class BookmarksEntryIndexerIndexedFieldsTest {
 	private Map<String, String> _expectedFieldValues(
 			BookmarksEntry bookmarksEntry)
 		throws Exception {
+
+		User user = _users.get(0);
 
 		Map<String, String> map = HashMapBuilder.put(
 			Field.ASSET_ENTRY_ID,
@@ -205,7 +208,17 @@ public class BookmarksEntryIndexerIndexedFieldsTest {
 			"assetEntryId_sortable",
 			String.valueOf(_getAssetEntryId(bookmarksEntry))
 		).put(
+			"groupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
+			"scopeGroupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
+			"statusByUserExternalReferenceCode", user.getExternalReferenceCode()
+		).put(
+			"statusByUserId", String.valueOf(bookmarksEntry.getStatusByUserId())
+		).put(
 			"title_sortable", StringUtil.lowerCase(bookmarksEntry.getName())
+		).put(
+			"userExternalReferenceCode", user.getExternalReferenceCode()
 		).put(
 			"visible", "true"
 		).build();

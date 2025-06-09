@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -17,7 +8,8 @@ package com.liferay.jenkins.results.parser;
 import java.io.File;
 
 import java.util.Properties;
-import java.util.Set;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -26,11 +18,16 @@ public class DefaultPortalJob
 	extends BaseJob implements PortalTestClassJob, TestSuiteJob {
 
 	@Override
-	public Set<String> getDistTypes() {
-		String testBatchDistAppServers = JenkinsResultsParserUtil.getProperty(
-			getJobProperties(), "test.batch.dist.app.servers");
+	public JSONObject getJSONObject() {
+		if (jsonObject != null) {
+			return jsonObject;
+		}
 
-		return getSetFromString(testBatchDistAppServers);
+		jsonObject = super.getJSONObject();
+
+		jsonObject.put("test_suite_name", _testSuiteName);
+
+		return jsonObject;
 	}
 
 	@Override
@@ -77,12 +74,33 @@ public class DefaultPortalJob
 	}
 
 	protected DefaultPortalJob(
-		String jobName, BuildProfile buildProfile, String testSuiteName) {
+		BuildProfile buildProfile, String jobName,
+		PortalGitWorkingDirectory portalGitWorkingDirectory,
+		String testSuiteName) {
 
-		super(jobName, buildProfile);
+		super(buildProfile, jobName);
 
+		_portalGitWorkingDirectory = portalGitWorkingDirectory;
 		_testSuiteName = testSuiteName;
 
+		_initialize();
+	}
+
+	protected DefaultPortalJob(
+		BuildProfile buildProfile, String jobName, String testSuiteName) {
+
+		this(buildProfile, jobName, null, testSuiteName);
+	}
+
+	protected DefaultPortalJob(JSONObject jsonObject) {
+		super(jsonObject);
+
+		_testSuiteName = jsonObject.getString("test_suite_name");
+
+		_initialize();
+	}
+
+	private void _initialize() {
 		PortalGitWorkingDirectory portalGitWorkingDirectory =
 			getPortalGitWorkingDirectory();
 
@@ -93,15 +111,6 @@ public class DefaultPortalJob
 			new File(portalWorkingDirectory, "build.properties"));
 		jobPropertiesFiles.add(
 			new File(portalWorkingDirectory, "test.properties"));
-
-		readJobProperties();
-	}
-
-	@Override
-	protected Set<String> getRawBatchNames() {
-		return getSetFromString(
-			JenkinsResultsParserUtil.getProperty(
-				getJobProperties(), "test.batch.names"));
 	}
 
 	private PortalGitWorkingDirectory _portalGitWorkingDirectory;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.dto.v1_0;
@@ -20,11 +11,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Alessio Antonio Rendina
@@ -47,8 +38,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("AccountMember")
+@io.swagger.v3.oas.annotations.media.Schema(requiredProperties = {"email"})
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"email"})
 @XmlRootElement(name = "AccountMember")
 public class AccountMember implements Serializable {
 
@@ -61,85 +52,123 @@ public class AccountMember implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getAccountId() {
+		if (_accountIdSupplier != null) {
+			accountId = _accountIdSupplier.get();
+
+			_accountIdSupplier = null;
+		}
+
 		return accountId;
 	}
 
 	public void setAccountId(Long accountId) {
 		this.accountId = accountId;
+
+		_accountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccountId(
 		UnsafeSupplier<Long, Exception> accountIdUnsafeSupplier) {
 
-		try {
-			accountId = accountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountIdSupplier = () -> {
+			try {
+				return accountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long accountId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _accountIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		example = "[{description={en_US=Account Administrator Description US, hr_HR=Account Administrator Description HR, hu_HU=Account Administrator Description HU}}, {description={en_US=Order Manager Description US, hr_HR=Order Manager Description HR, hu_HU=Order Manager Description HU}}]"
+	)
 	@Valid
 	public AccountRole[] getAccountRoles() {
+		if (_accountRolesSupplier != null) {
+			accountRoles = _accountRolesSupplier.get();
+
+			_accountRolesSupplier = null;
+		}
+
 		return accountRoles;
 	}
 
 	public void setAccountRoles(AccountRole[] accountRoles) {
 		this.accountRoles = accountRoles;
+
+		_accountRolesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setAccountRoles(
 		UnsafeSupplier<AccountRole[], Exception> accountRolesUnsafeSupplier) {
 
-		try {
-			accountRoles = accountRolesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_accountRolesSupplier = () -> {
+			try {
+				return accountRolesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected AccountRole[] accountRoles;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<AccountRole[]> _accountRolesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "joe.1@commerce.com")
 	public String getEmail() {
+		if (_emailSupplier != null) {
+			email = _emailSupplier.get();
+
+			_emailSupplier = null;
+		}
+
 		return email;
 	}
 
 	public void setEmail(String email) {
 		this.email = email;
+
+		_emailSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setEmail(
 		UnsafeSupplier<String, Exception> emailUnsafeSupplier) {
 
-		try {
-			email = emailUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_emailSupplier = () -> {
+			try {
+				return emailUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -147,67 +176,105 @@ public class AccountMember implements Serializable {
 	@NotEmpty
 	protected String email;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _emailSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "AB-34098-789-N")
 	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
 		return externalReferenceCode;
 	}
 
 	public void setExternalReferenceCode(String externalReferenceCode) {
 		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setExternalReferenceCode(
 		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
 
-		try {
-			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String externalReferenceCode;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "User Name")
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "UAB-34098-789-N")
 	public String getUserExternalReferenceCode() {
+		if (_userExternalReferenceCodeSupplier != null) {
+			userExternalReferenceCode =
+				_userExternalReferenceCodeSupplier.get();
+
+			_userExternalReferenceCodeSupplier = null;
+		}
+
 		return userExternalReferenceCode;
 	}
 
 	public void setUserExternalReferenceCode(String userExternalReferenceCode) {
 		this.userExternalReferenceCode = userExternalReferenceCode;
+
+		_userExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -215,50 +282,67 @@ public class AccountMember implements Serializable {
 		UnsafeSupplier<String, Exception>
 			userExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			userExternalReferenceCode =
-				userExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_userExternalReferenceCodeSupplier = () -> {
+			try {
+				return userExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String userExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _userExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30002")
 	public Long getUserId() {
+		if (_userIdSupplier != null) {
+			userId = _userIdSupplier.get();
+
+			_userIdSupplier = null;
+		}
+
 		return userId;
 	}
 
 	public void setUserId(Long userId) {
 		this.userId = userId;
+
+		_userIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setUserId(
 		UnsafeSupplier<Long, Exception> userIdUnsafeSupplier) {
 
-		try {
-			userId = userIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_userIdSupplier = () -> {
+			try {
+				return userIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long userId;
+
+	@JsonIgnore
+	private Supplier<Long> _userIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -287,6 +371,8 @@ public class AccountMember implements Serializable {
 
 		sb.append("{");
 
+		Long accountId = getAccountId();
+
 		if (accountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -296,6 +382,8 @@ public class AccountMember implements Serializable {
 
 			sb.append(accountId);
 		}
+
+		AccountRole[] accountRoles = getAccountRoles();
 
 		if (accountRoles != null) {
 			if (sb.length() > 1) {
@@ -317,6 +405,8 @@ public class AccountMember implements Serializable {
 			sb.append("]");
 		}
 
+		String email = getEmail();
+
 		if (email != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -330,6 +420,8 @@ public class AccountMember implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String externalReferenceCode = getExternalReferenceCode();
 
 		if (externalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -345,6 +437,8 @@ public class AccountMember implements Serializable {
 			sb.append("\"");
 		}
 
+		String name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -359,6 +453,8 @@ public class AccountMember implements Serializable {
 			sb.append("\"");
 		}
 
+		String userExternalReferenceCode = getUserExternalReferenceCode();
+
 		if (userExternalReferenceCode != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -372,6 +468,8 @@ public class AccountMember implements Serializable {
 
 			sb.append("\"");
 		}
+
+		Long userId = getUserId();
 
 		if (userId != null) {
 			if (sb.length() > 1) {
@@ -388,17 +486,17 @@ public class AccountMember implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.account.dto.v1_0.AccountMember",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -424,7 +522,7 @@ public class AccountMember implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -435,7 +533,10 @@ public class AccountMember implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -456,7 +557,7 @@ public class AccountMember implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -472,5 +573,12 @@ public class AccountMember implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

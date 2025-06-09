@@ -1,43 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.servlet;
 
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.util.BasePortalLifecycle;
 import com.liferay.portal.kernel.util.InstanceFactory;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 
 import java.io.IOException;
 
 import java.util.Enumeration;
 
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-
 /**
  * @author Brian Wing Shun Chan
  */
-public class SecureServlet
-	extends BasePortalLifecycle implements Servlet, ServletConfig {
+public class SecureServlet implements Servlet, ServletConfig {
 
 	@Override
 	public void destroy() {
-		portalDestroy();
+		servlet.destroy();
 	}
 
 	@Override
@@ -75,10 +64,25 @@ public class SecureServlet
 	}
 
 	@Override
-	public void init(ServletConfig servletConfig) {
+	public void init(ServletConfig servletConfig) throws ServletException {
 		this.servletConfig = servletConfig;
 
-		registerPortalLifecycle();
+		ServletContext servletContext = servletConfig.getServletContext();
+
+		ClassLoader classLoader = (ClassLoader)servletContext.getAttribute(
+			PluginContextListener.PLUGIN_CLASS_LOADER);
+
+		String servletClass = servletConfig.getInitParameter("servlet-class");
+
+		try {
+			servlet = (Servlet)InstanceFactory.newInstance(
+				classLoader, servletClass);
+		}
+		catch (Exception exception) {
+			throw new ServletException(exception);
+		}
+
+		servlet.init(servletConfig);
 	}
 
 	@Override
@@ -87,26 +91,6 @@ public class SecureServlet
 		throws IOException, ServletException {
 
 		servlet.service(servletRequest, servletResponse);
-	}
-
-	@Override
-	protected void doPortalDestroy() {
-		servlet.destroy();
-	}
-
-	@Override
-	protected void doPortalInit() throws Exception {
-		ServletContext servletContext = servletConfig.getServletContext();
-
-		ClassLoader classLoader = (ClassLoader)servletContext.getAttribute(
-			PluginContextListener.PLUGIN_CLASS_LOADER);
-
-		String servletClass = servletConfig.getInitParameter("servlet-class");
-
-		servlet = (Servlet)InstanceFactory.newInstance(
-			classLoader, servletClass);
-
-		servlet.init(servletConfig);
 	}
 
 	protected Servlet servlet;

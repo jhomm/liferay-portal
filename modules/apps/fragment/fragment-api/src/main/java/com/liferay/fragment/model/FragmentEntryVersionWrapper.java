@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model;
@@ -51,6 +42,7 @@ public class FragmentEntryVersionWrapper
 		attributes.put("fragmentEntryVersionId", getFragmentEntryVersionId());
 		attributes.put("version", getVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fragmentEntryId", getFragmentEntryId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -66,9 +58,12 @@ public class FragmentEntryVersionWrapper
 		attributes.put("js", getJs());
 		attributes.put("cacheable", isCacheable());
 		attributes.put("configuration", getConfiguration());
+		attributes.put("icon", getIcon());
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
+		attributes.put("marketplace", isMarketplace());
 		attributes.put("readOnly", isReadOnly());
 		attributes.put("type", getType());
+		attributes.put("typeOptions", getTypeOptions());
 		attributes.put("lastPublishDate", getLastPublishDate());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
@@ -109,6 +104,13 @@ public class FragmentEntryVersionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fragmentEntryId = (Long)attributes.get("fragmentEntryId");
@@ -202,10 +204,22 @@ public class FragmentEntryVersionWrapper
 			setConfiguration(configuration);
 		}
 
+		String icon = (String)attributes.get("icon");
+
+		if (icon != null) {
+			setIcon(icon);
+		}
+
 		Long previewFileEntryId = (Long)attributes.get("previewFileEntryId");
 
 		if (previewFileEntryId != null) {
 			setPreviewFileEntryId(previewFileEntryId);
+		}
+
+		Boolean marketplace = (Boolean)attributes.get("marketplace");
+
+		if (marketplace != null) {
+			setMarketplace(marketplace);
 		}
 
 		Boolean readOnly = (Boolean)attributes.get("readOnly");
@@ -218,6 +232,12 @@ public class FragmentEntryVersionWrapper
 
 		if (type != null) {
 			setType(type);
+		}
+
+		String typeOptions = (String)attributes.get("typeOptions");
+
+		if (typeOptions != null) {
+			setTypeOptions(typeOptions);
 		}
 
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
@@ -317,6 +337,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this fragment entry version.
+	 *
+	 * @return the external reference code of this fragment entry version
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the fragment collection ID of this fragment entry version.
 	 *
 	 * @return the fragment collection ID of this fragment entry version
@@ -377,6 +407,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Returns the icon of this fragment entry version.
+	 *
+	 * @return the icon of this fragment entry version
+	 */
+	@Override
+	public String getIcon() {
+		return model.getIcon();
+	}
+
+	/**
 	 * Returns the js of this fragment entry version.
 	 *
 	 * @return the js of this fragment entry version
@@ -394,6 +434,16 @@ public class FragmentEntryVersionWrapper
 	@Override
 	public Date getLastPublishDate() {
 		return model.getLastPublishDate();
+	}
+
+	/**
+	 * Returns the marketplace of this fragment entry version.
+	 *
+	 * @return the marketplace of this fragment entry version
+	 */
+	@Override
+	public boolean getMarketplace() {
+		return model.getMarketplace();
 	}
 
 	/**
@@ -517,6 +567,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Returns the type options of this fragment entry version.
+	 *
+	 * @return the type options of this fragment entry version
+	 */
+	@Override
+	public String getTypeOptions() {
+		return model.getTypeOptions();
+	}
+
+	/**
 	 * Returns the user ID of this fragment entry version.
 	 *
 	 * @return the user ID of this fragment entry version
@@ -637,6 +697,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Returns <code>true</code> if this fragment entry version is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment entry version is marketplace; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isMarketplace() {
+		return model.isMarketplace();
+	}
+
+	/**
 	 * Returns <code>true</code> if this fragment entry version is pending.
 	 *
 	 * @return <code>true</code> if this fragment entry version is pending; <code>false</code> otherwise
@@ -727,6 +797,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this fragment entry version.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment entry version
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the fragment collection ID of this fragment entry version.
 	 *
 	 * @param fragmentCollectionId the fragment collection ID of this fragment entry version
@@ -787,6 +867,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Sets the icon of this fragment entry version.
+	 *
+	 * @param icon the icon of this fragment entry version
+	 */
+	@Override
+	public void setIcon(String icon) {
+		model.setIcon(icon);
+	}
+
+	/**
 	 * Sets the js of this fragment entry version.
 	 *
 	 * @param js the js of this fragment entry version
@@ -804,6 +894,16 @@ public class FragmentEntryVersionWrapper
 	@Override
 	public void setLastPublishDate(Date lastPublishDate) {
 		model.setLastPublishDate(lastPublishDate);
+	}
+
+	/**
+	 * Sets whether this fragment entry version is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment entry version
+	 */
+	@Override
+	public void setMarketplace(boolean marketplace) {
+		model.setMarketplace(marketplace);
 	}
 
 	/**
@@ -927,6 +1027,16 @@ public class FragmentEntryVersionWrapper
 	}
 
 	/**
+	 * Sets the type options of this fragment entry version.
+	 *
+	 * @param typeOptions the type options of this fragment entry version
+	 */
+	@Override
+	public void setTypeOptions(String typeOptions) {
+		model.setTypeOptions(typeOptions);
+	}
+
+	/**
 	 * Sets the user ID of this fragment entry version.
 	 *
 	 * @param userId the user ID of this fragment entry version
@@ -974,6 +1084,11 @@ public class FragmentEntryVersionWrapper
 	@Override
 	public void setVersion(int version) {
 		model.setVersion(version);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

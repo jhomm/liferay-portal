@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.test;
@@ -20,9 +11,11 @@ import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.upgrade.CTModelUpgradeProcess;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.sql.Connection;
@@ -56,31 +49,39 @@ public class UpgradeCTModelTest {
 	public static void setUpClass() throws Exception {
 		_db = DBManagerUtil.getDB();
 
-		_db.runSQL(
-			StringBundler.concat(
-				"create table UpgradeCTModelTest (mvccVersion LONG default 0 ",
-				"not null, uuid_ VARCHAR(75) null, upgradeCTModelId LONG not ",
-				"null primary key, companyId LONG, createDate DATE null, ",
-				"modifiedDate DATE null, name STRING null);"));
+		_companyLocalService.forEachCompany(
+			company -> {
+				_db.runSQL(
+					StringBundler.concat(
+						"create table UpgradeCTModelTest (mvccVersion LONG ",
+						"default 0 not null, uuid_ VARCHAR(75) null, ",
+						"upgradeCTModelId LONG not null primary key, ",
+						"companyId LONG, createDate DATE null, modifiedDate ",
+						"DATE null, name STRING null)"));
 
-		_db.runSQL(
-			"insert into UpgradeCTModelTest values (0, 'uuid', 1, 2, NULL, " +
-				"NULL, 'name');");
+				_db.runSQL(
+					"insert into UpgradeCTModelTest values (0, 'uuid', 1, 2, " +
+						"NULL, NULL, 'name')");
 
-		_db.runSQL(
-			StringBundler.concat(
-				"create table UpgradeCTModelMappingTest (companyId LONG not ",
-				"null, leftId LONG not null, rightId LONG not null, primary ",
-				"key (leftId, rightId));"));
+				_db.runSQL(
+					StringBundler.concat(
+						"create table UpgradeCTModelMappingTest (companyId ",
+						"LONG not null, leftId LONG not null, rightId LONG ",
+						"not null, primary key (leftId, rightId))"));
 
-		_db.runSQL("insert into UpgradeCTModelMappingTest values (1, 2, 3);");
+				_db.runSQL(
+					"insert into UpgradeCTModelMappingTest values (1, 2, 3)");
+			});
 	}
 
 	@AfterClass
 	public static void tearDownClass() throws Exception {
-		_db.runSQL("drop table UpgradeCTModelTest");
+		_companyLocalService.forEachCompany(
+			company -> {
+				_db.runSQL("drop table UpgradeCTModelTest");
 
-		_db.runSQL("drop table UpgradeCTModelMappingTest");
+				_db.runSQL("drop table UpgradeCTModelMappingTest");
+			});
 	}
 
 	@Test
@@ -203,6 +204,9 @@ public class UpgradeCTModelTest {
 				pkNames.toArray(new String[0]));
 		}
 	}
+
+	@Inject
+	private static CompanyLocalService _companyLocalService;
 
 	private static DB _db;
 

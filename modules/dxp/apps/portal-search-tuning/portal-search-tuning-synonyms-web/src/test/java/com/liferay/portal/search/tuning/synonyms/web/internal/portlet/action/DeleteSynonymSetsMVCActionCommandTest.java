@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.portlet.action;
@@ -22,14 +13,13 @@ import com.liferay.portal.search.tuning.synonyms.web.internal.index.SynonymSet;
 import com.liferay.portal.search.tuning.synonyms.web.internal.synchronizer.IndexToFilterSynchronizer;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -37,7 +27,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -53,8 +42,6 @@ public class DeleteSynonymSetsMVCActionCommandTest
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
-
 		_deleteSynonymSetsMVCActionCommand =
 			new DeleteSynonymSetsMVCActionCommand();
 
@@ -75,6 +62,32 @@ public class DeleteSynonymSetsMVCActionCommandTest
 		ReflectionTestUtil.setFieldValue(
 			_deleteSynonymSetsMVCActionCommand, "_synonymSetStorageAdapter",
 			synonymSetStorageAdapter);
+	}
+
+	@Test
+	public void testDeleteSynonymSets() throws Exception {
+		SynonymSet.SynonymSetBuilder synonymSetBuilder =
+			new SynonymSet.SynonymSetBuilder();
+
+		_deleteSynonymSetsMVCActionCommand.deleteSynonymSets(
+			Mockito.mock(SynonymSetIndexName.class),
+			Arrays.asList(
+				synonymSetBuilder.synonyms(
+					"car,atumobile"
+				).synonymSetDocumentId(
+					"id-1"
+				).build(),
+				synonymSetBuilder.synonyms(
+					"clever,smart"
+				).synonymSetDocumentId(
+					"id-2"
+				).build()));
+
+		Mockito.verify(
+			synonymSetStorageAdapter, Mockito.times(2)
+		).delete(
+			Mockito.any(), Mockito.anyString()
+		);
 	}
 
 	@Test
@@ -111,57 +124,24 @@ public class DeleteSynonymSetsMVCActionCommandTest
 
 		Assert.assertEquals(1, synonymSets.size(), 0.0);
 
-		Stream<SynonymSet> synonymSetsStream = synonymSets.stream();
-
-		synonymSetsStream.forEach(
+		synonymSets.forEach(
 			synonymSet -> {
 				Assert.assertEquals("car,automobile", synonymSet.getSynonyms());
 				Assert.assertEquals("id", synonymSet.getSynonymSetDocumentId());
 			});
 	}
 
-	@Test
-	public void testRemoveSynonymSets() throws Exception {
-		SynonymSet.SynonymSetBuilder synonymSetBuilder =
-			new SynonymSet.SynonymSetBuilder();
-
-		_deleteSynonymSetsMVCActionCommand.removeSynonymSets(
-			Mockito.mock(SynonymSetIndexName.class),
-			Arrays.asList(
-				synonymSetBuilder.synonyms(
-					"car,atumobile"
-				).synonymSetDocumentId(
-					"id-1"
-				).build(),
-				synonymSetBuilder.synonyms(
-					"clever,smart"
-				).synonymSetDocumentId(
-					"id-2"
-				).build()));
-
-		Mockito.verify(
-			synonymSetStorageAdapter, Mockito.times(2)
-		).delete(
-			Mockito.anyObject(), Mockito.anyString()
-		);
-	}
-
-	@Mock
-	private ActionRequest _actionRequest;
-
-	@Mock
-	private ActionResponse _actionResponse;
-
+	private final ActionRequest _actionRequest = Mockito.mock(
+		ActionRequest.class);
+	private final ActionResponse _actionResponse = Mockito.mock(
+		ActionResponse.class);
 	private DeleteSynonymSetsMVCActionCommand
 		_deleteSynonymSetsMVCActionCommand;
-
-	@Mock
-	private HttpServletRequest _httpServletRequest;
-
-	@Mock
-	private IndexNameBuilder _indexNameBuilder;
-
-	@Mock
-	private IndexToFilterSynchronizer _indexToFilterSynchronizer;
+	private final HttpServletRequest _httpServletRequest = Mockito.mock(
+		HttpServletRequest.class);
+	private final IndexNameBuilder _indexNameBuilder = Mockito.mock(
+		IndexNameBuilder.class);
+	private final IndexToFilterSynchronizer _indexToFilterSynchronizer =
+		Mockito.mock(IndexToFilterSynchronizer.class);
 
 }

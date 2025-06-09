@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.web.internal.display.context;
@@ -22,14 +13,17 @@ import com.liferay.commerce.inventory.model.CommerceInventoryWarehouseItem;
 import com.liferay.commerce.inventory.service.CommerceInventoryReplenishmentItemService;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemService;
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseService;
-import com.liferay.commerce.product.display.context.util.CPRequestHelper;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
+import com.liferay.commerce.util.CommerceQuantityFormatter;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -37,14 +31,16 @@ import com.liferay.portal.kernel.security.permission.resource.PortletResourcePer
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.RenderURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderResponse;
-import javax.portlet.RenderURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Luca Pellizzon
@@ -55,24 +51,28 @@ public class CommerceInventoryDisplayContext {
 	public CommerceInventoryDisplayContext(
 		CommerceInventoryReplenishmentItemService
 			commerceInventoryReplenishmentItemService,
-		CommerceInventoryWarehouseService commerceInventoryWarehouseService,
 		CommerceInventoryWarehouseItemService
 			commerceInventoryWarehouseItemService,
 		ModelResourcePermission<CommerceInventoryWarehouse>
 			commerceInventoryWarehouseModelResourcePermission,
+		CommerceInventoryWarehouseService commerceInventoryWarehouseService,
+		CommerceQuantityFormatter commerceQuantityFormatter,
 		HttpServletRequest httpServletRequest) {
 
 		_commerceInventoryReplenishmentItemService =
 			commerceInventoryReplenishmentItemService;
-		_commerceInventoryWarehouseService = commerceInventoryWarehouseService;
 		_commerceInventoryWarehouseItemService =
 			commerceInventoryWarehouseItemService;
 		_commerceInventoryWarehouseModelResourcePermission =
 			commerceInventoryWarehouseModelResourcePermission;
+		_commerceInventoryWarehouseService = commerceInventoryWarehouseService;
+		_commerceQuantityFormatter = commerceQuantityFormatter;
 
 		_cpRequestHelper = new CPRequestHelper(httpServletRequest);
 
 		_sku = ParamUtil.getString(httpServletRequest, "sku");
+		_unitOfMeasureKey = ParamUtil.getString(
+			httpServletRequest, "unitOfMeasureKey");
 	}
 
 	public String getAddQuantityActionURL() throws Exception {
@@ -82,6 +82,8 @@ public class CommerceInventoryDisplayContext {
 			"/commerce_inventory/edit_commerce_inventory_warehouse"
 		).setParameter(
 			"sku", _sku
+		).setParameter(
+			"unitOfMeasureKey", _unitOfMeasureKey
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
@@ -95,13 +97,13 @@ public class CommerceInventoryDisplayContext {
 			_cpRequestHelper.getRequest(),
 			"commerceInventoryReplenishmentItemId");
 
-		if (commerceInventoryReplenishmentItemId > 0) {
-			return _commerceInventoryReplenishmentItemService.
-				getCommerceInventoryReplenishmentItem(
-					commerceInventoryReplenishmentItemId);
+		if (commerceInventoryReplenishmentItemId <= 0) {
+			return null;
 		}
 
-		return null;
+		return _commerceInventoryReplenishmentItemService.
+			getCommerceInventoryReplenishmentItem(
+				commerceInventoryReplenishmentItemId);
 	}
 
 	public long getCommerceInventoryReplenishmentItemId()
@@ -124,13 +126,12 @@ public class CommerceInventoryDisplayContext {
 		long commerceInventoryWarehouseItemId = ParamUtil.getLong(
 			_cpRequestHelper.getRequest(), "commerceInventoryWarehouseItemId");
 
-		if (commerceInventoryWarehouseItemId > 0) {
-			return _commerceInventoryWarehouseItemService.
-				getCommerceInventoryWarehouseItem(
-					commerceInventoryWarehouseItemId);
+		if (commerceInventoryWarehouseItemId <= 0) {
+			return null;
 		}
 
-		return null;
+		return _commerceInventoryWarehouseItemService.
+			getCommerceInventoryWarehouseItem(commerceInventoryWarehouseItemId);
 	}
 
 	public long getCommerceInventoryWarehouseItemId() throws PortalException {
@@ -171,30 +172,44 @@ public class CommerceInventoryDisplayContext {
 			"/commerce_inventory/edit_commerce_inventory_replenishment_item"
 		).setParameter(
 			"sku", _sku
+		).setParameter(
+			"unitOfMeasureKey", _unitOfMeasureKey
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
 	}
 
-	public List<HeaderActionModel> getHeaderActionModels()
-		throws PrincipalException {
+	public String getFormattedQuantity(BigDecimal quantity)
+		throws PortalException {
 
+		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
+			getCommerceInventoryWarehouseItem();
+
+		if (commerceInventoryWarehouseItem == null) {
+			return StringPool.BLANK;
+		}
+
+		BigDecimal formattedQuantity = _commerceQuantityFormatter.format(
+			_cpRequestHelper.getCompanyId(), quantity,
+			commerceInventoryWarehouseItem.getSku(),
+			commerceInventoryWarehouseItem.getUnitOfMeasureKey());
+
+		return formattedQuantity.toString();
+	}
+
+	public List<HeaderActionModel> getHeaderActionModels() {
 		List<HeaderActionModel> headerActionModels = new ArrayList<>();
 
 		if (_sku == null) {
 			return headerActionModels;
 		}
 
-		if (_hasPermission()) {
-			RenderResponse renderResponse =
-				_cpRequestHelper.getRenderResponse();
+		RenderResponse renderResponse = _cpRequestHelper.getRenderResponse();
 
-			RenderURL cancelURL = renderResponse.createRenderURL();
+		RenderURL cancelURL = renderResponse.createRenderURL();
 
-			headerActionModels.add(
-				new HeaderActionModel(
-					null, cancelURL.toString(), null, "cancel"));
-		}
+		headerActionModels.add(
+			new HeaderActionModel(null, cancelURL.toString(), null, "cancel"));
 
 		return headerActionModels;
 	}
@@ -237,6 +252,11 @@ public class CommerceInventoryDisplayContext {
 		return portletURL;
 	}
 
+	public String getQuantity(BigDecimal quantity) throws Exception {
+		return _commerceQuantityFormatter.format(
+			quantity, _cpRequestHelper.getLocale());
+	}
+
 	public CreationMenu getReplenishmentCreationMenu() throws Exception {
 		CreationMenu creationMenu = new CreationMenu();
 
@@ -258,6 +278,20 @@ public class CommerceInventoryDisplayContext {
 		return _sku;
 	}
 
+	public String getTitle() {
+		StringBundler sb = new StringBundler(getSku());
+
+		if (Validator.isNotNull(getUnitOfMeasureKey())) {
+			sb.append(
+				StringPool.SPACE
+			).append(
+				getUnitOfMeasureKey()
+			);
+		}
+
+		return sb.toString();
+	}
+
 	public String getTransferQuantitiesActionURL() throws Exception {
 		return PortletURLBuilder.createRenderURL(
 			_cpRequestHelper.getLiferayPortletResponse()
@@ -265,6 +299,8 @@ public class CommerceInventoryDisplayContext {
 			"/commerce_inventory/transfer_quantities"
 		).setParameter(
 			"sku", _sku
+		).setParameter(
+			"unitOfMeasureKey", _unitOfMeasureKey
 		).setWindowState(
 			LiferayWindowState.POP_UP
 		).buildString();
@@ -282,6 +318,10 @@ public class CommerceInventoryDisplayContext {
 		).setParameter(
 			"sku", _sku
 		).buildPortletURL();
+	}
+
+	public String getUnitOfMeasureKey() {
+		return _unitOfMeasureKey;
 	}
 
 	public CreationMenu getWarehousesCreationMenu() throws Exception {
@@ -311,14 +351,21 @@ public class CommerceInventoryDisplayContext {
 		return creationMenu;
 	}
 
-	private boolean _hasPermission() throws PrincipalException {
+	private boolean _hasPermission() {
 		PortletResourcePermission portletResourcePermission =
 			_commerceInventoryWarehouseModelResourcePermission.
 				getPortletResourcePermission();
 
+		if (portletResourcePermission.contains(
+				PermissionThreadLocal.getPermissionChecker(), null,
+				CommerceInventoryActionKeys.MANAGE_INVENTORY)) {
+
+			return true;
+		}
+
 		return portletResourcePermission.contains(
 			PermissionThreadLocal.getPermissionChecker(), null,
-			CommerceInventoryActionKeys.MANAGE_INVENTORY);
+			CommerceInventoryActionKeys.ADD_WAREHOUSE);
 	}
 
 	private final CommerceInventoryReplenishmentItemService
@@ -329,7 +376,9 @@ public class CommerceInventoryDisplayContext {
 		_commerceInventoryWarehouseModelResourcePermission;
 	private final CommerceInventoryWarehouseService
 		_commerceInventoryWarehouseService;
+	private final CommerceQuantityFormatter _commerceQuantityFormatter;
 	private final CPRequestHelper _cpRequestHelper;
 	private String _sku;
+	private final String _unitOfMeasureKey;
 
 }

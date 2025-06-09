@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.service.impl;
@@ -19,17 +10,22 @@ import com.liferay.calendar.model.CalendarNotificationTemplate;
 import com.liferay.calendar.notification.NotificationTemplateType;
 import com.liferay.calendar.notification.NotificationType;
 import com.liferay.calendar.service.base.CalendarNotificationTemplateLocalServiceBaseImpl;
+import com.liferay.calendar.service.persistence.CalendarPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 
 import java.util.Date;
 import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Adam Brandizzi
@@ -50,8 +46,8 @@ public class CalendarNotificationTemplateLocalServiceImpl
 			String body, ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
-		Calendar calendar = calendarPersistence.findByPrimaryKey(calendarId);
+		User user = _userLocalService.getUser(userId);
+		Calendar calendar = _calendarPersistence.findByPrimaryKey(calendarId);
 		Date date = new Date();
 
 		long calendarNotificationTemplateId = counterLocalService.increment();
@@ -79,21 +75,40 @@ public class CalendarNotificationTemplateLocalServiceImpl
 		calendarNotificationTemplate.setSubject(subject);
 		calendarNotificationTemplate.setBody(body);
 
-		return calendarNotificationTemplatePersistence.update(
-			calendarNotificationTemplate);
+		calendarNotificationTemplate =
+			calendarNotificationTemplatePersistence.update(
+				calendarNotificationTemplate);
+
+		_resourceLocalService.addResources(
+			calendarNotificationTemplate.getCompanyId(), 0,
+			calendarNotificationTemplate.getUserId(),
+			CalendarNotificationTemplate.class.getName(),
+			calendarNotificationTemplate.getCalendarNotificationTemplateId(),
+			false, false, false);
+
+		return calendarNotificationTemplate;
 	}
 
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CalendarNotificationTemplate deleteCalendarNotificationTemplate(
-		CalendarNotificationTemplate calendarNotificationTemplate) {
+			CalendarNotificationTemplate calendarNotificationTemplate)
+		throws PortalException {
 
-		return calendarNotificationTemplatePersistence.remove(
-			calendarNotificationTemplate);
+		calendarNotificationTemplate =
+			calendarNotificationTemplatePersistence.remove(
+				calendarNotificationTemplate);
+
+		_resourceLocalService.deleteResource(
+			calendarNotificationTemplate, ResourceConstants.SCOPE_INDIVIDUAL);
+
+		return calendarNotificationTemplate;
 	}
 
 	@Override
-	public void deleteCalendarNotificationTemplates(long calendarId) {
+	public void deleteCalendarNotificationTemplates(long calendarId)
+		throws PortalException {
+
 		List<CalendarNotificationTemplate> calendarNotificationTemplates =
 			calendarNotificationTemplatePersistence.findByCalendarId(
 				calendarId);
@@ -138,5 +153,14 @@ public class CalendarNotificationTemplateLocalServiceImpl
 		return calendarNotificationTemplatePersistence.update(
 			calendarNotificationTemplate);
 	}
+
+	@Reference
+	private CalendarPersistence _calendarPersistence;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

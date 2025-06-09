@@ -1,4 +1,4 @@
-@component-name = "portal-workflow"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -15,7 +15,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -23,9 +23,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -37,7 +37,7 @@ definition {
 		}
 	}
 
-	@priority = "5"
+	@priority = 5
 	test WithdrawTaskAssignedToMeByActions {
 		property portal.acceptance = "true";
 
@@ -47,7 +47,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -77,7 +77,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -91,7 +91,7 @@ definition {
 			webContentTitle = "WC WebContent Title");
 	}
 
-	@priority = "3"
+	@priority = 3
 	test WithdrawTaskAssignedToMeByDetails {
 		var webContentContent = "WC WebContent Content";
 		var webContentTitle = "WC WebContent Title";
@@ -99,7 +99,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -132,7 +132,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -146,7 +146,7 @@ definition {
 			webContentTitle = "WC WebContent Title");
 	}
 
-	@priority = "4"
+	@priority = 4
 	test WithdrawTaskAssignedToMyRolesByActions {
 		var webContentContent = "WC WebContent Content";
 		var webContentTitle = "WC WebContent Title";
@@ -154,7 +154,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -177,7 +177,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -191,7 +191,7 @@ definition {
 			webContentTitle = "WC WebContent Title");
 	}
 
-	@priority = "3"
+	@priority = 3
 	test WithdrawTaskAssignedToMyRolesByDetails {
 		var webContentContent = "WC WebContent Content";
 		var webContentTitle = "WC WebContent Title";
@@ -199,7 +199,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -224,7 +224,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -238,7 +238,7 @@ definition {
 			webContentTitle = "WC WebContent Title");
 	}
 
-	@priority = "4"
+	@priority = 4
 	test WithdrawTaskCompletedNoByActions {
 		var webContentContent = "WC WebContent Content";
 		var webContentTitle = "WC WebContent Title";
@@ -246,7 +246,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 
@@ -281,7 +281,7 @@ definition {
 			workflowTask = "Approved");
 	}
 
-	@priority = "3"
+	@priority = 3
 	test WithdrawTaskCompletedNoByDetails {
 		var webContentContent = "WC WebContent Content";
 		var webContentTitle = "WC WebContent Title";
@@ -289,7 +289,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Web Content");
 

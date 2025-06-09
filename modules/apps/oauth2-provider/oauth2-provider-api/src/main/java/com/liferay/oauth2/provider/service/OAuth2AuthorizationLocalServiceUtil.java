@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -100,32 +92,32 @@ public class OAuth2AuthorizationLocalServiceUtil {
 		return getService().addOAuth2Authorization(oAuth2Authorization);
 	}
 
-	public static void addOAuth2ScopeGrantOAuth2Authorization(
+	public static boolean addOAuth2ScopeGrantOAuth2Authorization(
 		long oAuth2ScopeGrantId, long oAuth2AuthorizationId) {
 
-		getService().addOAuth2ScopeGrantOAuth2Authorization(
+		return getService().addOAuth2ScopeGrantOAuth2Authorization(
 			oAuth2ScopeGrantId, oAuth2AuthorizationId);
 	}
 
-	public static void addOAuth2ScopeGrantOAuth2Authorization(
+	public static boolean addOAuth2ScopeGrantOAuth2Authorization(
 		long oAuth2ScopeGrantId, OAuth2Authorization oAuth2Authorization) {
 
-		getService().addOAuth2ScopeGrantOAuth2Authorization(
+		return getService().addOAuth2ScopeGrantOAuth2Authorization(
 			oAuth2ScopeGrantId, oAuth2Authorization);
 	}
 
-	public static void addOAuth2ScopeGrantOAuth2Authorizations(
+	public static boolean addOAuth2ScopeGrantOAuth2Authorizations(
 		long oAuth2ScopeGrantId,
 		List<OAuth2Authorization> oAuth2Authorizations) {
 
-		getService().addOAuth2ScopeGrantOAuth2Authorizations(
+		return getService().addOAuth2ScopeGrantOAuth2Authorizations(
 			oAuth2ScopeGrantId, oAuth2Authorizations);
 	}
 
-	public static void addOAuth2ScopeGrantOAuth2Authorizations(
+	public static boolean addOAuth2ScopeGrantOAuth2Authorizations(
 		long oAuth2ScopeGrantId, long[] oAuth2AuthorizationIds) {
 
-		getService().addOAuth2ScopeGrantOAuth2Authorizations(
+		return getService().addOAuth2ScopeGrantOAuth2Authorizations(
 			oAuth2ScopeGrantId, oAuth2AuthorizationIds);
 	}
 
@@ -158,7 +150,9 @@ public class OAuth2AuthorizationLocalServiceUtil {
 		return getService().createPersistedModel(primaryKeyObj);
 	}
 
-	public static void deleteExpiredOAuth2Authorizations() {
+	public static void deleteExpiredOAuth2Authorizations()
+		throws PortalException {
+
 		getService().deleteExpiredOAuth2Authorizations();
 	}
 
@@ -562,9 +556,12 @@ public class OAuth2AuthorizationLocalServiceUtil {
 	}
 
 	public static OAuth2AuthorizationLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile OAuth2AuthorizationLocalService _service;
+	private static final Snapshot<OAuth2AuthorizationLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			OAuth2AuthorizationLocalServiceUtil.class,
+			OAuth2AuthorizationLocalService.class);
 
 }

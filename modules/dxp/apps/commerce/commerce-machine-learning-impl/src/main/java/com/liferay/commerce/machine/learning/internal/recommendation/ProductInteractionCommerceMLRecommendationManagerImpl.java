@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.internal.recommendation;
 
 import com.liferay.commerce.machine.learning.internal.recommendation.constants.CommerceMLRecommendationField;
-import com.liferay.commerce.machine.learning.internal.search.api.CommerceMLIndexer;
+import com.liferay.commerce.machine.learning.internal.search.constants.IndexNamePatterns;
 import com.liferay.commerce.machine.learning.recommendation.ProductInteractionCommerceMLRecommendation;
 import com.liferay.commerce.machine.learning.recommendation.ProductInteractionCommerceMLRecommendationManager;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.SortFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
+import com.liferay.portal.search.index.IndexNameBuilder;
 
 import java.util.List;
 
@@ -34,10 +26,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Riccardo Ferrari
  */
-@Component(
-	enabled = false, immediate = true,
-	service = ProductInteractionCommerceMLRecommendationManager.class
-)
+@Component(service = ProductInteractionCommerceMLRecommendationManager.class)
 public class ProductInteractionCommerceMLRecommendationManagerImpl
 	extends BaseCommerceMLRecommendationServiceImpl
 		<ProductInteractionCommerceMLRecommendation>
@@ -52,9 +41,8 @@ public class ProductInteractionCommerceMLRecommendationManagerImpl
 
 		return addCommerceMLRecommendation(
 			productInteractionCommerceMLRecommendation,
-			_commerceMLIndexer.getIndexName(
-				productInteractionCommerceMLRecommendation.getCompanyId()),
-			_commerceMLIndexer.getDocumentType());
+			_getIndexName(
+				productInteractionCommerceMLRecommendation.getCompanyId()));
 	}
 
 	@Override
@@ -69,8 +57,7 @@ public class ProductInteractionCommerceMLRecommendationManagerImpl
 		throws PortalException {
 
 		SearchSearchRequest searchSearchRequest = getSearchSearchRequest(
-			_commerceMLIndexer.getIndexName(companyId), companyId,
-			cpDefinition);
+			_getIndexName(companyId), companyId, cpDefinition);
 
 		Sort sort = SortFactoryUtil.create(
 			CommerceMLRecommendationField.RANK, Sort.INT_TYPE, false);
@@ -117,9 +104,13 @@ public class ProductInteractionCommerceMLRecommendationManagerImpl
 		return productInteractionCommerceMLRecommendationModel;
 	}
 
-	@Reference(
-		target = "(component.name=com.liferay.commerce.machine.learning.internal.recommendation.search.index.ProductInteractionCommerceMLRecommendationIndexer)"
-	)
-	private CommerceMLIndexer _commerceMLIndexer;
+	private String _getIndexName(long companyId) {
+		return IndexNamePatterns.getIndexName(
+			_indexNameBuilder,
+			IndexNamePatterns.PRODUCT_INTERACTION_RECOMMENDATION, companyId);
+	}
+
+	@Reference
+	private IndexNameBuilder _indexNameBuilder;
 
 }

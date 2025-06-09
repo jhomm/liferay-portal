@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -22,11 +13,11 @@ describe('UnsafeHTML', () => {
 	afterEach(cleanup);
 
 	it('renders the given HTML markup', () => {
-		const {getByRole} = render(
+		const {container} = render(
 			<UnsafeHTML markup="<h1>Hello <strong>Gürjen</strong></h1>" />
 		);
 
-		expect(getByRole('heading')).toBeInTheDocument();
+		expect(container.querySelector('h1')).toBeInTheDocument();
 	});
 
 	it('allows adding any id', () => {
@@ -46,11 +37,11 @@ describe('UnsafeHTML', () => {
 	});
 
 	it('allows using a custom HTML tag as container', () => {
-		const {getByRole} = render(
+		const {container} = render(
 			<UnsafeHTML TagName="h1" markup="The Title" />
 		);
 
-		expect(getByRole('heading')).toBeInTheDocument();
+		expect(container.querySelector('h1')).toBeInTheDocument();
 	});
 
 	it('calls onRender prop whenever the content is updated', () => {

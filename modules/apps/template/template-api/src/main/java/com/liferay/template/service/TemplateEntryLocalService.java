@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.service;
@@ -71,9 +62,9 @@ public interface TemplateEntryLocalService
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.template.service.impl.TemplateEntryLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the template entry local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link TemplateEntryLocalServiceUtil} if injection and service tracking are not available.
 	 */
 	public TemplateEntry addTemplateEntry(
-			long userId, long groupId, long ddmTemplateId,
-			String infoItemClassName, String infoItemFormVariationKey,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long ddmTemplateId, String infoItemClassName,
+			String infoItemFormVariationKey, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -111,6 +102,8 @@ public interface TemplateEntryLocalService
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException;
 
+	public void deleteTemplateEntries(long groupId);
+
 	/**
 	 * Deletes the template entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -125,6 +118,9 @@ public interface TemplateEntryLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public TemplateEntry deleteTemplateEntry(long templateEntryId)
 		throws PortalException;
+
+	public TemplateEntry deleteTemplateEntry(
+		String externalReferenceCode, long groupId);
 
 	/**
 	 * Deletes the template entry from the database. Also notifies the appropriate model listeners.
@@ -217,6 +213,10 @@ public interface TemplateEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public TemplateEntry fetchTemplateEntryByDDMTemplateId(long ddmTemplateId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public TemplateEntry fetchTemplateEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
 	/**
 	 * Returns the template entry matching the UUID and group.
 	 *
@@ -280,6 +280,12 @@ public interface TemplateEntryLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<TemplateEntry> getTemplateEntries(long[] groupIds);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<TemplateEntry> getTemplateEntries(
+		long[] groupIds, String infoItemClassName,
+		String infoItemFormVariationKey, int start, int end,
+		OrderByComparator<TemplateEntry> orderByComparator);
+
 	/**
 	 * Returns all the template entries matching the UUID and company.
 	 *
@@ -328,6 +334,11 @@ public interface TemplateEntryLocalService
 	public TemplateEntry getTemplateEntry(long templateEntryId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public TemplateEntry getTemplateEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Returns the template entry matching the UUID and group.
 	 *
@@ -342,6 +353,10 @@ public interface TemplateEntryLocalService
 		throws PortalException;
 
 	public TemplateEntry updateTemplateEntry(long templateEntryId)
+		throws PortalException;
+
+	public TemplateEntry updateTemplateEntry(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**

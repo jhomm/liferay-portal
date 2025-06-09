@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CommerceChannel;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -31,6 +26,8 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -54,13 +51,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CommerceChannelLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CommerceChannelLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CommerceChannel>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -83,8 +82,17 @@ public interface CommerceChannelLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceChannel addCommerceChannel(
-			String externalReferenceCode, long siteGroupId, String name,
-			String type, UnicodeProperties typeSettingsUnicodeProperties,
+			String externalReferenceCode, long accountEntryId, long siteGroupId,
+			String name, String type,
+			UnicodeProperties typeSettingsUnicodeProperties,
+			String commerceCurrencyCode, ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CommerceChannel addOrUpdateCommerceChannel(
+			long userId, String externalReferenceCode, long accountEntryId,
+			long siteGroupId, String name, String type,
+			UnicodeProperties typeSettingsUnicodeProperties,
 			String commerceCurrencyCode, ServiceContext serviceContext)
 		throws PortalException;
 
@@ -217,33 +225,28 @@ public interface CommerceChannelLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceChannel fetchByExternalReferenceCode(
+	public CommerceChannel fetchCommerceChannel(long commerceChannelId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceChannel fetchCommerceChannelByExternalReferenceCode(
 		String externalReferenceCode, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceChannel fetchCommerceChannel(long commerceChannelId);
-
-	/**
-	 * Returns the commerce channel with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce channel's external reference code
-	 * @return the matching commerce channel, or <code>null</code> if a matching commerce channel could not be found
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceChannel fetchCommerceChannelByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceChannelByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceChannel fetchCommerceChannelByReferenceCode(
-		long companyId, String externalReferenceCode);
+	public CommerceChannel fetchCommerceChannelByGroupClassPK(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceChannel fetchCommerceChannelBySiteGroupId(long siteGroupId);
+
+	/**
+	 * Returns the commerce channel with the matching UUID and company.
+	 *
+	 * @param uuid the commerce channel's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce channel, or <code>null</code> if a matching commerce channel could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceChannel fetchCommerceChannelByUuidAndCompanyId(
+		String uuid, long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Group fetchCommerceChannelGroup(long commerceChannelId)
@@ -263,17 +266,9 @@ public interface CommerceChannelLocalService
 	public CommerceChannel getCommerceChannel(long commerceChannelId)
 		throws PortalException;
 
-	/**
-	 * Returns the commerce channel with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce channel's external reference code
-	 * @return the matching commerce channel
-	 * @throws PortalException if a matching commerce channel could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceChannel getCommerceChannelByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -282,6 +277,19 @@ public interface CommerceChannelLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceChannel getCommerceChannelByOrderGroupId(long orderGroupId)
+		throws PortalException;
+
+	/**
+	 * Returns the commerce channel with the matching UUID and company.
+	 *
+	 * @param uuid the commerce channel's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce channel
+	 * @throws PortalException if a matching commerce channel could not be found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceChannel getCommerceChannelByUuidAndCompanyId(
+			String uuid, long companyId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -309,6 +317,15 @@ public interface CommerceChannelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceChannel> getCommerceChannels(long companyId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceChannel> getCommerceChannels(
+			long companyId, String keywords, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceChannel> getCommerceChannelsByAccountEntryId(
+		long accountEntryId);
+
 	/**
 	 * Returns the number of commerce channels.
 	 *
@@ -316,6 +333,19 @@ public interface CommerceChannelLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCommerceChannelsCount();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCommerceChannelsCount(long companyId, String keywords)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceChannel> getEligibleCommerceChannels(
+			long accountEntryId, String name, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -363,14 +393,8 @@ public interface CommerceChannelLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceChannel updateCommerceChannel(
-			long commerceChannelId, long siteGroupId, String name, String type,
-			UnicodeProperties typeSettingsUnicodeProperties,
-			String commerceCurrencyCode)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public CommerceChannel updateCommerceChannel(
-			long commerceChannelId, long siteGroupId, String name, String type,
+			long commerceChannelId, long accountEntryId, long siteGroupId,
+			String name, String type,
 			UnicodeProperties typeSettingsUnicodeProperties,
 			String commerceCurrencyCode, String priceDisplayType,
 			boolean discountsTargetNetPrice)
@@ -380,5 +404,20 @@ public interface CommerceChannelLocalService
 	public CommerceChannel updateCommerceChannelExternalReferenceCode(
 			String externalReferenceCode, long commerceChannelId)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CommerceChannel> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CommerceChannel> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CommerceChannel>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

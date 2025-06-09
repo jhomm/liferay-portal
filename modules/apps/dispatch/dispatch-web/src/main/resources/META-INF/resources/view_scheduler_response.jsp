@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -34,13 +25,8 @@ SchedulerResponseDisplayContext schedulerResponseDisplayContext = (SchedulerResp
 				className="com.liferay.portal.kernel.scheduler.messaging.SchedulerResponse"
 				modelVar="schedulerResponse"
 			>
-				<liferay-ui:search-container-column-jsp
-					cssClass="entry-action-column"
-					path="/scheduler_response_action.jsp"
-				/>
-
 				<liferay-ui:search-container-column-text
-					cssClass="important table-cell-expand"
+					cssClass="font-weight-bold important table-cell-expand"
 					name="name"
 				>
 					<liferay-ui:message key="<%= schedulerResponseDisplayContext.getSimpleName(schedulerResponse.getJobName()) %>" />
@@ -54,12 +40,13 @@ SchedulerResponseDisplayContext schedulerResponseDisplayContext = (SchedulerResp
 				/>
 
 				<liferay-ui:search-container-column-text
+					cssClass="table-cell-ws-nowrap"
 					name="next-fire-date"
 					value="<%= schedulerResponseDisplayContext.getNextFireDateString(schedulerResponse) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
-					cssClass="important table-cell-ws-nowrap"
+					cssClass="font-weight-bold important table-cell-ws-nowrap"
 					name="status"
 				>
 
@@ -67,14 +54,19 @@ SchedulerResponseDisplayContext schedulerResponseDisplayContext = (SchedulerResp
 					TriggerState triggerState = schedulerResponseDisplayContext.getTriggerState(schedulerResponse);
 					%>
 
-					<h6 class="<%= (triggerState == TriggerState.NORMAL) ? "text-success" : "text-info" %>">
+					<span class="<%= (triggerState == TriggerState.NORMAL) ? "label label-success" : "label label-info" %>">
 						<liferay-ui:message key="<%= triggerState.toString() %>" />
-					</h6>
+					</span>
 				</liferay-ui:search-container-column-text>
 
 				<liferay-ui:search-container-column-jsp
 					cssClass="table-cell-ws-nowrap"
 					path="/scheduler_response_buttons.jsp"
+				/>
+
+				<liferay-ui:search-container-column-jsp
+					cssClass="entry-action-column"
+					path="/scheduler_response_action.jsp"
 				/>
 			</liferay-ui:search-container-row>
 

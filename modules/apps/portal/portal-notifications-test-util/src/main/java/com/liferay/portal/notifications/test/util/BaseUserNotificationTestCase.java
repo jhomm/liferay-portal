@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.notifications.test.util;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.BaseModel;
@@ -48,7 +40,7 @@ public abstract class BaseUserNotificationTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		user = UserTestUtil.addOmniAdminUser();
+		user = UserTestUtil.addOmniadminUser();
 
 		group = GroupTestUtil.addGroup();
 
@@ -56,6 +48,8 @@ public abstract class BaseUserNotificationTestCase {
 
 		_userNotificationDeliveries = _getUserNotificationDeliveries(
 			user.getUserId());
+
+		MailServiceTestUtil.clearMessages();
 	}
 
 	@After
@@ -297,22 +291,11 @@ public abstract class BaseUserNotificationTestCase {
 	protected List<JSONObject> getUserNotificationEventsJSONObjects(long userId)
 		throws Exception {
 
-		List<UserNotificationEvent> userNotificationEvents =
+		return TransformUtil.transform(
 			_userNotificationEventLocalService.getUserNotificationEvents(
-				userId);
-
-		List<JSONObject> userNotificationEventJSONObjects = new ArrayList<>(
-			userNotificationEvents.size());
-
-		for (UserNotificationEvent userNotificationEvent :
-				userNotificationEvents) {
-
-			userNotificationEventJSONObjects.add(
-				_jsonFactory.createJSONObject(
-					userNotificationEvent.getPayload()));
-		}
-
-		return userNotificationEventJSONObjects;
+				userId),
+			userNotificationEvent -> _jsonFactory.createJSONObject(
+				userNotificationEvent.getPayload()));
 	}
 
 	protected boolean isValidUserNotificationEventObject(

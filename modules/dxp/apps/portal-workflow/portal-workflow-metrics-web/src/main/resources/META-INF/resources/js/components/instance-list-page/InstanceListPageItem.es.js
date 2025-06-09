@@ -1,13 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+/* eslint-disable @liferay/empty-line-between-elements */
 
 import {ClayCheckbox} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
@@ -15,7 +11,8 @@ import ClayLayout from '@clayui/layout';
 import ClayModal, {useModal} from '@clayui/modal';
 import ClayPopover from '@clayui/popover';
 import ClayTable from '@clayui/table';
-import WorkflowInstanceTracker from '@liferay/portal-workflow-instance-tracker-web/js/components/WorkflowInstanceTracker';
+import {WorkflowInstanceTracker} from '@liferay/portal-workflow-instance-tracker-web';
+import {sub} from 'frontend-js-web';
 import React, {useContext, useState} from 'react';
 
 import useDebounceCallback from '../../hooks/useDebounceCallback.es';
@@ -26,8 +23,9 @@ import {capitalize, getSLAStatusIconInfo} from '../../shared/util/util.es';
 import {AppContext} from '../AppContext.es';
 import {InstanceListContext} from './InstanceListPageProvider.es';
 import {ModalContext} from './modal/ModalProvider.es';
-function Item({totalCount, ...instance}) {
-	const {userId} = useContext(AppContext);
+
+function Item({isAdmin, totalCount, ...instance}) {
+	const {baseResourceURL, userId} = useContext(AppContext);
 	const {
 		selectedItems = [],
 		setInstanceId,
@@ -49,9 +47,8 @@ function Item({totalCount, ...instance}) {
 		taskNames = [Liferay.Language.get('not-available')],
 	} = instance;
 
-	const [showInstanceTrackerModal, setShowInstanceTrackerModal] = useState(
-		false
-	);
+	const [showInstanceTrackerModal, setShowInstanceTrackerModal] =
+		useState(false);
 
 	const {observer} = useModal({
 		onClose: () => {
@@ -65,7 +62,11 @@ function Item({totalCount, ...instance}) {
 	const assigneeNames = assignees.map((user) => user.name).join(', ');
 	const {reviewer} = assignees.find(({id}) => id === -1) || {};
 
-	const disableCheckbox = (!assignedToUser && !reviewer) || completed;
+	let disableCheckbox = completed;
+
+	if (!isAdmin) {
+		disableCheckbox = !assignedToUser && !reviewer;
+	}
 
 	const formattedAssignees = !completed
 		? assigneeNames
@@ -91,6 +92,11 @@ function Item({totalCount, ...instance}) {
 			<ClayTable.Cell>
 				<div className="table-first-element-group">
 					<ClayCheckbox
+						aria-label={sub(
+							Liferay.Language.get('select-x-x'),
+							assetType,
+							assetTitle
+						)}
 						checked={checked}
 						disabled={disableCheckbox}
 						onChange={handleCheck}
@@ -161,9 +167,9 @@ function Item({totalCount, ...instance}) {
 			</ClayTable.Cell>
 
 			<ClayTable.Cell>
-				{moment
-					.utc(dateCreated)
-					.format(Liferay.Language.get('mmm-dd-yyyy-lt'))}
+				{moment(dateCreated).format(
+					Liferay.Language.get('mmm-dd-yyyy-lt')
+				)}
 			</ClayTable.Cell>
 
 			<ClayTable.Cell style={{paddingRight: '0rem'}}>
@@ -183,7 +189,10 @@ function Item({totalCount, ...instance}) {
 					</ClayModal.Header>
 
 					<ClayModal.Body>
-						<WorkflowInstanceTracker workflowInstanceId={id} />
+						<WorkflowInstanceTracker
+							baseResourceURL={baseResourceURL}
+							workflowInstanceId={id}
+						/>
 					</ClayModal.Body>
 				</ClayModal>
 			)}
@@ -193,7 +202,6 @@ function Item({totalCount, ...instance}) {
 
 function QuickActionMenu({disabled, instance, setShowInstanceTrackerModal}) {
 	const {openModal, setSingleTransition} = useContext(ModalContext);
-	const {workflowInstanceTrackerEnabled} = useContext(AppContext);
 	const {setSelectedItems} = useContext(InstanceListContext);
 	const {transitions = [], taskNames = []} = instance;
 
@@ -209,26 +217,20 @@ function QuickActionMenu({disabled, instance, setShowInstanceTrackerModal}) {
 		onClick: () => handleClick('bulkUpdateDueDate', 'updateDueDate'),
 	};
 
-	let kebabItems = [
+	const kebabItems = [
 		{
 			icon: 'change',
 			label: Liferay.Language.get('reassign-task'),
 			onClick: () => handleClick('bulkReassign', 'singleReassign'),
 		},
 		updateDueDateItem,
+		{
+			label: Liferay.Language.get('track-workflow'),
+			onClick: setShowInstanceTrackerModal,
+		},
 	];
 
-	if (workflowInstanceTrackerEnabled) {
-		kebabItems = [
-			...kebabItems,
-			{
-				label: Liferay.Language.get('track-workflow'),
-				onClick: setShowInstanceTrackerModal,
-			},
-		];
-	}
-
-	if (transitions.length > 0) {
+	if (transitions.length) {
 		const transitionItems = [
 			{
 				type: 'divider',
@@ -254,7 +256,7 @@ function QuickActionMenu({disabled, instance, setShowInstanceTrackerModal}) {
 
 		kebabItems.push(...transitionItems);
 	}
-	else if (transitions.length === 0 && taskNames.length > 1) {
+	else if (!transitions.length && taskNames.length > 1) {
 		kebabItems.splice(
 			1,
 			1,
@@ -291,7 +293,8 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 
 		let format = '';
 
-		const sameYear = dateOverdue.split('-')[0] == new Date().getFullYear();
+		const sameYear =
+			dateOverdue.split('-')[0] === new Date().getFullYear().toString();
 
 		if (sameYear) {
 			format = fullDatetime
@@ -304,7 +307,7 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 				: Liferay.Language.get('mmm-dd-yyyy');
 		}
 
-		return moment.utc(dateOverdue).format(format);
+		return moment(dateOverdue).format(format);
 	};
 
 	const instanceSlaResults = slaResults.slice(0, 2).map((slaResult) => {
@@ -351,6 +354,7 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 					header={Liferay.Language.get('due-date')}
 					onMouseEnter={() => setPopover(true)}
 					onMouseLeave={() => setPopover(false)}
+					onShowChange={setPopover}
 					show={popover}
 					trigger={
 						<div
@@ -362,6 +366,7 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 							onMouseOver={() => showPopover()}
 						>
 							<span className="due-date-badge"></span>
+
 							{slaResultDateOverdue}
 						</div>
 					}
@@ -369,9 +374,9 @@ function DueDateSLAResults({slaResults, slaStatusIconInfo}) {
 					{instanceSlaResults.map((slaResult) => (
 						<div key={`critical-sla-${slaResult.id}`}>
 							<div>{slaResult.name}:</div>
+
 							<div className={slaResult.textClass}>
-								{slaResult.datetimeOverdueFormatted} (
-								{slaResult.durationText} {slaResult.onTimeText})
+								{`${slaResult.datetimeOverdueFormatted} (${slaResult.durationText} ${slaResult.onTimeText})`}
 							</div>
 						</div>
 					))}

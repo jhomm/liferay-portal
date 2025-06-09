@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core;
 
+import com.liferay.poshi.core.selenium.LiferaySeleniumMethod;
 import com.liferay.poshi.core.util.FileUtil;
+import com.liferay.poshi.core.util.PropsUtil;
 
 import java.io.File;
 
@@ -45,7 +38,11 @@ public class PoshiContextTest extends TestCase {
 		String poshiFileDir =
 			"src/test/resources/com/liferay/poshi/core/dependencies/test";
 
-		PoshiContext.readFiles(poshiFileNames, poshiFileDir);
+		PropsUtil.clear();
+
+		PropsUtil.set("test.base.dir.name", poshiFileDir);
+
+		PoshiContext.readFiles(true, poshiFileNames, poshiFileDir);
 	}
 
 	@After
@@ -57,12 +54,12 @@ public class PoshiContextTest extends TestCase {
 	@Test
 	public void testGetFilePath() throws Exception {
 		String actualFilePath = PoshiContext.getFilePathFromFileName(
-			"Action2.action", PoshiContext.getDefaultNamespace());
+			"Macro.macro", PoshiContext.getDefaultNamespace());
 
 		String baseDirName = FileUtil.getCanonicalPath(
 			"src/test/resources/com/liferay/poshi/core/");
 
-		File file = new File(baseDirName, "/dependencies/test/Action2.action");
+		File file = new File(baseDirName, "/dependencies/test/Macro.macro");
 
 		String expectedFilePath = file.getCanonicalPath();
 
@@ -126,11 +123,16 @@ public class PoshiContextTest extends TestCase {
 
 	@Test
 	public void testGetSeleniumParameterCount() {
-		int count = PoshiContext.getSeleniumParameterCount("clickAt");
+		LiferaySeleniumMethod seleniumMethod =
+			PoshiContext.getLiferaySeleniumMethod("clickAt");
+
+		int count = seleniumMethod.getParameterCount();
 
 		Assert.assertEquals("getSeleniumParameterCount is failing", 2, count);
 
-		count = PoshiContext.getSeleniumParameterCount("click");
+		seleniumMethod = PoshiContext.getLiferaySeleniumMethod("click");
+
+		count = seleniumMethod.getParameterCount();
 
 		Assert.assertEquals("getSeleniumParameterCount is failing", 1, count);
 	}

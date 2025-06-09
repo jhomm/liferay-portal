@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.context.vocabulary.internal.options.provider.test;
@@ -24,14 +15,13 @@ import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -64,22 +54,15 @@ public class AssetVocabularyConfigurationOptionsProviderTest {
 				null, null, ServiceContextTestUtil.getServiceContext());
 
 		try {
-			List<ConfigurationFieldOptionsProvider.Option> options =
-				_configurationFieldOptionsProvider.getOptions();
-
-			Stream<ConfigurationFieldOptionsProvider.Option> stream =
-				options.stream();
-
 			Assert.assertTrue(
-				stream.filter(
+				ListUtil.exists(
+					_configurationFieldOptionsProvider.getOptions(),
 					option -> Objects.equals(
-						option.getLabel(LocaleUtil.getDefault()),
-						assetVocabulary.getTitle(LocaleUtil.getDefault()))
-				).findFirst(
-				).isPresent());
+						assetVocabulary.getTitle(LocaleUtil.getDefault()),
+						option.getLabel(LocaleUtil.getDefault()))));
 		}
 		finally {
-			_assetVocabularyLocalService.deleteAssetVocabulary(
+			_assetVocabularyLocalService.deleteVocabulary(
 				assetVocabulary.getVocabularyId());
 		}
 	}
@@ -91,7 +74,7 @@ public class AssetVocabularyConfigurationOptionsProviderTest {
 	private CompanyLocalService _companyLocalService;
 
 	@Inject(
-		filter = "(&(configuration.pid=com.liferay.segments.context.vocabulary.internal.configuration.SegmentsContextVocabularyConfiguration)(configuration.field.name=assetVocabulary))"
+		filter = "(&(configuration.pid=com.liferay.segments.context.vocabulary.internal.configuration.SegmentsContextVocabularyConfiguration)(configuration.field.name=assetVocabularyName))"
 	)
 	private ConfigurationFieldOptionsProvider
 		_configurationFieldOptionsProvider;

@@ -1,0 +1,16 @@
+Bundle-Name: Liferay Notification API
+Bundle-SymbolicName: com.liferay.notification.api
+Bundle-Version: 19.2.2
+Export-Package:\
+	com.liferay.notification.constants,\
+	com.liferay.notification.context,\
+	com.liferay.notification.exception,\
+	com.liferay.notification.handler,\
+	com.liferay.notification.model,\
+	com.liferay.notification.service,\
+	com.liferay.notification.service.persistence,\
+	com.liferay.notification.term.evaluator,\
+	com.liferay.notification.term.provider,\
+	com.liferay.notification.type,\
+	com.liferay.notification.type.util,\
+	com.liferay.notification.util

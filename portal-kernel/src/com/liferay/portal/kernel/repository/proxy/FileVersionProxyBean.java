@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.repository.proxy;
@@ -20,12 +11,16 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.RepositoryModelOperation;
+import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.InputStream;
 import java.io.Serializable;
 
+import java.lang.reflect.InvocationHandler;
+
 import java.util.Date;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * @author Mika Koivisto
@@ -86,9 +81,15 @@ public class FileVersionProxyBean
 	}
 
 	@Override
+	public Date getDisplayDate() {
+		return _fileVersion.getDisplayDate();
+	}
+
+	@Override
 	public ExpandoBridge getExpandoBridge() {
-		return (ExpandoBridge)newProxyInstance(
-			_fileVersion.getExpandoBridge(), ExpandoBridge.class);
+		return newProxyInstance(
+			_fileVersion.getExpandoBridge(),
+			_expandoBridgeProxyProviderFunction);
 	}
 
 	@Override
@@ -282,6 +283,11 @@ public class FileVersionProxyBean
 	}
 
 	@Override
+	public boolean isScheduled() {
+		return _fileVersion.isScheduled();
+	}
+
+	@Override
 	public void setCompanyId(long companyId) {
 		_fileVersion.setCompanyId(companyId);
 	}
@@ -344,6 +350,10 @@ public class FileVersionProxyBean
 
 		return newFileVersionProxyBean(fileVersion);
 	}
+
+	private static final Function<InvocationHandler, ExpandoBridge>
+		_expandoBridgeProxyProviderFunction =
+			ProxyUtil.getProxyProviderFunction(ExpandoBridge.class);
 
 	private final FileVersion _fileVersion;
 

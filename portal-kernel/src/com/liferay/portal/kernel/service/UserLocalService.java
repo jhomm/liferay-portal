@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -35,10 +27,11 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
-import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -62,6 +55,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.User"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -80,6 +76,7 @@ public interface UserLocalService
 	 * Adds a default admin user for the company.
 	 *
 	 * @param companyId the primary key of the user's company
+	 * @param password the password of the user
 	 * @param screenName the user's screen name
 	 * @param emailAddress the user's email address
 	 * @param locale the user's locale
@@ -89,8 +86,9 @@ public interface UserLocalService
 	 * @return the new default admin user
 	 */
 	public User addDefaultAdminUser(
-			long companyId, String screenName, String emailAddress,
-			Locale locale, String firstName, String middleName, String lastName)
+			long companyId, String password, String screenName,
+			String emailAddress, Locale locale, String firstName,
+			String middleName, String lastName)
 		throws PortalException;
 
 	/**
@@ -117,6 +115,9 @@ public interface UserLocalService
 	 */
 	public boolean addDefaultRoles(long userId) throws PortalException;
 
+	public User addDefaultServiceAccountUser(long companyId)
+		throws PortalException;
+
 	/**
 	 * Adds the user to the default user groups, unless the user is already in
 	 * these user groups. The default user groups can be specified in
@@ -129,36 +130,36 @@ public interface UserLocalService
 	 */
 	public boolean addDefaultUserGroups(long userId) throws PortalException;
 
-	public void addGroupUser(long groupId, long userId);
+	public boolean addGroupUser(long groupId, long userId);
 
-	public void addGroupUser(long groupId, User user);
+	public boolean addGroupUser(long groupId, User user);
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addGroupUsers(long groupId, List<User> users)
+	public boolean addGroupUsers(long groupId, List<User> users)
 		throws PortalException;
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addGroupUsers(long groupId, long[] userIds)
+	public boolean addGroupUsers(long groupId, long[] userIds)
 		throws PortalException;
 
-	public void addOrganizationUser(long organizationId, long userId);
+	public boolean addOrganizationUser(long organizationId, long userId);
 
-	public void addOrganizationUser(long organizationId, User user);
+	public boolean addOrganizationUser(long organizationId, User user);
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addOrganizationUsers(long organizationId, List<User> users)
+	public boolean addOrganizationUsers(long organizationId, List<User> users)
 		throws PortalException;
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addOrganizationUsers(long organizationId, long[] userIds)
+	public boolean addOrganizationUsers(long organizationId, long[] userIds)
 		throws PortalException;
 
 	public User addOrUpdateUser(
@@ -166,9 +167,9 @@ public interface UserLocalService
 			boolean autoPassword, String password1, String password2,
 			boolean autoScreenName, String screenName, String emailAddress,
 			Locale locale, String firstName, String middleName, String lastName,
-			long prefixId, long suffixId, boolean male, int birthdayMonth,
-			int birthdayDay, int birthdayYear, String jobTitle,
-			boolean sendEmail, ServiceContext serviceContext)
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			String jobTitle, boolean sendEmail, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -180,36 +181,36 @@ public interface UserLocalService
 	 */
 	public void addPasswordPolicyUsers(long passwordPolicyId, long[] userIds);
 
-	public void addRoleUser(long roleId, long userId);
+	public boolean addRoleUser(long roleId, long userId);
 
-	public void addRoleUser(long roleId, User user);
+	public boolean addRoleUser(long roleId, User user);
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addRoleUsers(long roleId, List<User> users)
+	public boolean addRoleUsers(long roleId, List<User> users)
 		throws PortalException;
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addRoleUsers(long roleId, long[] userIds)
+	public boolean addRoleUsers(long roleId, long[] userIds)
 		throws PortalException;
 
-	public void addTeamUser(long teamId, long userId);
+	public boolean addTeamUser(long teamId, long userId);
 
-	public void addTeamUser(long teamId, User user);
+	public boolean addTeamUser(long teamId, User user);
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addTeamUsers(long teamId, List<User> users)
+	public boolean addTeamUsers(long teamId, List<User> users)
 		throws PortalException;
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addTeamUsers(long teamId, long[] userIds)
+	public boolean addTeamUsers(long teamId, long[] userIds)
 		throws PortalException;
 
 	/**
@@ -236,14 +237,15 @@ public interface UserLocalService
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
 	 * @param birthdayDay the user's birthday day
 	 * @param birthdayYear the user's birthday year
 	 * @param jobTitle the user's job title
+	 * @param type the user's type
 	 * @param groupIds the primary keys of the user's groups
 	 * @param organizationIds the primary keys of the user's organizations
 	 * @param roleIds the primary keys of the roles this user possesses
@@ -260,73 +262,10 @@ public interface UserLocalService
 			long creatorUserId, long companyId, boolean autoPassword,
 			String password1, String password2, boolean autoScreenName,
 			String screenName, String emailAddress, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * Adds a user.
-	 *
-	 * <p>
-	 * This method handles the creation and bookkeeping of the user including
-	 * its resources, metadata, and internal data structures. It is not
-	 * necessary to make subsequent calls to any methods to setup default
-	 * groups, resources, etc.
-	 * </p>
-	 *
-	 * @param creatorUserId the primary key of the creator
-	 * @param companyId the primary key of the user's company
-	 * @param autoPassword whether a password should be automatically
-	 generated for the user
-	 * @param password1 the user's password
-	 * @param password2 the user's password confirmation
-	 * @param autoScreenName whether a screen name should be automatically
-	 generated for the user
-	 * @param screenName the user's screen name
-	 * @param emailAddress the user's email address
-	 * @param facebookId the user's facebook ID
-	 * @param openId the user's OpenID
-	 * @param locale the user's locale
-	 * @param firstName the user's first name
-	 * @param middleName the user's middle name
-	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
-	 * @param male whether the user is male
-	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
-	 for January)
-	 * @param birthdayDay the user's birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param jobTitle the user's job title
-	 * @param groupIds the primary keys of the user's groups
-	 * @param organizationIds the primary keys of the user's organizations
-	 * @param roleIds the primary keys of the roles this user possesses
-	 * @param userGroupIds the primary keys of the user's user groups
-	 * @param sendEmail whether to send the user an email notification
-	 about their new account
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the UUID (with the
-	 <code>uuid</code> attribute), asset category IDs, asset tag
-	 names, and expando bridge attributes for the user.
-	 * @return the new user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #addUser(long,
-	 long, boolean, String, String, boolean, String, String,
-	 Locale, String, String, String, long, long, boolean, int,
-	 int, int, String, long[], long[], long[], long[], boolean,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public User addUser(
-			long creatorUserId, long companyId, boolean autoPassword,
-			String password1, String password2, boolean autoScreenName,
-			String screenName, String emailAddress, long facebookId,
-			String openId, Locale locale, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
 			int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
+			String jobTitle, int type, long[] groupIds, long[] organizationIds,
 			long[] roleIds, long[] userGroupIds, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -344,20 +283,20 @@ public interface UserLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public User addUser(User user);
 
-	public void addUserGroupUser(long userGroupId, long userId);
+	public boolean addUserGroupUser(long userGroupId, long userId);
 
-	public void addUserGroupUser(long userGroupId, User user);
+	public boolean addUserGroupUser(long userGroupId, User user);
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addUserGroupUsers(long userGroupId, List<User> users)
+	public boolean addUserGroupUsers(long userGroupId, List<User> users)
 		throws PortalException;
 
 	/**
 	 * @throws PortalException
 	 */
-	public void addUserGroupUsers(long userGroupId, long[] userIds)
+	public boolean addUserGroupUsers(long userGroupId, long[] userIds)
 		throws PortalException;
 
 	/**
@@ -384,14 +323,15 @@ public interface UserLocalService
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
 	 * @param birthdayDay the user's birthday day
 	 * @param birthdayYear the user's birthday year
 	 * @param jobTitle the user's job title
+	 * @param type the user's type
 	 * @param groupIds the primary keys of the user's groups
 	 * @param organizationIds the primary keys of the user's organizations
 	 * @param roleIds the primary keys of the roles this user possesses
@@ -408,73 +348,10 @@ public interface UserLocalService
 			long creatorUserId, long companyId, boolean autoPassword,
 			String password1, String password2, boolean autoScreenName,
 			String screenName, String emailAddress, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds, long[] userGroupIds,
-			boolean sendEmail, ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * Adds a user with workflow.
-	 *
-	 * <p>
-	 * This method handles the creation and bookkeeping of the user including
-	 * its resources, metadata, and internal data structures. It is not
-	 * necessary to make subsequent calls to any methods to setup default
-	 * groups, resources, etc.
-	 * </p>
-	 *
-	 * @param creatorUserId the primary key of the creator
-	 * @param companyId the primary key of the user's company
-	 * @param autoPassword whether a password should be automatically
-	 generated for the user
-	 * @param password1 the user's password
-	 * @param password2 the user's password confirmation
-	 * @param autoScreenName whether a screen name should be automatically
-	 generated for the user
-	 * @param screenName the user's screen name
-	 * @param emailAddress the user's email address
-	 * @param facebookId the user's facebook ID
-	 * @param openId the user's OpenID
-	 * @param locale the user's locale
-	 * @param firstName the user's first name
-	 * @param middleName the user's middle name
-	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
-	 * @param male whether the user is male
-	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
-	 for January)
-	 * @param birthdayDay the user's birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param jobTitle the user's job title
-	 * @param groupIds the primary keys of the user's groups
-	 * @param organizationIds the primary keys of the user's organizations
-	 * @param roleIds the primary keys of the roles this user possesses
-	 * @param userGroupIds the primary keys of the user's user groups
-	 * @param sendEmail whether to send the user an email notification
-	 about their new account
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the UUID (with the
-	 <code>uuid</code> attribute), asset category IDs, asset tag
-	 names, and expando bridge attributes for the user.
-	 * @return the new user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addUserWithWorkflow(long, long, boolean, String, String,
-	 boolean, String, String, Locale, String, String, String,
-	 long, long, boolean, int, int, int, String, long[], long[],
-	 long[], long[], boolean, ServiceContext)}
-	 */
-	@Deprecated
-	public User addUserWithWorkflow(
-			long creatorUserId, long companyId, boolean autoPassword,
-			String password1, String password2, boolean autoScreenName,
-			String screenName, String emailAddress, long facebookId,
-			String openId, Locale locale, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
 			int birthdayMonth, int birthdayDay, int birthdayYear,
-			String jobTitle, long[] groupIds, long[] organizationIds,
+			String jobTitle, int type, long[] groupIds, long[] organizationIds,
 			long[] roleIds, long[] userGroupIds, boolean sendEmail,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -600,7 +477,6 @@ public interface UserLocalService
 	 * authentication, without using the AuthPipeline. Primarily used for
 	 * authenticating users of <code>tunnel-web</code>.
 	 *
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 * @param companyId the primary key of the user's company
 	 * @param realm unused
 	 * @param nonce the number used once
@@ -609,6 +485,7 @@ public interface UserLocalService
 	 * @param response the authentication response hash
 	 * @return the user's primary key if authentication is successful;
 	 <code>0</code> otherwise
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS)
@@ -616,20 +493,6 @@ public interface UserLocalService
 			long companyId, String userName, String realm, String nonce,
 			String method, String uri, String response)
 		throws PortalException;
-
-	/**
-	 * Attempts to authenticate the user using JAAS credentials, without using
-	 * the AuthPipeline.
-	 *
-	 * @param userId the primary key of the user
-	 * @param encPassword the encrypted password
-	 * @return <code>true</code> if authentication is successful;
-	 <code>false</code> otherwise
-	 * @deprecated As of Cavanaugh (7.4.x), with no replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public boolean authenticateForJAAS(long userId, String encPassword);
 
 	/**
 	 * Checks if the user is currently locked out based on the password policy,
@@ -700,10 +563,8 @@ public interface UserLocalService
 	 * the confirmation email.
 	 *
 	 * @param user the user
-	 * @param serviceContext the service context to be applied. You can specify
-	 an unencrypted custom password for the user via attribute
-	 <code>passwordUnencrypted</code>. You automatically generate a
-	 password for the user by setting attribute
+	 * @param serviceContext the service context to be applied. You
+	 automatically generate a password for the user by setting attribute
 	 <code>autoPassword</code> to <code>true</code>. You can send a
 	 confirmation email to the user by setting attribute
 	 <code>sendEmail</code> to <code>true</code>.
@@ -726,20 +587,6 @@ public interface UserLocalService
 	 */
 	@Transactional(enabled = false)
 	public User createUser(long userId);
-
-	/**
-	 * Decrypts the user's primary key and password from their encrypted forms.
-	 * Used for decrypting a user's credentials from the values stored in an
-	 * automatic login cookie.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param name the encrypted primary key of the user
-	 * @param password the encrypted password of the user
-	 * @return the user's primary key and password
-	 */
-	public KeyValuePair decryptUserId(
-			long companyId, String name, String password)
-		throws PortalException;
 
 	public void deleteGroupUser(long groupId, long userId);
 
@@ -819,6 +666,7 @@ public interface UserLocalService
 	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public User deleteUser(User user) throws PortalException;
 
 	/**
@@ -920,14 +768,14 @@ public interface UserLocalService
 	public String encryptUserId(String name) throws PortalException;
 
 	/**
-	 * Returns the default user for the company.
+	 * Returns the guest user for the company.
 	 *
 	 * @param companyId the primary key of the company
-	 * @return the default user for the company, or <code>null</code> if a user
+	 * @return the guest user for the company, or <code>null</code> if a user
 	 with the company key could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User fetchDefaultUser(long companyId);
+	public User fetchGuestUser(long companyId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUser(long userId);
@@ -953,16 +801,9 @@ public interface UserLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserByEmailAddress(long companyId, String emailAddress);
 
-	/**
-	 * Returns the user with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the matching user, or <code>null</code> if a matching user could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the user with the Facebook ID.
@@ -971,22 +812,9 @@ public interface UserLocalService
 	 * @param facebookId the user's Facebook ID
 	 * @return the user with the Facebook ID, or <code>null</code> if a user
 	 with the Facebook ID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
-	@Deprecated
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserByFacebookId(long companyId, long facebookId);
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID, or <code>null</code> if a user
-	 with the Google user ID could not be found
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User fetchUserByGoogleUserId(long companyId, String googleUserId);
 
 	/**
 	 * Returns the user with the primary key.
@@ -999,19 +827,6 @@ public interface UserLocalService
 	public User fetchUserById(long userId);
 
 	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID, or <code>null</code> if a user with
-	 the OpenID could not be found
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User fetchUserByOpenId(long companyId, String openId);
-
-	/**
 	 * Returns the user with the portrait ID.
 	 *
 	 * @param portraitId the user's portrait ID
@@ -1020,14 +835,6 @@ public interface UserLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User fetchUserByPortraitId(long portraitId);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchUserByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User fetchUserByReferenceCode(
-		long companyId, String externalReferenceCode);
 
 	/**
 	 * Returns the user with the screen name.
@@ -1083,21 +890,19 @@ public interface UserLocalService
 	public int getCompanyUsersCount(long companyId);
 
 	/**
-	 * Returns the default user for the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @return the default user for the company
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 #getGuestUser(long)}
 	 */
-	@Transactional(enabled = false)
+	@Deprecated
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User getDefaultUser(long companyId) throws PortalException;
 
 	/**
-	 * Returns the primary key of the default user for the company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @return the primary key of the default user for the company
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 #getGuestUserId(long)}
 	 */
-	@Transactional(enabled = false)
+	@Deprecated
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long getDefaultUserId(long companyId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -1181,6 +986,24 @@ public interface UserLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getGroupUsersCount(long groupId, int status)
 		throws PortalException;
+
+	/**
+	 * Returns the guest user for the company.
+	 *
+	 * @param companyId the primary key of the company
+	 * @return the guest user for the company
+	 */
+	@Transactional(enabled = false)
+	public User getGuestUser(long companyId) throws PortalException;
+
+	/**
+	 * Returns the primary key of the guest user for the company.
+	 *
+	 * @param companyId the primary key of the company
+	 * @return the primary key of the guest user for the company
+	 */
+	@Transactional(enabled = false)
+	public long getGuestUserId(long companyId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -1327,6 +1150,9 @@ public interface UserLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public long[] getRoleUserIds(long roleId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public long[] getRoleUserIds(long roleId, long type);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<User> getRoleUsers(long roleId);
@@ -1513,41 +1339,9 @@ public interface UserLocalService
 	public User getUserByEmailAddress(long companyId, String emailAddress)
 		throws PortalException;
 
-	/**
-	 * Returns the user with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user's external reference code
-	 * @return the matching user
-	 * @throws PortalException if a matching user could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User getUserByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
-		throws PortalException;
-
-	/**
-	 * Returns the user with the Facebook ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param facebookId the user's Facebook ID
-	 * @return the user with the Facebook ID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByFacebookId(long companyId, long facebookId)
-		throws PortalException;
-
-	/**
-	 * Returns the user with the Google user ID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param googleUserId the user's Google user ID
-	 * @return the user with the Google user ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByGoogleUserId(long companyId, String googleUserId)
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -1568,28 +1362,6 @@ public interface UserLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public User getUserById(long companyId, long userId) throws PortalException;
-
-	/**
-	 * Returns the user with the OpenID.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param openId the user's OpenID
-	 * @return the user with the OpenID
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByOpenId(long companyId, String openId)
-		throws PortalException;
-
-	/**
-	 * Returns the user with the portrait ID.
-	 *
-	 * @param portraitId the user's portrait ID
-	 * @return the user with the portrait ID
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User getUserByPortraitId(long portraitId) throws PortalException;
 
 	/**
 	 * Returns the user with the screen name.
@@ -1686,8 +1458,17 @@ public interface UserLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<User> getUsers(
-		long companyId, boolean defaultUser, int status, int start, int end,
+		long companyId, int status, int start, int end,
 		OrderByComparator<User> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<User> getUsersByRoleId(long roleId, int start, int end)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<User> getUsersByRoleName(
+			long companyId, String roleName, int start, int end)
+		throws PortalException;
 
 	/**
 	 * Returns the number of users.
@@ -1698,7 +1479,7 @@ public interface UserLocalService
 	public int getUsersCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getUsersCount(long companyId, boolean defaultUser, int status);
+	public int getUsersCount(long companyId, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public boolean hasGroupUser(long groupId, long userId);
@@ -1771,13 +1552,13 @@ public interface UserLocalService
 	public boolean isPasswordExpired(User user) throws PortalException;
 
 	/**
-	 * Returns the default user for the company.
+	 * Returns the guest user for the company.
 	 *
 	 * @param companyId the primary key of the company
-	 * @return the default user for the company
+	 * @return the guest user for the company
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public User loadGetDefaultUser(long companyId) throws PortalException;
+	public User loadGetGuestUser(long companyId) throws PortalException;
 
 	/**
 	 * Returns an ordered range of all the users who match the keywords and
@@ -1952,12 +1733,13 @@ public interface UserLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<User> searchBySocial(
-		long companyId, long[] groupIds, String keywords, int start, int end);
+		long companyId, long[] groupIds, long[] userGroupIds, String keywords,
+		int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<User> searchBySocial(
-		long companyId, long[] groupIds, String keywords, int start, int end,
-		OrderByComparator<User> orderByComparator);
+		long companyId, long[] groupIds, long[] userGroupIds, String keywords,
+		int start, int end, OrderByComparator<User> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<User> searchBySocial(
@@ -2014,48 +1796,6 @@ public interface UserLocalService
 	public Map<Long, Integer> searchCounts(
 		long companyId, int status, long[] groupIds);
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long, int[], String, int, int)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<User> searchSocial(
-			long userId, int[] socialRelationTypes, String keywords, int start,
-			int end)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long, long[], String, int, int)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<User> searchSocial(
-		long companyId, long[] groupIds, String keywords, int start, int end);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long, long[], String, int, int,
-	 OrderByComparator)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<User> searchSocial(
-		long companyId, long[] groupIds, String keywords, int start, int end,
-		OrderByComparator<User> orderByComparator);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchBySocial(long[], long, int[], String, int, int)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<User> searchSocial(
-			long[] groupIds, long userId, int[] socialRelationTypes,
-			String keywords, int start, int end)
-		throws PortalException;
-
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<User> searchUsers(
 			long companyId, String keywords, int status,
@@ -2098,22 +1838,12 @@ public interface UserLocalService
 			User user, String emailAddress, ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * Sends the password email to the user with the email address. The content
-	 * of this email can be specified in <code>portal.properties</code> with the
-	 * <code>admin.email.password</code> keys.
-	 *
-	 * @param companyId the primary key of the user's company
-	 * @param emailAddress the user's email address
-	 * @param fromName the name of the individual that the email should be from
-	 * @param fromAddress the address of the individual that the email should be
-	 from
-	 * @param subject the email subject. If <code>null</code>, the subject
-	 specified in <code>portal.properties</code> will be used.
-	 * @param body the email body. If <code>null</code>, the body specified in
-	 <code>portal.properties</code> will be used.
-	 * @param serviceContext the service context to be applied
-	 */
+	public boolean sendEmailUserCreationAttempt(
+			long companyId, String emailAddress, String fromName,
+			String fromAddress, String subject, String body,
+			ServiceContext serviceContext)
+		throws PortalException;
+
 	public boolean sendPassword(
 			long companyId, String emailAddress, String fromName,
 			String fromAddress, String subject, String body,
@@ -2185,6 +1915,12 @@ public interface UserLocalService
 	 contains a reset link
 	 */
 	public boolean sendPasswordByUserId(long userId) throws PortalException;
+
+	public boolean sendPasswordLockout(
+			long companyId, String emailAddress, String fromName,
+			String fromAddress, String subject, String body,
+			ServiceContext serviceContext)
+		throws PortalException;
 
 	public void setGroupUsers(long groupId, long[] userIds);
 
@@ -2286,6 +2022,7 @@ public interface UserLocalService
 	 use
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updateAgreedToTermsOfUse(
 			long userId, boolean agreedToTermsOfUse)
 		throws PortalException;
@@ -2354,30 +2091,19 @@ public interface UserLocalService
 	 * @param emailAddressVerified whether the user has verified email address
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updateEmailAddressVerified(
 			long userId, boolean emailAddressVerified)
 		throws PortalException;
 
-	/**
-	 * Updates the user's Facebook ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param facebookId the user's new Facebook ID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public User updateFacebookId(long userId, long facebookId)
+	@Indexable(type = IndexableType.REINDEX)
+	public User updateExternalReferenceCode(
+			long userId, String externalReferenceCode)
 		throws PortalException;
 
-	/**
-	 * Updates the user's Google user ID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param googleUserId the new Google user ID
-	 * @return the user
-	 */
-	public User updateGoogleUserId(long userId, String googleUserId)
+	@Indexable(type = IndexableType.REINDEX)
+	public User updateExternalReferenceCode(
+			User user, String externalReferenceCode)
 		throws PortalException;
 
 	/**
@@ -2411,8 +2137,8 @@ public interface UserLocalService
 	 * @param firstName the user's first name
 	 * @param middleName the user's middle name
 	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
+	 * @param prefixListTypeId the user's name prefix ID
+	 * @param suffixListTypeId the user's name suffix ID
 	 * @param male whether the user is male
 	 * @param birthdayMonth the user's birthday month (0-based, meaning 0 for
 	 January)
@@ -2431,62 +2157,8 @@ public interface UserLocalService
 			long creatorUserId, long companyId, boolean autoPassword,
 			String password1, String password2, boolean autoScreenName,
 			String screenName, String emailAddress, Locale locale,
-			String firstName, String middleName, String lastName, long prefixId,
-			long suffixId, boolean male, int birthdayMonth, int birthdayDay,
-			int birthdayYear, String jobTitle, boolean updateUserInformation,
-			boolean sendEmail, ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * Updates a user account that was automatically created when a guest user
-	 * participated in an action (e.g. posting a comment) and only provided his
-	 * name and email address.
-	 *
-	 * @param creatorUserId the primary key of the creator
-	 * @param companyId the primary key of the user's company
-	 * @param autoPassword whether a password should be automatically
-	 generated for the user
-	 * @param password1 the user's password
-	 * @param password2 the user's password confirmation
-	 * @param autoScreenName whether a screen name should be automatically
-	 generated for the user
-	 * @param screenName the user's screen name
-	 * @param emailAddress the user's email address
-	 * @param facebookId the user's facebook ID
-	 * @param openId the user's OpenID
-	 * @param locale the user's locale
-	 * @param firstName the user's first name
-	 * @param middleName the user's middle name
-	 * @param lastName the user's last name
-	 * @param prefixId the user's name prefix ID
-	 * @param suffixId the user's name suffix ID
-	 * @param male whether the user is male
-	 * @param birthdayMonth the user's birthday month (0-based, meaning 0
-	 for January)
-	 * @param birthdayDay the user's birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param jobTitle the user's job title
-	 * @param updateUserInformation whether to update the user's
-	 information
-	 * @param sendEmail whether to send the user an email notification
-	 about their new account
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set expando bridge attributes for the
-	 user.
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateIncompleteUser(long, long, boolean, String, String,
-	 boolean, String, String, Locale, String, String, String,
-	 long, long, boolean, int, int, int, String, boolean, boolean,
-	 ServiceContext)}
-	 */
-	@Deprecated
-	public User updateIncompleteUser(
-			long creatorUserId, long companyId, boolean autoPassword,
-			String password1, String password2, boolean autoScreenName,
-			String screenName, String emailAddress, long facebookId,
-			String openId, Locale locale, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
+			String firstName, String middleName, String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
 			int birthdayMonth, int birthdayDay, int birthdayYear,
 			String jobTitle, boolean updateUserInformation, boolean sendEmail,
 			ServiceContext serviceContext)
@@ -2503,6 +2175,9 @@ public interface UserLocalService
 	public User updateJobTitle(long userId, String jobTitle)
 		throws PortalException;
 
+	public User updateLanguageId(long userId, String languageId)
+		throws PortalException;
+
 	/**
 	 * Updates the user's last login with the current time and the IP address.
 	 *
@@ -2510,8 +2185,20 @@ public interface UserLocalService
 	 * @param loginIP the IP address the user logged in from
 	 * @return the user
 	 */
-	@CTAware(onProduction = true)
+	@Indexable(
+		callbackKey = "com.liferay.portal.kernel.model.User#lastLoginDate",
+		type = IndexableType.REINDEX
+	)
+	@Transactional(enabled = false)
 	public User updateLastLogin(long userId, String loginIP)
+		throws PortalException;
+
+	@Indexable(
+		callbackKey = "com.liferay.portal.kernel.model.User#lastLoginDate",
+		type = IndexableType.REINDEX
+	)
+	@Transactional(enabled = false)
+	public User updateLastLogin(User user, String loginIP)
 		throws PortalException;
 
 	/**
@@ -2570,17 +2257,6 @@ public interface UserLocalService
 		throws PortalException;
 
 	/**
-	 * Updates the user's OpenID.
-	 *
-	 * @param userId the primary key of the user
-	 * @param openId the new OpenID
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public User updateOpenId(long userId, String openId) throws PortalException;
-
-	/**
 	 * Sets the organizations that the user is in, removing and adding
 	 * organizations as necessary.
 	 *
@@ -2604,6 +2280,7 @@ public interface UserLocalService
 	 password the next time they log in
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updatePassword(
 			long userId, String password1, String password2,
 			boolean passwordReset)
@@ -2622,6 +2299,7 @@ public interface UserLocalService
 	 tracked, or validated. Primarily used for password imports.
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updatePassword(
 			long userId, String password1, String password2,
 			boolean passwordReset, boolean silentUpdate)
@@ -2653,6 +2331,7 @@ public interface UserLocalService
 	 password the next time they login
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updatePasswordReset(long userId, boolean passwordReset)
 		throws PortalException;
 
@@ -2674,6 +2353,7 @@ public interface UserLocalService
 	 * @param answer the user's new password reset answer
 	 * @return the user
 	 */
+	@CTAware(onProduction = true)
 	public User updateReminderQuery(long userId, String question, String answer)
 		throws PortalException;
 
@@ -2702,6 +2382,10 @@ public interface UserLocalService
 			long userId, int status, ServiceContext serviceContext)
 		throws PortalException;
 
+	public User updateStatus(
+			User user, int status, ServiceContext serviceContext)
+		throws PortalException;
+
 	/**
 	 * Updates the user.
 	 *
@@ -2726,8 +2410,8 @@ public interface UserLocalService
 	 * @param firstName the user's new first name
 	 * @param middleName the user's new middle name
 	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
+	 * @param prefixListTypeId the user's new name prefix ID
+	 * @param suffixListTypeId the user's new name suffix ID
 	 * @param male whether user is male
 	 * @param birthdayMonth the user's new birthday month (0-based, meaning 0
 	 for January)
@@ -2757,86 +2441,11 @@ public interface UserLocalService
 			String screenName, String emailAddress, boolean hasPortrait,
 			byte[] portraitBytes, String languageId, String timeZoneId,
 			String greeting, String comments, String firstName,
-			String middleName, String lastName, long prefixId, long suffixId,
-			boolean male, int birthdayMonth, int birthdayDay, int birthdayYear,
-			String smsSn, String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
-			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * Updates the user.
-	 *
-	 * @param userId the primary key of the user
-	 * @param oldPassword the user's old password
-	 * @param newPassword1 the user's new password (optionally
-	 <code>null</code>)
-	 * @param newPassword2 the user's new password confirmation (optionally
-	 <code>null</code>)
-	 * @param passwordReset whether the user should be asked to reset their
-	 password the next time they login
-	 * @param reminderQueryQuestion the user's new password reset question
-	 * @param reminderQueryAnswer the user's new password reset answer
-	 * @param screenName the user's new screen name
-	 * @param emailAddress the user's new email address
-	 * @param facebookId the user's new Facebook ID
-	 * @param openId the user's new OpenID
-	 * @param hasPortrait if the user has a custom portrait image
-	 * @param portraitBytes the new portrait image data
-	 * @param languageId the user's new language ID
-	 * @param timeZoneId the user's new time zone ID
-	 * @param greeting the user's new greeting
-	 * @param comments the user's new comments
-	 * @param firstName the user's new first name
-	 * @param middleName the user's new middle name
-	 * @param lastName the user's new last name
-	 * @param prefixId the user's new name prefix ID
-	 * @param suffixId the user's new name suffix ID
-	 * @param male whether user is male
-	 * @param birthdayMonth the user's new birthday month (0-based, meaning
-	 0 for January)
-	 * @param birthdayDay the user's new birthday day
-	 * @param birthdayYear the user's birthday year
-	 * @param smsSn the user's new SMS screen name
-	 * @param facebookSn the user's new Facebook screen name
-	 * @param jabberSn the user's new Jabber screen name
-	 * @param skypeSn the user's new Skype screen name
-	 * @param twitterSn the user's new Twitter screen name
-	 * @param jobTitle the user's new job title
-	 * @param groupIds the primary keys of the user's groups
-	 * @param organizationIds the primary keys of the user's organizations
-	 * @param roleIds the primary keys of the user's roles
-	 * @param userGroupRoles the user user's group roles
-	 * @param userGroupIds the primary keys of the user's user groups
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set the UUID (with the
-	 <code>uuid</code> attribute), asset category IDs, asset tag
-	 names, and expando bridge attributes for the user.
-	 * @return the user
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateUser(long, String, String, String, boolean, String,
-	 String, String, String, boolean, byte[], String, String,
-	 String, String, String, String, String, long, long, boolean,
-	 int, int, int, String, String, String, String, String,
-	 String, long[], long[], long[], List, long[], ServiceContext)
-	 }
-	 */
-	@Deprecated
-	public User updateUser(
-			long userId, String oldPassword, String newPassword1,
-			String newPassword2, boolean passwordReset,
-			String reminderQueryQuestion, String reminderQueryAnswer,
-			String screenName, String emailAddress, long facebookId,
-			String openId, boolean hasPortrait, byte[] portraitBytes,
-			String languageId, String timeZoneId, String greeting,
-			String comments, String firstName, String middleName,
-			String lastName, long prefixId, long suffixId, boolean male,
-			int birthdayMonth, int birthdayDay, int birthdayYear, String smsSn,
-			String facebookSn, String jabberSn, String skypeSn,
-			String twitterSn, String jobTitle, long[] groupIds,
-			long[] organizationIds, long[] roleIds,
+			String middleName, String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, String smsSn, String facebookSn,
+			String jabberSn, String skypeSn, String twitterSn, String jobTitle,
+			long[] groupIds, long[] organizationIds, long[] roleIds,
 			List<UserGroupRole> userGroupRoles, long[] userGroupIds,
 			ServiceContext serviceContext)
 		throws PortalException;
@@ -2853,6 +2462,8 @@ public interface UserLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public User updateUser(User user);
+
+	public void validateMaxUsers(long companyId) throws PortalException;
 
 	/**
 	 * Verifies the email address of the ticket.

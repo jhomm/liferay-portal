@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.authverifier;
@@ -22,18 +13,24 @@ import com.liferay.portal.kernel.security.access.control.AccessControlUtil;
 import com.liferay.portal.kernel.security.auth.AccessControlContext;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierConfiguration;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierResult;
-import com.liferay.portal.kernel.servlet.ProtectedServletRequest;
 import com.liferay.portal.kernel.servlet.ServletContextPool;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.auth.AuthVerifierPipeline;
+import com.liferay.portal.servlet.AuthVerifierServletRequest;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 import com.liferay.portal.util.PropsUtil;
+
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -43,12 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * <p>
@@ -201,17 +192,17 @@ public class AuthVerifierFilter extends BasePortalFilter {
 				accessControlContext.getSettings(),
 				AuthVerifierPipeline.AUTH_TYPE);
 
-			ProtectedServletRequest protectedServletRequest =
-				new ProtectedServletRequest(
-					httpServletRequest, String.valueOf(userId), authType);
+			AuthVerifierServletRequest authVerifierServletRequest =
+				new AuthVerifierServletRequest(
+					httpServletRequest, userId, authType);
 
-			accessControlContext.setRequest(protectedServletRequest);
+			accessControlContext.setRequest(authVerifierServletRequest);
 
 			Class<?> clazz = getClass();
 
 			processFilter(
-				clazz.getName(), protectedServletRequest, httpServletResponse,
-				filterChain);
+				clazz.getName(), authVerifierServletRequest,
+				httpServletResponse, filterChain);
 		}
 		else {
 			_log.error("Unimplemented state " + state);
@@ -236,10 +227,10 @@ public class AuthVerifierFilter extends BasePortalFilter {
 			String authVerifierPropertyName = propertyName.substring(
 				PropsKeys.AUTH_VERIFIER.length());
 
-			int indexOf = authVerifierPropertyName.indexOf('.');
+			int index = authVerifierPropertyName.indexOf('.');
 
 			String authVerifierClassName = authVerifierPropertyName.substring(
-				0, indexOf);
+				0, index);
 
 			Integer authVerifierConfigurationIndex =
 				authVerifierConfigurationIndexs.get(authVerifierClassName);
@@ -269,7 +260,7 @@ public class AuthVerifierFilter extends BasePortalFilter {
 			Properties properties = authVerifierConfiguration.getProperties();
 
 			properties.put(
-				authVerifierPropertyName.substring(indexOf + 1),
+				authVerifierPropertyName.substring(index + 1),
 				entry.getValue());
 		}
 
@@ -314,7 +305,8 @@ public class AuthVerifierFilter extends BasePortalFilter {
 		}
 
 		if (_log.isDebugEnabled()) {
-			String completeURL = HttpUtil.getCompleteURL(httpServletRequest);
+			String completeURL = HttpComponentsUtil.getCompleteURL(
+				httpServletRequest);
 
 			_log.debug("Securing " + completeURL);
 		}

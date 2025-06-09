@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.test.util.lar;
@@ -45,6 +36,8 @@ import com.liferay.portal.kernel.zip.ZipWriterFactory;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portlet.PortletPreferencesImpl;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -55,8 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -184,6 +175,10 @@ public abstract class BasePortletDataHandlerTestCase {
 
 		Group cleanGroup = GroupTestUtil.addGroup();
 
+		portletDataContext.setDataStrategy(
+			PortletDataHandlerKeys.DATA_STRATEGY_MIRROR);
+		portletDataContext.setGroupId(cleanGroup.getGroupId());
+		portletDataContext.setScopeGroupId(cleanGroup.getGroupId());
 		portletDataContext.setUserIdStrategy(
 			userUuid -> {
 				try {
@@ -193,15 +188,8 @@ public abstract class BasePortletDataHandlerTestCase {
 					return 0;
 				}
 			});
-
-		portletDataContext.setDataStrategy(
-			PortletDataHandlerKeys.DATA_STRATEGY_MIRROR);
-
 		portletDataContext.setZipReader(
 			_zipReaderFactory.getZipReader(exportZipWriter.getFile()));
-
-		portletDataContext.setScopeGroupId(cleanGroup.getGroupId());
-		portletDataContext.setGroupId(cleanGroup.getGroupId());
 
 		portletDataContext.clearScopedPrimaryKeys();
 
@@ -210,18 +198,18 @@ public abstract class BasePortletDataHandlerTestCase {
 
 		List<StagedModel> importedStagedModels = getStagedModels();
 
-		Set<String> exportedUuidSet = new HashSet<>();
-		Set<String> importedUuidSet = new HashSet<>();
+		Set<String> exportedUuids = new HashSet<>();
+		Set<String> importedUuids = new HashSet<>();
 
 		for (StagedModel stagedModel : exportedStagedModels) {
-			exportedUuidSet.add(stagedModel.getUuid());
+			exportedUuids.add(stagedModel.getUuid());
 		}
 
 		for (StagedModel stagedModel : importedStagedModels) {
-			importedUuidSet.add(stagedModel.getUuid());
+			importedUuids.add(stagedModel.getUuid());
 		}
 
-		Assert.assertEquals(exportedUuidSet, importedUuidSet);
+		Assert.assertEquals(exportedUuids, importedUuids);
 	}
 
 	@Test
@@ -549,13 +537,13 @@ public abstract class BasePortletDataHandlerTestCase {
 			BundleContext bundleContext = bundle.getBundleContext();
 
 			Collection<ServiceReference<PortletDataHandler>>
-				portletDataHandlerReferences =
+				portletDataHandlerServiceReferences =
 					bundleContext.getServiceReferences(
 						PortletDataHandler.class,
-						"(javax.portlet.name=" + portletId + ")");
+						"(jakarta.portlet.name=" + portletId + ")");
 
 			Iterator<ServiceReference<PortletDataHandler>> iterator =
-				portletDataHandlerReferences.iterator();
+				portletDataHandlerServiceReferences.iterator();
 
 			return bundleContext.getService(iterator.next());
 		}
@@ -631,7 +619,7 @@ public abstract class BasePortletDataHandlerTestCase {
 
 	protected boolean isDisplayPortlet() {
 		if (isDataPortletInstanceLevel() &&
-			!ArrayUtil.isEmpty(
+			ArrayUtil.isNotEmpty(
 				portletDataHandler.getDataPortletPreferences())) {
 
 			return true;

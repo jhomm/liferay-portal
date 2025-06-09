@@ -1,15 +1,11 @@
 {
+	"friendlyURL": "/account-settings",
 	"hidden": false,
+	"name": "Account Settings",
 	"name_i18n": {
 		"en_US": "Account Settings"
 	},
 	"private": false,
 	"system": false,
-	"type": "Content",
-	"typeSettings": [
-		{
-			"key": "collectionType",
-			"value": "com.liferay.item.selector.criteria.InfoListItemSelectorReturnType"
-		}
-	]
+	"type": "Content"
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal.mvc;
@@ -19,26 +10,26 @@ import com.liferay.bean.portlet.extension.BeanPortletMethodDecorator;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 
+import jakarta.annotation.ManagedBean;
+
+import jakarta.mvc.Controller;
+import jakarta.mvc.MvcContext;
+import jakarta.mvc.binding.BindingResult;
+
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.validation.MessageInterpolator;
+import jakarta.validation.Validator;
+
+import jakarta.ws.rs.core.Configuration;
+
 import java.beans.BeanInfo;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 
 import java.lang.reflect.Method;
-
-import javax.annotation.ManagedBean;
-
-import javax.mvc.Controller;
-import javax.mvc.MvcContext;
-import javax.mvc.binding.BindingResult;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.validation.MessageInterpolator;
-import javax.validation.Validator;
-
-import javax.ws.rs.core.Configuration;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -100,7 +91,7 @@ public class BeanPortletMethodDecoratorMVCImpl
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return eventObject;
@@ -115,11 +106,7 @@ public class BeanPortletMethodDecoratorMVCImpl
 
 		Class<?> declaringClass = method.getDeclaringClass();
 
-		if (declaringClass.isAnnotationPresent(Controller.class)) {
-			return true;
-		}
-
-		return false;
+		return declaringClass.isAnnotationPresent(Controller.class);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

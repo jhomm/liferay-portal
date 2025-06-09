@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.display.context;
@@ -39,16 +30,15 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowDefinition;
-import com.liferay.portal.kernel.workflow.WorkflowDefinitionManagerUtil;
-import com.liferay.portal.kernel.workflow.WorkflowEngineManagerUtil;
 import com.liferay.portal.kernel.workflow.WorkflowHandler;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
 import com.liferay.portal.util.RepositoryUtil;
+import com.liferay.portal.workflow.util.WorkflowDefinitionManagerUtil;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Objects;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -219,11 +209,46 @@ public class DLEditFolderDisplayContext {
 		}
 
 		_workflowDefinitions =
-			WorkflowDefinitionManagerUtil.getActiveWorkflowDefinitions(
+			WorkflowDefinitionManagerUtil.liberalGetActiveWorkflowDefinitions(
 				_themeDisplay.getCompanyId(), QueryUtil.ALL_POS,
 				QueryUtil.ALL_POS, null);
 
 		return _workflowDefinitions;
+	}
+
+	public boolean hasAdvancedUpdateDLFolderPermission()
+		throws PortalException {
+
+		if (getFolder() == null) {
+			return true;
+		}
+
+		if (_advancedUpdateDLFolderPermission != null) {
+			return _advancedUpdateDLFolderPermission;
+		}
+
+		_advancedUpdateDLFolderPermission = DLFolderPermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getScopeGroupId(), getFolderId(),
+			ActionKeys.ADVANCED_UPDATE);
+
+		return _advancedUpdateDLFolderPermission;
+	}
+
+	public boolean hasUpdateDLFolderPermission() throws PortalException {
+		if (getFolder() == null) {
+			return true;
+		}
+
+		if (_updateDLFolderPermission != null) {
+			return _updateDLFolderPermission;
+		}
+
+		_updateDLFolderPermission = DLFolderPermission.contains(
+			_themeDisplay.getPermissionChecker(),
+			_themeDisplay.getScopeGroupId(), getFolderId(), ActionKeys.UPDATE);
+
+		return _updateDLFolderPermission;
 	}
 
 	public boolean isFileEntryTypeSelected(DLFileEntryType dlFileEntryType) {
@@ -372,12 +397,15 @@ public class DLEditFolderDisplayContext {
 			WorkflowHandlerRegistryUtil.getWorkflowHandler(
 				DLFileEntry.class.getName());
 
-		if (WorkflowEngineManagerUtil.isDeployed() &&
-			(workflowHandler != null) &&
-			DLFolderPermission.contains(
+		if ((workflowHandler != null) &&
+			(DLFolderPermission.contains(
 				_themeDisplay.getPermissionChecker(),
 				_themeDisplay.getScopeGroupId(), getFolderId(),
-				ActionKeys.UPDATE) &&
+				ActionKeys.ADVANCED_UPDATE) ||
+			 DLFolderPermission.contains(
+				 _themeDisplay.getPermissionChecker(),
+				 _themeDisplay.getScopeGroupId(), getFolderId(),
+				 ActionKeys.UPDATE)) &&
 			!scopeGroup.isLayoutSetPrototype()) {
 
 			_workflowEnabled = true;
@@ -417,7 +445,7 @@ public class DLEditFolderDisplayContext {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return null;
@@ -427,6 +455,7 @@ public class DLEditFolderDisplayContext {
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLEditFolderDisplayContext.class);
 
+	private Boolean _advancedUpdateDLFolderPermission;
 	private List<DLFileEntryType> _dlFileEntryTypes;
 	private Folder _folder;
 	private Long _folderId;
@@ -436,6 +465,7 @@ public class DLEditFolderDisplayContext {
 	private String _redirect;
 	private Long _repositoryId;
 	private final ThemeDisplay _themeDisplay;
+	private Boolean _updateDLFolderPermission;
 	private List<WorkflowDefinition> _workflowDefinitions;
 	private Boolean _workflowEnabled;
 

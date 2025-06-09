@@ -1,23 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.admin.web.internal.util;
 
-import com.liferay.portal.instances.service.PortalInstancesLocalService;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.search.IndexWriterHelper;
 import com.liferay.portal.kernel.search.SearchException;
+import com.liferay.portal.model.impl.CompanyImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import org.junit.Before;
@@ -25,10 +17,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 
 /**
  * @author Adam Brandizzi
@@ -42,39 +31,52 @@ public class DictionaryReindexerTest {
 
 	@Before
 	public void setUp() {
-		MockitoAnnotations.initMocks(this);
+		PortalInstancePool.enableCache();
 
-		Mockito.when(
-			_portalInstancesLocalService.getCompanyIds()
-		).thenReturn(
-			_COMPANY_IDS
-		);
+		PortalInstancePool.add(
+			new CompanyImpl() {
+
+				@Override
+				public long getCompanyId() {
+					return _COMPANY_IDS[0];
+				}
+
+			});
+		PortalInstancePool.add(
+			new CompanyImpl() {
+
+				@Override
+				public long getCompanyId() {
+					return _COMPANY_IDS[1];
+				}
+
+			});
 	}
 
 	@Test
 	public void testReindexAllCompaniesDictionaries() throws SearchException {
 		DictionaryReindexer dictionaryReindexer = new DictionaryReindexer(
-			_indexWriterHelper, _portalInstancesLocalService);
+			_indexWriterHelper);
 
 		dictionaryReindexer.reindexDictionaries();
 
 		for (long companyId : _COMPANY_IDS) {
-			assertIndexWriterHelperReindexDictionariesWithCompanyId(companyId);
+			_assertIndexWriterHelperReindexDictionariesWithCompanyId(companyId);
 		}
 	}
 
 	@Test
 	public void testReindexSystemCompanyDictionaries() throws SearchException {
 		DictionaryReindexer dictionaryReindexer = new DictionaryReindexer(
-			_indexWriterHelper, _portalInstancesLocalService);
+			_indexWriterHelper);
 
 		dictionaryReindexer.reindexDictionaries();
 
-		assertIndexWriterHelperReindexDictionariesWithCompanyId(
+		_assertIndexWriterHelperReindexDictionariesWithCompanyId(
 			CompanyConstants.SYSTEM);
 	}
 
-	protected void assertIndexWriterHelperReindexDictionariesWithCompanyId(
+	private void _assertIndexWriterHelperReindexDictionariesWithCompanyId(
 			long companyId)
 		throws SearchException {
 
@@ -93,11 +95,7 @@ public class DictionaryReindexerTest {
 
 	private static final long[] _COMPANY_IDS = {1001L, 2002L};
 
-	@Spy
 	private final IndexWriterHelper _indexWriterHelper = Mockito.mock(
 		IndexWriterHelper.class);
-
-	@Mock
-	private PortalInstancesLocalService _portalInstancesLocalService;
 
 }

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCPInstanceExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPInstanceException;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPInstanceLocalServiceUtil;
@@ -27,15 +19,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -127,6 +123,10 @@ public class CPInstancePersistenceTest {
 
 		CPInstance newCPInstance = _persistence.create(pk);
 
+		newCPInstance.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCPInstance.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPInstance.setUuid(RandomTestUtil.randomString());
 
 		newCPInstance.setExternalReferenceCode(RandomTestUtil.randomString());
@@ -208,6 +208,15 @@ public class CPInstancePersistenceTest {
 
 		newCPInstance.setUnspsc(RandomTestUtil.randomString());
 
+		newCPInstance.setDiscontinued(RandomTestUtil.randomBoolean());
+
+		newCPInstance.setDiscontinuedDate(RandomTestUtil.nextDate());
+
+		newCPInstance.setReplacementCPInstanceUuid(
+			RandomTestUtil.randomString());
+
+		newCPInstance.setReplacementCProductId(RandomTestUtil.nextLong());
+
 		newCPInstance.setStatus(RandomTestUtil.nextInt());
 
 		newCPInstance.setStatusByUserId(RandomTestUtil.nextLong());
@@ -221,6 +230,12 @@ public class CPInstancePersistenceTest {
 		CPInstance existingCPInstance = _persistence.findByPrimaryKey(
 			newCPInstance.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCPInstance.getMvccVersion(),
+			newCPInstance.getMvccVersion());
+		Assert.assertEquals(
+			existingCPInstance.getCtCollectionId(),
+			newCPInstance.getCtCollectionId());
 		Assert.assertEquals(
 			existingCPInstance.getUuid(), newCPInstance.getUuid());
 		Assert.assertEquals(
@@ -319,6 +334,18 @@ public class CPInstancePersistenceTest {
 		Assert.assertEquals(
 			existingCPInstance.getUnspsc(), newCPInstance.getUnspsc());
 		Assert.assertEquals(
+			existingCPInstance.isDiscontinued(),
+			newCPInstance.isDiscontinued());
+		Assert.assertEquals(
+			Time.getShortTimestamp(existingCPInstance.getDiscontinuedDate()),
+			Time.getShortTimestamp(newCPInstance.getDiscontinuedDate()));
+		Assert.assertEquals(
+			existingCPInstance.getReplacementCPInstanceUuid(),
+			newCPInstance.getReplacementCPInstanceUuid());
+		Assert.assertEquals(
+			existingCPInstance.getReplacementCProductId(),
+			newCPInstance.getReplacementCProductId());
+		Assert.assertEquals(
 			existingCPInstance.getStatus(), newCPInstance.getStatus());
 		Assert.assertEquals(
 			existingCPInstance.getStatusByUserId(),
@@ -329,6 +356,26 @@ public class CPInstancePersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingCPInstance.getStatusDate()),
 			Time.getShortTimestamp(newCPInstance.getStatusDate()));
+	}
+
+	@Test(expected = DuplicateCPInstanceExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CPInstance cpInstance = addCPInstance();
+
+		CPInstance newCPInstance = addCPInstance();
+
+		newCPInstance.setCompanyId(cpInstance.getCompanyId());
+
+		newCPInstance = _persistence.update(newCPInstance);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCPInstance);
+
+		newCPInstance.setExternalReferenceCode(
+			cpInstance.getExternalReferenceCode());
+
+		_persistence.update(newCPInstance);
 	}
 
 	@Test
@@ -397,6 +444,15 @@ public class CPInstancePersistenceTest {
 	}
 
 	@Test
+	public void testCountByC_S() throws Exception {
+		_persistence.countByC_S(RandomTestUtil.nextLong(), "");
+
+		_persistence.countByC_S(0L, "null");
+
+		_persistence.countByC_S(0L, (String)null);
+	}
+
+	@Test
 	public void testCountByC_C() throws Exception {
 		_persistence.countByC_C(RandomTestUtil.nextLong(), "");
 
@@ -406,12 +462,12 @@ public class CPInstancePersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_S() throws Exception {
-		_persistence.countByC_S(RandomTestUtil.nextLong(), "");
+	public void testCountByCPDI_S() throws Exception {
+		_persistence.countByCPDI_S(RandomTestUtil.nextLong(), "");
 
-		_persistence.countByC_S(0L, "null");
+		_persistence.countByCPDI_S(0L, "null");
 
-		_persistence.countByC_S(0L, (String)null);
+		_persistence.countByCPDI_S(0L, (String)null);
 	}
 
 	@Test
@@ -440,12 +496,22 @@ public class CPInstancePersistenceTest {
 	}
 
 	@Test
-	public void testCountByC_ERC() throws Exception {
-		_persistence.countByC_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByR_R_S() throws Exception {
+		_persistence.countByR_R_S(
+			"", RandomTestUtil.nextLong(), RandomTestUtil.nextInt());
 
-		_persistence.countByC_ERC(0L, "null");
+		_persistence.countByR_R_S("null", 0L, 0);
 
-		_persistence.countByC_ERC(0L, (String)null);
+		_persistence.countByR_R_S((String)null, 0L, 0);
+	}
+
+	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
 	}
 
 	@Test
@@ -471,14 +537,39 @@ public class CPInstancePersistenceTest {
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
+	@Test
+	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
+	}
+
 	protected OrderByComparator<CPInstance> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPInstance", "uuid", true, "externalReferenceCode", true,
-			"CPInstanceId", true, "groupId", true, "companyId", true, "userId",
-			true, "userName", true, "createDate", true, "modifiedDate", true,
-			"CPDefinitionId", true, "CPInstanceUuid", true, "sku", true, "gtin",
-			true, "manufacturerPartNumber", true, "purchasable", true, "width",
-			true, "height", true, "depth", true, "weight", true, "price", true,
+			"CPInstance", "mvccVersion", true, "ctCollectionId", true, "uuid",
+			true, "externalReferenceCode", true, "CPInstanceId", true,
+			"groupId", true, "companyId", true, "userId", true, "userName",
+			true, "createDate", true, "modifiedDate", true, "CPDefinitionId",
+			true, "CPInstanceUuid", true, "sku", true, "gtin", true,
+			"manufacturerPartNumber", true, "purchasable", true, "width", true,
+			"height", true, "depth", true, "weight", true, "price", true,
 			"promoPrice", true, "cost", true, "published", true, "displayDate",
 			true, "expirationDate", true, "lastPublishDate", true,
 			"overrideSubscriptionInfo", true, "subscriptionEnabled", true,
@@ -486,8 +577,10 @@ public class CPInstancePersistenceTest {
 			"maxSubscriptionCycles", true, "deliverySubscriptionEnabled", true,
 			"deliverySubscriptionLength", true, "deliverySubscriptionType",
 			true, "deliverySubscriptionTypeSettings", true,
-			"deliveryMaxSubscriptionCycles", true, "unspsc", true, "status",
-			true, "statusByUserId", true, "statusByUserName", true,
+			"deliveryMaxSubscriptionCycles", true, "unspsc", true,
+			"discontinued", true, "discontinuedDate", true,
+			"replacementCPInstanceUuid", true, "replacementCProductId", true,
+			"status", true, "statusByUserId", true, "statusByUserName", true,
 			"statusDate", true);
 	}
 
@@ -785,21 +878,25 @@ public class CPInstancePersistenceTest {
 				new Class<?>[] {String.class}, "sku"));
 
 		Assert.assertEquals(
-			Long.valueOf(cpInstance.getCompanyId()),
-			ReflectionTestUtil.<Long>invoke(
-				cpInstance, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "companyId"));
-		Assert.assertEquals(
 			cpInstance.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				cpInstance, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cpInstance.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpInstance, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CPInstance addCPInstance() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		CPInstance cpInstance = _persistence.create(pk);
+
+		cpInstance.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpInstance.setCtCollectionId(RandomTestUtil.nextLong());
 
 		cpInstance.setUuid(RandomTestUtil.randomString());
 
@@ -876,6 +973,14 @@ public class CPInstancePersistenceTest {
 		cpInstance.setDeliveryMaxSubscriptionCycles(RandomTestUtil.nextLong());
 
 		cpInstance.setUnspsc(RandomTestUtil.randomString());
+
+		cpInstance.setDiscontinued(RandomTestUtil.randomBoolean());
+
+		cpInstance.setDiscontinuedDate(RandomTestUtil.nextDate());
+
+		cpInstance.setReplacementCPInstanceUuid(RandomTestUtil.randomString());
+
+		cpInstance.setReplacementCProductId(RandomTestUtil.nextLong());
 
 		cpInstance.setStatus(RandomTestUtil.nextInt());
 

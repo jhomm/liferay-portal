@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.portal.instances.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.headless.portal.instances.client.dto.v1_0;
 import com.liferay.headless.portal.instances.client.function.UnsafeSupplier;
 import com.liferay.headless.portal.instances.client.serdes.v1_0.PortalInstanceSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alberto Chaparro
@@ -54,6 +45,25 @@ public class PortalInstance implements Cloneable, Serializable {
 	}
 
 	protected Boolean active;
+
+	public Admin getAdmin() {
+		return admin;
+	}
+
+	public void setAdmin(Admin admin) {
+		this.admin = admin;
+	}
+
+	public void setAdmin(UnsafeSupplier<Admin, Exception> adminUnsafeSupplier) {
+		try {
+			admin = adminUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Admin admin;
 
 	public Long getCompanyId() {
 		return companyId;

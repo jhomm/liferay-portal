@@ -1,28 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.summary;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.search.highlight.HighlightUtil;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.summary.Summary;
 import com.liferay.portal.search.summary.SummaryBuilder;
-import com.liferay.portal.util.HtmlImpl;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -35,7 +28,7 @@ public class SummaryBuilderImpl implements SummaryBuilder {
 
 	@Override
 	public Summary build() {
-		return new SummaryImpl(buildTitle(), buildContent(), _locale);
+		return new SummaryImpl(_buildTitle(), _buildContent(), _locale);
 	}
 
 	@Override
@@ -68,62 +61,107 @@ public class SummaryBuilderImpl implements SummaryBuilder {
 		_title = title;
 	}
 
-	protected String buildContent() {
-		if (Validator.isNull(_content)) {
+	private String _buildContent() {
+		return _buildText(_content, true);
+	}
+
+	private String _buildText(String text, boolean checkMaxLength) {
+		if (Validator.isNull(text)) {
 			return StringPool.BLANK;
 		}
 
-		if (_highlight) {
-			return buildContentHighlighted();
+		if (checkMaxLength && (_maxContentLength > 0)) {
+			text = _shorten(text, _maxContentLength);
 		}
 
-		return buildContentPlain();
-	}
-
-	protected String buildContentHighlighted() {
-		return _escapeAndHighlight(_content);
-	}
-
-	protected String buildContentPlain() {
-		if ((_maxContentLength <= 0) ||
-			(_content.length() <= _maxContentLength)) {
-
-			return _content;
-		}
-
-		return StringUtil.shorten(_content, _maxContentLength);
-	}
-
-	protected String buildTitle() {
-		if (Validator.isNull(_title)) {
-			return StringPool.BLANK;
+		if (_escape) {
+			text = _escape(text);
 		}
 
 		if (_highlight) {
-			return buildTitleHighlighted();
+			text = _highlight(text);
 		}
 
-		return buildTitlePlain();
+		return text;
 	}
 
-	protected String buildTitleHighlighted() {
-		return _escapeAndHighlight(_title);
+	private String _buildTitle() {
+		return _buildText(_title, false);
 	}
 
-	protected String buildTitlePlain() {
-		return _title;
-	}
-
-	private String _escapeAndHighlight(String text) {
+	private String _escape(String text) {
 		text = StringUtil.replace(
 			text, _HIGHLIGHT_TAGS, _ESCAPE_SAFE_HIGHLIGHTS);
 
-		if (_escape) {
-			text = _html.escape(text);
-		}
+		text = HtmlUtil.escape(text);
 
 		return StringUtil.replace(
-			text, _ESCAPE_SAFE_HIGHLIGHTS, HighlightUtil.HIGHLIGHTS);
+			text, _ESCAPE_SAFE_HIGHLIGHTS, _HIGHLIGHT_TAGS);
+	}
+
+	private String _highlight(String text) {
+		return StringUtil.replace(
+			text, _HIGHLIGHT_TAGS, HighlightUtil.HIGHLIGHTS);
+	}
+
+	private String _shorten(String text, int maxLength) {
+		String originalText = text;
+
+		List<Integer> closeTagIndexes = new ArrayList<>();
+		List<Integer> openTagIndexes = new ArrayList<>();
+
+		while (text.lastIndexOf(HighlightUtil.HIGHLIGHT_TAG_CLOSE) != -1) {
+			closeTagIndexes.add(
+				text.lastIndexOf(HighlightUtil.HIGHLIGHT_TAG_CLOSE));
+
+			text = StringUtil.removeLast(
+				text, HighlightUtil.HIGHLIGHT_TAG_CLOSE);
+
+			openTagIndexes.add(
+				text.lastIndexOf(HighlightUtil.HIGHLIGHT_TAG_OPEN));
+
+			text = StringUtil.removeLast(
+				text, HighlightUtil.HIGHLIGHT_TAG_OPEN);
+		}
+
+		if (text.length() > maxLength) {
+			text = StringUtil.shorten(text, maxLength);
+		}
+		else {
+			return originalText;
+		}
+
+		ListUtil.sort(closeTagIndexes);
+		ListUtil.sort(openTagIndexes);
+
+		for (int i = 0; i < openTagIndexes.size(); i++) {
+			int textEndIndex = text.length();
+
+			if (text.endsWith("...")) {
+				textEndIndex = textEndIndex - 3;
+			}
+
+			int openTagIndex = openTagIndexes.get(i);
+
+			if (openTagIndex < textEndIndex) {
+				text = StringUtil.insert(
+					text, HighlightUtil.HIGHLIGHT_TAG_OPEN, openTagIndex);
+
+				textEndIndex =
+					textEndIndex + HighlightUtil.HIGHLIGHT_TAG_OPEN.length();
+
+				int closeTagIndex = closeTagIndexes.get(i);
+
+				text = StringUtil.insert(
+					text, HighlightUtil.HIGHLIGHT_TAG_CLOSE,
+					Math.min(closeTagIndex, textEndIndex));
+			}
+			else {
+				break;
+			}
+		}
+
+		return text;
 	}
 
 	private static final String[] _ESCAPE_SAFE_HIGHLIGHTS = {
@@ -137,7 +175,6 @@ public class SummaryBuilderImpl implements SummaryBuilder {
 	private String _content;
 	private boolean _escape = true;
 	private boolean _highlight;
-	private final Html _html = new HtmlImpl();
 	private Locale _locale;
 	private int _maxContentLength;
 	private String _title;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.entry.rel.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -216,108 +206,98 @@ public class AssetEntryAssetCategoryRelModelImpl
 	public Map<String, Function<AssetEntryAssetCategoryRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AssetEntryAssetCategoryRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AssetEntryAssetCategoryRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AssetEntryAssetCategoryRel.class.getClassLoader(),
-			AssetEntryAssetCategoryRel.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<AssetEntryAssetCategoryRel, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<AssetEntryAssetCategoryRel> constructor =
-				(Constructor<AssetEntryAssetCategoryRel>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<AssetEntryAssetCategoryRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<AssetEntryAssetCategoryRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AssetEntryAssetCategoryRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId",
+				AssetEntryAssetCategoryRel::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"assetEntryAssetCategoryRelId",
+				AssetEntryAssetCategoryRel::getAssetEntryAssetCategoryRelId);
+			attributeGetterFunctions.put(
+				"companyId", AssetEntryAssetCategoryRel::getCompanyId);
+			attributeGetterFunctions.put(
+				"assetEntryId", AssetEntryAssetCategoryRel::getAssetEntryId);
+			attributeGetterFunctions.put(
+				"assetCategoryId",
+				AssetEntryAssetCategoryRel::getAssetCategoryId);
+			attributeGetterFunctions.put(
+				"priority", AssetEntryAssetCategoryRel::getPriority);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map
-		<String, Function<AssetEntryAssetCategoryRel, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<AssetEntryAssetCategoryRel, Object>>
-			_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AssetEntryAssetCategoryRel, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<AssetEntryAssetCategoryRel, Object>>();
-		Map<String, BiConsumer<AssetEntryAssetCategoryRel, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<AssetEntryAssetCategoryRel, ?>>();
+		private static final Map
+			<String, BiConsumer<AssetEntryAssetCategoryRel, Object>>
+				_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AssetEntryAssetCategoryRel::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AssetEntryAssetCategoryRel, Long>)
-				AssetEntryAssetCategoryRel::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", AssetEntryAssetCategoryRel::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<AssetEntryAssetCategoryRel, Long>)
-				AssetEntryAssetCategoryRel::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"assetEntryAssetCategoryRelId",
-			AssetEntryAssetCategoryRel::getAssetEntryAssetCategoryRelId);
-		attributeSetterBiConsumers.put(
-			"assetEntryAssetCategoryRelId",
-			(BiConsumer<AssetEntryAssetCategoryRel, Long>)
-				AssetEntryAssetCategoryRel::setAssetEntryAssetCategoryRelId);
-		attributeGetterFunctions.put(
-			"companyId", AssetEntryAssetCategoryRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AssetEntryAssetCategoryRel, Long>)
-				AssetEntryAssetCategoryRel::setCompanyId);
-		attributeGetterFunctions.put(
-			"assetEntryId", AssetEntryAssetCategoryRel::getAssetEntryId);
-		attributeSetterBiConsumers.put(
-			"assetEntryId",
-			(BiConsumer<AssetEntryAssetCategoryRel, Long>)
-				AssetEntryAssetCategoryRel::setAssetEntryId);
-		attributeGetterFunctions.put(
-			"assetCategoryId", AssetEntryAssetCategoryRel::getAssetCategoryId);
-		attributeSetterBiConsumers.put(
-			"assetCategoryId",
-			(BiConsumer<AssetEntryAssetCategoryRel, Long>)
-				AssetEntryAssetCategoryRel::setAssetCategoryId);
-		attributeGetterFunctions.put(
-			"priority", AssetEntryAssetCategoryRel::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<AssetEntryAssetCategoryRel, Integer>)
-				AssetEntryAssetCategoryRel::setPriority);
+		static {
+			Map<String, BiConsumer<AssetEntryAssetCategoryRel, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<AssetEntryAssetCategoryRel, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AssetEntryAssetCategoryRel, Long>)
+					AssetEntryAssetCategoryRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AssetEntryAssetCategoryRel, Long>)
+					AssetEntryAssetCategoryRel::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"assetEntryAssetCategoryRelId",
+				(BiConsumer<AssetEntryAssetCategoryRel, Long>)
+					AssetEntryAssetCategoryRel::
+						setAssetEntryAssetCategoryRelId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AssetEntryAssetCategoryRel, Long>)
+					AssetEntryAssetCategoryRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"assetEntryId",
+				(BiConsumer<AssetEntryAssetCategoryRel, Long>)
+					AssetEntryAssetCategoryRel::setAssetEntryId);
+			attributeSetterBiConsumers.put(
+				"assetCategoryId",
+				(BiConsumer<AssetEntryAssetCategoryRel, Long>)
+					AssetEntryAssetCategoryRel::setAssetCategoryId);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<AssetEntryAssetCategoryRel, Integer>)
+					AssetEntryAssetCategoryRel::setPriority);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -681,45 +661,13 @@ public class AssetEntryAssetCategoryRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AssetEntryAssetCategoryRel, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AssetEntryAssetCategoryRel, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AssetEntryAssetCategoryRel, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(AssetEntryAssetCategoryRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, AssetEntryAssetCategoryRel>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						AssetEntryAssetCategoryRel.class, ModelWrapper.class);
 
 	}
 
@@ -733,7 +681,8 @@ public class AssetEntryAssetCategoryRelModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<AssetEntryAssetCategoryRel, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,16 +8,19 @@ import ClayIcon from '@clayui/icon';
 import ClayLabel from '@clayui/label';
 import classnames from 'classnames';
 import {useMutation} from 'graphql-hooks';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useState} from 'react';
 import {withRouter} from 'react-router-dom';
 
+import {AppContext} from '../AppContext.es';
+import FlagsContainer from '../pages/questions/components/FlagsContainer';
 import {
 	deleteMessageQuery,
 	markAsAnswerMessageBoardMessageQuery,
+	unMarkAsAnswerMessageBoardMessageQuery,
 } from '../utils/client.es';
-import lang from '../utils/lang.es';
 import ArticleBodyRenderer from './ArticleBodyRenderer.es';
 import Comments from './Comments.es';
+import EditedTimestamp from './EditedTimestamp.es';
 import Link from './Link.es';
 import Modal from './Modal.es';
 import Rating from './Rating.es';
@@ -38,18 +32,23 @@ export default withRouter(
 		answerChange,
 		canMarkAsAnswer,
 		deleteAnswer,
+		display,
 		editable = true,
 		match: {url},
+		onSubscription,
+		question,
+		showItems = true,
+		showSignature,
+		styledItems = false,
 	}) => {
+		const context = useContext(AppContext);
 		const [comments, setComments] = useState(
 			answer.messageBoardMessages.items
 		);
-		const [dateModified, setDateModified] = useState('');
 		const [showAsAnswer, setShowAsAnswer] = useState(answer.showAsAnswer);
 		const [showNewComment, setShowNewComment] = useState(false);
-		const [showDeleteAnswerModal, setShowDeleteAnswerModal] = useState(
-			false
-		);
+		const [showDeleteAnswerModal, setShowDeleteAnswerModal] =
+			useState(false);
 
 		const [deleteMessage] = useMutation(deleteMessageQuery);
 
@@ -61,55 +60,100 @@ export default withRouter(
 			markAsAnswerMessageBoardMessageQuery
 		);
 
+		const [unMarkAsAnswerMessageBoardMessage] = useMutation(
+			unMarkAsAnswerMessageBoardMessageQuery
+		);
+
+		const markAsAnswerFunction = showAsAnswer
+			? unMarkAsAnswerMessageBoardMessage
+			: markAsAnswerMessageBoardMessage;
+
 		useEffect(() => {
 			setShowAsAnswer(answer.showAsAnswer);
 		}, [answer.showAsAnswer]);
 
-		useEffect(() => {
-			setDateModified(new Date(answer.dateModified).toLocaleDateString());
-		}, [answer.dateModified]);
-
 		return (
 			<>
 				<div
-					className={classnames('questions-answer c-p-3', {
+					className={classnames('questions-answer c-py-2', {
+						'c-px-3': showAsAnswer && !display?.preview,
+						'questions-answer': styledItems,
 						'questions-answer-success': showAsAnswer,
 					})}
 					data-testid="mark-as-answer-style"
 				>
 					<div className="d-flex row">
-						<div className="c-ml-auto c-ml-md-1 c-ml-sm-auto order-1 order-md-0 text-md-center text-right">
-							<Rating
-								aggregateRating={answer.aggregateRating}
-								disabled={!editable}
-								entityId={answer.id}
-								myRating={
-									answer.myRating &&
-									answer.myRating.ratingValue
-								}
-								type="Message"
-							/>
-						</div>
+						{showItems && (
+							<div className="c-ml-auto c-ml-md-1 c-ml-sm-auto order-1 order-md-0 text-md-center text-right">
+								<Rating
+									aggregateRating={answer.aggregateRating}
+									disabled={!editable}
+									entityId={answer.id}
+									myRating={
+										answer.myRating &&
+										answer.myRating.ratingValue
+									}
+									type="Message"
+								/>
+							</div>
+						)}
 
 						<div className="c-mb-4 c-mb-md-0 c-ml-3 col-lg-11 col-md-10 col-sm-12 col-xl-11">
-							{showAsAnswer && (
-								<p
-									className="c-mb-0 font-weight-bold text-success"
-									data-testid="mark-as-answer-check"
-								>
-									<ClayIcon symbol="check-circle-full" />
+							<div
+								className={classnames('d-flex', {
+									'flex-column':
+										showAsAnswer && !display?.preview,
+									'flex-row-reverse':
+										showAsAnswer && display?.preview,
+									'justify-content-between': display?.preview,
+								})}
+							>
+								{showAsAnswer && (
+									<div
+										className={classnames('d-flex', {
+											'justify-content-end':
+												display?.preview,
+										})}
+									>
+										<p
+											className="c-mb-0 font-weight-bold text-success"
+											data-testid="mark-as-answer-check"
+										>
+											<span className="c-mr-2">
+												{Liferay.Language.get(
+													'chosen-answer'
+												)}
+											</span>
 
-									<span className="c-ml-3">
-										{Liferay.Language.get('chosen-answer')}
+											<ClayIcon
+												aria-label={Liferay.Language.get(
+													'chosen-answer'
+												)}
+												symbol="check-circle-full"
+											/>
+										</p>
+									</div>
+								)}
+
+								<span className="text-secondary">
+									<EditedTimestamp
+										creator={answer.creator.name}
+										dateCreated={answer.dateCreated}
+										dateModified={answer.dateModified}
+										operationText={Liferay.Language.get(
+											'answered'
+										)}
+										styledTimeStamp={styledItems}
+									/>
+								</span>
+
+								{answer.modified && (
+									<span className="question-edited">
+										({Liferay.Language.get('edited')})
 									</span>
-								</p>
-							)}
+								)}
+							</div>
 
-							<span className="text-secondary">
-								{lang.sub(Liferay.Language.get('answered-x'), [
-									dateModified,
-								])}
-							</span>
 							{answer.status && answer.status !== 'approved' && (
 								<span className="c-ml-2 text-secondary">
 									<ClayLabel displayType="info">
@@ -117,23 +161,39 @@ export default withRouter(
 									</ClayLabel>
 								</span>
 							)}
-							<div className="c-mt-2">
+
+							<div>
 								<ArticleBodyRenderer {...answer} />
 							</div>
-							<div className="d-flex justify-content-between">
+
+							<div>
 								<div>
 									{editable && (
-										<ClayButton.Group
-											className="font-weight-bold text-secondary"
-											spaced={true}
+										<div
+											className={classnames(
+												'font-weight-bold text-secondary',
+												{
+													'font-weight-bold text-secondary d-flex':
+														styledItems,
+												}
+											)}
 										>
 											{answer.actions[
 												'reply-to-message'
 											] &&
-												answer.status !== 'pending' && (
+												answer.status !== 'pending' &&
+												!comments.length && (
 													<ClayButton
-														className="text-reset"
-														displayType="unstyled"
+														aria-label={Liferay.Language.get(
+															'add-comment'
+														)}
+														className={classnames(
+															'btn-sm c-mr-2 c-px-2 c-py-1',
+															{
+																'text-2':
+																	styledItems,
+															}
+														)}
 														onClick={() =>
 															setShowNewComment(
 																true
@@ -141,7 +201,7 @@ export default withRouter(
 														}
 													>
 														{Liferay.Language.get(
-															'reply'
+															'add-comment'
 														)}
 													</ClayButton>
 												)}
@@ -149,8 +209,17 @@ export default withRouter(
 											{answer.actions.delete && (
 												<>
 													<ClayButton
-														className="text-reset"
-														displayType="unstyled"
+														aria-label={Liferay.Language.get(
+															'delete'
+														)}
+														className={classnames(
+															'btn-sm c-mr-2 c-px-2 c-py-1',
+															{
+																'text-2':
+																	styledItems,
+															}
+														)}
+														displayType="secondary"
 														onClick={() => {
 															setShowDeleteAnswerModal(
 																true
@@ -172,9 +241,37 @@ export default withRouter(
 																		answer.id,
 																},
 															}).then(() => {
-																deleteAnswer(
-																	answer
-																);
+																if (
+																	comments.length
+																) {
+																	Promise.all(
+																		comments.map(
+																			({
+																				id,
+																			}) =>
+																				deleteMessage(
+																					{
+																						variables:
+																							{
+																								messageBoardMessageId:
+																									id,
+																							},
+																					}
+																				)
+																		)
+																	).then(
+																		() => {
+																			deleteAnswer(
+																				answer
+																			);
+																		}
+																	);
+																}
+																else {
+																	deleteAnswer(
+																		answer
+																	);
+																}
 															});
 														}}
 														onClose={() => {
@@ -198,19 +295,31 @@ export default withRouter(
 
 											{canMarkAsAnswer && (
 												<ClayButton
-													className="text-reset"
+													aria-label={
+														showAsAnswer
+															? Liferay.Language.get(
+																	'unmark-as-answer'
+																)
+															: Liferay.Language.get(
+																	'mark-as-answer'
+																)
+													}
+													className={classnames(
+														'btn-sm c-mr-2 c-px-2 c-py-1',
+														{
+															'text-2':
+																styledItems,
+														}
+													)}
 													data-testid="mark-as-answer-button"
-													displayType="unstyled"
+													displayType="secondary"
 													onClick={() => {
-														markAsAnswerMessageBoardMessage(
-															{
-																variables: {
-																	messageBoardMessageId:
-																		answer.id,
-																	showAsAnswer: !showAsAnswer,
-																},
-															}
-														).then(() => {
+														markAsAnswerFunction({
+															variables: {
+																messageBoardMessageId:
+																	answer.id,
+															},
+														}).then(() => {
 															setShowAsAnswer(
 																!showAsAnswer
 															);
@@ -222,39 +331,66 @@ export default withRouter(
 														});
 													}}
 												>
-													{Liferay.Language.get(
-														showAsAnswer
-															? 'Unmark as answer'
-															: 'Mark as answer'
-													)}
+													{showAsAnswer
+														? Liferay.Language.get(
+																'unmark-as-answer'
+															)
+														: Liferay.Language.get(
+																'mark-as-answer'
+															)}
 												</ClayButton>
 											)}
 
-											{/* this is an extra double check, remove it without creating 2 clay-group-item */}
-											{answer.actions.replace && (
-												<ClayButton
-													className="text-reset"
-													displayType="unstyled"
-												>
-													<Link
-														className="text-reset"
-														to={`${url}/answers/${answer.friendlyUrlPath}/edit`}
-													>
-														{Liferay.Language.get(
+											{display?.flags && (
+												<FlagsContainer
+													btnProps={{
+														className:
+															'c-mr-2 c-px-2 c-py-1 btn btn-secondary',
+														small: true,
+													}}
+													content={answer}
+													context={context}
+													onlyIcon={false}
+													showIcon={false}
+												/>
+											)}
+
+											{editable &&
+												answer.actions.replace &&
+												showItems && (
+													<ClayButton
+														aria-label={Liferay.Language.get(
 															'edit'
 														)}
-													</Link>
-												</ClayButton>
-											)}
-										</ClayButton.Group>
+														className="btn-sm c-mr-2 c-px-2 c-py-1"
+														displayType="secondary"
+													>
+														<Link
+															className="text-reset"
+															to={`${url}/answers/${answer.friendlyUrlPath}/edit`}
+														>
+															{Liferay.Language.get(
+																'edit'
+															)}
+														</Link>
+													</ClayButton>
+												)}
+										</div>
 									)}
 								</div>
-								<div className="c-ml-md-auto c-ml-sm-2 c-mr-lg-2 c-mr-md-4 c-mr-xl-2">
-									<UserRow
-										creator={answer.creator}
-										statistics={answer.creatorStatistics}
-									/>
-								</div>
+
+								{showItems && (
+									<div className="c-ml-md-auto c-ml-sm-2 c-mr-lg-2 c-mr-md-4 c-mr-xl-2 d-flex justify-content-end">
+										<UserRow
+											companyName={context.companyName}
+											creator={answer.creator}
+											hasCompanyMx={answer.hasCompanyMx}
+											statistics={
+												answer.creatorStatistics
+											}
+										/>
+									</div>
+								)}
 							</div>
 						</div>
 					</div>
@@ -267,12 +403,38 @@ export default withRouter(
 							commentsChange={_commentsChange}
 							editable={editable}
 							entityId={answer.id}
+							hasCompanyMx={comments.hasCompanyMx}
+							onSubscription={onSubscription}
+							question={question}
 							showNewComment={showNewComment}
 							showNewCommentChange={(value) =>
 								setShowNewComment(value)
 							}
+							showSignature={showSignature}
+							styledItems={styledItems}
 						/>
 					</div>
+				</div>
+				<div className="c-my-2 offset-md-1">
+					{editable && !!comments.length && !showNewComment && (
+						<ClayButton.Group
+							className="font-weight-bold text-secondary"
+							spaced
+						>
+							{answer.actions['reply-to-message'] &&
+								answer.status !== 'pending' && (
+									<ClayButton
+										aria-label={Liferay.Language.get(
+											'add-comment'
+										)}
+										className="btn-sm c-px-2 c-py-1"
+										onClick={() => setShowNewComment(true)}
+									>
+										{Liferay.Language.get('add-comment')}
+									</ClayButton>
+								)}
+						</ClayButton.Group>
+					)}
 				</div>
 			</>
 		);

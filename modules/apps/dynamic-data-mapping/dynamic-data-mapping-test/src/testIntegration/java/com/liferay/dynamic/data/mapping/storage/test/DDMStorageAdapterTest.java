@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.storage.test;
@@ -26,9 +17,9 @@ import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterDeleteRequest;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterDeleteResponse;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterGetRequest;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterGetResponse;
+import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterRegistry;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterSaveRequest;
 import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterSaveResponse;
-import com.liferay.dynamic.data.mapping.storage.DDMStorageAdapterTracker;
 import com.liferay.dynamic.data.mapping.storage.StorageType;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormTestUtil;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
@@ -80,12 +71,12 @@ public class DDMStorageAdapterTest {
 	@Test
 	public void testGetDDMStorageAdapter() throws Exception {
 		DDMStorageAdapter jsonDDMStorageAdapter =
-			_ddmStorageAdapterTracker.getDDMStorageAdapter(_STORAGE_TYPE_JSON);
+			_ddmStorageAdapterRegistry.getDDMStorageAdapter(_STORAGE_TYPE_JSON);
 
 		Assert.assertNotNull(jsonDDMStorageAdapter);
 
 		DDMStorageAdapter testDDMStorageAdapter =
-			_ddmStorageAdapterTracker.getDDMStorageAdapter(_STORAGE_TYPE_TEST);
+			_ddmStorageAdapterRegistry.getDDMStorageAdapter(_STORAGE_TYPE_TEST);
 
 		Assert.assertNotNull(testDDMStorageAdapter);
 	}
@@ -93,7 +84,7 @@ public class DDMStorageAdapterTest {
 	@Test
 	public void testGetDDMStorageAdapterTypes() throws Exception {
 		List<String> ddmStorageAdapterTypes = new ArrayList<>(
-			_ddmStorageAdapterTracker.getDDMStorageAdapterTypes());
+			_ddmStorageAdapterRegistry.getDDMStorageAdapterTypes());
 
 		Assert.assertTrue(ddmStorageAdapterTypes.contains(_STORAGE_TYPE_JSON));
 		Assert.assertTrue(ddmStorageAdapterTypes.contains(_STORAGE_TYPE_TEST));
@@ -102,7 +93,7 @@ public class DDMStorageAdapterTest {
 	@Test
 	public void testInvokeDDMTestStorageAdapter() throws Exception {
 		DDMStorageAdapter testDDMStorageAdapter =
-			_ddmStorageAdapterTracker.getDDMStorageAdapter(_STORAGE_TYPE_TEST);
+			_ddmStorageAdapterRegistry.getDDMStorageAdapter(_STORAGE_TYPE_TEST);
 
 		long primaryKey = _saveDDMFormValues(
 			_createDDMFormValues(), testDDMStorageAdapter);
@@ -208,7 +199,7 @@ public class DDMStorageAdapterTest {
 	private static final String _STORAGE_TYPE_TEST = "test";
 
 	@Inject
-	private static DDMStorageAdapterTracker _ddmStorageAdapterTracker;
+	private static DDMStorageAdapterRegistry _ddmStorageAdapterRegistry;
 
 	private static ServiceRegistration<DDMStorageAdapter> _serviceRegistration;
 
@@ -238,19 +229,19 @@ public class DDMStorageAdapterTest {
 				DDMStorageAdapterGetRequest ddmStorageAdapterGetRequest)
 			throws StorageException {
 
-			if (Objects.equals(
+			if (!Objects.equals(
 					_DEFAULT_PRIMARY_KEY,
 					ddmStorageAdapterGetRequest.getPrimaryKey())) {
 
-				DDMStorageAdapterGetResponse.Builder
-					ddmStorageAdapterGetResponseBuilder =
-						DDMStorageAdapterGetResponse.Builder.newBuilder(
-							_ddmFormValues);
-
-				return ddmStorageAdapterGetResponseBuilder.build();
+				return null;
 			}
 
-			return null;
+			DDMStorageAdapterGetResponse.Builder
+				ddmStorageAdapterGetResponseBuilder =
+					DDMStorageAdapterGetResponse.Builder.newBuilder(
+						_ddmFormValues);
+
+			return ddmStorageAdapterGetResponseBuilder.build();
 		}
 
 		@Override

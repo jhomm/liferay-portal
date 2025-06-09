@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.style.book.model.StyleBookEntry;
 
@@ -30,6 +22,10 @@ public class StyleBookEntryLocalServiceWrapper
 	implements ServiceWrapper<StyleBookEntryLocalService>,
 			   StyleBookEntryLocalService {
 
+	public StyleBookEntryLocalServiceWrapper() {
+		this(null);
+	}
+
 	public StyleBookEntryLocalServiceWrapper(
 		StyleBookEntryLocalService styleBookEntryLocalService) {
 
@@ -38,23 +34,15 @@ public class StyleBookEntryLocalServiceWrapper
 
 	@Override
 	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _styleBookEntryLocalService.addStyleBookEntry(
-			userId, groupId, name, styleBookEntryKey, serviceContext);
-	}
-
-	@Override
-	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _styleBookEntryLocalService.addStyleBookEntry(
-			userId, groupId, frontendTokensValues, name, styleBookEntryKey,
+			externalReferenceCode, userId, groupId, defaultStyleBookEntry,
+			frontendTokensValues, name, styleBookEntryKey, themeId,
 			serviceContext);
 	}
 
@@ -84,12 +72,12 @@ public class StyleBookEntryLocalServiceWrapper
 
 	@Override
 	public StyleBookEntry copyStyleBookEntry(
-			long userId, long groupId, long styleBookEntryId,
+			long userId, long groupId, long sourceStyleBookEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _styleBookEntryLocalService.copyStyleBookEntry(
-			userId, groupId, styleBookEntryId, serviceContext);
+			userId, groupId, sourceStyleBookEntryId, serviceContext);
 	}
 
 	/**
@@ -138,6 +126,13 @@ public class StyleBookEntryLocalServiceWrapper
 		return _styleBookEntryLocalService.deletePersistedModel(persistedModel);
 	}
 
+	@Override
+	public void deleteStyleBookEntries(long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_styleBookEntryLocalService.deleteStyleBookEntries(groupId);
+	}
+
 	/**
 	 * Deletes the style book entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -155,6 +150,15 @@ public class StyleBookEntryLocalServiceWrapper
 
 		return _styleBookEntryLocalService.deleteStyleBookEntry(
 			styleBookEntryId);
+	}
+
+	@Override
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _styleBookEntryLocalService.deleteStyleBookEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -288,8 +292,11 @@ public class StyleBookEntryLocalServiceWrapper
 	}
 
 	@Override
-	public StyleBookEntry fetchDefaultStyleBookEntry(long groupId) {
-		return _styleBookEntryLocalService.fetchDefaultStyleBookEntry(groupId);
+	public StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId) {
+
+		return _styleBookEntryLocalService.fetchDefaultStyleBookEntry(
+			groupId, themeId);
 	}
 
 	@Override
@@ -432,6 +439,14 @@ public class StyleBookEntryLocalServiceWrapper
 
 		return _styleBookEntryLocalService.getStyleBookEntries(
 			groupId, start, end, orderByComparator);
+	}
+
+	@Override
+	public java.util.List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId) {
+
+		return _styleBookEntryLocalService.getStyleBookEntries(
+			groupId, themeId);
 	}
 
 	@Override
@@ -596,7 +611,7 @@ public class StyleBookEntryLocalServiceWrapper
 	 * <strong>Important:</strong> Inspect StyleBookEntryLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 	 * </p>
 	 *
-	 * @param styleBookEntry the style book entry
+	 * @param draftStyleBookEntry the style book entry
 	 * @return the style book entry that was updated
 	 */
 	@Override
@@ -606,6 +621,11 @@ public class StyleBookEntryLocalServiceWrapper
 
 		return _styleBookEntryLocalService.updateStyleBookEntry(
 			draftStyleBookEntry);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _styleBookEntryLocalService.getBasePersistence();
 	}
 
 	@Override

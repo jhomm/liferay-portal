@@ -1,33 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import AJAX from '../AJAX/index';
-import {CP_INSTANCE_CHANGED} from '../eventsDefinitions';
 import {getDefaultFieldsShape, updateFields} from './formsHelper';
 
 class DDMFormHandler {
-	constructor({DDMFormInstance, actionURL, namespace, portletId}) {
-		this.actionURL = actionURL;
+	constructor({
+		DDMFormInstance,
+		accountId = 0,
+		channelId = 0,
+		cpDefinitionId,
+		namespace,
+		quantity,
+	}) {
+		const {
+			account: {accountId: contextAccountId},
+			commerceChannelId: contextCommerceChannelId,
+			currency: {currencyCode},
+		} = Liferay.CommerceContext;
+
 		this.DDMFormInstance = DDMFormInstance;
-		this.namespace = namespace;
-		this.portletId = portletId;
+		this.accountId = accountId || contextAccountId;
+		this.channelId = channelId || contextCommerceChannelId;
+		this.currencyCode = currencyCode;
 		this.fields = getDefaultFieldsShape(
 			DDMFormInstance.reactComponentRef.current.toJSON()
 		);
+		this.namespace = namespace;
+		this.productId = cpDefinitionId;
+		this.quantity = quantity;
 
 		this._attachFormListener();
-		this.checkCPInstance();
 	}
 
 	_attachFormListener() {
@@ -35,38 +39,14 @@ class DDMFormHandler {
 			({payload: field, type: eventName}) => {
 				if (eventName === 'field_change') {
 					this.fields = updateFields(this.fields, field);
-					this.checkCPInstance();
+
+					Liferay.fire('product-option-upload-update', {
+						key: field.fieldInstance.fieldName,
+						value: field.value,
+					});
 				}
 			}
 		);
-	}
-
-	checkCPInstance() {
-		const ddmFormValues = JSON.stringify(this.fields);
-		const fieldsParam = new FormData();
-
-		fieldsParam.append(`_${this.portletId}_ddmFormValues`, ddmFormValues);
-
-		AJAX.POST(this.actionURL, null, {
-			body: fieldsParam,
-			headers: new Headers({'x-csrf-token': Liferay.authToken}),
-		}).then((cpInstance) => {
-			if (cpInstance.cpInstanceExist) {
-				cpInstance.options = ddmFormValues;
-				cpInstance.skuId = parseInt(cpInstance.cpInstanceId, 10);
-
-				const dispatchedPayload = {
-					cpInstance,
-					formFields: this.fields,
-					namespace: this.namespace,
-				};
-
-				Liferay.fire(
-					`${this.namespace}${CP_INSTANCE_CHANGED}`,
-					dispatchedPayload
-				);
-			}
-		});
 	}
 }
 

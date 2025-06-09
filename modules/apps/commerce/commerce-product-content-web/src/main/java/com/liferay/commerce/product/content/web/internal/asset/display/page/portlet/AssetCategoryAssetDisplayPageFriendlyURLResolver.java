@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.asset.display.page.portlet;
@@ -31,36 +22,36 @@ import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.product.url.CPFriendlyURL;
 import com.liferay.friendly.url.model.FriendlyURLEntry;
 import com.liferay.friendly.url.service.FriendlyURLEntryLocalService;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageProvider;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutFriendlyURLComposite;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.FriendlyURLResolver;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.FriendlyURLNormalizerUtil;
-import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.kernel.util.InheritableMap;
+import com.liferay.portal.kernel.util.FriendlyURLNormalizer;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import java.util.List;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -70,7 +61,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  * @author Ivica Cardic
  */
-@Component(enabled = false, service = FriendlyURLResolver.class)
+@Component(service = FriendlyURLResolver.class)
 public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 	extends BaseAssetDisplayPageFriendlyURLResolver {
 
@@ -83,11 +74,11 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 		Group companyGroup = _groupLocalService.getCompanyGroup(companyId);
 
-		String urlTitle = friendlyURL.substring(
-			_assetDisplayPageFriendlyURLResolverHelper.getURLSeparatorLength(
-				getURLSeparator()));
+		String urlSeparator = getURLSeparator();
 
-		urlTitle = FriendlyURLNormalizerUtil.normalizeWithEncoding(urlTitle);
+		String urlTitle = friendlyURL.substring(urlSeparator.length());
+
+		urlTitle = _friendlyURLNormalizer.normalizeWithEncoding(urlTitle);
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
@@ -122,9 +113,10 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 			String assetFriendlyURL =
 				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
-					_portal.getClassName(
-						layoutDisplayPageObjectProvider.getClassNameId()),
-					layoutDisplayPageObjectProvider.getClassPK(),
+					new InfoItemReference(
+						layoutDisplayPageObjectProvider.getClassName(),
+						new ClassPKInfoItemIdentifier(
+							layoutDisplayPageObjectProvider.getClassPK())),
 					_portal.getLocale(
 						(HttpServletRequest)requestContext.get("request")),
 					themeDisplay);
@@ -139,8 +131,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 		}
 
 		return _getBasicLayoutURL(
-			groupId, privateLayout, mainPath, params, requestContext,
-			assetCategory);
+			groupId, privateLayout, mainPath, requestContext, assetCategory);
 	}
 
 	@Override
@@ -152,9 +143,9 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 
 		Group companyGroup = _groupLocalService.getCompanyGroup(companyId);
 
-		String urlTitle = friendlyURL.substring(
-			_assetDisplayPageFriendlyURLResolverHelper.getURLSeparatorLength(
-				getURLSeparator()));
+		String urlSeparator = getURLSeparator();
+
+		String urlTitle = friendlyURL.substring(urlSeparator.length());
 
 		FriendlyURLEntry friendlyURLEntry =
 			_friendlyURLEntryLocalService.fetchFriendlyURLEntry(
@@ -165,18 +156,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 			return null;
 		}
 
-		HttpServletRequest httpServletRequest =
-			(HttpServletRequest)requestContext.get("request");
-
-		HttpSession httpSession = httpServletRequest.getSession();
-
-		Locale locale = (Locale)httpSession.getAttribute(WebKeys.LOCALE);
-
-		if (locale == null) {
-			locale = _portal.getLocale(httpServletRequest);
-		}
-
-		String languageId = LanguageUtil.getLanguageId(locale);
+		String languageId = _language.getLanguageId(getLocale(requestContext));
 
 		if (Validator.isBlank(friendlyURLEntry.getUrlTitle(languageId))) {
 			return null;
@@ -204,12 +184,13 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 				requestContext);
 		}
 
-		Layout layout = getAssetCategoryLayout(
+		Layout layout = _getAssetCategoryLayout(
 			groupId, privateLayout, assetCategory.getCategoryId());
 
 		return new LayoutFriendlyURLComposite(
 			layout,
-			getURLSeparator() + friendlyURLEntry.getUrlTitle(languageId));
+			getURLSeparator() + friendlyURLEntry.getUrlTitle(languageId),
+			false);
 	}
 
 	@Override
@@ -218,7 +199,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 			CompanyThreadLocal.getCompanyId());
 	}
 
-	protected Layout getAssetCategoryLayout(
+	private Layout _getAssetCategoryLayout(
 			long groupId, boolean privateLayout, long categoryId)
 		throws PortalException {
 
@@ -234,7 +215,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 					groupId);
 
 			CPDisplayLayoutConfiguration cpDisplayLayoutConfiguration =
-				ConfigurationProviderUtil.getConfiguration(
+				_configurationProvider.getConfiguration(
 					CPDisplayLayoutConfiguration.class,
 					new GroupServiceSettingsLocator(
 						commerceChannel.getGroupId(),
@@ -257,46 +238,47 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 				}
 			}
 
-			long plid =
-				_assetDisplayPageFriendlyURLResolverHelper.getPlidFromPortletId(
-					groupId, privateLayout,
-					CPPortletKeys.CP_CATEGORY_CONTENT_WEB);
+			long plid = _portal.getPlidFromPortletId(
+				groupId, privateLayout, CPPortletKeys.CP_CATEGORY_CONTENT_WEB);
 
 			return _layoutLocalService.getLayout(plid);
 		}
 
-		return _layoutLocalService.getLayoutByUuidAndGroupId(
+		Layout layout = _layoutLocalService.fetchLayoutByUuidAndGroupId(
 			cpDisplayLayout.getLayoutUuid(), groupId, privateLayout);
+
+		if (layout == null) {
+			layout = _layoutLocalService.fetchLayoutByUuidAndGroupId(
+				cpDisplayLayout.getLayoutUuid(), groupId, !privateLayout);
+		}
+
+		return layout;
 	}
 
 	private String _getBasicLayoutURL(
 			long groupId, boolean privateLayout, String mainPath,
-			Map<String, String[]> params, Map<String, Object> requestContext,
-			AssetCategory assetCategory)
+			Map<String, Object> requestContext, AssetCategory assetCategory)
 		throws PortalException {
 
-		Layout layout = getAssetCategoryLayout(
+		Layout layout = _getAssetCategoryLayout(
 			groupId, privateLayout, assetCategory.getCategoryId());
 
 		String layoutActualURL = _portal.getLayoutActualURL(layout, mainPath);
-
-		InheritableMap<String, String[]> actualParams = new InheritableMap<>();
-
-		if (params != null) {
-			actualParams.setParentMap(params);
-		}
-
-		actualParams.put(
-			"p_p_id", new String[] {CPPortletKeys.CP_CATEGORY_CONTENT_WEB});
-		actualParams.put("p_p_lifecycle", new String[] {"0"});
-		actualParams.put("p_p_mode", new String[] {"view"});
 
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)requestContext.get("request");
 
 		httpServletRequest.setAttribute(WebKeys.ASSET_CATEGORY, assetCategory);
 
-		String queryString = _http.parameterMapToString(actualParams, false);
+		String queryString = HttpComponentsUtil.parameterMapToString(
+			HashMapBuilder.put(
+				"p_p_id", new String[] {CPPortletKeys.CP_CATEGORY_CONTENT_WEB}
+			).put(
+				"p_p_lifecycle", new String[] {"0"}
+			).put(
+				"p_p_mode", new String[] {"view"}
+			).build(),
+			false);
 
 		if (layoutActualURL.contains(StringPool.QUESTION)) {
 			layoutActualURL =
@@ -307,13 +289,14 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 				layoutActualURL + StringPool.QUESTION + queryString;
 		}
 
-		String languageId = LanguageUtil.getLanguageId(
+		String languageId = _language.getLanguageId(
 			_portal.getLocale(httpServletRequest));
 
 		_portal.addPageSubtitle(
 			assetCategory.getTitle(languageId), httpServletRequest);
 		_portal.addPageDescription(
-			assetCategory.getDescription(languageId), httpServletRequest);
+			HtmlUtil.stripHtml(assetCategory.getDescription(languageId)),
+			httpServletRequest);
 
 		List<AssetTag> assetTags = _assetTagLocalService.getTags(
 			AssetCategory.class.getName(), assetCategory.getPrimaryKey());
@@ -331,7 +314,7 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 		_getLayoutDisplayPageObjectProvider(AssetCategory assetCategory) {
 
 		LayoutDisplayPageProvider<?> layoutDisplayPageProvider =
-			layoutDisplayPageProviderTracker.
+			layoutDisplayPageProviderRegistry.
 				getLayoutDisplayPageProviderByClassName(
 					AssetCategory.class.getName());
 
@@ -350,14 +333,13 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 		_assetDisplayPageFriendlyURLProvider;
 
 	@Reference
-	private AssetDisplayPageFriendlyURLResolverHelper
-		_assetDisplayPageFriendlyURLResolverHelper;
-
-	@Reference
 	private AssetTagLocalService _assetTagLocalService;
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private CPDisplayLayoutLocalService _cpDisplayLayoutLocalService;
@@ -369,10 +351,13 @@ public class AssetCategoryAssetDisplayPageFriendlyURLResolver
 	private FriendlyURLEntryLocalService _friendlyURLEntryLocalService;
 
 	@Reference
+	private FriendlyURLNormalizer _friendlyURLNormalizer;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 	@Reference
-	private Http _http;
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

@@ -1,35 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.change.tracking;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
-import com.liferay.petra.lang.SafeClosable;
 import com.liferay.petra.lang.SafeCloseable;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 /**
  * @author Preston Crary
  */
 public class CTCollectionThreadLocal {
 
+	public static final long CT_COLLECTION_ID_PRODUCTION = 0;
+
 	public static long getCTCollectionId() {
 		return _ctCollectionId.get();
 	}
 
 	public static boolean isProductionMode() {
-		if (_ctCollectionId.get() == 0) {
+		if (_ctCollectionId.get() == CT_COLLECTION_ID_PRODUCTION) {
 			return true;
 		}
 
@@ -40,13 +32,8 @@ public class CTCollectionThreadLocal {
 		_ctCollectionId.remove();
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #setCTCollectionIdWithSafeCloseable(long)}
-	 */
-	@Deprecated
-	public static SafeClosable setCTCollectionId(long ctCollectionId) {
-		return _ctCollectionId.setWithSafeClosable(ctCollectionId);
+	public static void setCTCollectionId(long ctCollectionId) {
+		_ctCollectionId.set(ctCollectionId);
 	}
 
 	public static SafeCloseable setCTCollectionIdWithSafeCloseable(
@@ -55,11 +42,16 @@ public class CTCollectionThreadLocal {
 		return _ctCollectionId.setWithSafeCloseable(ctCollectionId);
 	}
 
+	public static SafeCloseable setProductionModeWithSafeCloseable() {
+		return setCTCollectionIdWithSafeCloseable(CT_COLLECTION_ID_PRODUCTION);
+	}
+
 	private static long _getCTCollectionId() {
-		CTCollectionIdSupplier ctCollectionIdSupplier = _ctCollectionIdSupplier;
+		CTCollectionIdSupplier ctCollectionIdSupplier =
+			_ctCollectionIdSupplierSnapshot.get();
 
 		if (ctCollectionIdSupplier == null) {
-			return 0;
+			return CT_COLLECTION_ID_PRODUCTION;
 		}
 
 		return ctCollectionIdSupplier.getCTCollectionId();
@@ -72,9 +64,8 @@ public class CTCollectionThreadLocal {
 		new CentralizedThreadLocal<>(
 			CTCollectionThreadLocal.class + "._ctCollectionId",
 			CTCollectionThreadLocal::_getCTCollectionId);
-	private static volatile CTCollectionIdSupplier _ctCollectionIdSupplier =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			CTCollectionIdSupplier.class, CTCollectionThreadLocal.class,
-			"_ctCollectionIdSupplier", false, true);
+	private static final Snapshot<CTCollectionIdSupplier>
+		_ctCollectionIdSupplierSnapshot = new Snapshot<>(
+			CTCollectionThreadLocal.class, CTCollectionIdSupplier.class);
 
 }

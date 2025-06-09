@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v1_0_1;
@@ -33,26 +24,26 @@ public class ResourcePermissionUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		updateResourcePermissions(DDMStructure.class.getName());
+		_updateResourcePermissions(DDMStructure.class.getName());
 
-		updateResourcePermissions(DDMTemplate.class.getName());
+		_updateResourcePermissions(DDMTemplate.class.getName());
 	}
 
-	protected String getNewCompositeModelName(String ddmModelClassName) {
+	private String _getNewCompositeModelName(String ddmModelClassName) {
 		return _resourceActions.getCompositeModelName(
 			ddmModelClassName, _CLASS_NAME);
 	}
 
-	protected String getOldCompositeModelName(String ddmModelClassName) {
+	private String _getOldCompositeModelName(String ddmModelClassName) {
 		return _CLASS_NAME + StringPool.DASH + ddmModelClassName;
 	}
 
-	protected void updateResourcePermissions(String ddmModelClassName)
+	private void _updateResourcePermissions(String ddmModelClassName)
 		throws Exception {
 
-		String newCompositeModelName = getNewCompositeModelName(
+		String newCompositeModelName = _getNewCompositeModelName(
 			ddmModelClassName);
-		String oldCompositeModelName = getOldCompositeModelName(
+		String oldCompositeModelName = _getOldCompositeModelName(
 			ddmModelClassName);
 
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(

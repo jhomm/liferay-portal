@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.converter;
@@ -22,25 +13,25 @@ import com.liferay.dynamic.data.mapping.expression.constants.DDMExpressionConsta
 import com.liferay.dynamic.data.mapping.expression.model.Expression;
 import com.liferay.dynamic.data.mapping.form.builder.internal.converter.visitor.ActionExpressionVisitor;
 import com.liferay.dynamic.data.mapping.form.builder.internal.converter.visitor.ConditionExpressionVisitor;
+import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
+import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMFormRule;
 import com.liferay.dynamic.data.mapping.spi.converter.SPIDDMFormRuleConverter;
 import com.liferay.dynamic.data.mapping.spi.converter.model.SPIDDMFormRule;
 import com.liferay.dynamic.data.mapping.spi.converter.model.SPIDDMFormRuleAction;
 import com.liferay.dynamic.data.mapping.spi.converter.model.SPIDDMFormRuleCondition;
 import com.liferay.dynamic.data.mapping.spi.converter.serializer.SPIDDMFormRuleSerializerContext;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.UnaryOperator;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,18 +40,12 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  * @author Marcellus Tavares
  */
-@Component(immediate = true, service = SPIDDMFormRuleConverter.class)
+@Component(service = SPIDDMFormRuleConverter.class)
 public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 
 	@Override
 	public List<SPIDDMFormRule> convert(List<DDMFormRule> ddmFormRules) {
-		List<SPIDDMFormRule> spiDDMFormRules = new ArrayList<>();
-
-		for (DDMFormRule ddmFormRule : ddmFormRules) {
-			spiDDMFormRules.add(convertRule(ddmFormRule));
-		}
-
-		return spiDDMFormRules;
+		return TransformUtil.transform(ddmFormRules, this::_convertRule);
 	}
 
 	@Override
@@ -68,25 +53,54 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		List<SPIDDMFormRule> spiDDMFormRules,
 		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
 
-		Stream<SPIDDMFormRule> spiDDMFormRulesStream = spiDDMFormRules.stream();
-
-		Stream<DDMFormRule> ddmFormRuleStream = spiDDMFormRulesStream.map(
-			formRule -> convertRule(formRule, spiDDMFormRuleSerializerContext));
-
-		return ddmFormRuleStream.collect(Collectors.toList());
+		return TransformUtil.transform(
+			spiDDMFormRules,
+			formRule -> _convertRule(
+				formRule, spiDDMFormRuleSerializerContext));
 	}
 
-	protected SPIDDMFormRuleAction convertAction(
-		String actionExpressionString) {
+	protected void setSPIDDMFormRuleActions(
+		SPIDDMFormRule spiDDMFormRule, List<String> actions) {
 
-		Expression actionExpression = createExpression(actionExpressionString);
+		spiDDMFormRule.setSPIDDMFormRuleActions(
+			TransformUtil.transform(actions, this::_convertAction));
+	}
+
+	protected void setSPIDDMFormRuleConditions(
+		SPIDDMFormRule spiDDMFormRule, String conditionExpressionString) {
+
+		Expression conditionExpression = _createExpression(
+			conditionExpressionString);
+
+		ConditionExpressionVisitor conditionExpressionVisitor =
+			new ConditionExpressionVisitor();
+
+		conditionExpression.accept(conditionExpressionVisitor);
+
+		spiDDMFormRule.setSPIDDMFormRuleConditions(
+			conditionExpressionVisitor.getSPIDDMFormRuleConditions());
+		spiDDMFormRule.setLogicalOperator(
+			conditionExpressionVisitor.getLogicalOperator());
+	}
+
+	@Reference
+	protected DDMExpressionFactory ddmExpressionFactory;
+
+	private void _append(StringBundler sb, String value) {
+		sb.append(value);
+		sb.append(StringPool.COMMA_AND_SPACE);
+	}
+
+	private SPIDDMFormRuleAction _convertAction(String actionExpressionString) {
+		Expression actionExpression = _createExpression(actionExpressionString);
 
 		return (SPIDDMFormRuleAction)actionExpression.accept(
 			new ActionExpressionVisitor());
 	}
 
-	protected String convertCondition(
-		SPIDDMFormRuleCondition spiDDMFormRuleCondition) {
+	private String _convertCondition(
+		SPIDDMFormRuleCondition spiDDMFormRuleCondition,
+		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
 
 		String operator = spiDDMFormRuleCondition.getOperator();
 
@@ -99,14 +113,19 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 			}
 
 			return String.format(
-				_COMPARISON_EXPRESSION_FORMAT, convertOperand(operands.get(0)),
-				_operators.get(operator), convertOperand(operands.get(1)));
+				_COMPARISON_EXPRESSION_FORMAT,
+				_convertOperand(
+					operands.get(0), spiDDMFormRuleSerializerContext),
+				_operators.get(operator),
+				_convertOperand(
+					operands.get(1), spiDDMFormRuleSerializerContext));
 		}
 
 		String functionName = _operatorFunctionNames.getOrDefault(
 			operator, operator);
 
-		String condition = createCondition(functionName, operands);
+		String condition = _createCondition(
+			functionName, operands, spiDDMFormRuleSerializerContext);
 
 		if (operator.startsWith("not")) {
 			return String.format(_NOT_EXPRESSION_FORMAT, condition);
@@ -115,12 +134,15 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		return condition;
 	}
 
-	protected String convertConditions(
+	private String _convertConditions(
 		String logicalOperator,
-		List<SPIDDMFormRuleCondition> spiDDMFormRuleConditions) {
+		List<SPIDDMFormRuleCondition> spiDDMFormRuleConditions,
+		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
 
 		if (spiDDMFormRuleConditions.size() == 1) {
-			return convertCondition(spiDDMFormRuleConditions.get(0));
+			return _convertCondition(
+				spiDDMFormRuleConditions.get(0),
+				spiDDMFormRuleSerializerContext);
 		}
 
 		StringBundler sb = new StringBundler(
@@ -129,7 +151,9 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		for (SPIDDMFormRuleCondition spiDDMFormRuleCondition :
 				spiDDMFormRuleConditions) {
 
-			sb.append(convertCondition(spiDDMFormRuleCondition));
+			sb.append(
+				_convertCondition(
+					spiDDMFormRuleCondition, spiDDMFormRuleSerializerContext));
 			sb.append(StringPool.SPACE);
 			sb.append(logicalOperator);
 			sb.append(StringPool.SPACE);
@@ -140,13 +164,26 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		return sb.toString();
 	}
 
-	protected String convertOperand(SPIDDMFormRuleCondition.Operand operand) {
-		if (Objects.equals("field", operand.getType())) {
-			return String.format(
+	private String _convertOperand(
+		SPIDDMFormRuleCondition.Operand operand,
+		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
+
+		if (Objects.equals(operand.getType(), "field")) {
+			String getValueExpression = String.format(
 				_FUNCTION_CALL_UNARY_EXPRESSION_FORMAT, "getValue",
 				StringUtil.quote(operand.getValue()));
+
+			if (!_isDDMFormFieldWithOptions(
+					operand, spiDDMFormRuleSerializerContext)) {
+
+				return getValueExpression;
+			}
+
+			return String.format(
+				_FUNCTION_CALL_BINARY_EXPRESSION_FORMAT, "getOptionLabel",
+				StringUtil.quote(operand.getValue()), getValueExpression);
 		}
-		else if (Objects.equals("json", operand.getType())) {
+		else if (Objects.equals(operand.getType(), "json")) {
 			return String.format(
 				_FUNCTION_CALL_UNARY_EXPRESSION_FORMAT, "getJSONValue",
 				StringUtil.quote(operand.getValue()));
@@ -154,30 +191,33 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 
 		String value = operand.getValue();
 
-		if (isNumericConstant(operand.getType())) {
+		if (_isNumericConstant(operand.getType())) {
 			return value;
 		}
 
-		if (Objects.equals("string", operand.getType())) {
+		if (Objects.equals(operand.getType(), "string")) {
 			return StringUtil.quote(value);
 		}
 
-		String[] values = StringUtil.split(value);
+		String operandType = operand.getType();
 
-		UnaryOperator<String> quoteOperation = StringUtil::quote;
-		UnaryOperator<String> trimOperation = StringUtil::trim;
+		String string = StringUtil.merge(
+			TransformUtil.transformToList(
+				StringUtil.split(value),
+				curVal -> StringUtil.quote(StringUtil.trim(curVal))),
+			StringPool.COMMA_AND_SPACE);
 
-		return Stream.of(
-			values
-		).map(
-			trimOperation.andThen(quoteOperation)
-		).collect(
-			getCollector(operand.getType())
-		);
+		if (!operandType.equals("list")) {
+			return string;
+		}
+
+		return StringBundler.concat(
+			StringPool.OPEN_BRACKET, string, StringPool.CLOSE_BRACKET);
 	}
 
-	protected String convertOperands(
-		List<SPIDDMFormRuleCondition.Operand> operands) {
+	private String _convertOperands(
+		List<SPIDDMFormRuleCondition.Operand> operands,
+		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
 
 		StringBundler sb = new StringBundler(operands.size());
 
@@ -187,26 +227,40 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 			SPIDDMFormRuleCondition.Operand operand = operands.get(i);
 
 			if (hasNestedFunction) {
-				sb.append(operand.getValue());
-			}
-			else {
-				if ((i > 0) && Objects.equals("option", operand.getType())) {
-					SPIDDMFormRuleCondition.Operand previousOperand =
-						operands.get(i - 1);
+				_append(sb, operand.getValue());
 
-					sb.append(
-						String.format(
-							_FUNCTION_CALL_BINARY_EXPRESSION_FORMAT,
-							"getOptionLabel",
-							StringUtil.quote(previousOperand.getValue()),
-							StringUtil.quote(operand.getValue())));
-				}
-				else {
-					sb.append(convertOperand(operand));
-				}
+				continue;
 			}
 
-			sb.append(StringPool.COMMA_AND_SPACE);
+			if (i == 0) {
+				_append(
+					sb,
+					_convertOperand(operand, spiDDMFormRuleSerializerContext));
+
+				continue;
+			}
+
+			SPIDDMFormRuleCondition.Operand previousOperand = operands.get(
+				i - 1);
+
+			if (Objects.equals(operand.getType(), "option") ||
+				(Objects.equals(operand.getType(), "string") &&
+				 _isDDMFormFieldWithOptions(
+					 previousOperand, spiDDMFormRuleSerializerContext))) {
+
+				_append(
+					sb,
+					String.format(
+						_FUNCTION_CALL_BINARY_EXPRESSION_FORMAT,
+						"getOptionLabel",
+						StringUtil.quote(previousOperand.getValue()),
+						StringUtil.quote(operand.getValue())));
+
+				continue;
+			}
+
+			_append(
+				sb, _convertOperand(operand, spiDDMFormRuleSerializerContext));
 		}
 
 		sb.setIndex(sb.index() - 1);
@@ -214,7 +268,7 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		return sb.toString();
 	}
 
-	protected SPIDDMFormRule convertRule(DDMFormRule ddmFormRule) {
+	private SPIDDMFormRule _convertRule(DDMFormRule ddmFormRule) {
 		SPIDDMFormRule spiDDMFormRule = new SPIDDMFormRule();
 
 		spiDDMFormRule.setName(ddmFormRule.getName());
@@ -225,29 +279,31 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		return spiDDMFormRule;
 	}
 
-	protected DDMFormRule convertRule(
+	private DDMFormRule _convertRule(
 		SPIDDMFormRule spiDDMFormRule,
 		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
 
-		String condition = convertConditions(
-			spiDDMFormRule.getLogicalOperator(),
-			spiDDMFormRule.getSPIDDMFormRuleConditions());
+		List<SPIDDMFormRuleCondition> spiDDMFormRuleConditions =
+			spiDDMFormRule.getSPIDDMFormRuleConditions();
 
-		List<String> actions = new ArrayList<>();
-
-		for (SPIDDMFormRuleAction spiDDMFormRuleAction :
-				spiDDMFormRule.getSPIDDMFormRuleActions()) {
-
-			actions.add(
-				spiDDMFormRuleAction.serialize(
-					spiDDMFormRuleSerializerContext));
+		if (ListUtil.isEmpty(spiDDMFormRuleConditions)) {
+			return null;
 		}
 
-		return new DDMFormRule(actions, condition, spiDDMFormRule.getName());
+		return new DDMFormRule(
+			TransformUtil.transform(
+				spiDDMFormRule.getSPIDDMFormRuleActions(),
+				spiDDMFormRuleAction -> spiDDMFormRuleAction.serialize(
+					spiDDMFormRuleSerializerContext)),
+			_convertConditions(
+				spiDDMFormRule.getLogicalOperator(), spiDDMFormRuleConditions,
+				spiDDMFormRuleSerializerContext),
+			spiDDMFormRule.getName());
 	}
 
-	protected String createCondition(
-		String functionName, List<SPIDDMFormRuleCondition.Operand> operands) {
+	private String _createCondition(
+		String functionName, List<SPIDDMFormRuleCondition.Operand> operands,
+		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
 
 		if (Objects.equals(functionName, "belongsTo")) {
 			operands.removeIf(
@@ -256,10 +312,10 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 
 		return String.format(
 			_FUNCTION_CALL_UNARY_EXPRESSION_FORMAT, functionName,
-			convertOperands(operands));
+			_convertOperands(operands, spiDDMFormRuleSerializerContext));
 	}
 
-	protected Expression createExpression(String expressionString) {
+	private Expression _createExpression(String expressionString) {
 		try {
 			CreateExpressionRequest createExpressionRequest =
 				CreateExpressionRequest.Builder.newBuilder(
@@ -279,71 +335,59 @@ public class DDMFormRuleConverterImpl implements SPIDDMFormRuleConverter {
 		}
 	}
 
-	protected Collector<CharSequence, ?, String> getCollector(
-		String operandType) {
+	private boolean _hasNestedFunction(
+		List<SPIDDMFormRuleCondition.Operand> operands) {
 
-		if (operandType.equals("list")) {
-			return Collectors.joining(
-				StringPool.COMMA_AND_SPACE, StringPool.OPEN_BRACKET,
-				StringPool.CLOSE_BRACKET);
+		for (SPIDDMFormRuleCondition.Operand operand : operands) {
+			if (_isNestedFunction(operand.getValue())) {
+				return true;
+			}
 		}
 
-		return Collectors.joining(StringPool.COMMA_AND_SPACE);
+		return false;
 	}
 
-	protected boolean isNumericConstant(String operandType) {
-		if (operandType.equals("integer") || operandType.equals("double")) {
+	private boolean _isDDMFormFieldWithOptions(
+		SPIDDMFormRuleCondition.Operand operand,
+		SPIDDMFormRuleSerializerContext spiDDMFormRuleSerializerContext) {
+
+		DDMForm ddmForm = spiDDMFormRuleSerializerContext.getAttribute("form");
+
+		if (ddmForm == null) {
+			return false;
+		}
+
+		Map<String, DDMFormField> ddmFormFieldsMap =
+			ddmForm.getDDMFormFieldsMap(true);
+
+		DDMFormField ddmFormField = ddmFormFieldsMap.get(operand.getValue());
+
+		if ((ddmFormField != null) &&
+			(StringUtil.equals(
+				ddmFormField.getType(),
+				DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE) ||
+			 StringUtil.equals(
+				 ddmFormField.getType(), DDMFormFieldTypeConstants.RADIO) ||
+			 StringUtil.equals(
+				 ddmFormField.getType(), DDMFormFieldTypeConstants.SELECT))) {
+
 			return true;
 		}
 
 		return false;
 	}
 
-	protected void setSPIDDMFormRuleActions(
-		SPIDDMFormRule spiDDMFormRule, List<String> actions) {
-
-		List<SPIDDMFormRuleAction> spiDDMFormRuleActions = new ArrayList<>();
-
-		for (String action : actions) {
-			spiDDMFormRuleActions.add(convertAction(action));
-		}
-
-		spiDDMFormRule.setSPIDDMFormRuleActions(spiDDMFormRuleActions);
-	}
-
-	protected void setSPIDDMFormRuleConditions(
-		SPIDDMFormRule spiDDMFormRule, String conditionExpressionString) {
-
-		Expression conditionExpression = createExpression(
-			conditionExpressionString);
-
-		ConditionExpressionVisitor conditionExpressionVisitor =
-			new ConditionExpressionVisitor();
-
-		conditionExpression.accept(conditionExpressionVisitor);
-
-		spiDDMFormRule.setSPIDDMFormRuleConditions(
-			conditionExpressionVisitor.getSPIDDMFormRuleConditions());
-		spiDDMFormRule.setLogicalOperator(
-			conditionExpressionVisitor.getLogicalOperator());
-	}
-
-	@Reference
-	protected DDMExpressionFactory ddmExpressionFactory;
-
-	private boolean _hasNestedFunction(
-		List<SPIDDMFormRuleCondition.Operand> operands) {
-
-		Stream<SPIDDMFormRuleCondition.Operand> operandsStream =
-			operands.stream();
-
-		return operandsStream.anyMatch(
-			operand -> _isNestedFunction(operand.getValue()));
-	}
-
 	private boolean _isNestedFunction(String operandValue) {
 		return operandValue.matches(
 			DDMExpressionConstants.NESTED_FUNCTION_REGEX);
+	}
+
+	private boolean _isNumericConstant(String operandType) {
+		if (operandType.equals("integer") || operandType.equals("double")) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private static final String _COMPARISON_EXPRESSION_FORMAT = "%s %s %s";

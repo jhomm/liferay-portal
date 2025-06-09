@@ -1,44 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
 
+import com.liferay.petra.concurrent.DCLSingleton;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.cache.CacheRegistryUtil;
 import com.liferay.portal.kernel.dao.db.DB;
-import com.liferay.portal.kernel.dao.db.DBContext;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.db.DBProcessContext;
 import com.liferay.portal.kernel.exception.OldServiceComponentException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
-import com.liferay.portal.kernel.model.Release;
 import com.liferay.portal.kernel.model.ServiceComponent;
-import com.liferay.portal.kernel.module.util.SystemBundleUtil;
-import com.liferay.portal.kernel.service.ReleaseLocalService;
 import com.liferay.portal.kernel.service.configuration.ServiceComponentConfiguration;
 import com.liferay.portal.kernel.service.configuration.servlet.ServletServiceContextComponentConfiguration;
-import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTable;
-import com.liferay.portal.kernel.upgrade.util.UpgradeTableFactoryUtil;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTableListener;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.InstanceFactory;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -48,60 +31,23 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.service.base.ServiceComponentLocalServiceBaseImpl;
+import com.liferay.portal.upgrade.util.UpgradeTableFactoryUtil;
 import com.liferay.portal.util.PropsValues;
 
 import java.io.IOException;
-import java.io.OutputStream;
 
 import java.lang.reflect.Field;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.Filter;
-import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.ServiceTracker;
-import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class ServiceComponentLocalServiceImpl
 	extends ServiceComponentLocalServiceBaseImpl {
-
-	public ServiceComponentLocalServiceImpl() {
-		Filter filter = SystemBundleUtil.createFilter(
-			StringBundler.concat(
-				"(&(objectClass=", UpgradeStep.class.getName(),
-				")(upgrade.from.schema.version=0.0.0)(upgrade.initial.",
-				"database.creation=true))"));
-
-		_upgradeStepServiceTracker = new ServiceTracker<>(
-			_bundleContext, filter, new UpgradeStepServiceTrackerCustomizer());
-
-		_upgradeStepServiceTracker.open();
-	}
-
-	@Override
-	public void destroy() {
-		super.destroy();
-
-		_upgradeStepServiceTracker.close();
-	}
-
-	@Override
-	public void destroyServiceComponent(
-		ServiceComponentConfiguration serviceComponentConfiguration,
-		ClassLoader classLoader) {
-
-		if (PropsValues.CACHE_CLEAR_ON_PLUGIN_UNDEPLOY) {
-			CacheRegistryUtil.clear();
-		}
-	}
 
 	@Override
 	public List<ServiceComponent> getLatestServiceComponents() {
@@ -137,7 +83,8 @@ public class ServiceComponentLocalServiceImpl
 		ServiceComponent previousServiceComponent = null;
 
 		Map<String, ServiceComponent> serviceComponents =
-			_getServiceComponents();
+			_serviceComponentsDCLSingleton.getSingleton(
+				this::_createServiceComponents);
 
 		ServiceComponent serviceComponent = serviceComponents.get(
 			buildNamespace);
@@ -171,7 +118,7 @@ public class ServiceComponentLocalServiceImpl
 
 					previousBuildNumber = currentBuildNumber;
 
-					_serviceComponents.put(buildNamespace, serviceComponent);
+					serviceComponents.put(buildNamespace, serviceComponent);
 				}
 			}
 
@@ -268,57 +215,6 @@ public class ServiceComponentLocalServiceImpl
 			tablesSQL, sequencesSQL, indexesSQL);
 	}
 
-	@Override
-	public void verifyDB() {
-		for (Object service : _upgradeStepServiceTracker.getServices()) {
-			UpgradeStepHolder upgradeStepHolder = (UpgradeStepHolder)service;
-
-			String servletContextName = upgradeStepHolder._servletContextName;
-
-			Release release = _releaseLocalService.fetchRelease(
-				upgradeStepHolder._servletContextName);
-
-			if ((release != null) &&
-				!Objects.equals(release.getSchemaVersion(), "0.0.0")) {
-
-				continue;
-			}
-
-			try {
-				UpgradeStep upgradeStep = upgradeStepHolder._upgradeStep;
-
-				upgradeStep.upgrade(
-					new DBProcessContext() {
-
-						@Override
-						public DBContext getDBContext() {
-							return new DBContext();
-						}
-
-						@Override
-						public OutputStream getOutputStream() {
-							return null;
-						}
-
-					});
-
-				_releaseLocalService.updateRelease(
-					servletContextName, "0.0.1", "0.0.0");
-
-				release = _releaseLocalService.fetchRelease(servletContextName);
-
-				int buildNumber = upgradeStepHolder._buildNumber;
-
-				release.setBuildNumber(buildNumber);
-
-				_releaseLocalService.updateRelease(release);
-			}
-			catch (Exception exception) {
-				_log.error(exception, exception);
-			}
-		}
-	}
-
 	protected List<String> getModelNames(ClassLoader classLoader)
 		throws DocumentException, IOException {
 
@@ -348,27 +244,17 @@ public class ServiceComponentLocalServiceImpl
 	}
 
 	protected List<String> getModelNames(String xml) throws DocumentException {
-		List<String> modelNames = new ArrayList<>();
-
 		Document document = UnsecureSAXReaderUtil.read(xml);
 
 		Element rootElement = document.getRootElement();
 
-		List<Element> modelElements = rootElement.elements("model");
-
-		for (Element modelElement : modelElements) {
-			String name = modelElement.attributeValue("name");
-
-			modelNames.add(name);
-		}
-
-		return modelNames;
+		return TransformUtil.transform(
+			rootElement.elements("model"),
+			modelElement -> modelElement.attributeValue("name"));
 	}
 
 	protected List<String> getModifiedTableNames(
 		String previousTablesSQL, String tablesSQL) {
-
-		List<String> modifiedTableNames = new ArrayList<>();
 
 		List<String> previousTablesSQLParts = ListUtil.fromArray(
 			StringUtil.split(previousTablesSQL, StringPool.SEMICOLON));
@@ -377,14 +263,14 @@ public class ServiceComponentLocalServiceImpl
 
 		tablesSQLParts.removeAll(previousTablesSQLParts);
 
-		for (String tablesSQLPart : tablesSQLParts) {
-			int x = tablesSQLPart.indexOf("create table ");
-			int y = tablesSQLPart.indexOf(" (");
+		return TransformUtil.transform(
+			tablesSQLParts,
+			tablesSQLPart -> {
+				int x = tablesSQLPart.indexOf("create table ");
+				int y = tablesSQLPart.indexOf(" (");
 
-			modifiedTableNames.add(tablesSQLPart.substring(x + 13, y));
-		}
-
-		return modifiedTableNames;
+				return tablesSQLPart.substring(x + 13, y);
+			});
 	}
 
 	protected UpgradeTableListener getUpgradeTableListener(
@@ -504,39 +390,27 @@ public class ServiceComponentLocalServiceImpl
 		}
 	}
 
-	private Map<String, ServiceComponent> _getServiceComponents() {
-		if (_serviceComponents != null) {
-			return _serviceComponents;
+	private Map<String, ServiceComponent> _createServiceComponents() {
+		Map<String, ServiceComponent> serviceComponents =
+			new ConcurrentHashMap<>();
+
+		for (ServiceComponent serviceComponent :
+				serviceComponentPersistence.findAll()) {
+
+			String buildNamespace = serviceComponent.getBuildNamespace();
+
+			ServiceComponent previousServiceComponent = serviceComponents.get(
+				buildNamespace);
+
+			if ((previousServiceComponent == null) ||
+				(serviceComponent.getBuildNumber() >
+					previousServiceComponent.getBuildNumber())) {
+
+				serviceComponents.put(buildNamespace, serviceComponent);
+			}
 		}
 
-		synchronized (this) {
-			if (_serviceComponents != null) {
-				return _serviceComponents;
-			}
-
-			Map<String, ServiceComponent> serviceComponents =
-				new ConcurrentHashMap<>();
-
-			for (ServiceComponent serviceComponent :
-					serviceComponentPersistence.findAll()) {
-
-				String buildNamespace = serviceComponent.getBuildNamespace();
-
-				ServiceComponent previousServiceComponent =
-					serviceComponents.get(buildNamespace);
-
-				if ((previousServiceComponent == null) ||
-					(serviceComponent.getBuildNumber() >
-						previousServiceComponent.getBuildNumber())) {
-
-					serviceComponents.put(buildNamespace, serviceComponent);
-				}
-			}
-
-			_serviceComponents = serviceComponents;
-		}
-
-		return _serviceComponents;
+		return serviceComponents;
 	}
 
 	private void _upgradeDB(
@@ -552,9 +426,9 @@ public class ServiceComponentLocalServiceImpl
 				_log.info("Running " + buildNamespace + " SQL scripts");
 			}
 
-			db.runSQLTemplateString(tablesSQL, false);
-			db.runSQLTemplateString(sequencesSQL, false);
-			db.runSQLTemplateString(indexesSQL, false);
+			db.runSQLTemplate(tablesSQL, false);
+			db.runSQLTemplate(sequencesSQL, false);
+			db.runSQLTemplate(indexesSQL, false);
 		}
 		else if (PropsValues.SCHEMA_MODULE_BUILD_AUTO_UPGRADE) {
 			if (_log.isWarnEnabled()) {
@@ -572,7 +446,7 @@ public class ServiceComponentLocalServiceImpl
 					_log.info("Upgrading database with tables.sql");
 				}
 
-				db.runSQLTemplateString(tablesSQL, false);
+				db.runSQLTemplate(tablesSQL, false);
 
 				upgradeModels(classLoader, previousServiceComponent, tablesSQL);
 			}
@@ -584,7 +458,7 @@ public class ServiceComponentLocalServiceImpl
 					_log.info("Upgrading database with sequences.sql");
 				}
 
-				db.runSQLTemplateString(sequencesSQL, false);
+				db.runSQLTemplate(sequencesSQL, false);
 			}
 
 			if (!indexesSQL.equals(previousServiceComponent.getIndexesSQL()) ||
@@ -594,7 +468,7 @@ public class ServiceComponentLocalServiceImpl
 					_log.info("Upgrading database with indexes.sql");
 				}
 
-				db.runSQLTemplateString(indexesSQL, false);
+				db.runSQLTemplate(indexesSQL, false);
 			}
 		}
 	}
@@ -606,68 +480,7 @@ public class ServiceComponentLocalServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		ServiceComponentLocalServiceImpl.class);
 
-	private final BundleContext _bundleContext =
-		SystemBundleUtil.getBundleContext();
-
-	@BeanReference(type = ReleaseLocalService.class)
-	private ReleaseLocalService _releaseLocalService;
-
-	private volatile Map<String, ServiceComponent> _serviceComponents;
-	private final ServiceTracker<UpgradeStep, UpgradeStepHolder>
-		_upgradeStepServiceTracker;
-
-	private static class UpgradeStepHolder {
-
-		private UpgradeStepHolder(
-			String servletContextName, int buildNumber,
-			UpgradeStep upgradeStep) {
-
-			_servletContextName = servletContextName;
-			_buildNumber = buildNumber;
-			_upgradeStep = upgradeStep;
-		}
-
-		private final int _buildNumber;
-		private final String _servletContextName;
-		private final UpgradeStep _upgradeStep;
-
-	}
-
-	private class UpgradeStepServiceTrackerCustomizer
-		implements ServiceTrackerCustomizer<UpgradeStep, UpgradeStepHolder> {
-
-		@Override
-		public UpgradeStepHolder addingService(
-			ServiceReference<UpgradeStep> serviceReference) {
-
-			String servletContextName = (String)serviceReference.getProperty(
-				"upgrade.bundle.symbolic.name");
-			int buildNumber = GetterUtil.getInteger(
-				serviceReference.getProperty("build.number"));
-
-			UpgradeStep upgradeStep = _bundleContext.getService(
-				serviceReference);
-
-			return new UpgradeStepHolder(
-				servletContextName, buildNumber, upgradeStep);
-		}
-
-		@Override
-		public void modifiedService(
-			ServiceReference<UpgradeStep> serviceReference,
-			UpgradeStepHolder upgradeStepHolder) {
-
-			addingService(serviceReference);
-		}
-
-		@Override
-		public void removedService(
-			ServiceReference<UpgradeStep> serviceReference,
-			UpgradeStepHolder upgradeStepHolder) {
-
-			_bundleContext.ungetService(serviceReference);
-		}
-
-	}
+	private final DCLSingleton<Map<String, ServiceComponent>>
+		_serviceComponentsDCLSingleton = new DCLSingleton<>();
 
 }

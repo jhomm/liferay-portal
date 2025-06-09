@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -24,8 +15,31 @@ package com.liferay.portal.kernel.service;
 public class ContactServiceWrapper
 	implements ContactService, ServiceWrapper<ContactService> {
 
+	public ContactServiceWrapper() {
+		this(null);
+	}
+
 	public ContactServiceWrapper(ContactService contactService) {
 		_contactService = contactService;
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Contact addContact(
+			long userId, java.lang.String className, long classPK,
+			java.lang.String emailAddress, java.lang.String firstName,
+			java.lang.String middleName, java.lang.String lastName,
+			long prefixListTypeId, long suffixListTypeId, boolean male,
+			int birthdayMonth, int birthdayDay, int birthdayYear,
+			java.lang.String smsSn, java.lang.String facebookSn,
+			java.lang.String jabberSn, java.lang.String skypeSn,
+			java.lang.String twitterSn, java.lang.String jobTitle)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _contactService.addContact(
+			userId, className, classPK, emailAddress, firstName, middleName,
+			lastName, prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, smsSn, facebookSn, jabberSn, skypeSn,
+			twitterSn, jobTitle);
 	}
 
 	@Override
@@ -74,6 +88,25 @@ public class ContactServiceWrapper
 	@Override
 	public java.lang.String getOSGiServiceIdentifier() {
 		return _contactService.getOSGiServiceIdentifier();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.model.Contact updateContact(
+			long contactId, java.lang.String emailAddress,
+			java.lang.String firstName, java.lang.String middleName,
+			java.lang.String lastName, long prefixListTypeId,
+			long suffixListTypeId, boolean male, int birthdayMonth,
+			int birthdayDay, int birthdayYear, java.lang.String smsSn,
+			java.lang.String facebookSn, java.lang.String jabberSn,
+			java.lang.String skypeSn, java.lang.String twitterSn,
+			java.lang.String jobTitle)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _contactService.updateContact(
+			contactId, emailAddress, firstName, middleName, lastName,
+			prefixListTypeId, suffixListTypeId, male, birthdayMonth,
+			birthdayDay, birthdayYear, smsSn, facebookSn, jabberSn, skypeSn,
+			twitterSn, jobTitle);
 	}
 
 	@Override

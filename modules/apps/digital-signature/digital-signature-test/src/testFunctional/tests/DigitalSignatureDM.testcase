@@ -1,0 +1,134 @@
+@component-name = "portal-bpm"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Digital Signature";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginUI();
+
+		task ("Configure digital signature with credentials") {
+			PortalSettings.openInstanceSettingsAdmin();
+
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "Digital Signature",
+				configurationName = "Digital Signature Configuration",
+				configurationScope = "Virtual Instance Scope");
+
+			FormFields.enableCheckbox(fieldName = "enabled");
+
+			DigitalSignature.enableDigitalSignature(
+				environment = "Sandbox",
+				siteStrategy = "Always Inherit");
+
+			DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+		}
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "false") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			DigitalSignature.deleteCreatedDM();
+
+			RecycleBin.openRecycleBinAdmin(siteURLKey = "guest");
+
+			RecycleBin.emptyCP();
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "LPS-133993. Verify if its possible collect Digital Signature By button"
+	@priority = 5
+	test CanCollectDigitalSignatureByButton {
+		property portal.release = "quarantine";
+		property solutions.acceptance = "quarantine";
+
+		task ("Given that user Test creates a document") {
+			DMDocument.addCP(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentFile = "Alice's Adventures in Wonderland.pdf",
+				dmDocumentTitle = "DM Document PDF");
+
+			var dmDocumentTitle = "DM Document PDF";
+		}
+
+		task ("When the user goes to digital signature") {
+			DigitalSignature.documentDigitalSignature(documentlist = "DM Document PDF");
+		}
+
+		task ("The the user can confirm that he are on Digital Signature page") {
+			DigitalSignature.assertDigitalSignaturePage(assertPage = "New Digital Signature Envelope");
+		}
+	}
+
+	@description = "LPS-133993. Verify if its possible collect Digital Signature By vertical ellipsis"
+	@priority = 5
+	test CanCollectDigitalSignatureByVerticalEllipsis {
+		task ("Given the user creates a document") {
+			DMDocument.addCP(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentFile = "Alice's Adventures in Wonderland.pdf",
+				dmDocumentTitle = "DM Document PDF");
+
+			var dmDocumentTitle = "DM Document PDF";
+		}
+
+		task ("When the user goes to digital signature by ellipises") {
+			DigitalSignature.goToDigitalSignatureEllipsis(dmDocumentTitle = "DM Document PDF");
+		}
+
+		task ("Then the user can confirm that he are on the Digital Signature page") {
+			DigitalSignature.assertDigitalSignaturePage(assertPage = "New Digital Signature Envelope");
+		}
+	}
+
+	@description = "LPS-133105. Verify if its possible get multiple signatures from diferent documents in DM"
+	@priority = 5
+	test CanGetMultipleSignaturesByButton {
+		property portal.release = "quarantine";
+		property solutions.acceptance = "quarantine";
+
+		task ("Given that user Test creates multiple documents") {
+			DMDocument.addMultipleCP(dmDocumentFileList = "Document_1.doc,Document_2.jpg");
+		}
+
+		task ("When the user goes to digital signature") {
+			DigitalSignature.documentDigitalSignature(documentlist = "Document_1,Document_2");
+		}
+
+		task ("Then the user can confirm that he are on the Digital Signature page") {
+			DigitalSignature.assertDigitalSignaturePage(assertPage = "New Digital Signature Envelope");
+		}
+	}
+
+	@description = "LPS-134093. Verify if warning message appear after try insert more than 10 documents to collect the digital signature"
+	@priority = 5
+	test CanViewWarningMessageForMoreThan10Documents {
+		task ("Given that user Test creates multiple documents") {
+			DMDocument.addMultipleCP(dmDocumentFileList = "Document_1.jpg,Document_2.pdf,Document_3.png,Document_4.jpg,Document_5.txt,Commerce_Black.jpg,Commerce_Blue.jpg,Commerce_White.jpg,Spaceport.jpg,analytics-cloud-hero-image.png,marketplace_icon.png");
+		}
+
+		task ("And selects all documents") {
+			PortletEntry.selectAll();
+
+			DigitalSignature.selectDMFolder(checkboxDM = "_com_liferay_document_library_web_portlet_DLAdminPortlet_rowIdsFolder");
+		}
+
+		task ("When the user tries to go to digital signature") {
+			DigitalSignature.goToDigitalSignature();
+		}
+
+		task ("Then a warning message is displayed") {
+			DigitalSignature.assertAlertMessage(alertMessage = "You have exceeded the maximum amount of 10 files allowed per envelope.");
+		}
+	}
+
+}

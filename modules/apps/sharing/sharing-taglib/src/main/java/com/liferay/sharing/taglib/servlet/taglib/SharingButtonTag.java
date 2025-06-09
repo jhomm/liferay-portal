@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.taglib.servlet.taglib;
@@ -17,12 +8,17 @@ package com.liferay.sharing.taglib.servlet.taglib;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.sharing.display.context.util.SharingJavaScriptFactory;
+import com.liferay.sharing.security.permission.SharingPermission;
+import com.liferay.sharing.taglib.internal.permission.util.SharingPermissionUtil;
 import com.liferay.sharing.taglib.internal.servlet.ServletContextUtil;
 import com.liferay.sharing.taglib.internal.servlet.SharingJavaScriptFactoryUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
 
 /**
  * @author Alejandro Tardín
@@ -70,6 +66,16 @@ public class SharingButtonTag extends BaseSharingTag {
 		SharingJavaScriptFactory sharingJavaScriptFactory =
 			SharingJavaScriptFactoryUtil.getSharingJavaScriptFactory();
 
+		long classNameId = PortalUtil.getClassNameId(getClassName());
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		if (_containsSharePermission(classNameId, getClassPK(), themeDisplay)) {
+			sharingJavaScriptFactory.requestSharingJavaScript();
+		}
+
 		try {
 			httpServletRequest.setAttribute(
 				"liferay-sharing:button:onClick",
@@ -78,6 +84,24 @@ public class SharingButtonTag extends BaseSharingTag {
 		}
 		catch (PortalException portalException) {
 			_log.error("Unable to set onclick method", portalException);
+		}
+	}
+
+	private boolean _containsSharePermission(
+		long classNameId, long classPK, ThemeDisplay themeDisplay) {
+
+		SharingPermission sharingPermission =
+			SharingPermissionUtil.getSharingPermission();
+
+		try {
+			return sharingPermission.containsSharePermission(
+				themeDisplay.getPermissionChecker(), classNameId, classPK,
+				themeDisplay.getScopeGroupId());
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
+
+			return false;
 		}
 	}
 

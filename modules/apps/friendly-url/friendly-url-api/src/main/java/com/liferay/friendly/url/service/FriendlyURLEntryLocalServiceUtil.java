@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -121,6 +113,12 @@ public class FriendlyURLEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().createPersistedModel(primaryKeyObj);
+	}
+
+	public static void deleteCompanyFriendlyURLEntries(
+		long companyId, long classNameId) {
+
+		getService().deleteCompanyFriendlyURLEntries(companyId, classNameId);
 	}
 
 	/**
@@ -321,10 +319,25 @@ public class FriendlyURLEntryLocalServiceUtil {
 
 	public static com.liferay.friendly.url.model.FriendlyURLEntryLocalization
 		fetchFriendlyURLEntryLocalization(
+			long groupId, long classNameId, String languageId,
+			String urlTitle) {
+
+		return getService().fetchFriendlyURLEntryLocalization(
+			groupId, classNameId, languageId, urlTitle);
+	}
+
+	public static com.liferay.friendly.url.model.FriendlyURLEntryLocalization
+		fetchFriendlyURLEntryLocalization(
 			long friendlyURLEntryId, String languageId) {
 
 		return getService().fetchFriendlyURLEntryLocalization(
 			friendlyURLEntryId, languageId);
+	}
+
+	public static FriendlyURLEntry fetchMainFriendlyURLEntry(
+		long classNameId, long classPK) {
+
+		return getService().fetchMainFriendlyURLEntry(classNameId, classPK);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -447,6 +460,17 @@ public class FriendlyURLEntryLocalServiceUtil {
 
 	public static com.liferay.friendly.url.model.FriendlyURLEntryLocalization
 			getFriendlyURLEntryLocalization(
+				long groupId, long classNameId, String languageId,
+				String urlTitle)
+		throws com.liferay.friendly.url.exception.
+			NoSuchFriendlyURLEntryLocalizationException {
+
+		return getService().getFriendlyURLEntryLocalization(
+			groupId, classNameId, languageId, urlTitle);
+	}
+
+	public static com.liferay.friendly.url.model.FriendlyURLEntryLocalization
+			getFriendlyURLEntryLocalization(
 				long friendlyURLEntryId, String languageId)
 		throws PortalException {
 
@@ -515,18 +539,6 @@ public class FriendlyURLEntryLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getUniqueUrlTitle(long, long, long, String, String)}
-	 */
-	@Deprecated
-	public static String getUniqueUrlTitle(
-		long groupId, long classNameId, long classPK, String urlTitle) {
-
-		return getService().getUniqueUrlTitle(
-			groupId, classNameId, classPK, urlTitle);
-	}
-
 	public static String getUniqueUrlTitle(
 		long groupId, long classNameId, long classPK, String urlTitle,
 		String languageId) {
@@ -565,6 +577,17 @@ public class FriendlyURLEntryLocalServiceUtil {
 		return getService().updateFriendlyURLEntry(
 			friendlyURLEntryId, classNameId, classPK, defaultLanguageId,
 			urlTitleMap);
+	}
+
+	public static FriendlyURLEntry updateFriendlyURLEntry(
+			long friendlyURLEntryId, long classNameId, long classPK,
+			String defaultLanguageId, Map<String, String> urlTitleMap,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateFriendlyURLEntry(
+			friendlyURLEntryId, classNameId, classPK, defaultLanguageId,
+			urlTitleMap, serviceContext);
 	}
 
 	public static com.liferay.friendly.url.model.FriendlyURLEntryLocalization
@@ -621,6 +644,15 @@ public class FriendlyURLEntryLocalServiceUtil {
 		getService().validate(groupId, classNameId, classPK, urlTitle);
 	}
 
+	public static void validate(
+			long groupId, long classNameId, long classPK, String languageId,
+			String urlTitle)
+		throws PortalException {
+
+		getService().validate(
+			groupId, classNameId, classPK, languageId, urlTitle);
+	}
+
 	public static void validate(long groupId, long classNameId, String urlTitle)
 		throws PortalException {
 
@@ -628,9 +660,12 @@ public class FriendlyURLEntryLocalServiceUtil {
 	}
 
 	public static FriendlyURLEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile FriendlyURLEntryLocalService _service;
+	private static final Snapshot<FriendlyURLEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			FriendlyURLEntryLocalServiceUtil.class,
+			FriendlyURLEntryLocalService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.search.experiences.model.SXPBlueprint;
 
@@ -46,15 +38,16 @@ public class SXPBlueprintLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.search.experiences.service.impl.SXPBlueprintLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static SXPBlueprint addSXPBlueprint(
-			long userId, String configurationJSON,
+			String externalReferenceCode, long userId, String configurationJSON,
 			Map<java.util.Locale, String> descriptionMap,
-			String elementInstancesJSON, Map<java.util.Locale, String> titleMap,
+			String elementInstancesJSON, String schemaVersion,
+			Map<java.util.Locale, String> titleMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addSXPBlueprint(
-			userId, configurationJSON, descriptionMap, elementInstancesJSON,
-			titleMap, serviceContext);
+			externalReferenceCode, userId, configurationJSON, descriptionMap,
+			elementInstancesJSON, schemaVersion, titleMap, serviceContext);
 	}
 
 	/**
@@ -89,6 +82,12 @@ public class SXPBlueprintLocalServiceUtil {
 	 */
 	public static SXPBlueprint createSXPBlueprint(long sxpBlueprintId) {
 		return getService().createSXPBlueprint(sxpBlueprintId);
+	}
+
+	public static void deleteCompanySXPBlueprints(long companyId)
+		throws PortalException {
+
+		getService().deleteCompanySXPBlueprints(companyId);
 	}
 
 	/**
@@ -224,6 +223,13 @@ public class SXPBlueprintLocalServiceUtil {
 		return getService().fetchSXPBlueprint(sxpBlueprintId);
 	}
 
+	public static SXPBlueprint fetchSXPBlueprintByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchSXPBlueprintByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the sxp blueprint with the matching UUID and company.
 	 *
@@ -290,6 +296,14 @@ public class SXPBlueprintLocalServiceUtil {
 		return getService().getSXPBlueprint(sxpBlueprintId);
 	}
 
+	public static SXPBlueprint getSXPBlueprintByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getSXPBlueprintByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the sxp blueprint with the matching UUID and company.
 	 *
@@ -320,6 +334,10 @@ public class SXPBlueprintLocalServiceUtil {
 		return getService().getSXPBlueprints(start, end);
 	}
 
+	public static List<SXPBlueprint> getSXPBlueprints(long companyId) {
+		return getService().getSXPBlueprints(companyId);
+	}
+
 	/**
 	 * Returns the number of sxp blueprints.
 	 *
@@ -343,15 +361,18 @@ public class SXPBlueprintLocalServiceUtil {
 	}
 
 	public static SXPBlueprint updateSXPBlueprint(
-			long userId, long sxpBlueprintId, String configurationJSON,
+			String externalReferenceCode, long userId, long sxpBlueprintId,
+			String configurationJSON,
 			Map<java.util.Locale, String> descriptionMap,
-			String elementInstancesJSON, Map<java.util.Locale, String> titleMap,
+			String elementInstancesJSON, String schemaVersion,
+			Map<java.util.Locale, String> titleMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateSXPBlueprint(
-			userId, sxpBlueprintId, configurationJSON, descriptionMap,
-			elementInstancesJSON, titleMap, serviceContext);
+			externalReferenceCode, userId, sxpBlueprintId, configurationJSON,
+			descriptionMap, elementInstancesJSON, schemaVersion, titleMap,
+			serviceContext);
 	}
 
 	/**
@@ -369,9 +390,11 @@ public class SXPBlueprintLocalServiceUtil {
 	}
 
 	public static SXPBlueprintLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile SXPBlueprintLocalService _service;
+	private static final Snapshot<SXPBlueprintLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			SXPBlueprintLocalServiceUtil.class, SXPBlueprintLocalService.class);
 
 }

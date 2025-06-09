@@ -1,18 +1,12 @@
 <#include "macro.ftl">
 
-<#include "roles.ftl">
-
-<#include "asset.ftl">
-
-<#include "class_names.ftl">
+<#include "default_company.ftl">
 
 <#include "company.ftl">
 
-<#include "ddm.ftl">
+<#include "class_names.ftl">
 
 <#include "default_dl_file_type.ftl">
-
-<#include "groups.ftl">
 
 <#include "release.ftl">
 

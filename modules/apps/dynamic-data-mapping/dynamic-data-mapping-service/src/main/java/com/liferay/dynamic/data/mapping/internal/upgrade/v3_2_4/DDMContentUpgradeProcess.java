@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_2_4;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -75,12 +67,12 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 					JSONObject dataJSONObject = _jsonFactory.createJSONObject(
 						data);
 
-					if (_upgradeDDMContentData(
+					if (upgradeDDMContentData(
 							dataJSONObject.getJSONArray("fieldValues"),
 							definitionJSONObject.getJSONArray("fields"))) {
 
 						preparedStatement2.setString(
-							1, dataJSONObject.toJSONString());
+							1, dataJSONObject.toString());
 
 						long contentId = resultSet.getLong("contentId");
 
@@ -95,24 +87,7 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	private HashMap<String, JSONObject> _mapDataFieldValues(
-		JSONArray fieldValuesJSONArray) {
-
-		HashMap<String, JSONObject> dataFieldValuesMap = new HashMap<>();
-
-		fieldValuesJSONArray.forEach(
-			object -> {
-				JSONObject fieldValueJSONObject = (JSONObject)object;
-
-				dataFieldValuesMap.put(
-					fieldValueJSONObject.getString("name"),
-					fieldValueJSONObject.getJSONObject("value"));
-			});
-
-		return dataFieldValuesMap;
-	}
-
-	private boolean _upgradeDDMContentData(
+	protected boolean upgradeDDMContentData(
 		JSONArray fieldValuesJSONArray, JSONArray fieldsJSONArray) {
 
 		AtomicBoolean upgraded = new AtomicBoolean(false);
@@ -136,53 +111,68 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 						return;
 					}
 
-					JSONArray namesJSONArray = fieldValueJSONObject.names();
+					for (String key : fieldValueJSONObject.keySet()) {
+						try {
+							String valueString = fieldValueJSONObject.getString(
+								key);
 
-					namesJSONArray.forEach(
-						languageId -> {
-							try {
-								DecimalFormat decimalFormat =
-									NumericDDMFormFieldUtil.getDecimalFormat(
-										LocaleUtil.fromLanguageId(
-											GetterUtil.getString(languageId)));
-
-								String valueString =
-									fieldValueJSONObject.getString(
-										GetterUtil.getString(languageId));
-
-								Number number = GetterUtil.getNumber(
-									decimalFormat.parse(valueString));
-
-								String formattedNumber = decimalFormat.format(
-									number);
-
-								if (!valueString.equals(formattedNumber)) {
-									DecimalFormat defaultDecimalFormat =
-										NumericDDMFormFieldUtil.
-											getDecimalFormat(LocaleUtil.US);
-
-									number = defaultDecimalFormat.parse(
-										valueString);
-
-									formattedNumber = decimalFormat.format(
-										number);
-
-									upgraded.set(true);
-
-									fieldValueJSONObject.put(
-										languageId.toString(), formattedNumber);
-								}
+							if (Validator.isNull(valueString)) {
+								continue;
 							}
-							catch (ParseException parseException) {
-								if (_log.isWarnEnabled()) {
-									_log.warn(parseException, parseException);
-								}
+
+							DecimalFormat decimalFormat =
+								NumericDDMFormFieldUtil.getDecimalFormat(
+									LocaleUtil.fromLanguageId(key));
+
+							Number number = GetterUtil.getNumber(
+								decimalFormat.parse(valueString));
+
+							String formattedNumber = decimalFormat.format(
+								number);
+
+							if (valueString.equals(formattedNumber)) {
+								continue;
 							}
-						});
+
+							DecimalFormat defaultDecimalFormat =
+								NumericDDMFormFieldUtil.getDecimalFormat(
+									LocaleUtil.US);
+
+							number = defaultDecimalFormat.parse(valueString);
+
+							formattedNumber = decimalFormat.format(number);
+
+							upgraded.set(true);
+
+							fieldValueJSONObject.put(key, formattedNumber);
+						}
+						catch (ParseException parseException) {
+							if (_log.isWarnEnabled()) {
+								_log.warn(parseException);
+							}
+						}
+					}
 				}
 			});
 
 		return upgraded.get();
+	}
+
+	private HashMap<String, JSONObject> _mapDataFieldValues(
+		JSONArray fieldValuesJSONArray) {
+
+		HashMap<String, JSONObject> dataFieldValuesMap = new HashMap<>();
+
+		fieldValuesJSONArray.forEach(
+			object -> {
+				JSONObject fieldValueJSONObject = (JSONObject)object;
+
+				dataFieldValuesMap.put(
+					fieldValueJSONObject.getString("name"),
+					fieldValueJSONObject.getJSONObject("value"));
+			});
+
+		return dataFieldValuesMap;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

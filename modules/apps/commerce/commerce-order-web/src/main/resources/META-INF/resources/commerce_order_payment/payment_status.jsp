@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,24 +15,21 @@ CommerceOrder commerceOrder = commerceOrderEditDisplayContext.getCommerceOrder()
 
 <portlet:actionURL name="/commerce_order/edit_commerce_order" var="editCommerceOrderPaymentStatusActionURL" />
 
-<commerce-ui:modal-content>
-	<aui:form action="<%= editCommerceOrderPaymentStatusActionURL %>" method="post" name="fm">
-		<aui:input name="<%= Constants.CMD %>" type="hidden" value="paymentStatus" />
-		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
-		<aui:input name="commerceOrderId" type="hidden" value="<%= commerceOrder.getCommerceOrderId() %>" />
+<aui:form action="<%= editCommerceOrderPaymentStatusActionURL %>" cssClass="p-4" method="post" name="fm">
+	<aui:input name="<%= Constants.CMD %>" type="hidden" value="paymentStatus" />
+	<aui:input name="commerceOrderId" type="hidden" value="<%= commerceOrder.getCommerceOrderId() %>" />
 
-		<aui:select name="paymentStatus">
+	<aui:select name="paymentStatus">
 
-			<%
-			for (int paymentStatus : CommerceOrderPaymentConstants.STATUSES) {
-			%>
+		<%
+		for (int paymentStatus : CommerceOrderPaymentConstants.STATUSES) {
+		%>
 
-				<aui:option label="<%= LanguageUtil.get(request, CommerceOrderPaymentConstants.getOrderPaymentStatusLabel(paymentStatus)) %>" selected="<%= paymentStatus == commerceOrder.getPaymentStatus() %>" value="<%= paymentStatus %>" />
+			<aui:option label="<%= LanguageUtil.get(request, CommerceOrderPaymentConstants.getOrderPaymentStatusLabel(paymentStatus)) %>" selected="<%= paymentStatus == commerceOrder.getPaymentStatus() %>" value="<%= paymentStatus %>" />
 
-			<%
-			}
-			%>
+		<%
+		}
+		%>
 
-		</aui:select>
-	</aui:form>
-</commerce-ui:modal-content>
+	</aui:select>
+</aui:form>

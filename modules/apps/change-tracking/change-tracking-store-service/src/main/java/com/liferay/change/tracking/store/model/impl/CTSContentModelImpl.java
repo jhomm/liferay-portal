@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.store.model.impl;
@@ -31,7 +22,6 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -226,98 +216,86 @@ public class CTSContentModelImpl
 	public Map<String, Function<CTSContent, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CTSContent, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CTSContent>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CTSContent.class.getClassLoader(), CTSContent.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CTSContent, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CTSContent> constructor =
-				(Constructor<CTSContent>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CTSContent, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<CTSContent, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CTSContent::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CTSContent::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"ctsContentId", CTSContent::getCtsContentId);
+			attributeGetterFunctions.put("companyId", CTSContent::getCompanyId);
+			attributeGetterFunctions.put(
+				"repositoryId", CTSContent::getRepositoryId);
+			attributeGetterFunctions.put("path", CTSContent::getPath);
+			attributeGetterFunctions.put("version", CTSContent::getVersion);
+			attributeGetterFunctions.put("data", CTSContent::getData);
+			attributeGetterFunctions.put("size", CTSContent::getSize);
+			attributeGetterFunctions.put("storeType", CTSContent::getStoreType);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CTSContent, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CTSContent, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CTSContent, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CTSContent, Object>>();
-		Map<String, BiConsumer<CTSContent, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CTSContent, ?>>();
+		private static final Map<String, BiConsumer<CTSContent, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", CTSContent::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CTSContent, Long>)CTSContent::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", CTSContent::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<CTSContent, Long>)CTSContent::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"ctsContentId", CTSContent::getCtsContentId);
-		attributeSetterBiConsumers.put(
-			"ctsContentId",
-			(BiConsumer<CTSContent, Long>)CTSContent::setCtsContentId);
-		attributeGetterFunctions.put("companyId", CTSContent::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CTSContent, Long>)CTSContent::setCompanyId);
-		attributeGetterFunctions.put(
-			"repositoryId", CTSContent::getRepositoryId);
-		attributeSetterBiConsumers.put(
-			"repositoryId",
-			(BiConsumer<CTSContent, Long>)CTSContent::setRepositoryId);
-		attributeGetterFunctions.put("path", CTSContent::getPath);
-		attributeSetterBiConsumers.put(
-			"path", (BiConsumer<CTSContent, String>)CTSContent::setPath);
-		attributeGetterFunctions.put("version", CTSContent::getVersion);
-		attributeSetterBiConsumers.put(
-			"version", (BiConsumer<CTSContent, String>)CTSContent::setVersion);
-		attributeGetterFunctions.put("data", CTSContent::getData);
-		attributeSetterBiConsumers.put(
-			"data", (BiConsumer<CTSContent, Blob>)CTSContent::setData);
-		attributeGetterFunctions.put("size", CTSContent::getSize);
-		attributeSetterBiConsumers.put(
-			"size", (BiConsumer<CTSContent, Long>)CTSContent::setSize);
-		attributeGetterFunctions.put("storeType", CTSContent::getStoreType);
-		attributeSetterBiConsumers.put(
-			"storeType",
-			(BiConsumer<CTSContent, String>)CTSContent::setStoreType);
+		static {
+			Map<String, BiConsumer<CTSContent, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<CTSContent, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CTSContent, Long>)CTSContent::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CTSContent, Long>)CTSContent::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"ctsContentId",
+				(BiConsumer<CTSContent, Long>)CTSContent::setCtsContentId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CTSContent, Long>)CTSContent::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"repositoryId",
+				(BiConsumer<CTSContent, Long>)CTSContent::setRepositoryId);
+			attributeSetterBiConsumers.put(
+				"path", (BiConsumer<CTSContent, String>)CTSContent::setPath);
+			attributeSetterBiConsumers.put(
+				"version",
+				(BiConsumer<CTSContent, String>)CTSContent::setVersion);
+			attributeSetterBiConsumers.put(
+				"data", (BiConsumer<CTSContent, Blob>)CTSContent::setData);
+			attributeSetterBiConsumers.put(
+				"size", (BiConsumer<CTSContent, Long>)CTSContent::setSize);
+			attributeSetterBiConsumers.put(
+				"storeType",
+				(BiConsumer<CTSContent, String>)CTSContent::setStoreType);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -794,78 +772,12 @@ public class CTSContentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		StringBundler sb = new StringBundler(34);
-
-		sb.append("<model><model-name>");
-		sb.append("com.liferay.change.tracking.store.model.CTSContent");
-		sb.append("</model-name>");
-
-		sb.append(
-			"<column><column-name>mvccVersion</column-name><column-value><![CDATA[");
-
-		sb.append(getMvccVersion());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>ctCollectionId</column-name><column-value><![CDATA[");
-
-		sb.append(getCtCollectionId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>ctsContentId</column-name><column-value><![CDATA[");
-
-		sb.append(getCtsContentId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>companyId</column-name><column-value><![CDATA[");
-
-		sb.append(getCompanyId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>repositoryId</column-name><column-value><![CDATA[");
-
-		sb.append(getRepositoryId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>path</column-name><column-value><![CDATA[");
-
-		sb.append(getPath());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>version</column-name><column-value><![CDATA[");
-
-		sb.append(getVersion());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>size</column-name><column-value><![CDATA[");
-
-		sb.append(getSize());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>storeType</column-name><column-value><![CDATA[");
-
-		sb.append(getStoreType());
-
-		sb.append("]]></column-value></column>");
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CTSContent>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CTSContent.class, ModelWrapper.class);
 
 	}
 
@@ -883,8 +795,9 @@ public class CTSContentModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<CTSContent, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<CTSContent, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

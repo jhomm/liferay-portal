@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.cmis.search;
@@ -24,17 +15,13 @@ import com.liferay.portal.kernel.repository.search.RepositorySearchQueryTermBuil
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.RepositoryEntryLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.PropsTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.util.DateFormatFactory;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-
-import java.text.SimpleDateFormat;
 
 import java.util.Collections;
 
@@ -47,7 +34,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 
 /**
  * @author Mika Koivisto
@@ -62,11 +48,10 @@ public class BaseCmisSearchQueryBuilderTest {
 
 	@Before
 	public void setUp() throws Exception {
-		MockitoAnnotations.initMocks(this);
-
 		setUpPropsUtil();
 
-		setUpDateFormatFactoryUtil();
+		PropsTestUtil.setProps(
+			PropsKeys.INDEX_DATE_FORMAT_PATTERN, "yyyyMMddHHmmss");
 
 		_cmisSearchQueryBuilder = new BaseCmisSearchQueryBuilder(
 			createRepositoryEntryLocalService(),
@@ -384,16 +369,6 @@ public class BaseCmisSearchQueryBuilderTest {
 			searchContext, getFullQuery(searchContext));
 	}
 
-	protected DateFormatFactory createDateFormatFactory(String pattern) {
-		DateFormatFactory dateFormatFactory = Mockito.mock(
-			DateFormatFactory.class);
-
-		setUpPattern(dateFormatFactory, pattern);
-		setUpPattern(dateFormatFactory, "yyyy-MM-dd'T'HH:mm:ss.000'Z'");
-
-		return dateFormatFactory;
-	}
-
 	protected RepositoryEntry createRepositoryEntry() {
 		RepositoryEntry repositoryEntry = Mockito.mock(RepositoryEntry.class);
 
@@ -424,14 +399,18 @@ public class BaseCmisSearchQueryBuilderTest {
 	protected RepositorySearchQueryBuilder
 		createRepositorySearchQueryBuilder() {
 
-		return new RepositorySearchQueryBuilderImpl() {
-			{
-				setDLAppService(Mockito.mock(DLAppService.class));
+		RepositorySearchQueryBuilderImpl repositorySearchQueryBuilderImpl =
+			new RepositorySearchQueryBuilderImpl();
 
-				setRepositorySearchQueryTermBuilder(
-					createRepositorySearchQueryTermBuilder());
-			}
-		};
+		ReflectionTestUtil.setFieldValue(
+			repositorySearchQueryBuilderImpl, "_dlAppService",
+			Mockito.mock(DLAppService.class));
+		ReflectionTestUtil.setFieldValue(
+			repositorySearchQueryBuilderImpl,
+			"_repositorySearchQueryTermBuilder",
+			createRepositorySearchQueryTermBuilder());
+
+		return repositorySearchQueryBuilderImpl;
 	}
 
 	protected RepositorySearchQueryTermBuilder
@@ -456,8 +435,6 @@ public class BaseCmisSearchQueryBuilderTest {
 	protected SearchContext getSearchContext() {
 		SearchContext searchContext = new SearchContext();
 
-		searchContext.setSearchEngineId(SearchEngineHelper.GENERIC_ENGINE_ID);
-
 		QueryConfig queryConfig = searchContext.getQueryConfig();
 
 		queryConfig.setScoreEnabled(true);
@@ -465,37 +442,11 @@ public class BaseCmisSearchQueryBuilderTest {
 		return searchContext;
 	}
 
-	protected void setUpDateFormatFactoryUtil() {
-		String pattern = _INDEX_DATE_FORMAT_PATTERN;
-
-		PropsTestUtil.setProps(PropsKeys.INDEX_DATE_FORMAT_PATTERN, pattern);
-
-		DateFormatFactoryUtil dateFormatFactoryUtil =
-			new DateFormatFactoryUtil();
-
-		dateFormatFactoryUtil.setDateFormatFactory(
-			createDateFormatFactory(pattern));
-	}
-
-	protected void setUpPattern(
-		DateFormatFactory dateFormatFactory, String pattern) {
-
-		Mockito.doReturn(
-			new SimpleDateFormat(pattern)
-		).when(
-			dateFormatFactory
-		).getSimpleDateFormat(
-			pattern
-		);
-	}
-
 	protected void setUpPropsUtil() {
 		PropsTestUtil.setProps(Collections.emptyMap());
 	}
 
 	private static final long _DL_FOLDER_ID = RandomTestUtil.randomLong();
-
-	private static final String _INDEX_DATE_FORMAT_PATTERN = "yyyyMMddHHmmss";
 
 	private static final String _MAPPED_ID = "1000";
 

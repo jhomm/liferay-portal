@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.web.internal.portlet.action;
@@ -24,8 +15,8 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,9 +25,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+		"jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 		"mvc.command.name=/journal/update_folder"
 	},
 	service = MVCActionCommand.class
@@ -50,8 +40,7 @@ public class UpdateFolderMVCActionCommand extends BaseMVCActionCommand {
 
 		long folderId = ParamUtil.getLong(actionRequest, "folderId");
 
-		long parentFolderId = ParamUtil.getLong(
-			actionRequest, "parentFolderId");
+		long newFolderId = ParamUtil.getLong(actionRequest, "newFolderId");
 		String name = ParamUtil.getString(actionRequest, "name");
 		String description = ParamUtil.getString(actionRequest, "description");
 
@@ -68,7 +57,7 @@ public class UpdateFolderMVCActionCommand extends BaseMVCActionCommand {
 			actionRequest, "mergeWithParentFolder");
 
 		_journalFolderService.updateFolder(
-			serviceContext.getScopeGroupId(), folderId, parentFolderId, name,
+			serviceContext.getScopeGroupId(), folderId, newFolderId, name,
 			description, ddmStructureIds, restrictionType,
 			mergeWithParentFolder, serviceContext);
 	}

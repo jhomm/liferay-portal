@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.style.book.model.StyleBookEntry;
 
@@ -45,22 +37,15 @@ public class StyleBookEntryLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.style.book.service.impl.StyleBookEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addStyleBookEntry(
-			userId, groupId, name, styleBookEntryKey, serviceContext);
-	}
-
-	public static StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addStyleBookEntry(
-			userId, groupId, frontendTokensValues, name, styleBookEntryKey,
+			externalReferenceCode, userId, groupId, defaultStyleBookEntry,
+			frontendTokensValues, name, styleBookEntryKey, themeId,
 			serviceContext);
 	}
 
@@ -88,12 +73,12 @@ public class StyleBookEntryLocalServiceUtil {
 	}
 
 	public static StyleBookEntry copyStyleBookEntry(
-			long userId, long groupId, long styleBookEntryId,
+			long userId, long groupId, long sourceStyleBookEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyStyleBookEntry(
-			userId, groupId, styleBookEntryId, serviceContext);
+			userId, groupId, sourceStyleBookEntryId, serviceContext);
 	}
 
 	/**
@@ -137,6 +122,12 @@ public class StyleBookEntryLocalServiceUtil {
 		return getService().deletePersistedModel(persistedModel);
 	}
 
+	public static void deleteStyleBookEntries(long groupId)
+		throws PortalException {
+
+		getService().deleteStyleBookEntries(groupId);
+	}
+
 	/**
 	 * Deletes the style book entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -152,6 +143,14 @@ public class StyleBookEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteStyleBookEntry(styleBookEntryId);
+	}
+
+	public static StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteStyleBookEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -266,8 +265,10 @@ public class StyleBookEntryLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static StyleBookEntry fetchDefaultStyleBookEntry(long groupId) {
-		return getService().fetchDefaultStyleBookEntry(groupId);
+	public static StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId) {
+
+		return getService().fetchDefaultStyleBookEntry(groupId, themeId);
 	}
 
 	public static StyleBookEntry fetchDraft(long primaryKey) {
@@ -384,6 +385,12 @@ public class StyleBookEntryLocalServiceUtil {
 
 		return getService().getStyleBookEntries(
 			groupId, start, end, orderByComparator);
+	}
+
+	public static List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId) {
+
+		return getService().getStyleBookEntries(groupId, themeId);
 	}
 
 	public static List<StyleBookEntry> getStyleBookEntries(
@@ -529,7 +536,7 @@ public class StyleBookEntryLocalServiceUtil {
 	 * <strong>Important:</strong> Inspect StyleBookEntryLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 	 * </p>
 	 *
-	 * @param styleBookEntry the style book entry
+	 * @param draftStyleBookEntry the style book entry
 	 * @return the style book entry that was updated
 	 */
 	public static StyleBookEntry updateStyleBookEntry(
@@ -540,9 +547,12 @@ public class StyleBookEntryLocalServiceUtil {
 	}
 
 	public static StyleBookEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile StyleBookEntryLocalService _service;
+	private static final Snapshot<StyleBookEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			StyleBookEntryLocalServiceUtil.class,
+			StyleBookEntryLocalService.class);
 
 }

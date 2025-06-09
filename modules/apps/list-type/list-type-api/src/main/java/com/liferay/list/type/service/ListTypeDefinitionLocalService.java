@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.list.type.service;
 
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -84,7 +76,14 @@ public interface ListTypeDefinitionLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public ListTypeDefinition addListTypeDefinition(
-			long userId, Map<Locale, String> nameMap)
+			String externalReferenceCode, long userId, boolean system)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public ListTypeDefinition addListTypeDefinition(
+			String externalReferenceCode, long userId,
+			Map<Locale, String> nameMap, boolean system,
+			List<ListTypeEntry> listTypeEntries)
 		throws PortalException;
 
 	/**
@@ -219,6 +218,10 @@ public interface ListTypeDefinitionLocalService
 	public ListTypeDefinition fetchListTypeDefinition(
 		long listTypeDefinitionId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ListTypeDefinition fetchListTypeDefinitionByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the list type definition with the matching UUID and company.
 	 *
@@ -249,6 +252,11 @@ public interface ListTypeDefinitionLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ListTypeDefinition getListTypeDefinition(long listTypeDefinitionId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ListTypeDefinition getListTypeDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	/**
@@ -317,7 +325,12 @@ public interface ListTypeDefinitionLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public ListTypeDefinition updateListTypeDefinition(
-			long listTypeDefinitionId, Map<Locale, String> nameMap)
+			String externalReferenceCode, long listTypeDefinitionId,
+			long userId, Map<Locale, String> nameMap,
+			List<ListTypeEntry> listTypeEntries)
+		throws PortalException;
+
+	public void updateUserId(long companyId, long oldUserId, long newUserId)
 		throws PortalException;
 
 }

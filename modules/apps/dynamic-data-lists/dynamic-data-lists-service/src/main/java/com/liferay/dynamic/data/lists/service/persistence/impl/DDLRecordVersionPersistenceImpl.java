@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.service.persistence.impl;
@@ -22,7 +13,9 @@ import com.liferay.dynamic.data.lists.model.impl.DDLRecordVersionModelImpl;
 import com.liferay.dynamic.data.lists.service.persistence.DDLRecordVersionPersistence;
 import com.liferay.dynamic.data.lists.service.persistence.DDLRecordVersionUtil;
 import com.liferay.dynamic.data.lists.service.persistence.impl.constants.DDLPersistenceConstants;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
 import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
@@ -38,7 +31,6 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.helper.CTPersistenceHelper;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -49,7 +41,6 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.ArrayList;
@@ -81,7 +72,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(service = {DDLRecordVersionPersistence.class, BasePersistence.class})
+@Component(service = DDLRecordVersionPersistence.class)
 public class DDLRecordVersionPersistenceImpl
 	extends BasePersistenceImpl<DDLRecordVersion>
 	implements DDLRecordVersionPersistence {
@@ -179,96 +170,100 @@ public class DDLRecordVersionPersistenceImpl
 		OrderByComparator<DDLRecordVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByRecordId;
-				finderArgs = new Object[] {recordId};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByRecordId;
+					finderArgs = new Object[] {recordId};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByRecordId;
-			finderArgs = new Object[] {recordId, start, end, orderByComparator};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByRecordId;
+				finderArgs = new Object[] {
+					recordId, start, end, orderByComparator
+				};
+			}
 
-		List<DDLRecordVersion> list = null;
+			List<DDLRecordVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDLRecordVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDLRecordVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDLRecordVersion ddlRecordVersion : list) {
-					if (recordId != ddlRecordVersion.getRecordId()) {
-						list = null;
+				if ((list != null) && !list.isEmpty()) {
+					for (DDLRecordVersion ddlRecordVersion : list) {
+						if (recordId != ddlRecordVersion.getRecordId()) {
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					3 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(3);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						3 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(3);
+				}
 
-			sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
+				sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_RECORDID_RECORDID_2);
+				sb.append(_FINDER_COLUMN_RECORDID_RECORDID_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(recordId);
+					queryPos.add(recordId);
 
-				list = (List<DDLRecordVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DDLRecordVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -560,57 +555,51 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public int countByRecordId(long recordId) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByRecordId;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {recordId};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByRecordId;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {recordId};
+			if (count == null) {
+				StringBundler sb = new StringBundler(2);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
+				sb.append(_FINDER_COLUMN_RECORDID_RECORDID_2);
 
-			sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_RECORDID_RECORDID_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(recordId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(recordId);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_RECORDID_RECORDID_2 =
@@ -700,118 +689,121 @@ public class DDLRecordVersionPersistenceImpl
 		OrderByComparator<DDLRecordVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		recordSetVersion = Objects.toString(recordSetVersion, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+			recordSetVersion = Objects.toString(recordSetVersion, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByR_R;
-				finderArgs = new Object[] {recordSetId, recordSetVersion};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByR_R;
+					finderArgs = new Object[] {recordSetId, recordSetVersion};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByR_R;
-			finderArgs = new Object[] {
-				recordSetId, recordSetVersion, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByR_R;
+				finderArgs = new Object[] {
+					recordSetId, recordSetVersion, start, end, orderByComparator
+				};
+			}
 
-		List<DDLRecordVersion> list = null;
+			List<DDLRecordVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDLRecordVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDLRecordVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDLRecordVersion ddlRecordVersion : list) {
-					if ((recordSetId != ddlRecordVersion.getRecordSetId()) ||
-						!recordSetVersion.equals(
-							ddlRecordVersion.getRecordSetVersion())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DDLRecordVersion ddlRecordVersion : list) {
+						if ((recordSetId !=
+								ddlRecordVersion.getRecordSetId()) ||
+							!recordSetVersion.equals(
+								ddlRecordVersion.getRecordSetVersion())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
-
-			sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_R_R_RECORDSETID_2);
-
-			boolean bindRecordSetVersion = false;
-
-			if (recordSetVersion.isEmpty()) {
-				sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_3);
-			}
-			else {
-				bindRecordSetVersion = true;
-
-				sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_2);
-			}
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(recordSetId);
-
-				if (bindRecordSetVersion) {
-					queryPos.add(recordSetVersion);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
 				}
 
-				list = (List<DDLRecordVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_R_R_RECORDSETID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindRecordSetVersion = false;
+
+				if (recordSetVersion.isEmpty()) {
+					sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_3);
+				}
+				else {
+					bindRecordSetVersion = true;
+
+					sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_2);
+				}
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(recordSetId);
+
+					if (bindRecordSetVersion) {
+						queryPos.add(recordSetVersion);
+					}
+
+					list = (List<DDLRecordVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1139,74 +1131,68 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public int countByR_R(long recordSetId, String recordSetVersion) {
-		recordSetVersion = Objects.toString(recordSetVersion, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+			recordSetVersion = Objects.toString(recordSetVersion, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByR_R;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {recordSetId, recordSetVersion};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByR_R;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {recordSetId, recordSetVersion};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_R_R_RECORDSETID_2);
 
-			sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
+				boolean bindRecordSetVersion = false;
 
-			sb.append(_FINDER_COLUMN_R_R_RECORDSETID_2);
+				if (recordSetVersion.isEmpty()) {
+					sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_3);
+				}
+				else {
+					bindRecordSetVersion = true;
 
-			boolean bindRecordSetVersion = false;
-
-			if (recordSetVersion.isEmpty()) {
-				sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_3);
-			}
-			else {
-				bindRecordSetVersion = true;
-
-				sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(recordSetId);
-
-				if (bindRecordSetVersion) {
-					queryPos.add(recordSetVersion);
+					sb.append(_FINDER_COLUMN_R_R_RECORDSETVERSION_2);
 				}
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(recordSetId);
+
+					if (bindRecordSetVersion) {
+						queryPos.add(recordSetVersion);
+					}
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_R_R_RECORDSETID_2 =
@@ -1219,7 +1205,6 @@ public class DDLRecordVersionPersistenceImpl
 		"(ddlRecordVersion.recordSetVersion IS NULL OR ddlRecordVersion.recordSetVersion = '')";
 
 	private FinderPath _finderPathFetchByR_V;
-	private FinderPath _finderPathCountByR_V;
 
 	/**
 	 * Returns the ddl record version where recordId = &#63; and version = &#63; or throws a <code>NoSuchRecordVersionException</code> if it could not be found.
@@ -1282,97 +1267,100 @@ public class DDLRecordVersionPersistenceImpl
 	public DDLRecordVersion fetchByR_V(
 		long recordId, String version, boolean useFinderCache) {
 
-		version = Objects.toString(version, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+			version = Objects.toString(version, "");
 
-		Object[] finderArgs = null;
+			Object[] finderArgs = null;
 
-		if (useFinderCache && productionMode) {
-			finderArgs = new Object[] {recordId, version};
-		}
-
-		Object result = null;
-
-		if (useFinderCache && productionMode) {
-			result = finderCache.getResult(_finderPathFetchByR_V, finderArgs);
-		}
-
-		if (result instanceof DDLRecordVersion) {
-			DDLRecordVersion ddlRecordVersion = (DDLRecordVersion)result;
-
-			if ((recordId != ddlRecordVersion.getRecordId()) ||
-				!Objects.equals(version, ddlRecordVersion.getVersion())) {
-
-				result = null;
-			}
-		}
-
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_R_V_RECORDID_2);
-
-			boolean bindVersion = false;
-
-			if (version.isEmpty()) {
-				sb.append(_FINDER_COLUMN_R_V_VERSION_3);
-			}
-			else {
-				bindVersion = true;
-
-				sb.append(_FINDER_COLUMN_R_V_VERSION_2);
+			if (useFinderCache) {
+				finderArgs = new Object[] {recordId, version};
 			}
 
-			String sql = sb.toString();
+			Object result = null;
 
-			Session session = null;
+			if (useFinderCache) {
+				result = finderCache.getResult(
+					_finderPathFetchByR_V, finderArgs, this);
+			}
 
-			try {
-				session = openSession();
+			if (result instanceof DDLRecordVersion) {
+				DDLRecordVersion ddlRecordVersion = (DDLRecordVersion)result;
 
-				Query query = session.createQuery(sql);
+				if ((recordId != ddlRecordVersion.getRecordId()) ||
+					!Objects.equals(version, ddlRecordVersion.getVersion())) {
 
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(recordId);
-
-				if (bindVersion) {
-					queryPos.add(version);
+					result = null;
 				}
+			}
 
-				List<DDLRecordVersion> list = query.list();
+			if (result == null) {
+				StringBundler sb = new StringBundler(4);
 
-				if (list.isEmpty()) {
-					if (useFinderCache && productionMode) {
-						finderCache.putResult(
-							_finderPathFetchByR_V, finderArgs, list);
-					}
+				sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
+
+				sb.append(_FINDER_COLUMN_R_V_RECORDID_2);
+
+				boolean bindVersion = false;
+
+				if (version.isEmpty()) {
+					sb.append(_FINDER_COLUMN_R_V_VERSION_3);
 				}
 				else {
-					DDLRecordVersion ddlRecordVersion = list.get(0);
+					bindVersion = true;
 
-					result = ddlRecordVersion;
+					sb.append(_FINDER_COLUMN_R_V_VERSION_2);
+				}
 
-					cacheResult(ddlRecordVersion);
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(recordId);
+
+					if (bindVersion) {
+						queryPos.add(version);
+					}
+
+					List<DDLRecordVersion> list = query.list();
+
+					if (list.isEmpty()) {
+						if (useFinderCache) {
+							finderCache.putResult(
+								_finderPathFetchByR_V, finderArgs, list);
+						}
+					}
+					else {
+						DDLRecordVersion ddlRecordVersion = list.get(0);
+
+						result = ddlRecordVersion;
+
+						cacheResult(ddlRecordVersion);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		if (result instanceof List<?>) {
-			return null;
-		}
-		else {
-			return (DDLRecordVersion)result;
+			if (result instanceof List<?>) {
+				return null;
+			}
+			else {
+				return (DDLRecordVersion)result;
+			}
 		}
 	}
 
@@ -1401,74 +1389,13 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public int countByR_V(long recordId, String version) {
-		version = Objects.toString(version, "");
+		DDLRecordVersion ddlRecordVersion = fetchByR_V(recordId, version);
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
-
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
-
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByR_V;
-
-			finderArgs = new Object[] {recordId, version};
-
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
+		if (ddlRecordVersion == null) {
+			return 0;
 		}
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_R_V_RECORDID_2);
-
-			boolean bindVersion = false;
-
-			if (version.isEmpty()) {
-				sb.append(_FINDER_COLUMN_R_V_VERSION_3);
-			}
-			else {
-				bindVersion = true;
-
-				sb.append(_FINDER_COLUMN_R_V_VERSION_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(recordId);
-
-				if (bindVersion) {
-					queryPos.add(version);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
-					finderCache.putResult(finderPath, finderArgs, count);
-				}
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
-
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_R_V_RECORDID_2 =
@@ -1560,104 +1487,106 @@ public class DDLRecordVersionPersistenceImpl
 		OrderByComparator<DDLRecordVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByR_S;
-				finderArgs = new Object[] {recordId, status};
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByR_S;
+					finderArgs = new Object[] {recordId, status};
+				}
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByR_S;
-			finderArgs = new Object[] {
-				recordId, status, start, end, orderByComparator
-			};
-		}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByR_S;
+				finderArgs = new Object[] {
+					recordId, status, start, end, orderByComparator
+				};
+			}
 
-		List<DDLRecordVersion> list = null;
+			List<DDLRecordVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDLRecordVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDLRecordVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDLRecordVersion ddlRecordVersion : list) {
-					if ((recordId != ddlRecordVersion.getRecordId()) ||
-						(status != ddlRecordVersion.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DDLRecordVersion ddlRecordVersion : list) {
+						if ((recordId != ddlRecordVersion.getRecordId()) ||
+							(status != ddlRecordVersion.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					4 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(4);
-			}
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						4 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(4);
+				}
 
-			sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
+				sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_R_S_RECORDID_2);
+				sb.append(_FINDER_COLUMN_R_S_RECORDID_2);
 
-			sb.append(_FINDER_COLUMN_R_S_STATUS_2);
+				sb.append(_FINDER_COLUMN_R_S_STATUS_2);
 
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
-			}
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
+				}
 
-			String sql = sb.toString();
+				String sql = sb.toString();
 
-			Session session = null;
+				Session session = null;
 
-			try {
-				session = openSession();
+				try {
+					session = openSession();
 
-				Query query = session.createQuery(sql);
+					Query query = session.createQuery(sql);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				queryPos.add(recordId);
+					queryPos.add(recordId);
 
-				queryPos.add(status);
+					queryPos.add(status);
 
-				list = (List<DDLRecordVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+					list = (List<DDLRecordVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
 
-				cacheResult(list);
+					cacheResult(list);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -1971,61 +1900,55 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public int countByR_S(long recordId, int status) {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByR_S;
 
-		Long count = null;
+			Object[] finderArgs = new Object[] {recordId, status};
 
-		if (productionMode) {
-			finderPath = _finderPathCountByR_S;
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-			finderArgs = new Object[] {recordId, status};
+			if (count == null) {
+				StringBundler sb = new StringBundler(3);
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+				sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
+				sb.append(_FINDER_COLUMN_R_S_RECORDID_2);
 
-			sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
+				sb.append(_FINDER_COLUMN_R_S_STATUS_2);
 
-			sb.append(_FINDER_COLUMN_R_S_RECORDID_2);
+				String sql = sb.toString();
 
-			sb.append(_FINDER_COLUMN_R_S_STATUS_2);
+				Session session = null;
 
-			String sql = sb.toString();
+				try {
+					session = openSession();
 
-			Session session = null;
+					Query query = session.createQuery(sql);
 
-			try {
-				session = openSession();
+					QueryPos queryPos = QueryPos.getInstance(query);
 
-				Query query = session.createQuery(sql);
+					queryPos.add(recordId);
 
-				QueryPos queryPos = QueryPos.getInstance(query);
+					queryPos.add(status);
 
-				queryPos.add(recordId);
+					count = (Long)query.uniqueResult();
 
-				queryPos.add(status);
-
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_R_S_RECORDID_2 =
@@ -2131,131 +2054,134 @@ public class DDLRecordVersionPersistenceImpl
 		OrderByComparator<DDLRecordVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		recordSetVersion = Objects.toString(recordSetVersion, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+			recordSetVersion = Objects.toString(recordSetVersion, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindByU_R_R_S;
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindByU_R_R_S;
+					finderArgs = new Object[] {
+						userId, recordSetId, recordSetVersion, status
+					};
+				}
+			}
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindByU_R_R_S;
 				finderArgs = new Object[] {
-					userId, recordSetId, recordSetVersion, status
+					userId, recordSetId, recordSetVersion, status, start, end,
+					orderByComparator
 				};
 			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindByU_R_R_S;
-			finderArgs = new Object[] {
-				userId, recordSetId, recordSetVersion, status, start, end,
-				orderByComparator
-			};
-		}
 
-		List<DDLRecordVersion> list = null;
+			List<DDLRecordVersion> list = null;
 
-		if (useFinderCache && productionMode) {
-			list = (List<DDLRecordVersion>)finderCache.getResult(
-				finderPath, finderArgs);
+			if (useFinderCache) {
+				list = (List<DDLRecordVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
 
-			if ((list != null) && !list.isEmpty()) {
-				for (DDLRecordVersion ddlRecordVersion : list) {
-					if ((userId != ddlRecordVersion.getUserId()) ||
-						(recordSetId != ddlRecordVersion.getRecordSetId()) ||
-						!recordSetVersion.equals(
-							ddlRecordVersion.getRecordSetVersion()) ||
-						(status != ddlRecordVersion.getStatus())) {
+				if ((list != null) && !list.isEmpty()) {
+					for (DDLRecordVersion ddlRecordVersion : list) {
+						if ((userId != ddlRecordVersion.getUserId()) ||
+							(recordSetId !=
+								ddlRecordVersion.getRecordSetId()) ||
+							!recordSetVersion.equals(
+								ddlRecordVersion.getRecordSetVersion()) ||
+							(status != ddlRecordVersion.getStatus())) {
 
-						list = null;
+							list = null;
 
-						break;
+							break;
+						}
 					}
 				}
 			}
-		}
 
-		if (list == null) {
-			StringBundler sb = null;
+			if (list == null) {
+				StringBundler sb = null;
 
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					6 + (orderByComparator.getOrderByFields().length * 2));
-			}
-			else {
-				sb = new StringBundler(6);
-			}
-
-			sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
-
-			sb.append(_FINDER_COLUMN_U_R_R_S_USERID_2);
-
-			sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETID_2);
-
-			boolean bindRecordSetVersion = false;
-
-			if (recordSetVersion.isEmpty()) {
-				sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_3);
-			}
-			else {
-				bindRecordSetVersion = true;
-
-				sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_2);
-			}
-
-			sb.append(_FINDER_COLUMN_U_R_R_S_STATUS_2);
-
-			if (orderByComparator != null) {
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-			}
-			else {
-				sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(userId);
-
-				queryPos.add(recordSetId);
-
-				if (bindRecordSetVersion) {
-					queryPos.add(recordSetVersion);
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						6 + (orderByComparator.getOrderByFields().length * 2));
+				}
+				else {
+					sb = new StringBundler(6);
 				}
 
-				queryPos.add(status);
+				sb.append(_SQL_SELECT_DDLRECORDVERSION_WHERE);
 
-				list = (List<DDLRecordVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
+				sb.append(_FINDER_COLUMN_U_R_R_S_USERID_2);
 
-				cacheResult(list);
+				sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETID_2);
 
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				boolean bindRecordSetVersion = false;
+
+				if (recordSetVersion.isEmpty()) {
+					sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_3);
+				}
+				else {
+					bindRecordSetVersion = true;
+
+					sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_2);
+				}
+
+				sb.append(_FINDER_COLUMN_U_R_R_S_STATUS_2);
+
+				if (orderByComparator != null) {
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+				}
+				else {
+					sb.append(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				String sql = sb.toString();
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(userId);
+
+					queryPos.add(recordSetId);
+
+					if (bindRecordSetVersion) {
+						queryPos.add(recordSetVersion);
+					}
+
+					queryPos.add(status);
+
+					list = (List<DDLRecordVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			return list;
+		}
 	}
 
 	/**
@@ -2625,84 +2551,78 @@ public class DDLRecordVersionPersistenceImpl
 	public int countByU_R_R_S(
 		long userId, long recordSetId, String recordSetVersion, int status) {
 
-		recordSetVersion = Objects.toString(recordSetVersion, "");
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+			recordSetVersion = Objects.toString(recordSetVersion, "");
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = _finderPathCountByU_R_R_S;
 
-		Long count = null;
-
-		if (productionMode) {
-			finderPath = _finderPathCountByU_R_R_S;
-
-			finderArgs = new Object[] {
+			Object[] finderArgs = new Object[] {
 				userId, recordSetId, recordSetVersion, status
 			};
 
-			count = (Long)finderCache.getResult(finderPath, finderArgs);
-		}
+			Long count = (Long)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
+			if (count == null) {
+				StringBundler sb = new StringBundler(5);
 
-			sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
+				sb.append(_SQL_COUNT_DDLRECORDVERSION_WHERE);
 
-			sb.append(_FINDER_COLUMN_U_R_R_S_USERID_2);
+				sb.append(_FINDER_COLUMN_U_R_R_S_USERID_2);
 
-			sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETID_2);
+				sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETID_2);
 
-			boolean bindRecordSetVersion = false;
+				boolean bindRecordSetVersion = false;
 
-			if (recordSetVersion.isEmpty()) {
-				sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_3);
-			}
-			else {
-				bindRecordSetVersion = true;
+				if (recordSetVersion.isEmpty()) {
+					sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_3);
+				}
+				else {
+					bindRecordSetVersion = true;
 
-				sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_2);
-			}
-
-			sb.append(_FINDER_COLUMN_U_R_R_S_STATUS_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(userId);
-
-				queryPos.add(recordSetId);
-
-				if (bindRecordSetVersion) {
-					queryPos.add(recordSetVersion);
+					sb.append(_FINDER_COLUMN_U_R_R_S_RECORDSETVERSION_2);
 				}
 
-				queryPos.add(status);
+				sb.append(_FINDER_COLUMN_U_R_R_S_STATUS_2);
 
-				count = (Long)query.uniqueResult();
+				String sql = sb.toString();
 
-				if (productionMode) {
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					QueryPos queryPos = QueryPos.getInstance(query);
+
+					queryPos.add(userId);
+
+					queryPos.add(recordSetId);
+
+					if (bindRecordSetVersion) {
+						queryPos.add(recordSetVersion);
+					}
+
+					queryPos.add(status);
+
+					count = (Long)query.uniqueResult();
+
 					finderCache.putResult(finderPath, finderArgs, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	private static final String _FINDER_COLUMN_U_R_R_S_USERID_2 =
@@ -2736,20 +2656,22 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public void cacheResult(DDLRecordVersion ddlRecordVersion) {
-		if (ddlRecordVersion.getCtCollectionId() != 0) {
-			return;
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ddlRecordVersion.getCtCollectionId())) {
+
+			entityCache.putResult(
+				DDLRecordVersionImpl.class, ddlRecordVersion.getPrimaryKey(),
+				ddlRecordVersion);
+
+			finderCache.putResult(
+				_finderPathFetchByR_V,
+				new Object[] {
+					ddlRecordVersion.getRecordId(),
+					ddlRecordVersion.getVersion()
+				},
+				ddlRecordVersion);
 		}
-
-		entityCache.putResult(
-			DDLRecordVersionImpl.class, ddlRecordVersion.getPrimaryKey(),
-			ddlRecordVersion);
-
-		finderCache.putResult(
-			_finderPathFetchByR_V,
-			new Object[] {
-				ddlRecordVersion.getRecordId(), ddlRecordVersion.getVersion()
-			},
-			ddlRecordVersion);
 	}
 
 	private int _valueObjectFinderCacheListThreshold;
@@ -2770,15 +2692,16 @@ public class DDLRecordVersionPersistenceImpl
 		}
 
 		for (DDLRecordVersion ddlRecordVersion : ddlRecordVersions) {
-			if (ddlRecordVersion.getCtCollectionId() != 0) {
-				continue;
-			}
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+						ddlRecordVersion.getCtCollectionId())) {
 
-			if (entityCache.getResult(
-					DDLRecordVersionImpl.class,
-					ddlRecordVersion.getPrimaryKey()) == null) {
+				if (entityCache.getResult(
+						DDLRecordVersionImpl.class,
+						ddlRecordVersion.getPrimaryKey()) == null) {
 
-				cacheResult(ddlRecordVersion);
+					cacheResult(ddlRecordVersion);
+				}
 			}
 		}
 	}
@@ -2829,14 +2752,18 @@ public class DDLRecordVersionPersistenceImpl
 	protected void cacheUniqueFindersCache(
 		DDLRecordVersionModelImpl ddlRecordVersionModelImpl) {
 
-		Object[] args = new Object[] {
-			ddlRecordVersionModelImpl.getRecordId(),
-			ddlRecordVersionModelImpl.getVersion()
-		};
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ddlRecordVersionModelImpl.getCtCollectionId())) {
 
-		finderCache.putResult(_finderPathCountByR_V, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByR_V, args, ddlRecordVersionModelImpl);
+			Object[] args = new Object[] {
+				ddlRecordVersionModelImpl.getRecordId(),
+				ddlRecordVersionModelImpl.getVersion()
+			};
+
+			finderCache.putResult(
+				_finderPathFetchByR_V, args, ddlRecordVersionModelImpl);
+		}
 	}
 
 	/**
@@ -3010,16 +2937,6 @@ public class DDLRecordVersionPersistenceImpl
 			closeSession(session);
 		}
 
-		if (ddlRecordVersion.getCtCollectionId() != 0) {
-			if (isNew) {
-				ddlRecordVersion.setNew(false);
-			}
-
-			ddlRecordVersion.resetOriginalValues();
-
-			return ddlRecordVersion;
-		}
-
 		entityCache.putResult(
 			DDLRecordVersionImpl.class, ddlRecordVersionModelImpl, false, true);
 
@@ -3081,11 +2998,24 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public DDLRecordVersion fetchByPrimaryKey(Serializable primaryKey) {
-		if (ctPersistenceHelper.isProductionMode(DDLRecordVersion.class)) {
-			return super.fetchByPrimaryKey(primaryKey);
+		if (ctPersistenceHelper.isProductionMode(
+				DDLRecordVersion.class, primaryKey)) {
+
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKey(primaryKey);
+			}
 		}
 
-		DDLRecordVersion ddlRecordVersion = null;
+		DDLRecordVersion ddlRecordVersion =
+			(DDLRecordVersion)entityCache.getResult(
+				DDLRecordVersionImpl.class, primaryKey);
+
+		if (ddlRecordVersion != null) {
+			return ddlRecordVersion;
+		}
 
 		Session session = null;
 
@@ -3125,7 +3055,12 @@ public class DDLRecordVersionPersistenceImpl
 		Set<Serializable> primaryKeys) {
 
 		if (ctPersistenceHelper.isProductionMode(DDLRecordVersion.class)) {
-			return super.fetchByPrimaryKeys(primaryKeys);
+			try (SafeCloseable safeCloseable =
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
+
+				return super.fetchByPrimaryKeys(primaryKeys);
+			}
 		}
 
 		if (primaryKeys.isEmpty()) {
@@ -3146,6 +3081,34 @@ public class DDLRecordVersionPersistenceImpl
 				map.put(primaryKey, ddlRecordVersion);
 			}
 
+			return map;
+		}
+
+		Set<Serializable> uncachedPrimaryKeys = null;
+
+		for (Serializable primaryKey : primaryKeys) {
+			try (SafeCloseable safeCloseable =
+					ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+						DDLRecordVersion.class, primaryKey)) {
+
+				DDLRecordVersion ddlRecordVersion =
+					(DDLRecordVersion)entityCache.getResult(
+						DDLRecordVersionImpl.class, primaryKey);
+
+				if (ddlRecordVersion == null) {
+					if (uncachedPrimaryKeys == null) {
+						uncachedPrimaryKeys = new HashSet<>();
+					}
+
+					uncachedPrimaryKeys.add(primaryKey);
+				}
+				else {
+					map.put(primaryKey, ddlRecordVersion);
+				}
+			}
+		}
+
+		if (uncachedPrimaryKeys == null) {
 			return map;
 		}
 
@@ -3278,78 +3241,80 @@ public class DDLRecordVersionPersistenceImpl
 		OrderByComparator<DDLRecordVersion> orderByComparator,
 		boolean useFinderCache) {
 
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		FinderPath finderPath = null;
-		Object[] finderArgs = null;
+			FinderPath finderPath = null;
+			Object[] finderArgs = null;
 
-		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
-			(orderByComparator == null)) {
+			if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+				(orderByComparator == null)) {
 
-			if (useFinderCache && productionMode) {
-				finderPath = _finderPathWithoutPaginationFindAll;
-				finderArgs = FINDER_ARGS_EMPTY;
-			}
-		}
-		else if (useFinderCache && productionMode) {
-			finderPath = _finderPathWithPaginationFindAll;
-			finderArgs = new Object[] {start, end, orderByComparator};
-		}
-
-		List<DDLRecordVersion> list = null;
-
-		if (useFinderCache && productionMode) {
-			list = (List<DDLRecordVersion>)finderCache.getResult(
-				finderPath, finderArgs);
-		}
-
-		if (list == null) {
-			StringBundler sb = null;
-			String sql = null;
-
-			if (orderByComparator != null) {
-				sb = new StringBundler(
-					2 + (orderByComparator.getOrderByFields().length * 2));
-
-				sb.append(_SQL_SELECT_DDLRECORDVERSION);
-
-				appendOrderByComparator(
-					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
-
-				sql = sb.toString();
-			}
-			else {
-				sql = _SQL_SELECT_DDLRECORDVERSION;
-
-				sql = sql.concat(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
-			}
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				list = (List<DDLRecordVersion>)QueryUtil.list(
-					query, getDialect(), start, end);
-
-				cacheResult(list);
-
-				if (useFinderCache && productionMode) {
-					finderCache.putResult(finderPath, finderArgs, list);
+				if (useFinderCache) {
+					finderPath = _finderPathWithoutPaginationFindAll;
+					finderArgs = FINDER_ARGS_EMPTY;
 				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
+			else if (useFinderCache) {
+				finderPath = _finderPathWithPaginationFindAll;
+				finderArgs = new Object[] {start, end, orderByComparator};
 			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return list;
+			List<DDLRecordVersion> list = null;
+
+			if (useFinderCache) {
+				list = (List<DDLRecordVersion>)finderCache.getResult(
+					finderPath, finderArgs, this);
+			}
+
+			if (list == null) {
+				StringBundler sb = null;
+				String sql = null;
+
+				if (orderByComparator != null) {
+					sb = new StringBundler(
+						2 + (orderByComparator.getOrderByFields().length * 2));
+
+					sb.append(_SQL_SELECT_DDLRECORDVERSION);
+
+					appendOrderByComparator(
+						sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+
+					sql = sb.toString();
+				}
+				else {
+					sql = _SQL_SELECT_DDLRECORDVERSION;
+
+					sql = sql.concat(DDLRecordVersionModelImpl.ORDER_BY_JPQL);
+				}
+
+				Session session = null;
+
+				try {
+					session = openSession();
+
+					Query query = session.createQuery(sql);
+
+					list = (List<DDLRecordVersion>)QueryUtil.list(
+						query, getDialect(), start, end);
+
+					cacheResult(list);
+
+					if (useFinderCache) {
+						finderCache.putResult(finderPath, finderArgs, list);
+					}
+				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
+			}
+
+			return list;
+		}
 	}
 
 	/**
@@ -3370,40 +3335,37 @@ public class DDLRecordVersionPersistenceImpl
 	 */
 	@Override
 	public int countAll() {
-		boolean productionMode = ctPersistenceHelper.isProductionMode(
-			DDLRecordVersion.class);
+		try (SafeCloseable safeCloseable =
+				ctPersistenceHelper.setCTCollectionIdWithSafeCloseable(
+					DDLRecordVersion.class)) {
 
-		Long count = null;
+			Long count = (Long)finderCache.getResult(
+				_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
-		if (productionMode) {
-			count = (Long)finderCache.getResult(
-				_finderPathCountAll, FINDER_ARGS_EMPTY);
-		}
+			if (count == null) {
+				Session session = null;
 
-		if (count == null) {
-			Session session = null;
+				try {
+					session = openSession();
 
-			try {
-				session = openSession();
+					Query query = session.createQuery(
+						_SQL_COUNT_DDLRECORDVERSION);
 
-				Query query = session.createQuery(_SQL_COUNT_DDLRECORDVERSION);
+					count = (Long)query.uniqueResult();
 
-				count = (Long)query.uniqueResult();
-
-				if (productionMode) {
 					finderCache.putResult(
 						_finderPathCountAll, FINDER_ARGS_EMPTY, count);
 				}
+				catch (Exception exception) {
+					throw processException(exception);
+				}
+				finally {
+					closeSession(session);
+				}
 			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
-		}
 
-		return count.intValue();
+			return count.intValue();
+		}
 	}
 
 	@Override
@@ -3459,6 +3421,7 @@ public class DDLRecordVersionPersistenceImpl
 
 	static {
 		Set<String> ctControlColumnNames = new HashSet<String>();
+		Set<String> ctMergeColumnNames = new HashSet<String>();
 		Set<String> ctStrictColumnNames = new HashSet<String>();
 
 		ctControlColumnNames.add("mvccVersion");
@@ -3468,19 +3431,20 @@ public class DDLRecordVersionPersistenceImpl
 		ctStrictColumnNames.add("userId");
 		ctStrictColumnNames.add("userName");
 		ctStrictColumnNames.add("createDate");
-		ctStrictColumnNames.add("DDMStorageId");
-		ctStrictColumnNames.add("recordSetId");
-		ctStrictColumnNames.add("recordSetVersion");
-		ctStrictColumnNames.add("recordId");
-		ctStrictColumnNames.add("version");
-		ctStrictColumnNames.add("displayIndex");
-		ctStrictColumnNames.add("status");
-		ctStrictColumnNames.add("statusByUserId");
-		ctStrictColumnNames.add("statusByUserName");
-		ctStrictColumnNames.add("statusDate");
+		ctMergeColumnNames.add("DDMStorageId");
+		ctMergeColumnNames.add("recordSetId");
+		ctMergeColumnNames.add("recordSetVersion");
+		ctMergeColumnNames.add("recordId");
+		ctMergeColumnNames.add("version");
+		ctMergeColumnNames.add("displayIndex");
+		ctMergeColumnNames.add("status");
+		ctMergeColumnNames.add("statusByUserId");
+		ctMergeColumnNames.add("statusByUserName");
+		ctMergeColumnNames.add("statusDate");
 
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.CONTROL, ctControlColumnNames);
+		_ctColumnNamesMap.put(CTColumnResolutionType.MERGE, ctMergeColumnNames);
 		_ctColumnNamesMap.put(
 			CTColumnResolutionType.PK,
 			Collections.singleton("recordVersionId"));
@@ -3552,11 +3516,6 @@ public class DDLRecordVersionPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"recordId", "version"}, true);
 
-		_finderPathCountByR_V = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByR_V",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"recordId", "version"}, false);
-
 		_finderPathWithPaginationFindByR_S = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByR_S",
 			new String[] {
@@ -3611,30 +3570,14 @@ public class DDLRecordVersionPersistenceImpl
 			},
 			false);
 
-		_setDDLRecordVersionUtilPersistence(this);
+		DDLRecordVersionUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setDDLRecordVersionUtilPersistence(null);
+		DDLRecordVersionUtil.setPersistence(null);
 
 		entityCache.removeCache(DDLRecordVersionImpl.class.getName());
-	}
-
-	private void _setDDLRecordVersionUtilPersistence(
-		DDLRecordVersionPersistence ddlRecordVersionPersistence) {
-
-		try {
-			Field field = DDLRecordVersionUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, ddlRecordVersionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -3699,9 +3642,5 @@ public class DDLRecordVersionPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private DDLRecordVersionModelArgumentsResolver
-		_ddlRecordVersionModelArgumentsResolver;
 
 }

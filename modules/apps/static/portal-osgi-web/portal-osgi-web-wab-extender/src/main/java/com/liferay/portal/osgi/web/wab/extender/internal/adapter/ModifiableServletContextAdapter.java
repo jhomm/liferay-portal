@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.extender.internal.adapter;
@@ -17,6 +8,7 @@ package com.liferay.portal.osgi.web.wab.extender.internal.adapter;
 import com.liferay.petra.io.BigEndianCodec;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.osgi.web.servlet.JSPServletFactory;
 import com.liferay.portal.osgi.web.servlet.context.helper.definition.FilterDefinition;
@@ -26,12 +18,20 @@ import com.liferay.portal.osgi.web.servlet.context.helper.definition.WebXMLDefin
 import com.liferay.portal.osgi.web.wab.extender.internal.registration.FilterRegistrationImpl;
 import com.liferay.portal.osgi.web.wab.extender.internal.registration.ServletRegistrationImpl;
 
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterRegistration;
+import jakarta.servlet.Registration;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRegistration;
+
 import java.io.File;
 import java.io.IOException;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -45,15 +45,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterRegistration;
-import javax.servlet.Registration;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRegistration;
+import java.util.function.Function;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -69,8 +61,7 @@ public class ModifiableServletContextAdapter
 		JSPServletFactory jspServletFactory,
 		WebXMLDefinition webXMLDefinition) {
 
-		return (ServletContext)Proxy.newProxyInstance(
-			ModifiableServletContextAdapter.class.getClassLoader(), _INTERFACES,
+		return _servletContextProxyProviderFunction.apply(
 			new ModifiableServletContextAdapter(
 				servletContext, bundleContext, jspServletFactory,
 				webXMLDefinition));
@@ -143,7 +134,7 @@ public class ModifiableServletContextAdapter
 		_jspServletFactory = jspServletFactory;
 		_webXMLDefinition = webXMLDefinition;
 
-		_bundle = _bundleContext.getBundle();
+		_bundle = bundleContext.getBundle();
 	}
 
 	public FilterRegistration.Dynamic addFilter(
@@ -350,7 +341,7 @@ public class ModifiableServletContextAdapter
 				}
 				catch (IOException ioException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(ioException, ioException);
+						_log.debug(ioException);
 					}
 				}
 
@@ -646,7 +637,7 @@ public class ModifiableServletContextAdapter
 				}
 				catch (IOException ioException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(ioException, ioException);
+						_log.debug(ioException);
 					}
 				}
 			}
@@ -684,19 +675,25 @@ public class ModifiableServletContextAdapter
 			Class<?>[] parameterTypes = adapterMethod.getParameterTypes();
 
 			try {
-				Method method = ServletContext.class.getMethod(
-					name, parameterTypes);
-
-				methods.put(method, adapterMethod);
+				methods.put(
+					ServletContext.class.getMethod(name, parameterTypes),
+					adapterMethod);
 			}
 			catch (NoSuchMethodException noSuchMethodException1) {
-				try {
-					Method method = ModifiableServletContext.class.getMethod(
-						name, parameterTypes);
+				if (_log.isDebugEnabled()) {
+					_log.debug(noSuchMethodException1);
+				}
 
-					methods.put(method, adapterMethod);
+				try {
+					methods.put(
+						ModifiableServletContext.class.getMethod(
+							name, parameterTypes),
+						adapterMethod);
 				}
 				catch (NoSuchMethodException noSuchMethodException2) {
+					if (_log.isDebugEnabled()) {
+						_log.debug(noSuchMethodException2);
+					}
 				}
 			}
 		}
@@ -722,16 +719,12 @@ public class ModifiableServletContextAdapter
 		}
 		catch (NoSuchMethodException noSuchMethodException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchMethodException, noSuchMethodException);
+				_log.debug(noSuchMethodException);
 			}
 		}
 
 		return Collections.unmodifiableMap(methods);
 	}
-
-	private static final Class<?>[] _INTERFACES = new Class<?>[] {
-		ModifiableServletContext.class, ServletContext.class
-	};
 
 	private static final String _LIFERAY_WAB_BUNDLE_RESOURCES_LAST_MODIFIED =
 		"LIFERAY_WAB_BUNDLE_RESOURCES_LAST_MODIFIED";
@@ -740,6 +733,10 @@ public class ModifiableServletContextAdapter
 		ModifiableServletContextAdapter.class);
 
 	private static final Map<Method, Method> _contextAdapterMethods;
+	private static final Function<InvocationHandler, ServletContext>
+		_servletContextProxyProviderFunction =
+			ProxyUtil.getProxyProviderFunction(
+				ModifiableServletContext.class, ServletContext.class);
 
 	static {
 		_contextAdapterMethods = _createContextAdapterMethods();

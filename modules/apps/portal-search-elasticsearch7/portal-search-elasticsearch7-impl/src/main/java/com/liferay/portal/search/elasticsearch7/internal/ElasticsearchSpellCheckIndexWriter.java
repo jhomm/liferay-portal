@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal;
@@ -23,14 +14,12 @@ import com.liferay.portal.kernel.search.ParseException;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.search.generic.MatchAllQuery;
 import com.liferay.portal.kernel.search.suggest.SpellCheckIndexWriter;
 import com.liferay.portal.kernel.search.suggest.SuggestionConstants;
 import com.liferay.portal.kernel.util.Localization;
-import com.liferay.portal.kernel.util.LocalizationUtil;
 import com.liferay.portal.kernel.util.PortalRunMode;
 import com.liferay.portal.search.elasticsearch7.internal.util.DocumentTypes;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
@@ -49,7 +38,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true, property = "search.engine.impl=Elasticsearch",
+	property = "search.engine.impl=Elasticsearch",
 	service = SpellCheckIndexWriter.class
 )
 public class ElasticsearchSpellCheckIndexWriter
@@ -131,12 +120,9 @@ public class ElasticsearchSpellCheckIndexWriter
 
 		Document document = createDocument();
 
-		Localization localization = getLocalization();
-
-		String localizedName = localization.getLocalizedName(
-			keywordFieldName, languageId);
-
-		document.addKeyword(localizedName, keywords);
+		document.addKeyword(
+			_localization.getLocalizedName(keywordFieldName, languageId),
+			keywords);
 
 		document.addKeyword(Field.COMPANY_ID, companyId);
 		document.addKeyword(Field.GROUP_ID, groupId);
@@ -154,25 +140,23 @@ public class ElasticsearchSpellCheckIndexWriter
 		SearchContext searchContext, String typeFieldValue) {
 
 		try {
-			String indexName = _indexNameBuilder.getIndexName(
-				searchContext.getCompanyId());
+			BooleanQuery booleanQuery = new BooleanQueryImpl();
 
-			Filter termFilter = new TermFilter(Field.TYPE, typeFieldValue);
+			booleanQuery.add(new MatchAllQuery(), BooleanClauseOccur.MUST);
 
 			BooleanFilter booleanFilter = new BooleanFilter();
 
-			booleanFilter.add(termFilter, BooleanClauseOccur.MUST);
-
-			MatchAllQuery matchAllQuery = new MatchAllQuery();
-
-			BooleanQuery booleanQuery = new BooleanQueryImpl();
+			booleanFilter.add(
+				new TermFilter(Field.TYPE, typeFieldValue),
+				BooleanClauseOccur.MUST);
 
 			booleanQuery.setPreBooleanFilter(booleanFilter);
 
-			booleanQuery.add(matchAllQuery, BooleanClauseOccur.MUST);
-
 			DeleteByQueryDocumentRequest deleteByQueryDocumentRequest =
-				new DeleteByQueryDocumentRequest(matchAllQuery, indexName);
+				new DeleteByQueryDocumentRequest(
+					booleanQuery,
+					_indexNameBuilder.getIndexName(
+						searchContext.getCompanyId()));
 
 			if (PortalRunMode.isTestMode() ||
 				searchContext.isCommitImmediately()) {
@@ -187,35 +171,17 @@ public class ElasticsearchSpellCheckIndexWriter
 		}
 	}
 
-	protected Localization getLocalization() {
-
-		// See LPS-72507 and LPS-76500
-
-		if (_localization != null) {
-			return _localization;
-		}
-
-		return LocalizationUtil.getLocalization();
-	}
-
-	@Reference(unbind = "-")
-	protected void setIndexNameBuilder(IndexNameBuilder indexNameBuilder) {
-		_indexNameBuilder = indexNameBuilder;
-	}
-
 	protected void setLocalization(Localization localization) {
 		_localization = localization;
 	}
 
-	@Reference(target = "(search.engine.impl=Elasticsearch)", unbind = "-")
-	protected void setSearchEngineAdapter(
-		SearchEngineAdapter searchEngineAdapter) {
-
-		_searchEngineAdapter = searchEngineAdapter;
-	}
-
+	@Reference
 	private IndexNameBuilder _indexNameBuilder;
+
+	@Reference
 	private Localization _localization;
+
+	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private SearchEngineAdapter _searchEngineAdapter;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service;
@@ -70,9 +61,10 @@ public interface SXPBlueprintLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public SXPBlueprint addSXPBlueprint(
-			long userId, String configurationJSON,
+			String externalReferenceCode, long userId, String configurationJSON,
 			Map<Locale, String> descriptionMap, String elementInstancesJSON,
-			Map<Locale, String> titleMap, ServiceContext serviceContext)
+			String schemaVersion, Map<Locale, String> titleMap,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -102,6 +94,9 @@ public interface SXPBlueprintLocalService
 	 */
 	@Transactional(enabled = false)
 	public SXPBlueprint createSXPBlueprint(long sxpBlueprintId);
+
+	public void deleteCompanySXPBlueprints(long companyId)
+		throws PortalException;
 
 	/**
 	 * @throws PortalException
@@ -217,6 +212,10 @@ public interface SXPBlueprintLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public SXPBlueprint fetchSXPBlueprint(long sxpBlueprintId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SXPBlueprint fetchSXPBlueprintByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
+
 	/**
 	 * Returns the sxp blueprint with the matching UUID and company.
 	 *
@@ -264,6 +263,11 @@ public interface SXPBlueprintLocalService
 	public SXPBlueprint getSXPBlueprint(long sxpBlueprintId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public SXPBlueprint getSXPBlueprintByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
 	 * Returns the sxp blueprint with the matching UUID and company.
 	 *
@@ -291,6 +295,9 @@ public interface SXPBlueprintLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<SXPBlueprint> getSXPBlueprints(int start, int end);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<SXPBlueprint> getSXPBlueprints(long companyId);
+
 	/**
 	 * Returns the number of sxp blueprints.
 	 *
@@ -310,8 +317,9 @@ public interface SXPBlueprintLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public SXPBlueprint updateSXPBlueprint(
-			long userId, long sxpBlueprintId, String configurationJSON,
-			Map<Locale, String> descriptionMap, String elementInstancesJSON,
+			String externalReferenceCode, long userId, long sxpBlueprintId,
+			String configurationJSON, Map<Locale, String> descriptionMap,
+			String elementInstancesJSON, String schemaVersion,
 			Map<Locale, String> titleMap, ServiceContext serviceContext)
 		throws PortalException;
 

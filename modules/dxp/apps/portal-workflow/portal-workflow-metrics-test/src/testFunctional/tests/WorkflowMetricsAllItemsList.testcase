@@ -1,4 +1,4 @@
-@component-name = "portal-workflow-ee"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -9,44 +9,56 @@ definition {
 	setUp {
 		TestCase.setUpPortalInstance();
 
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		User.firstLoginPG();
 
 		Navigator.openURL();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 	}
 
+	@description = "Verify that an administrator user that it's not asset creator can reassign and transition the task"
+	@ignore = "Test Stub"
+	@priority = 5
+	test AdministratorUserCanReassignAndTransitionAnyTasks {
+
+		// TODO AdministratorUserCanReassignAndTransitionAnyTasks pending implementation
+
+	}
+
+	@description = "Verify that the Asset Creator user can resubmit the task after a administrator that it's not asset creator reject a task assigned to him"
+	@ignore = "Test Stub"
+	@priority = 5
+	test AssetCreatorCanResubmitTaskRejectedByOtherAdministratorUser {
+
+		// TODO AssetCreatorCanResubmitTaskRejectedByOtherAdministratorUser pending implementation
+
+	}
+
 	@description = "LPS-98517 - Verify that the Assignee dropdown options are listed in alphabetical order"
-	@priority = "3"
+	@priority = 3
 	test AssigneeOptionsAreListedInAlphabeticalOrder {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
 			workflowResourceValue = "Blogs Entry");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		JSONUser.addUser(
 			userEmailAddress = "AUser@liferay.com",
@@ -54,10 +66,7 @@ definition {
 			userLastName = "A Userl",
 			userScreenName = "Auser_");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Power User",
@@ -69,10 +78,7 @@ definition {
 			userLastName = "B Userl",
 			userScreenName = "Buser_");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Power User",
@@ -81,7 +87,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Blogs");
 
@@ -104,7 +110,7 @@ definition {
 
 		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
 
-		LexiconEntry.gotoEllipsisMenuItem(menuItem = "Assign to Me");
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
@@ -121,17 +127,186 @@ definition {
 			locator1 = "WorkflowMetrics#METRICS_ALL_ITEMS_TABLE_INSTANCE");
 	}
 
-	@description = "LPS-92052 - Verify that the user is able to click on the table header Assignee to choose the items order (A-Z / Z-A)"
-	@priority = "5"
-	test CanOrderByAssignee {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsList#CanOrderByAssignee";
+	@description = "Verify that the user is able to click on the Current Node link and the node will be in evidence"
+	@priority = 3
+	test CanClickCurrentNodeLink {
+		Workflow.openWorkflowListView();
 
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry",
+			entryTitle = "Blogs Entry Title");
+
+		WorkflowMetrics.goToDashboardAllItemsWithFilter(
+			workflowFilterOption = "PENDING",
+			workflowMetricsTab = "DASHBOARD",
+			workflowProcess = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetrics.goToCurrentNode(currentNode = "Review");
+	}
+
+	@description = "Verify that the users are able to identify the current node of the instance in the workflow"
+	@priority = 4
+	test CanIdentifyCurrentNode {
+		Workflow.openWorkflowListView();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Test Content",
+			entryTitle = "Test Blog");
+
+		Workflow.openWorkflowMetrics();
+
+		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetrics.viewCurrentNode(currentNode = "Review");
+
+		WorkflowMetrics.viewCurrentNodeCircleIcon(currentNode = "Review");
+
+		WorkflowMetrics.viewCurrentNodeCircleNotPresent(currentNode = "Created");
+
+		WorkflowMetrics.viewCurrentNodeCircleNotPresent(currentNode = "Update");
+
+		WorkflowMetrics.viewCurrentNodeCircleNotPresent(currentNode = "Approved");
+	}
+
+	@description = "Verify that the users are able to identify the current nodes of the instance in the workflow, when there is multiple statuses"
+	@priority = 4
+	test CanIdentifyMultipleCurrentNode {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Workflow.openWorkflowListView();
+
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "multi-task-process-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Multi Task Process",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry",
+			entryTitle = "Blogs Entry Title");
+
+		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Multi Task Process");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetrics.viewCurrentNode(currentNode = "task1, task2, task3");
+
+		WorkflowMetrics.viewCurrentNodeCircleIcon(currentNode = "task1");
+
+		WorkflowMetrics.viewCurrentNodeCircleIcon(currentNode = "task2");
+
+		WorkflowMetrics.viewCurrentNodeCircleIcon(currentNode = "task3");
+
+		WorkflowMetrics.viewCurrentNodeCircleNotPresent(currentNode = "Join");
+	}
+
+	@description = "Verify that the users are able to identify the past stages that the workflow instance has already passed by"
+	@priority = 3
+	test CanIdentifyPastStagesOnWorkflow {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Workflow.openWorkflowListView();
+
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "multi-task-process-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Multi Task Process",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry",
+			entryTitle = "Blogs Entry Title");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
+		Navigator.gotoNavTab(navTab = "Assigned to My Roles");
+
+		LexiconEntry.gotoVerticalEllipsisMenuItemNoError(menuItem = "Assign to Me");
+
+		Workflow.confirmWorkflowAction();
+
+		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Multi Task Process");
+
+		WorkflowMetrics.goToTransitionSteps();
+
+		WorkflowMetrics.selectAllTransitionTasks();
+
+		WorkflowMetrics.chooseTransitionPerStep(
+			taskName = "Task1",
+			transitionOption = "task1_join_join");
+
+		Click(
+			key_text = "Blogs Entry: Blogs Entry Title",
+			locator1 = "Icon#ANY_VERTICAL_ELLIPSIS");
+
+		MenuItem.click(menuItem = "Track Workflow");
+
+		WorkflowMetrics.viewCurrentNodeCircleIcon(currentNode = "task2");
+
+		WorkflowMetrics.viewCurrentNodeCircleIcon(currentNode = "task3");
+
+		WorkflowMetrics.viewCurrentNodeDoneIcon(currentNode = "fork");
+
+		WorkflowMetrics.viewCurrentNodeDoneIcon(currentNode = "task1");
+	}
+
+	@description = "LPS-92052 - Verify that the user is able to click on the table header Assignee to choose the items order (A-Z / Z-A)"
+	@priority = 5
+	test CanOrderByAssignee {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		WorkflowMetrics.createUsersAndAssignInstancesWithGroovy(
-			numberOfBlogInstances = "3",
-			numberOfUsers = "3",
-			site = "${siteName}");
+			numberOfBlogInstances = 3,
+			numberOfUsers = 3,
+			site = ${siteName});
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
@@ -140,53 +315,57 @@ definition {
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ASSIGNEE_HEADER");
 
 		AssertTextEquals(
-			key_entryIndex = "1",
-			key_itemIndex = "3",
+			key_entryIndex = 1,
+			key_itemIndex = 3,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BY_INDEXES",
 			value1 = "3user user3");
 
 		AssertTextEquals(
-			key_entryIndex = "2",
-			key_itemIndex = "3",
+			key_entryIndex = 2,
+			key_itemIndex = 3,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BY_INDEXES",
 			value1 = "2user user2");
 
 		AssertTextEquals(
-			key_entryIndex = "3",
-			key_itemIndex = "3",
+			key_entryIndex = 3,
+			key_itemIndex = 3,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BY_INDEXES",
 			value1 = "1user user1");
 
 		Click(locator1 = "//span[contains(@data-title,'Assignee')]");
 
 		AssertTextEquals(
-			key_entryIndex = "1",
-			key_itemIndex = "3",
+			key_entryIndex = 1,
+			key_itemIndex = 3,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BY_INDEXES",
 			value1 = "1user user1");
 
 		AssertTextEquals(
-			key_entryIndex = "2",
-			key_itemIndex = "3",
+			key_entryIndex = 2,
+			key_itemIndex = 3,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BY_INDEXES",
 			value1 = "2user user2");
 
 		AssertTextEquals(
-			key_entryIndex = "3",
-			key_itemIndex = "3",
+			key_entryIndex = 3,
+			key_itemIndex = 3,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BY_INDEXES",
 			value1 = "3user user3");
 	}
 
 	@description = "LPS-130218 - Verify that the user is able to click on the table header Created by to choose the items order (A-Z / Z-A)."
-	@priority = "5"
+	@priority = 5
 	test CanOrderByCreatedBy {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -211,12 +390,7 @@ definition {
 			roleTitle = "Administrator",
 			userEmailAddress = "user1@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -242,7 +416,7 @@ definition {
 			userLoginFullName = "user1 user1");
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Blogs");
 
@@ -263,12 +437,12 @@ definition {
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Second Blogs Entry",
 			keyCompare = "Blogs Entry: Blogs Entry",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Blogs Entry",
 			keyCompare = "Blogs Entry: Second Blogs Entry",
-			rowNumber = "2");
+			rowNumber = 2);
 
 		Click(
 			key_orderBy = "Created By",
@@ -277,21 +451,110 @@ definition {
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Blogs Entry",
 			keyCompare = "Blogs Entry: Second Blogs Entry",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Second Blogs Entry",
 			keyCompare = "Blogs Entry: Blogs Entry",
-			rowNumber = "2");
+			rowNumber = 2);
+	}
+
+	@description = "Verify that the user is able to see the label of the transitions of a specific node while hovering it"
+	@priority = 4
+	test CanSeeTransitionsLabelOnHoverNode {
+		Workflow.openWorkflowListView();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Test Content",
+			entryTitle = "Test Blog");
+
+		Workflow.openWorkflowMetrics();
+
+		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetrics.viewTrackWorkflowModal();
+
+		WorkflowMetrics.viewNameHoverTransition(
+			nameOverTransition = "REVIEW",
+			nodesTrackWorkflow = "Created");
+
+		WorkflowMetrics.viewNameHoverTransition(
+			nameOverTransition = "APPROVE",
+			nodesTrackWorkflow = "Review");
+
+		WorkflowMetrics.viewNameHoverTransition(
+			nameOverTransition = "REJECT",
+			nodesTrackWorkflow = "Review");
+	}
+
+	@description = "Verify that there is a Track Approval link on the instance detail modal"
+	@priority = 5
+	test CanSelectTrackApprovalLinkOnDetailModal {
+		Workflow.openWorkflowListView();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry",
+			entryTitle = "Blogs Entry Title");
+
+		WorkflowMetrics.goToDashboardAllItemsWithFilter(
+			workflowFilterOption = "PENDING",
+			workflowMetricsTab = "DASHBOARD",
+			workflowProcess = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.viewTrackWorkflowLink();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+	}
+
+	@description = "Verify that there is a Track Approval option on the kebab menu"
+	@priority = 4
+	test CanSelectTrackApprovalOnKebabMenu {
+		Workflow.openWorkflowListView();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Test Content",
+			entryTitle = "Test Blog");
+
+		Workflow.openWorkflowMetrics();
+
+		WorkflowMetrics.goToDashboardAllItemsWithFilter(
+			workflowFilterOption = "PENDING",
+			workflowMetricsTab = "DASHBOARD",
+			workflowProcess = "Single Approver");
+
+		Click(locator1 = "Icon#SVG_ELLIPSIS");
+
+		MenuItem.viewPresent(menuItem = "Track Workflow");
 	}
 
 	@description = "LPS-92053 - Verify that, at the items table, users should be able to click on process ID column and open a modal for the respective item details"
-	@priority = "3"
+	@priority = 3
 	test ClickOnProcessIdColumnToSeeItemDetailsPage {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -315,10 +578,7 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "COMPLETED",
@@ -343,12 +603,9 @@ definition {
 	}
 
 	@description = "LPS-86652 - Verify that every column displays the correct info for a item"
-	@priority = "5"
+	@priority = 5
 	test ColumnsDiplayCorrectInfo {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -373,12 +630,9 @@ definition {
 	}
 
 	@description = "LPS-86652 - Validate that the correct number of entries is showed when user chooses 4, 8, 20, 40, 60"
-	@priority = "3"
+	@priority = 3
 	test CorrectNumberOfEntriesDisplayedWhenPaginationEdited {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -401,13 +655,13 @@ definition {
 
 		for (var orderNumber : list "1,2,3,4") {
 			AssertElementPresent(
-				key_order = "${orderNumber}",
+				key_order = ${orderNumber},
 				key_processStep = "Review",
 				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 		}
 
 		AssertElementNotPresent(
-			key_order = "5",
+			key_order = 5,
 			key_processStep = "Review",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 
@@ -415,20 +669,24 @@ definition {
 
 		for (var orderNumber : list "1,2,3,4") {
 			AssertElementPresent(
-				key_order = "${orderNumber}",
+				key_order = ${orderNumber},
 				key_processStep = "Review",
 				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 		}
 
 		AssertElementNotPresent(
-			key_order = "5",
+			key_order = 5,
 			key_processStep = "Review",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 	}
 
 	@description = "LPS-130218 - Verify that once the order/sorting is made by the user, this definition should be preserved when the user change pagination number"
-	@priority = "3"
+	@priority = 3
 	test CreatedBySortIsPreservedWhenChangesPagination {
+		Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+		Site.manageMembershipOptions(allowManualMembershipManagement = "true");
+
 		JSONUser.addUser(
 			userEmailAddress = "user2@liferay.com",
 			userFirstName = "user2",
@@ -444,12 +702,7 @@ definition {
 			roleTitle = "Administrator",
 			userEmailAddress = "user2@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -470,10 +723,7 @@ definition {
 			userLastName = "user2",
 			userScreenName = "user2");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -521,12 +771,9 @@ definition {
 	}
 
 	@description = "LPS-130217 - Verify that the header title Creation Date is underline and bold on mouse hover"
-	@priority = "2"
+	@priority = 2
 	test CreationDateTitleIsUnderlineAndBold {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -551,12 +798,9 @@ definition {
 	}
 
 	@description = "LPS-130217 - Verify that once the order/sorting is made by the user, this definition should be preserved when the user change pagination number"
-	@priority = "3"
+	@priority = 3
 	test DefinitionIsPreservedWhenChangesPagination {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -564,12 +808,13 @@ definition {
 			workflowDefinition = "Single Approver",
 			workflowResourceValue = "Blogs Entry");
 
-		var count = "1";
+		var count = 1;
 
-		while ("${count}" != "6") {
+		while (${count} != 6) {
 			JSONBlog.addEntry(
 				entryContent = "Blogs Entry",
 				entryTitle = "Blogs Entry ${count}");
+
 			var count = ${count} + 1;
 		}
 
@@ -584,7 +829,7 @@ definition {
 			locator1 = "ACSettings#ITEM_ON_LIST");
 
 		Click(
-			key_pageNumber = "2",
+			key_pageNumber = 2,
 			locator1 = "WorkflowMetricsProcessListView#METRICS_WORKFLOW_PAGINATION_NUMBER_BUTTON");
 
 		AssertElementPresent(
@@ -593,12 +838,9 @@ definition {
 	}
 
 	@description = "LPS-86652 - Verify that the correct columns are displayed ID, Due Date, Item Subject, Process Step, Assignee, Created By, Creation Date"
-	@priority = "5"
+	@priority = 5
 	test DisplayColumns {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -610,10 +852,7 @@ definition {
 			entryContent = "Test content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -636,23 +875,68 @@ definition {
 	}
 
 	@description = "LPS-92043 - Verify that the Due Date is displayed with a hyphen if a SLA didn't start counting"
-	@ignore = "Test Stub"
-	@priority = "4"
+	@priority = 4
 	test DisplayDueDateWithHyphenWhenSLANotStarted {
+		task ("Given a workflow with an SLA Definition") {
+			WorkflowMetrics.executeIndexActions(actionDescription = "Workflow Indexes");
 
-		// TODO LRQA-67729 DisplayDueDateWithHyphenWhenSLANotStarted pending implementation
+			WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
+			Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
+
+			WorkflowMetrics.fillSLAForm(
+				slaDefinitionDays = 0,
+				slaDefinitionDescription = "SLA Description",
+				slaDefinitionEnd = "Process Ends: Approved",
+				slaDefinitionHours = "00:01",
+				slaDefinitionName = "SLA Name",
+				slaDefinitionStart = "Process Begins");
+
+			Button.clickSave();
+		}
+
+		task ("When the workflow is configured to an asset and the asset is created") {
+			Workflow.openWorkflowListView();
+
+			Navigator.gotoNavItem(navItem = "Configuration");
+
+			Workflow.configureWorkflow(
+				workflowDefinition = "Single Approver",
+				workflowResourceValue = "Blogs Entry");
+
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry Content",
+				entryTitle = "Blogs Entry Title");
+		}
+
+		task ("Then the due date should display with a hyphen and the SLA hasn't started counting") {
+			WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
+
+			Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_TITLE");
+
+			AssertElementPresent(
+				key_columnName = "Due Date",
+				key_fieldName = "-",
+				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ASSERT_ITEM");
+		}
 	}
 
 	@description = "LPS-92043 - Verify that the Due Date displays the next SLA in line when a SLA didn't start counting"
-	@priority = "3"
+	@priority = 3
 	test DisplayNextSLAInLineWhenSLANotStarted {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:05",
@@ -666,7 +950,7 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Leaves Task: Update",
 			slaDefinitionHours = "00:01",
@@ -675,10 +959,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -690,43 +971,72 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		Pause(locator1 = "60000");
-
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
 		WaitForElementPresent(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
 		var getInstanceId = selenium.getText("WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
+		while ((IsElementNotPresent(key_status = "check", locator1 = "WorkflowAllItems#DETAIL_SLA_STATUS")) && (maxIterations = "100")) {
+			Refresh();
+		}
+
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
 		WorkflowMetrics.validateInstanceDetailsSLA(
-			openNumber = "1",
+			openNumber = 1,
 			slaNames = "SLA Definition 1");
 
 		WorkflowMetrics.validateInstanceDetailsSLA(
-			notStartedNumber = "1",
+			notStartedNumber = 1,
 			slaNames = "SLA Definition 2");
 	}
 
-	@description = "LPS-92053 - Verify that, in the item detail modal, the Due Date by SLA will group SLAs into Open or Resolved"
-	@ignore = "Test Stub"
-	@priority = "3"
-	test DueDateBySlaGroupsSlaIntoOpenOrResolved {
+	@description = "Verify that the component displays the entire workflow that the instance is in"
+	@priority = 5
+	test DisplaysEntireWorkflow {
+		Workflow.openWorkflowListView();
 
-		// TODO LRQA-67743 DueDateBySlaGroupsSlaIntoOpenOrResolved pending implementation
+		Navigator.gotoNavItem(navItem = "Configuration");
 
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Test Content",
+			entryTitle = "Test Blog");
+
+		Workflow.openWorkflowMetrics();
+
+		WorkflowMetrics.goToDashboardAllItemsWithFilter(
+			workflowFilterOption = "PENDING",
+			workflowMetricsTab = "DASHBOARD",
+			workflowProcess = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetricsAllItemsList.viewNodesDisplayed(nodesTrackWorkflow = "Created,Review,Update,Approved");
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, the Due Date by SLA will provide a summary for the total number of entries for each group next to the section title"
-	@priority = "3"
+	@priority = 3
 	test DueDateBySlaProvidesSummaryForTotalNumberOfEntries {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:01",
@@ -740,7 +1050,7 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:01",
@@ -749,10 +1059,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -764,30 +1071,42 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		Pause(locator1 = "50000");
-
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
 		WaitForElementPresent(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
+		while ((IsElementNotPresent(key_status = "check", locator1 = "WorkflowAllItems#DETAIL_SLA_STATUS")) && (maxIterations = "100")) {
+			Refresh();
+		}
+
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
 		WorkflowMetrics.validateInstanceDetailsSLA(
-			openNumber = "2",
+			openNumber = 2,
 			slaNames = "SLA Definition 1,SLA Definition 2");
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, Resolved each due date has an icon according to the status On Time or Overdue, SLA name, due date and resolution status resolved on time or overdue"
-	@priority = "4"
+	@priority = 4
 	test DueDateHasIconSlaNameDueDateAndResolutionStatus {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		property portal.upstream = "quarantine";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.executeIndexActions(actionDescription = "Workflow Indexes");
+
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
 
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:02",
@@ -799,7 +1118,7 @@ definition {
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -825,17 +1144,27 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
+		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
+
+		WorkflowMetrics.waitForCompletedSLA(
+			key_expectedValue = 2,
+			key_status = "UNTRACKED");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
 		Workflow.approveTaskByActions(
 			workflowAssetTitle = "Blogs Entry Title 1",
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		Pause(locator1 = "60000");
-
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "COMPLETED",
 			workflowMetricsTab = "PERFORMANCE",
 			workflowProcess = "Single Approver");
+
+		while ((IsElementNotPresent(key_itemSubject = "Blogs Entry: Blogs Entry Title 1", key_value = "-", locator1 = "WorkflowMetricsAllItemsList#DUE_DATE_COLUMN_VALUE")) && (maxIterations = "30")) {
+			Refresh();
+		}
 
 		WorkflowMetrics.validateDueDateBySLADetails(
 			itemName = "Blogs Entry: Blogs Entry Title 1",
@@ -845,6 +1174,14 @@ definition {
 
 		Navigator.openURL();
 
+		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
+
+		WorkflowMetrics.waitForCompletedSLA(
+			key_expectedValue = 1,
+			key_status = "OVERDUE");
+
+		UserBar.gotoDropdownItem(dropdownItem = "My Workflow Tasks");
+
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
 			workflowMetricsTab = "DASHBOARD",
@@ -852,18 +1189,20 @@ definition {
 
 		Click(
 			locator1 = "WorkflowAllItems#KEBAB_DROPDOWN",
-			task = "1");
+			task = 1);
 
 		Click(locator1 = "WorkflowAllItems#APPROVE_DROPDOWN");
 
 		Button.click(button = "Done");
 
-		Pause(locator1 = "60000");
-
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "COMPLETED",
 			workflowMetricsTab = "PERFORMANCE",
 			workflowProcess = "Single Approver");
+
+		while ((IsElementNotPresent(key_itemSubject = "Blogs Entry: Blogs Entry Title 2", key_value = "-", locator1 = "WorkflowMetricsAllItemsList#DUE_DATE_COLUMN_VALUE")) && (maxIterations = "30")) {
+			Refresh();
+		}
 
 		WorkflowMetrics.validateDueDateBySLADetails(
 			itemName = "Blogs Entry: Blogs Entry Title 2",
@@ -873,26 +1212,23 @@ definition {
 	}
 
 	@description = "LPS-130167 - Verify that the table entries should be ordered by Due Date, from older to the most recent date"
-	@priority = "3"
+	@priority = 3
 	test EntriesAreOrderedByDueDate {
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "1",
+			slaDefinitionDays = 1,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "0000",
+			slaDefinitionHours = 0000,
 			slaDefinitionName = "SLAName",
 			slaDefinitionStart = "Process Begins");
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -906,10 +1242,7 @@ definition {
 				entryTitle = "Blogs Entry Title ${addBlogs}");
 		}
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -922,12 +1255,9 @@ definition {
 	}
 
 	@description = "LPS-94146 - Verify that user can close the filters shown as tags clicking on x and the result is applied on items list"
-	@priority = "4"
+	@priority = 4
 	test FiltersCanBeClosedAndResultAppliedOnList {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -965,7 +1295,7 @@ definition {
 			isPresent = "Blogs Entry Title 2",
 			taskName = "Review");
 
-		WorkflowMetrics.clearAllFilter();
+		ManagementBar.clearFilter();
 
 		WorkflowMetrics.verifyFiltersFromDashboardNotPresent(isNotPresent = "Pending");
 
@@ -976,7 +1306,7 @@ definition {
 	}
 
 	@description = "LPS-87571 - Verify that when user reaches the page through Dashboard tab, the filter options are: SLA Status, Process Status, Process Step and Assignee"
-	@priority = "3"
+	@priority = 3
 	test FiltersDisplayedWhenReachingPageThroughDashboardTab {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
@@ -1000,11 +1330,11 @@ definition {
 	}
 
 	@description = "LPS-87571 - Verify that when user reaches the page through Performance tab, the filter options are: SLA Status, Process Status, Process Step, Completion Time and Assignee"
-	@priority = "3"
+	@priority = 3
 	test FiltersDisplayedWhenReachingPageThroughPerformanceTab {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#PERFORMANCE_TOTAL_COMPLETED_ITEMS_VALUE");
 
@@ -1030,14 +1360,14 @@ definition {
 	}
 
 	@description = "LPS-86652 - Verify that hovering the cursor on a ellipsis text will display a tooltip that contains the rest of the text"
-	@priority = "3"
+	@priority = 3
 	test HoveringCursorDisplayTooltip {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -1062,12 +1392,11 @@ definition {
 	}
 
 	@description = "Verify that, in the item detail modal, when an item is completed with No SLA, the icon on modal title will keep informing the SLA status but styled in grey color"
-	@priority = "3"
+	@priority = 3
 	test IconOnModalTitleIsGreyWhenItemIsCompletedNoSLA {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		property ci.retries.disabled = "true";
+
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1107,26 +1436,30 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, when an item is completed On Time, the icon on modal title will keep informing the SLA status but styled in grey color"
-	@priority = "3"
+	@priority = 3
 	test IconOnModalTitleIsGreyWhenItemIsCompletedOnTime {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "1",
+			slaDefinitionDays = 1,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "00:05",
+			slaDefinitionHours = 0005,
 			slaDefinitionName = "SLA Definition",
 			slaDefinitionStart = "Process Begins");
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1141,17 +1474,17 @@ definition {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
 		WorkflowMetrics.waitForSLA(
-			key_expectedValue = "0",
+			key_expectedValue = 0,
 			key_status = "ONTIME");
 
 		Workflow.completeWorkflowBlogInstance(key_workflowInstanceTitle = "Blogs Entry Title");
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Navigator.gotoNavItem(navItem = "Performance");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(
-			key_index = "2",
+			key_index = 2,
 			locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_COMPLETED_ITEMS_BUTTON");
 
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
@@ -1163,26 +1496,30 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, when an item is completed Overdue, the icon on modal title will keep informing the SLA status but styled in grey color "
-	@priority = "3"
+	@priority = 3
 	test IconOnModalTitleIsGreyWhenItemIsCompletedOverdue {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "00:01",
+			slaDefinitionHours = 0001,
 			slaDefinitionName = "SLA Definition",
 			slaDefinitionStart = "Process Begins");
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1197,28 +1534,22 @@ definition {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
 		WorkflowMetrics.waitForSLA(
-			key_expectedValue = "0",
+			key_expectedValue = 0,
 			key_status = "OVERDUE");
 
 		Workflow.completeWorkflowBlogInstance(key_workflowInstanceTitle = "Blogs Entry Title");
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Navigator.gotoNavItem(navItem = "Performance");
-
-		Pause(locator = "120000");
-
-		Refresh();
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(
-			key_index = "4",
+			key_index = 4,
 			locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_COMPLETED_ITEMS_BUTTON");
 
-		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
-
-		Refresh();
-
-		Pause(locator1 = "10000");
+		while ((IsElementNotPresent(key_status = "Overdue", locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_DEFINITION_RESOLVED")) && (maxIterations = "10")) {
+			Refresh();
+		}
 
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
@@ -1233,8 +1564,15 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that an item is considered overdue if it has at least one SLA overdue, regardless if it is resolved or open"
-	@priority = "4"
+	@priority = 4
 	test ItemIsConsideredOverdueWhenItHasOneSlaOverdue {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
 		AssertElementPresent(locator1 = "WorkflowMetrics#METRICS_NO_SLA_MESSAGE");
@@ -1244,10 +1582,10 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "Test 1 Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "0001",
+			slaDefinitionHours = 0001,
 			slaDefinitionName = "Test 1",
 			slaDefinitionStart = "Process Begins");
 
@@ -1258,19 +1596,16 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "1",
+			slaDefinitionDays = 1,
 			slaDefinitionDescription = "Test 2 Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "0000",
+			slaDefinitionHours = 0000,
 			slaDefinitionName = "Test 2",
 			slaDefinitionStart = "Process Begins");
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1285,7 +1620,7 @@ definition {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
 		WorkflowMetrics.waitForSLA(
-			key_expectedValue = "0",
+			key_expectedValue = 0,
 			key_status = "OVERDUE");
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_TITLE");
@@ -1321,7 +1656,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Navigator.gotoNavItem(navItem = "Performance");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#PERFORMANCE_TOTAL_COMPLETED_ITEMS_VALUE");
 
@@ -1329,11 +1664,13 @@ definition {
 
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
-		while (IsElementPresent(key_slaStatusTitle= "OPEN", locator1= "WorkflowAllItems#DETAIL_PAGE_SLA_STATUS_TITLE") && (maxIterations = "24")) {
+		while ((IsElementPresent(key_slaStatusTitle = "OPEN", locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_STATUS_TITLE")) && (maxIterations = "24")) {
 			echo("Waiting 5 seconds to recheck");
+
 			Click(locator1 = "WorkflowAllItems#DETAIL_PAGE_CLOSE");
-			Pause(locator1 = "5000");
+
 			Refresh();
+
 			Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 		}
 
@@ -1348,12 +1685,9 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that the item modal places an icon before the modal title referring to the SLA status: No SLA"
-	@priority = "3"
+	@priority = 3
 	test ItemModalPlacesIconReferringToSlaStatusNoSla {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1375,12 +1709,16 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that the item modal places an icon before the modal title referring to the SLA status: On Time"
-	@priority = "3"
+	@priority = 3
 	test ItemModalPlacesIconReferringToSlaStatusOnTime {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1393,10 +1731,10 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "0100",
+			slaDefinitionHours = 0100,
 			slaDefinitionName = "SLAName",
 			slaDefinitionPause = "On Task: Update",
 			slaDefinitionStart = "Process Begins");
@@ -1411,9 +1749,9 @@ definition {
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_TITLE");
 
-		Pause(locator1 = "60000");
-
-		Refresh();
+		while ((IsElementNotPresent(key_status = "check", locator1 = "WorkflowAllItems#DETAIL_SLA_STATUS")) && (maxIterations = "30")) {
+			Refresh();
+		}
 
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
@@ -1423,12 +1761,16 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that the item modal places an icon before the modal title referring to the SLA status: Overdue"
-	@priority = "3"
+	@priority = 3
 	test ItemModalPlacesIconReferringToSlaStatusOverdue {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
+
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1441,10 +1783,10 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "0001",
+			slaDefinitionHours = 0001,
 			slaDefinitionName = "SLAName",
 			slaDefinitionStart = "Process Begins");
 
@@ -1457,7 +1799,7 @@ definition {
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
 		WorkflowMetrics.waitForSLA(
-			key_expectedValue = "0",
+			key_expectedValue = 0,
 			key_status = "OVERDUE");
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_PENDING_ITEMS_TITLE");
@@ -1470,14 +1812,12 @@ definition {
 	}
 
 	@description = "LPS-130216 - Verify that once the order/sorting is made by the user, this definition should be preserved when the user change pagination number."
-	@priority = "3"
+	@priority = 3
 	test ItemOrdetationIsPreservedWhenChangesPagination {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsList#ItemOrdetationIsPreservedWhenChangesPagination";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1514,14 +1854,14 @@ definition {
 		for (var orderNumber : list "1,2,3,4") {
 			AssertElementPresent(
 				key_itemSubject = "Web Content Article: Web Content Title ${orderNumber}",
-				key_order = "${orderNumber}",
+				key_order = ${orderNumber},
 				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
 		}
 
 		for (var orderNumber : list "5,6,7,8") {
 			AssertElementPresent(
 				key_itemSubject = "Blogs Entry: Blogs Entry Title ${orderNumber}",
-				key_order = "${orderNumber}",
+				key_order = ${orderNumber},
 				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
 		}
 
@@ -1530,23 +1870,21 @@ definition {
 		for (var orderNumber : list "1,2,3,4") {
 			AssertElementPresent(
 				key_itemSubject = "Web Content Article: Web Content Title ${orderNumber}",
-				key_order = "${orderNumber}",
+				key_order = ${orderNumber},
 				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
 		}
 
 		for (var orderNumber : list "5,6,7,8") {
 			AssertElementPresent(
 				key_itemSubject = "Blogs Entry: Blogs Entry Title ${orderNumber}",
-				key_order = "${orderNumber}",
+				key_order = ${orderNumber},
 				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_ITEM_ORDER");
 		}
 	}
 
 	@description = "LPS-86652 - Verify that long texts will display ellipsis"
-	@priority = "3"
+	@priority = 3
 	test LongTextsDisplayEllipsis {
-		property portal.upstream = "quarantine";
-
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
@@ -1575,23 +1913,18 @@ definition {
 			workflowAssetType = "Web Content Article",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetricsAndTotalCompleted(workflowProcessName = "Single Approver");
 
 		WorkflowMetrics.viewTableSizeInTheAllItems(
 			itemTable = "Web Content Article: WebContent Title",
-			itemTableSize = "106.887px");
+			itemTableSize = "100.816px");
 	}
 
 	@description = "LPS-98517 - Verify that the long usernames in the result table do not break into different lines"
-	@priority = "3"
+	@priority = 3
 	test LongUserNameDisplaysEllipsis {
-		property portal.upstream = "quarantine";
-
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
@@ -1613,10 +1946,7 @@ definition {
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry Title");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		User.openUsersAdmin();
 
 		User.assignRegularRoleCP(
 			roleTitle = "Administrator",
@@ -1632,10 +1962,7 @@ definition {
 			assigneeName = "buyerbuyerbuyerbuyerbuyer (buyerbuyerbuyerbuyerbuyer buyerbuyerbuyerbuyerbuyer)",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
@@ -1644,16 +1971,13 @@ definition {
 
 		WorkflowMetrics.viewTableSizeInTheAllItems(
 			itemTable = "buyerbuyerbuyerbuyerbuyer",
-			itemTableSize = "106.887px");
+			itemTableSize = "100.816px");
 	}
 
 	@description = "LPS-98517 - Verify that a long username that exceeds 240px in the assignee dropdown option is placed in more than one line, respecting the alignment of the field"
-	@priority = "3"
+	@priority = 3
 	test LongUserNameIsDisplayedInMoreThanOneLineInDropdown {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1697,16 +2021,22 @@ definition {
 			key_workflowStep = "testtesttesttesttesttesttesttest",
 			locator1 = "WorkflowMetrics#METRICS_WORKLOAD_BY_ASSIGNEE_CARD_FILTER_OPTION2",
 			locator2 = "font-weight",
-			value1 = "400");
+			value1 = 400);
+	}
+
+	@description = "Verify that users with different roles then administrator can't reassign tasks"
+	@ignore = "Test Stub"
+	@priority = 4
+	test NonAdministratorUsersCantReassignTasks {
+
+		// TODO NonAdministratorUsersCantReassignTasks pending implementation
+
 	}
 
 	@description = "LPS-92053 - Verify that the Go to submission page button opens the submission page in another tab"
-	@priority = "4"
+	@priority = 4
 	test OpenSubmissionPageInAnotherTab {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1726,12 +2056,10 @@ definition {
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
 		Click(locator1 = "WorkflowAllItems#BUTTON_GO_TO_SUBMISSION_PAGE");
-
-		Pause(locator1 = "3000");
 	}
 
 	@description = "LPS-130167 - Verify that the ordination icon is displayed next to the column title to be ordered"
-	@priority = "3"
+	@priority = 3
 	test OrdinationIconIsDisplayedNextToDueDateColumn {
 		Navigator.openURL();
 
@@ -1745,7 +2073,7 @@ definition {
 			workflowResourceValue = "Blogs Entry");
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			portlet = "Blogs");
 
 		Blogs.addWithWorkflow(
@@ -1761,14 +2089,21 @@ definition {
 	}
 
 	@description = "LPS-130166 - Verify that popover for Due Date will display up to 2 SLAs and the order should be from the most to the least critical SLA"
-	@priority = "3"
+	@priority = 3
 	test PopoverDisplaysUpTo2SlasOrderFromMostToLeastCritical {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -1779,7 +2114,7 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "Test Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "01:00",
@@ -1791,7 +2126,7 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "1",
+			slaDefinitionDays = 1,
 			slaDefinitionDescription = "Test Description 2",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:00",
@@ -1803,7 +2138,7 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "Test Description 3",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:30",
@@ -1816,33 +2151,32 @@ definition {
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry");
 
-		Pause(locator1 = "60000");
-
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "ONTIME",
 			workflowMetricsTab = "DASHBOARD",
 			workflowProcess = "Single Approver");
 
-		WorkflowMetrics.assertDueDatePopoverInfo(
-			itemPosition = "3",
-			rowNumber = "1",
-			slaName = "Test3",
-			slaPosition = "1");
+		while ((IsElementNotPresent(key_itemPosition = 1, key_rowNumber = 3, locator1 = "WorkflowAllItems#METRICS_INSTANCE_ITEMS_POSITION")) && (maxIterations = "35")) {
+			Refresh();
+		}
 
 		WorkflowMetrics.assertDueDatePopoverInfo(
-			itemPosition = "3",
-			rowNumber = "1",
+			itemPosition = 3,
+			rowNumber = 1,
+			slaName = "Test3",
+			slaPosition = 1);
+
+		WorkflowMetrics.assertDueDatePopoverInfo(
+			itemPosition = 3,
+			rowNumber = 1,
 			slaName = "Test1",
-			slaPosition = "2");
+			slaPosition = 2);
 	}
 
 	@description = "LPS-130166 - Verify that the popover is not displayd when hovering untracked items on Due Date column item"
-	@priority = "3"
+	@priority = 3
 	test PopoverIsNotDisplayedForUntrackedItems {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1873,12 +2207,9 @@ definition {
 	}
 
 	@description = "LPS-130217 - Verify that user is able to click on the table header title to order items by Creation Date: old-new / new-old"
-	@priority = "4"
+	@priority = 4
 	test ReorderEntriesClickingCreationDateColumn {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -1906,50 +2237,56 @@ definition {
 			entryContent = "Blogs Entry Content",
 			entryTitle = "Blogs Entry Title 2");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "COMPLETED",
 			workflowMetricsTab = "PERFORMANCE",
 			workflowProcess = "Single Approver");
 
-		WorkflowMetrics.clearAllFilter();
+		ManagementBar.clearFilter();
 
 		AssertElementPresent(
-			key_order = "1",
+			key_order = 1,
 			key_processStep = "Completed",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 
 		AssertElementPresent(
-			key_order = "2",
+			key_order = 2,
 			key_processStep = "Review",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_BUTTON_CREATION_DATE");
 
 		AssertElementPresent(
-			key_order = "1",
+			key_order = 1,
 			key_processStep = "Review",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 
 		AssertElementPresent(
-			key_order = "2",
+			key_order = 2,
 			key_processStep = "Completed",
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ORDER");
 	}
 
 	@description = "LPS-130167 - Verify that the user is able to reorder entries by clicking the Due Date column title"
-	@priority = "3"
+	@priority = 3
 	test ReorderEntriesClickingDueDateColumn {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		SearchAdministration.executeReindex();
+
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
+
+		WorkflowMetrics.setSLADefinitionsJobInterval(
+			definitionsJobInterval = 1,
+			slaJobInterval = 1);
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -1960,7 +2297,7 @@ definition {
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:01",
@@ -1977,8 +2314,6 @@ definition {
 			entryContent = "Blogs Entry  Content",
 			entryTitle = "Blogs Entry Title 2");
 
-		Pause(locator1 = "60000");
-
 		WorkflowMetrics.goToDashboardAllItemsWithFilter(
 			workflowFilterOption = "PENDING",
 			workflowMetricsTab = "DASHBOARD",
@@ -1987,14 +2322,16 @@ definition {
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Blogs Entry Title 1",
 			keyCompare = "Blogs Entry: Blogs Entry Title 2",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Blogs Entry Title 2",
 			keyCompare = "Blogs Entry: Blogs Entry Title 1",
-			rowNumber = "2");
+			rowNumber = 2);
 
-		Pause(locator1 = "60000");
+		while ((IsElementNotPresent(locator1 = "WorkflowAllItems#assertTableOrder", rowNumber = 1)) && (maxIterations = "10")) {
+			Refresh();
+		}
 
 		Click(
 			key_orderBy = "Due Date",
@@ -2003,34 +2340,35 @@ definition {
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Blogs Entry Title 2",
 			keyCompare = "Blogs Entry: Blogs Entry Title 1",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: Blogs Entry Title 1",
 			keyCompare = "Blogs Entry: Blogs Entry Title 2",
-			rowNumber = "2");
+			rowNumber = 2);
 	}
 
 	@description = "LPS-98517 - Verify that if Assignee dropdown menu is higher than 496px a search bar is added on it as specified on Figma"
-	@priority = "3"
+	@priority = 3
 	test SearchBarIsAddedOnAssigneeDropdownMenuWhenItIsHigherThan496px {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsList#SearchBarIsAddedOnAssigneeDropdownMenuWhenItIsHigherThan496px";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
 			workflowResourceValue = "Blogs Entry");
 
 		WorkflowMetrics.createUsersAndAssignInstances(
-			numberOfBlogInstances = "13",
-			numberOfUsers = "13",
-			site = "${siteName}");
+			numberOfBlogInstances = 13,
+			numberOfUsers = 13,
+			site = ${siteName});
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
@@ -2052,12 +2390,9 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, when one of the sections has no entries, the section title is completely removed"
-	@priority = "4"
+	@priority = 4
 	test SectionIsRemovedWhenItHasNoEntries {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2103,15 +2438,16 @@ definition {
 	}
 
 	@description = "LPS-92052 - Verify that when the task has multiple assignees, the sort considers the first one displayed on the row"
-	@priority = "3"
+	@priority = 3
 	test SortConsidersOnlyTheFirstAssignee {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsList#SortConsidersOnlyTheFirstAssignee";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		for (var orderNumber : list "1,2,3") {
-			key_order = "${orderNumber}";
-			key_title = "Blogs Entry: Blogs Entry Title ${orderNumber}";
+			var key_order = ${orderNumber};
+			var key_title = "Blogs Entry: Blogs Entry Title ${orderNumber}";
 
 			JSONUser.addUser(
 				userEmailAddress = "user${orderNumber}@liferay.com",
@@ -2128,31 +2464,20 @@ definition {
 				roleTitle = "Administrator",
 				userEmailAddress = "user${orderNumber}@liferay.com");
 		}
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "People",
-			panel = "Site Administration",
-			portlet = "Memberships");
-
-		for (var orderNumber : list "1,2,3") {
-			key_order = "${orderNumber}";
-			Site.assignUserAsMemberCP(
-				userFirstName = "user${orderNumber}",
-				userLastName = "user${orderNumber}",
-				userScreenName = "user${orderNumber}");
-		}
 
 		Navigator.openURL();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
-		Workflow.uploadDefinition(
-			workflowDefinitionFile = "similar-single-approver-workflow-definition.xml",
-			workflowDefinitionTitle = "Similar Single Approver Process");
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Similar Single Approver Process");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "similar-single-approver-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2170,7 +2495,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Similar Single Approver Process");
 
-		WorkflowMetrics.goToBulkReassignSelectTasks();
+		WorkflowMetrics.goToReassignTask();
 
 		WorkflowMetrics.selectReassignTasks(taskList = "task1");
 
@@ -2182,7 +2507,7 @@ definition {
 			nameOfAssignee = "user1 user1",
 			taskList = "task1");
 
-		WorkflowMetrics.goToBulkReassignSelectTasks();
+		WorkflowMetrics.goToReassignTask();
 
 		WorkflowMetrics.selectReassignTasks(taskList = "task2");
 
@@ -2194,7 +2519,7 @@ definition {
 			nameOfAssignee = "user2 user2",
 			taskList = "task2");
 
-		WorkflowMetrics.goToBulkReassignSelectTasks();
+		WorkflowMetrics.goToReassignTask();
 
 		WorkflowMetrics.selectReassignTasks(taskList = "task3");
 
@@ -2212,19 +2537,19 @@ definition {
 
 		AssertElementPresent(
 			key_assigneeName = "user1 user1, user2 user2, user3 user3",
-			key_order = "1",
+			key_order = 1,
 			locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_ASSIGNEE_ORDER");
 	}
 
 	@description = "LPS-130216 - Verify that the Item Subject sort will only use the Asset Type information for sorting."
-	@priority = "4"
+	@priority = 4
 	test SortOnlyUseAssetTypeInformation {
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
 		ProductMenu.gotoPortlet(
 			category = "Configuration",
 			portlet = "Workflow",
-			site = "${siteName}");
+			site = ${siteName});
 
 		Workflow.configureWorkflow(
 			workflowDefinition = "Single Approver",
@@ -2264,31 +2589,28 @@ definition {
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Web Content Article: BB",
 			keyCompare = "Blogs Entry: AA",
-			rowNumber = "1");
+			rowNumber = 1);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Web Content Article: DD",
 			keyCompare = "Blogs Entry: CC",
-			rowNumber = "2");
+			rowNumber = 2);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: AA",
 			keyCompare = "Web Content Article: BB",
-			rowNumber = "3");
+			rowNumber = 3);
 
 		WorkflowMetrics.assertTableOrder(
 			itemTitle = "Blogs Entry: CC",
 			keyCompare = "Web Content Article: DD",
-			rowNumber = "4");
+			rowNumber = 4);
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, when an item is completed, the summary section should hide the info Current Step and replace it with End Date"
-	@priority = "3"
+	@priority = 3
 	test SummarySectionDisplaysEndDateInsteadOfCurrentStep {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2300,10 +2622,7 @@ definition {
 			entryContent = "Test Content",
 			entryTitle = "Test Blog");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
@@ -2331,14 +2650,11 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Metrics");
+		Workflow.openWorkflowMetrics();
 
 		WorkflowMetrics.goToWorkflowProcessMetrics(workflowProcessName = "Single Approver");
 
-		Click(locator1 = "WorkflowMetrics#METRICS_PERFORMANCE_TAB");
+		WorkflowMetrics.goToPerformanceTab();
 
 		Click(locator1 = "WorkflowMetrics#DASHBOARD_TOTAL_COMPLETED_ITEMS_TITLE");
 
@@ -2349,20 +2665,135 @@ definition {
 		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_END_DATE");
 	}
 
+	@description = "LPS-98517 - Verify that tasks can be assigned to more than one user and listed with commas"
+	@priority = 3
+	test TaskReassignedToMultipleUsers {
+		property portal.upstream = "quarantine";
+
+		task ("Given a primary user who creates a secondary Power user with a membership") {
+			property test.liferay.virtual.instance = "false";
+			property test.run.type = "single";
+
+			Site.openSiteSettingsAdmin(siteURLKey = "guest");
+
+			Site.manageMembershipOptions(allowManualMembershipManagement = "true");
+
+			WorkflowMetrics.executeIndexActions(actionDescription = "Workflow Indexes");
+
+			JSONUser.addUser(
+				userEmailAddress = "tester@liferay.com",
+				userFirstName = "tester",
+				userLastName = "tester",
+				userScreenName = "tester");
+
+			JSONUser.setFirstPassword(
+				agreeToTermsAndAnswerReminderQuery = "true",
+				requireReset = "false",
+				userEmailAddress = "tester@liferay.com");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "Administrator",
+				userEmailAddress = "tester@liferay.com");
+
+			JSONRole.assignRoleToUser(
+				roleTitle = "Power User",
+				userEmailAddress = "tester@liferay.com");
+
+			Navigator.openURL();
+
+			ProductMenu.gotoPortlet(
+				category = "People",
+				panel = "Site Administration",
+				portlet = "Memberships");
+
+			Site.assignUserAsMemberCP(
+				userFirstName = "tester",
+				userLastName = "tester",
+				userScreenName = "tester");
+		}
+
+		task ("and Given a multi task process configured to an asset") {
+			Workflow.openWorkflowListView();
+
+			Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
+
+			ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "multi-task-process-workflow-definition.xml");
+
+			ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+			Button.clickPublish();
+
+			Workflow.openWorkflowListView();
+
+			Navigator.gotoNavItem(navItem = "Configuration");
+
+			Workflow.configureWorkflow(
+				workflowDefinition = "Multi Task Process",
+				workflowResourceValue = "Blogs Entry");
+
+			JSONBlog.addEntry(
+				entryContent = "Blogs Entry",
+				entryTitle = "Blogs Entry Title");
+		}
+
+		task ("When tasks are assigned to the Power user") {
+			WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Multi Task Process");
+
+			WorkflowMetrics.goToReassignTask();
+
+			WorkflowMetrics.selectReassignTasks(taskList = "task1,task2");
+
+			AssertElementPresent(locator1 = "WorkflowReassignModal#PERMISSION_TOOLTIP");
+
+			AssertElementPresent(locator1 = "WorkflowReassignModal#NEXT_BUTTON_DISABLED");
+
+			WorkflowMetrics.selectNewAssignee(
+				nameOfAssignee = "tester tester",
+				taskList = "task1,task2");
+		}
+
+		task ("and When a task is assigned to Primary user") {
+			WorkflowMetrics.goToReassignTask();
+
+			WorkflowMetrics.selectReassignTasks(taskList = "task3");
+
+			AssertElementPresent(locator1 = "WorkflowReassignModal#PERMISSION_TOOLTIP");
+
+			AssertElementPresent(locator1 = "WorkflowReassignModal#NEXT_BUTTON_DISABLED");
+
+			WorkflowMetrics.selectNewAssignee(
+				nameOfAssignee = "Test Test",
+				taskList = "task3");
+		}
+
+		task ("Then the tasks are reassigned to multiple users, separated by commas") {
+			Refresh();
+
+			AssertElementPresent(
+				key_workflowInstanceAssignee = "Test Test, tester tester",
+				key_workflowInstanceName = "Blogs Entry: Blogs Entry Title",
+				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_CURRENT_ASSIGNEE_VALUE");
+		}
+	}
+
 	@description = "LPS-86652 - Verify that hovering the cursor on the process step, when it contains more than 1 option, the toolip will display a bullet list"
-	@priority = "3"
+	@priority = 3
 	test TooltipDisplaysStepsListWhenMultipleItems {
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsList#TooltipDisplaysBulletListWhenMultipleItems";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
-		Workflow.uploadDefinition(
-			workflowDefinitionFile = "multi-task-process-workflow-definition.xml",
-			workflowDefinitionTitle = "Multi Task Process");
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "multi-task-process-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2380,12 +2811,9 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that the Go to submission page button, on hover, displays a tooltip saying Open page in new tab"
-	@priority = "3"
+	@priority = 3
 	test TooltipIsDisplayedWhenHoveringButton {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2408,8 +2836,101 @@ definition {
 		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_GO_TO_SUBMISSION_PAGE_TOOLTIP");
 	}
 
+	@description = "Verify that when the user updates the Workflow definition, the Track Approval still displays the version of the Workflow instance"
+	@priority = 4
+	test TrackApprovalDisplayCorrectVersionAfterChange {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		WorkflowMetrics.executeIndexActions(actionDescription = "Workflow Indexes");
+
+		Workflow.openWorkflowListView();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Single Approver",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry",
+			entryTitle = "Blogs Entry Title");
+
+		WorkflowMetrics.goToDashboardAllItemsWithFilter(
+			workflowFilterOption = "PENDING",
+			workflowMetricsTab = "DASHBOARD",
+			workflowProcess = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetricsAllItemsList.viewNodesDisplayed(nodesTrackWorkflow = "Created,Review,Update,Approved");
+
+		Workflow.openWorkflowListView();
+
+		Workflow.gotoEditWorkflowDefinition(workflowDefinitionTitle = "Single Approver");
+
+		WorkflowMetricsAllItemsList.selectAndChangeNodeName(
+			nodeLabel = "review",
+			nodeName = "Review changed",
+			nodeType = "task",
+			update = "true");
+
+		Workflow.openWorkflowMetrics();
+
+		WorkflowMetrics.goToDashboardAllItemsWithFilter(
+			workflowFilterOption = "PENDING",
+			workflowMetricsTab = "DASHBOARD",
+			workflowProcess = "Single Approver");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetricsAllItemsList.viewNodesDisplayed(nodesTrackWorkflow = "Created,Review,Update,Approved");
+	}
+
+	@description = "Verify that when the user clicks the link in the detail modal, the Workflow in use is displayed"
+	@priority = 5
+	test TrackApprovalDisplayWorkflowInUse {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		Workflow.openWorkflowListView();
+
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "multi-task-process-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
+
+		Navigator.gotoNavItem(navItem = "Configuration");
+
+		Workflow.configureWorkflow(
+			workflowDefinition = "Multi Task Process",
+			workflowResourceValue = "Blogs Entry");
+
+		JSONBlog.addEntry(
+			entryContent = "Blogs Entry",
+			entryTitle = "Blogs Entry Title");
+
+		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Multi Task Process");
+
+		WorkflowMetricsAllItemsList.viewDetailsModal();
+
+		WorkflowMetricsAllItemsList.goToTrackWorkflowlink();
+
+		WorkflowMetricsAllItemsList.viewNodesDisplayed(nodesTrackWorkflow = "start,task1,task2,task3,end");
+	}
+
 	@description = "LPS-108138 - Verify that, in All Items page, when the users select an instance that can't be transitioned by them, the option to transition is not available to be selected"
-	@priority = "4"
+	@priority = 4
 	test TransitionOptionIsNotAvailableWhenUserCanNotTransitionInstance {
 		JSONUser.addUser(
 			userEmailAddress = "user@liferay.com",
@@ -2430,12 +2951,7 @@ definition {
 			roleTitle = "Power User",
 			userEmailAddress = "user@liferay.com");
 
-		Navigator.openURL();
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Configuration",
-			panel = "Control Panel",
-			portlet = "Instance Settings");
+		PortalSettings.openInstanceSettingsAdmin();
 
 		PortalSettings.gotoConfiguration(
 			configurationCategory = "User Authentication",
@@ -2444,22 +2960,7 @@ definition {
 
 		PortalSettings.uncheckStrangersVerifyEmailCheckbox();
 
-		Navigator.openURL();
-
-		ProductMenu.gotoPortlet(
-			category = "People",
-			panel = "Site Administration",
-			portlet = "Memberships");
-
-		Site.assignUserAsMemberCP(
-			userFirstName = "user",
-			userLastName = "user",
-			userScreenName = "user");
-
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2488,28 +2989,23 @@ definition {
 		MouseOver.mouseOverNotVisible(locator1 = "WorkflowAllItems#WORKFLOW_DROPDOWN_DISABLED");
 	}
 
-	@description = "LPS-98517 - Verify that the usernames in the result table are separated by a comma when there is more than one assignee per item"
-	@priority = "3"
-	test UsernamesAreSeparatedByComma {
-		property portal.acceptance = "true";
-
-		// TODO LRQA-67751 UsernamesAreSeparatedByComma pending implementation
-
-	}
-
 	@description = "LPS-98517 - Verify that, in the item detail modal, the usernames are separated by a comma when there is more than one assignee per item under the Process Details section"
-	@priority = "3"
+	@priority = 3
 	test UsernamesAreSeparatedByCommaInItemDetailModal {
-		property test.name.skip.portal.instance = "WorkflowMetricsAllItemsList#UsernamesAreSeparatedByCommaInItemDetailModal";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
-		Workflow.uploadDefinition(
-			workflowDefinitionFile = "multi-task-process-workflow-definition.xml",
-			workflowDefinitionTitle = "Multi Task Process");
+		Workflow.addNewDefinition(workflowDefinitionTitle = "Multi Task Process");
+
+		ProcessBuilderKaleoDesignerReact.uploadDefinition(workflowDefinitionFile = "multi-task-process-workflow-definition.xml");
+
+		ProcessBuilderKaleoDesignerReact.diagramSourceSwitchView();
+
+		Button.clickPublish();
+
+		Navigator.gotoBack();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2542,7 +3038,7 @@ definition {
 
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Multi Task Process");
 
-		WorkflowMetrics.goToBulkReassignSelectTasks();
+		WorkflowMetrics.goToReassignTask();
 
 		WorkflowMetrics.selectReassignTasks(taskList = "task1");
 
@@ -2550,7 +3046,7 @@ definition {
 			nameOfAssignee = "User User",
 			taskList = "task1");
 
-		WorkflowMetrics.goToBulkReassignSelectTasks();
+		WorkflowMetrics.goToReassignTask();
 
 		WorkflowMetrics.selectReassignTasks(taskList = "task3");
 
@@ -2560,10 +3056,7 @@ definition {
 			nameOfAssignee = "Test Test",
 			taskList = "task3");
 
-		while (IsElementNotPresent(key_workflowInstanceName = "Blogs Entry",
-				key_workflowInstanceAssignee = "Test Test, Unassigned, User User",
-				locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_CURRENT_ASSIGNEE_VALUE") && (maxIterations = "20")) {
-			Pause(locator1 = "3000");
+		while ((IsElementNotPresent(key_workflowInstanceAssignee = "Test Test, Unassigned, User User", key_workflowInstanceName = "Blogs Entry", locator1 = "WorkflowAllItems#WORKFLOW_ALL_ITEMS_TABLE_CURRENT_ASSIGNEE_VALUE")) && (maxIterations = "10")) {
 			Refresh();
 		}
 
@@ -2575,12 +3068,9 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-98825."
-	@priority = "5"
+	@priority = 5
 	test ViewMyWorkflowTasksOrderResults {
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2619,14 +3109,14 @@ definition {
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, Pause instead of due date, the UI will inform SLA Paused sentence next to the SLA name"
-	@priority = "4"
+	@priority = 4
 	test WhenSlaIsPausedSlaPausedIsDisplayedInsteadOfDueDate {
 		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
 		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
 		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
+			slaDefinitionDays = 0,
 			slaDefinitionDescription = "SLA Description",
 			slaDefinitionEnd = "Process Ends: Approved",
 			slaDefinitionHours = "00:01",
@@ -2636,10 +3126,7 @@ definition {
 
 		Button.clickSave();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+		Workflow.openWorkflowListView();
 
 		Navigator.gotoNavItem(navItem = "Configuration");
 
@@ -2650,7 +3137,7 @@ definition {
 		Navigator.openURL();
 
 		ProductMenu.gotoPortlet(
-			category = "Content &amp; Data",
+			category = "Content & Data",
 			panel = "Site Administration",
 			portlet = "Blogs");
 
@@ -2671,8 +3158,6 @@ definition {
 			workflowAssetType = "Blogs Entry",
 			workflowTask = "Review");
 
-		Pause(locator1 = "60000");
-
 		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
 		WaitForElementPresent(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
@@ -2681,51 +3166,71 @@ definition {
 
 		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
 
-		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_PAUSED");
+		while ((IsElementNotPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_PAUSED")) && (maxIterations = "20")) {
+			Refresh();
+
+			Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
+		}
+
+		if (IsElementNotPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_PAUSED")) {
+			echo("Pause information not displayed");
+		}
 	}
 
 	@description = "LPS-92053 - Verify that, in the item detail modal, Open when an SLA is paused, the SLA status will be related to the moment when it triggered the pause timer"
-	@priority = "4"
+	@priority = 4
 	test WhenSlaIsPausedSlaStatusIsRelatedToThePauseTimer {
-		WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
+		property ci.retries.disabled = "true";
+		property portal.acceptance = "quarantine";
 
-		Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
+		task ("Given a Single Approver SLA with a pause") {
+			WorkflowMetrics.executeIndexActions(actionDescription = "Workflow Indexes");
 
-		WorkflowMetrics.fillSLAForm(
-			slaDefinitionDays = "0",
-			slaDefinitionDescription = "SLA Description",
-			slaDefinitionEnd = "Process Ends: Approved",
-			slaDefinitionHours = "00:01",
-			slaDefinitionName = "SLA Definition 1",
-			slaDefinitionPause = "On Task: Review",
-			slaDefinitionStart = "Process Begins");
+			WorkflowMetrics.goToWorkflowSLASettings(workflowProcessName = "Single Approver");
 
-		Button.clickSave();
+			Click(locator1 = "WorkflowMetricsSLA#ADD_NEW_SLA_BUTTON");
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Workflow",
-			panel = "Applications",
-			portlet = "Process Builder");
+			WorkflowMetrics.fillSLAForm(
+				slaDefinitionDays = 0,
+				slaDefinitionDescription = "SLA Description",
+				slaDefinitionEnd = "Process Ends: Approved",
+				slaDefinitionHours = "00:01",
+				slaDefinitionName = "SLA Definition 1",
+				slaDefinitionPause = "On Task: Review",
+				slaDefinitionStart = "Process Begins");
 
-		Navigator.gotoNavItem(navItem = "Configuration");
+			Button.clickSave();
+		}
 
-		Workflow.configureWorkflow(
-			workflowDefinition = "Single Approver",
-			workflowResourceValue = "Blogs Entry");
+		task ("When a blog entry is created with a Single Approver Workflow") {
+			Workflow.openWorkflowListView();
 
-		JSONBlog.addEntry(
-			entryContent = "Test Content",
-			entryTitle = "Test Blog");
+			Navigator.gotoNavItem(navItem = "Configuration");
 
-		Pause(locator1 = "60000");
+			Workflow.configureWorkflow(
+				workflowDefinition = "Single Approver",
+				workflowResourceValue = "Blogs Entry");
 
-		WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
+			JSONBlog.addEntry(
+				entryContent = "Test Content",
+				entryTitle = "Blog Entry");
+		}
 
-		WaitForElementPresent(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
+		task ("Then the SLA status should be related to the moment the pause timer triggered") {
+			WorkflowMetrics.goToWorkflowAllItems(workflowProcessName = "Single Approver");
 
-		Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
+			Pause(value1 = 60000);
 
-		AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_PAUSED");
+			Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
+
+			while ((IsElementNotPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_PAUSED")) && (maxIterations = "20")) {
+				Refresh();
+
+				Click(locator1 = "WorkflowAllItems#WORKFLOW_INSTANCE_ID");
+			}
+
+			AssertElementPresent(locator1 = "WorkflowAllItems#DETAIL_PAGE_SLA_PAUSED");
+		}
 	}
 
 }

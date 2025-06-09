@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.validation.util;
@@ -27,6 +18,8 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+
+import java.util.Locale;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -51,14 +44,50 @@ public class DateParameterUtilTest {
 
 	@Test
 	public void testGetLocalDate() {
-		String dateString = "2021-10-28";
+		_testGetLocalDate();
 
-		LocalDate localDate = DateParameterUtil.getLocalDate(dateString);
+		Locale locale = LocaleUtil.getDefault();
 
-		Assert.assertEquals(dateString, localDate.toString());
+		try {
+			_setDefaultLocale(new Locale("ar", "SA"));
+
+			_testGetLocalDate();
+		}
+		finally {
+			_setDefaultLocale(locale);
+		}
 
 		Assert.assertNull(DateParameterUtil.getLocalDate(null));
 		Assert.assertNull(DateParameterUtil.getLocalDate(StringPool.BLANK));
+	}
+
+	@Test
+	public void testGetLocalDateTime() {
+		Assert.assertEquals(
+			"2021-10-28T01:00",
+			String.valueOf(
+				DateParameterUtil.getLocalDateTime("2021-10-28 1:00")));
+		Assert.assertNull(DateParameterUtil.getLocalDateTime(null));
+		Assert.assertNull(DateParameterUtil.getLocalDateTime(StringPool.BLANK));
+		Assert.assertEquals(
+			"2021-10-28T00:00",
+			String.valueOf(DateParameterUtil.getLocalDateTime("2021-10-28")));
+
+		Assert.assertEquals(
+			"2021-10-28T01:00",
+			String.valueOf(
+				DateParameterUtil.getLocalDateTime("2021-10-28 01:00:00")));
+
+		Assert.assertEquals(
+			"2021-10-28T01:00",
+			String.valueOf(
+				DateParameterUtil.getLocalDateTime("2021-10-28 1:00")));
+
+		Assert.assertEquals(
+			"2024-02-06T14:43:44",
+			String.valueOf(
+				DateParameterUtil.getLocalDateTime(
+					"Tue Feb 06 14:43:44 GMT 2024")));
 	}
 
 	@Test
@@ -73,6 +102,18 @@ public class DateParameterUtilTest {
 			StringPool.BLANK,
 			DateParameterUtil.getParameter(
 				null, null, StringPool.OPEN_CURLY_BRACE, null));
+	}
+
+	@Test
+	public void testGetParameterBlankWithDateField() {
+		Assert.assertEquals(
+			StringPool.BLANK,
+			DateParameterUtil.getParameter(
+				null, "endsOn",
+				_getParameter(
+					"dateField", "Date12345678", "endsOn", "1", "dateField",
+					"days"),
+				null));
 	}
 
 	@Test
@@ -196,7 +237,20 @@ public class DateParameterUtilTest {
 			).put(
 				"unit", unit
 			)
-		).toJSONString();
+		).toString();
+	}
+
+	private void _setDefaultLocale(Locale locale) {
+		LocaleUtil.setDefault(
+			locale.getLanguage(), locale.getCountry(), locale.getVariant());
+	}
+
+	private void _testGetLocalDate() {
+		String dateString = "2021-10-28";
+
+		LocalDate localDate = DateParameterUtil.getLocalDate(dateString);
+
+		Assert.assertEquals(dateString, localDate.toString());
 	}
 
 }

@@ -1,0 +1,65 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies;
+
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
+
+/**
+ * @author Qi Zhang
+ */
+public class ToJSONStringMethodCalls {
+
+	public void test() {
+		JSONUtil.put(
+			"key", "key"
+		).put(
+			"value", "value"
+		).toJSONString();
+
+		JSONUtil.putAll(
+			JSONUtil.put(
+				"address", "@gmail.com"
+			).put(
+				"descriptionLanguageKey",
+				"please-enable-imap-in-you-gmail-settings-for-mail-to-work"
+			)
+		).toJSONString();
+
+		JSONObject jsonObject = toJSONObject();
+
+		return jsonObject.toJSONString();
+	}
+
+	public JSONObject toJSONObject() {
+		return JSONUtil.put(
+			"createdLocalDateTime", "createdLocalDateTime"
+		).put(
+			"recipients",
+			JSONUtil.put(
+				"signers",
+				JSONUtil.toJSONArray(
+					"DSRecipients",
+					JSONUtil.put(
+						"email", "email"
+					).put(
+						"name", "name"
+					),
+					_log))
+		).put(
+			"senderEmailAddress", _testString()
+		);
+	}
+
+	public String toString() {
+		return toJSONObject().toJSONString();
+	}
+
+	private String _testString() {
+		return "senderEmailAddress";
+	}
+
+}

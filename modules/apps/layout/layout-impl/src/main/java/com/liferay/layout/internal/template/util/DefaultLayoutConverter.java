@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.internal.template.util;
@@ -23,15 +14,15 @@ import com.liferay.layout.util.template.LayoutRow;
 import com.liferay.layout.util.template.LayoutTypeSettingsInspectorUtil;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTemplate;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.LayoutTypePortletConstants;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.util.Validator;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,24 +37,16 @@ import org.jsoup.select.Elements;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Rubén Pulido
  */
 @Component(
 	configurationPid = "com.liferay.layout.internal.configuration.LayoutConverterConfiguration",
-	immediate = true, property = "layout.template.id=default",
-	service = LayoutConverter.class
+	property = "layout.template.id=default", service = LayoutConverter.class
 )
 public class DefaultLayoutConverter implements LayoutConverter {
-
-	@Override
-	public LayoutData convert(Layout layout) {
-		LayoutConversionResult layoutConversionResult = convert(
-			layout, LocaleUtil.getSiteDefault());
-
-		return layoutConversionResult.getLayoutData();
-	}
 
 	@Override
 	public LayoutConversionResult convert(Layout layout, Locale locale) {
@@ -150,7 +133,7 @@ public class DefaultLayoutConverter implements LayoutConverter {
 				typeSettingsUnicodeProperties)) {
 
 			conversionWarningMessages.add(
-				LanguageUtil.get(
+				_language.get(
 					locale,
 					"this-page-uses-nested-applications-widgets.-they-have-" +
 						"been-placed-in-a-single-column-and-may-require-" +
@@ -161,7 +144,7 @@ public class DefaultLayoutConverter implements LayoutConverter {
 				typeSettingsUnicodeProperties)) {
 
 			conversionWarningMessages.add(
-				LanguageUtil.get(
+				_language.get(
 					locale,
 					"this-page-has-customizable-columns.-this-capability-is-" +
 						"not-supported-for-content-pages-and-will-be-lost-if-" +
@@ -175,7 +158,7 @@ public class DefaultLayoutConverter implements LayoutConverter {
 					LayoutTypePortletConstants.LAYOUT_TEMPLATE_ID))) {
 
 			conversionWarningMessages.add(
-				LanguageUtil.get(
+				_language.get(
 					locale,
 					"this-page-uses-a-custom-page-layout.-a-best-effort-" +
 						"conversion-has-been-performed.-verify-the-" +
@@ -184,7 +167,7 @@ public class DefaultLayoutConverter implements LayoutConverter {
 
 		if (!_isLayoutTemplateParseable(layout)) {
 			conversionWarningMessages.add(
-				LanguageUtil.get(
+				_language.get(
 					locale,
 					"this-page-uses-a-custom-page-layout.-all-widgets-have-" +
 						"been-placed-in-a-single-column-and-will-require-" +
@@ -200,8 +183,13 @@ public class DefaultLayoutConverter implements LayoutConverter {
 
 		LayoutTemplate layoutTemplate = layoutTypePortlet.getLayoutTemplate();
 
-		Document document = Jsoup.parseBodyFragment(
-			layoutTemplate.getContent());
+		String content = layoutTemplate.getContent();
+
+		if (Validator.isNull(content)) {
+			return null;
+		}
+
+		Document document = Jsoup.parseBodyFragment(content);
 
 		Document.OutputSettings outputSettings = new Document.OutputSettings();
 
@@ -214,6 +202,10 @@ public class DefaultLayoutConverter implements LayoutConverter {
 
 	private boolean _isLayoutTemplateParseable(Layout layout) {
 		Document layoutTemplateDocument = _getLayoutTemplateDocument(layout);
+
+		if (layoutTemplateDocument == null) {
+			return false;
+		}
 
 		Elements rowElements = layoutTemplateDocument.select(
 			".portlet-layout.row");
@@ -253,6 +245,9 @@ public class DefaultLayoutConverter implements LayoutConverter {
 	}
 
 	private static final String _CSS_CLASS_COLUMN_PREFIX = "col-md-";
+
+	@Reference
+	private Language _language;
 
 	private volatile LayoutConverterConfiguration _layoutConverterConfiguration;
 

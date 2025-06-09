@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
@@ -91,23 +82,11 @@ public interface FragmentEntryLocalService
 	public FragmentEntry addFragmentEntry(FragmentEntry fragmentEntry);
 
 	public FragmentEntry addFragmentEntry(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentEntryKey, String name, long previewFileEntryId,
-			int type, int status, ServiceContext serviceContext)
-		throws PortalException;
-
-	public FragmentEntry addFragmentEntry(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentEntryKey, String name, String css, String html,
-			String js, boolean cacheable, String configuration,
-			long previewFileEntryId, int type, int status,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public FragmentEntry addFragmentEntry(
-			long userId, long groupId, long fragmentCollectionId,
-			String fragmentEntryKey, String name, String css, String html,
-			String js, String configuration, long previewFileEntryId, int type,
+			String externalReferenceCode, long userId, long groupId,
+			long fragmentCollectionId, String fragmentEntryKey, String name,
+			String css, String html, String js, boolean cacheable,
+			String configuration, String icon, long previewFileEntryId,
+			boolean marketplace, boolean readOnly, int type, String typeOptions,
 			int status, ServiceContext serviceContext)
 		throws PortalException;
 
@@ -118,7 +97,7 @@ public interface FragmentEntryLocalService
 		throws PortalException;
 
 	public FragmentEntry copyFragmentEntry(
-			long userId, long groupId, long fragmentEntryId,
+			long userId, long groupId, long sourceFragmentEntryId,
 			long fragmentCollectionId, ServiceContext serviceContext)
 		throws PortalException;
 
@@ -178,6 +157,10 @@ public interface FragmentEntryLocalService
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public FragmentEntry deleteFragmentEntry(long fragmentEntryId)
+		throws PortalException;
+
+	public FragmentEntry deleteFragmentEntry(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -280,6 +263,10 @@ public interface FragmentEntryLocalService
 		long groupId, String fragmentEntryKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public FragmentEntry fetchFragmentEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentEntry fetchFragmentEntryByUuidAndGroupId(
 		String uuid, long groupId);
 
@@ -340,8 +327,18 @@ public interface FragmentEntryLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntry> getFragmentEntries(
+		long groupId, long fragmentCollectionId, int status, int start, int end,
+		OrderByComparator<FragmentEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntry> getFragmentEntries(
 		long groupId, long fragmentCollectionId, int start, int end,
 		OrderByComparator<FragmentEntry> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<FragmentEntry> getFragmentEntries(
+		long groupId, long fragmentCollectionId, String name, int status,
+		int start, int end, OrderByComparator<FragmentEntry> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<FragmentEntry> getFragmentEntries(
@@ -407,6 +404,10 @@ public interface FragmentEntryLocalService
 			long userId, long groupId, String folderName)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getUniqueFragmentEntryName(
+		long groupId, long fragmentCollectionId, String name);
+
 	@Override
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public FragmentEntryVersion getVersion(
@@ -448,12 +449,16 @@ public interface FragmentEntryLocalService
 	 * <strong>Important:</strong> Inspect FragmentEntryLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 	 * </p>
 	 *
-	 * @param fragmentEntry the fragment entry
+	 * @param draftFragmentEntry the fragment entry
 	 * @return the fragment entry that was updated
 	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public FragmentEntry updateFragmentEntry(FragmentEntry draftFragmentEntry)
+		throws PortalException;
+
+	public FragmentEntry updateFragmentEntry(
+			long fragmentEntryId, boolean cacheable)
 		throws PortalException;
 
 	public FragmentEntry updateFragmentEntry(
@@ -463,29 +468,8 @@ public interface FragmentEntryLocalService
 	public FragmentEntry updateFragmentEntry(
 			long userId, long fragmentEntryId, long fragmentCollectionId,
 			String name, String css, String html, String js, boolean cacheable,
-			String configuration, long previewFileEntryId, int status)
-		throws PortalException;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateFragmentEntry(long, long, long, String, String, String, String, boolean, String, long, int)}
-	 */
-	@Deprecated
-	public FragmentEntry updateFragmentEntry(
-			long userId, long fragmentEntryId, String name, String css,
-			String html, String js, boolean cacheable, String configuration,
-			long previewFileEntryId, int status)
-		throws PortalException;
-
-	public FragmentEntry updateFragmentEntry(
-			long userId, long fragmentEntryId, String name, String css,
-			String html, String js, String configuration, int status)
-		throws PortalException;
-
-	public FragmentEntry updateFragmentEntry(
-			long userId, long fragmentEntryId, String name, String css,
-			String html, String js, String configuration,
-			long previewFileEntryId, int status)
+			String configuration, String icon, long previewFileEntryId,
+			boolean readOnly, String typeOptions, int status)
 		throws PortalException;
 
 	public FragmentEntry updateFragmentEntry(long fragmentEntryId, String name)

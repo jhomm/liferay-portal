@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.client.test;
@@ -19,21 +10,23 @@ import com.liferay.portal.json.JSONObjectImpl;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+
+import jakarta.ws.rs.client.Entity;
+import jakarta.ws.rs.client.Invocation;
+import jakarta.ws.rs.client.WebTarget;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
 import java.util.Arrays;
 import java.util.Collections;
-
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MultivaluedHashMap;
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -52,7 +45,9 @@ public class JsonWebServiceTest extends BaseClientTestCase {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Test
 	public void test() throws Exception {
@@ -77,7 +72,8 @@ public class JsonWebServiceTest extends BaseClientTestCase {
 
 		String tokenString = getToken(
 			"oauthTestApplicationRO", null,
-			getResourceOwnerPasswordBiFunction("test@liferay.com", "test"),
+			getResourceOwnerPasswordBiFunction(
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD),
 			this::parseTokenString);
 
 		invocationBuilder = authorize(webTarget.request(), tokenString);
@@ -98,6 +94,7 @@ public class JsonWebServiceTest extends BaseClientTestCase {
 		formData.putSingle("active", "true");
 		formData.putSingle("countryId", "0");
 		formData.putSingle("name", "'aName'");
+		formData.putSingle("position", "0");
 		formData.putSingle("regionCode", "'aRegionCode'");
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
@@ -111,7 +108,8 @@ public class JsonWebServiceTest extends BaseClientTestCase {
 		String token = getToken(
 			"oauthTestApplicationRW", null,
 			getResourceOwnerPasswordBiFunction(
-				"test@liferay.com", "test", "everything.write"),
+				_user.getEmailAddress(), PropsValues.DEFAULT_ADMIN_PASSWORD,
+				"everything.write"),
 			this::parseTokenString);
 
 		invocationBuilder = authorize(webTarget.request(), token);
@@ -139,31 +137,33 @@ public class JsonWebServiceTest extends BaseClientTestCase {
 		}
 	}
 
-	public static class JsonWebServiceTestPreparatorBundleActivator
+	@Override
+	protected BundleActivator getBundleActivator() {
+		return new JsonWebServiceTestPreparatorBundleActivator();
+	}
+
+	private User _user;
+
+	private class JsonWebServiceTestPreparatorBundleActivator
 		extends BaseTestPreparatorBundleActivator {
 
 		@Override
 		protected void prepareTest() throws Exception {
-			long defaultCompanyId = PortalUtil.getDefaultCompanyId();
+			long companyId = TestPropsValues.getCompanyId();
 
-			User user = UserTestUtil.getAdminUser(defaultCompanyId);
+			_user = UserTestUtil.getAdminUser(companyId);
 
 			createCompany("testcompany");
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationRO",
+				companyId, _user, "oauthTestApplicationRO",
 				Collections.singletonList("everything.read"));
 
 			createOAuth2Application(
-				defaultCompanyId, user, "oauthTestApplicationRW",
+				companyId, _user, "oauthTestApplicationRW",
 				Arrays.asList("everything.read", "everything.write"));
 		}
 
-	}
-
-	@Override
-	protected BundleActivator getBundleActivator() {
-		return new JsonWebServiceTestPreparatorBundleActivator();
 	}
 
 }

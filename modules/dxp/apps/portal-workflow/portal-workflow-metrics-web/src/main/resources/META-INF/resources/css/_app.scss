@@ -107,6 +107,7 @@ $font-weight-semi-bold: 600;
 		width: 6.5rem;
 
 		li {
+			border: none;
 			cursor: pointer;
 			padding: 0.2rem;
 			text-align: center;
@@ -122,25 +123,61 @@ $font-weight-semi-bold: 600;
 	display: flex;
 	justify-content: center;
 
-	.modal-content,
 	.modal-body {
-		width: 1050px;
-	}
-
-	.modal-body {
-		height: 590px;
-		max-height: 590px;
 		overflow: hidden;
 		padding: 0;
 	}
+}
 
-	.modal-content {
-		height: 654px;
+@media screen and (min-width: 1700px) {
+	.modal-full-screen {
+		.modal-content,
+		.modal-body {
+			width: 1500px;
+		}
+
+		.modal-body {
+			height: 676px;
+		}
+
+		.modal-content {
+			height: 740px;
+		}
 	}
 }
 
-.nav-underline .nav-link:focus {
-	box-shadow: none;
+@media screen and (min-width: 1280px) and (max-width: 1699px) {
+	.modal-full-screen {
+		.modal-content,
+		.modal-body {
+			width: 1050px;
+		}
+
+		.modal-body {
+			height: 590px;
+		}
+
+		.modal-content {
+			height: 654px;
+		}
+	}
+}
+
+@media screen and (max-width: 1279px) {
+	.modal-full-screen {
+		.modal-content,
+		.modal-body {
+			width: 700px;
+		}
+
+		.modal-body {
+			height: 573px;
+		}
+
+		.modal-content {
+			height: 637px;
+		}
+	}
 }
 
 .step-of-bar {
@@ -182,6 +219,10 @@ $font-weight-semi-bold: 600;
 		margin-right: 0.5rem;
 		width: 1.5rem;
 	}
+}
+
+.tracker-tooltip {
+	cursor: pointer;
 }
 
 .transition-panel-body {

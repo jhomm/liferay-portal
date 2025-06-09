@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.hibernate;
@@ -56,13 +47,11 @@ public class SQLServerLimitStringUtil {
 		String innerOrderBy = splitOrderBy[0];
 		String outerOrderBy = splitOrderBy[1];
 
-		String innerSelectFrom = _getInnerSelectFrom(
-			selectFrom, innerOrderBy, limit);
-
 		return StringBundler.concat(
 			"select * from (select *, row_number() over (", outerOrderBy,
-			") as _page_row_num from (", innerSelectFrom, selectFromWhere,
-			innerOrderBy,
+			") as _page_row_num from (",
+			_getInnerSelectFrom(selectFrom, innerOrderBy, limit),
+			selectFromWhere, innerOrderBy,
 			" ) _temp_table_1 ) _temp_table_2 where _page_row_num between ",
 			offset + 1, " and ", limit, " order by _page_row_num");
 	}

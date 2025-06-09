@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {generateInstanceId} from '../../utils/fieldSupport';
@@ -19,25 +10,26 @@ import {
 	parseName,
 	parseNestedFieldName,
 } from '../../utils/repeatable.es';
+import {
+	replaceURLObjectPathnameSegment,
+	updateURLObjectSearchParam,
+} from '../../utils/url';
 import {PagesVisitor} from '../../utils/visitors.es';
 import {EVENT_TYPES} from '../actions/eventTypes.es';
 
-export const createRepeatedField = (sourceField, repeatedIndex) => {
+export function createRepeatedField(
+	defaultLanguageId,
+	sourceField,
+	repeatedIndex
+) {
 	const instanceId = generateInstanceId();
-	const {locale, name, nestedFields, predefinedValue} = sourceField;
-	let localizedValue;
+	const {name, nestedFields, predefinedValue} = sourceField;
+	const localizedValue = {};
+	const localizedValueEdited = {};
 
 	if (sourceField.localizedValue) {
-		localizedValue = Object.keys(sourceField.localizedValue).reduce(
-			(localizedValues, key) => {
-				localizedValues[key] = '';
-
-				return localizedValues;
-			},
-			{}
-		);
-
-		localizedValue[locale] = predefinedValue ?? localizedValue[locale];
+		localizedValue[defaultLanguageId] = predefinedValue || '';
+		localizedValueEdited[defaultLanguageId] = true;
 	}
 
 	return {
@@ -45,16 +37,17 @@ export const createRepeatedField = (sourceField, repeatedIndex) => {
 		confirmationValue: '',
 		instanceId,
 		localizedValue,
+		localizedValueEdited,
 		name: generateName(name, {instanceId, repeatedIndex}),
 		nestedFields: nestedFields?.map((nestedField) =>
-			createRepeatedField(nestedField)
+			createRepeatedField(defaultLanguageId, nestedField)
 		),
 		valid: true,
 		value: predefinedValue,
 	};
-};
+}
 
-export const updateNestedFieldNames = (parentFieldName, nestedFields) => {
+export function updateNestedFieldNames(parentFieldName, nestedFields) {
 	return (nestedFields || []).map((nestedField) => {
 		const newNestedFieldName = generateNestedFieldName(
 			nestedField.name,
@@ -63,6 +56,13 @@ export const updateNestedFieldNames = (parentFieldName, nestedFields) => {
 
 		return {
 			...nestedField,
+			...(nestedField.editorConfig && {
+				editorConfig: updateEditorConfigFilebrowsersURL(
+					nestedField.editorConfig,
+					newNestedFieldName,
+					nestedField.fieldName
+				),
+			}),
 			name: newNestedFieldName,
 			nestedFields: updateNestedFieldNames(
 				newNestedFieldName,
@@ -71,9 +71,56 @@ export const updateNestedFieldNames = (parentFieldName, nestedFields) => {
 			...parseNestedFieldName(newNestedFieldName),
 		};
 	});
-};
+}
 
-export default (state, action) => {
+export function updateEditorConfigFilebrowsersURL(
+	editorConfig,
+	name,
+	fieldName
+) {
+	const newEditorConfig = {...editorConfig};
+	const newItemSelectedEventName = name + 'selectItem';
+
+	for (const [configProperty, configValue] of Object.entries(
+		newEditorConfig
+	)) {
+		const isFilebrowserURLConfigProperty = ['filebrowser', 'Url'].every(
+			(subString) => configProperty.includes(subString)
+		);
+
+		if (isFilebrowserURLConfigProperty) {
+			try {
+				const url = new URL(configValue);
+
+				replaceURLObjectPathnameSegment(
+					newItemSelectedEventName,
+					['_', fieldName, 'portlet', 'selectItem'],
+					url
+				);
+
+				updateURLObjectSearchParam(
+					newItemSelectedEventName,
+					['_', 'itemSelectedEventName', 'ItemSelectorPortlet'],
+					url
+				);
+
+				newEditorConfig[configProperty] = url.toString();
+			}
+			catch (error) {
+				console.error(
+					Liferay.Language.get(
+						'an-error-occurred-while-parsing-the-url'
+					),
+					error
+				);
+			}
+		}
+	}
+
+	return newEditorConfig;
+}
+
+export default function fieldReducer(state, action) {
 	switch (action.type) {
 		case EVENT_TYPES.FIELD.BLUR: {
 			const {fieldInstance} = action.payload;
@@ -84,7 +131,7 @@ export default (state, action) => {
 					const matches =
 						field.name === fieldInstance.name &&
 						field.required &&
-						fieldInstance.value == '';
+						fieldInstance.value === '';
 
 					return {
 						...field,
@@ -200,6 +247,7 @@ export default (state, action) => {
 						if (sourceFieldIndex > -1) {
 							const newFieldIndex = sourceFieldIndex + 1;
 							const newField = createRepeatedField(
+								state.defaultLanguageId,
 								fields[sourceFieldIndex],
 								newFieldIndex
 							);
@@ -218,12 +266,21 @@ export default (state, action) => {
 									const name = generateName(
 										currentField.name,
 										{
-											repeatedIndex: currentRepeatedIndex++,
+											repeatedIndex:
+												currentRepeatedIndex++,
 										}
 									);
 
 									return {
 										...currentField,
+										...(currentField.editorConfig && {
+											editorConfig:
+												updateEditorConfigFilebrowsersURL(
+													currentField.editorConfig,
+													name,
+													currentField.fieldName
+												),
+										}),
 										name,
 										nestedFields: updateNestedFieldNames(
 											name,
@@ -256,4 +313,4 @@ export default (state, action) => {
 		default:
 			return state;
 	}
-};
+}

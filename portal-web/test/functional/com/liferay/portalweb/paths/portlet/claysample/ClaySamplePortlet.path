@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!--FORM_ELEMENTS-->
+
 <tr>
 	<td>CHECKBOX</td>
 	<td>//td[normalize-space(text())='${key_definition}']/..//input[@type='checkbox']</td>
@@ -33,7 +35,32 @@
 </tr>
 <tr>
 	<td>CHECKBOX_WITH_CUSTOM_CLASS_AND_ID</td>
-	<td>//input[@type='checkbox' and @id='customId' and contains(@class,'custom-css-class')]</td>
+	<td>//input[@type='checkbox' and @data-qa-id='clayCustomCheckbox01' and contains(@class,'custom-css-class')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKBOX_SELECTABLE_IMAGE_CARD</td>
+	<td>//div[contains(@class,'h4') and contains(text(), '${key_header}')]//following::div[contains(@data-qa-id,'image-card-icon-block')]//input[contains(@type,'checkbox')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CHECKBOX_NESTED</td>
+	<td>//div[contains(@class,'autofit-row')]//span[contains(text(),'${key_label}')]//..//..//input</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CARD_ACTIVE</td>
+	<td>//div[contains(@class,'h4') and contains(text(), '${key_header}')]//following::div[contains(@class,'active file-card')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>KEBAB_DROPDOWN_CARD_OPTION</td>
+	<td>//div[contains(@class,'h4') and contains(text(), '${key_header}')]//following::div[contains(@data-qa-id,'image-card-icon-block')]//button[contains(@class, 'dropdown-toggle')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TITLE_CARD</td>
+	<td>//div[contains(@class,'h4') and contains(text(), '${key_header}')]//following::a[contains(text(),'${key_title}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -79,6 +106,34 @@
 <tr>
 	<td>MULTISELECT_DROPDOWN_ITEM_STICKER</td>
 	<td>//div[contains(@class,'dropdown-menu') and contains(@class, 'show')]//button[.='${key_item}']/..//span[contains(@class,'sticker-overlay')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CLAY_SECTION</td>
+	<td>//div[contains(@class, portlet-dropzone)]//div[contains(@class, "portlet-boundary_com_liferay_clay_sample_web_portlet_ClaySamplePortlet_")]</td>
+	<td></td>
+</tr>
+
+<!--MANAGEMENT_TOOLBARS-->
+
+<tr>
+	<td>DISPLAY_CONTEXT_ANY_ICON</td>
+	<td>//h3[text()='USING DISPLAY CONTEXT']//following::nav[contains(@class,'management-bar')][1]//*[*[name()='svg'][contains(@class,'icon-${key_text}')]]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISPLAY_CONTEXT_CHECKBOX</td>
+	<td>//div[not(contains(@class,'hide')) and contains(@id, 'tabs')]//h3[text()='USING DISPLAY CONTEXT']//following::nav[contains(@class,'management-bar')][1]//input[@type='checkbox']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISPLAY_CONTEXT_CONTAINER</td>
+	<td>//h3[text()='USING DISPLAY CONTEXT']//following::nav[contains(@class,'management-bar')]/*[contains(@class,'container')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>DISPLAY_CONTEXT_FILTER_OR_ORDER</td>
+	<td>//h3[text()='USING DISPLAY CONTEXT']//following::nav[contains(@class,'management-bar')][1]//*[*[contains(@title,'${key_filter}')]]</td>
 	<td></td>
 </tr>
 </tbody>

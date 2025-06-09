@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service;
@@ -91,23 +82,6 @@ public interface DDMStructureLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructure addDDMStructure(DDMStructure ddmStructure);
 
-	@Indexable(type = IndexableType.REINDEX)
-	public DDMStructure addStructure(
-			long userId, long groupId, long parentStructureId, long classNameId,
-			String structureKey, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, DDMForm ddmForm,
-			DDMFormLayout ddmFormLayout, String storageType, int type,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public DDMStructure addStructure(
-			long userId, long groupId, long parentStructureId, long classNameId,
-			String structureKey, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String definition,
-			String storageType, ServiceContext serviceContext)
-		throws PortalException;
-
 	public DDMStructure addStructure(
 			long userId, long groupId, long classNameId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
@@ -120,6 +94,24 @@ public interface DDMStructureLocalService
 			long classNameId, String structureKey, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, DDMForm ddmForm,
 			DDMFormLayout ddmFormLayout, String storageType, int type,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public DDMStructure addStructure(
+			String externalReferenceCode, long userId, long groupId,
+			long parentStructureId, long classNameId, String structureKey,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			DDMForm ddmForm, DDMFormLayout ddmFormLayout, String storageType,
+			int type, ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public DDMStructure addStructure(
+			String externalReferenceCode, long userId, long groupId,
+			long parentStructureId, long classNameId, String structureKey,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			String definition, String storageType,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -151,7 +143,7 @@ public interface DDMStructureLocalService
 	 * and description.
 	 *
 	 * @param userId the primary key of the structure's creator/owner
-	 * @param structureId the primary key of the structure to be copied
+	 * @param sourceStructureId the primary key of the structure to be copied
 	 * @param nameMap the new structure's locales and localized names
 	 * @param descriptionMap the new structure's locales and localized
 	 descriptions
@@ -162,13 +154,13 @@ public interface DDMStructureLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructure copyStructure(
-			long userId, long structureId, Map<Locale, String> nameMap,
+			long userId, long sourceStructureId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructure copyStructure(
-			long userId, long structureId, ServiceContext serviceContext)
+			long userId, long sourceStructureId, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -420,6 +412,10 @@ public interface DDMStructureLocalService
 		boolean includeAncestorStructures);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DDMStructure fetchStructureByExternalReferenceCode(
+		String externalReferenceCode, long groupId, long classNameId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMStructure fetchStructureByUuidAndGroupId(
 		String uuid, long groupId, boolean includeAncestorStructures);
 
@@ -637,6 +633,11 @@ public interface DDMStructureLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DDMStructure> getStructure(
 		long groupId, String name, String description);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DDMStructure getStructureByExternalReferenceCode(
+			String externalReferenceCode, long groupId, long classNameId)
+		throws PortalException;
 
 	@Transactional(enabled = false)
 	public DDMForm getStructureDDMForm(DDMStructure structure)
@@ -877,8 +878,13 @@ public interface DDMStructureLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getStructuresCount(long[] groupIds, long classNameId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public boolean hasStructure(
+		long groupId, long classNameId, String structureKey);
+
 	public String prepareLocalizedDefinitionForImport(
-		DDMStructure structure, Locale defaultImportLocale);
+			DDMStructure structure, Locale defaultImportLocale)
+		throws PortalException;
 
 	public void revertStructure(
 			long userId, long structureId, String version,
@@ -1047,9 +1053,11 @@ public interface DDMStructureLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMStructure updateStructure(
-			long userId, long structureId, long parentStructureId,
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String definition, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long structureId,
+			long groupId, long parentStructureId, long classNameId,
+			String structureKey, Map<Locale, String> nameMap,
+			Map<Locale, String> descriptionMap, String definition,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	@Override

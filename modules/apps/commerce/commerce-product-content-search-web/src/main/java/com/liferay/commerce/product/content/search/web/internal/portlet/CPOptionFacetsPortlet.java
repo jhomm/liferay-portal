@@ -1,47 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.search.web.internal.portlet;
 
-import com.liferay.commerce.product.constants.CPField;
 import com.liferay.commerce.product.constants.CPPortletKeys;
-import com.liferay.commerce.product.content.search.web.internal.display.context.CPOptionFacetsDisplayContext;
-import com.liferay.commerce.product.content.search.web.internal.util.CPOptionFacetsUtil;
-import com.liferay.commerce.product.model.CPOption;
+import com.liferay.commerce.product.content.search.web.internal.display.context.CPOptionsSearchFacetDisplayContext;
+import com.liferay.commerce.product.content.search.web.internal.display.context.builder.CPOptionsSearchFacetDisplayContextBuilder;
 import com.liferay.commerce.product.service.CPOptionLocalService;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.search.facet.Facet;
-import com.liferay.portal.kernel.search.facet.collector.FacetCollector;
-import com.liferay.portal.kernel.search.facet.collector.TermCollector;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.search.searcher.SearchRequest;
-import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchRequest;
-import com.liferay.portal.search.web.portlet.shared.search.PortletSharedSearchResponse;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -50,7 +30,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-cp-option-facets",
@@ -62,13 +41,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.restore-current-view=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Option Facet",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/option_facets/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.CP_OPTION_FACETS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=guest,power-user,user"
+		"jakarta.portlet.display-name=Option Facet",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/option_facets/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.CP_OPTION_FACETS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -79,70 +59,49 @@ public class CPOptionFacetsPortlet extends MVCPortlet {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		PortletSharedSearchResponse portletSharedSearchResponse =
-			portletSharedSearchRequest.search(renderRequest);
+		CPOptionsSearchFacetDisplayContext cpOptionsSearchFacetDisplayContext =
+			_buildCPOptionsSearchFacetDisplayContext(renderRequest);
 
-		try {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)renderRequest.getAttribute(WebKeys.THEME_DISPLAY);
-
-			List<Facet> filledFacets = new ArrayList<>();
-
-			Facet facet = portletSharedSearchResponse.getFacet(
-				CPField.OPTION_NAMES);
-
-			FacetCollector facetCollector = facet.getFacetCollector();
-
-			for (TermCollector termCollector :
-					facetCollector.getTermCollectors()) {
-
-				CPOption cpOption = _cpOptionLocalService.getCPOption(
-					themeDisplay.getCompanyId(), termCollector.getTerm());
-
-				if (cpOption.isFacetable()) {
-					filledFacets.add(
-						portletSharedSearchResponse.getFacet(
-							CPOptionFacetsUtil.getIndexFieldName(
-								termCollector.getTerm(),
-								themeDisplay.getLanguageId())));
-				}
-			}
-
-			CPOptionFacetsDisplayContext cpOptionFacetsDisplayContext =
-				new CPOptionFacetsDisplayContext(
-					_cpOptionLocalService, renderRequest, filledFacets,
-					getPaginationStartParameterName(
-						portletSharedSearchResponse),
-					portletSharedSearchResponse);
-
-			renderRequest.setAttribute(
-				WebKeys.PORTLET_DISPLAY_CONTEXT, cpOptionFacetsDisplayContext);
-		}
-		catch (Exception exception) {
-			_log.error(exception, exception);
-		}
+		renderRequest.setAttribute(
+			WebKeys.PORTLET_DISPLAY_CONTEXT,
+			cpOptionsSearchFacetDisplayContext);
 
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected String getPaginationStartParameterName(
-		PortletSharedSearchResponse portletSharedSearchResponse) {
+	private CPOptionsSearchFacetDisplayContext
+		_buildCPOptionsSearchFacetDisplayContext(RenderRequest renderRequest) {
 
-		SearchResponse searchResponse =
-			portletSharedSearchResponse.getSearchResponse();
+		CPOptionsSearchFacetDisplayContextBuilder
+			cpOptionsSearchFacetDisplayContextBuilder =
+				new CPOptionsSearchFacetDisplayContextBuilder(renderRequest);
 
-		SearchRequest searchRequest = searchResponse.getRequest();
+		cpOptionsSearchFacetDisplayContextBuilder.configurationProvider(
+			_configurationProvider);
+		cpOptionsSearchFacetDisplayContextBuilder.cpOptionLocalService(
+			_cpOptionLocalService);
+		cpOptionsSearchFacetDisplayContextBuilder.groupLocalService(
+			_groupLocalService);
+		cpOptionsSearchFacetDisplayContextBuilder.portal(_portal);
+		cpOptionsSearchFacetDisplayContextBuilder.portletSharedSearchRequest(
+			_portletSharedSearchRequest);
 
-		return searchRequest.getPaginationStartParameterName();
+		return cpOptionsSearchFacetDisplayContextBuilder.build();
 	}
 
 	@Reference
-	protected PortletSharedSearchRequest portletSharedSearchRequest;
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		CPOptionFacetsPortlet.class);
+	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private CPOptionLocalService _cpOptionLocalService;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private PortletSharedSearchRequest _portletSharedSearchRequest;
 
 }

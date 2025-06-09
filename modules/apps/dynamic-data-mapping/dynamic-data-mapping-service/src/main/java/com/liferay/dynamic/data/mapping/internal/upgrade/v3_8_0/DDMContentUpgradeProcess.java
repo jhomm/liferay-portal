@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_8_0;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.PreparedStatement;
@@ -33,9 +25,8 @@ import java.sql.ResultSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Marcos Martins
@@ -53,7 +44,8 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				StringBundler.concat(
-					"select DDMContent.contentId, DDMContent.data_, ",
+					"select DDMContent.ctCollectionId, DDMContent.contentId, ",
+					"DDMContent.data_, ",
 					"DDMStructureVersion.structureVersionId, ",
 					"DDMStructureVersion.definition from DDMContent inner ",
 					"join DDMFormInstanceRecordVersion on ",
@@ -70,7 +62,8 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
-					"update DDMContent set data_ = ? where contentId = ?")) {
+					"update DDMContent set data_ = ? where ctCollectionId = " +
+						"? and contentId = ?")) {
 
 			try (ResultSet resultSet = preparedStatement1.executeQuery()) {
 				while (resultSet.next()) {
@@ -78,19 +71,10 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 						_ddmFormDeserializer,
 						resultSet.getString("definition"));
 
-					List<DDMFormField> ddmFormFields =
-						ddmForm.getDDMFormFields();
-
-					Stream<DDMFormField> stream = ddmFormFields.stream();
-
-					List<DDMFormField> fieldSetDDMFormFields = stream.filter(
-						ddmFormField -> ddmFormField.getType(
-						).equals(
-							"fieldset"
-						)
-					).collect(
-						Collectors.toList()
-					);
+					List<DDMFormField> fieldSetDDMFormFields = ListUtil.filter(
+						ddmForm.getDDMFormFields(),
+						ddmFormField -> Objects.equals(
+							ddmFormField.getType(), "fieldset"));
 
 					if (fieldSetDDMFormFields.isEmpty()) {
 						continue;
@@ -107,7 +91,9 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 
 					preparedStatement2.setString(1, newData);
 					preparedStatement2.setLong(
-						2, resultSet.getLong("contentId"));
+						2, resultSet.getLong("ctCollectionId"));
+					preparedStatement2.setLong(
+						3, resultSet.getLong("contentId"));
 
 					preparedStatement2.addBatch();
 				}
@@ -190,7 +176,7 @@ public class DDMContentUpgradeProcess extends UpgradeProcess {
 
 		dataJSONObject.put("fieldValues", fieldValuesJSONArray);
 
-		return dataJSONObject.toJSONString();
+		return dataJSONObject.toString();
 	}
 
 	private final DDMFormDeserializer _ddmFormDeserializer;

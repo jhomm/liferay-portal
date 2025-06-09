@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.internal.upgrade.v1_0_0;
@@ -31,7 +22,14 @@ import java.util.Set;
  */
 public class KaleoTaskInstanceTokenUpgradeProcess extends UpgradeProcess {
 
-	protected void deleteKaleoInstanceTokens() throws Exception {
+	@Override
+	protected void doUpgrade() throws Exception {
+		_updateKaleoTaskInstanceTokens();
+
+		_deleteKaleoInstanceTokens();
+	}
+
+	private void _deleteKaleoInstanceTokens() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			if (_kaleoInstanceTokenIds.isEmpty()) {
 				return;
@@ -57,14 +55,7 @@ public class KaleoTaskInstanceTokenUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		updateKaleoTaskInstanceTokens();
-
-		deleteKaleoInstanceTokens();
-	}
-
-	protected long getKaleoInstanceTokenId(long kaleoInstanceTokenId)
+	private long _getKaleoInstanceTokenId(long kaleoInstanceTokenId)
 		throws Exception {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -92,7 +83,7 @@ public class KaleoTaskInstanceTokenUpgradeProcess extends UpgradeProcess {
 
 					_kaleoInstanceTokenIds.add(kaleoInstanceTokenId);
 
-					return getKaleoInstanceTokenId(parentKaleoInstanceTokenId);
+					return _getKaleoInstanceTokenId(parentKaleoInstanceTokenId);
 				}
 
 				return kaleoInstanceTokenId;
@@ -100,7 +91,7 @@ public class KaleoTaskInstanceTokenUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateKaleoTaskInstanceTokens() throws Exception {
+	private void _updateKaleoTaskInstanceTokens() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement = connection.prepareStatement(
 				"select kaleoTaskInstanceTokenId, kaleoInstanceTokenId from " +
@@ -111,7 +102,7 @@ public class KaleoTaskInstanceTokenUpgradeProcess extends UpgradeProcess {
 				long oldKaleoInstanceTokenId = resultSet.getLong(
 					"kaleoInstanceTokenId");
 
-				long newKaleoInstanceTokenId = getKaleoInstanceTokenId(
+				long newKaleoInstanceTokenId = _getKaleoInstanceTokenId(
 					oldKaleoInstanceTokenId);
 
 				if (oldKaleoInstanceTokenId == newKaleoInstanceTokenId) {

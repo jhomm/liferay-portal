@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.rest.builder.internal.util;
@@ -29,6 +20,10 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+import java.text.Format;
+import java.text.SimpleDateFormat;
+
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -98,6 +93,22 @@ public class FileUtil {
 				}
 
 			});
+	}
+
+	public static String getCopyrightYear(File file) throws Exception {
+		if (file.exists()) {
+			String content = read(file);
+
+			int x = content.indexOf("/**\n * SPDX-FileCopyrightText: (c) ");
+
+			if (x != -1) {
+				return content.substring(x + 35, x + 39);
+			}
+		}
+
+		Format format = new SimpleDateFormat("yyyy");
+
+		return format.format(new Date());
 	}
 
 	public static File[] getFiles(File dir, String prefix, String suffix) {

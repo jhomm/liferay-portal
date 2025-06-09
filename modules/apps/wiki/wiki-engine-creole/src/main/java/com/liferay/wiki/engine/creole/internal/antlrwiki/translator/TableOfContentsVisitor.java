@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.engine.creole.internal.antlrwiki.translator;
@@ -37,13 +28,13 @@ public class TableOfContentsVisitor extends BaseASTVisitor {
 
 	@Override
 	public void visit(HeadingNode headingNode) {
-		addHeadingNode(_headingNode, headingNode);
+		_addHeadingNode(_headingNode, headingNode);
 	}
 
-	protected boolean addHeadingNode(
+	private boolean _addHeadingNode(
 		TreeNode<HeadingNode> treeNode, HeadingNode headingNode) {
 
-		if (!isLastHeadingNode(treeNode, headingNode)) {
+		if (!_isLastHeadingNode(treeNode, headingNode)) {
 			HeadingNode treeNodeHeadingNode = treeNode.getValue();
 
 			if (headingNode.getLevel() <= treeNodeHeadingNode.getLevel()) {
@@ -61,13 +52,13 @@ public class TableOfContentsVisitor extends BaseASTVisitor {
 		List<TreeNode<HeadingNode>> treeNodes = treeNode.getChildNodes();
 
 		for (int i = treeNodes.size() - 1; i >= 0; --i) {
-			return addHeadingNode(treeNodes.get(i), headingNode);
+			return _addHeadingNode(treeNodes.get(i), headingNode);
 		}
 
 		return true;
 	}
 
-	protected boolean isLastHeadingNode(
+	private boolean _isLastHeadingNode(
 		TreeNode<HeadingNode> treeNode, HeadingNode headingNode) {
 
 		HeadingNode treeNodeHeadingNode = treeNode.getValue();

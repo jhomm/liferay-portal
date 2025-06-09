@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.internal.exportimport.content.processor;
 
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.util.configuration.FragmentConfigurationField;
 import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
@@ -23,12 +15,11 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Víctor Galán
@@ -53,7 +44,8 @@ public abstract class
 
 		JSONObject editableProcessorJSONObject =
 			editableValuesJSONObject.getJSONObject(
-				_KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
 
 		if (editableProcessorJSONObject == null) {
 			return editableValuesJSONObject;
@@ -89,7 +81,8 @@ public abstract class
 
 		JSONObject editableProcessorJSONObject =
 			editableValuesJSONObject.getJSONObject(
-				_KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+				FragmentEntryProcessorConstants.
+					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
 
 		if (editableProcessorJSONObject == null) {
 			return editableValuesJSONObject;
@@ -102,6 +95,13 @@ public abstract class
 				fragmentConfigurationField.getName());
 
 			if (jsonObject != null) {
+				String className = jsonObject.getString("className");
+
+				if (Validator.isNotNull(className)) {
+					jsonObject.put(
+						"classNameId", PortalUtil.getClassNameId(className));
+				}
+
 				replaceImportContentReferences(portletDataContext, jsonObject);
 			}
 		}
@@ -135,21 +135,11 @@ public abstract class
 		FragmentEntryConfigurationParser fragmentEntryConfigurationParser =
 			getFragmentEntryConfigurationParser();
 
-		return Stream.of(
+		return ListUtil.filter(
 			fragmentEntryConfigurationParser.getFragmentConfigurationFields(
-				fragmentEntryLink.getConfiguration())
-		).flatMap(
-			Collection::stream
-		).filter(
+				fragmentEntryLink.getConfiguration()),
 			fragmentConfigurationField -> Objects.equals(
-				fragmentConfigurationField.getType(), getConfigurationType())
-		).collect(
-			Collectors.toList()
-		);
+				fragmentConfigurationField.getType(), getConfigurationType()));
 	}
-
-	private static final String _KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR =
-		"com.liferay.fragment.entry.processor.freemarker." +
-			"FreeMarkerFragmentEntryProcessor";
 
 }

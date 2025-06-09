@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.impl;
@@ -18,8 +9,11 @@ import com.liferay.commerce.pricing.exception.CommercePricingClassTitleException
 import com.liferay.commerce.pricing.exception.NoSuchPricingClassException;
 import com.liferay.commerce.pricing.model.CommercePricingClass;
 import com.liferay.commerce.pricing.model.CommercePricingClassCPDefinitionRel;
+import com.liferay.commerce.pricing.service.CommercePricingClassCPDefinitionRelLocalService;
 import com.liferay.commerce.pricing.service.base.CommercePricingClassLocalServiceBaseImpl;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -33,12 +27,14 @@ import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Indexer;
-import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.ResourceLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -46,7 +42,6 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
@@ -56,12 +51,17 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.stream.LongStream;
-import java.util.stream.Stream;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Riccardo Alberti
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.pricing.model.CommercePricingClass",
+	service = AopService.class
+)
 public class CommercePricingClassLocalServiceImpl
 	extends CommercePricingClassLocalServiceBaseImpl {
 
@@ -84,9 +84,9 @@ public class CommercePricingClassLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
-		validate(titleMap);
+		_validate(titleMap);
 
 		long commercePricingClassId = counterLocalService.increment();
 
@@ -99,7 +99,6 @@ public class CommercePricingClassLocalServiceImpl
 		commercePricingClass.setUserName(user.getFullName());
 		commercePricingClass.setTitleMap(titleMap);
 		commercePricingClass.setDescriptionMap(descriptionMap);
-		commercePricingClass.setExpandoBridgeAttributes(serviceContext);
 
 		Date date = new Date();
 
@@ -108,12 +107,14 @@ public class CommercePricingClassLocalServiceImpl
 
 		commercePricingClass.setLastPublishDate(calendar.getTime());
 
+		commercePricingClass.setExpandoBridgeAttributes(serviceContext);
+
 		commercePricingClass = commercePricingClassPersistence.update(
 			commercePricingClass);
 
 		// Resources
 
-		resourceLocalService.addModelResources(
+		_resourceLocalService.addModelResources(
 			commercePricingClass, serviceContext);
 
 		return commercePricingClass;
@@ -145,8 +146,8 @@ public class CommercePricingClassLocalServiceImpl
 
 		if (!Validator.isBlank(externalReferenceCode)) {
 			CommercePricingClass commercePricingClass =
-				commercePricingClassPersistence.fetchByC_ERC(
-					serviceContext.getCompanyId(), externalReferenceCode);
+				commercePricingClassPersistence.fetchByERC_C(
+					externalReferenceCode, serviceContext.getCompanyId());
 
 			if (commercePricingClass != null) {
 				return commercePricingClassLocalService.
@@ -171,14 +172,14 @@ public class CommercePricingClassLocalServiceImpl
 		long commercePricingClassId =
 			commercePricingClass.getCommercePricingClassId();
 
-		commercePricingClassCPDefinitionRelLocalService.
+		_commercePricingClassCPDefinitionRelLocalService.
 			deleteCommercePricingClassCPDefinitionRels(commercePricingClassId);
 
 		commercePricingClassPersistence.remove(commercePricingClass);
 
 		// Resources
 
-		resourceLocalService.deleteResource(
+		_resourceLocalService.deleteResource(
 			commercePricingClass, ResourceConstants.SCOPE_INDIVIDUAL);
 
 		// Expando
@@ -217,31 +218,11 @@ public class CommercePricingClassLocalServiceImpl
 	}
 
 	@Override
-	public CommercePricingClass fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		if (Validator.isBlank(externalReferenceCode)) {
-			return null;
-		}
-
-		return commercePricingClassPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
-	}
-
-	@Override
 	public long[] getCommercePricingClassByCPDefinition(long cpDefinitionId) {
-		List<CommercePricingClassCPDefinitionRel>
-			commercePricingClassCPDefinitionRels =
-				commercePricingClassCPDefinitionRelLocalService.
-					getCommercePricingClassByCPDefinitionId(cpDefinitionId);
-
-		Stream<CommercePricingClassCPDefinitionRel> stream =
-			commercePricingClassCPDefinitionRels.stream();
-
-		LongStream longStream = stream.mapToLong(
+		return TransformUtil.transformToLongArray(
+			_commercePricingClassCPDefinitionRelLocalService.
+				getCommercePricingClassByCPDefinitionId(cpDefinitionId),
 			CommercePricingClassCPDefinitionRel::getCommercePricingClassId);
-
-		return longStream.toArray();
 	}
 
 	@Override
@@ -288,10 +269,10 @@ public class CommercePricingClassLocalServiceImpl
 				long companyId, String keywords, int start, int end, Sort sort)
 		throws PortalException {
 
-		SearchContext searchContext = buildSearchContext(
+		SearchContext searchContext = _buildSearchContext(
 			companyId, keywords, start, end, sort);
 
-		return searchCommercePricingClasses(searchContext);
+		return _searchCommercePricingClasses(searchContext);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -302,13 +283,13 @@ public class CommercePricingClassLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
 		CommercePricingClass commercePricingClass =
 			commercePricingClassPersistence.findByPrimaryKey(
 				commercePricingClassId);
 
-		validate(titleMap);
+		_validate(titleMap);
 
 		commercePricingClass.setCompanyId(serviceContext.getCompanyId());
 		commercePricingClass.setUserId(user.getUserId());
@@ -344,7 +325,7 @@ public class CommercePricingClassLocalServiceImpl
 			commercePricingClass);
 	}
 
-	protected SearchContext buildSearchContext(
+	private SearchContext _buildSearchContext(
 		long companyId, String keywords, int start, int end, Sort sort) {
 
 		SearchContext searchContext = new SearchContext();
@@ -362,7 +343,6 @@ public class CommercePricingClassLocalServiceImpl
 					"keywords", keywords
 				).build()
 			).build());
-
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
 
@@ -384,7 +364,7 @@ public class CommercePricingClassLocalServiceImpl
 		return searchContext;
 	}
 
-	protected List<CommercePricingClass> getCommercePricingClasses(Hits hits)
+	private List<CommercePricingClass> _getCommercePricingClasses(Hits hits)
 		throws PortalException {
 
 		List<Document> documents = hits.toList();
@@ -403,7 +383,7 @@ public class CommercePricingClassLocalServiceImpl
 				commercePricingClasses = null;
 
 				Indexer<CommercePricingClass> indexer =
-					IndexerRegistryUtil.getIndexer(CommercePricingClass.class);
+					_indexerRegistry.getIndexer(CommercePricingClass.class);
 
 				long companyId = GetterUtil.getLong(
 					document.get(Field.COMPANY_ID));
@@ -418,18 +398,18 @@ public class CommercePricingClassLocalServiceImpl
 		return commercePricingClasses;
 	}
 
-	protected BaseModelSearchResult<CommercePricingClass>
-			searchCommercePricingClasses(SearchContext searchContext)
+	private BaseModelSearchResult<CommercePricingClass>
+			_searchCommercePricingClasses(SearchContext searchContext)
 		throws PortalException {
 
 		Indexer<CommercePricingClass> indexer =
-			IndexerRegistryUtil.nullSafeGetIndexer(CommercePricingClass.class);
+			_indexerRegistry.nullSafeGetIndexer(CommercePricingClass.class);
 
 		for (int i = 0; i < 10; i++) {
 			Hits hits = indexer.search(searchContext, _SELECTED_FIELD_NAMES);
 
 			List<CommercePricingClass> commercePricingClasses =
-				getCommercePricingClasses(hits);
+				_getCommercePricingClasses(hits);
 
 			if (commercePricingClasses != null) {
 				return new BaseModelSearchResult<>(
@@ -441,7 +421,7 @@ public class CommercePricingClassLocalServiceImpl
 			"Unable to fix the search index after 10 attempts");
 	}
 
-	protected void validate(Map<Locale, String> titleMap)
+	private void _validate(Map<Locale, String> titleMap)
 		throws PortalException {
 
 		if ((titleMap == null) || titleMap.isEmpty()) {
@@ -457,7 +437,20 @@ public class CommercePricingClassLocalServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommercePricingClassLocalServiceImpl.class);
 
-	@ServiceReference(type = ExpandoRowLocalService.class)
+	@Reference
+	private CommercePricingClassCPDefinitionRelLocalService
+		_commercePricingClassCPDefinitionRelLocalService;
+
+	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@Reference
+	private IndexerRegistry _indexerRegistry;
+
+	@Reference
+	private ResourceLocalService _resourceLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

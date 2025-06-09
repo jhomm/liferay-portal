@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.internal.modifier;
@@ -18,12 +9,15 @@ import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListLocalService;
+import com.liferay.commerce.pricing.constants.CommercePriceModifierConstants;
 import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.commerce.pricing.modifier.CommercePriceModifierHelper;
 import com.liferay.commerce.pricing.service.CommercePriceModifierLocalService;
 import com.liferay.commerce.pricing.type.CommercePriceModifierType;
 import com.liferay.commerce.pricing.type.CommercePriceModifierTypeRegistry;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -36,7 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Riccardo Alberti
  */
-@Component(enabled = false, service = CommercePriceModifierHelper.class)
+@Component(service = CommercePriceModifierHelper.class)
 public class CommercePriceModifierHelperImpl
 	implements CommercePriceModifierHelper {
 
@@ -65,16 +59,15 @@ public class CommercePriceModifierHelperImpl
 
 		BigDecimal originalPrice = originalCommerceMoney.getPrice();
 
-		if (commercePriceList.getCommerceCurrencyId() !=
-				originalCommerceCurrency.getCommerceCurrencyId()) {
+		if (!StringUtil.equals(
+				commercePriceList.getCommerceCurrencyCode(),
+				originalCommerceCurrency.getCode())) {
 
-			originalPrice = originalPrice.divide(
-				priceListCurrency.getRate(),
-				RoundingMode.valueOf(priceListCurrency.getRoundingMode()));
-
-			originalPrice = originalPrice.multiply(
-				originalCommerceCurrency.getRate());
+			originalPrice = _getPrice(
+				originalPrice, priceListCurrency, originalCommerceCurrency);
 		}
+
+		String priceModifierKey = StringPool.BLANK;
 
 		if ((commercePriceModifiers != null) &&
 			!commercePriceModifiers.isEmpty()) {
@@ -90,10 +83,22 @@ public class CommercePriceModifierHelperImpl
 				BigDecimal actualPrice = commercePriceModifierType.evaluate(
 					originalPrice, commercePriceModifier);
 
+				if (CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE.equals(
+						commercePriceModifierType.getKey()) &&
+					!StringUtil.equals(
+						commercePriceList.getCommerceCurrencyCode(),
+						originalCommerceCurrency.getCode())) {
+
+					actualPrice = _getPrice(
+						actualPrice, priceListCurrency,
+						originalCommerceCurrency);
+				}
+
 				if ((lowestPrice == null) ||
 					(actualPrice.compareTo(lowestPrice) < 0)) {
 
 					lowestPrice = actualPrice;
+					priceModifierKey = commercePriceModifierType.getKey();
 				}
 			}
 		}
@@ -102,15 +107,14 @@ public class CommercePriceModifierHelperImpl
 			return originalCommerceMoney.getPrice();
 		}
 
-		if (commercePriceList.getCommerceCurrencyId() !=
-				originalCommerceCurrency.getCommerceCurrencyId()) {
+		if (!CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE.equals(
+				priceModifierKey) &&
+			!StringUtil.equals(
+				commercePriceList.getCommerceCurrencyCode(),
+				originalCommerceCurrency.getCode())) {
 
-			lowestPrice = lowestPrice.divide(
-				originalCommerceCurrency.getRate(),
-				RoundingMode.valueOf(
-					originalCommerceCurrency.getRoundingMode()));
-
-			lowestPrice = lowestPrice.multiply(priceListCurrency.getRate());
+			lowestPrice = _getPrice(
+				lowestPrice, originalCommerceCurrency, priceListCurrency);
 		}
 
 		RoundingMode roundingMode = RoundingMode.valueOf(
@@ -130,6 +134,18 @@ public class CommercePriceModifierHelperImpl
 					commercePriceListId, cpDefinitionId);
 
 		return !commercePriceModifiers.isEmpty();
+	}
+
+	private BigDecimal _getPrice(
+		BigDecimal price, CommerceCurrency commerceCurrency1,
+		CommerceCurrency commerceCurrency2) {
+
+		price = price.divide(
+			commerceCurrency1.getRate(),
+			RoundingMode.valueOf(commerceCurrency1.getRoundingMode()));
+		price = price.multiply(commerceCurrency2.getRate());
+
+		return price;
 	}
 
 	private static final int _SCALE = 10;

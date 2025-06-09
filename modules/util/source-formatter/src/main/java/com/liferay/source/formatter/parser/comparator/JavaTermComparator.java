@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.source.formatter.parser.comparator;
@@ -209,8 +200,8 @@ public class JavaTermComparator implements Comparator<JavaTerm> {
 			JavaParameter parameter1 = parameters1.get(i);
 			JavaParameter parameter2 = parameters2.get(i);
 
-			String parameterType1 = parameter1.getParameterType();
-			String parameterType2 = parameter2.getParameterType();
+			String parameterType1 = parameter1.getParameterType(false);
+			String parameterType2 = parameter2.getParameterType(false);
 
 			if ((parameters1.size() != parameters2.size()) &&
 				(parameterType1.equals(parameterType2.concat("...")) ||
@@ -218,6 +209,17 @@ public class JavaTermComparator implements Comparator<JavaTerm> {
 
 				continue;
 			}
+
+			if (parameterType1.compareToIgnoreCase(parameterType2) != 0) {
+				return parameterType1.compareToIgnoreCase(parameterType2);
+			}
+
+			if (parameterType1.compareTo(parameterType2) != 0) {
+				return -parameterType1.compareTo(parameterType2);
+			}
+
+			parameterType1 = parameter1.getParameterType(true);
+			parameterType2 = parameter2.getParameterType(true);
 
 			if (parameterType1.compareToIgnoreCase(parameterType2) != 0) {
 				return parameterType1.compareToIgnoreCase(parameterType2);

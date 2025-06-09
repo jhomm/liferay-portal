@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
@@ -40,8 +31,10 @@ import org.osgi.annotation.versioning.ProviderType;
  *
  * @author Alessio Antonio Rendina
  * @see CommerceAddressLocalServiceUtil
+ * @deprecated As of Cavanaugh (7.4.x)
  * @generated
  */
+@Deprecated
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -54,38 +47,17 @@ public interface CommerceAddressLocalService extends BaseLocalService {
 	 *
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.commerce.service.impl.CommerceAddressLocalServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the commerce address local service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link CommerceAddressLocalServiceUtil} if injection and service tracking are not available.
 	 */
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), defaultBilling/Shipping exist on Account Entity. Pass type.
-	 */
-	@Deprecated
-	public CommerceAddress addCommerceAddress(
-			String className, long classPK, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			boolean defaultBilling, boolean defaultShipping,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public CommerceAddress addCommerceAddress(
-			String className, long classPK, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			int type, ServiceContext serviceContext)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceAddress addCommerceAddress(
 			String externalReferenceCode, String className, long classPK,
-			String name, String description, String street1, String street2,
-			String street3, String city, String zip, long regionId,
-			long countryId, String phoneNumber, int type,
+			long countryId, long regionId, String city, String description,
+			String name, String phoneNumber, String street1, String street2,
+			String street3, String subtype, int type, String zip,
 			ServiceContext serviceContext)
 		throws PortalException;
 
 	public CommerceAddress copyCommerceAddress(
-			long commerceAddressId, String className, long classPK,
+			long sourceCommerceAddressId, String className, long classPK,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -94,9 +66,6 @@ public interface CommerceAddressLocalService extends BaseLocalService {
 	@Indexable(type = IndexableType.DELETE)
 	public CommerceAddress deleteCommerceAddress(
 			CommerceAddress commerceAddress)
-		throws PortalException;
-
-	public CommerceAddress deleteCommerceAddress(long commerceAddressId)
 		throws PortalException;
 
 	public void deleteCommerceAddresses(String className, long classPK)
@@ -109,11 +78,11 @@ public interface CommerceAddressLocalService extends BaseLocalService {
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceAddress fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
+	public CommerceAddress fetchCommerceAddress(long commerceAddressId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceAddress fetchCommerceAddress(long commerceAddressId);
+	public CommerceAddress fetchCommerceAddressByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceAddress geolocateCommerceAddress(long commerceAddressId)
@@ -130,13 +99,23 @@ public interface CommerceAddressLocalService extends BaseLocalService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceAddress> getBillingCommerceAddresses(
-			long companyId, String className, long classPK, String keywords,
-			int start, int end, Sort sort)
+		long channelId, String className, long classPK, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceAddress> getBillingCommerceAddresses(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords, int start, int end,
+			Sort sort)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getBillingCommerceAddressesCount(
-			long companyId, String className, long classPK, String keywords)
+		long channelId, String className, long classPK, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getBillingCommerceAddressesCount(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -203,13 +182,19 @@ public interface CommerceAddressLocalService extends BaseLocalService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceAddress> getShippingCommerceAddresses(
-			long companyId, String className, long classPK, String keywords,
-			int start, int end, Sort sort)
+		long channelId, String className, long classPK, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceAddress> getShippingCommerceAddresses(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords, int start, int end,
+			Sort sort)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getShippingCommerceAddressesCount(
-			long companyId, String className, long classPK, String keywords)
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords)
 		throws PortalException;
 
 	/**
@@ -228,24 +213,13 @@ public interface CommerceAddressLocalService extends BaseLocalService {
 			int start, int end, Sort sort)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), defaultBilling/Shipping exist on Account Entity. Pass type.
-	 */
-	@Deprecated
-	public CommerceAddress updateCommerceAddress(
-			long commerceAddressId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			boolean defaultBilling, boolean defaultShipping,
-			ServiceContext serviceContext)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceAddress updateCommerceAddress(
-			long commerceAddressId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			int type, ServiceContext serviceContext)
+			String externalReferenceCode, long commerceAddressId,
+			long countryId, long regionId, String city, String description,
+			String name, String phoneNumber, String street1, String street2,
+			String street3, String subtype, int type, String zip,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 }

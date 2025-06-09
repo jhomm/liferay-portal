@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.store.s3;
@@ -45,6 +36,7 @@ import com.liferay.document.library.kernel.exception.AccessDeniedException;
 import com.liferay.document.library.kernel.exception.NoSuchFileException;
 import com.liferay.document.library.kernel.store.Store;
 import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.petra.io.unsync.UnsyncFilterInputStream;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -72,8 +64,6 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -86,7 +76,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.store.s3.configuration.S3StoreConfiguration",
-	configurationPolicy = ConfigurationPolicy.REQUIRE, immediate = true,
+	configurationPolicy = ConfigurationPolicy.REQUIRE, enabled = false,
 	property = "store.type=com.liferay.portal.store.s3.S3Store",
 	service = Store.class
 )
@@ -120,7 +110,7 @@ public class S3Store implements Store {
 	public void deleteDirectory(
 		long companyId, long repositoryId, String dirName) {
 
-		String key = _s3KeyTransformer.getDirectoryKey(
+		String key = S3KeyTransformerUtil.getDirectoryKey(
 			companyId, repositoryId, dirName);
 
 		deleteObjects(key);
@@ -132,7 +122,7 @@ public class S3Store implements Store {
 		String versionLabel) {
 
 		try {
-			String key = _s3KeyTransformer.getFileVersionKey(
+			String key = S3KeyTransformerUtil.getFileVersionKey(
 				companyId, repositoryId, fileName, versionLabel);
 
 			DeleteObjectRequest deleteObjectRequest = new DeleteObjectRequest(
@@ -155,17 +145,26 @@ public class S3Store implements Store {
 			String versionLabel)
 		throws PortalException {
 
-		_s3FileCache.cleanUpCacheFiles();
-
 		try {
 			S3Object s3Object = getS3Object(
 				companyId, repositoryId, fileName, versionLabel);
 
-			ObjectMetadata objectMetadata = s3Object.getObjectMetadata();
+			InputStream s3InputStream = s3Object.getObjectContent();
 
-			return _s3FileCache.getCacheFileInputStream(
-				s3Object, fileName, s3Object::getObjectContent,
-				objectMetadata.getLastModified());
+			if (s3InputStream == null) {
+				throw new IOException("S3 object input stream is null");
+			}
+
+			return new UnsyncFilterInputStream(s3InputStream) {
+
+				@Override
+				public void close() throws IOException {
+					super.close();
+
+					s3Object.close();
+				}
+
+			};
 		}
 		catch (IOException ioException) {
 			throw new SystemException(ioException);
@@ -179,10 +178,11 @@ public class S3Store implements Store {
 		String key = null;
 
 		if (Validator.isNull(dirName)) {
-			key = _s3KeyTransformer.getRepositoryKey(companyId, repositoryId);
+			key = S3KeyTransformerUtil.getRepositoryKey(
+				companyId, repositoryId);
 		}
 		else {
-			key = _s3KeyTransformer.getDirectoryKey(
+			key = S3KeyTransformerUtil.getDirectoryKey(
 				companyId, repositoryId, dirName);
 		}
 
@@ -195,7 +195,7 @@ public class S3Store implements Store {
 		for (int i = 0; i < fileNames.length; i++) {
 			S3ObjectSummary s3ObjectSummary = iterator.next();
 
-			fileNames[i] = _s3KeyTransformer.getFileName(
+			fileNames[i] = S3KeyTransformerUtil.getFileName(
 				s3ObjectSummary.getKey());
 		}
 
@@ -213,7 +213,7 @@ public class S3Store implements Store {
 				companyId, repositoryId, fileName);
 		}
 
-		String key = _s3KeyTransformer.getFileVersionKey(
+		String key = S3KeyTransformerUtil.getFileVersionKey(
 			companyId, repositoryId, fileName, versionLabel);
 
 		GetObjectMetadataRequest getObjectMetadataRequest =
@@ -233,7 +233,7 @@ public class S3Store implements Store {
 	public String[] getFileVersions(
 		long companyId, long repositoryId, String fileName) {
 
-		String key = _s3KeyTransformer.getFileKey(
+		String key = S3KeyTransformerUtil.getFileKey(
 			companyId, repositoryId, fileName);
 
 		List<S3ObjectSummary> s3ObjectSummaries = getS3ObjectSummaries(key);
@@ -273,7 +273,7 @@ public class S3Store implements Store {
 					companyId, repositoryId, fileName);
 			}
 
-			String key = _s3KeyTransformer.getFileVersionKey(
+			String key = S3KeyTransformerUtil.getFileVersionKey(
 				companyId, repositoryId, fileName, versionLabel);
 
 			return _amazonS3.doesObjectExist(_bucketName, key);
@@ -290,7 +290,7 @@ public class S3Store implements Store {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileException, noSuchFileException);
+				_log.debug(noSuchFileException);
 			}
 
 			return false;
@@ -487,11 +487,10 @@ public class S3Store implements Store {
 
 		clientConfiguration.setConnectionTimeout(
 			_s3StoreConfiguration.connectionTimeout());
-
-		clientConfiguration.setMaxErrorRetry(
-			_s3StoreConfiguration.httpClientMaxErrorRetry());
 		clientConfiguration.setMaxConnections(
 			_s3StoreConfiguration.httpClientMaxConnections());
+		clientConfiguration.setMaxErrorRetry(
+			_s3StoreConfiguration.httpClientMaxErrorRetry());
 
 		configureConnectionProtocol(clientConfiguration);
 		configureProxySettings(clientConfiguration);
@@ -504,7 +503,7 @@ public class S3Store implements Store {
 			long companyId, long repositoryId, String fileName)
 		throws NoSuchFileException {
 
-		String key = _s3KeyTransformer.getFileKey(
+		String key = S3KeyTransformerUtil.getFileKey(
 			companyId, repositoryId, fileName);
 
 		List<S3ObjectSummary> s3ObjectSummaries = getS3ObjectSummaries(key);
@@ -543,7 +542,7 @@ public class S3Store implements Store {
 					companyId, repositoryId, fileName);
 			}
 
-			String key = _s3KeyTransformer.getFileVersionKey(
+			String key = S3KeyTransformerUtil.getFileVersionKey(
 				companyId, repositoryId, fileName, versionLabel);
 
 			GetObjectRequest getObjectRequest = new GetObjectRequest(
@@ -637,13 +636,6 @@ public class S3Store implements Store {
 		return false;
 	}
 
-	@Modified
-	protected void modified(Map<String, Object> properties) {
-		deactivate();
-
-		activate(properties);
-	}
-
 	protected void putObject(
 		long companyId, long repositoryId, String fileName, String versionLabel,
 		File file) {
@@ -651,7 +643,7 @@ public class S3Store implements Store {
 		Upload upload = null;
 
 		try {
-			String key = _s3KeyTransformer.getFileVersionKey(
+			String key = S3KeyTransformerUtil.getFileVersionKey(
 				companyId, repositoryId, fileName, versionLabel);
 
 			PutObjectRequest putObjectRequest = new PutObjectRequest(
@@ -668,7 +660,7 @@ public class S3Store implements Store {
 		}
 		catch (InterruptedException interruptedException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(interruptedException, interruptedException);
+				_log.debug(interruptedException);
 			}
 
 			upload.abort();
@@ -728,13 +720,6 @@ public class S3Store implements Store {
 	private AmazonS3 _amazonS3;
 	private AWSCredentialsProvider _awsCredentialsProvider;
 	private String _bucketName;
-
-	@Reference
-	private S3FileCache _s3FileCache;
-
-	@Reference
-	private S3KeyTransformer _s3KeyTransformer;
-
 	private StorageClass _storageClass;
 	private TransferManager _transferManager;
 

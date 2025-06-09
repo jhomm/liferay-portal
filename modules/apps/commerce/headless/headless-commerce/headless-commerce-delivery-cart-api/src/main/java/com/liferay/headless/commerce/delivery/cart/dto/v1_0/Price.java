@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.cart.dto.v1_0;
@@ -20,11 +11,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,10 +26,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Andrea Sbarra
@@ -55,125 +46,185 @@ public class Price implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Price.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getCurrency() {
+		if (_currencySupplier != null) {
+			currency = _currencySupplier.get();
+
+			_currencySupplier = null;
+		}
+
 		return currency;
 	}
 
 	public void setCurrency(String currency) {
 		this.currency = currency;
+
+		_currencySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setCurrency(
 		UnsafeSupplier<String, Exception> currencyUnsafeSupplier) {
 
-		try {
-			currency = currencyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_currencySupplier = () -> {
+			try {
+				return currencyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String currency;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _currencySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getDiscount() {
+		if (_discountSupplier != null) {
+			discount = _discountSupplier.get();
+
+			_discountSupplier = null;
+		}
+
 		return discount;
 	}
 
 	public void setDiscount(Double discount) {
 		this.discount = discount;
+
+		_discountSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscount(
 		UnsafeSupplier<Double, Exception> discountUnsafeSupplier) {
 
-		try {
-			discount = discountUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountSupplier = () -> {
+			try {
+				return discountUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double discount;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _discountSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDiscountFormatted() {
+		if (_discountFormattedSupplier != null) {
+			discountFormatted = _discountFormattedSupplier.get();
+
+			_discountFormattedSupplier = null;
+		}
+
 		return discountFormatted;
 	}
 
 	public void setDiscountFormatted(String discountFormatted) {
 		this.discountFormatted = discountFormatted;
+
+		_discountFormattedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountFormatted(
 		UnsafeSupplier<String, Exception> discountFormattedUnsafeSupplier) {
 
-		try {
-			discountFormatted = discountFormattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountFormattedSupplier = () -> {
+			try {
+				return discountFormattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String discountFormatted;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _discountFormattedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getDiscountPercentage() {
+		if (_discountPercentageSupplier != null) {
+			discountPercentage = _discountPercentageSupplier.get();
+
+			_discountPercentageSupplier = null;
+		}
+
 		return discountPercentage;
 	}
 
 	public void setDiscountPercentage(String discountPercentage) {
 		this.discountPercentage = discountPercentage;
+
+		_discountPercentageSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountPercentage(
 		UnsafeSupplier<String, Exception> discountPercentageUnsafeSupplier) {
 
-		try {
-			discountPercentage = discountPercentageUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountPercentageSupplier = () -> {
+			try {
+				return discountPercentageUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String discountPercentage;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _discountPercentageSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getDiscountPercentageLevel1() {
+		if (_discountPercentageLevel1Supplier != null) {
+			discountPercentageLevel1 = _discountPercentageLevel1Supplier.get();
+
+			_discountPercentageLevel1Supplier = null;
+		}
+
 		return discountPercentageLevel1;
 	}
 
 	public void setDiscountPercentageLevel1(Double discountPercentageLevel1) {
 		this.discountPercentageLevel1 = discountPercentageLevel1;
+
+		_discountPercentageLevel1Supplier = null;
 	}
 
 	@JsonIgnore
@@ -181,29 +232,41 @@ public class Price implements Serializable {
 		UnsafeSupplier<Double, Exception>
 			discountPercentageLevel1UnsafeSupplier) {
 
-		try {
-			discountPercentageLevel1 =
-				discountPercentageLevel1UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountPercentageLevel1Supplier = () -> {
+			try {
+				return discountPercentageLevel1UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double discountPercentageLevel1;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _discountPercentageLevel1Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getDiscountPercentageLevel2() {
+		if (_discountPercentageLevel2Supplier != null) {
+			discountPercentageLevel2 = _discountPercentageLevel2Supplier.get();
+
+			_discountPercentageLevel2Supplier = null;
+		}
+
 		return discountPercentageLevel2;
 	}
 
 	public void setDiscountPercentageLevel2(Double discountPercentageLevel2) {
 		this.discountPercentageLevel2 = discountPercentageLevel2;
+
+		_discountPercentageLevel2Supplier = null;
 	}
 
 	@JsonIgnore
@@ -211,29 +274,41 @@ public class Price implements Serializable {
 		UnsafeSupplier<Double, Exception>
 			discountPercentageLevel2UnsafeSupplier) {
 
-		try {
-			discountPercentageLevel2 =
-				discountPercentageLevel2UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountPercentageLevel2Supplier = () -> {
+			try {
+				return discountPercentageLevel2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double discountPercentageLevel2;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _discountPercentageLevel2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getDiscountPercentageLevel3() {
+		if (_discountPercentageLevel3Supplier != null) {
+			discountPercentageLevel3 = _discountPercentageLevel3Supplier.get();
+
+			_discountPercentageLevel3Supplier = null;
+		}
+
 		return discountPercentageLevel3;
 	}
 
 	public void setDiscountPercentageLevel3(Double discountPercentageLevel3) {
 		this.discountPercentageLevel3 = discountPercentageLevel3;
+
+		_discountPercentageLevel3Supplier = null;
 	}
 
 	@JsonIgnore
@@ -241,29 +316,41 @@ public class Price implements Serializable {
 		UnsafeSupplier<Double, Exception>
 			discountPercentageLevel3UnsafeSupplier) {
 
-		try {
-			discountPercentageLevel3 =
-				discountPercentageLevel3UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountPercentageLevel3Supplier = () -> {
+			try {
+				return discountPercentageLevel3UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double discountPercentageLevel3;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _discountPercentageLevel3Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getDiscountPercentageLevel4() {
+		if (_discountPercentageLevel4Supplier != null) {
+			discountPercentageLevel4 = _discountPercentageLevel4Supplier.get();
+
+			_discountPercentageLevel4Supplier = null;
+		}
+
 		return discountPercentageLevel4;
 	}
 
 	public void setDiscountPercentageLevel4(Double discountPercentageLevel4) {
 		this.discountPercentageLevel4 = discountPercentageLevel4;
+
+		_discountPercentageLevel4Supplier = null;
 	}
 
 	@JsonIgnore
@@ -271,189 +358,312 @@ public class Price implements Serializable {
 		UnsafeSupplier<Double, Exception>
 			discountPercentageLevel4UnsafeSupplier) {
 
-		try {
-			discountPercentageLevel4 =
-				discountPercentageLevel4UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountPercentageLevel4Supplier = () -> {
+			try {
+				return discountPercentageLevel4UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double discountPercentageLevel4;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _discountPercentageLevel4Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getFinalPrice() {
+		if (_finalPriceSupplier != null) {
+			finalPrice = _finalPriceSupplier.get();
+
+			_finalPriceSupplier = null;
+		}
+
 		return finalPrice;
 	}
 
 	public void setFinalPrice(Double finalPrice) {
 		this.finalPrice = finalPrice;
+
+		_finalPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFinalPrice(
 		UnsafeSupplier<Double, Exception> finalPriceUnsafeSupplier) {
 
-		try {
-			finalPrice = finalPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_finalPriceSupplier = () -> {
+			try {
+				return finalPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double finalPrice;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _finalPriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getFinalPriceFormatted() {
+		if (_finalPriceFormattedSupplier != null) {
+			finalPriceFormatted = _finalPriceFormattedSupplier.get();
+
+			_finalPriceFormattedSupplier = null;
+		}
+
 		return finalPriceFormatted;
 	}
 
 	public void setFinalPriceFormatted(String finalPriceFormatted) {
 		this.finalPriceFormatted = finalPriceFormatted;
+
+		_finalPriceFormattedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setFinalPriceFormatted(
 		UnsafeSupplier<String, Exception> finalPriceFormattedUnsafeSupplier) {
 
-		try {
-			finalPriceFormatted = finalPriceFormattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_finalPriceFormattedSupplier = () -> {
+			try {
+				return finalPriceFormattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String finalPriceFormatted;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _finalPriceFormattedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getPrice() {
+		if (_priceSupplier != null) {
+			price = _priceSupplier.get();
+
+			_priceSupplier = null;
+		}
+
 		return price;
 	}
 
 	public void setPrice(Double price) {
 		this.price = price;
+
+		_priceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPrice(
 		UnsafeSupplier<Double, Exception> priceUnsafeSupplier) {
 
-		try {
-			price = priceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceSupplier = () -> {
+			try {
+				return priceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double price;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _priceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getPriceFormatted() {
+		if (_priceFormattedSupplier != null) {
+			priceFormatted = _priceFormattedSupplier.get();
+
+			_priceFormattedSupplier = null;
+		}
+
 		return priceFormatted;
 	}
 
 	public void setPriceFormatted(String priceFormatted) {
 		this.priceFormatted = priceFormatted;
+
+		_priceFormattedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriceFormatted(
 		UnsafeSupplier<String, Exception> priceFormattedUnsafeSupplier) {
 
-		try {
-			priceFormatted = priceFormattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_priceFormattedSupplier = () -> {
+			try {
+				return priceFormattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String priceFormatted;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _priceFormattedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getPriceOnApplication() {
+		if (_priceOnApplicationSupplier != null) {
+			priceOnApplication = _priceOnApplicationSupplier.get();
+
+			_priceOnApplicationSupplier = null;
+		}
+
+		return priceOnApplication;
+	}
+
+	public void setPriceOnApplication(Boolean priceOnApplication) {
+		this.priceOnApplication = priceOnApplication;
+
+		_priceOnApplicationSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setPriceOnApplication(
+		UnsafeSupplier<Boolean, Exception> priceOnApplicationUnsafeSupplier) {
+
+		_priceOnApplicationSupplier = () -> {
+			try {
+				return priceOnApplicationUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Boolean priceOnApplication;
+
+	@JsonIgnore
+	private Supplier<Boolean> _priceOnApplicationSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Double getPromoPrice() {
+		if (_promoPriceSupplier != null) {
+			promoPrice = _promoPriceSupplier.get();
+
+			_promoPriceSupplier = null;
+		}
+
 		return promoPrice;
 	}
 
 	public void setPromoPrice(Double promoPrice) {
 		this.promoPrice = promoPrice;
+
+		_promoPriceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPromoPrice(
 		UnsafeSupplier<Double, Exception> promoPriceUnsafeSupplier) {
 
-		try {
-			promoPrice = promoPriceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_promoPriceSupplier = () -> {
+			try {
+				return promoPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double promoPrice;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Double> _promoPriceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getPromoPriceFormatted() {
+		if (_promoPriceFormattedSupplier != null) {
+			promoPriceFormatted = _promoPriceFormattedSupplier.get();
+
+			_promoPriceFormattedSupplier = null;
+		}
+
 		return promoPriceFormatted;
 	}
 
 	public void setPromoPriceFormatted(String promoPriceFormatted) {
 		this.promoPriceFormatted = promoPriceFormatted;
+
+		_promoPriceFormattedSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPromoPriceFormatted(
 		UnsafeSupplier<String, Exception> promoPriceFormattedUnsafeSupplier) {
 
-		try {
-			promoPriceFormatted = promoPriceFormattedUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_promoPriceFormattedSupplier = () -> {
+			try {
+				return promoPriceFormattedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String promoPriceFormatted;
+
+	@JsonIgnore
+	private Supplier<String> _promoPriceFormattedSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -482,6 +692,8 @@ public class Price implements Serializable {
 
 		sb.append("{");
 
+		String currency = getCurrency();
+
 		if (currency != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -496,6 +708,8 @@ public class Price implements Serializable {
 			sb.append("\"");
 		}
 
+		Double discount = getDiscount();
+
 		if (discount != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -505,6 +719,8 @@ public class Price implements Serializable {
 
 			sb.append(discount);
 		}
+
+		String discountFormatted = getDiscountFormatted();
 
 		if (discountFormatted != null) {
 			if (sb.length() > 1) {
@@ -520,6 +736,8 @@ public class Price implements Serializable {
 			sb.append("\"");
 		}
 
+		String discountPercentage = getDiscountPercentage();
+
 		if (discountPercentage != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -534,6 +752,8 @@ public class Price implements Serializable {
 			sb.append("\"");
 		}
 
+		Double discountPercentageLevel1 = getDiscountPercentageLevel1();
+
 		if (discountPercentageLevel1 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -543,6 +763,8 @@ public class Price implements Serializable {
 
 			sb.append(discountPercentageLevel1);
 		}
+
+		Double discountPercentageLevel2 = getDiscountPercentageLevel2();
 
 		if (discountPercentageLevel2 != null) {
 			if (sb.length() > 1) {
@@ -554,6 +776,8 @@ public class Price implements Serializable {
 			sb.append(discountPercentageLevel2);
 		}
 
+		Double discountPercentageLevel3 = getDiscountPercentageLevel3();
+
 		if (discountPercentageLevel3 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -563,6 +787,8 @@ public class Price implements Serializable {
 
 			sb.append(discountPercentageLevel3);
 		}
+
+		Double discountPercentageLevel4 = getDiscountPercentageLevel4();
 
 		if (discountPercentageLevel4 != null) {
 			if (sb.length() > 1) {
@@ -574,6 +800,8 @@ public class Price implements Serializable {
 			sb.append(discountPercentageLevel4);
 		}
 
+		Double finalPrice = getFinalPrice();
+
 		if (finalPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -583,6 +811,8 @@ public class Price implements Serializable {
 
 			sb.append(finalPrice);
 		}
+
+		String finalPriceFormatted = getFinalPriceFormatted();
 
 		if (finalPriceFormatted != null) {
 			if (sb.length() > 1) {
@@ -598,6 +828,8 @@ public class Price implements Serializable {
 			sb.append("\"");
 		}
 
+		Double price = getPrice();
+
 		if (price != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -607,6 +839,8 @@ public class Price implements Serializable {
 
 			sb.append(price);
 		}
+
+		String priceFormatted = getPriceFormatted();
 
 		if (priceFormatted != null) {
 			if (sb.length() > 1) {
@@ -622,6 +856,20 @@ public class Price implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean priceOnApplication = getPriceOnApplication();
+
+		if (priceOnApplication != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"priceOnApplication\": ");
+
+			sb.append(priceOnApplication);
+		}
+
+		Double promoPrice = getPromoPrice();
+
 		if (promoPrice != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -631,6 +879,8 @@ public class Price implements Serializable {
 
 			sb.append(promoPrice);
 		}
+
+		String promoPriceFormatted = getPromoPriceFormatted();
 
 		if (promoPriceFormatted != null) {
 			if (sb.length() > 1) {
@@ -651,17 +901,17 @@ public class Price implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.delivery.cart.dto.v1_0.Price",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -687,7 +937,7 @@ public class Price implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -698,7 +948,10 @@ public class Price implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -719,7 +972,7 @@ public class Price implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -735,5 +988,12 @@ public class Price implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

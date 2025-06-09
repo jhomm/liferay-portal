@@ -1,26 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.web.internal.events;
 
-import com.liferay.analytics.reports.web.internal.product.navigation.control.menu.AnalyticsReportsProductNavigationControlMenuEntry;
+import com.liferay.analytics.reports.web.internal.constants.ProductNavigationControlMenuEntryConstants;
 import com.liferay.portal.kernel.events.Action;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.events.LifecycleAction;
+import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -28,10 +20,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Yurena Cabrera
  */
-@Component(
-	immediate = true, property = "key=logout.events.pre",
-	service = LifecycleAction.class
-)
+@Component(property = "key=logout.events.pre", service = LifecycleAction.class)
 public class LogoutPreAction extends Action {
 
 	@Override
@@ -41,11 +30,15 @@ public class LogoutPreAction extends Action {
 		throws ActionException {
 
 		_analyticsReportsProductNavigationControlMenuEntry.setPanelState(
-			httpServletRequest, "closed");
+			httpServletRequest,
+			ProductNavigationControlMenuEntryConstants.SESSION_CLICKS_KEY,
+			"closed");
 	}
 
-	@Reference
-	private AnalyticsReportsProductNavigationControlMenuEntry
+	@Reference(
+		target = "(component.name=com.liferay.analytics.reports.web.internal.product.navigation.control.menu.AnalyticsReportsProductNavigationControlMenuEntry)"
+	)
+	private ProductNavigationControlMenuEntry
 		_analyticsReportsProductNavigationControlMenuEntry;
 
 }

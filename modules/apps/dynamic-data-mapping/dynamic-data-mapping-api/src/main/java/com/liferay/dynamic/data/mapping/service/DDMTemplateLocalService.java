@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service;
@@ -93,6 +84,7 @@ public interface DDMTemplateLocalService
 	/**
 	 * Adds a template.
 	 *
+	 * @param externalReferenceCode the template's external reference code
 	 * @param userId the primary key of the template's creator/owner
 	 * @param groupId the primary key of the group
 	 * @param classNameId the primary key of the class name for the template's
@@ -116,15 +108,17 @@ public interface DDMTemplateLocalService
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public DDMTemplate addTemplate(
-			long userId, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String type, String mode,
-			String language, String script, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
+			String type, String mode, String language, String script,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
 	 * Adds a template with additional parameters.
 	 *
+	 * @param externalReferenceCode the template's external reference code
 	 * @param userId the primary key of the template's creator/owner
 	 * @param groupId the primary key of the group
 	 * @param classNameId the primary key of the class name for the template's
@@ -157,12 +151,13 @@ public interface DDMTemplateLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMTemplate addTemplate(
-			long userId, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, String templateKey,
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String type, String mode, String language, String script,
-			boolean cacheable, boolean smallImage, String smallImageURL,
-			File smallImageFile, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			String templateKey, Map<Locale, String> nameMap,
+			Map<Locale, String> descriptionMap, String type, String mode,
+			String language, String script, boolean cacheable,
+			boolean smallImage, String smallImageURL, File smallImageFile,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -195,7 +190,7 @@ public interface DDMTemplateLocalService
 	 * and description.
 	 *
 	 * @param userId the primary key of the template's creator/owner
-	 * @param templateId the primary key of the template to be copied
+	 * @param sourceTemplateId the primary key of the template to be copied
 	 * @param nameMap the new template's locales and localized names
 	 * @param descriptionMap the new template's locales and localized
 	 descriptions
@@ -207,13 +202,13 @@ public interface DDMTemplateLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMTemplate copyTemplate(
-			long userId, long templateId, Map<Locale, String> nameMap,
+			long userId, long sourceTemplateId, Map<Locale, String> nameMap,
 			Map<Locale, String> descriptionMap, ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public DDMTemplate copyTemplate(
-			long userId, long templateId, ServiceContext serviceContext)
+			long userId, long sourceTemplateId, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -224,8 +219,8 @@ public interface DDMTemplateLocalService
 	 * @param userId the primary key of the template's creator/owner
 	 * @param classNameId the primary key of the class name for the template's
 	 related model
-	 * @param oldClassPK the primary key of the old template's related entity
-	 * @param newClassPK the primary key of the new template's related entity
+	 * @param sourceClassPK the primary key of the old template's related entity
+	 * @param targetClassPK the primary key of the new template's related entity
 	 * @param type the template's type. For more information, see
 	 DDMTemplateConstants in the dynamic-data-mapping-api module.
 	 * @param serviceContext the service context to be applied. Can set the
@@ -236,8 +231,8 @@ public interface DDMTemplateLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public List<DDMTemplate> copyTemplates(
-			long userId, long classNameId, long oldClassPK, long newClassPK,
-			String type, ServiceContext serviceContext)
+			long userId, long classNameId, long sourceClassPK,
+			long targetClassPK, String type, ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -308,6 +303,10 @@ public interface DDMTemplateLocalService
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public void deleteTemplate(long templateId) throws PortalException;
+
+	public DDMTemplate deleteTemplate(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	/**
 	 * Deletes all the templates of the group.
@@ -395,6 +394,15 @@ public interface DDMTemplateLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMTemplate fetchDDMTemplate(long templateId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DDMTemplate fetchDDMTemplateByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DDMTemplate fetchDDMTemplateByExternalReferenceCode(
+		String externalReferenceCode, long groupId,
+		boolean includeAncestorTemplates);
+
 	/**
 	 * Returns the ddm template matching the UUID and group.
 	 *
@@ -469,6 +477,11 @@ public interface DDMTemplateLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DDMTemplate getDDMTemplate(long templateId) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DDMTemplate getDDMTemplateByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	/**
 	 * Returns the ddm template matching the UUID and group.

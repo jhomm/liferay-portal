@@ -1,39 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.web.internal.portlet.shared.task;
 
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsKeys;
+import com.liferay.portal.search.web.internal.portlet.shared.task.helper.PortletSharedRequestHelper;
 import com.liferay.portal.search.web.portlet.shared.task.PortletSharedTask;
 import com.liferay.portal.search.web.portlet.shared.task.PortletSharedTaskExecutor;
 
-import java.util.Arrays;
-import java.util.Optional;
+import jakarta.portlet.RenderRequest;
+
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.portlet.RenderRequest;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author André de Oliveira
  */
-@Component(immediate = true, service = PortletSharedTaskExecutor.class)
+@Component(service = PortletSharedTaskExecutor.class)
 public class PortletSharedTaskExecutorImpl
 	implements PortletSharedTaskExecutor {
 
@@ -42,28 +30,27 @@ public class PortletSharedTaskExecutorImpl
 		PortletSharedTask<T> portletSharedTask, String attributeSuffix,
 		RenderRequest renderRequest) {
 
-		String attributeName = _requestSharedAttribute.concat(attributeSuffix);
+		FutureTask<T> futureTask = null;
 
-		Optional<FutureTask<T>> oldFutureTaskOptional;
-		FutureTask<T> futureTask;
+		AtomicBoolean oldTaskExists = new AtomicBoolean(true);
+
+		String attributeName = "LIFERAY_SHARED_" + attributeSuffix;
 
 		synchronized (renderRequest) {
-			oldFutureTaskOptional = portletSharedRequestHelper.getAttribute(
+			futureTask = portletSharedRequestHelper.getAttribute(
 				attributeName, renderRequest);
 
-			futureTask = oldFutureTaskOptional.orElseGet(
-				() -> {
-					FutureTask<T> newFutureTask = new FutureTask<>(
-						portletSharedTask::execute);
+			if (futureTask == null) {
+				futureTask = new FutureTask<>(portletSharedTask::execute);
 
-					portletSharedRequestHelper.setAttribute(
-						attributeName, newFutureTask, renderRequest);
+				portletSharedRequestHelper.setAttribute(
+					attributeName, futureTask, renderRequest);
 
-					return newFutureTask;
-				});
+				oldTaskExists.set(false);
+			}
 		}
 
-		if (!oldFutureTaskOptional.isPresent()) {
+		if (!oldTaskExists.get()) {
 			futureTask.run();
 		}
 
@@ -75,22 +62,7 @@ public class PortletSharedTaskExecutorImpl
 		}
 	}
 
-	@Activate
-	protected void activate() {
-		String[] requestSharedAttributes = props.getArray(
-			PropsKeys.REQUEST_SHARED_ATTRIBUTES);
-
-		Arrays.sort(requestSharedAttributes);
-
-		_requestSharedAttribute = requestSharedAttributes[0];
-	}
-
 	@Reference
 	protected PortletSharedRequestHelper portletSharedRequestHelper;
-
-	@Reference
-	protected Props props;
-
-	private String _requestSharedAttribute;
 
 }

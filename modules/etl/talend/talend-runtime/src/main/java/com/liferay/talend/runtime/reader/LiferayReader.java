@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.talend.runtime.reader;
@@ -18,6 +9,7 @@ import com.liferay.talend.avro.JsonObjectIndexedRecordConverter;
 import com.liferay.talend.common.headless.HeadlessUtil;
 import com.liferay.talend.properties.input.LiferayInputProperties;
 import com.liferay.talend.runtime.LiferaySource;
+import com.liferay.talend.runtime.client.exception.ResponseContentClientException;
 
 import java.io.IOException;
 
@@ -26,7 +18,6 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -57,7 +48,6 @@ public class LiferayReader implements Reader<IndexedRecord> {
 		LiferayInputProperties liferayInputProperties) {
 
 		_liferaySource = liferaySource;
-
 		_liferayInputProperties = liferayInputProperties;
 
 		_jsonObjectIndexedRecordConverter =
@@ -88,7 +78,16 @@ public class LiferayReader implements Reader<IndexedRecord> {
 
 		_currentPage++;
 
-		_readEndpointJsonObject();
+		try {
+			_readEndpointJsonObject();
+		}
+		catch (ResponseContentClientException responseContentClientException) {
+			if (responseContentClientException.getHttpStatus() == 404) {
+				return false;
+			}
+
+			throw responseContentClientException;
+		}
 
 		if (_itemsJsonArray.size() <= 0) {
 			_hasMore = false;
@@ -214,16 +213,14 @@ public class LiferayReader implements Reader<IndexedRecord> {
 					resourceURI.toString());
 		}
 
-		Optional<JsonObject> jsonObjectOptional = liferaySource.doGetRequest(
+		JsonObject jsonObject = liferaySource.doGetRequest(
 			resourceURI.toString());
 
-		if (!jsonObjectOptional.isPresent()) {
+		if (jsonObject == null) {
 			throw new IOException(
 				"Unable to get JSON object for resource at " +
 					resourceURI.toASCIIString());
 		}
-
-		JsonObject jsonObject = jsonObjectOptional.get();
 
 		if (jsonObject.containsKey("page")) {
 			if (jsonObject.containsKey("items")) {

@@ -1,31 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
-import com.liferay.portal.kernel.dao.jdbc.aop.DynamicDataSourceTargetSource;
-import com.liferay.portal.kernel.jndi.JNDIUtil;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.portal.kernel.concurrent.DefaultNoticeableFuture;
 import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
-
-import java.util.Properties;
-
-import javax.mail.Session;
-
-import javax.naming.Context;
-import javax.naming.InitialContext;
 
 import javax.sql.DataSource;
 
@@ -40,73 +22,42 @@ public class InfrastructureUtil {
 		return _dataSource;
 	}
 
-	public static DynamicDataSourceTargetSource
-		getDynamicDataSourceTargetSource() {
-
-		return _dynamicDataSourceTargetSource;
-	}
-
-	public static Session getMailSession() {
-		if (_mailSession == null) {
-			_mailSession = _createMailSession();
+	public static Object getSessionFactory() {
+		try {
+			return _sessionFactoryDefaultNoticeableFuture.get();
 		}
-
-		return _mailSession;
+		catch (Exception exception) {
+			return ReflectionUtil.throwException(exception);
+		}
 	}
 
 	public static Object getTransactionManager() {
-		return _transactionManager;
+		try {
+			return _transactionManagerDefaultNoticeableFuture.get();
+		}
+		catch (Exception exception) {
+			return ReflectionUtil.throwException(exception);
+		}
 	}
 
-	public void setDataSource(DataSource dataSource) {
+	public static void setDataSource(DataSource dataSource) {
 		_dataSource = dataSource;
 	}
 
-	public void setDynamicDataSourceTargetSource(
-		DynamicDataSourceTargetSource dynamicDataSourceTargetSource) {
-
-		_dynamicDataSourceTargetSource = dynamicDataSourceTargetSource;
+	public static void setSessionFactory(Object sessionFactory) {
+		_sessionFactoryDefaultNoticeableFuture.set(sessionFactory);
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), with no direct replacement
-	 */
-	@Deprecated
-	public void setMailSession(Session mailSession) {
+	public static void setTransactionManager(Object transactionManager) {
+		_transactionManagerDefaultNoticeableFuture.set(transactionManager);
 	}
-
-	public void setTransactionManager(Object transactionManager) {
-		_transactionManager = transactionManager;
-	}
-
-	private static Session _createMailSession() {
-		Properties properties = PropsUtil.getProperties("mail.session.", true);
-
-		String jndiName = properties.getProperty("jndi.name");
-
-		if (Validator.isNotNull(jndiName)) {
-			try {
-				Properties jndiEnvironmentProperties = PropsUtil.getProperties(
-					PropsKeys.JNDI_ENVIRONMENT, true);
-
-				Context context = new InitialContext(jndiEnvironmentProperties);
-
-				return (Session)JNDIUtil.lookup(context, jndiName);
-			}
-			catch (Exception exception) {
-				_log.error("Unable to lookup " + jndiName, exception);
-			}
-		}
-
-		return Session.getInstance(properties);
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		InfrastructureUtil.class);
 
 	private static DataSource _dataSource;
-	private static DynamicDataSourceTargetSource _dynamicDataSourceTargetSource;
-	private static Session _mailSession;
-	private static Object _transactionManager;
+	private static final DefaultNoticeableFuture<Object>
+		_sessionFactoryDefaultNoticeableFuture =
+			new DefaultNoticeableFuture<>();
+	private static final DefaultNoticeableFuture<Object>
+		_transactionManagerDefaultNoticeableFuture =
+			new DefaultNoticeableFuture<>();
 
 }

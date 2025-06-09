@@ -1,45 +1,46 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.display.context;
 
+import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.model.CommerceMoney;
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
+import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.price.list.service.CommercePriceEntryService;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
+import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
+import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.commerce.product.service.CommerceCatalogService;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowStateException;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.WindowStateException;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -49,17 +50,26 @@ public class CommercePriceEntryDisplayContext
 
 	public CommercePriceEntryDisplayContext(
 		CommerceCatalogService commerceCatalogService,
+		CommercePriceEntryLocalService commercePriceEntryLocalService,
 		CommercePriceEntryService commercePriceEntryService,
+		CommercePriceFormatter commercePriceFormatter,
 		ModelResourcePermission<CommercePriceList>
 			commercePriceListModelResourcePermission,
 		CommercePriceListService commercePriceListService,
+		CPInstanceLocalService cpInstanceLocalService,
+		CPInstanceUnitOfMeasureLocalService cpInstanceUnitOfMeasureLocalService,
 		HttpServletRequest httpServletRequest) {
 
 		super(
 			commerceCatalogService, commercePriceListModelResourcePermission,
 			commercePriceListService, httpServletRequest);
 
+		_commercePriceEntryLocalService = commercePriceEntryLocalService;
 		_commercePriceEntryService = commercePriceEntryService;
+		_commercePriceFormatter = commercePriceFormatter;
+		_cpInstanceLocalService = cpInstanceLocalService;
+		_cpInstanceUnitOfMeasureLocalService =
+			cpInstanceUnitOfMeasureLocalService;
 	}
 
 	public String getAddCommerceTierPriceEntryRenderURL() throws Exception {
@@ -82,17 +92,21 @@ public class CommercePriceEntryDisplayContext
 		CommercePriceList commercePriceList = getCommercePriceList();
 
 		CommercePriceEntry instanceBaseCommercePriceEntry =
-			_commercePriceEntryService.getInstanceBaseCommercePriceEntry(
+			_commercePriceEntryLocalService.getInstanceBaseCommercePriceEntry(
 				commercePriceEntry.getCPInstanceUuid(),
-				commercePriceList.getType());
+				commercePriceList.getType(),
+				commercePriceEntry.getUnitOfMeasureKey());
 
 		if (instanceBaseCommercePriceEntry == null) {
 			return StringPool.DASH;
 		}
 
+		CommerceCurrency commerceCurrency =
+			commercePriceList.getCommerceCurrency();
+
 		CommerceMoney priceCommerceMoney =
 			instanceBaseCommercePriceEntry.getPriceCommerceMoney(
-				commercePriceList.getCommerceCurrencyId());
+				commerceCurrency.getCommerceCurrencyId());
 
 		return priceCommerceMoney.format(
 			commercePricingRequestHelper.getLocale());
@@ -125,6 +139,38 @@ public class CommercePriceEntryDisplayContext
 		return commercePriceEntry.getCommercePriceEntryId();
 	}
 
+	public CPInstance getCPInstance() throws Exception {
+		if (_cpInstance != null) {
+			return _cpInstance;
+		}
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _cpInstanceLocalService.fetchCPInstance(
+			commercePriceEntry.getCProductId(),
+			commercePriceEntry.getCPInstanceUuid());
+	}
+
+	public List<CPInstanceUnitOfMeasure> getCPInstanceUnitOfMeasures()
+		throws Exception {
+
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		CPInstance cpInstance = _cpInstanceLocalService.fetchCPInstance(
+			commercePriceEntry.getCProductId(),
+			commercePriceEntry.getCPInstanceUuid());
+
+		if (cpInstance == null) {
+			return Collections.emptyList();
+		}
+
+		return ListUtil.sort(
+			_cpInstanceUnitOfMeasureLocalService.
+				getActiveCPInstanceUnitOfMeasures(cpInstance.getCPInstanceId()),
+			Comparator.comparing(
+				CPInstanceUnitOfMeasure::getKey, String::compareToIgnoreCase));
+	}
+
 	public CreationMenu getCreationMenu() throws Exception {
 		CreationMenu creationMenu = new CreationMenu();
 
@@ -143,12 +189,49 @@ public class CommercePriceEntryDisplayContext
 		return creationMenu;
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getPriceEntriesClayDataSetActionDropdownItems()
+	public String getDiscountLevel1() throws PortalException {
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _commercePriceFormatter.format(
+			commercePriceEntry.getDiscountLevel1(),
+			cpRequestHelper.getLocale());
+	}
+
+	public String getDiscountLevel2() throws PortalException {
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _commercePriceFormatter.format(
+			commercePriceEntry.getDiscountLevel2(),
+			cpRequestHelper.getLocale());
+	}
+
+	public String getDiscountLevel3() throws PortalException {
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _commercePriceFormatter.format(
+			commercePriceEntry.getDiscountLevel3(),
+			cpRequestHelper.getLocale());
+	}
+
+	public String getDiscountLevel4() throws PortalException {
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _commercePriceFormatter.format(
+			commercePriceEntry.getDiscountLevel4(),
+			cpRequestHelper.getLocale());
+	}
+
+	public String getPrice() throws PortalException {
+		CommercePriceEntry commercePriceEntry = getCommercePriceEntry();
+
+		return _commercePriceFormatter.format(
+			commercePriceEntry.getPrice(), cpRequestHelper.getLocale());
+	}
+
+	public List<FDSActionDropdownItem> getPriceEntriesFDSActionDropdownItems()
 		throws PortalException {
 
-		List<ClayDataSetActionDropdownItem> clayDataSetActionDropdownItems =
-			new ArrayList<>();
+		List<FDSActionDropdownItem> fdsActionDropdownItems = new ArrayList<>();
 
 		PortletURL portletURL = PortletURLBuilder.createRenderURL(
 			liferayPortletResponse
@@ -166,22 +249,22 @@ public class CommercePriceEntryDisplayContext
 			portletURL.setWindowState(LiferayWindowState.POP_UP);
 		}
 		catch (WindowStateException windowStateException) {
-			_log.error(windowStateException, windowStateException);
+			_log.error(windowStateException);
 		}
 
-		clayDataSetActionDropdownItems.add(
-			new ClayDataSetActionDropdownItem(
+		fdsActionDropdownItems.add(
+			new FDSActionDropdownItem(
 				portletURL.toString(), "pencil", "edit",
 				LanguageUtil.get(httpServletRequest, "edit"), "get", null,
 				"sidePanel"));
 
-		clayDataSetActionDropdownItems.add(
-			new ClayDataSetActionDropdownItem(
+		fdsActionDropdownItems.add(
+			new FDSActionDropdownItem(
 				null, "trash", "remove",
 				LanguageUtil.get(httpServletRequest, "remove"), "delete",
 				"delete", "headless"));
 
-		return clayDataSetActionDropdownItems;
+		return fdsActionDropdownItems;
 	}
 
 	public String getPriceEntryApiURL() throws PortalException {
@@ -194,6 +277,13 @@ public class CommercePriceEntryDisplayContext
 		CommercePriceEntryDisplayContext.class);
 
 	private CommercePriceEntry _commercePriceEntry;
+	private final CommercePriceEntryLocalService
+		_commercePriceEntryLocalService;
 	private final CommercePriceEntryService _commercePriceEntryService;
+	private final CommercePriceFormatter _commercePriceFormatter;
+	private CPInstance _cpInstance;
+	private final CPInstanceLocalService _cpInstanceLocalService;
+	private final CPInstanceUnitOfMeasureLocalService
+		_cpInstanceUnitOfMeasureLocalService;
 
 }

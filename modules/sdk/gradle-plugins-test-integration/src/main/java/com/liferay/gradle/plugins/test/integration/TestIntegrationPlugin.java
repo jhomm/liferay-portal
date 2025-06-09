@@ -1,29 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.test.integration;
 
 import com.liferay.gradle.plugins.test.integration.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.test.integration.internal.util.StringUtil;
-import com.liferay.gradle.plugins.test.integration.tasks.BaseAppServerTask;
-import com.liferay.gradle.plugins.test.integration.tasks.JmxRemotePortSpec;
-import com.liferay.gradle.plugins.test.integration.tasks.ManagerSpec;
-import com.liferay.gradle.plugins.test.integration.tasks.ModuleFrameworkBaseDirSpec;
-import com.liferay.gradle.plugins.test.integration.tasks.SetUpArquillianTask;
-import com.liferay.gradle.plugins.test.integration.tasks.SetUpTestableTomcatTask;
-import com.liferay.gradle.plugins.test.integration.tasks.StartTestableTomcatTask;
-import com.liferay.gradle.plugins.test.integration.tasks.StopTestableTomcatTask;
+import com.liferay.gradle.plugins.test.integration.task.BaseAppServerTask;
+import com.liferay.gradle.plugins.test.integration.task.JmxRemotePortSpec;
+import com.liferay.gradle.plugins.test.integration.task.ManagerSpec;
+import com.liferay.gradle.plugins.test.integration.task.ModuleFrameworkBaseDirSpec;
+import com.liferay.gradle.plugins.test.integration.task.SetUpArquillianTask;
+import com.liferay.gradle.plugins.test.integration.task.SetUpTestableTomcatTask;
+import com.liferay.gradle.plugins.test.integration.task.StartTestableTomcatTask;
+import com.liferay.gradle.plugins.test.integration.task.StopTestableTomcatTask;
 import com.liferay.gradle.util.FileUtil;
 import com.liferay.gradle.util.OSDetector;
 import com.liferay.gradle.util.copy.RenameDependencyClosure;
@@ -44,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.gradle.StartParameter;
 import org.gradle.api.Action;
+import org.gradle.api.JavaVersion;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -297,13 +289,8 @@ public class TestIntegrationPlugin implements Plugin<Project> {
 					_startedAppServersReentrantLock.lock();
 
 					try {
-						if (_startedAppServerBinDirs.contains(
-								setUpTestableTomcatTask.getBinDir())) {
-
-							return false;
-						}
-
-						return true;
+						return !_startedAppServerBinDirs.contains(
+							setUpTestableTomcatTask.getBinDir());
 					}
 					finally {
 						_startedAppServersReentrantLock.unlock();
@@ -414,11 +401,7 @@ public class TestIntegrationPlugin implements Plugin<Project> {
 					StartTestableTomcatTask startTestableTomcatTask =
 						(StartTestableTomcatTask)task;
 
-					if (startTestableTomcatTask.isReachable()) {
-						return false;
-					}
-
-					return true;
+					return !startTestableTomcatTask.isReachable();
 				}
 
 			});
@@ -707,6 +690,23 @@ public class TestIntegrationPlugin implements Plugin<Project> {
 		test.dependsOn(closure);
 
 		test.jvmArgs("-Djava.net.preferIPv4Stack=true", "-Duser.timezone=GMT");
+
+		JavaVersion javaVersion = test.getJavaVersion();
+
+		if (javaVersion.isJava11Compatible()) {
+			test.jvmArgs("--add-opens", "java.base/java.lang=ALL-UNNAMED");
+			test.jvmArgs(
+				"--add-opens", "java.base/java.lang.invoke=ALL-UNNAMED");
+			test.jvmArgs(
+				"--add-opens", "java.base/java.lang.reflect=ALL-UNNAMED");
+			test.jvmArgs("--add-opens", "java.base/java.net=ALL-UNNAMED");
+			test.jvmArgs(
+				"--add-opens",
+				"java.base/sun.net.www.protocol.http=ALL-UNNAMED");
+			test.jvmArgs(
+				"--add-opens", "java.base/sun.util.calendar=ALL-UNNAMED");
+			test.jvmArgs("--add-opens", "jdk.zipfs/jdk.nio.zipfs=ALL-UNNAMED");
+		}
 
 		Properties systemProperties = System.getProperties();
 

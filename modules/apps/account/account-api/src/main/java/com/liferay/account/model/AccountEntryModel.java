@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
-import com.liferay.portal.kernel.model.AuditedModel;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
+import com.liferay.portal.kernel.model.StagedAuditedModel;
+import com.liferay.portal.kernel.model.WorkflowedModel;
 
 import java.util.Date;
 
@@ -37,7 +30,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface AccountEntryModel
-	extends AuditedModel, BaseModel<AccountEntry>, MVCCModel, ShardedModel {
+	extends BaseModel<AccountEntry>, ExternalReferenceCodeModel, MVCCModel,
+			ShardedModel, StagedAuditedModel, WorkflowedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -76,11 +70,29 @@ public interface AccountEntryModel
 	public void setMvccVersion(long mvccVersion);
 
 	/**
+	 * Returns the uuid of this account entry.
+	 *
+	 * @return the uuid of this account entry
+	 */
+	@AutoEscape
+	@Override
+	public String getUuid();
+
+	/**
+	 * Sets the uuid of this account entry.
+	 *
+	 * @param uuid the uuid of this account entry
+	 */
+	@Override
+	public void setUuid(String uuid);
+
+	/**
 	 * Returns the external reference code of this account entry.
 	 *
 	 * @return the external reference code of this account entry
 	 */
 	@AutoEscape
+	@Override
 	public String getExternalReferenceCode();
 
 	/**
@@ -88,6 +100,7 @@ public interface AccountEntryModel
 	 *
 	 * @param externalReferenceCode the external reference code of this account entry
 	 */
+	@Override
 	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
@@ -216,6 +229,21 @@ public interface AccountEntryModel
 	public void setDefaultBillingAddressId(long defaultBillingAddressId);
 
 	/**
+	 * Returns the default c payment method key of this account entry.
+	 *
+	 * @return the default c payment method key of this account entry
+	 */
+	@AutoEscape
+	public String getDefaultCPaymentMethodKey();
+
+	/**
+	 * Sets the default c payment method key of this account entry.
+	 *
+	 * @param defaultCPaymentMethodKey the default c payment method key of this account entry
+	 */
+	public void setDefaultCPaymentMethodKey(String defaultCPaymentMethodKey);
+
+	/**
 	 * Returns the default shipping address ID of this account entry.
 	 *
 	 * @return the default shipping address ID of this account entry
@@ -318,6 +346,27 @@ public interface AccountEntryModel
 	public void setName(String name);
 
 	/**
+	 * Returns the restrict membership of this account entry.
+	 *
+	 * @return the restrict membership of this account entry
+	 */
+	public boolean getRestrictMembership();
+
+	/**
+	 * Returns <code>true</code> if this account entry is restrict membership.
+	 *
+	 * @return <code>true</code> if this account entry is restrict membership; <code>false</code> otherwise
+	 */
+	public boolean isRestrictMembership();
+
+	/**
+	 * Sets whether this account entry is restrict membership.
+	 *
+	 * @param restrictMembership the restrict membership of this account entry
+	 */
+	public void setRestrictMembership(boolean restrictMembership);
+
+	/**
 	 * Returns the tax exemption code of this account entry.
 	 *
 	 * @return the tax exemption code of this account entry
@@ -367,6 +416,7 @@ public interface AccountEntryModel
 	 *
 	 * @return the status of this account entry
 	 */
+	@Override
 	public int getStatus();
 
 	/**
@@ -374,9 +424,143 @@ public interface AccountEntryModel
 	 *
 	 * @param status the status of this account entry
 	 */
+	@Override
 	public void setStatus(int status);
+
+	/**
+	 * Returns the status by user ID of this account entry.
+	 *
+	 * @return the status by user ID of this account entry
+	 */
+	@Override
+	public long getStatusByUserId();
+
+	/**
+	 * Sets the status by user ID of this account entry.
+	 *
+	 * @param statusByUserId the status by user ID of this account entry
+	 */
+	@Override
+	public void setStatusByUserId(long statusByUserId);
+
+	/**
+	 * Returns the status by user uuid of this account entry.
+	 *
+	 * @return the status by user uuid of this account entry
+	 */
+	@Override
+	public String getStatusByUserUuid();
+
+	/**
+	 * Sets the status by user uuid of this account entry.
+	 *
+	 * @param statusByUserUuid the status by user uuid of this account entry
+	 */
+	@Override
+	public void setStatusByUserUuid(String statusByUserUuid);
+
+	/**
+	 * Returns the status by user name of this account entry.
+	 *
+	 * @return the status by user name of this account entry
+	 */
+	@AutoEscape
+	@Override
+	public String getStatusByUserName();
+
+	/**
+	 * Sets the status by user name of this account entry.
+	 *
+	 * @param statusByUserName the status by user name of this account entry
+	 */
+	@Override
+	public void setStatusByUserName(String statusByUserName);
+
+	/**
+	 * Returns the status date of this account entry.
+	 *
+	 * @return the status date of this account entry
+	 */
+	@Override
+	public Date getStatusDate();
+
+	/**
+	 * Sets the status date of this account entry.
+	 *
+	 * @param statusDate the status date of this account entry
+	 */
+	@Override
+	public void setStatusDate(Date statusDate);
+
+	/**
+	 * Returns <code>true</code> if this account entry is approved.
+	 *
+	 * @return <code>true</code> if this account entry is approved; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isApproved();
+
+	/**
+	 * Returns <code>true</code> if this account entry is denied.
+	 *
+	 * @return <code>true</code> if this account entry is denied; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isDenied();
+
+	/**
+	 * Returns <code>true</code> if this account entry is a draft.
+	 *
+	 * @return <code>true</code> if this account entry is a draft; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isDraft();
+
+	/**
+	 * Returns <code>true</code> if this account entry is expired.
+	 *
+	 * @return <code>true</code> if this account entry is expired; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isExpired();
+
+	/**
+	 * Returns <code>true</code> if this account entry is inactive.
+	 *
+	 * @return <code>true</code> if this account entry is inactive; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isInactive();
+
+	/**
+	 * Returns <code>true</code> if this account entry is incomplete.
+	 *
+	 * @return <code>true</code> if this account entry is incomplete; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isIncomplete();
+
+	/**
+	 * Returns <code>true</code> if this account entry is pending.
+	 *
+	 * @return <code>true</code> if this account entry is pending; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isPending();
+
+	/**
+	 * Returns <code>true</code> if this account entry is scheduled.
+	 *
+	 * @return <code>true</code> if this account entry is scheduled; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isScheduled();
 
 	@Override
 	public AccountEntry cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.reader;
@@ -178,6 +169,46 @@ public class JSONBatchEngineImportTaskItemReaderImplTest
 	}
 
 	@Test
+	public void testJSONStringColumnMapping() throws Exception {
+
+		// As JSON object
+
+		try (JSONBatchEngineImportTaskItemReaderImpl
+				jsonBatchEngineImportTaskItemReaderImpl =
+					_getJSONBatchEngineImportTaskItemReader(
+						new String[] {"jsonString1"},
+						new Object[][] {{"{\"key\": \"value\"}"}})) {
+
+			Item item = getItem(
+				HashMapBuilder.put(
+					"jsonString1", "jsonString"
+				).build(),
+				jsonBatchEngineImportTaskItemReaderImpl.read());
+
+			Assert.assertEquals("{\"key\":\"value\"}", item.getJsonString());
+		}
+
+		// As JSON string
+
+		try (JSONBatchEngineImportTaskItemReaderImpl
+				jsonBatchEngineImportTaskItemReaderImpl =
+					_getJSONBatchEngineImportTaskItemReader(
+						new String[] {"jsonString1"},
+						new Object[][] {
+							{"\"{\\\"key\\\": \\\"value\\\"}\""}
+						})) {
+
+			Item item = getItem(
+				HashMapBuilder.put(
+					"jsonString1", "jsonString"
+				).build(),
+				jsonBatchEngineImportTaskItemReaderImpl.read());
+
+			Assert.assertEquals("{\"key\": \"value\"}", item.getJsonString());
+		}
+	}
+
+	@Test
 	public void testReadInvalidRow() throws Exception {
 		try (JSONBatchEngineImportTaskItemReaderImpl
 				jsonBatchEngineImportTaskItemReaderImpl =
@@ -323,7 +354,7 @@ public class JSONBatchEngineImportTaskItemReaderImplTest
 		}
 	}
 
-	private byte[] _getContent(String[] cellNames, Object[][] rowValues) {
+	private byte[] _getContent(String[] columnNames, Object[][] rowValues) {
 		StringBundler sb = new StringBundler();
 
 		sb.append("[");
@@ -334,7 +365,7 @@ public class JSONBatchEngineImportTaskItemReaderImplTest
 			for (int j = 0; j < singleRowValues.length; j++) {
 				if (singleRowValues[j] != null) {
 					sb.append("\"");
-					sb.append(cellNames[j]);
+					sb.append(columnNames[j]);
 					sb.append("\": ");
 					sb.append(singleRowValues[j]);
 					sb.append(",");
@@ -355,11 +386,12 @@ public class JSONBatchEngineImportTaskItemReaderImplTest
 
 	private JSONBatchEngineImportTaskItemReaderImpl
 			_getJSONBatchEngineImportTaskItemReader(
-				String[] cellNames, Object[][] rowValues)
+				String[] columnNames, Object[][] rowValues)
 		throws IOException {
 
 		return new JSONBatchEngineImportTaskItemReaderImpl(
-			new ByteArrayInputStream(_getContent(cellNames, rowValues)));
+			Collections.emptyList(),
+			new ByteArrayInputStream(_getContent(columnNames, rowValues)));
 	}
 
 	private static final String[] _FIELD_NAMES = {

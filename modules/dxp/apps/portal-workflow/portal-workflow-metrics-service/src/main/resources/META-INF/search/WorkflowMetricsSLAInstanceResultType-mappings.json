@@ -1,0 +1,67 @@
+{
+	"date_detection": false,
+	"dynamic_templates": [
+		{
+			"template_long_sortable": {
+				"mapping": {
+					"type": "long"
+				},
+				"match": "*_sortable",
+				"match_mapping_type": "long"
+			}
+		}
+	],
+	"properties": {
+		"active": {
+			"type": "boolean"
+		},
+		"blocked": {
+			"type": "boolean"
+		},
+		"companyId": {
+			"type": "long"
+		},
+		"completionDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"deleted": {
+			"type": "boolean"
+		},
+		"elapsedTime": {
+			"type": "long"
+		},
+		"instanceCompleted": {
+			"type": "boolean"
+		},
+		"instanceId": {
+			"type": "long"
+		},
+		"modifiedDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"onTime": {
+			"type": "boolean"
+		},
+		"overdueDate": {
+			"format": "yyyyMMddHHmmss",
+			"type": "date"
+		},
+		"processId": {
+			"type": "long"
+		},
+		"remainingTime": {
+			"type": "long"
+		},
+		"slaDefinitionId": {
+			"type": "long"
+		},
+		"status": {
+			"type": "keyword"
+		},
+		"uid": {
+			"type": "keyword"
+		}
+	}
+}

@@ -1,0 +1,34 @@
+{
+	"description_i18n": {
+		"en_US": "limit-search-to-my-sites-description"
+	},
+	"elementDefinition": {
+		"category": "filter",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "filter",
+								"query": {
+									"terms": {
+										"scopeGroupId": "${user.group_ids}"
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "filter",
+		"uiConfiguration": {
+		}
+	},
+	"externalReferenceCode": "LIMIT_SEARCH_TO_MY_SITES",
+	"title_i18n": {
+		"en_US": "limit-search-to-my-sites"
+	}
+}

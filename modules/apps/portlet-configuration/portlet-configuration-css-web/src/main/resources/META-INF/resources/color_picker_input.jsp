@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,7 +23,7 @@ String name = ParamUtil.getString(request, "name");
 			<div class="clay-color input-group">
 				<div class="input-group-item input-group-item-shrink input-group-prepend">
 					<div class="input-group-text">
-						<button class="btn clay-color-btn dropdown-toggle" style="border-width: 0px; height: 28px; width: 28px;" title="<%= color %>" type="button" />
+						<button class="btn clay-color-btn clay-color-btn-bordered dropdown-toggle" title="<%= color %>" type="button" />
 					</div>
 				</div>
 
@@ -46,7 +37,7 @@ String name = ParamUtil.getString(request, "name");
 	</div>
 
 	<react:component
-		module="js/ColorPickerInput.es"
+		module="{ColorPickerInput} from portlet-configuration-css-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"color", color

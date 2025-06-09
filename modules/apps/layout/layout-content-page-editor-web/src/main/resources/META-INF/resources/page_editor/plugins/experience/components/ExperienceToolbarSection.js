@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React, {useEffect, useMemo} from 'react';
 
+import {loadReducer} from '../../../app/actions';
 import togglePermissions from '../../../app/actions/togglePermission';
 import {config} from '../../../app/config/index';
 import {useDispatch, useSelector} from '../../../app/contexts/StoreContext';
 import selectSegmentsExperienceId from '../../../app/selectors/selectSegmentsExperienceId';
+import ExperienceReducer from '../reducers/index';
 import ExperienceSelector from './ExperienceSelector';
 
-// TODO: show how to colocate CSS with plugins (may use loaders)
-
-export default function ExperienceToolbarSection({selectId}) {
+function ExperienceToolbarSection() {
 	const availableSegmentsExperiences = useSelector(
 		(state) => state.availableSegmentsExperiences
 	);
@@ -76,17 +67,41 @@ export default function ExperienceToolbarSection({selectId}) {
 
 	return (
 		<div className="page-editor__toolbar-experience">
-			<label className="d-lg-block d-none mr-2" htmlFor={selectId}>
+			<span
+				aria-hidden
+				className="d-none d-xl-block font-weight-bold mr-2"
+			>
 				{Liferay.Language.get('experience')}
-			</label>
+			</span>
 
 			<ExperienceSelector
 				editSegmentsEntryURL={config.editSegmentsEntryURL}
 				experiences={experiences}
 				segments={segments}
-				selectId={selectId}
 				selectedExperience={selectedExperience}
 			/>
 		</div>
 	);
+}
+
+export default function ExperienceToolbarSectionWrapper() {
+	const dispatch = useDispatch();
+
+	const availableSegmentsExperiences = useSelector(
+		(state) => state.availableSegmentsExperiences
+	);
+
+	useEffect(() => {
+		dispatch(loadReducer(ExperienceReducer, 'ExperienceReducer'));
+	}, [dispatch]);
+
+	if (
+		!availableSegmentsExperiences ||
+		!Object.keys(availableSegmentsExperiences).length ||
+		config.singleSegmentsExperienceMode
+	) {
+		return null;
+	}
+
+	return <ExperienceToolbarSection />;
 }

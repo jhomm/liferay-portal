@@ -1,21 +1,24 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property portal.acceptance = "true";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.component.names = "Roles";
 	property testray.main.component.name = "Wiki";
 
 	setUp {
 		TestCase.setUpPortalInstance();
 
 		User.firstLoginPG();
+
+		WikiPortlet.enableWiki();
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -31,22 +34,12 @@ definition {
 
 			Site.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@description = "This is a test for LPS-136986. It checks that page permissions can be configured via More Options."
-	@ignore = "true"
-	@priority = "3"
-	test CanConfigurePermissionsViaMoreOptions {
-		property portal.acceptance = "false";
-
-		// TODO LPS-136986 CanConfigurePermissionsViaMoreOptions pending implementation
-
-	}
-
 	@description = "This ensures that a regular role with permissions can delete a wiki node."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDeleteWikiNodeWithPermissions {
 		Permissions.setUpRegRoleLoginUserCP(
@@ -90,7 +83,7 @@ definition {
 	}
 
 	@description = "This ensures that a regular role with permissions can delete a wiki page."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanDeleteWikiPageWithPermissions {
 		JSONUser.addUser(
@@ -160,7 +153,7 @@ definition {
 	}
 
 	@description = "This ensures that a regular role with permissions can edit a wiki node."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanEditWikiNodeWithPermissions {
 		Permissions.setUpRegRoleLoginUserCP(
@@ -206,12 +199,12 @@ definition {
 		WikiNavigator.openWikiAdmin(siteURLKey = "guest");
 
 		WikiNode.viewCP(
-			numberOfWikiPages = "0",
+			numberOfWikiPages = 0,
 			wikiNodeName = "Wiki Node Name Edit");
 	}
 
 	@description = "This ensures that a regular role with permissions can edit a wiki page."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanEditWikiPageWithPermissions {
 		JSONUser.addUser(
@@ -288,10 +281,10 @@ definition {
 	}
 
 	@description = "This ensures that users can not add wiki assets with a regular role without permissions."
-	@priority = "4"
+	@priority = 3
 	@refactordone
 	test CannotAddWikiAssetsWithRegularRoleWithoutPermissions {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property custom.properties = "feature.flag.LPS-188058=true${line.separator}jsonws.web.service.paths.excludes=";
 
 		Permissions.setUpRegRoleLoginUserCP(
 			roleTitle = "Regrole Name",
@@ -320,10 +313,10 @@ definition {
 	}
 
 	@description = "This ensures that users can not add wiki assets with a site role without permissions."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CannotAddWikiAssetsWithSiteRoleWithoutPermissions {
-		property custom.properties = "jsonws.web.service.paths.excludes=";
+		property custom.properties = "feature.flag.LPS-188058=true${line.separator}jsonws.web.service.paths.excludes=";
 
 		JSONUser.addUser(
 			userEmailAddress = "userea@liferay.com",
@@ -366,6 +359,73 @@ definition {
 		WikiNavigator.openWikiAdmin(siteURLKey = "guest");
 
 		WikiPortlet.viewNoPermissionCP();
+	}
+
+	@description = "This is a test for LPS-162742. It checks that configured permissions will remain after renaming the wiki page."
+	@priority = 3
+	test ConfiguredPermissionsWillRemainAfterRenamingPage {
+		WikiNavigator.openToAddPage(
+			groupName = "Guest",
+			siteURLKey = "guest",
+			wikiNodeName = "Main");
+
+		WikiEntry.addPageTitle(wikiPageTitle = "Wiki Page Title");
+
+		WikiEntry.addPageContent(wikiPageContent = "Wiki Page Content");
+
+		Panel.expandPanel(panel = "Permissions");
+
+		Select(
+			locator1 = "AssetPermissions#VIEWABLE_AS_SELECT",
+			value1 = "Site Members");
+
+		PermissionsInline.addOrRemoveEntryPermissionsFromAllRoles(
+			addOrRemoveViewPermission = "Remove",
+			key_roleTitle = "Guest",
+			permissionDefinitionKeyList = "ADD_DISCUSSION");
+
+		PortletEntry.publish();
+
+		WikiNavigator.openToWikiPage(
+			siteURLKey = "guest",
+			wikiNodeName = "Main",
+			wikiPageTitle = "Wiki Page Title");
+
+		WikiPage.renameWikiPageCP(
+			wikiPageTitle = "Wiki Page Title",
+			wikiPageTitleRename = "Rename Page Title");
+
+		WikiNavigator.openToWikiNode(
+			groupName = "Guest",
+			siteURLKey = "guest",
+			wikiNodeName = "Main");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Permissions",
+			rowEntry = "Wiki Page Title");
+
+		IFrame.selectPermissionsFrame();
+
+		PermissionsInline.viewPermissionsRemoved(
+			permissionDefinitionKey = "INLINE_PERMISSIONS_ADD_DISCUSSION_CHECKBOX",
+			roleTitle = "Guest");
+
+		SelectFrameTop();
+
+		WikiNavigator.openToWikiNode(
+			groupName = "Guest",
+			siteURLKey = "guest",
+			wikiNodeName = "Main");
+
+		LexiconEntry.gotoEntryMenuItem(
+			menuItem = "Permissions",
+			rowEntry = "Rename Page Title");
+
+		IFrame.selectPermissionsFrame();
+
+		PermissionsInline.viewPermissionsRemoved(
+			permissionDefinitionKey = "INLINE_PERMISSIONS_ADD_DISCUSSION_CHECKBOX",
+			roleTitle = "Guest");
 	}
 
 }

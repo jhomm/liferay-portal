@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_1;
@@ -72,7 +63,7 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 				while (resultSet.next()) {
 					String definition = resultSet.getString(2);
 
-					String newDefinition = upgradeDDMFormInstanceStructure(
+					String newDefinition = _upgradeDDMFormInstanceStructure(
 						definition);
 
 					if (Objects.equals(definition, newDefinition)) {
@@ -95,7 +86,7 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 						while (resultSet2.next()) {
 							definition = resultSet2.getString("definition");
 
-							newDefinition = upgradeDDMFormInstanceStructure(
+							newDefinition = _upgradeDDMFormInstanceStructure(
 								definition);
 
 							if (Objects.equals(definition, newDefinition)) {
@@ -121,17 +112,13 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 		}
 	}
 
-	protected boolean isAutocompleteEnabled(Map<String, Object> properties) {
+	private boolean _isAutocompleteEnabled(Map<String, Object> properties) {
 		String dataSourceType = (String)properties.get("dataSourceType");
 
-		if (Validator.isNotNull(dataSourceType)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(dataSourceType);
 	}
 
-	protected String upgradeDDMFormInstanceStructure(String definition)
+	private String _upgradeDDMFormInstanceStructure(String definition)
 		throws Exception {
 
 		DDMForm ddmForm = DDMFormDeserializeUtil.deserialize(
@@ -143,7 +130,7 @@ public class AutocompleteDDMTextFieldSettingUpgradeProcess
 
 				if (!properties.containsKey("autocomplete")) {
 					properties.put(
-						"autocomplete", isAutocompleteEnabled(properties));
+						"autocomplete", _isAutocompleteEnabled(properties));
 				}
 			}
 		}

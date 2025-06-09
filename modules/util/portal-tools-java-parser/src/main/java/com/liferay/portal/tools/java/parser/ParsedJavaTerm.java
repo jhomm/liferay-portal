@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser;
@@ -35,16 +26,16 @@ import java.util.regex.Pattern;
 public class ParsedJavaTerm implements Comparable<ParsedJavaTerm> {
 
 	public ParsedJavaTerm(
-		String content, Position startPosition, Position endPosition,
-		String className, String precedingNestedCodeBlockClassName,
-		String followingNestedCodeBlockClassName) {
+		String className, String content, Position endPosition,
+		String followingNestedCodeBlockClassName,
+		String precedingNestedCodeBlockClassName, Position startPosition) {
 
-		_content = content;
-		_startPosition = startPosition;
-		_endPosition = endPosition;
 		_className = className;
-		_precedingNestedCodeBlockClassName = precedingNestedCodeBlockClassName;
+		_content = content;
+		_endPosition = endPosition;
 		_followingNestedCodeBlockClassName = followingNestedCodeBlockClassName;
+		_precedingNestedCodeBlockClassName = precedingNestedCodeBlockClassName;
+		_startPosition = startPosition;
 	}
 
 	@Override

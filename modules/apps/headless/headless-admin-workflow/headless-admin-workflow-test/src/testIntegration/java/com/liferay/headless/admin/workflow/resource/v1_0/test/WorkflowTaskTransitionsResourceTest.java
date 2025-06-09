@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.resource.v1_0.test;
@@ -71,17 +62,33 @@ public class WorkflowTaskTransitionsResourceTest
 			(WorkflowTaskTransition)ArrayUtil.getValue(
 				workflowTaskTransitions.getWorkflowTaskTransitions(), 0);
 
-		Transition[] transitions = workflowTaskTransition.getTransitions();
+		Transition[] actualTransitions =
+			workflowTaskTransition.getTransitions();
 
 		Assert.assertEquals(
-			Arrays.toString(transitions), 2, transitions.length);
+			Arrays.toString(actualTransitions), 2, actualTransitions.length);
 
-		String[] expectedTransitionNames = {"approve", "reject"};
+		Transition[] expectedTransitions = {
+			new Transition() {
+				{
+					label = "Approve";
+					name = "approve";
+					sourceNodeName = "review";
+					targetNodeName = "approved";
+				}
+			},
+			new Transition() {
+				{
+					label = "Reject";
+					name = "reject";
+					sourceNodeName = "review";
+					targetNodeName = "update";
+				}
+			}
+		};
 
-		for (Transition transition : transitions) {
-			Assert.assertTrue(
-				ArrayUtil.contains(
-					expectedTransitionNames, transition.getName()));
+		for (int i = 0; i < expectedTransitions.length; i++) {
+			Assert.assertEquals(expectedTransitions[i], actualTransitions[i]);
 		}
 	}
 

@@ -30,7 +30,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--LOGIN-->
+
 <tr>
 	<td>LOGIN_EMAIL_FIELD</td>
 	<td>//input[@id='identifierId']</td>
@@ -38,7 +40,7 @@
 </tr>
 <tr>
 	<td>LOGIN_PASSWORD_FIELD</td>
-	<td>//input[@name='password']</td>
+	<td>//input[@type='password']</td>
 	<td></td>
 </tr>
 <tr>
@@ -56,7 +58,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--ACCOUNT_MENULIST-->
+
 <tr>
 	<td>ACCOUNT_MENULIST_USE_ANOTHER_ACCOUNT</td>
 	<td>//div[@class='pQ0lne']//li[contains(@class,'JDAKTe')]//div[contains(.,'Use another account')]</td>

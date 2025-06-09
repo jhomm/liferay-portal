@@ -1,5 +1,21 @@
-<li class="control-menu-nav-item d-none d-sm-inline-flex segments-experiment-icon ${cssClass}">
-	<a aria-label="${title}" class="control-menu-icon lfr-portal-tooltip product-menu-toggle sidenav-toggler" data-content="body" data-open-class="open-admin-panel" data-qa-id="segmentsExperimentPanel" data-target="#${portletNamespace}segmentsExperimentPanelId" data-title="${title}" data-toggle="liferay-sidenav" data-type="fixed-push" data-type-mobile="fixed" ${dataURL} href="javascript:;" id="${portletNamespace}segmentsExperimentPanelToggleId">
+<li class="control-menu-nav-item segments-experiment-icon ${cssClass}">
+	<button
+		aria-label="${title}"
+		class="btn btn-monospaced btn-sm control-menu-nav-link lfr-portal-tooltip product-menu-toggle sidenav-toggler"
+		data-content="body"
+		data-open-class="open-admin-panel open"
+		data-qa-id="segmentsExperimentPanel"
+		data-target="#${portletNamespace}segmentsExperimentPanelId"
+		data-title="${title}"
+		data-toggle="liferay-sidenav"
+		data-type="fixed-push"
+		data-type-mobile="fixed"
+		id="${portletNamespace}segmentsExperimentPanelToggleId"
+	>
 		${iconTag}
-	</a>
+	</button>
 </li>
+
+<script ${nonceAttribute}>
+	Liferay.SideNavigation.initialize(document.getElementById('${portletNamespace}segmentsExperimentPanelToggleId'));
+</script>

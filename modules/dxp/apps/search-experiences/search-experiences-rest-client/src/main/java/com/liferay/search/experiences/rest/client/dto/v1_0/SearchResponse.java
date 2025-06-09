@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.dto.v1_0;
@@ -17,11 +8,12 @@ package com.liferay.search.experiences.rest.client.dto.v1_0;
 import com.liferay.search.experiences.rest.client.function.UnsafeSupplier;
 import com.liferay.search.experiences.rest.client.serdes.v1_0.SearchResponseSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
+import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -34,47 +26,26 @@ public class SearchResponse implements Cloneable, Serializable {
 		return SearchResponseSerDes.toDTO(json);
 	}
 
-	public Document[] getDocuments() {
-		return documents;
+	public Map[] getErrors() {
+		return errors;
 	}
 
-	public void setDocuments(Document[] documents) {
-		this.documents = documents;
+	public void setErrors(Map[] errors) {
+		this.errors = errors;
 	}
 
-	public void setDocuments(
-		UnsafeSupplier<Document[], Exception> documentsUnsafeSupplier) {
+	public void setErrors(
+		UnsafeSupplier<Map[], Exception> errorsUnsafeSupplier) {
 
 		try {
-			documents = documentsUnsafeSupplier.get();
+			errors = errorsUnsafeSupplier.get();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected Document[] documents;
-
-	public Double getMaxScore() {
-		return maxScore;
-	}
-
-	public void setMaxScore(Double maxScore) {
-		this.maxScore = maxScore;
-	}
-
-	public void setMaxScore(
-		UnsafeSupplier<Double, Exception> maxScoreUnsafeSupplier) {
-
-		try {
-			maxScore = maxScoreUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Double maxScore;
+	protected Map[] errors;
 
 	public Integer getPage() {
 		return page;
@@ -200,6 +171,27 @@ public class SearchResponse implements Cloneable, Serializable {
 
 	protected String responseString;
 
+	public SearchHits getSearchHits() {
+		return searchHits;
+	}
+
+	public void setSearchHits(SearchHits searchHits) {
+		this.searchHits = searchHits;
+	}
+
+	public void setSearchHits(
+		UnsafeSupplier<SearchHits, Exception> searchHitsUnsafeSupplier) {
+
+		try {
+			searchHits = searchHitsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected SearchHits searchHits;
+
 	public SearchRequest getSearchRequest() {
 		return searchRequest;
 	}
@@ -220,27 +212,6 @@ public class SearchResponse implements Cloneable, Serializable {
 	}
 
 	protected SearchRequest searchRequest;
-
-	public Integer getTotalHits() {
-		return totalHits;
-	}
-
-	public void setTotalHits(Integer totalHits) {
-		this.totalHits = totalHits;
-	}
-
-	public void setTotalHits(
-		UnsafeSupplier<Integer, Exception> totalHitsUnsafeSupplier) {
-
-		try {
-			totalHits = totalHitsUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Integer totalHits;
 
 	@Override
 	public SearchResponse clone() throws CloneNotSupportedException {

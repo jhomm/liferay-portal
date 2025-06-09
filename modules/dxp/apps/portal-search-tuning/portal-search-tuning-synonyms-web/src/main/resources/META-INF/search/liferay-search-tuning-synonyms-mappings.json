@@ -1,0 +1,21 @@
+{
+	"properties": {
+		"index": {
+			"type": "keyword"
+		},
+		"synonyms": {
+			"fields": {
+				"keyword": {
+					"type": "keyword"
+				}
+			},
+			"type": "text"
+		},
+		"timestamp": {
+			"type": "date"
+		},
+		"uid": {
+			"type": "keyword"
+		}
+	}
+}

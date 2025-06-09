@@ -1,62 +1,91 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.security.permission.resource;
 
+import com.liferay.account.constants.AccountActionKeys;
 import com.liferay.account.model.AccountEntry;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Pei-Jung Lan
  */
-@Component(immediate = true, service = {})
 public class AccountEntryPermission {
 
 	public static boolean contains(
-			PermissionChecker permissionChecker, AccountEntry accountEntry,
-			String actionId)
-		throws PortalException {
+		PermissionChecker permissionChecker, AccountEntry accountEntry,
+		String actionId) {
 
-		return _accountEntryModelResourcePermission.contains(
-			permissionChecker, accountEntry, actionId);
+		try {
+			ModelResourcePermission<AccountEntry> modelResourcePermission =
+				_accountEntryModelResourcePermissionSnapshot.get();
+
+			return modelResourcePermission.contains(
+				permissionChecker, accountEntry, actionId);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return false;
 	}
 
 	public static boolean contains(
-			PermissionChecker permissionChecker, long accountEntryId,
-			String actionId)
-		throws PortalException {
+		PermissionChecker permissionChecker, long accountEntryId,
+		String actionId) {
 
-		return _accountEntryModelResourcePermission.contains(
-			permissionChecker, accountEntryId, actionId);
+		try {
+			ModelResourcePermission<AccountEntry> modelResourcePermission =
+				_accountEntryModelResourcePermissionSnapshot.get();
+
+			return modelResourcePermission.contains(
+				permissionChecker, accountEntryId, actionId);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return false;
 	}
 
-	@Reference(
-		target = "(model.class.name=com.liferay.account.model.AccountEntry)",
-		unbind = "-"
-	)
-	protected void setModelResourcePermission(
+	public static boolean hasEditOrManageOrganizationsPermission(
+		PermissionChecker permissionChecker, long accountEntryId) {
+
+		if (contains(
+				permissionChecker, accountEntryId,
+				AccountActionKeys.MANAGE_ORGANIZATIONS) ||
+			contains(
+				permissionChecker, accountEntryId,
+				AccountActionKeys.UPDATE_ORGANIZATIONS)) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	protected void unsetModelResourcePermission(
 		ModelResourcePermission<AccountEntry> modelResourcePermission) {
-
-		_accountEntryModelResourcePermission = modelResourcePermission;
 	}
 
-	private static ModelResourcePermission<AccountEntry>
-		_accountEntryModelResourcePermission;
+	private static final Log _log = LogFactoryUtil.getLog(
+		AccountEntryPermission.class);
+
+	private static final Snapshot<ModelResourcePermission<AccountEntry>>
+		_accountEntryModelResourcePermissionSnapshot = new Snapshot<>(
+			AccountEntryPermission.class,
+			Snapshot.cast(ModelResourcePermission.class),
+			"(model.class.name=com.liferay.account.model.AccountEntry)", true);
 
 }

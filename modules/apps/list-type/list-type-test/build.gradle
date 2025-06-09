@@ -1,5 +1,8 @@
 dependencies {
-	testIntegrationCompile project(":apps:list-type:list-type-api")
-	testIntegrationCompile project(":apps:object:object-api")
-	testIntegrationCompile project(":test:arquillian-extension-junit-bridge")
+	testIntegrationImplementation project(":apps:list-type:list-type-api")
+	testIntegrationImplementation project(":apps:object:object-api")
+	testIntegrationImplementation project(":apps:portal-vulcan:portal-vulcan-api")
+	testIntegrationImplementation project(":apps:portal:portal-upgrade-test-util")
+	testIntegrationImplementation project(":apps:static:portal:portal-upgrade-api")
+	testIntegrationImplementation project(":test:arquillian-extension-junit-bridge")
 }

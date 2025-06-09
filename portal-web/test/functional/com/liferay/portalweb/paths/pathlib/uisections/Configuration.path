@@ -10,10 +10,17 @@
 </thead>
 
 <tbody>
+
 <!--NAVIGATION-->
+
 <tr>
 	<td>NAVIGATION_SETUP</td>
 	<td>//*[contains(@class,'nav-link') and contains(.,'Setup')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NAVIGATION_SCOPE</td>
+	<td>//*[contains(@class,'nav-link') and contains(.,'Scope')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -61,7 +68,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SETUP-->
+
 <tr>
 	<td>ARCHIVE_RESTORE</td>
 	<td>//div[@class='archived-setups']//a</td>
@@ -84,7 +93,7 @@
 </tr>
 <tr>
 	<td>SCOPE_SELECT</td>
-	<td>//div[@id='scopeContent']//a[@title='Select']</td>
+	<td>//div[@id='scopeContent']//button[normalize-space()='Select']</td>
 	<td></td>
 </tr>
 <tr>
@@ -102,7 +111,9 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--SETUP_RSS-->
+
 <tr>
 	<td>SETUP_RSS_MAXIMUM_ITEMS_TO_DISPLAY_SELECT</td>
 	<td>//select[contains(@id,'rssDelta')]</td>

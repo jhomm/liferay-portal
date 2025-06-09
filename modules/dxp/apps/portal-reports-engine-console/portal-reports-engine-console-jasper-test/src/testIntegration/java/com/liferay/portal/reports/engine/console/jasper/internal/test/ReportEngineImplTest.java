@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.jasper.internal.test;
@@ -27,6 +18,9 @@ import com.liferay.portal.reports.engine.ReportFormat;
 import com.liferay.portal.reports.engine.ReportRequest;
 import com.liferay.portal.reports.engine.ReportRequestContext;
 import com.liferay.portal.reports.engine.ReportResultContainer;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.io.InputStream;
@@ -37,19 +31,14 @@ import java.util.HashMap;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceReference;
 
 /**
  * @author Michael C. Han
@@ -67,101 +56,82 @@ public class ReportEngineImplTest extends TestCase {
 			new LiferayIntegrationTestRule(),
 			SynchronousDestinationTestRule.INSTANCE);
 
-	@Before
-	@Override
-	public void setUp() throws Exception {
-		Bundle bundle = FrameworkUtil.getBundle(getClass());
-
-		_bundleContext = bundle.getBundleContext();
-
-		int counter = 0;
-
-		do {
-			_serviceReference = _bundleContext.getServiceReference(
-				ReportEngine.class);
-
-			if (_serviceReference == null) {
-				Thread.sleep(500);
-			}
-
-			counter++;
-
-			if (counter >= 5) {
-				throw new IllegalStateException(
-					"Unable to get reference to a report engine");
-			}
-		}
-		while (_serviceReference == null);
-
-		_reportEngine = _bundleContext.getService(_serviceReference);
-	}
-
-	@After
-	@Override
-	public void tearDown() throws Exception {
-		_bundleContext.ungetService(_serviceReference);
-
-		_bundleContext = null;
-	}
-
 	@Test
 	public void testCompileCsv() throws Exception {
-		compile(
+		_compile(
 			ReportDataSourceType.CSV, "CsvDataSource.txt",
 			"CsvDataSourceReport.jrxml", ReportFormat.CSV);
 	}
 
 	@Test
 	public void testCompileXls() throws Exception {
-		compile(
+		_compile(
 			ReportDataSourceType.XLS, "XlsDataSource.data.xls",
 			"XlsDataSourceReport.jrxml", ReportFormat.CSV);
 	}
 
 	@Test
 	public void testCompileXml() throws Exception {
-		compile(
+		_compile(
 			ReportDataSourceType.XML, "northwind.xml", "OrdersReport.jrxml",
 			ReportFormat.CSV);
 	}
 
 	@Test
 	public void testExportCsv() throws Exception {
-		export(ReportFormat.CSV);
+		_export(ReportFormat.CSV);
 	}
 
 	@Test
 	public void testExportPdf() throws Exception {
-		export(ReportFormat.PDF);
+		_export(ReportFormat.PDF);
+	}
+
+	@Test
+	public void testExportPdfWithChineseCharacters() throws Exception {
+		_testExportPdfWithFontExtension(
+			"dependencies/reports_admin_template_chinese_characters.jrxml",
+			"中国文字");
+	}
+
+	@Test
+	public void testExportPdfWithJapaneseCharacters() throws Exception {
+		_testExportPdfWithFontExtension(
+			"dependencies/reports_admin_template_japanese_characters.jrxml",
+			"本語の文字");
 	}
 
 	@Test
 	public void testExportRtf() throws Exception {
-		export(ReportFormat.RTF);
+		_export(ReportFormat.RTF);
 	}
 
 	@Test
 	public void testExportTxt() throws Exception {
-		export(ReportFormat.TXT);
+		_export(ReportFormat.TXT);
 	}
 
 	@Test
 	public void testExportXls() throws Exception {
-		export(ReportFormat.XLS);
+		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"org.apache.poi.POIDocument", LoggerTestUtil.WARN)) {
+
+			_export(ReportFormat.XLS);
+		}
 	}
 
 	@Test
 	public void testExportXml() throws Exception {
-		export(ReportFormat.XML);
+		_export(ReportFormat.XML);
 	}
 
-	protected ReportRequest compile(
+	private ReportRequest _compile(
 			ReportDataSourceType reportDataSourceType,
 			String dataSourceFileName, String dataSourceReportFileName,
 			ReportFormat reportFormat)
 		throws Exception {
 
-		ReportRequest reportRequest = getReportRequest(
+		ReportRequest reportRequest = _getReportRequest(
 			reportDataSourceType, dataSourceFileName, dataSourceReportFileName,
 			reportFormat);
 
@@ -170,13 +140,13 @@ public class ReportEngineImplTest extends TestCase {
 		return reportRequest;
 	}
 
-	protected void export(ReportFormat reportFormat) throws Exception {
-		ReportRequest reportRequest = compile(
+	private void _export(ReportFormat reportFormat) throws Exception {
+		ReportRequest reportRequest = _compile(
 			ReportDataSourceType.CSV, "CsvDataSource.txt",
-			"CsvDataSourceReport.jrxml", ReportFormat.CSV);
+			"CsvDataSourceReport.jrxml", reportFormat);
 
 		ReportResultContainer reportResultContainer =
-			new ByteArrayReportResultContainer();
+			new ByteArrayReportResultContainer(null);
 
 		_reportEngine.execute(reportRequest, reportResultContainer);
 
@@ -184,7 +154,7 @@ public class ReportEngineImplTest extends TestCase {
 		Assert.assertNotNull(reportResultContainer.getResults());
 	}
 
-	protected ReportRequest getReportRequest(
+	private ReportRequest _getReportRequest(
 			ReportDataSourceType reportDataSourceType,
 			String dataSourceFileName, String dataSourceReportFileName,
 			ReportFormat reportFormat)
@@ -209,7 +179,13 @@ public class ReportEngineImplTest extends TestCase {
 			"city,id,name,address,state");
 
 		InputStream dataSourceReportInputStream =
-			classLoader.getResourceAsStream(dataSourceReportFileName);
+			reportEngineImplTestClass.getResourceAsStream(
+				dataSourceReportFileName);
+
+		if (dataSourceReportInputStream == null) {
+			dataSourceReportInputStream = classLoader.getResourceAsStream(
+				dataSourceReportFileName);
+		}
 
 		byte[] reportByteArray = IOUtils.toByteArray(
 			dataSourceReportInputStream);
@@ -223,8 +199,34 @@ public class ReportEngineImplTest extends TestCase {
 			new HashMap<String, String>(), reportFormat.getValue());
 	}
 
-	private BundleContext _bundleContext;
+	private void _testExportPdfWithFontExtension(
+			String dataSourceReportFileName, String expectedCharacters)
+		throws Exception {
+
+		ReportRequest reportRequest = _compile(
+			ReportDataSourceType.CSV, "CsvDataSource.txt",
+			dataSourceReportFileName, ReportFormat.PDF);
+
+		ReportResultContainer reportResultContainer =
+			new ByteArrayReportResultContainer(null);
+
+		_reportEngine.execute(reportRequest, reportResultContainer);
+
+		Assert.assertFalse(reportResultContainer.hasError());
+		Assert.assertNotNull(reportResultContainer.getResults());
+
+		try (PDDocument pdDocument = PDDocument.load(
+				reportResultContainer.getResults())) {
+
+			PDFTextStripper pdfTextStripper = new PDFTextStripper();
+
+			String text = pdfTextStripper.getText(pdDocument);
+
+			Assert.assertTrue(text.contains(expectedCharacters));
+		}
+	}
+
+	@Inject
 	private ReportEngine _reportEngine;
-	private ServiceReference<ReportEngine> _serviceReference;
 
 }

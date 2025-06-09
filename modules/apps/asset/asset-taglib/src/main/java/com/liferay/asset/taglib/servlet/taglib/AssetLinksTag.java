@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.taglib.servlet.taglib;
 
 import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetLink;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
-import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
+import com.liferay.asset.link.model.AssetLink;
+import com.liferay.asset.link.service.AssetLinkLocalServiceUtil;
 import com.liferay.asset.taglib.internal.servlet.ServletContextUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.log.Log;
@@ -33,9 +24,10 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -45,17 +37,16 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.taglib.util.IncludeTag;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Juan Fernández
@@ -151,7 +142,7 @@ public class AssetLinksTag extends IncludeTag {
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(systemException, systemException);
+					_log.debug(systemException);
 				}
 			}
 		}
@@ -169,7 +160,7 @@ public class AssetLinksTag extends IncludeTag {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -204,77 +195,88 @@ public class AssetLinksTag extends IncludeTag {
 		LiferayPortletResponse liferayPortletResponse =
 			PortalUtil.getLiferayPortletResponse(portletResponse);
 
-		List<Tuple> assetLinkEntries = new ArrayList<>();
-
 		List<AssetLink> assetLinks = AssetLinkLocalServiceUtil.getDirectLinks(
 			_assetEntryId, false);
 
-		for (AssetLink assetLink : assetLinks) {
-			AssetEntry assetLinkEntry = null;
+		return TransformUtil.transform(
+			assetLinks,
+			assetLink -> {
+				AssetEntry assetLinkEntry = null;
 
-			if (assetLink.getEntryId1() == _assetEntryId) {
-				assetLinkEntry = AssetEntryLocalServiceUtil.getEntry(
-					assetLink.getEntryId2());
-			}
-			else {
-				assetLinkEntry = AssetEntryLocalServiceUtil.getEntry(
-					assetLink.getEntryId1());
-			}
-
-			AssetRendererFactory<?> assetRendererFactory =
-				AssetRendererFactoryRegistryUtil.
-					getAssetRendererFactoryByClassNameId(
-						assetLinkEntry.getClassNameId());
-
-			if (assetRendererFactory == null) {
-				if (_log.isWarnEnabled()) {
-					String className = PortalUtil.getClassName(
-						assetLinkEntry.getClassNameId());
-
-					_log.warn(
-						"No asset renderer factory found for class " +
-							className);
+				if (assetLink.getEntryId1() == _assetEntryId) {
+					assetLinkEntry = AssetEntryLocalServiceUtil.getEntry(
+						assetLink.getEntryId2());
+				}
+				else {
+					assetLinkEntry = AssetEntryLocalServiceUtil.getEntry(
+						assetLink.getEntryId1());
 				}
 
-				continue;
-			}
+				AssetRendererFactory<?> assetRendererFactory =
+					AssetRendererFactoryRegistryUtil.
+						getAssetRendererFactoryByClassName(
+							assetLinkEntry.getClassName());
 
-			if (!assetRendererFactory.isActive(themeDisplay.getCompanyId())) {
-				continue;
-			}
+				if (assetRendererFactory == null) {
+					if (_log.isWarnEnabled()) {
+						String className = PortalUtil.getClassName(
+							assetLinkEntry.getClassNameId());
 
-			AssetRenderer<?> assetRenderer =
-				assetRendererFactory.getAssetRenderer(
-					assetLinkEntry.getClassPK());
+						_log.warn(
+							"No asset renderer factory found for class " +
+								className);
+					}
 
-			if (!assetRenderer.hasViewPermission(
-					themeDisplay.getPermissionChecker()) ||
-				!(assetLinkEntry.isVisible() ||
-				  (assetRenderer.getStatus() ==
-					  WorkflowConstants.STATUS_SCHEDULED))) {
+					return null;
+				}
 
-				continue;
-			}
+				if (!assetRendererFactory.isActive(
+						themeDisplay.getCompanyId())) {
 
-			Group group = GroupLocalServiceUtil.getGroup(
-				assetLinkEntry.getGroupId());
+					return null;
+				}
 
-			Group scopeGroup = themeDisplay.getScopeGroup();
+				AssetRenderer<?> assetRenderer =
+					assetRendererFactory.getAssetRenderer(
+						assetLinkEntry.getClassPK());
 
-			if (group.isStaged() &&
-				(group.isStagingGroup() ^ scopeGroup.isStagingGroup())) {
+				if (assetRenderer == null) {
+					if (_log.isWarnEnabled()) {
+						_log.warn(
+							"No asset renderer found for class PK " +
+								assetLinkEntry.getClassPK());
+					}
 
-				continue;
-			}
+					return null;
+				}
 
-			String viewURL = _getViewURL(
-				assetLinkEntry, assetRenderer, assetRendererFactory.getType(),
-				liferayPortletRequest, liferayPortletResponse, themeDisplay);
+				if (!assetRenderer.hasViewPermission(
+						themeDisplay.getPermissionChecker()) ||
+					!(assetLinkEntry.isVisible() ||
+					  (assetRenderer.getStatus() ==
+						  WorkflowConstants.STATUS_SCHEDULED))) {
 
-			assetLinkEntries.add(new Tuple(assetLinkEntry, viewURL));
-		}
+					return null;
+				}
 
-		return assetLinkEntries;
+				Group group = GroupLocalServiceUtil.getGroup(
+					assetLinkEntry.getGroupId());
+
+				Group scopeGroup = themeDisplay.getScopeGroup();
+
+				if (group.isStaged() &&
+					(group.isStagingGroup() ^ scopeGroup.isStagingGroup())) {
+
+					return null;
+				}
+
+				String viewURL = _getViewURL(
+					assetLinkEntry, assetRenderer,
+					assetRendererFactory.getType(), liferayPortletRequest,
+					liferayPortletResponse, themeDisplay);
+
+				return new Tuple(assetLinkEntry, viewURL);
+			});
 	}
 
 	private String _getViewURL(
@@ -283,6 +285,8 @@ public class AssetLinksTag extends IncludeTag {
 			LiferayPortletResponse liferayPortletResponse,
 			ThemeDisplay themeDisplay)
 		throws Exception {
+
+		String viewURL = null;
 
 		PortletURL viewAssetURL = null;
 
@@ -318,25 +322,23 @@ public class AssetLinksTag extends IncludeTag {
 			viewAssetURL.setParameter("urlTitle", urlTitle);
 		}
 
-		String viewURL = null;
-
 		if (_viewInContext) {
 			String noSuchEntryRedirect = viewAssetURL.toString();
 
-			String urlViewInContext = assetRenderer.getURLViewInContext(
+			String viewInContextURL = assetRenderer.getURLViewInContext(
 				liferayPortletRequest, liferayPortletResponse,
 				noSuchEntryRedirect);
 
-			if (Validator.isNotNull(urlViewInContext) &&
-				!Objects.equals(urlViewInContext, noSuchEntryRedirect)) {
+			if (Validator.isNotNull(viewInContextURL) &&
+				!Objects.equals(viewInContextURL, noSuchEntryRedirect)) {
 
-				urlViewInContext = HttpUtil.setParameter(
-					urlViewInContext, "inheritRedirect", Boolean.TRUE);
-				urlViewInContext = HttpUtil.setParameter(
-					urlViewInContext, "redirect", themeDisplay.getURLCurrent());
+				viewInContextURL = HttpComponentsUtil.setParameter(
+					viewInContextURL, "inheritRedirect", Boolean.TRUE);
+				viewInContextURL = HttpComponentsUtil.setParameter(
+					viewInContextURL, "redirect", themeDisplay.getURLCurrent());
 			}
 
-			viewURL = urlViewInContext;
+			viewURL = viewInContextURL;
 		}
 
 		if (Validator.isNull(viewURL)) {

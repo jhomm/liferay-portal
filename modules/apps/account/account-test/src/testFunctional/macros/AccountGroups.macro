@@ -1,9 +1,8 @@
 definition {
 
-	macro addAssignee {
+	@summary = "Default summary"
+	macro addAssignee(accountGroupName = null, assigneeNames = null) {
 		LexiconEntry.gotoAdd();
-
-		Pause(locator1 = "3000");
 
 		SelectFrame(
 			key_title = "Assign Accounts to ${accountGroupName}",
@@ -13,11 +12,9 @@ definition {
 			PortletEntry.selectAll();
 		}
 		else {
-			for (var assigneeName : list "${assigneeNames}") {
-				Search.searchCP(searchTerm = "${assigneeName}");
-
+			for (var assigneeName : list ${assigneeNames}) {
 				Check(
-					key_tableEntry = "${assigneeName}",
+					key_tableEntry = ${assigneeName},
 					locator1 = "LexiconTable#TABLE_ENTRY_CHECKBOX");
 			}
 		}
@@ -27,28 +24,20 @@ definition {
 		Button.click(button = "Assign");
 
 		Alert.viewSuccessMessage();
-
-		Refresh();
-
-		for (var assigneeName : list "${assigneeNames}") {
-			AssertTextEquals.assertPartialText(
-				key_tableEntry = "${assigneeName}",
-				locator1 = "LexiconTable#TABLE_ENTRY",
-				value1 = "${assigneeName}");
-		}
 	}
 
-	macro addCP {
+	@summary = "Default summary"
+	macro addCP(accountGroupDescription = null, accountGroupName = null) {
 		LexiconEntry.gotoAdd();
 
 		AssertTextEquals(
 			locator1 = "Portlet#HEADER",
 			value1 = "Add Account Group");
 
-		PortletEntry.inputName(name = "${accountGroupName}");
+		PortletEntry.inputName(name = ${accountGroupName});
 
 		if (isSet(accountGroupDescription)) {
-			PortletEntry.inputDescription(description = "${accountGroupDescription}");
+			PortletEntry.inputDescription(description = ${accountGroupDescription});
 		}
 
 		Button.clickSave();
@@ -56,23 +45,22 @@ definition {
 		Alert.viewSuccessMessage();
 	}
 
-	macro editCP {
+	@summary = "Default summary"
+	macro editCP(accountGroupName = null, accountGroupDescriptionEdit = null, accountGroupNameEdit = null) {
 		AccountGroups.openAccountGroupsAdmin();
-
-		Search.searchCP(searchTerm = "${accountGroupName}");
 
 		LexiconEntry.gotoEntryMenuItem(
 			menuItem = "Edit",
-			rowEntry = "${accountGroupName}");
+			rowEntry = ${accountGroupName});
 
 		AssertTextEquals(
 			locator1 = "Portlet#HEADER",
 			value1 = "Edit ${accountGroupName}");
 
-		PortletEntry.inputName(name = "${accountGroupNameEdit}");
+		PortletEntry.inputName(name = ${accountGroupNameEdit});
 
 		if (isSet(accountGroupDescriptionEdit)) {
-			PortletEntry.inputDescription(description = "${accountGroupDescriptionEdit}");
+			PortletEntry.inputDescription(description = ${accountGroupDescriptionEdit});
 		}
 
 		Button.clickSave();
@@ -84,26 +72,28 @@ definition {
 			value1 = "Edit ${accountGroupNameEdit}");
 	}
 
-	macro openAccountGroupsAdmin {
+	@summary = "Default summary"
+	macro openAccountGroupsAdmin() {
 		Navigator.openWithAppendToBaseURL(urlAppend = "group/control_panel/manage?p_p_id=com_liferay_account_admin_web_internal_portlet_AccountGroupsAdminPortlet");
 	}
 
-	macro removeAccount {
-		Search.searchCP(searchTerm = "${accountGroupName}");
+	@summary = "Default summary"
+	macro removeAccount(removeType = null, accountGroupName = null) {
+		if (${removeType} == "Toolbar Remove Icon") {
+			LexiconEntry.selectEntry(key_rowEntry = ${accountGroupName});
 
-		if ("${removeType}" == "Toolbar Remove Icon") {
-			LexiconEntry.selectEntry(key_rowEntry = "${accountGroupName}");
-
-			ClickNoError.clickNoMouseOver(locator1 = "ManagementBar#REMOVE");
+			ClickNoError(
+				key_text = "times-circle",
+				locator1 = "ManagementBar#ANY_ICON");
 
 			AssertConfirm(value1 = "Are you sure you want to remove the selected accounts?");
 
 			Alert.viewSuccessMessage();
 		}
-		else if ("${removeType}" == "Management Toolbar") {
-			LexiconEntry.selectEntry(key_rowEntry = "${accountGroupName}");
+		else if (${removeType} == "Management Toolbar") {
+			LexiconEntry.selectEntry(key_rowEntry = ${accountGroupName});
 
-			Click(locator1 = "Icon#TOOLBAR_ELLIPSIS");
+			Click(locator1 = "ManagementBar#ELLIPSIS");
 
 			MenuItem.clickNoError(menuItem = "Remove");
 
@@ -113,7 +103,7 @@ definition {
 		}
 		else {
 			ClickNoError(
-				key_entryName = "${accountGroupName}",
+				key_entryName = ${accountGroupName},
 				locator1 = "LexiconTable#TABLE_ENTRY_DELETE");
 
 			AssertConfirm(value1 = "Are you sure you want to remove this account?");
@@ -121,50 +111,53 @@ definition {
 			Alert.viewSuccessMessage();
 		}
 
-		LexiconEntry.viewNoEntry(rowEntry = "${accountGroupName}");
+		LexiconEntry.viewNoEntry(rowEntry = ${accountGroupName});
 	}
 
-	macro viewAssignee {
+	@summary = "Default summary"
+	macro viewAssignee(assigneeName = null) {
 		AssertElementPresent(
 			key_tab = "Accounts",
 			locator1 = "NavTab#ACTIVE_TAB_LINK");
 
 		AssertTextEquals.assertPartialText(
-			key_tableEntry = "${assigneeName}",
+			key_tableEntry = ${assigneeName},
 			locator1 = "LexiconTable#TABLE_ENTRY",
-			value1 = "${assigneeName}");
+			value1 = ${assigneeName});
 	}
 
-	macro viewDefault {
-		if (IsElementPresent(key_tab = "${tabName}",locator1 = "NavTab#ACTIVE_TAB_LINK")) {
+	@summary = "Default summary"
+	macro viewDefault() {
+		if (IsElementPresent(key_tab = ${tabName}, locator1 = "NavTab#ACTIVE_TAB_LINK")) {
 			AssertElementPresent(
-				key_tab = "${tabName}",
+				key_tab = ${tabName},
 				locator1 = "NavTab#ACTIVE_TAB_LINK");
 		}
 
-		var tabName = StringUtil.toLowerCase("${tabName}");
+		var tabName = StringUtil.toLowerCase(${tabName});
 
-		AssertTextEquals(
+		AssertTextEquals.assertPartialText(
 			locator1 = "Message#EMPTY_INFO",
 			value1 = "No ${tabName} were found.");
 	}
 
-	macro viewEntry {
-		LexiconEntry.viewEntryName(rowEntry = "${accountGroupName}");
+	@summary = "Default summary"
+	macro viewEntry(accountGroupDescription = null, accountGroupName = null, accountGroupAccount = null) {
+		LexiconEntry.viewEntryName(rowEntry = ${accountGroupName});
 
 		if (isSet(accountGroupDescription)) {
 			AssertTextEquals(
-				key_rowEntry = "${accountGroupName}",
+				key_rowEntry = ${accountGroupName},
 				locator1 = "ContentRow#ENTRY_CONTENT_ENTRY_DESCRIPTION_TD3",
-				value1 = "${accountGroupDescription}");
+				value1 = ${accountGroupDescription});
 		}
 
 		if (isSet(accountGroupAccount)) {
 			AssertTextEquals(
 				key_columnName = "lfr-accounts-column",
-				key_rowEntry = "${accountGroupName}",
+				key_rowEntry = ${accountGroupName},
 				locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER_TD",
-				value1 = "${accountGroupAccount}");
+				value1 = ${accountGroupAccount});
 		}
 	}
 

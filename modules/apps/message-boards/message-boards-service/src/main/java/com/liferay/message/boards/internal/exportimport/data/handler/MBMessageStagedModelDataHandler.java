@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.exportimport.data.handler;
@@ -31,6 +22,7 @@ import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBDiscussionLocalService;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBThreadLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -48,6 +40,7 @@ import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portlet.documentlibrary.lar.FileEntryUtil;
 import com.liferay.ratings.kernel.model.RatingsEntry;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
+import com.liferay.trash.TrashHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,7 +58,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Daniel Kocsis
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class MBMessageStagedModelDataHandler
 	extends BaseStagedModelDataHandler<MBMessage> {
 
@@ -137,6 +130,13 @@ public class MBMessageStagedModelDataHandler
 	protected void doExportStagedModel(
 			PortletDataContext portletDataContext, MBMessage message)
 		throws Exception {
+
+		if (message.isAnonymous()) {
+			message.setUserId(0);
+			message.setUserName(StringPool.BLANK);
+			message.setStatusByUserId(0);
+			message.setStatusByUserName(StringPool.BLANK);
+		}
 
 		if (message.isDiscussion()) {
 			MBDiscussion discussion = _mbDiscussionLocalService.getDiscussion(
@@ -392,7 +392,7 @@ public class MBMessageStagedModelDataHandler
 
 			thread.setUuid(messageElement.attributeValue("threadUuid"));
 
-			_mbThreadLocalService.updateMBThread(thread);
+			thread = _mbThreadLocalService.updateMBThread(thread);
 
 			if (importedMessage.getCategoryId() != parentCategoryId) {
 				_mbThreadLocalService.moveThread(
@@ -410,7 +410,7 @@ public class MBMessageStagedModelDataHandler
 				}
 				catch (IOException ioException) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(ioException, ioException);
+						_log.warn(ioException);
 					}
 				}
 			}
@@ -442,7 +442,7 @@ public class MBMessageStagedModelDataHandler
 			}
 		}
 
-		if (existingMessage.isInTrashContainer()) {
+		if (_trashHelper.isInTrashContainer(existingMessage)) {
 			MBThread existingThread = existingMessage.getThread();
 
 			TrashHandler trashHandler =
@@ -467,7 +467,7 @@ public class MBMessageStagedModelDataHandler
 				_mbDiscussionLocalService.getThreadDiscussion(threadId);
 
 			return _mbMessageLocalService.addDiscussionMessage(
-				userId, message.getUserName(),
+				null, userId, message.getUserName(),
 				portletDataContext.getScopeGroupId(), discussion.getClassName(),
 				discussion.getClassPK(), threadId, parentMessageId,
 				message.getSubject(), message.getBody(), serviceContext);
@@ -515,7 +515,7 @@ public class MBMessageStagedModelDataHandler
 				}
 				catch (Exception exception) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(exception, exception);
+						_log.debug(exception);
 					}
 				}
 			}
@@ -567,9 +567,7 @@ public class MBMessageStagedModelDataHandler
 
 		importedMessage.setModifiedDate(modifiedDate);
 
-		_mbMessageLocalService.updateMBMessage(importedMessage);
-
-		return importedMessage;
+		return _mbMessageLocalService.updateMBMessage(importedMessage);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -586,5 +584,8 @@ public class MBMessageStagedModelDataHandler
 
 	@Reference
 	private RatingsEntryLocalService _ratingsEntryLocalService;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 }

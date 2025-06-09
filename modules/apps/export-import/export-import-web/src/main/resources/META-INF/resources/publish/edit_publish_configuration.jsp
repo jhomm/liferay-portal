@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -205,16 +196,16 @@ response.setHeader("Ajax-ID", request.getHeader("Ajax-ID"));
 					<%
 					String taskExecutorClassName = localPublishing ? BackgroundTaskExecutorNames.LAYOUT_STAGING_BACKGROUND_TASK_EXECUTOR : BackgroundTaskExecutorNames.LAYOUT_REMOTE_STAGING_BACKGROUND_TASK_EXECUTOR;
 
-					int incompleteBackgroundTaskCount = BackgroundTaskManagerUtil.getBackgroundTasksCount(stagingGroupId, taskExecutorClassName, false);
+					int incompleteBackgroundTasksCount = BackgroundTaskManagerUtil.getBackgroundTasksCount(stagingGroupId, taskExecutorClassName, false);
 
 					if (localPublishing) {
-						incompleteBackgroundTaskCount += BackgroundTaskManagerUtil.getBackgroundTasksCount(liveGroupId, taskExecutorClassName, false);
+						incompleteBackgroundTasksCount += BackgroundTaskManagerUtil.getBackgroundTasksCount(liveGroupId, taskExecutorClassName, false);
 					}
 					%>
 
-					<div class="<%= (incompleteBackgroundTaskCount == 0) ? "hide" : "in-progress" %>" id="<portlet:namespace />incompleteProcessMessage">
+					<div class="<%= (incompleteBackgroundTasksCount == 0) ? "hide" : "in-progress" %>" id="<portlet:namespace />incompleteProcessMessage">
 						<liferay-util:include page="/incomplete_processes_message.jsp" servletContext="<%= application %>">
-							<liferay-util:param name="incompleteBackgroundTaskCount" value="<%= String.valueOf(incompleteBackgroundTaskCount) %>" />
+							<liferay-util:param name="incompleteBackgroundTasksCount" value="<%= String.valueOf(incompleteBackgroundTasksCount) %>" />
 						</liferay-util:include>
 					</div>
 
@@ -236,69 +227,78 @@ response.setHeader("Ajax-ID", request.getHeader("Ajax-ID"));
 					}
 					%>
 
-					<aui:fieldset-group markupView="lexicon">
-						<aui:fieldset>
-							<c:choose>
-								<c:when test="<%= exportImportConfiguration == null %>">
-									<aui:input maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" placeholder="process-name-placeholder" />
-								</c:when>
-								<c:otherwise>
-									<aui:input maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" value="<%= exportImportConfiguration.getName() %>" />
-								</c:otherwise>
-							</c:choose>
-						</aui:fieldset>
+					<div class="sheet">
+						<div class="panel-group panel-group-flush">
+							<clay:alert
+								displayType="warning"
+								message="publish-small-incremental-changes-to-avoid-large-publishing-processes-that-can-take-a-long-time-to-execute"
+								symbol="page"
+								title="recommendation"
+							/>
 
-						<aui:fieldset cssClass="options-group">
-							<clay:sheet-section>
-								<h3 class="sheet-subtitle"><liferay-ui:message key="date" /></h3>
+							<aui:fieldset>
+								<c:choose>
+									<c:when test="<%= exportImportConfiguration == null %>">
+										<aui:input maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" placeholder="process-name-placeholder" />
+									</c:when>
+									<c:otherwise>
+										<aui:input maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" value="<%= exportImportConfiguration.getName() %>" />
+									</c:otherwise>
+								</c:choose>
+							</aui:fieldset>
 
-								<%@ include file="/publish/publish_layouts_scheduler.jspf" %>
-							</clay:sheet-section>
-						</aui:fieldset>
+							<aui:fieldset cssClass="options-group">
+								<clay:sheet-section>
+									<h3 class="sheet-subtitle"><liferay-ui:message key="date" /></h3>
 
-						<liferay-staging:deletions
-							cmd="<%= Constants.PUBLISH %>"
-							disableInputs="<%= configuredPublish %>"
-							exportImportConfigurationId="<%= exportImportConfigurationId %>"
-						/>
+									<%@ include file="/publish/publish_layouts_scheduler.jspf" %>
+								</clay:sheet-section>
+							</aui:fieldset>
 
-						<c:if test="<%= GroupCapabilityUtil.isSupportsPages(group) && !group.isCompany() %>">
-							<liferay-staging:select-pages
-								action="<%= Constants.PUBLISH %>"
+							<liferay-staging:deletions
+								cmd="<%= Constants.PUBLISH %>"
 								disableInputs="<%= configuredPublish %>"
 								exportImportConfigurationId="<%= exportImportConfigurationId %>"
-								groupId="<%= groupId %>"
-								privateLayout="<%= privateLayout %>"
-								treeId="<%= treeId %>"
 							/>
-						</c:if>
 
-						<liferay-staging:content
-							cmd="<%= cmd %>"
-							disableInputs="<%= configuredPublish %>"
-							exportImportConfigurationId="<%= exportImportConfigurationId %>"
-							type="<%= localPublishing ? Constants.PUBLISH_TO_LIVE : Constants.PUBLISH_TO_REMOTE %>"
-						/>
-
-						<liferay-staging:permissions
-							action="<%= Constants.PUBLISH %>"
-							descriptionCSSClass="permissions-description"
-							disableInputs="<%= configuredPublish %>"
-							exportImportConfigurationId="<%= exportImportConfigurationId %>"
-							global="<%= group.isCompany() %>"
-							labelCSSClass="permissions-label"
-						/>
-
-						<c:if test="<%= !localPublishing %>">
-							<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" cssClass="options-group" label="remote-live-connection-settings">
-								<liferay-staging:remote-options
+							<c:if test="<%= GroupCapabilityUtil.isSupportsPages(group) && !group.isCompany() %>">
+								<liferay-staging:select-pages
+									action="<%= Constants.PUBLISH %>"
 									disableInputs="<%= configuredPublish %>"
 									exportImportConfigurationId="<%= exportImportConfigurationId %>"
+									groupId="<%= groupId %>"
 									privateLayout="<%= privateLayout %>"
+									treeId="<%= treeId %>"
 								/>
-							</aui:fieldset>
-						</c:if>
-					</aui:fieldset-group>
+							</c:if>
+
+							<liferay-staging:content
+								cmd="<%= cmd %>"
+								disableInputs="<%= configuredPublish %>"
+								exportImportConfigurationId="<%= exportImportConfigurationId %>"
+								type="<%= localPublishing ? Constants.PUBLISH_TO_LIVE : Constants.PUBLISH_TO_REMOTE %>"
+							/>
+
+							<liferay-staging:permissions
+								action="<%= Constants.PUBLISH %>"
+								descriptionCSSClass="permissions-description"
+								disableInputs="<%= configuredPublish %>"
+								exportImportConfigurationId="<%= exportImportConfigurationId %>"
+								global="<%= group.isCompany() %>"
+								labelCSSClass="permissions-label"
+							/>
+
+							<c:if test="<%= !localPublishing %>">
+								<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" cssClass="options-group" label="remote-live-connection-settings">
+									<liferay-staging:remote-options
+										disableInputs="<%= configuredPublish %>"
+										exportImportConfigurationId="<%= exportImportConfigurationId %>"
+										privateLayout="<%= privateLayout %>"
+									/>
+								</aui:fieldset>
+							</c:if>
+						</div>
+					</div>
 				</clay:container-fluid>
 			</div>
 
@@ -321,10 +321,32 @@ response.setHeader("Ajax-ID", request.getHeader("Ajax-ID"));
 			'<portlet:namespace />ExportImportComponent'
 		);
 
+		var deletePortletDataBeforeImportingCheckbox = document.getElementById(
+			'<portlet:namespace /><%= PortletDataHandlerKeys.DELETE_PORTLET_DATA %>'
+		);
+
 		var dateChecker = exportImport.getDateRangeChecker();
 
 		if (dateChecker.validRange) {
-			submitForm(document.<portlet:namespace />publishPagesFm);
+			var form = document.<portlet:namespace />publishPagesFm;
+
+			if (
+				deletePortletDataBeforeImportingCheckbox &&
+				deletePortletDataBeforeImportingCheckbox.checked
+			) {
+				Liferay.Util.openConfirmModal({
+					message:
+						'<%= UnicodeLanguageUtil.get(request, "delete-application-data-before-importing-confirmation") %>',
+					onConfirm: (isConfirmed) => {
+						if (isConfirmed) {
+							submitForm(form);
+						}
+					},
+				});
+			}
+			else {
+				submitForm(form);
+			}
 		}
 		else {
 			exportImport.showNotification(dateChecker);
@@ -351,23 +373,31 @@ response.setHeader("Ajax-ID", request.getHeader("Ajax-ID"));
 		['<portlet:namespace />selectSchedule', '<portlet:namespace />addButton'],
 		'<portlet:namespace />publishButton'
 	);
-	Liferay.Util.toggleRadio('<portlet:namespace />rangeAll', '', [
-		'<portlet:namespace />startEndDate',
-		'<portlet:namespace />rangeLastInputs',
-	]);
+	Liferay.Util.toggleRadio(
+		'<portlet:namespace />rangeAll',
+		'<portlet:namespace />warningSection',
+		[
+			'<portlet:namespace />startEndDate',
+			'<portlet:namespace />rangeLastInputs',
+		]
+	);
 	Liferay.Util.toggleRadio(
 		'<portlet:namespace />rangeDateRange',
 		'<portlet:namespace />startEndDate',
-		'<portlet:namespace />rangeLastInputs'
+		[
+			'<portlet:namespace />rangeLastInputs',
+			'<portlet:namespace />warningSection',
+		]
 	);
 	Liferay.Util.toggleRadio('<portlet:namespace />rangeLastPublish', '', [
 		'<portlet:namespace />startEndDate',
 		'<portlet:namespace />rangeLastInputs',
+		'<portlet:namespace />warningSection',
 	]);
 	Liferay.Util.toggleRadio(
 		'<portlet:namespace />rangeLast',
 		'<portlet:namespace />rangeLastInputs',
-		['<portlet:namespace />startEndDate']
+		['<portlet:namespace />startEndDate', '<portlet:namespace />warningSection']
 	);
 </aui:script>
 

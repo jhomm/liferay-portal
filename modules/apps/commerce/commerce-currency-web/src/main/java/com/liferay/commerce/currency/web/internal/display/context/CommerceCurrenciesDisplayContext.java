@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.currency.web.internal.display.context;
@@ -19,43 +10,60 @@ import com.liferay.commerce.currency.configuration.RoundingTypeConfiguration;
 import com.liferay.commerce.currency.constants.CommerceCurrencyActionKeys;
 import com.liferay.commerce.currency.constants.CommerceCurrencyConstants;
 import com.liferay.commerce.currency.constants.CommerceCurrencyExchangeRateConstants;
+import com.liferay.commerce.currency.constants.CommerceCurrencyPortletKeys;
 import com.liferay.commerce.currency.constants.RoundingTypeConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyService;
 import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.currency.util.ExchangeRateProviderRegistry;
 import com.liferay.commerce.currency.web.internal.util.CommerceCurrencyUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.commerce.product.constants.CPField;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.petra.string.CharPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.settings.SystemSettingsLocator;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Andrea Di Giorgi
  * @author Marco Leo
  * @author Alessio Antonio Rendina
+ * @author Luca Pellizzon
  */
 public class CommerceCurrenciesDisplayContext {
 
@@ -74,11 +82,50 @@ public class CommerceCurrenciesDisplayContext {
 		_portletResourcePermission = portletResourcePermission;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
+
+		_liferayPortletRequest = PortalUtil.getLiferayPortletRequest(
+			renderRequest);
+		_liferayPortletResponse = PortalUtil.getLiferayPortletResponse(
+			renderResponse);
+
+		_httpServletRequest = _liferayPortletRequest.getHttpServletRequest();
 	}
 
 	public String format(BigDecimal rate) throws PortalException {
 		return _commercePriceFormatter.format(
 			rate, PortalUtil.getLocale(_renderRequest));
+	}
+
+	public List<DropdownItem> getBulkActionDropdownItems() {
+		return ListUtil.fromArray(
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					PortalUtil.getControlPanelPortletURL(
+						_httpServletRequest,
+						CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+						PortletRequest.ACTION_PHASE)
+				).setActionName(
+					"/commerce_currency/edit_commerce_currency"
+				).setCMD(
+					"updateExchangeRates"
+				).buildString(),
+				"reload", "update-exchange-rates",
+				LanguageUtil.get(_httpServletRequest, "update-exchange-rates"),
+				"patch", null, null),
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					PortalUtil.getControlPanelPortletURL(
+						_httpServletRequest,
+						CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+						PortletRequest.ACTION_PHASE)
+				).setActionName(
+					"/commerce_currency/edit_commerce_currency"
+				).setCMD(
+					Constants.DELETE
+				).buildString(),
+				"trash", "delete",
+				LanguageUtil.get(_httpServletRequest, "delete"), "delete", null,
+				null));
 	}
 
 	public CommerceCurrency getCommerceCurrency() throws PortalException {
@@ -110,27 +157,31 @@ public class CommerceCurrenciesDisplayContext {
 				CommerceCurrencyExchangeRateConstants.SERVICE_NAME));
 	}
 
+	public String getCurrencyApiURL() {
+		return "/o/headless-commerce-admin-catalog/v1.0/currencies";
+	}
+
 	public String getDefaultFormatPattern() throws ConfigurationException {
-		return CommerceCurrencyConstants.DEFAULT_FORMAT_PATTERN;
+		return CommerceCurrencyConstants.DECIMAL_FORMAT_PATTERN;
 	}
 
 	public int getDefaultMaxFractionDigits() throws ConfigurationException {
 		RoundingTypeConfiguration roundingTypeConfiguration =
-			getRoundingTypeConfiguration();
+			_getRoundingTypeConfiguration();
 
 		return roundingTypeConfiguration.maximumFractionDigits();
 	}
 
 	public int getDefaultMinFractionDigits() throws ConfigurationException {
 		RoundingTypeConfiguration roundingTypeConfiguration =
-			getRoundingTypeConfiguration();
+			_getRoundingTypeConfiguration();
 
 		return roundingTypeConfiguration.minimumFractionDigits();
 	}
 
 	public String getDefaultRoundingMode() throws ConfigurationException {
 		RoundingTypeConfiguration roundingTypeConfiguration =
-			getRoundingTypeConfiguration();
+			_getRoundingTypeConfiguration();
 
 		RoundingMode roundingMode = roundingTypeConfiguration.roundingMode();
 
@@ -141,22 +192,127 @@ public class CommerceCurrenciesDisplayContext {
 		return _exchangeRateProviderRegistry.getExchangeRateProviderKeys();
 	}
 
+	public List<FDSActionDropdownItem> getFDSActionDropdownItems()
+		throws PortalException {
+
+		return ListUtil.fromArray(
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					PortalUtil.getControlPanelPortletURL(
+						_httpServletRequest,
+						CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+						PortletRequest.RENDER_PHASE)
+				).setMVCRenderCommandName(
+					"/commerce_currency/edit_commerce_currency"
+				).setParameter(
+					"commerceCurrencyId", "{id}"
+				).buildString(),
+				"pencil", "view", LanguageUtil.get(_httpServletRequest, "edit"),
+				"get", null, null),
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					PortalUtil.getControlPanelPortletURL(
+						_httpServletRequest,
+						CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+						PortletRequest.ACTION_PHASE)
+				).setActionName(
+					"/commerce_currency/edit_commerce_currency"
+				).setCMD(
+					"setActive"
+				).setParameter(
+					"active", Boolean.TRUE
+				).setParameter(
+					"commerceCurrencyId", "{id}"
+				).buildString(),
+				"pencil", "toggle-active",
+				LanguageUtil.get(_httpServletRequest, "toggle-active"), "patch",
+				null, null),
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					PortalUtil.getControlPanelPortletURL(
+						_httpServletRequest,
+						CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+						PortletRequest.ACTION_PHASE)
+				).setActionName(
+					"/commerce_currency/edit_commerce_currency"
+				).setCMD(
+					"setPrimary"
+				).setParameter(
+					"commerceCurrencyId", "{id}"
+				).setParameter(
+					"primary", Boolean.TRUE
+				).buildString(),
+				"pencil", "primary",
+				LanguageUtil.get(_httpServletRequest, "primary"), "patch", null,
+				null),
+			new FDSActionDropdownItem(
+				PortletURLBuilder.create(
+					PortalUtil.getControlPanelPortletURL(
+						_httpServletRequest,
+						CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+						PortletRequest.ACTION_PHASE)
+				).setActionName(
+					"/commerce_currency/edit_commerce_currency"
+				).setCMD(
+					"updateExchangeRates"
+				).setParameter(
+					"commerceCurrencyId", "{id}"
+				).buildString(),
+				"reload", "update-exchange-rates",
+				LanguageUtil.get(_httpServletRequest, "update-exchange-rates"),
+				"get", null, null),
+			new FDSActionDropdownItem(
+				LanguageUtil.get(
+					_httpServletRequest,
+					"are-you-sure-you-want-to-delete-this-entry"),
+				getCurrencyApiURL() + "/{id}", "trash", "delete",
+				LanguageUtil.get(_httpServletRequest, "delete"), "delete", null,
+				"async"));
+	}
+
+	public CreationMenu getFDSCreationMenu() {
+		return CreationMenuBuilder.addPrimaryDropdownItem(
+			dropdownItem -> {
+				dropdownItem.setHref(
+					_liferayPortletResponse.createRenderURL(),
+					"mvcRenderCommandName",
+					"/commerce_currency/edit_commerce_currency", "redirect",
+					PortalUtil.getCurrentURL(_liferayPortletRequest));
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "add-currency"));
+			}
+		).build();
+	}
+
 	public String getOrderByCol() {
-		return ParamUtil.getString(
-			_renderRequest, SearchContainer.DEFAULT_ORDER_BY_COL_PARAM,
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
+		}
+
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_renderRequest, CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
 			"priority");
+
+		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		return ParamUtil.getString(
-			_renderRequest, SearchContainer.DEFAULT_ORDER_BY_TYPE_PARAM, "asc");
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
+		}
+
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_renderRequest, CommerceCurrencyPortletKeys.COMMERCE_CURRENCY,
+			"asc");
+
+		return _orderByType;
 	}
 
 	public PortletURL getPortletURL() {
 		return PortletURLBuilder.createRenderURL(
 			_renderResponse
 		).setNavigation(
-			getNavigation()
+			_getNavigation()
 		).setParameter(
 			"orderByCol", getOrderByCol()
 		).setParameter(
@@ -182,8 +338,11 @@ public class CommerceCurrenciesDisplayContext {
 	}
 
 	public String getRoundingModeLabel(String roundingModeName) {
-		return StringUtil.replace(
-			roundingModeName, CharPool.UNDERLINE, CharPool.SPACE);
+		return LanguageUtil.get(
+			PortalUtil.getLocale(_renderRequest),
+			StringUtil.replace(
+				StringUtil.toLowerCase(roundingModeName), CharPool.UNDERLINE,
+				CharPool.DASH));
 	}
 
 	public SearchContainer<CommerceCurrency> getSearchContainer()
@@ -199,7 +358,7 @@ public class CommerceCurrenciesDisplayContext {
 		Boolean active = null;
 		String emptyResultsMessage = "there-are-no-currencies";
 
-		String navigation = getNavigation();
+		String navigation = _getNavigation();
 
 		if (navigation.equals("active")) {
 			active = Boolean.TRUE;
@@ -213,39 +372,52 @@ public class CommerceCurrenciesDisplayContext {
 		_searchContainer = new SearchContainer<>(
 			_renderRequest, getPortletURL(), null, emptyResultsMessage);
 
-		String orderByCol = getOrderByCol();
-		String orderByType = getOrderByType();
-
-		OrderByComparator<CommerceCurrency> orderByComparator =
+		_searchContainer.setOrderByCol(getOrderByCol());
+		_searchContainer.setOrderByComparator(
 			CommerceCurrencyUtil.getCommerceCurrencyOrderByComparator(
-				orderByCol, orderByType);
+				getOrderByCol(), getOrderByType()));
+		_searchContainer.setOrderByType(getOrderByType());
 
-		_searchContainer.setOrderByCol(orderByCol);
-		_searchContainer.setOrderByComparator(orderByComparator);
-		_searchContainer.setOrderByType(orderByType);
-		_searchContainer.setRowChecker(getRowChecker());
+		String keywords = ParamUtil.getString(_renderRequest, "keywords");
 
-		int total;
-		List<CommerceCurrency> results;
+		if (Validator.isBlank(keywords)) {
+			if (active != null) {
+				boolean finalActive = active;
 
-		if (active != null) {
-			total = _commerceCurrencyService.getCommerceCurrenciesCount(
-				themeDisplay.getCompanyId(), active);
-			results = _commerceCurrencyService.getCommerceCurrencies(
-				themeDisplay.getCompanyId(), active,
-				_searchContainer.getStart(), _searchContainer.getEnd(),
-				orderByComparator);
+				_searchContainer.setResultsAndTotal(
+					() -> _commerceCurrencyService.getCommerceCurrencies(
+						themeDisplay.getCompanyId(), finalActive,
+						_searchContainer.getStart(), _searchContainer.getEnd(),
+						_searchContainer.getOrderByComparator()),
+					_commerceCurrencyService.getCommerceCurrenciesCount(
+						themeDisplay.getCompanyId(), finalActive));
+			}
+			else {
+				_searchContainer.setResultsAndTotal(
+					() -> _commerceCurrencyService.getCommerceCurrencies(
+						themeDisplay.getCompanyId(),
+						_searchContainer.getStart(), _searchContainer.getEnd(),
+						_searchContainer.getOrderByComparator()),
+					_commerceCurrencyService.getCommerceCurrenciesCount(
+						themeDisplay.getCompanyId()));
+			}
 		}
 		else {
-			total = _commerceCurrencyService.getCommerceCurrenciesCount(
-				themeDisplay.getCompanyId());
-			results = _commerceCurrencyService.getCommerceCurrencies(
-				themeDisplay.getCompanyId(), _searchContainer.getStart(),
-				_searchContainer.getEnd(), orderByComparator);
+			LinkedHashMap<String, Object> params = new LinkedHashMap<>();
+
+			if (active != null) {
+				params.put(CPField.ACTIVE, active);
+			}
+
+			_searchContainer.setResultsAndTotal(
+				_commerceCurrencyService.searchCommerceCurrencies(
+					themeDisplay.getCompanyId(), keywords, params,
+					_searchContainer.getStart(), _searchContainer.getEnd(),
+					CommerceCurrencyUtil.getCommerceCurrencySort(
+						getOrderByCol(), getOrderByType())));
 		}
 
-		_searchContainer.setTotal(total);
-		_searchContainer.setResults(results);
+		_searchContainer.setRowChecker(_getRowChecker());
 
 		return _searchContainer;
 	}
@@ -259,11 +431,11 @@ public class CommerceCurrenciesDisplayContext {
 			CommerceCurrencyActionKeys.MANAGE_COMMERCE_CURRENCIES);
 	}
 
-	protected String getNavigation() {
+	private String _getNavigation() {
 		return ParamUtil.getString(_renderRequest, "navigation");
 	}
 
-	protected RoundingTypeConfiguration getRoundingTypeConfiguration()
+	private RoundingTypeConfiguration _getRoundingTypeConfiguration()
 		throws ConfigurationException {
 
 		return _configurationProvider.getConfiguration(
@@ -271,7 +443,7 @@ public class CommerceCurrenciesDisplayContext {
 			new SystemSettingsLocator(RoundingTypeConstants.SERVICE_NAME));
 	}
 
-	protected RowChecker getRowChecker() {
+	private RowChecker _getRowChecker() {
 		if (_rowChecker == null) {
 			_rowChecker = new EmptyOnClickRowChecker(_renderResponse);
 		}
@@ -284,6 +456,11 @@ public class CommerceCurrenciesDisplayContext {
 	private final CommercePriceFormatter _commercePriceFormatter;
 	private final ConfigurationProvider _configurationProvider;
 	private final ExchangeRateProviderRegistry _exchangeRateProviderRegistry;
+	private final HttpServletRequest _httpServletRequest;
+	private final LiferayPortletRequest _liferayPortletRequest;
+	private final LiferayPortletResponse _liferayPortletResponse;
+	private String _orderByCol;
+	private String _orderByType;
 	private final PortletResourcePermission _portletResourcePermission;
 	private CommerceCurrency _primaryCommerceCurrency;
 	private final RenderRequest _renderRequest;

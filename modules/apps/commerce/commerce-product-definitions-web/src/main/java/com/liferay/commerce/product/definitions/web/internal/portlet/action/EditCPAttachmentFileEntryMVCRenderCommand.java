@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.definitions.web.internal.portlet.action;
@@ -17,13 +8,13 @@ package com.liferay.commerce.product.definitions.web.internal.portlet.action;
 import com.liferay.commerce.product.configuration.AttachmentsConfiguration;
 import com.liferay.commerce.product.constants.CPAttachmentFileEntryConstants;
 import com.liferay.commerce.product.constants.CPPortletKeys;
-import com.liferay.commerce.product.ddm.DDMHelper;
 import com.liferay.commerce.product.definitions.web.internal.display.context.CPAttachmentFileEntriesDisplayContext;
 import com.liferay.commerce.product.exception.NoSuchCPAttachmentFileEntryException;
+import com.liferay.commerce.product.helper.CPInstanceHelper;
+import com.liferay.commerce.product.option.CommerceOptionTypeRegistry;
 import com.liferay.commerce.product.portlet.action.ActionHelper;
 import com.liferay.commerce.product.service.CPAttachmentFileEntryService;
 import com.liferay.commerce.product.service.CPDefinitionOptionRelService;
-import com.liferay.commerce.product.util.CPInstanceHelper;
 import com.liferay.document.library.display.context.DLMimeTypeDisplayContext;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
@@ -34,15 +25,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Map;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Reference;
 
 /**
@@ -50,10 +40,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.commerce.product.configuration.AttachmentsConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, enabled = false,
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
+		"jakarta.portlet.name=" + CPPortletKeys.CP_DEFINITIONS,
 		"mvc.command.name=/cp_definitions/edit_cp_attachment_file_entry"
 	},
 	service = MVCRenderCommand.class
@@ -71,9 +59,10 @@ public class EditCPAttachmentFileEntryMVCRenderCommand
 				cpAttachmentFileEntriesDisplayContext =
 					new CPAttachmentFileEntriesDisplayContext(
 						_actionHelper, _attachmentsConfiguration,
+						_commerceOptionTypeRegistry,
 						_cpAttachmentFileEntryService,
 						_cpDefinitionOptionRelService, _cpInstanceHelper,
-						_ddmHelper, _dlMimeTypeDisplayContext,
+						_dlMimeTypeDisplayContext,
 						_portal.getHttpServletRequest(renderRequest),
 						_itemSelector);
 
@@ -115,6 +104,9 @@ public class EditCPAttachmentFileEntryMVCRenderCommand
 	private volatile AttachmentsConfiguration _attachmentsConfiguration;
 
 	@Reference
+	private CommerceOptionTypeRegistry _commerceOptionTypeRegistry;
+
+	@Reference
 	private CPAttachmentFileEntryService _cpAttachmentFileEntryService;
 
 	@Reference
@@ -122,9 +114,6 @@ public class EditCPAttachmentFileEntryMVCRenderCommand
 
 	@Reference
 	private CPInstanceHelper _cpInstanceHelper;
-
-	@Reference
-	private DDMHelper _ddmHelper;
 
 	@Reference
 	private DLMimeTypeDisplayContext _dlMimeTypeDisplayContext;

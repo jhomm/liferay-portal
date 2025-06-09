@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter;
@@ -19,7 +10,7 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.shop.by.diagram.model.CSDiagramSetting;
 import com.liferay.commerce.shop.by.diagram.service.CSDiagramSettingService;
-import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.document.library.util.DLURLHelperUtil;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Diagram;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
@@ -32,9 +23,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.commerce.shop.by.diagram.model.CSDiagramSetting",
-	service = {DiagramDTOConverter.class, DTOConverter.class}
+	service = DTOConverter.class
 )
 public class DiagramDTOConverter
 	implements DTOConverter<CSDiagramSetting, Diagram> {
@@ -58,14 +48,8 @@ public class DiagramDTOConverter
 
 		return new Diagram() {
 			{
-				color = csDiagramSetting.getColor();
-				id = csDiagramSetting.getCSDiagramSettingId();
-				productExternalReferenceCode =
-					cProduct.getExternalReferenceCode();
-				productId = cProduct.getCProductId();
-				radius = csDiagramSetting.getRadius();
-				type = csDiagramSetting.getType();
-
+				setColor(csDiagramSetting::getColor);
+				setId(csDiagramSetting::getCSDiagramSettingId);
 				setImageURL(
 					() -> {
 						CPAttachmentFileEntry cpAttachmentFileEntry =
@@ -78,9 +62,14 @@ public class DiagramDTOConverter
 							return null;
 						}
 
-						return DLUtil.getDownloadURL(
+						return DLURLHelperUtil.getDownloadURL(
 							fileEntry, fileEntry.getFileVersion(), null, null);
 					});
+				setProductExternalReferenceCode(
+					cProduct::getExternalReferenceCode);
+				setProductId(cProduct::getCProductId);
+				setRadius(csDiagramSetting::getRadius);
+				setType(csDiagramSetting::getType);
 			}
 		};
 	}

@@ -1,17 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayList from '@clayui/list';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import className from 'classnames';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 
@@ -55,9 +50,10 @@ export default function SocialDetail({
 
 	const {referringSocialMedia} = currentPage.data;
 
-	const dateFormatters = useMemo(() => dateFormat(languageTag), [
-		languageTag,
-	]);
+	const dateFormatters = useMemo(
+		() => dateFormat(languageTag),
+		[languageTag]
+	);
 
 	const {firstDate, lastDate} = useDateTitle();
 
@@ -67,9 +63,8 @@ export default function SocialDetail({
 
 	const chartDispatch = useContext(ChartDispatchContext);
 
-	const {pieChartLoading, timeSpanKey, timeSpanOffset} = useContext(
-		ChartStateContext
-	);
+	const {pieChartLoading, timeSpanKey, timeSpanOffset} =
+		useContext(ChartStateContext);
 
 	const {validAnalyticsConnection} = useContext(ConnectionContext);
 
@@ -92,7 +87,7 @@ export default function SocialDetail({
 
 	const [highlighted, setHighlighted] = useState(null);
 
-	const firstUpdate = useRef(true);
+	const firstUpdateRef = useRef(true);
 
 	const trafficSourceDetailClasses = className(
 		'c-p-3 traffic-source-detail',
@@ -110,8 +105,8 @@ export default function SocialDetail({
 	}
 
 	useEffect(() => {
-		if (firstUpdate.current) {
-			firstUpdate.current = false;
+		if (firstUpdateRef.current) {
+			firstUpdateRef.current = false;
 
 			return;
 		}
@@ -126,7 +121,7 @@ export default function SocialDetail({
 
 			trafficSourcesDataProvider()
 				.then((trafficSources) => {
-					handleDetailPeriodChange(trafficSources, 'social');
+					handleDetailPeriodChange(trafficSources, 'social', true);
 				})
 				.catch(() => {
 					dispatch({type: 'ADD_WARNING'});
@@ -158,6 +153,7 @@ export default function SocialDetail({
 					small
 				/>
 			)}
+
 			<div className="c-mb-3 c-mt-2">
 				<TimeSpanSelector
 					disabledNextTimeSpan={timeSpanOffset === 0}
@@ -169,12 +165,12 @@ export default function SocialDetail({
 				/>
 			</div>
 
-			{title && <h5 className="c-mb-4">{title}</h5>}
+			{title && <div className="c-mb-4 h5">{title}</div>}
 
 			<TotalCount
 				className="c-mb-2"
 				dataProvider={trafficVolumeDataProvider}
-				label={Liferay.Util.sub(Liferay.Language.get('traffic-volume'))}
+				label={sub(Liferay.Language.get('traffic-volume'))}
 				popoverHeader={Liferay.Language.get('traffic-volume')}
 				popoverMessage={Liferay.Language.get(
 					'traffic-volume-is-the-number-of-page-views-coming-from-one-channel'
@@ -185,7 +181,7 @@ export default function SocialDetail({
 			<TotalCount
 				className="c-mb-3"
 				dataProvider={trafficShareDataProvider}
-				label={Liferay.Util.sub(Liferay.Language.get('traffic-share'))}
+				label={sub(Liferay.Language.get('traffic-share'))}
 				percentage={true}
 				popoverHeader={Liferay.Language.get('traffic-share')}
 				popoverMessage={Liferay.Language.get(
@@ -204,12 +200,14 @@ export default function SocialDetail({
 							</span>
 						</ClayList.ItemTitle>
 					</ClayList.ItemField>
+
 					<ClayList.ItemField>
 						<ClayList.ItemTitle>
 							<span>{Liferay.Language.get('traffic')}</span>
 						</ClayList.ItemTitle>
 					</ClayList.ItemField>
 				</ClayList.Item>
+
 				{referringSocialMedia.map(
 					({name, title, trafficAmount}, index) => {
 						const listItemClasses = className({
@@ -231,20 +229,21 @@ export default function SocialDetail({
 										</span>
 									</ClayList.ItemText>
 								</ClayList.ItemField>
+
 								<ClayList.ItemField
 									className="align-self-center"
 									expand
 								>
 									<div
 										style={{
-											backgroundColor: keyToHexColor(
-												name
-											),
+											backgroundColor:
+												keyToHexColor(name),
 											height: '16px',
 											width: keyToWidth(index),
 										}}
 									/>
 								</ClayList.ItemField>
+
 								<ClayList.ItemField className="align-self-center">
 									<span className="align-self-end c-ml-2 font-weight-semi-bold text-dark">
 										{numberFormat(

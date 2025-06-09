@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service;
 
+import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountRel;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
@@ -34,6 +26,7 @@ import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.UnicodeProperties;
 
 import java.io.Serializable;
 
@@ -81,6 +74,7 @@ public interface CommerceDiscountRelLocalService
 
 	public CommerceDiscountRel addCommerceDiscountRel(
 			long commerceDiscountId, String className, long classPK,
+			UnicodeProperties typeSettingsUnicodeProperties,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -100,6 +94,12 @@ public interface CommerceDiscountRelLocalService
 	public PersistedModel createPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	public CommerceDiscountRel deleteCommerceDiscountRel(
+			CommerceDiscount commerceDiscount,
+			CommerceDiscountRel commerceDiscountRel)
+		throws PortalException;
+
 	/**
 	 * Deletes the commerce discount rel from the database. Also notifies the appropriate model listeners.
 	 *
@@ -109,13 +109,10 @@ public interface CommerceDiscountRelLocalService
 	 *
 	 * @param commerceDiscountRel the commerce discount rel
 	 * @return the commerce discount rel that was removed
-	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
-	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CommerceDiscountRel deleteCommerceDiscountRel(
-			CommerceDiscountRel commerceDiscountRel)
-		throws PortalException;
+		CommerceDiscountRel commerceDiscountRel);
 
 	/**
 	 * Deletes the commerce discount rel with the primary key from the database. Also notifies the appropriate model listeners.
@@ -133,7 +130,7 @@ public interface CommerceDiscountRelLocalService
 			long commerceDiscountRelId)
 		throws PortalException;
 
-	public void deleteCommerceDiscountRels(long commerceDiscountId)
+	public void deleteCommerceDiscountRels(CommerceDiscount commerceDiscount)
 		throws PortalException;
 
 	public void deleteCommerceDiscountRels(String className, long classPK)
@@ -266,6 +263,14 @@ public interface CommerceDiscountRelLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscountRel> getCommerceDiscountRels(
 		int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceDiscountRel> getCommerceDiscountRels(
+		long classNameId, long classPK);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceDiscountRel> getCommerceDiscountRels(
+		long classNameId, long classPK, String unitOfMeasureKey);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceDiscountRel> getCommerceDiscountRels(

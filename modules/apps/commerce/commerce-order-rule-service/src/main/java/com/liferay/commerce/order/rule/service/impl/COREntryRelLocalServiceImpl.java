@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.service.impl;
@@ -42,6 +33,8 @@ import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
@@ -56,7 +49,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "model.class.name=com.liferay.commerce.order.rule.model.COREntryRel",
 	service = AopService.class
 )
@@ -71,20 +63,20 @@ public class COREntryRelLocalServiceImpl
 		COREntryRel corEntryRel = corEntryRelPersistence.create(
 			counterLocalService.increment());
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 
 		corEntryRel.setCompanyId(user.getCompanyId());
 		corEntryRel.setUserId(user.getUserId());
 		corEntryRel.setUserName(user.getFullName());
 
 		corEntryRel.setClassNameId(
-			classNameLocalService.getClassNameId(className));
+			_classNameLocalService.getClassNameId(className));
 		corEntryRel.setClassPK(classPK);
 		corEntryRel.setCOREntryId(corEntryId);
 
 		corEntryRel = corEntryRelPersistence.update(corEntryRel);
 
-		reindexCOREntry(corEntryId);
+		_reindexCOREntry(corEntryId);
 
 		return corEntryRel;
 	}
@@ -96,7 +88,7 @@ public class COREntryRelLocalServiceImpl
 
 		corEntryRelPersistence.remove(corEntryRel);
 
-		reindexCOREntry(corEntryRel.getCOREntryId());
+		_reindexCOREntry(corEntryRel.getCOREntryId());
 
 		return corEntryRel;
 	}
@@ -126,7 +118,7 @@ public class COREntryRelLocalServiceImpl
 		throws PortalException {
 
 		List<COREntryRel> corEntryRels = corEntryRelPersistence.findByC_C(
-			classNameLocalService.getClassNameId(className), corEntryId);
+			_classNameLocalService.getClassNameId(className), corEntryId);
 
 		for (COREntryRel corEntryRel : corEntryRels) {
 			corEntryRelLocalService.deleteCOREntryRel(corEntryRel);
@@ -138,7 +130,7 @@ public class COREntryRelLocalServiceImpl
 		String className, long classPK, long corEntryId) {
 
 		return corEntryRelPersistence.fetchByC_C_C(
-			classNameLocalService.getClassNameId(className), classPK,
+			_classNameLocalService.getClassNameId(className), classPK,
 			corEntryId);
 	}
 
@@ -289,13 +281,6 @@ public class COREntryRelLocalServiceImpl
 		return corEntryRelPersistence.countByCOREntryId(corEntryId);
 	}
 
-	protected void reindexCOREntry(long corEntryId) throws PortalException {
-		Indexer<COREntry> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
-			COREntry.class);
-
-		indexer.reindex(COREntry.class.getName(), corEntryId);
-	}
-
 	private GroupByStep _getGroupByStep(
 		FromStep fromStep, Table innerJoinTable, Predicate innerJoinPredicate,
 		Long corEntryId, String className, String keywords,
@@ -316,23 +301,36 @@ public class COREntryRelLocalServiceImpl
 				corEntryId
 			).and(
 				COREntryRelTable.INSTANCE.classNameId.eq(
-					classNameLocalService.getClassNameId(className))
+					_classNameLocalService.getClassNameId(className))
 			).and(
 				() -> {
-					if (Validator.isNotNull(keywords)) {
-						return Predicate.withParentheses(
-							_customSQL.getKeywordsPredicate(
-								DSLFunctionFactoryUtil.lower(
-									keywordsPredicateExpression),
-								_customSQL.keywords(keywords, true)));
+					if (Validator.isNull(keywords)) {
+						return null;
 					}
 
-					return null;
+					return Predicate.withParentheses(
+						_customSQL.getKeywordsPredicate(
+							DSLFunctionFactoryUtil.lower(
+								keywordsPredicateExpression),
+							_customSQL.keywords(keywords, true)));
 				}
 			));
 	}
 
+	private void _reindexCOREntry(long corEntryId) throws PortalException {
+		Indexer<COREntry> indexer = IndexerRegistryUtil.nullSafeGetIndexer(
+			COREntry.class);
+
+		indexer.reindex(COREntry.class.getName(), corEntryId);
+	}
+
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
 	@Reference
 	private CustomSQL _customSQL;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

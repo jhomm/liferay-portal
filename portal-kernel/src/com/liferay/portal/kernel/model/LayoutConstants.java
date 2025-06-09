@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -33,8 +24,6 @@ public class LayoutConstants {
 
 	public static final String TYPE_ASSET_DISPLAY = "asset_display";
 
-	public static final String TYPE_COLLECTION = "collection";
-
 	public static final String TYPE_CONTENT = "content";
 
 	public static final String TYPE_CONTROL_PANEL = "control_panel";
@@ -46,10 +35,14 @@ public class LayoutConstants {
 
 	public static final String TYPE_LINK_TO_LAYOUT = "link_to_layout";
 
+	public static final String TYPE_NODE = "node";
+
 	public static final String TYPE_PANEL = "panel";
 
 	public static final String TYPE_PORTLET = "portlet";
 
 	public static final String TYPE_URL = "url";
+
+	public static final String TYPE_UTILITY = "utility";
 
 }

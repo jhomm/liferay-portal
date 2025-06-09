@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -17,7 +8,7 @@ import ClayIcon from '@clayui/icon';
 import {useMutation} from 'graphql-hooks';
 import React, {useEffect, useState} from 'react';
 
-export default ({
+export default function SubscriptionButton({
 	isSubscribed,
 	onSubscription,
 	parentSection = false,
@@ -25,7 +16,7 @@ export default ({
 	showTitle = false,
 	subscribeQuery,
 	unsubscribeQuery,
-}) => {
+}) {
 	const [subscription, setSubscription] = useState(false);
 
 	useEffect(() => {
@@ -36,7 +27,7 @@ export default ({
 
 	const onCompleted = () => {
 		setSubscription(!subscription);
-		onSubscription?.();
+		onSubscription?.(!subscription);
 	};
 
 	const [subscribe] = useMutation(subscribeQuery);
@@ -47,25 +38,25 @@ export default ({
 		fn({variables: queryVariables}).then(onCompleted);
 	};
 
-	const btnTitle = showTitle
-		? subscription
-			? Liferay.Language.get('subscribed')
-			: Liferay.Language.get('subscribe')
-		: '';
+	const btnTitle = subscription
+		? Liferay.Language.get('subscribed')
+		: Liferay.Language.get('subscribe');
 
 	return (
 		<ClayButton
+			aria-label={btnTitle}
+			data-tooltip-align="top"
 			displayType={subscription ? 'primary' : 'secondary'}
 			onClick={changeSubscription}
 			title={btnTitle}
 		>
 			<ClayIcon symbol="bell-on" />
 
-			{btnTitle && (
+			{showTitle && (
 				<span className="c-ml-2 d-none d-sm-inline-block">
 					{btnTitle}
 				</span>
 			)}
 		</ClayButton>
 	);
-};
+}

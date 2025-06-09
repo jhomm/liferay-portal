@@ -1,34 +1,38 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.service.impl;
 
 import com.liferay.commerce.notification.model.CommerceNotificationTemplate;
 import com.liferay.commerce.notification.model.CommerceNotificationTemplateCommerceAccountGroupRel;
+import com.liferay.commerce.notification.service.CommerceNotificationTemplateLocalService;
 import com.liferay.commerce.notification.service.base.CommerceNotificationTemplateCommerceAccountGroupRelServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceNotificationTemplateCommerceAccountGroupRel"
+	},
+	service = AopService.class
+)
+@Deprecated
 public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 	extends CommerceNotificationTemplateCommerceAccountGroupRelServiceBaseImpl {
 
@@ -97,7 +101,7 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 		throws PortalException {
 
 		CommerceNotificationTemplate commerceNotificationTemplate =
-			commerceNotificationTemplateLocalService.
+			_commerceNotificationTemplateLocalService.
 				fetchCommerceNotificationTemplate(
 					commerceNotificationTemplateId);
 
@@ -112,12 +116,14 @@ public class CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl
 				commerceNotificationTemplateId, start, end, orderByComparator);
 	}
 
-	private static volatile ModelResourcePermission
-		<CommerceNotificationTemplate>
-			_commerceNotificationTemplateResourcePermission =
-				ModelResourcePermissionFactory.getInstance(
-					CommerceNotificationTemplateCommerceAccountGroupRelServiceImpl.class,
-					"_commerceNotificationTemplateResourcePermission",
-					CommerceNotificationTemplate.class);
+	@Reference
+	private CommerceNotificationTemplateLocalService
+		_commerceNotificationTemplateLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.notification.model.CommerceNotificationTemplate)"
+	)
+	private ModelResourcePermission<CommerceNotificationTemplate>
+		_commerceNotificationTemplateResourcePermission;
 
 }

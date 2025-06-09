@@ -1,10 +1,10 @@
-@component-name = "portal-tools"
+@component-name = "portal-ci-infrastructure"
 definition {
 
 	property portal.smoke = "dummy";
-	property testray.main.component.name = "Tools";
+	property testray.main.component.name = "Poshi Runner";
 
-	@priority = "5"
+	@priority = 5
 	test Dummy {
 		echo("Dummy Functional Test");
 	}

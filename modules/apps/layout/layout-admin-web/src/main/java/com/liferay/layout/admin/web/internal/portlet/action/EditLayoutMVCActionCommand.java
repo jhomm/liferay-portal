@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.portlet.action;
 
-import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.asset.kernel.model.AssetEntry;
+import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
+import com.liferay.layout.set.prototype.helper.LayoutSetPrototypeHelper;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.exception.ModelListenerException;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -24,18 +17,15 @@ import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
-import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutService;
-import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.upload.UploadPortletRequest;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropertiesParamUtil;
@@ -43,15 +33,17 @@ import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.sites.kernel.util.Sites;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,9 +52,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/edit_layout"
 	},
 	service = MVCActionCommand.class
@@ -82,53 +73,34 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
 			long groupId = ParamUtil.getLong(actionRequest, "groupId");
-			long liveGroupId = ParamUtil.getLong(actionRequest, "liveGroupId");
-			long stagingGroupId = ParamUtil.getLong(
-				actionRequest, "stagingGroupId");
-			boolean privateLayout = ParamUtil.getBoolean(
-				actionRequest, "privateLayout");
-			long layoutId = ParamUtil.getLong(actionRequest, "layoutId");
-			Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
-				actionRequest, "name");
+			Map<Locale, String> nameMap = _localization.getLocalizationMap(
+				actionRequest, "nameMapAsXML");
+			long selPlid = ParamUtil.getLong(actionRequest, "selPlid");
 			String type = ParamUtil.getString(uploadPortletRequest, "type");
 			boolean hidden = ParamUtil.getBoolean(
 				uploadPortletRequest, "hidden");
 			Map<Locale, String> friendlyURLMap =
-				LocalizationUtil.getLocalizationMap(
-					actionRequest, "friendlyURL");
-			boolean deleteLogo = ParamUtil.getBoolean(
-				actionRequest, "deleteLogo");
+				_localization.getLocalizationMap(actionRequest, "friendlyURL");
 
-			byte[] iconBytes = null;
-
-			long fileEntryId = ParamUtil.getLong(
-				uploadPortletRequest, "fileEntryId");
-
-			if (fileEntryId > 0) {
-				FileEntry fileEntry = _dlAppLocalService.getFileEntry(
-					fileEntryId);
-
-				iconBytes = FileUtil.getBytes(fileEntry.getContentStream());
-			}
-
-			Layout layout = _layoutLocalService.getLayout(
-				groupId, privateLayout, layoutId);
-
-			long masterLayoutPlid = ParamUtil.getLong(
-				uploadPortletRequest, "masterLayoutPlid",
-				layout.getMasterLayoutPlid());
-			long styleBookEntryId = ParamUtil.getLong(
-				uploadPortletRequest, "styleBookEntryId",
-				layout.getStyleBookEntryId());
+			Layout layout = _layoutLocalService.getLayout(selPlid);
 
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
 				Layout.class.getName(), actionRequest);
+
+			if ((layout.isTypeAssetDisplay() || layout.isTypeContent()) &&
+				(layout.fetchDraftLayout() == null)) {
+
+				AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+					Layout.class.getName(), layout.getPlid());
+
+				serviceContext.setAssetCategoryIds(assetEntry.getCategoryIds());
+			}
 
 			String oldFriendlyURL = layout.getFriendlyURL();
 
 			Collection<String> values = friendlyURLMap.values();
 
-			values.removeIf(value -> Validator.isNull(value));
+			values.removeIf(Validator::isNull);
 
 			if (friendlyURLMap.isEmpty()) {
 				friendlyURLMap = layout.getFriendlyURLMap();
@@ -139,25 +111,48 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 					"layout.instanceable.allowed", Boolean.TRUE);
 			}
 
+			if (layout.isDraftLayout()) {
+				UnicodeProperties layoutTypeSettingsUnicodeProperties =
+					layout.getTypeSettingsProperties();
+
+				serviceContext.setAttribute(
+					Sites.LAYOUT_UPDATEABLE,
+					layoutTypeSettingsUnicodeProperties.get(
+						Sites.LAYOUT_UPDATEABLE));
+			}
+
 			layout = _layoutService.updateLayout(
-				groupId, privateLayout, layoutId, layout.getParentLayoutId(),
-				nameMap, layout.getTitleMap(), layout.getDescriptionMap(),
-				layout.getKeywordsMap(), layout.getRobotsMap(), type, hidden,
-				friendlyURLMap, !deleteLogo, iconBytes, masterLayoutPlid,
-				styleBookEntryId, serviceContext);
+				groupId, layout.isPrivateLayout(), layout.getLayoutId(),
+				layout.getParentLayoutId(), nameMap, layout.getTitleMap(),
+				layout.getDescriptionMap(), layout.getKeywordsMap(),
+				layout.getRobotsMap(), type, hidden, friendlyURLMap,
+				layout.isIconImage(), null, layout.getStyleBookEntryId(),
+				layout.getFaviconFileEntryId(), layout.getMasterLayoutPlid(),
+				serviceContext);
+
+			UnicodeProperties formTypeSettingsUnicodeProperties =
+				PropertiesParamUtil.getProperties(
+					actionRequest, "TypeSettingsProperties--");
 
 			Layout draftLayout = layout.fetchDraftLayout();
 
 			if (draftLayout != null) {
+				serviceContext.setAttribute(
+					Sites.LAYOUT_UPDATEABLE,
+					formTypeSettingsUnicodeProperties.get(
+						Sites.LAYOUT_UPDATEABLE));
+
 				_layoutService.updateLayout(
-					groupId, privateLayout, draftLayout.getLayoutId(),
-					draftLayout.getParentLayoutId(), nameMap,
-					draftLayout.getTitleMap(), draftLayout.getDescriptionMap(),
+					groupId, draftLayout.isPrivateLayout(),
+					draftLayout.getLayoutId(), draftLayout.getParentLayoutId(),
+					nameMap, draftLayout.getTitleMap(),
+					draftLayout.getDescriptionMap(),
 					draftLayout.getKeywordsMap(), draftLayout.getRobotsMap(),
 					type, draftLayout.isHidden(),
-					draftLayout.getFriendlyURLMap(), !deleteLogo, iconBytes,
-					draftLayout.getMasterLayoutPlid(), styleBookEntryId,
-					serviceContext);
+					draftLayout.getFriendlyURLMap(), draftLayout.isIconImage(),
+					null, draftLayout.getStyleBookEntryId(),
+					draftLayout.getFaviconFileEntryId(),
+					draftLayout.getMasterLayoutPlid(), serviceContext);
 			}
 
 			themeDisplay.clearLayoutFriendlyURL(layout);
@@ -165,16 +160,12 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 			UnicodeProperties layoutTypeSettingsUnicodeProperties =
 				layout.getTypeSettingsProperties();
 
-			UnicodeProperties formTypeSettingsUnicodeProperties =
-				PropertiesParamUtil.getProperties(
-					actionRequest, "TypeSettingsProperties--");
-
 			String linkToLayoutUuid = ParamUtil.getString(
 				actionRequest, "linkToLayoutUuid");
 
 			if (Validator.isNotNull(linkToLayoutUuid)) {
 				Layout linkToLayout = _layoutService.getLayoutByUuidAndGroupId(
-					linkToLayoutUuid, groupId, privateLayout);
+					linkToLayoutUuid, groupId, layout.isPrivateLayout());
 
 				formTypeSettingsUnicodeProperties.put(
 					"linkToLayoutId",
@@ -187,7 +178,9 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 			if (type.equals(LayoutConstants.TYPE_PORTLET)) {
 				String layoutTemplateId = ParamUtil.getString(
 					uploadPortletRequest, "layoutTemplateId",
-					PropsValues.DEFAULT_LAYOUT_TEMPLATE_ID);
+					GetterUtil.getString(
+						layoutTypePortlet.getLayoutTemplateId(),
+						PropsValues.DEFAULT_LAYOUT_TEMPLATE_ID));
 
 				layoutTypePortlet.setLayoutTemplateId(
 					themeDisplay.getUserId(), layoutTemplateId);
@@ -213,7 +206,7 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 			}
 
 			layout = _layoutService.updateLayout(
-				groupId, privateLayout, layoutId,
+				groupId, layout.isPrivateLayout(), layout.getLayoutId(),
 				layoutTypeSettingsUnicodeProperties.toString());
 
 			EventsProcessorUtil.process(
@@ -222,12 +215,14 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 				uploadPortletRequest,
 				_portal.getHttpServletResponse(actionResponse));
 
-			ActionUtil.updateLookAndFeel(
-				actionRequest, themeDisplay.getCompanyId(), liveGroupId,
-				stagingGroupId, privateLayout, layout.getLayoutId(),
-				layout.getTypeSettingsProperties());
+			if (layout.isDraftLayout()) {
+				_layoutLocalService.updateStatus(
+					themeDisplay.getUserId(), layout.getPlid(),
+					WorkflowConstants.STATUS_DRAFT, serviceContext);
+			}
 
-			String redirect = ParamUtil.getString(actionRequest, "redirect");
+			String redirect = _portal.escapeRedirect(
+				ParamUtil.getString(actionRequest, "redirect"));
 
 			if (Validator.isNull(redirect) ||
 				(redirect.contains(oldFriendlyURL) &&
@@ -242,6 +237,10 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 			MultiSessionMessages.add(
 				actionRequest, portletResource + "layoutUpdated", layout);
 
+			ActionUtil.addFriendlyURLWarningSessionMessages(
+				_portal.getHttpServletRequest(actionRequest), layout,
+				_layoutSetPrototypeHelper);
+
 			actionRequest.setAttribute(WebKeys.REDIRECT, redirect);
 		}
 		catch (ModelListenerException modelListenerException) {
@@ -254,7 +253,7 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
-	private DLAppLocalService _dlAppLocalService;
+	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
@@ -263,9 +262,12 @@ public class EditLayoutMVCActionCommand extends BaseMVCActionCommand {
 	private LayoutService _layoutService;
 
 	@Reference
-	private Portal _portal;
+	private LayoutSetPrototypeHelper _layoutSetPrototypeHelper;
 
 	@Reference
-	private PortletPreferencesLocalService _portletPreferencesLocalService;
+	private Localization _localization;
+
+	@Reference
+	private Portal _portal;
 
 }

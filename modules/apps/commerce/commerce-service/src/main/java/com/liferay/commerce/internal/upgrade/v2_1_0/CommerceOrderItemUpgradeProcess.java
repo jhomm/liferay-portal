@@ -1,31 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.upgrade.v2_1_0;
 
-import com.liferay.commerce.internal.upgrade.base.BaseCommerceServiceUpgradeProcess;
 import com.liferay.commerce.model.impl.CommerceOrderItemModelImpl;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.service.CPDefinitionLocalService;
 import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.portal.kernel.dao.db.DB;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.IndexMetadata;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeProcessFactory;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 
-import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -36,8 +30,7 @@ import java.util.Objects;
 /**
  * @author Alec Sloan
  */
-public class CommerceOrderItemUpgradeProcess
-	extends BaseCommerceServiceUpgradeProcess {
+public class CommerceOrderItemUpgradeProcess extends UpgradeProcess {
 
 	public CommerceOrderItemUpgradeProcess(
 		CPDefinitionLocalService cpDefinitionLocalService,
@@ -49,10 +42,6 @@ public class CommerceOrderItemUpgradeProcess
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		addColumn(
-			CommerceOrderItemModelImpl.class,
-			CommerceOrderItemModelImpl.TABLE_NAME, "CProductId", "LONG");
-
 		_addIndexes(CommerceOrderItemModelImpl.TABLE_NAME);
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -79,6 +68,14 @@ public class CommerceOrderItemUpgradeProcess
 				preparedStatement.execute();
 			}
 		}
+	}
+
+	@Override
+	protected UpgradeStep[] getPreUpgradeSteps() {
+		return new UpgradeStep[] {
+			UpgradeProcessFactory.addColumns(
+				"CommerceOrderItem", "CProductId LONG")
+		};
 	}
 
 	private void _addIndexes(String tableName) throws Exception {
@@ -112,10 +109,10 @@ public class CommerceOrderItemUpgradeProcess
 	private boolean _tableHasIndex(String tableName, String indexName)
 		throws Exception {
 
-		DatabaseMetaData metadata = connection.getMetaData();
+		DB db = DBManagerUtil.getDB();
 
-		try (ResultSet resultSet = metadata.getIndexInfo(
-				null, null, tableName, false, false)) {
+		try (ResultSet resultSet = db.getIndexResultSet(
+				connection, tableName, false)) {
 
 			while (resultSet.next()) {
 				String curIndexName = resultSet.getString("index_name");

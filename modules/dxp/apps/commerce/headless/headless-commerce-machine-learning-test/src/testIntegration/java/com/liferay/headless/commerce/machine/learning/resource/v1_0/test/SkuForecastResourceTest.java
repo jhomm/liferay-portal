@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.machine.learning.resource.v1_0.test;
@@ -20,10 +11,11 @@ import com.liferay.commerce.machine.learning.forecast.SkuCommerceMLForecastManag
 import com.liferay.headless.commerce.machine.learning.client.dto.v1_0.SkuForecast;
 import com.liferay.headless.commerce.machine.learning.client.pagination.Page;
 import com.liferay.headless.commerce.machine.learning.client.pagination.Pagination;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.search.test.util.IdempotentRetryAssert;
 import com.liferay.portal.test.rule.Inject;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -31,12 +23,9 @@ import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -57,14 +46,11 @@ public class SkuForecastResourceTest extends BaseSkuForecastResourceTestCase {
 		_skuCommerceMLForecasts = _addSkuCommerceMLForecasts(
 			4, _FORECAST_LENGTH + _HISTORY_LENGTH);
 
-		Stream<SkuCommerceMLForecast> stream = _skuCommerceMLForecasts.stream();
+		_skus = TransformUtil.transform(
+			_skuCommerceMLForecasts,
+			skuCommerceMLForecast -> skuCommerceMLForecast.getSku());
 
-		_skus = stream.map(
-			SkuCommerceMLForecast::getSku
-		).distinct(
-		).collect(
-			Collectors.toList()
-		);
+		ListUtil.distinct(_skus);
 	}
 
 	@Override
@@ -73,7 +59,7 @@ public class SkuForecastResourceTest extends BaseSkuForecastResourceTestCase {
 		List<String> expectedSkus = _skus.subList(0, 2);
 
 		IdempotentRetryAssert.retryAssert(
-			1, TimeUnit.SECONDS, 3, TimeUnit.SECONDS,
+			5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS,
 			() -> {
 				_testGetSkuForecastsByMonthlyRevenuePage(expectedSkus);
 
@@ -87,7 +73,7 @@ public class SkuForecastResourceTest extends BaseSkuForecastResourceTestCase {
 		throws Exception {
 
 		IdempotentRetryAssert.retryAssert(
-			1, TimeUnit.SECONDS, 3, TimeUnit.SECONDS,
+			5, TimeUnit.SECONDS, 1, TimeUnit.SECONDS,
 			() -> {
 				_testGetSkuForecastsByMonthlyRevenuePageWithPagination();
 
@@ -167,17 +153,11 @@ public class SkuForecastResourceTest extends BaseSkuForecastResourceTestCase {
 			expectedTotalCount,
 			skuForecastsByMonthlyRevenuePage.getTotalCount());
 
-		Collection<SkuForecast> skuForecasts =
-			skuForecastsByMonthlyRevenuePage.getItems();
+		List<String> actualSkus = TransformUtil.transform(
+			skuForecastsByMonthlyRevenuePage.getItems(),
+			skuForecast -> skuForecast.getSku());
 
-		Stream<SkuForecast> stream = skuForecasts.stream();
-
-		List<String> actualSkus = stream.map(
-			SkuForecast::getSku
-		).distinct(
-		).collect(
-			Collectors.toList()
-		);
+		ListUtil.distinct(actualSkus);
 
 		Assert.assertTrue(
 			expectedSkus.containsAll(actualSkus) &&

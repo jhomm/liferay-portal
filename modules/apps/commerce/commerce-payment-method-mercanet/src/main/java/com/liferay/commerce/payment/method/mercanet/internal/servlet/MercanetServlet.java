@@ -1,35 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.method.mercanet.internal.servlet;
 
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.payment.engine.CommercePaymentEngine;
+import com.liferay.commerce.payment.helper.CommercePaymentHttpHelper;
+import com.liferay.commerce.payment.method.mercanet.internal.MercanetCommercePaymentMethod;
 import com.liferay.commerce.payment.method.mercanet.internal.configuration.MercanetGroupServiceConfiguration;
 import com.liferay.commerce.payment.method.mercanet.internal.connector.Environment;
 import com.liferay.commerce.payment.method.mercanet.internal.connector.PaypageClient;
 import com.liferay.commerce.payment.method.mercanet.internal.constants.MercanetCommercePaymentMethodConstants;
-import com.liferay.commerce.payment.util.CommercePaymentHttpHelper;
-import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
-import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.servlet.PortalSessionThreadLocal;
@@ -44,19 +34,21 @@ import com.worldline.sips.model.PaypageResponse;
 import com.worldline.sips.model.ResponseCode;
 import com.worldline.sips.model.ResponseData;
 
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
+
+import java.net.URL;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -65,7 +57,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Luca Pellizzon
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"osgi.http.whiteboard.context.path=/" + MercanetCommercePaymentMethodConstants.SERVLET_PATH,
 		"osgi.http.whiteboard.servlet.name=com.liferay.commerce.payment.method.mercanet.internal.servlet.MercanetServlet",
@@ -98,7 +89,7 @@ public class MercanetServlet extends HttpServlet {
 			requestDispatcher.forward(httpServletRequest, httpServletResponse);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -115,25 +106,43 @@ public class MercanetServlet extends HttpServlet {
 
 			Map<String, String> parameterMap = _getResponseParameters(data);
 
-			if (Objects.equals("normal", type)) {
+			if (Objects.equals(type, "normal")) {
 				if (PortalSessionThreadLocal.getHttpSession() == null) {
 					PortalSessionThreadLocal.setHttpSession(
 						httpServletRequest.getSession());
 				}
 
-				PermissionChecker permissionChecker =
+				PermissionThreadLocal.setPermissionChecker(
 					PermissionCheckerFactoryUtil.create(
-						_portal.getUser(httpServletRequest));
+						_portal.getUser(httpServletRequest)));
 
-				PermissionThreadLocal.setPermissionChecker(permissionChecker);
+				URL portalURL = new URL(
+					_portal.getPortalURL(httpServletRequest));
 
 				String redirect = ParamUtil.getString(
 					httpServletRequest, "redirect");
+
+				URL url = new URL(redirect);
+
+				if (!Objects.equals(portalURL.getHost(), url.getHost())) {
+					throw new ServletException();
+				}
 
 				if (!Objects.equals(parameterMap.get("responseCode"), "00")) {
 					String orderId = parameterMap.get("orderId");
 
 					long commerceOrderId = GetterUtil.getLong(orderId);
+
+					CommerceOrder commerceOrder =
+						_commerceOrderLocalService.getCommerceOrder(
+							commerceOrderId);
+
+					if (!Objects.equals(
+							commerceOrder.getCommercePaymentMethodKey(),
+							MercanetCommercePaymentMethod.KEY)) {
+
+						throw new ServletException();
+					}
 
 					String transactionReference = parameterMap.get(
 						"transactionReference");
@@ -146,7 +155,7 @@ public class MercanetServlet extends HttpServlet {
 				httpServletResponse.sendRedirect(redirect);
 			}
 
-			if (Objects.equals("automatic", type)) {
+			if (Objects.equals(type, "automatic")) {
 				String uuid = ParamUtil.getString(httpServletRequest, "uuid");
 				long groupId = ParamUtil.getLong(httpServletRequest, "groupId");
 
@@ -154,9 +163,17 @@ public class MercanetServlet extends HttpServlet {
 					_commerceOrderLocalService.getCommerceOrderByUuidAndGroupId(
 						uuid, groupId);
 
+				if (!Objects.equals(
+						commerceOrder.getCommercePaymentMethodKey(),
+						MercanetCommercePaymentMethod.KEY)) {
+
+					throw new ServletException();
+				}
+
 				MercanetGroupServiceConfiguration
-					mercanetGroupServiceConfiguration = _getConfiguration(
-						commerceOrder.getGroupId());
+					mercanetGroupServiceConfiguration =
+						_getMercanetGroupServiceConfiguration(
+							commerceOrder.getGroupId());
 
 				String environment = StringUtil.toUpperCase(
 					mercanetGroupServiceConfiguration.environment());
@@ -202,11 +219,13 @@ public class MercanetServlet extends HttpServlet {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_portal.sendError(
+				exception, httpServletRequest, httpServletResponse);
 		}
 	}
 
-	private MercanetGroupServiceConfiguration _getConfiguration(Long groupId)
+	private MercanetGroupServiceConfiguration
+			_getMercanetGroupServiceConfiguration(Long groupId)
 		throws ConfigurationException {
 
 		return _configurationProvider.getConfiguration(
@@ -236,9 +255,6 @@ public class MercanetServlet extends HttpServlet {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		MercanetServlet.class);
-
-	@Reference
-	private CommerceChannelLocalService _commerceChannelLocalService;
 
 	@Reference
 	private CommerceOrderLocalService _commerceOrderLocalService;

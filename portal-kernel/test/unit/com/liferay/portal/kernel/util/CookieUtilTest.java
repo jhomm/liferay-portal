@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 
-import javax.servlet.http.Cookie;
+import jakarta.servlet.http.Cookie;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -39,23 +30,14 @@ public class CookieUtilTest {
 	@Test
 	public void testEquals() {
 
-		// Comment
+		// Domain
 
 		Cookie cookie1 = new Cookie("name", null);
 
-		cookie1.setComment("comment");
+		cookie1.setDomain("domain");
 
 		Cookie cookie2 = new Cookie("name2", null);
 
-		cookie2.setComment("comment2");
-
-		Assert.assertFalse(CookieUtil.equals(cookie1, cookie2));
-
-		cookie2.setComment("comment");
-
-		// Domain
-
-		cookie1.setDomain("domain");
 		cookie2.setDomain("domain2");
 
 		Assert.assertFalse(CookieUtil.equals(cookie1, cookie2));
@@ -77,7 +59,6 @@ public class CookieUtilTest {
 
 		cookie2 = new Cookie("name", null);
 
-		cookie2.setComment("comment");
 		cookie2.setDomain("domain");
 		cookie2.setMaxAge(1);
 
@@ -108,15 +89,6 @@ public class CookieUtilTest {
 
 		cookie2.setValue("value");
 
-		// Version
-
-		cookie1.setVersion(1);
-		cookie2.setVersion(2);
-
-		Assert.assertFalse(CookieUtil.equals(cookie1, cookie2));
-
-		cookie2.setVersion(1);
-
 		// HTTP only
 
 		cookie1.setHttpOnly(true);
@@ -142,13 +114,11 @@ public class CookieUtilTest {
 
 		Cookie cookie2 = new Cookie("name2", "value");
 
-		cookie2.setComment("comment");
 		cookie2.setDomain("domain");
 		cookie2.setHttpOnly(true);
 		cookie2.setMaxAge(1);
 		cookie2.setPath("path");
 		cookie2.setSecure(true);
-		cookie2.setVersion(1);
 
 		bytes = CookieUtil.serialize(cookie2);
 
@@ -160,17 +130,15 @@ public class CookieUtilTest {
 	public void testToString() {
 		Cookie cookie = new Cookie("name", "value");
 
-		cookie.setComment("comment");
 		cookie.setDomain("domain");
 		cookie.setHttpOnly(true);
 		cookie.setMaxAge(1);
 		cookie.setPath("path");
 		cookie.setSecure(true);
-		cookie.setVersion(1);
 
 		Assert.assertEquals(
-			"{comment=comment, domain=domain, httpOnly=true, maxAge=1, " +
-				"name=name, path=path, secure=true, value=value, version=1}",
+			"{domain=domain, httpOnly=true, maxAge=1, name=name, path=path, " +
+				"secure=true, value=value}",
 			CookieUtil.toString(cookie));
 	}
 

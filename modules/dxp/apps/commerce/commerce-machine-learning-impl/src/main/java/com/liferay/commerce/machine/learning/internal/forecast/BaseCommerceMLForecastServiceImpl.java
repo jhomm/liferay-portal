@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.machine.learning.internal.forecast;
@@ -17,7 +8,8 @@ package com.liferay.commerce.machine.learning.internal.forecast;
 import com.liferay.commerce.machine.learning.forecast.CommerceMLForecast;
 import com.liferay.commerce.machine.learning.internal.forecast.constants.CommerceMLForecastField;
 import com.liferay.commerce.machine.learning.internal.forecast.constants.CommerceMLForecastPeriod;
-import com.liferay.commerce.machine.learning.internal.search.api.CommerceMLIndexer;
+import com.liferay.commerce.machine.learning.internal.search.constants.IndexNamePatterns;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -45,6 +37,7 @@ import com.liferay.portal.search.engine.adapter.search.CountSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.CountSearchResponse;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
+import com.liferay.portal.search.index.IndexNameBuilder;
 
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -61,8 +54,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Reference;
 
@@ -78,9 +69,7 @@ public abstract class BaseCommerceMLForecastServiceImpl
 		document.addKeyword(Field.UID, String.valueOf(model.getForecastId()));
 
 		IndexDocumentRequest indexDocumentRequest = new IndexDocumentRequest(
-			commerceMLIndexer.getIndexName(model.getCompanyId()), document);
-
-		indexDocumentRequest.setType(commerceMLIndexer.getDocumentType());
+			getIndexName(model.getCompanyId()), document);
 
 		IndexDocumentResponse indexDocumentResponse =
 			searchEngineAdapter.execute(indexDocumentRequest);
@@ -132,18 +121,19 @@ public abstract class BaseCommerceMLForecastServiceImpl
 	protected T getCommerceMLForecast(long companyId, long forecastId)
 		throws PortalException {
 
-		TermFilter termFilter = new TermFilter(
-			CommerceMLForecastField.FORECAST_ID, String.valueOf(forecastId));
-
 		List<T> searchResults = getSearchResults(
 			getSearchSearchRequest(
-				commerceMLIndexer.getIndexName(companyId),
+				getIndexName(companyId),
 				new BooleanQueryImpl() {
 					{
 						setPreBooleanFilter(
 							new BooleanFilter() {
 								{
-									add(termFilter, BooleanClauseOccur.MUST);
+									add(
+										new TermFilter(
+											CommerceMLForecastField.FORECAST_ID,
+											String.valueOf(forecastId)),
+										BooleanClauseOccur.MUST);
 								}
 							});
 					}
@@ -193,7 +183,7 @@ public abstract class BaseCommerceMLForecastServiceImpl
 		}
 		catch (ParseException parseException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(parseException, parseException);
+				_log.debug(parseException);
 			}
 		}
 
@@ -293,22 +283,20 @@ public abstract class BaseCommerceMLForecastServiceImpl
 		return HashUtil.hash(values.length, sb.toString());
 	}
 
+	protected String getIndexName(long companyId) {
+		return IndexNamePatterns.getIndexName(
+			indexNameBuilder, IndexNamePatterns.FORECAST, companyId);
+	}
+
 	protected List<T> getSearchResults(
 		SearchSearchRequest searchSearchRequest) {
 
 		SearchSearchResponse searchSearchResponse = searchEngineAdapter.execute(
 			searchSearchRequest);
 
-		List<Document> documents = _getDocuments(
-			searchSearchResponse.getHits());
-
-		Stream<Document> stream = documents.stream();
-
-		return stream.map(
-			this::toForecastModel
-		).collect(
-			Collectors.toList()
-		);
+		return TransformUtil.transform(
+			_getDocuments(searchSearchResponse.getHits()),
+			this::toForecastModel);
 	}
 
 	protected SearchSearchRequest getSearchSearchRequest(
@@ -318,9 +306,9 @@ public abstract class BaseCommerceMLForecastServiceImpl
 			{
 				setIndexNames(new String[] {indexName});
 				setQuery(query);
-				setStart(Integer.valueOf(start));
 				setSize(Integer.valueOf(size));
 				setSorts(sorts);
+				setStart(Integer.valueOf(start));
 				setStats(Collections.emptyMap());
 			}
 		};
@@ -360,10 +348,8 @@ public abstract class BaseCommerceMLForecastServiceImpl
 
 	protected static final String SORTABLE_FIELD_SUFFIX = "_sortable";
 
-	@Reference(
-		target = "(component.name=com.liferay.commerce.machine.learning.internal.forecast.search.index.CommerceMLForecastIndexer)"
-	)
-	protected volatile CommerceMLIndexer commerceMLIndexer;
+	@Reference
+	protected IndexNameBuilder indexNameBuilder;
 
 	@Reference
 	protected volatile SearchEngineAdapter searchEngineAdapter;

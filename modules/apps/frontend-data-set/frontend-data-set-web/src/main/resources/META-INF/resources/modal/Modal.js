@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import ClayModal, {useModal} from '@clayui/modal';
+import {navigate} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 
 import {
 	CLOSE_MODAL,
@@ -23,11 +15,11 @@ import {
 	OPEN_MODAL,
 } from '../utils/eventsDefinitions';
 import {isPageInIframe} from '../utils/iframes';
-import {liferayNavigate} from '../utils/index';
 import {INITIAL_MODAL_SIZE} from '../utils/modals/constants';
-import {resolveModalHeight} from '../utils/modals/index';
+import {resolveModalHeight} from '../utils/modals/resolveModalHeight';
 
 function Modal({
+	disableHeader: disableHeaderProp,
 	id,
 	onClose: onCloseProp,
 	status,
@@ -40,6 +32,11 @@ function Modal({
 	const [title, setTitle] = useState(titleProp);
 	const [url, setURL] = useState(urlProp);
 	const [size, setSize] = useState(INITIAL_MODAL_SIZE);
+	const [disableHeader, setDisableHeader] = useState(
+		disableHeaderProp || true
+	);
+
+	const iframeRef = useRef(null);
 
 	const doClose = useCallback(
 		(successNotification) => {
@@ -81,9 +78,9 @@ function Modal({
 				setTitle(data.title);
 			}
 
-			if (!data.size) {
-				setSize(INITIAL_MODAL_SIZE);
-			}
+			setDisableHeader(data.disableHeader ?? true);
+
+			setSize(data.size || INITIAL_MODAL_SIZE);
 		}
 
 		function handleCloseModal({
@@ -96,7 +93,7 @@ function Modal({
 			}
 
 			if (redirectURL) {
-				liferayNavigate(redirectURL);
+				navigate(redirectURL);
 			}
 			else if (willIframeRefresh) {
 				closeOnIframeRefresh(successNotification);
@@ -117,6 +114,8 @@ function Modal({
 			Liferay.detach(CLOSE_MODAL, handleCloseModal);
 			Liferay.detach(IS_LOADING_MODAL, handleSetLoading);
 			Liferay.detach('destroyPortlet', cleanUpListeners);
+
+			iframeRef.current?.removeEventListener('load', handleIFrameLoad);
 		}
 
 		if (Liferay.on) {
@@ -125,6 +124,12 @@ function Modal({
 			Liferay.on(IS_LOADING_MODAL, handleSetLoading);
 			Liferay.on('destroyPortlet', cleanUpListeners);
 		}
+
+		function handleIFrameLoad() {
+			setLoading(false);
+		}
+
+		iframeRef.current?.addEventListener('load', handleIFrameLoad);
 
 		return () => cleanUpListeners();
 	}, [id, closeOnIframeRefresh, visible, doClose]);
@@ -137,20 +142,26 @@ function Modal({
 		<>
 			{visible && (
 				<ClayModal
-					className="clay-modal"
+					className="clay-modal fds-modal"
 					observer={observer}
 					size={size}
 					status={status}
 				>
-					{title && <ClayModal.Header>{title}</ClayModal.Header>}
+					{!disableHeader && (
+						<ClayModal.Header withTitle={!disableHeader}>
+							{title}
+						</ClayModal.Header>
+					)}
+
 					<div
-						className="modal-body modal-body-iframe"
+						className="fds-modal-body modal-body modal-body-iframe"
 						style={{
 							height: resolveModalHeight(size),
 							maxHeight: '100%',
 						}}
 					>
-						<iframe src={url} title={title} />
+						<iframe ref={iframeRef} src={url} title={title} />
+
 						{loading && (
 							<div className="loader-container">
 								<ClayLoadingIndicator />
@@ -165,7 +176,8 @@ function Modal({
 
 Modal.propTypes = {
 	closeOnSubmit: PropTypes.bool,
-	id: PropTypes.string.isRequired,
+	disableHeader: PropTypes.bool,
+	id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]).isRequired,
 	onClose: PropTypes.func,
 	status: PropTypes.string,
 	title: PropTypes.string,

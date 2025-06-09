@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.content.web.internal.render.list.entry;
@@ -43,10 +34,7 @@ import org.osgi.service.component.annotations.Deactivate;
 /**
  * @author Alessio Antonio Rendina
  */
-@Component(
-	enabled = false, immediate = true,
-	service = CPContentListEntryRendererRegistry.class
-)
+@Component(service = CPContentListEntryRendererRegistry.class)
 public class CPContentListEntryRendererRegistryImpl
 	implements CPContentListEntryRendererRegistry {
 
@@ -60,7 +48,7 @@ public class CPContentListEntryRendererRegistryImpl
 
 		ServiceWrapper<CPContentListEntryRenderer>
 			cpContentListEntryRendererServiceWrapper =
-				_cpContentListEntryRendererServiceTrackerMap.getService(key);
+				_serviceTrackerMap.getService(key);
 
 		if (cpContentListEntryRendererServiceWrapper == null) {
 			if (_log.isDebugEnabled()) {
@@ -124,7 +112,7 @@ public class CPContentListEntryRendererRegistryImpl
 
 		List<ServiceWrapper<CPContentListEntryRenderer>>
 			cpContentListEntryRendererServiceWrappers = ListUtil.fromCollection(
-				_cpContentListEntryRendererServiceTrackerMap.values());
+				_serviceTrackerMap.values());
 
 		Collections.sort(
 			cpContentListEntryRendererServiceWrappers,
@@ -192,27 +180,25 @@ public class CPContentListEntryRendererRegistryImpl
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_cpContentListEntryRendererServiceTrackerMap =
-			ServiceTrackerMapFactory.openSingleValueMap(
-				bundleContext, CPContentListEntryRenderer.class,
-				"commerce.product.content.list.entry.renderer.key",
-				ServiceTrackerCustomizerFactory.
-					<CPContentListEntryRenderer>serviceWrapper(bundleContext));
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+			bundleContext, CPContentListEntryRenderer.class,
+			"commerce.product.content.list.entry.renderer.key",
+			ServiceTrackerCustomizerFactory.
+				<CPContentListEntryRenderer>serviceWrapper(bundleContext));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_cpContentListEntryRendererServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CPContentListEntryRendererRegistryImpl.class);
 
-	private ServiceTrackerMap
-		<String, ServiceWrapper<CPContentListEntryRenderer>>
-			_cpContentListEntryRendererServiceTrackerMap;
 	private final Comparator<ServiceWrapper<CPContentListEntryRenderer>>
 		_cpContentListEntryRendererServiceWrapperOrderComparator =
 			new CPContentListEntryRendererServiceWrapperOrderComparator();
+	private ServiceTrackerMap
+		<String, ServiceWrapper<CPContentListEntryRenderer>> _serviceTrackerMap;
 
 }

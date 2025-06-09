@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -132,26 +122,20 @@ public class VirtualHostModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long DEFAULTVIRTUALHOST_COLUMN_BITMASK = 2L;
+	public static final long HOSTNAME_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long HOSTNAME_COLUMN_BITMASK = 4L;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
-	 */
-	@Deprecated
-	public static final long LAYOUTSETID_COLUMN_BITMASK = 8L;
+	public static final long LAYOUTSETID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long VIRTUALHOSTID_COLUMN_BITMASK = 16L;
+	public static final long VIRTUALHOSTID_COLUMN_BITMASK = 8L;
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -233,97 +217,86 @@ public class VirtualHostModelImpl
 	public Map<String, Function<VirtualHost, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<VirtualHost, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, VirtualHost>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			VirtualHost.class.getClassLoader(), VirtualHost.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<VirtualHost, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<VirtualHost> constructor =
-				(Constructor<VirtualHost>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<VirtualHost, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<VirtualHost, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", VirtualHost::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", VirtualHost::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"virtualHostId", VirtualHost::getVirtualHostId);
+			attributeGetterFunctions.put(
+				"companyId", VirtualHost::getCompanyId);
+			attributeGetterFunctions.put(
+				"layoutSetId", VirtualHost::getLayoutSetId);
+			attributeGetterFunctions.put("hostname", VirtualHost::getHostname);
+			attributeGetterFunctions.put(
+				"defaultVirtualHost", VirtualHost::getDefaultVirtualHost);
+			attributeGetterFunctions.put(
+				"languageId", VirtualHost::getLanguageId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<VirtualHost, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<VirtualHost, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<VirtualHost, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<VirtualHost, Object>>();
-		Map<String, BiConsumer<VirtualHost, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<VirtualHost, ?>>();
+		private static final Map<String, BiConsumer<VirtualHost, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", VirtualHost::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<VirtualHost, Long>)VirtualHost::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", VirtualHost::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<VirtualHost, Long>)VirtualHost::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"virtualHostId", VirtualHost::getVirtualHostId);
-		attributeSetterBiConsumers.put(
-			"virtualHostId",
-			(BiConsumer<VirtualHost, Long>)VirtualHost::setVirtualHostId);
-		attributeGetterFunctions.put("companyId", VirtualHost::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<VirtualHost, Long>)VirtualHost::setCompanyId);
-		attributeGetterFunctions.put(
-			"layoutSetId", VirtualHost::getLayoutSetId);
-		attributeSetterBiConsumers.put(
-			"layoutSetId",
-			(BiConsumer<VirtualHost, Long>)VirtualHost::setLayoutSetId);
-		attributeGetterFunctions.put("hostname", VirtualHost::getHostname);
-		attributeSetterBiConsumers.put(
-			"hostname",
-			(BiConsumer<VirtualHost, String>)VirtualHost::setHostname);
-		attributeGetterFunctions.put(
-			"defaultVirtualHost", VirtualHost::getDefaultVirtualHost);
-		attributeSetterBiConsumers.put(
-			"defaultVirtualHost",
-			(BiConsumer<VirtualHost, Boolean>)
-				VirtualHost::setDefaultVirtualHost);
-		attributeGetterFunctions.put("languageId", VirtualHost::getLanguageId);
-		attributeSetterBiConsumers.put(
-			"languageId",
-			(BiConsumer<VirtualHost, String>)VirtualHost::setLanguageId);
+		static {
+			Map<String, BiConsumer<VirtualHost, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<VirtualHost, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<VirtualHost, Long>)VirtualHost::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<VirtualHost, Long>)VirtualHost::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"virtualHostId",
+				(BiConsumer<VirtualHost, Long>)VirtualHost::setVirtualHostId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<VirtualHost, Long>)VirtualHost::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"layoutSetId",
+				(BiConsumer<VirtualHost, Long>)VirtualHost::setLayoutSetId);
+			attributeSetterBiConsumers.put(
+				"hostname",
+				(BiConsumer<VirtualHost, String>)VirtualHost::setHostname);
+			attributeSetterBiConsumers.put(
+				"defaultVirtualHost",
+				(BiConsumer<VirtualHost, Boolean>)
+					VirtualHost::setDefaultVirtualHost);
+			attributeSetterBiConsumers.put(
+				"languageId",
+				(BiConsumer<VirtualHost, String>)VirtualHost::setLanguageId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -461,16 +434,6 @@ public class VirtualHostModelImpl
 		}
 
 		_defaultVirtualHost = defaultVirtualHost;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getColumnOriginalValue(String)}
-	 */
-	@Deprecated
-	public boolean getOriginalDefaultVirtualHost() {
-		return GetterUtil.getBoolean(
-			this.<Boolean>getColumnOriginalValue("defaultVirtualHost"));
 	}
 
 	@Override
@@ -746,41 +709,12 @@ public class VirtualHostModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<VirtualHost, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<VirtualHost, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<VirtualHost, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((VirtualHost)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, VirtualHost>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					VirtualHost.class, ModelWrapper.class);
 
 	}
 
@@ -794,8 +728,9 @@ public class VirtualHostModelImpl
 	private String _languageId;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<VirtualHost, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<VirtualHost, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

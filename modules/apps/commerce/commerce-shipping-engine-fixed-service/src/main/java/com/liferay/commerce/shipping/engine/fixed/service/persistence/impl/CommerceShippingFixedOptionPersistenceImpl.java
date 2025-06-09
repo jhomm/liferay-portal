@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.shipping.engine.fixed.model.impl.CommerceShippingFix
 import com.liferay.commerce.shipping.engine.fixed.model.impl.CommerceShippingFixedOptionModelImpl;
 import com.liferay.commerce.shipping.engine.fixed.service.persistence.CommerceShippingFixedOptionPersistence;
 import com.liferay.commerce.shipping.engine.fixed.service.persistence.CommerceShippingFixedOptionUtil;
+import com.liferay.commerce.shipping.engine.fixed.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -40,17 +34,25 @@ import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
+import com.liferay.portal.kernel.util.SetUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce shipping fixed option service.
@@ -62,6 +64,7 @@ import java.util.Set;
  * @author Alessio Antonio Rendina
  * @generated
  */
+@Component(service = CommerceShippingFixedOptionPersistence.class)
 public class CommerceShippingFixedOptionPersistenceImpl
 	extends BasePersistenceImpl<CommerceShippingFixedOption>
 	implements CommerceShippingFixedOptionPersistence {
@@ -189,7 +192,7 @@ public class CommerceShippingFixedOptionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceShippingFixedOption>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceShippingFixedOption commerceShippingFixedOption :
@@ -575,7 +578,7 @@ public class CommerceShippingFixedOptionPersistenceImpl
 
 		Object[] finderArgs = new Object[] {commerceShippingMethodId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -617,7 +620,216 @@ public class CommerceShippingFixedOptionPersistenceImpl
 		_FINDER_COLUMN_COMMERCESHIPPINGMETHODID_COMMERCESHIPPINGMETHODID_2 =
 			"commerceShippingFixedOption.commerceShippingMethodId = ?";
 
+	private FinderPath _finderPathFetchByC_K;
+
+	/**
+	 * Returns the commerce shipping fixed option where companyId = &#63; and key = &#63; or throws a <code>NoSuchShippingFixedOptionException</code> if it could not be found.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the matching commerce shipping fixed option
+	 * @throws NoSuchShippingFixedOptionException if a matching commerce shipping fixed option could not be found
+	 */
+	@Override
+	public CommerceShippingFixedOption findByC_K(long companyId, String key)
+		throws NoSuchShippingFixedOptionException {
+
+		CommerceShippingFixedOption commerceShippingFixedOption = fetchByC_K(
+			companyId, key);
+
+		if (commerceShippingFixedOption == null) {
+			StringBundler sb = new StringBundler(6);
+
+			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+			sb.append("companyId=");
+			sb.append(companyId);
+
+			sb.append(", key=");
+			sb.append(key);
+
+			sb.append("}");
+
+			if (_log.isDebugEnabled()) {
+				_log.debug(sb.toString());
+			}
+
+			throw new NoSuchShippingFixedOptionException(sb.toString());
+		}
+
+		return commerceShippingFixedOption;
+	}
+
+	/**
+	 * Returns the commerce shipping fixed option where companyId = &#63; and key = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the matching commerce shipping fixed option, or <code>null</code> if a matching commerce shipping fixed option could not be found
+	 */
+	@Override
+	public CommerceShippingFixedOption fetchByC_K(long companyId, String key) {
+		return fetchByC_K(companyId, key, true);
+	}
+
+	/**
+	 * Returns the commerce shipping fixed option where companyId = &#63; and key = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching commerce shipping fixed option, or <code>null</code> if a matching commerce shipping fixed option could not be found
+	 */
+	@Override
+	public CommerceShippingFixedOption fetchByC_K(
+		long companyId, String key, boolean useFinderCache) {
+
+		key = Objects.toString(key, "");
+
+		Object[] finderArgs = null;
+
+		if (useFinderCache) {
+			finderArgs = new Object[] {companyId, key};
+		}
+
+		Object result = null;
+
+		if (useFinderCache) {
+			result = finderCache.getResult(
+				_finderPathFetchByC_K, finderArgs, this);
+		}
+
+		if (result instanceof CommerceShippingFixedOption) {
+			CommerceShippingFixedOption commerceShippingFixedOption =
+				(CommerceShippingFixedOption)result;
+
+			if ((companyId != commerceShippingFixedOption.getCompanyId()) ||
+				!Objects.equals(key, commerceShippingFixedOption.getKey())) {
+
+				result = null;
+			}
+		}
+
+		if (result == null) {
+			StringBundler sb = new StringBundler(4);
+
+			sb.append(_SQL_SELECT_COMMERCESHIPPINGFIXEDOPTION_WHERE);
+
+			sb.append(_FINDER_COLUMN_C_K_COMPANYID_2);
+
+			boolean bindKey = false;
+
+			if (key.isEmpty()) {
+				sb.append(_FINDER_COLUMN_C_K_KEY_3);
+			}
+			else {
+				bindKey = true;
+
+				sb.append(_FINDER_COLUMN_C_K_KEY_2);
+			}
+
+			String sql = sb.toString();
+
+			Session session = null;
+
+			try {
+				session = openSession();
+
+				Query query = session.createQuery(sql);
+
+				QueryPos queryPos = QueryPos.getInstance(query);
+
+				queryPos.add(companyId);
+
+				if (bindKey) {
+					queryPos.add(key);
+				}
+
+				List<CommerceShippingFixedOption> list = query.list();
+
+				if (list.isEmpty()) {
+					if (useFinderCache) {
+						finderCache.putResult(
+							_finderPathFetchByC_K, finderArgs, list);
+					}
+				}
+				else {
+					CommerceShippingFixedOption commerceShippingFixedOption =
+						list.get(0);
+
+					result = commerceShippingFixedOption;
+
+					cacheResult(commerceShippingFixedOption);
+				}
+			}
+			catch (Exception exception) {
+				throw processException(exception);
+			}
+			finally {
+				closeSession(session);
+			}
+		}
+
+		if (result instanceof List<?>) {
+			return null;
+		}
+		else {
+			return (CommerceShippingFixedOption)result;
+		}
+	}
+
+	/**
+	 * Removes the commerce shipping fixed option where companyId = &#63; and key = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the commerce shipping fixed option that was removed
+	 */
+	@Override
+	public CommerceShippingFixedOption removeByC_K(long companyId, String key)
+		throws NoSuchShippingFixedOptionException {
+
+		CommerceShippingFixedOption commerceShippingFixedOption = findByC_K(
+			companyId, key);
+
+		return remove(commerceShippingFixedOption);
+	}
+
+	/**
+	 * Returns the number of commerce shipping fixed options where companyId = &#63; and key = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param key the key
+	 * @return the number of matching commerce shipping fixed options
+	 */
+	@Override
+	public int countByC_K(long companyId, String key) {
+		CommerceShippingFixedOption commerceShippingFixedOption = fetchByC_K(
+			companyId, key);
+
+		if (commerceShippingFixedOption == null) {
+			return 0;
+		}
+
+		return 1;
+	}
+
+	private static final String _FINDER_COLUMN_C_K_COMPANYID_2 =
+		"commerceShippingFixedOption.companyId = ? AND ";
+
+	private static final String _FINDER_COLUMN_C_K_KEY_2 =
+		"commerceShippingFixedOption.key = ?";
+
+	private static final String _FINDER_COLUMN_C_K_KEY_3 =
+		"(commerceShippingFixedOption.key IS NULL OR commerceShippingFixedOption.key = '')";
+
 	public CommerceShippingFixedOptionPersistenceImpl() {
+		Map<String, String> dbColumnNames = new HashMap<String, String>();
+
+		dbColumnNames.put("key", "key_");
+
+		setDBColumnNames(dbColumnNames);
+
 		setModelClass(CommerceShippingFixedOption.class);
 
 		setModelImplClass(CommerceShippingFixedOptionImpl.class);
@@ -638,6 +850,14 @@ public class CommerceShippingFixedOptionPersistenceImpl
 		entityCache.putResult(
 			CommerceShippingFixedOptionImpl.class,
 			commerceShippingFixedOption.getPrimaryKey(),
+			commerceShippingFixedOption);
+
+		finderCache.putResult(
+			_finderPathFetchByC_K,
+			new Object[] {
+				commerceShippingFixedOption.getCompanyId(),
+				commerceShippingFixedOption.getKey()
+			},
 			commerceShippingFixedOption);
 	}
 
@@ -722,6 +942,19 @@ public class CommerceShippingFixedOptionPersistenceImpl
 			entityCache.removeResult(
 				CommerceShippingFixedOptionImpl.class, primaryKey);
 		}
+	}
+
+	protected void cacheUniqueFindersCache(
+		CommerceShippingFixedOptionModelImpl
+			commerceShippingFixedOptionModelImpl) {
+
+		Object[] args = new Object[] {
+			commerceShippingFixedOptionModelImpl.getCompanyId(),
+			commerceShippingFixedOptionModelImpl.getKey()
+		};
+
+		finderCache.putResult(
+			_finderPathFetchByC_K, args, commerceShippingFixedOptionModelImpl);
 	}
 
 	/**
@@ -920,6 +1153,8 @@ public class CommerceShippingFixedOptionPersistenceImpl
 			CommerceShippingFixedOptionImpl.class,
 			commerceShippingFixedOptionModelImpl, false, true);
 
+		cacheUniqueFindersCache(commerceShippingFixedOptionModelImpl);
+
 		if (isNew) {
 			commerceShippingFixedOption.setNew(false);
 		}
@@ -1068,7 +1303,7 @@ public class CommerceShippingFixedOptionPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceShippingFixedOption>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1141,7 +1376,7 @@ public class CommerceShippingFixedOptionPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1169,6 +1404,11 @@ public class CommerceShippingFixedOptionPersistenceImpl
 	}
 
 	@Override
+	public Set<String> getBadColumnNames() {
+		return _badColumnNames;
+	}
+
+	@Override
 	protected EntityCache getEntityCache() {
 		return entityCache;
 	}
@@ -1191,7 +1431,8 @@ public class CommerceShippingFixedOptionPersistenceImpl
 	/**
 	 * Initializes the commerce shipping fixed option persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -1230,38 +1471,52 @@ public class CommerceShippingFixedOptionPersistenceImpl
 			new String[] {Long.class.getName()},
 			new String[] {"commerceShippingMethodId"}, false);
 
-		_setCommerceShippingFixedOptionUtilPersistence(this);
+		_finderPathFetchByC_K = new FinderPath(
+			FINDER_CLASS_NAME_ENTITY, "fetchByC_K",
+			new String[] {Long.class.getName(), String.class.getName()},
+			new String[] {"companyId", "key_"}, true);
+
+		CommerceShippingFixedOptionUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceShippingFixedOptionUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceShippingFixedOptionUtil.setPersistence(null);
 
 		entityCache.removeCache(
 			CommerceShippingFixedOptionImpl.class.getName());
 	}
 
-	private void _setCommerceShippingFixedOptionUtilPersistence(
-		CommerceShippingFixedOptionPersistence
-			commerceShippingFixedOptionPersistence) {
-
-		try {
-			Field field =
-				CommerceShippingFixedOptionUtil.class.getDeclaredField(
-					"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceShippingFixedOptionPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCESHIPPINGFIXEDOPTION =
@@ -1287,6 +1542,9 @@ public class CommerceShippingFixedOptionPersistenceImpl
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceShippingFixedOptionPersistenceImpl.class);
+
+	private static final Set<String> _badColumnNames = SetUtil.fromArray(
+		new String[] {"key"});
 
 	@Override
 	protected FinderCache getFinderCache() {

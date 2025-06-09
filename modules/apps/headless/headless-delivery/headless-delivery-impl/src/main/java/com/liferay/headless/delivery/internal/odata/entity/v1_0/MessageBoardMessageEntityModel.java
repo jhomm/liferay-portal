@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.odata.entity.v1_0;
@@ -37,13 +28,14 @@ public class MessageBoardMessageEntityModel implements EntityModel {
 
 	public MessageBoardMessageEntityModel(List<EntityField> entityFields) {
 		_entityFieldsMap = EntityFieldsMapFactory.create(
+			new BooleanEntityField("answered", locale -> "answered"),
 			new BooleanEntityField("showAsQuestion", locale -> "question"),
 			new CollectionEntityField(
 				new IntegerEntityField(
 					"taxonomyCategoryIds", locale -> "assetCategoryIds")),
 			new CollectionEntityField(
 				new StringEntityField(
-					"keywords", locale -> "assetTagNames.raw")),
+					"keywords", locale -> "assetTagNames.lowercase")),
 			new ComplexEntityField(
 				"creator",
 				Collections.singletonList(
@@ -57,10 +49,16 @@ public class MessageBoardMessageEntityModel implements EntityModel {
 				"dateModified",
 				locale -> Field.getSortableFieldName(Field.MODIFIED_DATE),
 				locale -> Field.MODIFIED_DATE),
+			new DateTimeEntityField(
+				"lastPostDate",
+				locale -> Field.getSortableFieldName("lastPostDate"),
+				locale -> "lastPostDate"),
 			new EntityField(
 				"showAsAnswer", EntityField.Type.BOOLEAN,
 				locale -> Field.getSortableFieldName("answer_String"),
 				locale -> "answer", String::valueOf),
+			new IntegerEntityField(
+				"childMessagesCount", locale -> "childMessagesCount"),
 			new IntegerEntityField("creatorId", locale -> Field.USER_ID),
 			new IntegerEntityField(
 				"messageBoardSectionId", locale -> Field.CATEGORY_ID),
@@ -69,16 +67,24 @@ public class MessageBoardMessageEntityModel implements EntityModel {
 			new IntegerEntityField(
 				"parentMessageBoardMessageId", locale -> "parentMessageId"),
 			new IntegerEntityField(
-				"ratingValue",
-				locale -> Field.getSortableFieldName("totalScore")),
+				"ratingsStatTotalScore",
+				locale -> Field.getSortableFieldName("ratingsStatTotalScore")),
+			new IntegerEntityField(
+				"viewCount", locale -> Field.getSortableFieldName("viewCount")),
 			new StringEntityField(
 				"friendlyUrlPath",
 				locale -> Field.getSortableFieldName("urlSubject_String")),
 			new StringEntityField(
 				"headline",
 				locale -> Field.getSortableFieldName(
-					"localized_title_".concat(
-						LocaleUtil.toLanguageId(locale)))));
+					"localized_title_".concat(LocaleUtil.toLanguageId(locale))),
+				locale -> {
+					String sortableFieldName = Field.getSortableFieldName(
+						"localized_title_".concat(
+							LocaleUtil.toLanguageId(locale)));
+
+					return sortableFieldName.concat(".keyword_lowercase");
+				}));
 	}
 
 	@Override

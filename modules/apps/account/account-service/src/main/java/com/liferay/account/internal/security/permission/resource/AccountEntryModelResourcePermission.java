@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.security.permission.resource;
@@ -23,13 +14,16 @@ import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.OrganizationLocalService;
-import com.liferay.portal.kernel.service.permission.OrganizationPermission;
+import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +32,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.account.model.AccountEntry",
 	service = ModelResourcePermission.class
 )
@@ -90,9 +83,10 @@ public class AccountEntryModelResourcePermission
 		AccountEntry accountEntry = _accountEntryLocalService.fetchAccountEntry(
 			accountEntryId);
 
-		if (permissionChecker.hasOwnerPermission(
+		if ((accountEntry != null) &&
+			permissionChecker.hasOwnerPermission(
 				permissionChecker.getCompanyId(), AccountEntry.class.getName(),
-				accountEntryId, permissionChecker.getUserId(), actionId)) {
+				accountEntryId, accountEntry.getUserId(), actionId)) {
 
 			return true;
 		}
@@ -101,6 +95,10 @@ public class AccountEntryModelResourcePermission
 			_accountEntryOrganizationRelLocalService.
 				getAccountEntryOrganizationRels(accountEntryId);
 
+		long[] userOrganizationIds =
+			_organizationLocalService.getUserOrganizationIds(
+				permissionChecker.getUserId(), true);
+
 		for (AccountEntryOrganizationRel accountEntryOrganizationRel :
 				accountEntryOrganizationRels) {
 
@@ -108,33 +106,60 @@ public class AccountEntryModelResourcePermission
 				_organizationLocalService.fetchOrganization(
 					accountEntryOrganizationRel.getOrganizationId());
 
-			if (organization == null) {
-				continue;
-			}
+			Organization originalOrganization = organization;
 
-			if (permissionChecker.hasPermission(
-					organization.getGroupId(), AccountEntry.class.getName(),
-					accountEntryId, actionId)) {
-
-				return true;
-			}
-
-			while (!organization.isRoot()) {
-				Organization parentOrganization =
-					organization.getParentOrganization();
-
-				if (_organizationPermission.contains(
-						permissionChecker, parentOrganization,
-						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS) &&
+			while (organization != null) {
+				if (Objects.equals(
+						actionId, AccountActionKeys.UPDATE_ORGANIZATIONS) &&
 					permissionChecker.hasPermission(
-						parentOrganization.getGroupId(),
-						AccountEntry.class.getName(), accountEntryId,
-						actionId)) {
+						organization.getGroupId(), AccountEntry.class.getName(),
+						accountEntryId,
+						AccountActionKeys.MANAGE_ORGANIZATIONS)) {
 
 					return true;
 				}
 
-				organization = parentOrganization;
+				boolean organizationMember = ArrayUtil.contains(
+					userOrganizationIds, organization.getOrganizationId());
+
+				if (!Objects.equals(
+						actionId, AccountActionKeys.MANAGE_ORGANIZATIONS) &&
+					!Objects.equals(
+						actionId, AccountActionKeys.UPDATE_ORGANIZATIONS) &&
+					organizationMember &&
+					OrganizationPermissionUtil.contains(
+						permissionChecker, organization.getOrganizationId(),
+						AccountActionKeys.MANAGE_AVAILABLE_ACCOUNTS)) {
+
+					return true;
+				}
+
+				if (Objects.equals(organization, originalOrganization) &&
+					permissionChecker.hasPermission(
+						organization.getGroupId(), AccountEntry.class.getName(),
+						accountEntryId, actionId)) {
+
+					return true;
+				}
+
+				if (!Objects.equals(organization, originalOrganization) &&
+					(OrganizationPermissionUtil.contains(
+						permissionChecker, organization,
+						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS) ||
+					 OrganizationPermissionUtil.contains(
+						 permissionChecker, organization,
+						 AccountActionKeys.UPDATE_SUBORGANIZATIONS_ACCOUNTS)) &&
+					((organizationMember &&
+					  Objects.equals(actionId, ActionKeys.VIEW)) ||
+					 permissionChecker.hasPermission(
+						 organization.getGroupId(),
+						 AccountEntry.class.getName(), accountEntryId,
+						 actionId))) {
+
+					return true;
+				}
+
+				organization = organization.getParentOrganization();
 			}
 		}
 
@@ -142,6 +167,14 @@ public class AccountEntryModelResourcePermission
 
 		if (accountEntry != null) {
 			accountEntryGroupId = accountEntry.getAccountEntryGroupId();
+		}
+
+		if (Objects.equals(actionId, AccountActionKeys.UPDATE_ORGANIZATIONS) &&
+			permissionChecker.hasPermission(
+				accountEntryGroupId, AccountEntry.class.getName(),
+				accountEntryId, AccountActionKeys.MANAGE_ORGANIZATIONS)) {
+
+			return true;
 		}
 
 		return permissionChecker.hasPermission(
@@ -168,9 +201,6 @@ public class AccountEntryModelResourcePermission
 
 	@Reference
 	private OrganizationLocalService _organizationLocalService;
-
-	@Reference
-	private OrganizationPermission _organizationPermission;
 
 	@Reference(
 		target = "(resource.name=" + AccountConstants.RESOURCE_NAME + ")"

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.service;
 
 import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -46,14 +38,17 @@ public class KBArticleServiceUtil {
 			String externalReferenceCode, String portletId,
 			long parentResourceClassNameId, long parentResourcePrimKey,
 			String title, String urlTitle, String content, String description,
-			String sourceURL, String[] sections, String[] selectedFileNames,
+			String[] sections, String sourceURL, java.util.Date displayDate,
+			java.util.Date expirationDate, java.util.Date reviewDate,
+			String[] selectedFileNames,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addKBArticle(
 			externalReferenceCode, portletId, parentResourceClassNameId,
 			parentResourcePrimKey, title, urlTitle, content, description,
-			sourceURL, sections, selectedFileNames, serviceContext);
+			sections, sourceURL, displayDate, expirationDate, reviewDate,
+			selectedFileNames, serviceContext);
 	}
 
 	public static int addKBArticlesMarkdown(
@@ -77,6 +72,13 @@ public class KBArticleServiceUtil {
 			mimeType);
 	}
 
+	public static int countKBArticlesByKeywords(
+		long groupId, String keywords, int status) {
+
+		return getService().countKBArticlesByKeywords(
+			groupId, keywords, status);
+	}
+
 	public static KBArticle deleteKBArticle(long resourcePrimKey)
 		throws PortalException {
 
@@ -96,6 +98,14 @@ public class KBArticleServiceUtil {
 
 		getService().deleteTempAttachment(
 			groupId, resourcePrimKey, fileName, tempFolderName);
+	}
+
+	public static KBArticle expireKBArticle(
+			long resourcePrimKey,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().expireKBArticle(resourcePrimKey, serviceContext);
 	}
 
 	public static KBArticle fetchFirstChildKBArticle(
@@ -143,6 +153,13 @@ public class KBArticleServiceUtil {
 			groupId, kbFolderId, urlTitle, status);
 	}
 
+	public static com.liferay.portal.kernel.lock.Lock forceLockKBArticle(
+			long groupId, long resourcePrimKey)
+		throws PortalException {
+
+		return getService().forceLockKBArticle(groupId, resourcePrimKey);
+	}
+
 	public static List<KBArticle> getAllDescendantKBArticles(
 			long groupId, long resourcePrimKey, int status,
 			OrderByComparator<KBArticle> orderByComparator)
@@ -165,12 +182,13 @@ public class KBArticleServiceUtil {
 	}
 
 	public static String getGroupKBArticlesRSS(
-			int status, int rssDelta, String rssDisplayStyle, String rssFormat,
+			int status, int max, String type, double version,
+			String displayStyle,
 			com.liferay.portal.kernel.theme.ThemeDisplay themeDisplay)
 		throws PortalException {
 
 		return getService().getGroupKBArticlesRSS(
-			status, rssDelta, rssDisplayStyle, rssFormat, themeDisplay);
+			status, max, type, version, displayStyle, themeDisplay);
 	}
 
 	public static KBArticle getKBArticle(long resourcePrimKey, int version)
@@ -189,13 +207,13 @@ public class KBArticleServiceUtil {
 	}
 
 	public static String getKBArticleRSS(
-			long resourcePrimKey, int status, int rssDelta,
-			String rssDisplayStyle, String rssFormat,
+			long resourcePrimKey, int status, int max, String type,
+			double version, String displayStyle,
 			com.liferay.portal.kernel.theme.ThemeDisplay themeDisplay)
 		throws PortalException {
 
 		return getService().getKBArticleRSS(
-			resourcePrimKey, status, rssDelta, rssDisplayStyle, rssFormat,
+			resourcePrimKey, status, max, type, version, displayStyle,
 			themeDisplay);
 	}
 
@@ -222,6 +240,13 @@ public class KBArticleServiceUtil {
 
 		return getService().getKBArticles(
 			groupId, resourcePrimKeys, status, orderByComparator);
+	}
+
+	public static List<KBArticle> getKBArticlesByKeywords(
+		long groupId, String keywords, int status, int start, int end) {
+
+		return getService().getKBArticlesByKeywords(
+			groupId, keywords, status, start, end);
 	}
 
 	public static int getKBArticlesCount(
@@ -264,6 +289,12 @@ public class KBArticleServiceUtil {
 
 		return getService().getKBArticleVersionsCount(
 			groupId, resourcePrimKey, status);
+	}
+
+	public static KBArticle getLatestKBArticle(long resourcePrimKey)
+		throws PortalException {
+
+		return getService().getLatestKBArticle(resourcePrimKey);
 	}
 
 	public static KBArticle getLatestKBArticle(long resourcePrimKey, int status)
@@ -317,6 +348,13 @@ public class KBArticleServiceUtil {
 		return getService().getTempAttachmentNames(groupId, tempFolderName);
 	}
 
+	public static com.liferay.portal.kernel.lock.Lock lockKBArticle(
+			long resourcePrimKey)
+		throws PortalException {
+
+		return getService().lockKBArticle(resourcePrimKey);
+	}
+
 	public static void moveKBArticle(
 			long resourcePrimKey, long parentResourceClassNameId,
 			long parentResourcePrimKey, double priority)
@@ -325,6 +363,12 @@ public class KBArticleServiceUtil {
 		getService().moveKBArticle(
 			resourcePrimKey, parentResourceClassNameId, parentResourcePrimKey,
 			priority);
+	}
+
+	public static KBArticle moveKBArticleToTrash(long resourcePrimKey)
+		throws PortalException {
+
+		return getService().moveKBArticleToTrash(resourcePrimKey);
 	}
 
 	public static KBArticle revertKBArticle(
@@ -348,6 +392,12 @@ public class KBArticleServiceUtil {
 		getService().subscribeKBArticle(groupId, resourcePrimKey);
 	}
 
+	public static void unlockKBArticle(long resourcePrimKey)
+		throws PortalException {
+
+		getService().unlockKBArticle(resourcePrimKey);
+	}
+
 	public static void unsubscribeGroupKBArticles(
 			long groupId, String portletId)
 		throws PortalException {
@@ -361,16 +411,34 @@ public class KBArticleServiceUtil {
 		getService().unsubscribeKBArticle(resourcePrimKey);
 	}
 
+	public static KBArticle updateAndUnlockKBArticle(
+			long resourcePrimKey, String title, String content,
+			String description, String[] sections, String sourceURL,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate, String[] selectedFileNames,
+			long[] removeFileEntryIds,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateAndUnlockKBArticle(
+			resourcePrimKey, title, content, description, sections, sourceURL,
+			displayDate, expirationDate, reviewDate, selectedFileNames,
+			removeFileEntryIds, serviceContext);
+	}
+
 	public static KBArticle updateKBArticle(
 			long resourcePrimKey, String title, String content,
-			String description, String sourceURL, String[] sections,
-			String[] selectedFileNames, long[] removeFileEntryIds,
+			String description, String[] sections, String sourceURL,
+			java.util.Date displayDate, java.util.Date expirationDate,
+			java.util.Date reviewDate, String[] selectedFileNames,
+			long[] removeFileEntryIds,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateKBArticle(
-			resourcePrimKey, title, content, description, sourceURL, sections,
-			selectedFileNames, removeFileEntryIds, serviceContext);
+			resourcePrimKey, title, content, description, sections, sourceURL,
+			displayDate, expirationDate, reviewDate, selectedFileNames,
+			removeFileEntryIds, serviceContext);
 	}
 
 	public static void updateKBArticlesPriorities(
@@ -382,9 +450,10 @@ public class KBArticleServiceUtil {
 	}
 
 	public static KBArticleService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile KBArticleService _service;
+	private static final Snapshot<KBArticleService> _serviceSnapshot =
+		new Snapshot<>(KBArticleServiceUtil.class, KBArticleService.class);
 
 }

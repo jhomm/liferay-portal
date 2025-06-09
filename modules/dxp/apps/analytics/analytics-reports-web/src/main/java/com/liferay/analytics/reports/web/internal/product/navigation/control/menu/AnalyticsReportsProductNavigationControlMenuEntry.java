@@ -1,63 +1,78 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.web.internal.product.navigation.control.menu;
 
 import com.liferay.analytics.reports.constants.AnalyticsReportsWebKeys;
 import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItem;
-import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItemTracker;
+import com.liferay.analytics.reports.info.item.AnalyticsReportsInfoItemRegistry;
+import com.liferay.analytics.reports.info.item.ClassNameClassPKInfoItemIdentifier;
 import com.liferay.analytics.reports.info.item.provider.AnalyticsReportsInfoItemObjectProvider;
 import com.liferay.analytics.reports.web.internal.constants.AnalyticsReportsPortletKeys;
-import com.liferay.analytics.reports.web.internal.info.item.provider.AnalyticsReportsInfoItemObjectProviderTracker;
+import com.liferay.analytics.reports.web.internal.constants.ProductNavigationControlMenuEntryConstants;
+import com.liferay.analytics.reports.web.internal.info.item.provider.util.AnalyticsReportsInfoItemObjectProviderRegistryUtil;
 import com.liferay.analytics.reports.web.internal.util.AnalyticsReportsUtil;
+import com.liferay.analytics.settings.rest.manager.AnalyticsSettingsManager;
+import com.liferay.frontend.taglib.clay.servlet.taglib.ButtonTag;
+import com.liferay.frontend.taglib.clay.servlet.taglib.IconTag;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.PortletPreferencesTable;
 import com.liferay.portal.kernel.portlet.PortletURLFactory;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.Html;
+import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
-import com.liferay.portal.kernel.util.SessionClicks;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.template.react.renderer.ComponentDescriptor;
+import com.liferay.portal.template.react.renderer.ReactRenderer;
 import com.liferay.product.navigation.control.menu.BaseProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.ProductNavigationControlMenuEntry;
 import com.liferay.product.navigation.control.menu.constants.ProductNavigationControlMenuCategoryKeys;
-import com.liferay.taglib.aui.IconTag;
-import com.liferay.taglib.portletext.RuntimeTag;
 import com.liferay.taglib.util.BodyBottomTag;
+
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.JspWriter;
+import jakarta.servlet.jsp.PageContext;
 
 import java.io.IOException;
 import java.io.Writer;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.ResourceBundle;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.JspWriter;
-import javax.servlet.jsp.PageContext;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -67,15 +82,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sarai Díaz
  */
 @Component(
-	immediate = true,
 	property = {
 		"product.navigation.control.menu.category.key=" + ProductNavigationControlMenuCategoryKeys.USER,
 		"product.navigation.control.menu.entry.order:Integer=400"
 	},
-	service = {
-		AnalyticsReportsProductNavigationControlMenuEntry.class,
-		ProductNavigationControlMenuEntry.class
-	}
+	service = ProductNavigationControlMenuEntry.class
 )
 public class AnalyticsReportsProductNavigationControlMenuEntry
 	extends BaseProductNavigationControlMenuEntry {
@@ -118,70 +129,56 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 			HttpServletResponse httpServletResponse)
 		throws IOException {
 
-		Map<String, String> values = new HashMap<>();
-
-		if (isPanelStateOpen(httpServletRequest)) {
-			values.put("analyticsReportsPanelURL", StringPool.BLANK);
-			values.put("cssClass", "active");
-		}
-		else {
-			InfoItemReference infoItemReference = _getInfoItemReference(
-				httpServletRequest);
-
-			try {
-				values.put(
-					"analyticsReportsPanelURL",
-					AnalyticsReportsUtil.getAnalyticsReportsPanelURL(
-						infoItemReference, httpServletRequest, _portal,
-						_portletURLFactory));
-			}
-			catch (Exception exception) {
-				ReflectionUtil.throwException(exception);
-			}
-
-			values.put("cssClass", StringPool.BLANK);
-		}
-
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			_portal.getLocale(httpServletRequest), getClass());
-
-		values.put(
-			"title",
-			_html.escape(_language.get(resourceBundle, "content-performance")));
-
-		IconTag iconTag = new IconTag();
-
-		iconTag.setCssClass("icon-monospaced");
-		iconTag.setImage("analytics");
-		iconTag.setMarkupView("lexicon");
-
-		try {
-			values.put(
-				"iconTag",
-				iconTag.doTagAsString(httpServletRequest, httpServletResponse));
-		}
-		catch (JspException jspException) {
-			ReflectionUtil.throwException(jspException);
-		}
-
-		values.put("portletNamespace", _portletNamespace);
-
 		Writer writer = httpServletResponse.getWriter();
 
-		writer.write(StringUtil.replace(_ICON_TMPL_CONTENT, "${", "}", values));
+		writer.write(
+			StringUtil.replace(
+				_ICON_TMPL_CONTENT, "${", "}",
+				HashMapBuilder.put(
+					"cssClass",
+					() -> {
+						if (isPanelStateOpen(
+								httpServletRequest,
+								ProductNavigationControlMenuEntryConstants.
+									SESSION_CLICKS_KEY)) {
+
+							return "active";
+						}
+
+						return StringPool.BLANK;
+					}
+				).put(
+					"iconTag",
+					() -> {
+						IconTag iconTag = new IconTag();
+
+						iconTag.setCssClass("icon-monospaced");
+						iconTag.setSymbol("analytics");
+
+						return iconTag.doTagAsString(
+							httpServletRequest, httpServletResponse);
+					}
+				).put(
+					"nonceAttribute",
+					ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+						httpServletRequest)
+				).put(
+					"portletNamespace", _portletNamespace
+				).put(
+					"title",
+					() -> {
+						ResourceBundle resourceBundle =
+							ResourceBundleUtil.getBundle(
+								_portal.getLocale(httpServletRequest),
+								getClass());
+
+						return HtmlUtil.escape(
+							_language.get(
+								resourceBundle, "content-performance"));
+					}
+				).build()));
 
 		return true;
-	}
-
-	public boolean isPanelStateOpen(HttpServletRequest httpServletRequest) {
-		String analyticsReportsPanelState = SessionClicks.get(
-			httpServletRequest, _SESSION_CLICKS_KEY, "closed");
-
-		if (Objects.equals(analyticsReportsPanelState, "open")) {
-			return true;
-		}
-
-		return false;
 	}
 
 	@Override
@@ -194,7 +191,7 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 		AnalyticsReportsInfoItemObjectProvider<Object>
 			analyticsReportsInfoItemObjectProvider =
 				(AnalyticsReportsInfoItemObjectProvider<Object>)
-					_analyticsReportsInfoItemObjectProviderTracker.
+					AnalyticsReportsInfoItemObjectProviderRegistryUtil.
 						getAnalyticsReportsInfoItemObjectProvider(
 							infoItemReference.getClassName());
 
@@ -212,32 +209,39 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 
 		AnalyticsReportsInfoItem<Object> analyticsReportsInfoItem =
 			(AnalyticsReportsInfoItem<Object>)
-				_analyticsReportsInfoItemTracker.getAnalyticsReportsInfoItem(
+				_analyticsReportsInfoItemRegistry.getAnalyticsReportsInfoItem(
 					infoItemReference.getClassName());
-
-		if ((analyticsReportsInfoItem == null) ||
-			!analyticsReportsInfoItem.isShow(analyticsReportsInfoItemObject)) {
-
-			return false;
-		}
-
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (!AnalyticsReportsUtil.isShowAnalyticsReportsPanel(
-				themeDisplay.getCompanyId(), httpServletRequest)) {
+		if ((analyticsReportsInfoItem == null) ||
+			(!analyticsReportsInfoItem.isShow(analyticsReportsInfoItemObject) &&
+			 !_hasResourcePermission(
+				 ActionKeys.UPDATE, httpServletRequest.getParameter("p_l_id"),
+				 _resourceNames, themeDisplay))) {
+
+			return false;
+		}
+
+		try {
+			if (!AnalyticsReportsUtil.isShowAnalyticsReportsPanel(
+					_analyticsSettingsManager, themeDisplay.getCompanyId(),
+					httpServletRequest)) {
+
+				return false;
+			}
+		}
+		catch (PortalException portalException) {
+			throw portalException;
+		}
+		catch (Exception exception) {
+			_log.error(exception);
 
 			return false;
 		}
 
 		return super.isShow(httpServletRequest);
-	}
-
-	public void setPanelState(
-		HttpServletRequest httpServletRequest, String panelState) {
-
-		SessionClicks.put(httpServletRequest, _SESSION_CLICKS_KEY, panelState);
 	}
 
 	@Activate
@@ -246,20 +250,154 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 			AnalyticsReportsPortletKeys.ANALYTICS_REPORTS);
 	}
 
+	private String _getAnalyticsReportsURL(
+		HttpServletRequest httpServletRequest) {
+
+		InfoItemReference infoItemReference = _getInfoItemReference(
+			httpServletRequest);
+
+		if (infoItemReference.getInfoItemIdentifier() instanceof
+				ClassNameClassPKInfoItemIdentifier) {
+
+			ClassNameClassPKInfoItemIdentifier
+				classNameClassPKInfoItemIdentifier =
+					(ClassNameClassPKInfoItemIdentifier)
+						infoItemReference.getInfoItemIdentifier();
+
+			return PortletURLBuilder.create(
+				_portletURLFactory.create(
+					httpServletRequest,
+					AnalyticsReportsPortletKeys.ANALYTICS_REPORTS,
+					PortletRequest.RESOURCE_PHASE)
+			).setParameter(
+				"className", infoItemReference.getClassName()
+			).setParameter(
+				"classPK", classNameClassPKInfoItemIdentifier.getClassPK()
+			).setParameter(
+				"classTypeName",
+				classNameClassPKInfoItemIdentifier.getClassName()
+			).setParameter(
+				"p_p_resource_id", "/analytics_reports/get_data"
+			).buildString();
+		}
+		else if (infoItemReference.getInfoItemIdentifier() instanceof
+					ClassPKInfoItemIdentifier) {
+
+			return PortletURLBuilder.create(
+				_portletURLFactory.create(
+					httpServletRequest,
+					AnalyticsReportsPortletKeys.ANALYTICS_REPORTS,
+					PortletRequest.RESOURCE_PHASE)
+			).setParameter(
+				"className", infoItemReference.getClassName()
+			).setParameter(
+				"classPK",
+				() -> {
+					ClassPKInfoItemIdentifier classPKInfoItemIdentifier =
+						(ClassPKInfoItemIdentifier)
+							infoItemReference.getInfoItemIdentifier();
+
+					return classPKInfoItemIdentifier.getClassPK();
+				}
+			).setParameter(
+				"p_p_resource_id", "/analytics_reports/get_data"
+			).buildString();
+		}
+
+		return StringPool.BLANK;
+	}
+
 	private InfoItemReference _getInfoItemReference(
 		HttpServletRequest httpServletRequest) {
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		return Optional.ofNullable(
+		InfoItemReference infoItemReference =
 			(InfoItemReference)httpServletRequest.getAttribute(
-				AnalyticsReportsWebKeys.INFO_ITEM_REFERENCE)
-		).orElseGet(
-			() -> new InfoItemReference(
-				Layout.class.getName(), themeDisplay.getPlid())
-		);
+				AnalyticsReportsWebKeys.ANALYTICS_INFO_ITEM_REFERENCE);
+
+		if (infoItemReference == null) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)httpServletRequest.getAttribute(
+					WebKeys.THEME_DISPLAY);
+
+			return new InfoItemReference(
+				Layout.class.getName(), themeDisplay.getPlid());
+		}
+
+		return infoItemReference;
+	}
+
+	private List<String> _getResourceNames(
+		String portletId, Map<String, List<String>> resourceNames) {
+
+		for (Map.Entry<String, List<String>> entry : resourceNames.entrySet()) {
+			if (portletId.contains(entry.getKey())) {
+				return entry.getValue();
+			}
+		}
+
+		return Collections.emptyList();
+	}
+
+	private boolean _hasResourcePermission(
+		String actionId, String plid, Map<String, List<String>> resourceNames,
+		ThemeDisplay themeDisplay) {
+
+		if (!themeDisplay.isSignedIn()) {
+			return false;
+		}
+
+		if (Validator.isNotNull(plid)) {
+			PermissionChecker permissionChecker =
+				PermissionThreadLocal.getPermissionChecker();
+
+			Set<String> resourceNamesSet = new HashSet<>();
+
+			Predicate predicate = null;
+
+			for (String resourceName : resourceNames.keySet()) {
+				if (predicate == null) {
+					predicate = PortletPreferencesTable.INSTANCE.portletId.like(
+						StringUtil.quote(resourceName, CharPool.PERCENT));
+				}
+				else {
+					predicate = predicate.or(
+						PortletPreferencesTable.INSTANCE.portletId.like(
+							StringUtil.quote(resourceName, CharPool.PERCENT)));
+				}
+			}
+
+			List<String> portletIds = _portletPreferencesLocalService.dslQuery(
+				DSLQueryFactoryUtil.selectDistinct(
+					PortletPreferencesTable.INSTANCE.portletId
+				).from(
+					PortletPreferencesTable.INSTANCE
+				).where(
+					PortletPreferencesTable.INSTANCE.companyId.eq(
+						themeDisplay.getCompanyId()
+					).and(
+						PortletPreferencesTable.INSTANCE.plid.eq(
+							GetterUtil.getLong(plid))
+					).and(
+						predicate
+					)
+				));
+
+			for (String portletId : portletIds) {
+				resourceNamesSet.addAll(
+					_getResourceNames(portletId, resourceNames));
+			}
+
+			for (String resourceName : resourceNamesSet) {
+				if (permissionChecker.hasPermission(
+						themeDisplay.getScopeGroupId(), resourceName, "0",
+						actionId)) {
+
+					return true;
+				}
+			}
+		}
+
+		return false;
 	}
 
 	private void _processBodyBottomTagBody(PageContext pageContext) {
@@ -274,34 +412,81 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 
 			JspWriter jspWriter = pageContext.getOut();
 
-			jspWriter.write("<div class=\"");
+			StringBundler sb = new StringBundler(24);
 
-			if (isPanelStateOpen(httpServletRequest)) {
-				jspWriter.write(
-					"lfr-has-analytics-reports-panel open-admin-panel ");
+			sb.append("<div class=\"");
+
+			if (isPanelStateOpen(
+					httpServletRequest,
+					ProductNavigationControlMenuEntryConstants.
+						SESSION_CLICKS_KEY)) {
+
+				sb.append(
+					"lfr-has-analytics-reports-panel open-admin-panel open ");
 			}
 
-			jspWriter.write(
+			sb.append(
 				StringBundler.concat(
 					"cadmin d-print-none lfr-admin-panel ",
 					"lfr-product-menu-panel lfr-analytics-reports-panel ",
 					"sidenav-fixed sidenav-menu-slider sidenav-right\" id=\""));
+			sb.append(_portletNamespace);
+			sb.append("analyticsReportsPanelId\" ");
+			sb.append("tabindex=\"-1\">");
+			sb.append("<div class=\"sidebar sidebar-light sidenav-menu ");
+			sb.append("sidebar-sm\">");
+			sb.append("<div class=\"lfr-analytics-reports-sidebar\" ");
+			sb.append("id=\"analyticsReportsSidebar\">");
+			sb.append("<div class=\"d-flex justify-content-between p-3 ");
+			sb.append("sidebar-header\">");
+			sb.append("<h1 class=\"sr-only\">");
+			sb.append(_language.get(httpServletRequest, "content-performance"));
+			sb.append("</h1>");
+			sb.append("<span class=\"font-weight-bold\">");
+			sb.append(_language.get(httpServletRequest, "content-performance"));
+			sb.append("</span>");
 
-			jspWriter.write(_portletNamespace);
+			ButtonTag buttonTag = new ButtonTag();
 
-			jspWriter.write("analyticsReportsPanelId\">");
-			jspWriter.write(
-				"<div class=\"sidebar sidebar-light sidenav-menu " +
-					"sidebar-sm\">");
+			buttonTag.setCssClass("close sidenav-close");
+			buttonTag.setDisplayType("unstyled");
+			buttonTag.setDynamicAttribute(
+				StringPool.BLANK, "aria-label",
+				_language.get(
+					(HttpServletRequest)pageContext.getRequest(), "close"));
+			buttonTag.setIcon("times");
 
-			RuntimeTag runtimeTag = new RuntimeTag();
+			sb.append(buttonTag.doTagAsString(pageContext));
 
-			runtimeTag.setPortletName(
-				AnalyticsReportsPortletKeys.ANALYTICS_REPORTS);
+			sb.append("</div>");
+			sb.append("<div class=\"sidebar-body\">");
+			sb.append("<span aria-hidden=\"true\" ");
+			sb.append("className=\"loading-animation ");
+			sb.append("loading-animation-sm\" />");
 
-			runtimeTag.doTag(pageContext);
+			jspWriter.write(sb.toString());
 
-			jspWriter.write("</div></div>");
+			_reactRenderer.renderReact(
+				new ComponentDescriptor(
+					"{AnalyticsReportsApp} from analytics-reports-web"),
+				HashMapBuilder.<String, Object>put(
+					"context",
+					HashMapBuilder.<String, Object>put(
+						"analyticsReportsDataURL",
+						_getAnalyticsReportsURL(httpServletRequest)
+					).put(
+						"isPanelStateOpen",
+						isPanelStateOpen(
+							httpServletRequest,
+							ProductNavigationControlMenuEntryConstants.
+								SESSION_CLICKS_KEY)
+					).build()
+				).put(
+					"portletNamespace", _portletNamespace
+				).build(),
+				httpServletRequest, jspWriter);
+
+			jspWriter.write("</div></div></div></div>");
 		}
 		catch (Exception exception) {
 			ReflectionUtil.throwException(exception);
@@ -311,18 +496,14 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 	private static final String _ICON_TMPL_CONTENT = StringUtil.read(
 		AnalyticsReportsProductNavigationControlMenuEntry.class, "icon.tmpl");
 
-	private static final String _SESSION_CLICKS_KEY =
-		"com.liferay.analytics.reports.web_panelState";
+	private static final Log _log = LogFactoryUtil.getLog(
+		AnalyticsReportsProductNavigationControlMenuEntry.class);
 
 	@Reference
-	private AnalyticsReportsInfoItemObjectProviderTracker
-		_analyticsReportsInfoItemObjectProviderTracker;
+	private AnalyticsReportsInfoItemRegistry _analyticsReportsInfoItemRegistry;
 
 	@Reference
-	private AnalyticsReportsInfoItemTracker _analyticsReportsInfoItemTracker;
-
-	@Reference
-	private Html _html;
+	private AnalyticsSettingsManager _analyticsSettingsManager;
 
 	@Reference
 	private Language _language;
@@ -333,6 +514,28 @@ public class AnalyticsReportsProductNavigationControlMenuEntry
 	private String _portletNamespace;
 
 	@Reference
+	private PortletPreferencesLocalService _portletPreferencesLocalService;
+
+	@Reference
 	private PortletURLFactory _portletURLFactory;
+
+	@Reference
+	private ReactRenderer _reactRenderer;
+
+	private final Map<String, List<String>> _resourceNames =
+		HashMapBuilder.<String, List<String>>put(
+			"com_liferay_blogs_web_portlet_BlogsPortlet",
+			Arrays.asList("com.liferay.blogs.model.BlogsEntry")
+		).put(
+			"com_liferay_document_library_web_portlet_DLPortlet",
+			Arrays.asList(
+				"com.liferay.document.library",
+				"com.liferay.document.library.kernel.model.DLFileEntry")
+		).put(
+			"com_liferay_journal_content_web_portlet_JournalContentPortlet",
+			Arrays.asList(
+				"com.liferay.journal",
+				"com.liferay.journal.model.JournalArticle")
+		).build();
 
 }

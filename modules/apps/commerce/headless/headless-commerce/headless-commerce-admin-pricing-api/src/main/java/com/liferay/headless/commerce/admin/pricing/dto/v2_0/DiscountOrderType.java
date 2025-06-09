@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.dto.v2_0;
@@ -20,11 +11,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,14 +30,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -47,8 +38,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("DiscountOrderType")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"orderTypeId"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"orderTypeId", "discountId"})
 @XmlRootElement(name = "DiscountOrderType")
 public class DiscountOrderType implements Serializable {
 
@@ -60,14 +53,22 @@ public class DiscountOrderType implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(DiscountOrderType.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -75,23 +76,35 @@ public class DiscountOrderType implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "PAB-34098-789-N")
 	public String getDiscountExternalReferenceCode() {
+		if (_discountExternalReferenceCodeSupplier != null) {
+			discountExternalReferenceCode =
+				_discountExternalReferenceCodeSupplier.get();
+
+			_discountExternalReferenceCodeSupplier = null;
+		}
+
 		return discountExternalReferenceCode;
 	}
 
@@ -99,6 +112,8 @@ public class DiscountOrderType implements Serializable {
 		String discountExternalReferenceCode) {
 
 		this.discountExternalReferenceCode = discountExternalReferenceCode;
+
+		_discountExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -106,112 +121,161 @@ public class DiscountOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			discountExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			discountExternalReferenceCode =
-				discountExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountExternalReferenceCodeSupplier = () -> {
+			try {
+				return discountExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String discountExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _discountExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getDiscountId() {
+		if (_discountIdSupplier != null) {
+			discountId = _discountIdSupplier.get();
+
+			_discountIdSupplier = null;
+		}
+
 		return discountId;
 	}
 
 	public void setDiscountId(Long discountId) {
 		this.discountId = discountId;
+
+		_discountIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountId(
 		UnsafeSupplier<Long, Exception> discountIdUnsafeSupplier) {
 
-		try {
-			discountId = discountIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountIdSupplier = () -> {
+			try {
+				return discountIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	@NotNull
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountId;
 
+	@JsonIgnore
+	private Supplier<Long> _discountIdSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30643")
 	public Long getDiscountOrderTypeId() {
+		if (_discountOrderTypeIdSupplier != null) {
+			discountOrderTypeId = _discountOrderTypeIdSupplier.get();
+
+			_discountOrderTypeIdSupplier = null;
+		}
+
 		return discountOrderTypeId;
 	}
 
 	public void setDiscountOrderTypeId(Long discountOrderTypeId) {
 		this.discountOrderTypeId = discountOrderTypeId;
+
+		_discountOrderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDiscountOrderTypeId(
 		UnsafeSupplier<Long, Exception> discountOrderTypeIdUnsafeSupplier) {
 
-		try {
-			discountOrderTypeId = discountOrderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_discountOrderTypeIdSupplier = () -> {
+			try {
+				return discountOrderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long discountOrderTypeId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _discountOrderTypeIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public OrderType getOrderType() {
+		if (_orderTypeSupplier != null) {
+			orderType = _orderTypeSupplier.get();
+
+			_orderTypeSupplier = null;
+		}
+
 		return orderType;
 	}
 
 	public void setOrderType(OrderType orderType) {
 		this.orderType = orderType;
+
+		_orderTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderType(
 		UnsafeSupplier<OrderType, Exception> orderTypeUnsafeSupplier) {
 
-		try {
-			orderType = orderTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeSupplier = () -> {
+			try {
+				return orderTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected OrderType orderType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<OrderType> _orderTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "DAB-34098-789-N")
 	public String getOrderTypeExternalReferenceCode() {
+		if (_orderTypeExternalReferenceCodeSupplier != null) {
+			orderTypeExternalReferenceCode =
+				_orderTypeExternalReferenceCodeSupplier.get();
+
+			_orderTypeExternalReferenceCodeSupplier = null;
+		}
+
 		return orderTypeExternalReferenceCode;
 	}
 
@@ -219,6 +283,8 @@ public class DiscountOrderType implements Serializable {
 		String orderTypeExternalReferenceCode) {
 
 		this.orderTypeExternalReferenceCode = orderTypeExternalReferenceCode;
+
+		_orderTypeExternalReferenceCodeSupplier = null;
 	}
 
 	@JsonIgnore
@@ -226,45 +292,59 @@ public class DiscountOrderType implements Serializable {
 		UnsafeSupplier<String, Exception>
 			orderTypeExternalReferenceCodeUnsafeSupplier) {
 
-		try {
-			orderTypeExternalReferenceCode =
-				orderTypeExternalReferenceCodeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeExternalReferenceCodeSupplier = () -> {
+			try {
+				return orderTypeExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String orderTypeExternalReferenceCode;
 
+	@JsonIgnore
+	private Supplier<String> _orderTypeExternalReferenceCodeSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30324")
 	public Long getOrderTypeId() {
+		if (_orderTypeIdSupplier != null) {
+			orderTypeId = _orderTypeIdSupplier.get();
+
+			_orderTypeIdSupplier = null;
+		}
+
 		return orderTypeId;
 	}
 
 	public void setOrderTypeId(Long orderTypeId) {
 		this.orderTypeId = orderTypeId;
+
+		_orderTypeIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setOrderTypeId(
 		UnsafeSupplier<Long, Exception> orderTypeIdUnsafeSupplier) {
 
-		try {
-			orderTypeId = orderTypeIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_orderTypeIdSupplier = () -> {
+			try {
+				return orderTypeIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -272,34 +352,50 @@ public class DiscountOrderType implements Serializable {
 	@NotNull
 	protected Long orderTypeId;
 
+	@JsonIgnore
+	private Supplier<Long> _orderTypeIdSupplier;
+
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1")
 	public Integer getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Integer priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Integer, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Integer priority;
+
+	@JsonIgnore
+	private Supplier<Integer> _prioritySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -328,6 +424,8 @@ public class DiscountOrderType implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -337,6 +435,9 @@ public class DiscountOrderType implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		String discountExternalReferenceCode =
+			getDiscountExternalReferenceCode();
 
 		if (discountExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -352,6 +453,8 @@ public class DiscountOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long discountId = getDiscountId();
+
 		if (discountId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -361,6 +464,8 @@ public class DiscountOrderType implements Serializable {
 
 			sb.append(discountId);
 		}
+
+		Long discountOrderTypeId = getDiscountOrderTypeId();
 
 		if (discountOrderTypeId != null) {
 			if (sb.length() > 1) {
@@ -372,6 +477,8 @@ public class DiscountOrderType implements Serializable {
 			sb.append(discountOrderTypeId);
 		}
 
+		OrderType orderType = getOrderType();
+
 		if (orderType != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -381,6 +488,9 @@ public class DiscountOrderType implements Serializable {
 
 			sb.append(String.valueOf(orderType));
 		}
+
+		String orderTypeExternalReferenceCode =
+			getOrderTypeExternalReferenceCode();
 
 		if (orderTypeExternalReferenceCode != null) {
 			if (sb.length() > 1) {
@@ -396,6 +506,8 @@ public class DiscountOrderType implements Serializable {
 			sb.append("\"");
 		}
 
+		Long orderTypeId = getOrderTypeId();
+
 		if (orderTypeId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -405,6 +517,8 @@ public class DiscountOrderType implements Serializable {
 
 			sb.append(orderTypeId);
 		}
+
+		Integer priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -421,17 +535,17 @@ public class DiscountOrderType implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.pricing.dto.v2_0.DiscountOrderType",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -457,7 +571,7 @@ public class DiscountOrderType implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -468,7 +582,10 @@ public class DiscountOrderType implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -489,7 +606,7 @@ public class DiscountOrderType implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -505,5 +622,12 @@ public class DiscountOrderType implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

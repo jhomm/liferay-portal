@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.select;
@@ -17,24 +8,21 @@ package com.liferay.dynamic.data.mapping.form.field.type.internal.select;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
-import com.liferay.dynamic.data.mapping.model.DDMFormFieldOptions;
-import com.liferay.dynamic.data.mapping.model.LocalizedValue;
-import com.liferay.dynamic.data.mapping.model.Value;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.dynamic.data.mapping.util.DDMFormFieldValueUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.util.Locale;
-import java.util.Objects;
-import java.util.function.IntFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,33 +33,32 @@ import org.osgi.service.component.annotations.Reference;
  * @author Renato Rego
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.SELECT,
-	service = {
-		DDMFormFieldValueAccessor.class, SelectDDMFormFieldValueAccessor.class
-	}
+	service = DDMFormFieldValueAccessor.class
 )
 public class SelectDDMFormFieldValueAccessor
 	implements DDMFormFieldValueAccessor<JSONArray> {
 
 	@Override
-	public IntFunction<JSONArray[]> getArrayGeneratorIntFunction() {
-		return JSONArray[]::new;
+	public JSONArray[] getArrayGenericType() {
+		return new JSONArray[0];
 	}
 
 	@Override
 	public JSONArray getValue(
 		DDMFormFieldValue ddmFormFieldValue, Locale locale) {
 
-		return getOptionsValuesJSONArray(ddmFormFieldValue, locale);
+		return DDMFormFieldValueUtil.getOptionsValuesJSONArray(
+			ddmFormFieldValue, locale);
 	}
 
 	@Override
 	public JSONArray getValueForEvaluation(
 		DDMFormFieldValue ddmFormFieldValue, Locale locale) {
 
-		JSONArray optionsValuesJSONArray = getOptionsValuesJSONArray(
-			ddmFormFieldValue, locale);
+		JSONArray optionsValuesJSONArray =
+			DDMFormFieldValueUtil.getOptionsValuesJSONArray(
+				ddmFormFieldValue, locale);
 
 		if (ddmFormFieldValue.getDDMFormValues() == null) {
 			return optionsValuesJSONArray;
@@ -82,11 +69,15 @@ public class SelectDDMFormFieldValueAccessor
 				optionsValuesJSONArray.getString(i));
 
 			if (matcher.matches()) {
-				return createJSONArray(
-					StringBundler.concat(
-						StringPool.OPEN_BRACKET,
-						getOptionsLabels(ddmFormFieldValue, locale),
-						StringPool.CLOSE_BRACKET));
+				JSONArray jsonArray = DDMFormFieldValueUtil.createJSONArray(
+					"[]");
+
+				jsonArray.put(
+					DDMFormFieldValueUtil.getOptionsLabels(
+						ddmFormFieldValue, locale,
+						DDMFormFieldValueUtil::isManualDataSourceType));
+
+				return jsonArray;
 			}
 		}
 
@@ -97,11 +88,27 @@ public class SelectDDMFormFieldValueAccessor
 	public boolean isEmpty(DDMFormFieldValue ddmFormFieldValue, Locale locale) {
 		JSONArray jsonArray = getValue(ddmFormFieldValue, locale);
 
-		if (jsonArray.length() > 0) {
+		if (JSONUtil.isEmpty(jsonArray)) {
+			return true;
+		}
+
+		DDMFormField ddmFormField = ddmFormFieldValue.getDDMFormField();
+
+		if (ddmFormField == null) {
 			return false;
 		}
 
-		return true;
+		for (int i = 0; i < jsonArray.length(); i++) {
+			String optionValue = jsonArray.getString(i);
+
+			if (Validator.isNull(optionValue) ||
+				StringUtil.equals(optionValue, "chooseAnOption")) {
+
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	@Override
@@ -130,89 +137,6 @@ public class SelectDDMFormFieldValueAccessor
 
 			return StringPool.BLANK;
 		}
-	}
-
-	protected JSONArray createJSONArray(String json) {
-		try {
-			return jsonFactory.createJSONArray(json);
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug("Unable to parse JSON array", jsonException);
-			}
-
-			return jsonFactory.createJSONArray();
-		}
-	}
-
-	protected DDMFormFieldOptions getDDMFormFieldOptions(
-		DDMFormFieldValue ddmFormFieldValue) {
-
-		DDMFormField ddmFormField = ddmFormFieldValue.getDDMFormField();
-
-		return ddmFormField.getDDMFormFieldOptions();
-	}
-
-	protected String getOptionsLabels(
-		DDMFormFieldValue ddmFormFieldValue, Locale locale) {
-
-		JSONArray optionsValuesJSONArray = getOptionsValuesJSONArray(
-			ddmFormFieldValue, locale);
-
-		if (optionsValuesJSONArray.length() == 0) {
-			return StringPool.BLANK;
-		}
-
-		StringBundler sb = new StringBundler(
-			(optionsValuesJSONArray.length() * 2) - 1);
-
-		DDMFormFieldOptions ddmFormFieldOptions = getDDMFormFieldOptions(
-			ddmFormFieldValue);
-
-		for (int i = 0; i < optionsValuesJSONArray.length(); i++) {
-			String optionValue = optionsValuesJSONArray.getString(i);
-
-			if (isManualDataSourceType(ddmFormFieldValue.getDDMFormField())) {
-				LocalizedValue optionLabel =
-					ddmFormFieldOptions.getOptionLabels(optionValue);
-
-				if (optionLabel != null) {
-					sb.append(HtmlUtil.escape(optionLabel.getString(locale)));
-				}
-				else {
-					sb.append(optionValue);
-				}
-			}
-			else {
-				sb.append(optionValue);
-			}
-
-			sb.append(StringPool.COMMA_AND_SPACE);
-		}
-
-		sb.setIndex(sb.index() - 1);
-
-		return sb.toString();
-	}
-
-	protected JSONArray getOptionsValuesJSONArray(
-		DDMFormFieldValue ddmFormFieldValue, Locale locale) {
-
-		Value value = ddmFormFieldValue.getValue();
-
-		if (value == null) {
-			return createJSONArray("[]");
-		}
-
-		return createJSONArray(value.getString(locale));
-	}
-
-	protected boolean isManualDataSourceType(DDMFormField ddmFormField) {
-		if (Objects.equals(ddmFormField.getDataSourceType(), "manual")) {
-			return true;
-		}
-
-		return false;
 	}
 
 	@Reference

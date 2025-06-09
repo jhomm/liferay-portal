@@ -1,0 +1,57 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<%
+ObjectLayoutBox categorizationObjectLayoutBox = objectEntryDisplayContext.getObjectLayoutBox(ObjectLayoutBoxConstants.TYPE_CATEGORIZATION);
+%>
+
+<c:if test="<%= objectDefinition.isEnableCategorization() && (categorizationObjectLayoutBox != null) %>">
+
+	<%
+	long classPK = (objectEntry == null) ? 0 : objectEntry.getObjectEntryId();
+	%>
+
+	<div class="lfr-form-content" id="<portlet:namespace />categorization">
+		<liferay-asset:asset-categories-error />
+
+		<liferay-asset:asset-tags-error />
+
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset collapsed="<%= categorizationObjectLayoutBox.isCollapsable() %>" collapsible="<%= categorizationObjectLayoutBox.isCollapsable() %>" label="categorization">
+					<c:choose>
+						<c:when test="<%= objectEntryDisplayContext.isReadOnly() %>">
+							<liferay-asset:asset-categories-summary
+								className="<%= objectDefinition.getClassName() %>"
+								classPK="<%= classPK %>"
+								visibleTypes="<%= AssetVocabularyConstants.VISIBILITY_TYPES %>"
+							/>
+
+							<liferay-asset:asset-tags-summary
+								className="<%= objectDefinition.getClassName() %>"
+								classPK="<%= classPK %>"
+								message="tags"
+							/>
+						</c:when>
+						<c:otherwise>
+							<liferay-asset:asset-categories-selector
+								className="<%= objectDefinition.getClassName() %>"
+								classPK="<%= classPK %>"
+								visibilityTypes="<%= AssetVocabularyConstants.VISIBILITY_TYPES %>"
+							/>
+
+							<liferay-asset:asset-tags-selector
+								className="<%= objectDefinition.getClassName() %>"
+								classPK="<%= classPK %>"
+							/>
+						</c:otherwise>
+					</c:choose>
+				</aui:fieldset>
+			</div>
+		</div>
+	</div>
+</c:if>

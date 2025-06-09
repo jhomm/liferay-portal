@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v0_0_3;
@@ -69,11 +60,18 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 		_userLocalService = userLocalService;
 	}
 
-	protected AssetCategory addAssetCategory(
+	@Override
+	protected void doUpgrade() throws Exception {
+		_updateArticleType();
+
+		_alterTable();
+	}
+
+	private AssetCategory _addAssetCategory(
 			long groupId, long companyId, String title, long assetVocabularyId)
 		throws Exception {
 
-		long userId = _userLocalService.getDefaultUserId(companyId);
+		long userId = _userLocalService.getGuestUserId(companyId);
 
 		ServiceContext serviceContext = new ServiceContext();
 
@@ -84,12 +82,12 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 			userId, groupId, title, assetVocabularyId, serviceContext);
 	}
 
-	protected AssetVocabulary addAssetVocabulary(
+	private AssetVocabulary _addAssetVocabulary(
 			long groupId, long companyId, String title,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap)
 		throws Exception {
 
-		long userId = _userLocalService.getDefaultUserId(companyId);
+		long userId = _userLocalService.getGuestUserId(companyId);
 
 		AssetVocabularySettingsHelper assetVocabularySettingsHelper =
 			new AssetVocabularySettingsHelper();
@@ -111,20 +109,13 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 			assetVocabularySettingsHelper.toString(), serviceContext);
 	}
 
-	protected void alterTable() throws Exception {
+	private void _alterTable() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
-			runSQL("alter table JournalArticle drop column type_");
+			alterTableDropColumn("JournalArticle", "type_");
 		}
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		updateArticleType();
-
-		alterTable();
-	}
-
-	protected Set<String> getArticleTypes() throws Exception {
+	private Set<String> _getArticleTypes() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select distinct type_ from JournalArticle");
 			ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -139,7 +130,7 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected boolean hasSelectedArticleTypes() throws Exception {
+	private boolean _hasSelectedArticleTypes() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select count(*) from JournalArticle where type_ != 'general'");
 			ResultSet resultSet = preparedStatement.executeQuery()) {
@@ -156,7 +147,7 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateArticles(
+	private void _updateArticles(
 			long companyId,
 			Map<String, Long> journalArticleTypesToAssetCategoryIds)
 		throws Exception {
@@ -200,13 +191,13 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateArticleType() throws Exception {
+	private void _updateArticleType() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
-			if (!hasSelectedArticleTypes()) {
+			if (!_hasSelectedArticleTypes()) {
 				return;
 			}
 
-			Set<String> types = getArticleTypes();
+			Set<String> types = _getArticleTypes();
 
 			if (types.size() <= 0) {
 				return;
@@ -231,7 +222,7 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 							LocalizationUtil.getLocalizationMap(
 								locales, defaultLocale, "type");
 
-						AssetVocabulary assetVocabulary = addAssetVocabulary(
+						AssetVocabulary assetVocabulary = _addAssetVocabulary(
 							company.getGroupId(), company.getCompanyId(),
 							"type", nameMap, new HashMap<Locale, String>());
 
@@ -240,7 +231,7 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 								new HashMap<>();
 
 						for (String type : types) {
-							AssetCategory assetCategory = addAssetCategory(
+							AssetCategory assetCategory = _addAssetCategory(
 								company.getGroupId(), company.getCompanyId(),
 								type, assetVocabulary.getVocabularyId());
 
@@ -248,7 +239,7 @@ public class JournalArticleTypeUpgradeProcess extends UpgradeProcess {
 								type, assetCategory.getCategoryId());
 						}
 
-						updateArticles(
+						_updateArticles(
 							company.getCompanyId(),
 							journalArticleTypesToAssetCategoryIds);
 					});

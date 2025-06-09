@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
@@ -20,6 +11,7 @@ import com.liferay.dynamic.data.mapping.exception.StructureDefinitionException;
 import com.liferay.dynamic.data.mapping.exception.StructureLayoutException;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializer;
 import com.liferay.dynamic.data.mapping.form.builder.context.DDMFormContextDeserializerRequest;
+import com.liferay.dynamic.data.mapping.form.web.internal.portlet.action.helper.SaveFormInstanceMVCCommandHelper;
 import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormInstance;
 import com.liferay.dynamic.data.mapping.model.DDMFormLayout;
@@ -41,14 +33,14 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,9 +49,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"mvc.command.name=/dynamic_data_mapping_form/save_structure"
 	},
 	service = MVCActionCommand.class
@@ -88,7 +79,7 @@ public class SaveStructureMVCActionCommand extends BaseMVCActionCommand {
 		Map<Locale, String> nameMap =
 			saveFormInstanceMVCCommandHelper.getNameMap(
 				ddmForm, name, "untitled-element-set");
-		Map<Locale, String> descriptionMap = getLocalizedMap(
+		Map<Locale, String> descriptionMap = _getLocalizedMap(
 			description, ddmForm.getAvailableLocales(),
 			ddmForm.getDefaultLocale());
 
@@ -122,7 +113,6 @@ public class SaveStructureMVCActionCommand extends BaseMVCActionCommand {
 
 		portletURL.setParameter(
 			"structureId", String.valueOf(ddmStructure.getStructureId()));
-
 		portletURL.setParameter("redirect", redirect);
 
 		actionRequest.setAttribute(WebKeys.REDIRECT, portletURL.toString());
@@ -158,27 +148,6 @@ public class SaveStructureMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected Map<Locale, String> getLocalizedMap(
-			String value, Set<Locale> availableLocales, Locale defaultLocale)
-		throws PortalException {
-
-		Map<Locale, String> localizedMap = new HashMap<>();
-
-		JSONObject jsonObject = jsonFactory.createJSONObject(value);
-
-		String defaultValueString = jsonObject.getString(
-			LocaleUtil.toLanguageId(defaultLocale));
-
-		for (Locale availableLocale : availableLocales) {
-			String valueString = jsonObject.getString(
-				LocaleUtil.toLanguageId(availableLocale), defaultValueString);
-
-			localizedMap.put(availableLocale, valueString);
-		}
-
-		return localizedMap;
-	}
-
 	@Reference(
 		target = "(dynamic.data.mapping.form.builder.context.deserializer.type=form)"
 	)
@@ -196,6 +165,27 @@ public class SaveStructureMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	protected SaveFormInstanceMVCCommandHelper saveFormInstanceMVCCommandHelper;
+
+	private Map<Locale, String> _getLocalizedMap(
+			String value, Set<Locale> availableLocales, Locale defaultLocale)
+		throws Exception {
+
+		Map<Locale, String> localizedMap = new HashMap<>();
+
+		JSONObject jsonObject = jsonFactory.createJSONObject(value);
+
+		String defaultValueString = jsonObject.getString(
+			LocaleUtil.toLanguageId(defaultLocale));
+
+		for (Locale availableLocale : availableLocales) {
+			String valueString = jsonObject.getString(
+				LocaleUtil.toLanguageId(availableLocale), defaultValueString);
+
+			localizedMap.put(availableLocale, valueString);
+		}
+
+		return localizedMap;
+	}
 
 	@Reference
 	private DDMStructureService _ddmStructureService;

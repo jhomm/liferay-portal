@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.portlet.container.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.test.util.LayoutFriendlyURLRandomizerBumper;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.application.type.ApplicationType;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletQName;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
@@ -37,14 +28,14 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.osgi.web.portlet.container.test.util.PortletContainerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.junit.Assert;
 import org.junit.ClassRule;
@@ -101,7 +92,7 @@ public class PublicRenderParameterTest extends BasePortletContainerTestCase {
 					ApplicationType.WIDGET.toString()
 				}
 			).put(
-				"javax.portlet.supported-public-render-parameter", prpName
+				"jakarta.portlet.supported-public-render-parameter", prpName
 			).build(),
 			TEST_PORTLET_ID, false);
 
@@ -116,7 +107,7 @@ public class PublicRenderParameterTest extends BasePortletContainerTestCase {
 			UniqueStringRandomizerBumper.INSTANCE);
 
 		layout = LayoutLocalServiceUtil.addLayout(
-			TestPropsValues.getUserId(), group.getGroupId(), false,
+			null, TestPropsValues.getUserId(), group.getGroupId(), false,
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, name, null, null,
 			"full_page_application", false,
 			StringPool.SLASH + FriendlyURLNormalizerUtil.normalize(name),
@@ -183,7 +174,7 @@ public class PublicRenderParameterTest extends BasePortletContainerTestCase {
 		setUpPortlet(
 			testPortlet,
 			HashMapDictionaryBuilder.<String, Object>put(
-				"javax.portlet.supported-public-render-parameter", prpName
+				"jakarta.portlet.supported-public-render-parameter", prpName
 			).build(),
 			TEST_PORTLET_ID);
 

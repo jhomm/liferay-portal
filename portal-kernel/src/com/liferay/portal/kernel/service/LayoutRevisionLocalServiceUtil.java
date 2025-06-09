@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -278,13 +269,6 @@ public class LayoutRevisionLocalServiceUtil {
 		return getService().fetchLayoutRevision(layoutRevisionId);
 	}
 
-	public static LayoutRevision fetchLayoutRevision(
-		long layoutSetBranchId, long layoutBranchId, boolean head, long plid) {
-
-		return getService().fetchLayoutRevision(
-			layoutSetBranchId, layoutBranchId, head, plid);
-	}
-
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -427,6 +411,10 @@ public class LayoutRevisionLocalServiceUtil {
 		return getService().getLayoutRevisionsCount();
 	}
 
+	public static int getLayoutRevisionsCount(long plid) {
+		return getService().getLayoutRevisionsCount(plid);
+	}
+
 	public static int getLayoutRevisionsCount(
 		long layoutSetBranchId, long layoutBranchId, long plid) {
 
@@ -493,6 +481,10 @@ public class LayoutRevisionLocalServiceUtil {
 
 	public static LayoutRevisionLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(LayoutRevisionLocalService service) {
+		_service = service;
 	}
 
 	private static volatile LayoutRevisionLocalService _service;

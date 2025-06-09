@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.internal.exportimport.data.handler.test;
@@ -18,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.exportimport.test.util.lar.BaseStagedModelDataHandlerTestCase;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Address;
+import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.EmailAddress;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.OrgLabor;
@@ -28,6 +20,7 @@ import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.Website;
 import com.liferay.portal.kernel.service.AddressLocalServiceUtil;
+import com.liferay.portal.kernel.service.CountryLocalServiceUtil;
 import com.liferay.portal.kernel.service.EmailAddressLocalServiceUtil;
 import com.liferay.portal.kernel.service.OrgLaborLocalServiceUtil;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
@@ -73,7 +66,7 @@ public class OrganizationStagedModelDataHandlerTest
 						_organization.getUuid(), _organization.getCompanyId());
 
 			if (_organization != null) {
-				deleteOrganizations(_organization);
+				_deleteOrganizations(_organization);
 			}
 		}
 	}
@@ -97,6 +90,16 @@ public class OrganizationStagedModelDataHandlerTest
 
 		addDependentStagedModel(
 			dependentStagedModelsMap, Address.class, address);
+
+		Country country = OrganizationTestUtil.addCountry(
+			_organization,
+			ServiceContextTestUtil.getServiceContext(group.getGroupId()));
+
+		addDependentStagedModel(
+			dependentStagedModelsMap, Country.class, country);
+
+		_organization = OrganizationLocalServiceUtil.getOrganization(
+			_organization.getOrganizationId());
 
 		EmailAddress emailAddress = OrganizationTestUtil.addEmailAddress(
 			_organization);
@@ -124,20 +127,6 @@ public class OrganizationStagedModelDataHandlerTest
 			dependentStagedModelsMap, Website.class, website);
 
 		return _organization;
-	}
-
-	protected void deleteOrganizations(Organization organization)
-		throws Exception {
-
-		List<Organization> childOrganizations =
-			OrganizationLocalServiceUtil.getOrganizations(
-				organization.getCompanyId(), organization.getOrganizationId());
-
-		for (Organization childOrganization : childOrganizations) {
-			deleteOrganizations(childOrganization);
-		}
-
-		OrganizationLocalServiceUtil.deleteOrganization(organization);
 	}
 
 	@Override
@@ -201,6 +190,27 @@ public class OrganizationStagedModelDataHandlerTest
 		Assert.assertNotNull(importedAddress);
 		Assert.assertEquals(
 			organization.getOrganizationId(), importedAddress.getClassPK());
+
+		List<StagedModel> countryDependentStagedModels =
+			dependentStagedModelsMap.get(Country.class.getSimpleName());
+
+		Assert.assertEquals(
+			countryDependentStagedModels.toString(), 1,
+			countryDependentStagedModels.size());
+
+		Country country = (Country)countryDependentStagedModels.get(0);
+
+		Country importedCountry =
+			CountryLocalServiceUtil.fetchCountryByUuidAndCompanyId(
+				country.getUuid(), group.getCompanyId());
+
+		Assert.assertNotNull(importedCountry);
+
+		Country organizationCountry = CountryLocalServiceUtil.fetchCountry(
+			organization.getCountryId());
+
+		Assert.assertEquals(
+			organizationCountry.getA2(), importedCountry.getA2());
 
 		List<StagedModel> emailAddressDependentStagedModels =
 			dependentStagedModelsMap.get(EmailAddress.class.getSimpleName());
@@ -307,6 +317,20 @@ public class OrganizationStagedModelDataHandlerTest
 			organization.isRecursable(), importedOrganization.isRecursable());
 		Assert.assertEquals(
 			organization.getComments(), importedOrganization.getComments());
+	}
+
+	private void _deleteOrganizations(Organization organization)
+		throws Exception {
+
+		List<Organization> childOrganizations =
+			OrganizationLocalServiceUtil.getOrganizations(
+				organization.getCompanyId(), organization.getOrganizationId());
+
+		for (Organization childOrganization : childOrganizations) {
+			_deleteOrganizations(childOrganization);
+		}
+
+		OrganizationLocalServiceUtil.deleteOrganization(organization);
 	}
 
 	private Organization _organization;

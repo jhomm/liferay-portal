@@ -1,25 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 (function () {
-	var pluginName = 'lfrpopup';
+	const pluginName = 'lfrpopup';
 
 	CKEDITOR.plugins.add(pluginName, {
 		init(editor) {
 			AUI().use('querystring-parse', (A) => {
 				editor.popup = function (url, width, height, options) {
-					var params = A.QueryString.parse(url.split('?')[1]);
+					const params = A.QueryString.parse(url.split('?')[1]);
 
 					if (params.p_p_id) {
 						url = url.replace(
@@ -30,15 +21,12 @@
 
 					options = A.QueryString.parse(options);
 
-					Liferay.Util.openWindow({
-						dialog: {
-							zIndex: CKEDITOR.getNextZIndex(),
-						},
-						height,
-						stack: false,
+					Liferay.Util.openModal({
+						containerProps: {},
+						iframeBodyCssClass: '',
 						title: options.title || '',
-						uri: url,
-						width,
+						url,
+						zIndex: CKEDITOR.getNextZIndex(),
 					});
 				};
 			});

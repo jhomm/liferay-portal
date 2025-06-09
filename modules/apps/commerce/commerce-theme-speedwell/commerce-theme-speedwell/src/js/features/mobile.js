@@ -1,47 +1,37 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 Liferay.component(
 	'SpeedwellMobileHelpers',
 	(function () {
-		let filtersButton,
-			filtersHeader,
-			addToCartInline,
-			addToCartInlineDefaultPosition;
+		let filtersButton;
+		let filtersHeader;
+		let addToCartInline;
+		let addToCartInlineDefaultPosition;
 
-		const IS_OPEN_CLASS = 'is-open',
-			IS_FIXED_CLASS = 'is-fixed';
+		const IS_OPEN_CLASS = 'is-open';
+		const IS_FIXED_CLASS = 'is-fixed';
 
 		function setupFiltersHeader() {
-			filtersHeader.querySelector(
-				'.title'
-			).innerText = Liferay.Language.get('filters');
+			filtersHeader.querySelector('.title').innerText =
+				Liferay.Language.get('filters');
 		}
 
 		function listenToFiltersButton() {
-			const filtersAreClosed = !filtersButton.classList.contains(
-				IS_OPEN_CLASS
-			);
+			const filtersAreClosed =
+				!filtersButton.classList.contains(IS_OPEN_CLASS);
 
 			filtersButton.classList.toggle(IS_OPEN_CLASS, filtersAreClosed);
 
 			filtersHeader
 				.querySelector('.close-button')
-				[filtersAreClosed ? 'addEventListener' : 'removeEventListener'](
-					'click',
-					listenToFiltersButton
-				);
+				[
+					filtersAreClosed
+						? 'addEventListener'
+						: 'removeEventListener'
+				]('click', listenToFiltersButton);
 		}
 
 		function isFixed(element) {
@@ -90,8 +80,8 @@ Liferay.component(
 		}
 
 		if (addToCartInline) {
-			addToCartInlineDefaultPosition = addToCartInline.getBoundingClientRect()
-				.top;
+			addToCartInlineDefaultPosition =
+				addToCartInline.getBoundingClientRect().top;
 			window.addEventListener('scroll', fixAddToCartButton);
 		}
 

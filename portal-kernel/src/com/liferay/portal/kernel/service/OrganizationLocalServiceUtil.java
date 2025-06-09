@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -44,26 +35,28 @@ public class OrganizationLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.OrganizationLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static void addGroupOrganization(long groupId, long organizationId) {
-		getService().addGroupOrganization(groupId, organizationId);
+	public static boolean addGroupOrganization(
+		long groupId, long organizationId) {
+
+		return getService().addGroupOrganization(groupId, organizationId);
 	}
 
-	public static void addGroupOrganization(
+	public static boolean addGroupOrganization(
 		long groupId, Organization organization) {
 
-		getService().addGroupOrganization(groupId, organization);
+		return getService().addGroupOrganization(groupId, organization);
 	}
 
-	public static void addGroupOrganizations(
+	public static boolean addGroupOrganizations(
 		long groupId, List<Organization> organizations) {
 
-		getService().addGroupOrganizations(groupId, organizations);
+		return getService().addGroupOrganizations(groupId, organizations);
 	}
 
-	public static void addGroupOrganizations(
+	public static boolean addGroupOrganizations(
 		long groupId, long[] organizationIds) {
 
-		getService().addGroupOrganizations(groupId, organizationIds);
+		return getService().addGroupOrganizations(groupId, organizationIds);
 	}
 
 	/**
@@ -93,6 +86,20 @@ public class OrganizationLocalServiceUtil {
 	}
 
 	/**
+	 * Adds the organization to the database. Also notifies the appropriate model listeners.
+	 *
+	 * <p>
+	 * <strong>Important:</strong> Inspect OrganizationLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
+	 * </p>
+	 *
+	 * @param organization the organization
+	 * @return the organization that was added
+	 */
+	public static Organization addOrganization(Organization organization) {
+		return getService().addOrganization(organization);
+	}
+
+	/**
 	 * Adds an organization.
 	 *
 	 * <p>
@@ -109,7 +116,7 @@ public class OrganizationLocalServiceUtil {
 	 * @param type the organization's type
 	 * @param regionId the primary key of the organization's region
 	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
+	 * @param statusListTypeId the organization's workflow status
 	 * @param comments the comments about the organization
 	 * @param site whether the organization is to be associated with a main
 	 site
@@ -119,28 +126,16 @@ public class OrganizationLocalServiceUtil {
 	 * @return the organization
 	 */
 	public static Organization addOrganization(
-			long userId, long parentOrganizationId, String name, String type,
-			long regionId, long countryId, long statusId, String comments,
+			String externalReferenceCode, long userId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
 			boolean site, ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addOrganization(
-			userId, parentOrganizationId, name, type, regionId, countryId,
-			statusId, comments, site, serviceContext);
-	}
-
-	/**
-	 * Adds the organization to the database. Also notifies the appropriate model listeners.
-	 *
-	 * <p>
-	 * <strong>Important:</strong> Inspect OrganizationLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
-	 * </p>
-	 *
-	 * @param organization the organization
-	 * @return the organization that was added
-	 */
-	public static Organization addOrganization(Organization organization) {
-		return getService().addOrganization(organization);
+			externalReferenceCode, userId, parentOrganizationId, name, type,
+			regionId, countryId, statusListTypeId, comments, site,
+			serviceContext);
 	}
 
 	/**
@@ -167,6 +162,20 @@ public class OrganizationLocalServiceUtil {
 			emailAddress, organizationId, serviceContext);
 	}
 
+	public static Organization addOrUpdateOrganization(
+			String externalReferenceCode, long userId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean hasLogo, byte[] logoBytes, boolean site,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateOrganization(
+			externalReferenceCode, userId, parentOrganizationId, name, type,
+			regionId, countryId, statusListTypeId, comments, hasLogo, logoBytes,
+			site, serviceContext);
+	}
+
 	/**
 	 * Assigns the password policy to the organizations, removing any other
 	 * currently assigned password policies.
@@ -181,14 +190,16 @@ public class OrganizationLocalServiceUtil {
 			passwordPolicyId, organizationIds);
 	}
 
-	public static void addUserOrganization(long userId, long organizationId) {
-		getService().addUserOrganization(userId, organizationId);
+	public static boolean addUserOrganization(
+		long userId, long organizationId) {
+
+		return getService().addUserOrganization(userId, organizationId);
 	}
 
-	public static void addUserOrganization(
+	public static boolean addUserOrganization(
 		long userId, Organization organization) {
 
-		getService().addUserOrganization(userId, organization);
+		return getService().addUserOrganization(userId, organization);
 	}
 
 	public static void addUserOrganizationByEmailAddress(
@@ -199,16 +210,16 @@ public class OrganizationLocalServiceUtil {
 			emailAddress, organizationId);
 	}
 
-	public static void addUserOrganizations(
+	public static boolean addUserOrganizations(
 		long userId, List<Organization> organizations) {
 
-		getService().addUserOrganizations(userId, organizations);
+		return getService().addUserOrganizations(userId, organizations);
 	}
 
-	public static void addUserOrganizations(
+	public static boolean addUserOrganizations(
 		long userId, long[] organizationIds) {
 
-		getService().addUserOrganizations(userId, organizationIds);
+		return getService().addUserOrganizations(userId, organizationIds);
 	}
 
 	public static void clearGroupOrganizations(long groupId) {
@@ -449,29 +460,11 @@ public class OrganizationLocalServiceUtil {
 		return getService().fetchOrganization(companyId, name);
 	}
 
-	/**
-	 * Returns the organization with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the organization's external reference code
-	 * @return the matching organization, or <code>null</code> if a matching organization could not be found
-	 */
 	public static Organization fetchOrganizationByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchOrganizationByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchOrganizationByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static Organization fetchOrganizationByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchOrganizationByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -556,6 +549,15 @@ public class OrganizationLocalServiceUtil {
 		return getService().getNoAssetOrganizations();
 	}
 
+	public static Organization getOrAddIncompleteOrganization(
+			String externalReferenceCode, long companyId, long userId,
+			String name)
+		throws Exception {
+
+		return getService().getOrAddIncompleteOrganization(
+			externalReferenceCode, companyId, userId, name);
+	}
+
 	/**
 	 * Returns the organization with the primary key.
 	 *
@@ -582,20 +584,12 @@ public class OrganizationLocalServiceUtil {
 		return getService().getOrganization(companyId, name);
 	}
 
-	/**
-	 * Returns the organization with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the organization's external reference code
-	 * @return the matching organization
-	 * @throws PortalException if a matching organization could not be found
-	 */
 	public static Organization getOrganizationByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getOrganizationByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -707,6 +701,14 @@ public class OrganizationLocalServiceUtil {
 		return getService().getOrganizations(companyId, treePath);
 	}
 
+	public static List<Organization> getOrganizations(
+		long companyId, String name, int start, int end,
+		OrderByComparator<Organization> orderByComparator) {
+
+		return getService().getOrganizations(
+			companyId, name, start, end, orderByComparator);
+	}
+
 	/**
 	 * Returns the organizations with the primary keys.
 	 *
@@ -791,6 +793,10 @@ public class OrganizationLocalServiceUtil {
 
 		return getService().getOrganizationsCount(
 			companyId, parentOrganizationId, name);
+	}
+
+	public static int getOrganizationsCount(long companyId, String name) {
+		return getService().getOrganizationsCount(companyId, name);
 	}
 
 	/**
@@ -1586,40 +1592,10 @@ public class OrganizationLocalServiceUtil {
 			userId, organization, assetCategoryIds, assetTagNames);
 	}
 
-	/**
-	 * Updates the organization.
-	 *
-	 * @param companyId the primary key of the organization's company
-	 * @param organizationId the primary key of the organization
-	 * @param parentOrganizationId the primary key of organization's parent
-	 organization
-	 * @param name the organization's name
-	 * @param type the organization's type
-	 * @param regionId the primary key of the organization's region
-	 * @param countryId the primary key of the organization's country
-	 * @param statusId the organization's workflow status
-	 * @param comments the comments about the organization
-	 * @param hasLogo if the organization has a custom logo
-	 * @param logoBytes the new logo image data
-	 * @param site whether the organization is to be associated with a main
-	 site
-	 * @param serviceContext the service context to be applied (optionally
-	 <code>null</code>). Can set asset category IDs and asset tag
-	 names for the organization, and merge expando bridge attributes
-	 for the organization.
-	 * @return the organization
-	 */
-	public static Organization updateOrganization(
-			long companyId, long organizationId, long parentOrganizationId,
-			String name, String type, long regionId, long countryId,
-			long statusId, String comments, boolean hasLogo, byte[] logoBytes,
-			boolean site, ServiceContext serviceContext)
+	public static Organization updateLogo(long organizationId, byte[] logoBytes)
 		throws PortalException {
 
-		return getService().updateOrganization(
-			companyId, organizationId, parentOrganizationId, name, type,
-			regionId, countryId, statusId, comments, hasLogo, logoBytes, site,
-			serviceContext);
+		return getService().updateLogo(organizationId, logoBytes);
 	}
 
 	/**
@@ -1636,8 +1612,50 @@ public class OrganizationLocalServiceUtil {
 		return getService().updateOrganization(organization);
 	}
 
+	/**
+	 * Updates the organization.
+	 *
+	 * @param companyId the primary key of the organization's company
+	 * @param organizationId the primary key of the organization
+	 * @param parentOrganizationId the primary key of organization's parent
+	 organization
+	 * @param name the organization's name
+	 * @param type the organization's type
+	 * @param regionId the primary key of the organization's region
+	 * @param countryId the primary key of the organization's country
+	 * @param statusListTypeId the organization's workflow status
+	 * @param comments the comments about the organization
+	 * @param hasLogo if the organization has a custom logo
+	 * @param logoBytes the new logo image data
+	 * @param site whether the organization is to be associated with a main
+	 site
+	 * @param serviceContext the service context to be applied (optionally
+	 <code>null</code>). Can set asset category IDs and asset tag
+	 names for the organization, and merge expando bridge attributes
+	 for the organization.
+	 * @return the organization
+	 */
+	public static Organization updateOrganization(
+			String externalReferenceCode, long companyId, long organizationId,
+			long parentOrganizationId, String name, String type, long regionId,
+			long countryId, long statusListTypeId, String comments,
+			boolean hasLogo, byte[] logoBytes, boolean site,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().updateOrganization(
+			externalReferenceCode, companyId, organizationId,
+			parentOrganizationId, name, type, regionId, countryId,
+			statusListTypeId, comments, hasLogo, logoBytes, site,
+			serviceContext);
+	}
+
 	public static OrganizationLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(OrganizationLocalService service) {
+		_service = service;
 	}
 
 	private static volatile OrganizationLocalService _service;

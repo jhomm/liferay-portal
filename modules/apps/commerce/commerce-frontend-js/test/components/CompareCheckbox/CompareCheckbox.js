@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {act, cleanup, fireEvent, render, wait} from '@testing-library/react';
+import {act, fireEvent, render, waitFor} from '@testing-library/react';
 import React from 'react';
 
 import CompareCheckbox from '../../../src/main/resources/META-INF/resources/components/compare_checkbox/CompareCheckbox';
@@ -40,23 +31,17 @@ describe('CompareCheckbox', () => {
 			detach: jest.fn(),
 			fire: jest.fn(),
 			on: jest.fn((eventName, callback) => {
-				switch (eventName) {
-					case PRODUCT_COMPARISON_TOGGLED:
-						toggleCompareTrigger = callback;
-						break;
-					case ITEM_REMOVED_FROM_COMPARE:
-						removeFromCompareTrigger = callback;
-						break;
-					default:
-						break;
+				if (eventName === ITEM_REMOVED_FROM_COMPARE) {
+					removeFromCompareTrigger = callback;
+				}
+				else if (eventName === PRODUCT_COMPARISON_TOGGLED) {
+					toggleCompareTrigger = callback;
 				}
 			}),
 		};
 	});
 
 	afterEach(() => {
-		cleanup();
-
 		jest.resetAllMocks();
 	});
 
@@ -117,7 +102,7 @@ describe('CompareCheckbox', () => {
 				fireEvent.click(ComponentElement);
 			});
 
-			await wait(() => {
+			await waitFor(() => {
 				expect(window.Liferay.fire).toHaveBeenCalledTimes(1);
 				expect(window.Liferay.fire).toHaveBeenCalledWith(
 					TOGGLE_ITEM_IN_PRODUCT_COMPARISON,
@@ -147,7 +132,7 @@ describe('CompareCheckbox', () => {
 					removeFromCompareTrigger({id: PROPS.itemId});
 				});
 
-				await wait(() => {
+				await waitFor(() => {
 					expect(ComponentElement).not.toBeChecked();
 					expect(PROPS.onUpdate).toHaveBeenCalledWith({
 						disabled: false,
@@ -173,7 +158,7 @@ describe('CompareCheckbox', () => {
 					removeFromCompareTrigger({id: FAILING_ITEM_ID});
 				});
 
-				await wait(() => {
+				await waitFor(() => {
 					expect(ComponentElement).toBeChecked();
 					expect(PROPS.onUpdate).not.toHaveBeenCalled();
 				});
@@ -195,7 +180,7 @@ describe('CompareCheckbox', () => {
 					toggleCompareTrigger({disabled: false});
 				});
 
-				await wait(() => {
+				await waitFor(() => {
 					expect(ComponentElement).not.toBeDisabled();
 					expect(PROPS.onUpdate).toHaveBeenCalledWith({
 						disabled: false,
@@ -218,7 +203,7 @@ describe('CompareCheckbox', () => {
 					toggleCompareTrigger({disabled: true});
 				});
 
-				await wait(() => {
+				await waitFor(() => {
 					expect(ComponentElement).toBeDisabled();
 					expect(PROPS.onUpdate).toHaveBeenCalledWith({
 						disabled: true,
@@ -241,7 +226,7 @@ describe('CompareCheckbox', () => {
 					toggleCompareTrigger({});
 				});
 
-				await wait(() => {
+				await waitFor(() => {
 					expect(ComponentElement).toBeDisabled();
 					expect(PROPS.onUpdate).toHaveBeenCalledWith({
 						disabled: true,

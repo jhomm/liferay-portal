@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.shielded.container.internal;
 
 import com.liferay.shielded.container.Ordered;
 import com.liferay.shielded.container.ShieldedContainerInitializer;
-import com.liferay.shielded.container.internal.proxy.ProxyFactory;
 import com.liferay.shielded.container.internal.proxy.ServletContextDelegate;
 import com.liferay.shielded.container.internal.session.ShieldedContainerHttpSessionListener;
+
+import jakarta.servlet.ServletContainerInitializer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
 
 import java.io.File;
 
@@ -31,10 +25,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.Set;
-
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
 /**
  * @author Shuyang Zhou
@@ -49,18 +39,8 @@ public class ShieldedContainerServletContainerInitializer
 		ClassLoader shieldedContainerClassLoader =
 			_buildShieldContainerClassLoader(servletContext);
 
-		ProxyFactory proxyFactory = new ProxyFactory(
-			shieldedContainerClassLoader);
-
-		ServletContextDelegate servletContextDelegate =
-			new ServletContextDelegate(
-				proxyFactory, servletContext, shieldedContainerClassLoader);
-
-		servletContext = proxyFactory.createASMWrapper(
-			shieldedContainerClassLoader, ServletContext.class,
-			servletContextDelegate, servletContext);
-
-		servletContextDelegate.setProxiedServletContext(servletContext);
+		servletContext = ServletContextDelegate.create(
+			shieldedContainerClassLoader, servletContext);
 
 		servletContext.addListener(
 			new ShieldedContainerHttpSessionListener(servletContext));

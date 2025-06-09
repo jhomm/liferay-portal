@@ -1,40 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
-import classnames from 'classnames';
-import React from 'react';
+import classNames from 'classnames';
+import React, {useEffect, useState} from 'react';
 
 import * as DefaultVariant from '../../../core/components/PageRenderer/DefaultVariant.es';
 import {useConfig} from '../../../core/hooks/useConfig.es';
 import {MultiStep} from '../components/MultiStep.es';
 import {PaginationControls} from '../components/PaginationControls.es';
+import PartialResults from '../components/PartialResults';
 
-export const Column = ({
-	children,
-	column,
-	columnRef,
-	editable,
-	...otherProps
-}) => {
+export function Column({children, column, columnRef, editable, ...otherProps}) {
 	const firstField = column.fields[0];
 
 	return (
 		<DefaultVariant.Column
 			{...otherProps}
 			column={column}
-			columnClassName={classnames({
+			columnClassName={classNames({
 				hide: firstField?.hideField && !editable,
 			})}
 			ref={columnRef}
@@ -42,11 +28,11 @@ export const Column = ({
 			{children}
 		</DefaultVariant.Column>
 	);
-};
+}
 
 Column.displayName = 'WizardVariant.Column';
 
-export const Container = ({
+export function Container({
 	activePage,
 	children,
 	editable,
@@ -54,56 +40,120 @@ export const Container = ({
 	pages,
 	readOnly,
 	strings = null,
-}) => {
-	const {showSubmitButton, submitLabel} = useConfig();
+}) {
+	const [showReport, setShowReport] = useState(false);
+	const [alertDismissed, setAlertDismissed] = useState(false);
+
+	const {
+		dataEngineModule,
+		displayChartAsTable,
+		formReportDataURL,
+		showPartialResultsToRespondents,
+		showSubmitButton,
+		submitLabel,
+	} = useConfig();
+
+	const onClick = () => {
+		setShowReport(true);
+
+		if (
+			document.querySelector(
+				'.lfr-ddm__show-partial-results-alert--hidden'
+			)
+		) {
+			setAlertDismissed(true);
+		}
+	};
+
+	useEffect(() => {
+		const backButton = document.querySelector(
+			'.lfr-ddm__default-page-header-back-button'
+		);
+		const alertElement = document.querySelector(
+			'.lfr-ddm__show-partial-results-alert'
+		);
+		if (alertDismissed) {
+			alertElement.classList.add(
+				'lfr-ddm__show-partial-results-alert--hidden'
+			);
+		}
+		if (showReport) {
+			backButton?.classList.remove('hide');
+			backButton.addEventListener('click', () => setShowReport(false));
+			alertElement.classList.add(
+				'lfr-ddm__show-partial-results-alert--hidden'
+			);
+		}
+
+		return () => {
+			if (showPartialResultsToRespondents) {
+				backButton?.classList.add('hide');
+				alertElement?.classList.remove(
+					'lfr-ddm__show-partial-results-alert--hidden'
+				);
+			}
+		};
+	}, [alertDismissed, showPartialResultsToRespondents, showReport]);
 
 	return (
-		<div className="ddm-form-page-container wizard">
-			{pages.length > 1 && pageIndex === activePage && (
-				<MultiStep
-					activePage={activePage}
-					editable={editable}
-					pages={pages}
+		<>
+			{showReport ? (
+				<PartialResults
+					dataEngineModule={dataEngineModule}
+					displayChartAsTable={displayChartAsTable}
+					onShow={() => setShowReport(false)}
+					reportDataURL={formReportDataURL}
 				/>
-			)}
-
-			<div
-				className={classnames(
-					'ddm-layout-builder ddm-page-container-layout',
-					{
-						hide: activePage !== pageIndex,
-					}
-				)}
-			>
-				<div className="form-builder-layout">{children}</div>
-			</div>
-
-			{pageIndex === activePage && (
-				<>
-					{pages.length > 0 && (
-						<PaginationControls
+			) : (
+				<div className="ddm-form-page-container wizard">
+					{pages.length > 1 && pageIndex === activePage && (
+						<MultiStep
 							activePage={activePage}
-							readOnly={readOnly}
-							showSubmitButton={showSubmitButton}
-							strings={strings}
-							submitLabel={submitLabel}
-							total={pages.length}
+							editable={editable}
+							pages={pages}
 						/>
 					)}
 
-					{!pages.length && showSubmitButton && (
-						<ClayButton
-							className="float-right lfr-ddm-form-submit"
-							id="ddm-form-submit"
-							type="submit"
-						>
-							{submitLabel}
-						</ClayButton>
+					<div
+						className={classNames(
+							'ddm-layout-builder ddm-page-container-layout',
+							{
+								hide: activePage !== pageIndex,
+							}
+						)}
+					>
+						<div className="form-builder-layout">{children}</div>
+					</div>
+
+					{pageIndex === activePage && (
+						<>
+							{!!pages.length && (
+								<PaginationControls
+									activePage={activePage}
+									onClick={onClick}
+									readOnly={readOnly}
+									showSubmitButton={showSubmitButton}
+									strings={strings}
+									submitLabel={submitLabel}
+									total={pages.length}
+								/>
+							)}
+
+							{!pages.length && showSubmitButton && (
+								<ClayButton
+									className="float-left"
+									id="ddm-form-submit"
+									type="submit"
+								>
+									{submitLabel}
+								</ClayButton>
+							)}
+						</>
 					)}
-				</>
+				</div>
 			)}
-		</div>
+		</>
 	);
-};
+}
 
 Container.displayName = 'WizardVariant.Container';

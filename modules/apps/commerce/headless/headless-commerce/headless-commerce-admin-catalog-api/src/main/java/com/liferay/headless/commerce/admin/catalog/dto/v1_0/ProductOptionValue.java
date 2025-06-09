@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.dto.v1_0;
@@ -20,27 +11,29 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
+
+import java.math.BigDecimal;
 
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-import javax.validation.constraints.DecimalMin;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Zoltán Takács
@@ -48,8 +41,10 @@ import javax.xml.bind.annotation.XmlRootElement;
  */
 @Generated("")
 @GraphQLName("ProductOptionValue")
+@io.swagger.v3.oas.annotations.media.Schema(
+	requiredProperties = {"key", "name"}
+)
 @JsonFilter("Liferay.Vulcan")
-@Schema(requiredProperties = {"key", "name"})
 @XmlRootElement(name = "ProductOptionValue")
 public class ProductOptionValue implements Serializable {
 
@@ -62,52 +57,118 @@ public class ProductOptionValue implements Serializable {
 	}
 
 	@DecimalMin("0")
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema(example = "10")
+	@Valid
+	public BigDecimal getDeltaPrice() {
+		if (_deltaPriceSupplier != null) {
+			deltaPrice = _deltaPriceSupplier.get();
+
+			_deltaPriceSupplier = null;
+		}
+
+		return deltaPrice;
+	}
+
+	public void setDeltaPrice(BigDecimal deltaPrice) {
+		this.deltaPrice = deltaPrice;
+
+		_deltaPriceSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setDeltaPrice(
+		UnsafeSupplier<BigDecimal, Exception> deltaPriceUnsafeSupplier) {
+
+		_deltaPriceSupplier = () -> {
+			try {
+				return deltaPriceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected BigDecimal deltaPrice;
+
+	@JsonIgnore
+	private Supplier<BigDecimal> _deltaPriceSupplier;
+
+	@DecimalMin("0")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30130")
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "black")
 	public String getKey() {
+		if (_keySupplier != null) {
+			key = _keySupplier.get();
+
+			_keySupplier = null;
+		}
+
 		return key;
 	}
 
 	public void setKey(String key) {
 		this.key = key;
+
+		_keySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setKey(UnsafeSupplier<String, Exception> keyUnsafeSupplier) {
-		try {
-			key = keyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_keySupplier = () -> {
+			try {
+				return keyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -115,29 +176,44 @@ public class ProductOptionValue implements Serializable {
 	@NotEmpty
 	protected String key;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _keySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(
+		example = "{en_US=Black, hr_HR=Black HR, hu_HU=Black HU}"
+	)
 	@Valid
 	public Map<String, String> getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(Map<String, String> name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(
 		UnsafeSupplier<Map<String, String>, Exception> nameUnsafeSupplier) {
 
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
@@ -145,33 +221,256 @@ public class ProductOptionValue implements Serializable {
 	@NotNull
 	protected Map<String, String> name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "true")
+	public Boolean getPreselected() {
+		if (_preselectedSupplier != null) {
+			preselected = _preselectedSupplier.get();
+
+			_preselectedSupplier = null;
+		}
+
+		return preselected;
+	}
+
+	public void setPreselected(Boolean preselected) {
+		this.preselected = preselected;
+
+		_preselectedSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setPreselected(
+		UnsafeSupplier<Boolean, Exception> preselectedUnsafeSupplier) {
+
+		_preselectedSupplier = () -> {
+			try {
+				return preselectedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean preselected;
+
+	@JsonIgnore
+	private Supplier<Boolean> _preselectedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "1.2")
 	public Double getPriority() {
+		if (_prioritySupplier != null) {
+			priority = _prioritySupplier.get();
+
+			_prioritySupplier = null;
+		}
+
 		return priority;
 	}
 
 	public void setPriority(Double priority) {
 		this.priority = priority;
+
+		_prioritySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPriority(
 		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
 
-		try {
-			priority = priorityUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_prioritySupplier = () -> {
+			try {
+				return priorityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Double priority;
+
+	@JsonIgnore
+	private Supplier<Double> _prioritySupplier;
+
+	@DecimalMin("0")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "10")
+	@Valid
+	public BigDecimal getQuantity() {
+		if (_quantitySupplier != null) {
+			quantity = _quantitySupplier.get();
+
+			_quantitySupplier = null;
+		}
+
+		return quantity;
+	}
+
+	public void setQuantity(BigDecimal quantity) {
+		this.quantity = quantity;
+
+		_quantitySupplier = null;
+	}
+
+	@JsonIgnore
+	public void setQuantity(
+		UnsafeSupplier<BigDecimal, Exception> quantityUnsafeSupplier) {
+
+		_quantitySupplier = () -> {
+			try {
+				return quantityUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected BigDecimal quantity;
+
+	@JsonIgnore
+	private Supplier<BigDecimal> _quantitySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "SKU0111")
+	public String getSkuExternalReferenceCode() {
+		if (_skuExternalReferenceCodeSupplier != null) {
+			skuExternalReferenceCode = _skuExternalReferenceCodeSupplier.get();
+
+			_skuExternalReferenceCodeSupplier = null;
+		}
+
+		return skuExternalReferenceCode;
+	}
+
+	public void setSkuExternalReferenceCode(String skuExternalReferenceCode) {
+		this.skuExternalReferenceCode = skuExternalReferenceCode;
+
+		_skuExternalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setSkuExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			skuExternalReferenceCodeUnsafeSupplier) {
+
+		_skuExternalReferenceCodeSupplier = () -> {
+			try {
+				return skuExternalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String skuExternalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _skuExternalReferenceCodeSupplier;
+
+	@DecimalMin("0")
+	@io.swagger.v3.oas.annotations.media.Schema(example = "30129")
+	public Long getSkuId() {
+		if (_skuIdSupplier != null) {
+			skuId = _skuIdSupplier.get();
+
+			_skuIdSupplier = null;
+		}
+
+		return skuId;
+	}
+
+	public void setSkuId(Long skuId) {
+		this.skuId = skuId;
+
+		_skuIdSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setSkuId(UnsafeSupplier<Long, Exception> skuIdUnsafeSupplier) {
+		_skuIdSupplier = () -> {
+			try {
+				return skuIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long skuId;
+
+	@JsonIgnore
+	private Supplier<Long> _skuIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema(example = "pl")
+	public String getUnitOfMeasureKey() {
+		if (_unitOfMeasureKeySupplier != null) {
+			unitOfMeasureKey = _unitOfMeasureKeySupplier.get();
+
+			_unitOfMeasureKeySupplier = null;
+		}
+
+		return unitOfMeasureKey;
+	}
+
+	public void setUnitOfMeasureKey(String unitOfMeasureKey) {
+		this.unitOfMeasureKey = unitOfMeasureKey;
+
+		_unitOfMeasureKeySupplier = null;
+	}
+
+	@JsonIgnore
+	public void setUnitOfMeasureKey(
+		UnsafeSupplier<String, Exception> unitOfMeasureKeyUnsafeSupplier) {
+
+		_unitOfMeasureKeySupplier = () -> {
+			try {
+				return unitOfMeasureKeyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected String unitOfMeasureKey;
+
+	@JsonIgnore
+	private Supplier<String> _unitOfMeasureKeySupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -200,6 +499,20 @@ public class ProductOptionValue implements Serializable {
 
 		sb.append("{");
 
+		BigDecimal deltaPrice = getDeltaPrice();
+
+		if (deltaPrice != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"deltaPrice\": ");
+
+			sb.append(deltaPrice);
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -209,6 +522,8 @@ public class ProductOptionValue implements Serializable {
 
 			sb.append(id);
 		}
+
+		String key = getKey();
 
 		if (key != null) {
 			if (sb.length() > 1) {
@@ -224,6 +539,8 @@ public class ProductOptionValue implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, String> name = getName();
+
 		if (name != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -233,6 +550,20 @@ public class ProductOptionValue implements Serializable {
 
 			sb.append(_toJSON(name));
 		}
+
+		Boolean preselected = getPreselected();
+
+		if (preselected != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"preselected\": ");
+
+			sb.append(preselected);
+		}
+
+		Double priority = getPriority();
 
 		if (priority != null) {
 			if (sb.length() > 1) {
@@ -244,22 +575,78 @@ public class ProductOptionValue implements Serializable {
 			sb.append(priority);
 		}
 
+		BigDecimal quantity = getQuantity();
+
+		if (quantity != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"quantity\": ");
+
+			sb.append(quantity);
+		}
+
+		String skuExternalReferenceCode = getSkuExternalReferenceCode();
+
+		if (skuExternalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"skuExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(skuExternalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long skuId = getSkuId();
+
+		if (skuId != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"skuId\": ");
+
+			sb.append(skuId);
+		}
+
+		String unitOfMeasureKey = getUnitOfMeasureKey();
+
+		if (unitOfMeasureKey != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasureKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(unitOfMeasureKey));
+
+			sb.append("\"");
+		}
+
 		sb.append("}");
 
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.headless.commerce.admin.catalog.dto.v1_0.ProductOptionValue",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -285,7 +672,7 @@ public class ProductOptionValue implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -296,7 +683,10 @@ public class ProductOptionValue implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -317,7 +707,7 @@ public class ProductOptionValue implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -333,5 +723,12 @@ public class ProductOptionValue implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

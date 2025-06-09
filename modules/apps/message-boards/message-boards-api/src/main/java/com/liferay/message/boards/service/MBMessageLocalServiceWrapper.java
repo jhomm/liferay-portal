@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
@@ -17,6 +8,7 @@ package com.liferay.message.boards.service;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -28,6 +20,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
  */
 public class MBMessageLocalServiceWrapper
 	implements MBMessageLocalService, ServiceWrapper<MBMessageLocalService> {
+
+	public MBMessageLocalServiceWrapper() {
+		this(null);
+	}
 
 	public MBMessageLocalServiceWrapper(
 		MBMessageLocalService mbMessageLocalService) {
@@ -47,15 +43,15 @@ public class MBMessageLocalServiceWrapper
 
 	@Override
 	public MBMessage addDiscussionMessage(
-			long userId, String userName, long groupId, String className,
-			long classPK, long threadId, long parentMessageId, String subject,
-			String body,
+			String externalReferenceCode, long userId, String userName,
+			long groupId, String className, long classPK, long threadId,
+			long parentMessageId, String subject, String body,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbMessageLocalService.addDiscussionMessage(
-			userId, userName, groupId, className, classPK, threadId,
-			parentMessageId, subject, body, serviceContext);
+			externalReferenceCode, userId, userName, groupId, className,
+			classPK, threadId, parentMessageId, subject, body, serviceContext);
 	}
 
 	/**
@@ -489,31 +485,12 @@ public class MBMessageLocalServiceWrapper
 		return _mbMessageLocalService.fetchMBMessage(messageId);
 	}
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message, or <code>null</code> if a matching message-boards message could not be found
-	 */
 	@Override
 	public MBMessage fetchMBMessageByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return _mbMessageLocalService.fetchMBMessageByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchMBMessageByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public MBMessage fetchMBMessageByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return _mbMessageLocalService.fetchMBMessageByReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -741,6 +718,22 @@ public class MBMessageLocalServiceWrapper
 	}
 
 	@Override
+	public java.util.List<MBMessage> getGroupUserMessageBoardMessagesActivity(
+		long groupId, long userId, int start, int end) {
+
+		return _mbMessageLocalService.getGroupUserMessageBoardMessagesActivity(
+			groupId, userId, start, end);
+	}
+
+	@Override
+	public int getGroupUserMessageBoardMessagesActivityCount(
+		long groupId, long userId) {
+
+		return _mbMessageLocalService.
+			getGroupUserMessageBoardMessagesActivityCount(groupId, userId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery
 		getIndexableActionableDynamicQuery() {
 
@@ -768,21 +761,13 @@ public class MBMessageLocalServiceWrapper
 		return _mbMessageLocalService.getMBMessage(messageId);
 	}
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message
-	 * @throws PortalException if a matching message-boards message could not be found
-	 */
 	@Override
 	public MBMessage getMBMessageByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbMessageLocalService.getMBMessageByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -1115,17 +1100,19 @@ public class MBMessageLocalServiceWrapper
 	}
 
 	@Override
-	public void updateAnswer(long messageId, boolean answer, boolean cascade)
+	public MBMessage updateAnswer(
+			long messageId, boolean answer, boolean cascade)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_mbMessageLocalService.updateAnswer(messageId, answer, cascade);
+		return _mbMessageLocalService.updateAnswer(messageId, answer, cascade);
 	}
 
 	@Override
-	public void updateAnswer(MBMessage message, boolean answer, boolean cascade)
+	public MBMessage updateAnswer(
+			MBMessage message, boolean answer, boolean cascade)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_mbMessageLocalService.updateAnswer(message, answer, cascade);
+		return _mbMessageLocalService.updateAnswer(message, answer, cascade);
 	}
 
 	@Override
@@ -1205,6 +1192,11 @@ public class MBMessageLocalServiceWrapper
 	@Override
 	public void updateUserName(long userId, String userName) {
 		_mbMessageLocalService.updateUserName(userId, userName);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _mbMessageLocalService.getBasePersistence();
 	}
 
 	@Override

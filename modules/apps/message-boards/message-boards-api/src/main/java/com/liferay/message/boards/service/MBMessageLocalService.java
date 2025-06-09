@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
@@ -87,9 +78,10 @@ public interface MBMessageLocalService
 		throws PortalException;
 
 	public MBMessage addDiscussionMessage(
-			long userId, String userName, long groupId, String className,
-			long classPK, long threadId, long parentMessageId, String subject,
-			String body, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, String userName,
+			long groupId, String className, long classPK, long threadId,
+			long parentMessageId, String subject, String body,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	/**
@@ -356,24 +348,9 @@ public interface MBMessageLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBMessage fetchMBMessage(long messageId);
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message, or <code>null</code> if a matching message-boards message could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBMessage fetchMBMessageByExternalReferenceCode(
-		long groupId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchMBMessageByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public MBMessage fetchMBMessageByReferenceCode(
-		long groupId, String externalReferenceCode);
+		String externalReferenceCode, long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBMessage fetchMBMessageByUrlSubject(
@@ -491,6 +468,14 @@ public interface MBMessageLocalService
 	public int getGroupMessagesCount(long groupId, long userId, int status);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<MBMessage> getGroupUserMessageBoardMessagesActivity(
+		long groupId, long userId, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getGroupUserMessageBoardMessagesActivityCount(
+		long groupId, long userId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -507,17 +492,9 @@ public interface MBMessageLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBMessage getMBMessage(long messageId) throws PortalException;
 
-	/**
-	 * Returns the message-boards message with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the message-boards message's external reference code
-	 * @return the matching message-boards message
-	 * @throws PortalException if a matching message-boards message could not be found
-	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public MBMessage getMBMessageByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -711,10 +688,14 @@ public interface MBMessageLocalService
 	public void unsubscribeMessage(long userId, long messageId)
 		throws PortalException;
 
-	public void updateAnswer(long messageId, boolean answer, boolean cascade)
+	@Indexable(type = IndexableType.REINDEX)
+	public MBMessage updateAnswer(
+			long messageId, boolean answer, boolean cascade)
 		throws PortalException;
 
-	public void updateAnswer(MBMessage message, boolean answer, boolean cascade)
+	@Indexable(type = IndexableType.REINDEX)
+	public MBMessage updateAnswer(
+			MBMessage message, boolean answer, boolean cascade)
 		throws PortalException;
 
 	public void updateAsset(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence.impl;
@@ -21,7 +12,9 @@ import com.liferay.commerce.model.impl.CommerceSubscriptionEntryImpl;
 import com.liferay.commerce.model.impl.CommerceSubscriptionEntryModelImpl;
 import com.liferay.commerce.service.persistence.CommerceSubscriptionEntryPersistence;
 import com.liferay.commerce.service.persistence.CommerceSubscriptionEntryUtil;
+import com.liferay.commerce.service.persistence.impl.constants.CommercePersistenceConstants;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.configuration.Configuration;
 import com.liferay.portal.kernel.dao.orm.EntityCache;
 import com.liferay.portal.kernel.dao.orm.FinderCache;
 import com.liferay.portal.kernel.dao.orm.FinderPath;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.dao.orm.Query;
 import com.liferay.portal.kernel.dao.orm.QueryPos;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
@@ -43,11 +37,9 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -56,6 +48,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * The persistence implementation for the commerce subscription entry service.
@@ -67,6 +66,7 @@ import java.util.Set;
  * @author Alessio Antonio Rendina
  * @generated
  */
+@Component(service = CommerceSubscriptionEntryPersistence.class)
 public class CommerceSubscriptionEntryPersistenceImpl
 	extends BasePersistenceImpl<CommerceSubscriptionEntry>
 	implements CommerceSubscriptionEntryPersistence {
@@ -185,7 +185,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -581,7 +581,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -636,7 +636,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 		"(commerceSubscriptionEntry.uuid IS NULL OR commerceSubscriptionEntry.uuid = '')";
 
 	private FinderPath _finderPathFetchByUUID_G;
-	private FinderPath _finderPathCountByUUID_G;
 
 	/**
 	 * Returns the commerce subscription entry where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchSubscriptionEntryException</code> if it could not be found.
@@ -712,7 +711,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByUUID_G, finderArgs);
+				_finderPathFetchByUUID_G, finderArgs, this);
 		}
 
 		if (result instanceof CommerceSubscriptionEntry) {
@@ -820,62 +819,14 @@ public class CommerceSubscriptionEntryPersistenceImpl
 	 */
 	@Override
 	public int countByUUID_G(String uuid, long groupId) {
-		uuid = Objects.toString(uuid, "");
+		CommerceSubscriptionEntry commerceSubscriptionEntry = fetchByUUID_G(
+			uuid, groupId);
 
-		FinderPath finderPath = _finderPathCountByUUID_G;
-
-		Object[] finderArgs = new Object[] {uuid, groupId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_COMMERCESUBSCRIPTIONENTRY_WHERE);
-
-			boolean bindUuid = false;
-
-			if (uuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_3);
-			}
-			else {
-				bindUuid = true;
-
-				sb.append(_FINDER_COLUMN_UUID_G_UUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_UUID_G_GROUPID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindUuid) {
-					queryPos.add(uuid);
-				}
-
-				queryPos.add(groupId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceSubscriptionEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_UUID_G_UUID_2 =
@@ -994,7 +945,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -1416,7 +1367,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1573,7 +1524,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -1944,7 +1895,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2082,7 +2033,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -2453,7 +2404,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2494,7 +2445,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 		"commerceSubscriptionEntry.companyId = ?";
 
 	private FinderPath _finderPathFetchByCommerceOrderItemId;
-	private FinderPath _finderPathCountByCommerceOrderItemId;
 
 	/**
 	 * Returns the commerce subscription entry where commerceOrderItemId = &#63; or throws a <code>NoSuchSubscriptionEntryException</code> if it could not be found.
@@ -2565,7 +2515,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByCommerceOrderItemId, finderArgs);
+				_finderPathFetchByCommerceOrderItemId, finderArgs, this);
 		}
 
 		if (result instanceof CommerceSubscriptionEntry) {
@@ -2658,45 +2608,14 @@ public class CommerceSubscriptionEntryPersistenceImpl
 	 */
 	@Override
 	public int countByCommerceOrderItemId(long commerceOrderItemId) {
-		FinderPath finderPath = _finderPathCountByCommerceOrderItemId;
+		CommerceSubscriptionEntry commerceSubscriptionEntry =
+			fetchByCommerceOrderItemId(commerceOrderItemId);
 
-		Object[] finderArgs = new Object[] {commerceOrderItemId};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(2);
-
-			sb.append(_SQL_COUNT_COMMERCESUBSCRIPTIONENTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_COMMERCEORDERITEMID_COMMERCEORDERITEMID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(commerceOrderItemId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceSubscriptionEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String
@@ -2805,7 +2724,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -3181,7 +3100,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {subscriptionStatus};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -3327,7 +3246,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -3723,7 +3642,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, userId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -3880,7 +3799,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (CommerceSubscriptionEntry commerceSubscriptionEntry :
@@ -4299,7 +4218,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, companyId, userId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -4354,7 +4273,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 		"commerceSubscriptionEntry.userId = ?";
 
 	private FinderPath _finderPathFetchByC_C_C;
-	private FinderPath _finderPathCountByC_C_C;
 
 	/**
 	 * Returns the commerce subscription entry where CPInstanceUuid = &#63; and CProductId = &#63; and commerceOrderItemId = &#63; or throws a <code>NoSuchSubscriptionEntryException</code> if it could not be found.
@@ -4442,7 +4360,8 @@ public class CommerceSubscriptionEntryPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByC_C_C, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByC_C_C, finderArgs, this);
 		}
 
 		if (result instanceof CommerceSubscriptionEntry) {
@@ -4563,68 +4482,14 @@ public class CommerceSubscriptionEntryPersistenceImpl
 	public int countByC_C_C(
 		String CPInstanceUuid, long CProductId, long commerceOrderItemId) {
 
-		CPInstanceUuid = Objects.toString(CPInstanceUuid, "");
+		CommerceSubscriptionEntry commerceSubscriptionEntry = fetchByC_C_C(
+			CPInstanceUuid, CProductId, commerceOrderItemId);
 
-		FinderPath finderPath = _finderPathCountByC_C_C;
-
-		Object[] finderArgs = new Object[] {
-			CPInstanceUuid, CProductId, commerceOrderItemId
-		};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_COMMERCESUBSCRIPTIONENTRY_WHERE);
-
-			boolean bindCPInstanceUuid = false;
-
-			if (CPInstanceUuid.isEmpty()) {
-				sb.append(_FINDER_COLUMN_C_C_C_CPINSTANCEUUID_3);
-			}
-			else {
-				bindCPInstanceUuid = true;
-
-				sb.append(_FINDER_COLUMN_C_C_C_CPINSTANCEUUID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_C_C_C_CPRODUCTID_2);
-
-			sb.append(_FINDER_COLUMN_C_C_C_COMMERCEORDERITEMID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				if (bindCPInstanceUuid) {
-					queryPos.add(CPInstanceUuid);
-				}
-
-				queryPos.add(CProductId);
-
-				queryPos.add(commerceOrderItemId);
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (commerceSubscriptionEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_C_C_C_CPINSTANCEUUID_2 =
@@ -4783,7 +4648,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 			commerceSubscriptionEntryModelImpl.getGroupId()
 		};
 
-		finderCache.putResult(_finderPathCountByUUID_G, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByUUID_G, args, commerceSubscriptionEntryModelImpl);
 
@@ -4791,8 +4655,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 			commerceSubscriptionEntryModelImpl.getCommerceOrderItemId()
 		};
 
-		finderCache.putResult(
-			_finderPathCountByCommerceOrderItemId, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByCommerceOrderItemId, args,
 			commerceSubscriptionEntryModelImpl);
@@ -4803,7 +4665,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 			commerceSubscriptionEntryModelImpl.getCommerceOrderItemId()
 		};
 
-		finderCache.putResult(_finderPathCountByC_C_C, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByC_C_C, args, commerceSubscriptionEntryModelImpl);
 	}
@@ -5156,7 +5017,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<CommerceSubscriptionEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -5227,7 +5088,7 @@ public class CommerceSubscriptionEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -5282,7 +5143,8 @@ public class CommerceSubscriptionEntryPersistenceImpl
 	/**
 	 * Initializes the commerce subscription entry persistence.
 	 */
-	public void afterPropertiesSet() {
+	@Activate
+	public void activate() {
 		_valueObjectFinderCacheListThreshold = GetterUtil.getInteger(
 			PropsUtil.get(PropsKeys.VALUE_OBJECT_FINDER_CACHE_LIST_THRESHOLD));
 
@@ -5320,11 +5182,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByUUID_G",
 			new String[] {String.class.getName(), Long.class.getName()},
 			new String[] {"uuid_", "groupId"}, true);
-
-		_finderPathCountByUUID_G = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByUUID_G",
-			new String[] {String.class.getName(), Long.class.getName()},
-			new String[] {"uuid_", "groupId"}, false);
 
 		_finderPathWithPaginationFindByUuid_C = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByUuid_C",
@@ -5385,11 +5242,6 @@ public class CommerceSubscriptionEntryPersistenceImpl
 			FINDER_CLASS_NAME_ENTITY, "fetchByCommerceOrderItemId",
 			new String[] {Long.class.getName()},
 			new String[] {"commerceOrderItemId"}, true);
-
-		_finderPathCountByCommerceOrderItemId = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION,
-			"countByCommerceOrderItemId", new String[] {Long.class.getName()},
-			new String[] {"commerceOrderItemId"}, false);
 
 		_finderPathWithPaginationFindBySubscriptionStatus = new FinderPath(
 			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findBySubscriptionStatus",
@@ -5462,47 +5314,46 @@ public class CommerceSubscriptionEntryPersistenceImpl
 			},
 			true);
 
-		_finderPathCountByC_C_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByC_C_C",
-			new String[] {
-				String.class.getName(), Long.class.getName(),
-				Long.class.getName()
-			},
-			new String[] {
-				"CPInstanceUuid", "CProductId", "commerceOrderItemId"
-			},
-			false);
-
-		_setCommerceSubscriptionEntryUtilPersistence(this);
+		CommerceSubscriptionEntryUtil.setPersistence(this);
 	}
 
-	public void destroy() {
-		_setCommerceSubscriptionEntryUtilPersistence(null);
+	@Deactivate
+	public void deactivate() {
+		CommerceSubscriptionEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(CommerceSubscriptionEntryImpl.class.getName());
 	}
 
-	private void _setCommerceSubscriptionEntryUtilPersistence(
-		CommerceSubscriptionEntryPersistence
-			commerceSubscriptionEntryPersistence) {
-
-		try {
-			Field field = CommerceSubscriptionEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, commerceSubscriptionEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	@ServiceReference(type = EntityCache.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
+	}
+
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected EntityCache entityCache;
 
-	@ServiceReference(type = FinderCache.class)
+	@Reference
 	protected FinderCache finderCache;
 
 	private static final String _SQL_SELECT_COMMERCESUBSCRIPTIONENTRY =

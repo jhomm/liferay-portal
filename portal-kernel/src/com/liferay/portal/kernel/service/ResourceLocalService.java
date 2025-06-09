@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -171,6 +162,11 @@ public interface ResourceLocalService extends BaseLocalService {
 			boolean addGuestPermissions)
 		throws PortalException;
 
+	public void addResources(
+			long companyId, long groupId, long userId, String name,
+			long primKey, boolean portletActions, ServiceContext serviceContext)
+		throws PortalException;
+
 	/**
 	 * Adds resources for the entity with the name and primary key string,
 	 * always creating a resource at the individual scope and only creating
@@ -195,6 +191,12 @@ public interface ResourceLocalService extends BaseLocalService {
 			boolean addGuestPermissions)
 		throws PortalException;
 
+	public void addResources(
+			long companyId, long groupId, long userId, String name,
+			String[] primKeys, boolean portletActions,
+			boolean addGroupPermissions, boolean addGuestPermissions)
+		throws PortalException;
+
 	/**
 	 * Adds resources for the entity with the name. Use this method if the user
 	 * is unknown or irrelevant and there is no current entity instance.
@@ -211,7 +213,7 @@ public interface ResourceLocalService extends BaseLocalService {
 		throws PortalException;
 
 	public void copyModelResources(
-			long companyId, String name, long oldPrimKey, long newPrimKey)
+			long companyId, String name, long sourcePrimKey, long targetPrimKey)
 		throws PortalException;
 
 	/**
@@ -294,6 +296,11 @@ public interface ResourceLocalService extends BaseLocalService {
 	public boolean hasUserPermissions(
 			long userId, long resourceId, List<Resource> resources,
 			String actionId, long[] roleIds)
+		throws PortalException;
+
+	public void removeResource(
+			long companyId, String name, int scope, String primKey, long roleId,
+			String actionId)
 		throws PortalException;
 
 	/**

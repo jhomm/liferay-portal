@@ -1,40 +1,61 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {ClayButtonWithIcon} from '@clayui/button';
 import classNames from 'classnames';
-import PropTypes from 'prop-types';
 import React from 'react';
 
-export default function SidebarPanelHeader({padded = true, ...props}) {
+import {switchSidebarPanel} from '../../app/actions/index';
+import {useDispatch, useSelector} from '../../app/contexts/StoreContext';
+
+export default function SidebarPanelHeader({
+	children,
+	iconLeft = null,
+	iconRight = null,
+	showCloseButton = true,
+}) {
+	const dispatch = useDispatch();
+
+	const sidebar = useSelector((state) => state.sidebar);
+
 	return (
-		<h1
-			{...props}
+		<header
 			className={classNames(
-				'page-editor__sidebar__panel-header',
-				'align-items-center',
-				'd-flex',
-				{
-					'light': true,
-					[props.className]: !!props.className,
-					'pt-2': padded,
-					'px-3': padded,
-				}
+				'align-items-center d-flex justify-content-between my-3 pl-3 pr-2 page-editor__sidebar__panel-header'
 			)}
-		/>
+		>
+			{iconLeft}
+
+			<h2 className="flex-grow-1 mb-0 mr-1 text-3">{children}</h2>
+
+			{iconRight}
+
+			{showCloseButton && (
+				<ClayButtonWithIcon
+					aria-label={Liferay.Language.get('close')}
+					displayType="unstyled"
+					onClick={() => {
+						dispatch(
+							switchSidebarPanel({
+								itemConfigurationOpen:
+									sidebar.itemConfigurationOpen,
+								sidebarOpen: false,
+							})
+						);
+
+						document
+							.querySelector(
+								`[data-panel-id="${sidebar.panelId}"]`
+							)
+							?.focus();
+					}}
+					size="sm"
+					symbol="times"
+					title={Liferay.Language.get('close')}
+				/>
+			)}
+		</header>
 	);
 }
-
-SidebarPanelHeader.propTypes = {
-	padded: PropTypes.bool,
-};

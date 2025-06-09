@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.form.field;
@@ -17,6 +8,7 @@ package com.liferay.project.templates.form.field;
 import com.liferay.maven.executor.MavenExecutor;
 import com.liferay.project.templates.BaseProjectTemplatesTestCase;
 import com.liferay.project.templates.extensions.util.Validator;
+import com.liferay.project.templates.extensions.util.VersionUtil;
 import com.liferay.project.templates.util.FileTestUtil;
 
 import java.io.File;
@@ -27,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Properties;
 
 import org.junit.Assert;
@@ -50,7 +43,8 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 
 	@Parameterized.Parameters(name = "Testcase-{index}: testing {0}")
 	public static Iterable<Object[]> data() {
-		return Arrays.asList(new Object[][] {{"7.3.7"}, {"7.4.1-1"}});
+		return Arrays.asList(
+			new Object[][] {{"7.3.7"}, {"7.4.3.56"}, {"2024.q1.1"}});
 	}
 
 	@BeforeClass
@@ -81,19 +75,49 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 			temporaryFolder, "gradle", "gradleWS", _liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			_liferayVersion);
+
+		String product = "portal";
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				workspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+
+			product = liferayWorkspaceProduct.substring(
+				0, liferayWorkspaceProduct.indexOf("-"));
+		}
+
 		File gradleProjectDir = buildTemplateWithGradle(
 			new File(workspaceDir, "modules"), "form-field", name,
-			"--liferay-version", _liferayVersion, "--js-framework", "react");
+			"--js-framework", "react", "--liferay-product", product,
+			"--liferay-version", _liferayVersion);
 
 		testContains(
 			gradleProjectDir, "build.gradle",
-			"compileOnly group: \"com.liferay\", name: " +
-				"\"com.liferay.dynamic.data.mapping.api\"",
-			"compileOnly group: \"com.liferay\", name: " +
-				"\"com.liferay.frontend.js.loader.modules.extender.api\"",
 			"jsCompile group: \"com.liferay\", name: " +
-				"\"com.liferay.dynamic.data.mapping.form.field.type\"",
-			DEPENDENCY_PORTAL_KERNEL);
+				"\"com.liferay.dynamic.data.mapping.form.field.type\"");
+
+		if (Objects.equals(product, "dxp")) {
+			testContains(
+				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
+		}
+		else if (Objects.equals(product, "portal")) {
+			testContains(
+				gradleProjectDir, "build.gradle",
+				DEPENDENCY_RELEASE_PORTAL_API);
+		}
+
+		String jsLiferayApiVersion = _liferayVersion.substring(0, 3);
+
+		if (VersionUtil.isLiferayQuarterlyVersion(_liferayVersion)) {
+			jsLiferayApiVersion = "7.4";
+		}
+
+		testContains(
+			gradleProjectDir, "package.json", "\"@babel/cli\": \"^7.2.3\"",
+			"\"@liferay/portal-" + jsLiferayApiVersion + "\": \"*\"");
 		testContains(
 			gradleProjectDir,
 			"src/main/java/foobar/form/field/FoobarDDMFormFieldType.java",
@@ -108,16 +132,11 @@ public class ProjectTemplatesFormFieldWorkspaceReactTest
 		testContains(
 			gradleProjectDir,
 			"src/main/resources/META-INF/resources/foobar.es.js",
-			"import React from 'react';",
-			"import {FieldBase} from 'dynamic-data-mapping-form-field-type" +
-				"/FieldBase/ReactFieldBase.es';",
-			"import {useSyncValue} from " +
-				"'dynamic-data-mapping-form-field-type/hooks/useSyncValue.es';",
-			"const Foobar = ({name, onChange, predefinedValue, readOnly, " +
-				"value})",
-			"const Main = ({label, name, onChange, predefinedValue, " +
-				"readOnly, value, ...otherProps})",
-			"Main.displayName = 'Foobar';", "export default Main;");
+			"import {ReactFieldBase as FieldBase} from " +
+				"'dynamic-data-mapping-form-field-type';",
+			"import React, {useState} from 'react';",
+			"export default function Foobar({",
+			"const [currentValue, setCurrentValue] = useState(");
 
 		testNotContains(
 			gradleProjectDir, "build.gradle", true, "^repositories \\{.*");

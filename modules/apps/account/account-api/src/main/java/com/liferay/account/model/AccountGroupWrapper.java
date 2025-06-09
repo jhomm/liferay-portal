@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.model;
 
+import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
@@ -43,6 +35,7 @@ public class AccountGroupWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("uuid", getUuid());
 		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("accountGroupId", getAccountGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -54,6 +47,7 @@ public class AccountGroupWrapper
 		attributes.put("description", getDescription());
 		attributes.put("name", getName());
 		attributes.put("type", getType());
+		attributes.put("status", getStatus());
 
 		return attributes;
 	}
@@ -64,6 +58,12 @@ public class AccountGroupWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		String uuid = (String)attributes.get("uuid");
+
+		if (uuid != null) {
+			setUuid(uuid);
 		}
 
 		String externalReferenceCode = (String)attributes.get(
@@ -132,6 +132,12 @@ public class AccountGroupWrapper
 
 		if (type != null) {
 			setType(type);
+		}
+
+		Integer status = (Integer)attributes.get("status");
+
+		if (status != null) {
+			setStatus(status);
 		}
 	}
 
@@ -241,6 +247,16 @@ public class AccountGroupWrapper
 	}
 
 	/**
+	 * Returns the status of this account group.
+	 *
+	 * @return the status of this account group
+	 */
+	@Override
+	public int getStatus() {
+		return model.getStatus();
+	}
+
+	/**
 	 * Returns the type of this account group.
 	 *
 	 * @return the type of this account group
@@ -278,6 +294,16 @@ public class AccountGroupWrapper
 	@Override
 	public String getUserUuid() {
 		return model.getUserUuid();
+	}
+
+	/**
+	 * Returns the uuid of this account group.
+	 *
+	 * @return the uuid of this account group
+	 */
+	@Override
+	public String getUuid() {
+		return model.getUuid();
 	}
 
 	/**
@@ -396,6 +422,16 @@ public class AccountGroupWrapper
 	}
 
 	/**
+	 * Sets the status of this account group.
+	 *
+	 * @param status the status of this account group
+	 */
+	@Override
+	public void setStatus(int status) {
+		model.setStatus(status);
+	}
+
+	/**
 	 * Sets the type of this account group.
 	 *
 	 * @param type the type of this account group
@@ -433,6 +469,26 @@ public class AccountGroupWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	/**
+	 * Sets the uuid of this account group.
+	 *
+	 * @param uuid the uuid of this account group
+	 */
+	@Override
+	public void setUuid(String uuid) {
+		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public StagedModelType getStagedModelType() {
+		return model.getStagedModelType();
 	}
 
 	@Override

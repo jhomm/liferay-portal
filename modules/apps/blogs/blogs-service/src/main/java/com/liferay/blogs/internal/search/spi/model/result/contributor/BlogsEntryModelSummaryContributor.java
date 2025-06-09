@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.search.spi.model.result.contributor;
@@ -19,24 +10,21 @@ import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.search.spi.model.result.contributor.ModelSummaryContributor;
 
 import java.util.Locale;
-
-import org.osgi.service.component.annotations.Component;
 
 /**
  * @author Igor Fabiano Nazar
  * @author Luan Maoski
  */
-@Component(
-	immediate = true,
-	property = "indexer.class.name=com.liferay.blogs.model.BlogsEntry",
-	service = ModelSummaryContributor.class
-)
 public class BlogsEntryModelSummaryContributor
 	implements ModelSummaryContributor {
+
+	public BlogsEntryModelSummaryContributor(Localization localization) {
+		_localization = localization;
+	}
 
 	@Override
 	public Summary getSummary(
@@ -45,9 +33,8 @@ public class BlogsEntryModelSummaryContributor
 		String languageId = LocaleUtil.toLanguageId(locale);
 
 		return _createSummary(
-			document,
-			LocalizationUtil.getLocalizedName(Field.CONTENT, languageId),
-			LocalizationUtil.getLocalizedName(Field.TITLE, languageId));
+			document, _localization.getLocalizedName(Field.CONTENT, languageId),
+			_localization.getLocalizedName(Field.TITLE, languageId));
 	}
 
 	private Summary _createSummary(
@@ -63,5 +50,7 @@ public class BlogsEntryModelSummaryContributor
 
 		return summary;
 	}
+
+	private final Localization _localization;
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.template.model.TemplateEntry;
 
@@ -30,6 +22,10 @@ public class TemplateEntryLocalServiceWrapper
 	implements ServiceWrapper<TemplateEntryLocalService>,
 			   TemplateEntryLocalService {
 
+	public TemplateEntryLocalServiceWrapper() {
+		this(null);
+	}
+
 	public TemplateEntryLocalServiceWrapper(
 		TemplateEntryLocalService templateEntryLocalService) {
 
@@ -38,14 +34,15 @@ public class TemplateEntryLocalServiceWrapper
 
 	@Override
 	public TemplateEntry addTemplateEntry(
-			long userId, long groupId, long ddmTemplateId,
-			String infoItemClassName, String infoItemFormVariationKey,
+			String externalReferenceCode, long userId, long groupId,
+			long ddmTemplateId, String infoItemClassName,
+			String infoItemFormVariationKey,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _templateEntryLocalService.addTemplateEntry(
-			userId, groupId, ddmTemplateId, infoItemClassName,
-			infoItemFormVariationKey, serviceContext);
+			externalReferenceCode, userId, groupId, ddmTemplateId,
+			infoItemClassName, infoItemFormVariationKey, serviceContext);
 	}
 
 	/**
@@ -96,6 +93,11 @@ public class TemplateEntryLocalServiceWrapper
 		return _templateEntryLocalService.deletePersistedModel(persistedModel);
 	}
 
+	@Override
+	public void deleteTemplateEntries(long groupId) {
+		_templateEntryLocalService.deleteTemplateEntries(groupId);
+	}
+
 	/**
 	 * Deletes the template entry with the primary key from the database. Also notifies the appropriate model listeners.
 	 *
@@ -112,6 +114,14 @@ public class TemplateEntryLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _templateEntryLocalService.deleteTemplateEntry(templateEntryId);
+	}
+
+	@Override
+	public TemplateEntry deleteTemplateEntry(
+		String externalReferenceCode, long groupId) {
+
+		return _templateEntryLocalService.deleteTemplateEntry(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -243,6 +253,15 @@ public class TemplateEntryLocalServiceWrapper
 			ddmTemplateId);
 	}
 
+	@Override
+	public TemplateEntry fetchTemplateEntryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return _templateEntryLocalService.
+			fetchTemplateEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the template entry matching the UUID and group.
 	 *
@@ -348,6 +367,18 @@ public class TemplateEntryLocalServiceWrapper
 		return _templateEntryLocalService.getTemplateEntries(groupIds);
 	}
 
+	@Override
+	public java.util.List<TemplateEntry> getTemplateEntries(
+		long[] groupIds, String infoItemClassName,
+		String infoItemFormVariationKey, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<TemplateEntry>
+			orderByComparator) {
+
+		return _templateEntryLocalService.getTemplateEntries(
+			groupIds, infoItemClassName, infoItemFormVariationKey, start, end,
+			orderByComparator);
+	}
+
 	/**
 	 * Returns all the template entries matching the UUID and company.
 	 *
@@ -412,6 +443,16 @@ public class TemplateEntryLocalServiceWrapper
 		return _templateEntryLocalService.getTemplateEntry(templateEntryId);
 	}
 
+	@Override
+	public TemplateEntry getTemplateEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _templateEntryLocalService.
+			getTemplateEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the template entry matching the UUID and group.
 	 *
@@ -436,6 +477,15 @@ public class TemplateEntryLocalServiceWrapper
 		return _templateEntryLocalService.updateTemplateEntry(templateEntryId);
 	}
 
+	@Override
+	public TemplateEntry updateTemplateEntry(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _templateEntryLocalService.updateTemplateEntry(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Updates the template entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -449,6 +499,11 @@ public class TemplateEntryLocalServiceWrapper
 	@Override
 	public TemplateEntry updateTemplateEntry(TemplateEntry templateEntry) {
 		return _templateEntryLocalService.updateTemplateEntry(templateEntry);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _templateEntryLocalService.getBasePersistence();
 	}
 
 	@Override

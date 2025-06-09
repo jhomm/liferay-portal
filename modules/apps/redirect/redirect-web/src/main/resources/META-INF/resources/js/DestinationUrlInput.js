@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import ClayForm, {ClayInput} from '@clayui/form';
 import ClayIcon from '@clayui/icon';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 
-const REGEX_URL = /((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(https?:\/\/|www.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[\w]*))((.*):(\d*)\/?(.*))?)/;
+const REGEX_URL =
+	/((([A-Za-z]{3,9}:(?:\/\/)?)(?:[-;:&=+$,\w]+@)?[A-Za-z0-9.-]+|(https?:\/\/|www.|[-;:&=+$,\w]+@)[A-Za-z0-9.-]+)((?:\/[+~%/.\w-_]*)?\??(?:[-+=&;%@.\w_]*)#?(?:[\w]*))((.*):(\d*)\/?(.*))?)/;
 
 const STR_BLANK = '';
 
@@ -45,6 +38,41 @@ const DestinationUrlInput = ({
 		return REGEX_URL && REGEX_URL.test(url);
 	};
 
+	useEffect(() => {
+		const destinationURLInput = document.getElementById(
+			`${namespace}destinationURL`
+		);
+		const initialDestinationURL = destinationURLInput.value;
+		const permanentSelect = document.getElementById(
+			`${namespace}permanent`
+		);
+		const typeInfoAlert = document.getElementById(
+			`${namespace}typeInfoAlert`
+		);
+
+		const _showTypeInfoAlert = () => {
+			typeInfoAlert.classList.toggle(
+				'hide',
+				permanentSelect.value === 'true' &&
+					destinationURLInput.value === initialDestinationURL
+			);
+		};
+
+		if (typeInfoAlert && permanentSelect.value === 'true') {
+			destinationURLInput.addEventListener('input', _showTypeInfoAlert);
+			permanentSelect.addEventListener('input', _showTypeInfoAlert);
+		}
+
+		return () => {
+			destinationURLInput?.removeEventListener(
+				'input',
+				_showTypeInfoAlert
+			);
+
+			permanentSelect?.removeEventListener('input', _showTypeInfoAlert);
+		};
+	}, [namespace]);
+
 	return (
 		<ClayForm.Group
 			className={requiredError || urlError ? 'has-error' : STR_BLANK}
@@ -55,7 +83,7 @@ const DestinationUrlInput = ({
 				<span className="inline-item-after reference-mark">
 					<ClayIcon symbol="asterisk" />
 
-					<span className="hide-accessible">
+					<span className="hide-accessible sr-only">
 						{Liferay.Language.get('required')}
 					</span>
 				</span>
@@ -79,8 +107,10 @@ const DestinationUrlInput = ({
 						value={destinationUrl}
 					/>
 				</ClayInput.GroupItem>
+
 				<ClayInput.GroupItem append shrink>
 					<ClayButtonWithIcon
+						aria-label={Liferay.Language.get('check-url')}
 						disabled={
 							destinationUrl === STR_BLANK ||
 							!isAbsoluteUrl(destinationUrl)
@@ -105,12 +135,14 @@ const DestinationUrlInput = ({
 				<ClayForm.FeedbackGroup>
 					<ClayForm.FeedbackItem>
 						<ClayForm.FeedbackIndicator symbol="exclamation-full" />
+
 						{Liferay.Language.get('this-url-is-not-supported')}
 					</ClayForm.FeedbackItem>
+
 					<div
 						className="small"
 						dangerouslySetInnerHTML={{
-							__html: Liferay.Util.sub(
+							__html: sub(
 								Liferay.Language.get('enter-an-absolute-url'),
 								'<em>',
 								'</em>'

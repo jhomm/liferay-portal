@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -212,90 +202,82 @@ public class UserTrackerPathModelImpl
 	public Map<String, Function<UserTrackerPath, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<UserTrackerPath, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, UserTrackerPath>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			UserTrackerPath.class.getClassLoader(), UserTrackerPath.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<UserTrackerPath, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<UserTrackerPath> constructor =
-				(Constructor<UserTrackerPath>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<UserTrackerPath, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<UserTrackerPath, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", UserTrackerPath::getMvccVersion);
+			attributeGetterFunctions.put(
+				"userTrackerPathId", UserTrackerPath::getUserTrackerPathId);
+			attributeGetterFunctions.put(
+				"companyId", UserTrackerPath::getCompanyId);
+			attributeGetterFunctions.put(
+				"userTrackerId", UserTrackerPath::getUserTrackerId);
+			attributeGetterFunctions.put("path", UserTrackerPath::getPath);
+			attributeGetterFunctions.put(
+				"pathDate", UserTrackerPath::getPathDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<UserTrackerPath, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<UserTrackerPath, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<UserTrackerPath, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<UserTrackerPath, Object>>();
-		Map<String, BiConsumer<UserTrackerPath, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<UserTrackerPath, ?>>();
+		private static final Map<String, BiConsumer<UserTrackerPath, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", UserTrackerPath::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<UserTrackerPath, Long>)UserTrackerPath::setMvccVersion);
-		attributeGetterFunctions.put(
-			"userTrackerPathId", UserTrackerPath::getUserTrackerPathId);
-		attributeSetterBiConsumers.put(
-			"userTrackerPathId",
-			(BiConsumer<UserTrackerPath, Long>)
-				UserTrackerPath::setUserTrackerPathId);
-		attributeGetterFunctions.put(
-			"companyId", UserTrackerPath::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<UserTrackerPath, Long>)UserTrackerPath::setCompanyId);
-		attributeGetterFunctions.put(
-			"userTrackerId", UserTrackerPath::getUserTrackerId);
-		attributeSetterBiConsumers.put(
-			"userTrackerId",
-			(BiConsumer<UserTrackerPath, Long>)
-				UserTrackerPath::setUserTrackerId);
-		attributeGetterFunctions.put("path", UserTrackerPath::getPath);
-		attributeSetterBiConsumers.put(
-			"path",
-			(BiConsumer<UserTrackerPath, String>)UserTrackerPath::setPath);
-		attributeGetterFunctions.put("pathDate", UserTrackerPath::getPathDate);
-		attributeSetterBiConsumers.put(
-			"pathDate",
-			(BiConsumer<UserTrackerPath, Date>)UserTrackerPath::setPathDate);
+		static {
+			Map<String, BiConsumer<UserTrackerPath, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<UserTrackerPath, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<UserTrackerPath, Long>)
+					UserTrackerPath::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"userTrackerPathId",
+				(BiConsumer<UserTrackerPath, Long>)
+					UserTrackerPath::setUserTrackerPathId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<UserTrackerPath, Long>)
+					UserTrackerPath::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userTrackerId",
+				(BiConsumer<UserTrackerPath, Long>)
+					UserTrackerPath::setUserTrackerId);
+			attributeSetterBiConsumers.put(
+				"path",
+				(BiConsumer<UserTrackerPath, String>)UserTrackerPath::setPath);
+			attributeSetterBiConsumers.put(
+				"pathDate",
+				(BiConsumer<UserTrackerPath, Date>)
+					UserTrackerPath::setPathDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -634,41 +616,12 @@ public class UserTrackerPathModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<UserTrackerPath, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<UserTrackerPath, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<UserTrackerPath, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((UserTrackerPath)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, UserTrackerPath>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					UserTrackerPath.class, ModelWrapper.class);
 
 	}
 
@@ -683,7 +636,8 @@ public class UserTrackerPathModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<UserTrackerPath, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

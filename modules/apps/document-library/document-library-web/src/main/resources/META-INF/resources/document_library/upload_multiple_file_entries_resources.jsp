@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -173,7 +164,40 @@ else {
 
 						<%
 						try {
-							for (DDMStructure ddmStructure : fileEntryType.getDDMStructures()) {
+							List<DDMStructure> ddmStructures = DLFileEntryTypeUtil.getDDMStructures(fileEntryType);
+
+							boolean showLanguageSelector = false;
+
+							for (DDMStructure ddmStructure : ddmStructures) {
+								if (dlEditFileEntryDisplayContext.isDDMStructureVisible(ddmStructure)) {
+									showLanguageSelector = true;
+
+									break;
+								}
+							}
+						%>
+
+							<c:if test="<%= showLanguageSelector %>">
+								<div class="mt-2">
+									<react:component
+										module="{LanguageSelector} from document-library-web"
+										props='<%=
+											HashMapBuilder.<String, Object>put(
+												"ddmStructureIds", DDMStructureUtil.getDDMStructureIds(ddmStructures)
+											).put(
+												"languageIds", DDMStructureUtil.getAvailableLanguageIds(themeDisplay)
+											).put(
+												"selectedLanguageId", LocaleUtil.toLanguageId(LocaleUtil.getSiteDefault())
+											).put(
+												"translatedLanguageIds", DDMStructureUtil.getTranslatedLanguageIds(ddmStructures, dlEditFileEntryDisplayContext, fileVersionId)
+											).build()
+										%>'
+									/>
+								</div>
+							</c:if>
+
+							<%
+							for (DDMStructure ddmStructure : ddmStructures) {
 								DDMFormValues ddmFormValues = null;
 
 								try {
@@ -187,7 +211,7 @@ else {
 								if (groupId <= 0) {
 									groupId = ddmStructure.getGroupId();
 								}
-						%>
+							%>
 
 								<div class="document-type-fields" data-ddm-fieldset>
 									<liferay-data-engine:data-layout-renderer
@@ -195,6 +219,7 @@ else {
 										dataDefinitionId="<%= ddmStructure.getStructureId() %>"
 										dataRecordValues="<%= DataRecordValuesUtil.getDataRecordValues(ddmFormValues, ddmStructure) %>"
 										namespace="<%= liferayPortletResponse.getNamespace() + ddmStructure.getStructureId() + StringPool.UNDERLINE %>"
+										persistDefaultValues="<%= true %>"
 										persisted="<%= fileEntry != null %>"
 										submittable="<%= false %>"
 									/>
@@ -209,15 +234,13 @@ else {
 
 					</c:if>
 
-					<aui:script position="inline" require="frontend-js-web/liferay/delegate/delegate.es as delegateModule,frontend-js-web/liferay/util/run_scripts_in_element.es as runScriptsInElement">
+					<aui:script position="inline" sandbox="<%= true %>">
 						var documentTypeMenuList = document.querySelector(
 							'#<portlet:namespace />documentTypeSelector .lfr-menu-list'
 						);
 
 						if (documentTypeMenuList) {
-							var delegate = delegateModule.default;
-
-							delegate(documentTypeMenuList, 'click', 'li a', (event) => {
+							Liferay.Util.delegate(documentTypeMenuList, 'click', 'li a', (event) => {
 								event.preventDefault();
 
 								Liferay.Util.fetch(event.delegateTarget.getAttribute('href'))
@@ -232,7 +255,9 @@ else {
 										if (commonFileMetadataContainer) {
 											commonFileMetadataContainer.innerHTML = response;
 
-											runScriptsInElement.default(commonFileMetadataContainer);
+											Liferay.Util.runScriptsInElement(
+												commonFileMetadataContainer
+											);
 										}
 
 										var fileNodes = document.querySelectorAll(
@@ -333,7 +358,6 @@ else {
 						className="<%= DLFileEntry.class.getName() %>"
 						classPK="<%= assetClassPK %>"
 						classTypePK="<%= fileEntryTypeId %>"
-						visibilityTypes="<%= AssetVocabularyConstants.VISIBILITY_TYPES %>"
 					/>
 
 					<liferay-asset:asset-tags-selector
@@ -351,11 +375,18 @@ else {
 			id="dlFileEntryExpirationDatePanel"
 			markupView="lexicon"
 			persistState="<%= true %>"
-			title="expiration-date"
+			title="schedule"
 		>
 			<aui:fieldset>
+				<liferay-ui:error exception="<%= FileEntryDisplayDateException.class %>" message="please-enter-a-valid-publish-date" />
 				<liferay-ui:error exception="<%= FileEntryExpirationDateException.class %>" message="please-enter-a-valid-expiration-date" />
 				<liferay-ui:error exception="<%= FileEntryReviewDateException.class %>" message="please-enter-a-valid-review-date" />
+
+				<p class="text-secondary">
+					<liferay-ui:message key="set-the-publication-date-and-time-for-your-document-to-be-published-automatically" />
+				</p>
+
+				<aui:input label="publish-date" name="displayDate" wrapperCssClass="display-date" />
 
 				<p class="text-secondary">
 					<liferay-ui:message key="including-an-expiration-date-will-allow-your-documents-or-media-to-expire-automatically-and-become-unpublished" />

@@ -1,11 +1,40 @@
 components:
     schemas:
+        Admin:
+            # @review
+            description:
+                Administrator information.
+            properties:
+                emailAddress:
+                    # @review
+                    description:
+                        Administrator's email address.
+                    format: email
+                    type: string
+                familyName:
+                    # @review
+                    description:
+                        The admin's surname (last name).
+                    type: string
+                givenName:
+                    # @review
+                    description:
+                        The admin's first name.
+                    type: string
+            type: object
         PortalInstance:
             # @review
             properties:
                 active:
                     readOnly: true
                     type: boolean
+                admin:
+                    $ref: "#/components/schemas/Admin"
+                    # @review
+                    description:
+                        The portal instance's administrator. This field is optional and is only used in the portal
+                        instance creation.
+                    writeOnly: true
                 companyId:
                     description:
                         internal unique key.
@@ -28,7 +57,7 @@ components:
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.headless.portal.instances.client', and version '1.0.3'."
+        'com.liferay.headless.portal.instances.client', and version '1.0.28'."
     license:
         name: Apache 2.0
         url: http://www.apache.org/licenses/LICENSE-2.0.html
@@ -42,13 +71,13 @@ paths:
                 Retrieves the portal instances
             operationId: getPortalInstancesPage
             parameters:
-                - in: query
-                  explode: true
-                  name: skipDefault
-                  required: false
-                  schema:
-                      type: boolean
-                  style: form
+                -   in: query
+                    explode: true
+                    name: skipDefault
+                    required: false
+                    schema:
+                        type: boolean
+                    style: form
             responses:
                 200:
                     content:
@@ -97,11 +126,11 @@ paths:
                 Removes the portal instance
             operationId: deletePortalInstance
             parameters:
-                - in: path
-                  name: portalInstanceId
-                  required: true
-                  schema:
-                      type: string
+                -   in: path
+                    name: portalInstanceId
+                    required: true
+                    schema:
+                        type: string
             responses:
                 204:
                     content:
@@ -114,11 +143,11 @@ paths:
                 Retrieves the portal instance
             operationId: getPortalInstance
             parameters:
-                - in: path
-                  name: portalInstanceId
-                  required: true
-                  schema:
-                      type: string
+                -   in: path
+                    name: portalInstanceId
+                    required: true
+                    schema:
+                        type: string
             responses:
                 200:
                     content:
@@ -139,11 +168,11 @@ paths:
                 updated.
             operationId: patchPortalInstance
             parameters:
-                - in: path
-                  name: portalInstanceId
-                  required: true
-                  schema:
-                      type: string
+                -   in: path
+                    name: portalInstanceId
+                    required: true
+                    schema:
+                        type: string
             requestBody:
                 content:
                     application/json:
@@ -173,11 +202,11 @@ paths:
                 Activates the portal instance
             operationId: putPortalInstanceActivate
             parameters:
-                - in: path
-                  name: portalInstanceId
-                  required: true
-                  schema:
-                      type: string
+                -   in: path
+                    name: portalInstanceId
+                    required: true
+                    schema:
+                        type: string
             responses:
                 200:
                     content:
@@ -194,11 +223,11 @@ paths:
                 respond requests.
             operationId: putPortalInstanceDeactivate
             parameters:
-                - in: path
-                  name: portalInstanceId
-                  required: true
-                  schema:
-                      type: string
+                -   in: path
+                    name: portalInstanceId
+                    required: true
+                    schema:
+                        type: string
             responses:
                 200:
                     content:

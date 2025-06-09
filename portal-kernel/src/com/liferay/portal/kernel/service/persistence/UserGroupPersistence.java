@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -1394,54 +1385,54 @@ public interface UserGroupPersistence
 		long userGroupId, long companyId, long parentUserGroupId);
 
 	/**
-	 * Returns the user group where companyId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchUserGroupException</code> if it could not be found.
+	 * Returns the user group where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchUserGroupException</code> if it could not be found.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching user group
 	 * @throws NoSuchUserGroupException if a matching user group could not be found
 	 */
-	public UserGroup findByC_ERC(long companyId, String externalReferenceCode)
+	public UserGroup findByERC_C(String externalReferenceCode, long companyId)
 		throws NoSuchUserGroupException;
 
 	/**
-	 * Returns the user group where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the user group where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
 	 */
-	public UserGroup fetchByC_ERC(long companyId, String externalReferenceCode);
+	public UserGroup fetchByERC_C(String externalReferenceCode, long companyId);
 
 	/**
-	 * Returns the user group where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the user group where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
 	 */
-	public UserGroup fetchByC_ERC(
-		long companyId, String externalReferenceCode, boolean useFinderCache);
+	public UserGroup fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache);
 
 	/**
-	 * Removes the user group where companyId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the user group where externalReferenceCode = &#63; and companyId = &#63; from the database.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the user group that was removed
 	 */
-	public UserGroup removeByC_ERC(long companyId, String externalReferenceCode)
+	public UserGroup removeByERC_C(String externalReferenceCode, long companyId)
 		throws NoSuchUserGroupException;
 
 	/**
-	 * Returns the number of user groups where companyId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of user groups where externalReferenceCode = &#63; and companyId = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the number of matching user groups
 	 */
-	public int countByC_ERC(long companyId, String externalReferenceCode);
+	public int countByERC_C(String externalReferenceCode, long companyId);
 
 	/**
 	 * Caches the user group in the entity cache if it is enabled.
@@ -1642,32 +1633,37 @@ public interface UserGroupPersistence
 	 *
 	 * @param pk the primary key of the user group
 	 * @param groupPK the primary key of the group
+	 * @return <code>true</code> if an association between the user group and the group was added; <code>false</code> if they were already associated
 	 */
-	public void addGroup(long pk, long groupPK);
+	public boolean addGroup(long pk, long groupPK);
 
 	/**
 	 * Adds an association between the user group and the group. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param group the group
+	 * @return <code>true</code> if an association between the user group and the group was added; <code>false</code> if they were already associated
 	 */
-	public void addGroup(long pk, com.liferay.portal.kernel.model.Group group);
+	public boolean addGroup(
+		long pk, com.liferay.portal.kernel.model.Group group);
 
 	/**
 	 * Adds an association between the user group and the groups. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param groupPKs the primary keys of the groups
+	 * @return <code>true</code> if at least one association between the user group and the groups was added; <code>false</code> if they were all already associated
 	 */
-	public void addGroups(long pk, long[] groupPKs);
+	public boolean addGroups(long pk, long[] groupPKs);
 
 	/**
 	 * Adds an association between the user group and the groups. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param groups the groups
+	 * @return <code>true</code> if at least one association between the user group and the groups was added; <code>false</code> if they were all already associated
 	 */
-	public void addGroups(
+	public boolean addGroups(
 		long pk, java.util.List<com.liferay.portal.kernel.model.Group> groups);
 
 	/**
@@ -1808,32 +1804,36 @@ public interface UserGroupPersistence
 	 *
 	 * @param pk the primary key of the user group
 	 * @param teamPK the primary key of the team
+	 * @return <code>true</code> if an association between the user group and the team was added; <code>false</code> if they were already associated
 	 */
-	public void addTeam(long pk, long teamPK);
+	public boolean addTeam(long pk, long teamPK);
 
 	/**
 	 * Adds an association between the user group and the team. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param team the team
+	 * @return <code>true</code> if an association between the user group and the team was added; <code>false</code> if they were already associated
 	 */
-	public void addTeam(long pk, com.liferay.portal.kernel.model.Team team);
+	public boolean addTeam(long pk, com.liferay.portal.kernel.model.Team team);
 
 	/**
 	 * Adds an association between the user group and the teams. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param teamPKs the primary keys of the teams
+	 * @return <code>true</code> if at least one association between the user group and the teams was added; <code>false</code> if they were all already associated
 	 */
-	public void addTeams(long pk, long[] teamPKs);
+	public boolean addTeams(long pk, long[] teamPKs);
 
 	/**
 	 * Adds an association between the user group and the teams. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param teams the teams
+	 * @return <code>true</code> if at least one association between the user group and the teams was added; <code>false</code> if they were all already associated
 	 */
-	public void addTeams(
+	public boolean addTeams(
 		long pk, java.util.List<com.liferay.portal.kernel.model.Team> teams);
 
 	/**
@@ -1973,32 +1973,36 @@ public interface UserGroupPersistence
 	 *
 	 * @param pk the primary key of the user group
 	 * @param userPK the primary key of the user
+	 * @return <code>true</code> if an association between the user group and the user was added; <code>false</code> if they were already associated
 	 */
-	public void addUser(long pk, long userPK);
+	public boolean addUser(long pk, long userPK);
 
 	/**
 	 * Adds an association between the user group and the user. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param user the user
+	 * @return <code>true</code> if an association between the user group and the user was added; <code>false</code> if they were already associated
 	 */
-	public void addUser(long pk, com.liferay.portal.kernel.model.User user);
+	public boolean addUser(long pk, com.liferay.portal.kernel.model.User user);
 
 	/**
 	 * Adds an association between the user group and the users. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param userPKs the primary keys of the users
+	 * @return <code>true</code> if at least one association between the user group and the users was added; <code>false</code> if they were all already associated
 	 */
-	public void addUsers(long pk, long[] userPKs);
+	public boolean addUsers(long pk, long[] userPKs);
 
 	/**
 	 * Adds an association between the user group and the users. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the user group
 	 * @param users the users
+	 * @return <code>true</code> if at least one association between the user group and the users was added; <code>false</code> if they were all already associated
 	 */
-	public void addUsers(
+	public boolean addUsers(
 		long pk, java.util.List<com.liferay.portal.kernel.model.User> users);
 
 	/**

@@ -1,0 +1,36 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<c:if test="<%= hasPermission %>">
+	<div id="item-finder-root-order-types"></div>
+
+	<liferay-frontend:component
+		context='<%=
+			HashMapBuilder.<String, Object>put(
+				"dataSetId", CommercePaymentMethodGroupRelFDSNames.ORDER_TYPES
+			).put(
+				"paymentMethodGroupRelId", commercePaymentMethodGroupRelId
+			).put(
+				"rootPortletId", portletDisplay.getRootPortletId()
+			).build()
+		%>'
+		module="{commerceOrderTypes} from commerce-payment-web"
+	/>
+
+	<commerce-ui:panel
+		bodyClasses="p-0"
+		title='<%= LanguageUtil.get(request, "order-types") %>'
+	>
+		<frontend-data-set:headless-display
+			apiURL="<%= commercePaymentMethodGroupRelQualifiersDisplayContext.getCommerceOrderTypeCommercePaymentMethodGroupRelsAPIURL() %>"
+			fdsActionDropdownItems="<%= commercePaymentMethodGroupRelQualifiersDisplayContext.getCommerceOrderTypeFDSActionDropdownItems() %>"
+			formName="fm"
+			id="<%= CommercePaymentMethodGroupRelFDSNames.ORDER_TYPES %>"
+			itemsPerPage="<%= 10 %>"
+		/>
+	</commerce-ui:panel>
+</c:if>

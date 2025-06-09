@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayPopover from '@clayui/popover';
@@ -18,7 +9,7 @@ import React from 'react';
 import {dateToBriefInternationalHuman} from '../utils/utils.es';
 import UserIcon from './UserIcon.es';
 
-export default ({creator, statistics}) => {
+export default function UserPopover({creator, statistics}) {
 	return (
 		<ClayPopover
 			alignPosition="bottom"
@@ -33,9 +24,9 @@ export default ({creator, statistics}) => {
 					/>
 
 					<div className="c-ml-2">
-						<h4 className="font-weight-light h6 text-secondary">
+						<div className="font-weight-light h6 text-secondary">
 							{statistics?.rank}
-						</h4>
+						</div>
 
 						<h3 className="h5">
 							{creator?.name ||
@@ -48,20 +39,28 @@ export default ({creator, statistics}) => {
 			}
 		>
 			<div className="text-secondary">
-				<p className="c-mb-0">Posts: {statistics?.postsNumber}</p>
 				<p className="c-mb-0">
-					Join Date:{' '}
-					{statistics
-						? dateToBriefInternationalHuman(statistics.joinDate)
-						: ''}
+					{Liferay.Language.get('posts')}: {statistics?.postsNumber}
 				</p>
+
 				<p className="c-mb-0">
-					Last Post Date:{' '}
-					{statistics
-						? dateToBriefInternationalHuman(statistics.lastPostDate)
-						: ''}
+					{`${Liferay.Language.get('join-date')}: ${
+						statistics
+							? dateToBriefInternationalHuman(statistics.joinDate)
+							: ''
+					}`}
+				</p>
+
+				<p className="c-mb-0">
+					{`${Liferay.Language.get('last-post-date')}: ${
+						statistics
+							? dateToBriefInternationalHuman(
+									statistics.lastPostDate
+								)
+							: ''
+					}`}
 				</p>
 			</div>
 		</ClayPopover>
 	);
-};
+}

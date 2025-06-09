@@ -1,32 +1,29 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.admin.rest.dto.v1_0;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -34,12 +31,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Javier Gamarra
@@ -59,14 +51,22 @@ public class ObjectRelationship implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(ObjectRelationship.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Map<String, String>> getActions() {
+		if (_actionsSupplier != null) {
+			actions = _actionsSupplier.get();
+
+			_actionsSupplier = null;
+		}
+
 		return actions;
 	}
 
 	public void setActions(Map<String, Map<String, String>> actions) {
 		this.actions = actions;
+
+		_actionsSupplier = null;
 	}
 
 	@JsonIgnore
@@ -74,29 +74,43 @@ public class ObjectRelationship implements Serializable {
 		UnsafeSupplier<Map<String, Map<String, String>>, Exception>
 			actionsUnsafeSupplier) {
 
-		try {
-			actions = actionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_actionsSupplier = () -> {
+			try {
+				return actionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Map<String, Map<String, String>> actions;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Map<String, String>>> _actionsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@JsonGetter("deletionType")
 	@Valid
 	public DeletionType getDeletionType() {
+		if (_deletionTypeSupplier != null) {
+			deletionType = _deletionTypeSupplier.get();
+
+			_deletionTypeSupplier = null;
+		}
+
 		return deletionType;
 	}
 
 	@JsonIgnore
 	public String getDeletionTypeAsString() {
+		DeletionType deletionType = getDeletionType();
+
 		if (deletionType == null) {
 			return null;
 		}
@@ -106,200 +120,804 @@ public class ObjectRelationship implements Serializable {
 
 	public void setDeletionType(DeletionType deletionType) {
 		this.deletionType = deletionType;
+
+		_deletionTypeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setDeletionType(
 		UnsafeSupplier<DeletionType, Exception> deletionTypeUnsafeSupplier) {
 
-		try {
-			deletionType = deletionTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_deletionTypeSupplier = () -> {
+			try {
+				return deletionTypeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected DeletionType deletionType;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<DeletionType> _deletionTypeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getEdge() {
+		if (_edgeSupplier != null) {
+			edge = _edgeSupplier.get();
+
+			_edgeSupplier = null;
+		}
+
+		return edge;
+	}
+
+	public void setEdge(Boolean edge) {
+		this.edge = edge;
+
+		_edgeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setEdge(UnsafeSupplier<Boolean, Exception> edgeUnsafeSupplier) {
+		_edgeSupplier = () -> {
+			try {
+				return edgeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean edge;
+
+	@JsonIgnore
+	private Supplier<Boolean> _edgeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCodeSupplier != null) {
+			externalReferenceCode = _externalReferenceCodeSupplier.get();
+
+			_externalReferenceCodeSupplier = null;
+		}
+
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+
+		_externalReferenceCodeSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		_externalReferenceCodeSupplier = () -> {
+			try {
+				return externalReferenceCodeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String externalReferenceCode;
+
+	@JsonIgnore
+	private Supplier<String> _externalReferenceCodeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getId() {
+		if (_idSupplier != null) {
+			id = _idSupplier.get();
+
+			_idSupplier = null;
+		}
+
 		return id;
 	}
 
 	public void setId(Long id) {
 		this.id = id;
+
+		_idSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setId(UnsafeSupplier<Long, Exception> idUnsafeSupplier) {
-		try {
-			id = idUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_idSupplier = () -> {
+			try {
+				return idUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
 	protected Long id;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _idSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, String> getLabel() {
+		if (_labelSupplier != null) {
+			label = _labelSupplier.get();
+
+			_labelSupplier = null;
+		}
+
 		return label;
 	}
 
 	public void setLabel(Map<String, String> label) {
 		this.label = label;
+
+		_labelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel(
 		UnsafeSupplier<Map<String, String>, Exception> labelUnsafeSupplier) {
 
-		try {
-			label = labelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_labelSupplier = () -> {
+			try {
+				return labelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, String> label;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, String>> _labelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getObjectDefinitionExternalReferenceCode1() {
+		if (_objectDefinitionExternalReferenceCode1Supplier != null) {
+			objectDefinitionExternalReferenceCode1 =
+				_objectDefinitionExternalReferenceCode1Supplier.get();
+
+			_objectDefinitionExternalReferenceCode1Supplier = null;
+		}
+
+		return objectDefinitionExternalReferenceCode1;
+	}
+
+	public void setObjectDefinitionExternalReferenceCode1(
+		String objectDefinitionExternalReferenceCode1) {
+
+		this.objectDefinitionExternalReferenceCode1 =
+			objectDefinitionExternalReferenceCode1;
+
+		_objectDefinitionExternalReferenceCode1Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionExternalReferenceCode1(
+		UnsafeSupplier<String, Exception>
+			objectDefinitionExternalReferenceCode1UnsafeSupplier) {
+
+		_objectDefinitionExternalReferenceCode1Supplier = () -> {
+			try {
+				return objectDefinitionExternalReferenceCode1UnsafeSupplier.
+					get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String objectDefinitionExternalReferenceCode1;
+
+	@JsonIgnore
+	private Supplier<String> _objectDefinitionExternalReferenceCode1Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getObjectDefinitionExternalReferenceCode2() {
+		if (_objectDefinitionExternalReferenceCode2Supplier != null) {
+			objectDefinitionExternalReferenceCode2 =
+				_objectDefinitionExternalReferenceCode2Supplier.get();
+
+			_objectDefinitionExternalReferenceCode2Supplier = null;
+		}
+
+		return objectDefinitionExternalReferenceCode2;
+	}
+
+	public void setObjectDefinitionExternalReferenceCode2(
+		String objectDefinitionExternalReferenceCode2) {
+
+		this.objectDefinitionExternalReferenceCode2 =
+			objectDefinitionExternalReferenceCode2;
+
+		_objectDefinitionExternalReferenceCode2Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionExternalReferenceCode2(
+		UnsafeSupplier<String, Exception>
+			objectDefinitionExternalReferenceCode2UnsafeSupplier) {
+
+		_objectDefinitionExternalReferenceCode2Supplier = () -> {
+			try {
+				return objectDefinitionExternalReferenceCode2UnsafeSupplier.
+					get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String objectDefinitionExternalReferenceCode2;
+
+	@JsonIgnore
+	private Supplier<String> _objectDefinitionExternalReferenceCode2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getObjectDefinitionId1() {
+		if (_objectDefinitionId1Supplier != null) {
+			objectDefinitionId1 = _objectDefinitionId1Supplier.get();
+
+			_objectDefinitionId1Supplier = null;
+		}
+
 		return objectDefinitionId1;
 	}
 
 	public void setObjectDefinitionId1(Long objectDefinitionId1) {
 		this.objectDefinitionId1 = objectDefinitionId1;
+
+		_objectDefinitionId1Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setObjectDefinitionId1(
 		UnsafeSupplier<Long, Exception> objectDefinitionId1UnsafeSupplier) {
 
-		try {
-			objectDefinitionId1 = objectDefinitionId1UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectDefinitionId1Supplier = () -> {
+			try {
+				return objectDefinitionId1UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long objectDefinitionId1;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _objectDefinitionId1Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getObjectDefinitionId2() {
+		if (_objectDefinitionId2Supplier != null) {
+			objectDefinitionId2 = _objectDefinitionId2Supplier.get();
+
+			_objectDefinitionId2Supplier = null;
+		}
+
 		return objectDefinitionId2;
 	}
 
 	public void setObjectDefinitionId2(Long objectDefinitionId2) {
 		this.objectDefinitionId2 = objectDefinitionId2;
+
+		_objectDefinitionId2Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setObjectDefinitionId2(
 		UnsafeSupplier<Long, Exception> objectDefinitionId2UnsafeSupplier) {
 
-		try {
-			objectDefinitionId2 = objectDefinitionId2UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectDefinitionId2Supplier = () -> {
+			try {
+				return objectDefinitionId2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long objectDefinitionId2;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _objectDefinitionId2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getObjectDefinitionModifiable2() {
+		if (_objectDefinitionModifiable2Supplier != null) {
+			objectDefinitionModifiable2 =
+				_objectDefinitionModifiable2Supplier.get();
+
+			_objectDefinitionModifiable2Supplier = null;
+		}
+
+		return objectDefinitionModifiable2;
+	}
+
+	public void setObjectDefinitionModifiable2(
+		Boolean objectDefinitionModifiable2) {
+
+		this.objectDefinitionModifiable2 = objectDefinitionModifiable2;
+
+		_objectDefinitionModifiable2Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionModifiable2(
+		UnsafeSupplier<Boolean, Exception>
+			objectDefinitionModifiable2UnsafeSupplier) {
+
+		_objectDefinitionModifiable2Supplier = () -> {
+			try {
+				return objectDefinitionModifiable2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean objectDefinitionModifiable2;
+
+	@JsonIgnore
+	private Supplier<Boolean> _objectDefinitionModifiable2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getObjectDefinitionName2() {
+		if (_objectDefinitionName2Supplier != null) {
+			objectDefinitionName2 = _objectDefinitionName2Supplier.get();
+
+			_objectDefinitionName2Supplier = null;
+		}
+
 		return objectDefinitionName2;
 	}
 
 	public void setObjectDefinitionName2(String objectDefinitionName2) {
 		this.objectDefinitionName2 = objectDefinitionName2;
+
+		_objectDefinitionName2Supplier = null;
 	}
 
 	@JsonIgnore
 	public void setObjectDefinitionName2(
 		UnsafeSupplier<String, Exception> objectDefinitionName2UnsafeSupplier) {
 
-		try {
-			objectDefinitionName2 = objectDefinitionName2UnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_objectDefinitionName2Supplier = () -> {
+			try {
+				return objectDefinitionName2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String objectDefinitionName2;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _objectDefinitionName2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getObjectDefinitionScope2() {
+		if (_objectDefinitionScope2Supplier != null) {
+			objectDefinitionScope2 = _objectDefinitionScope2Supplier.get();
+
+			_objectDefinitionScope2Supplier = null;
+		}
+
+		return objectDefinitionScope2;
+	}
+
+	public void setObjectDefinitionScope2(String objectDefinitionScope2) {
+		this.objectDefinitionScope2 = objectDefinitionScope2;
+
+		_objectDefinitionScope2Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionScope2(
+		UnsafeSupplier<String, Exception>
+			objectDefinitionScope2UnsafeSupplier) {
+
+		_objectDefinitionScope2Supplier = () -> {
+			try {
+				return objectDefinitionScope2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String objectDefinitionScope2;
+
+	@JsonIgnore
+	private Supplier<String> _objectDefinitionScope2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getObjectDefinitionSystem2() {
+		if (_objectDefinitionSystem2Supplier != null) {
+			objectDefinitionSystem2 = _objectDefinitionSystem2Supplier.get();
+
+			_objectDefinitionSystem2Supplier = null;
+		}
+
+		return objectDefinitionSystem2;
+	}
+
+	public void setObjectDefinitionSystem2(Boolean objectDefinitionSystem2) {
+		this.objectDefinitionSystem2 = objectDefinitionSystem2;
+
+		_objectDefinitionSystem2Supplier = null;
+	}
+
+	@JsonIgnore
+	public void setObjectDefinitionSystem2(
+		UnsafeSupplier<Boolean, Exception>
+			objectDefinitionSystem2UnsafeSupplier) {
+
+		_objectDefinitionSystem2Supplier = () -> {
+			try {
+				return objectDefinitionSystem2UnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean objectDefinitionSystem2;
+
+	@JsonIgnore
+	private Supplier<Boolean> _objectDefinitionSystem2Supplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public ObjectField getObjectField() {
+		if (_objectFieldSupplier != null) {
+			objectField = _objectFieldSupplier.get();
+
+			_objectFieldSupplier = null;
+		}
+
+		return objectField;
+	}
+
+	public void setObjectField(ObjectField objectField) {
+		this.objectField = objectField;
+
+		_objectFieldSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setObjectField(
+		UnsafeSupplier<ObjectField, Exception> objectFieldUnsafeSupplier) {
+
+		_objectFieldSupplier = () -> {
+			try {
+				return objectFieldUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected ObjectField objectField;
+
+	@JsonIgnore
+	private Supplier<ObjectField> _objectFieldSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Long getParameterObjectFieldId() {
+		if (_parameterObjectFieldIdSupplier != null) {
+			parameterObjectFieldId = _parameterObjectFieldIdSupplier.get();
+
+			_parameterObjectFieldIdSupplier = null;
+		}
+
+		return parameterObjectFieldId;
+	}
+
+	public void setParameterObjectFieldId(Long parameterObjectFieldId) {
+		this.parameterObjectFieldId = parameterObjectFieldId;
+
+		_parameterObjectFieldIdSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setParameterObjectFieldId(
+		UnsafeSupplier<Long, Exception> parameterObjectFieldIdUnsafeSupplier) {
+
+		_parameterObjectFieldIdSupplier = () -> {
+			try {
+				return parameterObjectFieldIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Long parameterObjectFieldId;
+
+	@JsonIgnore
+	private Supplier<Long> _parameterObjectFieldIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getParameterObjectFieldName() {
+		if (_parameterObjectFieldNameSupplier != null) {
+			parameterObjectFieldName = _parameterObjectFieldNameSupplier.get();
+
+			_parameterObjectFieldNameSupplier = null;
+		}
+
+		return parameterObjectFieldName;
+	}
+
+	public void setParameterObjectFieldName(String parameterObjectFieldName) {
+		this.parameterObjectFieldName = parameterObjectFieldName;
+
+		_parameterObjectFieldNameSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setParameterObjectFieldName(
+		UnsafeSupplier<String, Exception>
+			parameterObjectFieldNameUnsafeSupplier) {
+
+		_parameterObjectFieldNameSupplier = () -> {
+			try {
+				return parameterObjectFieldNameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String parameterObjectFieldName;
+
+	@JsonIgnore
+	private Supplier<String> _parameterObjectFieldNameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getReverse() {
+		if (_reverseSupplier != null) {
+			reverse = _reverseSupplier.get();
+
+			_reverseSupplier = null;
+		}
+
+		return reverse;
+	}
+
+	public void setReverse(Boolean reverse) {
+		this.reverse = reverse;
+
+		_reverseSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setReverse(
+		UnsafeSupplier<Boolean, Exception> reverseUnsafeSupplier) {
+
+		_reverseSupplier = () -> {
+			try {
+				return reverseUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_ONLY)
+	protected Boolean reverse;
+
+	@JsonIgnore
+	private Supplier<Boolean> _reverseSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public Boolean getSystem() {
+		if (_systemSupplier != null) {
+			system = _systemSupplier.get();
+
+			_systemSupplier = null;
+		}
+
+		return system;
+	}
+
+	public void setSystem(Boolean system) {
+		this.system = system;
+
+		_systemSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setSystem(
+		UnsafeSupplier<Boolean, Exception> systemUnsafeSupplier) {
+
+		_systemSupplier = () -> {
+			try {
+				return systemUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected Boolean system;
+
+	@JsonIgnore
+	private Supplier<Boolean> _systemSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@JsonGetter("type")
 	@Valid
 	public Type getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
 		return type;
 	}
 
 	@JsonIgnore
 	public String getTypeAsString() {
+		Type type = getType();
+
 		if (type == null) {
 			return null;
 		}
@@ -309,24 +927,31 @@ public class ObjectRelationship implements Serializable {
 
 	public void setType(Type type) {
 		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setType(UnsafeSupplier<Type, Exception> typeUnsafeSupplier) {
-		try {
-			type = typeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Type type;
+
+	@JsonIgnore
+	private Supplier<Type> _typeSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -355,6 +980,8 @@ public class ObjectRelationship implements Serializable {
 
 		sb.append("{");
 
+		Map<String, Map<String, String>> actions = getActions();
+
 		if (actions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -364,6 +991,8 @@ public class ObjectRelationship implements Serializable {
 
 			sb.append(_toJSON(actions));
 		}
+
+		DeletionType deletionType = getDeletionType();
 
 		if (deletionType != null) {
 			if (sb.length() > 1) {
@@ -379,6 +1008,36 @@ public class ObjectRelationship implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean edge = getEdge();
+
+		if (edge != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"edge\": ");
+
+			sb.append(edge);
+		}
+
+		String externalReferenceCode = getExternalReferenceCode();
+
+		if (externalReferenceCode != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(externalReferenceCode));
+
+			sb.append("\"");
+		}
+
+		Long id = getId();
+
 		if (id != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -389,6 +1048,8 @@ public class ObjectRelationship implements Serializable {
 			sb.append(id);
 		}
 
+		Map<String, String> label = getLabel();
+
 		if (label != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -398,6 +1059,8 @@ public class ObjectRelationship implements Serializable {
 
 			sb.append(_toJSON(label));
 		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -413,6 +1076,42 @@ public class ObjectRelationship implements Serializable {
 			sb.append("\"");
 		}
 
+		String objectDefinitionExternalReferenceCode1 =
+			getObjectDefinitionExternalReferenceCode1();
+
+		if (objectDefinitionExternalReferenceCode1 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionExternalReferenceCode1\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectDefinitionExternalReferenceCode1));
+
+			sb.append("\"");
+		}
+
+		String objectDefinitionExternalReferenceCode2 =
+			getObjectDefinitionExternalReferenceCode2();
+
+		if (objectDefinitionExternalReferenceCode2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionExternalReferenceCode2\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectDefinitionExternalReferenceCode2));
+
+			sb.append("\"");
+		}
+
+		Long objectDefinitionId1 = getObjectDefinitionId1();
+
 		if (objectDefinitionId1 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -423,6 +1122,8 @@ public class ObjectRelationship implements Serializable {
 			sb.append(objectDefinitionId1);
 		}
 
+		Long objectDefinitionId2 = getObjectDefinitionId2();
+
 		if (objectDefinitionId2 != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -432,6 +1133,20 @@ public class ObjectRelationship implements Serializable {
 
 			sb.append(objectDefinitionId2);
 		}
+
+		Boolean objectDefinitionModifiable2 = getObjectDefinitionModifiable2();
+
+		if (objectDefinitionModifiable2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionModifiable2\": ");
+
+			sb.append(objectDefinitionModifiable2);
+		}
+
+		String objectDefinitionName2 = getObjectDefinitionName2();
 
 		if (objectDefinitionName2 != null) {
 			if (sb.length() > 1) {
@@ -446,6 +1161,100 @@ public class ObjectRelationship implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String objectDefinitionScope2 = getObjectDefinitionScope2();
+
+		if (objectDefinitionScope2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionScope2\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(objectDefinitionScope2));
+
+			sb.append("\"");
+		}
+
+		Boolean objectDefinitionSystem2 = getObjectDefinitionSystem2();
+
+		if (objectDefinitionSystem2 != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectDefinitionSystem2\": ");
+
+			sb.append(objectDefinitionSystem2);
+		}
+
+		ObjectField objectField = getObjectField();
+
+		if (objectField != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"objectField\": ");
+
+			sb.append(String.valueOf(objectField));
+		}
+
+		Long parameterObjectFieldId = getParameterObjectFieldId();
+
+		if (parameterObjectFieldId != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"parameterObjectFieldId\": ");
+
+			sb.append(parameterObjectFieldId);
+		}
+
+		String parameterObjectFieldName = getParameterObjectFieldName();
+
+		if (parameterObjectFieldName != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"parameterObjectFieldName\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(parameterObjectFieldName));
+
+			sb.append("\"");
+		}
+
+		Boolean reverse = getReverse();
+
+		if (reverse != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"reverse\": ");
+
+			sb.append(reverse);
+		}
+
+		Boolean system = getSystem();
+
+		if (system != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"system\": ");
+
+			sb.append(system);
+		}
+
+		Type type = getType();
 
 		if (type != null) {
 			if (sb.length() > 1) {
@@ -466,8 +1275,8 @@ public class ObjectRelationship implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.object.admin.rest.dto.v1_0.ObjectRelationship",
 		name = "x-class-name"
 	)
@@ -514,7 +1323,8 @@ public class ObjectRelationship implements Serializable {
 	@GraphQLName("Type")
 	public static enum Type {
 
-		ONE_TO_MANY("oneToMany"), MANY_TO_MANY("manyToMany");
+		ONE_TO_MANY("oneToMany"), ONE_TO_ONE("oneToOne"),
+		MANY_TO_MANY("manyToMany");
 
 		@JsonCreator
 		public static Type create(String value) {
@@ -550,9 +1360,9 @@ public class ObjectRelationship implements Serializable {
 	}
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -578,7 +1388,7 @@ public class ObjectRelationship implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -589,7 +1399,10 @@ public class ObjectRelationship implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -610,7 +1423,7 @@ public class ObjectRelationship implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -626,5 +1439,12 @@ public class ObjectRelationship implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

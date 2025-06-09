@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.util.test;
@@ -20,16 +11,20 @@ import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.DBAssertionUtil;
 import com.liferay.portal.kernel.test.util.RoleTestUtil;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+import com.liferay.portal.kernel.upgrade.UpgradeStep;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.util.BaseUpgradeResourceBlock;
 
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Types;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -56,105 +51,118 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 
 		_siteRole = RoleTestUtil.addRole(RoleConstants.TYPE_SITE);
 
-		connection = DataAccess.getConnection();
+		_connection = DataAccess.getConnection();
 
-		runSQL(
-			StringBundler.concat(
-				"create table ResourceBlock (mvccVersion LONG default 0 not ",
-				"null, resourceBlockId LONG not null primary key, companyId ",
-				"LONG, groupId LONG, name VARCHAR(75) null, permissionsHash ",
-				"VARCHAR(75) null, referenceCount LONG);"));
+		_companyLocalService.forEachCompany(
+			company -> {
+				runSQL(
+					StringBundler.concat(
+						"create table ResourceBlock (mvccVersion LONG default ",
+						"0 not null, resourceBlockId LONG not null primary ",
+						"key, companyId LONG, groupId LONG, name VARCHAR(75)  ",
+						"null, permissionsHash VARCHAR(75) null, ",
+						"referenceCount LONG);"));
 
-		runSQL(
-			StringBundler.concat(
-				"create table ResourceBlockPermission (mvccVersion LONG ",
-				"default 0 not null, resourceBlockPermissionId LONG not null ",
-				"primary key, companyId LONG, resourceBlockId LONG, roleId ",
-				"LONG, actionIds LONG);"));
+				runSQL(
+					StringBundler.concat(
+						"create table ResourceBlockPermission (mvccVersion ",
+						"LONG default 0 not null, resourceBlockPermissionId ",
+						"LONG not null primary key, companyId LONG, ",
+						"resourceBlockId LONG, roleId LONG, actionIds LONG);"));
 
-		runSQL(
-			"create table UpgradeResourceBlockTest(id_ LONG not null primary " +
-				"key, userId LONG, resourceBlockId LONG)");
+				runSQL(
+					"create table UpgradeResourceBlockTest(id_ LONG not null " +
+						"primary key, userId LONG, resourceBlockId LONG)");
 
-		runSQL(
-			StringBundler.concat(
-				"create table ResourceTypePermission (mvccVersion LONG ",
-				"default 0 not null, resourceTypePermissionId LONG not null ",
-				"primary key, companyId LONG, groupId LONG, name VARCHAR(75) ",
-				"null, roleId LONG, actionIds LONG);"));
+				runSQL(
+					StringBundler.concat(
+						"create table ResourceTypePermission (mvccVersion ",
+						"LONG default 0 not null, resourceTypePermissionId ",
+						"LONG not null primary key, companyId LONG, groupId ",
+						"LONG, name VARCHAR(75) null, roleId LONG, actionIds ",
+						"LONG);"));
 
-		long resourceBlockId = -1;
+				long resourceBlockId = -1;
 
-		StringBundler sb = new StringBundler(11);
+				StringBundler sb = new StringBundler(11);
 
-		sb.append("insert into UpgradeResourceBlockTest(id_, userId, ");
-		sb.append("resourceBlockId) values (");
-		sb.append(_RESOURCE_PRIMARY_KEY);
-		sb.append(", ");
-		sb.append(_USER_ID);
-		sb.append(", ");
-		sb.append(resourceBlockId);
-		sb.append(")");
+				sb.append("insert into UpgradeResourceBlockTest(id_, userId, ");
+				sb.append("resourceBlockId) values (");
+				sb.append(_RESOURCE_PRIMARY_KEY);
+				sb.append(", ");
+				sb.append(_USER_ID);
+				sb.append(", ");
+				sb.append(resourceBlockId);
+				sb.append(")");
 
-		runSQL(sb.toString());
+				runSQL(sb.toString());
 
-		_insertResourceTypePermission(
-			-2, 0, _regularRole.getRoleId(), _COMPANY_SCOPE_ACTION_IDS);
+				_insertResourceTypePermission(
+					-2, 0, _regularRole.getRoleId(), _COMPANY_SCOPE_ACTION_IDS);
 
-		_insertResourceTypePermission(
-			-3, _GROUP_ID, _siteRole.getRoleId(), _GROUP_SCOPE_ACTION_IDS);
+				_insertResourceTypePermission(
+					-3, _GROUP_ID, _siteRole.getRoleId(),
+					_GROUP_SCOPE_ACTION_IDS);
 
-		_insertResourceTypePermission(
-			-4, 0, _siteRole.getRoleId(), _GROUP_TEMPLATE_SCOPE_ACTION_IDS);
+				_insertResourceTypePermission(
+					-4, 0, _siteRole.getRoleId(),
+					_GROUP_TEMPLATE_SCOPE_ACTION_IDS);
 
-		sb.setIndex(0);
+				sb.setIndex(0);
 
-		sb.append("insert into ResourceBlock(mvccVersion, resourceBlockId, ");
-		sb.append("companyId, groupId, name, permissionsHash, referenceCount");
-		sb.append(") values (1, ");
-		sb.append(resourceBlockId);
-		sb.append(", ");
-		sb.append(_COMPANY_ID);
-		sb.append(", ");
-		sb.append(_GROUP_ID);
-		sb.append(", '");
-		sb.append(UpgradeResourceBlockTest.class.getName());
-		sb.append("', 'hash', 1)");
+				sb.append(
+					"insert into ResourceBlock(mvccVersion, resourceBlockId, ");
+				sb.append("companyId, groupId, name, ");
+				sb.append("permissionsHash, referenceCount");
+				sb.append(") values (1, ");
+				sb.append(resourceBlockId);
+				sb.append(", ");
+				sb.append(_COMPANY_ID);
+				sb.append(", ");
+				sb.append(_GROUP_ID);
+				sb.append(", '");
+				sb.append(UpgradeResourceBlockTest.class.getName());
+				sb.append("', 'hash', 1)");
 
-		runSQL(sb.toString());
+				runSQL(sb.toString());
 
-		sb.setIndex(0);
+				sb.setIndex(0);
 
-		sb.append("insert into ResourceBlockPermission(mvccVersion, ");
-		sb.append("resourceBlockPermissionId, companyId, resourceBlockId, ");
-		sb.append("roleId, actionIds) values (1, -5, ");
-		sb.append(_COMPANY_ID);
-		sb.append(", ");
-		sb.append(resourceBlockId);
-		sb.append(", ");
-		sb.append(_regularRole.getRoleId());
-		sb.append(", ");
-		sb.append(_INDIVIDUAL_SCOPE_ACTION_IDS);
-		sb.append(")");
+				sb.append("insert into ResourceBlockPermission(mvccVersion, ");
+				sb.append(
+					"resourceBlockPermissionId, companyId, resourceBlockId, ");
+				sb.append("roleId, actionIds) values (1, -5, ");
+				sb.append(_COMPANY_ID);
+				sb.append(", ");
+				sb.append(resourceBlockId);
+				sb.append(", ");
+				sb.append(_regularRole.getRoleId());
+				sb.append(", ");
+				sb.append(_INDIVIDUAL_SCOPE_ACTION_IDS);
+				sb.append(")");
 
-		runSQL(sb.toString());
+				runSQL(sb.toString());
+			});
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		runSQL("drop table ResourceBlock");
+		_companyLocalService.forEachCompany(
+			company -> {
+				dropTable("ResourceBlock");
 
-		runSQL("drop table ResourceBlockPermission");
+				dropTable("ResourceBlockPermission");
 
-		runSQL("drop table ResourceTypePermission");
+				dropTable("ResourceTypePermission");
 
-		runSQL(
-			"delete from ResourcePermission where name = '" +
-				UpgradeResourceBlockTest.class.getName() + "'");
+				runSQL(
+					"delete from ResourcePermission where name = '" +
+						UpgradeResourceBlockTest.class.getName() + "'");
 
-		runSQL(TableClass.TABLE_SQL_DROP);
+				dropTable(getTableName());
 
-		connection.close();
+				_connection.close();
+			});
 	}
 
 	@Test
@@ -165,25 +173,6 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 	@Test
 	public void testUpgradeWithUserId() throws Exception {
 		_testUpgrade(true);
-	}
-
-	public static class TableClass {
-
-		public static final Object[][] TABLE_COLUMNS = {
-			{"id_", Types.BIGINT}, {"userId", Types.BIGINT}
-		};
-
-		public static final String TABLE_NAME = "UpgradeResourceBlockTest";
-
-		public static final String[] TABLE_SQL_ADD_INDEXES = {};
-
-		public static final String TABLE_SQL_CREATE =
-			"create table UpgradeResourceBlockTest(id_ LONG not null primary " +
-				"key, userId LONG, resourceBlockId LONG)";
-
-		public static final String TABLE_SQL_DROP =
-			"drop table UpgradeResourceBlockTest";
-
 	}
 
 	@Override
@@ -197,8 +186,8 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 	}
 
 	@Override
-	protected Class<?> getTableClass() {
-		return TableClass.class;
+	protected String getTableName() {
+		return "UpgradeResourceBlockTest";
 	}
 
 	@Override
@@ -230,7 +219,7 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 	private void _assertRowsRemoved(String tableName, String primaryKeyName)
 		throws Exception {
 
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
+		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				StringBundler.concat(
 					"select * from ", tableName, " where ", primaryKeyName,
 					" < 0"));
@@ -259,11 +248,15 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 		_hasUserId = hasUserId;
 
 		DBAssertionUtil.assertColumns(
-			TableClass.TABLE_NAME, "id_", "userId", "resourceBlockId");
+			getTableName(), "id_", "userId", "resourceBlockId");
 
-		doUpgrade();
+		for (UpgradeStep upgradeStep : getUpgradeSteps()) {
+			UpgradeProcess upgradeProcess = (UpgradeProcess)upgradeStep;
 
-		try (PreparedStatement preparedStatement = connection.prepareStatement(
+			upgradeProcess.upgrade();
+		}
+
+		try (PreparedStatement preparedStatement = _connection.prepareStatement(
 				"select * from ResourcePermission where name = '" +
 					UpgradeResourceBlockTest.class.getName() +
 						"' order by scope");
@@ -296,7 +289,7 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 			Assert.assertFalse(resultSet.next());
 		}
 
-		DBAssertionUtil.assertColumns(TableClass.TABLE_NAME, "id_", "userId");
+		DBAssertionUtil.assertColumns(getTableName(), "id_", "userId");
 
 		_assertRowsRemoved("ResourceBlock", "resourceBlockId");
 		_assertRowsRemoved(
@@ -320,6 +313,11 @@ public class UpgradeResourceBlockTest extends BaseUpgradeResourceBlock {
 	private static final long _RESOURCE_PRIMARY_KEY = -8;
 
 	private static final long _USER_ID = -9;
+
+	@Inject
+	private static CompanyLocalService _companyLocalService;
+
+	private static Connection _connection;
 
 	private boolean _hasUserId;
 

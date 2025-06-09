@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.configuration.toolbar.contributor.locator.internal;
@@ -25,9 +16,9 @@ import com.liferay.portal.kernel.portlet.toolbar.contributor.locator.PortletTool
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.List;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -46,11 +37,11 @@ public abstract class BasePortletToolbarContributorLocator
 			portletRequest, getParameterName(), "-");
 
 		List<PortletToolbarContributor> portletToolbarContributors =
-			_serviceTrackerMap.getService(getKey(portletId, value));
+			_serviceTrackerMap.getService(_getKey(portletId, value));
 
 		if (ListUtil.isEmpty(portletToolbarContributors)) {
 			portletToolbarContributors = _serviceTrackerMap.getService(
-				getKey(portletId, StringPool.STAR));
+				_getKey(portletId, StringPool.STAR));
 		}
 
 		return portletToolbarContributors;
@@ -59,7 +50,7 @@ public abstract class BasePortletToolbarContributorLocator
 	protected void activate(BundleContext bundleContext) {
 		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
 			bundleContext, PortletToolbarContributor.class,
-			"(javax.portlet.name=*)",
+			"(jakarta.portlet.name=*)",
 			new ServiceReferenceMapper<String, PortletToolbarContributor>() {
 
 				@Override
@@ -69,13 +60,13 @@ public abstract class BasePortletToolbarContributorLocator
 					Emitter<String> emitter) {
 
 					List<String> portletNames = StringPlus.asList(
-						serviceReference.getProperty("javax.portlet.name"));
+						serviceReference.getProperty("jakarta.portlet.name"));
 					List<String> values = StringPlus.asList(
 						serviceReference.getProperty(getPropertyName()));
 
 					for (String portletName : portletNames) {
 						for (String value : values) {
-							emitter.emit(getKey(portletName, value));
+							emitter.emit(_getKey(portletName, value));
 						}
 					}
 				}
@@ -87,15 +78,15 @@ public abstract class BasePortletToolbarContributorLocator
 		_serviceTrackerMap.close();
 	}
 
-	protected String getKey(String portletId, String value) {
+	protected abstract String getParameterName();
+
+	protected abstract String getPropertyName();
+
+	private String _getKey(String portletId, String value) {
 		return StringBundler.concat(
 			portletId, StringPool.PERIOD, getPropertyName(), StringPool.PERIOD,
 			value);
 	}
-
-	protected abstract String getParameterName();
-
-	protected abstract String getPropertyName();
 
 	private ServiceTrackerMap<String, List<PortletToolbarContributor>>
 		_serviceTrackerMap;

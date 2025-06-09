@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -267,144 +257,138 @@ public class LayoutFriendlyURLModelImpl
 	public Map<String, Function<LayoutFriendlyURL, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<LayoutFriendlyURL, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, LayoutFriendlyURL>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			LayoutFriendlyURL.class.getClassLoader(), LayoutFriendlyURL.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<LayoutFriendlyURL, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<LayoutFriendlyURL> constructor =
-				(Constructor<LayoutFriendlyURL>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<LayoutFriendlyURL, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<LayoutFriendlyURL, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", LayoutFriendlyURL::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", LayoutFriendlyURL::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", LayoutFriendlyURL::getUuid);
+			attributeGetterFunctions.put(
+				"layoutFriendlyURLId",
+				LayoutFriendlyURL::getLayoutFriendlyURLId);
+			attributeGetterFunctions.put(
+				"groupId", LayoutFriendlyURL::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", LayoutFriendlyURL::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", LayoutFriendlyURL::getUserId);
+			attributeGetterFunctions.put(
+				"userName", LayoutFriendlyURL::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", LayoutFriendlyURL::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", LayoutFriendlyURL::getModifiedDate);
+			attributeGetterFunctions.put("plid", LayoutFriendlyURL::getPlid);
+			attributeGetterFunctions.put(
+				"privateLayout", LayoutFriendlyURL::getPrivateLayout);
+			attributeGetterFunctions.put(
+				"friendlyURL", LayoutFriendlyURL::getFriendlyURL);
+			attributeGetterFunctions.put(
+				"languageId", LayoutFriendlyURL::getLanguageId);
+			attributeGetterFunctions.put(
+				"lastPublishDate", LayoutFriendlyURL::getLastPublishDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<LayoutFriendlyURL, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<LayoutFriendlyURL, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<LayoutFriendlyURL, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<LayoutFriendlyURL, Object>>();
-		Map<String, BiConsumer<LayoutFriendlyURL, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<LayoutFriendlyURL, ?>>();
+		private static final Map<String, BiConsumer<LayoutFriendlyURL, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", LayoutFriendlyURL::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<LayoutFriendlyURL, Long>)
-				LayoutFriendlyURL::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", LayoutFriendlyURL::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<LayoutFriendlyURL, Long>)
-				LayoutFriendlyURL::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", LayoutFriendlyURL::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<LayoutFriendlyURL, String>)LayoutFriendlyURL::setUuid);
-		attributeGetterFunctions.put(
-			"layoutFriendlyURLId", LayoutFriendlyURL::getLayoutFriendlyURLId);
-		attributeSetterBiConsumers.put(
-			"layoutFriendlyURLId",
-			(BiConsumer<LayoutFriendlyURL, Long>)
-				LayoutFriendlyURL::setLayoutFriendlyURLId);
-		attributeGetterFunctions.put("groupId", LayoutFriendlyURL::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<LayoutFriendlyURL, Long>)LayoutFriendlyURL::setGroupId);
-		attributeGetterFunctions.put(
-			"companyId", LayoutFriendlyURL::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<LayoutFriendlyURL, Long>)
-				LayoutFriendlyURL::setCompanyId);
-		attributeGetterFunctions.put("userId", LayoutFriendlyURL::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<LayoutFriendlyURL, Long>)LayoutFriendlyURL::setUserId);
-		attributeGetterFunctions.put(
-			"userName", LayoutFriendlyURL::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<LayoutFriendlyURL, String>)
-				LayoutFriendlyURL::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", LayoutFriendlyURL::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<LayoutFriendlyURL, Date>)
-				LayoutFriendlyURL::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", LayoutFriendlyURL::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<LayoutFriendlyURL, Date>)
-				LayoutFriendlyURL::setModifiedDate);
-		attributeGetterFunctions.put("plid", LayoutFriendlyURL::getPlid);
-		attributeSetterBiConsumers.put(
-			"plid",
-			(BiConsumer<LayoutFriendlyURL, Long>)LayoutFriendlyURL::setPlid);
-		attributeGetterFunctions.put(
-			"privateLayout", LayoutFriendlyURL::getPrivateLayout);
-		attributeSetterBiConsumers.put(
-			"privateLayout",
-			(BiConsumer<LayoutFriendlyURL, Boolean>)
-				LayoutFriendlyURL::setPrivateLayout);
-		attributeGetterFunctions.put(
-			"friendlyURL", LayoutFriendlyURL::getFriendlyURL);
-		attributeSetterBiConsumers.put(
-			"friendlyURL",
-			(BiConsumer<LayoutFriendlyURL, String>)
-				LayoutFriendlyURL::setFriendlyURL);
-		attributeGetterFunctions.put(
-			"languageId", LayoutFriendlyURL::getLanguageId);
-		attributeSetterBiConsumers.put(
-			"languageId",
-			(BiConsumer<LayoutFriendlyURL, String>)
-				LayoutFriendlyURL::setLanguageId);
-		attributeGetterFunctions.put(
-			"lastPublishDate", LayoutFriendlyURL::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<LayoutFriendlyURL, Date>)
-				LayoutFriendlyURL::setLastPublishDate);
+		static {
+			Map<String, BiConsumer<LayoutFriendlyURL, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<LayoutFriendlyURL, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<LayoutFriendlyURL, String>)
+					LayoutFriendlyURL::setUuid);
+			attributeSetterBiConsumers.put(
+				"layoutFriendlyURLId",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setLayoutFriendlyURLId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<LayoutFriendlyURL, String>)
+					LayoutFriendlyURL::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<LayoutFriendlyURL, Date>)
+					LayoutFriendlyURL::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<LayoutFriendlyURL, Date>)
+					LayoutFriendlyURL::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"plid",
+				(BiConsumer<LayoutFriendlyURL, Long>)
+					LayoutFriendlyURL::setPlid);
+			attributeSetterBiConsumers.put(
+				"privateLayout",
+				(BiConsumer<LayoutFriendlyURL, Boolean>)
+					LayoutFriendlyURL::setPrivateLayout);
+			attributeSetterBiConsumers.put(
+				"friendlyURL",
+				(BiConsumer<LayoutFriendlyURL, String>)
+					LayoutFriendlyURL::setFriendlyURL);
+			attributeSetterBiConsumers.put(
+				"languageId",
+				(BiConsumer<LayoutFriendlyURL, String>)
+					LayoutFriendlyURL::setLanguageId);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<LayoutFriendlyURL, Date>)
+					LayoutFriendlyURL::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -1056,41 +1040,12 @@ public class LayoutFriendlyURLModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<LayoutFriendlyURL, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<LayoutFriendlyURL, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<LayoutFriendlyURL, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((LayoutFriendlyURL)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, LayoutFriendlyURL>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					LayoutFriendlyURL.class, ModelWrapper.class);
 
 	}
 
@@ -1115,7 +1070,8 @@ public class LayoutFriendlyURLModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<LayoutFriendlyURL, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

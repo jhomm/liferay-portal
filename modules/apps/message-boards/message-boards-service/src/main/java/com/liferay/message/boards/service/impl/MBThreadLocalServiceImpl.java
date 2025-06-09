@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.impl;
@@ -26,10 +17,12 @@ import com.liferay.message.boards.constants.MBThreadConstants;
 import com.liferay.message.boards.exception.SplitThreadException;
 import com.liferay.message.boards.internal.util.MBMessageUtil;
 import com.liferay.message.boards.model.MBCategory;
+import com.liferay.message.boards.model.MBDiscussion;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.model.MBTreeWalker;
 import com.liferay.message.boards.model.impl.MBTreeWalkerImpl;
+import com.liferay.message.boards.service.MBDiscussionLocalService;
 import com.liferay.message.boards.service.base.MBThreadLocalServiceBaseImpl;
 import com.liferay.message.boards.service.persistence.MBCategoryPersistence;
 import com.liferay.message.boards.service.persistence.MBMessageFinder;
@@ -77,8 +70,9 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalService;
 import com.liferay.social.kernel.model.SocialActivityConstants;
 import com.liferay.subscription.service.SubscriptionLocalService;
-import com.liferay.trash.kernel.exception.RestoreEntryException;
-import com.liferay.trash.kernel.exception.TrashEntryException;
+import com.liferay.trash.TrashHelper;
+import com.liferay.trash.exception.RestoreEntryException;
+import com.liferay.trash.exception.TrashEntryException;
 import com.liferay.trash.model.TrashEntry;
 import com.liferay.trash.model.TrashVersion;
 import com.liferay.trash.service.TrashEntryLocalService;
@@ -193,6 +187,17 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 			PortletFileRepositoryUtil.deletePortletFolder(folderId);
 		}
 
+		// Discussion
+
+		MBDiscussion discussion =
+			_mbDiscussionLocalService.fetchThreadDiscussion(
+				thread.getThreadId());
+
+		if (discussion != null) {
+			_mbDiscussionLocalService.deleteMBDiscussion(
+				discussion.getDiscussionId());
+		}
+
 		// Subscriptions
 
 		_subscriptionLocalService.deleteSubscriptions(
@@ -292,7 +297,9 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 			groupId, categoryId);
 
 		for (MBThread thread : threads) {
-			if (includeTrashedEntries || !thread.isInTrashExplicitly()) {
+			if (includeTrashedEntries ||
+				!_trashHelper.isInTrashExplicitly(thread)) {
+
 				mbThreadLocalService.deleteThread(thread);
 			}
 		}
@@ -657,7 +664,7 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 				RestoreEntryException.INVALID_STATUS);
 		}
 
-		if (thread.isInTrashExplicitly()) {
+		if (_trashHelper.isInTrashExplicitly(thread)) {
 			restoreThreadFromTrash(userId, threadId);
 		}
 		else {
@@ -1008,7 +1015,7 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 
 			thread.setTitle(subject);
 
-			mbThreadLocalService.updateMBThread(thread);
+			thread = mbThreadLocalService.updateMBThread(thread);
 		}
 
 		message.setThreadId(thread.getThreadId());
@@ -1019,7 +1026,7 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 
 		// Attachments
 
-		moveAttachmentsFolders(
+		_moveAttachmentsFolders(
 			message, oldAttachmentsFolderId, oldThread, thread, serviceContext);
 
 		// Indexer
@@ -1030,7 +1037,7 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 
 		// Update children
 
-		moveChildrenMessages(message, category, oldThread.getThreadId());
+		_moveChildrenMessages(message, category, oldThread.getThreadId());
 
 		// Indexer
 
@@ -1134,7 +1141,10 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 		return thread;
 	}
 
-	protected void moveAttachmentsFolders(
+	@Reference
+	protected ExpandoRowLocalService expandoRowLocalService;
+
+	private void _moveAttachmentsFolders(
 			MBMessage message, long oldAttachmentsFolderId, MBThread oldThread,
 			MBThread newThread, ServiceContext serviceContext)
 		throws PortalException {
@@ -1154,13 +1164,13 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 			oldThread.getThreadId(), message.getMessageId());
 
 		for (MBMessage childMessage : childMessages) {
-			moveAttachmentsFolders(
+			_moveAttachmentsFolders(
 				childMessage, childMessage.getAttachmentsFolderId(), oldThread,
 				newThread, serviceContext);
 		}
 	}
 
-	protected void moveChildrenMessages(
+	private void _moveChildrenMessages(
 			MBMessage parentMessage, MBCategory category, long oldThreadId)
 		throws PortalException {
 
@@ -1177,12 +1187,9 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 
 			indexer.reindex(_mbMessagePersistence.update(message));
 
-			moveChildrenMessages(message, category, oldThreadId);
+			_moveChildrenMessages(message, category, oldThreadId);
 		}
 	}
-
-	@Reference
-	protected ExpandoRowLocalService expandoRowLocalService;
 
 	@Reference
 	private AssetEntryLocalService _assetEntryLocalService;
@@ -1198,6 +1205,9 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 
 	@Reference
 	private MBCategoryPersistence _mbCategoryPersistence;
+
+	@Reference
+	private MBDiscussionLocalService _mbDiscussionLocalService;
 
 	@Reference
 	private MBMessageFinder _mbMessageFinder;
@@ -1216,6 +1226,9 @@ public class MBThreadLocalServiceImpl extends MBThreadLocalServiceBaseImpl {
 
 	@Reference
 	private TrashEntryLocalService _trashEntryLocalService;
+
+	@Reference
+	private TrashHelper _trashHelper;
 
 	@Reference
 	private TrashVersionLocalService _trashVersionLocalService;

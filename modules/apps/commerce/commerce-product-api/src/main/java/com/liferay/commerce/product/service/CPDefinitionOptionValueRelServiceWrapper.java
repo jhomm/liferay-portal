@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
+import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 
 /**
@@ -27,6 +19,10 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	implements CPDefinitionOptionValueRelService,
 			   ServiceWrapper<CPDefinitionOptionValueRelService> {
 
+	public CPDefinitionOptionValueRelServiceWrapper() {
+		this(null);
+	}
+
 	public CPDefinitionOptionValueRelServiceWrapper(
 		CPDefinitionOptionValueRelService cpDefinitionOptionValueRelService) {
 
@@ -34,21 +30,34 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			addCPDefinitionOptionValueRel(
-				long cpDefinitionOptionRelId,
-				java.util.Map<java.util.Locale, String> nameMap,
-				double priority, String key,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
+			long cpDefinitionOptionRelId, long cpInstanceId, String key,
+			java.util.Map<java.util.Locale, String> nameMap,
+			boolean preselected, java.math.BigDecimal deltaPrice,
+			double priority, java.math.BigDecimal quantity,
+			String unitOfMeasureKey,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.addCPDefinitionOptionValueRel(
-			cpDefinitionOptionRelId, nameMap, priority, key, serviceContext);
+			cpDefinitionOptionRelId, cpInstanceId, key, nameMap, preselected,
+			deltaPrice, priority, quantity, unitOfMeasureKey, serviceContext);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			deleteCPDefinitionOptionValueRel(long cpDefinitionOptionValueRelId)
+	public CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
+			long cpDefinitionOptionRelId, String key,
+			java.util.Map<java.util.Locale, String> nameMap, double priority,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _cpDefinitionOptionValueRelService.addCPDefinitionOptionValueRel(
+			cpDefinitionOptionRelId, key, nameMap, priority, serviceContext);
+	}
+
+	@Override
+	public CPDefinitionOptionValueRel deleteCPDefinitionOptionValueRel(
+			long cpDefinitionOptionValueRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
@@ -56,8 +65,8 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			fetchCPDefinitionOptionValueRel(long cpDefinitionOptionValueRelId)
+	public CPDefinitionOptionValueRel fetchCPDefinitionOptionValueRel(
+			long cpDefinitionOptionValueRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
@@ -65,9 +74,8 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			fetchCPDefinitionOptionValueRel(
-				long cpDefinitionOptionRelId, String key)
+	public CPDefinitionOptionValueRel fetchCPDefinitionOptionValueRel(
+			long cpDefinitionOptionRelId, String key)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
@@ -75,8 +83,8 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			getCPDefinitionOptionValueRel(long cpDefinitionOptionValueRelId)
+	public CPDefinitionOptionValueRel getCPDefinitionOptionValueRel(
+			long cpDefinitionOptionValueRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.getCPDefinitionOptionValueRel(
@@ -84,25 +92,22 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.product.model.CPDefinitionOptionValueRel>
-				getCPDefinitionOptionValueRels(
-					long cpDefinitionOptionRelId, int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CPDefinitionOptionValueRel>
+			getCPDefinitionOptionValueRels(
+				long cpDefinitionOptionRelId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
 			getCPDefinitionOptionValueRels(cpDefinitionOptionRelId, start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.product.model.CPDefinitionOptionValueRel>
-				getCPDefinitionOptionValueRels(
-					long cpDefinitionOptionRelId, int start, int end,
-					com.liferay.portal.kernel.util.OrderByComparator
-						<com.liferay.commerce.product.model.
-							CPDefinitionOptionValueRel> orderByComparator)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CPDefinitionOptionValueRel>
+			getCPDefinitionOptionValueRels(
+				long cpDefinitionOptionRelId, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<CPDefinitionOptionValueRel> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
 			getCPDefinitionOptionValueRels(
@@ -110,11 +115,10 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.product.model.CPDefinitionOptionValueRel>
-				getCPDefinitionOptionValueRels(
-					long groupId, String key, int start, int end)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CPDefinitionOptionValueRel>
+			getCPDefinitionOptionValueRels(
+				long groupId, String key, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
 			getCPDefinitionOptionValueRels(groupId, key, start, end);
@@ -139,9 +143,8 @@ public class CPDefinitionOptionValueRelServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			resetCPInstanceCPDefinitionOptionValueRel(
-				long cpDefinitionOptionValueRelId)
+	public CPDefinitionOptionValueRel resetCPInstanceCPDefinitionOptionValueRel(
+			long cpDefinitionOptionValueRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
@@ -149,43 +152,12 @@ public class CPDefinitionOptionValueRelServiceWrapper
 				cpDefinitionOptionValueRelId);
 	}
 
-	/**
-	 * @param companyId
-	 * @param groupId
-	 * @param cpDefinitionOptionRelId
-	 * @param keywords
-	 * @param start
-	 * @param end
-	 * @param sort
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 #searchCPDefinitionOptionValueRels(long, long, long, String,
-	 int, int, Sort[])}
-	 */
-	@Deprecated
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<com.liferay.commerce.product.model.CPDefinitionOptionValueRel>
-				searchCPDefinitionOptionValueRels(
-					long companyId, long groupId, long cpDefinitionOptionRelId,
-					String keywords, int start, int end,
-					com.liferay.portal.kernel.search.Sort sort)
-			throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpDefinitionOptionValueRelService.
-			searchCPDefinitionOptionValueRels(
-				companyId, groupId, cpDefinitionOptionRelId, keywords, start,
-				end, sort);
-	}
-
-	@Override
-	public com.liferay.portal.kernel.search.BaseModelSearchResult
-		<com.liferay.commerce.product.model.CPDefinitionOptionValueRel>
-				searchCPDefinitionOptionValueRels(
-					long companyId, long groupId, long cpDefinitionOptionRelId,
-					String keywords, int start, int end,
-					com.liferay.portal.kernel.search.Sort[] sorts)
+		<CPDefinitionOptionValueRel> searchCPDefinitionOptionValueRels(
+				long companyId, long groupId, long cpDefinitionOptionRelId,
+				String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort[] sorts)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
@@ -205,84 +177,24 @@ public class CPDefinitionOptionValueRelServiceWrapper
 				companyId, groupId, cpDefinitionOptionRelId, keywords);
 	}
 
-	/**
-	 * @param cpDefinitionOptionValueRelId
-	 * @param nameMap
-	 * @param priority
-	 * @param key
-	 * @param cpInstanceId
-	 * @param quantity
-	 * @param price
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 #updateCPDefinitionOptionValueRel(long, Map, double, String,
-	 long, int, boolean, BigDecimal, ServiceContext)}
-	 */
-	@Deprecated
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			updateCPDefinitionOptionValueRel(
-				long cpDefinitionOptionValueRelId,
-				java.util.Map<java.util.Locale, String> nameMap,
-				double priority, String key, long cpInstanceId, int quantity,
-				java.math.BigDecimal price,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
+			long cpDefinitionOptionValueRelId, long cpInstanceId, String key,
+			java.util.Map<java.util.Locale, String> nameMap,
+			boolean preselected, java.math.BigDecimal price, double priority,
+			java.math.BigDecimal quantity, String unitOfMeasureKey,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cpDefinitionOptionValueRelService.
 			updateCPDefinitionOptionValueRel(
-				cpDefinitionOptionValueRelId, nameMap, priority, key,
-				cpInstanceId, quantity, price, serviceContext);
-	}
-
-	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			updateCPDefinitionOptionValueRel(
-				long cpDefinitionOptionValueRelId,
-				java.util.Map<java.util.Locale, String> nameMap,
-				double priority, String key, long cpInstanceId, int quantity,
-				boolean preselected, java.math.BigDecimal price,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpDefinitionOptionValueRelService.
-			updateCPDefinitionOptionValueRel(
-				cpDefinitionOptionValueRelId, nameMap, priority, key,
-				cpInstanceId, quantity, preselected, price, serviceContext);
-	}
-
-	/**
-	 * @param cpDefinitionOptionValueRelId
-	 * @param nameMap
-	 * @param priority
-	 * @param key
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 #updateCPDefinitionOptionValueRel(long, Map, double, String,
-	 long, int, boolean, BigDecimal, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
-			updateCPDefinitionOptionValueRel(
-				long cpDefinitionOptionValueRelId,
-				java.util.Map<java.util.Locale, String> nameMap,
-				double priority, String key,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _cpDefinitionOptionValueRelService.
-			updateCPDefinitionOptionValueRel(
-				cpDefinitionOptionValueRelId, nameMap, priority, key,
+				cpDefinitionOptionValueRelId, cpInstanceId, key, nameMap,
+				preselected, price, priority, quantity, unitOfMeasureKey,
 				serviceContext);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CPDefinitionOptionValueRel
+	public CPDefinitionOptionValueRel
 			updateCPDefinitionOptionValueRelPreselected(
 				long cpDefinitionOptionValueRelId, boolean preselected)
 		throws com.liferay.portal.kernel.exception.PortalException {

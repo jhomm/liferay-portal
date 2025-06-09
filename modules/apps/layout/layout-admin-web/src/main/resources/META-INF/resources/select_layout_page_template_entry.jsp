@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,10 +16,11 @@ if (Validator.isNull(backURL)) {
 	backURL = portletURL.toString();
 }
 
-SelectLayoutPageTemplateEntryDisplayContext selectLayoutPageTemplateEntryDisplayContext = new SelectLayoutPageTemplateEntryDisplayContext(request);
+SelectLayoutPageTemplateEntryDisplayContext selectLayoutPageTemplateEntryDisplayContext = (SelectLayoutPageTemplateEntryDisplayContext)request.getAttribute(SelectLayoutPageTemplateEntryDisplayContext.class.getName());
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(backURL);
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
 renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 %>
@@ -36,51 +28,19 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 <clay:container-fluid
 	cssClass="container-view"
 	id='<%= liferayPortletResponse.getNamespace() + "layoutPageTemplateEntries" %>'
+	size="xxxl"
 >
 	<clay:row>
 		<clay:col
 			lg="3"
 		>
-			<nav class="menubar menubar-transparent menubar-vertical-expand-lg">
-				<ul class="nav nav-nested">
-					<li class="nav-item">
-						<p class="text-uppercase">
-							<strong><liferay-ui:message key="collections" /></strong>
-						</p>
+			<div class="c-mb-3 h5 text-uppercase">
+				<liferay-ui:message key="page-template-sets" />
+			</div>
 
-						<ul class="nav nav-stacked">
-
-							<%
-							for (LayoutPageTemplateCollection layoutPageTemplateCollection : LayoutPageTemplateCollectionServiceUtil.getLayoutPageTemplateCollections(scopeGroupId)) {
-								int layoutPageTemplateEntriesCount = LayoutPageTemplateEntryServiceUtil.getLayoutPageTemplateEntriesCount(themeDisplay.getScopeGroupId(), layoutPageTemplateCollection.getLayoutPageTemplateCollectionId(), WorkflowConstants.STATUS_APPROVED);
-							%>
-
-								<c:if test="<%= layoutPageTemplateEntriesCount > 0 %>">
-									<li class="nav-item">
-										<a class="nav-link text-truncate <%= (selectLayoutPageTemplateEntryDisplayContext.getLayoutPageTemplateCollectionId() == layoutPageTemplateCollection.getLayoutPageTemplateCollectionId()) ? "active" : StringPool.BLANK %>" href="<%= layoutsAdminDisplayContext.getSelectLayoutPageTemplateEntryURL(layoutPageTemplateCollection.getLayoutPageTemplateCollectionId(), layoutsAdminDisplayContext.getSelPlid(), layoutsAdminDisplayContext.isPrivateLayout()) %>">
-											<%= HtmlUtil.escape(layoutPageTemplateCollection.getName()) %>
-										</a>
-									</li>
-								</c:if>
-
-							<%
-							}
-							%>
-
-							<li class="nav-item">
-								<a class="nav-link text-truncate <%= selectLayoutPageTemplateEntryDisplayContext.isBasicTemplates() ? "active" : StringPool.BLANK %>" href="<%= layoutsAdminDisplayContext.getSelectLayoutPageTemplateEntryURL(0, layoutsAdminDisplayContext.getSelPlid(), "basic-templates", layoutsAdminDisplayContext.isPrivateLayout()) %>">
-									<liferay-ui:message key="basic-templates" />
-								</a>
-							</li>
-							<li class="nav-item">
-								<a class="nav-link text-truncate <%= selectLayoutPageTemplateEntryDisplayContext.isGlobalTemplates() ? "active" : StringPool.BLANK %>" href="<%= layoutsAdminDisplayContext.getSelectLayoutPageTemplateEntryURL(0, layoutsAdminDisplayContext.getSelPlid(), "global-templates", layoutsAdminDisplayContext.isPrivateLayout()) %>">
-									<liferay-ui:message key="global-templates" />
-								</a>
-							</li>
-						</ul>
-					</li>
-				</ul>
-			</nav>
+			<clay:vertical-nav
+				verticalNavItems="<%= layoutsAdminDisplayContext.getVerticalNavItemList(selectLayoutPageTemplateEntryDisplayContext) %>"
+			/>
 		</clay:col>
 
 		<clay:col
@@ -136,8 +96,9 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 								modelVar="layoutPageTemplateEntry"
 							>
 								<liferay-ui:search-container-column-text>
-									<clay:vertical-card
-										verticalCard="<%= new SelectLayoutPageTemplateEntryVerticalCard(layoutPageTemplateEntry, renderRequest, renderResponse) %>"
+									<react:component
+										module="{LayoutPageTemplateEntryCard} from layout-admin-web"
+										props="<%= selectLayoutPageTemplateEntryDisplayContext.getLayoutPageTemplateEntryCardProps(layoutPageTemplateEntry) %>"
 									/>
 								</liferay-ui:search-container-column-text>
 							</liferay-ui:search-container-row>
@@ -160,21 +121,20 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 	</clay:row>
 </clay:container-fluid>
 
-<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
-	var delegate = delegateModule.default;
-
+<aui:script sandbox="<%= true %>">
 	var layoutPageTemplateEntries = document.getElementById(
 		'<portlet:namespace />layoutPageTemplateEntries'
 	);
 
-	var addLayoutActionOptionQueryClickHandler = delegate(
+	var addLayoutActionOptionQueryClickHandler = Liferay.Util.delegate(
 		layoutPageTemplateEntries,
 		'click',
 		'.add-layout-action-option',
 		(event) => {
 			Liferay.Util.openModal({
+				disableAutoClose: true,
 				height: '60vh',
-				id: '<portlet:namespace />addLayoutDialog',
+				id: 'addLayoutDialog',
 				size: 'md',
 				title: '<liferay-ui:message key="add-page" />',
 				url: event.delegateTarget.dataset.addLayoutUrl,
@@ -182,7 +142,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "select-template"));
 		}
 	);
 
-	var addLayoutActionOptionQueryKeyDownHandler = delegate(
+	var addLayoutActionOptionQueryKeyDownHandler = Liferay.Util.delegate(
 		layoutPageTemplateEntries,
 		'keydown',
 		'.add-layout-action-option',

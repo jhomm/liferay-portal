@@ -1,24 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {
-	act,
-	fireEvent,
-	render,
-	waitForElement,
-	within,
-} from '@testing-library/react';
+import {act, fireEvent, render, waitFor, within} from '@testing-library/react';
 import React from 'react';
 
 import ResultRankingsForm from '../../../src/main/resources/META-INF/resources/js/components/ResultRankingsForm.es';
+import {STATUS_TYPES} from '../../../src/main/resources/META-INF/resources/js/utils/constants.es';
 import {
 	FETCH_HIDDEN_DOCUMENTS_URL,
 	FETCH_SEARCH_DOCUMENTS_URL,
@@ -37,14 +26,14 @@ const UNPIN_BUTTON_LABEL = 'unpin-result';
 function renderTestResultRankingsForm(props) {
 	return render(
 		<ResultRankingsForm
-			cancelUrl="cancel"
-			fetchDocumentsHiddenUrl={FETCH_HIDDEN_DOCUMENTS_URL}
-			fetchDocumentsSearchUrl={FETCH_SEARCH_DOCUMENTS_URL}
-			fetchDocumentsVisibleUrl={FETCH_VISIBLE_DOCUMENTS_URL}
+			cancelURL="cancel"
+			fetchDocumentsHiddenURL={FETCH_HIDDEN_DOCUMENTS_URL}
+			fetchDocumentsSearchURL={FETCH_SEARCH_DOCUMENTS_URL}
+			fetchDocumentsVisibleURL={FETCH_VISIBLE_DOCUMENTS_URL}
 			formName={FORM_NAME}
-			initialInactive={false}
+			initialStatus={STATUS_TYPES.ACTIVE}
 			searchQuery=""
-			validateFormUrl={VALIDATE_FORM_URL}
+			validateFormURL={VALIDATE_FORM_URL}
 			{...props}
 		/>
 	);
@@ -72,11 +61,12 @@ describe('ResultRankingsForm', () => {
 	`(
 		'renders the results ranking items after loading in the $tab tab',
 		async ({expected, tab}) => {
-			const {getByTestId, getByText} = renderTestResultRankingsForm();
+			const {findByTestId, getByTestId, getByText} =
+				renderTestResultRankingsForm();
 
 			fireEvent.click(getByText(tab));
 
-			await waitForElement(() => getByTestId(expected[0]));
+			await findByTestId(expected[0]);
 
 			expected.forEach((id) => {
 				expect(getByTestId(id)).toBeInTheDocument();
@@ -85,36 +75,44 @@ describe('ResultRankingsForm', () => {
 	);
 
 	it.each`
-		initialAliases             | addedAliases | expected                           | description
-		${['one', 'two', 'three']} | ${[]}        | ${['one', 'two', 'three']}         | ${'initial aliases'}
-		${[]}                      | ${['one']}   | ${['one']}                         | ${'added alias'}
-		${['one', 'two', 'three']} | ${['four']}  | ${['one', 'two', 'three', 'four']} | ${'added alias with initial'}
-		${[]}                      | ${[' ']}     | ${[]}                              | ${'blank alias'}
-		${[]}                      | ${[' one ']} | ${['one']}                         | ${'trimmed alias'}
-		${['one', 'two', 'three']} | ${['one']}   | ${['one', 'two', 'three']}         | ${'no duplicate aliases'}
-	`('renders $description', ({addedAliases, expected, initialAliases}) => {
-		const {container} = renderTestResultRankingsForm({
-			initialAliases,
-		});
+		initialAliases             | addedAliases | expectedValue | expected                           | description
+		${['one', 'two', 'three']} | ${[]}        | ${''}         | ${['one', 'two', 'three']}         | ${'initial aliases'}
+		${[]}                      | ${['one']}   | ${''}         | ${['one']}                         | ${'added alias'}
+		${['one', 'two', 'three']} | ${['four']}  | ${''}         | ${['one', 'two', 'three', 'four']} | ${'added alias with initial'}
+		${[]}                      | ${['']}      | ${''}         | ${[]}                              | ${'blank alias'}
+		${[]}                      | ${[' one ']} | ${''}         | ${['one']}                         | ${'trimmed alias'}
+		${['one', 'two', 'three']} | ${['one']}   | ${''}         | ${['one', 'two', 'three']}         | ${'no duplicate aliases'}
+	`(
+		'renders $description',
+		({addedAliases, expected, expectedValue, initialAliases}) => {
+			const {container} = renderTestResultRankingsForm({
+				initialAliases,
+			});
 
-		const input = container.querySelector('.form-control-inset');
+			const input = container.querySelector('.form-control-inset');
 
-		addedAliases.forEach((alias) => {
-			fireEvent.change(input, {target: {value: alias}});
+			addedAliases.forEach((alias) => {
+				fireEvent.change(input, {target: {value: alias}});
 
-			fireEvent.keyDown(input, {key: 'Enter', keyCode: 13, which: 13});
-		});
+				fireEvent.keyDown(input, {
+					key: 'Enter',
+					keyCode: 13,
+					which: 13,
+				});
+			});
 
-		expect(input.getAttribute('value')).toBe('');
+			expect(input.getAttribute('value')).toBe(expectedValue);
 
-		const tagsElement = container.querySelectorAll('.label-item-expand');
+			const tagsElement =
+				container.querySelectorAll('.label-item-expand');
 
-		expect(tagsElement).toHaveLength(expected.length);
+			expect(tagsElement).toHaveLength(expected.length);
 
-		tagsElement.forEach((element, i) => {
-			expect(element).toHaveTextContent(expected[i]);
-		});
-	});
+			tagsElement.forEach((element, i) => {
+				expect(element).toHaveTextContent(expected[i]);
+			});
+		}
+	);
 
 	it('removes an initial alias after clicking delete', async () => {
 		const {container} = renderTestResultRankingsForm({
@@ -133,20 +131,17 @@ describe('ResultRankingsForm', () => {
 
 	it.each`
 		id       | button               | selector
-		${'100'} | ${HIDE_BUTTON_LABEL} | ${'#hiddenIdsAdded'}
-		${'200'} | ${SHOW_BUTTON_LABEL} | ${'#hiddenIdsRemoved'}
+		${'100'} | ${HIDE_BUTTON_LABEL} | ${'#addedHiddenIds'}
+		${'200'} | ${SHOW_BUTTON_LABEL} | ${'#removedHiddenIds'}
 	`('updates the $selector', async ({button, id, selector}) => {
-		const {
-			container,
-			getByTestId,
-			getByText,
-		} = renderTestResultRankingsForm();
+		const {container, getByTestId, getByText} =
+			renderTestResultRankingsForm();
 
 		if (selector.includes('Removed')) {
 			fireEvent.click(getByText('hidden'));
 		}
 
-		await waitForElement(() => getByTestId(id));
+		await waitFor(() => getByTestId(id));
 
 		fireEvent.click(within(getByTestId(id)).getByTitle(button));
 
@@ -155,16 +150,13 @@ describe('ResultRankingsForm', () => {
 
 	it.each`
 		id       | button               | newButton            | selector
-		${'100'} | ${HIDE_BUTTON_LABEL} | ${SHOW_BUTTON_LABEL} | ${'#hiddenIdsAdded'}
-		${'200'} | ${SHOW_BUTTON_LABEL} | ${HIDE_BUTTON_LABEL} | ${'#hiddenIdsRemoved'}
+		${'100'} | ${HIDE_BUTTON_LABEL} | ${SHOW_BUTTON_LABEL} | ${'#addedHiddenIds'}
+		${'200'} | ${SHOW_BUTTON_LABEL} | ${HIDE_BUTTON_LABEL} | ${'#removedHiddenIds'}
 	`(
 		'updates the $selector back',
 		async ({button, id, newButton, selector}) => {
-			const {
-				container,
-				getByTestId,
-				getByText,
-			} = renderTestResultRankingsForm();
+			const {container, findByTestId, getByTestId, getByText} =
+				renderTestResultRankingsForm();
 
 			const order = selector.includes('Removed')
 				? ['hidden', 'visible']
@@ -172,7 +164,7 @@ describe('ResultRankingsForm', () => {
 
 			fireEvent.click(getByText(order[0]));
 
-			await waitForElement(() => getByTestId(id));
+			await findByTestId(id);
 
 			fireEvent.click(within(getByTestId(id)).getByTitle(button));
 
@@ -189,9 +181,10 @@ describe('ResultRankingsForm', () => {
 		${'105'} | ${PIN_BUTTON_LABEL}   | ${'100,101,102,103,104,105'}
 		${'100'} | ${UNPIN_BUTTON_LABEL} | ${'101,102,103,104'}
 	`('updates the pinnedIds by $button', async ({button, expected, id}) => {
-		const {container, getByTestId} = renderTestResultRankingsForm();
+		const {container, findByTestId, getByTestId} =
+			renderTestResultRankingsForm();
 
-		await waitForElement(() => getByTestId(id));
+		await findByTestId(id);
 
 		fireEvent.click(within(getByTestId(id)).getByTitle(button));
 
@@ -199,13 +192,14 @@ describe('ResultRankingsForm', () => {
 	});
 
 	it('fetches more results after clicking on load more button', async () => {
-		const {container, getByTestId} = renderTestResultRankingsForm();
+		const {container, findByTestId, getByTestId} =
+			renderTestResultRankingsForm();
 
-		await waitForElement(() => getByTestId('100'));
+		await findByTestId('100');
 
 		fireEvent.click(container.querySelector('.load-more-button'));
 
-		await waitForElement(() => getByTestId('110'));
+		await findByTestId('110');
 
 		expect(getByTestId('110')).toHaveTextContent(
 			'This is a Document Example'
@@ -216,36 +210,35 @@ describe('ResultRankingsForm', () => {
 	});
 
 	it('has the same pinned end index if there are no additional pinned items loaded', async () => {
-		const {container, getByTestId} = renderTestResultRankingsForm();
+		const {container, findByTestId} = renderTestResultRankingsForm();
 
-		const pinnedIdsEndIndexInput = container.querySelector(
-			'#pinnedIdsEndIndex'
-		);
+		const pinnedIdsEndIndexInput =
+			container.querySelector('#pinnedIdsEndIndex');
 
-		await waitForElement(() => getByTestId('100'));
+		await findByTestId('100');
 
 		expect(pinnedIdsEndIndexInput.value).toBe('4');
 
 		fireEvent.click(container.querySelector('.load-more-button'));
 
-		await waitForElement(() => getByTestId('110'));
+		await findByTestId('110');
 
 		expect(pinnedIdsEndIndexInput.value).toBe('4');
 	});
 
 	it.each`
 		state         | newState      | expected
-		${'active'}   | ${'inactive'} | ${true}
-		${'inactive'} | ${'active'}   | ${false}
+		${'active'}   | ${'inactive'} | ${STATUS_TYPES.INACTIVE}
+		${'inactive'} | ${'active'}   | ${STATUS_TYPES.ACTIVE}
 	`('updates the state to $newState', async ({expected, newState, state}) => {
 		const {container, getByLabelText} = renderTestResultRankingsForm({
-			initialInactive: !expected,
+			initialStatus: state,
 		});
 
 		fireEvent.click(getByLabelText(state));
 
 		expect(getByLabelText(newState)).toBeInTheDocument();
 
-		expect(container.querySelector('#inactive').value).toBe(`${expected}`);
+		expect(container.querySelector('#status').value).toBe(`${expected}`);
 	});
 });

@@ -1,32 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import hasDropZoneChild from '../components/layout-data-items/hasDropZoneChild';
+import hasDropZoneChild from '../components/layout_data_items/hasDropZoneChild';
 import {LAYOUT_DATA_ITEM_TYPES} from '../config/constants/layoutDataItemTypes';
 import getWidget from '../utils/getWidget';
+import isStepper from './isStepper';
 
 export default function canBeDuplicated(
 	fragmentEntryLinks,
 	item,
 	layoutData,
-	widgets
+	getWidgets
 ) {
 	switch (item.type) {
 		case LAYOUT_DATA_ITEM_TYPES.collection:
 			return true;
 
 		case LAYOUT_DATA_ITEM_TYPES.container:
+		case LAYOUT_DATA_ITEM_TYPES.form:
 		case LAYOUT_DATA_ITEM_TYPES.row:
 			return !hasDropZoneChild(item, layoutData);
 
@@ -34,14 +27,25 @@ export default function canBeDuplicated(
 			const fragmentEntryLink =
 				fragmentEntryLinks[item.config.fragmentEntryLinkId];
 
-			const portletId = fragmentEntryLink.editableValues.portletId;
+			const portletId = fragmentEntryLink?.editableValues.portletId;
 
-			const widget = portletId && getWidget(widgets, portletId);
+			if (hasDropZoneChild(item, layoutData)) {
+				return false;
+			}
 
-			return (
-				(!widget || widget.instanceable) &&
-				!hasDropZoneChild(item, layoutData)
-			);
+			if (portletId) {
+				const widget = getWidget(getWidgets(), portletId);
+
+				if (widget && !widget.instanceable) {
+					return false;
+				}
+			}
+
+			if (isStepper(fragmentEntryLink)) {
+				return false;
+			}
+
+			return true;
 		}
 
 		default:

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service.persistence.test;
@@ -27,15 +18,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -162,7 +157,7 @@ public class JournalArticlePersistenceTest {
 
 		newJournalArticle.setUrlTitle(RandomTestUtil.randomString());
 
-		newJournalArticle.setDDMStructureKey(RandomTestUtil.randomString());
+		newJournalArticle.setDDMStructureId(RandomTestUtil.nextLong());
 
 		newJournalArticle.setDDMTemplateKey(RandomTestUtil.randomString());
 
@@ -181,6 +176,8 @@ public class JournalArticlePersistenceTest {
 		newJournalArticle.setSmallImage(RandomTestUtil.randomBoolean());
 
 		newJournalArticle.setSmallImageId(RandomTestUtil.nextLong());
+
+		newJournalArticle.setSmallImageSource(RandomTestUtil.nextInt());
 
 		newJournalArticle.setSmallImageURL(RandomTestUtil.randomString());
 
@@ -254,8 +251,8 @@ public class JournalArticlePersistenceTest {
 			existingJournalArticle.getUrlTitle(),
 			newJournalArticle.getUrlTitle());
 		Assert.assertEquals(
-			existingJournalArticle.getDDMStructureKey(),
-			newJournalArticle.getDDMStructureKey());
+			existingJournalArticle.getDDMStructureId(),
+			newJournalArticle.getDDMStructureId());
 		Assert.assertEquals(
 			existingJournalArticle.getDDMTemplateKey(),
 			newJournalArticle.getDDMTemplateKey());
@@ -283,6 +280,9 @@ public class JournalArticlePersistenceTest {
 		Assert.assertEquals(
 			existingJournalArticle.getSmallImageId(),
 			newJournalArticle.getSmallImageId());
+		Assert.assertEquals(
+			existingJournalArticle.getSmallImageSource(),
+			newJournalArticle.getSmallImageSource());
 		Assert.assertEquals(
 			existingJournalArticle.getSmallImageURL(),
 			newJournalArticle.getSmallImageURL());
@@ -351,20 +351,10 @@ public class JournalArticlePersistenceTest {
 	}
 
 	@Test
-	public void testCountByDDMStructureKey() throws Exception {
-		_persistence.countByDDMStructureKey("");
+	public void testCountByDDMStructureId() throws Exception {
+		_persistence.countByDDMStructureId(RandomTestUtil.nextLong());
 
-		_persistence.countByDDMStructureKey("null");
-
-		_persistence.countByDDMStructureKey((String)null);
-	}
-
-	@Test
-	public void testCountByDDMStructureKeyArrayable() throws Exception {
-		_persistence.countByDDMStructureKey(
-			new String[] {
-				RandomTestUtil.randomString(), "", "null", null, null
-			});
+		_persistence.countByDDMStructureId(0L);
 	}
 
 	@Test
@@ -465,12 +455,11 @@ public class JournalArticlePersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_DDMSK() throws Exception {
-		_persistence.countByG_DDMSK(RandomTestUtil.nextLong(), "");
+	public void testCountByG_DDMSI() throws Exception {
+		_persistence.countByG_DDMSI(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
 
-		_persistence.countByG_DDMSK(0L, "null");
-
-		_persistence.countByG_DDMSK(0L, (String)null);
+		_persistence.countByG_DDMSI(0L, 0L);
 	}
 
 	@Test
@@ -585,6 +574,23 @@ public class JournalArticlePersistenceTest {
 	}
 
 	@Test
+	public void testCountByG_ERC_ST() throws Exception {
+		_persistence.countByG_ERC_ST(
+			RandomTestUtil.nextLong(), "", RandomTestUtil.nextInt());
+
+		_persistence.countByG_ERC_ST(0L, "null", 0);
+
+		_persistence.countByG_ERC_ST(0L, (String)null, 0);
+	}
+
+	@Test
+	public void testCountByG_ERC_STArrayable() throws Exception {
+		_persistence.countByG_ERC_ST(
+			RandomTestUtil.nextLong(), RandomTestUtil.randomString(),
+			new int[] {RandomTestUtil.nextInt(), 0});
+	}
+
+	@Test
 	public void testCountByG_F_ST() throws Exception {
 		_persistence.countByG_F_ST(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
@@ -610,13 +616,12 @@ public class JournalArticlePersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_C_DDMSK() throws Exception {
-		_persistence.countByG_C_DDMSK(
-			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(), "");
+	public void testCountByG_C_DDMSI() throws Exception {
+		_persistence.countByG_C_DDMSI(
+			RandomTestUtil.nextLong(), RandomTestUtil.nextLong(),
+			RandomTestUtil.nextLong());
 
-		_persistence.countByG_C_DDMSK(0L, 0L, "null");
-
-		_persistence.countByG_C_DDMSK(0L, 0L, (String)null);
+		_persistence.countByG_C_DDMSI(0L, 0L, 0L);
 	}
 
 	@Test
@@ -729,6 +734,24 @@ public class JournalArticlePersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -741,12 +764,12 @@ public class JournalArticlePersistenceTest {
 			true, "modifiedDate", true, "externalReferenceCode", true,
 			"folderId", true, "classNameId", true, "classPK", true, "treePath",
 			true, "articleId", true, "version", true, "urlTitle", true,
-			"DDMStructureKey", true, "DDMTemplateKey", true,
-			"defaultLanguageId", true, "layoutUuid", true, "displayDate", true,
-			"expirationDate", true, "reviewDate", true, "indexable", true,
-			"smallImage", true, "smallImageId", true, "smallImageURL", true,
-			"lastPublishDate", true, "status", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true);
+			"DDMStructureId", true, "DDMTemplateKey", true, "defaultLanguageId",
+			true, "layoutUuid", true, "displayDate", true, "expirationDate",
+			true, "reviewDate", true, "indexable", true, "smallImage", true,
+			"smallImageId", true, "smallImageSource", true, "smallImageURL",
+			true, "lastPublishDate", true, "status", true, "statusByUserId",
+			true, "statusByUserName", true, "statusDate", true);
 	}
 
 	@Test
@@ -1046,10 +1069,10 @@ public class JournalArticlePersistenceTest {
 				journalArticle, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "classNameId"));
 		Assert.assertEquals(
-			journalArticle.getDDMStructureKey(),
-			ReflectionTestUtil.invoke(
+			Long.valueOf(journalArticle.getDDMStructureId()),
+			ReflectionTestUtil.<Long>invoke(
 				journalArticle, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "DDMStructureKey"));
+				new Class<?>[] {String.class}, "DDMStructureId"));
 
 		Assert.assertEquals(
 			Long.valueOf(journalArticle.getGroupId()),
@@ -1109,7 +1132,7 @@ public class JournalArticlePersistenceTest {
 
 		journalArticle.setUrlTitle(RandomTestUtil.randomString());
 
-		journalArticle.setDDMStructureKey(RandomTestUtil.randomString());
+		journalArticle.setDDMStructureId(RandomTestUtil.nextLong());
 
 		journalArticle.setDDMTemplateKey(RandomTestUtil.randomString());
 
@@ -1128,6 +1151,8 @@ public class JournalArticlePersistenceTest {
 		journalArticle.setSmallImage(RandomTestUtil.randomBoolean());
 
 		journalArticle.setSmallImageId(RandomTestUtil.nextLong());
+
+		journalArticle.setSmallImageSource(RandomTestUtil.nextInt());
 
 		journalArticle.setSmallImageURL(RandomTestUtil.randomString());
 

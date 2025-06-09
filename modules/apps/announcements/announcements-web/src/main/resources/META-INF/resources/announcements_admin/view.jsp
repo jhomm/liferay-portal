@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,26 +10,7 @@
 <%
 String navigation = ParamUtil.getString(request, "navigation", "announcements");
 
-String distributionScope = ParamUtil.getString(request, "distributionScope");
-
-long classNameId = 0;
-long classPK = 0;
-
-String[] distributionScopeArray = StringUtil.split(distributionScope);
-
-if (distributionScopeArray.length == 2) {
-	classNameId = GetterUtil.getLong(distributionScopeArray[0]);
-	classPK = GetterUtil.getLong(distributionScopeArray[1]);
-}
-
-SearchContainer<AnnouncementsEntry> announcementsEntriesSearchContainer = new SearchContainer(renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM, SearchContainer.DEFAULT_DELTA, currentURLObj, null, "no-entries-were-found");
-
-announcementsEntriesSearchContainer.setRowChecker(new AnnouncementsEntryChecker(liferayPortletRequest, liferayPortletResponse));
-
-announcementsEntriesSearchContainer.setTotal(AnnouncementsEntryLocalServiceUtil.getEntriesCount(themeDisplay.getCompanyId(), classNameId, classPK, navigation.equals("alerts")));
-announcementsEntriesSearchContainer.setResults(AnnouncementsEntryLocalServiceUtil.getEntries(themeDisplay.getCompanyId(), classNameId, classPK, navigation.equals("alerts"), announcementsEntriesSearchContainer.getStart(), announcementsEntriesSearchContainer.getEnd()));
-
-AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewManagementToolbarDisplayContext = new AnnouncementsAdminViewManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, announcementsEntriesSearchContainer);
+AnnouncementsAdminViewDisplayContext announcementsAdminViewDisplayContext = new AnnouncementsAdminViewDisplayContext(request, liferayPortletRequest, liferayPortletResponse, renderRequest);
 %>
 
 <clay:navigation-bar
@@ -62,29 +34,9 @@ AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewMana
 	%>'
 />
 
-<portlet:actionURL name="/announcements/edit_entry" var="deleteEntriesURL" />
-
 <clay:management-toolbar
-	actionDropdownItems="<%= announcementsAdminViewManagementToolbarDisplayContext.getActionDropdownItems() %>"
-	additionalProps='<%=
-		HashMapBuilder.<String, Object>put(
-			"deleteEntriesURL", deleteEntriesURL.toString()
-		).put(
-			"inputId", Constants.CMD
-		).put(
-			"inputValue", Constants.DELETE
-		).build()
-	%>'
-	clearResultsURL="<%= announcementsAdminViewManagementToolbarDisplayContext.getClearResultsURL() %>"
-	creationMenu="<%= announcementsAdminViewManagementToolbarDisplayContext.getCreationMenu() %>"
-	disabled="<%= announcementsAdminViewManagementToolbarDisplayContext.isDisabled() %>"
-	filterDropdownItems="<%= announcementsAdminViewManagementToolbarDisplayContext.getFilterDropdownItems() %>"
-	filterLabelItems="<%= announcementsAdminViewManagementToolbarDisplayContext.getFilterLabelItems() %>"
-	itemsTotal="<%= announcementsAdminViewManagementToolbarDisplayContext.getTotal() %>"
-	propsTransformer="announcements_admin/js/AnnouncementsManagementToolbarPropsTransformer"
-	searchContainerId="<%= announcementsAdminViewManagementToolbarDisplayContext.getSearchContainerId() %>"
-	selectable="<%= true %>"
-	showSearch="<%= false %>"
+	managementToolbarDisplayContext="<%= new AnnouncementsAdminViewManagementToolbarDisplayContext(announcementsAdminViewDisplayContext, request, liferayPortletRequest, liferayPortletResponse) %>"
+	propsTransformer="{AnnouncementsManagementToolbarPropsTransformer} from announcements-web"
 />
 
 <clay:container-fluid>
@@ -93,14 +45,8 @@ AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewMana
 		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 
 		<liferay-ui:search-container
-			id="<%= announcementsAdminViewManagementToolbarDisplayContext.getSearchContainerId() %>"
-			searchContainer="<%= announcementsEntriesSearchContainer %>"
-			total="<%= announcementsEntriesSearchContainer.getTotal() %>"
+			searchContainer="<%= announcementsAdminViewDisplayContext.getSearchContainer() %>"
 		>
-			<liferay-ui:search-container-results
-				results="<%= announcementsEntriesSearchContainer.getResults() %>"
-			/>
-
 			<liferay-ui:search-container-row
 				className="com.liferay.announcements.kernel.model.AnnouncementsEntry"
 				keyProperty="entryId"
@@ -110,7 +56,7 @@ AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewMana
 				<%
 				row.setData(
 					HashMapBuilder.<String, Object>put(
-						"actions", StringUtil.merge(announcementsAdminViewManagementToolbarDisplayContext.getAvailableActions(entry))
+						"actions", StringUtil.merge(announcementsAdminViewDisplayContext.getAvailableActions(entry))
 					).build());
 				%>
 
@@ -158,7 +104,6 @@ AnnouncementsAdminViewManagementToolbarDisplayContext announcementsAdminViewMana
 
 			<liferay-ui:search-iterator
 				markupView="lexicon"
-				searchContainer="<%= announcementsEntriesSearchContainer %>"
 			/>
 		</liferay-ui:search-container>
 	</aui:form>

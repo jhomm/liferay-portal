@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -17,8 +8,6 @@ package com.liferay.portal.service.impl;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.bean.BeanReference;
-import com.liferay.portal.kernel.image.SpriteProcessor;
-import com.liferay.portal.kernel.image.SpriteProcessorUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ColorScheme;
@@ -44,7 +33,6 @@ import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ReleaseInfo;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.ThemeFactoryUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
@@ -52,10 +40,10 @@ import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.model.impl.ThemeImpl;
 import com.liferay.portal.plugin.PluginUtil;
 import com.liferay.portal.service.base.ThemeLocalServiceBaseImpl;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.util.ThemeFactoryUtil;
 import com.liferay.util.ContextReplace;
 
-import java.net.URL;
+import jakarta.servlet.ServletContext;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -63,11 +51,8 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.servlet.ServletContext;
 
 /**
  * @author Brian Wing Shun Chan
@@ -322,7 +307,7 @@ public class ThemeLocalServiceImpl extends ThemeLocalServiceBaseImpl {
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		_themesPool.clear();
@@ -703,7 +688,6 @@ public class ThemeLocalServiceImpl extends ThemeLocalServiceBaseImpl {
 			}
 
 			theme.setTemplateExtension(templateExtension);
-
 			theme.setTimestamp(timestamp);
 
 			PluginSetting pluginSetting =
@@ -711,7 +695,6 @@ public class ThemeLocalServiceImpl extends ThemeLocalServiceBaseImpl {
 
 			theme.setPluginPackage(pluginPackage);
 			theme.setDefaultPluginSetting(pluginSetting);
-
 			theme.setThemeCompanyLimit(companyLimit);
 			theme.setThemeGroupLimit(groupLimit);
 
@@ -849,17 +832,10 @@ public class ThemeLocalServiceImpl extends ThemeLocalServiceBaseImpl {
 				}
 			}
 
-			if (PropsValues.SPRITE_ENABLED) {
-				_setSpriteImages(servletContext, theme, imagesPath);
-			}
-
 			if (!_themes.containsKey(themeId)) {
 				_themes.put(themeId, theme);
 			}
 
-			_readPortletDecorators(
-				themeElement, theme.getPortletDecoratorsMap(),
-				themeContextReplace);
 			_readPortletDecorators(
 				themeElement, theme.getPortletDecoratorsMap(),
 				themeContextReplace);
@@ -868,62 +844,6 @@ public class ThemeLocalServiceImpl extends ThemeLocalServiceBaseImpl {
 		}
 
 		return themes;
-	}
-
-	private void _setSpriteImages(
-			ServletContext servletContext, Theme theme, String resourcePath)
-		throws Exception {
-
-		if (!resourcePath.startsWith(StringPool.SLASH)) {
-			resourcePath = StringPool.SLASH.concat(resourcePath);
-		}
-
-		Set<String> resourcePaths = servletContext.getResourcePaths(
-			resourcePath);
-
-		if ((resourcePaths == null) || resourcePaths.isEmpty()) {
-			return;
-		}
-
-		List<URL> imageURLs = new ArrayList<>(resourcePaths.size());
-
-		for (String curResourcePath : resourcePaths) {
-			if (curResourcePath.endsWith(StringPool.SLASH)) {
-				_setSpriteImages(servletContext, theme, curResourcePath);
-			}
-			else if (curResourcePath.endsWith(".png")) {
-				URL imageURL = servletContext.getResource(curResourcePath);
-
-				if (imageURL != null) {
-					imageURLs.add(imageURL);
-				}
-				else {
-					_log.error(
-						"Resource URL for " + curResourcePath + " is null");
-				}
-			}
-		}
-
-		String spriteRootDirName = PropsValues.SPRITE_ROOT_DIR;
-		String spriteFileName = resourcePath.concat(
-			PropsValues.SPRITE_FILE_NAME);
-		String spritePropertiesFileName = resourcePath.concat(
-			PropsValues.SPRITE_PROPERTIES_FILE_NAME);
-		String rootPath = ServletContextUtil.getRootPath(servletContext);
-
-		Properties spriteProperties = SpriteProcessorUtil.generate(
-			servletContext, imageURLs, spriteRootDirName, spriteFileName,
-			spritePropertiesFileName, rootPath, 16, 16, 10240);
-
-		if (spriteProperties == null) {
-			return;
-		}
-
-		spriteFileName = StringBundler.concat(
-			servletContext.getContextPath(), SpriteProcessor.PATH,
-			spriteFileName);
-
-		theme.setSpriteImages(spriteFileName, spriteProperties);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

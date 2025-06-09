@@ -1,29 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.dto.v1_0.util;
 
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.search.experiences.rest.dto.v1_0.AggregationConfiguration;
 import com.liferay.search.experiences.rest.dto.v1_0.Clause;
+import com.liferay.search.experiences.rest.dto.v1_0.Condition;
 import com.liferay.search.experiences.rest.dto.v1_0.Configuration;
 import com.liferay.search.experiences.rest.dto.v1_0.QueryConfiguration;
 import com.liferay.search.experiences.rest.dto.v1_0.Rescore;
 import com.liferay.search.experiences.rest.dto.v1_0.SortConfiguration;
-
-import java.util.Map;
 
 /**
  * @author André de Oliveira
@@ -31,6 +21,10 @@ import java.util.Map;
 public class ConfigurationUtil {
 
 	public static Configuration toConfiguration(String json) {
+		if (Validator.isNull(json)) {
+			return null;
+		}
+
 		return unpack(Configuration.unsafeToDTO(json));
 	}
 
@@ -43,9 +37,9 @@ public class ConfigurationUtil {
 			configuration.getAggregationConfiguration();
 
 		if (aggregationConfiguration != null) {
-			aggregationConfiguration.setAggs(
-				JSONFactoryUtil.createJSONObject(
-					(Map<?, ?>)aggregationConfiguration.getAggs()));
+			Object aggs = aggregationConfiguration.getAggs();
+
+			aggregationConfiguration.setAggs(() -> UnpackUtil.unpack(aggs));
 		}
 
 		QueryConfiguration queryConfiguration =
@@ -62,6 +56,13 @@ public class ConfigurationUtil {
 						ConfigurationUtil::_unpack);
 					ArrayUtil.isNotEmptyForEach(
 						queryEntry.getRescores(), ConfigurationUtil::_unpack);
+
+					Condition condition = queryEntry.getCondition();
+
+					if (condition != null) {
+						queryEntry.setCondition(
+							() -> ConditionUtil.unpack(condition));
+					}
 				});
 		}
 
@@ -69,27 +70,32 @@ public class ConfigurationUtil {
 			configuration.getSortConfiguration();
 
 		if (sortConfiguration != null) {
-			sortConfiguration.setSorts(
-				JSONFactoryUtil.createJSONArray(
-					(Object[])sortConfiguration.getSorts()));
+			Object sorts = sortConfiguration.getSorts();
+
+			sortConfiguration.setSorts(() -> UnpackUtil.unpack(sorts));
 		}
 
 		return configuration;
 	}
 
 	private static void _unpack(Clause clause) {
-		if (clause.getQuery() != null) {
-			clause.setQuery(
-				JSONFactoryUtil.createJSONObject((Map<?, ?>)clause.getQuery()));
+		if (clause == null) {
+			return;
 		}
+
+		Object query = clause.getQuery();
+
+		clause.setQuery(() -> UnpackUtil.unpack(query));
 	}
 
 	private static void _unpack(Rescore rescore) {
-		if (rescore.getQuery() != null) {
-			rescore.setQuery(
-				JSONFactoryUtil.createJSONObject(
-					(Map<?, ?>)rescore.getQuery()));
+		if (rescore == null) {
+			return;
 		}
+
+		Object query = rescore.getQuery();
+
+		rescore.setQuery(() -> UnpackUtil.unpack(query));
 	}
 
 }

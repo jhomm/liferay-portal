@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.talend.web.internal.process;
@@ -23,6 +14,7 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.JavaDetector;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
@@ -131,9 +123,20 @@ public class TalendProcessTest {
 
 		List<String> processConfigArguments = processConfig.getArguments();
 
-		Assert.assertEquals(
-			processConfigArguments.toString(), 3,
-			processConfigArguments.size());
+		if (JavaDetector.isJDK21()) {
+			Assert.assertEquals(
+				processConfigArguments.toString(), 4,
+				processConfigArguments.size());
+
+			Assert.assertTrue(
+				processConfigArguments.contains(
+					"-Djava.security.manager=allow"));
+		}
+		else {
+			Assert.assertEquals(
+				processConfigArguments.toString(), 3,
+				processConfigArguments.size());
+		}
 
 		Assert.assertTrue(processConfigArguments.contains("-Xint"));
 		Assert.assertTrue(processConfigArguments.contains("-Xms2G"));

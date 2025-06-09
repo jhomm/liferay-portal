@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service;
@@ -17,9 +8,11 @@ package com.liferay.commerce.service;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.exception.NoSuchOrderItemException;
 import com.liferay.commerce.model.CommerceOrderItem;
+import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
+import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -86,21 +79,17 @@ public interface CommerceOrderItemLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceOrderItem addCommerceOrderItem(
-			long commerceOrderId, long cpInstanceId, String json, int quantity,
-			int shippedQuantity, CommerceContext commerceContext,
-			ServiceContext serviceContext)
+			long userId, long commerceOrderId, long cpInstanceId, String json,
+			BigDecimal quantity, long replacedCPInstanceId,
+			BigDecimal shippedQuantity, String unitOfMeasureKey,
+			CommerceContext commerceContext, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CommerceOrderItem addOrUpdateCommerceOrderItem(
-			long commerceOrderId, long cpInstanceId, int quantity,
-			int shippedQuantity, CommerceContext commerceContext,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public CommerceOrderItem addOrUpdateCommerceOrderItem(
-			long commerceOrderId, long cpInstanceId, String json, int quantity,
-			int shippedQuantity, CommerceContext commerceContext,
-			ServiceContext serviceContext)
+			long userId, long commerceOrderId, long cpInstanceId, String json,
+			BigDecimal quantity, long replacedCPInstanceId,
+			BigDecimal shippedQuantity, String unitOfMeasureKey,
+			CommerceContext commerceContext, ServiceContext serviceContext)
 		throws PortalException;
 
 	public int countSubscriptionCommerceOrderItems(long commerceOrderId);
@@ -129,18 +118,10 @@ public interface CommerceOrderItemLocalService
 	 *
 	 * @param commerceOrderItem the commerce order item
 	 * @return the commerce order item that was removed
-	 * @throws PortalException
 	 */
 	@Indexable(type = IndexableType.DELETE)
 	public CommerceOrderItem deleteCommerceOrderItem(
-			CommerceOrderItem commerceOrderItem)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.DELETE)
-	public CommerceOrderItem deleteCommerceOrderItem(
-			CommerceOrderItem commerceOrderItem,
-			CommerceContext commerceContext)
-		throws PortalException;
+		CommerceOrderItem commerceOrderItem);
 
 	/**
 	 * Deletes the commerce order item with the primary key from the database. Also notifies the appropriate model listeners.
@@ -157,10 +138,31 @@ public interface CommerceOrderItemLocalService
 	public CommerceOrderItem deleteCommerceOrderItem(long commerceOrderItemId)
 		throws PortalException;
 
-	public void deleteCommerceOrderItems(long commerceOrderId)
+	@Indexable(type = IndexableType.DELETE)
+	public CommerceOrderItem deleteCommerceOrderItem(
+			long userId, CommerceOrderItem commerceOrderItem)
 		throws PortalException;
 
-	public void deleteCommerceOrderItemsByCPInstanceId(long cpInstanceId)
+	@Indexable(type = IndexableType.DELETE)
+	public CommerceOrderItem deleteCommerceOrderItem(
+			long userId, CommerceOrderItem commerceOrderItem,
+			CommerceContext commerceContext)
+		throws PortalException;
+
+	public CommerceOrderItem deleteCommerceOrderItem(
+			long userId, long commerceOrderItemId)
+		throws PortalException;
+
+	public void deleteCommerceOrderItems(long userId, long commerceOrderId)
+		throws PortalException;
+
+	public void deleteCommerceOrderItemsByCPInstanceId(
+			long userId, long cpInstanceId)
+		throws PortalException;
+
+	public void deleteMissingCommerceOrderItems(
+			long userId, long commerceOrderId, Long[] commerceOrderItemIds,
+			String[] externalReferenceCodes)
 		throws PortalException;
 
 	/**
@@ -243,34 +245,27 @@ public interface CommerceOrderItemLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderItem fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CommerceOrderItem fetchCommerceOrderItem(long commerceOrderItemId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderItem fetchCommerceOrderItemByBookedQuantityId(
-		long bookedQuantityId);
+	public CommerceOrderItem
+		fetchCommerceOrderItemByCommerceInventoryBookedQuantityId(
+			long commerceInventoryBookedQuantityId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceOrderItem fetchCommerceOrderItemByExternalReferenceCode(
+		String externalReferenceCode, long companyId);
 
 	/**
-	 * Returns the commerce order item with the matching external reference code and company.
+	 * Returns the commerce order item matching the UUID and group.
 	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order item's external reference code
+	 * @param uuid the commerce order item's UUID
+	 * @param groupId the primary key of the group
 	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderItem fetchCommerceOrderItemByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCommerceOrderItemByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderItem fetchCommerceOrderItemByReferenceCode(
-		long companyId, String externalReferenceCode);
+	public CommerceOrderItem fetchCommerceOrderItemByUuidAndGroupId(
+		String uuid, long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
@@ -284,7 +279,7 @@ public interface CommerceOrderItemLocalService
 		long parentCommerceOrderItemId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceInventoryWarehouseItemQuantity(
+	public BigDecimal getCommerceInventoryWarehouseItemQuantity(
 			long commerceOrderItemId, long commerceInventoryWarehouseId)
 		throws PortalException;
 
@@ -299,17 +294,22 @@ public interface CommerceOrderItemLocalService
 	public CommerceOrderItem getCommerceOrderItem(long commerceOrderItemId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CommerceOrderItem getCommerceOrderItemByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
 	/**
-	 * Returns the commerce order item with the matching external reference code and company.
+	 * Returns the commerce order item matching the UUID and group.
 	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the commerce order item's external reference code
+	 * @param uuid the commerce order item's UUID
+	 * @param groupId the primary key of the group
 	 * @return the matching commerce order item
 	 * @throws PortalException if a matching commerce order item could not be found
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CommerceOrderItem getCommerceOrderItemByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+	public CommerceOrderItem getCommerceOrderItemByUuidAndGroupId(
+			String uuid, long groupId)
 		throws PortalException;
 
 	/**
@@ -337,6 +337,11 @@ public interface CommerceOrderItemLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CommerceOrderItem> getCommerceOrderItems(
+		long cpInstanceId, int[] orderStatuses, String unitOfMeasureKey,
+		int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceOrderItem> getCommerceOrderItems(
 		long commerceOrderId, long cpInstanceId, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -348,6 +353,32 @@ public interface CommerceOrderItemLocalService
 	public List<CommerceOrderItem> getCommerceOrderItems(
 		long groupId, long commerceAccountId, int[] orderStatuses, int start,
 		int end);
+
+	/**
+	 * Returns all the commerce order items matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce order items
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce order items, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceOrderItem> getCommerceOrderItemsByUuidAndCompanyId(
+		String uuid, long companyId);
+
+	/**
+	 * Returns a range of commerce order items matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the commerce order items
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching commerce order items, or an empty list if no matches were found
+	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceOrderItem> getCommerceOrderItemsByUuidAndCompanyId(
+		String uuid, long companyId, int start, int end,
+		OrderByComparator<CommerceOrderItem> orderByComparator);
 
 	/**
 	 * Returns the number of commerce order items.
@@ -369,7 +400,17 @@ public interface CommerceOrderItemLocalService
 		long groupId, long commerceAccountId, int[] orderStatuses);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCommerceOrderItemsQuantity(long commerceOrderId);
+	public BigDecimal getCommerceOrderItemsQuantity(long commerceOrderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Long> getCustomerCommerceOrderIds(long commerceOrderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCustomerCommerceOrderIdsCount(long commerceOrderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public ExportActionableDynamicQuery getExportActionableDynamicQuery(
+		PortletDataContext portletDataContext);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
@@ -393,8 +434,28 @@ public interface CommerceOrderItemLocalService
 	public List<CommerceOrderItem> getSubscriptionCommerceOrderItems(
 		long commerceOrderId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<Long> getSupplierCommerceOrderIds(long commerceOrderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getSupplierCommerceOrderIdsCount(long commerceOrderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CommerceOrderItem> getSupplierCommerceOrderItems(
+		long customerCommerceOrderItemId, int start, int end);
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CommerceOrderItem importCommerceOrderItem(
+			long userId, String externalReferenceCode, long commerceOrderItemId,
+			long commerceOrderId, long cpInstanceId,
+			String cpMeasurementUnitKey, String json, BigDecimal quantity,
+			BigDecimal shippedQuantity,
+			BigDecimal unitOfMeasureIncrementalOrderQuantity,
+			String unitOfMeasureKey, ServiceContext serviceContext)
+		throws PortalException;
+
 	public CommerceOrderItem incrementShippedQuantity(
-			long commerceOrderItemId, int shippedQuantity)
+			long commerceOrderItemId, BigDecimal shippedQuantity)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -430,18 +491,36 @@ public interface CommerceOrderItemLocalService
 		CommerceOrderItem commerceOrderItem);
 
 	public CommerceOrderItem updateCommerceOrderItem(
-			long commerceOrderItemId, int quantity,
+			long commerceOrderItemId, long commerceInventoryBookedQuantityId)
+		throws NoSuchOrderItemException;
+
+	public CommerceOrderItem updateCommerceOrderItem(
+			long userId, long commerceOrderItemId, BigDecimal quantity,
 			CommerceContext commerceContext, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CommerceOrderItem updateCommerceOrderItem(
-			long commerceOrderItemId, long bookedQuantityId)
-		throws NoSuchOrderItemException;
+			long userId, long commerceOrderItemId, long cpMeasurementUnitId,
+			BigDecimal quantity, CommerceContext commerceContext,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public CommerceOrderItem updateCommerceOrderItem(
+			long userId, long commerceOrderItemId, long cpMeasurementUnitId,
+			BigDecimal quantity, ServiceContext serviceContext)
+		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceOrderItem updateCommerceOrderItem(
-			long commerceOrderItemId, String json, int quantity,
-			CommerceContext commerceContext, ServiceContext serviceContext)
+			long userId, long commerceOrderItemId, String json,
+			BigDecimal quantity, ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public CommerceOrderItem updateCommerceOrderItem(
+			String externalReferenceCode, long userId, long commerceOrderItemId,
+			String json, BigDecimal quantity, CommerceContext commerceContext,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -452,13 +531,13 @@ public interface CommerceOrderItemLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceOrderItem updateCommerceOrderItemInfo(
 			long commerceOrderItemId, long shippingAddressId,
-			String deliveryGroup, String printedNote)
+			String deliveryGroupName, String printedNote)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceOrderItem updateCommerceOrderItemInfo(
 			long commerceOrderItemId, long shippingAddressId,
-			String deliveryGroup, String printedNote,
+			String deliveryGroupName, String printedNote,
 			int requestedDeliveryDateMonth, int requestedDeliveryDateDay,
 			int requestedDeliveryDateYear)
 		throws PortalException;
@@ -468,7 +547,7 @@ public interface CommerceOrderItemLocalService
 	 */
 	@Deprecated
 	public CommerceOrderItem updateCommerceOrderItemInfo(
-			long commerceOrderItemId, String deliveryGroup,
+			long commerceOrderItemId, String deliveryGroupName,
 			long shippingAddressId, String printedNote,
 			int requestedDeliveryDateMonth, int requestedDeliveryDateDay,
 			int requestedDeliveryDateYear, int requestedDeliveryDateHour,
@@ -516,13 +595,17 @@ public interface CommerceOrderItemLocalService
 		throws PortalException;
 
 	public CommerceOrderItem updateCommerceOrderItemUnitPrice(
-			long userId, long commerceOrderItemId, int quantity,
+			long userId, long commerceOrderItemId, BigDecimal quantity,
 			BigDecimal unitPrice)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CommerceOrderItem updateCustomFields(
 			long commerceOrderItemId, ServiceContext serviceContext)
+		throws PortalException;
+
+	public CommerceOrderItem updateExternalReferenceCode(
+			long commerceOrderItemId, String externalReferenceCode)
 		throws PortalException;
 
 }

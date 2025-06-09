@@ -1,27 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.order.test;
 
+import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
+import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.constants.CommerceWebKeys;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
-import com.liferay.commerce.discount.service.CommerceDiscountLocalService;
 import com.liferay.commerce.inventory.model.CommerceInventoryBookedQuantity;
 import com.liferay.commerce.inventory.model.CommerceInventoryWarehouse;
 import com.liferay.commerce.inventory.service.CommerceInventoryBookedQuantityLocalService;
@@ -36,15 +26,15 @@ import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
 import com.liferay.commerce.test.util.CommerceTestUtil;
 import com.liferay.commerce.test.util.context.TestCommerceContext;
 import com.liferay.petra.lang.CentralizedThreadLocal;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
-import com.liferay.portal.kernel.service.GroupLocalService;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
@@ -52,16 +42,19 @@ import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.theme.ThemeDisplayFactory;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.math.BigDecimal;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.frutilla.FrutillaRule;
 
@@ -95,6 +88,8 @@ public class CommerceOrderHttpHelperImplTest {
 
 		_user = UserTestUtil.addUser();
 
+		_permissionChecker = PermissionThreadLocal.getPermissionChecker();
+
 		PermissionThreadLocal.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(_user));
 
@@ -102,14 +97,14 @@ public class CommerceOrderHttpHelperImplTest {
 
 		List<CommerceInventoryBookedQuantity>
 			commerceInventoryBookedQuantities =
-				_commerceBookedQuantityLocalService.
+				_commerceInventoryBookedQuantityLocalService.
 					getCommerceInventoryBookedQuantities(
 						QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 		for (CommerceInventoryBookedQuantity commerceInventoryBookedQuantity :
 				commerceInventoryBookedQuantities) {
 
-			_commerceBookedQuantityLocalService.
+			_commerceInventoryBookedQuantityLocalService.
 				deleteCommerceInventoryBookedQuantity(
 					commerceInventoryBookedQuantity);
 		}
@@ -124,13 +119,12 @@ public class CommerceOrderHttpHelperImplTest {
 		_commerceChannel = CommerceTestUtil.addCommerceChannel(
 			_group.getGroupId(), _commerceCurrency.getCode());
 
-		_commerceAccount =
-			_commerceAccountLocalService.getPersonalCommerceAccount(
-				_user.getUserId());
+		_accountEntry = CommerceAccountTestUtil.getPersonAccountEntry(
+			_user.getUserId());
 
 		CommerceContext commerceContext = new TestCommerceContext(
-			_commerceCurrency, _commerceChannel, _user, _group,
-			_commerceAccount, null);
+			_accountEntry, _commerceCurrency, _commerceChannel, _user, _group,
+			null);
 
 		_httpServletRequest.setAttribute(
 			CommerceWebKeys.COMMERCE_CONTEXT, commerceContext);
@@ -139,11 +133,11 @@ public class CommerceOrderHttpHelperImplTest {
 
 		_themeDisplay = ThemeDisplayFactory.create();
 
-		_themeDisplay.setScopeGroupId(_group.getGroupId());
-		_themeDisplay.setUser(_user);
-		_themeDisplay.setSignedIn(true);
 		_themeDisplay.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(_user));
+		_themeDisplay.setScopeGroupId(_group.getGroupId());
+		_themeDisplay.setSignedIn(true);
+		_themeDisplay.setUser(_user);
 
 		_httpServletRequest.setAttribute(WebKeys.THEME_DISPLAY, _themeDisplay);
 
@@ -154,11 +148,11 @@ public class CommerceOrderHttpHelperImplTest {
 
 	@After
 	public void tearDown() throws PortalException {
-		CentralizedThreadLocal.clearShortLivedThreadLocals();
-
 		for (CommerceOrder commerceOrder : _commerceOrders) {
 			_commerceOrderLocalService.deleteCommerceOrder(commerceOrder);
 		}
+
+		CentralizedThreadLocal.clearShortLivedCentralizedThreadLocals();
 	}
 
 	@Test
@@ -219,18 +213,38 @@ public class CommerceOrderHttpHelperImplTest {
 			_commerceChannel.getCommerceChannelId());
 
 		CommerceInventoryTestUtil.addCommerceInventoryWarehouseItem(
-			_user.getUserId(), _commerceInventoryWarehouse, cpInstance.getSku(),
-			10);
+			_user.getUserId(), _commerceInventoryWarehouse, BigDecimal.TEN,
+			cpInstance.getSku(), StringPool.BLANK);
 
 		CommerceOrderItem commerceOrderItem =
 			CommerceTestUtil.addCommerceOrderItem(
 				commerceOrder.getCommerceOrderId(),
-				cpInstance.getCPInstanceId(), 2);
+				cpInstance.getCPInstanceId(), BigDecimal.valueOf(2));
 
-		Assert.assertEquals(
-			commerceOrderItem.getQuantity(),
-			_commerceOrderHttpHelper.getCommerceOrderItemsQuantity(
-				_httpServletRequest));
+		Assert.assertTrue(
+			BigDecimalUtil.eq(
+				commerceOrderItem.getQuantity(),
+				_commerceOrderHttpHelper.getCommerceOrderItemsQuantity(
+					_httpServletRequest)));
+	}
+
+	@Test
+	public void testGetCommerceOrderWithNullCommerceContext() throws Exception {
+		frutillaRule.scenario(
+			"Attempt to get a commerce order from http servlet request"
+		).given(
+			"An HttpServletRequest and a ThemeDisplay"
+		).when(
+			"I use an empty HttpServletRequest with null CommerceContext"
+		).then(
+			"I should get a null value"
+		);
+
+		CommerceOrder commerceOrder =
+			_commerceOrderHttpHelper.getCurrentCommerceOrder(
+				new MockHttpServletRequest());
+
+		Assert.assertNull(commerceOrder);
 	}
 
 	@Rule
@@ -238,14 +252,8 @@ public class CommerceOrderHttpHelperImplTest {
 
 	private static User _user;
 
-	private CommerceAccount _commerceAccount;
-
-	@Inject
-	private CommerceAccountLocalService _commerceAccountLocalService;
-
-	@Inject
-	private CommerceInventoryBookedQuantityLocalService
-		_commerceBookedQuantityLocalService;
+	@DeleteAfterTestRun
+	private AccountEntry _accountEntry;
 
 	@DeleteAfterTestRun
 	private CommerceChannel _commerceChannel;
@@ -254,7 +262,8 @@ public class CommerceOrderHttpHelperImplTest {
 	private CommerceCurrency _commerceCurrency;
 
 	@Inject
-	private CommerceDiscountLocalService _commerceDiscountLocalService;
+	private CommerceInventoryBookedQuantityLocalService
+		_commerceInventoryBookedQuantityLocalService;
 
 	@DeleteAfterTestRun
 	private CommerceInventoryWarehouse _commerceInventoryWarehouse;
@@ -267,14 +276,8 @@ public class CommerceOrderHttpHelperImplTest {
 
 	private final List<CommerceOrder> _commerceOrders = new ArrayList<>();
 	private Group _group;
-
-	@Inject
-	private GroupLocalService _groupLocalService;
-
 	private HttpServletRequest _httpServletRequest;
+	private PermissionChecker _permissionChecker;
 	private ThemeDisplay _themeDisplay;
-
-	@Inject
-	private UserLocalService _userLocalService;
 
 }

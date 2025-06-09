@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -22,7 +13,7 @@ String[] discountPercentages = priceModel.getDiscountPercentages();
 
 <c:if test="<%= !compact %>">
 	<span class="price-label">
-		<%= LanguageUtil.get(request, "discount") %>
+		<liferay-ui:message key="discount" />
 	</span>
 	<span class="price-value price-value-discount">
 		<c:choose>
@@ -41,10 +32,10 @@ String[] discountPercentages = priceModel.getDiscountPercentages();
 <span class="price-label">
 	<c:choose>
 		<c:when test="<%= netPrice %>">
-			<%= LanguageUtil.get(request, "net-price") %>
+			<liferay-ui:message key="net-price" />
 		</c:when>
 		<c:otherwise>
-			<%= LanguageUtil.get(request, "gross-price") %>
+			<liferay-ui:message key="gross-price" />
 		</c:otherwise>
 	</c:choose>
 </span>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.workflow.internal.resource.v1_0;
@@ -20,23 +11,24 @@ import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.CreatorUtil;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.RoleUtil;
 import com.liferay.headless.admin.workflow.internal.dto.v1_0.util.WorkflowLogUtil;
 import com.liferay.headless.admin.workflow.resource.v1_0.WorkflowLogResource;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
-import com.liferay.portal.kernel.workflow.WorkflowLogManager;
-import com.liferay.portal.kernel.workflow.comparator.WorkflowComparatorFactoryUtil;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
+import com.liferay.portal.workflow.comparator.WorkflowComparatorFactory;
 import com.liferay.portal.workflow.kaleo.KaleoWorkflowModelConverter;
 import com.liferay.portal.workflow.kaleo.definition.LogType;
 import com.liferay.portal.workflow.kaleo.definition.util.KaleoLogUtil;
 import com.liferay.portal.workflow.kaleo.service.KaleoLogLocalService;
+import com.liferay.portal.workflow.manager.WorkflowLogManager;
 
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,6 +41,7 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/workflow-log.properties",
 	scope = ServiceScope.PROTOTYPE, service = WorkflowLogResource.class
 )
+@CTAware
 public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 
 	@Override
@@ -62,7 +55,7 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 					contextCompany.getCompanyId(), workflowInstanceId,
 					_toLogTypes(types), pagination.getStartPosition(),
 					pagination.getEndPosition(),
-					WorkflowComparatorFactoryUtil.getLogCreateDateComparator(
+					_workflowComparatorFactory.getLogCreateDateComparator(
 						false)),
 				this::_toWorkflowLog),
 			pagination,
@@ -89,7 +82,7 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 					contextCompany.getCompanyId(), workflowTaskId,
 					_toLogTypes(types), pagination.getStartPosition(),
 					pagination.getEndPosition(),
-					WorkflowComparatorFactoryUtil.getLogCreateDateComparator(
+					_workflowComparatorFactory.getLogCreateDateComparator(
 						false)),
 				this::_toWorkflowLog),
 			pagination,
@@ -99,7 +92,10 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 	}
 
 	private String _toLogTypeName(WorkflowLog.Type type) {
-		if (type == WorkflowLog.Type.NODE_ENTRY) {
+		if (type == WorkflowLog.Type.INSTANCE_FAIL) {
+			return LogType.INSTANCE_FAIL.name();
+		}
+		else if (type == WorkflowLog.Type.NODE_ENTRY) {
 			return LogType.NODE_ENTRY.name();
 		}
 		else if (type == WorkflowLog.Type.TASK_ASSIGN) {
@@ -119,18 +115,14 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 	}
 
 	private List<Integer> _toLogTypes(String[] types) {
-		return Stream.of(
-			types
-		).map(
-			WorkflowLog.Type::create
-		).map(
-			this::_toLogTypeName
-		).map(
-			KaleoLogUtil::convert
-		).distinct(
-		).collect(
-			Collectors.toList()
-		);
+		List<Integer> logTypes = transformToList(
+			types,
+			type -> KaleoLogUtil.convert(
+				_toLogTypeName(WorkflowLog.Type.create(type))));
+
+		ListUtil.distinct(logTypes);
+
+		return logTypes;
 	}
 
 	private Role _toRole(long roleId) throws Exception {
@@ -153,52 +145,69 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 
 		return new WorkflowLog() {
 			{
-				auditPerson = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(workflowLog.getAuditUserId()));
-				commentLog = _language.get(
-					ResourceBundleUtil.getBundle(
-						"content.Language",
-						contextAcceptLanguage.getPreferredLocale(), getClass()),
-					workflowLog.getComment());
-				dateCreated = workflowLog.getCreateDate();
-				description = WorkflowLogUtil.getDescription(
-					_language, contextAcceptLanguage.getPreferredLocale(),
-					_portal, _roleLocalService::fetchRole,
-					_userLocalService::fetchUser, workflowLog);
-				id = workflowLog.getWorkflowLogId();
-				person = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(workflowLog.getUserId()));
-				previousPerson = CreatorUtil.toCreator(
-					_portal,
-					_userLocalService.fetchUser(
-						workflowLog.getPreviousUserId()));
-				previousRole = _toRole(workflowLog.getPreviousRoleId());
-				previousState = workflowLog.getPreviousState();
-				role = _toRole(workflowLog.getRoleId());
-				state = workflowLog.getState();
-				type = _toWorkflowLogType(
-					KaleoLogUtil.convert(workflowLog.getType()));
-				workflowTaskId = workflowLog.getWorkflowTaskId();
+				setAuditPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							workflowLog.getAuditUserId())));
+				setCommentLog(
+					() -> _language.get(
+						ResourceBundleUtil.getBundle(
+							"content.Language",
+							contextAcceptLanguage.getPreferredLocale(),
+							getClass()),
+						workflowLog.getComment()));
+				setDateCreated(workflowLog::getCreateDate);
+				setDescription(
+					() -> WorkflowLogUtil.getDescription(
+						_language, contextAcceptLanguage.getPreferredLocale(),
+						_portal, _roleLocalService::fetchRole,
+						_userLocalService::fetchUser, workflowLog));
+				setId(workflowLog::getWorkflowLogId);
+				setPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(workflowLog.getUserId())));
+				setPreviousPerson(
+					() -> CreatorUtil.toCreator(
+						_portal,
+						_userLocalService.fetchUser(
+							workflowLog.getPreviousUserId())));
+				setPreviousRole(() -> _toRole(workflowLog.getPreviousRoleId()));
+				setPreviousState(workflowLog::getPreviousWorkflowNodeName);
+				setPreviousStateLabel(
+					() -> workflowLog.getPreviousWorkflowNodeLabel(
+						contextAcceptLanguage.getPreferredLocale()));
+				setRole(() -> _toRole(workflowLog.getRoleId()));
+				setState(workflowLog::getCurrentWorkflowNodeName);
+				setStateLabel(
+					() -> workflowLog.getCurrentWorkflowNodeLabel(
+						contextAcceptLanguage.getPreferredLocale()));
+				setType(
+					() -> _toWorkflowLogType(
+						KaleoLogUtil.convert(workflowLog.getType())));
+				setWorkflowTaskId(workflowLog::getWorkflowTaskId);
 			}
 		};
 	}
 
 	private WorkflowLog.Type _toWorkflowLogType(String type) {
-		if (type == LogType.NODE_ENTRY.name()) {
+		if (Objects.equals(type, LogType.INSTANCE_FAIL.name())) {
+			return WorkflowLog.Type.INSTANCE_FAIL;
+		}
+		else if (Objects.equals(type, LogType.NODE_ENTRY.name())) {
 			return WorkflowLog.Type.NODE_ENTRY;
 		}
-		else if (type == LogType.NODE_EXIT.name()) {
+		else if (Objects.equals(type, LogType.NODE_EXIT.name())) {
 			return WorkflowLog.Type.TRANSITION;
 		}
-		else if (type == LogType.TASK_ASSIGNMENT.name()) {
+		else if (Objects.equals(type, LogType.TASK_ASSIGNMENT.name())) {
 			return WorkflowLog.Type.TASK_ASSIGN;
 		}
-		else if (type == LogType.TASK_COMPLETION.name()) {
+		else if (Objects.equals(type, LogType.TASK_COMPLETION.name())) {
 			return WorkflowLog.Type.TASK_COMPLETION;
 		}
-		else if (type == LogType.TASK_UPDATE.name()) {
+		else if (Objects.equals(type, LogType.TASK_UPDATE.name())) {
 			return WorkflowLog.Type.TASK_UPDATE;
 		}
 
@@ -222,6 +231,9 @@ public class WorkflowLogResourceImpl extends BaseWorkflowLogResourceImpl {
 
 	@Reference
 	private UserLocalService _userLocalService;
+
+	@Reference
+	private WorkflowComparatorFactory _workflowComparatorFactory;
 
 	@Reference
 	private WorkflowLogManager _workflowLogManager;

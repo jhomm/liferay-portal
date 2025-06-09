@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.legacy.query;
 
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.BooleanQuery;
@@ -22,18 +16,19 @@ import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.FilterTranslator;
 import com.liferay.portal.kernel.search.query.QueryVisitor;
 
+import java.util.List;
+
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author André de Oliveira
  * @author Miguel Angelo Caldas Gallindo
  */
-@Component(immediate = true, service = BooleanQueryTranslator.class)
+@Component(service = BooleanQueryTranslator.class)
 public class BooleanQueryTranslatorImpl implements BooleanQueryTranslator {
 
 	@Override
@@ -42,7 +37,9 @@ public class BooleanQueryTranslatorImpl implements BooleanQueryTranslator {
 
 		BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
 
-		for (BooleanClause<Query> clause : booleanQuery.clauses()) {
+		List<BooleanClause<Query>> clauses = booleanQuery.clauses();
+
+		for (BooleanClause<Query> clause : clauses) {
 			_addClause(clause, boolQueryBuilder, queryVisitor);
 		}
 
@@ -62,8 +59,19 @@ public class BooleanQueryTranslatorImpl implements BooleanQueryTranslator {
 
 		BoolQueryBuilder wrapperBoolQueryBuilder = QueryBuilders.boolQuery();
 
-		if (booleanQuery.hasClauses()) {
+		if (!clauses.isEmpty()) {
 			wrapperBoolQueryBuilder.must(boolQueryBuilder);
+		}
+
+		FilterTranslator<QueryBuilder> filterTranslator =
+			_filterTranslatorSnapshot.get();
+
+		if (filterTranslator == null) {
+			_log.error(
+				"Unable to translate boolean filter " + booleanFilter +
+					" because filter translator is null");
+
+			return boolQueryBuilder;
 		}
 
 		QueryBuilder filterQueryBuilder = filterTranslator.translate(
@@ -73,9 +81,6 @@ public class BooleanQueryTranslatorImpl implements BooleanQueryTranslator {
 
 		return wrapperBoolQueryBuilder;
 	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)")
-	protected FilterTranslator<QueryBuilder> filterTranslator;
 
 	private void _addClause(
 		BooleanClause<Query> clause, BoolQueryBuilder boolQuery,
@@ -107,5 +112,14 @@ public class BooleanQueryTranslatorImpl implements BooleanQueryTranslator {
 
 		throw new IllegalArgumentException();
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		BooleanQueryTranslatorImpl.class);
+
+	private static final Snapshot<FilterTranslator<QueryBuilder>>
+		_filterTranslatorSnapshot = new Snapshot<>(
+			BooleanQueryTranslatorImpl.class,
+			Snapshot.cast(FilterTranslator.class),
+			"(search.engine.impl=Elasticsearch)", true);
 
 }

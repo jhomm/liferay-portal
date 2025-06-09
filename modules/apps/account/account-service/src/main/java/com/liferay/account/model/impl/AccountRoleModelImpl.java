@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.model.impl;
 
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.model.AccountRoleModel;
-import com.liferay.account.model.AccountRoleSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -32,18 +22,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -72,9 +59,9 @@ public class AccountRoleModelImpl
 	public static final String TABLE_NAME = "AccountRole";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"accountRoleId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"accountEntryId", Types.BIGINT},
-		{"roleId", Types.BIGINT}
+		{"mvccVersion", Types.BIGINT}, {"externalReferenceCode", Types.VARCHAR},
+		{"accountRoleId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"accountEntryId", Types.BIGINT}, {"roleId", Types.BIGINT}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -82,6 +69,7 @@ public class AccountRoleModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("accountRoleId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("accountEntryId", Types.BIGINT);
@@ -89,7 +77,7 @@ public class AccountRoleModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table AccountRole (mvccVersion LONG default 0 not null,accountRoleId LONG not null primary key,companyId LONG,accountEntryId LONG,roleId LONG)";
+		"create table AccountRole (mvccVersion LONG default 0 not null,externalReferenceCode VARCHAR(75) null,accountRoleId LONG not null primary key,companyId LONG,accountEntryId LONG,roleId LONG)";
 
 	public static final String TABLE_SQL_DROP = "drop table AccountRole";
 
@@ -98,6 +86,9 @@ public class AccountRoleModelImpl
 
 	public static final String ORDER_BY_SQL =
 		" ORDER BY AccountRole.accountRoleId ASC";
+
+	public static final String ORDER_BY_SQL_INLINE_DISTINCT =
+		" ORDER BY accountRole.accountRoleId ASC";
 
 	public static final String DATA_SOURCE = "liferayDataSource";
 
@@ -121,14 +112,20 @@ public class AccountRoleModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long ROLEID_COLUMN_BITMASK = 4L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 4L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long ROLEID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
 	 *		#getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long ACCOUNTROLEID_COLUMN_BITMASK = 8L;
+	public static final long ACCOUNTROLEID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -142,53 +139,6 @@ public class AccountRoleModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static AccountRole toModel(AccountRoleSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		AccountRole model = new AccountRoleImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setAccountRoleId(soapModel.getAccountRoleId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setAccountEntryId(soapModel.getAccountEntryId());
-		model.setRoleId(soapModel.getRoleId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AccountRole> toModels(AccountRoleSoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<AccountRole> models = new ArrayList<AccountRole>(
-			soapModels.length);
-
-		for (AccountRoleSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public AccountRoleModelImpl() {
@@ -267,81 +217,76 @@ public class AccountRoleModelImpl
 	public Map<String, Function<AccountRole, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AccountRole, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AccountRole>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AccountRole.class.getClassLoader(), AccountRole.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<AccountRole, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AccountRole> constructor =
-				(Constructor<AccountRole>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AccountRole, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<AccountRole, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AccountRole::getMvccVersion);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", AccountRole::getExternalReferenceCode);
+			attributeGetterFunctions.put(
+				"accountRoleId", AccountRole::getAccountRoleId);
+			attributeGetterFunctions.put(
+				"companyId", AccountRole::getCompanyId);
+			attributeGetterFunctions.put(
+				"accountEntryId", AccountRole::getAccountEntryId);
+			attributeGetterFunctions.put("roleId", AccountRole::getRoleId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AccountRole, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AccountRole, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AccountRole, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<AccountRole, Object>>();
-		Map<String, BiConsumer<AccountRole, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<AccountRole, ?>>();
+		private static final Map<String, BiConsumer<AccountRole, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AccountRole::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AccountRole, Long>)AccountRole::setMvccVersion);
-		attributeGetterFunctions.put(
-			"accountRoleId", AccountRole::getAccountRoleId);
-		attributeSetterBiConsumers.put(
-			"accountRoleId",
-			(BiConsumer<AccountRole, Long>)AccountRole::setAccountRoleId);
-		attributeGetterFunctions.put("companyId", AccountRole::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AccountRole, Long>)AccountRole::setCompanyId);
-		attributeGetterFunctions.put(
-			"accountEntryId", AccountRole::getAccountEntryId);
-		attributeSetterBiConsumers.put(
-			"accountEntryId",
-			(BiConsumer<AccountRole, Long>)AccountRole::setAccountEntryId);
-		attributeGetterFunctions.put("roleId", AccountRole::getRoleId);
-		attributeSetterBiConsumers.put(
-			"roleId", (BiConsumer<AccountRole, Long>)AccountRole::setRoleId);
+		static {
+			Map<String, BiConsumer<AccountRole, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<AccountRole, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AccountRole, Long>)AccountRole::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<AccountRole, String>)
+					AccountRole::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"accountRoleId",
+				(BiConsumer<AccountRole, Long>)AccountRole::setAccountRoleId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AccountRole, Long>)AccountRole::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"accountEntryId",
+				(BiConsumer<AccountRole, Long>)AccountRole::setAccountEntryId);
+			attributeSetterBiConsumers.put(
+				"roleId",
+				(BiConsumer<AccountRole, Long>)AccountRole::setRoleId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -357,6 +302,35 @@ public class AccountRoleModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -505,6 +479,7 @@ public class AccountRoleModelImpl
 		AccountRoleImpl accountRoleImpl = new AccountRoleImpl();
 
 		accountRoleImpl.setMvccVersion(getMvccVersion());
+		accountRoleImpl.setExternalReferenceCode(getExternalReferenceCode());
 		accountRoleImpl.setAccountRoleId(getAccountRoleId());
 		accountRoleImpl.setCompanyId(getCompanyId());
 		accountRoleImpl.setAccountEntryId(getAccountEntryId());
@@ -521,6 +496,8 @@ public class AccountRoleModelImpl
 
 		accountRoleImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		accountRoleImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		accountRoleImpl.setAccountRoleId(
 			this.<Long>getColumnOriginalValue("accountRoleId"));
 		accountRoleImpl.setCompanyId(
@@ -606,6 +583,18 @@ public class AccountRoleModelImpl
 
 		accountRoleCacheModel.mvccVersion = getMvccVersion();
 
+		accountRoleCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			accountRoleCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			accountRoleCacheModel.externalReferenceCode = null;
+		}
+
 		accountRoleCacheModel.accountRoleId = getAccountRoleId();
 
 		accountRoleCacheModel.companyId = getCompanyId();
@@ -666,53 +655,26 @@ public class AccountRoleModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AccountRole, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AccountRole, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AccountRole, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((AccountRole)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AccountRole>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AccountRole.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private String _externalReferenceCode;
 	private long _accountRoleId;
 	private long _companyId;
 	private long _accountEntryId;
 	private long _roleId;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<AccountRole, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<AccountRole, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -738,6 +700,8 @@ public class AccountRoleModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("accountRoleId", _accountRoleId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("accountEntryId", _accountEntryId);
@@ -757,13 +721,15 @@ public class AccountRoleModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("accountRoleId", 2L);
+		columnBitmasks.put("externalReferenceCode", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("accountRoleId", 4L);
 
-		columnBitmasks.put("accountEntryId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("roleId", 16L);
+		columnBitmasks.put("accountEntryId", 16L);
+
+		columnBitmasks.put("roleId", 32L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

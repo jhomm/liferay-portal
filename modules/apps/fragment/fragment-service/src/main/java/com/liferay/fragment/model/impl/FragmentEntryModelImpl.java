@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model.impl;
@@ -19,7 +10,6 @@ import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.fragment.model.FragmentEntry;
 import com.liferay.fragment.model.FragmentEntryModel;
-import com.liferay.fragment.model.FragmentEntrySoap;
 import com.liferay.fragment.model.FragmentEntryVersion;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.bean.AutoEscapeBeanHandler;
@@ -39,18 +29,15 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -80,19 +67,22 @@ public class FragmentEntryModelImpl
 
 	public static final Object[][] TABLE_COLUMNS = {
 		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
-		{"uuid_", Types.VARCHAR}, {"headId", Types.BIGINT},
-		{"head", Types.BOOLEAN}, {"fragmentEntryId", Types.BIGINT},
-		{"groupId", Types.BIGINT}, {"companyId", Types.BIGINT},
-		{"userId", Types.BIGINT}, {"userName", Types.VARCHAR},
-		{"createDate", Types.TIMESTAMP}, {"modifiedDate", Types.TIMESTAMP},
+		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
+		{"headId", Types.BIGINT}, {"head", Types.BOOLEAN},
+		{"fragmentEntryId", Types.BIGINT}, {"groupId", Types.BIGINT},
+		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
+		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
+		{"modifiedDate", Types.TIMESTAMP},
 		{"fragmentCollectionId", Types.BIGINT},
 		{"fragmentEntryKey", Types.VARCHAR}, {"name", Types.VARCHAR},
 		{"css", Types.CLOB}, {"html", Types.CLOB}, {"js", Types.CLOB},
 		{"cacheable", Types.BOOLEAN}, {"configuration", Types.CLOB},
-		{"previewFileEntryId", Types.BIGINT}, {"readOnly", Types.BOOLEAN},
-		{"type_", Types.INTEGER}, {"lastPublishDate", Types.TIMESTAMP},
-		{"status", Types.INTEGER}, {"statusByUserId", Types.BIGINT},
-		{"statusByUserName", Types.VARCHAR}, {"statusDate", Types.TIMESTAMP}
+		{"icon", Types.VARCHAR}, {"previewFileEntryId", Types.BIGINT},
+		{"marketplace", Types.BOOLEAN}, {"readOnly", Types.BOOLEAN},
+		{"type_", Types.INTEGER}, {"typeOptions", Types.CLOB},
+		{"lastPublishDate", Types.TIMESTAMP}, {"status", Types.INTEGER},
+		{"statusByUserId", Types.BIGINT}, {"statusByUserName", Types.VARCHAR},
+		{"statusDate", Types.TIMESTAMP}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -102,6 +92,7 @@ public class FragmentEntryModelImpl
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
+		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("headId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("head", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("fragmentEntryId", Types.BIGINT);
@@ -119,9 +110,12 @@ public class FragmentEntryModelImpl
 		TABLE_COLUMNS_MAP.put("js", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("cacheable", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("configuration", Types.CLOB);
+		TABLE_COLUMNS_MAP.put("icon", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("previewFileEntryId", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("marketplace", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("readOnly", Types.BOOLEAN);
 		TABLE_COLUMNS_MAP.put("type_", Types.INTEGER);
+		TABLE_COLUMNS_MAP.put("typeOptions", Types.CLOB);
 		TABLE_COLUMNS_MAP.put("lastPublishDate", Types.TIMESTAMP);
 		TABLE_COLUMNS_MAP.put("status", Types.INTEGER);
 		TABLE_COLUMNS_MAP.put("statusByUserId", Types.BIGINT);
@@ -130,7 +124,7 @@ public class FragmentEntryModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table FragmentEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,headId LONG,head BOOLEAN,fragmentEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,fragmentCollectionId LONG,fragmentEntryKey VARCHAR(75) null,name VARCHAR(75) null,css TEXT null,html TEXT null,js TEXT null,cacheable BOOLEAN,configuration TEXT null,previewFileEntryId LONG,readOnly BOOLEAN,type_ INTEGER,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (fragmentEntryId, ctCollectionId))";
+		"create table FragmentEntry (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,headId LONG,head BOOLEAN,fragmentEntryId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,fragmentCollectionId LONG,fragmentEntryKey VARCHAR(75) null,name VARCHAR(75) null,css TEXT null,html TEXT null,js TEXT null,cacheable BOOLEAN,configuration TEXT null,icon VARCHAR(75) null,previewFileEntryId LONG,marketplace BOOLEAN,readOnly BOOLEAN,type_ INTEGER,typeOptions TEXT null,lastPublishDate DATE null,status INTEGER,statusByUserId LONG,statusByUserName VARCHAR(75) null,statusDate DATE null,primary key (fragmentEntryId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table FragmentEntry";
 
@@ -156,55 +150,61 @@ public class FragmentEntryModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FRAGMENTCOLLECTIONID_COLUMN_BITMASK = 2L;
+	public static final long EXTERNALREFERENCECODE_COLUMN_BITMASK = 2L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FRAGMENTENTRYKEY_COLUMN_BITMASK = 4L;
+	public static final long FRAGMENTCOLLECTIONID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 8L;
+	public static final long FRAGMENTENTRYKEY_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long HEAD_COLUMN_BITMASK = 16L;
+	public static final long GROUPID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long HEADID_COLUMN_BITMASK = 32L;
+	public static final long HEAD_COLUMN_BITMASK = 32L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long NAME_COLUMN_BITMASK = 64L;
+	public static final long HEADID_COLUMN_BITMASK = 64L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long STATUS_COLUMN_BITMASK = 128L;
+	public static final long NAME_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long TYPE_COLUMN_BITMASK = 256L;
+	public static final long STATUS_COLUMN_BITMASK = 256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long UUID_COLUMN_BITMASK = 512L;
+	public static final long TYPE_COLUMN_BITMASK = 512L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long UUID_COLUMN_BITMASK = 1024L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -218,75 +218,6 @@ public class FragmentEntryModelImpl
 	 */
 	@Deprecated
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
-	}
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static FragmentEntry toModel(FragmentEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		FragmentEntry model = new FragmentEntryImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setUuid(soapModel.getUuid());
-		model.setHeadId(soapModel.getHeadId());
-		model.setFragmentEntryId(soapModel.getFragmentEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setFragmentCollectionId(soapModel.getFragmentCollectionId());
-		model.setFragmentEntryKey(soapModel.getFragmentEntryKey());
-		model.setName(soapModel.getName());
-		model.setCss(soapModel.getCss());
-		model.setHtml(soapModel.getHtml());
-		model.setJs(soapModel.getJs());
-		model.setCacheable(soapModel.isCacheable());
-		model.setConfiguration(soapModel.getConfiguration());
-		model.setPreviewFileEntryId(soapModel.getPreviewFileEntryId());
-		model.setReadOnly(soapModel.isReadOnly());
-		model.setType(soapModel.getType());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-		model.setStatus(soapModel.getStatus());
-		model.setStatusByUserId(soapModel.getStatusByUserId());
-		model.setStatusByUserName(soapModel.getStatusByUserName());
-		model.setStatusDate(soapModel.getStatusDate());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<FragmentEntry> toModels(FragmentEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<FragmentEntry> models = new ArrayList<FragmentEntry>(
-			soapModels.length);
-
-		for (FragmentEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
 	}
 
 	public FragmentEntryModelImpl() {
@@ -365,178 +296,206 @@ public class FragmentEntryModelImpl
 	public Map<String, Function<FragmentEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<FragmentEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, FragmentEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			FragmentEntry.class.getClassLoader(), FragmentEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<FragmentEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<FragmentEntry> constructor =
-				(Constructor<FragmentEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<FragmentEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<FragmentEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", FragmentEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", FragmentEntry::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", FragmentEntry::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode",
+				FragmentEntry::getExternalReferenceCode);
+			attributeGetterFunctions.put("headId", FragmentEntry::getHeadId);
+			attributeGetterFunctions.put(
+				"fragmentEntryId", FragmentEntry::getFragmentEntryId);
+			attributeGetterFunctions.put("groupId", FragmentEntry::getGroupId);
+			attributeGetterFunctions.put(
+				"companyId", FragmentEntry::getCompanyId);
+			attributeGetterFunctions.put("userId", FragmentEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", FragmentEntry::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", FragmentEntry::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", FragmentEntry::getModifiedDate);
+			attributeGetterFunctions.put(
+				"fragmentCollectionId", FragmentEntry::getFragmentCollectionId);
+			attributeGetterFunctions.put(
+				"fragmentEntryKey", FragmentEntry::getFragmentEntryKey);
+			attributeGetterFunctions.put("name", FragmentEntry::getName);
+			attributeGetterFunctions.put("css", FragmentEntry::getCss);
+			attributeGetterFunctions.put("html", FragmentEntry::getHtml);
+			attributeGetterFunctions.put("js", FragmentEntry::getJs);
+			attributeGetterFunctions.put(
+				"cacheable", FragmentEntry::getCacheable);
+			attributeGetterFunctions.put(
+				"configuration", FragmentEntry::getConfiguration);
+			attributeGetterFunctions.put("icon", FragmentEntry::getIcon);
+			attributeGetterFunctions.put(
+				"previewFileEntryId", FragmentEntry::getPreviewFileEntryId);
+			attributeGetterFunctions.put(
+				"marketplace", FragmentEntry::getMarketplace);
+			attributeGetterFunctions.put(
+				"readOnly", FragmentEntry::getReadOnly);
+			attributeGetterFunctions.put("type", FragmentEntry::getType);
+			attributeGetterFunctions.put(
+				"typeOptions", FragmentEntry::getTypeOptions);
+			attributeGetterFunctions.put(
+				"lastPublishDate", FragmentEntry::getLastPublishDate);
+			attributeGetterFunctions.put("status", FragmentEntry::getStatus);
+			attributeGetterFunctions.put(
+				"statusByUserId", FragmentEntry::getStatusByUserId);
+			attributeGetterFunctions.put(
+				"statusByUserName", FragmentEntry::getStatusByUserName);
+			attributeGetterFunctions.put(
+				"statusDate", FragmentEntry::getStatusDate);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<FragmentEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<FragmentEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<FragmentEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<FragmentEntry, Object>>();
-		Map<String, BiConsumer<FragmentEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<FragmentEntry, ?>>();
+		private static final Map<String, BiConsumer<FragmentEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", FragmentEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", FragmentEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setCtCollectionId);
-		attributeGetterFunctions.put("uuid", FragmentEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<FragmentEntry, String>)FragmentEntry::setUuid);
-		attributeGetterFunctions.put("headId", FragmentEntry::getHeadId);
-		attributeSetterBiConsumers.put(
-			"headId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setHeadId);
-		attributeGetterFunctions.put(
-			"fragmentEntryId", FragmentEntry::getFragmentEntryId);
-		attributeSetterBiConsumers.put(
-			"fragmentEntryId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setFragmentEntryId);
-		attributeGetterFunctions.put("groupId", FragmentEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setGroupId);
-		attributeGetterFunctions.put("companyId", FragmentEntry::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setCompanyId);
-		attributeGetterFunctions.put("userId", FragmentEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setUserId);
-		attributeGetterFunctions.put("userName", FragmentEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<FragmentEntry, String>)FragmentEntry::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", FragmentEntry::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<FragmentEntry, Date>)FragmentEntry::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", FragmentEntry::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<FragmentEntry, Date>)FragmentEntry::setModifiedDate);
-		attributeGetterFunctions.put(
-			"fragmentCollectionId", FragmentEntry::getFragmentCollectionId);
-		attributeSetterBiConsumers.put(
-			"fragmentCollectionId",
-			(BiConsumer<FragmentEntry, Long>)
-				FragmentEntry::setFragmentCollectionId);
-		attributeGetterFunctions.put(
-			"fragmentEntryKey", FragmentEntry::getFragmentEntryKey);
-		attributeSetterBiConsumers.put(
-			"fragmentEntryKey",
-			(BiConsumer<FragmentEntry, String>)
-				FragmentEntry::setFragmentEntryKey);
-		attributeGetterFunctions.put("name", FragmentEntry::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<FragmentEntry, String>)FragmentEntry::setName);
-		attributeGetterFunctions.put("css", FragmentEntry::getCss);
-		attributeSetterBiConsumers.put(
-			"css", (BiConsumer<FragmentEntry, String>)FragmentEntry::setCss);
-		attributeGetterFunctions.put("html", FragmentEntry::getHtml);
-		attributeSetterBiConsumers.put(
-			"html", (BiConsumer<FragmentEntry, String>)FragmentEntry::setHtml);
-		attributeGetterFunctions.put("js", FragmentEntry::getJs);
-		attributeSetterBiConsumers.put(
-			"js", (BiConsumer<FragmentEntry, String>)FragmentEntry::setJs);
-		attributeGetterFunctions.put("cacheable", FragmentEntry::getCacheable);
-		attributeSetterBiConsumers.put(
-			"cacheable",
-			(BiConsumer<FragmentEntry, Boolean>)FragmentEntry::setCacheable);
-		attributeGetterFunctions.put(
-			"configuration", FragmentEntry::getConfiguration);
-		attributeSetterBiConsumers.put(
-			"configuration",
-			(BiConsumer<FragmentEntry, String>)FragmentEntry::setConfiguration);
-		attributeGetterFunctions.put(
-			"previewFileEntryId", FragmentEntry::getPreviewFileEntryId);
-		attributeSetterBiConsumers.put(
-			"previewFileEntryId",
-			(BiConsumer<FragmentEntry, Long>)
-				FragmentEntry::setPreviewFileEntryId);
-		attributeGetterFunctions.put("readOnly", FragmentEntry::getReadOnly);
-		attributeSetterBiConsumers.put(
-			"readOnly",
-			(BiConsumer<FragmentEntry, Boolean>)FragmentEntry::setReadOnly);
-		attributeGetterFunctions.put("type", FragmentEntry::getType);
-		attributeSetterBiConsumers.put(
-			"type", (BiConsumer<FragmentEntry, Integer>)FragmentEntry::setType);
-		attributeGetterFunctions.put(
-			"lastPublishDate", FragmentEntry::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<FragmentEntry, Date>)FragmentEntry::setLastPublishDate);
-		attributeGetterFunctions.put("status", FragmentEntry::getStatus);
-		attributeSetterBiConsumers.put(
-			"status",
-			(BiConsumer<FragmentEntry, Integer>)FragmentEntry::setStatus);
-		attributeGetterFunctions.put(
-			"statusByUserId", FragmentEntry::getStatusByUserId);
-		attributeSetterBiConsumers.put(
-			"statusByUserId",
-			(BiConsumer<FragmentEntry, Long>)FragmentEntry::setStatusByUserId);
-		attributeGetterFunctions.put(
-			"statusByUserName", FragmentEntry::getStatusByUserName);
-		attributeSetterBiConsumers.put(
-			"statusByUserName",
-			(BiConsumer<FragmentEntry, String>)
-				FragmentEntry::setStatusByUserName);
-		attributeGetterFunctions.put(
-			"statusDate", FragmentEntry::getStatusDate);
-		attributeSetterBiConsumers.put(
-			"statusDate",
-			(BiConsumer<FragmentEntry, Date>)FragmentEntry::setStatusDate);
+		static {
+			Map<String, BiConsumer<FragmentEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<FragmentEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<FragmentEntry, Long>)FragmentEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<FragmentEntry, Long>)
+					FragmentEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<FragmentEntry, String>)FragmentEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<FragmentEntry, String>)
+					FragmentEntry::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"headId",
+				(BiConsumer<FragmentEntry, Long>)FragmentEntry::setHeadId);
+			attributeSetterBiConsumers.put(
+				"fragmentEntryId",
+				(BiConsumer<FragmentEntry, Long>)
+					FragmentEntry::setFragmentEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<FragmentEntry, Long>)FragmentEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<FragmentEntry, Long>)FragmentEntry::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<FragmentEntry, Long>)FragmentEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<FragmentEntry, String>)FragmentEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<FragmentEntry, Date>)FragmentEntry::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<FragmentEntry, Date>)
+					FragmentEntry::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"fragmentCollectionId",
+				(BiConsumer<FragmentEntry, Long>)
+					FragmentEntry::setFragmentCollectionId);
+			attributeSetterBiConsumers.put(
+				"fragmentEntryKey",
+				(BiConsumer<FragmentEntry, String>)
+					FragmentEntry::setFragmentEntryKey);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<FragmentEntry, String>)FragmentEntry::setName);
+			attributeSetterBiConsumers.put(
+				"css",
+				(BiConsumer<FragmentEntry, String>)FragmentEntry::setCss);
+			attributeSetterBiConsumers.put(
+				"html",
+				(BiConsumer<FragmentEntry, String>)FragmentEntry::setHtml);
+			attributeSetterBiConsumers.put(
+				"js", (BiConsumer<FragmentEntry, String>)FragmentEntry::setJs);
+			attributeSetterBiConsumers.put(
+				"cacheable",
+				(BiConsumer<FragmentEntry, Boolean>)
+					FragmentEntry::setCacheable);
+			attributeSetterBiConsumers.put(
+				"configuration",
+				(BiConsumer<FragmentEntry, String>)
+					FragmentEntry::setConfiguration);
+			attributeSetterBiConsumers.put(
+				"icon",
+				(BiConsumer<FragmentEntry, String>)FragmentEntry::setIcon);
+			attributeSetterBiConsumers.put(
+				"previewFileEntryId",
+				(BiConsumer<FragmentEntry, Long>)
+					FragmentEntry::setPreviewFileEntryId);
+			attributeSetterBiConsumers.put(
+				"marketplace",
+				(BiConsumer<FragmentEntry, Boolean>)
+					FragmentEntry::setMarketplace);
+			attributeSetterBiConsumers.put(
+				"readOnly",
+				(BiConsumer<FragmentEntry, Boolean>)FragmentEntry::setReadOnly);
+			attributeSetterBiConsumers.put(
+				"type",
+				(BiConsumer<FragmentEntry, Integer>)FragmentEntry::setType);
+			attributeSetterBiConsumers.put(
+				"typeOptions",
+				(BiConsumer<FragmentEntry, String>)
+					FragmentEntry::setTypeOptions);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<FragmentEntry, Date>)
+					FragmentEntry::setLastPublishDate);
+			attributeSetterBiConsumers.put(
+				"status",
+				(BiConsumer<FragmentEntry, Integer>)FragmentEntry::setStatus);
+			attributeSetterBiConsumers.put(
+				"statusByUserId",
+				(BiConsumer<FragmentEntry, Long>)
+					FragmentEntry::setStatusByUserId);
+			attributeSetterBiConsumers.put(
+				"statusByUserName",
+				(BiConsumer<FragmentEntry, String>)
+					FragmentEntry::setStatusByUserName);
+			attributeSetterBiConsumers.put(
+				"statusDate",
+				(BiConsumer<FragmentEntry, Date>)FragmentEntry::setStatusDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -545,6 +504,8 @@ public class FragmentEntryModelImpl
 
 		fragmentEntryVersion.setCtCollectionId(getCtCollectionId());
 		fragmentEntryVersion.setUuid(getUuid());
+		fragmentEntryVersion.setExternalReferenceCode(
+			getExternalReferenceCode());
 		fragmentEntryVersion.setGroupId(getGroupId());
 		fragmentEntryVersion.setCompanyId(getCompanyId());
 		fragmentEntryVersion.setUserId(getUserId());
@@ -559,9 +520,12 @@ public class FragmentEntryModelImpl
 		fragmentEntryVersion.setJs(getJs());
 		fragmentEntryVersion.setCacheable(getCacheable());
 		fragmentEntryVersion.setConfiguration(getConfiguration());
+		fragmentEntryVersion.setIcon(getIcon());
 		fragmentEntryVersion.setPreviewFileEntryId(getPreviewFileEntryId());
+		fragmentEntryVersion.setMarketplace(getMarketplace());
 		fragmentEntryVersion.setReadOnly(getReadOnly());
 		fragmentEntryVersion.setType(getType());
+		fragmentEntryVersion.setTypeOptions(getTypeOptions());
 		fragmentEntryVersion.setLastPublishDate(getLastPublishDate());
 		fragmentEntryVersion.setStatus(getStatus());
 		fragmentEntryVersion.setStatusByUserId(getStatusByUserId());
@@ -626,6 +590,35 @@ public class FragmentEntryModelImpl
 	@Deprecated
 	public String getOriginalUuid() {
 		return getColumnOriginalValue("uuid_");
+	}
+
+	@JSON
+	@Override
+	public String getExternalReferenceCode() {
+		if (_externalReferenceCode == null) {
+			return "";
+		}
+		else {
+			return _externalReferenceCode;
+		}
+	}
+
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_externalReferenceCode = externalReferenceCode;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public String getOriginalExternalReferenceCode() {
+		return getColumnOriginalValue("externalReferenceCode");
 	}
 
 	@JSON
@@ -1024,6 +1017,26 @@ public class FragmentEntryModelImpl
 
 	@JSON
 	@Override
+	public String getIcon() {
+		if (_icon == null) {
+			return "";
+		}
+		else {
+			return _icon;
+		}
+	}
+
+	@Override
+	public void setIcon(String icon) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_icon = icon;
+	}
+
+	@JSON
+	@Override
 	public long getPreviewFileEntryId() {
 		return _previewFileEntryId;
 	}
@@ -1035,6 +1048,27 @@ public class FragmentEntryModelImpl
 		}
 
 		_previewFileEntryId = previewFileEntryId;
+	}
+
+	@JSON
+	@Override
+	public boolean getMarketplace() {
+		return _marketplace;
+	}
+
+	@JSON
+	@Override
+	public boolean isMarketplace() {
+		return _marketplace;
+	}
+
+	@Override
+	public void setMarketplace(boolean marketplace) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_marketplace = marketplace;
 	}
 
 	@JSON
@@ -1081,6 +1115,26 @@ public class FragmentEntryModelImpl
 	public int getOriginalType() {
 		return GetterUtil.getInteger(
 			this.<Integer>getColumnOriginalValue("type_"));
+	}
+
+	@JSON
+	@Override
+	public String getTypeOptions() {
+		if (_typeOptions == null) {
+			return "";
+		}
+		else {
+			return _typeOptions;
+		}
+	}
+
+	@Override
+	public void setTypeOptions(String typeOptions) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_typeOptions = typeOptions;
 	}
 
 	@JSON
@@ -1334,6 +1388,7 @@ public class FragmentEntryModelImpl
 		fragmentEntryImpl.setMvccVersion(getMvccVersion());
 		fragmentEntryImpl.setCtCollectionId(getCtCollectionId());
 		fragmentEntryImpl.setUuid(getUuid());
+		fragmentEntryImpl.setExternalReferenceCode(getExternalReferenceCode());
 		fragmentEntryImpl.setHeadId(getHeadId());
 		fragmentEntryImpl.setFragmentEntryId(getFragmentEntryId());
 		fragmentEntryImpl.setGroupId(getGroupId());
@@ -1350,9 +1405,12 @@ public class FragmentEntryModelImpl
 		fragmentEntryImpl.setJs(getJs());
 		fragmentEntryImpl.setCacheable(isCacheable());
 		fragmentEntryImpl.setConfiguration(getConfiguration());
+		fragmentEntryImpl.setIcon(getIcon());
 		fragmentEntryImpl.setPreviewFileEntryId(getPreviewFileEntryId());
+		fragmentEntryImpl.setMarketplace(isMarketplace());
 		fragmentEntryImpl.setReadOnly(isReadOnly());
 		fragmentEntryImpl.setType(getType());
+		fragmentEntryImpl.setTypeOptions(getTypeOptions());
 		fragmentEntryImpl.setLastPublishDate(getLastPublishDate());
 		fragmentEntryImpl.setStatus(getStatus());
 		fragmentEntryImpl.setStatusByUserId(getStatusByUserId());
@@ -1373,6 +1431,8 @@ public class FragmentEntryModelImpl
 		fragmentEntryImpl.setCtCollectionId(
 			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		fragmentEntryImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
+		fragmentEntryImpl.setExternalReferenceCode(
+			this.<String>getColumnOriginalValue("externalReferenceCode"));
 		fragmentEntryImpl.setHeadId(
 			this.<Long>getColumnOriginalValue("headId"));
 		fragmentEntryImpl.setFragmentEntryId(
@@ -1401,12 +1461,17 @@ public class FragmentEntryModelImpl
 			this.<Boolean>getColumnOriginalValue("cacheable"));
 		fragmentEntryImpl.setConfiguration(
 			this.<String>getColumnOriginalValue("configuration"));
+		fragmentEntryImpl.setIcon(this.<String>getColumnOriginalValue("icon"));
 		fragmentEntryImpl.setPreviewFileEntryId(
 			this.<Long>getColumnOriginalValue("previewFileEntryId"));
+		fragmentEntryImpl.setMarketplace(
+			this.<Boolean>getColumnOriginalValue("marketplace"));
 		fragmentEntryImpl.setReadOnly(
 			this.<Boolean>getColumnOriginalValue("readOnly"));
 		fragmentEntryImpl.setType(
 			this.<Integer>getColumnOriginalValue("type_"));
+		fragmentEntryImpl.setTypeOptions(
+			this.<String>getColumnOriginalValue("typeOptions"));
 		fragmentEntryImpl.setLastPublishDate(
 			this.<Date>getColumnOriginalValue("lastPublishDate"));
 		fragmentEntryImpl.setStatus(
@@ -1505,6 +1570,18 @@ public class FragmentEntryModelImpl
 			fragmentEntryCacheModel.uuid = null;
 		}
 
+		fragmentEntryCacheModel.externalReferenceCode =
+			getExternalReferenceCode();
+
+		String externalReferenceCode =
+			fragmentEntryCacheModel.externalReferenceCode;
+
+		if ((externalReferenceCode != null) &&
+			(externalReferenceCode.length() == 0)) {
+
+			fragmentEntryCacheModel.externalReferenceCode = null;
+		}
+
 		fragmentEntryCacheModel.headId = getHeadId();
 
 		fragmentEntryCacheModel.head = isHead();
@@ -1596,11 +1673,29 @@ public class FragmentEntryModelImpl
 			fragmentEntryCacheModel.configuration = null;
 		}
 
+		fragmentEntryCacheModel.icon = getIcon();
+
+		String icon = fragmentEntryCacheModel.icon;
+
+		if ((icon != null) && (icon.length() == 0)) {
+			fragmentEntryCacheModel.icon = null;
+		}
+
 		fragmentEntryCacheModel.previewFileEntryId = getPreviewFileEntryId();
+
+		fragmentEntryCacheModel.marketplace = isMarketplace();
 
 		fragmentEntryCacheModel.readOnly = isReadOnly();
 
 		fragmentEntryCacheModel.type = getType();
+
+		fragmentEntryCacheModel.typeOptions = getTypeOptions();
+
+		String typeOptions = fragmentEntryCacheModel.typeOptions;
+
+		if ((typeOptions != null) && (typeOptions.length() == 0)) {
+			fragmentEntryCacheModel.typeOptions = null;
+		}
 
 		Date lastPublishDate = getLastPublishDate();
 
@@ -1684,47 +1779,19 @@ public class FragmentEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<FragmentEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<FragmentEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<FragmentEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((FragmentEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, FragmentEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					FragmentEntry.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
 	private long _ctCollectionId;
 	private String _uuid;
+	private String _externalReferenceCode;
 	private long _headId;
 	private boolean _head;
 	private long _fragmentEntryId;
@@ -1743,9 +1810,12 @@ public class FragmentEntryModelImpl
 	private String _js;
 	private boolean _cacheable;
 	private String _configuration;
+	private String _icon;
 	private long _previewFileEntryId;
+	private boolean _marketplace;
 	private boolean _readOnly;
 	private int _type;
+	private String _typeOptions;
 	private Date _lastPublishDate;
 	private int _status;
 	private long _statusByUserId;
@@ -1760,7 +1830,8 @@ public class FragmentEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<FragmentEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1788,6 +1859,8 @@ public class FragmentEntryModelImpl
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
 		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
+		_columnOriginalValues.put(
+			"externalReferenceCode", _externalReferenceCode);
 		_columnOriginalValues.put("headId", _headId);
 		_columnOriginalValues.put("head", _head);
 		_columnOriginalValues.put("fragmentEntryId", _fragmentEntryId);
@@ -1806,9 +1879,12 @@ public class FragmentEntryModelImpl
 		_columnOriginalValues.put("js", _js);
 		_columnOriginalValues.put("cacheable", _cacheable);
 		_columnOriginalValues.put("configuration", _configuration);
+		_columnOriginalValues.put("icon", _icon);
 		_columnOriginalValues.put("previewFileEntryId", _previewFileEntryId);
+		_columnOriginalValues.put("marketplace", _marketplace);
 		_columnOriginalValues.put("readOnly", _readOnly);
 		_columnOriginalValues.put("type_", _type);
+		_columnOriginalValues.put("typeOptions", _typeOptions);
 		_columnOriginalValues.put("lastPublishDate", _lastPublishDate);
 		_columnOriginalValues.put("status", _status);
 		_columnOriginalValues.put("statusByUserId", _statusByUserId);
@@ -1844,55 +1920,63 @@ public class FragmentEntryModelImpl
 
 		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("headId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("head", 16L);
+		columnBitmasks.put("headId", 16L);
 
-		columnBitmasks.put("fragmentEntryId", 32L);
+		columnBitmasks.put("head", 32L);
 
-		columnBitmasks.put("groupId", 64L);
+		columnBitmasks.put("fragmentEntryId", 64L);
 
-		columnBitmasks.put("companyId", 128L);
+		columnBitmasks.put("groupId", 128L);
 
-		columnBitmasks.put("userId", 256L);
+		columnBitmasks.put("companyId", 256L);
 
-		columnBitmasks.put("userName", 512L);
+		columnBitmasks.put("userId", 512L);
 
-		columnBitmasks.put("createDate", 1024L);
+		columnBitmasks.put("userName", 1024L);
 
-		columnBitmasks.put("modifiedDate", 2048L);
+		columnBitmasks.put("createDate", 2048L);
 
-		columnBitmasks.put("fragmentCollectionId", 4096L);
+		columnBitmasks.put("modifiedDate", 4096L);
 
-		columnBitmasks.put("fragmentEntryKey", 8192L);
+		columnBitmasks.put("fragmentCollectionId", 8192L);
 
-		columnBitmasks.put("name", 16384L);
+		columnBitmasks.put("fragmentEntryKey", 16384L);
 
-		columnBitmasks.put("css", 32768L);
+		columnBitmasks.put("name", 32768L);
 
-		columnBitmasks.put("html", 65536L);
+		columnBitmasks.put("css", 65536L);
 
-		columnBitmasks.put("js", 131072L);
+		columnBitmasks.put("html", 131072L);
 
-		columnBitmasks.put("cacheable", 262144L);
+		columnBitmasks.put("js", 262144L);
 
-		columnBitmasks.put("configuration", 524288L);
+		columnBitmasks.put("cacheable", 524288L);
 
-		columnBitmasks.put("previewFileEntryId", 1048576L);
+		columnBitmasks.put("configuration", 1048576L);
 
-		columnBitmasks.put("readOnly", 2097152L);
+		columnBitmasks.put("icon", 2097152L);
 
-		columnBitmasks.put("type_", 4194304L);
+		columnBitmasks.put("previewFileEntryId", 4194304L);
 
-		columnBitmasks.put("lastPublishDate", 8388608L);
+		columnBitmasks.put("marketplace", 8388608L);
 
-		columnBitmasks.put("status", 16777216L);
+		columnBitmasks.put("readOnly", 16777216L);
 
-		columnBitmasks.put("statusByUserId", 33554432L);
+		columnBitmasks.put("type_", 33554432L);
 
-		columnBitmasks.put("statusByUserName", 67108864L);
+		columnBitmasks.put("typeOptions", 67108864L);
 
-		columnBitmasks.put("statusDate", 134217728L);
+		columnBitmasks.put("lastPublishDate", 134217728L);
+
+		columnBitmasks.put("status", 268435456L);
+
+		columnBitmasks.put("statusByUserId", 536870912L);
+
+		columnBitmasks.put("statusByUserName", 1073741824L);
+
+		columnBitmasks.put("statusDate", 2147483648L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

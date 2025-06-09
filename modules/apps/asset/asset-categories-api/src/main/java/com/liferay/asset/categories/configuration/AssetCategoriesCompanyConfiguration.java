@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.configuration;
@@ -35,11 +26,12 @@ import org.osgi.annotation.versioning.ProviderType;
 public interface AssetCategoriesCompanyConfiguration {
 
 	@Meta.AD(
-		deflt = "https://learn.liferay.com/dxp/7.x/en/content-authoring-and-management/tags-and-categories/defining-categories-and-vocabularies-for-content.html",
-		description = "link-to-documentation-url-description",
-		name = "link-to-documentation-url", required = false
+		deflt = "true",
+		description = "include-children-categories-when-searching-parent-categories-description",
+		name = "include-children-categories-when-searching-parent-categories",
+		required = false
 	)
-	public String linkToDocumentationURL();
+	public boolean includeChildrenCategoriesWhenSearchingParentCategories();
 
 	@Meta.AD(
 		deflt = "150",

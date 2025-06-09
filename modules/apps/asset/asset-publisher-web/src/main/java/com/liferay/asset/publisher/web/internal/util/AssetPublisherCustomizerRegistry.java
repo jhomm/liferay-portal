@@ -1,25 +1,63 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.util;
 
+import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
+import com.liferay.asset.publisher.util.AssetPublisherHelper;
+import com.liferay.asset.publisher.web.internal.configuration.AssetPublisherWebConfiguration;
+
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author Pavel Savinov
  */
-public interface AssetPublisherCustomizerRegistry {
+public class AssetPublisherCustomizerRegistry {
+
+	public AssetPublisherCustomizerRegistry(
+		AssetPublisherHelper assetPublisherHelper,
+		AssetPublisherWebConfiguration assetPublisherWebConfiguration) {
+
+		_register(
+			new DefaultAssetPublisherCustomizer(
+				assetPublisherHelper, assetPublisherWebConfiguration));
+		_register(
+			new HighestRatedAssetPublisherCustomizer(
+				assetPublisherHelper, assetPublisherWebConfiguration));
+		_register(
+			new MostViewedAssetPublisherCustomizer(
+				assetPublisherHelper, assetPublisherWebConfiguration));
+		_register(
+			new RecentContentAssetPublisherCustomizer(
+				assetPublisherHelper, assetPublisherWebConfiguration));
+		_register(
+			new RelatedAssetPublisherCustomizer(
+				assetPublisherHelper, assetPublisherWebConfiguration));
+	}
 
 	public AssetPublisherCustomizer getAssetPublisherCustomizer(
-		String portletId);
+		String portletId) {
+
+		AssetPublisherCustomizer assetPublisherCustomizer =
+			_assetPublisherCustomizers.get(portletId);
+
+		if (assetPublisherCustomizer == null) {
+			assetPublisherCustomizer = _assetPublisherCustomizers.get(
+				AssetPublisherPortletKeys.ASSET_PUBLISHER);
+		}
+
+		return assetPublisherCustomizer;
+	}
+
+	private void _register(AssetPublisherCustomizer assetPublisherCustomizer) {
+		_assetPublisherCustomizers.put(
+			assetPublisherCustomizer.getPortletId(), assetPublisherCustomizer);
+	}
+
+	private final Map<String, AssetPublisherCustomizer>
+		_assetPublisherCustomizers = new HashMap<>();
 
 }

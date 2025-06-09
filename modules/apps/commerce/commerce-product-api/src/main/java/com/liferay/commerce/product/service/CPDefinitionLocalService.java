@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -18,7 +9,9 @@ import com.liferay.commerce.product.model.CPAttachmentFileEntry;
 import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionLocalization;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -37,6 +30,8 @@ import com.liferay.portal.kernel.search.facet.Facet;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -44,13 +39,13 @@ import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -64,13 +59,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CPDefinitionLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CPDefinitionLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CPDefinition>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -93,7 +90,7 @@ public interface CPDefinitionLocalService
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CPDefinition addCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<Locale, String> nameMap,
 			Map<Locale, String> shortDescriptionMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
@@ -116,12 +113,12 @@ public interface CPDefinitionLocalService
 			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
 			int deliverySubscriptionLength, String deliverySubscriptionType,
 			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
-			long deliveryMaxSubscriptionCycles, ServiceContext serviceContext)
+			long deliveryMaxSubscriptionCycles, int status,
+			ServiceContext serviceContext)
 		throws PortalException;
 
-	@Indexable(type = IndexableType.REINDEX)
 	public CPDefinition addCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<Locale, String> nameMap,
 			Map<Locale, String> shortDescriptionMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
@@ -141,11 +138,12 @@ public interface CPDefinitionLocalService
 			boolean neverExpire, String defaultSku, boolean subscriptionEnabled,
 			int subscriptionLength, String subscriptionType,
 			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, ServiceContext serviceContext)
+			long maxSubscriptionCycles, int status,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<Locale, String> nameMap,
 			Map<Locale, String> shortDescriptionMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
@@ -168,11 +166,12 @@ public interface CPDefinitionLocalService
 			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
 			int deliverySubscriptionLength, String deliverySubscriptionType,
 			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
-			long deliveryMaxSubscriptionCycles, ServiceContext serviceContext)
+			long deliveryMaxSubscriptionCycles, int status,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public CPDefinition addOrUpdateCPDefinition(
-			String externalReferenceCode, long groupId, long userId,
+			String externalReferenceCode, long userId, long groupId,
 			Map<Locale, String> nameMap,
 			Map<Locale, String> shortDescriptionMap,
 			Map<Locale, String> descriptionMap, Map<Locale, String> urlTitleMap,
@@ -192,16 +191,24 @@ public interface CPDefinitionLocalService
 			boolean neverExpire, String defaultSku, boolean subscriptionEnabled,
 			int subscriptionLength, String subscriptionType,
 			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, ServiceContext serviceContext)
+			long maxSubscriptionCycles, int status,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void checkCPDefinitions() throws PortalException;
 
-	public CPDefinition copyCPDefinition(long cpDefinitionId)
+	@Indexable(type = IndexableType.REINDEX)
+	public CPDefinition cloneCPDefinition(
+			long userId, long cpDefinitionId, long groupId,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	public CPDefinition copyCPDefinition(long sourceCPDefinitionId)
 		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
-	public CPDefinition copyCPDefinition(long cpDefinitionId, long groupId)
+	public CPDefinition copyCPDefinition(
+			long sourceCPDefinitionId, long groupId, int status)
 		throws PortalException;
 
 	/**
@@ -346,6 +353,10 @@ public interface CPDefinitionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPDefinition fetchCPDefinitionByCProductId(long cProductId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinition fetchCPDefinitionByFriendlyURL(
+		long groupId, String friendlyURL);
 
 	/**
 	 * Returns the cp definition matching the UUID and group.
@@ -501,6 +512,19 @@ public interface CPDefinitionLocalService
 		long cpDefinitionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPDefinition getCProductCPDefinition(long cProductId, int version)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinition> getCProductCPDefinitions(
+		long cProductId, int status, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPDefinition> getCProductCPDefinitions(
+		long cProductId, int status, int start, int end,
+		OrderByComparator<CPDefinition> orderByComparator);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPAttachmentFileEntry getDefaultImageCPAttachmentFileEntry(
 			long cpDefinitionId)
 		throws PortalException;
@@ -515,6 +539,10 @@ public interface CPDefinitionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getLayoutPageTemplateEntryUuid(
+		long groupId, long cpDefinitionId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public String getLayoutUuid(long groupId, long cpDefinitionId);
@@ -560,13 +588,13 @@ public interface CPDefinitionLocalService
 	public boolean isVersionable(
 		long cpDefinitionId, HttpServletRequest httpServletRequest);
 
-	public void maintainVersionThreshold(long cProductId)
+	public void maintainVersionThreshold(long companyId, long cProductId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<CPDefinition> searchCPDefinitions(
 			long companyId, long[] groupIds, String keywords, int status,
-			int start, int end, Sort sort)
+			boolean ignoreCommerceAccountGroup, int start, int end, Sort sort)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -580,7 +608,8 @@ public interface CPDefinitionLocalService
 	public BaseModelSearchResult<CPDefinition>
 			searchCPDefinitionsByChannelGroupId(
 				long companyId, long[] groupIds, long commerceChannelGroupId,
-				String keywords, int status, int start, int end, Sort sort)
+				String keywords, int status, boolean ignoreCommerceAccountGroup,
+				int start, int end, Sort sort)
 		throws PortalException;
 
 	public void updateAsset(
@@ -705,20 +734,24 @@ public interface CPDefinitionLocalService
 			long deliveryMaxSubscriptionCycles)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public CPDefinition updateSubscriptionInfo(
-			long cpDefinitionId, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, ServiceContext serviceContext)
-		throws PortalException;
-
 	public CPDefinition updateTaxCategoryInfo(
 			long cpDefinitionId, long cpTaxCategoryId, boolean taxExempt,
 			boolean telcoOrElectronics)
 		throws PortalException;
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CPDefinition> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CPDefinition> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CPDefinition>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

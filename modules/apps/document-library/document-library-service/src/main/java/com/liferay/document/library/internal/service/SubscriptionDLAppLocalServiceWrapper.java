@@ -1,28 +1,28 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.internal.service;
 
+import com.liferay.document.library.internal.DLAssetDisplayPageUtil;
+import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.model.DLFileEntryTypeConstants;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
-import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceWrapper;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceWrapper;
 import com.liferay.subscription.service.SubscriptionLocalService;
+
+import java.io.File;
+import java.io.InputStream;
+
+import java.util.Date;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -34,14 +34,90 @@ import org.osgi.service.component.annotations.Reference;
 public class SubscriptionDLAppLocalServiceWrapper
 	extends DLAppLocalServiceWrapper {
 
-	public SubscriptionDLAppLocalServiceWrapper() {
-		super(null);
+	@Override
+	public FileEntry addFileEntry(
+			String externalReferenceCode, long userId, long repositoryId,
+			long folderId, String sourceFileName, String mimeType, byte[] bytes,
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.addFileEntry(
+			externalReferenceCode, userId, repositoryId, folderId,
+			sourceFileName, mimeType, bytes, displayDate, expirationDate,
+			reviewDate, serviceContext);
 	}
 
-	public SubscriptionDLAppLocalServiceWrapper(
-		DLAppLocalService dlAppLocalService) {
+	@Override
+	public FileEntry addFileEntry(
+			String externalReferenceCode, long userId, long repositoryId,
+			long folderId, String sourceFileName, String mimeType, String title,
+			String urlTitle, String description, String changeLog, byte[] bytes,
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
+		throws PortalException {
 
-		super(dlAppLocalService);
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.addFileEntry(
+			externalReferenceCode, userId, repositoryId, folderId,
+			sourceFileName, mimeType, title, urlTitle, description, changeLog,
+			bytes, displayDate, expirationDate, reviewDate, serviceContext);
+	}
+
+	@Override
+	public FileEntry addFileEntry(
+			String externalReferenceCode, long userId, long repositoryId,
+			long folderId, String sourceFileName, String mimeType, String title,
+			String urlTitle, String description, String changeLog, File file,
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.addFileEntry(
+			externalReferenceCode, userId, repositoryId, folderId,
+			sourceFileName, mimeType, title, urlTitle, description, changeLog,
+			file, displayDate, expirationDate, reviewDate, serviceContext);
+	}
+
+	@Override
+	public FileEntry addFileEntry(
+			String externalReferenceCode, long userId, long repositoryId,
+			long folderId, String sourceFileName, String mimeType, String title,
+			String urlTitle, String description, String changeLog,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+		throws PortalException {
+
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.addFileEntry(
+			externalReferenceCode, userId, repositoryId, folderId,
+			sourceFileName, mimeType, title, urlTitle, description, changeLog,
+			inputStream, size, displayDate, expirationDate, reviewDate,
+			serviceContext);
+	}
+
+	@Override
+	public void subscribeFileEntry(long userId, long groupId, long fileEntryId)
+		throws PortalException {
+
+		super.subscribeFileEntry(userId, groupId, fileEntryId);
+
+		_subscriptionLocalService.addSubscription(
+			userId, groupId, DLFileEntry.class.getName(), fileEntryId);
 	}
 
 	@Override
@@ -76,6 +152,17 @@ public class SubscriptionDLAppLocalServiceWrapper
 	}
 
 	@Override
+	public void unsubscribeFileEntry(
+			long userId, long groupId, long fileEntryId)
+		throws PortalException {
+
+		super.subscribeFileEntry(userId, groupId, fileEntryId);
+
+		_subscriptionLocalService.deleteSubscription(
+			userId, DLFileEntry.class.getName(), fileEntryId);
+	}
+
+	@Override
 	public void unsubscribeFileEntryType(
 			long userId, long groupId, long fileEntryTypeId)
 		throws PortalException {
@@ -104,6 +191,63 @@ public class SubscriptionDLAppLocalServiceWrapper
 
 		_subscriptionLocalService.deleteSubscription(
 			userId, DLFolder.class.getName(), folderId);
+	}
+
+	@Override
+	public FileEntry updateFileEntry(
+			long userId, long fileEntryId, String sourceFileName,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			byte[] bytes, Date displayDate, Date expirationDate,
+			Date reviewDate, ServiceContext serviceContext)
+		throws PortalException {
+
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.updateFileEntry(
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, bytes, displayDate,
+			expirationDate, reviewDate, serviceContext);
+	}
+
+	@Override
+	public FileEntry updateFileEntry(
+			long userId, long fileEntryId, String sourceFileName,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			File file, Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.updateFileEntry(
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, file, displayDate,
+			expirationDate, reviewDate, serviceContext);
+	}
+
+	@Override
+	public FileEntry updateFileEntry(
+			long userId, long fileEntryId, String sourceFileName,
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+		throws PortalException {
+
+		serviceContext.setAttribute(
+			"hasAssetDisplayPage",
+			DLAssetDisplayPageUtil.hasAssetDisplayPage(serviceContext));
+
+		return super.updateFileEntry(
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, inputStream, size,
+			displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	@Reference

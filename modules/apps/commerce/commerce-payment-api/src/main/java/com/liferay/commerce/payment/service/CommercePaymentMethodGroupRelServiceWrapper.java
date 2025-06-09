@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.service;
@@ -26,6 +17,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommercePaymentMethodGroupRelServiceWrapper
 	implements CommercePaymentMethodGroupRelService,
 			   ServiceWrapper<CommercePaymentMethodGroupRelService> {
+
+	public CommercePaymentMethodGroupRelServiceWrapper() {
+		this(null);
+	}
 
 	public CommercePaymentMethodGroupRelServiceWrapper(
 		CommercePaymentMethodGroupRelService
@@ -65,14 +60,15 @@ public class CommercePaymentMethodGroupRelServiceWrapper
 			addCommercePaymentMethodGroupRel(
 				long groupId, java.util.Map<java.util.Locale, String> nameMap,
 				java.util.Map<java.util.Locale, String> descriptionMap,
-				java.io.File imageFile, String engineKey, double priority,
-				boolean active)
+				boolean active, java.io.File imageFile,
+				String paymentIntegrationKey, double priority,
+				String typeSettings)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePaymentMethodGroupRelService.
 			addCommercePaymentMethodGroupRel(
-				groupId, nameMap, descriptionMap, imageFile, engineKey,
-				priority, active);
+				groupId, nameMap, descriptionMap, active, imageFile,
+				paymentIntegrationKey, priority, typeSettings);
 	}
 
 	@Override
@@ -101,6 +97,16 @@ public class CommercePaymentMethodGroupRelServiceWrapper
 		_commercePaymentMethodGroupRelService.
 			deleteCommercePaymentMethodGroupRel(
 				commercePaymentMethodGroupRelId);
+	}
+
+	@Override
+	public com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel
+			fetchCommercePaymentMethodGroupRel(
+				long commercePaymentMethodGroupRelId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commercePaymentMethodGroupRelService.
+			fetchCommercePaymentMethodGroupRel(commercePaymentMethodGroupRelId);
 	}
 
 	@Override
@@ -259,6 +265,17 @@ public class CommercePaymentMethodGroupRelServiceWrapper
 
 		return _commercePaymentMethodGroupRelService.setActive(
 			commercePaymentMethodGroupRelId, active);
+	}
+
+	@Override
+	public com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel
+			updateCommercePaymentMethodGroupRel(
+				com.liferay.commerce.payment.model.CommercePaymentMethodGroupRel
+					commercePaymentMethodGroupRel)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commercePaymentMethodGroupRelService.
+			updateCommercePaymentMethodGroupRel(commercePaymentMethodGroupRel);
 	}
 
 	@Override

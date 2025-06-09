@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -54,7 +45,7 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 						displayType="secondary"
 						id='<%= liferayPortletResponse.getNamespace() + "addConnectedSiteButton" %>'
 						label="add"
-						propsTransformer="js/AddConnectedSitesButtonPropsTransformer"
+						propsTransformer="{AddConnectedSitesButtonPropsTransformer} from depot-web"
 						small="<%= true %>"
 						title="connect-to-a-site"
 					/>
@@ -82,7 +73,7 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 	<c:if test="<%= depotAdminSitesDisplayContext.isLiveDepotEntry() %>">
 		<clay:alert
 			displayType="info"
-			message='<%= LanguageUtil.get(request, "this-is-a-live-asset-library.-site-connections-must-be-managed-from-the-staging-one") %>'
+			message="this-is-a-live-asset-library.-site-connections-must-be-managed-from-the-staging-one"
 		/>
 	</c:if>
 
@@ -98,7 +89,8 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 		total="<%= depotEntryGroupRels.size() %>"
 	>
 		<liferay-ui:search-container-results
-			results="<%= depotEntryGroupRels.subList(searchContainer.getStart(), searchContainer.getResultEnd()) %>"
+			calculateStartAndEnd="<%= true %>"
+			results="<%= depotEntryGroupRels %>"
 		/>
 
 		<liferay-ui:search-container-row
@@ -137,7 +129,7 @@ List<DepotEntryGroupRel> depotEntryGroupRels = depotAdminSitesDisplayContext.get
 						dropdownItems="<%= depotAdminSitesDisplayContext.getConnectedSiteDropdownItems(depotEntryGroupRel) %>"
 						icon="ellipsis-v"
 						monospaced="<%= true %>"
-						propsTransformer="js/ConnectedSiteDropdownPropsTransformer"
+						propsTransformer="{ConnectedSiteDropdownPropsTransformer} from depot-web"
 						small="<%= true %>"
 					/>
 				</liferay-ui:search-container-column-text>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.test;
@@ -23,7 +14,8 @@ import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.blogs.service.BlogsEntryService;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.dao.orm.QueryDefinition;
+import com.liferay.portal.kernel.lazy.referencing.LazyReferencingThreadLocal;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BooleanClause;
 import com.liferay.portal.kernel.search.BooleanClauseFactoryUtil;
@@ -46,10 +38,8 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.servlet.taglib.ui.ImageSelector;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
-import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
-import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapDictionary;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -61,6 +51,7 @@ import com.liferay.portal.odata.entity.IntegerEntityField;
 import com.liferay.portal.odata.entity.StringEntityField;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.io.Serializable;
 
@@ -71,13 +62,16 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -95,33 +89,39 @@ public class BaseBatchEngineTaskExecutorTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
-		group = GroupTestUtil.addGroup();
+		user = TestPropsValues.getUser();
 
-		user = UserTestUtil.addGroupAdminUser(group);
+		Date date = new Date();
 
-		baseDate = dateFormat.parse(dateFormat.format(new Date()));
+		Instant instant = date.toInstant();
+
+		instant = instant.truncatedTo(ChronoUnit.MINUTES);
+
+		baseDate = Date.from(instant);
 
 		Bundle bundle = FrameworkUtil.getBundle(
 			BatchEngineImportTaskExecutorTest.class);
 
 		BundleContext bundleContext = bundle.getBundleContext();
 
-		_batchEngineTaskItemDelegateRegistration =
+		_batchEngineTaskItemDelegateServiceRegistration =
 			bundleContext.registerService(
 				BatchEngineTaskItemDelegate.class.getName(),
 				new TestBlogPostingBatchEngineTaskItemDelegate(),
 				new HashMapDictionary<String, String>());
+
+		initialCount = getBlogEntriesCount();
 	}
 
 	@After
 	public void tearDown() throws Exception {
-		blogsEntryLocalService.deleteEntries(group.getGroupId());
-
-		_batchEngineTaskItemDelegateRegistration.unregister();
+		_batchEngineTaskItemDelegateServiceRegistration.unregister();
 	}
 
 	public static class BlogPostingEntityModel implements EntityModel {
@@ -129,11 +129,11 @@ public class BaseBatchEngineTaskExecutorTest {
 		public BlogPostingEntityModel() {
 			_entityFieldsMap = EntityModel.toEntityFieldsMap(
 				new CollectionEntityField(
-					new StringEntityField(
-						"keywords", locale -> "assetTagNames.raw")),
-				new CollectionEntityField(
 					new IntegerEntityField(
 						"taxonomyCategoryIds", locale -> "assetCategoryIds")),
+				new CollectionEntityField(
+					new StringEntityField(
+						"keywords", locale -> "assetTagNames.lowercase")),
 				new DateTimeEntityField(
 					"dateCreated",
 					locale -> Field.getSortableFieldName(Field.CREATE_DATE),
@@ -167,7 +167,18 @@ public class BaseBatchEngineTaskExecutorTest {
 		extends BaseBatchEngineTaskItemDelegate<BlogPosting> {
 
 		@Override
-		public void createItem(
+		public void create(
+				Collection<BlogPosting> blogPostings,
+				Map<String, Serializable> parameters)
+			throws Exception {
+
+			Assert.assertTrue(LazyReferencingThreadLocal.isEnabled());
+
+			super.create(blogPostings, parameters);
+		}
+
+		@Override
+		public BlogPosting createItem(
 				BlogPosting blogPosting,
 				Map<String, Serializable> queryParameters)
 			throws Exception {
@@ -184,6 +195,19 @@ public class BaseBatchEngineTaskExecutorTest {
 				localDateTime.getHour(), localDateTime.getMinute(), true, true,
 				new String[0], null, new ImageSelector(), null,
 				_createServiceContext(blogPosting.getSiteId()));
+
+			return null;
+		}
+
+		@Override
+		public void delete(
+				Collection<BlogPosting> blogPostings,
+				Map<String, Serializable> parameters)
+			throws Exception {
+
+			Assert.assertTrue(LazyReferencingThreadLocal.isEnabled());
+
+			super.delete(blogPostings, parameters);
 		}
 
 		@Override
@@ -209,6 +233,8 @@ public class BaseBatchEngineTaskExecutorTest {
 				Map<String, Serializable> parameters, String search)
 			throws Exception {
 
+			Assert.assertFalse(LazyReferencingThreadLocal.isEnabled());
+
 			long siteId = GetterUtil.getLong(parameters.get("siteId"));
 
 			return _search(
@@ -219,7 +245,7 @@ public class BaseBatchEngineTaskExecutorTest {
 					Field.ENTRY_CLASS_PK),
 				searchContext -> {
 					searchContext.setAttribute(
-						Field.STATUS, WorkflowConstants.STATUS_APPROVED);
+						Field.STATUS, WorkflowConstants.STATUS_ANY);
 					searchContext.setCompanyId(contextCompany.getCompanyId());
 					searchContext.setGroupIds(new long[] {siteId});
 				},
@@ -231,9 +257,22 @@ public class BaseBatchEngineTaskExecutorTest {
 		}
 
 		@Override
+		public void update(
+				Collection<BlogPosting> blogPostings,
+				Map<String, Serializable> parameters)
+			throws Exception {
+
+			Assert.assertTrue(LazyReferencingThreadLocal.isEnabled());
+
+			super.update(blogPostings, parameters);
+		}
+
+		@Override
 		public void updateItem(
 				BlogPosting blogPosting, Map<String, Serializable> parameters)
 			throws Exception {
+
+			Assert.assertTrue(LazyReferencingThreadLocal.isEnabled());
 
 			LocalDateTime localDateTime = _toLocalDateTime(
 				blogPosting.getDatePublished());
@@ -344,7 +383,7 @@ public class BaseBatchEngineTaskExecutorTest {
 				};
 			}
 
-			List<BlogPosting> items = new ArrayList<>();
+			List<BlogPosting> blogPostings = new ArrayList<>();
 
 			Indexer<?> indexer = IndexerRegistryUtil.getIndexer(
 				(Class<?>)BlogsEntry.class);
@@ -360,13 +399,15 @@ public class BaseBatchEngineTaskExecutorTest {
 			for (Document document : hits.getDocs()) {
 				BlogPosting item = transformUnsafeFunction.apply(document);
 
-				if (item != null) {
-					items.add(item);
+				if (item == null) {
+					continue;
 				}
+
+				blogPostings.add(item);
 			}
 
 			return Page.of(
-				items, pagination, indexer.searchCount(searchContext));
+				blogPostings, pagination, indexer.searchCount(searchContext));
 		}
 
 		private BlogPosting _toBlogPosting(BlogsEntry blogsEntry) {
@@ -408,11 +449,21 @@ public class BaseBatchEngineTaskExecutorTest {
 					null, "articleBody" + i, new Date(baseDate.getTime()),
 					false, false, null, null, null, null,
 					ServiceContextTestUtil.getServiceContext(
-						user.getCompanyId(), group.getGroupId(),
-						user.getUserId())));
+						TestPropsValues.getCompanyId(),
+						TestPropsValues.getGroupId(), user.getUserId())));
 		}
 
 		return blogsEntries;
+	}
+
+	protected void assertBlogsEntriesCount() throws Exception {
+		Assert.assertEquals(initialCount + ROWS_COUNT, getBlogEntriesCount());
+	}
+
+	protected int getBlogEntriesCount() throws Exception {
+		return blogsEntryLocalService.getGroupEntriesCount(
+			TestPropsValues.getGroupId(),
+			new QueryDefinition<>(WorkflowConstants.STATUS_ANY));
 	}
 
 	protected static final String[] FIELD_NAMES = {
@@ -428,15 +479,12 @@ public class BaseBatchEngineTaskExecutorTest {
 	protected BlogsEntryLocalService blogsEntryLocalService;
 
 	protected final DateFormat dateFormat = new SimpleDateFormat(
-		"yyyy-MM-dd'T'HH:mm:00.000XXX");
-
-	@DeleteAfterTestRun
-	protected Group group;
-
-	@DeleteAfterTestRun
+		"yyyy-MM-dd'T'HH:mm:ssX");
+	protected int initialCount;
 	protected User user;
 
-	private ServiceRegistration<?> _batchEngineTaskItemDelegateRegistration;
+	private ServiceRegistration<?>
+		_batchEngineTaskItemDelegateServiceRegistration;
 
 	@Inject
 	private BlogsEntryService _blogsEntryService;

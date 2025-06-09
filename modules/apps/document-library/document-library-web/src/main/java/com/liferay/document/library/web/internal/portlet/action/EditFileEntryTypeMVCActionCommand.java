@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.web.internal.portlet.action;
@@ -27,11 +18,11 @@ import com.liferay.document.library.kernel.model.DLFileEntryType;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeLocalService;
 import com.liferay.document.library.kernel.service.DLFileEntryTypeService;
+import com.liferay.dynamic.data.mapping.exception.NoSuchStructureException;
 import com.liferay.dynamic.data.mapping.exception.RequiredStructureException;
-import com.liferay.dynamic.data.mapping.kernel.NoSuchStructureException;
-import com.liferay.dynamic.data.mapping.kernel.StructureDefinitionException;
-import com.liferay.dynamic.data.mapping.kernel.StructureDuplicateElementException;
-import com.liferay.dynamic.data.mapping.kernel.StructureNameException;
+import com.liferay.dynamic.data.mapping.exception.StructureDefinitionException;
+import com.liferay.dynamic.data.mapping.exception.StructureDuplicateElementException;
+import com.liferay.dynamic.data.mapping.exception.StructureNameException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseTransactionalMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -43,7 +34,7 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.SetUtil;
@@ -51,13 +42,13 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -67,9 +58,9 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
-		"javax.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.MEDIA_GALLERY_DISPLAY,
 		"mvc.command.name=/document_library/edit_file_entry_type"
 	},
 	service = MVCActionCommand.class
@@ -182,7 +173,8 @@ public class EditFileEntryTypeMVCActionCommand
 			WebKeys.THEME_DISPLAY);
 
 		dataDefinition.setDefaultDataLayout(
-			DataLayout.toDTO(ParamUtil.getString(actionRequest, "dataLayout")));
+			() -> DataLayout.toDTO(
+				ParamUtil.getString(actionRequest, "dataLayout")));
 
 		DataDefinitionResource dataDefinitionResource =
 			dataDefinitionResourceBuilder.user(
@@ -194,19 +186,19 @@ public class EditFileEntryTypeMVCActionCommand
 				themeDisplay.getScopeGroupId(), "document-library",
 				dataDefinition);
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			DLFileEntryType.class.getName(), actionRequest);
 
 		DLFileEntryType fileEntryType =
 			_dlFileEntryTypeService.addFileEntryType(
-				themeDisplay.getScopeGroupId(), dataDefinition.getId(), null,
-				nameMap, descriptionMap, serviceContext);
+				null, themeDisplay.getScopeGroupId(), dataDefinition.getId(),
+				null, nameMap, descriptionMap, serviceContext);
 
 		_dlFileEntryTypeLocalService.addDDMStructureLinks(
 			fileEntryType.getFileEntryTypeId(),
@@ -306,7 +298,8 @@ public class EditFileEntryTypeMVCActionCommand
 			actionRequest, "fileEntryTypeId");
 
 		dataDefinition.setDefaultDataLayout(
-			DataLayout.toDTO(ParamUtil.getString(actionRequest, "dataLayout")));
+			() -> DataLayout.toDTO(
+				ParamUtil.getString(actionRequest, "dataLayout")));
 
 		DataDefinitionResource dataDefinitionResource =
 			dataDefinitionResourceBuilder.user(
@@ -317,11 +310,11 @@ public class EditFileEntryTypeMVCActionCommand
 			ParamUtil.getLong(actionRequest, "dataDefinitionId"),
 			dataDefinition);
 
-		Map<Locale, String> nameMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> nameMap = _localization.getLocalizationMap(
 			actionRequest, "name");
 
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 
 		_dlFileEntryTypeService.updateFileEntryType(
 			fileEntryTypeId, nameMap, descriptionMap);
@@ -343,6 +336,9 @@ public class EditFileEntryTypeMVCActionCommand
 
 	@Reference
 	private DLFileEntryTypeService _dlFileEntryTypeService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private Portal _portal;

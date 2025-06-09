@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.resource.v2_0.test;
@@ -22,57 +13,67 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceEntry;
 import com.liferay.headless.commerce.admin.pricing.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Page;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.PriceEntryResource;
 import com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0.PriceEntrySerDes;
+import com.liferay.oauth2.provider.scope.ScopeChecker;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.ResourceActionLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.vulcan.crud.VulcanCRUDItemDelegateBuilderRegistry;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -91,12 +92,14 @@ public abstract class BasePriceEntryResourceTestCase {
 
 	@ClassRule
 	@Rule
-	public static final LiferayIntegrationTestRule liferayIntegrationTestRule =
-		new LiferayIntegrationTestRule();
+	public static final AggregateTestRule aggregateTestRule =
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -110,10 +113,25 @@ public abstract class BasePriceEntryResourceTestCase {
 
 		_priceEntryResource.setContextCompany(testCompany);
 
-		PriceEntryResource.Builder builder = PriceEntryResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		priceEntryResource = builder.authentication(
-			"test@liferay.com", "test"
+		priceEntryResource = PriceEntryResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -127,7 +145,32 @@ public abstract class BasePriceEntryResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		PriceEntry priceEntry1 = randomPriceEntry();
+
+		String json = objectMapper.writeValueAsString(priceEntry1);
+
+		PriceEntry priceEntry2 = PriceEntrySerDes.toDTO(json);
+
+		Assert.assertTrue(equals(priceEntry1, priceEntry2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		PriceEntry priceEntry = randomPriceEntry();
+
+		String json1 = objectMapper.writeValueAsString(priceEntry);
+		String json2 = PriceEntrySerDes.toJSON(priceEntry);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -142,40 +185,6 @@ public abstract class BasePriceEntryResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		PriceEntry priceEntry1 = randomPriceEntry();
-
-		String json = objectMapper.writeValueAsString(priceEntry1);
-
-		PriceEntry priceEntry2 = PriceEntrySerDes.toDTO(json);
-
-		Assert.assertTrue(equals(priceEntry1, priceEntry2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		PriceEntry priceEntry = randomPriceEntry();
-
-		String json1 = objectMapper.writeValueAsString(priceEntry);
-		String json2 = PriceEntrySerDes.toJSON(priceEntry);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -189,6 +198,7 @@ public abstract class BasePriceEntryResourceTestCase {
 		priceEntry.setPriceFormatted(regex);
 		priceEntry.setPriceListExternalReferenceCode(regex);
 		priceEntry.setSkuExternalReferenceCode(regex);
+		priceEntry.setUnitOfMeasureKey(regex);
 
 		String json = PriceEntrySerDes.toJSON(priceEntry);
 
@@ -202,11 +212,113 @@ public abstract class BasePriceEntryResourceTestCase {
 		Assert.assertEquals(
 			regex, priceEntry.getPriceListExternalReferenceCode());
 		Assert.assertEquals(regex, priceEntry.getSkuExternalReferenceCode());
+		Assert.assertEquals(regex, priceEntry.getUnitOfMeasureKey());
+	}
+
+	@Test
+	public void testDeletePriceEntry() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGraphQLDeletePriceEntry() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testDeletePriceEntryBatch() throws Exception {
+		PriceEntry priceEntry1 = testDeletePriceEntryBatch_addPriceEntry();
+
+		testDeletePriceEntryBatch_deletePriceEntry(
+			"COMPLETED", null, priceEntry1.getPriceEntryId());
+
+		assertHttpResponseStatusCode(
+			404,
+			priceEntryResource.getPriceEntryHttpResponse(
+				priceEntry1.getPriceEntryId()));
+
+		PriceEntry priceEntry2 = testDeletePriceEntryBatch_addPriceEntry();
+
+		testDeletePriceEntryBatch_deletePriceEntry(
+			"COMPLETED", priceEntry2.getExternalReferenceCode(), null);
+
+		assertHttpResponseStatusCode(
+			404,
+			priceEntryResource.getPriceEntryHttpResponse(
+				priceEntry2.getPriceEntryId()));
+
+		priceEntry1 = testDeletePriceEntryBatch_addPriceEntry();
+		priceEntry2 = testDeletePriceEntryBatch_addPriceEntry();
+
+		testDeletePriceEntryBatch_deletePriceEntry(
+			"COMPLETED", priceEntry2.getExternalReferenceCode(),
+			priceEntry1.getPriceEntryId());
+
+		assertHttpResponseStatusCode(
+			404,
+			priceEntryResource.getPriceEntryHttpResponse(
+				priceEntry1.getPriceEntryId()));
+		assertHttpResponseStatusCode(
+			200,
+			priceEntryResource.getPriceEntryHttpResponse(
+				priceEntry2.getPriceEntryId()));
+
+		testDeletePriceEntryBatch_deletePriceEntry(
+			"COMPLETED", priceEntry2.getExternalReferenceCode(),
+			priceEntry1.getPriceEntryId());
+
+		assertHttpResponseStatusCode(
+			404,
+			priceEntryResource.getPriceEntryHttpResponse(
+				priceEntry2.getPriceEntryId()));
+	}
+
+	protected PriceEntry testDeletePriceEntryBatch_addPriceEntry()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected void testDeletePriceEntryBatch_deletePriceEntry(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			priceEntryResource.deletePriceEntryBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"priceEntryId", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
 	}
 
 	@Test
 	public void testDeletePriceEntryByExternalReferenceCode() throws Exception {
 		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGetPriceEntry() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testGraphQLGetPriceEntry() throws Exception {
+		Assert.assertTrue(true);
+	}
+
+	@Test
+	public void testGraphQLGetPriceEntryNotFound() throws Exception {
+		Assert.assertTrue(true);
 	}
 
 	@Test
@@ -229,41 +341,6 @@ public abstract class BasePriceEntryResourceTestCase {
 	}
 
 	@Test
-	public void testPatchPriceEntryByExternalReferenceCode() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testDeletePriceEntry() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGraphQLDeletePriceEntry() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGetPriceEntry() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
-	public void testGraphQLGetPriceEntry() throws Exception {
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testGraphQLGetPriceEntryNotFound() throws Exception {
-		Assert.assertTrue(true);
-	}
-
-	@Test
-	public void testPatchPriceEntry() throws Exception {
-		Assert.assertTrue(false);
-	}
-
-	@Test
 	public void testGetPriceListByExternalReferenceCodePriceEntriesPage()
 		throws Exception {
 
@@ -275,9 +352,10 @@ public abstract class BasePriceEntryResourceTestCase {
 		Page<PriceEntry> page =
 			priceEntryResource.
 				getPriceListByExternalReferenceCodePriceEntriesPage(
-					externalReferenceCode, Pagination.of(1, 10));
+					externalReferenceCode, null, null, Pagination.of(1, 10),
+					null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			PriceEntry irrelevantPriceEntry =
@@ -288,14 +366,17 @@ public abstract class BasePriceEntryResourceTestCase {
 			page =
 				priceEntryResource.
 					getPriceListByExternalReferenceCodePriceEntriesPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode, null, null,
+						Pagination.of(1, (int)totalCount + 1), null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPriceEntry),
-				(List<PriceEntry>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantPriceEntry, (List<PriceEntry>)page.getItems());
+			assertValid(
+				page,
+				testGetPriceListByExternalReferenceCodePriceEntriesPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		PriceEntry priceEntry1 =
@@ -309,14 +390,130 @@ public abstract class BasePriceEntryResourceTestCase {
 		page =
 			priceEntryResource.
 				getPriceListByExternalReferenceCodePriceEntriesPage(
-					externalReferenceCode, Pagination.of(1, 10));
+					externalReferenceCode, null, null, Pagination.of(1, 10),
+					null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceEntry1, priceEntry2),
-			(List<PriceEntry>)page.getItems());
-		assertValid(page);
+		assertContains(priceEntry1, (List<PriceEntry>)page.getItems());
+		assertContains(priceEntry2, (List<PriceEntry>)page.getItems());
+		assertValid(
+			page,
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilterDateTimeEquals()
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(
+			EntityField.Type.DATE_TIME);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		String externalReferenceCode =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_getExternalReferenceCode();
+
+		PriceEntry priceEntry1 = randomPriceEntry();
+
+		priceEntry1 =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
+				externalReferenceCode, priceEntry1);
+
+		for (EntityField entityField : entityFields) {
+			Page<PriceEntry> page =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null,
+						getFilterString(entityField, "between", priceEntry1),
+						Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(priceEntry1),
+				(List<PriceEntry>)page.getItems());
+		}
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilterStringContains()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilterStringEquals()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void
+			testGetPriceListByExternalReferenceCodePriceEntriesPageWithFilter(
+				String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		String externalReferenceCode =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_getExternalReferenceCode();
+
+		PriceEntry priceEntry1 =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
+				externalReferenceCode, randomPriceEntry());
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		PriceEntry priceEntry2 =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
+				externalReferenceCode, randomPriceEntry());
+
+		for (EntityField entityField : entityFields) {
+			Page<PriceEntry> page =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null,
+						getFilterString(entityField, operator, priceEntry1),
+						Pagination.of(1, 2), null);
+
+			assertEquals(
+				Collections.singletonList(priceEntry1),
+				(List<PriceEntry>)page.getItems());
+		}
 	}
 
 	@Test
@@ -325,6 +522,14 @@ public abstract class BasePriceEntryResourceTestCase {
 
 		String externalReferenceCode =
 			testGetPriceListByExternalReferenceCodePriceEntriesPage_getExternalReferenceCode();
+
+		Page<PriceEntry> priceEntriesPage =
+			priceEntryResource.
+				getPriceListByExternalReferenceCodePriceEntriesPage(
+					externalReferenceCode, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			priceEntriesPage.getTotalCount());
 
 		PriceEntry priceEntry1 =
 			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
@@ -338,34 +543,233 @@ public abstract class BasePriceEntryResourceTestCase {
 			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
 				externalReferenceCode, randomPriceEntry());
 
-		Page<PriceEntry> page1 =
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
+
+		int pageSizeLimit = 500;
+
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceEntry> page1 =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
+
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
+
+			assertContains(priceEntry1, (List<PriceEntry>)page1.getItems());
+
+			Page<PriceEntry> page2 =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
+
+			assertContains(priceEntry2, (List<PriceEntry>)page2.getItems());
+
+			Page<PriceEntry> page3 =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit),
+						null);
+
+			assertContains(priceEntry3, (List<PriceEntry>)page3.getItems());
+		}
+		else {
+			Page<PriceEntry> page1 =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, totalCount + 2), null);
+
+			List<PriceEntry> priceEntries1 = (List<PriceEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				priceEntries1.toString(), totalCount + 2, priceEntries1.size());
+
+			Page<PriceEntry> page2 =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceEntry> priceEntries2 = (List<PriceEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				priceEntries2.toString(), 1, priceEntries2.size());
+
+			Page<PriceEntry> page3 =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, (int)totalCount + 3), null);
+
+			assertContains(priceEntry1, (List<PriceEntry>)page3.getItems());
+			assertContains(priceEntry2, (List<PriceEntry>)page3.getItems());
+			assertContains(priceEntry3, (List<PriceEntry>)page3.getItems());
+		}
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithSortDateTime()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithSort(
+			EntityField.Type.DATE_TIME,
+			(entityField, priceEntry1, priceEntry2) -> {
+				BeanTestUtil.setProperty(
+					priceEntry1, entityField.getName(),
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithSortDouble()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, priceEntry1, priceEntry2) -> {
+				BeanTestUtil.setProperty(
+					priceEntry1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					priceEntry2, entityField.getName(), 0.5);
+			});
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithSortInteger()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithSort(
+			EntityField.Type.INTEGER,
+			(entityField, priceEntry1, priceEntry2) -> {
+				BeanTestUtil.setProperty(priceEntry1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(priceEntry2, entityField.getName(), 1);
+			});
+	}
+
+	@Test
+	public void testGetPriceListByExternalReferenceCodePriceEntriesPageWithSortString()
+		throws Exception {
+
+		testGetPriceListByExternalReferenceCodePriceEntriesPageWithSort(
+			EntityField.Type.STRING,
+			(entityField, priceEntry1, priceEntry2) -> {
+				Class<?> clazz = priceEntry1.getClass();
+
+				String entityFieldName = entityField.getName();
+
+				Method method = clazz.getMethod(
+					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
+
+				Class<?> returnType = method.getReturnType();
+
+				if (returnType.isAssignableFrom(Map.class)) {
+					BeanTestUtil.setProperty(
+						priceEntry1, entityFieldName,
+						Collections.singletonMap("Aaa", "Aaa"));
+					BeanTestUtil.setProperty(
+						priceEntry2, entityFieldName,
+						Collections.singletonMap("Bbb", "Bbb"));
+				}
+				else if (entityFieldName.contains("email")) {
+					BeanTestUtil.setProperty(
+						priceEntry1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+					BeanTestUtil.setProperty(
+						priceEntry2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()) +
+									"@liferay.com");
+				}
+				else {
+					BeanTestUtil.setProperty(
+						priceEntry1, entityFieldName,
+						"aaa" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+					BeanTestUtil.setProperty(
+						priceEntry2, entityFieldName,
+						"bbb" +
+							StringUtil.toLowerCase(
+								RandomTestUtil.randomString()));
+				}
+			});
+	}
+
+	protected void
+			testGetPriceListByExternalReferenceCodePriceEntriesPageWithSort(
+				EntityField.Type type,
+				UnsafeTriConsumer
+					<EntityField, PriceEntry, PriceEntry, Exception>
+						unsafeTriConsumer)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
+
+		if (entityFields.isEmpty()) {
+			return;
+		}
+
+		String externalReferenceCode =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_getExternalReferenceCode();
+
+		PriceEntry priceEntry1 = randomPriceEntry();
+		PriceEntry priceEntry2 = randomPriceEntry();
+
+		for (EntityField entityField : entityFields) {
+			unsafeTriConsumer.accept(entityField, priceEntry1, priceEntry2);
+		}
+
+		priceEntry1 =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
+				externalReferenceCode, priceEntry1);
+
+		priceEntry2 =
+			testGetPriceListByExternalReferenceCodePriceEntriesPage_addPriceEntry(
+				externalReferenceCode, priceEntry2);
+
+		Page<PriceEntry> page =
 			priceEntryResource.
 				getPriceListByExternalReferenceCodePriceEntriesPage(
-					externalReferenceCode, Pagination.of(1, 2));
+					externalReferenceCode, null, null, null, null);
 
-		List<PriceEntry> priceEntries1 = (List<PriceEntry>)page1.getItems();
+		for (EntityField entityField : entityFields) {
+			Page<PriceEntry> ascPage =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, (int)page.getTotalCount() + 1),
+						entityField.getName() + ":asc");
 
-		Assert.assertEquals(priceEntries1.toString(), 2, priceEntries1.size());
+			assertContains(priceEntry1, (List<PriceEntry>)ascPage.getItems());
+			assertContains(priceEntry2, (List<PriceEntry>)ascPage.getItems());
 
-		Page<PriceEntry> page2 =
-			priceEntryResource.
-				getPriceListByExternalReferenceCodePriceEntriesPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Page<PriceEntry> descPage =
+				priceEntryResource.
+					getPriceListByExternalReferenceCodePriceEntriesPage(
+						externalReferenceCode, null, null,
+						Pagination.of(1, (int)page.getTotalCount() + 1),
+						entityField.getName() + ":desc");
 
-		Assert.assertEquals(3, page2.getTotalCount());
-
-		List<PriceEntry> priceEntries2 = (List<PriceEntry>)page2.getItems();
-
-		Assert.assertEquals(priceEntries2.toString(), 1, priceEntries2.size());
-
-		Page<PriceEntry> page3 =
-			priceEntryResource.
-				getPriceListByExternalReferenceCodePriceEntriesPage(
-					externalReferenceCode, Pagination.of(1, 3));
-
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceEntry1, priceEntry2, priceEntry3),
-			(List<PriceEntry>)page3.getItems());
+			assertContains(priceEntry2, (List<PriceEntry>)descPage.getItems());
+			assertContains(priceEntry1, (List<PriceEntry>)descPage.getItems());
+		}
 	}
 
 	protected PriceEntry
@@ -393,29 +797,6 @@ public abstract class BasePriceEntryResourceTestCase {
 	}
 
 	@Test
-	public void testPostPriceListByExternalReferenceCodePriceEntry()
-		throws Exception {
-
-		PriceEntry randomPriceEntry = randomPriceEntry();
-
-		PriceEntry postPriceEntry =
-			testPostPriceListByExternalReferenceCodePriceEntry_addPriceEntry(
-				randomPriceEntry);
-
-		assertEquals(randomPriceEntry, postPriceEntry);
-		assertValid(postPriceEntry);
-	}
-
-	protected PriceEntry
-			testPostPriceListByExternalReferenceCodePriceEntry_addPriceEntry(
-				PriceEntry priceEntry)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetPriceListIdPriceEntriesPage() throws Exception {
 		Long id = testGetPriceListIdPriceEntriesPage_getId();
 		Long irrelevantId =
@@ -425,7 +806,7 @@ public abstract class BasePriceEntryResourceTestCase {
 			priceEntryResource.getPriceListIdPriceEntriesPage(
 				id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantId != null) {
 			PriceEntry irrelevantPriceEntry =
@@ -433,14 +814,17 @@ public abstract class BasePriceEntryResourceTestCase {
 					irrelevantId, randomIrrelevantPriceEntry());
 
 			page = priceEntryResource.getPriceListIdPriceEntriesPage(
-				irrelevantId, null, null, Pagination.of(1, 2), null);
+				irrelevantId, null, null, Pagination.of(1, (int)totalCount + 1),
+				null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantPriceEntry),
-				(List<PriceEntry>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantPriceEntry, (List<PriceEntry>)page.getItems());
+			assertValid(
+				page,
+				testGetPriceListIdPriceEntriesPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		PriceEntry priceEntry1 =
@@ -454,12 +838,21 @@ public abstract class BasePriceEntryResourceTestCase {
 		page = priceEntryResource.getPriceListIdPriceEntriesPage(
 			id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceEntry1, priceEntry2),
-			(List<PriceEntry>)page.getItems());
-		assertValid(page);
+		assertContains(priceEntry1, (List<PriceEntry>)page.getItems());
+		assertContains(priceEntry2, (List<PriceEntry>)page.getItems());
+		assertValid(
+			page, testGetPriceListIdPriceEntriesPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetPriceListIdPriceEntriesPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -494,11 +887,42 @@ public abstract class BasePriceEntryResourceTestCase {
 	}
 
 	@Test
+	public void testGetPriceListIdPriceEntriesPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetPriceListIdPriceEntriesPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetPriceListIdPriceEntriesPageWithFilterStringContains()
+		throws Exception {
+
+		testGetPriceListIdPriceEntriesPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetPriceListIdPriceEntriesPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetPriceListIdPriceEntriesPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetPriceListIdPriceEntriesPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetPriceListIdPriceEntriesPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetPriceListIdPriceEntriesPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -518,7 +942,8 @@ public abstract class BasePriceEntryResourceTestCase {
 		for (EntityField entityField : entityFields) {
 			Page<PriceEntry> page =
 				priceEntryResource.getPriceListIdPriceEntriesPage(
-					id, null, getFilterString(entityField, "eq", priceEntry1),
+					id, null,
+					getFilterString(entityField, operator, priceEntry1),
 					Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -533,6 +958,13 @@ public abstract class BasePriceEntryResourceTestCase {
 
 		Long id = testGetPriceListIdPriceEntriesPage_getId();
 
+		Page<PriceEntry> priceEntriesPage =
+			priceEntryResource.getPriceListIdPriceEntriesPage(
+				id, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			priceEntriesPage.getTotalCount());
+
 		PriceEntry priceEntry1 =
 			testGetPriceListIdPriceEntriesPage_addPriceEntry(
 				id, randomPriceEntry());
@@ -545,31 +977,73 @@ public abstract class BasePriceEntryResourceTestCase {
 			testGetPriceListIdPriceEntriesPage_addPriceEntry(
 				id, randomPriceEntry());
 
-		Page<PriceEntry> page1 =
-			priceEntryResource.getPriceListIdPriceEntriesPage(
-				id, null, null, Pagination.of(1, 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<PriceEntry> priceEntries1 = (List<PriceEntry>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(priceEntries1.toString(), 2, priceEntries1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<PriceEntry> page1 =
+				priceEntryResource.getPriceListIdPriceEntriesPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<PriceEntry> page2 =
-			priceEntryResource.getPriceListIdPriceEntriesPage(
-				id, null, null, Pagination.of(2, 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(priceEntry1, (List<PriceEntry>)page1.getItems());
 
-		List<PriceEntry> priceEntries2 = (List<PriceEntry>)page2.getItems();
+			Page<PriceEntry> page2 =
+				priceEntryResource.getPriceListIdPriceEntriesPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(priceEntries2.toString(), 1, priceEntries2.size());
+			assertContains(priceEntry2, (List<PriceEntry>)page2.getItems());
 
-		Page<PriceEntry> page3 =
-			priceEntryResource.getPriceListIdPriceEntriesPage(
-				id, null, null, Pagination.of(1, 3), null);
+			Page<PriceEntry> page3 =
+				priceEntryResource.getPriceListIdPriceEntriesPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(priceEntry1, priceEntry2, priceEntry3),
-			(List<PriceEntry>)page3.getItems());
+			assertContains(priceEntry3, (List<PriceEntry>)page3.getItems());
+		}
+		else {
+			Page<PriceEntry> page1 =
+				priceEntryResource.getPriceListIdPriceEntriesPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<PriceEntry> priceEntries1 = (List<PriceEntry>)page1.getItems();
+
+			Assert.assertEquals(
+				priceEntries1.toString(), totalCount + 2, priceEntries1.size());
+
+			Page<PriceEntry> page2 =
+				priceEntryResource.getPriceListIdPriceEntriesPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<PriceEntry> priceEntries2 = (List<PriceEntry>)page2.getItems();
+
+			Assert.assertEquals(
+				priceEntries2.toString(), 1, priceEntries2.size());
+
+			Page<PriceEntry> page3 =
+				priceEntryResource.getPriceListIdPriceEntriesPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(priceEntry1, (List<PriceEntry>)page3.getItems());
+			assertContains(priceEntry2, (List<PriceEntry>)page3.getItems());
+			assertContains(priceEntry3, (List<PriceEntry>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -579,9 +1053,23 @@ public abstract class BasePriceEntryResourceTestCase {
 		testGetPriceListIdPriceEntriesPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, priceEntry1, priceEntry2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					priceEntry1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetPriceListIdPriceEntriesPageWithSortDouble()
+		throws Exception {
+
+		testGetPriceListIdPriceEntriesPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, priceEntry1, priceEntry2) -> {
+				BeanTestUtil.setProperty(
+					priceEntry1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					priceEntry2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -592,8 +1080,8 @@ public abstract class BasePriceEntryResourceTestCase {
 		testGetPriceListIdPriceEntriesPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, priceEntry1, priceEntry2) -> {
-				BeanUtils.setProperty(priceEntry1, entityField.getName(), 0);
-				BeanUtils.setProperty(priceEntry2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(priceEntry1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(priceEntry2, entityField.getName(), 1);
 			});
 	}
 
@@ -608,27 +1096,27 @@ public abstract class BasePriceEntryResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceEntry1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceEntry2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceEntry1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceEntry2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -636,12 +1124,12 @@ public abstract class BasePriceEntryResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceEntry1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						priceEntry2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -677,24 +1165,28 @@ public abstract class BasePriceEntryResourceTestCase {
 		priceEntry2 = testGetPriceListIdPriceEntriesPage_addPriceEntry(
 			id, priceEntry2);
 
+		Page<PriceEntry> page =
+			priceEntryResource.getPriceListIdPriceEntriesPage(
+				id, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<PriceEntry> ascPage =
 				priceEntryResource.getPriceListIdPriceEntriesPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(priceEntry1, priceEntry2),
-				(List<PriceEntry>)ascPage.getItems());
+			assertContains(priceEntry1, (List<PriceEntry>)ascPage.getItems());
+			assertContains(priceEntry2, (List<PriceEntry>)ascPage.getItems());
 
 			Page<PriceEntry> descPage =
 				priceEntryResource.getPriceListIdPriceEntriesPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(priceEntry2, priceEntry1),
-				(List<PriceEntry>)descPage.getItems());
+			assertContains(priceEntry2, (List<PriceEntry>)descPage.getItems());
+			assertContains(priceEntry1, (List<PriceEntry>)descPage.getItems());
 		}
 	}
 
@@ -715,6 +1207,39 @@ public abstract class BasePriceEntryResourceTestCase {
 		throws Exception {
 
 		return null;
+	}
+
+	@Test
+	public void testPatchPriceEntry() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPatchPriceEntryByExternalReferenceCode() throws Exception {
+		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testPostPriceListByExternalReferenceCodePriceEntry()
+		throws Exception {
+
+		PriceEntry randomPriceEntry = randomPriceEntry();
+
+		PriceEntry postPriceEntry =
+			testPostPriceListByExternalReferenceCodePriceEntry_addPriceEntry(
+				randomPriceEntry);
+
+		assertEquals(randomPriceEntry, postPriceEntry);
+		assertValid(postPriceEntry);
+	}
+
+	protected PriceEntry
+			testPostPriceListByExternalReferenceCodePriceEntry_addPriceEntry(
+				PriceEntry priceEntry)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -981,8 +1506,26 @@ public abstract class BasePriceEntryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"priceOnApplication", additionalAssertFieldName)) {
+
+				if (priceEntry.getPriceOnApplication() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("product", additionalAssertFieldName)) {
 				if (priceEntry.getProduct() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("quantity", additionalAssertFieldName)) {
+				if (priceEntry.getQuantity() == null) {
 					valid = false;
 				}
 
@@ -1023,6 +1566,14 @@ public abstract class BasePriceEntryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (priceEntry.getUnitOfMeasureKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -1032,6 +1583,13 @@ public abstract class BasePriceEntryResourceTestCase {
 	}
 
 	protected void assertValid(Page<PriceEntry> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<PriceEntry> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<PriceEntry> priceEntries = page.getItems();
@@ -1046,6 +1604,25 @@ public abstract class BasePriceEntryResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1341,9 +1918,32 @@ public abstract class BasePriceEntryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals(
+					"priceOnApplication", additionalAssertFieldName)) {
+
+				if (!Objects.deepEquals(
+						priceEntry1.getPriceOnApplication(),
+						priceEntry2.getPriceOnApplication())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("product", additionalAssertFieldName)) {
 				if (!Objects.deepEquals(
 						priceEntry1.getProduct(), priceEntry2.getProduct())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("quantity", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						priceEntry1.getQuantity(), priceEntry2.getQuantity())) {
 
 					return false;
 				}
@@ -1395,6 +1995,17 @@ public abstract class BasePriceEntryResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						priceEntry1.getUnitOfMeasureKey(),
+						priceEntry2.getUnitOfMeasureKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -1432,14 +2043,20 @@ public abstract class BasePriceEntryResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1456,6 +2073,10 @@ public abstract class BasePriceEntryResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1465,18 +2086,18 @@ public abstract class BasePriceEntryResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1538,29 +2159,65 @@ public abstract class BasePriceEntryResourceTestCase {
 		}
 
 		if (entityFieldName.equals("discountLevelsFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(priceEntry.getDiscountLevelsFormatted()));
-			sb.append("'");
+			Object object = priceEntry.getDiscountLevelsFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("displayDate")) {
 			if (operator.equals("between")) {
+				Date date = priceEntry.getDisplayDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(priceEntry.getDisplayDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(priceEntry.getDisplayDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1570,7 +2227,7 @@ public abstract class BasePriceEntryResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(priceEntry.getDisplayDate()));
+				sb.append(_format.format(priceEntry.getDisplayDate()));
 			}
 
 			return sb.toString();
@@ -1578,22 +2235,18 @@ public abstract class BasePriceEntryResourceTestCase {
 
 		if (entityFieldName.equals("expirationDate")) {
 			if (operator.equals("between")) {
+				Date date = priceEntry.getExpirationDate();
+
 				sb = new StringBundler();
 
 				sb.append("(");
 				sb.append(entityFieldName);
 				sb.append(" gt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							priceEntry.getExpirationDate(), -2)));
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
 				sb.append(" and ");
 				sb.append(entityFieldName);
 				sb.append(" lt ");
-				sb.append(
-					_dateFormat.format(
-						DateUtils.addSeconds(
-							priceEntry.getExpirationDate(), 2)));
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
 				sb.append(")");
 			}
 			else {
@@ -1603,16 +2256,54 @@ public abstract class BasePriceEntryResourceTestCase {
 				sb.append(operator);
 				sb.append(" ");
 
-				sb.append(_dateFormat.format(priceEntry.getExpirationDate()));
+				sb.append(_format.format(priceEntry.getExpirationDate()));
 			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("externalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(priceEntry.getExternalReferenceCode()));
-			sb.append("'");
+			Object object = priceEntry.getExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1628,8 +2319,9 @@ public abstract class BasePriceEntryResourceTestCase {
 		}
 
 		if (entityFieldName.equals("price")) {
-			throw new IllegalArgumentException(
-				"Invalid entity field " + entityFieldName);
+			sb.append(String.valueOf(priceEntry.getPrice()));
+
+			return sb.toString();
 		}
 
 		if (entityFieldName.equals("priceEntryId")) {
@@ -1638,18 +2330,93 @@ public abstract class BasePriceEntryResourceTestCase {
 		}
 
 		if (entityFieldName.equals("priceFormatted")) {
-			sb.append("'");
-			sb.append(String.valueOf(priceEntry.getPriceFormatted()));
-			sb.append("'");
+			Object object = priceEntry.getPriceFormatted();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
 
 		if (entityFieldName.equals("priceListExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(priceEntry.getPriceListExternalReferenceCode()));
-			sb.append("'");
+			Object object = priceEntry.getPriceListExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1659,7 +2426,17 @@ public abstract class BasePriceEntryResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("priceOnApplication")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
 		if (entityFieldName.equals("product")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("quantity")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
 		}
@@ -1670,9 +2447,47 @@ public abstract class BasePriceEntryResourceTestCase {
 		}
 
 		if (entityFieldName.equals("skuExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(String.valueOf(priceEntry.getSkuExternalReferenceCode()));
-			sb.append("'");
+			Object object = priceEntry.getSkuExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1685,6 +2500,52 @@ public abstract class BasePriceEntryResourceTestCase {
 		if (entityFieldName.equals("tierPrices")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("unitOfMeasureKey")) {
+			Object object = priceEntry.getUnitOfMeasureKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
 		}
 
 		throw new IllegalArgumentException(
@@ -1701,7 +2562,8 @@ public abstract class BasePriceEntryResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1749,9 +2611,12 @@ public abstract class BasePriceEntryResourceTestCase {
 				priceListExternalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				priceListId = RandomTestUtil.randomLong();
+				priceOnApplication = RandomTestUtil.randomBoolean();
 				skuExternalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				skuId = RandomTestUtil.randomLong();
+				unitOfMeasureKey = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 			}
 		};
 	}
@@ -1766,10 +2631,155 @@ public abstract class BasePriceEntryResourceTestCase {
 		return randomPriceEntry();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected PriceEntryResource priceEntryResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1845,23 +2855,35 @@ public abstract class BasePriceEntryResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BasePriceEntryResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private
 		com.liferay.headless.commerce.admin.pricing.resource.v2_0.
 			PriceEntryResource _priceEntryResource;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private ResourceActionLocalService _resourceActionLocalService;
+
+	@Inject
+	private ResourcePermissionLocalService _resourcePermissionLocalService;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@Inject
+	private ScopeChecker _scopeChecker;
+
+	@Inject
+	private UserLocalService _userLocalService;
+
+	@Inject
+	private VulcanCRUDItemDelegateBuilderRegistry
+		_vulcanCRUDItemDelegateBuilderRegistry;
 
 }

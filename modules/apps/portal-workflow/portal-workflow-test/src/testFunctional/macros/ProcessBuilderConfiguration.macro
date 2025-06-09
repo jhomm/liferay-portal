@@ -1,0 +1,26 @@
+definition {
+
+	@summary = "Default summary"
+	macro chooseSortOption(key_menuItem = null) {
+		Click(locator1 = "ManagementBar#ORDER");
+
+		Click(
+			key_menuItem = ${key_menuItem},
+			locator1 = "ManagementBar#FILTER_AND_ORDER_ITEM");
+	}
+
+	@summary = "Default summary"
+	macro viewSpecificOrder(resultsList = null) {
+		var resultOrder = 0;
+
+		for (var searchAssetTitle : list ${resultsList}) {
+			var resultOrder = ${resultOrder} + 1;
+
+			AssertTextEquals.assertPartialText(
+				locator1 = "ProcessBuilderConfiguration#ASSET_TYPE",
+				resultOrder = ${resultOrder},
+				value1 = ${searchAssetTitle});
+		}
+	}
+
+}

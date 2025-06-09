@@ -1,18 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayList from '@clayui/list';
 import ClayLoadingIndicator from '@clayui/loading-indicator';
 import className from 'classnames';
+import {sub} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 
@@ -45,20 +40,18 @@ export default function ReferralDetail({
 }) {
 	const {languageTag} = useContext(StoreStateContext);
 
-	const [isReferringPagesExpanded, setIsReferringPagesExpanded] = useState(
-		false
-	);
+	const [isReferringPagesExpanded, setIsReferringPagesExpanded] =
+		useState(false);
 
-	const [
-		isReferringDomainsExpanded,
-		setIsReferringDomainsExpanded,
-	] = useState(false);
+	const [isReferringDomainsExpanded, setIsReferringDomainsExpanded] =
+		useState(false);
 
 	const {referringDomains, referringPages} = currentPage.data;
 
-	const dateFormatters = useMemo(() => dateFormat(languageTag), [
-		languageTag,
-	]);
+	const dateFormatters = useMemo(
+		() => dateFormat(languageTag),
+		[languageTag]
+	);
 
 	const {firstDate, lastDate} = useDateTitle();
 
@@ -70,15 +63,14 @@ export default function ReferralDetail({
 
 	const chartDispatch = useContext(ChartDispatchContext);
 
-	const {pieChartLoading, timeSpanKey, timeSpanOffset} = useContext(
-		ChartStateContext
-	);
+	const {pieChartLoading, timeSpanKey, timeSpanOffset} =
+		useContext(ChartStateContext);
 
 	const {validAnalyticsConnection} = useContext(ConnectionContext);
 
 	const isPreviousPeriodButtonDisabled = useIsPreviousPeriodButtonDisabled();
 
-	const firstUpdate = useRef(true);
+	const firstUpdateRef = useRef(true);
 
 	const trafficSourceDetailClasses = className(
 		'c-p-3 traffic-source-detail',
@@ -88,8 +80,8 @@ export default function ReferralDetail({
 	);
 
 	useEffect(() => {
-		if (firstUpdate.current) {
-			firstUpdate.current = false;
+		if (firstUpdateRef.current) {
+			firstUpdateRef.current = false;
 
 			return;
 		}
@@ -103,9 +95,9 @@ export default function ReferralDetail({
 			});
 
 			trafficSourcesDataProvider()
-				.then((trafficSources) =>
-					handleDetailPeriodChange(trafficSources, 'referral')
-				)
+				.then((trafficSources) => {
+					handleDetailPeriodChange(trafficSources, 'referral', true);
+				})
 				.catch(() => {
 					dispatch({type: 'ADD_WARNING'});
 				})
@@ -136,6 +128,7 @@ export default function ReferralDetail({
 					small
 				/>
 			)}
+
 			<div className="c-mb-3 c-mt-2">
 				<TimeSpanSelector
 					disabledNextTimeSpan={timeSpanOffset === 0}
@@ -147,12 +140,12 @@ export default function ReferralDetail({
 				/>
 			</div>
 
-			{title && <h5 className="c-mb-4">{title}</h5>}
+			{title && <div className="c-mb-4 h5">{title}</div>}
 
 			<TotalCount
 				className="c-mb-2"
 				dataProvider={trafficVolumeDataProvider}
-				label={Liferay.Util.sub(Liferay.Language.get('traffic-volume'))}
+				label={sub(Liferay.Language.get('traffic-volume'))}
 				popoverHeader={Liferay.Language.get('traffic-volume')}
 				popoverMessage={Liferay.Language.get(
 					'traffic-volume-is-the-number-of-page-views-coming-from-one-channel'
@@ -163,7 +156,7 @@ export default function ReferralDetail({
 			<TotalCount
 				className="c-mb-3"
 				dataProvider={trafficShareDataProvider}
-				label={Liferay.Util.sub(Liferay.Language.get('traffic-share'))}
+				label={sub(Liferay.Language.get('traffic-share'))}
 				percentage={true}
 				popoverHeader={Liferay.Language.get('traffic-share')}
 				popoverMessage={Liferay.Language.get(
@@ -177,6 +170,7 @@ export default function ReferralDetail({
 						<ClayList.ItemTitle className="text-truncate-inline">
 							<span className="text-truncate">
 								{Liferay.Language.get('top-referring-pages')}
+
 								<span className="text-secondary">
 									<Hint
 										message={Liferay.Language.get(
@@ -190,12 +184,14 @@ export default function ReferralDetail({
 							</span>
 						</ClayList.ItemTitle>
 					</ClayList.ItemField>
+
 					<ClayList.ItemField>
 						<ClayList.ItemTitle>
 							<span>{Liferay.Language.get('traffic')}</span>
 						</ClayList.ItemTitle>
 					</ClayList.ItemField>
 				</ClayList.Item>
+
 				{referringPages
 					.slice(0, isReferringPagesExpanded ? 10 : ITEMS_TO_SHOW)
 					.map(({trafficAmount, url}) => {
@@ -218,6 +214,7 @@ export default function ReferralDetail({
 										</span>
 									</ClayList.ItemText>
 								</ClayList.ItemField>
+
 								<ClayList.ItemField expand>
 									<span className="align-self-end font-weight-semi-bold text-dark">
 										{numberFormat(
@@ -255,6 +252,7 @@ export default function ReferralDetail({
 						<ClayList.ItemTitle className="text-truncate-inline">
 							<span className="text-truncate">
 								{Liferay.Language.get('top-referring-domains')}
+
 								<span className="text-secondary">
 									<Hint
 										message={Liferay.Language.get(
@@ -268,12 +266,14 @@ export default function ReferralDetail({
 							</span>
 						</ClayList.ItemTitle>
 					</ClayList.ItemField>
+
 					<ClayList.ItemField>
 						<ClayList.ItemTitle>
 							<span>{Liferay.Language.get('traffic')}</span>
 						</ClayList.ItemTitle>
 					</ClayList.ItemField>
 				</ClayList.Item>
+
 				{referringDomains
 					.slice(0, isReferringDomainsExpanded ? 10 : ITEMS_TO_SHOW)
 					.map(({trafficAmount, url}) => {
@@ -296,6 +296,7 @@ export default function ReferralDetail({
 										</span>
 									</ClayList.ItemText>
 								</ClayList.ItemField>
+
 								<ClayList.ItemField expand>
 									<span className="align-self-end font-weight-semi-bold text-dark">
 										{numberFormat(

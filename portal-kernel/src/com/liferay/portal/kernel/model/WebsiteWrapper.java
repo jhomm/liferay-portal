@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -44,6 +35,7 @@ public class WebsiteWrapper
 
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("websiteId", getWebsiteId());
 		attributes.put("companyId", getCompanyId());
 		attributes.put("userId", getUserId());
@@ -53,7 +45,7 @@ public class WebsiteWrapper
 		attributes.put("classNameId", getClassNameId());
 		attributes.put("classPK", getClassPK());
 		attributes.put("url", getUrl());
-		attributes.put("typeId", getTypeId());
+		attributes.put("listTypeId", getListTypeId());
 		attributes.put("primary", isPrimary());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
@@ -72,6 +64,13 @@ public class WebsiteWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long websiteId = (Long)attributes.get("websiteId");
@@ -128,10 +127,10 @@ public class WebsiteWrapper
 			setUrl(url);
 		}
 
-		Long typeId = (Long)attributes.get("typeId");
+		Long listTypeId = (Long)attributes.get("listTypeId");
 
-		if (typeId != null) {
-			setTypeId(typeId);
+		if (listTypeId != null) {
+			setListTypeId(listTypeId);
 		}
 
 		Boolean primary = (Boolean)attributes.get("primary");
@@ -203,6 +202,16 @@ public class WebsiteWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this website.
+	 *
+	 * @return the external reference code of this website
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the last publish date of this website.
 	 *
 	 * @return the last publish date of this website
@@ -210,6 +219,23 @@ public class WebsiteWrapper
 	@Override
 	public Date getLastPublishDate() {
 		return model.getLastPublishDate();
+	}
+
+	@Override
+	public ListType getListType()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getListType();
+	}
+
+	/**
+	 * Returns the list type ID of this website.
+	 *
+	 * @return the list type ID of this website
+	 */
+	@Override
+	public long getListTypeId() {
+		return model.getListTypeId();
 	}
 
 	/**
@@ -250,23 +276,6 @@ public class WebsiteWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
-	}
-
-	@Override
-	public ListType getType()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getType();
-	}
-
-	/**
-	 * Returns the type ID of this website.
-	 *
-	 * @return the type ID of this website
-	 */
-	@Override
-	public long getTypeId() {
-		return model.getTypeId();
 	}
 
 	/**
@@ -390,6 +399,16 @@ public class WebsiteWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this website.
+	 *
+	 * @param externalReferenceCode the external reference code of this website
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the last publish date of this website.
 	 *
 	 * @param lastPublishDate the last publish date of this website
@@ -397,6 +416,16 @@ public class WebsiteWrapper
 	@Override
 	public void setLastPublishDate(Date lastPublishDate) {
 		model.setLastPublishDate(lastPublishDate);
+	}
+
+	/**
+	 * Sets the list type ID of this website.
+	 *
+	 * @param listTypeId the list type ID of this website
+	 */
+	@Override
+	public void setListTypeId(long listTypeId) {
+		model.setListTypeId(listTypeId);
 	}
 
 	/**
@@ -437,16 +466,6 @@ public class WebsiteWrapper
 	@Override
 	public void setPrimaryKey(long primaryKey) {
 		model.setPrimaryKey(primaryKey);
-	}
-
-	/**
-	 * Sets the type ID of this website.
-	 *
-	 * @param typeId the type ID of this website
-	 */
-	@Override
-	public void setTypeId(long typeId) {
-		model.setTypeId(typeId);
 	}
 
 	/**
@@ -507,6 +526,11 @@ public class WebsiteWrapper
 	@Override
 	public void setWebsiteId(long websiteId) {
 		model.setWebsiteId(websiteId);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

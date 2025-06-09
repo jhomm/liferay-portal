@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -55,14 +46,14 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 						<liferay-ui:message key="not-set" />
 					</c:when>
 					<c:otherwise>
-						<h4><%= defaultBillingAddress.getName() %></h4>
+						<div class="h4"><%= HtmlUtil.escape(defaultBillingAddress.getName()) %></div>
 
 						<liferay-text-localizer:address-display
 							address="<%= defaultBillingAddress %>"
 						/>
 
 						<c:if test="<%= Validator.isNotNull(defaultBillingAddress.getPhoneNumber()) %>">
-							<span class="autofit-row"><%= defaultBillingAddress.getPhoneNumber() %></span>
+							<span class="autofit-row"><%= HtmlUtil.escape(defaultBillingAddress.getPhoneNumber()) %></span>
 						</c:if>
 					</c:otherwise>
 				</c:choose>
@@ -80,7 +71,7 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 					linkCssClass="btn btn-secondary btn-sm"
 					message='<%= (accountEntryDisplay.getDefaultBillingAddress() == null) ? "set-default-address" : "change" %>'
 					method="get"
-					url="javascript:;"
+					url="javascript:void(0);"
 				/>
 
 				<c:if test="<%= accountEntryDisplay.getDefaultBillingAddress() != null %>">
@@ -122,14 +113,14 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 						<liferay-ui:message key="not-set" />
 					</c:when>
 					<c:otherwise>
-						<h4><%= defaultShippingAddress.getName() %></h4>
+						<div class="h4"><%= HtmlUtil.escape(defaultShippingAddress.getName()) %></div>
 
 						<liferay-text-localizer:address-display
 							address="<%= defaultShippingAddress %>"
 						/>
 
 						<c:if test="<%= Validator.isNotNull(defaultShippingAddress.getPhoneNumber()) %>">
-							<span class="autofit-row"><%= defaultShippingAddress.getPhoneNumber() %></span>
+							<span class="autofit-row"><%= HtmlUtil.escape(defaultShippingAddress.getPhoneNumber()) %></span>
 						</c:if>
 					</c:otherwise>
 				</c:choose>
@@ -147,7 +138,7 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 					linkCssClass="btn btn-secondary btn-sm"
 					message='<%= (accountEntryDisplay.getDefaultShippingAddress() == null) ? "set-default-address" : "change" %>'
 					method="get"
-					url="javascript:;"
+					url="javascript:void(0);"
 				/>
 
 				<c:if test="<%= accountEntryDisplay.getDefaultShippingAddress() != null %>">
@@ -193,5 +184,5 @@ AccountEntryDisplay accountEntryDisplay = (AccountEntryDisplay)request.getAttrib
 			"defaultAddressesContainerId", liferayPortletResponse.getNamespace() + "defaultAddresses"
 		).build()
 	%>'
-	module="account_entries_admin/js/DefaultAddresses"
+	module="{DefaultAddresses} from account-admin-web"
 />

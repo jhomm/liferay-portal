@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.segments.model.SegmentsEntry;
 
@@ -29,6 +21,10 @@ import com.liferay.segments.model.SegmentsEntry;
 public class SegmentsEntryLocalServiceWrapper
 	implements SegmentsEntryLocalService,
 			   ServiceWrapper<SegmentsEntryLocalService> {
+
+	public SegmentsEntryLocalServiceWrapper() {
+		this(null);
+	}
 
 	public SegmentsEntryLocalServiceWrapper(
 		SegmentsEntryLocalService segmentsEntryLocalService) {
@@ -56,12 +52,12 @@ public class SegmentsEntryLocalServiceWrapper
 			String segmentsEntryKey,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
-			boolean active, String criteria, String type,
+			boolean active, String criteria,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsEntryLocalService.addSegmentsEntry(
-			segmentsEntryKey, nameMap, descriptionMap, active, criteria, type,
+			segmentsEntryKey, nameMap, descriptionMap, active, criteria,
 			serviceContext);
 	}
 
@@ -70,13 +66,13 @@ public class SegmentsEntryLocalServiceWrapper
 			String segmentsEntryKey,
 			java.util.Map<java.util.Locale, String> nameMap,
 			java.util.Map<java.util.Locale, String> descriptionMap,
-			boolean active, String criteria, String source, String type,
+			boolean active, String criteria, String source,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsEntryLocalService.addSegmentsEntry(
 			segmentsEntryKey, nameMap, descriptionMap, active, criteria, source,
-			type, serviceContext);
+			serviceContext);
 	}
 
 	@Override
@@ -291,11 +287,10 @@ public class SegmentsEntryLocalServiceWrapper
 
 	@Override
 	public SegmentsEntry fetchSegmentsEntry(
-		long groupId, String segmentsEntryKey,
-		boolean includeAncestorSegmentsEntries) {
+		long groupId, String segmentsEntryKey) {
 
 		return _segmentsEntryLocalService.fetchSegmentsEntry(
-			groupId, segmentsEntryKey, includeAncestorSegmentsEntries);
+			groupId, segmentsEntryKey);
 	}
 
 	/**
@@ -378,35 +373,30 @@ public class SegmentsEntryLocalServiceWrapper
 
 	@Override
 	public java.util.List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean includeAncestorSegmentsEntries, int start,
-		int end,
+		long groupId, int start, int end,
 		com.liferay.portal.kernel.util.OrderByComparator<SegmentsEntry>
 			orderByComparator) {
 
 		return _segmentsEntryLocalService.getSegmentsEntries(
-			groupId, includeAncestorSegmentsEntries, start, end,
-			orderByComparator);
+			groupId, start, end, orderByComparator);
 	}
 
 	@Override
 	public java.util.List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String type, int start, int end,
+		long groupId, String source, int start, int end,
 		com.liferay.portal.kernel.util.OrderByComparator<SegmentsEntry>
 			orderByComparator) {
 
 		return _segmentsEntryLocalService.getSegmentsEntries(
-			groupId, active, type, start, end, orderByComparator);
+			groupId, source, start, end, orderByComparator);
 	}
 
 	@Override
 	public java.util.List<SegmentsEntry> getSegmentsEntries(
-		long groupId, boolean active, String source, String type, int start,
-		int end,
-		com.liferay.portal.kernel.util.OrderByComparator<SegmentsEntry>
-			orderByComparator) {
+		long[] segmentsEntryIds, int start, int end) {
 
 		return _segmentsEntryLocalService.getSegmentsEntries(
-			groupId, active, source, type, start, end, orderByComparator);
+			segmentsEntryIds, start, end);
 	}
 
 	@Override
@@ -465,11 +455,8 @@ public class SegmentsEntryLocalServiceWrapper
 	}
 
 	@Override
-	public int getSegmentsEntriesCount(
-		long groupId, boolean includeAncestorSegmentsEntries) {
-
-		return _segmentsEntryLocalService.getSegmentsEntriesCount(
-			groupId, includeAncestorSegmentsEntries);
+	public int getSegmentsEntriesCount(long groupId) {
+		return _segmentsEntryLocalService.getSegmentsEntriesCount(groupId);
 	}
 
 	/**
@@ -503,37 +490,16 @@ public class SegmentsEntryLocalServiceWrapper
 			uuid, groupId);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #searchSegmentsEntries(long, long, String, boolean,
-	 LinkedHashMap, int, int, Sort)}
-	 */
-	@Deprecated
 	@Override
 	public com.liferay.portal.kernel.search.BaseModelSearchResult<SegmentsEntry>
 			searchSegmentsEntries(
 				long companyId, long groupId, String keywords,
-				boolean includeAncestorSegmentsEntries, int start, int end,
-				com.liferay.portal.kernel.search.Sort sort)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _segmentsEntryLocalService.searchSegmentsEntries(
-			companyId, groupId, keywords, includeAncestorSegmentsEntries, start,
-			end, sort);
-	}
-
-	@Override
-	public com.liferay.portal.kernel.search.BaseModelSearchResult<SegmentsEntry>
-			searchSegmentsEntries(
-				long companyId, long groupId, String keywords,
-				boolean includeAncestorSegmentsEntries,
 				java.util.LinkedHashMap<String, Object> params, int start,
 				int end, com.liferay.portal.kernel.search.Sort sort)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _segmentsEntryLocalService.searchSegmentsEntries(
-			companyId, groupId, keywords, includeAncestorSegmentsEntries,
-			params, start, end, sort);
+			companyId, groupId, keywords, params, start, end, sort);
 	}
 
 	@Override
@@ -572,6 +538,11 @@ public class SegmentsEntryLocalServiceWrapper
 	@Override
 	public SegmentsEntry updateSegmentsEntry(SegmentsEntry segmentsEntry) {
 		return _segmentsEntryLocalService.updateSegmentsEntry(segmentsEntry);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _segmentsEntryLocalService.getBasePersistence();
 	}
 
 	@Override

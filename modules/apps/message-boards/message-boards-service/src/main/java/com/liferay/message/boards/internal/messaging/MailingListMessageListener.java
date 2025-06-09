@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.messaging;
 
 import com.liferay.mail.kernel.model.Account;
+import com.liferay.mail.kernel.service.MailService;
 import com.liferay.message.boards.constants.MBMessageConstants;
 import com.liferay.message.boards.internal.util.MBMailMessage;
 import com.liferay.message.boards.internal.util.MBMailUtil;
@@ -22,11 +14,13 @@ import com.liferay.message.boards.internal.util.MailingListThreadLocal;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.MBMessageService;
-import com.liferay.petra.mail.MailEngine;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
+import com.liferay.portal.kernel.messaging.Destination;
+import com.liferay.portal.kernel.messaging.DestinationConfiguration;
+import com.liferay.portal.kernel.messaging.DestinationFactory;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.MessageListener;
 import com.liferay.portal.kernel.model.User;
@@ -35,37 +29,60 @@ import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HtmlParser;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.security.permission.PermissionCheckerUtil;
+
+import jakarta.mail.Address;
+import jakarta.mail.Flags;
+import jakarta.mail.Folder;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Session;
+import jakarta.mail.Store;
+import jakarta.mail.URLName;
+import jakarta.mail.internet.InternetAddress;
 
 import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.List;
 
-import javax.mail.Address;
-import javax.mail.Flags;
-import javax.mail.Folder;
-import javax.mail.Message;
-import javax.mail.MessagingException;
-import javax.mail.Session;
-import javax.mail.Store;
-import javax.mail.URLName;
-import javax.mail.internet.InternetAddress;
-
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Thiago Moreira
  */
 @Component(
-	immediate = true,
 	property = "destination.name=" + DestinationNames.MESSAGE_BOARDS_MAILING_LIST,
 	service = MessageListener.class
 )
 public class MailingListMessageListener extends BaseMessageListener {
+
+	@Activate
+	protected void activate(BundleContext bundleContext) {
+		Destination destination = _destinationFactory.createDestination(
+			new DestinationConfiguration(
+				DestinationConfiguration.DESTINATION_TYPE_PARALLEL,
+				DestinationNames.MESSAGE_BOARDS_MAILING_LIST));
+
+		_serviceRegistration = bundleContext.registerService(
+			Destination.class, destination,
+			MapUtil.singletonDictionary(
+				"destination.name", destination.getName()));
+	}
+
+	@Deactivate
+	protected void deactivate() {
+		_serviceRegistration.unregister();
+	}
 
 	@Override
 	protected void doReceive(
@@ -82,15 +99,15 @@ public class MailingListMessageListener extends BaseMessageListener {
 		Message[] messages = null;
 
 		try {
-			store = getStore(mailingListRequest);
+			store = _getStore(mailingListRequest);
 
 			store.connect();
 
-			folder = getFolder(store);
+			folder = _getFolder(store);
 
 			messages = folder.getMessages();
 
-			processMessages(mailingListRequest, messages);
+			_processMessages(mailingListRequest, messages);
 		}
 		finally {
 			if ((folder != null) && folder.isOpen()) {
@@ -100,7 +117,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 				}
 				catch (Exception exception) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(exception, exception);
+						_log.debug(exception);
 					}
 				}
 
@@ -109,7 +126,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 				}
 				catch (Exception exception) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(exception, exception);
+						_log.debug(exception);
 					}
 				}
 			}
@@ -120,14 +137,14 @@ public class MailingListMessageListener extends BaseMessageListener {
 				}
 				catch (MessagingException messagingException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(messagingException, messagingException);
+						_log.debug(messagingException);
 					}
 				}
 			}
 		}
 	}
 
-	protected Folder getFolder(Store store) throws Exception {
+	private Folder _getFolder(Store store) throws Exception {
 		Folder folder = store.getFolder("INBOX");
 
 		if (!folder.exists()) {
@@ -139,7 +156,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 		return folder;
 	}
 
-	protected Store getStore(MailingListRequest mailingListRequest)
+	private Store _getStore(MailingListRequest mailingListRequest)
 		throws Exception {
 
 		String protocol = mailingListRequest.getInProtocol();
@@ -155,7 +172,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 		account.setUser(user);
 		account.setPassword(password);
 
-		Session session = MailEngine.getSession(account);
+		Session session = _mailService.getSession(account);
 
 		URLName urlName = new URLName(
 			protocol, host, port, StringPool.BLANK, user, password);
@@ -163,7 +180,7 @@ public class MailingListMessageListener extends BaseMessageListener {
 		return session.getStore(urlName);
 	}
 
-	protected void processMessage(
+	private void _processMessage(
 			MailingListRequest mailingListRequest, Message mailMessage)
 		throws Exception {
 
@@ -244,12 +261,12 @@ public class MailingListMessageListener extends BaseMessageListener {
 		serviceContext.setAddGuestPermissions(true);
 
 		long groupId = mailingListRequest.getGroupId();
-		String portletId = PortletProviderUtil.getPortletId(
-			MBMessage.class.getName(), PortletProvider.Action.VIEW);
 
 		serviceContext.setLayoutFullURL(
-			_portal.getLayoutFullURL(groupId, portletId));
-
+			_portal.getLayoutFullURL(
+				groupId,
+				PortletProviderUtil.getPortletId(
+					MBMessage.class.getName(), PortletProvider.Action.VIEW)));
 		serviceContext.setScopeGroupId(groupId);
 
 		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
@@ -258,15 +275,17 @@ public class MailingListMessageListener extends BaseMessageListener {
 		try {
 			if (parentMessage == null) {
 				_mbMessageService.addMessage(
-					groupId, categoryId, subject, mbMailMessage.getBody(),
+					groupId, categoryId, subject,
+					mbMailMessage.getBody(_htmlParser),
 					MBMessageConstants.DEFAULT_FORMAT, inputStreamOVPs,
 					anonymous, 0.0, true, serviceContext);
 			}
 			else {
 				_mbMessageService.addMessage(
 					parentMessage.getMessageId(), subject,
-					mbMailMessage.getBody(), MBMessageConstants.DEFAULT_FORMAT,
-					inputStreamOVPs, anonymous, 0.0, true, serviceContext);
+					mbMailMessage.getBody(_htmlParser),
+					MBMessageConstants.DEFAULT_FORMAT, inputStreamOVPs,
+					anonymous, 0.0, true, serviceContext);
 			}
 		}
 		finally {
@@ -277,20 +296,20 @@ public class MailingListMessageListener extends BaseMessageListener {
 				}
 				catch (IOException ioException) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(ioException, ioException);
+						_log.warn(ioException);
 					}
 				}
 			}
 		}
 	}
 
-	protected void processMessages(
+	private void _processMessages(
 			MailingListRequest mailingListRequest, Message[] messages)
 		throws Exception {
 
 		for (Message message : messages) {
 			try {
-				processMessage(mailingListRequest, message);
+				_processMessage(mailingListRequest, message);
 			}
 			finally {
 				PermissionCheckerUtil.setThreadValues(null);
@@ -302,6 +321,15 @@ public class MailingListMessageListener extends BaseMessageListener {
 		MailingListMessageListener.class);
 
 	@Reference
+	private DestinationFactory _destinationFactory;
+
+	@Reference
+	private HtmlParser _htmlParser;
+
+	@Reference
+	private MailService _mailService;
+
+	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
 
 	@Reference
@@ -309,6 +337,8 @@ public class MailingListMessageListener extends BaseMessageListener {
 
 	@Reference
 	private Portal _portal;
+
+	private ServiceRegistration<Destination> _serviceRegistration;
 
 	@Reference
 	private UserLocalService _userLocalService;

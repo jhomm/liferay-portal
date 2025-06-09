@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceShippingFixedOptionLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceShippingFixedOptionLocalServiceWrapper
 	implements CommerceShippingFixedOptionLocalService,
 			   ServiceWrapper<CommerceShippingFixedOptionLocalService> {
+
+	public CommerceShippingFixedOptionLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceShippingFixedOptionLocalServiceWrapper(
 		CommerceShippingFixedOptionLocalService
@@ -61,37 +57,16 @@ public class CommerceShippingFixedOptionLocalServiceWrapper
 		com.liferay.commerce.shipping.engine.fixed.model.
 			CommerceShippingFixedOption addCommerceShippingFixedOption(
 					long userId, long groupId, long commerceShippingMethodId,
-					java.util.Map<java.util.Locale, String> nameMap,
+					java.math.BigDecimal amount,
 					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.math.BigDecimal amount, double priority)
+					String key, java.util.Map<java.util.Locale, String> nameMap,
+					double priority)
 				throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShippingFixedOptionLocalService.
 			addCommerceShippingFixedOption(
-				userId, groupId, commerceShippingMethodId, nameMap,
-				descriptionMap, amount, priority);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public
-		com.liferay.commerce.shipping.engine.fixed.model.
-			CommerceShippingFixedOption addCommerceShippingFixedOption(
-					long commerceShippingMethodId,
-					java.util.Map<java.util.Locale, String> nameMap,
-					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.math.BigDecimal amount, double priority,
-					com.liferay.portal.kernel.service.ServiceContext
-						serviceContext)
-				throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceShippingFixedOptionLocalService.
-			addCommerceShippingFixedOption(
-				commerceShippingMethodId, nameMap, descriptionMap, amount,
-				priority, serviceContext);
+				userId, groupId, commerceShippingMethodId, amount,
+				descriptionMap, key, nameMap, priority);
 	}
 
 	/**
@@ -301,11 +276,34 @@ public class CommerceShippingFixedOptionLocalServiceWrapper
 	}
 
 	@Override
+	public
+		com.liferay.commerce.shipping.engine.fixed.model.
+			CommerceShippingFixedOption fetchCommerceShippingFixedOption(
+				long companyId, String key) {
+
+		return _commerceShippingFixedOptionLocalService.
+			fetchCommerceShippingFixedOption(companyId, key);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
 		return _commerceShippingFixedOptionLocalService.
 			getActionableDynamicQuery();
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.commerce.shipping.engine.fixed.model.
+			CommerceShippingFixedOption>
+				getCommerceOrderTypeCommerceShippingFixedOptions(
+					long companyId, long commerceOrderTypeId,
+					long commerceShippingMethodId) {
+
+		return _commerceShippingFixedOptionLocalService.
+			getCommerceOrderTypeCommerceShippingFixedOptions(
+				companyId, commerceOrderTypeId, commerceShippingMethodId);
 	}
 
 	/**
@@ -485,15 +483,21 @@ public class CommerceShippingFixedOptionLocalServiceWrapper
 		com.liferay.commerce.shipping.engine.fixed.model.
 			CommerceShippingFixedOption updateCommerceShippingFixedOption(
 					long commerceShippingFixedOptionId,
-					java.util.Map<java.util.Locale, String> nameMap,
+					java.math.BigDecimal amount,
 					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.math.BigDecimal amount, double priority)
+					String key, java.util.Map<java.util.Locale, String> nameMap,
+					double priority)
 				throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShippingFixedOptionLocalService.
 			updateCommerceShippingFixedOption(
-				commerceShippingFixedOptionId, nameMap, descriptionMap, amount,
-				priority);
+				commerceShippingFixedOptionId, amount, descriptionMap, key,
+				nameMap, priority);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceShippingFixedOptionLocalService.getBasePersistence();
 	}
 
 	@Override

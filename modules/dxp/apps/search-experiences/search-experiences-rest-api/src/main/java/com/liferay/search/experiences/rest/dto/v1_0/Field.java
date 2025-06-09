@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.dto.v1_0;
@@ -20,11 +11,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,12 +29,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -57,312 +49,373 @@ public class Field implements Serializable {
 		return ObjectMapperUtil.unsafeReadValue(Field.class, json);
 	}
 
-	@Schema
-	public Boolean getBoost() {
-		return boost;
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public Object getDefaultValue() {
+		if (_defaultValueSupplier != null) {
+			defaultValue = _defaultValueSupplier.get();
+
+			_defaultValueSupplier = null;
+		}
+
+		return defaultValue;
 	}
 
-	public void setBoost(Boolean boost) {
-		this.boost = boost;
+	public void setDefaultValue(Object defaultValue) {
+		this.defaultValue = defaultValue;
+
+		_defaultValueSupplier = null;
 	}
 
 	@JsonIgnore
-	public void setBoost(
-		UnsafeSupplier<Boolean, Exception> boostUnsafeSupplier) {
+	public void setDefaultValue(
+		UnsafeSupplier<Object, Exception> defaultValueUnsafeSupplier) {
 
-		try {
-			boost = boostUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_defaultValueSupplier = () -> {
+			try {
+				return defaultValueUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Boolean boost;
+	protected Object defaultValue;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Object> _defaultValueSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	@Valid
+	public FieldMapping[] getFieldMappings() {
+		if (_fieldMappingsSupplier != null) {
+			fieldMappings = _fieldMappingsSupplier.get();
+
+			_fieldMappingsSupplier = null;
+		}
+
+		return fieldMappings;
+	}
+
+	public void setFieldMappings(FieldMapping[] fieldMappings) {
+		this.fieldMappings = fieldMappings;
+
+		_fieldMappingsSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setFieldMappings(
+		UnsafeSupplier<FieldMapping[], Exception> fieldMappingsUnsafeSupplier) {
+
+		_fieldMappingsSupplier = () -> {
+			try {
+				return fieldMappingsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected FieldMapping[] fieldMappings;
+
+	@JsonIgnore
+	private Supplier<FieldMapping[]> _fieldMappingsSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getHelpText() {
+		if (_helpTextSupplier != null) {
+			helpText = _helpTextSupplier.get();
+
+			_helpTextSupplier = null;
+		}
+
 		return helpText;
 	}
 
 	public void setHelpText(String helpText) {
 		this.helpText = helpText;
+
+		_helpTextSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setHelpText(
 		UnsafeSupplier<String, Exception> helpTextUnsafeSupplier) {
 
-		try {
-			helpText = helpTextUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_helpTextSupplier = () -> {
+			try {
+				return helpTextUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String helpText;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _helpTextSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getHelpTextLocalized() {
+		if (_helpTextLocalizedSupplier != null) {
+			helpTextLocalized = _helpTextLocalizedSupplier.get();
+
+			_helpTextLocalizedSupplier = null;
+		}
+
+		return helpTextLocalized;
+	}
+
+	public void setHelpTextLocalized(String helpTextLocalized) {
+		this.helpTextLocalized = helpTextLocalized;
+
+		_helpTextLocalizedSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setHelpTextLocalized(
+		UnsafeSupplier<String, Exception> helpTextLocalizedUnsafeSupplier) {
+
+		_helpTextLocalizedSupplier = () -> {
+			try {
+				return helpTextLocalizedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String helpTextLocalized;
+
+	@JsonIgnore
+	private Supplier<String> _helpTextLocalizedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getLabel() {
+		if (_labelSupplier != null) {
+			label = _labelSupplier.get();
+
+			_labelSupplier = null;
+		}
+
 		return label;
 	}
 
 	public void setLabel(String label) {
 		this.label = label;
+
+		_labelSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setLabel(
 		UnsafeSupplier<String, Exception> labelUnsafeSupplier) {
 
-		try {
-			label = labelUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_labelSupplier = () -> {
+			try {
+				return labelUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String label;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _labelSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getLabelLocalized() {
+		if (_labelLocalizedSupplier != null) {
+			labelLocalized = _labelLocalizedSupplier.get();
+
+			_labelLocalizedSupplier = null;
+		}
+
+		return labelLocalized;
+	}
+
+	public void setLabelLocalized(String labelLocalized) {
+		this.labelLocalized = labelLocalized;
+
+		_labelLocalizedSupplier = null;
+	}
+
+	@JsonIgnore
+	public void setLabelLocalized(
+		UnsafeSupplier<String, Exception> labelLocalizedUnsafeSupplier) {
+
+		_labelLocalizedSupplier = () -> {
+			try {
+				return labelLocalizedUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
+	}
+
+	@GraphQLField
+	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
+	protected String labelLocalized;
+
+	@JsonIgnore
+	private Supplier<String> _labelLocalizedSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getName() {
+		if (_nameSupplier != null) {
+			name = _nameSupplier.get();
+
+			_nameSupplier = null;
+		}
+
 		return name;
 	}
 
 	public void setName(String name) {
 		this.name = name;
+
+		_nameSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setName(UnsafeSupplier<String, Exception> nameUnsafeSupplier) {
-		try {
-			name = nameUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_nameSupplier = () -> {
+			try {
+				return nameUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String name;
 
-	@Schema
-	public Boolean getNullable() {
-		return nullable;
+	@JsonIgnore
+	private Supplier<String> _nameSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
+	public String getType() {
+		if (_typeSupplier != null) {
+			type = _typeSupplier.get();
+
+			_typeSupplier = null;
+		}
+
+		return type;
 	}
 
-	public void setNullable(Boolean nullable) {
-		this.nullable = nullable;
+	public void setType(String type) {
+		this.type = type;
+
+		_typeSupplier = null;
 	}
 
 	@JsonIgnore
-	public void setNullable(
-		UnsafeSupplier<Boolean, Exception> nullableUnsafeSupplier) {
-
-		try {
-			nullable = nullableUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+	public void setType(UnsafeSupplier<String, Exception> typeUnsafeSupplier) {
+		_typeSupplier = () -> {
+			try {
+				return typeUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Boolean nullable;
+	protected String type;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _typeSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
-	public Option[] getOptions() {
-		return options;
+	public TypeOptions getTypeOptions() {
+		if (_typeOptionsSupplier != null) {
+			typeOptions = _typeOptionsSupplier.get();
+
+			_typeOptionsSupplier = null;
+		}
+
+		return typeOptions;
 	}
 
-	public void setOptions(Option[] options) {
-		this.options = options;
+	public void setTypeOptions(TypeOptions typeOptions) {
+		this.typeOptions = typeOptions;
+
+		_typeOptionsSupplier = null;
 	}
 
 	@JsonIgnore
-	public void setOptions(
-		UnsafeSupplier<Option[], Exception> optionsUnsafeSupplier) {
+	public void setTypeOptions(
+		UnsafeSupplier<TypeOptions, Exception> typeOptionsUnsafeSupplier) {
 
-		try {
-			options = optionsUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_typeOptionsSupplier = () -> {
+			try {
+				return typeOptionsUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Option[] options;
-
-	@Schema
-	public Boolean getRequired() {
-		return required;
-	}
-
-	public void setRequired(Boolean required) {
-		this.required = required;
-	}
+	protected TypeOptions typeOptions;
 
 	@JsonIgnore
-	public void setRequired(
-		UnsafeSupplier<Boolean, Exception> requiredUnsafeSupplier) {
-
-		try {
-			required = requiredUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected Boolean required;
-
-	@Schema
-	public String getUiType() {
-		return uiType;
-	}
-
-	public void setUiType(String uiType) {
-		this.uiType = uiType;
-	}
-
-	@JsonIgnore
-	public void setUiType(
-		UnsafeSupplier<String, Exception> uiTypeUnsafeSupplier) {
-
-		try {
-			uiType = uiTypeUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String uiType;
-
-	@Schema
-	public String getUnit() {
-		return unit;
-	}
-
-	public void setUnit(String unit) {
-		this.unit = unit;
-	}
-
-	@JsonIgnore
-	public void setUnit(UnsafeSupplier<String, Exception> unitUnsafeSupplier) {
-		try {
-			unit = unitUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String unit;
-
-	@Schema
-	public String getUnitSuffix() {
-		return unitSuffix;
-	}
-
-	public void setUnitSuffix(String unitSuffix) {
-		this.unitSuffix = unitSuffix;
-	}
-
-	@JsonIgnore
-	public void setUnitSuffix(
-		UnsafeSupplier<String, Exception> unitSuffixUnsafeSupplier) {
-
-		try {
-			unitSuffix = unitSuffixUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected String unitSuffix;
-
-	@Schema
-	@Valid
-	public ValueDefinition getValueDefinition() {
-		return valueDefinition;
-	}
-
-	public void setValueDefinition(ValueDefinition valueDefinition) {
-		this.valueDefinition = valueDefinition;
-	}
-
-	@JsonIgnore
-	public void setValueDefinition(
-		UnsafeSupplier<ValueDefinition, Exception>
-			valueDefinitionUnsafeSupplier) {
-
-		try {
-			valueDefinition = valueDefinitionUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	@GraphQLField
-	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
-	protected ValueDefinition valueDefinition;
+	private Supplier<TypeOptions> _typeOptionsSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -391,15 +444,52 @@ public class Field implements Serializable {
 
 		sb.append("{");
 
-		if (boost != null) {
+		Object defaultValue = getDefaultValue();
+
+		if (defaultValue != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"boost\": ");
+			sb.append("\"defaultValue\": ");
 
-			sb.append(boost);
+			if (defaultValue instanceof Map) {
+				sb.append(
+					JSONFactoryUtil.createJSONObject((Map<?, ?>)defaultValue));
+			}
+			else if (defaultValue instanceof String) {
+				sb.append("\"");
+				sb.append(_escape((String)defaultValue));
+				sb.append("\"");
+			}
+			else {
+				sb.append(defaultValue);
+			}
 		}
+
+		FieldMapping[] fieldMappings = getFieldMappings();
+
+		if (fieldMappings != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"fieldMappings\": ");
+
+			sb.append("[");
+
+			for (int i = 0; i < fieldMappings.length; i++) {
+				sb.append(String.valueOf(fieldMappings[i]));
+
+				if ((i + 1) < fieldMappings.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+		}
+
+		String helpText = getHelpText();
 
 		if (helpText != null) {
 			if (sb.length() > 1) {
@@ -415,6 +505,24 @@ public class Field implements Serializable {
 			sb.append("\"");
 		}
 
+		String helpTextLocalized = getHelpTextLocalized();
+
+		if (helpTextLocalized != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"helpTextLocalized\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(helpTextLocalized));
+
+			sb.append("\"");
+		}
+
+		String label = getLabel();
+
 		if (label != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -428,6 +536,24 @@ public class Field implements Serializable {
 
 			sb.append("\"");
 		}
+
+		String labelLocalized = getLabelLocalized();
+
+		if (labelLocalized != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"labelLocalized\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(labelLocalized));
+
+			sb.append("\"");
+		}
+
+		String name = getName();
 
 		if (name != null) {
 			if (sb.length() > 1) {
@@ -443,96 +569,32 @@ public class Field implements Serializable {
 			sb.append("\"");
 		}
 
-		if (nullable != null) {
+		String type = getType();
+
+		if (type != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"nullable\": ");
-
-			sb.append(nullable);
-		}
-
-		if (options != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"options\": ");
-
-			sb.append("[");
-
-			for (int i = 0; i < options.length; i++) {
-				sb.append(String.valueOf(options[i]));
-
-				if ((i + 1) < options.length) {
-					sb.append(", ");
-				}
-			}
-
-			sb.append("]");
-		}
-
-		if (required != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"required\": ");
-
-			sb.append(required);
-		}
-
-		if (uiType != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"uiType\": ");
+			sb.append("\"type\": ");
 
 			sb.append("\"");
 
-			sb.append(_escape(uiType));
+			sb.append(_escape(type));
 
 			sb.append("\"");
 		}
 
-		if (unit != null) {
+		TypeOptions typeOptions = getTypeOptions();
+
+		if (typeOptions != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
 			}
 
-			sb.append("\"unit\": ");
+			sb.append("\"typeOptions\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(unit));
-
-			sb.append("\"");
-		}
-
-		if (unitSuffix != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"unitSuffix\": ");
-
-			sb.append("\"");
-
-			sb.append(_escape(unitSuffix));
-
-			sb.append("\"");
-		}
-
-		if (valueDefinition != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"valueDefinition\": ");
-
-			sb.append(String.valueOf(valueDefinition));
+			sb.append(String.valueOf(typeOptions));
 		}
 
 		sb.append("}");
@@ -540,17 +602,17 @@ public class Field implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.search.experiences.rest.dto.v1_0.Field",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -576,7 +638,7 @@ public class Field implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -587,7 +649,10 @@ public class Field implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -608,7 +673,7 @@ public class Field implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -624,5 +689,12 @@ public class Field implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

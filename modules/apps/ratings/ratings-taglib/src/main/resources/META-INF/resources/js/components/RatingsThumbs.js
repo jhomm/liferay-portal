@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -184,6 +175,7 @@ const RatingsThumbs = ({
 						<span className="off">
 							<ClayIcon symbol="thumbs-up" />
 						</span>
+
 						<span
 							className="on"
 							onAnimationEnd={handleAnimationEndUp}
@@ -191,11 +183,13 @@ const RatingsThumbs = ({
 							<ClayIcon symbol="thumbs-up-full" />
 						</span>
 					</span>
+
 					<span className="inline-item">
 						<AnimatedCounter counter={positiveVotes} />
 					</span>
 				</span>
 			</ClayButton>
+
 			<ClayButton
 				aria-pressed={pressed === PRESSED_DOWN}
 				borderless
@@ -214,6 +208,7 @@ const RatingsThumbs = ({
 						<span className="off">
 							<ClayIcon symbol="thumbs-down" />
 						</span>
+
 						<span
 							className="on"
 							onAnimationEnd={handleAnimationEndDown}
@@ -221,6 +216,7 @@ const RatingsThumbs = ({
 							<ClayIcon symbol="thumbs-down-full" />
 						</span>
 					</span>
+
 					<span className="inline-item">
 						<AnimatedCounter counter={negativeVotes} />
 					</span>

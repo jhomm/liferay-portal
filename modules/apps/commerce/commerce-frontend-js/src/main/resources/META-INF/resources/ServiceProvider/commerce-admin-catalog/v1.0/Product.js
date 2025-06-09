@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import AJAX from '../../../utilities/AJAX/index';
 
 const PRODUCTS_PATH = '/products';
+
+const PRODUCT_SPECIFICATIONS_PATH = '/productSpecifications';
 
 const VERSION = 'v1.0';
 
@@ -22,9 +15,24 @@ function resolveProductsPath(basePath = '', productId = '') {
 	return `${basePath}${VERSION}${PRODUCTS_PATH}/${productId}`;
 }
 
-export default (basePath) => ({
-	createProduct: (json) => AJAX.POST(resolveProductsPath(basePath), json),
+function resolveProductSpecificationsPath(basePath = '', productId = '') {
+	return `${basePath}${VERSION}${PRODUCTS_PATH}/${productId}${PRODUCT_SPECIFICATIONS_PATH}`;
+}
 
-	getProductById: (productId) =>
-		AJAX.GET(resolveProductsPath(basePath, productId)),
-});
+export default function Product(basePath) {
+	return {
+		createProduct: (json) => AJAX.POST(resolveProductsPath(basePath), json),
+
+		createProductSpecification: (productId, json) =>
+			AJAX.POST(
+				resolveProductSpecificationsPath(basePath, productId),
+				json
+			),
+
+		getProductById: (productId) =>
+			AJAX.GET(resolveProductsPath(basePath, productId)),
+
+		updateProduct: (productId, json) =>
+			AJAX.PATCH(resolveProductsPath(basePath, productId), json),
+	};
+}

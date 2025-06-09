@@ -2,42 +2,58 @@
 @summary = "Open browser to '${locator1}'"
 definition {
 
-	function open {
+	function open(value1) {
 		WaitForSPARefresh();
-
-		selenium.selectWindow("null");
 
 		selenium.selectFrame("relative=top");
 
-		selenium.open();
+		selenium.open(${value1});
 
 		WaitForLiferayEvent.initializeLiferayEventLog();
 
-		selenium.assertJavaScriptErrors();
+		selenium.assertJavaScriptErrors("true");
 
 		selenium.assertLiferayErrors();
 
 		WaitForSPARefresh();
 	}
 
-	function openInTheNewTab {
+	function openInTheNewTab(value1) {
 		WaitForSPARefresh();
 
-		var javascript = '''
-window.open("${locator1}","_blank");
-		''';
+		ExecuteJavaScript(value1 = "sessionStorage.clear(); window.open();");
 
-		selenium.runScript("${javascript}");
+		selenium.selectPopUp("null");
+
+		selenium.open(${value1});
 	}
 
-	function openNoError {
+	function openNoError(value1) {
 		WaitForSPARefresh();
 
 		selenium.selectWindow("null");
 
 		selenium.selectFrame("relative=top");
 
-		selenium.open();
+		selenium.open(${value1});
+	}
+
+	function openNoErrorNoSPARefresh(value1) {
+		selenium.selectWindow("null");
+
+		selenium.selectFrame("relative=top");
+
+		selenium.open(${value1});
+	}
+
+	function openRedirect(locator1, javaScript) {
+		WaitForSPARefresh();
+
+		var javascript = '''
+window.open("${locator1}","_self");
+		''';
+
+		ExecuteJavaScript(value1 = ${javaScript});
 	}
 
 }

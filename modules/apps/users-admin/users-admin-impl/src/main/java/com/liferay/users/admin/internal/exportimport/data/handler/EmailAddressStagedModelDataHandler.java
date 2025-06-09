@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.internal.exportimport.data.handler;
@@ -35,7 +26,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author David Mendez Gonzalez
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class EmailAddressStagedModelDataHandler
 	extends BaseStagedModelDataHandler<EmailAddress> {
 
@@ -107,14 +98,16 @@ public class EmailAddressStagedModelDataHandler
 			serviceContext.setUuid(emailAddress.getUuid());
 
 			importedEmailAddress = _emailAddressLocalService.addEmailAddress(
-				userId, emailAddress.getClassName(), emailAddress.getClassPK(),
-				emailAddress.getAddress(), emailAddress.getTypeId(),
+				emailAddress.getExternalReferenceCode(), userId,
+				emailAddress.getClassName(), emailAddress.getClassPK(),
+				emailAddress.getAddress(), emailAddress.getListTypeId(),
 				emailAddress.isPrimary(), serviceContext);
 		}
 		else {
 			importedEmailAddress = _emailAddressLocalService.updateEmailAddress(
+				existingEmailAddress.getExternalReferenceCode(),
 				existingEmailAddress.getEmailAddressId(),
-				emailAddress.getAddress(), emailAddress.getTypeId(),
+				emailAddress.getAddress(), emailAddress.getListTypeId(),
 				emailAddress.isPrimary());
 		}
 
@@ -122,19 +115,10 @@ public class EmailAddressStagedModelDataHandler
 			emailAddress, importedEmailAddress);
 	}
 
-	@Reference(unbind = "-")
-	protected void setEmailAddressLocalService(
-		EmailAddressLocalService emailAddressLocalService) {
-
-		_emailAddressLocalService = emailAddressLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setGroupLocalService(GroupLocalService groupLocalService) {
-		_groupLocalService = groupLocalService;
-	}
-
+	@Reference
 	private EmailAddressLocalService _emailAddressLocalService;
+
+	@Reference
 	private GroupLocalService _groupLocalService;
 
 }

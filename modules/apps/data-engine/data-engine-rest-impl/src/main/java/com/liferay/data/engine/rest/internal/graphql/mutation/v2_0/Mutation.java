@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.internal.graphql.mutation.v2_0;
@@ -20,6 +11,7 @@ import com.liferay.data.engine.rest.dto.v2_0.DataLayoutRenderingContext;
 import com.liferay.data.engine.rest.dto.v2_0.DataListView;
 import com.liferay.data.engine.rest.dto.v2_0.DataRecord;
 import com.liferay.data.engine.rest.dto.v2_0.DataRecordCollection;
+import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionFieldLinkResource;
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.resource.v2_0.DataLayoutResource;
 import com.liferay.data.engine.rest.resource.v2_0.DataListViewResource;
@@ -27,25 +19,26 @@ import com.liferay.data.engine.rest.resource.v2_0.DataRecordCollectionResource;
 import com.liferay.data.engine.rest.resource.v2_0.DataRecordResource;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineExportTaskResource;
+import com.liferay.portal.vulcan.batch.engine.resource.VulcanBatchEngineImportTaskResource;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.pagination.Page;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.validation.constraints.NotEmpty;
+
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.validation.constraints.NotEmpty;
-
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -62,6 +55,15 @@ public class Mutation {
 
 		_dataDefinitionResourceComponentServiceObjects =
 			dataDefinitionResourceComponentServiceObjects;
+	}
+
+	public static void
+		setDataDefinitionFieldLinkResourceComponentServiceObjects(
+			ComponentServiceObjects<DataDefinitionFieldLinkResource>
+				dataDefinitionFieldLinkResourceComponentServiceObjects) {
+
+		_dataDefinitionFieldLinkResourceComponentServiceObjects =
+			dataDefinitionFieldLinkResourceComponentServiceObjects;
 	}
 
 	public static void setDataLayoutResourceComponentServiceObjects(
@@ -97,20 +99,6 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public DataDefinition createDataDefinitionByContentType(
-			@GraphQLName("contentType") String contentType,
-			@GraphQLName("dataDefinition") DataDefinition dataDefinition)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dataDefinitionResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataDefinitionResource ->
-				dataDefinitionResource.postDataDefinitionByContentType(
-					contentType, dataDefinition));
-	}
-
-	@GraphQLField
 	public boolean deleteDataDefinition(
 			@GraphQLName("dataDefinitionId") Long dataDefinitionId)
 		throws Exception {
@@ -139,6 +127,25 @@ public class Mutation {
 	}
 
 	@GraphQLField
+	public boolean deleteSiteDataDefinitionByContentTypeByExternalReferenceCode(
+			@GraphQLName("siteKey") @NotEmpty String siteKey,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("externalReferenceCode") String externalReferenceCode)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_dataDefinitionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataDefinitionResource ->
+				dataDefinitionResource.
+					deleteSiteDataDefinitionByContentTypeByExternalReferenceCode(
+						Long.valueOf(siteKey), contentType,
+						externalReferenceCode));
+
+		return true;
+	}
+
+	@GraphQLField
 	public DataDefinition patchDataDefinition(
 			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
 			@GraphQLName("dataDefinition") DataDefinition dataDefinition)
@@ -150,6 +157,48 @@ public class Mutation {
 			dataDefinitionResource ->
 				dataDefinitionResource.patchDataDefinition(
 					dataDefinitionId, dataDefinition));
+	}
+
+	@GraphQLField
+	public DataDefinition createDataDefinitionByContentType(
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("dataDefinition") DataDefinition dataDefinition)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataDefinitionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataDefinitionResource ->
+				dataDefinitionResource.postDataDefinitionByContentType(
+					contentType, dataDefinition));
+	}
+
+	@GraphQLField
+	public DataDefinition createDataDefinitionCopy(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataDefinitionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataDefinitionResource ->
+				dataDefinitionResource.postDataDefinitionCopy(
+					dataDefinitionId));
+	}
+
+	@GraphQLField
+	public DataDefinition createSiteDataDefinitionByContentType(
+			@GraphQLName("siteKey") @NotEmpty String siteKey,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("dataDefinition") DataDefinition dataDefinition)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataDefinitionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataDefinitionResource ->
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					Long.valueOf(siteKey), contentType, dataDefinition));
 	}
 
 	@GraphQLField
@@ -181,7 +230,7 @@ public class Mutation {
 
 	@GraphQLField
 	public java.util.Collection<com.liferay.portal.vulcan.permission.Permission>
-			updateDataDefinitionPermission(
+			updateDataDefinitionPermissionsPage(
 				@GraphQLName("dataDefinitionId") Long dataDefinitionId,
 				@GraphQLName("permissions")
 					com.liferay.portal.vulcan.permission.Permission[]
@@ -193,7 +242,7 @@ public class Mutation {
 			this::_populateResourceContext,
 			dataDefinitionResource -> {
 				Page paginationPage =
-					dataDefinitionResource.putDataDefinitionPermission(
+					dataDefinitionResource.putDataDefinitionPermissionsPage(
 						dataDefinitionId, permissions);
 
 				return paginationPage.getItems();
@@ -201,22 +250,46 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public DataDefinition createSiteDataDefinitionByContentType(
-			@GraphQLName("siteKey") @NotEmpty String siteKey,
-			@GraphQLName("contentType") String contentType,
-			@GraphQLName("dataDefinition") DataDefinition dataDefinition)
+	public DataDefinition
+			updateSiteDataDefinitionByContentTypeByExternalReferenceCode(
+				@GraphQLName("siteKey") @NotEmpty String siteKey,
+				@GraphQLName("contentType") String contentType,
+				@GraphQLName("externalReferenceCode") String
+					externalReferenceCode,
+				@GraphQLName("dataDefinition") DataDefinition dataDefinition)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_dataDefinitionResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			dataDefinitionResource ->
-				dataDefinitionResource.postSiteDataDefinitionByContentType(
-					Long.valueOf(siteKey), contentType, dataDefinition));
+				dataDefinitionResource.
+					putSiteDataDefinitionByContentTypeByExternalReferenceCode(
+						Long.valueOf(siteKey), contentType,
+						externalReferenceCode, dataDefinition));
 	}
 
 	@GraphQLField
-	public boolean deleteDataLayoutsDataDefinition(
+	public Response createDataDefinitionDataDefinitionFieldLinksPageExportBatch(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("fieldName") String fieldName,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataDefinitionFieldLinkResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataDefinitionFieldLinkResource ->
+				dataDefinitionFieldLinkResource.
+					postDataDefinitionDataDefinitionFieldLinksPageExportBatch(
+						dataDefinitionId, fieldName, callbackURL, contentType,
+						fieldNames));
+	}
+
+	@GraphQLField
+	public boolean deleteDataDefinitionDataLayout(
 			@GraphQLName("dataDefinitionId") Long dataDefinitionId)
 		throws Exception {
 
@@ -224,10 +297,37 @@ public class Mutation {
 			_dataLayoutResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			dataLayoutResource ->
-				dataLayoutResource.deleteDataLayoutsDataDefinition(
+				dataLayoutResource.deleteDataDefinitionDataLayout(
 					dataDefinitionId));
 
 		return true;
+	}
+
+	@GraphQLField
+	public boolean deleteDataLayout(
+			@GraphQLName("dataLayoutId") Long dataLayoutId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_dataLayoutResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataLayoutResource -> dataLayoutResource.deleteDataLayout(
+				dataLayoutId));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Response deleteDataLayoutBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataLayoutResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataLayoutResource -> dataLayoutResource.deleteDataLayoutBatch(
+				callbackURL, object));
 	}
 
 	@GraphQLField
@@ -260,30 +360,37 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public boolean deleteDataLayout(
-			@GraphQLName("dataLayoutId") Long dataLayoutId)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_dataLayoutResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataLayoutResource -> dataLayoutResource.deleteDataLayout(
-				dataLayoutId));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response deleteDataLayoutBatch(
+	public Response createDataDefinitionDataLayoutsPageExportBatch(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("keywords") String keywords,
+			@GraphQLName("sort") String sortsString,
 			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_dataLayoutResourceComponentServiceObjects,
 			this::_populateResourceContext,
-			dataLayoutResource -> dataLayoutResource.deleteDataLayoutBatch(
-				callbackURL, object));
+			dataLayoutResource ->
+				dataLayoutResource.postDataDefinitionDataLayoutsPageExportBatch(
+					dataDefinitionId, keywords,
+					_sortsBiFunction.apply(dataLayoutResource, sortsString),
+					callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField
+	public Response createDataLayoutContext(
+			@GraphQLName("dataLayoutId") Long dataLayoutId,
+			@GraphQLName("dataLayoutRenderingContext")
+				DataLayoutRenderingContext dataLayoutRenderingContext)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataLayoutResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataLayoutResource -> dataLayoutResource.postDataLayoutContext(
+				dataLayoutId, dataLayoutRenderingContext));
 	}
 
 	@GraphQLField
@@ -313,21 +420,7 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public Response createDataLayoutContext(
-			@GraphQLName("dataLayoutId") Long dataLayoutId,
-			@GraphQLName("dataLayoutRenderingContext")
-				DataLayoutRenderingContext dataLayoutRenderingContext)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dataLayoutResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataLayoutResource -> dataLayoutResource.postDataLayoutContext(
-				dataLayoutId, dataLayoutRenderingContext));
-	}
-
-	@GraphQLField
-	public boolean deleteDataListViewsDataDefinition(
+	public boolean deleteDataDefinitionDataListView(
 			@GraphQLName("dataDefinitionId") Long dataDefinitionId)
 		throws Exception {
 
@@ -335,10 +428,38 @@ public class Mutation {
 			_dataListViewResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			dataListViewResource ->
-				dataListViewResource.deleteDataListViewsDataDefinition(
+				dataListViewResource.deleteDataDefinitionDataListView(
 					dataDefinitionId));
 
 		return true;
+	}
+
+	@GraphQLField
+	public boolean deleteDataListView(
+			@GraphQLName("dataListViewId") Long dataListViewId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_dataListViewResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataListViewResource -> dataListViewResource.deleteDataListView(
+				dataListViewId));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Response deleteDataListViewBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataListViewResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataListViewResource ->
+				dataListViewResource.deleteDataListViewBatch(
+					callbackURL, object));
 	}
 
 	@GraphQLField
@@ -371,31 +492,25 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public boolean deleteDataListView(
-			@GraphQLName("dataListViewId") Long dataListViewId)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_dataListViewResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataListViewResource -> dataListViewResource.deleteDataListView(
-				dataListViewId));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response deleteDataListViewBatch(
+	public Response createDataDefinitionDataListViewsPageExportBatch(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("keywords") String keywords,
+			@GraphQLName("sort") String sortsString,
 			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_dataListViewResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			dataListViewResource ->
-				dataListViewResource.deleteDataListViewBatch(
-					callbackURL, object));
+				dataListViewResource.
+					postDataDefinitionDataListViewsPageExportBatch(
+						dataDefinitionId, keywords,
+						_sortsBiFunction.apply(
+							dataListViewResource, sortsString),
+						callbackURL, contentType, fieldNames));
 	}
 
 	@GraphQLField
@@ -422,64 +537,6 @@ public class Mutation {
 			this::_populateResourceContext,
 			dataListViewResource -> dataListViewResource.putDataListViewBatch(
 				callbackURL, object));
-	}
-
-	@GraphQLField
-	public DataRecord createDataDefinitionDataRecord(
-			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
-			@GraphQLName("dataRecord") DataRecord dataRecord)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dataRecordResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataRecordResource ->
-				dataRecordResource.postDataDefinitionDataRecord(
-					dataDefinitionId, dataRecord));
-	}
-
-	@GraphQLField
-	public Response createDataDefinitionDataRecordBatch(
-			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dataRecordResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataRecordResource ->
-				dataRecordResource.postDataDefinitionDataRecordBatch(
-					dataDefinitionId, callbackURL, object));
-	}
-
-	@GraphQLField
-	public DataRecord createDataRecordCollectionDataRecord(
-			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId,
-			@GraphQLName("dataRecord") DataRecord dataRecord)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dataRecordResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataRecordResource ->
-				dataRecordResource.postDataRecordCollectionDataRecord(
-					dataRecordCollectionId, dataRecord));
-	}
-
-	@GraphQLField
-	public Response createDataRecordCollectionDataRecordBatch(
-			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId,
-			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_dataRecordResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataRecordResource ->
-				dataRecordResource.postDataRecordCollectionDataRecordBatch(
-					dataRecordCollectionId, callbackURL, object));
 	}
 
 	@GraphQLField
@@ -523,6 +580,107 @@ public class Mutation {
 	}
 
 	@GraphQLField
+	public DataRecord createDataDefinitionDataRecord(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("dataRecord") DataRecord dataRecord)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordResource ->
+				dataRecordResource.postDataDefinitionDataRecord(
+					dataDefinitionId, dataRecord));
+	}
+
+	@GraphQLField
+	public Response createDataDefinitionDataRecordBatch(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordResource ->
+				dataRecordResource.postDataDefinitionDataRecordBatch(
+					dataDefinitionId, callbackURL, object));
+	}
+
+	@GraphQLField
+	public Response createDataDefinitionDataRecordsPageExportBatch(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("dataListViewId") Long dataListViewId,
+			@GraphQLName("keywords") String keywords,
+			@GraphQLName("sort") String sortsString,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordResource ->
+				dataRecordResource.postDataDefinitionDataRecordsPageExportBatch(
+					dataDefinitionId, dataListViewId, keywords,
+					_sortsBiFunction.apply(dataRecordResource, sortsString),
+					callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField
+	public DataRecord createDataRecordCollectionDataRecord(
+			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId,
+			@GraphQLName("dataRecord") DataRecord dataRecord)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordResource ->
+				dataRecordResource.postDataRecordCollectionDataRecord(
+					dataRecordCollectionId, dataRecord));
+	}
+
+	@GraphQLField
+	public Response createDataRecordCollectionDataRecordBatch(
+			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordResource ->
+				dataRecordResource.postDataRecordCollectionDataRecordBatch(
+					dataRecordCollectionId, callbackURL, object));
+	}
+
+	@GraphQLField
+	public Response createDataRecordCollectionDataRecordsPageExportBatch(
+			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId,
+			@GraphQLName("dataListViewId") Long dataListViewId,
+			@GraphQLName("keywords") String keywords,
+			@GraphQLName("sort") String sortsString,
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordResource ->
+				dataRecordResource.
+					postDataRecordCollectionDataRecordsPageExportBatch(
+						dataRecordCollectionId, dataListViewId, keywords,
+						_sortsBiFunction.apply(dataRecordResource, sortsString),
+						callbackURL, contentType, fieldNames));
+	}
+
+	@GraphQLField
 	public DataRecord updateDataRecord(
 			@GraphQLName("dataRecordId") Long dataRecordId,
 			@GraphQLName("dataRecord") DataRecord dataRecord)
@@ -546,6 +704,35 @@ public class Mutation {
 			this::_populateResourceContext,
 			dataRecordResource -> dataRecordResource.putDataRecordBatch(
 				callbackURL, object));
+	}
+
+	@GraphQLField
+	public boolean deleteDataRecordCollection(
+			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId)
+		throws Exception {
+
+		_applyVoidComponentServiceObjects(
+			_dataRecordCollectionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordCollectionResource ->
+				dataRecordCollectionResource.deleteDataRecordCollection(
+					dataRecordCollectionId));
+
+		return true;
+	}
+
+	@GraphQLField
+	public Response deleteDataRecordCollectionBatch(
+			@GraphQLName("callbackURL") String callbackURL,
+			@GraphQLName("object") Object object)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_dataRecordCollectionResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			dataRecordCollectionResource ->
+				dataRecordCollectionResource.deleteDataRecordCollectionBatch(
+					callbackURL, object));
 	}
 
 	@GraphQLField
@@ -581,32 +768,22 @@ public class Mutation {
 	}
 
 	@GraphQLField
-	public boolean deleteDataRecordCollection(
-			@GraphQLName("dataRecordCollectionId") Long dataRecordCollectionId)
-		throws Exception {
-
-		_applyVoidComponentServiceObjects(
-			_dataRecordCollectionResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			dataRecordCollectionResource ->
-				dataRecordCollectionResource.deleteDataRecordCollection(
-					dataRecordCollectionId));
-
-		return true;
-	}
-
-	@GraphQLField
-	public Response deleteDataRecordCollectionBatch(
+	public Response createDataDefinitionDataRecordCollectionsPageExportBatch(
+			@GraphQLName("dataDefinitionId") Long dataDefinitionId,
+			@GraphQLName("keywords") String keywords,
 			@GraphQLName("callbackURL") String callbackURL,
-			@GraphQLName("object") Object object)
+			@GraphQLName("contentType") String contentType,
+			@GraphQLName("fieldNames") String fieldNames)
 		throws Exception {
 
 		return _applyComponentServiceObjects(
 			_dataRecordCollectionResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			dataRecordCollectionResource ->
-				dataRecordCollectionResource.deleteDataRecordCollectionBatch(
-					callbackURL, object));
+				dataRecordCollectionResource.
+					postDataDefinitionDataRecordCollectionsPageExportBatch(
+						dataDefinitionId, keywords, callbackURL, contentType,
+						fieldNames));
 	}
 
 	@GraphQLField
@@ -640,7 +817,7 @@ public class Mutation {
 
 	@GraphQLField
 	public java.util.Collection<com.liferay.portal.vulcan.permission.Permission>
-			updateDataRecordCollectionPermission(
+			updateDataRecordCollectionPermissionsPage(
 				@GraphQLName("dataRecordCollectionId") Long
 					dataRecordCollectionId,
 				@GraphQLName("permissions")
@@ -654,7 +831,7 @@ public class Mutation {
 			dataRecordCollectionResource -> {
 				Page paginationPage =
 					dataRecordCollectionResource.
-						putDataRecordCollectionPermission(
+						putDataRecordCollectionPermissionsPage(
 							dataRecordCollectionId, permissions);
 
 				return paginationPage.getItems();
@@ -713,6 +890,36 @@ public class Mutation {
 		dataDefinitionResource.setContextUser(_user);
 		dataDefinitionResource.setGroupLocalService(_groupLocalService);
 		dataDefinitionResource.setRoleLocalService(_roleLocalService);
+
+		dataDefinitionResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		dataDefinitionResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
+	}
+
+	private void _populateResourceContext(
+			DataDefinitionFieldLinkResource dataDefinitionFieldLinkResource)
+		throws Exception {
+
+		dataDefinitionFieldLinkResource.setContextAcceptLanguage(
+			_acceptLanguage);
+		dataDefinitionFieldLinkResource.setContextCompany(_company);
+		dataDefinitionFieldLinkResource.setContextHttpServletRequest(
+			_httpServletRequest);
+		dataDefinitionFieldLinkResource.setContextHttpServletResponse(
+			_httpServletResponse);
+		dataDefinitionFieldLinkResource.setContextUriInfo(_uriInfo);
+		dataDefinitionFieldLinkResource.setContextUser(_user);
+		dataDefinitionFieldLinkResource.setGroupLocalService(
+			_groupLocalService);
+		dataDefinitionFieldLinkResource.setRoleLocalService(_roleLocalService);
+
+		dataDefinitionFieldLinkResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		dataDefinitionFieldLinkResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(DataLayoutResource dataLayoutResource)
@@ -726,6 +933,12 @@ public class Mutation {
 		dataLayoutResource.setContextUser(_user);
 		dataLayoutResource.setGroupLocalService(_groupLocalService);
 		dataLayoutResource.setRoleLocalService(_roleLocalService);
+
+		dataLayoutResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		dataLayoutResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(
@@ -741,6 +954,12 @@ public class Mutation {
 		dataListViewResource.setContextUser(_user);
 		dataListViewResource.setGroupLocalService(_groupLocalService);
 		dataListViewResource.setRoleLocalService(_roleLocalService);
+
+		dataListViewResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		dataListViewResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(DataRecordResource dataRecordResource)
@@ -754,6 +973,12 @@ public class Mutation {
 		dataRecordResource.setContextUser(_user);
 		dataRecordResource.setGroupLocalService(_groupLocalService);
 		dataRecordResource.setRoleLocalService(_roleLocalService);
+
+		dataRecordResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		dataRecordResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private void _populateResourceContext(
@@ -770,10 +995,18 @@ public class Mutation {
 		dataRecordCollectionResource.setContextUser(_user);
 		dataRecordCollectionResource.setGroupLocalService(_groupLocalService);
 		dataRecordCollectionResource.setRoleLocalService(_roleLocalService);
+
+		dataRecordCollectionResource.setVulcanBatchEngineExportTaskResource(
+			_vulcanBatchEngineExportTaskResource);
+
+		dataRecordCollectionResource.setVulcanBatchEngineImportTaskResource(
+			_vulcanBatchEngineImportTaskResource);
 	}
 
 	private static ComponentServiceObjects<DataDefinitionResource>
 		_dataDefinitionResourceComponentServiceObjects;
+	private static ComponentServiceObjects<DataDefinitionFieldLinkResource>
+		_dataDefinitionFieldLinkResourceComponentServiceObjects;
 	private static ComponentServiceObjects<DataLayoutResource>
 		_dataLayoutResourceComponentServiceObjects;
 	private static ComponentServiceObjects<DataListViewResource>
@@ -789,8 +1022,13 @@ public class Mutation {
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
+	private VulcanBatchEngineExportTaskResource
+		_vulcanBatchEngineExportTaskResource;
+	private VulcanBatchEngineImportTaskResource
+		_vulcanBatchEngineImportTaskResource;
 
 }

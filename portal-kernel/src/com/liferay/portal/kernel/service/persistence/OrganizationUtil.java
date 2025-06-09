@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service.persistence;
@@ -2576,73 +2567,73 @@ public class OrganizationUtil {
 	}
 
 	/**
-	 * Returns the organization where companyId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchOrganizationException</code> if it could not be found.
+	 * Returns the organization where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchOrganizationException</code> if it could not be found.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching organization
 	 * @throws NoSuchOrganizationException if a matching organization could not be found
 	 */
-	public static Organization findByC_ERC(
-			long companyId, String externalReferenceCode)
+	public static Organization findByERC_C(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.NoSuchOrganizationException {
 
-		return getPersistence().findByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().findByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
-	 * Returns the organization where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the organization where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching organization, or <code>null</code> if a matching organization could not be found
 	 */
-	public static Organization fetchByC_ERC(
-		long companyId, String externalReferenceCode) {
+	public static Organization fetchByERC_C(
+		String externalReferenceCode, long companyId) {
 
-		return getPersistence().fetchByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().fetchByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
-	 * Returns the organization where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the organization where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching organization, or <code>null</code> if a matching organization could not be found
 	 */
-	public static Organization fetchByC_ERC(
-		long companyId, String externalReferenceCode, boolean useFinderCache) {
+	public static Organization fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache) {
 
-		return getPersistence().fetchByC_ERC(
-			companyId, externalReferenceCode, useFinderCache);
+		return getPersistence().fetchByERC_C(
+			externalReferenceCode, companyId, useFinderCache);
 	}
 
 	/**
-	 * Removes the organization where companyId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the organization where externalReferenceCode = &#63; and companyId = &#63; from the database.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the organization that was removed
 	 */
-	public static Organization removeByC_ERC(
-			long companyId, String externalReferenceCode)
+	public static Organization removeByERC_C(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.NoSuchOrganizationException {
 
-		return getPersistence().removeByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().removeByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
-	 * Returns the number of organizations where companyId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of organizations where externalReferenceCode = &#63; and companyId = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the number of matching organizations
 	 */
-	public static int countByC_ERC(
-		long companyId, String externalReferenceCode) {
+	public static int countByERC_C(
+		String externalReferenceCode, long companyId) {
 
-		return getPersistence().countByC_ERC(companyId, externalReferenceCode);
+		return getPersistence().countByERC_C(externalReferenceCode, companyId);
 	}
 
 	/**
@@ -2889,9 +2880,10 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param groupPK the primary key of the group
+	 * @return <code>true</code> if an association between the organization and the group was added; <code>false</code> if they were already associated
 	 */
-	public static void addGroup(long pk, long groupPK) {
-		getPersistence().addGroup(pk, groupPK);
+	public static boolean addGroup(long pk, long groupPK) {
+		return getPersistence().addGroup(pk, groupPK);
 	}
 
 	/**
@@ -2899,11 +2891,12 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param group the group
+	 * @return <code>true</code> if an association between the organization and the group was added; <code>false</code> if they were already associated
 	 */
-	public static void addGroup(
+	public static boolean addGroup(
 		long pk, com.liferay.portal.kernel.model.Group group) {
 
-		getPersistence().addGroup(pk, group);
+		return getPersistence().addGroup(pk, group);
 	}
 
 	/**
@@ -2911,9 +2904,10 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param groupPKs the primary keys of the groups
+	 * @return <code>true</code> if at least one association between the organization and the groups was added; <code>false</code> if they were all already associated
 	 */
-	public static void addGroups(long pk, long[] groupPKs) {
-		getPersistence().addGroups(pk, groupPKs);
+	public static boolean addGroups(long pk, long[] groupPKs) {
+		return getPersistence().addGroups(pk, groupPKs);
 	}
 
 	/**
@@ -2921,11 +2915,12 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param groups the groups
+	 * @return <code>true</code> if at least one association between the organization and the groups was added; <code>false</code> if they were all already associated
 	 */
-	public static void addGroups(
+	public static boolean addGroups(
 		long pk, List<com.liferay.portal.kernel.model.Group> groups) {
 
-		getPersistence().addGroups(pk, groups);
+		return getPersistence().addGroups(pk, groups);
 	}
 
 	/**
@@ -3098,9 +3093,10 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param userPK the primary key of the user
+	 * @return <code>true</code> if an association between the organization and the user was added; <code>false</code> if they were already associated
 	 */
-	public static void addUser(long pk, long userPK) {
-		getPersistence().addUser(pk, userPK);
+	public static boolean addUser(long pk, long userPK) {
+		return getPersistence().addUser(pk, userPK);
 	}
 
 	/**
@@ -3108,11 +3104,12 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param user the user
+	 * @return <code>true</code> if an association between the organization and the user was added; <code>false</code> if they were already associated
 	 */
-	public static void addUser(
+	public static boolean addUser(
 		long pk, com.liferay.portal.kernel.model.User user) {
 
-		getPersistence().addUser(pk, user);
+		return getPersistence().addUser(pk, user);
 	}
 
 	/**
@@ -3120,9 +3117,10 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param userPKs the primary keys of the users
+	 * @return <code>true</code> if at least one association between the organization and the users was added; <code>false</code> if they were all already associated
 	 */
-	public static void addUsers(long pk, long[] userPKs) {
-		getPersistence().addUsers(pk, userPKs);
+	public static boolean addUsers(long pk, long[] userPKs) {
+		return getPersistence().addUsers(pk, userPKs);
 	}
 
 	/**
@@ -3130,11 +3128,12 @@ public class OrganizationUtil {
 	 *
 	 * @param pk the primary key of the organization
 	 * @param users the users
+	 * @return <code>true</code> if at least one association between the organization and the users was added; <code>false</code> if they were all already associated
 	 */
-	public static void addUsers(
+	public static boolean addUsers(
 		long pk, List<com.liferay.portal.kernel.model.User> users) {
 
-		getPersistence().addUsers(pk, users);
+		return getPersistence().addUsers(pk, users);
 	}
 
 	/**
@@ -3214,6 +3213,10 @@ public class OrganizationUtil {
 
 	public static OrganizationPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(OrganizationPersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile OrganizationPersistence _persistence;

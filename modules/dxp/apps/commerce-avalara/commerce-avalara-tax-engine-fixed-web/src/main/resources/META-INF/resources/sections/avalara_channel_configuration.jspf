@@ -1,0 +1,44 @@
+<%--
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+--%>
+
+<%
+CommerceAvalaraConnectorChannelConfiguration commerceAvalaraConnectorChannelConfiguration = (CommerceAvalaraConnectorChannelConfiguration)GetterUtil.getObject(request.getAttribute(CommerceAvalaraConnectorChannelConfiguration.class.getName()));
+%>
+
+<liferay-frontend:fieldset
+	collapsible="<%= true %>"
+	label="settings"
+>
+	<aui:select id="avalara-company-code" ignoreRequestValue="<%= true %>" label="company-code" name="companyCode" value="<%= commerceAvalaraConnectorChannelConfiguration.companyCode() %>">
+
+		<%
+		Map<String, String> avalaraCompanies = (Map<String, String>)GetterUtil.getObject(request.getAttribute(CommerceAvalaraWebKeys.AVALARA_COMPANIES), Collections.emptyMap());
+		String companyCode = commerceAvalaraConnectorChannelConfiguration.companyCode();
+		%>
+
+		<c:choose>
+			<c:when test="<%= avalaraCompanies.isEmpty() %>">
+				<aui:option label="DEFAULT" selected="<%= true %>" value="DEFAULT" />
+			</c:when>
+			<c:otherwise>
+
+				<%
+				for (Map.Entry<String, String> companyModel : avalaraCompanies.entrySet()) {
+				%>
+
+					<aui:option label="<%= companyModel.getKey() %>" selected='<%= companyCode.isEmpty() ? companyModel.getValue().equals("DEFAULT") : companyModel.getValue().equals(companyCode) %>' value="<%= companyModel.getValue() %>" />
+
+				<%
+				}
+				%>
+
+			</c:otherwise>
+		</c:choose>
+	</aui:select>
+
+	<aui:input id="avalara-disabled-document-recording" label="disable-document-recording" name="disableDocumentRecording" type="toggle-switch" value="<%= commerceAvalaraConnectorChannelConfiguration.disableDocumentRecording() %>" />
+</liferay-frontend:fieldset>

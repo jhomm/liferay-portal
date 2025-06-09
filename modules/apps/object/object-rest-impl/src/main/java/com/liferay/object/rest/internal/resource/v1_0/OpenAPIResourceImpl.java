@@ -1,35 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.rest.internal.resource.v1_0;
 
-import com.liferay.portal.vulcan.openapi.OpenAPISchemaFilter;
-import com.liferay.portal.vulcan.resource.OpenAPIResource;
+import com.liferay.object.model.ObjectDefinition;
+import com.liferay.object.rest.openapi.v1_0.ObjectEntryOpenAPIResource;
+import com.liferay.object.rest.openapi.v1_0.ObjectEntryOpenAPIResourceProvider;
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.info.Info;
 
-import java.util.Set;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.UriInfo;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
 
 /**
  * @author Javier Gamarra
@@ -38,13 +30,10 @@ import javax.ws.rs.core.UriInfo;
 public class OpenAPIResourceImpl {
 
 	public OpenAPIResourceImpl(
-		OpenAPIResource openAPIResource,
-		OpenAPISchemaFilter openAPISchemaFilter,
-		Set<Class<?>> resourceClasses) {
+		ObjectEntryOpenAPIResourceProvider objectEntryOpenAPIResourceProvider) {
 
-		_openAPIResource = openAPIResource;
-		_openAPISchemaFilter = openAPISchemaFilter;
-		_resourceClasses = resourceClasses;
+		_objectEntryOpenAPIResourceProvider =
+			objectEntryOpenAPIResourceProvider;
 	}
 
 	@GET
@@ -53,13 +42,22 @@ public class OpenAPIResourceImpl {
 	public Response getOpenAPI(@PathParam("type") String type)
 		throws Exception {
 
-		return _openAPIResource.getOpenAPI(
-			_openAPISchemaFilter, _resourceClasses, type, _uriInfo);
+		ObjectEntryOpenAPIResource objectEntryOpenAPIResource =
+			_objectEntryOpenAPIResourceProvider.getObjectEntryOpenAPIResource(
+				_objectDefinition);
+
+		return objectEntryOpenAPIResource.getOpenAPI(
+			_httpServletRequest, type, _uriInfo);
 	}
 
-	private final OpenAPIResource _openAPIResource;
-	private final OpenAPISchemaFilter _openAPISchemaFilter;
-	private final Set<Class<?>> _resourceClasses;
+	@Context
+	private HttpServletRequest _httpServletRequest;
+
+	@Context
+	private ObjectDefinition _objectDefinition;
+
+	private final ObjectEntryOpenAPIResourceProvider
+		_objectEntryOpenAPIResourceProvider;
 
 	@Context
 	private UriInfo _uriInfo;

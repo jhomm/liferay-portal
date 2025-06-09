@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.util;
@@ -18,8 +9,10 @@ import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.Digester;
+import com.liferay.portal.kernel.util.DigesterUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
-import java.io.File;
 import java.io.InputStream;
 
 import java.lang.reflect.Method;
@@ -37,7 +30,7 @@ import java.nio.file.StandardCopyOption;
  */
 public class JarUtil {
 
-	public static void downloadAndInstallJar(URL url, Path path)
+	public static void downloadAndInstallJar(URL url, Path path, String sha1)
 		throws Exception {
 
 		if (_log.isInfoEnabled()) {
@@ -48,16 +41,27 @@ public class JarUtil {
 			Files.copy(inputStream, path, StandardCopyOption.REPLACE_EXISTING);
 		}
 
+		try (InputStream inputStream = Files.newInputStream(path)) {
+			String digest = DigesterUtil.digestHex(Digester.SHA_1, inputStream);
+
+			if (!StringUtil.equalsIgnoreCase(sha1, digest)) {
+				throw new Exception(
+					StringBundler.concat(
+						"Unable to download ", url, " to ", path, " because ",
+						sha1, " does not equal ", digest));
+			}
+		}
+
 		if (_log.isInfoEnabled()) {
 			_log.info(StringBundler.concat("Downloaded ", url, " to ", path));
 		}
 	}
 
 	public static void downloadAndInstallJar(
-			URL url, Path path, URLClassLoader urlClassLoader)
+			URL url, Path path, URLClassLoader urlClassLoader, String sha1)
 		throws Exception {
 
-		downloadAndInstallJar(url, path);
+		downloadAndInstallJar(url, path, sha1);
 
 		URI uri = path.toUri();
 
@@ -74,40 +78,6 @@ public class JarUtil {
 				StringBundler.concat(
 					"Installed ", path, " to ", urlClassLoader));
 		}
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #downloadAndInstallJar(URL, Path)}
-	 */
-	@Deprecated
-	public static Path downloadAndInstallJar(
-			URL url, String libPath, String name)
-		throws Exception {
-
-		File file = new File(libPath, name);
-
-		Path path = file.toPath();
-
-		downloadAndInstallJar(url, path);
-
-		return path;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #downloadAndInstallJar(URL, Path, URLClassLoader)}
-	 */
-	@Deprecated
-	public static void downloadAndInstallJar(
-			URL url, String libPath, String name, URLClassLoader urlClassLoader)
-		throws Exception {
-
-		File file = new File(libPath, name);
-
-		Path path = file.toPath();
-
-		downloadAndInstallJar(url, path, urlClassLoader);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(JarUtil.class);

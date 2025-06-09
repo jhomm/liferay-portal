@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.form.navigator.internal;
@@ -26,6 +17,7 @@ import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapperFa
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.osgi.util.ServiceTrackerFactory;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
@@ -38,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Optional;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.component.annotations.Activate;
@@ -50,22 +41,21 @@ import org.osgi.util.tracker.ServiceTracker;
 /**
  * @author Sergio González
  */
-@Component(immediate = true, service = FormNavigatorEntryProvider.class)
+@Component(service = FormNavigatorEntryProvider.class)
 public class FormNavigatorEntryProviderImpl
 	implements FormNavigatorEntryProvider {
 
-	public <T> Optional<List<FormNavigatorEntry<T>>> getFormNavigatorEntries(
+	public <T> List<FormNavigatorEntry<T>> getFormNavigatorEntries(
 		String formNavigatorId, String categoryKey, T formModelBean) {
 
 		String context = _getContext(formNavigatorId, formModelBean);
 
-		Optional<List<String>> formNavigatorEntryKeysOptional =
+		List<String> formNavigatorEntryKeys =
 			_formNavigatorEntryConfigurationRetriever.getFormNavigatorEntryKeys(
 				formNavigatorId, categoryKey, context);
 
-		return formNavigatorEntryKeysOptional.map(
-			formNavigatorEntryKeys -> _getFormNavigatorEntries(
-				formNavigatorId, formNavigatorEntryKeys));
+		return _getFormNavigatorEntries(
+			formNavigatorId, formNavigatorEntryKeys);
 	}
 
 	@Override
@@ -81,7 +71,7 @@ public class FormNavigatorEntryProviderImpl
 			return Collections.emptyList();
 		}
 
-		return filterVisibleFormNavigatorEntries(
+		return _filterVisibleFormNavigatorEntries(
 			formNavigatorEntries, user, formModelBean);
 	}
 
@@ -104,7 +94,7 @@ public class FormNavigatorEntryProviderImpl
 			}
 		}
 
-		return filterVisibleFormNavigatorEntries(
+		return _filterVisibleFormNavigatorEntries(
 			formNavigatorEntries, user, formModelBean);
 	}
 
@@ -152,23 +142,6 @@ public class FormNavigatorEntryProviderImpl
 		return labels.toArray(new String[0]);
 	}
 
-	protected static <T> List<FormNavigatorEntry<T>>
-		filterVisibleFormNavigatorEntries(
-			List<FormNavigatorEntry<T>> formNavigatorEntries, User user,
-			T formModelBean) {
-
-		List<FormNavigatorEntry<T>> filteredFormNavigatorEntries =
-			new ArrayList<>();
-
-		for (FormNavigatorEntry<T> formNavigatorEntry : formNavigatorEntries) {
-			if (formNavigatorEntry.isVisible(user, formModelBean)) {
-				filteredFormNavigatorEntries.add(formNavigatorEntry);
-			}
-		}
-
-		return filteredFormNavigatorEntries;
-	}
-
 	@Activate
 	protected void activate(BundleContext bundleContext) {
 		_formNavigatorContextProviderMap =
@@ -206,7 +179,22 @@ public class FormNavigatorEntryProviderImpl
 		_formNavigatorContextProviderMap.close();
 	}
 
-	private <T> Optional<List<FormNavigatorEntry<T>>>
+	private <T> List<FormNavigatorEntry<T>> _filterVisibleFormNavigatorEntries(
+		List<FormNavigatorEntry<T>> formNavigatorEntries, User user,
+		T formModelBean) {
+
+		return TransformUtil.transform(
+			formNavigatorEntries,
+			formNavigatorEntry -> {
+				if (formNavigatorEntry.isVisible(user, formModelBean)) {
+					return formNavigatorEntry;
+				}
+
+				return null;
+			});
+	}
+
+	private <T> List<FormNavigatorEntry<T>>
 		_getConfigurationFormNavigatorEntries(
 			String formNavigatorId, String categoryKey, T formModelBean) {
 
@@ -233,29 +221,25 @@ public class FormNavigatorEntryProviderImpl
 	private <T> List<FormNavigatorEntry<T>> _getFormNavigatorEntries(
 		String formNavigatorId, List<String> formNavigatorEntryKeys) {
 
-		List<FormNavigatorEntry<T>> formNavigatorEntries = new ArrayList<>();
-
-		for (String key : formNavigatorEntryKeys) {
-			FormNavigatorEntry<T> formNavigatorEntry = _getFormNavigatorEntry(
-				key, formNavigatorId);
-
-			if (formNavigatorEntry != null) {
-				formNavigatorEntries.add(formNavigatorEntry);
-			}
+		if (formNavigatorEntryKeys == null) {
+			return null;
 		}
 
-		return formNavigatorEntries;
+		return TransformUtil.transform(
+			formNavigatorEntryKeys,
+			formNavigatorEntryKey -> _getFormNavigatorEntry(
+				formNavigatorEntryKey, formNavigatorId));
 	}
 
 	private <T> List<FormNavigatorEntry<T>> _getFormNavigatorEntries(
 		String formNavigatorId, String categoryKey, T formModelBean) {
 
-		Optional<List<FormNavigatorEntry<T>>> formNavigationEntriesOptional =
+		List<FormNavigatorEntry<T>> formNavigatorEntries =
 			_getConfigurationFormNavigatorEntries(
 				formNavigatorId, categoryKey, formModelBean);
 
-		if (formNavigationEntriesOptional.isPresent()) {
-			return formNavigationEntriesOptional.get();
+		if (formNavigatorEntries != null) {
+			return formNavigatorEntries;
 		}
 
 		return (List)_formNavigatorEntries.getService(

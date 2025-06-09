@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharepoint.soap.repository.connector;
@@ -59,8 +50,9 @@ import java.util.Set;
 import org.apache.axis2.client.Options;
 import org.apache.axis2.client.ServiceClient;
 import org.apache.axis2.client.Stub;
+import org.apache.axis2.namespace.Constants;
 import org.apache.axis2.transport.http.HTTPConstants;
-import org.apache.axis2.transport.http.impl.httpclient3.HttpTransportPropertiesImpl;
+import org.apache.axis2.transport.http.impl.httpclient4.HttpTransportPropertiesImpl;
 import org.apache.http.client.config.AuthSchemes;
 
 /**
@@ -304,7 +296,9 @@ public class SharepointConnectionImpl implements SharepointConnection {
 		_addFolderOperation = _buildOperation(AddFolderOperation.class);
 		_addOrUpdateFileOperation = _buildOperation(
 			AddOrUpdateFileOperation.class);
-		_batchOperation = _buildOperation(BatchOperation.class);
+
+		_buildOperation(BatchOperation.class);
+
 		_cancelCheckOutFileOperation = _buildOperation(
 			CancelCheckOutFileOperation.class);
 		_checkInFileOperation = _buildOperation(CheckInFileOperation.class);
@@ -354,6 +348,7 @@ public class SharepointConnectionImpl implements SharepointConnection {
 		HttpTransportPropertiesImpl.Authenticator authenticator =
 			new HttpTransportPropertiesImpl.Authenticator();
 
+		authenticator.setAllowedRetry(true);
 		authenticator.setAuthSchemes(
 			Collections.singletonList(AuthSchemes.NTLM));
 		authenticator.setDomain(url.getHost());
@@ -364,6 +359,8 @@ public class SharepointConnectionImpl implements SharepointConnection {
 		authenticator.setUsername(_sharepointConnectionInfo.getUserName());
 
 		options.setProperty(HTTPConstants.AUTHENTICATE, authenticator);
+
+		options.setSoapVersionURI(Constants.URI_SOAP11_ENV);
 	}
 
 	private URL _getServiceURL(String serviceName) {
@@ -419,7 +416,6 @@ public class SharepointConnectionImpl implements SharepointConnection {
 
 	private AddFolderOperation _addFolderOperation;
 	private AddOrUpdateFileOperation _addOrUpdateFileOperation;
-	private BatchOperation _batchOperation;
 	private CancelCheckOutFileOperation _cancelCheckOutFileOperation;
 	private CheckInFileOperation _checkInFileOperation;
 	private CheckOutFileOperation _checkOutFileOperation;

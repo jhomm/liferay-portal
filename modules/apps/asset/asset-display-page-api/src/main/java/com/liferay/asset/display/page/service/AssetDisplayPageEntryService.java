@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.display.page.service;
@@ -56,13 +47,13 @@ public interface AssetDisplayPageEntryService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.asset.display.page.service.impl.AssetDisplayPageEntryServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the asset display page entry remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link AssetDisplayPageEntryServiceUtil} if injection and service tracking are not available.
 	 */
 	public AssetDisplayPageEntry addAssetDisplayPageEntry(
-			long userId, long groupId, long classNameId, long classPK,
+			long groupId, long classNameId, long classPK,
 			long layoutPageTemplateEntryId, int type,
 			ServiceContext serviceContext)
 		throws Exception;
 
 	public AssetDisplayPageEntry addAssetDisplayPageEntry(
-			long userId, long groupId, long classNameId, long classPK,
+			long groupId, long classNameId, long classPK,
 			long layoutPageTemplateEntryId, ServiceContext serviceContext)
 		throws Exception;
 

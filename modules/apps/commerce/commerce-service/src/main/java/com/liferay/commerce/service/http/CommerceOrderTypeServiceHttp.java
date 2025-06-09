@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Alessio Antonio Rendina
- * @see CommerceOrderTypeServiceSoap
  * @generated
  */
 public class CommerceOrderTypeServiceHttp {
@@ -148,19 +138,17 @@ public class CommerceOrderTypeServiceHttp {
 	}
 
 	public static com.liferay.commerce.model.CommerceOrderType
-			fetchByExternalReferenceCode(
-				HttpPrincipal httpPrincipal, String externalReferenceCode,
-				long companyId)
+			fetchCommerceOrderType(
+				HttpPrincipal httpPrincipal, long commerceOrderTypeId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
-				CommerceOrderTypeServiceUtil.class,
-				"fetchByExternalReferenceCode",
-				_fetchByExternalReferenceCodeParameterTypes2);
+				CommerceOrderTypeServiceUtil.class, "fetchCommerceOrderType",
+				_fetchCommerceOrderTypeParameterTypes2);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, externalReferenceCode, companyId);
+				methodKey, commerceOrderTypeId);
 
 			Object returnObj = null;
 
@@ -191,17 +179,19 @@ public class CommerceOrderTypeServiceHttp {
 	}
 
 	public static com.liferay.commerce.model.CommerceOrderType
-			fetchCommerceOrderType(
-				HttpPrincipal httpPrincipal, long commerceOrderTypeId)
+			fetchCommerceOrderTypeByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
-				CommerceOrderTypeServiceUtil.class, "fetchCommerceOrderType",
-				_fetchCommerceOrderTypeParameterTypes3);
+				CommerceOrderTypeServiceUtil.class,
+				"fetchCommerceOrderTypeByExternalReferenceCode",
+				_fetchCommerceOrderTypeByExternalReferenceCodeParameterTypes3);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, commerceOrderTypeId);
+				methodKey, externalReferenceCode, companyId);
 
 			Object returnObj = null;
 
@@ -469,12 +459,11 @@ public class CommerceOrderTypeServiceHttp {
 		};
 	private static final Class<?>[] _deleteCommerceOrderTypeParameterTypes1 =
 		new Class[] {long.class};
-	private static final Class<?>[]
-		_fetchByExternalReferenceCodeParameterTypes2 = new Class[] {
-			String.class, long.class
-		};
-	private static final Class<?>[] _fetchCommerceOrderTypeParameterTypes3 =
+	private static final Class<?>[] _fetchCommerceOrderTypeParameterTypes2 =
 		new Class[] {long.class};
+	private static final Class<?>[]
+		_fetchCommerceOrderTypeByExternalReferenceCodeParameterTypes3 =
+			new Class[] {String.class, long.class};
 	private static final Class<?>[] _getCommerceOrderTypeParameterTypes4 =
 		new Class[] {long.class};
 	private static final Class<?>[] _getCommerceOrderTypesParameterTypes5 =

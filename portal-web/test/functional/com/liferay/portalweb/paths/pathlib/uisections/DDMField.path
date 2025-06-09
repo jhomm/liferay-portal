@@ -26,6 +26,16 @@
 	<td></td>
 </tr>
 <tr>
+	<td>GEOLOCATION_MAP</td>
+	<td>//div[contains(@class,'lfr-map')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>GEOLOCATION_MAP_INPUT</td>
+	<td>//div[contains(@class,'field-group')]//div[contains(@id,'Container')]/following-sibling::input | //div[contains(@class,'lfr-map')]/following-sibling::input</td>
+	<td></td>
+</tr>
+<tr>
 	<td>HTML</td>
 	<td>//div[@data-fieldname='${key_fieldName}']//div[contains(@id,'cke__')]</td>
 	<td></td>
@@ -37,12 +47,17 @@
 </tr>
 <tr>
 	<td>MULTIPLE_LINES</td>
-	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::textarea</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//..//textarea</td>
+	<td></td>
+</tr>
+<tr>
+	<td>MULTIPLE_LINES_2</td>
+	<td>xpath=(//label[normalize-space(text())='${key_fieldFieldLabel}']//..//textarea)[2]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>NESTED_INPUT</td>
-	<td>//div[contains(@class,'nested-separator')][//following-sibling::div[1][//label[normalize-space(text())='${key_fieldName}']]]//following-sibling::div[2]//label[normalize-space(text())='${key_nestedFieldName}']//following-sibling::input</td>
+	<td>//div[contains(@class,'nested-separator')][//following-sibling::div[1][//label[normalize-space(text())='${key_fieldName}']]]//following-sibling::div[2]//label[normalize-space(text())='${key_nestedFieldName}']//..//input</td>
 	<td></td>
 </tr>
 <tr>
@@ -56,18 +71,18 @@
 	<td></td>
 </tr>
 <tr>
-	<td>SELECT_FROM_LIST</td>
-	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']//following-sibling::div[contains(@class,'form-builder-select-field')]//div[contains(@class,'option-selected')]</td>
-	<td></td>
-</tr>
-<tr>
 	<td>SEPARATOR</td>
-	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']/following-sibling::div[contains(@class,'separator')]</td>
+	<td>//label[normalize-space(text())='${key_fieldFieldLabel}']/following-sibling::hr[contains(@class,'separator')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>TEXT_BOX</td>
 	<td>//div[contains(@data-fieldname,'${key_fieldName}')]//textarea</td>
+	<td></td>
+</tr>
+<tr>
+	<td>CUSTOM_TEXT_BOX</td>
+	<td>//div[contains(@class,'ddm-field')][${key_position}]//textarea</td>
 	<td></td>
 </tr>
 <tr>
@@ -83,6 +98,11 @@
 <tr>
 	<td>REMOVE_REPEATED_FIELD</td>
 	<td>//div[contains(@data-field-name,'${key_fieldName}')]/..//button[@*='Remove']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>REMOVE_REPEATED_FIELD_N</td>
+	<td>xpath=(//div[contains(@data-field-name,'${key_fieldName}')]//button[@*='Remove'])[${key_index}]</td>
 	<td></td>
 </tr>
 <tr>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.impl;
@@ -46,10 +37,8 @@ import com.liferay.portal.model.impl.PortletItemModelImpl;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +178,7 @@ public class PortletItemPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PortletItem>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (PortletItem portletItem : list) {
@@ -578,7 +567,8 @@ public class PortletItemPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, classNameId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -738,7 +728,7 @@ public class PortletItemPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PortletItem>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (PortletItem portletItem : list) {
@@ -1178,7 +1168,8 @@ public class PortletItemPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId, portletId, classNameId};
 
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
+		Long count = (Long)FinderCacheUtil.getResult(
+			finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -1247,7 +1238,6 @@ public class PortletItemPersistenceImpl
 		"portletItem.classNameId = ?";
 
 	private FinderPath _finderPathFetchByG_N_P_C;
-	private FinderPath _finderPathCountByG_N_P_C;
 
 	/**
 	 * Returns the portlet item where groupId = &#63; and name = &#63; and portletId = &#63; and classNameId = &#63; or throws a <code>NoSuchPortletItemException</code> if it could not be found.
@@ -1340,7 +1330,7 @@ public class PortletItemPersistenceImpl
 
 		if (useFinderCache) {
 			result = FinderCacheUtil.getResult(
-				_finderPathFetchByG_N_P_C, finderArgs);
+				_finderPathFetchByG_N_P_C, finderArgs, this);
 		}
 
 		if (result instanceof PortletItem) {
@@ -1418,23 +1408,6 @@ public class PortletItemPersistenceImpl
 					}
 				}
 				else {
-					if (list.size() > 1) {
-						Collections.sort(list, Collections.reverseOrder());
-
-						if (_log.isWarnEnabled()) {
-							if (!useFinderCache) {
-								finderArgs = new Object[] {
-									groupId, name, portletId, classNameId
-								};
-							}
-
-							_log.warn(
-								"PortletItemPersistenceImpl.fetchByG_N_P_C(long, String, String, long, boolean) with parameters (" +
-									StringUtil.merge(finderArgs) +
-										") yields a result set with more than 1 result. This violates the logical unique restriction. There is no order guarantee on which result is returned by this finder.");
-						}
-					}
-
 					PortletItem portletItem = list.get(0);
 
 					result = portletItem;
@@ -1491,84 +1464,14 @@ public class PortletItemPersistenceImpl
 	public int countByG_N_P_C(
 		long groupId, String name, String portletId, long classNameId) {
 
-		name = Objects.toString(name, "");
-		portletId = Objects.toString(portletId, "");
+		PortletItem portletItem = fetchByG_N_P_C(
+			groupId, name, portletId, classNameId);
 
-		FinderPath finderPath = _finderPathCountByG_N_P_C;
-
-		Object[] finderArgs = new Object[] {
-			groupId, name, portletId, classNameId
-		};
-
-		Long count = (Long)FinderCacheUtil.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(5);
-
-			sb.append(_SQL_COUNT_PORTLETITEM_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_N_P_C_GROUPID_2);
-
-			boolean bindName = false;
-
-			if (name.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_N_P_C_NAME_3);
-			}
-			else {
-				bindName = true;
-
-				sb.append(_FINDER_COLUMN_G_N_P_C_NAME_2);
-			}
-
-			boolean bindPortletId = false;
-
-			if (portletId.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_N_P_C_PORTLETID_3);
-			}
-			else {
-				bindPortletId = true;
-
-				sb.append(_FINDER_COLUMN_G_N_P_C_PORTLETID_2);
-			}
-
-			sb.append(_FINDER_COLUMN_G_N_P_C_CLASSNAMEID_2);
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindName) {
-					queryPos.add(StringUtil.toLowerCase(name));
-				}
-
-				if (bindPortletId) {
-					queryPos.add(portletId);
-				}
-
-				queryPos.add(classNameId);
-
-				count = (Long)query.uniqueResult();
-
-				FinderCacheUtil.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (portletItem == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_N_P_C_GROUPID_2 =
@@ -1694,8 +1597,6 @@ public class PortletItemPersistenceImpl
 			portletItemModelImpl.getClassNameId()
 		};
 
-		FinderCacheUtil.putResult(
-			_finderPathCountByG_N_P_C, args, Long.valueOf(1));
 		FinderCacheUtil.putResult(
 			_finderPathFetchByG_N_P_C, args, portletItemModelImpl);
 	}
@@ -2016,7 +1917,7 @@ public class PortletItemPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<PortletItem>)FinderCacheUtil.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2086,7 +1987,7 @@ public class PortletItemPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)FinderCacheUtil.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2203,38 +2104,13 @@ public class PortletItemPersistenceImpl
 			},
 			new String[] {"groupId", "name", "portletId", "classNameId"}, true);
 
-		_finderPathCountByG_N_P_C = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_N_P_C",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				String.class.getName(), Long.class.getName()
-			},
-			new String[] {"groupId", "name", "portletId", "classNameId"},
-			false);
-
-		_setPortletItemUtilPersistence(this);
+		PortletItemUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setPortletItemUtilPersistence(null);
+		PortletItemUtil.setPersistence(null);
 
 		EntityCacheUtil.removeCache(PortletItemImpl.class.getName());
-	}
-
-	private void _setPortletItemUtilPersistence(
-		PortletItemPersistence portletItemPersistence) {
-
-		try {
-			Field field = PortletItemUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, portletItemPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	private static final String _SQL_SELECT_PORTLETITEM =

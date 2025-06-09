@@ -1,21 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
 
+import com.liferay.commerce.currency.util.CommercePriceFormatter;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
+import com.liferay.commerce.pricing.constants.CommercePriceModifierConstants;
 import com.liferay.commerce.pricing.constants.CommercePricingPortletKeys;
+import com.liferay.commerce.pricing.exception.CommercePriceModifierAmountException;
 import com.liferay.commerce.pricing.exception.NoSuchPriceModifierException;
 import com.liferay.commerce.pricing.model.CommercePriceModifier;
 import com.liferay.commerce.pricing.service.CommercePriceModifierService;
@@ -28,16 +22,15 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.math.BigDecimal;
 
 import java.util.Calendar;
 import java.util.Date;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,10 +39,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
 		"mvc.command.name=/commerce_price_list/edit_commerce_price_modifier"
 	},
 	service = MVCActionCommand.class
@@ -57,7 +49,53 @@ import org.osgi.service.component.annotations.Reference;
 public class EditCommercePriceModifierMVCActionCommand
 	extends BaseMVCActionCommand {
 
-	protected void deleteCommercePriceModifiers(
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
+
+		long commercePriceModifierId = ParamUtil.getLong(
+			actionRequest, "commercePriceModifierId");
+
+		try {
+			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
+				_updateCommercePriceModifier(
+					commercePriceModifierId, actionRequest);
+			}
+			else if (cmd.equals(Constants.DELETE)) {
+				_deleteCommercePriceModifiers(
+					commercePriceModifierId, actionRequest);
+			}
+		}
+		catch (Exception exception) {
+			if (exception instanceof CommercePriceModifierAmountException) {
+				hideDefaultErrorMessage(actionRequest);
+				hideDefaultSuccessMessage(actionRequest);
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
+			else if (exception instanceof NoSuchPriceListException ||
+					 exception instanceof NoSuchPriceModifierException ||
+					 exception instanceof PrincipalException) {
+
+				SessionErrors.add(actionRequest, exception.getClass());
+
+				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
+			}
+			else {
+				throw exception;
+			}
+		}
+	}
+
+	private void _deleteCommercePriceModifiers(
 			long commercePriceModifierId, ActionRequest actionRequest)
 		throws Exception {
 
@@ -83,42 +121,7 @@ public class EditCommercePriceModifierMVCActionCommand
 		}
 	}
 
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
-
-		long commercePriceModifierId = ParamUtil.getLong(
-			actionRequest, "commercePriceModifierId");
-
-		try {
-			if (cmd.equals(Constants.ADD) || cmd.equals(Constants.UPDATE)) {
-				updateCommercePriceModifier(
-					commercePriceModifierId, actionRequest);
-			}
-			else if (cmd.equals(Constants.DELETE)) {
-				deleteCommercePriceModifiers(
-					commercePriceModifierId, actionRequest);
-			}
-		}
-		catch (Exception exception) {
-			if (exception instanceof NoSuchPriceListException ||
-				exception instanceof NoSuchPriceModifierException ||
-				exception instanceof PrincipalException) {
-
-				SessionErrors.add(actionRequest, exception.getClass());
-
-				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
-			}
-			else {
-				throw exception;
-			}
-		}
-	}
-
-	protected CommercePriceModifier updateCommercePriceModifier(
+	private CommercePriceModifier _updateCommercePriceModifier(
 			long commercePriceModifierId, ActionRequest actionRequest)
 		throws Exception {
 
@@ -126,10 +129,16 @@ public class EditCommercePriceModifierMVCActionCommand
 		String target = ParamUtil.getString(actionRequest, "target");
 		long commercePriceListId = ParamUtil.getLong(
 			actionRequest, "commercePriceListId");
+
 		String modifierType = ParamUtil.getString(
 			actionRequest, "modifierType");
-		BigDecimal modifierAmount = (BigDecimal)ParamUtil.getNumber(
-			actionRequest, "modifierAmount", BigDecimal.ZERO);
+
+		BigDecimal modifierAmount = _commercePriceFormatter.parse(
+			actionRequest,
+			!modifierType.equals(
+				CommercePriceModifierConstants.MODIFIER_TYPE_REPLACE),
+			CommercePriceModifier.class.getName(), "modifierAmount");
+
 		double priority = ParamUtil.getDouble(actionRequest, "priority");
 		boolean active = ParamUtil.getBoolean(actionRequest, "active");
 
@@ -201,9 +210,9 @@ public class EditCommercePriceModifierMVCActionCommand
 	}
 
 	@Reference
-	private CommercePriceModifierService _commercePriceModifierService;
+	private CommercePriceFormatter _commercePriceFormatter;
 
 	@Reference
-	private Portal _portal;
+	private CommercePriceModifierService _commercePriceModifierService;
 
 }

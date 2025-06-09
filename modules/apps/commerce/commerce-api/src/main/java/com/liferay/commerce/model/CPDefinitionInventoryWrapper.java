@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -18,9 +9,13 @@ import com.liferay.exportimport.kernel.lar.StagedModelType;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.wrapper.BaseModelWrapper;
 
+import java.math.BigDecimal;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 /**
  * <p>
@@ -46,6 +41,7 @@ public class CPDefinitionInventoryWrapper
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
 		attributes.put("mvccVersion", getMvccVersion());
+		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
 		attributes.put("CPDefinitionInventoryId", getCPDefinitionInventoryId());
 		attributes.put("groupId", getGroupId());
@@ -76,6 +72,12 @@ public class CPDefinitionInventoryWrapper
 
 		if (mvccVersion != null) {
 			setMvccVersion(mvccVersion);
+		}
+
+		Long ctCollectionId = (Long)attributes.get("ctCollectionId");
+
+		if (ctCollectionId != null) {
+			setCtCollectionId(ctCollectionId);
 		}
 
 		String uuid = (String)attributes.get("uuid");
@@ -160,7 +162,8 @@ public class CPDefinitionInventoryWrapper
 			setDisplayStockQuantity(displayStockQuantity);
 		}
 
-		Integer minStockQuantity = (Integer)attributes.get("minStockQuantity");
+		BigDecimal minStockQuantity = (BigDecimal)attributes.get(
+			"minStockQuantity");
 
 		if (minStockQuantity != null) {
 			setMinStockQuantity(minStockQuantity);
@@ -172,13 +175,15 @@ public class CPDefinitionInventoryWrapper
 			setBackOrders(backOrders);
 		}
 
-		Integer minOrderQuantity = (Integer)attributes.get("minOrderQuantity");
+		BigDecimal minOrderQuantity = (BigDecimal)attributes.get(
+			"minOrderQuantity");
 
 		if (minOrderQuantity != null) {
 			setMinOrderQuantity(minOrderQuantity);
 		}
 
-		Integer maxOrderQuantity = (Integer)attributes.get("maxOrderQuantity");
+		BigDecimal maxOrderQuantity = (BigDecimal)attributes.get(
+			"maxOrderQuantity");
 
 		if (maxOrderQuantity != null) {
 			setMaxOrderQuantity(maxOrderQuantity);
@@ -191,7 +196,7 @@ public class CPDefinitionInventoryWrapper
 			setAllowedOrderQuantities(allowedOrderQuantities);
 		}
 
-		Integer multipleOrderQuantity = (Integer)attributes.get(
+		BigDecimal multipleOrderQuantity = (BigDecimal)attributes.get(
 			"multipleOrderQuantity");
 
 		if (multipleOrderQuantity != null) {
@@ -215,7 +220,7 @@ public class CPDefinitionInventoryWrapper
 	}
 
 	@Override
-	public int[] getAllowedOrderQuantitiesArray() {
+	public BigDecimal[] getAllowedOrderQuantitiesArray() {
 		return model.getAllowedOrderQuantitiesArray();
 	}
 
@@ -280,6 +285,16 @@ public class CPDefinitionInventoryWrapper
 	}
 
 	/**
+	 * Returns the ct collection ID of this cp definition inventory.
+	 *
+	 * @return the ct collection ID of this cp definition inventory
+	 */
+	@Override
+	public long getCtCollectionId() {
+		return model.getCtCollectionId();
+	}
+
+	/**
 	 * Returns the display availability of this cp definition inventory.
 	 *
 	 * @return the display availability of this cp definition inventory
@@ -325,7 +340,7 @@ public class CPDefinitionInventoryWrapper
 	 * @return the max order quantity of this cp definition inventory
 	 */
 	@Override
-	public int getMaxOrderQuantity() {
+	public BigDecimal getMaxOrderQuantity() {
 		return model.getMaxOrderQuantity();
 	}
 
@@ -335,7 +350,7 @@ public class CPDefinitionInventoryWrapper
 	 * @return the min order quantity of this cp definition inventory
 	 */
 	@Override
-	public int getMinOrderQuantity() {
+	public BigDecimal getMinOrderQuantity() {
 		return model.getMinOrderQuantity();
 	}
 
@@ -345,7 +360,7 @@ public class CPDefinitionInventoryWrapper
 	 * @return the min stock quantity of this cp definition inventory
 	 */
 	@Override
-	public int getMinStockQuantity() {
+	public BigDecimal getMinStockQuantity() {
 		return model.getMinStockQuantity();
 	}
 
@@ -365,7 +380,7 @@ public class CPDefinitionInventoryWrapper
 	 * @return the multiple order quantity of this cp definition inventory
 	 */
 	@Override
-	public int getMultipleOrderQuantity() {
+	public BigDecimal getMultipleOrderQuantity() {
 		return model.getMultipleOrderQuantity();
 	}
 
@@ -537,6 +552,16 @@ public class CPDefinitionInventoryWrapper
 	}
 
 	/**
+	 * Sets the ct collection ID of this cp definition inventory.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition inventory
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		model.setCtCollectionId(ctCollectionId);
+	}
+
+	/**
 	 * Sets whether this cp definition inventory is display availability.
 	 *
 	 * @param displayAvailability the display availability of this cp definition inventory
@@ -582,7 +607,7 @@ public class CPDefinitionInventoryWrapper
 	 * @param maxOrderQuantity the max order quantity of this cp definition inventory
 	 */
 	@Override
-	public void setMaxOrderQuantity(int maxOrderQuantity) {
+	public void setMaxOrderQuantity(BigDecimal maxOrderQuantity) {
 		model.setMaxOrderQuantity(maxOrderQuantity);
 	}
 
@@ -592,7 +617,7 @@ public class CPDefinitionInventoryWrapper
 	 * @param minOrderQuantity the min order quantity of this cp definition inventory
 	 */
 	@Override
-	public void setMinOrderQuantity(int minOrderQuantity) {
+	public void setMinOrderQuantity(BigDecimal minOrderQuantity) {
 		model.setMinOrderQuantity(minOrderQuantity);
 	}
 
@@ -602,7 +627,7 @@ public class CPDefinitionInventoryWrapper
 	 * @param minStockQuantity the min stock quantity of this cp definition inventory
 	 */
 	@Override
-	public void setMinStockQuantity(int minStockQuantity) {
+	public void setMinStockQuantity(BigDecimal minStockQuantity) {
 		model.setMinStockQuantity(minStockQuantity);
 	}
 
@@ -622,7 +647,7 @@ public class CPDefinitionInventoryWrapper
 	 * @param multipleOrderQuantity the multiple order quantity of this cp definition inventory
 	 */
 	@Override
-	public void setMultipleOrderQuantity(int multipleOrderQuantity) {
+	public void setMultipleOrderQuantity(BigDecimal multipleOrderQuantity) {
 		model.setMultipleOrderQuantity(multipleOrderQuantity);
 	}
 
@@ -684,6 +709,25 @@ public class CPDefinitionInventoryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
+	}
+
+	@Override
+	public Map<String, Function<CPDefinitionInventory, Object>>
+		getAttributeGetterFunctions() {
+
+		return model.getAttributeGetterFunctions();
+	}
+
+	@Override
+	public Map<String, BiConsumer<CPDefinitionInventory, Object>>
+		getAttributeSetterBiConsumers() {
+
+		return model.getAttributeSetterBiConsumers();
 	}
 
 	@Override

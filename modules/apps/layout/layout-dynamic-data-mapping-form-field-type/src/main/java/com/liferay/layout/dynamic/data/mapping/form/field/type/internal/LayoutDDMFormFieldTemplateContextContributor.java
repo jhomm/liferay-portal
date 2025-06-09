@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.dynamic.data.mapping.form.field.type.internal;
@@ -24,8 +15,10 @@ import com.liferay.layout.dynamic.data.mapping.form.field.type.constants.LayoutD
 import com.liferay.layout.item.selector.criterion.LayoutItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalService;
@@ -35,12 +28,10 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -49,12 +40,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + LayoutDDMFormFieldTypeConstants.LINK_TO_LAYOUT,
-	service = {
-		DDMFormFieldTemplateContextContributor.class,
-		LayoutDDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class LayoutDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -66,7 +53,7 @@ public class LayoutDDMFormFieldTemplateContextContributor
 
 		return HashMapBuilder.<String, Object>put(
 			"itemSelectorURL",
-			getItemSelectorURL(
+			_getItemSelectorURL(
 				ddmFormFieldRenderingContext,
 				ddmFormFieldRenderingContext.getHttpServletRequest())
 		).put(
@@ -102,7 +89,7 @@ public class LayoutDDMFormFieldTemplateContextContributor
 		).build();
 	}
 
-	protected String getItemSelectorURL(
+	private String _getItemSelectorURL(
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext,
 		HttpServletRequest httpServletRequest) {
 
@@ -113,18 +100,15 @@ public class LayoutDDMFormFieldTemplateContextContributor
 		LayoutItemSelectorCriterion layoutItemSelectorCriterion =
 			new LayoutItemSelectorCriterion();
 
-		layoutItemSelectorCriterion.setShowPrivatePages(true);
-		layoutItemSelectorCriterion.setShowPublicPages(true);
-
 		layoutItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
 			new UUIDItemSelectorReturnType());
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
-			ddmFormFieldRenderingContext.getPortletNamespace() + "selectLayout",
-			layoutItemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(httpServletRequest),
+				ddmFormFieldRenderingContext.getPortletNamespace() +
+					"selectLayout",
+				layoutItemSelectorCriterion));
 	}
 
 	private String _getValue(
@@ -135,7 +119,7 @@ public class LayoutDDMFormFieldTemplateContextContributor
 		}
 
 		try {
-			JSONObject jsonObject = JSONFactoryUtil.createJSONObject(value);
+			JSONObject jsonObject = _jsonFactory.createJSONObject(value);
 
 			ServiceContext serviceContext =
 				ServiceContextThreadLocal.getServiceContext();
@@ -173,15 +157,25 @@ public class LayoutDDMFormFieldTemplateContextContributor
 				jsonObject.put("value", layout.getFriendlyURL(defaultLocale));
 			}
 
-			return jsonObject.toJSONString();
+			return jsonObject.toString();
 		}
 		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
 			return StringPool.BLANK;
 		}
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		LayoutDDMFormFieldTemplateContextContributor.class);
+
 	@Reference
 	private ItemSelector _itemSelector;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

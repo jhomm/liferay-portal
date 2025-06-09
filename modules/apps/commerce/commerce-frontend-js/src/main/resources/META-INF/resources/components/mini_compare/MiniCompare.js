@@ -1,24 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayButtonWithIcon} from '@clayui/button';
-import {ClayIconSpriteContext} from '@clayui/icon';
+import ClayIcon from '@clayui/icon';
 import ClaySticker from '@clayui/sticker';
+import {checkCookieConsentForTypes} from '@liferay/cookies-banner-web';
 import classnames from 'classnames';
+import {COOKIE_TYPES, checkConsent} from 'frontend-js-web';
 import PropTypes from 'prop-types';
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
 
+import './mini_compare.scss';
 import CommerceCookie from '../../utilities/cookies';
 import {
 	ITEM_REMOVED_FROM_COMPARE,
@@ -26,7 +19,10 @@ import {
 	TOGGLE_ITEM_IN_PRODUCT_COMPARISON,
 } from '../../utilities/eventsDefinitions';
 
-const compareCookie = new CommerceCookie('COMMERCE_COMPARE_cpDefinitionIds_');
+const compareCookie = new CommerceCookie(
+	'COMMERCE_COMPARE_cpDefinitionIds_',
+	COOKIE_TYPES.FUNCTIONAL
+);
 
 function toggleStatus(commerceChannelGroupId, id, toggle) {
 	const value = compareCookie.getValue(commerceChannelGroupId);
@@ -49,6 +45,17 @@ function toggleStatus(commerceChannelGroupId, id, toggle) {
 	compareCookie.setValue(commerceChannelGroupId, cpDefinitionIds.join(':'));
 }
 
+function alertCookies(alertType, alertTitle, alertMessage) {
+	Liferay.Util.openToast({
+		message: alertMessage,
+		title: alertTitle,
+		toastProps: {
+			autoClose: 5000,
+		},
+		type: alertType,
+	});
+}
+
 function Item(props) {
 	return (
 		<div className={classnames('mini-compare-item', props.id && 'active')}>
@@ -62,24 +69,64 @@ function Item(props) {
 					}
 				/>
 			</ClaySticker>
-			<ClayButtonWithIcon
-				className="mini-compare-delete"
-				displayType="unstyled"
-				onClick={props.onDelete}
-				small
-				symbol="times"
-			/>
+
+			<button className="mini-compare-delete" onClick={props.onDelete}>
+				<ClayIcon symbol="times" />
+			</button>
 		</div>
 	);
 }
 
 function MiniCompare(props) {
-	const [items, updateItems] = useState(props.items);
-
-	compareCookie.setValue(
-		props.commerceChannelGroupId,
-		items.map((item) => item.id).join(':')
+	const [items, setItems] = useState(props.items);
+	const [functionalCookiesConsent, setFunctionalCookiesConsent] = useState(
+		checkConsent(COOKIE_TYPES.FUNCTIONAL)
 	);
+
+	const triggerCheckCookieConsent = useCallback(() => {
+		return !functionalCookiesConsent && items?.length > 0;
+	}, [functionalCookiesConsent, items?.length]);
+
+	useEffect(() => {
+		if (triggerCheckCookieConsent()) {
+			checkCookieConsentForTypes(COOKIE_TYPES.FUNCTIONAL, {
+				alertMessage: Liferay.Language.get(
+					'product-comparison-cookies-alert'
+				),
+				customTitle: Liferay.Language.get(
+					'product-comparison-cookies-title'
+				),
+			})
+				.then(() => {
+					compareCookie.setValue(
+						props.commerceChannelGroupId,
+						items.map((item) => item.id).join(':')
+					);
+					setFunctionalCookiesConsent(true);
+					alertCookies(
+						'success',
+						Liferay.Language.get('cookies-allowed'),
+						Liferay.Language.get(
+							'product-comparison-cookies-success'
+						)
+					);
+				})
+				.catch(() => {
+					alertCookies(
+						'warning',
+						Liferay.Language.get('cookies-not-allowed'),
+						Liferay.Language.get(
+							'product-comparison-cookies-warning'
+						)
+					);
+				});
+		}
+	}, [
+		functionalCookiesConsent,
+		items,
+		props.commerceChannelGroupId,
+		triggerCheckCookieConsent,
+	]);
 
 	useEffect(() => {
 		function toggleItem({id, thumbnail}) {
@@ -88,7 +135,7 @@ function MiniCompare(props) {
 				thumbnail,
 			};
 
-			updateItems((items) => {
+			setItems((items) => {
 				const included = items.find((element) => element.id === id);
 
 				toggleStatus(props.commerceChannelGroupId, id, !included);
@@ -112,52 +159,44 @@ function MiniCompare(props) {
 
 	useEffect(() => {
 		Liferay.fire(PRODUCT_COMPARISON_TOGGLED, {
-			disabled: items.length > props.itemsLimit,
+			disabled: items.length >= props.itemsLimit,
 		});
 	}, [items, props.itemsLimit]);
 
-	return (
-		<ClayIconSpriteContext.Provider value={props.spritemap}>
-			<div
-				className={classnames(
-					'mini-compare',
-					!!items.length && 'active'
-				)}
-			>
-				{Array(props.itemsLimit)
-					.fill(null)
-					.map((_el, i) => {
-						const currentItem = items[i] || {};
+	return triggerCheckCookieConsent() ? null : (
+		<div className={classnames('mini-compare', !!items.length && 'active')}>
+			{Array(props.itemsLimit)
+				.fill(null)
+				.map((_el, i) => {
+					const currentItem = items[i] || {};
 
-						return (
-							<Item
-								{...currentItem}
-								key={i}
-								onDelete={(event) => {
-									event.preventDefault();
-									updateItems(
-										items.filter(
-											(v) => v.id !== currentItem.id
-										)
-									);
-									toggleStatus(
-										props.commerceChannelGroupId,
-										currentItem.id,
-										false
-									);
-									Liferay.fire(
-										ITEM_REMOVED_FROM_COMPARE,
-										currentItem
-									);
-								}}
-							/>
-						);
-					})}
-				<a className="btn btn-primary" href={props.compareProductsURL}>
-					{Liferay.Language.get('compare')}
-				</a>
-			</div>
-		</ClayIconSpriteContext.Provider>
+					return (
+						<Item
+							{...currentItem}
+							key={i}
+							onDelete={(event) => {
+								event.preventDefault();
+								setItems(
+									items.filter((v) => v.id !== currentItem.id)
+								);
+								toggleStatus(
+									props.commerceChannelGroupId,
+									currentItem.id,
+									false
+								);
+								Liferay.fire(
+									ITEM_REMOVED_FROM_COMPARE,
+									currentItem
+								);
+							}}
+						/>
+					);
+				})}
+
+			<a className="btn btn-primary" href={props.compareProductsURL}>
+				{Liferay.Language.get('compare')}
+			</a>
+		</div>
 	);
 }
 
@@ -173,7 +212,6 @@ MiniCompare.propTypes = {
 	),
 	itemsLimit: PropTypes.number,
 	portletNamespace: PropTypes.string.isRequired,
-	spritemap: PropTypes.string,
 };
 
 MiniCompare.defaultProps = {

@@ -1,0 +1,32 @@
+{
+	"properties": {
+		"companyId": {
+			"index": true,
+			"type": "long"
+		},
+		"createDate": {
+			"index": false,
+			"type": "date"
+		},
+		"entryClassPK": {
+			"index": true,
+			"type": "long"
+		},
+		"jobId": {
+			"index": false,
+			"type": "keyword"
+		},
+		"rank": {
+			"index": false,
+			"type": "integer"
+		},
+		"recommendedEntryClassPK": {
+			"index": false,
+			"type": "long"
+		},
+		"score": {
+			"index": false,
+			"type": "float"
+		}
+	}
+}

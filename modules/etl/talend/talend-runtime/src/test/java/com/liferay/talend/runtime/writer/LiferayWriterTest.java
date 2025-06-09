@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.talend.runtime.writer;
@@ -33,6 +24,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import javax.json.JsonArray;
 import javax.json.JsonNumber;
 import javax.json.JsonObject;
 import javax.json.JsonValue;
@@ -92,15 +84,72 @@ public class LiferayWriterTest extends BaseTestCase {
 
 		JsonObject outputJsonObject = outputJsonValue.asJsonObject();
 
-		Assert.assertTrue(
-			"Output has name", outputJsonObject.containsKey("name"));
+		Assert.assertTrue(outputJsonObject.containsKey("name"));
 
 		JsonObject nameJsonObject = outputJsonObject.getJsonObject("name");
 
-		Assert.assertNotNull("name is json object", nameJsonObject);
+		Assert.assertNotNull(nameJsonObject);
+		Assert.assertTrue(nameJsonObject.containsKey("hr_HR"));
+	}
 
-		Assert.assertTrue(
-			"Name has key hr_HR", nameJsonObject.containsKey("hr_HR"));
+	@Test
+	public void testWriteArray() throws Exception {
+		String openApiModule = "/headless-commerce-admin-catalog/v1.0";
+		String endpoint = "/v1.0/products/{id}/categories";
+
+		LiferayRequestContentAggregatorSink
+			liferayRequestContentAggregatorSink =
+				new LiferayRequestContentAggregatorSink();
+
+		LiferayOutputProperties testLiferayOutputProperties =
+			_getLiferayOutputProperties(
+				Operation.Update, openApiModule, _OAS_URL, endpoint, "id");
+
+		JsonObject oasJsonObject = readObject(
+			"headless-commerce-admin-catalog-openapi.json");
+
+		Schema patchContentSchema = getSchema(
+			endpoint, Operation.Update.getHttpMethod(), oasJsonObject);
+
+		Object iterableObjectProp = patchContentSchema.getObjectProp(
+			"iterable");
+
+		Assert.assertNotNull(iterableObjectProp);
+		Assert.assertTrue(iterableObjectProp instanceof Boolean);
+		Assert.assertTrue((Boolean)iterableObjectProp);
+
+		testLiferayOutputProperties.resource.inboundSchemaProperties.schema.
+			setValue(patchContentSchema);
+		testLiferayOutputProperties.resource.outboundSchemaProperties.schema.
+			setValue(patchContentSchema);
+
+		LiferayWriter liferayWriter = new LiferayWriter(
+			new LiferayWriteOperation(
+				liferayRequestContentAggregatorSink,
+				testLiferayOutputProperties),
+			testLiferayOutputProperties);
+
+		liferayWriter.open("aaaa-bbbb-cccc-dddd");
+
+		liferayWriter.write(
+			_createIndexedRecordFromFile(
+				"category_content.json", patchContentSchema));
+
+		JsonValue outputJsonValue =
+			liferayRequestContentAggregatorSink.getOutputJsonValue();
+
+		JsonArray jsonArray = outputJsonValue.asJsonArray();
+
+		Assert.assertNotNull(jsonArray);
+		Assert.assertEquals(1, jsonArray.size());
+
+		Iterable<IndexedRecord> successfulWrites =
+			liferayWriter.getSuccessfulWrites();
+
+		Iterator<IndexedRecord> iterator = successfulWrites.iterator();
+
+		Assert.assertNotNull(iterator.next());
+		Assert.assertFalse(iterator.hasNext());
 	}
 
 	@Test

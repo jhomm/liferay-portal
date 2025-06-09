@@ -1,0 +1,79 @@
+{
+	"description_i18n": {
+		"en_US": "boost-contents-in-a-category-for-a-period-of-time-description"
+	},
+	"elementDefinition": {
+		"category": "conditional",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "should",
+								"query": {
+									"terms": {
+										"boost": "${configuration.boost}",
+										"groupAssetCategoryExternalReferenceCodes": "${configuration.group_asset_category_external_reference_codes}"
+									}
+								}
+							}
+						],
+						"condition": {
+							"range": {
+								"format": "yyyyMMdd",
+								"gte": "${configuration.start_date}",
+								"lte": "${configuration.end_date}",
+								"parameterName": "time.current_date"
+							}
+						}
+					}
+				]
+			}
+		},
+		"icon": "thumbs-up",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"label": "asset-category-external-reference-codes",
+							"name": "group_asset_category_external_reference_codes",
+							"type": "multiselect"
+						},
+						{
+							"label": "date-from",
+							"name": "start_date",
+							"type": "date",
+							"typeOptions": {
+								"format": "YYYYMMDD"
+							}
+						},
+						{
+							"label": "date-to",
+							"name": "end_date",
+							"type": "date",
+							"typeOptions": {
+								"format": "YYYYMMDD"
+							}
+						},
+						{
+							"defaultValue": 10,
+							"label": "boost",
+							"name": "boost",
+							"type": "number",
+							"typeOptions": {
+								"min": 0
+							}
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "BOOST_CONTENTS_IN_A_CATEGORY_FOR_A_PERIOD_OF_TIME",
+	"title_i18n": {
+		"en_US": "boost-contents-in-a-category-for-a-period-of-time"
+	}
+}

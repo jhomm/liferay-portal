@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.frontend.taglib.servlet.taglib;
@@ -22,9 +13,11 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
+import java.util.Map;
 
 /**
  * @author Fabio Diego Mastrorilli
@@ -49,13 +42,15 @@ public class PanelTag extends IncludeTag {
 				(ThemeDisplay)httpServletRequest.getAttribute(
 					WebKeys.THEME_DISPLAY);
 
-			_spritemap = themeDisplay.getPathThemeImages() + "/clay/icons.svg";
+			_spritemap = themeDisplay.getPathThemeSpritemap();
 		}
 
 		String randomNamespace =
 			PortalUtil.generateRandomKey(httpServletRequest, "commerce_panel") +
 				StringPool.UNDERLINE;
 
+		httpServletRequest.setAttribute(
+			"liferay-commerce:panel:actionContext", _actionContext);
 		httpServletRequest.setAttribute(
 			"liferay-commerce:panel:actionIcon", _actionIcon);
 		httpServletRequest.setAttribute(
@@ -89,6 +84,10 @@ public class PanelTag extends IncludeTag {
 		super.doStartTag();
 
 		return EVAL_BODY_INCLUDE;
+	}
+
+	public Map<String, Object> getActionContext() {
+		return _actionContext;
 	}
 
 	public String getActionIcon() {
@@ -145,6 +144,10 @@ public class PanelTag extends IncludeTag {
 
 	public String getTitle() {
 		return _title;
+	}
+
+	public void setActionContext(Map<String, Object> actionContext) {
+		_actionContext = actionContext;
 	}
 
 	public void setActionIcon(String actionIcon) {
@@ -214,6 +217,7 @@ public class PanelTag extends IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_actionContext = null;
 		_actionIcon = null;
 		_actionLabel = null;
 		_actionTargetId = null;
@@ -247,6 +251,7 @@ public class PanelTag extends IncludeTag {
 
 	private static final String _START_PAGE = "/panel/start.jsp";
 
+	private Map<String, Object> _actionContext;
 	private String _actionIcon;
 	private String _actionLabel;
 	private String _actionTargetId;

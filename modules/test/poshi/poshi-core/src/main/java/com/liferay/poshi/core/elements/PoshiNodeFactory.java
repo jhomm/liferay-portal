@@ -1,23 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.elements;
 
-import com.google.common.reflect.ClassPath;
-
 import com.liferay.poshi.core.script.PoshiScriptParserException;
-import com.liferay.poshi.core.script.UnbalancedCodeException;
+import com.liferay.poshi.core.script.PoshiScriptParserUtil;
 import com.liferay.poshi.core.util.Dom4JUtil;
 import com.liferay.poshi.core.util.FileUtil;
 
@@ -39,6 +28,8 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.Node;
+
+import org.reflections.Reflections;
 
 /**
  * @author Kenji Heigel
@@ -106,7 +97,9 @@ public abstract class PoshiNodeFactory {
 					document.getRootElement(), url);
 			}
 
-			if (_definitionPoshiElement.isBalancedPoshiScript(content, true)) {
+			if (PoshiScriptParserUtil.isBalancedPoshiScript(
+					content, url, true)) {
+
 				return _definitionPoshiElement.clone(content, url);
 			}
 		}
@@ -116,10 +109,6 @@ public abstract class PoshiNodeFactory {
 				documentException.getCause());
 		}
 		catch (PoshiScriptParserException poshiScriptParserException) {
-			if (poshiScriptParserException instanceof UnbalancedCodeException) {
-				poshiScriptParserException.setFilePath(url.getFile());
-			}
-
 			throw poshiScriptParserException;
 		}
 
@@ -214,17 +203,11 @@ public abstract class PoshiNodeFactory {
 
 	static {
 		try {
-			ClassPath classPath = ClassPath.from(
-				PoshiNode.class.getClassLoader());
+			Reflections reflections = new Reflections(
+				"com.liferay.poshi.core.elements");
 
-			List<Class<?>> poshiElementClasses = new ArrayList<>();
-
-			for (ClassPath.ClassInfo classInfo :
-					classPath.getTopLevelClasses(
-						"com.liferay.poshi.core.elements")) {
-
-				poshiElementClasses.add(classInfo.load());
-			}
+			List<Class<?>> poshiElementClasses = new ArrayList<>(
+				reflections.getSubTypesOf(PoshiNode.class));
 
 			Collections.sort(
 				poshiElementClasses,
@@ -262,11 +245,38 @@ public abstract class PoshiNodeFactory {
 				}
 			}
 
+			Collections.sort(
+				_poshiElements,
+				new Comparator<PoshiElement>() {
+
+					@Override
+					public int compare(
+						PoshiElement poshiElement1,
+						PoshiElement poshiElement2) {
+
+						Class<?> poshiElementClass1 = poshiElement1.getClass();
+						Class<?> poshiElementClass2 = poshiElement2.getClass();
+
+						String classSimpleName1 =
+							poshiElementClass1.getSimpleName();
+						String classSimpleName2 =
+							poshiElementClass2.getSimpleName();
+
+						if (classSimpleName1.equals("AndPoshiElement") ||
+							(classSimpleName1.equals("OrPoshiElement") &&
+							 !classSimpleName2.equals("AndPoshiElement"))) {
+
+							return -1;
+						}
+
+						return classSimpleName1.compareTo(classSimpleName2);
+					}
+
+				});
+
 			_definitionPoshiElement = _getDefinitionPoshiElement();
 		}
-		catch (IllegalAccessException | InstantiationException | IOException
-					exception) {
-
+		catch (IllegalAccessException | InstantiationException exception) {
 			throw new RuntimeException(exception);
 		}
 	}

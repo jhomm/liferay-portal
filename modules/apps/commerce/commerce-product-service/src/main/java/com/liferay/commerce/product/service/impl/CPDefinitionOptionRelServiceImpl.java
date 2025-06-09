@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -19,14 +10,17 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.service.CPDefinitionLocalService;
+import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.base.CPDefinitionOptionRelServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
@@ -34,17 +28,27 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Marco Leo
  * @author Igor Beslic
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CPDefinitionOptionRel"
+	},
+	service = AopService.class
+)
 public class CPDefinitionOptionRelServiceImpl
 	extends CPDefinitionOptionRelServiceBaseImpl {
 
 	@Override
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			double priority, boolean facetable, boolean required,
 			boolean skuContributor, boolean importOptionValue,
 			ServiceContext serviceContext)
@@ -54,25 +58,27 @@ public class CPDefinitionOptionRelServiceImpl
 
 		return cpDefinitionOptionRelLocalService.addCPDefinitionOptionRel(
 			cpDefinitionId, cpOptionId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, priority, facetable, required, skuContributor,
-			importOptionValue, serviceContext);
+			commerceOptionTypeKey, priority, facetable, required,
+			skuContributor, importOptionValue, serviceContext);
 	}
 
 	@Override
 	public CPDefinitionOptionRel addCPDefinitionOptionRel(
 			long cpDefinitionId, long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
-			double priority, boolean facetable, boolean required,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
+			String infoItemServiceKey, double priority,
+			boolean definedExternally, boolean facetable, boolean required,
 			boolean skuContributor, boolean importOptionValue, String priceType,
-			ServiceContext serviceContext)
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException {
 
 		_checkCommerceCatalog(cpDefinitionId, ActionKeys.UPDATE);
 
 		return cpDefinitionOptionRelLocalService.addCPDefinitionOptionRel(
 			cpDefinitionId, cpOptionId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, priority, facetable, required, skuContributor,
-			importOptionValue, priceType, serviceContext);
+			commerceOptionTypeKey, infoItemServiceKey, priority,
+			definedExternally, facetable, required, skuContributor,
+			importOptionValue, priceType, typeSettings, serviceContext);
 	}
 
 	@Override
@@ -163,7 +169,7 @@ public class CPDefinitionOptionRelServiceImpl
 				long cpInstanceId)
 		throws PortalException {
 
-		CPInstance cpInstance = cpInstanceLocalService.getCPInstance(
+		CPInstance cpInstance = _cpInstanceLocalService.getCPInstance(
 			cpInstanceId);
 
 		_checkCommerceCatalog(cpInstance.getCPDefinitionId(), ActionKeys.VIEW);
@@ -228,34 +234,6 @@ public class CPDefinitionOptionRelServiceImpl
 			cpDefinitionId, skuContributor);
 	}
 
-	/**
-	 * @param      companyId
-	 * @param      groupId
-	 * @param      cpDefinitionId
-	 * @param      keywords
-	 * @param      start
-	 * @param      end
-	 * @param      sort
-	 * @return
-	 *
-	 * @throws     PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 * 			   #searchCPDefinitionOptionRels(long, long, long, String, int,
-	 * 			   int, Sort[])}
-	 */
-	@Deprecated
-	@Override
-	public BaseModelSearchResult<CPDefinitionOptionRel>
-			searchCPDefinitionOptionRels(
-				long companyId, long groupId, long cpDefinitionId,
-				String keywords, int start, int end, Sort sort)
-		throws PortalException {
-
-		return cpDefinitionOptionRelService.searchCPDefinitionOptionRels(
-			companyId, groupId, cpDefinitionId, keywords, start, end,
-			new Sort[] {sort});
-	}
-
 	@Override
 	public BaseModelSearchResult<CPDefinitionOptionRel>
 			searchCPDefinitionOptionRels(
@@ -285,7 +263,7 @@ public class CPDefinitionOptionRelServiceImpl
 	public CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, double priority, boolean facetable,
 			boolean required, boolean skuContributor,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -299,7 +277,7 @@ public class CPDefinitionOptionRelServiceImpl
 
 		return cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
 			cpDefinitionOptionRel.getCPDefinitionOptionRelId(), cpOptionId,
-			nameMap, descriptionMap, ddmFormFieldTypeName, priority, facetable,
+			nameMap, descriptionMap, commerceOptionTypeKey, priority, facetable,
 			required, skuContributor, serviceContext);
 	}
 
@@ -307,9 +285,10 @@ public class CPDefinitionOptionRelServiceImpl
 	public CPDefinitionOptionRel updateCPDefinitionOptionRel(
 			long cpDefinitionOptionRelId, long cpOptionId,
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, double priority, boolean facetable,
+			String commerceOptionTypeKey, String infoItemServiceKey,
+			double priority, boolean definedExternally, boolean facetable,
 			boolean required, boolean skuContributor, String priceType,
-			ServiceContext serviceContext)
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
@@ -321,14 +300,15 @@ public class CPDefinitionOptionRelServiceImpl
 
 		return cpDefinitionOptionRelLocalService.updateCPDefinitionOptionRel(
 			cpDefinitionOptionRel.getCPDefinitionOptionRelId(), cpOptionId,
-			nameMap, descriptionMap, ddmFormFieldTypeName, priority, facetable,
-			required, skuContributor, priceType, serviceContext);
+			nameMap, descriptionMap, commerceOptionTypeKey, infoItemServiceKey,
+			priority, definedExternally, facetable, required, skuContributor,
+			priceType, typeSettings, serviceContext);
 	}
 
 	private void _checkCommerceCatalog(long cpDefinitionId, String actionId)
 		throws PortalException {
 
-		CPDefinition cpDefinition = cpDefinitionLocalService.fetchCPDefinition(
+		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
 			cpDefinitionId);
 
 		if (cpDefinition == null) {
@@ -336,7 +316,7 @@ public class CPDefinitionOptionRelServiceImpl
 		}
 
 		CommerceCatalog commerceCatalog =
-			commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
+			_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
 				cpDefinition.getGroupId());
 
 		if (commerceCatalog == null) {
@@ -347,11 +327,19 @@ public class CPDefinitionOptionRelServiceImpl
 			getPermissionChecker(), commerceCatalog, actionId);
 	}
 
-	private static volatile ModelResourcePermission<CommerceCatalog>
-		_commerceCatalogModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CPDefinitionOptionRelServiceImpl.class,
-				"_commerceCatalogModelResourcePermission",
-				CommerceCatalog.class);
+	@Reference
+	private CommerceCatalogLocalService _commerceCatalogLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceCatalog)"
+	)
+	private ModelResourcePermission<CommerceCatalog>
+		_commerceCatalogModelResourcePermission;
+
+	@Reference
+	private CPDefinitionLocalService _cpDefinitionLocalService;
+
+	@Reference
+	private CPInstanceLocalService _cpInstanceLocalService;
 
 }

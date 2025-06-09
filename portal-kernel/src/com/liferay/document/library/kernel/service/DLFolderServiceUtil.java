@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -40,14 +31,15 @@ public class DLFolderServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portlet.documentlibrary.service.impl.DLFolderServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static DLFolder addFolder(
-			long groupId, long repositoryId, boolean mountPoint,
-			long parentFolderId, String name, String description,
+			String externalReferenceCode, long groupId, long repositoryId,
+			boolean mountPoint, long parentFolderId, String name,
+			String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addFolder(
-			groupId, repositoryId, mountPoint, parentFolderId, name,
-			description, serviceContext);
+			externalReferenceCode, groupId, repositoryId, mountPoint,
+			parentFolderId, name, description, serviceContext);
 	}
 
 	public static void deleteFolder(long folderId) throws PortalException {
@@ -68,6 +60,14 @@ public class DLFolderServiceUtil {
 		getService().deleteFolder(groupId, parentFolderId, name);
 	}
 
+	public static DLFolder getDLFolderByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getDLFolderByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	public static List<Object> getFileEntriesAndFileShortcuts(
 			long groupId, long folderId, int status, int start, int end)
 		throws PortalException {
@@ -82,20 +82,6 @@ public class DLFolderServiceUtil {
 
 		return getService().getFileEntriesAndFileShortcutsCount(
 			groupId, folderId, status);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFileEntriesAndFileShortcutsCount(long, long, String[],
-	 int)}
-	 */
-	@Deprecated
-	public static int getFileEntriesAndFileShortcutsCount(
-			long groupId, long folderId, int status, String[] mimeTypes)
-		throws PortalException {
-
-		return getService().getFileEntriesAndFileShortcutsCount(
-			groupId, folderId, status, mimeTypes);
 	}
 
 	public static int getFileEntriesAndFileShortcutsCount(
@@ -124,6 +110,13 @@ public class DLFolderServiceUtil {
 	}
 
 	public static List<DLFolder> getFolders(
+			long groupId, double score, int start, int end)
+		throws PortalException {
+
+		return getService().getFolders(groupId, score, start, end);
+	}
+
+	public static List<DLFolder> getFolders(
 			long groupId, long parentFolderId, boolean includeMountfolders,
 			int status, int start, int end,
 			OrderByComparator<DLFolder> orderByComparator)
@@ -131,23 +124,6 @@ public class DLFolderServiceUtil {
 
 		return getService().getFolders(
 			groupId, parentFolderId, includeMountfolders, status, start, end,
-			orderByComparator);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFolders(long, long, boolean, int, int, int,
-	 OrderByComparator)}
-	 */
-	@Deprecated
-	public static List<DLFolder> getFolders(
-			long groupId, long parentFolderId, int status,
-			boolean includeMountfolders, int start, int end,
-			OrderByComparator<DLFolder> orderByComparator)
-		throws PortalException {
-
-		return getService().getFolders(
-			groupId, parentFolderId, status, includeMountfolders, start, end,
 			orderByComparator);
 	}
 
@@ -169,40 +145,6 @@ public class DLFolderServiceUtil {
 		return getService().getFoldersAndFileEntriesAndFileShortcuts(
 			groupId, folderId, includeMountFolders, status, start, end,
 			orderByComparator);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFoldersAndFileEntriesAndFileShortcuts(long, long,
-	 boolean, int, int, int, OrderByComparator)}
-	 */
-	@Deprecated
-	public static List<Object> getFoldersAndFileEntriesAndFileShortcuts(
-			long groupId, long folderId, int status,
-			boolean includeMountFolders, int start, int end,
-			OrderByComparator<?> orderByComparator)
-		throws PortalException {
-
-		return getService().getFoldersAndFileEntriesAndFileShortcuts(
-			groupId, folderId, status, includeMountFolders, start, end,
-			orderByComparator);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #getFoldersAndFileEntriesAndFileShortcuts(long, long,
-	 String[], boolean, int, int, int, OrderByComparator)}
-	 */
-	@Deprecated
-	public static List<Object> getFoldersAndFileEntriesAndFileShortcuts(
-			long groupId, long folderId, int status, String[] mimeTypes,
-			boolean includeMountFolders, int start, int end,
-			OrderByComparator<?> orderByComparator)
-		throws PortalException {
-
-		return getService().getFoldersAndFileEntriesAndFileShortcuts(
-			groupId, folderId, status, mimeTypes, includeMountFolders, start,
-			end, orderByComparator);
 	}
 
 	public static List<Object> getFoldersAndFileEntriesAndFileShortcuts(
@@ -290,6 +232,12 @@ public class DLFolderServiceUtil {
 		return getService().getFoldersAndFileEntriesAndFileShortcutsCount(
 			groupId, folderId, mimeTypes, fileEntryTypeId, includeMountFolders,
 			status);
+	}
+
+	public static int getFoldersCount(long groupId, double score)
+		throws PortalException {
+
+		return getService().getFoldersCount(groupId, score);
 	}
 
 	public static int getFoldersCount(long groupId, long parentFolderId)
@@ -450,6 +398,10 @@ public class DLFolderServiceUtil {
 
 	public static DLFolderService getService() {
 		return _service;
+	}
+
+	public static void setService(DLFolderService service) {
+		_service = service;
 	}
 
 	private static volatile DLFolderService _service;

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -73,6 +64,8 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 
 <c:if test="<%= liveGroup != null %>">
 	<aui:input name="siteId" type="resource" value="<%= String.valueOf(liveGroup.getGroupId()) %>" />
+
+	<aui:input disabled="<%= true %>" name="externalReferenceCode" value="<%= String.valueOf(liveGroup.getExternalReferenceCode()) %>" />
 </c:if>
 
 <c:choose>
@@ -80,7 +73,7 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 		<aui:input helpMessage="the-name-of-this-site-cannot-be-edited-because-it-belongs-to-an-organization" name="name" placeholder="name" type="resource" value="<%= liveGroup.getDescriptiveName(locale) %>" />
 	</c:when>
 	<c:when test="<%= (liveGroup == null) || (!liveGroup.isCompany() && !PortalUtil.isSystemGroup(liveGroup.getGroupKey())) %>">
-		<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) %>" name="name" placeholder="name" />
+		<aui:input name="name" placeholder="name" />
 	</c:when>
 </c:choose>
 
@@ -125,13 +118,18 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 		</div>
 
 		<div class="input-group-item input-group-item-shrink">
-			<button class="btn btn-secondary mr-1" id="<portlet:namespace />clearParentSiteLink" type="button">
-				<liferay-ui:message key="clear" />
-			</button>
+			<clay:button
+				cssClass="c-mr-1"
+				displayType="secondary"
+				id='<%= liferayPortletResponse.getNamespace() + "clearParentSiteLink" %>'
+				label="clear"
+			/>
 
-			<button class="btn btn-secondary" id="<portlet:namespace />changeParentSiteLink" type="button">
-				<liferay-ui:message key="change" />
-			</button>
+			<clay:button
+				displayType="secondary"
+				id='<%= liferayPortletResponse.getNamespace() + "changeParentSiteLink" %>'
+				label="change"
+			/>
 		</div>
 	</div>
 
@@ -164,24 +162,26 @@ if (parentGroupId != GroupConstants.DEFAULT_PARENT_GROUP_ID) {
 
 	<aui:input inlineLabel="right" label="allow-manual-membership-management" labelCssClass="simple-toggle-switch" name="manualMembership" type="toggle-switch" value="<%= manualMembership %>" />
 
+	<%
+	ItemSelector itemSelector = (ItemSelector)request.getAttribute(ItemSelector.class.getName());
+
+	SiteItemSelectorCriterion siteItemSelectorCriterion = new SiteItemSelectorCriterion();
+
+	siteItemSelectorCriterion.setDesiredItemSelectorReturnTypes(new GroupItemSelectorReturnType());
+	siteItemSelectorCriterion.setExcludedGroupIds(new long[] {siteGroup.getGroupId()});
+	siteItemSelectorCriterion.setIncludeCompany(false);
+	siteItemSelectorCriterion.setIncludeRecentSites(false);
+	%>
+
 	<liferay-frontend:component
 		componentId='<%= liferayPortletResponse.getNamespace() + "details" %>'
 		context='<%=
 			HashMapBuilder.<String, Object>put(
 				"defaultParentGroupId", GroupConstants.DEFAULT_PARENT_GROUP_ID
 			).put(
-				"eventName", liferayPortletResponse.getNamespace() + "selectGroup"
-			).put(
-				"groupId", siteGroup.getGroupId()
-			).put(
-				"portletURL",
-				PortletURLBuilder.create(
-					PortletProviderUtil.getPortletURL(request, Group.class.getName(), PortletProvider.Action.BROWSE)
-				).buildString()
-			).put(
-				"windowState", LiferayWindowState.POP_UP.toString()
+				"portletURL", String.valueOf(itemSelector.getItemSelectorURL(RequestBackedPortletURLFactoryUtil.create(request), liferayPortletResponse.getNamespace() + "selectGroup", siteItemSelectorCriterion))
 			).build()
 		%>'
-		module="js/site/Details"
+		module="{Details} from site-admin-web"
 	/>
 </c:if>

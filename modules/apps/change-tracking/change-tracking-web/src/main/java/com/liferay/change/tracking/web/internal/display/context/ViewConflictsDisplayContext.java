@@ -1,54 +1,60 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.display.context;
 
 import com.liferay.change.tracking.conflict.ConflictInfo;
 import com.liferay.change.tracking.constants.CTConstants;
+import com.liferay.change.tracking.constants.CTPortletKeys;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTEntry;
+import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTEntryLocalService;
-import com.liferay.change.tracking.web.internal.display.CTDisplayRendererRegistry;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.petra.string.StringPool;
-import com.liferay.portal.change.tracking.sql.CTSQLModeThreadLocal;
+import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
+import com.liferay.change.tracking.spi.display.CTDisplayRendererRegistry;
+import com.liferay.change.tracking.web.internal.configuration.helper.CTSettingsConfigurationHelper;
+import com.liferay.change.tracking.web.internal.util.PublicationsPortletURLUtil;
+import com.liferay.journal.model.JournalArticle;
+import com.liferay.learn.LearnMessage;
+import com.liferay.learn.LearnMessageUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.time.Instant;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.TimeZone;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Samuel Trong Tran
@@ -59,23 +65,28 @@ public class ViewConflictsDisplayContext {
 		long activeCtCollectionId,
 		Map<Long, List<ConflictInfo>> conflictInfoMap,
 		CTCollection ctCollection,
+		CTCollectionLocalService ctCollectionLocalService,
 		CTDisplayRendererRegistry ctDisplayRendererRegistry,
-		CTEntryLocalService ctEntryLocalService, Language language,
-		Portal portal, RenderRequest renderRequest,
-		RenderResponse renderResponse) {
+		CTEntryLocalService ctEntryLocalService,
+		CTSettingsConfigurationHelper ctSettingsConfigurationHelper,
+		boolean hasUnapprovedChanges, Language language, Portal portal,
+		RenderRequest renderRequest, RenderResponse renderResponse) {
 
 		_activeCtCollectionId = activeCtCollectionId;
 		_conflictInfoMap = conflictInfoMap;
 		_ctCollection = ctCollection;
+		_ctCollectionLocalService = ctCollectionLocalService;
 		_ctDisplayRendererRegistry = ctDisplayRendererRegistry;
 		_ctEntryLocalService = ctEntryLocalService;
+		_ctSettingsConfigurationHelper = ctSettingsConfigurationHelper;
+		_hasUnapprovedChanges = hasUnapprovedChanges;
 		_language = language;
 		_portal = portal;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 
-		_httpServletRequest = _portal.getHttpServletRequest(_renderRequest);
-		_themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
+		_httpServletRequest = portal.getHttpServletRequest(renderRequest);
+		_themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -89,23 +100,55 @@ public class ViewConflictsDisplayContext {
 		JSONArray unresolvedConflictsJSONArray =
 			JSONFactoryUtil.createJSONArray();
 
-		for (Map.Entry<Long, List<ConflictInfo>> entry :
-				_conflictInfoMap.entrySet()) {
+		if (_conflictInfoMap != null) {
+			for (Map.Entry<Long, List<ConflictInfo>> entry :
+					_conflictInfoMap.entrySet()) {
 
-			for (ConflictInfo conflictInfo : entry.getValue()) {
-				JSONObject jsonObject = _getConflictJSONObject(
-					conflictInfo, entry.getKey());
+				for (ConflictInfo conflictInfo : entry.getValue()) {
+					JSONObject jsonObject = _getConflictJSONObject(
+						conflictInfo, entry.getKey());
 
-				if (conflictInfo.isResolved()) {
-					resolvedConflictsJSONArray.put(jsonObject);
-				}
-				else {
-					unresolvedConflictsJSONArray.put(jsonObject);
+					if (conflictInfo.isResolved()) {
+						resolvedConflictsJSONArray.put(jsonObject);
+					}
+					else {
+						unresolvedConflictsJSONArray.put(jsonObject);
+					}
 				}
 			}
 		}
 
 		return HashMapBuilder.<String, Object>put(
+			"hasUnapprovedChanges", _hasUnapprovedChanges
+		).put(
+			"isEmpty", _ctCollection.isEmpty()
+		).put(
+			"learnLink",
+			() -> {
+				LearnMessage learnMessage = LearnMessageUtil.getLearnMessage(
+					"manually-resolving-conflicts",
+					_themeDisplay.getLanguageId(), "change-tracking-web");
+
+				return JSONUtil.put(
+					"message", learnMessage.getMessage()
+				).put(
+					"url", learnMessage.getURL()
+				);
+			}
+		).put(
+			"learnResolvingConflictsLink",
+			() -> {
+				LearnMessage learnMessage = LearnMessageUtil.getLearnMessage(
+					"resolving-conflicts", _themeDisplay.getLanguageId(),
+					"change-tracking-web");
+
+				return JSONUtil.put(
+					"message", learnMessage.getMessage()
+				).put(
+					"url", learnMessage.getURL()
+				);
+			}
+		).put(
 			"publishURL",
 			() -> PortletURLBuilder.createActionURL(
 				_renderResponse
@@ -134,23 +177,46 @@ public class ViewConflictsDisplayContext {
 				"ctCollectionId", _ctCollection.getCtCollectionId()
 			).buildString()
 		).put(
-			"spritemap", _themeDisplay.getPathThemeImages() + "/clay/icons.svg"
+			"spritemap", _themeDisplay.getPathThemeSpritemap()
 		).put(
 			"timeZone",
 			() -> {
 				TimeZone timeZone = _themeDisplay.getTimeZone();
 
-				if (Objects.equals(timeZone.getID(), StringPool.UTC)) {
-					return "GMT";
-				}
-
-				Instant instant = Instant.now();
-
-				return "GMT" +
-					String.format("%tz", instant.atZone(timeZone.toZoneId()));
+				return timeZone.getID();
 			}
 		).put(
+			"unapprovedChangesAllowed",
+			_ctSettingsConfigurationHelper.isUnapprovedChangesAllowed(
+				_themeDisplay.getCompanyId())
+		).put(
 			"unresolvedConflicts", unresolvedConflictsJSONArray
+		).put(
+			"unscheduleURL",
+			() -> {
+				if (_ctCollection.getStatus() !=
+						WorkflowConstants.STATUS_SCHEDULED) {
+
+					return null;
+				}
+
+				return PortletURLBuilder.createActionURL(
+					_renderResponse
+				).setActionName(
+					"/change_tracking/unschedule_publication"
+				).setRedirect(
+					() -> {
+						String namespace = _portal.getPortletNamespace(
+							CTPortletKeys.PUBLICATIONS);
+
+						return HttpComponentsUtil.addParameter(
+							_portal.getCurrentURL(_renderRequest),
+							namespace + "schedule", true);
+					}
+				).setParameter(
+					"ctCollectionId", _ctCollection.getCtCollectionId()
+				).buildString();
+			}
 		).build();
 	}
 
@@ -168,6 +234,96 @@ public class ViewConflictsDisplayContext {
 		).setParameter(
 			"ctCollectionId", _ctCollection.getCtCollectionId()
 		).buildString();
+	}
+
+	private <T extends BaseModel<T>> void _checkModifiedJournalArticlesInTrash(
+		ConflictInfo conflictInfo, CTEntry ctEntry, JSONArray jsonArray) {
+
+		if (!Objects.equals(
+				_portal.getClassName(ctEntry.getModelClassNameId()),
+				JournalArticle.class.getName())) {
+
+			return;
+		}
+
+		CTDisplayRenderer<T> ctDisplayRenderer =
+			_ctDisplayRendererRegistry.getCTDisplayRenderer(
+				ctEntry.getModelClassNameId());
+
+		T model = _ctDisplayRendererRegistry.fetchCTModel(
+			ctEntry.getCtCollectionId(),
+			_ctDisplayRendererRegistry.getCTSQLMode(
+				ctEntry.getCtCollectionId(), ctEntry),
+			ctEntry.getModelClassNameId(), conflictInfo.getSourcePrimaryKey());
+
+		if (model == null) {
+			return;
+		}
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
+
+			model = ctDisplayRenderer.fetchLatestVersionedModel(model);
+
+			if (model == null) {
+				return;
+			}
+
+			Map<String, Object> modelAttributes = model.getModelAttributes();
+
+			int status = GetterUtil.getInteger(modelAttributes.get("status"));
+
+			if (status != WorkflowConstants.STATUS_IN_TRASH) {
+				return;
+			}
+
+			jsonArray.put(
+				JSONUtil.put(
+					"href",
+					PortletURLBuilder.createActionURL(
+						_renderResponse
+					).setActionName(
+						"/change_tracking/restore_trash_entries"
+					).setRedirect(
+						_portal.getCurrentURL(_renderRequest)
+					).setParameter(
+						"modelClassNameId", ctEntry.getModelClassNameId()
+					).setParameter(
+						"modelClassPK", modelAttributes.get("resourcePrimKey")
+					).buildString()
+				).put(
+					"label",
+					_language.get(
+						_httpServletRequest, "restore-from-recycle-bin")
+				).put(
+					"symbol", "restore"
+				));
+		}
+	}
+
+	private JSONObject _createEditActionJSONObject(
+		String confirmationMessage, long ctCollectionId, String editURL,
+		String label) {
+
+		JSONObject editActionJSONObject = JSONUtil.put(
+			"label", label
+		).put(
+			"symbol", "pencil"
+		);
+
+		if (_activeCtCollectionId != ctCollectionId) {
+			editActionJSONObject.put(
+				"confirmationMessage", confirmationMessage);
+
+			editURL = PublicationsPortletURLUtil.getHref(
+				_renderResponse.createActionURL(), ActionRequest.ACTION_NAME,
+				"/change_tracking/checkout_ct_collection", "redirect", editURL,
+				"ctCollectionId", String.valueOf(ctCollectionId));
+		}
+
+		editActionJSONObject.put("href", editURL);
+
+		return editActionJSONObject;
 	}
 
 	private <T extends BaseModel<T>> JSONObject _getConflictJSONObject(
@@ -212,6 +368,9 @@ public class ViewConflictsDisplayContext {
 			_ctCollection.getCtCollectionId(), modelClassNameId,
 			conflictInfo.getSourcePrimaryKey());
 
+		T model = _ctDisplayRendererRegistry.fetchCTModel(
+			modelClassNameId, conflictInfo.getTargetPrimaryKey());
+
 		if (ctEntry != null) {
 			dataURL.setParameter(
 				"ctEntryId", String.valueOf(ctEntry.getCtEntryId()));
@@ -227,25 +386,70 @@ public class ViewConflictsDisplayContext {
 					_themeDisplay.getLocale())
 			);
 
-			if (!conflictInfo.isResolved()) {
+			if (!conflictInfo.isResolved() &&
+				(_ctCollection.getStatus() !=
+					WorkflowConstants.STATUS_SCHEDULED)) {
+
 				JSONArray actionsJSONArray = JSONFactoryUtil.createJSONArray();
 
-				if (_ctCollection.getCtCollectionId() ==
-						_activeCtCollectionId) {
+				String conflictDescription =
+					conflictInfo.getConflictDescription(resourceBundle);
+
+				if (!conflictDescription.equals(
+						LanguageUtil.get(
+							resourceBundle,
+							"deletion-modification-conflict"))) {
 
 					String editURL = _ctDisplayRendererRegistry.getEditURL(
 						_httpServletRequest, ctEntry);
 
 					if (Validator.isNotNull(editURL)) {
 						actionsJSONArray.put(
-							JSONUtil.put(
-								"href", editURL
-							).put(
-								"label",
-								_language.get(_httpServletRequest, "edit-item")
-							).put(
-								"symbol", "pencil"
-							));
+							_createEditActionJSONObject(
+								_language.format(
+									_httpServletRequest,
+									"you-are-currently-working-on-" +
+										"production.-work-on-x",
+									new Object[] {_ctCollection.getName()},
+									false),
+								_ctCollection.getCtCollectionId(), editURL,
+								_language.format(
+									_httpServletRequest, "edit-in-x",
+									new Object[] {_ctCollection.getName()},
+									false)));
+					}
+				}
+
+				_checkModifiedJournalArticlesInTrash(
+					conflictInfo, ctEntry, actionsJSONArray);
+
+				if ((model != null) &&
+					!Objects.equals(
+						conflictInfo.getResolutionDescription(resourceBundle),
+						LanguageUtil.get(
+							resourceBundle,
+							"deletion-conflicts-with-modifications-in-" +
+								"another-publication"))) {
+
+					String editURL = _ctDisplayRendererRegistry.getEditURL(
+						CTConstants.CT_COLLECTION_ID_PRODUCTION,
+						CTSQLModeThreadLocal.CTSQLMode.DEFAULT,
+						_httpServletRequest, model, modelClassNameId);
+
+					if (Validator.isNotNull(editURL)) {
+						actionsJSONArray.put(
+							_createEditActionJSONObject(
+								_language.format(
+									_httpServletRequest,
+									"you-are-currently-working-on-x.-work-on-" +
+										"production",
+									new Object[] {_ctCollection.getName()},
+									false),
+								CTConstants.CT_COLLECTION_ID_PRODUCTION,
+								editURL,
+								_language.get(
+									_httpServletRequest,
+									"edit-in-production")));
 					}
 				}
 
@@ -273,6 +477,17 @@ public class ViewConflictsDisplayContext {
 					));
 
 				jsonObject.put("actions", actionsJSONArray);
+
+				if (_log.isInfoEnabled()) {
+					_log.info(
+						StringBundler.concat(
+							"Unresolved conflict with change tracking entry ",
+							"ID, ", ctEntry.getCtEntryId(),
+							", model class name ID ",
+							ctEntry.getModelClassNameId(),
+							", and model class PK ", ctEntry.getModelClassPK(),
+							": ", jsonObject));
+				}
 			}
 		}
 		else {
@@ -281,9 +496,6 @@ public class ViewConflictsDisplayContext {
 			dataURL.setParameter(
 				"modelClassPK",
 				String.valueOf(conflictInfo.getTargetPrimaryKey()));
-
-			T model = _ctDisplayRendererRegistry.fetchCTModel(
-				modelClassNameId, conflictInfo.getTargetPrimaryKey());
 
 			String title = null;
 
@@ -312,11 +524,17 @@ public class ViewConflictsDisplayContext {
 		return jsonObject;
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		ViewConflictsDisplayContext.class);
+
 	private final long _activeCtCollectionId;
 	private final Map<Long, List<ConflictInfo>> _conflictInfoMap;
 	private final CTCollection _ctCollection;
+	private final CTCollectionLocalService _ctCollectionLocalService;
 	private final CTDisplayRendererRegistry _ctDisplayRendererRegistry;
 	private final CTEntryLocalService _ctEntryLocalService;
+	private final CTSettingsConfigurationHelper _ctSettingsConfigurationHelper;
+	private final boolean _hasUnapprovedChanges;
 	private final HttpServletRequest _httpServletRequest;
 	private final Language _language;
 	private final Portal _portal;

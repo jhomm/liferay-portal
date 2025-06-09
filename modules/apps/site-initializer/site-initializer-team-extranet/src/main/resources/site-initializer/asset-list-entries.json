@@ -1,0 +1,166 @@
+[
+	{
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:ENTRY$]",
+		"title": "Blog Entries",
+		"unicodeProperties": {
+			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
+			"classNameIds": "com.liferay.journal.model.JournalArticle",
+			"classTypeIds": "classTypeIdsJournalArticleAssetRendererFactory",
+			"orderBy": [
+				{
+					"key": "orderByColumn1",
+					"value": "modifiedDate"
+				},
+				{
+					"key": "orderByColumn2",
+					"value": "title"
+				},
+				{
+					"key": "orderByType1",
+					"value": "ASC"
+				},
+				{
+					"key": "orderByType2",
+					"value": "ASC"
+				}
+			],
+			"query": [
+				{
+					"key": "queryAndOperator",
+					"value": "true"
+				},
+				{
+					"key": "queryContains",
+					"value": "true"
+				},
+				{
+					"key": "queryName",
+					"value": "assetTags"
+				}
+			]
+		}
+	},
+	{
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:ENTRY$]",
+		"title": "Featured Blog Entries",
+		"unicodeProperties": {
+			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
+			"classNameIds": "com.liferay.journal.model.JournalArticle",
+			"classTypeIds": "classTypeIdsJournalArticleAssetRendererFactory",
+			"orderBy": [
+				{
+					"key": "orderByColumn1",
+					"value": "title"
+				},
+				{
+					"key": "orderByColumn2",
+					"value": "title"
+				},
+				{
+					"key": "orderByType1",
+					"value": "ASC"
+				},
+				{
+					"key": "orderByType2",
+					"value": "ASC"
+				}
+			],
+			"query": [
+				{
+					"key": "queryAndOperator",
+					"value": "true"
+				},
+				{
+					"key": "queryContains",
+					"value": "true"
+				},
+				{
+					"key": "queryName",
+					"value": "assetTags"
+				}
+			]
+		}
+	},
+	{
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:MEMBER$]",
+		"title": "Team Members",
+		"unicodeProperties": {
+			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
+			"classNameIds": "com.liferay.journal.model.JournalArticle",
+			"classTypeIds": "classTypeIdsJournalArticleAssetRendererFactory",
+			"orderBy": [
+				{
+					"key": "orderByColumn1",
+					"value": "modifiedDate"
+				},
+				{
+					"key": "orderByColumn2",
+					"value": "title"
+				},
+				{
+					"key": "orderByType1",
+					"value": "ASC"
+				},
+				{
+					"key": "orderByType2",
+					"value": "ASC"
+				}
+			],
+			"query": [
+				{
+					"key": "queryAndOperator",
+					"value": "true"
+				},
+				{
+					"key": "queryContains",
+					"value": "true"
+				},
+				{
+					"key": "queryName",
+					"value": "assetTags"
+				}
+			]
+		}
+	},
+	{
+		"assetEntrySubtypeId": "[$DDM_STRUCTURE_ID:POSITION$]",
+		"title": "Job Positions",
+		"unicodeProperties": {
+			"anyClassType": "anyClassTypeJournalArticleAssetRendererFactory",
+			"classNameIds": "com.liferay.journal.model.JournalArticle",
+			"classTypeIds": "classTypeIdsJournalArticleAssetRendererFactory",
+			"orderBy": [
+				{
+					"key": "orderByColumn1",
+					"value": "modifiedDate"
+				},
+				{
+					"key": "orderByColumn2",
+					"value": "title"
+				},
+				{
+					"key": "orderByType1",
+					"value": "ASC"
+				},
+				{
+					"key": "orderByType2",
+					"value": "ASC"
+				}
+			],
+			"query": [
+				{
+					"key": "queryAndOperator",
+					"value": "true"
+				},
+				{
+					"key": "queryContains",
+					"value": "true"
+				},
+				{
+					"key": "queryName",
+					"value": "assetTags"
+				}
+			]
+		}
+	}
+]

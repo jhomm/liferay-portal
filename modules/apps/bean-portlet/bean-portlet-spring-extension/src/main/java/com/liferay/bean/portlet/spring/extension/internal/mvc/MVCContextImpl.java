@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal.mvc;
@@ -20,6 +11,20 @@ import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.mvc.MvcContext;
+import jakarta.mvc.locale.LocaleResolver;
+import jakarta.mvc.locale.LocaleResolverContext;
+import jakarta.mvc.security.Csrf;
+import jakarta.mvc.security.Encoders;
+
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.Cookie;
+
+import jakarta.ws.rs.core.Configuration;
+import jakarta.ws.rs.core.UriBuilder;
+
 import java.net.URI;
 
 import java.util.Collections;
@@ -28,20 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.mvc.MvcContext;
-import javax.mvc.locale.LocaleResolver;
-import javax.mvc.locale.LocaleResolverContext;
-import javax.mvc.security.Csrf;
-import javax.mvc.security.Encoders;
-
-import javax.portlet.PortletContext;
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.Cookie;
-
-import javax.ws.rs.core.Configuration;
-import javax.ws.rs.core.UriBuilder;
 
 /**
  * @author Neil Griffin
@@ -56,10 +47,9 @@ public class MVCContextImpl implements MvcContext {
 		_configuration = configuration;
 		_encoders = encoders;
 		_portletContext = portletContext;
-
 		_portletRequest = portletRequest;
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)_portletRequest.getAttribute(
+		ThemeDisplay themeDisplay = (ThemeDisplay)portletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
 		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
@@ -73,32 +63,32 @@ public class MVCContextImpl implements MvcContext {
 		_csrf = new CsrfImpl(
 			"p_auth", csrfLiferayPortletURL.getParameter("p_auth"));
 
-		Map<String, javax.ws.rs.core.Cookie> cookieMap = new HashMap<>();
+		Map<String, jakarta.ws.rs.core.Cookie> cookieMap = new HashMap<>();
 
-		Cookie[] cookies = _portletRequest.getCookies();
+		Cookie[] cookies = portletRequest.getCookies();
 
 		if (cookies != null) {
 			for (Cookie cookie : cookies) {
 				cookieMap.put(
 					cookie.getName(),
-					new javax.ws.rs.core.Cookie(
+					new jakarta.ws.rs.core.Cookie(
 						cookie.getName(), cookie.getValue()));
 			}
 		}
 
 		Map<String, String> headerMap = new HashMap<>();
 
-		Enumeration<String> enumeration = _portletRequest.getPropertyNames();
+		Enumeration<String> enumeration = portletRequest.getPropertyNames();
 
 		while (enumeration.hasMoreElements()) {
 			String header = enumeration.nextElement();
 
-			headerMap.put(header, _portletRequest.getProperty(header));
+			headerMap.put(header, portletRequest.getProperty(header));
 		}
 
 		LocaleResolverContext localeResolverContext =
 			new LocaleResolverContextImpl(
-				Collections.list(_portletRequest.getLocales()), _configuration,
+				Collections.list(portletRequest.getLocales()), _configuration,
 				cookieMap, headerMap, new UriInfoImpl());
 
 		Locale locale = null;

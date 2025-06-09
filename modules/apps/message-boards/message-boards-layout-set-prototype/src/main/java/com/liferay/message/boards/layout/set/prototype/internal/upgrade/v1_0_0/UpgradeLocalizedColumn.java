@@ -1,23 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.layout.set.prototype.internal.upgrade.v1_0_0;
 
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.upgrade.BaseLocalizedColumnUpgradeProcess;
 import com.liferay.portal.language.LanguageResources;
-import com.liferay.portal.upgrade.v7_1_x.util.LayoutSetPrototypeTable;
-import com.liferay.portal.util.PortalInstances;
 
 /**
  * @author Leon Chi
@@ -26,16 +16,16 @@ public class UpgradeLocalizedColumn extends BaseLocalizedColumnUpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		long[] companyIds = PortalInstances.getCompanyIdsBySQL();
+		long[] companyIds = PortalInstancePool.getCompanyIds();
 
 		upgradeLocalizedColumn(
 			LanguageResources.PORTAL_RESOURCE_BUNDLE_LOADER,
-			LayoutSetPrototypeTable.class, "name", _NAME,
+			"LayoutSetPrototype", "name", _NAME,
 			"layout-set-prototype-community-site-title", "Name", companyIds);
 
 		upgradeLocalizedColumn(
 			LanguageResources.PORTAL_RESOURCE_BUNDLE_LOADER,
-			LayoutSetPrototypeTable.class, "description", _DESCRIPTION,
+			"LayoutSetPrototype", "description", _DESCRIPTION,
 			"layout-set-prototype-community-site-description", "Description",
 			companyIds);
 	}

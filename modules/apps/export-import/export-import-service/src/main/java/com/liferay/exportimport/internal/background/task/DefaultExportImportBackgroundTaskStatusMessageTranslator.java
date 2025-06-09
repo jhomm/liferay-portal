@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.background.task;
@@ -46,7 +37,7 @@ public class DefaultExportImportBackgroundTaskStatusMessageTranslator
 			translatePortletMessage(backgroundTaskStatus, message);
 		}
 		else if (messageType.equals("stagedModel")) {
-			translateStagedModelMessage(backgroundTaskStatus, message);
+			_translateStagedModelMessage(backgroundTaskStatus, message);
 		}
 	}
 
@@ -68,22 +59,6 @@ public class DefaultExportImportBackgroundTaskStatusMessageTranslator
 			new HashMap<String, LongWrapper>());
 	}
 
-	protected long getTotal(Map<String, LongWrapper> modelCounters) {
-		if (modelCounters == null) {
-			return 0;
-		}
-
-		long total = 0;
-
-		for (Map.Entry<String, LongWrapper> entry : modelCounters.entrySet()) {
-			LongWrapper longWrapper = entry.getValue();
-
-			total += longWrapper.getValue();
-		}
-
-		return total;
-	}
-
 	protected synchronized void translateLayoutMessage(
 		BackgroundTaskStatus backgroundTaskStatus, Message message) {
 
@@ -91,7 +66,7 @@ public class DefaultExportImportBackgroundTaskStatusMessageTranslator
 			(Map<String, LongWrapper>)message.get("modelAdditionCounters");
 
 		backgroundTaskStatus.setAttribute(
-			"allModelAdditionCountersTotal", getTotal(modelAdditionCounters));
+			"allModelAdditionCountersTotal", _getTotal(modelAdditionCounters));
 
 		long allPortletAdditionCounter = 0;
 
@@ -150,7 +125,23 @@ public class DefaultExportImportBackgroundTaskStatusMessageTranslator
 		backgroundTaskStatus.setAttribute("uuid", StringPool.BLANK);
 	}
 
-	protected synchronized void translateStagedModelMessage(
+	private long _getTotal(Map<String, LongWrapper> modelCounters) {
+		if (modelCounters == null) {
+			return 0;
+		}
+
+		long total = 0;
+
+		for (Map.Entry<String, LongWrapper> entry : modelCounters.entrySet()) {
+			LongWrapper longWrapper = entry.getValue();
+
+			total += longWrapper.getValue();
+		}
+
+		return total;
+	}
+
+	private synchronized void _translateStagedModelMessage(
 		BackgroundTaskStatus backgroundTaskStatus, Message message) {
 
 		String portletId = (String)backgroundTaskStatus.getAttribute(

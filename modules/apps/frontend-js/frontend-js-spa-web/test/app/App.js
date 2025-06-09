@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {fireEvent} from '@testing-library/dom';
@@ -26,16 +17,16 @@ import {
 	getNodeOffset,
 	getUrlPathWithoutHash,
 } from '../../src/main/resources/META-INF/resources/util/utils';
-
 class StubScreen extends Screen {}
 StubScreen.prototype.activate = jest.fn();
 StubScreen.prototype.beforeDeactivate = jest.fn();
 StubScreen.prototype.deactivate = jest.fn();
+StubScreen.prototype.disposeInternal = jest.fn();
+StubScreen.prototype.evaluateScripts = jest.fn();
+StubScreen.prototype.evaluateStyles = jest.fn();
 StubScreen.prototype.flip = jest.fn();
 StubScreen.prototype.load = jest.fn(() => Promise.resolve());
-StubScreen.prototype.disposeInternal = jest.fn();
-StubScreen.prototype.evaluateStyles = jest.fn();
-StubScreen.prototype.evaluateScripts = jest.fn();
+StubScreen.prototype.preloadStyles = jest.fn();
 
 describe('App', function () {
 	beforeAll(() => {
@@ -70,7 +61,7 @@ describe('App', function () {
 	it('adds route', () => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
-		var route = this.app.findRoute('/path');
+		const route = this.app.findRoute('/path');
 		expect(this.app.hasRoutes()).toBe(true);
 		expect(route).toBeInstanceOf(Route);
 		expect(route.getPath()).toBe('/path');
@@ -79,7 +70,7 @@ describe('App', function () {
 
 	it('removes route', () => {
 		this.app = new App();
-		var route = new Route('/path', Screen);
+		const route = new Route('/path', Screen);
 		this.app.addRoutes(route);
 		expect(this.app.removeRoute(route)).toBe(true);
 	});
@@ -90,7 +81,7 @@ describe('App', function () {
 			handler: Screen,
 			path: '/path',
 		});
-		var route = this.app.findRoute('/path');
+		const route = this.app.findRoute('/path');
 		expect(this.app.hasRoutes()).toBe(true);
 		expect(route).toBeInstanceOf(Route);
 		expect(route.getPath()).toBe('/path');
@@ -106,12 +97,12 @@ describe('App', function () {
 			},
 			new Route('/pathOther', Screen),
 		]);
-		var route = this.app.findRoute('/path');
+		const route = this.app.findRoute('/path');
 		expect(this.app.hasRoutes()).toBe(true);
 		expect(route).toBeInstanceOf(Route);
 		expect(route.getPath()).toBe('/path');
 		expect(route.getHandler()).toBe(Screen);
-		var routeOther = this.app.findRoute('/pathOther');
+		const routeOther = this.app.findRoute('/pathOther');
 		expect(routeOther).toBeInstanceOf(Route);
 		expect(routeOther.getPath()).toBe('/pathOther');
 		expect(routeOther.getHandler()).toBe(Screen);
@@ -232,7 +223,7 @@ describe('App', function () {
 
 	it('creates screen instance to a route', () => {
 		this.app = new App();
-		var screen = this.app.createScreenInstance(
+		const screen = this.app.createScreenInstance(
 			'/path',
 			new Route('/path', Screen)
 		);
@@ -241,7 +232,7 @@ describe('App', function () {
 
 	it('creates screen instance to a route for Screen class child', () => {
 		this.app = new App();
-		var screen = this.app.createScreenInstance(
+		const screen = this.app.createScreenInstance(
 			'/path',
 			new Route('/path', HtmlScreen)
 		);
@@ -250,9 +241,9 @@ describe('App', function () {
 
 	it('creates screen instance to a route with function handler', () => {
 		this.app = new App();
-		var stub = jest.fn();
-		var route = new Route('/path', stub);
-		var screen = this.app.createScreenInstance('/path', route);
+		const stub = jest.fn();
+		const route = new Route('/path', stub);
+		const screen = this.app.createScreenInstance('/path', route);
 		expect(stub).toHaveBeenCalledTimes(1);
 		expect(stub).toHaveBeenCalledWith(route);
 		expect(stub).toHaveReturnedWith(undefined);
@@ -261,20 +252,20 @@ describe('App', function () {
 
 	it('gets same screen instance to a route', () => {
 		this.app = new App();
-		var route = new Route('/path', Screen);
-		var screen = this.app.createScreenInstance('/path', route);
+		const route = new Route('/path', Screen);
+		const screen = this.app.createScreenInstance('/path', route);
 		this.app.screens['/path'] = screen;
 		expect(this.app.createScreenInstance('/path', route)).toBe(screen);
 	});
 
 	it('uses same screen instance when simulating navigate refresh', () => {
 		this.app = new App();
-		var route = new Route('/path', HtmlScreen);
-		var screen = this.app.createScreenInstance('/path', route);
+		const route = new Route('/path', HtmlScreen);
+		const screen = this.app.createScreenInstance('/path', route);
 		this.app.screens['/path'] = screen;
 		this.app.activePath = '/path';
 		this.app.activeScreen = screen;
-		var screenRefresh = this.app.createScreenInstance('/path', route);
+		const screenRefresh = this.app.createScreenInstance('/path', route);
 		expect(screenRefresh).toBe(screen);
 	});
 
@@ -309,7 +300,7 @@ describe('App', function () {
 		this.app.addRoutes(new Route('/path2', NoCacheScreen));
 
 		this.app.navigate('/path1?foo=1').then(() => {
-			var screenFirstNavigate = this.app.screens['/path1?foo=1'];
+			const screenFirstNavigate = this.app.screens['/path1?foo=1'];
 			this.app.navigate('/path2').then(() => {
 				this.app.navigate('/path1?foo=2').then(() => {
 					expect(this.app.screens['/path1?foo=2']).not.toBe(
@@ -332,7 +323,7 @@ describe('App', function () {
 		this.app.addRoutes(new Route('/path1', NoCacheScreen));
 		this.app.addRoutes(new Route('/path2', NoCacheScreen));
 		this.app.navigate('/path1').then(() => {
-			var screenFirstNavigate = this.app.screens['/path1'];
+			const screenFirstNavigate = this.app.screens['/path1'];
 			this.app.navigate('/path2').then(() => {
 				this.app.navigate('/path1').then(() => {
 					expect(this.app.screens['/path1']).not.toBe(
@@ -355,7 +346,7 @@ describe('App', function () {
 		this.app.addRoutes(new Route('/path1', CacheScreen));
 		this.app.addRoutes(new Route('/path2', CacheScreen));
 		this.app.navigate('/path1').then(() => {
-			var screenFirstNavigate = this.app.screens['/path1'];
+			const screenFirstNavigate = this.app.screens['/path1'];
 			this.app.navigate('/path2').then(() => {
 				this.app.navigate('/path1').then(() => {
 					expect(this.app.screens['/path1']).toBe(
@@ -379,11 +370,11 @@ describe('App', function () {
 
 	it('clears all screen caches on app dispose', () => {
 		this.app = new App();
-		var screen1 = this.app.createScreenInstance(
+		const screen1 = this.app.createScreenInstance(
 			'/path1',
 			new Route('/path1', HtmlScreen)
 		);
-		var screen2 = this.app.createScreenInstance(
+		const screen2 = this.app.createScreenInstance(
 			'/path2',
 			new Route('/path2', HtmlScreen)
 		);
@@ -397,7 +388,7 @@ describe('App', function () {
 
 	it('clears screen cache and remove surfaces', () => {
 		this.app = new App();
-		var surface = new Surface('surfaceId');
+		const surface = new Surface('surfaceId');
 		surface.remove = jest.fn();
 		this.app.addSurfaces(surface);
 		this.app.screens['/path'] = this.app.createScreenInstance(
@@ -431,8 +422,10 @@ describe('App', function () {
 			}
 
 			flip(surfaces) {
-				super.flip(surfaces);
+				const promises = super.flip(surfaces);
 				event.emit('flip');
+
+				return promises;
 			}
 		}
 
@@ -447,7 +440,7 @@ describe('App', function () {
 			done();
 		};
 
-		var route = new Route('/path1', StubScreen);
+		const route = new Route('/path1', StubScreen);
 
 		this.app = new App();
 		this.app.addSurfaces(new Surface('surfaceId'));
@@ -666,8 +659,8 @@ describe('App', function () {
 	});
 
 	it('emits startNavigate and endNavigate custom event', (done) => {
-		var startNavigateStub = jest.fn();
-		var endNavigateStub = jest.fn();
+		const startNavigateStub = jest.fn();
+		const endNavigateStub = jest.fn();
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
 		this.app.on('startNavigate', startNavigateStub);
@@ -687,8 +680,8 @@ describe('App', function () {
 	});
 
 	it('emits startNavigate and endNavigate custom event with replace history', (done) => {
-		var startNavigateStub = jest.fn();
-		var endNavigateStub = jest.fn();
+		const startNavigateStub = jest.fn();
+		const endNavigateStub = jest.fn();
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
 		this.app.on('startNavigate', startNavigateStub);
@@ -720,7 +713,7 @@ describe('App', function () {
 	});
 
 	it.skip('cancels navigate', (done) => {
-		var stub = jest.fn();
+		const stub = jest.fn();
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
 		this.app.on('endNavigate', (payload) => {
@@ -757,8 +750,8 @@ describe('App', function () {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', CacheScreen));
 		this.app.navigate('/path').then(() => {
-			var pendingNavigate1 = this.app.navigate('/path');
-			var pendingNavigate2 = this.app.navigate('/path');
+			const pendingNavigate1 = this.app.navigate('/path');
+			const pendingNavigate2 = this.app.navigate('/path');
 			expect(pendingNavigate1).toBeTruthy();
 			expect(pendingNavigate2).toBeTruthy();
 			expect(pendingNavigate1).toBe(pendingNavigate2);
@@ -774,7 +767,7 @@ describe('App', function () {
 			.navigate('/path1')
 			.then(() => this.app.navigate('/path2'))
 			.then(() => {
-				var activeScreen = this.app.activeScreen;
+				const activeScreen = this.app.activeScreen;
 				expect(window.location.pathname).toBe('/path2');
 				this.app.once('endNavigate', () => {
 					expect(window.location.pathname).toBe('/path1');
@@ -793,7 +786,7 @@ describe('App', function () {
 			.navigate('/path1')
 			.then(() => this.app.navigate('/path1#hash'))
 			.then(() => {
-				var startNavigate = jest.fn();
+				const startNavigate = jest.fn();
 				this.app.on('startNavigate', startNavigate);
 				window.addEventListener(
 					'popstate',
@@ -818,8 +811,8 @@ describe('App', function () {
 		this.app.addRoutes(new Route('/path', CacheScreen));
 		this.app.navigate('/path').then(() => {
 			this.app.navigate('/path');
-			var beforeNavigate = jest.fn();
-			var startNavigate = jest.fn();
+			const beforeNavigate = jest.fn();
+			const startNavigate = jest.fn();
 			this.app.on('beforeNavigate', beforeNavigate);
 			this.app.on('startNavigate', startNavigate);
 			this.app.navigate('/path');
@@ -843,8 +836,8 @@ describe('App', function () {
 			.navigate('/path1')
 			.then(() => this.app.navigate('/path2'))
 			.then(() => {
-				var pendingNavigate1 = this.app.navigate('/path1');
-				var pendingNavigate2 = this.app.navigate('/path2');
+				const pendingNavigate1 = this.app.navigate('/path1');
+				const pendingNavigate2 = this.app.navigate('/path2');
 				expect(pendingNavigate1).toBeTruthy();
 				expect(pendingNavigate2).toBeTruthy();
 				expect(pendingNavigate1).not.toBe(pendingNavigate2);
@@ -869,7 +862,7 @@ describe('App', function () {
 	});
 
 	it('adds loading css class on navigate', (done) => {
-		var containsLoadingCssClass = () => {
+		const containsLoadingCssClass = () => {
 			return document.documentElement.classList.contains(
 				this.app.getLoadingCssClass()
 			);
@@ -889,7 +882,7 @@ describe('App', function () {
 	});
 
 	it.skip('does not remove loading css class on navigate if there is pending navigate', (done) => {
-		var containsLoadingCssClass = () => {
+		const containsLoadingCssClass = () => {
 			return document.documentElement.classList.contains(
 				this.app.getLoadingCssClass()
 			);
@@ -1138,7 +1131,7 @@ describe('App', function () {
 			.cancel();
 	});
 
-	it('navigates when clicking on routed links', () => {
+	it('navigates when clicking on routed links', async () => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
 
@@ -1152,23 +1145,27 @@ describe('App', function () {
 			'syncScrollPositionSyncThenAsync_'
 		).mockImplementation(() => {});
 
-		userEvent.click(enterDocumentLinkElement('/path'));
-		expect(this.app.pendingNavigate).toBeTruthy();
+		const link = enterDocumentLinkElement('/path');
+
+		await userEvent.click(link);
+
+		expect(this.app.navigationStrategy).toBe('immediate');
+
 		exitDocumentLinkElement();
 	});
 
-	it('does not navigate when clicking on target blank links', () => {
+	it('does not navigate when clicking on target blank links', async () => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
 		const link = enterDocumentLinkElement('/path');
 		link.setAttribute('target', '_blank');
 		link.addEventListener('click', (event) => event.preventDefault());
-		userEvent.click(link);
+		await userEvent.click(link);
 		exitDocumentLinkElement();
 		expect(this.app.pendingNavigate).toBeNull();
 	});
 
-	it('passes original event object to "beforeNavigate" when a link is clicked', () => {
+	it('passes original event object to "beforeNavigate" when a link is clicked', async () => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
 
@@ -1186,77 +1183,77 @@ describe('App', function () {
 			expect(data.event).toBeTruthy();
 			expect(data.event.type).toBe('click');
 		});
-		userEvent.click(enterDocumentLinkElement('/path'));
+		await userEvent.click(enterDocumentLinkElement('/path'));
 		exitDocumentLinkElement();
 
 		expect(window.location.pathname).not.toBe('/path');
 	});
 
-	it('prevents navigation on both senna and the browser via beforeNavigate', () => {
+	it('prevents navigation on both senna and the browser via beforeNavigate', async () => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/preventedPath', Screen));
 		this.app.on('beforeNavigate', (data, event) => {
 			data.event.preventDefault();
 			event.preventDefault();
 		});
-		userEvent.click(enterDocumentLinkElement('/preventedPath'));
+		await userEvent.click(enterDocumentLinkElement('/preventedPath'));
 		exitDocumentLinkElement();
 
 		expect(window.location.pathname).not.toBe('/preventedPath');
 	});
 
-	it('does not navigate when clicking on external links', () => {
-		var link = enterDocumentLinkElement('http://sennajs.com');
+	it('does not navigate when clicking on external links', async () => {
+		const link = enterDocumentLinkElement('http://sennajs.com');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		link.addEventListener('click', preventDefault);
-		userEvent.click(link);
+		await userEvent.click(link);
 		expect(this.app.pendingNavigate).toBeFalsy();
 		exitDocumentLinkElement();
 	});
 
-	it('does not navigate when clicking on links outside basepath', () => {
-		var link = enterDocumentLinkElement('/path');
+	it('does not navigate when clicking on links outside basepath', async () => {
+		const link = enterDocumentLinkElement('/path');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		this.app.setBasePath('/base');
 		link.addEventListener('click', preventDefault);
-		userEvent.click(link);
+		await userEvent.click(link);
 		expect(this.app.pendingNavigate).toBeFalsy();
 		exitDocumentLinkElement();
 	});
 
-	it('does not navigate when clicking on unrouted links', () => {
-		var link = enterDocumentLinkElement('/path');
+	it('does not navigate when clicking on unrouted links', async () => {
+		const link = enterDocumentLinkElement('/path');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		link.addEventListener('click', preventDefault);
-		userEvent.click(link);
+		await userEvent.click(link);
 		expect(this.app.pendingNavigate).toBeFalsy();
 		exitDocumentLinkElement();
 	});
 
-	it('does not navigate when clicking on links with invalid mouse button or modifier keys pressed', () => {
-		var link = enterDocumentLinkElement('/path');
+	it('does not navigate when clicking on links with invalid mouse button or modifier keys pressed', async () => {
+		const link = enterDocumentLinkElement('/path');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		this.app.addRoutes(new Route('/path', Screen));
 
 		link.addEventListener('click', preventDefault);
 
-		userEvent.click(link, {altKey: false});
-		userEvent.click(link, {ctrlKey: false});
-		userEvent.click(link, {metaKey: false});
-		userEvent.click(link, {shiftKey: false});
-		userEvent.click(link, {button: 1});
-		userEvent.click(link, {button: 2});
+		await userEvent.click(link, {altKey: false});
+		await userEvent.click(link, {ctrlKey: false});
+		await userEvent.click(link, {metaKey: false});
+		await userEvent.click(link, {shiftKey: false});
+		await userEvent.click(link, {button: 1});
+		await userEvent.click(link, {button: 2});
 
 		expect(this.app.pendingNavigate).toBeFalsy();
 		exitDocumentLinkElement();
 	});
 
-	it('does not navigate when navigate fails synchronously', () => {
-		var link = enterDocumentLinkElement('/path');
+	it('does not navigate when navigate fails synchronously', async () => {
+		const link = enterDocumentLinkElement('/path');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		this.app.addRoutes(new Route('/path', Screen));
@@ -1264,7 +1261,7 @@ describe('App', function () {
 			throw new Error();
 		};
 		link.addEventListener('click', preventDefault);
-		userEvent.click(link);
+		await userEvent.click(link);
 		expect(this.app.pendingNavigate).toBeFalsy();
 		exitDocumentLinkElement();
 	});
@@ -1374,7 +1371,7 @@ describe('App', function () {
 		fireEvent(window, new PopStateEvent('popstate'));
 	});
 
-	it('does not navigate on clicking links when onbeforeunload returns truthy value', () => {
+	it('does not navigate on clicking links when onbeforeunload returns truthy value', async () => {
 		const beforeunload = jest.fn();
 		window.onbeforeunload = beforeunload;
 		this.app = new App();
@@ -1391,7 +1388,7 @@ describe('App', function () {
 
 		this.app.addRoutes(new Route('/path', Screen));
 		const link = enterDocumentLinkElement('/path');
-		userEvent.click(link);
+		await await userEvent.click(link);
 		exitDocumentLinkElement();
 		expect(beforeunload).toHaveBeenCalled();
 	});
@@ -1416,7 +1413,7 @@ describe('App', function () {
 	});
 
 	it.skip('respositions scroll to hashed anchors on hash popstate', (done) => {
-		var link = enterDocumentLinkElement('/path');
+		const link = enterDocumentLinkElement('/path');
 		link.style.position = 'absolute';
 		link.style.top = '1000px';
 		link.style.left = '1000px';
@@ -1476,7 +1473,7 @@ describe('App', function () {
 	it('does not navigate when submitting routed forms if submit event was prevented', (done) => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
-		var form = enterDocumentFormElement('/path', 'post');
+		const form = enterDocumentFormElement('/path', 'post');
 
 		form.addEventListener(
 			'submit',
@@ -1494,7 +1491,7 @@ describe('App', function () {
 	it('does not capture form element when submit event was prevented', (done) => {
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', Screen));
-		var form = enterDocumentFormElement('/path', 'post');
+		const form = enterDocumentFormElement('/path', 'post');
 
 		form.addEventListener(
 			'submit',
@@ -1526,7 +1523,7 @@ describe('App', function () {
 	});
 
 	it('does not navigate when submitting forms with method get', () => {
-		var form = enterDocumentFormElement('/path', 'get');
+		const form = enterDocumentFormElement('/path', 'get');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		this.app.addRoutes(new Route('/path', Screen));
@@ -1537,7 +1534,7 @@ describe('App', function () {
 	});
 
 	it('does not navigate when submitting on external forms', () => {
-		var form = enterDocumentFormElement('http://sennajs.com', 'post');
+		const form = enterDocumentFormElement('http://sennajs.com', 'post');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		form.addEventListener('submit', preventDefault);
@@ -1547,7 +1544,7 @@ describe('App', function () {
 	});
 
 	it('does not navigate when submitting on forms outside basepath', () => {
-		var form = enterDocumentFormElement('/path', 'post');
+		const form = enterDocumentFormElement('/path', 'post');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		this.app.setBasePath('/base');
@@ -1558,7 +1555,7 @@ describe('App', function () {
 	});
 
 	it('does not navigate when submitting on unrouted forms', () => {
-		var form = enterDocumentFormElement('/path', 'post');
+		const form = enterDocumentFormElement('/path', 'post');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		form.addEventListener('submit', preventDefault);
@@ -1568,7 +1565,7 @@ describe('App', function () {
 	});
 
 	it('does not capture form if navigate fails when submitting forms', () => {
-		var form = enterDocumentFormElement('/path', 'post');
+		const form = enterDocumentFormElement('/path', 'post');
 		this.app = new App();
 		this.app.setAllowPreventNavigate(false);
 		form.addEventListener('submit', preventDefault);
@@ -1732,12 +1729,13 @@ describe('App', function () {
 		StubScreen2.prototype.activate = jest.fn();
 		StubScreen2.prototype.beforeDeactivate = jest.fn();
 		StubScreen2.prototype.deactivate = jest.fn();
+		StubScreen2.prototype.evaluateScripts = jest.fn();
+		StubScreen2.prototype.evaluateStyles = jest.fn();
 		StubScreen2.prototype.flip = jest.fn();
 		StubScreen2.prototype.load = jest
 			.fn()
 			.mockImplementation(() => Promise.resolve());
-		StubScreen2.prototype.evaluateStyles = jest.fn();
-		StubScreen2.prototype.evaluateScripts = jest.fn();
+
 		this.app = new App();
 
 		jest.spyOn(this.app, 'updateHistory_').mockImplementation(() => {});
@@ -1755,8 +1753,67 @@ describe('App', function () {
 
 		return this.app.navigate('/path1').then(() => {
 			this.app.navigate('/path2').then(() => {
-				var lifecycleOrder = [
+				const lifecycleOrder = [
 					StubScreen.prototype.load,
+					StubScreen.prototype.flip,
+					StubScreen.prototype.evaluateStyles,
+					StubScreen.prototype.evaluateScripts,
+					StubScreen.prototype.activate,
+					StubScreen.prototype.beforeDeactivate,
+					StubScreen2.prototype.load,
+					StubScreen.prototype.deactivate,
+					StubScreen2.prototype.flip,
+					StubScreen2.prototype.evaluateStyles,
+					StubScreen2.prototype.evaluateScripts,
+					StubScreen2.prototype.activate,
+					StubScreen.prototype.disposeInternal,
+				];
+				for (let i = 1; i < lifecycleOrder.length - 1; i++) {
+					expect(
+						lifecycleOrder[i - 1].mock.invocationCallOrder[0]
+					).toBeLessThan(
+						lifecycleOrder[i].mock.invocationCallOrder[0]
+					);
+				}
+
+				done();
+			});
+		});
+	});
+
+	it('respects screen lifecycle on navigate, preload styles', (done) => {
+		class StubScreen2 extends Screen {}
+		StubScreen2.prototype.activate = jest.fn();
+		StubScreen2.prototype.beforeDeactivate = jest.fn();
+		StubScreen2.prototype.deactivate = jest.fn();
+		StubScreen2.prototype.evaluateScripts = jest.fn();
+		StubScreen2.prototype.evaluateStyles = jest.fn();
+		StubScreen2.prototype.flip = jest.fn();
+		StubScreen2.prototype.load = jest
+			.fn()
+			.mockImplementation(() => Promise.resolve());
+		StubScreen2.prototype.preloadStyles = jest.fn();
+
+		this.app = new App({preloadCSS: true});
+
+		jest.spyOn(this.app, 'updateHistory_').mockImplementation(() => {});
+		jest.spyOn(
+			this.app,
+			'maybeUpdateScrollPositionState_'
+		).mockImplementation(() => {});
+		jest.spyOn(
+			this.app,
+			'syncScrollPositionSyncThenAsync_'
+		).mockImplementation(() => {});
+
+		this.app.addRoutes(new Route('/path1', StubScreen));
+		this.app.addRoutes(new Route('/path2', StubScreen2));
+
+		this.app.navigate('/path1').then(() => {
+			this.app.navigate('/path2').then(() => {
+				const lifecycleOrder = [
+					StubScreen.prototype.load,
+					StubScreen.prototype.preloadStyles,
 					StubScreen.prototype.evaluateStyles,
 					StubScreen.prototype.flip,
 					StubScreen.prototype.evaluateScripts,
@@ -1764,13 +1821,14 @@ describe('App', function () {
 					StubScreen.prototype.beforeDeactivate,
 					StubScreen2.prototype.load,
 					StubScreen.prototype.deactivate,
+					StubScreen2.prototype.preloadStyles,
 					StubScreen2.prototype.evaluateStyles,
 					StubScreen2.prototype.flip,
 					StubScreen2.prototype.evaluateScripts,
 					StubScreen2.prototype.activate,
 					StubScreen.prototype.disposeInternal,
 				];
-				for (var i = 1; i < lifecycleOrder.length - 1; i++) {
+				for (let i = 1; i < lifecycleOrder.length - 1; i++) {
 					expect(
 						lifecycleOrder[i - 1].mock.invocationCallOrder[0]
 					).toBeLessThan(
@@ -1792,7 +1850,7 @@ describe('App', function () {
 				return 'screenId';
 			}
 		}
-		var surface = new Surface('surfaceId');
+		const surface = new Surface('surfaceId');
 		surface.addContent = jest.fn();
 		this.app = new App();
 		this.app.addRoutes(new Route('/path', ContentScreen));
@@ -1807,7 +1865,7 @@ describe('App', function () {
 	});
 
 	it('passes extracted params to "getSurfaceContent"', (done) => {
-		var screen;
+		let screen;
 		class ContentScreen extends Screen {
 			constructor() {
 				super();
@@ -1820,7 +1878,7 @@ describe('App', function () {
 		}
 		ContentScreen.prototype.getSurfaceContent = jest.fn();
 
-		var surface = new Surface('surfaceId');
+		const surface = new Surface('surfaceId');
 		this.app = new App();
 		this.app.addRoutes(new Route('/path/:foo(\\d+)/:bar', ContentScreen));
 		this.app.addSurfaces(surface);
@@ -1834,7 +1892,7 @@ describe('App', function () {
 	});
 
 	it('passes extracted params to "getSurfaceContent" with base path', (done) => {
-		var screen;
+		let screen;
 		class ContentScreen extends Screen {
 			constructor() {
 				super();
@@ -1847,7 +1905,7 @@ describe('App', function () {
 		}
 		ContentScreen.prototype.getSurfaceContent = jest.fn();
 
-		var surface = new Surface('surfaceId');
+		const surface = new Surface('surfaceId');
 		this.app = new App();
 		this.app.setBasePath('/path');
 		this.app.addRoutes(new Route('/:foo(\\d+)/:bar', ContentScreen));
@@ -1864,8 +1922,8 @@ describe('App', function () {
 	it('extracts params for the given route and path', () => {
 		this.app = new App();
 		this.app.setBasePath('/path');
-		var route = new Route('/:foo(\\d+)/:bar', () => {});
-		var params = this.app.extractParams(route, '/path/123/abc');
+		const route = new Route('/:foo(\\d+)/:bar', () => {});
+		const params = this.app.extractParams(route, '/path/123/abc');
 
 		expect(params).toEqual({
 			bar: 'abc',
@@ -1904,8 +1962,8 @@ describe('App', function () {
 				'<div id="surfaceId2"><div id="surfaceId2-default">default2</div></div>'
 			)
 		);
-		var surface1 = new Surface('surfaceId1');
-		var surface2 = new Surface('surfaceId2');
+		const surface1 = new Surface('surfaceId1');
+		const surface2 = new Surface('surfaceId2');
 		surface1.addContent = jest.fn();
 		surface2.addContent = jest.fn();
 		this.app = new App();
@@ -1944,7 +2002,7 @@ describe('App', function () {
 	});
 
 	it('adds surface content after history path is updated', (done) => {
-		var surface = new Surface('surfaceId');
+		const surface = new Surface('surfaceId');
 		surface.addContent = () => {
 			expect(window.location.pathname).toBe('/path');
 		};
@@ -1956,7 +2014,7 @@ describe('App', function () {
 		});
 	});
 
-	it.skip('navigates cancelling navigation to multiple paths after navigation is scheduled to keep only the last one', (done) => {
+	it('navigates cancelling navigation to multiple paths after navigation is scheduled to keep only the last one', (done) => {
 		const app = (this.app = new App());
 
 		class TestScreen extends Screen {
@@ -1968,7 +2026,7 @@ describe('App', function () {
 			}
 
 			evaluateScripts(surfaces) {
-				expect(app.scheduledNavigationEvent).toBeTruthy();
+				expect(app.isNavigationPending).toBeTruthy();
 
 				return super.evaluateScripts(surfaces);
 			}
@@ -1983,62 +2041,72 @@ describe('App', function () {
 			}
 
 			evaluateScripts(surfaces) {
-				expect(app.scheduledNavigationEvent).toBeTruthy();
+				expect(app.isNavigationPending).toBeTruthy();
 
 				return super.evaluateScripts(surfaces);
 			}
 		}
 
+		const startNavigateStub = jest.fn();
+		const endNavigateStub = jest.fn();
+		this.app.stopPendingNavigate_ = jest.fn();
+
+		this.app.on('startNavigate', startNavigateStub);
+		this.app.on('endNavigate', endNavigateStub);
+
 		this.app.addRoutes(new Route('/path1', TestScreen));
 		this.app.addRoutes(new Route('/path2', TestScreen2));
 		this.app.addRoutes(new Route('/path3', TestScreen2));
 
 		this.app.navigate('/path1');
+		this.app.navigate('/path2');
 
-		this.app.on('endNavigate', (event) => {
-			if (event.path === '/path3') {
-				expect(this.app.scheduledNavigationEvent).toBeFalsy();
-				expect(window.location.pathname).toBe('/path3');
-				done();
-			}
+		this.app.navigate('/path1').then(() => {
+			expect(startNavigateStub).toHaveBeenCalledTimes(3);
+			expect(endNavigateStub).toHaveBeenCalledTimes(3);
+			expect(this.app.stopPendingNavigate_).toHaveBeenCalledTimes(3);
+
+			expect(this.app.isNavigationPending).toBeFalsy();
+
+			done();
 		});
 	});
 
-	it.skip('navigates cancelling navigation to multiple paths when navigation strategy is setted up to be immediate', (done) => {
+	it('navigates cancelling previous navigation when navigation is to the same path', (done) => {
 		this.app = new App();
 
 		class TestScreen extends Screen {
 			load(path) {
-				userEvent.click(enterDocumentLinkElement('/path2'));
+				userEvent.click(enterDocumentLinkElement('/path1'));
 				exitDocumentLinkElement();
 
 				return super.load(path);
 			}
 		}
 
-		class TestScreen2 extends Screen {
-			load(path) {
-				userEvent.click(enterDocumentLinkElement('/path3'));
-				exitDocumentLinkElement();
+		const startNavigateStub = jest.fn();
+		const endNavigateStub = jest.fn();
+		this.app.stopPendingNavigate_ = jest.fn();
 
-				return super.load(path);
-			}
-		}
+		this.app.on('startNavigate', startNavigateStub);
+		this.app.on('endNavigate', endNavigateStub);
 
 		this.app.addRoutes(new Route('/path1', TestScreen));
-		this.app.addRoutes(new Route('/path2', TestScreen2));
-		this.app.addRoutes(new Route('/path3', TestScreen2));
 
 		this.app.navigate('/path1');
+		this.app.navigate('/path1');
+		this.app.navigate('/path1');
+		this.app.navigate('/path1');
 
-		expect(this.app.scheduledNavigationEvent).toBeFalsy();
+		this.app.navigate('/path1').then(() => {
+			expect(startNavigateStub).toHaveBeenCalledTimes(1);
+			expect(endNavigateStub).toHaveBeenCalledTimes(1);
 
-		this.app.on('endNavigate', (event) => {
-			if (event.path === '/path3') {
-				expect(this.app.scheduledNavigationEvent).toBeFalsy();
-				expect(window.location.pathname).toBe('/path3');
-				done();
-			}
+			expect(this.app.stopPendingNavigate_).toHaveBeenCalledTimes(1);
+
+			expect(this.app.isNavigationPending).toBeFalsy();
+
+			done();
 		});
 	});
 
@@ -2103,7 +2171,7 @@ describe('App', function () {
 			}
 		}
 
-		var app = new App();
+		const app = new App();
 		this.app = app;
 		app.addRoutes(new Route('/path1', CacheScreen));
 		app.addRoutes(new Route('/path2', CacheScreen));
@@ -2113,7 +2181,7 @@ describe('App', function () {
 			.then(() => app.navigate('/path2'))
 			.then(() => app.navigate('/path3'))
 			.then(() => {
-				var pendingNavigate;
+				let pendingNavigate;
 				app.on('startNavigate', () => {
 					pendingNavigate = app.pendingNavigate;
 					expect(app.screens['/path2']).toBeTruthy();

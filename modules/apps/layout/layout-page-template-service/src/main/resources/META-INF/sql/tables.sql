@@ -2,6 +2,7 @@ create table LayoutPageTemplateCollection (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	layoutPageTemplateCollectionId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -9,9 +10,11 @@ create table LayoutPageTemplateCollection (
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
+	parentLPTCollectionId LONG,
 	lptCollectionKey VARCHAR(75) null,
 	name VARCHAR(75) null,
 	description STRING null,
+	type_ INTEGER,
 	lastPublishDate DATE null,
 	primary key (layoutPageTemplateCollectionId, ctCollectionId)
 );
@@ -20,6 +23,7 @@ create table LayoutPageTemplateEntry (
 	mvccVersion LONG default 0 not null,
 	ctCollectionId LONG default 0 not null,
 	uuid_ VARCHAR(75) null,
+	externalReferenceCode VARCHAR(75) null,
 	layoutPageTemplateEntryId LONG not null,
 	groupId LONG,
 	companyId LONG,
@@ -56,8 +60,7 @@ create table LayoutPageTemplateStructure (
 	userName VARCHAR(75) null,
 	createDate DATE null,
 	modifiedDate DATE null,
-	classNameId LONG,
-	classPK LONG,
+	plid LONG,
 	primary key (layoutPageTemplateStructureId, ctCollectionId)
 );
 
@@ -75,5 +78,10 @@ create table LayoutPageTemplateStructureRel (
 	layoutPageTemplateStructureId LONG,
 	segmentsExperienceId LONG,
 	data_ TEXT null,
+	lastPublishDate DATE null,
+	status INTEGER,
+	statusByUserId LONG,
+	statusByUserName VARCHAR(75) null,
+	statusDate DATE null,
 	primary key (lPageTemplateStructureRelId, ctCollectionId)
 );

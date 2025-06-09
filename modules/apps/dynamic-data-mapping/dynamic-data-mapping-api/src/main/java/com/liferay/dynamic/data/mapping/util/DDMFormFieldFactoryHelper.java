@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.util;
@@ -38,8 +29,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author Marcellus Tavares
@@ -73,12 +62,7 @@ public class DDMFormFieldFactoryHelper {
 
 			if (value instanceof String[]) {
 				ddmFormField.setProperty(
-					entry.getKey(),
-					Stream.of(
-						(String[])value
-					).map(
-						this::getValue
-					).toArray());
+					entry.getKey(), _getValues((String[])value));
 			}
 			else {
 				ddmFormField.setProperty(entry.getKey(), getValue(value));
@@ -290,12 +274,16 @@ public class DDMFormFieldFactoryHelper {
 	}
 
 	protected Map<String, String[]> getDDMFormFieldProperties() {
-		return Stream.of(
-			_ddmFormField.ddmFormFieldProperties()
-		).collect(
-			Collectors.toMap(
-				DDMFormFieldProperty::name, DDMFormFieldProperty::value)
-		);
+		Map<String, String[]> ddmFormFieldProperties = new HashMap<>();
+
+		for (DDMFormFieldProperty ddmFormFieldProperty :
+				_ddmFormField.ddmFormFieldProperties()) {
+
+			ddmFormFieldProperties.put(
+				ddmFormFieldProperty.name(), ddmFormFieldProperty.value());
+		}
+
+		return ddmFormFieldProperties;
 	}
 
 	protected LocalizedValue getDDMFormFieldTip() {
@@ -336,6 +324,12 @@ public class DDMFormFieldFactoryHelper {
 			ddmFormFieldValidation.setDDMFormFieldValidationExpression(
 				new DDMFormFieldValidationExpression() {
 					{
+						if (Validator.isNotNull(
+								_ddmFormField.validationExpressionName())) {
+
+							setName(_ddmFormField.validationExpressionName());
+						}
+
 						setValue(_ddmFormField.validationExpression());
 					}
 				});
@@ -354,6 +348,11 @@ public class DDMFormFieldFactoryHelper {
 
 			ddmFormFieldValidation.setErrorMessageLocalizedValue(
 				createLocalizedValue(validationErrorMessage));
+		}
+
+		if (Validator.isNotNull(_ddmFormField.validationParameter())) {
+			ddmFormFieldValidation.setParameterLocalizedValue(
+				createLocalizedValue(_ddmFormField.validationParameter()));
 		}
 
 		return ddmFormFieldValidation;
@@ -443,21 +442,13 @@ public class DDMFormFieldFactoryHelper {
 	protected boolean isDDMFormFieldLocalizable() {
 		Class<?> returnType = _method.getReturnType();
 
-		if (returnType.isAssignableFrom(LocalizedValue.class)) {
-			return true;
-		}
-
-		return false;
+		return returnType.isAssignableFrom(LocalizedValue.class);
 	}
 
 	protected boolean isDDMFormFieldRepeatable() {
 		Class<?> returnType = _method.getReturnType();
 
-		if (returnType.isArray()) {
-			return true;
-		}
-
-		return false;
+		return returnType.isArray();
 	}
 
 	protected boolean isDDMFormFieldRequired() {
@@ -494,6 +485,16 @@ public class DDMFormFieldFactoryHelper {
 		}
 
 		return returnType;
+	}
+
+	private Object[] _getValues(String[] values) {
+		Object[] objects = new Object[values.length];
+
+		for (int i = 0; i < values.length; i++) {
+			objects[i] = getValue(values[i]);
+		}
+
+		return objects;
 	}
 
 	private Set<Locale> _availableLocales;

@@ -1,21 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.suggest;
 
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.suggest.AggregateSuggester;
 import com.liferay.portal.kernel.search.suggest.CompletionSuggester;
 import com.liferay.portal.kernel.search.suggest.PhraseSuggester;
 import com.liferay.portal.kernel.search.suggest.Suggester;
@@ -32,7 +22,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Michael C. Han
  */
 @Component(
-	immediate = true, property = "search.engine.impl=Elasticsearch",
+	property = "search.engine.impl=Elasticsearch",
 	service = SuggesterTranslator.class
 )
 public class ElasticsearchSuggesterTranslator
@@ -44,11 +34,6 @@ public class ElasticsearchSuggesterTranslator
 		Suggester suggester, SearchContext searchContext) {
 
 		return suggester.accept(this);
-	}
-
-	@Override
-	public SuggestionBuilder visit(AggregateSuggester aggregateSuggester) {
-		return null;
 	}
 
 	@Override
@@ -66,29 +51,13 @@ public class ElasticsearchSuggesterTranslator
 		return _termSuggesterTranslator.translate(termSuggester);
 	}
 
-	@Reference(unbind = "-")
-	protected void setCompletionSuggesterTranslator(
-		CompletionSuggesterTranslator completionSuggesterTranslator) {
-
-		_completionSuggesterTranslator = completionSuggesterTranslator;
-	}
-
-	@Reference(unbind = "-")
-	protected void setPhraseSuggesterTranslator(
-		PhraseSuggesterTranslator phraseSuggesterTranslator) {
-
-		_phraseSuggesterTranslator = phraseSuggesterTranslator;
-	}
-
-	@Reference(unbind = "-")
-	protected void setTermSuggesterTranslator(
-		TermSuggesterTranslator termSuggesterTranslator) {
-
-		_termSuggesterTranslator = termSuggesterTranslator;
-	}
-
+	@Reference
 	private CompletionSuggesterTranslator _completionSuggesterTranslator;
+
+	@Reference
 	private PhraseSuggesterTranslator _phraseSuggesterTranslator;
+
+	@Reference
 	private TermSuggesterTranslator _termSuggesterTranslator;
 
 }

@@ -1,40 +1,34 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.web.internal.struts;
 
 import com.liferay.fragment.constants.FragmentActionKeys;
 import com.liferay.fragment.constants.FragmentConstants;
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.constants.FragmentPortletKeys;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.renderer.FragmentRendererController;
-import com.liferay.fragment.web.internal.constants.FragmentWebKeys;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
+import com.liferay.portal.kernel.servlet.SessionErrors;
+import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.struts.StrutsAction;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.theme.ThemeUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.taglib.util.ThemeUtil;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -47,7 +41,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true, property = "path=/portal/fragment/render_fragment_entry",
+	property = "path=/portal/fragment/render_fragment_entry",
 	service = StrutsAction.class
 )
 public class RenderFragmentEntryStrutsAction implements StrutsAction {
@@ -69,11 +63,11 @@ public class RenderFragmentEntryStrutsAction implements StrutsAction {
 			FragmentActionKeys.MANAGE_FRAGMENT_ENTRIES);
 
 		httpServletRequest.setAttribute(
-			FragmentActionKeys.FRAGMENT_RENDERER_CONTROLLER,
-			_fragmentRendererController);
+			FragmentCollectionContributorRegistry.class.getName(),
+			_fragmentCollectionContributorRegistry);
 		httpServletRequest.setAttribute(
-			FragmentWebKeys.FRAGMENT_COLLECTION_CONTRIBUTOR_TRACKER,
-			_fragmentCollectionContributorTracker);
+			FragmentRendererController.class.getName(),
+			_fragmentRendererController);
 
 		LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
 			groupId, false);
@@ -94,11 +88,19 @@ public class RenderFragmentEntryStrutsAction implements StrutsAction {
 
 		requestDispatcher.include(httpServletRequest, pipingServletResponse);
 
-		Document document = Jsoup.parse(
-			ThemeUtil.include(
-				httpServletRequest.getServletContext(), httpServletRequest,
-				httpServletResponse, "portal_normal.ftl", layoutSet.getTheme(),
-				false));
+		String content = ThemeUtil.include(
+			httpServletRequest.getServletContext(), httpServletRequest,
+			httpServletResponse, "portal_normal.ftl", layoutSet.getTheme(),
+			false);
+
+		if (Validator.isNull(content)) {
+			ServletResponseUtil.write(
+				httpServletResponse, unsyncStringWriter.toString());
+
+			return null;
+		}
+
+		Document document = Jsoup.parse(content);
 
 		Element bodyElement = document.body();
 
@@ -106,12 +108,19 @@ public class RenderFragmentEntryStrutsAction implements StrutsAction {
 
 		ServletResponseUtil.write(httpServletResponse, document.html());
 
+		SessionErrors.clear(httpServletRequest);
+
+		SessionMessages.add(
+			httpServletRequest,
+			FragmentPortletKeys.FRAGMENT +
+				SessionMessages.KEY_SUFFIX_HIDE_DEFAULT_SUCCESS_MESSAGE);
+
 		return null;
 	}
 
 	@Reference
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
 
 	@Reference
 	private FragmentRendererController _fragmentRendererController;

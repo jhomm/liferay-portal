@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -39,6 +30,8 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, Long> mvccVersion =
 		createColumn(
 			"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
+	public final Column<CommerceOrderItemTable, String> uuid = createColumn(
+		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, String> externalReferenceCode =
 		createColumn(
 			"externalReferenceCode", String.class, Types.VARCHAR,
@@ -60,9 +53,10 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, Date> modifiedDate =
 		createColumn(
 			"modifiedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
-	public final Column<CommerceOrderItemTable, Long> bookedQuantityId =
-		createColumn(
-			"bookedQuantityId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Long>
+		commerceInventoryBookedQuantityId = createColumn(
+			"CIBookedQuantityId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Long> commerceOrderId =
 		createColumn(
 			"commerceOrderId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
@@ -73,8 +67,16 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, Long> CPInstanceId =
 		createColumn(
 			"CPInstanceId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Long> CPMeasurementUnitId =
+		createColumn(
+			"CPMeasurementUnitId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Long> CProductId = createColumn(
 		"CProductId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Long>
+		customerCommerceOrderItemId = createColumn(
+			"customerCommerceOrderItemId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Long>
 		parentCommerceOrderItemId = createColumn(
 			"parentCommerceOrderItemId", Long.class, Types.BIGINT,
@@ -82,9 +84,10 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, Long> shippingAddressId =
 		createColumn(
 			"shippingAddressId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
-	public final Column<CommerceOrderItemTable, String> deliveryGroup =
+	public final Column<CommerceOrderItemTable, String> deliveryGroupName =
 		createColumn(
-			"deliveryGroup", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+			"deliveryGroupName", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Long>
 		deliveryMaxSubscriptionCycles = createColumn(
 			"deliveryMaxSubscriptionCycles", Long.class, Types.BIGINT,
@@ -106,6 +109,10 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, BigDecimal> discountAmount =
 		createColumn(
 			"discountAmount", BigDecimal.class, Types.DECIMAL,
+			Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Boolean>
+		discountManuallyAdjusted = createColumn(
+			"discountManuallyAdjusted", Boolean.class, Types.BOOLEAN,
 			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, BigDecimal>
 		discountPercentageLevel1 = createColumn(
@@ -167,6 +174,14 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, String> name = createColumn(
 		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Boolean> priceManuallyAdjusted =
+		createColumn(
+			"priceManuallyAdjusted", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Boolean> priceOnApplication =
+		createColumn(
+			"priceOnApplication", Boolean.class, Types.BOOLEAN,
+			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, String> printedNote =
 		createColumn(
 			"printedNote", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
@@ -177,9 +192,16 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 		promoPriceWithTaxAmount = createColumn(
 			"promoPriceWithTaxAmount", BigDecimal.class, Types.DECIMAL,
 			Column.FLAG_DEFAULT);
-	public final Column<CommerceOrderItemTable, Integer> quantity =
+	public final Column<CommerceOrderItemTable, BigDecimal> quantity =
 		createColumn(
-			"quantity", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
+			"quantity", BigDecimal.class, Types.DECIMAL, Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, Long> replacedCPInstanceId =
+		createColumn(
+			"replacedCPInstanceId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, String> replacedSku =
+		createColumn(
+			"replacedSku", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Date> requestedDeliveryDate =
 		createColumn(
 			"requestedDeliveryDate", Date.class, Types.TIMESTAMP,
@@ -191,9 +213,9 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, Boolean> shippable =
 		createColumn(
 			"shippable", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
-	public final Column<CommerceOrderItemTable, Integer> shippedQuantity =
+	public final Column<CommerceOrderItemTable, BigDecimal> shippedQuantity =
 		createColumn(
-			"shippedQuantity", Integer.class, Types.INTEGER,
+			"shippedQuantity", BigDecimal.class, Types.DECIMAL,
 			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, Double> shippingExtraPrice =
 		createColumn(
@@ -215,6 +237,14 @@ public class CommerceOrderItemTable extends BaseTable<CommerceOrderItemTable> {
 	public final Column<CommerceOrderItemTable, String>
 		subscriptionTypeSettings = createColumn(
 			"subscriptionTypeSettings", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, BigDecimal>
+		unitOfMeasureIncrementalOrderQuantity = createColumn(
+			"UOMIncrementalOrderQuantity", BigDecimal.class, Types.DECIMAL,
+			Column.FLAG_DEFAULT);
+	public final Column<CommerceOrderItemTable, String> unitOfMeasureKey =
+		createColumn(
+			"unitOfMeasureKey", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
 	public final Column<CommerceOrderItemTable, BigDecimal> unitPrice =
 		createColumn(

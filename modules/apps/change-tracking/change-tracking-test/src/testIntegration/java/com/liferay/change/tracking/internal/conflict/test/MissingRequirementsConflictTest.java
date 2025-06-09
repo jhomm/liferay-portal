@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal.conflict.test;
@@ -19,9 +10,11 @@ import com.liferay.change.tracking.conflict.ConflictInfo;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.service.CTCollectionLocalService;
 import com.liferay.change.tracking.service.CTProcessLocalService;
+import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.model.JournalFolder;
 import com.liferay.journal.service.JournalFolderLocalService;
 import com.liferay.journal.test.util.JournalFolderFixture;
+import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.model.Group;
@@ -29,6 +22,7 @@ import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -61,6 +55,49 @@ public class MissingRequirementsConflictTest {
 	}
 
 	@Test
+	public void testGetAllMissingConflicts() throws Exception {
+		List<Long> journalArticleIds = new ArrayList<>();
+
+		JournalFolder journalFolder = JournalTestUtil.addFolder(
+			_group.getGroupId(), RandomTestUtil.randomString());
+
+		CTCollection ctCollection = _addCTCollection(
+			RandomTestUtil.randomString());
+
+		try (SafeCloseable safeCloseable =
+				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
+					ctCollection.getCtCollectionId())) {
+
+			JournalArticle journalArticle1 = JournalTestUtil.addArticle(
+				_group.getGroupId(), journalFolder.getFolderId());
+
+			journalArticleIds.add(journalArticle1.getId());
+
+			JournalArticle journalArticle2 = JournalTestUtil.addArticle(
+				_group.getGroupId(), journalFolder.getFolderId());
+
+			journalArticleIds.add(journalArticle2.getId());
+		}
+
+		_journalFolderLocalService.deleteFolder(journalFolder.getFolderId());
+
+		Map<Long, List<ConflictInfo>> conflictInfoMap =
+			_ctCollectionLocalService.checkConflicts(ctCollection);
+
+		List<ConflictInfo> conflictInfos = conflictInfoMap.remove(
+			_classNameLocalService.getClassNameId(JournalArticle.class));
+
+		Assert.assertEquals(conflictInfos.toString(), 2, conflictInfos.size());
+
+		for (ConflictInfo conflictInfo : conflictInfos) {
+			Assert.assertFalse(conflictInfo.isResolved());
+
+			Assert.assertTrue(
+				journalArticleIds.contains(conflictInfo.getSourcePrimaryKey()));
+		}
+	}
+
+	@Test
 	public void testMissingParentFolderProduction() throws Exception {
 		_testMissingConflicts(false);
 	}
@@ -72,7 +109,8 @@ public class MissingRequirementsConflictTest {
 
 	private CTCollection _addCTCollection(String name) throws Exception {
 		CTCollection ctCollection = _ctCollectionLocalService.addCTCollection(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			0,
 			MissingRequirementsConflictTest.class.getSimpleName() + " " + name,
 			null);
 

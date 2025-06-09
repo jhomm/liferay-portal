@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
@@ -19,27 +10,35 @@ import React, {useCallback, useContext, useRef, useState} from 'react';
 import {withRouter} from 'react-router-dom';
 
 import {AppContext} from '../AppContext.es';
-import {createCommentQuery} from '../utils/client.es';
-import {getContextLink} from '../utils/utils.es';
+import {createCommentQuery, getUserActivityQuery} from '../utils/client.es';
+import {deleteCacheKey, getContextLink} from '../utils/utils.es';
 import Comment from './Comment.es';
 import DefaultQuestionsEditor from './DefaultQuestionsEditor.es';
+import SubscritionCheckbox from './SubscribeCheckbox.es';
 
 export default withRouter(
 	({
 		comments,
 		commentsChange,
+		companyName,
+		display,
 		editable = true,
 		entityId,
 		match: {
 			params: {questionId, sectionTitle},
 		},
+		onSubscription,
+		question,
 		showNewComment,
 		showNewCommentChange,
+		showSignature,
+		styledItems = false,
 	}) => {
 		const context = useContext(AppContext);
 
-		const editor = useRef('');
+		const editorRef = useRef('');
 
+		const [allowSubscription, setAllowSubscription] = useState(false);
 		const [isReplyButtonDisable, setIsReplyButtonDisable] = useState(false);
 
 		const [createComment] = useMutation(createCommentQuery);
@@ -57,14 +56,49 @@ export default withRouter(
 			[commentsChange, comments]
 		);
 
+		const onCreateComment = async () => {
+			const {data} = await createComment({
+				fetchOptionsOverrides: getContextLink(
+					`${sectionTitle}/${questionId}`
+				),
+				variables: {
+					articleBody: editorRef.current.getContent(),
+					parentMessageBoardMessageId: entityId,
+				},
+			});
+
+			editorRef.current.clearContent();
+
+			showNewCommentChange(false);
+
+			commentsChange([
+				...comments,
+				data.createMessageBoardMessageMessageBoardMessage,
+			]);
+
+			onSubscription({allowSubscription});
+
+			deleteCacheKey(getUserActivityQuery, {
+				filter: `creatorId eq ${context.userId}`,
+				page: 1,
+				pageSize: 20,
+				siteKey: context.siteKey,
+			});
+		};
+
 		return (
 			<div>
 				{comments.map((comment) => (
 					<Comment
 						comment={comment}
 						commentChange={_commentChange}
+						companyName={companyName}
+						display={display}
 						editable={editable}
+						hasCompanyMx={comment.hasCompanyMx}
 						key={comment.id}
+						showSignature={showSignature}
+						styledItems={styledItems}
 					/>
 				))}
 
@@ -72,42 +106,42 @@ export default withRouter(
 					<>
 						<ClayForm.Group small>
 							<DefaultQuestionsEditor
-								label={Liferay.Language.get('your-answer')}
+								label={Liferay.Language.get('your-comment')}
 								onContentLengthValid={setIsReplyButtonDisable}
-								ref={editor}
+								ref={editorRef}
 							/>
+
+							{!question.subscribed && (
+								<SubscritionCheckbox
+									checked={allowSubscription}
+									setChecked={setAllowSubscription}
+								/>
+							)}
 
 							<ClayButton.Group className="c-mt-3" spaced>
 								<ClayButton
+									aria-label={
+										context.trustedUser
+											? Liferay.Language.get(
+													'add-comment'
+												)
+											: Liferay.Language.get(
+													'submit-for-publication'
+												)
+									}
 									disabled={isReplyButtonDisable}
 									displayType="primary"
-									onClick={() => {
-										createComment({
-											fetchOptionsOverrides: getContextLink(
-												`${sectionTitle}/${questionId}`
-											),
-											variables: {
-												articleBody: editor.current.getContent(),
-												parentMessageBoardMessageId: entityId,
-											},
-										}).then(({data}) => {
-											editor.current.clearContent();
-											showNewCommentChange(false);
-											commentsChange([
-												...comments,
-												data.createMessageBoardMessageMessageBoardMessage,
-											]);
-										});
-									}}
+									onClick={onCreateComment}
 								>
 									{context.trustedUser
-										? Liferay.Language.get('reply')
+										? Liferay.Language.get('add-comment')
 										: Liferay.Language.get(
-												'submit-for-publication'
-										  )}
+												'submit-for-workflow'
+											)}
 								</ClayButton>
 
 								<ClayButton
+									aria-label={Liferay.Language.get('cancel')}
 									displayType="secondary"
 									onClick={() => showNewCommentChange(false)}
 								>

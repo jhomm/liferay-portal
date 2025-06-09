@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,22 +32,6 @@ public class CPTaxCategoryServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.commerce.product.service.impl.CPTaxCategoryServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addCPTaxCategory(String, Map, Map, ServiceContext)}
-	 */
-	@Deprecated
-	public static CPTaxCategory addCPTaxCategory(
-			Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addCPTaxCategory(
-			nameMap, descriptionMap, serviceContext);
-	}
-
 	public static CPTaxCategory addCPTaxCategory(
 			String externalReferenceCode, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
@@ -123,18 +99,14 @@ public class CPTaxCategoryServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateCPTaxCategory(String, long, Map, Map)}
-	 */
-	@Deprecated
-	public static CPTaxCategory updateCPTaxCategory(
-			long cpTaxCategoryId, Map<java.util.Locale, String> nameMap,
-			Map<java.util.Locale, String> descriptionMap)
-		throws PortalException {
+	public static com.liferay.portal.kernel.search.BaseModelSearchResult
+		<CPTaxCategory> searchCPTaxCategories(
+				long companyId, String keywords, int start, int end,
+				com.liferay.portal.kernel.search.Sort sort)
+			throws PortalException {
 
-		return getService().updateCPTaxCategory(
-			cpTaxCategoryId, nameMap, descriptionMap);
+		return getService().searchCPTaxCategories(
+			companyId, keywords, start, end, sort);
 	}
 
 	public static CPTaxCategory updateCPTaxCategory(
@@ -148,9 +120,11 @@ public class CPTaxCategoryServiceUtil {
 	}
 
 	public static CPTaxCategoryService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPTaxCategoryService _service;
+	private static final Snapshot<CPTaxCategoryService> _serviceSnapshot =
+		new Snapshot<>(
+			CPTaxCategoryServiceUtil.class, CPTaxCategoryService.class);
 
 }

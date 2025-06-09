@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.processor.test;
@@ -18,13 +9,14 @@ import com.liferay.adaptive.media.AdaptiveMedia;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationEntry;
 import com.liferay.adaptive.media.image.configuration.AMImageConfigurationHelper;
 import com.liferay.adaptive.media.image.finder.AMImageFinder;
-import com.liferay.adaptive.media.image.processor.AMImageProcessor;
+import com.liferay.adaptive.media.processor.AMProcessor;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -40,8 +32,9 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import java.util.Collection;
-import java.util.stream.Stream;
+import java.util.List;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -66,6 +59,24 @@ public class AMImageProcessorTest {
 
 		UserTestUtil.setUser(TestPropsValues.getUser());
 
+		_amImageConfigurationEntries =
+			_amImageConfigurationHelper.getAMImageConfigurationEntries(
+				TestPropsValues.getCompanyId(),
+				amImageConfigurationEntry -> true);
+
+		for (AMImageConfigurationEntry amImageConfigurationEntry :
+				_amImageConfigurationEntries) {
+
+			_amImageConfigurationHelper.forceDeleteAMImageConfigurationEntry(
+				TestPropsValues.getCompanyId(),
+				amImageConfigurationEntry.getUUID());
+		}
+
+		_addTestVariant();
+	}
+
+	@After
+	public void tearDown() throws Exception {
 		Collection<AMImageConfigurationEntry> amImageConfigurationEntries =
 			_amImageConfigurationHelper.getAMImageConfigurationEntries(
 				TestPropsValues.getCompanyId(),
@@ -79,7 +90,20 @@ public class AMImageProcessorTest {
 				amImageConfigurationEntry.getUUID());
 		}
 
-		_addTestVariant();
+		for (AMImageConfigurationEntry amImageConfigurationEntry :
+				_amImageConfigurationEntries) {
+
+			_amImageConfigurationHelper.forceDeleteAMImageConfigurationEntry(
+				TestPropsValues.getCompanyId(),
+				amImageConfigurationEntry.getUUID());
+
+			_amImageConfigurationHelper.addAMImageConfigurationEntry(
+				TestPropsValues.getCompanyId(),
+				amImageConfigurationEntry.getName(),
+				amImageConfigurationEntry.getDescription(),
+				amImageConfigurationEntry.getUUID(),
+				amImageConfigurationEntry.getProperties());
+		}
 	}
 
 	@Test
@@ -99,93 +123,89 @@ public class AMImageProcessorTest {
 				amImageConfigurationEntry.getUUID());
 		}
 
-		ServiceContext serviceContext =
+		FileEntry fileEntry = _addNonimageFileEntry(
 			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
+				_group, TestPropsValues.getUserId()));
 
-		FileEntry fileEntry = _addNonimageFileEntry(serviceContext);
-
-		Stream<AdaptiveMedia<AMImageProcessor>> adaptiveMediaStream =
-			_amImageFinder.getAdaptiveMediaStream(
+		List<AdaptiveMedia<AMProcessor<FileVersion>>> adaptiveMedias =
+			_amImageFinder.getAdaptiveMedias(
 				amImageQueryBuilder -> amImageQueryBuilder.forFileEntry(
 					fileEntry
 				).done());
 
-		Assert.assertEquals(0, adaptiveMediaStream.count());
+		Assert.assertEquals(
+			adaptiveMedias.toString(), 0, adaptiveMedias.size());
 	}
 
 	@Test
 	public void testAddingFileEntryWithImageCreatesMedia() throws Exception {
-		ServiceContext serviceContext =
+		FileEntry fileEntry = _addImageFileEntry(
 			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
+				_group, TestPropsValues.getUserId()));
 
-		FileEntry fileEntry = _addImageFileEntry(serviceContext);
-
-		Stream<AdaptiveMedia<AMImageProcessor>> adaptiveMediaStream =
-			_amImageFinder.getAdaptiveMediaStream(
+		List<AdaptiveMedia<AMProcessor<FileVersion>>> adaptiveMedias =
+			_amImageFinder.getAdaptiveMedias(
 				amImageQueryBuilder -> amImageQueryBuilder.forFileEntry(
 					fileEntry
 				).done());
 
-		Assert.assertEquals(_getVariantsCount(), adaptiveMediaStream.count());
+		Assert.assertEquals(
+			adaptiveMedias.toString(), _getVariantsCount(),
+			adaptiveMedias.size());
 	}
 
 	@Test
 	public void testAddingFileEntryWithNoImageCreatesNoMedia()
 		throws Exception {
 
-		ServiceContext serviceContext =
+		FileEntry fileEntry = _addNonimageFileEntry(
 			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
+				_group, TestPropsValues.getUserId()));
 
-		FileEntry fileEntry = _addNonimageFileEntry(serviceContext);
-
-		Stream<AdaptiveMedia<AMImageProcessor>> adaptiveMediaStream =
-			_amImageFinder.getAdaptiveMediaStream(
+		List<AdaptiveMedia<AMProcessor<FileVersion>>> adaptiveMedias =
+			_amImageFinder.getAdaptiveMedias(
 				amImageQueryBuilder -> amImageQueryBuilder.forFileEntry(
 					fileEntry
 				).done());
 
-		Assert.assertEquals(0, adaptiveMediaStream.count());
+		Assert.assertEquals(
+			adaptiveMedias.toString(), 0, adaptiveMedias.size());
 	}
 
 	@Test
 	public void testCleaningFileEntryWithImageRemovesMedia() throws Exception {
-		ServiceContext serviceContext =
+		FileEntry fileEntry = _addImageFileEntry(
 			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
+				_group, TestPropsValues.getUserId()));
 
-		FileEntry fileEntry = _addImageFileEntry(serviceContext);
+		_amProcessor.cleanUp(fileEntry.getLatestFileVersion(true));
 
-		_amImageProcessor.cleanUp(fileEntry.getLatestFileVersion(true));
-
-		Stream<AdaptiveMedia<AMImageProcessor>> adaptiveMediaStream =
-			_amImageFinder.getAdaptiveMediaStream(
+		List<AdaptiveMedia<AMProcessor<FileVersion>>> adaptiveMedias =
+			_amImageFinder.getAdaptiveMedias(
 				amImageQueryBuilder -> amImageQueryBuilder.forFileEntry(
 					fileEntry
 				).done());
 
-		Assert.assertEquals(0, adaptiveMediaStream.count());
+		Assert.assertEquals(
+			adaptiveMedias.toString(), 0, adaptiveMedias.size());
 	}
 
 	@Test
 	public void testCleaningFileEntryWithNoImageDoesNothing() throws Exception {
-		ServiceContext serviceContext =
+		FileEntry fileEntry = _addNonimageFileEntry(
 			ServiceContextTestUtil.getServiceContext(
-				_group, TestPropsValues.getUserId());
+				_group, TestPropsValues.getUserId()));
 
-		FileEntry fileEntry = _addNonimageFileEntry(serviceContext);
+		_amProcessor.cleanUp(fileEntry.getLatestFileVersion(true));
 
-		_amImageProcessor.cleanUp(fileEntry.getLatestFileVersion(true));
-
-		Stream<AdaptiveMedia<AMImageProcessor>> adaptiveMediaStream =
-			_amImageFinder.getAdaptiveMediaStream(
+		List<AdaptiveMedia<AMProcessor<FileVersion>>> adaptiveMedias =
+			_amImageFinder.getAdaptiveMedias(
 				amImageQueryBuilder -> amImageQueryBuilder.forFileEntry(
 					fileEntry
 				).done());
 
-		Assert.assertEquals(0, adaptiveMediaStream.count());
+		Assert.assertEquals(
+			adaptiveMedias.toString(), 0, adaptiveMedias.size());
 	}
 
 	private FileEntry _addImageFileEntry(ServiceContext serviceContext)
@@ -195,7 +215,7 @@ public class AMImageProcessorTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(), ContentTypes.IMAGE_JPEG,
-			_getImageBytes(), null, null, serviceContext);
+			_getImageBytes(), null, null, null, serviceContext);
 	}
 
 	private FileEntry _addNonimageFileEntry(ServiceContext serviceContext)
@@ -206,7 +226,7 @@ public class AMImageProcessorTest {
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			RandomTestUtil.randomString(),
 			ContentTypes.APPLICATION_OCTET_STREAM, _getNonimageBytes(), null,
-			null, serviceContext);
+			null, null, serviceContext);
 	}
 
 	private void _addTestVariant() throws Exception {
@@ -239,6 +259,8 @@ public class AMImageProcessorTest {
 		return amImageConfigurationEntries.size();
 	}
 
+	private Collection<AMImageConfigurationEntry> _amImageConfigurationEntries;
+
 	@Inject
 	private AMImageConfigurationHelper _amImageConfigurationHelper;
 
@@ -246,7 +268,7 @@ public class AMImageProcessorTest {
 	private AMImageFinder _amImageFinder;
 
 	@Inject
-	private AMImageProcessor _amImageProcessor;
+	private AMProcessor<FileVersion> _amProcessor;
 
 	@Inject
 	private DLAppLocalService _dlAppLocalService;

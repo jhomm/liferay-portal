@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.sql.transformer;
@@ -55,13 +46,6 @@ public class OracleSQLTransformerLogicTest
 	}
 
 	@Test
-	public void testReplaceCastText() {
-		Assert.assertEquals(
-			"select CAST(foo AS VARCHAR(4000)) from Foo",
-			sqlTransformer.transform(getCastTextOriginalSQL()));
-	}
-
-	@Test
 	public void testReplaceEscape() {
 		Assert.assertEquals(
 			"select foo from Foo where foo LIKE ? ESCAPE '\\'",
@@ -90,7 +74,18 @@ public class OracleSQLTransformerLogicTest
 
 	@Override
 	protected String getCastClobTextTransformedSQL() {
-		return "select DBMS_LOB.SUBSTR(foo, 4000, 1) from Foo";
+		return StringBundler.concat(
+			"select DBMS_LOB.SUBSTR(foo || (DBMS_LOB.SUBSTR(foo, 4000, 1) || ",
+			"(bar || foo)), 4000, 1), DBMS_LOB.SUBSTR(foo || (bar || foo), ",
+			"4000, 1) from Foo");
+	}
+
+	@Override
+	protected String getCastTextTransformedSQL() {
+		return StringBundler.concat(
+			"select CAST(foo || (CAST(foo AS VARCHAR(4000)) || (bar || foo)) ",
+			"AS VARCHAR(4000)), CAST(foo || (bar || foo) AS VARCHAR(4000)) ",
+			"from Foo");
 	}
 
 	@Override

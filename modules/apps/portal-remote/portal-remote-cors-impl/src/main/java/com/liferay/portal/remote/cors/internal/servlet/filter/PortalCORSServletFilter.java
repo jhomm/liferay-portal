@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.remote.cors.internal.servlet.filter;
@@ -17,8 +8,6 @@ package com.liferay.portal.remote.cors.internal.servlet.filter;
 import com.liferay.oauth2.provider.scope.liferay.OAuth2ProviderScopeLiferayAccessControlContext;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.url.pattern.mapper.URLPatternMapper;
-import com.liferay.petra.url.pattern.mapper.URLPatternMapperFactory;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.configuration.persistence.listener.ConfigurationModelListener;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -26,40 +15,30 @@ import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.servlet.BaseFilter;
 import com.liferay.portal.kernel.servlet.HttpMethods;
-import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionary;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.remote.cors.configuration.PortalCORSConfiguration;
 import com.liferay.portal.remote.cors.internal.CORSSupport;
 import com.liferay.portal.remote.cors.internal.configuration.persistence.listener.PortalCORSConfigurationModelListener;
+import com.liferay.portal.remote.cors.internal.util.PortalCORSRegistryUtil;
 import com.liferay.portal.util.PropsValues;
 
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Map;
 
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Constants;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.cm.ConfigurationException;
-import org.osgi.service.cm.ManagedServiceFactory;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -70,37 +49,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carlos Sierra Andrés
  */
 @Component(
-	immediate = true,
 	property = {
-		Constants.SERVICE_PID + "=com.liferay.portal.remote.cors.configuration.PortalCORSConfiguration",
 		"before-filter=Upload Servlet Request Filter", "dispatcher=FORWARD",
 		"dispatcher=REQUEST", "servlet-context-name=",
 		"servlet-filter-name=Portal CORS Servlet Filter", "url-pattern=/*"
 	},
-	service = {Filter.class, ManagedServiceFactory.class}
+	service = Filter.class
 )
-public class PortalCORSServletFilter
-	extends BaseFilter implements ManagedServiceFactory {
-
-	@Override
-	public void deleted(String pid) {
-		Dictionary<String, ?> properties = _configurationPidsProperties.remove(
-			pid);
-
-		long companyId = GetterUtil.getLong(properties.get("companyId"));
-
-		if (companyId == CompanyConstants.SYSTEM) {
-			_rebuild();
-		}
-		else {
-			_rebuild(companyId);
-		}
-	}
-
-	@Override
-	public String getName() {
-		return StringPool.BLANK;
-	}
+public class PortalCORSServletFilter extends BaseFilter {
 
 	@Override
 	public void init(FilterConfig filterConfig) {
@@ -114,45 +70,7 @@ public class PortalCORSServletFilter
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
 
-		if (CORSSupport.isCORSRequest(httpServletRequest::getHeader)) {
-			return true;
-		}
-
-		return false;
-	}
-
-	@Override
-	public void updated(String pid, Dictionary<String, ?> properties)
-		throws ConfigurationException {
-
-		Dictionary<String, ?> oldProperties = _configurationPidsProperties.put(
-			pid, properties);
-
-		long companyId = GetterUtil.getLong(
-			properties.get("companyId"), CompanyConstants.SYSTEM);
-
-		if (companyId == CompanyConstants.SYSTEM) {
-			_rebuild();
-
-			return;
-		}
-
-		if (oldProperties != null) {
-			long oldCompanyId = GetterUtil.getLong(
-				oldProperties.get("companyId"));
-
-			if (oldCompanyId == CompanyConstants.SYSTEM) {
-				_rebuild();
-
-				return;
-			}
-
-			if (oldCompanyId != companyId) {
-				_rebuild(oldCompanyId);
-			}
-		}
-
-		_rebuild(companyId);
+		return CORSSupport.isCORSRequest(httpServletRequest::getHeader);
 	}
 
 	@Activate
@@ -162,7 +80,7 @@ public class PortalCORSServletFilter
 		_serviceRegistration = bundleContext.registerService(
 			ConfigurationModelListener.class,
 			new PortalCORSConfigurationModelListener(
-				_configurationPidsProperties),
+				PortalCORSRegistryUtil.getConfigurationPidsProperties()),
 			new HashMapDictionary<>(
 				HashMapBuilder.putAll(
 					properties
@@ -247,18 +165,19 @@ public class PortalCORSServletFilter
 			uri = uri.substring(_contextPath.length());
 		}
 
-		return _http.normalizePath(uri);
+		return HttpComponentsUtil.normalizePath(uri);
 	}
 
 	private URLPatternMapper<CORSSupport> _getURLPatternMapper(long companyId) {
-		URLPatternMapper<CORSSupport> urlPatternMapper = _urlPatternMappers.get(
-			companyId);
+		URLPatternMapper<CORSSupport> urlPatternMapper =
+			PortalCORSRegistryUtil.getUrlPatternMappers(companyId);
 
 		if (urlPatternMapper != null) {
 			return urlPatternMapper;
 		}
 
-		urlPatternMapper = _urlPatternMappers.get(CompanyConstants.SYSTEM);
+		urlPatternMapper = PortalCORSRegistryUtil.getUrlPatternMappers(
+			CompanyConstants.SYSTEM);
 
 		if (urlPatternMapper != null) {
 			return urlPatternMapper;
@@ -277,105 +196,18 @@ public class PortalCORSServletFilter
 
 		User user = permissionChecker.getUser();
 
-		return user.isDefaultUser();
-	}
-
-	private void _mergeCORSConfiguration(
-		Map<String, CORSSupport> corsSupports, long companyId) {
-
-		for (Dictionary<String, ?> properties :
-				_configurationPidsProperties.values()) {
-
-			if (companyId != GetterUtil.getLong(properties.get("companyId"))) {
-				continue;
-			}
-
-			PortalCORSConfiguration portalCORSConfiguration =
-				ConfigurableUtil.createConfigurable(
-					PortalCORSConfiguration.class, properties);
-
-			_populateCORSSupports(corsSupports, portalCORSConfiguration);
-		}
-	}
-
-	private void _populateCORSSupports(
-		Map<String, CORSSupport> corsSupports,
-		PortalCORSConfiguration portalCORSConfiguration) {
-
-		CORSSupport corsSupport = new CORSSupport();
-
-		corsSupport.setCORSHeaders(
-			CORSSupport.buildCORSHeaders(portalCORSConfiguration.headers()));
-
-		for (String urlPattern :
-				portalCORSConfiguration.filterMappingURLPatterns()) {
-
-			if (!corsSupports.containsKey(urlPattern)) {
-				corsSupports.put(urlPattern, corsSupport);
-			}
-		}
-	}
-
-	private void _rebuild() {
-		Map<String, CORSSupport> corsSupports = new HashMap<>();
-
-		_mergeCORSConfiguration(corsSupports, CompanyConstants.SYSTEM);
-
-		if (corsSupports.isEmpty()) {
-			_urlPatternMappers.remove(CompanyConstants.SYSTEM);
-		}
-		else {
-			_urlPatternMappers.put(
-				CompanyConstants.SYSTEM,
-				URLPatternMapperFactory.create(corsSupports));
-		}
-
-		_companyLocalService.forEachCompanyId(
-			companyId -> {
-				if (companyId != CompanyConstants.SYSTEM) {
-					_rebuild(companyId);
-				}
-			},
-			ArrayUtil.toLongArray(_urlPatternMappers.keySet()));
-	}
-
-	private void _rebuild(long companyId) {
-		Map<String, CORSSupport> corsSupports = new HashMap<>();
-
-		_mergeCORSConfiguration(corsSupports, companyId);
-
-		if (corsSupports.isEmpty()) {
-			_urlPatternMappers.remove(companyId);
-
-			return;
-		}
-
-		_mergeCORSConfiguration(corsSupports, CompanyConstants.SYSTEM);
-
-		_urlPatternMappers.put(
-			companyId, URLPatternMapperFactory.create(corsSupports));
+		return user.isGuestUser();
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		PortalCORSServletFilter.class);
 
-	@Reference
-	private CompanyLocalService _companyLocalService;
-
-	private final Map<String, Dictionary<String, ?>>
-		_configurationPidsProperties = Collections.synchronizedMap(
-			new LinkedHashMap<>());
 	private String _contextPath;
-
-	@Reference
-	private Http _http;
 
 	@Reference
 	private Portal _portal;
 
 	private ServiceRegistration<ConfigurationModelListener>
 		_serviceRegistration;
-	private final Map<Long, URLPatternMapper<CORSSupport>> _urlPatternMappers =
-		Collections.synchronizedMap(new LinkedHashMap<>());
 
 }

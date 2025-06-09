@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.service.persistence.impl;
@@ -35,7 +26,6 @@ import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -49,7 +39,6 @@ import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Collections;
@@ -76,7 +65,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Ryan Park
  * @generated
  */
-@Component(service = {ModulePersistence.class, BasePersistence.class})
+@Component(service = ModulePersistence.class)
 public class ModulePersistenceImpl
 	extends BasePersistenceImpl<Module> implements ModulePersistence {
 
@@ -190,7 +179,8 @@ public class ModulePersistenceImpl
 		List<Module> list = null;
 
 		if (useFinderCache) {
-			list = (List<Module>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<Module>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Module module : list) {
@@ -570,7 +560,7 @@ public class ModulePersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -726,7 +716,8 @@ public class ModulePersistenceImpl
 		List<Module> list = null;
 
 		if (useFinderCache) {
-			list = (List<Module>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<Module>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Module module : list) {
@@ -1136,7 +1127,7 @@ public class ModulePersistenceImpl
 
 		Object[] finderArgs = new Object[] {uuid, companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -1288,7 +1279,8 @@ public class ModulePersistenceImpl
 		List<Module> list = null;
 
 		if (useFinderCache) {
-			list = (List<Module>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<Module>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Module module : list) {
@@ -1643,7 +1635,7 @@ public class ModulePersistenceImpl
 
 		Object[] finderArgs = new Object[] {appId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1783,7 +1775,8 @@ public class ModulePersistenceImpl
 		List<Module> list = null;
 
 		if (useFinderCache) {
-			list = (List<Module>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<Module>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Module module : list) {
@@ -2176,7 +2169,7 @@ public class ModulePersistenceImpl
 
 		Object[] finderArgs = new Object[] {bundleSymbolicName};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2333,7 +2326,8 @@ public class ModulePersistenceImpl
 		List<Module> list = null;
 
 		if (useFinderCache) {
-			list = (List<Module>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<Module>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (Module module : list) {
@@ -2716,7 +2710,7 @@ public class ModulePersistenceImpl
 
 		Object[] finderArgs = new Object[] {contextName};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2771,7 +2765,6 @@ public class ModulePersistenceImpl
 		"(module.contextName IS NULL OR module.contextName = '')";
 
 	private FinderPath _finderPathFetchByA_CN;
-	private FinderPath _finderPathCountByA_CN;
 
 	/**
 	 * Returns the module where appId = &#63; and contextName = &#63; or throws a <code>NoSuchModuleException</code> if it could not be found.
@@ -2845,7 +2838,8 @@ public class ModulePersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByA_CN, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByA_CN, finderArgs, this);
 		}
 
 		if (result instanceof Module) {
@@ -2965,62 +2959,13 @@ public class ModulePersistenceImpl
 	 */
 	@Override
 	public int countByA_CN(long appId, String contextName) {
-		contextName = Objects.toString(contextName, "");
+		Module module = fetchByA_CN(appId, contextName);
 
-		FinderPath finderPath = _finderPathCountByA_CN;
-
-		Object[] finderArgs = new Object[] {appId, contextName};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_MODULE_WHERE);
-
-			sb.append(_FINDER_COLUMN_A_CN_APPID_2);
-
-			boolean bindContextName = false;
-
-			if (contextName.isEmpty()) {
-				sb.append(_FINDER_COLUMN_A_CN_CONTEXTNAME_3);
-			}
-			else {
-				bindContextName = true;
-
-				sb.append(_FINDER_COLUMN_A_CN_CONTEXTNAME_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(appId);
-
-				if (bindContextName) {
-					queryPos.add(contextName);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (module == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_A_CN_APPID_2 =
@@ -3033,7 +2978,6 @@ public class ModulePersistenceImpl
 		"(module.contextName IS NULL OR module.contextName = '')";
 
 	private FinderPath _finderPathFetchByA_BSN_BV;
-	private FinderPath _finderPathCountByA_BSN_BV;
 
 	/**
 	 * Returns the module where appId = &#63; and bundleSymbolicName = &#63; and bundleVersion = &#63; or throws a <code>NoSuchModuleException</code> if it could not be found.
@@ -3122,7 +3066,7 @@ public class ModulePersistenceImpl
 
 		if (useFinderCache) {
 			result = finderCache.getResult(
-				_finderPathFetchByA_BSN_BV, finderArgs);
+				_finderPathFetchByA_BSN_BV, finderArgs, this);
 		}
 
 		if (result instanceof Module) {
@@ -3267,80 +3211,14 @@ public class ModulePersistenceImpl
 	public int countByA_BSN_BV(
 		long appId, String bundleSymbolicName, String bundleVersion) {
 
-		bundleSymbolicName = Objects.toString(bundleSymbolicName, "");
-		bundleVersion = Objects.toString(bundleVersion, "");
+		Module module = fetchByA_BSN_BV(
+			appId, bundleSymbolicName, bundleVersion);
 
-		FinderPath finderPath = _finderPathCountByA_BSN_BV;
-
-		Object[] finderArgs = new Object[] {
-			appId, bundleSymbolicName, bundleVersion
-		};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(4);
-
-			sb.append(_SQL_COUNT_MODULE_WHERE);
-
-			sb.append(_FINDER_COLUMN_A_BSN_BV_APPID_2);
-
-			boolean bindBundleSymbolicName = false;
-
-			if (bundleSymbolicName.isEmpty()) {
-				sb.append(_FINDER_COLUMN_A_BSN_BV_BUNDLESYMBOLICNAME_3);
-			}
-			else {
-				bindBundleSymbolicName = true;
-
-				sb.append(_FINDER_COLUMN_A_BSN_BV_BUNDLESYMBOLICNAME_2);
-			}
-
-			boolean bindBundleVersion = false;
-
-			if (bundleVersion.isEmpty()) {
-				sb.append(_FINDER_COLUMN_A_BSN_BV_BUNDLEVERSION_3);
-			}
-			else {
-				bindBundleVersion = true;
-
-				sb.append(_FINDER_COLUMN_A_BSN_BV_BUNDLEVERSION_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(appId);
-
-				if (bindBundleSymbolicName) {
-					queryPos.add(bundleSymbolicName);
-				}
-
-				if (bindBundleVersion) {
-					queryPos.add(bundleVersion);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (module == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_A_BSN_BV_APPID_2 =
@@ -3467,7 +3345,6 @@ public class ModulePersistenceImpl
 			moduleModelImpl.getAppId(), moduleModelImpl.getContextName()
 		};
 
-		finderCache.putResult(_finderPathCountByA_CN, args, Long.valueOf(1));
 		finderCache.putResult(_finderPathFetchByA_CN, args, moduleModelImpl);
 
 		args = new Object[] {
@@ -3475,8 +3352,6 @@ public class ModulePersistenceImpl
 			moduleModelImpl.getBundleVersion()
 		};
 
-		finderCache.putResult(
-			_finderPathCountByA_BSN_BV, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByA_BSN_BV, args, moduleModelImpl);
 	}
@@ -3773,7 +3648,8 @@ public class ModulePersistenceImpl
 		List<Module> list = null;
 
 		if (useFinderCache) {
-			list = (List<Module>)finderCache.getResult(finderPath, finderArgs);
+			list = (List<Module>)finderCache.getResult(
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -3843,7 +3719,7 @@ public class ModulePersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -4008,11 +3884,6 @@ public class ModulePersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"appId", "contextName"}, true);
 
-		_finderPathCountByA_CN = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByA_CN",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"appId", "contextName"}, false);
-
 		_finderPathFetchByA_BSN_BV = new FinderPath(
 			FINDER_CLASS_NAME_ENTITY, "fetchByA_BSN_BV",
 			new String[] {
@@ -4022,38 +3893,14 @@ public class ModulePersistenceImpl
 			new String[] {"appId", "bundleSymbolicName", "bundleVersion"},
 			true);
 
-		_finderPathCountByA_BSN_BV = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByA_BSN_BV",
-			new String[] {
-				Long.class.getName(), String.class.getName(),
-				String.class.getName()
-			},
-			new String[] {"appId", "bundleSymbolicName", "bundleVersion"},
-			false);
-
-		_setModuleUtilPersistence(this);
+		ModuleUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setModuleUtilPersistence(null);
+		ModuleUtil.setPersistence(null);
 
 		entityCache.removeCache(ModuleImpl.class.getName());
-	}
-
-	private void _setModuleUtilPersistence(
-		ModulePersistence modulePersistence) {
-
-		try {
-			Field field = ModuleUtil.class.getDeclaredField("_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, modulePersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -4118,8 +3965,5 @@ public class ModulePersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private ModuleModelArgumentsResolver _moduleModelArgumentsResolver;
 
 }

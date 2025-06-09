@@ -1,28 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.content.processor.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.exportimport.configuration.ExportImportServiceConfiguration;
+import com.liferay.exportimport.configuration.ExportImportServiceConfigurationWhitelistedURLPatternsHelper;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
+import com.liferay.exportimport.kernel.exception.ExportImportContentValidationException;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.PortletDataContextFactoryUtil;
 import com.liferay.exportimport.test.util.TestReaderWriter;
 import com.liferay.exportimport.test.util.TestUserIdStrategy;
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
+import com.liferay.fragment.model.FragmentEntryLink;
+import com.liferay.fragment.renderer.DefaultFragmentRendererContext;
+import com.liferay.fragment.renderer.FragmentRenderer;
+import com.liferay.fragment.renderer.FragmentRendererRegistry;
+import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.journal.test.util.JournalTestUtil;
+import com.liferay.layout.test.util.ContentLayoutTestUtil;
 import com.liferay.layout.test.util.LayoutFriendlyURLRandomizerBumper;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
@@ -30,11 +35,16 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.test.randomizerbumpers.NumericStringRandomizerBumper;
 import com.liferay.portal.kernel.test.randomizerbumpers.UniqueStringRandomizerBumper;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.xml.Document;
@@ -44,9 +54,11 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 import com.liferay.portal.util.PropsValues;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.TreeMap;
 
 import org.junit.Assert;
@@ -69,6 +81,71 @@ public class LayoutReferencesExportImportContentProcessorTest {
 			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Test
+	public void testContentReferenceWithoutAssetRendererFactoryForClassName()
+		throws Exception {
+
+		Group liveGroup = GroupTestUtil.addGroup();
+
+		Layout layout = LayoutTestUtil.addTypeContentLayout(liveGroup);
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		long segmentsExperienceId =
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				draftLayout.getPlid());
+
+		FragmentRenderer fragmentRenderer =
+			_fragmentRendererRegistry.getFragmentRenderer(
+				"com.liferay.fragment.internal.renderer." +
+					"ContentObjectFragmentRenderer");
+
+		DefaultFragmentRendererContext defaultFragmentRendererContext =
+			new DefaultFragmentRendererContext(null);
+
+		FragmentEntryLink draftLayoutFragmentEntryLink =
+			_fragmentEntryLinkLocalService.addFragmentEntryLink(
+				null, TestPropsValues.getUserId(), draftLayout.getGroupId(), 0,
+				0, segmentsExperienceId, draftLayout.getPlid(),
+				StringPool.BLANK, StringPool.BLANK, StringPool.BLANK,
+				fragmentRenderer.getConfiguration(
+					defaultFragmentRendererContext),
+				JSONUtil.put(
+					FragmentEntryProcessorConstants.
+						KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR,
+					JSONUtil.put(
+						"itemSelector",
+						JSONUtil.put(
+							"className", RandomTestUtil.randomString()))
+				).toString(),
+				StringPool.BLANK, 0, fragmentRenderer.getKey(),
+				fragmentRenderer.getType(),
+				ServiceContextTestUtil.getServiceContext(
+					liveGroup.getGroupId(), TestPropsValues.getUserId()));
+
+		ContentLayoutTestUtil.addFragmentEntryLinkToLayout(
+			draftLayoutFragmentEntryLink, draftLayout, null, 0,
+			segmentsExperienceId);
+
+		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
+
+		Assert.assertNotNull(
+			_fragmentEntryLinkLocalService.getFragmentEntryLink(
+				liveGroup.getGroupId(),
+				draftLayoutFragmentEntryLink.getFragmentEntryLinkId(),
+				layout.getPlid()));
+
+		GroupTestUtil.enableLocalStaging(
+			liveGroup, TestPropsValues.getUserId());
+
+		Group stagingGroup = liveGroup.getStagingGroup();
+
+		Assert.assertNotNull(
+			_layoutLocalService.getLayoutByUuidAndGroupId(
+				layout.getUuid(), stagingGroup.getGroupId(),
+				layout.isPrivateLayout()));
+	}
+
+	@Test
 	public void testExportDefaultGroupCompanyHostImportDefaultGroupCompanyHost()
 		throws Exception {
 
@@ -80,7 +157,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(importGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Assert.assertEquals(
 			_getCompanyHostPortalURL(importGroup) +
@@ -97,7 +174,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		Group exportGroup = GroupTestUtil.addGroup();
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -118,7 +195,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		Group exportGroup = GroupTestUtil.addGroup();
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -141,7 +218,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -162,7 +239,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -185,7 +262,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -208,7 +285,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -224,12 +301,12 @@ public class LayoutReferencesExportImportContentProcessorTest {
 	}
 
 	@Test
-	public void testExportDefaultGroupRelativeURLHostImportDefaultGroup()
+	public void testExportDefaultGroupRelativeURLImportDefaultGroup()
 		throws Exception {
 
 		Group exportGroup = GroupTestUtil.addGroup();
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -246,7 +323,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		Group exportGroup = GroupTestUtil.addGroup();
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -264,7 +341,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		Group exportGroup = GroupTestUtil.addGroup();
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -278,6 +355,25 @@ public class LayoutReferencesExportImportContentProcessorTest {
 	}
 
 	@Test
+	public void testExportDefaultGroupRelativeURLWithLocaleImportDefaultGroup()
+		throws Exception {
+
+		Group exportGroup = GroupTestUtil.addGroup();
+
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
+
+		Group importGroup = GroupTestUtil.addGroup();
+
+		Assert.assertEquals(
+			StringPool.SLASH + LocaleUtil.getDefault() +
+				exportLayout.getFriendlyURL(),
+			_exportAndImportLayoutURL(
+				StringPool.SLASH + LocaleUtil.getDefault() +
+					exportLayout.getFriendlyURL(),
+				exportGroup, importGroup, true, true));
+	}
+
+	@Test
 	public void testExportPrivatePagesVirtualHostURLImportDefaultGroup()
 		throws Exception {
 
@@ -285,7 +381,8 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, true);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup, true);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(
+			exportGroup, true);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -308,7 +405,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -329,7 +426,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -352,7 +449,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Assert.assertEquals(
 			exportLayout.getFriendlyURL(),
@@ -381,7 +478,8 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, true);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup, true);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(
+			exportGroup, true);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -404,7 +502,8 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, true);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup, true);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(
+			exportGroup, true);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -427,7 +526,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -450,7 +549,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -473,7 +572,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -492,7 +591,7 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
 
-		Layout exportLayout = LayoutTestUtil.addLayout(exportGroup);
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(exportGroup);
 
 		Group importGroup = GroupTestUtil.addGroup();
 
@@ -502,6 +601,267 @@ public class LayoutReferencesExportImportContentProcessorTest {
 			exportLayout.getFriendlyURL(),
 			_exportAndImportLayoutURL(
 				exportLayout.getFriendlyURL(), exportGroup, importGroup));
+	}
+
+	@Test
+	public void testRelativePublicDefaultPageURLWithLocale() throws Exception {
+		Group exportGroup = GroupTestUtil.addGroup();
+
+		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
+
+		Group importGroup = GroupTestUtil.addGroup();
+
+		GroupTestUtil.addLayoutSetVirtualHost(importGroup, false);
+
+		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(exportGroup);
+
+		String url = StringPool.SLASH + siteDefaultLocale.getLanguage();
+
+		Assert.assertEquals(
+			url, _exportAndImportLayoutURL(url, exportGroup, importGroup));
+	}
+
+	@Test
+	public void testRelativePublicPageURLWithSlashWithLocale()
+		throws Exception {
+
+		Group exportGroup = GroupTestUtil.addGroup();
+
+		GroupTestUtil.addLayoutSetVirtualHost(exportGroup, false);
+
+		Group importGroup = GroupTestUtil.addGroup();
+
+		GroupTestUtil.addLayoutSetVirtualHost(importGroup, false);
+
+		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(exportGroup);
+
+		String layoutName = RandomTestUtil.randomString(
+			LayoutFriendlyURLRandomizerBumper.INSTANCE,
+			NumericStringRandomizerBumper.INSTANCE,
+			UniqueStringRandomizerBumper.INSTANCE);
+
+		layoutName = layoutName + StringPool.SLASH + layoutName;
+
+		Layout exportLayout = LayoutTestUtil.addTypePortletLayout(
+			exportGroup.getGroupId(), layoutName, false, null, false);
+
+		String url = StringBundler.concat(
+			StringPool.SLASH, siteDefaultLocale.getLanguage(),
+			exportLayout.getFriendlyURL());
+
+		Assert.assertEquals(
+			url, _exportAndImportLayoutURL(url, exportGroup, importGroup));
+	}
+
+	@Test
+	public void testValidateContentRelativePublicDefaultPageURLWithLocale()
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		GroupTestUtil.addLayoutSetVirtualHost(group, false);
+
+		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(group);
+
+		_layoutReferencesExportImportContentProcessor.validateContentReferences(
+			group.getGroupId(),
+			StringBundler.concat(
+				_CONTENT_PREFIX, StringPool.SLASH,
+				siteDefaultLocale.getLanguage(), _CONTENT_POSTFIX));
+	}
+
+	@Test
+	public void testValidateContentRelativePublicPageURLWithSlashWithLocale()
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		GroupTestUtil.addLayoutSetVirtualHost(group, false);
+
+		Locale siteDefaultLocale = _portal.getSiteDefaultLocale(group);
+
+		String layoutName = RandomTestUtil.randomString(
+			LayoutFriendlyURLRandomizerBumper.INSTANCE,
+			NumericStringRandomizerBumper.INSTANCE,
+			UniqueStringRandomizerBumper.INSTANCE);
+
+		layoutName = layoutName + StringPool.SLASH + layoutName;
+
+		Layout layout = LayoutTestUtil.addTypePortletLayout(
+			group.getGroupId(), layoutName, false, null, false);
+
+		String url = StringBundler.concat(
+			StringPool.SLASH, siteDefaultLocale.getLanguage(),
+			layout.getFriendlyURL());
+
+		_layoutReferencesExportImportContentProcessor.validateContentReferences(
+			group.getGroupId(),
+			StringBundler.concat(_CONTENT_PREFIX, url, _CONTENT_POSTFIX));
+	}
+
+	@Test(expected = ExportImportContentValidationException.class)
+	public void testValidateURLWithWhitelistedExactMatchPatternFailCase()
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		String urlSegment1 = RandomTestUtil.randomString(
+			LayoutFriendlyURLRandomizerBumper.INSTANCE);
+
+		String exactMatchPattern = StringBundler.concat(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+			group.getFriendlyURL(), StringPool.SLASH, urlSegment1);
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						ExportImportServiceConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"validateLayoutReferencesWhitelistedURLPatterns",
+							new String[] {exactMatchPattern}
+						).build())) {
+
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+
+			_layoutReferencesExportImportContentProcessor.
+				validateContentReferences(
+					group.getGroupId(),
+					StringBundler.concat(
+						_CONTENT_PREFIX, exactMatchPattern, StringPool.SLASH,
+						RandomTestUtil.randomString(
+							LayoutFriendlyURLRandomizerBumper.INSTANCE),
+						_CONTENT_POSTFIX));
+		}
+		finally {
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+		}
+	}
+
+	@Test
+	public void testValidateURLWithWhitelistedExactMatchPatternPassCase()
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		String urlSegment = RandomTestUtil.randomString(
+			LayoutFriendlyURLRandomizerBumper.INSTANCE);
+
+		String exactMatchPattern = StringBundler.concat(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+			group.getFriendlyURL(), StringPool.SLASH, urlSegment);
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						ExportImportServiceConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"validateLayoutReferencesWhitelistedURLPatterns",
+							new String[] {exactMatchPattern}
+						).build())) {
+
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+
+			_layoutReferencesExportImportContentProcessor.
+				validateContentReferences(
+					group.getGroupId(),
+					StringBundler.concat(
+						_CONTENT_PREFIX, exactMatchPattern, _CONTENT_POSTFIX));
+		}
+		finally {
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+		}
+	}
+
+	@Test(expected = ExportImportContentValidationException.class)
+	public void testValidateURLWithWhitelistedStarPatternFailCase()
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						ExportImportServiceConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"validateLayoutReferencesWhitelistedURLPatterns",
+							new String[] {
+								StringBundler.concat(
+									PropsValues.
+										LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+									group.getFriendlyURL(), StringPool.SLASH,
+									RandomTestUtil.randomString(
+										LayoutFriendlyURLRandomizerBumper.
+											INSTANCE),
+									StringPool.SLASH, StringPool.STAR)
+							}
+						).build())) {
+
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+
+			_layoutReferencesExportImportContentProcessor.
+				validateContentReferences(
+					group.getGroupId(),
+					StringBundler.concat(
+						_CONTENT_PREFIX,
+						PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+						group.getFriendlyURL(), StringPool.SLASH,
+						RandomTestUtil.randomString(
+							LayoutFriendlyURLRandomizerBumper.INSTANCE),
+						StringPool.SLASH, RandomTestUtil.randomString(),
+						_CONTENT_POSTFIX));
+		}
+		finally {
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+		}
+	}
+
+	@Test
+	public void testValidateURLWithWhitelistedStarPatternPassCase()
+		throws Exception {
+
+		Group group = GroupTestUtil.addGroup();
+
+		String urlSegment = RandomTestUtil.randomString(
+			LayoutFriendlyURLRandomizerBumper.INSTANCE);
+
+		String prefixPattern = StringBundler.concat(
+			PropsValues.LAYOUT_FRIENDLY_URL_PUBLIC_SERVLET_MAPPING,
+			group.getFriendlyURL(), StringPool.SLASH, urlSegment,
+			StringPool.SLASH);
+
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						ExportImportServiceConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"validateLayoutReferencesWhitelistedURLPatterns",
+							new String[] {prefixPattern + StringPool.STAR}
+						).build())) {
+
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+
+			_layoutReferencesExportImportContentProcessor.
+				validateContentReferences(
+					group.getGroupId(),
+					StringBundler.concat(
+						_CONTENT_PREFIX, prefixPattern,
+						RandomTestUtil.randomString(), _CONTENT_POSTFIX));
+		}
+		finally {
+			_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+				rebuildURLPatternMapper(TestPropsValues.getCompanyId());
+		}
 	}
 
 	private String _exportAndImportLayoutURL(
@@ -616,7 +976,6 @@ public class LayoutReferencesExportImportContentProcessorTest {
 					testReaderWriter);
 
 			importPortletDataContext.setImportDataRootElement(rootElement);
-
 			importPortletDataContext.setMissingReferencesElement(
 				missingReferencesElement);
 
@@ -703,7 +1062,20 @@ public class LayoutReferencesExportImportContentProcessorTest {
 	private CompanyLocalService _companyLocalService;
 
 	@Inject
+	private ExportImportServiceConfigurationWhitelistedURLPatternsHelper
+		_exportImportServiceConfigurationWhitelistedURLPatternsHelper;
+
+	@Inject
+	private FragmentEntryLinkLocalService _fragmentEntryLinkLocalService;
+
+	@Inject
+	private FragmentRendererRegistry _fragmentRendererRegistry;
+
+	@Inject
 	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private LayoutLocalService _layoutLocalService;
 
 	@Inject(filter = "content.processor.type=LayoutReferences")
 	private ExportImportContentProcessor<String>
@@ -711,5 +1083,8 @@ public class LayoutReferencesExportImportContentProcessorTest {
 
 	@Inject
 	private Portal _portal;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

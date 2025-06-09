@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.display.context;
@@ -17,18 +8,18 @@ package com.liferay.portal.search.tuning.synonyms.web.internal.display.context;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexName;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexNameBuilder;
 import com.liferay.portal.search.tuning.synonyms.web.internal.BaseSynonymsWebTestCase;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslatorImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -36,8 +27,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 /**
@@ -52,12 +41,12 @@ public class SynonymsDisplayBuilderTest extends BaseSynonymsWebTestCase {
 
 	@Before
 	public void setUp() throws Exception {
-		super.setUp();
+		setUpPortletPreferencesFactoryUtil();
 
 		_synonymsDisplayBuilder = new SynonymsDisplayBuilder(
-			_documentToSynonymSetTranslatorImpl, _httpServletRequest, _language,
-			portal, _queries, _renderRequest, _renderResponse,
-			searchEngineAdapter, _sorts, _synonymSetIndexNameBuilder);
+			_httpServletRequest, _language, portal, _queries, _renderRequest,
+			_renderResponse, searchEngineAdapter, _searchEngineInformation,
+			_sorts, _synonymSetIndexNameBuilder);
 	}
 
 	@Test
@@ -71,7 +60,7 @@ public class SynonymsDisplayBuilderTest extends BaseSynonymsWebTestCase {
 
 		Mockito.when(
 			_synonymSetIndexNameBuilder.getSynonymSetIndexName(
-				Matchers.anyLong())
+				Mockito.anyLong())
 		).thenReturn(
 			Mockito.mock(SynonymSetIndexName.class)
 		);
@@ -94,31 +83,19 @@ public class SynonymsDisplayBuilderTest extends BaseSynonymsWebTestCase {
 			_synonymsDisplayBuilder.getDisplayedSynonymSet("car,automobile"));
 	}
 
-	private final DocumentToSynonymSetTranslatorImpl
-		_documentToSynonymSetTranslatorImpl =
-			new DocumentToSynonymSetTranslatorImpl();
-
-	@Mock
-	private HttpServletRequest _httpServletRequest;
-
-	@Mock
-	private Language _language;
-
-	@Mock
-	private Queries _queries;
-
-	@Mock
-	private RenderRequest _renderRequest;
-
-	@Mock
-	private RenderResponse _renderResponse;
-
-	@Mock
-	private Sorts _sorts;
-
+	private final HttpServletRequest _httpServletRequest = Mockito.mock(
+		HttpServletRequest.class);
+	private final Language _language = Mockito.mock(Language.class);
+	private final Queries _queries = Mockito.mock(Queries.class);
+	private final RenderRequest _renderRequest = Mockito.mock(
+		RenderRequest.class);
+	private final RenderResponse _renderResponse = Mockito.mock(
+		RenderResponse.class);
+	private final SearchEngineInformation _searchEngineInformation =
+		Mockito.mock(SearchEngineInformation.class);
+	private final Sorts _sorts = Mockito.mock(Sorts.class);
 	private SynonymsDisplayBuilder _synonymsDisplayBuilder;
-
-	@Mock
-	private SynonymSetIndexNameBuilder _synonymSetIndexNameBuilder;
+	private final SynonymSetIndexNameBuilder _synonymSetIndexNameBuilder =
+		Mockito.mock(SynonymSetIndexNameBuilder.class);
 
 }

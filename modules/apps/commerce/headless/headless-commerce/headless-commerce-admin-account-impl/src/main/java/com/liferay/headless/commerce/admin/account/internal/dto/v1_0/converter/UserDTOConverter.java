@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.internal.dto.v1_0.converter;
@@ -30,9 +21,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	property = "dto.class.name=com.liferay.portal.kernel.model.User",
-	service = {DTOConverter.class, UserDTOConverter.class}
+	service = DTOConverter.class
 )
 public class UserDTOConverter
 	implements DTOConverter<com.liferay.portal.kernel.model.User, User> {
@@ -51,15 +41,15 @@ public class UserDTOConverter
 
 		return new User() {
 			{
-				email = user.getEmailAddress();
-				externalReferenceCode = user.getExternalReferenceCode();
-				firstName = user.getFirstName();
-				id = user.getUserId();
-				jobTitle = user.getJobTitle();
-				lastName = user.getLastName();
-				male = user.isMale();
-				middleName = user.getMiddleName();
-				roles = _getRoles(user);
+				setEmail(user::getEmailAddress);
+				setExternalReferenceCode(user::getExternalReferenceCode);
+				setFirstName(user::getFirstName);
+				setId(user::getUserId);
+				setJobTitle(user::getJobTitle);
+				setLastName(user::getLastName);
+				setMale(user::isMale);
+				setMiddleName(user::getMiddleName);
+				setRoles(() -> _getRoles(user));
 			}
 		};
 	}

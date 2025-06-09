@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.video.internal.display.context;
@@ -25,16 +16,16 @@ import com.liferay.document.library.video.external.shortcut.resolver.DLVideoExte
 import com.liferay.document.library.video.internal.constants.DLVideoConstants;
 import com.liferay.document.library.video.internal.helper.DLVideoExternalShortcutMetadataHelper;
 import com.liferay.document.library.video.internal.helper.DLVideoExternalShortcutMetadataHelperFactory;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileShortcut;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alejandro Tardín
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=-100",
+	property = "service.ranking:Integer=-100",
 	service = DLDisplayContextFactory.class
 )
 public class DLVideoExternalShortcutDLDisplayContextFactory
@@ -144,15 +135,15 @@ public class DLVideoExternalShortcutDLDisplayContextFactory
 		DLVideoExternalShortcutMetadataHelper
 			dlVideoExternalShortcutMetadataHelper) {
 
-		if (dlVideoExternalShortcutMetadataHelper.containsField(
+		if (!dlVideoExternalShortcutMetadataHelper.containsField(
 				DLVideoConstants.DDM_FIELD_NAME_URL)) {
 
-			return _dlVideoExternalShortcutResolver.resolve(
-				dlVideoExternalShortcutMetadataHelper.getFieldValue(
-					DLVideoConstants.DDM_FIELD_NAME_URL));
+			return null;
 		}
 
-		return null;
+		return _dlVideoExternalShortcutResolver.resolve(
+			dlVideoExternalShortcutMetadataHelper.getFieldValue(
+				DLVideoConstants.DDM_FIELD_NAME_URL));
 	}
 
 	@Reference

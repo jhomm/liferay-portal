@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.repository.liferayrepository.model;
@@ -27,7 +18,7 @@ import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.repository.model.RepositoryModelOperation;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionRegistryUtil;
 import com.liferay.portlet.documentlibrary.util.RepositoryModelUtil;
 
 import java.io.Serializable;
@@ -68,7 +59,11 @@ public class LiferayFolder extends LiferayModel implements Folder {
 			PermissionChecker permissionChecker, String actionId)
 		throws PortalException {
 
-		return _dlFolderModelResourcePermission.contains(
+		ModelResourcePermission<DLFolder> dlFolderModelResourcePermission =
+			ModelResourcePermissionRegistryUtil.getModelResourcePermission(
+				DLFolder.class.getName());
+
+		return dlFolderModelResourcePermission.contains(
 			permissionChecker, _dlFolder, actionId);
 	}
 
@@ -84,11 +79,7 @@ public class LiferayFolder extends LiferayModel implements Folder {
 
 		LiferayFolder liferayFolder = (LiferayFolder)object;
 
-		if (Objects.equals(_dlFolder, liferayFolder._dlFolder)) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(_dlFolder, liferayFolder._dlFolder);
 	}
 
 	@Override
@@ -133,6 +124,11 @@ public class LiferayFolder extends LiferayModel implements Folder {
 	@Override
 	public ExpandoBridge getExpandoBridge() {
 		return _dlFolder.getExpandoBridge();
+	}
+
+	@Override
+	public String getExternalReferenceCode() {
+		return _dlFolder.getExternalReferenceCode();
 	}
 
 	@Override
@@ -300,56 +296,32 @@ public class LiferayFolder extends LiferayModel implements Folder {
 
 	@Override
 	public boolean isSupportsLocking() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsMetadata() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsMultipleUpload() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsShortcuts() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsSocial() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
 	public boolean isSupportsSubscribing() {
-		if (isMountPoint()) {
-			return false;
-		}
-
-		return true;
+		return !isMountPoint();
 	}
 
 	@Override
@@ -439,13 +411,6 @@ public class LiferayFolder extends LiferayModel implements Folder {
 				portalException);
 		}
 	}
-
-	private static volatile ModelResourcePermission<DLFolder>
-		_dlFolderModelResourcePermission =
-			ServiceProxyFactory.newServiceTrackedInstance(
-				ModelResourcePermission.class, LiferayFolder.class,
-				"_dlFolderModelResourcePermission",
-				"(model.class.name=" + DLFolder.class.getName() + ")", true);
 
 	private final DLFolder _dlFolder;
 	private final boolean _escapedModel;

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.exception.DuplicateDLFileEntryExternalReferenceCodeException;
 import com.liferay.document.library.kernel.exception.NoSuchFileEntryException;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
@@ -27,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -183,6 +179,8 @@ public class DLFileEntryPersistenceTest {
 
 		newDLFileEntry.setManualCheckInRequired(RandomTestUtil.randomBoolean());
 
+		newDLFileEntry.setDisplayDate(RandomTestUtil.nextDate());
+
 		newDLFileEntry.setExpirationDate(RandomTestUtil.nextDate());
 
 		newDLFileEntry.setReviewDate(RandomTestUtil.nextDate());
@@ -273,6 +271,9 @@ public class DLFileEntryPersistenceTest {
 			existingDLFileEntry.isManualCheckInRequired(),
 			newDLFileEntry.isManualCheckInRequired());
 		Assert.assertEquals(
+			Time.getShortTimestamp(existingDLFileEntry.getDisplayDate()),
+			Time.getShortTimestamp(newDLFileEntry.getDisplayDate()));
+		Assert.assertEquals(
 			Time.getShortTimestamp(existingDLFileEntry.getExpirationDate()),
 			Time.getShortTimestamp(newDLFileEntry.getExpirationDate()));
 		Assert.assertEquals(
@@ -281,6 +282,26 @@ public class DLFileEntryPersistenceTest {
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingDLFileEntry.getLastPublishDate()),
 			Time.getShortTimestamp(newDLFileEntry.getLastPublishDate()));
+	}
+
+	@Test(expected = DuplicateDLFileEntryExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		DLFileEntry dlFileEntry = addDLFileEntry();
+
+		DLFileEntry newDLFileEntry = addDLFileEntry();
+
+		newDLFileEntry.setGroupId(dlFileEntry.getGroupId());
+
+		newDLFileEntry = _persistence.update(newDLFileEntry);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newDLFileEntry);
+
+		newDLFileEntry.setExternalReferenceCode(
+			dlFileEntry.getExternalReferenceCode());
+
+		_persistence.update(newDLFileEntry);
 	}
 
 	@Test
@@ -488,12 +509,12 @@ public class DLFileEntryPersistenceTest {
 	}
 
 	@Test
-	public void testCountByG_ERC() throws Exception {
-		_persistence.countByG_ERC(RandomTestUtil.nextLong(), "");
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
 
-		_persistence.countByG_ERC(0L, "null");
+		_persistence.countByERC_G("null", 0L);
 
-		_persistence.countByG_ERC(0L, (String)null);
+		_persistence.countByERC_G((String)null, 0L);
 	}
 
 	@Test
@@ -521,6 +542,24 @@ public class DLFileEntryPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -536,8 +575,9 @@ public class DLFileEntryPersistenceTest {
 			true, "title", true, "description", true, "fileEntryTypeId", true,
 			"version", true, "size", true, "smallImageId", true, "largeImageId",
 			true, "custom1ImageId", true, "custom2ImageId", true,
-			"manualCheckInRequired", true, "expirationDate", true, "reviewDate",
-			true, "lastPublishDate", true);
+			"manualCheckInRequired", true, "displayDate", true,
+			"expirationDate", true, "reviewDate", true, "lastPublishDate",
+			true);
 	}
 
 	@Test
@@ -862,15 +902,15 @@ public class DLFileEntryPersistenceTest {
 				new Class<?>[] {String.class}, "title"));
 
 		Assert.assertEquals(
-			Long.valueOf(dlFileEntry.getGroupId()),
-			ReflectionTestUtil.<Long>invoke(
-				dlFileEntry, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "groupId"));
-		Assert.assertEquals(
 			dlFileEntry.getExternalReferenceCode(),
 			ReflectionTestUtil.invoke(
 				dlFileEntry, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(dlFileEntry.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				dlFileEntry, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected DLFileEntry addDLFileEntry() throws Exception {
@@ -937,6 +977,8 @@ public class DLFileEntryPersistenceTest {
 		dlFileEntry.setCustom2ImageId(RandomTestUtil.nextLong());
 
 		dlFileEntry.setManualCheckInRequired(RandomTestUtil.randomBoolean());
+
+		dlFileEntry.setDisplayDate(RandomTestUtil.nextDate());
 
 		dlFileEntry.setExpirationDate(RandomTestUtil.nextDate());
 

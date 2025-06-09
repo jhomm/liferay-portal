@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model.impl;
@@ -33,7 +24,6 @@ import com.liferay.portal.tools.service.builder.test.model.UADPartialEntryModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -207,78 +197,70 @@ public class UADPartialEntryModelImpl
 	public Map<String, Function<UADPartialEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<UADPartialEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, UADPartialEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			UADPartialEntry.class.getClassLoader(), UADPartialEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<UADPartialEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<UADPartialEntry> constructor =
-				(Constructor<UADPartialEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<UADPartialEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<UADPartialEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"uadPartialEntryId", UADPartialEntry::getUadPartialEntryId);
+			attributeGetterFunctions.put("userId", UADPartialEntry::getUserId);
+			attributeGetterFunctions.put(
+				"userName", UADPartialEntry::getUserName);
+			attributeGetterFunctions.put(
+				"message", UADPartialEntry::getMessage);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<UADPartialEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<UADPartialEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<UADPartialEntry, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<UADPartialEntry, Object>>();
-		Map<String, BiConsumer<UADPartialEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<UADPartialEntry, ?>>();
+		private static final Map<String, BiConsumer<UADPartialEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"uadPartialEntryId", UADPartialEntry::getUadPartialEntryId);
-		attributeSetterBiConsumers.put(
-			"uadPartialEntryId",
-			(BiConsumer<UADPartialEntry, Long>)
-				UADPartialEntry::setUadPartialEntryId);
-		attributeGetterFunctions.put("userId", UADPartialEntry::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<UADPartialEntry, Long>)UADPartialEntry::setUserId);
-		attributeGetterFunctions.put("userName", UADPartialEntry::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<UADPartialEntry, String>)UADPartialEntry::setUserName);
-		attributeGetterFunctions.put("message", UADPartialEntry::getMessage);
-		attributeSetterBiConsumers.put(
-			"message",
-			(BiConsumer<UADPartialEntry, String>)UADPartialEntry::setMessage);
+		static {
+			Map<String, BiConsumer<UADPartialEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<UADPartialEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"uadPartialEntryId",
+				(BiConsumer<UADPartialEntry, Long>)
+					UADPartialEntry::setUadPartialEntryId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<UADPartialEntry, Long>)UADPartialEntry::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<UADPartialEntry, String>)
+					UADPartialEntry::setUserName);
+			attributeSetterBiConsumers.put(
+				"message",
+				(BiConsumer<UADPartialEntry, String>)
+					UADPartialEntry::setMessage);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -589,41 +571,12 @@ public class UADPartialEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<UADPartialEntry, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<UADPartialEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<UADPartialEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((UADPartialEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, UADPartialEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					UADPartialEntry.class, ModelWrapper.class);
 
 	}
 
@@ -634,7 +587,8 @@ public class UADPartialEntryModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<UADPartialEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

@@ -1,20 +1,15 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
+
+<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
+<liferay-ui:error exception="<%= CaptchaException.class %>" message="captcha-verification-failed" />
+<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
 
 <%
 Collection<ConvertProcess> convertProcesses = ConvertProcessUtil.getEnabledConvertProcesses();
@@ -22,19 +17,15 @@ Collection<ConvertProcess> convertProcesses = ConvertProcessUtil.getEnabledConve
 
 <liferay-ui:error exception="<%= FileSystemStoreRootDirException.class %>" message="the-root-directories-of-the-selected-file-system-stores-are-not-valid" />
 
-<div class="server-admin-tabs">
-	<c:choose>
-		<c:when test="<%= convertProcesses.isEmpty() %>">
-			<div class="alert alert-info">
-				<liferay-ui:message key="no-data-migration-processes-are-available" />
-			</div>
-		</c:when>
-		<c:otherwise>
-			<liferay-ui:panel-container
-				extended="<%= true %>"
-				id="convertPanelContainer"
-				persistState="<%= true %>"
-			>
+<c:choose>
+	<c:when test="<%= convertProcesses.isEmpty() %>">
+		<div class="alert alert-info">
+			<liferay-ui:message key="no-data-migration-processes-are-available" />
+		</div>
+	</c:when>
+	<c:otherwise>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
 
 				<%
 				int i = 0;
@@ -45,14 +36,7 @@ Collection<ConvertProcess> convertProcesses = ConvertProcessUtil.getEnabledConve
 					String[] parameterNames = convertProcess.getParameterNames();
 				%>
 
-					<liferay-ui:panel
-						collapsible="<%= true %>"
-						extended="<%= true %>"
-						id='<%= "convert" + i + "Panel" %>'
-						markupView="lexicon"
-						persistState="<%= true %>"
-						title="<%= convertProcess.getDescription() %>"
-					>
+					<aui:fieldset collapsed="<%= false %>" collapsible="<%= true %>" label="<%= convertProcess.getDescription() %>">
 						<c:choose>
 							<c:when test="<%= convertProcess.hasCustomView() %>">
 
@@ -67,7 +51,7 @@ Collection<ConvertProcess> convertProcesses = ConvertProcessUtil.getEnabledConve
 								</div>
 							</c:when>
 							<c:otherwise>
-								<aui:fieldset label='<%= Validator.isNotNull(parameterDescription) ? parameterDescription : "" %>'>
+								<aui:field-wrapper label='<%= Validator.isNotNull(parameterDescription) ? parameterDescription : "" %>'>
 
 									<%
 									for (String parameterName : parameterNames) {
@@ -121,21 +105,23 @@ Collection<ConvertProcess> convertProcesses = ConvertProcessUtil.getEnabledConve
 									}
 									%>
 
-								</aui:fieldset>
+								</aui:field-wrapper>
+
+								<liferay-captcha:captcha />
 
 								<aui:button-row>
 									<aui:button cssClass="save-server-button" data-cmd='<%= "convertProcess." + clazz.getName() %>' value="execute" />
 								</aui:button-row>
 							</c:otherwise>
 						</c:choose>
-					</liferay-ui:panel>
+					</aui:fieldset>
 
 				<%
 					i++;
 				}
 				%>
 
-			</liferay-ui:panel-container>
-		</c:otherwise>
-	</c:choose>
-</div>
+			</div>
+		</div>
+	</c:otherwise>
+</c:choose>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.social.kernel.model;
@@ -28,6 +19,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -38,21 +30,21 @@ import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashHandlerRegistryUtil;
+import com.liferay.portal.kernel.trash.helper.TrashHelper;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.social.kernel.service.SocialActivityLocalServiceUtil;
 import com.liferay.social.kernel.service.SocialActivitySetLocalServiceUtil;
 import com.liferay.social.kernel.service.persistence.SocialActivityUtil;
-import com.liferay.trash.kernel.util.TrashUtil;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.WindowState;
 
 import java.util.List;
 import java.util.ResourceBundle;
-
-import javax.portlet.PortletURL;
-import javax.portlet.WindowState;
 
 /**
  * @author Brian Wing Shun Chan
@@ -140,11 +132,14 @@ public abstract class BaseSocialActivityInterpreter
 			return url;
 		}
 
-		return HttpUtil.setParameter(url, "noSuchEntryRedirect", viewEntryURL);
+		return HttpComponentsUtil.setParameter(
+			url, "noSuchEntryRedirect", viewEntryURL);
 	}
 
 	protected String buildLink(String link, String text) {
-		return StringBundler.concat("<a href=\"", link, "\">", text, "</a>");
+		return StringBundler.concat(
+			"<a class=\"text-decoration-underline\" href=\"", link, "\">", text,
+			"</a>");
 	}
 
 	protected SocialActivityFeedEntry doInterpret(
@@ -236,12 +231,12 @@ public abstract class BaseSocialActivityInterpreter
 			}
 
 			return StringBundler.concat(
-				"<a class=\"group\" href=\"", groupDisplayURL, "\">",
-				HtmlUtil.escape(groupName), "</a>");
+				"<a class=\"group text-decoration-underline\" href=\"",
+				groupDisplayURL, "\">", HtmlUtil.escape(groupName), "</a>");
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
@@ -322,7 +317,7 @@ public abstract class BaseSocialActivityInterpreter
 			return sb.toString();
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return null;
 		}
@@ -333,20 +328,6 @@ public abstract class BaseSocialActivityInterpreter
 		throws Exception {
 
 		return StringPool.BLANK;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #acquireResourceBundleLoader}
-	 */
-	@Deprecated
-	protected com.liferay.portal.kernel.util.ResourceBundleLoader
-		getResourceBundleLoader() {
-
-		ResourceBundleLoader resourceBundleLoader =
-			acquireResourceBundleLoader();
-
-		return locale -> resourceBundleLoader.loadResourceBundle(locale);
 	}
 
 	protected String getTitle(
@@ -429,7 +410,7 @@ public abstract class BaseSocialActivityInterpreter
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
@@ -444,7 +425,9 @@ public abstract class BaseSocialActivityInterpreter
 			className);
 
 		if ((trashHandler != null) && trashHandler.isInTrash(classPK)) {
-			PortletURL portletURL = TrashUtil.getViewContentURL(
+			TrashHelper trashHelper = _trashHelperSnapshot.get();
+
+			PortletURL portletURL = trashHelper.getViewContentURL(
 				serviceContext.getRequest(), className, classPK);
 
 			if (portletURL == null) {
@@ -528,5 +511,8 @@ public abstract class BaseSocialActivityInterpreter
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseSocialActivityInterpreter.class);
+
+	private static final Snapshot<TrashHelper> _trashHelperSnapshot =
+		new Snapshot<>(BaseSocialActivityInterpreter.class, TrashHelper.class);
 
 }

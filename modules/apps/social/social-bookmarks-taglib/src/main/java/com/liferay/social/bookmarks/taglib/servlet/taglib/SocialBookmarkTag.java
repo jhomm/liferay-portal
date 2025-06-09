@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.social.bookmarks.taglib.servlet.taglib;
@@ -20,12 +11,14 @@ import com.liferay.social.bookmarks.taglib.internal.util.SocialBookmarksRegistry
 import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.util.AttributesTagSupport;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.IOException;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
+import java.util.Map;
 
 /**
  * @author David Truong
@@ -42,6 +35,9 @@ public class SocialBookmarkTag extends AttributesTagSupport {
 			if (socialBookmark != null) {
 				HttpServletRequest httpServletRequest = getRequest();
 
+				httpServletRequest.setAttribute(
+					"liferay-social-bookmarks:bookmark:additionalProps",
+					_additionalProps);
 				httpServletRequest.setAttribute(
 					"liferay-social-bookmarks:bookmark:displayStyle",
 					_displayStyle);
@@ -68,6 +64,10 @@ public class SocialBookmarkTag extends AttributesTagSupport {
 		catch (IOException | ServletException exception) {
 			throw new JspException(exception);
 		}
+	}
+
+	public void setAdditionalProps(Map<String, Object> additionalProps) {
+		_additionalProps = additionalProps;
 	}
 
 	public void setDisplayStyle(String displayStyle) {
@@ -101,6 +101,7 @@ public class SocialBookmarkTag extends AttributesTagSupport {
 		return SocialBookmarksRegistryUtil.getSocialBookmark(_type);
 	}
 
+	private Map<String, Object> _additionalProps;
 	private String _displayStyle;
 	private String _target;
 	private String _title;

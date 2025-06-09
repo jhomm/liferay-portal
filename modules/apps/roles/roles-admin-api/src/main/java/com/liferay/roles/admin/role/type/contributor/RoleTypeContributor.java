@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.role.type.contributor;
 
+import com.liferay.portal.kernel.dao.search.SearchPaginationUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -139,11 +131,7 @@ public interface RoleTypeContributor {
 	 *         granted by the role; <code>false</code> otherwise
 	 */
 	public default boolean isAllowDefinePermissions(Role role) {
-		if (ArrayUtil.contains(getExcludedRoleNames(), role.getName())) {
-			return false;
-		}
-
-		return true;
+		return !ArrayUtil.contains(getExcludedRoleNames(), role.getName());
 	}
 
 	/**
@@ -179,12 +167,17 @@ public interface RoleTypeContributor {
 				"classNameId", PortalUtil.getClassNameId(getClassName()));
 		}
 
+		int total = RoleServiceUtil.searchCount(
+			companyId, keywords, new Integer[] {getType()}, params);
+
+		int[] startAndEnd = SearchPaginationUtil.calculateStartAndEnd(
+			start, end, total);
+
 		return new BaseModelSearchResult<>(
 			RoleServiceUtil.search(
-				companyId, keywords, new Integer[] {getType()}, params, start,
-				end, orderByComparator),
-			RoleServiceUtil.searchCount(
-				companyId, keywords, new Integer[] {getType()}, params));
+				companyId, keywords, new Integer[] {getType()}, params,
+				startAndEnd[0], startAndEnd[1], orderByComparator),
+			total);
 	}
 
 }

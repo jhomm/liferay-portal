@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.model;
@@ -48,6 +39,7 @@ public class StyleBookEntryWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("headId", getHeadId());
 		attributes.put("styleBookEntryId", getStyleBookEntryId());
 		attributes.put("groupId", getGroupId());
@@ -61,6 +53,7 @@ public class StyleBookEntryWrapper
 		attributes.put("name", getName());
 		attributes.put("previewFileEntryId", getPreviewFileEntryId());
 		attributes.put("styleBookEntryKey", getStyleBookEntryKey());
+		attributes.put("themeId", getThemeId());
 
 		return attributes;
 	}
@@ -83,6 +76,13 @@ public class StyleBookEntryWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long headId = (Long)attributes.get("headId");
@@ -164,6 +164,12 @@ public class StyleBookEntryWrapper
 		if (styleBookEntryKey != null) {
 			setStyleBookEntryKey(styleBookEntryKey);
 		}
+
+		String themeId = (String)attributes.get("themeId");
+
+		if (themeId != null) {
+			setThemeId(themeId);
+		}
 	}
 
 	@Override
@@ -209,6 +215,16 @@ public class StyleBookEntryWrapper
 	@Override
 	public boolean getDefaultStyleBookEntry() {
 		return model.getDefaultStyleBookEntry();
+	}
+
+	/**
+	 * Returns the external reference code of this style book entry.
+	 *
+	 * @return the external reference code of this style book entry
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
 	}
 
 	/**
@@ -319,6 +335,16 @@ public class StyleBookEntryWrapper
 	}
 
 	/**
+	 * Returns the theme ID of this style book entry.
+	 *
+	 * @return the theme ID of this style book entry
+	 */
+	@Override
+	public String getThemeId() {
+		return model.getThemeId();
+	}
+
+	/**
 	 * Returns the user ID of this style book entry.
 	 *
 	 * @return the user ID of this style book entry
@@ -422,6 +448,16 @@ public class StyleBookEntryWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this style book entry.
+	 *
+	 * @param externalReferenceCode the external reference code of this style book entry
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the frontend tokens values of this style book entry.
 	 *
 	 * @param frontendTokensValues the frontend tokens values of this style book entry
@@ -522,6 +558,16 @@ public class StyleBookEntryWrapper
 	}
 
 	/**
+	 * Sets the theme ID of this style book entry.
+	 *
+	 * @param themeId the theme ID of this style book entry
+	 */
+	@Override
+	public void setThemeId(String themeId) {
+		model.setThemeId(themeId);
+	}
+
+	/**
 	 * Sets the user ID of this style book entry.
 	 *
 	 * @param userId the user ID of this style book entry
@@ -559,6 +605,11 @@ public class StyleBookEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

@@ -1,53 +1,47 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.rankings.web.internal.portlet.action;
 
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.index.IndexNameBuilder;
+import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.tuning.rankings.constants.ResultRankingsConstants;
+import com.liferay.portal.search.tuning.rankings.helper.RankingHelper;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexName;
+import com.liferay.portal.search.tuning.rankings.index.name.RankingIndexNameBuilder;
 import com.liferay.portal.search.tuning.rankings.web.internal.constants.ResultRankingsPortletKeys;
+import com.liferay.portal.search.tuning.rankings.web.internal.index.Criteria;
 import com.liferay.portal.search.tuning.rankings.web.internal.index.DuplicateQueryStringsDetector;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexName;
-import com.liferay.portal.search.tuning.rankings.web.internal.index.name.RankingIndexNameBuilder;
+
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.io.IOException;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Objects;
 
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -55,9 +49,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Kevin Tan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ResultRankingsPortletKeys.RESULT_RANKINGS,
+		"jakarta.portlet.name=" + ResultRankingsPortletKeys.RESULT_RANKINGS,
 		"mvc.command.name=/result_rankings/validate_ranking"
 	},
 	service = MVCResourceCommand.class
@@ -76,29 +69,36 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 			return false;
 		}
 		catch (RuntimeException runtimeException) {
-			runtimeException.printStackTrace();
+			_log.error(runtimeException);
 
 			throw runtimeException;
 		}
+	}
+
+	@Activate
+	protected void activate() {
+		_duplicateQueryStringsDetector = new DuplicateQueryStringsDetector(
+			_queries, _searchEngineAdapter);
 	}
 
 	protected JSONObject getJSONObject(ResourceRequest resourceRequest) {
 		ValidateRankingMVCResourceRequest validateRankingMVCResourceRequest =
 			new ValidateRankingMVCResourceRequest(resourceRequest);
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		List<String> duplicateQueryStrings = _getDuplicateQueryStrings(
 			resourceRequest, validateRankingMVCResourceRequest);
 
 		if (ListUtil.isNotEmpty(duplicateQueryStrings) &&
-			!validateRankingMVCResourceRequest.getInactive()) {
+			Objects.equals(
+				validateRankingMVCResourceRequest.getStatus(),
+				ResultRankingsConstants.STATUS_ACTIVE)) {
 
 			jsonArray.put(
-				LanguageUtil.format(
+				_language.format(
 					portal.getHttpServletRequest(resourceRequest),
-					"active-search-queries-and-aliases-must-be-unique-across-" +
-						"all-rankings.-the-following-ones-already-exist-x",
+					"active-rankings-must-be-unique-x",
 					StringUtil.merge(
 						duplicateQueryStrings, StringPool.COMMA_AND_SPACE),
 					false));
@@ -125,9 +125,6 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 	}
 
 	@Reference
-	protected DuplicateQueryStringsDetector duplicateQueryStringsDetector;
-
-	@Reference
 	protected IndexNameBuilder indexNameBuilder;
 
 	@Reference
@@ -142,18 +139,9 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 	private List<String> _getAliases(
 		ValidateRankingMVCResourceRequest validateRankingMVCResourceRequest) {
 
-		List<String> strings = new ArrayList<>(
-			validateRankingMVCResourceRequest.getAliases());
-
-		Stream<String> stream = strings.stream();
-
-		Predicate<String> predicate = this::_isUpdateSpecial;
-
-		return stream.filter(
-			predicate.negate()
-		).collect(
-			Collectors.toList()
-		);
+		return ListUtil.filter(
+			validateRankingMVCResourceRequest.getAliases(),
+			alias -> !_isUpdateSpecial(alias));
 	}
 
 	private long _getCompanyId(ResourceRequest resourceRequest) {
@@ -164,27 +152,22 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 		ResourceRequest resourceRequest,
 		ValidateRankingMVCResourceRequest validateRankingMVCResourceRequest) {
 
-		List<String> aliases = _getAliases(validateRankingMVCResourceRequest);
-
-		Collection<String> queryStrings = Stream.concat(
-			Stream.of(validateRankingMVCResourceRequest.getQueryString()),
-			aliases.stream()
-		).filter(
-			string -> !Validator.isBlank(string)
-		).distinct(
-		).sorted(
-		).collect(
-			Collectors.toList()
-		);
-
-		return duplicateQueryStringsDetector.detect(
-			duplicateQueryStringsDetector.builder(
+		return _duplicateQueryStringsDetector.detect(
+			new Criteria.Builder(
 			).index(
 				_getIndexName(resourceRequest)
+			).groupExternalReferenceCode(
+				validateRankingMVCResourceRequest.
+					getGroupExternalReferenceCode()
 			).queryStrings(
-				queryStrings
+				_rankingHelper.getQueryStrings(
+					validateRankingMVCResourceRequest.getQueryString(),
+					_getAliases(validateRankingMVCResourceRequest))
 			).rankingIndexName(
 				_getRankingIndexName(resourceRequest)
+			).sxpBlueprintExternalReferenceCode(
+				validateRankingMVCResourceRequest.
+					getSXPBlueprintExternalReferenceCode()
 			).unlessRankingDocumentId(
 				validateRankingMVCResourceRequest.getResultsRankingUid()
 			).build());
@@ -207,6 +190,26 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 
 	private static final String _UPDATE_SPECIAL = StringPool.GREATER_THAN;
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		ValidateRankingMVCResourceCommand.class);
+
+	private DuplicateQueryStringsDetector _duplicateQueryStringsDetector;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private Queries _queries;
+
+	@Reference
+	private RankingHelper _rankingHelper;
+
+	@Reference
+	private SearchEngineAdapter _searchEngineAdapter;
+
 	private class ValidateRankingMVCResourceRequest {
 
 		public ValidateRankingMVCResourceRequest(
@@ -214,18 +217,22 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 
 			_aliases = Arrays.asList(
 				ParamUtil.getStringValues(resourceRequest, "aliases"));
-			_inactive = ParamUtil.getBoolean(resourceRequest, "inactive");
+			_groupExternalReferenceCode = ParamUtil.getString(
+				resourceRequest, "groupExternalReferenceCode");
 			_queryString = ParamUtil.getString(resourceRequest, "keywords");
 			_resultsRankingUid = ParamUtil.getString(
 				resourceRequest, "resultsRankingUid");
+			_status = ParamUtil.getString(resourceRequest, "status");
+			_sxpBlueprintExternalReferenceCode = ParamUtil.getString(
+				resourceRequest, "sxpBlueprintExternalReferenceCode");
 		}
 
 		public List<String> getAliases() {
 			return Collections.unmodifiableList(_aliases);
 		}
 
-		public boolean getInactive() {
-			return _inactive;
+		public String getGroupExternalReferenceCode() {
+			return _groupExternalReferenceCode;
 		}
 
 		public String getQueryString() {
@@ -236,10 +243,20 @@ public class ValidateRankingMVCResourceCommand implements MVCResourceCommand {
 			return _resultsRankingUid;
 		}
 
+		public String getStatus() {
+			return _status;
+		}
+
+		public String getSXPBlueprintExternalReferenceCode() {
+			return _sxpBlueprintExternalReferenceCode;
+		}
+
 		private final List<String> _aliases;
-		private final boolean _inactive;
+		private final String _groupExternalReferenceCode;
 		private final String _queryString;
 		private final String _resultsRankingUid;
+		private final String _status;
+		private final String _sxpBlueprintExternalReferenceCode;
 
 	}
 

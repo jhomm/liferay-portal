@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.settings.web.internal.display.context;
@@ -18,8 +9,8 @@ import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.analytics.settings.web.internal.constants.AnalyticsSettingsWebKeys;
 import com.liferay.analytics.settings.web.internal.search.UserGroupChecker;
 import com.liferay.analytics.settings.web.internal.search.UserGroupSearch;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.UserGroupServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
@@ -29,13 +20,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.UserGroupNameComparator;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Objects;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.LinkedHashMap;
+import java.util.Objects;
 
 /**
  * @author André Miranda
@@ -58,8 +48,9 @@ public class UserGroupDisplayContext {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(
-			_renderRequest, "orderByType", "asc");
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_renderRequest, AnalyticsSettingsWebKeys.ANALYTICS_CONFIGURATION,
+			"user-group-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -78,24 +69,18 @@ public class UserGroupDisplayContext {
 
 		userGroupSearch.setOrderByCol(_getOrderByCol());
 		userGroupSearch.setOrderByType(getOrderByType());
-
-		List<UserGroup> userGroups = UserGroupServiceUtil.search(
-			_getCompanyId(), _getKeywords(), _getUserGroupParams(),
-			userGroupSearch.getStart(), userGroupSearch.getEnd(),
-			new UserGroupNameComparator(_isOrderByAscending()));
-
-		userGroupSearch.setResults(userGroups);
-
+		userGroupSearch.setResultsAndTotal(
+			() -> UserGroupServiceUtil.search(
+				_getCompanyId(), _getKeywords(), _getUserGroupParams(),
+				userGroupSearch.getStart(), userGroupSearch.getEnd(),
+				UserGroupNameComparator.getInstance(_isOrderByAscending())),
+			UserGroupServiceUtil.searchCount(
+				_getCompanyId(), _getKeywords(), _getUserGroupParams()));
 		userGroupSearch.setRowChecker(
 			new UserGroupChecker(
 				_renderResponse,
 				SetUtil.fromArray(
 					_analyticsConfiguration.syncedUserGroupIds())));
-
-		int total = UserGroupServiceUtil.searchCount(
-			_getCompanyId(), _getKeywords(), _getUserGroupParams());
-
-		userGroupSearch.setTotal(total);
 
 		return userGroupSearch;
 	}
@@ -122,8 +107,9 @@ public class UserGroupDisplayContext {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(
-			_renderRequest, "orderByCol", "user-group-name");
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_renderRequest, AnalyticsSettingsWebKeys.ANALYTICS_CONFIGURATION,
+			"user-group-order-by-col", "user-group-name");
 
 		return _orderByCol;
 	}
@@ -135,11 +121,7 @@ public class UserGroupDisplayContext {
 	}
 
 	private boolean _isOrderByAscending() {
-		if (Objects.equals("asc", getOrderByType())) {
-			return true;
-		}
-
-		return false;
+		return Objects.equals(getOrderByType(), "asc");
 	}
 
 	private final AnalyticsConfiguration _analyticsConfiguration;

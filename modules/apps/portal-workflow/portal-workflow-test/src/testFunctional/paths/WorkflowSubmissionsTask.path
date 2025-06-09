@@ -10,7 +10,9 @@
 </thead>
 
 <tbody>
+
 <!--MENU-->
+
 <tr>
 	<td>DROPDOWN_MENU_OPTION</td>
 	<td>//a[contains(@class,'dropdown-item') and contains(text(), '${key_selectOption}')]</td>
@@ -26,25 +28,32 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--PREVIEW-->
+
 <tr>
 	<td>PREVIEW</td>
-	<td>//span[@class='panel-title']</td>
+	<td>xpath=(//span[@class='panel-title'])[1]</td>
 	<td></td>
 </tr>
 <tr>
-	<td>PREVIEW_CONTENT</td>
-	<td>//div[@id='preview']//div[@class='panel-body']</td>
+	<td>PREVIEW_CONTENT_TITLE</td>
+	<td>//h3[@class='task-content-title']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>PREVIEW_CONTENT_BODY</td>
+	<td>//div[@class='asset-summary']</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PREVIEW_VIEW</td>
-	<td>//a[contains(@data-title,'View')]/span[@class='icon-monospaced']/*[name()='svg'][contains(@class,'lexicon-icon-view')]</td>
+	<td>//*[contains(@id, 'view')] | //a[@data-title="View"]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PREVIEW_EDIT</td>
-	<td>//*[@data-qa-id='editButton'] | //span/*[name()='svg'][contains(@class,'icon-pencil')]</td>
+	<td>//*[@data-qa-id='editButton'] | //*[contains(@id, 'edit')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -52,7 +61,9 @@
 	<td>//div[contains(@class,'contacts-container')]//div[@class='lfr-contact-extra']</td>
 	<td></td>
 </tr>
+
 <!--TABLE-->
+
 <tr>
 	<td>TABLE_ORDER_SUBMISSIONS</td>
 	<td>//tbody//tr[${key_order}]//td//a[text()='${key_title}']</td>

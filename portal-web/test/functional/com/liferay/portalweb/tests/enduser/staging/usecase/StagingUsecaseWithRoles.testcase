@@ -1,6 +1,7 @@
-@component-name = "portal-staging"
+@component-name = "portal-headless"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Staging";
@@ -10,7 +11,7 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
@@ -18,9 +19,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -36,8 +37,11 @@ definition {
 		}
 	}
 
-	@priority = "4"
+	@priority = 3
 	test StagingDemoLocalLive1 {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		JSONStaging.enableLocalStaging(groupName = "Site Name");
 
 		JSONRole.addSiteRole(
@@ -46,7 +50,7 @@ definition {
 
 		for (var resourceActionIndex : list "PERMISSIONS,OVERRIDE_CHECKOUT,DELETE_DISCUSSION,DELETE,ADD_DISCUSSION,VIEW,UPDATE_DISCUSSION,UPDATE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.document.library.kernel.model.DLFileEntry",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -54,7 +58,7 @@ definition {
 
 		for (var resourceActionIndex : list "DELETE,PERMISSIONS,CONFIGURE_PORTLETS,MANAGE_TEAMS,VIEW_STAGING,ASSIGN_USER_ROLES,MANAGE_SUBGROUPS,VIEW_SITE_ADMINISTRATION,ASSIGN_MEMBERS,MANAGE_STAGING,VIEW_MEMBERS,ADD_LAYOUT_SET_BRANCH,MANAGE_LAYOUTS,VIEW,ADD_LAYOUT_BRANCH,MANAGE_ARCHIVED_SETUPS,UPDATE,ADD_LAYOUT,MANAGE_ANNOUNCEMENTS,PUBLISH_STAGING,ADD_COMMUNITY,EXPORT_IMPORT_PORTLET_INFO,PUBLISH_PORTLET_INFO,EXPORT_IMPORT_LAYOUTS,PREVIEW_IN_DEVICE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.Group",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -62,7 +66,7 @@ definition {
 
 		for (var resourceActionIndex : list "UPDATE_DISCUSSION,UPDATE,PERMISSIONS,DELETE_DISCUSSION,DELETE,CUSTOMIZE,CONFIGURE_PORTLETS,ADD_LAYOUT,ADD_DISCUSSION,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.Layout",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -70,7 +74,7 @@ definition {
 
 		for (var resourceActionIndex : list "UPDATE,PERMISSIONS,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.LayoutBranch",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -78,7 +82,7 @@ definition {
 
 		for (var resourceActionIndex : list "UPDATE,PERMISSIONS,MERGE,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.LayoutSetBranch",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -86,7 +90,7 @@ definition {
 
 		for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,VIEW,PREFERENCES,PERMISSIONS,CONFIGURATION,ADD_TO_PAGE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_layout_admin_web_portlet_GroupPagesPortlet",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -105,6 +109,10 @@ definition {
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
 		DMDocument.enableActionsMenuOnPortlet();
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Staging Test Page",
+			siteName = "Site Name");
 
 		DMDocument.addPG(
 			dmDocumentDescription = "DM Document Description",
@@ -144,8 +152,11 @@ definition {
 			dmDocumentTitle = "DM Document Title");
 	}
 
-	@priority = "4"
+	@priority = 3
 	test StagingDemoLocalLive2 {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		JSONStaging.enableLocalStaging(
 			branchingPrivate = "true",
 			branchingPublic = "true",
@@ -155,45 +166,50 @@ definition {
 
 		Staging.assignStagingAdminToSite(siteName = "Site Name");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.configurePage(
+		PagesAdmin.configurePage(
 			columnName = "1 Column",
 			pageName = "Staging Test Page",
-			privacy = "Public Pages",
 			sitePageType = "Widget Page");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.gotoPageMenuItem(
+		PagesAdmin.gotoPageEllipsisMenuItem(
 			menuItem = "Configure",
 			pageName = "Staging Test Page");
 
-		Page.viewPageLayoutColumn(columnName = "1 Column");
+		AssertElementPresent(
+			key_card = "1 Column",
+			locator1 = "Card#CARD_SELECTED");
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
 		Staging.undoStagingPageVersioningPG();
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.gotoPageMenuItem(
+		PagesAdmin.gotoPageEllipsisMenuItem(
 			menuItem = "Configure",
 			pageName = "Staging Test Page");
 
-		Page.viewPageLayoutColumn(columnName = "2 Columns");
+		AssertElementPresent(
+			key_card = "2 Columns",
+			locator1 = "Card#CARD_SELECTED");
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
 		Staging.redoStagingPageVersioningPG();
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.gotoPageMenuItem(
+		PagesAdmin.gotoPageEllipsisMenuItem(
 			menuItem = "Configure",
 			pageName = "Staging Test Page");
 
-		Page.viewPageLayoutColumn(columnName = "1 Column");
+		AssertElementPresent(
+			key_card = "1 Column",
+			locator1 = "Card#CARD_SELECTED");
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
@@ -201,17 +217,22 @@ definition {
 
 		Staging.publishToLive();
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.gotoPageMenuItem(
+		PagesAdmin.gotoPageEllipsisMenuItem(
 			menuItem = "Configure",
 			pageName = "Staging Test Page");
 
-		Page.viewPageLayoutColumn(columnName = "1 Column");
+		AssertElementPresent(
+			key_card = "1 Column",
+			locator1 = "Card#CARD_SELECTED");
 	}
 
-	@priority = "4"
+	@priority = 3
 	test StagingDemoLocalLive3 {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
 			layoutName = "Wiki");
@@ -247,21 +268,17 @@ definition {
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
-		Page.view(
-			pageName = "Staging Test Page",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Staging Test Page");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Wiki",
 			siteName = "Site Name");
 
-		Page.view(
-			pageName = "Wiki",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Wiki");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.addPublicPage(pageName = "Test Page Name");
+		PagesAdmin.addPage(pageName = "Test Page Name");
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
@@ -275,7 +292,6 @@ definition {
 
 		Staging.enablePageInSitePagesVariation(
 			pageName = "Test Page Name",
-			privacy = "Public Pages",
 			sitePagesVariationName = "Main Variation Edit");
 
 		Navigator.gotoStagedSitePage(
@@ -288,13 +304,11 @@ definition {
 			pageName = "Test Page Name",
 			siteName = "Site Name");
 
-		Page.view(
-			pageName = "Test Page Name",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Test Page Name");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.deletePage(pageName = "Staging Test Page");
+		PagesAdmin.deletePage(pageName = "Staging Test Page");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Test Page Name",
@@ -308,9 +322,7 @@ definition {
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
-		Page.view(
-			pageName = "Staging Test Page",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Staging Test Page");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Test Page Name",
@@ -336,9 +348,9 @@ definition {
 			copySitePagesVariationName = "None (Empty Site Pages Variation)",
 			sitePagesVariationName = "Empty Variation");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.addPublicPage(pageName = "Empty Page Name");
+		PagesAdmin.addPage(pageName = "Empty Page Name");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Empty Page Name",
@@ -370,9 +382,7 @@ definition {
 
 		Staging.viewSitePagesVariationPG(sitePagesVariationName = "Empty Variation");
 
-		Page.view(
-			pageName = "Staging Test Page",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Staging Test Page");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Wiki",
@@ -380,9 +390,7 @@ definition {
 
 		Staging.viewSitePagesVariationPG(sitePagesVariationName = "Empty Variation");
 
-		Page.view(
-			pageName = "Wiki",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Wiki");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "Test Page Name",
@@ -390,14 +398,13 @@ definition {
 
 		Staging.viewSitePagesVariationPG(sitePagesVariationName = "Empty Variation");
 
-		Page.view(
-			pageName = "Test Page Name",
-			privacy = "Public Pages");
+		PagesAdmin.viewPageItemPresent(pageName = "Test Page Name");
 	}
 
-	@priority = "5"
+	@priority = 3
 	test StagingDemoLocalLive4 {
-		property testray.component.names = "Training";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
@@ -418,9 +425,9 @@ definition {
 			copySitePagesVariationName = "Main Variation",
 			sitePagesVariationName = "New Variation");
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.deletePage(pageName = "Wiki");
+		PagesAdmin.deletePage(pageName = "Wiki");
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
@@ -443,9 +450,9 @@ definition {
 			AssertElementNotPresent(locator1 = "Home#PAGE_2");
 		}
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.addPublicPage(pageName = "New Page Name");
+		PagesAdmin.addPage(pageName = "New Page Name");
 
 		Navigator.gotoStagedSitePage(
 			pageName = "New Page Name",
@@ -466,7 +473,9 @@ definition {
 			AssertElementNotPresent(locator1 = "Home#PAGE_2_GUEST_VIEW");
 		}
 
-		Pause(locator1 = "180000");
+		// This pause is required to allow the test to wait for the scheduled Publication to be published. See LRQA-7161 and LRQA-75872 for more details.
+
+		Pause(value1 = 300000);
 
 		Navigator.gotoSitePage(
 			pageName = "Staging Test Page",
@@ -478,8 +487,11 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-82564."
-	@priority = "4"
+	@priority = 3
 	test StagingLocalLiveWebContent {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		JSONStaging.enableLocalStaging(groupName = "Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
@@ -490,7 +502,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "Web Content Title");
 
@@ -500,63 +512,63 @@ definition {
 
 		for (var resourceActionIndex : list "VIEW,UPDATE,PERMISSIONS,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.dynamic.data.mapping.model.DDMStructure-com.liferay.journal.model.JournalArticle",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "VIEW,UPDATE,PERMISSIONS,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.dynamic.data.mapping.model.DDMTemplate-com.liferay.journal.model.JournalArticle",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "ADD_STRUCTURE,ADD_FOLDER,ADD_FEED,ADD_ARTICLE,VIEW,UPDATE,SUBSCRIBE,PERMISSIONS,ADD_TEMPLATE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "ADD_DISCUSSION,VIEW,UPDATE_DISCUSSION,UPDATE,SUBSCRIBE,PERMISSIONS,EXPIRE,DELETE_DISCUSSION,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalArticle",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "VIEW,UPDATE,PERMISSIONS,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalFeed",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "VIEW,UPDATE,SUBSCRIBE,PERMISSIONS,DELETE,ADD_SUBFOLDER,ADD_ARTICLE,ACCESS") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalFolder",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "DELETE,PERMISSIONS,CONFIGURE_PORTLETS,MANAGE_TEAMS,VIEW_STAGING,ASSIGN_USER_ROLES,MANAGE_SUBGROUPS,VIEW_SITE_ADMINISTRATION,ASSIGN_MEMBERS,MANAGE_STAGING,VIEW_MEMBERS,ADD_LAYOUT_SET_BRANCH,MANAGE_LAYOUTS,VIEW,ADD_LAYOUT_BRANCH,MANAGE_ARCHIVED_SETUPS,UPDATE,ADD_LAYOUT,MANAGE_ANNOUNCEMENTS,PUBLISH_STAGING,ADD_COMMUNITY,EXPORT_IMPORT_PORTLET_INFO,PUBLISH_PORTLET_INFO,EXPORT_IMPORT_LAYOUTS,PREVIEW_IN_DEVICE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.Group",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "VIEW,PREFERENCES,PERMISSIONS,CONFIGURATION,ADD_TO_PAGE,ACCESS_IN_CONTROL_PANEL") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_journal_web_portlet_JournalPortlet",
 				roleTitle = "Web Content Administrator Role");
 		}
 
 		for (var resourceActionIndex : list "VIEW,PREFERENCES,PERMISSIONS,CONFIGURATION,ADD_TO_PAGE,ACCESS_IN_CONTROL_PANEL") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_site_admin_web_portlet_SiteAdminPortlet",
 				roleTitle = "Web Content Administrator Role");
 		}
@@ -577,6 +589,8 @@ definition {
 			userEmailAddress = "userea@liferay.com",
 			userScreenName = "usersn");
 
+		User.firstLoginPG();
+
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "userea@liferay.com",
 			userLoginFullName = "userfn userln");
@@ -594,8 +608,11 @@ definition {
 			webContentTitle = "Web Content Title");
 	}
 
-	@priority = "4"
+	@priority = 3
 	test StagingLocalLiveWorkflow {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		JSONStaging.enableLocalStaging(
 			branchingPrivate = "true",
 			branchingPublic = "true",
@@ -617,7 +634,7 @@ definition {
 
 		for (var resourceActionIndex : list "VIEW_SITE_ADMINISTRATION,MANAGE_ANNOUNCEMENTS,VIEW_MEMBERS,EXPORT_IMPORT_PORTLET_INFO,VIEW,EXPORT_IMPORT_LAYOUTS,UPDATE,DELETE,PUBLISH_STAGING,CONFIGURE_PORTLETS,PUBLISH_PORTLET_INFO,ASSIGN_USER_ROLES,PREVIEW_IN_DEVICE,ASSIGN_MEMBERS,PERMISSIONS,ADD_LAYOUT_SET_BRANCH,MANAGE_TEAMS,ADD_LAYOUT_BRANCH,MANAGE_SUBGROUPS,ADD_LAYOUT,MANAGE_STAGING,ADD_COMMUNITY,MANAGE_LAYOUTS,VIEW_STAGING,MANAGE_ARCHIVED_SETUPS") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.Group",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -625,7 +642,7 @@ definition {
 
 		for (var resourceActionIndex : list "ADD_LAYOUT,ADD_DISCUSSION,VIEW,UPDATE_DISCUSSION,UPDATE,PERMISSIONS,DELETE_DISCUSSION,DELETE,CUSTOMIZE,CONFIGURE_PORTLETS") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.Layout",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -633,7 +650,7 @@ definition {
 
 		for (var resourceActionIndex : list "UPDATE,PERMISSIONS,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.LayoutBranch",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -641,7 +658,7 @@ definition {
 
 		for (var resourceActionIndex : list "UPDATE,PERMISSIONS,MERGE,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.portal.kernel.model.LayoutSetBranch",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -649,7 +666,7 @@ definition {
 
 		for (var resourceActionIndex : list "VIEW,PREFERENCES,PERMISSIONS,CONFIGURATION,ADD_TO_PAGE,ACCESS_IN_CONTROL_PANEL") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_layout_admin_web_portlet_GroupPagesPortlet",
 				roleTitle = "Staging Admin",
 				roleType = "site");
@@ -661,7 +678,7 @@ definition {
 
 		for (var resourceActionIndex : list "PERMISSIONS,ADD_TEMPLATE,ADD_STRUCTURE,ADD_FOLDER,ADD_FEED,ADD_ARTICLE,VIEW,UPDATE,SUBSCRIBE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal",
 				roleTitle = "Content Creator",
 				roleType = "site");
@@ -669,7 +686,7 @@ definition {
 
 		for (var resourceActionIndex : list "DELETE,ADD_DISCUSSION,VIEW,UPDATE_DISCUSSION,UPDATE,SUBSCRIBE,PERMISSIONS,EXPIRE,DELETE_DISCUSSION") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalArticle",
 				roleTitle = "Content Creator",
 				roleType = "site");
@@ -677,7 +694,7 @@ definition {
 
 		for (var resourceActionIndex : list "VIEW,UPDATE,PERMISSIONS,DELETE") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalFeed",
 				roleTitle = "Content Creator",
 				roleType = "site");
@@ -685,7 +702,7 @@ definition {
 
 		for (var resourceActionIndex : list "VIEW,UPDATE,SUBSCRIBE,PERMISSIONS,DELETE,ADD_SUBFOLDER,ADD_ARTICLE,ACCESS") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalFolder",
 				roleTitle = "Content Creator",
 				roleType = "site");
@@ -699,7 +716,7 @@ definition {
 
 		for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,VIEW,PREFERENCES,PERMISSIONS,CONFIGURATION") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_journal_web_portlet_JournalPortlet",
 				roleTitle = "Content Creator",
 				roleType = "site");
@@ -760,7 +777,7 @@ definition {
 
 		Portlet.addPG(portletName = "Web Content Display");
 
-		WebContent.addWithWorkflowPGViaWCD(
+		WebContentDisplayPortlet.addWithWorkflow(
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
@@ -794,7 +811,7 @@ definition {
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
-		Staging.submitForPublicationPageRevision();
+		Staging.submitForWorkflowPageRevision();
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "contentapprover@liferay.com",
@@ -828,7 +845,9 @@ definition {
 			pageName = "Staging Test Page",
 			siteName = "Site Name");
 
-		WebContent.viewPGViaWCD(webContentContent = "Web Content Content");
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "Web Content Content",
+			webContentTitle = "Web Content Title");
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "contentapprover@liferay.com",
@@ -847,9 +866,10 @@ definition {
 			workflowTask = "Review");
 	}
 
-	@priority = "5"
+	@priority = 3
 	test StagingPublishPage {
-		property testray.component.names = "Training";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
@@ -889,13 +909,13 @@ definition {
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
-		Portlet.addPG(portletName = "Navigation Menu");
+		Portlet.addPG(portletName = "Menu Display");
 
 		Staging.markAsReadyForPublication();
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name-staging");
+		PagesAdmin.openPagesAdmin(siteURLKey = "site-name-staging");
 
-		SitePages.deletePage(pageName = "Wiki");
+		PagesAdmin.deletePage(pageName = "Wiki");
 
 		Navigator.openStagingSiteURL(siteName = "Site Name");
 
@@ -909,7 +929,7 @@ definition {
 			pageName = "Staging Test Page",
 			siteName = "Site Name");
 
-		Portlet.viewPG(portletName = "Navigation Menu");
+		Portlet.viewPG(portletName = "Menu Display");
 
 		Navigator.gotoSitePage(
 			pageName = "Wiki",
@@ -919,8 +939,15 @@ definition {
 	}
 
 	@description = "This is a use case for LPS-88004."
-	@priority = "3"
+	@priority = 3
 	test UpdateAndDeleteWebContentCommentOnLiveSite {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
 		JSONStaging.enableLocalStaging(groupName = "Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
@@ -931,7 +958,7 @@ definition {
 			webContentContent = "Web Content Content",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContent.viewTitle(webContentTitle = "Web Content Title");
 
@@ -973,7 +1000,7 @@ definition {
 
 		for (var resourceActionIndex : list "UPDATE_DISCUSSION,DELETE_DISCUSSION") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com.liferay.journal.model.JournalArticle",
 				roleTitle = "Web Content Comment Reviewer");
 		}

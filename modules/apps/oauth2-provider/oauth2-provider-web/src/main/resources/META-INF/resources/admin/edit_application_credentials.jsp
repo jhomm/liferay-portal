@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -93,23 +84,22 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 
 					<aui:model-context bean="<%= oAuth2Application %>" model="<%= OAuth2Application.class %>" />
 
+					<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" var="baseResourceURL" />
+
 					<c:if test="<%= oAuth2Application != null %>">
-						<aui:fieldset style="margin-bottom: 1em; border-bottom: 2px solid #F0F0F0;">
-							<div class="pencil-wrapper">
-								<aui:button href="" onClick='<%= liferayPortletResponse.getNamespace() + "showEditClientIdModal();" %>' value="edit" />
-
-								<aui:input helpMessage="client-id-help[oauth2]" name="clientId" readonly="true" required="<%= true %>" type="text" />
-							</div>
-
-							<aui:input name="originalClientId" type="hidden" value="<%= clientId %>" />
-
-							<div class="pencil-wrapper">
-								<aui:button href="" onClick='<%= liferayPortletResponse.getNamespace() + "showEditClientSecretModal();" %>' value="edit" />
-
-								<aui:input helpMessage="client-secret-help[oauth2]" name="clientSecret" readonly="true" type="password" value="<%= clientSecret %>" />
-							</div>
-
-							<aui:input name="originalClientSecret" type="hidden" value="<%= clientSecret %>" />
+						<aui:fieldset cssClass="mb-3">
+							<react:component
+								module="{EditClientDetails} from oauth2-provider-web"
+								props='<%=
+									HashMapBuilder.<String, Object>put(
+										"baseResourceURL", String.valueOf(baseResourceURL)
+									).put(
+										"clientId", clientId
+									).put(
+										"clientSecret", clientSecret
+									).build()
+								%>'
+							/>
 						</aui:fieldset>
 					</c:if>
 				</clay:col>
@@ -125,6 +115,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 						</clay:col>
 
 						<clay:col
+							cssClass="pt-4"
 							lg="3"
 						>
 							<h3 class="sheet-subtitle"><liferay-ui:message key="icon" /></h3>
@@ -135,11 +126,10 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 
 							<c:choose>
 								<c:when test="<%= oAuth2AdminPortletDisplayContext.hasUpdatePermission(oAuth2Application) %>">
-									<liferay-ui:logo-selector
+									<liferay-frontend:logo-selector
 										currentLogoURL="<%= thumbnailURL %>"
-										defaultLogo="<%= oAuth2Application.getIconFileEntryId() == 0 %>"
 										defaultLogoURL="<%= oAuth2AdminPortletDisplayContext.getDefaultIconURL() %>"
-										tempImageFileName="<%= String.valueOf(oAuth2Application.getClientId()) %>"
+										label='<%= LanguageUtil.get(request, "icon") %>'
 									/>
 								</c:when>
 								<c:otherwise>
@@ -173,126 +163,40 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 	</clay:container-fluid>
 </aui:form>
 
-<div class="hidden">
-	<div id="<portlet:namespace />edit-client-id-modal">
-		<div>
-			<div class="portlet-msg-error">
-				<clay:icon
-					symbol="info-panel-open"
-				/>
-
-				<b><liferay-ui:message key="warning" />:</b>
-
-				<liferay-ui:message key="if-changed-clients-with-the-old-client-id-will-no-longer-be-able-to-request-new-tokens-after-you-save-the-application-details" />
-			</div>
-
-			<div class="padlock" id="<portlet:namespace />clientIdPadlock">
-				<div class="open" style="display: none;">
-					<clay:icon symbol="unlock" /><liferay-ui:message key="changed" />
-				</div>
-
-				<div class="closed">
-					<clay:icon symbol="lock" /><liferay-ui:message key="unchanged" />
-				</div>
-			</div>
-
-			<aui:input helpMessage="client-id-help[oauth2]" label="client-id" name="newClientId" onKeyup='<%= liferayPortletResponse.getNamespace() + "updatePadlock('clientIdPadlock', this.value, '" + HtmlUtil.escapeJS(clientId) + "')" %>' type="text" value="<%= clientId %>" />
-
-			<aui:button-row>
-				<aui:button href="" icon="icon-undo" onClick='<%= liferayPortletResponse.getNamespace() + "setControlEqualTo('newClientId', 'originalClientId')" %>' value="revert" />
-			</aui:button-row>
-		</div>
-	</div>
-
-	<div id="<portlet:namespace />edit-client-secret-modal">
-		<div>
-			<div class="portlet-msg-error">
-				<clay:icon
-					symbol="info-panel-open"
-				/>
-
-				<b><liferay-ui:message key="warning" />:</b>
-
-				<liferay-ui:message key="if-changed-clients-with-the-old-client-secret-will-no-longer-be-able-to-request-new-tokens-after-you-save-the-application-details" />
-			</div>
-
-			<div class="padlock" id="<portlet:namespace />clientSecretPadlock">
-				<div class="open" style="display: none;">
-					<clay:icon symbol="unlock" /><liferay-ui:message key="changed" />
-				</div>
-
-				<div class="closed">
-					<clay:icon symbol="lock" /><liferay-ui:message key="unchanged" />
-				</div>
-			</div>
-
-			<aui:input helpMessage="client-secret-id" label="client-secret" name="newClientSecret" onKeyup='<%= liferayPortletResponse.getNamespace() + "updatePadlock('clientSecretPadlock', this.value, '" + HtmlUtil.escapeJS(clientSecret) + "')" %>' type="text" value="<%= clientSecret %>" />
-
-			<aui:button-row>
-				<aui:button href="" icon="icon-plus" onClick='<%= liferayPortletResponse.getNamespace() + "generateRandomSecret()" %>' value="generate-new-secret" />
-
-				<aui:button href="" icon="icon-undo" onClick='<%= liferayPortletResponse.getNamespace() + "setControlEqualTo('newClientSecret', 'originalClientSecret')" %>' value="revert" />
-			</aui:button-row>
-		</div>
-	</div>
-</div>
-
 <aui:script use="aui-modal,liferay-form,node,node-event-simulate">
-	<portlet:namespace />areAdminApplicationSectionsRequired = function () {
+	window.<portlet:namespace />areAdminApplicationSectionsRequired = function () {
 		var selectedClientProfile = <portlet:namespace />getSelectedClientProfile();
 		return (
 			A.all(
 				'#<portlet:namespace />allowedGrantTypes .client-profile-' +
 					selectedClientProfile.val() +
-					' input:checked[name=<%= liferayPortletResponse.getNamespace() + "grant-" + GrantType.AUTHORIZATION_CODE.name() %>]'
+					' input:checked[name=<%= liferayPortletResponse.getNamespace() %>grant-<%= GrantType.AUTHORIZATION_CODE.name() %>]'
 			).size() > 0 ||
 			A.all(
 				'#<portlet:namespace />allowedGrantTypes .client-profile-' +
 					selectedClientProfile.val() +
-					' input:checked[name=<%= liferayPortletResponse.getNamespace() + "grant-" + GrantType.AUTHORIZATION_CODE_PKCE.name() %>]'
+					' input:checked[name=<%= liferayPortletResponse.getNamespace() %>grant-<%= GrantType.AUTHORIZATION_CODE_PKCE.name() %>]'
 			).size() > 0
 		);
 	};
 
-	<portlet:namespace />generateRandomSecret = function () {
-		Liferay.Util.fetch(
-			'<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="/oauth2_provider/generate_random_secret" />',
-			{
-				method: 'POST',
-			}
-		)
-			.then((response) => {
-				return response.text();
-			})
-			.then((response) => {
-				var newClientSecretField = A.one(
-					'#<portlet:namespace />newClientSecret'
-				);
-
-				<portlet:namespace />updateComponent(
-					newClientSecretField,
-					response
-				);
-			});
+	window.<portlet:namespace />getSelectedClientProfile = function () {
+		return A.one('#<portlet:namespace />clientProfile').get('selectedOptions');
 	};
 
-	<portlet:namespace />getSelectedClientProfile = function () {
-		return A.one('#<portlet:namespace />clientProfile option:selected');
-	};
-
-	<portlet:namespace />isClientCredentialsSectionRequired = function () {
+	window.<portlet:namespace />isClientCredentialsSectionRequired = function () {
 		var selectedClientProfile = <portlet:namespace />getSelectedClientProfile();
 
 		return (
 			A.all(
 				'#<portlet:namespace />allowedGrantTypes .client-profile-' +
 					selectedClientProfile.val() +
-					' input:checked[name=<%= liferayPortletResponse.getNamespace() + "grant-" + GrantType.CLIENT_CREDENTIALS.name() %>]'
+					' input:checked[name=<%= liferayPortletResponse.getNamespace() %>grant-<%= GrantType.CLIENT_CREDENTIALS.name() %>]'
 			).size() > 0
 		);
 	};
 
-	<portlet:namespace />isConfidentialClientRequired = function () {
+	window.<portlet:namespace />isConfidentialClientRequired = function () {
 		var selectedClientProfile = <portlet:namespace />getSelectedClientProfile();
 
 		return (
@@ -304,7 +208,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		);
 	};
 
-	<portlet:namespace />isRedirectURIRequired = function () {
+	window.<portlet:namespace />isRedirectURIRequired = function () {
 		var selectedClientProfile = <portlet:namespace />getSelectedClientProfile();
 
 		return (
@@ -316,7 +220,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		);
 	};
 
-	<portlet:namespace />requiredRedirectURIs = function () {
+	window.<portlet:namespace />requiredRedirectURIs = function () {
 		var grantTypesNodeList = A.all(
 			'#<portlet:namespace />allowedGrantTypes .allowedGrantType'
 		)._nodes;
@@ -350,7 +254,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		<portlet:namespace />updateRedirectURIs(redirectURIs);
 	};
 
-	<portlet:namespace />setControlEqualTo = function (
+	window.<portlet:namespace />setControlEqualTo = function (
 		targetControlId,
 		srcControlId
 	) {
@@ -360,96 +264,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		<portlet:namespace />updateComponent(targetControl, srcControl.val());
 	};
 
-	<portlet:namespace />showEditClientIdModal = function () {
-		var bodyContentDiv = A.one('#<portlet:namespace />edit-client-id-modal');
-		var clientIdPadlock = A.one('#<portlet:namespace />clientIdPadlock');
-		var applyField = A.one('#<portlet:namespace />newClientId');
-		var populateFieldClientId = A.one('#<portlet:namespace />clientId');
-
-		<portlet:namespace />showModal(
-			'<%= UnicodeLanguageUtil.get(request, "edit-client-id") %>',
-			bodyContentDiv,
-			clientIdPadlock,
-			applyField,
-			populateFieldClientId
-		);
-	};
-
-	<portlet:namespace />showEditClientSecretModal = function () {
-		var bodyContentDiv = A.one(
-			'#<portlet:namespace />edit-client-secret-modal'
-		);
-		var clientSecretPadlock = A.one(
-			'#<portlet:namespace />clientSecretPadlock'
-		);
-		var applyField = A.one('#<portlet:namespace />newClientSecret');
-		var populateFieldClientSecret = A.one('#<portlet:namespace />clientSecret');
-
-		<portlet:namespace />showModal(
-			'<%= UnicodeLanguageUtil.get(request, "edit-client-secret") %>',
-			bodyContentDiv,
-			clientSecretPadlock,
-			applyField,
-			populateFieldClientSecret
-		);
-	};
-
-	<portlet:namespace />showModal = function (
-		title,
-		bodyContent,
-		footerContent,
-		applyField,
-		populateField
-	) {
-		var modal = new A.Modal({
-			bodyContent: bodyContent,
-			centered: true,
-			cssClass: 'edit-client-credentials-modal',
-			destroyOnHide: false,
-			footerContent: footerContent,
-			headerContent: title,
-			modal: true,
-			plugins: [Liferay.WidgetZIndex],
-		}).render();
-
-		modal.on('render', (event) => {
-			<portlet:namespace />updateComponent(applyField, populateField.val());
-		});
-
-		modal.addToolbar([
-			{
-				label: '<liferay-ui:message key="cancel" />',
-				on: {
-					click: function () {
-						<portlet:namespace />updateComponent(
-							applyField,
-							populateField.val()
-						);
-
-						modal.hide();
-					},
-				},
-			},
-			{
-				cssClass: 'btn-primary',
-				label: '<liferay-ui:message key="apply" />',
-				on: {
-					click: function () {
-						<portlet:namespace />updateComponent(
-							populateField,
-							applyField.val()
-						);
-
-						modal.hide();
-					},
-				},
-			},
-		]);
-
-		modal.show();
-	};
-
-	<portlet:namespace />updateAdminOptionsApplicationSection = function () {
+	window.<portlet:namespace />updateAdminOptionsApplicationSection = function () {
 		var rememberApplicationSection = A.one(
 			'#<portlet:namespace />rememberDeviceSection'
 		);
@@ -478,7 +293,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		}
 	};
 
-	<portlet:namespace />updateAllowedGrantTypes = function (clientProfile) {
+	window.<portlet:namespace />updateAllowedGrantTypes = function (clientProfile) {
 		A.all('#<portlet:namespace />allowedGrantTypes .allowedGrantType').hide();
 		A.all(
 			'#<portlet:namespace />allowedGrantTypes .allowedGrantType.client-profile-' +
@@ -490,7 +305,7 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		<portlet:namespace />updateClientCredentialsSection();
 	};
 
-	<portlet:namespace />updateClientCredentialsSection = function () {
+	window.<portlet:namespace />updateClientCredentialsSection = function () {
 		var clientCredentialsSection = A.one(
 			'#<portlet:namespace />clientCredentialsSection'
 		);
@@ -510,29 +325,13 @@ String clientSecret = (oAuth2Application == null) ? "" : oAuth2Application.getCl
 		}
 	};
 
-	<portlet:namespace />updateComponent = function (component, newValue) {
+	window.<portlet:namespace />updateComponent = function (component, newValue) {
 		component.val(newValue);
 		component.simulate('keyup');
 		component.simulate('change');
 	};
 
-	<portlet:namespace />updatePadlock = function (
-		padlockId,
-		newValue,
-		originalValue
-	) {
-		var padlock = A.one('#<portlet:namespace />' + padlockId);
-		if (newValue != originalValue) {
-			padlock.one('div.closed').hide();
-			padlock.one('div.open').show();
-		}
-		else {
-			padlock.one('div.open').hide();
-			padlock.one('div.closed').show();
-		}
-	};
-
-	<portlet:namespace />updateRedirectURIs = function (required) {
+	window.<portlet:namespace />updateRedirectURIs = function (required) {
 		var redirectURIsNode = document.getElementById(
 			'<portlet:namespace />redirectURIs'
 		);

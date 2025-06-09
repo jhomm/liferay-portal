@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.servlet.jsp.compiler.internal;
@@ -20,18 +11,27 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.FileUtil;
+import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.osgi.web.servlet.JSPServletFactory;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.servlet.Servlet;
+
 import java.io.File;
+
+import java.lang.reflect.Method;
 
 import java.net.URL;
 
 import java.util.Dictionary;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
-import javax.servlet.Servlet;
+import org.apache.jasper.compiler.Compiler;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -47,12 +47,12 @@ import org.osgi.util.tracker.BundleTrackerCustomizer;
 /**
  * @author Preston Crary
  */
-@Component(immediate = true, service = JSPServletFactory.class)
+@Component(service = JSPServletFactory.class)
 public class JSPServletFactoryImpl implements JSPServletFactory {
 
 	@Override
 	public Servlet createJSPServlet() {
-		return new JspServlet();
+		return new JspServlet(_fragmentCounts.keySet());
 	}
 
 	@Activate
@@ -77,9 +77,51 @@ public class JSPServletFactoryImpl implements JSPServletFactory {
 	private static final Log _log = LogFactoryUtil.getLog(
 		JSPServletFactoryImpl.class);
 
-	private BundleTracker<Tracked> _bundleTracker;
+	static {
+		try {
+			ClassLoader classLoader = PortalClassLoaderUtil.getClassLoader();
 
-	private static class JspFragmentBundleTrackerCustomizer
+			Class<?> clazz = classLoader.loadClass(
+				"com.liferay.portal.jsp.engine.internal.compiler." +
+					"BridgeCompiler");
+
+			Method initMethod = clazz.getMethod("init", Supplier.class);
+
+			initMethod.invoke(
+				null, (Supplier<Compiler>)() -> new CompilerWrapper());
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			throw new ExceptionInInitializerError(reflectiveOperationException);
+		}
+	}
+
+	private BundleTracker<Tracked> _bundleTracker;
+	private final Map<String, AtomicInteger> _fragmentCounts = new HashMap<>();
+
+	private static class Tracked {
+
+		public boolean match(Bundle bundle) {
+			if (_symbolicName.equals(bundle.getSymbolicName()) &&
+				((_versionRange == null) ||
+				 _versionRange.includes(bundle.getVersion()))) {
+
+				return true;
+			}
+
+			return false;
+		}
+
+		private Tracked(String symbolicName, VersionRange versionRange) {
+			_symbolicName = symbolicName;
+			_versionRange = versionRange;
+		}
+
+		private final String _symbolicName;
+		private final VersionRange _versionRange;
+
+	}
+
+	private class JspFragmentBundleTrackerCustomizer
 		implements BundleTrackerCustomizer<Tracked> {
 
 		@Override
@@ -117,7 +159,7 @@ public class JSPServletFactoryImpl implements JSPServletFactory {
 
 			Tracked tracked = new Tracked(symbolicName, versionRange);
 
-			_deleteJSPServletClasses(tracked);
+			_deleteJSPServletClasses(tracked, true);
 
 			return tracked;
 		}
@@ -131,7 +173,7 @@ public class JSPServletFactoryImpl implements JSPServletFactory {
 		public void removedBundle(
 			Bundle bundle, BundleEvent event, Tracked tracked) {
 
-			_deleteJSPServletClasses(tracked);
+			_deleteJSPServletClasses(tracked, false);
 		}
 
 		private JspFragmentBundleTrackerCustomizer(
@@ -140,23 +182,37 @@ public class JSPServletFactoryImpl implements JSPServletFactory {
 			_bundleContext = bundleContext;
 		}
 
-		private void _deleteJSPServletClasses(Tracked tracked) {
+		private void _deleteJSPServletClasses(Tracked tracked, boolean add) {
 			for (Bundle bundle : _bundleContext.getBundles()) {
 				if (!tracked.match(bundle)) {
 					continue;
 				}
 
+				_fragmentCounts.compute(
+					tracked._symbolicName,
+					(symbolicName, count) -> {
+						if (add) {
+							if (count == null) {
+								return new AtomicInteger(1);
+							}
+
+							count.incrementAndGet();
+
+							return count;
+						}
+
+						if (count.decrementAndGet() == 0) {
+							return null;
+						}
+
+						return count;
+					});
+
 				String scratchDir = StringBundler.concat(
 					_WORK_DIR, bundle.getSymbolicName(), StringPool.DASH,
 					bundle.getVersion());
 
-				if (PropsValues.WORK_DIR_OVERRIDE_ENABLED &&
-					_log.isInfoEnabled()) {
-
-					_log.info(
-						"Deleting JSP class files from ".concat(scratchDir));
-				}
-				else if (_log.isDebugEnabled()) {
+				if (_log.isDebugEnabled()) {
 					_log.debug(
 						"Deleting JSP class files from ".concat(scratchDir));
 				}
@@ -166,29 +222,6 @@ public class JSPServletFactoryImpl implements JSPServletFactory {
 		}
 
 		private final BundleContext _bundleContext;
-
-	}
-
-	private static class Tracked {
-
-		public boolean match(Bundle bundle) {
-			if (_symbolicName.equals(bundle.getSymbolicName()) &&
-				((_versionRange == null) ||
-				 _versionRange.includes(bundle.getVersion()))) {
-
-				return true;
-			}
-
-			return false;
-		}
-
-		private Tracked(String symbolicName, VersionRange versionRange) {
-			_symbolicName = symbolicName;
-			_versionRange = versionRange;
-		}
-
-		private final String _symbolicName;
-		private final VersionRange _versionRange;
 
 	}
 

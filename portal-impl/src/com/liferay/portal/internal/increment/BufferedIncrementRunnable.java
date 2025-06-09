@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.internal.increment;
@@ -17,10 +8,10 @@ package com.liferay.portal.internal.increment;
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
+import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.increment.Increment;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 
 import java.io.Serializable;
 
@@ -41,18 +32,14 @@ public class BufferedIncrementRunnable implements Runnable {
 		_queueLengthTracker = queueLengthTracker;
 		_dispatchThread = dispatchThread;
 
-		if (_bufferedIncrementConfiguration.isStandbyEnabled()) {
+		if (bufferedIncrementConfiguration.isStandbyEnabled()) {
 			_queueLengthTracker.incrementAndGet();
 		}
-
-		_companyId = CompanyThreadLocal.getCompanyId();
 	}
 
 	@Override
 	@SuppressWarnings("rawtypes")
 	public void run() {
-		CompanyThreadLocal.setCompanyId(_companyId);
-
 		while (true) {
 			BufferedIncreasableEntry bufferedIncreasableEntry =
 				(BufferedIncreasableEntry)_batchablePipe.take();
@@ -71,7 +58,9 @@ public class BufferedIncrementRunnable implements Runnable {
 					throwable);
 			}
 
-			if (_bufferedIncrementConfiguration.isStandbyEnabled()) {
+			if (_bufferedIncrementConfiguration.isStandbyEnabled() &&
+				CTCollectionThreadLocal.isProductionMode()) {
+
 				int queueLength = _queueLengthTracker.decrementAndGet();
 
 				long standbyTime =
@@ -83,7 +72,7 @@ public class BufferedIncrementRunnable implements Runnable {
 				}
 				catch (InterruptedException interruptedException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(interruptedException, interruptedException);
+						_log.debug(interruptedException);
 					}
 
 					break;
@@ -94,7 +83,7 @@ public class BufferedIncrementRunnable implements Runnable {
 		if (_dispatchThread != Thread.currentThread()) {
 			ThreadLocalCacheManager.clearAll(Lifecycle.REQUEST);
 
-			CentralizedThreadLocal.clearShortLivedThreadLocals();
+			CentralizedThreadLocal.clearShortLivedCentralizedThreadLocals();
 		}
 	}
 
@@ -104,7 +93,6 @@ public class BufferedIncrementRunnable implements Runnable {
 	private final BatchablePipe<Serializable, Increment<?>> _batchablePipe;
 	private final BufferedIncrementConfiguration
 		_bufferedIncrementConfiguration;
-	private final long _companyId;
 	private final Thread _dispatchThread;
 	private final AtomicInteger _queueLengthTracker;
 

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.internal.exportimport.content.processor;
 
 import com.liferay.exportimport.configuration.ExportImportServiceConfiguration;
+import com.liferay.exportimport.configuration.ExportImportServiceConfigurationWhitelistedURLPatternsHelper;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.kernel.exception.ExportImportContentProcessorException;
 import com.liferay.exportimport.kernel.exception.ExportImportContentValidationException;
@@ -23,6 +15,7 @@ import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
@@ -36,13 +29,14 @@ import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.StagedModel;
 import com.liferay.portal.kernel.model.VirtualLayoutConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.portlet.FriendlyURLResolverRegistryUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutFriendlyURLLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.InetAddressUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Portal;
@@ -51,11 +45,13 @@ import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.staging.StagingGroupHelper;
 
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
 import java.util.Locale;
@@ -72,7 +68,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.exportimport.configuration.ExportImportServiceConfiguration",
-	immediate = true, property = "content.processor.type=LayoutReferences",
+	property = "content.processor.type=LayoutReferences",
 	service = ExportImportContentProcessor.class
 )
 public class LayoutReferencesExportImportContentProcessor
@@ -116,11 +112,11 @@ public class LayoutReferencesExportImportContentProcessor
 			Group group, String url, StringBundler urlSB)
 		throws PortalException {
 
-		if (!_http.hasProtocol(url)) {
+		if (!HttpComponentsUtil.hasProtocol(url)) {
 			return url;
 		}
 
-		boolean secure = _http.isSecure(url);
+		boolean secure = HttpComponentsUtil.isSecure(url);
 
 		int serverPort = _portal.getPortalServerPort(secure);
 
@@ -320,19 +316,17 @@ public class LayoutReferencesExportImportContentProcessor
 					url = url.substring(pathContext.length());
 				}
 
-				if (!url.startsWith(StringPool.SLASH)) {
-					continue;
-				}
-
 				pos = url.indexOf(StringPool.SLASH, 1);
 
-				String localePath = StringPool.BLANK;
+				if (pos == -1) {
+					pos = url.length();
+				}
 
 				Locale locale = null;
 
-				if (pos != -1) {
-					localePath = url.substring(0, pos);
+				String localePath = url.substring(0, pos);
 
+				if (localePath.length() > 1) {
 					locale = LocaleUtil.fromLanguageId(
 						localePath.substring(1), true, false);
 				}
@@ -352,6 +346,40 @@ public class LayoutReferencesExportImportContentProcessor
 
 						url = urlWithoutLocale;
 					}
+					else if ((urlWithoutLocale.indexOf(StringPool.SLASH, 1) ==
+								-1) &&
+							 !localePath.equals(
+								 _PRIVATE_GROUP_SERVLET_MAPPING) &&
+							 !localePath.equals(
+								 _PRIVATE_USER_SERVLET_MAPPING) &&
+							 !localePath.equals(
+								 _PUBLIC_GROUP_SERVLET_MAPPING)) {
+
+						urlSB.append(localePath);
+
+						url = urlWithoutLocale;
+					}
+					else {
+						Layout layout =
+							_layoutLocalService.fetchLayoutByFriendlyURL(
+								group.getGroupId(), false, urlWithoutLocale);
+
+						if (layout == null) {
+							layout =
+								_layoutLocalService.fetchLayoutByFriendlyURL(
+									group.getGroupId(), true, urlWithoutLocale);
+						}
+
+						if (layout != null) {
+							urlSB.append(localePath);
+
+							url = urlWithoutLocale;
+						}
+					}
+				}
+
+				if (!url.startsWith(StringPool.SLASH)) {
+					continue;
 				}
 
 				boolean privateLayout = false;
@@ -536,9 +564,12 @@ public class LayoutReferencesExportImportContentProcessor
 					PortletDataContext.REFERENCE_TYPE_DEPENDENCY, true);
 			}
 			catch (Exception exception) {
-				if ((exception instanceof NoSuchLayoutException) &&
-					!_exportImportServiceConfiguration.
-						validateLayoutReferences()) {
+				if (((exception instanceof NoSuchLayoutException) &&
+					 !_exportImportServiceConfiguration.
+						 validateLayoutReferences()) ||
+					_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+						isWhitelistedURL(
+							CompanyThreadLocal.getCompanyId(), url)) {
 
 					continue;
 				}
@@ -827,13 +858,6 @@ public class LayoutReferencesExportImportContentProcessor
 		return content;
 	}
 
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
 	protected void validateLayoutReferences(long groupId, String content)
 		throws PortalException {
 
@@ -846,7 +870,7 @@ public class LayoutReferencesExportImportContentProcessor
 		}
 		catch (ConfigurationException configurationException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(configurationException.getMessage());
+				_log.warn(configurationException);
 			}
 		}
 
@@ -856,7 +880,6 @@ public class LayoutReferencesExportImportContentProcessor
 
 		Group group = _groupLocalService.getGroup(groupId);
 
-		String[] friendlyURLSeparators = {"/-/", "/b/", "/d/", "/w/"};
 		String[] patterns = {"href=", "[[", "{{"};
 
 		int beginPos = -1;
@@ -918,7 +941,11 @@ public class LayoutReferencesExportImportContentProcessor
 
 			url = content.substring(beginPos + offset, endPos);
 
-			endPos = StringUtil.indexOfAny(url, friendlyURLSeparators);
+			endPos = StringUtil.indexOfAny(
+				url,
+				ArrayUtil.remove(
+					FriendlyURLResolverRegistryUtil.getURLSeparators(),
+					VirtualLayoutConstants.CANONICAL_URL_SEPARATOR));
 
 			if (endPos != -1) {
 				url = url.substring(0, endPos);
@@ -932,7 +959,9 @@ public class LayoutReferencesExportImportContentProcessor
 
 			url = replaceExportHostname(group, url, urlSB);
 
-			if (!url.startsWith(StringPool.SLASH)) {
+			if (!url.startsWith(StringPool.SLASH) ||
+				PortalInstances.isVirtualHostsIgnorePath(url)) {
+
 				continue;
 			}
 
@@ -946,19 +975,17 @@ public class LayoutReferencesExportImportContentProcessor
 				url = url.substring(pathContext.length());
 			}
 
-			if (!url.startsWith(StringPool.SLASH)) {
-				continue;
-			}
-
 			int pos = url.indexOf(StringPool.SLASH, 1);
 
-			String localePath = StringPool.BLANK;
+			if (pos == -1) {
+				pos = url.length();
+			}
 
 			Locale locale = null;
 
-			if (pos != -1) {
-				localePath = url.substring(0, pos);
+			String localePath = url.substring(0, pos);
 
+			if (localePath.length() > 1) {
 				locale = LocaleUtil.fromLanguageId(
 					localePath.substring(1), true, false);
 			}
@@ -976,6 +1003,39 @@ public class LayoutReferencesExportImportContentProcessor
 
 					url = urlWithoutLocale;
 				}
+				else if ((urlWithoutLocale.indexOf(StringPool.SLASH, 1) ==
+							-1) &&
+						 !localePath.equals(_PRIVATE_GROUP_SERVLET_MAPPING) &&
+						 !localePath.equals(_PRIVATE_USER_SERVLET_MAPPING) &&
+						 !localePath.equals(_PUBLIC_GROUP_SERVLET_MAPPING)) {
+
+					urlSB.append(localePath);
+
+					url = urlWithoutLocale;
+				}
+				else {
+					Layout layout =
+						_layoutLocalService.fetchLayoutByFriendlyURL(
+							group.getGroupId(), false, urlWithoutLocale);
+
+					if (layout == null) {
+						layout = _layoutLocalService.fetchLayoutByFriendlyURL(
+							group.getGroupId(), true, urlWithoutLocale);
+					}
+
+					if (layout != null) {
+						urlSB.append(localePath);
+
+						url = urlWithoutLocale;
+					}
+				}
+			}
+
+			if (!url.startsWith(StringPool.SLASH) ||
+				_exportImportServiceConfigurationWhitelistedURLPatternsHelper.
+					isWhitelistedURL(companyId, url)) {
+
+				continue;
 			}
 
 			boolean privateLayout = false;
@@ -1117,23 +1177,33 @@ public class LayoutReferencesExportImportContentProcessor
 		throws PortalException {
 
 		try {
-			URI uri = _http.getURI(url);
+			URI uri = null;
 
-			if ((uri != null) &&
-				InetAddressUtil.isLocalInetAddress(
-					InetAddress.getByName(uri.getHost()))) {
+			try {
+				uri = HttpComponentsUtil.getURI(url);
+			}
+			catch (URISyntaxException uriSyntaxException) {
+				if (_log.isDebugEnabled()) {
+					_log.debug(uriSyntaxException);
+				}
+			}
 
-				return StringBundler.concat(
-					uri.getScheme(), "://", uri.getHost(), StringPool.COLON,
-					uri.getPort());
+			if ((uri != null) && Validator.isIPAddress(uri.getHost())) {
+				InetAddress inetAddress = InetAddressUtil.getInetAddressByName(
+					uri.getHost());
+
+				if ((inetAddress != null) &&
+					InetAddressUtil.isLocalInetAddress(inetAddress)) {
+
+					return StringBundler.concat(
+						uri.getScheme(), "://", uri.getHost(), StringPool.COLON,
+						uri.getPort());
+				}
 			}
 		}
 		catch (UnknownHostException unknownHostException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(unknownHostException, unknownHostException);
-			}
-			else if (_log.isWarnEnabled()) {
-				_log.warn(unknownHostException.getMessage());
+			if (_log.isWarnEnabled()) {
+				_log.warn(unknownHostException);
 			}
 		}
 		catch (Exception exception) {
@@ -1264,15 +1334,18 @@ public class LayoutReferencesExportImportContentProcessor
 	@Reference
 	private CompanyLocalService _companyLocalService;
 
+	@Reference
 	private ConfigurationProvider _configurationProvider;
+
 	private volatile ExportImportServiceConfiguration
 		_exportImportServiceConfiguration;
 
 	@Reference
-	private GroupLocalService _groupLocalService;
+	private ExportImportServiceConfigurationWhitelistedURLPatternsHelper
+		_exportImportServiceConfigurationWhitelistedURLPatternsHelper;
 
 	@Reference
-	private Http _http;
+	private GroupLocalService _groupLocalService;
 
 	@Reference
 	private LayoutFriendlyURLLocalService _layoutFriendlyURLLocalService;

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.upgrade.v3_5_1;
 
+import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.DocumentException;
@@ -38,13 +30,13 @@ public class JournalArticleDataFileEntryIdUpgradeProcess
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		try (PreparedStatement selectPreparedStatement =
-				connection.prepareStatement(
-					"select id_, content from JournalArticle");
-			PreparedStatement updatePreparedStatement =
-				connection.prepareStatement(
-					"update JournalArticle set content = ? where id_ = ?");
-			ResultSet resultSet = selectPreparedStatement.executeQuery()) {
+		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
+				"select id_, content from JournalArticle");
+			ResultSet resultSet = preparedStatement1.executeQuery();
+			PreparedStatement preparedStatement2 =
+				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
+					connection,
+					"update JournalArticle set content = ? where id_ = ?")) {
 
 			while (resultSet.next()) {
 				String content = resultSet.getString("content");
@@ -52,13 +44,14 @@ public class JournalArticleDataFileEntryIdUpgradeProcess
 				String upgradedContent = _upgradeContent(content);
 
 				if (!Objects.equals(content, upgradedContent)) {
-					updatePreparedStatement.setString(1, upgradedContent);
-					updatePreparedStatement.setLong(
-						2, resultSet.getLong("id_"));
+					preparedStatement2.setString(1, upgradedContent);
+					preparedStatement2.setLong(2, resultSet.getLong("id_"));
 
-					updatePreparedStatement.executeUpdate();
+					preparedStatement2.addBatch();
 				}
 			}
+
+			preparedStatement2.executeBatch();
 		}
 	}
 

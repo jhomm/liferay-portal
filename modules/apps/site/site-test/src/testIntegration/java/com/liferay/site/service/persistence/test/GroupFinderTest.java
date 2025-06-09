@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.service.persistence.test;
@@ -119,6 +110,25 @@ public class GroupFinderTest {
 			GroupConstants.ANY_PARENT_GROUP_ID, new String[] {null},
 			new String[] {null},
 			LinkedHashMapBuilder.<String, Object>put(
+				"actionId", _arbitraryResourceAction.getActionId()
+			).put(
+				"userId", _user.getUserId()
+			).build(),
+			true, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		Assert.assertTrue(groups.contains(withActionIdGroup));
+		Assert.assertFalse(groups.contains(withoutActionIdGroup));
+
+		// Parameter order is important. See LPD-34884.
+
+		groups = _groupFinder.findByC_C_PG_N_D(
+			TestPropsValues.getCompanyId(),
+			new long[] {_portal.getClassNameId(Group.class)},
+			GroupConstants.ANY_PARENT_GROUP_ID, new String[] {null},
+			new String[] {null},
+			LinkedHashMapBuilder.<String, Object>put(
+				"active", true
+			).put(
 				"actionId", _arbitraryResourceAction.getActionId()
 			).put(
 				"userId", _user.getUserId()
@@ -261,19 +271,19 @@ public class GroupFinderTest {
 
 		_groups.addFirst(parentGroup);
 
-		LayoutTestUtil.addLayout(parentGroup, false);
+		LayoutTestUtil.addTypePortletLayout(parentGroup, false);
 
 		Group childGroup1 = GroupTestUtil.addGroup(parentGroup.getGroupId());
 
 		_groups.addFirst(childGroup1);
 
-		LayoutTestUtil.addLayout(childGroup1, false);
+		LayoutTestUtil.addTypePortletLayout(childGroup1, false);
 
 		Group childGroup2 = GroupTestUtil.addGroup(parentGroup.getGroupId());
 
 		_groups.addFirst(childGroup2);
 
-		LayoutTestUtil.addLayout(childGroup2, true);
+		LayoutTestUtil.addTypePortletLayout(childGroup2, true);
 
 		groups = _findByLayouts(GroupConstants.DEFAULT_PARENT_GROUP_ID);
 
@@ -299,19 +309,19 @@ public class GroupFinderTest {
 
 		_groups.addFirst(parentGroup);
 
-		LayoutTestUtil.addLayout(parentGroup, false);
+		LayoutTestUtil.addTypePortletLayout(parentGroup, false);
 
 		Group childGroup1 = GroupTestUtil.addGroup(parentGroup.getGroupId());
 
 		_groups.addFirst(childGroup1);
 
-		LayoutTestUtil.addLayout(childGroup1, false);
+		LayoutTestUtil.addTypePortletLayout(childGroup1, false);
 
 		Group childGroup2 = GroupTestUtil.addGroup(parentGroup.getGroupId());
 
 		_groups.addFirst(childGroup2);
 
-		LayoutTestUtil.addLayout(childGroup2, true);
+		LayoutTestUtil.addTypePortletLayout(childGroup2, true);
 
 		_groupLocalService.updateGroup(
 			parentGroup.getGroupId(), parentGroup.getParentGroupId(),

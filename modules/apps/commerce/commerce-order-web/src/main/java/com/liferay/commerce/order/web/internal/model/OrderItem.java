@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.web.internal.model;
@@ -24,14 +15,16 @@ import java.util.List;
 public class OrderItem {
 
 	public OrderItem(
-		String deliveryGroup, String discount, ImageField image, String name,
-		String options, long orderId, long orderItemId,
-		List<OrderItem> orderItems, long parentOrderItemId, String price,
-		int quantity, String requestedDeliveryDate, String sku,
-		String subscriptionDuration, String subscriptionPeriod, String total) {
+		String deliveryGroupName, String discount, String formattedQuantity,
+		ImageField image, String name, String options, long orderId,
+		long orderItemId, List<OrderItem> orderItems, long parentOrderItemId,
+		String price, String requestedDeliveryDate, String sku,
+		String subscriptionDuration, String subscriptionPeriod, String total,
+		String unitOfMeasureKey) {
 
-		_deliveryGroup = deliveryGroup;
+		_deliveryGroupName = deliveryGroupName;
 		_discount = discount;
+		_formattedQuantity = formattedQuantity;
 		_image = image;
 		_name = name;
 		_options = options;
@@ -40,20 +33,24 @@ public class OrderItem {
 		_orderItems = orderItems;
 		_parentOrderItemId = parentOrderItemId;
 		_price = price;
-		_quantity = quantity;
 		_requestedDeliveryDate = requestedDeliveryDate;
 		_sku = sku;
 		_subscriptionDuration = subscriptionDuration;
 		_subscriptionPeriod = subscriptionPeriod;
 		_total = total;
+		_unitOfMeasureKey = unitOfMeasureKey;
 	}
 
-	public String getDeliveryGroup() {
-		return _deliveryGroup;
+	public String getDeliveryGroupName() {
+		return _deliveryGroupName;
 	}
 
 	public String getDiscount() {
 		return _discount;
+	}
+
+	public String getFormattedQuantity() {
+		return _formattedQuantity;
 	}
 
 	public ImageField getImage() {
@@ -88,10 +85,6 @@ public class OrderItem {
 		return _price;
 	}
 
-	public int getQuantity() {
-		return _quantity;
-	}
-
 	public String getRequestedDeliveryDate() {
 		return _requestedDeliveryDate;
 	}
@@ -112,8 +105,13 @@ public class OrderItem {
 		return _total;
 	}
 
-	private final String _deliveryGroup;
+	public String getUnitOfMeasureKey() {
+		return _unitOfMeasureKey;
+	}
+
+	private final String _deliveryGroupName;
 	private final String _discount;
+	private final String _formattedQuantity;
 	private final ImageField _image;
 	private final String _name;
 	private final String _options;
@@ -122,11 +120,11 @@ public class OrderItem {
 	private final List<OrderItem> _orderItems;
 	private final long _parentOrderItemId;
 	private final String _price;
-	private final int _quantity;
 	private final String _requestedDeliveryDate;
 	private final String _sku;
 	private final String _subscriptionDuration;
 	private final String _subscriptionPeriod;
 	private final String _total;
+	private final String _unitOfMeasureKey;
 
 }

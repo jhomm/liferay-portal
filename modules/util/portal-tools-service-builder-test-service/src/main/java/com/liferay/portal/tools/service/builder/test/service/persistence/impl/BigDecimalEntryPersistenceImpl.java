@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.persistence.impl;
@@ -49,7 +40,6 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.LVEntry
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.math.BigDecimal;
@@ -192,7 +182,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BigDecimalEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BigDecimalEntry bigDecimalEntry : list) {
@@ -585,7 +575,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {bigDecimalValue};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -731,7 +721,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BigDecimalEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BigDecimalEntry bigDecimalEntry : list) {
@@ -1124,7 +1114,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {bigDecimalValue};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1270,7 +1260,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BigDecimalEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BigDecimalEntry bigDecimalEntry : list) {
@@ -1663,7 +1653,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {bigDecimalValue};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -2108,7 +2098,7 @@ public class BigDecimalEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BigDecimalEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -2178,7 +2168,7 @@ public class BigDecimalEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -2323,17 +2313,18 @@ public class BigDecimalEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the big decimal entry
 	 * @param lvEntryPK the primary key of the lv entry
+	 * @return <code>true</code> if an association between the big decimal entry and the lv entry was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addLVEntry(long pk, long lvEntryPK) {
+	public boolean addLVEntry(long pk, long lvEntryPK) {
 		BigDecimalEntry bigDecimalEntry = fetchByPrimaryKey(pk);
 
 		if (bigDecimalEntry == null) {
-			bigDecimalEntryToLVEntryTableMapper.addTableMapping(
+			return bigDecimalEntryToLVEntryTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, lvEntryPK);
 		}
 		else {
-			bigDecimalEntryToLVEntryTableMapper.addTableMapping(
+			return bigDecimalEntryToLVEntryTableMapper.addTableMapping(
 				bigDecimalEntry.getCompanyId(), pk, lvEntryPK);
 		}
 	}
@@ -2343,20 +2334,21 @@ public class BigDecimalEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the big decimal entry
 	 * @param lvEntry the lv entry
+	 * @return <code>true</code> if an association between the big decimal entry and the lv entry was added; <code>false</code> if they were already associated
 	 */
 	@Override
-	public void addLVEntry(
+	public boolean addLVEntry(
 		long pk,
 		com.liferay.portal.tools.service.builder.test.model.LVEntry lvEntry) {
 
 		BigDecimalEntry bigDecimalEntry = fetchByPrimaryKey(pk);
 
 		if (bigDecimalEntry == null) {
-			bigDecimalEntryToLVEntryTableMapper.addTableMapping(
+			return bigDecimalEntryToLVEntryTableMapper.addTableMapping(
 				CompanyThreadLocal.getCompanyId(), pk, lvEntry.getPrimaryKey());
 		}
 		else {
-			bigDecimalEntryToLVEntryTableMapper.addTableMapping(
+			return bigDecimalEntryToLVEntryTableMapper.addTableMapping(
 				bigDecimalEntry.getCompanyId(), pk, lvEntry.getPrimaryKey());
 		}
 	}
@@ -2366,9 +2358,10 @@ public class BigDecimalEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the big decimal entry
 	 * @param lvEntryPKs the primary keys of the lv entries
+	 * @return <code>true</code> if at least one association between the big decimal entry and the lv entries was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addLVEntries(long pk, long[] lvEntryPKs) {
+	public boolean addLVEntries(long pk, long[] lvEntryPKs) {
 		long companyId = 0;
 
 		BigDecimalEntry bigDecimalEntry = fetchByPrimaryKey(pk);
@@ -2380,8 +2373,14 @@ public class BigDecimalEntryPersistenceImpl
 			companyId = bigDecimalEntry.getCompanyId();
 		}
 
-		bigDecimalEntryToLVEntryTableMapper.addTableMappings(
+		long[] addedKeys = bigDecimalEntryToLVEntryTableMapper.addTableMappings(
 			companyId, pk, lvEntryPKs);
+
+		if (addedKeys.length > 0) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -2389,14 +2388,15 @@ public class BigDecimalEntryPersistenceImpl
 	 *
 	 * @param pk the primary key of the big decimal entry
 	 * @param lvEntries the lv entries
+	 * @return <code>true</code> if at least one association between the big decimal entry and the lv entries was added; <code>false</code> if they were all already associated
 	 */
 	@Override
-	public void addLVEntries(
+	public boolean addLVEntries(
 		long pk,
 		List<com.liferay.portal.tools.service.builder.test.model.LVEntry>
 			lvEntries) {
 
-		addLVEntries(
+		return addLVEntries(
 			pk,
 			ListUtil.toLongArray(
 				lvEntries,
@@ -2624,31 +2624,15 @@ public class BigDecimalEntryPersistenceImpl
 			new String[] {BigDecimal.class.getName()},
 			new String[] {"bigDecimalValue"}, false);
 
-		_setBigDecimalEntryUtilPersistence(this);
+		BigDecimalEntryUtil.setPersistence(this);
 	}
 
 	public void destroy() {
-		_setBigDecimalEntryUtilPersistence(null);
+		BigDecimalEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(BigDecimalEntryImpl.class.getName());
 
 		TableMapperFactory.removeTableMapper("BigDecimalEntries_LVEntries");
-	}
-
-	private void _setBigDecimalEntryUtilPersistence(
-		BigDecimalEntryPersistence bigDecimalEntryPersistence) {
-
-		try {
-			Field field = BigDecimalEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, bigDecimalEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@ServiceReference(type = EntityCache.class)

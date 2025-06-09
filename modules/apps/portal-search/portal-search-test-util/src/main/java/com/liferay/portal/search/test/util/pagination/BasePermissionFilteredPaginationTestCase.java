@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.test.util.pagination;
@@ -27,12 +18,13 @@ import com.liferay.portal.kernel.search.SearchResultPermissionFilter;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Props;
-import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.configuration.DefaultSearchResultPermissionFilterConfiguration;
 import com.liferay.portal.search.internal.facet.FacetPostProcessorImpl;
 import com.liferay.portal.search.internal.permission.DefaultSearchResultPermissionFilter;
+import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
+import com.liferay.portal.search.searcher.SearchRequest;
+import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.test.util.IdempotentRetryAssert;
 import com.liferay.portal.search.test.util.indexing.BaseIndexingTestCase;
 import com.liferay.portal.search.test.util.indexing.DocumentCreationHelpers;
@@ -49,7 +41,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.mockito.AdditionalMatchers;
-import org.mockito.Matchers;
 import org.mockito.Mockito;
 
 /**
@@ -183,21 +174,7 @@ public abstract class BasePermissionFilteredPaginationTestCase
 	public void testPastLast() throws Exception {
 		index(9, filtering());
 
-		assertPagination(10, 12, 3, "[[7, 8, 9]]");
-	}
-
-	@Test
-	public void testPastLastSecondIndex() throws Exception {
-		index(9, filtering());
-
-		assertPagination(11, 12, 3, "[[9]]");
-	}
-
-	@Test
-	public void testPastLastThirdIndex() throws Exception {
-		index(9, filtering());
-
-		assertPagination(12, 12, 3, "[[9]]");
+		assertPagination(10, 12, 3, "[[]]");
 	}
 
 	@Test
@@ -282,10 +259,9 @@ public abstract class BasePermissionFilteredPaginationTestCase
 		SearchContext searchContext = createSearchContext();
 
 		searchContext.setEnd(end);
-		searchContext.setStart(start);
-
 		searchContext.setSorts(
 			new Sort(Field.PRIORITY, Sort.DOUBLE_TYPE, false));
+		searchContext.setStart(start);
 
 		return searchContext;
 	}
@@ -296,7 +272,6 @@ public abstract class BasePermissionFilteredPaginationTestCase
 		IndexerRegistry indexerRegistry = Mockito.mock(IndexerRegistry.class);
 		PermissionChecker permissionChecker = Mockito.mock(
 			PermissionChecker.class);
-		Props props = Mockito.mock(Props.class);
 		RelatedEntryIndexerRegistry relatedEntryIndexerRegistry = Mockito.mock(
 			RelatedEntryIndexerRegistry.class);
 
@@ -305,12 +280,16 @@ public abstract class BasePermissionFilteredPaginationTestCase
 				DefaultSearchResultPermissionFilterConfiguration.class);
 
 		setUpSearchResultPermissionFilterMocks(
-			indexerRegistry, permissionChecker, props,
+			indexerRegistry, permissionChecker,
 			defaultSearchResultPermissionFilterConfiguration);
+
+		SearchRequestBuilderFactory searchRequestBuilderFactory =
+			_getSearchRequestBuilderFactory();
 
 		return new DefaultSearchResultPermissionFilter(
 			new FacetPostProcessorImpl(), indexerRegistry, permissionChecker,
-			props, relatedEntryIndexerRegistry, this::doSearch,
+			relatedEntryIndexerRegistry, this::doSearch,
+			searchRequestBuilderFactory,
 			defaultSearchResultPermissionFilterConfiguration);
 	}
 
@@ -446,7 +425,7 @@ public abstract class BasePermissionFilteredPaginationTestCase
 
 	protected void setUpSearchResultPermissionFilterMocks(
 			IndexerRegistry indexerRegistry,
-			PermissionChecker permissionChecker, Props props,
+			PermissionChecker permissionChecker,
 			DefaultSearchResultPermissionFilterConfiguration
 				defaultSearchResultPermissionFilterConfiguration)
 		throws Exception {
@@ -455,17 +434,17 @@ public abstract class BasePermissionFilteredPaginationTestCase
 
 		Mockito.when(
 			indexer.hasPermission(
-				Matchers.any(PermissionChecker.class), Matchers.anyString(),
-				Matchers.anyLong(), Matchers.anyString())
+				Mockito.any(PermissionChecker.class), Mockito.anyString(),
+				Mockito.anyLong(), Mockito.anyString())
 		).thenReturn(
 			true
 		);
 
 		Mockito.when(
 			indexer.hasPermission(
-				Matchers.any(PermissionChecker.class), Matchers.anyString(),
+				Mockito.any(PermissionChecker.class), Mockito.anyString(),
 				AdditionalMatchers.geq(_FILTERED_ENTRY_IDENTIFIER),
-				Matchers.anyString())
+				Mockito.anyString())
 		).thenReturn(
 			false
 		);
@@ -477,7 +456,7 @@ public abstract class BasePermissionFilteredPaginationTestCase
 		);
 
 		Mockito.when(
-			indexerRegistry.getIndexer(Matchers.anyString())
+			indexerRegistry.getIndexer(Mockito.anyString())
 		).thenReturn(
 			indexer
 		);
@@ -486,13 +465,6 @@ public abstract class BasePermissionFilteredPaginationTestCase
 			permissionChecker.getCompanyId()
 		).thenReturn(
 			getCompanyId()
-		);
-
-		Mockito.when(
-			props.get(
-				PropsKeys.INDEX_PERMISSION_FILTER_SEARCH_AMPLIFICATION_FACTOR)
-		).thenReturn(
-			"1.5"
 		);
 
 		Mockito.when(
@@ -512,6 +484,42 @@ public abstract class BasePermissionFilteredPaginationTestCase
 
 	protected int permissionFilteredSearchResultAccurateCountThreshold;
 	protected int searchQueryResultWindowLimit;
+
+	private SearchRequestBuilderFactory _getSearchRequestBuilderFactory() {
+		SearchRequestBuilderFactory searchRequestBuilderFactory = Mockito.mock(
+			SearchRequestBuilderFactory.class);
+
+		SearchRequestBuilder searchRequestBuilder = Mockito.mock(
+			SearchRequestBuilder.class);
+
+		Mockito.when(
+			searchRequestBuilderFactory.builder(Mockito.any())
+		).thenReturn(
+			searchRequestBuilder
+		);
+
+		SearchRequest searchRequest = Mockito.mock(SearchRequest.class);
+
+		Mockito.when(
+			searchRequestBuilder.build()
+		).thenReturn(
+			searchRequest
+		);
+
+		Mockito.when(
+			searchRequest.getFrom()
+		).thenReturn(
+			0
+		);
+
+		Mockito.when(
+			searchRequest.getSize()
+		).thenReturn(
+			10
+		);
+
+		return searchRequestBuilderFactory;
+	}
 
 	private static final long _FILTERED_ENTRY_IDENTIFIER = 1000000;
 

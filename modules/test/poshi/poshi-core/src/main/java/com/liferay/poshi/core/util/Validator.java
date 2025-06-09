@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core.util;
@@ -150,9 +141,8 @@ public class Validator {
 		else if ((object1 == null) || (object2 == null)) {
 			return false;
 		}
-		else {
-			return object1.equals(object2);
-		}
+
+		return object1.equals(object2);
 	}
 
 	/**
@@ -165,6 +155,25 @@ public class Validator {
 	 */
 	public static boolean equals(short short1, short short2) {
 		if (short1 == short2) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	 * Returns <code>true</code> if the character is in the ASCII character set.
+	 * This includes characters with integer values between 32 and 126
+	 * (inclusive).
+	 *
+	 * @param  c the character to check
+	 * @return <code>true</code> if the character is in the ASCII character set;
+	 *         <code>false</code> otherwise
+	 */
+	public static boolean isAscii(char c) {
+		int i = c;
+
+		if ((i >= 32) && (i <= 126)) {
 			return true;
 		}
 
@@ -280,9 +289,8 @@ public class Validator {
 		else if (object == null) {
 			return true;
 		}
-		else {
-			return false;
-		}
+
+		return false;
 	}
 
 	/**

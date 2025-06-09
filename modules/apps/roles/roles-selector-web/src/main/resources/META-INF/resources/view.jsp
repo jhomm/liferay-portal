@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -188,7 +179,7 @@ SearchContainer<?> searchContainer = (SearchContainer<?>)request.getAttribute("l
 	showCreationMenu="<%= false %>"
 />
 
-<aui:form action="<%= portletURL.toString() %>" method="post" name="fm">
+<aui:form action="<%= portletURL %>" method="post" name="fm">
 	<aui:input name="tabs1" type="hidden" value="<%= tabs1 %>" />
 	<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 	<aui:input name="groupId" type="hidden" value="<%= String.valueOf(group.getGroupId()) %>" />
@@ -216,7 +207,7 @@ SearchContainer<?> searchContainer = (SearchContainer<?>)request.getAttribute("l
 	</aui:button-row>
 </aui:form>
 
-<script>
+<aui:script>
 	function <portlet:namespace />updateUserGroupGroupRoleUsers(redirect) {
 		var Util = Liferay.Util;
 
@@ -225,11 +216,11 @@ SearchContainer<?> searchContainer = (SearchContainer<?>)request.getAttribute("l
 		Util.postForm(form, {
 			data: {
 				redirect: redirect,
-				addUserGroupIds: Util.listCheckedExcept(
+				addUserGroupIds: Util.getCheckedCheckboxes(
 					form,
 					'<portlet:namespace />allRowIds'
 				),
-				removeUserGroupIds: Util.listUncheckedExcept(
+				removeUserGroupIds: Util.getUncheckedCheckboxes(
 					form,
 					'<portlet:namespace />allRowIds'
 				),
@@ -246,11 +237,11 @@ SearchContainer<?> searchContainer = (SearchContainer<?>)request.getAttribute("l
 		Util.postForm(form, {
 			data: {
 				redirect: redirect,
-				addUserIds: Util.listCheckedExcept(
+				addUserIds: Util.getCheckedCheckboxes(
 					form,
 					'<portlet:namespace />allRowIds'
 				),
-				removeUserIds: Util.listUncheckedExcept(
+				removeUserIds: Util.getUncheckedCheckboxes(
 					form,
 					'<portlet:namespace />allRowIds'
 				),
@@ -258,4 +249,4 @@ SearchContainer<?> searchContainer = (SearchContainer<?>)request.getAttribute("l
 			url: '<portlet:actionURL name="editUserGroupRoleUsers" />',
 		});
 	}
-</script>
+</aui:script>

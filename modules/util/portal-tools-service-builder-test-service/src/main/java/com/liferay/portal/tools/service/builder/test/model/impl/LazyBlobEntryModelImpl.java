@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model.impl;
@@ -29,22 +20,18 @@ import com.liferay.portal.tools.service.builder.test.model.LazyBlobEntry;
 import com.liferay.portal.tools.service.builder.test.model.LazyBlobEntryBlob1BlobModel;
 import com.liferay.portal.tools.service.builder.test.model.LazyBlobEntryBlob2BlobModel;
 import com.liferay.portal.tools.service.builder.test.model.LazyBlobEntryModel;
-import com.liferay.portal.tools.service.builder.test.model.LazyBlobEntrySoap;
 import com.liferay.portal.tools.service.builder.test.service.LazyBlobEntryLocalServiceUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -142,53 +129,6 @@ public class LazyBlobEntryModelImpl
 	@Deprecated
 	public static final long LAZYBLOBENTRYID_COLUMN_BITMASK = 4L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static LazyBlobEntry toModel(LazyBlobEntrySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		LazyBlobEntry model = new LazyBlobEntryImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setLazyBlobEntryId(soapModel.getLazyBlobEntryId());
-		model.setGroupId(soapModel.getGroupId());
-		model.setBlob1(soapModel.getBlob1());
-		model.setBlob2(soapModel.getBlob2());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<LazyBlobEntry> toModels(LazyBlobEntrySoap[] soapModels) {
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<LazyBlobEntry> models = new ArrayList<LazyBlobEntry>(
-			soapModels.length);
-
-		for (LazyBlobEntrySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.tools.service.builder.test.service.util.ServiceProps.
 			get(
@@ -270,77 +210,70 @@ public class LazyBlobEntryModelImpl
 	public Map<String, Function<LazyBlobEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<LazyBlobEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, LazyBlobEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			LazyBlobEntry.class.getClassLoader(), LazyBlobEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<LazyBlobEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<LazyBlobEntry> constructor =
-				(Constructor<LazyBlobEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<LazyBlobEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<LazyBlobEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put("uuid", LazyBlobEntry::getUuid);
+			attributeGetterFunctions.put(
+				"lazyBlobEntryId", LazyBlobEntry::getLazyBlobEntryId);
+			attributeGetterFunctions.put("groupId", LazyBlobEntry::getGroupId);
+			attributeGetterFunctions.put("blob1", LazyBlobEntry::getBlob1);
+			attributeGetterFunctions.put("blob2", LazyBlobEntry::getBlob2);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<LazyBlobEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<LazyBlobEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<LazyBlobEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<LazyBlobEntry, Object>>();
-		Map<String, BiConsumer<LazyBlobEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<LazyBlobEntry, ?>>();
+		private static final Map<String, BiConsumer<LazyBlobEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", LazyBlobEntry::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<LazyBlobEntry, String>)LazyBlobEntry::setUuid);
-		attributeGetterFunctions.put(
-			"lazyBlobEntryId", LazyBlobEntry::getLazyBlobEntryId);
-		attributeSetterBiConsumers.put(
-			"lazyBlobEntryId",
-			(BiConsumer<LazyBlobEntry, Long>)LazyBlobEntry::setLazyBlobEntryId);
-		attributeGetterFunctions.put("groupId", LazyBlobEntry::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<LazyBlobEntry, Long>)LazyBlobEntry::setGroupId);
-		attributeGetterFunctions.put("blob1", LazyBlobEntry::getBlob1);
-		attributeSetterBiConsumers.put(
-			"blob1", (BiConsumer<LazyBlobEntry, Blob>)LazyBlobEntry::setBlob1);
-		attributeGetterFunctions.put("blob2", LazyBlobEntry::getBlob2);
-		attributeSetterBiConsumers.put(
-			"blob2", (BiConsumer<LazyBlobEntry, Blob>)LazyBlobEntry::setBlob2);
+		static {
+			Map<String, BiConsumer<LazyBlobEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<LazyBlobEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<LazyBlobEntry, String>)LazyBlobEntry::setUuid);
+			attributeSetterBiConsumers.put(
+				"lazyBlobEntryId",
+				(BiConsumer<LazyBlobEntry, Long>)
+					LazyBlobEntry::setLazyBlobEntryId);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<LazyBlobEntry, Long>)LazyBlobEntry::setGroupId);
+			attributeSetterBiConsumers.put(
+				"blob1",
+				(BiConsumer<LazyBlobEntry, Blob>)LazyBlobEntry::setBlob1);
+			attributeSetterBiConsumers.put(
+				"blob2",
+				(BiConsumer<LazyBlobEntry, Blob>)LazyBlobEntry::setBlob2);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -673,43 +606,12 @@ public class LazyBlobEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		StringBundler sb = new StringBundler(19);
-
-		sb.append("<model><model-name>");
-		sb.append(
-			"com.liferay.portal.tools.service.builder.test.model.LazyBlobEntry");
-		sb.append("</model-name>");
-
-		sb.append(
-			"<column><column-name>uuid</column-name><column-value><![CDATA[");
-
-		sb.append(getUuid());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>lazyBlobEntryId</column-name><column-value><![CDATA[");
-
-		sb.append(getLazyBlobEntryId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>groupId</column-name><column-value><![CDATA[");
-
-		sb.append(getGroupId());
-
-		sb.append("]]></column-value></column>");
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, LazyBlobEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					LazyBlobEntry.class, ModelWrapper.class);
 
 	}
 
@@ -723,7 +625,8 @@ public class LazyBlobEntryModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<LazyBlobEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

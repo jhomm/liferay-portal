@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.tax.model;
@@ -42,6 +33,7 @@ public class CommerceTaxMethodWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("commerceTaxMethodId", getCommerceTaxMethodId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -54,12 +46,19 @@ public class CommerceTaxMethodWrapper
 		attributes.put("engineKey", getEngineKey());
 		attributes.put("percentage", isPercentage());
 		attributes.put("active", isActive());
+		attributes.put("typeSettings", getTypeSettings());
 
 		return attributes;
 	}
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		Long commerceTaxMethodId = (Long)attributes.get("commerceTaxMethodId");
 
 		if (commerceTaxMethodId != null) {
@@ -130,6 +129,12 @@ public class CommerceTaxMethodWrapper
 
 		if (active != null) {
 			setActive(active);
+		}
+
+		String typeSettings = (String)attributes.get("typeSettings");
+
+		if (typeSettings != null) {
+			setTypeSettings(typeSettings);
 		}
 	}
 
@@ -295,6 +300,16 @@ public class CommerceTaxMethodWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this commerce tax method.
+	 *
+	 * @return the mvcc version of this commerce tax method
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the name of this commerce tax method.
 	 *
 	 * @return the name of this commerce tax method
@@ -388,6 +403,23 @@ public class CommerceTaxMethodWrapper
 	@Override
 	public long getPrimaryKey() {
 		return model.getPrimaryKey();
+	}
+
+	/**
+	 * Returns the type settings of this commerce tax method.
+	 *
+	 * @return the type settings of this commerce tax method
+	 */
+	@Override
+	public String getTypeSettings() {
+		return model.getTypeSettings();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.util.UnicodeProperties
+		getTypeSettingsUnicodeProperties() {
+
+		return model.getTypeSettingsUnicodeProperties();
 	}
 
 	/**
@@ -598,6 +630,16 @@ public class CommerceTaxMethodWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this commerce tax method.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce tax method
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the name of this commerce tax method.
 	 *
 	 * @param name the name of this commerce tax method
@@ -681,6 +723,24 @@ public class CommerceTaxMethodWrapper
 	}
 
 	/**
+	 * Sets the type settings of this commerce tax method.
+	 *
+	 * @param typeSettings the type settings of this commerce tax method
+	 */
+	@Override
+	public void setTypeSettings(String typeSettings) {
+		model.setTypeSettings(typeSettings);
+	}
+
+	@Override
+	public void setTypeSettingsUnicodeProperties(
+		com.liferay.portal.kernel.util.UnicodeProperties
+			typeSettingsUnicodeProperties) {
+
+		model.setTypeSettingsUnicodeProperties(typeSettingsUnicodeProperties);
+	}
+
+	/**
 	 * Sets the user ID of this commerce tax method.
 	 *
 	 * @param userId the user ID of this commerce tax method
@@ -708,6 +768,11 @@ public class CommerceTaxMethodWrapper
 	@Override
 	public void setUserUuid(String userUuid) {
 		model.setUserUuid(userUuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

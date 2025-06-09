@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
 
 import com.liferay.petra.concurrent.ConcurrentReferenceKeyHashMap;
 import com.liferay.petra.memory.FinalizeManager;
+import com.liferay.petra.string.CharPool;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageBuilderUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.language.UTF8Control;
@@ -70,7 +63,7 @@ public class ResourceBundleUtil {
 	}
 
 	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no replacement
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	public static ResourceBundle getBundle(Locale locale, String symbolicName) {
@@ -111,28 +104,6 @@ public class ResourceBundleUtil {
 		return _getBundle(baseName, locale, classLoader, symbolicName);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getLocalizationMap(ResourceBundleLoader, String)}
-	 */
-	@Deprecated
-	public static Map<Locale, String> getLocalizationMap(
-		com.liferay.portal.kernel.util.ResourceBundleLoader
-			resourceBundleLoader,
-		String key) {
-
-		return getLocalizationMap(
-			new ResourceBundleLoader() {
-
-				@Override
-				public ResourceBundle loadResourceBundle(Locale locale) {
-					return resourceBundleLoader.loadResourceBundle(locale);
-				}
-
-			},
-			key);
-	}
-
 	public static Map<Locale, String> getLocalizationMap(
 		ResourceBundleLoader resourceBundleLoader, String key) {
 
@@ -155,16 +126,6 @@ public class ResourceBundleUtil {
 			getBundle(locale, clazz), PortalUtil.getResourceBundle(locale));
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static com.liferay.portal.kernel.util.ResourceBundleLoader
-		getResourceBundleLoader(String baseName, ClassLoader classLoader) {
-
-		return new ClassResourceBundleLoader(baseName, classLoader);
-	}
-
 	public static String getString(ResourceBundle resourceBundle, String key) {
 		if (!resourceBundle.containsKey(key)) {
 			return null;
@@ -175,7 +136,7 @@ public class ResourceBundleUtil {
 		}
 		catch (MissingResourceException missingResourceException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(missingResourceException, missingResourceException);
+				_log.debug(missingResourceException);
 			}
 
 			return null;
@@ -197,7 +158,9 @@ public class ResourceBundleUtil {
 
 		if (ArrayUtil.isNotEmpty(arguments)) {
 			MessageFormat messageFormat = new MessageFormat(
-				value, resourceBundle.getLocale());
+				StringUtil.replace(
+					value, CharPool.APOSTROPHE, StringPool.DOUBLE_APOSTROPHE),
+				resourceBundle.getLocale());
 
 			value = messageFormat.format(arguments);
 		}
@@ -234,8 +197,7 @@ public class ResourceBundleUtil {
 				}
 				catch (MissingResourceException missingResourceException) {
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							missingResourceException, missingResourceException);
+						_log.debug(missingResourceException);
 					}
 
 					_portalResourceBundleClassLoaders.add(classLoader);

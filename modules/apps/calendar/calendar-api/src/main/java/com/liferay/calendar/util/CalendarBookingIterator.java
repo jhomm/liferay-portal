@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.util;
@@ -41,7 +32,15 @@ public class CalendarBookingIterator implements Iterator<CalendarBooking> {
 	public CalendarBookingIterator(CalendarBooking calendarBooking)
 		throws ParseException {
 
+		this(calendarBooking, calendarBooking.getTimeZone());
+	}
+
+	public CalendarBookingIterator(
+			CalendarBooking calendarBooking, TimeZone displayTimeZone)
+		throws ParseException {
+
 		_calendarBooking = calendarBooking;
+		_displayTimeZone = displayTimeZone;
 
 		_recurrenceIterator =
 			RecurrenceIteratorFactory.createRecurrenceIterator(
@@ -72,11 +71,13 @@ public class CalendarBookingIterator implements Iterator<CalendarBooking> {
 
 		Calendar jCalendar = _getStartTimeJCalendar(_currentDateValue);
 
+		long startTime = jCalendar.getTimeInMillis();
+
+		newCalendarBooking.setStartTime(startTime);
 		newCalendarBooking.setEndTime(
-			jCalendar.getTimeInMillis() + _calendarBooking.getDuration());
+			startTime + _calendarBooking.getDuration());
 
 		newCalendarBooking.setInstanceIndex(_instanceIndex);
-		newCalendarBooking.setStartTime(jCalendar.getTimeInMillis());
 
 		_instanceIndex++;
 
@@ -98,8 +99,14 @@ public class CalendarBookingIterator implements Iterator<CalendarBooking> {
 			jCalendar.get(Calendar.SECOND), jCalendar.get(Calendar.MILLISECOND),
 			_getTimeZone(_calendarBooking));
 
+		if (_calendarBooking.isRecurring()) {
+			return startTimeJCalendar;
+		}
+
 		int shift = JCalendarUtil.getDSTShift(
-			jCalendar, startTimeJCalendar, _getTimeZone(_calendarBooking));
+			jCalendar, startTimeJCalendar,
+			_calendarBooking.isAllDay() ? TimeZone.getTimeZone(StringPool.UTC) :
+				_displayTimeZone);
 
 		startTimeJCalendar.add(Calendar.MILLISECOND, shift);
 
@@ -116,7 +123,7 @@ public class CalendarBookingIterator implements Iterator<CalendarBooking> {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -153,6 +160,7 @@ public class CalendarBookingIterator implements Iterator<CalendarBooking> {
 
 	private final CalendarBooking _calendarBooking;
 	private DateValue _currentDateValue;
+	private final TimeZone _displayTimeZone;
 	private int _instanceIndex;
 	private final RecurrenceIterator _recurrenceIterator;
 

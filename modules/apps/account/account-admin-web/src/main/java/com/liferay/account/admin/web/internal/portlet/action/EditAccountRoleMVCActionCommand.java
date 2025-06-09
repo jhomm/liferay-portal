@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.portlet.action;
@@ -17,25 +8,24 @@ package com.liferay.account.admin.web.internal.portlet.action;
 import com.liferay.account.constants.AccountPortletKeys;
 import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountRoleLocalService;
+import com.liferay.account.service.AccountRoleService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -44,36 +34,14 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
-		"javax.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_ADMIN,
+		"jakarta.portlet.name=" + AccountPortletKeys.ACCOUNT_ENTRIES_MANAGEMENT,
 		"mvc.command.name=/account_admin/edit_account_role"
 	},
 	service = MVCActionCommand.class
 )
 public class EditAccountRoleMVCActionCommand extends BaseMVCActionCommand {
-
-	protected AccountRole addAccountRole(ActionRequest actionRequest)
-		throws Exception {
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		long accountEntryId = ParamUtil.getLong(
-			actionRequest, "accountEntryId");
-		String name = ParamUtil.getString(actionRequest, "name");
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
-			actionRequest, "title");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
-
-		_roleLocalService.validateName(name);
-
-		return _accountRoleLocalService.addAccountRole(
-			themeDisplay.getUserId(), accountEntryId, name, titleMap,
-			descriptionMap);
-	}
 
 	@Override
 	protected void doProcessAction(
@@ -86,14 +54,14 @@ public class EditAccountRoleMVCActionCommand extends BaseMVCActionCommand {
 			String redirect = ParamUtil.getString(actionRequest, "redirect");
 
 			if (cmd.equals(Constants.ADD)) {
-				AccountRole accountRole = addAccountRole(actionRequest);
+				AccountRole accountRole = _addAccountRole(actionRequest);
 
-				redirect = _http.setParameter(
+				redirect = HttpComponentsUtil.setParameter(
 					redirect, actionResponse.getNamespace() + "accountRoleId",
 					accountRole.getAccountRoleId());
 			}
 			else if (cmd.equals(Constants.UPDATE)) {
-				updateAccountRole(actionRequest);
+				_updateAccountRole(actionRequest);
 			}
 
 			if (Validator.isNotNull(redirect)) {
@@ -116,7 +84,24 @@ public class EditAccountRoleMVCActionCommand extends BaseMVCActionCommand {
 		}
 	}
 
-	protected void updateAccountRole(ActionRequest actionRequest)
+	private AccountRole _addAccountRole(ActionRequest actionRequest)
+		throws Exception {
+
+		long accountEntryId = ParamUtil.getLong(
+			actionRequest, "accountEntryId");
+		String name = ParamUtil.getString(actionRequest, "name");
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
+			actionRequest, "title");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
+
+		_roleLocalService.validateName(name);
+
+		return _accountRoleService.addAccountRole(
+			null, accountEntryId, name, titleMap, descriptionMap);
+	}
+
+	private void _updateAccountRole(ActionRequest actionRequest)
 		throws PortalException {
 
 		long accountRoleId = ParamUtil.getLong(actionRequest, "accountRoleId");
@@ -128,21 +113,24 @@ public class EditAccountRoleMVCActionCommand extends BaseMVCActionCommand {
 
 		_roleLocalService.validateName(name);
 
-		Map<Locale, String> titleMap = LocalizationUtil.getLocalizationMap(
+		Map<Locale, String> titleMap = _localization.getLocalizationMap(
 			actionRequest, "title");
-		Map<Locale, String> descriptionMap =
-			LocalizationUtil.getLocalizationMap(actionRequest, "description");
+		Map<Locale, String> descriptionMap = _localization.getLocalizationMap(
+			actionRequest, "description");
 
 		_roleLocalService.updateRole(
-			accountRole.getRoleId(), name, titleMap, descriptionMap, null,
-			null);
+			accountRole.getExternalReferenceCode(), accountRole.getRoleId(),
+			name, titleMap, descriptionMap, null, null);
 	}
 
 	@Reference
 	private AccountRoleLocalService _accountRoleLocalService;
 
 	@Reference
-	private Http _http;
+	private AccountRoleService _accountRoleService;
+
+	@Reference
+	private Localization _localization;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

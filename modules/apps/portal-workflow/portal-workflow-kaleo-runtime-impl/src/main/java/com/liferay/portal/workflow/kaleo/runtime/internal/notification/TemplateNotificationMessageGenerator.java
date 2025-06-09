@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.runtime.internal.notification;
@@ -26,6 +17,7 @@ import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.workflow.kaleo.KaleoWorkflowModelConverter;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstance;
 import com.liferay.portal.workflow.kaleo.model.KaleoInstanceToken;
@@ -51,14 +43,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marcellus Tavares
  * @author Michael C. Han
  */
-@Component(
-	immediate = true,
-	property = {
-		"template.language=freemarker", "template.language=soy",
-		"template.language=velocity"
-	},
-	service = NotificationMessageGenerator.class
-)
+@Component(service = NotificationMessageGenerator.class)
 public class TemplateNotificationMessageGenerator
 	implements NotificationMessageGenerator {
 
@@ -69,25 +54,12 @@ public class TemplateNotificationMessageGenerator
 			ExecutionContext executionContext)
 		throws NotificationMessageGenerationException {
 
-		String templateManagerName = _templateManagerNames.get(
-			notificationTemplateLanguage);
-
-		if (Validator.isNull(templateManagerName)) {
-			throw new NotificationMessageGenerationException(
-				"Unsupported notification template language " +
-					notificationTemplateLanguage);
-		}
-
 		try {
-			String templateId =
-				notificationName + kaleoClassName + kaleoClassPK;
+			Template template = _getTemplate(
+				kaleoClassName, kaleoClassPK, notificationName,
+				notificationTemplate, notificationTemplateLanguage);
 
-			Template template = TemplateManagerUtil.getTemplate(
-				templateManagerName,
-				new StringTemplateResource(templateId, notificationTemplate),
-				false);
-
-			populateContextVariables(template, executionContext);
+			_populateContextVariables(template, executionContext);
 
 			if (_log.isDebugEnabled()) {
 				template.forEach(
@@ -109,6 +81,11 @@ public class TemplateNotificationMessageGenerator
 		}
 	}
 
+	@Override
+	public String[] getTemplateLanguages() {
+		return new String[] {"freemarker", "soy", "velocity"};
+	}
+
 	@Activate
 	protected void activate() {
 		_templateManagerNames.put(
@@ -117,7 +94,29 @@ public class TemplateNotificationMessageGenerator
 		_templateManagerNames.put("velocity", TemplateConstants.LANG_TYPE_VM);
 	}
 
-	protected void populateContextVariables(
+	private Template _getTemplate(
+			String kaleoClassName, long kaleoClassPK, String notificationName,
+			String notificationTemplate, String notificationTemplateLanguage)
+		throws Exception {
+
+		String templateManagerName = _templateManagerNames.get(
+			notificationTemplateLanguage);
+
+		if (Validator.isNull(templateManagerName)) {
+			throw new NotificationMessageGenerationException(
+				"Unsupported notification template language " +
+					notificationTemplateLanguage);
+		}
+
+		String templateId = notificationName + kaleoClassName + kaleoClassPK;
+
+		return TemplateManagerUtil.getTemplate(
+			templateManagerName,
+			new StringTemplateResource(templateId, notificationTemplate),
+			!PropsValues.NOTIFICATION_EMAIL_TEMPLATE_ENABLED);
+	}
+
+	private void _populateContextVariables(
 			Template template, ExecutionContext executionContext)
 		throws Exception {
 

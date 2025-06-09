@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.filter.range;
@@ -44,9 +35,9 @@ public class RangeTermQueryValueParserTest {
 
 		Assert.assertNotNull(rangeTermQueryValue);
 
-		assertIncludesLower(rangeTermQueryValue);
-		assertDoesNotIncludeUpper(rangeTermQueryValue);
-		assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
+		_assertIncludesLower(rangeTermQueryValue);
+		_assertDoesNotIncludeUpper(rangeTermQueryValue);
+		_assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
 	}
 
 	@Test
@@ -56,9 +47,9 @@ public class RangeTermQueryValueParserTest {
 
 		Assert.assertNotNull(rangeTermQueryValue);
 
-		assertIncludesLower(rangeTermQueryValue);
-		assertIncludesUpper(rangeTermQueryValue);
-		assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
+		_assertIncludesLower(rangeTermQueryValue);
+		_assertIncludesUpper(rangeTermQueryValue);
+		_assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
 	}
 
 	@Test
@@ -68,9 +59,9 @@ public class RangeTermQueryValueParserTest {
 
 		Assert.assertNotNull(rangeTermQueryValue);
 
-		assertDoesNotIncludeLower(rangeTermQueryValue);
-		assertIncludesUpper(rangeTermQueryValue);
-		assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
+		_assertDoesNotIncludeLower(rangeTermQueryValue);
+		_assertIncludesUpper(rangeTermQueryValue);
+		_assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
 	}
 
 	@Test
@@ -97,11 +88,13 @@ public class RangeTermQueryValueParserTest {
 		Assert.assertNotNull(rangeTermQueryValue);
 
 		Assert.assertFalse(rangeTermQueryValue.isIncludesLower());
-		assertDoesNotIncludeUpper(rangeTermQueryValue);
-		assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
+		_assertDoesNotIncludeUpper(rangeTermQueryValue);
+		_assertBounds(rangeTermQueryValue, "now/d", "now+1d/d");
 	}
 
-	protected void assertBounds(
+	protected RangeTermQueryValueParser rangeTermQueryValueParser;
+
+	private void _assertBounds(
 		RangeTermQueryValue rangeTermQueryValue, String lowerBound,
 		String upperBound) {
 
@@ -109,30 +102,24 @@ public class RangeTermQueryValueParserTest {
 		Assert.assertEquals(upperBound, rangeTermQueryValue.getUpperBound());
 	}
 
-	protected void assertDoesNotIncludeLower(
+	private void _assertDoesNotIncludeLower(
 		RangeTermQueryValue rangeTermQueryValue) {
 
 		Assert.assertFalse(rangeTermQueryValue.isIncludesLower());
 	}
 
-	protected void assertDoesNotIncludeUpper(
+	private void _assertDoesNotIncludeUpper(
 		RangeTermQueryValue rangeTermQueryValue) {
 
 		Assert.assertFalse(rangeTermQueryValue.isIncludesUpper());
 	}
 
-	protected void assertIncludesLower(
-		RangeTermQueryValue rangeTermQueryValue) {
-
+	private void _assertIncludesLower(RangeTermQueryValue rangeTermQueryValue) {
 		Assert.assertTrue(rangeTermQueryValue.isIncludesLower());
 	}
 
-	protected void assertIncludesUpper(
-		RangeTermQueryValue rangeTermQueryValue) {
-
+	private void _assertIncludesUpper(RangeTermQueryValue rangeTermQueryValue) {
 		Assert.assertTrue(rangeTermQueryValue.isIncludesUpper());
 	}
-
-	protected RangeTermQueryValueParser rangeTermQueryValueParser;
 
 }

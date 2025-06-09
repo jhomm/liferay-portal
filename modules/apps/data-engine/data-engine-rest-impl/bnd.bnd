@@ -1,12 +1,14 @@
 Bundle-Name: Liferay Data Engine REST Implementation
 Bundle-SymbolicName: com.liferay.data.engine.rest.impl
-Bundle-Version: 3.0.25
+Bundle-Version: 3.0.127
 Import-Package:\
 	!com.fasterxml.jackson.*,\
 	\
-	!com.google.gson.*,\
+	!jakarta.json.*,\
 	\
 	!org.apache.tapestry5.json.*,\
+	\
+	!org.codehaus.jettison.*,\
 	\
 	*
 Web-ContextPath: /data-engine-rest-impl

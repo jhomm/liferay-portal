@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.lists.internal.workflow;
@@ -44,7 +35,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Leonardo Barros
  */
-@Component(immediate = true, service = WorkflowHandler.class)
+@Component(service = WorkflowHandler.class)
 public class DDLFormWorkflowHandler extends BaseWorkflowHandler<DDLFormRecord> {
 
 	@Override
@@ -115,30 +106,13 @@ public class DDLFormWorkflowHandler extends BaseWorkflowHandler<DDLFormRecord> {
 		return new DDLFormRecordImpl(record);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDLRecordLocalService(
-		DDLRecordLocalService ddlRecordLocalService) {
-
-		_ddlRecordLocalService = ddlRecordLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDLRecordVersionLocalService(
-		DDLRecordVersionLocalService ddlRecordVersionLocalService) {
-
-		_ddlRecordVersionLocalService = ddlRecordVersionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWorkflowDefinitionLinkLocalService(
-		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService) {
-
-		_workflowDefinitionLinkLocalService =
-			workflowDefinitionLinkLocalService;
-	}
-
+	@Reference
 	private DDLRecordLocalService _ddlRecordLocalService;
+
+	@Reference
 	private DDLRecordVersionLocalService _ddlRecordVersionLocalService;
+
+	@Reference
 	private WorkflowDefinitionLinkLocalService
 		_workflowDefinitionLinkLocalService;
 

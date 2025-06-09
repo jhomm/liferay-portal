@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.tuning.synonyms.web.internal.portlet;
@@ -17,21 +8,20 @@ package com.liferay.portal.search.tuning.synonyms.web.internal.portlet;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.search.engine.SearchEngineInformation;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
-import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.search.tuning.synonyms.index.name.SynonymSetIndexNameBuilder;
 import com.liferay.portal.search.tuning.synonyms.web.internal.constants.SynonymsPortletKeys;
 import com.liferay.portal.search.tuning.synonyms.web.internal.display.context.SynonymsDisplayBuilder;
-import com.liferay.portal.search.tuning.synonyms.web.internal.index.DocumentToSynonymSetTranslator;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,7 +30,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Filipe Oshiro
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=portlet-search-tuning",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -49,13 +38,14 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-request-attributes=false",
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Synonyms",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + SynonymsPortletKeys.SYNONYMS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Synonyms",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + SynonymsPortletKeys.SYNONYMS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -68,10 +58,10 @@ public class SynonymsPortlet extends MVCPortlet {
 
 		SynonymsDisplayBuilder synonymsDisplayBuilder =
 			new SynonymsDisplayBuilder(
-				_documentToSynonymSetTranslator,
 				_portal.getHttpServletRequest(renderRequest), _language,
 				_portal, _queries, renderRequest, renderResponse,
-				_searchEngineAdapter, _sorts, _synonymSetIndexNameBuilder);
+				_searchEngineAdapter, _searchEngineInformation, _sorts,
+				_synonymSetIndexNameBuilder);
 
 		renderRequest.setAttribute(
 			SynonymsPortletKeys.SYNONYMS_DISPLAY_CONTEXT,
@@ -79,12 +69,6 @@ public class SynonymsPortlet extends MVCPortlet {
 
 		super.render(renderRequest, renderResponse);
 	}
-
-	@Reference
-	private DocumentToSynonymSetTranslator _documentToSynonymSetTranslator;
-
-	@Reference
-	private IndexNameBuilder _indexNameBuilder;
 
 	@Reference
 	private Language _language;
@@ -97,6 +81,9 @@ public class SynonymsPortlet extends MVCPortlet {
 
 	@Reference
 	private SearchEngineAdapter _searchEngineAdapter;
+
+	@Reference
+	private SearchEngineInformation _searchEngineInformation;
 
 	@Reference
 	private Sorts _sorts;

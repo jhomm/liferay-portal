@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.web.internal.portlet.action;
@@ -23,12 +14,11 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,9 +27,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
+		"jakarta.portlet.name=" + AMPortletKeys.ADAPTIVE_MEDIA,
 		"mvc.command.name=/adaptive_media/delete_image_configuration_entry"
 	},
 	service = MVCActionCommand.class
@@ -65,18 +54,19 @@ public class DeleteImageConfigurationEntryMVCActionCommand
 		for (String deleteAMImageConfigurationEntryUuid :
 				deleteAMImageConfigurationEntryUuids) {
 
-			Optional<AMImageConfigurationEntry>
-				amImageConfigurationEntryOptional =
-					_amImageConfigurationHelper.getAMImageConfigurationEntry(
-						themeDisplay.getCompanyId(),
-						deleteAMImageConfigurationEntryUuid);
+			AMImageConfigurationEntry amImageConfigurationEntry =
+				_amImageConfigurationHelper.getAMImageConfigurationEntry(
+					themeDisplay.getCompanyId(),
+					deleteAMImageConfigurationEntryUuid);
 
 			_amImageConfigurationHelper.deleteAMImageConfigurationEntry(
 				themeDisplay.getCompanyId(),
 				deleteAMImageConfigurationEntryUuid);
 
-			amImageConfigurationEntryOptional.ifPresent(
-				deletedAMImageConfigurationEntries::add);
+			if (amImageConfigurationEntry != null) {
+				deletedAMImageConfigurationEntries.add(
+					amImageConfigurationEntry);
+			}
 		}
 
 		SessionMessages.add(

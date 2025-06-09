@@ -6,7 +6,6 @@ exports[`Field DocumentLibrary has a helptext 1`] = `
     aria-labelledby="uploadField_fieldDetails"
     class="form-group has-error hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -22,6 +21,8 @@ exports[`Field DocumentLibrary has a helptext 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -30,8 +31,10 @@ exports[`Field DocumentLibrary has a helptext 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -43,7 +46,6 @@ exports[`Field DocumentLibrary has a helptext 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{}"
@@ -54,22 +56,32 @@ exports[`Field DocumentLibrary has a helptext 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      aria-hidden="true"
-      class="form-text"
-    >
-      Type something
-    </span>
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+      <div>
+        Type something
+      </div>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
@@ -91,8 +103,6 @@ exports[`Field DocumentLibrary has a label 1`] = `
     <label
       aria-labelledby="uploadField_fieldDetails"
       class="ddm-label"
-      for="uploadField"
-      tabindex="0"
     >
       label
     </label>
@@ -110,6 +120,8 @@ exports[`Field DocumentLibrary has a label 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -118,8 +130,10 @@ exports[`Field DocumentLibrary has a label 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -131,7 +145,6 @@ exports[`Field DocumentLibrary has a label 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{}"
@@ -142,20 +155,35 @@ exports[`Field DocumentLibrary has a label 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
     >
+      label
+      <br />
        you-need-to-be-signed-in-to-edit-this-field
     </span>
   </div>
@@ -168,7 +196,6 @@ exports[`Field DocumentLibrary has a placeholder 1`] = `
     aria-labelledby="uploadField_fieldDetails"
     class="form-group has-error hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -184,6 +211,8 @@ exports[`Field DocumentLibrary has a placeholder 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -192,8 +221,10 @@ exports[`Field DocumentLibrary has a placeholder 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -205,7 +236,6 @@ exports[`Field DocumentLibrary has a placeholder 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         placeholder="Placeholder"
         type="hidden"
@@ -217,16 +247,29 @@ exports[`Field DocumentLibrary has a placeholder 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
@@ -243,7 +286,6 @@ exports[`Field DocumentLibrary has a spritemap 1`] = `
     aria-labelledby="uploadField_fieldDetails"
     class="form-group has-error hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -259,6 +301,8 @@ exports[`Field DocumentLibrary has a spritemap 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -267,8 +311,10 @@ exports[`Field DocumentLibrary has a spritemap 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -280,7 +326,6 @@ exports[`Field DocumentLibrary has a spritemap 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{}"
@@ -291,16 +336,29 @@ exports[`Field DocumentLibrary has a spritemap 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
@@ -317,7 +375,6 @@ exports[`Field DocumentLibrary has a value 1`] = `
     aria-labelledby="uploadField_fieldDetails"
     class="form-group has-error hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -333,6 +390,8 @@ exports[`Field DocumentLibrary has a value 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -341,8 +400,10 @@ exports[`Field DocumentLibrary has a value 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -354,7 +415,6 @@ exports[`Field DocumentLibrary has a value 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{\\"id\\":\\"123\\"}"
@@ -365,16 +425,29 @@ exports[`Field DocumentLibrary has a value 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
@@ -391,7 +464,6 @@ exports[`Field DocumentLibrary has an id 1`] = `
     aria-labelledby="ID_fieldDetails"
     class="form-group has-error hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -407,6 +479,8 @@ exports[`Field DocumentLibrary has an id 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -415,8 +489,10 @@ exports[`Field DocumentLibrary has an id 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="ID_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -428,7 +504,6 @@ exports[`Field DocumentLibrary has an id 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         id="ID"
         name="uploadField"
         type="hidden"
@@ -440,16 +515,29 @@ exports[`Field DocumentLibrary has an id 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="ID_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="ID_fieldDetails"
@@ -463,10 +551,8 @@ exports[`Field DocumentLibrary has an id 1`] = `
 exports[`Field DocumentLibrary is not readOnly 1`] = `
 <div>
   <div
-    aria-labelledby="uploadField_fieldDetails"
     class="form-group hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -481,6 +567,8 @@ exports[`Field DocumentLibrary is not readOnly 1`] = `
             aria-label="file"
             class="form-control bg-light field"
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -490,6 +578,7 @@ exports[`Field DocumentLibrary is not readOnly 1`] = `
         >
           <button
             class="select-button btn btn-secondary"
+            id="uploadField"
             type="button"
           >
             <span
@@ -501,7 +590,6 @@ exports[`Field DocumentLibrary is not readOnly 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{}"
@@ -512,7 +600,15 @@ exports[`Field DocumentLibrary is not readOnly 1`] = `
       type="hidden"
       value="false"
     />
-    
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
+    >
+      <div
+        aria-live="assertive"
+        class="form-feedback-item"
+      />
+    </div>
   </div>
 </div>
 `;
@@ -523,7 +619,6 @@ exports[`Field DocumentLibrary is not required 1`] = `
     aria-labelledby="uploadField_fieldDetails"
     class="form-group has-error hide"
     data-field-name="uploadField"
-    tabindex="0"
   >
     <div
       class="liferay-ddm-form-field-document-library"
@@ -539,6 +634,8 @@ exports[`Field DocumentLibrary is not required 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -547,8 +644,11 @@ exports[`Field DocumentLibrary is not required 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
+            aria-required="false"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -560,7 +660,6 @@ exports[`Field DocumentLibrary is not required 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{}"
@@ -571,16 +670,29 @@ exports[`Field DocumentLibrary is not required 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
@@ -600,8 +712,6 @@ exports[`Field DocumentLibrary renders Label if showLabel is true 1`] = `
     <label
       aria-labelledby="uploadField_fieldDetails"
       class="ddm-label"
-      for="uploadField"
-      tabindex="0"
     >
       text
     </label>
@@ -619,6 +729,8 @@ exports[`Field DocumentLibrary renders Label if showLabel is true 1`] = `
             class="form-control bg-light field"
             disabled=""
             id="uploadFieldinputFile"
+            readonly="true"
+            tabindex="-1"
             type="text"
             value=""
           />
@@ -627,8 +739,10 @@ exports[`Field DocumentLibrary renders Label if showLabel is true 1`] = `
           class="input-group-item input-group-append input-group-item-shrink"
         >
           <button
+            aria-describedby="uploadField_fieldFeedback"
             class="select-button btn btn-secondary"
             disabled=""
+            id="uploadField"
             type="button"
           >
             <span
@@ -640,7 +754,6 @@ exports[`Field DocumentLibrary renders Label if showLabel is true 1`] = `
         </div>
       </div>
       <input
-        class="form-control"
         name="uploadField"
         type="hidden"
         value="{}"
@@ -651,20 +764,35 @@ exports[`Field DocumentLibrary renders Label if showLabel is true 1`] = `
       type="hidden"
       value="false"
     />
-    <span
-      class="form-feedback-group"
+    <div
+      class="form-feedback-group field-feedback"
+      id="uploadField_fieldFeedback"
     >
       <div
-        aria-hidden="true"
+        aria-live="assertive"
         class="form-feedback-item"
       >
+        <span
+          class="form-feedback-indicator inline-item-before"
+        >
+          <svg
+            class="lexicon-icon lexicon-icon-exclamation-full"
+            role="presentation"
+          >
+            <use
+              href="#exclamation-full"
+            />
+          </svg>
+        </span>
          you-need-to-be-signed-in-to-edit-this-field
       </div>
-    </span>
+    </div>
     <span
       class="sr-only"
       id="uploadField_fieldDetails"
     >
+      text
+      <br />
        you-need-to-be-signed-in-to-edit-this-field
     </span>
   </div>

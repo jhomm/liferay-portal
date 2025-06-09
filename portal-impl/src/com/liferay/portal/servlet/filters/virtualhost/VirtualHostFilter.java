@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.virtualhost;
@@ -19,14 +10,13 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.LayoutFriendlyURLException;
 import com.liferay.portal.kernel.exception.NoSuchLayoutException;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.struts.LastPath;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -39,15 +29,15 @@ import com.liferay.portal.util.PortalInstances;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.webserver.WebServerServlet;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Map;
 import java.util.Objects;
-
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * <p>
@@ -99,18 +89,27 @@ public class VirtualHostFilter extends BasePortalFilter {
 	}
 
 	protected boolean isDocumentFriendlyURL(
-			HttpServletRequest httpServletRequest, long groupId,
+			HttpServletRequest httpServletRequest,
+			HttpServletResponse httpServletResponse, long groupId,
 			String friendlyURL)
-		throws PortalException {
+		throws Exception {
 
 		if (friendlyURL.startsWith(_PATH_DOCUMENTS) &&
 			WebServerServlet.hasFiles(httpServletRequest)) {
 
-			String path = HttpUtil.fixPath(httpServletRequest.getPathInfo());
+			String path = HttpComponentsUtil.fixPath(
+				httpServletRequest.getPathInfo());
 
 			String[] pathArray = StringUtil.split(path, CharPool.SLASH);
 
-			if (pathArray.length == 2) {
+			if (pathArray.length == 0) {
+				PortalUtil.sendError(
+					new NoSuchLayoutException(), httpServletRequest,
+					httpServletResponse);
+
+				return true;
+			}
+			else if (pathArray.length == 2) {
 				try {
 					LayoutLocalServiceUtil.getFriendlyURLLayout(
 						groupId, false, friendlyURL);
@@ -120,8 +119,7 @@ public class VirtualHostFilter extends BasePortalFilter {
 					// LPS-52675
 
 					if (_log.isDebugEnabled()) {
-						_log.debug(
-							noSuchLayoutException, noSuchLayoutException);
+						_log.debug(noSuchLayoutException);
 					}
 
 					return true;
@@ -165,7 +163,7 @@ public class VirtualHostFilter extends BasePortalFilter {
 			HttpServletResponse httpServletResponse, FilterChain filterChain)
 		throws Exception {
 
-		String originalFriendlyURL = HttpUtil.normalizePath(
+		String originalFriendlyURL = HttpComponentsUtil.normalizePath(
 			httpServletRequest.getRequestURI());
 
 		String friendlyURL = originalFriendlyURL;
@@ -188,6 +186,10 @@ public class VirtualHostFilter extends BasePortalFilter {
 
 		if (i18nLanguageId != null) {
 			friendlyURL = friendlyURL.substring(i18nLanguageId.length());
+
+			if (friendlyURL.length() == 0) {
+				friendlyURL = StringPool.SLASH;
+			}
 		}
 
 		int widgetServletMappingPos = 0;
@@ -261,6 +263,9 @@ public class VirtualHostFilter extends BasePortalFilter {
 				VirtualHostFilter.class.getName(), httpServletRequest,
 				httpServletResponse, filterChain);
 
+			WebServerServlet.sendMessageObjectEntryAttachmentDownload(
+				httpServletRequest, null);
+
 			return;
 		}
 
@@ -273,7 +278,8 @@ public class VirtualHostFilter extends BasePortalFilter {
 			String parameters = StringPool.BLANK;
 
 			if (!parameterMap.isEmpty()) {
-				parameters = HttpUtil.parameterMapToString(parameterMap);
+				parameters = HttpComponentsUtil.parameterMapToString(
+					parameterMap);
 			}
 
 			LastPath lastPath = new LastPath(
@@ -304,7 +310,8 @@ public class VirtualHostFilter extends BasePortalFilter {
 				Group group = layoutSet.getGroup();
 
 				if (isDocumentFriendlyURL(
-						httpServletRequest, group.getGroupId(), friendlyURL)) {
+						httpServletRequest, httpServletResponse,
+						group.getGroupId(), friendlyURL)) {
 
 					processFilter(
 						VirtualHostFilter.class.getName(), httpServletRequest,
@@ -324,6 +331,22 @@ public class VirtualHostFilter extends BasePortalFilter {
 
 					if (Validator.isNotNull(homeURL)) {
 						friendlyURL = homeURL;
+					}
+
+					if (friendlyURL.equals(StringPool.SLASH)) {
+						if (layoutSet.isPrivateLayout()) {
+							if (group.isUser()) {
+								sb.append(_PRIVATE_USER_SERVLET_MAPPING);
+							}
+							else {
+								sb.append(_PRIVATE_GROUP_SERVLET_MAPPING);
+							}
+						}
+						else {
+							sb.append(_PUBLIC_GROUP_SERVLET_MAPPING);
+						}
+
+						sb.append(group.getFriendlyURL());
 					}
 				}
 				else {
@@ -361,7 +384,7 @@ public class VirtualHostFilter extends BasePortalFilter {
 			requestDispatcher.forward(httpServletRequest, httpServletResponse);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			processFilter(
 				VirtualHostFilter.class.getName(), httpServletRequest,

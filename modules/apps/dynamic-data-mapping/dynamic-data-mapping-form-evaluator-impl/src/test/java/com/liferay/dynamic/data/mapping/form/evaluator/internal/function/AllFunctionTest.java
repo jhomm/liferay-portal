@@ -1,61 +1,47 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.evaluator.internal.function;
 
-import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionTracker;
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionRegistry;
 import com.liferay.dynamic.data.mapping.expression.internal.DDMExpressionFactoryImpl;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.math.BigDecimal;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
  */
-@RunWith(MockitoJUnitRunner.class)
-public class AllFunctionTest extends PowerMockito {
+public class AllFunctionTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() throws Exception {
+	@BeforeClass
+	public static void setUpClass() {
 		_allFunction = new AllFunction(_ddmExpressionFactoryImpl);
 
-		field(
-			DDMExpressionFactoryImpl.class, "ddmExpressionFunctionTracker"
-		).set(
-			_ddmExpressionFactoryImpl, mock(DDMExpressionFunctionTracker.class)
-		);
+		ReflectionTestUtil.setFieldValue(
+			_ddmExpressionFactoryImpl, "ddmExpressionFunctionRegistry",
+			Mockito.mock(DDMExpressionFunctionRegistry.class));
 	}
 
 	@Test
-	public void testArrayFalse() throws Exception {
-		Boolean result = (Boolean)_allFunction.apply(
+	public void testArrayFalse() {
+		Boolean result = _allFunction.apply(
 			"#value# >= 1",
 			new BigDecimal[] {
 				new BigDecimal(0), new BigDecimal(2), new BigDecimal(3)
@@ -65,8 +51,8 @@ public class AllFunctionTest extends PowerMockito {
 	}
 
 	@Test
-	public void testArrayTrue() throws Exception {
-		Boolean result = (Boolean)_allFunction.apply(
+	public void testArrayTrue() {
+		Boolean result = _allFunction.apply(
 			"#value# >= 1",
 			new BigDecimal[] {
 				new BigDecimal(1), new BigDecimal(2), new BigDecimal(3)
@@ -76,36 +62,35 @@ public class AllFunctionTest extends PowerMockito {
 	}
 
 	@Test
-	public void testEmptyArray() throws Exception {
-		Boolean result = (Boolean)_allFunction.apply(
-			"#value# >= 1", new BigDecimal[0]);
+	public void testEmptyArray() {
+		Boolean result = _allFunction.apply("#value# >= 1", new BigDecimal[0]);
 
 		Assert.assertFalse(result);
 	}
 
 	@Test
-	public void testInvalidExpression1() throws Exception {
-		Boolean result = (Boolean)_allFunction.apply("#invalid# > 10", 11);
+	public void testInvalidExpression1() {
+		Boolean result = _allFunction.apply("#invalid# > 10", 11);
 
 		Assert.assertFalse(result);
 	}
 
 	@Test
-	public void testInvalidExpression2() throws Exception {
-		Boolean result = (Boolean)_allFunction.apply("#value# >>> 10", 11);
+	public void testInvalidExpression2() {
+		Boolean result = _allFunction.apply("#value# >>> 10", 11);
 
 		Assert.assertFalse(result);
 	}
 
 	@Test
-	public void testSingleValue() throws Exception {
-		Boolean result = (Boolean)_allFunction.apply("#value# >= 1", 2);
+	public void testSingleValue() {
+		Boolean result = _allFunction.apply("#value# >= 1", 2);
 
 		Assert.assertTrue(result);
 	}
 
-	private AllFunction _allFunction;
-	private final DDMExpressionFactoryImpl _ddmExpressionFactoryImpl =
+	private static AllFunction _allFunction;
+	private static final DDMExpressionFactoryImpl _ddmExpressionFactoryImpl =
 		new DDMExpressionFactoryImpl();
 
 }

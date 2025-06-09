@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.uad.display;
@@ -39,10 +30,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Brian Wing Shun Chan
  */
-@Component(
-	immediate = true,
-	service = {DDMFormInstanceUADDisplay.class, UADDisplay.class}
-)
+@Component(service = UADDisplay.class)
 public class DDMFormInstanceUADDisplay extends BaseDDMFormInstanceUADDisplay {
 
 	@Override
@@ -77,22 +65,24 @@ public class DDMFormInstanceUADDisplay extends BaseDDMFormInstanceUADDisplay {
 		Class<?> parentContainerClass, Serializable parentContainerId,
 		Object childObject) {
 
-		if ((childObject instanceof DDMFormInstanceRecord) &&
-			(parentContainerId instanceof Long)) {
+		if (!(childObject instanceof DDMFormInstanceRecord) ||
+			!(parentContainerId instanceof Long)) {
 
-			try {
-				Long ddmFormInstanceParentId = (Long)parentContainerId;
+			return null;
+		}
 
-				if (ddmFormInstanceParentId.longValue() == 0) {
-					DDMFormInstanceRecord ddmFormInstanceRecord =
-						(DDMFormInstanceRecord)childObject;
+		try {
+			Long ddmFormInstanceParentId = (Long)parentContainerId;
 
-					return ddmFormInstanceRecord.getFormInstance();
-				}
+			if (ddmFormInstanceParentId.longValue() == 0) {
+				DDMFormInstanceRecord ddmFormInstanceRecord =
+					(DDMFormInstanceRecord)childObject;
+
+				return ddmFormInstanceRecord.getFormInstance();
 			}
-			catch (PortalException portalException) {
-				_log.error(portalException, portalException);
-			}
+		}
+		catch (PortalException portalException) {
+			_log.error(portalException);
 		}
 
 		return null;

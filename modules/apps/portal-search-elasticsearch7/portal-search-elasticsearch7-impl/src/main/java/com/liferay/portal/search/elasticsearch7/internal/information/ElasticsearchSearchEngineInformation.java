@@ -1,35 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.information;
 
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.version.Version;
 import com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConnectionConfiguration;
-import com.liferay.portal.search.elasticsearch7.internal.ElasticsearchSearchEngine;
 import com.liferay.portal.search.elasticsearch7.internal.configuration.ElasticsearchConfigurationWrapper;
-import com.liferay.portal.search.elasticsearch7.internal.configuration.OperationModeResolver;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnection;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchConnectionManager;
+import com.liferay.portal.search.elasticsearch7.internal.connection.constants.ConnectionConstants;
 import com.liferay.portal.search.engine.ConnectionInformation;
 import com.liferay.portal.search.engine.ConnectionInformationBuilder;
 import com.liferay.portal.search.engine.ConnectionInformationBuilderFactory;
@@ -42,16 +32,15 @@ import com.liferay.portal.search.engine.adapter.cluster.HealthClusterRequest;
 import com.liferay.portal.search.engine.adapter.cluster.HealthClusterResponse;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.apache.http.util.EntityUtils;
 
-import org.elasticsearch.Version;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
@@ -65,13 +54,13 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Adam Brandizzi
  */
-@Component(immediate = true, service = SearchEngineInformation.class)
+@Component(service = SearchEngineInformation.class)
 public class ElasticsearchSearchEngineInformation
 	implements SearchEngineInformation {
 
 	@Override
 	public String getClientVersionString() {
-		return Version.CURRENT.toString();
+		return org.elasticsearch.Version.CURRENT.toString();
 	}
 
 	@Override
@@ -82,13 +71,13 @@ public class ElasticsearchSearchEngineInformation
 		ElasticsearchConnection elasticsearchConnection =
 			elasticsearchConnectionManager.getElasticsearchConnection();
 
-		addMainConnection(elasticsearchConnection, connectionInformationList);
+		_addMainConnection(elasticsearchConnection, connectionInformationList);
 
 		String filterString = String.format(
 			"(&(service.factoryPid=%s)(active=%s)",
 			ElasticsearchConnectionConfiguration.class.getName(), true);
 
-		if (operationModeResolver.isProductionModeEnabled() &&
+		if (elasticsearchConfigurationWrapper.isProductionModeEnabled() &&
 			!Validator.isBlank(
 				elasticsearchConfigurationWrapper.
 					remoteClusterConnectionId())) {
@@ -103,12 +92,12 @@ public class ElasticsearchSearchEngineInformation
 		ElasticsearchConnection localClusterElasticsearchConnection =
 			elasticsearchConnectionManager.getElasticsearchConnection(true);
 
-		if (operationModeResolver.isProductionModeEnabled() &&
+		if (elasticsearchConfigurationWrapper.isProductionModeEnabled() &&
 			elasticsearchConnectionManager.isCrossClusterReplicationEnabled() &&
 			!elasticsearchConnection.equals(
 				localClusterElasticsearchConnection)) {
 
-			addCCRConnection(
+			_addCCRConnection(
 				localClusterElasticsearchConnection, connectionInformationList);
 
 			filterString = filterString.concat(
@@ -120,7 +109,7 @@ public class ElasticsearchSearchEngineInformation
 		filterString = filterString.concat(")");
 
 		try {
-			addActiveConnections(filterString, connectionInformationList);
+			_addActiveConnections(filterString, connectionInformationList);
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
@@ -132,16 +121,36 @@ public class ElasticsearchSearchEngineInformation
 	}
 
 	@Override
+	public int[] getEmbeddingVectorDimensions() {
+		try {
+			Version serverVersion = _getServerVersion();
+
+			if ((serverVersion != null) &&
+				(serverVersion.compareTo(_VERSION_8_11) >= 0)) {
+
+				return new int[] {
+					256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096
+				};
+			}
+		}
+		catch (Exception exception) {
+			_log.error(exception);
+		}
+
+		return new int[] {256, 384, 512, 768, 1024, 1536, 2048};
+	}
+
+	@Override
 	public String getNodesString() {
 		try {
-			String clusterNodesString = getClusterNodesString(
+			String clusterNodesString = _getClusterNodesString(
 				elasticsearchConnectionManager.getRestHighLevelClient());
 
-			if (operationModeResolver.isProductionModeEnabled() &&
+			if (elasticsearchConfigurationWrapper.isProductionModeEnabled() &&
 				elasticsearchConnectionManager.
 					isCrossClusterReplicationEnabled()) {
 
-				String localClusterNodesString = getClusterNodesString(
+				String localClusterNodesString = _getClusterNodesString(
 					elasticsearchConnectionManager.getRestHighLevelClient(
 						null, true));
 
@@ -161,16 +170,36 @@ public class ElasticsearchSearchEngineInformation
 
 	@Override
 	public String getVendorString() {
-		String vendor = elasticsearchSearchEngine.getVendor();
+		String vendor = "Elasticsearch";
 
-		if (operationModeResolver.isDevelopmentModeEnabled()) {
+		if (elasticsearchConfigurationWrapper.isDevelopmentModeEnabled()) {
 			return vendor + " (Sidecar)";
 		}
 
 		return vendor;
 	}
 
-	protected void addActiveConnections(
+	@Reference
+	protected ConfigurationAdmin configurationAdmin;
+
+	@Reference
+	protected ConnectionInformationBuilderFactory
+		connectionInformationBuilderFactory;
+
+	@Reference
+	protected ElasticsearchConfigurationWrapper
+		elasticsearchConfigurationWrapper;
+
+	@Reference
+	protected ElasticsearchConnectionManager elasticsearchConnectionManager;
+
+	@Reference
+	protected NodeInformationBuilderFactory nodeInformationBuilderFactory;
+
+	@Reference
+	protected SearchEngineAdapter searchEngineAdapter;
+
+	private void _addActiveConnections(
 			String filterString,
 			List<ConnectionInformation> connectionInformationList)
 		throws Exception {
@@ -188,25 +217,26 @@ public class ElasticsearchSearchEngineInformation
 
 			String connectionId = (String)properties.get("connectionId");
 
-			addConnectionInformation(
+			_addConnectionInformation(
 				elasticsearchConnectionManager.getElasticsearchConnection(
 					connectionId),
-				connectionInformationList, null);
+				connectionInformationList, new LinkedHashSet<>());
 		}
 	}
 
-	protected void addCCRConnection(
+	private void _addCCRConnection(
 		ElasticsearchConnection elasticsearchConnection,
 		List<ConnectionInformation> connectionInformationList) {
 
-		addConnectionInformation(
-			elasticsearchConnection, connectionInformationList, "read");
+		_addConnectionInformation(
+			elasticsearchConnection, connectionInformationList,
+			new LinkedHashSet<>(Arrays.asList("read")));
 	}
 
-	protected void addConnectionInformation(
+	private void _addConnectionInformation(
 		ElasticsearchConnection elasticsearchConnection,
 		List<ConnectionInformation> connectionInformationList,
-		String... labels) {
+		Set<String> labels) {
 
 		if (elasticsearchConnection == null) {
 			return;
@@ -218,7 +248,7 @@ public class ElasticsearchSearchEngineInformation
 
 		try {
 			_setClusterAndNodeInformation(
-				connectionInformationBuilder,
+				connectionInformationBuilder, labels,
 				elasticsearchConnection.getRestHighLevelClient());
 		}
 		catch (Exception exception) {
@@ -229,8 +259,13 @@ public class ElasticsearchSearchEngineInformation
 			}
 		}
 
-		connectionInformationBuilder.connectionId(
-			elasticsearchConnection.getConnectionId());
+		String connectionId = elasticsearchConnection.getConnectionId();
+
+		connectionInformationBuilder.connectionId(connectionId);
+
+		if (connectionId.equals(ConnectionConstants.SIDECAR_CONNECTION_ID)) {
+			labels.add("not-supported");
+		}
 
 		try {
 			_setHealthInformation(
@@ -245,33 +280,34 @@ public class ElasticsearchSearchEngineInformation
 			}
 		}
 
-		if (ArrayUtil.isNotEmpty(labels)) {
-			connectionInformationBuilder.labels(SetUtil.fromArray(labels));
+		if (!labels.isEmpty()) {
+			connectionInformationBuilder.labels(labels);
 		}
 
 		connectionInformationList.add(connectionInformationBuilder.build());
 	}
 
-	protected void addMainConnection(
+	private void _addMainConnection(
 		ElasticsearchConnection elasticsearchConnection,
 		List<ConnectionInformation> connectionInformationList) {
 
-		String[] labels = {"read", "write"};
+		Set<String> labels = new LinkedHashSet<>(
+			Arrays.asList("read", "write"));
 
-		if (operationModeResolver.isProductionModeEnabled() &&
+		if (elasticsearchConfigurationWrapper.isProductionModeEnabled() &&
 			elasticsearchConnectionManager.isCrossClusterReplicationEnabled() &&
 			!elasticsearchConnection.equals(
 				elasticsearchConnectionManager.getElasticsearchConnection(
 					true))) {
 
-			labels = new String[] {"write"};
+			labels.remove("read");
 		}
 
-		addConnectionInformation(
+		_addConnectionInformation(
 			elasticsearchConnection, connectionInformationList, labels);
 	}
 
-	protected String getClusterNodesString(
+	private String _getClusterNodesString(
 		RestHighLevelClient restHighLevelClient) {
 
 		try {
@@ -284,7 +320,8 @@ public class ElasticsearchSearchEngineInformation
 					getConnectionInformationBuilder();
 
 			_setClusterAndNodeInformation(
-				connectionInformationBuilder, restHighLevelClient);
+				connectionInformationBuilder, new LinkedHashSet<>(),
+				restHighLevelClient);
 
 			ConnectionInformation connectionInformation =
 				connectionInformationBuilder.build();
@@ -294,59 +331,76 @@ public class ElasticsearchSearchEngineInformation
 			List<NodeInformation> nodeInformations =
 				connectionInformation.getNodeInformationList();
 
-			Stream<NodeInformation> stream = nodeInformations.stream();
+			StringBundler sb = new StringBundler(
+				(nodeInformations.size() * 6) + 4);
 
-			return StringBundler.concat(
-				clusterName, StringPool.COLON, StringPool.SPACE,
-				StringPool.OPEN_BRACKET,
-				stream.map(
-					nodeInfo -> StringBundler.concat(
-						nodeInfo.getName(), StringPool.SPACE,
-						StringPool.OPEN_PARENTHESIS, nodeInfo.getVersion(),
-						StringPool.CLOSE_PARENTHESIS)
-				).collect(
-					Collectors.joining(StringPool.COMMA_AND_SPACE)
-				),
-				StringPool.CLOSE_BRACKET);
+			sb.append(clusterName);
+			sb.append(StringPool.COLON);
+			sb.append(StringPool.SPACE);
+			sb.append(StringPool.OPEN_BRACKET);
+
+			for (NodeInformation nodeInformation : nodeInformations) {
+				sb.append(nodeInformation.getName());
+				sb.append(StringPool.SPACE);
+				sb.append(StringPool.OPEN_PARENTHESIS);
+				sb.append(nodeInformation.getVersion());
+				sb.append(StringPool.CLOSE_PARENTHESIS);
+
+				sb.append(StringPool.COMMA_AND_SPACE);
+			}
+
+			sb.setIndex(sb.index() - 1);
+
+			sb.append(StringPool.CLOSE_BRACKET);
+
+			return sb.toString();
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
 				_log.warn("Unable to get node information", exception);
 			}
 
-			return StringBundler.concat("(Error: ", exception.toString(), ")");
+			return StringBundler.concat("(Error: ", exception, ")");
 		}
 	}
 
-	@Reference
-	protected ConfigurationAdmin configurationAdmin;
+	private Version _getServerVersion() throws Exception {
+		String serverVersionString = _getServerVersionString();
 
-	@Reference
-	protected ConnectionInformationBuilderFactory
-		connectionInformationBuilderFactory;
+		if (Validator.isBlank(serverVersionString)) {
+			return null;
+		}
 
-	@Reference
-	protected volatile ElasticsearchConfigurationWrapper
-		elasticsearchConfigurationWrapper;
+		return Version.parseVersion(serverVersionString);
+	}
 
-	@Reference
-	protected ElasticsearchConnectionManager elasticsearchConnectionManager;
+	private String _getServerVersionString() throws Exception {
+		RestHighLevelClient restHighLevelClient =
+			elasticsearchConnectionManager.getRestHighLevelClient();
 
-	@Reference
-	protected ElasticsearchSearchEngine elasticsearchSearchEngine;
+		RestClient restClient = restHighLevelClient.getLowLevelClient();
 
-	@Reference
-	protected NodeInformationBuilderFactory nodeInformationBuilderFactory;
+		Response response = restClient.performRequest(
+			new Request("GET", StringPool.SLASH));
 
-	@Reference
-	protected OperationModeResolver operationModeResolver;
+		String responseBody = EntityUtils.toString(response.getEntity());
 
-	@Reference
-	protected SearchEngineAdapter searchEngineAdapter;
+		JSONObject responseJSONObject = _jsonFactory.createJSONObject(
+			responseBody);
+
+		JSONObject versionJSONObject = responseJSONObject.getJSONObject(
+			"version");
+
+		if (versionJSONObject != null) {
+			return versionJSONObject.getString("number");
+		}
+
+		return null;
+	}
 
 	private void _setClusterAndNodeInformation(
 			ConnectionInformationBuilder connectionInformationBuilder,
-			RestHighLevelClient restHighLevelClient)
+			Set<String> labels, RestHighLevelClient restHighLevelClient)
 		throws Exception {
 
 		RestClient restClient = restHighLevelClient.getLowLevelClient();
@@ -361,7 +415,7 @@ public class ElasticsearchSearchEngineInformation
 
 		String responseBody = EntityUtils.toString(response.getEntity());
 
-		JSONObject responseJSONObject = JSONFactoryUtil.createJSONObject(
+		JSONObject responseJSONObject = _jsonFactory.createJSONObject(
 			responseBody);
 
 		String clusterName = GetterUtil.getString(
@@ -383,8 +437,15 @@ public class ElasticsearchSearchEngineInformation
 
 			nodeInformationBuilder.name(
 				GetterUtil.getString(nodeJSONObject.get("name")));
-			nodeInformationBuilder.version(
+
+			Version version = Version.parseVersion(
 				GetterUtil.getString(nodeJSONObject.get("version")));
+
+			nodeInformationBuilder.version(version.toString());
+
+			if (version.getMajor() == 7) {
+				labels.add("deprecated");
+			}
 
 			nodeInformationList.add(nodeInformationBuilder.build());
 		}
@@ -408,7 +469,12 @@ public class ElasticsearchSearchEngineInformation
 			String.valueOf(healthClusterResponse.getClusterHealthStatus()));
 	}
 
+	private static final Version _VERSION_8_11 = Version.parseVersion("8.11");
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		ElasticsearchSearchEngineInformation.class);
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 }

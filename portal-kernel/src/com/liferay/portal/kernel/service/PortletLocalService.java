@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.expando.kernel.model.CustomAttributesDisplay;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.cluster.Clusterable;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -29,20 +21,22 @@ import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.model.PortletCategory;
 import com.liferay.portal.kernel.plugin.PluginPackage;
 import com.liferay.portal.kernel.portlet.FriendlyURLMapper;
+import com.liferay.portal.kernel.portlet.PortletFriendlyURLMapperMatch;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
+
+import jakarta.servlet.ServletContext;
 
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -56,6 +50,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see PortletLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Portlet"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -136,6 +133,7 @@ public interface PortletLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public Portlet deletePortlet(long id) throws PortalException;
 
+	@CTAware
 	public void deletePortlet(long companyId, String portletId, long plid)
 		throws PortalException;
 
@@ -152,6 +150,7 @@ public interface PortletLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public Portlet deletePortlet(Portlet portlet);
 
+	@CTAware
 	public void deletePortlets(long companyId, String[] portletIds, long plid)
 		throws PortalException;
 
@@ -311,6 +310,10 @@ public interface PortletLocalService
 
 	@Transactional(enabled = false)
 	public Portlet getPortletByStrutsPath(long companyId, String strutsPath);
+
+	@Transactional(enabled = false)
+	public PortletFriendlyURLMapperMatch getPortletFriendlyURLMapperMatch(
+		String url);
 
 	@Transactional(enabled = false)
 	public List<Portlet> getPortlets();

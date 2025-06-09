@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
@@ -27,36 +18,14 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class FragmentEntryServiceWrapper
 	implements FragmentEntryService, ServiceWrapper<FragmentEntryService> {
 
+	public FragmentEntryServiceWrapper() {
+		this(null);
+	}
+
 	public FragmentEntryServiceWrapper(
 		FragmentEntryService fragmentEntryService) {
 
 		_fragmentEntryService = fragmentEntryService;
-	}
-
-	@Override
-	public FragmentEntry addFragmentEntry(
-			long groupId, long fragmentCollectionId, String fragmentEntryKey,
-			String name, long previewFileEntryId, int type, int status,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentEntryService.addFragmentEntry(
-			groupId, fragmentCollectionId, fragmentEntryKey, name,
-			previewFileEntryId, type, status, serviceContext);
-	}
-
-	@Override
-	public FragmentEntry addFragmentEntry(
-			long groupId, long fragmentCollectionId, String fragmentEntryKey,
-			String name, String css, String html, String js, boolean cacheable,
-			String configuration, long previewFileEntryId, int type, int status,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentEntryService.addFragmentEntry(
-			groupId, fragmentCollectionId, fragmentEntryKey, name, css, html,
-			js, cacheable, configuration, previewFileEntryId, type, status,
-			serviceContext);
 	}
 
 	@Override
@@ -74,13 +43,32 @@ public class FragmentEntryServiceWrapper
 	}
 
 	@Override
+	public FragmentEntry addFragmentEntry(
+			String externalReferenceCode, long groupId,
+			long fragmentCollectionId, String fragmentEntryKey, String name,
+			String css, String html, String js, boolean cacheable,
+			String configuration, String icon, long previewFileEntryId,
+			boolean marketplace, boolean readOnly, int type, String typeOptions,
+			int status,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryService.addFragmentEntry(
+			externalReferenceCode, groupId, fragmentCollectionId,
+			fragmentEntryKey, name, css, html, js, cacheable, configuration,
+			icon, previewFileEntryId, marketplace, readOnly, type, typeOptions,
+			status, serviceContext);
+	}
+
+	@Override
 	public FragmentEntry copyFragmentEntry(
-			long groupId, long fragmentEntryId, long fragmentCollectionId,
+			long groupId, long sourceFragmentEntryId, long fragmentCollectionId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentEntryService.copyFragmentEntry(
-			groupId, fragmentEntryId, fragmentCollectionId, serviceContext);
+			groupId, sourceFragmentEntryId, fragmentCollectionId,
+			serviceContext);
 	}
 
 	@Override
@@ -95,6 +83,15 @@ public class FragmentEntryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentEntryService.deleteFragmentEntry(fragmentEntryId);
+	}
+
+	@Override
+	public FragmentEntry deleteFragmentEntry(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryService.deleteFragmentEntry(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -300,6 +297,15 @@ public class FragmentEntryServiceWrapper
 			groupId, fragmentCollectionId, type, status);
 	}
 
+	@Override
+	public FragmentEntry getFragmentEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryService.getFragmentEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the OSGi service identifier.
 	 *
@@ -349,6 +355,15 @@ public class FragmentEntryServiceWrapper
 
 	@Override
 	public FragmentEntry updateFragmentEntry(
+			long fragmentEntryId, boolean cacheable)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentEntryService.updateFragmentEntry(
+			fragmentEntryId, cacheable);
+	}
+
+	@Override
+	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, long previewFileEntryId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -360,12 +375,14 @@ public class FragmentEntryServiceWrapper
 	public FragmentEntry updateFragmentEntry(
 			long fragmentEntryId, long fragmentCollectionId, String name,
 			String css, String html, String js, boolean cacheable,
-			String configuration, long previewFileEntryId, int status)
+			String configuration, String icon, long previewFileEntryId,
+			boolean readOnly, String typeOptions, int status)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentEntryService.updateFragmentEntry(
 			fragmentEntryId, fragmentCollectionId, name, css, html, js,
-			cacheable, configuration, previewFileEntryId, status);
+			cacheable, configuration, icon, previewFileEntryId, readOnly,
+			typeOptions, status);
 	}
 
 	@Override
@@ -373,51 +390,6 @@ public class FragmentEntryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentEntryService.updateFragmentEntry(fragmentEntryId, name);
-	}
-
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, boolean cacheable, String configuration, int status)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentEntryService.updateFragmentEntry(
-			fragmentEntryId, name, css, html, js, cacheable, configuration,
-			status);
-	}
-
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, boolean cacheable, String configuration,
-			long previewFileEntryId, int status)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentEntryService.updateFragmentEntry(
-			fragmentEntryId, name, css, html, js, cacheable, configuration,
-			previewFileEntryId, status);
-	}
-
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, String configuration, int status)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentEntryService.updateFragmentEntry(
-			fragmentEntryId, name, css, html, js, configuration, status);
-	}
-
-	@Override
-	public FragmentEntry updateFragmentEntry(
-			long fragmentEntryId, String name, String css, String html,
-			String js, String configuration, long previewFileEntryId,
-			int status)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _fragmentEntryService.updateFragmentEntry(
-			fragmentEntryId, name, css, html, js, configuration,
-			previewFileEntryId, status);
 	}
 
 	@Override

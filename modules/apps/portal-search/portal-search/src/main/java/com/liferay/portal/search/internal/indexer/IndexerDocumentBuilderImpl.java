@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.indexer;
@@ -20,11 +11,15 @@ import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.DocumentContributor;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.IndexerPostProcessor;
+import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.search.indexer.BaseModelDocumentFactory;
 import com.liferay.portal.search.indexer.IndexerDocumentBuilder;
 import com.liferay.portal.search.permission.SearchPermissionDocumentContributor;
 import com.liferay.portal.search.spi.model.index.contributor.ModelDocumentContributor;
+
+import java.util.List;
 
 /**
  * @author Michael C. Han
@@ -34,15 +29,14 @@ public class IndexerDocumentBuilderImpl implements IndexerDocumentBuilder {
 	public IndexerDocumentBuilderImpl(
 		BaseModelDocumentFactory baseModelDocumentFactory,
 		Iterable<ModelDocumentContributor<?>> modelDocumentContributors,
-		Iterable<DocumentContributor<?>> documentContributors,
-		IndexerPostProcessorsHolder indexerPostProcessorsHolder,
+		Iterable<DocumentContributor<?>> documentContributors, String className,
 		SearchPermissionDocumentContributor
 			searchPermissionDocumentContributor) {
 
 		_baseModelDocumentFactory = baseModelDocumentFactory;
 		_modelDocumentContributors = modelDocumentContributors;
 		_documentContributors = documentContributors;
-		_indexerPostProcessorsHolder = indexerPostProcessorsHolder;
+		_className = className;
 		_searchPermissionDocumentContributor =
 			searchPermissionDocumentContributor;
 	}
@@ -62,7 +56,7 @@ public class IndexerDocumentBuilderImpl implements IndexerDocumentBuilder {
 		_searchPermissionDocumentContributor.addPermissionFields(
 			GetterUtil.getLong(document.get(Field.COMPANY_ID)), document);
 
-		postProcessDocument(document, baseModel);
+		_postProcessDocument(document, baseModel);
 
 		return document;
 	}
@@ -74,10 +68,13 @@ public class IndexerDocumentBuilderImpl implements IndexerDocumentBuilder {
 		return document.get(Field.UID);
 	}
 
-	protected <T extends BaseModel<?>> void postProcessDocument(
+	private <T extends BaseModel<?>> void _postProcessDocument(
 		Document document, T baseModel) {
 
-		_indexerPostProcessorsHolder.forEach(
+		List<IndexerPostProcessor> indexerPostProcessors =
+			IndexerRegistryUtil.getIndexerPostProcessors(_className);
+
+		indexerPostProcessors.forEach(
 			indexerPostProcessor -> {
 				try {
 					indexerPostProcessor.postProcessDocument(
@@ -97,8 +94,8 @@ public class IndexerDocumentBuilderImpl implements IndexerDocumentBuilder {
 		IndexerDocumentBuilderImpl.class);
 
 	private final BaseModelDocumentFactory _baseModelDocumentFactory;
+	private final String _className;
 	private final Iterable<DocumentContributor<?>> _documentContributors;
-	private final IndexerPostProcessorsHolder _indexerPostProcessorsHolder;
 	private final Iterable<ModelDocumentContributor<?>>
 		_modelDocumentContributors;
 	private final SearchPermissionDocumentContributor

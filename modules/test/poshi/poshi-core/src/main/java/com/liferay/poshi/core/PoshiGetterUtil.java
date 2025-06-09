@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.poshi.core;
@@ -19,14 +10,12 @@ import com.google.common.reflect.ClassPath;
 import com.liferay.poshi.core.elements.PoshiElement;
 import com.liferay.poshi.core.elements.PoshiNode;
 import com.liferay.poshi.core.elements.PoshiNodeFactory;
-import com.liferay.poshi.core.prose.PoshiProseDefinition;
 import com.liferay.poshi.core.util.Dom4JUtil;
 import com.liferay.poshi.core.util.ExternalMethod;
 import com.liferay.poshi.core.util.FileUtil;
 import com.liferay.poshi.core.util.GetterUtil;
 import com.liferay.poshi.core.util.OSDetector;
 import com.liferay.poshi.core.util.PropsUtil;
-import com.liferay.poshi.core.util.PropsValues;
 import com.liferay.poshi.core.util.StringUtil;
 import com.liferay.poshi.core.util.Validator;
 
@@ -147,7 +136,7 @@ public class PoshiGetterUtil {
 	public static String getClassTypeFromFileExtension(String fileExtension) {
 		String classType = fileExtension;
 
-		if (fileExtension.equals("testcase") || fileExtension.equals("prose")) {
+		if (fileExtension.equals("testcase")) {
 			classType = "test-case";
 		}
 
@@ -181,7 +170,9 @@ public class PoshiGetterUtil {
 	}
 
 	public static String getExtendedTestCaseName() {
-		String testName = PropsValues.TEST_NAME;
+		PoshiProperties poshiProperties = PoshiProperties.getPoshiProperties();
+
+		String testName = poshiProperties.testName;
 
 		Element rootElement = PoshiContext.getTestCaseRootElement(
 			getClassNameFromNamespacedClassCommandName(testName),
@@ -242,8 +233,8 @@ public class PoshiGetterUtil {
 	}
 
 	public static Object getMethodReturnValue(
-			List<String> args, String className, String methodName,
-			Object object)
+			String testNamespacedCommandName, List<String> args,
+			String className, String methodName, Object object)
 		throws Exception {
 
 		if (!className.equals("selenium")) {
@@ -267,18 +258,20 @@ public class PoshiGetterUtil {
 
 			Object parameter = null;
 
+			PoshiVariablesContext poshiVariablesContext =
+				PoshiVariablesContext.getPoshiVariablesContext(
+					testNamespacedCommandName);
+
 			if (matcher.matches()) {
-				parameter = PoshiVariablesUtil.getValueFromCommandMap(
+				parameter = poshiVariablesContext.getValueFromCommandMap(
 					matcher.group(1));
 			}
 			else {
-				parameter = PoshiVariablesUtil.replaceCommandVars(arg);
+				parameter = poshiVariablesContext.replaceCommandVars(arg);
 			}
 
-			if (className.endsWith("MathUtil") &&
-				(parameter instanceof String)) {
-
-				parameter = GetterUtil.getInteger((String)parameter);
+			if (className.endsWith("MathUtil")) {
+				parameter = GetterUtil.getLong(parameter);
 			}
 			else if (className.endsWith("StringUtil")) {
 				parameter = String.valueOf(parameter);
@@ -311,7 +304,7 @@ public class PoshiGetterUtil {
 			String namespace = matcher.group("namespace");
 
 			if (Validator.isNull(namespace)) {
-				namespace = PoshiStackTraceUtil.getCurrentNamespace();
+				namespace = PoshiContext.getDefaultNamespace();
 			}
 
 			String className = matcher.group("className");
@@ -333,7 +326,7 @@ public class PoshiGetterUtil {
 			String namespace = matcher.group("namespace");
 
 			if (Validator.isNull(namespace)) {
-				namespace = PoshiStackTraceUtil.getCurrentNamespace();
+				return null;
 			}
 
 			return namespace;
@@ -353,7 +346,7 @@ public class PoshiGetterUtil {
 			String namespace = matcher.group("namespace");
 
 			if (Validator.isNull(namespace)) {
-				namespace = PoshiStackTraceUtil.getCurrentNamespace();
+				namespace = PoshiContext.getDefaultNamespace();
 			}
 
 			return namespace;
@@ -364,7 +357,9 @@ public class PoshiGetterUtil {
 	}
 
 	public static String getProjectDirName() {
-		return FileUtil.getCanonicalPath(PropsValues.PROJECT_DIR);
+		PoshiProperties poshiProperties = PoshiProperties.getPoshiProperties();
+
+		return FileUtil.getCanonicalPath(poshiProperties.projectDir);
 	}
 
 	public static Element getRootElementFromURL(URL url) throws Exception {
@@ -374,11 +369,13 @@ public class PoshiGetterUtil {
 	public static Element getRootElementFromURL(URL url, boolean addLineNumbers)
 		throws Exception {
 
-		if (Dom4JUtil.isValidDocument(url)) {
+		String filePath = url.getFile();
+
+		if (filePath.endsWith(".path")) {
+			Dom4JUtil.validateDocument(url);
+
 			return _preparePoshiXMLElement(url, addLineNumbers);
 		}
-
-		String filePath = url.getFile();
 
 		if (filePath.endsWith(".function") || filePath.endsWith(".macro") ||
 			filePath.endsWith(".testcase")) {
@@ -389,15 +386,6 @@ public class PoshiGetterUtil {
 			if (poshiNode instanceof PoshiElement) {
 				return (Element)poshiNode;
 			}
-		}
-
-		if (filePath.endsWith(".prose")) {
-			PoshiProseDefinition poshiProseDefinition =
-				new PoshiProseDefinition(url);
-
-			return _preparePoshiXMLElement(
-				url, Dom4JUtil.format(poshiProseDefinition.toElement()),
-				addLineNumbers);
 		}
 
 		throw new Exception("Unable to parse Poshi file: " + filePath);
@@ -413,11 +401,7 @@ public class PoshiGetterUtil {
 	}
 
 	public static boolean isValidUtilityClass(String className) {
-		if (_utilityClassMap.containsValue(className)) {
-			return true;
-		}
-
-		return false;
+		return _utilityClassMap.containsValue(className);
 	}
 
 	private static Element _preparePoshiXMLElement(
@@ -544,9 +528,9 @@ public class PoshiGetterUtil {
 		"and", "arg", "body", "case", "command", "condition", "contains",
 		"default", "definition", "description", "echo", "else", "elseif",
 		"equals", "execute", "fail", "for", "if", "head", "html", "isset",
-		"not", "off", "on", "or", "property", "prose", "return", "set-up",
-		"table", "take-screenshot", "task", "tbody", "td", "tear-down", "thead",
-		"then", "title", "tr", "var", "while");
+		"not", "off", "on", "or", "property", "return", "set-up", "table",
+		"take-screenshot", "task", "tbody", "td", "tear-down", "thead", "then",
+		"title", "tr", "var", "while");
 	private static final Pattern _tagPattern = Pattern.compile("<[a-z\\-]+");
 
 	private static final Map<String, String> _utilityClassMap =

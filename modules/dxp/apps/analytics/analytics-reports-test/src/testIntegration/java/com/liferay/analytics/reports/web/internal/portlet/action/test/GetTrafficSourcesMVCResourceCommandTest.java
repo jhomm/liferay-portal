@@ -1,33 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.web.internal.portlet.action.test;
 
 import com.liferay.analytics.reports.test.util.MockContextUtil;
-import com.liferay.analytics.reports.web.internal.portlet.action.test.util.MockHttpUtil;
 import com.liferay.analytics.reports.web.internal.portlet.action.test.util.MockThemeDisplayUtil;
+import com.liferay.analytics.settings.configuration.AnalyticsConfiguration;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.test.util.CompanyConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
@@ -40,23 +31,22 @@ import com.liferay.portal.kernel.test.portlet.MockLiferayResourceRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayResourceResponse;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.MockHttp;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.HashMapDictionary;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.LocaleUtil;
-import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PrefsProps;
-import com.liferay.portal.kernel.util.PrefsPropsUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
-import com.liferay.portal.util.PrefsPropsImpl;
 
 import java.io.ByteArrayOutputStream;
 
-import java.util.Objects;
+import java.util.Dictionary;
 import java.util.ResourceBundle;
 
 import org.junit.Assert;
@@ -81,89 +71,50 @@ public class GetTrafficSourcesMVCResourceCommandTest {
 	public void setUp() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		_layout = LayoutTestUtil.addLayout(_group);
+		_layout = LayoutTestUtil.addTypePortletLayout(_group);
 	}
 
 	@Test
 	public void testGetTrafficSources() throws Exception {
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+		Long dataSourceId = RandomTestUtil.nextLong();
 
-		ValidPrefsPropsWrapper validPrefsPropsWrapper =
-			new ValidPrefsPropsWrapper(prefsProps);
-
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps", validPrefsPropsWrapper);
-
-		ReflectionTestUtil.setFieldValue(
-			_mvcResourceCommand, "_http",
-			MockHttpUtil.geHttp(
-				HashMapBuilder.<String, UnsafeSupplier<String, Exception>>put(
-					() -> {
-						String dataSourceId = validPrefsPropsWrapper.getString(
-							RandomTestUtil.nextLong(),
-							"liferayAnalyticsDataSourceId");
-
-						return "/api/1.0/data-sources/" + dataSourceId;
-					},
-					() -> StringPool.BLANK
-				).put(
-					"/api/1.0/pages/acquisition-channels",
-					() -> JSONUtil.put(
-						"organic", 3192L
-					).put(
-						"referral", 2L
-					).put(
-						"social", 385L
-					).toString()
-				).put(
-					"/api/1.0/pages/page-referrer-hosts",
-					() -> JSONUtil.put(
-						"slickdeals.net", 2.0
-					).toString()
-				).put(
-					"/api/1.0/pages/page-referrers",
-					() -> JSONUtil.put(
-						"https://slickdeals.net/credit-card-offers/", 2.0
-					).toString()
-				).put(
-					"/api/1.0/pages/social-page-referrers",
-					() -> JSONUtil.put(
-						"facebook", 385.0
-					).toString()
-				).put(
-					"/api/seo/1.0/traffic-sources",
-					() -> JSONUtil.put(
-						JSONUtil.put(
-							"countryKeywords",
-							JSONUtil.put(
-								JSONUtil.put(
-									"countryCode", "us"
-								).put(
-									"countryName", "United States"
-								).put(
-									"keywords",
-									JSONUtil.put(
-										JSONUtil.put(
-											"keyword", "liferay"
-										).put(
-											"position", 1
-										).put(
-											"searchVolume", 3600
-										).put(
-											"traffic", 2880L
-										))
-								))
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(),
+						HashMapDictionaryBuilder.<String, Object>put(
+							"liferayAnalyticsDataSourceId", dataSourceId
 						).put(
-							"name", "organic"
+							"liferayAnalyticsEnableAllGroupIds", true
 						).put(
-							"trafficAmount", 3L
+							"liferayAnalyticsFaroBackendSecuritySignature",
+							RandomTestUtil.randomString()
 						).put(
-							"trafficShare", 93.93D
-						)
-					).toString()
-				).build()));
+							"liferayAnalyticsFaroBackendURL",
+							"http://" + RandomTestUtil.randomString()
+						).build())) {
 
-		try {
+			ReflectionTestUtil.setFieldValue(
+				_mvcResourceCommand, "_http",
+				new MockHttp(
+					HashMapBuilder.
+						<String, UnsafeSupplier<String, Exception>>put(
+							"/api/1.0/data-sources/" + dataSourceId,
+							() -> StringPool.BLANK
+						).put(
+							"/api/1.0/pages/acquisition-channels",
+							() -> JSONUtil.put(
+								"organic", 3192L
+							).put(
+								"paid", 1L
+							).put(
+								"referral", 2L
+							).put(
+								"social", 385L
+							).toString()
+						).build()));
+
 			MockContextUtil.testWithMockContext(
 				MockContextUtil.MockContext.builder(
 				).build(),
@@ -203,108 +154,59 @@ public class GetTrafficSourcesMVCResourceCommandTest {
 
 					Assert.assertEquals("organic", jsonObject2.get("name"));
 					Assert.assertEquals(
-						89.20D, Double.valueOf(jsonObject2.getString("share")),
-						0.0);
+						String.format("%.1f", 89.20D),
+						jsonObject2.getString("share"));
+
 					Assert.assertEquals(3192, jsonObject2.get("value"));
-
-					JSONArray countryKeywordsJSONArray =
-						(JSONArray)jsonObject2.get("countryKeywords");
-
-					Assert.assertEquals(
-						JSONUtil.put(
-							JSONUtil.put(
-								"countryCode", "us"
-							).put(
-								"countryName", "United States"
-							).put(
-								"keywords",
-								JSONUtil.put(
-									JSONUtil.put(
-										"keyword", "liferay"
-									).put(
-										"position", 1
-									).put(
-										"searchVolume", 3600
-									).put(
-										"traffic", 2880
-									))
-							)
-						).toString(),
-						countryKeywordsJSONArray.toString());
 
 					JSONObject jsonObject3 = jsonArray.getJSONObject(1);
 
+					Assert.assertEquals(
+						"http//localhost/test?",
+						jsonObject3.getString("endpointURL"));
 					Assert.assertEquals("social", jsonObject3.get("name"));
 					Assert.assertEquals(385, jsonObject3.getInt("value"));
 
-					JSONArray referringSocialMediaJSONArray =
-						jsonObject3.getJSONArray("referringSocialMedia");
-
-					JSONObject referringSocialMediaJSONObject =
-						referringSocialMediaJSONArray.getJSONObject(0);
-
-					Assert.assertEquals(
-						"facebook", referringSocialMediaJSONObject.get("name"));
-					Assert.assertEquals(
-						385,
-						referringSocialMediaJSONObject.get("trafficAmount"));
-
 					JSONObject jsonObject4 = jsonArray.getJSONObject(2);
 
+					Assert.assertEquals(
+						"http//localhost/test?",
+						jsonObject4.getString("endpointURL"));
 					Assert.assertEquals("referral", jsonObject4.get("name"));
 					Assert.assertEquals(2L, jsonObject4.getInt("value"));
-
-					JSONArray referringDomainsJSONArray =
-						jsonObject4.getJSONArray("referringDomains");
-
-					JSONObject referringDomainsJSONObject =
-						referringDomainsJSONArray.getJSONObject(0);
-
-					Assert.assertEquals(
-						"slickdeals.net",
-						referringDomainsJSONObject.get("url"));
-
-					JSONArray referringPagesJSONArray =
-						jsonObject4.getJSONArray("referringPages");
-
-					JSONObject referringPagesJSONObject =
-						referringPagesJSONArray.getJSONObject(0);
-
-					Assert.assertEquals(
-						"https://slickdeals.net/credit-card-offers/",
-						referringPagesJSONObject.get("url"));
 
 					JSONObject jsonObject5 = jsonArray.getJSONObject(3);
 
 					Assert.assertEquals("paid", jsonObject5.get("name"));
-					Assert.assertEquals(0, jsonObject5.getInt("value"));
+					Assert.assertEquals(1L, jsonObject5.getInt("value"));
 
 					JSONObject jsonObject6 = jsonArray.getJSONObject(4);
 
 					Assert.assertEquals("direct", jsonObject6.get("name"));
 					Assert.assertEquals(0, jsonObject6.getInt("value"));
+					Assert.assertNull(jsonObject6.get("endpointURL"));
 				});
 		}
 		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
-
 			ReflectionTestUtil.setFieldValue(
 				_mvcResourceCommand, "_http", _http);
 		}
 	}
 
 	@Test
-	public void testGetTrafficSourcesWithInvalidConnection() throws Exception {
-		PrefsProps prefsProps = PrefsPropsUtil.getPrefsProps();
+	public void testGetTrafficSourcesWithoutLiferayAnalyticsDataSourceId()
+		throws Exception {
 
-		InvalidPropsWrapper invalidPropsWrapper = new InvalidPropsWrapper(
-			prefsProps);
+		Dictionary<String, Object> dictionary = new HashMapDictionary();
 
-		ReflectionTestUtil.setFieldValue(
-			PrefsPropsUtil.class, "_prefsProps", invalidPropsWrapper);
+		dictionary.put("liferayAnalyticsDataSourceId", null);
 
-		try {
+		try (CompanyConfigurationTemporarySwapper
+				companyConfigurationTemporarySwapper =
+					new CompanyConfigurationTemporarySwapper(
+						TestPropsValues.getCompanyId(),
+						AnalyticsConfiguration.class.getName(), dictionary)) {
+
 			MockContextUtil.testWithMockContext(
 				MockContextUtil.MockContext.builder(
 				).build(),
@@ -349,75 +251,15 @@ public class GetTrafficSourcesMVCResourceCommandTest {
 								"helpMessage",
 								ResourceBundleUtil.getString(
 									resourceBundle,
-									StringBundler.concat(
-										"this-is-the-number-of-page-views-",
-										"generated-by-people-coming-to-your-",
-										"page-from-other-sites-which-are-not-",
-										"search-engine-pages-or-social-sites"))
-							).put(
-								"name", "referral"
-							).put(
-								"share", String.format("%.1f", 0.0)
-							).put(
-								"title",
-								ResourceBundleUtil.getString(
-									resourceBundle, "referral")
-							).put(
-								"value", 0
-							),
-							JSONUtil.put(
-								"helpMessage",
-								ResourceBundleUtil.getString(
-									resourceBundle,
-									"this-is-the-number-of-page-views-" +
-										"generated-by-people-coming-to-your-" +
-											"page-from-social-sites")
-							).put(
-								"name", "social"
-							).put(
-								"share", String.format("%.1f", 0.0)
-							).put(
-								"title",
-								ResourceBundleUtil.getString(
-									resourceBundle, "social")
-							).put(
-								"value", 0
-							),
-							JSONUtil.put(
-								"helpMessage",
-								ResourceBundleUtil.getString(
-									resourceBundle,
 									"this-is-the-number-of-page-views-" +
 										"generated-by-people-arriving-" +
 											"directly-to-your-page")
 							).put(
 								"name", "direct"
 							).put(
-								"share", String.format("%.1f", 0.0)
-							).put(
 								"title",
 								ResourceBundleUtil.getString(
 									resourceBundle, "direct")
-							).put(
-								"value", 0
-							),
-							JSONUtil.put(
-								"helpMessage",
-								ResourceBundleUtil.getString(
-									resourceBundle,
-									"this-is-the-number-of-page-views-" +
-										"generated-by-people-that-find-your-" +
-											"page-through-google-adwords")
-							).put(
-								"name", "paid"
-							).put(
-								"share", String.format("%.1f", 0.0)
-							).put(
-								"title",
-								ResourceBundleUtil.getString(
-									resourceBundle, "paid")
-							).put(
-								"value", 0
 							),
 							JSONUtil.put(
 								"helpMessage",
@@ -429,22 +271,63 @@ public class GetTrafficSourcesMVCResourceCommandTest {
 							).put(
 								"name", "organic"
 							).put(
-								"share", String.format("%.1f", 0.0)
-							).put(
 								"title",
 								ResourceBundleUtil.getString(
 									resourceBundle, "organic")
+							),
+							JSONUtil.put(
+								"helpMessage",
+								ResourceBundleUtil.getString(
+									resourceBundle,
+									"this-is-the-number-of-page-views-" +
+										"generated-by-people-that-find-your-" +
+											"page-through-google-adwords")
 							).put(
-								"value", 0
+								"name", "paid"
+							).put(
+								"title",
+								ResourceBundleUtil.getString(
+									resourceBundle, "paid")
+							),
+							JSONUtil.put(
+								"endpointURL", "http//localhost/test?"
+							).put(
+								"helpMessage",
+								ResourceBundleUtil.getString(
+									resourceBundle,
+									StringBundler.concat(
+										"this-is-the-number-of-page-views-",
+										"generated-by-people-coming-to-your-",
+										"page-from-other-sites-which-are-not-",
+										"search-engine-pages-or-social-sites"))
+							).put(
+								"name", "referral"
+							).put(
+								"title",
+								ResourceBundleUtil.getString(
+									resourceBundle, "referral")
+							),
+							JSONUtil.put(
+								"endpointURL", "http//localhost/test?"
+							).put(
+								"helpMessage",
+								ResourceBundleUtil.getString(
+									resourceBundle,
+									"this-is-the-number-of-page-views-" +
+										"generated-by-people-coming-to-your-" +
+											"page-from-social-sites")
+							).put(
+								"name", "social"
+							).put(
+								"title",
+								ResourceBundleUtil.getString(
+									resourceBundle, "social")
 							)
-						).toJSONString(),
-						jsonArray.toJSONString());
+						).toString(),
+						jsonArray.toString());
 				});
 		}
 		finally {
-			ReflectionTestUtil.setFieldValue(
-				PrefsPropsUtil.class, "_prefsProps", prefsProps);
-
 			ReflectionTestUtil.setFieldValue(
 				_mvcResourceCommand, "_http", _http);
 		}
@@ -481,9 +364,6 @@ public class GetTrafficSourcesMVCResourceCommandTest {
 	@Inject
 	private Http _http;
 
-	@Inject
-	private Language _language;
-
 	private Layout _layout;
 
 	@Inject
@@ -491,54 +371,5 @@ public class GetTrafficSourcesMVCResourceCommandTest {
 
 	@Inject(filter = "mvc.command.name=/analytics_reports/get_traffic_sources")
 	private MVCResourceCommand _mvcResourceCommand;
-
-	@Inject
-	private Portal _portal;
-
-	private class InvalidPropsWrapper extends PrefsPropsImpl {
-
-		public InvalidPropsWrapper(PrefsProps prefsProps) {
-			_prefsProps = prefsProps;
-		}
-
-		@Override
-		public String getString(long companyId, String name) {
-			if (Objects.equals("liferayAnalyticsDataSourceId", name) ||
-				Objects.equals(
-					name, "liferayAnalyticsFaroBackendSecuritySignature") ||
-				Objects.equals("liferayAnalyticsFaroBackendURL", name)) {
-
-				return null;
-			}
-
-			return _prefsProps.getString(companyId, name);
-		}
-
-		private final PrefsProps _prefsProps;
-
-	}
-
-	private class ValidPrefsPropsWrapper extends PrefsPropsImpl {
-
-		public ValidPrefsPropsWrapper(PrefsProps prefsProps) {
-			_prefsProps = prefsProps;
-		}
-
-		@Override
-		public String getString(long companyId, String name) {
-			if (Objects.equals("liferayAnalyticsDataSourceId", name) ||
-				Objects.equals(
-					name, "liferayAnalyticsFaroBackendSecuritySignature") ||
-				Objects.equals("liferayAnalyticsFaroBackendURL", name)) {
-
-				return "test";
-			}
-
-			return _prefsProps.getString(companyId, name);
-		}
-
-		private final PrefsProps _prefsProps;
-
-	}
 
 }

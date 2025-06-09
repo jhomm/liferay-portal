@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {updateFieldValidationProperty} from '../core/utils/fields';
@@ -17,11 +8,11 @@ import {generateInstanceId, getDefaultFieldName} from './fieldSupport';
 import {normalizeFieldName} from './fields.es';
 import {PagesVisitor} from './visitors.es';
 
-export const getSettingsContextProperty = (
+export function getSettingsContextProperty(
 	settingsContext,
 	propertyName,
 	propertyType = 'value'
-) => {
+) {
 	let propertyValue;
 	const visitor = new PagesVisitor(settingsContext.pages);
 
@@ -32,15 +23,28 @@ export const getSettingsContextProperty = (
 	});
 
 	return propertyValue;
-};
+}
 
-export const setFieldReferenceErrorMessage = (
+export function setFieldErrorMessage(
 	settingsContext,
 	propertyName,
 	displayErrors = true,
 	shouldUpdateValue = false
-) => {
+) {
 	const visitor = new PagesVisitor(settingsContext.pages);
+
+	const getErrorMessage = () => {
+		if (!displayErrors) {
+			return '';
+		}
+		if (propertyName === 'fieldReference') {
+			return Liferay.Language.get('this-reference-is-already-being-used');
+		}
+
+		return Liferay.Language.get(
+			'this-name-is-already-in-use-try-another-one'
+		);
+	};
 
 	return {
 		...settingsContext,
@@ -49,9 +53,7 @@ export const setFieldReferenceErrorMessage = (
 				field = {
 					...field,
 					displayErrors,
-					errorMessage: Liferay.Language.get(
-						'this-reference-is-already-being-used'
-					),
+					errorMessage: getErrorMessage(),
 					shouldUpdateValue,
 					valid: !displayErrors,
 				};
@@ -60,15 +62,15 @@ export const setFieldReferenceErrorMessage = (
 			return field;
 		}),
 	};
-};
+}
 
-export const updateSettingsContextProperty = (
+export function updateSettingsContextProperty(
 	defaultLanguageId = themeDisplay.getDefaultLanguageId(),
 	editingLanguageId,
 	settingsContext,
 	propertyName,
 	propertyValue
-) => {
+) {
 	const visitor = new PagesVisitor(settingsContext.pages);
 	const isLocalizablePropertyValue = typeof propertyValue === 'object';
 	const isLocalizableLabel =
@@ -108,9 +110,9 @@ export const updateSettingsContextProperty = (
 			return field;
 		}),
 	};
-};
+}
 
-export const updateSettingsContextInstanceId = ({settingsContext}) => {
+export function updateSettingsContextInstanceId({settingsContext}) {
 	const visitor = new PagesVisitor(settingsContext.pages);
 
 	return {
@@ -124,25 +126,29 @@ export const updateSettingsContextInstanceId = ({settingsContext}) => {
 			return newField;
 		}),
 	};
-};
+}
 
-export const updateFieldName = (
+export function updateFieldName(
 	defaultLanguageId,
 	editingLanguageId,
 	fieldNameGenerator,
 	focusedField,
-	value
-) => {
+	value,
+	isInvalidValue = false
+) {
 	const {fieldName} = focusedField;
 	const normalizedFieldName = normalizeFieldName(value);
 
 	let newFieldName;
 
-	if (normalizedFieldName !== '') {
-		newFieldName = fieldNameGenerator(value, fieldName);
+	if (normalizedFieldName === '') {
+		newFieldName = fieldNameGenerator(
+			getDefaultFieldName(false, {name: focusedField.type}),
+			fieldName
+		);
 	}
 	else {
-		newFieldName = fieldNameGenerator(getDefaultFieldName(), fieldName);
+		newFieldName = normalizedFieldName;
 	}
 
 	if (newFieldName) {
@@ -158,14 +164,22 @@ export const updateFieldName = (
 			),
 		};
 
+		const settingsContextWithErrors = setFieldErrorMessage(
+			settingsContext,
+			'name',
+			isInvalidValue,
+			false
+		);
+
 		focusedField = {
 			...focusedField,
+			displayErrors: isInvalidValue,
 			fieldName: newFieldName,
 			name: newFieldName,
 			settingsContext: updateSettingsContextProperty(
 				defaultLanguageId,
 				editingLanguageId,
-				settingsContext,
+				settingsContextWithErrors,
 				'name',
 				newFieldName
 			),
@@ -173,18 +187,18 @@ export const updateFieldName = (
 	}
 
 	return focusedField;
-};
+}
 
-export const updateFieldReference = (
+export function updateFieldReference(
 	focusedField,
 	invalid = false,
 	shouldUpdateValue = false
-) => {
+) {
 	const {settingsContext} = focusedField;
 
 	focusedField = {
 		...focusedField,
-		settingsContext: setFieldReferenceErrorMessage(
+		settingsContext: setFieldErrorMessage(
 			settingsContext,
 			'fieldReference',
 			invalid,
@@ -193,14 +207,14 @@ export const updateFieldReference = (
 	};
 
 	return focusedField;
-};
+}
 
-export const updateFieldDataType = (
+export function updateFieldDataType(
 	defaultLanguageId,
 	editingLanguageId,
 	focusedField,
 	value
-) => {
+) {
 	let {settingsContext} = focusedField;
 
 	settingsContext = {
@@ -224,16 +238,16 @@ export const updateFieldDataType = (
 			value
 		),
 	};
-};
+}
 
-export const updateFieldLabel = (
+export function updateFieldLabel(
 	defaultLanguageId,
 	editingLanguageId,
 	fieldNameGenerator,
 	focusedField,
 	generateFieldNameUsingFieldLabel,
 	value
-) => {
+) {
 	let {fieldName, settingsContext} = focusedField;
 	let label = value;
 
@@ -269,7 +283,7 @@ export const updateFieldLabel = (
 			value
 		),
 	};
-};
+}
 
 const isLocalizedObjectValue = ({localizable, value}) => {
 	return typeof value === 'object' && localizable;
@@ -281,6 +295,10 @@ const getValueLocalized = (
 	defaultLanguageId,
 	editingLanguageId
 ) => {
+	if (value === null) {
+		return value;
+	}
+
 	if (
 		isLocalizedObjectValue({localizable, value}) &&
 		value[editingLanguageId] !== undefined
@@ -297,13 +315,13 @@ const getValueLocalized = (
 	return value;
 };
 
-export const updateFieldProperty = (
+export function updateFieldProperty(
 	defaultLanguageId,
 	editingLanguageId,
 	focusedField,
 	propertyName,
 	propertyValue
-) => {
+) {
 	return {
 		...focusedField,
 		[propertyName]: getValueLocalized(
@@ -320,14 +338,14 @@ export const updateFieldProperty = (
 			propertyValue
 		),
 	};
-};
+}
 
-export const updateFieldOptions = (
+export function updateFieldOptions(
 	defaultLanguageId,
 	editingLanguageId,
 	focusedField,
 	value
-) => {
+) {
 	const options = value[editingLanguageId];
 
 	return {
@@ -341,9 +359,9 @@ export const updateFieldOptions = (
 			value
 		),
 	};
-};
+}
 
-export const updateField = (
+export function updateField(
 	{
 		defaultLanguageId,
 		editingLanguageId,
@@ -353,7 +371,7 @@ export const updateField = (
 	field,
 	propertyName,
 	propertyValue
-) => {
+) {
 	if (propertyName === 'dataType') {
 		field = {
 			...field,
@@ -386,7 +404,8 @@ export const updateField = (
 				editingLanguageId,
 				fieldNameGenerator,
 				field,
-				propertyValue
+				propertyValue,
+				field.displayErrors
 			),
 		};
 	}
@@ -421,4 +440,4 @@ export const updateField = (
 	}
 
 	return field;
-};
+}

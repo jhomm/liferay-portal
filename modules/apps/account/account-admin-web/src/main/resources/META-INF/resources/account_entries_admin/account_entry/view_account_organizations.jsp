@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,7 +22,7 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= viewAccountOrganizationsManagementToolbarDisplayContext %>"
-	propsTransformer="account_entries_admin/js/AccountOrganizationsManagementToolbarPropsTransformer"
+	propsTransformer="{AccountOrganizationsManagementToolbarPropsTransformer} from account-admin-web"
 />
 
 <clay:container-fluid>
@@ -50,16 +41,16 @@ renderResponse.setTitle(accountEntryDisplay.getName());
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					name="name"
-					property="name"
+					value="<%= HtmlUtil.escape(accountOrganization.getName()) %>"
 				/>
 
 				<liferay-ui:search-container-column-text
 					cssClass="table-cell-expand-small table-cell-minw-150"
 					name="parent-organization"
-					property="parentOrganizationName"
+					value="<%= HtmlUtil.escape(accountOrganization.getParentOrganizationName()) %>"
 				/>
 
-				<c:if test="<%= AccountEntryPermission.contains(permissionChecker, accountEntryDisplay.getAccountEntryId(), AccountActionKeys.MANAGE_ORGANIZATIONS) %>">
+				<c:if test="<%= AccountEntryPermission.hasEditOrManageOrganizationsPermission(permissionChecker, accountEntryDisplay.getAccountEntryId()) %>">
 					<liferay-ui:search-container-column-text>
 						<portlet:actionURL name="/account_admin/remove_account_organizations" var="removeAccountOrganizationsURL">
 							<portlet:param name="redirect" value="<%= currentURL %>" />

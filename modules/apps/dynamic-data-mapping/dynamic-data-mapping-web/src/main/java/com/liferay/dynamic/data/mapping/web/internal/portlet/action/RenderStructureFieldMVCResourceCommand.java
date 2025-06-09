@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.portlet.action;
@@ -28,17 +19,19 @@ import com.liferay.portal.kernel.portlet.bridges.mvc.MVCResourceCommand;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Map;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -48,9 +41,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Leonardo Barros
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
 		"mvc.command.name=/dynamic_data_mapping/render_structure_field"
 	},
 	service = MVCResourceCommand.class
@@ -62,18 +54,17 @@ public class RenderStructureFieldMVCResourceCommand
 		HttpServletRequest httpServletRequest,
 		HttpServletResponse httpServletResponse) {
 
-		ThemeDisplay themeDisplay =
-			(ThemeDisplay)httpServletRequest.getAttribute(
-				WebKeys.THEME_DISPLAY);
-
-		String mode = ParamUtil.getString(httpServletRequest, "mode");
-		String namespace = ParamUtil.getString(httpServletRequest, "namespace");
-		String portletNamespace = ParamUtil.getString(
-			httpServletRequest, "portletNamespace");
-		boolean readOnly = ParamUtil.getBoolean(httpServletRequest, "readOnly");
-
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext =
 			new DDMFormFieldRenderingContext();
+
+		String portletId = ParamUtil.getString(httpServletRequest, "portletId");
+
+		if (Validator.isNotNull(portletId)) {
+			httpServletRequest.setAttribute(WebKeys.PORTLET_ID, portletId);
+		}
+
+		String portletNamespace = HtmlUtil.escapeAttribute(
+			ParamUtil.getString(httpServletRequest, "portletNamespace"));
 
 		httpServletRequest.setAttribute(
 			"aui:form:portletNamespace", portletNamespace);
@@ -82,11 +73,21 @@ public class RenderStructureFieldMVCResourceCommand
 			_portal.getOriginalServletRequest(httpServletRequest));
 		ddmFormFieldRenderingContext.setHttpServletResponse(
 			httpServletResponse);
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
 		ddmFormFieldRenderingContext.setLocale(themeDisplay.getLocale());
-		ddmFormFieldRenderingContext.setMode(mode);
-		ddmFormFieldRenderingContext.setNamespace(namespace);
+
+		ddmFormFieldRenderingContext.setMode(
+			ParamUtil.getString(httpServletRequest, "mode"));
+		ddmFormFieldRenderingContext.setNamespace(
+			HtmlUtil.escapeAttribute(
+				ParamUtil.getString(httpServletRequest, "namespace")));
 		ddmFormFieldRenderingContext.setPortletNamespace(portletNamespace);
-		ddmFormFieldRenderingContext.setReadOnly(readOnly);
+		ddmFormFieldRenderingContext.setReadOnly(
+			ParamUtil.getBoolean(httpServletRequest, "readOnly"));
 
 		return ddmFormFieldRenderingContext;
 	}
@@ -102,7 +103,7 @@ public class RenderStructureFieldMVCResourceCommand
 		HttpServletRequest httpServletRequest = _portal.getHttpServletRequest(
 			resourceRequest);
 
-		DDMFormField ddmFormField = getDDMFormField(httpServletRequest);
+		DDMFormField ddmFormField = _getDDMFormField(httpServletRequest);
 
 		DDMFormFieldRenderer ddmFormFieldRenderer =
 			_ddmFormFieldRendererRegistry.getDDMFormFieldRenderer(
@@ -120,7 +121,7 @@ public class RenderStructureFieldMVCResourceCommand
 		ServletResponseUtil.write(httpServletResponse, ddmFormFieldHTML);
 	}
 
-	protected DDMFormField getDDMFormField(
+	private DDMFormField _getDDMFormField(
 		HttpServletRequest httpServletRequest) {
 
 		String definition = ParamUtil.getString(
@@ -143,13 +144,7 @@ public class RenderStructureFieldMVCResourceCommand
 		return ddmFormFieldsMap.get(fieldName);
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMFormFieldRendererRegistry(
-		DDMFormFieldRendererRegistry ddmFormFieldRendererRegistry) {
-
-		_ddmFormFieldRendererRegistry = ddmFormFieldRendererRegistry;
-	}
-
+	@Reference
 	private DDMFormFieldRendererRegistry _ddmFormFieldRendererRegistry;
 
 	@Reference(target = "(ddm.form.deserializer.type=json)")

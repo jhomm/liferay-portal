@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 const identity = (value) => value;
@@ -83,31 +74,24 @@ class PagesVisitor {
 		this._pages = [...pages];
 	}
 
-	visitFields(fn) {
-		const isFieldNode = (node) =>
-			Object.prototype.hasOwnProperty.call(node, 'fieldName');
-
-		const getChildren = (node) => {
-			if (isFieldNode(node)) {
-				return node.nestedFields || [];
+	visitFields(evaluateField) {
+		const evaluateNode = (node) => {
+			if (!node) {
+				return false;
 			}
 
-			return node.fields || node.rows || node.columns || [];
+			if (node.fieldName) {
+				return evaluateField(node) || evaluateNode(node.nestedFields);
+			}
+
+			if (Array.isArray(node)) {
+				return node.some((item) => evaluateNode(item));
+			}
+
+			return evaluateNode(node.fields ?? node.rows ?? node.columns);
 		};
 
-		const collection = [...this._pages];
-
-		while (collection.length) {
-			const node = collection.shift();
-
-			if (isFieldNode(node) && fn(node)) {
-				return true;
-			}
-
-			collection.unshift(...getChildren(node));
-		}
-
-		return false;
+		return evaluateNode(this._pages);
 	}
 
 	_map(pageMapper, rowMapper, columnMapper, fieldFn) {

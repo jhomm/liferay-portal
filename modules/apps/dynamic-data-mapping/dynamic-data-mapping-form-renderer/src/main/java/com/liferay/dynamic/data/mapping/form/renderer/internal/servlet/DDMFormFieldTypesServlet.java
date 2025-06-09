@@ -1,49 +1,42 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.renderer.internal.servlet;
 
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldType;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
+import com.liferay.frontend.js.loader.modules.extender.esm.ESImportUtil;
 import com.liferay.frontend.js.loader.modules.extender.npm.NPMResolver;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.json.JSONObjectImpl;
 import com.liferay.portal.kernel.events.ActionException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.ServletResponseUtil;
+import com.liferay.portal.kernel.servlet.taglib.aui.ESImport;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 import com.liferay.portal.util.PropsValues;
+
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,7 +45,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Matuzalem Teles
  */
 @Component(
-	immediate = true,
 	property = {
 		"osgi.http.whiteboard.context.path=/dynamic-data-mapping-form-field-types",
 		"osgi.http.whiteboard.servlet.name=com.liferay.dynamic.data.mapping.form.renderer.internal.servlet.DDMFormFieldTypesServlet",
@@ -85,7 +77,7 @@ public class DDMFormFieldTypesServlet extends HttpServlet {
 		}
 		catch (ActionException actionException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(actionException, actionException);
+				_log.debug(actionException);
 			}
 		}
 	}
@@ -96,29 +88,31 @@ public class DDMFormFieldTypesServlet extends HttpServlet {
 			HttpServletResponse httpServletResponse)
 		throws IOException {
 
-		JSONArray fieldTypesJSONArray = _jsonFactory.createJSONArray();
-
-		Set<String> ddmFormFieldTypeNames =
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldTypeNames();
-
-		Stream<String> stream = ddmFormFieldTypeNames.stream();
-
-		stream.map(
-			ddmFormFieldTypeName -> getFieldTypeMetadataJSONObject(
-				ddmFormFieldTypeName, Collections.emptyMap())
-		).forEach(
-			fieldTypesJSONArray::put
-		);
-
 		httpServletResponse.setContentType(ContentTypes.APPLICATION_JSON);
 		httpServletResponse.setStatus(HttpServletResponse.SC_OK);
 
-		ServletResponseUtil.write(
-			httpServletResponse, fieldTypesJSONArray.toJSONString());
+		JSONArray jsonArray = null;
+
+		try {
+			jsonArray = JSONUtil.toJSONArray(
+				_ddmFormFieldTypeServicesRegistry.getDDMFormFieldTypeNames(),
+				ddmFormFieldTypeName -> _getFieldTypeMetadataJSONObject(
+					ddmFormFieldTypeName, Collections.emptyMap(),
+					httpServletRequest));
+		}
+		catch (Exception exception) {
+			throw new RuntimeException(exception);
+		}
+
+		ServletResponseUtil.write(httpServletResponse, jsonArray.toString());
 	}
 
-	protected JSONObject getFieldTypeMetadataJSONObject(
-		String ddmFormFieldName, Map<String, Object> configuration) {
+	@Reference
+	protected NPMResolver npmResolver;
+
+	private JSONObject _getFieldTypeMetadataJSONObject(
+		String ddmFormFieldName, Map<String, Object> configuration,
+		HttpServletRequest httpServletRequest) {
 
 		JSONObject jsonObject = new JSONObjectImpl();
 
@@ -133,15 +127,31 @@ public class DDMFormFieldTypesServlet extends HttpServlet {
 			}
 		).put(
 			"javaScriptModule",
-			resolveModuleName(
-				_ddmFormFieldTypeServicesTracker.getDDMFormFieldType(
-					ddmFormFieldName))
+			_resolveModuleName(
+				_ddmFormFieldTypeServicesRegistry.getDDMFormFieldType(
+					ddmFormFieldName),
+				httpServletRequest)
 		).put(
 			"name", ddmFormFieldName
 		);
 	}
 
-	protected String resolveModuleName(DDMFormFieldType ddmFormFieldType) {
+	private String _resolveModuleName(
+		DDMFormFieldType ddmFormFieldType,
+		HttpServletRequest httpServletRequest) {
+
+		String esModule = ddmFormFieldType.getESModule();
+
+		if (Validator.isNotNull(esModule)) {
+			ESImport esImport = ESImportUtil.getESImport(
+				_absolutePortalURLBuilderFactory.getAbsolutePortalURLBuilder(
+					httpServletRequest),
+				esModule);
+
+			return StringBundler.concat(
+				"{", esImport.getSymbol(), "} from ", esImport.getModule());
+		}
+
 		if (Validator.isNull(ddmFormFieldType.getModuleName())) {
 			return StringPool.BLANK;
 		}
@@ -153,16 +163,13 @@ public class DDMFormFieldTypesServlet extends HttpServlet {
 		return npmResolver.resolveModuleName(ddmFormFieldType.getModuleName());
 	}
 
-	@Reference
-	protected NPMResolver npmResolver;
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMFormFieldTypesServlet.class);
 
 	@Reference
-	private DDMFormFieldTypeServicesTracker _ddmFormFieldTypeServicesTracker;
+	private AbsolutePortalURLBuilderFactory _absolutePortalURLBuilderFactory;
 
 	@Reference
-	private JSONFactory _jsonFactory;
+	private DDMFormFieldTypeServicesRegistry _ddmFormFieldTypeServicesRegistry;
 
 }

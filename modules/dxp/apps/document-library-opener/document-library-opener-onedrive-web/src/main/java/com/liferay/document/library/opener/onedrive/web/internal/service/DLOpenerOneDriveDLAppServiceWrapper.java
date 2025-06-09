@@ -1,22 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.service;
 
-import com.liferay.document.library.kernel.model.DLFileEntryConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
-import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.service.DLAppServiceWrapper;
 import com.liferay.document.library.kernel.util.DLValidator;
 import com.liferay.document.library.opener.constants.DLOpenerFileEntryReferenceConstants;
@@ -42,6 +31,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import java.io.File;
 import java.io.InputStream;
 
+import java.util.Date;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -57,14 +47,6 @@ import org.osgi.service.component.annotations.Reference;
 @Component(service = ServiceWrapper.class)
 public class DLOpenerOneDriveDLAppServiceWrapper extends DLAppServiceWrapper {
 
-	public DLOpenerOneDriveDLAppServiceWrapper() {
-		super(null);
-	}
-
-	public DLOpenerOneDriveDLAppServiceWrapper(DLAppService dlAppService) {
-		super(dlAppService);
-	}
-
 	@Override
 	public void cancelCheckOut(long fileEntryId) throws PortalException {
 		FileEntry fileEntry = getFileEntry(fileEntryId);
@@ -73,12 +55,6 @@ public class DLOpenerOneDriveDLAppServiceWrapper extends DLAppServiceWrapper {
 
 		if (_dlOpenerOneDriveManager.isConfigured(fileEntry.getCompanyId()) &&
 			_dlOpenerOneDriveManager.isOneDriveFile(fileEntry)) {
-
-			DLOpenerFileEntryReference dlOpenerFileEntryReference =
-				_dlOpenerFileEntryReferenceLocalService.
-					getDLOpenerFileEntryReference(
-						DLOpenerOneDriveConstants.ONE_DRIVE_REFERENCE_TYPE,
-						fileEntry);
 
 			try {
 				_dlOpenerOneDriveManager.deleteFile(_getUserId(), fileEntry);
@@ -89,14 +65,6 @@ public class DLOpenerOneDriveDLAppServiceWrapper extends DLAppServiceWrapper {
 				_log.error(
 					"The OneDrive file does not exist",
 					graphServicePortalException);
-			}
-
-			if ((dlOpenerFileEntryReference.getType() ==
-					DLOpenerFileEntryReferenceConstants.TYPE_NEW) &&
-				DLFileEntryConstants.VERSION_DEFAULT.equals(
-					fileEntry.getVersion())) {
-
-				deleteFileEntry(fileEntryId);
 			}
 		}
 	}
@@ -166,9 +134,11 @@ public class DLOpenerOneDriveDLAppServiceWrapper extends DLAppServiceWrapper {
 	@Override
 	public FileEntry updateFileEntryAndCheckIn(
 			long fileEntryId, String sourceFileName, String mimeType,
-			String title, String description, String changeLog,
+			String title, String urlTitle, String description, String changeLog,
 			DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, ServiceContext serviceContext)
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date revisionDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		FileEntry fileEntry = getFileEntry(fileEntryId);
@@ -177,16 +147,19 @@ public class DLOpenerOneDriveDLAppServiceWrapper extends DLAppServiceWrapper {
 			!_dlOpenerOneDriveManager.isOneDriveFile(fileEntry)) {
 
 			return super.updateFileEntryAndCheckIn(
-				fileEntryId, sourceFileName, mimeType, title, description,
-				changeLog, dlVersionNumberIncrease, null, serviceContext);
+				fileEntryId, sourceFileName, mimeType, title, urlTitle,
+				description, changeLog, dlVersionNumberIncrease, inputStream,
+				size, displayDate, expirationDate, revisionDate,
+				serviceContext);
 		}
 
 		checkInFileEntry(
 			fileEntryId, dlVersionNumberIncrease, changeLog, serviceContext);
 
 		return super.updateFileEntry(
-			fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, null, 0, serviceContext);
+			fileEntryId, sourceFileName, mimeType, title, urlTitle, description,
+			changeLog, dlVersionNumberIncrease, inputStream, size, displayDate,
+			expirationDate, revisionDate, serviceContext);
 	}
 
 	private long _getUserId() {
@@ -227,8 +200,9 @@ public class DLOpenerOneDriveDLAppServiceWrapper extends DLAppServiceWrapper {
 		try {
 			updateFileEntry(
 				fileEntry.getFileEntryId(), sourceFileName,
-				fileEntry.getMimeType(), title, fileEntry.getDescription(),
-				StringPool.BLANK, DLVersionNumberIncrease.NONE, file,
+				fileEntry.getMimeType(), title, StringPool.BLANK,
+				fileEntry.getDescription(), StringPool.BLANK,
+				DLVersionNumberIncrease.NONE, file, null, null, null,
 				serviceContext);
 		}
 		finally {

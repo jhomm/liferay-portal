@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.test;
@@ -34,6 +25,7 @@ import com.liferay.portal.kernel.test.context.ContextUserReplace;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
@@ -73,13 +65,14 @@ public class SegmentsExperimentRelServiceTest {
 		_group = GroupTestUtil.addGroup();
 
 		_role = RoleLocalServiceUtil.addRole(
-			TestPropsValues.getUserId(), null, 0, StringUtil.randomString(),
-			null, null, RoleConstants.TYPE_SITE, null,
+			RandomTestUtil.randomString(), TestPropsValues.getUserId(), null, 0,
+			StringUtil.randomString(), null, null, RoleConstants.TYPE_SITE,
+			null,
 			ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		_user = UserTestUtil.addGroupUser(_group, _role.getName());
 
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		_classNameId = _classNameLocalService.getClassNameId(Layout.class);
 
@@ -118,12 +111,10 @@ public class SegmentsExperimentRelServiceTest {
 	}
 
 	private SegmentsExperience _addSegmentsExperience() throws Exception {
-		long classNameId = _classNameLocalService.getClassNameId(
-			Layout.class.getName());
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		return SegmentsTestUtil.addSegmentsExperience(
-			_group.getGroupId(), classNameId, layout.getPlid());
+			_group.getGroupId(), layout.getPlid());
 	}
 
 	private SegmentsExperiment _addSegmentsExperiment() throws Exception {
@@ -138,8 +129,7 @@ public class SegmentsExperimentRelServiceTest {
 
 		return SegmentsTestUtil.addSegmentsExperiment(
 			_group.getGroupId(), segmentsExperience.getSegmentsExperienceId(),
-			segmentsExperience.getClassNameId(),
-			segmentsExperience.getClassPK());
+			segmentsExperience.getPlid());
 	}
 
 	private SegmentsExperimentRel _addSegmentsExperimentRel(

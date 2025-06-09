@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Brian Wing Shun Chan
- * @see AccountEntryServiceSoap
  * @generated
  */
 public class AccountEntryServiceHttp {
@@ -128,8 +118,9 @@ public class AccountEntryServiceHttp {
 	}
 
 	public static com.liferay.account.model.AccountEntry addAccountEntry(
-			HttpPrincipal httpPrincipal, long userId, long parentAccountEntryId,
-			String name, String description, String[] domains, String email,
+			HttpPrincipal httpPrincipal, String externalReferenceCode,
+			long userId, long parentAccountEntryId, String name,
+			String description, String[] domains, String email,
 			byte[] logoBytes, String taxIdNumber, String type, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -140,9 +131,56 @@ public class AccountEntryServiceHttp {
 				_addAccountEntryParameterTypes2);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, userId, parentAccountEntryId, name, description,
-				domains, email, logoBytes, taxIdNumber, type, status,
-				serviceContext);
+				methodKey, externalReferenceCode, userId, parentAccountEntryId,
+				name, description, domains, email, logoBytes, taxIdNumber, type,
+				status, serviceContext);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry
+			addOrUpdateAccountEntry(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long userId, long parentAccountEntryId, String name,
+				String description, String[] domains, String emailAddress,
+				byte[] logoBytes, String taxIdNumber, String type, int status,
+				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class, "addOrUpdateAccountEntry",
+				_addOrUpdateAccountEntryParameterTypes3);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, userId, parentAccountEntryId,
+				name, description, domains, emailAddress, logoBytes,
+				taxIdNumber, type, status, serviceContext);
 
 			Object returnObj = null;
 
@@ -179,7 +217,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "deactivateAccountEntries",
-				_deactivateAccountEntriesParameterTypes3);
+				_deactivateAccountEntriesParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryIds);
@@ -215,7 +253,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "deactivateAccountEntry",
-				_deactivateAccountEntryParameterTypes4);
+				_deactivateAccountEntryParameterTypes5);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryId);
@@ -255,7 +293,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "deleteAccountEntries",
-				_deleteAccountEntriesParameterTypes5);
+				_deleteAccountEntriesParameterTypes6);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryIds);
@@ -291,7 +329,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "deleteAccountEntry",
-				_deleteAccountEntryParameterTypes6);
+				_deleteAccountEntryParameterTypes7);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryId);
@@ -327,10 +365,53 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "fetchAccountEntry",
-				_fetchAccountEntryParameterTypes7);
+				_fetchAccountEntryParameterTypes8);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry
+			fetchAccountEntryByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class,
+				"fetchAccountEntryByExternalReferenceCode",
+				_fetchAccountEntryByExternalReferenceCodeParameterTypes9);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
 
 			Object returnObj = null;
 
@@ -371,7 +452,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "getAccountEntries",
-				_getAccountEntriesParameterTypes8);
+				_getAccountEntriesParameterTypes10);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, companyId, status, start, end, orderByComparator);
@@ -412,7 +493,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "getAccountEntry",
-				_getAccountEntryParameterTypes9);
+				_getAccountEntryParameterTypes11);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryId);
@@ -445,6 +526,88 @@ public class AccountEntryServiceHttp {
 		}
 	}
 
+	public static com.liferay.account.model.AccountEntry
+			getAccountEntryByExternalReferenceCode(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class,
+				"getAccountEntryByExternalReferenceCode",
+				_getAccountEntryByExternalReferenceCodeParameterTypes12);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, companyId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry
+			getOrAddIncompleteAccountEntry(
+				HttpPrincipal httpPrincipal, String externalReferenceCode,
+				String name, String type)
+		throws Exception {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class, "getOrAddIncompleteAccountEntry",
+				_getOrAddIncompleteAccountEntryParameterTypes13);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, externalReferenceCode, name, type);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof Exception) {
+					throw (Exception)exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult
 		<com.liferay.account.model.AccountEntry> searchAccountEntries(
 				HttpPrincipal httpPrincipal, String keywords,
@@ -455,7 +618,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "searchAccountEntries",
-				_searchAccountEntriesParameterTypes10);
+				_searchAccountEntriesParameterTypes14);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, keywords, params, cur, delta, orderByField, reverse);
@@ -497,7 +660,7 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "updateAccountEntry",
-				_updateAccountEntryParameterTypes11);
+				_updateAccountEntryParameterTypes15);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntry);
@@ -531,22 +694,147 @@ public class AccountEntryServiceHttp {
 	}
 
 	public static com.liferay.account.model.AccountEntry updateAccountEntry(
-			HttpPrincipal httpPrincipal, long accountEntryId,
-			long parentAccountEntryId, String name, String description,
-			boolean deleteLogo, String[] domains, String emailAddress,
-			byte[] logoBytes, String taxIdNumber, int status,
+			HttpPrincipal httpPrincipal, String externalReferenceCode,
+			long accountEntryId, long parentAccountEntryId, String name,
+			String description, boolean deleteLogo, String[] domains,
+			String emailAddress, byte[] logoBytes, String taxIdNumber,
+			int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "updateAccountEntry",
-				_updateAccountEntryParameterTypes12);
+				_updateAccountEntryParameterTypes16);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, accountEntryId, parentAccountEntryId, name,
-				description, deleteLogo, domains, emailAddress, logoBytes,
-				taxIdNumber, status, serviceContext);
+				methodKey, externalReferenceCode, accountEntryId,
+				parentAccountEntryId, name, description, deleteLogo, domains,
+				emailAddress, logoBytes, taxIdNumber, status, serviceContext);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry
+			updateDefaultBillingAddressId(
+				HttpPrincipal httpPrincipal, long accountEntryId,
+				long addressId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class, "updateDefaultBillingAddressId",
+				_updateDefaultBillingAddressIdParameterTypes17);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, accountEntryId, addressId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry
+			updateDefaultShippingAddressId(
+				HttpPrincipal httpPrincipal, long accountEntryId,
+				long addressId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class, "updateDefaultShippingAddressId",
+				_updateDefaultShippingAddressIdParameterTypes18);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, accountEntryId, addressId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry updateDomains(
+			HttpPrincipal httpPrincipal, long accountEntryId, String[] domains)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class, "updateDomains",
+				_updateDomainsParameterTypes19);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, accountEntryId, domains);
 
 			Object returnObj = null;
 
@@ -585,10 +873,52 @@ public class AccountEntryServiceHttp {
 		try {
 			MethodKey methodKey = new MethodKey(
 				AccountEntryServiceUtil.class, "updateExternalReferenceCode",
-				_updateExternalReferenceCodeParameterTypes13);
+				_updateExternalReferenceCodeParameterTypes20);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, accountEntryId, externalReferenceCode);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.account.model.AccountEntry)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static com.liferay.account.model.AccountEntry
+			updateRestrictMembership(
+				HttpPrincipal httpPrincipal, long accountEntryId,
+				boolean restrictMembership)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				AccountEntryServiceUtil.class, "updateRestrictMembership",
+				_updateRestrictMembershipParameterTypes21);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, accountEntryId, restrictMembership);
 
 			Object returnObj = null;
 
@@ -627,43 +957,76 @@ public class AccountEntryServiceHttp {
 		new Class[] {long.class};
 	private static final Class<?>[] _addAccountEntryParameterTypes2 =
 		new Class[] {
-			long.class, long.class, String.class, String.class, String[].class,
-			String.class, byte[].class, String.class, String.class, int.class,
+			String.class, long.class, long.class, String.class, String.class,
+			String[].class, String.class, byte[].class, String.class,
+			String.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
-	private static final Class<?>[] _deactivateAccountEntriesParameterTypes3 =
+	private static final Class<?>[] _addOrUpdateAccountEntryParameterTypes3 =
+		new Class[] {
+			String.class, long.class, long.class, String.class, String.class,
+			String[].class, String.class, byte[].class, String.class,
+			String.class, int.class,
+			com.liferay.portal.kernel.service.ServiceContext.class
+		};
+	private static final Class<?>[] _deactivateAccountEntriesParameterTypes4 =
 		new Class[] {long[].class};
-	private static final Class<?>[] _deactivateAccountEntryParameterTypes4 =
+	private static final Class<?>[] _deactivateAccountEntryParameterTypes5 =
 		new Class[] {long.class};
-	private static final Class<?>[] _deleteAccountEntriesParameterTypes5 =
+	private static final Class<?>[] _deleteAccountEntriesParameterTypes6 =
 		new Class[] {long[].class};
-	private static final Class<?>[] _deleteAccountEntryParameterTypes6 =
+	private static final Class<?>[] _deleteAccountEntryParameterTypes7 =
 		new Class[] {long.class};
-	private static final Class<?>[] _fetchAccountEntryParameterTypes7 =
+	private static final Class<?>[] _fetchAccountEntryParameterTypes8 =
 		new Class[] {long.class};
-	private static final Class<?>[] _getAccountEntriesParameterTypes8 =
+	private static final Class<?>[]
+		_fetchAccountEntryByExternalReferenceCodeParameterTypes9 = new Class[] {
+			String.class, long.class
+		};
+	private static final Class<?>[] _getAccountEntriesParameterTypes10 =
 		new Class[] {
 			long.class, int.class, int.class, int.class,
 			com.liferay.portal.kernel.util.OrderByComparator.class
 		};
-	private static final Class<?>[] _getAccountEntryParameterTypes9 =
+	private static final Class<?>[] _getAccountEntryParameterTypes11 =
 		new Class[] {long.class};
-	private static final Class<?>[] _searchAccountEntriesParameterTypes10 =
+	private static final Class<?>[]
+		_getAccountEntryByExternalReferenceCodeParameterTypes12 = new Class[] {
+			String.class, long.class
+		};
+	private static final Class<?>[]
+		_getOrAddIncompleteAccountEntryParameterTypes13 = new Class[] {
+			String.class, String.class, String.class
+		};
+	private static final Class<?>[] _searchAccountEntriesParameterTypes14 =
 		new Class[] {
 			String.class, java.util.LinkedHashMap.class, int.class, int.class,
 			String.class, boolean.class
 		};
-	private static final Class<?>[] _updateAccountEntryParameterTypes11 =
+	private static final Class<?>[] _updateAccountEntryParameterTypes15 =
 		new Class[] {com.liferay.account.model.AccountEntry.class};
-	private static final Class<?>[] _updateAccountEntryParameterTypes12 =
+	private static final Class<?>[] _updateAccountEntryParameterTypes16 =
 		new Class[] {
-			long.class, long.class, String.class, String.class, boolean.class,
-			String[].class, String.class, byte[].class, String.class, int.class,
+			String.class, long.class, long.class, String.class, String.class,
+			boolean.class, String[].class, String.class, byte[].class,
+			String.class, int.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
-		_updateExternalReferenceCodeParameterTypes13 = new Class[] {
+		_updateDefaultBillingAddressIdParameterTypes17 = new Class[] {
+			long.class, long.class
+		};
+	private static final Class<?>[]
+		_updateDefaultShippingAddressIdParameterTypes18 = new Class[] {
+			long.class, long.class
+		};
+	private static final Class<?>[] _updateDomainsParameterTypes19 =
+		new Class[] {long.class, String[].class};
+	private static final Class<?>[]
+		_updateExternalReferenceCodeParameterTypes20 = new Class[] {
 			long.class, String.class
 		};
+	private static final Class<?>[] _updateRestrictMembershipParameterTypes21 =
+		new Class[] {long.class, boolean.class};
 
 }

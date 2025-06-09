@@ -1,31 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import java.io.File;
 import java.io.IOException;
 
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.PathMatcher;
 import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -33,10 +27,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -44,12 +37,17 @@ import org.junit.Test;
 /**
  * @author Matthew Tambara
  */
-public class ConfigurationEnvBuilderTest {
+public class ConfigurationEnvBuilderTest extends ConfigurationEnvBuilder {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
+
+	@Before
+	public void setUp() throws Exception {
+		_fileSystem = FileSystems.getDefault();
+	}
 
 	@Test
 	public void testBuildContent() throws IOException {
@@ -57,7 +55,9 @@ public class ConfigurationEnvBuilderTest {
 
 		Path modulesDirPath = Paths.get("modules");
 
-		Matcher matcher = _pattern.matcher(StringPool.BLANK);
+		PathMatcher excludePathMatcher = _getPathMatcher("glob:**/*-test/**");
+		PathMatcher includePathMatcher = _getPathMatcher(
+			"glob:**/apps/**/configuration{,/**}/*Configuration.java");
 
 		Files.walkFileTree(
 			modulesDirPath,
@@ -68,12 +68,10 @@ public class ConfigurationEnvBuilderTest {
 						Path path, BasicFileAttributes basicFileAttributes)
 					throws IOException {
 
-					String pathString = path.toString();
+					if (includePathMatcher.matches(path) &&
+						!excludePathMatcher.matches(path)) {
 
-					matcher.reset(pathString);
-
-					if (matcher.matches()) {
-						configurationJavaFileNames.add(pathString);
+						configurationJavaFileNames.add(path.toString());
 					}
 
 					return FileVisitResult.CONTINUE;
@@ -82,8 +80,10 @@ public class ConfigurationEnvBuilderTest {
 			});
 
 		List<String> expectedList = StringUtil.split(
-			ConfigurationEnvBuilder.buildContent(
-				configurationJavaFileNames.toArray(new String[0])),
+			buildContent(
+				getObjectDefs(
+					Paths.get("."),
+					configurationJavaFileNames.toArray(new String[0]))),
 			CharPool.NEW_LINE);
 
 		List<String> actualList = _readPortalOSGiConfigurationProperties();
@@ -114,17 +114,26 @@ public class ConfigurationEnvBuilderTest {
 	}
 
 	private List<String> _formatList(List<String> lines) {
-		List<String> result = new ArrayList<>();
+		return TransformUtil.transform(
+			lines,
+			line -> {
+				if (!line.contains("configuration.override")) {
+					return null;
+				}
 
-		for (String line : lines) {
-			if (line.contains("configuration.override")) {
-				line = line.replace(StringPool.POUND, StringPool.BLANK);
+				line =
+					com.liferay.portal.kernel.util.StringUtil.removeSubstring(
+						line, StringPool.POUND);
 
-				result.add(line.trim());
-			}
-		}
+				return line.trim();
+			});
+	}
 
-		return result;
+	private PathMatcher _getPathMatcher(String pattern) {
+		String separator = _fileSystem.getSeparator();
+
+		return _fileSystem.getPathMatcher(
+			StringUtil.replace(pattern, CharPool.SLASH, separator.charAt(0)));
 	}
 
 	private List<String> _readPortalOSGiConfigurationProperties()
@@ -160,10 +169,6 @@ public class ConfigurationEnvBuilderTest {
 	private static final String _MESSAGE =
 		"Run \"ant update-portal-osgi-configuration-properties\".";
 
-	private static final Pattern _pattern = Pattern.compile(
-		StringBundler.concat(
-			".*", File.separator, "apps", File.separator, ".*", File.separator,
-			"configuration", File.separator, "[^", File.separator,
-			"]+Configuration\\.java"));
+	private FileSystem _fileSystem;
 
 }

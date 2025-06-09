@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.servlet.taglib;
@@ -17,17 +8,18 @@ package com.liferay.frontend.taglib.servlet.taglib;
 import com.liferay.frontend.taglib.internal.util.ServicesProvider;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
 import com.liferay.portal.kernel.servlet.taglib.util.OutputData;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilder;
 import com.liferay.portal.url.builder.AbsolutePortalURLBuilderFactory;
 import com.liferay.taglib.util.AttributesTagSupport;
 
-import java.util.Map;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
 
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
+import java.util.Map;
 
 import org.osgi.framework.Bundle;
 
@@ -58,14 +50,18 @@ public class StylesheetTag extends AttributesTagSupport {
 
 		OutputData outputData = _getOutputData(httpServletRequest);
 
-		StringBundler sb = new StringBundler(3);
+		StringBundler sb = new StringBundler(5);
 
-		sb.append("<link rel=\"stylesheet\" type=\"text/css\" href=\"");
+		sb.append("<link href=\"");
 		sb.append(
-			absolutePortalURLBuilder.forModule(
+			absolutePortalURLBuilder.forBundleStylesheet(
 				bundle, _css
 			).build());
-		sb.append("\"></link>");
+		sb.append(StringPool.QUOTE);
+		sb.append(
+			ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+				httpServletRequest));
+		sb.append(" rel=\"stylesheet\" type=\"text/css\"></link>");
 
 		outputData.addDataSB(_getOutputKey(), WebKeys.PAGE_TOP, sb);
 

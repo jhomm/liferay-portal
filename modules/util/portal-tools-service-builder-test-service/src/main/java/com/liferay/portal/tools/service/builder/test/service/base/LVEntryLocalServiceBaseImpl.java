@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service.base;
@@ -18,8 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -28,18 +18,18 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.version.VersionService;
 import com.liferay.portal.kernel.service.version.VersionServiceListener;
 import com.liferay.portal.kernel.transaction.Transactional;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.spring.extender.service.ServiceReference;
 import com.liferay.portal.tools.service.builder.test.model.LVEntry;
 import com.liferay.portal.tools.service.builder.test.model.LVEntryLocalization;
@@ -55,7 +45,7 @@ import com.liferay.portal.tools.service.builder.test.service.persistence.LVEntry
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -345,6 +335,11 @@ public abstract class LVEntryLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement LVEntryLocalServiceImpl#deleteLVEntry(LVEntry) to avoid orphaned data");
+		}
+
 		return lvEntryLocalService.deleteLVEntry((LVEntry)persistedModel);
 	}
 
@@ -396,7 +391,7 @@ public abstract class LVEntryLocalServiceBaseImpl
 	 * <strong>Important:</strong> Inspect LVEntryLocalServiceImpl for overloaded versions of the method. If provided, use these entry points to the API, as the implementation logic may require the additional parameters defined there.
 	 * </p>
 	 *
-	 * @param lvEntry the lv entry
+	 * @param draftLVEntry the lv entry
 	 * @return the lv entry that was updated
 	 */
 	@Indexable(type = IndexableType.REINDEX)
@@ -408,37 +403,41 @@ public abstract class LVEntryLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addBigDecimalEntryLVEntry(
+	public boolean addBigDecimalEntryLVEntry(
 		long bigDecimalEntryId, long lvEntryId) {
 
-		bigDecimalEntryPersistence.addLVEntry(bigDecimalEntryId, lvEntryId);
+		return bigDecimalEntryPersistence.addLVEntry(
+			bigDecimalEntryId, lvEntryId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addBigDecimalEntryLVEntry(
+	public boolean addBigDecimalEntryLVEntry(
 		long bigDecimalEntryId, LVEntry lvEntry) {
 
-		bigDecimalEntryPersistence.addLVEntry(bigDecimalEntryId, lvEntry);
+		return bigDecimalEntryPersistence.addLVEntry(
+			bigDecimalEntryId, lvEntry);
 	}
 
 	/**
 	 */
 	@Override
-	public void addBigDecimalEntryLVEntries(
+	public boolean addBigDecimalEntryLVEntries(
 		long bigDecimalEntryId, long[] lvEntryIds) {
 
-		bigDecimalEntryPersistence.addLVEntries(bigDecimalEntryId, lvEntryIds);
+		return bigDecimalEntryPersistence.addLVEntries(
+			bigDecimalEntryId, lvEntryIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addBigDecimalEntryLVEntries(
+	public boolean addBigDecimalEntryLVEntries(
 		long bigDecimalEntryId, List<LVEntry> lvEntries) {
 
-		bigDecimalEntryPersistence.addLVEntries(bigDecimalEntryId, lvEntries);
+		return bigDecimalEntryPersistence.addLVEntries(
+			bigDecimalEntryId, lvEntries);
 	}
 
 	/**
@@ -876,20 +875,13 @@ public abstract class LVEntryLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.tools.service.builder.test.model.LVEntry",
-			lvEntryLocalService);
-
 		registerListener(new LVEntryLocalizationVersionServiceListener());
 
-		_setLocalServiceUtilService(lvEntryLocalService);
+		LVEntryLocalServiceUtil.setService(lvEntryLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.tools.service.builder.test.model.LVEntry");
-
-		_setLocalServiceUtilService(null);
+		LVEntryLocalServiceUtil.setService(null);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -1265,37 +1257,26 @@ public abstract class LVEntryLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = lvEntryPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = lvEntryPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		LVEntryLocalService lvEntryLocalService) {
-
-		try {
-			Field field = LVEntryLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, lvEntryLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -1324,9 +1305,8 @@ public abstract class LVEntryLocalServiceBaseImpl
 	protected LVEntryLocalizationVersionPersistence
 		lvEntryLocalizationVersionPersistence;
 
-	@ServiceReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		LVEntryLocalServiceBaseImpl.class);
 
 	private class LVEntryLocalizationVersionServiceListener
 		implements VersionServiceListener<LVEntry, LVEntryVersion> {

@@ -1,30 +1,23 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
-<%
-String commandOutput = (String)SessionMessages.get(renderRequest, "commandOutput");
-%>
-
 <portlet:actionURL name="executeCommand" var="executeCommandURL" />
+
+<portlet:renderURL var="redirect" />
 
 <clay:container-fluid>
 	<aui:form action="<%= executeCommandURL %>" method="post" name="fm" onSubmit='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "executeCommand();" %>'>
-		<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
+		<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
+
+		<liferay-ui:error exception="<%= CaptchaConfigurationException.class %>" message="a-captcha-error-occurred-please-contact-an-administrator" />
+		<liferay-ui:error exception="<%= CaptchaException.class %>" message="captcha-verification-failed" />
+		<liferay-ui:error exception="<%= CaptchaTextException.class %>" message="text-verification-failed" />
 
 		<liferay-ui:error key="gogo">
 
@@ -35,11 +28,20 @@ String commandOutput = (String)SessionMessages.get(renderRequest, "commandOutput
 			<%= HtmlUtil.escape(e.getMessage()) %>
 		</liferay-ui:error>
 
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
-				<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) || windowState.equals(LiferayWindowState.POP_UP) %>" name="command" prefix='<%= (String)SessionMessages.get(renderRequest, "prompt") %>' value='<%= (String)SessionMessages.get(renderRequest, "command") %>' />
-			</aui:fieldset>
-		</aui:fieldset-group>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset>
+					<clay:alert
+						displayType="info"
+						message="command-will-only-be-executed-on-this-node"
+					/>
+
+					<aui:input name="command" prefix='<%= (String)SessionMessages.get(renderRequest, "prompt") %>' value='<%= (String)SessionMessages.get(renderRequest, "command") %>' />
+
+					<liferay-captcha:captcha />
+				</aui:fieldset>
+			</div>
+		</div>
 
 		<aui:button-row>
 			<aui:button primary="<%= true %>" type="submit" value="execute" />
@@ -51,6 +53,10 @@ String commandOutput = (String)SessionMessages.get(renderRequest, "commandOutput
 				/>
 			</div>
 		</aui:button-row>
+
+		<%
+		String commandOutput = (String)SessionMessages.get(renderRequest, "commandOutput");
+		%>
 
 		<c:if test="<%= Validator.isNotNull(commandOutput) %>">
 			<b><liferay-ui:message key="output" /></b>

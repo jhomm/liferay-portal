@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.web.internal.admin.portlet;
 
-import com.liferay.document.library.kernel.store.DLStoreUtil;
+import com.liferay.document.library.kernel.store.Store;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.portlet.PortletResponseUtil;
@@ -32,36 +22,29 @@ import com.liferay.portal.reports.engine.console.model.Definition;
 import com.liferay.portal.reports.engine.console.model.Source;
 import com.liferay.portal.reports.engine.console.service.DefinitionLocalService;
 import com.liferay.portal.reports.engine.console.service.SourceLocalService;
-import com.liferay.portal.reports.engine.console.web.internal.admin.configuration.ReportsEngineAdminWebConfiguration;
 import com.liferay.portal.reports.engine.console.web.internal.admin.constants.ReportsEngineWebKeys;
+
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import java.util.Map;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Gavin Wan
  */
 @Component(
-	configurationPid = "com.liferay.portal.reports.engine.console.web.internal.admin.configuration.ReportsEngineAdminWebConfiguration",
-	immediate = true,
 	property = {
 		"com.liferay.portlet.css-class-wrapper=reports-portlet",
 		"com.liferay.portlet.display-category=category.hidden",
-		"com.liferay.portlet.footer-portlet-javascript=/admin/js/main.js",
+		"com.liferay.portlet.footer-portlet-javascript=/admin/js/ReportParameters.js",
 		"com.liferay.portlet.header-portlet-css=/admin/css/main.css",
 		"com.liferay.portlet.icon=/icons/admin.png",
 		"com.liferay.portlet.preferences-owned-by-group=true",
@@ -70,19 +53,20 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Report Admin",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.config-template=/admin/configuration.jsp",
-		"javax.portlet.init-param.copy-request-parameters=true",
-		"javax.portlet.init-param.mvc-action-command-package-prefix=com.liferay.portal.reports.engine.console.web.admin.portlet.action",
-		"javax.portlet.init-param.view-template=/admin/view.jsp",
-		"javax.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
-		"javax.portlet.portlet-info.keywords=Reports Admin",
-		"javax.portlet.portlet-info.short-title=Reports Admin",
-		"javax.portlet.portlet-info.title=Reports Admin",
-		"javax.portlet.portlet-mode=text/html;config",
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"jakarta.portlet.display-name=Report Admin",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.config-template=/admin/configuration.jsp",
+		"jakarta.portlet.init-param.copy-request-parameters=true",
+		"jakarta.portlet.init-param.mvc-action-command-package-prefix=com.liferay.portal.reports.engine.console.web.admin.portlet.action",
+		"jakarta.portlet.init-param.view-template=/admin/view.jsp",
+		"jakarta.portlet.name=" + ReportsEngineConsolePortletKeys.REPORTS_ADMIN,
+		"jakarta.portlet.portlet-info.keywords=Reports Admin",
+		"jakarta.portlet.portlet-info.short-title=Reports Admin",
+		"jakarta.portlet.portlet-info.title=Reports Admin",
+		"jakarta.portlet.portlet-mode=text/html;config",
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -94,12 +78,9 @@ public class AdminPortlet extends MVCPortlet {
 		throws IOException, PortletException {
 
 		try {
-			setDefinitionRequestAttribute(renderRequest);
+			_setDefinitionRequestAttribute(renderRequest);
 
-			setSourceRequestAttribute(renderRequest);
-
-			setReportsEngineAdminWebConfigurationRequestAttribute(
-				renderRequest);
+			_setSourceRequestAttribute(renderRequest);
 		}
 		catch (Exception exception) {
 			if (isSessionErrorException(exception)) {
@@ -124,7 +105,7 @@ public class AdminPortlet extends MVCPortlet {
 			String resourceID = resourceRequest.getResourceID();
 
 			if (resourceID.equals("download")) {
-				serveDownload(resourceRequest, resourceResponse);
+				_serveDownload(resourceRequest, resourceResponse);
 			}
 		}
 		catch (IOException ioException) {
@@ -138,27 +119,16 @@ public class AdminPortlet extends MVCPortlet {
 		}
 	}
 
-	@Reference(unbind = "-")
-	public void setDefinitionLocalService(
-		DefinitionLocalService definitionLocalService) {
+	@Reference
+	protected DefinitionLocalService definitionLocalService;
 
-		_definitionLocalService = definitionLocalService;
-	}
+	@Reference
+	protected SourceLocalService sourceLocalService;
 
-	@Reference(unbind = "-")
-	public void setSourceLocalService(SourceLocalService sourceLocalService) {
-		_sourceLocalService = sourceLocalService;
-	}
+	@Reference(target = "(default=true)")
+	protected Store store;
 
-	@Activate
-	@Modified
-	protected void activate(Map<String, Object> properties) {
-		_reportsEngineAdminWebConfiguration =
-			ConfigurableUtil.createConfigurable(
-				ReportsEngineAdminWebConfiguration.class, properties);
-	}
-
-	protected void serveDownload(
+	private void _serveDownload(
 			ResourceRequest resourceRequest, ResourceResponse resourceResponse)
 		throws Exception {
 
@@ -169,15 +139,16 @@ public class AdminPortlet extends MVCPortlet {
 
 		String shortFileName = StringUtil.extractLast(
 			fileName, StringPool.SLASH);
-		InputStream inputStream = DLStoreUtil.getFileAsStream(
-			themeDisplay.getCompanyId(), CompanyConstants.SYSTEM, fileName);
+		InputStream inputStream = store.getFileAsStream(
+			themeDisplay.getCompanyId(), CompanyConstants.SYSTEM, fileName,
+			StringPool.BLANK);
 
 		PortletResponseUtil.sendFile(
 			resourceRequest, resourceResponse, shortFileName, inputStream,
 			MimeTypesUtil.getContentType(fileName));
 	}
 
-	protected void setDefinitionRequestAttribute(RenderRequest renderRequest)
+	private void _setDefinitionRequestAttribute(RenderRequest renderRequest)
 		throws PortalException {
 
 		long definitionId = ParamUtil.getLong(renderRequest, "definitionId");
@@ -185,21 +156,13 @@ public class AdminPortlet extends MVCPortlet {
 		Definition definition = null;
 
 		if (definitionId > 0) {
-			definition = _definitionLocalService.getDefinition(definitionId);
+			definition = definitionLocalService.getDefinition(definitionId);
 		}
 
 		renderRequest.setAttribute(ReportsEngineWebKeys.DEFINITION, definition);
 	}
 
-	protected void setReportsEngineAdminWebConfigurationRequestAttribute(
-		RenderRequest renderRequest) {
-
-		renderRequest.setAttribute(
-			ReportsEngineAdminWebConfiguration.class.getName(),
-			_reportsEngineAdminWebConfiguration);
-	}
-
-	protected void setSourceRequestAttribute(RenderRequest renderRequest)
+	private void _setSourceRequestAttribute(RenderRequest renderRequest)
 		throws PortalException {
 
 		long sourceId = ParamUtil.getLong(renderRequest, "sourceId");
@@ -207,15 +170,10 @@ public class AdminPortlet extends MVCPortlet {
 		Source source = null;
 
 		if (sourceId > 0) {
-			source = _sourceLocalService.getSource(sourceId);
+			source = sourceLocalService.getSource(sourceId);
 		}
 
 		renderRequest.setAttribute(ReportsEngineWebKeys.SOURCE, source);
 	}
-
-	private DefinitionLocalService _definitionLocalService;
-	private volatile ReportsEngineAdminWebConfiguration
-		_reportsEngineAdminWebConfiguration;
-	private SourceLocalService _sourceLocalService;
 
 }

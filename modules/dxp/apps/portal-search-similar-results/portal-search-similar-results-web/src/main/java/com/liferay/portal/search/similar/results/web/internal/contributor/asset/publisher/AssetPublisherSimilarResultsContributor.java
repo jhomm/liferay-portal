@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.asset.publisher;
@@ -17,17 +8,18 @@ package com.liferay.portal.search.similar.results.web.internal.contributor.asset
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
-import com.liferay.asset.publisher.constants.AssetPublisherPortletKeys;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.model.ClassedModel;
+import com.liferay.portal.kernel.portlet.PortletQName;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.search.model.uid.UIDFactory;
 import com.liferay.portal.search.similar.results.web.internal.builder.AssetTypeUtil;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
+import com.liferay.portal.search.similar.results.web.internal.helper.HttpHelperUtil;
 import com.liferay.portal.search.similar.results.web.internal.util.SearchStringUtil;
-import com.liferay.portal.search.similar.results.web.internal.util.http.HttpHelper;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.CriteriaBuilder;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.CriteriaHelper;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.DestinationBuilder;
@@ -39,34 +31,43 @@ import com.liferay.wiki.service.WikiPageLocalService;
 
 import java.util.Objects;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Wade Cao
  * @author André de Oliveira
  */
-@Component(service = SimilarResultsContributor.class)
 public class AssetPublisherSimilarResultsContributor
 	implements SimilarResultsContributor {
+
+	public AssetPublisherSimilarResultsContributor(
+		AssetEntryLocalService assetEntryLocalService,
+		BlogsEntryLocalService blogsEntryLocalService, UIDFactory uidFactory,
+		WikiPageLocalService wikiPageLocalService) {
+
+		_assetEntryLocalService = assetEntryLocalService;
+		_blogsEntryLocalService = blogsEntryLocalService;
+		_uidFactory = uidFactory;
+		_wikiPageLocalService = wikiPageLocalService;
+	}
 
 	@Override
 	public void detectRoute(
 		RouteBuilder routeBuilder, RouteHelper routeHelper) {
 
-		String urlString = routeHelper.getURLString();
+		String urlString = HttpComponentsUtil.decodePath(
+			routeHelper.getURLString());
 
-		String[] parameters = _httpHelper.getFriendlyURLParameters(urlString);
+		String[] parameters = HttpHelperUtil.getFriendlyURLParameters(
+			urlString);
 
 		SearchStringUtil.requireEquals("asset_publisher", parameters[0]);
 
-		putAttribute(parameters[2], "type", routeBuilder);
+		_putAttribute(parameters[2], "type", routeBuilder);
 
-		String assetEntryId = _httpHelper.getPortletIdParameter(
-			urlString, "assetEntryId",
-			_getAssetPublisherPortletId(parameters[1]));
+		String assetEntryId = HttpHelperUtil.getPortletIdParameter(
+			urlString,
+			PortletQName.PUBLIC_RENDER_PARAMETER_NAMESPACE + "assetEntryId");
 
-		putAttribute(Long.valueOf(assetEntryId), "entryId", routeBuilder);
+		_putAttribute(Long.valueOf(assetEntryId), "entryId", routeBuilder);
 	}
 
 	@Override
@@ -109,48 +110,6 @@ public class AssetPublisherSimilarResultsContributor
 		);
 	}
 
-	protected void putAttribute(
-		Object value, String name, RouteBuilder routeBuilder) {
-
-		routeBuilder.addAttribute(name, value);
-	}
-
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		_assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setBlogsEntryLocalService(
-		BlogsEntryLocalService blogsEntryLocalService) {
-
-		_blogsEntryLocalService = blogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setHttpHelper(HttpHelper httpHelper) {
-		_httpHelper = httpHelper;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUIDFactory(UIDFactory uidFactory) {
-		_uidFactory = uidFactory;
-	}
-
-	@Reference(unbind = "-")
-	protected void setWikiPageLocalService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		_wikiPageLocalService = wikiPageLocalService;
-	}
-
-	private String _getAssetPublisherPortletId(String instanceId) {
-		return AssetPublisherPortletKeys.ASSET_PUBLISHER + "_INSTANCE_" +
-			instanceId;
-	}
-
 	private ClassedModel _getClassedModel(AssetEntry assetEntry) {
 		if (Objects.equals(
 				BlogsEntry.class.getName(), assetEntry.getClassName())) {
@@ -187,10 +146,15 @@ public class AssetPublisherSimilarResultsContributor
 			assetEntry.getClassName(), String.valueOf(assetEntry.getClassPK()));
 	}
 
-	private AssetEntryLocalService _assetEntryLocalService;
-	private BlogsEntryLocalService _blogsEntryLocalService;
-	private HttpHelper _httpHelper;
-	private UIDFactory _uidFactory;
-	private WikiPageLocalService _wikiPageLocalService;
+	private void _putAttribute(
+		Object value, String name, RouteBuilder routeBuilder) {
+
+		routeBuilder.addAttribute(name, value);
+	}
+
+	private final AssetEntryLocalService _assetEntryLocalService;
+	private final BlogsEntryLocalService _blogsEntryLocalService;
+	private final UIDFactory _uidFactory;
+	private final WikiPageLocalService _wikiPageLocalService;
 
 }

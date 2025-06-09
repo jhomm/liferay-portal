@@ -1,44 +1,31 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.google.docs.internal.display.context;
 
 import com.liferay.document.library.display.context.BaseDLViewFileVersionDisplayContext;
 import com.liferay.document.library.display.context.DLViewFileVersionDisplayContext;
-import com.liferay.document.library.google.docs.internal.util.GoogleDocsMetadataHelper;
+import com.liferay.document.library.google.docs.internal.helper.GoogleDocsMetadataHelper;
 import com.liferay.document.library.google.docs.internal.util.constants.GoogleDocsConstants;
-import com.liferay.dynamic.data.mapping.kernel.DDMStructure;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.repository.model.FileVersion;
-import com.liferay.portal.kernel.servlet.taglib.ui.Menu;
-import com.liferay.portal.kernel.servlet.taglib.ui.MenuItem;
-import com.liferay.portal.kernel.servlet.taglib.ui.ToolbarItem;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.UUID;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Iván Zaera
@@ -63,34 +50,11 @@ public class GoogleDocsDLViewFileVersionDisplayContext
 	}
 
 	@Override
-	public List<DDMStructure> getDDMStructures() throws PortalException {
-		List<DDMStructure> ddmStructures = super.getDDMStructures();
-
-		Iterator<DDMStructure> iterator = ddmStructures.iterator();
-
-		while (iterator.hasNext()) {
-			DDMStructure ddmStructure = iterator.next();
-
-			String structureKey = ddmStructure.getStructureKey();
-
-			if (structureKey.equals(
-					GoogleDocsConstants.DDM_STRUCTURE_KEY_GOOGLE_DOCS)) {
-
-				iterator.remove();
-
-				break;
-			}
-		}
-
-		return ddmStructures;
-	}
-
-	@Override
-	public Menu getMenu() throws PortalException {
-		Menu menu = super.getMenu();
+	public List<DropdownItem> getActionDropdownItems() throws PortalException {
+		List<DropdownItem> actionDropdownItems = super.getActionDropdownItems();
 
 		if (!isActionsVisible()) {
-			return menu;
+			return actionDropdownItems;
 		}
 
 		// See LPS-79987
@@ -99,42 +63,16 @@ public class GoogleDocsDLViewFileVersionDisplayContext
 				_googleDocsMetadataHelper.getFieldValue(
 					GoogleDocsConstants.DDM_FIELD_NAME_URL))) {
 
-			return menu;
+			return actionDropdownItems;
 		}
 
-		List<MenuItem> menuItems = menu.getMenuItems();
+		actionDropdownItems.removeIf(
+			dropdownItem -> Objects.equals(
+				dropdownItem.get("key"), "#edit-with-image-editor"));
 
-		menuItems.removeIf(
-			menuItem -> Objects.equals(
-				menuItem.getKey(), "#edit-with-image-editor"));
+		_googleDocsUIItemsProcessor.processDropdownItems(actionDropdownItems);
 
-		_googleDocsUIItemsProcessor.processMenuItems(menuItems);
-
-		return menu;
-	}
-
-	@Override
-	public List<ToolbarItem> getToolbarItems() throws PortalException {
-		List<ToolbarItem> toolbarItems = super.getToolbarItems();
-
-		_googleDocsUIItemsProcessor.processToolbarItems(toolbarItems);
-
-		return toolbarItems;
-	}
-
-	@Override
-	public boolean hasPreview() {
-		return false;
-	}
-
-	@Override
-	public boolean isDownloadLinkVisible() {
-		return false;
-	}
-
-	@Override
-	public boolean isVersionInfoVisible() {
-		return false;
+		return actionDropdownItems;
 	}
 
 	@Override

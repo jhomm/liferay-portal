@@ -1,4 +1,6 @@
 {
+	"cssClasses": [
+	],
 	"gutters": true,
 	"landscapeMobile": {
 		"styles": {
@@ -23,6 +25,5 @@
 		"styles": {
 		},
 		"verticalAlignment": "middle"
-	},
-	"verticalAlignment": "top"
+	}
 }

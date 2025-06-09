@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model.impl;
@@ -18,6 +9,7 @@ import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.model.CacheModel;
+import com.liferay.portal.kernel.model.MVCCModel;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +25,7 @@ import java.util.Date;
  * @generated
  */
 public class CommercePriceListCacheModel
-	implements CacheModel<CommercePriceList>, Externalizable {
+	implements CacheModel<CommercePriceList>, Externalizable, MVCCModel {
 
 	@Override
 	public boolean equals(Object object) {
@@ -48,8 +40,9 @@ public class CommercePriceListCacheModel
 		CommercePriceListCacheModel commercePriceListCacheModel =
 			(CommercePriceListCacheModel)object;
 
-		if (commercePriceListId ==
-				commercePriceListCacheModel.commercePriceListId) {
+		if ((commercePriceListId ==
+				commercePriceListCacheModel.commercePriceListId) &&
+			(mvccVersion == commercePriceListCacheModel.mvccVersion)) {
 
 			return true;
 		}
@@ -59,14 +52,30 @@ public class CommercePriceListCacheModel
 
 	@Override
 	public int hashCode() {
-		return HashUtil.hash(0, commercePriceListId);
+		int hashCode = HashUtil.hash(0, commercePriceListId);
+
+		return HashUtil.hash(hashCode, mvccVersion);
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		this.mvccVersion = mvccVersion;
 	}
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(47);
+		StringBundler sb = new StringBundler(51);
 
-		sb.append("{uuid=");
+		sb.append("{mvccVersion=");
+		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
+		sb.append(", uuid=");
 		sb.append(uuid);
 		sb.append(", externalReferenceCode=");
 		sb.append(externalReferenceCode);
@@ -84,8 +93,8 @@ public class CommercePriceListCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
-		sb.append(", commerceCurrencyId=");
-		sb.append(commerceCurrencyId);
+		sb.append(", commerceCurrencyCode=");
+		sb.append(commerceCurrencyCode);
 		sb.append(", parentCommercePriceListId=");
 		sb.append(parentCommercePriceListId);
 		sb.append(", catalogBasePriceList=");
@@ -121,6 +130,9 @@ public class CommercePriceListCacheModel
 	public CommercePriceList toEntityModel() {
 		CommercePriceListImpl commercePriceListImpl =
 			new CommercePriceListImpl();
+
+		commercePriceListImpl.setMvccVersion(mvccVersion);
+		commercePriceListImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			commercePriceListImpl.setUuid("");
@@ -163,7 +175,13 @@ public class CommercePriceListCacheModel
 			commercePriceListImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
-		commercePriceListImpl.setCommerceCurrencyId(commerceCurrencyId);
+		if (commerceCurrencyCode == null) {
+			commercePriceListImpl.setCommerceCurrencyCode("");
+		}
+		else {
+			commercePriceListImpl.setCommerceCurrencyCode(commerceCurrencyCode);
+		}
+
 		commercePriceListImpl.setParentCommercePriceListId(
 			parentCommercePriceListId);
 		commercePriceListImpl.setCatalogBasePriceList(catalogBasePriceList);
@@ -230,6 +248,9 @@ public class CommercePriceListCacheModel
 
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
+		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
 		externalReferenceCode = objectInput.readUTF();
 
@@ -243,8 +264,7 @@ public class CommercePriceListCacheModel
 		userName = objectInput.readUTF();
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
-
-		commerceCurrencyId = objectInput.readLong();
+		commerceCurrencyCode = objectInput.readUTF();
 
 		parentCommercePriceListId = objectInput.readLong();
 
@@ -268,6 +288,10 @@ public class CommercePriceListCacheModel
 
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
+		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
@@ -300,7 +324,12 @@ public class CommercePriceListCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
-		objectOutput.writeLong(commerceCurrencyId);
+		if (commerceCurrencyCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(commerceCurrencyCode);
+		}
 
 		objectOutput.writeLong(parentCommercePriceListId);
 
@@ -341,6 +370,8 @@ public class CommercePriceListCacheModel
 		objectOutput.writeLong(statusDate);
 	}
 
+	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
 	public String externalReferenceCode;
 	public long commercePriceListId;
@@ -350,7 +381,7 @@ public class CommercePriceListCacheModel
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
-	public long commerceCurrencyId;
+	public String commerceCurrencyCode;
 	public long parentCommercePriceListId;
 	public boolean catalogBasePriceList;
 	public boolean netPrice;

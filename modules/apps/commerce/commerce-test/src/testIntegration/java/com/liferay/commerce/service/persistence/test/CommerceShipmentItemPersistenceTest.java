@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.exception.DuplicateCommerceShipmentItemExternalReferenceCodeException;
 import com.liferay.commerce.exception.NoSuchShipmentItemException;
 import com.liferay.commerce.model.CommerceShipmentItem;
 import com.liferay.commerce.service.CommerceShipmentItemLocalServiceUtil;
@@ -40,6 +32,8 @@ import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
 
 import java.io.Serializable;
+
+import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -129,6 +123,11 @@ public class CommerceShipmentItemPersistenceTest {
 
 		newCommerceShipmentItem.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCommerceShipmentItem.setUuid(RandomTestUtil.randomString());
+
+		newCommerceShipmentItem.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newCommerceShipmentItem.setGroupId(RandomTestUtil.nextLong());
 
 		newCommerceShipmentItem.setCompanyId(RandomTestUtil.nextLong());
@@ -150,7 +149,11 @@ public class CommerceShipmentItemPersistenceTest {
 		newCommerceShipmentItem.setCommerceInventoryWarehouseId(
 			RandomTestUtil.nextLong());
 
-		newCommerceShipmentItem.setQuantity(RandomTestUtil.nextInt());
+		newCommerceShipmentItem.setQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
+		newCommerceShipmentItem.setUnitOfMeasureKey(
+			RandomTestUtil.randomString());
 
 		_commerceShipmentItems.add(
 			_persistence.update(newCommerceShipmentItem));
@@ -162,6 +165,12 @@ public class CommerceShipmentItemPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceShipmentItem.getMvccVersion(),
 			newCommerceShipmentItem.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceShipmentItem.getUuid(),
+			newCommerceShipmentItem.getUuid());
+		Assert.assertEquals(
+			existingCommerceShipmentItem.getExternalReferenceCode(),
+			newCommerceShipmentItem.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCommerceShipmentItem.getCommerceShipmentItemId(),
 			newCommerceShipmentItem.getCommerceShipmentItemId());
@@ -197,6 +206,60 @@ public class CommerceShipmentItemPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceShipmentItem.getQuantity(),
 			newCommerceShipmentItem.getQuantity());
+		Assert.assertEquals(
+			existingCommerceShipmentItem.getUnitOfMeasureKey(),
+			newCommerceShipmentItem.getUnitOfMeasureKey());
+	}
+
+	@Test(
+		expected = DuplicateCommerceShipmentItemExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceShipmentItem commerceShipmentItem = addCommerceShipmentItem();
+
+		CommerceShipmentItem newCommerceShipmentItem =
+			addCommerceShipmentItem();
+
+		newCommerceShipmentItem.setCompanyId(
+			commerceShipmentItem.getCompanyId());
+
+		newCommerceShipmentItem = _persistence.update(newCommerceShipmentItem);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceShipmentItem);
+
+		newCommerceShipmentItem.setExternalReferenceCode(
+			commerceShipmentItem.getExternalReferenceCode());
+
+		_persistence.update(newCommerceShipmentItem);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUUID_G() throws Exception {
+		_persistence.countByUUID_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByUUID_G("null", 0L);
+
+		_persistence.countByUUID_G((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
 	}
 
 	@Test
@@ -238,6 +301,15 @@ public class CommerceShipmentItemPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CommerceShipmentItem newCommerceShipmentItem =
 			addCommerceShipmentItem();
@@ -265,12 +337,13 @@ public class CommerceShipmentItemPersistenceTest {
 
 	protected OrderByComparator<CommerceShipmentItem> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceShipmentItem", "mvccVersion", true,
-			"commerceShipmentItemId", true, "groupId", true, "companyId", true,
-			"userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "commerceShipmentId", true,
-			"commerceOrderItemId", true, "commerceInventoryWarehouseId", true,
-			"quantity", true);
+			"CommerceShipmentItem", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "commerceShipmentItemId", true,
+			"groupId", true, "companyId", true, "userId", true, "userName",
+			true, "createDate", true, "modifiedDate", true,
+			"commerceShipmentId", true, "commerceOrderItemId", true,
+			"commerceInventoryWarehouseId", true, "quantity", true,
+			"unitOfMeasureKey", true);
 	}
 
 	@Test
@@ -565,6 +638,17 @@ public class CommerceShipmentItemPersistenceTest {
 		CommerceShipmentItem commerceShipmentItem) {
 
 		Assert.assertEquals(
+			commerceShipmentItem.getUuid(),
+			ReflectionTestUtil.invoke(
+				commerceShipmentItem, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "uuid_"));
+		Assert.assertEquals(
+			Long.valueOf(commerceShipmentItem.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceShipmentItem, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
+
+		Assert.assertEquals(
 			Long.valueOf(commerceShipmentItem.getCommerceShipmentId()),
 			ReflectionTestUtil.<Long>invoke(
 				commerceShipmentItem, "getColumnOriginalValue",
@@ -580,6 +664,17 @@ public class CommerceShipmentItemPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				commerceShipmentItem, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "commerceInventoryWarehouseId"));
+
+		Assert.assertEquals(
+			commerceShipmentItem.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				commerceShipmentItem, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceShipmentItem.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceShipmentItem, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CommerceShipmentItem addCommerceShipmentItem() throws Exception {
@@ -588,6 +683,11 @@ public class CommerceShipmentItemPersistenceTest {
 		CommerceShipmentItem commerceShipmentItem = _persistence.create(pk);
 
 		commerceShipmentItem.setMvccVersion(RandomTestUtil.nextLong());
+
+		commerceShipmentItem.setUuid(RandomTestUtil.randomString());
+
+		commerceShipmentItem.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		commerceShipmentItem.setGroupId(RandomTestUtil.nextLong());
 
@@ -608,7 +708,10 @@ public class CommerceShipmentItemPersistenceTest {
 		commerceShipmentItem.setCommerceInventoryWarehouseId(
 			RandomTestUtil.nextLong());
 
-		commerceShipmentItem.setQuantity(RandomTestUtil.nextInt());
+		commerceShipmentItem.setQuantity(
+			new BigDecimal(RandomTestUtil.nextDouble()));
+
+		commerceShipmentItem.setUnitOfMeasureKey(RandomTestUtil.randomString());
 
 		_commerceShipmentItems.add(_persistence.update(commerceShipmentItem));
 

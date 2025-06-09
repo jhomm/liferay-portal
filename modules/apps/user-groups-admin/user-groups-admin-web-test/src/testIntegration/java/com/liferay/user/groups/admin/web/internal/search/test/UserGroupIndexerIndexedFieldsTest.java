@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.groups.admin.web.internal.search.test;
@@ -20,26 +11,29 @@ import com.liferay.expando.kernel.model.ExpandoColumnConstants;
 import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.model.uid.UIDFactory;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.ExpandoTableSearchFixture;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -73,11 +67,11 @@ public class UserGroupIndexerIndexedFieldsTest {
 
 	@Before
 	public void setUp() throws Exception {
-		setUpExpandoTableSearchFixture();
+		_setUpExpandoTableSearchFixture();
 
 		setUpUserSearchFixture();
 
-		setUpIndexedFieldsFixture();
+		_setUpIndexedFieldsFixture();
 
 		setUpUserGroupIndexerFixture();
 
@@ -95,7 +89,10 @@ public class UserGroupIndexerIndexedFieldsTest {
 		indexedFieldsFixture.postProcessDocument(document);
 
 		FieldValuesAssert.assertFieldValues(
-			_expectedFieldValues(userGroup), document, searchTerm);
+			document, _expectedFieldValues(userGroup),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Test
@@ -122,26 +119,14 @@ public class UserGroupIndexerIndexedFieldsTest {
 		indexedFieldsFixture.postProcessDocument(document);
 
 		FieldValuesAssert.assertFieldValues(
-			_expectedFieldValuesWithExpando(userGroup), document, searchTerm);
+			document, _expectedFieldValuesWithExpando(userGroup),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
-
-	protected void setUpExpandoTableSearchFixture() {
-		expandoTableSearchFixture = new ExpandoTableSearchFixture(
-			classNameLocalService, expandoColumnLocalService,
-			expandoTableLocalService);
-
-		_expandoColumns = expandoTableSearchFixture.getExpandoColumns();
-
-		_expandoTables = expandoTableSearchFixture.getExpandoTables();
-	}
-
-	protected void setUpIndexedFieldsFixture() {
-		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService, uidFactory, documentBuilderFactory);
-	}
 
 	protected void setUpUserGroupFixture() {
 		userGroupFixture = new UserGroupFixture(_group, userGroupLocalService);
@@ -184,6 +169,9 @@ public class UserGroupIndexerIndexedFieldsTest {
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
 	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
+	@Inject
 	protected UIDFactory uidFactory;
 
 	protected UserGroupFixture userGroupFixture;
@@ -214,7 +202,16 @@ public class UserGroupIndexerIndexedFieldsTest {
 		).put(
 			Field.USER_NAME, StringUtil.lowerCase(userGroup.getUserName())
 		).put(
+			"externalReferenceCode", userGroup.getExternalReferenceCode()
+		).put(
 			"name_sortable", StringUtil.lowerCase(userGroup.getName())
+		).put(
+			"userExternalReferenceCode",
+			() -> {
+				User user = TestPropsValues.getUser();
+
+				return user.getExternalReferenceCode();
+			}
 		).build();
 
 		indexedFieldsFixture.populateUID(userGroup, map);
@@ -255,6 +252,22 @@ public class UserGroupIndexerIndexedFieldsTest {
 		indexedFieldsFixture.populateRoleIdFields(
 			userGroup.getCompanyId(), UserGroup.class.getName(),
 			userGroup.getUserGroupId(), userGroup.getGroupId(), null, map);
+	}
+
+	private void _setUpExpandoTableSearchFixture() {
+		expandoTableSearchFixture = new ExpandoTableSearchFixture(
+			classNameLocalService, expandoColumnLocalService,
+			expandoTableLocalService);
+
+		_expandoColumns = expandoTableSearchFixture.getExpandoColumns();
+
+		_expandoTables = expandoTableSearchFixture.getExpandoTables();
+	}
+
+	private void _setUpIndexedFieldsFixture() {
+		indexedFieldsFixture = new IndexedFieldsFixture(
+			resourcePermissionLocalService, searchEngineHelper, uidFactory,
+			documentBuilderFactory);
 	}
 
 	@DeleteAfterTestRun

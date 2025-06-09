@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model;
@@ -48,6 +39,7 @@ public class FragmentCollectionWrapper
 		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("ctCollectionId", getCtCollectionId());
 		attributes.put("uuid", getUuid());
+		attributes.put("externalReferenceCode", getExternalReferenceCode());
 		attributes.put("fragmentCollectionId", getFragmentCollectionId());
 		attributes.put("groupId", getGroupId());
 		attributes.put("companyId", getCompanyId());
@@ -58,6 +50,7 @@ public class FragmentCollectionWrapper
 		attributes.put("fragmentCollectionKey", getFragmentCollectionKey());
 		attributes.put("name", getName());
 		attributes.put("description", getDescription());
+		attributes.put("marketplace", isMarketplace());
 		attributes.put("lastPublishDate", getLastPublishDate());
 
 		return attributes;
@@ -81,6 +74,13 @@ public class FragmentCollectionWrapper
 
 		if (uuid != null) {
 			setUuid(uuid);
+		}
+
+		String externalReferenceCode = (String)attributes.get(
+			"externalReferenceCode");
+
+		if (externalReferenceCode != null) {
+			setExternalReferenceCode(externalReferenceCode);
 		}
 
 		Long fragmentCollectionId = (Long)attributes.get(
@@ -145,6 +145,12 @@ public class FragmentCollectionWrapper
 			setDescription(description);
 		}
 
+		Boolean marketplace = (Boolean)attributes.get("marketplace");
+
+		if (marketplace != null) {
+			setMarketplace(marketplace);
+		}
+
 		Date lastPublishDate = (Date)attributes.get("lastPublishDate");
 
 		if (lastPublishDate != null) {
@@ -198,6 +204,16 @@ public class FragmentCollectionWrapper
 	}
 
 	/**
+	 * Returns the external reference code of this fragment collection.
+	 *
+	 * @return the external reference code of this fragment collection
+	 */
+	@Override
+	public String getExternalReferenceCode() {
+		return model.getExternalReferenceCode();
+	}
+
+	/**
 	 * Returns the fragment collection ID of this fragment collection.
 	 *
 	 * @return the fragment collection ID of this fragment collection
@@ -235,6 +251,16 @@ public class FragmentCollectionWrapper
 	@Override
 	public Date getLastPublishDate() {
 		return model.getLastPublishDate();
+	}
+
+	/**
+	 * Returns the marketplace of this fragment collection.
+	 *
+	 * @return the marketplace of this fragment collection
+	 */
+	@Override
+	public boolean getMarketplace() {
+		return model.getMarketplace();
 	}
 
 	/**
@@ -278,6 +304,13 @@ public class FragmentCollectionWrapper
 	}
 
 	@Override
+	public com.liferay.portal.kernel.repository.model.FileEntry getResource(
+		String path) {
+
+		return model.getResource(path);
+	}
+
+	@Override
 	public java.util.List<com.liferay.portal.kernel.repository.model.FileEntry>
 			getResources()
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -297,6 +330,14 @@ public class FragmentCollectionWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getResourcesFolderId(createIfAbsent);
+	}
+
+	@Override
+	public Map<String, com.liferay.portal.kernel.repository.model.FileEntry>
+			getResourcesMap()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getResourcesMap();
 	}
 
 	/**
@@ -344,6 +385,16 @@ public class FragmentCollectionWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.hasResources();
+	}
+
+	/**
+	 * Returns <code>true</code> if this fragment collection is marketplace.
+	 *
+	 * @return <code>true</code> if this fragment collection is marketplace; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isMarketplace() {
+		return model.isMarketplace();
 	}
 
 	@Override
@@ -408,6 +459,16 @@ public class FragmentCollectionWrapper
 	}
 
 	/**
+	 * Sets the external reference code of this fragment collection.
+	 *
+	 * @param externalReferenceCode the external reference code of this fragment collection
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		model.setExternalReferenceCode(externalReferenceCode);
+	}
+
+	/**
 	 * Sets the fragment collection ID of this fragment collection.
 	 *
 	 * @param fragmentCollectionId the fragment collection ID of this fragment collection
@@ -445,6 +506,16 @@ public class FragmentCollectionWrapper
 	@Override
 	public void setLastPublishDate(Date lastPublishDate) {
 		model.setLastPublishDate(lastPublishDate);
+	}
+
+	/**
+	 * Sets whether this fragment collection is marketplace.
+	 *
+	 * @param marketplace the marketplace of this fragment collection
+	 */
+	@Override
+	public void setMarketplace(boolean marketplace) {
+		model.setMarketplace(marketplace);
 	}
 
 	/**
@@ -525,6 +596,11 @@ public class FragmentCollectionWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.util;
@@ -17,6 +8,7 @@ package com.liferay.asset.publisher.util;
 import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.info.pagination.InfoPage;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -26,16 +18,16 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
 import java.io.Serializable;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
-
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -117,6 +109,10 @@ public interface AssetPublisherHelper {
 			Map<String, Serializable> attributes)
 		throws Exception;
 
+	public String getAssetSocialURL(
+		LiferayPortletRequest liferayPortletRequest,
+		LiferayPortletResponse liferayPortletResponse, AssetEntry assetEntry);
+
 	public String[] getAssetTagNames(PortletPreferences portletPreferences);
 
 	public String getAssetViewURL(
@@ -149,6 +145,17 @@ public interface AssetPublisherHelper {
 	public long[] getGroupIds(
 		PortletPreferences portletPreferences, long scopeGroupId,
 		Layout layout);
+
+	public InfoPage<AssetEntry> getInfoPage(
+			PortletRequest portletRequest,
+			PortletPreferences portletPreferences,
+			PermissionChecker permissionChecker, long[] groupIds,
+			long[] allCategoryIds, String[] allTagNames,
+			boolean deleteMissingAssetEntries, boolean checkPermission,
+			int start, int end)
+		throws Exception;
+
+	public Group getItemSelectorScopeGroup(Group scopeGroup) throws Exception;
 
 	public String[] getKeywords(PortletPreferences portletPreferences);
 

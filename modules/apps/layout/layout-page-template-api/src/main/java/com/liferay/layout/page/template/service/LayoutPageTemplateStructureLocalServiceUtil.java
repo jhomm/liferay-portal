@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -62,29 +54,14 @@ public class LayoutPageTemplateStructureLocalServiceUtil {
 			layoutPageTemplateStructure);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addLayoutPageTemplateStructure(long, long, long, long,
-	 String, ServiceContext)}
-	 */
-	@Deprecated
 	public static LayoutPageTemplateStructure addLayoutPageTemplateStructure(
-			long userId, long groupId, long classNameId, long classPK,
+			long userId, long groupId, long plid, long segmentsExperienceId,
 			String data,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addLayoutPageTemplateStructure(
-			userId, groupId, classNameId, classPK, data, serviceContext);
-	}
-
-	public static LayoutPageTemplateStructure addLayoutPageTemplateStructure(
-			long userId, long groupId, long plid, String data,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addLayoutPageTemplateStructure(
-			userId, groupId, plid, data, serviceContext);
+			userId, groupId, plid, segmentsExperienceId, data, serviceContext);
 	}
 
 	/**
@@ -151,19 +128,6 @@ public class LayoutPageTemplateStructureLocalServiceUtil {
 		throws PortalException {
 
 		return getService().deleteLayoutPageTemplateStructure(groupId, plid);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #deleteLayoutPageTemplateStructure(long, long)}
-	 */
-	@Deprecated
-	public static LayoutPageTemplateStructure deleteLayoutPageTemplateStructure(
-			long groupId, long classNameId, long classPK)
-		throws PortalException {
-
-		return getService().deleteLayoutPageTemplateStructure(
-			groupId, classNameId, classPK);
 	}
 
 	/**
@@ -272,40 +236,6 @@ public class LayoutPageTemplateStructureLocalServiceUtil {
 		long groupId, long plid) {
 
 		return getService().fetchLayoutPageTemplateStructure(groupId, plid);
-	}
-
-	public static LayoutPageTemplateStructure fetchLayoutPageTemplateStructure(
-			long groupId, long plid, boolean rebuildStructure)
-		throws PortalException {
-
-		return getService().fetchLayoutPageTemplateStructure(
-			groupId, plid, rebuildStructure);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #fetchLayoutPageTemplateStructure(long, long)}
-	 */
-	@Deprecated
-	public static LayoutPageTemplateStructure fetchLayoutPageTemplateStructure(
-		long groupId, long classNameId, long classPK) {
-
-		return getService().fetchLayoutPageTemplateStructure(
-			groupId, classNameId, classPK);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #fetchLayoutPageTemplateStructure(long, long, boolean)}
-	 */
-	@Deprecated
-	public static LayoutPageTemplateStructure fetchLayoutPageTemplateStructure(
-			long groupId, long classNameId, long classPK,
-			boolean rebuildStructure)
-		throws PortalException {
-
-		return getService().fetchLayoutPageTemplateStructure(
-			groupId, classNameId, classPK, rebuildStructure);
 	}
 
 	/**
@@ -454,27 +384,6 @@ public class LayoutPageTemplateStructureLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
-	public static LayoutPageTemplateStructure
-			rebuildLayoutPageTemplateStructure(long groupId, long plid)
-		throws PortalException {
-
-		return getService().rebuildLayoutPageTemplateStructure(groupId, plid);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #rebuildLayoutPageTemplateStructure(long, long)}
-	 */
-	@Deprecated
-	public static LayoutPageTemplateStructure
-			rebuildLayoutPageTemplateStructure(
-				long groupId, long classNameId, long classPK)
-		throws PortalException {
-
-		return getService().rebuildLayoutPageTemplateStructure(
-			groupId, classNameId, classPK);
-	}
-
 	/**
 	 * Updates the layout page template structure in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -490,34 +399,6 @@ public class LayoutPageTemplateStructureLocalServiceUtil {
 
 		return getService().updateLayoutPageTemplateStructure(
 			layoutPageTemplateStructure);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateLayoutPageTemplateStructureData(long, long, long,
-	 String)}
-	 */
-	@Deprecated
-	public static LayoutPageTemplateStructure updateLayoutPageTemplateStructure(
-			long groupId, long classNameId, long classPK,
-			long segmentsExperienceId, String data)
-		throws PortalException {
-
-		return getService().updateLayoutPageTemplateStructure(
-			groupId, classNameId, classPK, segmentsExperienceId, data);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #updateLayoutPageTemplateStructureData(long, long, String)}
-	 */
-	@Deprecated
-	public static LayoutPageTemplateStructure updateLayoutPageTemplateStructure(
-			long groupId, long classNameId, long classPK, String data)
-		throws PortalException {
-
-		return getService().updateLayoutPageTemplateStructure(
-			groupId, classNameId, classPK, data);
 	}
 
 	public static LayoutPageTemplateStructure
@@ -539,9 +420,12 @@ public class LayoutPageTemplateStructureLocalServiceUtil {
 	}
 
 	public static LayoutPageTemplateStructureLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile LayoutPageTemplateStructureLocalService _service;
+	private static final Snapshot<LayoutPageTemplateStructureLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			LayoutPageTemplateStructureLocalServiceUtil.class,
+			LayoutPageTemplateStructureLocalService.class);
 
 }

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPDefinitionLink;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,12 +32,21 @@ public class CPDefinitionLinkServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.commerce.product.service.impl.CPDefinitionLinkServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CPDefinitionLink addCPDefinitionLink(
-			long cpDefinitionId, long cProductId, double priority, String type,
+			long cpDefinitionId, long cProductId, int displayDateMonth,
+			int displayDateDay, int displayDateYear, int displayDateHour,
+			int displayDateMinute, int expirationDateMonth,
+			int expirationDateDay, int expirationDateYear,
+			int expirationDateHour, int expirationDateMinute,
+			boolean neverExpire, double priority, String type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPDefinitionLink(
-			cpDefinitionId, cProductId, priority, type, serviceContext);
+			cpDefinitionId, cProductId, displayDateMonth, displayDateDay,
+			displayDateYear, displayDateHour, displayDateMinute,
+			expirationDateMonth, expirationDateDay, expirationDateYear,
+			expirationDateHour, expirationDateMinute, neverExpire, priority,
+			type, serviceContext);
 	}
 
 	public static void deleteCPDefinitionLink(long cpDefinitionLinkId)
@@ -59,6 +60,14 @@ public class CPDefinitionLinkServiceUtil {
 		throws PortalException {
 
 		return getService().fetchCPDefinitionLink(cpDefinitionLinkId);
+	}
+
+	public static CPDefinitionLink fetchCPDefinitionLink(
+			long cpDefinitionId, long cProductId, String type)
+		throws PortalException {
+
+		return getService().fetchCPDefinitionLink(
+			cpDefinitionId, cProductId, type);
 	}
 
 	public static CPDefinitionLink getCPDefinitionLink(long cpDefinitionLinkId)
@@ -75,6 +84,13 @@ public class CPDefinitionLinkServiceUtil {
 	}
 
 	public static List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, int status)
+		throws PortalException {
+
+		return getService().getCPDefinitionLinks(cpDefinitionId, status);
+	}
+
+	public static List<CPDefinitionLink> getCPDefinitionLinks(
 			long cpDefinitionId, int start, int end)
 		throws PortalException {
 
@@ -82,10 +98,34 @@ public class CPDefinitionLinkServiceUtil {
 	}
 
 	public static List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, int status, int start, int end)
+		throws PortalException {
+
+		return getService().getCPDefinitionLinks(
+			cpDefinitionId, status, start, end);
+	}
+
+	public static List<CPDefinitionLink> getCPDefinitionLinks(
 			long cpDefinitionId, String type)
 		throws PortalException {
 
 		return getService().getCPDefinitionLinks(cpDefinitionId, type);
+	}
+
+	public static List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, String type, int status)
+		throws PortalException {
+
+		return getService().getCPDefinitionLinks(cpDefinitionId, type, status);
+	}
+
+	public static List<CPDefinitionLink> getCPDefinitionLinks(
+			long cpDefinitionId, String type, int status, int start, int end,
+			OrderByComparator<CPDefinitionLink> orderByComparator)
+		throws PortalException {
+
+		return getService().getCPDefinitionLinks(
+			cpDefinitionId, type, status, start, end, orderByComparator);
 	}
 
 	public static List<CPDefinitionLink> getCPDefinitionLinks(
@@ -103,11 +143,25 @@ public class CPDefinitionLinkServiceUtil {
 		return getService().getCPDefinitionLinksCount(cpDefinitionId);
 	}
 
+	public static int getCPDefinitionLinksCount(long cpDefinitionId, int status)
+		throws PortalException {
+
+		return getService().getCPDefinitionLinksCount(cpDefinitionId, status);
+	}
+
 	public static int getCPDefinitionLinksCount(
 			long cpDefinitionId, String type)
 		throws PortalException {
 
 		return getService().getCPDefinitionLinksCount(cpDefinitionId, type);
+	}
+
+	public static int getCPDefinitionLinksCount(
+			long cpDefinitionId, String type, int status)
+		throws PortalException {
+
+		return getService().getCPDefinitionLinksCount(
+			cpDefinitionId, type, status);
 	}
 
 	/**
@@ -120,12 +174,20 @@ public class CPDefinitionLinkServiceUtil {
 	}
 
 	public static CPDefinitionLink updateCPDefinitionLink(
-			long cpDefinitionLinkId, double priority,
+			long cpDefinitionLinkId, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire, double priority,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPDefinitionLink(
-			cpDefinitionLinkId, priority, serviceContext);
+			cpDefinitionLinkId, displayDateMonth, displayDateDay,
+			displayDateYear, displayDateHour, displayDateMinute,
+			expirationDateMonth, expirationDateDay, expirationDateYear,
+			expirationDateHour, expirationDateMinute, neverExpire, priority,
+			serviceContext);
 	}
 
 	public static void updateCPDefinitionLinks(
@@ -138,9 +200,11 @@ public class CPDefinitionLinkServiceUtil {
 	}
 
 	public static CPDefinitionLinkService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPDefinitionLinkService _service;
+	private static final Snapshot<CPDefinitionLinkService> _serviceSnapshot =
+		new Snapshot<>(
+			CPDefinitionLinkServiceUtil.class, CPDefinitionLinkService.class);
 
 }

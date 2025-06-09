@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.util;
@@ -18,7 +9,6 @@ import com.liferay.dynamic.data.mapping.constants.DDMConstants;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalServiceUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -26,6 +16,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoader;
 import com.liferay.portal.kernel.resource.bundle.ResourceBundleLoaderUtil;
 import com.liferay.portal.kernel.template.TemplateConstants;
@@ -40,16 +31,16 @@ import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
 import java.util.Set;
-
-import javax.portlet.PortletRequest;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -169,6 +160,8 @@ public abstract class BaseDDMDisplay implements DDMDisplay {
 		return getDefaultEditTemplateTitle(locale);
 	}
 
+	public abstract String getPortletId();
+
 	@Override
 	public String getStorageType() {
 		return StringPool.BLANK;
@@ -211,12 +204,12 @@ public abstract class BaseDDMDisplay implements DDMDisplay {
 
 		classPKs.add(0L);
 
-		List<DDMStructure> structures =
+		List<DDMStructure> ddmStructures =
 			DDMStructureLocalServiceUtil.getClassStructures(
 				companyId, PortalUtil.getClassNameId(getStructureType()));
 
-		for (DDMStructure structure : structures) {
-			classPKs.add(structure.getPrimaryKey());
+		for (DDMStructure ddmStructure : ddmStructures) {
+			classPKs.add(ddmStructure.getPrimaryKey());
 		}
 
 		return ArrayUtil.toLongArray(classPKs);
@@ -308,12 +301,12 @@ public abstract class BaseDDMDisplay implements DDMDisplay {
 			return ParamUtil.getString(liferayPortletRequest, "redirect");
 		}
 
-		String portletId = PortletProviderUtil.getPortletId(
-			DDMStructure.class.getName(), PortletProvider.Action.VIEW);
-
 		return PortletURLBuilder.create(
 			PortalUtil.getControlPanelPortletURL(
-				liferayPortletRequest, portletId, PortletRequest.RENDER_PHASE)
+				liferayPortletRequest,
+				PortletProviderUtil.getPortletId(
+					DDMStructure.class.getName(), PortletProvider.Action.VIEW),
+				PortletRequest.RENDER_PHASE)
 		).setMVCPath(
 			"/view.jsp"
 		).buildString();
@@ -437,12 +430,12 @@ public abstract class BaseDDMDisplay implements DDMDisplay {
 			long classPK, long resourceClassNameId)
 		throws Exception {
 
-		String portletId = PortletProviderUtil.getPortletId(
-			DDMStructure.class.getName(), PortletProvider.Action.VIEW);
-
 		return PortletURLBuilder.create(
 			PortalUtil.getControlPanelPortletURL(
-				liferayPortletRequest, portletId, PortletRequest.RENDER_PHASE)
+				liferayPortletRequest,
+				PortletProviderUtil.getPortletId(
+					DDMStructure.class.getName(), PortletProvider.Action.VIEW),
+				PortletRequest.RENDER_PHASE)
 		).setMVCPath(
 			"/view_template.jsp"
 		).setParameter(

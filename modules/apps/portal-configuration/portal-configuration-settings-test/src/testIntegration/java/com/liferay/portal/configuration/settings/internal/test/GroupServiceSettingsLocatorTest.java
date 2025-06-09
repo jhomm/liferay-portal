@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.settings.internal.test;
@@ -19,6 +10,7 @@ import com.liferay.portal.configuration.settings.internal.constants.SettingsLoca
 import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.settings.GroupServiceSettingsLocator;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
 import java.util.ArrayList;
@@ -45,27 +37,47 @@ public class GroupServiceSettingsLocatorTest
 	public void testReturnsGroupScopedValues() throws Exception {
 		Assert.assertEquals(
 			SettingsLocatorTestConstants.TEST_DEFAULT_VALUE,
-			getSettingsValue());
+			getSettingsValue(SettingsLocatorTestConstants.TEST_KEY));
 
-		String companyConfigurationValue = saveScopedConfiguration(
-			ExtendedObjectClassDefinition.Scope.COMPANY, companyId);
+		String companyConfigurationValue = saveFactoryConfiguration(
+			SettingsLocatorTestConstants.TEST_CONFIGURATION_PID,
+			ExtendedObjectClassDefinition.Scope.COMPANY, companyId, null, null,
+			SettingsLocatorTestConstants.TEST_KEY,
+			RandomTestUtil.randomString());
 
-		Assert.assertEquals(companyConfigurationValue, getSettingsValue());
+		Assert.assertEquals(
+			companyConfigurationValue,
+			getSettingsValue(SettingsLocatorTestConstants.TEST_KEY));
 
 		String companyPortletPreferencesValue = savePortletPreferences(
-			companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
+			companyId, PortletKeys.PREFS_OWNER_TYPE_COMPANY, portletId,
+			PortletKeys.PREFS_PLID_SHARED,
+			SettingsLocatorTestConstants.TEST_KEY,
+			RandomTestUtil.randomString());
 
-		Assert.assertEquals(companyPortletPreferencesValue, getSettingsValue());
+		Assert.assertEquals(
+			companyPortletPreferencesValue,
+			getSettingsValue(SettingsLocatorTestConstants.TEST_KEY));
 
-		String groupConfigurationValue = saveScopedConfiguration(
-			ExtendedObjectClassDefinition.Scope.GROUP, groupId);
+		String groupConfigurationValue = saveFactoryConfiguration(
+			SettingsLocatorTestConstants.TEST_CONFIGURATION_PID,
+			ExtendedObjectClassDefinition.Scope.GROUP, groupId, null, null,
+			SettingsLocatorTestConstants.TEST_KEY,
+			RandomTestUtil.randomString());
 
-		Assert.assertEquals(groupConfigurationValue, getSettingsValue());
+		Assert.assertEquals(
+			groupConfigurationValue,
+			getSettingsValue(SettingsLocatorTestConstants.TEST_KEY));
 
 		String groupPortletPreferencesValue = savePortletPreferences(
-			groupId, PortletKeys.PREFS_OWNER_TYPE_GROUP);
+			groupId, PortletKeys.PREFS_OWNER_TYPE_GROUP, portletId,
+			PortletKeys.PREFS_PLID_SHARED,
+			SettingsLocatorTestConstants.TEST_KEY,
+			RandomTestUtil.randomString());
 
-		Assert.assertEquals(groupPortletPreferencesValue, getSettingsValue());
+		Assert.assertEquals(
+			groupPortletPreferencesValue,
+			getSettingsValue(SettingsLocatorTestConstants.TEST_KEY));
 	}
 
 	@DeleteAfterTestRun

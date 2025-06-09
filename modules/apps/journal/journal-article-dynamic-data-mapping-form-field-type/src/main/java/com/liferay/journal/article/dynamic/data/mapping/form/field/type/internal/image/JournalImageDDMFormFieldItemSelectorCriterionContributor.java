@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.article.dynamic.data.mapping.form.field.type.internal.image;
@@ -19,15 +10,15 @@ import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
 import com.liferay.item.selector.ItemSelectorCriterion;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.journal.constants.JournalPortletKeys;
-import com.liferay.journal.item.selector.criterion.JournalItemSelectorCriterion;
+import com.liferay.journal.item.selector.JournalItemSelectorCriterion;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import java.util.Objects;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,10 +26,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Eudaldo Alonso
  */
-@Component(
-	immediate = true,
-	service = ImageDDMFormFieldItemSelectorCriterionContributor.class
-)
+@Component(service = ImageDDMFormFieldItemSelectorCriterionContributor.class)
 public class JournalImageDDMFormFieldItemSelectorCriterionContributor
 	implements ImageDDMFormFieldItemSelectorCriterionContributor {
 
@@ -69,14 +57,9 @@ public class JournalImageDDMFormFieldItemSelectorCriterionContributor
 	public boolean isVisible(
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
 
-		if (Objects.equals(
-				ddmFormFieldRenderingContext.getPortletNamespace(),
-				_portal.getPortletNamespace(JournalPortletKeys.JOURNAL))) {
-
-			return true;
-		}
-
-		return false;
+		return Objects.equals(
+			ddmFormFieldRenderingContext.getPortletNamespace(),
+			_portal.getPortletNamespace(JournalPortletKeys.JOURNAL));
 	}
 
 	private long _getResourcePrimaryKey(long groupId, String articleId) {

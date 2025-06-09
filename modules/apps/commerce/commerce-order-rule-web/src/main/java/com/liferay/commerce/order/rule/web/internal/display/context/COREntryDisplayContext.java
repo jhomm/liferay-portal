@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.rule.web.internal.display.context;
@@ -26,10 +17,9 @@ import com.liferay.commerce.order.rule.entry.type.COREntryTypeJSPContributorRegi
 import com.liferay.commerce.order.rule.entry.type.COREntryTypeRegistry;
 import com.liferay.commerce.order.rule.model.COREntry;
 import com.liferay.commerce.order.rule.service.COREntryService;
-import com.liferay.commerce.order.rule.web.internal.display.context.util.COREntryRequestHelper;
-import com.liferay.frontend.taglib.clay.data.set.servlet.taglib.util.ClayDataSetActionDropdownItem;
+import com.liferay.commerce.order.rule.web.internal.display.context.helper.COREntryRequestHelper;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -38,6 +28,7 @@ import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalServiceUtil;
@@ -49,16 +40,16 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.math.BigDecimal;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -95,6 +86,23 @@ public class COREntryDisplayContext {
 		).buildString();
 	}
 
+	public String getApplyTo() throws Exception {
+		COREntry corEntry = getCOREntry();
+
+		if (corEntry == null) {
+			return StringPool.BLANK;
+		}
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				corEntry.getTypeSettings()
+			).build();
+
+		return GetterUtil.getString(
+			typeSettingsUnicodeProperties.getProperty(
+				COREntryConstants.TYPE_MINIMUM_ORDER_AMOUNT_FIELD_APPLY_TO));
+	}
+
 	public List<CommerceCurrency> getCommerceCurrencies()
 		throws PortalException {
 
@@ -124,12 +132,11 @@ public class COREntryDisplayContext {
 		return _corEntryService.fetchCOREntry(corEntryId);
 	}
 
-	public List<ClayDataSetActionDropdownItem>
-			getCOREntryClayDataSetActionDropdownItems()
+	public List<FDSActionDropdownItem> getCOREntryFDSActionDropdownItems()
 		throws PortalException {
 
 		return ListUtil.fromArray(
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				PortletURLBuilder.create(
 					PortletProviderUtil.getPortletURL(
 						httpServletRequest, COREntry.class.getName(),
@@ -143,11 +150,11 @@ public class COREntryDisplayContext {
 				).buildString(),
 				"pencil", "edit", LanguageUtil.get(httpServletRequest, "edit"),
 				"get", null, null),
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				null, "trash", "delete",
 				LanguageUtil.get(httpServletRequest, "delete"), "delete",
 				"delete", "headless"),
-			new ClayDataSetActionDropdownItem(
+			new FDSActionDropdownItem(
 				_getManagePermissionsURL(), null, "permissions",
 				LanguageUtil.get(httpServletRequest, "permissions"), "get",
 				"permissions", "modal-permissions"));
@@ -172,6 +179,22 @@ public class COREntryDisplayContext {
 
 	public List<COREntryType> getCOREntryTypes() {
 		return _corEntryTypeRegistry.getCOREntryTypes();
+	}
+
+	public String getCProductIds() throws Exception {
+		COREntry corEntry = getCOREntry();
+
+		if (corEntry == null) {
+			return StringPool.BLANK;
+		}
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				corEntry.getTypeSettings()
+			).build();
+
+		return typeSettingsUnicodeProperties.getProperty(
+			COREntryConstants.TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_IDS);
 	}
 
 	public CreationMenu getCreationMenu() throws Exception {
@@ -236,7 +259,7 @@ public class COREntryDisplayContext {
 				corEntryRequestHelper.getScopeGroupId(),
 				COREntry.class.getName())) {
 
-			publishButtonLabel = "submit-for-publication";
+			publishButtonLabel = "submit-for-workflow";
 		}
 
 		String additionalClasses = "btn-primary";
@@ -307,6 +330,22 @@ public class COREntryDisplayContext {
 		}
 
 		return portletURL;
+	}
+
+	public String getQuantity() throws Exception {
+		COREntry corEntry = getCOREntry();
+
+		if (corEntry == null) {
+			return StringPool.BLANK;
+		}
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			UnicodePropertiesBuilder.fastLoad(
+				corEntry.getTypeSettings()
+			).build();
+
+		return typeSettingsUnicodeProperties.getProperty(
+			COREntryConstants.TYPE_PRODUCTS_LIMIT_FIELD_PRODUCT_QUANTITY);
 	}
 
 	public boolean hasAddPermission() throws PortalException {

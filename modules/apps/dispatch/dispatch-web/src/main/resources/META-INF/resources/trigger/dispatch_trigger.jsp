@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,13 +10,17 @@
 <%
 DispatchTrigger dispatchTrigger = (DispatchTrigger)request.getAttribute(DispatchWebKeys.DISPATCH_TRIGGER);
 
-Date endDate = (dispatchTrigger.getEndDate() == null) ? new Date() : dispatchTrigger.getEndDate();
+Date timeZoneEndDate = (dispatchTrigger.getTimeZoneEndDate() == null) ? new Date() : dispatchTrigger.getTimeZoneEndDate();
 
-Date startDate = (dispatchTrigger.getStartDate() == null) ? new Date() : dispatchTrigger.getStartDate();
+Date timeZoneStartDate = (dispatchTrigger.getTimeZoneStartDate() == null) ? new Date() : dispatchTrigger.getTimeZoneStartDate();
 
-Calendar endDateCalendar = CalendarFactoryUtil.getCalendar(endDate.getTime());
+Calendar endDateCalendar = CalendarFactoryUtil.getCalendar();
 
-Calendar startDateCalendar = CalendarFactoryUtil.getCalendar(startDate.getTime());
+endDateCalendar.setTime(timeZoneEndDate);
+
+Calendar startDateCalendar = CalendarFactoryUtil.getCalendar();
+
+startDateCalendar.setTime(timeZoneStartDate);
 
 int endDateAmPm = endDateCalendar.get(Calendar.AM_PM);
 int endDateDay = endDateCalendar.get(Calendar.DATE);
@@ -44,12 +39,12 @@ int startDateYear = startDateCalendar.get(Calendar.YEAR);
 boolean neverEnd = ParamUtil.getBoolean(request, "neverEnd", true);
 boolean dispatchTaskExecutorReady = true;
 
+DispatchTriggerDisplayContext dispatchTriggerDisplayContext = (DispatchTriggerDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+
 if (dispatchTrigger != null) {
 	if (dispatchTrigger.getEndDate() != null) {
 		neverEnd = false;
 	}
-
-	DispatchTriggerDisplayContext dispatchTriggerDisplayContext = (DispatchTriggerDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 	DispatchTriggerMetadata dispatchTriggerMetadata = dispatchTriggerDisplayContext.getDispatchTriggerMetadata(dispatchTrigger.getDispatchTriggerId());
 
@@ -68,111 +63,138 @@ if (dispatchTrigger != null) {
 		<liferay-ui:message key="task-executor-is-not-ready" />
 	</div>
 
-	<aui:fieldset-group markupView="lexicon">
-		<aui:fieldset disabled="<%= !dispatchTaskExecutorReady %>">
-			<aui:model-context bean="<%= dispatchTrigger %>" model="<%= DispatchTrigger.class %>" />
+	<div class="sheet">
+		<div class="panel-group panel-group-flush">
+			<aui:fieldset disabled="<%= !dispatchTaskExecutorReady %>">
+				<aui:model-context bean="<%= dispatchTrigger %>" model="<%= DispatchTrigger.class %>" />
 
-			<div class="lfr-form-content">
-				<aui:fieldset>
-					<aui:input name="active" />
+				<div class="lfr-form-content">
+					<aui:fieldset>
+						<aui:input name="active" />
 
-					<c:choose>
-						<c:when test="<%= ClusterExecutorUtil.isEnabled() %>">
-							<aui:select label="task-execution-cluster-mode" name="dispatchTaskClusterMode">
+						<c:choose>
+							<c:when test="<%= ClusterExecutorUtil.isEnabled() && !dispatchTriggerDisplayContext.isClusterModeSingle(dispatchTrigger.getDispatchTaskExecutorType()) %>">
+								<aui:select label="task-execution-cluster-mode" name="dispatchTaskClusterMode">
 
-								<%
-								for (DispatchTaskClusterMode dispatchTaskClusterMode : DispatchTaskClusterMode.values()) {
-									if (dispatchTaskClusterMode == DispatchTaskClusterMode.NOT_APPLICABLE) {
-										continue;
+									<%
+									for (DispatchTaskClusterMode dispatchTaskClusterMode : DispatchTaskClusterMode.values()) {
+										if (dispatchTaskClusterMode == DispatchTaskClusterMode.NOT_APPLICABLE) {
+											continue;
+										}
+									%>
+
+										<aui:option label="<%= dispatchTaskClusterMode.getLabel() %>" selected="<%= dispatchTrigger.getDispatchTaskClusterMode() == dispatchTaskClusterMode.getMode() %>" value="<%= dispatchTaskClusterMode.getMode() %>" />
+
+									<%
 									}
-								%>
+									%>
 
-									<aui:option label="<%= dispatchTaskClusterMode.getLabel() %>" selected="<%= dispatchTrigger.getDispatchTaskClusterMode() == dispatchTaskClusterMode.getMode() %>" value="<%= dispatchTaskClusterMode.getMode() %>" />
+								</aui:select>
+							</c:when>
+							<c:otherwise>
 
 								<%
+								DispatchTaskClusterMode dispatchTaskClusterMode = DispatchTaskClusterMode.NOT_APPLICABLE;
+
+								if (dispatchTriggerDisplayContext.isClusterModeSingle(dispatchTrigger.getDispatchTaskExecutorType())) {
+									dispatchTaskClusterMode = DispatchTaskClusterMode.SINGLE_NODE_PERSISTED;
 								}
 								%>
 
-							</aui:select>
-						</c:when>
-						<c:otherwise>
-							<aui:select disabled="<%= true %>" helpMessage="this-option-is-enabled-only-in-a-clustered-environment" label="task-execution-cluster-mode" name="dispatchTaskClusterMode">
-								<aui:option label="<%= DispatchTaskClusterMode.NOT_APPLICABLE.getLabel() %>" />
-							</aui:select>
-						</c:otherwise>
-					</c:choose>
+								<aui:select disabled="<%= true %>" helpMessage="this-option-is-enabled-only-in-a-clustered-environment" label="task-execution-cluster-mode" name="dispatchTaskClusterMode">
+									<aui:option label="<%= dispatchTaskClusterMode.getLabel() %>" />
+								</aui:select>
+							</c:otherwise>
+						</c:choose>
 
-					<aui:input name="overlapAllowed" />
+						<aui:input name="overlapAllowed" />
 
-					<aui:input name="cronExpression" />
+						<aui:select label="time-zone" name="timeZoneId">
 
-					<aui:field-wrapper label="start-date">
-						<liferay-ui:input-date
-							dayParam="startDateDay"
-							dayValue="<%= startDateDay %>"
-							monthParam="startDateMonth"
-							monthValue="<%= startDateMonth %>"
-							yearParam="startDateYear"
-							yearValue="<%= startDateYear %>"
-						/>
+							<%
+							String dispatchTriggerTimeZoneId = dispatchTrigger.getTimeZoneId();
 
-						<liferay-ui:icon
-							icon="calendar"
-							markupView="lexicon"
-						/>
+							for (String timeZoneId : PropsUtil.getArray(PropsKeys.TIME_ZONES)) {
+							%>
 
-						<liferay-ui:input-time
-							amPmParam="startDateAmPm"
-							amPmValue="<%= startDateAmPm %>"
-							hourParam="startDateHour"
-							hourValue="<%= startDateHour %>"
-							minuteParam="startDateMinute"
-							minuteValue="<%= startDateMinute %>"
-						/>
-					</aui:field-wrapper>
+								<aui:option label="<%= timeZoneId %>" selected='<%= dispatchTriggerTimeZoneId.isEmpty() ? timeZoneId.equals("UTC") : dispatchTriggerTimeZoneId.equals(timeZoneId) %>' value="<%= timeZoneId %>" />
 
-					<aui:field-wrapper label="end-date">
-						<aui:input name="neverEnd" onClick='<%= liferayPortletResponse.getNamespace() + "updateEndDateTimeInputsDisabled(this.checked);" %>' type="checkbox" value="<%= neverEnd %>" />
+							<%
+							}
+							%>
 
-						<span class="end-date-input-selector">
+						</aui:select>
+
+						<aui:input name="cronExpression" />
+
+						<aui:field-wrapper label="start-date">
 							<liferay-ui:input-date
-								dayParam="endDateDay"
-								dayValue="<%= endDateDay %>"
-								disabled="<%= neverEnd %>"
-								monthParam="endDateMonth"
-								monthValue="<%= endDateMonth %>"
-								yearParam="endDateYear"
-								yearValue="<%= endDateYear %>"
+								dayParam="startDateDay"
+								dayValue="<%= startDateDay %>"
+								monthParam="startDateMonth"
+								monthValue="<%= startDateMonth %>"
+								yearParam="startDateYear"
+								yearValue="<%= startDateYear %>"
 							/>
-						</span>
 
-						<liferay-ui:icon
-							icon="calendar"
-							markupView="lexicon"
-						/>
+							<liferay-ui:icon
+								icon="calendar"
+								markupView="lexicon"
+							/>
 
-						<span class="end-time-input-selector">
 							<liferay-ui:input-time
-								amPmParam="endDateAmPm"
-								amPmValue="<%= endDateAmPm %>"
-								disabled="<%= neverEnd %>"
-								hourParam="endDateHour"
-								hourValue="<%= endDateHour %>"
-								minuteParam="endDateMinute"
-								minuteValue="<%= endDateMinute %>"
+								amPmParam="startDateAmPm"
+								amPmValue="<%= startDateAmPm %>"
+								hourParam="startDateHour"
+								hourValue="<%= startDateHour %>"
+								minuteParam="startDateMinute"
+								minuteValue="<%= startDateMinute %>"
 							/>
-						</span>
-					</aui:field-wrapper>
-				</aui:fieldset>
+						</aui:field-wrapper>
 
-				<div class="sheet-footer">
-					<aui:button type="submit" value="save" />
+						<aui:field-wrapper label="end-date">
+							<aui:input name="neverEnd" onClick='<%= liferayPortletResponse.getNamespace() + "updateEndDateTimeInputsDisabled(this.checked);" %>' type="checkbox" value="<%= neverEnd %>" />
 
-					<aui:button href="<%= backURL %>" type="cancel" />
+							<span class="end-date-input-selector">
+								<liferay-ui:input-date
+									dayParam="endDateDay"
+									dayValue="<%= endDateDay %>"
+									disabled="<%= neverEnd %>"
+									monthParam="endDateMonth"
+									monthValue="<%= endDateMonth %>"
+									yearParam="endDateYear"
+									yearValue="<%= endDateYear %>"
+								/>
+							</span>
+
+							<liferay-ui:icon
+								icon="calendar"
+								markupView="lexicon"
+							/>
+
+							<span class="end-time-input-selector">
+								<liferay-ui:input-time
+									amPmParam="endDateAmPm"
+									amPmValue="<%= endDateAmPm %>"
+									disabled="<%= neverEnd %>"
+									hourParam="endDateHour"
+									hourValue="<%= endDateHour %>"
+									minuteParam="endDateMinute"
+									minuteValue="<%= endDateMinute %>"
+								/>
+							</span>
+						</aui:field-wrapper>
+					</aui:fieldset>
+
+					<div class="sheet-footer">
+						<aui:button type="submit" value="save" />
+
+						<aui:button href="<%= backURL %>" type="cancel" />
+					</div>
 				</div>
-			</div>
-		</aui:fieldset>
-	</aui:fieldset-group>
+			</aui:fieldset>
+		</div>
+	</div>
 </aui:form>
 
 <aui:script>

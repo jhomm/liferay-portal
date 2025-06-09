@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.engine;
@@ -37,14 +28,6 @@ public class NodeInformationImpl implements NodeInformation {
 		_version = nodeInformationImpl._version;
 	}
 
-	protected void setName(String name) {
-		_name = name;
-	}
-
-	protected void setVersion(String version) {
-		_version = version;
-	}
-
 	protected static class Builder implements NodeInformationBuilder {
 
 		@Override
@@ -54,12 +37,12 @@ public class NodeInformationImpl implements NodeInformation {
 
 		@Override
 		public void name(String name) {
-			_nodeInformationImpl.setName(name);
+			_nodeInformationImpl._setName(name);
 		}
 
 		@Override
 		public void version(String version) {
-			_nodeInformationImpl.setVersion(version);
+			_nodeInformationImpl._setVersion(version);
 		}
 
 		private final NodeInformationImpl _nodeInformationImpl =
@@ -68,6 +51,14 @@ public class NodeInformationImpl implements NodeInformation {
 	}
 
 	private NodeInformationImpl() {
+	}
+
+	private void _setName(String name) {
+		_name = name;
+	}
+
+	private void _setVersion(String version) {
+		_version = version;
 	}
 
 	private String _name;

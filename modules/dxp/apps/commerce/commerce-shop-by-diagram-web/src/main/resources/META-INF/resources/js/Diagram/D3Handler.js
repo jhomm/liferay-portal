@@ -1,19 +1,17 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {drag as d3drag, event as d3event, select as d3select} from 'd3';
-import {openToast} from 'frontend-js-web';
+import {openToast} from 'frontend-js-components-web';
 
 import DiagramZoomHandler from '../utilities/DiagramZoomHandler';
-import {PINS_CIRCLE_RADIUS, PINS_RADIUS} from '../utilities/constants';
+import {
+	PINS_CIRCLE_RADIUS,
+	PINS_RADIUS,
+	ZOOM_DISABLED,
+} from '../utilities/constants';
 import {savePin} from '../utilities/data';
 import {
 	getAbsolutePositions,
@@ -69,20 +67,27 @@ class D3Handler extends DiagramZoomHandler {
 	}
 
 	_printImage() {
-		const wrappperBoundingClientRect = this._diagramWrapper.getBoundingClientRect();
+		const wrapperBoundingClientRect =
+			this._diagramWrapper.getBoundingClientRect();
 
 		this._image = this._d3zoomWrapper
 			.append('image')
 			.attr('href', this._imageURL)
-			.attr('height', wrappperBoundingClientRect.height)
+			.attr('height', wrapperBoundingClientRect.height)
 			.attr('x', 0)
 			.attr('y', 0)
 			.on('load', (_d, index, nodes) => {
 				const imageWidth = nodes[index].getBoundingClientRect().width;
-				const panX =
-					(wrappperBoundingClientRect.width - imageWidth) / 2;
 
-				this._d3diagramWrapper.call(this._zoom.translateBy, panX, 0);
+				const panX = (wrapperBoundingClientRect.width - imageWidth) / 2;
+
+				if (!ZOOM_DISABLED) {
+					this._d3diagramWrapper.call(
+						this._zoom.translateBy,
+						panX,
+						0
+					);
+				}
 
 				this.imageRendered = true;
 
@@ -96,7 +101,7 @@ class D3Handler extends DiagramZoomHandler {
 	}
 
 	_handleZoom() {
-		this._resetActivePinsState();
+		this.resetActivePinsState();
 		this._setTooltipData(null);
 
 		super._handleZoom();
@@ -117,10 +122,10 @@ class D3Handler extends DiagramZoomHandler {
 		const x = -pinPositionX * k + width / 2;
 		const y = -pinPositionY * k + height / 2;
 
-		return super._recenterViewport(x, y, duration);
+		return super._recenterViewport(x, y, duration, k);
 	}
 
-	_resetActivePinsState() {
+	resetActivePinsState() {
 		if (this._activePin) {
 			this._activePin.classList.remove('active');
 		}
@@ -132,7 +137,7 @@ class D3Handler extends DiagramZoomHandler {
 	}
 
 	_handleImageClick() {
-		this._resetActivePinsState();
+		this.resetActivePinsState();
 
 		if (!this._allowPinsUpdate) {
 			this._setTooltipData(null);
@@ -186,7 +191,7 @@ class D3Handler extends DiagramZoomHandler {
 
 	updatePins(pins) {
 		this._pins = pins;
-		this._resetActivePinsState();
+		this.resetActivePinsState();
 
 		if (this.imageRendered) {
 			this._updatePrintedPins();
@@ -219,7 +224,7 @@ class D3Handler extends DiagramZoomHandler {
 	}
 
 	_selectPinNode(target) {
-		this._resetActivePinsState();
+		this.resetActivePinsState();
 
 		target.classList.add('active');
 
@@ -252,6 +257,7 @@ class D3Handler extends DiagramZoomHandler {
 						this._currentScale
 					)})`
 			)
+			.attr('role', 'pin')
 			.on('click', (_d, index, nodes) => {
 				this._selectPinNode(nodes[index]);
 			});
@@ -309,7 +315,7 @@ class D3Handler extends DiagramZoomHandler {
 
 		selectedPin.classList.add('drag-started');
 
-		this._resetActivePinsState();
+		this.resetActivePinsState();
 		this._setTooltipData(null);
 	}
 

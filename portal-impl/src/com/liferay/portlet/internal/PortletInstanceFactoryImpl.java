@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
@@ -25,20 +16,20 @@ import com.liferay.portal.kernel.portlet.InvokerPortletFactory;
 import com.liferay.portal.kernel.portlet.PortletBag;
 import com.liferay.portal.kernel.portlet.PortletBagPool;
 import com.liferay.portal.kernel.portlet.PortletConfigFactoryUtil;
-import com.liferay.portal.kernel.portlet.PortletContextFactoryUtil;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletInstanceFactory;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
+import com.liferay.portlet.PortletContextFactoryUtil;
 import com.liferay.portlet.UndeployedPortlet;
+
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+
+import jakarta.servlet.ServletContext;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-
-import javax.servlet.ServletContext;
 
 import org.osgi.util.tracker.ServiceTracker;
 
@@ -166,7 +157,7 @@ public class PortletInstanceFactoryImpl implements PortletInstanceFactory {
 			PortletConfig portletConfig = PortletConfigFactoryUtil.create(
 				portlet, servletContext);
 
-			javax.portlet.Portlet portletInstance = null;
+			jakarta.portlet.Portlet portletInstance = null;
 
 			if (deployed) {
 				portletInstance = PortletBagUtil.getPortletInstance(
@@ -188,7 +179,7 @@ public class PortletInstanceFactoryImpl implements PortletInstanceFactory {
 			return rootInvokerPortletInstance;
 		}
 
-		javax.portlet.Portlet portletInstance =
+		jakarta.portlet.Portlet portletInstance =
 			rootInvokerPortletInstance.getPortletInstance();
 
 		PortletConfig portletConfig = PortletConfigFactoryUtil.create(
@@ -257,7 +248,7 @@ public class PortletInstanceFactoryImpl implements PortletInstanceFactory {
 
 	protected InvokerPortlet init(
 			Portlet portlet, PortletConfig portletConfig,
-			javax.portlet.Portlet portletInstance)
+			jakarta.portlet.Portlet portletInstance)
 		throws PortletException {
 
 		PortletContext portletContext = portletConfig.getPortletContext();

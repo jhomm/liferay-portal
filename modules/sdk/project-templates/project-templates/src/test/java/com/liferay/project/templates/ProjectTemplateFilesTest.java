@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates;
@@ -363,9 +354,7 @@ public class ProjectTemplateFilesTest {
 				"Undeclared \"" + expression + "\" property. Please add to " +
 					archetypeMetadataXmlPath,
 				_expressionContainedInList(declaredVariables, expression) ||
-				_expressionContainedInList(requiredPropertyNames, expression) ||
-				_expressionContainedInList(
-					_archetypeMetadataXmlDefaultPropertyNames, expression));
+				_expressionContainedInList(requiredPropertyNames, expression));
 		}
 	}
 
@@ -1009,7 +998,8 @@ public class ProjectTemplateFilesTest {
 
 	private static final List<String>
 		_archetypeMetadataXmlDefaultPropertyNames = Arrays.asList(
-			"artifactId", "groupId", "package", "project", "version");
+			"artifactId", "groupId", "package", "project", "replacestring",
+			"version");
 	private static final Pattern _archetypeMetadataXmlIncludePattern =
 		Pattern.compile("<include>([^\\*]+?)<\\/include>");
 	private static final Pattern _archetypeMetadataXmlRequiredPropertyPattern =
@@ -1019,8 +1009,9 @@ public class ProjectTemplateFilesTest {
 	private static final Pattern _buildGradleDependencyPattern =
 		Pattern.compile(
 			"(compile(?:Only)?) \\(?group: \\\"(.+)\\\", name: \\\"([a-zA-Z" +
-				"0-9\\.\\-]+)\\\"((?:, version: )\\\"([0-9\\.]+)\\\")?(, " +
-					"transitive: (?: true|false))?(\\) \\{force = true\\})?");
+				"0-9\\.\\-\\{\\}\\$]+)\\\"((?:, version: )\\\"([0-9\\.]+)" +
+					"\\\")?(, transitive: (?: true|false))?(\\) \\{force = " +
+						"true\\})?");
 	private static final Pattern _bundleDescriptionPattern = Pattern.compile(
 		"Creates a .+\\.");
 	private static final Pattern _bundleNameSeparatorPattern = Pattern.compile(

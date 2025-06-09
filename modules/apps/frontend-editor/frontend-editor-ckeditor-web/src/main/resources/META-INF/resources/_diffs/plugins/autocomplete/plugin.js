@@ -1,40 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 (function () {
 	CKEDITOR.plugins.add('autocomplete', {
 		init(editor) {
-			var instance = this;
+			const instance = this;
 
-			AUI().use('aui-debounce', 'liferay-autocomplete-input', (A) => {
-				var path = instance.path;
+			AUI().use(
+				'aui-event-key',
+				'aui-debounce',
+				'aui-base',
+				'autocomplete',
+				'autocomplete-filters',
+				'autocomplete-highlighters',
+				() => {
+					const path = instance.path;
 
-				var dependencies = [CKEDITOR.getUrl(path + 'autocomplete.js')];
+					const dependencies = [
+						CKEDITOR.getUrl(path + 'autocomplete.js'),
+					];
 
-				CKEDITOR.scriptLoader.load(dependencies, () => {
-					var liferayAutoCompleteCKEditor = new Liferay.AutoCompleteCKEditor(
-						A.merge(editor.config.autocomplete, {
-							editor,
-							width: 300,
-						})
-					);
+					CKEDITOR.scriptLoader.load(dependencies, () => {
+						const liferayAutoCompleteCKEditor =
+							new Liferay.AutoCompleteCKEditor({
+								...editor.config.autocomplete,
+								editor,
+								width: 300,
+							});
 
-					liferayAutoCompleteCKEditor.render();
+						liferayAutoCompleteCKEditor.render();
 
-					liferayAutoCompleteCKEditor.detach('valueChange');
-				});
-			});
+						liferayAutoCompleteCKEditor.detach('valueChange');
+					});
+				}
+			);
 		},
 	});
 })();

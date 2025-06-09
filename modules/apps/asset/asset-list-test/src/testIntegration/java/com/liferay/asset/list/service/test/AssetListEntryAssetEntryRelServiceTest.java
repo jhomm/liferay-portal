@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service.test;
@@ -21,7 +12,7 @@ import com.liferay.asset.list.model.AssetListEntry;
 import com.liferay.asset.list.model.AssetListEntryAssetEntryRel;
 import com.liferay.asset.list.service.AssetListEntryAssetEntryRelLocalService;
 import com.liferay.asset.list.service.persistence.AssetListEntryAssetEntryRelUtil;
-import com.liferay.asset.list.util.AssetListTestUtil;
+import com.liferay.asset.list.test.util.AssetListTestUtil;
 import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.asset.test.util.asset.renderer.factory.TestAssetRendererFactory;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
@@ -259,20 +250,20 @@ public class AssetListEntryAssetEntryRelServiceTest {
 		AssetListTestUtil.addAssetListEntryAssetEntryRel(
 			_group.getGroupId(), assetEntry2, assetListEntry, segmentsEntryId);
 
-		List<AssetListEntryAssetEntryRel> assetListEntryRelList =
+		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
 			_assetListEntryAssetEntryRelLocalService.
 				getAssetListEntryAssetEntryRels(
 					assetListEntry.getAssetListEntryId(), QueryUtil.ALL_POS,
 					QueryUtil.ALL_POS);
 
 		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel =
-			assetListEntryRelList.get(0);
+			assetListEntryAssetEntryRels.get(0);
 
 		Assert.assertEquals(
 			assetListEntryAssetEntryRel.getAssetEntryId(),
 			assetEntry1.getEntryId());
 
-		assetListEntryAssetEntryRel = assetListEntryRelList.get(1);
+		assetListEntryAssetEntryRel = assetListEntryAssetEntryRels.get(1);
 
 		Assert.assertEquals(
 			assetListEntryAssetEntryRel.getAssetEntryId(),

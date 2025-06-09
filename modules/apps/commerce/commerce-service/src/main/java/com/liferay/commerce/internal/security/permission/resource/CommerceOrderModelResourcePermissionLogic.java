@@ -1,33 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.security.permission.resource;
 
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.constants.AccountRoleConstants;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.constants.CommerceOrderActionKeys;
 import com.liferay.commerce.constants.CommerceOrderConstants;
 import com.liferay.commerce.model.CommerceOrder;
+import com.liferay.commerce.product.model.CommerceChannel;
+import com.liferay.commerce.product.service.CommerceChannelLocalService;
+import com.liferay.commerce.service.CommerceOrderLocalService;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionLogic;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.WorkflowDefinitionLinkLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
 
@@ -41,14 +40,22 @@ public class CommerceOrderModelResourcePermissionLogic
 	implements ModelResourcePermissionLogic<CommerceOrder> {
 
 	public CommerceOrderModelResourcePermissionLogic(
+		AccountEntryLocalService accountEntryLocalService,
+		CommerceChannelLocalService commerceChannelLocalService,
+		CommerceOrderLocalService commerceOrderLocalService,
 		ConfigurationProvider configurationProvider,
 		GroupLocalService groupLocalService,
 		PortletResourcePermission portletResourcePermission,
+		UserGroupRoleLocalService userGroupRoleLocalService,
 		WorkflowDefinitionLinkLocalService workflowDefinitionLinkLocalService) {
 
+		_accountEntryLocalService = accountEntryLocalService;
+		_commerceChannelLocalService = commerceChannelLocalService;
+		_commerceOrderLocalService = commerceOrderLocalService;
 		_configurationProvider = configurationProvider;
 		_groupLocalService = groupLocalService;
 		_portletResourcePermission = portletResourcePermission;
+		_userGroupRoleLocalService = userGroupRoleLocalService;
 		_workflowDefinitionLinkLocalService =
 			workflowDefinitionLinkLocalService;
 	}
@@ -59,10 +66,19 @@ public class CommerceOrderModelResourcePermissionLogic
 			CommerceOrder commerceOrder, String actionId)
 		throws PortalException {
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
 
-		if ((commerceAccount.getCommerceAccountId() ==
-				CommerceAccountConstants.ACCOUNT_ID_GUEST) &&
+		if ((accountEntry.getAccountEntryId() ==
+				AccountConstants.ACCOUNT_ENTRY_ID_GUEST) &&
+			permissionChecker.isSignedIn() &&
+			_hasOwnerPermission(permissionChecker, commerceOrder) &&
+			actionId.equals(ActionKeys.VIEW)) {
+
+			return true;
+		}
+
+		if ((accountEntry.getAccountEntryId() ==
+				AccountConstants.ACCOUNT_ENTRY_ID_GUEST) &&
 			permissionChecker.isSignedIn()) {
 
 			return _hasPermission(
@@ -72,26 +88,44 @@ public class CommerceOrderModelResourcePermissionLogic
 
 		if (permissionChecker.isCompanyAdmin(commerceOrder.getCompanyId()) ||
 			permissionChecker.isGroupAdmin(commerceOrder.getGroupId()) ||
-			((commerceAccount.getCommerceAccountId() !=
-				CommerceAccountConstants.ACCOUNT_ID_GUEST) &&
+			((accountEntry.getAccountEntryId() !=
+				AccountConstants.ACCOUNT_ENTRY_ID_GUEST) &&
 			 _hasAncestorPermission(
-				 permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+				 permissionChecker, accountEntry.getAccountEntryGroupId(),
 				 CommerceOrderActionKeys.MANAGE_COMMERCE_ORDERS))) {
 
 			return true;
 		}
 
-		if ((commerceAccount.getCommerceAccountId() !=
-				CommerceAccountConstants.ACCOUNT_ID_GUEST) &&
+		if ((actionId.equals(ActionKeys.UPDATE) ||
+			 actionId.equals(ActionKeys.VIEW)) &&
+			_hasRoleAccountSupplier(permissionChecker, commerceOrder)) {
+
+			return true;
+		}
+
+		if ((accountEntry.getAccountEntryId() !=
+				AccountConstants.ACCOUNT_ENTRY_ID_GUEST) &&
 			actionId.equals(CommerceOrderActionKeys.APPROVE_COMMERCE_ORDER)) {
 
 			return _hasAncestorPermission(
-				permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+				permissionChecker, accountEntry.getAccountEntryGroupId(),
 				CommerceOrderActionKeys.APPROVE_OPEN_COMMERCE_ORDERS);
 		}
 
 		if (actionId.equals(CommerceOrderActionKeys.CHECKOUT_COMMERCE_ORDER)) {
 			return _containsCheckoutPermission(
+				permissionChecker, commerceOrder);
+		}
+
+		if (actionId.equals(ActionKeys.DELETE)) {
+			return _containsDeletePermission(permissionChecker, commerceOrder);
+		}
+
+		if (actionId.equals(
+				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_DELIVERY_TERMS)) {
+
+			return _containsManageDeliveryTerms(
 				permissionChecker, commerceOrder);
 		}
 
@@ -104,13 +138,34 @@ public class CommerceOrderModelResourcePermissionLogic
 
 		if (actionId.equals(
 				CommerceOrderActionKeys.
+					MANAGE_COMMERCE_ORDER_PAYMENT_METHODS)) {
+
+			return _containsManagePaymentMethods(
+				permissionChecker, commerceOrder);
+		}
+
+		if (actionId.equals(
+				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_PAYMENT_TERMS)) {
+
+			return _containsManagePaymentTerms(
+				permissionChecker, commerceOrder);
+		}
+
+		if ((accountEntry.getAccountEntryId() !=
+				AccountConstants.ACCOUNT_ENTRY_ID_GUEST) &&
+			actionId.equals(
+				CommerceOrderActionKeys.
 					MANAGE_COMMERCE_ORDER_RESTRICTED_NOTES)) {
 
 			return _containsManageNotes(permissionChecker, commerceOrder, true);
 		}
 
-		if (actionId.equals(ActionKeys.DELETE)) {
-			return _containsDeletePermission(permissionChecker, commerceOrder);
+		if (actionId.equals(
+				CommerceOrderActionKeys.
+					MANAGE_COMMERCE_ORDER_SHIPPING_OPTIONS)) {
+
+			return _containsManageShippingOptions(
+				permissionChecker, commerceOrder);
 		}
 
 		if (actionId.equals(ActionKeys.UPDATE)) {
@@ -121,7 +176,13 @@ public class CommerceOrderModelResourcePermissionLogic
 			return _containsViewPermission(permissionChecker, commerceOrder);
 		}
 
-		return false;
+		if (actionId.equals(CommerceOrderActionKeys.VIEW_BILLING_ADDRESS)) {
+			return _containsViewBillingAddress(
+				permissionChecker, commerceOrder);
+		}
+
+		return _hasPermission(
+			permissionChecker, commerceOrder.getGroupId(), actionId);
 	}
 
 	private boolean _containsCheckoutPermission(
@@ -137,15 +198,15 @@ public class CommerceOrderModelResourcePermissionLogic
 
 		User user = permissionChecker.getUser();
 
-		if (user.isDefaultUser() && commerceOrder.isGuestOrder()) {
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
 			return true;
 		}
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
 
 		if (commerceOrder.isPending() &&
 			!_hasPermission(
-				permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+				permissionChecker, accountEntry.getAccountEntryGroupId(),
 				CommerceOrderActionKeys.APPROVE_OPEN_COMMERCE_ORDERS)) {
 
 			return false;
@@ -158,7 +219,7 @@ public class CommerceOrderModelResourcePermissionLogic
 		}
 
 		return _portletResourcePermission.contains(
-			permissionChecker, commerceAccount.getCommerceAccountGroup(),
+			permissionChecker, accountEntry.getAccountEntryGroup(),
 			CommerceOrderActionKeys.CHECKOUT_OPEN_COMMERCE_ORDERS);
 	}
 
@@ -176,11 +237,32 @@ public class CommerceOrderModelResourcePermissionLogic
 			}
 		}
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
 
 		return _portletResourcePermission.contains(
-			permissionChecker, commerceAccount.getCommerceAccountGroup(),
+			permissionChecker, accountEntry.getAccountEntryGroup(),
 			CommerceOrderActionKeys.DELETE_COMMERCE_ORDERS);
+	}
+
+	private boolean _containsManageDeliveryTerms(
+			PermissionChecker permissionChecker, CommerceOrder commerceOrder)
+		throws PortalException {
+
+		if (!commerceOrder.isOpen()) {
+			return false;
+		}
+
+		User user = permissionChecker.getUser();
+
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
+			return true;
+		}
+
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
+
+		return _portletResourcePermission.contains(
+			permissionChecker, accountEntry.getAccountEntryGroup(),
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_DELIVERY_TERMS);
 	}
 
 	private boolean _containsManageNotes(
@@ -194,11 +276,85 @@ public class CommerceOrderModelResourcePermissionLogic
 			return true;
 		}
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
+		String actionIds = restricted ?
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_RESTRICTED_NOTES :
+				CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_NOTES;
+
+		if (_hasPermission(
+				permissionChecker, accountEntry.getAccountEntryGroupId(),
+				actionIds) ||
+			_hasRoleAccountSupplier(permissionChecker, commerceOrder)) {
+
+			return true;
+		}
 
 		return _hasAncestorPermission(
-			permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+			permissionChecker, accountEntry.getAccountEntryGroupId(),
 			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDERS);
+	}
+
+	private boolean _containsManagePaymentMethods(
+			PermissionChecker permissionChecker, CommerceOrder commerceOrder)
+		throws PortalException {
+
+		if (!commerceOrder.isOpen()) {
+			return false;
+		}
+
+		User user = permissionChecker.getUser();
+
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
+			return true;
+		}
+
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
+
+		return _portletResourcePermission.contains(
+			permissionChecker, accountEntry.getAccountEntryGroup(),
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_PAYMENT_METHODS);
+	}
+
+	private boolean _containsManagePaymentTerms(
+			PermissionChecker permissionChecker, CommerceOrder commerceOrder)
+		throws PortalException {
+
+		if (!commerceOrder.isOpen()) {
+			return false;
+		}
+
+		User user = permissionChecker.getUser();
+
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
+			return true;
+		}
+
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
+
+		return _portletResourcePermission.contains(
+			permissionChecker, accountEntry.getAccountEntryGroup(),
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_PAYMENT_TERMS);
+	}
+
+	private boolean _containsManageShippingOptions(
+			PermissionChecker permissionChecker, CommerceOrder commerceOrder)
+		throws PortalException {
+
+		if (!commerceOrder.isOpen()) {
+			return false;
+		}
+
+		User user = permissionChecker.getUser();
+
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
+			return true;
+		}
+
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
+
+		return _portletResourcePermission.contains(
+			permissionChecker, accountEntry.getAccountEntryGroup(),
+			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDER_SHIPPING_OPTIONS);
 	}
 
 	private boolean _containsUpdatePermission(
@@ -207,11 +363,11 @@ public class CommerceOrderModelResourcePermissionLogic
 
 		User user = permissionChecker.getUser();
 
-		if (user.isDefaultUser() && commerceOrder.isGuestOrder()) {
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
 			return true;
 		}
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
 
 		if (commerceOrder.isOpen()) {
 			if (_hasOwnerPermission(permissionChecker, commerceOrder)) {
@@ -223,8 +379,7 @@ public class CommerceOrderModelResourcePermissionLogic
 			}
 
 			if (_hasAncestorPermission(
-					permissionChecker,
-					commerceAccount.getCommerceAccountGroupId(),
+					permissionChecker, accountEntry.getAccountEntryGroupId(),
 					CommerceOrderActionKeys.ADD_COMMERCE_ORDER)) {
 
 				return true;
@@ -236,15 +391,37 @@ public class CommerceOrderModelResourcePermissionLogic
 					CommerceOrderConstants.TYPE_PK_APPROVAL)) {
 
 				return _hasPermission(
-					permissionChecker,
-					commerceAccount.getCommerceAccountGroupId(),
+					permissionChecker, accountEntry.getAccountEntryGroupId(),
 					CommerceOrderActionKeys.APPROVE_OPEN_COMMERCE_ORDERS);
 			}
 		}
 
+		if (commerceOrder.isQuote()) {
+			return _hasPermission(
+				permissionChecker, commerceOrder.getGroupId(),
+				CommerceOrderActionKeys.MANAGE_QUOTES);
+		}
+
 		return _hasAncestorPermission(
-			permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+			permissionChecker, accountEntry.getAccountEntryGroupId(),
 			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDERS);
+	}
+
+	private boolean _containsViewBillingAddress(
+			PermissionChecker permissionChecker, CommerceOrder commerceOrder)
+		throws PortalException {
+
+		User user = permissionChecker.getUser();
+
+		if (user.isGuestUser() && commerceOrder.isGuestOrder()) {
+			return true;
+		}
+
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
+
+		return _portletResourcePermission.contains(
+			permissionChecker, accountEntry.getAccountEntryGroup(),
+			CommerceOrderActionKeys.VIEW_BILLING_ADDRESS);
 	}
 
 	private boolean _containsViewPermission(
@@ -257,7 +434,7 @@ public class CommerceOrderModelResourcePermissionLogic
 			return true;
 		}
 
-		CommerceAccount commerceAccount = commerceOrder.getCommerceAccount();
+		AccountEntry accountEntry = commerceOrder.getAccountEntry();
 
 		if (commerceOrder.isOpen()) {
 			if (commerceOrder.isDraft()) {
@@ -265,13 +442,13 @@ public class CommerceOrderModelResourcePermissionLogic
 			}
 
 			return _hasPermission(
-				permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+				permissionChecker, accountEntry.getAccountEntryGroupId(),
 				CommerceOrderActionKeys.APPROVE_OPEN_COMMERCE_ORDERS,
 				CommerceOrderActionKeys.VIEW_OPEN_COMMERCE_ORDERS);
 		}
 
 		return _hasAncestorPermission(
-			permissionChecker, commerceAccount.getCommerceAccountGroupId(),
+			permissionChecker, accountEntry.getAccountEntryGroupId(),
 			CommerceOrderActionKeys.MANAGE_COMMERCE_ORDERS,
 			CommerceOrderActionKeys.VIEW_COMMERCE_ORDERS);
 	}
@@ -325,9 +502,65 @@ public class CommerceOrderModelResourcePermissionLogic
 		return false;
 	}
 
+	private boolean _hasRoleAccountSupplier(
+			PermissionChecker permissionChecker, CommerceOrder commerceOrder)
+		throws PortalException {
+
+		List<AccountEntry> accountEntries =
+			_accountEntryLocalService.getUserAccountEntries(
+				permissionChecker.getUserId(), 0L, StringPool.BLANK,
+				new String[] {AccountConstants.ACCOUNT_ENTRY_TYPE_SUPPLIER},
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+
+		for (AccountEntry accountEntry : accountEntries) {
+			CommerceChannel commerceChannel =
+				_commerceChannelLocalService.fetchCommerceChannelByGroupClassPK(
+					commerceOrder.getGroupId());
+
+			if ((accountEntry.getAccountEntryId() ==
+					commerceChannel.getAccountEntryId()) &&
+				_userGroupRoleLocalService.hasUserGroupRole(
+					permissionChecker.getUserId(),
+					accountEntry.getAccountEntryGroupId(),
+					AccountRoleConstants.ROLE_NAME_ACCOUNT_SUPPLIER)) {
+
+				return true;
+			}
+
+			for (long commerceOrderIds :
+					commerceOrder.getSupplierCommerceOrderIds()) {
+
+				CommerceOrder supplierCommerceOrder =
+					_commerceOrderLocalService.getCommerceOrder(
+						commerceOrderIds);
+
+				commerceChannel =
+					_commerceChannelLocalService.
+						fetchCommerceChannelByGroupClassPK(
+							supplierCommerceOrder.getGroupId());
+
+				if ((accountEntry.getAccountEntryId() ==
+						commerceChannel.getAccountEntryId()) &&
+					_userGroupRoleLocalService.hasUserGroupRole(
+						permissionChecker.getUserId(),
+						accountEntry.getAccountEntryGroupId(),
+						AccountRoleConstants.ROLE_NAME_ACCOUNT_SUPPLIER)) {
+
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	private final AccountEntryLocalService _accountEntryLocalService;
+	private final CommerceChannelLocalService _commerceChannelLocalService;
+	private final CommerceOrderLocalService _commerceOrderLocalService;
 	private final ConfigurationProvider _configurationProvider;
 	private final GroupLocalService _groupLocalService;
 	private final PortletResourcePermission _portletResourcePermission;
+	private final UserGroupRoleLocalService _userGroupRoleLocalService;
 	private final WorkflowDefinitionLinkLocalService
 		_workflowDefinitionLinkLocalService;
 

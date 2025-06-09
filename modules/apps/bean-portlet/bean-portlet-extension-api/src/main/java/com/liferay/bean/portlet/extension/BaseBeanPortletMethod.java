@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.extension;
@@ -17,19 +8,19 @@ package com.liferay.bean.portlet.extension;
 import com.liferay.petra.lang.HashUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.ProcessAction;
+import jakarta.portlet.RenderMode;
+import jakarta.portlet.annotations.ActionMethod;
+import jakarta.portlet.annotations.EventMethod;
+import jakarta.portlet.annotations.HeaderMethod;
+import jakarta.portlet.annotations.PortletQName;
+import jakarta.portlet.annotations.RenderMethod;
+import jakarta.portlet.annotations.ServeResourceMethod;
+
 import java.lang.reflect.Method;
 
 import java.util.Objects;
-
-import javax.portlet.PortletMode;
-import javax.portlet.ProcessAction;
-import javax.portlet.RenderMode;
-import javax.portlet.annotations.ActionMethod;
-import javax.portlet.annotations.EventMethod;
-import javax.portlet.annotations.HeaderMethod;
-import javax.portlet.annotations.PortletQName;
-import javax.portlet.annotations.RenderMethod;
-import javax.portlet.annotations.ServeResourceMethod;
 
 import javax.xml.namespace.QName;
 
@@ -163,12 +154,14 @@ public abstract class BaseBeanPortletMethod implements BeanPortletMethod {
 		ServeResourceMethod serveResourceMethod = _method.getAnnotation(
 			ServeResourceMethod.class);
 
-		if (serveResourceMethod != null) {
-			String resourceID = serveResourceMethod.resourceID();
+		if (serveResourceMethod == null) {
+			return null;
+		}
 
-			if (Validator.isNotNull(resourceID)) {
-				return resourceID;
-			}
+		String resourceID = serveResourceMethod.resourceID();
+
+		if (Validator.isNotNull(resourceID)) {
+			return resourceID;
 		}
 
 		return null;

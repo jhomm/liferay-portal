@@ -1,33 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.portletext;
 
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
 import com.liferay.portal.kernel.model.Portlet;
+import com.liferay.portal.kernel.model.PortletApp;
 import com.liferay.portal.kernel.model.PortletWrapper;
 import com.liferay.portal.kernel.portlet.PortletContainerUtil;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
-import com.liferay.portal.kernel.portlet.PortletJSONUtil;
 import com.liferay.portal.kernel.portlet.PortletLayoutListener;
 import com.liferay.portal.kernel.portlet.PortletParameterUtil;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
@@ -35,6 +24,8 @@ import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.RestrictPortletServletRequest;
 import com.liferay.portal.kernel.portlet.constants.PortletPreferencesFactoryConstants;
+import com.liferay.portal.kernel.portlet.render.PortletRenderParts;
+import com.liferay.portal.kernel.portlet.render.PortletRenderUtil;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalServiceUtil;
@@ -42,6 +33,9 @@ import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.servlet.DynamicServletRequest;
 import com.liferay.portal.kernel.servlet.PipingServletResponse;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ClassUtil;
+import com.liferay.portal.kernel.util.Constants;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.Validator;
@@ -51,17 +45,24 @@ import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.util.PortalIncludeUtil;
 import com.liferay.taglib.util.ThreadLocalUtil;
 
+import jakarta.portlet.GenericPortlet;
+import jakarta.portlet.HeaderRequest;
+import jakarta.portlet.HeaderResponse;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+import jakarta.servlet.jsp.tagext.TagSupport;
+
+import java.lang.reflect.Method;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.PageContext;
-import javax.servlet.jsp.tagext.TagSupport;
 
 /**
  * @author Brian Wing Shun Chan
@@ -230,11 +231,18 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 			}
 		}
 
-		queryString = PortletParameterUtil.addNamespace(
-			portletInstanceKey, queryString);
+		if (Validator.isNotNull(queryString)) {
+			queryString = PortletParameterUtil.addNamespace(
+				portletInstanceKey, queryString);
 
-		httpServletRequest = DynamicServletRequest.addQueryString(
-			restrictPortletServletRequest, parameterMap, queryString, false);
+			httpServletRequest = DynamicServletRequest.addQueryString(
+				restrictPortletServletRequest, parameterMap, queryString,
+				false);
+		}
+		else {
+			httpServletRequest = new DynamicServletRequest(
+				restrictPortletServletRequest, parameterMap, false);
+		}
 
 		try {
 			httpServletRequest.setAttribute(
@@ -255,12 +263,20 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 				_embeddedPortletIds.set(embeddedPortletIds);
 			}
 
-			if (embeddedPortletIds.search(portlet.getPortletId()) > -1) {
+			String embeddedPortletId = portlet.getPortletId();
+
+			if (embeddedPortletIds.search(embeddedPortletId) > -1) {
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"The application cannot include itself: " +
+							embeddedPortletId);
+				}
+
 				String errorMessage = LanguageUtil.get(
-					httpServletRequest,
+					originalHttpServletRequest,
 					"the-application-cannot-include-itself");
 
-				httpServletRequest.setAttribute(
+				originalHttpServletRequest.setAttribute(
 					"liferay-portlet:runtime:errorMessage", errorMessage);
 
 				PortalIncludeUtil.include(pageContext, _ERROR_PAGE);
@@ -287,64 +303,67 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 			httpServletRequest.setAttribute(
 				WebKeys.SETTINGS_SCOPE, settingsScope);
 
-			JSONObject jsonObject = null;
+			String layoutMode = ParamUtil.getString(
+				httpServletRequest, "p_l_mode", Constants.VIEW);
 
-			boolean writeObject = false;
+			if (!layoutMode.equals(Constants.PREVIEW)) {
+				if (persistSettings &&
+					!layout.isPortletEmbedded(
+						portlet.getPortletId(), layout.getGroupId())) {
 
-			if (persistSettings &&
-				!layout.isPortletEmbedded(
-					portlet.getPortletId(), layout.getGroupId())) {
-
-				PortletPreferencesFactoryUtil.getLayoutPortletSetup(
-					themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId(),
-					PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
-					PortletKeys.PREFS_PLID_SHARED, portletInstanceKey,
-					defaultPreferences);
-
-				writeObject = true;
-			}
-
-			long count =
-				PortletPreferencesLocalServiceUtil.getPortletPreferencesCount(
-					PortletKeys.PREFS_OWNER_TYPE_LAYOUT, themeDisplay.getPlid(),
-					portletInstanceKey);
-
-			if (count < 1) {
-				PortletPreferencesFactoryUtil.getLayoutPortletSetup(
-					layout, portletInstanceKey, defaultPreferences);
-				PortletPreferencesFactoryUtil.getPortletSetup(
-					httpServletRequest, portletInstanceKey, defaultPreferences);
-
-				PortletLayoutListener portletLayoutListener =
-					portlet.getPortletLayoutListenerInstance();
-
-				if (portletLayoutListener != null) {
-					portletLayoutListener.onAddToLayout(
-						portletInstanceKey, themeDisplay.getPlid());
+					PortletPreferencesFactoryUtil.getLayoutPortletSetup(
+						themeDisplay.getCompanyId(),
+						themeDisplay.getScopeGroupId(),
+						PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+						PortletKeys.PREFS_PLID_SHARED, portletInstanceKey,
+						defaultPreferences);
 				}
 
-				writeObject = true;
+				if (persistSettings) {
+					long count =
+						PortletPreferencesLocalServiceUtil.
+							getPortletPreferencesCount(
+								PortletKeys.PREFS_OWNER_TYPE_LAYOUT,
+								themeDisplay.getPlid(), portletInstanceKey);
+
+					if (count < 1) {
+						PortletPreferencesFactoryUtil.getLayoutPortletSetup(
+							layout, portletInstanceKey, defaultPreferences);
+
+						PortletPreferencesFactoryUtil.getPortletSetup(
+							httpServletRequest, portletInstanceKey,
+							defaultPreferences);
+
+						PortletLayoutListener portletLayoutListener =
+							portlet.getPortletLayoutListenerInstance();
+
+						if (portletLayoutListener != null) {
+							portletLayoutListener.onAddToLayout(
+								portletInstanceKey, themeDisplay.getPlid());
+						}
+					}
+				}
 			}
 
-			if (writeObject) {
-				jsonObject = JSONFactoryUtil.createJSONObject();
+			PortletRenderParts portletRenderParts =
+				PortletRenderUtil.getPortletRenderParts(
+					httpServletRequest, StringPool.BLANK, portlet);
 
-				PortletJSONUtil.populatePortletJSONObject(
-					httpServletRequest, StringPool.BLANK, portlet, jsonObject);
-			}
+			PortletRenderUtil.writeHeaderPaths(
+				httpServletResponse, portletRenderParts);
 
-			if (jsonObject != null) {
-				PortletJSONUtil.writeHeaderPaths(
-					httpServletResponse, jsonObject);
-			}
-
-			embeddedPortletIds.push(portletInstanceKey);
+			embeddedPortletIds.push(embeddedPortletId);
 
 			boolean lifecycleRender = themeDisplay.isLifecycleRender();
 
 			try {
 				if (resetLifecycleRender) {
 					themeDisplay.setLifecycleRender(true);
+				}
+
+				if (_isHeaderPortlet(portlet)) {
+					PortletContainerUtil.renderHeaders(
+						httpServletRequest, httpServletResponse, portlet);
 				}
 
 				PortletContainerUtil.render(
@@ -358,10 +377,8 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 
 			embeddedPortletIds.pop();
 
-			if (jsonObject != null) {
-				PortletJSONUtil.writeFooterPaths(
-					httpServletResponse, jsonObject);
-			}
+			PortletRenderUtil.writeFooterPaths(
+				httpServletResponse, portletRenderParts);
 		}
 		finally {
 			restrictPortletServletRequest.mergeSharedAttributes();
@@ -404,7 +421,7 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 			return EVAL_PAGE;
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new JspException(exception);
 		}
@@ -486,6 +503,69 @@ public class RuntimeTag extends TagSupport implements DirectTag {
 		portlet.setStatic(true);
 
 		return portlet;
+	}
+
+	private static boolean _isHeaderPortlet(Portlet portlet) {
+		PortletApp portletApp = portlet.getPortletApp();
+
+		if (portletApp.getSpecMajorVersion() < 3) {
+			return false;
+		}
+
+		String portletClassName = portlet.getPortletClass();
+
+		if (Objects.equals(
+				portletClassName,
+				"jakarta.portlet.faces.GenericFacesPortlet")) {
+
+			return true;
+		}
+
+		ServletContext servletContext = portletApp.getServletContext();
+
+		if (servletContext == null) {
+			return false;
+		}
+
+		ClassLoader classLoader = servletContext.getClassLoader();
+
+		if (classLoader == null) {
+			return false;
+		}
+
+		try {
+			Class<?> portletClass = classLoader.loadClass(portletClassName);
+
+			if (ClassUtil.isSubclass(
+					portletClass,
+					"jakarta.portlet.faces.GenericFacesPortlet")) {
+
+				return true;
+			}
+
+			Method renderHeadersMethod = portletClass.getMethod(
+				"renderHeaders", HeaderRequest.class, HeaderResponse.class);
+
+			if (GenericPortlet.class !=
+					renderHeadersMethod.getDeclaringClass()) {
+
+				return true;
+			}
+		}
+		catch (ClassNotFoundException classNotFoundException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(
+					"Unable to load portlet class " + portletClassName,
+					classNotFoundException);
+			}
+		}
+		catch (NoSuchMethodException noSuchMethodException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(noSuchMethodException);
+			}
+		}
+
+		return false;
 	}
 
 	private static final String _ERROR_PAGE =

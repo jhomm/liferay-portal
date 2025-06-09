@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
@@ -26,6 +17,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  */
 public class MBMessageServiceWrapper
 	implements MBMessageService, ServiceWrapper<MBMessageService> {
+
+	public MBMessageServiceWrapper() {
+		this(null);
+	}
 
 	public MBMessageServiceWrapper(MBMessageService mbMessageService) {
 		_mbMessageService = mbMessageService;
@@ -307,6 +302,33 @@ public class MBMessageServiceWrapper
 	}
 
 	@Override
+	public java.util.List<MBMessage> getGroupUserMessageBoardMessagesActivity(
+			long groupId, long userId, int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbMessageService.getGroupUserMessageBoardMessagesActivity(
+			groupId, userId, start, end);
+	}
+
+	@Override
+	public int getGroupUserMessageBoardMessagesActivityCount(
+			long groupId, long userId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbMessageService.getGroupUserMessageBoardMessagesActivityCount(
+			groupId, userId);
+	}
+
+	@Override
+	public MBMessage getMBMessageByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbMessageService.getMBMessageByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	@Override
 	public MBMessage getMessage(long messageId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
@@ -406,10 +428,11 @@ public class MBMessageServiceWrapper
 	}
 
 	@Override
-	public void updateAnswer(long messageId, boolean answer, boolean cascade)
+	public MBMessage updateAnswer(
+			long messageId, boolean answer, boolean cascade)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		_mbMessageService.updateAnswer(messageId, answer, cascade);
+		return _mbMessageService.updateAnswer(messageId, answer, cascade);
 	}
 
 	@Override

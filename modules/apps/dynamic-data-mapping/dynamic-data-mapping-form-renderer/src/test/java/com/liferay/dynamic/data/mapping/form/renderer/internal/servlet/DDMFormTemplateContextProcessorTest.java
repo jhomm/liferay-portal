@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.renderer.internal.servlet;
@@ -21,39 +12,40 @@ import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidationExpression;
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
 import com.liferay.dynamic.data.mapping.test.util.DDMFormValuesTestUtil;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.SetUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Carolina Barbosa
  */
-@PrepareForTest(LanguageUtil.class)
-@RunWith(PowerMockRunner.class)
-public class DDMFormTemplateContextProcessorTest extends PowerMockito {
+public class DDMFormTemplateContextProcessorTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	public void setUp() {
@@ -132,17 +124,9 @@ public class DDMFormTemplateContextProcessorTest extends PowerMockito {
 
 		Assert.assertEquals("FieldsGroup12345678", ddmFormField.getName());
 
-		List<DDMFormField> nestedDDMFormFields =
-			ddmFormField.getNestedDDMFormFields();
-
-		Stream<DDMFormField> nestedDDMFormFieldsStream =
-			nestedDDMFormFields.stream();
-
-		Set<String> nestedDDMFormFieldNames = nestedDDMFormFieldsStream.map(
-			DDMFormField::getName
-		).collect(
-			Collectors.toSet()
-		);
+		Set<String> nestedDDMFormFieldNames = SetUtil.fromList(
+			TransformUtil.transform(
+				ddmFormField.getNestedDDMFormFields(), DDMFormField::getName));
 
 		Assert.assertEquals(
 			nestedDDMFormFieldNames.toString(), 2,
@@ -441,13 +425,19 @@ public class DDMFormTemplateContextProcessorTest extends PowerMockito {
 	}
 
 	private void _setUpLanguageUtil() {
-		mockStatic(LanguageUtil.class);
+		LanguageUtil languageUtil = new LanguageUtil();
 
-		when(
-			LanguageUtil.isAvailableLocale(Matchers.any(Locale.class))
-		).thenReturn(
+		Language language = Mockito.mock(Language.class);
+
+		Mockito.doReturn(
 			Boolean.TRUE
+		).when(
+			language
+		).isAvailableLocale(
+			Mockito.any(Locale.class)
 		);
+
+		languageUtil.setLanguage(language);
 	}
 
 	private DDMFormTemplateContextProcessor _ddmFormTemplateContextProcessor;

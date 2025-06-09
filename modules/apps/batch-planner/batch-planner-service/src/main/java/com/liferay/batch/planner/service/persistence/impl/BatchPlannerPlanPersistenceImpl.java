@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.service.persistence.impl;
@@ -39,7 +30,6 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -50,7 +40,6 @@ import com.liferay.portal.kernel.util.SetUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -77,7 +66,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Igor Beslic
  * @generated
  */
-@Component(service = {BatchPlannerPlanPersistence.class, BasePersistence.class})
+@Component(service = BatchPlannerPlanPersistence.class)
 public class BatchPlannerPlanPersistenceImpl
 	extends BasePersistenceImpl<BatchPlannerPlan>
 	implements BatchPlannerPlanPersistence {
@@ -197,7 +186,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchPlannerPlan>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchPlannerPlan batchPlannerPlan : list) {
@@ -623,7 +612,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -820,7 +810,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -895,7 +886,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -1086,7 +1077,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchPlannerPlan>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchPlannerPlan batchPlannerPlan : list) {
@@ -1542,7 +1533,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -1746,7 +1738,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -1826,7 +1819,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, userId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2029,7 +2022,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchPlannerPlan>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchPlannerPlan batchPlannerPlan : list) {
@@ -2487,7 +2480,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -2691,7 +2685,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -2771,7 +2766,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, export};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -2871,96 +2866,135 @@ public class BatchPlannerPlanPersistenceImpl
 	private static final String _FINDER_COLUMN_C_E_EXPORT_2 =
 		"batchPlannerPlan.export = ?";
 
-	private FinderPath _finderPathFetchByC_N;
+	private FinderPath _finderPathWithPaginationFindByC_N;
+	private FinderPath _finderPathWithoutPaginationFindByC_N;
 	private FinderPath _finderPathCountByC_N;
 
 	/**
-	 * Returns the batch planner plan where companyId = &#63; and name = &#63; or throws a <code>NoSuchPlanException</code> if it could not be found.
+	 * Returns all the batch planner plans where companyId = &#63; and name = &#63;.
 	 *
 	 * @param companyId the company ID
 	 * @param name the name
-	 * @return the matching batch planner plan
-	 * @throws NoSuchPlanException if a matching batch planner plan could not be found
+	 * @return the matching batch planner plans
 	 */
 	@Override
-	public BatchPlannerPlan findByC_N(long companyId, String name)
-		throws NoSuchPlanException {
-
-		BatchPlannerPlan batchPlannerPlan = fetchByC_N(companyId, name);
-
-		if (batchPlannerPlan == null) {
-			StringBundler sb = new StringBundler(6);
-
-			sb.append(_NO_SUCH_ENTITY_WITH_KEY);
-
-			sb.append("companyId=");
-			sb.append(companyId);
-
-			sb.append(", name=");
-			sb.append(name);
-
-			sb.append("}");
-
-			if (_log.isDebugEnabled()) {
-				_log.debug(sb.toString());
-			}
-
-			throw new NoSuchPlanException(sb.toString());
-		}
-
-		return batchPlannerPlan;
+	public List<BatchPlannerPlan> findByC_N(long companyId, String name) {
+		return findByC_N(
+			companyId, name, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 	}
 
 	/**
-	 * Returns the batch planner plan where companyId = &#63; and name = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns a range of all the batch planner plans where companyId = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>BatchPlannerPlanModelImpl</code>.
+	 * </p>
 	 *
 	 * @param companyId the company ID
 	 * @param name the name
-	 * @return the matching batch planner plan, or <code>null</code> if a matching batch planner plan could not be found
+	 * @param start the lower bound of the range of batch planner plans
+	 * @param end the upper bound of the range of batch planner plans (not inclusive)
+	 * @return the range of matching batch planner plans
 	 */
 	@Override
-	public BatchPlannerPlan fetchByC_N(long companyId, String name) {
-		return fetchByC_N(companyId, name, true);
+	public List<BatchPlannerPlan> findByC_N(
+		long companyId, String name, int start, int end) {
+
+		return findByC_N(companyId, name, start, end, null);
 	}
 
 	/**
-	 * Returns the batch planner plan where companyId = &#63; and name = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns an ordered range of all the batch planner plans where companyId = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>BatchPlannerPlanModelImpl</code>.
+	 * </p>
 	 *
 	 * @param companyId the company ID
 	 * @param name the name
+	 * @param start the lower bound of the range of batch planner plans
+	 * @param end the upper bound of the range of batch planner plans (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching batch planner plans
+	 */
+	@Override
+	public List<BatchPlannerPlan> findByC_N(
+		long companyId, String name, int start, int end,
+		OrderByComparator<BatchPlannerPlan> orderByComparator) {
+
+		return findByC_N(companyId, name, start, end, orderByComparator, true);
+	}
+
+	/**
+	 * Returns an ordered range of all the batch planner plans where companyId = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>BatchPlannerPlanModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param start the lower bound of the range of batch planner plans
+	 * @param end the upper bound of the range of batch planner plans (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
 	 * @param useFinderCache whether to use the finder cache
-	 * @return the matching batch planner plan, or <code>null</code> if a matching batch planner plan could not be found
+	 * @return the ordered range of matching batch planner plans
 	 */
 	@Override
-	public BatchPlannerPlan fetchByC_N(
-		long companyId, String name, boolean useFinderCache) {
+	public List<BatchPlannerPlan> findByC_N(
+		long companyId, String name, int start, int end,
+		OrderByComparator<BatchPlannerPlan> orderByComparator,
+		boolean useFinderCache) {
 
 		name = Objects.toString(name, "");
 
+		FinderPath finderPath = null;
 		Object[] finderArgs = null;
 
-		if (useFinderCache) {
-			finderArgs = new Object[] {companyId, name};
+		if ((start == QueryUtil.ALL_POS) && (end == QueryUtil.ALL_POS) &&
+			(orderByComparator == null)) {
+
+			if (useFinderCache) {
+				finderPath = _finderPathWithoutPaginationFindByC_N;
+				finderArgs = new Object[] {companyId, name};
+			}
+		}
+		else if (useFinderCache) {
+			finderPath = _finderPathWithPaginationFindByC_N;
+			finderArgs = new Object[] {
+				companyId, name, start, end, orderByComparator
+			};
 		}
 
-		Object result = null;
+		List<BatchPlannerPlan> list = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByC_N, finderArgs);
-		}
+			list = (List<BatchPlannerPlan>)finderCache.getResult(
+				finderPath, finderArgs, this);
 
-		if (result instanceof BatchPlannerPlan) {
-			BatchPlannerPlan batchPlannerPlan = (BatchPlannerPlan)result;
+			if ((list != null) && !list.isEmpty()) {
+				for (BatchPlannerPlan batchPlannerPlan : list) {
+					if ((companyId != batchPlannerPlan.getCompanyId()) ||
+						!name.equals(batchPlannerPlan.getName())) {
 
-			if ((companyId != batchPlannerPlan.getCompanyId()) ||
-				!Objects.equals(name, batchPlannerPlan.getName())) {
+						list = null;
 
-				result = null;
+						break;
+					}
+				}
 			}
 		}
 
-		if (result == null) {
-			StringBundler sb = new StringBundler(4);
+		if (list == null) {
+			StringBundler sb = null;
+
+			if (orderByComparator != null) {
+				sb = new StringBundler(
+					4 + (orderByComparator.getOrderByFields().length * 2));
+			}
+			else {
+				sb = new StringBundler(4);
+			}
 
 			sb.append(_SQL_SELECT_BATCHPLANNERPLAN_WHERE);
 
@@ -2975,6 +3009,14 @@ public class BatchPlannerPlanPersistenceImpl
 				bindName = true;
 
 				sb.append(_FINDER_COLUMN_C_N_NAME_2);
+			}
+
+			if (orderByComparator != null) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator);
+			}
+			else {
+				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
 			}
 
 			String sql = sb.toString();
@@ -2994,20 +3036,13 @@ public class BatchPlannerPlanPersistenceImpl
 					queryPos.add(name);
 				}
 
-				List<BatchPlannerPlan> list = query.list();
+				list = (List<BatchPlannerPlan>)QueryUtil.list(
+					query, getDialect(), start, end);
 
-				if (list.isEmpty()) {
-					if (useFinderCache) {
-						finderCache.putResult(
-							_finderPathFetchByC_N, finderArgs, list);
-					}
-				}
-				else {
-					BatchPlannerPlan batchPlannerPlan = list.get(0);
+				cacheResult(list);
 
-					result = batchPlannerPlan;
-
-					cacheResult(batchPlannerPlan);
+				if (useFinderCache) {
+					finderCache.putResult(finderPath, finderArgs, list);
 				}
 			}
 			catch (Exception exception) {
@@ -3018,28 +3053,700 @@ public class BatchPlannerPlanPersistenceImpl
 			}
 		}
 
-		if (result instanceof List<?>) {
+		return list;
+	}
+
+	/**
+	 * Returns the first batch planner plan in the ordered set where companyId = &#63; and name = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching batch planner plan
+	 * @throws NoSuchPlanException if a matching batch planner plan could not be found
+	 */
+	@Override
+	public BatchPlannerPlan findByC_N_First(
+			long companyId, String name,
+			OrderByComparator<BatchPlannerPlan> orderByComparator)
+		throws NoSuchPlanException {
+
+		BatchPlannerPlan batchPlannerPlan = fetchByC_N_First(
+			companyId, name, orderByComparator);
+
+		if (batchPlannerPlan != null) {
+			return batchPlannerPlan;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("companyId=");
+		sb.append(companyId);
+
+		sb.append(", name=");
+		sb.append(name);
+
+		sb.append("}");
+
+		throw new NoSuchPlanException(sb.toString());
+	}
+
+	/**
+	 * Returns the first batch planner plan in the ordered set where companyId = &#63; and name = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching batch planner plan, or <code>null</code> if a matching batch planner plan could not be found
+	 */
+	@Override
+	public BatchPlannerPlan fetchByC_N_First(
+		long companyId, String name,
+		OrderByComparator<BatchPlannerPlan> orderByComparator) {
+
+		List<BatchPlannerPlan> list = findByC_N(
+			companyId, name, 0, 1, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the last batch planner plan in the ordered set where companyId = &#63; and name = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching batch planner plan
+	 * @throws NoSuchPlanException if a matching batch planner plan could not be found
+	 */
+	@Override
+	public BatchPlannerPlan findByC_N_Last(
+			long companyId, String name,
+			OrderByComparator<BatchPlannerPlan> orderByComparator)
+		throws NoSuchPlanException {
+
+		BatchPlannerPlan batchPlannerPlan = fetchByC_N_Last(
+			companyId, name, orderByComparator);
+
+		if (batchPlannerPlan != null) {
+			return batchPlannerPlan;
+		}
+
+		StringBundler sb = new StringBundler(6);
+
+		sb.append(_NO_SUCH_ENTITY_WITH_KEY);
+
+		sb.append("companyId=");
+		sb.append(companyId);
+
+		sb.append(", name=");
+		sb.append(name);
+
+		sb.append("}");
+
+		throw new NoSuchPlanException(sb.toString());
+	}
+
+	/**
+	 * Returns the last batch planner plan in the ordered set where companyId = &#63; and name = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching batch planner plan, or <code>null</code> if a matching batch planner plan could not be found
+	 */
+	@Override
+	public BatchPlannerPlan fetchByC_N_Last(
+		long companyId, String name,
+		OrderByComparator<BatchPlannerPlan> orderByComparator) {
+
+		int count = countByC_N(companyId, name);
+
+		if (count == 0) {
 			return null;
 		}
+
+		List<BatchPlannerPlan> list = findByC_N(
+			companyId, name, count - 1, count, orderByComparator);
+
+		if (!list.isEmpty()) {
+			return list.get(0);
+		}
+
+		return null;
+	}
+
+	/**
+	 * Returns the batch planner plans before and after the current batch planner plan in the ordered set where companyId = &#63; and name = &#63;.
+	 *
+	 * @param batchPlannerPlanId the primary key of the current batch planner plan
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next batch planner plan
+	 * @throws NoSuchPlanException if a batch planner plan with the primary key could not be found
+	 */
+	@Override
+	public BatchPlannerPlan[] findByC_N_PrevAndNext(
+			long batchPlannerPlanId, long companyId, String name,
+			OrderByComparator<BatchPlannerPlan> orderByComparator)
+		throws NoSuchPlanException {
+
+		name = Objects.toString(name, "");
+
+		BatchPlannerPlan batchPlannerPlan = findByPrimaryKey(
+			batchPlannerPlanId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			BatchPlannerPlan[] array = new BatchPlannerPlanImpl[3];
+
+			array[0] = getByC_N_PrevAndNext(
+				session, batchPlannerPlan, companyId, name, orderByComparator,
+				true);
+
+			array[1] = batchPlannerPlan;
+
+			array[2] = getByC_N_PrevAndNext(
+				session, batchPlannerPlan, companyId, name, orderByComparator,
+				false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected BatchPlannerPlan getByC_N_PrevAndNext(
+		Session session, BatchPlannerPlan batchPlannerPlan, long companyId,
+		String name, OrderByComparator<BatchPlannerPlan> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				5 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
 		else {
-			return (BatchPlannerPlan)result;
+			sb = new StringBundler(4);
+		}
+
+		sb.append(_SQL_SELECT_BATCHPLANNERPLAN_WHERE);
+
+		sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
+
+		boolean bindName = false;
+
+		if (name.isEmpty()) {
+			sb.append(_FINDER_COLUMN_C_N_NAME_3);
+		}
+		else {
+			bindName = true;
+
+			sb.append(_FINDER_COLUMN_C_N_NAME_2);
+		}
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByConditionFields[i]);
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				sb.append(_ORDER_BY_ENTITY_ALIAS);
+				sb.append(orderByFields[i]);
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+		}
+
+		String sql = sb.toString();
+
+		Query query = session.createQuery(sql);
+
+		query.setFirstResult(0);
+		query.setMaxResults(2);
+
+		QueryPos queryPos = QueryPos.getInstance(query);
+
+		queryPos.add(companyId);
+
+		if (bindName) {
+			queryPos.add(name);
+		}
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						batchPlannerPlan)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<BatchPlannerPlan> list = query.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
 		}
 	}
 
 	/**
-	 * Removes the batch planner plan where companyId = &#63; and name = &#63; from the database.
+	 * Returns all the batch planner plans that the user has permission to view where companyId = &#63; and name = &#63;.
 	 *
 	 * @param companyId the company ID
 	 * @param name the name
-	 * @return the batch planner plan that was removed
+	 * @return the matching batch planner plans that the user has permission to view
 	 */
 	@Override
-	public BatchPlannerPlan removeByC_N(long companyId, String name)
+	public List<BatchPlannerPlan> filterFindByC_N(long companyId, String name) {
+		return filterFindByC_N(
+			companyId, name, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+	}
+
+	/**
+	 * Returns a range of all the batch planner plans that the user has permission to view where companyId = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>BatchPlannerPlanModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param start the lower bound of the range of batch planner plans
+	 * @param end the upper bound of the range of batch planner plans (not inclusive)
+	 * @return the range of matching batch planner plans that the user has permission to view
+	 */
+	@Override
+	public List<BatchPlannerPlan> filterFindByC_N(
+		long companyId, String name, int start, int end) {
+
+		return filterFindByC_N(companyId, name, start, end, null);
+	}
+
+	/**
+	 * Returns an ordered range of all the batch planner plans that the user has permissions to view where companyId = &#63; and name = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>BatchPlannerPlanModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param start the lower bound of the range of batch planner plans
+	 * @param end the upper bound of the range of batch planner plans (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching batch planner plans that the user has permission to view
+	 */
+	@Override
+	public List<BatchPlannerPlan> filterFindByC_N(
+		long companyId, String name, int start, int end,
+		OrderByComparator<BatchPlannerPlan> orderByComparator) {
+
+		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
+			return findByC_N(companyId, name, start, end, orderByComparator);
+		}
+
+		name = Objects.toString(name, "");
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				4 + (orderByComparator.getOrderByFields().length * 2));
+		}
+		else {
+			sb = new StringBundler(5);
+		}
+
+		if (getDB().isSupportsInlineDistinct()) {
+			sb.append(_FILTER_SQL_SELECT_BATCHPLANNERPLAN_WHERE);
+		}
+		else {
+			sb.append(
+				_FILTER_SQL_SELECT_BATCHPLANNERPLAN_NO_INLINE_DISTINCT_WHERE_1);
+		}
+
+		sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
+
+		boolean bindName = false;
+
+		if (name.isEmpty()) {
+			sb.append(_FINDER_COLUMN_C_N_NAME_3);
+		}
+		else {
+			bindName = true;
+
+			sb.append(_FINDER_COLUMN_C_N_NAME_2);
+		}
+
+		if (!getDB().isSupportsInlineDistinct()) {
+			sb.append(
+				_FILTER_SQL_SELECT_BATCHPLANNERPLAN_NO_INLINE_DISTINCT_WHERE_2);
+		}
+
+		if (orderByComparator != null) {
+			if (getDB().isSupportsInlineDistinct()) {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_ALIAS, orderByComparator, true);
+			}
+			else {
+				appendOrderByComparator(
+					sb, _ORDER_BY_ENTITY_TABLE, orderByComparator, true);
+			}
+		}
+		else {
+			if (getDB().isSupportsInlineDistinct()) {
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
+			}
+			else {
+				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
+			}
+		}
+
+		String sql = InlineSQLHelperUtil.replacePermissionCheck(
+			sb.toString(), BatchPlannerPlan.class.getName(),
+			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			if (getDB().isSupportsInlineDistinct()) {
+				sqlQuery.addEntity(
+					_FILTER_ENTITY_ALIAS, BatchPlannerPlanImpl.class);
+			}
+			else {
+				sqlQuery.addEntity(
+					_FILTER_ENTITY_TABLE, BatchPlannerPlanImpl.class);
+			}
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(companyId);
+
+			if (bindName) {
+				queryPos.add(name);
+			}
+
+			return (List<BatchPlannerPlan>)QueryUtil.list(
+				sqlQuery, getDialect(), start, end);
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	/**
+	 * Returns the batch planner plans before and after the current batch planner plan in the ordered set of batch planner plans that the user has permission to view where companyId = &#63; and name = &#63;.
+	 *
+	 * @param batchPlannerPlanId the primary key of the current batch planner plan
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next batch planner plan
+	 * @throws NoSuchPlanException if a batch planner plan with the primary key could not be found
+	 */
+	@Override
+	public BatchPlannerPlan[] filterFindByC_N_PrevAndNext(
+			long batchPlannerPlanId, long companyId, String name,
+			OrderByComparator<BatchPlannerPlan> orderByComparator)
 		throws NoSuchPlanException {
 
-		BatchPlannerPlan batchPlannerPlan = findByC_N(companyId, name);
+		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
+			return findByC_N_PrevAndNext(
+				batchPlannerPlanId, companyId, name, orderByComparator);
+		}
 
-		return remove(batchPlannerPlan);
+		name = Objects.toString(name, "");
+
+		BatchPlannerPlan batchPlannerPlan = findByPrimaryKey(
+			batchPlannerPlanId);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			BatchPlannerPlan[] array = new BatchPlannerPlanImpl[3];
+
+			array[0] = filterGetByC_N_PrevAndNext(
+				session, batchPlannerPlan, companyId, name, orderByComparator,
+				true);
+
+			array[1] = batchPlannerPlan;
+
+			array[2] = filterGetByC_N_PrevAndNext(
+				session, batchPlannerPlan, companyId, name, orderByComparator,
+				false);
+
+			return array;
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
+	}
+
+	protected BatchPlannerPlan filterGetByC_N_PrevAndNext(
+		Session session, BatchPlannerPlan batchPlannerPlan, long companyId,
+		String name, OrderByComparator<BatchPlannerPlan> orderByComparator,
+		boolean previous) {
+
+		StringBundler sb = null;
+
+		if (orderByComparator != null) {
+			sb = new StringBundler(
+				6 + (orderByComparator.getOrderByConditionFields().length * 3) +
+					(orderByComparator.getOrderByFields().length * 3));
+		}
+		else {
+			sb = new StringBundler(5);
+		}
+
+		if (getDB().isSupportsInlineDistinct()) {
+			sb.append(_FILTER_SQL_SELECT_BATCHPLANNERPLAN_WHERE);
+		}
+		else {
+			sb.append(
+				_FILTER_SQL_SELECT_BATCHPLANNERPLAN_NO_INLINE_DISTINCT_WHERE_1);
+		}
+
+		sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
+
+		boolean bindName = false;
+
+		if (name.isEmpty()) {
+			sb.append(_FINDER_COLUMN_C_N_NAME_3);
+		}
+		else {
+			bindName = true;
+
+			sb.append(_FINDER_COLUMN_C_N_NAME_2);
+		}
+
+		if (!getDB().isSupportsInlineDistinct()) {
+			sb.append(
+				_FILTER_SQL_SELECT_BATCHPLANNERPLAN_NO_INLINE_DISTINCT_WHERE_2);
+		}
+
+		if (orderByComparator != null) {
+			String[] orderByConditionFields =
+				orderByComparator.getOrderByConditionFields();
+
+			if (orderByConditionFields.length > 0) {
+				sb.append(WHERE_AND);
+			}
+
+			for (int i = 0; i < orderByConditionFields.length; i++) {
+				if (getDB().isSupportsInlineDistinct()) {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_ALIAS, orderByConditionFields[i],
+							true));
+				}
+				else {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_TABLE, orderByConditionFields[i],
+							true));
+				}
+
+				if ((i + 1) < orderByConditionFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN_HAS_NEXT);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(WHERE_GREATER_THAN);
+					}
+					else {
+						sb.append(WHERE_LESSER_THAN);
+					}
+				}
+			}
+
+			sb.append(ORDER_BY_CLAUSE);
+
+			String[] orderByFields = orderByComparator.getOrderByFields();
+
+			for (int i = 0; i < orderByFields.length; i++) {
+				if (getDB().isSupportsInlineDistinct()) {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_ALIAS, orderByFields[i], true));
+				}
+				else {
+					sb.append(
+						getColumnName(
+							_ORDER_BY_ENTITY_TABLE, orderByFields[i], true));
+				}
+
+				if ((i + 1) < orderByFields.length) {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC_HAS_NEXT);
+					}
+					else {
+						sb.append(ORDER_BY_DESC_HAS_NEXT);
+					}
+				}
+				else {
+					if (orderByComparator.isAscending() ^ previous) {
+						sb.append(ORDER_BY_ASC);
+					}
+					else {
+						sb.append(ORDER_BY_DESC);
+					}
+				}
+			}
+		}
+		else {
+			if (getDB().isSupportsInlineDistinct()) {
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
+			}
+			else {
+				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
+			}
+		}
+
+		String sql = InlineSQLHelperUtil.replacePermissionCheck(
+			sb.toString(), BatchPlannerPlan.class.getName(),
+			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN);
+
+		SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+		sqlQuery.setFirstResult(0);
+		sqlQuery.setMaxResults(2);
+
+		if (getDB().isSupportsInlineDistinct()) {
+			sqlQuery.addEntity(
+				_FILTER_ENTITY_ALIAS, BatchPlannerPlanImpl.class);
+		}
+		else {
+			sqlQuery.addEntity(
+				_FILTER_ENTITY_TABLE, BatchPlannerPlanImpl.class);
+		}
+
+		QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+		queryPos.add(companyId);
+
+		if (bindName) {
+			queryPos.add(name);
+		}
+
+		if (orderByComparator != null) {
+			for (Object orderByConditionValue :
+					orderByComparator.getOrderByConditionValues(
+						batchPlannerPlan)) {
+
+				queryPos.add(orderByConditionValue);
+			}
+		}
+
+		List<BatchPlannerPlan> list = sqlQuery.list();
+
+		if (list.size() == 2) {
+			return list.get(1);
+		}
+		else {
+			return null;
+		}
+	}
+
+	/**
+	 * Removes all the batch planner plans where companyId = &#63; and name = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 */
+	@Override
+	public void removeByC_N(long companyId, String name) {
+		for (BatchPlannerPlan batchPlannerPlan :
+				findByC_N(
+					companyId, name, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+					null)) {
+
+			remove(batchPlannerPlan);
+		}
 	}
 
 	/**
@@ -3057,7 +3764,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, name};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -3107,6 +3814,72 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 
 		return count.intValue();
+	}
+
+	/**
+	 * Returns the number of batch planner plans that the user has permission to view where companyId = &#63; and name = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param name the name
+	 * @return the number of matching batch planner plans that the user has permission to view
+	 */
+	@Override
+	public int filterCountByC_N(long companyId, String name) {
+		if (!InlineSQLHelperUtil.isEnabled(companyId, 0)) {
+			return countByC_N(companyId, name);
+		}
+
+		name = Objects.toString(name, "");
+
+		StringBundler sb = new StringBundler(3);
+
+		sb.append(_FILTER_SQL_COUNT_BATCHPLANNERPLAN_WHERE);
+
+		sb.append(_FINDER_COLUMN_C_N_COMPANYID_2);
+
+		boolean bindName = false;
+
+		if (name.isEmpty()) {
+			sb.append(_FINDER_COLUMN_C_N_NAME_3);
+		}
+		else {
+			bindName = true;
+
+			sb.append(_FINDER_COLUMN_C_N_NAME_2);
+		}
+
+		String sql = InlineSQLHelperUtil.replacePermissionCheck(
+			sb.toString(), BatchPlannerPlan.class.getName(),
+			_FILTER_ENTITY_TABLE_FILTER_PK_COLUMN);
+
+		Session session = null;
+
+		try {
+			session = openSession();
+
+			SQLQuery sqlQuery = session.createSynchronizedSQLQuery(sql);
+
+			sqlQuery.addScalar(
+				COUNT_COLUMN_NAME, com.liferay.portal.kernel.dao.orm.Type.LONG);
+
+			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
+
+			queryPos.add(companyId);
+
+			if (bindName) {
+				queryPos.add(name);
+			}
+
+			Long count = (Long)sqlQuery.uniqueResult();
+
+			return count.intValue();
+		}
+		catch (Exception exception) {
+			throw processException(exception);
+		}
+		finally {
+			closeSession(session);
+		}
 	}
 
 	private static final String _FINDER_COLUMN_C_N_COMPANYID_2 =
@@ -3221,7 +3994,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchPlannerPlan>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchPlannerPlan batchPlannerPlan : list) {
@@ -3680,7 +4453,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -3884,7 +4658,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -3964,7 +4739,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, template};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(3);
@@ -4174,7 +4949,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchPlannerPlan>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (BatchPlannerPlan batchPlannerPlan : list) {
@@ -4661,7 +5436,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -4873,7 +5649,8 @@ public class BatchPlannerPlanPersistenceImpl
 		}
 		else {
 			if (getDB().isSupportsInlineDistinct()) {
-				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_JPQL);
+				sb.append(
+					BatchPlannerPlanModelImpl.ORDER_BY_SQL_INLINE_DISTINCT);
 			}
 			else {
 				sb.append(BatchPlannerPlanModelImpl.ORDER_BY_SQL);
@@ -4959,7 +5736,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		Object[] finderArgs = new Object[] {companyId, export, template};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(4);
@@ -5077,6 +5854,7 @@ public class BatchPlannerPlanPersistenceImpl
 		Map<String, String> dbColumnNames = new HashMap<String, String>();
 
 		dbColumnNames.put("active", "active_");
+		dbColumnNames.put("size", "size_");
 
 		setDBColumnNames(dbColumnNames);
 
@@ -5097,13 +5875,6 @@ public class BatchPlannerPlanPersistenceImpl
 	public void cacheResult(BatchPlannerPlan batchPlannerPlan) {
 		entityCache.putResult(
 			BatchPlannerPlanImpl.class, batchPlannerPlan.getPrimaryKey(),
-			batchPlannerPlan);
-
-		finderCache.putResult(
-			_finderPathFetchByC_N,
-			new Object[] {
-				batchPlannerPlan.getCompanyId(), batchPlannerPlan.getName()
-			},
 			batchPlannerPlan);
 	}
 
@@ -5175,19 +5946,6 @@ public class BatchPlannerPlanPersistenceImpl
 		for (Serializable primaryKey : primaryKeys) {
 			entityCache.removeResult(BatchPlannerPlanImpl.class, primaryKey);
 		}
-	}
-
-	protected void cacheUniqueFindersCache(
-		BatchPlannerPlanModelImpl batchPlannerPlanModelImpl) {
-
-		Object[] args = new Object[] {
-			batchPlannerPlanModelImpl.getCompanyId(),
-			batchPlannerPlanModelImpl.getName()
-		};
-
-		finderCache.putResult(_finderPathCountByC_N, args, Long.valueOf(1));
-		finderCache.putResult(
-			_finderPathFetchByC_N, args, batchPlannerPlanModelImpl);
 	}
 
 	/**
@@ -5366,8 +6124,6 @@ public class BatchPlannerPlanPersistenceImpl
 		entityCache.putResult(
 			BatchPlannerPlanImpl.class, batchPlannerPlanModelImpl, false, true);
 
-		cacheUniqueFindersCache(batchPlannerPlanModelImpl);
-
 		if (isNew) {
 			batchPlannerPlan.setNew(false);
 		}
@@ -5512,7 +6268,7 @@ public class BatchPlannerPlanPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<BatchPlannerPlan>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -5582,7 +6338,7 @@ public class BatchPlannerPlanPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -5709,8 +6465,17 @@ public class BatchPlannerPlanPersistenceImpl
 			new String[] {Long.class.getName(), Boolean.class.getName()},
 			new String[] {"companyId", "export"}, false);
 
-		_finderPathFetchByC_N = new FinderPath(
-			FINDER_CLASS_NAME_ENTITY, "fetchByC_N",
+		_finderPathWithPaginationFindByC_N = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITH_PAGINATION, "findByC_N",
+			new String[] {
+				Long.class.getName(), String.class.getName(),
+				Integer.class.getName(), Integer.class.getName(),
+				OrderByComparator.class.getName()
+			},
+			new String[] {"companyId", "name"}, true);
+
+		_finderPathWithoutPaginationFindByC_N = new FinderPath(
+			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "findByC_N",
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"companyId", "name"}, true);
 
@@ -5763,30 +6528,14 @@ public class BatchPlannerPlanPersistenceImpl
 			},
 			new String[] {"companyId", "export", "template"}, false);
 
-		_setBatchPlannerPlanUtilPersistence(this);
+		BatchPlannerPlanUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setBatchPlannerPlanUtilPersistence(null);
+		BatchPlannerPlanUtil.setPersistence(null);
 
 		entityCache.removeCache(BatchPlannerPlanImpl.class.getName());
-	}
-
-	private void _setBatchPlannerPlanUtilPersistence(
-		BatchPlannerPlanPersistence batchPlannerPlanPersistence) {
-
-		try {
-			Field field = BatchPlannerPlanUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, batchPlannerPlanPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -5868,15 +6617,11 @@ public class BatchPlannerPlanPersistenceImpl
 		BatchPlannerPlanPersistenceImpl.class);
 
 	private static final Set<String> _badColumnNames = SetUtil.fromArray(
-		new String[] {"active"});
+		new String[] {"active", "size"});
 
 	@Override
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private BatchPlannerPlanModelArgumentsResolver
-		_batchPlannerPlanModelArgumentsResolver;
 
 }

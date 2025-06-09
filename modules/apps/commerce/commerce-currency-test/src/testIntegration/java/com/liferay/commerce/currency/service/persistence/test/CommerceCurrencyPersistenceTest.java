@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.currency.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.currency.exception.DuplicateCommerceCurrencyExternalReferenceCodeException;
 import com.liferay.commerce.currency.exception.NoSuchCurrencyException;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalServiceUtil;
@@ -127,7 +119,12 @@ public class CommerceCurrencyPersistenceTest {
 
 		CommerceCurrency newCommerceCurrency = _persistence.create(pk);
 
+		newCommerceCurrency.setMvccVersion(RandomTestUtil.nextLong());
+
 		newCommerceCurrency.setUuid(RandomTestUtil.randomString());
+
+		newCommerceCurrency.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newCommerceCurrency.setCompanyId(RandomTestUtil.nextLong());
 
@@ -170,7 +167,13 @@ public class CommerceCurrencyPersistenceTest {
 			_persistence.findByPrimaryKey(newCommerceCurrency.getPrimaryKey());
 
 		Assert.assertEquals(
+			existingCommerceCurrency.getMvccVersion(),
+			newCommerceCurrency.getMvccVersion());
+		Assert.assertEquals(
 			existingCommerceCurrency.getUuid(), newCommerceCurrency.getUuid());
+		Assert.assertEquals(
+			existingCommerceCurrency.getExternalReferenceCode(),
+			newCommerceCurrency.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCommerceCurrency.getCommerceCurrencyId(),
 			newCommerceCurrency.getCommerceCurrencyId());
@@ -223,6 +226,28 @@ public class CommerceCurrencyPersistenceTest {
 			Time.getShortTimestamp(
 				existingCommerceCurrency.getLastPublishDate()),
 			Time.getShortTimestamp(newCommerceCurrency.getLastPublishDate()));
+	}
+
+	@Test(
+		expected = DuplicateCommerceCurrencyExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceCurrency commerceCurrency = addCommerceCurrency();
+
+		CommerceCurrency newCommerceCurrency = addCommerceCurrency();
+
+		newCommerceCurrency.setCompanyId(commerceCurrency.getCompanyId());
+
+		newCommerceCurrency = _persistence.update(newCommerceCurrency);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceCurrency);
+
+		newCommerceCurrency.setExternalReferenceCode(
+			commerceCurrency.getExternalReferenceCode());
+
+		_persistence.update(newCommerceCurrency);
 	}
 
 	@Test
@@ -286,6 +311,15 @@ public class CommerceCurrencyPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CommerceCurrency newCommerceCurrency = addCommerceCurrency();
 
@@ -310,7 +344,8 @@ public class CommerceCurrencyPersistenceTest {
 
 	protected OrderByComparator<CommerceCurrency> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceCurrency", "uuid", true, "commerceCurrencyId", true,
+			"CommerceCurrency", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "commerceCurrencyId", true,
 			"companyId", true, "userId", true, "userName", true, "createDate",
 			true, "modifiedDate", true, "code", true, "name", true, "symbol",
 			true, "rate", true, "formatPattern", true, "maxFractionDigits",
@@ -597,6 +632,17 @@ public class CommerceCurrencyPersistenceTest {
 			ReflectionTestUtil.invoke(
 				commerceCurrency, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "code_"));
+
+		Assert.assertEquals(
+			commerceCurrency.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				commerceCurrency, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceCurrency.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceCurrency, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CommerceCurrency addCommerceCurrency() throws Exception {
@@ -604,7 +650,12 @@ public class CommerceCurrencyPersistenceTest {
 
 		CommerceCurrency commerceCurrency = _persistence.create(pk);
 
+		commerceCurrency.setMvccVersion(RandomTestUtil.nextLong());
+
 		commerceCurrency.setUuid(RandomTestUtil.randomString());
+
+		commerceCurrency.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		commerceCurrency.setCompanyId(RandomTestUtil.nextLong());
 

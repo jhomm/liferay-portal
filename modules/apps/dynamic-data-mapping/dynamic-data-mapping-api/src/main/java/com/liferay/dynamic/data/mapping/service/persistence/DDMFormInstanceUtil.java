@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service.persistence;
@@ -867,7 +858,7 @@ public class DDMFormInstanceUtil {
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DDMFormInstanceModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param start the lower bound of the range of ddm form instances
 	 * @param end the upper bound of the range of ddm form instances (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -930,6 +921,66 @@ public class DDMFormInstanceUtil {
 	 */
 	public static int filterCountByGroupId(long[] groupIds) {
 		return getPersistence().filterCountByGroupId(groupIds);
+	}
+
+	/**
+	 * Returns the ddm form instance where structureId = &#63; or throws a <code>NoSuchFormInstanceException</code> if it could not be found.
+	 *
+	 * @param structureId the structure ID
+	 * @return the matching ddm form instance
+	 * @throws NoSuchFormInstanceException if a matching ddm form instance could not be found
+	 */
+	public static DDMFormInstance findByStructureId(long structureId)
+		throws com.liferay.dynamic.data.mapping.exception.
+			NoSuchFormInstanceException {
+
+		return getPersistence().findByStructureId(structureId);
+	}
+
+	/**
+	 * Returns the ddm form instance where structureId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param structureId the structure ID
+	 * @return the matching ddm form instance, or <code>null</code> if a matching ddm form instance could not be found
+	 */
+	public static DDMFormInstance fetchByStructureId(long structureId) {
+		return getPersistence().fetchByStructureId(structureId);
+	}
+
+	/**
+	 * Returns the ddm form instance where structureId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param structureId the structure ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching ddm form instance, or <code>null</code> if a matching ddm form instance could not be found
+	 */
+	public static DDMFormInstance fetchByStructureId(
+		long structureId, boolean useFinderCache) {
+
+		return getPersistence().fetchByStructureId(structureId, useFinderCache);
+	}
+
+	/**
+	 * Removes the ddm form instance where structureId = &#63; from the database.
+	 *
+	 * @param structureId the structure ID
+	 * @return the ddm form instance that was removed
+	 */
+	public static DDMFormInstance removeByStructureId(long structureId)
+		throws com.liferay.dynamic.data.mapping.exception.
+			NoSuchFormInstanceException {
+
+		return getPersistence().removeByStructureId(structureId);
+	}
+
+	/**
+	 * Returns the number of ddm form instances where structureId = &#63;.
+	 *
+	 * @param structureId the structure ID
+	 * @return the number of matching ddm form instances
+	 */
+	public static int countByStructureId(long structureId) {
+		return getPersistence().countByStructureId(structureId);
 	}
 
 	/**
@@ -1085,6 +1136,10 @@ public class DDMFormInstanceUtil {
 
 	public static DDMFormInstancePersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(DDMFormInstancePersistence persistence) {
+		_persistence = persistence;
 	}
 
 	private static volatile DDMFormInstancePersistence _persistence;

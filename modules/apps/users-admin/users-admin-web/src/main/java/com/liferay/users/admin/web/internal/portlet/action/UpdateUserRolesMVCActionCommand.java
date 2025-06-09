@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.portlet.action;
@@ -32,9 +23,10 @@ import com.liferay.portal.kernel.security.membershippolicy.MembershipPolicyExcep
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
-import com.liferay.portal.kernel.service.RoleService;
+import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.UserService;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
 import com.liferay.portal.kernel.service.permission.PortletPermissionUtil;
@@ -42,25 +34,25 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.users.admin.constants.UsersAdminPortletKeys;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -69,11 +61,11 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pei-Jung Lan
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
-		"javax.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
-		"javax.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ACCOUNT,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.MY_ORGANIZATIONS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.SERVICE_ACCOUNTS,
+		"jakarta.portlet.name=" + UsersAdminPortletKeys.USERS_ADMIN,
 		"mvc.command.name=/users_admin/update_user_roles"
 	},
 	service = MVCActionCommand.class
@@ -94,7 +86,7 @@ public class UpdateUserRolesMVCActionCommand extends BaseMVCActionCommand {
 
 			birthdayCal.setTime(user.getBirthday());
 
-			long[] roleIds = _usersAdmin.getRoleIds(actionRequest);
+			long[] roleIds = UsersAdminUtil.getRoleIds(actionRequest);
 
 			_validate(user, roleIds);
 
@@ -114,7 +106,8 @@ public class UpdateUserRolesMVCActionCommand extends BaseMVCActionCommand {
 				(deleteGroupRolesGroupIds != null) ||
 				(deleteGroupRolesRoleIds != null)) {
 
-				userGroupRoles = _usersAdmin.getUserGroupRoles(actionRequest);
+				userGroupRoles = UsersAdminUtil.getUserGroupRoles(
+					actionRequest);
 			}
 
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
@@ -129,13 +122,14 @@ public class UpdateUserRolesMVCActionCommand extends BaseMVCActionCommand {
 				user.getEmailAddress(), user.getLanguageId(),
 				user.getTimeZoneId(), user.getGreeting(), user.getComments(),
 				user.getFirstName(), user.getMiddleName(), user.getLastName(),
-				contact.getPrefixId(), contact.getSuffixId(), user.isMale(),
-				birthdayCal.get(Calendar.MONTH), birthdayCal.get(Calendar.DATE),
-				birthdayCal.get(Calendar.YEAR), contact.getSmsSn(),
-				contact.getFacebookSn(), contact.getJabberSn(),
-				contact.getSkypeSn(), contact.getTwitterSn(),
-				user.getJobTitle(), null, user.getOrganizationIds(), roleIds,
-				userGroupRoles, user.getUserGroupIds(), serviceContext);
+				contact.getPrefixListTypeId(), contact.getSuffixListTypeId(),
+				user.isMale(), birthdayCal.get(Calendar.MONTH),
+				birthdayCal.get(Calendar.DATE), birthdayCal.get(Calendar.YEAR),
+				contact.getSmsSn(), contact.getFacebookSn(),
+				contact.getJabberSn(), contact.getSkypeSn(),
+				contact.getTwitterSn(), user.getJobTitle(), null,
+				user.getOrganizationIds(), roleIds, userGroupRoles,
+				user.getUserGroupIds(), serviceContext);
 
 			User currentUser = _userService.getCurrentUser();
 
@@ -203,15 +197,15 @@ public class UpdateUserRolesMVCActionCommand extends BaseMVCActionCommand {
 				httpServletRequest, "redirect");
 
 			if (Validator.isNotNull(redirect)) {
-				Map<String, String[]> parameterMap = _http.getParameterMap(
-					redirect);
+				Map<String, String[]> parameterMap =
+					HttpComponentsUtil.getParameterMap(redirect);
 
 				backURL = parameterMap.get(portletNamespace + "backURL")[0];
 			}
 
 			if (Validator.isNotNull(backURL)) {
-				Map<String, String[]> parameterMap = _http.getParameterMap(
-					backURL);
+				Map<String, String[]> parameterMap =
+					HttpComponentsUtil.getParameterMap(backURL);
 
 				organizationId = GetterUtil.getLong(
 					parameterMap.get(portletNamespace + "organizationId")[0]);
@@ -243,10 +237,10 @@ public class UpdateUserRolesMVCActionCommand extends BaseMVCActionCommand {
 		// this check in UserServiceImpl is useless because UsersAdmin readds
 		// the role.
 
-		Role administratorRole = _roleService.getRole(
+		Role administratorRole = _roleLocalService.getRole(
 			user.getCompanyId(), RoleConstants.ADMINISTRATOR);
 
-		long[] administratorUserIds = _userService.getRoleUserIds(
+		long[] administratorUserIds = _userLocalService.getRoleUserIds(
 			administratorRole.getRoleId());
 
 		if ((administratorUserIds.length == 1) &&
@@ -258,16 +252,13 @@ public class UpdateUserRolesMVCActionCommand extends BaseMVCActionCommand {
 	}
 
 	@Reference
-	private Http _http;
-
-	@Reference
 	private Portal _portal;
 
 	@Reference
-	private RoleService _roleService;
+	private RoleLocalService _roleLocalService;
 
 	@Reference
-	private UsersAdmin _usersAdmin;
+	private UserLocalService _userLocalService;
 
 	@Reference
 	private UserService _userService;

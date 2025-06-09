@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.resource.v2_0.test;
@@ -22,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountSku;
 import com.liferay.headless.commerce.admin.pricing.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Page;
@@ -29,50 +22,49 @@ import com.liferay.headless.commerce.admin.pricing.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.DiscountSkuResource;
 import com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0.DiscountSkuSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -96,7 +88,7 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -110,10 +102,25 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 		_discountSkuResource.setContextCompany(testCompany);
 
-		DiscountSkuResource.Builder builder = DiscountSkuResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		discountSkuResource = builder.authentication(
-			"test@liferay.com", "test"
+		discountSkuResource = DiscountSkuResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -127,7 +134,32 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		DiscountSku discountSku1 = randomDiscountSku();
+
+		String json = objectMapper.writeValueAsString(discountSku1);
+
+		DiscountSku discountSku2 = DiscountSkuSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(discountSku1, discountSku2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		DiscountSku discountSku = randomDiscountSku();
+
+		String json1 = objectMapper.writeValueAsString(discountSku);
+		String json2 = DiscountSkuSerDes.toJSON(discountSku);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -142,40 +174,6 @@ public abstract class BaseDiscountSkuResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		DiscountSku discountSku1 = randomDiscountSku();
-
-		String json = objectMapper.writeValueAsString(discountSku1);
-
-		DiscountSku discountSku2 = DiscountSkuSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(discountSku1, discountSku2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		DiscountSku discountSku = randomDiscountSku();
-
-		String json1 = objectMapper.writeValueAsString(discountSku);
-		String json2 = DiscountSkuSerDes.toJSON(discountSku);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -186,6 +184,7 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 		discountSku.setDiscountExternalReferenceCode(regex);
 		discountSku.setSkuExternalReferenceCode(regex);
+		discountSku.setUnitOfMeasureKey(regex);
 
 		String json = DiscountSkuSerDes.toJSON(discountSku);
 
@@ -196,6 +195,7 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		Assert.assertEquals(
 			regex, discountSku.getDiscountExternalReferenceCode());
 		Assert.assertEquals(regex, discountSku.getSkuExternalReferenceCode());
+		Assert.assertEquals(regex, discountSku.getUnitOfMeasureKey());
 	}
 
 	@Test
@@ -206,6 +206,42 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	@Test
 	public void testGraphQLDeleteDiscountSku() throws Exception {
 		Assert.assertTrue(false);
+	}
+
+	@Test
+	public void testDeleteDiscountSkuBatch() throws Exception {
+		DiscountSku discountSku1 = testDeleteDiscountSkuBatch_addDiscountSku();
+
+		testDeleteDiscountSkuBatch_deleteDiscountSku(
+			"COMPLETED", null, discountSku1.getDiscountSkuId());
+	}
+
+	protected DiscountSku testDeleteDiscountSkuBatch_addDiscountSku()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected void testDeleteDiscountSkuBatch_deleteDiscountSku(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			discountSkuResource.deleteDiscountSkuBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"discountSkuId", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
 	}
 
 	@Test
@@ -222,7 +258,7 @@ public abstract class BaseDiscountSkuResourceTestCase {
 				getDiscountByExternalReferenceCodeDiscountSkusPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			DiscountSku irrelevantDiscountSku =
@@ -233,14 +269,17 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			page =
 				discountSkuResource.
 					getDiscountByExternalReferenceCodeDiscountSkusPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantDiscountSku),
-				(List<DiscountSku>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantDiscountSku, (List<DiscountSku>)page.getItems());
+			assertValid(
+				page,
+				testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		DiscountSku discountSku1 =
@@ -256,12 +295,24 @@ public abstract class BaseDiscountSkuResourceTestCase {
 				getDiscountByExternalReferenceCodeDiscountSkusPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountSku1, discountSku2),
-			(List<DiscountSku>)page.getItems());
-		assertValid(page);
+		assertContains(discountSku1, (List<DiscountSku>)page.getItems());
+		assertContains(discountSku2, (List<DiscountSku>)page.getItems());
+		assertValid(
+			page,
+			testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -270,6 +321,14 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 		String externalReferenceCode =
 			testGetDiscountByExternalReferenceCodeDiscountSkusPage_getExternalReferenceCode();
+
+		Page<DiscountSku> discountSkusPage =
+			discountSkuResource.
+				getDiscountByExternalReferenceCodeDiscountSkusPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(
+			discountSkusPage.getTotalCount());
 
 		DiscountSku discountSku1 =
 			testGetDiscountByExternalReferenceCodeDiscountSkusPage_addDiscountSku(
@@ -283,34 +342,80 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			testGetDiscountByExternalReferenceCodeDiscountSkusPage_addDiscountSku(
 				externalReferenceCode, randomDiscountSku());
 
-		Page<DiscountSku> page1 =
-			discountSkuResource.
-				getDiscountByExternalReferenceCodeDiscountSkusPage(
-					externalReferenceCode, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DiscountSku> discountSkus1 = (List<DiscountSku>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(discountSkus1.toString(), 2, discountSkus1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DiscountSku> page1 =
+				discountSkuResource.
+					getDiscountByExternalReferenceCodeDiscountSkusPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<DiscountSku> page2 =
-			discountSkuResource.
-				getDiscountByExternalReferenceCodeDiscountSkusPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(discountSku1, (List<DiscountSku>)page1.getItems());
 
-		List<DiscountSku> discountSkus2 = (List<DiscountSku>)page2.getItems();
+			Page<DiscountSku> page2 =
+				discountSkuResource.
+					getDiscountByExternalReferenceCodeDiscountSkusPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(discountSkus2.toString(), 1, discountSkus2.size());
+			assertContains(discountSku2, (List<DiscountSku>)page2.getItems());
 
-		Page<DiscountSku> page3 =
-			discountSkuResource.
-				getDiscountByExternalReferenceCodeDiscountSkusPage(
-					externalReferenceCode, Pagination.of(1, 3));
+			Page<DiscountSku> page3 =
+				discountSkuResource.
+					getDiscountByExternalReferenceCodeDiscountSkusPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountSku1, discountSku2, discountSku3),
-			(List<DiscountSku>)page3.getItems());
+			assertContains(discountSku3, (List<DiscountSku>)page3.getItems());
+		}
+		else {
+			Page<DiscountSku> page1 =
+				discountSkuResource.
+					getDiscountByExternalReferenceCodeDiscountSkusPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<DiscountSku> discountSkus1 =
+				(List<DiscountSku>)page1.getItems();
+
+			Assert.assertEquals(
+				discountSkus1.toString(), totalCount + 2, discountSkus1.size());
+
+			Page<DiscountSku> page2 =
+				discountSkuResource.
+					getDiscountByExternalReferenceCodeDiscountSkusPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DiscountSku> discountSkus2 =
+				(List<DiscountSku>)page2.getItems();
+
+			Assert.assertEquals(
+				discountSkus2.toString(), 1, discountSkus2.size());
+
+			Page<DiscountSku> page3 =
+				discountSkuResource.
+					getDiscountByExternalReferenceCodeDiscountSkusPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(discountSku1, (List<DiscountSku>)page3.getItems());
+			assertContains(discountSku2, (List<DiscountSku>)page3.getItems());
+			assertContains(discountSku3, (List<DiscountSku>)page3.getItems());
+		}
 	}
 
 	protected DiscountSku
@@ -338,29 +443,6 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	}
 
 	@Test
-	public void testPostDiscountByExternalReferenceCodeDiscountSku()
-		throws Exception {
-
-		DiscountSku randomDiscountSku = randomDiscountSku();
-
-		DiscountSku postDiscountSku =
-			testPostDiscountByExternalReferenceCodeDiscountSku_addDiscountSku(
-				randomDiscountSku);
-
-		assertEquals(randomDiscountSku, postDiscountSku);
-		assertValid(postDiscountSku);
-	}
-
-	protected DiscountSku
-			testPostDiscountByExternalReferenceCodeDiscountSku_addDiscountSku(
-				DiscountSku discountSku)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetDiscountIdDiscountSkusPage() throws Exception {
 		Long id = testGetDiscountIdDiscountSkusPage_getId();
 		Long irrelevantId = testGetDiscountIdDiscountSkusPage_getIrrelevantId();
@@ -369,7 +451,7 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			discountSkuResource.getDiscountIdDiscountSkusPage(
 				id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantId != null) {
 			DiscountSku irrelevantDiscountSku =
@@ -377,14 +459,17 @@ public abstract class BaseDiscountSkuResourceTestCase {
 					irrelevantId, randomIrrelevantDiscountSku());
 
 			page = discountSkuResource.getDiscountIdDiscountSkusPage(
-				irrelevantId, null, null, Pagination.of(1, 2), null);
+				irrelevantId, null, null, Pagination.of(1, (int)totalCount + 1),
+				null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantDiscountSku),
-				(List<DiscountSku>)page.getItems());
-			assertValid(page);
+			assertContains(
+				irrelevantDiscountSku, (List<DiscountSku>)page.getItems());
+			assertValid(
+				page,
+				testGetDiscountIdDiscountSkusPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		DiscountSku discountSku1 =
@@ -398,12 +483,21 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		page = discountSkuResource.getDiscountIdDiscountSkusPage(
 			id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountSku1, discountSku2),
-			(List<DiscountSku>)page.getItems());
-		assertValid(page);
+		assertContains(discountSku1, (List<DiscountSku>)page.getItems());
+		assertContains(discountSku2, (List<DiscountSku>)page.getItems());
+		assertValid(
+			page, testGetDiscountIdDiscountSkusPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetDiscountIdDiscountSkusPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -438,11 +532,42 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	}
 
 	@Test
+	public void testGetDiscountIdDiscountSkusPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetDiscountIdDiscountSkusPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetDiscountIdDiscountSkusPageWithFilterStringContains()
+		throws Exception {
+
+		testGetDiscountIdDiscountSkusPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetDiscountIdDiscountSkusPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetDiscountIdDiscountSkusPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetDiscountIdDiscountSkusPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetDiscountIdDiscountSkusPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetDiscountIdDiscountSkusPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -462,7 +587,8 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		for (EntityField entityField : entityFields) {
 			Page<DiscountSku> page =
 				discountSkuResource.getDiscountIdDiscountSkusPage(
-					id, null, getFilterString(entityField, "eq", discountSku1),
+					id, null,
+					getFilterString(entityField, operator, discountSku1),
 					Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -477,6 +603,13 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 		Long id = testGetDiscountIdDiscountSkusPage_getId();
 
+		Page<DiscountSku> discountSkusPage =
+			discountSkuResource.getDiscountIdDiscountSkusPage(
+				id, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			discountSkusPage.getTotalCount());
+
 		DiscountSku discountSku1 =
 			testGetDiscountIdDiscountSkusPage_addDiscountSku(
 				id, randomDiscountSku());
@@ -489,31 +622,75 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			testGetDiscountIdDiscountSkusPage_addDiscountSku(
 				id, randomDiscountSku());
 
-		Page<DiscountSku> page1 =
-			discountSkuResource.getDiscountIdDiscountSkusPage(
-				id, null, null, Pagination.of(1, 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DiscountSku> discountSkus1 = (List<DiscountSku>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(discountSkus1.toString(), 2, discountSkus1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DiscountSku> page1 =
+				discountSkuResource.getDiscountIdDiscountSkusPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<DiscountSku> page2 =
-			discountSkuResource.getDiscountIdDiscountSkusPage(
-				id, null, null, Pagination.of(2, 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(discountSku1, (List<DiscountSku>)page1.getItems());
 
-		List<DiscountSku> discountSkus2 = (List<DiscountSku>)page2.getItems();
+			Page<DiscountSku> page2 =
+				discountSkuResource.getDiscountIdDiscountSkusPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(discountSkus2.toString(), 1, discountSkus2.size());
+			assertContains(discountSku2, (List<DiscountSku>)page2.getItems());
 
-		Page<DiscountSku> page3 =
-			discountSkuResource.getDiscountIdDiscountSkusPage(
-				id, null, null, Pagination.of(1, 3), null);
+			Page<DiscountSku> page3 =
+				discountSkuResource.getDiscountIdDiscountSkusPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountSku1, discountSku2, discountSku3),
-			(List<DiscountSku>)page3.getItems());
+			assertContains(discountSku3, (List<DiscountSku>)page3.getItems());
+		}
+		else {
+			Page<DiscountSku> page1 =
+				discountSkuResource.getDiscountIdDiscountSkusPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<DiscountSku> discountSkus1 =
+				(List<DiscountSku>)page1.getItems();
+
+			Assert.assertEquals(
+				discountSkus1.toString(), totalCount + 2, discountSkus1.size());
+
+			Page<DiscountSku> page2 =
+				discountSkuResource.getDiscountIdDiscountSkusPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DiscountSku> discountSkus2 =
+				(List<DiscountSku>)page2.getItems();
+
+			Assert.assertEquals(
+				discountSkus2.toString(), 1, discountSkus2.size());
+
+			Page<DiscountSku> page3 =
+				discountSkuResource.getDiscountIdDiscountSkusPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(discountSku1, (List<DiscountSku>)page3.getItems());
+			assertContains(discountSku2, (List<DiscountSku>)page3.getItems());
+			assertContains(discountSku3, (List<DiscountSku>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -523,9 +700,23 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		testGetDiscountIdDiscountSkusPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, discountSku1, discountSku2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					discountSku1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetDiscountIdDiscountSkusPageWithSortDouble()
+		throws Exception {
+
+		testGetDiscountIdDiscountSkusPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, discountSku1, discountSku2) -> {
+				BeanTestUtil.setProperty(
+					discountSku1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					discountSku2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -536,8 +727,10 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		testGetDiscountIdDiscountSkusPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, discountSku1, discountSku2) -> {
-				BeanUtils.setProperty(discountSku1, entityField.getName(), 0);
-				BeanUtils.setProperty(discountSku2, entityField.getName(), 1);
+				BeanTestUtil.setProperty(
+					discountSku1, entityField.getName(), 0);
+				BeanTestUtil.setProperty(
+					discountSku2, entityField.getName(), 1);
 			});
 	}
 
@@ -552,27 +745,27 @@ public abstract class BaseDiscountSkuResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountSku1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountSku2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountSku1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountSku2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -580,12 +773,12 @@ public abstract class BaseDiscountSkuResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountSku1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountSku2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -621,24 +814,30 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		discountSku2 = testGetDiscountIdDiscountSkusPage_addDiscountSku(
 			id, discountSku2);
 
+		Page<DiscountSku> page =
+			discountSkuResource.getDiscountIdDiscountSkusPage(
+				id, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<DiscountSku> ascPage =
 				discountSkuResource.getDiscountIdDiscountSkusPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(discountSku1, discountSku2),
-				(List<DiscountSku>)ascPage.getItems());
+			assertContains(discountSku1, (List<DiscountSku>)ascPage.getItems());
+			assertContains(discountSku2, (List<DiscountSku>)ascPage.getItems());
 
 			Page<DiscountSku> descPage =
 				discountSkuResource.getDiscountIdDiscountSkusPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(discountSku2, discountSku1),
-				(List<DiscountSku>)descPage.getItems());
+			assertContains(
+				discountSku2, (List<DiscountSku>)descPage.getItems());
+			assertContains(
+				discountSku1, (List<DiscountSku>)descPage.getItems());
 		}
 	}
 
@@ -659,6 +858,29 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		throws Exception {
 
 		return null;
+	}
+
+	@Test
+	public void testPostDiscountByExternalReferenceCodeDiscountSku()
+		throws Exception {
+
+		DiscountSku randomDiscountSku = randomDiscountSku();
+
+		DiscountSku postDiscountSku =
+			testPostDiscountByExternalReferenceCodeDiscountSku_addDiscountSku(
+				randomDiscountSku);
+
+		assertEquals(randomDiscountSku, postDiscountSku);
+		assertValid(postDiscountSku);
+	}
+
+	protected DiscountSku
+			testPostDiscountByExternalReferenceCodeDiscountSku_addDiscountSku(
+				DiscountSku discountSku)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -833,6 +1055,14 @@ public abstract class BaseDiscountSkuResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (discountSku.getUnitOfMeasureKey() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -842,6 +1072,13 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	}
 
 	protected void assertValid(Page<DiscountSku> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DiscountSku> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DiscountSku> discountSkus = page.getItems();
@@ -856,6 +1093,25 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1028,6 +1284,17 @@ public abstract class BaseDiscountSkuResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("unitOfMeasureKey", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						discountSku1.getUnitOfMeasureKey(),
+						discountSku2.getUnitOfMeasureKey())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
 			throw new IllegalArgumentException(
 				"Invalid additional assert field name " +
 					additionalAssertFieldName);
@@ -1065,14 +1332,20 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1089,6 +1362,10 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1098,18 +1375,18 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1131,10 +1408,47 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		}
 
 		if (entityFieldName.equals("discountExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(discountSku.getDiscountExternalReferenceCode()));
-			sb.append("'");
+			Object object = discountSku.getDiscountExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1165,10 +1479,47 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		}
 
 		if (entityFieldName.equals("skuExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(discountSku.getSkuExternalReferenceCode()));
-			sb.append("'");
+			Object object = discountSku.getSkuExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1176,6 +1527,52 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		if (entityFieldName.equals("skuId")) {
 			throw new IllegalArgumentException(
 				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("unitOfMeasureKey")) {
+			Object object = discountSku.getUnitOfMeasureKey();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
+
+			return sb.toString();
 		}
 
 		throw new IllegalArgumentException(
@@ -1192,7 +1589,8 @@ public abstract class BaseDiscountSkuResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1230,6 +1628,8 @@ public abstract class BaseDiscountSkuResourceTestCase {
 				skuExternalReferenceCode = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				skuId = RandomTestUtil.randomLong();
+				unitOfMeasureKey = StringUtil.toLowerCase(
+					RandomTestUtil.randomString());
 			}
 		};
 	}
@@ -1244,10 +1644,155 @@ public abstract class BaseDiscountSkuResourceTestCase {
 		return randomDiscountSku();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected DiscountSkuResource discountSkuResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1323,19 +1868,9 @@ public abstract class BaseDiscountSkuResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseDiscountSkuResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.pricing.resource.v2_0.

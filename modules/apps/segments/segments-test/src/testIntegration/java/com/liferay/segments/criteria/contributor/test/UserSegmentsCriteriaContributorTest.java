@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.criteria.contributor.test;
@@ -20,18 +11,34 @@ import com.liferay.expando.kernel.model.ExpandoColumnConstants;
 import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.expando.kernel.model.ExpandoValue;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
+import com.liferay.expando.test.util.ExpandoTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
-import com.liferay.portal.kernel.model.Company;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
+import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
+import com.liferay.portal.kernel.service.RoleLocalService;
+import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.servlet.PortletServlet;
+import com.liferay.portal.kernel.test.portlet.MockPortletRequest;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.RoleTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserGroupTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
@@ -45,21 +52,18 @@ import com.liferay.portal.odata.normalizer.Normalizer;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portlet.expando.util.test.ExpandoTestUtil;
-import com.liferay.portletmvc4spring.test.mock.web.portlet.MockPortletRequest;
+import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.criteria.contributor.SegmentsCriteriaContributor;
 import com.liferay.segments.field.Field;
 
 import java.io.Serializable;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -129,8 +133,96 @@ public class UserSegmentsCriteriaContributorTest {
 	public void setUp() throws Exception {
 		_expandoTable = ExpandoTestUtil.addTable(
 			PortalUtil.getClassNameId(User.class), "CUSTOM_FIELDS");
-
 		_group = GroupTestUtil.addGroup();
+
+		_organization = OrganizationTestUtil.addOrganization(true);
+		_user = UserTestUtil.addUser();
+
+		_organizationLocalService.addUserOrganization(
+			_user.getUserId(), _organization.getOrganizationId());
+
+		_role1 = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+
+		_roleLocalService.addGroupRole(
+			_organization.getGroupId(), _role1.getRoleId());
+
+		_role2 = RoleTestUtil.addRole(RoleConstants.TYPE_REGULAR);
+		_userGroup = UserGroupTestUtil.addUserGroup();
+
+		_roleLocalService.addGroupRole(
+			_userGroup.getGroupId(), _role2.getRoleId());
+		_userGroupLocalService.addUserUserGroup(
+			_user.getUserId(), _userGroup.getUserGroupId());
+	}
+
+	@Test
+	public void testContribute() throws Exception {
+		SegmentsCriteriaContributor segmentsCriteriaContributor =
+			_getSegmentsCriteriaContributor();
+
+		Criteria criteria = new Criteria();
+
+		segmentsCriteriaContributor.contribute(
+			criteria,
+			StringBundler.concat(
+				"(roleIds eq '", _role1.getRoleId(), "' or roleIds eq '",
+				_role2.getRoleId(), "')"),
+			Criteria.Conjunction.AND);
+
+		Assert.assertEquals(
+			StringBundler.concat(
+				"((roleIds eq '", _role1.getRoleId(),
+				"' or organizationIds eq '", _organization.getOrganizationId(),
+				"') or (roleIds eq '", _role2.getRoleId(),
+				"' or userGroupIds eq '", _userGroup.getUserGroupId(), "'))"),
+			criteria.getFilterString(Criteria.Type.MODEL));
+
+		criteria = new Criteria();
+
+		segmentsCriteriaContributor.contribute(
+			criteria, "dateModified eq 2025-03-14T00:00:00.000Z",
+			Criteria.Conjunction.AND);
+
+		Assert.assertEquals(
+			"dateModified ge 2025-03-14T00:00:00.000Z and dateModified le " +
+				"2025-03-14T23:59:59.999Z",
+			criteria.getFilterString(Criteria.Type.MODEL));
+	}
+
+	@Test
+	public void testGetCriteriaJSONObject() throws Exception {
+		SegmentsCriteriaContributor segmentsCriteriaContributor =
+			_getSegmentsCriteriaContributor();
+
+		Criteria criteria = new Criteria();
+
+		segmentsCriteriaContributor.contribute(
+			criteria, "(lastName eq 'Xing')", Criteria.Conjunction.AND);
+
+		JSONObject jsonObject =
+			segmentsCriteriaContributor.getCriteriaJSONObject(criteria);
+
+		Assert.assertEquals(
+			String.valueOf(Criteria.Conjunction.AND),
+			jsonObject.getString("conjunctionName"));
+
+		Assert.assertEquals(
+			JSONUtil.put(
+				"conjunctionName", String.valueOf(Criteria.Conjunction.AND)
+			).put(
+				"groupId", "group_0"
+			).put(
+				"items",
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"operatorName", "eq"
+					).put(
+						"propertyName", "lastName"
+					).put(
+						"value", "Xing"
+					))
+			).toString(),
+			String.valueOf(jsonObject.getString("query")));
 	}
 
 	@Test
@@ -156,15 +248,15 @@ public class UserSegmentsCriteriaContributorTest {
 		List<Field> fields = segmentsCriteriaContributor.getFields(
 			_getMockPortletRequest());
 
-		Stream<Field> stream = fields.stream();
+		Set<String> complexEntityFieldNames = new HashSet<>();
 
-		Set<String> complexEntityFieldNames = stream.filter(
-			field -> StringUtil.startsWith(field.getName(), "customField/")
-		).map(
-			field -> StringUtil.removeSubstring(field.getName(), "customField/")
-		).collect(
-			Collectors.toSet()
-		);
+		for (Field field : fields) {
+			if (StringUtil.startsWith(field.getName(), "customField/")) {
+				complexEntityFieldNames.add(
+					StringUtil.removeSubstring(
+						field.getName(), "customField/"));
+			}
+		}
 
 		Assert.assertFalse(complexEntityFieldNames.isEmpty());
 
@@ -187,51 +279,47 @@ public class UserSegmentsCriteriaContributorTest {
 		SegmentsCriteriaContributor segmentsCriteriaContributor =
 			_getSegmentsCriteriaContributor();
 
-		List<Field> fields = segmentsCriteriaContributor.getFields(
-			_getMockPortletRequest());
+		Field field = null;
 
-		Stream<Field> fieldsStream = fields.stream();
+		for (Field curField :
+				segmentsCriteriaContributor.getFields(
+					_getMockPortletRequest())) {
 
-		Optional<Field> fieldOptional = fieldsStream.filter(
-			field -> StringUtil.endsWith(
-				field.getName(),
-				Normalizer.normalizeIdentifier(expandoColumn.getName()))
-		).findFirst();
+			if (StringUtil.endsWith(
+					curField.getName(),
+					Normalizer.normalizeIdentifier(expandoColumn.getName()))) {
 
-		Assert.assertTrue(fieldOptional.isPresent());
+				field = curField;
 
-		Field field = fieldOptional.get();
+				break;
+			}
+		}
 
-		List<Field.Option> options = field.getOptions();
-
-		Stream<Field.Option> optionsStream = options.stream();
+		Assert.assertNotNull(field);
 
 		Assert.assertEquals(
 			Arrays.asList(defaultValue),
-			optionsStream.map(
-				Field.Option::getValue
-			).collect(
-				Collectors.toList()
-			));
+			TransformUtil.transform(
+				field.getOptions(), Field.Option::getValue));
 	}
 
 	@Test
 	public void testGetFieldsWithSelectEntity() throws Exception {
+		Field field = null;
+
 		SegmentsCriteriaContributor segmentsCriteriaContributor =
 			_getSegmentsCriteriaContributor();
 
-		List<Field> fields = segmentsCriteriaContributor.getFields(
-			_getMockPortletRequest());
+		for (Field curField :
+				segmentsCriteriaContributor.getFields(
+					_getMockPortletRequest())) {
 
-		Stream<Field> fieldsStream = fields.stream();
+			if (Objects.equals(curField.getName(), "groupIds")) {
+				field = curField;
+			}
+		}
 
-		Optional<Field> fieldOptional = fieldsStream.filter(
-			field -> Objects.equals(field.getName(), "groupIds")
-		).findFirst();
-
-		Assert.assertTrue(fieldOptional.isPresent());
-
-		Field field = fieldOptional.get();
+		Assert.assertNotNull(field);
 
 		Assert.assertEquals("id", field.getType());
 
@@ -271,14 +359,14 @@ public class UserSegmentsCriteriaContributorTest {
 	}
 
 	private MockPortletRequest _getMockPortletRequest() throws Exception {
+		MockPortletRequest mockPortletRequest = new MockPortletRequest();
+
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
-		Company company = _companyLocalService.getCompany(
-			TestPropsValues.getCompanyId());
+		themeDisplay.setCompany(
+			_companyLocalService.getCompany(TestPropsValues.getCompanyId()));
 
-		themeDisplay.setCompany(company);
-
-		Layout layout = LayoutTestUtil.addLayout(_group);
+		Layout layout = LayoutTestUtil.addTypeContentLayout(_group);
 
 		themeDisplay.setLayout(layout);
 		themeDisplay.setLayoutSet(layout.getLayoutSet());
@@ -295,8 +383,6 @@ public class UserSegmentsCriteriaContributorTest {
 
 		mockHttpServletRequest.setAttribute(
 			WebKeys.THEME_DISPLAY, themeDisplay);
-
-		MockPortletRequest mockPortletRequest = new MockPortletRequest();
 
 		mockPortletRequest.setAttribute(
 			PortletServlet.PORTLET_SERVLET_REQUEST, mockHttpServletRequest);
@@ -325,5 +411,29 @@ public class UserSegmentsCriteriaContributorTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@DeleteAfterTestRun
+	private Organization _organization;
+
+	@Inject
+	private OrganizationLocalService _organizationLocalService;
+
+	@DeleteAfterTestRun
+	private Role _role1;
+
+	@DeleteAfterTestRun
+	private Role _role2;
+
+	@Inject
+	private RoleLocalService _roleLocalService;
+
+	@DeleteAfterTestRun
+	private User _user;
+
+	@DeleteAfterTestRun
+	private UserGroup _userGroup;
+
+	@Inject
+	private UserGroupLocalService _userGroupLocalService;
 
 }

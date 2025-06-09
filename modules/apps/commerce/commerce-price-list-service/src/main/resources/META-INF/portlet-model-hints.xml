@@ -2,6 +2,8 @@
 
 <model-hints>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceEntry">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commercePriceEntryId" type="long" />
@@ -13,17 +15,21 @@
 		<field name="commercePriceListId" type="long" />
 		<field name="CPInstanceUuid" type="String" />
 		<field name="CProductId" type="long" />
-		<field name="price" type="BigDecimal" />
-		<field name="promoPrice" type="BigDecimal" />
+		<field name="bulkPricing" type="boolean" />
 		<field name="discountDiscovery" type="boolean" />
 		<field name="discountLevel1" type="BigDecimal" />
 		<field name="discountLevel2" type="BigDecimal" />
 		<field name="discountLevel3" type="BigDecimal" />
 		<field name="discountLevel4" type="BigDecimal" />
-		<field name="hasTierPrice" type="boolean" />
-		<field name="bulkPricing" type="boolean" />
 		<field name="displayDate" type="Date" />
 		<field name="expirationDate" type="Date" />
+		<field name="hasTierPrice" type="boolean" />
+		<field name="price" type="BigDecimal" />
+		<field name="priceOnApplication" type="boolean" />
+		<field name="pricingQuantity" type="BigDecimal" />
+		<field name="promoPrice" type="BigDecimal" />
+		<field name="quantity" type="BigDecimal" />
+		<field name="unitOfMeasureKey" type="String" />
 		<field name="lastPublishDate" type="Date" />
 		<field name="status" type="int" />
 		<field name="statusByUserId" type="long" />
@@ -31,6 +37,8 @@
 		<field name="statusDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceList">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commercePriceListId" type="long" />
@@ -40,7 +48,7 @@
 		<field name="userName" type="String" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
-		<field name="commerceCurrencyId" type="long" />
+		<field name="commerceCurrencyCode" type="String" />
 		<field name="parentCommercePriceListId" type="long" />
 		<field name="catalogBasePriceList" type="boolean" />
 		<field name="netPrice" type="boolean" />
@@ -56,6 +64,8 @@
 		<field name="statusDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceListAccountRel">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="commercePriceListAccountRelId" type="long" />
 		<field name="companyId" type="long" />
@@ -69,6 +79,8 @@
 		<field name="lastPublishDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceListChannelRel">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="CommercePriceListChannelRelId" type="long" />
 		<field name="companyId" type="long" />
@@ -82,6 +94,8 @@
 		<field name="lastPublishDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceListCommerceAccountGroupRel">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="commercePriceListCommerceAccountGroupRelId" type="long" />
 		<field name="companyId" type="long" />
@@ -95,6 +109,8 @@
 		<field name="lastPublishDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceListDiscountRel">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="commercePriceListDiscountRelId" type="long" />
 		<field name="companyId" type="long" />
@@ -108,6 +124,8 @@
 		<field name="lastPublishDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="commercePriceListOrderTypeRelId" type="long" />
 		<field name="companyId" type="long" />
@@ -121,6 +139,8 @@
 		<field name="lastPublishDate" type="Date" />
 	</model>
 	<model name="com.liferay.commerce.price.list.model.CommerceTierPriceEntry">
+		<field name="mvccVersion" type="long" />
+		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
 		<field name="externalReferenceCode" type="String" />
 		<field name="commerceTierPriceEntryId" type="long" />
@@ -137,7 +157,7 @@
 		<field name="discountLevel2" type="BigDecimal" />
 		<field name="discountLevel3" type="BigDecimal" />
 		<field name="discountLevel4" type="BigDecimal" />
-		<field name="minQuantity" type="int" />
+		<field name="minQuantity" type="BigDecimal" />
 		<field name="displayDate" type="Date" />
 		<field name="expirationDate" type="Date" />
 		<field name="lastPublishDate" type="Date" />

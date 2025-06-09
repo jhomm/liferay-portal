@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -54,9 +45,9 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 				"Please set the workspace Git repository");
 		}
 
-		if (_downstreamBuildDataList == null) {
+		if (_downstreamPortalBuildDataList == null) {
 			throw new IllegalStateException(
-				"Please set the downstream build data list");
+				"Please set the downstream portal build data list");
 		}
 
 		return Dom4JUtil.getNewElement(
@@ -64,10 +55,10 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 			getJenkinsReportBodyElement());
 	}
 
-	public void setDownstreamBuildDataList(
-		List<BuildData> downstreamBuildDataList) {
+	public void setDownstreamPortalBuildDataList(
+		List<PortalBuildData> downstreamPortalBuildDataList) {
 
-		_downstreamBuildDataList = downstreamBuildDataList;
+		_downstreamPortalBuildDataList = downstreamPortalBuildDataList;
 	}
 
 	public void setWorkspaceGitRepository(
@@ -223,41 +214,82 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 	}
 
 	protected List<GitCommitGroup> getCommitGroups() {
-		List<BuildData> buildDataList = Lists.newArrayList(
-			_downstreamBuildDataList);
+		List<PortalBuildData> portalBuildDataList = Lists.newArrayList(
+			_downstreamPortalBuildDataList);
 
 		List<GitCommitGroup> gitCommitGroups = new ArrayList<>(
-			_downstreamBuildDataList.size());
+			_downstreamPortalBuildDataList.size());
 
 		GitCommitGroup gitCommitGroup = null;
 
 		List<LocalGitCommit> historicalLocalGitCommits =
 			_workspaceGitRepository.getHistoricalLocalGitCommits();
 
-		for (int i = 0; i < historicalLocalGitCommits.size(); i++) {
-			LocalGitCommit localGitCommit = historicalLocalGitCommits.get(i);
+		if (portalBuildDataList.size() > 1) {
+			PortalBuildData firstPortalBuildData = portalBuildDataList.get(0);
+			PortalBuildData secondPortalBuildData = portalBuildDataList.get(1);
 
-			String sha = localGitCommit.getSHA();
+			String firstPortalBuildDataPortalBranchSHA =
+				firstPortalBuildData.getPortalBranchSHA();
+			String secondPortalBuildDataPortalBranchSHA =
+				secondPortalBuildData.getPortalBranchSHA();
 
-			PortalBuildData portalBuildData = null;
+			if (firstPortalBuildDataPortalBranchSHA.equals(
+					secondPortalBuildDataPortalBranchSHA)) {
 
-			for (BuildData buildData : buildDataList) {
-				if (buildData instanceof PortalBuildData) {
-					PortalBuildData currentPortalBuildData =
-						(PortalBuildData)buildData;
+				LocalGitCommit retestLocalGitCommit = null;
 
-					if (sha.equals(
-							currentPortalBuildData.getPortalBranchSHA())) {
+				for (LocalGitCommit historicalLocalGitCommit :
+						historicalLocalGitCommits) {
 
-						portalBuildData = currentPortalBuildData;
+					String sha = historicalLocalGitCommit.getSHA();
+
+					if (sha.equals(firstPortalBuildDataPortalBranchSHA)) {
+						retestLocalGitCommit = historicalLocalGitCommit;
 
 						break;
 					}
 				}
+
+				for (PortalBuildData portalBuildData : portalBuildDataList) {
+					if (portalBuildData != null) {
+						gitCommitGroup = new GitCommitGroup(portalBuildData);
+
+						gitCommitGroups.add(gitCommitGroup);
+					}
+					else {
+						gitCommitGroup = new GitCommitGroup(null);
+
+						gitCommitGroups.add(gitCommitGroup);
+					}
+
+					if (retestLocalGitCommit != null) {
+						gitCommitGroup.add(retestLocalGitCommit);
+					}
+				}
+
+				return gitCommitGroups;
+			}
+		}
+
+		for (int i = 0; i < historicalLocalGitCommits.size(); i++) {
+			LocalGitCommit historicalLocalGitCommit =
+				historicalLocalGitCommits.get(i);
+
+			String sha = historicalLocalGitCommit.getSHA();
+
+			PortalBuildData portalBuildData = null;
+
+			for (PortalBuildData currentPortalBuildData : portalBuildDataList) {
+				if (sha.equals(currentPortalBuildData.getPortalBranchSHA())) {
+					portalBuildData = currentPortalBuildData;
+
+					break;
+				}
 			}
 
 			if (portalBuildData != null) {
-				buildDataList.remove(portalBuildData);
+				portalBuildDataList.remove(portalBuildData);
 
 				gitCommitGroup = new GitCommitGroup(portalBuildData);
 
@@ -269,7 +301,7 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 				gitCommitGroups.add(gitCommitGroup);
 			}
 
-			gitCommitGroup.add(localGitCommit);
+			gitCommitGroup.add(historicalLocalGitCommit);
 		}
 
 		return gitCommitGroups;
@@ -370,7 +402,7 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("$(document).ready(function() {\n");
-		sb.append("$('[data-toggle=\"toggle\"]').change(function(){\n");
+		sb.append("$('[data-toggle=\"toggle\"]').change(function() {\n");
 		sb.append("$(this).parents().next('.hidden-row').toggle();\n");
 		sb.append("var label = $(this).parent('td').find('label');\n");
 		sb.append("var text = label.text();\n");
@@ -579,7 +611,7 @@ public class RootCauseAnalysisToolBuild extends DefaultTopLevelBuild {
 	private static final String _URL_JQUERY =
 		"https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.min.js";
 
-	private List<BuildData> _downstreamBuildDataList;
+	private List<PortalBuildData> _downstreamPortalBuildDataList;
 	private WorkspaceGitRepository _workspaceGitRepository;
 
 }

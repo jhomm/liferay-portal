@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.model.impl;
@@ -77,10 +68,12 @@ public class KaleoTimerCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(39);
+		StringBundler sb = new StringBundler(41);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", kaleoTimerId=");
 		sb.append(kaleoTimerId);
 		sb.append(", groupId=");
@@ -127,6 +120,7 @@ public class KaleoTimerCacheModel
 		KaleoTimerImpl kaleoTimerImpl = new KaleoTimerImpl();
 
 		kaleoTimerImpl.setMvccVersion(mvccVersion);
+		kaleoTimerImpl.setCtCollectionId(ctCollectionId);
 		kaleoTimerImpl.setKaleoTimerId(kaleoTimerId);
 		kaleoTimerImpl.setGroupId(groupId);
 		kaleoTimerImpl.setCompanyId(companyId);
@@ -207,6 +201,8 @@ public class KaleoTimerCacheModel
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
 
+		ctCollectionId = objectInput.readLong();
+
 		kaleoTimerId = objectInput.readLong();
 
 		groupId = objectInput.readLong();
@@ -239,6 +235,8 @@ public class KaleoTimerCacheModel
 	@Override
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
+
+		objectOutput.writeLong(ctCollectionId);
 
 		objectOutput.writeLong(kaleoTimerId);
 
@@ -307,6 +305,7 @@ public class KaleoTimerCacheModel
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public long kaleoTimerId;
 	public long groupId;
 	public long companyId;

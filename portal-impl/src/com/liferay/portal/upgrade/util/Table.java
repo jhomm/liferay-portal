@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.upgrade.util;
@@ -17,7 +8,6 @@ package com.liferay.portal.upgrade.util;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.dao.jdbc.postgresql.PostgreSQLJDBCUtil;
-import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
@@ -84,7 +74,7 @@ public class Table {
 			throw new UpgradeException(
 				StringBundler.concat(
 					"Nulls should never be inserted into the database. ",
-					"Attempted to append column to ", sb.toString(), "."));
+					"Attempted to append column to ", sb, "."));
 		}
 		else if (value instanceof byte[]) {
 			sb.append(Base64.encode((byte[])value));
@@ -123,7 +113,7 @@ public class Table {
 		}
 		catch (SQLException sqlException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(sqlException, sqlException);
+				_log.debug(sqlException);
 			}
 
 			if (name.equals("uuid_")) {
@@ -361,7 +351,7 @@ public class Table {
 			}
 			catch (SQLException sqlException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(sqlException, sqlException);
+					_log.debug(sqlException);
 				}
 
 				value = GetterUtil.getLong(resultSet.getString(name));
@@ -371,9 +361,7 @@ public class Table {
 			value = GetterUtil.getBoolean(resultSet.getBoolean(name));
 		}
 		else if ((t == Types.BLOB) || (t == Types.LONGVARBINARY)) {
-			DB db = DBManagerUtil.getDB();
-
-			DBType dbType = db.getDBType();
+			DBType dbType = DBManagerUtil.getDBType();
 
 			if (dbType.equals(DBType.POSTGRESQL) &&
 				PostgreSQLJDBCUtil.isPGStatement(resultSet.getStatement())) {
@@ -423,7 +411,7 @@ public class Table {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 
 				// If the database doesn't allow CLOB types for the column
@@ -438,7 +426,7 @@ public class Table {
 			}
 			catch (SQLException sqlException) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(sqlException, sqlException);
+					_log.debug(sqlException);
 				}
 
 				value = resultSet.getString(name);
@@ -470,7 +458,7 @@ public class Table {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 
@@ -505,7 +493,7 @@ public class Table {
 
 		try (PreparedStatement preparedStatement =
 				AutoBatchPreparedStatementUtil.autoBatch(
-					connection.prepareStatement(getInsertSQL()));
+					connection, getInsertSQL());
 			UnsyncBufferedReader unsyncBufferedReader =
 				new UnsyncBufferedReader(new FileReader(_tempFileName))) {
 
@@ -689,7 +677,7 @@ public class Table {
 			preparedStatement.executeUpdate();
 		}
 		catch (SQLException sqlException) {
-			_log.error(sqlException, sqlException);
+			_log.error(sqlException);
 
 			throw new RuntimeException(
 				"Unable to execute " + sql, sqlException);

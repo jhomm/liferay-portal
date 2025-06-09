@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.enterprise.product.notification.web.internal.jaxrs.application;
@@ -17,17 +8,17 @@ package com.liferay.enterprise.product.notification.web.internal.jaxrs.applicati
 import com.liferay.enterprise.product.notification.web.internal.EPNManager;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.Response;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,8 +29,8 @@ import org.osgi.service.jaxrs.whiteboard.JaxrsWhiteboardConstants;
  */
 @Component(
 	property = {
-		JaxrsWhiteboardConstants.JAX_RS_APPLICATION_BASE + "=/enterprise-product-notification",
-		JaxrsWhiteboardConstants.JAX_RS_NAME + "=EPN.Application",
+		JaxrsWhiteboardConstants.JAX_RS_APPLICATION_BASE + "=/com-liferay-enterprise-product-notification-web",
+		JaxrsWhiteboardConstants.JAX_RS_NAME + "=com.liferay.enterprise.product.notification.web.internal.jaxrs.application.EPNApplication",
 		"auth.verifier.auth.verifier.PortalSessionAuthVerifier.urls.includes=/*",
 		"auth.verifier.guest.allowed=false", "liferay.oauth2=false"
 	},

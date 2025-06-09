@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -44,16 +35,6 @@ public class PhoneLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.PhoneLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static Phone addPhone(
-			long userId, String className, long classPK, String number,
-			String extension, long typeId, boolean primary,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addPhone(
-			userId, className, classPK, number, extension, typeId, primary,
-			serviceContext);
-	}
 
 	/**
 	 * Adds the phone to the database. Also notifies the appropriate model listeners.
@@ -67,6 +48,17 @@ public class PhoneLocalServiceUtil {
 	 */
 	public static Phone addPhone(Phone phone) {
 		return getService().addPhone(phone);
+	}
+
+	public static Phone addPhone(
+			String externalReferenceCode, long userId, String className,
+			long classPK, String number, String extension, long listTypeId,
+			boolean primary, ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addPhone(
+			externalReferenceCode, userId, className, classPK, number,
+			extension, listTypeId, primary, serviceContext);
 	}
 
 	/**
@@ -223,6 +215,13 @@ public class PhoneLocalServiceUtil {
 		return getService().fetchPhone(phoneId);
 	}
 
+	public static Phone fetchPhoneByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return getService().fetchPhoneByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the phone with the matching UUID and company.
 	 *
@@ -286,6 +285,14 @@ public class PhoneLocalServiceUtil {
 		return getService().getPhone(phoneId);
 	}
 
+	public static Phone getPhoneByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getPhoneByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the phone with the matching UUID and company.
 	 *
@@ -334,15 +341,6 @@ public class PhoneLocalServiceUtil {
 		return getService().getPhonesCount();
 	}
 
-	public static Phone updatePhone(
-			long phoneId, String number, String extension, long typeId,
-			boolean primary)
-		throws PortalException {
-
-		return getService().updatePhone(
-			phoneId, number, extension, typeId, primary);
-	}
-
 	/**
 	 * Updates the phone in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -357,8 +355,22 @@ public class PhoneLocalServiceUtil {
 		return getService().updatePhone(phone);
 	}
 
+	public static Phone updatePhone(
+			String externalReferenceCode, long phoneId, String number,
+			String extension, long listTypeId, boolean primary)
+		throws PortalException {
+
+		return getService().updatePhone(
+			externalReferenceCode, phoneId, number, extension, listTypeId,
+			primary);
+	}
+
 	public static PhoneLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(PhoneLocalService service) {
+		_service = service;
 	}
 
 	private static volatile PhoneLocalService _service;

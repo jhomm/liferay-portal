@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.category.property.model.impl;
@@ -78,12 +69,14 @@ public class AssetCategoryPropertyCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(23);
+		StringBundler sb = new StringBundler(25);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", ctCollectionId=");
 		sb.append(ctCollectionId);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", categoryPropertyId=");
 		sb.append(categoryPropertyId);
 		sb.append(", companyId=");
@@ -114,6 +107,15 @@ public class AssetCategoryPropertyCacheModel
 
 		assetCategoryPropertyImpl.setMvccVersion(mvccVersion);
 		assetCategoryPropertyImpl.setCtCollectionId(ctCollectionId);
+
+		if (externalReferenceCode == null) {
+			assetCategoryPropertyImpl.setExternalReferenceCode("");
+		}
+		else {
+			assetCategoryPropertyImpl.setExternalReferenceCode(
+				externalReferenceCode);
+		}
+
 		assetCategoryPropertyImpl.setCategoryPropertyId(categoryPropertyId);
 		assetCategoryPropertyImpl.setCompanyId(companyId);
 		assetCategoryPropertyImpl.setUserId(userId);
@@ -165,6 +167,7 @@ public class AssetCategoryPropertyCacheModel
 		mvccVersion = objectInput.readLong();
 
 		ctCollectionId = objectInput.readLong();
+		externalReferenceCode = objectInput.readUTF();
 
 		categoryPropertyId = objectInput.readLong();
 
@@ -185,6 +188,13 @@ public class AssetCategoryPropertyCacheModel
 		objectOutput.writeLong(mvccVersion);
 
 		objectOutput.writeLong(ctCollectionId);
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
 
 		objectOutput.writeLong(categoryPropertyId);
 
@@ -221,6 +231,7 @@ public class AssetCategoryPropertyCacheModel
 
 	public long mvccVersion;
 	public long ctCollectionId;
+	public String externalReferenceCode;
 	public long categoryPropertyId;
 	public long companyId;
 	public long userId;

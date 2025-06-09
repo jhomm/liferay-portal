@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,38 +11,124 @@
 DispatchLogDisplayContext dispatchLogDisplayContext = (DispatchLogDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
 
 DispatchLog dispatchLog = dispatchLogDisplayContext.getDispatchLog();
+
+DispatchTrigger dispatchTrigger = dispatchLogDisplayContext.getDispatchTrigger();
+
+Format dateTimeFormat = FastDateFormatFactoryUtil.getDateTime(FastDateFormatConstants.SHORT, FastDateFormatConstants.LONG, locale, TimeZone.getTimeZone(dispatchTrigger.getTimeZoneId()));
 %>
 
 <portlet:actionURL name="/dispatch/edit_dispatch_log" var="editDispatchLogActionURL" />
 
 <div class="container-fluid container-fluid-max-xl container-view">
-	<div class="sheet">
-		<aui:form action="<%= editDispatchLogActionURL %>" method="post" name="fm">
-			<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
-			<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
-			<aui:input name="dispatchLogId" type="hidden" value="<%= String.valueOf(dispatchLog.getDispatchLogId()) %>" />
+	<div class="card">
+		<div class="card-body">
+			<clay:content-row>
+				<clay:content-col
+					expand="<%= true %>"
+				>
+					<clay:row>
+						<clay:col
+							md="2"
+						>
+							<liferay-ui:message key="start-date" />
+						</clay:col>
 
-			<div class="lfr-form-content">
-				<aui:fieldset>
-					<aui:input disabled="<%= true %>" label="start-date" name="startDate" value='<%= (dispatchLog.getStartDate() != null) ? fastDateFormat.format(dispatchLog.getStartDate()) : "" %>' />
+						<clay:col
+							md="8"
+						>
+							<%= (dispatchLog.getStartDate() != null) ? fastDateTimeFormat.format(dispatchLog.getStartDate()) : "" %>
+						</clay:col>
+					</clay:row>
 
-					<%
-					DispatchTaskStatus dispatchTaskStatus = DispatchTaskStatus.valueOf(dispatchLog.getStatus());
-					%>
+					<clay:row>
+						<clay:col
+							md="2"
+						>
+							<liferay-ui:message key="scheduled-start-date" />
+						</clay:col>
 
-					<aui:input disabled="<%= true %>" name="status" value="<%= LanguageUtil.get(request, dispatchTaskStatus.getLabel()) %>" />
+						<clay:col
+							md="8"
+						>
+							<%= (dispatchLog.getStartDate() != null) ? dateTimeFormat.format(dispatchLog.getStartDate()) : "" %>
+						</clay:col>
+					</clay:row>
 
-					<aui:input disabled="<%= true %>" label="runtime" name="runTime" value='<%= dispatchLogDisplayContext.getExecutionTimeMills() + " ms" %>' />
+					<clay:row>
+						<clay:col
+							md="2"
+						>
+							<liferay-ui:message key="status" />
+						</clay:col>
 
-					<aui:input disabled="<%= true %>" label="error" name="error" type="textarea" value="<%= dispatchLog.getError() %>" />
+						<%
+						DispatchTaskStatus dispatchTaskStatus = DispatchTaskStatus.valueOf(dispatchLog.getStatus());
+						%>
 
-					<aui:input disabled="<%= true %>" label="output" name="output" type="textarea" value="<%= dispatchLog.getOutput() %>" />
-				</aui:fieldset>
+						<clay:col
+							cssClass='<%= String.format("background-task-status-row background-task-status-%s %s", dispatchTaskStatus.getLabel(), dispatchTaskStatus.getCssClass()) %>'
+							md="8"
+						>
+							<div class="h6"><liferay-ui:message key="<%= dispatchTaskStatus.getLabel() %>" /></div>
+						</clay:col>
+					</clay:row>
 
-				<div class="sheet-footer">
-					<aui:button href="<%= backURL %>" type="cancel" />
-				</div>
+					<clay:row>
+						<clay:col
+							md="2"
+						>
+							<liferay-ui:message key="runtime" />
+						</clay:col>
+
+						<clay:col
+							md="8"
+						>
+							<%= dispatchLogDisplayContext.getExecutionTimeMills() %> ms
+						</clay:col>
+					</clay:row>
+
+					<c:if test="<%= dispatchLog.getError() != null %>">
+						<clay:row>
+							<clay:col
+								md="2"
+							>
+								<liferay-ui:message key="error" />
+							</clay:col>
+
+							<clay:col
+								md="8"
+							>
+								<pre><%= dispatchLog.getError() %></pre>
+							</clay:col>
+						</clay:row>
+					</c:if>
+
+					<c:if test="<%= dispatchLog.getOutput() != null %>">
+						<clay:row>
+							<clay:col
+								md="2"
+							>
+								<liferay-ui:message key="output" />
+							</clay:col>
+
+							<clay:col
+								md="8"
+							>
+								<pre><%= dispatchLog.getOutput() %></pre>
+							</clay:col>
+						</clay:row>
+					</c:if>
+				</clay:content-col>
+			</clay:content-row>
+
+			<div class="mt-4">
+				<clay:link
+					displayType="primary"
+					href="<%= backURL %>"
+					label="back"
+					type="button"
+				/>
 			</div>
-		</aui:form>
+		</div>
 	</div>
 </div>

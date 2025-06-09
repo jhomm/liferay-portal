@@ -1,23 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
 import {cleanup, render} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import {FormProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Numeric from '../../../src/main/resources/META-INF/resources/Numeric/Numeric';
+import Numeric from '../../../src/main/resources/META-INF/resources/js/Numeric/Numeric';
+import {maxLengthExceeded} from '../../../src/main/resources/META-INF/resources/js/Numeric/numericUtil';
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -36,6 +29,22 @@ describe('Field Numeric', () => {
 		const {container} = render(<Numeric />);
 
 		expect(container).toMatchSnapshot();
+	});
+
+	it('does not render html autocomplete attribute', () => {
+		render(<Numeric />);
+
+		expect(
+			document.querySelector('.form-control').hasAttribute('autocomplete')
+		).toBe(false);
+	});
+
+	it('renders the html autocomplete attribute', () => {
+		render(<Numeric htmlAutocompleteAttribute="name" />);
+
+		expect(
+			document.querySelector('.form-control').getAttribute('autocomplete')
+		).toBe('name');
 	});
 
 	it('has a name', () => {
@@ -77,9 +86,12 @@ describe('Field Numeric', () => {
 	});
 
 	it('has a label', () => {
-		const {getByText} = render(<Numeric label="label" />);
+		const {getAllByText} = render(<Numeric label="label" />);
 
-		expect(getByText(/label/)).toBeInTheDocument();
+		const allByText = getAllByText(/label/);
+		expect(allByText).toHaveLength(2);
+		expect(allByText[0]).toBeInTheDocument();
+		expect(allByText[1]).toBeInTheDocument();
 	});
 
 	it('has a placeholder', () => {
@@ -97,9 +109,14 @@ describe('Field Numeric', () => {
 	});
 
 	it('renders Label if showLabel is true', () => {
-		const {getByText} = render(<Numeric label="Numeric Field" showLabel />);
+		const {getAllByText} = render(
+			<Numeric label="Numeric Field" showLabel />
+		);
 
-		expect(getByText(/Numeric Field/)).toHaveClass('ddm-label');
+		const allByText = getAllByText(/Numeric Field/);
+		expect(allByText).toHaveLength(2);
+		expect(allByText[0]).toHaveClass('ddm-label');
+		expect(allByText[1]).toHaveClass('sr-only');
 	});
 
 	it('has a value', () => {
@@ -156,6 +173,39 @@ describe('Field Numeric', () => {
 		);
 
 		expect(container.querySelector('input').value).toBe('2282');
+	});
+
+	it('updates decimal symbol using the current value of symbols', () => {
+		const {container} = render(
+			<Numeric
+				dataType="double"
+				symbols={{decimalSymbol: ','}}
+				value="-1.2"
+			/>
+		);
+
+		expect(container.querySelector('input').value).toBe('-1,2');
+	});
+
+	it('updates decimal symbol using the localizedSymbols based on current editing language', () => {
+		const {container} = render(
+			<FormProvider initialState={{editingLanguageId: 'pt_BR'}}>
+				<Numeric
+					dataType="double"
+					localizedSymbols={{
+						en_US: {
+							decimalSymbol: '.',
+						},
+						pt_BR: {
+							decimalSymbol: ',',
+						},
+					}}
+					value="1.2"
+				/>
+			</FormProvider>
+		);
+
+		expect(container.querySelector('input').value).toBe('1,2');
 	});
 
 	describe('Confirmation Field', () => {
@@ -295,6 +345,16 @@ describe('Field Numeric', () => {
 			const input = container.querySelector('input[name="LPS-134259"]');
 
 			expect(input.value).toBe('1234');
+		});
+
+		it('allows input mask format to have only numbers', () => {
+			const {container} = render(
+				<Numeric inputMask inputMaskFormat={99} value="1234" />
+			);
+
+			const input = container.querySelector('input');
+
+			expect(input.value).toBe('12');
 		});
 
 		/**
@@ -519,6 +579,29 @@ describe('Field Numeric', () => {
 			expect(onChange).toHaveBeenLastCalledWith({
 				target: {value: '0,083'},
 			});
+		});
+	});
+
+	describe('maxLengthExceeded function', () => {
+
+		/**
+		 * LPD-39819
+		 */
+
+		it('returns true if the input has surpassed the max length of the mask', () => {
+
+			// input smaller or with the same size as the mask should return false
+
+			expect(maxLengthExceeded('10', '90')).toBe(false);
+			expect(maxLengthExceeded('1', '90')).toBe(false);
+
+			// input longer than the size of the mask should return true
+
+			expect(maxLengthExceeded('100', '90')).toBe(true);
+
+			// when inputMaskFormat is undefined it should return false
+
+			expect(maxLengthExceeded('10', undefined)).toBe(false);
 		});
 	});
 });

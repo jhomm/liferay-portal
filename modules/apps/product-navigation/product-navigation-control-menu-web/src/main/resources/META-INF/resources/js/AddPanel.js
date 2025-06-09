@@ -1,17 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
+import {DragPreview} from '@liferay/layout-js-components-web';
 import classNames from 'classnames';
 import PropTypes from 'prop-types';
 import React, {useEffect, useMemo, useState} from 'react';
@@ -19,7 +11,6 @@ import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
 
 import DragAndDrop from './DragAndDrop';
-import DragPreview from './DragPreview';
 import TabsPanel from './TabsPanel';
 import {LAYOUT_DATA_ITEM_TYPES} from './constants/layoutDataItemTypes';
 
@@ -28,6 +19,7 @@ const INITIAL_STATE = {
 	contents: null,
 	displayGrid: false,
 	getContentsURL: null,
+	hasAddContentPermission: false,
 	namespace: null,
 	plid: null,
 	portletNamespace: null,
@@ -64,12 +56,12 @@ const updateUsedCategoryPortlet = ({category, item, used}) => {
 				categories: category.categories.map((category) =>
 					updateUsedCategoryPortlet({category, item, used})
 				),
-		  }
+			}
 		: category;
 };
 
-export const updateUsedWidget = ({item, used = true, widgets}) =>
-	widgets.map((collection) => {
+export function updateUsedWidget({item, used = true, widgets}) {
+	return widgets.map((collection) => {
 		updateUsedCategoryPortlet({category: collection, item, used});
 
 		return {
@@ -81,10 +73,12 @@ export const updateUsedWidget = ({item, used = true, widgets}) =>
 			}),
 		};
 	});
+}
 
 const normalizeWidget = (widget) => {
 	return {
 		data: {
+			deprecated: widget.deprecated,
 			instanceable: widget.instanceable,
 			portletId: widget.portletId,
 			portletItemId: widget.portletItemId || null,
@@ -109,15 +103,14 @@ const normalizeCollections = (collection) => {
 	};
 
 	if (collection.categories?.length) {
-		normalizedElement.collections = collection.categories.map(
-			normalizeCollections
-		);
+		normalizedElement.collections =
+			collection.categories.map(normalizeCollections);
 	}
 
 	return normalizedElement;
 };
 
-export const normalizeContent = (content) => {
+export function normalizeContent(content) {
 	return {
 		category: content.type,
 		data: {
@@ -133,12 +126,13 @@ export const normalizeContent = (content) => {
 		label: content.title,
 		type: LAYOUT_DATA_ITEM_TYPES.content,
 	};
-};
+}
 
 const AddPanel = ({
 	addContentsURLs,
 	contents,
 	getContentsURL,
+	hasAddContentPermission,
 	languageDirection,
 	languageId,
 	namespace,
@@ -182,27 +176,27 @@ const AddPanel = ({
 				id: 'widgets',
 				label: Liferay.Language.get('widgets'),
 			},
-			{
-				collections: [
-					{
-						children: contents.map(normalizeContent),
-						collectionId: 'recent-content',
-						label: Liferay.Language.get('recent'),
-					},
-				],
-				id: 'content',
-				label: Liferay.Language.get('content'),
-			},
+			...(hasAddContentPermission
+				? [
+						{
+							collections: [
+								{
+									children: contents.map(normalizeContent),
+									collectionId: 'recent-content',
+									label: Liferay.Language.get('recent'),
+								},
+							],
+							id: 'content',
+							label: Liferay.Language.get('content'),
+						},
+					]
+				: []),
 		],
-		[contents, widgets]
+		[contents, hasAddContentPermission, widgets]
 	);
 
 	return (
-		<div
-			className={classNames('sidebar-body__add-panel', {
-				rtl,
-			})}
-		>
+		<div className={classNames('sidebar-body__add-panel p-0', {rtl})}>
 			<AddPanelContextProvider
 				value={{
 					addContentsURLs,
@@ -218,8 +212,10 @@ const AddPanel = ({
 				}}
 			>
 				<DndProvider backend={HTML5Backend}>
-					<DragPreview rtl={rtl} />
+					<DragPreview />
+
 					<DragAndDrop />
+
 					<TabsPanel tabs={tabs} />
 				</DndProvider>
 			</AddPanelContextProvider>
@@ -231,6 +227,7 @@ AddPanel.propTypes = {
 	addContentsURLs: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 	contents: PropTypes.arrayOf(PropTypes.shape({})).isRequired,
 	getContentsURL: PropTypes.string.isRequired,
+	hasAddContentPermission: PropTypes.bool.isRequired,
 	languageDirection: PropTypes.shape({}),
 	languageId: PropTypes.string.isRequired,
 	namespace: PropTypes.string.isRequired,

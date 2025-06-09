@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.dto.v1_0.util;
@@ -40,29 +31,35 @@ public class ContentTemplateUtil {
 
 		return new ContentTemplate() {
 			{
-				actions = dtoConverterContext.getActions();
-				assetLibraryKey = GroupUtil.getAssetLibraryKey(group);
-				availableLanguages = LocaleUtil.toW3cLanguageIds(
-					ddmTemplate.getAvailableLanguageIds());
-				contentStructureId = ddmTemplate.getClassPK();
-				creator = CreatorUtil.toCreator(
-					portal, dtoConverterContext.getUriInfoOptional(),
-					userLocalService.fetchUser(ddmTemplate.getUserId()));
-				dateCreated = ddmTemplate.getCreateDate();
-				dateModified = ddmTemplate.getModifiedDate();
-				description = ddmTemplate.getDescription(
-					dtoConverterContext.getLocale());
-				description_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					ddmTemplate.getDescriptionMap());
-				id = ddmTemplate.getTemplateKey();
-				name = ddmTemplate.getName(dtoConverterContext.getLocale());
-				name_i18n = LocalizedMapUtil.getI18nMap(
-					dtoConverterContext.isAcceptAllLanguages(),
-					ddmTemplate.getNameMap());
-				programmingLanguage = ddmTemplate.getLanguage();
-				siteId = GroupUtil.getSiteId(group);
-				templateScript = ddmTemplate.getScript();
+				setActions(dtoConverterContext::getActions);
+				setAssetLibraryKey(() -> GroupUtil.getAssetLibraryKey(group));
+				setAvailableLanguages(
+					() -> LocaleUtil.toW3cLanguageIds(
+						ddmTemplate.getAvailableLanguageIds()));
+				setContentStructureId(ddmTemplate::getClassPK);
+				setCreator(
+					() -> CreatorUtil.toCreator(
+						dtoConverterContext, portal,
+						userLocalService.fetchUser(ddmTemplate.getUserId())));
+				setDateCreated(ddmTemplate::getCreateDate);
+				setDateModified(ddmTemplate::getModifiedDate);
+				setDescription(
+					() -> ddmTemplate.getDescription(
+						dtoConverterContext.getLocale()));
+				setDescription_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						ddmTemplate.getDescriptionMap()));
+				setId(ddmTemplate::getTemplateKey);
+				setName(
+					() -> ddmTemplate.getName(dtoConverterContext.getLocale()));
+				setName_i18n(
+					() -> LocalizedMapUtil.getI18nMap(
+						dtoConverterContext.isAcceptAllLanguages(),
+						ddmTemplate.getNameMap()));
+				setProgrammingLanguage(ddmTemplate::getLanguage);
+				setSiteId(() -> GroupUtil.getSiteId(group));
+				setTemplateScript(ddmTemplate::getScript);
 			}
 		};
 	}

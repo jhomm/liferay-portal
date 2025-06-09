@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.kernel.lar;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.db.partition.DBPartition;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.plugin.Version;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalServiceUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -30,13 +24,16 @@ import com.liferay.portal.kernel.xml.DocumentException;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletPreferences;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * @author Brian Wing Shun Chan
@@ -48,6 +45,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 			PortletDataContext portletDataContext, String portletId,
 			PortletPreferences portletPreferences)
 		throws PortletDataException {
+
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return null;
+		}
 
 		long startTime = 0;
 
@@ -84,6 +85,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 			PortletPreferences portletPreferences)
 		throws PortletDataException {
 
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return null;
+		}
+
 		long startTime = 0;
 
 		if (_log.isInfoEnabled()) {
@@ -114,6 +119,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 			PortletDataContext portletDataContext, String portletId,
 			PortletPreferences portletPreferences)
 		throws PortletDataException {
+
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return null;
+		}
 
 		long startTime = 0;
 
@@ -268,11 +277,9 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 	public PortletDataHandlerControl[] getImportConfigurationControls(
 		Portlet portlet, ManifestSummary manifestSummary) {
 
-		String[] configurationPortletOptions =
+		return getImportConfigurationControls(
 			manifestSummary.getConfigurationPortletOptions(
-				portlet.getRootPortletId());
-
-		return getImportConfigurationControls(configurationPortletOptions);
+				portlet.getRootPortletId()));
 	}
 
 	@Override
@@ -368,6 +375,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 			PortletPreferences portletPreferences, String data)
 		throws PortletDataException {
 
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return null;
+		}
+
 		long startTime = 0;
 
 		if (_log.isInfoEnabled()) {
@@ -437,12 +448,21 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 	@Override
 	public boolean isDisplayPortlet() {
 		if (isDataPortletInstanceLevel() &&
-			!ArrayUtil.isEmpty(getDataPortletPreferences())) {
+			ArrayUtil.isNotEmpty(getDataPortletPreferences())) {
 
 			return true;
 		}
 
 		return false;
+	}
+
+	public boolean isEmptyControlsAllowed() {
+		return _emptyControlsAllowed;
+	}
+
+	@Override
+	public boolean isModelCountSupported() {
+		return true;
 	}
 
 	@Override
@@ -475,6 +495,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 			PortletPreferences portletPreferences)
 		throws PortletDataException {
 
+		if (!isEnabled(_getCompanyId(portletDataContext))) {
+			return;
+		}
+
 		try {
 			doPrepareManifestSummary(portletDataContext, portletPreferences);
 		}
@@ -497,12 +521,16 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 
 	@Override
 	public boolean validateSchemaVersion(String schemaVersion) {
+		if (!isEnabled(CompanyThreadLocal.getCompanyId())) {
+			return true;
+		}
+
 		try {
 			return doValidateSchemaVersion(schemaVersion);
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return false;
@@ -676,7 +704,7 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 		}
 		catch (IOException ioException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(ioException, ioException);
+				_log.debug(ioException);
 			}
 
 			return StringPool.BLANK;
@@ -738,6 +766,20 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 		return totalModelCount;
 	}
 
+	protected StagedModelType[] getStagedModelTypes(
+		Supplier<List<StagedModelType>> stagedModelTypesSupplier) {
+
+		return _stagedModelTypesMap.computeIfAbsent(
+			DBPartition.isPartitionEnabled() ?
+				CompanyThreadLocal.getCompanyId() : CompanyConstants.SYSTEM,
+			companyId -> {
+				List<StagedModelType> stagedModelTypes =
+					stagedModelTypesSupplier.get();
+
+				return stagedModelTypes.toArray(new StagedModelType[0]);
+			});
+	}
+
 	protected void setDataAlwaysStaged(boolean dataAlwaysStaged) {
 		_dataAlwaysStaged = dataAlwaysStaged;
 	}
@@ -759,6 +801,10 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 
 		_deletionSystemEventStagedModelTypes =
 			deletionSystemEventStagedModelTypes;
+	}
+
+	protected void setEmptyControlsAllowed(boolean emptyControlsAllowed) {
+		_emptyControlsAllowed = emptyControlsAllowed;
 	}
 
 	protected void setExportControls(
@@ -799,6 +845,14 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 		_stagingControls = stagingControls;
 	}
 
+	private long _getCompanyId(PortletDataContext portletDataContext) {
+		if (portletDataContext != null) {
+			return portletDataContext.getCompanyId();
+		}
+
+		return CompanyThreadLocal.getCompanyId();
+	}
+
 	private PortletDataException _handleException(
 		Exception exception, int type, String portletId) {
 
@@ -832,6 +886,7 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 	private String[] _dataPortletPreferences = StringPool.EMPTY_ARRAY;
 	private StagedModelType[] _deletionSystemEventStagedModelTypes =
 		new StagedModelType[0];
+	private boolean _emptyControlsAllowed;
 	private PortletDataHandlerControl[] _exportControls =
 		new PortletDataHandlerControl[0];
 	private PortletDataHandlerControl[] _exportMetadataControls =
@@ -843,6 +898,8 @@ public abstract class BasePortletDataHandler implements PortletDataHandler {
 	private String _portletId;
 	private boolean _publishToLiveByDefault;
 	private int _rank = 100;
+	private final Map<Long, StagedModelType[]> _stagedModelTypesMap =
+		new ConcurrentHashMap<>();
 	private PortletDataHandlerControl[] _stagingControls =
 		new PortletDataHandlerControl[0];
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.users.admin.web.internal.manager;
@@ -19,9 +10,9 @@ import com.liferay.portal.kernel.service.OrgLaborLocalService;
 import com.liferay.portal.kernel.service.OrgLaborService;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.List;
+import jakarta.portlet.ActionRequest;
 
-import javax.portlet.ActionRequest;
+import java.util.List;
 
 /**
  * @author Samuel Trong Tran
@@ -42,7 +33,8 @@ public class OrgLaborContactInfoManager
 	protected OrgLabor construct(ActionRequest actionRequest) throws Exception {
 		long orgLaborId = ParamUtil.getLong(actionRequest, "primaryKey");
 
-		long typeId = ParamUtil.getLong(actionRequest, "orgLaborTypeId");
+		long listTypeId = ParamUtil.getLong(
+			actionRequest, "orgLaborListTypeId");
 		int sunOpen = ParamUtil.getInteger(actionRequest, "sunOpen", -1);
 		int sunClose = ParamUtil.getInteger(actionRequest, "sunClose", -1);
 		int monOpen = ParamUtil.getInteger(actionRequest, "monOpen", -1);
@@ -60,7 +52,7 @@ public class OrgLaborContactInfoManager
 
 		OrgLabor orgLabor = _orgLaborLocalService.createOrgLabor(orgLaborId);
 
-		orgLabor.setTypeId(typeId);
+		orgLabor.setListTypeId(listTypeId);
 		orgLabor.setSunOpen(sunOpen);
 		orgLabor.setSunClose(sunClose);
 		orgLabor.setMonOpen(monOpen);
@@ -82,7 +74,7 @@ public class OrgLaborContactInfoManager
 	@Override
 	protected OrgLabor doAdd(OrgLabor orgLabor) throws Exception {
 		return _orgLaborService.addOrgLabor(
-			_classPK, orgLabor.getTypeId(), orgLabor.getSunOpen(),
+			_classPK, orgLabor.getListTypeId(), orgLabor.getSunOpen(),
 			orgLabor.getSunClose(), orgLabor.getMonOpen(),
 			orgLabor.getMonClose(), orgLabor.getTueOpen(),
 			orgLabor.getTueClose(), orgLabor.getWedOpen(),
@@ -100,7 +92,7 @@ public class OrgLaborContactInfoManager
 	@Override
 	protected void doUpdate(OrgLabor orgLabor) throws Exception {
 		_orgLaborService.updateOrgLabor(
-			orgLabor.getOrgLaborId(), orgLabor.getTypeId(),
+			orgLabor.getOrgLaborId(), orgLabor.getListTypeId(),
 			orgLabor.getSunOpen(), orgLabor.getSunClose(),
 			orgLabor.getMonOpen(), orgLabor.getMonClose(),
 			orgLabor.getTueOpen(), orgLabor.getTueClose(),

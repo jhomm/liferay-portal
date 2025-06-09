@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -35,20 +26,26 @@ public class PortalFixpackRelease {
 		_portalRelease = portalRelease;
 
 		try {
-			String portalVersion = _portalRelease.getPortalVersion();
+			String portalVersion = portalRelease.getPortalVersion();
 			String portalFixpackType = "dxp";
 
-			String portalBuildVersion = portalVersion.replaceAll(
-				"([\\d\\.]+).*", "$1");
+			if (portalVersion.contains("7.0")) {
+				portalFixpackType = "de";
+			}
 
-			portalBuildVersion = portalBuildVersion.replaceAll("\\.", "");
+			String portalBaseVersion = portalVersion.replaceAll(
+				"(\\d)\\.(\\d)\\.(\\d\\d).*", "$1.$2.$3");
+
+			String portalBaseBuildVersion = portalBaseVersion.replaceAll(
+				"\\.", "");
 
 			_portalFixpackURL = new URL(
 				JenkinsResultsParserUtil.combine(
 					"https://files.liferay.com/private/ee/fix-packs/",
-					portalVersion, "/", portalFixpackType, "/liferay-fix-pack-",
-					portalFixpackType, "-", _portalFixpackVersion, "-",
-					portalBuildVersion, ".zip"));
+					portalBaseVersion, "/", portalFixpackType,
+					"/liferay-fix-pack-", portalFixpackType, "-",
+					_portalFixpackVersion, "-", portalBaseBuildVersion,
+					".zip"));
 		}
 		catch (MalformedURLException malformedURLException) {
 			throw new RuntimeException(malformedURLException);
@@ -134,6 +131,19 @@ public class PortalFixpackRelease {
 
 	private String _getPortalVersion(
 		String portalBuildVersion, String portalFixpackVersion) {
+
+		if (portalBuildVersion.startsWith("73")) {
+			if (portalFixpackVersion.equals("1") ||
+				portalFixpackVersion.equals("2")) {
+
+				return "7.3.10.1";
+			}
+			else if (portalFixpackVersion.equals("3")) {
+				return "7.3.10.3";
+			}
+
+			return "7.3.10.u" + portalFixpackVersion;
+		}
 
 		String basePortalVersionRegex = "(\\d)(\\d)(\\d\\d)";
 

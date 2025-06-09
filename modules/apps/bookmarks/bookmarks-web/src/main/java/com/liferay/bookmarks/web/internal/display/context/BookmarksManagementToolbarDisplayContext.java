@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.web.internal.display.context;
@@ -19,7 +10,6 @@ import com.liferay.bookmarks.constants.BookmarksFolderConstants;
 import com.liferay.bookmarks.constants.BookmarksPortletKeys;
 import com.liferay.bookmarks.constants.BookmarksWebKeys;
 import com.liferay.bookmarks.service.BookmarksFolderServiceUtil;
-import com.liferay.bookmarks.web.internal.portlet.toolbar.contributor.BookmarksPortletToolbarContributor;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
@@ -27,7 +17,6 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuil
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -36,6 +25,8 @@ import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.toolbar.contributor.PortletToolbarContributor;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.servlet.taglib.ui.Menu;
 import com.liferay.portal.kernel.servlet.taglib.ui.URLMenuItem;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -47,12 +38,12 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.trash.TrashHelper;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alejandro Tardín
@@ -76,15 +67,12 @@ public class BookmarksManagementToolbarDisplayContext {
 		_trashHelper = trashHelper;
 
 		_currentURLObj = PortletURLUtil.getCurrent(
-			_liferayPortletRequest, _liferayPortletResponse);
-
+			liferayPortletRequest, liferayPortletResponse);
 		_folderId = GetterUtil.getLong(
-			(String)_httpServletRequest.getAttribute("view.jsp-folderId"));
-
-		_searchContainer = (SearchContainer)_httpServletRequest.getAttribute(
+			(String)httpServletRequest.getAttribute("view.jsp-folderId"));
+		_searchContainer = (SearchContainer)httpServletRequest.getAttribute(
 			"view.jsp-bookmarksSearchContainer");
-
-		_themeDisplay = (ThemeDisplay)_httpServletRequest.getAttribute(
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 	}
 
@@ -92,21 +80,9 @@ public class BookmarksManagementToolbarDisplayContext {
 		return DropdownItemListBuilder.add(
 			dropdownItem -> {
 				dropdownItem.putData("action", "deleteEntries");
-
-				if (_trashHelper.isTrashEnabled(
-						_themeDisplay.getScopeGroupId())) {
-
-					dropdownItem.setIcon("trash");
-					dropdownItem.setLabel(
-						LanguageUtil.get(
-							_httpServletRequest, "move-to-recycle-bin"));
-				}
-				else {
-					dropdownItem.setIcon("times-circle");
-					dropdownItem.setLabel(
-						LanguageUtil.get(_httpServletRequest, "delete"));
-				}
-
+				dropdownItem.setIcon("trash");
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "delete"));
 				dropdownItem.setQuickAction(true);
 			}
 		).build();
@@ -123,10 +99,9 @@ public class BookmarksManagementToolbarDisplayContext {
 			return null;
 		}
 
-		BookmarksPortletToolbarContributor bookmarksPortletToolbarContributor =
-			(BookmarksPortletToolbarContributor)
-				_httpServletRequest.getAttribute(
-					BookmarksWebKeys.BOOKMARKS_PORTLET_TOOLBAR_CONTRIBUTOR);
+		PortletToolbarContributor bookmarksPortletToolbarContributor =
+			(PortletToolbarContributor)_httpServletRequest.getAttribute(
+				BookmarksWebKeys.BOOKMARKS_PORTLET_TOOLBAR_CONTRIBUTOR);
 
 		List<Menu> menus =
 			bookmarksPortletToolbarContributor.getPortletTitleMenus(
@@ -160,8 +135,7 @@ public class BookmarksManagementToolbarDisplayContext {
 				dropdownGroupItem.setDropdownItems(
 					_getFilterNavigationDropdownItems());
 				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_httpServletRequest, "filter-by-navigation"));
+					LanguageUtil.get(_httpServletRequest, "filter-by"));
 			}
 		).build();
 	}
@@ -180,11 +154,11 @@ public class BookmarksManagementToolbarDisplayContext {
 
 				User user = _themeDisplay.getUser();
 
-				String label = String.format(
-					"%s: %s", LanguageUtil.get(_httpServletRequest, "owner"),
-					user.getFullName());
-
-				labelItem.setLabel(label);
+				labelItem.setLabel(
+					String.format(
+						"%s: %s",
+						LanguageUtil.get(_httpServletRequest, "owner"),
+						user.getFullName()));
 			}
 		).add(
 			() -> navigation.equals("recent"),
@@ -194,7 +168,6 @@ public class BookmarksManagementToolbarDisplayContext {
 					_removeNavigartionParameter(_currentURLObj));
 
 				labelItem.setCloseable(true);
-
 				labelItem.setLabel(
 					LanguageUtil.get(_httpServletRequest, "recent"));
 			}

@@ -1,0 +1,1431 @@
+@component-name = "portal-commerce"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Shopping Experience";
+
+	setUp {
+		CommerceConfiguration.commerceSetUp();
+
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+	}
+
+	tearDown {
+		CommerceConfiguration.commerceTearDown();
+	}
+
+	@description = "This is a test for COMMERCE-7843. Verify when a default page for categories is not set, the old logic is still applied"
+	@priority = 3
+	test AssertOldLogicIsAppliedIfDefaultCategoryDisplayPageIsNotSet {
+		property portal.acceptance = "false";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given a Private Category Navigation page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				widgetName = "Commerce Categories Navigation");
+
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				widgetName = "Category Content");
+		}
+
+		task ("When a user navigates to the page and clicks on a category") {
+			Refresh();
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then the user should be redirected to the Categories Navigation Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Categories Navigation");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			Portlet.viewBody(
+				portletBody = "Engine",
+				portletName = "Category Content");
+		}
+	}
+
+	@description = "This is a test case for COMMERCE-10820. User with Category Manager role can access Categories from the site admin menu"
+	@priority = 3
+	test CanCategoryManagerAccessCategoriesAdminMenu {
+		property custom.properties = "company.security.strangers.verify=false${line.separator}jsonws.web.service.paths.excludes=";
+		property portal.acceptance = "false";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And a user with Category Manager role is created") {
+			JSONUser.addUserWithRole(
+				roleTitle = "Category Manager",
+				userEmailAddress = "category.manager@liferay.com",
+				userFirstName = "Category",
+				userLastName = "Manager",
+				userScreenName = "category.manager");
+
+			JSONUser.addUserToSite(
+				groupName = "Minium",
+				userEmailAddress = "category.manager@liferay.com");
+		}
+
+		task ("When Category Manager logs in") {
+			User.logoutPG();
+
+			CommerceLogin.miniumLogin(
+				password = PropsUtil.get("default.admin.password"),
+				urlAppend = "web/minium",
+				userEmailAddress = "category.manager@liferay.com");
+		}
+
+		task ("Then Categories admin menu is shown") {
+			ProductMenu.gotoPortlet(
+				category = "Categorization",
+				portlet = "Categories");
+
+			AssertTextEquals(
+				locator1 = "ControlMenu#HEADING",
+				value1 = "Categories");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-10322. Create a new Content Page, deploy the widget Categories Navigation, configure it with Minium as Vocabulary, and then verify if when the page is reached by the guest no errors are present"
+	@priority = 5
+	test CanGuestUserViewTheCategoriesNavigationWidgetWithoutErrors {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And a new Content Page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation");
+		}
+
+		task ("And the widget Categories Navigation is deployed") {
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				widgetName = "Commerce Categories Navigation");
+		}
+
+		task ("And configured with the Minium as a Vocabulary") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+		}
+
+		task ("When the guest reaches the Content Page by URL") {
+			User.logoutPG();
+
+			Navigator.openWithAppendToBaseURL(
+				baseURL = ${portalURL},
+				urlAppend = "web/minium/categories-navigation");
+		}
+
+		task ("Then no errors are present") {
+			AssertElementNotPresent(locator1 = "Message#ERROR");
+
+			AssertConsoleTextNotPresent(value1 = "must have VIEW permission for com.liferay.asset.kernel.model.AssetVocabulary");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-11649. Verify that 404 Utility Pages work on Minium site"
+	@priority = 3
+	test CanSee404UtilityPagesWorkOnMiniumSite {
+		property portal.acceptance = "false";
+
+		var portalURL = PropsUtil.get("portal.url");
+
+		task ("Given a Minium Site with an account is created") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+			Navigator.openWithAppendToBaseURL(urlAppend = "web/minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Account Management");
+
+			CommerceAcceleratorsInitializer.createNewAccountViaFront(accountName = "Commerce Account");
+		}
+
+		task ("And the admin creates a master page template with a Commerce Categories Navigation widget inside of it") {
+			ProductMenu.gotoPortlet(
+				category = "Design",
+				portlet = "Page Templates");
+
+			MastersPageTemplatesAdmin.addMasters(masterLayoutName = "Master Page Template Test");
+
+			PageEditor.addWidget(
+				dropTarget = "Header",
+				portletName = "Commerce Categories Navigation",
+				scope = "Minium");
+		}
+
+		task ("And in the widget configuration the vocabulary is changed to 'Minium'") {
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			MastersPageTemplates.publishMaster();
+		}
+
+		task ("And the admin creates a new utility page, selecting the created master for it") {
+			PagesAdmin.openPagesAdmin(siteURLKey = "minium");
+
+			Navigator.gotoNavTab(navTab = "Utility Pages");
+
+			PagesAdmin.addUtilityPage(
+				masterLayoutName = "Master Page Template Test",
+				pageName = "404 Error Utility Page");
+		}
+
+		task ("And a paragraph is added to the 404 page") {
+			PageEditor.addFragment(
+				collectionName = "Basic Components",
+				fragmentName = "Paragraph");
+
+			PageEditor.editFragmentText(
+				fragmentName = "Paragraph",
+				id = "element-text",
+				text = "Paragraph text edited.");
+
+			PageEditor.publish();
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("And the newly created 404 is set as default") {
+			LexiconEntry.gotoEntryMenuItem(
+				menuItem = "Mark as Default",
+				rowEntry = "404 Error Utility Page");
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("When the admin navigates to the non existent page") {
+			Navigator.openSpecificURL(url = "${portalURL}/web/minium/mynonexistentpage");
+		}
+
+		task ("Then the paragraph is visible inside the page") {
+			AssertElementPresent(
+				key_value = "Paragraph text edited.",
+				locator1 = "CommerceEntry#ASSERT_PARAGRAPH_TEXT");
+		}
+
+		task ("And the Minium Catalog page is not visible") {
+			AssertElementNotPresent(
+				key_title = "Catalog",
+				locator1 = "CommerceAccelerators#MINIUM_PAGE_TITLE");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7952. Verify user can select, change, and remove a default category display page"
+	@priority = 5
+	test CanSelectChangeAndRemoveDefaultCategoryDisplayPage {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				widgetName = "Commerce Categories Navigation");
+
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+		}
+
+		task ("And given the Minium site has two pages with a Category Content widget") {
+			for (var pageNum : list "1,2") {
+				JSONLayout.addPublicLayout(
+					groupName = "Minium",
+					layoutName = "Test Public Widget Page ${pageNum}");
+			}
+
+			for (var widgetNum : list "1,2") {
+				JSONLayout.addWidgetToPublicLayout(
+					groupName = "Minium",
+					layoutName = "Test Public Widget Page ${widgetNum}",
+					widgetName = "Category Content");
+			}
+		}
+
+		task ("When the user sets the first page as the Default Category Display page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Widget Page 1",
+				pageType = "Public");
+		}
+
+		task ("Then the page should be set as Default Category Display Page") {
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Widget Page 1",
+				pageType = "Public");
+		}
+
+		task ("When the user changes the Default Category Display Page") {
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Widget Page 2",
+				pageType = "Public");
+		}
+
+		task ("Then the new page should be set as Default Category Display Page") {
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Widget Page 2",
+				pageType = "Public");
+		}
+
+		task ("When the user removes the Default Category Display Page") {
+			CommerceChannels.removeDefaultDisplayPage();
+		}
+
+		task ("Then it should show Default Category Display Page as 'None'") {
+			CommerceEntry.assertDefaultDisplayPage(pageName = "None");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7953. Verify user can select, change, and remove a default category display page override"
+	@priority = 5
+	test CanSelectChangeAndRemoveOverrideDefaultCategoryDisplayPage {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				widgetName = "Commerce Categories Navigation");
+
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+		}
+
+		task ("And given the Minium site has two pages with a Category Content widget") {
+			for (var pageNum : list "1,2") {
+				JSONLayout.addPublicLayout(
+					groupName = "Minium",
+					layoutName = "Test Public Widget Page ${pageNum}");
+			}
+
+			for (var widgetNum : list "1,2") {
+				JSONLayout.addWidgetToPublicLayout(
+					groupName = "Minium",
+					layoutName = "Test Public Widget Page ${widgetNum}",
+					widgetName = "Category Content");
+			}
+		}
+
+		task ("When the user sets the first page as Override Default Category Display Page for a category") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Engine",
+				pageName = "Test Public Widget Page 1",
+				pageType = "Public");
+		}
+
+		task ("Then the page should be correctly set as Override Default Category Display Page for that category") {
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Public Widget Page 1");
+		}
+
+		task ("When the user edits the category and layout of the override") {
+			CommerceChannels.editOverrideCategoryDisplayPage(
+				category = "Engine",
+				newCategory = "Suspension",
+				newPageName = "Test Public Widget Page 2",
+				newPageType = "Public");
+		}
+
+		task ("Then the new override should be shown under Override Default Category Display Page") {
+			CommerceEntry.assertNoDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Public Widget Page 1");
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Suspension",
+				layout = "Test Public Widget Page 2");
+		}
+
+		task ("When the user removes the Override Default Category Display Page") {
+			CommerceEntry.deleteCommerceEntry(entryName = "Suspension");
+		}
+
+		task ("Then the category display page override should no longer be present") {
+			CommerceEntry.assertNoDisplayPageOverride(
+				entryName = "Suspension",
+				layout = "Test Public Widget Page 2");
+
+			AssertTextEquals(
+				locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER",
+				value1 = "Sorry, no results were found.");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-11975. The admin is not redirected into another page after he publishes an image for a category"
+	@priority = 3
+	test CanViewSamePageAfterPublishingAnImageForACategory {
+		property portal.acceptance = "false";
+
+		task ("Given a Minium site is created") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And also a new vocabulary for the site") {
+			JSONCategory.addVocabulary(
+				groupName = "Minium",
+				title = "Test Vocabulary");
+		}
+
+		task ("And also a category for the vocabulary") {
+			JSONCategory.addCategory(
+				groupName = "Minium",
+				title = "Test Category",
+				vocabularyName = "Test Vocabulary");
+		}
+
+		task ("When the admin navigates to the minium categories page") {
+			Category.openCategoriesAdmin(siteURLKey = "minium");
+		}
+
+		task ("And adds an image for the category using Select from File button") {
+			Category.addImageToCategory(
+				categoryName = "Test Category",
+				imageName = "Document_1.jpg");
+		}
+
+		task ("Then after publishing the admin is not redirected to the categories page, but remains in the same tab") {
+			AssertElementPresent(
+				key_tabName = "Images",
+				locator1 = "StagingPublishToLive#ACTIVE_TAB_NAME");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7853. Verify user can override a default category display page for different categories"
+	@priority = 5
+	test OverrideDefaultCategoryDisplayPageForDifferentCategories {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public content page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Public Content Page",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public widget page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Widget Page");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Widget Page",
+				widgetName = "Category Content");
+		}
+
+		task ("And given the Minium site has a private content page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Private Content Page",
+				privateLayout = "true",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And Given the Test Public Content Page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+		}
+
+		task ("And Given it is not possible to add an Override Default Category Display Page by selecting only a category") {
+			CommerceChannels.addCategory(key_card = "Engine");
+
+			SelectFrame.selectFrameTop();
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			Button.clickSave();
+
+			AssertTextEquals.assertText(
+				locator1 = "Message#ERROR",
+				value1 = "Close Error:Please select a valid layout.");
+		}
+
+		task ("And Given it is not possible to add an Override Default Category Display Page by selecting only a page") {
+			Refresh();
+
+			Click(locator1 = "Button#PLUS");
+
+			CommerceChannels.chooseDisplayPageFromSidePanel(
+				pageName = "Test Public Widget Page",
+				pageType = "Public");
+
+			SelectFrame.selectFrameNoLoading(locator1 = "CommerceEntry#IFRAME_SIDE_PANEL");
+
+			Button.clickSave();
+
+			WaitForElementPresent(locator1 = "Message#ERROR");
+
+			AssertTextEquals.assertText(
+				locator1 = "Message#ERROR",
+				value1 = "Close Error:Please select a valid category.");
+		}
+
+		task ("And given the Test Public Widget Page is set as Override Default Category Display Page for Engine") {
+			Refresh();
+
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Engine",
+				pageName = "Test Public Widget Page",
+				pageType = "Public");
+
+			Refresh();
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Public Widget Page");
+		}
+
+		task ("And given the Test Private Content Page is set as Override Default Category Display Page for Transmission") {
+			Refresh();
+
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Transmission",
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+
+			Refresh();
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Transmission",
+				layout = "Test Private Content Page");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category besides Engine or Transmission") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Suspension");
+		}
+
+		task ("Then I should be redirected to the Test Public Content Page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/suspension");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Suspension");
+		}
+
+		task ("When I go to the Categories Navigation page and click on the Engine category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then I should be redirected to the Test Public Widget Page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Widget Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Engine");
+		}
+
+		task ("When I go to the Categories Navigation page and click on the Transmission category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Transmission");
+		}
+
+		task ("Then I should be redirected to the Test Private Content Page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/transmission");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Transmission");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7852. Verify user can override a private default category display page with another private page"
+	@priority = 5
+	test OverridePrivateDefaultCategoryDisplayPageWithAPrivatePage {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a private content page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Private Content Page",
+				privateLayout = "true",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a private widget page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Widget Page");
+
+			JSONLayout.addWidgetToPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Widget Page",
+				widgetName = "Category Content");
+		}
+
+		task ("And Given the Test Private Content Page is set as Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+		}
+
+		task ("And given the Test Private Widget Page is set as Override Default Category Display Page for Engine") {
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Engine",
+				pageName = "Test Private Widget Page",
+				pageType = "Private");
+
+			Refresh();
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Private Widget Page");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category besides Engine") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Suspension");
+		}
+
+		task ("Then I should be redirected to the private content page with the category shown on the Category Content Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/suspension");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Suspension");
+		}
+
+		task ("When I go to the Categories Navigation page and click on the Engine category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then I should be redirected to the private widget page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Widget Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Engine");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7851. Verify user can override a private default category display page with a public page"
+	@priority = 5
+	test OverridePrivateDefaultCategoryDisplayPageWithAPublicPage {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a private content page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Private Content Page",
+				privateLayout = "true",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public content page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Public Content Page",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And Given the private content page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+		}
+
+		task ("And given the Test Public Content Page is set as Override Default Category Display Page for Engine") {
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Engine",
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+
+			Refresh();
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Public Content Page");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category besides Engine") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Suspension");
+		}
+
+		task ("Then I should be redirected to the private content page with the category shown on the Category Content Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/suspension");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Suspension");
+		}
+
+		task ("When I go to the Categories Navigation page and click on the Engine category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then I should be redirected to the public content page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Engine");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7850. Verify user can override a public default category display page with a private page"
+	@priority = 5
+	test OverridePublicDefaultCategoryDisplayPageWithAPrivatePage {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public content page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Public Content Page",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a private content page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Private Content Page",
+				privateLayout = "true",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And Given the Test Public Content Page is set as Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+		}
+
+		task ("And given the Test Private Content Page is set as Override Default Category Display Page for Engine") {
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Engine",
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+
+			Refresh();
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Private Content Page");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category besides Engine") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Suspension");
+		}
+
+		task ("Then I should be redirected to the public content page with the category shown on the Category Content Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/suspension");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Suspension");
+		}
+
+		task ("When I go to the Categories Navigation page and click on the Engine category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then I should be redirected to the private content page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Engine");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7849. Verify user can override a public default category display page with a public page"
+	@priority = 5
+	test OverridePublicDefaultCategoryDisplayPageWithAPublicPage {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public content page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Public Content Page",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public widget page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Widget Page");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Widget Page",
+				widgetName = "Category Content");
+		}
+
+		task ("And Given the content page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+		}
+
+		task ("And given the Test Public Widget Page is set as Override Default Category Display Page for Engine") {
+			CommerceChannels.overrideCategoryDisplayPage(
+				category = "Engine",
+				pageName = "Test Public Widget Page",
+				pageType = "Public");
+
+			Refresh();
+
+			CommerceEntry.assertDisplayPageOverride(
+				entryName = "Engine",
+				layout = "Test Public Widget Page");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category besides Engine") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Suspension");
+		}
+
+		task ("Then I should be redirected to the public content page with the category shown on the Category Content Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/suspension");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Suspension");
+		}
+
+		task ("When I go to the Categories Navigation page and click on the Engine category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then I should be redirected to the public widget page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Widget Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Engine");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7846. Create a private widget page and a private content page with a Category Content widget and define it as the default category display page, and then try if it works on the front."
+	@priority = 5
+	test ViewDefaultCategoryDisplayPageWithPrivateWidgetAndContentPages {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a private widget page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Widget Page");
+
+			JSONLayout.addWidgetToPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Widget Page",
+				widgetName = "Category Content");
+		}
+
+		task ("And Given the widget page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Private Widget Page",
+				pageType = "Private");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Private Widget Page",
+				pageType = "Private");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Transmission");
+		}
+
+		task ("Then I should be redirected to the private widget page with the category shown on the Category Content Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Widget Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/transmission");
+
+			Portlet.viewBody(
+				portletBody = "Transmission",
+				portletName = "Category Content");
+		}
+
+		task ("Given the Minium site has a private content page with a Category Content widget") {
+			JSONLayout.addPrivateLayout(
+				groupName = "Minium",
+				layoutName = "Test Private Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Private Content Page",
+				privateLayout = "true",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the content page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Private Content Page",
+				pageType = "Private");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Brake System");
+		}
+
+		task ("Then I should be redirected to the private content page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Private Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/brake-system");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Brake System");
+		}
+	}
+
+	@description = "This is a test for COMMERCE-7844. Create a public widget page and a public content page with a Category Content widget and define it as the default category display page, and then try if it works on the front"
+	@priority = 5
+	test ViewDefaultCategoryDisplayPageWithPublicWidgetAndContentPages {
+		property portal.acceptance = "true";
+
+		task ("Given a Minium site") {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+		}
+
+		task ("And given the Minium site has a private Categories Navigation page with a Commerce Categories Navigation widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Categories Navigation",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Categories Navigation",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Commerce Categories Navigation");
+
+			Portlet.gotoPortletOptions(
+				portletName = "Commerce Categories Navigation",
+				portletOption = "Configuration");
+
+			CommerceNavigator.changeVocabulary(newVocabularyName = "Minium");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the Minium site has a public widget page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Widget Page");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Widget Page",
+				widgetName = "Category Content");
+		}
+
+		task ("And Given the widget page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Widget Page",
+				pageType = "Public");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Widget Page",
+				pageType = "Public");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Engine");
+		}
+
+		task ("Then I should be redirected to the public widget page with the category shown on the Category Content Widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Widget Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/engine");
+
+			Portlet.viewBody(
+				portletBody = "Engine",
+				portletName = "Category Content");
+		}
+
+		task ("Given the Minium site has a public content page with a Category Content widget") {
+			JSONLayout.addPublicLayout(
+				groupName = "Minium",
+				layoutName = "Test Public Content Page",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Public Content Page",
+				siteName = "Minium");
+
+			PageEditor.addWidget(portletName = "Category Content");
+
+			PageEditor.publish();
+		}
+
+		task ("And given the content page is set as the Default Category Display Page") {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+			CommerceEntry.gotoMenuTab(menuTab = "Category Display Pages");
+
+			CommerceChannels.chooseDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+
+			CommerceEntry.assertDefaultDisplayPage(
+				pageName = "Test Public Content Page",
+				pageType = "Public");
+		}
+
+		task ("When I go to the Categories Navigation page and click on a category") {
+			ApplicationsMenu.gotoSite(site = "Minium");
+
+			CommerceNavigator.gotoMiniumSidebarItem(menuItem = "Categories Navigation");
+
+			CommerceNavigator.selectItemFromTreeNode(itemName = "Suspension");
+		}
+
+		task ("Then I should be redirected to the public content page with the category shown on the Category Content widget") {
+			ControlMenu.viewHeaderTitle(headerTitle = "Test Public Content Page");
+
+			AssertLocation.assertPartialLocation(value1 = "web/minium/g/suspension");
+
+			AssertTextEquals(
+				locator1 = "CommerceEntry#CATEGORY_CONTENT_TITLE",
+				value1 = "Suspension");
+		}
+	}
+
+}

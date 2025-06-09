@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -32,25 +23,21 @@
 	<aui:input name="preferences--assetEntryId--" type="hidden" value="<%= journalContentDisplayContext.getAssetEntryId() %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<div id="<portlet:namespace />articlePreview">
-					<liferay-util:include page="/journal_resources.jsp" servletContext="<%= application %>">
-						<liferay-util:param name="refererPortletName" value="<%= liferayPortletResponse.getNamespace() %>" />
-					</liferay-util:include>
-				</div>
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+		<liferay-frontend:fieldset>
+			<div id="<portlet:namespace />articlePreview">
+				<liferay-util:include page="/journal_resources.jsp" servletContext="<%= application %>">
+					<liferay-util:param name="refererPortletName" value="<%= liferayPortletResponse.getNamespace() %>" />
+				</liferay-util:include>
+			</div>
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button name="saveButton" type="submit" />
-
-		<aui:button href='<%= ParamUtil.getString(request, "redirect") %>' type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
-<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
+<aui:script sandbox="<%= true %>">
 	var articlePreview = document.getElementById(
 		'<portlet:namespace />articlePreview'
 	);
@@ -58,24 +45,28 @@
 		'<portlet:namespace />assetEntryId'
 	);
 
-	var delegate = delegateModule.default;
+	Liferay.Util.delegate(
+		articlePreview,
+		'click',
+		'.web-content-selector',
+		(event) => {
+			event.preventDefault();
 
-	delegate(articlePreview, 'click', '.web-content-selector', (event) => {
-		event.preventDefault();
+			Liferay.Util.openSelectionModal({
+				onSelect: function (data) {
+					if (data.value && data.value.length) {
+						const selectedItem = JSON.parse(data.value);
+						retrieveWebContent(selectedItem.classPK);
+					}
+				},
+				selectEventName: '<portlet:namespace />selectedItem',
+				title: '<liferay-ui:message key="select-web-content" />',
+				url: '<%= journalContentDisplayContext.getItemSelectorURL() %>',
+			});
+		}
+	);
 
-		Liferay.Util.openSelectionModal({
-			onSelect: function (selectedItem) {
-				if (selectedItem) {
-					retrieveWebContent(selectedItem.assetclasspk);
-				}
-			},
-			selectEventName: '<portlet:namespace />selectedItem',
-			title: '<liferay-ui:message key="select-web-content" />',
-			url: '<%= journalContentDisplayContext.getItemSelectorURL() %>',
-		});
-	});
-
-	delegate(articlePreview, 'click', '.selector-button', (event) => {
+	Liferay.Util.delegate(articlePreview, 'click', '.selector-button', (event) => {
 		event.preventDefault();
 		retrieveWebContent(-1);
 	});

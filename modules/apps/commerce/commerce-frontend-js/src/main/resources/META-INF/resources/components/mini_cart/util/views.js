@@ -1,45 +1,43 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {getJsModule} from '../../../utilities/modules';
+import {loadModule} from 'frontend-js-web';
+
 import Summary from '../../summary/Summary';
 import CartItem from '../CartItem';
 import CartItemsList from '../CartItemsList';
 import CartItemsListActions from '../CartItemsListActions';
+import EditItem from '../EditItem';
 import Header from '../Header';
 import Opener from '../Opener';
 import OrderButton from '../OrderButton';
+import RequestQuoteButton from '../RequestQuoteButton';
 import Wrapper from '../Wrapper';
 import {
 	CART,
+	EDIT_ITEM,
 	HEADER,
 	ITEM,
 	ITEMS_LIST,
 	ITEMS_LIST_ACTIONS,
 	OPENER,
 	ORDER_BUTTON,
+	REQUEST_QUOTE_BUTTON,
 	SUMMARY,
 } from './constants';
 
 export const DEFAULT_VIEWS = {
 	[CART]: {component: Wrapper},
+	[EDIT_ITEM]: {component: EditItem},
 	[HEADER]: {component: Header},
 	[ITEM]: {component: CartItem},
 	[ITEMS_LIST]: {component: CartItemsList},
 	[ITEMS_LIST_ACTIONS]: {component: CartItemsListActions},
 	[OPENER]: {component: Opener},
 	[ORDER_BUTTON]: {component: OrderButton},
+	[REQUEST_QUOTE_BUTTON]: {component: RequestQuoteButton},
 	[SUMMARY]: {component: Summary},
 };
 
@@ -63,7 +61,7 @@ function resolveView({component, contentRendererModuleUrl}) {
 		);
 	}
 
-	return getJsModule(contentRendererModuleUrl).then((module) =>
+	return loadModule(contentRendererModuleUrl).then((module) =>
 		Promise.resolve(
 			decorateWith(module, {
 				moduleURL: contentRendererModuleUrl,

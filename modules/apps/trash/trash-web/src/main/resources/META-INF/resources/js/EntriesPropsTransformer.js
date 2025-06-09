@@ -1,32 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSelectionModal} from 'frontend-js-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+
+import openDeleteEntryModal from './openDeleteEntryModal';
 
 const ACTIONS = {
 	deleteEntry(itemData) {
-		if (
-			confirm(
-				Liferay.Language.get('are-you-sure-you-want-to-delete-this')
-			)
-		) {
-			submitForm(document.hrefFm, itemData.deleteEntryURL);
-		}
+		openDeleteEntryModal({
+			onDelete: () => {
+				submitForm(document.hrefFm, itemData.deleteEntryURL);
+			},
+		});
 	},
 
 	moveEntry(itemData, portletNamespace) {
 		openSelectionModal({
+			height: '70vh',
+			iframeBodyCssClass: '',
 			onSelect: (event) => {
 				const selectContainerForm = document.getElementById(
 					`${portletNamespace}selectContainerForm`
@@ -72,7 +65,8 @@ const ACTIONS = {
 				}
 			},
 			selectEventName: `${portletNamespace}selectContainer`,
-			title: Liferay.Language.get('warning'),
+			size: 'md',
+			title: Liferay.Language.get('select-restore-folder'),
 			url: itemData.moveEntryURL,
 		});
 	},
@@ -82,22 +76,36 @@ const ACTIONS = {
 	},
 };
 
-export default function propsTransformer({items, portletNamespace, ...props}) {
+export default function propsTransformer({
+	actions,
+	items,
+	portletNamespace,
+	...props
+}) {
+	const updateItem = (item) => {
+		const newItem = {
+			...item,
+			onClick(event) {
+				const action = item.data?.action;
+
+				if (action) {
+					event.preventDefault();
+
+					ACTIONS[action]?.(item.data, portletNamespace);
+				}
+			},
+		};
+
+		if (Array.isArray(item.items)) {
+			newItem.items = item.items.map(updateItem);
+		}
+
+		return newItem;
+	};
+
 	return {
 		...props,
-		items: items.map((item) => {
-			return {
-				...item,
-				onClick(event) {
-					const action = item.data?.action;
-
-					if (action) {
-						event.preventDefault();
-
-						ACTIONS[action](item.data, portletNamespace);
-					}
-				},
-			};
-		}),
+		actions: actions?.map(updateItem),
+		items: items?.map(updateItem),
 	};
 }

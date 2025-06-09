@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.groups.admin.web.internal.display.context;
@@ -20,12 +11,13 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.UserGroup;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.PortalPermissionUtil;
@@ -33,19 +25,19 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usergroupsadmin.search.UserGroupChecker;
-import com.liferay.portlet.usergroupsadmin.search.UserGroupDisplayTerms;
-import com.liferay.portlet.usergroupsadmin.search.UserGroupSearch;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.user.groups.admin.constants.UserGroupsAdminPortletKeys;
+import com.liferay.user.groups.admin.web.internal.search.UserGroupChecker;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -91,25 +83,7 @@ public class ViewUserGroupsManagementToolbarDisplayContext {
 					"/edit_user_group.jsp", "redirect",
 					_renderResponse.createRenderURL());
 				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "add"));
-			}
-		).build();
-	}
-
-	public List<DropdownItem> getFilterDropdownItems() {
-		return DropdownItemListBuilder.addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					_getFilterNavigationDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(
-						_httpServletRequest, "filter-by-navigation"));
-			}
-		).addGroup(
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(_getOrderByDropdownItems());
-				dropdownGroupItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "order-by"));
+					LanguageUtil.get(_httpServletRequest, "add-user-group"));
 			}
 		).build();
 	}
@@ -123,19 +97,36 @@ public class ViewUserGroupsManagementToolbarDisplayContext {
 	}
 
 	public String getOrderByCol() {
-		if (Validator.isNull(_orderByCol)) {
-			_orderByCol = ParamUtil.getString(
-				_httpServletRequest, "orderByCol", "name");
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
 		}
+
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest, UserGroupsAdminPortletKeys.USER_GROUPS_ADMIN,
+			"view-user-groups-order-by-col", "name");
 
 		return _orderByCol;
 	}
 
+	public List<DropdownItem> getOrderByDropdownItems() {
+		return DropdownItemListBuilder.add(
+			dropdownItem -> {
+				dropdownItem.setActive(Objects.equals(getOrderByCol(), "name"));
+				dropdownItem.setHref(getPortletURL(), "orderByCol", "name");
+				dropdownItem.setLabel(
+					LanguageUtil.get(_httpServletRequest, "name"));
+			}
+		).build();
+	}
+
 	public String getOrderByType() {
-		if (Validator.isNull(_orderByType)) {
-			_orderByType = ParamUtil.getString(
-				_httpServletRequest, "orderByType", "asc");
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
 		}
+
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest, UserGroupsAdminPortletKeys.USER_GROUPS_ADMIN,
+			"view-user-groups-order-by-type", "asc");
 
 		return _orderByType;
 	}
@@ -173,13 +164,13 @@ public class ViewUserGroupsManagementToolbarDisplayContext {
 			}
 		).buildPortletURL();
 
-		if (_userGroupSearch != null) {
+		if (_userGroupSearchContainer != null) {
 			portletURL.setParameter(
-				_userGroupSearch.getCurParam(),
-				String.valueOf(_userGroupSearch.getCur()));
+				_userGroupSearchContainer.getCurParam(),
+				String.valueOf(_userGroupSearchContainer.getCur()));
 			portletURL.setParameter(
-				_userGroupSearch.getDeltaParam(),
-				String.valueOf(_userGroupSearch.getDelta()));
+				_userGroupSearchContainer.getDeltaParam(),
+				String.valueOf(_userGroupSearchContainer.getDelta()));
 		}
 
 		return portletURL;
@@ -192,44 +183,48 @@ public class ViewUserGroupsManagementToolbarDisplayContext {
 	}
 
 	public SearchContainer<UserGroup> getSearchContainer() throws Exception {
-		if (_userGroupSearch != null) {
-			return _userGroupSearch;
+		if (_userGroupSearchContainer != null) {
+			return _userGroupSearchContainer;
 		}
 
-		UserGroupSearch userGroupSearch = new UserGroupSearch(
-			_renderRequest, getPortletURL());
+		SearchContainer<UserGroup> userGroupSearchContainer =
+			new SearchContainer<>(
+				_renderRequest, getPortletURL(), null,
+				"no-user-groups-were-found");
 
-		userGroupSearch.setRowChecker(new UserGroupChecker(_renderResponse));
+		userGroupSearchContainer.setOrderByCol(getOrderByCol());
+		userGroupSearchContainer.setOrderByComparator(
+			UsersAdminUtil.getUserGroupOrderByComparator(
+				getOrderByCol(), getOrderByType()));
+		userGroupSearchContainer.setOrderByType(getOrderByType());
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)_httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		UserGroupDisplayTerms userGroupSearchTerms =
-			(UserGroupDisplayTerms)userGroupSearch.getSearchTerms();
-
 		LinkedHashMap<String, Object> userGroupParams = new LinkedHashMap<>();
 
-		String keywords = userGroupSearchTerms.getKeywords();
+		String keywords = getKeywords();
 
 		if (Validator.isNotNull(keywords)) {
 			userGroupParams.put("expandoAttributes", keywords);
 		}
 
-		List<UserGroup> results = UserGroupLocalServiceUtil.search(
-			themeDisplay.getCompanyId(), keywords, userGroupParams,
-			userGroupSearch.getStart(), userGroupSearch.getEnd(),
-			userGroupSearch.getOrderByComparator());
+		userGroupSearchContainer.setResultsAndTotal(
+			() -> UserGroupLocalServiceUtil.search(
+				themeDisplay.getCompanyId(), keywords, userGroupParams,
+				userGroupSearchContainer.getStart(),
+				userGroupSearchContainer.getEnd(),
+				userGroupSearchContainer.getOrderByComparator()),
+			UserGroupLocalServiceUtil.searchCount(
+				themeDisplay.getCompanyId(), keywords, userGroupParams));
 
-		int total = UserGroupLocalServiceUtil.searchCount(
-			themeDisplay.getCompanyId(), keywords, userGroupParams);
+		userGroupSearchContainer.setRowChecker(
+			new UserGroupChecker(_renderResponse));
 
-		userGroupSearch.setResults(results);
-		userGroupSearch.setTotal(total);
+		_userGroupSearchContainer = userGroupSearchContainer;
 
-		_userGroupSearch = userGroupSearch;
-
-		return _userGroupSearch;
+		return _userGroupSearchContainer;
 	}
 
 	public String getSortingURL() {
@@ -254,28 +249,6 @@ public class ViewUserGroupsManagementToolbarDisplayContext {
 		return _hasAddUserGroupPermission();
 	}
 
-	private List<DropdownItem> _getFilterNavigationDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(true);
-				dropdownItem.setHref(StringPool.BLANK);
-				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "all"));
-			}
-		).build();
-	}
-
-	private List<DropdownItem> _getOrderByDropdownItems() {
-		return DropdownItemListBuilder.add(
-			dropdownItem -> {
-				dropdownItem.setActive(Objects.equals(getOrderByCol(), "name"));
-				dropdownItem.setHref(getPortletURL(), "orderByCol", "name");
-				dropdownItem.setLabel(
-					LanguageUtil.get(_httpServletRequest, "name"));
-			}
-		).build();
-	}
-
 	private boolean _hasAddUserGroupPermission() {
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)_httpServletRequest.getAttribute(
@@ -292,6 +265,6 @@ public class ViewUserGroupsManagementToolbarDisplayContext {
 	private String _orderByType;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
-	private UserGroupSearch _userGroupSearch;
+	private SearchContainer<UserGroup> _userGroupSearchContainer;
 
 }

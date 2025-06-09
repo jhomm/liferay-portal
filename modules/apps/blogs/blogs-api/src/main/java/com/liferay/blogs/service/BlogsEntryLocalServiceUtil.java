@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -48,12 +40,13 @@ public class BlogsEntryLocalServiceUtil {
 	 */
 	public static com.liferay.portal.kernel.repository.model.FileEntry
 			addAttachmentFileEntry(
-				BlogsEntry entry, long userId, String fileName, String mimeType,
-				InputStream inputStream)
+				String externalReferenceCode, long userId, long groupId,
+				String fileName, String mimeType, InputStream inputStream)
 		throws PortalException {
 
 		return getService().addAttachmentFileEntry(
-			entry, userId, fileName, mimeType, inputStream);
+			externalReferenceCode, userId, groupId, fileName, mimeType,
+			inputStream);
 	}
 
 	public static com.liferay.portal.kernel.repository.model.Folder
@@ -263,6 +256,12 @@ public class BlogsEntryLocalServiceUtil {
 		return getService().createPersistedModel(primaryKeyObj);
 	}
 
+	public static void deleteAttachmentFileEntry(long fileEntryId)
+		throws PortalException {
+
+		getService().deleteAttachmentFileEntry(fileEntryId);
+	}
+
 	/**
 	 * Deletes the blogs entry from the database. Also notifies the appropriate model listeners.
 	 *
@@ -413,29 +412,11 @@ public class BlogsEntryLocalServiceUtil {
 		return getService().fetchBlogsEntry(entryId);
 	}
 
-	/**
-	 * Returns the blogs entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the blogs entry's external reference code
-	 * @return the matching blogs entry, or <code>null</code> if a matching blogs entry could not be found
-	 */
 	public static BlogsEntry fetchBlogsEntryByExternalReferenceCode(
-		long groupId, String externalReferenceCode) {
+		String externalReferenceCode, long groupId) {
 
 		return getService().fetchBlogsEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchBlogsEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static BlogsEntry fetchBlogsEntryByReferenceCode(
-		long groupId, String externalReferenceCode) {
-
-		return getService().fetchBlogsEntryByReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -459,6 +440,22 @@ public class BlogsEntryLocalServiceUtil {
 		getActionableDynamicQuery() {
 
 		return getService().getActionableDynamicQuery();
+	}
+
+	public static com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentFileEntry(long fileEntryId)
+		throws PortalException {
+
+		return getService().getAttachmentFileEntry(fileEntryId);
+	}
+
+	public static com.liferay.portal.kernel.repository.model.FileEntry
+			getAttachmentFileEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getAttachmentFileEntryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -529,20 +526,12 @@ public class BlogsEntryLocalServiceUtil {
 		return getService().getBlogsEntry(entryId);
 	}
 
-	/**
-	 * Returns the blogs entry with the matching external reference code and group.
-	 *
-	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the blogs entry's external reference code
-	 * @return the matching blogs entry
-	 * @throws PortalException if a matching blogs entry could not be found
-	 */
 	public static BlogsEntry getBlogsEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode)
+			String externalReferenceCode, long groupId)
 		throws PortalException {
 
 		return getService().getBlogsEntryByExternalReferenceCode(
-			groupId, externalReferenceCode);
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -913,9 +902,11 @@ public class BlogsEntryLocalServiceUtil {
 	}
 
 	public static BlogsEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile BlogsEntryLocalService _service;
+	private static final Snapshot<BlogsEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			BlogsEntryLocalServiceUtil.class, BlogsEntryLocalService.class);
 
 }

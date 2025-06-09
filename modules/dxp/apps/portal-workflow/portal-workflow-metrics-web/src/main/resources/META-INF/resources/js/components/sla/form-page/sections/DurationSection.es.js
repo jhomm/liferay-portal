@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClaySelect} from '@clayui/form';
 import ClayLayout from '@clayui/layout';
 import React, {useCallback, useContext} from 'react';
 import MaskedInput from 'react-text-mask';
-import createNumberMask from 'text-mask-addons/dist/createNumberMask';
+import {createNumberMask} from 'text-mask-addons';
 
 import FieldLabel from '../../../../shared/components/form/FieldLabel.es';
 import FormGroupWithStatus from '../../../../shared/components/form/FormGroupWithStatus.es';
@@ -26,6 +20,16 @@ import {
 } from '../SLAFormConstants.es';
 import {SLAFormContext} from '../SLAFormPageProvider.es';
 import {validateDuration, validateHours} from '../util/slaFormUtil.es';
+
+let MaskedInputDefault = MaskedInput;
+
+// `react-text-mask` provides both a commonjs and ESM version.
+// We need this logic here so that both work. Unit tests rely on commonjs and
+// our DXP runtime uses ESM.
+
+if (MaskedInputDefault.default) {
+	MaskedInputDefault = MaskedInputDefault.default;
+}
 
 export default function DurationSection({onChangeHandler}) {
 	const {
@@ -98,7 +102,7 @@ export default function DurationSection({onChangeHandler}) {
 				{calendars.length > 1
 					? Liferay.Language.get(
 							'define-the-sla-duration-and-calendar-format'
-					  )
+						)
 					: Liferay.Language.get('define-the-sla-duration')}
 			</div>
 
@@ -113,7 +117,7 @@ export default function DurationSection({onChangeHandler}) {
 						htmlFor="slaDurationDays"
 						label={Liferay.Language.get('days')}
 					>
-						<MaskedInput
+						<MaskedInputDefault
 							className="form-control"
 							id="slaDurationDays"
 							mask={daysMask}
@@ -132,7 +136,7 @@ export default function DurationSection({onChangeHandler}) {
 						htmlFor="slaDurationHours"
 						label={Liferay.Language.get('hours')}
 					>
-						<MaskedInput
+						<MaskedInputDefault
 							className="form-control"
 							id="slaDurationHours"
 							mask={[/\d/, /\d/, ':', /\d/, /\d/]}

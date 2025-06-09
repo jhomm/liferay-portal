@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service.impl;
@@ -21,6 +12,7 @@ import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.model.CTEntryTable;
 import com.liferay.change.tracking.service.base.CTEntryLocalServiceBaseImpl;
 import com.liferay.change.tracking.service.persistence.CTCollectionPersistence;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.aop.AopService;
@@ -29,13 +21,22 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.change.tracking.CTModel;
+import com.liferay.portal.kernel.search.Indexable;
+import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import java.io.Serializable;
+
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -52,18 +53,18 @@ import org.osgi.service.component.annotations.Reference;
 @CTAware
 public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 
+	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CTEntry addCTEntry(
-			long ctCollectionId, long modelClassNameId, CTModel<?> ctModel,
-			long userId, int changeType)
+			String externalReferenceCode, long ctCollectionId,
+			long modelClassNameId, CTModel<?> ctModel, long userId,
+			int changeType)
 		throws PortalException {
 
 		CTCollection ctCollection = _ctCollectionPersistence.findByPrimaryKey(
 			ctCollectionId);
 
-		if ((ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT) &&
-			(ctCollection.getStatus() != WorkflowConstants.STATUS_PENDING)) {
-
+		if (ctCollection.isReadOnly()) {
 			throw new PortalException(
 				"Change tracking collection " + ctCollection + " is read only");
 		}
@@ -72,6 +73,7 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 
 		CTEntry ctEntry = ctEntryPersistence.create(ctEntryId);
 
+		ctEntry.setExternalReferenceCode(externalReferenceCode);
 		ctEntry.setCompanyId(ctCollection.getCompanyId());
 		ctEntry.setUserId(userId);
 		ctEntry.setCtCollectionId(ctCollectionId);
@@ -83,14 +85,21 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 		return ctEntryPersistence.update(ctEntry);
 	}
 
+	@Indexable(type = IndexableType.DELETE)
 	@Override
 	public CTEntry deleteCTEntry(CTEntry ctEntry) throws PortalException {
+		return deleteCTEntry(ctEntry, false);
+	}
+
+	@Indexable(type = IndexableType.DELETE)
+	@Override
+	public CTEntry deleteCTEntry(CTEntry ctEntry, boolean force)
+		throws PortalException {
+
 		CTCollection ctCollection = _ctCollectionPersistence.findByPrimaryKey(
 			ctEntry.getCtCollectionId());
 
-		if ((ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT) &&
-			(ctCollection.getStatus() != WorkflowConstants.STATUS_PENDING)) {
-
+		if (!force && ctCollection.isReadOnly()) {
 			throw new PortalException(
 				"Change tracking collection " + ctCollection + " is read only");
 		}
@@ -140,6 +149,17 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 
 		return ctEntryPersistence.findByC_MCNI(
 			ctCollectionId, modelClassNameId);
+	}
+
+	@Override
+	public List<CTEntry> getCTEntries(long[] ctEntryIds) {
+		Set<Serializable> primaryKeys = new HashSet<>(
+			TransformUtil.transformToList(ctEntryIds, GetterUtil::getLong));
+
+		Map<Serializable, CTEntry> ctEntriesMap =
+			ctEntryPersistence.fetchByPrimaryKeys(primaryKeys);
+
+		return new ArrayList<>(ctEntriesMap.values());
 	}
 
 	@Override
@@ -227,6 +247,53 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 	}
 
 	@Override
+	public boolean hasCTEntry(
+		long ctCollectionId, long modelClassNameId, long modelClassPK) {
+
+		int count = ctEntryPersistence.countByC_MCNI_MCPK(
+			ctCollectionId, modelClassNameId, modelClassPK);
+
+		if (count == 0) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Override
+	public boolean hasUnpublishedCTEntries(
+		long modelClassNameId, long modelClassPK, int changeType) {
+
+		int count = ctEntryLocalService.dslQueryCount(
+			DSLQueryFactoryUtil.countDistinct(
+				CTEntryTable.INSTANCE.ctEntryId
+			).from(
+				CTEntryTable.INSTANCE
+			).innerJoinON(
+				CTCollectionTable.INSTANCE,
+				CTCollectionTable.INSTANCE.ctCollectionId.eq(
+					CTEntryTable.INSTANCE.ctCollectionId)
+			).where(
+				CTCollectionTable.INSTANCE.status.eq(
+					WorkflowConstants.STATUS_DRAFT
+				).and(
+					CTEntryTable.INSTANCE.modelClassNameId.eq(modelClassNameId)
+				).and(
+					CTEntryTable.INSTANCE.modelClassPK.eq(modelClassPK)
+				).and(
+					CTEntryTable.INSTANCE.changeType.eq(changeType)
+				)
+			));
+
+		if (count == 0) {
+			return false;
+		}
+
+		return true;
+	}
+
+	@Indexable(type = IndexableType.REINDEX)
+	@Override
 	public CTEntry updateCTEntry(CTEntry ctEntry) {
 		CTCollection ctCollection = _ctCollectionPersistence.fetchByPrimaryKey(
 			ctEntry.getCtCollectionId());
@@ -244,6 +311,17 @@ public class CTEntryLocalServiceImpl extends CTEntryLocalServiceBaseImpl {
 			throw new SystemException(
 				"Change tracking collection " + ctCollection + " is read only");
 		}
+
+		return ctEntryPersistence.update(ctEntry);
+	}
+
+	@Override
+	public CTEntry updateModelMvccVersion(
+		long ctEntryId, long modelMvccVersion) {
+
+		CTEntry ctEntry = ctEntryPersistence.fetchByPrimaryKey(ctEntryId);
+
+		ctEntry.setModelMvccVersion(modelMvccVersion);
 
 		return ctEntryPersistence.update(ctEntry);
 	}

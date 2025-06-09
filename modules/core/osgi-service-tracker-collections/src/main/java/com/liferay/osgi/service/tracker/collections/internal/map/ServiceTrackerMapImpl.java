@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.osgi.service.tracker.collections.internal.map;
 
+import com.liferay.osgi.service.tracker.collections.EagerServiceTrackerCustomizer;
+import com.liferay.osgi.service.tracker.collections.internal.ServiceTrackerManager;
 import com.liferay.osgi.service.tracker.collections.internal.ServiceTrackerUtil;
 import com.liferay.osgi.service.tracker.collections.map.KeyedServiceReferenceServiceTuple;
 import com.liferay.osgi.service.tracker.collections.map.ServiceReferenceMapper;
@@ -57,21 +50,38 @@ public class ServiceTrackerMapImpl<K, SR, TS, R>
 			bundleContext, clazz, filterString,
 			new ServiceReferenceServiceTrackerCustomizer());
 
-		_serviceTracker.open();
+		boolean trackAllServices = false;
+
+		if (clazz == null) {
+			trackAllServices = true;
+		}
+
+		_serviceTrackerManager = new ServiceTrackerManager(
+			_serviceTracker, trackAllServices);
+
+		if (_serviceTrackerCustomizer instanceof
+				EagerServiceTrackerCustomizer) {
+
+			_serviceTrackerManager.open();
+		}
 	}
 
 	@Override
 	public void close() {
-		_serviceTracker.close();
+		_serviceTrackerManager.close();
 	}
 
 	@Override
 	public boolean containsKey(K key) {
+		_serviceTrackerManager.open();
+
 		return _serviceTrackerBuckets.containsKey(key);
 	}
 
 	@Override
 	public R getService(K key) {
+		_serviceTrackerManager.open();
+
 		ServiceTrackerBucket<SR, TS, R> serviceTrackerBucket =
 			_serviceTrackerBuckets.get(key);
 
@@ -84,15 +94,19 @@ public class ServiceTrackerMapImpl<K, SR, TS, R>
 
 	@Override
 	public Set<K> keySet() {
+		_serviceTrackerManager.open();
+
 		return Collections.unmodifiableSet(_serviceTrackerBuckets.keySet());
 	}
 
 	@Override
 	public Collection<R> values() {
-		return Collections.unmodifiableCollection(getServices());
+		_serviceTrackerManager.open();
+
+		return Collections.unmodifiableCollection(_getServices());
 	}
 
-	protected Collection<R> getServices() {
+	private Collection<R> _getServices() {
 		Collection<R> services = new ArrayList<>();
 
 		for (ServiceTrackerBucket<SR, TS, R> serviceTrackerBucket :
@@ -167,6 +181,7 @@ public class ServiceTrackerMapImpl<K, SR, TS, R>
 	private final ConcurrentMap<K, ServiceTrackerBucket<SR, TS, R>>
 		_serviceTrackerBuckets = new ConcurrentHashMap<>();
 	private final ServiceTrackerCustomizer<SR, TS> _serviceTrackerCustomizer;
+	private final ServiceTrackerManager _serviceTrackerManager;
 	private final ServiceTrackerBucketFactory<SR, TS, R>
 		_serviceTrackerMapBucketFactory;
 	private final ServiceTrackerMapListener<K, TS, R>

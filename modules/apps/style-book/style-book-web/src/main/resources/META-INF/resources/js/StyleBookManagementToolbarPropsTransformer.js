@@ -1,21 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openSimpleInputModal} from 'frontend-js-web';
+import {openModal, openSimpleInputModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes} from 'frontend-js-web';
+
+import AddStyleBookModalContent from './AddStyleBookModalContent';
+import openDeleteStyleBookModal from './openDeleteStyleBookModal';
 
 export default function propsTransformer({
-	additionalProps: {copyStyleBookEntryURL, exportStyleBookEntriesURL},
+	additionalProps: {
+		addStyleBookEntryURL,
+		copyStyleBookEntryURL,
+		exportStyleBookEntriesURL,
+		frontendTokenDefinitionProviders,
+	},
 	portletNamespace,
 	...otherProps
 }) {
@@ -32,7 +32,7 @@ export default function propsTransformer({
 
 		styleBookEntryIds.setAttribute(
 			'value',
-			Liferay.Util.listCheckedExcept(form, `${portletNamespace}allRowIds`)
+			getCheckedCheckboxes(form, `${portletNamespace}allRowIds`)
 		);
 
 		const styleBookEntryFm = document.getElementById(
@@ -45,17 +45,16 @@ export default function propsTransformer({
 	};
 
 	const deleteSelectedStyleBookEntries = () => {
-		if (
-			confirm(
-				Liferay.Language.get('are-you-sure-you-want-to-delete-this')
-			)
-		) {
-			const form = document.getElementById(`${portletNamespace}fm`);
+		openDeleteStyleBookModal({
+			multiple: true,
+			onDelete: () => {
+				const form = document.getElementById(`${portletNamespace}fm`);
 
-			if (form) {
-				submitForm(form);
-			}
-		}
+				if (form) {
+					submitForm(form);
+				}
+			},
+		});
 	};
 
 	const exportSelectedStyleBookEntries = () => {
@@ -82,16 +81,29 @@ export default function propsTransformer({
 			}
 		},
 		onCreateButtonClick(event, {item}) {
-			const data = item?.data;
+			if (Liferay?.FeatureFlags?.['LPD-30204']) {
+				openModal({
+					contentComponent: ({closeModal}) =>
+						AddStyleBookModalContent({
+							addStyleBookEntryURL,
+							closeModal,
+							frontendTokenDefinitionProviders,
+							namespace: portletNamespace,
+						}),
+				});
+			}
+			else {
+				const data = item?.data;
 
-			openSimpleInputModal({
-				dialogTitle: data?.title,
-				formSubmitURL: data?.addStyleBookEntryURL,
-				mainFieldLabel: Liferay.Language.get('name'),
-				mainFieldName: 'name',
-				namespace: `${portletNamespace}`,
-				placeholder: Liferay.Language.get('name'),
-			});
+				openSimpleInputModal({
+					dialogTitle: data?.title,
+					formSubmitURL: data?.addStyleBookEntryURL,
+					mainFieldLabel: Liferay.Language.get('name'),
+					mainFieldName: 'name',
+					mainFieldPlaceholder: Liferay.Language.get('name'),
+					namespace: `${portletNamespace}`,
+				});
+			}
 		},
 	};
 }

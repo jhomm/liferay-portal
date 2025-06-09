@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.internal.search.test;
@@ -46,13 +37,13 @@ import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.searcher.SearchResponse;
 import com.liferay.portal.search.searcher.Searcher;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.DocumentsAssert;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
-import java.util.stream.Stream;
+import java.util.Arrays;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -77,8 +68,8 @@ public class SearchCTTest {
 	@Before
 	public void setUp() throws Exception {
 		_ctCollection1 = _ctCollectionLocalService.addCTCollection(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			SearchCTTest.class.getName(), SearchCTTest.class.getName());
+			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			0, SearchCTTest.class.getName(), SearchCTTest.class.getName());
 		_group = GroupTestUtil.addGroup();
 	}
 
@@ -97,15 +88,15 @@ public class SearchCTTest {
 				_group.getGroupId());
 		}
 
-		assertAllHits(
+		_assertAllHits(
 			_USER_GROUP_CLASS,
-			getUIDs(
+			_getUIDs(
 				CTConstants.CT_COLLECTION_ID_PRODUCTION, _productionUserGroup),
-			getUIDs(_ctCollection1.getCtCollectionId(), addedUserGroup));
+			_getUIDs(_ctCollection1.getCtCollectionId(), addedUserGroup));
 
-		assertProductionHits(_USER_GROUP_CLASS, _productionUserGroup);
+		_assertProductionHits(_USER_GROUP_CLASS, _productionUserGroup);
 
-		assertCollectionHits(
+		_assertCollectionHits(
 			_ctCollection1.getCtCollectionId(), _USER_GROUP_CLASS,
 			new UserGroup[] {addedUserGroup},
 			new UserGroup[] {_productionUserGroup});
@@ -132,8 +123,8 @@ public class SearchCTTest {
 		}
 
 		_ctCollection2 = _ctCollectionLocalService.addCTCollection(
-			TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
-			SearchCTTest.class.getSimpleName(),
+			null, TestPropsValues.getCompanyId(), TestPropsValues.getUserId(),
+			0, SearchCTTest.class.getSimpleName(),
 			SearchCTTest.class.getSimpleName());
 
 		UserGroup modifiedUserGroup2 = null;
@@ -151,13 +142,13 @@ public class SearchCTTest {
 				productionUserGroup);
 		}
 
-		assertProductionHits(_USER_GROUP_CLASS, _productionUserGroup);
+		_assertProductionHits(_USER_GROUP_CLASS, _productionUserGroup);
 
-		assertCollectionHits(
+		_assertCollectionHits(
 			_ctCollection1.getCtCollectionId(), _USER_GROUP_CLASS,
 			new UserGroup[] {modifiedUserGroup1}, new UserGroup[0]);
 
-		assertCollectionHits(
+		_assertCollectionHits(
 			_ctCollection2.getCtCollectionId(), _USER_GROUP_CLASS,
 			new UserGroup[] {modifiedUserGroup2}, new UserGroup[0]);
 	}
@@ -178,8 +169,8 @@ public class SearchCTTest {
 
 		Layout addedLayout = null;
 
-		Layout deletedLayout = LayoutTestUtil.addLayout(_group);
-		Layout modifiedLayout = LayoutTestUtil.addLayout(_group);
+		Layout deletedLayout = LayoutTestUtil.addTypePortletLayout(_group);
+		Layout modifiedLayout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		try (SafeCloseable safeCloseable =
 				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
@@ -195,7 +186,7 @@ public class SearchCTTest {
 			modifiedJournalArticle2 = JournalTestUtil.updateArticle(
 				modifiedJournalArticle1, "testModifyJournalArticle");
 
-			addedLayout = LayoutTestUtil.addLayout(_group);
+			addedLayout = LayoutTestUtil.addTypePortletLayout(_group);
 
 			deletedLayout = _layoutLocalService.deleteLayout(deletedLayout);
 
@@ -204,27 +195,27 @@ public class SearchCTTest {
 			modifiedLayout = _layoutLocalService.updateLayout(modifiedLayout);
 		}
 
-		assertProductionHits(
+		_assertProductionHits(
 			_JOURNAL_ARTICLE_CLASS, deletedJournalArticle,
 			modifiedJournalArticle1);
 
-		assertCollectionHits(
+		_assertCollectionHits(
 			_ctCollection1.getCtCollectionId(), _JOURNAL_ARTICLE_CLASS,
 			new JournalArticle[] {addedJournalArticle, modifiedJournalArticle2},
-			new JournalArticle[] {modifiedJournalArticle1});
+			new JournalArticle[0]);
 
-		assertProductionHits(_LAYOUT_CLASS, deletedLayout, modifiedLayout);
+		_assertProductionHits(_LAYOUT_CLASS, deletedLayout, modifiedLayout);
 
-		assertCollectionHits(
+		_assertCollectionHits(
 			_ctCollection1.getCtCollectionId(), _LAYOUT_CLASS,
 			new Layout[] {addedLayout, modifiedLayout}, new Layout[0]);
 
-		assertAllHits(
+		_assertAllHits(
 			_ALL_INDEXER_CLASSES,
-			getUIDs(
+			_getUIDs(
 				CTConstants.CT_COLLECTION_ID_PRODUCTION, deletedJournalArticle,
 				deletedLayout, modifiedJournalArticle1, modifiedLayout),
-			getUIDs(
+			_getUIDs(
 				_ctCollection1.getCtCollectionId(), addedJournalArticle,
 				addedLayout, modifiedJournalArticle2, modifiedLayout));
 	}
@@ -262,14 +253,14 @@ public class SearchCTTest {
 				modifiedJournalArticle1, "testModifyJournalArticle");
 		}
 
-		assertProductionHits(
+		_assertProductionHits(
 			_JOURNAL_ARTICLE_CLASS, deletedJournalArticle,
 			modifiedJournalArticle1, unmodifiedJournalArticle);
 
 		_ctProcessLocalService.addCTProcess(
 			_ctCollection1.getUserId(), _ctCollection1.getCtCollectionId());
 
-		assertProductionHits(
+		_assertProductionHits(
 			_JOURNAL_ARTICLE_CLASS, addedJournalArticle,
 			modifiedJournalArticle2, unmodifiedJournalArticle);
 
@@ -281,7 +272,7 @@ public class SearchCTTest {
 			_undoCTCollection.getUserId(),
 			_undoCTCollection.getCtCollectionId());
 
-		assertProductionHits(
+		_assertProductionHits(
 			_JOURNAL_ARTICLE_CLASS, deletedJournalArticle,
 			modifiedJournalArticle1, unmodifiedJournalArticle);
 	}
@@ -290,15 +281,15 @@ public class SearchCTTest {
 	public void testPublishAndUndoLayout() throws Exception {
 		Layout addedLayout = null;
 
-		Layout deletedLayout = LayoutTestUtil.addLayout(_group);
-		Layout modifiedLayout = LayoutTestUtil.addLayout(_group);
-		Layout unmodifiedLayout = LayoutTestUtil.addLayout(_group);
+		Layout deletedLayout = LayoutTestUtil.addTypePortletLayout(_group);
+		Layout modifiedLayout = LayoutTestUtil.addTypePortletLayout(_group);
+		Layout unmodifiedLayout = LayoutTestUtil.addTypePortletLayout(_group);
 
 		try (SafeCloseable safeCloseable =
 				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
 					_ctCollection1.getCtCollectionId())) {
 
-			addedLayout = LayoutTestUtil.addLayout(_group);
+			addedLayout = LayoutTestUtil.addTypePortletLayout(_group);
 			deletedLayout = _layoutLocalService.deleteLayout(deletedLayout);
 
 			modifiedLayout.setFriendlyURL("/testModifyLayout");
@@ -306,21 +297,21 @@ public class SearchCTTest {
 			modifiedLayout = _layoutLocalService.updateLayout(modifiedLayout);
 		}
 
-		assertProductionHits(
+		_assertProductionHits(
 			_LAYOUT_CLASS, deletedLayout, modifiedLayout, unmodifiedLayout);
 
 		_ctProcessLocalService.addCTProcess(
 			_ctCollection1.getUserId(), _ctCollection1.getCtCollectionId());
 
-		assertProductionHits(
+		_assertProductionHits(
 			_LAYOUT_CLASS, addedLayout, modifiedLayout, unmodifiedLayout);
 
-		assertAllHits(
+		_assertAllHits(
 			_LAYOUT_CLASS,
-			getUIDs(
+			_getUIDs(
 				CTConstants.CT_COLLECTION_ID_PRODUCTION, addedLayout,
 				modifiedLayout, unmodifiedLayout),
-			getUIDs(
+			_getUIDs(
 				_ctCollection1.getCtCollectionId(), addedLayout,
 				modifiedLayout));
 
@@ -332,46 +323,76 @@ public class SearchCTTest {
 			_undoCTCollection.getUserId(),
 			_undoCTCollection.getCtCollectionId());
 
-		assertProductionHits(
+		_assertProductionHits(
 			_LAYOUT_CLASS, deletedLayout, modifiedLayout, unmodifiedLayout);
 
-		assertAllHits(
+		_assertAllHits(
 			_LAYOUT_CLASS,
-			getUIDs(
+			_getUIDs(
 				CTConstants.CT_COLLECTION_ID_PRODUCTION, deletedLayout,
 				modifiedLayout, unmodifiedLayout),
-			getUIDs(
+			_getUIDs(
 				_ctCollection1.getCtCollectionId(), addedLayout,
 				modifiedLayout),
-			getUIDs(
+			_getUIDs(
 				_undoCTCollection.getCtCollectionId(), deletedLayout,
 				modifiedLayout));
+	}
+
+	@Test
+	public void testSearchCTCollection() throws Exception {
+		SearchRequestBuilder searchRequestBuilder =
+			_searchRequestBuilderFactory.builder(
+			).companyId(
+				_group.getCompanyId()
+			).emptySearchEnabled(
+				true
+			).entryClassNames(
+				CTCollection.class.getName()
+			).modelIndexerClasses(
+				CTCollection.class
+			).withSearchContext(
+				searchContext -> {
+				}
+			);
+
+		SearchResponse searchResponse = _searcher.search(
+			searchRequestBuilder.build());
+
+		DocumentsAssert.assertValuesIgnoreRelevance(
+			searchResponse.getRequestString(), searchResponse.getDocuments(),
+			Field.UID,
+			Arrays.asList(
+				_uidFactory.getUID(
+					CTCollection.class.getName(),
+					_ctCollection1.getCtCollectionId(),
+					CTConstants.CT_COLLECTION_ID_PRODUCTION)));
 	}
 
 	@Rule
 	public SearchTestRule searchTestRule = new SearchTestRule();
 
-	protected void assertAllHits(Class<?>[] classes, String[]... uids) {
-		assertHits(
+	private void _assertAllHits(Class<?>[] classes, String[]... uids) {
+		_assertHits(
 			CTConstants.CT_COLLECTION_ID_PRODUCTION, classes,
 			ArrayUtil.append(uids), true);
 	}
 
-	protected void assertCollectionHits(
+	private void _assertCollectionHits(
 		long ctCollectionId, Class<?>[] classes,
 		CTModel<?>[] collectionCtModels, CTModel<?>[] productionCtModels) {
 
-		assertHits(
+		_assertHits(
 			ctCollectionId, classes,
 			ArrayUtil.append(
-				getUIDs(ctCollectionId, collectionCtModels),
-				getUIDs(
+				_getUIDs(ctCollectionId, collectionCtModels),
+				_getUIDs(
 					CTConstants.CT_COLLECTION_ID_PRODUCTION,
 					productionCtModels)),
 			false);
 	}
 
-	protected void assertHits(
+	private void _assertHits(
 		long ctCollectionId, Class<?>[] classes, String[] uids, boolean all) {
 
 		String[] classNames = new String[classes.length];
@@ -409,7 +430,6 @@ public class SearchCTTest {
 				searchContext -> {
 					searchContext.setAttribute(
 						Field.GROUP_ID, _group.getGroupId());
-
 					searchContext.setAttribute(
 						Field.TYPE,
 						new String[] {LayoutConstants.TYPE_PORTLET});
@@ -426,20 +446,19 @@ public class SearchCTTest {
 
 			DocumentsAssert.assertValuesIgnoreRelevance(
 				searchResponse.getRequestString(),
-				searchResponse.getDocumentsStream(), Field.UID,
-				Stream.of(uids));
+				searchResponse.getDocuments(), Field.UID, Arrays.asList(uids));
 		}
 	}
 
-	protected void assertProductionHits(
+	private void _assertProductionHits(
 		Class<?>[] classes, CTModel<?>... ctModels) {
 
-		assertHits(
+		_assertHits(
 			CTConstants.CT_COLLECTION_ID_PRODUCTION, classes,
-			getUIDs(CTConstants.CT_COLLECTION_ID_PRODUCTION, ctModels), false);
+			_getUIDs(CTConstants.CT_COLLECTION_ID_PRODUCTION, ctModels), false);
 	}
 
-	protected String[] getUIDs(long ctCollectionId, CTModel<?>... ctModels) {
+	private String[] _getUIDs(long ctCollectionId, CTModel<?>... ctModels) {
 		String[] uids = new String[ctModels.length];
 
 		for (int i = 0; i < ctModels.length; i++) {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.translation.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.translation.model.TranslationEntry;
 
@@ -46,18 +38,6 @@ public class TranslationEntryLocalServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.translation.service.impl.TranslationEntryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static TranslationEntry addOrUpdateTranslationEntry(
-			long groupId, String languageId,
-			com.liferay.info.item.InfoItemReference infoItemReference,
-			com.liferay.info.item.InfoItemFieldValues infoItemFieldValues,
-			com.liferay.portal.kernel.service.ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addOrUpdateTranslationEntry(
-			groupId, languageId, infoItemReference, infoItemFieldValues,
-			serviceContext);
-	}
-
-	public static TranslationEntry addOrUpdateTranslationEntry(
 			long groupId, String className, long classPK, String content,
 			String contentType, String languageId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -66,6 +46,18 @@ public class TranslationEntryLocalServiceUtil {
 		return getService().addOrUpdateTranslationEntry(
 			groupId, className, classPK, content, contentType, languageId,
 			serviceContext);
+	}
+
+	public static TranslationEntry addOrUpdateTranslationEntry(
+			long groupId, String sourceLanguageId, String targetLanguageId,
+			com.liferay.info.item.InfoItemReference infoItemReference,
+			com.liferay.info.item.InfoItemFieldValues infoItemFieldValues,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addOrUpdateTranslationEntry(
+			groupId, sourceLanguageId, targetLanguageId, infoItemReference,
+			infoItemFieldValues, serviceContext);
 	}
 
 	/**
@@ -381,6 +373,13 @@ public class TranslationEntryLocalServiceUtil {
 		return getService().getTranslationEntriesCount();
 	}
 
+	public static int getTranslationEntriesCount(
+		String className, long classPK, int[] statuses, boolean exclude) {
+
+		return getService().getTranslationEntriesCount(
+			className, classPK, statuses, exclude);
+	}
+
 	/**
 	 * Returns the translation entry with the primary key.
 	 *
@@ -437,9 +436,12 @@ public class TranslationEntryLocalServiceUtil {
 	}
 
 	public static TranslationEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile TranslationEntryLocalService _service;
+	private static final Snapshot<TranslationEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			TranslationEntryLocalServiceUtil.class,
+			TranslationEntryLocalService.class);
 
 }

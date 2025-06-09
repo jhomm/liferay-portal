@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.exportimport.data.handler;
@@ -23,7 +14,7 @@ import com.liferay.dynamic.data.mapping.security.permission.DDMPermissionSupport
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateVersionLocalService;
-import com.liferay.dynamic.data.mapping.web.internal.exportimport.content.processor.DDMTemplateExportImportContentProcessor;
+import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.data.handler.base.BaseStagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -64,8 +55,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Daniel Kocsis
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
+	property = "jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING,
 	service = StagedModelDataHandler.class
 )
 public class DDMTemplateStagedModelDataHandler
@@ -128,15 +118,15 @@ public class DDMTemplateStagedModelDataHandler
 			"template-key", template.getTemplateKey()
 		).build();
 
-		long defaultUserId = 0;
+		long guestUserId = 0;
 
 		try {
-			defaultUserId = _userLocalService.getDefaultUserId(
+			guestUserId = _userLocalService.getGuestUserId(
 				template.getCompanyId());
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return referenceAttributes;
@@ -144,7 +134,7 @@ public class DDMTemplateStagedModelDataHandler
 
 		referenceAttributes.put(
 			"preloaded",
-			String.valueOf(isPreloadedTemplate(defaultUserId, template)));
+			String.valueOf(_isPreloadedTemplate(guestUserId, template)));
 
 		return referenceAttributes;
 	}
@@ -177,7 +167,7 @@ public class DDMTemplateStagedModelDataHandler
 			referenceElement.attributeValue("referenced-class-name"));
 		String templateKey = referenceElement.attributeValue("template-key");
 
-		DDMTemplate existingTemplate = fetchExistingTemplateWithParentGroups(
+		DDMTemplate existingTemplate = _fetchExistingTemplateWithParentGroups(
 			uuid, groupId, classNameId, templateKey, preloaded);
 
 		if (existingTemplate == null) {
@@ -258,10 +248,10 @@ public class DDMTemplateStagedModelDataHandler
 
 		template.setScript(script);
 
-		long defaultUserId = _userLocalService.getDefaultUserId(
-			template.getCompanyId());
+		if (_isPreloadedTemplate(
+				_userLocalService.getGuestUserId(template.getCompanyId()),
+				template)) {
 
-		if (isPreloadedTemplate(defaultUserId, template)) {
 			templateElement.addAttribute("preloaded", "true");
 		}
 
@@ -281,7 +271,7 @@ public class DDMTemplateStagedModelDataHandler
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 	}
@@ -316,7 +306,7 @@ public class DDMTemplateStagedModelDataHandler
 			existingTemplate = fetchMissingReference(uuid, groupId);
 		}
 		else {
-			existingTemplate = fetchExistingTemplateWithParentGroups(
+			existingTemplate = _fetchExistingTemplateWithParentGroups(
 				uuid, groupId, classNameId, templateKey, preloaded);
 		}
 
@@ -417,7 +407,7 @@ public class DDMTemplateStagedModelDataHandler
 				boolean preloaded = GetterUtil.getBoolean(
 					element.attributeValue("preloaded"));
 
-				DDMTemplate existingTemplate = fetchExistingTemplate(
+				DDMTemplate existingTemplate = _fetchExistingTemplate(
 					template.getUuid(), portletDataContext.getScopeGroupId(),
 					template.getClassNameId(), template.getTemplateKey(),
 					preloaded);
@@ -429,14 +419,18 @@ public class DDMTemplateStagedModelDataHandler
 						portletDataContext.getScopeGroupId(),
 						template.getClassNameId(), template.getTemplateKey());
 
+					String externalReferenceCode = null;
 					String templateKey = null;
 
 					if (existingTemplate == null) {
+						externalReferenceCode =
+							template.getExternalReferenceCode();
 						templateKey = template.getTemplateKey();
 					}
 
 					importedTemplate = _ddmTemplateLocalService.addTemplate(
-						userId, portletDataContext.getScopeGroupId(),
+						externalReferenceCode, userId,
+						portletDataContext.getScopeGroupId(),
 						template.getClassNameId(), classPK, resourceClassNameId,
 						templateKey, template.getNameMap(),
 						template.getDescriptionMap(), template.getType(),
@@ -457,7 +451,7 @@ public class DDMTemplateStagedModelDataHandler
 			}
 			else {
 				importedTemplate = _ddmTemplateLocalService.addTemplate(
-					userId, portletDataContext.getScopeGroupId(),
+					null, userId, portletDataContext.getScopeGroupId(),
 					template.getClassNameId(), classPK, resourceClassNameId,
 					null, template.getNameMap(), template.getDescriptionMap(),
 					template.getType(), template.getMode(),
@@ -475,7 +469,7 @@ public class DDMTemplateStagedModelDataHandler
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 
@@ -493,7 +487,17 @@ public class DDMTemplateStagedModelDataHandler
 		}
 	}
 
-	protected DDMTemplate fetchExistingTemplate(
+	protected String getResourceName(DDMTemplate template)
+		throws PortalException {
+
+		return ddmPermissionSupport.getTemplateModelResourceName(
+			template.getResourceClassName());
+	}
+
+	@Reference
+	protected DDMPermissionSupport ddmPermissionSupport;
+
+	private DDMTemplate _fetchExistingTemplate(
 		String uuid, long groupId, long classNameId, String templateKey,
 		boolean preloaded) {
 
@@ -510,7 +514,7 @@ public class DDMTemplateStagedModelDataHandler
 		return existingTemplate;
 	}
 
-	protected DDMTemplate fetchExistingTemplateWithParentGroups(
+	private DDMTemplate _fetchExistingTemplateWithParentGroups(
 		String uuid, long groupId, long classNameId, String templateKey,
 		boolean preloaded) {
 
@@ -523,7 +527,7 @@ public class DDMTemplateStagedModelDataHandler
 		long companyId = group.getCompanyId();
 
 		while (group != null) {
-			DDMTemplate existingTemplate = fetchExistingTemplate(
+			DDMTemplate existingTemplate = _fetchExistingTemplate(
 				uuid, group.getGroupId(), classNameId, templateKey, preloaded);
 
 			if (existingTemplate != null) {
@@ -539,22 +543,15 @@ public class DDMTemplateStagedModelDataHandler
 			return null;
 		}
 
-		return fetchExistingTemplate(
+		return _fetchExistingTemplate(
 			uuid, companyGroup.getGroupId(), classNameId, templateKey,
 			preloaded);
 	}
 
-	protected String getResourceName(DDMTemplate template)
-		throws PortalException {
+	private boolean _isPreloadedTemplate(
+		long guestUserId, DDMTemplate template) {
 
-		return ddmPermissionSupport.getTemplateModelResourceName(
-			template.getResourceClassName());
-	}
-
-	protected boolean isPreloadedTemplate(
-		long defaultUserId, DDMTemplate template) {
-
-		if (defaultUserId == template.getUserId()) {
+		if (guestUserId == template.getUserId()) {
 			return true;
 		}
 
@@ -567,11 +564,11 @@ public class DDMTemplateStagedModelDataHandler
 					DDMTemplateConstants.VERSION_DEFAULT);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		if ((ddmTemplateVersion != null) &&
-			(defaultUserId == ddmTemplateVersion.getUserId())) {
+			(guestUserId == ddmTemplateVersion.getUserId())) {
 
 			return true;
 		}
@@ -579,66 +576,34 @@ public class DDMTemplateStagedModelDataHandler
 		return false;
 	}
 
-	@Reference(unbind = "-")
-	protected void setDDMStructureLocalService(
-		DDMStructureLocalService ddmStructureLocalService) {
-
-		_ddmStructureLocalService = ddmStructureLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMTemplateExportImportContentProcessor(
-		DDMTemplateExportImportContentProcessor
-			ddmTemplateExportImportContentProcessor) {
-
-		_ddmTemplateExportImportContentProcessor =
-			ddmTemplateExportImportContentProcessor;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMTemplateLocalService(
-		DDMTemplateLocalService ddmTemplateLocalService) {
-
-		_ddmTemplateLocalService = ddmTemplateLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setDDMTemplateVersionLocalService(
-		DDMTemplateVersionLocalService ddmTemplateVersionLocalService) {
-
-		_ddmTemplateVersionLocalService = ddmTemplateVersionLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setImageLocalService(ImageLocalService imageLocalService) {
-		_imageLocalService = imageLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
-	@Reference
-	protected DDMPermissionSupport ddmPermissionSupport;
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		DDMTemplateStagedModelDataHandler.class);
 
+	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
-	private DDMTemplateExportImportContentProcessor
+
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMTemplate)"
+	)
+	private ExportImportContentProcessor<String>
 		_ddmTemplateExportImportContentProcessor;
+
+	@Reference
 	private DDMTemplateLocalService _ddmTemplateLocalService;
+
+	@Reference
 	private DDMTemplateVersionLocalService _ddmTemplateVersionLocalService;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
 
+	@Reference
 	private ImageLocalService _imageLocalService;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

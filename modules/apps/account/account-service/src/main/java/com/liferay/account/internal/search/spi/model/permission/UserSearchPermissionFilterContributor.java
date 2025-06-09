@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.internal.search.spi.model.permission;
@@ -22,26 +13,31 @@ import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.account.service.AccountEntryUserRelLocalService;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.Organization;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.TermsFilter;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.UserBag;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.OrganizationLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.permission.OrganizationPermissionUtil;
-import com.liferay.portal.search.spi.model.permission.SearchPermissionFilterContributor;
+import com.liferay.portal.search.spi.model.permission.contributor.SearchPermissionFilterContributor;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferencePolicy;
+import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Drew Brokke
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.portal.kernel.model.User",
 	service = SearchPermissionFilterContributor.class
 )
@@ -104,6 +100,43 @@ public class UserSearchPermissionFilterContributor
 									getAccountEntryId()));
 					}
 				}
+
+				if (OrganizationPermissionUtil.contains(
+						permissionChecker, userOrgId,
+						AccountActionKeys.MANAGE_SUBORGANIZATIONS_ACCOUNTS)) {
+
+					Set<Organization> organizations = new HashSet<>();
+
+					List<Organization> suborganizations =
+						_organizationLocalService.getSuborganizations(
+							companyId, userOrgId);
+
+					while (!suborganizations.isEmpty()) {
+						organizations.addAll(suborganizations);
+
+						suborganizations =
+							_organizationLocalService.getSuborganizations(
+								suborganizations);
+					}
+
+					for (Organization organization : organizations) {
+						List<AccountEntryOrganizationRel>
+							accountEntryOrganizationRels =
+								_accountEntryOrganizationRelLocalService.
+									getAccountEntryOrganizationRelsByOrganizationId(
+										organization.getOrganizationId());
+
+						for (AccountEntryOrganizationRel
+								accountEntryOrganizationRel :
+									accountEntryOrganizationRels) {
+
+							termsFilter.addValue(
+								String.valueOf(
+									accountEntryOrganizationRel.
+										getAccountEntryId()));
+						}
+					}
+				}
 			}
 
 			if (!termsFilter.isEmpty()) {
@@ -112,7 +145,7 @@ public class UserSearchPermissionFilterContributor
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 	}
@@ -124,9 +157,11 @@ public class UserSearchPermissionFilterContributor
 		UserSearchPermissionFilterContributor.class);
 
 	@Reference(
+		policy = ReferencePolicy.DYNAMIC,
+		policyOption = ReferencePolicyOption.GREEDY,
 		target = "(model.class.name=com.liferay.account.model.AccountEntry)"
 	)
-	private ModelResourcePermission<AccountEntry>
+	private volatile ModelResourcePermission<AccountEntry>
 		_accountEntryModelResourcePermission;
 
 	@Reference
@@ -135,5 +170,8 @@ public class UserSearchPermissionFilterContributor
 
 	@Reference
 	private AccountEntryUserRelLocalService _accountEntryUserRelLocalService;
+
+	@Reference
+	private OrganizationLocalService _organizationLocalService;
 
 }

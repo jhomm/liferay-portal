@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.exception.DuplicateCommerceShipmentExternalReferenceCodeException;
 import com.liferay.commerce.exception.NoSuchShipmentException;
 import com.liferay.commerce.model.CommerceShipment;
 import com.liferay.commerce.service.CommerceShipmentLocalServiceUtil;
@@ -26,6 +18,8 @@ import com.liferay.portal.kernel.dao.orm.DynamicQueryFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
+import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -124,6 +118,11 @@ public class CommerceShipmentPersistenceTest {
 
 		newCommerceShipment.setMvccVersion(RandomTestUtil.nextLong());
 
+		newCommerceShipment.setUuid(RandomTestUtil.randomString());
+
+		newCommerceShipment.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newCommerceShipment.setGroupId(RandomTestUtil.nextLong());
 
 		newCommerceShipment.setCompanyId(RandomTestUtil.nextLong());
@@ -143,16 +142,18 @@ public class CommerceShipmentPersistenceTest {
 		newCommerceShipment.setCommerceShippingMethodId(
 			RandomTestUtil.nextLong());
 
-		newCommerceShipment.setShippingOptionName(
-			RandomTestUtil.randomString());
-
 		newCommerceShipment.setCarrier(RandomTestUtil.randomString());
 
-		newCommerceShipment.setTrackingNumber(RandomTestUtil.randomString());
+		newCommerceShipment.setExpectedDate(RandomTestUtil.nextDate());
 
 		newCommerceShipment.setShippingDate(RandomTestUtil.nextDate());
 
-		newCommerceShipment.setExpectedDate(RandomTestUtil.nextDate());
+		newCommerceShipment.setShippingOptionName(
+			RandomTestUtil.randomString());
+
+		newCommerceShipment.setTrackingNumber(RandomTestUtil.randomString());
+
+		newCommerceShipment.setTrackingURL(RandomTestUtil.randomString());
 
 		newCommerceShipment.setStatus(RandomTestUtil.nextInt());
 
@@ -164,6 +165,11 @@ public class CommerceShipmentPersistenceTest {
 		Assert.assertEquals(
 			existingCommerceShipment.getMvccVersion(),
 			newCommerceShipment.getMvccVersion());
+		Assert.assertEquals(
+			existingCommerceShipment.getUuid(), newCommerceShipment.getUuid());
+		Assert.assertEquals(
+			existingCommerceShipment.getExternalReferenceCode(),
+			newCommerceShipment.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCommerceShipment.getCommerceShipmentId(),
 			newCommerceShipment.getCommerceShipmentId());
@@ -195,23 +201,75 @@ public class CommerceShipmentPersistenceTest {
 			existingCommerceShipment.getCommerceShippingMethodId(),
 			newCommerceShipment.getCommerceShippingMethodId());
 		Assert.assertEquals(
-			existingCommerceShipment.getShippingOptionName(),
-			newCommerceShipment.getShippingOptionName());
-		Assert.assertEquals(
 			existingCommerceShipment.getCarrier(),
 			newCommerceShipment.getCarrier());
-		Assert.assertEquals(
-			existingCommerceShipment.getTrackingNumber(),
-			newCommerceShipment.getTrackingNumber());
-		Assert.assertEquals(
-			Time.getShortTimestamp(existingCommerceShipment.getShippingDate()),
-			Time.getShortTimestamp(newCommerceShipment.getShippingDate()));
 		Assert.assertEquals(
 			Time.getShortTimestamp(existingCommerceShipment.getExpectedDate()),
 			Time.getShortTimestamp(newCommerceShipment.getExpectedDate()));
 		Assert.assertEquals(
+			Time.getShortTimestamp(existingCommerceShipment.getShippingDate()),
+			Time.getShortTimestamp(newCommerceShipment.getShippingDate()));
+		Assert.assertEquals(
+			existingCommerceShipment.getShippingOptionName(),
+			newCommerceShipment.getShippingOptionName());
+		Assert.assertEquals(
+			existingCommerceShipment.getTrackingNumber(),
+			newCommerceShipment.getTrackingNumber());
+		Assert.assertEquals(
+			existingCommerceShipment.getTrackingURL(),
+			newCommerceShipment.getTrackingURL());
+		Assert.assertEquals(
 			existingCommerceShipment.getStatus(),
 			newCommerceShipment.getStatus());
+	}
+
+	@Test(
+		expected = DuplicateCommerceShipmentExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CommerceShipment commerceShipment = addCommerceShipment();
+
+		CommerceShipment newCommerceShipment = addCommerceShipment();
+
+		newCommerceShipment.setCompanyId(commerceShipment.getCompanyId());
+
+		newCommerceShipment = _persistence.update(newCommerceShipment);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCommerceShipment);
+
+		newCommerceShipment.setExternalReferenceCode(
+			commerceShipment.getExternalReferenceCode());
+
+		_persistence.update(newCommerceShipment);
+	}
+
+	@Test
+	public void testCountByUuid() throws Exception {
+		_persistence.countByUuid("");
+
+		_persistence.countByUuid("null");
+
+		_persistence.countByUuid((String)null);
+	}
+
+	@Test
+	public void testCountByUUID_G() throws Exception {
+		_persistence.countByUUID_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByUUID_G("null", 0L);
+
+		_persistence.countByUUID_G((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByUuid_C() throws Exception {
+		_persistence.countByUuid_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByUuid_C("null", 0L);
+
+		_persistence.countByUuid_C((String)null, 0L);
 	}
 
 	@Test
@@ -257,6 +315,15 @@ public class CommerceShipmentPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CommerceShipment newCommerceShipment = addCommerceShipment();
 
@@ -281,12 +348,13 @@ public class CommerceShipmentPersistenceTest {
 
 	protected OrderByComparator<CommerceShipment> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CommerceShipment", "mvccVersion", true, "commerceShipmentId", true,
+			"CommerceShipment", "mvccVersion", true, "uuid", true,
+			"externalReferenceCode", true, "commerceShipmentId", true,
 			"groupId", true, "companyId", true, "userId", true, "userName",
 			true, "createDate", true, "modifiedDate", true, "commerceAccountId",
 			true, "commerceAddressId", true, "commerceShippingMethodId", true,
-			"carrier", true, "trackingNumber", true, "shippingDate", true,
-			"expectedDate", true, "status", true);
+			"carrier", true, "expectedDate", true, "shippingDate", true,
+			"trackingNumber", true, "trackingURL", true, "status", true);
 	}
 
 	@Test
@@ -506,12 +574,92 @@ public class CommerceShipmentPersistenceTest {
 		Assert.assertEquals(0, result.size());
 	}
 
+	@Test
+	public void testResetOriginalValues() throws Exception {
+		CommerceShipment newCommerceShipment = addCommerceShipment();
+
+		_persistence.clearCache();
+
+		_assertOriginalValues(
+			_persistence.findByPrimaryKey(newCommerceShipment.getPrimaryKey()));
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromDatabase()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(true);
+	}
+
+	@Test
+	public void testResetOriginalValuesWithDynamicQueryLoadFromSession()
+		throws Exception {
+
+		_testResetOriginalValuesWithDynamicQuery(false);
+	}
+
+	private void _testResetOriginalValuesWithDynamicQuery(boolean clearSession)
+		throws Exception {
+
+		CommerceShipment newCommerceShipment = addCommerceShipment();
+
+		if (clearSession) {
+			Session session = _persistence.openSession();
+
+			session.flush();
+
+			session.clear();
+		}
+
+		DynamicQuery dynamicQuery = DynamicQueryFactoryUtil.forClass(
+			CommerceShipment.class, _dynamicQueryClassLoader);
+
+		dynamicQuery.add(
+			RestrictionsFactoryUtil.eq(
+				"commerceShipmentId",
+				newCommerceShipment.getCommerceShipmentId()));
+
+		List<CommerceShipment> result = _persistence.findWithDynamicQuery(
+			dynamicQuery);
+
+		_assertOriginalValues(result.get(0));
+	}
+
+	private void _assertOriginalValues(CommerceShipment commerceShipment) {
+		Assert.assertEquals(
+			commerceShipment.getUuid(),
+			ReflectionTestUtil.invoke(
+				commerceShipment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "uuid_"));
+		Assert.assertEquals(
+			Long.valueOf(commerceShipment.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceShipment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
+
+		Assert.assertEquals(
+			commerceShipment.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				commerceShipment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(commerceShipment.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				commerceShipment, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
+	}
+
 	protected CommerceShipment addCommerceShipment() throws Exception {
 		long pk = RandomTestUtil.nextLong();
 
 		CommerceShipment commerceShipment = _persistence.create(pk);
 
 		commerceShipment.setMvccVersion(RandomTestUtil.nextLong());
+
+		commerceShipment.setUuid(RandomTestUtil.randomString());
+
+		commerceShipment.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		commerceShipment.setGroupId(RandomTestUtil.nextLong());
 
@@ -531,15 +679,17 @@ public class CommerceShipmentPersistenceTest {
 
 		commerceShipment.setCommerceShippingMethodId(RandomTestUtil.nextLong());
 
-		commerceShipment.setShippingOptionName(RandomTestUtil.randomString());
-
 		commerceShipment.setCarrier(RandomTestUtil.randomString());
 
-		commerceShipment.setTrackingNumber(RandomTestUtil.randomString());
+		commerceShipment.setExpectedDate(RandomTestUtil.nextDate());
 
 		commerceShipment.setShippingDate(RandomTestUtil.nextDate());
 
-		commerceShipment.setExpectedDate(RandomTestUtil.nextDate());
+		commerceShipment.setShippingOptionName(RandomTestUtil.randomString());
+
+		commerceShipment.setTrackingNumber(RandomTestUtil.randomString());
+
+		commerceShipment.setTrackingURL(RandomTestUtil.randomString());
 
 		commerceShipment.setStatus(RandomTestUtil.nextInt());
 

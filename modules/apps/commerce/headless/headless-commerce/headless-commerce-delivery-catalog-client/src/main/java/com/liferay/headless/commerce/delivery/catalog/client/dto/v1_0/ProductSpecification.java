@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.delivery.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0.ProductSpecificationSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -116,6 +107,50 @@ public class ProductSpecification implements Cloneable, Serializable {
 
 	protected Long productId;
 
+	public String getSpecificationGroupKey() {
+		return specificationGroupKey;
+	}
+
+	public void setSpecificationGroupKey(String specificationGroupKey) {
+		this.specificationGroupKey = specificationGroupKey;
+	}
+
+	public void setSpecificationGroupKey(
+		UnsafeSupplier<String, Exception> specificationGroupKeyUnsafeSupplier) {
+
+		try {
+			specificationGroupKey = specificationGroupKeyUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String specificationGroupKey;
+
+	public String getSpecificationGroupTitle() {
+		return specificationGroupTitle;
+	}
+
+	public void setSpecificationGroupTitle(String specificationGroupTitle) {
+		this.specificationGroupTitle = specificationGroupTitle;
+	}
+
+	public void setSpecificationGroupTitle(
+		UnsafeSupplier<String, Exception>
+			specificationGroupTitleUnsafeSupplier) {
+
+		try {
+			specificationGroupTitle =
+				specificationGroupTitleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String specificationGroupTitle;
+
 	public Long getSpecificationId() {
 		return specificationId;
 	}
@@ -157,6 +192,48 @@ public class ProductSpecification implements Cloneable, Serializable {
 	}
 
 	protected String specificationKey;
+
+	public Double getSpecificationPriority() {
+		return specificationPriority;
+	}
+
+	public void setSpecificationPriority(Double specificationPriority) {
+		this.specificationPriority = specificationPriority;
+	}
+
+	public void setSpecificationPriority(
+		UnsafeSupplier<Double, Exception> specificationPriorityUnsafeSupplier) {
+
+		try {
+			specificationPriority = specificationPriorityUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Double specificationPriority;
+
+	public String getSpecificationTitle() {
+		return specificationTitle;
+	}
+
+	public void setSpecificationTitle(String specificationTitle) {
+		this.specificationTitle = specificationTitle;
+	}
+
+	public void setSpecificationTitle(
+		UnsafeSupplier<String, Exception> specificationTitleUnsafeSupplier) {
+
+		try {
+			specificationTitle = specificationTitleUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String specificationTitle;
 
 	public String getValue() {
 		return value;

@@ -1,37 +1,29 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/facets/init.jsp" %>
 
 <%
-AssetCategoriesSearchFacetDisplayBuilder assetCategoriesSearchFacetDisplayBuilder = new AssetCategoriesSearchFacetDisplayBuilder(renderRequest);
+AssetCategoriesSearchFacetDisplayContextBuilder assetCategoriesSearchFacetDisplayContextBuilder = new AssetCategoriesSearchFacetDisplayContextBuilder(renderRequest);
 
-assetCategoriesSearchFacetDisplayBuilder.setAssetCategoryLocalService(AssetCategoryLocalServiceUtil.getService());
-assetCategoriesSearchFacetDisplayBuilder.setAssetCategoryPermissionChecker(new AssetCategoryPermissionCheckerImpl(themeDisplay.getPermissionChecker()));
-assetCategoriesSearchFacetDisplayBuilder.setDisplayStyle(dataJSONObject.getString("displayStyle", "cloud"));
-assetCategoriesSearchFacetDisplayBuilder.setFacet(facet);
-assetCategoriesSearchFacetDisplayBuilder.setFrequenciesVisible(dataJSONObject.getBoolean("showAssetCount", true));
-assetCategoriesSearchFacetDisplayBuilder.setFrequencyThreshold(dataJSONObject.getInt("frequencyThreshold"));
-assetCategoriesSearchFacetDisplayBuilder.setLocale(locale);
-assetCategoriesSearchFacetDisplayBuilder.setMaxTerms(dataJSONObject.getInt("maxTerms", 10));
-assetCategoriesSearchFacetDisplayBuilder.setParameterName(facet.getFieldId());
-assetCategoriesSearchFacetDisplayBuilder.setParameterValue(fieldParam);
-assetCategoriesSearchFacetDisplayBuilder.setPortal(PortalUtil.getPortal());
+assetCategoriesSearchFacetDisplayContextBuilder.setAssetCategoryLocalService(AssetCategoryLocalServiceUtil.getService());
+assetCategoriesSearchFacetDisplayContextBuilder.setAssetCategoryPermissionChecker(new AssetCategoryPermissionCheckerImpl(themeDisplay.getPermissionChecker()));
+assetCategoriesSearchFacetDisplayContextBuilder.setAssetVocabularyLocalService(AssetVocabularyLocalServiceUtil.getService());
+assetCategoriesSearchFacetDisplayContextBuilder.setDisplayStyle(dataJSONObject.getString("displayStyle", "cloud"));
+assetCategoriesSearchFacetDisplayContextBuilder.setFacet(facet);
+assetCategoriesSearchFacetDisplayContextBuilder.setFrequenciesVisible(dataJSONObject.getBoolean("showAssetCount", true));
+assetCategoriesSearchFacetDisplayContextBuilder.setFrequencyThreshold(dataJSONObject.getInt("frequencyThreshold"));
+assetCategoriesSearchFacetDisplayContextBuilder.setLocale(locale);
+assetCategoriesSearchFacetDisplayContextBuilder.setMaxTerms(dataJSONObject.getInt("maxTerms", 10));
+assetCategoriesSearchFacetDisplayContextBuilder.setParameterName(facet.getFieldId());
+assetCategoriesSearchFacetDisplayContextBuilder.setParameterValue(fieldParam);
+assetCategoriesSearchFacetDisplayContextBuilder.setPortal(PortalUtil.getPortal());
 
-AssetCategoriesSearchFacetDisplayContext assetCategoriesSearchFacetDisplayContext = assetCategoriesSearchFacetDisplayBuilder.build();
+AssetCategoriesSearchFacetDisplayContext assetCategoriesSearchFacetDisplayContext = assetCategoriesSearchFacetDisplayContextBuilder.build();
 %>
 
 <c:choose>
@@ -52,19 +44,19 @@ AssetCategoriesSearchFacetDisplayContext assetCategoriesSearchFacetDisplayContex
 
 					<ul class="<%= assetCategoriesSearchFacetDisplayContext.isCloud() ? "tag-cloud" : "tag-list" %> list-unstyled">
 						<li class="default facet-value">
-							<a class="<%= assetCategoriesSearchFacetDisplayContext.isNothingSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="" href="javascript:;"><liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" /></a>
+							<a class="<%= assetCategoriesSearchFacetDisplayContext.isNothingSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="" href="javascript:void(0);"><liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" /></a>
 						</li>
 
 						<%
-						for (AssetCategoriesSearchFacetTermDisplayContext assetCategoriesSearchFacetTermDisplayContext : assetCategoriesSearchFacetDisplayContext.getTermDisplayContexts()) {
+						for (BucketDisplayContext bucketDisplayContext : assetCategoriesSearchFacetDisplayContext.getBucketDisplayContexts()) {
 						%>
 
-							<li class="facet-value tag-popularity-<%= assetCategoriesSearchFacetTermDisplayContext.getPopularity() %>">
-								<a class="<%= assetCategoriesSearchFacetTermDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="<%= HtmlUtil.escapeAttribute(String.valueOf(assetCategoriesSearchFacetTermDisplayContext.getAssetCategoryId())) %>" href="javascript:;">
-									<%= HtmlUtil.escape(assetCategoriesSearchFacetTermDisplayContext.getDisplayName()) %>
+							<li class="facet-value tag-popularity-<%= bucketDisplayContext.getPopularity() %>">
+								<a class="<%= bucketDisplayContext.isSelected() ? "facet-term-selected" : "facet-term-unselected" %>" data-value="<%= HtmlUtil.escapeAttribute(bucketDisplayContext.getFilterValue()) %>" href="javascript:void(0);">
+									<%= HtmlUtil.escape(bucketDisplayContext.getBucketText()) %>
 
-									<c:if test="<%= assetCategoriesSearchFacetTermDisplayContext.isFrequencyVisible() %>">
-										<span class="frequency">(<%= assetCategoriesSearchFacetTermDisplayContext.getFrequency() %>)</span>
+									<c:if test="<%= bucketDisplayContext.isFrequencyVisible() %>">
+										<span class="frequency">(<%= bucketDisplayContext.getFrequency() %>)</span>
 									</c:if>
 								</a>
 							</li>

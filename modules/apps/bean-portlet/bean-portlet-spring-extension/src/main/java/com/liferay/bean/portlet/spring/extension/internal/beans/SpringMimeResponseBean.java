@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal.beans;
@@ -17,26 +8,26 @@ package com.liferay.bean.portlet.spring.extension.internal.beans;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringScopedBeanManager;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringScopedBeanManagerThreadLocal;
 
+import jakarta.annotation.ManagedBean;
+import jakarta.annotation.Priority;
+
+import jakarta.portlet.ActionURL;
+import jakarta.portlet.CacheControl;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderURL;
+import jakarta.portlet.ResourceURL;
+import jakarta.portlet.filter.MimeResponseWrapper;
+
+import jakarta.servlet.http.Cookie;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 
 import java.util.Collection;
 import java.util.Locale;
-
-import javax.annotation.ManagedBean;
-import javax.annotation.Priority;
-
-import javax.portlet.ActionURL;
-import javax.portlet.CacheControl;
-import javax.portlet.MimeResponse;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderURL;
-import javax.portlet.ResourceURL;
-import javax.portlet.filter.MimeResponseWrapper;
-
-import javax.servlet.http.Cookie;
 
 import org.w3c.dom.Element;
 

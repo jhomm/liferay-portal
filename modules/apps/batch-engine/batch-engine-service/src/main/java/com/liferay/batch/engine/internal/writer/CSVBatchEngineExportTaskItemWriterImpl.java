@@ -1,90 +1,95 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.writer;
 
-import com.liferay.petra.io.unsync.UnsyncPrintWriter;
-import com.liferay.petra.string.StringUtil;
+import com.liferay.batch.engine.csv.ColumnDescriptorProvider;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.ObjectValuePair;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Serializable;
 
 import java.lang.reflect.Field;
-
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.lang.reflect.Method;
 
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
+
 /**
  * @author Ivica Cardic
+ * @author Igor Beslic
+ * @author Matija Petanjek
  */
 public class CSVBatchEngineExportTaskItemWriterImpl
 	implements BatchEngineExportTaskItemWriter {
 
 	public CSVBatchEngineExportTaskItemWriterImpl(
-		String delimiter, Map<String, Field> fieldMap, List<String> fieldNames,
-		OutputStream outputStream) {
+			ColumnDescriptorProvider columnDescriptorProvider, long companyId,
+			String delimiter,
+			Map<String, ObjectValuePair<Field, Method>>
+				fieldNameObjectValuePairs,
+			List<String> fieldNames, OutputStream outputStream,
+			Map<String, Serializable> parameters, String taskItemDelegateName)
+		throws IOException, PortalException {
 
 		if (fieldNames.isEmpty()) {
 			throw new IllegalArgumentException("Field names are not set");
 		}
 
-		_delimiter = delimiter;
+		_csvPrinter = new CSVPrinter(
+			new BufferedWriter(new OutputStreamWriter(outputStream)),
+			_getCSVFormat(delimiter));
+
+		fieldNames = ListUtil.sort(
+			fieldNames, (value1, value2) -> value1.compareToIgnoreCase(value2));
 
 		_columnValuesExtractor = new ColumnValuesExtractor(
-			fieldMap, fieldNames);
+			columnDescriptorProvider, companyId, fieldNameObjectValuePairs,
+			fieldNames, taskItemDelegateName);
 
-		_unsyncPrintWriter = new UnsyncPrintWriter(outputStream);
+		if (Boolean.valueOf(
+				(String)parameters.getOrDefault(
+					"containsHeaders", StringPool.TRUE))) {
 
-		_unsyncPrintWriter.println(StringUtil.merge(fieldNames, delimiter));
+			_csvPrinter.printRecord(_columnValuesExtractor.getHeaders());
+		}
 	}
 
 	@Override
 	public void close() throws IOException {
-		_unsyncPrintWriter.close();
+		_csvPrinter.close();
 	}
 
 	@Override
 	public void write(Collection<?> items) throws Exception {
-		DateFormat dateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
-
 		for (Object item : items) {
-			_write(dateFormat, _columnValuesExtractor.extractValues(item));
+			for (Object[] values : _columnValuesExtractor.extractValues(item)) {
+				_csvPrinter.printRecord(values);
+			}
 		}
 	}
 
-	private void _write(DateFormat dateFormat, Collection<?> values) {
-		_unsyncPrintWriter.println(
-			StringUtil.merge(
-				values,
-				value -> {
-					if (value instanceof Date) {
-						return dateFormat.format(value);
-					}
+	private CSVFormat _getCSVFormat(String delimiter) {
+		CSVFormat.Builder builder = CSVFormat.Builder.create();
 
-					return String.valueOf(value);
-				},
-				_delimiter));
+		builder.setDelimiter(delimiter);
+
+		return builder.build();
 	}
 
 	private final ColumnValuesExtractor _columnValuesExtractor;
-	private final String _delimiter;
-	private final UnsyncPrintWriter _unsyncPrintWriter;
+	private final CSVPrinter _csvPrinter;
 
 }

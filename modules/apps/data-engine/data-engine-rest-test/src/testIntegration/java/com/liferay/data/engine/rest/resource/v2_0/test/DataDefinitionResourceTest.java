@@ -1,24 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.resource.v2_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.data.engine.nativeobject.tracker.DataEngineNativeObjectTracker;
+import com.liferay.data.engine.nativeobject.tracker.DataEngineNativeObjectRegistry;
 import com.liferay.data.engine.rest.client.dto.v2_0.DataDefinition;
 import com.liferay.data.engine.rest.client.dto.v2_0.DataDefinitionField;
 import com.liferay.data.engine.rest.client.dto.v2_0.DataLayout;
+import com.liferay.data.engine.rest.client.dto.v2_0.DataLayoutColumn;
+import com.liferay.data.engine.rest.client.dto.v2_0.DataLayoutPage;
+import com.liferay.data.engine.rest.client.dto.v2_0.DataLayoutRow;
 import com.liferay.data.engine.rest.client.pagination.Page;
 import com.liferay.data.engine.rest.client.pagination.Pagination;
 import com.liferay.data.engine.rest.client.permission.Permission;
@@ -28,27 +22,50 @@ import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataDefinitionTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.DataLayoutTestUtil;
 import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.TestDataDefinitionContentType;
+import com.liferay.data.engine.rest.resource.v2_0.test.util.content.type.test.util.ModelResourceActionTestUtil;
 import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
+import com.liferay.portal.kernel.security.permission.ResourceActions;
+import com.liferay.portal.kernel.service.CompanyLocalService;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.HTTPTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
+import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Queue;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -60,6 +77,19 @@ import org.junit.runner.RunWith;
 @RunWith(Arquillian.class)
 public class DataDefinitionResourceTest
 	extends BaseDataDefinitionResourceTestCase {
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		BaseDataDefinitionResourceTestCase.setUpClass();
+
+		ModelResourceActionTestUtil.populateModelResourceAction(
+			_resourceActions);
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		ModelResourceActionTestUtil.deleteModelResourceAction(_resourceActions);
+	}
 
 	@Override
 	@Test
@@ -87,11 +117,6 @@ public class DataDefinitionResourceTest
 					"ddmStructureId", parentDataDefinition.getId()
 				).put(
 					"ddmStructureLayoutId", ""
-				).put(
-					"rows",
-					new String[] {
-						"[{\"columns\":[{\"fields\":[\"Text\"],\"size\": 12}]}]"
-					}
 				).build());
 		}
 
@@ -106,6 +131,16 @@ public class DataDefinitionResourceTest
 			404,
 			dataDefinitionResource.getDataDefinitionHttpResponse(
 				parentDataDefinition.getId()));
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testDeleteSiteDataDefinitionByContentTypeByExternalReferenceCode_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
 	}
 
 	@Override
@@ -131,6 +166,16 @@ public class DataDefinitionResourceTest
 				postDataDefinition.getId(), RoleConstants.GUEST);
 
 		Assert.assertNotNull(page);
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testGetSiteDataDefinitionByContentTypeByExternalReferenceCode_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
 	}
 
 	@Override
@@ -176,6 +221,26 @@ public class DataDefinitionResourceTest
 					null, Pagination.of(1, 2), null);
 
 		Assert.assertEquals(1, page.getTotalCount());
+
+		List<DataDefinition> dataDefinitions = ListUtil.fromCollection(
+			page.getItems());
+
+		DataDefinition dataDefinition = dataDefinitions.get(0);
+
+		Map<String, DataDefinitionField> dataDefinitionFields = new HashMap<>();
+
+		ListUtil.isNotEmptyForEach(
+			ListUtil.fromArray(dataDefinition.getDataDefinitionFields()),
+			dataDefinitionField -> dataDefinitionFields.put(
+				dataDefinitionField.getName(), dataDefinitionField));
+
+		DataDefinitionField richTextDataDefinitionField =
+			dataDefinitionFields.get("RichText");
+
+		Map<String, Object> customProperties =
+			richTextDataDefinitionField.getCustomProperties();
+
+		Assert.assertTrue(customProperties.containsKey("editorConfig"));
 	}
 
 	@Override
@@ -263,6 +328,31 @@ public class DataDefinitionResourceTest
 
 	@Override
 	@Test
+	public void testGraphQLGetSiteDataDefinitionByContentTypeByExternalReferenceCodeNotFound()
+		throws Exception {
+
+		Assert.assertEquals(
+			"Not Found",
+			JSONUtil.getValueAsString(
+				invokeGraphQLQuery(
+					new GraphQLField(
+						"dataDefinitionByContentTypeByExternalReferenceCode",
+						HashMapBuilder.<String, Object>put(
+							"contentType", "\"" + _CONTENT_TYPE + "\""
+						).put(
+							"externalReferenceCode",
+							"\"" + RandomTestUtil.randomString() + "\""
+						).put(
+							"siteKey",
+							"\"" + irrelevantGroup.getGroupId() + "\""
+						).build(),
+						getGraphQLFields())),
+				"JSONArray/errors", "Object/0", "JSONObject/extensions",
+				"Object/code"));
+	}
+
+	@Override
+	@Test
 	public void testPostDataDefinitionByContentType() throws Exception {
 		super.testPostDataDefinitionByContentType();
 
@@ -288,7 +378,9 @@ public class DataDefinitionResourceTest
 
 			Assert.assertEquals("text2", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustNotDuplicateFieldName", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustNotDuplicateFieldName",
+				problem.getType());
 		}
 
 		// MustSetAvailableLocales
@@ -306,7 +398,9 @@ public class DataDefinitionResourceTest
 			Problem problem = problemException.getProblem();
 
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetAvailableLocales", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetAvailableLocales",
+				problem.getType());
 		}
 
 		// MustSetDefaultLocaleAsAvailableLocale
@@ -327,7 +421,9 @@ public class DataDefinitionResourceTest
 			Assert.assertEquals("es_ES", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
 			Assert.assertEquals(
-				"MustSetDefaultLocaleAsAvailableLocale", problem.getType());
+				"DataDefinitionValidationException." +
+					"MustSetDefaultLocaleAsAvailableLocale",
+				problem.getType());
 		}
 
 		// MustSetFields
@@ -347,7 +443,9 @@ public class DataDefinitionResourceTest
 			Problem problem = problemException.getProblem();
 
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetFields", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetFields",
+				problem.getType());
 		}
 
 		_testDataDefinitionContentType.setAllowEmptyDataDefinition(true);
@@ -374,7 +472,9 @@ public class DataDefinitionResourceTest
 
 			Assert.assertEquals("text1", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetFieldType", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetFieldType",
+				problem.getType());
 		}
 
 		// MustSetOptionsForField
@@ -394,7 +494,9 @@ public class DataDefinitionResourceTest
 
 			Assert.assertEquals("select1", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetOptionsForField", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetOptionsForField",
+				problem.getType());
 		}
 
 		// MustSetValidCharactersForFieldName
@@ -415,7 +517,9 @@ public class DataDefinitionResourceTest
 			Assert.assertEquals("#name*", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
 			Assert.assertEquals(
-				"MustSetValidCharactersForFieldName", problem.getType());
+				"DataDefinitionValidationException." +
+					"MustSetValidCharactersForFieldName",
+				problem.getType());
 		}
 
 		// MustSetValidCharactersForFieldType
@@ -436,7 +540,9 @@ public class DataDefinitionResourceTest
 			Assert.assertEquals("text$#", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
 			Assert.assertEquals(
-				"MustSetValidCharactersForFieldType", problem.getType());
+				"DataDefinitionValidationException." +
+					"MustSetValidCharactersForFieldType",
+				problem.getType());
 		}
 
 		// MustSetValidContentType
@@ -445,7 +551,8 @@ public class DataDefinitionResourceTest
 			dataDefinitionResource.postDataDefinitionByContentType(
 				"INVALID",
 				DataDefinition.toDTO(
-					DataDefinitionTestUtil.read("data-definition.json")));
+					DataDefinitionTestUtil.read(
+						"localized-data-definition.json")));
 
 			Assert.fail("An exception must be thrown");
 		}
@@ -454,7 +561,9 @@ public class DataDefinitionResourceTest
 
 			Assert.assertEquals("INVALID", problem.getDetail());
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetValidContentType", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetValidContentType",
+				problem.getType());
 		}
 
 		// MustSetValidName
@@ -472,7 +581,9 @@ public class DataDefinitionResourceTest
 			Problem problem = problemException.getProblem();
 
 			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetValidName", problem.getType());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetValidName",
+				problem.getType());
 		}
 
 		// MustSetValidType
@@ -489,12 +600,14 @@ public class DataDefinitionResourceTest
 		catch (Problem.ProblemException problemException) {
 			Problem problem = problemException.getProblem();
 
-			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
-			Assert.assertEquals("MustSetValidType", problem.getType());
 			Assert.assertEquals("string", problem.getDetail());
+			Assert.assertEquals("BAD_REQUEST", problem.getStatus());
+			Assert.assertEquals(
+				"DataDefinitionValidationException.MustSetValidType",
+				problem.getType());
 		}
 
-		// Provide default layout name when none is informed
+		// Provide default data layout name when no name is provided
 
 		DataDefinition dataDefinition =
 			dataDefinitionResource.postSiteDataDefinitionByContentType(
@@ -506,6 +619,60 @@ public class DataDefinitionResourceTest
 		DataLayout dataLayout = dataDefinition.getDefaultDataLayout();
 
 		Assert.assertEquals(dataDefinition.getName(), dataLayout.getName());
+
+		dataDefinitionResource.deleteDataDefinition(dataDefinition.getId());
+
+		// Provide empty string as the data definition field default value when
+		// no default value is provided
+
+		dataDefinition = DataDefinition.toDTO(
+			DataDefinitionTestUtil.read("data-definition-basic.json"));
+
+		DataDefinitionField[] dataDefinitionFields =
+			dataDefinition.getDataDefinitionFields();
+
+		Assert.assertEquals(
+			Arrays.toString(dataDefinitionFields), 1,
+			dataDefinitionFields.length);
+
+		DataDefinitionField dataDefinitionField = dataDefinitionFields[0];
+
+		Assert.assertNull(dataDefinitionField.getDefaultValue());
+
+		dataDefinition =
+			dataDefinitionResource.postSiteDataDefinitionByContentType(
+				testGroup.getGroupId(), _CONTENT_TYPE, dataDefinition);
+
+		dataDefinitionFields = dataDefinition.getDataDefinitionFields();
+
+		dataDefinitionField = dataDefinitionFields[0];
+
+		Assert.assertEquals(
+			HashMapBuilder.<String, Object>put(
+				"en_US", StringPool.BLANK
+			).build(),
+			dataDefinitionField.getDefaultValue());
+
+		dataDefinitionResource.deleteDataDefinition(dataDefinition.getId());
+	}
+
+	@Override
+	@Test
+	public void testPostDataDefinitionCopy() throws Exception {
+		DataDefinition randomDataDefinition =
+			testGetDataDefinition_addDataDefinition();
+
+		DataDefinition copiedDataDefinition =
+			testPostDataDefinitionCopy_addDataDefinition(randomDataDefinition);
+
+		_testCopiedDataDefinitionDataLayout(
+			randomDataDefinition.getDefaultDataLayout(),
+			copiedDataDefinition.getDefaultDataLayout());
+		_testCopiedDataDefinitionFields(
+			randomDataDefinition.getDataDefinitionFields(),
+			copiedDataDefinition.getDataDefinitionFields());
+
+		assertValid(copiedDataDefinition);
 	}
 
 	@Override
@@ -515,11 +682,11 @@ public class DataDefinitionResourceTest
 
 		Group group = GroupTestUtil.addGroup();
 
-		DataDefinitionResource.Builder dataDefinitionResourcedBuilder =
-			DataDefinitionResource.builder();
+		DataDefinitionResource.Builder dataDefinitionResourceBuilder =
+			_dataDefinitionResourceFactory.create();
 
 		DataDefinitionResource dataDefinitionResource =
-			dataDefinitionResourcedBuilder.user(
+			dataDefinitionResourceBuilder.user(
 				TestPropsValues.getUser()
 			).build();
 
@@ -547,6 +714,117 @@ public class DataDefinitionResourceTest
 	@Override
 	@Test
 	public void testPutDataDefinition() throws Exception {
+		Queue<Long> queue = new LinkedList<>();
+
+		ReflectionTestUtil.setFieldValue(
+			_dataDefinitionResource, "_ddmStructureLocalService",
+			ProxyUtil.newProxyInstance(
+				DDMStructureLocalService.class.getClassLoader(),
+				new Class<?>[] {DDMStructureLocalService.class},
+				(proxy, method, arguments) -> {
+					if (Objects.equals(method.getName(), "updateStructure")) {
+						queue.add((Long)arguments[1]);
+					}
+
+					return method.invoke(_ddmStructureLocalService, arguments);
+				}));
+
+		String originalName = PrincipalThreadLocal.getName();
+
+		try {
+			PrincipalThreadLocal.setName(TestPropsValues.getUserId());
+
+			DataDefinition dataDefinition1 =
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					testGroup.getGroupId(), _CONTENT_TYPE,
+					DataDefinition.toDTO(
+						DataDefinitionTestUtil.read("data-definition-1.json")));
+			DataDefinition dataDefinition2 =
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					testGroup.getGroupId(), _CONTENT_TYPE,
+					DataDefinition.toDTO(
+						DataDefinitionTestUtil.read(
+							"data-definition-2-linked-to-data-definition-1." +
+								"json")));
+			DataDefinition dataDefinition3 =
+				dataDefinitionResource.postSiteDataDefinitionByContentType(
+					testGroup.getGroupId(), _CONTENT_TYPE,
+					DataDefinition.toDTO(
+						DataDefinitionTestUtil.read(
+							"data-definition-3-linked-to-data-definition-2." +
+								"json")));
+
+			_setUpDataDefinitionResource(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUser());
+
+			_dataDefinitionResource.putDataDefinition(
+				dataDefinition1.getId(),
+				com.liferay.data.engine.rest.dto.v2_0.DataDefinition.toDTO(
+					dataDefinition1.toString()));
+
+			Assert.assertEquals(3, queue.size());
+
+			dataDefinitionResource.deleteDataDefinition(
+				dataDefinition2.getId());
+			dataDefinitionResource.deleteDataDefinition(
+				dataDefinition3.getId());
+
+			queue.clear();
+
+			JSONObject jsonObject = HTTPTestUtil.invokeToJSONObject(
+				JSONUtil.put(
+					"domain", "able.com"
+				).put(
+					"portalInstanceId", "able.com"
+				).put(
+					"virtualHost", "www.able.com"
+				).toString(),
+				"headless-portal-instances/v1.0/portal-instances",
+				Http.Method.POST);
+
+			long companyId = jsonObject.getLong("companyId");
+
+			try (SafeCloseable safeCloseable =
+					CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+						companyId)) {
+
+				User user = UserTestUtil.getAdminUser(companyId);
+
+				PrincipalThreadLocal.setName(user.getUserId());
+
+				_setUpDataDefinitionResource(companyId, user);
+
+				Group group = GroupTestUtil.addGroup(
+					companyId, user.getUserId(), 0);
+
+				DataDefinitionField dataDefinitionField =
+					dataDefinition2.getDataDefinitionFields()[0];
+
+				Map<String, Object> customProperties =
+					dataDefinitionField.getCustomProperties();
+
+				customProperties.put("ddmStructureId", dataDefinition1.getId());
+
+				_dataDefinitionResource.postSiteDataDefinitionByContentType(
+					group.getGroupId(), _CONTENT_TYPE,
+					com.liferay.data.engine.rest.dto.v2_0.DataDefinition.toDTO(
+						dataDefinition2.toString()));
+			}
+
+			_setUpDataDefinitionResource(
+				TestPropsValues.getCompanyId(), TestPropsValues.getUser());
+
+			_dataDefinitionResource.putDataDefinition(
+				dataDefinition1.getId(),
+				com.liferay.data.engine.rest.dto.v2_0.DataDefinition.toDTO(
+					dataDefinition1.toString()));
+
+			Assert.assertEquals(1, queue.size());
+		}
+		finally {
+			PrincipalThreadLocal.setName(originalName);
+		}
+
 		DataDefinition postDataDefinition =
 			testPutDataDefinition_addDataDefinition();
 
@@ -570,6 +848,26 @@ public class DataDefinitionResourceTest
 
 		assertEquals(randomDataDefinition, getDataDefinition);
 		assertValid(getDataDefinition);
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testPutSiteDataDefinitionByContentTypeByExternalReferenceCode_addDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
+	}
+
+	@Override
+	@Test
+	public DataDefinition
+			testPutSiteDataDefinitionByContentTypeByExternalReferenceCode_createDataDefinition()
+		throws Exception {
+
+		return dataDefinitionResource.postSiteDataDefinitionByContentType(
+			testGroup.getGroupId(), _CONTENT_TYPE, randomDataDefinition());
 	}
 
 	@Rule
@@ -718,6 +1016,15 @@ public class DataDefinitionResourceTest
 	}
 
 	@Override
+	protected DataDefinition testPostDataDefinitionCopy_addDataDefinition(
+			DataDefinition dataDefinition)
+		throws Exception {
+
+		return dataDefinitionResource.postDataDefinitionCopy(
+			dataDefinition.getId());
+	}
+
+	@Override
 	protected DataDefinition
 			testPostSiteDataDefinitionByContentType_addDataDefinition(
 				DataDefinition dataDefinition)
@@ -736,7 +1043,8 @@ public class DataDefinitionResourceTest
 	}
 
 	@Override
-	protected DataDefinition testPutDataDefinitionPermission_addDataDefinition()
+	protected DataDefinition
+			testPutDataDefinitionPermissionsPage_addDataDefinition()
 		throws Exception {
 
 		return dataDefinitionResource.postSiteDataDefinitionByContentType(
@@ -766,6 +1074,94 @@ public class DataDefinitionResourceTest
 		dataDefinition.setSiteId(testGroup.getGroupId());
 
 		return dataDefinition;
+	}
+
+	private List<String> _getDataLayoutColumnFieldNames(DataLayout dataLayout) {
+		List<String> dataLayoutColumnFieldNames = new ArrayList<>();
+
+		for (DataLayoutPage dataLayoutPage : dataLayout.getDataLayoutPages()) {
+			for (DataLayoutRow dataLayoutRow :
+					dataLayoutPage.getDataLayoutRows()) {
+
+				for (DataLayoutColumn dataLayoutColumn :
+						dataLayoutRow.getDataLayoutColumns()) {
+
+					Collections.addAll(
+						dataLayoutColumnFieldNames,
+						dataLayoutColumn.getFieldNames());
+				}
+			}
+		}
+
+		return dataLayoutColumnFieldNames;
+	}
+
+	private void _setUpDataDefinitionResource(long companyId, User user)
+		throws Exception {
+
+		_dataDefinitionResource.setContextCompany(
+			_companyLocalService.getCompany(companyId));
+		_dataDefinitionResource.setContextUser(user);
+	}
+
+	private void _testCopiedDataDefinitionDataLayout(
+		DataLayout dataLayout1, DataLayout dataLayout2) {
+
+		List<String> dataLayoutColumnFieldNames1 =
+			_getDataLayoutColumnFieldNames(dataLayout1);
+
+		List<String> dataLayoutColumnFieldNames2 =
+			_getDataLayoutColumnFieldNames(dataLayout2);
+
+		Assert.assertEquals(
+			dataLayoutColumnFieldNames2.toString(),
+			dataLayoutColumnFieldNames1.size(),
+			dataLayoutColumnFieldNames2.size());
+
+		for (int i = 0; i < dataLayoutColumnFieldNames1.size(); i++) {
+			Assert.assertEquals(
+				"CopyOf" + dataLayoutColumnFieldNames1.get(i),
+				dataLayoutColumnFieldNames2.get(i));
+		}
+	}
+
+	private void _testCopiedDataDefinitionFields(
+		DataDefinitionField[] dataDefinitionFields1,
+		DataDefinitionField[] dataDefinitionFields2) {
+
+		Assert.assertEquals(
+			Arrays.toString(dataDefinitionFields2),
+			dataDefinitionFields1.length, dataDefinitionFields2.length);
+
+		for (int i = 0; i < dataDefinitionFields1.length; i++) {
+			Assert.assertEquals(
+				"CopyOf" + dataDefinitionFields1[i].getName(),
+				dataDefinitionFields2[i].getName());
+
+			Map<String, Object> customProperties1 =
+				dataDefinitionFields1[i].getCustomProperties();
+			Map<String, Object> customProperties2 =
+				dataDefinitionFields2[i].getCustomProperties();
+
+			Assert.assertEquals(
+				customProperties1.containsKey("fieldReference"),
+				customProperties2.containsKey("fieldReference"));
+
+			if (customProperties1.containsKey("fieldReference")) {
+				Assert.assertEquals(
+					"CopyOf" + customProperties1.get("fieldReference"),
+					customProperties2.get("fieldReference"));
+			}
+
+			if (!customProperties1.containsKey("structureId") &&
+				!Objects.equals(
+					dataDefinitionFields1[i].getFieldType(), "fieldset")) {
+
+				_testCopiedDataDefinitionFields(
+					dataDefinitionFields1[i].getNestedDataDefinitionFields(),
+					dataDefinitionFields2[i].getNestedDataDefinitionFields());
+			}
+		}
 	}
 
 	private void _testGetSiteDataDefinitionsPage(
@@ -800,8 +1196,20 @@ public class DataDefinitionResourceTest
 
 	private static final String _CONTENT_TYPE = "test";
 
-	@Inject(type = DataEngineNativeObjectTracker.class)
-	private DataEngineNativeObjectTracker _dataEngineNativeObjectTracker;
+	@Inject
+	private static ResourceActions _resourceActions;
+
+	@Inject
+	private CompanyLocalService _companyLocalService;
+
+	@Inject
+	private DataDefinitionResource _dataDefinitionResource;
+
+	@Inject
+	private DataDefinitionResource.Factory _dataDefinitionResourceFactory;
+
+	@Inject(type = DataEngineNativeObjectRegistry.class)
+	private DataEngineNativeObjectRegistry _dataEngineNativeObjectRegistry;
 
 	@Inject
 	private DDMStructureLocalService _ddmStructureLocalService;

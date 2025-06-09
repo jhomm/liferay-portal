@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.auto.tagger.internal;
@@ -18,6 +9,7 @@ import com.liferay.asset.auto.tagger.AssetAutoTagProvider;
 import com.liferay.asset.auto.tagger.AssetAutoTagger;
 import com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfiguration;
 import com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfigurationFactory;
+import com.liferay.asset.auto.tagger.internal.util.AssetAutoTaggerUtil;
 import com.liferay.asset.auto.tagger.model.AssetAutoTaggerEntry;
 import com.liferay.asset.auto.tagger.service.AssetAutoTaggerEntryLocalService;
 import com.liferay.asset.kernel.exception.AssetTagException;
@@ -25,6 +17,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
 import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -46,20 +39,23 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alejandro Tardín
  */
 @Component(
-	configurationPid = "com.liferay.asset.auto.tagger.internal.configuration.AssetAutoTaggerConfiguration",
+	configurationPid = "com.liferay.asset.auto.tagger.configuration.AssetAutoTaggerConfiguration",
 	service = AopService.class
 )
+@CTAware
 public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 
 	@Override
 	@Transactional(rollbackFor = Exception.class)
 	public void tag(AssetEntry assetEntry) throws PortalException {
-		if (!_assetAutoTaggerHelper.isAutoTaggable(assetEntry)) {
-			return;
-		}
-
 		AssetAutoTaggerConfiguration assetAutoTaggerConfiguration =
 			_getAssetAutoTaggerConfiguration(assetEntry);
+
+		if (!AssetAutoTaggerUtil.isAutoTaggable(
+				assetAutoTaggerConfiguration, assetEntry)) {
+
+			return;
+		}
 
 		List<String> assetTagNames = _getAutoAssetTagNames(
 			assetEntry,
@@ -132,21 +128,21 @@ public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 
 		AssetRenderer<?> assetRenderer = assetEntry.getAssetRenderer();
 
-		Set<String> assetTagNamesSet = new LinkedHashSet<>();
+		Set<String> assetTagNames1 = new LinkedHashSet<>();
 
 		for (AssetAutoTagProvider<?> assetAutoTagProvider :
-				_assetAutoTaggerHelper.getAssetEntryAssetAutoTagProviders()) {
+				AssetAutoTaggerUtil.getAssetEntryAssetAutoTagProviders()) {
 
 			AssetAutoTagProvider<AssetEntry> assetEntryAssetAutoTagProvider =
 				(AssetAutoTagProvider<AssetEntry>)assetAutoTagProvider;
 
-			assetTagNamesSet.addAll(
+			assetTagNames1.addAll(
 				assetEntryAssetAutoTagProvider.getTagNames(assetEntry));
 		}
 
 		if (assetRenderer != null) {
 			List<AssetAutoTagProvider<?>> assetAutoTagProviders =
-				_assetAutoTaggerHelper.getAssetAutoTagProviders(
+				AssetAutoTaggerUtil.getAssetAutoTagProviders(
 					assetEntry.getClassName());
 
 			for (AssetAutoTagProvider<?> assetAutoTagProvider :
@@ -155,31 +151,42 @@ public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 				AssetAutoTagProvider<Object> objectAssetAutoTagProvider =
 					(AssetAutoTagProvider<Object>)assetAutoTagProvider;
 
-				assetTagNamesSet.addAll(
+				assetTagNames1.addAll(
 					objectAssetAutoTagProvider.getTagNames(
 						assetRenderer.getAssetObject()));
 			}
 		}
 
-		assetTagNamesSet.removeAll(Arrays.asList(assetEntry.getTagNames()));
+		assetTagNames1.removeAll(Arrays.asList(assetEntry.getTagNames()));
 
-		List<String> assetTagNames = new ArrayList<>(assetTagNamesSet);
+		List<String> assetTagNames2 = new ArrayList<>(assetTagNames1);
 
 		if (maximumNumberOfTagsPerAsset > 0) {
-			return assetTagNames.subList(
-				0, Math.min(maximumNumberOfTagsPerAsset, assetTagNames.size()));
+			return assetTagNames2.subList(
+				0,
+				Math.min(maximumNumberOfTagsPerAsset, assetTagNames2.size()));
 		}
 
-		return assetTagNames;
+		return assetTagNames2;
 	}
 
 	private void _reindex(AssetEntry assetEntry) throws PortalException {
 		Indexer<Object> indexer = _indexerRegistry.getIndexer(
 			assetEntry.getClassName());
 
-		if (indexer != null) {
-			indexer.reindex(assetEntry.getClassName(), assetEntry.getClassPK());
+		if (indexer == null) {
+			return;
 		}
+
+		AssetRenderer<?> assetRenderer = assetEntry.getAssetRenderer();
+
+		if (assetRenderer == null) {
+			indexer.reindex(assetEntry.getClassName(), assetEntry.getClassPK());
+
+			return;
+		}
+
+		indexer.reindex(assetRenderer.getAssetObject());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -191,9 +198,6 @@ public class AssetAutoTaggerImpl implements AopService, AssetAutoTagger {
 
 	@Reference
 	private AssetAutoTaggerEntryLocalService _assetAutoTaggerEntryLocalService;
-
-	@Reference
-	private AssetAutoTaggerHelper _assetAutoTaggerHelper;
 
 	@Reference
 	private AssetTagLocalService _assetTagLocalService;

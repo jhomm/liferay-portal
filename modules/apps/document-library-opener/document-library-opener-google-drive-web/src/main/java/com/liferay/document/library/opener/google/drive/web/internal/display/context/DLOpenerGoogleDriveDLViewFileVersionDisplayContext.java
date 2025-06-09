@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.google.drive.web.internal.display.context;
@@ -18,47 +9,39 @@ import com.liferay.document.library.display.context.BaseDLViewFileVersionDisplay
 import com.liferay.document.library.display.context.DLUIItemKeys;
 import com.liferay.document.library.display.context.DLViewFileVersionDisplayContext;
 import com.liferay.document.library.opener.constants.DLOpenerFileEntryReferenceConstants;
-import com.liferay.document.library.opener.google.drive.constants.DLOpenerGoogleDriveMimeTypes;
 import com.liferay.document.library.opener.google.drive.web.internal.DLOpenerGoogleDriveManager;
 import com.liferay.document.library.opener.google.drive.web.internal.constants.DLOpenerGoogleDriveConstants;
+import com.liferay.document.library.opener.google.drive.web.internal.constants.DLOpenerGoogleDriveMimeTypes;
 import com.liferay.document.library.opener.model.DLOpenerFileEntryReference;
 import com.liferay.document.library.opener.service.DLOpenerFileEntryReferenceLocalService;
-import com.liferay.petra.string.StringBundler;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemBuilder;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.servlet.HttpMethods;
-import com.liferay.portal.kernel.servlet.taglib.ui.BaseUIItem;
-import com.liferay.portal.kernel.servlet.taglib.ui.JavaScriptUIItem;
-import com.liferay.portal.kernel.servlet.taglib.ui.Menu;
-import com.liferay.portal.kernel.servlet.taglib.ui.MenuItem;
-import com.liferay.portal.kernel.servlet.taglib.ui.URLMenuItem;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Collection;
+import jakarta.portlet.PortletRequest;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.ResourceBundle;
 import java.util.UUID;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Adolfo Pérez
@@ -95,7 +78,7 @@ public class DLOpenerGoogleDriveDLViewFileVersionDisplayContext
 	}
 
 	@Override
-	public Menu getMenu() throws PortalException {
+	public List<DropdownItem> getActionDropdownItems() throws PortalException {
 		if (!isActionsVisible() ||
 			!DLOpenerGoogleDriveMimeTypes.isGoogleMimeTypeSupported(
 				fileVersion.getMimeType()) ||
@@ -105,94 +88,115 @@ public class DLOpenerGoogleDriveDLViewFileVersionDisplayContext
 				_permissionChecker, fileVersion.getFileEntry(),
 				ActionKeys.UPDATE)) {
 
-			return super.getMenu();
+			return super.getActionDropdownItems();
 		}
 
-		Menu menu = super.getMenu();
+		List<DropdownItem> dropdownItems = super.getActionDropdownItems();
 
 		FileEntry fileEntry = fileVersion.getFileEntry();
 
 		if (_isCheckedOutInGoogleDrive()) {
 			if (fileEntry.hasLock()) {
-				List<MenuItem> menuItems = menu.getMenuItems();
+				_updateCancelCheckoutAndCheckinDropdownItems(dropdownItems);
 
-				_updateCancelCheckoutAndCheckinMenuItems(menuItems);
-
-				_addEditInGoogleDocsUIItem(
-					menuItems, _createEditInGoogleDocsMenuItem(Constants.EDIT));
+				_addEditInGoogleDocsDropdownItem(
+					dropdownItems,
+					_createEditInGoogleDocsDropdownItem(Constants.EDIT));
 			}
 
-			return menu;
+			return dropdownItems;
 		}
 
 		if (!_isCheckedOutByAnotherUser(fileEntry)) {
-			_addEditInGoogleDocsUIItem(
-				menu.getMenuItems(),
-				_createEditInGoogleDocsMenuItem(Constants.CHECKOUT));
+			_addEditInGoogleDocsDropdownItem(
+				dropdownItems,
+				_createEditInGoogleDocsDropdownItem(Constants.CHECKOUT));
 		}
 
-		return menu;
+		return dropdownItems;
 	}
 
-	/**
-	 * @see com.liferay.sharing.document.library.internal.display.context.SharingDLViewFileVersionDisplayContext#_addSharingUIItem(List, BaseUIItem)
-	 */
-	private <T extends BaseUIItem> List<T> _addEditInGoogleDocsUIItem(
-		List<T> uiItems, T editInGoogleDocsUIItem) {
+	private List<DropdownItem> _addEditInGoogleDocsDropdownItem(
+		List<DropdownItem> dropdownItems,
+		DropdownItem editInGoogleDocsDropdownItem) {
+
+		if (_addEditInGoogleDocsDropdownItemGroup(
+				dropdownItems, editInGoogleDocsDropdownItem)) {
+
+			return dropdownItems;
+		}
+
+		dropdownItems.add(editInGoogleDocsDropdownItem);
+
+		return dropdownItems;
+	}
+
+	private boolean _addEditInGoogleDocsDropdownItemGroup(
+		List<DropdownItem> dropdownItems,
+		DropdownItem editInGoogleDocsDropdownItem) {
 
 		int i = 1;
 
-		for (T uiItem : uiItems) {
-			if (DLUIItemKeys.EDIT.equals(uiItem.getKey())) {
+		for (DropdownItem dropdownItem : dropdownItems) {
+			if (Objects.equals(dropdownItem.get("type"), "group")) {
+				if (_addEditInGoogleDocsDropdownItemGroup(
+						(List<DropdownItem>)dropdownItem.get("items"),
+						editInGoogleDocsDropdownItem)) {
+
+					return true;
+				}
+			}
+			else if (Objects.equals(
+						DLUIItemKeys.EDIT, dropdownItem.get("key"))) {
+
 				break;
 			}
 
 			i++;
 		}
 
-		if (i >= uiItems.size()) {
-			uiItems.add(editInGoogleDocsUIItem);
-		}
-		else {
-			uiItems.add(i, editInGoogleDocsUIItem);
+		if (i < dropdownItems.size()) {
+			dropdownItems.add(i, editInGoogleDocsDropdownItem);
+
+			return true;
 		}
 
-		return uiItems;
+		return false;
 	}
 
-	private MenuItem _createEditInGoogleDocsMenuItem(String cmd)
+	private DropdownItem _createEditInGoogleDocsDropdownItem(String cmd)
 		throws PortalException {
 
-		URLMenuItem urlMenuItem = new URLMenuItem();
-
-		urlMenuItem.setKey("#edit-in-google-drive");
-		urlMenuItem.setLabel(LanguageUtil.get(_resourceBundle, _getLabelKey()));
-		urlMenuItem.setMethod(HttpMethods.POST);
-		urlMenuItem.setURL(_getActionURL(cmd));
-
-		return urlMenuItem;
+		return DropdownItemBuilder.setHref(
+			_getActionURL(cmd)
+		).setKey(
+			"#edit-in-google-drive"
+		).setLabel(
+			LanguageUtil.get(_resourceBundle, _getLabelKey())
+		).build();
 	}
 
 	private String _getActionURL(String cmd) throws PortalException {
-		LiferayPortletURL liferayPortletURL = PortletURLFactoryUtil.create(
-			request, _portal.getPortletId(request),
-			PortletRequest.ACTION_PHASE);
+		return PortletURLBuilder.create(
+			PortletURLFactoryUtil.create(
+				request, _portal.getPortletId(request),
+				PortletRequest.ACTION_PHASE)
+		).setActionName(
+			"/document_library/edit_in_google_docs"
+		).setCMD(
+			cmd
+		).setParameter(
+			"fileEntryId", fileVersion.getFileEntryId()
+		).setParameter(
+			"folderId",
+			() -> {
+				FileEntry fileEntry = fileVersion.getFileEntry();
 
-		liferayPortletURL.setParameter(
-			ActionRequest.ACTION_NAME, "/document_library/edit_in_google_docs");
-		liferayPortletURL.setParameter(Constants.CMD, cmd);
-		liferayPortletURL.setParameter(
-			"fileEntryId", String.valueOf(fileVersion.getFileEntryId()));
-
-		FileEntry fileEntry = fileVersion.getFileEntry();
-
-		liferayPortletURL.setParameter(
-			"folderId", String.valueOf(fileEntry.getFolderId()));
-
-		liferayPortletURL.setParameter(
-			"googleDocsRedirect", _portal.getCurrentURL(request));
-
-		return liferayPortletURL.toString();
+				return fileEntry.getFolderId();
+			}
+		).setParameter(
+			"googleDocsRedirect", _portal.getCurrentURL(request)
+		).buildString();
 	}
 
 	private String _getLabelKey() {
@@ -215,20 +219,6 @@ public class DLOpenerGoogleDriveDLViewFileVersionDisplayContext
 		}
 
 		return "edit-in-google-docs";
-	}
-
-	private LiferayPortletResponse _getLiferayPortletResponse() {
-		PortletResponse portletResponse = (PortletResponse)request.getAttribute(
-			JavaConstants.JAVAX_PORTLET_RESPONSE);
-
-		return PortalUtil.getLiferayPortletResponse(portletResponse);
-	}
-
-	private String _getNamespace() {
-		LiferayPortletResponse liferayPortletResponse =
-			_getLiferayPortletResponse();
-
-		return liferayPortletResponse.getNamespace();
 	}
 
 	private boolean _isCheckedOutByAnotherUser(FileEntry fileEntry) {
@@ -267,42 +257,34 @@ public class DLOpenerGoogleDriveDLViewFileVersionDisplayContext
 		return false;
 	}
 
-	private void _updateCancelCheckoutAndCheckinMenuItems(
-			Collection<MenuItem> menuItems)
+	private void _updateCancelCheckoutAndCheckinDropdownItems(
+			List<DropdownItem> dropdownItems)
 		throws PortalException {
 
-		for (MenuItem menuItem : menuItems) {
-			if (DLUIItemKeys.CHECKIN.equals(menuItem.getKey())) {
-				if (menuItem instanceof JavaScriptUIItem) {
-					JavaScriptUIItem javaScriptUIItem =
-						(JavaScriptUIItem)menuItem;
-
-					if (_isCheckingInNewFile()) {
-						javaScriptUIItem.setOnClick(
-							StringBundler.concat(
-								"window.location.href = '",
-								HtmlUtil.escapeJS(
-									_getActionURL(Constants.CHECKIN)),
-								"'"));
-					}
-					else {
-						javaScriptUIItem.setOnClick(
-							StringBundler.concat(
-								_getNamespace(), "showVersionDetailsDialog('",
-								HtmlUtil.escapeJS(
-									_getActionURL(Constants.CHECKIN)),
-								"');"));
-					}
+		for (DropdownItem dropdownItem : dropdownItems) {
+			if (Objects.equals(dropdownItem.get("type"), "group")) {
+				_updateCancelCheckoutAndCheckinDropdownItems(
+					(List<DropdownItem>)dropdownItem.get("items"));
+			}
+			else if (DLUIItemKeys.CHECKIN.equals(dropdownItem.get("key"))) {
+				if (_isCheckingInNewFile()) {
+					dropdownItem.setData(new HashMap<>());
+					dropdownItem.setHref(_getActionURL(Constants.CHECKIN));
+				}
+				else {
+					dropdownItem.setData(
+						HashMapBuilder.<String, Object>put(
+							"action", "checkin"
+						).put(
+							"checkinURL", _getActionURL(Constants.CHECKIN)
+						).build());
+					dropdownItem.setHref(StringPool.BLANK);
 				}
 			}
-			else if (DLUIItemKeys.CANCEL_CHECKOUT.equals(menuItem.getKey())) {
-				if (menuItem instanceof URLMenuItem) {
-					URLMenuItem urlMenuItem = (URLMenuItem)menuItem;
+			else if (DLUIItemKeys.CANCEL_CHECKOUT.equals(
+						dropdownItem.get("key"))) {
 
-					urlMenuItem.setMethod(HttpMethods.POST);
-					urlMenuItem.setURL(
-						_getActionURL(Constants.CANCEL_CHECKOUT));
-				}
+				dropdownItem.setHref(_getActionURL(Constants.CANCEL_CHECKOUT));
 			}
 		}
 	}

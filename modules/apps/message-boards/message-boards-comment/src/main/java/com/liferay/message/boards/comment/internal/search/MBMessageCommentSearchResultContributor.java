@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.comment.internal.search;
@@ -26,10 +17,10 @@ import com.liferay.portal.kernel.search.Summary;
 import com.liferay.portal.kernel.search.result.SearchResultContributor;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import java.util.Locale;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
+import java.util.Locale;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adolfo Pérez
  * @author André de Oliveira
  */
-@Component(immediate = true, service = SearchResultContributor.class)
+@Component(service = SearchResultContributor.class)
 public class MBMessageCommentSearchResultContributor
 	implements SearchResultContributor {
 
@@ -68,19 +59,10 @@ public class MBMessageCommentSearchResultContributor
 		return MBMessage.class.getName();
 	}
 
-	@Reference(unbind = "-")
-	public void setCommentManager(CommentManager commentManager) {
-		_commentManager = commentManager;
-	}
-
-	@Reference(unbind = "-")
-	public void setMBMessageLocalService(
-		MBMessageLocalService mbMessageLocalService) {
-
-		_mbMessageLocalService = mbMessageLocalService;
-	}
-
+	@Reference
 	private CommentManager _commentManager;
+
+	@Reference
 	private MBMessageLocalService _mbMessageLocalService;
 
 }

@@ -1,25 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration;
 
 import com.liferay.petra.lang.HashUtil;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.configuration.Filter;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.CompanyConstants;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropertiesUtil;
@@ -49,13 +38,11 @@ import org.apache.commons.configuration.MapConfiguration;
 public class ConfigurationImpl
 	implements com.liferay.portal.kernel.configuration.Configuration {
 
-	public ConfigurationImpl(
-		ClassLoader classLoader, String name, long companyId, String webId) {
-
+	public ConfigurationImpl(ClassLoader classLoader, String name) {
 		_classLoaderAggregateProperties =
-			ClassLoaderAggregatePropertiesUtil.create(classLoader, webId, name);
+			ClassLoaderAggregatePropertiesUtil.create(classLoader, name);
 
-		printSources(companyId, webId);
+		printSources();
 	}
 
 	@Override
@@ -72,12 +59,12 @@ public class ConfigurationImpl
 				(List<Configuration>)field1.get(
 					_classLoaderAggregateProperties));
 
-			MapConfiguration newConfiguration = new MapConfiguration(
+			MapConfiguration newMapConfiguration = new MapConfiguration(
 				_castPropertiesToMap(properties));
 
-			newConfiguration.setTrimmingDisabled(true);
+			newMapConfiguration.setTrimmingDisabled(true);
 
-			configurations.add(0, newConfiguration);
+			configurations.add(0, newMapConfiguration);
 
 			field1.set(_classLoaderAggregateProperties, configurations);
 
@@ -89,7 +76,7 @@ public class ConfigurationImpl
 			configurations = new LinkedList<>(
 				(List<Configuration>)field1.get(compositeConfiguration));
 
-			configurations.add(0, newConfiguration);
+			configurations.add(0, newMapConfiguration);
 
 			field1.set(compositeConfiguration, configurations);
 
@@ -235,6 +222,11 @@ public class ConfigurationImpl
 	}
 
 	@Override
+	public List<String> getLoadedSources() {
+		return _classLoaderAggregateProperties.loadedSources();
+	}
+
+	@Override
 	public Properties getProperties() {
 		if (_properties != null) {
 			return _properties;
@@ -320,7 +312,7 @@ public class ConfigurationImpl
 		clearCache();
 	}
 
-	protected void printSources(long companyId, String webId) {
+	protected void printSources() {
 		if (GetterUtil.getBoolean(
 				System.getProperty("configuration.impl.quiet"))) {
 
@@ -343,11 +335,6 @@ public class ConfigurationImpl
 			}
 
 			String info = "Loading " + source;
-
-			if (companyId > CompanyConstants.SYSTEM) {
-				info += StringBundler.concat(
-					" for {companyId=", companyId, ", webId=", webId, "}");
-			}
 
 			System.out.println(info);
 		}

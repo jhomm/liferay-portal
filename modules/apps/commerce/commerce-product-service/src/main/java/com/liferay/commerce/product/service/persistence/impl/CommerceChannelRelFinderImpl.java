@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.impl;
 
+import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.model.CommerceChannelRel;
 import com.liferay.commerce.product.model.impl.CommerceChannelRelImpl;
 import com.liferay.commerce.product.service.persistence.CommerceChannelRelFinder;
@@ -26,18 +18,21 @@ import com.liferay.portal.kernel.dao.orm.Session;
 import com.liferay.portal.kernel.dao.orm.Type;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(service = CommerceChannelRelFinder.class)
 public class CommerceChannelRelFinderImpl
 	extends CommerceChannelRelFinderBaseImpl
 	implements CommerceChannelRelFinder {
@@ -70,15 +65,15 @@ public class CommerceChannelRelFinderImpl
 
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
-					sql, className, "CommerceChannel.commerceChannelId", null,
-					null, new long[] {0}, null);
+					sql, CommerceChannel.class.getName(),
+					"CommerceChannel.commerceChannelId");
 			}
 
 			String[] keywords = _customSQL.keywords(name, true);
 
 			if (Validator.isNotNull(name)) {
 				sql = _customSQL.replaceKeywords(
-					sql, "(LOWER(CommerceChannel.name)", StringPool.LIKE, true,
+					sql, "LOWER(CommerceChannel.name)", StringPool.LIKE, true,
 					keywords);
 				sql = _customSQL.replaceAndOperator(sql, false);
 			}
@@ -95,7 +90,7 @@ public class CommerceChannelRelFinderImpl
 
 			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			queryPos.add(PortalUtil.getClassNameId(className));
+			queryPos.add(_portal.getClassNameId(className));
 			queryPos.add(classPK);
 
 			if (Validator.isNotNull(name)) {
@@ -120,18 +115,6 @@ public class CommerceChannelRelFinderImpl
 		finally {
 			closeSession(session);
 		}
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public int countByC_C(
-		String className, long classPK, String classPKField, String name,
-		boolean inlineSQLHelper) {
-
-		throw new UnsupportedOperationException();
 	}
 
 	@Override
@@ -161,13 +144,13 @@ public class CommerceChannelRelFinderImpl
 
 			if (inlineSQLHelper) {
 				sql = InlineSQLHelperUtil.replacePermissionCheck(
-					sql, className, "CommerceChannel.commerceChannelId", null,
-					null, new long[] {0}, null);
+					sql, CommerceChannel.class.getName(),
+					"CommerceChannel.commerceChannelId");
 			}
 
 			if (Validator.isNotNull(name)) {
 				sql = _customSQL.replaceKeywords(
-					sql, "(LOWER(CommerceChannel.name)", StringPool.LIKE, true,
+					sql, "LOWER(CommerceChannel.name)", StringPool.LIKE, true,
 					keywords);
 				sql = _customSQL.replaceAndOperator(sql, false);
 			}
@@ -186,7 +169,7 @@ public class CommerceChannelRelFinderImpl
 
 			QueryPos queryPos = QueryPos.getInstance(sqlQuery);
 
-			queryPos.add(PortalUtil.getClassNameId(className));
+			queryPos.add(_portal.getClassNameId(className));
 			queryPos.add(classPK);
 
 			if (Validator.isNotNull(name)) {
@@ -202,18 +185,6 @@ public class CommerceChannelRelFinderImpl
 		finally {
 			closeSession(session);
 		}
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public List<CommerceChannelRel> findByC_C(
-		String className, long classPK, String classPKField, String name,
-		int start, int end, boolean inlineSQLHelper) {
-
-		throw new UnsupportedOperationException();
 	}
 
 	private List<Long> _findClassNameIds() {
@@ -240,7 +211,7 @@ public class CommerceChannelRelFinderImpl
 	}
 
 	private boolean _isValidClassName(String className) {
-		long classNameId = PortalUtil.getClassNameId(className);
+		long classNameId = _portal.getClassNameId(className);
 
 		List<Long> validClassNameIds = _findClassNameIds();
 
@@ -250,7 +221,10 @@ public class CommerceChannelRelFinderImpl
 	private static final String _FIND_CLASS_NAME_IDS =
 		CommerceChannelRelFinder.class.getName() + ".findClassNameIds";
 
-	@ServiceReference(type = CustomSQL.class)
+	@Reference
 	private CustomSQL _customSQL;
+
+	@Reference
+	private Portal _portal;
 
 }

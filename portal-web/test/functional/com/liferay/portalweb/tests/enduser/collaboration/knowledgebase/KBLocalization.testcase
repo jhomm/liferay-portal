@@ -1,4 +1,4 @@
-@component-name = "portal-knowledge-base"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column";
@@ -13,41 +13,34 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
-			Workflow.tearDownSiteWorkflow();
-
-			KBFolder.tearDownCP();
-
 			KBArticle.tearDownCP();
 
 			JSONUser.tearDownNonAdminUsers();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@priority = "3"
+	@priority = 3
 	@refactorneeded
 	test ViewUnchangedKBArticleTitleViaLocalizedPage {
 		var portalURL = PropsUtil.get("portal.url");
-		var siteName = TestCase.getSiteName(siteName = "${siteName}");
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+		Site.openSitesAdmin();
 
 		ProductMenu.gotoPortlet(
 			category = "Site Builder",
 			portlet = "Pages",
-			site = "${siteName}");
+			site = ${siteName});
 
-		SitePages.addPublicChildPage(
+		PagesAdmin.addChildPage(
 			childPageName = "Knowledge Base Display Page",
 			parentPageName = "Home");
 
@@ -55,16 +48,14 @@ definition {
 			category = "Site Builder",
 			portlet = "Pages");
 
-		SitePages.configureChildPage(
+		PagesAdmin.configureChildPage(
 			columnName = "1 Column",
 			pageName = "Knowledge Base Display Page",
 			parentPagesHierarchy = "Home",
-			privacy = "Public Pages",
 			sitePageType = "Widget Page");
 
-		KBAdmin.openKBAdmin(siteURLKey = "guest");
-
-		KBArticle.addCP(
+		JSONKnowledgeBase.addkBArticle(
+			groupName = "Guest",
 			kbArticleContent = "Knowledge Base Article Content",
 			kbArticleTitle = "Knowledge Base Article Title");
 
@@ -76,7 +67,7 @@ definition {
 
 		Portlet.addPG(portletName = "Knowledge Base Display");
 
-		KBArticle.viewViaKBDisplayPG(
+		KBDisplayWidget.viewViaKBDisplayPG(
 			kbArticleContent = "Knowledge Base Article Content",
 			kbArticleTitle = "Knowledge Base Article Title");
 
@@ -86,17 +77,17 @@ definition {
 			sitePageURL = "${portalURL}/es/web/guest/knowledge-base-display-page",
 			translationLanguageLocalizationMessage = "This page is displayed in Spanish (Spain).");
 
-		KBArticle.viewViaKBDisplayPG(
+		KBDisplayWidget.viewViaKBDisplayPG(
 			kbArticleContent = "Knowledge Base Article Content",
 			kbArticleTitle = "Knowledge Base Article Title");
 
-		KBArticle.editPGViaLocalizedKBDisplay(
+		KBDisplayWidget.editPGViaLocalizedKBDisplay(
 			kbArticleContentEdit = "Knowledge Base Article Content Edited",
 			kbArticleTitle = "Knowledge Base Article Title",
 			kbArticleTitleEdit = "Knowledge Base Article Title Edited",
 			localizedSuccessMessage = "Su petición ha terminado con éxito.");
 
-		KBArticle.viewViaKBDisplayPG(
+		KBDisplayWidget.viewViaKBDisplayPG(
 			kbArticleContent = "Knowledge Base Article Content Edited",
 			kbArticleTitle = "Knowledge Base Article Title Edited");
 	}

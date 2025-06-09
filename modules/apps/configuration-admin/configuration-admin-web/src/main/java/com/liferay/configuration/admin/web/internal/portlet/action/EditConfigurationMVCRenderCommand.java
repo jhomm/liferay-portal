@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.portlet.action;
@@ -17,17 +8,15 @@ package com.liferay.configuration.admin.web.internal.portlet.action;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.configuration.admin.menu.ConfigurationMenuItem;
 import com.liferay.configuration.admin.web.internal.constants.ConfigurationAdminWebKeys;
-import com.liferay.configuration.admin.web.internal.display.ConfigurationCategoryMenuDisplay;
 import com.liferay.configuration.admin.web.internal.display.ConfigurationEntry;
 import com.liferay.configuration.admin.web.internal.display.ConfigurationModelConfigurationEntry;
 import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContext;
 import com.liferay.configuration.admin.web.internal.display.context.ConfigurationScopeDisplayContextFactory;
+import com.liferay.configuration.admin.web.internal.helper.DDMFormRendererHelper;
 import com.liferay.configuration.admin.web.internal.model.ConfigurationModel;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationEntryRetriever;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationFormRendererRetriever;
 import com.liferay.configuration.admin.web.internal.util.ConfigurationModelRetriever;
-import com.liferay.configuration.admin.web.internal.util.DDMFormRendererHelper;
-import com.liferay.configuration.admin.web.internal.util.ResourceBundleLoaderProvider;
 import com.liferay.dynamic.data.mapping.form.renderer.DDMFormRenderer;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
@@ -42,28 +31,28 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Jorge Ferrer
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SITE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.SYSTEM_SETTINGS,
 		"mvc.command.name=/configuration_admin/edit_configuration",
 		"service.ranking:Integer=" + (Integer.MAX_VALUE - 1000)
 	},
@@ -109,28 +98,20 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 			}
 
 			configurationModel = new ConfigurationModel(
-				configurationModel.getBundleLocation(),
-				configurationModel.getBundleSymbolicName(),
-				configurationModel.getClassLoader(), configuration,
-				configurationModel.getExtendedObjectClassDefinition(),
-				configurationModel.isFactory());
+				configuration, configurationModel);
 
-			ConfigurationCategoryMenuDisplay configurationCategoryMenuDisplay =
+			renderRequest.setAttribute(
+				ConfigurationAdminWebKeys.CONFIGURATION_CATEGORY_MENU_DISPLAY,
 				_configurationEntryRetriever.
 					getConfigurationCategoryMenuDisplay(
 						configurationModel.getCategory(),
 						themeDisplay.getLanguageId(),
 						configurationScopeDisplayContext.getScope(),
-						configurationScopeDisplayContext.getScopePK());
-
-			renderRequest.setAttribute(
-				ConfigurationAdminWebKeys.CONFIGURATION_CATEGORY_MENU_DISPLAY,
-				configurationCategoryMenuDisplay);
+						configurationScopeDisplayContext.getScopePK()));
 
 			ConfigurationEntry configurationEntry =
 				new ConfigurationModelConfigurationEntry(
-					configurationModel, _portal.getLocale(renderRequest),
-					_resourceBundleLoaderProvider);
+					configurationModel, _portal.getLocale(renderRequest));
 
 			renderRequest.setAttribute(
 				ConfigurationAdminWebKeys.CONFIGURATION_ENTRY,
@@ -139,16 +120,11 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 			renderRequest.setAttribute(
 				ConfigurationAdminWebKeys.CONFIGURATION_FORM_RENDERER,
 				_configurationFormRendererRetriever.
-					getConfigurationFormRenderer(pid));
+					getConfigurationFormRenderer(
+						configurationModel.getBaseID()));
 
 			List<ConfigurationMenuItem> configurationMenuItems =
-				_configurationMenuItemsServiceTrackerMap.getService(pid);
-
-			if (configurationMenuItems == null) {
-				configurationMenuItems =
-					_configurationMenuItemsServiceTrackerMap.getService(
-						factoryPid);
-			}
+				_serviceTrackerMap.getService(configurationModel.getBaseID());
 
 			if (configurationMenuItems != null) {
 				renderRequest.setAttribute(
@@ -169,16 +145,11 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 			DDMFormRendererHelper ddmFormRendererHelper =
 				new DDMFormRendererHelper(
 					renderRequest, renderResponse, configurationModel,
-					_ddmFormRenderer, locationVariableResolver,
-					_resourceBundleLoaderProvider);
+					_ddmFormRenderer, locationVariableResolver);
 
 			renderRequest.setAttribute(
 				ConfigurationAdminWebKeys.CONFIGURATION_MODEL_FORM_HTML,
 				ddmFormRendererHelper.getDDMFormHTML());
-
-			renderRequest.setAttribute(
-				ConfigurationAdminWebKeys.RESOURCE_BUNDLE_LOADER_PROVIDER,
-				_resourceBundleLoaderProvider);
 
 			return "/edit_configuration.jsp";
 		}
@@ -190,14 +161,13 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_configurationMenuItemsServiceTrackerMap =
-			ServiceTrackerMapFactory.openMultiValueMap(
-				bundleContext, ConfigurationMenuItem.class,
-				"configuration.pid");
+		_serviceTrackerMap = ServiceTrackerMapFactory.openMultiValueMap(
+			bundleContext, ConfigurationMenuItem.class, "configuration.pid");
 	}
 
+	@Deactivate
 	protected void deactivate() {
-		_configurationMenuItemsServiceTrackerMap.close();
+		_serviceTrackerMap.close();
 	}
 
 	@Reference
@@ -206,9 +176,6 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 	@Reference
 	private ConfigurationFormRendererRetriever
 		_configurationFormRendererRetriever;
-
-	private ServiceTrackerMap<String, List<ConfigurationMenuItem>>
-		_configurationMenuItemsServiceTrackerMap;
 
 	@Reference(target = "(filter.visibility=*)")
 	private ConfigurationModelRetriever _configurationModelRetriever;
@@ -219,8 +186,8 @@ public class EditConfigurationMVCRenderCommand implements MVCRenderCommand {
 	@Reference
 	private Portal _portal;
 
-	@Reference
-	private ResourceBundleLoaderProvider _resourceBundleLoaderProvider;
+	private ServiceTrackerMap<String, List<ConfigurationMenuItem>>
+		_serviceTrackerMap;
 
 	@Reference
 	private SettingsLocatorHelper _settingsLocatorHelper;

@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.account.admin.web.internal.display.context;
 
-import com.liferay.account.admin.web.internal.dao.search.AccountUserRowChecker;
-import com.liferay.account.admin.web.internal.dao.search.SelectAccountRoleUserRowChecker;
+import com.liferay.account.admin.web.internal.dao.search.AccountEntryAccountRoleUserRowChecker;
+import com.liferay.account.admin.web.internal.dao.search.AccountEntryUserRowChecker;
 import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
@@ -34,7 +25,7 @@ public class SelectAccountUsersDisplayContext {
 		_liferayPortletResponse = liferayPortletResponse;
 
 		_accountEntryId = ParamUtil.getLong(
-			_liferayPortletRequest, "accountEntryId");
+			liferayPortletRequest, "accountEntryId");
 	}
 
 	public long getAccountEntryId() {
@@ -50,17 +41,12 @@ public class SelectAccountUsersDisplayContext {
 			_liferayPortletRequest, "accountRoleId");
 
 		if (accountRoleId > 0) {
-			return new SelectAccountRoleUserRowChecker(
-				_liferayPortletResponse, _accountEntryId, accountRoleId);
+			return new AccountEntryAccountRoleUserRowChecker(
+				_accountEntryId, accountRoleId, _liferayPortletResponse);
 		}
 
-		return new AccountUserRowChecker(
+		return new AccountEntryUserRowChecker(
 			_accountEntryId, _liferayPortletResponse);
-	}
-
-	public boolean isOpenModalOnRedirect() {
-		return ParamUtil.getBoolean(
-			_liferayPortletRequest, "openModalOnRedirect");
 	}
 
 	public boolean isShowCreateButton() {

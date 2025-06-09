@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults.internal;
@@ -19,21 +10,26 @@ import com.liferay.gradle.plugins.defaults.internal.util.GradlePluginsDefaultsUt
 import com.liferay.gradle.plugins.defaults.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.node.NodeExtension;
 import com.liferay.gradle.plugins.node.NodePlugin;
-import com.liferay.gradle.plugins.node.tasks.ExecutePackageManagerTask;
-import com.liferay.gradle.plugins.node.tasks.NpmInstallTask;
-import com.liferay.gradle.plugins.node.tasks.PackageRunTestTask;
-import com.liferay.gradle.plugins.node.tasks.PublishNodeModuleTask;
+import com.liferay.gradle.plugins.node.task.ExecutePackageManagerTask;
+import com.liferay.gradle.plugins.node.task.NpmInstallTask;
+import com.liferay.gradle.plugins.node.task.PackageRunTestTask;
+import com.liferay.gradle.plugins.node.task.PublishNodeModuleTask;
 import com.liferay.gradle.plugins.util.PortalTools;
 import com.liferay.gradle.util.Validator;
 
 import java.io.File;
+import java.io.IOException;
+
+import java.nio.file.Files;
 
 import java.util.concurrent.Callable;
 
 import org.gradle.api.Action;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
+import org.gradle.api.UncheckedIOException;
 import org.gradle.api.tasks.TaskContainer;
+import org.gradle.util.VersionNumber;
 
 /**
  * @author Andrea Di Giorgi
@@ -63,12 +59,18 @@ public class NodeDefaultsPlugin extends BaseDefaultsPlugin<NodePlugin> {
 	}
 
 	private void _configureNode(Project project, String portalVersion) {
+		VersionNumber versionNumber = VersionNumber.parse(
+			GradleUtil.getProperty(
+				project, "release.info.version", (String)null));
+
 		if (PortalTools.PORTAL_VERSION_7_0_X.equals(portalVersion)) {
 			NodeExtension nodeExtension = GradleUtil.getExtension(
 				project, NodeExtension.class);
 
 			nodeExtension.setGlobal(false);
 			nodeExtension.setNodeVersion("6.6.0");
+			nodeExtension.setNpmVersion("6.4.1");
+			nodeExtension.setYarnVersion("1.13.0");
 		}
 		else if (PortalTools.PORTAL_VERSION_7_1_X.equals(portalVersion)) {
 			NodeExtension nodeExtension = GradleUtil.getExtension(
@@ -76,6 +78,27 @@ public class NodeDefaultsPlugin extends BaseDefaultsPlugin<NodePlugin> {
 
 			nodeExtension.setNodeVersion("8.15.0");
 			nodeExtension.setNpmVersion("6.4.1");
+			nodeExtension.setYarnVersion("1.13.0");
+		}
+		else if (PortalTools.PORTAL_VERSION_7_2_X.equals(portalVersion) ||
+				 PortalTools.PORTAL_VERSION_7_3_X.equals(portalVersion)) {
+
+			NodeExtension nodeExtension = GradleUtil.getExtension(
+				project, NodeExtension.class);
+
+			nodeExtension.setNodeVersion("10.15.3");
+			nodeExtension.setNpmVersion("6.4.1");
+			nodeExtension.setYarnVersion("1.13.0");
+		}
+		else if ((versionNumber.compareTo(VersionNumber.parse("7.x.x")) > 0) &&
+				 (versionNumber.compareTo(VersionNumber.parse("7.4.3.117")) <=
+					 0)) {
+
+			NodeExtension nodeExtension = GradleUtil.getExtension(
+				project, NodeExtension.class);
+
+			nodeExtension.setNodeVersion("16.13.0");
+			nodeExtension.setNpmVersion("8.1.0");
 		}
 	}
 
@@ -98,8 +121,22 @@ public class NodeDefaultsPlugin extends BaseDefaultsPlugin<NodePlugin> {
 		NpmInstallTask npmInstallTask = (NpmInstallTask)GradleUtil.getTask(
 			project, NodePlugin.NPM_INSTALL_TASK_NAME);
 
-		npmInstallTask.setNodeModulesDigestFile(
-			new File(npmInstallTask.getNodeModulesDir(), ".digest"));
+		File file = new File(npmInstallTask.getNodeModulesDir(), ".digest");
+
+		if (!file.exists()) {
+			File dir = file.getParentFile();
+
+			try {
+				Files.createDirectories(dir.toPath());
+
+				file.createNewFile();
+			}
+			catch (IOException ioException) {
+				throw new UncheckedIOException(ioException);
+			}
+		}
+
+		npmInstallTask.setNodeModulesDigestFile(file);
 
 		if (!PortalTools.PORTAL_VERSION_7_0_X.equals(portalVersion)) {
 			npmInstallTask.setUseNpmCI(Boolean.TRUE);
@@ -132,7 +169,7 @@ public class NodeDefaultsPlugin extends BaseDefaultsPlugin<NodePlugin> {
 		final Project project = publishNodeModuleTask.getProject();
 
 		publishNodeModuleTask.doFirst(
-			MavenDefaultsPlugin.failReleaseOnWrongBranchAction);
+			MavenPublishDefaultsPlugin.failReleaseOnWrongBranchAction);
 
 		if (GradlePluginsDefaultsUtil.isPrivateProject(project)) {
 			publishNodeModuleTask.setEnabled(false);
@@ -157,11 +194,12 @@ public class NodeDefaultsPlugin extends BaseDefaultsPlugin<NodePlugin> {
 							GradlePluginsDefaultsUtil.
 								SNAPSHOT_VERSION_SUFFIX)) {
 
+						int snapshotVersionSuffixLength =
+							GradlePluginsDefaultsUtil.SNAPSHOT_VERSION_SUFFIX.
+								length();
+
 						version = version.substring(
-							0,
-							version.length() -
-								GradlePluginsDefaultsUtil.
-									SNAPSHOT_VERSION_SUFFIX.length());
+							0, version.length() - snapshotVersionSuffixLength);
 
 						version += "-alpha." + System.currentTimeMillis();
 					}

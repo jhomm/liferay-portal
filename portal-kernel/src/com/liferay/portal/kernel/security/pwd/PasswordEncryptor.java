@@ -1,36 +1,66 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.security.pwd;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.portal.kernel.exception.PwdEncryptorException;
+
+import org.osgi.annotation.versioning.ProviderType;
 
 /**
  * @author Tomas Polesovsky
  */
+@ProviderType
 public interface PasswordEncryptor {
 
-	public String encrypt(String plainTextPassword, String encryptedPassword)
-		throws PwdEncryptorException;
+	public static final String TYPE_BCRYPT = "BCRYPT";
+
+	public static final String TYPE_DEFAULT = "DEFAULT";
+
+	public static final String TYPE_MD2 = "MD2";
+
+	public static final String TYPE_MD5 = "MD5";
+
+	public static final String TYPE_NONE = "NONE";
+
+	public static final String TYPE_PBKDF2 = "PBKDF2";
+
+	public static final String TYPE_SHA = "SHA";
+
+	public static final String TYPE_SHA_256 = "SHA-256";
+
+	public static final String TYPE_SHA_384 = "SHA-384";
+
+	public static final String TYPE_SSHA = "SSHA";
+
+	public static final String TYPE_UFC_CRYPT = "UFC-CRYPT";
+
+	public default String encrypt(
+			String algorithm, String plainTextPassword,
+			String encryptedPassword)
+		throws PwdEncryptorException {
+
+		return encrypt(algorithm, plainTextPassword, encryptedPassword, false);
+	}
 
 	public String encrypt(
 			String algorithm, String plainTextPassword,
-			String encryptedPassword)
+			String encryptedPassword, boolean upgradeHashSecurity)
 		throws PwdEncryptorException;
 
-	public String getDefaultPasswordAlgorithmType();
+	public default String getEncryptedPasswordAlgorithmSettings(
+		String encryptedPassword) {
 
-	public String[] getSupportedAlgorithmTypes();
+		int index = encryptedPassword.indexOf(CharPool.CLOSE_CURLY_BRACE);
+
+		if (index < 0) {
+			return null;
+		}
+
+		return encryptedPassword.substring(1, index);
+	}
 
 }

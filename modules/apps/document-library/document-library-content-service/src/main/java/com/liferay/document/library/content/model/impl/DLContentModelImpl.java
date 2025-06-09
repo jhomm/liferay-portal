@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.content.model.impl;
@@ -31,7 +22,6 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -220,94 +210,84 @@ public class DLContentModelImpl
 	public Map<String, Function<DLContent, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<DLContent, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, DLContent>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			DLContent.class.getClassLoader(), DLContent.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<DLContent, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<DLContent> constructor =
-				(Constructor<DLContent>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<DLContent, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<DLContent, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", DLContent::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", DLContent::getCtCollectionId);
+			attributeGetterFunctions.put("contentId", DLContent::getContentId);
+			attributeGetterFunctions.put("groupId", DLContent::getGroupId);
+			attributeGetterFunctions.put("companyId", DLContent::getCompanyId);
+			attributeGetterFunctions.put(
+				"repositoryId", DLContent::getRepositoryId);
+			attributeGetterFunctions.put("path", DLContent::getPath);
+			attributeGetterFunctions.put("version", DLContent::getVersion);
+			attributeGetterFunctions.put("data", DLContent::getData);
+			attributeGetterFunctions.put("size", DLContent::getSize);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<DLContent, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<DLContent, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<DLContent, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<DLContent, Object>>();
-		Map<String, BiConsumer<DLContent, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<DLContent, ?>>();
+		private static final Map<String, BiConsumer<DLContent, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("mvccVersion", DLContent::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<DLContent, Long>)DLContent::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", DLContent::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<DLContent, Long>)DLContent::setCtCollectionId);
-		attributeGetterFunctions.put("contentId", DLContent::getContentId);
-		attributeSetterBiConsumers.put(
-			"contentId", (BiConsumer<DLContent, Long>)DLContent::setContentId);
-		attributeGetterFunctions.put("groupId", DLContent::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<DLContent, Long>)DLContent::setGroupId);
-		attributeGetterFunctions.put("companyId", DLContent::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<DLContent, Long>)DLContent::setCompanyId);
-		attributeGetterFunctions.put(
-			"repositoryId", DLContent::getRepositoryId);
-		attributeSetterBiConsumers.put(
-			"repositoryId",
-			(BiConsumer<DLContent, Long>)DLContent::setRepositoryId);
-		attributeGetterFunctions.put("path", DLContent::getPath);
-		attributeSetterBiConsumers.put(
-			"path", (BiConsumer<DLContent, String>)DLContent::setPath);
-		attributeGetterFunctions.put("version", DLContent::getVersion);
-		attributeSetterBiConsumers.put(
-			"version", (BiConsumer<DLContent, String>)DLContent::setVersion);
-		attributeGetterFunctions.put("data", DLContent::getData);
-		attributeSetterBiConsumers.put(
-			"data", (BiConsumer<DLContent, Blob>)DLContent::setData);
-		attributeGetterFunctions.put("size", DLContent::getSize);
-		attributeSetterBiConsumers.put(
-			"size", (BiConsumer<DLContent, Long>)DLContent::setSize);
+		static {
+			Map<String, BiConsumer<DLContent, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<DLContent, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<DLContent, Long>)DLContent::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<DLContent, Long>)DLContent::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"contentId",
+				(BiConsumer<DLContent, Long>)DLContent::setContentId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<DLContent, Long>)DLContent::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<DLContent, Long>)DLContent::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"repositoryId",
+				(BiConsumer<DLContent, Long>)DLContent::setRepositoryId);
+			attributeSetterBiConsumers.put(
+				"path", (BiConsumer<DLContent, String>)DLContent::setPath);
+			attributeSetterBiConsumers.put(
+				"version",
+				(BiConsumer<DLContent, String>)DLContent::setVersion);
+			attributeSetterBiConsumers.put(
+				"data", (BiConsumer<DLContent, Blob>)DLContent::setData);
+			attributeSetterBiConsumers.put(
+				"size", (BiConsumer<DLContent, Long>)DLContent::setSize);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -763,78 +743,12 @@ public class DLContentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		StringBundler sb = new StringBundler(34);
-
-		sb.append("<model><model-name>");
-		sb.append("com.liferay.document.library.content.model.DLContent");
-		sb.append("</model-name>");
-
-		sb.append(
-			"<column><column-name>mvccVersion</column-name><column-value><![CDATA[");
-
-		sb.append(getMvccVersion());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>ctCollectionId</column-name><column-value><![CDATA[");
-
-		sb.append(getCtCollectionId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>contentId</column-name><column-value><![CDATA[");
-
-		sb.append(getContentId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>groupId</column-name><column-value><![CDATA[");
-
-		sb.append(getGroupId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>companyId</column-name><column-value><![CDATA[");
-
-		sb.append(getCompanyId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>repositoryId</column-name><column-value><![CDATA[");
-
-		sb.append(getRepositoryId());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>path</column-name><column-value><![CDATA[");
-
-		sb.append(getPath());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>version</column-name><column-value><![CDATA[");
-
-		sb.append(getVersion());
-
-		sb.append("]]></column-value></column>");
-		sb.append(
-			"<column><column-name>size</column-name><column-value><![CDATA[");
-
-		sb.append(getSize());
-
-		sb.append("]]></column-value></column>");
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, DLContent>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					DLContent.class, ModelWrapper.class);
 
 	}
 
@@ -852,8 +766,9 @@ public class DLContentModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<DLContent, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<DLContent, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

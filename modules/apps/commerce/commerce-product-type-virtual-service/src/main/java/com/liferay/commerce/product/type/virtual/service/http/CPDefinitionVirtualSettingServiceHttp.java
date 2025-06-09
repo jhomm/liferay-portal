@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.service.http;
@@ -46,7 +37,6 @@ import com.liferay.portal.kernel.util.MethodKey;
  * </p>
  *
  * @author Marco Leo
- * @see CPDefinitionVirtualSettingServiceSoap
  * @generated
  */
 public class CPDefinitionVirtualSettingServiceHttp {
@@ -57,7 +47,7 @@ public class CPDefinitionVirtualSettingServiceHttp {
 					HttpPrincipal httpPrincipal, String className, long classPK,
 					long fileEntryId, String url, int activationStatus,
 					long duration, int maxUsages, boolean useSample,
-					long sampleFileEntryId, String sampleUrl,
+					long sampleFileEntryId, String sampleURL,
 					boolean termsOfUseRequired,
 					java.util.Map<java.util.Locale, String>
 						termsOfUseContentMap,
@@ -76,7 +66,7 @@ public class CPDefinitionVirtualSettingServiceHttp {
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, className, classPK, fileEntryId, url,
 				activationStatus, duration, maxUsages, useSample,
-				sampleFileEntryId, sampleUrl, termsOfUseRequired,
+				sampleFileEntryId, sampleURL, termsOfUseRequired,
 				termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey,
 				override, serviceContext);
 
@@ -111,31 +101,18 @@ public class CPDefinitionVirtualSettingServiceHttp {
 
 	public static
 		com.liferay.commerce.product.type.virtual.model.
-			CPDefinitionVirtualSetting addCPDefinitionVirtualSetting(
-					HttpPrincipal httpPrincipal, String className, long classPK,
-					long fileEntryId, String url, int activationStatus,
-					long duration, int maxUsages, boolean useSample,
-					long sampleFileEntryId, String sampleUrl,
-					boolean termsOfUseRequired,
-					java.util.Map<java.util.Locale, String>
-						termsOfUseContentMap,
-					long termsOfUseJournalArticleResourcePrimKey,
-					com.liferay.portal.kernel.service.ServiceContext
-						serviceContext)
+			CPDefinitionVirtualSetting deleteCPDefinitionVirtualSetting(
+					HttpPrincipal httpPrincipal, String className, long classPK)
 				throws com.liferay.portal.kernel.exception.PortalException {
 
 		try {
 			MethodKey methodKey = new MethodKey(
 				CPDefinitionVirtualSettingServiceUtil.class,
-				"addCPDefinitionVirtualSetting",
-				_addCPDefinitionVirtualSettingParameterTypes1);
+				"deleteCPDefinitionVirtualSetting",
+				_deleteCPDefinitionVirtualSettingParameterTypes1);
 
 			MethodHandler methodHandler = new MethodHandler(
-				methodKey, className, classPK, fileEntryId, url,
-				activationStatus, duration, maxUsages, useSample,
-				sampleFileEntryId, sampleUrl, termsOfUseRequired,
-				termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey,
-				serviceContext);
+				methodKey, className, classPK);
 
 			Object returnObj = null;
 
@@ -212,12 +189,57 @@ public class CPDefinitionVirtualSettingServiceHttp {
 
 	public static
 		com.liferay.commerce.product.type.virtual.model.
+			CPDefinitionVirtualSetting getCPDefinitionVirtualSetting(
+					HttpPrincipal httpPrincipal,
+					long cpDefinitionVirtualSettingId)
+				throws com.liferay.portal.kernel.exception.PortalException {
+
+		try {
+			MethodKey methodKey = new MethodKey(
+				CPDefinitionVirtualSettingServiceUtil.class,
+				"getCPDefinitionVirtualSetting",
+				_getCPDefinitionVirtualSettingParameterTypes3);
+
+			MethodHandler methodHandler = new MethodHandler(
+				methodKey, cpDefinitionVirtualSettingId);
+
+			Object returnObj = null;
+
+			try {
+				returnObj = TunnelUtil.invoke(httpPrincipal, methodHandler);
+			}
+			catch (Exception exception) {
+				if (exception instanceof
+						com.liferay.portal.kernel.exception.PortalException) {
+
+					throw (com.liferay.portal.kernel.exception.PortalException)
+						exception;
+				}
+
+				throw new com.liferay.portal.kernel.exception.SystemException(
+					exception);
+			}
+
+			return (com.liferay.commerce.product.type.virtual.model.
+				CPDefinitionVirtualSetting)returnObj;
+		}
+		catch (com.liferay.portal.kernel.exception.SystemException
+					systemException) {
+
+			_log.error(systemException, systemException);
+
+			throw systemException;
+		}
+	}
+
+	public static
+		com.liferay.commerce.product.type.virtual.model.
 			CPDefinitionVirtualSetting updateCPDefinitionVirtualSetting(
 					HttpPrincipal httpPrincipal,
 					long cpDefinitionVirtualSettingId, long fileEntryId,
 					String url, int activationStatus, long duration,
 					int maxUsages, boolean useSample, long sampleFileEntryId,
-					String sampleUrl, boolean termsOfUseRequired,
+					String sampleURL, boolean termsOfUseRequired,
 					java.util.Map<java.util.Locale, String>
 						termsOfUseContentMap,
 					long termsOfUseJournalArticleResourcePrimKey,
@@ -230,12 +252,12 @@ public class CPDefinitionVirtualSettingServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPDefinitionVirtualSettingServiceUtil.class,
 				"updateCPDefinitionVirtualSetting",
-				_updateCPDefinitionVirtualSettingParameterTypes3);
+				_updateCPDefinitionVirtualSettingParameterTypes4);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, cpDefinitionVirtualSettingId, fileEntryId, url,
 				activationStatus, duration, maxUsages, useSample,
-				sampleFileEntryId, sampleUrl, termsOfUseRequired,
+				sampleFileEntryId, sampleURL, termsOfUseRequired,
 				termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey,
 				override, serviceContext);
 
@@ -275,7 +297,7 @@ public class CPDefinitionVirtualSettingServiceHttp {
 					long cpDefinitionVirtualSettingId, long fileEntryId,
 					String url, int activationStatus, long duration,
 					int maxUsages, boolean useSample, long sampleFileEntryId,
-					String sampleUrl, boolean termsOfUseRequired,
+					String sampleURL, boolean termsOfUseRequired,
 					java.util.Map<java.util.Locale, String>
 						termsOfUseContentMap,
 					long termsOfUseJournalArticleResourcePrimKey,
@@ -287,12 +309,12 @@ public class CPDefinitionVirtualSettingServiceHttp {
 			MethodKey methodKey = new MethodKey(
 				CPDefinitionVirtualSettingServiceUtil.class,
 				"updateCPDefinitionVirtualSetting",
-				_updateCPDefinitionVirtualSettingParameterTypes4);
+				_updateCPDefinitionVirtualSettingParameterTypes5);
 
 			MethodHandler methodHandler = new MethodHandler(
 				methodKey, cpDefinitionVirtualSettingId, fileEntryId, url,
 				activationStatus, duration, maxUsages, useSample,
-				sampleFileEntryId, sampleUrl, termsOfUseRequired,
+				sampleFileEntryId, sampleURL, termsOfUseRequired,
 				termsOfUseContentMap, termsOfUseJournalArticleResourcePrimKey,
 				serviceContext);
 
@@ -336,25 +358,26 @@ public class CPDefinitionVirtualSettingServiceHttp {
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
-		_addCPDefinitionVirtualSettingParameterTypes1 = new Class[] {
-			String.class, long.class, long.class, String.class, int.class,
-			long.class, int.class, boolean.class, long.class, String.class,
-			boolean.class, java.util.Map.class, long.class,
-			com.liferay.portal.kernel.service.ServiceContext.class
+		_deleteCPDefinitionVirtualSettingParameterTypes1 = new Class[] {
+			String.class, long.class
 		};
 	private static final Class<?>[]
 		_fetchCPDefinitionVirtualSettingParameterTypes2 = new Class[] {
 			String.class, long.class
 		};
 	private static final Class<?>[]
-		_updateCPDefinitionVirtualSettingParameterTypes3 = new Class[] {
+		_getCPDefinitionVirtualSettingParameterTypes3 = new Class[] {
+			long.class
+		};
+	private static final Class<?>[]
+		_updateCPDefinitionVirtualSettingParameterTypes4 = new Class[] {
 			long.class, long.class, String.class, int.class, long.class,
 			int.class, boolean.class, long.class, String.class, boolean.class,
 			java.util.Map.class, long.class, boolean.class,
 			com.liferay.portal.kernel.service.ServiceContext.class
 		};
 	private static final Class<?>[]
-		_updateCPDefinitionVirtualSettingParameterTypes4 = new Class[] {
+		_updateCPDefinitionVirtualSettingParameterTypes5 = new Class[] {
 			long.class, long.class, String.class, int.class, long.class,
 			int.class, boolean.class, long.class, String.class, boolean.class,
 			java.util.Map.class, long.class,

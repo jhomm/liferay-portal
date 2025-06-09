@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.service.persistence;
@@ -17,6 +8,7 @@ package com.liferay.commerce.pricing.service.persistence;
 import com.liferay.commerce.pricing.exception.NoSuchPricingClassException;
 import com.liferay.commerce.pricing.model.CommercePricingClass;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 import org.osgi.annotation.versioning.ProviderType;
 
@@ -33,7 +25,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CommercePricingClassPersistence
-	extends BasePersistence<CommercePricingClass> {
+	extends BasePersistence<CommercePricingClass>,
+			CTPersistence<CommercePricingClass> {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -682,57 +675,57 @@ public interface CommercePricingClassPersistence
 	public int filterCountByCompanyId(long companyId);
 
 	/**
-	 * Returns the commerce pricing class where companyId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchPricingClassException</code> if it could not be found.
+	 * Returns the commerce pricing class where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchPricingClassException</code> if it could not be found.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching commerce pricing class
 	 * @throws NoSuchPricingClassException if a matching commerce pricing class could not be found
 	 */
-	public CommercePricingClass findByC_ERC(
-			long companyId, String externalReferenceCode)
+	public CommercePricingClass findByERC_C(
+			String externalReferenceCode, long companyId)
 		throws NoSuchPricingClassException;
 
 	/**
-	 * Returns the commerce pricing class where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the commerce pricing class where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching commerce pricing class, or <code>null</code> if a matching commerce pricing class could not be found
 	 */
-	public CommercePricingClass fetchByC_ERC(
-		long companyId, String externalReferenceCode);
+	public CommercePricingClass fetchByERC_C(
+		String externalReferenceCode, long companyId);
 
 	/**
-	 * Returns the commerce pricing class where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the commerce pricing class where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching commerce pricing class, or <code>null</code> if a matching commerce pricing class could not be found
 	 */
-	public CommercePricingClass fetchByC_ERC(
-		long companyId, String externalReferenceCode, boolean useFinderCache);
+	public CommercePricingClass fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache);
 
 	/**
-	 * Removes the commerce pricing class where companyId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the commerce pricing class where externalReferenceCode = &#63; and companyId = &#63; from the database.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the commerce pricing class that was removed
 	 */
-	public CommercePricingClass removeByC_ERC(
-			long companyId, String externalReferenceCode)
+	public CommercePricingClass removeByERC_C(
+			String externalReferenceCode, long companyId)
 		throws NoSuchPricingClassException;
 
 	/**
-	 * Returns the number of commerce pricing classes where companyId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of commerce pricing classes where externalReferenceCode = &#63; and companyId = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the number of matching commerce pricing classes
 	 */
-	public int countByC_ERC(long companyId, String externalReferenceCode);
+	public int countByERC_C(String externalReferenceCode, long companyId);
 
 	/**
 	 * Caches the commerce pricing class in the entity cache if it is enabled.

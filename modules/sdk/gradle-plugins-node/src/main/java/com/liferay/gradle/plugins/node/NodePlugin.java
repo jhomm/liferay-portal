@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.node;
@@ -17,16 +8,18 @@ package com.liferay.gradle.plugins.node;
 import com.liferay.gradle.plugins.node.internal.util.FileUtil;
 import com.liferay.gradle.plugins.node.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.node.internal.util.StringUtil;
-import com.liferay.gradle.plugins.node.tasks.DownloadNodeModuleTask;
-import com.liferay.gradle.plugins.node.tasks.DownloadNodeTask;
-import com.liferay.gradle.plugins.node.tasks.ExecuteNodeTask;
-import com.liferay.gradle.plugins.node.tasks.ExecutePackageManagerTask;
-import com.liferay.gradle.plugins.node.tasks.NpmInstallTask;
-import com.liferay.gradle.plugins.node.tasks.NpmShrinkwrapTask;
-import com.liferay.gradle.plugins.node.tasks.PackageRunBuildTask;
-import com.liferay.gradle.plugins.node.tasks.PackageRunTask;
-import com.liferay.gradle.plugins.node.tasks.PackageRunTestTask;
-import com.liferay.gradle.plugins.node.tasks.PublishNodeModuleTask;
+import com.liferay.gradle.plugins.node.task.DownloadNodeModuleTask;
+import com.liferay.gradle.plugins.node.task.DownloadNodeTask;
+import com.liferay.gradle.plugins.node.task.ExecuteNodeTask;
+import com.liferay.gradle.plugins.node.task.ExecutePackageManagerTask;
+import com.liferay.gradle.plugins.node.task.NpmInstallTask;
+import com.liferay.gradle.plugins.node.task.NpmShrinkwrapTask;
+import com.liferay.gradle.plugins.node.task.PackageRunBuildTask;
+import com.liferay.gradle.plugins.node.task.PackageRunTask;
+import com.liferay.gradle.plugins.node.task.PackageRunTestTask;
+import com.liferay.gradle.plugins.node.task.PublishNodeModuleTask;
+import com.liferay.gradle.plugins.node.task.YarnInstallTask;
+import com.liferay.gradle.util.OSDetector;
 import com.liferay.gradle.util.OSGiUtil;
 import com.liferay.gradle.util.Validator;
 
@@ -56,7 +49,9 @@ import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.UncheckedIOException;
 import org.gradle.api.file.CopySpec;
+import org.gradle.api.file.DuplicatesStrategy;
 import org.gradle.api.plugins.BasePlugin;
+import org.gradle.api.plugins.JavaLibraryPlugin;
 import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.plugins.PluginContainer;
 import org.gradle.api.specs.Spec;
@@ -140,6 +135,7 @@ public class NodePlugin implements Plugin<Project> {
 					_configureTasksExecutePackageManagerArgs(
 						project, nodeExtension);
 					_configureTasksNpmInstall(project, nodeExtension);
+					_configureTasksYarnInstall(project);
 				}
 
 			});
@@ -248,6 +244,23 @@ public class NodePlugin implements Plugin<Project> {
 		downloadNodeTask.setDescription(
 			"Downloads Node.js in the project build directory.");
 
+		if (!OSDetector.isWindows()) {
+
+			// https://github.com/gradle/gradle/issues/3525
+
+			TaskOutputs taskOutputs = downloadNodeTask.getOutputs();
+
+			taskOutputs.upToDateWhen(
+				new Spec<Task>() {
+
+					@Override
+					public boolean isSatisfiedBy(Task task) {
+						return false;
+					}
+
+				});
+		}
+
 		return downloadNodeTask;
 	}
 
@@ -349,12 +362,12 @@ public class NodePlugin implements Plugin<Project> {
 		PluginContainer pluginContainer = project.getPlugins();
 
 		pluginContainer.withType(
-			JavaPlugin.class,
-			new Action<JavaPlugin>() {
+			JavaLibraryPlugin.class,
+			new Action<JavaLibraryPlugin>() {
 
 				@Override
-				public void execute(JavaPlugin javaPlugin) {
-					_configureTaskPackageRunBuildForJavaPlugin(
+				public void execute(JavaLibraryPlugin javaLibraryPlugin) {
+					_configureTaskPackageRunBuildForJavaLibraryPlugin(
 						packageRunBuildTask);
 				}
 
@@ -669,9 +682,10 @@ public class NodePlugin implements Plugin<Project> {
 			Project curProject = npmInstallTask.getProject();
 
 			do {
-				TaskProvider<Task> yarnInstallTaskProvider =
+				TaskProvider<YarnInstallTask> yarnInstallTaskProvider =
 					GradleUtil.fetchTaskProvider(
-						curProject, YarnPlugin.YARN_INSTALL_TASK_NAME);
+						curProject, YarnPlugin.YARN_INSTALL_TASK_NAME,
+						YarnInstallTask.class);
 
 				if (yarnInstallTaskProvider != null) {
 					npmInstallTask.finalizedBy(yarnInstallTaskProvider);
@@ -682,7 +696,7 @@ public class NodePlugin implements Plugin<Project> {
 	}
 
 	@SuppressWarnings("serial")
-	private void _configureTaskPackageRunBuildForJavaPlugin(
+	private void _configureTaskPackageRunBuildForJavaLibraryPlugin(
 		final PackageRunBuildTask packageRunBuildTask) {
 
 		final Project project = packageRunBuildTask.getProject();
@@ -770,6 +784,9 @@ public class NodePlugin implements Plugin<Project> {
 			}
 
 			processResourcesCopy.dependsOn(packageRunBuildTask);
+
+			processResourcesCopy.setDuplicatesStrategy(
+				DuplicatesStrategy.INCLUDE);
 
 			processResourcesCopy.from(
 				new Callable<File>() {
@@ -972,6 +989,35 @@ public class NodePlugin implements Plugin<Project> {
 			});
 	}
 
+	private void _configureTasksYarnInstall(Project project) {
+		TaskContainer taskContainer = project.getTasks();
+
+		taskContainer.withType(
+			YarnInstallTask.class,
+			new Action<YarnInstallTask>() {
+
+				@Override
+				public void execute(YarnInstallTask yarnInstallTask) {
+					_configureTaskYarnInstall(yarnInstallTask);
+				}
+
+			});
+	}
+
+	private void _configureTaskYarnInstall(YarnInstallTask yarnInstallTask) {
+		TaskOutputs taskOutputs = yarnInstallTask.getOutputs();
+
+		taskOutputs.upToDateWhen(
+			new Spec<Task>() {
+
+				@Override
+				public boolean isSatisfiedBy(Task task) {
+					return false;
+				}
+
+			});
+	}
+
 	private File _getYarnWorkingDir(
 		Project project, NodeExtension nodeExtension) {
 
@@ -1008,6 +1054,23 @@ public class NodePlugin implements Plugin<Project> {
 
 		Map<String, Object> packageJSONMap =
 			(Map<String, Object>)jsonSlurper.parse(packageJSONFile);
+
+		Map<String, String> scriptsJSONMap =
+			(Map<String, String>)packageJSONMap.get("scripts");
+
+		if (scriptsJSONMap != null) {
+			for (Map.Entry<String, String> entry : scriptsJSONMap.entrySet()) {
+				String command = entry.getValue();
+				String name = entry.getKey();
+
+				if (Objects.equals(name, "build") &&
+					(Objects.equals(command, "node-scripts") ||
+					 command.startsWith("node-scripts "))) {
+
+					return true;
+				}
+			}
+		}
 
 		Map<String, Object> devDependencies =
 			(Map<String, Object>)packageJSONMap.get("devDependencies");
@@ -1051,11 +1114,7 @@ public class NodePlugin implements Plugin<Project> {
 
 		packageJSONFile = new File(yarnWorkingDir, "package.json");
 
-		if (_hasLiferayNpmScripts12Dependency(packageJSONFile)) {
-			return true;
-		}
-
-		return false;
+		return _hasLiferayNpmScripts12Dependency(packageJSONFile);
 	}
 
 	@SuppressWarnings("unchecked")

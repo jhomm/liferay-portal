@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 (function () {
@@ -19,22 +10,8 @@
 		return;
 	}
 
-	const templateHTML =
-		'<a' +
-		' class="cke_button cke_button__{name} {cssClass}"' +
-		' hidefocus="true"' +
-		' id="{id}"' +
-		' onclick="CKEDITOR.tools.callFunction({clickFn},event,this);return false;"' +
-		' role="button"' +
-		' tabindex="-1"' +
-		' title="{title}"' +
-		'>' +
-		'<span class="cke_button_icon cke_button__{icon}_icon">&nbsp;</span>' +
-		'</a>';
-
-	const template = CKEDITOR.addTemplate('balloonToolbarButton', templateHTML);
-
 	CKEDITOR.ui.balloonToolbarButton = CKEDITOR.tools.createClass({
+
 		// eslint-disable-next-line
 		$: function (definition) {
 			CKEDITOR.tools.extend(this, definition, {
@@ -43,6 +20,7 @@
 				command: definition.command,
 				cssClass: definition.cssClass,
 				icon: definition.icon,
+				label: definition.label,
 				modes: {wysiwyg: 1},
 				title: definition.title,
 			});
@@ -73,6 +51,28 @@
 					id,
 				};
 
+				const template = new CKEDITOR.template((data) => {
+					const output = [
+						`<a class="cke_button cke_button__{name} {cssClass}" hidefocus="true" id="{id}" onclick="CKEDITOR.tools.callFunction({clickFn},event,this);return false;" role="button" tabindex="-1" title="{title}">`,
+					];
+
+					if (data.icon) {
+						output.push(
+							'<span class="cke_button_icon cke_button__{icon}_icon">&nbsp;</span>'
+						);
+					}
+
+					if (data.label) {
+						output.push(
+							'<span class="cke_button_label cke_button__{label}_label" style="display:inline-block;">{label}</span>'
+						);
+					}
+
+					output.push('</a>');
+
+					return output.join('');
+				});
+
 				const clickFn = CKEDITOR.tools.addFunction(() => {
 					instance.execute();
 				});
@@ -83,6 +83,7 @@
 					cssClass: this.cssClass ? this.cssClass : '',
 					icon: this.icon,
 					id,
+					label: this.label,
 					title: this.title || '',
 				};
 

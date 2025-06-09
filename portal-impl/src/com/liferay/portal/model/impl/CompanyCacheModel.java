@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -76,7 +67,7 @@ public class CompanyCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(45);
+		StringBundler sb = new StringBundler(47);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -98,8 +89,6 @@ public class CompanyCacheModel
 		sb.append(homeURL);
 		sb.append(", logoId=");
 		sb.append(logoId);
-		sb.append(", system=");
-		sb.append(system);
 		sb.append(", maxUsers=");
 		sb.append(maxUsers);
 		sb.append(", active=");
@@ -122,6 +111,10 @@ public class CompanyCacheModel
 		sb.append(type);
 		sb.append(", size=");
 		sb.append(size);
+		sb.append(", indexNameCurrent=");
+		sb.append(indexNameCurrent);
+		sb.append(", indexNameNext=");
+		sb.append(indexNameNext);
 		sb.append("}");
 
 		return sb.toString();
@@ -178,7 +171,6 @@ public class CompanyCacheModel
 		}
 
 		companyImpl.setLogoId(logoId);
-		companyImpl.setSystem(system);
 		companyImpl.setMaxUsers(maxUsers);
 		companyImpl.setActive(active);
 
@@ -245,9 +237,23 @@ public class CompanyCacheModel
 			companyImpl.setSize(size);
 		}
 
+		if (indexNameCurrent == null) {
+			companyImpl.setIndexNameCurrent("");
+		}
+		else {
+			companyImpl.setIndexNameCurrent(indexNameCurrent);
+		}
+
+		if (indexNameNext == null) {
+			companyImpl.setIndexNameNext("");
+		}
+		else {
+			companyImpl.setIndexNameNext(indexNameNext);
+		}
+
 		companyImpl.resetOriginalValues();
 
-		companyImpl.setCompanySecurityBag(_companySecurityBag);
+		companyImpl.setGroupId(_groupId);
 
 		companyImpl.setVirtualHostname(_virtualHostname);
 
@@ -272,8 +278,6 @@ public class CompanyCacheModel
 
 		logoId = objectInput.readLong();
 
-		system = objectInput.readBoolean();
-
 		maxUsers = objectInput.readInt();
 
 		active = objectInput.readBoolean();
@@ -286,9 +290,10 @@ public class CompanyCacheModel
 		industry = objectInput.readUTF();
 		type = objectInput.readUTF();
 		size = objectInput.readUTF();
+		indexNameCurrent = objectInput.readUTF();
+		indexNameNext = objectInput.readUTF();
 
-		_companySecurityBag =
-			(CompanyImpl.CompanySecurityBag)objectInput.readObject();
+		_groupId = (long)objectInput.readObject();
 		_virtualHostname = (String)objectInput.readObject();
 	}
 
@@ -332,8 +337,6 @@ public class CompanyCacheModel
 		}
 
 		objectOutput.writeLong(logoId);
-
-		objectOutput.writeBoolean(system);
 
 		objectOutput.writeInt(maxUsers);
 
@@ -402,7 +405,21 @@ public class CompanyCacheModel
 			objectOutput.writeUTF(size);
 		}
 
-		objectOutput.writeObject(_companySecurityBag);
+		if (indexNameCurrent == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(indexNameCurrent);
+		}
+
+		if (indexNameNext == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(indexNameNext);
+		}
+
+		objectOutput.writeObject(_groupId);
 		objectOutput.writeObject(_virtualHostname);
 	}
 
@@ -416,7 +433,6 @@ public class CompanyCacheModel
 	public String mx;
 	public String homeURL;
 	public long logoId;
-	public boolean system;
 	public int maxUsers;
 	public boolean active;
 	public String name;
@@ -428,7 +444,9 @@ public class CompanyCacheModel
 	public String industry;
 	public String type;
 	public String size;
-	public CompanyImpl.CompanySecurityBag _companySecurityBag;
+	public String indexNameCurrent;
+	public String indexNameNext;
+	public long _groupId;
 	public String _virtualHostname;
 
 }

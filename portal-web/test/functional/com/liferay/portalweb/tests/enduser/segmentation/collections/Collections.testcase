@@ -1,0 +1,1861 @@
+@component-name = "portal-search"
+definition {
+
+	property ci.retries.disabled = "true";
+	property custom.properties = "jsonws.web.service.paths.excludes=";
+	property portal.release = "true";
+	property portal.suite.search.engine = "elasticsearch7,opensearch2,solr";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Collections";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
+		}
+
+		HeadlessSite.addSite(siteName = "Test Site Name");
+	}
+
+	@description = "Assert that the UI works correctly for adding, deleting and renaming Asset Lists."
+	@priority = 5
+	@uitest
+	test AddAssetList {
+		property portal.acceptance = "true";
+
+		task ("Create a manual asset list") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Asset List Test");
+		}
+
+		task ("Create a dynamic asset list") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Asset List Test");
+		}
+
+		task ("When the site administrator hovers over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then the site administrator could see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to Collections",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+
+		task ("Assert Asset List Entry names and types") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssertTextEquals.assertPartialText(
+				key_title = "Manual Asset List Test",
+				locator1 = "AssetLists#ASSET_LIST_ENTRY_TITLE",
+				value1 = "Manual Asset List Test");
+
+			AssertTextEquals.assertPartialText(
+				key_columnName = "lfr-type",
+				key_tableEntry = "Manual",
+				locator1 = "LexiconTable#TABLE_ENTRY_INFO",
+				value1 = "Manual");
+
+			AssertTextEquals.assertPartialText(
+				key_title = "Dynamic Asset List Test",
+				locator1 = "AssetLists#ASSET_LIST_ENTRY_TITLE",
+				value1 = "Dynamic Asset List Test");
+
+			AssertTextEquals.assertPartialText(
+				key_columnName = "lfr-type",
+				key_tableEntry = "Dynamic",
+				locator1 = "LexiconTable#TABLE_ENTRY_INFO",
+				value1 = "Dynamic");
+		}
+
+		task ("Create an asset list that has the same name as the first asset list") {
+			LexiconEntry.gotoAddMenuItem(menuItem = "Manual Collection");
+
+			PortletEntry.inputText(
+				fieldLabel = "Title",
+				text = "Manual Asset List Test");
+
+			Button.clickSave();
+		}
+
+		task ("Assert an error displays notifying that the user is not allowed to create a duplicate asset list") {
+			AssertTextEquals.assertPartialText(
+				locator1 = "Message#ERROR_MODAL_CONTENT",
+				value1 = "A collection with that title already exists.");
+		}
+
+		task ("Rename the asset list") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.renameAssetList(
+				newAssetListTitle = "Manual Asset List Edit",
+				oldAssetListTitle = "Manual Asset List Test");
+		}
+
+		task ("Assert that the name of the asset list changed correctly") {
+			AssertTextEquals.assertPartialText(
+				key_title = "Manual Asset List Edit",
+				locator1 = "AssetLists#ASSET_LIST_ENTRY_TITLE",
+				value1 = "Manual Asset List Edit");
+
+			AssertTextEquals.assertPartialText(
+				key_columnName = "lfr-type",
+				key_tableEntry = "Manual",
+				locator1 = "LexiconTable#TABLE_ENTRY_INFO",
+				value1 = "Manual");
+		}
+
+		task ("Delete both asset lists") {
+			AssetListsAdmin.deleteEntry(assetListTitle = "Manual Asset List Edit");
+
+			AssetListsAdmin.deleteEntry(assetListTitle = "Dynamic Asset List Test");
+		}
+
+		task ("Assert the taglib that displays when there are no entries displays") {
+			AssertElementPresent(locator1 = "Message#EMPTY_INFO_TAGLIB");
+		}
+	}
+
+	@description = "This is a test for LPS-143093. Add assets to manual collection for selected item types."
+	@priority = 4
+	test AddAssetsToManualCollectionForSelectedItemTypes {
+		task ("Given a user has a manual collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection");
+		}
+
+		task ("When the user selects item types") {
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemType = "Select Types",
+				moveToAvailableItemTypeList = "Blogs Entry,Web Content Article");
+		}
+
+		task ("Then only selected types are shown on the dropdown menu") {
+			Button.clickSelect();
+
+			for (var menuItem : list "Calendar Event,Basic Document,Translation,Web Content Folder") {
+				MenuItem.verifyVisible(menuItem = ${menuItem});
+			}
+
+			for (var menuItem : list "Blogs Entry,Web Content Article") {
+				MenuItem.viewNotPresent(menuItem = ${menuItem});
+			}
+		}
+	}
+
+	@description = "This is a test for LPS-115236. Configure Filter by Field."
+	@priority = 5
+	@uitest
+	test ConfigureFilterByField {
+		property portal.acceptance = "true";
+
+		task ("Add a web content structure with a Select field") {
+			WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
+
+			NavItem.gotoStructures();
+
+			WebContentStructures.addCP(structureName = "WC Structure Name");
+
+			DataEngine.addField(
+				fieldFieldLabel = "Select from List",
+				fieldName = "Select from List");
+
+			var index = 1;
+
+			for (var optionValue : list "Option 1,Option 2,Option 3") {
+				DataEngine.addFieldOption(
+					fieldFieldLabel = "Select from List",
+					index = ${index},
+					optionValue = ${optionValue});
+
+				DataEngine.editFieldReferenceOfFieldOption(
+					fieldFieldLabel = "Select from List",
+					fieldReferenceOfFieldOption = "Value${index}",
+					index = ${index});
+
+				DataEngine.viewField(
+					fieldFieldLabel = "Select from List",
+					fieldName = "Select from List");
+
+				if (${index} != 3) {
+					FormFields.clickAddOptionButton();
+				}
+
+				var index = ${index} + 1;
+			}
+
+			WebContentStructures.saveCP();
+		}
+
+		task ("Add a Dynamic Collection based on Web Content Article and new structure") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "WC Structure Name",
+				itemType = "Web Content Article");
+		}
+
+		task ("Enable Filter by Field and Choose Select from List field") {
+			AssetListsAdmin.configureFilterByField(fieldName = "Select from List");
+
+			Select(
+				key_fieldLabel = "Select from List",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Option 2");
+
+			AssertSelectedLabel(
+				key_fieldLabel = "Select from List",
+				locator1 = "Select#GENERIC_SELECT_FIELD",
+				value1 = "Option 2");
+
+			Button.click(button = "Apply");
+
+			SelectFrameTop();
+		}
+
+		task ("Assert the selected info is shown above the Select button") {
+			AssertTextEquals.assertPartialText(
+				key_text = "Select from List: Option 2",
+				locator1 = "APConfiguration#SOURCE_SCOPE_FIELD_FILTER_AND_VALUE",
+				value1 = "Select from List: Option 2");
+		}
+
+		task ("Assert the selected info is still shown above the Select button") {
+			PortletEntry.save();
+
+			AssertTextEquals.assertPartialText(
+				key_text = "Select from List: Option 2",
+				locator1 = "APConfiguration#SOURCE_SCOPE_FIELD_FILTER_AND_VALUE",
+				value1 = "Select from List: Option 2");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Dynamic Collection Then the variations list always contains the ""Anyone"" variation"
+	@priority = 4
+	test DefaultVariationForDynamicCollection {
+		property portal.acceptance = "true";
+
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Check is not possible to delete defualt variation") {
+			AssetListsAdmin.clickDeleteDisabled(variationTitle = "Anyone");
+
+			AssertVisible(
+				key_text = "Delete",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Manual Collection Then the variations list always contains the ""Anyone"" variation"
+	@priority = 4
+	test DefaultVariationForManualCollection {
+		property portal.acceptance = "true";
+
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Check is not possible to delete defualt variation") {
+			AssetListsAdmin.clickDeleteDisabled(variationTitle = "Anyone");
+
+			AssertVisible(
+				key_text = "Delete",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Dynamic Collection When the user opens the elipsis menu of a variation and clicks on Delete Then the variation name is removed from the list of personalized variations"
+	@priority = 3
+	test DeleteVariationForDynamicCollection {
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Delete the variation created") {
+			AssetListsAdmin.deleteVariation(variationTitle = "First Segment");
+		}
+
+		task ("Check that variation was deleted") {
+			AssertElementNotPresent(
+				key_variation = "First Segment",
+				locator1 = "AssetLists#VARIATION_TITLE");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Manual Collection When the user opens the elipsis menu of a variation and clicks on Delete Then the variation name is removed from the list of personalized variations"
+	@priority = 3
+	test DeleteVariationForManualCollection {
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Delete the variation created") {
+			AssetListsAdmin.deleteVariation(variationTitle = "First Segment");
+		}
+
+		task ("Check that variation was deleted") {
+			AssertElementNotPresent(
+				key_variation = "First Segment",
+				locator1 = "AssetLists#VARIATION_TITLE");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Dynamic Collection When the user opens the elipsis menu of the last variation of the list Then the Deprioritize option of the elipsis menu is disabled"
+	@priority = 3
+	test DeprioritizeDisabledForDynamicCollection {
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Assert the deprioritize option is disable") {
+			AssetListsAdmin.clickDepriotirizeDisabled(variationTitle = "First Segment");
+
+			AssertVisible(
+				key_text = "Deprioritize",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Dynamic Collection When the user opens the elipsis menu of a variation and clicks on Deprioritize Then the variation name is moved downwards in the list of personalized variations (unless is the last variation of the list)"
+	@priority = 3
+	test DeprioritizeVariationForDynamicCollection {
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Deprioritize the Anyone variation") {
+			AssetListsAdmin.deprioritizeVariation(variationTitle = "Anyone");
+
+			AssertTextEquals(
+				key_index = 2,
+				locator1 = "AssetLists#VARIATION_INDEX",
+				value1 = "Anyone");
+		}
+
+		task ("Check if Deprioritize is disabled if it's at the botton") {
+			Click(
+				key_variation = "Anyone",
+				locator1 = "AssetLists#VARIATION_TITLE");
+
+			Click(
+				key_variation = "Anyone",
+				locator1 = "AssetLists#VARIATION_ELLIPSIS");
+
+			AssertVisible(
+				key_text = "Deprioritize",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Manual Collection When the user opens the elipsis menu of a variation and clicks on Deprioritize Then the variation name is moved downwards in the list of personalized variations (unless is the last variation of the list)"
+	@priority = 3
+	test DeprioritizeVariationForManualCollection {
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Deprioritize the Anyone variation") {
+			AssetListsAdmin.deprioritizeVariation(variationTitle = "Anyone");
+
+			AssertTextEquals(
+				key_index = 2,
+				locator1 = "AssetLists#VARIATION_INDEX",
+				value1 = "Anyone");
+		}
+
+		task ("Check if Deprioritize is disabled if it's at the botton") {
+			Click(
+				key_variation = "Anyone",
+				locator1 = "AssetLists#VARIATION_TITLE");
+
+			Click(
+				key_variation = "Anyone",
+				locator1 = "AssetLists#VARIATION_ELLIPSIS");
+
+			AssertVisible(
+				key_text = "Deprioritize",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
+	@description = "This is a test for LPS-98466. Editing a collection fails after deleting a segment used by it."
+	@priority = 3
+	test EditManualCollectionAfterDeletingASegmentUsedByIt {
+		task ("Given a manual collection with variation") {
+			task ("Create web content articles") {
+				for (var i : list "1,2") {
+					JSONWebcontent.addWebContent(
+						content = "WC Content",
+						groupName = "Test Site Name",
+						title = "WC_Title_${i}");
+				}
+			}
+
+			task ("Create a segment") {
+				JSONSegmentsentry.addSegment(
+					fieldName = "Signed In",
+					groupName = "Test Site Name",
+					operator = "equals",
+					segmentName = "Segment Name",
+					text = "false");
+			}
+
+			task ("Create a manual Collection") {
+				AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+				AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+				AssetListsAdmin.configureItemTypeInManualCollection(
+					itemSubtype = "All Subtypes",
+					itemType = "Web Content Article");
+			}
+
+			task ("Create a variation for the collection and select a web content") {
+				AssetListsAdmin.addPersonalizedVariation(segmentName = "Segment Name");
+
+				AssetListsAdmin.selectAsset(
+					assetListTitle = "Manual Collection Test",
+					assetType = "Basic Web Content",
+					entryList = "WC_Title_2");
+			}
+		}
+
+		task ("When delete the segment") {
+			JSONSegmentsentry.deleteSegment(
+				groupName = "Test Site Name",
+				segmentName = "Segment Name");
+		}
+
+		task ("Then assert user is able to edit the manual collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.editAssetList(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.selectAsset(
+				assetListTitle = "Manual Collection Test",
+				assetType = "Basic Web Content",
+				entryList = "WC_Title_1");
+		}
+	}
+
+	@description = "This is a test for LPS-131309. The user could filter collection items by global category."
+	@priority = 4
+	test FilterCollectionItemsByGlobalCategory {
+		property portal.acceptance = "true";
+
+		task ("Add two web contents with different global category") {
+			var n = 1;
+
+			for (var vocabularyName : list "Topic,Audience") {
+				var categoryId = JSONCategory.addCategory(
+					groupName = "Global",
+					title = "Category Name ${n}",
+					vocabularyName = ${vocabularyName});
+
+				JSONWebcontent.addWebContent(
+					assetCategoryIds = ${categoryId},
+					content = "Web Content Content ${n}",
+					groupName = "Test Site Name",
+					title = "Web Content Title ${n}");
+
+				var n = ${n} + 1;
+			}
+		}
+
+		task ("Add a dynamic collection with All Types") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+		}
+
+		task ("Add a category filter rule") {
+			AssetListsAdmin.addCategoriesFilter(
+				categoryNameList = "Category Name 1",
+				queryAndOperator = "Any",
+				queryContains = "Contains");
+		}
+
+		task ("View only the first web content shown in collection items") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.viewContent(
+				assetListTitle = "Dynamic Collection",
+				assetTitle = "Web Content Title 1",
+				assetType = "Web Content Article");
+
+			Navigator.gotoBack();
+
+			AssetListsAdmin.viewNoContent(
+				assetListTitle = "Dynamic Collection",
+				assetTitle = "Web Content Title 2",
+				assetType = "Web Content Article");
+		}
+
+		task ("Remove the selected category") {
+			AssetCategorization.removeCategories(categoryNameList = "Category Name 1");
+		}
+
+		task ("Add a new category filter rule") {
+			AssetListsAdmin.addCategoriesFilter(categoryNameList = "Category Name 2");
+		}
+
+		task ("View only the second web content shown in collection items") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.viewContent(
+				assetListTitle = "Dynamic Collection",
+				assetTitle = "Web Content Title 2",
+				assetType = "Web Content Article");
+
+			Navigator.gotoBack();
+
+			AssetListsAdmin.viewNoContent(
+				assetListTitle = "Dynamic Collection",
+				assetTitle = "Web Content Title 1",
+				assetType = "Web Content Article");
+
+			AssertElementNotPresent(locator1 = "AssetLists#ASSET_TITLE_ROW");
+
+			AssertElementNotPresent(locator1 = "AssetLists#ASSET_TYPE_ROW");
+		}
+
+		task ("Delete the global categories") {
+			var n = 1;
+
+			for (var vocabularyName : list "Topic,Audience") {
+				JSONCategory.deleteCategory(
+					categoryName = "Category Name ${n}",
+					groupName = "Global",
+					vocabularyName = ${vocabularyName});
+
+				var n = ${n} + 1;
+			}
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Dynamic Collection When the user creates a new variation Then the new variation is positioned at the end of the variations list"
+	@priority = 4
+	test NewVariationPriorityForDynamicCollection {
+		property portal.acceptance = "true";
+
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Check that variation is listed at the botton") {
+			AssertTextEquals(
+				key_index = 2,
+				locator1 = "AssetLists#VARIATION_INDEX",
+				value1 = "First Segment");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Manual Collection When the user creates a new variation Then the new variation is positioned at the end of the variations list"
+	@priority = 4
+	test NewVariationPriorityForManualCollection {
+		property portal.acceptance = "true";
+
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Check that variation is listed at the botton") {
+			AssertTextEquals(
+				key_index = 2,
+				locator1 = "AssetLists#VARIATION_INDEX",
+				value1 = "First Segment");
+		}
+	}
+
+	@description = "LPS-86283: Validate if, can have only one variation per segment"
+	@priority = 3
+	test NumberOfVariationsBySegments {
+		task ("Create a segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment Test 1",
+				text = "Test");
+
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment Test 2",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Add a personalized variation to collection") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "Segment Test 1");
+		}
+
+		task ("Assert variation's name") {
+			Click(locator1 = "AssetLists#ADD_VARIATION_ICON");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			AssertElementPresent(
+				key_tableEntry = "Segment Test 1",
+				locator1 = "LexiconTable#TABLE_ENTRY_TITLE");
+
+			AssertElementNotPresent(
+				key_tableEntry = "Segment Test 1",
+				locator1 = "LexiconTable#TABLE_ENTRY_TITLE_LINK");
+		}
+	}
+
+	@description = "LPS-101448 Given the personalized variations list of a Dynamic Collection When the user opens the elipsis menu of the first variation of the list Then the Prioritize option of the elipsis menu is disabled"
+	@priority = 3
+	test PrioritizeDisabledForDynamicCollection {
+		task ("Create a Segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "First Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "First Segment",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Create a variation") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "First Segment");
+		}
+
+		task ("Check that Prioritize is disabled for first") {
+			AssetListsAdmin.clickPriotirizeDisabled(variationTitle = "Anyone");
+
+			AssertVisible(
+				key_text = "Prioritize",
+				locator1 = "Button#ANY_DISABLED");
+		}
+	}
+
+	@description = "LPS-86283: Validate if, when selecting a segment it is possible to filter and order, sorting and search	"
+	@priority = 4
+	test SearchingSegments {
+		property portal.acceptance = "true";
+
+		task ("Create Segments") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment One",
+				text = "Test");
+
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment Two",
+				text = "Test");
+		}
+
+		task ("Create a manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Open New Personalized Variation modal") {
+			AssetListsAdmin.openPersonalizedVariation();
+		}
+
+		task ("Order segments") {
+			ManagementBar.setFilterAndOrder(orderBy = "Name");
+
+			AssertTextEquals.assertPartialText(
+				index = 1,
+				locator1 = "LexiconTable#TABLE_ROW",
+				value1 = "Segment One");
+
+			AssertTextEquals.assertPartialText(
+				index = 2,
+				locator1 = "LexiconTable#TABLE_ROW",
+				value1 = "Segment Two");
+		}
+
+		task ("Sort segments") {
+			ManagementBar.sortAssets(sortDirection = "Descending");
+
+			AssertTextEquals.assertPartialText(
+				index = 1,
+				locator1 = "LexiconTable#TABLE_ROW",
+				value1 = "Segment Two");
+
+			AssertTextEquals.assertPartialText(
+				index = 2,
+				locator1 = "LexiconTable#TABLE_ROW",
+				value1 = "Segment One");
+		}
+
+		task ("Search segments") {
+			Search.searchCP(searchTerm = "Two");
+
+			LexiconTable.viewTableEntryTitle(tableEntry = "Segment Two");
+
+			LexiconTable.viewTableEntryNotPresent(tableEntry = "Segment One");
+
+			Search.clearSearchResult();
+		}
+	}
+
+	@description = "LPS-93726: Validate if, on content set personalized variations, the same content can match different content set variations"
+	@priority = 3
+	test SelectAssetToDifferentVariations {
+		task ("Create a public page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add an Asset Publisher portlet to the created public page") {
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name",
+				widgetName = "Asset Publisher");
+		}
+
+		task ("Create a web content article") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Create a segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment With Test User",
+				text = "Test");
+		}
+
+		task ("Create a manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Add a personalized variation to collection") {
+			AssetListsAdmin.selectAsset(
+				assetName = "WC WebContent Title",
+				assetType = "Basic Web Content");
+		}
+
+		task ("Select the Web Content Article as item type and Basic Web Content as item subtype and link the web content article to the Collection") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "Segment With Test User");
+
+			AssetListsAdmin.selectAsset(
+				assetName = "WC WebContent Title",
+				assetType = "Basic Web Content",
+				itemSubtype = "Basic Web Content",
+				itemType = "Web Content Article");
+		}
+
+		task ("Select the created manual Collection to be used in the asset publisher portlet") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			AssetPublisherPortlet.selectAssetList(assetListName = "Manual Collection Test");
+		}
+
+		task ("View web content article matching with Collection for that variation in Asset Publisher") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			AssertTextEquals(
+				key_assetTitle = "WC WebContent Title",
+				locator1 = "AP#ASSET_ABSTRACT_DESCRIPTION",
+				value1 = "WC WebContent Content");
+		}
+
+		task ("Logout and View web content article matching with Collection for default variation in Asset Publisher") {
+			User.logoutPG();
+
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			AssertTextEquals(
+				key_assetTitle = "WC WebContent Title",
+				locator1 = "AP#ASSET_ABSTRACT_DESCRIPTION",
+				value1 = "WC WebContent Content");
+		}
+	}
+
+	@description = "LPS-93726: Validate if, when the user creates one content set personalized, for Manual Content Sets, he can apply in some portlet (assert publisher) to use"
+	@priority = 5
+	test UseManualCollectionAtPortlet {
+		property portal.acceptance = "true";
+
+		task ("Create a public page") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name");
+		}
+
+		task ("Add an Asset Publisher portlet to the created public page") {
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name",
+				widgetName = "Asset Publisher");
+		}
+
+		task ("Create a web content article") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Create a segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment With Test User",
+				text = "Test");
+		}
+
+		task ("Create a manual Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection Test");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Add a personalized variation to collection") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "Segment With Test User");
+		}
+
+		task ("Select the Web Content Article as item type and Basic Web Content as item subtype and link the web content article to the Collection") {
+			AssetListsAdmin.selectAsset(
+				assetName = "WC WebContent Title",
+				assetType = "Basic Web Content",
+				itemSubtype = "Basic Web Content",
+				itemType = "Web Content Article");
+		}
+
+		task ("Deprioritize the Anyone variation") {
+			AssetListsAdmin.deprioritizeVariation(variationTitle = "Anyone");
+		}
+
+		task ("Select the created manual Collection to be used in the asset publisher portlet") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			AssetPublisherPortlet.selectAssetList(assetListName = "Manual Collection Test");
+		}
+
+		task ("View web content articles matching with dynamic Collection display in Asset Publisher") {
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			AssertTextEquals(
+				key_assetTitle = "WC WebContent Title",
+				locator1 = "AP#ASSET_ABSTRACT_DESCRIPTION",
+				value1 = "WC WebContent Content");
+		}
+	}
+
+	@description = "LPS-86283: Validate if, the name of the variation is provided by the name of the segment	"
+	@priority = 3
+	test VariationNameIsShown {
+		task ("Create a segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment for VariationNameIsShown Test",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Add a personalized variation to collection") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "Segment for VariationNameIsShown Test");
+		}
+
+		task ("Assert variation's name") {
+			AssertElementPresent(
+				key_title = "Segment for VariationNameIsShown Test",
+				locator1 = "Header#H3_TITLE");
+		}
+	}
+
+	@description = "This is a test for LPS-132626. Able to select all vocabularies when creating a collection."
+	@priority = 4
+	test ViewAllTwoCategoriesInDynamicCollection {
+		property portal.acceptance = "true";
+
+		task ("Add a vocabulary with Web Content Article") {
+			Category.openCategoriesAdmin(siteURLKey = "test-site-name");
+
+			Vocabulary.gotoAddVocabulary();
+
+			PortletEntry.inputName(name = "Language");
+
+			Vocabulary.addAssociatedAssetType(
+				assetType = "Web Content Article",
+				vocabularyName = "Language");
+
+			Button.clickNoError(button = "Save");
+
+			AssertConfirm.assertPartialConfirmation(value1 = "Are you sure you want to create this vocabulary with public visibility?");
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("Add a vocabulary with two associated asset types") {
+			Category.openCategoriesAdmin(siteURLKey = "test-site-name");
+
+			Vocabulary.gotoAddVocabulary();
+
+			PortletEntry.inputName(name = "Region");
+
+			Vocabulary.addAssociatedAssetType(assetType = "Web Content Article");
+
+			Button.clickAddRow();
+
+			Vocabulary.addAssociatedAssetType(
+				assetType = "Page",
+				rowNumber = 2);
+
+			Button.clickNoError(button = "Save");
+
+			AssertConfirm.assertPartialConfirmation(value1 = "Are you sure you want to create this vocabulary with public visibility?");
+
+			Alert.viewSuccessMessage();
+		}
+
+		task ("Add a categories") {
+			JSONCategory.addCategory(
+				groupName = "Test Site Name",
+				title = "Category Name 1",
+				vocabularyName = "Language");
+
+			JSONCategory.addCategory(
+				groupName = "Test Site Name",
+				title = "Category Name 2",
+				vocabularyName = "Region");
+		}
+
+		task ("Add a dynamic collection with All Types") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+		}
+
+		task ("Assert the 2 vocabularies in Collection Category Filter") {
+			Panel.expandPanel(panel = "Filter");
+
+			Select(
+				locator1 = "APConfiguration#FILTER_CATEGORIZATION_SELECT",
+				value1 = "Categories");
+
+			Click(locator1 = "Button#SELECT_CATEGORIES");
+
+			AssetCategorization.gotoSelectCategory();
+
+			for (var vocabularyName : list "Language (Test Site Name),Region (Test Site Name)") {
+				AssertElementPresent(
+					key_nodeName = ${vocabularyName},
+					locator1 = "Treeview#NODE_ITEM");
+			}
+		}
+	}
+
+	@description = "Assert that Asset Lists correctly display their selected content."
+	@priority = 4
+	@uitest
+	test ViewAssetListContent {
+		property portal.acceptance = "true";
+
+		task ("Create a web content article") {
+			JSONWebcontent.addWebContent(
+				content = "WC WebContent Content",
+				groupName = "Test Site Name",
+				title = "WC WebContent Title");
+		}
+
+		task ("Create a manual asset list") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Asset List Test");
+		}
+
+		task ("Select the Web Content Article as item type and Basic Web Content as item subtype") {
+			AssetListsAdmin.configureItemTypeInManualCollection(
+				itemSubtype = "Basic Web Content",
+				itemType = "Web Content Article");
+		}
+
+		task ("Select the created web content article to be linked to the asset list") {
+			AssetListsAdmin.selectAsset(
+				assetName = "WC WebContent Title",
+				assetType = "Basic Web Content");
+		}
+
+		task ("Assert the selected web content article is viewable from the View Content action for the asset list") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.viewContent(
+				assetListTitle = "Manual Asset List Test",
+				assetTitle = "WC WebContent Title",
+				assetType = "Web Content Article");
+
+			AssertTextEquals(
+				key_assetTitle = "WC WebContent Title",
+				locator1 = "AssetLists#ASSET_TITLE_ROW",
+				value1 = "WC WebContent Title");
+
+			AssertTextEquals(
+				key_assetTitle = "Web Content Article",
+				locator1 = "AssetLists#ASSET_TYPE_ROW",
+				value1 = "Web Content Article");
+		}
+	}
+
+	@description = "This is a test for LPS-125486. Collection should be available after delete Item Subtype."
+	@priority = 4
+	test ViewCollectionAfterDeleteItemSubtype {
+		task ("Given a collection creator has a dynamic collection with custom structure as Item Subtype") {
+			task ("Add a web content structure with text field") {
+				WebContentNavigator.openWebContentStructuresAdmin(siteURLKey = "test-site-name");
+
+				WebContentStructures.addCP(structureName = "WC Structure Name");
+
+				DataEngine.addField(fieldName = "Text");
+
+				WebContentStructures.saveCP();
+			}
+
+			task ("Add a Dynamic Collection based on Web Content Article and WC Structure Name") {
+				AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+				AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+				AssetListsAdmin.configureItemTypeInDynamicCollection(
+					itemSubtype = "WC Structure Name",
+					itemType = "Web Content Article");
+			}
+		}
+
+		task ("When the collection creator deletes the wc structure name") {
+			WebContentNavigator.openWebContentStructuresAdmin(siteURLKey = "test-site-name");
+
+			WebContentStructures.deleteCP(structureName = "WC Structure Name");
+		}
+
+		task ("Then the collection creator should see the dynamic collection in Asset Lists admin") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.editAssetList(assetListTitle = "Dynamic Collection");
+
+			AssertSelectedLabel(
+				key_selectFieldLabel = "Item Type",
+				locator1 = "Select#ANY",
+				value1 = "Web Content Article");
+
+			AssertSelectedLabel(
+				key_selectFieldLabel = "Item Subtype",
+				locator1 = "Select#ANY",
+				value1 = "-Not Selected-");
+		}
+	}
+
+	@description = "LPS-86283: Validate if, is possible to preview the content of a dynamic content set variation in a modal window	"
+	@priority = 4
+	test ViewContentOfAVariant {
+		property portal.acceptance = "true";
+
+		task ("Create categories") {
+			JSONCategory.addVocabulary(
+				groupName = "Test Site Name",
+				title = "Vocabulary Name");
+
+			var categoryId1 = JSONCategory.addCategory(
+				groupName = "Test Site Name",
+				title = "Category_1",
+				vocabularyName = "Vocabulary Name");
+		}
+
+		task ("Create a web content article") {
+			for (var i : list "1,2,3") {
+				JSONWebcontent.addWebContent(
+					assetCategoryIds = ${categoryId1},
+					content = "WC WebContent Content",
+					groupName = "Test Site Name",
+					title = "WC_Title_${i}");
+			}
+		}
+
+		task ("Create a segment") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Screen Name",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "Segment With Test User",
+				text = "Test");
+		}
+
+		task ("Create a Dynamic Collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection Test");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(
+				itemSubtype = "All Subtypes",
+				itemType = "Web Content Article");
+		}
+
+		task ("Add a personalized variation to collection") {
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "Segment With Test User");
+		}
+
+		task ("Configure asset types to collection") {
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+		}
+
+		task ("Filter that variation by category") {
+			AssetListsAdmin.addCategoriesFilter(
+				categoryNameList = "Category_1",
+				queryAndOperator = "Any",
+				queryContains = "Contains");
+		}
+
+		task ("View content of that variant") {
+			AssetListsAdmin.viewContent(assetTitleList = "WC_Title_1,WC_Title_2,WC_Title_3");
+		}
+	}
+
+	@description = "This is a test for LPS-166046. The site designer could see the tooltip when hover on the icon of collection."
+	@priority = 3
+	test ViewTooltipWhenHoverOnCollectionIcon {
+		task ("Given a site designer has collections") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(itemType = "All Types");
+		}
+
+		task ("When the site designer hovers on the dynamic collection icon under table style") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			MouseOver.javaScriptFocus(
+				key_tableEntry = "Dynamic Collection",
+				key_text = "bolt",
+				locator1 = "LexiconTable#TABLE_ENTRY_ICON");
+		}
+
+		task ("Then the site designer sees the tooltip") {
+			AssertVisible(
+				key_content = "Dynamic Collection",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+
+		task ("When the site designer hovers on the manual collection icon under table style") {
+			MouseOver.javaScriptFocus(
+				key_tableEntry = "Manual Collection",
+				key_text = "list",
+				locator1 = "LexiconTable#TABLE_ENTRY_ICON");
+		}
+
+		task ("Then the site designer sees the tooltip") {
+			AssertVisible(
+				key_content = "Manual Collection",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+
+		task ("When the site designer hovers on the dynamic collection icon under list style") {
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+			MouseOver.javaScriptFocus(
+				key_listEntry = "Dynamic Collection",
+				key_text = "bolt",
+				locator1 = "LexiconList#ANY_ICON");
+		}
+
+		task ("Then the site designer sees the tooltip") {
+			AssertVisible(
+				key_content = "Dynamic Collection",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+
+		task ("When the site designer hovers on the dynamic collection icon under list style") {
+			MouseOver.javaScriptFocus(
+				key_listEntry = "Manual Collection",
+				key_text = "list",
+				locator1 = "LexiconList#ANY_ICON");
+		}
+
+		task ("Then the site designer sees the tooltip") {
+			AssertVisible(
+				key_content = "Manual Collection",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+	}
+
+	@description = "This is a test for LPS-166045. The site designer could see the usages of Collections from asset library."
+	@priority = 5
+	test ViewUsagesOfCollectionFromAssetLibrary {
+		task ("Given the site designer has collections from asset library") {
+			JSONDepot.addDepot(depotName = "Test Depot Name");
+
+			JSONAssetlist.addDynamicAssetListEntryWithItemType(
+				groupName = "Test Depot Name",
+				itemType = "All Types",
+				site = "false",
+				title = "Dynamic Collection");
+
+			JSONDepot.connectSite(
+				depotName = "Test Depot Name",
+				groupName = "Test Site Name");
+		}
+
+		task ("When the site designer select the dynamic collection on a Collection Display") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Content Display",
+				fragmentName = "Collection Display");
+
+			PageEditor.editCollectionDisplay(
+				assetListName = "Dynamic Collection",
+				depotName = "Test Depot Name",
+				fragmentName = "Collection Display");
+		}
+
+		task ("Then the site designer could directly see usages on the dynamic collection") {
+			DepotNavigator.openDepotAssetListsAdmin(depotName = "Test Depot Name");
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "usages",
+				tableEntry = "Dynamic Collection",
+				tableEntryInfo = 1);
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+			LexiconList.viewListEntrySubtitle(
+				listEntry = "Dynamic Collection",
+				listEntrySubtitle = "1 Usages");
+		}
+
+		task ("When the site designer publish the content page") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.publish();
+		}
+
+		task ("Then the site designer could see usages updated on the dynamic collection") {
+			DepotNavigator.openDepotAssetListsAdmin(depotName = "Test Depot Name");
+
+			LexiconList.viewListEntrySubtitle(
+				listEntry = "Dynamic Collection",
+				listEntrySubtitle = "2 Usages");
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "table");
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "usages",
+				tableEntry = "Dynamic Collection",
+				tableEntryInfo = 2);
+
+			JSONDepot.deleteDepot(depotName = "Test Depot Name");
+		}
+	}
+
+	@description = "This is a test for LPS-84331 and LPS-166045. The site designer could see the usages of Collections from site."
+	@priority = 5
+	test ViewUsagesOfCollectionFromSite {
+		property portal.acceptance = "true";
+
+		task ("Given the site designer has collections") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(itemType = "All Types");
+		}
+
+		task ("When the site designer select the dynamic collection on a Collection Display") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name 1",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name 1",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Content Display",
+				fragmentName = "Collection Display");
+
+			PageEditor.editCollectionDisplay(
+				assetListName = "Dynamic Collection",
+				fragmentName = "Collection Display");
+		}
+
+		task ("Then the site designer could directly see usages on the dynamic collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "usages",
+				tableEntry = "Dynamic Collection",
+				tableEntryInfo = 1);
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+			LexiconList.viewListEntrySubtitle(
+				listEntry = "Dynamic Collection",
+				listEntrySubtitle = "1 Usages");
+		}
+
+		task ("When the site designer publish the content page") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name 1",
+				siteName = "Test Site Name");
+
+			PageEditor.publish();
+		}
+
+		task ("Then the site designer could see usages updated on the dynamic collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			LexiconList.viewListEntrySubtitle(
+				listEntry = "Dynamic Collection",
+				listEntrySubtitle = "2 Usages");
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "table");
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "usages",
+				tableEntry = "Dynamic Collection",
+				tableEntryInfo = 2);
+		}
+
+		task ("When the site designer select the manual collection on an Asset Publisher") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name 2");
+
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name 2",
+				widgetName = "Asset Publisher");
+
+			Navigator.gotoSitePage(
+				pageName = "Test Page Name 2",
+				siteName = "Test Site Name");
+
+			AssetPublisherPortlet.selectAssetList(assetListName = "Manual Collection");
+		}
+
+		task ("Then the site designer could directly see usages on the manual collection") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "usages",
+				tableEntry = "Manual Collection",
+				tableEntryInfo = 1);
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+			LexiconList.viewListEntrySubtitle(
+				listEntry = "Manual Collection",
+				listEntrySubtitle = "1 Usages");
+		}
+
+		task ("When the site designer open the dropdown menu of manual collection") {
+			AssetListsAdmin.gotoEntryMenuItem(
+				assetListTitle = "Manual Collection",
+				item = "View Usages");
+		}
+
+		task ("Then the site designer could access to the usages page") {
+			AssertElementPresent(
+				locator1 = "AssetLists#ASSET_LIST_USAGES",
+				usageAmount = 1,
+				usageType = "All");
+		}
+	}
+
+	@description = "This is a test for LPS-166046. The site designer could see the variations indicator of collection in the Collections admin."
+	@priority = 5
+	test ViewVariationsIndicatorInCollectionsAdmin {
+		task ("Given a site designer has collections") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(itemType = "All Types");
+		}
+
+		task ("When the site designer changes the display style to cards in the Collections admin") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "cards");
+		}
+
+		task ("Then the site designer see the No Variations label shown in collections") {
+			for (var collectionName : list "Dynamic Collection,Manual Collection") {
+				LexiconCard.viewCardLabel(
+					card = ${collectionName},
+					cardLabel = "No Variations");
+			}
+		}
+
+		task ("When the site designer changes the display style to list") {
+			LexiconEntry.changeDisplayStyle(displayStyle = "list");
+		}
+
+		task ("Then the site designer see the No Variations label shown in collections") {
+			for (var collectionName : list "Dynamic Collection,Manual Collection") {
+				LexiconList.viewListEntryLabel(
+					listEntry = ${collectionName},
+					listEntryLabel = "No Variations");
+			}
+		}
+
+		task ("When the site designer adds personalized variations to collections") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Email Address",
+				groupName = "Test Site Name",
+				operator = "contains",
+				segmentName = "By Email Address",
+				text = "liferay.com");
+
+			JSONSegmentsentry.addSegment(
+				fieldName = "Job Title",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "By Job Title",
+				text = "Manager");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.editAssetList(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "By Email Address");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.editAssetList(assetListTitle = "Manual Collection");
+
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "By Email Address");
+
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "By Job Title");
+		}
+
+		task ("Then the site designer sees the variations indicator updated") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			LexiconList.viewListEntryLabel(
+				listEntry = "Dynamic Collection",
+				listEntryLabel = "2 Variations");
+
+			LexiconList.viewListEntryLabel(
+				listEntry = "Manual Collection",
+				listEntryLabel = "3 Variations");
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "cards");
+
+			LexiconCard.viewCardLabel(
+				card = "Dynamic Collection",
+				cardLabel = "2 Variations");
+
+			LexiconCard.viewCardLabel(
+				card = "Manual Collection",
+				cardLabel = "3 Variations");
+		}
+	}
+
+	@description = "This is a test for LPS-166046. The site designer could see the variations indicator of collection on the Select modal."
+	@priority = 5
+	test ViewVariationsIndicatorOnSelectModal {
+		task ("Given a site designer has collections") {
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addDynamicSelection(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.addManualSelection(assetListTitle = "Manual Collection");
+
+			AssetListsAdmin.configureItemTypeInManualCollection(itemType = "All Types");
+		}
+
+		task ("When the site designer opens the Select modal of Collection Display") {
+			JSONLayout.addPublicLayout(
+				groupName = "Test Site Name",
+				layoutName = "Test Page Name",
+				type = "content");
+
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.addFragment(
+				collectionName = "Content Display",
+				fragmentName = "Collection Display");
+
+			PageEditor.gotoConfiguration(fragmentName = "Collection Display");
+
+			Click(
+				key_fieldLabel = "Collection",
+				key_text = "plus",
+				locator1 = "Icon#ANY_ITEM_SELECTOR");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		}
+
+		task ("Then the site designer see the No Variations label shown on collections") {
+			for (var collectionName : list "Dynamic Collection,Manual Collection") {
+				LexiconCard.viewCardLabel(
+					card = ${collectionName},
+					cardLabel = "No Variations");
+			}
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "table");
+
+			for (var collectionName : list "Dynamic Collection,Manual Collection") {
+				LexiconTable.viewTableEntryInfo(
+					columnName = "variations",
+					tableEntry = ${collectionName},
+					tableEntryInfo = 0);
+			}
+		}
+
+		task ("When the site designer adds personalized variations to collections") {
+			JSONSegmentsentry.addSegment(
+				fieldName = "Email Address",
+				groupName = "Test Site Name",
+				operator = "contains",
+				segmentName = "By Email Address",
+				text = "liferay.com");
+
+			JSONSegmentsentry.addSegment(
+				fieldName = "Job Title",
+				groupName = "Test Site Name",
+				operator = "equals",
+				segmentName = "By Job Title",
+				text = "Manager");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.editAssetList(assetListTitle = "Dynamic Collection");
+
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "By Email Address");
+
+			AssetListsAdmin.configureItemTypeInDynamicCollection(itemType = "All Types");
+
+			AssetListsAdmin.openAssetListsAdmin(siteURLKey = "test-site-name");
+
+			AssetListsAdmin.editAssetList(assetListTitle = "Manual Collection");
+
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "By Email Address");
+
+			AssetListsAdmin.addPersonalizedVariation(segmentName = "By Job Title");
+		}
+
+		task ("Then the site designer sees the variations indicator updated") {
+			ContentPagesNavigator.openEditContentPage(
+				pageName = "Test Page Name",
+				siteName = "Test Site Name");
+
+			PageEditor.gotoConfiguration(fragmentName = "Collection Display");
+
+			Click(
+				key_fieldLabel = "Collection",
+				key_text = "plus",
+				locator1 = "Icon#ANY_ITEM_SELECTOR");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+			LexiconCard.viewCardLabel(
+				card = "Dynamic Collection",
+				cardLabel = "2 Variations");
+
+			LexiconCard.viewCardLabel(
+				card = "Manual Collection",
+				cardLabel = "3 Variations");
+
+			LexiconEntry.changeDisplayStyle(displayStyle = "table");
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "variations",
+				tableEntry = "Dynamic Collection",
+				tableEntryInfo = 2);
+
+			LexiconTable.viewTableEntryInfo(
+				columnName = "variations",
+				tableEntry = "Manual Collection",
+				tableEntryInfo = 3);
+		}
+	}
+
+}

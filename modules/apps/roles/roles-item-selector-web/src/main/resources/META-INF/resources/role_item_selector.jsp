@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -77,15 +68,13 @@ RoleItemSelectorViewDisplayContext roleItemSelectorViewDisplayContext = (RoleIte
 
 <c:choose>
 	<c:when test="<%= roleItemSelectorViewDisplayContext.getItemSelectorCriterion() instanceof RoleItemSelectorCriterion %>">
-		<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
-			var delegate = delegateModule.default;
-
-			var selectItemHandler = delegate(
+		<aui:script sandbox="<%= true %>">
+			var selectItemHandler = Liferay.Util.delegate(
 				document.getElementById('<portlet:namespace />roleSelectorWrapper'),
 				'change',
 				'.entry input',
 				(event) => {
-					var checked = Liferay.Util.listCheckedExcept(
+					var checked = Liferay.Util.getCheckedCheckboxes(
 						document.getElementById(
 							'<portlet:namespace /><%= roleItemSelectorViewDisplayContext.getSearchContainerId() %>'
 						),
@@ -121,9 +110,18 @@ RoleItemSelectorViewDisplayContext roleItemSelectorViewDisplayContext = (RoleIte
 				var selectedData = [];
 
 				allSelectedElements.each(function () {
-					var row = this.ancestor('tr');
+					var data;
 
-					var data = row.getDOM().dataset;
+					if (Object.keys(this.getDOM().dataset).length) {
+						data = this.getDOM().dataset;
+					}
+					else {
+						const row = this.ancestor('tr');
+
+						if (row && Object.keys(row.getDOM().dataset).length) {
+							data = row.getDOM().dataset;
+						}
+					}
 
 					selectedData.push({
 						id: data.id,

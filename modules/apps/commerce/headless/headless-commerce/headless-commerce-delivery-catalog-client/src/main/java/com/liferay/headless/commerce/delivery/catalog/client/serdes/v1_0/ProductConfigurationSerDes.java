@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0;
@@ -17,13 +8,15 @@ package com.liferay.headless.commerce.delivery.catalog.client.serdes.v1_0;
 import com.liferay.headless.commerce.delivery.catalog.client.dto.v1_0.ProductConfiguration;
 import com.liferay.headless.commerce.delivery.catalog.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
+import java.math.BigDecimal;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -89,6 +82,31 @@ public class ProductConfigurationSerDes {
 			}
 
 			sb.append("]");
+		}
+
+		if (productConfiguration.getAvailabilityEstimateId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"availabilityEstimateId\": ");
+
+			sb.append(productConfiguration.getAvailabilityEstimateId());
+		}
+
+		if (productConfiguration.getAvailabilityEstimateName() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"availabilityEstimateName\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(productConfiguration.getAvailabilityEstimateName()));
+
+			sb.append("\"");
 		}
 
 		if (productConfiguration.getDisplayAvailability() != null) {
@@ -219,6 +237,26 @@ public class ProductConfigurationSerDes {
 					productConfiguration.getAllowedOrderQuantities()));
 		}
 
+		if (productConfiguration.getAvailabilityEstimateId() == null) {
+			map.put("availabilityEstimateId", null);
+		}
+		else {
+			map.put(
+				"availabilityEstimateId",
+				String.valueOf(
+					productConfiguration.getAvailabilityEstimateId()));
+		}
+
+		if (productConfiguration.getAvailabilityEstimateName() == null) {
+			map.put("availabilityEstimateName", null);
+		}
+		else {
+			map.put(
+				"availabilityEstimateName",
+				String.valueOf(
+					productConfiguration.getAvailabilityEstimateName()));
+		}
+
 		if (productConfiguration.getDisplayAvailability() == null) {
 			map.put("displayAvailability", null);
 		}
@@ -309,6 +347,60 @@ public class ProductConfigurationSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "allowBackOrder")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "allowedOrderQuantities")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "availabilityEstimateId")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "availabilityEstimateName")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "displayAvailability")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "displayStockQuantity")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "inventoryEngine")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "lowStockAction")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "maxOrderQuantity")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "minOrderQuantity")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "minStockQuantity")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "multipleOrderQuantity")) {
+
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ProductConfiguration productConfiguration,
 			String jsonParserFieldName, Object jsonParserFieldValue) {
@@ -324,7 +416,23 @@ public class ProductConfigurationSerDes {
 
 				if (jsonParserFieldValue != null) {
 					productConfiguration.setAllowedOrderQuantities(
-						toIntegers((Object[])jsonParserFieldValue));
+						toBigDecimals((Object[])jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "availabilityEstimateId")) {
+
+				if (jsonParserFieldValue != null) {
+					productConfiguration.setAvailabilityEstimateId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "availabilityEstimateName")) {
+
+				if (jsonParserFieldValue != null) {
+					productConfiguration.setAvailabilityEstimateName(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -358,19 +466,19 @@ public class ProductConfigurationSerDes {
 			else if (Objects.equals(jsonParserFieldName, "maxOrderQuantity")) {
 				if (jsonParserFieldValue != null) {
 					productConfiguration.setMaxOrderQuantity(
-						Integer.valueOf((String)jsonParserFieldValue));
+						new BigDecimal((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "minOrderQuantity")) {
 				if (jsonParserFieldValue != null) {
 					productConfiguration.setMinOrderQuantity(
-						Integer.valueOf((String)jsonParserFieldValue));
+						new BigDecimal((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "minStockQuantity")) {
 				if (jsonParserFieldValue != null) {
 					productConfiguration.setMinStockQuantity(
-						Integer.valueOf((String)jsonParserFieldValue));
+						new BigDecimal((String)jsonParserFieldValue));
 				}
 			}
 			else if (Objects.equals(
@@ -378,7 +486,7 @@ public class ProductConfigurationSerDes {
 
 				if (jsonParserFieldValue != null) {
 					productConfiguration.setMultipleOrderQuantity(
-						Integer.valueOf((String)jsonParserFieldValue));
+						new BigDecimal((String)jsonParserFieldValue));
 				}
 			}
 		}
@@ -413,36 +521,7 @@ public class ProductConfigurationSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -452,6 +531,42 @@ public class ProductConfigurationSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

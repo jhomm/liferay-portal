@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.contacts.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Contact;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ContactLocalService;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -28,10 +21,10 @@ import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -88,7 +81,10 @@ public class ContactIndexerIndexedFieldsTest {
 		indexedFieldsFixture.postProcessDocument(document);
 
 		FieldValuesAssert.assertFieldValues(
-			expectedFieldValues(contact), document, searchTerm);
+			document, expectedFieldValues(contact),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
@@ -126,6 +122,7 @@ public class ContactIndexerIndexedFieldsTest {
 		map.put(
 			"lastName_sortable", StringUtil.toLowerCase(contact.getLastName()));
 		map.put("middleName", contact.getMiddleName());
+		map.put("userExternalReferenceCode", user.getExternalReferenceCode());
 
 		return map;
 	}
@@ -133,10 +130,8 @@ public class ContactIndexerIndexedFieldsTest {
 	protected void setUpContactFixture() throws Exception {
 		contactFixture = new ContactFixture(contactLocalService);
 
-		contactFixture.setUp();
-
-		contactFixture.setUser(user);
 		contactFixture.setGroup(group);
+		contactFixture.setUser(user);
 
 		_contacts = contactFixture.getContacts();
 	}
@@ -147,7 +142,7 @@ public class ContactIndexerIndexedFieldsTest {
 
 	protected void setUpIndexedFieldsFixture() {
 		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService);
+			resourcePermissionLocalService, searchEngineHelper);
 	}
 
 	protected void setUpUserSearchFixture() throws Exception {
@@ -174,6 +169,9 @@ public class ContactIndexerIndexedFieldsTest {
 
 	@Inject
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
+
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
 
 	protected User user;
 	protected UserSearchFixture userSearchFixture;

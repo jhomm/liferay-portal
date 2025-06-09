@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.service.test;
@@ -86,13 +77,13 @@ public class GroupServiceUserSitesGroupsTest {
 	public void testInactiveGroups() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		LayoutTestUtil.addLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
 
 		_user = UserTestUtil.addGroupUser(_group, RoleConstants.USER);
 
 		_group.setActive(false);
 
-		_groupLocalService.updateGroup(_group);
+		_group = _groupLocalService.updateGroup(_group);
 
 		List<Group> groups = _groupService.getUserSitesGroups(
 			_user.getUserId(), null, QueryUtil.ALL_POS);
@@ -114,13 +105,13 @@ public class GroupServiceUserSitesGroupsTest {
 
 		Group group = organization.getGroup();
 
-		LayoutTestUtil.addLayout(group);
+		LayoutTestUtil.addTypePortletLayout(group);
 
 		group = _groupLocalService.getGroup(group.getGroupId());
 
 		group.setActive(false);
 
-		_groupLocalService.updateGroup(group);
+		group = _groupLocalService.updateGroup(group);
 
 		List<Group> groups = _groupService.getUserSitesGroups(
 			_user.getUserId(), null, QueryUtil.ALL_POS);
@@ -181,7 +172,7 @@ public class GroupServiceUserSitesGroupsTest {
 
 		Group organizationGroup = organization.getGroup();
 
-		LayoutTestUtil.addLayout(organizationGroup);
+		LayoutTestUtil.addTypePortletLayout(organizationGroup);
 
 		List<Group> groups = _groupService.getUserSitesGroups(
 			_user.getUserId(), null, QueryUtil.ALL_POS);
@@ -204,7 +195,7 @@ public class GroupServiceUserSitesGroupsTest {
 
 		Group organizationGroup = organization.getGroup();
 
-		LayoutTestUtil.addLayout(organizationGroup);
+		LayoutTestUtil.addTypePortletLayout(organizationGroup);
 
 		List<Group> groups = _groupService.getUserSitesGroups(
 			_user.getUserId(), null, QueryUtil.ALL_POS);
@@ -272,7 +263,7 @@ public class GroupServiceUserSitesGroupsTest {
 	public void testUsersGroups() throws Exception {
 		_group = GroupTestUtil.addGroup();
 
-		LayoutTestUtil.addLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
 
 		_user = UserTestUtil.addGroupUser(_group, RoleConstants.USER);
 

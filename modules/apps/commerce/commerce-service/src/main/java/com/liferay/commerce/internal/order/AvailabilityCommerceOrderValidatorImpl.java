@@ -1,35 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.internal.order;
 
-import com.liferay.commerce.inventory.CPDefinitionInventoryEngine;
-import com.liferay.commerce.inventory.CPDefinitionInventoryEngineRegistry;
-import com.liferay.commerce.inventory.engine.CommerceInventoryEngine;
 import com.liferay.commerce.inventory.model.CommerceInventoryBookedQuantity;
 import com.liferay.commerce.inventory.service.CommerceInventoryBookedQuantityLocalService;
-import com.liferay.commerce.model.CPDefinitionInventory;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.order.CommerceOrderValidator;
 import com.liferay.commerce.order.CommerceOrderValidatorResult;
-import com.liferay.commerce.product.model.CPDefinition;
+import com.liferay.commerce.product.availability.CPAvailabilityChecker;
 import com.liferay.commerce.product.model.CPInstance;
-import com.liferay.commerce.service.CPDefinitionInventoryLocalService;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
+
+import java.math.BigDecimal;
 
 import java.util.Locale;
 import java.util.ResourceBundle;
@@ -41,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"commerce.order.validator.key=" + AvailabilityCommerceOrderValidatorImpl.KEY,
 		"commerce.order.validator.priority:Integer=20"
@@ -61,48 +50,25 @@ public class AvailabilityCommerceOrderValidatorImpl
 	@Override
 	public CommerceOrderValidatorResult validate(
 			Locale locale, CommerceOrder commerceOrder, CPInstance cpInstance,
-			int quantity)
+			String json, BigDecimal quantity, boolean child)
 		throws PortalException {
 
-		if (cpInstance == null) {
+		if (!_cpAvailabilityChecker.isPurchasable(cpInstance)) {
 			return new CommerceOrderValidatorResult(
 				false,
 				_getLocalizedMessage(
 					locale, "the-product-is-no-longer-available"));
 		}
 
-		CPDefinition cpDefinition = cpInstance.getCPDefinition();
-
-		if (!cpDefinition.isApproved() || !cpInstance.isApproved() ||
-			!cpInstance.isPublished() || !cpInstance.isPurchasable()) {
+		if (!_cpAvailabilityChecker.isAvailable(
+				commerceOrder.getCommerceAccountId(),
+				commerceOrder.getGroupId(), cpInstance, StringPool.BLANK,
+				quantity)) {
 
 			return new CommerceOrderValidatorResult(
 				false,
 				_getLocalizedMessage(
-					locale, "the-product-is-no-longer-available"));
-		}
-
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpDefinition.getCPDefinitionId());
-
-		CPDefinitionInventoryEngine cpDefinitionInventoryEngine =
-			_cpDefinitionInventoryEngineRegistry.getCPDefinitionInventoryEngine(
-				cpDefinitionInventory);
-
-		if (cpDefinitionInventoryEngine.isBackOrderAllowed(cpInstance)) {
-			return new CommerceOrderValidatorResult(true);
-		}
-
-		int availableQuantity = _commerceInventoryEngine.getStockQuantity(
-			cpInstance.getCompanyId(), commerceOrder.getGroupId(),
-			cpInstance.getSku());
-
-		if (quantity > availableQuantity) {
-			return new CommerceOrderValidatorResult(
-				false,
-				_getLocalizedMessage(locale, "that-quantity-is-unavailable"));
+					locale, "the-specified-quantity-is-unavailable"));
 		}
 
 		return new CommerceOrderValidatorResult(true);
@@ -115,62 +81,53 @@ public class AvailabilityCommerceOrderValidatorImpl
 
 		CPInstance cpInstance = commerceOrderItem.fetchCPInstance();
 
-		if (cpInstance == null) {
+		if (!_cpAvailabilityChecker.isPurchasable(cpInstance)) {
 			return new CommerceOrderValidatorResult(
 				commerceOrderItem.getCommerceOrderItemId(), false,
 				_getLocalizedMessage(
 					locale, "the-product-is-no-longer-available"));
-		}
-
-		CPDefinition cpDefinition = cpInstance.getCPDefinition();
-
-		if (!cpDefinition.isApproved() || !cpInstance.isApproved() ||
-			!cpInstance.isPublished() || !cpInstance.isPurchasable()) {
-
-			return new CommerceOrderValidatorResult(
-				commerceOrderItem.getCommerceOrderItemId(), false,
-				_getLocalizedMessage(
-					locale, "the-product-is-no-longer-available"));
-		}
-
-		CPDefinitionInventory cpDefinitionInventory =
-			_cpDefinitionInventoryLocalService.
-				fetchCPDefinitionInventoryByCPDefinitionId(
-					cpDefinition.getCPDefinitionId());
-
-		CPDefinitionInventoryEngine cpDefinitionInventoryEngine =
-			_cpDefinitionInventoryEngineRegistry.getCPDefinitionInventoryEngine(
-				cpDefinitionInventory);
-
-		if (cpDefinitionInventoryEngine.isBackOrderAllowed(cpInstance)) {
-			return new CommerceOrderValidatorResult(true);
 		}
 
 		CommerceInventoryBookedQuantity commerceInventoryBookedQuantity =
 			_commerceInventoryBookedQuantityLocalService.
 				fetchCommerceInventoryBookedQuantity(
-					commerceOrderItem.getBookedQuantityId());
+					commerceOrderItem.getCommerceInventoryBookedQuantityId());
+		CommerceOrder commerceOrder = commerceOrderItem.getCommerceOrder();
+		BigDecimal quantity = commerceOrderItem.getQuantity();
 
-		int availableQuantity = _commerceInventoryEngine.getStockQuantity(
-			cpInstance.getCompanyId(), commerceOrderItem.getGroupId(),
-			cpInstance.getSku());
-
-		int orderQuantity = commerceOrderItem.getQuantity();
-
-		if ((orderQuantity > availableQuantity) &&
-			(commerceInventoryBookedQuantity == null)) {
+		if ((commerceInventoryBookedQuantity == null) &&
+			!_cpAvailabilityChecker.isAvailable(
+				commerceOrder.getCommerceAccountId(),
+				commerceOrderItem.getGroupId(), cpInstance,
+				commerceOrderItem.getUnitOfMeasureKey(), quantity)) {
 
 			return new CommerceOrderValidatorResult(
 				commerceOrderItem.getCommerceOrderItemId(), false,
-				_getLocalizedMessage(locale, "that-quantity-is-unavailable"));
+				_getLocalizedMessage(
+					locale, "the-specified-quantity-is-unavailable"));
 		}
-		else if ((commerceInventoryBookedQuantity != null) &&
-				 (orderQuantity !=
-					 commerceInventoryBookedQuantity.getQuantity())) {
 
-			return new CommerceOrderValidatorResult(
-				commerceOrderItem.getCommerceOrderItemId(), false,
-				_getLocalizedMessage(locale, "that-quantity-is-not-allowed"));
+		if ((commerceInventoryBookedQuantity != null) &&
+			!BigDecimalUtil.eq(
+				quantity, commerceInventoryBookedQuantity.getQuantity())) {
+
+			BigDecimal bookedQuantity = BigDecimal.ZERO;
+
+			BigDecimal commerceInventoryWarehouseItemQuantity =
+				commerceInventoryBookedQuantity.getQuantity();
+
+			if (commerceInventoryWarehouseItemQuantity != null) {
+				bookedQuantity = commerceInventoryWarehouseItemQuantity;
+			}
+
+			if (!BigDecimalUtil.eq(
+					commerceOrderItem.getQuantity(), bookedQuantity)) {
+
+				return new CommerceOrderValidatorResult(
+					commerceOrderItem.getCommerceOrderItemId(), false,
+					_getLocalizedMessage(
+						locale, "the-specified-quantity-is-not-allowed"));
+			}
 		}
 
 		return new CommerceOrderValidatorResult(true);
@@ -184,7 +141,7 @@ public class AvailabilityCommerceOrderValidatorImpl
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
 			"content.Language", locale, getClass());
 
-		return LanguageUtil.get(resourceBundle, key);
+		return _language.get(resourceBundle, key);
 	}
 
 	@Reference
@@ -192,14 +149,9 @@ public class AvailabilityCommerceOrderValidatorImpl
 		_commerceInventoryBookedQuantityLocalService;
 
 	@Reference
-	private CommerceInventoryEngine _commerceInventoryEngine;
+	private CPAvailabilityChecker _cpAvailabilityChecker;
 
 	@Reference
-	private CPDefinitionInventoryEngineRegistry
-		_cpDefinitionInventoryEngineRegistry;
-
-	@Reference
-	private CPDefinitionInventoryLocalService
-		_cpDefinitionInventoryLocalService;
+	private Language _language;
 
 }

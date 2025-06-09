@@ -1,18 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
+
+import com.atlassian.jira.rest.client.api.domain.Issue;
 
 import java.io.IOException;
 
@@ -23,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -38,6 +33,18 @@ public class GitHubRemoteGitCommit extends BaseGitCommit {
 		return JenkinsResultsParserUtil.combine(
 			"https://github.com/", _gitHubUsername, "/", getGitRepositoryName(),
 			"/commit/", getSHA());
+	}
+
+	public Issue getJIRAIssue() {
+		Matcher matcher = _messagePattern.matcher(getMessage());
+
+		if (matcher.find()) {
+			String issueKey = matcher.group("jiraIssueKey");
+
+			return JIRAUtil.getIssue(issueKey);
+		}
+
+		return null;
 	}
 
 	public List<String> getModifiedFilenames() {
@@ -79,7 +86,13 @@ public class GitHubRemoteGitCommit extends BaseGitCommit {
 
 		JSONObject jsonObject = new JSONObject();
 
-		jsonObject.put("state", StringUtils.lowerCase(status.toString()));
+		String state = status.toString();
+
+		if (state.equals("BYPASSED")) {
+			state = "SUCCESS";
+		}
+
+		jsonObject.put("state", StringUtils.lowerCase(state));
 
 		if (context != null) {
 			jsonObject.put("context", context);
@@ -104,7 +117,7 @@ public class GitHubRemoteGitCommit extends BaseGitCommit {
 
 	public enum Status {
 
-		ERROR, FAILURE, PENDING, SUCCESS
+		BYPASSED, ERROR, FAILURE, PENDING, SUCCESS
 
 	}
 
@@ -198,6 +211,9 @@ public class GitHubRemoteGitCommit extends BaseGitCommit {
 	}
 
 	protected List<String> modifiedFilenames;
+
+	private static final Pattern _messagePattern = Pattern.compile(
+		"^(?<jiraIssueKey>[A-Z]+[-][\\d]+)\\s*(?<message>.*)");
 
 	private final String _gitHubUsername;
 

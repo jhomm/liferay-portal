@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.util;
@@ -17,6 +8,8 @@ package com.liferay.taglib.util;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerList;
 import com.liferay.osgi.service.tracker.collections.list.ServiceTrackerListFactory;
 import com.liferay.petra.io.unsync.UnsyncStringWriter;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Theme;
@@ -29,7 +22,6 @@ import com.liferay.portal.kernel.template.Template;
 import com.liferay.portal.kernel.template.TemplateConstants;
 import com.liferay.portal.kernel.template.TemplateContextContributor;
 import com.liferay.portal.kernel.template.TemplateManagerUtil;
-import com.liferay.portal.kernel.template.TemplateResource;
 import com.liferay.portal.kernel.template.TemplateResourceLoaderUtil;
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -37,11 +29,11 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.Writer;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.Writer;
 
 /**
  * @author Brian Wing Shun Chan
@@ -101,27 +93,12 @@ public class ThemeUtil {
 				PluginContextListener.PLUGIN_CLASS_LOADER);
 		}
 
-		Thread currentThread = Thread.currentThread();
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				pluginClassLoader)) {
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
-		if ((pluginClassLoader != null) &&
-			(pluginClassLoader != contextClassLoader)) {
-
-			currentThread.setContextClassLoader(pluginClassLoader);
-		}
-
-		try {
 			return doIncludeFTL(
 				servletContext, httpServletRequest, httpServletResponse, path,
 				theme, false, write);
-		}
-		finally {
-			if ((pluginClassLoader != null) &&
-				(pluginClassLoader != contextClassLoader)) {
-
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
 		}
 	}
 
@@ -180,12 +157,11 @@ public class ThemeUtil {
 			return null;
 		}
 
-		TemplateResource templateResource =
-			TemplateResourceLoaderUtil.getTemplateResource(
-				TemplateConstants.LANG_TYPE_FTL, resourcePath);
-
 		Template template = TemplateManagerUtil.getTemplate(
-			TemplateConstants.LANG_TYPE_FTL, templateResource, restricted);
+			TemplateConstants.LANG_TYPE_FTL,
+			TemplateResourceLoaderUtil.getTemplateResource(
+				TemplateConstants.LANG_TYPE_FTL, resourcePath),
+			restricted);
 
 		// FreeMarker variables
 

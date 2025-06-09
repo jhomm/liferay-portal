@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -37,9 +28,10 @@ if (size != null) {
 }
 %>
 
-<style type="text/css">
+<aui:style type="text/css">
 	.dropdown-menu-personal-menu {
 		max-height: none;
+		z-index: 1021;
 	}
 
 	.dropdown-menu-personal-menu .dropdown-item-indicator {
@@ -50,10 +42,14 @@ if (size != null) {
 		border-radius: 5000px;
 	}
 
+	div.personal-menu-dropdown .btn > span.sticker-user-icon {
+		pointer-events: none;
+	}
+
 	div.personal-menu-dropdown .dropdown-item {
 		color: #6B6C7E;
 	}
-</style>
+</aui:style>
 
 <div class="personal-menu-dropdown" id="<%= namespace %>personal_menu_dropdown">
 	<c:choose>
@@ -61,10 +57,13 @@ if (size != null) {
 			<div><%= label %></div>
 		</c:when>
 		<c:otherwise>
-			<button aria-expanded="true" aria-haspopup="true" class="btn btn-unstyled dropdown-toggle" id="<%= namespace %>personal_menu_dropdown_toggle" ref="triggerButton" type="button">
+			<clay:button
+				cssClass="dropdown-toggle"
+				displayType="unstyled"
+				id='<%= namespace + "personal_menu_dropdown_toggle" %>'
+			>
 				<span class="<%= userStickerCssClasses %>">
-					<liferay-ui:user-portrait
-						cssClass="sticker-user-icon"
+					<liferay-user:user-portrait
 						size="<%= size %>"
 						user="<%= user2 %>"
 					/>
@@ -72,32 +71,42 @@ if (size != null) {
 					<c:if test="<%= themeDisplay.isImpersonated() %>">
 						<span class="<%= impersonateStickerCssClasses %> sticker-bottom-right sticker-circle sticker-outside sticker-user-icon" id="impersonate-user-sticker">
 							<span class="sticker-overlay">
-								<aui:icon id="impersonate-user-icon" image="user" markupView="lexicon" />
+								<clay:icon
+									id="impersonate-user-icon"
+									symbol="user"
+								/>
 							</span>
 						</span>
 					</c:if>
 				</span>
-			</button>
+			</clay:button>
 		</c:otherwise>
 	</c:choose>
 
 	<%
-	ResourceURL resourceURL = PortletURLFactoryUtil.create(request, PersonalMenuPortletKeys.PERSONAL_MENU, PortletRequest.RESOURCE_PHASE);
-
-	resourceURL.setParameter("currentURL", themeDisplay.getURLCurrent());
-	resourceURL.setParameter("portletId", themeDisplay.getPpid());
-	resourceURL.setResourceID("/product_navigation_personal_menu/get_personal_menu_items");
-
 	Map<String, Object> props = HashMapBuilder.<String, Object>put(
 		"color", color
 	).put(
 		"isImpersonated", themeDisplay.isImpersonated()
 	).put(
-		"itemsURL", resourceURL.toString()
+		"itemsURL",
+		PortletURLBuilder.create(
+			PortletURLFactoryUtil.create(request, PersonalMenuPortletKeys.PERSONAL_MENU, PortletRequest.RESOURCE_PHASE)
+		).setParameter(
+			"currentURL", themeDisplay.getURLCurrent()
+		).setParameter(
+			"p_p_resource_id", "/product_navigation_personal_menu/get_personal_menu_items"
+		).setParameter(
+			"portletId", themeDisplay.getPpid()
+		).setWindowState(
+			LiferayWindowState.EXCLUSIVE
+		).buildString()
 	).put(
 		"label", label
 	).put(
 		"size", size
+	).put(
+		"userName", HtmlUtil.escape(user2.getFullName())
 	).build();
 
 	if (user2.getPortraitId() > 0) {
@@ -106,7 +115,7 @@ if (size != null) {
 	%>
 
 	<react:component
-		module="personal_menu/js/PersonalMenu.es"
+		module="{PersonalMenu} from product-navigation-taglib"
 		props="<%= props %>"
 	/>
 </div>

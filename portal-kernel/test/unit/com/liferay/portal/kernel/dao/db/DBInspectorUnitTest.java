@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.dao.db;
 
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.sql.Connection;
@@ -21,18 +13,17 @@ import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 
+import java.util.List;
+
 import org.junit.Assert;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
 
 /**
  * @author Mariano Álvaro Sáiz
  */
-@RunWith(MockitoJUnitRunner.class)
 public class DBInspectorUnitTest {
 
 	@Test
@@ -103,6 +94,41 @@ public class DBInspectorUnitTest {
 		).executeQuery();
 	}
 
+	@Test
+	public void testIsObjectTable() {
+		DBInspector dbInspector = new DBInspector(_connection);
+
+		MockedStatic<PortalInstancePool> portalInstancePoolMockedStatic =
+			Mockito.mockStatic(PortalInstancePool.class);
+
+		portalInstancePoolMockedStatic.when(
+			PortalInstancePool::getCompanyIds
+		).thenReturn(
+			new long[] {1L}
+		);
+
+		Assert.assertTrue(dbInspector.isObjectTable("L_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable("l_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable("r_tableName"));
+	}
+
+	@Test
+	public void testIsObjectTableFilterByCompanyIds() {
+		DBInspector dbInspector = new DBInspector(_connection);
+
+		List<Long> companyIds = List.of(1L);
+
+		Assert.assertFalse(
+			dbInspector.isObjectTable(companyIds, "L_2_tableName"));
+		Assert.assertFalse(
+			dbInspector.isObjectTable(companyIds, "l_2_tableName"));
+		Assert.assertTrue(
+			dbInspector.isObjectTable(companyIds, "L_1_tableName"));
+		Assert.assertTrue(
+			dbInspector.isObjectTable(companyIds, "l_1_tableName"));
+		Assert.assertTrue(dbInspector.isObjectTable(companyIds, "r_tableName"));
+	}
+
 	private void _mockTableWithColumn(String tableName, String columnName)
 		throws Exception {
 
@@ -120,7 +146,7 @@ public class DBInspectorUnitTest {
 		);
 
 		Mockito.when(
-			_connection.prepareStatement(Mockito.anyString())
+			_connection.prepareStatement(Mockito.nullable(String.class))
 		).thenReturn(
 			_preparedStatement
 		);
@@ -133,7 +159,7 @@ public class DBInspectorUnitTest {
 
 		Mockito.when(
 			_databaseMetaData.getColumns(
-				Mockito.anyString(), Mockito.anyString(),
+				Mockito.nullable(String.class), Mockito.nullable(String.class),
 				Mockito.eq(StringUtil.toLowerCase(tableName)),
 				Mockito.eq(columnName))
 		).thenReturn(
@@ -163,16 +189,11 @@ public class DBInspectorUnitTest {
 
 	private static final String _TABLE_NAME = "table_name";
 
-	@Mock
-	private Connection _connection;
-
-	@Mock
-	private DatabaseMetaData _databaseMetaData;
-
-	@Mock
-	private PreparedStatement _preparedStatement;
-
-	@Mock
-	private ResultSet _resultSet;
+	private final Connection _connection = Mockito.mock(Connection.class);
+	private final DatabaseMetaData _databaseMetaData = Mockito.mock(
+		DatabaseMetaData.class);
+	private final PreparedStatement _preparedStatement = Mockito.mock(
+		PreparedStatement.class);
+	private final ResultSet _resultSet = Mockito.mock(ResultSet.class);
 
 }

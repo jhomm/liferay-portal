@@ -1,18 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.remote.rest.extender.internal;
+
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
+
+import jakarta.ws.rs.core.Application;
+import jakarta.ws.rs.ext.RuntimeDelegate;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,9 +17,6 @@ import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.function.Consumer;
-
-import javax.ws.rs.core.Application;
-import javax.ws.rs.ext.RuntimeDelegate;
 
 import org.apache.cxf.Bus;
 import org.apache.cxf.endpoint.Server;
@@ -70,7 +64,33 @@ public class CXFJaxRsServiceRegistrator {
 		_swapClassLoader(service, this::_removeService);
 	}
 
-	protected void registerApplication(Bus bus, Application application) {
+	private void _addApplication(Application application) {
+		_applications.add(application);
+
+		_rewire();
+	}
+
+	private void _addBus(Bus bus) {
+		_buses.add(bus);
+
+		for (Application application : _applications) {
+			_registerApplication(bus, application);
+		}
+	}
+
+	private void _addProvider(Object provider) {
+		_providers.add(provider);
+
+		_rewire();
+	}
+
+	private void _addService(Object service) {
+		_services.add(service);
+
+		_rewire();
+	}
+
+	private void _registerApplication(Bus bus, Application application) {
 		RuntimeDelegate runtimeDelegate = RuntimeDelegate.getInstance();
 
 		JAXRSServerFactoryBean jaxRSServerFactoryBean =
@@ -101,18 +121,18 @@ public class CXFJaxRsServiceRegistrator {
 
 		server.start();
 
-		store(bus, application, server);
+		_store(bus, application, server);
 	}
 
-	protected void registerApplications() {
+	private void _registerApplications() {
 		for (Bus bus : _buses) {
 			for (Application application : _applications) {
-				registerApplication(bus, application);
+				_registerApplication(bus, application);
 			}
 		}
 	}
 
-	protected void remove(Object application) {
+	private void _remove(Object application) {
 		for (Map<Object, Server> servers : _busServers.values()) {
 			Server server = servers.remove(application);
 
@@ -122,56 +142,10 @@ public class CXFJaxRsServiceRegistrator {
 		}
 	}
 
-	protected void rewire() {
-		for (Application application : _applications) {
-			remove(application);
-		}
-
-		registerApplications();
-	}
-
-	protected void store(Bus bus, Object object, Server server) {
-		Map<Object, Server> servers = _busServers.get(bus);
-
-		if (servers == null) {
-			servers = new HashMap<>();
-
-			_busServers.put(bus, servers);
-		}
-
-		servers.put(object, server);
-	}
-
-	private void _addApplication(Application application) {
-		_applications.add(application);
-
-		rewire();
-	}
-
-	private void _addBus(Bus bus) {
-		_buses.add(bus);
-
-		for (Application application : _applications) {
-			registerApplication(bus, application);
-		}
-	}
-
-	private void _addProvider(Object provider) {
-		_providers.add(provider);
-
-		rewire();
-	}
-
-	private void _addService(Object service) {
-		_services.add(service);
-
-		rewire();
-	}
-
 	private void _removeApplication(Application application) {
 		_applications.remove(application);
 
-		remove(application);
+		_remove(application);
 	}
 
 	private void _removeBus(Bus bus) {
@@ -191,29 +165,42 @@ public class CXFJaxRsServiceRegistrator {
 	private void _removeProvider(Object provider) {
 		_providers.remove(provider);
 
-		rewire();
+		_rewire();
 	}
 
 	private void _removeService(Object service) {
 		_services.remove(service);
 
-		rewire();
+		_rewire();
+	}
+
+	private void _rewire() {
+		for (Application application : _applications) {
+			_remove(application);
+		}
+
+		_registerApplications();
+	}
+
+	private void _store(Bus bus, Object object, Server server) {
+		Map<Object, Server> servers = _busServers.get(bus);
+
+		if (servers == null) {
+			servers = new HashMap<>();
+
+			_busServers.put(bus, servers);
+		}
+
+		servers.put(object, server);
 	}
 
 	private <T> void _swapClassLoader(T t, Consumer<T> consumer) {
 		Class<?> clazz = t.getClass();
 
-		Thread thread = Thread.currentThread();
-
-		ClassLoader classLoader = thread.getContextClassLoader();
-
-		try {
-			thread.setContextClassLoader(clazz.getClassLoader());
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				clazz.getClassLoader())) {
 
 			consumer.accept(t);
-		}
-		finally {
-			thread.setContextClassLoader(classLoader);
 		}
 	}
 

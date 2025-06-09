@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service.test;
@@ -18,11 +9,10 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
-import com.liferay.layout.page.template.service.test.util.DisplayPageTemplateTestUtil;
+import com.liferay.layout.page.template.test.util.DisplayPageTemplateTestUtil;
 import com.liferay.portal.kernel.exception.NoSuchClassNameException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
-import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
@@ -63,15 +53,13 @@ public class DisplayPageTemplateServiceTest {
 	public void testAddDisplayPageTemplate() throws PortalException {
 		String name = RandomTestUtil.randomString();
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		LayoutPageTemplateEntry displayPageTemplate =
 			_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-				_group.getGroupId(), 0, name,
-				LayoutPageTemplateEntryTypeConstants.TYPE_DISPLAY_PAGE,
-				WorkflowConstants.STATUS_DRAFT, serviceContext);
+				null, _group.getGroupId(), 0, null, name,
+				LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE, 0,
+				WorkflowConstants.STATUS_DRAFT,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		LayoutPageTemplateEntry persistedDisplayPageTemplate =
 			_layoutPageTemplateEntryService.fetchLayoutPageTemplateEntry(
@@ -105,14 +93,11 @@ public class DisplayPageTemplateServiceTest {
 			long classNameId, long classTypeId)
 		throws PortalException {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		return _layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-			_group.getGroupId(), 0, RandomTestUtil.randomString(),
-			WorkflowConstants.STATUS_DRAFT, classNameId, classTypeId,
-			serviceContext);
+			null, _group.getGroupId(), 0, null, classNameId, classTypeId,
+			RandomTestUtil.randomString(), 0, WorkflowConstants.STATUS_DRAFT,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Inject

@@ -1,36 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.on.demand.admin.internal.ticket.generator;
 
 import com.liferay.on.demand.admin.constants.OnDemandAdminConstants;
+import com.liferay.on.demand.admin.internal.configuration.OnDemandAdminConfiguration;
+import com.liferay.on.demand.admin.internal.helper.OnDemandAdminHelper;
 import com.liferay.on.demand.admin.ticket.generator.OnDemandAdminTicketGenerator;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
+import com.liferay.portal.kernel.audit.AuditMessage;
+import com.liferay.portal.kernel.audit.AuditRouter;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.Ticket;
+import com.liferay.portal.kernel.model.TicketConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.model.role.RoleConstants;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.TicketLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
-import com.liferay.portal.util.PropsValues;
+import com.liferay.portal.kernel.util.PwdGenerator;
+import com.liferay.portal.security.audit.event.generators.util.AuditMessageBuilder;
 
+import java.util.Calendar;
 import java.util.Date;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import org.osgi.service.component.annotations.Component;
@@ -39,51 +43,106 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pei-Jung Lan
  */
-@Component(immediate = true, service = OnDemandAdminTicketGenerator.class)
+@Component(service = OnDemandAdminTicketGenerator.class)
 public class OnDemandAdminTicketGeneratorImpl
 	implements OnDemandAdminTicketGenerator {
 
-	public Ticket generate(Company company, long requestorUserId)
+	@Override
+	public Ticket generate(
+			Company company, String justification, long requestorUserId)
 		throws PortalException {
 
-		User user = _addOnDemandAdminUser(company, requestorUserId);
-
-		return _ticketLocalService.addDistinctTicket(
-			user.getCompanyId(), User.class.getName(), user.getUserId(),
-			OnDemandAdminConstants.TICKET_TYPE_ON_DEMAND_ADMIN_LOGIN, null,
-			new Date(System.currentTimeMillis() + TimeUnit.MINUTES.toMillis(5)),
-			null);
+		return generate(
+			company, justification, _userLocalService.getUser(requestorUserId));
 	}
 
-	private User _addOnDemandAdminUser(Company company, long userId)
+	@Override
+	public Ticket generate(
+			Company company, String justification, User requestorUser)
 		throws PortalException {
 
-		User requestorUser = _userLocalService.getUser(userId);
+		_onDemandAdminHelper.checkRequestAdministratorAccessPermission(
+			company.getCompanyId(), requestorUser.getUserId());
 
-		Date date = requestorUser.getBirthday();
+		User user = _addOnDemandAdminUser(
+			requestorUser.getUserId(), company.getCompanyId(), company.getMx(),
+			requestorUser.getLocale(), requestorUser.getFirstName(),
+			requestorUser.getMiddleName(), requestorUser.getLastName(),
+			requestorUser.getMale());
 
-		Role role = _roleLocalService.getRole(
-			company.getCompanyId(), RoleConstants.ADMINISTRATOR);
+		AuditMessage auditMessage = AuditMessageBuilder.buildAuditMessage(
+			OnDemandAdminConstants.
+				AUDIT_EVENT_TYPE_ON_DEMAND_ADMIN_TICKET_GENERATED,
+			User.class.getName(), requestorUser.getUserId(), null);
 
-		User user = _userLocalService.addUser(
-			requestorUser.getUserId(), company.getCompanyId(), false,
-			PropsValues.DEFAULT_ADMIN_PASSWORD,
-			PropsValues.DEFAULT_ADMIN_PASSWORD, true, null,
-			requestorUser.getEmailAddress(), requestorUser.getLocale(),
-			requestorUser.getFirstName(), requestorUser.getMiddleName(),
-			requestorUser.getLastName(), 0, 0, requestorUser.getMale(),
-			date.getMonth(), date.getDay(), date.getYear(), null, null, null,
-			new long[] {role.getRoleId()}, null, false, new ServiceContext());
+		auditMessage.setAdditionalInfo(
+			JSONUtil.put(
+				"justification", justification
+			).put(
+				"requestedCompanyId", company.getCompanyId()
+			).put(
+				"requestedCompanyWebId", company.getWebId()
+			));
 
-		String screenName = _getScreenName(
-			requestorUser.getUserId(), user.getUserId());
+		_auditRouter.route(auditMessage);
 
-		user.setScreenName(screenName);
-		user.setEmailAddress(screenName + StringPool.AT + company.getMx());
+		OnDemandAdminConfiguration onDemandAdminConfiguration =
+			_configurationProvider.getSystemConfiguration(
+				OnDemandAdminConfiguration.class);
 
-		user.setEmailAddressVerified(true);
+		int expirationTime =
+			onDemandAdminConfiguration.authenticationTokenExpirationTime();
 
-		return _userLocalService.updateUser(user);
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(
+					company.getCompanyId())) {
+
+			return _ticketLocalService.addDistinctTicket(
+				user.getCompanyId(), User.class.getName(), user.getUserId(),
+				TicketConstants.TYPE_ON_DEMAND_ADMIN_LOGIN, justification,
+				new Date(
+					System.currentTimeMillis() +
+						TimeUnit.MINUTES.toMillis(expirationTime)),
+				null);
+		}
+	}
+
+	private User _addOnDemandAdminUser(
+			long userId, long companyId, String mx, Locale locale,
+			String firstName, String middleName, String lastName, boolean male)
+		throws PortalException {
+
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
+
+			String password = PwdGenerator.getPassword(20);
+
+			String screenName = _getScreenName(userId, 0);
+
+			String emailAddress = screenName + StringPool.AT + mx;
+
+			Calendar calendar = Calendar.getInstance();
+			Role role = _roleLocalService.getRole(
+				companyId, RoleConstants.ADMINISTRATOR);
+
+			User user = _userLocalService.addUser(
+				0, companyId, false, password, password, true, null,
+				emailAddress, locale, firstName, middleName, lastName, 0, 0,
+				male, calendar.get(Calendar.MONTH),
+				calendar.get(Calendar.DAY_OF_MONTH),
+				calendar.get(Calendar.YEAR), null, UserConstants.TYPE_REGULAR,
+				null, null, new long[] {role.getRoleId()}, null, false,
+				new ServiceContext());
+
+			screenName = _getScreenName(userId, user.getUserId());
+
+			user.setScreenName(screenName);
+			user.setEmailAddress(screenName + StringPool.AT + mx);
+
+			user.setEmailAddressVerified(true);
+
+			return _userLocalService.updateUser(user);
+		}
 	}
 
 	private String _getScreenName(long requestorUserId, long userId)
@@ -94,6 +153,15 @@ public class OnDemandAdminTicketGeneratorImpl
 			StringPool.UNDERLINE, requestorUserId, StringPool.UNDERLINE,
 			userId);
 	}
+
+	@Reference
+	private AuditRouter _auditRouter;
+
+	@Reference
+	private ConfigurationProvider _configurationProvider;
+
+	@Reference
+	private OnDemandAdminHelper _onDemandAdminHelper;
 
 	@Reference
 	private RoleLocalService _roleLocalService;

@@ -1,16 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
+
+import openWindow from './util/open_window';
 
 /**
  * Hides layout pane
@@ -20,8 +13,8 @@
 export function hideLayoutPane(options) {
 	options = options || {};
 
-	var object = options.obj;
-	var pane = options.pane;
+	const object = options.obj;
+	let pane = options.pane;
 
 	if (object && object.checked) {
 		pane = document.querySelector(pane);
@@ -51,22 +44,22 @@ export function getLayoutIcons() {
 export function proposeLayout(options) {
 	options = options || {};
 
-	var namespace = options.namespace;
-	var reviewers = options.reviewers;
+	const namespace = options.namespace;
+	const reviewers = options.reviewers;
 
-	var contents = '<div><form action="' + options.url + '" method="post">';
+	let contents = '<div><form action="' + options.url + '" method="post">';
 
-	if (reviewers.length > 0) {
+	if (reviewers.length) {
 		contents +=
 			'<textarea name="' +
 			namespace +
-			'description" style="height: 100px; width: 284px;"></textarea><br /><br />' +
+			'description"></textarea><br /><br />' +
 			Liferay.Language.get('reviewer') +
 			' <select name="' +
 			namespace +
 			'reviewUserId">';
 
-		for (var i = 0; i < reviewers.length; i++) {
+		for (let i = 0; i < reviewers.length; i++) {
 			contents +=
 				'<option value="' +
 				reviewers[i].userId +
@@ -93,7 +86,7 @@ export function proposeLayout(options) {
 
 	contents += '</form></div>';
 
-	Liferay.Util.openWindow({
+	openWindow({
 		dialog: {
 			destroyOnHide: true,
 		},
@@ -109,13 +102,13 @@ export function proposeLayout(options) {
 export function publishToLive(options) {
 	options = options || {};
 
-	Liferay.Util.openWindow({
+	openWindow({
 		dialog: {
 			constrain: true,
 			modal: true,
 			on: {
 				visibleChange(event) {
-					var instance = this;
+					const instance = this;
 
 					if (!event.newVal) {
 						instance.destroy();
@@ -136,8 +129,8 @@ export function publishToLive(options) {
 export function showLayoutPane(options) {
 	options = options || {};
 
-	var object = options.obj;
-	var pane = options.pane;
+	const object = options.obj;
+	let pane = options.pane;
 
 	if (object && object.checked) {
 		pane = document.querySelector(pane);
@@ -156,11 +149,11 @@ export function showLayoutPane(options) {
 export function toggleLayoutDetails(options) {
 	options = options || {};
 
-	var detail = document.querySelector(options.detail);
-	var image = document.querySelector(options.toggle);
+	const detail = document.querySelector(options.detail);
+	const image = document.querySelector(options.toggle);
 
 	if (detail && image) {
-		var icon = themeDisplay.getPathThemeImages() + '/arrows/01_plus.png';
+		let icon = themeDisplay.getPathThemeImages() + '/arrows/01_plus.png';
 
 		if (detail.classList.contains('hide')) {
 			detail.classList.remove('hide');

@@ -1,33 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.flags.internal.messaging;
 
 import com.liferay.flags.configuration.FlagsGroupServiceConfiguration;
-import com.liferay.petra.content.ContentUtil;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.messaging.BaseMessageListener;
+import com.liferay.portal.kernel.messaging.Destination;
 import com.liferay.portal.kernel.messaging.DestinationConfiguration;
+import com.liferay.portal.kernel.messaging.DestinationFactory;
 import com.liferay.portal.kernel.messaging.DestinationNames;
 import com.liferay.portal.kernel.messaging.Message;
 import com.liferay.portal.kernel.messaging.MessageListener;
-import com.liferay.portal.kernel.messaging.config.DefaultMessagingConfigurator;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Role;
@@ -35,9 +27,7 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.model.UserGroupGroupRole;
 import com.liferay.portal.kernel.model.UserGroupRole;
 import com.liferay.portal.kernel.model.role.RoleConstants;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -46,19 +36,21 @@ import com.liferay.portal.kernel.service.UserGroupGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 
 import java.io.IOException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -71,27 +63,30 @@ import org.osgi.service.component.annotations.Reference;
  * @author Peter Fellwock
  */
 @Component(
-	immediate = true, property = "destination.name=" + DestinationNames.FLAGS,
+	property = "destination.name=" + DestinationNames.FLAGS,
 	service = MessageListener.class
 )
 public class FlagsRequestMessageListener extends BaseMessageListener {
 
 	@Activate
-	protected void activate() {
-		_defaultMessagingConfigurator = new DefaultMessagingConfigurator();
+	protected void activate(BundleContext bundleContext) {
+		DestinationConfiguration destinationConfiguration =
+			new DestinationConfiguration(
+				DestinationConfiguration.DESTINATION_TYPE_PARALLEL,
+				DestinationNames.FLAGS);
 
-		_defaultMessagingConfigurator.setDestinationConfigurations(
-			Collections.singleton(
-				new DestinationConfiguration(
-					DestinationConfiguration.DESTINATION_TYPE_PARALLEL,
-					DestinationNames.FLAGS)));
+		Destination destination = _destinationFactory.createDestination(
+			destinationConfiguration);
 
-		_defaultMessagingConfigurator.afterPropertiesSet();
+		_destinationServiceRegistration = bundleContext.registerService(
+			Destination.class, destination,
+			MapUtil.singletonDictionary(
+				"destination.name", destination.getName()));
 	}
 
 	@Deactivate
 	protected void deactivate() {
-		_defaultMessagingConfigurator.destroy();
+		_destinationServiceRegistration.unregister();
 	}
 
 	@Override
@@ -105,9 +100,6 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 		// Company
 
 		long companyId = serviceContext.getCompanyId();
-
-		Company company = _companyLocalService.getCompany(
-			serviceContext.getCompanyId());
 
 		// Group
 
@@ -125,8 +117,8 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 
 		Locale locale = LocaleUtil.getDefault();
 
-		if (reporterUser.isDefaultUser()) {
-			reporterUserName = LanguageUtil.get(locale, "anonymous");
+		if (reporterUser.isGuestUser()) {
+			reporterUserName = _language.get(locale, "anonymous");
 		}
 		else {
 			reporterUserName = reporterUser.getFullName();
@@ -142,7 +134,7 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 		User reportedUser = _userLocalService.getUserById(
 			flagsRequest.getReportedUserId());
 
-		if (reportedUser.isDefaultUser()) {
+		if (reportedUser.isGuestUser()) {
 			reportedUserName = group.getDescriptiveName();
 		}
 		else {
@@ -159,52 +151,66 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 
 		// Reason
 
-		String reason = LanguageUtil.get(locale, flagsRequest.getReason());
+		String reason = _language.get(locale, flagsRequest.getReason());
 
 		// Email
 
 		FlagsGroupServiceConfiguration flagsGroupServiceConfiguration =
-			ConfigurationProviderUtil.getCompanyConfiguration(
+			_configurationProvider.getCompanyConfiguration(
 				FlagsGroupServiceConfiguration.class, companyId);
 
 		String fromName = flagsGroupServiceConfiguration.emailFromName();
 		String fromAddress = flagsGroupServiceConfiguration.emailFromAddress();
 
-		String subject = ContentUtil.get(
+		String subject = StringUtil.read(
 			FlagsRequestMessageListener.class.getClassLoader(),
 			flagsGroupServiceConfiguration.emailSubject());
-		String body = ContentUtil.get(
+		String body = StringUtil.read(
 			FlagsRequestMessageListener.class.getClassLoader(),
 			flagsGroupServiceConfiguration.emailBody());
 
-		// Recipients
+		// Users
 
-		Set<User> recipients = getRecipients(
+		Set<User> users = _getRecipients(
 			companyId, serviceContext.getScopeGroupId());
 
-		for (User recipient : recipients) {
+		for (User user : users) {
 			try {
-				notify(
-					reporterUser.getUserId(), company, group,
-					reporterEmailAddress, reporterUserName,
-					reportedEmailAddress, reportedUserName, reportedURL,
-					flagsRequest.getClassPK(), flagsRequest.getContentTitle(),
-					contentType, flagsRequest.getContentURL(), reason, fromName,
-					fromAddress, recipient.getFullName(),
-					recipient.getEmailAddress(), subject, body, serviceContext);
+				_notify(
+					reporterUser.getUserId(), group, reporterEmailAddress,
+					reporterUserName, reportedEmailAddress, reportedUserName,
+					reportedURL, flagsRequest.getClassPK(),
+					flagsRequest.getContentTitle(), contentType,
+					flagsRequest.getContentURL(), reason, fromName, fromAddress,
+					user.getFullName(), user.getEmailAddress(), subject, body,
+					serviceContext);
 			}
 			catch (IOException ioException) {
 				if (_log.isWarnEnabled()) {
-					_log.warn(ioException, ioException);
+					_log.warn(ioException);
 				}
 			}
 		}
 	}
 
-	protected Set<User> getRecipients(long companyId, long groupId)
-		throws PortalException {
+	private String _getGroupDescriptiveName(Group group, Locale locale) {
+		try {
+			return group.getDescriptiveName(locale);
+		}
+		catch (PortalException portalException) {
+			_log.error(
+				"Unable to get descriptive name for group " +
+					group.getGroupId(),
+				portalException);
+		}
 
-		Set<User> recipients = new LinkedHashSet<>();
+		return StringPool.BLANK;
+	}
+
+	private Set<User> _getRecipients(long companyId, long groupId)
+		throws Exception {
+
+		Set<User> users = new LinkedHashSet<>();
 
 		List<String> roleNames = new ArrayList<>();
 
@@ -231,7 +237,7 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 					groupId, role.getRoleId());
 
 			for (UserGroupRole userGroupRole : userGroupRoles) {
-				recipients.add(userGroupRole.getUser());
+				users.add(userGroupRole.getUser());
 			}
 
 			List<UserGroupGroupRole> userGroupGroupRoles =
@@ -240,29 +246,28 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 						groupId, role.getRoleId());
 
 			for (UserGroupGroupRole userGroupGroupRole : userGroupGroupRoles) {
-				recipients.addAll(
+				users.addAll(
 					_userLocalService.getUserGroupUsers(
 						userGroupGroupRole.getUserGroupId()));
 			}
 		}
 
-		if (recipients.isEmpty()) {
+		if (users.isEmpty()) {
 			Role role = _roleLocalService.getRole(
 				companyId, RoleConstants.ADMINISTRATOR);
 
-			recipients.addAll(_userLocalService.getRoleUsers(role.getRoleId()));
+			users.addAll(_userLocalService.getRoleUsers(role.getRoleId()));
 		}
 
-		return recipients;
+		return users;
 	}
 
-	protected void notify(
-			long reporterUserId, Company company, Group group,
-			String reporterEmailAddress, String reporterUserName,
-			String reportedEmailAddress, String reportedUserName,
-			String reportedUserURL, long contentId, String contentTitle,
-			String contentType, String contentURL, String reason,
-			String fromName, String fromAddress, String toName,
+	private void _notify(
+			long reporterUserId, Group group, String reporterEmailAddress,
+			String reporterUserName, String reportedEmailAddress,
+			String reportedUserName, String reportedUserURL, long contentId,
+			String contentTitle, String contentType, String contentURL,
+			String reason, String fromName, String fromAddress, String toName,
 			String toAddress, String subject, String body,
 			ServiceContext serviceContext)
 		throws Exception {
@@ -272,7 +277,6 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 		SubscriptionSender subscriptionSender = new SubscriptionSender();
 
 		subscriptionSender.setBody(body);
-		subscriptionSender.setCompanyId(company.getCompanyId());
 		subscriptionSender.setContextAttributes(
 			"[$CONTENT_ID$]", contentId, "[$CONTENT_TITLE$]", contentTitle,
 			"[$CONTENT_TYPE$]", contentType, "[$CONTENT_URL$]", contentURL,
@@ -296,30 +300,22 @@ public class FlagsRequestMessageListener extends BaseMessageListener {
 		subscriptionSender.flushNotificationsAsync();
 	}
 
-	private String _getGroupDescriptiveName(Group group, Locale locale) {
-		try {
-			return group.getDescriptiveName(locale);
-		}
-		catch (PortalException portalException) {
-			_log.error(
-				"Unable to get descriptive name for group " +
-					group.getGroupId(),
-				portalException);
-		}
-
-		return StringPool.BLANK;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		FlagsRequestMessageListener.class);
 
 	@Reference
-	private CompanyLocalService _companyLocalService;
+	private ConfigurationProvider _configurationProvider;
 
-	private DefaultMessagingConfigurator _defaultMessagingConfigurator;
+	@Reference
+	private DestinationFactory _destinationFactory;
+
+	private ServiceRegistration<Destination> _destinationServiceRegistration;
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

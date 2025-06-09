@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -20,7 +11,6 @@ import com.liferay.document.library.kernel.store.DLStoreUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Image;
 import com.liferay.portal.kernel.service.ImageLocalServiceUtil;
 import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.util.PropsValues;
@@ -51,26 +41,32 @@ public class ImageImpl extends ImageBaseImpl {
 
 			InputStream inputStream = null;
 
-			if ((dlFileEntry != null) &&
-				(dlFileEntry.getLargeImageId() == imageId)) {
+			try {
+				if ((dlFileEntry != null) &&
+					(dlFileEntry.getLargeImageId() == imageId)) {
 
-				inputStream = DLStoreUtil.getFileAsStream(
-					dlFileEntry.getCompanyId(),
-					dlFileEntry.getDataRepositoryId(), dlFileEntry.getName());
+					inputStream = DLStoreUtil.getFileAsStream(
+						dlFileEntry.getCompanyId(),
+						dlFileEntry.getDataRepositoryId(),
+						dlFileEntry.getName(), StringPool.BLANK);
+				}
+				else {
+					inputStream = ImageLocalServiceUtil.getImageInputStream(
+						getCompanyId(), imageId, getType());
+				}
+
+				byte[] bytes = FileUtil.getBytes(inputStream);
+
+				_textObj = bytes;
 			}
-			else {
-				Image image = ImageLocalServiceUtil.getImage(imageId);
-
-				inputStream = DLStoreUtil.getFileAsStream(
-					image.getCompanyId(), _REPOSITORY_ID, getFileName());
+			finally {
+				if (inputStream != null) {
+					inputStream.close();
+				}
 			}
-
-			byte[] bytes = FileUtil.getBytes(inputStream);
-
-			_textObj = bytes;
 		}
 		catch (Exception exception) {
-			_log.error("Error reading image " + imageId, exception);
+			_log.error("Unable to read image " + imageId, exception);
 		}
 
 		return _textObj;
@@ -80,12 +76,6 @@ public class ImageImpl extends ImageBaseImpl {
 	public void setTextObj(byte[] textObj) {
 		_textObj = textObj;
 	}
-
-	protected String getFileName() {
-		return getImageId() + StringPool.PERIOD + getType();
-	}
-
-	private static final long _REPOSITORY_ID = 0;
 
 	private static final Log _log = LogFactoryUtil.getLog(ImageImpl.class);
 

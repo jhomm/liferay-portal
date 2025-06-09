@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,8 +9,9 @@
 
 <%
 int aspectRatio = ParamUtil.getInteger(request, "aspectRatio");
+long ctCollectionId = ParamUtil.getLong(request, "ctCollectionId", CTCollectionThreadLocal.getCTCollectionId());
 String currentImageURL = ParamUtil.getString(request, "currentLogoURL");
-long maxFileSize = ParamUtil.getLong(request, "maxFileSize");
+long maxFileSize = UploadImageUtil.getMaxFileSize(renderRequest);
 boolean preserveRatio = ParamUtil.getBoolean(request, "preserveRatio");
 String randomNamespace = ParamUtil.getString(request, "randomNamespace");
 String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
@@ -28,6 +20,7 @@ String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
 <liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="/image_uploader/upload_image" var="previewURL">
 	<portlet:param name="mvcRenderCommandName" value="/image_uploader/upload_image" />
 	<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.GET_TEMP %>" />
+	<portlet:param name="ctCollectionId" value="<%= String.valueOf(ctCollectionId) %>" />
 </liferay-portlet:resourceURL>
 
 <c:choose>
@@ -36,24 +29,37 @@ String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
 		<%
 		FileEntry fileEntry = (FileEntry)SessionMessages.get(renderRequest, "imageUploaded");
 
-		previewURL = HttpUtil.addParameter(previewURL, liferayPortletResponse.getNamespace() + "tempImageFileName", tempImageFileName);
+		previewURL = HttpComponentsUtil.addParameter(previewURL, liferayPortletResponse.getNamespace() + "tempImageFileName", tempImageFileName);
 		%>
 
 		<aui:script>
 			<c:if test="<%= fileEntry != null %>">
-				Liferay.Util.getOpener().<%= HtmlUtil.escapeJS(randomNamespace) %>changeLogo(
-					'<%= previewURL %>',
-					'<%= fileEntry.getFileEntryId() %>'
-				);
+				const onChangeLogo =
+					Liferay.Util.getOpener()
+						.<%= HtmlUtil.escapeJS(randomNamespace) %>changeLogo;
+
+				if (onChangeLogo) {
+					Liferay.Util.getOpener().<%= HtmlUtil.escapeJS(randomNamespace) %>changeLogo(
+						'<%= previewURL %>',
+						'<%= fileEntry.getFileEntryId() %>'
+					);
+				}
+				else {
+					Liferay.Util.getOpener().Liferay.fire('changeLogo', {
+						previewURL: '<%= previewURL %>',
+						fileEntryId: '<%= fileEntry.getFileEntryId() %>',
+						tempImageFileName: '<%= HtmlUtil.escape(tempImageFileName) %>',
+					});
+				}
 			</c:if>
 
-			Liferay.Util.getWindow().hide();
+			Liferay.Util.getOpener().Liferay.fire('closeModal');
 		</aui:script>
 	</c:when>
 	<c:otherwise>
 		<portlet:actionURL name="/image_uploader/upload_image" var="uploadImageURL">
 			<portlet:param name="mvcRenderCommandName" value="/image_uploader/upload_image" />
-			<portlet:param name="maxFileSize" value="<%= String.valueOf(maxFileSize) %>" />
+			<portlet:param name="ctCollectionId" value="<%= String.valueOf(ctCollectionId) %>" />
 		</portlet:actionURL>
 
 		<aui:form action="<%= uploadImageURL %>" enctype="multipart/form-data" method="post" name="fm">
@@ -87,14 +93,14 @@ String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
 						<liferay-ui:message arguments="<%= LanguageUtil.formatStorageSize(maxFileSize, locale) %>" key="request-is-larger-than-x-and-could-not-be-processed" translateArguments="<%= false %>" />
 					</liferay-ui:error>
 
-					<aui:fieldset-group markupView="lexicon">
-						<aui:fieldset cssClass="lfr-portrait-editor">
-							<h4 class="text-default">
+					<div class="sheet">
+						<div class="panel-group panel-group-flush">
+							<div class="h4 text-default" id="<portlet:namespace />sizeDescription">
 								<liferay-ui:message arguments="<%= LanguageUtil.formatStorageSize(maxFileSize, locale) %>" key="upload-images-no-larger-than-x" />
-							</h4>
+							</div>
 
 							<div class="lfr-change-logo lfr-portrait-preview" id="<portlet:namespace />portraitPreview">
-								<img alt="<liferay-ui:message escapeAttribute="<%= true %>" key="image-preview" />" class="lfr-portrait-preview-img" id="<portlet:namespace />portraitPreviewImg" src="<%= HtmlUtil.escape(currentImageURL) %>" />
+								<img alt="<liferay-ui:message escapeAttribute="<%= true %>" key="image-preview" />" class="img-fluid lfr-portrait-preview-img" id="<portlet:namespace />portraitPreviewImg" src="<%= HtmlUtil.escape(currentImageURL) %>" />
 							</div>
 
 							<c:if test='<%= Validator.isNull(currentImageURL) || currentImageURL.contains("/spacer.png") %>'>
@@ -104,20 +110,24 @@ String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
 							</c:if>
 
 							<div class="button-holder">
-								<label class="btn btn-secondary" for="<portlet:namespace />fileName" id="<portlet:namespace />uploadImage" tabindex="0"><liferay-ui:message key="select" /></label>
+								<label for="<portlet:namespace />fileName" id="<portlet:namespace />uploadImage">
+									<span aria-describedby="<portlet:namespace />sizeDescription" aria-label="<%= LanguageUtil.format(request, "select-x", "image") %>" class="btn btn-secondary mt-2" role="button" tabindex="0">
+										<liferay-ui:message key="select" />
+									<span>
+								</label>
 
-								<aui:input autoFocus="<%= windowState.equals(WindowState.MAXIMIZED) || windowState.equals(LiferayWindowState.POP_UP) %>" cssClass="hide" label="" name="fileName" type="file">
+								<aui:input cssClass="hide" label="" name="fileName" type="file">
 									<aui:validator name="acceptFiles">
 										'<%= StringUtil.merge(dlConfiguration.fileExtensions()) %>'
 									</aui:validator>
 
-									<aui:validator name="maxFileSize">
+									<aui:validator errorMessage='<%= LanguageUtil.format(locale, "please-enter-a-file-with-a-valid-file-size-no-larger-than-x", LanguageUtil.formatStorageSize(maxFileSize, locale)) %>' name="maxFileSize">
 										'<%= String.valueOf(maxFileSize) %>'
 									</aui:validator>
 								</aui:input>
 							</div>
-						</aui:fieldset>
-					</aui:fieldset-group>
+						</div>
+					</div>
 				</clay:container-fluid>
 			</div>
 
@@ -128,7 +138,7 @@ String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
 			</aui:button-row>
 		</aui:form>
 
-		<script>
+		<aui:script>
 			(function () {
 				var uploadImageButton = document.getElementById(
 					'<portlet:namespace />uploadImage'
@@ -136,22 +146,22 @@ String tempImageFileName = ParamUtil.getString(request, "tempImageFileName");
 
 				if (uploadImageButton) {
 					uploadImageButton.addEventListener('keydown', (event) => {
-						event.preventDefault();
-
 						if (event.key == 'Enter' || event.key == ' ') {
+							event.preventDefault();
+
 							uploadImageButton.click();
 						}
 					});
 				}
 			})();
-		</script>
+		</aui:script>
 
 		<aui:script use="liferay-logo-editor">
 			<portlet:actionURL name="/image_uploader/upload_image" var="addTempImageURL">
 				<portlet:param name="mvcRenderCommandName" value="/image_uploader/upload_image" />
 				<portlet:param name="<%= Constants.CMD %>" value="<%= Constants.ADD_TEMP %>" />
+				<portlet:param name="ctCollectionId" value="<%= String.valueOf(ctCollectionId) %>" />
 				<portlet:param name="aspectRatio" value="<%= String.valueOf(aspectRatio) %>" />
-				<portlet:param name="maxFileSize" value="<%= String.valueOf(maxFileSize) %>" />
 				<portlet:param name="preserveRatio" value="<%= String.valueOf(preserveRatio) %>" />
 			</portlet:actionURL>
 

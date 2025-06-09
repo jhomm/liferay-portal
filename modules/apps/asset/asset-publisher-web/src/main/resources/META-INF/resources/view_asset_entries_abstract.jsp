@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,7 +21,7 @@ AssetEntryResult assetEntryResult = (AssetEntryResult)request.getAttribute("view
 
 <%
 for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
-	AssetRendererFactory<?> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassNameId(assetEntry.getClassNameId());
+	AssetRendererFactory<?> assetRendererFactory = AssetRendererFactoryRegistryUtil.getAssetRendererFactoryByClassName(assetEntry.getClassName());
 
 	if (assetRendererFactory == null) {
 		continue;
@@ -48,7 +39,7 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 	}
 	catch (Exception e) {
 		if (_log.isWarnEnabled()) {
-			_log.warn(e, e);
+			_log.warn(e);
 		}
 	}
 
@@ -61,9 +52,7 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 
 	try {
 		String title = assetRenderer.getTitle(LocaleUtil.fromLanguageId(LanguageUtil.getLanguageId(request)));
-
 		String viewURL = assetPublisherHelper.getAssetViewURL(liferayPortletRequest, liferayPortletResponse, assetRenderer, assetEntry, assetPublisherDisplayContext.isAssetLinkBehaviorViewInPortlet());
-
 		Map<String, Object> fragmentsEditorData = HashMapBuilder.<String, Object>put(
 			"fragments-editor-item-id", PortalUtil.getClassNameId(assetRenderer.getClassName()) + "-" + assetRenderer.getClassPK()
 		).put(
@@ -111,7 +100,7 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 						<clay:content-col
 							cssClass="asset-avatar inline-item-before mr-3 pt-1"
 						>
-							<liferay-ui:user-portrait
+							<liferay-user:user-portrait
 								userId="<%= assetRenderer.getUserId() %>"
 							/>
 						</clay:content-col>
@@ -132,21 +121,21 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 						if (assetPublisherDisplayContext.isShowCreateDate() && (assetEntry.getCreateDate() != null)) {
 							sb.append(LanguageUtil.get(request, "created"));
 							sb.append(StringPool.SPACE);
-							sb.append(dateFormatDate.format(assetEntry.getCreateDate()));
+							sb.append(dateFormat.format(assetEntry.getCreateDate()));
 							sb.append(" - ");
 						}
 
 						if (assetPublisherDisplayContext.isShowPublishDate() && (assetEntry.getPublishDate() != null)) {
 							sb.append(LanguageUtil.get(request, "published"));
 							sb.append(StringPool.SPACE);
-							sb.append(dateFormatDate.format(assetEntry.getPublishDate()));
+							sb.append(dateFormat.format(assetEntry.getPublishDate()));
 							sb.append(" - ");
 						}
 
 						if (assetPublisherDisplayContext.isShowExpirationDate() && (assetEntry.getExpirationDate() != null)) {
 							sb.append(LanguageUtil.get(request, "expired"));
 							sb.append(StringPool.SPACE);
-							sb.append(dateFormatDate.format(assetEntry.getExpirationDate()));
+							sb.append(dateFormat.format(assetEntry.getExpirationDate()));
 							sb.append(" - ");
 						}
 
@@ -230,7 +219,7 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 			</c:if>
 
 			<c:if test="<%= (assetPublisherDisplayContext.isEnableRatings() && assetRenderer.isRatable()) || assetPublisherDisplayContext.isEnableFlags() || assetPublisherDisplayContext.isEnablePrint() || Validator.isNotNull(assetPublisherDisplayContext.getSocialBookmarksTypes()) %>">
-				<div class="separator"><!-- --></div>
+				<hr class="separator" />
 
 				<clay:content-row
 					cssClass="asset-details"
@@ -277,7 +266,9 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 						>
 
 							<%
-							PortletURL printAssetURL = PortletURLBuilder.createRenderURL(
+							String label = LanguageUtil.format(request, "print-x", HtmlUtil.escape(title));
+
+							String printPageURL = PortletURLBuilder.createRenderURL(
 								renderResponse
 							).setMVCPath(
 								"/view_content.jsp"
@@ -291,28 +282,24 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 								"viewMode", Constants.PRINT
 							).setWindowState(
 								LiferayWindowState.POP_UP
-							).buildPortletURL();
-
-							String id = assetEntry.getEntryId() + StringUtil.randomId();
+							).buildString();
 							%>
 
-							<liferay-ui:icon
+							<clay:button
+								additionalProps='<%=
+									HashMapBuilder.<String, Object>put(
+										"printPageURL", printPageURL
+									).build()
+								%>'
+								aria-label="<%= label %>"
+								borderless="<%= true %>"
+								displayType="secondary"
 								icon="print"
-								linkCssClass="btn btn-monospaced btn-outline-borderless btn-outline-secondary btn-sm"
-								markupView="lexicon"
-								message='<%= LanguageUtil.format(request, "print-x-x", new Object[] {"hide-accessible", HtmlUtil.escape(title)}, false) %>'
-								url='<%= "javascript:" + liferayPortletResponse.getNamespace() + "printPage_" + id + "();" %>'
+								propsTransformer="{printPageButtonPropsTransformer} from asset-publisher-web"
+								small="<%= true %>"
+								title="<%= label %>"
+								type="button"
 							/>
-
-							<aui:script>
-								function <portlet:namespace />printPage_<%= id %>() {
-									window.open(
-										'<%= printAssetURL %>',
-										'',
-										'directories=0,height=480,left=80,location=1,menubar=1,resizable=1,scrollbars=yes,status=0,toolbar=0,top=180,width=640'
-									);
-								}
-							</aui:script>
 						</clay:content-col>
 					</c:if>
 
@@ -324,14 +311,14 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 							target="_blank"
 							title="<%= title %>"
 							types="<%= assetPublisherDisplayContext.getSocialBookmarksTypes() %>"
-							urlImpl="<%= assetPublisherHelper.getBaseAssetViewURL(liferayPortletRequest, liferayPortletResponse, assetRenderer, assetEntry) %>"
+							url="<%= assetPublisherHelper.getAssetSocialURL(liferayPortletRequest, liferayPortletResponse, assetEntry) %>"
 						/>
 					</clay:content-col>
 				</clay:content-row>
 			</c:if>
 
 			<c:if test="<%= (assetPublisherDisplayContext.isShowAvailableLocales() && assetRenderer.isLocalizable()) || (assetPublisherDisplayContext.isEnableConversions() && assetRenderer.isConvertible()) %>">
-				<div class="separator"><!-- --></div>
+				<hr class="separator" />
 
 				<clay:content-row
 					cssClass="asset-details"
@@ -354,7 +341,7 @@ for (AssetEntry assetEntry : assetEntryResult.getAssetEntries()) {
 							<clay:content-col
 								cssClass="locale-actions mr-3"
 							>
-								<liferay-ui:language
+								<liferay-site-navigation:language
 									formAction="<%= currentURL %>"
 									languageId="<%= languageId %>"
 									languageIds="<%= availableLanguageIds %>"

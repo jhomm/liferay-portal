@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,23 +20,19 @@
 	<aui:input name="redirect" type="hidden" value="<%= configurationRenderURL %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset
-				collapsed="<%= false %>"
-				label="site-membership-preference"
-			>
-				<div class="sheet-text">
-					<liferay-ui:message key="account-users-need-site-membership-in-order-to-access-the-site-and-use-this-widget" />
-				</div>
+		<liferay-frontend:fieldset
+			collapsed="<%= false %>"
+			label="site-membership-preference"
+		>
+			<div class="sheet-text">
+				<liferay-ui:message key="account-users-need-site-membership-in-order-to-access-the-site-and-use-this-widget" />
+			</div>
 
-				<aui:input name="preferences--enableAutomaticSiteMembership--" type="checkbox" value='<%= PrefsParamUtil.getBoolean(portletPreferences, request, "enableAutomaticSiteMembership", true) %>' />
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<aui:input name="preferences--enableAutomaticSiteMembership--" type="checkbox" value='<%= PrefsParamUtil.getBoolean(portletPreferences, request, "enableAutomaticSiteMembership", true) %>' />
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

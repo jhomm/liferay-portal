@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.model;
@@ -59,7 +50,6 @@ public class LayoutSEOEntryWrapper
 		attributes.put("layoutId", getLayoutId());
 		attributes.put("canonicalURL", getCanonicalURL());
 		attributes.put("canonicalURLEnabled", isCanonicalURLEnabled());
-		attributes.put("DDMStorageId", getDDMStorageId());
 		attributes.put("openGraphDescription", getOpenGraphDescription());
 		attributes.put(
 			"openGraphDescriptionEnabled", isOpenGraphDescriptionEnabled());
@@ -158,12 +148,6 @@ public class LayoutSEOEntryWrapper
 
 		if (canonicalURLEnabled != null) {
 			setCanonicalURLEnabled(canonicalURLEnabled);
-		}
-
-		Long DDMStorageId = (Long)attributes.get("DDMStorageId");
-
-		if (DDMStorageId != null) {
-			setDDMStorageId(DDMStorageId);
 		}
 
 		String openGraphDescription = (String)attributes.get(
@@ -337,16 +321,6 @@ public class LayoutSEOEntryWrapper
 	@Override
 	public long getCtCollectionId() {
 		return model.getCtCollectionId();
-	}
-
-	/**
-	 * Returns the ddm storage ID of this layout seo entry.
-	 *
-	 * @return the ddm storage ID of this layout seo entry
-	 */
-	@Override
-	public long getDDMStorageId() {
-		return model.getDDMStorageId();
 	}
 
 	@Override
@@ -908,16 +882,6 @@ public class LayoutSEOEntryWrapper
 	}
 
 	/**
-	 * Sets the ddm storage ID of this layout seo entry.
-	 *
-	 * @param DDMStorageId the ddm storage ID of this layout seo entry
-	 */
-	@Override
-	public void setDDMStorageId(long DDMStorageId) {
-		model.setDDMStorageId(DDMStorageId);
-	}
-
-	/**
 	 * Sets the group ID of this layout seo entry.
 	 *
 	 * @param groupId the group ID of this layout seo entry
@@ -1276,6 +1240,11 @@ public class LayoutSEOEntryWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

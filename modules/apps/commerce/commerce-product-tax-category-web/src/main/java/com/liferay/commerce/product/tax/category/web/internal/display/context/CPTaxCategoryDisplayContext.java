@@ -1,41 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.tax.category.web.internal.display.context;
 
+import com.liferay.commerce.frontend.model.HeaderActionModel;
 import com.liferay.commerce.product.constants.CPActionKeys;
+import com.liferay.commerce.product.constants.CPPortletKeys;
+import com.liferay.commerce.product.display.context.helper.CPRequestHelper;
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.service.CPTaxCategoryService;
+import com.liferay.commerce.product.tax.category.web.internal.util.CPTaxCategoryUtil;
 import com.liferay.commerce.product.util.comparator.CPTaxCategoryCreateDateComparator;
 import com.liferay.commerce.tax.model.CommerceTaxMethod;
 import com.liferay.commerce.tax.service.CommerceTaxMethodService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Alessio Antonio Rendina
@@ -53,6 +52,9 @@ public class CPTaxCategoryDisplayContext {
 		_portletResourcePermission = portletResourcePermission;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
+
+		cpRequestHelper = new CPRequestHelper(
+			PortalUtil.getHttpServletRequest(renderRequest));
 	}
 
 	public CommerceTaxMethod getCommerceTaxMethod() throws PortalException {
@@ -97,16 +99,40 @@ public class CPTaxCategoryDisplayContext {
 		return _cpTaxCategory;
 	}
 
+	public List<HeaderActionModel> getHeaderActionModels() {
+		List<HeaderActionModel> headerActionModels = new ArrayList<>();
+
+		RenderResponse renderResponse = cpRequestHelper.getRenderResponse();
+
+		HeaderActionModel publishHeaderActionModel = new HeaderActionModel(
+			"btn-primary", renderResponse.getNamespace() + "fm", null, null,
+			"save");
+
+		headerActionModels.add(publishHeaderActionModel);
+
+		return headerActionModels;
+	}
+
 	public String getOrderByCol() {
-		return ParamUtil.getString(
-			_renderRequest, SearchContainer.DEFAULT_ORDER_BY_COL_PARAM,
-			"create-date");
+		if (Validator.isNotNull(_orderByCol)) {
+			return _orderByCol;
+		}
+
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_renderRequest, CPPortletKeys.CP_TAX_CATEGORY, "create-date");
+
+		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		return ParamUtil.getString(
-			_renderRequest, SearchContainer.DEFAULT_ORDER_BY_TYPE_PARAM,
-			"desc");
+		if (Validator.isNotNull(_orderByType)) {
+			return _orderByType;
+		}
+
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_renderRequest, CPPortletKeys.CP_TAX_CATEGORY, "desc");
+
+		return _orderByType;
 	}
 
 	public PortletURL getPortletURL() {
@@ -129,31 +155,35 @@ public class CPTaxCategoryDisplayContext {
 		ThemeDisplay themeDisplay = (ThemeDisplay)_renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		String emptyResultsMessage = "there-are-no-tax-categories";
-
 		_searchContainer = new SearchContainer<>(
-			_renderRequest, getPortletURL(), null, emptyResultsMessage);
+			_renderRequest, getPortletURL(), null,
+			"there-are-no-tax-categories");
 
-		String orderByCol = getOrderByCol();
-		String orderByType = getOrderByType();
+		_searchContainer.setOrderByCol(getOrderByCol());
+		_searchContainer.setOrderByComparator(
+			_getCPTaxCategoryOrderByComparator(
+				getOrderByCol(), getOrderByType()));
+		_searchContainer.setOrderByType(getOrderByType());
 
-		OrderByComparator<CPTaxCategory> orderByComparator =
-			getCPTaxCategoryOrderByComparator(orderByCol, orderByType);
+		if (Validator.isBlank(getKeywords())) {
+			_searchContainer.setResultsAndTotal(
+				() -> _cpTaxCategoryService.getCPTaxCategories(
+					themeDisplay.getCompanyId(), _searchContainer.getStart(),
+					_searchContainer.getEnd(),
+					_searchContainer.getOrderByComparator()),
+				_cpTaxCategoryService.getCPTaxCategoriesCount(
+					themeDisplay.getCompanyId()));
+		}
+		else {
+			_searchContainer.setResultsAndTotal(
+				_cpTaxCategoryService.searchCPTaxCategories(
+					themeDisplay.getCompanyId(), getKeywords(),
+					_searchContainer.getStart(), _searchContainer.getEnd(),
+					CPTaxCategoryUtil.getCPTaxCategorySort(
+						getOrderByCol(), getOrderByType())));
+		}
 
-		_searchContainer.setOrderByCol(orderByCol);
-		_searchContainer.setOrderByComparator(orderByComparator);
-		_searchContainer.setOrderByType(orderByType);
-		_searchContainer.setRowChecker(getRowChecker());
-
-		int total = _cpTaxCategoryService.getCPTaxCategoriesCount(
-			themeDisplay.getCompanyId());
-
-		List<CPTaxCategory> results = _cpTaxCategoryService.getCPTaxCategories(
-			themeDisplay.getCompanyId(), _searchContainer.getStart(),
-			_searchContainer.getEnd(), orderByComparator);
-
-		_searchContainer.setTotal(total);
-		_searchContainer.setResults(results);
+		_searchContainer.setRowChecker(_getRowChecker());
 
 		return _searchContainer;
 	}
@@ -167,9 +197,14 @@ public class CPTaxCategoryDisplayContext {
 			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
 	}
 
-	protected OrderByComparator<CPTaxCategory>
-		getCPTaxCategoryOrderByComparator(
-			String orderByCol, String orderByType) {
+	protected String getKeywords() {
+		return ParamUtil.getString(_renderRequest, "keywords");
+	}
+
+	protected final CPRequestHelper cpRequestHelper;
+
+	private OrderByComparator<CPTaxCategory> _getCPTaxCategoryOrderByComparator(
+		String orderByCol, String orderByType) {
 
 		boolean orderByAsc = false;
 
@@ -180,14 +215,14 @@ public class CPTaxCategoryDisplayContext {
 		OrderByComparator<CPTaxCategory> orderByComparator = null;
 
 		if (orderByCol.equals("create-date")) {
-			orderByComparator = new CPTaxCategoryCreateDateComparator(
+			orderByComparator = CPTaxCategoryCreateDateComparator.getInstance(
 				orderByAsc);
 		}
 
 		return orderByComparator;
 	}
 
-	protected RowChecker getRowChecker() {
+	private RowChecker _getRowChecker() {
 		if (_rowChecker == null) {
 			_rowChecker = new EmptyOnClickRowChecker(_renderResponse);
 		}
@@ -199,6 +234,8 @@ public class CPTaxCategoryDisplayContext {
 	private final CommerceTaxMethodService _commerceTaxMethodService;
 	private CPTaxCategory _cpTaxCategory;
 	private final CPTaxCategoryService _cpTaxCategoryService;
+	private String _orderByCol;
+	private String _orderByType;
 	private final PortletResourcePermission _portletResourcePermission;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;

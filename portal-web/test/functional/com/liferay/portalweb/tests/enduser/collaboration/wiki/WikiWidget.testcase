@@ -1,7 +1,9 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
-	property portal.release = "true";
+	property custom.properties = "feature.flag.LPD-35013=false";
+	property osgi.modules.includes = "wiki";
+	property portal.release = "false";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Wiki";
 
@@ -10,23 +12,25 @@ definition {
 
 		User.firstLoginPG();
 
+		WikiPortlet.enableWiki();
+
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
-			layoutName = "Wiki Display Test Page");
+			layoutName = "Wiki Test Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
-			layoutName = "Wiki Display Test Page",
-			widgetName = "Wiki Display");
+			layoutName = "Wiki Test Page",
+			widgetName = "Wiki");
 
 		WikiNavigator.openWikiAdmin(siteURLKey = "guest");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -34,18 +38,170 @@ definition {
 
 			WikiPage.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
+	@description = "This ensures that the portlet display setting can be configured."
+	@priority = 4
+	@refactordone
+	test CanConfigurePortletDisplaySettings {
+		Navigator.gotoPage(pageName = "Wiki Test Page");
+
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+		WikiPortlet.viewConfigurationTabs(
+			isNotPresent = "NAVIGATION_EMAIL_FROM,NAVIGATION_PAGE_ADDED_EMAIL,NAVIGATION_PAGE_UPDATED_EMAIL,NAVIGATION_RSS",
+			isPresent = "SETUP_DISPLAY_SETTINGS_PANEL");
+
+		WikiPortlet.configureDisplaySettings(uncheckSetting = "ENABLE_COMMENTS,ENABLE_COMMENT_RATINGS,ENABLE_PAGE_RATINGS,SHOW_RELATED_ASSETS");
+
+		Navigator.gotoPage(pageName = "Wiki Test Page");
+
+		Portlet.gotoPortletOptions(portletOption = "Configuration");
+
+		WikiPortlet.viewDisplaySettings(uncheckedSetting = "ENABLE_COMMENTS,ENABLE_COMMENT_RATINGS,ENABLE_PAGE_RATINGS,SHOW_RELATED_ASSETS");
+	}
+
+	@description = "This ensures that a link added with another page URL can navigate to the page after clicking the link."
+	@priority = 4
+	@refactordone
+	test CanNavigateToOtherPageByEditorLink {
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
+		JSONLayout.addPrivateLayout(
+			groupName = "Guest",
+			layoutName = "Research Projects");
+
+		JSONLayout.addWidgetToPrivateLayout(
+			groupName = "Guest",
+			layoutName = "Research Projects",
+			widgetName = "Wiki");
+
+		WikiNavigator.openWikiAdmin(siteURLKey = "guest");
+
+		LAR.importPortlet(
+			larFileName = "research-projects-update-node.lar",
+			mirrorWithOverwriting = "true",
+			uploadFrom = "dependencies");
+
+		WikiNavigator.openToWikiPage(
+			siteURLKey = "guest",
+			wikiNodeName = "Organic Research Projects",
+			wikiPageTitle = "FrontPage");
+
+		AssertClick(
+			locator1 = "WikiEntry#BODY_LINK",
+			value1 = "Sweet Potatoes");
+
+		AssertTextEquals(
+			locator1 = "Portlet#H3_HEADER",
+			value1 = "Sweet Potatoes");
+	}
+
+	@description = "This ensures that the Wiki tabs can be viewed in the Breadcrumb widget."
+	@priority = 4
+	@refactordone
+	test CanViewBreadcrumbViaBreadcrumbWidgetAfterChangingWikiTab {
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Wiki Test Page",
+			widgetName = "Breadcrumb");
+
+		WikiNavigator.gotoWidgetSpecificTabByURL(
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			tabURLKey = "recent_changes",
+			wikiNodeName = "Main");
+
+		Breadcrumb.viewPG(breadcrumbListVisible = "Wiki Test Page,Recent Changes");
+
+		WikiNavigator.gotoWidgetSpecificTabByURL(
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			tabURLKey = "all_pages",
+			wikiNodeName = "Main");
+
+		Breadcrumb.viewPG(breadcrumbListVisible = "Wiki Test Page,All Pages");
+
+		WikiNavigator.gotoWidgetSpecificTabByURL(
+			layoutURLKey = "wiki-test-page",
+			siteURLKey = "guest",
+			tabURLKey = "draft_pages",
+			wikiNodeName = "Main");
+
+		Breadcrumb.viewPG(breadcrumbListVisible = "Wiki Test Page,Draft Pages");
+	}
+
+	@description = "This is a test for LPS-67548. It ensures that the history can be viewed in wiki details."
+	@priority = 3
+	test CanViewHistoryInDetails {
+		JSONWiki.updateWikiPage(
+			groupName = "Guest",
+			wikiNodeName = "Main",
+			wikiPageContent = "Wiki FrontPage Content",
+			wikiPageName = "FrontPage");
+
+		Navigator.gotoPage(pageName = "Wiki Test Page");
+
+		WikiPage.addComment(entryComment = "Wiki Page Comment");
+
+		WikiPage.viewSummary(
+			wikiPageRevision = "1.0",
+			wikiPageTitle = "FrontPage",
+			wikiVersionSummary = "New");
+
+		AssertConsoleTextNotPresent(value1 = "java.sql.SQLException");
+	}
+
 	@description = "This is a test for LPS-136997. It checks that pages can be viewed using the Tree Menu."
-	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test CanViewPagesViaTreeMenu {
-		property portal.acceptance = "false";
+		for (var num : list "1,2") {
+			JSONWiki.addWikiPage(
+				groupName = "Guest",
+				wikiNodeName = "Main",
+				wikiPageContent = "Wiki Page Content${num}",
+				wikiPageName = "Wiki Page Title${num}");
+		}
 
-		// TODO LPS-136997 CanViewPagesViaTreeMenu pending implementation
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Wiki Test Page",
+			widgetName = "Tree Menu");
 
+		Navigator.gotoPage(pageName = "Wiki Test Page");
+
+		for (var num : list "1,2") {
+			Click(
+				key_text = "Wiki Page Title${num}",
+				locator1 = "Link#ANY");
+
+			WikiPage.viewPagePG(
+				wikiPageContent = "Wiki Page Content${num}",
+				wikiPageTitle = "Wiki Page Title${num}");
+		}
+	}
+
+	@description = "This test ensures that the wiki widget follows W3C accessibility standards."
+	@ignore = "true"
+	@priority = 4
+	test WidgetFollowsAccessibilityStandards {
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Wiki Test Page",
+			widgetName = "Wiki Display");
+
+		Navigator.openSitePage(
+			pageName = "Wiki Test Page",
+			siteName = "Guest");
+
+		AssertAccessible();
 	}
 
 }

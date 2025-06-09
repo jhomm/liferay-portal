@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.order.web.internal.portlet.action;
 
 import com.liferay.commerce.constants.CommercePortletKeys;
 import com.liferay.commerce.exception.CommerceOrderNoteContentException;
+import com.liferay.commerce.exception.DuplicateCommerceOrderExternalReferenceCodeException;
 import com.liferay.commerce.exception.NoSuchOrderException;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.service.CommerceOrderService;
@@ -25,8 +17,8 @@ import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -35,9 +27,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alec Sloan
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_ORDER,
 		"mvc.command.name=/commerce_order/edit_commerce_order_external_reference_code"
 	},
 	service = MVCActionCommand.class
@@ -51,10 +42,12 @@ public class EditCommerceOrderExternalReferenceCodeMVCActionCommand
 		throws Exception {
 
 		try {
-			updateCommerceOrderExternalReferenceCode(actionRequest);
+			_updateCommerceOrderExternalReferenceCode(actionRequest);
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchOrderException ||
+			if (exception instanceof
+					DuplicateCommerceOrderExternalReferenceCodeException ||
+				exception instanceof NoSuchOrderException ||
 				exception instanceof PrincipalException) {
 
 				SessionErrors.add(actionRequest, exception.getClass());
@@ -70,7 +63,7 @@ public class EditCommerceOrderExternalReferenceCodeMVCActionCommand
 		}
 	}
 
-	protected void updateCommerceOrderExternalReferenceCode(
+	private void _updateCommerceOrderExternalReferenceCode(
 			ActionRequest actionRequest)
 		throws Exception {
 

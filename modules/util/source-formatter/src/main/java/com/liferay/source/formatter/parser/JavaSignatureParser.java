@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.source.formatter.parser;
@@ -19,6 +10,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.tools.ToolsUtil;
 
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -28,7 +20,8 @@ import java.util.TreeSet;
 public class JavaSignatureParser {
 
 	public static JavaSignature parseJavaSignature(
-		String content, String accessModifier, boolean method) {
+		String content, String accessModifier, String packageName,
+		List<String> importNames, boolean method) {
 
 		JavaSignature javaSignature = new JavaSignature();
 
@@ -42,7 +35,8 @@ public class JavaSignatureParser {
 
 		if (method) {
 			javaSignature.setReturnType(
-				_getReturnType(content.substring(x, y)));
+				_getReturnType(content.substring(x, y)), packageName,
+				importNames);
 		}
 
 		x = y;
@@ -69,6 +63,8 @@ public class JavaSignatureParser {
 		parameters = StringUtil.replace(
 			parameters, new String[] {"\t", ".\n", "\n"},
 			new String[] {"", ".", " "});
+
+		parameters = parameters.replaceAll(" +<", "<");
 
 		for (x = 0;;) {
 			int pos = -1;
@@ -122,8 +118,8 @@ public class JavaSignatureParser {
 				String parameterName = parameters.substring(x + 1);
 
 				javaSignature.addParameter(
-					parameterName, parameterType, parameterAnnotations,
-					isFinal);
+					parameterName, parameterType, parameterAnnotations, isFinal,
+					packageName, importNames);
 
 				return javaSignature;
 			}
@@ -131,7 +127,8 @@ public class JavaSignatureParser {
 			String parameterName = parameters.substring(x + 1, y);
 
 			javaSignature.addParameter(
-				parameterName, parameterType, parameterAnnotations, isFinal);
+				parameterName, parameterType, parameterAnnotations, isFinal,
+				packageName, importNames);
 
 			isFinal = false;
 			parameterAnnotations = new TreeSet<>();
@@ -142,14 +139,14 @@ public class JavaSignatureParser {
 	}
 
 	private static String _getReturnType(String s) {
+		String returnType = null;
+
 		s = StringUtil.replace(
 			s, new String[] {"\t", ".\n", "\n"}, new String[] {"", ".", " "});
 
 		int z = s.lastIndexOf(CharPool.SPACE);
 
 		s = s.substring(0, z);
-
-		String returnType = null;
 
 		while (true) {
 			z = s.lastIndexOf(CharPool.SPACE, z - 1);
@@ -162,7 +159,7 @@ public class JavaSignatureParser {
 		}
 
 		if (returnType.equals("void")) {
-			returnType = StringPool.BLANK;
+			return null;
 		}
 
 		return returnType;

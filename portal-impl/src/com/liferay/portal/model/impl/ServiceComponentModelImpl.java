@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -211,94 +201,84 @@ public class ServiceComponentModelImpl
 	public Map<String, Function<ServiceComponent, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ServiceComponent, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ServiceComponent>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ServiceComponent.class.getClassLoader(), ServiceComponent.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ServiceComponent, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ServiceComponent> constructor =
-				(Constructor<ServiceComponent>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ServiceComponent, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<ServiceComponent, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ServiceComponent::getMvccVersion);
+			attributeGetterFunctions.put(
+				"serviceComponentId", ServiceComponent::getServiceComponentId);
+			attributeGetterFunctions.put(
+				"buildNamespace", ServiceComponent::getBuildNamespace);
+			attributeGetterFunctions.put(
+				"buildNumber", ServiceComponent::getBuildNumber);
+			attributeGetterFunctions.put(
+				"buildDate", ServiceComponent::getBuildDate);
+			attributeGetterFunctions.put("data", ServiceComponent::getData);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ServiceComponent, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ServiceComponent, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ServiceComponent, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap<String, Function<ServiceComponent, Object>>();
-		Map<String, BiConsumer<ServiceComponent, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<ServiceComponent, ?>>();
+		private static final Map<String, BiConsumer<ServiceComponent, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ServiceComponent::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ServiceComponent, Long>)
-				ServiceComponent::setMvccVersion);
-		attributeGetterFunctions.put(
-			"serviceComponentId", ServiceComponent::getServiceComponentId);
-		attributeSetterBiConsumers.put(
-			"serviceComponentId",
-			(BiConsumer<ServiceComponent, Long>)
-				ServiceComponent::setServiceComponentId);
-		attributeGetterFunctions.put(
-			"buildNamespace", ServiceComponent::getBuildNamespace);
-		attributeSetterBiConsumers.put(
-			"buildNamespace",
-			(BiConsumer<ServiceComponent, String>)
-				ServiceComponent::setBuildNamespace);
-		attributeGetterFunctions.put(
-			"buildNumber", ServiceComponent::getBuildNumber);
-		attributeSetterBiConsumers.put(
-			"buildNumber",
-			(BiConsumer<ServiceComponent, Long>)
-				ServiceComponent::setBuildNumber);
-		attributeGetterFunctions.put(
-			"buildDate", ServiceComponent::getBuildDate);
-		attributeSetterBiConsumers.put(
-			"buildDate",
-			(BiConsumer<ServiceComponent, Long>)ServiceComponent::setBuildDate);
-		attributeGetterFunctions.put("data", ServiceComponent::getData);
-		attributeSetterBiConsumers.put(
-			"data",
-			(BiConsumer<ServiceComponent, String>)ServiceComponent::setData);
+		static {
+			Map<String, BiConsumer<ServiceComponent, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<ServiceComponent, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ServiceComponent, Long>)
+					ServiceComponent::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"serviceComponentId",
+				(BiConsumer<ServiceComponent, Long>)
+					ServiceComponent::setServiceComponentId);
+			attributeSetterBiConsumers.put(
+				"buildNamespace",
+				(BiConsumer<ServiceComponent, String>)
+					ServiceComponent::setBuildNamespace);
+			attributeSetterBiConsumers.put(
+				"buildNumber",
+				(BiConsumer<ServiceComponent, Long>)
+					ServiceComponent::setBuildNumber);
+			attributeSetterBiConsumers.put(
+				"buildDate",
+				(BiConsumer<ServiceComponent, Long>)
+					ServiceComponent::setBuildDate);
+			attributeSetterBiConsumers.put(
+				"data",
+				(BiConsumer<ServiceComponent, String>)
+					ServiceComponent::setData);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -668,41 +648,12 @@ public class ServiceComponentModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ServiceComponent, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ServiceComponent, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ServiceComponent, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ServiceComponent)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ServiceComponent>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ServiceComponent.class, ModelWrapper.class);
 
 	}
 
@@ -717,7 +668,8 @@ public class ServiceComponentModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<ServiceComponent, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.resource.v1_0.test;
@@ -34,8 +25,9 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.workflow.metrics.model.Assignment;
 import com.liferay.portal.workflow.metrics.model.RoleAssignment;
@@ -50,16 +42,12 @@ import com.liferay.portal.workflow.metrics.rest.resource.v1_0.test.helper.Workfl
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Stream;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -102,25 +90,25 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 	@Override
 	@Test
 	public void testGetProcessInstance() throws Exception {
+		SLAResult[] slaResults = {
+			_toSLAResult(true, SLAResult.Status.NEW),
+			_toSLAResult(true, SLAResult.Status.NEW),
+			_toSLAResult(true, SLAResult.Status.PAUSED),
+			_toSLAResult(true, SLAResult.Status.PAUSED),
+			_toSLAResult(true, SLAResult.Status.RUNNING),
+			_toSLAResult(true, SLAResult.Status.RUNNING),
+			_toSLAResult(true, SLAResult.Status.RUNNING),
+			_toSLAResult(true, SLAResult.Status.STOPPED),
+			_toSLAResult(true, SLAResult.Status.STOPPED),
+			_toSLAResult(true, SLAResult.Status.STOPPED)
+		};
+
+		Arrays.sort(
+			slaResults, Comparator.comparing(SLAResult::getRemainingTime));
+
 		Instance instance = randomInstance();
 
-		instance.setSlaResults(
-			Stream.of(
-				_toSLAResult(true, SLAResult.Status.NEW),
-				_toSLAResult(true, SLAResult.Status.NEW),
-				_toSLAResult(true, SLAResult.Status.PAUSED),
-				_toSLAResult(true, SLAResult.Status.PAUSED),
-				_toSLAResult(true, SLAResult.Status.RUNNING),
-				_toSLAResult(true, SLAResult.Status.RUNNING),
-				_toSLAResult(true, SLAResult.Status.RUNNING),
-				_toSLAResult(true, SLAResult.Status.STOPPED),
-				_toSLAResult(true, SLAResult.Status.STOPPED),
-				_toSLAResult(true, SLAResult.Status.STOPPED)
-			).sorted(
-				Comparator.comparing(SLAResult::getRemainingTime)
-			).toArray(
-				SLAResult[]::new
-			));
+		instance.setSlaResults(slaResults);
 
 		testGetProcessInstancesPage_addInstance(_process.getId(), instance);
 
@@ -151,7 +139,7 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 		instance1.setClassPK(_classPK);
 		instance1.setCompleted(true);
 		instance1.setDateCompletion(
-			DateUtils.truncate(new Date(), Calendar.SECOND));
+			new Date(System.currentTimeMillis() / Time.SECOND * Time.SECOND));
 
 		testGetProcessInstancesPage_addInstance(_process.getId(), instance1);
 
@@ -258,9 +246,10 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 			instances -> assertEqualsIgnoringOrder(
 				Arrays.asList(instance1, instance2, instance3), instances));
 
-		Date dateEnd = DateUtils.addSeconds(instance1.getDateCompletion(), 1);
-		Date dateStart = DateUtils.addSeconds(
-			instance1.getDateCompletion(), -1);
+		Date dateCompletion = instance1.getDateCompletion();
+
+		Date dateEnd = new Date(dateCompletion.getTime() + (1 * Time.SECOND));
+		Date dateStart = new Date(dateCompletion.getTime() - (1 * Time.SECOND));
 
 		_testGetProcessInstancesPage(
 			null, null, dateEnd, dateStart, new String[] {"Completed"},
@@ -280,26 +269,27 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 			EntityField.Type.DATE_TIME,
 			(entityField, instance1, instance2) -> {
 				if (Objects.equals(entityField.getName(), "dateOverdue")) {
-					Stream.of(
-						instance1.getSlaResults()
-					).forEach(
-						slaResult -> slaResult.setDateOverdue(
-							DateUtils.addDays(slaResult.getDateOverdue(), -2))
-					);
+					for (SLAResult slaResult : instance1.getSlaResults()) {
+						Date date = slaResult.getDateOverdue();
 
-					Stream.of(
-						instance2.getSlaResults()
-					).forEach(
-						slaResult -> slaResult.setDateOverdue(
-							DateUtils.addDays(slaResult.getDateOverdue(), -1))
-					);
+						slaResult.setDateOverdue(
+							new Date(date.getTime() - (2 * Time.DAY)));
+					}
+
+					for (SLAResult slaResult : instance2.getSlaResults()) {
+						Date date = slaResult.getDateOverdue();
+
+						slaResult.setDateOverdue(
+							new Date(date.getTime() - (1 * Time.DAY)));
+					}
 				}
 				else {
-					BeanUtils.setProperty(
+					long dateTime =
+						System.currentTimeMillis() / Time.SECOND * Time.SECOND;
+
+					BeanTestUtil.setProperty(
 						instance1, entityField.getName(),
-						DateUtils.addMinutes(
-							DateUtils.truncate(new Date(), Calendar.SECOND),
-							-2));
+						new Date(dateTime - (2 * Time.MINUTE)));
 				}
 			});
 	}
@@ -367,12 +357,12 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 						});
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						instance1, entityFieldName,
 						"aaa".concat(
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString())));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						instance2, entityFieldName,
 						"bbb".concat(
 							StringUtil.toLowerCase(
@@ -428,7 +418,6 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 			HashMapBuilder.put(
 				LocaleUtil.US.toLanguageTag(), instance.getAssetType()
 			).build());
-
 		instance.setAssignees(new Assignee[0]);
 
 		User adminUser = UserTestUtil.getAdminUser(testGroup.getCompanyId());
@@ -444,7 +433,7 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 		instance.setCompleted(false);
 		instance.setDateCompletion((Date)null);
 		instance.setDateCreated(
-			DateUtils.truncate(new Date(), Calendar.SECOND));
+			new Date(System.currentTimeMillis() / Time.SECOND * Time.SECOND));
 		instance.setProcessId(_process.getId());
 		instance.setProcessVersion(_process.getVersion());
 		instance.setSlaResults(
@@ -479,6 +468,14 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 	}
 
 	@Override
+	protected Map<String, Map<String, String>>
+			testGetProcessInstancesPage_getExpectedActions(Long processId)
+		throws Exception {
+
+		return Collections.emptyMap();
+	}
+
+	@Override
 	protected Long testGetProcessInstancesPage_getProcessId() throws Exception {
 		return _process.getId();
 	}
@@ -505,6 +502,7 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 		return instance;
 	}
 
+	@Override
 	protected Instance testPostProcessInstance_addInstance(Instance instance)
 		throws Exception {
 
@@ -589,9 +587,10 @@ public class InstanceResourceTest extends BaseInstanceResourceTestCase {
 
 		return new SLAResult() {
 			{
-				dateModified = DateUtils.truncate(
-					RandomTestUtil.nextDate(), Calendar.SECOND);
-				dateOverdue = DateUtils.truncate(new Date(), Calendar.SECOND);
+				dateModified = new Date(
+					System.currentTimeMillis() / Time.SECOND * Time.SECOND);
+				dateOverdue = new Date(
+					System.currentTimeMillis() / Time.SECOND * Time.SECOND);
 				id = RandomTestUtil.randomLong();
 				name = StringPool.BLANK;
 				onTime = !overdue;

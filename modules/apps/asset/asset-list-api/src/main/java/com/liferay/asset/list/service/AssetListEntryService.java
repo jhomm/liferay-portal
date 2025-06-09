@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service;
@@ -66,17 +57,18 @@ public interface AssetListEntryService extends BaseService {
 		throws PortalException;
 
 	public AssetListEntry addAssetListEntry(
-			long groupId, String title, int type, ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String title, int type,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public AssetListEntry addDynamicAssetListEntry(
-			long userId, long groupId, String title, String typeSettings,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String title,
+			String typeSettings, ServiceContext serviceContext)
 		throws PortalException;
 
 	public AssetListEntry addManualAssetListEntry(
-			long userId, long groupId, String title, long[] assetEntryIds,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long groupId, String title,
+			long[] assetEntryIds, ServiceContext serviceContext)
 		throws PortalException;
 
 	public void deleteAssetEntrySelection(
@@ -95,6 +87,11 @@ public interface AssetListEntryService extends BaseService {
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetListEntry fetchAssetListEntry(long assetListEntryId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetListEntry fetchAssetListEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -175,6 +172,11 @@ public interface AssetListEntryService extends BaseService {
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public AssetListEntry getAssetListEntry(
 			long groupId, String assetListEntryKey)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public AssetListEntry getAssetListEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)

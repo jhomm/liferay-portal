@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model.impl;
@@ -78,12 +69,14 @@ public class ObjectDefinitionCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(49);
+		StringBundler sb = new StringBundler(81);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", objectDefinitionId=");
 		sb.append(objectDefinitionId);
 		sb.append(", companyId=");
@@ -96,18 +89,44 @@ public class ObjectDefinitionCacheModel
 		sb.append(createDate);
 		sb.append(", modifiedDate=");
 		sb.append(modifiedDate);
+		sb.append(", accountEntryRestrictedObjectFieldId=");
+		sb.append(accountEntryRestrictedObjectFieldId);
 		sb.append(", descriptionObjectFieldId=");
 		sb.append(descriptionObjectFieldId);
+		sb.append(", objectFolderId=");
+		sb.append(objectFolderId);
 		sb.append(", titleObjectFieldId=");
 		sb.append(titleObjectFieldId);
+		sb.append(", accountEntryRestricted=");
+		sb.append(accountEntryRestricted);
 		sb.append(", active=");
 		sb.append(active);
-		sb.append(", dbTableName=");
-		sb.append(dbTableName);
-		sb.append(", label=");
-		sb.append(label);
 		sb.append(", className=");
 		sb.append(className);
+		sb.append(", dbTableName=");
+		sb.append(dbTableName);
+		sb.append(", enableCategorization=");
+		sb.append(enableCategorization);
+		sb.append(", enableComments=");
+		sb.append(enableComments);
+		sb.append(", enableFriendlyURLCustomization=");
+		sb.append(enableFriendlyURLCustomization);
+		sb.append(", enableIndexSearch=");
+		sb.append(enableIndexSearch);
+		sb.append(", enableLocalization=");
+		sb.append(enableLocalization);
+		sb.append(", enableObjectEntryDraft=");
+		sb.append(enableObjectEntryDraft);
+		sb.append(", enableObjectEntryHistory=");
+		sb.append(enableObjectEntryHistory);
+		sb.append(", enableObjectEntryVersioning=");
+		sb.append(enableObjectEntryVersioning);
+		sb.append(", friendlyURLSeparator=");
+		sb.append(friendlyURLSeparator);
+		sb.append(", label=");
+		sb.append(label);
+		sb.append(", modifiable=");
+		sb.append(modifiable);
 		sb.append(", name=");
 		sb.append(name);
 		sb.append(", panelAppOrder=");
@@ -120,8 +139,12 @@ public class ObjectDefinitionCacheModel
 		sb.append(pkObjectFieldName);
 		sb.append(", pluralLabel=");
 		sb.append(pluralLabel);
+		sb.append(", portlet=");
+		sb.append(portlet);
 		sb.append(", scope=");
 		sb.append(scope);
+		sb.append(", storageType=");
+		sb.append(storageType);
 		sb.append(", system=");
 		sb.append(system);
 		sb.append(", version=");
@@ -144,6 +167,14 @@ public class ObjectDefinitionCacheModel
 		}
 		else {
 			objectDefinitionImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectDefinitionImpl.setExternalReferenceCode("");
+		}
+		else {
+			objectDefinitionImpl.setExternalReferenceCode(
+				externalReferenceCode);
 		}
 
 		objectDefinitionImpl.setObjectDefinitionId(objectDefinitionId);
@@ -171,16 +202,46 @@ public class ObjectDefinitionCacheModel
 			objectDefinitionImpl.setModifiedDate(new Date(modifiedDate));
 		}
 
+		objectDefinitionImpl.setAccountEntryRestrictedObjectFieldId(
+			accountEntryRestrictedObjectFieldId);
 		objectDefinitionImpl.setDescriptionObjectFieldId(
 			descriptionObjectFieldId);
+		objectDefinitionImpl.setObjectFolderId(objectFolderId);
 		objectDefinitionImpl.setTitleObjectFieldId(titleObjectFieldId);
+		objectDefinitionImpl.setAccountEntryRestricted(accountEntryRestricted);
 		objectDefinitionImpl.setActive(active);
+
+		if (className == null) {
+			objectDefinitionImpl.setClassName("");
+		}
+		else {
+			objectDefinitionImpl.setClassName(className);
+		}
 
 		if (dbTableName == null) {
 			objectDefinitionImpl.setDBTableName("");
 		}
 		else {
 			objectDefinitionImpl.setDBTableName(dbTableName);
+		}
+
+		objectDefinitionImpl.setEnableCategorization(enableCategorization);
+		objectDefinitionImpl.setEnableComments(enableComments);
+		objectDefinitionImpl.setEnableFriendlyURLCustomization(
+			enableFriendlyURLCustomization);
+		objectDefinitionImpl.setEnableIndexSearch(enableIndexSearch);
+		objectDefinitionImpl.setEnableLocalization(enableLocalization);
+		objectDefinitionImpl.setEnableObjectEntryDraft(enableObjectEntryDraft);
+		objectDefinitionImpl.setEnableObjectEntryHistory(
+			enableObjectEntryHistory);
+		objectDefinitionImpl.setEnableObjectEntryVersioning(
+			enableObjectEntryVersioning);
+
+		if (friendlyURLSeparator == null) {
+			objectDefinitionImpl.setFriendlyURLSeparator("");
+		}
+		else {
+			objectDefinitionImpl.setFriendlyURLSeparator(friendlyURLSeparator);
 		}
 
 		if (label == null) {
@@ -190,12 +251,7 @@ public class ObjectDefinitionCacheModel
 			objectDefinitionImpl.setLabel(label);
 		}
 
-		if (className == null) {
-			objectDefinitionImpl.setClassName("");
-		}
-		else {
-			objectDefinitionImpl.setClassName(className);
-		}
+		objectDefinitionImpl.setModifiable(modifiable);
 
 		if (name == null) {
 			objectDefinitionImpl.setName("");
@@ -240,11 +296,20 @@ public class ObjectDefinitionCacheModel
 			objectDefinitionImpl.setPluralLabel(pluralLabel);
 		}
 
+		objectDefinitionImpl.setPortlet(portlet);
+
 		if (scope == null) {
 			objectDefinitionImpl.setScope("");
 		}
 		else {
 			objectDefinitionImpl.setScope(scope);
+		}
+
+		if (storageType == null) {
+			objectDefinitionImpl.setStorageType("");
+		}
+		else {
+			objectDefinitionImpl.setStorageType(storageType);
 		}
 
 		objectDefinitionImpl.setSystem(system);
@@ -260,6 +325,7 @@ public class ObjectDefinitionCacheModel
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		objectDefinitionId = objectInput.readLong();
 
@@ -270,21 +336,49 @@ public class ObjectDefinitionCacheModel
 		createDate = objectInput.readLong();
 		modifiedDate = objectInput.readLong();
 
+		accountEntryRestrictedObjectFieldId = objectInput.readLong();
+
 		descriptionObjectFieldId = objectInput.readLong();
+
+		objectFolderId = objectInput.readLong();
 
 		titleObjectFieldId = objectInput.readLong();
 
+		accountEntryRestricted = objectInput.readBoolean();
+
 		active = objectInput.readBoolean();
-		dbTableName = objectInput.readUTF();
-		label = objectInput.readUTF();
 		className = objectInput.readUTF();
+		dbTableName = objectInput.readUTF();
+
+		enableCategorization = objectInput.readBoolean();
+
+		enableComments = objectInput.readBoolean();
+
+		enableFriendlyURLCustomization = objectInput.readBoolean();
+
+		enableIndexSearch = objectInput.readBoolean();
+
+		enableLocalization = objectInput.readBoolean();
+
+		enableObjectEntryDraft = objectInput.readBoolean();
+
+		enableObjectEntryHistory = objectInput.readBoolean();
+
+		enableObjectEntryVersioning = objectInput.readBoolean();
+		friendlyURLSeparator = objectInput.readUTF();
+		label = objectInput.readUTF();
+
+		modifiable = objectInput.readBoolean();
 		name = objectInput.readUTF();
 		panelAppOrder = objectInput.readUTF();
 		panelCategoryKey = objectInput.readUTF();
 		pkObjectFieldDBColumnName = objectInput.readUTF();
 		pkObjectFieldName = objectInput.readUTF();
 		pluralLabel = objectInput.readUTF();
+
+		portlet = objectInput.readBoolean();
 		scope = objectInput.readUTF();
+		storageType = objectInput.readUTF();
 
 		system = objectInput.readBoolean();
 
@@ -304,6 +398,13 @@ public class ObjectDefinitionCacheModel
 			objectOutput.writeUTF(uuid);
 		}
 
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
+		}
+
 		objectOutput.writeLong(objectDefinitionId);
 
 		objectOutput.writeLong(companyId);
@@ -320,17 +421,53 @@ public class ObjectDefinitionCacheModel
 		objectOutput.writeLong(createDate);
 		objectOutput.writeLong(modifiedDate);
 
+		objectOutput.writeLong(accountEntryRestrictedObjectFieldId);
+
 		objectOutput.writeLong(descriptionObjectFieldId);
+
+		objectOutput.writeLong(objectFolderId);
 
 		objectOutput.writeLong(titleObjectFieldId);
 
+		objectOutput.writeBoolean(accountEntryRestricted);
+
 		objectOutput.writeBoolean(active);
+
+		if (className == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(className);
+		}
 
 		if (dbTableName == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(dbTableName);
+		}
+
+		objectOutput.writeBoolean(enableCategorization);
+
+		objectOutput.writeBoolean(enableComments);
+
+		objectOutput.writeBoolean(enableFriendlyURLCustomization);
+
+		objectOutput.writeBoolean(enableIndexSearch);
+
+		objectOutput.writeBoolean(enableLocalization);
+
+		objectOutput.writeBoolean(enableObjectEntryDraft);
+
+		objectOutput.writeBoolean(enableObjectEntryHistory);
+
+		objectOutput.writeBoolean(enableObjectEntryVersioning);
+
+		if (friendlyURLSeparator == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(friendlyURLSeparator);
 		}
 
 		if (label == null) {
@@ -340,12 +477,7 @@ public class ObjectDefinitionCacheModel
 			objectOutput.writeUTF(label);
 		}
 
-		if (className == null) {
-			objectOutput.writeUTF("");
-		}
-		else {
-			objectOutput.writeUTF(className);
-		}
+		objectOutput.writeBoolean(modifiable);
 
 		if (name == null) {
 			objectOutput.writeUTF("");
@@ -389,11 +521,20 @@ public class ObjectDefinitionCacheModel
 			objectOutput.writeUTF(pluralLabel);
 		}
 
+		objectOutput.writeBoolean(portlet);
+
 		if (scope == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(scope);
+		}
+
+		if (storageType == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(storageType);
 		}
 
 		objectOutput.writeBoolean(system);
@@ -405,25 +546,41 @@ public class ObjectDefinitionCacheModel
 
 	public long mvccVersion;
 	public String uuid;
+	public String externalReferenceCode;
 	public long objectDefinitionId;
 	public long companyId;
 	public long userId;
 	public String userName;
 	public long createDate;
 	public long modifiedDate;
+	public long accountEntryRestrictedObjectFieldId;
 	public long descriptionObjectFieldId;
+	public long objectFolderId;
 	public long titleObjectFieldId;
+	public boolean accountEntryRestricted;
 	public boolean active;
-	public String dbTableName;
-	public String label;
 	public String className;
+	public String dbTableName;
+	public boolean enableCategorization;
+	public boolean enableComments;
+	public boolean enableFriendlyURLCustomization;
+	public boolean enableIndexSearch;
+	public boolean enableLocalization;
+	public boolean enableObjectEntryDraft;
+	public boolean enableObjectEntryHistory;
+	public boolean enableObjectEntryVersioning;
+	public String friendlyURLSeparator;
+	public String label;
+	public boolean modifiable;
 	public String name;
 	public String panelAppOrder;
 	public String panelCategoryKey;
 	public String pkObjectFieldDBColumnName;
 	public String pkObjectFieldName;
 	public String pluralLabel;
+	public boolean portlet;
 	public String scope;
+	public String storageType;
 	public boolean system;
 	public int version;
 	public int status;

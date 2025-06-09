@@ -1,37 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.web.internal.portlet.action;
 
 import com.liferay.oauth2.provider.service.OAuth2ApplicationService;
 import com.liferay.oauth2.provider.web.internal.constants.OAuth2ProviderPortletKeys;
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Arrays;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_ADMIN,
+		"jakarta.portlet.name=" + OAuth2ProviderPortletKeys.OAUTH2_ADMIN,
 		"mvc.command.name=/oauth2_provider/assign_scopes"
 	},
 	service = MVCActionCommand.class
@@ -56,26 +46,21 @@ public class AssignScopesMVCActionCommand implements MVCActionCommand {
 		long oAuth2ApplicationId = ParamUtil.getLong(
 			actionRequest, "oAuth2ApplicationId");
 
-		String[] scopeAliases = ParamUtil.getStringValues(
-			actionRequest, "scopeAliases");
+		List<String> scopeAliasess = new ArrayList<>();
 
-		Stream<String> scopeAliasesStream = Arrays.stream(scopeAliases);
+		for (String scopeAlias :
+				ParamUtil.getStringValues(actionRequest, "scopeAliases")) {
 
-		List<String> scopeAliasesList = scopeAliasesStream.flatMap(
-			scopeAlias -> Arrays.stream(scopeAlias.split(StringPool.SPACE))
-		).filter(
-			Validator::isNotNull
-		).collect(
-			Collectors.toList()
-		);
+			scopeAliasess.addAll(StringUtil.split(scopeAlias, CharPool.SPACE));
+		}
 
 		try {
 			_oAuth2ApplicationService.updateScopeAliases(
-				oAuth2ApplicationId, scopeAliasesList);
+				oAuth2ApplicationId, scopeAliasess);
 		}
 		catch (PortalException portalException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			Class<?> peClass = portalException.getClass();

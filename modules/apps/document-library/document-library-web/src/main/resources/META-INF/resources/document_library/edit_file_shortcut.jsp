@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -26,6 +17,7 @@ renderResponse.setTitle(dlEditFileShortcutDisplayContext.getTitle());
 
 <clay:container-fluid
 	cssClass="container-form-lg"
+	size="lg"
 >
 	<aui:form action="<%= dlEditFileShortcutDisplayContext.getEditFileShortcutURL() %>" method="post" name="fm">
 		<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
@@ -38,33 +30,35 @@ renderResponse.setTitle(dlEditFileShortcutDisplayContext.getTitle());
 		<liferay-ui:error exception="<%= FileShortcutPermissionException.class %>" message="you-do-not-have-permission-to-create-a-shortcut-to-the-selected-document" />
 		<liferay-ui:error exception="<%= NoSuchFileEntryException.class %>" message="the-document-could-not-be-found" />
 
-		<aui:fieldset-group markupView="lexicon">
-			<aui:fieldset>
-				<div class="alert alert-info">
-					<liferay-ui:message key="you-can-create-a-shortcut-to-any-document-that-you-have-read-access-for" />
-				</div>
+		<div class="sheet">
+			<div class="panel-group panel-group-flush">
+				<aui:fieldset>
+					<div class="alert alert-info">
+						<liferay-ui:message key="you-can-create-a-shortcut-to-any-document-that-you-have-read-access-for" />
+					</div>
 
-				<div class="form-group">
-					<aui:input label="document" name="toFileEntryTitle" type="resource" value="<%= dlEditFileShortcutDisplayContext.getToFileEntryTitle() %>" />
+					<div class="form-group">
+						<aui:input label="document" name="toFileEntryTitle" type="resource" value="<%= dlEditFileShortcutDisplayContext.getToFileEntryTitle() %>" />
 
-					<aui:button name="selectToFileEntryButton" value="select" />
-				</div>
-			</aui:fieldset>
-
-			<c:if test="<%= dlEditFileShortcutDisplayContext.isPermissionConfigurable() %>">
-				<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
-					<liferay-ui:input-permissions
-						modelName="<%= DLFileShortcutConstants.getClassName() %>"
-					/>
+						<aui:button name="selectToFileEntryButton" value="select" />
+					</div>
 				</aui:fieldset>
-			</c:if>
 
-			<div class="sheet-footer">
-				<aui:button type="submit" />
+				<c:if test="<%= dlEditFileShortcutDisplayContext.isPermissionConfigurable() %>">
+					<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
+						<liferay-ui:input-permissions
+							modelName="<%= DLFileShortcutConstants.getClassName() %>"
+						/>
+					</aui:fieldset>
+				</c:if>
 
-				<aui:button href="<%= redirect %>" type="cancel" />
+				<div class="sheet-footer">
+					<aui:button type="submit" />
+
+					<aui:button href="<%= redirect %>" type="cancel" />
+				</div>
 			</div>
-		</aui:fieldset-group>
+		</div>
 	</aui:form>
 </clay:container-fluid>
 

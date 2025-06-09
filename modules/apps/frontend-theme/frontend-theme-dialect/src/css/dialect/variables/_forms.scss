@@ -1,5 +1,5 @@
 $input-label-color: var(--form-input-label-color);
-$input-label-disabled-color: var(--form-input-disabled-label-color);
+$input-label-disabled-color: var(--form-input-label-color-disabled);
 $input-label-font-size: var(--form-input-label-font-size);
 $input-label-font-weight: var(--form-input-label-font-weight);
 $input-label-margin-bottom: var(--form-input-label-margin-bottom);
@@ -19,7 +19,9 @@ $input-height: var(--form-input-height);
 $input-line-height: var(--form-input-line-height);
 $input-padding-x: var(--form-input-padding-x);
 $input-padding-y: var(--form-input-padding-y);
-$input-transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+$input-transition:
+	background-color 0.15s ease-in-out,
+	color 0.15s ease-in-out;
 
 $input-focus-bg: $form-white-color;
 $input-focus-border-color: $form-input-focus-color;
@@ -32,24 +34,21 @@ $input-disabled-border-color: var(
 	--current-form-input-disabled-border-color,
 	var(--form-input-disabled-border-color)
 );
-$input-disabled-color: var(--form-input-disabled-color);
+$input-disabled-color: var(--form-input-color-disabled);
 
 $input-placeholder-color: var(--form-input-placeholder-color);
-$input-placeholder-disabled-color: var(--form-input-placeholder-disabled-color);
-$input-placeholder-focus-color: var(--form-input-placeholder-focus-color);
+$input-placeholder-disabled-color: var(--form-input-placeholder-color-disabled);
+$input-placeholder-focus-color: var(--form-input-placeholder-color-focus);
 
 $input-danger-bg: var(--form-input-error-bg, #{danger-l2});
-$input-danger-border-color: var(
-	--form-input-error-border-color,
-	#{$dialect-danger}
-);
+$input-danger-border-color: var(--form-input-error-border-color, #{$danger});
 $input-danger-checkbox-label-color: $input-label-color;
 $input-danger-focus-bg: #{$form-white-color};
 $input-danger-focus-border-color: #{$form-input-focus-color};
 $input-success-bg: var(--form-input-success-bg, #{success-l2});
 $input-success-border-color: var(
 	--form-input-success-border-color,
-	#{$dialect-success}
+	#{$success}
 );
 $input-success-checkbox-label-color: $input-label-color;
 $input-success-focus-bg: #{$form-white-color};
@@ -57,7 +56,7 @@ $input-success-focus-border-color: #{$form-input-focus-color};
 $input-warning-bg: var(--form-input-warning-bg, #{warning-l2});
 $input-warning-border-color: var(
 	--form-input-warning-border-color,
-	#{$dialect-warning}
+	#{$warning}
 );
 $input-warning-checkbox-label-color: $input-label-color;
 $input-warning-focus-bg: #{$form-white-color};
@@ -73,14 +72,34 @@ $form-text-font-size: var(--form-text-font-size);
 $form-text-font-weight: var(--form-text-font-weight);
 $form-text-line-height: var(--form-text-line-height);
 
+$form-control-label-size: () !default;
+$form-control-label-size: map-deep-merge(
+	(
+		border-width: 0.0625rem,
+		font-size: 0.75rem,
+		height: auto,
+		margin-bottom: 0.3125rem,
+		margin-right: 0.625rem,
+		margin-top: 0.3125rem,
+		min-height: 1.5rem,
+		padding-bottom: 0.3125rem,
+		padding-left: 0.5rem,
+		padding-right: 0.5rem,
+		padding-top: 0.3125rem,
+		text-transform: none,
+	),
+	$form-control-label-size
+);
+
 // The following variables must be reset because they cause errors with CSS custom properties as values.
 
 $form-control-tag-group-padding-y: calc(
 	(
-			#{$input-height} - (2 * #{$input-border-width}) - map-get(
+			#{$input-height} - (2 * #{$input-border-width}) - #{map-get(
 					$form-control-label-size,
-					height
-				) - (map-get($form-control-label-size, margin-bottom)) - (map-get($form-control-label-size, margin-top))
+					min-height
+				)} - (#{map-get($form-control-label-size, margin-bottom)}) -
+				(#{map-get($form-control-label-size, margin-top)})
 		) / 2
 );
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -143,6 +134,8 @@ public class LayoutSetPersistenceTest {
 
 		newLayoutSet.setColorSchemeId(RandomTestUtil.randomString());
 
+		newLayoutSet.setFaviconFileEntryId(RandomTestUtil.nextLong());
+
 		newLayoutSet.setCss(RandomTestUtil.randomString());
 
 		newLayoutSet.setSettings(RandomTestUtil.randomString());
@@ -184,6 +177,9 @@ public class LayoutSetPersistenceTest {
 		Assert.assertEquals(
 			existingLayoutSet.getColorSchemeId(),
 			newLayoutSet.getColorSchemeId());
+		Assert.assertEquals(
+			existingLayoutSet.getFaviconFileEntryId(),
+			newLayoutSet.getFaviconFileEntryId());
 		Assert.assertEquals(existingLayoutSet.getCss(), newLayoutSet.getCss());
 		Assert.assertEquals(
 			existingLayoutSet.getSettings(), newLayoutSet.getSettings());
@@ -265,8 +261,8 @@ public class LayoutSetPersistenceTest {
 			"layoutSetId", true, "groupId", true, "companyId", true,
 			"createDate", true, "modifiedDate", true, "privateLayout", true,
 			"logoId", true, "themeId", true, "colorSchemeId", true,
-			"layoutSetPrototypeUuid", true, "layoutSetPrototypeLinkEnabled",
-			true);
+			"faviconFileEntryId", true, "layoutSetPrototypeUuid", true,
+			"layoutSetPrototypeLinkEnabled", true);
 	}
 
 	@Test
@@ -539,17 +535,6 @@ public class LayoutSetPersistenceTest {
 			ReflectionTestUtil.<Boolean>invoke(
 				layoutSet, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "privateLayout"));
-
-		Assert.assertEquals(
-			Boolean.valueOf(layoutSet.getPrivateLayout()),
-			ReflectionTestUtil.<Boolean>invoke(
-				layoutSet, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "privateLayout"));
-		Assert.assertEquals(
-			Long.valueOf(layoutSet.getLogoId()),
-			ReflectionTestUtil.<Long>invoke(
-				layoutSet, "getColumnOriginalValue",
-				new Class<?>[] {String.class}, "logoId"));
 	}
 
 	protected LayoutSet addLayoutSet() throws Exception {
@@ -576,6 +561,8 @@ public class LayoutSetPersistenceTest {
 		layoutSet.setThemeId(RandomTestUtil.randomString());
 
 		layoutSet.setColorSchemeId(RandomTestUtil.randomString());
+
+		layoutSet.setFaviconFileEntryId(RandomTestUtil.nextLong());
 
 		layoutSet.setCss(RandomTestUtil.randomString());
 

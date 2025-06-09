@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.service.impl;
@@ -19,10 +10,10 @@ import com.liferay.oauth2.provider.exception.NoSuchOAuth2AuthorizationException;
 import com.liferay.oauth2.provider.model.OAuth2Authorization;
 import com.liferay.oauth2.provider.model.OAuth2ScopeGrant;
 import com.liferay.oauth2.provider.service.base.OAuth2AuthorizationLocalServiceBaseImpl;
-import com.liferay.oauth2.provider.service.persistence.OAuth2ScopeGrantPersistence;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
+import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.util.OrderByComparator;
@@ -35,7 +26,7 @@ import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.Modified;
 
 /**
  * @author Brian Wing Shun Chan
@@ -106,19 +97,35 @@ public class OAuth2AuthorizationLocalServiceImpl
 	}
 
 	@Override
-	public void deleteExpiredOAuth2Authorizations() {
-		Date purgeDate = new Date();
+	public void deleteExpiredOAuth2Authorizations() throws PortalException {
+		ActionableDynamicQuery actionableDynamicQuery =
+			oAuth2AuthorizationLocalService.getActionableDynamicQuery();
 
-		purgeDate.setTime(
-			purgeDate.getTime() +
-				_expiredAuthorizationsAfterlifeDurationMillis);
+		actionableDynamicQuery.setAddCriteriaMethod(
+			dynamicQuery -> {
+				Date date = new Date(
+					System.currentTimeMillis() -
+						_expiredAuthorizationsAfterlifeDurationMillis);
 
-		for (OAuth2Authorization oAuth2Authorization :
-				oAuth2AuthorizationFinder.findByPurgeDate(
-					purgeDate, QueryUtil.ALL_POS, QueryUtil.ALL_POS)) {
+				dynamicQuery.add(
+					RestrictionsFactoryUtil.and(
+						RestrictionsFactoryUtil.lt(
+							"accessTokenExpirationDate", date),
+						RestrictionsFactoryUtil.or(
+							RestrictionsFactoryUtil.and(
+								RestrictionsFactoryUtil.isNotNull(
+									"refreshTokenExpirationDate"),
+								RestrictionsFactoryUtil.lt(
+									"refreshTokenExpirationDate", date)),
+							RestrictionsFactoryUtil.isNull(
+								"refreshTokenExpirationDate"))));
+			});
+		actionableDynamicQuery.setPerformActionMethod(
+			(OAuth2Authorization oAuth2Authorization) ->
+				oAuth2AuthorizationLocalService.deleteOAuth2Authorization(
+					oAuth2Authorization));
 
-			oAuth2AuthorizationPersistence.remove(oAuth2Authorization);
-		}
+		actionableDynamicQuery.performActions();
 	}
 
 	@Override
@@ -169,6 +176,7 @@ public class OAuth2AuthorizationLocalServiceImpl
 		return null;
 	}
 
+	@Override
 	public OAuth2Authorization fetchOAuth2AuthorizationByRememberDeviceContent(
 		long userId, long oAuth2ApplicationId, String rememberDeviceContent) {
 
@@ -229,7 +237,7 @@ public class OAuth2AuthorizationLocalServiceImpl
 	public Collection<OAuth2ScopeGrant> getOAuth2ScopeGrants(
 		long oAuth2AuthorizationId) {
 
-		return _oAuth2ScopeGrantPersistence.
+		return oAuth2ScopeGrantPersistence.
 			getOAuth2AuthorizationOAuth2ScopeGrants(oAuth2AuthorizationId);
 	}
 
@@ -247,6 +255,7 @@ public class OAuth2AuthorizationLocalServiceImpl
 		return oAuth2AuthorizationPersistence.countByUserId(userId);
 	}
 
+	@Override
 	public OAuth2Authorization updateRememberDeviceContent(
 		String refreshTokenContent, String rememberDeviceContent) {
 
@@ -259,22 +268,21 @@ public class OAuth2AuthorizationLocalServiceImpl
 	}
 
 	@Activate
+	@Modified
 	protected void activate(Map<String, Object> properties) {
 		OAuth2ProviderConfiguration oAuth2ProviderConfiguration =
 			ConfigurableUtil.createConfigurable(
 				OAuth2ProviderConfiguration.class, properties);
 
-		int expiredAuthorizationsAfterlifeDuration =
+		int expiredAuthorizationsAfterlifeDuration = Math.max(
 			oAuth2ProviderConfiguration.
-				expiredAuthorizationsAfterlifeDuration();
+				expiredAuthorizationsAfterlifeDuration(),
+			0);
 
 		_expiredAuthorizationsAfterlifeDurationMillis =
 			expiredAuthorizationsAfterlifeDuration * Time.SECOND;
 	}
 
-	private long _expiredAuthorizationsAfterlifeDurationMillis;
-
-	@Reference
-	private OAuth2ScopeGrantPersistence _oAuth2ScopeGrantPersistence;
+	private volatile long _expiredAuthorizationsAfterlifeDurationMillis;
 
 }

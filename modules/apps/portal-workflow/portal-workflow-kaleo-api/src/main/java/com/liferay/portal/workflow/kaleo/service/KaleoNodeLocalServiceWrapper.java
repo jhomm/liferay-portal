@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service;
 
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.workflow.kaleo.model.KaleoNode;
 
 /**
  * Provides a wrapper for {@link KaleoNodeLocalService}.
@@ -25,6 +20,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  */
 public class KaleoNodeLocalServiceWrapper
 	implements KaleoNodeLocalService, ServiceWrapper<KaleoNodeLocalService> {
+
+	public KaleoNodeLocalServiceWrapper() {
+		this(null);
+	}
 
 	public KaleoNodeLocalServiceWrapper(
 		KaleoNodeLocalService kaleoNodeLocalService) {
@@ -43,14 +42,12 @@ public class KaleoNodeLocalServiceWrapper
 	 * @return the kaleo node that was added
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode addKaleoNode(
-		com.liferay.portal.workflow.kaleo.model.KaleoNode kaleoNode) {
-
+	public KaleoNode addKaleoNode(KaleoNode kaleoNode) {
 		return _kaleoNodeLocalService.addKaleoNode(kaleoNode);
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode addKaleoNode(
+	public KaleoNode addKaleoNode(
 			long kaleoDefinitionId, long kaleoDefinitionVersionId,
 			com.liferay.portal.workflow.kaleo.definition.Node node,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -67,9 +64,7 @@ public class KaleoNodeLocalServiceWrapper
 	 * @return the new kaleo node
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode createKaleoNode(
-		long kaleoNodeId) {
-
+	public KaleoNode createKaleoNode(long kaleoNodeId) {
 		return _kaleoNodeLocalService.createKaleoNode(kaleoNodeId);
 	}
 
@@ -108,9 +103,7 @@ public class KaleoNodeLocalServiceWrapper
 	 * @return the kaleo node that was removed
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode deleteKaleoNode(
-		com.liferay.portal.workflow.kaleo.model.KaleoNode kaleoNode) {
-
+	public KaleoNode deleteKaleoNode(KaleoNode kaleoNode) {
 		return _kaleoNodeLocalService.deleteKaleoNode(kaleoNode);
 	}
 
@@ -126,8 +119,7 @@ public class KaleoNodeLocalServiceWrapper
 	 * @throws PortalException if a kaleo node with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode deleteKaleoNode(
-			long kaleoNodeId)
+	public KaleoNode deleteKaleoNode(long kaleoNodeId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoNodeLocalService.deleteKaleoNode(kaleoNodeId);
@@ -247,9 +239,7 @@ public class KaleoNodeLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode fetchKaleoNode(
-		long kaleoNodeId) {
-
+	public KaleoNode fetchKaleoNode(long kaleoNodeId) {
 		return _kaleoNodeLocalService.fetchKaleoNode(kaleoNodeId);
 	}
 
@@ -268,8 +258,8 @@ public class KaleoNodeLocalServiceWrapper
 	}
 
 	@Override
-	public java.util.List<com.liferay.portal.workflow.kaleo.model.KaleoNode>
-		getKaleoDefinitionVersionKaleoNodes(long kaleoDefinitionVersionId) {
+	public java.util.List<KaleoNode> getKaleoDefinitionVersionKaleoNodes(
+		long kaleoDefinitionVersionId) {
 
 		return _kaleoNodeLocalService.getKaleoDefinitionVersionKaleoNodes(
 			kaleoDefinitionVersionId);
@@ -283,8 +273,7 @@ public class KaleoNodeLocalServiceWrapper
 	 * @throws PortalException if a kaleo node with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode getKaleoNode(
-			long kaleoNodeId)
+	public KaleoNode getKaleoNode(long kaleoNodeId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _kaleoNodeLocalService.getKaleoNode(kaleoNodeId);
@@ -302,9 +291,7 @@ public class KaleoNodeLocalServiceWrapper
 	 * @return the range of kaleo nodes
 	 */
 	@Override
-	public java.util.List<com.liferay.portal.workflow.kaleo.model.KaleoNode>
-		getKaleoNodes(int start, int end) {
-
+	public java.util.List<KaleoNode> getKaleoNodes(int start, int end) {
 		return _kaleoNodeLocalService.getKaleoNodes(start, end);
 	}
 
@@ -350,10 +337,32 @@ public class KaleoNodeLocalServiceWrapper
 	 * @return the kaleo node that was updated
 	 */
 	@Override
-	public com.liferay.portal.workflow.kaleo.model.KaleoNode updateKaleoNode(
-		com.liferay.portal.workflow.kaleo.model.KaleoNode kaleoNode) {
-
+	public KaleoNode updateKaleoNode(KaleoNode kaleoNode) {
 		return _kaleoNodeLocalService.updateKaleoNode(kaleoNode);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _kaleoNodeLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<KaleoNode> getCTPersistence() {
+		return _kaleoNodeLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<KaleoNode> getModelClass() {
+		return _kaleoNodeLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<KaleoNode>, R, E> updateUnsafeFunction)
+		throws E {
+
+		return _kaleoNodeLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

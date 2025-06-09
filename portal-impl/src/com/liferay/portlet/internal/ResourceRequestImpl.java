@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
@@ -29,27 +20,27 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.AsyncPortletServletRequest;
 
+import jakarta.portlet.PortletAsyncContext;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.ResourceParameters;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.ResourceURL;
+import jakarta.portlet.WindowState;
+
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.portlet.PortletAsyncContext;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.ResourceParameters;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.ResourceURL;
-import javax.portlet.WindowState;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.DispatcherType;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Brian Wing Shun Chan
@@ -107,7 +98,7 @@ public class ResourceRequestImpl
 
 	/**
 	 * @deprecated As of Judson (7.1.x), replaced by {@link
-	 *             javax.portlet.RenderState#getRenderParameters()}
+	 *             jakarta.portlet.RenderState#getRenderParameters()}
 	 */
 	@Deprecated
 	@Override
@@ -157,7 +148,7 @@ public class ResourceRequestImpl
 		HttpServletRequest httpServletRequest, Portlet portlet,
 		InvokerPortlet invokerPortlet, PortletContext portletContext,
 		WindowState windowState, PortletMode portletMode,
-		PortletPreferences preferences, long plid) {
+		PortletPreferences portletPreferences, long plid) {
 
 		if (Validator.isNull(windowState.toString())) {
 			windowState = WindowState.NORMAL;
@@ -169,7 +160,7 @@ public class ResourceRequestImpl
 
 		super.init(
 			httpServletRequest, portlet, invokerPortlet, portletContext,
-			windowState, portletMode, preferences, plid);
+			windowState, portletMode, portletPreferences, plid);
 
 		_cacheablity = ParamUtil.getString(
 			httpServletRequest, "p_p_cacheability", ResourceURL.PAGE);

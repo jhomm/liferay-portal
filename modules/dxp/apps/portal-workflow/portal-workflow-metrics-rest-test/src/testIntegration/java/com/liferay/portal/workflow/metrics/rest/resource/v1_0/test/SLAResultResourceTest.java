@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.resource.v1_0.test;
@@ -20,6 +11,7 @@ import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Instance;
 import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.Process;
@@ -27,10 +19,7 @@ import com.liferay.portal.workflow.metrics.rest.client.dto.v1_0.SLAResult;
 import com.liferay.portal.workflow.metrics.rest.client.serdes.v1_0.SLAResultSerDes;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.test.helper.WorkflowMetricsRESTTestHelper;
 
-import java.util.Calendar;
 import java.util.Date;
-
-import org.apache.commons.lang.time.DateUtils;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -76,12 +65,13 @@ public class SLAResultResourceTest extends BaseSLAResultResourceTestCase {
 	@Override
 	@Test
 	public void testGetProcessLastSLAResult() throws Exception {
-		Date dateModified = DateUtils.truncate(
-			RandomTestUtil.nextDate(), Calendar.SECOND);
+		Date dateModified = new Date(
+			System.currentTimeMillis() / Time.SECOND * Time.SECOND);
 
 		SLAResult slaResult1 = randomSLAResult();
 
-		slaResult1.setDateModified(DateUtils.addDays(dateModified, -2));
+		slaResult1.setDateModified(
+			new Date(dateModified.getTime() - (2 * Time.DAY)));
 
 		SLAResult slaResult2 = randomSLAResult();
 
@@ -91,6 +81,19 @@ public class SLAResultResourceTest extends BaseSLAResultResourceTestCase {
 			testGroup.getCompanyId(), _instance, slaResult1, slaResult2);
 
 		SLAResult getSLAResult = slaResultResource.getProcessLastSLAResult(
+			_process.getId());
+
+		Assert.assertEquals(
+			slaResult2.getDateModified(), getSLAResult.getDateModified());
+		Assert.assertEquals(slaResult2.getId(), getSLAResult.getId());
+
+		assertEquals(slaResult2, getSLAResult);
+		assertValid(getSLAResult);
+
+		_workflowMetricsRESTTestHelper.blockSLAInstanceResults(
+			testGroup.getCompanyId(), _process.getId(), slaResult2.getId());
+
+		getSLAResult = slaResultResource.getProcessLastSLAResult(
 			_process.getId());
 
 		Assert.assertEquals(
@@ -132,8 +135,8 @@ public class SLAResultResourceTest extends BaseSLAResultResourceTestCase {
 
 		return new SLAResult() {
 			{
-				dateModified = DateUtils.truncate(
-					RandomTestUtil.nextDate(), Calendar.SECOND);
+				dateModified = new Date(
+					System.currentTimeMillis() / Time.SECOND * Time.SECOND);
 				dateOverdue = RandomTestUtil.nextDate();
 				id = RandomTestUtil.randomLong();
 				name = StringUtil.toLowerCase(RandomTestUtil.randomString());

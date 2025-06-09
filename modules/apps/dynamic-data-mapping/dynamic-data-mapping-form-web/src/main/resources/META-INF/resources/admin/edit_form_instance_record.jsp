@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -54,14 +45,14 @@ renderResponse.setTitle(LanguageUtil.get(request, "view-form"));
 		<aui:input name="defaultLanguageId" type="hidden" value="<%= LocaleUtil.toLanguageId(ddmFormValues.getDefaultLocale()) %>" />
 
 		<div class="ddm-form-basic-info">
-			<h1 class="ddm-form-name"><%= ddmFormAdminDisplayContext.getFormName() %></h1>
+			<h1 class="ddm-form-name"><%= HtmlUtil.replaceNewLine(HtmlUtil.escape(ddmFormAdminDisplayContext.getFormName())) %></h1>
 
 			<%
 			String description = ddmFormAdminDisplayContext.getFormDescription();
 			%>
 
 			<c:if test="<%= Validator.isNotNull(description) %>">
-				<h5 class="ddm-form-description"><%= description %></h5>
+				<div class="ddm-form-description h5"><%= HtmlUtil.replaceNewLine(HtmlUtil.escape(description)) %></div>
 			</c:if>
 		</div>
 
@@ -77,7 +68,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "view-form"));
 
 		<div id="<%= containerId %>">
 			<react:component
-				module="admin/js/FormView.link.es"
+				module="{FormView} from dynamic-data-mapping-form-web"
 				props="<%= ddmFormContext %>"
 			/>
 		</div>

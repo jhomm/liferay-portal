@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -20,6 +11,9 @@ import com.liferay.portal.kernel.model.GroupedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.StagedAuditedModel;
+import com.liferay.portal.kernel.model.change.tracking.CTModel;
+
+import java.math.BigDecimal;
 
 import java.util.Date;
 
@@ -38,8 +32,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface CPDefinitionInventoryModel
-	extends BaseModel<CPDefinitionInventory>, GroupedModel, MVCCModel,
-			ShardedModel, StagedAuditedModel {
+	extends BaseModel<CPDefinitionInventory>, CTModel<CPDefinitionInventory>,
+			GroupedModel, MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -52,6 +46,7 @@ public interface CPDefinitionInventoryModel
 	 *
 	 * @return the primary key of this cp definition inventory
 	 */
+	@Override
 	public long getPrimaryKey();
 
 	/**
@@ -59,6 +54,7 @@ public interface CPDefinitionInventoryModel
 	 *
 	 * @param primaryKey the primary key of this cp definition inventory
 	 */
+	@Override
 	public void setPrimaryKey(long primaryKey);
 
 	/**
@@ -76,6 +72,22 @@ public interface CPDefinitionInventoryModel
 	 */
 	@Override
 	public void setMvccVersion(long mvccVersion);
+
+	/**
+	 * Returns the ct collection ID of this cp definition inventory.
+	 *
+	 * @return the ct collection ID of this cp definition inventory
+	 */
+	@Override
+	public long getCtCollectionId();
+
+	/**
+	 * Sets the ct collection ID of this cp definition inventory.
+	 *
+	 * @param ctCollectionId the ct collection ID of this cp definition inventory
+	 */
+	@Override
+	public void setCtCollectionId(long ctCollectionId);
 
 	/**
 	 * Returns the uuid of this cp definition inventory.
@@ -313,14 +325,14 @@ public interface CPDefinitionInventoryModel
 	 *
 	 * @return the min stock quantity of this cp definition inventory
 	 */
-	public int getMinStockQuantity();
+	public BigDecimal getMinStockQuantity();
 
 	/**
 	 * Sets the min stock quantity of this cp definition inventory.
 	 *
 	 * @param minStockQuantity the min stock quantity of this cp definition inventory
 	 */
-	public void setMinStockQuantity(int minStockQuantity);
+	public void setMinStockQuantity(BigDecimal minStockQuantity);
 
 	/**
 	 * Returns the back orders of this cp definition inventory.
@@ -348,28 +360,28 @@ public interface CPDefinitionInventoryModel
 	 *
 	 * @return the min order quantity of this cp definition inventory
 	 */
-	public int getMinOrderQuantity();
+	public BigDecimal getMinOrderQuantity();
 
 	/**
 	 * Sets the min order quantity of this cp definition inventory.
 	 *
 	 * @param minOrderQuantity the min order quantity of this cp definition inventory
 	 */
-	public void setMinOrderQuantity(int minOrderQuantity);
+	public void setMinOrderQuantity(BigDecimal minOrderQuantity);
 
 	/**
 	 * Returns the max order quantity of this cp definition inventory.
 	 *
 	 * @return the max order quantity of this cp definition inventory
 	 */
-	public int getMaxOrderQuantity();
+	public BigDecimal getMaxOrderQuantity();
 
 	/**
 	 * Sets the max order quantity of this cp definition inventory.
 	 *
 	 * @param maxOrderQuantity the max order quantity of this cp definition inventory
 	 */
-	public void setMaxOrderQuantity(int maxOrderQuantity);
+	public void setMaxOrderQuantity(BigDecimal maxOrderQuantity);
 
 	/**
 	 * Returns the allowed order quantities of this cp definition inventory.
@@ -391,16 +403,20 @@ public interface CPDefinitionInventoryModel
 	 *
 	 * @return the multiple order quantity of this cp definition inventory
 	 */
-	public int getMultipleOrderQuantity();
+	public BigDecimal getMultipleOrderQuantity();
 
 	/**
 	 * Sets the multiple order quantity of this cp definition inventory.
 	 *
 	 * @param multipleOrderQuantity the multiple order quantity of this cp definition inventory
 	 */
-	public void setMultipleOrderQuantity(int multipleOrderQuantity);
+	public void setMultipleOrderQuantity(BigDecimal multipleOrderQuantity);
 
 	@Override
 	public CPDefinitionInventory cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

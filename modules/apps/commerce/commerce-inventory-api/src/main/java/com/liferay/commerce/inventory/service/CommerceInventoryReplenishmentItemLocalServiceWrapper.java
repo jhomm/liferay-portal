@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceInventoryReplenishmentItemLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 	implements CommerceInventoryReplenishmentItemLocalService,
 			   ServiceWrapper<CommerceInventoryReplenishmentItemLocalService> {
+
+	public CommerceInventoryReplenishmentItemLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceInventoryReplenishmentItemLocalServiceWrapper(
 		CommerceInventoryReplenishmentItemLocalService
@@ -62,14 +58,17 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 	public
 		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
 				addCommerceInventoryReplenishmentItem(
-					long userId, long commerceInventoryWarehouseId, String sku,
-					java.util.Date availabilityDate, int quantity)
+					String externalReferenceCode, long userId,
+					long commerceInventoryWarehouseId,
+					java.util.Date availabilityDate,
+					java.math.BigDecimal quantity, String sku,
+					String unitOfMeasureKey)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceInventoryReplenishmentItemLocalService.
 			addCommerceInventoryReplenishmentItem(
-				userId, commerceInventoryWarehouseId, sku, availabilityDate,
-				quantity);
+				externalReferenceCode, userId, commerceInventoryWarehouseId,
+				availabilityDate, quantity, sku, unitOfMeasureKey);
 	}
 
 	/**
@@ -145,6 +144,24 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 		return _commerceInventoryReplenishmentItemLocalService.
 			deleteCommerceInventoryReplenishmentItem(
 				commerceInventoryReplenishmentItemId);
+	}
+
+	@Override
+	public void deleteCommerceInventoryReplenishmentItems(
+		long commerceInventoryWarehouseId) {
+
+		_commerceInventoryReplenishmentItemLocalService.
+			deleteCommerceInventoryReplenishmentItems(
+				commerceInventoryWarehouseId);
+	}
+
+	@Override
+	public void deleteCommerceInventoryReplenishmentItems(
+		long companyId, String sku, String unitOfMeasureKey) {
+
+		_commerceInventoryReplenishmentItemLocalService.
+			deleteCommerceInventoryReplenishmentItems(
+				companyId, sku, unitOfMeasureKey);
 	}
 
 	/**
@@ -278,6 +295,49 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 	}
 
 	@Override
+	public
+		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
+			fetchCommerceInventoryReplenishmentItem(
+				long companyId, String sku, String unitOfMeasureKey,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<com.liferay.commerce.inventory.model.
+						CommerceInventoryReplenishmentItem> orderByComparator) {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			fetchCommerceInventoryReplenishmentItem(
+				companyId, sku, unitOfMeasureKey, orderByComparator);
+	}
+
+	@Override
+	public
+		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
+			fetchCommerceInventoryReplenishmentItemByExternalReferenceCode(
+				String externalReferenceCode, long companyId) {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			fetchCommerceInventoryReplenishmentItemByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the commerce inventory replenishment item with the matching UUID and company.
+	 *
+	 * @param uuid the commerce inventory replenishment item's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce inventory replenishment item, or <code>null</code> if a matching commerce inventory replenishment item could not be found
+	 */
+	@Override
+	public
+		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
+			fetchCommerceInventoryReplenishmentItemByUuidAndCompanyId(
+				String uuid, long companyId) {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			fetchCommerceInventoryReplenishmentItemByUuidAndCompanyId(
+				uuid, companyId);
+	}
+
+	@Override
 	public com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
 		getActionableDynamicQuery() {
 
@@ -302,6 +362,38 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 		return _commerceInventoryReplenishmentItemLocalService.
 			getCommerceInventoryReplenishmentItem(
 				commerceInventoryReplenishmentItemId);
+	}
+
+	@Override
+	public
+		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
+				getCommerceInventoryReplenishmentItemByExternalReferenceCode(
+					String externalReferenceCode, long companyId)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			getCommerceInventoryReplenishmentItemByExternalReferenceCode(
+				externalReferenceCode, companyId);
+	}
+
+	/**
+	 * Returns the commerce inventory replenishment item with the matching UUID and company.
+	 *
+	 * @param uuid the commerce inventory replenishment item's UUID
+	 * @param companyId the primary key of the company
+	 * @return the matching commerce inventory replenishment item
+	 * @throws PortalException if a matching commerce inventory replenishment item could not be found
+	 */
+	@Override
+	public
+		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
+				getCommerceInventoryReplenishmentItemByUuidAndCompanyId(
+					String uuid, long companyId)
+			throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			getCommerceInventoryReplenishmentItemByUuidAndCompanyId(
+				uuid, companyId);
 	}
 
 	/**
@@ -329,12 +421,26 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 	public java.util.List
 		<com.liferay.commerce.inventory.model.
 			CommerceInventoryReplenishmentItem>
-				getCommerceInventoryReplenishmentItemsByCompanyIdAndSku(
-					long companyId, String sku, int start, int end) {
+				getCommerceInventoryReplenishmentItemsByCommerceInventoryWarehouseId(
+					long commerceInventoryWarehouseId, int start, int end) {
 
 		return _commerceInventoryReplenishmentItemLocalService.
-			getCommerceInventoryReplenishmentItemsByCompanyIdAndSku(
-				companyId, sku, start, end);
+			getCommerceInventoryReplenishmentItemsByCommerceInventoryWarehouseId(
+				commerceInventoryWarehouseId, start, end);
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.commerce.inventory.model.
+			CommerceInventoryReplenishmentItem>
+				getCommerceInventoryReplenishmentItemsByCompanyIdSkuAndUnitOfMeasureKey(
+					long companyId, String sku, String unitOfMeasureKey,
+					int start, int end, boolean replacePermissionCheck) {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			getCommerceInventoryReplenishmentItemsByCompanyIdSkuAndUnitOfMeasureKey(
+				companyId, sku, unitOfMeasureKey, start, end,
+				replacePermissionCheck);
 	}
 
 	/**
@@ -349,21 +455,43 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 	}
 
 	@Override
-	public long getCommerceInventoryReplenishmentItemsCount(
-		long commerceInventoryWarehouseId, String sku) {
+	public java.math.BigDecimal getCommerceInventoryReplenishmentItemsCount(
+		long commerceInventoryWarehouseId, String sku,
+		String unitOfMeasureKey) {
 
 		return _commerceInventoryReplenishmentItemLocalService.
 			getCommerceInventoryReplenishmentItemsCount(
-				commerceInventoryWarehouseId, sku);
+				commerceInventoryWarehouseId, sku, unitOfMeasureKey);
 	}
 
 	@Override
-	public int getCommerceInventoryReplenishmentItemsCountByCompanyIdAndSku(
-		long companyId, String sku) {
+	public int
+		getCommerceInventoryReplenishmentItemsCountByCommerceInventoryWarehouseId(
+			long commerceInventoryWarehouseId) {
 
 		return _commerceInventoryReplenishmentItemLocalService.
-			getCommerceInventoryReplenishmentItemsCountByCompanyIdAndSku(
-				companyId, sku);
+			getCommerceInventoryReplenishmentItemsCountByCommerceInventoryWarehouseId(
+				commerceInventoryWarehouseId);
+	}
+
+	@Override
+	public int
+		getCommerceInventoryReplenishmentItemsCountByCompanyIdSkuAndUnitOfMeasureKey(
+			long companyId, String sku, String unitOfMeasureKey) {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			getCommerceInventoryReplenishmentItemsCountByCompanyIdSkuAndUnitOfMeasureKey(
+				companyId, sku, unitOfMeasureKey);
+	}
+
+	@Override
+	public com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery
+		getExportActionableDynamicQuery(
+			com.liferay.exportimport.kernel.lar.PortletDataContext
+				portletDataContext) {
+
+		return _commerceInventoryReplenishmentItemLocalService.
+			getExportActionableDynamicQuery(portletDataContext);
 	}
 
 	@Override
@@ -424,15 +552,22 @@ public class CommerceInventoryReplenishmentItemLocalServiceWrapper
 	public
 		com.liferay.commerce.inventory.model.CommerceInventoryReplenishmentItem
 				updateCommerceInventoryReplenishmentItem(
+					String externalReferenceCode,
 					long commerceInventoryReplenishmentItemId,
-					java.util.Date availabilityDate, int quantity,
-					long mvccVersion)
+					java.util.Date availabilityDate,
+					java.math.BigDecimal quantity, long mvccVersion)
 			throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceInventoryReplenishmentItemLocalService.
 			updateCommerceInventoryReplenishmentItem(
-				commerceInventoryReplenishmentItemId, availabilityDate,
-				quantity, mvccVersion);
+				externalReferenceCode, commerceInventoryReplenishmentItemId,
+				availabilityDate, quantity, mvccVersion);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceInventoryReplenishmentItemLocalService.
+			getBasePersistence();
 	}
 
 	@Override

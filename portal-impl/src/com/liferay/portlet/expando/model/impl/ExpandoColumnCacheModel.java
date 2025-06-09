@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.expando.model.impl;
@@ -24,6 +15,8 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+
+import java.util.Date;
 
 /**
  * The cache model class for representing ExpandoColumn in entity cache.
@@ -75,7 +68,7 @@ public class ExpandoColumnCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(19);
+		StringBundler sb = new StringBundler(21);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -85,6 +78,8 @@ public class ExpandoColumnCacheModel
 		sb.append(columnId);
 		sb.append(", companyId=");
 		sb.append(companyId);
+		sb.append(", modifiedDate=");
+		sb.append(modifiedDate);
 		sb.append(", tableId=");
 		sb.append(tableId);
 		sb.append(", name=");
@@ -108,6 +103,14 @@ public class ExpandoColumnCacheModel
 		expandoColumnImpl.setCtCollectionId(ctCollectionId);
 		expandoColumnImpl.setColumnId(columnId);
 		expandoColumnImpl.setCompanyId(companyId);
+
+		if (modifiedDate == Long.MIN_VALUE) {
+			expandoColumnImpl.setModifiedDate(null);
+		}
+		else {
+			expandoColumnImpl.setModifiedDate(new Date(modifiedDate));
+		}
+
 		expandoColumnImpl.setTableId(tableId);
 
 		if (name == null) {
@@ -149,6 +152,7 @@ public class ExpandoColumnCacheModel
 		columnId = objectInput.readLong();
 
 		companyId = objectInput.readLong();
+		modifiedDate = objectInput.readLong();
 
 		tableId = objectInput.readLong();
 		name = objectInput.readUTF();
@@ -167,6 +171,7 @@ public class ExpandoColumnCacheModel
 		objectOutput.writeLong(columnId);
 
 		objectOutput.writeLong(companyId);
+		objectOutput.writeLong(modifiedDate);
 
 		objectOutput.writeLong(tableId);
 
@@ -198,6 +203,7 @@ public class ExpandoColumnCacheModel
 	public long ctCollectionId;
 	public long columnId;
 	public long companyId;
+	public long modifiedDate;
 	public long tableId;
 	public String name;
 	public int type;

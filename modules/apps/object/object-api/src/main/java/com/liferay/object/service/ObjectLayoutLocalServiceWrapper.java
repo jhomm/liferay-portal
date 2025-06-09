@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ObjectLayoutLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class ObjectLayoutLocalServiceWrapper
 	implements ObjectLayoutLocalService,
 			   ServiceWrapper<ObjectLayoutLocalService> {
+
+	public ObjectLayoutLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ObjectLayoutLocalServiceWrapper(
 		ObjectLayoutLocalService objectLayoutLocalService) {
@@ -123,6 +119,13 @@ public class ObjectLayoutLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectLayoutLocalService.deleteObjectLayout(objectLayout);
+	}
+
+	@Override
+	public void deleteObjectLayouts(long objectDefinitionId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectLayoutLocalService.deleteObjectLayouts(objectDefinitionId);
 	}
 
 	/**
@@ -239,6 +242,14 @@ public class ObjectLayoutLocalServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectLayout fetchDefaultObjectLayout(
+		long objectDefinitionId) {
+
+		return _objectLayoutLocalService.fetchDefaultObjectLayout(
+			objectDefinitionId);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectLayout fetchObjectLayout(
 		long objectLayoutId) {
 
@@ -345,6 +356,13 @@ public class ObjectLayoutLocalServiceWrapper
 
 	@Override
 	public java.util.List<com.liferay.object.model.ObjectLayout>
+		getObjectLayouts(long objectDefinitionId) {
+
+		return _objectLayoutLocalService.getObjectLayouts(objectDefinitionId);
+	}
+
+	@Override
+	public java.util.List<com.liferay.object.model.ObjectLayout>
 		getObjectLayouts(long objectDefinitionId, int start, int end) {
 
 		return _objectLayoutLocalService.getObjectLayouts(
@@ -365,6 +383,14 @@ public class ObjectLayoutLocalServiceWrapper
 	public int getObjectLayoutsCount(long objectDefinitionId) {
 		return _objectLayoutLocalService.getObjectLayoutsCount(
 			objectDefinitionId);
+	}
+
+	@Override
+	public java.util.Map
+		<Long, java.util.List<com.liferay.object.model.ObjectLayout>>
+			getObjectLayoutsMap(long companyId) {
+
+		return _objectLayoutLocalService.getObjectLayoutsMap(companyId);
 	}
 
 	/**
@@ -415,6 +441,11 @@ public class ObjectLayoutLocalServiceWrapper
 		com.liferay.object.model.ObjectLayout objectLayout) {
 
 		return _objectLayoutLocalService.updateObjectLayout(objectLayout);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _objectLayoutLocalService.getBasePersistence();
 	}
 
 	@Override

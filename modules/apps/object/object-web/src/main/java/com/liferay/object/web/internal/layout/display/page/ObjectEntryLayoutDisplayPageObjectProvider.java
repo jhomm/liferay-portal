@@ -1,23 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.web.internal.layout.display.page;
 
+import com.liferay.friendly.url.info.item.provider.InfoItemFriendlyURLProvider;
 import com.liferay.layout.display.page.LayoutDisplayPageObjectProvider;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectEntry;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.util.Locale;
@@ -29,10 +26,17 @@ public class ObjectEntryLayoutDisplayPageObjectProvider
 	implements LayoutDisplayPageObjectProvider<ObjectEntry> {
 
 	public ObjectEntryLayoutDisplayPageObjectProvider(
+		InfoItemFriendlyURLProvider<ObjectEntry> infoItemFriendlyURLProvider,
 		ObjectDefinition objectDefinition, ObjectEntry objectEntry) {
 
+		_infoItemFriendlyURLProvider = infoItemFriendlyURLProvider;
 		_objectDefinition = objectDefinition;
 		_objectEntry = objectEntry;
+	}
+
+	@Override
+	public String getClassName() {
+		return _objectDefinition.getClassName();
 	}
 
 	@Override
@@ -61,6 +65,15 @@ public class ObjectEntryLayoutDisplayPageObjectProvider
 	}
 
 	@Override
+	public String getExternalReferenceCode() {
+		if (!_objectDefinition.isDefaultStorageType()) {
+			return _objectEntry.getExternalReferenceCode();
+		}
+
+		return StringPool.BLANK;
+	}
+
+	@Override
 	public long getGroupId() {
 		return _objectEntry.getGroupId();
 	}
@@ -72,14 +85,34 @@ public class ObjectEntryLayoutDisplayPageObjectProvider
 
 	@Override
 	public String getTitle(Locale locale) {
-		return _objectDefinition.getLabel(locale);
+		if (!_objectDefinition.isDefaultStorageType()) {
+			return _objectEntry.getExternalReferenceCode();
+		}
+
+		try {
+			return _objectEntry.getTitleValue(
+				LocaleUtil.toLanguageId(locale), true);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return StringPool.BLANK;
 	}
 
 	@Override
 	public String getURLTitle(Locale locale) {
-		return String.valueOf(_objectEntry.getObjectEntryId());
+		return _infoItemFriendlyURLProvider.getFriendlyURL(
+			_objectEntry, LanguageUtil.getLanguageId(locale));
 	}
 
+	private static final Log _log = LogFactoryUtil.getLog(
+		ObjectEntryLayoutDisplayPageObjectProvider.class);
+
+	private final InfoItemFriendlyURLProvider<ObjectEntry>
+		_infoItemFriendlyURLProvider;
 	private final ObjectDefinition _objectDefinition;
 	private final ObjectEntry _objectEntry;
 

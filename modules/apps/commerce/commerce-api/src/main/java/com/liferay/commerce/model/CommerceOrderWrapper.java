@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model;
@@ -55,34 +46,42 @@ public class CommerceOrderWrapper
 		attributes.put("userName", getUserName());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
-		attributes.put("commerceAccountId", getCommerceAccountId());
-		attributes.put("commerceCurrencyId", getCommerceCurrencyId());
-		attributes.put("commerceOrderTypeId", getCommerceOrderTypeId());
 		attributes.put("billingAddressId", getBillingAddressId());
-		attributes.put("shippingAddressId", getShippingAddressId());
-		attributes.put(
-			"commercePaymentMethodKey", getCommercePaymentMethodKey());
-		attributes.put("transactionId", getTransactionId());
+		attributes.put("commerceAccountId", getCommerceAccountId());
+		attributes.put("commerceCurrencyCode", getCommerceCurrencyCode());
+		attributes.put("commerceOrderTypeId", getCommerceOrderTypeId());
 		attributes.put(
 			"commerceShippingMethodId", getCommerceShippingMethodId());
-		attributes.put("shippingOptionName", getShippingOptionName());
-		attributes.put("purchaseOrderNumber", getPurchaseOrderNumber());
+		attributes.put(
+			"deliveryCommerceTermEntryId", getDeliveryCommerceTermEntryId());
+		attributes.put(
+			"paymentCommerceTermEntryId", getPaymentCommerceTermEntryId());
+		attributes.put("shippingAddressId", getShippingAddressId());
+		attributes.put("advanceStatus", getAdvanceStatus());
+		attributes.put(
+			"commercePaymentMethodKey", getCommercePaymentMethodKey());
 		attributes.put("couponCode", getCouponCode());
+		attributes.put(
+			"deliveryCommerceTermEntryDescription",
+			getDeliveryCommerceTermEntryDescription());
+		attributes.put(
+			"deliveryCommerceTermEntryName",
+			getDeliveryCommerceTermEntryName());
 		attributes.put("lastPriceUpdateDate", getLastPriceUpdateDate());
-		attributes.put("subtotal", getSubtotal());
-		attributes.put("subtotalDiscountAmount", getSubtotalDiscountAmount());
+		attributes.put("manuallyAdjusted", isManuallyAdjusted());
+		attributes.put("name", getName());
+		attributes.put("orderDate", getOrderDate());
+		attributes.put("orderStatus", getOrderStatus());
 		attributes.put(
-			"subtotalDiscountPercentageLevel1",
-			getSubtotalDiscountPercentageLevel1());
+			"paymentCommerceTermEntryDescription",
+			getPaymentCommerceTermEntryDescription());
 		attributes.put(
-			"subtotalDiscountPercentageLevel2",
-			getSubtotalDiscountPercentageLevel2());
-		attributes.put(
-			"subtotalDiscountPercentageLevel3",
-			getSubtotalDiscountPercentageLevel3());
-		attributes.put(
-			"subtotalDiscountPercentageLevel4",
-			getSubtotalDiscountPercentageLevel4());
+			"paymentCommerceTermEntryName", getPaymentCommerceTermEntryName());
+		attributes.put("paymentStatus", getPaymentStatus());
+		attributes.put("printedNote", getPrintedNote());
+		attributes.put("purchaseOrderNumber", getPurchaseOrderNumber());
+		attributes.put("requestedDeliveryDate", getRequestedDeliveryDate());
+		attributes.put("shippable", isShippable());
 		attributes.put("shippingAmount", getShippingAmount());
 		attributes.put("shippingDiscountAmount", getShippingDiscountAmount());
 		attributes.put(
@@ -97,6 +96,53 @@ public class CommerceOrderWrapper
 		attributes.put(
 			"shippingDiscountPercentageLevel4",
 			getShippingDiscountPercentageLevel4());
+		attributes.put(
+			"shippingDiscountPercentageLevel1WithTaxAmount",
+			getShippingDiscountPercentageLevel1WithTaxAmount());
+		attributes.put(
+			"shippingDiscountPercentageLevel2WithTaxAmount",
+			getShippingDiscountPercentageLevel2WithTaxAmount());
+		attributes.put(
+			"shippingDiscountPercentageLevel3WithTaxAmount",
+			getShippingDiscountPercentageLevel3WithTaxAmount());
+		attributes.put(
+			"shippingDiscountPercentageLevel4WithTaxAmount",
+			getShippingDiscountPercentageLevel4WithTaxAmount());
+		attributes.put(
+			"shippingDiscountWithTaxAmount",
+			getShippingDiscountWithTaxAmount());
+		attributes.put("shippingOptionName", getShippingOptionName());
+		attributes.put("shippingWithTaxAmount", getShippingWithTaxAmount());
+		attributes.put("subtotal", getSubtotal());
+		attributes.put("subtotalDiscountAmount", getSubtotalDiscountAmount());
+		attributes.put(
+			"subtotalDiscountPercentageLevel1",
+			getSubtotalDiscountPercentageLevel1());
+		attributes.put(
+			"subtotalDiscountPercentageLevel2",
+			getSubtotalDiscountPercentageLevel2());
+		attributes.put(
+			"subtotalDiscountPercentageLevel3",
+			getSubtotalDiscountPercentageLevel3());
+		attributes.put(
+			"subtotalDiscountPercentageLevel4",
+			getSubtotalDiscountPercentageLevel4());
+		attributes.put(
+			"subtotalDiscountPercentageLevel1WithTaxAmount",
+			getSubtotalDiscountPercentageLevel1WithTaxAmount());
+		attributes.put(
+			"subtotalDiscountPercentageLevel2WithTaxAmount",
+			getSubtotalDiscountPercentageLevel2WithTaxAmount());
+		attributes.put(
+			"subtotalDiscountPercentageLevel3WithTaxAmount",
+			getSubtotalDiscountPercentageLevel3WithTaxAmount());
+		attributes.put(
+			"subtotalDiscountPercentageLevel4WithTaxAmount",
+			getSubtotalDiscountPercentageLevel4WithTaxAmount());
+		attributes.put(
+			"subtotalDiscountWithTaxAmount",
+			getSubtotalDiscountWithTaxAmount());
+		attributes.put("subtotalWithTaxAmount", getSubtotalWithTaxAmount());
 		attributes.put("taxAmount", getTaxAmount());
 		attributes.put("total", getTotal());
 		attributes.put("totalDiscountAmount", getTotalDiscountAmount());
@@ -112,41 +158,6 @@ public class CommerceOrderWrapper
 		attributes.put(
 			"totalDiscountPercentageLevel4",
 			getTotalDiscountPercentageLevel4());
-		attributes.put("subtotalWithTaxAmount", getSubtotalWithTaxAmount());
-		attributes.put(
-			"subtotalDiscountWithTaxAmount",
-			getSubtotalDiscountWithTaxAmount());
-		attributes.put(
-			"subtotalDiscountPercentageLevel1WithTaxAmount",
-			getSubtotalDiscountPercentageLevel1WithTaxAmount());
-		attributes.put(
-			"subtotalDiscountPercentageLevel2WithTaxAmount",
-			getSubtotalDiscountPercentageLevel2WithTaxAmount());
-		attributes.put(
-			"subtotalDiscountPercentageLevel3WithTaxAmount",
-			getSubtotalDiscountPercentageLevel3WithTaxAmount());
-		attributes.put(
-			"subtotalDiscountPercentageLevel4WithTaxAmount",
-			getSubtotalDiscountPercentageLevel4WithTaxAmount());
-		attributes.put("shippingWithTaxAmount", getShippingWithTaxAmount());
-		attributes.put(
-			"shippingDiscountWithTaxAmount",
-			getShippingDiscountWithTaxAmount());
-		attributes.put(
-			"shippingDiscountPercentageLevel1WithTaxAmount",
-			getShippingDiscountPercentageLevel1WithTaxAmount());
-		attributes.put(
-			"shippingDiscountPercentageLevel2WithTaxAmount",
-			getShippingDiscountPercentageLevel2WithTaxAmount());
-		attributes.put(
-			"shippingDiscountPercentageLevel3WithTaxAmount",
-			getShippingDiscountPercentageLevel3WithTaxAmount());
-		attributes.put(
-			"shippingDiscountPercentageLevel4WithTaxAmount",
-			getShippingDiscountPercentageLevel4WithTaxAmount());
-		attributes.put("totalWithTaxAmount", getTotalWithTaxAmount());
-		attributes.put(
-			"totalDiscountWithTaxAmount", getTotalDiscountWithTaxAmount());
 		attributes.put(
 			"totalDiscountPercentageLevel1WithTaxAmount",
 			getTotalDiscountPercentageLevel1WithTaxAmount());
@@ -159,13 +170,10 @@ public class CommerceOrderWrapper
 		attributes.put(
 			"totalDiscountPercentageLevel4WithTaxAmount",
 			getTotalDiscountPercentageLevel4WithTaxAmount());
-		attributes.put("advanceStatus", getAdvanceStatus());
-		attributes.put("paymentStatus", getPaymentStatus());
-		attributes.put("orderDate", getOrderDate());
-		attributes.put("orderStatus", getOrderStatus());
-		attributes.put("printedNote", getPrintedNote());
-		attributes.put("requestedDeliveryDate", getRequestedDeliveryDate());
-		attributes.put("manuallyAdjusted", isManuallyAdjusted());
+		attributes.put(
+			"totalDiscountWithTaxAmount", getTotalDiscountWithTaxAmount());
+		attributes.put("totalWithTaxAmount", getTotalWithTaxAmount());
+		attributes.put("transactionId", getTransactionId());
 		attributes.put("status", getStatus());
 		attributes.put("statusByUserId", getStatusByUserId());
 		attributes.put("statusByUserName", getStatusByUserName());
@@ -237,47 +245,29 @@ public class CommerceOrderWrapper
 			setModifiedDate(modifiedDate);
 		}
 
-		Long commerceAccountId = (Long)attributes.get("commerceAccountId");
-
-		if (commerceAccountId != null) {
-			setCommerceAccountId(commerceAccountId);
-		}
-
-		Long commerceCurrencyId = (Long)attributes.get("commerceCurrencyId");
-
-		if (commerceCurrencyId != null) {
-			setCommerceCurrencyId(commerceCurrencyId);
-		}
-
-		Long commerceOrderTypeId = (Long)attributes.get("commerceOrderTypeId");
-
-		if (commerceOrderTypeId != null) {
-			setCommerceOrderTypeId(commerceOrderTypeId);
-		}
-
 		Long billingAddressId = (Long)attributes.get("billingAddressId");
 
 		if (billingAddressId != null) {
 			setBillingAddressId(billingAddressId);
 		}
 
-		Long shippingAddressId = (Long)attributes.get("shippingAddressId");
+		Long commerceAccountId = (Long)attributes.get("commerceAccountId");
 
-		if (shippingAddressId != null) {
-			setShippingAddressId(shippingAddressId);
+		if (commerceAccountId != null) {
+			setCommerceAccountId(commerceAccountId);
 		}
 
-		String commercePaymentMethodKey = (String)attributes.get(
-			"commercePaymentMethodKey");
+		String commerceCurrencyCode = (String)attributes.get(
+			"commerceCurrencyCode");
 
-		if (commercePaymentMethodKey != null) {
-			setCommercePaymentMethodKey(commercePaymentMethodKey);
+		if (commerceCurrencyCode != null) {
+			setCommerceCurrencyCode(commerceCurrencyCode);
 		}
 
-		String transactionId = (String)attributes.get("transactionId");
+		Long commerceOrderTypeId = (Long)attributes.get("commerceOrderTypeId");
 
-		if (transactionId != null) {
-			setTransactionId(transactionId);
+		if (commerceOrderTypeId != null) {
+			setCommerceOrderTypeId(commerceOrderTypeId);
 		}
 
 		Long commerceShippingMethodId = (Long)attributes.get(
@@ -287,11 +277,115 @@ public class CommerceOrderWrapper
 			setCommerceShippingMethodId(commerceShippingMethodId);
 		}
 
-		String shippingOptionName = (String)attributes.get(
-			"shippingOptionName");
+		Long deliveryCommerceTermEntryId = (Long)attributes.get(
+			"deliveryCommerceTermEntryId");
 
-		if (shippingOptionName != null) {
-			setShippingOptionName(shippingOptionName);
+		if (deliveryCommerceTermEntryId != null) {
+			setDeliveryCommerceTermEntryId(deliveryCommerceTermEntryId);
+		}
+
+		Long paymentCommerceTermEntryId = (Long)attributes.get(
+			"paymentCommerceTermEntryId");
+
+		if (paymentCommerceTermEntryId != null) {
+			setPaymentCommerceTermEntryId(paymentCommerceTermEntryId);
+		}
+
+		Long shippingAddressId = (Long)attributes.get("shippingAddressId");
+
+		if (shippingAddressId != null) {
+			setShippingAddressId(shippingAddressId);
+		}
+
+		String advanceStatus = (String)attributes.get("advanceStatus");
+
+		if (advanceStatus != null) {
+			setAdvanceStatus(advanceStatus);
+		}
+
+		String commercePaymentMethodKey = (String)attributes.get(
+			"commercePaymentMethodKey");
+
+		if (commercePaymentMethodKey != null) {
+			setCommercePaymentMethodKey(commercePaymentMethodKey);
+		}
+
+		String couponCode = (String)attributes.get("couponCode");
+
+		if (couponCode != null) {
+			setCouponCode(couponCode);
+		}
+
+		String deliveryCommerceTermEntryDescription = (String)attributes.get(
+			"deliveryCommerceTermEntryDescription");
+
+		if (deliveryCommerceTermEntryDescription != null) {
+			setDeliveryCommerceTermEntryDescription(
+				deliveryCommerceTermEntryDescription);
+		}
+
+		String deliveryCommerceTermEntryName = (String)attributes.get(
+			"deliveryCommerceTermEntryName");
+
+		if (deliveryCommerceTermEntryName != null) {
+			setDeliveryCommerceTermEntryName(deliveryCommerceTermEntryName);
+		}
+
+		Date lastPriceUpdateDate = (Date)attributes.get("lastPriceUpdateDate");
+
+		if (lastPriceUpdateDate != null) {
+			setLastPriceUpdateDate(lastPriceUpdateDate);
+		}
+
+		Boolean manuallyAdjusted = (Boolean)attributes.get("manuallyAdjusted");
+
+		if (manuallyAdjusted != null) {
+			setManuallyAdjusted(manuallyAdjusted);
+		}
+
+		String name = (String)attributes.get("name");
+
+		if (name != null) {
+			setName(name);
+		}
+
+		Date orderDate = (Date)attributes.get("orderDate");
+
+		if (orderDate != null) {
+			setOrderDate(orderDate);
+		}
+
+		Integer orderStatus = (Integer)attributes.get("orderStatus");
+
+		if (orderStatus != null) {
+			setOrderStatus(orderStatus);
+		}
+
+		String paymentCommerceTermEntryDescription = (String)attributes.get(
+			"paymentCommerceTermEntryDescription");
+
+		if (paymentCommerceTermEntryDescription != null) {
+			setPaymentCommerceTermEntryDescription(
+				paymentCommerceTermEntryDescription);
+		}
+
+		String paymentCommerceTermEntryName = (String)attributes.get(
+			"paymentCommerceTermEntryName");
+
+		if (paymentCommerceTermEntryName != null) {
+			setPaymentCommerceTermEntryName(paymentCommerceTermEntryName);
+		}
+
+		Integer paymentStatus = (Integer)attributes.get("paymentStatus");
+
+		if (paymentStatus != null) {
+			setPaymentStatus(paymentStatus);
+		}
+
+		String printedNote = (String)attributes.get("printedNote");
+
+		if (printedNote != null) {
+			setPrintedNote(printedNote);
 		}
 
 		String purchaseOrderNumber = (String)attributes.get(
@@ -301,16 +395,120 @@ public class CommerceOrderWrapper
 			setPurchaseOrderNumber(purchaseOrderNumber);
 		}
 
-		String couponCode = (String)attributes.get("couponCode");
+		Date requestedDeliveryDate = (Date)attributes.get(
+			"requestedDeliveryDate");
 
-		if (couponCode != null) {
-			setCouponCode(couponCode);
+		if (requestedDeliveryDate != null) {
+			setRequestedDeliveryDate(requestedDeliveryDate);
 		}
 
-		Date lastPriceUpdateDate = (Date)attributes.get("lastPriceUpdateDate");
+		Boolean shippable = (Boolean)attributes.get("shippable");
 
-		if (lastPriceUpdateDate != null) {
-			setLastPriceUpdateDate(lastPriceUpdateDate);
+		if (shippable != null) {
+			setShippable(shippable);
+		}
+
+		BigDecimal shippingAmount = (BigDecimal)attributes.get(
+			"shippingAmount");
+
+		if (shippingAmount != null) {
+			setShippingAmount(shippingAmount);
+		}
+
+		BigDecimal shippingDiscountAmount = (BigDecimal)attributes.get(
+			"shippingDiscountAmount");
+
+		if (shippingDiscountAmount != null) {
+			setShippingDiscountAmount(shippingDiscountAmount);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel1 =
+			(BigDecimal)attributes.get("shippingDiscountPercentageLevel1");
+
+		if (shippingDiscountPercentageLevel1 != null) {
+			setShippingDiscountPercentageLevel1(
+				shippingDiscountPercentageLevel1);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel2 =
+			(BigDecimal)attributes.get("shippingDiscountPercentageLevel2");
+
+		if (shippingDiscountPercentageLevel2 != null) {
+			setShippingDiscountPercentageLevel2(
+				shippingDiscountPercentageLevel2);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel3 =
+			(BigDecimal)attributes.get("shippingDiscountPercentageLevel3");
+
+		if (shippingDiscountPercentageLevel3 != null) {
+			setShippingDiscountPercentageLevel3(
+				shippingDiscountPercentageLevel3);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel4 =
+			(BigDecimal)attributes.get("shippingDiscountPercentageLevel4");
+
+		if (shippingDiscountPercentageLevel4 != null) {
+			setShippingDiscountPercentageLevel4(
+				shippingDiscountPercentageLevel4);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel1WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"shippingDiscountPercentageLevel1WithTaxAmount");
+
+		if (shippingDiscountPercentageLevel1WithTaxAmount != null) {
+			setShippingDiscountPercentageLevel1WithTaxAmount(
+				shippingDiscountPercentageLevel1WithTaxAmount);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel2WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"shippingDiscountPercentageLevel2WithTaxAmount");
+
+		if (shippingDiscountPercentageLevel2WithTaxAmount != null) {
+			setShippingDiscountPercentageLevel2WithTaxAmount(
+				shippingDiscountPercentageLevel2WithTaxAmount);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel3WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"shippingDiscountPercentageLevel3WithTaxAmount");
+
+		if (shippingDiscountPercentageLevel3WithTaxAmount != null) {
+			setShippingDiscountPercentageLevel3WithTaxAmount(
+				shippingDiscountPercentageLevel3WithTaxAmount);
+		}
+
+		BigDecimal shippingDiscountPercentageLevel4WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"shippingDiscountPercentageLevel4WithTaxAmount");
+
+		if (shippingDiscountPercentageLevel4WithTaxAmount != null) {
+			setShippingDiscountPercentageLevel4WithTaxAmount(
+				shippingDiscountPercentageLevel4WithTaxAmount);
+		}
+
+		BigDecimal shippingDiscountWithTaxAmount = (BigDecimal)attributes.get(
+			"shippingDiscountWithTaxAmount");
+
+		if (shippingDiscountWithTaxAmount != null) {
+			setShippingDiscountWithTaxAmount(shippingDiscountWithTaxAmount);
+		}
+
+		String shippingOptionName = (String)attributes.get(
+			"shippingOptionName");
+
+		if (shippingOptionName != null) {
+			setShippingOptionName(shippingOptionName);
+		}
+
+		BigDecimal shippingWithTaxAmount = (BigDecimal)attributes.get(
+			"shippingWithTaxAmount");
+
+		if (shippingWithTaxAmount != null) {
+			setShippingWithTaxAmount(shippingWithTaxAmount);
 		}
 
 		BigDecimal subtotal = (BigDecimal)attributes.get("subtotal");
@@ -358,50 +556,54 @@ public class CommerceOrderWrapper
 				subtotalDiscountPercentageLevel4);
 		}
 
-		BigDecimal shippingAmount = (BigDecimal)attributes.get(
-			"shippingAmount");
+		BigDecimal subtotalDiscountPercentageLevel1WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"subtotalDiscountPercentageLevel1WithTaxAmount");
 
-		if (shippingAmount != null) {
-			setShippingAmount(shippingAmount);
+		if (subtotalDiscountPercentageLevel1WithTaxAmount != null) {
+			setSubtotalDiscountPercentageLevel1WithTaxAmount(
+				subtotalDiscountPercentageLevel1WithTaxAmount);
 		}
 
-		BigDecimal shippingDiscountAmount = (BigDecimal)attributes.get(
-			"shippingDiscountAmount");
+		BigDecimal subtotalDiscountPercentageLevel2WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"subtotalDiscountPercentageLevel2WithTaxAmount");
 
-		if (shippingDiscountAmount != null) {
-			setShippingDiscountAmount(shippingDiscountAmount);
+		if (subtotalDiscountPercentageLevel2WithTaxAmount != null) {
+			setSubtotalDiscountPercentageLevel2WithTaxAmount(
+				subtotalDiscountPercentageLevel2WithTaxAmount);
 		}
 
-		BigDecimal shippingDiscountPercentageLevel1 =
-			(BigDecimal)attributes.get("shippingDiscountPercentageLevel1");
+		BigDecimal subtotalDiscountPercentageLevel3WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"subtotalDiscountPercentageLevel3WithTaxAmount");
 
-		if (shippingDiscountPercentageLevel1 != null) {
-			setShippingDiscountPercentageLevel1(
-				shippingDiscountPercentageLevel1);
+		if (subtotalDiscountPercentageLevel3WithTaxAmount != null) {
+			setSubtotalDiscountPercentageLevel3WithTaxAmount(
+				subtotalDiscountPercentageLevel3WithTaxAmount);
 		}
 
-		BigDecimal shippingDiscountPercentageLevel2 =
-			(BigDecimal)attributes.get("shippingDiscountPercentageLevel2");
+		BigDecimal subtotalDiscountPercentageLevel4WithTaxAmount =
+			(BigDecimal)attributes.get(
+				"subtotalDiscountPercentageLevel4WithTaxAmount");
 
-		if (shippingDiscountPercentageLevel2 != null) {
-			setShippingDiscountPercentageLevel2(
-				shippingDiscountPercentageLevel2);
+		if (subtotalDiscountPercentageLevel4WithTaxAmount != null) {
+			setSubtotalDiscountPercentageLevel4WithTaxAmount(
+				subtotalDiscountPercentageLevel4WithTaxAmount);
 		}
 
-		BigDecimal shippingDiscountPercentageLevel3 =
-			(BigDecimal)attributes.get("shippingDiscountPercentageLevel3");
+		BigDecimal subtotalDiscountWithTaxAmount = (BigDecimal)attributes.get(
+			"subtotalDiscountWithTaxAmount");
 
-		if (shippingDiscountPercentageLevel3 != null) {
-			setShippingDiscountPercentageLevel3(
-				shippingDiscountPercentageLevel3);
+		if (subtotalDiscountWithTaxAmount != null) {
+			setSubtotalDiscountWithTaxAmount(subtotalDiscountWithTaxAmount);
 		}
 
-		BigDecimal shippingDiscountPercentageLevel4 =
-			(BigDecimal)attributes.get("shippingDiscountPercentageLevel4");
+		BigDecimal subtotalWithTaxAmount = (BigDecimal)attributes.get(
+			"subtotalWithTaxAmount");
 
-		if (shippingDiscountPercentageLevel4 != null) {
-			setShippingDiscountPercentageLevel4(
-				shippingDiscountPercentageLevel4);
+		if (subtotalWithTaxAmount != null) {
+			setSubtotalWithTaxAmount(subtotalWithTaxAmount);
 		}
 
 		BigDecimal taxAmount = (BigDecimal)attributes.get("taxAmount");
@@ -451,120 +653,6 @@ public class CommerceOrderWrapper
 			setTotalDiscountPercentageLevel4(totalDiscountPercentageLevel4);
 		}
 
-		BigDecimal subtotalWithTaxAmount = (BigDecimal)attributes.get(
-			"subtotalWithTaxAmount");
-
-		if (subtotalWithTaxAmount != null) {
-			setSubtotalWithTaxAmount(subtotalWithTaxAmount);
-		}
-
-		BigDecimal subtotalDiscountWithTaxAmount = (BigDecimal)attributes.get(
-			"subtotalDiscountWithTaxAmount");
-
-		if (subtotalDiscountWithTaxAmount != null) {
-			setSubtotalDiscountWithTaxAmount(subtotalDiscountWithTaxAmount);
-		}
-
-		BigDecimal subtotalDiscountPercentageLevel1WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"subtotalDiscountPercentageLevel1WithTaxAmount");
-
-		if (subtotalDiscountPercentageLevel1WithTaxAmount != null) {
-			setSubtotalDiscountPercentageLevel1WithTaxAmount(
-				subtotalDiscountPercentageLevel1WithTaxAmount);
-		}
-
-		BigDecimal subtotalDiscountPercentageLevel2WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"subtotalDiscountPercentageLevel2WithTaxAmount");
-
-		if (subtotalDiscountPercentageLevel2WithTaxAmount != null) {
-			setSubtotalDiscountPercentageLevel2WithTaxAmount(
-				subtotalDiscountPercentageLevel2WithTaxAmount);
-		}
-
-		BigDecimal subtotalDiscountPercentageLevel3WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"subtotalDiscountPercentageLevel3WithTaxAmount");
-
-		if (subtotalDiscountPercentageLevel3WithTaxAmount != null) {
-			setSubtotalDiscountPercentageLevel3WithTaxAmount(
-				subtotalDiscountPercentageLevel3WithTaxAmount);
-		}
-
-		BigDecimal subtotalDiscountPercentageLevel4WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"subtotalDiscountPercentageLevel4WithTaxAmount");
-
-		if (subtotalDiscountPercentageLevel4WithTaxAmount != null) {
-			setSubtotalDiscountPercentageLevel4WithTaxAmount(
-				subtotalDiscountPercentageLevel4WithTaxAmount);
-		}
-
-		BigDecimal shippingWithTaxAmount = (BigDecimal)attributes.get(
-			"shippingWithTaxAmount");
-
-		if (shippingWithTaxAmount != null) {
-			setShippingWithTaxAmount(shippingWithTaxAmount);
-		}
-
-		BigDecimal shippingDiscountWithTaxAmount = (BigDecimal)attributes.get(
-			"shippingDiscountWithTaxAmount");
-
-		if (shippingDiscountWithTaxAmount != null) {
-			setShippingDiscountWithTaxAmount(shippingDiscountWithTaxAmount);
-		}
-
-		BigDecimal shippingDiscountPercentageLevel1WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"shippingDiscountPercentageLevel1WithTaxAmount");
-
-		if (shippingDiscountPercentageLevel1WithTaxAmount != null) {
-			setShippingDiscountPercentageLevel1WithTaxAmount(
-				shippingDiscountPercentageLevel1WithTaxAmount);
-		}
-
-		BigDecimal shippingDiscountPercentageLevel2WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"shippingDiscountPercentageLevel2WithTaxAmount");
-
-		if (shippingDiscountPercentageLevel2WithTaxAmount != null) {
-			setShippingDiscountPercentageLevel2WithTaxAmount(
-				shippingDiscountPercentageLevel2WithTaxAmount);
-		}
-
-		BigDecimal shippingDiscountPercentageLevel3WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"shippingDiscountPercentageLevel3WithTaxAmount");
-
-		if (shippingDiscountPercentageLevel3WithTaxAmount != null) {
-			setShippingDiscountPercentageLevel3WithTaxAmount(
-				shippingDiscountPercentageLevel3WithTaxAmount);
-		}
-
-		BigDecimal shippingDiscountPercentageLevel4WithTaxAmount =
-			(BigDecimal)attributes.get(
-				"shippingDiscountPercentageLevel4WithTaxAmount");
-
-		if (shippingDiscountPercentageLevel4WithTaxAmount != null) {
-			setShippingDiscountPercentageLevel4WithTaxAmount(
-				shippingDiscountPercentageLevel4WithTaxAmount);
-		}
-
-		BigDecimal totalWithTaxAmount = (BigDecimal)attributes.get(
-			"totalWithTaxAmount");
-
-		if (totalWithTaxAmount != null) {
-			setTotalWithTaxAmount(totalWithTaxAmount);
-		}
-
-		BigDecimal totalDiscountWithTaxAmount = (BigDecimal)attributes.get(
-			"totalDiscountWithTaxAmount");
-
-		if (totalDiscountWithTaxAmount != null) {
-			setTotalDiscountWithTaxAmount(totalDiscountWithTaxAmount);
-		}
-
 		BigDecimal totalDiscountPercentageLevel1WithTaxAmount =
 			(BigDecimal)attributes.get(
 				"totalDiscountPercentageLevel1WithTaxAmount");
@@ -601,47 +689,24 @@ public class CommerceOrderWrapper
 				totalDiscountPercentageLevel4WithTaxAmount);
 		}
 
-		String advanceStatus = (String)attributes.get("advanceStatus");
+		BigDecimal totalDiscountWithTaxAmount = (BigDecimal)attributes.get(
+			"totalDiscountWithTaxAmount");
 
-		if (advanceStatus != null) {
-			setAdvanceStatus(advanceStatus);
+		if (totalDiscountWithTaxAmount != null) {
+			setTotalDiscountWithTaxAmount(totalDiscountWithTaxAmount);
 		}
 
-		Integer paymentStatus = (Integer)attributes.get("paymentStatus");
+		BigDecimal totalWithTaxAmount = (BigDecimal)attributes.get(
+			"totalWithTaxAmount");
 
-		if (paymentStatus != null) {
-			setPaymentStatus(paymentStatus);
+		if (totalWithTaxAmount != null) {
+			setTotalWithTaxAmount(totalWithTaxAmount);
 		}
 
-		Date orderDate = (Date)attributes.get("orderDate");
+		String transactionId = (String)attributes.get("transactionId");
 
-		if (orderDate != null) {
-			setOrderDate(orderDate);
-		}
-
-		Integer orderStatus = (Integer)attributes.get("orderStatus");
-
-		if (orderStatus != null) {
-			setOrderStatus(orderStatus);
-		}
-
-		String printedNote = (String)attributes.get("printedNote");
-
-		if (printedNote != null) {
-			setPrintedNote(printedNote);
-		}
-
-		Date requestedDeliveryDate = (Date)attributes.get(
-			"requestedDeliveryDate");
-
-		if (requestedDeliveryDate != null) {
-			setRequestedDeliveryDate(requestedDeliveryDate);
-		}
-
-		Boolean manuallyAdjusted = (Boolean)attributes.get("manuallyAdjusted");
-
-		if (manuallyAdjusted != null) {
-			setManuallyAdjusted(manuallyAdjusted);
+		if (transactionId != null) {
+			setTransactionId(transactionId);
 		}
 
 		Integer status = (Integer)attributes.get("status");
@@ -674,6 +739,13 @@ public class CommerceOrderWrapper
 		return wrap(model.cloneWithOriginalValues());
 	}
 
+	@Override
+	public com.liferay.account.model.AccountEntry getAccountEntry()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getAccountEntry();
+	}
+
 	/**
 	 * Returns the advance status of this commerce order.
 	 *
@@ -682,6 +754,21 @@ public class CommerceOrderWrapper
 	@Override
 	public String getAdvanceStatus() {
 		return model.getAdvanceStatus();
+	}
+
+	@Override
+	public java.util.List<com.liferay.portal.kernel.repository.model.FileEntry>
+			getAttachmentFileEntries(int start, int end)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getAttachmentFileEntries(start, end);
+	}
+
+	@Override
+	public int getAttachmentFileEntriesCount()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getAttachmentFileEntriesCount();
 	}
 
 	@Override
@@ -699,14 +786,6 @@ public class CommerceOrderWrapper
 	@Override
 	public long getBillingAddressId() {
 		return model.getBillingAddressId();
-	}
-
-	@Override
-	public com.liferay.commerce.account.model.CommerceAccount
-			getCommerceAccount()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getCommerceAccount();
 	}
 
 	/**
@@ -735,13 +814,13 @@ public class CommerceOrderWrapper
 	}
 
 	/**
-	 * Returns the commerce currency ID of this commerce order.
+	 * Returns the commerce currency code of this commerce order.
 	 *
-	 * @return the commerce currency ID of this commerce order
+	 * @return the commerce currency code of this commerce order
 	 */
 	@Override
-	public long getCommerceCurrencyId() {
-		return model.getCommerceCurrencyId();
+	public String getCommerceCurrencyCode() {
+		return model.getCommerceCurrencyCode();
 	}
 
 	/**
@@ -838,6 +917,46 @@ public class CommerceOrderWrapper
 		return model.getCreateDate();
 	}
 
+	@Override
+	public java.util.List<Long> getCustomerCommerceOrderIds() {
+		return model.getCustomerCommerceOrderIds();
+	}
+
+	@Override
+	public int getCustomerCommerceOrderIdsCount() {
+		return model.getCustomerCommerceOrderIdsCount();
+	}
+
+	/**
+	 * Returns the delivery commerce term entry description of this commerce order.
+	 *
+	 * @return the delivery commerce term entry description of this commerce order
+	 */
+	@Override
+	public String getDeliveryCommerceTermEntryDescription() {
+		return model.getDeliveryCommerceTermEntryDescription();
+	}
+
+	/**
+	 * Returns the delivery commerce term entry ID of this commerce order.
+	 *
+	 * @return the delivery commerce term entry ID of this commerce order
+	 */
+	@Override
+	public long getDeliveryCommerceTermEntryId() {
+		return model.getDeliveryCommerceTermEntryId();
+	}
+
+	/**
+	 * Returns the delivery commerce term entry name of this commerce order.
+	 *
+	 * @return the delivery commerce term entry name of this commerce order
+	 */
+	@Override
+	public String getDeliveryCommerceTermEntryName() {
+		return model.getDeliveryCommerceTermEntryName();
+	}
+
 	/**
 	 * Returns the external reference code of this commerce order.
 	 *
@@ -846,6 +965,13 @@ public class CommerceOrderWrapper
 	@Override
 	public String getExternalReferenceCode() {
 		return model.getExternalReferenceCode();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.model.Folder getFolder(
+		com.liferay.portal.kernel.repository.LocalRepository localRepository) {
+
+		return model.getFolder(localRepository);
 	}
 
 	/**
@@ -866,6 +992,14 @@ public class CommerceOrderWrapper
 	@Override
 	public Date getLastPriceUpdateDate() {
 		return model.getLastPriceUpdateDate();
+	}
+
+	@Override
+	public com.liferay.portal.kernel.repository.LocalRepository
+			getLocalRepository()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getLocalRepository();
 	}
 
 	/**
@@ -899,6 +1033,16 @@ public class CommerceOrderWrapper
 	}
 
 	/**
+	 * Returns the name of this commerce order.
+	 *
+	 * @return the name of this commerce order
+	 */
+	@Override
+	public String getName() {
+		return model.getName();
+	}
+
+	/**
 	 * Returns the order date of this commerce order.
 	 *
 	 * @return the order date of this commerce order
@@ -916,6 +1060,36 @@ public class CommerceOrderWrapper
 	@Override
 	public int getOrderStatus() {
 		return model.getOrderStatus();
+	}
+
+	/**
+	 * Returns the payment commerce term entry description of this commerce order.
+	 *
+	 * @return the payment commerce term entry description of this commerce order
+	 */
+	@Override
+	public String getPaymentCommerceTermEntryDescription() {
+		return model.getPaymentCommerceTermEntryDescription();
+	}
+
+	/**
+	 * Returns the payment commerce term entry ID of this commerce order.
+	 *
+	 * @return the payment commerce term entry ID of this commerce order
+	 */
+	@Override
+	public long getPaymentCommerceTermEntryId() {
+		return model.getPaymentCommerceTermEntryId();
+	}
+
+	/**
+	 * Returns the payment commerce term entry name of this commerce order.
+	 *
+	 * @return the payment commerce term entry name of this commerce order
+	 */
+	@Override
+	public String getPaymentCommerceTermEntryName() {
+		return model.getPaymentCommerceTermEntryName();
 	}
 
 	/**
@@ -973,6 +1147,16 @@ public class CommerceOrderWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getScopeGroupId();
+	}
+
+	/**
+	 * Returns the shippable of this commerce order.
+	 *
+	 * @return the shippable of this commerce order
+	 */
+	@Override
+	public boolean getShippable() {
+		return model.getShippable();
 	}
 
 	@Override
@@ -1322,6 +1506,16 @@ public class CommerceOrderWrapper
 		return model.getSubtotalWithTaxAmountMoney();
 	}
 
+	@Override
+	public java.util.List<Long> getSupplierCommerceOrderIds() {
+		return model.getSupplierCommerceOrderIds();
+	}
+
+	@Override
+	public int getSupplierCommerceOrderIdsCount() {
+		return model.getSupplierCommerceOrderIdsCount();
+	}
+
 	/**
 	 * Returns the tax amount of this commerce order.
 	 *
@@ -1621,6 +1815,11 @@ public class CommerceOrderWrapper
 		return model.isPending();
 	}
 
+	@Override
+	public boolean isQuote() {
+		return model.isQuote();
+	}
+
 	/**
 	 * Returns <code>true</code> if this commerce order is scheduled.
 	 *
@@ -1629,6 +1828,16 @@ public class CommerceOrderWrapper
 	@Override
 	public boolean isScheduled() {
 		return model.isScheduled();
+	}
+
+	/**
+	 * Returns <code>true</code> if this commerce order is shippable.
+	 *
+	 * @return <code>true</code> if this commerce order is shippable; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isShippable() {
+		return model.isShippable();
 	}
 
 	@Override
@@ -1677,13 +1886,13 @@ public class CommerceOrderWrapper
 	}
 
 	/**
-	 * Sets the commerce currency ID of this commerce order.
+	 * Sets the commerce currency code of this commerce order.
 	 *
-	 * @param commerceCurrencyId the commerce currency ID of this commerce order
+	 * @param commerceCurrencyCode the commerce currency code of this commerce order
 	 */
 	@Override
-	public void setCommerceCurrencyId(long commerceCurrencyId) {
-		model.setCommerceCurrencyId(commerceCurrencyId);
+	public void setCommerceCurrencyCode(String commerceCurrencyCode) {
+		model.setCommerceCurrencyCode(commerceCurrencyCode);
 	}
 
 	/**
@@ -1757,6 +1966,43 @@ public class CommerceOrderWrapper
 	}
 
 	/**
+	 * Sets the delivery commerce term entry description of this commerce order.
+	 *
+	 * @param deliveryCommerceTermEntryDescription the delivery commerce term entry description of this commerce order
+	 */
+	@Override
+	public void setDeliveryCommerceTermEntryDescription(
+		String deliveryCommerceTermEntryDescription) {
+
+		model.setDeliveryCommerceTermEntryDescription(
+			deliveryCommerceTermEntryDescription);
+	}
+
+	/**
+	 * Sets the delivery commerce term entry ID of this commerce order.
+	 *
+	 * @param deliveryCommerceTermEntryId the delivery commerce term entry ID of this commerce order
+	 */
+	@Override
+	public void setDeliveryCommerceTermEntryId(
+		long deliveryCommerceTermEntryId) {
+
+		model.setDeliveryCommerceTermEntryId(deliveryCommerceTermEntryId);
+	}
+
+	/**
+	 * Sets the delivery commerce term entry name of this commerce order.
+	 *
+	 * @param deliveryCommerceTermEntryName the delivery commerce term entry name of this commerce order
+	 */
+	@Override
+	public void setDeliveryCommerceTermEntryName(
+		String deliveryCommerceTermEntryName) {
+
+		model.setDeliveryCommerceTermEntryName(deliveryCommerceTermEntryName);
+	}
+
+	/**
 	 * Sets the external reference code of this commerce order.
 	 *
 	 * @param externalReferenceCode the external reference code of this commerce order
@@ -1817,6 +2063,16 @@ public class CommerceOrderWrapper
 	}
 
 	/**
+	 * Sets the name of this commerce order.
+	 *
+	 * @param name the name of this commerce order
+	 */
+	@Override
+	public void setName(String name) {
+		model.setName(name);
+	}
+
+	/**
 	 * Sets the order date of this commerce order.
 	 *
 	 * @param orderDate the order date of this commerce order
@@ -1834,6 +2090,41 @@ public class CommerceOrderWrapper
 	@Override
 	public void setOrderStatus(int orderStatus) {
 		model.setOrderStatus(orderStatus);
+	}
+
+	/**
+	 * Sets the payment commerce term entry description of this commerce order.
+	 *
+	 * @param paymentCommerceTermEntryDescription the payment commerce term entry description of this commerce order
+	 */
+	@Override
+	public void setPaymentCommerceTermEntryDescription(
+		String paymentCommerceTermEntryDescription) {
+
+		model.setPaymentCommerceTermEntryDescription(
+			paymentCommerceTermEntryDescription);
+	}
+
+	/**
+	 * Sets the payment commerce term entry ID of this commerce order.
+	 *
+	 * @param paymentCommerceTermEntryId the payment commerce term entry ID of this commerce order
+	 */
+	@Override
+	public void setPaymentCommerceTermEntryId(long paymentCommerceTermEntryId) {
+		model.setPaymentCommerceTermEntryId(paymentCommerceTermEntryId);
+	}
+
+	/**
+	 * Sets the payment commerce term entry name of this commerce order.
+	 *
+	 * @param paymentCommerceTermEntryName the payment commerce term entry name of this commerce order
+	 */
+	@Override
+	public void setPaymentCommerceTermEntryName(
+		String paymentCommerceTermEntryName) {
+
+		model.setPaymentCommerceTermEntryName(paymentCommerceTermEntryName);
 	}
 
 	/**
@@ -1884,6 +2175,16 @@ public class CommerceOrderWrapper
 	@Override
 	public void setRequestedDeliveryDate(Date requestedDeliveryDate) {
 		model.setRequestedDeliveryDate(requestedDeliveryDate);
+	}
+
+	/**
+	 * Sets whether this commerce order is shippable.
+	 *
+	 * @param shippable the shippable of this commerce order
+	 */
+	@Override
+	public void setShippable(boolean shippable) {
+		model.setShippable(shippable);
 	}
 
 	/**
@@ -2472,6 +2773,11 @@ public class CommerceOrderWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

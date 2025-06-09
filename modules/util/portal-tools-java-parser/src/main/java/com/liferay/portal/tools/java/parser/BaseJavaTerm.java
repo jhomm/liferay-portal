@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.java.parser;
@@ -213,13 +204,13 @@ public abstract class BaseJavaTerm implements JavaTerm {
 	}
 
 	protected String append(
-		StringBundler sb, List<? extends JavaTerm> list, String delimeter,
+		StringBundler sb, List<? extends JavaTerm> list, String delimiter,
 		String indent, String prefix, String suffix, int maxLineLength) {
 
 		if ((list.isEmpty() && Validator.isNull(prefix) &&
 			 Validator.isNull(suffix)) ||
 			appendSingleLine(
-				sb, list, delimeter, prefix, suffix, maxLineLength)) {
+				sb, list, delimiter, prefix, suffix, maxLineLength)) {
 
 			return indent;
 		}
@@ -230,11 +221,11 @@ public abstract class BaseJavaTerm implements JavaTerm {
 
 		if (Validator.isNull(StringUtil.trim(lastLine))) {
 			appendNewLine(
-				sb, list, delimeter, lastLine, prefix, suffix, maxLineLength);
+				sb, list, delimiter, lastLine, prefix, suffix, maxLineLength);
 		}
 		else {
 			appendNewLine(
-				sb, list, delimeter, indent, prefix, suffix, maxLineLength);
+				sb, list, delimiter, indent, prefix, suffix, maxLineLength);
 		}
 
 		return "\t" + getIndent(getLastLine(sb));
@@ -349,15 +340,15 @@ public abstract class BaseJavaTerm implements JavaTerm {
 	}
 
 	protected void appendNewLine(
-		StringBundler sb, List<? extends JavaTerm> list, String delimeter,
+		StringBundler sb, List<? extends JavaTerm> list, String delimiter,
 		String indent, String prefix, String suffix, int maxLineLength) {
 
 		appendNewLine(
-			sb, list, delimeter, indent, prefix, suffix, maxLineLength, true);
+			sb, list, delimiter, indent, prefix, suffix, maxLineLength, true);
 	}
 
 	protected void appendNewLine(
-		StringBundler sb, List<? extends JavaTerm> list, String delimeter,
+		StringBundler sb, List<? extends JavaTerm> list, String delimiter,
 		String indent, String prefix, String suffix, int maxLineLength,
 		boolean breakJavaTerms) {
 
@@ -402,7 +393,7 @@ public abstract class BaseJavaTerm implements JavaTerm {
 				if (!appendSingleLine(
 						sb, javaTerm, prefix, suffix, maxLineLength)) {
 
-					delimeter = StringUtil.trim(delimeter);
+					delimiter = StringUtil.trim(delimiter);
 
 					if (breakJavaTerms) {
 						appendNewLine(
@@ -420,7 +411,7 @@ public abstract class BaseJavaTerm implements JavaTerm {
 			}
 
 			if (appendSingleLine(
-					sb, javaTerm, prefix, delimeter, maxLineLength)) {
+					sb, javaTerm, prefix, delimiter, maxLineLength)) {
 
 				continue;
 			}
@@ -431,17 +422,17 @@ public abstract class BaseJavaTerm implements JavaTerm {
 			sb.append(indent);
 
 			if (!appendSingleLine(
-					sb, javaTerm, prefix, delimeter, maxLineLength)) {
+					sb, javaTerm, prefix, delimiter, maxLineLength)) {
 
 				if (breakJavaTerms) {
 					appendNewLine(
 						sb, javaTerm, indent, prefix,
-						StringUtil.trimTrailing(delimeter), maxLineLength);
+						StringUtil.trimTrailing(delimiter), maxLineLength);
 				}
 				else {
 					appendNewLine(
 						sb, javaTerm, indent, prefix,
-						StringUtil.trimTrailing(delimeter), _FORCE_SINGLE_LINE);
+						StringUtil.trimTrailing(delimiter), _FORCE_SINGLE_LINE);
 				}
 
 				sb.append("\n");
@@ -472,11 +463,11 @@ public abstract class BaseJavaTerm implements JavaTerm {
 	}
 
 	protected boolean appendSingleLine(
-		StringBundler sb, List<? extends JavaTerm> list, String delimeter,
+		StringBundler sb, List<? extends JavaTerm> list, String delimiter,
 		int maxLineLength) {
 
 		return appendSingleLine(
-			sb, list, delimeter, StringPool.BLANK, StringPool.BLANK,
+			sb, list, delimiter, StringPool.BLANK, StringPool.BLANK,
 			maxLineLength);
 	}
 
@@ -490,11 +481,11 @@ public abstract class BaseJavaTerm implements JavaTerm {
 	}
 
 	protected boolean appendSingleLine(
-		StringBundler sb, List<? extends JavaTerm> list, String delimeter,
+		StringBundler sb, List<? extends JavaTerm> list, String delimiter,
 		String prefix, String suffix, int maxLineLength) {
 
 		return _appendSingleLine(
-			sb, ListUtil.toString(list, StringPool.BLANK, delimeter), prefix,
+			sb, ListUtil.toString(list, StringPool.BLANK, delimiter), prefix,
 			suffix, maxLineLength);
 	}
 
@@ -663,7 +654,9 @@ public abstract class BaseJavaTerm implements JavaTerm {
 		StringBundler sb, String s, String prefix, String suffix,
 		int maxLineLength) {
 
-		if (s.contains("\n") && (maxLineLength != _FORCE_SINGLE_LINE)) {
+		if (!s.startsWith("\"\"\"") && !s.endsWith("\"\"\"") &&
+			s.contains("\n") && (maxLineLength != _FORCE_SINGLE_LINE)) {
+
 			return false;
 		}
 

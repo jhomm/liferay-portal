@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -48,16 +39,29 @@ public class PortalHotfixReleasePortalTopLevelBuild
 				"Please set 'TEST_BUILD_HOTFIX_ZIP_URL'");
 		}
 
-		Matcher matcher = _hotfixZipURLPattern.matcher(testBuildHotfixZipURL);
+		Matcher matcher = _hotfixZipURLPattern.find(testBuildHotfixZipURL);
 
-		if (!matcher.find()) {
+		if (matcher == null) {
 			throw new RuntimeException(
 				"Please set a valid 'TEST_BUILD_HOTFIX_ZIP_URL'");
 		}
 
+		String portalVersion = getParameterValue(
+			"PATCHER_BUILD_PATCHER_PORTAL_VERSION");
+
+		if (PortalRelease.isQuarterlyRelease(portalVersion)) {
+			return _getQuarterlyReleaseBranchName(portalVersion);
+		}
+
+		String majorVersion = matcher.group("majorVersion");
+		String minorVersion = matcher.group("minorVersion");
+
+		if (majorVersion.equals("7") && minorVersion.equals("4")) {
+			return "master";
+		}
+
 		String branchName = JenkinsResultsParserUtil.combine(
-			matcher.group("majorVersion"), ".", matcher.group("minorVersion"),
-			".x");
+			majorVersion, ".", minorVersion, ".x");
 
 		if (branchName.startsWith("6")) {
 			return "ee-" + branchName;
@@ -77,6 +81,35 @@ public class PortalHotfixReleasePortalTopLevelBuild
 
 		if (JenkinsResultsParserUtil.isNullOrEmpty(patcherPortalVersion)) {
 			return null;
+		}
+
+		if (patcherPortalVersion.contains("7310")) {
+			Matcher matcher = _patcherPortalVersion73Pattern.matcher(
+				patcherPortalVersion);
+
+			if (!matcher.find()) {
+				return null;
+			}
+
+			String fixpackVersion = matcher.group("fixpackVersion");
+
+			if (!fixpackVersion.equals("1") && !fixpackVersion.equals("2")) {
+				return null;
+			}
+
+			try {
+				URL portalFixpackURL = new URL(
+					JenkinsResultsParserUtil.combine(
+						"https://files.liferay.com/private/ee/fix-packs/7.3.10",
+						"/dxp/liferay-fix-pack-dxp-", fixpackVersion,
+						"-7310.zip"));
+
+				_portalFixpackRelease = new PortalFixpackRelease(
+					portalFixpackURL);
+			}
+			catch (MalformedURLException malformedURLException) {
+				throw new RuntimeException(malformedURLException);
+			}
 		}
 
 		Matcher matcher = _patcherPortalVersionDXPPattern.matcher(
@@ -140,6 +173,31 @@ public class PortalHotfixReleasePortalTopLevelBuild
 		String patcherPortalVersion = getParameterValue(
 			"PATCHER_BUILD_PATCHER_PORTAL_VERSION");
 
+		if (patcherPortalVersion.contains("7310")) {
+			Matcher matcher = _patcherPortalVersion73Pattern.matcher(
+				patcherPortalVersion);
+
+			String portalReleaseVersion = "7.3.10";
+
+			if (matcher.find()) {
+				String fixpackVersion = matcher.group("fixpackVersion");
+
+				if (fixpackVersion.equals("1") || fixpackVersion.equals("2")) {
+					portalReleaseVersion = "7.3.10.1";
+				}
+				else if (fixpackVersion.equals("3")) {
+					portalReleaseVersion = "7.3.10.3";
+				}
+				else {
+					portalReleaseVersion = "7.3.10.u" + fixpackVersion;
+				}
+			}
+
+			_portalRelease = new PortalRelease(portalReleaseVersion);
+
+			return _portalRelease;
+		}
+
 		if (!JenkinsResultsParserUtil.isNullOrEmpty(patcherPortalVersion)) {
 			Matcher patcherPortalVersion62Matcher =
 				_patcherPortalVersion62Pattern.matcher(patcherPortalVersion);
@@ -156,7 +214,7 @@ public class PortalHotfixReleasePortalTopLevelBuild
 				String servicePackVersion = patcherPortalVersion62Matcher.group(
 					"servicePackVersion");
 
-				if (JenkinsResultsParserUtil.isNullOrEmpty(
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(
 						servicePackVersion)) {
 
 					sb.append(".");
@@ -167,12 +225,40 @@ public class PortalHotfixReleasePortalTopLevelBuild
 
 				return _portalRelease;
 			}
+
+			Matcher patcherPortalVersionMatcher =
+				_patcherPortalVersionPattern.find(patcherPortalVersion);
+
+			if (patcherPortalVersionMatcher != null) {
+				StringBuilder sb = new StringBuilder();
+
+				sb.append(patcherPortalVersionMatcher.group("majorVersion"));
+				sb.append(".");
+				sb.append(patcherPortalVersionMatcher.group("minorVersion"));
+				sb.append(".");
+				sb.append(patcherPortalVersionMatcher.group("fixVersion"));
+
+				if (!PortalRelease.isQuarterlyRelease(patcherPortalVersion)) {
+					String updateVersion = patcherPortalVersionMatcher.group(
+						"updateVersion");
+
+					if (!JenkinsResultsParserUtil.isNullOrEmpty(
+							updateVersion)) {
+
+						sb.append(updateVersion);
+					}
+				}
+
+				_portalRelease = new PortalRelease(sb.toString());
+
+				return _portalRelease;
+			}
 		}
 
-		Matcher hotfixZipURLMatcher = _hotfixZipURLPattern.matcher(
+		Matcher hotfixZipURLMatcher = _hotfixZipURLPattern.find(
 			getParameterValue("TEST_BUILD_HOTFIX_ZIP_URL"));
 
-		if (!hotfixZipURLMatcher.find()) {
+		if (hotfixZipURLMatcher == null) {
 			return null;
 		}
 
@@ -219,6 +305,16 @@ public class PortalHotfixReleasePortalTopLevelBuild
 		return workspace;
 	}
 
+	@Override
+	protected String getReleaseRepositoryName() {
+		return "liferay-portal-ee";
+	}
+
+	@Override
+	protected boolean isReleaseBuild() {
+		return true;
+	}
+
 	private String _getPortalGitHubURL() {
 		String portalBranchName = getParameterValue(
 			"TEST_PORTAL_USER_BRANCH_NAME");
@@ -228,39 +324,107 @@ public class PortalHotfixReleasePortalTopLevelBuild
 		if (JenkinsResultsParserUtil.isNullOrEmpty(portalBranchName) ||
 			JenkinsResultsParserUtil.isNullOrEmpty(portalBranchUsername)) {
 
-			return null;
-		}
+			String patcherPortalVersion = getParameterValue(
+				"PATCHER_BUILD_PATCHER_PORTAL_VERSION");
 
-		String branchName = getBranchName();
+			if (JenkinsResultsParserUtil.isNullOrEmpty(patcherPortalVersion)) {
+				return null;
+			}
+
+			portalBranchUsername = "liferay";
+
+			Matcher patcherPortalVersionDXPMatcher =
+				_patcherPortalVersionDXPPattern.matcher(patcherPortalVersion);
+
+			if (patcherPortalVersionDXPMatcher.find()) {
+				StringBuilder sb = new StringBuilder();
+
+				sb.append("https://github.com/");
+				sb.append(portalBranchUsername);
+				sb.append("/");
+				sb.append(getReleaseRepositoryName());
+				sb.append("/tree/");
+				sb.append(patcherPortalVersion);
+
+				return sb.toString();
+			}
+
+			Matcher patcherPortalVersionMatcher =
+				_patcherPortalVersionPattern.find(patcherPortalVersion);
+
+			if (patcherPortalVersionMatcher == null) {
+				return null;
+			}
+
+			StringBuilder sb = new StringBuilder();
+
+			sb.append(patcherPortalVersionMatcher.group("majorVersion"));
+			sb.append(".");
+			sb.append(patcherPortalVersionMatcher.group("minorVersion"));
+			sb.append(".");
+			sb.append(patcherPortalVersionMatcher.group("fixVersion"));
+
+			if (!PortalRelease.isQuarterlyRelease(patcherPortalVersion)) {
+				String updateVersion = patcherPortalVersionMatcher.group(
+					"updateVersion");
+
+				if (!JenkinsResultsParserUtil.isNullOrEmpty(updateVersion)) {
+					sb.append(updateVersion);
+				}
+			}
+
+			portalBranchName = sb.toString();
+		}
 
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("https://github.com/");
 		sb.append(portalBranchUsername);
-		sb.append("/liferay-portal");
-
-		if (!branchName.equals("master")) {
-			sb.append("-ee");
-		}
-
+		sb.append("/");
+		sb.append(getReleaseRepositoryName());
 		sb.append("/tree/");
 		sb.append(portalBranchName);
 
 		return sb.toString();
 	}
 
-	private static final Pattern _hotfixZipURLPattern = Pattern.compile(
+	private String _getQuarterlyReleaseBranchName(String portalVersion) {
+		Matcher quarterlyReleaseBranchMatcher =
+			_quarterlyReleaseBranchNamePattern.matcher(portalVersion);
+
+		if (quarterlyReleaseBranchMatcher.find()) {
+			return "release-" +
+				quarterlyReleaseBranchMatcher.group("branchName");
+		}
+
+		return "master";
+	}
+
+	private static final MultiPattern _hotfixZipURLPattern = new MultiPattern(
 		"https?://.*(?<majorVersion>\\d)(?<minorVersion>\\d)" +
-			"(?<fixVersion>\\d{2})\\.(lpkg|zip)");
+			"(?<fixVersion>\\d{2})\\.(lpkg|zip)",
+		"https?://.*liferay-dxp-(?<majorVersion>\\d{4})." +
+			"(?<minorVersion>q\\d+).(?<fixVersion>\\d+)-hotfix-\\d+.(zip|tar." +
+				"gz|lpkg)");
 	private static final Pattern _patcherPortalVersion62Pattern =
 		Pattern.compile(
-			"(?<majorVersion>\\d)\\.(?<minorVersion>\\d)\\." +
+			"(?<majorVersion>6)\\.(?<minorVersion>2)\\." +
 				"(?<fixVersion>\\d{2})( SP(?<servicePackVersion>\\d+))?");
+	private static final Pattern _patcherPortalVersion73Pattern =
+		Pattern.compile("fix-pack-dxp-(?<fixpackVersion>\\d+)-7310");
 	private static final Pattern _patcherPortalVersionDXPPattern =
 		Pattern.compile(
 			"fix-pack-(?<fixpackType>de|dxp)-(?<fixpackVersion>\\d+)-" +
 				"(?<majorVersion>\\d)(?<minorVersion>\\d)" +
 					"(?<fixVersion>\\d{2})");
+	private static final MultiPattern _patcherPortalVersionPattern =
+		new MultiPattern(
+			"(?<majorVersion>7)\\.(?<minorVersion>4)\\." +
+				"(?<fixVersion>\\d{2})(?<updateVersion>-(ep|u)\\d+)?",
+			"(?<majorVersion>\\d{4}).(?<minorVersion>q\\d+)." +
+				"(?<fixVersion>\\d+)");
+	private static final Pattern _quarterlyReleaseBranchNamePattern =
+		Pattern.compile("(?<branchName>\\d{4}.[Qq]\\d+).\\d+");
 
 	private PortalFixpackRelease _portalFixpackRelease;
 	private PortalHotfixRelease _portalHotfixRelease;

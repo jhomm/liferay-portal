@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -76,9 +67,11 @@
 		</c:if>
 	</div>
 
-	<div class="btn-group">
-		<aui:button name="chooseSpecificDisplayPage" value="select" />
-	</div>
+	<clay:button
+		displayType="secondary"
+		id='<%= liferayPortletResponse.getNamespace() + "chooseSpecificDisplayPage" %>'
+		label="select"
+	/>
 </div>
 
 <aui:script sandbox="<%= true %>">
@@ -106,14 +99,24 @@
 				pagesContainerInput.value = '';
 
 				if (selectedItem) {
-					if (selectedItem.type === 'asset-display-page') {
-						assetDisplayPageIdInput.value = selectedItem.id;
+					if (
+						selectedItem.returnType ===
+						'com.liferay.item.selector.criteria.AssetEntryItemSelectorReturnType'
+					) {
+						try {
+							var itemValue = JSON.parse(selectedItem.value);
+
+							assetDisplayPageIdInput.value = itemValue.id;
+
+							specificDisplayPageNameInput.value = itemValue.name;
+						}
+						catch (e) {}
 					}
 					else {
 						pagesContainerInput.value = selectedItem.id;
-					}
 
-					specificDisplayPageNameInput.value = selectedItem.name;
+						specificDisplayPageNameInput.value = selectedItem.name;
+					}
 
 					if (previewSpecificDisplayPageButton) {
 						previewSpecificDisplayPageButton.parentNode.remove();
@@ -123,8 +126,7 @@
 			selectEventName:
 				'<%= selectAssetDisplayPageDisplayContext.getEventName() %>',
 			title: '<liferay-ui:message key="select-page" />',
-			url:
-				'<%= selectAssetDisplayPageDisplayContext.getAssetDisplayPageItemSelectorURL() %>',
+			url: '<%= selectAssetDisplayPageDisplayContext.getAssetDisplayPageItemSelectorURL() %>',
 		});
 	});
 
@@ -136,8 +138,7 @@
 		previewDefaultDisplayPageButton.addEventListener('click', (event) => {
 			Liferay.Util.openModal({
 				title: '<liferay-ui:message key="preview" />',
-				url:
-					'<%= selectAssetDisplayPageDisplayContext.getURLViewInContext() %>',
+				url: '<%= HtmlUtil.escapeJS(selectAssetDisplayPageDisplayContext.getURLViewInContext()) %>',
 			});
 		});
 	}
@@ -146,8 +147,7 @@
 		previewSpecificDisplayPageButton.addEventListener('click', (event) => {
 			Liferay.Util.openModal({
 				title: '<liferay-ui:message key="preview" />',
-				url:
-					'<%= selectAssetDisplayPageDisplayContext.getURLViewInContext() %>',
+				url: '<%= HtmlUtil.escapeJS(selectAssetDisplayPageDisplayContext.getURLViewInContext()) %>',
 			});
 		});
 	}

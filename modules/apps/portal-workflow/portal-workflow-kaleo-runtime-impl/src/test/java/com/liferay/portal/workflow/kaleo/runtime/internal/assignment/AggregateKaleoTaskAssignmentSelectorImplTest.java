@@ -1,22 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.runtime.internal.assignment;
 
-import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
-import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 import com.liferay.portal.workflow.kaleo.model.KaleoTaskAssignment;
 import com.liferay.portal.workflow.kaleo.runtime.ExecutionContext;
 import com.liferay.portal.workflow.kaleo.runtime.assignment.KaleoTaskAssignmentSelector;
@@ -28,25 +22,42 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import org.mockito.Mockito;
 
-import org.powermock.api.support.membermodification.MemberMatcher;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Rafael Praxedes
  */
-@RunWith(PowerMockRunner.class)
 public class AggregateKaleoTaskAssignmentSelectorImplTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Before
 	public void setUp() throws Exception {
 		_setUpAggregateKaleoTaskAssignmentSelectorImpl();
+	}
+
+	@After
+	public void tearDown() {
+		_kaleoTaskAssignmentSelectorRegistryImpl.deactivate();
+
+		for (ServiceRegistration<KaleoTaskAssignmentSelector>
+				serviceRegistration : _serviceRegistrations) {
+
+			serviceRegistration.unregister();
+		}
 	}
 
 	@Test
@@ -95,6 +106,17 @@ public class AggregateKaleoTaskAssignmentSelectorImplTest {
 				_containsKaleoTaskAssignment(
 					kaleoTaskAssignments3, kaleoTaskAssignment));
 		}
+
+		KaleoTaskAssignment kaleoTaskAssignment3 = _createKaleoTaskAssignment(
+			assigneeClassNames.get(2), RandomTestUtil.randomLong());
+
+		Collection<KaleoTaskAssignment> kaleoTaskAssignments4 =
+			_aggregateKaleoTaskAssignmentSelectorImpl.getKaleoTaskAssignments(
+				Arrays.asList(kaleoTaskAssignment1, kaleoTaskAssignment3),
+				Mockito.mock(ExecutionContext.class));
+
+		Assert.assertEquals(
+			kaleoTaskAssignments4.toString(), 3, kaleoTaskAssignments4.size());
 	}
 
 	private boolean _containsKaleoTaskAssignment(
@@ -119,10 +141,16 @@ public class AggregateKaleoTaskAssignmentSelectorImplTest {
 	}
 
 	private KaleoTaskAssignment _createKaleoTaskAssignment(
-		String assigneeClassName, long assigneeClassPK) {
+		long groupId, String assigneeClassName, long assigneeClassPK) {
 
 		KaleoTaskAssignment kaleoTaskAssignment = Mockito.mock(
 			KaleoTaskAssignment.class);
+
+		Mockito.when(
+			kaleoTaskAssignment.getGroupId()
+		).thenReturn(
+			groupId
+		);
 
 		Mockito.when(
 			kaleoTaskAssignment.getAssigneeClassName()
@@ -139,49 +167,46 @@ public class AggregateKaleoTaskAssignmentSelectorImplTest {
 		return kaleoTaskAssignment;
 	}
 
+	private KaleoTaskAssignment _createKaleoTaskAssignment(
+		String assigneeClassName, long assigneeClassPK) {
+
+		return _createKaleoTaskAssignment(
+			0L, assigneeClassName, assigneeClassPK);
+	}
+
 	private void _setUpAggregateKaleoTaskAssignmentSelectorImpl()
 		throws Exception {
-
-		KaleoTaskAssignmentSelectorTracker kaleoTaskAssignmentSelectorTracker =
-			new KaleoTaskAssignmentSelectorTracker();
 
 		for (Map.Entry<String, List<KaleoTaskAssignment>> entry :
 				_kaleoTaskAssignmentSelectors.entrySet()) {
 
-			kaleoTaskAssignmentSelectorTracker.addKaleoTaskAssignmentSelector(
-				new KaleoTaskAssignmentSelector() {
-
-					@Override
-					public Collection<KaleoTaskAssignment>
-							getKaleoTaskAssignments(
-								KaleoTaskAssignment kaleoTaskAssignment,
-								ExecutionContext executionContext)
-						throws PortalException {
-
-						return entry.getValue();
-					}
-
-				},
-				HashMapBuilder.<String, Object>put(
-					"assignee.class.name", entry.getKey()
-				).build());
+			_serviceRegistrations.add(
+				_bundleContext.registerService(
+					KaleoTaskAssignmentSelector.class,
+					(kaleoTaskAssignment, executionContext) -> entry.getValue(),
+					MapUtil.singletonDictionary(
+						"assignee.class.name", entry.getKey())));
 		}
 
-		MemberMatcher.field(
-			AggregateKaleoTaskAssignmentSelectorImpl.class,
-			"_kaleoTaskAssignmentSelectorRegistry"
-		).set(
+		_kaleoTaskAssignmentSelectorRegistryImpl.activate(_bundleContext);
+
+		ReflectionTestUtil.setFieldValue(
 			_aggregateKaleoTaskAssignmentSelectorImpl,
-			kaleoTaskAssignmentSelectorTracker
-		);
+			"_kaleoTaskAssignmentSelectorRegistry",
+			_kaleoTaskAssignmentSelectorRegistryImpl);
 	}
 
 	private final AggregateKaleoTaskAssignmentSelectorImpl
 		_aggregateKaleoTaskAssignmentSelectorImpl =
 			new AggregateKaleoTaskAssignmentSelectorImpl();
+	private final BundleContext _bundleContext =
+		SystemBundleUtil.getBundleContext();
+	private final KaleoTaskAssignmentSelectorRegistryImpl
+		_kaleoTaskAssignmentSelectorRegistryImpl =
+			new KaleoTaskAssignmentSelectorRegistryImpl();
 	private final Map<String, List<KaleoTaskAssignment>>
 		_kaleoTaskAssignmentSelectors =
-			HashMapBuilder.<String, List<KaleoTaskAssignment>>put(
+			LinkedHashMapBuilder.<String, List<KaleoTaskAssignment>>put(
 				RandomTestUtil.randomString(),
 				Arrays.asList(
 					_createKaleoTaskAssignment("A", 1),
@@ -195,6 +220,13 @@ public class AggregateKaleoTaskAssignmentSelectorImplTest {
 					_createKaleoTaskAssignment(
 						RandomTestUtil.randomString(),
 						RandomTestUtil.randomLong()))
+			).put(
+				RandomTestUtil.randomString(),
+				Arrays.asList(
+					_createKaleoTaskAssignment(
+						RandomTestUtil.randomLong(), "A", 1))
 			).build();
+	private final List<ServiceRegistration<KaleoTaskAssignmentSelector>>
+		_serviceRegistrations = new ArrayList<>();
 
 }

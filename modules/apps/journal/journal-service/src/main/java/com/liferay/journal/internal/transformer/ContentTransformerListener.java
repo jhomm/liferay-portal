@@ -1,27 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.internal.transformer;
 
+import com.liferay.dynamic.data.mapping.model.Value;
+import com.liferay.dynamic.data.mapping.storage.DDMFormFieldValue;
+import com.liferay.dynamic.data.mapping.storage.DDMFormValues;
 import com.liferay.journal.configuration.JournalServiceConfiguration;
 import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.XMLUtil;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.templateparser.BaseTransformerListener;
@@ -41,6 +35,7 @@ import java.util.Map;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Modified;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Brian Wing Shun Chan
@@ -48,8 +43,7 @@ import org.osgi.service.component.annotations.Modified;
  */
 @Component(
 	configurationPid = "com.liferay.journal.configuration.JournalServiceConfiguration",
-	immediate = true,
-	property = "javax.portlet.name=" + JournalPortletKeys.JOURNAL,
+	property = "jakarta.portlet.name=" + JournalPortletKeys.JOURNAL,
 	service = TransformerListener.class
 )
 public class ContentTransformerListener extends BaseTransformerListener {
@@ -68,7 +62,7 @@ public class ContentTransformerListener extends BaseTransformerListener {
 			_log.debug("onScript");
 		}
 
-		return injectEditInPlace(script, document);
+		return _injectEditInPlace(script, document);
 	}
 
 	@Override
@@ -79,7 +73,7 @@ public class ContentTransformerListener extends BaseTransformerListener {
 			_log.debug("onXml");
 		}
 
-		replace(document, tokens);
+		replace(document, languageId, tokens);
 
 		return document;
 	}
@@ -91,82 +85,27 @@ public class ContentTransformerListener extends BaseTransformerListener {
 			JournalServiceConfiguration.class, properties);
 	}
 
-	protected String getDynamicContent(Document document, String elementName) {
-		String content = null;
+	protected void replace(
+		Document document, String languageId, Map<String, String> tokens) {
 
-		try {
-			Element rootElement = document.getRootElement();
-
-			for (Element element : rootElement.elements()) {
-				String curElementName = element.attributeValue(
-					"name", StringPool.BLANK);
-
-				if (curElementName.equals(elementName)) {
-					content = element.elementText("dynamic-content");
-
-					break;
-				}
-			}
-		}
-		catch (Exception exception) {
-			_log.error(exception, exception);
-		}
-
-		return GetterUtil.getString(content);
-	}
-
-	protected String injectEditInPlace(String script, Document document) {
-		if (!script.contains("$editInPlace(")) {
-			return script;
-		}
-
-		try {
-			List<Node> nodes = document.selectNodes("//dynamic-element");
-
-			for (Node node : nodes) {
-				Element element = (Element)node;
-
-				String name = GetterUtil.getString(
-					element.attributeValue("name"));
-				String type = GetterUtil.getString(
-					element.attributeValue("type"));
-
-				if (!name.startsWith("reserved-") &&
-					(type.equals("text") || type.equals("text_area") ||
-					 type.equals("text_box"))) {
-
-					script = wrapEditInPlaceField(script, name, type, "data");
-					script = wrapEditInPlaceField(
-						script, name, type, "getData()");
-				}
-			}
-		}
-		catch (Exception exception) {
-			if (_log.isWarnEnabled()) {
-				_log.warn(exception.getMessage());
-			}
-		}
-
-		return script;
-	}
-
-	protected void replace(Document document, Map<String, String> tokens) {
 		try {
 			Element rootElement = document.getRootElement();
 
 			long articleGroupId = GetterUtil.getLong(
 				tokens.get("article_group_id"));
 
-			replace(rootElement, articleGroupId);
+			replace(rootElement, articleGroupId, languageId);
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception.getMessage());
+				_log.warn(exception);
 			}
 		}
 	}
 
-	protected void replace(Element root, long articleGroupId) throws Exception {
+	protected void replace(Element root, long articleGroupId, String languageId)
+		throws Exception {
+
 		for (Element element : root.elements()) {
 			List<Element> dynamicContentElements = element.elements(
 				"dynamic-content");
@@ -191,14 +130,12 @@ public class ContentTransformerListener extends BaseTransformerListener {
 						String articleId = text.substring(0, pos);
 						String elementName = text.substring(pos + 1);
 
-						JournalArticle article =
-							JournalArticleLocalServiceUtil.getArticle(
-								articleGroupId, articleId);
-
 						dynamicContentElement.clearContent();
 						dynamicContentElement.addCDATA(
-							getDynamicContent(
-								article.getDocument(), elementName));
+							_getContent(
+								JournalArticleLocalServiceUtil.getArticle(
+									articleGroupId, articleId),
+								elementName, languageId));
 					}
 				}
 				else if ((text != null) &&
@@ -211,7 +148,7 @@ public class ContentTransformerListener extends BaseTransformerListener {
 				}
 			}
 
-			replace(element, articleGroupId);
+			replace(element, articleGroupId, languageId);
 		}
 	}
 
@@ -221,24 +158,83 @@ public class ContentTransformerListener extends BaseTransformerListener {
 	 *
 	 * @return the processed string
 	 */
-	protected String replace(String xml, Map<String, String> tokens) {
+	protected String replace(
+		String xml, String languageId, Map<String, String> tokens) {
+
 		try {
 			Document document = SAXReaderUtil.read(xml);
 
-			replace(document, tokens);
+			replace(document, languageId, tokens);
 
-			xml = XMLUtil.formatXML(document);
+			document.formattedString(StringPool.DOUBLE_SPACE);
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception.getMessage());
+				_log.warn(exception);
 			}
 		}
 
 		return xml;
 	}
 
-	protected String wrapEditInPlaceField(
+	private String _getContent(
+		JournalArticle article, String elementName, String languageId) {
+
+		DDMFormValues ddmFormValues = article.getDDMFormValues();
+
+		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap =
+			ddmFormValues.getDDMFormFieldValuesMap(true);
+
+		List<DDMFormFieldValue> ddmFormFieldValues = ddmFormFieldValuesMap.get(
+			elementName);
+
+		if (ddmFormFieldValues.isEmpty()) {
+			return null;
+		}
+
+		DDMFormFieldValue ddmFormFieldValue = ddmFormFieldValues.get(0);
+
+		Value value = ddmFormFieldValue.getValue();
+
+		return value.getString(_language.getLocale(languageId));
+	}
+
+	private String _injectEditInPlace(String script, Document document) {
+		if (!script.contains("$editInPlace(")) {
+			return script;
+		}
+
+		try {
+			List<Node> nodes = document.selectNodes("//dynamic-element");
+
+			for (Node node : nodes) {
+				Element element = (Element)node;
+
+				String name = GetterUtil.getString(
+					element.attributeValue("name"));
+				String type = GetterUtil.getString(
+					element.attributeValue("type"));
+
+				if (!name.startsWith("reserved-") &&
+					(type.equals("text") || type.equals("text_area") ||
+					 type.equals("text_box"))) {
+
+					script = _wrapEditInPlaceField(script, name, type, "data");
+					script = _wrapEditInPlaceField(
+						script, name, type, "getData()");
+				}
+			}
+		}
+		catch (Exception exception) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(exception);
+			}
+		}
+
+		return script;
+	}
+
+	private String _wrapEditInPlaceField(
 		String script, String name, String type, String call) {
 
 		String field = StringBundler.concat("$", name, ".", call);
@@ -255,5 +251,8 @@ public class ContentTransformerListener extends BaseTransformerListener {
 		ContentTransformerListener.class);
 
 	private volatile JournalServiceConfiguration _journalServiceConfiguration;
+
+	@Reference
+	private Language _language;
 
 }

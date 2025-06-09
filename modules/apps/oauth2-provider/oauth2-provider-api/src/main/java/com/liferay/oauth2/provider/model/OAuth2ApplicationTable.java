@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.model;
@@ -33,6 +24,12 @@ public class OAuth2ApplicationTable extends BaseTable<OAuth2ApplicationTable> {
 	public static final OAuth2ApplicationTable INSTANCE =
 		new OAuth2ApplicationTable();
 
+	public final Column<OAuth2ApplicationTable, String> uuid = createColumn(
+		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<OAuth2ApplicationTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<OAuth2ApplicationTable, Long> oAuth2ApplicationId =
 		createColumn(
 			"oAuth2ApplicationId", Long.class, Types.BIGINT,
@@ -55,6 +52,10 @@ public class OAuth2ApplicationTable extends BaseTable<OAuth2ApplicationTable> {
 	public final Column<OAuth2ApplicationTable, String> allowedGrantTypes =
 		createColumn(
 			"allowedGrantTypes", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<OAuth2ApplicationTable, String>
+		clientAuthenticationMethod = createColumn(
+			"clientAuthenticationMethod", String.class, Types.VARCHAR,
 			Column.FLAG_DEFAULT);
 	public final Column<OAuth2ApplicationTable, Long> clientCredentialUserId =
 		createColumn(
@@ -83,6 +84,8 @@ public class OAuth2ApplicationTable extends BaseTable<OAuth2ApplicationTable> {
 	public final Column<OAuth2ApplicationTable, Long> iconFileEntryId =
 		createColumn(
 			"iconFileEntryId", Long.class, Types.BIGINT, Column.FLAG_DEFAULT);
+	public final Column<OAuth2ApplicationTable, String> jwks = createColumn(
+		"jwks", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<OAuth2ApplicationTable, String> name = createColumn(
 		"name", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<OAuth2ApplicationTable, String> privacyPolicyURL =

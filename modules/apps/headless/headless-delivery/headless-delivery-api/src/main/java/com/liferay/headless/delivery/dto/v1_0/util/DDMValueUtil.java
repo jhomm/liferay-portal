@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.dto.v1_0.util;
@@ -31,13 +22,13 @@ import com.liferay.journal.article.dynamic.data.mapping.form.field.type.constant
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleService;
 import com.liferay.layout.dynamic.data.mapping.form.field.type.constants.LayoutDDMFormFieldTypeConstants;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
@@ -46,9 +37,10 @@ import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.permission.LayoutPermissionUtil;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
-import com.liferay.portal.kernel.util.HtmlUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.ws.rs.BadRequestException;
 
 import java.text.ParseException;
 
@@ -58,13 +50,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.ws.rs.BadRequestException;
 
 /**
  * @author Víctor Galán
@@ -90,156 +76,87 @@ public class DDMValueUtil {
 					ddmFormField.getFieldReference());
 		}
 
+		Map<String, ContentFieldValue> localizedContentFieldValues =
+			contentField.getContentFieldValue_i18n();
+
+		if (Objects.equals(DDMFormFieldType.DATE, ddmFormField.getType()) ||
+			Objects.equals(
+				DDMFormFieldTypeConstants.DATE, ddmFormField.getType())) {
+
+			return _toDateValue(
+				contentFieldValue, ddmFormField, localizedContentFieldValues,
+				preferredLocale);
+		}
+		else if (Objects.equals(
+					DDMFormFieldType.DOCUMENT_LIBRARY,
+					ddmFormField.getType()) ||
+				 Objects.equals(
+					 ddmFormField.getType(),
+					 DDMFormFieldTypeConstants.DOCUMENT_LIBRARY)) {
+
+			return _toDocumentLibraryValue(
+				contentFieldValue, ddmFormField, dlAppService,
+				localizedContentFieldValues, preferredLocale);
+		}
+		else if (Objects.equals(
+					DDMFormFieldType.IMAGE, ddmFormField.getType()) ||
+				 Objects.equals(
+					 DDMFormFieldTypeConstants.IMAGE, ddmFormField.getType())) {
+
+			return _toImageValue(
+				contentFieldValue, ddmFormField, dlAppService,
+				localizedContentFieldValues, preferredLocale);
+		}
+		else if (Objects.equals(
+					DDMFormFieldType.JOURNAL_ARTICLE, ddmFormField.getType()) ||
+				 Objects.equals(
+					 ddmFormField.getType(),
+					 JournalArticleDDMFormFieldTypeConstants.JOURNAL_ARTICLE)) {
+
+			return _toJournalArticleValue(
+				contentFieldValue, ddmFormField, journalArticleService,
+				localizedContentFieldValues, preferredLocale);
+		}
+		else if (Objects.equals(
+					DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE,
+					ddmFormField.getType()) ||
+				 Objects.equals(
+					 DDMFormFieldTypeConstants.RADIO, ddmFormField.getType()) ||
+				 Objects.equals(
+					 DDMFormFieldTypeConstants.SELECT,
+					 ddmFormField.getType())) {
+
+			return _toSelectValue(
+				contentFieldValue, ddmFormField, localizedContentFieldValues,
+				preferredLocale);
+		}
+		else if (Objects.equals(
+					DDMFormFieldType.LINK_TO_PAGE, ddmFormField.getType()) ||
+				 Objects.equals(
+					 LayoutDDMFormFieldTypeConstants.LINK_TO_LAYOUT,
+					 ddmFormField.getType())) {
+
+			return _toLinkToPageValue(
+				contentFieldValue, ddmFormField, groupId, layoutLocalService,
+				localizedContentFieldValues, preferredLocale);
+		}
+		else if (Objects.equals(
+					DDMFormFieldType.GEOLOCATION, ddmFormField.getType()) ||
+				 Objects.equals(
+					 DDMFormFieldTypeConstants.GEOLOCATION,
+					 ddmFormField.getType())) {
+
+			return _toGeolocationValue(
+				contentFieldValue, ddmFormField, localizedContentFieldValues,
+				preferredLocale);
+		}
+
 		if (ddmFormField.isLocalizable()) {
-			Map<String, ContentFieldValue> localizedContentFieldValues =
-				contentField.getContentFieldValue_i18n();
-
-			if (Objects.equals(DDMFormFieldType.DATE, ddmFormField.getType()) ||
-				Objects.equals(
-					DDMFormFieldTypeConstants.DATE, ddmFormField.getType())) {
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					DDMValueUtil::_toLocalizedDateString, preferredLocale);
-			}
-			else if (Objects.equals(
-						DDMFormFieldType.DOCUMENT_LIBRARY,
-						ddmFormField.getType()) ||
-					 Objects.equals(
-						 ddmFormField.getType(),
-						 DDMFormFieldTypeConstants.DOCUMENT_LIBRARY)) {
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) ->
-						_toLocalizedDocument(
-							localizedContentFieldValue, dlAppService),
-					preferredLocale);
-			}
-			else if (Objects.equals(
-						DDMFormFieldType.IMAGE, ddmFormField.getType()) ||
-					 Objects.equals(
-						 DDMFormFieldTypeConstants.IMAGE,
-						 ddmFormField.getType())) {
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) -> _toLocalizedImage(
-						localizedContentFieldValue, dlAppService),
-					preferredLocale);
-			}
-			else if (Objects.equals(
-						DDMFormFieldType.JOURNAL_ARTICLE,
-						ddmFormField.getType()) ||
-					 Objects.equals(
-						 ddmFormField.getType(),
-						 JournalArticleDDMFormFieldTypeConstants.
-							 JOURNAL_ARTICLE)) {
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) ->
-						_toLocalizedJournalArticle(
-							localizedContentFieldValue, journalArticleService,
-							locale),
-					preferredLocale);
-			}
-			else if (Objects.equals(
-						DDMFormFieldTypeConstants.RADIO,
-						ddmFormField.getType()) ||
-					 Objects.equals(
-						 DDMFormFieldTypeConstants.SELECT,
-						 ddmFormField.getType()) ||
-					 Objects.equals(
-						 DDMFormFieldTypeConstants.CHECKBOX_MULTIPLE,
-						 ddmFormField.getType())) {
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) -> {
-						try {
-							String data = localizedContentFieldValue.getData();
-
-							List<String> values = new ArrayList<>();
-
-							if (!ddmFormField.isMultiple() &&
-								!Objects.equals(
-									DDMFormFieldType.CHECKBOX_MULTIPLE,
-									ddmFormField.getType())) {
-
-								values.add(data);
-							}
-							else {
-								values.addAll(
-									JSONUtil.toStringList(
-										JSONFactoryUtil.createJSONArray(data)));
-							}
-
-							List<String> collect = _transformValuesToKeys(
-								ddmFormField, locale, values);
-
-							if ((collect.size() == 1) &&
-								DDMFormFieldType.RADIO.equals(
-									ddmFormField.getType())) {
-
-								return collect.get(0);
-							}
-
-							return JSONUtil.toString(
-								JSONFactoryUtil.createJSONArray(collect));
-						}
-						catch (JSONException jsonException) {
-							return null;
-						}
-					},
-					preferredLocale);
-			}
-			else if (Objects.equals(
-						DDMFormFieldType.LINK_TO_PAGE,
-						ddmFormField.getType()) ||
-					 Objects.equals(
-						 LayoutDDMFormFieldTypeConstants.LINK_TO_LAYOUT,
-						 ddmFormField.getType())) {
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) ->
-						_toLocalizedLinkToPage(
-							localizedContentFieldValue, groupId,
-							layoutLocalService, locale),
-					preferredLocale);
-			}
-			else if (Objects.equals(
-						DDMFormFieldType.GEOLOCATION, ddmFormField.getType()) ||
-					 Objects.equals(
-						 DDMFormFieldTypeConstants.GEOLOCATION,
-						 ddmFormField.getType())) {
-
-				Geo geo = contentFieldValue.getGeo();
-
-				if (Objects.isNull(geo) || Objects.isNull(geo.getLatitude()) ||
-					Objects.isNull(geo.getLongitude())) {
-
-					throw new BadRequestException("Invalid geo " + geo);
-				}
-
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) -> JSONUtil.put(
-						"lat", geo.getLatitude()
-					).put(
-						"lng", geo.getLongitude()
-					).toString(),
-					preferredLocale);
-			}
-			else {
-				return _toLocalizedValue(
-					contentFieldValue, localizedContentFieldValues,
-					(localizedContentFieldValue, locale) ->
-						GetterUtil.getString(
-							localizedContentFieldValue.getData()),
-					preferredLocale);
-			}
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> GetterUtil.getString(
+					localizedContentFieldValue.getData()),
+				preferredLocale);
 		}
 
 		return new UnlocalizedValue(
@@ -275,78 +192,45 @@ public class DDMValueUtil {
 		return layout;
 	}
 
-	private static String _getLayoutBreadcrumb(Layout layout, Locale locale) {
+	private static String _getOptionValues(
+		DDMFormField ddmFormField, Locale locale, String optionValues) {
+
 		try {
-			List<Layout> ancestors = layout.getAncestors();
+			List<String> values = new ArrayList<>();
 
-			StringBundler sb = new StringBundler((4 * ancestors.size()) + 5);
+			if (!ddmFormField.isMultiple() &&
+				!Objects.equals(
+					DDMFormFieldType.CHECKBOX_MULTIPLE,
+					ddmFormField.getType())) {
 
-			if (layout.isPrivateLayout()) {
-				sb.append(LanguageUtil.get(locale, "private-pages"));
+				values.add(optionValues);
 			}
 			else {
-				sb.append(LanguageUtil.get(locale, "public-pages"));
+				values.addAll(
+					JSONUtil.toStringList(
+						JSONFactoryUtil.createJSONArray(optionValues)));
 			}
 
-			sb.append(StringPool.SPACE);
-			sb.append(StringPool.GREATER_THAN);
-			sb.append(StringPool.SPACE);
+			values = _transformValuesToKeys(ddmFormField, locale, values);
 
-			Collections.reverse(ancestors);
+			if ((values.size() == 1) &&
+				DDMFormFieldType.RADIO.equals(ddmFormField.getType())) {
 
-			for (Layout ancestor : ancestors) {
-				sb.append(HtmlUtil.escape(ancestor.getName(locale)));
-				sb.append(StringPool.SPACE);
-				sb.append(StringPool.GREATER_THAN);
-				sb.append(StringPool.SPACE);
+				return values.get(0);
 			}
 
-			sb.append(HtmlUtil.escape(layout.getName(locale)));
-
-			return sb.toString();
+			return JSONUtil.toString(JSONFactoryUtil.createJSONArray(values));
 		}
-		catch (PortalException portalException) {
-			throw new BadRequestException(
-				"No page found with friendly URL " + layout.getName(),
-				portalException);
+		catch (JSONException jsonException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(jsonException);
+			}
+
+			return null;
 		}
 	}
 
-	private static String _toJSON(
-		String description, DLAppService dlAppService, long fileEntryId) {
-
-		FileEntry fileEntry = null;
-
-		try {
-			fileEntry = dlAppService.getFileEntry(fileEntryId);
-		}
-		catch (Exception exception) {
-			throw new BadRequestException(
-				"No document exists with ID " + fileEntryId, exception);
-		}
-
-		return JSONUtil.put(
-			"alt", description
-		).put(
-			"classPK", fileEntry.getFileEntryId()
-		).put(
-			"fileEntryId", fileEntry.getFileEntryId()
-		).put(
-			"groupId", fileEntry.getGroupId()
-		).put(
-			"name", fileEntry.getFileName()
-		).put(
-			"resourcePrimKey", fileEntry.getPrimaryKey()
-		).put(
-			"title", fileEntry.getFileName()
-		).put(
-			"type", "document"
-		).put(
-			"uuid", fileEntry.getUuid()
-		).toString();
-	}
-
-	private static String _toLocalizedDateString(
+	private static String _toDateString(
 		ContentFieldValue contentFieldValue, Locale locale) {
 
 		if (Validator.isNull(contentFieldValue.getData())) {
@@ -367,7 +251,40 @@ public class DDMValueUtil {
 		}
 	}
 
-	private static String _toLocalizedDocument(
+	private static Value _toDateValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				DDMValueUtil::_toDateString, preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			_toDateString(contentFieldValue, preferredLocale));
+	}
+
+	private static Value _toDocumentLibraryValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		DLAppService dlAppService,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> _toDocumentString(
+					localizedContentFieldValue, dlAppService),
+				preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			_toDocumentString(contentFieldValue, dlAppService));
+	}
+
+	private static String _toDocumentString(
 		ContentFieldValue contentFieldValue, DLAppService dlAppService) {
 
 		String valueString = StringPool.BLANK;
@@ -382,7 +299,39 @@ public class DDMValueUtil {
 		return valueString;
 	}
 
-	private static String _toLocalizedImage(
+	private static Value _toGeolocationValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		Geo geo = contentFieldValue.getGeo();
+
+		if (Objects.isNull(geo) || Objects.isNull(geo.getLatitude()) ||
+			Objects.isNull(geo.getLongitude())) {
+
+			throw new BadRequestException("Invalid geo " + geo);
+		}
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> JSONUtil.put(
+					"lat", geo.getLatitude()
+				).put(
+					"lng", geo.getLongitude()
+				).toString(),
+				preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			JSONUtil.put(
+				"lat", geo.getLatitude()
+			).put(
+				"lng", geo.getLongitude()
+			).toString());
+	}
+
+	private static String _toImageString(
 		ContentFieldValue contentFieldValue, DLAppService dlAppService) {
 
 		String valueString = StringPool.BLANK;
@@ -398,7 +347,25 @@ public class DDMValueUtil {
 		return valueString;
 	}
 
-	private static String _toLocalizedJournalArticle(
+	private static Value _toImageValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		DLAppService dlAppService,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> _toImageString(
+					localizedContentFieldValue, dlAppService),
+				preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			_toImageString(contentFieldValue, dlAppService));
+	}
+
+	private static String _toJournalArticleString(
 		ContentFieldValue contentFieldValue,
 		JournalArticleService journalArticleService, Locale locale) {
 
@@ -435,7 +402,60 @@ public class DDMValueUtil {
 		return valueString;
 	}
 
-	private static String _toLocalizedLinkToPage(
+	private static Value _toJournalArticleValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		JournalArticleService journalArticleService,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> _toJournalArticleString(
+					localizedContentFieldValue, journalArticleService, locale),
+				preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			_toJournalArticleString(
+				contentFieldValue, journalArticleService, preferredLocale));
+	}
+
+	private static String _toJSON(
+		String description, DLAppService dlAppService, long fileEntryId) {
+
+		FileEntry fileEntry = null;
+
+		try {
+			fileEntry = dlAppService.getFileEntry(fileEntryId);
+		}
+		catch (Exception exception) {
+			throw new BadRequestException(
+				"No document exists with ID " + fileEntryId, exception);
+		}
+
+		return JSONUtil.put(
+			"alt", description
+		).put(
+			"classPK", fileEntry.getFileEntryId()
+		).put(
+			"fileEntryId", fileEntry.getFileEntryId()
+		).put(
+			"groupId", fileEntry.getGroupId()
+		).put(
+			"name", fileEntry.getFileName()
+		).put(
+			"resourcePrimKey", fileEntry.getPrimaryKey()
+		).put(
+			"title", fileEntry.getFileName()
+		).put(
+			"type", "document"
+		).put(
+			"uuid", fileEntry.getUuid()
+		).toString();
+	}
+
+	private static String _toLinkToPageString(
 		ContentFieldValue contentFieldValue, long groupId,
 		LayoutLocalService layoutLocalService, Locale locale) {
 
@@ -454,13 +474,46 @@ public class DDMValueUtil {
 			).put(
 				"layoutId", layout.getLayoutId()
 			).put(
-				"name", _getLayoutBreadcrumb(layout, locale)
+				"name",
+				() -> {
+					try {
+						return layout.getBreadcrumb(locale);
+					}
+					catch (Exception exception) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(exception);
+						}
+
+						return StringPool.BLANK;
+					}
+				}
 			).put(
 				"privateLayout", layout.isPrivateLayout()
 			).toString();
 		}
 
 		return valueString;
+	}
+
+	private static Value _toLinkToPageValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		long groupId, LayoutLocalService layoutLocalService,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> _toLinkToPageString(
+					localizedContentFieldValue, groupId, layoutLocalService,
+					locale),
+				preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			_toLinkToPageString(
+				contentFieldValue, groupId, layoutLocalService,
+				preferredLocale));
 	}
 
 	private static LocalizedValue _toLocalizedValue(
@@ -475,62 +528,102 @@ public class DDMValueUtil {
 			preferredLocale,
 			localizedValueBiFunction.apply(contentFieldValue, preferredLocale));
 
-		Optional.ofNullable(
-			localizedContentFieldValues
-		).orElse(
-			Collections.emptyMap()
-		).forEach(
-			(languageId, localizedContentFieldValue) -> {
-				Locale locale = LocaleUtil.fromLanguageId(
-					languageId, true, false);
+		if (localizedContentFieldValues == null) {
+			localizedContentFieldValues = Collections.emptyMap();
+		}
 
-				if (locale != null) {
-					localizedValue.addString(
-						locale,
-						localizedValueBiFunction.apply(
-							localizedContentFieldValue, locale));
-				}
+		for (Map.Entry<String, ContentFieldValue> entry :
+				localizedContentFieldValues.entrySet()) {
+
+			Locale locale = LocaleUtil.fromLanguageId(
+				entry.getKey(), true, false);
+
+			if (locale != null) {
+				localizedValue.addString(
+					locale,
+					localizedValueBiFunction.apply(entry.getValue(), locale));
 			}
-		);
+		}
 
 		return localizedValue;
+	}
+
+	private static Value _toSelectValue(
+		ContentFieldValue contentFieldValue, DDMFormField ddmFormField,
+		Map<String, ContentFieldValue> localizedContentFieldValues,
+		Locale preferredLocale) {
+
+		if (ddmFormField.isLocalizable()) {
+			return _toLocalizedValue(
+				contentFieldValue, localizedContentFieldValues,
+				(localizedContentFieldValue, locale) -> {
+					String optionValues = localizedContentFieldValue.getData();
+
+					String value = localizedContentFieldValue.getValue();
+
+					if (Validator.isNotNull(value)) {
+						optionValues = value;
+					}
+
+					return _getOptionValues(ddmFormField, locale, optionValues);
+				},
+				preferredLocale);
+		}
+
+		return new UnlocalizedValue(
+			_getOptionValues(
+				ddmFormField, preferredLocale, contentFieldValue.getValue()));
 	}
 
 	private static List<String> _transformValuesToKeys(
 		DDMFormField ddmFormField, Locale locale, List<String> values) {
 
-		Stream<String> stream = values.stream();
+		List<String> keys = new ArrayList<>();
 
-		return stream.map(
-			value -> {
-				DDMFormFieldOptions ddmFormFieldOptions =
-					ddmFormField.getDDMFormFieldOptions();
+		DDMFormFieldOptions ddmFormFieldOptions =
+			ddmFormField.getDDMFormFieldOptions();
 
-				Map<String, LocalizedValue> options =
-					ddmFormFieldOptions.getOptions();
+		Map<String, LocalizedValue> options = ddmFormFieldOptions.getOptions();
+		Map<String, String> optionsReferences =
+			ddmFormFieldOptions.getOptionsReferences();
 
-				Set<Map.Entry<String, LocalizedValue>> set = options.entrySet();
+		for (String value : values) {
+			if (options.containsKey(value)) {
+				keys.add(value);
 
-				Stream<Map.Entry<String, LocalizedValue>> setStream =
-					set.stream();
-
-				return setStream.filter(
-					entry -> {
-						LocalizedValue localizedValue = entry.getValue();
-
-						return Objects.equals(
-							localizedValue.getString(locale), value);
-					}
-				).map(
-					Map.Entry::getKey
-				).findFirst(
-				).orElse(
-					""
-				);
+				continue;
 			}
-		).collect(
-			Collectors.toList()
-		);
+
+			String key = StringPool.BLANK;
+
+			for (Map.Entry<String, LocalizedValue> entry : options.entrySet()) {
+				LocalizedValue localizedValue = entry.getValue();
+
+				if (Objects.equals(localizedValue.getString(locale), value)) {
+					key = entry.getKey();
+
+					break;
+				}
+			}
+
+			if (Validator.isNull(key)) {
+				for (Map.Entry<String, String> entry :
+						optionsReferences.entrySet()) {
+
+					if (Objects.equals(entry.getValue(), value)) {
+						key = entry.getKey();
+
+						break;
+					}
+				}
+			}
+
+			keys.add(key);
+		}
+
+		return keys;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(DDMValueUtil.class);
 
 }

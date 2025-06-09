@@ -1,37 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {openModal, openSelectionModal, openToast} from 'frontend-js-web';
+import {
+	openModal,
+	openSelectionModal,
+	openToast,
+} from 'frontend-js-components-web';
+import {setFormValues, sub} from 'frontend-js-web';
+
+import openDeleteCategoryModal from './openDeleteCategoryModal';
 
 const ACTIONS = {
 	deleteCategory({deleteCategoryURL}) {
-		if (
-			confirm(
-				Liferay.Language.get(
-					'this-category-might-be-being-used-in-some-contents'
-				)
-			)
-		) {
-			submitForm(document.hrefFm, deleteCategoryURL);
-		}
+		openDeleteCategoryModal({
+			message: Liferay.Language.get(
+				'this-category-might-be-being-used-in-some-contents'
+			),
+			onDelete: () => {
+				submitForm(document.hrefFm, deleteCategoryURL);
+			},
+		});
 	},
 
 	moveCategory(
-		{categoryId, categoryTitle, moveCategoryURL},
+		{categoryId, categoryTitle, selectParentCategoryURL},
 		portletNamespace
 	) {
 		openSelectionModal({
+			height: '70vh',
 			iframeBodyCssClass: '',
 			multiple: true,
 			onSelect: (selectedItems) => {
@@ -44,13 +42,16 @@ const ACTIONS = {
 				);
 
 				const parentCategoryId = item.categoryId || 0;
-				const vocabularyId = item.vocabularyId || 0;
+				const vocabularyId = item.vocabularyId;
 
-				if (categoryId === parentCategoryId) {
+				if (
+					categoryId === parentCategoryId ||
+					item.ancestorIds?.includes(categoryId)
+				) {
 					openToast({
-						message: Liferay.Util.sub(
+						message: sub(
 							Liferay.Language.get(
-								'unable-to-move-the-category-x-into-itself'
+								'unable-to-move-the-category-x-into-itself-or-one-of-its-children'
 							),
 							categoryTitle
 						),
@@ -66,7 +67,7 @@ const ACTIONS = {
 					);
 
 					if (form) {
-						Liferay.Util.setFormValues(form, {
+						setFormValues(form, {
 							categoryId,
 							parentCategoryId,
 							vocabularyId,
@@ -77,11 +78,9 @@ const ACTIONS = {
 				}
 			},
 			selectEventName: `${portletNamespace}selectCategory`,
-			title: Liferay.Util.sub(
-				Liferay.Language.get('move-x'),
-				categoryTitle
-			),
-			url: moveCategoryURL,
+			size: 'md',
+			title: sub(Liferay.Language.get('move-x'), categoryTitle),
+			url: selectParentCategoryURL,
 		});
 	},
 

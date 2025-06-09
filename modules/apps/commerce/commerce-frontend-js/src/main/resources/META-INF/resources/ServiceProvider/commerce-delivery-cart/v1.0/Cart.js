@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import AJAX from '../../../utilities/AJAX/index';
 
-const CARTS_PATH = '/carts',
-	CHANNELS_PATH = '/channels';
+const CART_COMMENTS_PATH = '/cart-comments';
+const CARTS_PATH = '/carts';
+const CHANNELS_PATH = '/channels';
 
 const VERSION = 'v1.0';
 
@@ -23,6 +15,9 @@ function resolveCartsPath(basePath = '', cartId) {
 	return `${basePath}${VERSION}${CARTS_PATH}/${cartId}`;
 }
 
+function resolveCartsBatchPath(basePath = '') {
+	return `${basePath}${VERSION}${CARTS_PATH}/batch`;
+}
 function resolveChannelsPath(basePath = '', channelId) {
 	return `${basePath}${VERSION}${CHANNELS_PATH}/${channelId}`;
 }
@@ -30,48 +25,135 @@ function resolveChannelsPath(basePath = '', channelId) {
 function resolveCartsByAccountIdAndChannelIdPath(
 	basePath = '',
 	accountId,
-	channelId
+	channelId,
+	searchParams
 ) {
-	return `${resolveChannelsPath(
-		basePath,
-		channelId
-	)}/account/${accountId}${CARTS_PATH}`;
+	const url = new URL(
+		`${Liferay.ThemeDisplay.getPathContext()}${resolveChannelsPath(
+			basePath,
+			channelId
+		)}/account/${accountId}${CARTS_PATH}`,
+		Liferay.ThemeDisplay.getPortalURL()
+	);
+
+	if (searchParams) {
+		Object.keys(searchParams).forEach((searchParamKey) => {
+			url.searchParams.set(searchParamKey, searchParams[searchParamKey]);
+		});
+	}
+
+	return url.pathname + url.search;
 }
 
-export default (basePath) => ({
-	cartsByAccountIdAndChannelIdURL: (accountId, channelId) =>
-		resolveCartsByAccountIdAndChannelIdPath(basePath, accountId, channelId),
+function resolveCartCommentsPath(basePath = '', cartCommentId) {
+	return `${basePath}${VERSION}${CART_COMMENTS_PATH}/${cartCommentId}`;
+}
 
-	createCartByChannelId: (channelId, json) =>
-		AJAX.POST(
-			`${resolveChannelsPath(basePath, channelId)}${CARTS_PATH}`,
-			json
-		),
+export default function Cart(basePath) {
+	return {
+		addAttachment: (cartId, json) =>
+			AJAX.POST(
+				`${resolveCartsPath(basePath, cartId)}/attachments/by-base64`,
+				json
+			),
 
-	createCouponCodeByCartId: (cartId, json) =>
-		AJAX.POST(`${resolveCartsPath(basePath, cartId)}/coupon-code`, json),
-
-	deleteCartById: (cartId) => AJAX.DELETE(resolveCartsPath(basePath, cartId)),
-
-	getCartById: (cartId) => AJAX.GET(resolveCartsPath(basePath, cartId)),
-
-	getCartByIdWithItems: (cartId) =>
-		AJAX.GET(
-			resolveCartsPath(basePath, cartId) + '?nestedFields=cartItems'
-		),
-
-	getCartsByAccountIdAndChannelId: (accountId, channelId) =>
-		AJAX.GET(
+		cartsByAccountIdAndChannelIdURL: (accountId, channelId) =>
 			resolveCartsByAccountIdAndChannelIdPath(
 				basePath,
 				accountId,
 				channelId
-			)
-		),
+			),
 
-	replaceCartById: (cartId, json) =>
-		AJAX.PUT(resolveCartsPath(basePath, cartId), json),
+		checkoutCartById: (cartId) =>
+			AJAX.POST(`${resolveCartsPath(basePath, cartId)}/checkout`),
 
-	updateCartById: (cartId, jsonProps) =>
-		AJAX.PATCH(resolveCartsPath(basePath, cartId), jsonProps),
-});
+		createCartByChannelId: (channelId, json) =>
+			AJAX.POST(
+				`${resolveChannelsPath(
+					basePath,
+					channelId
+				)}${CARTS_PATH}?nestedFields=cartItems`,
+				json
+			),
+
+		createCommentsByCartId: (cartId, json) =>
+			AJAX.POST(resolveCartsPath(basePath, cartId) + '/comments', json),
+
+		createCouponCodeByCartId: (cartId, json) =>
+			AJAX.POST(
+				`${resolveCartsPath(basePath, cartId)}/coupon-code`,
+				json
+			),
+
+		deleteAttachment: (cartId, attachmentId) =>
+			AJAX.DELETE(
+				`${resolveCartsPath(basePath, cartId)}/attachments/${attachmentId}`
+			),
+
+		deleteCartById: (cartId) =>
+			AJAX.DELETE(resolveCartsPath(basePath, cartId)),
+
+		deleteCartsById: (items) =>
+			AJAX.DELETE(resolveCartsBatchPath(basePath), {
+				body: JSON.stringify(items),
+			}),
+
+		deleteCommentsByCartId: (cartCommentId) =>
+			AJAX.DELETE(resolveCartCommentsPath(basePath, cartCommentId)),
+
+		executeCartTransitionsById: (cartId, json) =>
+			AJAX.POST(
+				resolveCartsPath(basePath, cartId) + '/cart-transitions',
+				json
+			),
+
+		getCartById: (cartId) => AJAX.GET(resolveCartsPath(basePath, cartId)),
+
+		getCartByIdWithItems: (cartId) =>
+			AJAX.GET(
+				resolveCartsPath(basePath, cartId) + '?nestedFields=cartItems'
+			),
+
+		getCartDeliveryTermsPage: (cartId) =>
+			AJAX.GET(resolveCartsPath(basePath, cartId) + '/delivery-terms'),
+
+		getCartPaymentMethodsPage: (cartId) =>
+			AJAX.GET(resolveCartsPath(basePath, cartId) + '/payment-methods'),
+
+		getCartPaymentTermsPage: (cartId) =>
+			AJAX.GET(resolveCartsPath(basePath, cartId) + '/payment-terms'),
+
+		getCartShippingMethodsPage: (cartId) =>
+			AJAX.GET(resolveCartsPath(basePath, cartId) + '/shipping-methods'),
+
+		getCartTransitionsById: (cartId) =>
+			AJAX.GET(resolveCartsPath(basePath, cartId) + '/cart-transitions'),
+
+		getCartsByAccountIdAndChannelId: (accountId, channelId, searchParams) =>
+			AJAX.GET(
+				resolveCartsByAccountIdAndChannelIdPath(
+					basePath,
+					accountId,
+					channelId,
+					searchParams
+				)
+			),
+
+		getCommentsByCartId: (cartId) =>
+			AJAX.GET(resolveCartsPath(basePath, cartId) + '/comments'),
+
+		patchCommentsByCartId: (cartId) =>
+			AJAX.PATCH(resolveCartsPath(basePath, cartId) + '/comments'),
+
+		replaceCartById: (cartId, json) =>
+			AJAX.PUT(resolveCartsPath(basePath, cartId), json),
+
+		updateCartById: (cartId, jsonProps, params) =>
+			AJAX.PATCH(
+				resolveCartsPath(basePath, cartId) + '?nestedFields=cartItems',
+				jsonProps,
+				{},
+				params
+			),
+	};
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.settings.web.internal.portlet.action;
@@ -17,7 +8,7 @@ package com.liferay.analytics.settings.web.internal.portlet.action;
 import com.liferay.analytics.settings.web.internal.util.AnalyticsSettingsUtil;
 import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -34,12 +25,12 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Iterator;
 import java.util.Objects;
-
-import javax.portlet.ActionRequest;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -60,7 +51,7 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
+		"jakarta.portlet.name=" + ConfigurationAdminPortletKeys.INSTANCE_SETTINGS,
 		"mvc.command.name=/analytics_settings/edit_workspace_connection"
 	},
 	service = MVCActionCommand.class
@@ -167,7 +158,7 @@ public class EditWorkspaceConnectionMVCActionCommand
 				throw new IllegalArgumentException();
 			}
 
-			return JSONFactoryUtil.createJSONObject(
+			return _jsonFactory.createJSONObject(
 				new String(Base64.decode(token)));
 		}
 		catch (Exception exception) {
@@ -228,7 +219,7 @@ public class EditWorkspaceConnectionMVCActionCommand
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			SessionErrors.add(actionRequest, "unableToNotifyAnalyticsCloud");
@@ -248,7 +239,7 @@ public class EditWorkspaceConnectionMVCActionCommand
 
 		UnicodeProperties unicodeProperties = new UnicodeProperties(true);
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			dataSourceConnectionJSON);
 
 		Iterator<String> iterator = jsonObject.keys();
@@ -284,28 +275,28 @@ public class EditWorkspaceConnectionMVCActionCommand
 			configurationProperties.put(
 				"syncedContactFieldNames",
 				new String[] {
-					"accountId", "birthday", "classNameId", "classPK",
-					"companyId", "contactId", "createDate", "emailAddress",
-					"employeeNumber", "employeeStatusId", "facebookSn",
-					"firstName", "hoursOfOperation", "jabberSn", "jobClass",
-					"jobTitle", "lastName", "male", "middleName",
-					"modifiedDate", "parentContactId", "prefixId", "skypeSn",
-					"smsSn", "suffixId", "twitterSn", "userId", "userName"
+					"birthday", "classNameId", "classPK", "companyId",
+					"contactId", "createDate", "emailAddress", "employeeNumber",
+					"employeeStatusId", "facebookSn", "firstName",
+					"hoursOfOperation", "jabberSn", "jobClass", "jobTitle",
+					"lastName", "male", "middleName", "modifiedDate",
+					"parentContactId", "prefixListTypeId", "skypeSn", "smsSn",
+					"suffixListTypeId", "twitterSn", "userId", "userName"
 				});
 			configurationProperties.put(
 				"syncedUserFieldNames",
 				new String[] {
 					"agreedToTermsOfUse", "comments", "companyId", "contactId",
-					"createDate", "defaultUser", "emailAddress",
-					"emailAddressVerified", "externalReferenceCode",
-					"facebookId", "firstName", "googleUserId", "greeting",
-					"jobTitle", "languageId", "lastName", "ldapServerId",
-					"middleName", "modifiedDate", "openId", "portraitId",
-					"screenName", "status", "timeZoneId", "userId", "uuid"
+					"createDate", "emailAddress", "emailAddressVerified",
+					"externalReferenceCode", "facebookId", "firstName",
+					"googleUserId", "greeting", "jobTitle", "languageId",
+					"lastName", "ldapServerId", "middleName", "modifiedDate",
+					"openId", "portraitId", "screenName", "status",
+					"timeZoneId", "userId", "uuid"
 				});
 		}
 
-		JSONObject jsonObject = JSONFactoryUtil.createJSONObject(
+		JSONObject jsonObject = _jsonFactory.createJSONObject(
 			dataSourceConnectionJSON);
 
 		Iterator<String> iterator = jsonObject.keys();
@@ -319,6 +310,9 @@ public class EditWorkspaceConnectionMVCActionCommand
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditWorkspaceConnectionMVCActionCommand.class);
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Portal _portal;

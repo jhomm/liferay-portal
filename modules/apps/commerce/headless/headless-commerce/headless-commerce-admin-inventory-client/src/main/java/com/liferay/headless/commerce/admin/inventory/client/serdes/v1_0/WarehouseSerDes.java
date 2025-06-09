@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.inventory.client.serdes.v1_0;
@@ -18,14 +9,13 @@ import com.liferay.headless.commerce.admin.inventory.client.dto.v1_0.Warehouse;
 import com.liferay.headless.commerce.admin.inventory.client.dto.v1_0.WarehouseItem;
 import com.liferay.headless.commerce.admin.inventory.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Alessio Antonio Rendina
@@ -54,6 +44,16 @@ public class WarehouseSerDes {
 		StringBuilder sb = new StringBuilder();
 
 		sb.append("{");
+
+		if (warehouse.getActions() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"actions\": ");
+
+			sb.append(_toJSON(warehouse.getActions()));
+		}
 
 		if (warehouse.getActive() != null) {
 			if (sb.length() > 1) {
@@ -100,11 +100,7 @@ public class WarehouseSerDes {
 
 			sb.append("\"description\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(warehouse.getDescription()));
-
-			sb.append("\"");
+			sb.append(_toJSON(warehouse.getDescription()));
 		}
 
 		if (warehouse.getExternalReferenceCode() != null) {
@@ -151,16 +147,6 @@ public class WarehouseSerDes {
 			sb.append(warehouse.getLongitude());
 		}
 
-		if (warehouse.getMvccVersion() != null) {
-			if (sb.length() > 1) {
-				sb.append(", ");
-			}
-
-			sb.append("\"mvccVersion\": ");
-
-			sb.append(warehouse.getMvccVersion());
-		}
-
 		if (warehouse.getName() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -168,11 +154,7 @@ public class WarehouseSerDes {
 
 			sb.append("\"name\": ");
 
-			sb.append("\"");
-
-			sb.append(_escape(warehouse.getName()));
-
-			sb.append("\"");
+			sb.append(_toJSON(warehouse.getName()));
 		}
 
 		if (warehouse.getRegionISOCode() != null) {
@@ -297,6 +279,13 @@ public class WarehouseSerDes {
 
 		Map<String, String> map = new TreeMap<>();
 
+		if (warehouse.getActions() == null) {
+			map.put("actions", null);
+		}
+		else {
+			map.put("actions", String.valueOf(warehouse.getActions()));
+		}
+
 		if (warehouse.getActive() == null) {
 			map.put("active", null);
 		}
@@ -355,13 +344,6 @@ public class WarehouseSerDes {
 		}
 		else {
 			map.put("longitude", String.valueOf(warehouse.getLongitude()));
-		}
-
-		if (warehouse.getMvccVersion() == null) {
-			map.put("mvccVersion", null);
-		}
-		else {
-			map.put("mvccVersion", String.valueOf(warehouse.getMvccVersion()));
 		}
 
 		if (warehouse.getName() == null) {
@@ -439,11 +421,76 @@ public class WarehouseSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "city")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "countryISOCode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "description")) {
+				return true;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "latitude")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "longitude")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "regionISOCode")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "street1")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "street2")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "street3")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "warehouseItems")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "zip")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			Warehouse warehouse, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
 
-			if (Objects.equals(jsonParserFieldName, "active")) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				if (jsonParserFieldValue != null) {
+					warehouse.setActions(
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "active")) {
 				if (jsonParserFieldValue != null) {
 					warehouse.setActive((Boolean)jsonParserFieldValue);
 				}
@@ -460,7 +507,8 @@ public class WarehouseSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "description")) {
 				if (jsonParserFieldValue != null) {
-					warehouse.setDescription((String)jsonParserFieldValue);
+					warehouse.setDescription(
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(
@@ -488,15 +536,10 @@ public class WarehouseSerDes {
 						Double.valueOf((String)jsonParserFieldValue));
 				}
 			}
-			else if (Objects.equals(jsonParserFieldName, "mvccVersion")) {
-				if (jsonParserFieldValue != null) {
-					warehouse.setMvccVersion(
-						Integer.valueOf((String)jsonParserFieldValue));
-				}
-			}
 			else if (Objects.equals(jsonParserFieldName, "name")) {
 				if (jsonParserFieldValue != null) {
-					warehouse.setName((String)jsonParserFieldValue);
+					warehouse.setName(
+						(Map<String, String>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "regionISOCode")) {
@@ -526,14 +569,18 @@ public class WarehouseSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "warehouseItems")) {
 				if (jsonParserFieldValue != null) {
-					warehouse.setWarehouseItems(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> WarehouseItemSerDes.toDTO((String)object)
-						).toArray(
-							size -> new WarehouseItem[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					WarehouseItem[] warehouseItemsArray =
+						new WarehouseItem[jsonParserFieldValues.length];
+
+					for (int i = 0; i < warehouseItemsArray.length; i++) {
+						warehouseItemsArray[i] = WarehouseItemSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					warehouse.setWarehouseItems(warehouseItemsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "zip")) {
@@ -573,36 +620,7 @@ public class WarehouseSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -612,6 +630,42 @@ public class WarehouseSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

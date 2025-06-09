@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.marketplace.app.manager.web.internal.util;
@@ -24,6 +15,7 @@ import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -43,13 +35,10 @@ import java.util.Set;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Version;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Ryan Park
  */
-@Component(service = {})
 public class AppDisplayFactoryUtil {
 
 	public static AppDisplay getAppDisplay(List<Bundle> bundles, long appId) {
@@ -58,15 +47,17 @@ public class AppDisplayFactoryUtil {
 
 			bundlesMap.load(bundles);
 
-			return createMarketplaceAppDisplay(
-				bundlesMap, _appLocalService.getApp(appId));
+			AppLocalService appLocalService = _appLocalServiceSnapshot.get();
+
+			return _createMarketplaceAppDisplay(
+				bundlesMap, appLocalService.getApp(appId));
 		}
 		catch (PortalException portalException) {
 
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return null;
@@ -128,21 +119,24 @@ public class AppDisplayFactoryUtil {
 
 		bundlesMap.load(bundles);
 
-		appDisplays.addAll(createMarketplaceAppDisplays(bundlesMap, category));
+		appDisplays.addAll(_createMarketplaceAppDisplays(bundlesMap, category));
 		appDisplays.addAll(
-			createPortalAppDisplays(bundlesMap, category, locale));
+			_createPortalAppDisplays(bundlesMap, category, locale));
 
-		filterAppDisplays(appDisplays, state);
+		_filterAppDisplays(appDisplays, state);
 
 		return ListUtil.sort(appDisplays);
 	}
 
-	protected static AppDisplay createMarketplaceAppDisplay(
+	private static AppDisplay _createMarketplaceAppDisplay(
 		BundlesMap bundlesMap, App app) {
 
 		AppDisplay appDisplay = new MarketplaceAppDisplay(app);
 
-		List<Module> modules = _moduleLocalService.getModules(app.getAppId());
+		ModuleLocalService moduleLocalService =
+			_moduleLocalServiceSnapshot.get();
+
+		List<Module> modules = moduleLocalService.getModules(app.getAppId());
 
 		for (Module module : modules) {
 			Bundle bundle = bundlesMap.getBundle(module);
@@ -155,7 +149,7 @@ public class AppDisplayFactoryUtil {
 		return appDisplay;
 	}
 
-	protected static List<AppDisplay> createMarketplaceAppDisplays(
+	private static List<AppDisplay> _createMarketplaceAppDisplays(
 		BundlesMap bundlesMap, String category) {
 
 		List<AppDisplay> appDisplays = new ArrayList<>();
@@ -165,15 +159,19 @@ public class AppDisplayFactoryUtil {
 		List<App> apps = null;
 
 		if (Validator.isNotNull(category)) {
-			apps = _appLocalService.getApps(category);
+			AppLocalService appLocalService = _appLocalServiceSnapshot.get();
+
+			apps = appLocalService.getApps(category);
 		}
 		else {
-			apps = _appLocalService.getApps(
+			AppLocalService appLocalService = _appLocalServiceSnapshot.get();
+
+			apps = appLocalService.getApps(
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 		}
 
 		for (App app : apps) {
-			AppDisplay appDisplay = createMarketplaceAppDisplay(
+			AppDisplay appDisplay = _createMarketplaceAppDisplay(
 				bundlesMap, app);
 
 			appDisplays.add(appDisplay);
@@ -188,7 +186,7 @@ public class AppDisplayFactoryUtil {
 		return appDisplays;
 	}
 
-	protected static List<AppDisplay> createPortalAppDisplays(
+	private static List<AppDisplay> _createPortalAppDisplays(
 		BundlesMap bundlesMap, String category, Locale locale) {
 
 		Map<String, AppDisplay> appDisplaysMap = new HashMap<>();
@@ -235,7 +233,7 @@ public class AppDisplayFactoryUtil {
 		return ListUtil.fromMapValues(appDisplaysMap);
 	}
 
-	protected static void filterAppDisplays(
+	private static void _filterAppDisplays(
 		List<AppDisplay> appDisplays, int state) {
 
 		Iterator<AppDisplay> iterator = appDisplays.iterator();
@@ -249,22 +247,13 @@ public class AppDisplayFactoryUtil {
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setAppLocalService(AppLocalService appLocalService) {
-		_appLocalService = appLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setModuleLocalService(
-		ModuleLocalService moduleLocalService) {
-
-		_moduleLocalService = moduleLocalService;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		AppDisplayFactoryUtil.class);
 
-	private static AppLocalService _appLocalService;
-	private static ModuleLocalService _moduleLocalService;
+	private static final Snapshot<AppLocalService> _appLocalServiceSnapshot =
+		new Snapshot<>(AppDisplayFactoryUtil.class, AppLocalService.class);
+	private static final Snapshot<ModuleLocalService>
+		_moduleLocalServiceSnapshot = new Snapshot<>(
+			AppDisplayFactoryUtil.class, ModuleLocalService.class);
 
 }

@@ -1,35 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.analytics.reports.web.internal.display.context;
 
 import com.liferay.analytics.reports.info.item.ClassNameClassPKInfoItemIdentifier;
-import com.liferay.analytics.reports.web.internal.util.AnalyticsReportsUtil;
 import com.liferay.info.item.ClassPKInfoItemIdentifier;
 import com.liferay.info.item.InfoItemReference;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
-import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PrefsPropsUtil;
-import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.kernel.util.Portal;
+
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceURL;
 
 import java.util.Collections;
 import java.util.Map;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceURL;
 
 /**
  * @author David Arques
@@ -38,16 +30,16 @@ import javax.portlet.ResourceURL;
 public class AnalyticsReportsDisplayContext<T> {
 
 	public AnalyticsReportsDisplayContext(
-		InfoItemReference infoItemReference, RenderRequest renderRequest,
-		RenderResponse renderResponse, ThemeDisplay themeDisplay) {
+		InfoItemReference infoItemReference, Portal portal,
+		RenderRequest renderRequest, RenderResponse renderResponse) {
 
 		_infoItemReference = infoItemReference;
+		_portal = portal;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
-		_themeDisplay = themeDisplay;
 	}
 
-	public Map<String, Object> getData() {
+	public Map<String, Object> getData() throws PortalException {
 		if (_data != null) {
 			return _data;
 		}
@@ -62,44 +54,23 @@ public class AnalyticsReportsDisplayContext<T> {
 		return _data;
 	}
 
-	public String getHideAnalyticsReportsPanelURL() {
-		return PortletURLBuilder.createActionURL(
-			_renderResponse
-		).setActionName(
-			"/analytics_reports/hide_panel"
-		).setRedirect(
-			() -> {
-				String redirect = ParamUtil.getString(
-					_renderRequest, "redirect");
+	private ResourceURL _getResourceURL(String resourceID)
+		throws PortalException {
 
-				if (Validator.isNotNull(redirect)) {
-					return redirect;
-				}
+		LiferayPortletRequest liferayPortletRequest =
+			_portal.getLiferayPortletRequest(_renderRequest);
 
-				return _themeDisplay.getLayoutFriendlyURL(
-					_themeDisplay.getLayout());
-			}
-		).buildString();
-	}
-
-	public String getLiferayAnalyticsURL() {
-		return PrefsPropsUtil.getString(
-			_themeDisplay.getCompanyId(), "liferayAnalyticsURL");
-	}
-
-	public boolean isAnalyticsSynced() {
-		long groupId = ParamUtil.getLong(
-			_renderRequest, "groupId", _themeDisplay.getScopeGroupId());
-
-		return AnalyticsReportsUtil.isAnalyticsSynced(
-			_themeDisplay.getCompanyId(), groupId);
-	}
-
-	private ResourceURL _getResourceURL(String resourceID) {
-		ResourceURL resourceURL = _renderResponse.createResourceURL();
-
-		resourceURL.setParameter(
-			"className", _infoItemReference.getClassName());
+		ResourceURL resourceURL =
+			(ResourceURL)PortletURLBuilder.createLiferayPortletURL(
+				_portal.getLiferayPortletResponse(_renderResponse),
+				liferayPortletRequest.getPlid(),
+				liferayPortletRequest.getPortletName(),
+				PortletRequest.RESOURCE_PHASE, MimeResponse.Copy.PUBLIC
+			).setRedirect(
+				ParamUtil.getString(_renderRequest, "redirect")
+			).setParameter(
+				"className", _infoItemReference.getClassName()
+			).buildPortletURL();
 
 		if (_infoItemReference.getInfoItemIdentifier() instanceof
 				ClassNameClassPKInfoItemIdentifier) {
@@ -136,8 +107,8 @@ public class AnalyticsReportsDisplayContext<T> {
 
 	private Map<String, Object> _data;
 	private final InfoItemReference _infoItemReference;
+	private final Portal _portal;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
-	private final ThemeDisplay _themeDisplay;
 
 }

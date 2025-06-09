@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -20,7 +11,8 @@
 ItemSelectorViewDescriptorRendererDisplayContext itemSelectorViewDescriptorRendererDisplayContext = (ItemSelectorViewDescriptorRendererDisplayContext)request.getAttribute(ItemSelectorViewDescriptorRendererDisplayContext.class.getName());
 
 ItemSelectorViewDescriptor<Object> itemSelectorViewDescriptor = itemSelectorViewDescriptorRendererDisplayContext.getItemSelectorViewDescriptor();
-
+boolean listView = Objects.equals(itemSelectorViewDescriptorRendererDisplayContext.getDisplayStyle(), "list");
+boolean multipleSelection = itemSelectorViewDescriptorRendererDisplayContext.isMultipleSelection();
 SearchContainer<Object> searchContainer = itemSelectorViewDescriptorRendererDisplayContext.getSearchContainer();
 %>
 
@@ -46,8 +38,12 @@ SearchContainer<Object> searchContainer = itemSelectorViewDescriptorRendererDisp
 		var="entriesSearch"
 	>
 		<liferay-ui:search-container-row
+			ariaLabel='<%= multipleSelection ? StringPool.BLANK : LanguageUtil.get(request, "press-enter-to-select-the-item-and-close-the-modal") %>'
 			className="Object"
+			cssClass='<%= (listView && !multipleSelection) ? "entry entry-selector" : StringPool.BLANK %>'
+			keyProperty="<%= itemSelectorViewDescriptor.getKeyProperty() %>"
 			modelVar="entry"
+			tabIndex='<%= multipleSelection ? StringPool.BLANK : "0" %>'
 		>
 
 			<%
@@ -66,11 +62,26 @@ SearchContainer<Object> searchContainer = itemSelectorViewDescriptorRendererDisp
 
 							<%
 							row.setCssClass("card-page-item card-page-item-directory entry " + row.getCssClass());
+
+							HorizontalCard horizontalCard = itemDescriptor.getHorizontalCard(renderRequest, searchContainer.getRowChecker());
+
+							if (horizontalCard == null) {
+								BaseModel<?> baseModel = null;
+
+								if (entry instanceof BaseModel) {
+									baseModel = (BaseModel<?>)entry;
+								}
+
+								horizontalCard = new ItemDescriptorHorizontalCard(baseModel, itemDescriptor, renderRequest, searchContainer.getRowChecker());
+							}
 							%>
 
 							<liferay-ui:search-container-column-text>
 								<clay:horizontal-card
-									horizontalCard="<%= new ItemDescriptorHorizontalCard(itemDescriptor, renderRequest, searchContainer.getRowChecker()) %>"
+									aria-label='<%= LanguageUtil.format(request, "select-x", horizontalCard.getTitle()) %>'
+									horizontalCard="<%= horizontalCard %>"
+									role="button"
+									tabIndex="0"
 								/>
 							</liferay-ui:search-container-column-text>
 						</c:when>
@@ -78,11 +89,26 @@ SearchContainer<Object> searchContainer = itemSelectorViewDescriptorRendererDisp
 
 							<%
 							row.setCssClass("card-page-item card-page-item-asset entry " + row.getCssClass());
+
+							VerticalCard verticalCard = itemDescriptor.getVerticalCard(renderRequest, searchContainer.getRowChecker());
+
+							if (verticalCard == null) {
+								BaseModel<?> baseModel = null;
+
+								if (entry instanceof BaseModel) {
+									baseModel = (BaseModel<?>)entry;
+								}
+
+								verticalCard = new ItemDescriptorVerticalCard(baseModel, itemDescriptor, renderRequest, searchContainer.getRowChecker());
+							}
 							%>
 
 							<liferay-ui:search-container-column-text>
 								<clay:vertical-card
-									verticalCard="<%= new ItemDescriptorVerticalCard(itemDescriptor, renderRequest, searchContainer.getRowChecker()) %>"
+									aria-label='<%= LanguageUtil.format(request, "select-x", verticalCard.getTitle()) %>'
+									role="button"
+									tabIndex="0"
+									verticalCard="<%= verticalCard %>"
 								/>
 							</liferay-ui:search-container-column-text>
 						</c:otherwise>
@@ -134,45 +160,36 @@ SearchContainer<Object> searchContainer = itemSelectorViewDescriptorRendererDisp
 						</c:if>
 
 						<p class="font-weight-bold h5">
-							<%= itemDescriptor.getTitle(locale) %>
+							<%= HtmlUtil.escape(itemDescriptor.getTitle(locale)) %>
 						</p>
 
 						<p class="h6 text-default">
-							<%= itemDescriptor.getSubtitle(locale) %>
+							<%= HtmlUtil.escape(itemDescriptor.getSubtitle(locale)) %>
 						</p>
-					</liferay-ui:search-container-column-text>
-				</c:when>
-				<c:otherwise>
-					<liferay-ui:search-container-column-text
-						cssClass="table-cell-expand table-cell-minw-200"
-						name="title"
-					>
-						<a class="entry" title="<%= itemDescriptor.getTitle(locale) %>">
-							<%= itemDescriptor.getTitle(locale) %>
-						</a>
-					</liferay-ui:search-container-column-text>
 
-					<liferay-ui:search-container-column-text
-						cssClass="table-cell-expand-smaller table-cell-minw-150"
-						name="user"
-						value="<%= itemDescriptor.getUserName() %>"
-					/>
-
-					<liferay-ui:search-container-column-text
-						cssClass="table-cell-expand-smaller table-cell-minw-150"
-						name="modified-date"
-					>
-						<c:if test="<%= Objects.nonNull(itemDescriptor.getModifiedDate()) %>">
-
-							<%
-							Date modifiedDate = itemDescriptor.getModifiedDate();
-							%>
-
+						<c:if test="<%= itemDescriptor.getStatus() != null %>">
 							<span class="text-default">
-								<liferay-ui:message arguments="<%= LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - modifiedDate.getTime(), true) %>" key="modified-x-ago" />
+								<aui:workflow-status markupView="lexicon" showIcon="<%= false %>" showLabel="<%= false %>" status="<%= itemDescriptor.getStatus() %>" />
 							</span>
 						</c:if>
 					</liferay-ui:search-container-column-text>
+				</c:when>
+				<c:otherwise>
+
+					<%
+					TableItemView tableItemView = itemSelectorViewDescriptor.getTableItemView(row.getObject());
+
+					if (tableItemView == null) {
+						tableItemView = new DefaultTableItemView(itemDescriptor);
+					}
+
+					searchContainer.setHeaderNames(tableItemView.getHeaderNames());
+
+					for (SearchEntry searchEntry : tableItemView.getSearchEntries(locale)) {
+						row.addSearchEntry(searchEntry);
+					}
+					%>
+
 				</c:otherwise>
 			</c:choose>
 		</liferay-ui:search-container-row>
@@ -180,105 +197,19 @@ SearchContainer<Object> searchContainer = itemSelectorViewDescriptorRendererDisp
 		<liferay-ui:search-iterator
 			displayStyle="<%= itemSelectorViewDescriptorRendererDisplayContext.getDisplayStyle() %>"
 			markupView="lexicon"
+			resultRowSplitter="<%= itemSelectorViewDescriptor.getResultRowSplitter() %>"
 			searchContainer="<%= searchContainer %>"
 		/>
 	</liferay-ui:search-container>
 </clay:container-fluid>
 
-<c:choose>
-	<c:when test="<%= itemSelectorViewDescriptorRendererDisplayContext.isMultipleSelection() %>">
-		<aui:script use="liferay-search-container">
-			var searchContainer = Liferay.SearchContainer.get(
-				'<portlet:namespace />entries'
-			);
-
-			searchContainer.on('rowToggled', (event) => {
-				var searchContainerItems = event.elements.allSelectedElements;
-
-				var arr = [];
-
-				searchContainerItems.each(function () {
-					var domElement = this.ancestor('li');
-
-					if (domElement == null) {
-						domElement = this.ancestor('tr');
-					}
-
-					if (domElement != null) {
-						var itemValue = domElement.getDOM().dataset.value;
-
-						arr.push(itemValue);
-					}
-				});
-
-				Liferay.Util.getOpener().Liferay.fire(
-					'<%= itemSelectorViewDescriptorRendererDisplayContext.getItemSelectedEventName() %>',
-					{
-						data: {
-							returnType:
-								'<%= itemSelectorViewDescriptorRendererDisplayContext.getReturnType() %>',
-							value: arr,
-						},
-					}
-				);
-			});
-		</aui:script>
-	</c:when>
-	<c:otherwise>
-		<aui:script require="frontend-js-web/liferay/delegate/delegate.es as delegateModule">
-			var delegate = delegateModule.default;
-
-			var selectItemHandler = delegate(
-				document.querySelector('#<portlet:namespace />entriesContainer'),
-				'click',
-				'.entry',
-				(event) => {
-					var activeCards = document.querySelectorAll('.form-check-card.active');
-
-					if (activeCards.length) {
-						activeCards.forEach((card) => {
-							card.classList.remove('active');
-						});
-					}
-
-					var target = event.delegateTarget;
-
-					var newSelectedCard = target.closest('.form-check-card');
-
-					if (newSelectedCard) {
-						newSelectedCard.classList.add('active');
-					}
-
-					var domElement = target.closest('li');
-
-					if (domElement == null) {
-						domElement = target.closest('tr');
-					}
-
-					var itemValue = '';
-
-					if (domElement != null) {
-						itemValue = domElement.dataset.value;
-					}
-
-					Liferay.Util.getOpener().Liferay.fire(
-						'<%= itemSelectorViewDescriptorRendererDisplayContext.getItemSelectedEventName() %>',
-						{
-							data: {
-								returnType:
-									'<%= itemSelectorViewDescriptorRendererDisplayContext.getReturnType() %>',
-								value: itemValue,
-							},
-						}
-					);
-				}
-			);
-
-			Liferay.on('destroyPortlet', function removeListener() {
-				selectItemHandler.dispose();
-
-				Liferay.detach('destroyPortlet', removeListener);
-			});
-		</aui:script>
-	</c:otherwise>
-</c:choose>
+<liferay-frontend:component
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"itemSelectorReturnType", itemSelectorViewDescriptorRendererDisplayContext.getReturnType()
+		).put(
+			"itemSelectorSelectedEvent", HtmlUtil.escapeJS(itemSelectorViewDescriptorRendererDisplayContext.getItemSelectedEventName())
+		).build()
+	%>'
+	module='<%= multipleSelection ? "{ViewItemSelectorViewDescriptorMultiple} from item-selector-web" : "{ViewItemSelectorViewDescriptor} from item-selector-web" %>'
+/>

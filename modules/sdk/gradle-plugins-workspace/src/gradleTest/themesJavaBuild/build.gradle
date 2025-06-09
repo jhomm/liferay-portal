@@ -1,5 +1,9 @@
 task runGradleTest
 
+gradle.liferayWorkspace {
+	product = "dxp-2023.q4.6"
+}
+
 runGradleTest {
 	dependsOn distBundle
 

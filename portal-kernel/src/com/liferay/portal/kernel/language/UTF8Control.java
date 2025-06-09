@@ -1,26 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.language;
 
 import com.liferay.petra.concurrent.ConcurrentReferenceKeyHashMap;
+import com.liferay.petra.io.StreamUtil;
+import com.liferay.petra.io.unsync.UnsyncStringReader;
 import com.liferay.petra.memory.FinalizeManager;
 import com.liferay.petra.string.StringPool;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.Reader;
 
 import java.net.URL;
 import java.net.URLConnection;
@@ -30,6 +24,7 @@ import java.util.Map;
 import java.util.PropertyResourceBundle;
 import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiFunction;
 
 /**
  * @author Raymond Augé
@@ -74,9 +69,10 @@ public class UTF8Control extends ResourceBundle.Control {
 
 		urlConnection.setUseCaches(!reload);
 
-		try (InputStream inputStream = urlConnection.getInputStream()) {
-			ResourceBundle resourceBundle = new PropertyResourceBundle(
-				new InputStreamReader(inputStream, StringPool.UTF8));
+		try (InputStream inputStream = urlConnection.getInputStream();
+			Reader reader = _toReader(url, inputStream)) {
+
+			ResourceBundle resourceBundle = new PropertyResourceBundle(reader);
 
 			Map<URL, ResourceBundle> resourceBundles =
 				_resourceBundlesMap.computeIfAbsent(
@@ -88,8 +84,47 @@ public class UTF8Control extends ResourceBundle.Control {
 		}
 	}
 
+	private Reader _toReader(URL url, InputStream inputStream)
+		throws IOException {
+
+		if (_textReplacerBiFunction == null) {
+			return new InputStreamReader(inputStream, StringPool.UTF8);
+		}
+
+		return new UnsyncStringReader(
+			_textReplacerBiFunction.apply(
+				"UTF8Control#" + url,
+				StreamUtil.toString(inputStream, StringPool.UTF8)));
+	}
+
 	private static final Map<ClassLoader, Map<URL, ResourceBundle>>
 		_resourceBundlesMap = new ConcurrentReferenceKeyHashMap<>(
 			FinalizeManager.WEAK_REFERENCE_FACTORY);
+	private static final BiFunction<String, String, String>
+		_textReplacerBiFunction;
+
+	static {
+		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+
+		Object instance = null;
+
+		try {
+			Class<?> clazz = classLoader.loadClass(
+				"com.liferay.portal.tools.jakarta.ee.transformer.function." +
+					"TextReplacerBiFunction");
+
+			instance = clazz.newInstance();
+		}
+		catch (ReflectiveOperationException reflectiveOperationException) {
+			if (!(reflectiveOperationException instanceof
+					ClassNotFoundException)) {
+
+				throw new ExceptionInInitializerError(
+					reflectiveOperationException);
+			}
+		}
+
+		_textReplacerBiFunction = (BiFunction<String, String, String>)instance;
+	}
 
 }

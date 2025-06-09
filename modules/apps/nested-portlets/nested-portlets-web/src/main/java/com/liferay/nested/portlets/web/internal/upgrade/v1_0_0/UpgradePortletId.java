@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.nested.portlets.web.internal.upgrade.v1_0_0;
@@ -32,8 +23,8 @@ public class UpgradePortletId extends BasePortletIdUpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		super.doUpgrade();
 
-		updateNestedPortletLayoutRevisionTypeSettings();
-		updateNestedPortletLayoutTypeSettings();
+		_updateNestedPortletLayoutRevisionTypeSettings();
+		_updateNestedPortletLayoutTypeSettings();
 	}
 
 	@Override
@@ -43,7 +34,7 @@ public class UpgradePortletId extends BasePortletIdUpgradeProcess {
 		};
 	}
 
-	protected void updateNestedPortletLayoutRevisionTypeSettings()
+	private void _updateNestedPortletLayoutRevisionTypeSettings()
 		throws Exception {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -68,12 +59,12 @@ public class UpgradePortletId extends BasePortletIdUpgradeProcess {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 	}
 
-	protected void updateNestedPortletLayoutTypeSettings() throws Exception {
+	private void _updateNestedPortletLayoutTypeSettings() throws Exception {
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
 				"select plid, typeSettings from Layout where typeSettings " +
 					"LIKE '%nested-column-ids%'");
@@ -97,7 +88,7 @@ public class UpgradePortletId extends BasePortletIdUpgradeProcess {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 	}

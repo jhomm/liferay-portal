@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -45,9 +36,9 @@ PortletURL portletURL = viewUserGroupsManagementToolbarDisplayContext.getPortlet
 	actionDropdownItems="<%= viewUserGroupsManagementToolbarDisplayContext.getActionDropdownItems() %>"
 	clearResultsURL="<%= viewUserGroupsManagementToolbarDisplayContext.getClearResultsURL() %>"
 	creationMenu="<%= viewUserGroupsManagementToolbarDisplayContext.getCreationMenu() %>"
-	filterDropdownItems="<%= viewUserGroupsManagementToolbarDisplayContext.getFilterDropdownItems() %>"
 	itemsTotal="<%= searchContainer.getTotal() %>"
-	propsTransformer="js/ViewUserGroupsManagementToolbarPropsTransformer"
+	orderDropdownItems="<%= viewUserGroupsManagementToolbarDisplayContext.getOrderByDropdownItems() %>"
+	propsTransformer="{ViewUserGroupsManagementToolbarPropsTransformer} from user-groups-admin-web"
 	searchActionURL="<%= viewUserGroupsManagementToolbarDisplayContext.getSearchActionURL() %>"
 	searchContainerId="userGroups"
 	searchFormName="searchFm"
@@ -59,17 +50,14 @@ PortletURL portletURL = viewUserGroupsManagementToolbarDisplayContext.getPortlet
 	viewTypeItems="<%= viewUserGroupsManagementToolbarDisplayContext.getViewTypeItems() %>"
 />
 
-<aui:form action="<%= portletURL.toString() %>" cssClass="container-fluid container-fluid-max-xl container-view" method="get" name="fm">
+<aui:form action="<%= portletURL %>" cssClass="container-fluid container-fluid-max-xl container-view" method="get" name="fm">
 	<liferay-portlet:renderURLParams varImpl="portletURL" />
 	<aui:input name="redirect" type="hidden" value="<%= portletURL.toString() %>" />
 	<aui:input name="deleteUserGroupIds" type="hidden" />
 
 	<div id="breadcrumb">
-		<liferay-ui:breadcrumb
-			showCurrentGroup="<%= false %>"
-			showGuestGroup="<%= false %>"
-			showLayout="<%= false %>"
-			showPortletBreadcrumb="<%= true %>"
+		<liferay-site-navigation:breadcrumb
+			breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, true, true) %>"
 		/>
 	</div>
 
@@ -80,7 +68,7 @@ PortletURL portletURL = viewUserGroupsManagementToolbarDisplayContext.getPortlet
 	window.<portlet:namespace />deleteUserGroups = function () {
 		<portlet:namespace />doDeleteUserGroup(
 			'<%= UserGroup.class.getName() %>',
-			Liferay.Util.listCheckedExcept(
+			Liferay.Util.getCheckedCheckboxes(
 				document.<portlet:namespace />fm,
 				'<portlet:namespace />allRowIds'
 			)
@@ -108,13 +96,17 @@ PortletURL portletURL = viewUserGroupsManagementToolbarDisplayContext.getPortlet
 							count = parseInt(responseData, 10);
 
 							if (count > 0) {
-								if (
-									confirm(
-										'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this") %>'
-									)
-								) {
-									<portlet:namespace />doDeleteUserGroups(ids);
-								}
+								Liferay.Util.openConfirmModal({
+									message:
+										'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this") %>',
+									onConfirm: (isConfirmed) => {
+										if (isConfirmed) {
+											<portlet:namespace />doDeleteUserGroups(
+												ids
+											);
+										}
+									},
+								});
 							}
 							else {
 								var message;
@@ -128,19 +120,30 @@ PortletURL portletURL = viewUserGroupsManagementToolbarDisplayContext.getPortlet
 										'<%= UnicodeLanguageUtil.get(request, "the-selected-user-group-is-associated-with-deactivated-users.-do-you-want-to-proceed-with-deleting-the-selected-user-group-by-automatically-unassociating-the-deactivated-users") %>';
 								}
 
-								if (confirm(message)) {
-									<portlet:namespace />doDeleteUserGroups(ids);
-								}
+								Liferay.Util.openConfirmModal({
+									message: message,
+									onConfirm: (isConfirmed) => {
+										if (isConfirmed) {
+											<portlet:namespace />doDeleteUserGroups(
+												ids
+											);
+										}
+									},
+								});
 							}
 						}
 					);
 				}
-				else if (
-					confirm(
-						'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this") %>'
-					)
-				) {
-					<portlet:namespace />doDeleteUserGroups(ids);
+				else {
+					Liferay.Util.openConfirmModal({
+						message:
+							'<%= UnicodeLanguageUtil.get(request, "are-you-sure-you-want-to-delete-this") %>',
+						onConfirm: (isConfirmed) => {
+							if (isConfirmed) {
+								<portlet:namespace />doDeleteUserGroups(ids);
+							}
+						},
+					});
 				}
 			}
 		);

@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.trash;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.TrashedModel;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
@@ -32,7 +24,7 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.trash.TrashHelper;
 import com.liferay.trash.constants.TrashActionKeys;
-import com.liferay.trash.kernel.exception.RestoreEntryException;
+import com.liferay.trash.exception.RestoreEntryException;
 import com.liferay.trash.kernel.model.TrashEntry;
 import com.liferay.wiki.constants.WikiPortletKeys;
 import com.liferay.wiki.model.WikiNode;
@@ -41,11 +33,10 @@ import com.liferay.wiki.service.WikiNodeLocalService;
 import com.liferay.wiki.service.WikiPageLocalService;
 import com.liferay.wiki.web.internal.asset.WikiNodeTrashRenderer;
 
-import java.util.ArrayList;
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -162,17 +153,11 @@ public class WikiNodeTrashHandler extends BaseWikiTrashHandler {
 		long classPK, int start, int end,
 		OrderByComparator<?> orderByComparator) {
 
-		List<WikiPage> pages = _wikiPageLocalService.getPages(
-			classPK, true, WorkflowConstants.STATUS_IN_TRASH, start, end,
-			(OrderByComparator<WikiPage>)orderByComparator);
-
-		List<TrashedModel> trashedModels = new ArrayList<>(pages.size());
-
-		for (WikiPage page : pages) {
-			trashedModels.add(page);
-		}
-
-		return trashedModels;
+		return TransformUtil.transform(
+			_wikiPageLocalService.getPages(
+				classPK, true, WorkflowConstants.STATUS_IN_TRASH, start, end,
+				(OrderByComparator<WikiPage>)orderByComparator),
+			page -> page);
 	}
 
 	@Override
@@ -197,7 +182,7 @@ public class WikiNodeTrashHandler extends BaseWikiTrashHandler {
 			return false;
 		}
 
-		return !node.isInTrashContainer();
+		return !_trashHelper.isInTrashContainer(node);
 	}
 
 	@Override
@@ -253,6 +238,11 @@ public class WikiNodeTrashHandler extends BaseWikiTrashHandler {
 
 		return _wikiNodeModelResourcePermission.contains(
 			permissionChecker, classPK, actionId);
+	}
+
+	@Override
+	protected boolean isInTrashExplicitly(WikiPage page) {
+		return _trashHelper.isInTrashExplicitly(page);
 	}
 
 	@Reference

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -24,43 +15,11 @@ SearchContainer<CPDefinition> cpDefinitionSearchContainer = cpDefinitionItemSele
 String displayStyle = cpDefinitionItemSelectorViewDisplayContext.getDisplayStyle();
 
 String itemSelectedEventName = cpDefinitionItemSelectorViewDisplayContext.getItemSelectedEventName();
-
-PortletURL portletURL = cpDefinitionItemSelectorViewDisplayContext.getPortletURL();
 %>
 
-<liferay-frontend:management-bar
-	includeCheckBox="<%= !cpDefinitionItemSelectorViewDisplayContext.isSingleSelection() %>"
-	searchContainerId="cpDefinitions"
->
-	<liferay-frontend:management-bar-buttons>
-		<liferay-frontend:management-bar-display-buttons
-			displayViews='<%= new String[] {"list"} %>'
-			portletURL="<%= portletURL %>"
-			selectedDisplayStyle="<%= displayStyle %>"
-		/>
-	</liferay-frontend:management-bar-buttons>
-
-	<liferay-frontend:management-bar-filters>
-		<liferay-frontend:management-bar-navigation
-			navigationKeys='<%= new String[] {"all"} %>'
-			portletURL="<%= portletURL %>"
-		/>
-
-		<liferay-frontend:management-bar-sort
-			orderByCol="<%= cpDefinitionItemSelectorViewDisplayContext.getOrderByCol() %>"
-			orderByType="<%= cpDefinitionItemSelectorViewDisplayContext.getOrderByType() %>"
-			orderColumns='<%= new String[] {"name", "modified-date", "display-date"} %>'
-			portletURL="<%= portletURL %>"
-		/>
-
-		<li>
-			<liferay-commerce:search-input
-				actionURL="<%= portletURL %>"
-				formName="searchFm"
-			/>
-		</li>
-	</liferay-frontend:management-bar-filters>
-</liferay-frontend:management-bar>
+<clay:management-toolbar
+	managementToolbarDisplayContext="<%= new CPDefinitionItemSelectorViewManagementToolbarDisplayContext(cpDefinitionItemSelectorViewDisplayContext, request, liferayPortletRequest, liferayPortletResponse) %>"
+/>
 
 <div class="container-fluid container-fluid-max-xl" id="<portlet:namespace />cpDefinitionSelectorWrapper">
 	<liferay-ui:search-container
@@ -84,7 +43,7 @@ PortletURL portletURL = cpDefinitionItemSelectorViewDisplayContext.getPortletURL
 
 			CPType cpType = cpDefinitionItemSelectorViewDisplayContext.getCPType(cpDefinition.getProductTypeName());
 
-			String thumbnailSrc = cpDefinition.getDefaultImageThumbnailSrc();
+			String thumbnailSrc = cpDefinition.getDefaultImageThumbnailSrc(AccountConstants.ACCOUNT_ENTRY_ID_ADMIN);
 			%>
 
 			<c:choose>
@@ -124,10 +83,10 @@ PortletURL portletURL = cpDefinitionItemSelectorViewDisplayContext.getPortletURL
 				value="<%= HtmlUtil.escape(cpDefinitionItemSelectorViewDisplayContext.getSku(cpDefinition, locale)) %>"
 			/>
 
-			<liferay-ui:search-container-column-date
+			<liferay-ui:search-container-column-text
 				cssClass="table-cell-expand"
 				name="modified-date"
-				property="modifiedDate"
+				value="<%= cpDefinitionItemSelectorViewDisplayContext.getModifiedDate(cpDefinition, themeDisplay) %>"
 			/>
 
 			<liferay-ui:search-container-column-status

@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
+import com.liferay.commerce.product.model.CProduct;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link CProductLocalService}.
@@ -25,6 +20,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
  */
 public class CProductLocalServiceWrapper
 	implements CProductLocalService, ServiceWrapper<CProductLocalService> {
+
+	public CProductLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CProductLocalServiceWrapper(
 		CProductLocalService cProductLocalService) {
@@ -43,20 +42,18 @@ public class CProductLocalServiceWrapper
 	 * @return the c product that was added
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct addCProduct(
-		com.liferay.commerce.product.model.CProduct cProduct) {
-
+	public CProduct addCProduct(CProduct cProduct) {
 		return _cProductLocalService.addCProduct(cProduct);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CProduct addCProduct(
-			String externalReferenceCode, long groupId, long userId,
+	public CProduct addCProduct(
+			String externalReferenceCode, long userId, long groupId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.addCProduct(
-			externalReferenceCode, groupId, userId, serviceContext);
+			externalReferenceCode, userId, groupId, serviceContext);
 	}
 
 	/**
@@ -66,9 +63,7 @@ public class CProductLocalServiceWrapper
 	 * @return the new c product
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct createCProduct(
-		long CProductId) {
-
+	public CProduct createCProduct(long CProductId) {
 		return _cProductLocalService.createCProduct(CProductId);
 	}
 
@@ -95,8 +90,7 @@ public class CProductLocalServiceWrapper
 	 * @throws PortalException
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct deleteCProduct(
-			com.liferay.commerce.product.model.CProduct cProduct)
+	public CProduct deleteCProduct(CProduct cProduct)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.deleteCProduct(cProduct);
@@ -114,8 +108,7 @@ public class CProductLocalServiceWrapper
 	 * @throws PortalException if a c product with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct deleteCProduct(
-			long CProductId)
+	public CProduct deleteCProduct(long CProductId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.deleteCProduct(CProductId);
@@ -235,39 +228,16 @@ public class CProductLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CProduct fetchCProduct(
-		long CProductId) {
-
+	public CProduct fetchCProduct(long CProductId) {
 		return _cProductLocalService.fetchCProduct(CProductId);
 	}
 
-	/**
-	 * Returns the c product with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the c product's external reference code
-	 * @return the matching c product, or <code>null</code> if a matching c product could not be found
-	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-		fetchCProductByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+	public CProduct fetchCProductByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
 
 		return _cProductLocalService.fetchCProductByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCProductByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.commerce.product.model.CProduct
-		fetchCProductByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return _cProductLocalService.fetchCProductByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -278,9 +248,7 @@ public class CProductLocalServiceWrapper
 	 * @return the matching c product, or <code>null</code> if a matching c product could not be found
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-		fetchCProductByUuidAndGroupId(String uuid, long groupId) {
-
+	public CProduct fetchCProductByUuidAndGroupId(String uuid, long groupId) {
 		return _cProductLocalService.fetchCProductByUuidAndGroupId(
 			uuid, groupId);
 	}
@@ -300,38 +268,27 @@ public class CProductLocalServiceWrapper
 	 * @throws PortalException if a c product with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct getCProduct(
-			long CProductId)
+	public CProduct getCProduct(long CProductId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.getCProduct(CProductId);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-			getCProductByCPInstanceUuid(String cpInstanceUuid)
+	public CProduct getCProductByCPInstanceUuid(String cpInstanceUuid)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.getCProductByCPInstanceUuid(
 			cpInstanceUuid);
 	}
 
-	/**
-	 * Returns the c product with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the c product's external reference code
-	 * @return the matching c product
-	 * @throws PortalException if a matching c product could not be found
-	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-			getCProductByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+	public CProduct getCProductByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.getCProductByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -343,8 +300,7 @@ public class CProductLocalServiceWrapper
 	 * @throws PortalException if a matching c product could not be found
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-			getCProductByUuidAndGroupId(String uuid, long groupId)
+	public CProduct getCProductByUuidAndGroupId(String uuid, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.getCProductByUuidAndGroupId(uuid, groupId);
@@ -362,9 +318,7 @@ public class CProductLocalServiceWrapper
 	 * @return the range of c products
 	 */
 	@Override
-	public java.util.List<com.liferay.commerce.product.model.CProduct>
-		getCProducts(int start, int end) {
-
+	public java.util.List<CProduct> getCProducts(int start, int end) {
 		return _cProductLocalService.getCProducts(start, end);
 	}
 
@@ -376,8 +330,8 @@ public class CProductLocalServiceWrapper
 	 * @return the matching c products, or an empty list if no matches were found
 	 */
 	@Override
-	public java.util.List<com.liferay.commerce.product.model.CProduct>
-		getCProductsByUuidAndCompanyId(String uuid, long companyId) {
+	public java.util.List<CProduct> getCProductsByUuidAndCompanyId(
+		String uuid, long companyId) {
 
 		return _cProductLocalService.getCProductsByUuidAndCompanyId(
 			uuid, companyId);
@@ -394,12 +348,10 @@ public class CProductLocalServiceWrapper
 	 * @return the range of matching c products, or an empty list if no matches were found
 	 */
 	@Override
-	public java.util.List<com.liferay.commerce.product.model.CProduct>
-		getCProductsByUuidAndCompanyId(
-			String uuid, long companyId, int start, int end,
-			com.liferay.portal.kernel.util.OrderByComparator
-				<com.liferay.commerce.product.model.CProduct>
-					orderByComparator) {
+	public java.util.List<CProduct> getCProductsByUuidAndCompanyId(
+		String uuid, long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CProduct>
+			orderByComparator) {
 
 		return _cProductLocalService.getCProductsByUuidAndCompanyId(
 			uuid, companyId, start, end, orderByComparator);
@@ -471,16 +423,13 @@ public class CProductLocalServiceWrapper
 	 * @return the c product that was updated
 	 */
 	@Override
-	public com.liferay.commerce.product.model.CProduct updateCProduct(
-		com.liferay.commerce.product.model.CProduct cProduct) {
-
+	public CProduct updateCProduct(CProduct cProduct) {
 		return _cProductLocalService.updateCProduct(cProduct);
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-			updateCProductExternalReferenceCode(
-				String externalReferenceCode, long cProductId)
+	public CProduct updateCProductExternalReferenceCode(
+			String externalReferenceCode, long cProductId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.updateCProductExternalReferenceCode(
@@ -488,13 +437,36 @@ public class CProductLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.product.model.CProduct
-			updatePublishedCPDefinitionId(
-				long cProductId, long publishedCPDefinitionId)
+	public CProduct updatePublishedCPDefinitionId(
+			long cProductId, long publishedCPDefinitionId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _cProductLocalService.updatePublishedCPDefinitionId(
 			cProductId, publishedCPDefinitionId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _cProductLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<CProduct> getCTPersistence() {
+		return _cProductLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<CProduct> getModelClass() {
+		return _cProductLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CProduct>, R, E> updateUnsafeFunction)
+		throws E {
+
+		return _cProductLocalService.updateWithUnsafeFunction(
+			updateUnsafeFunction);
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.deploy.hot;
@@ -23,16 +14,22 @@ import com.liferay.portal.spring.aop.AopInvocationHandler;
 
 import java.lang.reflect.InvocationHandler;
 
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+
 /**
  * @author Raymond Augé
  */
 public class ServiceBag<V> {
 
 	public ServiceBag(
-		ClassLoader classLoader, AopInvocationHandler aopInvocationHandler,
-		Class<?> serviceTypeClass, ServiceWrapper<V> serviceWrapper) {
+		AopInvocationHandler aopInvocationHandler, Class<?> serviceTypeClass,
+		ServiceWrapper<V> serviceWrapper, BundleContext bundleContext,
+		ServiceReference<?> serviceReference) {
 
 		_aopInvocationHandler = aopInvocationHandler;
+		_bundleContext = bundleContext;
+		_serviceReference = serviceReference;
 
 		Object previousService = serviceWrapper.getWrappedService();
 
@@ -55,18 +52,17 @@ public class ServiceBag<V> {
 			serviceWrapper.setWrappedService((V)previousService);
 		}
 
-		ClassLoader newServiceAggregateClassLoader =
-			AggregateClassLoader.getAggregateClassLoader(
-				serviceTypeClass.getClassLoader(),
-				IdentifiableOSGiService.class.getClassLoader());
+		Class<?> clazz = serviceWrapper.getClass();
 
 		Object nextTarget = ProxyUtil.newProxyInstance(
-			newServiceAggregateClassLoader,
+			AggregateClassLoader.getAggregateClassLoader(
+				serviceTypeClass.getClassLoader(),
+				IdentifiableOSGiService.class.getClassLoader()),
 			new Class<?>[] {
 				serviceTypeClass, ServiceWrapper.class,
 				IdentifiableOSGiService.class
 			},
-			new ClassLoaderBeanHandler(serviceWrapper, classLoader));
+			new ClassLoaderBeanHandler(serviceWrapper, clazz.getClassLoader()));
 
 		_aopInvocationHandler.setTarget(nextTarget);
 
@@ -74,7 +70,7 @@ public class ServiceBag<V> {
 	}
 
 	@SuppressWarnings("unchecked")
-	public <T> void replace() throws Exception {
+	public <T> void replace() {
 		Object currentService = _aopInvocationHandler.getTarget();
 
 		ServiceWrapper<T> previousService = null;
@@ -137,9 +133,15 @@ public class ServiceBag<V> {
 
 			currentService = previousService.getWrappedService();
 		}
+
+		if (_serviceReference != null) {
+			_bundleContext.ungetService(_serviceReference);
+		}
 	}
 
 	private final AopInvocationHandler _aopInvocationHandler;
+	private final BundleContext _bundleContext;
+	private final ServiceReference<?> _serviceReference;
 	private final ServiceWrapper<?> _serviceWrapper;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -46,29 +37,31 @@ renderResponse.setTitle((source != null) ? LanguageUtil.format(request, "edit-x"
 
 	<aui:input name="sourceId" type="hidden" />
 
-	<aui:fieldset-group markupView="lexicon">
-		<aui:fieldset>
-			<div class="form-group">
-				<aui:input name="name" required="<%= true %>" />
+	<div class="sheet">
+		<div class="panel-group panel-group-flush">
+			<aui:fieldset>
+				<div class="form-group">
+					<aui:input name="name" required="<%= true %>" />
 
-				<aui:input label="jdbc-driver-class-name" name="driverClassName" required="<%= true %>" />
+					<aui:input label="jdbc-driver-class-name" name="driverClassName" required="<%= true %>" />
 
-				<aui:input label="jdbc-url" name="driverUrl" required="<%= true %>" />
+					<aui:input label="jdbc-url" name="driverUrl" required="<%= true %>" />
 
-				<aui:input autocomplete="off" label="jdbc-user-name" name="driverUserName" required="<%= true %>" />
+					<aui:input autocomplete="off" label="jdbc-user-name" name="driverUserName" required="<%= true %>" />
 
-				<aui:input label="jdbc-password" name="driverPassword" type="password" />
-			</div>
-		</aui:fieldset>
-
-		<c:if test="<%= source == null %>">
-			<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
-				<liferay-ui:input-permissions
-					modelName="<%= Source.class.getName() %>"
-				/>
+					<aui:input label="jdbc-password" name="driverPassword" type="password" />
+				</div>
 			</aui:fieldset>
-		</c:if>
-	</aui:fieldset-group>
+
+			<c:if test="<%= source == null %>">
+				<aui:fieldset collapsed="<%= true %>" collapsible="<%= true %>" label="permissions">
+					<liferay-ui:input-permissions
+						modelName="<%= Source.class.getName() %>"
+					/>
+				</aui:fieldset>
+			</c:if>
+		</div>
+	</div>
 
 	<aui:button-row>
 		<aui:button cssClass="btn-lg" type="submit" />

@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.video.internal.portlet.action;
 
 import com.liferay.document.library.constants.DLFileVersionPreviewConstants;
+import com.liferay.document.library.kernel.model.DLProcessorConstants;
+import com.liferay.document.library.kernel.processor.DLProcessor;
+import com.liferay.document.library.kernel.processor.VideoProcessor;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
-import com.liferay.document.library.kernel.util.VideoProcessor;
 import com.liferay.document.library.preview.exception.DLFileEntryPreviewGenerationException;
 import com.liferay.document.library.service.DLFileVersionPreviewLocalService;
 import com.liferay.document.library.util.DLURLHelper;
@@ -33,23 +26,22 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.util.PropsValues;
 
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 
 /**
  * @author Alejandro Tardín
  */
 @Component(
 	property = {
-		"javax.portlet.name=" + DLVideoPortletKeys.DL_VIDEO,
+		"jakarta.portlet.name=" + DLVideoPortletKeys.DL_VIDEO,
 		"mvc.command.name=/document_library_video/embed_video"
 	},
 	service = MVCRenderCommand.class
@@ -68,7 +60,9 @@ public class EmbedVideoMVCRenderCommand implements MVCRenderCommand {
 				renderRequest.setAttribute(
 					FileVersion.class.getName(), fileVersion);
 
-				if (_videoProcessor.hasVideo(fileVersion)) {
+				VideoProcessor videoProcessor = (VideoProcessor)_dlProcessor;
+
+				if (videoProcessor.hasVideo(fileVersion)) {
 					String videoPosterURL = _getVideoPosterURL(
 						fileVersion,
 						(ThemeDisplay)renderRequest.getAttribute(
@@ -78,7 +72,6 @@ public class EmbedVideoMVCRenderCommand implements MVCRenderCommand {
 						DLVideoWebKeys.PREVIEW_FILE_URLS,
 						_getPreviewFileURLs(
 							fileVersion, videoPosterURL, renderRequest));
-
 					renderRequest.setAttribute(
 						DLVideoWebKeys.VIDEO_POSTER_URL, videoPosterURL);
 
@@ -87,13 +80,12 @@ public class EmbedVideoMVCRenderCommand implements MVCRenderCommand {
 				else if (_isPreviewFailure(fileVersion)) {
 					return "/embed/error.jsp";
 				}
-				else {
-					return "/embed/generating.jsp";
-				}
+
+				return "/embed/generating.jsp";
 			}
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 
 		return "/embed/error.jsp";
@@ -120,10 +112,12 @@ public class EmbedVideoMVCRenderCommand implements MVCRenderCommand {
 			List<String> previewFileURLs = new ArrayList<>();
 
 			try {
+				VideoProcessor videoProcessor = (VideoProcessor)_dlProcessor;
+
 				for (String dlFileEntryPreviewVideoContainer :
 						PropsValues.DL_FILE_ENTRY_PREVIEW_VIDEO_CONTAINERS) {
 
-					long previewFileSize = _videoProcessor.getPreviewFileSize(
+					long previewFileSize = videoProcessor.getPreviewFileSize(
 						fileVersion, dlFileEntryPreviewVideoContainer);
 
 					if (previewFileSize > 0) {
@@ -162,10 +156,12 @@ public class EmbedVideoMVCRenderCommand implements MVCRenderCommand {
 	}
 
 	private boolean _isPreviewFailure(FileVersion fileVersion) {
+		VideoProcessor videoProcessor = (VideoProcessor)_dlProcessor;
+
 		if (_dlFileVersionPreviewLocalService.hasDLFileVersionPreview(
 				fileVersion.getFileEntryId(), fileVersion.getFileVersionId(),
 				DLFileVersionPreviewConstants.STATUS_FAILURE) ||
-			!_videoProcessor.isVideoSupported(fileVersion)) {
+			!videoProcessor.isVideoSupported(fileVersion)) {
 
 			return true;
 		}
@@ -182,10 +178,10 @@ public class EmbedVideoMVCRenderCommand implements MVCRenderCommand {
 	@Reference
 	private DLFileVersionPreviewLocalService _dlFileVersionPreviewLocalService;
 
+	@Reference(target = "(type=" + DLProcessorConstants.VIDEO_PROCESSOR + ")")
+	private DLProcessor _dlProcessor;
+
 	@Reference
 	private DLURLHelper _dlURLHelper;
-
-	@Reference(policyOption = ReferencePolicyOption.GREEDY)
-	private VideoProcessor _videoProcessor;
 
 }

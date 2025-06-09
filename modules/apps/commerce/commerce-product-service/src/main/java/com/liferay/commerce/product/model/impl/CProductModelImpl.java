@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model.impl;
@@ -36,7 +27,6 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -73,6 +63,7 @@ public class CProductModelImpl
 	public static final String TABLE_NAME = "CProduct";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"uuid_", Types.VARCHAR}, {"externalReferenceCode", Types.VARCHAR},
 		{"CProductId", Types.BIGINT}, {"groupId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
@@ -86,6 +77,8 @@ public class CProductModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("externalReferenceCode", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("CProductId", Types.BIGINT);
@@ -100,7 +93,7 @@ public class CProductModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CProduct (uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,CProductId LONG not null primary key,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,publishedCPDefinitionId LONG,latestVersion INTEGER)";
+		"create table CProduct (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,externalReferenceCode VARCHAR(75) null,CProductId LONG not null,groupId LONG,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,publishedCPDefinitionId LONG,latestVersion INTEGER,primary key (CProductId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table CProduct";
 
@@ -115,24 +108,6 @@ public class CProductModelImpl
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
 
 	public static final String TX_MANAGER = "liferayTransactionManager";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -165,9 +140,19 @@ public class CProductModelImpl
 	@Deprecated
 	public static final long CREATEDATE_COLUMN_BITMASK = 16L;
 
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.product.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.product.model.CProduct"));
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
+	 */
+	@Deprecated
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
+	}
 
 	public CProductModelImpl() {
 	}
@@ -244,99 +229,131 @@ public class CProductModelImpl
 	public Map<String, Function<CProduct, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CProduct, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CProduct>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CProduct.class.getClassLoader(), CProduct.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CProduct, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CProduct> constructor =
-				(Constructor<CProduct>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CProduct, Object>> attributeGetterFunctions =
+				new LinkedHashMap<String, Function<CProduct, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CProduct::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CProduct::getCtCollectionId);
+			attributeGetterFunctions.put("uuid", CProduct::getUuid);
+			attributeGetterFunctions.put(
+				"externalReferenceCode", CProduct::getExternalReferenceCode);
+			attributeGetterFunctions.put("CProductId", CProduct::getCProductId);
+			attributeGetterFunctions.put("groupId", CProduct::getGroupId);
+			attributeGetterFunctions.put("companyId", CProduct::getCompanyId);
+			attributeGetterFunctions.put("userId", CProduct::getUserId);
+			attributeGetterFunctions.put("userName", CProduct::getUserName);
+			attributeGetterFunctions.put("createDate", CProduct::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CProduct::getModifiedDate);
+			attributeGetterFunctions.put(
+				"publishedCPDefinitionId",
+				CProduct::getPublishedCPDefinitionId);
+			attributeGetterFunctions.put(
+				"latestVersion", CProduct::getLatestVersion);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CProduct, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CProduct, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CProduct, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CProduct, Object>>();
-		Map<String, BiConsumer<CProduct, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CProduct, ?>>();
+		private static final Map<String, BiConsumer<CProduct, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put("uuid", CProduct::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid", (BiConsumer<CProduct, String>)CProduct::setUuid);
-		attributeGetterFunctions.put(
-			"externalReferenceCode", CProduct::getExternalReferenceCode);
-		attributeSetterBiConsumers.put(
-			"externalReferenceCode",
-			(BiConsumer<CProduct, String>)CProduct::setExternalReferenceCode);
-		attributeGetterFunctions.put("CProductId", CProduct::getCProductId);
-		attributeSetterBiConsumers.put(
-			"CProductId", (BiConsumer<CProduct, Long>)CProduct::setCProductId);
-		attributeGetterFunctions.put("groupId", CProduct::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId", (BiConsumer<CProduct, Long>)CProduct::setGroupId);
-		attributeGetterFunctions.put("companyId", CProduct::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId", (BiConsumer<CProduct, Long>)CProduct::setCompanyId);
-		attributeGetterFunctions.put("userId", CProduct::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId", (BiConsumer<CProduct, Long>)CProduct::setUserId);
-		attributeGetterFunctions.put("userName", CProduct::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName", (BiConsumer<CProduct, String>)CProduct::setUserName);
-		attributeGetterFunctions.put("createDate", CProduct::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate", (BiConsumer<CProduct, Date>)CProduct::setCreateDate);
-		attributeGetterFunctions.put("modifiedDate", CProduct::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CProduct, Date>)CProduct::setModifiedDate);
-		attributeGetterFunctions.put(
-			"publishedCPDefinitionId", CProduct::getPublishedCPDefinitionId);
-		attributeSetterBiConsumers.put(
-			"publishedCPDefinitionId",
-			(BiConsumer<CProduct, Long>)CProduct::setPublishedCPDefinitionId);
-		attributeGetterFunctions.put(
-			"latestVersion", CProduct::getLatestVersion);
-		attributeSetterBiConsumers.put(
-			"latestVersion",
-			(BiConsumer<CProduct, Integer>)CProduct::setLatestVersion);
+		static {
+			Map<String, BiConsumer<CProduct, ?>> attributeSetterBiConsumers =
+				new LinkedHashMap<String, BiConsumer<CProduct, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CProduct, Long>)CProduct::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CProduct, Long>)CProduct::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid", (BiConsumer<CProduct, String>)CProduct::setUuid);
+			attributeSetterBiConsumers.put(
+				"externalReferenceCode",
+				(BiConsumer<CProduct, String>)
+					CProduct::setExternalReferenceCode);
+			attributeSetterBiConsumers.put(
+				"CProductId",
+				(BiConsumer<CProduct, Long>)CProduct::setCProductId);
+			attributeSetterBiConsumers.put(
+				"groupId", (BiConsumer<CProduct, Long>)CProduct::setGroupId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CProduct, Long>)CProduct::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId", (BiConsumer<CProduct, Long>)CProduct::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CProduct, String>)CProduct::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CProduct, Date>)CProduct::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CProduct, Date>)CProduct::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"publishedCPDefinitionId",
+				(BiConsumer<CProduct, Long>)
+					CProduct::setPublishedCPDefinitionId);
+			attributeSetterBiConsumers.put(
+				"latestVersion",
+				(BiConsumer<CProduct, Integer>)CProduct::setLatestVersion);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@Override
@@ -629,6 +646,8 @@ public class CProductModelImpl
 	public Object clone() {
 		CProductImpl cProductImpl = new CProductImpl();
 
+		cProductImpl.setMvccVersion(getMvccVersion());
+		cProductImpl.setCtCollectionId(getCtCollectionId());
 		cProductImpl.setUuid(getUuid());
 		cProductImpl.setExternalReferenceCode(getExternalReferenceCode());
 		cProductImpl.setCProductId(getCProductId());
@@ -650,6 +669,10 @@ public class CProductModelImpl
 	public CProduct cloneWithOriginalValues() {
 		CProductImpl cProductImpl = new CProductImpl();
 
+		cProductImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		cProductImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		cProductImpl.setUuid(this.<String>getColumnOriginalValue("uuid_"));
 		cProductImpl.setExternalReferenceCode(
 			this.<String>getColumnOriginalValue("externalReferenceCode"));
@@ -721,7 +744,7 @@ public class CProductModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -730,7 +753,7 @@ public class CProductModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -745,6 +768,10 @@ public class CProductModelImpl
 	@Override
 	public CacheModel<CProduct> toCacheModel() {
 		CProductCacheModel cProductCacheModel = new CProductCacheModel();
+
+		cProductCacheModel.mvccVersion = getMvccVersion();
+
+		cProductCacheModel.ctCollectionId = getCtCollectionId();
 
 		cProductCacheModel.uuid = getUuid();
 
@@ -855,44 +882,17 @@ public class CProductModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CProduct, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CProduct, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CProduct, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CProduct)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CProduct>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CProduct.class, ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private String _externalReferenceCode;
 	private long _CProductId;
@@ -909,8 +909,9 @@ public class CProductModelImpl
 	public <T> T getColumnValue(String columnName) {
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
-		Function<CProduct, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<CProduct, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -935,6 +936,8 @@ public class CProductModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
 			"externalReferenceCode", _externalReferenceCode);
@@ -971,27 +974,31 @@ public class CProductModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("externalReferenceCode", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("CProductId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("groupId", 8L);
+		columnBitmasks.put("externalReferenceCode", 8L);
 
-		columnBitmasks.put("companyId", 16L);
+		columnBitmasks.put("CProductId", 16L);
 
-		columnBitmasks.put("userId", 32L);
+		columnBitmasks.put("groupId", 32L);
 
-		columnBitmasks.put("userName", 64L);
+		columnBitmasks.put("companyId", 64L);
 
-		columnBitmasks.put("createDate", 128L);
+		columnBitmasks.put("userId", 128L);
 
-		columnBitmasks.put("modifiedDate", 256L);
+		columnBitmasks.put("userName", 256L);
 
-		columnBitmasks.put("publishedCPDefinitionId", 512L);
+		columnBitmasks.put("createDate", 512L);
 
-		columnBitmasks.put("latestVersion", 1024L);
+		columnBitmasks.put("modifiedDate", 1024L);
+
+		columnBitmasks.put("publishedCPDefinitionId", 2048L);
+
+		columnBitmasks.put("latestVersion", 4096L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

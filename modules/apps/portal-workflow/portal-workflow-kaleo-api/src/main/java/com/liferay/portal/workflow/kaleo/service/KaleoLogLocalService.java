@@ -1,20 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service;
 
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
@@ -27,6 +20,8 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -55,13 +50,14 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see KaleoLogLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface KaleoLogLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<KaleoLog>, PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -72,6 +68,24 @@ public interface KaleoLogLocalService
 	public KaleoLog addActionExecutionKaleoLog(
 			KaleoInstanceToken kaleoInstanceToken, KaleoAction kaleoAction,
 			long startTime, long endTime, String comment,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public KaleoLog addInstanceEndKaleoLog(
+			KaleoInstanceToken kaleoInstanceToken,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public KaleoLog addInstanceFailKaleoLog(
+			KaleoInstanceToken kaleoInstanceToken, String comment,
+			ServiceContext serviceContext)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.REINDEX)
+	public KaleoLog addInstanceStartKaleoLog(
+			KaleoInstanceToken kaleoInstanceToken,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -143,18 +157,6 @@ public interface KaleoLogLocalService
 	public KaleoLog addTaskUpdateKaleoLog(
 			KaleoTaskInstanceToken kaleoTaskInstanceToken, String comment,
 			Map<String, Serializable> workflowContext,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public KaleoLog addWorkflowInstanceEndKaleoLog(
-			KaleoInstanceToken kaleoInstanceToken,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public KaleoLog addWorkflowInstanceStartKaleoLog(
-			KaleoInstanceToken kaleoInstanceToken,
 			ServiceContext serviceContext)
 		throws PortalException;
 
@@ -372,5 +374,19 @@ public interface KaleoLogLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public KaleoLog updateKaleoLog(KaleoLog kaleoLog);
+
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<KaleoLog> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<KaleoLog> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<KaleoLog>, R, E> updateUnsafeFunction)
+		throws E;
 
 }

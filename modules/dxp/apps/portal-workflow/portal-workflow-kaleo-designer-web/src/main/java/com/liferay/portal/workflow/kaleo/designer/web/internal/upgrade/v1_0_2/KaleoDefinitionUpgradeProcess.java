@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.designer.web.internal.upgrade.v1_0_2;
@@ -29,7 +20,6 @@ import com.liferay.portal.workflow.kaleo.service.KaleoDefinitionLocalService;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 
 /**
@@ -47,7 +37,16 @@ public class KaleoDefinitionUpgradeProcess extends UpgradeProcess {
 		_userLocalService = userLocalService;
 	}
 
-	protected void addKaleoDefinition(
+	@Override
+	protected void doUpgrade() throws Exception {
+		if (hasTable("KaleoDefinitionVersion") &&
+			hasTable("KaleoDraftDefinition")) {
+
+			_addKaleoDefinitionsFromKaleoDefinitionVersion();
+		}
+	}
+
+	private void _addKaleoDefinition(
 			long groupId, long userId, Timestamp createDate,
 			Timestamp modifiedDate, String name, String title, String content,
 			int version)
@@ -78,8 +77,8 @@ public class KaleoDefinitionUpgradeProcess extends UpgradeProcess {
 		_kaleoDefinitionLocalService.addKaleoDefinition(kaleoDefinition);
 	}
 
-	protected void addKaleoDefinitionsFromKaleoDefinitionVersion()
-		throws PortalException, SQLException {
+	private void _addKaleoDefinitionsFromKaleoDefinitionVersion()
+		throws Exception {
 
 		try (LoggingTimer loggingTimer = new LoggingTimer();
 			PreparedStatement preparedStatement1 = connection.prepareStatement(
@@ -106,23 +105,14 @@ public class KaleoDefinitionUpgradeProcess extends UpgradeProcess {
 				String content = resultSet.getString("content");
 				String version = resultSet.getString("version");
 
-				addKaleoDefinition(
+				_addKaleoDefinition(
 					groupId, userId, createDate, modifiedDate, name, title,
-					content, getVersion(version));
+					content, _getVersion(version));
 			}
 		}
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		if (hasTable("KaleoDefinitionVersion") &&
-			hasTable("KaleoDraftDefinition")) {
-
-			addKaleoDefinitionsFromKaleoDefinitionVersion();
-		}
-	}
-
-	protected int getVersion(String version) {
+	private int _getVersion(String version) {
 		int[] versionParts = StringUtil.split(version, StringPool.PERIOD, 0);
 
 		return versionParts[0];

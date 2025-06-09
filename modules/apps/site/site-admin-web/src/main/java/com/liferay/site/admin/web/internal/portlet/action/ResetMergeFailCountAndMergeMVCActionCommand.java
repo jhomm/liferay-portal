@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.admin.web.internal.portlet.action;
 
+import com.liferay.exportimport.kernel.staging.MergeLayoutPrototypesThreadLocal;
+import com.liferay.layout.set.prototype.helper.LayoutSetPrototypeHelper;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutSetPrototype;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
@@ -24,10 +17,10 @@ import com.liferay.portal.kernel.service.LayoutSetPrototypeService;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.site.admin.web.internal.constants.SiteAdminPortletKeys;
-import com.liferay.sites.kernel.util.SitesUtil;
+import com.liferay.sites.kernel.util.Sites;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -46,9 +39,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN,
+		"jakarta.portlet.name=" + SiteAdminPortletKeys.SITE_ADMIN,
 		"mvc.command.name=/site_admin/reset_merge_fail_count_and_merge"
 	},
 	service = MVCActionCommand.class
@@ -68,7 +60,7 @@ public class ResetMergeFailCountAndMergeMVCActionCommand
 			_layoutSetPrototypeService.getLayoutSetPrototype(
 				layoutSetPrototypeId);
 
-		SitesUtil.setMergeFailCount(layoutSetPrototype, 0);
+		_layoutSetPrototypeHelper.setMergeFailCount(layoutSetPrototype, 0);
 
 		long groupId = ParamUtil.getLong(actionRequest, "groupId");
 		boolean privateLayoutSet = ParamUtil.getBoolean(
@@ -77,15 +69,17 @@ public class ResetMergeFailCountAndMergeMVCActionCommand
 		LayoutSet layoutSet = _layoutSetLocalService.getLayoutSet(
 			groupId, privateLayoutSet);
 
-		SitesUtil.resetPrototype(layoutSet);
+		_layoutSetPrototypeHelper.resetPrototype(layoutSet);
 
-		SitesUtil.mergeLayoutSetPrototypeLayouts(
+		MergeLayoutPrototypesThreadLocal.setSkipMerge(false);
+
+		_sites.mergeLayoutSetPrototypeLayouts(
 			_groupLocalService.getGroup(groupId), layoutSet);
 
 		layoutSetPrototype = _layoutSetPrototypeService.getLayoutSetPrototype(
 			layoutSetPrototypeId);
 
-		if (SitesUtil.getMergeFailCount(layoutSetPrototype) > 0) {
+		if (layoutSetPrototype.getMergeFailCount() > 0) {
 			SessionErrors.add(actionRequest, "resetMergeFailCountAndMerge");
 		}
 	}
@@ -97,6 +91,12 @@ public class ResetMergeFailCountAndMergeMVCActionCommand
 	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Reference
+	private LayoutSetPrototypeHelper _layoutSetPrototypeHelper;
+
+	@Reference
 	private LayoutSetPrototypeService _layoutSetPrototypeService;
+
+	@Reference
+	private Sites _sites;
 
 }

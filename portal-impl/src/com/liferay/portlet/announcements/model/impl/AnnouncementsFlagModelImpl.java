@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.announcements.model.impl;
 
 import com.liferay.announcements.kernel.model.AnnouncementsFlag;
 import com.liferay.announcements.kernel.model.AnnouncementsFlagModel;
-import com.liferay.announcements.kernel.model.AnnouncementsFlagSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -36,18 +26,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -76,10 +63,10 @@ public class AnnouncementsFlagModelImpl
 	public static final String TABLE_NAME = "AnnouncementsFlag";
 
 	public static final Object[][] TABLE_COLUMNS = {
-		{"mvccVersion", Types.BIGINT}, {"flagId", Types.BIGINT},
-		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
-		{"createDate", Types.TIMESTAMP}, {"entryId", Types.BIGINT},
-		{"value", Types.INTEGER}
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
+		{"flagId", Types.BIGINT}, {"companyId", Types.BIGINT},
+		{"userId", Types.BIGINT}, {"createDate", Types.TIMESTAMP},
+		{"entryId", Types.BIGINT}, {"value", Types.INTEGER}
 	};
 
 	public static final Map<String, Integer> TABLE_COLUMNS_MAP =
@@ -87,6 +74,7 @@ public class AnnouncementsFlagModelImpl
 
 	static {
 		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("flagId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("userId", Types.BIGINT);
@@ -96,7 +84,7 @@ public class AnnouncementsFlagModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table AnnouncementsFlag (mvccVersion LONG default 0 not null,flagId LONG not null primary key,companyId LONG,userId LONG,createDate DATE null,entryId LONG,value INTEGER)";
+		"create table AnnouncementsFlag (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,flagId LONG not null,companyId LONG,userId LONG,createDate DATE null,entryId LONG,value INTEGER,primary key (flagId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP = "drop table AnnouncementsFlag";
 
@@ -160,57 +148,6 @@ public class AnnouncementsFlagModelImpl
 	 */
 	@Deprecated
 	public static final long CREATEDATE_COLUMN_BITMASK = 16L;
-
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static AnnouncementsFlag toModel(AnnouncementsFlagSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		AnnouncementsFlag model = new AnnouncementsFlagImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setFlagId(soapModel.getFlagId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setEntryId(soapModel.getEntryId());
-		model.setValue(soapModel.getValue());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<AnnouncementsFlag> toModels(
-		AnnouncementsFlagSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<AnnouncementsFlag> models = new ArrayList<AnnouncementsFlag>(
-			soapModels.length);
-
-		for (AnnouncementsFlagSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
 
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
@@ -292,97 +229,96 @@ public class AnnouncementsFlagModelImpl
 	public Map<String, Function<AnnouncementsFlag, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<AnnouncementsFlag, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, AnnouncementsFlag>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			AnnouncementsFlag.class.getClassLoader(), AnnouncementsFlag.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<AnnouncementsFlag, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<AnnouncementsFlag> constructor =
-				(Constructor<AnnouncementsFlag>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<AnnouncementsFlag, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<AnnouncementsFlag, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", AnnouncementsFlag::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", AnnouncementsFlag::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"flagId", AnnouncementsFlag::getFlagId);
+			attributeGetterFunctions.put(
+				"companyId", AnnouncementsFlag::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", AnnouncementsFlag::getUserId);
+			attributeGetterFunctions.put(
+				"createDate", AnnouncementsFlag::getCreateDate);
+			attributeGetterFunctions.put(
+				"entryId", AnnouncementsFlag::getEntryId);
+			attributeGetterFunctions.put("value", AnnouncementsFlag::getValue);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<AnnouncementsFlag, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<AnnouncementsFlag, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<AnnouncementsFlag, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<AnnouncementsFlag, Object>>();
-		Map<String, BiConsumer<AnnouncementsFlag, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<AnnouncementsFlag, ?>>();
+		private static final Map<String, BiConsumer<AnnouncementsFlag, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", AnnouncementsFlag::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<AnnouncementsFlag, Long>)
-				AnnouncementsFlag::setMvccVersion);
-		attributeGetterFunctions.put("flagId", AnnouncementsFlag::getFlagId);
-		attributeSetterBiConsumers.put(
-			"flagId",
-			(BiConsumer<AnnouncementsFlag, Long>)AnnouncementsFlag::setFlagId);
-		attributeGetterFunctions.put(
-			"companyId", AnnouncementsFlag::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<AnnouncementsFlag, Long>)
-				AnnouncementsFlag::setCompanyId);
-		attributeGetterFunctions.put("userId", AnnouncementsFlag::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<AnnouncementsFlag, Long>)AnnouncementsFlag::setUserId);
-		attributeGetterFunctions.put(
-			"createDate", AnnouncementsFlag::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<AnnouncementsFlag, Date>)
-				AnnouncementsFlag::setCreateDate);
-		attributeGetterFunctions.put("entryId", AnnouncementsFlag::getEntryId);
-		attributeSetterBiConsumers.put(
-			"entryId",
-			(BiConsumer<AnnouncementsFlag, Long>)AnnouncementsFlag::setEntryId);
-		attributeGetterFunctions.put("value", AnnouncementsFlag::getValue);
-		attributeSetterBiConsumers.put(
-			"value",
-			(BiConsumer<AnnouncementsFlag, Integer>)
-				AnnouncementsFlag::setValue);
+		static {
+			Map<String, BiConsumer<AnnouncementsFlag, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<AnnouncementsFlag, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<AnnouncementsFlag, Long>)
+					AnnouncementsFlag::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<AnnouncementsFlag, Long>)
+					AnnouncementsFlag::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"flagId",
+				(BiConsumer<AnnouncementsFlag, Long>)
+					AnnouncementsFlag::setFlagId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<AnnouncementsFlag, Long>)
+					AnnouncementsFlag::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<AnnouncementsFlag, Long>)
+					AnnouncementsFlag::setUserId);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<AnnouncementsFlag, Date>)
+					AnnouncementsFlag::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"entryId",
+				(BiConsumer<AnnouncementsFlag, Long>)
+					AnnouncementsFlag::setEntryId);
+			attributeSetterBiConsumers.put(
+				"value",
+				(BiConsumer<AnnouncementsFlag, Integer>)
+					AnnouncementsFlag::setValue);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -398,6 +334,21 @@ public class AnnouncementsFlagModelImpl
 		}
 
 		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -602,6 +553,7 @@ public class AnnouncementsFlagModelImpl
 			new AnnouncementsFlagImpl();
 
 		announcementsFlagImpl.setMvccVersion(getMvccVersion());
+		announcementsFlagImpl.setCtCollectionId(getCtCollectionId());
 		announcementsFlagImpl.setFlagId(getFlagId());
 		announcementsFlagImpl.setCompanyId(getCompanyId());
 		announcementsFlagImpl.setUserId(getUserId());
@@ -621,6 +573,8 @@ public class AnnouncementsFlagModelImpl
 
 		announcementsFlagImpl.setMvccVersion(
 			this.<Long>getColumnOriginalValue("mvccVersion"));
+		announcementsFlagImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		announcementsFlagImpl.setFlagId(
 			this.<Long>getColumnOriginalValue("flagId"));
 		announcementsFlagImpl.setCompanyId(
@@ -724,6 +678,8 @@ public class AnnouncementsFlagModelImpl
 
 		announcementsFlagCacheModel.mvccVersion = getMvccVersion();
 
+		announcementsFlagCacheModel.ctCollectionId = getCtCollectionId();
+
 		announcementsFlagCacheModel.flagId = getFlagId();
 
 		announcementsFlagCacheModel.companyId = getCompanyId();
@@ -796,45 +752,17 @@ public class AnnouncementsFlagModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<AnnouncementsFlag, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<AnnouncementsFlag, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<AnnouncementsFlag, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((AnnouncementsFlag)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, AnnouncementsFlag>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					AnnouncementsFlag.class, ModelWrapper.class);
 
 	}
 
 	private long _mvccVersion;
+	private long _ctCollectionId;
 	private long _flagId;
 	private long _companyId;
 	private long _userId;
@@ -844,7 +772,8 @@ public class AnnouncementsFlagModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<AnnouncementsFlag, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -870,6 +799,7 @@ public class AnnouncementsFlagModelImpl
 		_columnOriginalValues = new HashMap<String, Object>();
 
 		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("flagId", _flagId);
 		_columnOriginalValues.put("companyId", _companyId);
 		_columnOriginalValues.put("userId", _userId);
@@ -891,17 +821,19 @@ public class AnnouncementsFlagModelImpl
 
 		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("flagId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("flagId", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("companyId", 8L);
 
-		columnBitmasks.put("createDate", 16L);
+		columnBitmasks.put("userId", 16L);
 
-		columnBitmasks.put("entryId", 32L);
+		columnBitmasks.put("createDate", 32L);
 
-		columnBitmasks.put("value", 64L);
+		columnBitmasks.put("entryId", 64L);
+
+		columnBitmasks.put("value", 128L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

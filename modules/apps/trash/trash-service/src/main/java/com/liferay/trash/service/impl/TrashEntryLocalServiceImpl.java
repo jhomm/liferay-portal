@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.service.impl;
@@ -46,8 +37,10 @@ import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.PrefsPropsUtil;
+import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-import com.liferay.trash.kernel.util.TrashUtil;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.trash.model.TrashEntry;
 import com.liferay.trash.model.TrashVersion;
 import com.liferay.trash.model.impl.TrashEntryImpl;
@@ -177,11 +170,9 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 
 				Date createDate = trashEntry.getCreateDate();
 
-				Date date = getMaxAge(group);
+				Date date = _getMaxAge(group);
 
-				if (createDate.before(date) ||
-					!TrashUtil.isTrashEnabled(group)) {
-
+				if (createDate.before(date) || !_isTrashEnabled(group)) {
 					TrashHandler trashHandler =
 						TrashHandlerRegistryUtil.getTrashHandler(
 							trashEntry.getClassName());
@@ -192,7 +183,9 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 								trashEntry.getClassPK());
 						}
 						catch (Exception exception) {
-							_log.error(exception, exception);
+							if (_log.isDebugEnabled()) {
+								_log.debug(exception);
+							}
 						}
 					}
 				}
@@ -225,7 +218,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 						trashHandler.deleteTrashEntry(entry.getClassPK());
 					}
 					catch (Exception exception) {
-						_log.error(exception, exception);
+						_log.error(exception);
 					}
 				}
 			}
@@ -397,7 +390,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 			Indexer<TrashEntry> indexer = _indexerRegistry.nullSafeGetIndexer(
 				TrashEntry.class);
 
-			SearchContext searchContext = buildSearchContext(
+			SearchContext searchContext = _buildSearchContext(
 				companyId, groupId, userId, keywords, start, end, sort);
 
 			return indexer.search(searchContext);
@@ -416,7 +409,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 			Indexer<TrashEntry> indexer = _indexerRegistry.nullSafeGetIndexer(
 				TrashEntry.class);
 
-			SearchContext searchContext = buildSearchContext(
+			SearchContext searchContext = _buildSearchContext(
 				companyId, groupId, userId, keywords, start, end, sort);
 
 			Hits hits = indexer.search(searchContext);
@@ -430,7 +423,7 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		}
 	}
 
-	protected SearchContext buildSearchContext(
+	private SearchContext _buildSearchContext(
 		long companyId, long groupId, long userId, String keywords, int start,
 		int end, Sort sort) {
 
@@ -454,16 +447,6 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		queryConfig.setScoreEnabled(false);
 
 		return searchContext;
-	}
-
-	protected Date getMaxAge(Group group) throws PortalException {
-		Calendar calendar = Calendar.getInstance();
-
-		calendar.setTime(new Date());
-
-		calendar.add(Calendar.MINUTE, -TrashUtil.getMaxAge(group));
-
-		return calendar.getTime();
 	}
 
 	private List<TrashEntry> _getEntries(Hits hits) {
@@ -529,6 +512,42 @@ public class TrashEntryLocalServiceImpl extends TrashEntryLocalServiceBaseImpl {
 		}
 
 		return entries;
+	}
+
+	private Date _getMaxAge(Group group) throws PortalException {
+		Calendar calendar = Calendar.getInstance();
+
+		calendar.setTime(new Date());
+
+		int trashEntriesMaxAge = PrefsPropsUtil.getInteger(
+			group.getCompanyId(), PropsKeys.TRASH_ENTRIES_MAX_AGE,
+			PropsValues.TRASH_ENTRIES_MAX_AGE);
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			group.getParentLiveGroupTypeSettingsProperties();
+
+		calendar.add(
+			Calendar.MINUTE,
+			-GetterUtil.getInteger(
+				typeSettingsUnicodeProperties.getProperty("trashEntriesMaxAge"),
+				trashEntriesMaxAge));
+
+		return calendar.getTime();
+	}
+
+	private boolean _isTrashEnabled(Group group) {
+		boolean companyTrashEnabled = PrefsPropsUtil.getBoolean(
+			group.getCompanyId(), PropsKeys.TRASH_ENABLED);
+
+		if (!companyTrashEnabled) {
+			return false;
+		}
+
+		UnicodeProperties typeSettingsUnicodeProperties =
+			group.getParentLiveGroupTypeSettingsProperties();
+
+		return GetterUtil.getBoolean(
+			typeSettingsUnicodeProperties.getProperty("trashEnabled"), true);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

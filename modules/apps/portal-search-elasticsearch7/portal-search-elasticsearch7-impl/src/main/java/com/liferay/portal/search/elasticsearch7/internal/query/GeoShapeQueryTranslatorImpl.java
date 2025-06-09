@@ -1,31 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.query;
 
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.search.elasticsearch7.internal.geolocation.ElasticsearchShapeTranslator;
 import com.liferay.portal.search.geolocation.Shape;
 import com.liferay.portal.search.query.GeoShapeQuery;
 import com.liferay.portal.search.query.geolocation.ShapeRelation;
 import com.liferay.portal.search.query.geolocation.SpatialStrategy;
 
-import java.io.IOException;
-
 import org.elasticsearch.index.query.GeoShapeQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.legacygeo.builders.ShapeBuilder;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -37,7 +26,7 @@ public class GeoShapeQueryTranslatorImpl implements GeoShapeQueryTranslator {
 
 	@Override
 	public QueryBuilder translate(GeoShapeQuery geoShapeQuery) {
-		GeoShapeQueryBuilder geoShapeQueryBuilder = translateQuery(
+		GeoShapeQueryBuilder geoShapeQueryBuilder = _translateQuery(
 			geoShapeQuery);
 
 		if (geoShapeQuery.getIgnoreUnmapped() != null) {
@@ -96,7 +85,7 @@ public class GeoShapeQueryTranslatorImpl implements GeoShapeQueryTranslator {
 			"Invalid SpatialStrategy: " + spatialStrategy);
 	}
 
-	protected GeoShapeQueryBuilder translateQuery(GeoShapeQuery geoShapeQuery) {
+	private GeoShapeQueryBuilder _translateQuery(GeoShapeQuery geoShapeQuery) {
 		if (geoShapeQuery.getIndexedShapeId() != null) {
 			GeoShapeQueryBuilder geoShapeQueryBuilder =
 				QueryBuilders.geoShapeQuery(
@@ -121,16 +110,12 @@ public class GeoShapeQueryTranslatorImpl implements GeoShapeQueryTranslator {
 			return geoShapeQueryBuilder;
 		}
 
-		try {
-			Shape shape = geoShapeQuery.getShape();
+		Shape shape = geoShapeQuery.getShape();
 
-			return QueryBuilders.geoShapeQuery(
-				geoShapeQuery.getField(),
-				shape.accept(_elasticsearchShapeTranslator));
-		}
-		catch (IOException ioException) {
-			throw new SystemException(ioException);
-		}
+		ShapeBuilder shapeBuilder = shape.accept(_elasticsearchShapeTranslator);
+
+		return new GeoShapeQueryBuilder(
+			geoShapeQuery.getField(), shapeBuilder.buildGeometry());
 	}
 
 	private final ElasticsearchShapeTranslator _elasticsearchShapeTranslator =

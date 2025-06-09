@@ -1,106 +1,110 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {act, fireEvent} from '@testing-library/react';
+import {act, fireEvent, render} from '@testing-library/react';
+import React from 'react';
 
-// import React from 'react';
-
-// import {InstanceListContext} from '../../../../../../src/main/resources/META-INF/resources/js/components/instance-list-page/InstanceListPageProvider.es';
-// import {ModalContext} from '../../../../../../src/main/resources/META-INF/resources/js/components/instance-list-page/modal/ModalProvider.es';
-// import SingleReassignModal from '../../../../../../src/main/resources/META-INF/resources/js/components/instance-list-page/modal/reassign/single/SingleReassignModal.es';
-// import ToasterProvider from '../../../../../../src/main/resources/META-INF/resources/js/shared/components/toaster/ToasterProvider.es';
-// import {MockRouter} from '../../../../../mock/MockRouter.es';
+import {InstanceListContext} from '../../../../../../src/main/resources/META-INF/resources/js/components/instance-list-page/InstanceListPageProvider.es';
+import {ModalContext} from '../../../../../../src/main/resources/META-INF/resources/js/components/instance-list-page/modal/ModalProvider.es';
+import SingleReassignModal from '../../../../../../src/main/resources/META-INF/resources/js/components/instance-list-page/modal/reassign/single/SingleReassignModal.es';
+import ToasterProvider from '../../../../../../src/main/resources/META-INF/resources/js/shared/components/toaster/ToasterProvider.es';
+import {MockRouter} from '../../../../../mock/MockRouter.es';
+import FetchMock, {fetchMockResponse} from '../../../../../mock/fetch.es';
 
 import '@testing-library/jest-dom/extend-expect';
 
-// const ContainerMock = ({children}) => {
-// 	const selectedInstance = {
-// 		assetTitle: 'Blog1',
-// 		assetType: 'Blogs Entry',
-// 		assignees: [{id: 2, name: 'Test Test'}],
-// 		id: 1,
-// 		status: 'In Progress',
-// 		taskNames: ['Review'],
-// 	};
+const ContainerMock = ({children}) => {
+	const selectedInstance = {
+		assetTitle: 'Blog1',
+		assetType: 'Blogs Entry',
+		assignees: [{id: 2, name: 'Test Test'}],
+		id: 1,
+		status: 'In Progress',
+		taskNames: ['Review'],
+	};
 
-// 	return (
-// 		<InstanceListContext.Provider
-// 			value={{
-// 				selectedInstance,
-// 			}}
-// 		>
-// 			<ModalContext.Provider value={{visibleModal: 'singleReassign'}}>
-// 				<ToasterProvider>{children}</ToasterProvider>
-// 			</ModalContext.Provider>
-// 		</InstanceListContext.Provider>
-// 	);
-// };
+	return (
+		<InstanceListContext.Provider
+			value={{
+				selectedInstance,
+			}}
+		>
+			<ModalContext.Provider value={{visibleModal: 'singleReassign'}}>
+				<ToasterProvider>{children}</ToasterProvider>
+			</ModalContext.Provider>
+		</InstanceListContext.Provider>
+	);
+};
 
 describe('The SingleReassignModal component should', () => {
 	let getByText;
 
-	// const items = [
-	// 	{
-	// 		id: 1,
-	// 		name: '0test test0',
-	// 	},
-	// ];
+	const items = [
+		{
+			id: 1,
+			name: '0test test0',
+		},
+	];
 
-	// const clientMock = {
-	// 	get: jest
-	// 		.fn()
-	// 		.mockRejectedValueOnce(new Error('Request failed'))
-	// 		.mockResolvedValueOnce({
-	// 			data: {
-	// 				items: [
-	// 					{
-	// 						assigneePerson: {id: 2, name: 'Test Test'},
-	// 						id: 1,
-	// 						label: 'Review',
-	// 						objectReviewed: {
-	// 							assetTitle: 'Blog1',
-	// 							assetType: 'Blogs Entry',
-	// 						},
-	// 						status: 'In Progress',
-	// 						workflowInstanceId: 1,
-	// 					},
-	// 				],
-	// 				totalCount: items.length,
-	// 			},
-	// 		})
-	// 		.mockResolvedValue({data: {items}}),
-	// 	post: jest
-	// 		.fn()
-	// 		.mockRejectedValueOnce(new Error('Request failed'))
-	// 		.mockResolvedValue({data: {items: []}}),
-	// };
+	const fetchMock = new FetchMock({
+		GET: {
+			default: [
+				fetchMockResponse({}, false),
+				fetchMockResponse({
+					items: [
+						{
+							assigneePerson: {id: 2, name: 'Test Test'},
+							id: 1,
+							label: 'Review',
+							objectReviewed: {
+								assetTitle: 'Blog1',
+								assetType: 'Blogs Entry',
+							},
+							status: 'In Progress',
+							workflowInstanceId: 1,
+						},
+					],
+					totalCount: items.length,
+				}),
+				fetchMockResponse({items}),
+			],
+		},
+		POST: {
+			default: [
+				fetchMockResponse(new Error('Request failed'), false),
+				fetchMockResponse({items: []}),
+			],
+		},
+	});
 
-	// beforeAll(async () => {
-	// 	const renderResult = render(
-	// 		<MockRouter client={clientMock}>
-	// 			<SingleReassignModal />
-	// 		</MockRouter>,
-	// 		{
-	// 			wrapper: ContainerMock,
-	// 		}
-	// 	);
+	beforeAll(async () => {
+		const renderResult = render(
+			<MockRouter>
+				<SingleReassignModal />
+			</MockRouter>,
+			{
+				wrapper: ContainerMock,
+			}
+		);
 
-	// 	getByText = renderResult.getByText;
+		getByText = renderResult.getByText;
 
-	// 	await act(async () => {
-	// 		jest.runAllTimers();
-	// 	});
-	// });
+		await act(async () => {
+			jest.runAllTimers();
+		});
+	});
 
-	xit('Render modal with error message and retry', async () => {
+	beforeEach(() => {
+		fetchMock.mock();
+	});
+
+	afterEach(() => {
+		fetchMock.reset();
+	});
+
+	it('Render modal with error message and retry', async () => {
 		const alertError = getByText('your-request-has-failed');
 		const emptyStateMessage = getByText('unable-to-retrieve-data');
 		const retryBtn = getByText('retry');
@@ -115,7 +119,7 @@ describe('The SingleReassignModal component should', () => {
 		});
 	});
 
-	xit('Render modal with items', async () => {
+	it('Render modal with items', async () => {
 		const cancelBtn = getByText('cancel');
 		const reassignBtn = getByText('reassign');
 		const table = document.querySelector('.table');
@@ -144,7 +148,7 @@ describe('The SingleReassignModal component should', () => {
 		});
 	});
 
-	xit('Render modal reassign error and retry', async () => {
+	it('Render modal reassign error and retry', async () => {
 		const alertError = getByText('your-request-has-failed');
 		const reassignBtn = getByText('reassign');
 
@@ -158,7 +162,7 @@ describe('The SingleReassignModal component should', () => {
 		});
 	});
 
-	xit('Render alert with success message and close modal', async () => {
+	it('Render alert with success message and close modal', async () => {
 		const alertToast = document.querySelector('.alert-dismissible');
 
 		const alertClose = alertToast.children[1];

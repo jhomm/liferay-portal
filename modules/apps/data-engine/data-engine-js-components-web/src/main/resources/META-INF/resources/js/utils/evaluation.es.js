@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {debounce} from 'frontend-js-web';
@@ -23,7 +14,7 @@ const EVALUATOR_URL =
 
 let controller = null;
 
-export const mergeFieldOptions = (field, newField) => {
+export function mergeFieldOptions(field, newField) {
 	let newValue = {...newField.value};
 
 	Object.keys(newValue).forEach((languageId) => {
@@ -46,16 +37,26 @@ export const mergeFieldOptions = (field, newField) => {
 	});
 
 	return newValue;
+}
+
+const sanitizePagesCaptchaHTML = (pages) => {
+	const visitor = new PagesVisitor(pages);
+
+	visitor.mapFields((field) => {
+		if (field.fieldName === '_CAPTCHA_') {
+			delete field.html;
+		}
+	});
 };
 
-export const mergePages = (
+export function mergePages(
 	defaultLanguageId,
 	editingLanguageId,
 	fieldName,
 	newPages,
 	sourcePages,
 	viewMode
-) => {
+) {
 	const newPagesVisitor = new PagesVisitor(newPages);
 	const sourcePagesVisitor = new PagesVisitor(sourcePages);
 
@@ -105,19 +106,18 @@ export const mergePages = (
 			}
 
 			if (newField.localizable) {
-				if (
-					field.type === 'numeric' &&
-					field.valueChanged &&
-					field.value != field.localizedValue[editingLanguageId]
-				) {
-					sourceField.localizedValue[editingLanguageId] = field.value;
-				}
-
 				newField = {
 					...newField,
 					localizedValue: {
 						...sourceField.localizedValue,
 					},
+				};
+			}
+			else {
+				newField = {
+					...newField,
+					editOnlyInDefaultLanguage:
+						sourceField.editOnlyInDefaultLanguage,
 				};
 			}
 
@@ -126,10 +126,11 @@ export const mergePages = (
 		false,
 		true
 	);
-};
+}
 
 const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 	const {
+		containerId,
 		defaultLanguageId,
 		editingLanguageId,
 		formId,
@@ -149,10 +150,17 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 		controller = new AbortController();
 	}
 
+	sanitizePagesCaptchaHTML(pages);
+
 	makeFetch({
 		body: convertToFormData({
-			languageId: editingLanguageId,
+			languageId:
+				containerId === 'editObjectEntry'
+					? defaultLanguageId
+					: editingLanguageId,
 			p_auth: Liferay.authToken,
+			p_l_id: themeDisplay.getPlid(),
+			p_v_l_s_g_id: themeDisplay.getSiteGroupId(),
 			portletNamespace,
 			serializedFormContext: JSON.stringify({
 				...evaluatorContext,
@@ -168,6 +176,10 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 		url: EVALUATOR_URL,
 	})
 		.then((newPages) => {
+			if (newPages.statusCode) {
+				callback(newPages);
+			}
+
 			const mergedPages = mergePages(
 				defaultLanguageId,
 				editingLanguageId,
@@ -180,9 +192,9 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 			callback(null, mergedPages);
 		})
 		.catch((error) => callback(error));
-}, 600);
+}, 350);
 
-export const evaluate = (fieldName, evaluatorContext) => {
+export function evaluate(fieldName, evaluatorContext) {
 	return new Promise((resolve, reject) => {
 		doEvaluate(fieldName, evaluatorContext, (error, pages) => {
 			if (error) {
@@ -192,4 +204,4 @@ export const evaluate = (fieldName, evaluatorContext) => {
 			resolve(pages);
 		});
 	});
-};
+}

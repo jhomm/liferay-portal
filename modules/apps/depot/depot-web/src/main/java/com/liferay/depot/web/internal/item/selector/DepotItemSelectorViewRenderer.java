@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.item.selector;
@@ -36,17 +27,16 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.taglib.util.PortalIncludeUtil;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.jsp.PageContext;
+
 import java.io.IOException;
 
 import java.util.List;
-import java.util.stream.Stream;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Alicia García
@@ -141,15 +131,13 @@ public class DepotItemSelectorViewRenderer implements ItemSelectorViewRenderer {
 			return _getPortletId(_className);
 		}
 
-		Stream<String> stream = _portletIds.stream();
+		for (String portletId : _portletIds) {
+			if (_depotApplicationController.isEnabled(portletId, groupId)) {
+				return portletId;
+			}
+		}
 
-		return stream.filter(
-			portletId -> _depotApplicationController.isEnabled(
-				portletId, groupId)
-		).findFirst(
-		).orElse(
-			StringPool.BLANK
-		);
+		return StringPool.BLANK;
 	}
 
 	private String _getPortletId(String className) {
@@ -165,9 +153,8 @@ public class DepotItemSelectorViewRenderer implements ItemSelectorViewRenderer {
 
 			return JournalPortletKeys.JOURNAL;
 		}
-		else {
-			return StringPool.BLANK;
-		}
+
+		return StringPool.BLANK;
 	}
 
 	private final String _className;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.monitoring.internal.statistics.portlet;
@@ -19,19 +10,18 @@ import com.liferay.portal.monitoring.internal.statistics.RequestStatistics;
 
 import java.util.Set;
 
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
-
 /**
  * @author Michael C. Han
  * @author Brian Wing Shun Chan
  */
-@Component(
-	enabled = false, immediate = true,
-	service = RenderRequestSummaryStatistics.class
-)
 public class RenderRequestSummaryStatistics
 	implements PortletSummaryStatistics {
+
+	public RenderRequestSummaryStatistics(
+		ServerStatisticsHelper serverStatisticsHelper) {
+
+		_serverStatisticsHelper = serverStatisticsHelper;
+	}
 
 	@Override
 	public long getAverageTime() {
@@ -40,7 +30,7 @@ public class RenderRequestSummaryStatistics
 		long count = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			for (RequestStatistics requestStatistics :
 					companyStatistics.getRenderRequestStatisticsSet()) {
@@ -63,7 +53,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getAverageTimeByCompany(
-			_serverStatistics.getCompanyStatistics(companyId));
+			_serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -71,7 +61,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getAverageTimeByCompany(
-			_serverStatistics.getCompanyStatistics(webId));
+			_serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -81,7 +71,7 @@ public class RenderRequestSummaryStatistics
 		long averageTime = 0;
 
 		Set<CompanyStatistics> companyStatisticsSet =
-			_serverStatistics.getCompanyStatisticsSet();
+			_serverStatisticsHelper.getCompanyStatisticsSet();
 
 		for (CompanyStatistics companyStatistics : companyStatisticsSet) {
 			RequestStatistics requestStatistics =
@@ -102,7 +92,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		CompanyStatistics companyStatistics =
-			_serverStatistics.getCompanyStatistics(companyId);
+			_serverStatisticsHelper.getCompanyStatistics(companyId);
 
 		RequestStatistics requestStatistics =
 			companyStatistics.getRenderRequestStatistics(portletId);
@@ -115,7 +105,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		CompanyStatistics companyStatistics =
-			_serverStatistics.getCompanyStatistics(webId);
+			_serverStatisticsHelper.getCompanyStatistics(webId);
 
 		RequestStatistics requestStatistics =
 			companyStatistics.getRenderRequestStatistics(portletId);
@@ -128,7 +118,7 @@ public class RenderRequestSummaryStatistics
 		long errorCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			errorCount += getErrorCountByCompany(companyStatistics);
 		}
@@ -141,7 +131,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getErrorCountByCompany(
-			_serverStatistics.getCompanyStatistics(companyId));
+			_serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -149,7 +139,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getErrorCountByCompany(
-			_serverStatistics.getCompanyStatistics(webId));
+			_serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -159,7 +149,7 @@ public class RenderRequestSummaryStatistics
 		long errorCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			errorCount += getErrorCountByPortlet(portletId, companyStatistics);
 		}
@@ -172,7 +162,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getErrorCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(companyId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -180,7 +170,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getErrorCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(webId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -188,7 +178,7 @@ public class RenderRequestSummaryStatistics
 		long maxTime = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			for (RequestStatistics requestStatistics :
 					companyStatistics.getRenderRequestStatisticsSet()) {
@@ -205,7 +195,7 @@ public class RenderRequestSummaryStatistics
 	@Override
 	public long getMaxTimeByCompany(long companyId) throws MonitoringException {
 		CompanyStatistics companyStatistics =
-			_serverStatistics.getCompanyStatistics(companyId);
+			_serverStatisticsHelper.getCompanyStatistics(companyId);
 
 		return companyStatistics.getMaxTime();
 	}
@@ -213,7 +203,7 @@ public class RenderRequestSummaryStatistics
 	@Override
 	public long getMaxTimeByCompany(String webId) throws MonitoringException {
 		CompanyStatistics companyStatistics =
-			_serverStatistics.getCompanyStatistics(webId);
+			_serverStatisticsHelper.getCompanyStatistics(webId);
 
 		return companyStatistics.getMaxTime();
 	}
@@ -225,7 +215,7 @@ public class RenderRequestSummaryStatistics
 		long maxTime = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			long curMaxTime = getMaxTimeByPortlet(portletId, companyStatistics);
 
@@ -242,7 +232,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getMaxTimeByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(companyId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -250,7 +240,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getMaxTimeByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(webId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -258,7 +248,7 @@ public class RenderRequestSummaryStatistics
 		long minTime = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			for (RequestStatistics requestStatistics :
 					companyStatistics.getRenderRequestStatisticsSet()) {
@@ -275,7 +265,7 @@ public class RenderRequestSummaryStatistics
 	@Override
 	public long getMinTimeByCompany(long companyId) throws MonitoringException {
 		CompanyStatistics companyStatistics =
-			_serverStatistics.getCompanyStatistics(companyId);
+			_serverStatisticsHelper.getCompanyStatistics(companyId);
 
 		return companyStatistics.getMinTime();
 	}
@@ -283,7 +273,7 @@ public class RenderRequestSummaryStatistics
 	@Override
 	public long getMinTimeByCompany(String webId) throws MonitoringException {
 		CompanyStatistics companyStatistics =
-			_serverStatistics.getCompanyStatistics(webId);
+			_serverStatisticsHelper.getCompanyStatistics(webId);
 
 		return companyStatistics.getMinTime();
 	}
@@ -295,7 +285,7 @@ public class RenderRequestSummaryStatistics
 		long minTime = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			long curMinTime = getMinTimeByPortlet(portletId, companyStatistics);
 
@@ -312,7 +302,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getMinTimeByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(companyId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -320,7 +310,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getMinTimeByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(webId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -328,7 +318,7 @@ public class RenderRequestSummaryStatistics
 		long requestCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			requestCount += getRequestCountByCompany(companyStatistics);
 		}
@@ -341,7 +331,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getRequestCountByCompany(
-			_serverStatistics.getCompanyStatistics(companyId));
+			_serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -349,7 +339,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getRequestCountByCompany(
-			_serverStatistics.getCompanyStatistics(webId));
+			_serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -359,7 +349,7 @@ public class RenderRequestSummaryStatistics
 		long requestCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			requestCount += getRequestCountByPortlet(
 				portletId, companyStatistics);
@@ -373,7 +363,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getRequestCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(companyId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -381,7 +371,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getRequestCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(webId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -389,7 +379,7 @@ public class RenderRequestSummaryStatistics
 		long successCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			successCount += getSuccessCountByCompany(companyStatistics);
 		}
@@ -402,7 +392,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getSuccessCountByCompany(
-			_serverStatistics.getCompanyStatistics(companyId));
+			_serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -410,7 +400,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getSuccessCountByCompany(
-			_serverStatistics.getCompanyStatistics(webId));
+			_serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -420,7 +410,7 @@ public class RenderRequestSummaryStatistics
 		long successCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			successCount += getSuccessCountByPortlet(
 				portletId, companyStatistics);
@@ -434,7 +424,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getSuccessCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(companyId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -442,7 +432,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getSuccessCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(webId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -450,7 +440,7 @@ public class RenderRequestSummaryStatistics
 		long timeoutCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			timeoutCount += getTimeoutCountByCompany(companyStatistics);
 		}
@@ -463,7 +453,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getTimeoutCountByCompany(
-			_serverStatistics.getCompanyStatistics(companyId));
+			_serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -471,7 +461,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getTimeoutCountByCompany(
-			_serverStatistics.getCompanyStatistics(webId));
+			_serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	@Override
@@ -481,7 +471,7 @@ public class RenderRequestSummaryStatistics
 		long timeoutCount = 0;
 
 		for (CompanyStatistics companyStatistics :
-				_serverStatistics.getCompanyStatisticsSet()) {
+				_serverStatisticsHelper.getCompanyStatisticsSet()) {
 
 			timeoutCount += getTimeoutCountByPortlet(
 				portletId, companyStatistics);
@@ -495,7 +485,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getTimeoutCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(companyId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(companyId));
 	}
 
 	@Override
@@ -503,7 +493,7 @@ public class RenderRequestSummaryStatistics
 		throws MonitoringException {
 
 		return getTimeoutCountByPortlet(
-			portletId, _serverStatistics.getCompanyStatistics(webId));
+			portletId, _serverStatisticsHelper.getCompanyStatistics(webId));
 	}
 
 	protected long getAverageTimeByCompany(
@@ -651,11 +641,6 @@ public class RenderRequestSummaryStatistics
 		return requestStatistics.getTimeoutCount();
 	}
 
-	@Reference(unbind = "-")
-	protected void setServerStatistics(ServerStatistics serverStatistics) {
-		_serverStatistics = serverStatistics;
-	}
-
-	private ServerStatistics _serverStatistics;
+	private final ServerStatisticsHelper _serverStatisticsHelper;
 
 }

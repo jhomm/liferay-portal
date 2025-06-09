@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -31,11 +22,11 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 		<div class="table-responsive">
 			<table class="table table-hover table-nowrap">
 				<thead>
-					<th class="price-point-column"><%= LanguageUtil.get(request, "quantity") %></th>
-					<th class="price-column table-cell-expand"><%= LanguageUtil.get(request, "price") %></th>
-					<th class="discount-column table-cell-expand"><%= LanguageUtil.get(request, "discount") %></th>
-					<th class="savings-column table-cell-expand"><%= LanguageUtil.get(request, "savings") %></th>
-					<th class="table-cell-expand total-column"><%= LanguageUtil.get(request, "total") %></th>
+					<th class="price-point-column"><liferay-ui:message key="quantity" /></th>
+					<th class="price-column table-cell-expand"><liferay-ui:message key="price" /></th>
+					<th class="discount-column table-cell-expand"><liferay-ui:message key="discount" /></th>
+					<th class="savings-column table-cell-expand"><liferay-ui:message key="savings" /></th>
+					<th class="table-cell-expand total-column"><liferay-ui:message key="total" /></th>
 				</thead>
 
 				<tbody>
@@ -46,7 +37,17 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 
 						BigDecimal price = commercePriceEntry.getPrice();
 
-						BigDecimal priceTotal = price.multiply(BigDecimal.valueOf(commerceTierPriceEntry.getMinQuantity()));
+						BigDecimal minQuantity = BigDecimal.ZERO;
+
+						if (commerceTierPriceEntry != null) {
+							minQuantity = commerceTierPriceEntry.getMinQuantity();
+
+							if (minQuantity != null) {
+								minQuantity = minQuantity.setScale(0, BigDecimal.ROUND_DOWN);
+							}
+						}
+
+						BigDecimal priceTotal = price.multiply(minQuantity);
 
 						BigDecimal commerceTierPriceEntryPrice = commerceTierPriceEntry.getPrice();
 
@@ -56,18 +57,20 @@ String randomNamespace = StringUtil.randomId() + StringPool.UNDERLINE;
 
 						discountPercent = discountPercent.multiply(BigDecimal.valueOf(100));
 
-						BigDecimal total = commerceTierPriceEntryPrice.multiply(BigDecimal.valueOf(commerceTierPriceEntry.getMinQuantity()));
+						BigDecimal total = commerceTierPriceEntryPrice.multiply(minQuantity);
 
 						BigDecimal savings = priceTotal.subtract(total);
 					%>
 
-						<tr class="multiples-row" onclick="<%= randomNamespace %>setQuantity('<%= commerceTierPriceEntry.getMinQuantity() %>');">
-							<td class="price-point-column"><%= commerceTierPriceEntry.getMinQuantity() %></td>
-							<td class="msrp-column table-cell-expand"><%= commercePriceFormatter.format(commerceContext.getCommerceCurrency(), priceTotal, themeDisplay.getLocale()) %></td>
-							<td class="discount-column table-cell-expand"><%= commercePriceFormatter.format(discountPercent, themeDisplay.getLocale()) %> %</td>
-							<td class="savings-column table-cell-expand"><%= commercePriceFormatter.format(commerceContext.getCommerceCurrency(), savings, themeDisplay.getLocale()) %></td>
-							<td class="table-cell-expand total-column"><%= commercePriceFormatter.format(commerceContext.getCommerceCurrency(), total, themeDisplay.getLocale()) %></td>
-						</tr>
+						<liferay-ui:csp>
+							<tr class="multiples-row" onclick="<%= randomNamespace %>setQuantity('<%= minQuantity %>');">
+								<td class="price-point-column"><%= minQuantity %></td>
+								<td class="msrp-column table-cell-expand"><%= commercePriceFormatter.format(commerceContext.getCommerceCurrency(), priceTotal, themeDisplay.getLocale()) %></td>
+								<td class="discount-column table-cell-expand"><%= commercePriceFormatter.format(discountPercent, themeDisplay.getLocale()) %> %</td>
+								<td class="savings-column table-cell-expand"><%= commercePriceFormatter.format(commerceContext.getCommerceCurrency(), savings, themeDisplay.getLocale()) %></td>
+								<td class="table-cell-expand total-column"><%= commercePriceFormatter.format(commerceContext.getCommerceCurrency(), total, themeDisplay.getLocale()) %></td>
+							</tr>
+						</liferay-ui:csp>
 
 					<%
 					}

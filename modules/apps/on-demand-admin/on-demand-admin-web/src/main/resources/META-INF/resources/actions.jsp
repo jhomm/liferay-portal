@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,15 +20,31 @@ Company rowObjectCompany = (Company)row.getObject();
 	message="<%= StringPool.BLANK %>"
 	showWhenSingleIcon="<%= true %>"
 >
-	<c:if test="<%= rowObjectCompany.getCompanyId() != PortalUtil.getDefaultCompanyId() %>">
-		<portlet:actionURL name="/on_demand_admin/request_admin_access" var="requestAdminAccessURL">
+	<c:if test="<%= rowObjectCompany.isActive() && (rowObjectCompany.getCompanyId() != PortalUtil.getDefaultCompanyId()) && PortletPermissionUtil.contains(permissionChecker, 0, 0, OnDemandAdminPortletKeys.ON_DEMAND_ADMIN, OnDemandAdminActionKeys.REQUEST_ADMINISTRATOR_ACCESS, true) %>">
+		<portlet:renderURL var="dialogURL" windowState="<%= LiferayWindowState.POP_UP.toString() %>">
+			<portlet:param name="mvcPath" value="/justification.jsp" />
 			<portlet:param name="companyId" value="<%= String.valueOf(rowObjectCompany.getCompanyId()) %>" />
-		</portlet:actionURL>
+		</portlet:renderURL>
 
 		<liferay-ui:icon
+			id="requestAdminAccessLink"
 			message="request-administrator-access"
-			target="_blank"
-			url="<%= requestAdminAccessURL %>"
+			onClick='<%= "event.preventDefault(); " + liferayPortletResponse.getNamespace() + "openModal(event);" %>'
+			url="<%= dialogURL %>"
 		/>
 	</c:if>
 </liferay-ui:icon-menu>
+
+<aui:script>
+	function <portlet:namespace />openModal(event) {
+		Liferay.Util.openModal({
+			disableAutoClose: true,
+			height: '60vh',
+			id: '<portlet:namespace />requestAdminAccessDialog',
+			iframeBodyCssClass: '',
+			size: 'md',
+			title: '<liferay-ui:message key="request-administrator-access" />',
+			url: event.currentTarget.href,
+		});
+	}
+</aui:script>

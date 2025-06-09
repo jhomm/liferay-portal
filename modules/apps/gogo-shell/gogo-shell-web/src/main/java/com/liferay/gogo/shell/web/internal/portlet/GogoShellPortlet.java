@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gogo.shell.web.internal.portlet;
 
+import com.liferay.captcha.util.CaptchaUtil;
 import com.liferay.gogo.shell.web.internal.constants.GogoShellPortletKeys;
 import com.liferay.gogo.shell.web.internal.constants.GogoShellWebKeys;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayInputStream;
 import com.liferay.portal.kernel.io.unsync.UnsyncByteArrayOutputStream;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -27,10 +19,18 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.TransientValue;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,15 +38,6 @@ import java.io.PrintStream;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.apache.felix.service.command.CommandProcessor;
 import org.apache.felix.service.command.CommandSession;
@@ -61,19 +52,19 @@ import org.osgi.service.component.annotations.Reference;
  * @author David Truong
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=portlet-gogo-shell",
 		"com.liferay.portlet.display-category=category.hidden",
 		"com.liferay.portlet.render-weight=50",
-		"javax.portlet.display-name=Gogo Shell",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Gogo Shell",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + GogoShellPortletKeys.GOGO_SHELL,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -84,7 +75,7 @@ public class GogoShellPortlet extends MVCPortlet {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		initCommandSession(renderRequest);
+		_initCommandSession(renderRequest);
 
 		CommandSession commandSession = _getSessionAttribute(
 			renderRequest, GogoShellWebKeys.COMMAND_SESSION);
@@ -99,12 +90,14 @@ public class GogoShellPortlet extends MVCPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
+		CaptchaUtil.check(actionRequest);
+
 		String command = ParamUtil.getString(actionRequest, "command");
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		initCommandSession(actionRequest);
+		_initCommandSession(actionRequest);
 
 		CommandSession commandSession = _getSessionAttribute(
 			actionRequest, GogoShellWebKeys.COMMAND_SESSION);
@@ -124,7 +117,7 @@ public class GogoShellPortlet extends MVCPortlet {
 		try {
 			SessionMessages.add(actionRequest, "command", command);
 
-			checkCommand(command, themeDisplay);
+			_checkCommand(command, themeDisplay);
 
 			Object result = commandSession.execute(command);
 
@@ -145,6 +138,14 @@ public class GogoShellPortlet extends MVCPortlet {
 			if (Validator.isNotNull(errorContent)) {
 				throw new Exception(errorContent);
 			}
+
+			String successMessage = ParamUtil.getString(
+				actionRequest, "successMessage");
+
+			SessionMessages.add(
+				actionRequest, "requestProcessed", successMessage);
+
+			sendRedirect(actionRequest, actionResponse);
 		}
 		catch (Exception exception) {
 			hideDefaultErrorMessage(actionRequest);
@@ -162,7 +163,7 @@ public class GogoShellPortlet extends MVCPortlet {
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws IOException, PortletException {
 
-		checkOmniAdmin();
+		_checkOmniadmin();
 
 		super.processAction(actionRequest, actionResponse);
 	}
@@ -172,25 +173,25 @@ public class GogoShellPortlet extends MVCPortlet {
 			RenderRequest renderRequest, RenderResponse renderResponse)
 		throws IOException, PortletException {
 
-		checkOmniAdmin();
+		_checkOmniadmin();
 
 		super.render(renderRequest, renderResponse);
 	}
 
-	protected void checkCommand(String command, ThemeDisplay themeDisplay)
+	private void _checkCommand(String command, ThemeDisplay themeDisplay)
 		throws Exception {
 
 		Matcher matcher = _pattern.matcher(command);
 
 		if (matcher.find()) {
 			throw new Exception(
-				LanguageUtil.format(
+				_language.format(
 					themeDisplay.getLocale(), "the-command-x-is-not-supported",
 					command));
 		}
 	}
 
-	protected void checkOmniAdmin() throws PortletException {
+	private void _checkOmniadmin() throws PortletException {
 		PermissionChecker permissionChecker =
 			PermissionThreadLocal.getPermissionChecker();
 
@@ -202,7 +203,23 @@ public class GogoShellPortlet extends MVCPortlet {
 		}
 	}
 
-	protected void initCommandSession(PortletRequest portletRequest) {
+	private <T> T _getSessionAttribute(
+		PortletRequest portletRequest, String name) {
+
+		PortletSession portletSession = portletRequest.getPortletSession();
+
+		Object sessionAttribute = portletSession.getAttribute(name);
+
+		if (!(sessionAttribute instanceof TransientValue)) {
+			return null;
+		}
+
+		TransientValue<T> transientValue = (TransientValue<T>)sessionAttribute;
+
+		return transientValue.getValue();
+	}
+
+	private void _initCommandSession(PortletRequest portletRequest) {
 		PortletSession portletSession = portletRequest.getPortletSession();
 
 		Object commandSessionAttribute = portletSession.getAttribute(
@@ -245,23 +262,6 @@ public class GogoShellPortlet extends MVCPortlet {
 			new TransientValue<>(outputUnsyncByteArrayOutputStream));
 	}
 
-	private <T> T _getSessionAttribute(
-		PortletRequest portletRequest, String name) {
-
-		PortletSession portletSession = portletRequest.getPortletSession();
-
-		Object sessionAttribute = portletSession.getAttribute(name);
-
-		if (sessionAttribute instanceof TransientValue) {
-			TransientValue<T> transientValue =
-				(TransientValue<T>)sessionAttribute;
-
-			return transientValue.getValue();
-		}
-
-		return null;
-	}
-
 	private static final InputStream _emptyInputStream =
 		new UnsyncByteArrayInputStream(new byte[0]);
 	private static final Pattern _pattern = Pattern.compile(
@@ -272,6 +272,6 @@ public class GogoShellPortlet extends MVCPortlet {
 	private CommandProcessor _commandProcessor;
 
 	@Reference
-	private Portal _portal;
+	private Language _language;
 
 }

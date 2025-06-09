@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v3_9_0;
@@ -50,36 +41,34 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 		DDMFormValuesDeserializer ddmFormValuesDeserializer,
 		DDMFormValuesSerializer ddmFormValuesSerializer) {
 
-		_ddmDataProviderSettingsProviderServiceTracker =
-			ddmDataProviderSettingsProviderServiceTracker;
 		_ddmFormValuesDeserializer = ddmFormValuesDeserializer;
 		_ddmFormValuesSerializer = ddmFormValuesSerializer;
+
+		_serviceTrackerMap = ddmDataProviderSettingsProviderServiceTracker;
 	}
 
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select dataProviderInstanceId, definition, type_ from " +
-					"DDMDataProviderInstance");
+				"select ctCollectionId, dataProviderInstanceId, definition, " +
+					"type_ from DDMDataProviderInstance");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMDataProviderInstance set definition = ? where " +
-						"dataProviderInstanceId = ?");
+						"ctCollectionId = ? and dataProviderInstanceId = ?");
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			while (resultSet.next()) {
-				String dataProviderInstanceDefinition = resultSet.getString(2);
-				String type = resultSet.getString(3);
-
 				preparedStatement2.setString(
 					1,
 					_upgradeDataProviderInstanceDefinition(
-						dataProviderInstanceDefinition, type));
-
-				long dataProviderInstanceId = resultSet.getLong(1);
-
-				preparedStatement2.setLong(2, dataProviderInstanceId);
+						resultSet.getString("definition"),
+						resultSet.getString("type_")));
+				preparedStatement2.setLong(
+					2, resultSet.getLong("ctCollectionId"));
+				preparedStatement2.setLong(
+					3, resultSet.getLong("dataProviderInstanceId"));
 
 				preparedStatement2.addBatch();
 			}
@@ -120,7 +109,7 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 		throws Exception {
 
 		DDMDataProviderSettingsProvider ddmDataProviderSettingsProvider =
-			_ddmDataProviderSettingsProviderServiceTracker.getService(type);
+			_serviceTrackerMap.getService(type);
 
 		DDMForm ddmForm = DDMFormFactory.create(
 			ddmDataProviderSettingsProvider.getSettings());
@@ -180,9 +169,9 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 			ddmFormValues, _ddmFormValuesSerializer);
 	}
 
-	private final ServiceTrackerMap<String, DDMDataProviderSettingsProvider>
-		_ddmDataProviderSettingsProviderServiceTracker;
 	private final DDMFormValuesDeserializer _ddmFormValuesDeserializer;
 	private final DDMFormValuesSerializer _ddmFormValuesSerializer;
+	private final ServiceTrackerMap<String, DDMDataProviderSettingsProvider>
+		_serviceTrackerMap;
 
 }

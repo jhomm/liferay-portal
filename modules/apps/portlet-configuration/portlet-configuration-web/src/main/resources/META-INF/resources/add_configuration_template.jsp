@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,7 +16,7 @@ String redirect = ParamUtil.getString(request, "redirect");
 	<portlet:param name="portletConfiguration" value="<%= Boolean.TRUE.toString() %>" />
 </portlet:actionURL>
 
-<div class="portlet-configuration-add-template">
+<div class="cadmin portlet-configuration-add-template">
 	<aui:form action="<%= updateArchivedSetupURL %>" cssClass="form" id="fm" method="post" name="fm">
 		<aui:input name="redirect" type="hidden" value="<%= redirect %>" />
 		<aui:input name="portletResource" type="hidden" value="<%= portletResource %>" />
@@ -34,35 +25,37 @@ String redirect = ParamUtil.getString(request, "redirect");
 			<clay:container-fluid>
 				<liferay-ui:error exception="<%= PortletItemNameException.class %>" message="please-enter-a-valid-setup-name" />
 
-				<aui:fieldset-group markupView="lexicon">
-					<aui:fieldset>
+				<div class="sheet">
+					<div class="panel-group panel-group-flush">
+						<aui:fieldset>
 
-						<%
-						String name = StringPool.BLANK;
+							<%
+							String name = StringPool.BLANK;
 
-						boolean useCustomTitle = GetterUtil.getBoolean(portletPreferences.getValue("portletSetupUseCustomTitle", null));
+							boolean useCustomTitle = GetterUtil.getBoolean(portletPreferences.getValue("portletSetupUseCustomTitle", null));
 
-						if (useCustomTitle) {
-							name = PortletConfigurationUtil.getPortletTitle(portletPreferences, LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale()));
-						}
-						%>
+							if (useCustomTitle) {
+								name = PortletConfigurationUtil.getPortletTitle(portletDisplay.getPortletName(), portletPreferences, LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale()));
+							}
+							%>
 
-						<aui:input name="name" placeholder="name" required="<%= true %>" type="text" value="<%= name %>">
-							<aui:validator name="maxLength">75</aui:validator>
-						</aui:input>
-					</aui:fieldset>
-				</aui:fieldset-group>
+							<aui:input name="name" placeholder="name" required="<%= true %>" type="text" value="<%= name %>">
+								<aui:validator name="maxLength">75</aui:validator>
+							</aui:input>
+						</aui:fieldset>
+					</div>
+				</div>
 			</clay:container-fluid>
 		</div>
 
 		<aui:button-row>
-			<aui:button type="submit" />
-
-			<aui:button href="<%= redirect %>" type="cancel" />
+			<liferay-frontend:edit-form-buttons
+				redirect="<%= redirect %>"
+			/>
 		</aui:button-row>
 	</aui:form>
 </div>
 
 <liferay-frontend:component
-	module="js/AddConfigurationTemplateEventHandler"
+	module="{AddConfigurationTemplateEventHandler} from portlet-configuration-web"
 />

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.auth;
@@ -28,10 +19,14 @@ import com.liferay.portal.kernel.security.auth.verifier.AuthVerifier;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierConfiguration;
 import com.liferay.portal.kernel.security.auth.verifier.AuthVerifierResult;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.security.auth.registry.AuthVerifierRegistry;
+import com.liferay.portal.spring.context.PortalContextLoaderListener;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,8 +37,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.function.Consumer;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -59,12 +52,6 @@ import org.osgi.util.tracker.ServiceTrackerCustomizer;
 public class AuthVerifierPipeline {
 
 	public static final String AUTH_TYPE = "auth.type";
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #getPortalAuthVerifierPipeline()}
-	 */
-	@Deprecated
-	public static volatile AuthVerifierPipeline PORTAL_AUTH_VERIFIER_PIPELINE;
 
 	public static String getAuthVerifierPropertyName(String className) {
 		String simpleClassName = StringUtil.extractLast(
@@ -116,6 +103,24 @@ public class AuthVerifierPipeline {
 		}
 
 		return _createGuestVerificationResult(accessControlContext);
+	}
+
+	private static List<AuthVerifierConfiguration> _filterSupremeAuthVerifier(
+		List<AuthVerifierConfiguration> authVerifierConfigurations) {
+
+		for (AuthVerifierConfiguration authVerifierConfiguration :
+				authVerifierConfigurations) {
+
+			Properties properties = authVerifierConfiguration.getProperties();
+
+			for (String key : _SUPREME_AUTH_VERIFIER_KEYS) {
+				if (GetterUtil.getBoolean(properties.get(key))) {
+					return Collections.singletonList(authVerifierConfiguration);
+				}
+			}
+		}
+
+		return authVerifierConfigurations;
 	}
 
 	private synchronized void _addAuthVerifierConfiguration(
@@ -185,10 +190,9 @@ public class AuthVerifierPipeline {
 		HttpServletRequest httpServletRequest =
 			accessControlContext.getRequest();
 
-		long defaultUserId = UserLocalServiceUtil.getDefaultUserId(
-			PortalUtil.getCompanyId(httpServletRequest));
-
-		authVerifierResult.setUserId(defaultUserId);
+		authVerifierResult.setUserId(
+			UserLocalServiceUtil.getGuestUserId(
+				PortalUtil.getCompanyId(httpServletRequest)));
 
 		return authVerifierResult;
 	}
@@ -216,6 +220,10 @@ public class AuthVerifierPipeline {
 
 		_buildURLPatternMapper();
 	}
+
+	private static final String[] _SUPREME_AUTH_VERIFIER_KEYS = {
+		"basic_auth", "digest_auth"
+	};
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AuthVerifierPipeline.class);
@@ -246,7 +254,7 @@ public class AuthVerifierPipeline {
 			}
 
 			for (AuthVerifierConfiguration authVerifierConfiguration :
-					authVerifierConfigurations) {
+					_filterSupremeAuthVerifier(authVerifierConfigurations)) {
 
 				if (_excludedAuthVerifierConfigurations.contains(
 						authVerifierConfiguration)) {
@@ -342,19 +350,44 @@ public class AuthVerifierPipeline {
 			User user = UserLocalServiceUtil.fetchUser(
 				authVerifierResult.getUserId());
 
-			if ((user != null) && !user.isActive()) {
+			if ((user != null) &&
+				(!user.isActive() ||
+				 !user.isEmailAddressVerificationComplete() ||
+				 user.isPasswordResetRequired())) {
+
+				long userId = authVerifierResult.getUserId();
+
 				if (_log.isDebugEnabled()) {
 					Class<?> authVerifierClass = authVerifier.getClass();
 
-					_log.debug(
-						StringBundler.concat(
-							"Auth verifier ", authVerifierClass.getName(),
-							" returned inactive user",
-							authVerifierResult.getUserId()));
+					if (!user.isActive()) {
+						_log.debug(
+							StringBundler.concat(
+								"Auth verifier ", authVerifierClass.getName(),
+								" returned inactive user ", userId));
+					}
+					else if (!user.isEmailAddressVerificationComplete()) {
+						_log.debug(
+							StringBundler.concat(
+								"Auth verifier ", authVerifierClass.getName(),
+								" returned user ", userId,
+								" who must verify his email address"));
+					}
+					else {
+						_log.debug(
+							StringBundler.concat(
+								"Auth verifier ", authVerifierClass.getName(),
+								" returned user ", userId,
+								" who must reset his password"));
+					}
 				}
+
+				authVerifierResult = new AuthVerifierResult();
 
 				authVerifierResult.setState(
 					AuthVerifierResult.State.UNSUCCESSFUL);
+
+				authVerifierResult.setUserId(userId);
 			}
 
 			Map<String, Object> settings = _mergeSettings(
@@ -385,7 +418,8 @@ public class AuthVerifierPipeline {
 		static {
 			AuthVerifierPipeline portalAuthVerifierPipeline =
 				new AuthVerifierPipeline(
-					Collections.emptyList(), PortalUtil.getPathContext());
+					Collections.emptyList(),
+					PortalContextLoaderListener.getPortalServletContextPath());
 
 			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
 
@@ -441,8 +475,6 @@ public class AuthVerifierPipeline {
 			serviceTracker.open();
 
 			_PORTAL_AUTH_VERIFIER_PIPELINE = portalAuthVerifierPipeline;
-
-			PORTAL_AUTH_VERIFIER_PIPELINE = portalAuthVerifierPipeline;
 		}
 
 	}

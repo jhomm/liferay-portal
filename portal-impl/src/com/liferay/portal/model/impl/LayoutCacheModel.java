@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -76,7 +67,7 @@ public class LayoutCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(85);
+		StringBundler sb = new StringBundler(89);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
@@ -84,6 +75,8 @@ public class LayoutCacheModel
 		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", plid=");
 		sb.append(plid);
 		sb.append(", groupId=");
@@ -142,6 +135,8 @@ public class LayoutCacheModel
 		sb.append(css);
 		sb.append(", priority=");
 		sb.append(priority);
+		sb.append(", faviconFileEntryId=");
+		sb.append(faviconFileEntryId);
 		sb.append(", masterLayoutPlid=");
 		sb.append(masterLayoutPlid);
 		sb.append(", layoutPrototypeUuid=");
@@ -179,6 +174,13 @@ public class LayoutCacheModel
 		}
 		else {
 			layoutImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			layoutImpl.setExternalReferenceCode("");
+		}
+		else {
+			layoutImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		layoutImpl.setPlid(plid);
@@ -299,6 +301,7 @@ public class LayoutCacheModel
 		}
 
 		layoutImpl.setPriority(priority);
+		layoutImpl.setFaviconFileEntryId(faviconFileEntryId);
 		layoutImpl.setMasterLayoutPlid(masterLayoutPlid);
 
 		if (layoutPrototypeUuid == null) {
@@ -361,6 +364,7 @@ public class LayoutCacheModel
 
 		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		plid = objectInput.readLong();
 
@@ -406,6 +410,8 @@ public class LayoutCacheModel
 
 		priority = objectInput.readInt();
 
+		faviconFileEntryId = objectInput.readLong();
+
 		masterLayoutPlid = objectInput.readLong();
 		layoutPrototypeUuid = objectInput.readUTF();
 
@@ -432,6 +438,13 @@ public class LayoutCacheModel
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(plid);
@@ -551,6 +564,8 @@ public class LayoutCacheModel
 
 		objectOutput.writeInt(priority);
 
+		objectOutput.writeLong(faviconFileEntryId);
+
 		objectOutput.writeLong(masterLayoutPlid);
 
 		if (layoutPrototypeUuid == null) {
@@ -589,6 +604,7 @@ public class LayoutCacheModel
 	public long mvccVersion;
 	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long plid;
 	public long groupId;
 	public long companyId;
@@ -618,6 +634,7 @@ public class LayoutCacheModel
 	public long styleBookEntryId;
 	public String css;
 	public int priority;
+	public long faviconFileEntryId;
 	public long masterLayoutPlid;
 	public String layoutPrototypeUuid;
 	public boolean layoutPrototypeLinkEnabled;

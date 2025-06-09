@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.search.test;
@@ -17,16 +8,23 @@ package com.liferay.calendar.search.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.calendar.model.Calendar;
 import com.liferay.calendar.model.CalendarResource;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.settings.LocalizedValuesMap;
 import com.liferay.portal.kernel.test.rule.DataGuard;
 import com.liferay.portal.kernel.test.rule.Sync;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
+import com.liferay.portal.test.rule.Inject;
 
 import java.text.DateFormat;
 
@@ -96,7 +94,11 @@ public class CalendarIndexerIndexedFieldsTest
 
 		indexedFieldsFixture.postProcessDocument(document);
 
-		FieldValuesAssert.assertFieldValues(map, document, keywords);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			keywords);
 	}
 
 	@Test
@@ -127,7 +129,11 @@ public class CalendarIndexerIndexedFieldsTest
 
 		indexedFieldsFixture.postProcessDocument(document);
 
-		FieldValuesAssert.assertFieldValues(map, document, keywords);
+		FieldValuesAssert.assertFieldValues(
+			document, map,
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			keywords);
 	}
 
 	protected Calendar addCalendar(
@@ -179,6 +185,17 @@ public class CalendarIndexerIndexedFieldsTest
 			Field.USER_NAME, StringUtil.toLowerCase(calendar.getUserName()));
 		map.put("calendarId", String.valueOf(calendar.getCalendarId()));
 
+		Group group = _groupLocalService.getGroup(calendar.getGroupId());
+
+		map.put("groupExternalReferenceCode", group.getExternalReferenceCode());
+		map.put(
+			"scopeGroupExternalReferenceCode",
+			group.getExternalReferenceCode());
+
+		User user = TestPropsValues.getUser();
+
+		map.put("userExternalReferenceCode", user.getExternalReferenceCode());
+
 		DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyyMMddHHmmss");
 
@@ -196,5 +213,11 @@ public class CalendarIndexerIndexedFieldsTest
 		indexedFieldsFixture.populateUID(
 			calendar.getModelClassName(), calendar.getCalendarId(), map);
 	}
+
+	@Inject
+	private GroupLocalService _groupLocalService;
+
+	@Inject
+	private UserLocalService _userLocalService;
 
 }

@@ -1,40 +1,32 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.sso.facebook.connect.internal;
 
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.facebook.FacebookConnect;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.settings.CompanyServiceSettingsLocator;
 import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.security.sso.facebook.connect.configuration.FacebookConnectConfiguration;
 import com.liferay.portal.security.sso.facebook.connect.constants.FacebookConnectConstants;
 import com.liferay.portal.security.sso.facebook.connect.constants.FacebookConnectWebKeys;
 
-import javax.portlet.PortletRequest;
+import jakarta.portlet.PortletRequest;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,23 +45,23 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.portal.security.sso.facebook.connect.configuration.FacebookConnectConfiguration",
-	immediate = true, service = FacebookConnect.class
+	service = FacebookConnect.class
 )
 public class FacebookConnectImpl implements FacebookConnect {
 
 	@Override
 	public String getAccessToken(long companyId, String redirect, String code) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		String url = facebookConnectConfiguration.oauthTokenURL();
 
-		url = _http.addParameter(
+		url = HttpComponentsUtil.addParameter(
 			url, "client_id", facebookConnectConfiguration.appId());
-		url = _http.addParameter(
+		url = HttpComponentsUtil.addParameter(
 			url, "client_secret", facebookConnectConfiguration.appSecret());
-		url = _http.addParameter(url, "code", code);
-		url = _http.addParameter(
+		url = HttpComponentsUtil.addParameter(url, "code", code);
+		url = HttpComponentsUtil.addParameter(
 			url, "redirect_uri",
 			facebookConnectConfiguration.oauthRedirectURL());
 
@@ -80,7 +72,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 		try {
 			String content = _http.URLtoString(options);
 
-			JSONObject contentJSONObject = JSONFactoryUtil.createJSONObject(
+			JSONObject contentJSONObject = _jsonFactory.createJSONObject(
 				content);
 
 			String accessToken = contentJSONObject.getString("access_token");
@@ -93,7 +85,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 				String appSecret = facebookConnectConfiguration.appSecret();
 
 				if (!appSecret.isEmpty()) {
-					url = _http.setParameter(
+					url = HttpComponentsUtil.setParameter(
 						url, "client_secret",
 						StringBundler.concat(
 							appSecret.charAt(0), "...redacted...",
@@ -117,7 +109,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public String getAccessTokenURL(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.oauthTokenURL();
 	}
@@ -125,7 +117,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public String getAppId(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.appId();
 	}
@@ -133,7 +125,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public String getAppSecret(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.appSecret();
 	}
@@ -141,7 +133,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public String getAuthURL(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.oauthAuthURL();
 	}
@@ -153,11 +145,11 @@ public class FacebookConnectImpl implements FacebookConnect {
 		try {
 			String graphURL = getGraphURL(companyId);
 
-			String url = _http.addParameter(
+			String url = HttpComponentsUtil.addParameter(
 				graphURL.concat(path), "access_token", accessToken);
 
 			if (Validator.isNotNull(fields)) {
-				url = _http.addParameter(url, "fields", fields);
+				url = HttpComponentsUtil.addParameter(url, "fields", fields);
 			}
 
 			Http.Options options = new Http.Options();
@@ -166,11 +158,11 @@ public class FacebookConnectImpl implements FacebookConnect {
 
 			String json = _http.URLtoString(options);
 
-			return JSONFactoryUtil.createJSONObject(json);
+			return _jsonFactory.createJSONObject(json);
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 		}
 
@@ -180,7 +172,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public String getGraphURL(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.graphURL();
 	}
@@ -216,7 +208,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public String getRedirectURL(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.oauthRedirectURL();
 	}
@@ -224,7 +216,7 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public boolean isEnabled(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.enabled();
 	}
@@ -232,12 +224,12 @@ public class FacebookConnectImpl implements FacebookConnect {
 	@Override
 	public boolean isVerifiedAccountRequired(long companyId) {
 		FacebookConnectConfiguration facebookConnectConfiguration =
-			getFacebookConnectConfiguration(companyId);
+			_getFacebookConnectConfiguration(companyId);
 
 		return facebookConnectConfiguration.verifiedAccountRequired();
 	}
 
-	protected FacebookConnectConfiguration getFacebookConnectConfiguration(
+	private FacebookConnectConfiguration _getFacebookConnectConfiguration(
 		long companyId) {
 
 		try {
@@ -255,20 +247,17 @@ public class FacebookConnectImpl implements FacebookConnect {
 		return null;
 	}
 
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		FacebookConnectImpl.class);
 
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
 	private Http _http;
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Portal _portal;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.cache;
@@ -40,28 +31,27 @@ public class PortalCacheHelperUtil {
 			portalCacheName);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #getPortalCache(String, String)}
-	 */
-	@Deprecated
 	public static <K extends Serializable, V> PortalCache<K, V> getPortalCache(
-		String portalCacheManagerName, String portalCacheName,
-		boolean blocking) {
-
-		return getPortalCache(portalCacheManagerName, portalCacheName);
-	}
-
-	public static <K extends Serializable, V> PortalCache<K, V> getPortalCache(
-		String portalCacheManagerName, String portalCacheName, boolean blocking,
-		boolean mvcc) {
+		String portalCacheManagerName, String portalCacheName, boolean mvcc) {
 
 		PortalCacheManager<?, ?> portalCacheManager =
 			PortalCacheManagerProvider.getPortalCacheManager(
 				portalCacheManagerName);
 
 		return (PortalCache<K, V>)portalCacheManager.getPortalCache(
-			portalCacheName, blocking, mvcc);
+			portalCacheName, mvcc);
+	}
+
+	public static <K extends Serializable, V> PortalCache<K, V> getPortalCache(
+		String portalCacheManagerName, String portalCacheName, boolean mvcc,
+		boolean sharded) {
+
+		PortalCacheManager<?, ?> portalCacheManager =
+			PortalCacheManagerProvider.getPortalCacheManager(
+				portalCacheManagerName);
+
+		return (PortalCache<K, V>)portalCacheManager.getPortalCache(
+			portalCacheName, mvcc, sharded);
 	}
 
 	public static <K extends Serializable, V> void putWithoutReplicator(
@@ -117,6 +107,16 @@ public class PortalCacheHelperUtil {
 				portalCacheManagerName);
 
 		portalCacheManager.removePortalCache(portalCacheName);
+	}
+
+	public static void removePortalCaches(
+		String portalCacheManagerName, long companyId) {
+
+		PortalCacheManager<?, ?> portalCacheManager =
+			PortalCacheManagerProvider.getPortalCacheManager(
+				portalCacheManagerName);
+
+		portalCacheManager.removePortalCaches(companyId);
 	}
 
 	public static <K extends Serializable> void removeWithoutReplicator(

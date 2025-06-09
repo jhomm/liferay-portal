@@ -1,30 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.Dom4jUtil;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CSVUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.xml.SAXReaderFactory;
+import com.liferay.portal.kernel.xml.Document;
+import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.kernel.xml.Node;
+import com.liferay.portal.kernel.xml.ProcessingInstruction;
+import com.liferay.portal.kernel.xml.QName;
+import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -34,7 +34,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -48,21 +47,14 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.Namespace;
-import org.dom4j.Node;
-import org.dom4j.QName;
-import org.dom4j.io.DocumentSource;
-import org.dom4j.io.SAXReader;
-
 /**
  * @author Peter Shin
  */
 public class SPDXBuilder {
 
 	public static void main(String[] args) throws IOException {
+		ToolDependencies.wireBasic();
+
 		String xmls = null;
 
 		try (BufferedReader bufferedReader = new BufferedReader(
@@ -81,15 +73,6 @@ public class SPDXBuilder {
 		new SPDXBuilder(
 			StringUtil.split(xmls), spdxFileName,
 			licenseOverridePropertiesFileName);
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #SPDXBuilder(String[], String, String)}
-	 */
-	@Deprecated
-	public SPDXBuilder(String[] xmls, String spdxFileName) {
-		new SPDXBuilder(xmls, spdxFileName, null);
 	}
 
 	public SPDXBuilder(
@@ -116,16 +99,17 @@ public class SPDXBuilder {
 			Document document = _getDocument(
 				xmls, spdxFile, licenseOverrideProperties);
 
+			String xml = document.formattedString();
+
 			_write(
-				new File(spdxFile.getParentFile(), "versions-spdx.xml"),
-				Dom4jUtil.toString(document));
+				new File(spdxFile.getParentFile(), "versions-spdx.xml"), xml);
 
 			_write(
 				new File(spdxFile.getParentFile(), "versions-spdx.csv"),
 				_toCSV(document));
 
 			TransformerFactory transformerFactory =
-				TransformerFactory.newInstance();
+				SecureXMLFactoryProviderUtil.newTransformerFactory();
 
 			Transformer transformer = transformerFactory.newTransformer(
 				new StreamSource(
@@ -135,19 +119,17 @@ public class SPDXBuilder {
 				spdxFile.getParentFile(), "versions-spdx.html");
 
 			transformer.transform(
-				new DocumentSource(document),
+				new StreamSource(new ByteArrayInputStream(xml.getBytes())),
 				new StreamResult(new FileOutputStream(versionHtmlFile)));
 		}
 		catch (Exception exception) {
-			exception.printStackTrace();
+			_log.error(exception);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
 	private List<Element> _createLibraryElements(
 		Element packageElement, Properties licenseOverrideProperties) {
-
-		List<Element> libraryElements = new ArrayList<>();
 
 		String downloadLocation = packageElement.elementText(
 			_getQName("downloadLocation"));
@@ -159,42 +141,52 @@ public class SPDXBuilder {
 
 		List<Element> fileElements = hasFileElement.elements(_getQName("File"));
 
-		for (Element fileElement : fileElements) {
-			String fileName = fileElement.elementText(_getQName("fileName"));
+		return TransformUtil.transform(
+			fileElements,
+			fileElement -> {
+				String fileName = fileElement.elementText(
+					_getQName("fileName"));
 
-			String dirName = fileName.substring(0, fileName.indexOf('/') + 1);
+				String dirName = fileName.substring(
+					0, fileName.indexOf('/') + 1);
 
-			if (dirName.endsWith("portal/") || dirName.endsWith("portal-ee/")) {
-				fileName = fileName.substring(dirName.length());
-			}
+				if (dirName.endsWith("portal/") ||
+					dirName.endsWith("portal-ee/")) {
 
-			Element libraryElement = DocumentHelper.createElement("library");
+					fileName = fileName.substring(dirName.length());
+				}
 
-			Element fileNameElement = libraryElement.addElement("file-name");
+				Element libraryElement = SAXReaderUtil.createElement("library");
 
-			fileNameElement.addText(fileName);
+				Element fileNameElement = libraryElement.addElement(
+					"file-name");
 
-			Element versionElement = libraryElement.addElement("version");
+				fileNameElement.addText(fileName);
 
-			versionElement.addText(versionInfo);
+				Element versionElement = libraryElement.addElement("version");
 
-			Element projectNameElement = libraryElement.addElement(
-				"project-name");
+				versionElement.addText(versionInfo);
 
-			projectNameElement.addText(name);
+				Element projectNameElement = libraryElement.addElement(
+					"project-name");
 
-			if ((downloadLocation != null) &&
-				downloadLocation.startsWith("http")) {
+				projectNameElement.addText(name);
 
-				Element element = libraryElement.addElement("project-url");
+				if ((downloadLocation != null) &&
+					downloadLocation.startsWith("http")) {
 
-				element.addText(downloadLocation);
-			}
+					Element element = libraryElement.addElement("project-url");
 
-			String licenseName = _getLicenseName(
-				packageElement, fileName, licenseOverrideProperties);
+					element.addText(downloadLocation);
+				}
 
-			if (licenseName != null) {
+				String licenseName = _getLicenseName(
+					packageElement, fileName, licenseOverrideProperties);
+
+				if (licenseName == null) {
+					return libraryElement;
+				}
+
 				Element licensesElement = libraryElement.addElement("licenses");
 
 				Element licenseElement = licensesElement.addElement("license");
@@ -211,12 +203,9 @@ public class SPDXBuilder {
 
 					element.addText(licenseURL);
 				}
-			}
 
-			libraryElements.add(libraryElement);
-		}
-
-		return libraryElements;
+				return libraryElement;
+			});
 	}
 
 	private String _encode(Node node) {
@@ -240,10 +229,8 @@ public class SPDXBuilder {
 
 		Map<String, Element> libraryElementMap = new TreeMap<>(comparator);
 
-		SAXReader saxReader = SAXReaderFactory.getSAXReader(null, false, false);
-
 		for (String xml : xmls) {
-			Document xmlDocument = saxReader.read(new File(xml));
+			Document xmlDocument = SAXReaderUtil.read(new File(xml));
 
 			List<Node> fileNameNodes = xmlDocument.selectNodes("//file-name");
 
@@ -255,7 +242,7 @@ public class SPDXBuilder {
 			}
 		}
 
-		Document spdxDocument = saxReader.read(spdxFile);
+		Document spdxDocument = SAXReaderUtil.read(spdxFile);
 
 		Element spdxRootElement = spdxDocument.getRootElement();
 
@@ -284,15 +271,18 @@ public class SPDXBuilder {
 			}
 		}
 
-		Document document = DocumentHelper.createDocument();
+		Document document = SAXReaderUtil.createDocument();
 
-		document.addProcessingInstruction(
-			"xml-stylesheet",
-			HashMapBuilder.put(
-				"href", "versions.xsl"
-			).put(
-				"type", "text/xsl"
-			).build());
+		ProcessingInstruction processingInstruction =
+			SAXReaderUtil.createProcessingInstruction(
+				"xml-stylesheet",
+				HashMapBuilder.put(
+					"href", "versions.xsl"
+				).put(
+					"type", "text/xsl"
+				).build());
+
+		document.add(processingInstruction);
 
 		Element versionsElement = document.addElement("versions");
 
@@ -381,10 +371,16 @@ public class SPDXBuilder {
 
 	private QName _getQName(String name) {
 		if (!_qNameMap.containsKey(name)) {
-			QName qName = new QName(name, _NAMESPACE_SPDX, "spdx:" + name);
+			QName qName = SAXReaderUtil.createQName(
+				name,
+				SAXReaderUtil.createNamespace(
+					"spdx", "http://spdx.org/rdf/terms#"));
 
 			if (Objects.equals(name, "resource")) {
-				qName = new QName(name, _NAMESPACE_RDF, "rdf:" + name);
+				qName = SAXReaderUtil.createQName(
+					name,
+					SAXReaderUtil.createNamespace(
+						"rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#"));
 			}
 
 			_qNameMap.put(name, qName);
@@ -443,11 +439,7 @@ public class SPDXBuilder {
 		Files.write(file.toPath(), s.getBytes(StandardCharsets.UTF_8));
 	}
 
-	private static final Namespace _NAMESPACE_RDF = new Namespace(
-		"rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-
-	private static final Namespace _NAMESPACE_SPDX = new Namespace(
-		"spdx", "http://spdx.org/rdf/terms#");
+	private static final Log _log = LogFactoryUtil.getLog(SPDXBuilder.class);
 
 	private static final Map<String, QName> _qNameMap = new HashMap<>();
 

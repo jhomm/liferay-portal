@@ -1,0 +1,912 @@
+@component-name = "portal-content-management"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property test.run.environment = "EE";
+	property testray.main.component.name = "External Document Repositories";
+
+	var pageName = "Documents and Media Page";
+	var portletName = "Documents and Media";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		OneDrive.enableOneDrive();
+
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Documents and Media Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 1,
+			groupName = "Guest",
+			layoutName = "Documents and Media Page",
+			widgetName = "Documents and Media");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.enableActionsMenuOnPortlet();
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "list");
+
+		OneDrive.goToOneDrive();
+
+		OneDrive.deleteDocument();
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			Site.tearDownCP();
+
+			DMDocument.tearDownCP();
+
+			DMFolder.tearDownCP();
+
+			PagesAdmin.tearDownCP();
+		}
+	}
+
+	@description = "This test ensures that an Excel sheet can be added via the OneDrive editor."
+	@ignore = "true"
+	@priority = 5
+	test AddExcelSheet {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Add Excel Sheet Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Excel");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Add Excel Sheet Title ${num}",
+			dmDocumentTypeName = "Excel");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewCheckedoutPG(
+			dmDocumentTitle = "Add Excel Sheet Title ${num}",
+			status = "Draft");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Add Excel Sheet Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewDocumentTitleInListView(dmDocumentTitle = "Add Excel Sheet Title ${num}");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "Add Excel Sheet Title ${num}");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "Add Excel Sheet Title ${num}");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "Add Excel Sheet Title ${num}.xlsx");
+	}
+
+	@description = "This test ensures that the title and the file name will be renamed when the created One Drive doc title duplicates the existing document File Name."
+	@ignore = "true"
+	@priority = 4
+	test AddOneDriveEntryWithDuplicateFileName {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		for (var documentTitle : list "OneDrive Entry Title ${num},OneDrive Entry Title Edit ${num},OneDrive Entry Title ${num} (1)") {
+			OneDrive.deleteDocument(dmDocumentTitle = ${documentTitle});
+		}
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Excel");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "OneDrive Entry Title ${num}",
+			dmDocumentTypeName = "Excel");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "OneDrive Entry Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.editPG(
+			dmDocumentTitle = "OneDrive Entry Title ${num}",
+			dmDocumentTitleEdit = "OneDrive Entry Title ${num} Edit");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewDocumentTitleInListView(dmDocumentTitle = "OneDrive Entry Title ${num} Edit");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "OneDrive Entry Title ${num} Edit");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num} Edit");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num}.xlsx");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Excel");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "OneDrive Entry Title ${num}",
+			dmDocumentTypeName = "Excel");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "OneDrive Entry Title ${num} (1)");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "OneDrive Entry Title ${num} (1)");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num} (1)");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num} (1).xlsx");
+	}
+
+	@description = "This test ensures that the title and the file name will be renamed when the created One Drive doc title duplicates the existing document title."
+	@ignore = "true"
+	@priority = 4
+	test AddOneDriveEntryWithDuplicateTitle {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		for (var documentTitle : list "OneDrive Entry Title ${num},OneDrive Entry Title ${num} Edit,OneDrive Entry Title ${num} Edit (1)") {
+			OneDrive.deleteDocument(dmDocumentTitle = ${documentTitle});
+		}
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "OneDrive Entry Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "OneDrive Entry Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.editPG(
+			dmDocumentTitle = "OneDrive Entry Title ${num}",
+			dmDocumentTitleEdit = "OneDrive Entry Title ${num} Edit");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewDocumentTitleInListView(dmDocumentTitle = "OneDrive Entry Title ${num} Edit");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "OneDrive Entry Title ${num} Edit");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num} Edit");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num}.docx");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "OneDrive Entry Title ${num} Edit",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "OneDrive Entry Title ${num} Edit (1)");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "OneDrive Entry Title ${num} Edit (1)");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num} Edit (1)");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "OneDrive Entry Title ${num} Edit (1).docx");
+	}
+
+	@description = "This test ensures that a Powerpoint presentation can be added via the OneDrive editor."
+	@ignore = "true"
+	@priority = 5
+	test AddPowerPointPresentation {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Add PowerPoint Presentation Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "PowerPoint");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Add PowerPoint Presentation Title ${num}",
+			dmDocumentTypeName = "PowerPoint");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewCheckedoutPG(
+			dmDocumentTitle = "Add PowerPoint Presentation Title ${num}",
+			status = "Draft");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Add PowerPoint Presentation Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewDocumentTitleInListView(dmDocumentTitle = "Add PowerPoint Presentation Title ${num}");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "Add PowerPoint Presentation Title ${num}");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "Add PowerPoint Presentation Title ${num}");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "Add PowerPoint Presentation Title ${num}.pptx");
+	}
+
+	@description = "This test ensures that a Word document can be added via the OneDrive editor. "
+	@ignore = "true"
+	@priority = 5
+	test AddWordDocument {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Add Word Doc Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Add Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewCheckedoutPG(
+			dmDocumentTitle = "Add Word Doc Title ${num}",
+			status = "Draft");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Add Word Doc Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewDocumentTitleInListView(dmDocumentTitle = "Add Word Doc Title ${num}");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "Add Word Doc Title ${num}");
+
+		AssertTextEquals(
+			key_fieldLabel = "Title",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "Add Word Doc Title ${num}");
+
+		AssertTextEquals(
+			key_fieldLabel = "File Name",
+			locator1 = "TextInput#GENERIC_TEXT_INPUT",
+			value1 = "Add Word Doc Title ${num}.docx");
+	}
+
+	@description = "This test ensures that a Word Document is autotagged once checked in."
+	@ignore = "true"
+	@priority = 4
+	test AutoTagWordDocument {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Auto Tagging Word Doc Title ${num}");
+
+		Navigator.openURL();
+
+		AutoTagging.enableOpenNLP(
+			assetType = "Document",
+			confidenceThreshold = "0.05");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentContent = "Since 2004 Liferay has been helping its customers, employees, partners, and community reach their full potential to serve others. With open source roots, Liferay has grown to over 900 employees in 23 offices across the globe. Serving a wide range of enterprises, we strive to stay true to our core values: Produce Excellence, Lead by Serving, Value People, Grow and Get Better.",
+			dmDocumentTitle = "Auto Tagging Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Auto Tagging Word Doc Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewPG(
+			dmDocumentTitle = "Auto Tagging Word Doc Title ${num}",
+			tagNameList = "liferay");
+	}
+
+	@description = "This test ensures that the document is in draft status after canceling checkout under site admin on an Excel document during creation."
+	@ignore = "true"
+	@priority = 4
+	test CancelCheckoutOnExcelSheet {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Cancel Checkout Excel Sheet Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Excel");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Cancel Checkout Excel Sheet Title ${num}",
+			dmDocumentTypeName = "Excel");
+
+		DMDocument.viewIconLockedCP(dmDocumentTitle = "Cancel Checkout Excel Sheet Title ${num}");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "guest");
+
+		DMDocument.cancelCheckoutCP(dmDocumentTitle = "Cancel Checkout Excel Sheet Title ${num}");
+
+		AssertElementNotPresent(
+			key_dmDocumentTitle = "Cancel Checkout Excel Sheet Title ${num}",
+			locator1 = "DocumentsAndMedia#ICON_DOCUMENT_ICON_LOCKED");
+	}
+
+	@description = "This test ensures that the document is in draft status after canceling checkout on a Word document during creation."
+	@ignore = "true"
+	@priority = 4
+	test CancelCheckoutOnWordDocument {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Cancel Checkout Word Doc Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Cancel Checkout Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		DMDocument.viewIconLockedCP(dmDocumentTitle = "Cancel Checkout Word Doc Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.cancelCheckoutPG(dmDocumentTitle = "Cancel Checkout Word Doc Title ${num}");
+
+		AssertElementNotPresent(
+			key_dmDocumentTitle = "Cancel Checkout Word Doc Title ${num}",
+			locator1 = "DocumentsAndMedia#ICON_DOCUMENT_ICON_LOCKED");
+	}
+
+	@description = "This test ensures that a One Drive doc in a depot can be copied from depot to site."
+	@ignore = "true"
+	@priority = 5
+	test CanCopyWordDocumentFromDepotToSite {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Copying Word Doc Title ${num}");
+
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONDepot.connectSite(
+			depotName = "Test Depot Name",
+			groupName = "Site Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Copying Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		DMDocument.gotoEntry(dmDocumentTitle = "Copying Word Doc Title ${num}");
+
+		DMDocument.checkinCP(revision = "Current");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.copy(
+			dmDocumentTitle = "Copying Word Doc Title ${num}",
+			homeFolder = "true",
+			siteName = "Site Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		LexiconEntry.viewEntryName(rowEntry = "Copying Word Doc Title ${num}");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
+
+		LexiconEntry.viewEntryName(rowEntry = "Copying Word Doc Title ${num}");
+	}
+
+	@description = "This test ensures that a One Drive doc in a depot can be copied to the another folder."
+	@ignore = "true"
+	@priority = 5
+	test CanCopyWordDocumentToOtherFolderInDepot {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Copying Word Doc Title ${num}");
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+
+		JSONFolder.addFolder(
+			dmFolderDescription = "DM Folder Description",
+			dmFolderName = "DM Folder Name",
+			groupName = "Test Depot Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMNavigator.gotoAddDocumentTypeCP(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Copying Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		DMDocument.gotoEntry(dmDocumentTitle = "Copying Word Doc Title ${num}");
+
+		DMDocument.checkinCP(revision = "Current");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		DMDocument.copy(
+			dmDocumentTitle = "Copying Word Doc Title ${num}",
+			targetFolderName = "DM Folder Name");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdmin(depotName = "Test Depot Name");
+
+		LexiconEntry.viewEntryName(rowEntry = "Copying Word Doc Title ${num}");
+
+		DepotNavigator.openToDMFolder(
+			depotName = "Test Depot Name",
+			folderName = "DM Folder Name");
+
+		LexiconEntry.viewEntryName(rowEntry = "Copying Word Doc Title ${num}");
+	}
+
+	@description = "This test ensures that a One Drive doc in a site can be copied to the other site folder."
+	@ignore = "true"
+	@priority = 5
+	test CanCopyWordDocumentToOtherSite {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Copying Word Doc Title ${num}");
+
+		Navigator.openURL();
+
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Copying Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Copying Word Doc Title ${num}");
+
+		DMDocument.copy(
+			dmDocumentTitle = "Copying Word Doc Title ${num}",
+			homeFolder = "true",
+			siteName = "Site Name");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		LexiconEntry.viewEntryName(rowEntry = "Copying Word Doc Title ${num}");
+
+		DMNavigator.openDocumentsAndMediaAdmin(siteURLKey = "site-name");
+
+		LexiconEntry.viewEntryName(rowEntry = "Copying Word Doc Title ${num}");
+	}
+
+	@description = "This test covers LPS-130200. It ensures that users can edit the entry through Office 365 after checkin the entry from the document editor."
+	@ignore = "true"
+	@priority = 4
+	test CanEditEntryThroughOneDriveAfterCheckinFromDocumentEditor {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		for (var documentTitle : list "OneDrive Entry Title ${num},OneDrive Entry Title ${num} Edited") {
+			OneDrive.deleteDocument(dmDocumentTitle = ${documentTitle});
+		}
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "OneDrive Entry Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.saveAndCheckinEditedDocumentPG(dmDocumentTitle = "OneDrive Entry Title ${num}");
+
+		OneDrive.gotoEdit(dmDocumentTitle = "OneDrive Entry Title ${num}");
+
+		OneDrive.editTitle(dmDocumentTitle = "OneDrive Entry Title ${num} Edited");
+
+		AssertConsoleTextNotPresent(value1 = "jakarta.portlet.PortletException: org.hibernate.exception.ConstraintViolationException");
+	}
+
+	@description = "This test ensures that an Excel sheet can be deleted."
+	@ignore = "true"
+	@priority = 5
+	test DeleteExcelSheet {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Delete Excel Sheet Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Excel");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Delete Excel Sheet Title ${num}",
+			dmDocumentTypeName = "Excel");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Delete Excel Sheet Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.deletePG(dmDocumentTitle = "Delete Excel Sheet Title ${num}");
+	}
+
+	@description = "This test ensures that a PowerPoint presentation can be deleted."
+	@ignore = "true"
+	@priority = 5
+	test DeletePowerPointPresentation {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Delete PowerPoint Presentation Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "PowerPoint");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Delete PowerPoint Presentation Title ${num}",
+			dmDocumentTypeName = "PowerPoint");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Delete PowerPoint Presentation Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.deletePG(dmDocumentTitle = "Delete PowerPoint Presentation Title ${num}");
+	}
+
+	@description = "This test ensures that a Word document can be deleted."
+	@ignore = "true"
+	@priority = 5
+	test DeleteWordDocument {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Delete Word Doc Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Delete Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Delete Word Doc Title ${num}");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.deletePG(dmDocumentTitle = "Delete Word Doc Title ${num}");
+	}
+
+	@description = "This test covers LPS-102478. It ensures that an Office 365 document is automatically unchecked out after the lock is expired."
+	@ignore = "true"
+	@priority = 4
+	test DocumentCheckoutIsCanceledAfterLockExpiration {
+		property custom.properties = "lock.expiration.time.com.liferay.document.library.kernel.model.DLFileEntry=90000";
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "Auto Checkin Word Doc Title ${num}");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "Auto Checkin Word Doc Title ${num}",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		// This pause is required to wait for the One Drive document to expire. See LPS-157957.
+
+		Pause(value1 = 90000);
+
+		Refresh();
+
+		LexiconEntry.changeDisplayStyle(displayStyle = "cards");
+
+		AssertTextEquals(
+			key_dmDocumentTitle = "Auto Checkin Word Doc Title ${num}",
+			locator1 = "DocumentsAndMedia#ICON_DOCUMENT_WORKFLOW_STATUS",
+			value1 = "DRAFT");
+
+		AssertElementNotPresent(
+			key_dmDocumentTitle = "Cancel Checkout Word Doc Title ${num}",
+			locator1 = "DocumentsAndMedia#ICON_DOCUMENT_ICON_LOCKED");
+	}
+
+	@description = "This test ensures that an Excel sheet title can be changed via the OneDrive editor."
+	@ignore = "true"
+	@priority = 4
+	test EditExcelSheet {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		for (var documentTitle : list "Document_1,Excel Sheet Title ${num} Edited") {
+			OneDrive.deleteDocument(dmDocumentTitle = ${documentTitle});
+		}
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Document_1.xlsx",
+			groupName = "Guest",
+			mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+			sourceFileName = "Document_1.xlsx");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		OneDrive.gotoEdit(dmDocumentTitle = "Document_1.xlsx");
+
+		OneDrive.editTitle(dmDocumentTitle = "Excel Sheet Title ${num} Edited");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewCheckedoutPG(
+			dmDocumentTitle = "Document_1.xlsx",
+			status = "Draft");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Document_1.xlsx");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewAllPG(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Excel Sheet Title ${num} Edited",
+			dmDocumentVersionNumber = "2.0");
+	}
+
+	@description = "This test ensures that a Powerpoint presentation title can be changed via the OneDrive editor."
+	@ignore = "true"
+	@priority = 4
+	test EditPowerPointPresentation {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		for (var documentTitle : list "Document_2,Powerpoint Presentation Title ${num} Edited") {
+			OneDrive.deleteDocument(dmDocumentTitle = ${documentTitle});
+		}
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Document_2.pptx",
+			groupName = "Guest",
+			mimeType = "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+			sourceFileName = "Document_2.pptx");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		OneDrive.gotoEdit(dmDocumentTitle = "Document_2.pptx");
+
+		OneDrive.editTitle(dmDocumentTitle = "Powerpoint Presentation Title ${num} Edited");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewCheckedoutPG(
+			dmDocumentTitle = "Document_2.pptx",
+			status = "Draft");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Document_2.pptx");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewAllPG(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Powerpoint Presentation Title ${num} Edited",
+			dmDocumentVersionNumber = "2.0");
+	}
+
+	@description = "This test covers LPS-191493. This test ensures that a Word document title can be changed via the OneDrive editor."
+	@ignore = "true"
+	@priority = 4
+	test EditWordDocument {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		for (var documentTitle : list "Document_3,Word Doc Title ${num} Edited") {
+			OneDrive.deleteDocument(dmDocumentTitle = ${documentTitle});
+		}
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.addPG(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentFile = "Document_3.docx",
+			dmDocumentTitle = "Document_3.docx");
+
+		DMNavigator.openToEntryInAdmin(
+			dmDocumentTitle = "Document_3.docx",
+			groupName = "Guest",
+			siteURLKey = "guest");
+
+		OneDrive.gotoEdit(
+			dmDocumentTitle = "Document_3.docx",
+			editInPreviewPage = "true");
+
+		OneDrive.editTitle(dmDocumentTitle = "Word Doc Title ${num} Edited");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewCheckedoutPG(
+			dmDocumentTitle = "Document_3.docx",
+			status = "Draft");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "Document_3.docx");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.viewAllPG(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "Word Doc Title ${num} Edited",
+			dmDocumentVersionNumber = "2.0");
+	}
+
+	@description = "This test ensures that the One Drive file can be added with Japanese."
+	@ignore = "true"
+	@priority = 4
+	test TitleAndFileNameCanBeDisplayedCorrectlyWithJapanese {
+		property test.liferay.virtual.instance = "false";
+
+		var num = MathUtil.randomNumber(10);
+
+		OneDrive.deleteDocument(dmDocumentTitle = "これは日本語のファイルです");
+
+		Navigator.openURL();
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoAddDocumentTypePG(dmDocumentTypeName = "Word");
+
+		OneDrive.AddDocument(
+			dmDocumentTitle = "これは日本語のファイルです",
+			dmDocumentTypeName = "Word");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMDocument.checkinPG(dmDocumentTitle = "これは日本語のファイルです");
+
+		Navigator.gotoPage(pageName = "Documents and Media Page");
+
+		DMNavigator.gotoEditDocumentPG(dmDocumentTitle = "これは日本語のファイルです");
+
+		DMDocument.viewEntryInEdit(
+			dmDocumentFileName = "これは日本語のファイルです.docx",
+			dmDocumentTitle = "これは日本語のファイルです");
+	}
+
+}

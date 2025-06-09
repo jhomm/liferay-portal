@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.dao.search;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Raymond Augé
@@ -148,6 +139,8 @@ public interface ResultRow {
 
 	public void addText(String align, String valign, String name, String href);
 
+	public String getAriaLabel();
+
 	public String getClassHoverName();
 
 	public String getClassName();
@@ -170,6 +163,8 @@ public interface ResultRow {
 
 	public String getState();
 
+	public String getTabIndex();
+
 	public boolean isBold();
 
 	public boolean isRestricted();
@@ -177,6 +172,8 @@ public interface ResultRow {
 	public boolean isSkip();
 
 	public void removeSearchEntry(int pos);
+
+	public void setAriaLabel(String ariaLabel);
 
 	public void setBold(boolean bold);
 
@@ -201,5 +198,7 @@ public interface ResultRow {
 	public void setSkip(boolean skip);
 
 	public void setState(String state);
+
+	public void setTabIndex(String tabIndex);
 
 }

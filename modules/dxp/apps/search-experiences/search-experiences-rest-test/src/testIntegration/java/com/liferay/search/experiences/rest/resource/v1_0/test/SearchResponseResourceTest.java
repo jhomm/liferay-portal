@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.resource.v1_0.test;
@@ -23,7 +14,9 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.search.experiences.rest.client.dto.v1_0.SXPBlueprint;
+import com.liferay.search.experiences.rest.client.dto.v1_0.SearchHits;
 import com.liferay.search.experiences.rest.client.dto.v1_0.SearchResponse;
+import com.liferay.search.experiences.rest.client.dto.v1_0.util.SXPBlueprintUtil;
 import com.liferay.search.experiences.rest.client.pagination.Pagination;
 import com.liferay.search.experiences.rest.client.problem.Problem;
 
@@ -49,10 +42,15 @@ public class SearchResponseResourceTest
 		super.testPostSearch();
 
 		_testPostSearch();
-		_testPostSearchThrowsElasticsearchStatusException();
-		_testPostSearchThrowsInvalidQueryEntryExceptionAndUnresolvedTemplateVariableException();
+		_testPostSearchZeroResults();
 
 		if (false) {
+
+			// TODO Tests pass with remote Elastic but sidecar does not play
+			// well with ConfigurationTemporarySwapper
+
+			_testPostSearchThrowsElasticsearchStatusException();
+			_testPostSearchThrowsInvalidQueryEntryExceptionAndUnresolvedTemplateVariableException();
 
 			// TODO SXPBlueprint.toDTO with "{ ... }" freezes and never returns
 
@@ -75,7 +73,8 @@ public class SearchResponseResourceTest
 	private SearchResponse _postSearch(String sxpBlueprintJSON)
 		throws Exception {
 
-		SXPBlueprint sxpBlueprint = SXPBlueprint.toDTO(sxpBlueprintJSON);
+		SXPBlueprint sxpBlueprint = SXPBlueprintUtil.toSXPBlueprint(
+			sxpBlueprintJSON);
 
 		Assert.assertNotNull(sxpBlueprint);
 
@@ -149,7 +148,6 @@ public class SearchResponseResourceTest
 				SearchResponse searchResponse = _postSearch(_read());
 
 				Assert.assertNull(searchResponse.getResponse());
-
 				Assert.assertThat(
 					searchResponse.getResponseString(),
 					CoreMatchers.containsString(message));
@@ -216,6 +214,21 @@ public class SearchResponseResourceTest
 						"defined in Configuration. The property \"INVALID_1\" ",
 						"is not defined in General.")));
 		}
+	}
+
+	private void _testPostSearchZeroResults() throws Exception {
+		SearchResponse searchResponse = _postSearch(_read());
+
+		SearchHits searchHits = searchResponse.getSearchHits();
+
+		Assert.assertEquals(Long.valueOf(0), searchHits.getTotalHits());
+
+		String response = String.valueOf(searchResponse.getResponse());
+
+		Assert.assertThat(response, CoreMatchers.containsString("hits"));
+		Assert.assertThat(
+			response,
+			CoreMatchers.not(CoreMatchers.containsString("max_score")));
 	}
 
 	private static final String _CLASS_NAME_ELASTICSEARCH_INDEX_SEARCHER =

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.grouped.service.persistence.test;
@@ -131,6 +122,8 @@ public class CPDefinitionGroupedEntryPersistenceTest {
 		CPDefinitionGroupedEntry newCPDefinitionGroupedEntry =
 			_persistence.create(pk);
 
+		newCPDefinitionGroupedEntry.setMvccVersion(RandomTestUtil.nextLong());
+
 		newCPDefinitionGroupedEntry.setUuid(RandomTestUtil.randomString());
 
 		newCPDefinitionGroupedEntry.setGroupId(RandomTestUtil.nextLong());
@@ -162,6 +155,9 @@ public class CPDefinitionGroupedEntryPersistenceTest {
 			_persistence.findByPrimaryKey(
 				newCPDefinitionGroupedEntry.getPrimaryKey());
 
+		Assert.assertEquals(
+			existingCPDefinitionGroupedEntry.getMvccVersion(),
+			newCPDefinitionGroupedEntry.getMvccVersion());
 		Assert.assertEquals(
 			existingCPDefinitionGroupedEntry.getUuid(),
 			newCPDefinitionGroupedEntry.getUuid());
@@ -239,6 +235,13 @@ public class CPDefinitionGroupedEntryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByEntryCProductId() throws Exception {
+		_persistence.countByEntryCProductId(RandomTestUtil.nextLong());
+
+		_persistence.countByEntryCProductId(0L);
+	}
+
+	@Test
 	public void testCountByC_E() throws Exception {
 		_persistence.countByC_E(
 			RandomTestUtil.nextLong(), RandomTestUtil.nextLong());
@@ -276,7 +279,7 @@ public class CPDefinitionGroupedEntryPersistenceTest {
 		getOrderByComparator() {
 
 		return OrderByComparatorFactoryUtil.create(
-			"CPDefinitionGroupedEntry", "uuid", true,
+			"CPDefinitionGroupedEntry", "mvccVersion", true, "uuid", true,
 			"CPDefinitionGroupedEntryId", true, "groupId", true, "companyId",
 			true, "userId", true, "userName", true, "createDate", true,
 			"modifiedDate", true, "CPDefinitionId", true, "entryCProductId",
@@ -608,6 +611,8 @@ public class CPDefinitionGroupedEntryPersistenceTest {
 
 		CPDefinitionGroupedEntry cpDefinitionGroupedEntry = _persistence.create(
 			pk);
+
+		cpDefinitionGroupedEntry.setMvccVersion(RandomTestUtil.nextLong());
 
 		cpDefinitionGroupedEntry.setUuid(RandomTestUtil.randomString());
 

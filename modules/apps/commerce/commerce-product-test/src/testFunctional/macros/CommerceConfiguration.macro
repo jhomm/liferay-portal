@@ -1,256 +1,309 @@
 definition {
 
-	macro accountGroupsTearDown {
-		var accountGroupsList = "";
+	@summary = "Default summary"
+	macro addCP(customBooleanDefaultValue = null, localization = null, baseURL = null, nameLocalization = null, modelResource = null, customInputDataType = null, resourceName = null, customFieldName = null, searchable = null, customFieldType = null, startingValue = null) {
+		var key_resourceName = ${resourceName};
 
-		var count = "1";
+		if (isSet(modelResource)) {
+			CustomFields.openToAddResourceCustomField(
+				baseURL = ${baseURL},
+				modelResource = ${modelResource});
+		}
+		else {
+			AssertClick(
+				key_resourceName = ${resourceName},
+				locator1 = "CommerceEntry#RESOURCE_TABLE_RESOURCE_NAME",
+				value1 = ${resourceName});
 
-		while (IsElementPresent(key_rowNumber = "${count}", locator1 = "CommerceNavigation#ENTRY_NAME_N")) {
-			var key_rowNumber = "${count}";
-
-			var entryName = selenium.getText("CommerceNavigation#ENTRY_NAME_N");
-
-			if ("${entryName}" != "Guest") {
-				accountGroupsList = StringUtil.add("${accountGroupsList}", "${entryName}");
-			}
-
-			var count = ${count} + 1;
+			LexiconEntry.gotoAdd();
 		}
 
-		if ("${accountGroupsList}" != "") {
-			for (var accountGroupName : list "${accountGroupsList}") {
-				ClickNoError(
-					key_entryName = "${accountGroupName}",
-					locator1 = "CommerceEntry#ENTRY_NAME_BODY_VERTICAL_ELLIPSIS_2");
+		var key_customFieldType = ${customFieldType};
 
-				CommerceEntry.clickNoError(menuItem = "Delete");
+		Click(locator1 = "CustomFields#CUSTOM_FIELD_TYPE");
 
-				AssertElementPresent(locator1 = "Message#SUCCESS");
+		var customFieldKey = StringUtil.lowerCase(${customFieldName});
 
-				AssertElementNotPresent(locator1 = "Message#ERROR");
+		PortletEntry.inputName(name = ${customFieldKey});
+
+		if (${customFieldType} == "Input Field") {
+			var key_customInputDataType = ${customInputDataType};
+
+			Select(
+				locator1 = "CustomFields#CUSTOM_INPUT_FIELD_DATA_TYPE",
+				value1 = ${customInputDataType});
+
+			if (isSet(startingValue)) {
+				Type(
+					key_fieldLabel = "Starting Value",
+					locator1 = "CustomFields#CUSTOM_INPUT_FIELD",
+					value1 = ${startingValue});
 			}
 		}
-	}
+		else if ((${customFieldType} == "Dropdown") || (${customFieldType} == "Checkbox") || (${customFieldType} == "Radio")) {
+			if (isSet(startingValue)) {
+				PortletEntry.inputTextArea(
+					fieldId = "Value",
+					text = ${startingValue});
+			}
+			else {
+				PortletEntry.inputTextArea(
+					fieldId = "Value",
+					text = ${customFieldType});
+			}
+		}
 
-	macro commerceAdminSetUp {
-		ApplicationsMenu.gotoPortlet(
-			category = "Users",
-			panel = "Control Panel",
-			portlet = "Users and Organizations");
+		if (isSet(nameLocalization)) {
+			if (${nameLocalization} == "false") {
+				Click(locator1 = "CustomFields#CUSTOM_FIELDS_ADVANCED_PROPERTIES");
 
-		User.addCP(
-			userEmailAddress = "commerceuser@liferay.com",
-			userFirstName = "Commerce",
-			userLastName = "User",
-			userScreenName = "commerceuser");
+				WaitForElementPresent(
+					key_toggleSwitchLabel = "Localize Field Name",
+					locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-		CommerceEntry.createNewCurrenciesEntry(
-			code = "NCU",
-			entryName = "New Currency");
+				Uncheck.uncheckToggleSwitch(
+					key_toggleSwitchLabel = "Localize Field Name",
+					locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+			}
+			else {
+				Click(locator1 = "CustomFields#CUSTOM_FIELDS_ADVANCED_PROPERTIES");
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+				WaitForElementPresent(
+					key_toggleSwitchLabel = "Localize Field Name",
+					locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
 
-		Click(locator1 = "Button#PLUS");
+				Check.checkToggleSwitch(
+					key_toggleSwitchLabel = "Localize Field Name",
+					locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+			}
+		}
 
-		CommerceEntry.addNewChannelsEntry(
-			channelCurrency = "US Dollar",
-			channelName = "Test Channel",
-			channelType = "Site",
-			siteName = "Guest");
+		if (isSet(customBooleanDefaultValue)) {
+			Select(
+				locator1 = "CustomFields#CUSTOM_BOOLEAN_DEFAULT_VALUE",
+				value1 = ${customBooleanDefaultValue});
+		}
+
+		if (${localization} == "true") {
+			Check(
+				checkboxName = "Make Field Localizable",
+				locator1 = "Checkbox#ANY_CHECKBOX");
+		}
+
+		if (${searchable} == "true") {
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "Searchable",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+		}
 
 		Button.clickSave();
 
-		AssertElementPresent(locator1 = "Message#SUCCESS");
+		var key_customFieldName = ${customFieldName};
+
+		AssertTextEquals(
+			locator1 = "CustomFieldsEditResource#CUSTOM_FIELDS_TABLE_NAME",
+			value1 = ${customFieldName});
 	}
 
-	macro commerceAdminTearDown {
+	@summary = "Default summary"
+	macro commerceAdminTearDown() {
+		var emptyCount = 0;
+
 		Navigator.openURL();
-
-		CommerceJSONOrdersAPI._deleteAllCommerceOrders();
-
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Orders");
-
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
 
 		CommerceJSONShipmentsAPI._deleteAllCommerceShipments();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Order Management",
-			portlet = "Shipments");
+		var shipmentsCount = CommerceJSONShipmentsAPI._getCommerceShipmentsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${shipmentsCount},
+			expected = ${emptyCount});
 
 		JSONUser.tearDownNonAdminUsers();
 
 		CommerceJSONAccountsAPI._deleteAllCommerceAccounts();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Accounts",
-			panel = "Control Panel",
-			portlet = "Accounts");
+		var accountsCount = CommerceJSONAccountsAPI._getCommerceAccountsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${accountsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONAccountGroupsAPI._deleteAllCommerceAccountGroups();
 
-		ApplicationsMenu.gotoPortlet(
-			category = "Accounts",
-			panel = "Control Panel",
-			portlet = "Account Groups");
+		var accountGroupsCount = CommerceJSONAccountGroupsAPI._getCommerceAccountGroupsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${accountGroupsCount},
+			expected = ${emptyCount});
+
+		CommerceJSONOrganizationsAPI._deleteAllOrganizations();
+
+		var organizationsCount = CommerceJSONOrganizationsAPI._getOrganizationsCount();
+
+		TestUtils.assertEquals(
+			actual = ${organizationsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONProductsAPI._deleteAllCommerceProducts();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Products");
+		var productsCount = CommerceJSONProductsAPI._getCommerceProductsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${productsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONOptionsAPI._deleteAllCommerceOptions();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Options");
+		var optionsCount = CommerceJSONOptionsAPI._getCommerceOptionsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${optionsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONSpecificationGroupsAPI._deleteAllCommerceSpecificationGroups();
 
+		var specificationGroupsCount = CommerceJSONSpecificationGroupsAPI._getCommerceSpecificationGroupsCount();
+
+		TestUtils.assertEquals(
+			actual = ${specificationGroupsCount},
+			expected = ${emptyCount});
+
 		CommerceJSONSpecificationsAPI._deleteAllCommerceSpecifications();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Specifications");
+		var specificationsCount = CommerceJSONSpecificationsAPI._getCommerceSpecificationsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
-
-		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Specification Groups");
-
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${specificationsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONChannelsAPI._deleteAllCommerceChannels();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		var channelsCount = CommerceJSONChannelsAPI._getCommerceChannelsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${channelsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONCatalogsAPI._deleteAllNoSystemCommerceCatalogs();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Catalogs");
+		var noSystemCatalogIds = CommerceJSONCatalogsAPI._getCommerceNoSystemCatalogIds();
 
-		IsElementPresent(
-			key_rowNumber = "1",
-			locator1 = "CommerceNavigation#ENTRY_NAME_N");
+		TestUtils.assertEquals(
+			actual = ${noSystemCatalogIds},
+			expected = "");
 
 		CommerceJSONPriceListsAndPromotionsAPI._deleteAllNoMasterPriceListsAndPromotions();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Pricing",
-			portlet = "Price Lists");
+		var priceListAndPromotionIds = CommerceJSONPriceListsAndPromotionsAPI._getCommerceNoMasterPriceListsAndPromotions();
 
-		IsElementPresent(
-			key_rowNumber = "1",
-			locator1 = "CommerceNavigation#ENTRY_NAME_N");
-
-		CommerceNavigator.gotoPortlet(
-			category = "Pricing",
-			portlet = "Promotions");
-
-		IsElementPresent(
-			key_rowNumber = "1",
-			locator1 = "CommerceNavigation#ENTRY_NAME_N");
+		TestUtils.assertEquals(
+			actual = ${priceListAndPromotionIds},
+			expected = "");
 
 		CommerceJSONDiscountsAPI._deleteAllCommerceDiscounts();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Pricing",
-			portlet = "Discounts");
+		var discountsCount = CommerceJSONDiscountsAPI._getCommerceDiscountsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${discountsCount},
+			expected = ${emptyCount});
 
 		CommerceJSONAvailableEstimatesAPI._deleteCommerceAvailableEstimates();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Settings",
-			portlet = "Availability Estimates");
+		var availableEstimatesCount = CommerceJSONAvailableEstimatesAPI._getAvailableEstimatesCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${availableEstimatesCount},
+			expected = ${emptyCount});
 
 		CommerceJSONMeasurementUnitsAPI._deleteCommerceMeasurementUnits();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Settings",
-			portlet = "Measurement Units");
+		var availableMeasurementUnits = CommerceJSONMeasurementUnitsAPI._getCommerceAvailableMeasurementUnitsCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
-
-		CommerceNavigator.gotoCommercePortletNavItem(navItem = "Weight");
-
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${availableMeasurementUnits},
+			expected = ${emptyCount});
 
 		CommerceJSONTaxCategoriesAPI._deleteCommerceTaxCategories();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Pricing",
-			portlet = "Tax Categories");
+		var commerceTaxCategoriesIds = CommerceJSONTaxCategoriesAPI._getCommereTaxCategoriesCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${commerceTaxCategoriesIds},
+			expected = ${emptyCount});
 
 		CommerceJSONWarehousesAndInventoriesAPI._deleteAllWarehouseItems();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Inventory");
+		var warehousesCount = CommerceJSONWarehousesAndInventoriesAPI._getCommerceWarehousesCount();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		TestUtils.assertEquals(
+			actual = ${warehousesCount},
+			expected = ${emptyCount});
 
-		CommerceNavigator.gotoPortlet(
-			category = "Inventory Management",
-			portlet = "Warehouses");
+		CommerceJSONTermsAndConditionsAPI._deleteAllCommerceTermsAndConditions();
 
-		IsElementPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER");
+		var commerceTermsAndConditionsCount = CommerceJSONTermsAndConditionsAPI._getCommerceTermsAndConditionsCount();
+
+		TestUtils.assertEquals(
+			actual = ${commerceTermsAndConditionsCount},
+			expected = ${emptyCount});
+
+		CommerceConfiguration.commerceInitializersTearDown();
 	}
 
-	macro commerceInitializersTearDown {
-		ApplicationsMenu.gotoPortlet(
-			category = "Sites",
-			panel = "Control Panel",
-			portlet = "Sites");
+	@summary = "Default summary"
+	macro commerceInitializersTearDown() {
+		Site.openSitesAdmin();
 
 		CommerceJSONSitesAPI._deleteCommerceSites();
 	}
 
-	macro commerceStoreFrontSetUp {
+	@summary = "Default summary"
+	macro commerceSetUp(moneyOrder = null) {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		if (isSet(storeFront)) {
+			CommerceConfiguration.commerceStoreFrontSetUp();
+		}
+
+		if (isSet(minium)) {
+			CommerceAccelerators.initializeNewSiteViaAccelerator(siteName = "Minium");
+
+			if (isSet(moneyOrder) && (${moneyOrder} == "true")) {
+				CommerceChannels.openChannelsAdmin();
+
+				CommerceNavigator.gotoEntry(entryName = "Minium Portal");
+
+				CommerceChannels.editPaymentMethod(
+					active = "true",
+					paymentMethod = "Money Order");
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro commerceStoreFrontSetUp() {
 		CommerceNavigator.gotoPortlet(
 			category = "Settings",
 			portlet = "Health Check");
 
-		for (var buttonRowNumber : list "1,2,3,4,5") {
-			if (!(IsElementPresent(locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_N", key_buttonStatus = "disabled"))) {
+		for (var buttonRowName : list "Service Access Policy,Commerce Currencies,Commerce Product Measurement Units,Account Roles,Catalog Base Price Lists/Promotions") {
+			if (!(IsElementPresent(key_buttonRowName = ${buttonRowName}, key_buttonStatus = "disabled", locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_NAME"))) {
 				Click(
-					key_buttonRowNumber = "${buttonRowNumber}",
+					key_buttonRowName = ${buttonRowName},
 					key_buttonStatus = "",
-					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_N");
+					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON_NAME");
 
 				WaitForElementPresent(
-					key_value = "${buttonRowNumber}",
-					locator1 = "CommerceEntry#HEALTH_CHECK_ICON_CHECK_N");
+					key_value = ${buttonRowName},
+					locator1 = "CommerceEntry#HEALTH_CHECK_ICON_CHECK_NAME");
 			}
 		}
 
-		CommerceNavigator.gotoPortlet(
-			category = "Store Management",
-			portlet = "Channels");
+		CommerceChannels.openChannelsAdmin();
 
 		Click(locator1 = "Button#PLUS");
 
@@ -269,9 +322,9 @@ definition {
 			locator1 = "CommerceEntry#MENU_TAB");
 
 		for (var fixIssueButtonName : list "Product Detail,Product Compare,Commerce Cart,Checkout") {
-			if (IsElementPresent(locator1 = "CommerceEntry#FIX_ISSUE_BUTTON", key_fixIssueButtonName = "${fixIssueButtonName}")) {
+			if (IsElementPresent(key_fixIssueButtonName = ${fixIssueButtonName}, locator1 = "CommerceEntry#FIX_ISSUE_BUTTON")) {
 				Click(
-					key_fixIssueButtonName = "${fixIssueButtonName}",
+					key_fixIssueButtonName = ${fixIssueButtonName},
 					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
 
 				Alert.viewSuccessMessage();
@@ -279,57 +332,170 @@ definition {
 		}
 	}
 
-	macro commerceStoreFrontTearDown {
-		Navigator.openURL();
+	@summary = "Default summary"
+	macro commerceTearDown() {
+		CommerceJSONOrdersAPI._deleteAllCommerceOrdersAndCheck();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Product Management",
-			portlet = "Catalog");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if (IsElementNotPresent(locator1 = "CommerceNavigation#EMPTY_SEARCH_CONTAINER")) {
-			CommerceProducts.moveCatalogEntriesToRecycleBin();
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
 		}
+		else {
+			Navigator.openURL();
 
-		CommerceNavigator.gotoPortlet(
-			category = "Settings",
-			portlet = "Options");
-
-		Pause(locator1 = "3000");
-
-		CommerceOptions.deleteOptionsEntries();
-
-		User.logoutPG();
-	}
-
-	@summary = "Deletes if present, catalogs, price lists or promotions, excluding Master occurrencies"
-	macro commerceTearDownExcludingMaster {
-		var elementsList= "";
-		var count = "1";
-
-		while (IsElementPresent(key_rowNumber = "${count}", locator1 = "CommerceNavigation#ENTRY_NAME_N")) {
-			var key_rowNumber = "${count}";
-			var entryName = selenium.getText("CommerceNavigation#ENTRY_NAME_N");
-
-			if (("${entryName}" != "Master") && ("${entryName}" != "Master Base Price List") && ("${entryName}" != "Master Base Promotion")) {
-				elementsList = StringUtil.add("${elementsList}", "${entryName}");
+			if (IsElementPresent(locator1 = "UserBar#USER_AVATAR_IMAGE")) {
+				User.logoutPG();
 			}
-			var count = ${count} + 1;
-		}
 
-		if ("${elementsList}" != "") {
-			for (var catalogName : list "${elementsList}") {
-				ClickNoError(
-					key_entryName = "${catalogName}",
-					locator1 = "CommerceEntry#ENTRY_NAME_BODY_VERTICAL_ELLIPSIS");
-				CommerceEntry.clickNoError(menuItem = "Delete");
-				AssertElementPresent(locator1 = "Message#SUCCESS");
-				AssertElementNotPresent(locator1 = "Message#ERROR");
+			User.firstLoginPG();
+
+			CommerceConfiguration.commerceAdminTearDown();
+
+			if (isSet(doLogout)) {
+				User.logoutPG();
 			}
 		}
 	}
 
-	macro reindexAllSearchIndexes {
-		SearchAdministration.executeReindex();
+	@summary = "Default summary"
+	macro configureWorkflow(workflowDefinition = null, workflowResourceValue = null) {
+		var key_workflowResourceValue = ${workflowResourceValue};
+
+		if (!(IsElementPresent(locator1 = "Pagination#ICON_DISABLED", type = "angle-right")) && (IsElementPresent(locator1 = "Pagination#FIRST_LINK"))) {
+			Pagination.changePagination(itemsPerPage = 40);
+		}
+
+		AssertClick.pauseAssertTextClickAt(
+			key_rowEntry = ${workflowResourceValue},
+			locator1 = "CommerceEntry#EDIT_ROW",
+			value1 = "Edit");
+
+		WaitForElementPresent(
+			key_rowEntry = ${workflowResourceValue},
+			locator1 = "CommerceEntry#RESOURCE_TABLE_SELECT",
+			value1 = ${workflowDefinition});
+
+		Select(
+			key_rowEntry = ${workflowResourceValue},
+			locator1 = "CommerceEntry#RESOURCE_TABLE_SELECT",
+			value1 = ${workflowDefinition});
+
+		AssertClick(
+			key_rowEntry = ${workflowResourceValue},
+			locator1 = "CommerceEntry#RESOURCE_TABLE_SAVE",
+			value1 = "Save");
+
+		Alert.viewSuccessMessage();
+	}
+
+	@summary = "Default summary"
+	macro setupB2BGuestCheckout(channelName = null) {
+		if (isSet(siteName)) {
+			var siteName = CommerceUtilities.convertStringToKey(string = ${siteName});
+
+			CommerceConfiguration.setupB2BGuestCheckoutPages(
+				pageNameList = "Catalog,Checkout,Search",
+				siteName = ${siteName});
+		}
+
+		if (isSet(channelName)) {
+			CommerceChannels.openChannelsAdmin();
+
+			CommerceNavigator.gotoEntry(entryName = ${channelName});
+
+			Check.checkToggleSwitch(
+				key_toggleSwitchLabel = "Guest Checkout",
+				locator1 = "ToggleSwitch#ANY_TOGGLE_SWITCH");
+
+			Button.clickSave();
+
+			for (var fixIsueButtonName : list "Commerce Cart,Guest Checkout Authentication") {
+				Click(
+					key_fixIssueButtonName = ${fixIsueButtonName},
+					locator1 = "CommerceEntry#FIX_ISSUE_BUTTON");
+
+				Alert.viewSuccessMessage();
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro setupB2BGuestCheckoutPages(pageNameList = null, siteName = null) {
+		Variables.assertDefined(parameterList = "${pageNameList},${siteName}");
+
+		PagesAdmin.openPagesAdmin(siteURLKey = ${siteName});
+
+		for (var pageName : list ${pageNameList}) {
+			if (${pageName} == "Checkout") {
+				PagesAdmin.gotoPageEllipsisMenuItem(
+					menuItem = "Permissions",
+					pageName = ${pageName},
+					parentPagesHierarchy = "Pending Orders");
+			}
+			else {
+				PagesAdmin.gotoPageEllipsisMenuItem(
+					menuItem = "Permissions",
+					pageName = ${pageName});
+			}
+
+			Role.definePermissionPG(
+				permissionDefinitionKey = "CONFIGURATION_PERMISSIONS_VIEW_CHECKBOX",
+				roleTitle = "guest");
+
+			IFrame.closeFrame();
+		}
+	}
+
+	@description = "Create a Content Page to be used as Catalog page"
+	@summary = "Default summary"
+	macro setUpCatalogPage(pageName = null, facets = null) {
+		var leftColumnWidgets = "Search Bar,Search Options";
+		var rightColumnWidgets = "Sort,Search Results";
+
+		ContentPages.addPage(pageName = ${pageName});
+
+		PageEditor.addFragment(
+			collectionName = "Layout Elements",
+			fragmentName = "Grid");
+
+		PageEditor.editLayoutGrid(columnCount = 2);
+
+		PageEditor.clickConfigurableField(fragmentName = "Grid");
+
+		PageEditor.gotoTab(tabName = "Browser");
+
+		DragAndDrop.dragAndDrop(
+			key_position = 2,
+			locator1 = "PageEditor#GRID_COLUMN_RESIZER",
+			value1 = "-100,0");
+
+		if (isSet(facets)) {
+			for (var facetName : list ${facets}) {
+				var leftColumnWidgets = "${leftColumnWidgets},${facetName} Facet";
+			}
+		}
+
+		for (var widgetName : list ${leftColumnWidgets}) {
+			PageEditor.addElementToColumn(
+				columnNumber = 1,
+				navTab = "Widgets",
+				portletName = ${widgetName});
+		}
+
+		for (var widgetName : list ${rightColumnWidgets}) {
+			PageEditor.addElementToColumn(
+				columnNumber = 2,
+				navTab = "Widgets",
+				portletName = ${widgetName},
+				position = 1);
+		}
+
+		SearchPage.configureSearchBarWidget(searchScope = "Everything");
+
+		SearchPage.configureSearchOptions(allowEmptySearches = "true");
+
+		PageEditor.publish();
 	}
 
 }

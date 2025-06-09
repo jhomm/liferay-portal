@@ -1,37 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.service.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.service.UserService;
+import com.liferay.portal.kernel.service.persistence.CompanyUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
+import com.liferay.portal.kernel.test.util.PrefsPropsTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portal.util.PropsUtil;
 
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -54,20 +50,28 @@ public class UserServiceWhenCompanySecurityStrangersWithMXDisabledTest {
 			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@BeforeClass
-	public static void setUpClass() {
-		_companySecurityStrangersWithMX = PropsUtil.get(
-			PropsKeys.COMPANY_SECURITY_STRANGERS_WITH_MX);
-
-		PropsUtil.set(
+	public static void setUpClass() throws Exception {
+		_safeCloseable = PrefsPropsTestUtil.swapWithSafeCloseable(
+			TestPropsValues.getCompanyId(),
 			PropsKeys.COMPANY_SECURITY_STRANGERS_WITH_MX,
 			Boolean.FALSE.toString());
 	}
 
 	@AfterClass
 	public static void tearDownClass() {
-		PropsUtil.set(
-			PropsKeys.COMPANY_SECURITY_STRANGERS_WITH_MX,
-			_companySecurityStrangersWithMX);
+		_safeCloseable.close();
+
+		CompanyUtil.clearCache();
+	}
+
+	@Before
+	public void setUp() {
+		CompanyUtil.clearCache();
+	}
+
+	@After
+	public void tearDown() {
+		CompanyUtil.clearCache();
 	}
 
 	@Test(expected = UserEmailAddressException.MustNotUseCompanyMx.class)
@@ -112,20 +116,16 @@ public class UserServiceWhenCompanySecurityStrangersWithMXDisabledTest {
 	public void testShouldUpdateEmailAddress() throws Exception {
 		String name = PrincipalThreadLocal.getName();
 
-		String companySecurityStrangers = PropsUtil.get(
-			PropsKeys.COMPANY_SECURITY_STRANGERS);
+		try (SafeCloseable safeCloseable =
+				PrefsPropsTestUtil.swapWithSafeCloseable(
+					TestPropsValues.getCompanyId(),
+					PropsKeys.COMPANY_SECURITY_STRANGERS,
+					Boolean.FALSE.toString())) {
 
-		PropsUtil.set(
-			PropsKeys.COMPANY_SECURITY_STRANGERS, Boolean.FALSE.toString());
-
-		try {
 			_updateEmailAddress();
 		}
 		finally {
 			PrincipalThreadLocal.setName(name);
-
-			PropsUtil.set(
-				PropsKeys.COMPANY_SECURITY_STRANGERS, companySecurityStrangers);
 		}
 	}
 
@@ -133,20 +133,16 @@ public class UserServiceWhenCompanySecurityStrangersWithMXDisabledTest {
 	public void testShouldUpdateUser() throws Exception {
 		String name = PrincipalThreadLocal.getName();
 
-		String companySecurityStrangers = PropsUtil.get(
-			PropsKeys.COMPANY_SECURITY_STRANGERS);
+		try (SafeCloseable safeCloseable =
+				PrefsPropsTestUtil.swapWithSafeCloseable(
+					TestPropsValues.getCompanyId(),
+					PropsKeys.COMPANY_SECURITY_STRANGERS,
+					Boolean.FALSE.toString())) {
 
-		PropsUtil.set(
-			PropsKeys.COMPANY_SECURITY_STRANGERS, Boolean.FALSE.toString());
-
-		try {
 			_updateUser();
 		}
 		finally {
 			PrincipalThreadLocal.setName(name);
-
-			PropsUtil.set(
-				PropsKeys.COMPANY_SECURITY_STRANGERS, companySecurityStrangers);
 		}
 	}
 
@@ -171,7 +167,7 @@ public class UserServiceWhenCompanySecurityStrangersWithMXDisabledTest {
 		UserTestUtil.updateUser(_user);
 	}
 
-	private static String _companySecurityStrangersWithMX;
+	private static SafeCloseable _safeCloseable;
 
 	@DeleteAfterTestRun
 	private User _user;

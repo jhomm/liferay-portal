@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import React from 'react';
@@ -22,20 +16,22 @@ function SegmentsExperimentsDetails({segmentsExperiment}) {
 		goal,
 		segmentsEntryName,
 		status,
+		type,
 	} = segmentsExperiment;
 
 	return (
 		<>
-			<h4 className="mb-3 mt-4 sheet-subtitle">
+			<div className="mb-3 mt-4 sheet-subtitle">
 				{Liferay.Language.get('details')}
-			</h4>
+			</div>
 
-			<dl>
+			<dl className="pl-0 segments-experiment-details">
 				{description && (
 					<div className="c-my-2">
 						<dt className="d-inline-block">
-							{Liferay.Language.get('description') + ':'}{' '}
+							{`${Liferay.Language.get('description')}:`}
 						</dt>
+
 						<dd className="d-inline inline-item-after text-secondary">
 							{description}
 						</dd>
@@ -44,8 +40,9 @@ function SegmentsExperimentsDetails({segmentsExperiment}) {
 
 				<div className="c-my-2">
 					<dt className="d-inline-block">
-						{Liferay.Language.get('segment') + ':'}{' '}
+						{`${Liferay.Language.get('segment')}:`}
 					</dt>
+
 					<dd className="d-inline inline-item-after text-secondary">
 						{segmentsEntryName}
 					</dd>
@@ -53,23 +50,51 @@ function SegmentsExperimentsDetails({segmentsExperiment}) {
 
 				<div className="c-my-2">
 					<dt className="d-inline-block">
-						{Liferay.Language.get('goal') + ':'}{' '}
+						{`${Liferay.Language.get('goal')}:`}
 					</dt>
+
 					<dd className="d-inline inline-item-after text-secondary">
 						{goal.label}
 					</dd>
 				</div>
 
-				{status.value !== STATUS_DRAFT && (
+				{status.value !== STATUS_DRAFT && type.value === 'AB' && (
 					<div className="c-my-2">
 						<dt className="d-inline-block">
-							{Liferay.Language.get('confidence-level') + ':'}{' '}
+							{`${Liferay.Language.get('confidence-level')}:`}
 						</dt>
+
 						<dd className="d-inline inline-item-after text-secondary">
 							{indexToPercentageString(confidenceLevel)}
 						</dd>
+
+						{Liferay.FeatureFlags['LRAC-15017'] && (
+							<div className="c-my-2">
+								<dt className="d-inline-block">
+									{`${Liferay.Language.get('test-type')}:`}
+								</dt>
+
+								<dd className="d-inline inline-item-after text-secondary">
+									{Liferay.Language.get('standard')}
+								</dd>
+							</div>
+						)}
 					</div>
 				)}
+
+				{Liferay.FeatureFlags['LRAC-15017'] &&
+					status.value !== STATUS_DRAFT &&
+					type.value === 'MAB' && (
+						<div className="c-my-2">
+							<dt className="d-inline-block">
+								{`${Liferay.Language.get('test-type')}:`}
+							</dt>
+
+							<dd className="d-inline inline-item-after text-secondary">
+								{Liferay.Language.get('dynamic')}
+							</dd>
+						</div>
+					)}
 			</dl>
 		</>
 	);

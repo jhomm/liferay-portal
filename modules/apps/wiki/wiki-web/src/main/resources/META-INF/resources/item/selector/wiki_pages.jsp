@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -19,51 +10,17 @@
 <%
 WikiPageItemSelectorViewDisplayContext wikiPageItemSelectorViewDisplayContext = (WikiPageItemSelectorViewDisplayContext)request.getAttribute(WikiItemSelectorWebKeys.WIKI_PAGE_ITEM_SELECTOR_VIEW_DISPLAY_CONTEXT);
 
-WikiNode node = wikiPageItemSelectorViewDisplayContext.getNode();
-
-String keywords = ParamUtil.getString(request, "keywords");
-
-SearchContainer<WikiPage> wikiPagesSearchContainer = new SearchContainer(renderRequest, null, null, SearchContainer.DEFAULT_CUR_PARAM, SearchContainer.DEFAULT_DELTA, wikiPageItemSelectorViewDisplayContext.getPortletURL(request, liferayPortletResponse), null, wikiPageItemSelectorViewDisplayContext.isSearch() ? LanguageUtil.format(locale, "no-pages-were-found-that-matched-the-keywords-x", "<strong>" + HtmlUtil.escape(keywords) + "</strong>", false) : "there-are-no-pages");
-
-if (wikiPageItemSelectorViewDisplayContext.isSearch()) {
-	Indexer<WikiPage> indexer = IndexerRegistryUtil.getIndexer(WikiPage.class);
-
-	SearchContext searchContext = SearchContextFactory.getInstance(request);
-
-	searchContext.setEnd(wikiPagesSearchContainer.getEnd());
-	searchContext.setIncludeAttachments(false);
-	searchContext.setIncludeDiscussions(false);
-	searchContext.setNodeIds(new long[] {node.getNodeId()});
-	searchContext.setStart(wikiPagesSearchContainer.getStart());
-
-	Hits hits = indexer.search(searchContext);
-
-	wikiPagesSearchContainer.setTotal(hits.getLength());
-
-	List<WikiPage> results = new ArrayList<>();
-
-	for (SearchResult searchResult : SearchResultUtil.getSearchResults(hits, themeDisplay.getLocale())) {
-		WikiPage wikiPage = WikiPageLocalServiceUtil.getPage(searchResult.getClassPK());
-
-		results.add(wikiPage);
-	}
-
-	wikiPagesSearchContainer.setResults(results);
-}
-else {
-	wikiPagesSearchContainer.setTotal(WikiPageLocalServiceUtil.getPagesCount(node.getNodeId(), true, wikiPageItemSelectorViewDisplayContext.getStatus()));
-	wikiPagesSearchContainer.setResults(WikiPageLocalServiceUtil.getPages(node.getNodeId(), true, wikiPageItemSelectorViewDisplayContext.getStatus(), wikiPagesSearchContainer.getStart(), wikiPagesSearchContainer.getEnd()));
-}
+SearchContainer<WikiPage> wikiPagesSearchContainer = wikiPageItemSelectorViewDisplayContext.getSearchContainer(request, liferayPortletResponse, renderRequest);
 %>
 
-<style type="text/css">
+<aui:style type="text/css">
 	.portlet-item-selector .wiki-page-item {
 		cursor: pointer;
 	}
-</style>
+</aui:style>
 
 <%
-String searchURL = HttpUtil.removeParameter(
+String searchURL = HttpComponentsUtil.removeParameter(
 	PortletURLBuilder.create(
 		PortletURLUtil.clone(currentURLObj, liferayPortletResponse)
 	).setParameter(
@@ -113,7 +70,7 @@ String searchURL = HttpUtil.removeParameter(
 				String modifiedDateDescription = LanguageUtil.getTimeDescription(request, System.currentTimeMillis() - modifiedDate.getTime(), true);
 				%>
 
-				<h5 class="text-default">
+				<div class="h5 text-default">
 					<c:choose>
 						<c:when test="<%= Validator.isNotNull(curPage.getUserName()) %>">
 							<liferay-ui:message arguments="<%= new String[] {HtmlUtil.escape(curPage.getUserName()), modifiedDateDescription} %>" key="x-modified-x-ago" />
@@ -122,21 +79,21 @@ String searchURL = HttpUtil.removeParameter(
 							<liferay-ui:message arguments="<%= modifiedDateDescription %>" key="modified-x-ago" />
 						</c:otherwise>
 					</c:choose>
-				</h5>
+				</div>
 
 				<%
 				WikiPageItemSelectorReturnTypeResolver wikiPageItemSelectorReturnTypeResolver = wikiPageItemSelectorViewDisplayContext.getWikiPageItemSelectorReturnTypeResolver();
 				%>
 
-				<h4>
-					<a class="wiki-page" data-title="<%= wikiPageItemSelectorReturnTypeResolver.getTitle(curPage, themeDisplay) %>" data-value="<%= wikiPageItemSelectorReturnTypeResolver.getValue(curPage, themeDisplay) %>" href="javascript:;">
+				<div class="h4">
+					<a class="wiki-page" data-title="<%= wikiPageItemSelectorReturnTypeResolver.getTitle(curPage, themeDisplay) %>" data-value="<%= wikiPageItemSelectorReturnTypeResolver.getValue(curPage, themeDisplay) %>" href="javascript:void(0);">
 						<%= curPage.getTitle() %>
 					</a>
-				</h4>
+				</div>
 
-				<h5 class="text-default">
+				<div class="h5 text-default">
 					<aui:workflow-status markupView="lexicon" showIcon="<%= false %>" showLabel="<%= false %>" status="<%= curPage.getStatus() %>" />
-				</h5>
+				</div>
 			</liferay-ui:search-container-column-text>
 		</liferay-ui:search-container-row>
 

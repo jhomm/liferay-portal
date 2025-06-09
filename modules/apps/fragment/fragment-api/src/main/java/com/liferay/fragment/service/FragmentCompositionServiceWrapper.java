@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service;
@@ -28,6 +19,10 @@ public class FragmentCompositionServiceWrapper
 	implements FragmentCompositionService,
 			   ServiceWrapper<FragmentCompositionService> {
 
+	public FragmentCompositionServiceWrapper() {
+		this(null);
+	}
+
 	public FragmentCompositionServiceWrapper(
 		FragmentCompositionService fragmentCompositionService) {
 
@@ -36,15 +31,17 @@ public class FragmentCompositionServiceWrapper
 
 	@Override
 	public FragmentComposition addFragmentComposition(
-			long groupId, long fragmentCollectionId,
-			String fragmentCompositionKey, String name, String description,
-			String data, long previewFileEntryId, int status,
+			String externalReferenceCode, long groupId,
+			long fragmentCollectionId, String fragmentCompositionKey,
+			String name, String description, String data,
+			long previewFileEntryId, int status,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _fragmentCompositionService.addFragmentComposition(
-			groupId, fragmentCollectionId, fragmentCompositionKey, name,
-			description, data, previewFileEntryId, status, serviceContext);
+			externalReferenceCode, groupId, fragmentCollectionId,
+			fragmentCompositionKey, name, description, data, previewFileEntryId,
+			status, serviceContext);
 	}
 
 	@Override
@@ -54,6 +51,15 @@ public class FragmentCompositionServiceWrapper
 
 		return _fragmentCompositionService.deleteFragmentComposition(
 			fragmentCompositionId);
+	}
+
+	@Override
+	public FragmentComposition deleteFragmentComposition(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentCompositionService.deleteFragmentComposition(
+			externalReferenceCode, groupId);
 	}
 
 	@Override
@@ -70,6 +76,16 @@ public class FragmentCompositionServiceWrapper
 
 		return _fragmentCompositionService.fetchFragmentComposition(
 			groupId, fragmentCompositionKey);
+	}
+
+	@Override
+	public FragmentComposition getFragmentCompositionByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _fragmentCompositionService.
+			getFragmentCompositionByExternalReferenceCode(
+				externalReferenceCode, groupId);
 	}
 
 	@Override

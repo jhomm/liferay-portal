@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,7 +9,7 @@
 
 <liferay-util:include page='<%= "/dynamic_include/" + clickToChatChatProviderId + ".jsp" %>' servletContext="<%= application %>" />
 
-<script type="text/javascript">
+<aui:script position="inline" type="text/javascript">
 	(function () {
 		function handleVisibility(selectors, hide) {
 			let selectorsList = selectors.split(',');
@@ -40,7 +31,7 @@
 			}
 		}
 
-		let clickToChatProviders = {
+		const clickToChatProviders = {
 			chatwoot: function (hide) {
 				if (hide) {
 					document
@@ -68,21 +59,21 @@
 				}
 			},
 			tidio: '#tidio-chat',
-			zendesk: '#launcher,#webWidget',
+			zendesk_web_widget: '#launcher,#webWidget',
+			zendesk_web_widget_classic: '#launcher,#webWidget',
 		};
 
 		Object.entries(clickToChatProviders).forEach(([key, action]) => {
 			var hideElement = true;
 
-			if (key === '<%= clickToChatChatProviderId %>') {
+			if (key.includes('<%= clickToChatChatProviderId %>')) {
 				hideElement = false;
 			}
 
 			if (typeof action === 'string') {
 				return handleVisibility(action, hideElement);
 			}
-
 			action(hideElement);
 		});
 	})();
-</script>
+</aui:script>

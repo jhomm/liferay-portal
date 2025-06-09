@@ -1,4 +1,4 @@
-@component-name = "data-engine"
+@component-name = "portal-bpm"
 definition {
 
 	property portal.release = "true";
@@ -10,15 +10,15 @@ definition {
 
 		User.firstLoginPG();
 
-		JSONGroup.addGroup(groupName = "Test Site Name");
+		HeadlessSite.addSite(siteName = "Test Site Name");
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "test-site-name");
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -27,7 +27,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that is possible to delete the field."
-	@priority = "5"
+	@priority = 5
 	test CanBeDeleted {
 		NavItem.gotoStructures();
 
@@ -55,7 +55,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that is possible to duplicate the field."
-	@priority = "4"
+	@priority = 4
 	test CanBeDuplicated {
 		NavItem.gotoStructures();
 
@@ -66,6 +66,8 @@ definition {
 			fieldName = "Text");
 
 		DataEngine.duplicate(fieldFieldLabel = "Text");
+
+		Click(locator1 = "Sidebar#BACK");
 
 		WebContentStructures.saveCP();
 
@@ -81,8 +83,11 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that Text field can be set as Single line or Multiple line."
-	@priority = "3"
+	@priority = 3
 	test CanBeSingleOrMultipleLine {
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
 		NavItem.gotoStructures();
 
 		WebContentStructures.addCP(structureName = "WC Structure Title");
@@ -111,13 +116,17 @@ definition {
 
 		WebContentNavigator.gotoEditStructure(structureName = "WC Structure Title");
 
+		DataEngine.editFieldType(
+			fieldLabel = "Text",
+			fieldLineType = "Single Line");
+
 		DataEngine.viewFieldType(
 			fieldLabel = "Text",
 			fieldLineType = "Single Line");
 	}
 
 	@description = "This is a test for LRQA-69035. This test verifies that edited data persists"
-	@priority = "5"
+	@priority = 5
 	test CanEditData {
 		NavItem.gotoStructures();
 
@@ -139,7 +148,7 @@ definition {
 			fieldLabel = "Text",
 			value = "This is a Text field");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -147,7 +156,7 @@ definition {
 			fieldLabel = "Text",
 			value = "This is a Text field Edited");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -157,7 +166,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that Label, Placeholder and Help text can be edited."
-	@priority = "5"
+	@priority = 5
 	test CanEditLabelPlaceholderAndHelpText {
 		NavItem.gotoStructures();
 
@@ -197,7 +206,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69035. This test verifies that input data persists"
-	@priority = "5"
+	@priority = 5
 	test CanInputData {
 		NavItem.gotoStructures();
 
@@ -219,7 +228,7 @@ definition {
 			fieldLabel = "Text",
 			value = "This is a Text field");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -229,7 +238,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-69035. This test verifies that upon duplicating a repeatable field, inputted data on both fields persists"
-	@priority = "5"
+	@priority = 5
 	test CanInputDataOnDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -253,31 +262,31 @@ definition {
 
 		DERenderer.inputDataInTextField(
 			fieldLabel = "Text",
-			index = "1",
+			index = 1,
 			value = "This is a Text field 1");
 
 		DERenderer.inputDataInTextField(
 			fieldLabel = "Text",
-			index = "2",
+			index = 2,
 			value = "This is a Text field 2");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.assertDataInTextField(
 			fieldLabel = "Text",
-			index = "1",
+			index = 1,
 			value = "This is a Text field 1");
 
 		DERenderer.assertDataInTextField(
 			fieldLabel = "Text",
-			index = "2",
+			index = 2,
 			value = "This is a Text field 2");
 	}
 
 	@description = "This is a test for LRQA-69035. This test verifies that is not possible to publish the Web Content with a required field blank"
-	@priority = "4"
+	@priority = 4
 	test CanNotPublishBlankRequiredField {
 		NavItem.gotoStructures();
 
@@ -297,13 +306,13 @@ definition {
 
 		PortletEntry.inputTitle(title = "Web Content Title");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		FormViewBuilder.validateObjectLabelOptionTextIsShown(text = "This field is required.");
 	}
 
 	@description = "This is a test for LRQA-69035. This test verifies that is possible to remove a duplicated field (repeatable)"
-	@priority = "4"
+	@priority = 4
 	test CanRemoveDuplicatedField {
 		NavItem.gotoStructures();
 
@@ -325,23 +334,23 @@ definition {
 
 		DataEngine.addRepeatableField(fieldLabel = "Text");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DERenderer.removeRepeatableField(fieldLabel = "Text");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
 		DEBuilder.assertFieldNotPresent(
 			fieldLabel = "Text",
-			index = "2");
+			index = 2);
 	}
 
 	@description = "This is a test for LRQA-69035. This test verifies that is possible to remove inputted data from the field"
-	@priority = "3"
+	@priority = 3
 	test CanRemoveInputtedData {
 		NavItem.gotoStructures();
 
@@ -363,7 +372,7 @@ definition {
 			fieldLabel = "Text",
 			value = "This is a Text field");
 
-		Button.clickPublish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -371,7 +380,7 @@ definition {
 			fieldLabel = "Text",
 			value = "");
 
-		Button.clickPublish();
+		WebContent.publishExistingWCArticleWithPermissions();
 
 		WebContentNavigator.gotoEditCP(webContentTitle = "Web Content Title");
 
@@ -381,9 +390,10 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that Default Searchable property is 'Disable' when System Setting is left unchecked."
-	@priority = "3"
+	@priority = 3
 	test CanSetDefaultSearchablePropertyToDisable {
-		property test.name.skip.portal.instance = "DETextField#CanSetDefaultSearchablePropertyToDisable";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -415,9 +425,10 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that Default Searchable property is 'Keyword' when System Setting is checked."
-	@priority = "3"
+	@priority = 3
 	test CanSetDefaultSearchablePropertyToKeyword {
-		property test.name.skip.portal.instance = "DETextField#CanSetDefaultSearchablePropertyToKeyword";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		ApplicationsMenu.gotoPortlet(
 			category = "Configuration",
@@ -449,7 +460,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that Label, Placeholder and Help text can be set."
-	@priority = "5"
+	@priority = 5
 	test CanSetLabelPlaceholderAndHelpText {
 		NavItem.gotoStructures();
 
@@ -476,7 +487,7 @@ definition {
 	}
 
 	@description = "This is a test for LRQA-68539. This test verifies that Label can be shown or hidden."
-	@priority = "3"
+	@priority = 3
 	test CanSetLabelToShownOrHidden {
 		NavItem.gotoStructures();
 
@@ -503,6 +514,61 @@ definition {
 		DataEngine.viewField(
 			fieldFieldLabel = "Text",
 			fieldName = "Text");
+	}
+
+	@description = "Check if Text Field details can be seen."
+	@priority = 4
+	test ViewTextFieldDetails {
+		property portal.acceptance = "true";
+		property portal.upstream = "true";
+
+		NavItem.gotoStructures();
+
+		WebContentStructures.addCP(structureName = "Text Structure");
+
+		DEBuilder.addField(
+			fieldLabel = "Text",
+			fieldName = "Text");
+
+		DEBuilder.openField(
+			fieldLabel = "Text",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Text",
+			searchableType = "Keyword");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Text");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Text");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Text");
+
+		WebContentStructures.saveCP();
+
+		WebContentNavigator.gotoEditStructure(structureName = "Text Structure");
+
+		DEBuilder.openField(
+			fieldLabel = "Text",
+			index = 1);
+
+		Navigator.gotoNavTab(navTab = "Advanced");
+
+		AssertElementPresent(locator1 = "FormViewBuilder#SIDEBAR_ADVANCED_FIELD_REFERENCE");
+
+		DataEngine.viewFieldSearchable(
+			fieldFieldLabel = "Text",
+			searchableType = "Keyword");
+
+		DataEngine.assertLocalizableField(fieldFieldLabel = "Text");
+
+		DataEngine.assertShowLabelField(fieldFieldLabel = "Text");
+
+		DataEngine.assertRepeatableField(fieldFieldLabel = "Text");
 	}
 
 }

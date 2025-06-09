@@ -1,0 +1,67 @@
+definition {
+
+	@summary = "Default summary"
+	macro addCountry(countryNumber = null, threeLetterISOCode = null, billingAllowed = null, countryPriority = null, subjectToVAT = null, countryName = null, twoLetterISOCode = null, shippingAllowed = null) {
+		Variables.assertDefined(parameterList = "${countryName},${countryNumber},${threeLetterISOCode},${twoLetterISOCode}");
+
+		if (!(isSet(creatorEmailAddress))) {
+			var creatorEmailAddress = "test@liferay.com";
+		}
+
+		if (!(isSet(creatorPassword))) {
+			var creatorPassword = PropsUtil.get("default.admin.password");
+		}
+
+		var countryStatus = JSONCountrySetter.setStatus(countryStatus = ${countryStatus});
+
+		JSONCountryAPI._addAccountEntry(
+			billingAllowed = ${billingAllowed},
+			countryName = ${countryName},
+			countryNumber = ${countryNumber},
+			countryPriority = ${countryPriority},
+			countryStatus = ${countryStatus},
+			creatorEmailAddress = ${creatorEmailAddress},
+			creatorPassword = ${creatorPassword},
+			shippingAllowed = ${shippingAllowed},
+			subjectToVAT = ${subjectToVAT},
+			threeLetterISOCode = ${threeLetterISOCode},
+			twoLetterISOCode = ${twoLetterISOCode});
+	}
+
+	@summary = "Default summary"
+	macro getCountryAbbreviation(countryName = null) {
+		Variables.assertDefined(parameterList = ${countryName});
+
+		var countryAbbreviation = JSONCountryAPI._getCountryAbbreviation(countryName = ${countryName});
+
+		return ${countryAbbreviation};
+	}
+
+	@summary = "Default summary"
+	macro getCountryId(countryName = null) {
+		Variables.assertDefined(parameterList = ${countryName});
+
+		var key_countryName = StringUtil.replace(${countryName}, " ", "-");
+
+		var country = JSONCountryAPI._getCountryByName(countryName = ${key_countryName});
+
+		var countryId = JSONUtil.getWithJSONPath(${country}, "$..countryId");
+
+		return ${countryId};
+	}
+
+	@summary = "Default summary"
+	macro getRegionId(regionName = null, countryName = null) {
+		Variables.assertDefined(parameterList = "${regionName},${countryName}");
+
+		var key_countryName = StringUtil.replace(${countryName}, " ", "-");
+		var countryAbbreviation = JSONCountryAPI._getCountryAbbreviation(countryName = ${countryName});
+
+		var countryRegions = JSONCountryAPI._getCountryRegions(countryAbbreviation = ${countryAbbreviation});
+
+		var regionId = JSONUtil.getWithJSONPath(${countryRegions}, "$[?(@.title=='${regionName}')].regionId");
+
+		return ${regionId};
+	}
+
+}

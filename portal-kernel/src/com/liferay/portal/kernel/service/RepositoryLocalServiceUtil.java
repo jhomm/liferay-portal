@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -44,18 +35,6 @@ public class RepositoryLocalServiceUtil {
 	 *
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.portal.service.impl.RepositoryLocalServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
-	public static Repository addRepository(
-			long userId, long groupId, long classNameId, long parentFolderId,
-			String name, String description, String portletId,
-			com.liferay.portal.kernel.util.UnicodeProperties
-				typeSettingsUnicodeProperties,
-			boolean hidden, ServiceContext serviceContext)
-		throws PortalException {
-
-		return getService().addRepository(
-			userId, groupId, classNameId, parentFolderId, name, description,
-			portletId, typeSettingsUnicodeProperties, hidden, serviceContext);
-	}
 
 	/**
 	 * Adds the repository to the database. Also notifies the appropriate model listeners.
@@ -69,6 +48,21 @@ public class RepositoryLocalServiceUtil {
 	 */
 	public static Repository addRepository(Repository repository) {
 		return getService().addRepository(repository);
+	}
+
+	public static Repository addRepository(
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long parentFolderId, String name,
+			String description, String portletId,
+			com.liferay.portal.kernel.util.UnicodeProperties
+				typeSettingsUnicodeProperties,
+			boolean hidden, ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().addRepository(
+			externalReferenceCode, userId, groupId, classNameId, parentFolderId,
+			name, description, portletId, typeSettingsUnicodeProperties, hidden,
+			serviceContext);
 	}
 
 	public static void checkRepository(long repositoryId) {
@@ -135,8 +129,11 @@ public class RepositoryLocalServiceUtil {
 	 *
 	 * @param repository the repository
 	 * @return the repository that was removed
+	 * @throws PortalException
 	 */
-	public static Repository deleteRepository(Repository repository) {
+	public static Repository deleteRepository(Repository repository)
+		throws PortalException {
+
 		return getService().deleteRepository(repository);
 	}
 
@@ -237,6 +234,13 @@ public class RepositoryLocalServiceUtil {
 		long groupId, String name, String portletId) {
 
 		return getService().fetchRepository(groupId, name, portletId);
+	}
+
+	public static Repository fetchRepositoryByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchRepositoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -376,6 +380,14 @@ public class RepositoryLocalServiceUtil {
 		return getService().getRepository(groupId, name, portletId);
 	}
 
+	public static Repository getRepositoryByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getRepositoryByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
 	/**
 	 * Returns the repository matching the UUID and group.
 	 *
@@ -431,6 +443,10 @@ public class RepositoryLocalServiceUtil {
 
 	public static RepositoryLocalService getService() {
 		return _service;
+	}
+
+	public static void setService(RepositoryLocalService service) {
+		_service = service;
 	}
 
 	private static volatile RepositoryLocalService _service;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.cache.multiple.internal.cluster.link;
@@ -17,10 +8,12 @@ package com.liferay.portal.cache.multiple.internal.cluster.link;
 import com.liferay.portal.cache.multiple.configuration.PortalCacheClusterConfiguration;
 import com.liferay.portal.cache.multiple.internal.PortalCacheClusterEvent;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
+import com.liferay.portal.kernel.cluster.ClusterLink;
 import com.liferay.portal.kernel.cluster.Priority;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.osgi.service.component.ComponentContext;
 import org.osgi.service.component.annotations.Activate;
@@ -28,26 +21,22 @@ import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferenceCardinality;
-import org.osgi.service.component.annotations.ReferencePolicy;
 
 /**
  * @author Shuyang Zhou
  */
 @Component(
-	configurationPid = "com.liferay.portal.cache.cluster.configuration.PortalCacheClusterConfiguration",
-	enabled = false, immediate = true, service = PortalCacheClusterLink.class
+	configurationPid = "com.liferay.portal.cache.multiple.configuration.PortalCacheClusterConfiguration",
+	enabled = false, service = PortalCacheClusterLink.class
 )
 public class PortalCacheClusterLink {
 
-	public long getSubmittedEventNumber() {
-		return _portalCacheClusterChannelSelector.getSelectedNumber();
-	}
-
 	public void sendEvent(PortalCacheClusterEvent portalCacheClusterEvent) {
+		long count = _eventCounter.getAndIncrement();
+		int size = _portalCacheClusterChannels.size();
+
 		PortalCacheClusterChannel portalCacheClusterChannel =
-			_portalCacheClusterChannelSelector.select(
-				_portalCacheClusterChannels, portalCacheClusterEvent);
+			_portalCacheClusterChannels.get((int)(count % size));
 
 		portalCacheClusterChannel.sendEvent(portalCacheClusterEvent);
 	}
@@ -66,15 +55,12 @@ public class PortalCacheClusterLink {
 
 		for (Priority priority : priorities) {
 			PortalCacheClusterChannel portalCacheClusterChannel =
-				_portalCacheClusterChannelFactory.
-					createPortalCacheClusterChannel(priority);
+				PortalCacheClusterChannelFactory.
+					createPortalCacheClusterChannel(
+						_clusterLink, priority,
+						portalCacheClusterConfiguration.usingCoalescedPipe());
 
 			_portalCacheClusterChannels.add(portalCacheClusterChannel);
-		}
-
-		if (_portalCacheClusterChannelSelector == null) {
-			_portalCacheClusterChannelSelector =
-				new UniformPortalCacheClusterChannelSelector();
 		}
 	}
 
@@ -92,16 +78,10 @@ public class PortalCacheClusterLink {
 	}
 
 	@Reference
-	private PortalCacheClusterChannelFactory _portalCacheClusterChannelFactory;
+	private ClusterLink _clusterLink;
 
+	private final AtomicLong _eventCounter = new AtomicLong(0);
 	private volatile List<PortalCacheClusterChannel>
 		_portalCacheClusterChannels;
-
-	@Reference(
-		cardinality = ReferenceCardinality.OPTIONAL,
-		policy = ReferencePolicy.DYNAMIC
-	)
-	private volatile PortalCacheClusterChannelSelector
-		_portalCacheClusterChannelSelector;
 
 }

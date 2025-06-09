@@ -1,19 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.expression.internal;
 
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunction;
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionFactory;
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFunctionRegistry;
 import com.liferay.dynamic.data.mapping.expression.model.AndExpression;
 import com.liferay.dynamic.data.mapping.expression.model.ArithmeticExpression;
 import com.liferay.dynamic.data.mapping.expression.model.ComparisonExpression;
@@ -25,14 +19,18 @@ import com.liferay.dynamic.data.mapping.expression.model.NotExpression;
 import com.liferay.dynamic.data.mapping.expression.model.OrExpression;
 import com.liferay.dynamic.data.mapping.expression.model.Parenthesis;
 import com.liferay.dynamic.data.mapping.expression.model.Term;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.List;
 
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
@@ -44,16 +42,35 @@ public class DDMExpressionModelTest {
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
+	@BeforeClass
+	public static void setUpClass() {
+		_ddmExpressionFunctionRegistry = Mockito.mock(
+			DDMExpressionFunctionRegistry.class);
+
+		Mockito.when(
+			_ddmExpressionFunctionRegistry.getDDMExpressionFunctionFactories(
+				Mockito.any())
+		).thenReturn(
+			HashMapBuilder.<String, DDMExpressionFunctionFactory>put(
+				"date", new TestDDMExpressionFunctionFactory()
+			).put(
+				"equals", new TestDDMExpressionFunctionFactory()
+			).put(
+				"sum", new TestDDMExpressionFunctionFactory()
+			).build()
+		);
+	}
+
 	@Test
 	public void testAndExpression() throws Exception {
 		DDMExpressionImpl<Boolean> ddmExpressionImpl = new DDMExpressionImpl<>(
-			"true && (2 != 3)");
+			_ddmExpressionFunctionRegistry, "true && (2 != 3)");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
-		Assert.assertEquals(AndExpression.class, expressionModel.getClass());
+		Assert.assertEquals(AndExpression.class, modelExpression.getClass());
 
-		AndExpression andExpression = (AndExpression)expressionModel;
+		AndExpression andExpression = (AndExpression)modelExpression;
 
 		Expression leftOperandExpression1 =
 			andExpression.getLeftOperandExpression();
@@ -95,15 +112,15 @@ public class DDMExpressionModelTest {
 	@Test
 	public void testArithmeticExpression() throws Exception {
 		DDMExpressionImpl<Double> ddmExpressionImpl = new DDMExpressionImpl<>(
-			"a + b * c - d");
+			_ddmExpressionFunctionRegistry, "a + b * c - d");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
 		Assert.assertEquals(
-			ArithmeticExpression.class, expressionModel.getClass());
+			ArithmeticExpression.class, modelExpression.getClass());
 
 		ArithmeticExpression arithmeticExpression1 =
-			(ArithmeticExpression)expressionModel;
+			(ArithmeticExpression)modelExpression;
 
 		Expression leftOperandExpression1 =
 			arithmeticExpression1.getLeftOperandExpression();
@@ -160,15 +177,15 @@ public class DDMExpressionModelTest {
 	@Test
 	public void testFunctionCallExpression() throws Exception {
 		DDMExpressionImpl<Boolean> ddmExpressionImpl = new DDMExpressionImpl<>(
-			"date()");
+			_ddmExpressionFunctionRegistry, "date()");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
 		Assert.assertEquals(
-			FunctionCallExpression.class, expressionModel.getClass());
+			FunctionCallExpression.class, modelExpression.getClass());
 
 		FunctionCallExpression functionCallExpression =
-			(FunctionCallExpression)expressionModel;
+			(FunctionCallExpression)modelExpression;
 
 		Assert.assertEquals("date", functionCallExpression.getFunctionName());
 		Assert.assertEquals(0, functionCallExpression.getArity());
@@ -177,15 +194,15 @@ public class DDMExpressionModelTest {
 	@Test
 	public void testGreaterThanExpression() throws Exception {
 		DDMExpressionImpl<Boolean> ddmExpressionImpl = new DDMExpressionImpl<>(
-			"(2 * 5) > 3");
+			_ddmExpressionFunctionRegistry, "(2 * 5) > 3");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
 		Assert.assertEquals(
-			ComparisonExpression.class, expressionModel.getClass());
+			ComparisonExpression.class, modelExpression.getClass());
 
 		ComparisonExpression comparisonExpression =
-			(ComparisonExpression)expressionModel;
+			(ComparisonExpression)modelExpression;
 
 		Expression leftOperandExpression =
 			comparisonExpression.getLeftOperandExpression();
@@ -234,15 +251,16 @@ public class DDMExpressionModelTest {
 	@Test
 	public void testLessThanEqualExpression() throws Exception {
 		DDMExpressionImpl<Boolean> ddmExpressionImpl = new DDMExpressionImpl<>(
+			_ddmExpressionFunctionRegistry,
 			"((1 + 4) / (5 - 2)) <= sum(Var1,Var2)");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
 		Assert.assertEquals(
-			ComparisonExpression.class, expressionModel.getClass());
+			ComparisonExpression.class, modelExpression.getClass());
 
 		ComparisonExpression comparisonExpression =
-			(ComparisonExpression)expressionModel;
+			(ComparisonExpression)modelExpression;
 
 		Expression comparisonLeftOperandExpression =
 			comparisonExpression.getLeftOperandExpression();
@@ -363,13 +381,13 @@ public class DDMExpressionModelTest {
 	@Test
 	public void testNotExpression() throws Exception {
 		DDMExpressionImpl<Boolean> ddmExpressionImpl = new DDMExpressionImpl<>(
-			"not false");
+			_ddmExpressionFunctionRegistry, "not false");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
-		Assert.assertEquals(NotExpression.class, expressionModel.getClass());
+		Assert.assertEquals(NotExpression.class, modelExpression.getClass());
 
-		NotExpression notExpression = (NotExpression)expressionModel;
+		NotExpression notExpression = (NotExpression)modelExpression;
 
 		Expression operandExpression = notExpression.getOperandExpression();
 
@@ -383,13 +401,14 @@ public class DDMExpressionModelTest {
 	@Test
 	public void testOrExpression() throws Exception {
 		DDMExpressionImpl<Boolean> ddmExpressionImpl = new DDMExpressionImpl<>(
+			_ddmExpressionFunctionRegistry,
 			"(-3 < Var1) || (not equals(Var2,sum(Var3,Var4)))");
 
-		Expression expressionModel = ddmExpressionImpl.getModel();
+		Expression modelExpression = ddmExpressionImpl.getModel();
 
-		Assert.assertEquals(OrExpression.class, expressionModel.getClass());
+		Assert.assertEquals(OrExpression.class, modelExpression.getClass());
 
-		OrExpression orExpression = (OrExpression)expressionModel;
+		OrExpression orExpression = (OrExpression)modelExpression;
 
 		Expression leftOperandExpression1 =
 			orExpression.getLeftOperandExpression();
@@ -492,6 +511,18 @@ public class DDMExpressionModelTest {
 		term = (Term)parameterExpression4;
 
 		Assert.assertEquals("Var4", term.getValue());
+	}
+
+	private static DDMExpressionFunctionRegistry _ddmExpressionFunctionRegistry;
+
+	private static class TestDDMExpressionFunctionFactory
+		implements DDMExpressionFunctionFactory {
+
+		@Override
+		public DDMExpressionFunction create() {
+			return null;
+		}
+
 	}
 
 }

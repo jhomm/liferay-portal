@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.internal.dto.v1_0.util;
@@ -111,7 +102,7 @@ public class SLAResultUtil {
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return null;
@@ -126,17 +117,15 @@ public class SLAResultUtil {
 		Supplier<Long> slaDefinitionIdSupplier,
 		Supplier<SLAResult.Status> slaResultStatusSupplier) {
 
-		Long slaResultId = slaDefinitionIdSupplier.get();
-
 		return new SLAResult() {
 			{
-				dateModified = modifiedDateSupplier.get();
-				dateOverdue = overdueDateSupplier.get();
-				id = slaResultId;
-				name = nameFunction.apply(slaResultId);
-				onTime = onTimeSupplier.get();
-				remainingTime = remainingTimeSupplier.get();
-				status = slaResultStatusSupplier.get();
+				setDateModified(modifiedDateSupplier::get);
+				setDateOverdue(overdueDateSupplier::get);
+				setId(slaDefinitionIdSupplier::get);
+				setName(() -> nameFunction.apply(getId()));
+				setOnTime(onTimeSupplier::get);
+				setRemainingTime(remainingTimeSupplier::get);
+				setStatus(slaResultStatusSupplier::get);
 			}
 		};
 	}

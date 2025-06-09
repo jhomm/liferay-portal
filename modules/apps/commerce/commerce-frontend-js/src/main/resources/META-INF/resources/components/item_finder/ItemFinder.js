@@ -1,23 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {ClayIconSpriteContext} from '@clayui/icon';
+import {FDS_EVENT} from '@liferay/frontend-data-set-web';
 import {fetch} from 'frontend-js-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useState} from 'react';
 
-import {DATASET_ACTION_PERFORMED} from '../../utilities/eventsDefinitions';
 import {fetchParams} from '../../utilities/index';
 import {
 	showErrorNotification,
@@ -25,18 +15,20 @@ import {
 } from '../../utilities/notifications';
 import AddOrCreate from './AddOrCreate';
 
+import './item_finder.scss';
+
 function ItemFinder(props) {
-	const [items, updateItems] = useState([]);
-	const [pageSize, updatePageSize] = useState(props.pageSize);
-	const [currentPage, updateCurrentPage] = useState(props.currentPage);
-	const [textFilter, updateTextFilter] = useState('');
-	const [itemsCount, updateItemsCount] = useState(props.itemsCount || 0);
-	const [selectedItems, updateSelectedItems] = useState([]);
+	const [items, setItems] = useState([]);
+	const [pageSize, setPageSize] = useState(props.pageSize);
+	const [currentPage, setCurrentPage] = useState(props.currentPage);
+	const [textFilter, setTextFilter] = useState('');
+	const [itemsCount, setItemsCount] = useState(props.itemsCount || 0);
+	const [selectedItems, setSelectedItems] = useState([]);
 
 	useEffect(() => {
 		if (!textFilter) {
-			updateItems(null);
-			updateItemsCount(0);
+			setItems(null);
+			setItemsCount(0);
 
 			return;
 		}
@@ -54,38 +46,38 @@ function ItemFinder(props) {
 		)
 			.then((data) => data.json())
 			.then((jsonResponse) => {
-				updateItems(jsonResponse.items);
-				updateItemsCount(jsonResponse.totalCount);
+				setItems(jsonResponse.items);
+				setItemsCount(jsonResponse.totalCount);
 			})
 			.catch(showErrorNotification);
 	}, [
 		pageSize,
 		currentPage,
 		textFilter,
-		updateItems,
-		updateItemsCount,
+		setItems,
+		setItemsCount,
 		props.apiUrl,
 	]);
 
 	useEffect(() => {
 		props
 			.getSelectedItems()
-			.then((selectedItems = []) => updateSelectedItems(selectedItems));
+			.then((selectedItems = []) => setSelectedItems(selectedItems));
 
-		function handleDatasetActions(event) {
-			if (props.linkedDatasetsId.includes(event.id)) {
+		function handleDataSetActions(event) {
+			if (props.linkedDataSetsId.includes(event.id)) {
 				props
 					.getSelectedItems()
 					.then((selectedItems = []) =>
-						updateSelectedItems(selectedItems)
+						setSelectedItems(selectedItems)
 					);
 			}
 		}
 
-		Liferay.on(DATASET_ACTION_PERFORMED, handleDatasetActions);
+		Liferay.on(FDS_EVENT.ACTION_PERFORMED, handleDataSetActions);
 
 		return () =>
-			Liferay.detach(DATASET_ACTION_PERFORMED, handleDatasetActions);
+			Liferay.detach(FDS_EVENT.ACTION_PERFORMED, handleDataSetActions);
 	}, [props, props.getSelectedItems]);
 
 	function selectItem(itemId) {
@@ -99,7 +91,7 @@ function ItemFinder(props) {
 					showNotification(props.itemSelectedMessage);
 				}
 				else {
-					updateSelectedItems((i) => [...i, itemId]);
+					setSelectedItems((i) => [...i, itemId]);
 				}
 			})
 			.catch(showErrorNotification);
@@ -109,40 +101,39 @@ function ItemFinder(props) {
 		props
 			.onItemCreated(textFilter)
 			.then((id) => {
-				updateTextFilter('');
+				showNotification(props.itemCreatedMessage);
+
+				setTextFilter('');
 
 				if (id) {
-					updateSelectedItems((i) => [...i, id]);
+					setSelectedItems((i) => [...i, id]);
 				}
 			})
 			.catch(showErrorNotification);
 	}
 
 	return (
-		<ClayIconSpriteContext.Provider value={props.spritemap}>
-			<AddOrCreate
-				createNewItemLabel={props.createNewItemLabel}
-				currentPage={currentPage}
-				inputPlaceholder={props.inputPlaceholder}
-				inputSearchValue={textFilter}
-				itemCreation={props.itemCreation}
-				items={items}
-				itemsCount={itemsCount}
-				itemsKey={props.itemsKey}
-				onInputSearchChange={updateTextFilter}
-				onItemCreated={createItem}
-				onItemSelected={selectItem}
-				pageSize={pageSize}
-				panelHeaderLabel={props.panelHeaderLabel}
-				schema={props.schema}
-				searchInputValue={textFilter}
-				selectedItems={selectedItems}
-				spritemap={props.spritemap}
-				titleLabel={props.titleLabel}
-				updateCurrentPage={updateCurrentPage}
-				updatePageSize={updatePageSize}
-			/>
-		</ClayIconSpriteContext.Provider>
+		<AddOrCreate
+			createNewItemLabel={props.createNewItemLabel}
+			currentPage={currentPage}
+			inputPlaceholder={props.inputPlaceholder}
+			inputSearchValue={textFilter}
+			itemCreation={props.itemCreation}
+			items={items}
+			itemsCount={itemsCount}
+			itemsKey={props.itemsKey}
+			onInputSearchChange={setTextFilter}
+			onItemCreated={createItem}
+			onItemSelected={selectItem}
+			pageSize={pageSize}
+			panelHeaderLabel={props.panelHeaderLabel}
+			schema={props.schema}
+			searchInputValue={textFilter}
+			selectedItems={selectedItems}
+			titleLabel={props.titleLabel}
+			updateCurrentPage={setCurrentPage}
+			updatePageSize={setPageSize}
+		/>
 	);
 }
 
@@ -151,10 +142,11 @@ ItemFinder.propTypes = {
 	createNewItemLabel: PropTypes.string,
 	getSelectedItems: PropTypes.func.isRequired,
 	inputPlaceholder: PropTypes.string,
+	itemCreatedMessage: PropTypes.string,
 	itemCreation: PropTypes.bool,
 	itemSelectedMessage: PropTypes.string,
 	itemsKey: PropTypes.string.isRequired,
-	linkedDatasetsId: PropTypes.arrayOf(PropTypes.string),
+	linkedDataSetsId: PropTypes.arrayOf(PropTypes.string),
 	multiSelectableEntries: PropTypes.bool,
 	onItemCreated: PropTypes.func.isRequired,
 	onItemSelected: PropTypes.func.isRequired,
@@ -166,6 +158,7 @@ ItemFinder.propTypes = {
 
 ItemFinder.defaultProps = {
 	currentPage: 1,
+	itemCreatedMessage: Liferay.Language.get('item-created'),
 	itemCreation: true,
 	itemSelectedMessage: Liferay.Language.get('item-selected'),
 	multiSelectableEntries: false,

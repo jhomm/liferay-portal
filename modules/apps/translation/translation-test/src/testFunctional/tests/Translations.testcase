@@ -1,6 +1,7 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Translations Management";
@@ -12,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -23,9 +24,9 @@ definition {
 	}
 
 	@description = "This ensures that the user can see translation options after move all available languages to current."
-	@priority = "4"
-	@refactorneeded
-	test ViewOptionsWithAllLanguages {
+	@priority = 4
+	@refactordone
+	test CanViewOptionsWithAllLanguages {
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
 		NavItem.gotoStructures();
@@ -59,7 +60,7 @@ definition {
 			webContentText = "Text",
 			webContentTitle = "Web Content Title");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		Site.openSiteSettingsAdmin(siteURLKey = "guest");
 
@@ -85,9 +86,9 @@ definition {
 	}
 
 	@description = "This ensures that the user can see translation options after move one more available language to current."
-	@priority = "5"
-	@refactorneeded
-	test ViewOptionsWithOneMoreLanguage {
+	@priority = 4
+	@refactordone
+	test CanViewOptionsWithOneMoreLanguage {
 		JSONWebcontent.addWebContent(
 			content = "Web Content Content",
 			groupName = "Guest",
@@ -117,9 +118,11 @@ definition {
 	}
 
 	@description = "This test covers LPS-128546. It ensures that the translated field content can be displayed correctly after editing by different translation ways."
-	@priority = "4"
-	@refactorneeded
-	test ViewTranslatedFieldContentAfterEditing {
+	@priority = 4
+	@refactordone
+	test CanViewTranslatedFieldContentAfterEditing {
+		property portal.acceptance = "quarantine";
+
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
 		NavItem.gotoStructures();
@@ -143,7 +146,7 @@ definition {
 			webContentText = "Text EN",
 			webContentTitle = "WC WebContent Title EN");
 
-		PortletEntry.publish();
+		WebContent.publishWithPermissions();
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
@@ -163,12 +166,12 @@ definition {
 			newTargetLocale = "pt-BR");
 
 		Translations.viewTargetFields(
-			webContentHTML = "Rich Text PT",
+			webContentHtml = "Rich Text PT",
 			webContentText = "Text PT",
 			webContentTitle = "WC WebContent Title PT");
 
 		Translations.translateFields(
-			webContentSourceHTML = "Rich Text PT Edit",
+			webContentSourceHtml = "Rich Text PT Edit",
 			webContentText = "Text PT Edit",
 			webContentTitle = "WC WebContent Title PT Edit");
 
@@ -201,7 +204,7 @@ definition {
 			newTargetLocale = "pt-BR");
 
 		Translations.viewTargetFields(
-			webContentHTML = "Rich Text PT Edit Again",
+			webContentHtml = "Rich Text PT Edit Again",
 			webContentText = "Text PT Again",
 			webContentTitle = "WC WebContent Title PT Again");
 	}

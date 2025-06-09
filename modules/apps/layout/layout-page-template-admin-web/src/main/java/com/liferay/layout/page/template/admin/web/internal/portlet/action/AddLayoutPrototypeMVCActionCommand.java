@@ -1,28 +1,19 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet.action;
 
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
-import com.liferay.layout.page.template.admin.web.internal.handler.LayoutPageTemplateEntryExceptionRequestHandler;
+import com.liferay.layout.page.template.admin.web.internal.handler.LayoutPageTemplateEntryExceptionRequestHandlerUtil;
 import com.liferay.layout.page.template.exception.LayoutPageTemplateEntryNameException;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
 import com.liferay.portal.kernel.exception.LayoutNameException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -38,20 +29,19 @@ import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.TransactionConfig;
 import com.liferay.portal.kernel.transaction.TransactionInvokerUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -60,9 +50,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Jürgen Kappler
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"mvc.command.name=/layout_page_template_admin/add_layout_prototype"
 	},
 	service = MVCActionCommand.class
@@ -108,12 +97,9 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 			return layoutPrototype;
 		}
 
-		long layoutPageTemplateCollectionId = ParamUtil.getLong(
-			actionRequest, "layoutPageTemplateCollectionId");
-
 		layoutPageTemplateEntry.setGroupId(themeDisplay.getScopeGroupId());
 		layoutPageTemplateEntry.setLayoutPageTemplateCollectionId(
-			layoutPageTemplateCollectionId);
+			ParamUtil.getLong(actionRequest, "layoutPageTemplateCollectionId"));
 
 		_layoutPageTemplateEntryLocalService.updateLayoutPageTemplateEntry(
 			layoutPageTemplateEntry);
@@ -144,8 +130,9 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 			String backURL = ParamUtil.getString(actionRequest, "backURL");
 
 			if (Validator.isNotNull(backURL)) {
-				redirectURL = _http.setParameter(
-					redirectURL, "p_l_back_url", backURL);
+				redirectURL = HttpComponentsUtil.addParameters(
+					redirectURL, "p_l_back_url", backURL, "p_l_back_url_title",
+					_language.get(themeDisplay.getLocale(), "page-templates"));
 			}
 
 			JSONPortletResponseUtil.writeJSON(
@@ -162,7 +149,7 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 					actionRequest, actionResponse,
 					JSONUtil.put(
 						"error",
-						LanguageUtil.get(
+						_language.get(
 							themeDisplay.getRequest(),
 							"please-enter-a-valid-name")));
 			}
@@ -173,7 +160,7 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 					layoutPageTemplateEntryNameException =
 						(LayoutPageTemplateEntryNameException)throwable;
 
-				_layoutPageTemplateEntryExceptionRequestHandler.
+				LayoutPageTemplateEntryExceptionRequestHandlerUtil.
 					handlePortalException(
 						actionRequest, actionResponse,
 						layoutPageTemplateEntryNameException);
@@ -183,7 +170,7 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 					actionRequest, actionResponse,
 					JSONUtil.put(
 						"error",
-						LanguageUtil.get(
+						_language.get(
 							themeDisplay.getRequest(),
 							"an-unexpected-error-occurred")));
 			}
@@ -198,11 +185,7 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 			Propagation.REQUIRED, new Class<?>[] {Exception.class});
 
 	@Reference
-	private Http _http;
-
-	@Reference
-	private LayoutPageTemplateEntryExceptionRequestHandler
-		_layoutPageTemplateEntryExceptionRequestHandler;
+	private Language _language;
 
 	@Reference
 	private LayoutPageTemplateEntryLocalService
@@ -210,9 +193,6 @@ public class AddLayoutPrototypeMVCActionCommand extends BaseMVCActionCommand {
 
 	@Reference
 	private LayoutPrototypeService _layoutPrototypeService;
-
-	@Reference
-	private Portal _portal;
 
 	private class AddLayoutPrototypeCallable
 		implements Callable<LayoutPrototype> {

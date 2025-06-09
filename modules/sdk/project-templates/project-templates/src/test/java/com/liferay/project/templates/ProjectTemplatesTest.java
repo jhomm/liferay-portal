@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates;
@@ -110,7 +101,7 @@ public class ProjectTemplatesTest implements BaseProjectTemplatesTestCase {
 	@Test
 	public void testBuildTemplateLiferayVersionValid70Maven() throws Exception {
 		_buildTemplateWithMaven(
-			"mvc-portlet", "test", "-DliferayVersion=7.0.6", "-DclassName=Foo",
+			"mvc-portlet", "test", "-DclassName=Foo", "-DliferayVersion=7.0.6",
 			"-Dpackage=foo.portlet");
 	}
 
@@ -137,7 +128,7 @@ public class ProjectTemplatesTest implements BaseProjectTemplatesTestCase {
 		throws Exception {
 
 		_buildTemplateWithMaven(
-			"mvc-portlet", "test", "-DliferayVersion=7.20.0", "-DclassName=Foo",
+			"mvc-portlet", "test", "-DclassName=Foo", "-DliferayVersion=7.20.0",
 			"-Dpackage=foo.portlet");
 	}
 
@@ -152,7 +143,7 @@ public class ProjectTemplatesTest implements BaseProjectTemplatesTestCase {
 		throws Exception {
 
 		_buildTemplateWithMaven(
-			"mvc-portlet", "test", "-DliferayVersion=7.3.10", "-DclassName=Foo",
+			"mvc-portlet", "test", "-DclassName=Foo", "-DliferayVersion=7.3.10",
 			"-Dpackage=foo.portlet");
 	}
 
@@ -162,6 +153,14 @@ public class ProjectTemplatesTest implements BaseProjectTemplatesTestCase {
 
 		_buildTemplateWithGradle(
 			"mvc-portlet", "test", "--liferay-version", "10.0.0");
+	}
+
+	@Test
+	public void testBuildTemplateLiferayVersionValidLiferayQuarterly()
+		throws Exception {
+
+		_buildTemplateWithGradle(
+			"mvc-portlet", "test", "--liferay-version", "2024.q1.1");
 	}
 
 	@Test(expected = IllegalArgumentException.class)

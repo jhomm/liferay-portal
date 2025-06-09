@@ -1,43 +1,40 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.change.tracking.spi.display;
 
 import com.liferay.change.tracking.spi.display.BaseCTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
+import com.liferay.change.tracking.spi.display.context.DisplayContext;
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.ColorScheme;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Theme;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.permission.LayoutPermission;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
+import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.style.book.model.StyleBookEntry;
 import com.liferay.style.book.service.StyleBookEntryLocalService;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -45,7 +42,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author David Truong
  */
-@Component(immediate = true, service = CTDisplayRenderer.class)
+@Component(service = CTDisplayRenderer.class)
 public class LayoutCTDisplayRenderer extends BaseCTDisplayRenderer<Layout> {
 
 	@Override
@@ -108,7 +105,69 @@ public class LayoutCTDisplayRenderer extends BaseCTDisplayRenderer<Layout> {
 
 	@Override
 	public boolean isHideable(Layout layout) {
+		if (layout.isDraftLayout() &&
+			(layout.getStatus() == WorkflowConstants.STATUS_DRAFT)) {
+
+			return false;
+		}
+
 		return layout.isSystem();
+	}
+
+	@Override
+	public String renderPreview(DisplayContext<Layout> displayContext)
+		throws Exception {
+
+		Layout layout = displayContext.getModel();
+
+		HttpServletRequest httpServletRequest =
+			displayContext.getHttpServletRequest();
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		Layout previewLayout = layout;
+
+		if (layout.isDenied() || layout.isPending()) {
+			previewLayout = layout.fetchDraftLayout();
+		}
+
+		String url = HttpComponentsUtil.addParameter(
+			themeDisplay.getPathMain() + "/portal/update_language", "p_l_id",
+			previewLayout.getPlid());
+
+		String redirect = HttpComponentsUtil.addParameter(
+			_portal.getLayoutFriendlyURL(previewLayout, themeDisplay),
+			"p_l_mode", "preview");
+
+		redirect = HttpComponentsUtil.addParameter(
+			redirect, "previewCTCollectionId", layout.getCtCollectionId());
+
+		long segmentsExperienceId = ParamUtil.getLong(
+			httpServletRequest, "segmentsExperienceId");
+
+		if (segmentsExperienceId > 0) {
+			redirect = HttpComponentsUtil.addParameter(
+				redirect, "segmentsExperienceId", segmentsExperienceId);
+		}
+
+		url = HttpComponentsUtil.addParameter(url, "redirect", redirect);
+
+		String languageId = LocaleUtil.toLanguageId(displayContext.getLocale());
+
+		url = HttpComponentsUtil.addParameter(url, "languageId", languageId);
+
+		url = HttpComponentsUtil.addParameter(url, "persistState", "false");
+		url = HttpComponentsUtil.addParameter(
+			url, "previewCTCollectionId", layout.getCtCollectionId());
+		url = HttpComponentsUtil.addParameter(
+			url, "showUserLocaleOptionsMessage", "false");
+
+		return StringBundler.concat(
+			"<iframe frameborder=\"0\" onload=\"this.style.height = ",
+			"(this.contentWindow.document.body.scrollHeight+20) + 'px';\" ",
+			"src=\"", url, "\" width=\"100%\"></iframe>");
 	}
 
 	@Override
@@ -164,17 +223,19 @@ public class LayoutCTDisplayRenderer extends BaseCTDisplayRenderer<Layout> {
 			() -> {
 				long styleBookEntryId = layout.getStyleBookEntryId();
 
-				if (styleBookEntryId > 0) {
-					StyleBookEntry styleBookEntry =
-						_styleBookEntryLocalService.fetchStyleBookEntry(
-							layout.getStyleBookEntryId());
-
-					if (styleBookEntry != null) {
-						return styleBookEntry.getName();
-					}
+				if (styleBookEntryId <= 0) {
+					return null;
 				}
 
-				return null;
+				StyleBookEntry styleBookEntry =
+					_styleBookEntryLocalService.fetchStyleBookEntry(
+						layout.getStyleBookEntryId());
+
+				if (styleBookEntry == null) {
+					return null;
+				}
+
+				return styleBookEntry.getName();
 			}
 		).display(
 			"type", layout.getType()

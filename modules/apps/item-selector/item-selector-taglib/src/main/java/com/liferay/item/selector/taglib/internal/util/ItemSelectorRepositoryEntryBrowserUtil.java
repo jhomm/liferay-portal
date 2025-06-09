@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.item.selector.taglib.internal.util;
@@ -20,19 +11,19 @@ import com.liferay.document.library.kernel.util.DLUtil;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.ItemSelectorReturnTypeResolver;
 import com.liferay.item.selector.taglib.ItemSelectorRepositoryEntryBrowserReturnTypeUtil;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.repository.model.Folder;
-import com.liferay.portal.kernel.service.GroupServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.HtmlUtil;
@@ -41,15 +32,15 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Ambrín Chaudhary
@@ -74,24 +65,22 @@ public class ItemSelectorRepositoryEntryBrowserUtil {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		Folder folder = null;
+		Group scopeGroup = themeDisplay.getScopeGroup();
 
-		if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
-			folder = DLAppServiceUtil.getFolder(folderId);
-		}
+		if (scopeGroup.isControlPanel()) {
+			Company company = themeDisplay.getCompany();
 
-		Group group = themeDisplay.getScopeGroup();
-
-		if (folder != null) {
-			group = GroupServiceUtil.getGroup(folder.getGroupId());
+			scopeGroup = company.getGroup();
 		}
 
 		_addPortletBreadcrumbEntry(
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID, httpServletRequest,
-			group.getDescriptiveName(httpServletRequest.getLocale()),
-			EntryURLUtil.getGroupPortletURL(group, liferayPortletRequest));
+			scopeGroup.getDescriptiveName(httpServletRequest.getLocale()),
+			EntryURLUtil.getGroupPortletURL(scopeGroup, liferayPortletRequest));
 
-		if (folder != null) {
+		if (folderId != DLFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
+			Folder folder = DLAppServiceUtil.getFolder(folderId);
+
 			List<Folder> ancestorFolders = folder.getAncestors();
 
 			Collections.reverse(ancestorFolders);

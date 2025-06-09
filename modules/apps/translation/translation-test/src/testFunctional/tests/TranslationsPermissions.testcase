@@ -1,6 +1,7 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Translations Management";
@@ -12,9 +13,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -23,9 +24,9 @@ definition {
 	}
 
 	@description = "This ensures that the user can not translate a web content to an unavailable language."
-	@priority = "4"
-	@refactorneeded
-	test TranslateWCToUnavailableLanguage {
+	@priority = 4
+	@refactordone
+	test CanTranslateWCToUnavailableLanguage {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
 		JSONWebcontent.addWebContent(
@@ -53,13 +54,13 @@ definition {
 		for (var resourceNameIndex : list "com_liferay_journal_web_portlet_JournalPortlet,com.liferay.journal,com.liferay.journal.model.JournalArticle") {
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "VIEW",
-				resourceName = "${resourceNameIndex}",
+				resourceName = ${resourceNameIndex},
 				roleTitle = "Regrole Name");
 		}
 
 		for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_translation_web_internal_portlet_TranslationPortlet",
 				roleTitle = "Regrole Name");
 		}
@@ -67,7 +68,7 @@ definition {
 		for (var resourceNameIndex : list "com.liferay.translation.zh_CN") {
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "TRANSLATE",
-				resourceName = "${resourceNameIndex}",
+				resourceName = ${resourceNameIndex},
 				roleTitle = "Regrole Name");
 		}
 
@@ -83,15 +84,15 @@ definition {
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
-		Translations.gotoTranslate(webContentTitle = "WC WebContent Title");
-
-		Alert.viewInfoMessageSpecific(infoMessage = "You do not have permissions to translate to any of the available languages.");
+		Translations.viewTranslationOptions(
+			noOptions = "true",
+			webContentTitle = "WC WebContent Title");
 	}
 
 	@description = "This ensures that the user can not translate a web content without any languages permissions."
-	@priority = "4"
-	@refactorneeded
-	test TranslateWCWithoutLanguagesPermissions {
+	@priority = 4
+	@refactordone
+	test CanTranslateWCWithoutLanguagesPermissions {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
 		JSONWebcontent.addWebContent(
@@ -110,7 +111,7 @@ definition {
 			requireReset = "false",
 			userEmailAddress = "userea@liferay.com");
 
-		JSONRole.addRegularRole(roleTitle = "Regrole Name");
+		JSONRole.addRegularRole(roleKey = "Regrole Name");
 
 		JSONRole.assignRoleToUser(
 			roleTitle = "Regrole Name",
@@ -118,7 +119,7 @@ definition {
 
 		for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_translation_web_internal_portlet_TranslationPortlet",
 				roleTitle = "Regrole Name");
 		}
@@ -136,7 +137,7 @@ definition {
 		for (var resourceNameIndex : list "com_liferay_journal_web_portlet_JournalPortlet,com.liferay.journal,com.liferay.journal.model.JournalArticle") {
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "VIEW",
-				resourceName = "${resourceNameIndex}",
+				resourceName = ${resourceNameIndex},
 				roleTitle = "Regrole Name");
 		}
 
@@ -146,15 +147,15 @@ definition {
 
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "guest");
 
-		Translations.gotoTranslate(webContentTitle = "WC WebContent Title");
-
-		Alert.viewInfoMessageSpecific(infoMessage = "You do not have permissions to translate to any of the available languages.");
+		Translations.viewTranslationOptions(
+			noOptions = "true",
+			webContentTitle = "WC WebContent Title");
 	}
 
 	@description = "This ensures that the user can translate a Web content to the language she has permissions."
-	@priority = "5"
-	@refactorneeded
-	test TranslateWCWithSpecificLanguagesPermissions {
+	@priority = 4
+	@refactordone
+	test CanTranslateWCWithSpecificLanguagesPermissions {
 		property custom.properties = "jsonws.web.service.paths.excludes=";
 
 		JSONWebcontent.addWebContent(
@@ -182,13 +183,13 @@ definition {
 		for (var resourceNameIndex : list "com_liferay_journal_web_portlet_JournalPortlet,com.liferay.journal,com.liferay.journal.model.JournalArticle") {
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "VIEW",
-				resourceName = "${resourceNameIndex}",
+				resourceName = ${resourceNameIndex},
 				roleTitle = "Regrole Name");
 		}
 
 		for (var resourceActionIndex : list "ACCESS_IN_CONTROL_PANEL,VIEW") {
 			Permissions.definePermissionViaJSONAPI(
-				resourceAction = "${resourceActionIndex}",
+				resourceAction = ${resourceActionIndex},
 				resourceName = "com_liferay_translation_web_internal_portlet_TranslationPortlet",
 				roleTitle = "Regrole Name");
 		}
@@ -196,7 +197,7 @@ definition {
 		for (var resourceNameIndex : list "com.liferay.translation.es_ES,com.liferay.translation.zh_CN") {
 			Permissions.definePermissionViaJSONAPI(
 				resourceAction = "TRANSLATE",
-				resourceName = "${resourceNameIndex}",
+				resourceName = ${resourceNameIndex},
 				roleTitle = "Regrole Name");
 		}
 

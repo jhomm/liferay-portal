@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -23,8 +14,11 @@ taglib uri="http://liferay.com/tld/theme" prefix="liferay-theme" %>
 
 <%@ page import="com.liferay.portal.kernel.language.LanguageUtil" %><%@
 page import="com.liferay.portal.kernel.util.Constants" %><%@
+page import="com.liferay.portal.search.tuning.rankings.constants.ResultRankingsConstants" %><%@
 page import="com.liferay.portal.search.tuning.rankings.web.internal.constants.ResultRankingsPortletKeys" %><%@
 page import="com.liferay.portal.search.tuning.rankings.web.internal.display.context.EditRankingDisplayContext" %>
+
+<%@ page import="java.util.Objects" %>
 
 <liferay-frontend:defineObjects />
 
@@ -37,6 +31,7 @@ EditRankingDisplayContext editRankingDisplayContext = (EditRankingDisplayContext
 
 portletDisplay.setShowBackIcon(true);
 portletDisplay.setURLBack(editRankingDisplayContext.getBackURL());
+portletDisplay.setURLBackTitle(portletDisplay.getPortletDisplayName());
 
 renderResponse.setTitle(LanguageUtil.get(request, "customize-results"));
 %>
@@ -48,7 +43,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "customize-results"));
 	<aui:input name="companyId" type="hidden" value="<%= editRankingDisplayContext.getCompanyId() %>" />
 	<aui:input name="keywords" type="hidden" value="<%= editRankingDisplayContext.getKeywords() %>" />
 	<aui:input name="resultsRankingUid" type="hidden" value="<%= editRankingDisplayContext.getResultsRankingUid() %>" />
-	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Constants.UPDATE %>" />
+	<aui:input name="<%= Constants.CMD %>" type="hidden" value="<%= Objects.equals(editRankingDisplayContext.getStatus(), ResultRankingsConstants.STATUS_NOT_APPLICABLE) ? Constants.DELETE : Constants.UPDATE %>" />
 
 	<div>
 		<div class="loading-animation-container">
@@ -56,7 +51,7 @@ renderResponse.setTitle(LanguageUtil.get(request, "customize-results"));
 		</div>
 
 		<react:component
-			module="js/ResultRankingsApp.es"
+			module="{ResultRankingsApp} from portal-search-tuning-rankings-web"
 			props="<%= editRankingDisplayContext.getData() %>"
 		/>
 	</div>

@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.model.impl;
 
 import com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel;
 import com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRelModel;
-import com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRelSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -37,18 +27,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -78,6 +65,7 @@ public class CommercePriceListOrderTypeRelModelImpl
 	public static final String TABLE_NAME = "CommercePriceListOrderTypeRel";
 
 	public static final Object[][] TABLE_COLUMNS = {
+		{"mvccVersion", Types.BIGINT}, {"ctCollectionId", Types.BIGINT},
 		{"uuid_", Types.VARCHAR}, {"CPriceListOrderTypeRelId", Types.BIGINT},
 		{"companyId", Types.BIGINT}, {"userId", Types.BIGINT},
 		{"userName", Types.VARCHAR}, {"createDate", Types.TIMESTAMP},
@@ -91,6 +79,8 @@ public class CommercePriceListOrderTypeRelModelImpl
 		new HashMap<String, Integer>();
 
 	static {
+		TABLE_COLUMNS_MAP.put("mvccVersion", Types.BIGINT);
+		TABLE_COLUMNS_MAP.put("ctCollectionId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("uuid_", Types.VARCHAR);
 		TABLE_COLUMNS_MAP.put("CPriceListOrderTypeRelId", Types.BIGINT);
 		TABLE_COLUMNS_MAP.put("companyId", Types.BIGINT);
@@ -105,7 +95,7 @@ public class CommercePriceListOrderTypeRelModelImpl
 	}
 
 	public static final String TABLE_SQL_CREATE =
-		"create table CommercePriceListOrderTypeRel (uuid_ VARCHAR(75) null,CPriceListOrderTypeRelId LONG not null primary key,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,commercePriceListId LONG,commerceOrderTypeId LONG,priority INTEGER,lastPublishDate DATE null)";
+		"create table CommercePriceListOrderTypeRel (mvccVersion LONG default 0 not null,ctCollectionId LONG default 0 not null,uuid_ VARCHAR(75) null,CPriceListOrderTypeRelId LONG not null,companyId LONG,userId LONG,userName VARCHAR(75) null,createDate DATE null,modifiedDate DATE null,commercePriceListId LONG,commerceOrderTypeId LONG,priority INTEGER,lastPublishDate DATE null,primary key (CPriceListOrderTypeRelId, ctCollectionId))";
 
 	public static final String TABLE_SQL_DROP =
 		"drop table CommercePriceListOrderTypeRel";
@@ -121,24 +111,6 @@ public class CommercePriceListOrderTypeRelModelImpl
 	public static final String SESSION_FACTORY = "liferaySessionFactory";
 
 	public static final String TX_MANAGER = "liferayTransactionManager";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
@@ -172,67 +144,18 @@ public class CommercePriceListOrderTypeRelModelImpl
 	public static final long PRIORITY_COLUMN_BITMASK = 16L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommercePriceListOrderTypeRel toModel(
-		CommercePriceListOrderTypeRelSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommercePriceListOrderTypeRel model =
-			new CommercePriceListOrderTypeRelImpl();
-
-		model.setUuid(soapModel.getUuid());
-		model.setCommercePriceListOrderTypeRelId(
-			soapModel.getCommercePriceListOrderTypeRelId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setCommercePriceListId(soapModel.getCommercePriceListId());
-		model.setCommerceOrderTypeId(soapModel.getCommerceOrderTypeId());
-		model.setPriority(soapModel.getPriority());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommercePriceListOrderTypeRel> toModels(
-		CommercePriceListOrderTypeRelSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommercePriceListOrderTypeRel> models =
-			new ArrayList<CommercePriceListOrderTypeRel>(soapModels.length);
-
-		for (CommercePriceListOrderTypeRelSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.price.list.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel"));
 
 	public CommercePriceListOrderTypeRelModelImpl() {
 	}
@@ -312,136 +235,168 @@ public class CommercePriceListOrderTypeRelModelImpl
 	public Map<String, Function<CommercePriceListOrderTypeRel, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommercePriceListOrderTypeRel, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommercePriceListOrderTypeRel>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommercePriceListOrderTypeRel.class.getClassLoader(),
-			CommercePriceListOrderTypeRel.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CommercePriceListOrderTypeRel, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CommercePriceListOrderTypeRel> constructor =
-				(Constructor<CommercePriceListOrderTypeRel>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CommercePriceListOrderTypeRel, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<CommercePriceListOrderTypeRel, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
-
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
-	}
-
-	private static final Map
-		<String, Function<CommercePriceListOrderTypeRel, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CommercePriceListOrderTypeRel, Object>>
-			_attributeSetterBiConsumers;
-
-	static {
-		Map<String, Function<CommercePriceListOrderTypeRel, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CommercePriceListOrderTypeRel, Object>>();
-		Map<String, BiConsumer<CommercePriceListOrderTypeRel, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommercePriceListOrderTypeRel, ?>>();
-
-		attributeGetterFunctions.put(
-			"uuid", CommercePriceListOrderTypeRel::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CommercePriceListOrderTypeRel, String>)
-				CommercePriceListOrderTypeRel::setUuid);
-		attributeGetterFunctions.put(
-			"commercePriceListOrderTypeRelId",
-			CommercePriceListOrderTypeRel::getCommercePriceListOrderTypeRelId);
-		attributeSetterBiConsumers.put(
-			"commercePriceListOrderTypeRelId",
-			(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+			attributeGetterFunctions.put(
+				"mvccVersion", CommercePriceListOrderTypeRel::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId",
+				CommercePriceListOrderTypeRel::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"uuid", CommercePriceListOrderTypeRel::getUuid);
+			attributeGetterFunctions.put(
+				"commercePriceListOrderTypeRelId",
 				CommercePriceListOrderTypeRel::
-					setCommercePriceListOrderTypeRelId);
-		attributeGetterFunctions.put(
-			"companyId", CommercePriceListOrderTypeRel::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommercePriceListOrderTypeRel, Long>)
-				CommercePriceListOrderTypeRel::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CommercePriceListOrderTypeRel::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommercePriceListOrderTypeRel, Long>)
-				CommercePriceListOrderTypeRel::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommercePriceListOrderTypeRel::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommercePriceListOrderTypeRel, String>)
-				CommercePriceListOrderTypeRel::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommercePriceListOrderTypeRel::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommercePriceListOrderTypeRel, Date>)
-				CommercePriceListOrderTypeRel::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommercePriceListOrderTypeRel::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommercePriceListOrderTypeRel, Date>)
-				CommercePriceListOrderTypeRel::setModifiedDate);
-		attributeGetterFunctions.put(
-			"commercePriceListId",
-			CommercePriceListOrderTypeRel::getCommercePriceListId);
-		attributeSetterBiConsumers.put(
-			"commercePriceListId",
-			(BiConsumer<CommercePriceListOrderTypeRel, Long>)
-				CommercePriceListOrderTypeRel::setCommercePriceListId);
-		attributeGetterFunctions.put(
-			"commerceOrderTypeId",
-			CommercePriceListOrderTypeRel::getCommerceOrderTypeId);
-		attributeSetterBiConsumers.put(
-			"commerceOrderTypeId",
-			(BiConsumer<CommercePriceListOrderTypeRel, Long>)
-				CommercePriceListOrderTypeRel::setCommerceOrderTypeId);
-		attributeGetterFunctions.put(
-			"priority", CommercePriceListOrderTypeRel::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<CommercePriceListOrderTypeRel, Integer>)
-				CommercePriceListOrderTypeRel::setPriority);
-		attributeGetterFunctions.put(
-			"lastPublishDate",
-			CommercePriceListOrderTypeRel::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<CommercePriceListOrderTypeRel, Date>)
-				CommercePriceListOrderTypeRel::setLastPublishDate);
+					getCommercePriceListOrderTypeRelId);
+			attributeGetterFunctions.put(
+				"companyId", CommercePriceListOrderTypeRel::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommercePriceListOrderTypeRel::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommercePriceListOrderTypeRel::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommercePriceListOrderTypeRel::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommercePriceListOrderTypeRel::getModifiedDate);
+			attributeGetterFunctions.put(
+				"commercePriceListId",
+				CommercePriceListOrderTypeRel::getCommercePriceListId);
+			attributeGetterFunctions.put(
+				"commerceOrderTypeId",
+				CommercePriceListOrderTypeRel::getCommerceOrderTypeId);
+			attributeGetterFunctions.put(
+				"priority", CommercePriceListOrderTypeRel::getPriority);
+			attributeGetterFunctions.put(
+				"lastPublishDate",
+				CommercePriceListOrderTypeRel::getLastPublishDate);
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
+		}
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map
+			<String, BiConsumer<CommercePriceListOrderTypeRel, Object>>
+				_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<CommercePriceListOrderTypeRel, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String,
+						 BiConsumer<CommercePriceListOrderTypeRel, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CommercePriceListOrderTypeRel, String>)
+					CommercePriceListOrderTypeRel::setUuid);
+			attributeSetterBiConsumers.put(
+				"commercePriceListOrderTypeRelId",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::
+						setCommercePriceListOrderTypeRelId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommercePriceListOrderTypeRel, String>)
+					CommercePriceListOrderTypeRel::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommercePriceListOrderTypeRel, Date>)
+					CommercePriceListOrderTypeRel::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommercePriceListOrderTypeRel, Date>)
+					CommercePriceListOrderTypeRel::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"commercePriceListId",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::setCommercePriceListId);
+			attributeSetterBiConsumers.put(
+				"commerceOrderTypeId",
+				(BiConsumer<CommercePriceListOrderTypeRel, Long>)
+					CommercePriceListOrderTypeRel::setCommerceOrderTypeId);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<CommercePriceListOrderTypeRel, Integer>)
+					CommercePriceListOrderTypeRel::setPriority);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CommercePriceListOrderTypeRel, Date>)
+					CommercePriceListOrderTypeRel::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
+	}
+
+	@JSON
+	@Override
+	public long getMvccVersion() {
+		return _mvccVersion;
+	}
+
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_mvccVersion = mvccVersion;
+	}
+
+	@JSON
+	@Override
+	public long getCtCollectionId() {
+		return _ctCollectionId;
+	}
+
+	@Override
+	public void setCtCollectionId(long ctCollectionId) {
+		if (_columnOriginalValues == Collections.EMPTY_MAP) {
+			_setColumnOriginalValues();
+		}
+
+		_ctCollectionId = ctCollectionId;
 	}
 
 	@JSON
@@ -747,6 +702,9 @@ public class CommercePriceListOrderTypeRelModelImpl
 		CommercePriceListOrderTypeRelImpl commercePriceListOrderTypeRelImpl =
 			new CommercePriceListOrderTypeRelImpl();
 
+		commercePriceListOrderTypeRelImpl.setMvccVersion(getMvccVersion());
+		commercePriceListOrderTypeRelImpl.setCtCollectionId(
+			getCtCollectionId());
 		commercePriceListOrderTypeRelImpl.setUuid(getUuid());
 		commercePriceListOrderTypeRelImpl.setCommercePriceListOrderTypeRelId(
 			getCommercePriceListOrderTypeRelId());
@@ -773,6 +731,10 @@ public class CommercePriceListOrderTypeRelModelImpl
 		CommercePriceListOrderTypeRelImpl commercePriceListOrderTypeRelImpl =
 			new CommercePriceListOrderTypeRelImpl();
 
+		commercePriceListOrderTypeRelImpl.setMvccVersion(
+			this.<Long>getColumnOriginalValue("mvccVersion"));
+		commercePriceListOrderTypeRelImpl.setCtCollectionId(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
 		commercePriceListOrderTypeRelImpl.setUuid(
 			this.<String>getColumnOriginalValue("uuid_"));
 		commercePriceListOrderTypeRelImpl.setCommercePriceListOrderTypeRelId(
@@ -856,7 +818,7 @@ public class CommercePriceListOrderTypeRelModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -865,7 +827,7 @@ public class CommercePriceListOrderTypeRelModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -882,6 +844,11 @@ public class CommercePriceListOrderTypeRelModelImpl
 		CommercePriceListOrderTypeRelCacheModel
 			commercePriceListOrderTypeRelCacheModel =
 				new CommercePriceListOrderTypeRelCacheModel();
+
+		commercePriceListOrderTypeRelCacheModel.mvccVersion = getMvccVersion();
+
+		commercePriceListOrderTypeRelCacheModel.ctCollectionId =
+			getCtCollectionId();
 
 		commercePriceListOrderTypeRelCacheModel.uuid = getUuid();
 
@@ -1000,48 +967,19 @@ public class CommercePriceListOrderTypeRelModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommercePriceListOrderTypeRel, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommercePriceListOrderTypeRel, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommercePriceListOrderTypeRel, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommercePriceListOrderTypeRel)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CommercePriceListOrderTypeRel>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommercePriceListOrderTypeRel.class,
+						ModelWrapper.class);
 
 	}
 
+	private long _mvccVersion;
+	private long _ctCollectionId;
 	private String _uuid;
 	private long _commercePriceListOrderTypeRelId;
 	private long _companyId;
@@ -1059,7 +997,8 @@ public class CommercePriceListOrderTypeRelModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommercePriceListOrderTypeRel, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(
@@ -1084,6 +1023,8 @@ public class CommercePriceListOrderTypeRelModelImpl
 	private void _setColumnOriginalValues() {
 		_columnOriginalValues = new HashMap<String, Object>();
 
+		_columnOriginalValues.put("mvccVersion", _mvccVersion);
+		_columnOriginalValues.put("ctCollectionId", _ctCollectionId);
 		_columnOriginalValues.put("uuid_", _uuid);
 		_columnOriginalValues.put(
 			"CPriceListOrderTypeRelId", _commercePriceListOrderTypeRelId);
@@ -1121,27 +1062,31 @@ public class CommercePriceListOrderTypeRelModelImpl
 	static {
 		Map<String, Long> columnBitmasks = new HashMap<>();
 
-		columnBitmasks.put("uuid_", 1L);
+		columnBitmasks.put("mvccVersion", 1L);
 
-		columnBitmasks.put("CPriceListOrderTypeRelId", 2L);
+		columnBitmasks.put("ctCollectionId", 2L);
 
-		columnBitmasks.put("companyId", 4L);
+		columnBitmasks.put("uuid_", 4L);
 
-		columnBitmasks.put("userId", 8L);
+		columnBitmasks.put("CPriceListOrderTypeRelId", 8L);
 
-		columnBitmasks.put("userName", 16L);
+		columnBitmasks.put("companyId", 16L);
 
-		columnBitmasks.put("createDate", 32L);
+		columnBitmasks.put("userId", 32L);
 
-		columnBitmasks.put("modifiedDate", 64L);
+		columnBitmasks.put("userName", 64L);
 
-		columnBitmasks.put("commercePriceListId", 128L);
+		columnBitmasks.put("createDate", 128L);
 
-		columnBitmasks.put("commerceOrderTypeId", 256L);
+		columnBitmasks.put("modifiedDate", 256L);
 
-		columnBitmasks.put("priority", 512L);
+		columnBitmasks.put("commercePriceListId", 512L);
 
-		columnBitmasks.put("lastPublishDate", 1024L);
+		columnBitmasks.put("commerceOrderTypeId", 1024L);
+
+		columnBitmasks.put("priority", 2048L);
+
+		columnBitmasks.put("lastPublishDate", 4096L);
 
 		_columnBitmasks = Collections.unmodifiableMap(columnBitmasks);
 	}

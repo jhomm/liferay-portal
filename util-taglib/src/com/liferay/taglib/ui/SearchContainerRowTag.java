@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -25,14 +16,14 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.ParamAndPropertyAncestorTagImpl;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.BodyTag;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.BodyTag;
 
 /**
  * @author Raymond Augé
@@ -103,6 +94,7 @@ public class SearchContainerRowTag<R>
 		_rowIndex = 0;
 		_resultRow = null;
 
+		_ariaLabel = StringPool.BLANK;
 		_bold = false;
 		_className = null;
 		_cssClass = StringPool.BLANK;
@@ -116,6 +108,7 @@ public class SearchContainerRowTag<R>
 		_rowVar = DEFAULT_ROW_VAR;
 		_stringKey = false;
 		_state = StringPool.BLANK;
+		_tabIndex = StringPool.BLANK;
 
 		return EVAL_PAGE;
 	}
@@ -141,7 +134,11 @@ public class SearchContainerRowTag<R>
 		HttpServletRequest httpServletRequest = getRequest();
 
 		httpServletRequest.setAttribute(
+			"liferay-ui:search-container-row:ariaLabel", _ariaLabel);
+		httpServletRequest.setAttribute(
 			"liferay-ui:search-container-row:cssClass", _cssClass);
+		httpServletRequest.setAttribute(
+			"liferay-ui:search-container-row:tabIndex", _tabIndex);
 
 		if ((_results != null) && !_results.isEmpty()) {
 			processRow();
@@ -150,6 +147,10 @@ public class SearchContainerRowTag<R>
 		}
 
 		return SKIP_BODY;
+	}
+
+	public String getAriaLabel() {
+		return _ariaLabel;
 	}
 
 	public String getClassName() {
@@ -208,6 +209,10 @@ public class SearchContainerRowTag<R>
 		return _state;
 	}
 
+	public String getTabIndex() {
+		return _tabIndex;
+	}
+
 	public boolean isBold() {
 		return _bold;
 	}
@@ -222,6 +227,10 @@ public class SearchContainerRowTag<R>
 
 	public boolean isStringKey() {
 		return _stringKey;
+	}
+
+	public void setAriaLabel(String ariaLabel) {
+		_ariaLabel = ariaLabel;
 	}
 
 	public void setBold(boolean bold) {
@@ -288,6 +297,10 @@ public class SearchContainerRowTag<R>
 		_stringKey = stringKey;
 	}
 
+	public void setTabIndex(String tabIndex) {
+		_tabIndex = tabIndex;
+	}
+
 	protected void processRow() {
 		Object model = _results.get(_rowIndex);
 
@@ -337,22 +350,18 @@ public class SearchContainerRowTag<R>
 					FriendlyURLNormalizerUtil.normalizeWithPeriodsAndSlashes(
 						String.valueOf(rowIdObject));
 			}
-
-			HttpServletRequest httpServletRequest = getRequest();
-
-			httpServletRequest.setAttribute(
-				"liferay-ui:search-container-row:rowIdProperty",
-				_rowIdProperty);
 		}
 
 		_resultRow = new com.liferay.taglib.search.ResultRow(
-			rowId, model, primaryKey, _rowIndex, _bold, _cssClass, _state);
+			rowId, model, primaryKey, _rowIndex, _bold, _ariaLabel, _cssClass,
+			_state, _tabIndex);
 
 		pageContext.setAttribute(_indexVar, _rowIndex);
 		pageContext.setAttribute(_modelVar, model);
 		pageContext.setAttribute(_rowVar, _resultRow);
 	}
 
+	private String _ariaLabel = StringPool.BLANK;
 	private boolean _bold;
 	private String _className;
 	private String _cssClass = StringPool.BLANK;
@@ -373,5 +382,6 @@ public class SearchContainerRowTag<R>
 	private SearchContainer<R> _searchContainer;
 	private String _state = StringPool.BLANK;
 	private boolean _stringKey;
+	private String _tabIndex;
 
 }

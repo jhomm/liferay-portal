@@ -1,32 +1,23 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.wiki.web.internal.trash;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ContainerModel;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.trash.BaseTrashHandler;
+import com.liferay.trash.BaseTrashHandler;
 import com.liferay.wiki.model.WikiNode;
 import com.liferay.wiki.model.WikiPage;
 import com.liferay.wiki.service.WikiNodeLocalServiceUtil;
 import com.liferay.wiki.service.WikiPageLocalServiceUtil;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -56,7 +47,7 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			page = WikiPageLocalServiceUtil.fetchWikiPage(classPK);
@@ -66,7 +57,7 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 			WikiPage parentPage = page.getParentPage();
 
 			while (parentPage != null) {
-				if (parentPage.isInTrashExplicitly()) {
+				if (isInTrashExplicitly(parentPage)) {
 					return WikiPage.class.getName();
 				}
 
@@ -75,7 +66,7 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -92,8 +83,6 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 			long classPK, long containerModelId, int start, int end)
 		throws PortalException {
 
-		List<ContainerModel> containerModels = new ArrayList<>();
-
 		WikiPage page = null;
 
 		String parentTitle = StringPool.BLANK;
@@ -102,14 +91,10 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 			page = WikiPageLocalServiceUtil.getPage(containerModelId);
 
 			if (page == null) {
-				List<WikiPage> pages = WikiPageLocalServiceUtil.getPages(
-					containerModelId, start, end);
-
-				for (WikiPage curPage : pages) {
-					containerModels.add(curPage);
-				}
-
-				return containerModels;
+				return TransformUtil.transform(
+					WikiPageLocalServiceUtil.getPages(
+						containerModelId, start, end),
+					curPage -> curPage);
 			}
 
 			parentTitle = page.getTitle();
@@ -118,14 +103,10 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 			page = WikiPageLocalServiceUtil.getPage(classPK);
 		}
 
-		List<WikiPage> pages = WikiPageLocalServiceUtil.getChildren(
-			page.getNodeId(), true, parentTitle, start, end);
-
-		for (WikiPage curPage : pages) {
-			containerModels.add(curPage);
-		}
-
-		return containerModels;
+		return TransformUtil.transform(
+			WikiPageLocalServiceUtil.getChildren(
+				page.getNodeId(), true, parentTitle, start, end),
+			curPage -> curPage);
 	}
 
 	@Override
@@ -205,6 +186,8 @@ public abstract class BaseWikiTrashHandler extends BaseTrashHandler {
 			userId, page.getNodeId(), page.getTitle(), parentPage.getNodeId(),
 			parentPage.getTitle());
 	}
+
+	protected abstract boolean isInTrashExplicitly(WikiPage page);
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		BaseWikiTrashHandler.class);

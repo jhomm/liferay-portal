@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.dto.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.delivery.client.dto.v1_0;
 import com.liferay.headless.delivery.client.function.UnsafeSupplier;
 import com.liferay.headless.delivery.client.serdes.v1_0.NavigationMenuItemSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -78,6 +69,35 @@ public class NavigationMenuItem implements Cloneable, Serializable {
 
 	protected Creator creator;
 
+	public com.liferay.headless.delivery.client.custom.field.CustomField[]
+		getCustomFields() {
+
+		return customFields;
+	}
+
+	public void setCustomFields(
+		com.liferay.headless.delivery.client.custom.field.CustomField[]
+			customFields) {
+
+		this.customFields = customFields;
+	}
+
+	public void setCustomFields(
+		UnsafeSupplier
+			<com.liferay.headless.delivery.client.custom.field.CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
+
+		try {
+			customFields = customFieldsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected com.liferay.headless.delivery.client.custom.field.CustomField[]
+		customFields;
+
 	public Date getDateCreated() {
 		return dateCreated;
 	}
@@ -120,6 +140,27 @@ public class NavigationMenuItem implements Cloneable, Serializable {
 
 	protected Date dateModified;
 
+	public String getExternalReferenceCode() {
+		return externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(String externalReferenceCode) {
+		this.externalReferenceCode = externalReferenceCode;
+	}
+
+	public void setExternalReferenceCode(
+		UnsafeSupplier<String, Exception> externalReferenceCodeUnsafeSupplier) {
+
+		try {
+			externalReferenceCode = externalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String externalReferenceCode;
+
 	public Long getId() {
 		return id;
 	}
@@ -138,47 +179,6 @@ public class NavigationMenuItem implements Cloneable, Serializable {
 	}
 
 	protected Long id;
-
-	public String getLink() {
-		return link;
-	}
-
-	public void setLink(String link) {
-		this.link = link;
-	}
-
-	public void setLink(UnsafeSupplier<String, Exception> linkUnsafeSupplier) {
-		try {
-			link = linkUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected String link;
-
-	public Map<String, String> getLink_i18n() {
-		return link_i18n;
-	}
-
-	public void setLink_i18n(Map<String, String> link_i18n) {
-		this.link_i18n = link_i18n;
-	}
-
-	public void setLink_i18n(
-		UnsafeSupplier<Map<String, String>, Exception>
-			link_i18nUnsafeSupplier) {
-
-		try {
-			link_i18n = link_i18nUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected Map<String, String> link_i18n;
 
 	public String getName() {
 		return name;
@@ -266,27 +266,6 @@ public class NavigationMenuItem implements Cloneable, Serializable {
 
 	protected Long parentNavigationMenuId;
 
-	public String getSitePageURL() {
-		return sitePageURL;
-	}
-
-	public void setSitePageURL(String sitePageURL) {
-		this.sitePageURL = sitePageURL;
-	}
-
-	public void setSitePageURL(
-		UnsafeSupplier<String, Exception> sitePageURLUnsafeSupplier) {
-
-		try {
-			sitePageURL = sitePageURLUnsafeSupplier.get();
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	protected String sitePageURL;
-
 	public String getType() {
 		return type;
 	}
@@ -306,24 +285,27 @@ public class NavigationMenuItem implements Cloneable, Serializable {
 
 	protected String type;
 
-	public String getUrl() {
-		return url;
+	public Map<String, String> getTypeSettings() {
+		return typeSettings;
 	}
 
-	public void setUrl(String url) {
-		this.url = url;
+	public void setTypeSettings(Map<String, String> typeSettings) {
+		this.typeSettings = typeSettings;
 	}
 
-	public void setUrl(UnsafeSupplier<String, Exception> urlUnsafeSupplier) {
+	public void setTypeSettings(
+		UnsafeSupplier<Map<String, String>, Exception>
+			typeSettingsUnsafeSupplier) {
+
 		try {
-			url = urlUnsafeSupplier.get();
+			typeSettings = typeSettingsUnsafeSupplier.get();
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	protected String url;
+	protected Map<String, String> typeSettings;
 
 	public Boolean getUseCustomName() {
 		return useCustomName;

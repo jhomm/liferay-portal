@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -23,7 +14,6 @@ import com.liferay.portal.kernel.model.CacheModel;
 import com.liferay.portal.kernel.model.ModelWrapper;
 import com.liferay.portal.kernel.model.PortletPreferences;
 import com.liferay.portal.kernel.model.PortletPreferencesModel;
-import com.liferay.portal.kernel.model.PortletPreferencesSoap;
 import com.liferay.portal.kernel.model.impl.BaseModelImpl;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -32,18 +22,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -165,58 +152,6 @@ public class PortletPreferencesModelImpl
 	@Deprecated
 	public static final long PORTLETPREFERENCESID_COLUMN_BITMASK = 32L;
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static PortletPreferences toModel(PortletPreferencesSoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		PortletPreferences model = new PortletPreferencesImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setCtCollectionId(soapModel.getCtCollectionId());
-		model.setPortletPreferencesId(soapModel.getPortletPreferencesId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setOwnerId(soapModel.getOwnerId());
-		model.setOwnerType(soapModel.getOwnerType());
-		model.setPlid(soapModel.getPlid());
-		model.setPortletId(soapModel.getPortletId());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<PortletPreferences> toModels(
-		PortletPreferencesSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<PortletPreferences> models = new ArrayList<PortletPreferences>(
-			soapModels.length);
-
-		for (PortletPreferencesSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
 		com.liferay.portal.util.PropsUtil.get(
 			"lock.expiration.time.com.liferay.portal.kernel.model.PortletPreferences"));
@@ -297,108 +232,97 @@ public class PortletPreferencesModelImpl
 	public Map<String, Function<PortletPreferences, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<PortletPreferences, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, PortletPreferences>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			PortletPreferences.class.getClassLoader(), PortletPreferences.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<PortletPreferences, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<PortletPreferences> constructor =
-				(Constructor<PortletPreferences>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<PortletPreferences, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<PortletPreferences, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", PortletPreferences::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", PortletPreferences::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"portletPreferencesId",
+				PortletPreferences::getPortletPreferencesId);
+			attributeGetterFunctions.put(
+				"companyId", PortletPreferences::getCompanyId);
+			attributeGetterFunctions.put(
+				"ownerId", PortletPreferences::getOwnerId);
+			attributeGetterFunctions.put(
+				"ownerType", PortletPreferences::getOwnerType);
+			attributeGetterFunctions.put("plid", PortletPreferences::getPlid);
+			attributeGetterFunctions.put(
+				"portletId", PortletPreferences::getPortletId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<PortletPreferences, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<PortletPreferences, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<PortletPreferences, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<PortletPreferences, Object>>();
-		Map<String, BiConsumer<PortletPreferences, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<PortletPreferences, ?>>();
+		private static final Map<String, BiConsumer<PortletPreferences, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", PortletPreferences::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<PortletPreferences, Long>)
-				PortletPreferences::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", PortletPreferences::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<PortletPreferences, Long>)
-				PortletPreferences::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"portletPreferencesId",
-			PortletPreferences::getPortletPreferencesId);
-		attributeSetterBiConsumers.put(
-			"portletPreferencesId",
-			(BiConsumer<PortletPreferences, Long>)
-				PortletPreferences::setPortletPreferencesId);
-		attributeGetterFunctions.put(
-			"companyId", PortletPreferences::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<PortletPreferences, Long>)
-				PortletPreferences::setCompanyId);
-		attributeGetterFunctions.put("ownerId", PortletPreferences::getOwnerId);
-		attributeSetterBiConsumers.put(
-			"ownerId",
-			(BiConsumer<PortletPreferences, Long>)
-				PortletPreferences::setOwnerId);
-		attributeGetterFunctions.put(
-			"ownerType", PortletPreferences::getOwnerType);
-		attributeSetterBiConsumers.put(
-			"ownerType",
-			(BiConsumer<PortletPreferences, Integer>)
-				PortletPreferences::setOwnerType);
-		attributeGetterFunctions.put("plid", PortletPreferences::getPlid);
-		attributeSetterBiConsumers.put(
-			"plid",
-			(BiConsumer<PortletPreferences, Long>)PortletPreferences::setPlid);
-		attributeGetterFunctions.put(
-			"portletId", PortletPreferences::getPortletId);
-		attributeSetterBiConsumers.put(
-			"portletId",
-			(BiConsumer<PortletPreferences, String>)
-				PortletPreferences::setPortletId);
+		static {
+			Map<String, BiConsumer<PortletPreferences, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<PortletPreferences, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<PortletPreferences, Long>)
+					PortletPreferences::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<PortletPreferences, Long>)
+					PortletPreferences::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"portletPreferencesId",
+				(BiConsumer<PortletPreferences, Long>)
+					PortletPreferences::setPortletPreferencesId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<PortletPreferences, Long>)
+					PortletPreferences::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"ownerId",
+				(BiConsumer<PortletPreferences, Long>)
+					PortletPreferences::setOwnerId);
+			attributeSetterBiConsumers.put(
+				"ownerType",
+				(BiConsumer<PortletPreferences, Integer>)
+					PortletPreferences::setOwnerType);
+			attributeSetterBiConsumers.put(
+				"plid",
+				(BiConsumer<PortletPreferences, Long>)
+					PortletPreferences::setPlid);
+			attributeSetterBiConsumers.put(
+				"portletId",
+				(BiConsumer<PortletPreferences, String>)
+					PortletPreferences::setPortletId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -819,41 +743,12 @@ public class PortletPreferencesModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<PortletPreferences, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<PortletPreferences, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<PortletPreferences, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((PortletPreferences)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, PortletPreferences>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					PortletPreferences.class, ModelWrapper.class);
 
 	}
 
@@ -868,7 +763,8 @@ public class PortletPreferencesModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<PortletPreferences, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

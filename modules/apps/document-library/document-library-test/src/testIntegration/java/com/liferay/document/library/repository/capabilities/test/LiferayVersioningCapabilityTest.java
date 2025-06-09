@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.capabilities.test;
@@ -19,8 +10,12 @@ import com.liferay.document.library.kernel.model.DLFolderConstants;
 import com.liferay.document.library.kernel.model.DLVersionNumberIncrease;
 import com.liferay.document.library.kernel.service.DLAppLocalServiceUtil;
 import com.liferay.document.library.kernel.service.DLAppServiceUtil;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalServiceUtil;
+import com.liferay.document.library.kernel.util.comparator.FileVersionVersionComparator;
+import com.liferay.document.library.test.util.DLAppTestUtil;
 import com.liferay.document.library.versioning.VersionPurger;
 import com.liferay.petra.function.UnsafeRunnable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.test.util.ConfigurationTemporarySwapper;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
@@ -35,13 +30,17 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.ContentTypes;
+import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import java.io.Serializable;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.List;
 
@@ -97,6 +96,93 @@ public class LiferayVersioningCapabilityTest {
 					fileEntry.getFileVersionsCount(
 						WorkflowConstants.STATUS_ANY));
 			});
+	}
+
+	@Test
+	public void testGetFileEntryVersionsByRange() throws Exception {
+		int numberOfVersions = 2;
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		List<FileVersion> expectedDLFileVersions = new ArrayList<>();
+
+		FileEntry fileEntry = DLAppTestUtil.addFileEntryWithWorkflow(
+			TestPropsValues.getUserId(), _group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString() + ".txt",
+			RandomTestUtil.randomString(), true, serviceContext);
+
+		for (int i = 0; i < numberOfVersions; i++) {
+			fileEntry = _generateNewVersion(fileEntry, serviceContext);
+
+			expectedDLFileVersions.add(fileEntry.getFileVersion());
+		}
+
+		List<FileVersion> actualDLFileVersions = fileEntry.getFileVersions(
+			WorkflowConstants.STATUS_ANY, 0, numberOfVersions);
+
+		Assert.assertEquals(
+			actualDLFileVersions.toString(), numberOfVersions,
+			actualDLFileVersions.size());
+
+		Collections.sort(
+			expectedDLFileVersions, new FileVersionVersionComparator());
+
+		Assert.assertEquals(expectedDLFileVersions, actualDLFileVersions);
+	}
+
+	@Test
+	public void testGetFileEntryVersionsByRangeAndStatus() throws Exception {
+		int numberOfExtraApprovedVersions = 2;
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		List<FileVersion> expectedDLFileVersions = new ArrayList<>();
+
+		FileEntry fileEntry = DLAppTestUtil.addFileEntryWithWorkflow(
+			TestPropsValues.getUserId(), _group.getGroupId(),
+			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
+			RandomTestUtil.randomString() + ".txt",
+			RandomTestUtil.randomString(), true, serviceContext);
+
+		for (int i = 0; i < numberOfExtraApprovedVersions; i++) {
+			fileEntry = DLAppServiceUtil.updateFileEntry(
+				fileEntry.getFileEntryId(), RandomTestUtil.randomString(), null,
+				RandomTestUtil.randomString(), StringPool.BLANK,
+				StringPool.BLANK, StringPool.BLANK,
+				DLVersionNumberIncrease.MINOR, null, 0,
+				fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+				fileEntry.getReviewDate(), serviceContext);
+
+			expectedDLFileVersions.add(fileEntry.getFileVersion());
+		}
+
+		fileEntry = DLAppServiceUtil.updateFileEntry(
+			fileEntry.getFileEntryId(), RandomTestUtil.randomString(), null,
+			RandomTestUtil.randomString(), StringPool.BLANK, StringPool.BLANK,
+			StringPool.BLANK, DLVersionNumberIncrease.MINOR, null, 0,
+			fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+			fileEntry.getReviewDate(), serviceContext);
+
+		fileEntry = _updateStatus(
+			fileEntry, WorkflowConstants.STATUS_DRAFT, serviceContext);
+
+		List<FileVersion> actualDLFileVersions = fileEntry.getFileVersions(
+			WorkflowConstants.STATUS_APPROVED, 0,
+			numberOfExtraApprovedVersions);
+
+		Assert.assertEquals(
+			actualDLFileVersions.toString(), numberOfExtraApprovedVersions,
+			actualDLFileVersions.size());
+
+		Collections.sort(
+			expectedDLFileVersions, new FileVersionVersionComparator());
+
+		Assert.assertEquals(expectedDLFileVersions, actualDLFileVersions);
 	}
 
 	@Test
@@ -249,7 +335,8 @@ public class LiferayVersioningCapabilityTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
 	}
 
 	private FileEntry _generateNewVersion(
@@ -258,11 +345,27 @@ public class LiferayVersioningCapabilityTest {
 
 		return DLAppServiceUtil.updateFileEntry(
 			fileEntry.getFileEntryId(), fileEntry.getFileName(),
-			fileEntry.getMimeType(), fileEntry.getTitle(),
+			fileEntry.getMimeType(), fileEntry.getTitle(), StringPool.BLANK,
 			fileEntry.getDescription(), RandomTestUtil.randomString(),
 			DLVersionNumberIncrease.MINOR, TestDataConstants.TEST_BYTE_ARRAY,
-			fileEntry.getExpirationDate(), fileEntry.getReviewDate(),
-			serviceContext);
+			fileEntry.getDisplayDate(), fileEntry.getExpirationDate(),
+			fileEntry.getReviewDate(), serviceContext);
+	}
+
+	private FileEntry _updateStatus(
+			FileEntry fileEntry, int status, ServiceContext serviceContext)
+		throws Exception {
+
+		FileVersion fileVersion = fileEntry.getFileVersion();
+
+		DLFileEntryLocalServiceUtil.updateStatus(
+			TestPropsValues.getUserId(), fileVersion.getFileVersionId(), status,
+			serviceContext,
+			HashMapBuilder.<String, Serializable>put(
+				WorkflowConstants.CONTEXT_URL, "http://localhost"
+			).build());
+
+		return DLAppLocalServiceUtil.getFileEntry(fileEntry.getFileEntryId());
 	}
 
 	private void _withMaximumNumberOfVersionsConfigured(

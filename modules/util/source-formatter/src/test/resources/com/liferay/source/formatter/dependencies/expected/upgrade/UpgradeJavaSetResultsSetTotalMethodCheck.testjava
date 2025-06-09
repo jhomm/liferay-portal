@@ -1,0 +1,34 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.source.formatter.dependencies.upgrade;
+
+public class UpgradeJavaSetResultsSetTotalMethodCheck {
+
+	public SearchContainer<User> setResults(List<User> results) {
+		SearchContainer<Entry> searchContainer = new SearchContainer();
+
+		searchContainer.setResultsAndTotal(results);
+
+		return searchContainer;
+	}
+
+	public SearchContainer<User> setTotal(int total) {
+		SearchContainer<Entry> searchContainer = new SearchContainer();
+
+		searchContainer.setResultsAndTotal(searchContainer::getResults, total);
+
+		return searchContainer;
+	}
+
+	public SearchContainer<User> setResultsAndTotal(List<User> results, int total) {
+		SearchContainer<Entry> searchContainer = new SearchContainer();
+
+		searchContainer.setResultsAndTotal(() -> results, total);
+
+		return searchContainer;
+	}
+
+}

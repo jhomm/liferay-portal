@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.search.request.body.contributor;
@@ -25,9 +16,10 @@ import com.liferay.portal.search.rescore.Rescore.ScoreMode;
 import com.liferay.portal.search.rescore.RescoreBuilder;
 import com.liferay.portal.search.rescore.RescoreBuilderFactory;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
+import com.liferay.search.experiences.blueprint.exception.InvalidQueryEntryException;
 import com.liferay.search.experiences.internal.blueprint.condition.SXPConditionEvaluator;
-import com.liferay.search.experiences.internal.blueprint.exception.InvalidQueryEntryException;
 import com.liferay.search.experiences.internal.blueprint.parameter.SXPParameterData;
+import com.liferay.search.experiences.internal.blueprint.property.PropertyValidator;
 import com.liferay.search.experiences.internal.blueprint.query.QueryConverter;
 import com.liferay.search.experiences.rest.dto.v1_0.Clause;
 import com.liferay.search.experiences.rest.dto.v1_0.Condition;
@@ -35,7 +27,6 @@ import com.liferay.search.experiences.rest.dto.v1_0.Configuration;
 import com.liferay.search.experiences.rest.dto.v1_0.QueryConfiguration;
 import com.liferay.search.experiences.rest.dto.v1_0.QueryEntry;
 import com.liferay.search.experiences.rest.dto.v1_0.Rescore;
-import com.liferay.search.experiences.rest.dto.v1_0.SXPBlueprint;
 
 import java.beans.ExceptionListener;
 
@@ -60,10 +51,8 @@ public class QuerySXPSearchRequestBodyContributor
 
 	@Override
 	public void contribute(
-		SearchRequestBuilder searchRequestBuilder, SXPBlueprint sxpBlueprint,
+		Configuration configuration, SearchRequestBuilder searchRequestBuilder,
 		SXPParameterData sxpParameterData) {
-
-		Configuration configuration = sxpBlueprint.getConfiguration();
 
 		QueryConfiguration queryConfiguration =
 			configuration.getQueryConfiguration();
@@ -97,16 +86,25 @@ public class QuerySXPSearchRequestBodyContributor
 	}
 
 	private boolean _evaluate(
-		Condition condition, SXPParameterData sxpParameterData) {
+		Condition condition, RuntimeException runtimeException,
+		SXPParameterData sxpParameterData) {
 
 		if (condition == null) {
 			return true;
 		}
 
-		SXPConditionEvaluator sxpConditionEvaluator = new SXPConditionEvaluator(
-			sxpParameterData);
+		try {
+			SXPConditionEvaluator sxpConditionEvaluator =
+				new SXPConditionEvaluator(sxpParameterData);
 
-		return sxpConditionEvaluator.evaluate(condition);
+			return sxpConditionEvaluator.evaluate(
+				PropertyValidator.validate(condition));
+		}
+		catch (Exception exception) {
+			runtimeException.addSuppressed(exception);
+
+			throw runtimeException;
+		}
 	}
 
 	private <X, Y> void _process(
@@ -151,14 +149,19 @@ public class QuerySXPSearchRequestBodyContributor
 		SearchRequestBuilder searchRequestBuilder,
 		SXPParameterData sxpParameterData) {
 
-		if (!GetterUtil.getBoolean(queryEntry.getEnabled(), true) ||
-			!_evaluate(queryEntry.getCondition(), sxpParameterData)) {
-
+		if (!GetterUtil.getBoolean(queryEntry.getEnabled(), true)) {
 			return;
 		}
 
 		InvalidQueryEntryException invalidQueryEntryException =
 			InvalidQueryEntryException.at(index);
+
+		if (!_evaluate(
+				queryEntry.getCondition(), invalidQueryEntryException,
+				sxpParameterData)) {
+
+			return;
+		}
 
 		ExceptionListener exceptionListener =
 			invalidQueryEntryException::addSuppressed;
@@ -202,6 +205,8 @@ public class QuerySXPSearchRequestBodyContributor
 			clause.getParent()
 		).query(
 			_queryConverter.toQuery((JSONObject)clause.getQuery())
+		).rootClause(
+			true
 		).type(
 			clause.getType()
 		).value(
@@ -222,11 +227,11 @@ public class QuerySXPSearchRequestBodyContributor
 		}
 
 		return rescoreBuilder.queryWeight(
-			rescore.getQueryWeight()
+			GetterUtil.getFloat(rescore.getQueryWeight())
 		).rescoreQueryWeight(
-			rescore.getRescoreQueryWeight()
+			GetterUtil.getFloat(rescore.getRescoreQueryWeight())
 		).windowSize(
-			rescore.getWindowSize()
+			GetterUtil.getInteger(rescore.getWindowSize())
 		).build();
 	}
 

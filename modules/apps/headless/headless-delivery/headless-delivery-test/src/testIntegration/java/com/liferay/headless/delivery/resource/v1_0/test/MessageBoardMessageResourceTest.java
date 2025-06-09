@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.resource.v1_0.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.delivery.client.dto.v1_0.MessageBoardMessage;
+import com.liferay.headless.delivery.client.pagination.Page;
+import com.liferay.headless.delivery.client.pagination.Pagination;
 import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBMessageLocalServiceUtil;
@@ -28,6 +21,10 @@ import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +44,86 @@ public class MessageBoardMessageResourceTest
 		ServiceContext serviceContext = new ServiceContext();
 
 		serviceContext.setScopeGroupId(testGroup.getGroupId());
+	}
+
+	@Override
+	@Test
+	public void testDeleteMessageBoardMessageMyRating() throws Exception {
+		super.testDeleteMessageBoardMessageMyRating();
+
+		MessageBoardMessage messageBoardMessage =
+			testDeleteMessageBoardMessageMyRating_addMessageBoardMessage();
+
+		assertHttpResponseStatusCode(
+			204,
+			messageBoardMessageResource.
+				deleteMessageBoardMessageMyRatingHttpResponse(
+					messageBoardMessage.getId()));
+		assertHttpResponseStatusCode(
+			404,
+			messageBoardMessageResource.
+				deleteMessageBoardMessageMyRatingHttpResponse(
+					messageBoardMessage.getId()));
+
+		MessageBoardMessage irrelevantMessageBoardMessage =
+			randomIrrelevantMessageBoardMessage();
+
+		assertHttpResponseStatusCode(
+			404,
+			messageBoardMessageResource.
+				deleteMessageBoardMessageMyRatingHttpResponse(
+					irrelevantMessageBoardMessage.getId()));
+	}
+
+	@Override
+	@Test
+	public void testGetMessageBoardMessageMessageBoardMessagesPage()
+		throws Exception {
+
+		super.testGetMessageBoardMessageMessageBoardMessagesPage();
+
+		// Message board messages in a tree hierarchy
+
+		Long parentMessageBoardMessageId =
+			testGetMessageBoardMessageMessageBoardMessagesPage_getParentMessageBoardMessageId();
+
+		MessageBoardMessage messageBoardMessage1 =
+			testGetMessageBoardMessageMessageBoardMessagesPage_addMessageBoardMessage(
+				parentMessageBoardMessageId, randomMessageBoardMessage());
+
+		MessageBoardMessage messageBoardMessage2 =
+			testGetMessageBoardMessageMessageBoardMessagesPage_addMessageBoardMessage(
+				messageBoardMessage1.getId(), randomMessageBoardMessage());
+
+		Boolean flatten = false;
+
+		Page<MessageBoardMessage> page =
+			messageBoardMessageResource.
+				getMessageBoardMessageMessageBoardMessagesPage(
+					parentMessageBoardMessageId, flatten, null, null, null,
+					Pagination.of(1, 10), null);
+
+		Assert.assertEquals(1, page.getTotalCount());
+
+		assertEqualsIgnoringOrder(
+			Arrays.asList(messageBoardMessage1),
+			(List<MessageBoardMessage>)page.getItems());
+		assertValid(page);
+
+		flatten = true;
+
+		page =
+			messageBoardMessageResource.
+				getMessageBoardMessageMessageBoardMessagesPage(
+					parentMessageBoardMessageId, flatten, null, null, null,
+					Pagination.of(1, 10), null);
+
+		Assert.assertEquals(2, page.getTotalCount());
+
+		assertEqualsIgnoringOrder(
+			Arrays.asList(messageBoardMessage1, messageBoardMessage2),
+			(List<MessageBoardMessage>)page.getItems());
+		assertValid(page);
 	}
 
 	@Test
@@ -81,8 +158,10 @@ public class MessageBoardMessageResourceTest
 	@Override
 	protected String[] getIgnoredEntityFieldNames() {
 		return new String[] {
-			"creatorId", "messageBoardSectionId", "messageBoardThreadId",
-			"parentMessageBoardMessageId", "ratingValue"
+			"childMessagesCount", "creatorId", "dateCreated", "dateModified",
+			"lastPostDate", "messageBoardSectionId", "messageBoardThreadId",
+			"modified", "parentMessageBoardMessageId", "ratingsStatTotalScore",
+			"ratingValue", "viewCount"
 		};
 	}
 
@@ -109,7 +188,12 @@ public class MessageBoardMessageResourceTest
 			testDeleteMessageBoardMessageMyRating_addMessageBoardMessage()
 		throws Exception {
 
-		return _addMessageBoardMessage();
+		MessageBoardMessage messageBoardMessage = _addMessageBoardMessage();
+
+		messageBoardMessageResource.putMessageBoardMessageMyRating(
+			messageBoardMessage.getId(), randomRating());
+
+		return messageBoardMessage;
 	}
 
 	@Override
@@ -188,6 +272,30 @@ public class MessageBoardMessageResourceTest
 
 	@Override
 	protected MessageBoardMessage
+			testGetSiteUserMessageBoardMessagesActivityPage_addMessageBoardMessage(
+				Long siteId, Long userId,
+				MessageBoardMessage messageBoardMessage)
+		throws Exception {
+
+		return _addMessageBoardMessage(messageBoardMessage, siteId);
+	}
+
+	@Override
+	protected Long testGetSiteUserMessageBoardMessagesActivityPage_getSiteId()
+		throws Exception {
+
+		return TestPropsValues.getGroupId();
+	}
+
+	@Override
+	protected Long testGetSiteUserMessageBoardMessagesActivityPage_getUserId()
+		throws Exception {
+
+		return UserLocalServiceUtil.getDefaultUserId(testGroup.getCompanyId());
+	}
+
+	@Override
+	protected MessageBoardMessage
 			testGraphQLMessageBoardMessage_addMessageBoardMessage()
 		throws Exception {
 
@@ -218,7 +326,15 @@ public class MessageBoardMessageResourceTest
 
 	@Override
 	protected MessageBoardMessage
-			testPutMessageBoardMessagePermission_addMessageBoardMessage()
+			testPutMessageBoardMessageMarkAsAnswer_addMessageBoardMessage()
+		throws Exception {
+
+		return _addMessageBoardMessage();
+	}
+
+	@Override
+	protected MessageBoardMessage
+			testPutMessageBoardMessagePermissionsPage_addMessageBoardMessage()
 		throws Exception {
 
 		return _addMessageBoardMessage();
@@ -227,6 +343,14 @@ public class MessageBoardMessageResourceTest
 	@Override
 	protected MessageBoardMessage
 			testPutMessageBoardMessageSubscribe_addMessageBoardMessage()
+		throws Exception {
+
+		return _addMessageBoardMessage();
+	}
+
+	@Override
+	protected MessageBoardMessage
+			testPutMessageBoardMessageUnmarkAsAnswer_addMessageBoardMessage()
 		throws Exception {
 
 		return _addMessageBoardMessage();
@@ -265,7 +389,7 @@ public class MessageBoardMessageResourceTest
 
 	@Override
 	protected MessageBoardMessage
-			testPutSiteMessageBoardMessagePermission_addMessageBoardMessage()
+			testPutSiteMessageBoardMessagePermissionsPage_addMessageBoardMessage()
 		throws Exception {
 
 		return _addMessageBoardMessage();
@@ -276,7 +400,7 @@ public class MessageBoardMessageResourceTest
 
 		MBMessage mbMessage = MBTestUtil.addMessage(
 			siteId,
-			UserLocalServiceUtil.getDefaultUserId(testGroup.getCompanyId()),
+			UserLocalServiceUtil.getGuestUserId(testGroup.getCompanyId()),
 			subject, body);
 
 		_mbThread = mbMessage.getThread();

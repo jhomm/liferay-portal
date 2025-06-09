@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service.persistence;
@@ -667,7 +658,7 @@ public interface DLFileEntryTypePersistence
 	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DLFileEntryTypeModelImpl</code>.
 	 * </p>
 	 *
-	 * @param groupId the group ID
+	 * @param groupIds the group IDs
 	 * @param start the lower bound of the range of document library file entry types
 	 * @param end the upper bound of the range of document library file entry types (not inclusive)
 	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
@@ -718,6 +709,149 @@ public interface DLFileEntryTypePersistence
 	 * @return the number of matching document library file entry types that the user has permission to view
 	 */
 	public int filterCountByGroupId(long[] groupIds);
+
+	/**
+	 * Returns all the document library file entry types where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @return the matching document library file entry types
+	 */
+	public java.util.List<DLFileEntryType> findByCompanyId(long companyId);
+
+	/**
+	 * Returns a range of all the document library file entry types where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DLFileEntryTypeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of document library file entry types
+	 * @param end the upper bound of the range of document library file entry types (not inclusive)
+	 * @return the range of matching document library file entry types
+	 */
+	public java.util.List<DLFileEntryType> findByCompanyId(
+		long companyId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the document library file entry types where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DLFileEntryTypeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of document library file entry types
+	 * @param end the upper bound of the range of document library file entry types (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching document library file entry types
+	 */
+	public java.util.List<DLFileEntryType> findByCompanyId(
+		long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the document library file entry types where companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>DLFileEntryTypeModelImpl</code>.
+	 * </p>
+	 *
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of document library file entry types
+	 * @param end the upper bound of the range of document library file entry types (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching document library file entry types
+	 */
+	public java.util.List<DLFileEntryType> findByCompanyId(
+		long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first document library file entry type in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching document library file entry type
+	 * @throws NoSuchFileEntryTypeException if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType findByCompanyId_First(
+			long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+				orderByComparator)
+		throws NoSuchFileEntryTypeException;
+
+	/**
+	 * Returns the first document library file entry type in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching document library file entry type, or <code>null</code> if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType fetchByCompanyId_First(
+		long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+			orderByComparator);
+
+	/**
+	 * Returns the last document library file entry type in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching document library file entry type
+	 * @throws NoSuchFileEntryTypeException if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType findByCompanyId_Last(
+			long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+				orderByComparator)
+		throws NoSuchFileEntryTypeException;
+
+	/**
+	 * Returns the last document library file entry type in the ordered set where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching document library file entry type, or <code>null</code> if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType fetchByCompanyId_Last(
+		long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+			orderByComparator);
+
+	/**
+	 * Returns the document library file entry types before and after the current document library file entry type in the ordered set where companyId = &#63;.
+	 *
+	 * @param fileEntryTypeId the primary key of the current document library file entry type
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next document library file entry type
+	 * @throws NoSuchFileEntryTypeException if a document library file entry type with the primary key could not be found
+	 */
+	public DLFileEntryType[] findByCompanyId_PrevAndNext(
+			long fileEntryTypeId, long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<DLFileEntryType>
+				orderByComparator)
+		throws NoSuchFileEntryTypeException;
+
+	/**
+	 * Removes all the document library file entry types where companyId = &#63; from the database.
+	 *
+	 * @param companyId the company ID
+	 */
+	public void removeByCompanyId(long companyId);
+
+	/**
+	 * Returns the number of document library file entry types where companyId = &#63;.
+	 *
+	 * @param companyId the company ID
+	 * @return the number of matching document library file entry types
+	 */
+	public int countByCompanyId(long companyId);
 
 	/**
 	 * Returns the document library file entry type where groupId = &#63; and dataDefinitionId = &#63; or throws a <code>NoSuchFileEntryTypeException</code> if it could not be found.
@@ -818,6 +952,59 @@ public interface DLFileEntryTypePersistence
 	 * @return the number of matching document library file entry types
 	 */
 	public int countByG_F(long groupId, String fileEntryTypeKey);
+
+	/**
+	 * Returns the document library file entry type where externalReferenceCode = &#63; and groupId = &#63; or throws a <code>NoSuchFileEntryTypeException</code> if it could not be found.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching document library file entry type
+	 * @throws NoSuchFileEntryTypeException if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType findByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchFileEntryTypeException;
+
+	/**
+	 * Returns the document library file entry type where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the matching document library file entry type, or <code>null</code> if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType fetchByERC_G(
+		String externalReferenceCode, long groupId);
+
+	/**
+	 * Returns the document library file entry type where externalReferenceCode = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching document library file entry type, or <code>null</code> if a matching document library file entry type could not be found
+	 */
+	public DLFileEntryType fetchByERC_G(
+		String externalReferenceCode, long groupId, boolean useFinderCache);
+
+	/**
+	 * Removes the document library file entry type where externalReferenceCode = &#63; and groupId = &#63; from the database.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the document library file entry type that was removed
+	 */
+	public DLFileEntryType removeByERC_G(
+			String externalReferenceCode, long groupId)
+		throws NoSuchFileEntryTypeException;
+
+	/**
+	 * Returns the number of document library file entry types where externalReferenceCode = &#63; and groupId = &#63;.
+	 *
+	 * @param externalReferenceCode the external reference code
+	 * @param groupId the group ID
+	 * @return the number of matching document library file entry types
+	 */
+	public int countByERC_G(String externalReferenceCode, long groupId);
 
 	/**
 	 * Caches the document library file entry type in the entity cache if it is enabled.
@@ -1021,16 +1208,18 @@ public interface DLFileEntryTypePersistence
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolderPK the primary key of the document library folder
+	 * @return <code>true</code> if an association between the document library file entry type and the document library folder was added; <code>false</code> if they were already associated
 	 */
-	public void addDLFolder(long pk, long dlFolderPK);
+	public boolean addDLFolder(long pk, long dlFolderPK);
 
 	/**
 	 * Adds an association between the document library file entry type and the document library folder. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolder the document library folder
+	 * @return <code>true</code> if an association between the document library file entry type and the document library folder was added; <code>false</code> if they were already associated
 	 */
-	public void addDLFolder(
+	public boolean addDLFolder(
 		long pk, com.liferay.document.library.kernel.model.DLFolder dlFolder);
 
 	/**
@@ -1038,16 +1227,18 @@ public interface DLFileEntryTypePersistence
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolderPKs the primary keys of the document library folders
+	 * @return <code>true</code> if at least one association between the document library file entry type and the document library folders was added; <code>false</code> if they were all already associated
 	 */
-	public void addDLFolders(long pk, long[] dlFolderPKs);
+	public boolean addDLFolders(long pk, long[] dlFolderPKs);
 
 	/**
 	 * Adds an association between the document library file entry type and the document library folders. Also notifies the appropriate model listeners and clears the mapping table finder cache.
 	 *
 	 * @param pk the primary key of the document library file entry type
 	 * @param dlFolders the document library folders
+	 * @return <code>true</code> if at least one association between the document library file entry type and the document library folders was added; <code>false</code> if they were all already associated
 	 */
-	public void addDLFolders(
+	public boolean addDLFolders(
 		long pk,
 		java.util.List<com.liferay.document.library.kernel.model.DLFolder>
 			dlFolders);

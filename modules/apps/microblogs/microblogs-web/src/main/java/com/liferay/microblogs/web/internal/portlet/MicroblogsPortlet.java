@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.microblogs.web.internal.portlet;
@@ -28,12 +19,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.Portlet;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.Portlet;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -42,7 +33,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adolfo Pérez
  */
 @Component(
-	immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.css-class-wrapper=microblogs-portlet",
@@ -50,15 +40,16 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.footer-portlet-javascript=/microblogs/js/main.js",
 		"com.liferay.portlet.header-portlet-css=/microblogs/css/main.css",
 		"com.liferay.portlet.icon=/microblogs/icons/microblogs.png",
-		"javax.portlet.display-name=Microblogs",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/microblogs/view.jsp",
-		"javax.portlet.name=" + MicroblogsPortletKeys.MICROBLOGS,
-		"javax.portlet.portlet-info.keywords=Microblogs",
-		"javax.portlet.portlet-info.short-title=Microblogs",
-		"javax.portlet.portlet-info.title=Microblogs",
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator,guest,power-user,user"
+		"jakarta.portlet.display-name=Microblogs",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/microblogs/view.jsp",
+		"jakarta.portlet.name=" + MicroblogsPortletKeys.MICROBLOGS,
+		"jakarta.portlet.portlet-info.keywords=Microblogs",
+		"jakarta.portlet.portlet-info.short-title=Microblogs",
+		"jakarta.portlet.portlet-info.title=Microblogs",
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator,guest,power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )
@@ -88,7 +79,7 @@ public class MicroblogsPortlet extends MVCPortlet {
 		ServiceContext serviceContext = ServiceContextFactory.getInstance(
 			MicroblogsEntry.class.getName(), actionRequest);
 
-		serviceContext.setAssetTagNames(getAssetTagNames(content));
+		serviceContext.setAssetTagNames(_getAssetTagNames(content));
 
 		if (microblogsEntryId > 0) {
 			microblogsEntryService.updateMicroblogsEntry(
@@ -127,7 +118,21 @@ public class MicroblogsPortlet extends MVCPortlet {
 			microblogsEntryId, 1);
 	}
 
-	protected String[] getAssetTagNames(String content) {
+	@Reference
+	protected AssetEntryLocalService assetEntryLocalService;
+
+	@Reference
+	protected MicroblogsEntryLocalService microblogsEntryLocalService;
+
+	@Reference
+	protected MicroblogsEntryService microblogsEntryService;
+
+	@Reference(
+		target = "(&(release.bundle.symbolic.name=com.liferay.microblogs.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))"
+	)
+	protected Release release;
+
+	private String[] _getAssetTagNames(String content) {
 		List<String> assetTagNames = new ArrayList<>();
 
 		assetTagNames.addAll(MicroblogsWebUtil.getHashtags(content));
@@ -136,37 +141,5 @@ public class MicroblogsPortlet extends MVCPortlet {
 
 		return assetTagNames.toArray(new String[0]);
 	}
-
-	@Reference(unbind = "-")
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
-
-		this.assetEntryLocalService = assetEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMicroblogsEntryLocalService(
-		MicroblogsEntryLocalService microblogsEntryLocalService) {
-
-		this.microblogsEntryLocalService = microblogsEntryLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setMicroblogsEntryService(
-		MicroblogsEntryService microblogsEntryService) {
-
-		this.microblogsEntryService = microblogsEntryService;
-	}
-
-	@Reference(
-		target = "(&(release.bundle.symbolic.name=com.liferay.microblogs.web)(&(release.schema.version>=1.0.0)(!(release.schema.version>=2.0.0))))",
-		unbind = "-"
-	)
-	protected void setRelease(Release release) {
-	}
-
-	protected AssetEntryLocalService assetEntryLocalService;
-	protected MicroblogsEntryLocalService microblogsEntryLocalService;
-	protected MicroblogsEntryService microblogsEntryService;
 
 }

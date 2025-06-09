@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -55,69 +46,78 @@
 				localPublishing="<%= localPublishing %>"
 			/>
 
-			<aui:fieldset-group markupView="lexicon">
-				<aui:fieldset>
-					<c:choose>
-						<c:when test="<%= exportImportConfiguration == null %>">
-							<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" placeholder="process-name-placeholder" />
-						</c:when>
-						<c:otherwise>
-							<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" value="<%= exportImportConfiguration.getName() %>" />
-						</c:otherwise>
-					</c:choose>
-				</aui:fieldset>
+			<div class="sheet">
+				<div class="panel-group panel-group-flush">
+					<clay:alert
+						displayType="warning"
+						message="publish-small-incremental-changes-to-avoid-large-publishing-processes-that-can-take-a-long-time-to-execute"
+						symbol="page"
+						title="recommendation"
+					/>
 
-				<aui:fieldset cssClass="options-group">
-					<clay:sheet-section>
-						<h3 class="sheet-subtitle"><liferay-ui:message key="date" /></h3>
+					<aui:fieldset>
+						<c:choose>
+							<c:when test="<%= exportImportConfiguration == null %>">
+								<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" placeholder="process-name-placeholder" />
+							</c:when>
+							<c:otherwise>
+								<aui:input label="title" maxlength='<%= ModelHintsUtil.getMaxLength(ExportImportConfiguration.class.getName(), "name") %>' name="name" value="<%= exportImportConfiguration.getName() %>" />
+							</c:otherwise>
+						</c:choose>
+					</aui:fieldset>
 
-						<%@ include file="/new_publication/publish_layouts_scheduler.jspf" %>
-					</clay:sheet-section>
-				</aui:fieldset>
+					<aui:fieldset cssClass="options-group">
+						<clay:sheet-section>
+							<h3 class="sheet-subtitle"><liferay-ui:message key="date" /></h3>
 
-				<liferay-staging:deletions
-					cmd="<%= Constants.PUBLISH %>"
-					disableInputs="<%= configuredPublish %>"
-					exportImportConfigurationId="<%= exportImportConfigurationId %>"
-				/>
+							<%@ include file="/new_publication/publish_layouts_scheduler.jspf" %>
+						</clay:sheet-section>
+					</aui:fieldset>
 
-				<c:if test="<%= !group.isCompany() && GroupCapabilityUtil.isSupportsPages(group) %>">
-					<liferay-staging:select-pages
-						action="<%= Constants.PUBLISH %>"
+					<liferay-staging:deletions
+						cmd="<%= Constants.PUBLISH %>"
 						disableInputs="<%= configuredPublish %>"
 						exportImportConfigurationId="<%= exportImportConfigurationId %>"
-						groupId="<%= groupId %>"
-						privateLayout="<%= privateLayout %>"
-						treeId="<%= treeId %>"
 					/>
-				</c:if>
 
-				<liferay-staging:content
-					cmd="<%= cmd %>"
-					disableInputs="<%= configuredPublish %>"
-					exportImportConfigurationId="<%= exportImportConfigurationId %>"
-					type="<%= localPublishing ? Constants.PUBLISH_TO_LIVE : Constants.PUBLISH_TO_REMOTE %>"
-				/>
-
-				<liferay-staging:permissions
-					action="<%= Constants.PUBLISH %>"
-					descriptionCSSClass="permissions-description"
-					disableInputs="<%= configuredPublish %>"
-					exportImportConfigurationId="<%= exportImportConfigurationId %>"
-					global="<%= group.isCompany() %>"
-					labelCSSClass="permissions-label"
-				/>
-
-				<c:if test="<%= !localPublishing %>">
-					<aui:fieldset collapsible="<%= true %>" cssClass="options-group" label="remote-live-connection-settings">
-						<liferay-staging:remote-options
+					<c:if test="<%= !group.isCompany() && GroupCapabilityUtil.isSupportsPages(group) %>">
+						<liferay-staging:select-pages
+							action="<%= Constants.PUBLISH %>"
 							disableInputs="<%= configuredPublish %>"
 							exportImportConfigurationId="<%= exportImportConfigurationId %>"
+							groupId="<%= groupId %>"
 							privateLayout="<%= privateLayout %>"
+							treeId="<%= treeId %>"
 						/>
-					</aui:fieldset>
-				</c:if>
-			</aui:fieldset-group>
+					</c:if>
+
+					<liferay-staging:content
+						cmd="<%= cmd %>"
+						disableInputs="<%= configuredPublish %>"
+						exportImportConfigurationId="<%= exportImportConfigurationId %>"
+						type="<%= localPublishing ? Constants.PUBLISH_TO_LIVE : Constants.PUBLISH_TO_REMOTE %>"
+					/>
+
+					<liferay-staging:permissions
+						action="<%= Constants.PUBLISH %>"
+						descriptionCSSClass="permissions-description"
+						disableInputs="<%= configuredPublish %>"
+						exportImportConfigurationId="<%= exportImportConfigurationId %>"
+						global="<%= group.isCompany() %>"
+						labelCSSClass="permissions-label"
+					/>
+
+					<c:if test="<%= !localPublishing %>">
+						<aui:fieldset collapsible="<%= true %>" cssClass="options-group" label="remote-live-connection-settings">
+							<liferay-staging:remote-options
+								disableInputs="<%= configuredPublish %>"
+								exportImportConfigurationId="<%= exportImportConfigurationId %>"
+								privateLayout="<%= privateLayout %>"
+							/>
+						</aui:fieldset>
+					</c:if>
+				</div>
+			</div>
 		</div>
 
 		<aui:button-row>
@@ -137,7 +137,7 @@
 		);
 
 		var deletePortletDataBeforeImportingCheckbox = document.getElementById(
-			'<portlet:namespace />deletePortletDataBeforeImportingCheckbox'
+			'<portlet:namespace /><%= PortletDataHandlerKeys.DELETE_PORTLET_DATA %>'
 		);
 
 		var dateChecker = exportImport.getDateRangeChecker();
@@ -149,9 +149,15 @@
 				deletePortletDataBeforeImportingCheckbox &&
 				deletePortletDataBeforeImportingCheckbox.checked
 			) {
-				confirm(
-					'<%= UnicodeLanguageUtil.get(request, "delete-application-data-before-importing-confirmation") %>'
-				) && submitForm(form);
+				Liferay.Util.openConfirmModal({
+					message:
+						'<%= UnicodeLanguageUtil.get(request, "delete-application-data-before-importing-confirmation") %>',
+					onConfirm: (isConfirmed) => {
+						if (isConfirmed) {
+							submitForm(form);
+						}
+					},
+				});
 			}
 			else {
 				submitForm(form);
@@ -182,23 +188,31 @@
 		['<portlet:namespace />selectSchedule', '<portlet:namespace />addButton'],
 		'<portlet:namespace />publishButton'
 	);
-	Liferay.Util.toggleRadio('<portlet:namespace />rangeAll', '', [
-		'<portlet:namespace />startEndDate',
-		'<portlet:namespace />rangeLastInputs',
-	]);
+	Liferay.Util.toggleRadio(
+		'<portlet:namespace />rangeAll',
+		'<portlet:namespace />warningSection',
+		[
+			'<portlet:namespace />startEndDate',
+			'<portlet:namespace />rangeLastInputs',
+		]
+	);
 	Liferay.Util.toggleRadio(
 		'<portlet:namespace />rangeDateRange',
 		'<portlet:namespace />startEndDate',
-		'<portlet:namespace />rangeLastInputs'
+		[
+			'<portlet:namespace />rangeLastInputs',
+			'<portlet:namespace />warningSection',
+		]
 	);
 	Liferay.Util.toggleRadio('<portlet:namespace />rangeLastPublish', '', [
 		'<portlet:namespace />startEndDate',
 		'<portlet:namespace />rangeLastInputs',
+		'<portlet:namespace />warningSection',
 	]);
 	Liferay.Util.toggleRadio(
 		'<portlet:namespace />rangeLast',
 		'<portlet:namespace />rangeLastInputs',
-		['<portlet:namespace />startEndDate']
+		['<portlet:namespace />startEndDate', '<portlet:namespace />warningSection']
 	);
 </aui:script>
 

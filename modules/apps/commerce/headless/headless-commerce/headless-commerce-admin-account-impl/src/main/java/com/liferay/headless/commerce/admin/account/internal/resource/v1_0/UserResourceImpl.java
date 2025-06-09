@@ -1,27 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.account.internal.resource.v1_0;
 
-import com.liferay.commerce.account.exception.NoSuchAccountException;
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountService;
-import com.liferay.commerce.account.service.CommerceAccountUserRelService;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryService;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.headless.commerce.admin.account.dto.v1_0.User;
-import com.liferay.headless.commerce.admin.account.internal.dto.v1_0.converter.UserDTOConverter;
 import com.liferay.headless.commerce.admin.account.resource.v1_0.UserResource;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -32,6 +21,7 @@ import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 
 import java.util.Calendar;
@@ -43,11 +33,13 @@ import org.osgi.service.component.annotations.ServiceScope;
 
 /**
  * @author Alessio Antonio Rendina
+ * @deprecated As of Cavanaugh (7.4.x)
  */
 @Component(
-	enabled = false, properties = "OSGI-INF/liferay/rest/v1_0/user.properties",
+	properties = "OSGI-INF/liferay/rest/v1_0/user.properties",
 	scope = ServiceScope.PROTOTYPE, service = UserResource.class
 )
+@Deprecated
 public class UserResourceImpl extends BaseUserResourceImpl {
 
 	@Override
@@ -55,18 +47,12 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 			String externalReferenceCode, User user)
 		throws Exception {
 
-		CommerceAccount commerceAccount =
-			_commerceAccountService.fetchByExternalReferenceCode(
-				contextCompany.getCompanyId(), externalReferenceCode);
-
-		if (commerceAccount == null) {
-			throw new NoSuchAccountException(
-				"Unable to find account with external reference code " +
-					externalReferenceCode);
-		}
+		AccountEntry accountEntry =
+			_accountEntryService.getAccountEntryByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 
 		ServiceContext serviceContext = _serviceContextHelper.getServiceContext(
-			commerceAccount.getCommerceAccountGroupId());
+			accountEntry.getAccountEntryGroupId());
 
 		com.liferay.portal.kernel.model.User invitedUser = null;
 
@@ -75,7 +61,7 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 		}
 		else if (Validator.isNotNull(user.getExternalReferenceCode())) {
 			invitedUser = _userLocalService.fetchUserByExternalReferenceCode(
-				contextCompany.getCompanyId(), user.getExternalReferenceCode());
+				user.getExternalReferenceCode(), contextCompany.getCompanyId());
 		}
 
 		if (invitedUser == null) {
@@ -85,8 +71,8 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 				user.getFirstName(), user.getMiddleName(), user.getLastName(),
 				0L, 0L, GetterUtil.getBoolean(user.getMale(), true), 1, 1, 1970,
 				user.getJobTitle(),
-				new long[] {commerceAccount.getCommerceAccountGroupId()}, null,
-				null, null, false, serviceContext);
+				new long[] {accountEntry.getAccountEntryGroupId()}, null, null,
+				null, false, serviceContext);
 		}
 		else {
 			Date birthday = invitedUser.getBirthday();
@@ -142,9 +128,9 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 			}
 		}
 
-		_commerceAccountUserRelService.addCommerceAccountUserRel(
-			commerceAccount.getCommerceAccountId(), invitedUser.getUserId(),
-			roleIds, serviceContext);
+		_commerceAccountHelper.addAccountEntryUserRel(
+			accountEntry.getAccountEntryId(), invitedUser.getUserId(), roleIds,
+			serviceContext);
 
 		return _userDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -153,10 +139,10 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 	}
 
 	@Reference
-	private CommerceAccountService _commerceAccountService;
+	private AccountEntryService _accountEntryService;
 
 	@Reference
-	private CommerceAccountUserRelService _commerceAccountUserRelService;
+	private CommerceAccountHelper _commerceAccountHelper;
 
 	@Reference
 	private RoleLocalService _roleLocalService;
@@ -164,8 +150,11 @@ public class UserResourceImpl extends BaseUserResourceImpl {
 	@Reference
 	private ServiceContextHelper _serviceContextHelper;
 
-	@Reference
-	private UserDTOConverter _userDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.account.internal.dto.v1_0.converter.UserDTOConverter)"
+	)
+	private DTOConverter<com.liferay.portal.kernel.model.User, User>
+		_userDTOConverter;
 
 	@Reference
 	private UserLocalService _userLocalService;

@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.web.internal.portlet.action;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
@@ -34,15 +25,15 @@ import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.UserScreenNameComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,9 +42,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Carolina Barbosa
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
+		"jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_FORM_ADMIN,
 		"mvc.command.name=/admin/autocomplete_user"
 	},
 	service = MVCResourceCommand.class
@@ -100,31 +90,34 @@ public class AutocompleteUserMVCResourceCommand extends BaseMVCResourceCommand {
 			return _userLocalService.search(
 				themeDisplay.getCompanyId(), query,
 				WorkflowConstants.STATUS_APPROVED, new LinkedHashMap<>(), 0, 20,
-				new UserScreenNameComparator());
+				UserScreenNameComparator.getInstance(false));
 		}
 
 		User user = themeDisplay.getUser();
 
-		if (ArrayUtil.isEmpty(user.getGroupIds())) {
+		if (ArrayUtil.isEmpty(user.getGroupIds()) &&
+			ArrayUtil.isEmpty(user.getUserGroupIds())) {
+
 			return Collections.emptyList();
 		}
 
 		return _userLocalService.searchBySocial(
-			themeDisplay.getCompanyId(), user.getGroupIds(), query, 0, 20,
-			new UserScreenNameComparator());
+			themeDisplay.getCompanyId(), user.getGroupIds(),
+			user.getUserGroupIds(), query, 0, 20,
+			UserScreenNameComparator.getInstance(false));
 	}
 
 	private JSONArray _getUsersJSONArray(
 		HttpServletRequest httpServletRequest) {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
 		for (User user : _getUsers(httpServletRequest, themeDisplay)) {
-			if (user.isDefaultUser() ||
+			if (user.isGuestUser() ||
 				(themeDisplay.getUserId() == user.getUserId())) {
 
 				continue;
@@ -140,6 +133,9 @@ public class AutocompleteUserMVCResourceCommand extends BaseMVCResourceCommand {
 
 		return jsonArray;
 	}
+
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private Portal _portal;

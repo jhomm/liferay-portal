@@ -1,76 +1,65 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
-<liferay-frontend:fieldset-group>
-	<liferay-frontend:fieldset
-		disabled="<%= editAssetListDisplayContext.isLiveGroup() %>"
-	>
-		<liferay-asset:asset-tags-error />
+<liferay-frontend:fieldset
+	disabled="<%= editAssetListDisplayContext.isLiveGroup() %>"
+>
+	<liferay-asset:asset-tags-error />
 
-		<liferay-ui:error exception="<%= DuplicateQueryRuleException.class %>">
+	<liferay-ui:error exception="<%= DuplicateQueryRuleException.class %>">
 
-			<%
-			DuplicateQueryRuleException dqre = (DuplicateQueryRuleException)errorException;
+		<%
+		DuplicateQueryRuleException dqre = (DuplicateQueryRuleException)errorException;
 
-			String name = "categories";
+		String name = "categories";
 
-			if (Objects.equals(dqre.getName(), "assetTags")) {
-				name = "tags";
-			}
-			else if (Objects.equals(dqre.getName(), "keywords")) {
-				name = "keywords";
-			}
-			%>
+		if (Objects.equals(dqre.getName(), "assetTags")) {
+			name = "tags";
+		}
+		else if (Objects.equals(dqre.getName(), "keywords")) {
+			name = "keywords";
+		}
+		%>
 
-			<liferay-util:buffer
-				var="messageArgument"
-			>
-				<em>(<liferay-ui:message key='<%= dqre.isContains() ? "contains" : "does-not-contain" %>' /> - <liferay-ui:message key='<%= dqre.isAndOperator() ? "all" : "any" %>' /> - <liferay-ui:message key="<%= name %>" />)</em>
-			</liferay-util:buffer>
+		<liferay-util:buffer
+			var="messageArgument"
+		>
+			<em>(<liferay-ui:message key='<%= dqre.isContains() ? "contains" : "does-not-contain" %>' /> - <liferay-ui:message key='<%= dqre.isAndOperator() ? "all" : "any" %>' /> - <liferay-ui:message key="<%= name %>" />)</em>
+		</liferay-util:buffer>
 
-			<liferay-ui:message arguments="<%= messageArgument %>" key="only-one-rule-with-the-combination-x-is-supported" translateArguments="<%= false %>" />
-		</liferay-ui:error>
+		<liferay-ui:message arguments="<%= messageArgument %>" key="only-one-rule-with-the-combination-x-is-supported" translateArguments="<%= false %>" />
+	</liferay-ui:error>
 
-		<p><liferay-ui:message key="displayed-items-must-match-these-rules" /></p>
+	<p><liferay-ui:message key="displayed-items-must-match-these-rules" /></p>
 
-		<div id="<portlet:namespace />ConditionForm"></div>
+	<div id="<portlet:namespace />ConditionForm"></div>
 
-		<div>
-			<react:component
-				module="auto_field/index"
-				props='<%=
-					HashMapBuilder.<String, Object>put(
-						"categorySelectorURL", editAssetListDisplayContext.getCategorySelectorURL()
-					).put(
-						"disabled", editAssetListDisplayContext.isLiveGroup()
-					).put(
-						"groupIds", ListUtil.toList(editAssetListDisplayContext.getReferencedModelsGroupIds())
-					).put(
-						"namespace", liferayPortletResponse.getNamespace()
-					).put(
-						"rules", editAssetListDisplayContext.getAutoFieldRulesJSONArray()
-					).put(
-						"tagSelectorURL", editAssetListDisplayContext.getTagSelectorURL()
-					).put(
-						"vocabularyIds", editAssetListDisplayContext.getVocabularyIds()
-					).build()
-				%>'
-			/>
-		</div>
-	</liferay-frontend:fieldset>
-</liferay-frontend:fieldset-group>
+	<div>
+		<react:component
+			module="{AssetFilterBuilder} from asset-list-web"
+			props='<%=
+				HashMapBuilder.<String, Object>put(
+					"categorySelectorURL", editAssetListDisplayContext.getCategorySelectorURL()
+				).put(
+					"disabled", editAssetListDisplayContext.isLiveGroup()
+				).put(
+					"groupIds", ListUtil.fromArray(editAssetListDisplayContext.getReferencedModelsGroupIds())
+				).put(
+					"namespace", liferayPortletResponse.getNamespace()
+				).put(
+					"rules", editAssetListDisplayContext.getAutoFieldRulesJSONArray()
+				).put(
+					"tagSelectorURL", editAssetListDisplayContext.getTagSelectorURL()
+				).put(
+					"vocabularyIds", editAssetListDisplayContext.getVocabularyIds()
+				).build()
+			%>'
+		/>
+	</div>
+</liferay-frontend:fieldset>

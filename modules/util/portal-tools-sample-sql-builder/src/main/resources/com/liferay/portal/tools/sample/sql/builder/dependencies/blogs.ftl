@@ -1,6 +1,4 @@
-<#assign blogsEntryModels = dataFactory.newBlogsEntryModels(groupId) />
-
-<#list blogsEntryModels as blogsEntryModel>
+<#list dataFactory.newBlogsEntryModels(groupId) as blogsEntryModel>
 	${dataFactory.toInsertSQL(blogsEntryModel)}
 
 	<#assign friendlyURLEntryModel = dataFactory.newFriendlyURLEntryModel(blogsEntryModel.groupId, dataFactory.blogsEntryClassNameId, blogsEntryModel.entryId) />
@@ -12,24 +10,24 @@
 	${dataFactory.toInsertSQL(dataFactory.newFriendlyURLEntryMapping(friendlyURLEntryModel))}
 
 	<@insertAssetEntry
-		_categoryAndTag=true
-		_entry=blogsEntryModel
+		_categoryAndTag = true
+		_entry = blogsEntryModel
 	/>
 
 	<#assign mbRootMessageId = dataFactory.getCounterNext() />
 
 	<@insertMBDiscussion
-		_classNameId=dataFactory.blogsEntryClassNameId
-		_classPK=blogsEntryModel.entryId
-		_groupId=groupId
-		_maxCommentCount=dataFactory.maxBlogsEntryCommentCount
-		_mbRootMessageId=mbRootMessageId
-		_mbThreadId=dataFactory.getCounterNext()
+		_classNameId = dataFactory.blogsEntryClassNameId
+		_classPK = blogsEntryModel.entryId
+		_groupId = groupId
+		_maxCommentCount = dataFactory.maxBlogsEntryCommentCount
+		_mbRootMessageId = mbRootMessageId
+		_mbThreadId = dataFactory.getCounterNext()
 	/>
 
 	${dataFactory.toInsertSQL(dataFactory.newSubscriptionModel(blogsEntryModel))}
 
 	${dataFactory.toInsertSQL(dataFactory.newSocialActivityModel(blogsEntryModel))}
 
-	${csvFileWriter.write("blog", blogsEntryModel.entryId + "," + blogsEntryModel.urlTitle + "," + mbRootMessageId + "\n")}
+	${csvFileWriter.write("blog", virtualHostModel.hostname + "," + groupModel.friendlyURL + "," + blogsEntryModel.entryId + "," + blogsEntryModel.urlTitle + "," + mbRootMessageId + "\n")}
 </#list>

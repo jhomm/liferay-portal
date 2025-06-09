@@ -1,43 +1,52 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.exportimport.portlet.preferences.processor.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.blogs.constants.BlogsPortletKeys;
+import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationParameterMapFactoryUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.exportimport.kernel.lar.PortletDataHandlerKeys;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
+import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerRegistryUtil;
+import com.liferay.exportimport.kernel.service.StagingLocalServiceUtil;
+import com.liferay.exportimport.kernel.staging.StagingUtil;
+import com.liferay.exportimport.kernel.staging.constants.StagingConstants;
 import com.liferay.exportimport.portlet.preferences.processor.ExportImportPortletPreferencesProcessor;
 import com.liferay.exportimport.test.util.ExportImportTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.Organization;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.OrganizationLocalServiceUtil;
+import com.liferay.portal.kernel.service.PortletLocalService;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.persistence.GroupUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.OrganizationTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
+import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
-import java.util.HashMap;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -63,7 +72,7 @@ public class BlogsAggregatorExportImportPortletPreferencesProcessorTest {
 
 		_group = GroupTestUtil.addGroup();
 
-		_layout = LayoutTestUtil.addLayout(_group.getGroupId());
+		_layout = LayoutTestUtil.addTypePortletLayout(_group.getGroupId());
 
 		LayoutTestUtil.addPortletToLayout(
 			TestPropsValues.getUserId(), _layout,
@@ -85,6 +94,49 @@ public class BlogsAggregatorExportImportPortletPreferencesProcessorTest {
 
 		_portletDataContextImport.setPortletId(
 			BlogsPortletKeys.BLOGS_AGGREGATOR);
+	}
+
+	@Test
+	public void testOrganizationMissingRefValidation() throws Exception {
+		StagedModelDataHandler<?> stagedModelDataHandler =
+			StagedModelDataHandlerRegistryUtil.getStagedModelDataHandler(
+				Organization.class.getName());
+
+		Portlet portlet = _portletLocalService.getPortletById(
+			_portletDataContextExport.getCompanyId(),
+			BlogsPortletKeys.BLOGS_AGGREGATOR);
+
+		_portletDataContextImport.addReferenceElement(
+			portlet, _portletDataContextExport.getExportDataRootElement(),
+			_organization, PortletDataContext.REFERENCE_TYPE_DEPENDENCY, true);
+
+		Assert.assertTrue(
+			stagedModelDataHandler.validateReference(
+				_portletDataContextImport,
+				_portletDataContextImport.getMissingReferenceElement(
+					_organization)));
+
+		Group remoteLiveGroup = GroupTestUtil.addGroup();
+
+		try {
+			_enableRemoteStaging(remoteLiveGroup, _group);
+
+			remoteLiveGroup = GroupLocalServiceUtil.getGroup(
+				remoteLiveGroup.getGroupId());
+
+			Map<String, String[]> parameters =
+				ExportImportConfigurationParameterMapFactoryUtil.
+					buildFullPublishParameterMap();
+
+			StagingUtil.publishLayouts(
+				TestPropsValues.getUserId(), _group.getGroupId(),
+				remoteLiveGroup.getGroupId(), false, parameters);
+
+			Assert.assertEquals(1, remoteLiveGroup.getPublicLayoutsPageCount());
+		}
+		finally {
+			GroupTestUtil.deleteGroup(remoteLiveGroup);
+		}
 	}
 
 	@Test
@@ -119,7 +171,8 @@ public class BlogsAggregatorExportImportPortletPreferencesProcessorTest {
 
 		_organization.setUuid(exportedOrganizationId);
 
-		OrganizationLocalServiceUtil.updateOrganization(_organization);
+		_organization = OrganizationLocalServiceUtil.updateOrganization(
+			_organization);
 
 		// Test the import
 
@@ -136,7 +189,54 @@ public class BlogsAggregatorExportImportPortletPreferencesProcessorTest {
 			GetterUtil.getLong(importedOrganizationId));
 	}
 
-	@Inject(filter = "javax.portlet.name=" + BlogsPortletKeys.BLOGS_AGGREGATOR)
+	private void _enableRemoteStaging(
+			Group remoteLiveGroup, Group remoteStagingGroup)
+		throws Exception {
+
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET",
+					"F0E1D2C3B4A5968778695A4B3C2D1E0F");
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET_HEX", true)) {
+
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext();
+
+			serviceContext.setAddGroupPermissions(true);
+			serviceContext.setAddGuestPermissions(true);
+			serviceContext.setScopeGroupId(remoteStagingGroup.getGroupId());
+
+			_setStagingAttribute(
+				serviceContext, PortletDataHandlerKeys.PORTLET_DATA_ALL, false);
+			_setStagingAttribute(
+				serviceContext, PortletDataHandlerKeys.PORTLET_SETUP_ALL,
+				false);
+
+			UserTestUtil.setUser(TestPropsValues.getUser());
+
+			StagingLocalServiceUtil.enableRemoteStaging(
+				TestPropsValues.getUserId(), remoteStagingGroup, false, false,
+				"localhost", PortalUtil.getPortalServerPort(false),
+				PortalUtil.getPathContext(), false,
+				remoteLiveGroup.getGroupId(), serviceContext);
+
+			GroupUtil.clearCache();
+		}
+	}
+
+	private void _setStagingAttribute(
+		ServiceContext serviceContext, String key, Object value) {
+
+		serviceContext.setAttribute(
+			StagingConstants.STAGED_PREFIX + key + StringPool.DOUBLE_DASH,
+			String.valueOf(value));
+	}
+
+	@Inject(
+		filter = "jakarta.portlet.name=" + BlogsPortletKeys.BLOGS_AGGREGATOR
+	)
 	private ExportImportPortletPreferencesProcessor
 		_exportImportPortletPreferencesProcessor;
 
@@ -150,5 +250,8 @@ public class BlogsAggregatorExportImportPortletPreferencesProcessorTest {
 
 	private PortletDataContext _portletDataContextExport;
 	private PortletDataContext _portletDataContextImport;
+
+	@Inject
+	private PortletLocalService _portletLocalService;
 
 }

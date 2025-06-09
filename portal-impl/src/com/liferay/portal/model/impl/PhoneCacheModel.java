@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.model.impl;
@@ -76,12 +67,16 @@ public class PhoneCacheModel
 
 	@Override
 	public String toString() {
-		StringBundler sb = new StringBundler(29);
+		StringBundler sb = new StringBundler(33);
 
 		sb.append("{mvccVersion=");
 		sb.append(mvccVersion);
+		sb.append(", ctCollectionId=");
+		sb.append(ctCollectionId);
 		sb.append(", uuid=");
 		sb.append(uuid);
+		sb.append(", externalReferenceCode=");
+		sb.append(externalReferenceCode);
 		sb.append(", phoneId=");
 		sb.append(phoneId);
 		sb.append(", companyId=");
@@ -102,8 +97,8 @@ public class PhoneCacheModel
 		sb.append(number);
 		sb.append(", extension=");
 		sb.append(extension);
-		sb.append(", typeId=");
-		sb.append(typeId);
+		sb.append(", listTypeId=");
+		sb.append(listTypeId);
 		sb.append(", primary=");
 		sb.append(primary);
 		sb.append("}");
@@ -116,12 +111,20 @@ public class PhoneCacheModel
 		PhoneImpl phoneImpl = new PhoneImpl();
 
 		phoneImpl.setMvccVersion(mvccVersion);
+		phoneImpl.setCtCollectionId(ctCollectionId);
 
 		if (uuid == null) {
 			phoneImpl.setUuid("");
 		}
 		else {
 			phoneImpl.setUuid(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			phoneImpl.setExternalReferenceCode("");
+		}
+		else {
+			phoneImpl.setExternalReferenceCode(externalReferenceCode);
 		}
 
 		phoneImpl.setPhoneId(phoneId);
@@ -166,7 +169,7 @@ public class PhoneCacheModel
 			phoneImpl.setExtension(extension);
 		}
 
-		phoneImpl.setTypeId(typeId);
+		phoneImpl.setListTypeId(listTypeId);
 		phoneImpl.setPrimary(primary);
 
 		phoneImpl.resetOriginalValues();
@@ -177,7 +180,10 @@ public class PhoneCacheModel
 	@Override
 	public void readExternal(ObjectInput objectInput) throws IOException {
 		mvccVersion = objectInput.readLong();
+
+		ctCollectionId = objectInput.readLong();
 		uuid = objectInput.readUTF();
+		externalReferenceCode = objectInput.readUTF();
 
 		phoneId = objectInput.readLong();
 
@@ -194,7 +200,7 @@ public class PhoneCacheModel
 		number = objectInput.readUTF();
 		extension = objectInput.readUTF();
 
-		typeId = objectInput.readLong();
+		listTypeId = objectInput.readLong();
 
 		primary = objectInput.readBoolean();
 	}
@@ -203,11 +209,20 @@ public class PhoneCacheModel
 	public void writeExternal(ObjectOutput objectOutput) throws IOException {
 		objectOutput.writeLong(mvccVersion);
 
+		objectOutput.writeLong(ctCollectionId);
+
 		if (uuid == null) {
 			objectOutput.writeUTF("");
 		}
 		else {
 			objectOutput.writeUTF(uuid);
+		}
+
+		if (externalReferenceCode == null) {
+			objectOutput.writeUTF("");
+		}
+		else {
+			objectOutput.writeUTF(externalReferenceCode);
 		}
 
 		objectOutput.writeLong(phoneId);
@@ -244,13 +259,15 @@ public class PhoneCacheModel
 			objectOutput.writeUTF(extension);
 		}
 
-		objectOutput.writeLong(typeId);
+		objectOutput.writeLong(listTypeId);
 
 		objectOutput.writeBoolean(primary);
 	}
 
 	public long mvccVersion;
+	public long ctCollectionId;
 	public String uuid;
+	public String externalReferenceCode;
 	public long phoneId;
 	public long companyId;
 	public long userId;
@@ -261,7 +278,7 @@ public class PhoneCacheModel
 	public long classPK;
 	public String number;
 	public String extension;
-	public long typeId;
+	public long listTypeId;
 	public boolean primary;
 
 }

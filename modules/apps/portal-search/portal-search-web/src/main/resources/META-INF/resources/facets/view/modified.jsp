@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -90,7 +81,7 @@ int index = 0;
 						).build();
 						%>
 
-						<aui:a cssClass='<%= (Validator.isNull(fieldParamSelection) || fieldParamSelection.equals("0")) ? "facet-term-selected" : "facet-term-unselected" %>' href="javascript:;">
+						<aui:a cssClass='<%= (Validator.isNull(fieldParamSelection) || fieldParamSelection.equals("0")) ? "facet-term-selected" : "facet-term-unselected" %>' href="javascript:void(0);">
 							<liferay-ui:message key="<%= HtmlUtil.escape(facetConfiguration.getLabel()) %>" />
 						</aui:a>
 					</li>
@@ -121,7 +112,7 @@ int index = 0;
 							).build();
 							%>
 
-							<aui:a cssClass="<%= rangeCssClass %>" data="<%= data %>" href="javascript:;">
+							<aui:a cssClass="<%= rangeCssClass %>" data="<%= data %>" href="javascript:void(0);">
 								<liferay-ui:message key="<%= label %>" />
 
 								<%
@@ -157,7 +148,7 @@ int index = 0;
 						}
 						%>
 
-						<aui:a cssClass="<%= customRangeCssClass %>" href="javascript:;">
+						<aui:a cssClass="<%= customRangeCssClass %>" href="javascript:void(0);">
 							<liferay-ui:message key="custom-range" />&hellip;
 
 							<c:if test="<%= termCollector != null %>">
@@ -308,9 +299,8 @@ int index = 0;
 			var data = {};
 
 			data['<%= HtmlUtil.escapeJS(facet.getFieldId()) %>'] = range;
-			data[
-				'<%= HtmlUtil.escapeJS(facet.getFieldId()) %>selection'
-			] = selection;
+			data['<%= HtmlUtil.escapeJS(facet.getFieldId()) %>selection'] =
+				selection;
 
 			Liferay.Util.postForm(form, {data: data});
 		}
@@ -396,6 +386,6 @@ int index = 0;
 	A.one('.<%= randomNamespace %>custom-range-toggle').on('click', (event) => {
 		event.halt();
 
-		A.one('#<%= randomNamespace + "customRange" %>').toggle();
+		A.one('#<%= randomNamespace %>customRange').toggle();
 	});
 </aui:script>

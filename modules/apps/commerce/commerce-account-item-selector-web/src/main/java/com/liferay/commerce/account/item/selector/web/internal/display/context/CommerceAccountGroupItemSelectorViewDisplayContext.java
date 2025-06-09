@@ -1,33 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.account.item.selector.web.internal.display.context;
 
-import com.liferay.commerce.account.item.selector.web.internal.display.context.util.CommerceAccountItemSelectorRequestHelper;
+import com.liferay.account.model.AccountGroup;
+import com.liferay.account.service.AccountGroupLocalService;
+import com.liferay.commerce.account.item.selector.web.internal.display.context.helper.CommerceAccountItemSelectorRequestHelper;
 import com.liferay.commerce.account.item.selector.web.internal.search.CommerceAccountGroupItemSelectorChecker;
-import com.liferay.commerce.account.model.CommerceAccountGroup;
-import com.liferay.commerce.account.service.CommerceAccountGroupLocalService;
-import com.liferay.portal.kernel.dao.search.RowChecker;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.LinkedHashMap;
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -35,11 +29,11 @@ import javax.servlet.http.HttpServletRequest;
 public class CommerceAccountGroupItemSelectorViewDisplayContext {
 
 	public CommerceAccountGroupItemSelectorViewDisplayContext(
-		CommerceAccountGroupLocalService commerceAccountGroupLocalService,
+		AccountGroupLocalService accountGroupLocalService,
 		HttpServletRequest httpServletRequest, PortletURL portletURL,
 		String itemSelectedEventName) {
 
-		_commerceAccountGroupLocalService = commerceAccountGroupLocalService;
+		_accountGroupLocalService = accountGroupLocalService;
 		_portletURL = portletURL;
 		_itemSelectedEventName = itemSelectedEventName;
 
@@ -73,7 +67,7 @@ public class CommerceAccountGroupItemSelectorViewDisplayContext {
 		return _portletURL;
 	}
 
-	public SearchContainer<CommerceAccountGroup> getSearchContainer()
+	public SearchContainer<AccountGroup> getSearchContainer()
 		throws PortalException {
 
 		if (_searchContainer != null) {
@@ -83,40 +77,45 @@ public class CommerceAccountGroupItemSelectorViewDisplayContext {
 		_searchContainer = new SearchContainer<>(
 			_commerceAccountItemSelectorRequestHelper.
 				getLiferayPortletRequest(),
-			getPortletURL(), null, null);
-
-		_searchContainer.setEmptyResultsMessage("there-are-no-account-groups");
+			getPortletURL(), null, "there-are-no-account-groups");
 
 		_searchContainer.setOrderByCol(getOrderByCol());
 		_searchContainer.setOrderByType(getOrderByType());
 
-		RowChecker rowChecker = new CommerceAccountGroupItemSelectorChecker(
-			_commerceAccountItemSelectorRequestHelper.getRenderResponse(),
-			getCheckedCommerceAccountGroupIds());
+		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
-		_searchContainer.setRowChecker(rowChecker);
+		long accountEntryId = ParamUtil.getLong(
+			_commerceAccountItemSelectorRequestHelper.getRenderRequest(),
+			"accountEntryId");
 
-		int total =
-			_commerceAccountGroupLocalService.searchCommerceAccountsGroupCount(
+		if (accountEntryId > 0) {
+			params.put("accountEntryIds", new long[] {accountEntryId});
+		}
+
+		long permissionUserId = ParamUtil.getLong(
+			_commerceAccountItemSelectorRequestHelper.getRenderRequest(),
+			"permissionUserId");
+
+		if (permissionUserId > 0) {
+			params.put("permissionUserId", permissionUserId);
+		}
+
+		BaseModelSearchResult<AccountGroup> baseModelSearchResult =
+			_accountGroupLocalService.searchAccountGroups(
 				_commerceAccountItemSelectorRequestHelper.getCompanyId(),
-				getKeywords());
+				getKeywords(), params, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+				null);
 
-		List<CommerceAccountGroup> results =
-			_commerceAccountGroupLocalService.search(
-				_commerceAccountItemSelectorRequestHelper.getCompanyId(),
-				getKeywords(), _searchContainer.getStart(),
-				_searchContainer.getEnd(), null);
+		_searchContainer.setResultsAndTotal(
+			() -> (List<AccountGroup>)baseModelSearchResult.getBaseModels(),
+			baseModelSearchResult.getLength());
 
-		_searchContainer.setTotal(total);
-		_searchContainer.setResults(results);
+		_searchContainer.setRowChecker(
+			new CommerceAccountGroupItemSelectorChecker(
+				_commerceAccountItemSelectorRequestHelper.getRenderResponse(),
+				_getCheckedCommerceAccountGroupIds()));
 
 		return _searchContainer;
-	}
-
-	protected long[] getCheckedCommerceAccountGroupIds() {
-		return ParamUtil.getLongValues(
-			_commerceAccountItemSelectorRequestHelper.getRenderRequest(),
-			"checkedCommerceAccountGroupIds");
 	}
 
 	protected String getKeywords() {
@@ -131,13 +130,20 @@ public class CommerceAccountGroupItemSelectorViewDisplayContext {
 		return _keywords;
 	}
 
-	private final CommerceAccountGroupLocalService
-		_commerceAccountGroupLocalService;
+	private long[] _getCheckedCommerceAccountGroupIds() {
+		return StringUtil.split(
+			ParamUtil.getString(
+				_commerceAccountItemSelectorRequestHelper.getRenderRequest(),
+				"checkedCommerceAccountGroupIds"),
+			0L);
+	}
+
+	private final AccountGroupLocalService _accountGroupLocalService;
 	private final CommerceAccountItemSelectorRequestHelper
 		_commerceAccountItemSelectorRequestHelper;
 	private final String _itemSelectedEventName;
 	private String _keywords;
 	private final PortletURL _portletURL;
-	private SearchContainer<CommerceAccountGroup> _searchContainer;
+	private SearchContainer<AccountGroup> _searchContainer;
 
 }

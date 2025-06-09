@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.openapi;
@@ -40,6 +31,10 @@ public class DTOProperty {
 		this(new HashMap<>(), name, type);
 	}
 
+	public String getDescription() {
+		return _description;
+	}
+
 	public List<DTOProperty> getDTOProperties() {
 		return _dtoProperties;
 	}
@@ -52,8 +47,20 @@ public class DTOProperty {
 		return _name;
 	}
 
+	public Boolean getReadOnly() {
+		return _readOnly;
+	}
+
 	public String getType() {
 		return _type;
+	}
+
+	public boolean isRequired() {
+		return _required;
+	}
+
+	public void setDescription(String description) {
+		_description = description;
 	}
 
 	public void setDTOProperties(List<DTOProperty> dtoProperties) {
@@ -64,13 +71,24 @@ public class DTOProperty {
 		_name = name;
 	}
 
+	public void setReadOnly(boolean readOnly) {
+		_readOnly = readOnly;
+	}
+
+	public void setRequired(boolean required) {
+		_required = required;
+	}
+
 	public void setType(String type) {
 		_type = type;
 	}
 
+	private String _description;
 	private List<DTOProperty> _dtoProperties = new ArrayList<>();
 	private final Map<String, Object> _extensions;
 	private String _name;
+	private Boolean _readOnly;
+	private boolean _required;
 	private String _type;
 
 }

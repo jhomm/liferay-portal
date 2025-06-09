@@ -1,29 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools;
 
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
-import com.liferay.petra.xml.Dom4jUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
-import com.liferay.portal.xml.SAXReaderFactory;
+import com.liferay.portal.kernel.xml.Document;
+import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.kernel.xml.Node;
+import com.liferay.portal.kernel.xml.ProcessingInstruction;
+import com.liferay.portal.kernel.xml.SAXReaderUtil;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,19 +38,14 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.transform.stream.StreamSource;
 
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.io.DocumentSource;
-import org.dom4j.io.SAXReader;
-
 /**
  * @author Brian Wing Shun Chan
  */
 public class XSLTBuilder {
 
 	public static void main(String[] args) throws IOException {
+		ToolDependencies.wireBasic();
+
 		if (args.length == 2) {
 			String xmls = null;
 
@@ -90,7 +81,7 @@ public class XSLTBuilder {
 			if (xmls.length > 1) {
 				String completeXml = prefix + "-complete.xml";
 
-				String completeContent = Dom4jUtil.toString(document);
+				String completeContent = document.formattedString();
 
 				Files.write(
 					Paths.get(completeXml),
@@ -98,29 +89,29 @@ public class XSLTBuilder {
 			}
 
 			TransformerFactory transformerFactory =
-				TransformerFactory.newInstance();
+				SecureXMLFactoryProviderUtil.newTransformerFactory();
 
 			Transformer transformer = transformerFactory.newTransformer(
 				new StreamSource(xsl));
 
+			String xml = document.formattedString();
+
 			transformer.transform(
-				new DocumentSource(document),
+				new StreamSource(new ByteArrayInputStream(xml.getBytes())),
 				new StreamResult(new FileOutputStream(html)));
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
 	private Document _combineAndSortXMLs(String[] xmls, String xsl)
 		throws Exception {
 
-		SAXReader saxReader = SAXReaderFactory.getSAXReader(null, false, false);
-
 		Map<String, Element> elementMap = new TreeMap<>();
 
 		for (String xml : xmls) {
-			Document document = saxReader.read(new File(xml));
+			Document document = SAXReaderUtil.read(new File(xml));
 
 			List<Node> nodes = document.selectNodes("//file-name");
 
@@ -129,18 +120,21 @@ public class XSLTBuilder {
 			}
 		}
 
-		Document document = DocumentHelper.createDocument();
+		Document document = SAXReaderUtil.createDocument();
 
 		File xslFile = new File(xsl);
 
 		if (xslFile.exists()) {
-			document.addProcessingInstruction(
-				"xml-stylesheet",
-				HashMapBuilder.put(
-					"href", xslFile.getName()
-				).put(
-					"type", "text/xsl"
-				).build());
+			ProcessingInstruction processingInstruction =
+				SAXReaderUtil.createProcessingInstruction(
+					"xml-stylesheet",
+					HashMapBuilder.put(
+						"href", xslFile.getName()
+					).put(
+						"type", "text/xsl"
+					).build());
+
+			document.add(processingInstruction);
 		}
 
 		Element versionsElement = document.addElement("versions");

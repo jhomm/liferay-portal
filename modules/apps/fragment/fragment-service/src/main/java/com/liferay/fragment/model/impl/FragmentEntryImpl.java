@@ -1,29 +1,21 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.model.impl;
 
-import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.document.library.util.DLURLHelperUtil;
 import com.liferay.fragment.constants.FragmentConstants;
 import com.liferay.fragment.constants.FragmentExportImportConstants;
 import com.liferay.fragment.model.FragmentEntry;
+import com.liferay.fragment.model.FragmentEntryVersion;
 import com.liferay.fragment.service.FragmentEntryLinkLocalServiceUtil;
 import com.liferay.fragment.service.FragmentEntryLocalServiceUtil;
-import com.liferay.fragment.util.FragmentEntryRenderUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSON;
+import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
@@ -51,7 +43,7 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 
 	@Override
 	public String getContent() {
-		return FragmentEntryRenderUtil.renderFragmentEntry(this);
+		return StringPool.BLANK;
 	}
 
 	@Override
@@ -62,8 +54,11 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 
 	@Override
 	public String getIcon() {
-		if (_icon == null) {
-			if (getType() == FragmentConstants.TYPE_REACT) {
+		if (Validator.isNull(_icon)) {
+			if (isTypeInput()) {
+				_icon = "forms";
+			}
+			else if (isTypeReact()) {
 				_icon = "react";
 			}
 			else {
@@ -76,7 +71,9 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 
 	@Override
 	public String getImagePreviewURL(ThemeDisplay themeDisplay) {
-		if (Validator.isNotNull(_imagePreviewURL)) {
+		if (Validator.isNotNull(_imagePreviewURL) &&
+			!_imagePreviewURL.endsWith(StringPool.SLASH)) {
+
 			return _imagePreviewURL;
 		}
 
@@ -87,10 +84,10 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 				return StringPool.BLANK;
 			}
 
-			return DLUtil.getImagePreviewURL(fileEntry, themeDisplay);
+			return DLURLHelperUtil.getImagePreviewURL(fileEntry, themeDisplay);
 		}
 		catch (Exception exception) {
-			_log.error("Unable to get preview entry image URL", exception);
+			_log.error("Unable to get image preview URL", exception);
 		}
 
 		return StringPool.BLANK;
@@ -113,13 +110,24 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 
 	@Override
 	public int getUsageCount() {
-		return FragmentEntryLinkLocalServiceUtil.getFragmentEntryLinksCount(
-			getGroupId(), getFragmentEntryId());
+		return FragmentEntryLinkLocalServiceUtil.
+			getAllFragmentEntryLinksCountByFragmentEntryId(
+				getGroupId(), getFragmentEntryId());
 	}
 
 	@Override
 	public boolean isApproved() {
-		if (isHead()) {
+		return isHead();
+	}
+
+	@Override
+	public boolean isDraft() {
+		return !isHead();
+	}
+
+	@Override
+	public boolean isTypeComponent() {
+		if (getType() == FragmentConstants.TYPE_COMPONENT) {
 			return true;
 		}
 
@@ -127,12 +135,39 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 	}
 
 	@Override
-	public boolean isDraft() {
-		if (isHead()) {
-			return false;
+	public boolean isTypeInput() {
+		if (getType() == FragmentConstants.TYPE_INPUT) {
+			return true;
 		}
 
-		return true;
+		return false;
+	}
+
+	@Override
+	public boolean isTypeReact() {
+		if (getType() == FragmentConstants.TYPE_REACT) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public boolean isTypeSection() {
+		if (getType() == FragmentConstants.TYPE_SECTION) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@Override
+	public void populateVersionModel(
+		FragmentEntryVersion fragmentEntryVersion) {
+
+		super.populateVersionModel(fragmentEntryVersion);
+
+		fragmentEntryVersion.setStatus(super.getStatus());
 	}
 
 	@Override
@@ -142,11 +177,29 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 		path = path + StringPool.SLASH + getFragmentEntryKey();
 
 		JSONObject jsonObject = JSONUtil.put(
-			"configurationPath", "index.json"
+			"cacheable",
+			() -> {
+				if (isCacheable()) {
+					return true;
+				}
+
+				return null;
+			}
+		).put(
+			"configurationPath", "configuration.json"
 		).put(
 			"cssPath", "index.css"
 		).put(
 			"htmlPath", "index.html"
+		).put(
+			"icon",
+			() -> {
+				if (Validator.isNotNull(_icon)) {
+					return _icon;
+				}
+
+				return null;
+			}
 		).put(
 			"jsPath", "index.js"
 		).put(
@@ -167,14 +220,21 @@ public class FragmentEntryImpl extends FragmentEntryBaseImpl {
 			jsonObject.put("type", typeLabel);
 		}
 
+		String typeOptions = getTypeOptions();
+
+		if (Validator.isNotNull(typeOptions)) {
+			jsonObject.put(
+				"typeOptions", JSONFactoryUtil.createJSONObject(typeOptions));
+		}
+
 		zipWriter.addEntry(
 			path + StringPool.SLASH +
 				FragmentExportImportConstants.FILE_NAME_FRAGMENT,
-			jsonObject.toString());
+			jsonObject.toString(2));
 
+		zipWriter.addEntry(path + "/configuration.json", getConfiguration());
 		zipWriter.addEntry(path + "/index.css", getCss());
 		zipWriter.addEntry(path + "/index.js", getJs());
-		zipWriter.addEntry(path + "/index.json", getConfiguration());
 		zipWriter.addEntry(path + "/index.html", getHtml());
 
 		if (previewFileEntry != null) {

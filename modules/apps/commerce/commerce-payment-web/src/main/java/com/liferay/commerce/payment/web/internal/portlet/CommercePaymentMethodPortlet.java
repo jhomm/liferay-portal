@@ -1,35 +1,26 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.payment.web.internal.portlet;
 
+import com.liferay.commerce.payment.integration.CommercePaymentIntegrationRegistry;
 import com.liferay.commerce.payment.method.CommercePaymentMethodRegistry;
 import com.liferay.commerce.payment.service.CommercePaymentMethodGroupRelService;
 import com.liferay.commerce.payment.web.internal.display.context.CommercePaymentMethodGroupRelsDisplayContext;
 import com.liferay.commerce.product.constants.CPPortletKeys;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
-import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.io.IOException;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.io.IOException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -38,7 +29,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Marco Leo
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -49,14 +39,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Payment Methods",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/edit_commerce_payment_method.jsp",
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=Payment Methods",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/edit_commerce_payment_method.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_PAYMENT_METHODS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {CommercePaymentMethodPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CommercePaymentMethodPortlet extends MVCPortlet {
 
@@ -70,7 +61,8 @@ public class CommercePaymentMethodPortlet extends MVCPortlet {
 				new CommercePaymentMethodGroupRelsDisplayContext(
 					_commerceChannelLocalService,
 					_commercePaymentMethodGroupRelService,
-					_commercePaymentMethodRegistry, _countryService,
+					_commercePaymentMethodRegistry,
+					_commercePaymentIntegrationRegistry,
 					_portal.getHttpServletRequest(renderRequest));
 
 		renderRequest.setAttribute(
@@ -84,14 +76,15 @@ public class CommercePaymentMethodPortlet extends MVCPortlet {
 	private CommerceChannelLocalService _commerceChannelLocalService;
 
 	@Reference
+	private CommercePaymentIntegrationRegistry
+		_commercePaymentIntegrationRegistry;
+
+	@Reference
 	private CommercePaymentMethodGroupRelService
 		_commercePaymentMethodGroupRelService;
 
 	@Reference
 	private CommercePaymentMethodRegistry _commercePaymentMethodRegistry;
-
-	@Reference
-	private CountryService _countryService;
 
 	@Reference
 	private Portal _portal;

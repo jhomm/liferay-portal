@@ -1,17 +1,20 @@
 Bundle-Name: Liferay Segments API
 Bundle-SymbolicName: com.liferay.segments.api
-Bundle-Version: 3.2.6
+Bundle-Version: 29.0.1
 Export-Package:\
 	com.liferay.segments,\
 	com.liferay.segments.configuration,\
+	com.liferay.segments.configuration.provider,\
 	com.liferay.segments.constants,\
 	com.liferay.segments.context,\
 	com.liferay.segments.context.contributor,\
 	com.liferay.segments.criteria,\
 	com.liferay.segments.criteria.contributor,\
+	com.liferay.segments.criteria.mapper,\
 	com.liferay.segments.exception,\
 	com.liferay.segments.field,\
 	com.liferay.segments.field.customizer,\
+	com.liferay.segments.manager,\
 	com.liferay.segments.model,\
 	com.liferay.segments.odata.matcher,\
 	com.liferay.segments.odata.retriever,\
@@ -20,6 +23,4 @@ Export-Package:\
 	com.liferay.segments.provider,\
 	com.liferay.segments.service,\
 	com.liferay.segments.service.persistence,\
-	com.liferay.segments.simulator,\
-	com.liferay.segments.source.provider,\
-	com.liferay.segments.util
+	com.liferay.segments.source.provider

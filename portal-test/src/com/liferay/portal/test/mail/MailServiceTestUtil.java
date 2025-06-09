@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.test.mail;
@@ -19,11 +10,12 @@ import com.dumbster.smtp.SmtpServerFactory;
 import com.dumbster.smtp.mailstores.RollingMailStore;
 
 import com.liferay.mail.kernel.service.MailServiceUtil;
-import com.liferay.portal.kernel.service.PortalPreferencesLocalServiceUtil;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.util.PortletKeys;
+import com.liferay.portal.kernel.test.util.PrefsPropsTestUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
-import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.SocketUtil;
 import com.liferay.portal.test.mail.impl.MailMessageImpl;
 
@@ -34,11 +26,8 @@ import java.net.SocketException;
 import java.nio.channels.ServerSocketChannel;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Adam Brandizzi
@@ -65,6 +54,34 @@ public class MailServiceTestUtil {
 			"There are no messages in the inbox");
 	}
 
+	public static MailMessage getMailMessage(
+		String headerName, String[] headerValues) {
+
+		Arrays.sort(headerValues);
+
+		for (com.dumbster.smtp.MailMessage mailMessage :
+				_smtpServer.getMessages()) {
+
+			String mailMessageHeaderValue = mailMessage.getFirstHeaderValue(
+				headerName);
+
+			if (mailMessageHeaderValue == null) {
+				continue;
+			}
+
+			String[] mailMessageHeaderValues = mailMessageHeaderValue.split(
+				"[,;]\\s*");
+
+			Arrays.sort(mailMessageHeaderValues);
+
+			if (Arrays.equals(mailMessageHeaderValues, headerValues)) {
+				return new MailMessageImpl(mailMessage);
+			}
+		}
+
+		return null;
+	}
+
 	public static List<MailMessage> getMailMessages(
 		String headerName, String headerValue) {
 
@@ -81,10 +98,10 @@ public class MailServiceTestUtil {
 				}
 			}
 			else {
-				String messageHeaderValue = mailMessage.getFirstHeaderValue(
+				String mailMessageHeaderValue = mailMessage.getFirstHeaderValue(
 					headerName);
 
-				if (messageHeaderValue.equals(headerValue)) {
+				if (mailMessageHeaderValue.equals(headerValue)) {
 					mailMessages.add(mailMessage);
 				}
 			}
@@ -108,7 +125,8 @@ public class MailServiceTestUtil {
 
 		int smtpPort = _getFreePort();
 
-		_prefsPropsTemporarySwapper = new PrefsPropsTemporarySwapper(
+		_safeCloseable = PrefsPropsTestUtil.swapWithSafeCloseable(
+			CompanyThreadLocal.getCompanyId(),
 			PropsKeys.MAIL_SESSION_MAIL_SMTP_PORT, smtpPort,
 			PropsKeys.MAIL_SESSION_MAIL, true);
 
@@ -137,7 +155,6 @@ public class MailServiceTestUtil {
 
 			});
 		_smtpServer.setPort(smtpPort);
-
 		_smtpServer.setThreaded(false);
 
 		ReflectionTestUtil.invoke(
@@ -156,7 +173,7 @@ public class MailServiceTestUtil {
 
 		_smtpServer = null;
 
-		_prefsPropsTemporarySwapper.close();
+		_safeCloseable.close();
 
 		MailServiceUtil.clearSession();
 	}
@@ -185,71 +202,13 @@ public class MailServiceTestUtil {
 	private static List<MailMessage> _wrapMailMessages(
 		List<com.dumbster.smtp.MailMessage> mailMessages) {
 
-		List<MailMessage> wrappedMailMessages = new ArrayList<>();
-
-		for (com.dumbster.smtp.MailMessage mailMessage : mailMessages) {
-			wrappedMailMessages.add(new MailMessageImpl(mailMessage));
-		}
-
-		return wrappedMailMessages;
+		return TransformUtil.transform(
+			mailMessages, mailMessage -> new MailMessageImpl(mailMessage));
 	}
 
 	private static final int _START_PORT = 3241;
 
-	private static PrefsPropsTemporarySwapper _prefsPropsTemporarySwapper;
+	private static SafeCloseable _safeCloseable;
 	private static SmtpServer _smtpServer;
-
-	private static class PrefsPropsTemporarySwapper implements AutoCloseable {
-
-		public PrefsPropsTemporarySwapper(
-				String firstKey, Object firstValue, Object... keysAndValues)
-			throws Exception {
-
-			PortletPreferences portletPreferences =
-				PortalPreferencesLocalServiceUtil.getPreferences(
-					0, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
-
-			_setTemporaryValue(
-				portletPreferences, firstKey, String.valueOf(firstValue));
-
-			for (int i = 0; i < keysAndValues.length; i += 2) {
-				String key = String.valueOf(keysAndValues[i]);
-				String value = String.valueOf(keysAndValues[i + 1]);
-
-				_setTemporaryValue(portletPreferences, key, value);
-			}
-
-			portletPreferences.store();
-		}
-
-		@Override
-		public void close() throws Exception {
-			PortletPreferences portletPreferences =
-				PortalPreferencesLocalServiceUtil.getPreferences(
-					0, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
-
-			for (Map.Entry<String, String> entry : _oldValues.entrySet()) {
-				portletPreferences.setValue(entry.getKey(), entry.getValue());
-			}
-
-			portletPreferences.store();
-		}
-
-		private void _setTemporaryValue(
-				PortletPreferences portletPreferences, String key, String value)
-			throws Exception {
-
-			PortletPreferences preferences =
-				PortalPreferencesLocalServiceUtil.getPreferences(
-					0, PortletKeys.PREFS_OWNER_TYPE_COMPANY);
-
-			_oldValues.put(key, preferences.getValue(key, PropsUtil.get(key)));
-
-			portletPreferences.setValue(key, value);
-		}
-
-		private final Map<String, String> _oldValues = new HashMap<>();
-
-	}
 
 }

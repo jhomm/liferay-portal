@@ -1,0 +1,12 @@
+{
+	"cacheable": false,
+	"fragmentEntryKey": "numeric-input",
+	"icon": "number",
+	"name": "numeric",
+	"type": "input",
+	"typeOptions": {
+		"fieldTypes": [
+			"number"
+		]
+	}
+}

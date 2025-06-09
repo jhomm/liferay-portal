@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "false";
 	property portal.upstream = "true";
@@ -24,6 +26,10 @@ definition {
 			ACUtils.addSiteAndPage();
 		}
 
+		task ("Create Blog to Add to Page") {
+			ACUtils.createBlogsAndAddToPage();
+		}
+
 		task ("Add a new user") {
 			JSONUser.addUser(
 				userEmailAddress = "userea@liferay.com",
@@ -43,44 +49,33 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
-
 		else {
 			JSONGroup.deleteGroupByName(groupName = "Site Name");
-
-			JSONUser.tearDownNonAdminUsers();
 		}
 
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8514 | Test Summary: Page Profile Visitor behavior card shows the number of unique visitors and views"
-	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test ShowNumberOfUniqueVisitorsAndViews {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: data doesn't appear on time
-		// AC Refactor ticket: LRAC-8728
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
 				userLoginEmailAddress = "userea@liferay.com",
 				userLoginFullName = "userfn userln");
 		}
 
-		task ("View the site page") {
+		task ("View the blog page") {
 			ACUtils.navigateToSitePage(
+				actionType = "View Blog",
+				documentTitleList = "Blogs AC Title,Blogs AC Title,Blogs AC Title,Blogs AC Title",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -92,7 +87,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to Pages tab in Sites dashboard") {
@@ -108,7 +103,9 @@ definition {
 		}
 
 		task ("Navigate to page report entry") {
-			ACNavigation.openItem(itemName = "AC Page - Site Name - Liferay DXP");
+			var dataSourceName = StringUtil.extractFirst(${assignedPropertyName}, " ");
+
+			ACNavigation.openItem(itemName = "Blogs AC Title - Site Name - ${dataSourceName}");
 		}
 
 		task ("Navigate to the Overview tab in Pages dashboard") {
@@ -125,29 +122,24 @@ definition {
 			ACCards.viewMetricValue(
 				cardTitle = "Visitors Behavior",
 				metricName = "Unique Visitors",
-				metricValue = "1");
+				metricValue = 1);
 		}
 
-		task ("View the number of Views in Visitors Behavior chart is 1") {
-			ACCards.viewMetricValue(
-				cardTitle = "Visitors Behavior",
-				metricName = "Views",
-				metricValue = "1");
+		task ("View the number of Views in Visitors Behavior chart") {
+			ACCards.viewIfVisitorsBehaviorMetricIsBetweenCorrectRange(
+				maxMetricValue = 5,
+				metricTitle = "Views",
+				minMetricValue = 1);
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8516 | Test Summary: Assert Sites Page Overview time filter to Custom Filter"
 	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test TimeFilterByCustomRangeInPagesOverview {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: data doesn't appear on time and the test needs data from a past date
 		// AC Refactor ticket: LRAC-8730
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
 
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
@@ -168,7 +160,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to Pages tab in Sites dashboard") {
@@ -191,41 +183,36 @@ definition {
 			ACTimeFilter.clickTimeFilterButton(cardName = "Visitors Behavior");
 
 			ACTimeFilter.setCustomRange(
-				endDay = "10",
+				endDay = 10,
 				endMonth = "July",
-				endYear = "2021",
-				startDay = "10",
+				endYear = 2021,
+				startDay = 10,
 				startMonth = "October",
-				startYear = "2020");
+				startYear = 2020);
 		}
 
 		task ("View the number of Unique Visitors in Visitors Behavior chart is 0") {
 			ACCards.viewMetricValue(
 				cardTitle = "Visitors Behavior",
 				metricName = "Unique Visitors",
-				metricValue = "0");
+				metricValue = 0);
 		}
 
 		task ("View the number of Views in Visitors Behavior chart is 0") {
 			ACCards.viewMetricValue(
 				cardTitle = "Visitors Behavior",
 				metricName = "Views",
-				metricValue = "0");
+				metricValue = 0);
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8517 | Test Summary: Assert Sites Page Overview time filter changes to 180 days"
 	@ignore = "true"
-	@priority = "5"
+	@priority = 5
 	test TimeFilterByLast180DaysInPagesOverview {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: data doesn't appear on time and the test needs data from a past date
 		// AC Refactor ticket: LRAC-8731
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
 
 		task ("Sign in as new user") {
 			User.logoutAndLoginPG(
@@ -246,7 +233,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to Pages tab in Sites dashboard") {
@@ -275,86 +262,14 @@ definition {
 			ACCards.viewMetricValue(
 				cardTitle = "Visitors Behavior",
 				metricName = "Unique Visitors",
-				metricValue = "0");
+				metricValue = 0);
 		}
 
 		task ("View the number of Views in Visitors Behavior chart is 0") {
 			ACCards.viewMetricValue(
 				cardTitle = "Visitors Behavior",
 				metricName = "Views",
-				metricValue = "0");
-		}
-	}
-
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8515 | Test Summary: Last Year time period filter in Page Overview"
-	@ignore = "true"
-	@priority = "5"
-	test TimeFilterByLastYearInPagesOverview {
-		property portal.upstream = "quarantine";
-
-		// AC Refactor: data doesn't appear on time and the test needs data from a past date
-		// AC Refactor ticket: LRAC-8729
-
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
-		task ("Sign in as new user") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "userea@liferay.com",
-				userLoginFullName = "userfn userln");
-		}
-
-		task ("View the site page") {
-			ACUtils.navigateToSitePage(
-				pageName = "AC Page",
-				siteName = "Site Name");
-		}
-
-		task ("Close sessions") {
-			ACUtils.closeAllSessionsAndWait();
-		}
-
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
-
-			ACProperties.switchProperty(propertyName = "${propertyName}");
-		}
-
-		task ("Navigate to Pages tab in Sites dashboard") {
-			ACNavigation.goToSites();
-
-			ACNavigation.switchTab(tabName = "Pages");
-		}
-
-		task ("Select the Last 24 hours in time period") {
-			ACTimeFilter.clickTimeFilterButton();
-
-			ACTimeFilter.setLast24Hours();
-		}
-
-		task ("Navigate to page report entry") {
-			ACNavigation.openItem(itemName = "AC Page - Site Name - Liferay DXP");
-		}
-
-		task ("Select the Last Year in Visitors Behavior chart") {
-			ACTimeFilter.clickTimeFilterButton(cardName = "Visitors Behavior");
-
-			ACTimeFilter.setLastYear();
-		}
-
-		task ("View the number of Unique Visitors in Visitors Behavior chart is 0") {
-			ACCards.viewMetricValue(
-				cardTitle = "Visitors Behavior",
-				metricName = "Unique Visitors",
-				metricValue = "0");
-		}
-
-		task ("View the number of Views in Visitors Behavior chart is 0") {
-			ACCards.viewMetricValue(
-				cardTitle = "Visitors Behavior",
-				metricName = "Views",
-				metricValue = "0");
+				metricValue = 0);
 		}
 	}
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.test;
@@ -46,7 +37,10 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import org.frutilla.FrutillaRule;
 
@@ -87,9 +81,16 @@ public class CPDefinitionOptionRelLocalServiceTest {
 
 	@After
 	public void tearDown() throws Exception {
-		_serviceContext = null;
+		for (CPDefinitionOptionRel cpDefinitionOptionRel :
+				_cpDefinitionOptionRels) {
 
-		_cpOptionLocalService.deleteCPOptions(_group.getCompanyId());
+			_cpDefinitionOptionRelLocalService.deleteCPDefinitionOptionRel(
+				cpDefinitionOptionRel);
+		}
+
+		_cpOptionLocalService.deleteCPOptions(_serviceContext.getCompanyId());
+
+		_serviceContext = null;
 	}
 
 	@Test
@@ -114,6 +115,8 @@ public class CPDefinitionOptionRelLocalServiceTest {
 				_commerceCatalog.getGroupId(), cpDefinition.getCPDefinitionId(),
 				false, 2);
 
+		_cpDefinitionOptionRels.add(cpDefinitionOptionRel);
+
 		Assert.assertFalse(
 			"SKU contributor value", cpDefinitionOptionRel.isSkuContributor());
 
@@ -123,7 +126,7 @@ public class CPDefinitionOptionRelLocalServiceTest {
 				cpDefinitionOptionRel.getCPOptionId(),
 				cpDefinitionOptionRel.getNameMap(),
 				cpDefinitionOptionRel.getDescriptionMap(),
-				cpDefinitionOptionRel.getDDMFormFieldTypeName(),
+				cpDefinitionOptionRel.getCommerceOptionTypeKey(),
 				cpDefinitionOptionRel.getPriority(),
 				cpDefinitionOptionRel.isFacetable(),
 				cpDefinitionOptionRel.isRequired(), true, _serviceContext);
@@ -145,12 +148,16 @@ public class CPDefinitionOptionRelLocalServiceTest {
 			_commerceCatalog.getGroupId(), cpDefinition.getCPDefinitionId(),
 			false, 2);
 
+		_cpDefinitionOptionRels.add(cpDefinitionOptionRel);
+
 		Assert.assertFalse(
 			"SKU contributor value", cpDefinitionOptionRel.isSkuContributor());
 
 		cpDefinitionOptionRel = CPTestUtil.addCPDefinitionOptionRel(
 			_commerceCatalog.getGroupId(), cpDefinition.getCPDefinitionId(),
 			true, 2);
+
+		_cpDefinitionOptionRels.add(cpDefinitionOptionRel);
 
 		Assert.assertTrue(
 			"SKU contributor value", cpDefinitionOptionRel.isSkuContributor());
@@ -178,7 +185,7 @@ public class CPDefinitionOptionRelLocalServiceTest {
 			cpDefinitionOptionRel.getCPOptionId(),
 			cpDefinitionOptionRel.getNameMap(),
 			cpDefinitionOptionRel.getDescriptionMap(),
-			cpDefinitionOptionRel.getDDMFormFieldTypeName(),
+			cpDefinitionOptionRel.getCommerceOptionTypeKey(),
 			cpDefinitionOptionRel.getPriority(),
 			cpDefinitionOptionRel.isFacetable(),
 			cpDefinitionOptionRel.isRequired(), false, _serviceContext);
@@ -226,6 +233,8 @@ public class CPDefinitionOptionRelLocalServiceTest {
 				_commerceCatalog.getGroupId(), cpDefinition.getCPDefinitionId(),
 				1, 5);
 
+		_cpDefinitionOptionRels.addAll(cpDefinitionOptionRels);
+
 		CPDefinitionOptionRel cpDefinitionOptionRel =
 			cpDefinitionOptionRels.get(0);
 
@@ -261,6 +270,86 @@ public class CPDefinitionOptionRelLocalServiceTest {
 	}
 
 	@Test
+	public void testGetCPDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys()
+		throws Exception {
+
+		frutillaRule.scenario(
+			"Verify keys combination for JSON payload"
+		).given(
+			"I have a product definition"
+		).when(
+			"a SKU contributor option is added to definition"
+		).and(
+			"the option has one"
+		).then(
+			"the generated combination contains key, skuOptionName, " +
+				"skuOptionValueName and value"
+		);
+
+		int cpOptionsCount = 1;
+		int cpOptionValuesCount = 1;
+
+		CPDefinition cpDefinition = CPTestUtil.addCPDefinitionFromCatalog(
+			_commerceCatalog.getGroupId(), SimpleCPTypeConstants.NAME, true,
+			true);
+
+		List<CPDefinitionOptionRel> cpDefinitionOptionRels =
+			CPTestUtil.addCPOption(
+				_commerceCatalog.getGroupId(), cpDefinition.getCPDefinitionId(),
+				cpOptionsCount, cpOptionValuesCount);
+
+		_cpDefinitionOptionRels.addAll(cpDefinitionOptionRels);
+
+		List<CPInstance> cpInstances = _cpInstanceLocalService.buildCPInstances(
+			cpDefinition.getCPDefinitionId(),
+			ServiceContextTestUtil.getServiceContext(
+				cpDefinition.getGroupId()));
+
+		CPInstance cpInstance = cpInstances.get(0);
+
+		Map<String, List<String>>
+			cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys =
+				_cpDefinitionOptionRelLocalService.
+					getCPDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys(
+						cpInstance.getCPInstanceId());
+
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			cpDefinitionOptionRels.get(0);
+
+		Assert.assertTrue(
+			"Key map does not contain the key: " +
+				cpDefinitionOptionRel.getKey(),
+			cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys.containsKey(
+				cpDefinitionOptionRel.getKey()));
+
+		List<String> strings =
+			cpDefinitionOptionRelKeysCPDefinitionOptionValueRelKeys.get(
+				cpDefinitionOptionRel.getKey());
+
+		Assert.assertTrue(strings.size() == 3);
+		Assert.assertTrue(
+			Objects.equals(
+				cpDefinitionOptionRel.getName(
+					cpDefinitionOptionRel.getDefaultLanguageId()),
+				strings.get(0)));
+
+		List<CPDefinitionOptionValueRel> cpDefinitionOptionValueRels =
+			cpDefinitionOptionRel.getCPDefinitionOptionValueRels();
+
+		CPDefinitionOptionValueRel cpDefinitionOptionValueRel =
+			cpDefinitionOptionValueRels.get(0);
+
+		Assert.assertTrue(
+			Objects.equals(
+				cpDefinitionOptionValueRel.getKey(), strings.get(2)));
+		Assert.assertTrue(
+			Objects.equals(
+				cpDefinitionOptionValueRel.getName(
+					cpDefinitionOptionRel.getDefaultLanguageId()),
+				strings.get(1)));
+	}
+
+	@Test
 	public void testUpdateCPDefinitionOptionRelPriceType() throws Exception {
 		frutillaRule.scenario(
 			"Update product option's priceType attribute"
@@ -277,12 +366,14 @@ public class CPDefinitionOptionRelLocalServiceTest {
 
 		CPOption cpOption = CPTestUtil.addCPOption(
 			_commerceCatalog.getGroupId(),
-			CPTestUtil.getDefaultDDMFormFieldType(false), false);
+			CPTestUtil.getDefaultCommerceOptionTypeKey(false), false);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
 			CPTestUtil.addCPDefinitionOptionRel(
 				_commerceCatalog.getGroupId(), cpDefinition.getCPDefinitionId(),
 				cpOption.getCPOptionId());
+
+		_cpDefinitionOptionRels.add(cpDefinitionOptionRel);
 
 		Assert.assertTrue(
 			Validator.isNull(cpDefinitionOptionRel.getPriceType()));
@@ -430,6 +521,8 @@ public class CPDefinitionOptionRelLocalServiceTest {
 			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRels(
 				cpDefinition.getCPDefinitionId());
 
+		_cpDefinitionOptionRels.addAll(cpDefinitionOptionRels);
+
 		Assert.assertFalse(cpDefinitionOptionRels.isEmpty());
 
 		for (CPDefinitionOptionRel cpDefinitionOptionRel :
@@ -460,11 +553,14 @@ public class CPDefinitionOptionRelLocalServiceTest {
 			cpDefinitionOptionRel.getCPOptionId(),
 			cpDefinitionOptionRel.getNameMap(),
 			cpDefinitionOptionRel.getDescriptionMap(),
-			cpDefinitionOptionRel.getDDMFormFieldTypeName(),
+			cpDefinitionOptionRel.getCommerceOptionTypeKey(),
+			cpDefinitionOptionRel.getInfoItemServiceKey(),
 			cpDefinitionOptionRel.getPriority(),
+			cpDefinitionOptionRel.isDefinedExternally(),
 			cpDefinitionOptionRel.isFacetable(),
 			cpDefinitionOptionRel.isRequired(),
 			cpDefinitionOptionRel.isSkuContributor(), priceType,
+			cpDefinitionOptionRel.getTypeSettings(),
 			ServiceContextTestUtil.getServiceContext(
 				cpDefinitionOptionRel.getGroupId()));
 	}
@@ -482,6 +578,9 @@ public class CPDefinitionOptionRelLocalServiceTest {
 	@Inject
 	private CPDefinitionOptionRelLocalService
 		_cpDefinitionOptionRelLocalService;
+
+	private final List<CPDefinitionOptionRel> _cpDefinitionOptionRels =
+		new ArrayList<>();
 
 	@Inject
 	private CPDefinitionOptionValueRelLocalService

@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.subscription.type.web.internal.display.context;
 
-import com.liferay.commerce.product.subscription.type.web.internal.display.context.util.CPSubscriptionTypeRequestHelper;
+import com.liferay.commerce.product.subscription.type.web.internal.display.context.helper.CPSubscriptionTypeRequestHelper;
 import com.liferay.commerce.product.subscription.type.web.internal.display.context.util.comparator.WeeklyCPSubscriptionTypeCalendarWeekDaysComparator;
 import com.liferay.commerce.util.CommerceSubscriptionTypeUtil;
 import com.liferay.petra.string.StringPool;
@@ -22,12 +13,12 @@ import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Alessio Antonio Rendina
@@ -48,7 +39,7 @@ public class WeeklyCPSubscriptionTypeDisplayContext {
 		List<Integer> calendarWeekDays = new ArrayList<>();
 
 		Map<String, Integer> calendarWeekDaysDisplayNames =
-			getCalendarWeekDaysDisplayNames();
+			_getCalendarWeekDaysDisplayNames();
 
 		for (Map.Entry<String, Integer> entry :
 				calendarWeekDaysDisplayNames.entrySet()) {
@@ -64,27 +55,28 @@ public class WeeklyCPSubscriptionTypeDisplayContext {
 
 	public int getSelectedWeekDay() {
 		UnicodeProperties subscriptionTypeSettingsUnicodeProperties =
-			CommerceSubscriptionTypeUtil.getSubscriptionTypeSettingsProperties(
-				_object, _payment);
+			CommerceSubscriptionTypeUtil.
+				getSubscriptionTypeSettingsUnicodeProperties(_object, _payment);
 
 		if ((subscriptionTypeSettingsUnicodeProperties == null) ||
 			subscriptionTypeSettingsUnicodeProperties.isEmpty()) {
 
-			return 0;
+			return 1;
 		}
 
 		if (isPayment()) {
 			return GetterUtil.getInteger(
-				subscriptionTypeSettingsUnicodeProperties.get("weekDay"));
+				subscriptionTypeSettingsUnicodeProperties.get("weekDay"), 1);
 		}
 
 		return GetterUtil.getInteger(
-			subscriptionTypeSettingsUnicodeProperties.get("deliveryWeekDay"));
+			subscriptionTypeSettingsUnicodeProperties.get("deliveryWeekDay"),
+			1);
 	}
 
 	public String getWeekDayDisplayName(int weekDay) {
 		Map<String, Integer> calendarWeekDaysDisplayNames =
-			getCalendarWeekDaysDisplayNames();
+			_getCalendarWeekDaysDisplayNames();
 
 		for (Map.Entry<String, Integer> entry :
 				calendarWeekDaysDisplayNames.entrySet()) {
@@ -101,7 +93,7 @@ public class WeeklyCPSubscriptionTypeDisplayContext {
 		return _payment;
 	}
 
-	protected Map<String, Integer> getCalendarWeekDaysDisplayNames() {
+	private Map<String, Integer> _getCalendarWeekDaysDisplayNames() {
 		Calendar calendar = CalendarFactoryUtil.getCalendar(
 			_cpSubscriptionTypeRequestHelper.getLocale());
 

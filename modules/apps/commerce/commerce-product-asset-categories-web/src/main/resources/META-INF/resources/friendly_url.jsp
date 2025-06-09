@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -29,7 +20,7 @@ long parentCategoryId = BeanParamUtil.getLong(category, request, "parentCategory
 PortletURL categoryRedirectURL = PortletURLBuilder.createRenderURL(
 	renderResponse
 ).setMVCPath(
-	"/view_categories.jsp"
+	"/view_asset_categories.jsp"
 ).buildPortletURL();
 
 if (parentCategoryId > 0) {
@@ -57,23 +48,21 @@ renderResponse.setTitle(category.getTitle(locale));
 	<aui:input name="categoryId" type="hidden" value="<%= category.getCategoryId() %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<label for="<portlet:namespace />urlTitleMapAsXML"><liferay-ui:message key="friendly-url" /><liferay-ui:icon-help message='<%= LanguageUtil.format(request, "for-example-x", "<em>news</em>", false) %>' /></label>
+		<liferay-frontend:fieldset>
+			<label for="<portlet:namespace />urlTitleMapAsXML"><liferay-ui:message key="friendly-url" /><liferay-ui:icon-help message='<%= LanguageUtil.format(request, "for-example-x", "<em>news</em>", false) %>' /></label>
 
-				<liferay-ui:input-localized
-					defaultLanguageId="<%= LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale()) %>"
-					inputAddon="<%= StringUtil.shorten(friendlyURLBase.toString(), 40) %>"
-					name="urlTitleMapAsXML"
-					xml="<%= HttpUtil.decodeURL(titleMapAsXML) %>"
-				/>
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<liferay-ui:input-localized
+				defaultLanguageId="<%= LocaleUtil.toLanguageId(themeDisplay.getSiteDefaultLocale()) %>"
+				inputAddon="<%= StringUtil.shorten(friendlyURLBase.toString(), 40) %>"
+				name="urlTitleMapAsXML"
+				xml="<%= HttpComponentsUtil.decodeURL(titleMapAsXML) %>"
+			/>
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button href="<%= categoryRedirectURL.toString() %>" type="cancel" />
+		<liferay-frontend:edit-form-buttons
+			redirect="<%= categoryRedirectURL.toString() %>"
+		/>
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>

@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link CommerceDiscountRelLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommerceDiscountRelLocalServiceWrapper
 	implements CommerceDiscountRelLocalService,
 			   ServiceWrapper<CommerceDiscountRelLocalService> {
+
+	public CommerceDiscountRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommerceDiscountRelLocalServiceWrapper(
 		CommerceDiscountRelLocalService commerceDiscountRelLocalService) {
@@ -57,11 +53,14 @@ public class CommerceDiscountRelLocalServiceWrapper
 	public com.liferay.commerce.discount.model.CommerceDiscountRel
 			addCommerceDiscountRel(
 				long commerceDiscountId, String className, long classPK,
+				com.liferay.portal.kernel.util.UnicodeProperties
+					typeSettingsUnicodeProperties,
 				com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceDiscountRelLocalService.addCommerceDiscountRel(
-			commerceDiscountId, className, classPK, serviceContext);
+			commerceDiscountId, className, classPK,
+			typeSettingsUnicodeProperties, serviceContext);
 	}
 
 	/**
@@ -90,6 +89,19 @@ public class CommerceDiscountRelLocalServiceWrapper
 			primaryKeyObj);
 	}
 
+	@Override
+	public com.liferay.commerce.discount.model.CommerceDiscountRel
+			deleteCommerceDiscountRel(
+				com.liferay.commerce.discount.model.CommerceDiscount
+					commerceDiscount,
+				com.liferay.commerce.discount.model.CommerceDiscountRel
+					commerceDiscountRel)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceDiscountRelLocalService.deleteCommerceDiscountRel(
+			commerceDiscount, commerceDiscountRel);
+	}
+
 	/**
 	 * Deletes the commerce discount rel from the database. Also notifies the appropriate model listeners.
 	 *
@@ -99,14 +111,12 @@ public class CommerceDiscountRelLocalServiceWrapper
 	 *
 	 * @param commerceDiscountRel the commerce discount rel
 	 * @return the commerce discount rel that was removed
-	 * @throws PortalException
 	 */
 	@Override
 	public com.liferay.commerce.discount.model.CommerceDiscountRel
-			deleteCommerceDiscountRel(
-				com.liferay.commerce.discount.model.CommerceDiscountRel
-					commerceDiscountRel)
-		throws com.liferay.portal.kernel.exception.PortalException {
+		deleteCommerceDiscountRel(
+			com.liferay.commerce.discount.model.CommerceDiscountRel
+				commerceDiscountRel) {
 
 		return _commerceDiscountRelLocalService.deleteCommerceDiscountRel(
 			commerceDiscountRel);
@@ -133,11 +143,13 @@ public class CommerceDiscountRelLocalServiceWrapper
 	}
 
 	@Override
-	public void deleteCommerceDiscountRels(long commerceDiscountId)
+	public void deleteCommerceDiscountRels(
+			com.liferay.commerce.discount.model.CommerceDiscount
+				commerceDiscount)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_commerceDiscountRelLocalService.deleteCommerceDiscountRels(
-			commerceDiscountId);
+			commerceDiscount);
 	}
 
 	@Override
@@ -350,6 +362,25 @@ public class CommerceDiscountRelLocalServiceWrapper
 	@Override
 	public java.util.List
 		<com.liferay.commerce.discount.model.CommerceDiscountRel>
+			getCommerceDiscountRels(long classNameId, long classPK) {
+
+		return _commerceDiscountRelLocalService.getCommerceDiscountRels(
+			classNameId, classPK);
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.commerce.discount.model.CommerceDiscountRel>
+			getCommerceDiscountRels(
+				long classNameId, long classPK, String unitOfMeasureKey) {
+
+		return _commerceDiscountRelLocalService.getCommerceDiscountRels(
+			classNameId, classPK, unitOfMeasureKey);
+	}
+
+	@Override
+	public java.util.List
+		<com.liferay.commerce.discount.model.CommerceDiscountRel>
 			getCommerceDiscountRels(long commerceDiscountId, String className) {
 
 		return _commerceDiscountRelLocalService.getCommerceDiscountRels(
@@ -495,6 +526,11 @@ public class CommerceDiscountRelLocalServiceWrapper
 
 		return _commerceDiscountRelLocalService.updateCommerceDiscountRel(
 			commerceDiscountRel);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commerceDiscountRelLocalService.getBasePersistence();
 	}
 
 	@Override

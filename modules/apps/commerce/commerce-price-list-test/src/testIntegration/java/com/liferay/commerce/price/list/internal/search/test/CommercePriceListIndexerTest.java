@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.internal.search.test;
@@ -33,12 +24,14 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -49,6 +42,7 @@ import java.util.List;
 import org.frutilla.FrutillaRule;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -75,17 +69,22 @@ public class CommercePriceListIndexerTest {
 	public static void setUpClass() throws Exception {
 		_company = CompanyTestUtil.addCompany();
 
+		_originalName = PrincipalThreadLocal.getName();
+
+		PrincipalThreadLocal.setName(TestPropsValues.getUserId());
+
 		_user = UserTestUtil.addUser(_company);
 
 		_indexer = _indexerRegistry.getIndexer(CommercePriceList.class);
 	}
 
+	@AfterClass
+	public static void tearDownClass() {
+		PrincipalThreadLocal.setName(_originalName);
+	}
+
 	@Before
 	public void setUp() throws Exception {
-		_company = CompanyTestUtil.addCompany();
-
-		_user = UserTestUtil.addUser(_company);
-
 		PermissionThreadLocal.setPermissionChecker(
 			PermissionCheckerFactoryUtil.create(_user));
 
@@ -117,15 +116,15 @@ public class CommercePriceListIndexerTest {
 			CommerceCurrencyTestUtil.addCommerceCurrency(
 				_company.getCompanyId());
 
-		User defaultUser = _company.getDefaultUser();
+		User guestUser = _company.getGuestUser();
 
 		CommerceCatalog commerceCatalog = CommerceTestUtil.addCommerceCatalog(
-			_company.getCompanyId(), _group.getGroupId(),
-			defaultUser.getUserId(), commerceCurrency.getCode());
+			_company.getCompanyId(), _group.getGroupId(), guestUser.getUserId(),
+			commerceCurrency.getCode());
 
 		_commercePriceListLocalService.addCommercePriceList(
-			null, commerceCatalog.getGroupId(), _user.getUserId(),
-			commerceCurrency.getCommerceCurrencyId(), true,
+			null, _user.getUserId(), commerceCatalog.getGroupId(),
+			commerceCurrency.getCode(), true,
 			CommercePriceListConstants.TYPE_PRICE_LIST, 0, false,
 			RandomTestUtil.randomString(), 0, 1, 1, 2018, 3, 4, 0, 0, 0, 0, 0,
 			true,
@@ -155,11 +154,16 @@ public class CommercePriceListIndexerTest {
 	public FrutillaRule frutillaRule = new FrutillaRule();
 
 	private static Company _company;
+
+	@Inject
+	private static CompanyLocalService _companyLocalService;
+
 	private static Indexer<CommercePriceList> _indexer;
 
 	@Inject
 	private static IndexerRegistry _indexerRegistry;
 
+	private static String _originalName;
 	private static User _user;
 
 	@Inject

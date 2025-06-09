@@ -1,26 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.staging.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetCategory;
+import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
+import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.exportimport.changeset.constants.ChangesetPortletKeys;
 import com.liferay.exportimport.kernel.configuration.ExportImportConfigurationParameterMapFactoryUtil;
+import com.liferay.exportimport.kernel.exception.RemoteExportException;
 import com.liferay.exportimport.kernel.lar.ExportImportDateUtil;
 import com.liferay.exportimport.kernel.lar.ExportImportHelperUtil;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
@@ -35,17 +29,20 @@ import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalServiceUtil;
 import com.liferay.journal.test.util.JournalTestUtil;
 import com.liferay.layout.test.util.LayoutTestUtil;
-import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.function.UnsafeSupplier;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProviderUtil;
+import com.liferay.portal.kernel.exception.NoSuchGroupException;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
-import com.liferay.portal.kernel.model.LayoutSet;
-import com.liferay.portal.kernel.model.LayoutSetBranch;
 import com.liferay.portal.kernel.model.LayoutSetBranchConstants;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
+import com.liferay.portal.kernel.service.LayoutServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetBranchLocalServiceUtil;
 import com.liferay.portal.kernel.service.LayoutSetLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -55,42 +52,45 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
-import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.SystemProperties;
 import com.liferay.portal.kernel.util.UnicodeProperties;
+import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Element;
 import com.liferay.portal.kernel.xml.SAXReaderUtil;
-import com.liferay.portal.kernel.zip.ZipReaderFactoryUtil;
+import com.liferay.portal.kernel.zip.ZipReaderFactory;
+import com.liferay.portal.test.log.LogCapture;
+import com.liferay.portal.test.log.LoggerTestUtil;
+import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-import com.liferay.portal.util.PropsValues;
 import com.liferay.staging.configuration.StagingConfiguration;
+
+import jakarta.portlet.PortletPreferences;
 
 import java.io.File;
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
+import java.nio.file.DirectoryStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Dictionary;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -124,10 +124,75 @@ public class StagingImplTest {
 	}
 
 	@Test
+	public void testDisableRemoteStagingWithIncorrectLiveGroupHiddenError()
+		throws Exception {
+
+		enableRemoteStaging(false);
+
+		Throwable caughtThrowable = null;
+
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNEL_SERVLET_HIDE_EXCEPTION_DATA", true)) {
+
+			caughtThrowable = _disableRemoteStagingWithIncorrectLiveGroupId();
+		}
+
+		Assert.assertNotNull(caughtThrowable);
+
+		Class<? extends Throwable> caughtExceptionClass =
+			caughtThrowable.getClass();
+
+		Assert.assertNotEquals(
+			NoSuchGroupException.class, caughtExceptionClass);
+		Assert.assertNotEquals(PortalException.class, caughtExceptionClass);
+		Assert.assertEquals(RemoteExportException.class, caughtExceptionClass);
+		Assert.assertNotEquals(SystemException.class, caughtExceptionClass);
+
+		RemoteExportException remoteExportException =
+			(RemoteExportException)caughtThrowable;
+
+		Assert.assertEquals(
+			remoteExportException.getType(), RemoteExportException.NO_GROUP);
+	}
+
+	@Test
+	public void testDisableRemoteStagingWithIncorrectLiveGroupVisibleError()
+		throws Exception {
+
+		enableRemoteStaging(false);
+
+		Throwable caughtThrowable = null;
+
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNEL_SERVLET_HIDE_EXCEPTION_DATA", false)) {
+
+			caughtThrowable = _disableRemoteStagingWithIncorrectLiveGroupId();
+		}
+
+		Assert.assertNotNull(caughtThrowable);
+
+		Class<? extends Throwable> caughtExceptionClass =
+			caughtThrowable.getClass();
+
+		Assert.assertEquals(NoSuchGroupException.class, caughtExceptionClass);
+		Assert.assertNotEquals(PortalException.class, caughtExceptionClass);
+		Assert.assertNotEquals(
+			RemoteExportException.class, caughtExceptionClass);
+		Assert.assertNotEquals(SystemException.class, caughtExceptionClass);
+
+		Assert.assertEquals(
+			"No Group exists with the primary key " +
+				(_remoteLiveGroup.getGroupId() + 1),
+			caughtThrowable.getMessage());
+	}
+
+	@Test
 	public void testGetRemoteLayout() throws Exception {
 		enableRemoteStaging(false);
 
-		Layout remoteStagingGroupLayout = LayoutTestUtil.addLayout(
+		Layout remoteStagingGroupLayout = LayoutTestUtil.addTypePortletLayout(
 			_remoteStagingGroup);
 
 		Map<String, String[]> parameters =
@@ -138,9 +203,11 @@ public class StagingImplTest {
 			TestPropsValues.getUserId(), _remoteStagingGroup.getGroupId(),
 			_remoteLiveGroup.getGroupId(), false, parameters);
 
-		Layout remoteLiveGroupLayout = StagingUtil.getRemoteLayout(
-			TestPropsValues.getUserId(), remoteStagingGroupLayout.getGroupId(),
-			remoteStagingGroupLayout.getPlid());
+		Layout remoteLiveGroupLayout = _executeWithRemoteCredentials(
+			() -> StagingUtil.getRemoteLayout(
+				TestPropsValues.getUserId(),
+				remoteStagingGroupLayout.getGroupId(),
+				remoteStagingGroupLayout.getPlid()));
 
 		Assert.assertNotNull(remoteLiveGroupLayout);
 
@@ -153,17 +220,58 @@ public class StagingImplTest {
 	}
 
 	@Test
-	public void testHasRemoteLayout() throws Exception {
+	public void testGetRemoteLayoutPlid() throws Exception {
 		enableRemoteStaging(false);
 
-		Layout remoteStagingGroupLayout = LayoutTestUtil.addLayout(
+		Layout remoteStagingGroupLayout = LayoutTestUtil.addTypePortletLayout(
 			_remoteStagingGroup);
 
-		Assert.assertFalse(
-			StagingUtil.hasRemoteLayout(
+		long remoteLiveGroupLayoutPlid = _executeWithRemoteCredentials(
+			() -> StagingUtil.getRemoteLayoutPlid(
 				TestPropsValues.getUserId(),
 				remoteStagingGroupLayout.getGroupId(),
 				remoteStagingGroupLayout.getPlid()));
+
+		Assert.assertEquals(0L, remoteLiveGroupLayoutPlid);
+
+		Map<String, String[]> parameters =
+			ExportImportConfigurationParameterMapFactoryUtil.
+				buildFullPublishParameterMap();
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), _remoteStagingGroup.getGroupId(),
+			_remoteLiveGroup.getGroupId(), false, parameters);
+
+		remoteLiveGroupLayoutPlid = _executeWithRemoteCredentials(
+			() -> StagingUtil.getRemoteLayoutPlid(
+				TestPropsValues.getUserId(),
+				remoteStagingGroupLayout.getGroupId(),
+				remoteStagingGroupLayout.getPlid()));
+
+		Layout remoteLiveGroupLayout = LayoutServiceUtil.fetchLayout(
+			_remoteLiveGroup.getGroupId(),
+			remoteStagingGroupLayout.isPrivateLayout(),
+			remoteStagingGroupLayout.getLayoutId());
+
+		Assert.assertNotNull(remoteLiveGroupLayout);
+
+		Assert.assertEquals(
+			remoteLiveGroupLayout.getPlid(), remoteLiveGroupLayoutPlid);
+	}
+
+	@Test
+	public void testHasRemoteLayout() throws Exception {
+		enableRemoteStaging(false);
+
+		Layout remoteStagingGroupLayout = LayoutTestUtil.addTypePortletLayout(
+			_remoteStagingGroup);
+
+		Assert.assertFalse(
+			_executeWithRemoteCredentials(
+				() -> StagingUtil.hasRemoteLayout(
+					TestPropsValues.getUserId(),
+					remoteStagingGroupLayout.getGroupId(),
+					remoteStagingGroupLayout.getPlid())));
 
 		Map<String, String[]> parameters =
 			ExportImportConfigurationParameterMapFactoryUtil.
@@ -174,39 +282,27 @@ public class StagingImplTest {
 			_remoteLiveGroup.getGroupId(), false, parameters);
 
 		Assert.assertTrue(
-			StagingUtil.hasRemoteLayout(
-				TestPropsValues.getUserId(),
-				remoteStagingGroupLayout.getGroupId(),
-				remoteStagingGroupLayout.getPlid()));
+			_executeWithRemoteCredentials(
+				() -> StagingUtil.hasRemoteLayout(
+					TestPropsValues.getUserId(),
+					remoteStagingGroupLayout.getGroupId(),
+					remoteStagingGroupLayout.getPlid())));
 	}
 
 	@Test
 	public void testInitialPublication() throws Exception {
-		long companyId = _group.getCompanyId();
-
-		StagingConfiguration stagingConfiguration =
-			ConfigurationProviderUtil.getCompanyConfiguration(
-				StagingConfiguration.class, companyId);
-
-		boolean stagingDeleteTempLAROnSuccess =
-			stagingConfiguration.stagingDeleteTempLAROnSuccess();
-
-		Dictionary<String, Object> properties = new Hashtable<>();
-
-		properties.put("stagingDeleteTempLAROnSuccess", false);
-
-		ConfigurationProviderUtil.saveCompanyConfiguration(
-			StagingConfiguration.class, companyId, properties);
-
 		try {
+			ConfigurationProviderUtil.saveCompanyConfiguration(
+				StagingConfiguration.class, _group.getCompanyId(),
+				HashMapDictionaryBuilder.<String, Object>put(
+					"stagingDeleteTempLAROnSuccess", false
+				).build());
+
 			doTestInitialPublication();
 		}
 		finally {
-			properties.put(
-				"stagingDeleteTempLAROnSuccess", stagingDeleteTempLAROnSuccess);
-
-			ConfigurationProviderUtil.saveCompanyConfiguration(
-				StagingConfiguration.class, companyId, properties);
+			ConfigurationProviderUtil.deleteCompanyConfiguration(
+				StagingConfiguration.class, _group.getCompanyId());
 		}
 	}
 
@@ -226,21 +322,33 @@ public class StagingImplTest {
 	}
 
 	@Test
+	public void testLocalStagingJournalChangesetLatestVersionConsistency()
+		throws Exception {
+
+		_assertLocalStagingJournalVersion(1.1D);
+	}
+
+	@Test
+	public void testLocalStagingJournalChangesetPreviousVersionConsistency()
+		throws Exception {
+
+		_assertLocalStagingJournalVersion(1.0D);
+	}
+
+	@Test
 	public void testLocalStagingUpdateLastPublishDate() throws Exception {
 		enableLocalStagingWithContent(true, false, false);
 
 		Group stagingGroup = _group.getStagingGroup();
 
-		LayoutSet layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-			_group.getGroupId(), false);
-
-		Assert.assertNull(ExportImportDateUtil.getLastPublishDate(layoutSet));
-
-		layoutSet = LayoutSetLocalServiceUtil.getLayoutSet(
-			stagingGroup.getGroupId(), false);
-
+		Assert.assertNull(
+			ExportImportDateUtil.getLastPublishDate(
+				LayoutSetLocalServiceUtil.getLayoutSet(
+					_group.getGroupId(), false)));
 		Assert.assertNotNull(
-			ExportImportDateUtil.getLastPublishDate(layoutSet));
+			ExportImportDateUtil.getLastPublishDate(
+				LayoutSetLocalServiceUtil.getLayoutSet(
+					stagingGroup.getGroupId(), false)));
 
 		PortletPreferences portletPreferences =
 			PortletPreferencesFactoryUtil.getStrictPortletSetup(
@@ -282,6 +390,49 @@ public class StagingImplTest {
 	}
 
 	@Test
+	public void testRemoteStagingHiddenError() throws Exception {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNEL_SERVLET_HIDE_EXCEPTION_DATA", true)) {
+
+			Throwable caughtThrowable = _enableRemoteStagingWithError();
+
+			Assert.assertEquals(
+				"Invocation failed due to " +
+					"com.liferay.portal.kernel.exception.NoSuchGroupException",
+				caughtThrowable.getMessage());
+
+			Assert.assertNotEquals(
+				caughtThrowable.getClass(), RemoteExportException.class);
+		}
+	}
+
+	@Test
+	public void testRemoteStagingVisibleError() throws Exception {
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNEL_SERVLET_HIDE_EXCEPTION_DATA", false)) {
+
+			Throwable caughtThrowable = _enableRemoteStagingWithError();
+
+			Assert.assertNotEquals(
+				"Invocation failed due to " +
+					"com.liferay.portal.kernel.exception.NoSuchGroupException",
+				caughtThrowable.getMessage());
+
+			Assert.assertEquals(
+				caughtThrowable.getClass(), RemoteExportException.class);
+
+			RemoteExportException remoteExportException =
+				(RemoteExportException)caughtThrowable;
+
+			Assert.assertEquals(
+				remoteExportException.getType(),
+				RemoteExportException.NO_GROUP);
+		}
+	}
+
+	@Test
 	public void testRemoteStagingWithLayoutVersioning() throws Exception {
 		enableRemoteStaging(true);
 	}
@@ -308,13 +459,14 @@ public class StagingImplTest {
 				titleMap, descriptionMap, null, serviceContext);
 
 		return AssetCategoryLocalServiceUtil.addCategory(
-			TestPropsValues.getUserId(), groupId, 0, titleMap, descriptionMap,
-			assetVocabulary.getVocabularyId(), new String[0], serviceContext);
+			null, TestPropsValues.getUserId(), groupId, 0, titleMap,
+			descriptionMap, assetVocabulary.getVocabularyId(), new String[0],
+			serviceContext);
 	}
 
 	protected void doTestInitialPublication() throws Exception {
-		LayoutTestUtil.addLayout(_group);
-		LayoutTestUtil.addLayout(_group, true);
+		LayoutTestUtil.addTypePortletLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group, true);
 
 		JournalTestUtil.addArticle(
 			_group.getGroupId(), RandomTestUtil.randomString(),
@@ -340,18 +492,23 @@ public class StagingImplTest {
 
 		String includePattern = String.valueOf(_group.getGroupId()) + "*.lar";
 
-		String[] larFileNames = FileUtil.find(
-			SystemProperties.get(SystemProperties.TMP_DIR), includePattern,
-			null);
+		List<String> larFileNames = new ArrayList<>();
 
-		Arrays.sort(larFileNames);
+		try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
+				Paths.get(SystemProperties.get(SystemProperties.TMP_DIR)),
+				includePattern)) {
 
-		File larFile = new File(larFileNames[larFileNames.length - 1]);
+			directoryStream.forEach(path -> larFileNames.add(path.toString()));
+		}
+
+		larFileNames.sort(null);
+
+		File larFile = new File(larFileNames.get(larFileNames.size() - 1));
 
 		PortletDataContext portletDataContext =
 			PortletDataContextFactoryUtil.createImportPortletDataContext(
 				_group.getCompanyId(), _group.getGroupId(), parameterMap,
-				userIdStrategy, ZipReaderFactoryUtil.getZipReader(larFile));
+				userIdStrategy, _zipReaderFactory.getZipReader(larFile));
 
 		String journalPortletPath = ExportImportPathUtil.getPortletPath(
 			portletDataContext, JournalPortletKeys.JOURNAL);
@@ -422,18 +579,14 @@ public class StagingImplTest {
 
 		Group stagingGroup = _group.getStagingGroup();
 
-		LayoutSetBranch layoutSetBranch =
+		Assert.assertNotNull(
 			LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
 				stagingGroup.getGroupId(), false,
-				LayoutSetBranchConstants.MASTER_BRANCH_NAME);
-
-		Assert.assertNotNull(layoutSetBranch);
-
-		layoutSetBranch = LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
-			stagingGroup.getGroupId(), true,
-			LayoutSetBranchConstants.MASTER_BRANCH_NAME);
-
-		Assert.assertNotNull(layoutSetBranch);
+				LayoutSetBranchConstants.MASTER_BRANCH_NAME));
+		Assert.assertNotNull(
+			LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
+				stagingGroup.getGroupId(), true,
+				LayoutSetBranchConstants.MASTER_BRANCH_NAME));
 	}
 
 	protected void enableLocalStaging(
@@ -462,8 +615,8 @@ public class StagingImplTest {
 
 		// Layouts
 
-		LayoutTestUtil.addLayout(_group);
-		LayoutTestUtil.addLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
 
 		// Create content
 
@@ -535,62 +688,64 @@ public class StagingImplTest {
 	}
 
 	protected void enableRemoteStaging(boolean branching) throws Exception {
-		_setPortalProperty(
-			"TUNNELING_SERVLET_SHARED_SECRET",
-			"F0E1D2C3B4A5968778695A4B3C2D1E0F");
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET",
+					"F0E1D2C3B4A5968778695A4B3C2D1E0F");
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET_HEX", true)) {
 
-		_setPortalProperty("TUNNELING_SERVLET_SHARED_SECRET_HEX", true);
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext(
+					_remoteStagingGroup.getGroupId());
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_remoteStagingGroup.getGroupId());
+			Map<String, Serializable> attributes =
+				serviceContext.getAttributes();
 
-		Map<String, Serializable> attributes = serviceContext.getAttributes();
+			attributes.putAll(
+				ExportImportConfigurationParameterMapFactoryUtil.
+					buildParameterMap());
 
-		attributes.putAll(
-			ExportImportConfigurationParameterMapFactoryUtil.
-				buildParameterMap());
+			if (branching) {
+				serviceContext.setSignedIn(true);
+			}
 
-		if (branching) {
-			serviceContext.setSignedIn(true);
+			UserTestUtil.setUser(TestPropsValues.getUser());
+
+			StagingLocalServiceUtil.enableRemoteStaging(
+				TestPropsValues.getUserId(), _remoteStagingGroup, branching,
+				branching, "localhost", PortalUtil.getPortalServerPort(false),
+				PortalUtil.getPathContext(), false,
+				_remoteLiveGroup.getGroupId(), serviceContext);
+
+			GroupUtil.clearCache();
+
+			if (!branching) {
+				return;
+			}
+
+			UnicodeProperties typeSettingsUnicodeProperties =
+				_remoteStagingGroup.getTypeSettingsProperties();
+
+			Assert.assertTrue(
+				GetterUtil.getBoolean(
+					typeSettingsUnicodeProperties.getProperty(
+						"branchingPrivate")));
+			Assert.assertTrue(
+				GetterUtil.getBoolean(
+					typeSettingsUnicodeProperties.getProperty(
+						"branchingPublic")));
+
+			Assert.assertNotNull(
+				LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
+					_remoteStagingGroup.getGroupId(), false,
+					LayoutSetBranchConstants.MASTER_BRANCH_NAME));
+			Assert.assertNotNull(
+				LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
+					_remoteStagingGroup.getGroupId(), true,
+					LayoutSetBranchConstants.MASTER_BRANCH_NAME));
 		}
-
-		UserTestUtil.setUser(TestPropsValues.getUser());
-
-		StagingLocalServiceUtil.enableRemoteStaging(
-			TestPropsValues.getUserId(), _remoteStagingGroup, branching,
-			branching, "localhost", PortalUtil.getPortalServerPort(false),
-			PortalUtil.getPathContext(), false, _remoteLiveGroup.getGroupId(),
-			serviceContext);
-
-		GroupUtil.clearCache();
-
-		if (!branching) {
-			return;
-		}
-
-		UnicodeProperties typeSettingsUnicodeProperties =
-			_remoteStagingGroup.getTypeSettingsProperties();
-
-		Assert.assertTrue(
-			GetterUtil.getBoolean(
-				typeSettingsUnicodeProperties.getProperty("branchingPrivate")));
-		Assert.assertTrue(
-			GetterUtil.getBoolean(
-				typeSettingsUnicodeProperties.getProperty("branchingPublic")));
-
-		LayoutSetBranch layoutSetBranch =
-			LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
-				_remoteStagingGroup.getGroupId(), false,
-				LayoutSetBranchConstants.MASTER_BRANCH_NAME);
-
-		Assert.assertNotNull(layoutSetBranch);
-
-		layoutSetBranch = LayoutSetBranchLocalServiceUtil.fetchLayoutSetBranch(
-			_remoteStagingGroup.getGroupId(), true,
-			LayoutSetBranchConstants.MASTER_BRANCH_NAME);
-
-		Assert.assertNotNull(layoutSetBranch);
 	}
 
 	protected AssetCategory updateAssetCategory(
@@ -610,20 +765,197 @@ public class StagingImplTest {
 			ServiceContextTestUtil.getServiceContext());
 	}
 
-	private void _setPortalProperty(String propertyName, Object value)
+	private void _assertLocalStagingJournalVersion(Double version)
 		throws Exception {
 
-		Field field = ReflectionUtil.getDeclaredField(
-			PropsValues.class, propertyName);
+		LayoutTestUtil.addTypePortletLayout(_group);
+		LayoutTestUtil.addTypePortletLayout(_group);
 
-		field.setAccessible(true);
+		// Create content
 
-		Field modifiersField = Field.class.getDeclaredField("modifiers");
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(), "Title", "content");
 
-		modifiersField.setAccessible(true);
-		modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(_group.getGroupId());
 
-		field.set(null, value);
+		serviceContext.setAttribute(
+			StagingUtil.getStagedPortletId(JournalPortletKeys.JOURNAL),
+			Boolean.TRUE);
+
+		Map<String, Serializable> attributes = serviceContext.getAttributes();
+
+		List<String> portletIds = new ArrayList<>();
+
+		portletIds.add(JournalPortletKeys.JOURNAL);
+
+		Map<String, String[]> parameters =
+			ExportImportConfigurationParameterMapFactoryUtil.buildParameterMap(
+				PortletDataHandlerKeys.DATA_STRATEGY_MIRROR_OVERWRITE, false,
+				false, false, false, false, false, false, false, true, false,
+				portletIds, true, false, portletIds, false, portletIds,
+				ExportImportDateUtil.RANGE_FROM_LAST_PUBLISH_DATE, false, true,
+				UserIdStrategy.CURRENT_USER_ID);
+
+		attributes.putAll(parameters);
+
+		enableLocalStaging(false, serviceContext);
+
+		Group stagingGroup = _group.getStagingGroup();
+
+		// Update content in staging
+
+		JournalArticle stagingJournalArticle =
+			JournalArticleLocalServiceUtil.getArticleByUrlTitle(
+				stagingGroup.getGroupId(), journalArticle.getUrlTitle());
+
+		stagingJournalArticle = JournalTestUtil.updateArticle(
+			stagingJournalArticle, "Title2",
+			stagingJournalArticle.getContent());
+
+		// Expire old version of the content
+
+		JournalTestUtil.expireArticle(
+			stagingJournalArticle.getGroupId(), stagingJournalArticle, version);
+
+		// Publish to live
+
+		StagingUtil.publishLayouts(
+			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
+			_group.getGroupId(), false, parameters);
+
+		// Get content from live after publishing
+
+		journalArticle = JournalArticleLocalServiceUtil.getArticle(
+			_group.getGroupId(), journalArticle.getArticleId());
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_APPROVED, journalArticle.getStatus());
+
+		JournalArticle oldJournalArticle =
+			JournalArticleLocalServiceUtil.getArticle(
+				_group.getGroupId(), journalArticle.getArticleId(), version);
+
+		Assert.assertEquals(
+			WorkflowConstants.STATUS_EXPIRED, oldJournalArticle.getStatus());
+
+		AssetEntry assetEntry = AssetEntryLocalServiceUtil.getEntry(
+			journalArticle.getGroupId(),
+			journalArticle.getArticleResourceUuid());
+
+		// Check the status of the asset entry related to the article in live
+
+		Assert.assertTrue(assetEntry.isVisible());
+	}
+
+	private Throwable _disableRemoteStagingWithIncorrectLiveGroupId() {
+		Throwable caughtThrowable = null;
+
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET",
+					"F0E1D2C3B4A5968778695A4B3C2D1E0F");
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET_HEX", true);
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.servlet.TunnelServlet",
+				LoggerTestUtil.OFF)) {
+
+			_setLiveGroupUnicodePropertiesIncorrectGroupId();
+
+			try {
+				StagingLocalServiceUtil.disableStaging(
+					_remoteLiveGroup,
+					ServiceContextTestUtil.getServiceContext(
+						_remoteStagingGroup.getGroupId()));
+			}
+			catch (Throwable throwable) {
+				caughtThrowable = throwable;
+			}
+			finally {
+				GroupUtil.clearCache();
+			}
+		}
+
+		return caughtThrowable;
+	}
+
+	private Throwable _enableRemoteStagingWithError() throws PortalException {
+		Throwable caughtThrowable = null;
+
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET",
+					"F0E1D2C3B4A5968778695A4B3C2D1E0F");
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET_HEX", true);
+			LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
+				"com.liferay.portal.servlet.TunnelServlet",
+				LoggerTestUtil.OFF)) {
+
+			ServiceContext serviceContext =
+				ServiceContextTestUtil.getServiceContext(
+					_remoteStagingGroup.getGroupId());
+
+			Map<String, Serializable> attributes =
+				serviceContext.getAttributes();
+
+			attributes.putAll(
+				ExportImportConfigurationParameterMapFactoryUtil.
+					buildParameterMap());
+
+			UserTestUtil.setUser(TestPropsValues.getUser());
+
+			try {
+				StagingLocalServiceUtil.enableRemoteStaging(
+					TestPropsValues.getUserId(), _remoteStagingGroup, false,
+					false, "localhost", PortalUtil.getPortalServerPort(false),
+					PortalUtil.getPathContext(), false,
+					_remoteLiveGroup.getGroupId() + 1, serviceContext);
+			}
+			catch (Throwable throwable) {
+				caughtThrowable = throwable;
+			}
+			finally {
+				GroupUtil.clearCache();
+			}
+		}
+
+		return caughtThrowable;
+	}
+
+	private <T> T _executeWithRemoteCredentials(
+			UnsafeSupplier<T, Exception> unsafeSupplier)
+		throws Exception {
+
+		try (SafeCloseable safeCloseable1 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET",
+					"F0E1D2C3B4A5968778695A4B3C2D1E0F");
+			SafeCloseable safeCloseable2 =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"TUNNELING_SERVLET_SHARED_SECRET_HEX", true)) {
+
+			return unsafeSupplier.get();
+		}
+	}
+
+	private void _setLiveGroupUnicodePropertiesIncorrectGroupId() {
+		UnicodeProperties typeSettingsUnicodeProperties =
+			_remoteLiveGroup.getTypeSettingsProperties();
+
+		typeSettingsUnicodeProperties.setProperty("remoteAddress", "localhost");
+		typeSettingsUnicodeProperties.setProperty(
+			"remoteGroupId", String.valueOf(_remoteLiveGroup.getGroupId() + 1));
+		typeSettingsUnicodeProperties.setProperty(
+			"remotePort",
+			String.valueOf(PortalUtil.getPortalServerPort(false)));
+		typeSettingsUnicodeProperties.setProperty(
+			"staged", Boolean.TRUE.toString());
+		typeSettingsUnicodeProperties.setProperty(
+			"stagedRemotely", Boolean.TRUE.toString());
 	}
 
 	private static final Locale[] _locales = {
@@ -638,5 +970,8 @@ public class StagingImplTest {
 
 	@DeleteAfterTestRun
 	private Group _remoteStagingGroup;
+
+	@Inject
+	private ZipReaderFactory _zipReaderFactory;
 
 }

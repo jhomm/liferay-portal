@@ -1,0 +1,55 @@
+{
+	"description_i18n": {
+		"en_US": "boost-tagged-contents-description"
+	},
+	"elementDefinition": {
+		"category": "boost",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "should",
+								"query": {
+									"terms": {
+										"assetTagNames.raw": "${configuration.asset_tags}",
+										"boost": "${configuration.boost}"
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "thumbs-up",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"label": "asset-tags",
+							"name": "asset_tags",
+							"type": "multiselect"
+						},
+						{
+							"defaultValue": 5,
+							"label": "boost",
+							"name": "boost",
+							"type": "number",
+							"typeOptions": {
+								"min": 0
+							}
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "BOOST_TAGGED_CONTENTS",
+	"title_i18n": {
+		"en_US": "boost-tagged-contents"
+	}
+}

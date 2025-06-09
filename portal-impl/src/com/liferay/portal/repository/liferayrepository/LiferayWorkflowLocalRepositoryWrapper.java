@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.repository.liferayrepository;
@@ -46,20 +37,18 @@ public class LiferayWorkflowLocalRepositoryWrapper
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			String urlTitle, String description, String changeLog, File file,
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		FileEntry fileEntry = super.addFileEntry(
 			externalReferenceCode, userId, folderId, sourceFileName, mimeType,
-			title, description, changeLog, file, expirationDate, reviewDate,
-			serviceContext);
+			title, urlTitle, description, changeLog, file, displayDate,
+			expirationDate, reviewDate, serviceContext);
 
 		DLAppHelperLocalServiceUtil.updateAsset(
-			userId, fileEntry, fileEntry.getFileVersion(),
-			serviceContext.getAssetCategoryIds(),
-			serviceContext.getAssetTagNames(),
-			serviceContext.getAssetLinkEntryIds());
+			userId, fileEntry, fileEntry.getFileVersion(), serviceContext);
 
 		_workflowSupport.addFileEntry(userId, fileEntry, serviceContext);
 
@@ -70,21 +59,18 @@ public class LiferayWorkflowLocalRepositoryWrapper
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, InputStream inputStream,
-			long size, Date expirationDate, Date reviewDate,
-			ServiceContext serviceContext)
+			String urlTitle, String description, String changeLog,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		FileEntry fileEntry = super.addFileEntry(
 			externalReferenceCode, userId, folderId, sourceFileName, mimeType,
-			title, description, changeLog, inputStream, size, expirationDate,
-			reviewDate, serviceContext);
+			title, urlTitle, description, changeLog, inputStream, size,
+			displayDate, expirationDate, reviewDate, serviceContext);
 
 		DLAppHelperLocalServiceUtil.updateAsset(
-			userId, fileEntry, fileEntry.getFileVersion(),
-			serviceContext.getAssetCategoryIds(),
-			serviceContext.getAssetTagNames(),
-			serviceContext.getAssetLinkEntryIds());
+			userId, fileEntry, fileEntry.getFileVersion(), serviceContext);
 
 		_workflowSupport.addFileEntry(userId, fileEntry, serviceContext);
 
@@ -130,10 +116,7 @@ public class LiferayWorkflowLocalRepositoryWrapper
 			userId, groupId, fileEntryId, destFolderId, serviceContext);
 
 		DLAppHelperLocalServiceUtil.updateAsset(
-			userId, fileEntry, fileEntry.getFileVersion(),
-			serviceContext.getAssetCategoryIds(),
-			serviceContext.getAssetTagNames(),
-			serviceContext.getAssetLinkEntryIds());
+			userId, fileEntry, fileEntry.getFileVersion(), serviceContext);
 
 		_workflowSupport.addFileEntry(userId, fileEntry, serviceContext);
 
@@ -155,15 +138,16 @@ public class LiferayWorkflowLocalRepositoryWrapper
 	@Override
 	public FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease, File file,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			File file, Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		FileEntry fileEntry = super.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, file, expirationDate,
-			reviewDate, serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, file, displayDate,
+			expirationDate, reviewDate, serviceContext);
 
 		_workflowSupport.updateFileEntry(
 			userId, fileEntry, dlVersionNumberIncrease, serviceContext);
@@ -174,16 +158,16 @@ public class LiferayWorkflowLocalRepositoryWrapper
 	@Override
 	public FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		FileEntry fileEntry = super.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, inputStream, size,
-			expirationDate, reviewDate, serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, inputStream, size,
+			displayDate, expirationDate, reviewDate, serviceContext);
 
 		_workflowSupport.updateFileEntry(
 			userId, fileEntry, dlVersionNumberIncrease, serviceContext);

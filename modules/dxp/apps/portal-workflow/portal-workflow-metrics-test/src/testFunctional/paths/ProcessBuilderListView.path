@@ -22,7 +22,7 @@
 </tr>
 <tr>
 	<td>FILTER_AND_ORDER</td>
-	<td>//div[contains(@class,'dropdown-menu show')]//a[contains(.,'${key_filterOption}')]</td>
+	<td>//div[contains(@class,'dropdown-menu')]//descendant::a[text()='${key_filterOption}']</td>
 	<td></td>
 </tr>
 <tr>
@@ -47,17 +47,12 @@
 </tr>
 <tr>
 	<td>PROCESS_BUILDER_HEADER_TITLE</td>
-	<td>//ul[contains(@class,'control-menu-nav')]//span[contains(@data-qa-id,'headerTitle') and contains(.,'${key_pageName}')]</td>
+	<td>//ul[contains(@class,'control-menu-nav')]//h1[contains(@data-qa-id,'headerTitle') and contains(.,'${key_pageName}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>PROCESS_NAME_TABLE_ROW</td>
 	<td>//tr[${key_rowNumber}]//td[1]</td>
-	<td></td>
-</tr>
-<tr>
-	<td>CLEAR_BUTTON_PROCESS_BUILDER</td>
-	<td>//li[@class='tbar-item']//a[@href=contains(text(),'Clear')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -67,7 +62,7 @@
 </tr>
 <tr>
 	<td>VALIDATE_SEARCH_RESULTS_BAR</td>
-	<td>//span[contains(.,'Results') and @class='text-truncate']</td>
+	<td>//span[contains(.,'Results') and @class='text-truncate'] | //span[contains(.,'Result') and @class='text-truncate']</td>
 	<td></td>
 </tr>
 <tr>

@@ -1,4 +1,6 @@
 create table COREntry (
+	mvccVersion LONG default 0 not null,
+	uuid_ VARCHAR(75) null,
 	externalReferenceCode VARCHAR(75) null,
 	COREntryId LONG not null primary key,
 	companyId LONG,
@@ -22,6 +24,7 @@ create table COREntry (
 );
 
 create table COREntryRel (
+	mvccVersion LONG default 0 not null,
 	COREntryRelId LONG not null primary key,
 	companyId LONG,
 	userId LONG,

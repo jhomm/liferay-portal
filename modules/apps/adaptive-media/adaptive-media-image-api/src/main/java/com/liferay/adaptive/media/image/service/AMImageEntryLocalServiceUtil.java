@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.image.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.InputStream;
@@ -499,6 +491,14 @@ public class AMImageEntryLocalServiceUtil {
 		return getService().getPercentage(companyId, configurationUuid);
 	}
 
+	public static int getPercentage(
+		long companyId, String configurationUuid,
+		int expectedAMImageEntriesCount) {
+
+		return getService().getPercentage(
+			companyId, configurationUuid, expectedAMImageEntriesCount);
+	}
+
 	/**
 	 * @throws PortalException
 	 */
@@ -506,6 +506,14 @@ public class AMImageEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getPersistedModel(primaryKeyObj);
+	}
+
+	public static boolean hasAMImageEntryContent(
+		String configurationUuid,
+		com.liferay.portal.kernel.repository.model.FileVersion fileVersion) {
+
+		return getService().hasAMImageEntryContent(
+			configurationUuid, fileVersion);
 	}
 
 	/**
@@ -523,9 +531,11 @@ public class AMImageEntryLocalServiceUtil {
 	}
 
 	public static AMImageEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile AMImageEntryLocalService _service;
+	private static final Snapshot<AMImageEntryLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			AMImageEntryLocalServiceUtil.class, AMImageEntryLocalService.class);
 
 }

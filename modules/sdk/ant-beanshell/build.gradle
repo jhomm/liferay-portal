@@ -1,5 +1,5 @@
-sourceCompatibility = "1.6"
-targetCompatibility = "1.6"
+sourceCompatibility = "1.8"
+targetCompatibility = "1.8"
 
 clean {
 	ext {
@@ -8,9 +8,8 @@ clean {
 }
 
 dependencies {
-	compile group: "org.apache-extras.beanshell", name: "bsh", version: "2.0b6"
-
-	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.11"
+	api group: "org.apache-extras.beanshell", name: "bsh", version: "2.0b6"
+	compileOnly group: "org.apache.ant", name: "ant", transitive: false, version: "1.10.14"
 }
 
 liferay {

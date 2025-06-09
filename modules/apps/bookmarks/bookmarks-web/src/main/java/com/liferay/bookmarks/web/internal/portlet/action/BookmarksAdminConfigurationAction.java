@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bookmarks.web.internal.portlet.action;
@@ -25,12 +16,11 @@ import com.liferay.portal.kernel.portlet.ConfigurationAction;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.GetterUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletConfig;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletConfig;
 
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -39,8 +29,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Sergio González
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + BookmarksPortletKeys.BOOKMARKS_ADMIN,
+	property = "jakarta.portlet.name=" + BookmarksPortletKeys.BOOKMARKS_ADMIN,
 	service = ConfigurationAction.class
 )
 public class BookmarksAdminConfigurationAction
@@ -48,7 +37,7 @@ public class BookmarksAdminConfigurationAction
 
 	@Override
 	public String getJspPath(HttpServletRequest httpServletRequest) {
-		return "/bookmarks_admin/configuration.jsp";
+		return "/bookmarks_admin/configuration_browse.jsp";
 	}
 
 	@Override
@@ -59,22 +48,13 @@ public class BookmarksAdminConfigurationAction
 
 		validateEmail(actionRequest, "emailMessageAdded");
 		validateEmail(actionRequest, "emailMessageUpdated");
-		validateEmailFrom(actionRequest);
-		validateRootFolder(actionRequest);
+
+		_validateRootFolder(actionRequest);
 
 		super.processAction(portletConfig, actionRequest, actionResponse);
 	}
 
-	@Override
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.bookmarks.web)",
-		unbind = "-"
-	)
-	public void setServletContext(ServletContext servletContext) {
-		super.setServletContext(servletContext);
-	}
-
-	protected void validateRootFolder(ActionRequest actionRequest)
+	private void _validateRootFolder(ActionRequest actionRequest)
 		throws Exception {
 
 		long rootFolderId = GetterUtil.getLong(
@@ -89,7 +69,7 @@ public class BookmarksAdminConfigurationAction
 				// LPS-52675
 
 				if (_log.isDebugEnabled()) {
-					_log.debug(noSuchFolderException, noSuchFolderException);
+					_log.debug(noSuchFolderException);
 				}
 
 				SessionErrors.add(actionRequest, "rootFolderIdInvalid");

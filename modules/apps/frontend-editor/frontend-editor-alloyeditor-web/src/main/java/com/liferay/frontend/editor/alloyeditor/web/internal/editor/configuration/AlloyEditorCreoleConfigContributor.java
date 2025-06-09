@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.editor.alloyeditor.web.internal.editor.configuration;
@@ -18,10 +9,10 @@ import com.liferay.frontend.editor.alloyeditor.web.internal.constants.AlloyEdito
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Validator;
@@ -30,6 +21,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Sergio González
@@ -129,24 +121,24 @@ public class AlloyEditorCreoleConfigContributor
 	protected JSONArray getStyleFormatsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
 			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "normal"), "p", _CKEDITOR_STYLE_BLOCK),
+				_language.get(locale, "normal"), "p", _CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "1"), "h1",
+				_language.format(locale, "heading-x", "1"), "h1",
 				_CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "2"), "h2",
+				_language.format(locale, "heading-x", "2"), "h2",
 				_CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "3"), "h3",
+				_language.format(locale, "heading-x", "3"), "h3",
 				_CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "4"), "h4",
+				_language.format(locale, "heading-x", "4"), "h4",
 				_CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "5"), "h5",
+				_language.format(locale, "heading-x", "5"), "h5",
 				_CKEDITOR_STYLE_BLOCK),
 			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "6"), "h6",
+				_language.format(locale, "heading-x", "6"), "h6",
 				_CKEDITOR_STYLE_BLOCK));
 	}
 
@@ -166,7 +158,7 @@ public class AlloyEditorCreoleConfigContributor
 				JSONUtil.put(
 					"cfg",
 					JSONUtil.put(
-						"tableAttributes", JSONFactoryUtil.createJSONObject())
+						"tableAttributes", _jsonFactory.createJSONObject())
 				).put(
 					"name", "table"
 				),
@@ -192,21 +184,9 @@ public class AlloyEditorCreoleConfigContributor
 		);
 	}
 
-	protected JSONObject getToolbarsStylesSelectionsHeadingTextJSONObject(
-		Locale locale) {
-
-		return JSONUtil.put(
-			"buttons", JSONUtil.put(getStyleFormatsJSONObject(locale))
-		).put(
-			"name", "headertext"
-		).put(
-			"test", "AlloyEditor.SelectionTest.headingtext"
-		);
-	}
-
 	protected JSONArray getToolbarsStylesSelectionsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
-			getToolbarsStylesSelectionsHeadingTextJSONObject(locale),
+			_getToolbarsStylesSelectionsHeadingTextJSONObject(locale),
 			getToolbarsStylesSelectionsLinkJSONObject(),
 			getToolbarsStylesSelectionsTextJSONObject(locale),
 			getToolbarsStylesSelectionsTableJSONObject());
@@ -266,6 +246,24 @@ public class AlloyEditorCreoleConfigContributor
 		);
 	}
 
+	private JSONObject _getToolbarsStylesSelectionsHeadingTextJSONObject(
+		Locale locale) {
+
+		return JSONUtil.put(
+			"buttons", JSONUtil.put(getStyleFormatsJSONObject(locale))
+		).put(
+			"name", "headertext"
+		).put(
+			"test", "AlloyEditor.SelectionTest.headingtext"
+		);
+	}
+
 	private static final int _CKEDITOR_STYLE_BLOCK = 1;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
+	private Language _language;
 
 }

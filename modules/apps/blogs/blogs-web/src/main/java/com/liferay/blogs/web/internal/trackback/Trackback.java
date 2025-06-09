@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.web.internal.trackback;
@@ -45,24 +36,24 @@ public class Trackback {
 			Function<String, ServiceContext> serviceContextFunction)
 		throws PortalException {
 
-		long userId = _userLocalService.getDefaultUserId(
+		long userId = _userLocalService.getGuestUserId(
 			themeDisplay.getCompanyId());
 		long groupId = entry.getGroupId();
 		String className = BlogsEntry.class.getName();
 		long classPK = entry.getEntryId();
 
-		String body = buildBody(themeDisplay, excerpt, url);
+		String body = _buildBody(themeDisplay, excerpt, url);
 
 		long commentId = _commentManager.addComment(
-			userId, groupId, className, classPK, blogName, title, body,
+			null, userId, groupId, className, classPK, blogName, title, body,
 			serviceContextFunction);
 
-		String entryURL = buildEntryURL(entry, themeDisplay);
+		String entryURL = _buildEntryURL(entry, themeDisplay);
 
 		_linkbackConsumer.addNewTrackback(commentId, url, entryURL);
 	}
 
-	protected String buildBBCodeBody(
+	private String _buildBBCodeBody(
 		ThemeDisplay themeDisplay, String excerpt, String url) {
 
 		url = StringUtil.replace(
@@ -74,17 +65,17 @@ public class Trackback {
 			themeDisplay.translate("read-more"), "[/url]");
 	}
 
-	protected String buildBody(
+	private String _buildBody(
 		ThemeDisplay themeDisplay, String excerpt, String url) {
 
 		if (PropsValues.DISCUSSION_COMMENTS_FORMAT.equals("bbcode")) {
-			return buildBBCodeBody(themeDisplay, excerpt, url);
+			return _buildBBCodeBody(themeDisplay, excerpt, url);
 		}
 
-		return buildHTMLBody(themeDisplay, excerpt, url);
+		return _buildHTMLBody(themeDisplay, excerpt, url);
 	}
 
-	protected String buildEntryURL(BlogsEntry entry, ThemeDisplay themeDisplay)
+	private String _buildEntryURL(BlogsEntry entry, ThemeDisplay themeDisplay)
 		throws PortalException {
 
 		return StringBundler.concat(
@@ -92,7 +83,7 @@ public class Trackback {
 			Portal.FRIENDLY_URL_SEPARATOR, "blogs/", entry.getUrlTitle());
 	}
 
-	protected String buildHTMLBody(
+	private String _buildHTMLBody(
 		ThemeDisplay themeDisplay, String excerpt, String url) {
 
 		return StringBundler.concat(

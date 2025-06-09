@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.bean;
@@ -29,14 +20,14 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
-
-import javax.servlet.http.HttpServletRequest;
 
 import jodd.bean.BeanCopy;
 import jodd.bean.BeanUtil;
@@ -56,30 +47,8 @@ public class BeanPropertiesImpl implements BeanProperties {
 			beanCopy.copy();
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void copyProperties(
-		Object source, Object target, Class<?> editable) {
-
-		copyProperties(source, target);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public void copyProperties(
-		Object source, Object target, String[] ignoreProperties) {
-
-		copyProperties(source, target);
 	}
 
 	@Override
@@ -120,7 +89,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toBooleanValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -146,7 +115,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -170,7 +139,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toByteValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -194,7 +163,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -218,7 +187,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toDoubleValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -244,7 +213,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -268,7 +237,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toFloatValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -292,7 +261,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -316,7 +285,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toIntValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -340,7 +309,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -364,7 +333,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toLongValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -388,7 +357,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -410,7 +379,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = BeanUtil.pojo.getProperty(bean, param);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -438,7 +407,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -466,7 +435,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanType = BeanUtil.pojo.getPropertyType(bean, param);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -494,7 +463,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -522,7 +491,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toShortValue(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -546,7 +515,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -570,7 +539,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 				beanValue = _converter.toString(value, defaultValue);
 			}
 			catch (Exception exception) {
-				_log.error(exception, exception);
+				_log.error(exception);
 			}
 		}
 
@@ -596,7 +565,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -667,7 +636,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			BeanUtil.pojo.setProperty(bean, param, value);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 	}
 
@@ -711,7 +680,7 @@ public class BeanPropertiesImpl implements BeanProperties {
 			// LPS-52675
 
 			if (_log.isDebugEnabled()) {
-				_log.debug(portalException, portalException);
+				_log.debug(portalException);
 			}
 
 			return null;

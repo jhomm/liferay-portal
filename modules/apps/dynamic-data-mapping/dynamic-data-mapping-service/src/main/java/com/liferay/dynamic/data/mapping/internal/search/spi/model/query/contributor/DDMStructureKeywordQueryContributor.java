@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.search.spi.model.query.contributor;
@@ -17,7 +8,7 @@ package com.liferay.dynamic.data.mapping.internal.search.spi.model.query.contrib
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.util.LocalizationUtil;
+import com.liferay.portal.kernel.util.Localization;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.query.QueryHelper;
 import com.liferay.portal.search.spi.model.query.contributor.KeywordQueryContributor;
@@ -30,7 +21,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Rafael Praxedes
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.dynamic.data.mapping.model.DDMStructure",
 	service = KeywordQueryContributor.class
 )
@@ -61,7 +51,7 @@ public class DDMStructureKeywordQueryContributor
 			return;
 		}
 
-		String fieldNameLocalizedName = LocalizationUtil.getLocalizedName(
+		String fieldNameLocalizedName = _localization.getLocalizedName(
 			fieldName, searchContext.getLanguageId());
 
 		searchContext.setAttribute(
@@ -74,5 +64,8 @@ public class DDMStructureKeywordQueryContributor
 
 	@Reference
 	protected QueryHelper queryHelper;
+
+	@Reference
+	private Localization _localization;
 
 }

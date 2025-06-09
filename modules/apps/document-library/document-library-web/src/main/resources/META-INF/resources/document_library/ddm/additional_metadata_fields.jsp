@@ -1,23 +1,14 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/document_library/init.jsp" %>
 
 <%
-DLFileEntryAdditionalMetadataSetsDisplayContext dlFileEntryAdditionalMetadataSetsDisplayContext = new DLFileEntryAdditionalMetadataSetsDisplayContext(request);
+DLFileEntryAdditionalMetadataSetsDisplayContext dlFileEntryAdditionalMetadataSetsDisplayContext = new DLFileEntryAdditionalMetadataSetsDisplayContext(request, renderResponse);
 %>
 
 <liferay-util:buffer
@@ -39,7 +30,7 @@ DLFileEntryAdditionalMetadataSetsDisplayContext dlFileEntryAdditionalMetadataSet
 	/>
 
 	<liferay-ui:search-container-row
-		className="com.liferay.dynamic.data.mapping.kernel.DDMStructure"
+		className="com.liferay.dynamic.data.mapping.model.DDMStructure"
 		escapedModel="<%= true %>"
 		keyProperty="structureId"
 		modelVar="curDDMStructure"
@@ -50,7 +41,7 @@ DLFileEntryAdditionalMetadataSetsDisplayContext dlFileEntryAdditionalMetadataSet
 		/>
 
 		<liferay-ui:search-container-column-text>
-			<a class="modify-link" data-rowId="<%= curDDMStructure.getStructureId() %>" href="javascript:;" title="<%= LanguageUtil.get(request, "remove") %>"><%= removeStructureIcon %></a>
+			<a class="modify-link" data-rowId="<%= curDDMStructure.getStructureId() %>" href="javascript:void(0);" title="<%= LanguageUtil.get(request, "remove") %>"><%= removeStructureIcon %></a>
 		</liferay-ui:search-container-column-text>
 	</liferay-ui:search-container-row>
 
@@ -75,24 +66,23 @@ DLFileEntryAdditionalMetadataSetsDisplayContext dlFileEntryAdditionalMetadataSet
 		Liferay.Util.openSelectionModal({
 			id: '<portlet:namespace />selectDDMStructure',
 			onSelect: function (selectedItem) {
+				const itemValue = JSON.parse(selectedItem.value);
+
 				var searchContainer = Liferay.SearchContainer.get(
 					'<portlet:namespace />ddmStructuresSearchContainer'
 				);
 
 				var data = searchContainer.getData(false);
 
-				if (!data.includes(selectedItem.ddmstructureid)) {
+				if (!data.includes(itemValue.ddmstructureid)) {
 					var ddmStructureLink =
 						'<a class="modify-link" data-rowId="' +
-						selectedItem.ddmstructureid +
-						'" href="javascript:;" title="<%= LanguageUtil.get(request, "remove") %>"><%= UnicodeFormatter.toString(removeStructureIcon) %></a>';
+						itemValue.ddmstructureid +
+						'" href="javascript:void(0);" title="<%= LanguageUtil.get(request, "remove") %>"><%= UnicodeFormatter.toString(removeStructureIcon) %></a>';
 
 					searchContainer.addRow(
-						[
-							Liferay.Util.escapeHTML(selectedItem.name),
-							ddmStructureLink,
-						],
-						selectedItem.ddmstructureid
+						[Liferay.Util.escapeHTML(itemValue.name), ddmStructureLink],
+						itemValue.ddmstructureid
 					);
 
 					searchContainer.updateDataStore();
@@ -100,8 +90,7 @@ DLFileEntryAdditionalMetadataSetsDisplayContext dlFileEntryAdditionalMetadataSet
 			},
 			selectEventName: '<portlet:namespace />selectDDMStructure',
 			title: '<%= UnicodeLanguageUtil.get(request, "select-metadata-set") %>',
-			url:
-				'<portlet:renderURL windowState="<%= LiferayWindowState.POP_UP.toString() %>"><portlet:param name="mvcPath" value="/document_library/ddm/select_ddm_structure.jsp" /><portlet:param name="ddmStructureId" value="<%= String.valueOf(dlFileEntryAdditionalMetadataSetsDisplayContext.getDDMStructureId()) %>" /></portlet:renderURL>',
+			url: '<%= dlFileEntryAdditionalMetadataSetsDisplayContext.getSelectDDMStructureURL() %>',
 		});
 	}
 </aui:script>

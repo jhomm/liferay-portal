@@ -1,49 +1,31 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-AssetCategory assetCategory = (AssetCategory)request.getAttribute(WebKeys.ASSET_CATEGORY);
-
-CPAttachmentFileEntryService cpAttachmentFileEntryService = (CPAttachmentFileEntryService)request.getAttribute("cpAttachmentFileEntryService");
-
 PortletURL portletURL = PortletURLBuilder.create(
 	currentURLObj
 ).setParameter(
 	"historyKey", liferayPortletResponse.getNamespace() + "images"
 ).buildPortletURL();
 
-SearchContainer<CPAttachmentFileEntry> cpAttachmentFileEntrySearchContainer = new SearchContainer<>(liferayPortletRequest, portletURL, null, null);
-
-List<CPAttachmentFileEntry> cpAttachmentFileEntries = cpAttachmentFileEntryService.getCPAttachmentFileEntries(PortalUtil.getClassNameId(AssetCategory.class), assetCategory.getCategoryId(), CPAttachmentFileEntryConstants.TYPE_IMAGE, WorkflowConstants.STATUS_ANY, cpAttachmentFileEntrySearchContainer.getStart(), cpAttachmentFileEntrySearchContainer.getEnd());
-
-cpAttachmentFileEntrySearchContainer.setTotal(cpAttachmentFileEntryService.getCPAttachmentFileEntriesCount(PortalUtil.getClassNameId(AssetCategory.class), assetCategory.getCategoryId(), CPAttachmentFileEntryConstants.TYPE_IMAGE, WorkflowConstants.STATUS_ANY));
-cpAttachmentFileEntrySearchContainer.setResults(cpAttachmentFileEntries);
+CategoryCPAttachmentFileEntriesManagementToolbarDisplayContext categoryCPAttachmentFileEntriesManagementToolbarDisplayContext = new CategoryCPAttachmentFileEntriesManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, portletURL);
 %>
 
 <clay:management-toolbar
-	managementToolbarDisplayContext="<%= new CategoryCPAttachmentFileEntriesManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, cpAttachmentFileEntrySearchContainer) %>"
+	managementToolbarDisplayContext="<%= categoryCPAttachmentFileEntriesManagementToolbarDisplayContext %>"
 />
 
 <clay:container-fluid>
 	<liferay-ui:search-container
 		emptyResultsMessage="there-are-no-images"
 		id="cpAttachmentFileEntries"
-		searchContainer="<%= cpAttachmentFileEntrySearchContainer %>"
+		searchContainer="<%= categoryCPAttachmentFileEntriesManagementToolbarDisplayContext.getSearchContainer() %>"
 	>
 		<liferay-ui:search-container-row
 			className="com.liferay.commerce.product.model.CPAttachmentFileEntry"
@@ -60,7 +42,7 @@ cpAttachmentFileEntrySearchContainer.setResults(cpAttachmentFileEntries);
 				thumbnailSrc = cpAttachmentFileEntry.getCDNURL();
 			}
 			else {
-				thumbnailSrc = CommerceMediaResolverUtil.getThumbnailURL(CommerceAccountConstants.ACCOUNT_ID_GUEST, cpAttachmentFileEntry.getCPAttachmentFileEntryId());
+				thumbnailSrc = CommerceMediaResolverUtil.getThumbnailURL(AccountConstants.ACCOUNT_ENTRY_ID_GUEST, cpAttachmentFileEntry.getCPAttachmentFileEntryId());
 			}
 			%>
 

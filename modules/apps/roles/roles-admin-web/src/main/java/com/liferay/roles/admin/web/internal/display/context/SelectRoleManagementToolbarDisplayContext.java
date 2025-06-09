@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.web.internal.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
@@ -25,27 +15,27 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.rolesadmin.search.RoleSearch;
-import com.liferay.portlet.rolesadmin.search.RoleSearchTerms;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
 import com.liferay.roles.admin.role.type.contributor.RoleTypeContributor;
+import com.liferay.roles.admin.search.RoleSearch;
+import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.roles.admin.web.internal.role.type.contributor.util.RoleTypeContributorRetrieverUtil;
-import com.liferay.users.admin.kernel.util.UsersAdminUtil;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Pei-Jung Lan
@@ -64,8 +54,8 @@ public class SelectRoleManagementToolbarDisplayContext {
 		_currentRoleTypeContributor =
 			RoleTypeContributorRetrieverUtil.getCurrentRoleTypeContributor(
 				renderRequest);
-		_groupId = ParamUtil.getLong(_httpServletRequest, "groupId");
-		_step = ParamUtil.getInteger(_httpServletRequest, "step", 1);
+		_groupId = ParamUtil.getLong(httpServletRequest, "groupId");
+		_step = ParamUtil.getInteger(httpServletRequest, "step", 1);
 	}
 
 	public String getClearResultsURL() {
@@ -91,6 +81,9 @@ public class SelectRoleManagementToolbarDisplayContext {
 			"roleType", String.valueOf(_currentRoleTypeContributor.getType()));
 
 		portletURL.setParameter("eventName", _eventName);
+		portletURL.setParameter(
+			"groupEventName",
+			ParamUtil.getString(_httpServletRequest, "groupEventName"));
 
 		String[] keywords = ParamUtil.getStringValues(
 			_httpServletRequest, "keywords");
@@ -146,11 +139,8 @@ public class SelectRoleManagementToolbarDisplayContext {
 		RoleSearchTerms roleSearchTerms =
 			(RoleSearchTerms)roleSearch.getSearchTerms();
 
-		List<Role> results = null;
-		int total = 0;
-
 		if (filterManageableRoles) {
-			results = RoleLocalServiceUtil.search(
+			List<Role> results = RoleLocalServiceUtil.search(
 				themeDisplay.getCompanyId(), roleSearchTerms.getKeywords(),
 				new Integer[] {_currentRoleTypeContributor.getType()},
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS,
@@ -165,25 +155,19 @@ public class SelectRoleManagementToolbarDisplayContext {
 					themeDisplay.getPermissionChecker(), groupId, results);
 			}
 
-			total = results.size();
-
-			results = ListUtil.subList(
-				results, roleSearch.getStart(), roleSearch.getEnd());
+			roleSearch.setResultsAndTotal(results);
 		}
 		else {
-			total = RoleLocalServiceUtil.searchCount(
-				themeDisplay.getCompanyId(), roleSearchTerms.getKeywords(),
-				new Integer[] {_currentRoleTypeContributor.getType()});
-
-			results = RoleLocalServiceUtil.search(
-				themeDisplay.getCompanyId(), roleSearchTerms.getKeywords(),
-				new Integer[] {_currentRoleTypeContributor.getType()},
-				roleSearch.getStart(), roleSearch.getEnd(),
-				roleSearch.getOrderByComparator());
+			roleSearch.setResultsAndTotal(
+				() -> RoleLocalServiceUtil.search(
+					themeDisplay.getCompanyId(), roleSearchTerms.getKeywords(),
+					new Integer[] {_currentRoleTypeContributor.getType()},
+					roleSearch.getStart(), roleSearch.getEnd(),
+					roleSearch.getOrderByComparator()),
+				RoleLocalServiceUtil.searchCount(
+					themeDisplay.getCompanyId(), roleSearchTerms.getKeywords(),
+					new Integer[] {_currentRoleTypeContributor.getType()}));
 		}
-
-		roleSearch.setResults(results);
-		roleSearch.setTotal(total);
 
 		_roleSearch = roleSearch;
 
@@ -217,7 +201,7 @@ public class SelectRoleManagementToolbarDisplayContext {
 			return PortalUtil.getSelectedUser(_httpServletRequest);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return null;
 		}

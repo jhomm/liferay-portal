@@ -1,68 +1,17 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
+<%
+MBThreadsDisplayContext mbThreadsDisplayContext = new MBThreadsDisplayContext(request, portletURL, renderRequest);
+%>
+
 <liferay-ui:search-container
-	headerNames="thread,started-by,posts,views,last-post"
-	iteratorURL="<%= portletURL %>"
+	searchContainer="<%= mbThreadsDisplayContext.getSearchContainer() %>"
 >
-
-	<%
-	String emptyResultsMessage = null;
-
-	if (mvcRenderCommandName.equals("/message_boards/view_my_subscriptions")) {
-		emptyResultsMessage = "you-are-not-subscribed-to-any-threads";
-	}
-	else {
-		emptyResultsMessage = "there-are-no-threads-in-this-category";
-	}
-
-	searchContainer.setEmptyResultsMessage(emptyResultsMessage);
-	%>
-
-	<liferay-ui:search-container-results>
-
-		<%
-		if (mvcRenderCommandName.equals("/message_boards/view_my_subscriptions")) {
-			total = MBThreadServiceUtil.getGroupThreadsCount(scopeGroupId, groupThreadsUserId, WorkflowConstants.STATUS_APPROVED, true);
-
-			searchContainer.setTotal(total);
-
-			results = MBThreadServiceUtil.getGroupThreads(scopeGroupId, groupThreadsUserId, WorkflowConstants.STATUS_APPROVED, true, searchContainer.getStart(), searchContainer.getEnd());
-		}
-		else if (useAssetEntryQuery) {
-			AssetEntryQuery assetEntryQuery = new AssetEntryQuery(MBMessage.class.getName(), searchContainer);
-
-			assetEntryQuery.setEnablePermissions(true);
-			assetEntryQuery.setExcludeZeroViewCount(false);
-
-			total = AssetEntryServiceUtil.getEntriesCount(assetEntryQuery);
-
-			searchContainer.setTotal(total);
-
-			assetEntryQuery.setEnd(searchContainer.getEnd());
-			assetEntryQuery.setStart(searchContainer.getStart());
-
-			results = AssetEntryServiceUtil.getEntries(assetEntryQuery);
-		}
-
-		searchContainer.setResults(results);
-		%>
-
-	</liferay-ui:search-container-results>
-
 	<liferay-ui:search-container-row
 		className="com.liferay.portal.kernel.model.BaseModel"
 		keyProperty="primaryKeyObj"

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.store.internal;
@@ -25,10 +16,12 @@ import com.liferay.document.library.kernel.store.Store;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMap;
 import com.liferay.osgi.service.tracker.collections.map.ServiceTrackerMapFactory;
 import com.liferay.petra.lang.SafeCloseable;
-import com.liferay.portal.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
+import com.liferay.portal.kernel.change.tracking.sql.CTSQLModeThreadLocal;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.service.ClassNameLocalService;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.util.Portal;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +40,7 @@ public class CTStoreCTEventListener implements CTEventListener {
 	@Override
 	public void onAfterPublish(long ctCollectionId) throws CTEventException {
 		List<CTEntry> ctEntries = _ctEntryLocalService.getCTEntries(
-			ctCollectionId, _ctsContentClassNameId);
+			ctCollectionId, _portal.getClassNameId(CTSContent.class.getName()));
 
 		if (ctEntries.isEmpty()) {
 			return;
@@ -80,19 +73,24 @@ public class CTStoreCTEventListener implements CTEventListener {
 
 				for (CTEntry ctEntry : deletedCTEnties) {
 					CTSContent ctsContent =
-						_ctsContentLocalService.getCTSContent(
+						_ctsContentLocalService.fetchCTSContent(
 							ctEntry.getModelClassPK());
 
-					Store store = _storeServiceTrackerMap.getService(
-						ctsContent.getStoreType());
+					if (ctsContent != null) {
+						Store store = _serviceTrackerMap.getService(
+							ctsContent.getStoreType());
 
-					store.deleteFile(
-						ctsContent.getCompanyId(), ctsContent.getRepositoryId(),
-						ctsContent.getPath(), ctsContent.getVersion());
+						store.deleteFile(
+							ctsContent.getCompanyId(),
+							ctsContent.getRepositoryId(), ctsContent.getPath(),
+							ctsContent.getVersion());
+					}
+					else if (_log.isWarnEnabled()) {
+						_log.warn(
+							"No change tracking store content found for " +
+								"model class PK " + ctEntry.getModelClassPK());
+					}
 				}
-			}
-			catch (PortalException portalException) {
-				throw new CTEventException(portalException);
 			}
 		}
 
@@ -100,15 +98,15 @@ public class CTStoreCTEventListener implements CTEventListener {
 
 		if (!addOrModifiedCTEntries.isEmpty()) {
 			try (SafeCloseable safeCloseable =
-					CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-						CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+					CTCollectionThreadLocal.
+						setProductionModeWithSafeCloseable()) {
 
 				for (CTEntry ctEntry : addOrModifiedCTEntries) {
 					CTSContent ctsContent =
 						_ctsContentLocalService.getCTSContent(
 							ctEntry.getModelClassPK());
 
-					Store store = _storeServiceTrackerMap.getService(
+					Store store = _serviceTrackerMap.getService(
 						ctsContent.getStoreType());
 
 					store.addFile(
@@ -128,15 +126,15 @@ public class CTStoreCTEventListener implements CTEventListener {
 	public void onBeforeRemove(long ctCollectionId) throws CTEventException {
 		List<Long> ctsContentIds =
 			_ctEntryLocalService.getExclusiveModelClassPKs(
-				ctCollectionId, _ctsContentClassNameId);
+				ctCollectionId,
+				_portal.getClassNameId(CTSContent.class.getName()));
 
 		if (ctsContentIds.isEmpty()) {
 			return;
 		}
 
 		try (SafeCloseable safeCloseable =
-				CTCollectionThreadLocal.setCTCollectionIdWithSafeCloseable(
-					CTConstants.CT_COLLECTION_ID_PRODUCTION)) {
+				CTCollectionThreadLocal.setProductionModeWithSafeCloseable()) {
 
 			for (long ctsContentId : ctsContentIds) {
 				CTSContent ctsContent = _ctsContentLocalService.fetchCTSContent(
@@ -151,24 +149,22 @@ public class CTStoreCTEventListener implements CTEventListener {
 
 	@Activate
 	protected void activate(BundleContext bundleContext) {
-		_ctsContentClassNameId = _classNameLocalService.getClassNameId(
-			CTSContent.class);
-
-		_storeServiceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
+		_serviceTrackerMap = ServiceTrackerMapFactory.openSingleValueMap(
 			bundleContext, Store.class, "store.type");
 	}
 
-	@Reference
-	private ClassNameLocalService _classNameLocalService;
+	private static final Log _log = LogFactoryUtil.getLog(
+		CTStoreCTEventListener.class);
 
 	@Reference
 	private CTEntryLocalService _ctEntryLocalService;
 
-	private long _ctsContentClassNameId;
-
 	@Reference
 	private CTSContentLocalService _ctsContentLocalService;
 
-	private ServiceTrackerMap<String, Store> _storeServiceTrackerMap;
+	@Reference
+	private Portal _portal;
+
+	private ServiceTrackerMap<String, Store> _serviceTrackerMap;
 
 }

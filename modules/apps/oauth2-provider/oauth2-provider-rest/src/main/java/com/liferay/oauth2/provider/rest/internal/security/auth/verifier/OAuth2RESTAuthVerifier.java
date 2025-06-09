@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.oauth2.provider.rest.internal.security.auth.verifier;
@@ -36,6 +27,9 @@ import com.liferay.portal.kernel.servlet.HttpHeaders;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -43,8 +37,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,7 +47,6 @@ import org.osgi.service.component.annotations.ReferencePolicyOption;
  * @author Carlos Sierra Andrés
  */
 @Component(
-	immediate = true,
 	property = "auth.verifier.OAuth2RESTAuthVerifier.urls.includes=#N/A#",
 	service = AuthVerifier.class
 )
@@ -74,23 +65,41 @@ public class OAuth2RESTAuthVerifier implements AuthVerifier {
 		AuthVerifierResult authVerifierResult = new AuthVerifierResult();
 
 		try {
-			BearerTokenProvider.AccessToken accessToken = getAccessToken(
+			String accessTokenContent = _getAccessTokenContent(
 				accessControlContext);
 
-			if (accessToken == null) {
+			if (accessTokenContent == null) {
 				return authVerifierResult;
 			}
 
-			OAuth2Application oAuth2Application =
-				accessToken.getOAuth2Application();
+			BearerTokenProvider.AccessToken accessToken = _getAccessToken(
+				accessTokenContent);
 
-			BearerTokenProvider bearerTokenProvider =
-				_bearerTokenProviderAccessor.getBearerTokenProvider(
-					oAuth2Application.getCompanyId(),
-					oAuth2Application.getClientId());
+			if (accessToken != null) {
+				OAuth2Application oAuth2Application =
+					accessToken.getOAuth2Application();
 
-			if ((bearerTokenProvider == null) ||
-				!bearerTokenProvider.isValid(accessToken)) {
+				BearerTokenProvider bearerTokenProvider =
+					_bearerTokenProviderAccessor.getBearerTokenProvider(
+						oAuth2Application.getCompanyId(),
+						oAuth2Application.getClientId());
+
+				if ((bearerTokenProvider == null) ||
+					!bearerTokenProvider.isValid(accessToken)) {
+
+					accessToken = null;
+				}
+			}
+
+			if (accessToken == null) {
+				HttpServletResponse httpServletResponse =
+					accessControlContext.getResponse();
+
+				httpServletResponse.setStatus(
+					HttpServletResponse.SC_UNAUTHORIZED);
+
+				authVerifierResult.setState(
+					AuthVerifierResult.State.INVALID_CREDENTIALS);
 
 				return authVerifierResult;
 			}
@@ -116,43 +125,24 @@ public class OAuth2RESTAuthVerifier implements AuthVerifier {
 		}
 	}
 
-	protected BearerTokenProvider.AccessToken getAccessToken(
-			AccessControlContext accessControlContext)
+	private BearerTokenProvider.AccessToken _getAccessToken(
+			String accessTokenContent)
 		throws PortalException {
 
-		HttpServletRequest httpServletRequest =
-			accessControlContext.getRequest();
-
-		String authorization = httpServletRequest.getHeader(
-			HttpHeaders.AUTHORIZATION);
-
-		if (Validator.isBlank(authorization)) {
-			return null;
-		}
-
-		String[] authorizationParts = authorization.split("\\s");
-
-		String scheme = authorizationParts[0];
-
-		if (!StringUtil.equalsIgnoreCase(scheme, _TOKEN_KEY)) {
-			return null;
-		}
-
-		String token = authorizationParts[1];
-
-		if (Validator.isBlank(token)) {
+		if (Validator.isBlank(accessTokenContent)) {
 			return null;
 		}
 
 		OAuth2Authorization oAuth2Authorization =
 			_oAuth2AuthorizationLocalService.
-				fetchOAuth2AuthorizationByAccessTokenContent(token);
+				fetchOAuth2AuthorizationByAccessTokenContent(
+					accessTokenContent);
 
 		if (oAuth2Authorization == null) {
 			return null;
 		}
 
-		String accessTokenContent = oAuth2Authorization.getAccessTokenContent();
+		accessTokenContent = oAuth2Authorization.getAccessTokenContent();
 
 		if (OAuth2ProviderConstants.EXPIRED_TOKEN.equals(accessTokenContent)) {
 			return null;
@@ -189,6 +179,34 @@ public class OAuth2RESTAuthVerifier implements AuthVerifier {
 			StringPool.BLANK, StringPool.BLANK, scopeAliasesList,
 			accessTokenContent, _TOKEN_KEY, oAuth2Authorization.getUserId(),
 			oAuth2Authorization.getUserName());
+	}
+
+	private String _getAccessTokenContent(
+		AccessControlContext accessControlContext) {
+
+		HttpServletRequest httpServletRequest =
+			accessControlContext.getRequest();
+
+		String authorization = httpServletRequest.getHeader(
+			HttpHeaders.AUTHORIZATION);
+
+		if (Validator.isBlank(authorization)) {
+			return null;
+		}
+
+		String[] authorizationParts = authorization.split("\\s");
+
+		String scheme = authorizationParts[0];
+
+		if (!StringUtil.equalsIgnoreCase(scheme, _TOKEN_KEY)) {
+			return null;
+		}
+
+		if (authorizationParts.length < 2) {
+			return StringPool.BLANK;
+		}
+
+		return authorizationParts[1];
 	}
 
 	private static final String _TOKEN_KEY = "Bearer";

@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.web.internal.asset.model;
 
+import com.liferay.asset.display.page.portlet.AssetDisplayPageFriendlyURLProvider;
+import com.liferay.asset.kernel.model.AssetRendererFactory;
 import com.liferay.asset.kernel.model.BaseJSPAssetRenderer;
+import com.liferay.info.item.ClassPKInfoItemIdentifier;
+import com.liferay.info.item.InfoItemReference;
 import com.liferay.knowledge.base.constants.KBActionKeys;
 import com.liferay.knowledge.base.constants.KBArticleConstants;
 import com.liferay.knowledge.base.constants.KBPortletKeys;
@@ -22,36 +17,50 @@ import com.liferay.knowledge.base.model.KBArticle;
 import com.liferay.knowledge.base.util.KnowledgeBaseUtil;
 import com.liferay.knowledge.base.web.internal.constants.KBWebKeys;
 import com.liferay.knowledge.base.web.internal.security.permission.resource.KBArticlePermission;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
+import com.liferay.portal.kernel.portlet.PortletLayoutFinder;
+import com.liferay.portal.kernel.portlet.PortletLayoutFinderRegistryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HtmlUtil;
+import com.liferay.portal.kernel.trash.TrashRenderer;
+import com.liferay.portal.kernel.util.HtmlParser;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.trash.TrashHelper;
+
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Peter Shin
  */
-public class KBArticleAssetRenderer extends BaseJSPAssetRenderer<KBArticle> {
+public class KBArticleAssetRenderer
+	extends BaseJSPAssetRenderer<KBArticle> implements TrashRenderer {
 
-	public KBArticleAssetRenderer(KBArticle kbArticle) {
+	public KBArticleAssetRenderer(
+		AssetDisplayPageFriendlyURLProvider assetDisplayPageFriendlyURLProvider,
+		HtmlParser htmlParser, KBArticle kbArticle, TrashHelper trashHelper) {
+
+		_assetDisplayPageFriendlyURLProvider =
+			assetDisplayPageFriendlyURLProvider;
+		_htmlParser = htmlParser;
 		_kbArticle = kbArticle;
+		_trashHelper = trashHelper;
 	}
 
 	@Override
@@ -88,6 +97,14 @@ public class KBArticleAssetRenderer extends BaseJSPAssetRenderer<KBArticle> {
 	}
 
 	@Override
+	public String getPortletId() {
+		AssetRendererFactory<KBArticle> assetRendererFactory =
+			getAssetRendererFactory();
+
+		return assetRendererFactory.getPortletId();
+	}
+
+	@Override
 	public int getStatus() {
 		return _kbArticle.getStatus();
 	}
@@ -96,19 +113,26 @@ public class KBArticleAssetRenderer extends BaseJSPAssetRenderer<KBArticle> {
 	public String getSummary(
 		PortletRequest portletRequest, PortletResponse portletResponse) {
 
-		String summary = _kbArticle.getDescription();
-
-		if (Validator.isNull(summary)) {
-			summary = StringUtil.shorten(
-				HtmlUtil.extractText(_kbArticle.getContent()), 200);
+		if (Validator.isNull(_kbArticle.getDescription())) {
+			return StringUtil.shorten(
+				_htmlParser.extractText(_kbArticle.getContent()), 200);
 		}
 
-		return summary;
+		return _kbArticle.getDescription();
 	}
 
 	@Override
 	public String getTitle(Locale locale) {
-		return _kbArticle.getTitle();
+		if (_trashHelper == null) {
+			return _kbArticle.getTitle();
+		}
+
+		return _trashHelper.getOriginalTitle(_kbArticle.getTitle());
+	}
+
+	@Override
+	public String getType() {
+		return KBArticleAssetRendererFactory.TYPE;
 	}
 
 	@Override
@@ -117,23 +141,13 @@ public class KBArticleAssetRenderer extends BaseJSPAssetRenderer<KBArticle> {
 			LiferayPortletResponse liferayPortletResponse)
 		throws Exception {
 
-		Group group = GroupLocalServiceUtil.fetchGroup(_kbArticle.getGroupId());
-
-		if (group.isCompany()) {
-			ThemeDisplay themeDisplay =
-				(ThemeDisplay)liferayPortletRequest.getAttribute(
-					WebKeys.THEME_DISPLAY);
-
-			group = themeDisplay.getScopeGroup();
-		}
-
 		return PortletURLBuilder.create(
 			PortalUtil.getControlPanelPortletURL(
-				liferayPortletRequest, group,
+				liferayPortletRequest, _getGroup(liferayPortletRequest),
 				KBPortletKeys.KNOWLEDGE_BASE_ADMIN, 0, 0,
 				PortletRequest.RENDER_PHASE)
-		).setMVCPath(
-			"/admin/edit_article.jsp"
+		).setMVCRenderCommandName(
+			"/knowledge_base/edit_kb_article"
 		).setParameter(
 			"resourcePrimKey", _kbArticle.getResourcePrimKey()
 		).buildPortletURL();
@@ -141,13 +155,42 @@ public class KBArticleAssetRenderer extends BaseJSPAssetRenderer<KBArticle> {
 
 	@Override
 	public String getURLViewInContext(
-		LiferayPortletRequest liferayPortletRequest,
-		LiferayPortletResponse liferayPortletResponse,
-		String noSuchEntryRedirect) {
+			LiferayPortletRequest liferayPortletRequest,
+			LiferayPortletResponse liferayPortletResponse,
+			String noSuchEntryRedirect)
+		throws PortalException {
 
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)liferayPortletRequest.getAttribute(
 				KBWebKeys.THEME_DISPLAY);
+
+		return getURLViewInContext(themeDisplay, noSuchEntryRedirect);
+	}
+
+	@Override
+	public String getURLViewInContext(
+			ThemeDisplay themeDisplay, String noSuchEntryRedirect)
+		throws PortalException {
+
+		if (_assetDisplayPageFriendlyURLProvider != null) {
+			String friendlyURL =
+				_assetDisplayPageFriendlyURLProvider.getFriendlyURL(
+					new InfoItemReference(
+						getClassName(),
+						new ClassPKInfoItemIdentifier(
+							_kbArticle.getKbArticleId())),
+					themeDisplay);
+
+			if (Validator.isNotNull(friendlyURL)) {
+				return friendlyURL;
+			}
+		}
+
+		if (!_hasViewInContextGroupLayout(
+				themeDisplay, _kbArticle.getGroupId())) {
+
+			return null;
+		}
 
 		return KnowledgeBaseUtil.getKBArticleURL(
 			themeDisplay.getPlid(), _kbArticle.getResourcePrimKey(),
@@ -212,6 +255,57 @@ public class KBArticleAssetRenderer extends BaseJSPAssetRenderer<KBArticle> {
 		return kbArticle.getResourcePrimKey();
 	}
 
+	private Group _getGroup(LiferayPortletRequest liferayPortletRequest) {
+		Group group = GroupLocalServiceUtil.fetchGroup(_kbArticle.getGroupId());
+
+		if ((group != null) && !group.isCompany()) {
+			return group;
+		}
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)liferayPortletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		return themeDisplay.getScopeGroup();
+	}
+
+	private boolean _hasViewInContextGroupLayout(
+		ThemeDisplay themeDisplay, long groupId) {
+
+		try {
+			PortletLayoutFinder portletLayoutFinder =
+				PortletLayoutFinderRegistryUtil.getPortletLayoutFinder(
+					getClassName());
+
+			if (portletLayoutFinder == null) {
+				return false;
+			}
+
+			PortletLayoutFinder.Result result = portletLayoutFinder.find(
+				themeDisplay, groupId);
+
+			if ((result == null) || Validator.isNull(result.getPortletId())) {
+				return false;
+			}
+
+			return true;
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+
+			return false;
+		}
+	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		KBArticleAssetRenderer.class);
+
+	private final AssetDisplayPageFriendlyURLProvider
+		_assetDisplayPageFriendlyURLProvider;
+	private final HtmlParser _htmlParser;
 	private final KBArticle _kbArticle;
+	private final TrashHelper _trashHelper;
 
 }

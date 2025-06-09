@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.impl;
@@ -19,10 +10,11 @@ import com.liferay.portal.kernel.model.Phone;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.permission.CommonPermissionUtil;
 import com.liferay.portal.service.base.PhoneServiceBaseImpl;
+import com.liferay.portal.service.permission.CommonPermissionUtil;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -31,32 +23,82 @@ public class PhoneServiceImpl extends PhoneServiceBaseImpl {
 
 	@Override
 	public Phone addPhone(
-			String className, long classPK, String number, String extension,
-			long typeId, boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			String number, String extension, long typeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException {
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				className, "com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
-			getPermissionChecker(), className, classPK, ActionKeys.UPDATE);
+			getPermissionChecker(), className, classPK, actionId);
 
 		return phoneLocalService.addPhone(
-			getUserId(), className, classPK, number, extension, typeId, primary,
-			serviceContext);
+			externalReferenceCode, getUserId(), className, classPK, number,
+			extension, typeId, primary, serviceContext);
 	}
 
 	@Override
 	public void deletePhone(long phoneId) throws PortalException {
 		Phone phone = phonePersistence.findByPrimaryKey(phoneId);
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				phone.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
 			getPermissionChecker(), phone.getClassNameId(), phone.getClassPK(),
-			ActionKeys.UPDATE);
+			actionId);
 
 		phoneLocalService.deletePhone(phone);
 	}
 
 	@Override
+	public Phone fetchPhoneByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Phone phone = phoneLocalService.fetchPhoneByExternalReferenceCode(
+			externalReferenceCode, companyId);
+
+		if (phone != null) {
+			CommonPermissionUtil.check(
+				getPermissionChecker(), phone.getClassNameId(),
+				phone.getClassPK(), ActionKeys.VIEW);
+		}
+
+		return phone;
+	}
+
+	@Override
 	public Phone getPhone(long phoneId) throws PortalException {
 		Phone phone = phonePersistence.findByPrimaryKey(phoneId);
+
+		CommonPermissionUtil.check(
+			getPermissionChecker(), phone.getClassNameId(), phone.getClassPK(),
+			ActionKeys.VIEW);
+
+		return phone;
+	}
+
+	@Override
+	public Phone getPhoneByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		Phone phone = phoneLocalService.getPhoneByExternalReferenceCode(
+			externalReferenceCode, companyId);
 
 		CommonPermissionUtil.check(
 			getPermissionChecker(), phone.getClassNameId(), phone.getClassPK(),
@@ -80,18 +122,27 @@ public class PhoneServiceImpl extends PhoneServiceBaseImpl {
 
 	@Override
 	public Phone updatePhone(
-			long phoneId, String number, String extension, long typeId,
-			boolean primary)
+			String externalReferenceCode, long phoneId, String number,
+			String extension, long typeId, boolean primary)
 		throws PortalException {
 
 		Phone phone = phonePersistence.findByPrimaryKey(phoneId);
 
+		String actionId = ActionKeys.UPDATE;
+
+		if (Objects.equals(
+				phone.getClassName(),
+				"com.liferay.account.model.AccountEntry")) {
+
+			actionId = "MANAGE_ADDRESSES";
+		}
+
 		CommonPermissionUtil.check(
 			getPermissionChecker(), phone.getClassNameId(), phone.getClassPK(),
-			ActionKeys.UPDATE);
+			actionId);
 
 		return phoneLocalService.updatePhone(
-			phoneId, number, extension, typeId, primary);
+			externalReferenceCode, phoneId, number, extension, typeId, primary);
 	}
 
 }

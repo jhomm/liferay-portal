@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.model;
@@ -35,6 +26,10 @@ public class CPInstanceTable extends BaseTable<CPInstanceTable> {
 
 	public static final CPInstanceTable INSTANCE = new CPInstanceTable();
 
+	public final Column<CPInstanceTable, Long> mvccVersion = createColumn(
+		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
+	public final Column<CPInstanceTable, Long> ctCollectionId = createColumn(
+		"ctCollectionId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<CPInstanceTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<CPInstanceTable, String> externalReferenceCode =
@@ -137,6 +132,18 @@ public class CPInstanceTable extends BaseTable<CPInstanceTable> {
 			Column.FLAG_DEFAULT);
 	public final Column<CPInstanceTable, String> unspsc = createColumn(
 		"unspsc", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<CPInstanceTable, Boolean> discontinued = createColumn(
+		"discontinued", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<CPInstanceTable, Date> discontinuedDate = createColumn(
+		"discontinuedDate", Date.class, Types.TIMESTAMP, Column.FLAG_DEFAULT);
+	public final Column<CPInstanceTable, String> replacementCPInstanceUuid =
+		createColumn(
+			"replacementCPInstanceUuid", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<CPInstanceTable, Long> replacementCProductId =
+		createColumn(
+			"replacementCProductId", Long.class, Types.BIGINT,
+			Column.FLAG_DEFAULT);
 	public final Column<CPInstanceTable, Integer> status = createColumn(
 		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 	public final Column<CPInstanceTable, Long> statusByUserId = createColumn(

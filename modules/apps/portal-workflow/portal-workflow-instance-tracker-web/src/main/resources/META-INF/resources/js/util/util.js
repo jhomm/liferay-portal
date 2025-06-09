@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import dagre from 'dagre';
@@ -69,12 +60,12 @@ const getLayoutedElements = (elements) => {
 	let transitions = elements.filter((element) => isEdge(element));
 
 	transitions = transitions.map((transition) => {
-		const sourceNode = nodes.find((node) => node.id == transition.source);
+		const sourceNode = nodes.find((node) => node.id === transition.source);
 
 		const sourceX = sourceNode.position.x;
 		const sourceY = sourceNode.position.y;
 
-		const targetNode = nodes.find((node) => node.id == transition.target);
+		const targetNode = nodes.find((node) => node.id === transition.target);
 
 		const targetX = targetNode.position.x;
 		const targetY = targetNode.position.y;
@@ -181,11 +172,23 @@ const getNodeType = (type) => {
 };
 
 const isCurrent = (currentNodes = [], node) => {
-	return currentNodes.includes(node.name);
+	return node.type === 'TASK' && currentNodes.includes(node.name);
 };
 
-const isVisited = (visitedNodes = [], node) => {
-	return visitedNodes.includes(node.name);
+const isVisited = (visitedNodes = [], transitionElements = [], node) => {
+	if (node.type === 'JOIN') {
+		const transitionsToJoin = transitionElements.filter(
+			(element) => element.targetNodeName === node.name
+		).length;
+		const visitedNodesJoin = visitedNodes.filter(
+			(element) => element === node.name
+		).length;
+
+		return transitionsToJoin === visitedNodesJoin;
+	}
+	else {
+		return visitedNodes.includes(node.name);
+	}
 };
 
 const nodeTypes = {

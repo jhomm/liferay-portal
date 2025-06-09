@@ -1,23 +1,14 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-SiteAdministrationPanelCategoryDisplayContext siteAdministrationPanelCategoryDisplayContext = new SiteAdministrationPanelCategoryDisplayContext(liferayPortletRequest, liferayPortletResponse, null);
+SiteAdministrationPanelCategoryDisplayContext siteAdministrationPanelCategoryDisplayContext = new SiteAdministrationPanelCategoryDisplayContext(liferayPortletRequest, null);
 
 Group group = siteAdministrationPanelCategoryDisplayContext.getGroup();
 PanelCategory panelCategory = siteAdministrationPanelCategoryDisplayContext.getPanelCategory();
@@ -31,6 +22,12 @@ int childPanelCategoriesSize = GetterUtil.getInteger(request.getAttribute("produ
 			<c:when test="<%= childPanelCategoriesSize > 1 %>">
 				<%@ include file="/sites/site_administration_header_icon_sites.jspf" %>
 
+				<aui:style type="text/css">
+					.site-administration--header {
+						background-image: url(<%= siteAdministrationPanelCategoryDisplayContext.getLogoURL() %>) !important;
+					}
+				</aui:style>
+
 				<a aria-controls="<portlet:namespace /><%= AUIUtil.normalizeId(panelCategory.getKey()) %>Collapse" aria-expanded="<%= siteAdministrationPanelCategoryDisplayContext.isCollapsedPanel() %>" class="panel-toggler <%= (group != null) ? "collapse-icon collapse-icon-middle " : StringPool.BLANK %> <%= siteAdministrationPanelCategoryDisplayContext.isCollapsedPanel() ? StringPool.BLANK : "collapsed" %> site-administration-toggler" data-parent="#<portlet:namespace />Accordion" data-qa-id="productMenuSiteAdministrationPanelCategory" data-toggle="liferay-collapse" href="#<portlet:namespace /><%= AUIUtil.normalizeId(panelCategory.getKey()) %>Collapse" id="<portlet:namespace /><%= AUIUtil.normalizeId(panelCategory.getKey()) %>Toggler" <%= (group != null) ? "role=\"button\"" : StringPool.BLANK %>>
 					<clay:content-row
 						verticalAlign="center"
@@ -38,7 +35,7 @@ int childPanelCategoriesSize = GetterUtil.getInteger(request.getAttribute("produ
 						<clay:content-col>
 							<c:choose>
 								<c:when test="<%= Validator.isNotNull(siteAdministrationPanelCategoryDisplayContext.getLogoURL()) %>">
-									<div class="aspect-ratio-bg-cover sticker" style="background-image: url(<%= siteAdministrationPanelCategoryDisplayContext.getLogoURL() %>);"></div>
+									<div class="aspect-ratio-bg-cover site-administration--header sticker"></div>
 								</c:when>
 								<c:otherwise>
 									<clay:sticker
@@ -53,11 +50,7 @@ int childPanelCategoriesSize = GetterUtil.getInteger(request.getAttribute("produ
 							cssClass="mr-4"
 							expand="<%= true %>"
 						>
-							<div class="depot-type">
-								<liferay-ui:message key='<%= group.isDepot() ? "asset-library" : "site" %>' />
-							</div>
-
-							<div class="lfr-portal-tooltip site-name text-truncate" title="<%= HtmlUtil.escape(siteAdministrationPanelCategoryDisplayContext.getGroupName()) %>">
+							<div class="lfr-portal-tooltip site-name text-truncate" title="<%= HtmlUtil.escapeAttribute(siteAdministrationPanelCategoryDisplayContext.getGroupName()) %>">
 								<%= HtmlUtil.escape(siteAdministrationPanelCategoryDisplayContext.getGroupName()) %>
 
 								<c:if test="<%= siteAdministrationPanelCategoryDisplayContext.isShowStagingInfo() && !group.isStagedRemotely() %>">
@@ -78,9 +71,15 @@ int childPanelCategoriesSize = GetterUtil.getInteger(request.getAttribute("produ
 						</clay:sticker>
 					</c:if>
 
-					<aui:icon cssClass="collapse-icon-closed" image="angle-right" markupView="lexicon" />
+					<clay:icon
+						cssClass="collapse-icon-closed"
+						symbol="angle-right"
+					/>
 
-					<aui:icon cssClass="collapse-icon-open" image="angle-down" markupView="lexicon" />
+					<clay:icon
+						cssClass="collapse-icon-open"
+						symbol="angle-down"
+					/>
 				</a>
 			</c:when>
 			<c:otherwise>

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -27,24 +18,24 @@ dateSearchEntry.setDate(ddmStructure.getModifiedDate());
 %>
 
 <div class="clamp-container">
-	<h4 class="text-truncate">
+	<div class="h4 text-truncate">
 		<aui:a cssClass="form-instance-name" href="<%= (String)request.getAttribute(WebKeys.SEARCH_ENTRY_HREF) %>">
 			<%= HtmlUtil.escape(ddmStructure.getName(locale)) %>
 		</aui:a>
-	</h4>
+	</div>
 
-	<h5 class="text-default">
+	<div class="h5 text-default">
 		<div class="form-instance-description text-truncate">
 			<%= HtmlUtil.escape(ddmStructure.getDescription(locale)) %>
 		</div>
-	</h5>
+	</div>
 
-	<h5 class="text-default">
+	<div class="h5 text-default">
 		<span class="form-instance-id">
 			<liferay-ui:message key="id" />: <%= ddmStructure.getStructureId() %>
 		</span>
 		<span class="form-instance-modified-date">
 			<liferay-ui:message key="modified-date" />: <%= dateSearchEntry.getName(request) %>
 		</span>
-	</h5>
+	</div>
 </div>

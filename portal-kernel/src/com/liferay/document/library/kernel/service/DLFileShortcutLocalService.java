@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.service;
@@ -36,6 +27,7 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.change.tracking.CTService;
 import com.liferay.portal.kernel.service.permission.ModelPermissions;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -59,6 +51,11 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @CTAware
+@OSGiBeanProperties(
+	property = {
+		"model.class.name=com.liferay.document.library.kernel.model.DLFileShortcut"
+	}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -88,8 +85,9 @@ public interface DLFileShortcutLocalService
 	public DLFileShortcut addDLFileShortcut(DLFileShortcut dlFileShortcut);
 
 	public DLFileShortcut addFileShortcut(
-			long userId, long groupId, long repositoryId, long folderId,
-			long toFileEntryId, ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long repositoryId, long folderId, long toFileEntryId,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void addFileShortcutResources(
@@ -158,6 +156,9 @@ public interface DLFileShortcutLocalService
 		throws PortalException;
 
 	public void deleteFileShortcut(long fileShortcutId) throws PortalException;
+
+	public void deleteFileShortcut(String externalReferenceCode, long groupId)
+		throws PortalException;
 
 	public void deleteFileShortcuts(long toFileEntryId) throws PortalException;
 
@@ -257,6 +258,10 @@ public interface DLFileShortcutLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileShortcut fetchDLFileShortcut(long fileShortcutId);
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DLFileShortcut fetchDLFileShortcutByExternalReferenceCode(
+		String externalReferenceCode, long groupId);
+
 	/**
 	 * Returns the document library file shortcut matching the UUID and group.
 	 *
@@ -280,6 +285,11 @@ public interface DLFileShortcutLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public DLFileShortcut getDLFileShortcut(long fileShortcutId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public DLFileShortcut getDLFileShortcutByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -355,6 +365,9 @@ public interface DLFileShortcutLocalService
 	public List<DLFileShortcut> getFileShortcuts(long toFileEntryId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DLFileShortcut> getFileShortcuts(long groupId, long folderId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<DLFileShortcut> getFileShortcuts(
 		long groupId, long folderId, boolean active, int status, int start,
 		int end);
@@ -362,6 +375,9 @@ public interface DLFileShortcutLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getFileShortcutsCount(
 		long groupId, long folderId, boolean active, int status);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<DLFileShortcut> getGroupFileShortcuts(long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public IndexableActionableDynamicQuery getIndexableActionableDynamicQuery();

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.cmis;
@@ -55,35 +46,37 @@ public abstract class CMISRepositoryHandler
 	public FileEntry addFileEntry(
 			String externalReferenceCode, long userId, long folderId,
 			String sourceFileName, String mimeType, String title,
-			String description, String changeLog, InputStream inputStream,
-			long size, Date expirationDate, Date reviewDate,
-			ServiceContext serviceContext)
+			String urlTitle, String description, String changeLog,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		return _baseCmisRepository.addFileEntry(
 			externalReferenceCode, userId, folderId, sourceFileName, mimeType,
-			title, description, changeLog, inputStream, size, expirationDate,
-			reviewDate, serviceContext);
+			title, urlTitle, description, changeLog, inputStream, size,
+			displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	@Override
 	public FileShortcut addFileShortcut(
-			long userId, long folderId, long toFileEntryId,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long folderId,
+			long toFileEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
 		return _baseCmisRepository.addFileShortcut(
-			userId, folderId, toFileEntryId, serviceContext);
+			externalReferenceCode, userId, folderId, toFileEntryId,
+			serviceContext);
 	}
 
 	@Override
 	public Folder addFolder(
-			long userId, long parentFolderId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long parentFolderId,
+			String name, String description, ServiceContext serviceContext)
 		throws PortalException {
 
 		return _baseCmisRepository.addFolder(
-			userId, parentFolderId, name, description, serviceContext);
+			externalReferenceCode, userId, parentFolderId, name, description,
+			serviceContext);
 	}
 
 	@Override
@@ -393,6 +386,13 @@ public abstract class CMISRepositoryHandler
 		return _baseCmisRepository.getObjectPaths(objectId);
 	}
 
+	@Override
+	public List<FileShortcut> getRepositoryFileShortcuts(long groupId)
+		throws PortalException {
+
+		return _baseCmisRepository.getRepositoryFileShortcuts(groupId);
+	}
+
 	public abstract Session getSession() throws PortalException;
 
 	@Override
@@ -563,27 +563,28 @@ public abstract class CMISRepositoryHandler
 	@Override
 	public FileEntry updateFileEntry(
 			long userId, long fileEntryId, String sourceFileName,
-			String mimeType, String title, String description, String changeLog,
-			DLVersionNumberIncrease dlVersionNumberIncrease,
-			InputStream inputStream, long size, Date expirationDate,
-			Date reviewDate, ServiceContext serviceContext)
+			String mimeType, String title, String urlTitle, String description,
+			String changeLog, DLVersionNumberIncrease dlVersionNumberIncrease,
+			InputStream inputStream, long size, Date displayDate,
+			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
 		throws PortalException {
 
 		return _baseCmisRepository.updateFileEntry(
-			userId, fileEntryId, sourceFileName, mimeType, title, description,
-			changeLog, dlVersionNumberIncrease, inputStream, size,
-			expirationDate, reviewDate, serviceContext);
+			userId, fileEntryId, sourceFileName, mimeType, title, urlTitle,
+			description, changeLog, dlVersionNumberIncrease, inputStream, size,
+			displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	public FileEntry updateFileEntry(
 			String objectId, String mimeType, Map<String, Object> properties,
 			InputStream inputStream, String sourceFileName, long size,
-			Date expirationDate, Date reviewDate, ServiceContext serviceContext)
+			Date displayDate, Date expirationDate, Date reviewDate,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		return _baseCmisRepository.updateFileEntry(
 			objectId, mimeType, properties, inputStream, sourceFileName, size,
-			expirationDate, reviewDate, serviceContext);
+			displayDate, expirationDate, reviewDate, serviceContext);
 	}
 
 	@Override

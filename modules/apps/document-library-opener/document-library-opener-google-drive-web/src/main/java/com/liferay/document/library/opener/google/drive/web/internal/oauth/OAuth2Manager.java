@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.google.drive.web.internal.oauth;
@@ -24,15 +15,14 @@ import com.google.api.client.googleapis.auth.oauth2.GoogleTokenResponse;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.store.DataStore;
-import com.google.api.client.util.store.MemoryDataStoreFactory;
 import com.google.api.services.drive.DriveScopes;
 
 import com.liferay.document.library.google.drive.configuration.DLGoogleDriveCompanyConfiguration;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -107,7 +97,7 @@ public class OAuth2Manager {
 		try {
 			DLGoogleDriveCompanyConfiguration
 				dlGoogleDriveCompanyConfiguration =
-					_getDlGoogleDriveCompanyConfiguration(companyId);
+					_getDLGoogleDriveCompanyConfiguration(companyId);
 
 			if (Validator.isNotNull(
 					dlGoogleDriveCompanyConfiguration.clientId()) &&
@@ -121,7 +111,7 @@ public class OAuth2Manager {
 		}
 		catch (ConfigurationException configurationException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(configurationException, configurationException);
+				_log.debug(configurationException);
 			}
 
 			return false;
@@ -194,10 +184,12 @@ public class OAuth2Manager {
 	@Deactivate
 	protected void deactivate() {
 		_googleAuthorizationCodeFlows.clear();
+
+		StoredCredentialUtil.clear();
 	}
 
 	private DLGoogleDriveCompanyConfiguration
-			_getDlGoogleDriveCompanyConfiguration(long companyId)
+			_getDLGoogleDriveCompanyConfiguration(long companyId)
 		throws ConfigurationException {
 
 		return _configurationProvider.getCompanyConfiguration(
@@ -215,7 +207,7 @@ public class OAuth2Manager {
 		try {
 			DLGoogleDriveCompanyConfiguration
 				dlGoogleDriveCompanyConfiguration =
-					_getDlGoogleDriveCompanyConfiguration(companyId);
+					_getDLGoogleDriveCompanyConfiguration(companyId);
 
 			if (_googleAuthorizationCodeFlows.containsKey(companyId)) {
 				GoogleAuthorizationCodeFlow googleAuthorizationCodeFlow =
@@ -254,7 +246,7 @@ public class OAuth2Manager {
 
 			googleAuthorizationCodeFlowBuilder =
 				googleAuthorizationCodeFlowBuilder.setDataStoreFactory(
-					MemoryDataStoreFactory.getDefaultInstance());
+					new StoredCredentialDataStoreFactory(companyId));
 
 			GoogleAuthorizationCodeFlow googleAuthorizationCodeFlow =
 				googleAuthorizationCodeFlowBuilder.build();

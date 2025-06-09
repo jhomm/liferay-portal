@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.engine.internal.reader;
@@ -55,8 +46,8 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 				xlsBatchEngineImportTaskItemReaderImpl =
 					_getXLSBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "underscore_field1", "id1",
+							"space name1_i18n_en", "space name1_i18n_hr"
 						},
 						new Object[][] {
 							{
@@ -70,11 +61,13 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 				HashMapBuilder.put(
 					"createDate1", "createDate"
 				).put(
-					"description1", "description"
-				).put(
 					"id1", "id"
 				).put(
-					"name1", "name"
+					"space name1_i18n_en", "name"
+				).put(
+					"space name1_i18n_hr", "name"
+				).put(
+					"underscore_field1", "description"
 				).build(),
 				xlsBatchEngineImportTaskItemReaderImpl.read(),
 				HashMapBuilder.put(
@@ -91,8 +84,8 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 				xlsBatchEngineImportTaskItemReaderImpl =
 					_getXLSBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
 						new Object[][] {
 							{
@@ -120,8 +113,8 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 				xlsBatchEngineImportTaskItemReaderImpl =
 					_getXLSBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
 						new Object[][] {
 							{
@@ -150,8 +143,8 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 				xlsBatchEngineImportTaskItemReaderImpl =
 					_getXLSBatchEngineImportTaskItemReader(
 						new String[] {
-							"createDate1", "description1", "id1", "name1_en",
-							"name1_hr"
+							"createDate1", "description1", "id1",
+							"name1_i18n_en", "name1_i18n_hr"
 						},
 						new Object[][] {
 							{
@@ -232,7 +225,18 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 
 				validate(
 					createDateString, "sample description " + rowCount,
-					rowCount, Collections.emptyMap(),
+					rowCount,
+					HashMapBuilder.put(
+						"createDate", "createDate"
+					).put(
+						"description", "description"
+					).put(
+						"id", "id"
+					).put(
+						"name_i18n_en", "name"
+					).put(
+						"name_i18n_hr", "name"
+					).build(),
 					xlsBatchEngineImportTaskItemReaderImpl.read(),
 					HashMapBuilder.put(
 						"en", "sample name " + rowCount
@@ -258,7 +262,17 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 
 			validate(
 				createDateString, "hey, here is comma inside", 1L,
-				Collections.emptyMap(),
+				HashMapBuilder.put(
+					"createDate", "createDate"
+				).put(
+					"description", "description"
+				).put(
+					"id", "id"
+				).put(
+					"name_i18n_en", "name"
+				).put(
+					"name_i18n_hr", "name"
+				).build(),
 				xlsBatchEngineImportTaskItemReaderImpl.read(),
 				HashMapBuilder.put(
 					"en", "sample name"
@@ -296,7 +310,18 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 						})) {
 
 			validate(
-				createDateString, null, 1L, Collections.emptyMap(),
+				createDateString, null, 1L,
+				HashMapBuilder.put(
+					"createDate", "createDate"
+				).put(
+					"description", "description"
+				).put(
+					"id", "id"
+				).put(
+					"name_i18n_en", "name"
+				).put(
+					"name_i18n_hr", "name"
+				).build(),
 				xlsBatchEngineImportTaskItemReaderImpl.read(),
 				new HashMap<String, String>() {
 					{
@@ -307,7 +332,17 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 
 			validate(
 				createDateString, "sample description 2", 2L,
-				Collections.emptyMap(),
+				HashMapBuilder.put(
+					"createDate", "createDate"
+				).put(
+					"description", "description"
+				).put(
+					"id", "id"
+				).put(
+					"name_i18n_en", "name"
+				).put(
+					"name_i18n_hr", "name"
+				).build(),
 				xlsBatchEngineImportTaskItemReaderImpl.read(),
 				HashMapBuilder.put(
 					"en", "sample name 2"
@@ -345,6 +380,7 @@ public class XLSBatchEngineImportTaskItemReaderImplTest
 		throws IOException {
 
 		return new XLSBatchEngineImportTaskItemReaderImpl(
+			Collections.emptyList(),
 			new ByteArrayInputStream(_getContent(cellNames, rowValues)));
 	}
 

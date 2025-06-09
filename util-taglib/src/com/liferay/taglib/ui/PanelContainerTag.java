@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -20,13 +11,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.BaseBodyTagSupport;
 import com.liferay.taglib.util.PortalIncludeUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.BodyTag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.BodyTag;
 
 /**
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.frontend.taglib.clay.servlet.taglib.PanelGroupTag}
  */
+@Deprecated
 public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 
 	@Override
@@ -145,7 +139,6 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 	}
 
 	public void setMarkupView(String markupView) {
-		_markupView = markupView;
 	}
 
 	public void setPersistState(boolean persistState) {
@@ -162,18 +155,12 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 		_endPage = null;
 		_extended = null;
 		_id = null;
-		_markupView = null;
 		_persistState = false;
 		_startPage = null;
 	}
 
 	protected String getEndPage() {
 		if (Validator.isNull(_endPage)) {
-			if (Validator.isNotNull(_markupView)) {
-				return "/html/taglib/ui/panel_container/" + _markupView +
-					"/end.jsp";
-			}
-
 			return "/html/taglib/ui/panel_container/end.jsp";
 		}
 
@@ -182,11 +169,6 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 
 	protected String getStartPage() {
 		if (Validator.isNull(_startPage)) {
-			if (Validator.isNotNull(_markupView)) {
-				return "/html/taglib/ui/panel_container/" + _markupView +
-					"/start.jsp";
-			}
-
 			return "/html/taglib/ui/panel_container/start.jsp";
 		}
 
@@ -198,7 +180,6 @@ public class PanelContainerTag extends BaseBodyTagSupport implements BodyTag {
 	private String _endPage;
 	private Boolean _extended;
 	private String _id;
-	private String _markupView;
 	private boolean _persistState;
 	private String _startPage;
 

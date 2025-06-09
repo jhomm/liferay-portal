@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.audit.storage.service.impl;
 
+import com.liferay.counter.kernel.model.Counter;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.audit.AuditMessage;
@@ -47,27 +39,25 @@ public class AuditEventLocalServiceImpl extends AuditEventLocalServiceBaseImpl {
 
 	@Override
 	public AuditEvent addAuditEvent(AuditMessage auditMessage) {
-		long auditEventId = counterLocalService.increment();
+		return auditEventPersistence.update(
+			_toAuditEvent(auditMessage, counterLocalService.increment()));
+	}
 
-		AuditEvent auditEvent = auditEventPersistence.create(auditEventId);
+	@Override
+	public void addAuditEvents(List<AuditMessage> auditMessages) {
+		if (auditMessages.isEmpty()) {
+			return;
+		}
 
-		auditEvent.setCompanyId(auditMessage.getCompanyId());
-		auditEvent.setUserId(auditMessage.getUserId());
-		auditEvent.setUserName(auditMessage.getUserName());
-		auditEvent.setCreateDate(auditMessage.getTimestamp());
-		auditEvent.setEventType(auditMessage.getEventType());
-		auditEvent.setClassName(auditMessage.getClassName());
-		auditEvent.setClassPK(auditMessage.getClassPK());
-		auditEvent.setMessage(auditMessage.getMessage());
-		auditEvent.setClientHost(auditMessage.getClientHost());
-		auditEvent.setClientIP(auditMessage.getClientIP());
-		auditEvent.setServerName(auditMessage.getServerName());
-		auditEvent.setServerPort(auditMessage.getServerPort());
-		auditEvent.setSessionID(auditMessage.getSessionID());
-		auditEvent.setAdditionalInfo(
-			String.valueOf(auditMessage.getAdditionalInfo()));
+		int size = auditMessages.size();
 
-		return auditEventPersistence.update(auditEvent);
+		long startAuditEventId =
+			counterLocalService.increment(Counter.class.getName(), size) - size;
+
+		for (AuditMessage auditMessage : auditMessages) {
+			auditEventPersistence.update(
+				_toAuditEvent(auditMessage, ++startAuditEventId));
+		}
 	}
 
 	@Override
@@ -92,30 +82,31 @@ public class AuditEventLocalServiceImpl extends AuditEventLocalServiceBaseImpl {
 
 	@Override
 	public List<AuditEvent> getAuditEvents(
-		long companyId, long userId, String userName, Date createDateGT,
-		Date createDateLT, String eventType, String className, String classPK,
-		String clientHost, String clientIP, String serverName, int serverPort,
-		String sessionID, boolean andSearch, int start, int end) {
+		long companyId, long groupId, long userId, String userName,
+		Date createDateGT, Date createDateLT, String eventType,
+		String className, String classPK, String clientHost, String clientIP,
+		String serverName, int serverPort, String sessionID, boolean andSearch,
+		int start, int end) {
 
 		return getAuditEvents(
-			companyId, userId, userName, createDateGT, createDateLT, eventType,
-			className, classPK, clientHost, clientIP, serverName, serverPort,
-			sessionID, andSearch, start, end,
+			companyId, groupId, userId, userName, createDateGT, createDateLT,
+			eventType, className, classPK, clientHost, clientIP, serverName,
+			serverPort, sessionID, andSearch, start, end,
 			new AuditEventCreateDateComparator());
 	}
 
 	@Override
 	public List<AuditEvent> getAuditEvents(
-		long companyId, long userId, String userName, Date createDateGT,
-		Date createDateLT, String eventType, String className, String classPK,
-		String clientHost, String clientIP, String serverName, int serverPort,
-		String sessionID, boolean andSearch, int start, int end,
-		OrderByComparator<AuditEvent> orderByComparator) {
+		long companyId, long groupId, long userId, String userName,
+		Date createDateGT, Date createDateLT, String eventType,
+		String className, String classPK, String clientHost, String clientIP,
+		String serverName, int serverPort, String sessionID, boolean andSearch,
+		int start, int end, OrderByComparator<AuditEvent> orderByComparator) {
 
-		DynamicQuery dynamicQuery = buildDynamicQuery(
-			companyId, userId, userName, createDateGT, createDateLT, eventType,
-			className, classPK, clientHost, clientIP, serverName, serverPort,
-			sessionID, andSearch);
+		DynamicQuery dynamicQuery = _buildDynamicQuery(
+			companyId, groupId, userId, userName, createDateGT, createDateLT,
+			eventType, className, classPK, clientHost, clientIP, serverName,
+			serverPort, sessionID, andSearch);
 
 		return dynamicQuery(dynamicQuery, start, end, orderByComparator);
 	}
@@ -127,24 +118,26 @@ public class AuditEventLocalServiceImpl extends AuditEventLocalServiceBaseImpl {
 
 	@Override
 	public int getAuditEventsCount(
-		long companyId, long userId, String userName, Date createDateGT,
-		Date createDateLT, String eventType, String className, String classPK,
-		String clientHost, String clientIP, String serverName, int serverPort,
-		String sessionID, boolean andSearch) {
+		long companyId, long groupId, long userId, String userName,
+		Date createDateGT, Date createDateLT, String eventType,
+		String className, String classPK, String clientHost, String clientIP,
+		String serverName, int serverPort, String sessionID,
+		boolean andSearch) {
 
-		DynamicQuery dynamicQuery = buildDynamicQuery(
-			companyId, userId, userName, createDateGT, createDateLT, eventType,
-			className, classPK, clientHost, clientIP, serverName, serverPort,
-			sessionID, andSearch);
+		DynamicQuery dynamicQuery = _buildDynamicQuery(
+			companyId, groupId, userId, userName, createDateGT, createDateLT,
+			eventType, className, classPK, clientHost, clientIP, serverName,
+			serverPort, sessionID, andSearch);
 
 		return (int)dynamicQueryCount(dynamicQuery);
 	}
 
-	protected DynamicQuery buildDynamicQuery(
-		long companyId, long userId, String userName, Date createDateGT,
-		Date createDateLT, String eventType, String className, String classPK,
-		String clientHost, String clientIP, String serverName, int serverPort,
-		String sessionID, boolean andSearch) {
+	private DynamicQuery _buildDynamicQuery(
+		long companyId, long groupId, long userId, String userName,
+		Date createDateGT, Date createDateLT, String eventType,
+		String className, String classPK, String clientHost, String clientIP,
+		String serverName, int serverPort, String sessionID,
+		boolean andSearch) {
 
 		Junction junction = null;
 
@@ -153,6 +146,12 @@ public class AuditEventLocalServiceImpl extends AuditEventLocalServiceBaseImpl {
 		}
 		else {
 			junction = RestrictionsFactoryUtil.disjunction();
+		}
+
+		if (groupId > 0) {
+			Property property = PropertyFactoryUtil.forName("groupId");
+
+			junction.add(property.eq(groupId));
 		}
 
 		if (userId > 0) {
@@ -246,6 +245,31 @@ public class AuditEventLocalServiceImpl extends AuditEventLocalServiceBaseImpl {
 		}
 
 		return dynamicQuery.add(junction);
+	}
+
+	private AuditEvent _toAuditEvent(
+		AuditMessage auditMessage, long auditEventId) {
+
+		AuditEvent auditEvent = auditEventPersistence.create(auditEventId);
+
+		auditEvent.setGroupId(auditMessage.getGroupId());
+		auditEvent.setCompanyId(auditMessage.getCompanyId());
+		auditEvent.setUserId(auditMessage.getUserId());
+		auditEvent.setUserName(auditMessage.getUserName());
+		auditEvent.setCreateDate(auditMessage.getTimestamp());
+		auditEvent.setEventType(auditMessage.getEventType());
+		auditEvent.setClassName(auditMessage.getClassName());
+		auditEvent.setClassPK(auditMessage.getClassPK());
+		auditEvent.setMessage(auditMessage.getMessage());
+		auditEvent.setClientHost(auditMessage.getClientHost());
+		auditEvent.setClientIP(auditMessage.getClientIP());
+		auditEvent.setServerName(auditMessage.getServerName());
+		auditEvent.setServerPort(auditMessage.getServerPort());
+		auditEvent.setSessionID(auditMessage.getSessionID());
+		auditEvent.setAdditionalInfo(
+			String.valueOf(auditMessage.getAdditionalInfo()));
+
+		return auditEvent;
 	}
 
 }

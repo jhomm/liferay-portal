@@ -1,42 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.captcha;
 
-import com.liferay.dynamic.data.mapping.form.field.type.BaseDDMFormFieldTypeSettingsTestCase;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Matchers;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.api.mockito.expectation.PowerMockitoStubber;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Carolina Barbosa
  */
-@RunWith(PowerMockRunner.class)
-public class CaptchaDDMFormFieldTemplateContextContributorTest
-	extends BaseDDMFormFieldTypeSettingsTestCase {
+public class CaptchaDDMFormFieldTemplateContextContributorTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testGetParameters() throws Exception {
@@ -47,7 +38,7 @@ public class CaptchaDDMFormFieldTemplateContextContributorTest
 		sb.append("</label><input type=\"text\"></div></div>");
 
 		CaptchaDDMFormFieldTemplateContextContributor
-			captchaDDMFormFieldTemplateContextContributor = createSpy(
+			captchaDDMFormFieldTemplateContextContributor = _createSpy(
 				sb.toString());
 
 		Map<String, Object> parameters =
@@ -58,21 +49,21 @@ public class CaptchaDDMFormFieldTemplateContextContributorTest
 		Assert.assertEquals(sb.toString(), parameters.get("html"));
 	}
 
-	protected CaptchaDDMFormFieldTemplateContextContributor createSpy(
+	private CaptchaDDMFormFieldTemplateContextContributor _createSpy(
 			String html)
 		throws Exception {
 
 		CaptchaDDMFormFieldTemplateContextContributor
-			captchaDDMFormFieldTemplateContextContributor = PowerMockito.spy(
+			captchaDDMFormFieldTemplateContextContributor = Mockito.spy(
 				_captchaDDMFormFieldTemplateContextContributor);
 
-		PowerMockitoStubber powerMockitoStubber = PowerMockito.doReturn(html);
-
-		powerMockitoStubber.when(
+		Mockito.doReturn(
+			html
+		).when(
 			captchaDDMFormFieldTemplateContextContributor
 		).renderCaptchaTag(
-			Matchers.any(DDMFormField.class),
-			Matchers.any(DDMFormFieldRenderingContext.class)
+			Mockito.any(DDMFormField.class),
+			Mockito.any(DDMFormFieldRenderingContext.class)
 		);
 
 		return captchaDDMFormFieldTemplateContextContributor;

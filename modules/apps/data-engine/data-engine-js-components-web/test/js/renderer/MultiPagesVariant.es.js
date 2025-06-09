@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
@@ -21,7 +12,7 @@ import {
 	useFormState,
 } from '../../../src/main/resources/META-INF/resources/js/core/hooks/useForm.es';
 import {PageProvider} from '../../../src/main/resources/META-INF/resources/js/core/hooks/usePage.es';
-import {EVENT_TYPES} from '../../../src/main/resources/META-INF/resources/js/custom/form/eventTypes.es';
+import {EVENT_TYPES} from '../../../src/main/resources/META-INF/resources/js/custom/form/eventTypes';
 import {pageReducer} from '../../../src/main/resources/META-INF/resources/js/custom/form/reducers/index.es';
 import {PageHeader} from '../../../src/main/resources/META-INF/resources/js/custom/form/renderer/MultiPagesVariant.es';
 import mockPages from '../__mock__/mockPages.es';
@@ -70,9 +61,8 @@ describe('MultiPagesVariant.PageHeader', () => {
 	});
 
 	it('renders', () => {
-		const {localizedDescription, localizedTitle} = mockPages[
-			defaultProps.page.pageIndex
-		];
+		const {localizedDescription, localizedTitle} =
+			mockPages[defaultProps.page.pageIndex];
 
 		const {container} = render(
 			<WithProvider {...defaultProps}>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.resource.v2_0.test;
@@ -22,6 +13,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.DiscountProduct;
 import com.liferay.headless.commerce.admin.pricing.client.http.HttpInvoker;
 import com.liferay.headless.commerce.admin.pricing.client.pagination.Page;
@@ -29,50 +22,49 @@ import com.liferay.headless.commerce.admin.pricing.client.pagination.Pagination;
 import com.liferay.headless.commerce.admin.pricing.client.resource.v2_0.DiscountProductResource;
 import com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0.DiscountProductSerDes;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.model.Company;
-import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.CompanyLocalServiceUtil;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
-import com.liferay.portal.kernel.util.DateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.odata.entity.EntityModel;
-import com.liferay.portal.search.test.util.SearchTestRule;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
 
-import java.lang.reflect.InvocationTargetException;
+import jakarta.annotation.Generated;
 
-import java.text.DateFormat;
+import jakarta.ws.rs.core.MultivaluedHashMap;
+
+import java.lang.reflect.Method;
+
+import java.text.Format;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
-
-import javax.ws.rs.core.MultivaluedHashMap;
-
-import org.apache.commons.beanutils.BeanUtils;
-import org.apache.commons.beanutils.BeanUtilsBean;
-import org.apache.commons.lang.time.DateUtils;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -96,7 +88,7 @@ public abstract class BaseDiscountProductResourceTestCase {
 
 	@BeforeClass
 	public static void setUpClass() throws Exception {
-		_dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
+		_format = FastDateFormatFactoryUtil.getSimpleDateFormat(
 			"yyyy-MM-dd'T'HH:mm:ss'Z'");
 	}
 
@@ -110,11 +102,25 @@ public abstract class BaseDiscountProductResourceTestCase {
 
 		_discountProductResource.setContextCompany(testCompany);
 
-		DiscountProductResource.Builder builder =
-			DiscountProductResource.builder();
+		_testCompanyAdminUser = UserTestUtil.getAdminUser(
+			testCompany.getCompanyId());
 
-		discountProductResource = builder.authentication(
-			"test@liferay.com", "test"
+		discountProductResource = DiscountProductResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
 		).locale(
 			LocaleUtil.getDefault()
 		).build();
@@ -128,7 +134,32 @@ public abstract class BaseDiscountProductResourceTestCase {
 
 	@Test
 	public void testClientSerDesToDTO() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		DiscountProduct discountProduct1 = randomDiscountProduct();
+
+		String json = objectMapper.writeValueAsString(discountProduct1);
+
+		DiscountProduct discountProduct2 = DiscountProductSerDes.toDTO(json);
+
+		Assert.assertTrue(equals(discountProduct1, discountProduct2));
+	}
+
+	@Test
+	public void testClientSerDesToJSON() throws Exception {
+		ObjectMapper objectMapper = getClientSerDesObjectMapper();
+
+		DiscountProduct discountProduct = randomDiscountProduct();
+
+		String json1 = objectMapper.writeValueAsString(discountProduct);
+		String json2 = DiscountProductSerDes.toJSON(discountProduct);
+
+		Assert.assertEquals(
+			objectMapper.readTree(json1), objectMapper.readTree(json2));
+	}
+
+	protected ObjectMapper getClientSerDesObjectMapper() {
+		return new ObjectMapper() {
 			{
 				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
 				configure(
@@ -143,40 +174,6 @@ public abstract class BaseDiscountProductResourceTestCase {
 					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
 			}
 		};
-
-		DiscountProduct discountProduct1 = randomDiscountProduct();
-
-		String json = objectMapper.writeValueAsString(discountProduct1);
-
-		DiscountProduct discountProduct2 = DiscountProductSerDes.toDTO(json);
-
-		Assert.assertTrue(equals(discountProduct1, discountProduct2));
-	}
-
-	@Test
-	public void testClientSerDesToJSON() throws Exception {
-		ObjectMapper objectMapper = new ObjectMapper() {
-			{
-				configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
-				configure(
-					SerializationFeature.WRITE_ENUMS_USING_TO_STRING, true);
-				setDateFormat(new ISO8601DateFormat());
-				setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-				setSerializationInclusion(JsonInclude.Include.NON_NULL);
-				setVisibility(
-					PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-				setVisibility(
-					PropertyAccessor.GETTER, JsonAutoDetect.Visibility.NONE);
-			}
-		};
-
-		DiscountProduct discountProduct = randomDiscountProduct();
-
-		String json1 = objectMapper.writeValueAsString(discountProduct);
-		String json2 = DiscountProductSerDes.toJSON(discountProduct);
-
-		Assert.assertEquals(
-			objectMapper.readTree(json1), objectMapper.readTree(json2));
 	}
 
 	@Test
@@ -211,6 +208,44 @@ public abstract class BaseDiscountProductResourceTestCase {
 	}
 
 	@Test
+	public void testDeleteDiscountProductBatch() throws Exception {
+		DiscountProduct discountProduct1 =
+			testDeleteDiscountProductBatch_addDiscountProduct();
+
+		testDeleteDiscountProductBatch_deleteDiscountProduct(
+			"COMPLETED", null, discountProduct1.getDiscountProductId());
+	}
+
+	protected DiscountProduct
+			testDeleteDiscountProductBatch_addDiscountProduct()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected void testDeleteDiscountProductBatch_deleteDiscountProduct(
+			String expectedExecuteStatus, String externalReferenceCode, Long id)
+		throws Exception {
+
+		HttpInvoker.HttpResponse httpResponse =
+			discountProductResource.deleteDiscountProductBatchHttpResponse(
+				null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode
+					).put(
+						"discountProductId", () -> id
+					)));
+
+		Assert.assertEquals(202, httpResponse.getStatusCode());
+
+		waitForFinish(
+			expectedExecuteStatus,
+			JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+	}
+
+	@Test
 	public void testGetDiscountByExternalReferenceCodeDiscountProductsPage()
 		throws Exception {
 
@@ -224,7 +259,7 @@ public abstract class BaseDiscountProductResourceTestCase {
 				getDiscountByExternalReferenceCodeDiscountProductsPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantExternalReferenceCode != null) {
 			DiscountProduct irrelevantDiscountProduct =
@@ -235,14 +270,18 @@ public abstract class BaseDiscountProductResourceTestCase {
 			page =
 				discountProductResource.
 					getDiscountByExternalReferenceCodeDiscountProductsPage(
-						irrelevantExternalReferenceCode, Pagination.of(1, 2));
+						irrelevantExternalReferenceCode,
+						Pagination.of(1, (int)totalCount + 1));
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantDiscountProduct),
+			assertContains(
+				irrelevantDiscountProduct,
 				(List<DiscountProduct>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountByExternalReferenceCodeDiscountProductsPage_getExpectedActions(
+					irrelevantExternalReferenceCode));
 		}
 
 		DiscountProduct discountProduct1 =
@@ -258,12 +297,26 @@ public abstract class BaseDiscountProductResourceTestCase {
 				getDiscountByExternalReferenceCodeDiscountProductsPage(
 					externalReferenceCode, Pagination.of(1, 10));
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountProduct1, discountProduct2),
-			(List<DiscountProduct>)page.getItems());
-		assertValid(page);
+		assertContains(
+			discountProduct1, (List<DiscountProduct>)page.getItems());
+		assertContains(
+			discountProduct2, (List<DiscountProduct>)page.getItems());
+		assertValid(
+			page,
+			testGetDiscountByExternalReferenceCodeDiscountProductsPage_getExpectedActions(
+				externalReferenceCode));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetDiscountByExternalReferenceCodeDiscountProductsPage_getExpectedActions(
+				String externalReferenceCode)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -272,6 +325,14 @@ public abstract class BaseDiscountProductResourceTestCase {
 
 		String externalReferenceCode =
 			testGetDiscountByExternalReferenceCodeDiscountProductsPage_getExternalReferenceCode();
+
+		Page<DiscountProduct> discountProductsPage =
+			discountProductResource.
+				getDiscountByExternalReferenceCodeDiscountProductsPage(
+					externalReferenceCode, null);
+
+		int totalCount = GetterUtil.getInteger(
+			discountProductsPage.getTotalCount());
 
 		DiscountProduct discountProduct1 =
 			testGetDiscountByExternalReferenceCodeDiscountProductsPage_addDiscountProduct(
@@ -285,38 +346,87 @@ public abstract class BaseDiscountProductResourceTestCase {
 			testGetDiscountByExternalReferenceCodeDiscountProductsPage_addDiscountProduct(
 				externalReferenceCode, randomDiscountProduct());
 
-		Page<DiscountProduct> page1 =
-			discountProductResource.
-				getDiscountByExternalReferenceCodeDiscountProductsPage(
-					externalReferenceCode, Pagination.of(1, 2));
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DiscountProduct> discountProducts1 =
-			(List<DiscountProduct>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			discountProducts1.toString(), 2, discountProducts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DiscountProduct> page1 =
+				discountProductResource.
+					getDiscountByExternalReferenceCodeDiscountProductsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Page<DiscountProduct> page2 =
-			discountProductResource.
-				getDiscountByExternalReferenceCodeDiscountProductsPage(
-					externalReferenceCode, Pagination.of(2, 2));
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				discountProduct1, (List<DiscountProduct>)page1.getItems());
 
-		List<DiscountProduct> discountProducts2 =
-			(List<DiscountProduct>)page2.getItems();
+			Page<DiscountProduct> page2 =
+				discountProductResource.
+					getDiscountByExternalReferenceCodeDiscountProductsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		Assert.assertEquals(
-			discountProducts2.toString(), 1, discountProducts2.size());
+			assertContains(
+				discountProduct2, (List<DiscountProduct>)page2.getItems());
 
-		Page<DiscountProduct> page3 =
-			discountProductResource.
-				getDiscountByExternalReferenceCodeDiscountProductsPage(
-					externalReferenceCode, Pagination.of(1, 3));
+			Page<DiscountProduct> page3 =
+				discountProductResource.
+					getDiscountByExternalReferenceCodeDiscountProductsPage(
+						externalReferenceCode,
+						Pagination.of(
+							(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+							pageSizeLimit));
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountProduct1, discountProduct2, discountProduct3),
-			(List<DiscountProduct>)page3.getItems());
+			assertContains(
+				discountProduct3, (List<DiscountProduct>)page3.getItems());
+		}
+		else {
+			Page<DiscountProduct> page1 =
+				discountProductResource.
+					getDiscountByExternalReferenceCodeDiscountProductsPage(
+						externalReferenceCode,
+						Pagination.of(1, totalCount + 2));
+
+			List<DiscountProduct> discountProducts1 =
+				(List<DiscountProduct>)page1.getItems();
+
+			Assert.assertEquals(
+				discountProducts1.toString(), totalCount + 2,
+				discountProducts1.size());
+
+			Page<DiscountProduct> page2 =
+				discountProductResource.
+					getDiscountByExternalReferenceCodeDiscountProductsPage(
+						externalReferenceCode,
+						Pagination.of(2, totalCount + 2));
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DiscountProduct> discountProducts2 =
+				(List<DiscountProduct>)page2.getItems();
+
+			Assert.assertEquals(
+				discountProducts2.toString(), 1, discountProducts2.size());
+
+			Page<DiscountProduct> page3 =
+				discountProductResource.
+					getDiscountByExternalReferenceCodeDiscountProductsPage(
+						externalReferenceCode,
+						Pagination.of(1, (int)totalCount + 3));
+
+			assertContains(
+				discountProduct1, (List<DiscountProduct>)page3.getItems());
+			assertContains(
+				discountProduct2, (List<DiscountProduct>)page3.getItems());
+			assertContains(
+				discountProduct3, (List<DiscountProduct>)page3.getItems());
+		}
 	}
 
 	protected DiscountProduct
@@ -344,29 +454,6 @@ public abstract class BaseDiscountProductResourceTestCase {
 	}
 
 	@Test
-	public void testPostDiscountByExternalReferenceCodeDiscountProduct()
-		throws Exception {
-
-		DiscountProduct randomDiscountProduct = randomDiscountProduct();
-
-		DiscountProduct postDiscountProduct =
-			testPostDiscountByExternalReferenceCodeDiscountProduct_addDiscountProduct(
-				randomDiscountProduct);
-
-		assertEquals(randomDiscountProduct, postDiscountProduct);
-		assertValid(postDiscountProduct);
-	}
-
-	protected DiscountProduct
-			testPostDiscountByExternalReferenceCodeDiscountProduct_addDiscountProduct(
-				DiscountProduct discountProduct)
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	@Test
 	public void testGetDiscountIdDiscountProductsPage() throws Exception {
 		Long id = testGetDiscountIdDiscountProductsPage_getId();
 		Long irrelevantId =
@@ -376,7 +463,7 @@ public abstract class BaseDiscountProductResourceTestCase {
 			discountProductResource.getDiscountIdDiscountProductsPage(
 				id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(0, page.getTotalCount());
+		long totalCount = page.getTotalCount();
 
 		if (irrelevantId != null) {
 			DiscountProduct irrelevantDiscountProduct =
@@ -384,14 +471,18 @@ public abstract class BaseDiscountProductResourceTestCase {
 					irrelevantId, randomIrrelevantDiscountProduct());
 
 			page = discountProductResource.getDiscountIdDiscountProductsPage(
-				irrelevantId, null, null, Pagination.of(1, 2), null);
+				irrelevantId, null, null, Pagination.of(1, (int)totalCount + 1),
+				null);
 
-			Assert.assertEquals(1, page.getTotalCount());
+			Assert.assertEquals(totalCount + 1, page.getTotalCount());
 
-			assertEquals(
-				Arrays.asList(irrelevantDiscountProduct),
+			assertContains(
+				irrelevantDiscountProduct,
 				(List<DiscountProduct>)page.getItems());
-			assertValid(page);
+			assertValid(
+				page,
+				testGetDiscountIdDiscountProductsPage_getExpectedActions(
+					irrelevantId));
 		}
 
 		DiscountProduct discountProduct1 =
@@ -405,12 +496,23 @@ public abstract class BaseDiscountProductResourceTestCase {
 		page = discountProductResource.getDiscountIdDiscountProductsPage(
 			id, null, null, Pagination.of(1, 10), null);
 
-		Assert.assertEquals(2, page.getTotalCount());
+		Assert.assertEquals(totalCount + 2, page.getTotalCount());
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountProduct1, discountProduct2),
-			(List<DiscountProduct>)page.getItems());
-		assertValid(page);
+		assertContains(
+			discountProduct1, (List<DiscountProduct>)page.getItems());
+		assertContains(
+			discountProduct2, (List<DiscountProduct>)page.getItems());
+		assertValid(
+			page, testGetDiscountIdDiscountProductsPage_getExpectedActions(id));
+	}
+
+	protected Map<String, Map<String, String>>
+			testGetDiscountIdDiscountProductsPage_getExpectedActions(Long id)
+		throws Exception {
+
+		Map<String, Map<String, String>> expectedActions = new HashMap<>();
+
+		return expectedActions;
 	}
 
 	@Test
@@ -446,11 +548,42 @@ public abstract class BaseDiscountProductResourceTestCase {
 	}
 
 	@Test
+	public void testGetDiscountIdDiscountProductsPageWithFilterDoubleEquals()
+		throws Exception {
+
+		testGetDiscountIdDiscountProductsPageWithFilter(
+			"eq", EntityField.Type.DOUBLE);
+	}
+
+	@Test
+	public void testGetDiscountIdDiscountProductsPageWithFilterStringContains()
+		throws Exception {
+
+		testGetDiscountIdDiscountProductsPageWithFilter(
+			"contains", EntityField.Type.STRING);
+	}
+
+	@Test
 	public void testGetDiscountIdDiscountProductsPageWithFilterStringEquals()
 		throws Exception {
 
-		List<EntityField> entityFields = getEntityFields(
-			EntityField.Type.STRING);
+		testGetDiscountIdDiscountProductsPageWithFilter(
+			"eq", EntityField.Type.STRING);
+	}
+
+	@Test
+	public void testGetDiscountIdDiscountProductsPageWithFilterStringStartsWith()
+		throws Exception {
+
+		testGetDiscountIdDiscountProductsPageWithFilter(
+			"startswith", EntityField.Type.STRING);
+	}
+
+	protected void testGetDiscountIdDiscountProductsPageWithFilter(
+			String operator, EntityField.Type type)
+		throws Exception {
+
+		List<EntityField> entityFields = getEntityFields(type);
 
 		if (entityFields.isEmpty()) {
 			return;
@@ -471,7 +604,7 @@ public abstract class BaseDiscountProductResourceTestCase {
 			Page<DiscountProduct> page =
 				discountProductResource.getDiscountIdDiscountProductsPage(
 					id, null,
-					getFilterString(entityField, "eq", discountProduct1),
+					getFilterString(entityField, operator, discountProduct1),
 					Pagination.of(1, 2), null);
 
 			assertEquals(
@@ -486,6 +619,13 @@ public abstract class BaseDiscountProductResourceTestCase {
 
 		Long id = testGetDiscountIdDiscountProductsPage_getId();
 
+		Page<DiscountProduct> discountProductsPage =
+			discountProductResource.getDiscountIdDiscountProductsPage(
+				id, null, null, null, null);
+
+		int totalCount = GetterUtil.getInteger(
+			discountProductsPage.getTotalCount());
+
 		DiscountProduct discountProduct1 =
 			testGetDiscountIdDiscountProductsPage_addDiscountProduct(
 				id, randomDiscountProduct());
@@ -498,35 +638,82 @@ public abstract class BaseDiscountProductResourceTestCase {
 			testGetDiscountIdDiscountProductsPage_addDiscountProduct(
 				id, randomDiscountProduct());
 
-		Page<DiscountProduct> page1 =
-			discountProductResource.getDiscountIdDiscountProductsPage(
-				id, null, null, Pagination.of(1, 2), null);
+		// See com.liferay.portal.vulcan.internal.configuration.HeadlessAPICompanyConfiguration#pageSizeLimit
 
-		List<DiscountProduct> discountProducts1 =
-			(List<DiscountProduct>)page1.getItems();
+		int pageSizeLimit = 500;
 
-		Assert.assertEquals(
-			discountProducts1.toString(), 2, discountProducts1.size());
+		if (totalCount >= (pageSizeLimit - 2)) {
+			Page<DiscountProduct> page1 =
+				discountProductResource.getDiscountIdDiscountProductsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 1.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Page<DiscountProduct> page2 =
-			discountProductResource.getDiscountIdDiscountProductsPage(
-				id, null, null, Pagination.of(2, 2), null);
+			Assert.assertEquals(totalCount + 3, page1.getTotalCount());
 
-		Assert.assertEquals(3, page2.getTotalCount());
+			assertContains(
+				discountProduct1, (List<DiscountProduct>)page1.getItems());
 
-		List<DiscountProduct> discountProducts2 =
-			(List<DiscountProduct>)page2.getItems();
+			Page<DiscountProduct> page2 =
+				discountProductResource.getDiscountIdDiscountProductsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 2.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		Assert.assertEquals(
-			discountProducts2.toString(), 1, discountProducts2.size());
+			assertContains(
+				discountProduct2, (List<DiscountProduct>)page2.getItems());
 
-		Page<DiscountProduct> page3 =
-			discountProductResource.getDiscountIdDiscountProductsPage(
-				id, null, null, Pagination.of(1, 3), null);
+			Page<DiscountProduct> page3 =
+				discountProductResource.getDiscountIdDiscountProductsPage(
+					id, null, null,
+					Pagination.of(
+						(int)Math.ceil((totalCount + 3.0) / pageSizeLimit),
+						pageSizeLimit),
+					null);
 
-		assertEqualsIgnoringOrder(
-			Arrays.asList(discountProduct1, discountProduct2, discountProduct3),
-			(List<DiscountProduct>)page3.getItems());
+			assertContains(
+				discountProduct3, (List<DiscountProduct>)page3.getItems());
+		}
+		else {
+			Page<DiscountProduct> page1 =
+				discountProductResource.getDiscountIdDiscountProductsPage(
+					id, null, null, Pagination.of(1, totalCount + 2), null);
+
+			List<DiscountProduct> discountProducts1 =
+				(List<DiscountProduct>)page1.getItems();
+
+			Assert.assertEquals(
+				discountProducts1.toString(), totalCount + 2,
+				discountProducts1.size());
+
+			Page<DiscountProduct> page2 =
+				discountProductResource.getDiscountIdDiscountProductsPage(
+					id, null, null, Pagination.of(2, totalCount + 2), null);
+
+			Assert.assertEquals(totalCount + 3, page2.getTotalCount());
+
+			List<DiscountProduct> discountProducts2 =
+				(List<DiscountProduct>)page2.getItems();
+
+			Assert.assertEquals(
+				discountProducts2.toString(), 1, discountProducts2.size());
+
+			Page<DiscountProduct> page3 =
+				discountProductResource.getDiscountIdDiscountProductsPage(
+					id, null, null, Pagination.of(1, (int)totalCount + 3),
+					null);
+
+			assertContains(
+				discountProduct1, (List<DiscountProduct>)page3.getItems());
+			assertContains(
+				discountProduct2, (List<DiscountProduct>)page3.getItems());
+			assertContains(
+				discountProduct3, (List<DiscountProduct>)page3.getItems());
+		}
 	}
 
 	@Test
@@ -536,9 +723,23 @@ public abstract class BaseDiscountProductResourceTestCase {
 		testGetDiscountIdDiscountProductsPageWithSort(
 			EntityField.Type.DATE_TIME,
 			(entityField, discountProduct1, discountProduct2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					discountProduct1, entityField.getName(),
-					DateUtils.addMinutes(new Date(), -2));
+					new Date(System.currentTimeMillis() - (2 * Time.MINUTE)));
+			});
+	}
+
+	@Test
+	public void testGetDiscountIdDiscountProductsPageWithSortDouble()
+		throws Exception {
+
+		testGetDiscountIdDiscountProductsPageWithSort(
+			EntityField.Type.DOUBLE,
+			(entityField, discountProduct1, discountProduct2) -> {
+				BeanTestUtil.setProperty(
+					discountProduct1, entityField.getName(), 0.1);
+				BeanTestUtil.setProperty(
+					discountProduct2, entityField.getName(), 0.5);
 			});
 	}
 
@@ -549,9 +750,9 @@ public abstract class BaseDiscountProductResourceTestCase {
 		testGetDiscountIdDiscountProductsPageWithSort(
 			EntityField.Type.INTEGER,
 			(entityField, discountProduct1, discountProduct2) -> {
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					discountProduct1, entityField.getName(), 0);
-				BeanUtils.setProperty(
+				BeanTestUtil.setProperty(
 					discountProduct2, entityField.getName(), 1);
 			});
 	}
@@ -567,27 +768,27 @@ public abstract class BaseDiscountProductResourceTestCase {
 
 				String entityFieldName = entityField.getName();
 
-				java.lang.reflect.Method method = clazz.getMethod(
+				Method method = clazz.getMethod(
 					"get" + StringUtil.upperCaseFirstLetter(entityFieldName));
 
 				Class<?> returnType = method.getReturnType();
 
 				if (returnType.isAssignableFrom(Map.class)) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountProduct1, entityFieldName,
 						Collections.singletonMap("Aaa", "Aaa"));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountProduct2, entityFieldName,
 						Collections.singletonMap("Bbb", "Bbb"));
 				}
 				else if (entityFieldName.contains("email")) {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountProduct1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()) +
 									"@liferay.com");
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountProduct2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -595,12 +796,12 @@ public abstract class BaseDiscountProductResourceTestCase {
 									"@liferay.com");
 				}
 				else {
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountProduct1, entityFieldName,
 						"aaa" +
 							StringUtil.toLowerCase(
 								RandomTestUtil.randomString()));
-					BeanUtils.setProperty(
+					BeanTestUtil.setProperty(
 						discountProduct2, entityFieldName,
 						"bbb" +
 							StringUtil.toLowerCase(
@@ -640,24 +841,32 @@ public abstract class BaseDiscountProductResourceTestCase {
 			testGetDiscountIdDiscountProductsPage_addDiscountProduct(
 				id, discountProduct2);
 
+		Page<DiscountProduct> page =
+			discountProductResource.getDiscountIdDiscountProductsPage(
+				id, null, null, null, null);
+
 		for (EntityField entityField : entityFields) {
 			Page<DiscountProduct> ascPage =
 				discountProductResource.getDiscountIdDiscountProductsPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":asc");
 
-			assertEquals(
-				Arrays.asList(discountProduct1, discountProduct2),
-				(List<DiscountProduct>)ascPage.getItems());
+			assertContains(
+				discountProduct1, (List<DiscountProduct>)ascPage.getItems());
+			assertContains(
+				discountProduct2, (List<DiscountProduct>)ascPage.getItems());
 
 			Page<DiscountProduct> descPage =
 				discountProductResource.getDiscountIdDiscountProductsPage(
-					id, null, null, Pagination.of(1, 2),
+					id, null, null,
+					Pagination.of(1, (int)page.getTotalCount() + 1),
 					entityField.getName() + ":desc");
 
-			assertEquals(
-				Arrays.asList(discountProduct2, discountProduct1),
-				(List<DiscountProduct>)descPage.getItems());
+			assertContains(
+				discountProduct2, (List<DiscountProduct>)descPage.getItems());
+			assertContains(
+				discountProduct1, (List<DiscountProduct>)descPage.getItems());
 		}
 	}
 
@@ -681,6 +890,29 @@ public abstract class BaseDiscountProductResourceTestCase {
 		throws Exception {
 
 		return null;
+	}
+
+	@Test
+	public void testPostDiscountByExternalReferenceCodeDiscountProduct()
+		throws Exception {
+
+		DiscountProduct randomDiscountProduct = randomDiscountProduct();
+
+		DiscountProduct postDiscountProduct =
+			testPostDiscountByExternalReferenceCodeDiscountProduct_addDiscountProduct(
+				randomDiscountProduct);
+
+		assertEquals(randomDiscountProduct, postDiscountProduct);
+		assertValid(postDiscountProduct);
+	}
+
+	protected DiscountProduct
+			testPostDiscountByExternalReferenceCodeDiscountProduct_addDiscountProduct(
+				DiscountProduct discountProduct)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
 	}
 
 	@Test
@@ -862,6 +1094,13 @@ public abstract class BaseDiscountProductResourceTestCase {
 	}
 
 	protected void assertValid(Page<DiscountProduct> page) {
+		assertValid(page, Collections.emptyMap());
+	}
+
+	protected void assertValid(
+		Page<DiscountProduct> page,
+		Map<String, Map<String, String>> expectedActions) {
+
 		boolean valid = false;
 
 		java.util.Collection<DiscountProduct> discountProducts =
@@ -877,6 +1116,25 @@ public abstract class BaseDiscountProductResourceTestCase {
 		}
 
 		Assert.assertTrue(valid);
+
+		assertValid(page.getActions(), expectedActions);
+	}
+
+	protected void assertValid(
+		Map<String, Map<String, String>> actions1,
+		Map<String, Map<String, String>> actions2) {
+
+		for (String key : actions2.keySet()) {
+			Map action = actions1.get(key);
+
+			Assert.assertNotNull(key + " does not contain an action", action);
+
+			Map<String, String> expectedAction = actions2.get(key);
+
+			Assert.assertEquals(
+				expectedAction.get("method"), action.get("method"));
+			Assert.assertEquals(expectedAction.get("href"), action.get("href"));
+		}
 	}
 
 	protected String[] getAdditionalAssertFieldNames() {
@@ -1069,14 +1327,20 @@ public abstract class BaseDiscountProductResourceTestCase {
 	protected java.lang.reflect.Field[] getDeclaredFields(Class clazz)
 		throws Exception {
 
-		Stream<java.lang.reflect.Field> stream = Stream.of(
-			ReflectionUtil.getDeclaredFields(clazz));
+		if (clazz.getClassLoader() == null) {
+			return new java.lang.reflect.Field[0];
+		}
 
-		return stream.filter(
-			field -> !field.isSynthetic()
-		).toArray(
-			java.lang.reflect.Field[]::new
-		);
+		return TransformUtil.transform(
+			ReflectionUtil.getDeclaredFields(clazz),
+			field -> {
+				if (field.isSynthetic()) {
+					return null;
+				}
+
+				return field;
+			},
+			java.lang.reflect.Field.class);
 	}
 
 	protected java.util.Collection<EntityField> getEntityFields()
@@ -1093,6 +1357,10 @@ public abstract class BaseDiscountProductResourceTestCase {
 		EntityModel entityModel = entityModelResource.getEntityModel(
 			new MultivaluedHashMap());
 
+		if (entityModel == null) {
+			return Collections.emptyList();
+		}
+
 		Map<String, EntityField> entityFieldsMap =
 			entityModel.getEntityFieldsMap();
 
@@ -1102,18 +1370,18 @@ public abstract class BaseDiscountProductResourceTestCase {
 	protected List<EntityField> getEntityFields(EntityField.Type type)
 		throws Exception {
 
-		java.util.Collection<EntityField> entityFields = getEntityFields();
+		return TransformUtil.transform(
+			getEntityFields(),
+			entityField -> {
+				if (!Objects.equals(entityField.getType(), type) ||
+					ArrayUtil.contains(
+						getIgnoredEntityFieldNames(), entityField.getName())) {
 
-		Stream<EntityField> stream = entityFields.stream();
+					return null;
+				}
 
-		return stream.filter(
-			entityField ->
-				Objects.equals(entityField.getType(), type) &&
-				!ArrayUtil.contains(
-					getIgnoredEntityFieldNames(), entityField.getName())
-		).collect(
-			Collectors.toList()
-		);
+				return entityField;
+			});
 	}
 
 	protected String getFilterString(
@@ -1136,11 +1404,47 @@ public abstract class BaseDiscountProductResourceTestCase {
 		}
 
 		if (entityFieldName.equals("discountExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					discountProduct.getDiscountExternalReferenceCode()));
-			sb.append("'");
+			Object object = discountProduct.getDiscountExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1161,11 +1465,47 @@ public abstract class BaseDiscountProductResourceTestCase {
 		}
 
 		if (entityFieldName.equals("productExternalReferenceCode")) {
-			sb.append("'");
-			sb.append(
-				String.valueOf(
-					discountProduct.getProductExternalReferenceCode()));
-			sb.append("'");
+			Object object = discountProduct.getProductExternalReferenceCode();
+
+			String value = String.valueOf(object);
+
+			if (operator.equals("contains")) {
+				sb = new StringBundler();
+
+				sb.append("contains(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 2)) {
+					sb.append(value.substring(1, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else if (operator.equals("startswith")) {
+				sb = new StringBundler();
+
+				sb.append("startswith(");
+				sb.append(entityFieldName);
+				sb.append(",'");
+
+				if ((object != null) && (value.length() > 1)) {
+					sb.append(value.substring(0, value.length() - 1));
+				}
+				else {
+					sb.append(value);
+				}
+
+				sb.append("')");
+			}
+			else {
+				sb.append("'");
+				sb.append(value);
+				sb.append("'");
+			}
 
 			return sb.toString();
 		}
@@ -1189,7 +1529,8 @@ public abstract class BaseDiscountProductResourceTestCase {
 			"application/json");
 		httpInvoker.httpMethod(HttpInvoker.HttpMethod.POST);
 		httpInvoker.path("http://localhost:8080/o/graphql");
-		httpInvoker.userNameAndPassword("test@liferay.com:test");
+		httpInvoker.userNameAndPassword(
+			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD);
 
 		HttpInvoker.HttpResponse httpResponse = httpInvoker.invoke();
 
@@ -1243,10 +1584,155 @@ public abstract class BaseDiscountProductResourceTestCase {
 		return randomDiscountProduct();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected DiscountProductResource discountProductResource;
-	protected Group irrelevantGroup;
-	protected Company testCompany;
-	protected Group testGroup;
+	protected ImportTaskResource importTaskResource;
+	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
+	protected com.liferay.portal.kernel.model.Company testCompany;
+	protected com.liferay.portal.kernel.model.Group testGroup;
+
+	protected static class BeanTestUtil {
+
+		public static void copyProperties(Object source, Object target)
+			throws Exception {
+
+			Class<?> sourceClass = source.getClass();
+
+			Class<?> targetClass = target.getClass();
+
+			for (java.lang.reflect.Field field :
+					_getAllDeclaredFields(sourceClass)) {
+
+				if (field.isSynthetic()) {
+					continue;
+				}
+
+				Method getMethod = _getMethod(
+					sourceClass, field.getName(), "get");
+
+				try {
+					Method setMethod = _getMethod(
+						targetClass, field.getName(), "set",
+						getMethod.getReturnType());
+
+					setMethod.invoke(target, getMethod.invoke(source));
+				}
+				catch (Exception e) {
+					continue;
+				}
+			}
+		}
+
+		public static boolean hasProperty(Object bean, String name) {
+			Method setMethod = _getMethod(
+				bean.getClass(), "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod != null) {
+				return true;
+			}
+
+			return false;
+		}
+
+		public static void setProperty(Object bean, String name, Object value)
+			throws Exception {
+
+			Class<?> clazz = bean.getClass();
+
+			Method setMethod = _getMethod(
+				clazz, "set" + StringUtil.upperCaseFirstLetter(name));
+
+			if (setMethod == null) {
+				throw new NoSuchMethodException();
+			}
+
+			Class<?>[] parameterTypes = setMethod.getParameterTypes();
+
+			setMethod.invoke(bean, _translateValue(parameterTypes[0], value));
+		}
+
+		private static List<java.lang.reflect.Field> _getAllDeclaredFields(
+			Class<?> clazz) {
+
+			List<java.lang.reflect.Field> fields = new ArrayList<>();
+
+			while ((clazz != null) && (clazz != Object.class)) {
+				for (java.lang.reflect.Field field :
+						clazz.getDeclaredFields()) {
+
+					fields.add(field);
+				}
+
+				clazz = clazz.getSuperclass();
+			}
+
+			return fields;
+		}
+
+		private static Method _getMethod(Class<?> clazz, String name) {
+			for (Method method : clazz.getMethods()) {
+				if (name.equals(method.getName()) &&
+					(method.getParameterCount() == 1) &&
+					_parameterTypes.contains(method.getParameterTypes()[0])) {
+
+					return method;
+				}
+			}
+
+			return null;
+		}
+
+		private static Method _getMethod(
+				Class<?> clazz, String fieldName, String prefix,
+				Class<?>... parameterTypes)
+			throws Exception {
+
+			return clazz.getMethod(
+				prefix + StringUtil.upperCaseFirstLetter(fieldName),
+				parameterTypes);
+		}
+
+		private static Object _translateValue(
+			Class<?> parameterType, Object value) {
+
+			if ((value instanceof Integer) &&
+				parameterType.equals(Long.class)) {
+
+				Integer intValue = (Integer)value;
+
+				return intValue.longValue();
+			}
+
+			return value;
+		}
+
+		private static final Set<Class<?>> _parameterTypes = new HashSet<>(
+			Arrays.asList(
+				Boolean.class, Date.class, Double.class, Integer.class,
+				Long.class, Map.class, String.class));
+
+	}
 
 	protected class GraphQLField {
 
@@ -1322,19 +1808,9 @@ public abstract class BaseDiscountProductResourceTestCase {
 	private static final com.liferay.portal.kernel.log.Log _log =
 		LogFactoryUtil.getLog(BaseDiscountProductResourceTestCase.class);
 
-	private static BeanUtilsBean _beanUtilsBean = new BeanUtilsBean() {
+	private static Format _format;
 
-		@Override
-		public void copyProperty(Object bean, String name, Object value)
-			throws IllegalAccessException, InvocationTargetException {
-
-			if (value != null) {
-				super.copyProperty(bean, name, value);
-			}
-		}
-
-	};
-	private static DateFormat _dateFormat;
+	private com.liferay.portal.kernel.model.User _testCompanyAdminUser;
 
 	@Inject
 	private com.liferay.headless.commerce.admin.pricing.resource.v2_0.

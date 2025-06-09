@@ -1,42 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {cleanup, render} from '@testing-library/react';
+import {render, screen, waitFor} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
 import ViewportSizeSelector from '../../../../src/main/resources/META-INF/resources/page_editor/app/components/ViewportSizeSelector';
 
-jest.mock(
-	'../../../../src/main/resources/META-INF/resources/page_editor/app/config',
-	() => ({
-		config: {
-			availableViewportSizes: {
-				desktop: {label: 'Desktop', sizeId: 'desktop'},
-				mobile: {label: 'Mobile', sizeId: 'mobile'},
-				tablet: {label: 'Tablet', sizeId: 'tablet'},
-			},
-		},
-	})
-);
-
-const defaultState = {
+const INITIAL_STATE = {
 	selectedViewportSize: 'desktop',
 };
 
-const renderComponent = ({onSelect = () => {}, state}) => {
+const renderComponent = ({onSelect = () => {}, state = INITIAL_STATE} = {}) => {
 	return render(
 		<ViewportSizeSelector
 			onSizeSelected={onSelect}
@@ -46,26 +24,49 @@ const renderComponent = ({onSelect = () => {}, state}) => {
 };
 
 describe('ViewportSizeSelector', () => {
-	afterEach(cleanup);
-
 	it('renders ViewportSizeSelector component', () => {
-		const {getByLabelText} = renderComponent({state: defaultState});
+		renderComponent();
 
-		expect(getByLabelText('Desktop')).toBeInTheDocument();
-		expect(getByLabelText('Mobile')).toBeInTheDocument();
-		expect(getByLabelText('Tablet')).toBeInTheDocument();
+		expect(screen.getByLabelText('Desktop')).toBeInTheDocument();
+		expect(screen.getByLabelText('Mobile')).toBeInTheDocument();
+		expect(screen.getByLabelText('Tablet')).toBeInTheDocument();
 	});
 
-	it('calls onSizeSelected with sizeId when a size is selected', () => {
-		const onSelect = jest.fn();
-		const {getByLabelText} = renderComponent({
-			onSelect,
-			state: defaultState,
-		});
-		const button = getByLabelText('Mobile');
+	it('renders ViewportSizeSelector dropdown button and makes sure it has tooltip and aria-label', () => {
+		renderComponent();
 
-		userEvent.click(button);
+		expect(screen.getByTitle('select-a-viewport')).toBeInTheDocument();
+		expect(
+			screen.getByLabelText('select-a-viewport.-current-viewport-x')
+		).toBeInTheDocument();
+	});
+
+	it('calls onSizeSelected with sizeId when a size is selected', async () => {
+		const onSelect = jest.fn();
+		renderComponent({
+			onSelect,
+		});
+
+		await userEvent.click(screen.getByLabelText('Mobile'));
 
 		expect(onSelect).toHaveBeenLastCalledWith('mobile');
+	});
+
+	it('calls onSizeSelected with sizeId when a size is selected from the dropdown', async () => {
+		const onSelect = jest.fn();
+
+		renderComponent({
+			onSelect,
+		});
+
+		await userEvent.click(screen.getByRole('combobox'));
+
+		const option = screen.getByText('Mobile');
+
+		await waitFor(() => {
+			userEvent.click(option);
+
+			expect(onSelect).toHaveBeenLastCalledWith('mobile');
+		});
 	});
 });

@@ -1,4 +1,4 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "jsonws.web.service.paths.excludes=";
@@ -24,34 +24,35 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			Site.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			JSONUser.tearDownNonAdminUsers();
 		}
 	}
 
 	@description = "This test is skipping portal instance setup due to LPS-75168"
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewNewSiteMember {
-		property test.name.skip.portal.instance = "InviteMembers#CanViewNewSiteMember";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = "Site Name");
 
 		JSONLayout.addPublicLayout(
 			groupName = "Site Name",
 			layoutName = "Site Page 1");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "2",
+			column = 2,
 			groupName = "Site Name",
 			layoutName = "Site Page 1",
 			widgetName = "Invite Members");
@@ -70,7 +71,7 @@ definition {
 			userLoginEmailAddress = "userea@liferay.com",
 			userLoginFullName = "userfn userln");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -92,6 +93,40 @@ definition {
 			userFirstName = "userfn",
 			userLastName = "userln",
 			userScreenName = "usersn");
+	}
+
+	@description = "This test checks that the javascript in the user name will not be executed when viewing invitation."
+	@priority = 3
+	test XSSIsNotExecutedWhenViewingInvitation {
+		JSONLayout.addPublicLayout(
+			groupName = "Guest",
+			layoutName = "Test Page");
+
+		JSONLayout.addWidgetToPublicLayout(
+			column = 2,
+			groupName = "Guest",
+			layoutName = "Test Page",
+			widgetName = "Invite Members");
+
+		JSONUser.addUser(
+			userEmailAddress = "userea@liferay.com",
+			userFirstName = "userfn",
+			userLastName = "userln",
+			userScreenName = "usersn");
+
+		User.openUsersAdmin();
+
+		UserNavigator.gotoUser(userScreenName = "usersn");
+
+		User.editUserInformation(userLastNameEdit = '''userln<script>alert('hello!')</script>''');
+
+		Navigator.gotoPage(pageName = "Test Page");
+
+		AssertClick(
+			locator1 = "Button#INVITE_MEMBERS",
+			value1 = "Invite Members");
+
+		AssertAlertNotPresent();
 	}
 
 }

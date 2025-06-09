@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClaySlider from '@clayui/slider';
@@ -14,6 +8,7 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 function SliderWithLabel({
+	disabled,
 	label,
 	max = 99,
 	min = 1,
@@ -23,23 +18,27 @@ function SliderWithLabel({
 }) {
 	return (
 		<label className="form-group-autofit">
-			<span className="form-group-item">
+			<span className="font-weight-normal form-group-item">
 				{label}
+
 				{subTitle && (
 					<span className="font-weight-normal form-text">
 						{subTitle}
 					</span>
 				)}
 			</span>
+
 			<div className="flex-row form-group-item">
 				<ClaySlider
 					className="w-100"
+					disabled={disabled}
 					max={max}
 					min={min}
-					onValueChange={onValueChange}
+					onChange={onValueChange}
 					showTooltip={false}
 					value={value}
 				/>
+
 				<small className="font-weight-normal form-text ml-3">
 					{value + '%'}
 				</small>

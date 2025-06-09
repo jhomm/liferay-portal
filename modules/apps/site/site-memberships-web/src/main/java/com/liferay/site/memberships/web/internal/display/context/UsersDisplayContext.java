@@ -1,31 +1,25 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.memberships.web.internal.display.context;
 
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.Team;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portlet.PortalPreferences;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
 import com.liferay.portal.kernel.portlet.SearchDisplayStyleUtil;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
+import com.liferay.portal.kernel.service.TeamLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.GroupPermissionUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -34,20 +28,19 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.UserSearch;
-import com.liferay.portlet.usersadmin.search.UserSearchTerms;
 import com.liferay.site.memberships.constants.SiteMembershipsPortletKeys;
 import com.liferay.site.memberships.web.internal.util.GroupUtil;
+import com.liferay.users.admin.search.UserSearch;
+import com.liferay.users.admin.search.UserSearchTerms;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -63,7 +56,7 @@ public class UsersDisplayContext {
 		_renderResponse = renderResponse;
 
 		_portalPreferences = PortletPreferencesFactoryUtil.getPortalPreferences(
-			_httpServletRequest);
+			httpServletRequest);
 	}
 
 	public String getDisplayStyle() {
@@ -117,43 +110,27 @@ public class UsersDisplayContext {
 	}
 
 	public String getOrderByCol() {
-		if (_orderByCol != null) {
+		if (Validator.isNotNull(_orderByCol)) {
 			return _orderByCol;
 		}
 
-		_orderByCol = ParamUtil.getString(_httpServletRequest, "orderByCol");
-
-		if (Validator.isNull(_orderByCol)) {
-			_orderByCol = _portalPreferences.getValue(
-				SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
-				"order-by-col", "modified-date");
-		}
-		else {
-			_portalPreferences.setValue(
-				SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
-				"order-by-col", _orderByCol);
-		}
+		_orderByCol = SearchOrderByUtil.getOrderByCol(
+			_httpServletRequest,
+			SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
+			"order-by-col-users", "modified-date");
 
 		return _orderByCol;
 	}
 
 	public String getOrderByType() {
-		if (_orderByType != null) {
+		if (Validator.isNotNull(_orderByType)) {
 			return _orderByType;
 		}
 
-		_orderByType = ParamUtil.getString(_httpServletRequest, "orderByType");
-
-		if (Validator.isNull(_orderByType)) {
-			_orderByType = _portalPreferences.getValue(
-				SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
-				"order-by-type", "asc");
-		}
-		else {
-			_portalPreferences.setValue(
-				SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
-				"order-by-type", _orderByType);
-		}
+		_orderByType = SearchOrderByUtil.getOrderByType(
+			_httpServletRequest,
+			SiteMembershipsPortletKeys.SITE_MEMBERSHIPS_ADMIN,
+			"order-by-type-users", "asc");
 
 		return _orderByType;
 	}
@@ -239,6 +216,17 @@ public class UsersDisplayContext {
 
 				return null;
 			}
+		).setParameter(
+			"teamId",
+			() -> {
+				Team team = getTeam();
+
+				if (team != null) {
+					return team.getTeamId();
+				}
+
+				return null;
+			}
 		).buildPortletURL();
 	}
 
@@ -254,6 +242,20 @@ public class UsersDisplayContext {
 		}
 
 		return _role;
+	}
+
+	public Team getTeam() {
+		if (_team != null) {
+			return _team;
+		}
+
+		long teamId = ParamUtil.getLong(_httpServletRequest, "teamId");
+
+		if (teamId > 0) {
+			_team = TeamLocalServiceUtil.fetchTeam(teamId);
+		}
+
+		return _team;
 	}
 
 	public SearchContainer<User> getUserSearchContainer()
@@ -277,10 +279,8 @@ public class UsersDisplayContext {
 					GroupUtil.getGroupTypeLabel(
 						_groupId, themeDisplay.getLocale())),
 				false));
-
 		userSearch.setOrderByCol(getOrderByCol());
 		userSearch.setOrderByType(getOrderByType());
-		userSearch.setRowChecker(new EmptyOnClickRowChecker(_renderResponse));
 
 		UserSearchTerms searchTerms =
 			(UserSearchTerms)userSearch.getSearchTerms();
@@ -304,27 +304,37 @@ public class UsersDisplayContext {
 
 					return null;
 				}
-			).build();
+			).put(
+				"usersTeams",
+				() -> {
+					Team team = getTeam();
 
-		int usersCount = 0;
-		List<User> users = Collections.emptyList();
+					if (team != null) {
+						return Long.valueOf(team.getTeamId());
+					}
+
+					return null;
+				}
+			).build();
 
 		if (GroupPermissionUtil.contains(
 				themeDisplay.getPermissionChecker(), getGroupId(),
 				ActionKeys.VIEW_MEMBERS)) {
 
-			usersCount = UserLocalServiceUtil.searchCount(
-				themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-				searchTerms.getStatus(), userParams);
-
-			users = UserLocalServiceUtil.search(
-				themeDisplay.getCompanyId(), searchTerms.getKeywords(),
-				searchTerms.getStatus(), userParams, userSearch.getStart(),
-				userSearch.getEnd(), userSearch.getOrderByComparator());
+			userSearch.setResultsAndTotal(
+				() -> UserLocalServiceUtil.search(
+					themeDisplay.getCompanyId(), searchTerms.getKeywords(),
+					searchTerms.getStatus(), userParams, userSearch.getStart(),
+					userSearch.getEnd(), userSearch.getOrderByComparator()),
+				UserLocalServiceUtil.searchCount(
+					themeDisplay.getCompanyId(), searchTerms.getKeywords(),
+					searchTerms.getStatus(), userParams));
+		}
+		else {
+			userSearch.setResultsAndTotal(Collections::emptyList, 0);
 		}
 
-		userSearch.setResults(users);
-		userSearch.setTotal(usersCount);
+		userSearch.setRowChecker(new EmptyOnClickRowChecker(_renderResponse));
 
 		_userSearch = userSearch;
 
@@ -342,6 +352,7 @@ public class UsersDisplayContext {
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private Role _role;
+	private Team _team;
 	private UserSearch _userSearch;
 
 }

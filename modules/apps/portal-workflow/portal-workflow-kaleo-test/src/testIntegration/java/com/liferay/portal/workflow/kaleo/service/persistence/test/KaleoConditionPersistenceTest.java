@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.kaleo.service.persistence.test;
@@ -127,6 +118,8 @@ public class KaleoConditionPersistenceTest {
 
 		newKaleoCondition.setMvccVersion(RandomTestUtil.nextLong());
 
+		newKaleoCondition.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newKaleoCondition.setGroupId(RandomTestUtil.nextLong());
 
 		newKaleoCondition.setCompanyId(RandomTestUtil.nextLong());
@@ -161,6 +154,9 @@ public class KaleoConditionPersistenceTest {
 		Assert.assertEquals(
 			existingKaleoCondition.getMvccVersion(),
 			newKaleoCondition.getMvccVersion());
+		Assert.assertEquals(
+			existingKaleoCondition.getCtCollectionId(),
+			newKaleoCondition.getCtCollectionId());
 		Assert.assertEquals(
 			existingKaleoCondition.getKaleoConditionId(),
 			newKaleoCondition.getKaleoConditionId());
@@ -246,10 +242,11 @@ public class KaleoConditionPersistenceTest {
 
 	protected OrderByComparator<KaleoCondition> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"KaleoCondition", "mvccVersion", true, "kaleoConditionId", true,
-			"groupId", true, "companyId", true, "userId", true, "userName",
-			true, "createDate", true, "modifiedDate", true, "kaleoDefinitionId",
-			true, "kaleoDefinitionVersionId", true, "kaleoNodeId", true,
+			"KaleoCondition", "mvccVersion", true, "ctCollectionId", true,
+			"kaleoConditionId", true, "groupId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "kaleoDefinitionId", true,
+			"kaleoDefinitionVersionId", true, "kaleoNodeId", true,
 			"scriptLanguage", true, "scriptRequiredContexts", true);
 	}
 
@@ -531,6 +528,8 @@ public class KaleoConditionPersistenceTest {
 		KaleoCondition kaleoCondition = _persistence.create(pk);
 
 		kaleoCondition.setMvccVersion(RandomTestUtil.nextLong());
+
+		kaleoCondition.setCtCollectionId(RandomTestUtil.nextLong());
 
 		kaleoCondition.setGroupId(RandomTestUtil.nextLong());
 

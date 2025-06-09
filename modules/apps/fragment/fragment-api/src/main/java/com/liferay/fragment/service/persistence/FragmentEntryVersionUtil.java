@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.fragment.service.persistence;
@@ -2111,6 +2102,356 @@ public class FragmentEntryVersionUtil {
 
 		return getPersistence().countByFragmentCollectionId_Version(
 			fragmentCollectionId, version);
+	}
+
+	/**
+	 * Returns all the fragment entry versions where type = &#63;.
+	 *
+	 * @param type the type
+	 * @return the matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType(int type) {
+		return getPersistence().findByType(type);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry versions where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @return the range of matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType(
+		int type, int start, int end) {
+
+		return getPersistence().findByType(type, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType(
+		int type, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return getPersistence().findByType(type, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType(
+		int type, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByType(
+			type, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion findByType_First(
+			int type, OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryVersionException {
+
+		return getPersistence().findByType_First(type, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion fetchByType_First(
+		int type, OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return getPersistence().fetchByType_First(type, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion findByType_Last(
+			int type, OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryVersionException {
+
+		return getPersistence().findByType_Last(type, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion fetchByType_Last(
+		int type, OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return getPersistence().fetchByType_Last(type, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry versions before and after the current fragment entry version in the ordered set where type = &#63;.
+	 *
+	 * @param fragmentEntryVersionId the primary key of the current fragment entry version
+	 * @param type the type
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry version
+	 * @throws NoSuchEntryVersionException if a fragment entry version with the primary key could not be found
+	 */
+	public static FragmentEntryVersion[] findByType_PrevAndNext(
+			long fragmentEntryVersionId, int type,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryVersionException {
+
+		return getPersistence().findByType_PrevAndNext(
+			fragmentEntryVersionId, type, orderByComparator);
+	}
+
+	/**
+	 * Removes all the fragment entry versions where type = &#63; from the database.
+	 *
+	 * @param type the type
+	 */
+	public static void removeByType(int type) {
+		getPersistence().removeByType(type);
+	}
+
+	/**
+	 * Returns the number of fragment entry versions where type = &#63;.
+	 *
+	 * @param type the type
+	 * @return the number of matching fragment entry versions
+	 */
+	public static int countByType(int type) {
+		return getPersistence().countByType(type);
+	}
+
+	/**
+	 * Returns all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @return the matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType_Version(
+		int type, int version) {
+
+		return getPersistence().findByType_Version(type, version);
+	}
+
+	/**
+	 * Returns a range of all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @return the range of matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType_Version(
+		int type, int version, int start, int end) {
+
+		return getPersistence().findByType_Version(type, version, start, end);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType_Version(
+		int type, int version, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return getPersistence().findByType_Version(
+			type, version, start, end, orderByComparator);
+	}
+
+	/**
+	 * Returns an ordered range of all the fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>FragmentEntryVersionModelImpl</code>.
+	 * </p>
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param start the lower bound of the range of fragment entry versions
+	 * @param end the upper bound of the range of fragment entry versions (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching fragment entry versions
+	 */
+	public static List<FragmentEntryVersion> findByType_Version(
+		int type, int version, int start, int end,
+		OrderByComparator<FragmentEntryVersion> orderByComparator,
+		boolean useFinderCache) {
+
+		return getPersistence().findByType_Version(
+			type, version, start, end, orderByComparator, useFinderCache);
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion findByType_Version_First(
+			int type, int version,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryVersionException {
+
+		return getPersistence().findByType_Version_First(
+			type, version, orderByComparator);
+	}
+
+	/**
+	 * Returns the first fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion fetchByType_Version_First(
+		int type, int version,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return getPersistence().fetchByType_Version_First(
+			type, version, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version
+	 * @throws NoSuchEntryVersionException if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion findByType_Version_Last(
+			int type, int version,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryVersionException {
+
+		return getPersistence().findByType_Version_Last(
+			type, version, orderByComparator);
+	}
+
+	/**
+	 * Returns the last fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching fragment entry version, or <code>null</code> if a matching fragment entry version could not be found
+	 */
+	public static FragmentEntryVersion fetchByType_Version_Last(
+		int type, int version,
+		OrderByComparator<FragmentEntryVersion> orderByComparator) {
+
+		return getPersistence().fetchByType_Version_Last(
+			type, version, orderByComparator);
+	}
+
+	/**
+	 * Returns the fragment entry versions before and after the current fragment entry version in the ordered set where type = &#63; and version = &#63;.
+	 *
+	 * @param fragmentEntryVersionId the primary key of the current fragment entry version
+	 * @param type the type
+	 * @param version the version
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next fragment entry version
+	 * @throws NoSuchEntryVersionException if a fragment entry version with the primary key could not be found
+	 */
+	public static FragmentEntryVersion[] findByType_Version_PrevAndNext(
+			long fragmentEntryVersionId, int type, int version,
+			OrderByComparator<FragmentEntryVersion> orderByComparator)
+		throws com.liferay.fragment.exception.NoSuchEntryVersionException {
+
+		return getPersistence().findByType_Version_PrevAndNext(
+			fragmentEntryVersionId, type, version, orderByComparator);
+	}
+
+	/**
+	 * Removes all the fragment entry versions where type = &#63; and version = &#63; from the database.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 */
+	public static void removeByType_Version(int type, int version) {
+		getPersistence().removeByType_Version(type, version);
+	}
+
+	/**
+	 * Returns the number of fragment entry versions where type = &#63; and version = &#63;.
+	 *
+	 * @param type the type
+	 * @param version the version
+	 * @return the number of matching fragment entry versions
+	 */
+	public static int countByType_Version(int type, int version) {
+		return getPersistence().countByType_Version(type, version);
 	}
 
 	/**
@@ -5171,6 +5512,12 @@ public class FragmentEntryVersionUtil {
 
 	public static FragmentEntryVersionPersistence getPersistence() {
 		return _persistence;
+	}
+
+	public static void setPersistence(
+		FragmentEntryVersionPersistence persistence) {
+
+		_persistence = persistence;
 	}
 
 	private static volatile FragmentEntryVersionPersistence _persistence;

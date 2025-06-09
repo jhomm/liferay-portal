@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.configuration.metatype.annotations;
@@ -42,9 +33,13 @@ public @interface ExtendedObjectClassDefinition {
 
 	public String category() default "";
 
+	public boolean deprecated() default false;
+
 	public String[] descriptionArguments() default {};
 
 	public String factoryInstanceLabelAttribute() default "";
+
+	public String featureFlagKey() default StringPool.BLANK;
 
 	public boolean generateUI() default true;
 
@@ -74,11 +69,29 @@ public @interface ExtendedObjectClassDefinition {
 	 */
 	public boolean strictScope() default false;
 
+	public String visibilityControllerKey() default StringPool.BLANK;
+
 	public enum Scope {
 
-		COMPANY("companyId", "company"), GROUP("groupId", "group"),
-		PORTLET_INSTANCE("portletInstanceId", "portlet-instance"),
-		SYSTEM(null, "system");
+		COMPANY("companyWebId", "companyId", "company"),
+		GROUP("groupKey", "groupId", "group"),
+		PORTLET_INSTANCE(
+			"portletInstanceKey", "portletInstanceId", "portlet-instance"),
+		SYSTEM(null, null, "system");
+
+		public static Scope getScope(String value) {
+			for (Scope scope : values()) {
+				if (scope._value.equals(value)) {
+					return scope;
+				}
+			}
+
+			throw new IllegalArgumentException("Invalid value " + value);
+		}
+
+		public boolean equals(Scope scope) {
+			return equals(scope.getValue());
+		}
 
 		public boolean equals(String value) {
 			return _value.equals(value);
@@ -86,6 +99,10 @@ public @interface ExtendedObjectClassDefinition {
 
 		public String getDelimiterString() {
 			return StringBundler.concat(_SEPARATOR, name(), _SEPARATOR);
+		}
+
+		public String getPortablePropertyKey() {
+			return _portablePropertyKey;
 		}
 
 		public String getPropertyKey() {
@@ -101,13 +118,17 @@ public @interface ExtendedObjectClassDefinition {
 			return _value;
 		}
 
-		private Scope(String propertyKey, String value) {
+		private Scope(
+			String portablePropertyKey, String propertyKey, String value) {
+
+			_portablePropertyKey = portablePropertyKey;
 			_propertyKey = propertyKey;
 			_value = value;
 		}
 
 		private static final String _SEPARATOR = StringPool.DOUBLE_UNDERLINE;
 
+		private final String _portablePropertyKey;
 		private final String _propertyKey;
 		private final String _value;
 

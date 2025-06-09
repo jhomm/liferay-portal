@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.impl;
@@ -23,11 +14,25 @@ import com.liferay.commerce.exception.CommerceAddressTypeException;
 import com.liferay.commerce.exception.CommerceAddressZipException;
 import com.liferay.commerce.model.CommerceAddress;
 import com.liferay.commerce.model.CommerceGeocoder;
-import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.impl.CommerceAddressImpl;
+import com.liferay.commerce.product.model.CommerceChannelRel;
+import com.liferay.commerce.product.model.CommerceChannelRelTable;
+import com.liferay.commerce.product.service.CommerceChannelRelLocalService;
 import com.liferay.commerce.service.base.CommerceAddressLocalServiceBaseImpl;
+import com.liferay.petra.function.transform.TransformUtil;
+import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
+import com.liferay.petra.sql.dsl.expression.Predicate;
+import com.liferay.petra.sql.dsl.query.FromStep;
+import com.liferay.petra.sql.dsl.query.GroupByStep;
+import com.liferay.petra.sql.dsl.query.JoinStep;
+import com.liferay.petra.string.StringPool;
+import com.liferay.portal.aop.AopService;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Address;
+import com.liferay.portal.kernel.model.AddressTable;
+import com.liferay.portal.kernel.model.Country;
+import com.liferay.portal.kernel.model.CountryTable;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
@@ -36,120 +41,87 @@ import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.AddressLocalService;
+import com.liferay.portal.kernel.service.ClassNameLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
-import com.liferay.portal.vulcan.util.TransformUtil;
-
-import java.math.BigDecimal;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Andrea Di Giorgi
  * @author Alec Sloan
+ * @deprecated As of Cavanaugh (7.4.x)
  */
+@Component(
+	property = {
+		"liferay.service=false",
+		"model.class.name=com.liferay.commerce.model.CommerceAddress"
+	},
+	service = AopService.class
+)
+@Deprecated
 public class CommerceAddressLocalServiceImpl
 	extends CommerceAddressLocalServiceBaseImpl {
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), defaultBilling/Shipping exist on Account Entity. Pass type.
-	 */
-	@Deprecated
-	@Override
-	public CommerceAddress addCommerceAddress(
-			String className, long classPK, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			boolean defaultBilling, boolean defaultShipping,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		int type = CommerceAddressConstants.ADDRESS_TYPE_BILLING_AND_SHIPPING;
-
-		if (defaultBilling && !defaultShipping) {
-			type = CommerceAddressConstants.ADDRESS_TYPE_BILLING;
-		}
-		else if (!defaultBilling && defaultShipping) {
-			type = CommerceAddressConstants.ADDRESS_TYPE_SHIPPING;
-		}
-
-		return commerceAddressLocalService.addCommerceAddress(
-			className, classPK, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, type, serviceContext);
-	}
-
-	@Indexable(type = IndexableType.REINDEX)
-	@Override
-	public CommerceAddress addCommerceAddress(
-			String className, long classPK, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			int type, ServiceContext serviceContext)
-		throws PortalException {
-
-		return commerceAddressLocalService.addCommerceAddress(
-			null, className, classPK, name, description, street1, street2,
-			street3, city, zip, regionId, countryId, phoneNumber, type,
-			serviceContext);
-	}
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CommerceAddress addCommerceAddress(
 			String externalReferenceCode, String className, long classPK,
-			String name, String description, String street1, String street2,
-			String street3, String city, String zip, long regionId,
-			long countryId, String phoneNumber, int type,
+			long countryId, long regionId, String city, String description,
+			String name, String phoneNumber, String street1, String street2,
+			String street3, String subtype, int type, String zip,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		validate(name, street1, city, zip, countryId, type);
+		_validate(city, countryId, name, street1, type, zip);
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
 		return CommerceAddressImpl.fromAddress(
 			_addressLocalService.addAddress(
 				externalReferenceCode, user.getUserId(), className, classPK,
-				name, description, street1, street2, street3, city, zip,
-				regionId, countryId, CommerceAddressImpl.toAddressTypeId(type),
-				false, false, phoneNumber, serviceContext));
+				countryId, CommerceAddressImpl.toAddressTypeId(type), regionId,
+				city, description, false, name, false, street1, street2,
+				street3, subtype, zip, phoneNumber, serviceContext));
 	}
 
 	@Override
 	public CommerceAddress copyCommerceAddress(
-			long commerceAddressId, String className, long classPK,
+			long sourceCommerceAddressId, String className, long classPK,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		CommerceAddress commerceAddress = getCommerceAddress(commerceAddressId);
+		CommerceAddress sourceCommerceAddress = getCommerceAddress(
+			sourceCommerceAddressId);
 
-		CommerceAddress copiedCommerceAddress =
+		CommerceAddress targetCommerceAddress =
 			commerceAddressLocalService.addCommerceAddress(
-				className, classPK, commerceAddress.getName(),
-				commerceAddress.getDescription(), commerceAddress.getStreet1(),
-				commerceAddress.getStreet2(), commerceAddress.getStreet3(),
-				commerceAddress.getCity(), commerceAddress.getZip(),
-				commerceAddress.getRegionId(), commerceAddress.getCountryId(),
-				commerceAddress.getPhoneNumber(), false, false, serviceContext);
+				StringPool.BLANK, className, classPK,
+				sourceCommerceAddress.getCountryId(),
+				sourceCommerceAddress.getRegionId(),
+				sourceCommerceAddress.getCity(),
+				sourceCommerceAddress.getDescription(),
+				sourceCommerceAddress.getName(),
+				sourceCommerceAddress.getPhoneNumber(),
+				sourceCommerceAddress.getStreet1(),
+				sourceCommerceAddress.getStreet2(),
+				sourceCommerceAddress.getStreet3(),
+				sourceCommerceAddress.getSubtype(),
+				sourceCommerceAddress.getType(), sourceCommerceAddress.getZip(),
+				serviceContext);
 
-		Address copiedAddress = _addressLocalService.getAddress(
-			copiedCommerceAddress.getCommerceAddressId());
-
-		if (Validator.isNotNull(commerceAddress.getExternalReferenceCode())) {
-			copiedAddress.setExternalReferenceCode(
-				commerceAddress.getExternalReferenceCode());
-
-			copiedAddress = _addressLocalService.updateAddress(copiedAddress);
-		}
-
-		return CommerceAddressImpl.fromAddress(copiedAddress);
+		return CommerceAddressImpl.fromAddress(
+			_addressLocalService.getAddress(
+				targetCommerceAddress.getCommerceAddressId()));
 	}
 
 	@Override
@@ -174,31 +146,7 @@ public class CommerceAddressLocalServiceImpl
 		_addressLocalService.deleteAddress(
 			commerceAddress.getCommerceAddressId());
 
-		// Commerce orders
-
-		List<CommerceOrder> commerceOrders =
-			commerceOrderLocalService.getCommerceOrdersByBillingAddress(
-				commerceAddress.getCommerceAddressId());
-
-		removeCommerceOrderAddresses(
-			commerceOrders, commerceAddress.getCommerceAddressId());
-
-		commerceOrders =
-			commerceOrderLocalService.getCommerceOrdersByShippingAddress(
-				commerceAddress.getCommerceAddressId());
-
-		removeCommerceOrderAddresses(
-			commerceOrders, commerceAddress.getCommerceAddressId());
-
 		return commerceAddress;
-	}
-
-	@Override
-	public CommerceAddress deleteCommerceAddress(long commerceAddressId)
-		throws PortalException {
-
-		return CommerceAddressImpl.fromAddress(
-			_addressLocalService.deleteAddress(commerceAddressId));
 	}
 
 	@Override
@@ -224,18 +172,18 @@ public class CommerceAddressLocalServiceImpl
 	}
 
 	@Override
-	public CommerceAddress fetchByExternalReferenceCode(
+	public CommerceAddress fetchCommerceAddress(long commerceAddressId) {
+		return CommerceAddressImpl.fromAddress(
+			_addressLocalService.fetchAddress(commerceAddressId));
+	}
+
+	@Override
+	public CommerceAddress fetchCommerceAddressByExternalReferenceCode(
 		String externalReferenceCode, long companyId) {
 
 		return CommerceAddressImpl.fromAddress(
 			_addressLocalService.fetchAddressByExternalReferenceCode(
-				companyId, externalReferenceCode));
-	}
-
-	@Override
-	public CommerceAddress fetchCommerceAddress(long commerceAddressId) {
-		return CommerceAddressImpl.fromAddress(
-			_addressLocalService.fetchAddress(commerceAddressId));
+				externalReferenceCode, companyId));
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
@@ -261,7 +209,7 @@ public class CommerceAddressLocalServiceImpl
 		long companyId, String className, long classPK) {
 
 		return TransformUtil.transform(
-			_addressLocalService.getTypeAddresses(
+			_addressLocalService.getListTypeAddresses(
 				companyId, className, classPK,
 				new long[] {
 					CommerceAddressImpl.toAddressTypeId(
@@ -277,20 +225,46 @@ public class CommerceAddressLocalServiceImpl
 		throws PortalException {
 
 		return commerceAddressLocalService.getBillingCommerceAddresses(
-			companyId, className, classPK, null, -1, -1, null);
+			companyId, className, classPK, 0, null, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
 	}
 
 	@Override
 	public List<CommerceAddress> getBillingCommerceAddresses(
-			long companyId, String className, long classPK, String keywords,
-			int start, int end, Sort sort)
+		long channelId, String className, long classPK, int start, int end) {
+
+		return TransformUtil.transform(
+			_addressLocalService.dslQuery(
+				_getGroupByStep(
+					DSLQueryFactoryUtil.selectDistinct(AddressTable.INSTANCE),
+					AddressTable.INSTANCE.listTypeId.eq(
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.ADDRESS_TYPE_BILLING)
+					).or(
+						AddressTable.INSTANCE.listTypeId.eq(
+							CommerceAddressImpl.toAddressTypeId(
+								CommerceAddressConstants.
+									ADDRESS_TYPE_BILLING_AND_SHIPPING))
+					),
+					channelId, className, classPK, true, false
+				).limit(
+					start, end
+				)),
+			CommerceAddressImpl::fromAddress);
+	}
+
+	@Override
+	public List<CommerceAddress> getBillingCommerceAddresses(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords, int start, int end,
+			Sort sort)
 		throws PortalException {
 
 		BaseModelSearchResult<Address> addressBaseModelSearchResult =
 			_addressLocalService.searchAddresses(
 				companyId, className, classPK, keywords,
 				LinkedHashMapBuilder.<String, Object>put(
-					"typeIds",
+					"listTypeIds",
 					new long[] {
 						CommerceAddressImpl.toAddressTypeId(
 							CommerceAddressConstants.ADDRESS_TYPE_BILLING),
@@ -299,23 +273,48 @@ public class CommerceAddressLocalServiceImpl
 								ADDRESS_TYPE_BILLING_AND_SHIPPING)
 					}
 				).build(),
-				start, end, sort);
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, sort);
 
 		return TransformUtil.transform(
-			addressBaseModelSearchResult.getBaseModels(),
+			_filterByCommerceChannel(
+				addressBaseModelSearchResult.getBaseModels(), commerceChannelId,
+				start, end),
 			CommerceAddressImpl::fromAddress);
 	}
 
 	@Override
 	public int getBillingCommerceAddressesCount(
-			long companyId, String className, long classPK, String keywords)
+		long channelId, String className, long classPK, int start, int end) {
+
+		return _addressLocalService.dslQueryCount(
+			_getGroupByStep(
+				DSLQueryFactoryUtil.selectDistinct(AddressTable.INSTANCE),
+				AddressTable.INSTANCE.listTypeId.eq(
+					CommerceAddressImpl.toAddressTypeId(
+						CommerceAddressConstants.ADDRESS_TYPE_BILLING)
+				).or(
+					AddressTable.INSTANCE.listTypeId.eq(
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.
+								ADDRESS_TYPE_BILLING_AND_SHIPPING))
+				),
+				channelId, className, classPK, true, false
+			).limit(
+				start, end
+			));
+	}
+
+	@Override
+	public int getBillingCommerceAddressesCount(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords)
 		throws PortalException {
 
 		BaseModelSearchResult<Address> addressBaseModelSearchResult =
 			_addressLocalService.searchAddresses(
 				companyId, className, classPK, keywords,
 				LinkedHashMapBuilder.<String, Object>put(
-					"typeIds",
+					"listTypeIds",
 					new long[] {
 						CommerceAddressImpl.toAddressTypeId(
 							CommerceAddressConstants.ADDRESS_TYPE_BILLING),
@@ -324,9 +323,12 @@ public class CommerceAddressLocalServiceImpl
 								ADDRESS_TYPE_BILLING_AND_SHIPPING)
 					}
 				).build(),
-				-1, -1, null);
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-		return addressBaseModelSearchResult.getLength();
+		return _filterByCommerceChannel(
+			addressBaseModelSearchResult.getBaseModels(), commerceChannelId, 0,
+			addressBaseModelSearchResult.getLength() - 1
+		).size();
 	}
 
 	@Override
@@ -444,20 +446,46 @@ public class CommerceAddressLocalServiceImpl
 		throws PortalException {
 
 		return commerceAddressLocalService.getShippingCommerceAddresses(
-			companyId, className, classPK, null, -1, -1, null);
+			companyId, className, classPK, 0, null, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS, null);
 	}
 
 	@Override
 	public List<CommerceAddress> getShippingCommerceAddresses(
-			long companyId, String className, long classPK, String keywords,
-			int start, int end, Sort sort)
+		long channelId, String className, long classPK, int start, int end) {
+
+		return TransformUtil.transform(
+			_addressLocalService.dslQuery(
+				_getGroupByStep(
+					DSLQueryFactoryUtil.selectDistinct(AddressTable.INSTANCE),
+					AddressTable.INSTANCE.listTypeId.eq(
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.ADDRESS_TYPE_SHIPPING)
+					).or(
+						AddressTable.INSTANCE.listTypeId.eq(
+							CommerceAddressImpl.toAddressTypeId(
+								CommerceAddressConstants.
+									ADDRESS_TYPE_BILLING_AND_SHIPPING))
+					),
+					channelId, className, classPK, false, true
+				).limit(
+					start, end
+				)),
+			CommerceAddressImpl::fromAddress);
+	}
+
+	@Override
+	public List<CommerceAddress> getShippingCommerceAddresses(
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords, int start, int end,
+			Sort sort)
 		throws PortalException {
 
 		BaseModelSearchResult<Address> addressBaseModelSearchResult =
 			_addressLocalService.searchAddresses(
 				companyId, className, classPK, keywords,
 				LinkedHashMapBuilder.<String, Object>put(
-					"typeIds",
+					"listTypeIds",
 					new long[] {
 						CommerceAddressImpl.toAddressTypeId(
 							CommerceAddressConstants.
@@ -466,23 +494,26 @@ public class CommerceAddressLocalServiceImpl
 							CommerceAddressConstants.ADDRESS_TYPE_SHIPPING)
 					}
 				).build(),
-				start, end, sort);
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, sort);
 
 		return TransformUtil.transform(
-			addressBaseModelSearchResult.getBaseModels(),
+			_filterByCommerceChannel(
+				addressBaseModelSearchResult.getBaseModels(), commerceChannelId,
+				start, end),
 			CommerceAddressImpl::fromAddress);
 	}
 
 	@Override
 	public int getShippingCommerceAddressesCount(
-			long companyId, String className, long classPK, String keywords)
+			long companyId, String className, long classPK,
+			long commerceChannelId, String keywords)
 		throws PortalException {
 
 		BaseModelSearchResult<Address> addressBaseModelSearchResult =
 			_addressLocalService.searchAddresses(
 				companyId, className, classPK, keywords,
 				LinkedHashMapBuilder.<String, Object>put(
-					"typeIds",
+					"listTypeIds",
 					new long[] {
 						CommerceAddressImpl.toAddressTypeId(
 							CommerceAddressConstants.
@@ -491,9 +522,12 @@ public class CommerceAddressLocalServiceImpl
 							CommerceAddressConstants.ADDRESS_TYPE_SHIPPING)
 					}
 				).build(),
-				-1, -1, null);
+				QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
-		return addressBaseModelSearchResult.getLength();
+		return _filterByCommerceChannel(
+			addressBaseModelSearchResult.getBaseModels(), commerceChannelId, 0,
+			addressBaseModelSearchResult.getLength() - 1
+		).size();
 	}
 
 	/**
@@ -508,7 +542,19 @@ public class CommerceAddressLocalServiceImpl
 
 		BaseModelSearchResult<Address> addressBaseModelSearchResult =
 			_addressLocalService.searchAddresses(
-				companyId, className, classPK, keywords, new LinkedHashMap<>(),
+				companyId, className, classPK, keywords,
+				LinkedHashMapBuilder.<String, Object>put(
+					"listTypeIds",
+					new long[] {
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.ADDRESS_TYPE_BILLING),
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.
+								ADDRESS_TYPE_BILLING_AND_SHIPPING),
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.ADDRESS_TYPE_SHIPPING)
+					}
+				).build(),
 				start, end, sort);
 
 		return new BaseModelSearchResult<>(
@@ -526,7 +572,19 @@ public class CommerceAddressLocalServiceImpl
 
 		BaseModelSearchResult<Address> addressBaseModelSearchResult =
 			_addressLocalService.searchAddresses(
-				companyId, className, classPK, keywords, new LinkedHashMap<>(),
+				companyId, className, classPK, keywords,
+				LinkedHashMapBuilder.<String, Object>put(
+					"listTypeIds",
+					new long[] {
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.ADDRESS_TYPE_BILLING),
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.
+								ADDRESS_TYPE_BILLING_AND_SHIPPING),
+						CommerceAddressImpl.toAddressTypeId(
+							CommerceAddressConstants.ADDRESS_TYPE_SHIPPING)
+					}
+				).build(),
 				start, end, sort);
 
 		return new BaseModelSearchResult<>(
@@ -536,132 +594,78 @@ public class CommerceAddressLocalServiceImpl
 			addressBaseModelSearchResult.getLength());
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), defaultBilling/Shipping exist on Account Entity. Pass type.
-	 */
-	@Deprecated
-	@Override
-	public CommerceAddress updateCommerceAddress(
-			long commerceAddressId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			boolean defaultBilling, boolean defaultShipping,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		int type = CommerceAddressConstants.ADDRESS_TYPE_BILLING_AND_SHIPPING;
-
-		if (defaultBilling && !defaultShipping) {
-			type = CommerceAddressConstants.ADDRESS_TYPE_BILLING;
-		}
-		else if (!defaultBilling && defaultShipping) {
-			type = CommerceAddressConstants.ADDRESS_TYPE_SHIPPING;
-		}
-
-		return updateCommerceAddress(
-			commerceAddressId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId, phoneNumber, type, serviceContext);
-	}
-
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CommerceAddress updateCommerceAddress(
-			long commerceAddressId, String name, String description,
-			String street1, String street2, String street3, String city,
-			String zip, long regionId, long countryId, String phoneNumber,
-			int type, ServiceContext serviceContext)
+			String externalReferenceCode, long commerceAddressId,
+			long countryId, long regionId, String city, String description,
+			String name, String phoneNumber, String street1, String street2,
+			String street3, String subtype, int type, String zip,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		// Commerce address
 
 		Address address = _addressLocalService.getAddress(commerceAddressId);
 
-		validate(name, street1, city, zip, countryId, type);
+		_validate(city, countryId, name, street1, type, zip);
 
 		address = _addressLocalService.updateAddress(
-			commerceAddressId, name, description, street1, street2, street3,
-			city, zip, regionId, countryId,
-			CommerceAddressImpl.toAddressTypeId(type), address.isMailing(),
-			address.isPrimary(), phoneNumber);
-
-		// Commerce orders
-
-		List<CommerceOrder> commerceOrders =
-			commerceOrderLocalService.getCommerceOrdersByShippingAddress(
-				commerceAddressId);
-
-		for (CommerceOrder commerceOrder : commerceOrders) {
-			commerceOrderLocalService.resetCommerceOrderShipping(
-				commerceOrder.getCommerceOrderId());
-		}
+			externalReferenceCode, commerceAddressId, countryId,
+			CommerceAddressImpl.toAddressTypeId(type), regionId, city,
+			description, address.isMailing(), name, address.isPrimary(),
+			street1, street2, street3, subtype, zip, phoneNumber);
 
 		return CommerceAddressImpl.fromAddress(address);
 	}
 
-	protected void removeCommerceOrderAddresses(
-			List<CommerceOrder> commerceOrders, long commerceAddressId)
-		throws PortalException {
+	private List<Address> _filterByCommerceChannel(
+		List<Address> addresses, long commerceChannelId, int start, int end) {
 
-		for (CommerceOrder commerceOrder : commerceOrders) {
-			long billingAddressId = commerceOrder.getBillingAddressId();
-			long shippingAddressId = commerceOrder.getShippingAddressId();
+		List<Address> filteredAddresses = new ArrayList<>();
 
-			long commerceShippingMethodId =
-				commerceOrder.getCommerceShippingMethodId();
-			String shippingOptionName = commerceOrder.getShippingOptionName();
-			BigDecimal shippingPrice = commerceOrder.getShippingAmount();
+		long commerceChannelRelsCount =
+			_commerceChannelRelLocalService.getCommerceChannelRelsCount(
+				commerceChannelId);
 
-			if (billingAddressId == commerceAddressId) {
-				billingAddressId = 0;
+		if (commerceChannelRelsCount > 0) {
+			for (Address address : addresses) {
+				List<CommerceChannelRel> commerceChannelRels =
+					_commerceChannelRelLocalService.getCommerceChannelRels(
+						Address.class.getName(), address.getAddressId(),
+						QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+				if (!commerceChannelRels.isEmpty()) {
+					for (CommerceChannelRel commerceChannelRel :
+							commerceChannelRels) {
+
+						if (commerceChannelRel.getCommerceChannelId() ==
+								commerceChannelId) {
+
+							filteredAddresses.add(address);
+
+							break;
+						}
+					}
+				}
+				else {
+					filteredAddresses.add(address);
+				}
 			}
-
-			if (shippingAddressId == commerceAddressId) {
-				shippingAddressId = 0;
-
-				commerceShippingMethodId = 0;
-				shippingOptionName = null;
-				shippingPrice = BigDecimal.ZERO;
-			}
-
-			commerceOrderLocalService.updateCommerceOrder(
-				commerceOrder.getCommerceOrderId(), billingAddressId,
-				shippingAddressId, commerceOrder.getCommercePaymentMethodKey(),
-				commerceShippingMethodId, shippingOptionName,
-				commerceOrder.getPurchaseOrderNumber(),
-				commerceOrder.getSubtotal(), shippingPrice,
-				commerceOrder.getTotal(), commerceOrder.getAdvanceStatus(),
-				null);
 		}
-	}
-
-	protected void validate(
-			String name, String street1, String city, String zip,
-			long countryId, int type)
-		throws PortalException {
-
-		if (Validator.isNull(name)) {
-			throw new CommerceAddressNameException();
+		else {
+			filteredAddresses = addresses;
 		}
 
-		if (Validator.isNull(street1)) {
-			throw new CommerceAddressStreetException();
+		if (end > filteredAddresses.size()) {
+			end = filteredAddresses.size();
 		}
 
-		if (Validator.isNull(city)) {
-			throw new CommerceAddressCityException();
+		if (end < 0) {
+			return filteredAddresses;
 		}
 
-		if (Validator.isNull(zip)) {
-			throw new CommerceAddressZipException();
-		}
-
-		if (countryId <= 0) {
-			throw new CommerceAddressCountryException();
-		}
-
-		if (!ArrayUtil.contains(CommerceAddressConstants.ADDRESS_TYPES, type)) {
-			throw new CommerceAddressTypeException();
-		}
+		return filteredAddresses.subList(start, end);
 	}
 
 	private OrderByComparator<Address> _getAddressOrderByComparator(
@@ -683,13 +687,127 @@ public class CommerceAddressLocalServiceImpl
 		};
 	}
 
-	@ServiceReference(type = AddressLocalService.class)
+	private GroupByStep _getGroupByStep(
+		FromStep fromStep, Predicate listTypeFilterPredicate,
+		long commerceChannelId, String className, long classPK,
+		boolean billingAllowed, boolean shippingAllowed) {
+
+		JoinStep joinStep = fromStep.from(
+			AddressTable.INSTANCE
+		).leftJoinOn(
+			CountryTable.INSTANCE,
+			AddressTable.INSTANCE.countryId.eq(CountryTable.INSTANCE.countryId)
+		).leftJoinOn(
+			CommerceChannelRelTable.INSTANCE,
+			CommerceChannelRelTable.INSTANCE.classPK.eq(
+				AddressTable.INSTANCE.addressId
+			).or(
+				CommerceChannelRelTable.INSTANCE.classPK.eq(
+					CountryTable.INSTANCE.countryId)
+			)
+		);
+
+		return joinStep.where(
+			() -> {
+				Predicate predicate = CountryTable.INSTANCE.active.eq(true);
+
+				predicate = predicate.and(
+					AddressTable.INSTANCE.classNameId.eq(
+						_classNameLocalService.getClassNameId(className)
+					).and(
+						AddressTable.INSTANCE.classPK.eq(classPK)
+					));
+
+				predicate = predicate.and(
+					listTypeFilterPredicate.withParentheses());
+
+				Predicate groupFilterPredicate =
+					CountryTable.INSTANCE.groupFilterEnabled.eq(false);
+
+				Predicate channelFilterPredicate =
+					CountryTable.INSTANCE.groupFilterEnabled.eq(true);
+
+				channelFilterPredicate = channelFilterPredicate.and(
+					CommerceChannelRelTable.INSTANCE.classNameId.eq(
+						_classNameLocalService.getClassNameId(Country.class)));
+				channelFilterPredicate = channelFilterPredicate.and(
+					CommerceChannelRelTable.INSTANCE.commerceChannelId.eq(
+						commerceChannelId));
+
+				groupFilterPredicate = groupFilterPredicate.or(
+					channelFilterPredicate.withParentheses());
+
+				predicate = predicate.and(
+					groupFilterPredicate.withParentheses());
+
+				if (billingAllowed) {
+					predicate = predicate.and(
+						CountryTable.INSTANCE.billingAllowed.eq(true));
+				}
+
+				if (shippingAllowed) {
+					predicate = predicate.and(
+						CountryTable.INSTANCE.shippingAllowed.eq(true));
+				}
+
+				Predicate addressFilterPredicate =
+					CommerceChannelRelTable.INSTANCE.commerceChannelId.eq(
+						commerceChannelId);
+
+				addressFilterPredicate = addressFilterPredicate.or(
+					CommerceChannelRelTable.INSTANCE.commerceChannelId.
+						isNull());
+
+				return predicate.and(addressFilterPredicate.withParentheses());
+			});
+	}
+
+	private void _validate(
+			String city, long countryId, String name, String street1, int type,
+			String zip)
+		throws PortalException {
+
+		if (Validator.isNull(city)) {
+			throw new CommerceAddressCityException();
+		}
+
+		if (countryId <= 0) {
+			throw new CommerceAddressCountryException();
+		}
+
+		if (Validator.isNull(name)) {
+			throw new CommerceAddressNameException();
+		}
+
+		if (Validator.isNull(street1)) {
+			throw new CommerceAddressStreetException();
+		}
+
+		if (!ArrayUtil.contains(CommerceAddressConstants.ADDRESS_TYPES, type)) {
+			throw new CommerceAddressTypeException();
+		}
+
+		if (Validator.isNull(zip)) {
+			throw new CommerceAddressZipException();
+		}
+	}
+
+	@Reference
 	private AddressLocalService _addressLocalService;
 
-	@ServiceReference(type = CommerceGeocoder.class)
+	@Reference
+	private ClassNameLocalService _classNameLocalService;
+
+	@Reference
+	private CommerceChannelRelLocalService _commerceChannelRelLocalService;
+
+	@Reference
 	private CommerceGeocoder _commerceGeocoder;
 
-	@ServiceReference(type = GroupLocalService.class)
+	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,0 +1,24 @@
+definition {
+
+	@summary = "Default summary"
+	macro uploadArchiveFile(fileName = null) {
+		var tempDir = PropsUtil.get("output.dir.name");
+		var dependencyFilePath = TestCase.getDependenciesDirPath(fileName = ${fileName});
+
+		UploadFile(
+			locator1 = "TextInput#FILE",
+			value1 = ${dependencyFilePath});
+	}
+
+	@summary = "Default summary"
+	macro uploadFile(fileName = null, filePath = null) {
+		var dependencyFilePath = TestCase.getDependenciesDirPath(
+			fileName = ${fileName},
+			filePath = ${filePath});
+
+		UploadFile(
+			locator1 = "TextInput#FILE",
+			value1 = ${dependencyFilePath});
+	}
+
+}

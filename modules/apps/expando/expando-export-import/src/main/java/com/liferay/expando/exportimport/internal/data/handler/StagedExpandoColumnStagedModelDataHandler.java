@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.expando.exportimport.internal.data.handler;
@@ -17,8 +8,8 @@ package com.liferay.expando.exportimport.internal.data.handler;
 import com.liferay.expando.kernel.model.ExpandoColumn;
 import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.expando.kernel.model.adapter.StagedExpandoColumn;
-import com.liferay.expando.kernel.model.adapter.StagedExpandoTable;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
+import com.liferay.expando.model.adapter.StagedExpandoTable;
 import com.liferay.exportimport.kernel.lar.BaseStagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.ExportImportPathUtil;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
@@ -27,11 +18,11 @@ import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandlerUtil;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.model.adapter.ModelAdapterUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.xml.Element;
+import com.liferay.portal.model.adapter.util.ModelAdapterUtil;
 
 import java.util.List;
 import java.util.Map;
@@ -42,7 +33,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Akos Thurzo
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class StagedExpandoColumnStagedModelDataHandler
 	extends BaseStagedModelDataHandler<StagedExpandoColumn> {
 
@@ -91,11 +82,7 @@ public class StagedExpandoColumnStagedModelDataHandler
 			fetchStagedModelsByUuidAndCompanyId(
 				uuid, portletDataContext.getCompanyId());
 
-		if (ListUtil.isEmpty(stagedExpandoColumns)) {
-			return false;
-		}
-
-		return true;
+		return ListUtil.isNotEmpty(stagedExpandoColumns);
 	}
 
 	@Override
@@ -196,19 +183,12 @@ public class StagedExpandoColumnStagedModelDataHandler
 			stagedExpandoColumn, importedExpandoColumn);
 	}
 
-	@Reference(
-		target = "(model.class.name=com.liferay.expando.kernel.model.adapter.StagedExpandoColumn)",
-		unbind = "-"
-	)
-	protected void setStagedModelRepository(
-		StagedModelRepository<StagedExpandoColumn> stagedModelRepository) {
-
-		_stagedModelRepository = stagedModelRepository;
-	}
-
 	@Reference
 	private ExpandoTableLocalService _expandoTableLocalService;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.expando.kernel.model.adapter.StagedExpandoColumn)"
+	)
 	private StagedModelRepository<StagedExpandoColumn> _stagedModelRepository;
 
 }

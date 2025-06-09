@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.entry.rel.internal.upgrade.v1_0_0;
@@ -25,7 +16,14 @@ import com.liferay.portal.kernel.util.StringUtil;
  */
 public class AssetEntryAssetCategoryRelUpgradeProcess extends UpgradeProcess {
 
-	protected void addAssetEntryAssetCategoryRels() throws Exception {
+	@Override
+	protected void doUpgrade() throws Exception {
+		_upgradeSchema();
+
+		_addAssetEntryAssetCategoryRels();
+	}
+
+	private void _addAssetEntryAssetCategoryRels() throws Exception {
 		processConcurrently(
 			"select entryId, categoryId from AssetEntries_AssetCategories",
 			resultSet -> new Object[] {
@@ -54,23 +52,15 @@ public class AssetEntryAssetCategoryRelUpgradeProcess extends UpgradeProcess {
 					throw exception;
 				}
 			},
-			"Unable to add relationships between asset entries and asset " +
-				"categories");
+			null);
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		upgradeSchema();
-
-		addAssetEntryAssetCategoryRels();
-	}
-
-	protected void upgradeSchema() throws Exception {
+	private void _upgradeSchema() throws Exception {
 		String template = StringUtil.read(
 			AssetEntryAssetCategoryRelUpgradeProcess.class.getResourceAsStream(
 				"dependencies/update.sql"));
 
-		runSQLTemplateString(template, false);
+		runSQLTemplate(template, false);
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

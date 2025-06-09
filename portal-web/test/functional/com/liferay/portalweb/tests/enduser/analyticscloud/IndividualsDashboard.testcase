@@ -1,6 +1,8 @@
 @component-name = "portal-analytics-cloud"
 definition {
 
+	property analytics.cloud.release = "true";
+	property analytics.cloud.upstream = "true";
 	property custom.properties = "jsonws.web.service.paths.excludes=";
 	property portal.release = "false";
 	property portal.upstream = "true";
@@ -43,28 +45,27 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
 		ACUtils.tearDownDXP();
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
-
 		else {
-			JSONGroup.deleteGroupByName(groupName = "Site Name");
-
 			JSONUser.tearDownNonAdminUsers();
+
+			JSONGroup.deleteGroupByName(groupName = "Site Name");
 		}
 
 		ACUtils.tearDownAC();
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8907 | Test Summary: Expand activity in individual overview"
-	@priority = "3"
+	@priority = 3
 	test CanExpandActivityInIndividualOverview {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
+		task ("Create Blog to Add to Page") {
+			ACUtils.createBlogsAndAddToPage();
 		}
 
 		task ("Sign in as new user") {
@@ -73,8 +74,10 @@ definition {
 				userLoginFullName = "userfn userln");
 		}
 
-		task ("View the site page") {
+		task ("View the blog page") {
 			ACUtils.navigateToSitePage(
+				actionType = "View Blog",
+				documentTitleList = "Blogs AC Title,Blogs AC Title,Blogs AC Title,Blogs AC Title",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
@@ -86,7 +89,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Known Individuals on the Individuals dashboard") {
@@ -108,7 +111,7 @@ definition {
 		}
 
 		task ("Expand access timeline") {
-			Click(locator1 = "ACIndividualsDashboard#BASE_RESULTS_TIMELINE");
+			ACIndividualsDashboard.expandActivity(eventName = "pageViewed");
 
 			AssertElementPresent(
 				locator1 = "ACIndividualsDashboard#BASE_RESULTS_TIMELINE_ATTRIBUTES_TITLE",
@@ -116,17 +119,17 @@ definition {
 		}
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8901 | Test Summary: As a Business User, I should be able to change individual overview time filter to Custom Range"
-	@priority = "5"
+	@description = "Feature ID: Legacy | Automation ID: LRAC-8901 | Test Summary: Assert Individuals Overview time filter Custom Range"
+	@ignore = "true"
+	@priority = 5
 	test CanUseCustomRangeTimeFilterOnActiveIndividualsChart {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+
+		// Tests with custom range are not possible to automate now. These cases will be automated on personas.
 
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Overview on the Individuals dashboard") {
@@ -138,12 +141,12 @@ definition {
 		task ("Select a Custom Range time period in Active Individuals chart") {
 			ACTimeFilter.setCustomRange(
 				cardName = "Active Individuals",
-				endDay = "13",
+				endDay = 13,
 				endMonth = "July",
-				endYear = "2020",
-				startDay = "1",
+				endYear = 2020,
+				startDay = 1,
 				startMonth = "July",
-				startYear = "2020");
+				startYear = 2020);
 		}
 
 		task ("View the time period in Active Individuals chart is Jul 1, 2020 - Jul 13, 2020") {
@@ -159,27 +162,28 @@ definition {
 			ACCards.assertAxisTick(
 				axis = "xAxis",
 				cardName = "Active Individuals",
-				index = "7",
+				index = 7,
 				tick = "Jul 13");
 
 			AssertElementNotPresent(
-				index = "8",
+				index = 8,
 				key_cardTitle = "Active Individuals",
 				locator1 = "ACCards#RECHARTS_CARTESIAN_X_AXIS_TICK");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8909 | Test Summary: As a Business User, I should be able to change individual time filter to 180 days"
-	@priority = "3"
+	@ignore = "true"
+	@priority = 3
 	test CanUseLast180DaysTimeFilterOnActiveIndividualsChart {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+
+		// AC Refactor: Data doesn't appear on time
+		// AC Refactor ticket: LRAC-13994
 
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Overview on the Individuals dashboard") {
@@ -199,40 +203,36 @@ definition {
 		}
 
 		task ("View only 6 xAxis ticks shown in Active Individuals chart") {
-			var n = "0";
+			var n = 0;
 
-			while ("${n}" != "6") {
+			while (${n} != 6) {
 				var n = ${n} + 1;
 
 				AssertVisible(
-					index = "${n}",
+					index = ${n},
 					key_cardTitle = "Active Individuals",
 					locator1 = "ACCards#RECHARTS_CARTESIAN_X_AXIS_TICK");
 			}
 
 			AssertElementNotPresent(
-				index = "7",
+				index = 7,
 				key_cardTitle = "Active Individuals",
 				locator1 = "ACCards#RECHARTS_CARTESIAN_X_AXIS_TICK");
 		}
 	}
 
 	@description = "Total Individuals increase by one when a new individual is added via event"
-	@priority = "5"
+	@priority = 5
 	test CanViewTotalIndividualsIncreaseByOne {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 		ACNavigation.goToIndividuals();
 
 		ACCards.viewTotalCount(
 			cardName = "Total Individuals",
-			count = "0");
+			count = 0);
 
 		ACUtils.launchDXP();
 
@@ -243,100 +243,125 @@ definition {
 
 		ACUtils.launchAC();
 
-		ACProperties.switchProperty(propertyName = "${propertyName}");
+		ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 
 		ACNavigation.goToIndividuals();
 
 		ACCards.viewTotalCount(
 			cardName = "Total Individuals",
-			count = "1");
+			count = 1);
 	}
 
-	@description = "Feature ID: Legacy | Automation ID: LRAC-8906 | Test Summary: As a Business User, I should be able to select a point on individual overview activities graph"
-	@priority = "3"
-	test SelectDataOnIndividualsActivitiesChart {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
+	@description = "Bug: LRAC-12694 | Automation ID: LRAC-12811 | Test Summary: Known Individuals is not duplicated if user exists in multiple properties"
+	@priority = 3
+	test IndividualNotDuplicatedIfUserExistsInMultipleProperties {
+		var propertyName1 = ${assignedPropertyName};
 
-		task ("Sign in as new user") {
-			User.logoutAndLoginPG(
-				userLoginEmailAddress = "userea@liferay.com",
-				userLoginFullName = "userfn userln");
-		}
-
-		task ("View the site page") {
-			ACUtils.navigateToSitePage(
+		task ("View the site page with new user to the first property") {
+			ACUtils.navigateToSitePageWithUser(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				emailList = "userea@liferay.com",
 				pageName = "AC Page",
 				siteName = "Site Name");
 		}
 
-		task ("Close sessions") {
+		task ("Close Sessions") {
 			ACUtils.closeAllSessionsAndWait();
 		}
 
-		task ("Switch to new property in AC") {
-			ACUtils.launchAC();
+		task ("Disconnect AC and DXP") {
+			ACUtils.launchDXP();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACDXPSettings.disconnectDXPFromAnalyticsCloud();
 		}
 
-		task ("Navigate to the Known Individuals on the Individuals dashboard") {
+		task ("Copy the token from AC") {
+			ACUtils.launchAC();
+
+			ACSettings.takeTokenFromAnalyticsCloud();
+		}
+
+		task ("Reconnect AC with DXP to use another property") {
+			ACUtils.launchDXP();
+
+			ACDXPSettings.connectDXPtoAnalyticsCloud(siteName = "Site Name");
+		}
+
+		task ("View the site page with new user to the second property") {
+			ACUtils.navigateToSitePageWithUser(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
+				emailList = "userea@liferay.com",
+				pageName = "AC Page",
+				siteName = "Site Name");
+		}
+
+		task ("Close Sessions") {
+			ACUtils.closeAllSessionsAndWait();
+		}
+
+		task ("Switch to the first property in AC") {
+			ACUtils.launchAC();
+
+			ACProperties.switchProperty(propertyName = ${propertyName1});
+		}
+
+		task ("Navigate to the Individuals and And check that only 1 user is counted in the total of individuals") {
 			ACNavigation.goToIndividuals();
 
+			ACCards.viewTotalCount(
+				cardName = "Total Individuals",
+				count = 1);
+		}
+
+		task ("Navigate to the Known Individuals tab") {
 			ACIndividualsDashboard.goToKnownIndividualsTab();
 		}
 
-		task ("Navigate to the individuals page of new user") {
-			ACUtils.searchBar(searchItem = "userfn userln");
+		task ("Check that the user does not appear duplicated in the list") {
+			ACUtils.viewNameList(nameList = "userfn userln");
 
-			ACNavigation.openItem(itemName = "userfn userln");
+			ACUtils.viewResultsMessage(results = "Showing 1 to 1 of 1 entry.");
 		}
 
-		task ("Select Last 24 hours time period in Individuals Events chart") {
-			ACTimeFilter.clickTimeFilterButton(cardName = "Individual Events");
+		task ("Switch to the second property in AC") {
+			ACUtils.launchAC();
 
-			ACTimeFilter.setLast24Hours();
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
-		task ("Select the data on Individuals Activities chart") {
-			ACIndividualsDashboard.selectDataOnIndividualsActivitiesChart();
+		task ("Navigate to the Individuals and And check that only 1 user is counted in the total of individuals") {
+			ACNavigation.goToIndividuals();
+
+			ACCards.viewTotalCount(
+				cardName = "Total Individuals",
+				count = 1);
 		}
 
-		task ("View the Clear Data Selection button shown") {
-			Button.viewPresent(button = "Clear Date Selection");
+		task ("Navigate to the Known Individuals tab") {
+			ACIndividualsDashboard.goToKnownIndividualsTab();
 		}
 
-		task ("Hover on the Individual Events graph and assert the elements that are shown on the tooltip") {
-			for (var current : list "Events-1,Sessions-1") {
-				var item = StringUtil.extractFirst("${current}","-");
-				var value = StringUtil.extractLast("${current}","-");
+		task ("Check that the user does not appear duplicated in the list") {
+			ACUtils.viewNameList(nameList = "userfn userln");
 
-				AssertElementPresent(
-					key_value = "${value}",
-					key_visitors = "${item}",
-					locator1 = "ACSites#TOOLTIP_UNIQUE_VISITORS");
-			}
+			ACUtils.viewResultsMessage(results = "Showing 1 to 1 of 1 entry.");
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8905 | Test Summary: As a Business User, I should be able to see the last 5 activity entries of an individual when set pagination to 5"
 	@ignore = "true"
-	@priority = "3"
+	@priority = 3
 	test ShowLast5ActivitiesOnIndividualsActivitiesChartWhenSetPaginationTo5 {
-		property portal.upstream = "quarantine";
 
 		// AC Refactor: data doesn't appear on time
 		// AC Refactor ticket: LRAC-8951
 
 		var interactions = "1,2,3,4,5,6";
 
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("Repeatly view the site page as new user 6 times") {
-			for (var current : list "${interactions}") {
+			for (var current : list ${interactions}) {
 				ACUtils.navigateToSitePageWithUser(
 					emailList = "userea@liferay.com",
 					pageName = "AC Page",
@@ -351,7 +376,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Known Individuals on the Individuals dashboard") {
@@ -372,27 +397,28 @@ definition {
 			ACTimeFilter.setLast24Hours();
 		}
 
-		task ("Select the 5 items in pagination of Individuals Activities chart") {
-			ACUtils.changePagination(itemsPerPage = "5");
+		task ("Select the 4 items in pagination of Individuals Activities chart") {
+			ACUtils.changePagination(itemsPerPage = 4);
 		}
 
-		task ("View only the last 5 activities shown in page 1") {
+		task ("View only the last 4 activities shown in page 1") {
 			var portalURL = PropsUtil.get("portal.url");
-			var portalURL = StringUtil.replace("${portalURL}", "http://", "");
-			var portalURL = StringUtil.replace("${portalURL}", ":8080", "");
 
-			var n = "0";
+			var portalURL = StringUtil.replace(${portalURL}, "http://", "");
 
-			while ("${n}" != "5") {
+			var portalURL = StringUtil.replace(${portalURL}, ":8080", "");
+			var n = 0;
+
+			while (${n} != 4) {
 				ACIndividualsDashboard.viewTimelineItem(
-					index = "${n}",
+					index = ${n},
 					itemName = "Visited ${portalURL}",
 					visits = "1 Visit");
 			}
 		}
 
 		task ("Navigate to page 2") {
-			ACUtils.checkAnyPage(pageNumber = "2");
+			ACUtils.checkAnyPage(pageNumber = 2);
 		}
 
 		task ("View the activity shown in page 2") {
@@ -403,12 +429,8 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8903 | Test Summary: As an Business User, I should be able to assert the cards on the Overview tab of the Individual's Dashboard page"
-	@priority = "4"
+	@priority = 4
 	test ViewCardsInTheOverviewTabOfIndividualsDashBoard {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("View the site page with new user") {
 			ACUtils.navigateToSitePageWithUser(
 				emailList = "userea@liferay.com",
@@ -423,7 +445,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Overview on the Individuals dashboard") {
@@ -433,21 +455,19 @@ definition {
 		}
 
 		task ("View the cards in the Overview tab") {
-			for (var cardTitle : list "Total Individuals,Known,Anonymous,Enriched Profiles,Active Individuals,Top Interests as of Today") {
-				ACCards.viewCards(cardTitle = "${cardTitle}");
+			for (var cardTitle : list "Total Individuals,Known,Anonymous,Enriched Profiles,Active Individuals,Top Interests as of Yesterday") {
+				ACCards.viewCards(cardTitle = ${cardTitle});
 			}
 		}
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8902 | Test Summary: As an Business User, I should be able to assert the cards on the Overview tab of an Individual's page"
-	@priority = "4"
+	@priority = 4
 	test ViewCardsInTheOverviewTabOfIndividualsPage {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("View the site page with new user") {
 			ACUtils.navigateToSitePageWithUser(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				emailList = "userea@liferay.com",
 				pageName = "AC Page",
 				siteName = "Site Name");
@@ -460,7 +480,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Known Individuals on the Individuals dashboard") {
@@ -481,7 +501,7 @@ definition {
 
 		task ("View the cards in the Overview tab") {
 			for (var cardTitle : list "Individual Events,Current Interests,Associated Segments") {
-				ACCards.viewCards(cardTitle = "${cardTitle}");
+				ACCards.viewCards(cardTitle = ${cardTitle});
 			}
 		}
 
@@ -493,14 +513,12 @@ definition {
 	}
 
 	@description = "Feature ID: Legacy | Automation ID: LRAC-8904 | Test Summary: As a Business User, I should be able to view individuals name at top of page"
-	@priority = "4"
+	@priority = 4
 	test ViewIndividualNameAtTheTopOfIndividualsPage {
-		task ("Get site assigned property name") {
-			var propertyName = ACDXPSettings.getAssignedPropertyName(siteName = "Site Name");
-		}
-
 		task ("View the site page with new user") {
 			ACUtils.navigateToSitePageWithUser(
+				actionType = "View WC",
+				documentTitleList = "1,2,3,4",
 				emailList = "userea@liferay.com",
 				pageName = "AC Page",
 				siteName = "Site Name");
@@ -513,7 +531,7 @@ definition {
 		task ("Switch to new property in AC") {
 			ACUtils.launchAC();
 
-			ACProperties.switchProperty(propertyName = "${propertyName}");
+			ACProperties.switchProperty(propertyName = ${assignedPropertyName});
 		}
 
 		task ("Navigate to the Known Individuals on the Individuals dashboard") {

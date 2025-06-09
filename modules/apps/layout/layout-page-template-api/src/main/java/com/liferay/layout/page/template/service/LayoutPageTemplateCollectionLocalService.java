@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.service;
@@ -88,9 +79,18 @@ public interface LayoutPageTemplateCollectionLocalService
 		LayoutPageTemplateCollection layoutPageTemplateCollection);
 
 	public LayoutPageTemplateCollection addLayoutPageTemplateCollection(
-			long userId, long groupId, String name, String description,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long parentLayoutPageTemplateCollectionId,
+			String layoutPageTemplateCollectionKey, String name,
+			String description, int type, ServiceContext serviceContext)
 		throws PortalException;
+
+	public LayoutPageTemplateCollection copyLayoutPageTemplateCollection(
+			long userId, long groupId,
+			long sourceLayoutPageTemplateCollectionId,
+			long layoutParentPageTemplateCollectionId, boolean copyPermissions,
+			ServiceContext serviceContext)
+		throws Exception;
 
 	/**
 	 * Creates a new layout page template collection with the primary key. Does not add the layout page template collection to the database.
@@ -139,6 +139,10 @@ public interface LayoutPageTemplateCollectionLocalService
 	@Indexable(type = IndexableType.DELETE)
 	public LayoutPageTemplateCollection deleteLayoutPageTemplateCollection(
 			long layoutPageTemplateCollectionId)
+		throws PortalException;
+
+	public LayoutPageTemplateCollection deleteLayoutPageTemplateCollection(
+			String externalReferenceCode, long groupId)
 		throws PortalException;
 
 	/**
@@ -226,7 +230,17 @@ public interface LayoutPageTemplateCollectionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public LayoutPageTemplateCollection fetchLayoutPageTemplateCollection(
-		long groupId, String layoutPageTemplateCollectionKey);
+		long groupId, String layoutPageTemplateCollectionKey, int type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public LayoutPageTemplateCollection fetchLayoutPageTemplateCollection(
+		long groupId, String name, long parentLayoutPageTemplateCollectionId,
+		int type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public LayoutPageTemplateCollection
+		fetchLayoutPageTemplateCollectionByExternalReferenceCode(
+			String externalReferenceCode, long groupId);
 
 	/**
 	 * Returns the layout page template collection matching the UUID and group.
@@ -262,6 +276,12 @@ public interface LayoutPageTemplateCollectionLocalService
 			long layoutPageTemplateCollectionId)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public LayoutPageTemplateCollection
+			getLayoutPageTemplateCollectionByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws PortalException;
+
 	/**
 	 * Returns the layout page template collection matching the UUID and group.
 	 *
@@ -293,16 +313,28 @@ public interface LayoutPageTemplateCollectionLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<LayoutPageTemplateCollection> getLayoutPageTemplateCollections(
-		long groupId, int start, int end);
+		long groupId);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<LayoutPageTemplateCollection> getLayoutPageTemplateCollections(
-		long groupId, int start, int end,
+		long groupId, int type, int start, int end);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutPageTemplateCollection> getLayoutPageTemplateCollections(
+		long groupId, int type, int start, int end,
 		OrderByComparator<LayoutPageTemplateCollection> orderByComparator);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<LayoutPageTemplateCollection> getLayoutPageTemplateCollections(
-		long groupId, String name, int start, int end,
+		long groupId, long layoutPageTemplateCollectionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutPageTemplateCollection> getLayoutPageTemplateCollections(
+		long groupId, long layoutPageTemplateCollectionId, int type);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<LayoutPageTemplateCollection> getLayoutPageTemplateCollections(
+		long groupId, String name, int type, int start, int end,
 		OrderByComparator<LayoutPageTemplateCollection> orderByComparator);
 
 	/**
@@ -342,10 +374,11 @@ public interface LayoutPageTemplateCollectionLocalService
 	public int getLayoutPageTemplateCollectionsCount();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getLayoutPageTemplateCollectionsCount(long groupId);
+	public int getLayoutPageTemplateCollectionsCount(long groupId, int type);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getLayoutPageTemplateCollectionsCount(long groupId, String name);
+	public int getLayoutPageTemplateCollectionsCount(
+		long groupId, String name, int type);
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -362,6 +395,16 @@ public interface LayoutPageTemplateCollectionLocalService
 	public PersistedModel getPersistedModel(Serializable primaryKeyObj)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public String getUniqueLayoutPageTemplateCollectionName(
+		long groupId, long layoutPageTemplateCollectionId, String sourceName,
+		int type);
+
+	public LayoutPageTemplateCollection moveLayoutPageTemplateCollection(
+			long layoutPageTemplateCollectionId,
+			long parentLayoutPageTemplateCollectionId)
+		throws PortalException;
+
 	/**
 	 * Updates the layout page template collection in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -375,6 +418,10 @@ public interface LayoutPageTemplateCollectionLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public LayoutPageTemplateCollection updateLayoutPageTemplateCollection(
 		LayoutPageTemplateCollection layoutPageTemplateCollection);
+
+	public LayoutPageTemplateCollection updateLayoutPageTemplateCollection(
+			long layoutPageTemplateCollectionId, String name)
+		throws PortalException;
 
 	public LayoutPageTemplateCollection updateLayoutPageTemplateCollection(
 			long layoutPageTemplateCollectionId, String name,

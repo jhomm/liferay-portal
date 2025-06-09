@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.user.service.test;
@@ -20,14 +11,13 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.exception.UserScreenNameException;
-import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
-import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
-import com.liferay.portal.kernel.test.util.CompanyTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
@@ -35,6 +25,7 @@ import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import java.util.Calendar;
 import java.util.Locale;
 
+import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -73,47 +64,13 @@ public class UserSetDigestTest {
 	}
 
 	@Test
-	public void testSetDigestAfterPrerequisites() throws Exception {
-		User user = _userLocalService.createUser(RandomTestUtil.nextLong());
+	public void testDigestIsEmptyAfterCreatingUser() throws Exception {
+		User user = _testAddUserWithWorkflowHelper(
+			RandomTestUtil.randomString(), _generateRandomEmailAddress());
 
-		user.setScreenName(RandomTestUtil.randomString());
-		user.setEmailAddress(_generateRandomEmailAddress());
+		String digest = user.getDigest();
 
-		user.setDigest(user.getDigest(RandomTestUtil.randomString()));
-	}
-
-	@Test(expected = IllegalStateException.class)
-	public void testSetDigestBeforePrerequisites() throws Exception {
-		User user = _userLocalService.createUser(RandomTestUtil.nextLong());
-
-		user.setDigest(user.getDigest(RandomTestUtil.randomString()));
-
-		user.setScreenName(RandomTestUtil.randomString());
-		user.setEmailAddress(_generateRandomEmailAddress());
-	}
-
-	@Test(expected = IllegalStateException.class)
-	public void testSetEmailAndDigestBeforeScreenName() throws Exception {
-		User user = _userLocalService.createUser(RandomTestUtil.nextLong());
-
-		user.setEmailAddress(_generateRandomEmailAddress());
-
-		user.setDigest(user.getDigest(RandomTestUtil.randomString()));
-
-		user.setScreenName(RandomTestUtil.randomString());
-	}
-
-	@Test(expected = IllegalStateException.class)
-	public void testSetScreenNameAndDigestBeforeEmailAddress()
-		throws Exception {
-
-		User user = _userLocalService.createUser(RandomTestUtil.nextLong());
-
-		user.setScreenName(RandomTestUtil.randomString());
-
-		user.setDigest(user.getDigest(RandomTestUtil.randomString()));
-
-		user.setEmailAddress(_generateRandomEmailAddress());
+		Assert.assertTrue(digest.isEmpty());
 	}
 
 	private String _generateRandomEmailAddress() {
@@ -122,15 +79,11 @@ public class UserSetDigestTest {
 			RandomTestUtil.randomString(), ".com");
 	}
 
-	private void _testAddUserWithWorkflowHelper(
+	private User _testAddUserWithWorkflowHelper(
 			String screenName, String emailAddress)
 		throws Exception {
 
 		long creatorUserId = 0;
-
-		_company = CompanyTestUtil.addCompany();
-
-		long companyId = _company.getCompanyId();
 
 		String randomString = RandomTestUtil.randomString();
 
@@ -143,8 +96,8 @@ public class UserSetDigestTest {
 		String firstName = RandomTestUtil.randomString();
 		String middleName = RandomTestUtil.randomString();
 		String lastName = RandomTestUtil.randomString();
-		long prefixId = 0;
-		long suffixId = 0;
+		long prefixListTypeId = 0;
+		long suffixListTypeId = 0;
 		boolean male = true;
 		int birthdayMonth = Calendar.JANUARY;
 		int birthdayDay = 1;
@@ -156,18 +109,16 @@ public class UserSetDigestTest {
 		long[] userGroupIds = null;
 		boolean sendEmail = false;
 
-		_userLocalService.addUserWithWorkflow(
-			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, emailAddress, locale, firstName,
-			middleName, lastName, prefixId, suffixId, male, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, groupIds, organizationIds,
+		return _userLocalService.addUserWithWorkflow(
+			creatorUserId, TestPropsValues.getCompanyId(), autoPassword,
+			password1, password2, autoScreenName, screenName, emailAddress,
+			locale, firstName, middleName, lastName, prefixListTypeId,
+			suffixListTypeId, male, birthdayMonth, birthdayDay, birthdayYear,
+			jobTitle, UserConstants.TYPE_REGULAR, groupIds, organizationIds,
 			roleIds, userGroupIds, sendEmail, new ServiceContext());
 	}
 
 	@Inject
 	private static UserLocalService _userLocalService;
-
-	@DeleteAfterTestRun
-	private Company _company;
 
 }

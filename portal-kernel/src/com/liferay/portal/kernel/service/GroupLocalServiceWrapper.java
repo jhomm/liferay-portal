@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -27,6 +19,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
  */
 public class GroupLocalServiceWrapper
 	implements GroupLocalService, ServiceWrapper<GroupLocalService> {
+
+	public GroupLocalServiceWrapper() {
+		this(null);
+	}
 
 	public GroupLocalServiceWrapper(GroupLocalService groupLocalService) {
 		_groupLocalService = groupLocalService;
@@ -80,87 +76,106 @@ public class GroupLocalServiceWrapper
 	}
 
 	@Override
-	public void addOrganizationGroup(long organizationId, Group group) {
-		_groupLocalService.addOrganizationGroup(organizationId, group);
+	public boolean addOrganizationGroup(long organizationId, Group group) {
+		return _groupLocalService.addOrganizationGroup(organizationId, group);
 	}
 
 	@Override
-	public void addOrganizationGroup(long organizationId, long groupId) {
-		_groupLocalService.addOrganizationGroup(organizationId, groupId);
+	public boolean addOrganizationGroup(long organizationId, long groupId) {
+		return _groupLocalService.addOrganizationGroup(organizationId, groupId);
 	}
 
 	@Override
-	public void addOrganizationGroups(
+	public boolean addOrganizationGroups(
 		long organizationId, java.util.List<Group> groups) {
 
-		_groupLocalService.addOrganizationGroups(organizationId, groups);
+		return _groupLocalService.addOrganizationGroups(organizationId, groups);
 	}
 
 	@Override
-	public void addOrganizationGroups(long organizationId, long[] groupIds) {
-		_groupLocalService.addOrganizationGroups(organizationId, groupIds);
+	public boolean addOrganizationGroups(long organizationId, long[] groupIds) {
+		return _groupLocalService.addOrganizationGroups(
+			organizationId, groupIds);
 	}
 
 	@Override
-	public void addRoleGroup(long roleId, Group group) {
-		_groupLocalService.addRoleGroup(roleId, group);
+	public Group addOrUpdateGroup(
+			String externalReferenceCode, long userId, long parentGroupId,
+			String className, long classPK, long liveGroupId,
+			java.util.Map<java.util.Locale, String> nameMap,
+			java.util.Map<java.util.Locale, String> descriptionMap, int type,
+			boolean manualMembership, int membershipRestriction,
+			String friendlyURL, boolean site, boolean inheritContent,
+			boolean active, ServiceContext serviceContext)
+		throws Exception {
+
+		return _groupLocalService.addOrUpdateGroup(
+			externalReferenceCode, userId, parentGroupId, className, classPK,
+			liveGroupId, nameMap, descriptionMap, type, manualMembership,
+			membershipRestriction, friendlyURL, site, inheritContent, active,
+			serviceContext);
 	}
 
 	@Override
-	public void addRoleGroup(long roleId, long groupId) {
-		_groupLocalService.addRoleGroup(roleId, groupId);
+	public boolean addRoleGroup(long roleId, Group group) {
+		return _groupLocalService.addRoleGroup(roleId, group);
 	}
 
 	@Override
-	public void addRoleGroups(long roleId, java.util.List<Group> groups) {
-		_groupLocalService.addRoleGroups(roleId, groups);
+	public boolean addRoleGroup(long roleId, long groupId) {
+		return _groupLocalService.addRoleGroup(roleId, groupId);
 	}
 
 	@Override
-	public void addRoleGroups(long roleId, long[] groupIds) {
-		_groupLocalService.addRoleGroups(roleId, groupIds);
+	public boolean addRoleGroups(long roleId, java.util.List<Group> groups) {
+		return _groupLocalService.addRoleGroups(roleId, groups);
 	}
 
 	@Override
-	public void addUserGroup(long userId, Group group) {
-		_groupLocalService.addUserGroup(userId, group);
+	public boolean addRoleGroups(long roleId, long[] groupIds) {
+		return _groupLocalService.addRoleGroups(roleId, groupIds);
 	}
 
 	@Override
-	public void addUserGroup(long userId, long groupId) {
-		_groupLocalService.addUserGroup(userId, groupId);
+	public boolean addUserGroup(long userId, Group group) {
+		return _groupLocalService.addUserGroup(userId, group);
 	}
 
 	@Override
-	public void addUserGroupGroup(long userGroupId, Group group) {
-		_groupLocalService.addUserGroupGroup(userGroupId, group);
+	public boolean addUserGroup(long userId, long groupId) {
+		return _groupLocalService.addUserGroup(userId, groupId);
 	}
 
 	@Override
-	public void addUserGroupGroup(long userGroupId, long groupId) {
-		_groupLocalService.addUserGroupGroup(userGroupId, groupId);
+	public boolean addUserGroupGroup(long userGroupId, Group group) {
+		return _groupLocalService.addUserGroupGroup(userGroupId, group);
 	}
 
 	@Override
-	public void addUserGroupGroups(
+	public boolean addUserGroupGroup(long userGroupId, long groupId) {
+		return _groupLocalService.addUserGroupGroup(userGroupId, groupId);
+	}
+
+	@Override
+	public boolean addUserGroupGroups(
 		long userGroupId, java.util.List<Group> groups) {
 
-		_groupLocalService.addUserGroupGroups(userGroupId, groups);
+		return _groupLocalService.addUserGroupGroups(userGroupId, groups);
 	}
 
 	@Override
-	public void addUserGroupGroups(long userGroupId, long[] groupIds) {
-		_groupLocalService.addUserGroupGroups(userGroupId, groupIds);
+	public boolean addUserGroupGroups(long userGroupId, long[] groupIds) {
+		return _groupLocalService.addUserGroupGroups(userGroupId, groupIds);
 	}
 
 	@Override
-	public void addUserGroups(long userId, java.util.List<Group> groups) {
-		_groupLocalService.addUserGroups(userId, groups);
+	public boolean addUserGroups(long userId, java.util.List<Group> groups) {
+		return _groupLocalService.addUserGroups(userId, groups);
 	}
 
 	@Override
-	public void addUserGroups(long userId, long[] groupIds) {
-		_groupLocalService.addUserGroups(userId, groupIds);
+	public boolean addUserGroups(long userId, long[] groupIds) {
+		return _groupLocalService.addUserGroups(userId, groupIds);
 	}
 
 	/**
@@ -537,6 +552,14 @@ public class GroupLocalServiceWrapper
 		return _groupLocalService.fetchGroup(companyId, groupKey);
 	}
 
+	@Override
+	public Group fetchGroupByExternalReferenceCode(
+		String externalReferenceCode, long companyId) {
+
+		return _groupLocalService.fetchGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
 	/**
 	 * Returns the group with the matching UUID and company.
 	 *
@@ -790,6 +813,15 @@ public class GroupLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _groupLocalService.getGroup(companyId, groupKey);
+	}
+
+	@Override
+	public Group getGroupByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _groupLocalService.getGroupByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -1318,20 +1350,6 @@ public class GroupLocalServiceWrapper
 	}
 
 	/**
-	 * Returns the staging group.
-	 *
-	 * @param liveGroupId the primary key of the live group
-	 * @return the staging group
-	 * @throws PortalException if a portal exception occurred
-	 */
-	@Override
-	public Group getStagingGroup(long liveGroupId)
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _groupLocalService.getStagingGroup(liveGroupId);
-	}
-
-	/**
 	 * Returns the group directly associated with the user.
 	 *
 	 * @param companyId the primary key of the company
@@ -1610,18 +1628,6 @@ public class GroupLocalServiceWrapper
 	@Override
 	public boolean hasRoleGroups(long roleId) {
 		return _groupLocalService.hasRoleGroups(roleId);
-	}
-
-	/**
-	 * Returns <code>true</code> if the live group has a staging group.
-	 *
-	 * @param liveGroupId the primary key of the live group
-	 * @return <code>true</code> if the live group has a staging group;
-	 <code>false</code> otherwise
-	 */
-	@Override
-	public boolean hasStagingGroup(long liveGroupId) {
-		return _groupLocalService.hasStagingGroup(liveGroupId);
 	}
 
 	@Override
@@ -2849,6 +2855,11 @@ public class GroupLocalServiceWrapper
 		_groupLocalService.validateRemote(
 			groupId, remoteAddress, remotePort, remotePathContext,
 			secureConnection, remoteGroupId);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _groupLocalService.getBasePersistence();
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.kernel.exception;
@@ -30,6 +21,8 @@ public class ExportImportContentValidationException extends PortalException {
 	public static final int DEFAULT = 1;
 
 	public static final int FILE_ENTRY_NOT_FOUND = 5;
+
+	public static final int JOURNAL_FEED_NOT_FOUND = 7;
 
 	public static final int LAYOUT_GROUP_NOT_FOUND = 2;
 
@@ -56,16 +49,20 @@ public class ExportImportContentValidationException extends PortalException {
 		return _className;
 	}
 
-	public String getDlReference() {
+	public String getDLReference() {
 		return _dlReference;
 	}
 
-	public Map<String, String[]> getDlReferenceParameters() {
+	public Map<String, String[]> getDLReferenceParameters() {
 		return _dlReferenceParameters;
 	}
 
 	public String getGroupFriendlyURL() {
 		return _groupFriendlyURL;
+	}
+
+	public String getJournalArticleFeedURL() {
+		return _journalArticleFeedURL;
 	}
 
 	public Map<String, String> getLayoutReferenceParameters() {
@@ -80,15 +77,6 @@ public class ExportImportContentValidationException extends PortalException {
 		return _stagedModelClassName;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #getStagedModelPrimaryKeyObj()}
-	 */
-	@Deprecated
-	public long getStagedModelClassPK() {
-		return _stagedModelClassPK;
-	}
-
 	public Serializable getStagedModelPrimaryKeyObj() {
 		return _stagedModelPrimaryKeyObj;
 	}
@@ -101,11 +89,11 @@ public class ExportImportContentValidationException extends PortalException {
 		_className = className;
 	}
 
-	public void setDlReference(String dlReference) {
+	public void setDLReference(String dlReference) {
 		_dlReference = dlReference;
 	}
 
-	public void setDlReferenceParameters(
+	public void setDLReferenceParameters(
 		Map<String, String[]> dlReferenceParameters) {
 
 		_dlReferenceParameters = dlReferenceParameters;
@@ -113,6 +101,10 @@ public class ExportImportContentValidationException extends PortalException {
 
 	public void setGroupFriendlyURL(String groupFriendlyURL) {
 		_groupFriendlyURL = groupFriendlyURL;
+	}
+
+	public void setJournalArticleFeedURL(String journalArticleFeedURL) {
+		_journalArticleFeedURL = journalArticleFeedURL;
 	}
 
 	public void setLayoutReferenceParameters(
@@ -129,15 +121,6 @@ public class ExportImportContentValidationException extends PortalException {
 		_stagedModelClassName = stagedModelClassName;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link
-	 *             #setStagedModelPrimaryKeyObj(Serializable)}
-	 */
-	@Deprecated
-	public void setStagedModelClassPK(long stagedModelClassPK) {
-		_stagedModelClassPK = stagedModelClassPK;
-	}
-
 	public void setStagedModelPrimaryKeyObj(
 		Serializable stagedModelPrimaryKeyObj) {
 
@@ -152,10 +135,10 @@ public class ExportImportContentValidationException extends PortalException {
 	private String _dlReference;
 	private Map<String, String[]> _dlReferenceParameters;
 	private String _groupFriendlyURL;
+	private String _journalArticleFeedURL;
 	private Map<String, String> _layoutReferenceParameters;
 	private String _layoutURL;
 	private String _stagedModelClassName;
-	private long _stagedModelClassPK;
 	private Serializable _stagedModelPrimaryKeyObj;
 	private int _type = DEFAULT;
 

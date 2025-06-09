@@ -1,10 +1,10 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
 	property custom.properties = "default.layout.template.id=1_column${line.separator}jsonws.web.service.paths.excludes=";
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Mentions";
 	property testray.main.component.name = "Mentions";
 
 	setUp {
@@ -17,7 +17,7 @@ definition {
 			layoutName = "Blogs Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Blogs Page",
 			widgetName = "Blogs");
@@ -43,9 +43,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -53,11 +53,11 @@ definition {
 
 			JSONUser.tearDownNonAdminUsers();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewMentionViaBlogsEntry {
 		Mentions.addMentionViaBlogsEntry(
@@ -77,7 +77,7 @@ definition {
 			mentionsUserScreenName = "usersn");
 	}
 
-	@priority = "5"
+	@priority = 5
 	@refactordone
 	test CanViewMentionViaBlogsEntryComment {
 		JSONBlog.addEntry(
@@ -100,11 +100,12 @@ definition {
 	}
 
 	@description = "This ensures that a guest is able to mention others in the comment section."
-	@priority = "3"
+	@priority = 3
 	@refactordone
 	test CanViewMentionViaBlogsEntryCommentAsGuest {
 		property osgi.module.configuration.file.names = "com.liferay.portal.bundle.blacklist.internal.configuration.BundleBlacklistConfiguration.config";
-		property osgi.module.configurations = "blacklistBundleSymbolicNames=&quot;com.liferay.saml.addon.keep.alive.web,com.liferay.saml.api,com.liferay.saml.impl,com.liferay.saml.opensaml.integration,com.liferay.saml.persistence.api,com.liferay.saml.persistence.service,com.liferay.saml.web,saml-hook&quot;";
+		property osgi.module.configurations = "blacklistBundleSymbolicNames=\"com.liferay.saml.addon.keep.alive.web,com.liferay.saml.api,com.liferay.saml.impl,com.liferay.saml.opensaml.integration,com.liferay.saml.persistence.api,com.liferay.saml.persistence.service,com.liferay.saml.web,saml-hook\"";
+		property portal.acceptance = "false";
 
 		JSONBlog.addEntry(
 			entryContent = "Blogs Entry Content",
@@ -132,7 +133,7 @@ definition {
 	}
 
 	@description = "This ensures that a user is able to mention others in comment section when editing."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewMentionViaEditedBlogsEntryComment {
 		JSONBlog.addEntry(

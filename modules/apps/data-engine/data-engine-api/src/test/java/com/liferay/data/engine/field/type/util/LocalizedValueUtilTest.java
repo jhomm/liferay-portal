@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.field.type.util;
 
 import com.liferay.dynamic.data.mapping.model.LocalizedValue;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.json.JSONFactoryImpl;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -30,31 +22,27 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.runners.MockitoJUnitRunner;
-
-import org.powermock.api.mockito.PowerMockito;
+import org.mockito.Mockito;
 
 import org.skyscreamer.jsonassert.JSONAssert;
 
 /**
  * @author Mateus Santana
  */
-@RunWith(MockitoJUnitRunner.class)
-public class LocalizedValueUtilTest extends PowerMockito {
+public class LocalizedValueUtilTest {
 
 	@ClassRule
 	@Rule
 	public static final LiferayUnitTestRule liferayUnitTestRule =
 		LiferayUnitTestRule.INSTANCE;
 
-	@Before
-	public void setUp() {
+	@BeforeClass
+	public static void setUpClass() {
 		_setUpJSONFactoryUtil();
 		_setUpLanguageUtil();
 	}
@@ -88,14 +76,20 @@ public class LocalizedValueUtilTest extends PowerMockito {
 
 	@Test
 	public void testToLocalizedValueEmptyMap() {
+		LocalizedValue localizedValue = LocalizedValueUtil.toLocalizedValue(
+			new HashMap<>());
+
 		Assert.assertEquals(
-			new LocalizedValue(LocaleUtil.US),
-			LocalizedValueUtil.toLocalizedValue(new HashMap<>()));
+			StringPool.BLANK, localizedValue.getString(LocaleUtil.US));
 	}
 
 	@Test
 	public void testToLocalizedValueNullValue() {
-		Assert.assertNull(LocalizedValueUtil.toLocalizedValue(null));
+		LocalizedValue localizedValue = LocalizedValueUtil.toLocalizedValue(
+			null);
+
+		Assert.assertEquals(
+			StringPool.BLANK, localizedValue.getString(LocaleUtil.US));
 	}
 
 	@Test
@@ -103,6 +97,20 @@ public class LocalizedValueUtilTest extends PowerMockito {
 		Assert.assertEquals(
 			Collections.emptyMap(),
 			LocalizedValueUtil.toLocalizedValuesMap(null));
+	}
+
+	@Test
+	public void testToLocalizedValuesMapWithBooleanValues() {
+		Map<String, Object> map = LocalizedValueUtil.toLocalizedValuesMap(
+			new LocalizedValue() {
+				{
+					addString(LocaleUtil.US, "true");
+					addString(LocaleUtil.BRAZIL, "false");
+				}
+			});
+
+		Assert.assertEquals("true", map.get("en_US"));
+		Assert.assertEquals("false", map.get("pt_BR"));
 	}
 
 	@Test
@@ -118,7 +126,7 @@ public class LocalizedValueUtilTest extends PowerMockito {
 		JSONAssert.assertEquals(
 			JSONUtil.put(
 				"eng"
-			).toJSONString(),
+			).toString(),
 			String.valueOf(map.get("en_US")), false);
 	}
 
@@ -137,7 +145,7 @@ public class LocalizedValueUtilTest extends PowerMockito {
 		JSONAssert.assertEquals(
 			JSONUtil.put(
 				"language", "eng"
-			).toJSONString(),
+			).toString(),
 			String.valueOf(map.get("en_US")), false);
 	}
 
@@ -176,36 +184,36 @@ public class LocalizedValueUtilTest extends PowerMockito {
 				).build()));
 	}
 
-	private void _setUpJSONFactoryUtil() {
+	private static void _setUpJSONFactoryUtil() {
 		JSONFactoryUtil jsonFactoryUtil = new JSONFactoryUtil();
 
 		jsonFactoryUtil.setJSONFactory(new JSONFactoryImpl());
 	}
 
-	private void _setUpLanguageUtil() {
+	private static void _setUpLanguageUtil() {
 		LanguageUtil languageUtil = new LanguageUtil();
 
-		Language language = mock(Language.class);
+		Language language = Mockito.mock(Language.class);
 
-		when(
+		Mockito.when(
 			language.isAvailableLocale(LocaleUtil.BRAZIL)
 		).thenReturn(
 			true
 		);
 
-		when(
+		Mockito.when(
 			language.isAvailableLocale(LocaleUtil.US)
 		).thenReturn(
 			true
 		);
 
-		when(
+		Mockito.when(
 			language.getLanguageId(LocaleUtil.BRAZIL)
 		).thenReturn(
 			"pt_BR"
 		);
 
-		when(
+		Mockito.when(
 			language.getLanguageId(LocaleUtil.US)
 		).thenReturn(
 			"en_US"

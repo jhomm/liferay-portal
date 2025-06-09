@@ -2,8 +2,8 @@
 @summary = "Evaluate the current test name."
 definition {
 
-	function isTestName {
-		selenium.isTestName("${value1}");
+	function isTestName(value1) {
+		selenium.isTestName(${value1});
 	}
 
 }

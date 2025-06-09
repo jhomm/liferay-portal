@@ -25,18 +25,27 @@
 	<td></td>
 	<td></td>
 </tr>
+
 <!--TEMPLATE_CARDS-->
+
 <tr>
 	<td>TEMPLATE_CARDS_SMALL_IMAGE</td>
 	<td>//div[contains(@class,'aspect-ratio')]/div/label//img</td>
 	<td></td>
 </tr>
 <tr>
+	<td>TEMPLATE_CARDS_SMALL_IMAGE_2</td>
+	<td>//div[contains(@class,'aspect-ratio')]/img</td>
+	<td></td>
+</tr>
+<tr>
 	<td></td>
 	<td></td>
 	<td></td>
 </tr>
+
 <!--TEMPLATE_TABLE-->
+
 <tr>
 	<td>TEMPLATE_TABLE_ALL_CHECKBOX</td>
 	<td>//div[contains(@id,'DDMPortlet_managementBarContainerId')]//input[contains(@name,'allRowIds')]</td>
@@ -55,6 +64,11 @@
 <tr>
 	<td>TEMPLATE_TABLE_DESCRIPTION_SMALL_IMAGE</td>
 	<td>//img[contains(@class,'small-image') and contains(@alt,'${key_ddlTemplateName}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>TEMPLATE_TABLE_ID</td>
+	<td>//td[contains(.,'${key_ddlTemplateName}')]/..//td[contains(@class,'lfr-id-column')]</td>
 	<td></td>
 </tr>
 <tr>

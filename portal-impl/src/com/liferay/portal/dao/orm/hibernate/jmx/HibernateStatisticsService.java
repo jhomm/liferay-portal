@@ -1,96 +1,56 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.dao.orm.hibernate.jmx;
 
-import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
+import com.liferay.portal.kernel.module.util.SystemBundleUtil;
+import com.liferay.portal.kernel.util.InfrastructureUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.util.PropsValues;
 
-import javax.management.Attribute;
-import javax.management.AttributeList;
-import javax.management.AttributeNotFoundException;
 import javax.management.DynamicMBean;
-import javax.management.InvalidAttributeValueException;
-import javax.management.MBeanException;
-import javax.management.MBeanInfo;
 import javax.management.NotCompliantMBeanException;
-import javax.management.ReflectionException;
 import javax.management.StandardMBean;
 
-import org.hibernate.engine.SessionFactoryImplementor;
-import org.hibernate.jmx.StatisticsService;
-import org.hibernate.jmx.StatisticsServiceMBean;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.stat.Statistics;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Shuyang Zhou
  */
-@OSGiBeanProperties(
-	property = "jmx.objectname=Hibernate:name=statistics",
-	service = DynamicMBean.class
-)
-public class HibernateStatisticsService
-	extends StatisticsService implements DynamicMBean {
+public class HibernateStatisticsService {
 
-	public HibernateStatisticsService() throws NotCompliantMBeanException {
-		setStatisticsEnabled(PropsValues.HIBERNATE_GENERATE_STATISTICS);
+	public void afterPropertiesSet() throws NotCompliantMBeanException {
+		if (PropsValues.HIBERNATE_GENERATE_STATISTICS) {
+			SessionFactoryImplementor sessionFactoryImplementor =
+				(SessionFactoryImplementor)
+					InfrastructureUtil.getSessionFactory();
 
-		_standardMBean = new StandardMBean(this, StatisticsServiceMBean.class);
+			Statistics statistics = sessionFactoryImplementor.getStatistics();
+
+			statistics.setStatisticsEnabled(true);
+
+			BundleContext bundleContext = SystemBundleUtil.getBundleContext();
+
+			_serviceRegistration = bundleContext.registerService(
+				DynamicMBean.class,
+				new StandardMBean(statistics, Statistics.class),
+				MapUtil.singletonDictionary(
+					"jmx.objectname", "Hibernate:name=statistics"));
+		}
 	}
 
-	@Override
-	public Object getAttribute(String attribute)
-		throws AttributeNotFoundException, MBeanException, ReflectionException {
-
-		return _standardMBean.getAttribute(attribute);
+	public void destroy() {
+		if (_serviceRegistration != null) {
+			_serviceRegistration.unregister();
+		}
 	}
 
-	@Override
-	public AttributeList getAttributes(String[] attributes) {
-		return _standardMBean.getAttributes(attributes);
-	}
-
-	@Override
-	public MBeanInfo getMBeanInfo() {
-		return _standardMBean.getMBeanInfo();
-	}
-
-	@Override
-	public Object invoke(String actionName, Object[] params, String[] signature)
-		throws MBeanException, ReflectionException {
-
-		return _standardMBean.invoke(actionName, params, signature);
-	}
-
-	@Override
-	public void setAttribute(Attribute attribute)
-		throws AttributeNotFoundException, InvalidAttributeValueException,
-			   MBeanException, ReflectionException {
-
-		_standardMBean.setAttribute(attribute);
-	}
-
-	@Override
-	public AttributeList setAttributes(AttributeList attributes) {
-		return _standardMBean.setAttributes(attributes);
-	}
-
-	public void setSessionFactoryImplementor(
-		SessionFactoryImplementor sessionFactoryImplementor) {
-
-		super.setSessionFactory(sessionFactoryImplementor);
-	}
-
-	private final StandardMBean _standardMBean;
+	private ServiceRegistration<?> _serviceRegistration;
 
 }

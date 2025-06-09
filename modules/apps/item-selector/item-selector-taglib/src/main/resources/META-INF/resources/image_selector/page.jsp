@@ -1,27 +1,18 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/image_selector/init.jsp" %>
 
 <%
+boolean draggable = GetterUtil.getBoolean(request.getAttribute("liferay-ui:image-selector:draggable"));
 long fileEntryId = GetterUtil.getLong(request.getAttribute("liferay-ui:image-selector:fileEntryId"));
 String imageCropDirection = GetterUtil.getString((String)request.getAttribute("liferay-ui:image-selector:imageCropDirection"), "none");
 String imageCropRegion = GetterUtil.getString((String)request.getAttribute("liferay-ui:image-selector:imageCropRegion"));
 String imageURL = GetterUtil.getString((String)request.getAttribute("liferay-ui:image-selector:imageURL"));
-boolean isDraggable = GetterUtil.getBoolean(request.getAttribute("liferay-ui:image-selector:isDraggable"));
 String itemSelectorEventName = GetterUtil.getString((String)request.getAttribute("liferay-ui:image-selector:itemSelectorEventName"));
 String itemSelectorURL = GetterUtil.getString((String)request.getAttribute("liferay-ui:image-selector:itemSelectorURL"));
 long maxFileSize = GetterUtil.getLong(request.getAttribute("liferay-ui:image-selector:maxFileSize"));
@@ -35,14 +26,18 @@ if (fileEntryId == 0) {
 	cssClass += " drop-enabled";
 }
 
-if (isDraggable) {
+if (draggable) {
 	cssClass += " draggable-image " + imageCropDirection;
 }
 %>
 
+<liferay-util:html-top>
+	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/image_selector.css") %>' rel="stylesheet" type="text/css" />
+</liferay-util:html-top>
+
 <div>
 	<react:component
-		module="image_selector/js/ImageSelector"
+		module="{ImageSelector} from item-selector-taglib"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
 				"fileEntryId", fileEntryId
@@ -53,7 +48,7 @@ if (isDraggable) {
 			).put(
 				"imageURL", imageURL
 			).put(
-				"isDraggable", isDraggable
+				"isDraggable", draggable
 			).put(
 				"itemSelectorEventName", itemSelectorEventName
 			).put(
@@ -103,7 +98,7 @@ if (isDraggable) {
 							</c:choose>
 						</c:when>
 						<c:otherwise>
-							<%= LanguageUtil.get(resourceBundle, "drag-and-drop-to-upload") %>
+							<liferay-ui:message key="drag-and-drop-to-upload" />
 						</c:otherwise>
 					</c:choose>
 				</div>

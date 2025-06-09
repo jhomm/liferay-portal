@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.converter.visitor;
@@ -30,6 +21,7 @@ import com.liferay.dynamic.data.mapping.expression.model.Term;
 import com.liferay.dynamic.data.mapping.spi.converter.model.SPIDDMFormRuleCondition;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.StringUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,7 +51,7 @@ public class ConditionExpressionVisitor extends ExpressionVisitor<Object> {
 	public Object visit(AndExpression andExpression) {
 		_andOperator = true;
 
-		return doVisitLogicalExpression(andExpression);
+		return _visitLogicalExpression(andExpression);
 	}
 
 	@Override
@@ -112,8 +104,14 @@ public class ConditionExpressionVisitor extends ExpressionVisitor<Object> {
 			SPIDDMFormRuleCondition.Operand operand = doVisit(
 				parameterExpressions.get(1));
 
+			String operandType = operand.getType();
+
+			if (StringUtil.equals(operand.getType(), "string")) {
+				operandType = "option";
+			}
+
 			return new SPIDDMFormRuleCondition.Operand(
-				"option", operand.getValue());
+				operandType, operand.getValue());
 		}
 
 		if (Objects.equals(functionName, "getValue")) {
@@ -127,20 +125,32 @@ public class ConditionExpressionVisitor extends ExpressionVisitor<Object> {
 		List<SPIDDMFormRuleCondition.Operand> operands = new ArrayList<>();
 
 		for (Expression parameterExpression : parameterExpressions) {
+			if (parameterExpression instanceof FunctionCallExpression) {
+				FunctionCallExpression parameterFunctionCallExpression =
+					(FunctionCallExpression)parameterExpression;
+
+				if (StringUtil.equals(
+						parameterFunctionCallExpression.getFunctionName(),
+						"getOptionLabel")) {
+
+					operands.add(doVisit(parameterExpression));
+
+					continue;
+				}
+			}
+
 			if (functionCallExpression.hasNestedFunctions()) {
 				operands.add(
 					new SPIDDMFormRuleCondition.Operand(
 						"condition", parameterExpression.toString()));
 			}
 			else {
-				operands.add(
-					(SPIDDMFormRuleCondition.Operand)doVisit(
-						parameterExpression));
+				operands.add(doVisit(parameterExpression));
 			}
 		}
 
 		_spiDDMFormRuleConditions.push(
-			createDDMFormRuleCondition(functionName, operands));
+			_createDDMFormRuleCondition(functionName, operands));
 
 		return _spiDDMFormRuleConditions;
 	}
@@ -169,7 +179,7 @@ public class ConditionExpressionVisitor extends ExpressionVisitor<Object> {
 	public Object visit(OrExpression orExpression) {
 		_andOperator = false;
 
-		return doVisitLogicalExpression(orExpression);
+		return _visitLogicalExpression(orExpression);
 	}
 
 	@Override
@@ -183,7 +193,11 @@ public class ConditionExpressionVisitor extends ExpressionVisitor<Object> {
 		return new SPIDDMFormRuleCondition.Operand("field", term.getValue());
 	}
 
-	protected SPIDDMFormRuleCondition createDDMFormRuleCondition(
+	protected <T> T doVisit(Expression expression) {
+		return (T)expression.accept(this);
+	}
+
+	private SPIDDMFormRuleCondition _createDDMFormRuleCondition(
 		String functionName, List<SPIDDMFormRuleCondition.Operand> operands) {
 
 		String functionNameOperator = _functionNameOperators.getOrDefault(
@@ -192,11 +206,7 @@ public class ConditionExpressionVisitor extends ExpressionVisitor<Object> {
 		return new SPIDDMFormRuleCondition(functionNameOperator, operands);
 	}
 
-	protected <T> T doVisit(Expression expression) {
-		return (T)expression.accept(this);
-	}
-
-	protected List<SPIDDMFormRuleCondition> doVisitLogicalExpression(
+	private List<SPIDDMFormRuleCondition> _visitLogicalExpression(
 		BinaryExpression binaryExpression) {
 
 		Object object1 = doVisit(binaryExpression.getLeftOperandExpression());

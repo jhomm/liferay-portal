@@ -1,26 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service.impl;
 
-import com.liferay.change.tracking.closure.CTClosure;
-import com.liferay.change.tracking.closure.CTClosureFactory;
 import com.liferay.change.tracking.constants.CTActionKeys;
 import com.liferay.change.tracking.constants.CTConstants;
-import com.liferay.change.tracking.exception.CTEnclosureException;
-import com.liferay.change.tracking.internal.CTEnclosureUtil;
-import com.liferay.change.tracking.internal.CTServiceRegistry;
+import com.liferay.change.tracking.exception.CTCollectionStatusException;
 import com.liferay.change.tracking.model.CTAutoResolutionInfo;
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.change.tracking.model.CTCollectionTable;
@@ -28,24 +15,16 @@ import com.liferay.change.tracking.model.CTEntry;
 import com.liferay.change.tracking.service.CTProcessLocalService;
 import com.liferay.change.tracking.service.base.CTCollectionServiceBaseImpl;
 import com.liferay.change.tracking.service.persistence.CTAutoResolutionInfoPersistence;
-import com.liferay.change.tracking.service.persistence.CTEntryPersistence;
 import com.liferay.petra.sql.dsl.DSLFunctionFactoryUtil;
 import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
 import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
-import com.liferay.portal.kernel.change.tracking.CTColumnResolutionType;
-import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.model.GroupTable;
 import com.liferay.portal.kernel.model.UserGroupRoleTable;
-import com.liferay.portal.kernel.search.IndexWriterHelper;
-import com.liferay.portal.kernel.search.Indexer;
-import com.liferay.portal.kernel.search.IndexerRegistry;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.InlineSQLHelper;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
@@ -53,22 +32,11 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.ClassNameLocalService;
-import com.liferay.portal.kernel.service.change.tracking.CTService;
-import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
-import com.liferay.portal.search.model.uid.UIDFactory;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -87,14 +55,16 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 
 	@Override
 	public CTCollection addCTCollection(
-			long companyId, long userId, String name, String description)
+			String externalReferenceCode, long companyId, long userId,
+			long ctRemoteId, String name, String description)
 		throws PortalException {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null, CTActionKeys.ADD_PUBLICATION);
 
 		return ctCollectionLocalService.addCTCollection(
-			companyId, userId, name, description);
+			externalReferenceCode, companyId, userId, ctRemoteId, name,
+			description);
 	}
 
 	@Override
@@ -128,8 +98,7 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 	}
 
 	@Override
-	public void discardCTEntries(
-			long ctCollectionId, long modelClassNameId, long modelClassPK)
+	public void discardCTEntry(long ctCollectionId, List<CTEntry> ctEntries)
 		throws PortalException {
 
 		CTCollection ctCollection = ctCollectionPersistence.findByPrimaryKey(
@@ -138,29 +107,8 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 		_ctCollectionModelResourcePermission.check(
 			getPermissionChecker(), ctCollection, ActionKeys.UPDATE);
 
-		if ((ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT) &&
-			(ctCollection.getStatus() != WorkflowConstants.STATUS_PENDING)) {
-
-			throw new PortalException(
-				"Change tracking collection " + ctCollection + " is read only");
-		}
-
-		List<CTEntry> discardCTEntries =
-			ctCollectionLocalService.getDiscardCTEntries(
-				ctCollectionId, modelClassNameId, modelClassPK);
-
-		Map<Long, List<CTEntry>> ctEntryMap = new HashMap<>();
-
-		for (CTEntry ctEntry : discardCTEntries) {
-			List<CTEntry> ctEntries = ctEntryMap.computeIfAbsent(
-				ctEntry.getModelClassNameId(), key -> new ArrayList<>());
-
-			ctEntries.add(ctEntry);
-		}
-
-		for (Map.Entry<Long, List<CTEntry>> entry : ctEntryMap.entrySet()) {
-			_discardCTEntries(ctCollection, entry.getKey(), entry.getValue());
-		}
+		ctCollectionLocalService.discardCTEntry(
+			ctCollectionId, ctEntries, false);
 	}
 
 	@Override
@@ -174,61 +122,8 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 		_ctCollectionModelResourcePermission.check(
 			getPermissionChecker(), ctCollection, ActionKeys.UPDATE);
 
-		if ((ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT) &&
-			(ctCollection.getStatus() != WorkflowConstants.STATUS_PENDING)) {
-
-			throw new PortalException(
-				"Change tracking collection " + ctCollection + " is read only");
-		}
-
-		CTClosure ctClosure = _ctClosureFactory.create(
-			ctCollection.getCtCollectionId());
-
-		Map<Long, Set<Long>> enclosureMap = CTEnclosureUtil.getEnclosureMap(
-			ctClosure, modelClassNameId, modelClassPK);
-
-		for (Map.Entry<Long, Long> parentEntry :
-				CTEnclosureUtil.getEnclosureParentEntries(
-					ctClosure, enclosureMap)) {
-
-			long classNameId = parentEntry.getKey();
-			long classPK = parentEntry.getValue();
-
-			int count = _ctEntryPersistence.countByC_MCNI_MCPK(
-				ctCollectionId, classNameId, classPK);
-
-			if (count > 0) {
-				throw new CTEnclosureException(
-					StringBundler.concat(
-						"{classNameId=", classNameId, ", classPK=", classPK,
-						", ctCollectionId=", ctCollectionId, "}"));
-			}
-		}
-
-		for (Map.Entry<Long, Set<Long>> enclosureEntry :
-				enclosureMap.entrySet()) {
-
-			long classNameId = enclosureEntry.getKey();
-
-			Set<Long> classPKs = enclosureEntry.getValue();
-
-			List<CTEntry> ctEntries = new ArrayList<>(classPKs.size());
-
-			for (long classPK : classPKs) {
-				CTEntry ctEntry = _ctEntryPersistence.fetchByC_MCNI_MCPK(
-					ctCollectionId, classNameId, classPK);
-
-				if (ctEntry != null) {
-					ctEntries.add(ctEntry);
-				}
-			}
-
-			if (ctEntries.isEmpty()) {
-				continue;
-			}
-
-			_discardCTEntries(ctCollection, classNameId, ctEntries);
-		}
+		ctCollectionLocalService.discardCTEntry(
+			ctCollectionId, modelClassNameId, modelClassPK, false);
 	}
 
 	@Override
@@ -280,11 +175,55 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 	}
 
 	@Override
+	public void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			List<CTEntry> ctEntries)
+		throws PortalException {
+
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), fromCTCollectionId, ActionKeys.UPDATE);
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), toCTCollectionId, ActionKeys.UPDATE);
+
+		ctCollectionLocalService.moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
+	}
+
+	@Override
+	public void moveCTEntry(
+			long fromCTCollectionId, long toCTCollectionId,
+			long modelClassNameId, long modelClassPK)
+		throws PortalException {
+
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), fromCTCollectionId, ActionKeys.UPDATE);
+		_ctCollectionModelResourcePermission.check(
+			getPermissionChecker(), toCTCollectionId, ActionKeys.UPDATE);
+
+		ctCollectionLocalService.moveCTEntry(
+			fromCTCollectionId, toCTCollectionId, modelClassNameId,
+			modelClassPK);
+	}
+
+	@Override
 	public void publishCTCollection(long userId, long ctCollectionId)
 		throws PortalException {
 
 		_ctCollectionModelResourcePermission.check(
 			getPermissionChecker(), ctCollectionId, CTActionKeys.PUBLISH);
+
+		CTCollection ctCollection = ctCollectionLocalService.getCTCollection(
+			ctCollectionId);
+
+		if (ctCollection.getStatus() == WorkflowConstants.STATUS_APPROVED) {
+			throw new CTCollectionStatusException(
+				"Change tracking collection is already published");
+		}
+
+		if (ctCollection.getStatus() != WorkflowConstants.STATUS_DRAFT) {
+			throw new CTCollectionStatusException(
+				"Change tracking collection is not a draft");
+		}
 
 		_ctProcessLocalService.addCTProcess(userId, ctCollectionId);
 	}
@@ -318,121 +257,6 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 			userId, ctCollectionId, name, description);
 	}
 
-	private void _discardCTEntries(
-		CTCollection ctCollection, long classNameId, List<CTEntry> ctEntries) {
-
-		CTService<?> ctService = _ctServiceRegistry.getCTService(classNameId);
-
-		ctService.updateWithUnsafeFunction(
-			ctPersistence -> {
-				Set<String> primaryKeyNames = ctPersistence.getCTColumnNames(
-					CTColumnResolutionType.PK);
-
-				if (primaryKeyNames.size() != 1) {
-					throw new IllegalArgumentException(
-						StringBundler.concat(
-							"{primaryKeyNames=", primaryKeyNames,
-							", tableName=", ctPersistence.getTableName(), "}"));
-				}
-
-				Iterator<String> iterator = primaryKeyNames.iterator();
-
-				String primaryKeyName = iterator.next();
-
-				StringBundler sb = new StringBundler(
-					(2 * ctEntries.size()) + 7);
-
-				sb.append("delete from ");
-				sb.append(ctPersistence.getTableName());
-				sb.append(" where ctCollectionId = ");
-				sb.append(ctCollection.getCtCollectionId());
-				sb.append(" and ");
-				sb.append(primaryKeyName);
-				sb.append(" in (");
-
-				for (CTEntry ctEntry : ctEntries) {
-					sb.append(ctEntry.getModelClassPK());
-					sb.append(", ");
-				}
-
-				sb.setStringAt(")", sb.index() - 1);
-
-				Connection connection = CurrentConnectionUtil.getConnection(
-					ctPersistence.getDataSource());
-
-				try (PreparedStatement preparedStatement =
-						connection.prepareStatement(sb.toString())) {
-
-					preparedStatement.executeUpdate();
-				}
-				catch (Exception exception) {
-					throw new SystemException(exception);
-				}
-
-				for (String mappingTableName :
-						ctPersistence.getMappingTableNames()) {
-
-					sb.setStringAt(mappingTableName, 1);
-
-					try (PreparedStatement preparedStatement =
-							connection.prepareStatement(sb.toString())) {
-
-						preparedStatement.executeUpdate();
-					}
-					catch (Exception exception) {
-						throw new SystemException(exception);
-					}
-				}
-
-				return null;
-			});
-
-		List<Long> modelClassPKs = new ArrayList<>(ctEntries.size());
-
-		for (CTEntry ctEntry : ctEntries) {
-			modelClassPKs.add(ctEntry.getModelClassPK());
-
-			_ctEntryPersistence.remove(ctEntry);
-		}
-
-		for (CTAutoResolutionInfo ctAutoResolutionInfo :
-				_ctAutoResolutionInfoPersistence.findByC_MCNI_SMCPK(
-					ctCollection.getCtCollectionId(), classNameId,
-					ArrayUtil.toLongArray(modelClassPKs))) {
-
-			_ctAutoResolutionInfoPersistence.remove(ctAutoResolutionInfo);
-		}
-
-		Indexer<?> indexer = _indexerRegistry.getIndexer(
-			ctService.getModelClass());
-
-		if (indexer != null) {
-			TransactionCommitCallbackUtil.registerCallback(
-				() -> {
-					List<String> uids = new ArrayList<>(ctEntries.size());
-
-					for (CTEntry ctEntry : ctEntries) {
-						if (ctEntry.getChangeType() !=
-								CTConstants.CT_CHANGE_TYPE_DELETION) {
-
-							uids.add(
-								_uidFactory.getUID(
-									indexer.getClassName(),
-									ctEntry.getModelClassPK(),
-									ctEntry.getCtCollectionId()));
-						}
-					}
-
-					_indexWriterHelper.deleteDocuments(
-						indexer.getSearchEngineId(),
-						ctCollection.getCompanyId(), uids,
-						indexer.isCommitImmediately());
-
-					return null;
-				});
-		}
-	}
-
 	private Predicate _getPredicate(
 		long companyId, int[] statuses, String keywords) {
 
@@ -440,12 +264,12 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 			companyId
 		).and(
 			() -> {
-				if (!ArrayUtil.isEmpty(statuses)) {
-					return CTCollectionTable.INSTANCE.status.in(
-						ArrayUtil.toArray(statuses));
+				if (ArrayUtil.isEmpty(statuses)) {
+					return null;
 				}
 
-				return null;
+				return CTCollectionTable.INSTANCE.status.in(
+					ArrayUtil.toArray(statuses));
 			}
 		);
 
@@ -507,9 +331,6 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 	@Reference
 	private CTAutoResolutionInfoPersistence _ctAutoResolutionInfoPersistence;
 
-	@Reference
-	private CTClosureFactory _ctClosureFactory;
-
 	@Reference(
 		target = "(model.class.name=com.liferay.change.tracking.model.CTCollection)"
 	)
@@ -517,30 +338,15 @@ public class CTCollectionServiceImpl extends CTCollectionServiceBaseImpl {
 		_ctCollectionModelResourcePermission;
 
 	@Reference
-	private CTEntryPersistence _ctEntryPersistence;
-
-	@Reference
 	private CTProcessLocalService _ctProcessLocalService;
 
 	@Reference
-	private CTServiceRegistry _ctServiceRegistry;
-
-	@Reference
 	private CustomSQL _customSQL;
-
-	@Reference
-	private IndexerRegistry _indexerRegistry;
-
-	@Reference
-	private IndexWriterHelper _indexWriterHelper;
 
 	@Reference
 	private InlineSQLHelper _inlineSQLHelper;
 
 	@Reference(target = "(resource.name=" + CTConstants.RESOURCE_NAME + ")")
 	private PortletResourcePermission _portletResourcePermission;
-
-	@Reference
-	private UIDFactory _uidFactory;
 
 }

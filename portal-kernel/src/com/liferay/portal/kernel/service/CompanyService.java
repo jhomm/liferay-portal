@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
+import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
@@ -62,10 +54,11 @@ public interface CompanyService extends BaseService {
 	/**
 	 * Adds a company.
 	 *
+	 * @param companyId the primary key of the company (optionally <code>null</code> or
+	 *         <code>0</code> to generate a key automatically)
 	 * @param webId the company's web domain
 	 * @param virtualHost the company's virtual host name
 	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e., the
 	 * @param maxUsers the max number of company users (optionally
 	 <code>0</code>)
 	 * @param active whether the company is active
@@ -73,8 +66,28 @@ public interface CompanyService extends BaseService {
 	 */
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
 	public Company addCompany(
-			String webId, String virtualHost, String mx, boolean system,
+			long companyId, String webId, String virtualHost, String mx,
 			int maxUsers, boolean active)
+		throws PortalException;
+
+	/**
+	 * Adds a company.
+	 *
+	 * @param webId the company's web domain
+	 * @param virtualHost the company's virtual host name
+	 * @param mx the company's mail domain
+	 * @param maxUsers the max number of company users (optionally
+	 <code>0</code>)
+	 * @param active whether the company is active
+	 * @return the company
+	 */
+	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
+	public Company addCompany(
+			Long companyId, String webId, String virtualHost, String mx,
+			int maxUsers, boolean active, String defaultAdminPassword,
+			String defaultAdminScreenName, String defaultAdminEmailAddress,
+			String defaultAdminFirstName, String defaultAdminMiddleName,
+			String defaultAdminLastName)
 		throws PortalException;
 
 	@JSONWebService(mode = JSONWebServiceMode.IGNORE)
@@ -86,6 +99,10 @@ public interface CompanyService extends BaseService {
 	 * @param companyId the primary key of the company
 	 */
 	public void deleteLogo(long companyId) throws PortalException;
+
+	public void forEachCompany(
+			UnsafeConsumer<Company, Exception> unsafeConsumer)
+		throws Exception;
 
 	/**
 	 * Returns all the companies.
@@ -103,24 +120,6 @@ public interface CompanyService extends BaseService {
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Company getCompanyById(long companyId) throws PortalException;
-
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return Returns the company with the logo
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByLogoId(long logoId) throws PortalException;
-
-	/**
-	 * Returns the company with the mail domian.
-	 *
-	 * @param mx the company's mail domain
-	 * @return Returns the company with the mail domain
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByMx(String mx) throws PortalException;
 
 	/**
 	 * Returns the company with the virtual host name.

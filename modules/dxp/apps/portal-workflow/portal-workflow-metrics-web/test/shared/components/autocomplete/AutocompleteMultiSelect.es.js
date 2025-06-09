@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {cleanup, fireEvent, render} from '@testing-library/react';
@@ -22,13 +16,14 @@ const items = [
 ];
 
 const ContainerMock = ({children}) => {
-	const [selectedItems, onChange] = useState([]);
+	const [selectedItems, setSelectedItems] = useState([]);
 
-	return cloneElement(children, {onChange, selectedItems});
+	return cloneElement(children, {onChange: setSelectedItems, selectedItems});
 };
 
 describe('The AutocompleteMultiSelect component should', () => {
-	let container, getByText;
+	let container;
+	let getByText;
 
 	afterEach(cleanup);
 
@@ -64,9 +59,8 @@ describe('The AutocompleteMultiSelect component should', () => {
 
 		fireEvent.mouseDown(dropDownListItems[0]);
 
-		const multiSelectItems = container.querySelectorAll(
-			'.label-dismissible'
-		);
+		const multiSelectItems =
+			container.querySelectorAll('.label-dismissible');
 
 		expect(multiSelectItems[0]).toHaveTextContent('1test test1');
 		expect(multiSelectItems[1]).toHaveTextContent('2test test2');
@@ -75,9 +69,8 @@ describe('The AutocompleteMultiSelect component should', () => {
 
 		expect(dropDownEmpty).toBeTruthy();
 
-		const multiSelectItemsRemove = container.querySelectorAll(
-			'button.close'
-		);
+		const multiSelectItemsRemove =
+			container.querySelectorAll('button.close');
 
 		fireEvent.click(multiSelectItemsRemove[1]);
 
@@ -124,9 +117,8 @@ describe('The AutocompleteMultiSelect component should', () => {
 
 		fireEvent.keyDown(multiSelectInput, {keyCode: 13});
 
-		const multiSelectItems = container.querySelectorAll(
-			'.label-dismissible'
-		);
+		const multiSelectItems =
+			container.querySelectorAll('.label-dismissible');
 
 		expect(multiSelectItems[0]).toHaveTextContent('2test test2');
 	});

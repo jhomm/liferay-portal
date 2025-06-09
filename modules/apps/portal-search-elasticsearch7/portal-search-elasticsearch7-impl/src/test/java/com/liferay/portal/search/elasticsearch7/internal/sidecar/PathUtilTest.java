@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.sidecar;
@@ -18,7 +9,6 @@ import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.io.IOException;
 
-import java.net.URISyntaxException;
 import java.net.URL;
 
 import java.nio.file.Files;
@@ -54,30 +44,30 @@ public class PathUtilTest {
 
 	@Test
 	public void testCopyDirectory() throws Exception {
-		Path fromPath = getResourcePath("root");
+		Path fromPath = _getResourcePath("root");
 
-		Path excludedPaths = getResourcePath("root/excluded");
+		Path excludedPaths = _getResourcePath("root/excluded");
 
 		PathUtil.copyDirectory(fromPath, _toPath, excludedPaths);
 
-		assertExists(_toPath, "directory1/file1.txt");
-		assertExists(_toPath, "directory2/file2.txt");
-		assertDoesNotExist(_toPath, "excluded/excluded.txt");
+		_assertExists(_toPath, "directory1/file1.txt");
+		_assertExists(_toPath, "directory2/file2.txt");
+		_assertDoesNotExist(_toPath, "excluded/excluded.txt");
 	}
 
-	protected void assertDoesNotExist(Path path, String name) {
+	private void _assertDoesNotExist(Path path, String name) {
 		Path fullPath = path.resolve(name);
 
 		Assert.assertFalse(Files.exists(fullPath));
 	}
 
-	protected void assertExists(Path path, String name) {
+	private void _assertExists(Path path, String name) {
 		Path fullPath = path.resolve(name);
 
 		Assert.assertTrue(Files.exists(fullPath));
 	}
 
-	protected Path getResourcePath(String name) throws URISyntaxException {
+	private Path _getResourcePath(String name) throws Exception {
 		Class<? extends PathUtilTest> clazz = getClass();
 
 		URL url = clazz.getResource(name);

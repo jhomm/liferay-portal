@@ -7,15 +7,13 @@
 	padding-right: $topbar-height;
 	position: fixed;
 	right: 0;
-	top: $liferay-topbar-height;
-	transition: background-color 0.2s $easeOutQuart, margin 500ms ease;
+	top: var(--control-menu-container-height);
+	transition:
+		background-color 0.2s $easeOutQuart,
+		margin 500ms ease;
 	z-index: 988;
 
-	@media screen and (max-width: $bp-xsmall) {
-		top: $liferay-topbar-height-small;
-	}
-
-	body.open & {
+	body.product-menu-open & {
 		margin-left: $liferay-sidebars-width;
 	}
 
@@ -80,7 +78,7 @@
 			background-color: $color-theme;
 			border-radius: 50%;
 			color: white;
-			content: attr(data-badge-count);
+			content: unquote("'\\FEFF' attr(data-badge-count)");
 			display: flex;
 			font-size: 10px;
 			font-weight: bold;

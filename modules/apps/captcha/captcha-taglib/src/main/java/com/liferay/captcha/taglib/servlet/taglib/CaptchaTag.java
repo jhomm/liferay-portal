@@ -1,43 +1,77 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.captcha.taglib.servlet.taglib;
 
-import com.liferay.captcha.taglib.internal.servlet.ServletContextUtil;
+import com.liferay.captcha.util.CaptchaUtil;
+import com.liferay.portal.kernel.captcha.Captcha;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.PageContext;
+
+import java.io.IOException;
 
 /**
  * @author Brian Wing Shun Chan
  */
 public class CaptchaTag extends IncludeTag {
 
+	@Override
+	public int doEndTag() throws JspException {
+		callSetAttributes();
+
+		Captcha captcha = CaptchaUtil.getCaptcha();
+
+		try {
+			captcha.render(
+				getRequest(),
+				PipingServletResponseFactory.createPipingServletResponse(
+					pageContext));
+
+			return EVAL_PAGE;
+		}
+		catch (IOException ioException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(ioException);
+			}
+
+			throw new JspException(ioException);
+		}
+		finally {
+			doClearTag();
+		}
+	}
+
+	public String getErrorMessage() {
+		return _errorMessage;
+	}
+
 	public String getUrl() {
 		return _url;
+	}
+
+	public void setErrorMessage(String errorMessage) {
+		_errorMessage = errorMessage;
 	}
 
 	@Override
 	public void setPageContext(PageContext pageContext) {
 		super.setPageContext(pageContext);
 
-		setServletContext(ServletContextUtil.getServletContext());
+		setServletContext(_servletContextSnapshot.get());
 	}
 
 	public void setUrl(String url) {
@@ -48,16 +82,14 @@ public class CaptchaTag extends IncludeTag {
 	protected void cleanUp() {
 		super.cleanUp();
 
+		_errorMessage = null;
 		_url = null;
 	}
 
 	@Override
-	protected String getPage() {
-		return _PAGE;
-	}
-
-	@Override
 	protected void setAttributes(HttpServletRequest httpServletRequest) {
+		httpServletRequest.setAttribute(
+			"liferay-captcha:captcha:errorMessage", _errorMessage);
 		httpServletRequest.setAttribute(
 			"liferay-captcha:captcha:url", _getURL(httpServletRequest));
 	}
@@ -82,8 +114,14 @@ public class CaptchaTag extends IncludeTag {
 		return url;
 	}
 
-	private static final String _PAGE = "/captcha/page.jsp";
+	private static final Log _log = LogFactoryUtil.getLog(CaptchaTag.class);
 
+	private static final Snapshot<ServletContext> _servletContextSnapshot =
+		new Snapshot<>(
+			CaptchaTag.class, ServletContext.class,
+			"(osgi.web.symbolicname=com.liferay.captcha.taglib)");
+
+	private String _errorMessage;
 	private String _url;
 
 }

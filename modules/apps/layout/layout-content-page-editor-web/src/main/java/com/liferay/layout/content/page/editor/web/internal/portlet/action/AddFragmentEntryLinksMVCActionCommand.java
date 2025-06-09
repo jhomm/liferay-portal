@@ -1,52 +1,49 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.portlet.action;
 
-import com.liferay.fragment.contributor.FragmentCollectionContributorTracker;
+import com.liferay.fragment.contributor.FragmentCollectionContributorRegistry;
 import com.liferay.fragment.exception.NoSuchEntryException;
+import com.liferay.fragment.listener.FragmentEntryLinkListener;
+import com.liferay.fragment.listener.FragmentEntryLinkListenerRegistry;
 import com.liferay.fragment.model.FragmentComposition;
 import com.liferay.fragment.model.FragmentEntryLink;
-import com.liferay.fragment.renderer.FragmentRendererController;
-import com.liferay.fragment.renderer.FragmentRendererTracker;
 import com.liferay.fragment.service.FragmentCompositionService;
-import com.liferay.fragment.util.configuration.FragmentEntryConfigurationParser;
-import com.liferay.item.selector.ItemSelector;
 import com.liferay.layout.content.page.editor.constants.ContentPageEditorPortletKeys;
-import com.liferay.layout.content.page.editor.listener.ContentPageEditorListener;
-import com.liferay.layout.content.page.editor.listener.ContentPageEditorListenerTracker;
-import com.liferay.layout.content.page.editor.web.internal.util.FragmentEntryLinkUtil;
+import com.liferay.layout.content.page.editor.web.internal.exception.FormContainerParentItemRequiredException;
+import com.liferay.layout.content.page.editor.web.internal.exception.NoninstanceablePortletException;
+import com.liferay.layout.content.page.editor.web.internal.manager.FormItemManager;
+import com.liferay.layout.content.page.editor.web.internal.manager.FragmentEntryLinkManager;
 import com.liferay.layout.content.page.editor.web.internal.util.layout.structure.LayoutStructureUtil;
-import com.liferay.layout.page.template.importer.LayoutPageTemplatesImporter;
+import com.liferay.layout.importer.LayoutsImporter;
+import com.liferay.layout.util.CheckNoninstanceablePortletThreadLocal;
 import com.liferay.layout.util.structure.LayoutStructure;
 import com.liferay.layout.util.structure.LayoutStructureItem;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.portal.kernel.exception.LockedLayoutException;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.Portlet;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.segments.constants.SegmentsExperienceConstants;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,9 +52,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET,
 		"mvc.command.name=/layout_content_page_editor/add_fragment_entry_links"
 	},
 	service = MVCActionCommand.class
@@ -82,9 +78,50 @@ public class AddFragmentEntryLinksMVCActionCommand
 	protected JSONObject processException(
 		ActionRequest actionRequest, Exception exception) {
 
+		if (exception instanceof LockedLayoutException) {
+			return processLockedLayoutException(actionRequest);
+		}
+
 		String errorMessage = "an-unexpected-error-occurred";
 
-		if (exception instanceof NoSuchEntryException) {
+		if (exception instanceof FormContainerParentItemRequiredException) {
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
+
+			errorMessage = _language.get(
+				themeDisplay.getLocale(),
+				"this-form-component-can-only-be-placed-inside-a-mapped-form-" +
+					"container");
+		}
+		else if (exception.getCause() instanceof
+					NoninstanceablePortletException) {
+
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
+
+			NoninstanceablePortletException noninstanceablePortletException =
+				(NoninstanceablePortletException)exception.getCause();
+
+			Portlet portlet = _portletLocalService.getPortletById(
+				themeDisplay.getCompanyId(),
+				noninstanceablePortletException.getPortletId());
+
+			HttpServletRequest httpServletRequest =
+				_portal.getHttpServletRequest(actionRequest);
+
+			HttpSession httpSession = httpServletRequest.getSession();
+
+			errorMessage = _language.format(
+				themeDisplay.getRequest(),
+				"the-fragment-could-not-be-added-because-it-contains-a-" +
+					"widget-x-that-can-only-appear-once-on-the-page",
+				new String[] {
+					_portal.getPortletTitle(
+						portlet, httpSession.getServletContext(),
+						themeDisplay.getLocale())
+				});
+		}
+		else if (exception instanceof NoSuchEntryException) {
 			errorMessage =
 				"the-fragment-can-no-longer-be-added-because-it-has-been-" +
 					"deleted";
@@ -92,7 +129,7 @@ public class AddFragmentEntryLinksMVCActionCommand
 
 		return JSONUtil.put(
 			"error",
-			LanguageUtil.get(
+			_language.get(
 				_portal.getHttpServletRequest(actionRequest), errorMessage));
 	}
 
@@ -100,121 +137,126 @@ public class AddFragmentEntryLinksMVCActionCommand
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
 
-		String fragmentEntryKey = ParamUtil.getString(
-			actionRequest, "fragmentEntryKey");
+		try (SafeCloseable safeCloseable =
+				CheckNoninstanceablePortletThreadLocal.
+					setCheckNoninstanceablePortletWithSafeCloseable(true)) {
 
-		FragmentComposition fragmentComposition =
-			_fragmentCollectionContributorTracker.getFragmentComposition(
-				fragmentEntryKey);
+			String fragmentEntryKey = ParamUtil.getString(
+				actionRequest, "fragmentEntryKey");
 
-		if (fragmentComposition == null) {
-			long groupId = ParamUtil.getLong(actionRequest, "groupId");
+			FragmentComposition fragmentComposition =
+				_fragmentCollectionContributorRegistry.getFragmentComposition(
+					fragmentEntryKey);
 
-			fragmentComposition =
-				_fragmentCompositionService.fetchFragmentComposition(
-					groupId, fragmentEntryKey);
-		}
+			if (fragmentComposition == null) {
+				long groupId = ParamUtil.getLong(actionRequest, "groupId");
 
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
+				fragmentComposition =
+					_fragmentCompositionService.fetchFragmentComposition(
+						groupId, fragmentEntryKey);
+			}
 
-		long segmentsExperienceId = ParamUtil.getLong(
-			actionRequest, "segmentsExperienceId",
-			SegmentsExperienceConstants.ID_DEFAULT);
+			ThemeDisplay themeDisplay =
+				(ThemeDisplay)actionRequest.getAttribute(WebKeys.THEME_DISPLAY);
 
-		LayoutStructure layoutStructure =
-			LayoutStructureUtil.getLayoutStructure(
+			long segmentsExperienceId = ParamUtil.getLong(
+				actionRequest, "segmentsExperienceId");
+
+			LayoutStructure layoutStructure =
+				LayoutStructureUtil.getLayoutStructure(
+					themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
+					segmentsExperienceId);
+
+			String parentItemId = ParamUtil.getString(
+				actionRequest, "parentItemId");
+
+			int position = ParamUtil.getInteger(actionRequest, "position");
+
+			List<FragmentEntryLink> fragmentEntryLinks =
+				_layoutsImporter.importPageElement(
+					themeDisplay.getLayout(), layoutStructure, parentItemId,
+					fragmentComposition.getData(), position, false,
+					segmentsExperienceId);
+
+			_formItemManager.checkFormContainerParentItemRequired(
+				fragmentEntryLinks, layoutStructure, parentItemId);
+
+			for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
+				for (FragmentEntryLinkListener fragmentEntryLinkListener :
+						_fragmentEntryLinkListenerRegistry.
+							getFragmentEntryLinkListeners()) {
+
+					fragmentEntryLinkListener.onAddFragmentEntryLink(
+						fragmentEntryLink);
+				}
+			}
+
+			JSONObject fragmentEntryLinksJSONObject =
+				_jsonFactory.createJSONObject();
+
+			layoutStructure = LayoutStructureUtil.getLayoutStructure(
 				themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
 				segmentsExperienceId);
 
-		String parentItemId = ParamUtil.getString(
-			actionRequest, "parentItemId");
+			LayoutStructureItem layoutStructureItem =
+				layoutStructure.getLayoutStructureItem(parentItemId);
 
-		LayoutStructureItem layoutStructureItem =
-			layoutStructure.getLayoutStructureItem(parentItemId);
-
-		JSONObject fragmentEntryLinksJSONObject =
-			JSONFactoryUtil.createJSONObject();
-
-		int position = ParamUtil.getInteger(actionRequest, "position");
-
-		List<FragmentEntryLink> fragmentEntryLinks =
-			_layoutPageTemplatesImporter.importPageElement(
-				themeDisplay.getLayout(), layoutStructure, parentItemId,
-				fragmentComposition.getData(), position, segmentsExperienceId);
-
-		for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
-			JSONObject editableValuesJSONObject =
-				JSONFactoryUtil.createJSONObject(
-					fragmentEntryLink.getEditableValues());
-
-			fragmentEntryLinksJSONObject.put(
-				String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
-				FragmentEntryLinkUtil.getFragmentEntryLinkJSONObject(
-					actionRequest, actionResponse,
-					_fragmentEntryConfigurationParser, fragmentEntryLink,
-					_fragmentCollectionContributorTracker,
-					_fragmentRendererController, _fragmentRendererTracker,
-					_itemSelector,
-					editableValuesJSONObject.getString("portletId")));
-
-			List<ContentPageEditorListener> contentPageEditorListeners =
-				_contentPageEditorListenerTracker.
-					getContentPageEditorListeners();
-
-			for (ContentPageEditorListener contentPageEditorListener :
-					contentPageEditorListeners) {
-
-				contentPageEditorListener.onAddFragmentEntryLink(
-					fragmentEntryLink);
+			for (FragmentEntryLink fragmentEntryLink : fragmentEntryLinks) {
+				fragmentEntryLinksJSONObject.put(
+					String.valueOf(fragmentEntryLink.getFragmentEntryLinkId()),
+					_fragmentEntryLinkManager.getFragmentEntryLinkJSONObject(
+						fragmentEntryLink,
+						_portal.getHttpServletRequest(actionRequest),
+						_portal.getHttpServletResponse(actionResponse),
+						layoutStructure));
 			}
+
+			return JSONUtil.put(
+				"addedItemId",
+				() -> {
+					List<String> childrenItemIds =
+						layoutStructureItem.getChildrenItemIds();
+
+					return childrenItemIds.get(position);
+				}
+			).put(
+				"fragmentEntryLinks", fragmentEntryLinksJSONObject
+			).put(
+				"layoutData", layoutStructure.toJSONObject()
+			);
 		}
-
-		layoutStructure = LayoutStructureUtil.getLayoutStructure(
-			themeDisplay.getScopeGroupId(), themeDisplay.getPlid(),
-			segmentsExperienceId);
-
-		return JSONUtil.put(
-			"addedItemId",
-			() -> {
-				List<String> childrenItemIds =
-					layoutStructureItem.getChildrenItemIds();
-
-				return childrenItemIds.get(position);
-			}
-		).put(
-			"fragmentEntryLinks", fragmentEntryLinksJSONObject
-		).put(
-			"layoutData", layoutStructure.toJSONObject()
-		);
 	}
 
 	@Reference
-	private ContentPageEditorListenerTracker _contentPageEditorListenerTracker;
+	private FormItemManager _formItemManager;
 
 	@Reference
-	private FragmentCollectionContributorTracker
-		_fragmentCollectionContributorTracker;
+	private FragmentCollectionContributorRegistry
+		_fragmentCollectionContributorRegistry;
 
 	@Reference
 	private FragmentCompositionService _fragmentCompositionService;
 
 	@Reference
-	private FragmentEntryConfigurationParser _fragmentEntryConfigurationParser;
+	private FragmentEntryLinkListenerRegistry
+		_fragmentEntryLinkListenerRegistry;
 
 	@Reference
-	private FragmentRendererController _fragmentRendererController;
+	private FragmentEntryLinkManager _fragmentEntryLinkManager;
 
 	@Reference
-	private FragmentRendererTracker _fragmentRendererTracker;
+	private JSONFactory _jsonFactory;
 
 	@Reference
-	private ItemSelector _itemSelector;
+	private Language _language;
 
 	@Reference
-	private LayoutPageTemplatesImporter _layoutPageTemplatesImporter;
+	private LayoutsImporter _layoutsImporter;
 
 	@Reference
 	private Portal _portal;
+
+	@Reference
+	private PortletLocalService _portletLocalService;
 
 }

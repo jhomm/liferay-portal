@@ -1,82 +1,83 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import classnames from 'classnames';
 import PropTypes from 'prop-types';
-import React from 'react';
+import React, {forwardRef, useRef} from 'react';
 
 import InputQuantitySelector from './InputQuantitySelector';
 import ListQuantitySelector from './ListQuantitySelector';
 
-function QuantitySelector({
-	allowedQuantities,
-	componentId,
-	disabled,
-	large,
-	name,
-	onUpdate,
-	quantity,
-	...quantitySettings
-}) {
-	const commonProps = {
-		'className': classnames({
-			'form-control-lg': large,
-			'quantity-selector': true,
-		}),
-		'data-component-id': componentId,
-		disabled,
-		name,
-		onUpdate,
-		quantity,
-	};
+import './quantity_selector.scss';
 
-	return (
-		<>
-			{allowedQuantities?.length > 0 ? (
-				<ListQuantitySelector
-					{...commonProps}
-					allowedQuantities={allowedQuantities}
-				/>
-			) : (
-				<InputQuantitySelector {...commonProps} {...quantitySettings} />
-			)}
-		</>
-	);
-}
+const QuantitySelector = forwardRef(
+	(
+		{
+			alignment,
+			allowEmptyValue,
+			allowedQuantities,
+			disabled,
+			max,
+			min,
+			name,
+			namespace,
+			onUpdate,
+			quantity,
+			size,
+			step,
+			unitOfMeasure,
+			...props
+		},
+		providedRef
+	) => {
+		const inputRef = useRef();
+
+		const Selector =
+			allowedQuantities?.length > 0
+				? ListQuantitySelector
+				: InputQuantitySelector;
+
+		return (
+			<Selector
+				{...props}
+				alignment={alignment}
+				allowEmptyValue={allowEmptyValue}
+				allowedQuantities={allowedQuantities}
+				className={classnames({
+					[`form-control-${size}`]: size,
+					'quantity-selector': true,
+				})}
+				disabled={disabled}
+				max={max}
+				min={min}
+				name={name}
+				namespace={namespace}
+				onUpdate={onUpdate}
+				quantity={quantity}
+				ref={providedRef || inputRef}
+				step={step}
+				unitOfMeasure={unitOfMeasure}
+			/>
+		);
+	}
+);
 
 QuantitySelector.defaultProps = {
-	allowedQuantities: [],
+	allowEmptyValue: false,
 	disabled: false,
-	large: false,
-	maxQuantity: 99,
-	minQuantity: 1,
-	multipleQuantity: 1,
-	onUpdate: () => {},
-	quantity: 1,
 };
 
 QuantitySelector.propTypes = {
-	allowedQuantities: PropTypes.arrayOf(PropTypes.number),
-	componentId: PropTypes.string,
+	alignment: PropTypes.oneOf(['top', 'bottom']),
+	allowEmptyValue: PropTypes.bool,
 	disabled: PropTypes.bool,
-	large: PropTypes.bool,
-	maxQuantity: PropTypes.number,
-	minQuantity: PropTypes.number,
-	multipleQuantity: PropTypes.number,
 	name: PropTypes.string,
-	onUpdate: PropTypes.func,
+	namespace: PropTypes.string,
+	onUpdate: PropTypes.func.isRequired,
 	quantity: PropTypes.number,
+	size: PropTypes.oneOf(['lg', 'md', 'sm']),
 };
 
 export default QuantitySelector;

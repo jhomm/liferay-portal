@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -63,6 +55,7 @@ public class DDMTemplateLocalServiceUtil {
 	/**
 	 * Adds a template.
 	 *
+	 * @param externalReferenceCode the template's external reference code
 	 * @param userId the primary key of the template's creator/owner
 	 * @param groupId the primary key of the group
 	 * @param classNameId the primary key of the class name for the template's
@@ -86,21 +79,24 @@ public class DDMTemplateLocalServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static DDMTemplate addTemplate(
-			long userId, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, Map<java.util.Locale, String> nameMap,
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, String type,
 			String mode, String language, String script,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addTemplate(
-			userId, groupId, classNameId, classPK, resourceClassNameId, nameMap,
-			descriptionMap, type, mode, language, script, serviceContext);
+			externalReferenceCode, userId, groupId, classNameId, classPK,
+			resourceClassNameId, nameMap, descriptionMap, type, mode, language,
+			script, serviceContext);
 	}
 
 	/**
 	 * Adds a template with additional parameters.
 	 *
+	 * @param externalReferenceCode the template's external reference code
 	 * @param userId the primary key of the template's creator/owner
 	 * @param groupId the primary key of the group
 	 * @param classNameId the primary key of the class name for the template's
@@ -132,9 +128,9 @@ public class DDMTemplateLocalServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static DDMTemplate addTemplate(
-			long userId, long groupId, long classNameId, long classPK,
-			long resourceClassNameId, String templateKey,
-			Map<java.util.Locale, String> nameMap,
+			String externalReferenceCode, long userId, long groupId,
+			long classNameId, long classPK, long resourceClassNameId,
+			String templateKey, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap, String type,
 			String mode, String language, String script, boolean cacheable,
 			boolean smallImage, String smallImageURL,
@@ -143,10 +139,10 @@ public class DDMTemplateLocalServiceUtil {
 		throws PortalException {
 
 		return getService().addTemplate(
-			userId, groupId, classNameId, classPK, resourceClassNameId,
-			templateKey, nameMap, descriptionMap, type, mode, language, script,
-			cacheable, smallImage, smallImageURL, smallImageFile,
-			serviceContext);
+			externalReferenceCode, userId, groupId, classNameId, classPK,
+			resourceClassNameId, templateKey, nameMap, descriptionMap, type,
+			mode, language, script, cacheable, smallImage, smallImageURL,
+			smallImageFile, serviceContext);
 	}
 
 	/**
@@ -188,7 +184,7 @@ public class DDMTemplateLocalServiceUtil {
 	 * and description.
 	 *
 	 * @param userId the primary key of the template's creator/owner
-	 * @param templateId the primary key of the template to be copied
+	 * @param sourceTemplateId the primary key of the template to be copied
 	 * @param nameMap the new template's locales and localized names
 	 * @param descriptionMap the new template's locales and localized
 	 descriptions
@@ -199,21 +195,23 @@ public class DDMTemplateLocalServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static DDMTemplate copyTemplate(
-			long userId, long templateId, Map<java.util.Locale, String> nameMap,
+			long userId, long sourceTemplateId,
+			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyTemplate(
-			userId, templateId, nameMap, descriptionMap, serviceContext);
+			userId, sourceTemplateId, nameMap, descriptionMap, serviceContext);
 	}
 
 	public static DDMTemplate copyTemplate(
-			long userId, long templateId,
+			long userId, long sourceTemplateId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
-		return getService().copyTemplate(userId, templateId, serviceContext);
+		return getService().copyTemplate(
+			userId, sourceTemplateId, serviceContext);
 	}
 
 	/**
@@ -224,8 +222,8 @@ public class DDMTemplateLocalServiceUtil {
 	 * @param userId the primary key of the template's creator/owner
 	 * @param classNameId the primary key of the class name for the template's
 	 related model
-	 * @param oldClassPK the primary key of the old template's related entity
-	 * @param newClassPK the primary key of the new template's related entity
+	 * @param sourceClassPK the primary key of the old template's related entity
+	 * @param targetClassPK the primary key of the new template's related entity
 	 * @param type the template's type. For more information, see
 	 DDMTemplateConstants in the dynamic-data-mapping-api module.
 	 * @param serviceContext the service context to be applied. Can set the
@@ -235,13 +233,14 @@ public class DDMTemplateLocalServiceUtil {
 	 * @throws PortalException if a portal exception occurred
 	 */
 	public static List<DDMTemplate> copyTemplates(
-			long userId, long classNameId, long oldClassPK, long newClassPK,
-			String type,
+			long userId, long classNameId, long sourceClassPK,
+			long targetClassPK, String type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().copyTemplates(
-			userId, classNameId, oldClassPK, newClassPK, type, serviceContext);
+			userId, classNameId, sourceClassPK, targetClassPK, type,
+			serviceContext);
 	}
 
 	/**
@@ -325,6 +324,13 @@ public class DDMTemplateLocalServiceUtil {
 	 */
 	public static void deleteTemplate(long templateId) throws PortalException {
 		getService().deleteTemplate(templateId);
+	}
+
+	public static DDMTemplate deleteTemplate(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().deleteTemplate(externalReferenceCode, groupId);
 	}
 
 	/**
@@ -432,6 +438,21 @@ public class DDMTemplateLocalServiceUtil {
 		return getService().fetchDDMTemplate(templateId);
 	}
 
+	public static DDMTemplate fetchDDMTemplateByExternalReferenceCode(
+		String externalReferenceCode, long groupId) {
+
+		return getService().fetchDDMTemplateByExternalReferenceCode(
+			externalReferenceCode, groupId);
+	}
+
+	public static DDMTemplate fetchDDMTemplateByExternalReferenceCode(
+		String externalReferenceCode, long groupId,
+		boolean includeAncestorTemplates) {
+
+		return getService().fetchDDMTemplateByExternalReferenceCode(
+			externalReferenceCode, groupId, includeAncestorTemplates);
+	}
+
 	/**
 	 * Returns the ddm template matching the UUID and group.
 	 *
@@ -519,6 +540,14 @@ public class DDMTemplateLocalServiceUtil {
 		throws PortalException {
 
 		return getService().getDDMTemplate(templateId);
+	}
+
+	public static DDMTemplate getDDMTemplateByExternalReferenceCode(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		return getService().getDDMTemplateByExternalReferenceCode(
+			externalReferenceCode, groupId);
 	}
 
 	/**
@@ -1412,9 +1441,11 @@ public class DDMTemplateLocalServiceUtil {
 	}
 
 	public static DDMTemplateLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile DDMTemplateLocalService _service;
+	private static final Snapshot<DDMTemplateLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			DDMTemplateLocalServiceUtil.class, DDMTemplateLocalService.class);
 
 }

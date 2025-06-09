@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter;
 
+import com.liferay.account.constants.AccountConstants;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.model.AssetVocabulary;
@@ -26,25 +18,24 @@ import com.liferay.commerce.product.model.CProduct;
 import com.liferay.commerce.product.model.CommerceCatalog;
 import com.liferay.commerce.product.service.CPDefinitionService;
 import com.liferay.commerce.product.type.CPType;
-import com.liferay.commerce.product.type.CPTypeServicesTracker;
+import com.liferay.commerce.product.type.CPTypeRegistry;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Category;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Product;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Status;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.util.CustomFieldsUtil;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.language.LanguageResources;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterContext;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.ResourceBundle;
-import java.util.stream.Stream;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,9 +44,12 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
-	property = "dto.class.name=com.liferay.commerce.product.model.CPDefinition",
-	service = {DTOConverter.class, ProductDTOConverter.class}
+	property = {
+		"application.name=Liferay.Headless.Commerce.Admin.Catalog",
+		"dto.class.name=com.liferay.commerce.product.model.CPDefinition",
+		"version=v1.0"
+	},
+	service = DTOConverter.class
 )
 public class ProductDTOConverter
 	implements DTOConverter<CPDefinition, Product> {
@@ -74,75 +68,113 @@ public class ProductDTOConverter
 
 		CProduct cProduct = cpDefinition.getCProduct();
 
-		ExpandoBridge expandoBridge = cpDefinition.getExpandoBridge();
-
 		Locale locale = dtoConverterContext.getLocale();
-
-		ResourceBundle resourceBundle = LanguageResources.getResourceBundle(
-			locale);
-
-		String productStatusLabel = WorkflowConstants.getStatusLabel(
-			cpDefinition.getStatus());
-
-		String productStatusLabelI18n = LanguageUtil.get(
-			resourceBundle,
-			WorkflowConstants.getStatusLabel(cpDefinition.getStatus()));
 
 		CPType cpType = _getCPType(cpDefinition.getProductTypeName());
 
 		return new Product() {
 			{
-				actions = dtoConverterContext.getActions();
-				active = !cpDefinition.isInactive();
-				catalogId = _getCommerceCatalogId(cpDefinition);
-				categories = TransformUtil.transformToArray(
-					_assetCategoryLocalService.getCategories(
-						cpDefinition.getModelClassName(),
-						cpDefinition.getCPDefinitionId()),
-					assetCategory -> _toCategory(assetCategory),
-					Category.class);
-				createDate = cpDefinition.getCreateDate();
-				customFields = CustomFieldsUtil.toCustomFields(
-					dtoConverterContext.isAcceptAllLanguages(),
-					CPDefinition.class.getName(),
-					cpDefinition.getCPDefinitionId(),
-					cpDefinition.getCompanyId(),
-					dtoConverterContext.getLocale());
-				description = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getDescriptionMap());
-				displayDate = cpDefinition.getDisplayDate();
-				expando = expandoBridge.getAttributes();
-				expirationDate = cpDefinition.getExpirationDate();
-				externalReferenceCode = cProduct.getExternalReferenceCode();
-				id = cpDefinition.getCPDefinitionId();
-				metaDescription = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getMetaDescriptionMap());
-				metaKeyword = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getMetaKeywordsMap());
-				metaTitle = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getMetaTitleMap());
-				modifiedDate = cpDefinition.getModifiedDate();
-				name = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getNameMap());
-				productAccountGroupFilter =
-					cpDefinition.isAccountGroupFilterEnabled();
-				productChannelFilter = cpDefinition.isChannelFilterEnabled();
-				productId = cProduct.getCProductId();
-				productStatus = cpDefinition.getStatus();
-				productType = cpType.getName();
-				productTypeI18n = cpType.getLabel(locale);
-				shortDescription = LanguageUtils.getLanguageIdMap(
-					cpDefinition.getShortDescriptionMap());
-				skuFormatted = _getSku(
-					cpDefinition, dtoConverterContext.getLocale());
-				tags = _getTags(cpDefinition);
-				thumbnail = cpDefinition.getDefaultImageThumbnailSrc();
-				urls = LanguageUtils.getLanguageIdMap(
-					_cpDefinitionService.getUrlTitleMap(
-						cpDefinition.getCPDefinitionId()));
-				workflowStatusInfo = _toStatus(
-					cpDefinition.getStatus(), productStatusLabel,
-					productStatusLabelI18n);
+				setActions(dtoConverterContext::getActions);
+				setActive(() -> !cpDefinition.isInactive());
+				setCatalogExternalReferenceCode(
+					() -> {
+						CommerceCatalog commerceCatalog =
+							cpDefinition.getCommerceCatalog();
+
+						if (commerceCatalog == null) {
+							return null;
+						}
+
+						return commerceCatalog.getExternalReferenceCode();
+					});
+				setCatalogId(() -> _getCommerceCatalogId(cpDefinition));
+				setCategories(
+					() -> TransformUtil.transformToArray(
+						_assetCategoryLocalService.getCategories(
+							cpDefinition.getModelClassName(),
+							cpDefinition.getCPDefinitionId()),
+						assetCategory -> _toCategory(assetCategory),
+						Category.class));
+				setCreateDate(cpDefinition::getCreateDate);
+				setCustomFields(
+					() -> CustomFieldsUtil.toCustomFields(
+						dtoConverterContext.isAcceptAllLanguages(),
+						CPDefinition.class.getName(),
+						cpDefinition.getCPDefinitionId(),
+						cpDefinition.getCompanyId(),
+						dtoConverterContext.getLocale()));
+				setDescription(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getDescriptionMap()));
+				setDisplayDate(cpDefinition::getDisplayDate);
+				setExpando(
+					() -> {
+						ExpandoBridge expandoBridge =
+							cpDefinition.getExpandoBridge();
+
+						return expandoBridge.getAttributes();
+					});
+				setExpirationDate(cpDefinition::getExpirationDate);
+				setExternalReferenceCode(cProduct::getExternalReferenceCode);
+				setId(cpDefinition::getCPDefinitionId);
+				setMetaDescription(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getMetaDescriptionMap()));
+				setMetaKeyword(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getMetaKeywordsMap()));
+				setMetaTitle(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getMetaTitleMap()));
+				setModifiedDate(cpDefinition::getModifiedDate);
+				setName(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getNameMap()));
+				setProductAccountGroupFilter(
+					cpDefinition::isAccountGroupFilterEnabled);
+				setProductChannelFilter(cpDefinition::isChannelFilterEnabled);
+				setProductId(cProduct::getCProductId);
+				setProductStatus(cpDefinition::getStatus);
+				setProductType(cpType::getName);
+				setProductTypeI18n(() -> cpType.getLabel(locale));
+				setShortDescription(
+					() -> LanguageUtils.getLanguageIdMap(
+						cpDefinition.getShortDescriptionMap()));
+				setSkuFormatted(
+					() -> _getSku(
+						cpDefinition, dtoConverterContext.getLocale()));
+				setTags(
+					() -> TransformUtil.transformToArray(
+						_assetTagService.getTags(
+							cpDefinition.getModelClassName(),
+							cpDefinition.getCPDefinitionId()),
+						AssetTag::getName, String.class));
+				setThumbnail(
+					() -> cpDefinition.getDefaultImageThumbnailSrc(
+						AccountConstants.ACCOUNT_ENTRY_ID_ADMIN));
+				setUrls(
+					() -> LanguageUtils.getLanguageIdMap(
+						_cpDefinitionService.getUrlTitleMap(
+							cpDefinition.getCPDefinitionId())));
+				setVersion(cpDefinition::getVersion);
+				setWorkflowStatusInfo(
+					() -> {
+						ResourceBundle resourceBundle =
+							LanguageResources.getResourceBundle(locale);
+
+						String productStatusLabel =
+							WorkflowConstants.getStatusLabel(
+								cpDefinition.getStatus());
+
+						String productStatusLabelI18n = _language.get(
+							resourceBundle,
+							WorkflowConstants.getStatusLabel(
+								cpDefinition.getStatus()));
+
+						return _toStatus(
+							cpDefinition.getStatus(), productStatusLabel,
+							productStatusLabelI18n);
+					});
 			}
 		};
 	}
@@ -158,7 +190,7 @@ public class ProductDTOConverter
 	}
 
 	private CPType _getCPType(String name) {
-		return _cpTypeServicesTracker.getCPType(name);
+		return _cpTypeRegistry.getCPType(name);
 	}
 
 	private String _getSku(CPDefinition cpDefinition, Locale locale) {
@@ -169,7 +201,7 @@ public class ProductDTOConverter
 		}
 
 		if (cpInstances.size() > 1) {
-			return LanguageUtil.get(locale, "multiple-skus");
+			return _language.get(locale, "multiple-skus");
 		}
 
 		CPInstance cpInstance = cpInstances.get(0);
@@ -177,27 +209,13 @@ public class ProductDTOConverter
 		return cpInstance.getSku();
 	}
 
-	private String[] _getTags(CPDefinition cpDefinition) {
-		List<AssetTag> assetEntryAssetTags = _assetTagService.getTags(
-			cpDefinition.getModelClassName(), cpDefinition.getCPDefinitionId());
-
-		Stream<AssetTag> stream = assetEntryAssetTags.stream();
-
-		return stream.map(
-			AssetTag::getName
-		).toArray(
-			String[]::new
-		);
-	}
-
 	private Category _toCategory(AssetCategory assetCategory) {
 		return new Category() {
 			{
-				externalReferenceCode =
-					assetCategory.getExternalReferenceCode();
-				id = assetCategory.getCategoryId();
-				name = assetCategory.getName();
-
+				setExternalReferenceCode(
+					assetCategory::getExternalReferenceCode);
+				setId(assetCategory::getCategoryId);
+				setName(assetCategory::getName);
 				setVocabulary(
 					() -> {
 						AssetVocabulary assetVocabulary =
@@ -220,9 +238,9 @@ public class ProductDTOConverter
 
 		return new Status() {
 			{
-				code = statusCode;
-				label = productStatusLabel;
-				label_i18n = productStatusLabelI18n;
+				setCode(() -> statusCode);
+				setLabel(() -> productStatusLabel);
+				setLabel_i18n(() -> productStatusLabelI18n);
 			}
 		};
 	}
@@ -240,6 +258,9 @@ public class ProductDTOConverter
 	private CPDefinitionService _cpDefinitionService;
 
 	@Reference
-	private CPTypeServicesTracker _cpTypeServicesTracker;
+	private CPTypeRegistry _cpTypeRegistry;
+
+	@Reference
+	private Language _language;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.ratings.transformer.test;
@@ -20,12 +11,15 @@ import com.liferay.portal.kernel.util.ProxyUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portlet.PortletPreferencesImpl;
+import com.liferay.ratings.kernel.definition.PortletRatingsDefinitionUtil;
+import com.liferay.ratings.kernel.definition.PortletRatingsDefinitionValues;
 import com.liferay.ratings.kernel.transformer.RatingsDataTransformer;
 import com.liferay.ratings.kernel.transformer.RatingsDataTransformerUtil;
 
-import java.util.Objects;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.Map;
+import java.util.Objects;
 
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -42,6 +36,7 @@ import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Leon Chi
+ * @author Roberto Díaz
  */
 @RunWith(Arquillian.class)
 public class RatingsDataTransformerUtilTest {
@@ -53,6 +48,9 @@ public class RatingsDataTransformerUtilTest {
 
 	@BeforeClass
 	public static void setUpClass() {
+		_portletRatingsDefinitionValuesMap =
+			PortletRatingsDefinitionUtil.getPortletRatingsDefinitionValuesMap();
+
 		Bundle bundle = FrameworkUtil.getBundle(
 			RatingsDataTransformerUtilTest.class);
 
@@ -84,29 +82,9 @@ public class RatingsDataTransformerUtilTest {
 	public void testTransformCompanyRatingsData() throws Exception {
 		_calledTransformRatingsData = false;
 
-		PortletPreferences oldPortletPreferences = new PortletPreferencesImpl();
-
-		oldPortletPreferences.setValue(
-			"com.liferay.blogs.model.BlogsEntry_RatingsType", "like");
-		oldPortletPreferences.setValue(
-			"com.liferay.bookmarks.model.BookmarksEntry_RatingsType", "like");
-		oldPortletPreferences.setValue(
-			"com.liferay.document.library.kernel.model.DLFileEntry_RatingsType",
-			"like");
-		oldPortletPreferences.setValue(
-			"com.liferay.journal.model.JournalArticle_RatingsType", "like");
-		oldPortletPreferences.setValue(
-			"com.liferay.knowledge.base.model.KBArticle_RatingsType", "like");
-		oldPortletPreferences.setValue(
-			"com.liferay.message.boards.model.MBDiscussion_RatingsType",
-			"like");
-		oldPortletPreferences.setValue(
-			"com.liferay.message.boards.model.MBMessage_RatingsType", "like");
-		oldPortletPreferences.setValue(
-			"com.liferay.wiki.model.WikiPage_RatingsType", "like");
-
 		RatingsDataTransformerUtil.transformCompanyRatingsData(
-			1, oldPortletPreferences, _createUnicodeProperties("stars"));
+			1, _createPortletPreferences("like"),
+			_createUnicodeProperties("stars"));
 
 		Assert.assertTrue(_calledTransformRatingsData);
 	}
@@ -122,31 +100,41 @@ public class RatingsDataTransformerUtilTest {
 		Assert.assertTrue(_calledTransformRatingsData);
 	}
 
+	private PortletPreferences _createPortletPreferences(String value)
+		throws Exception {
+
+		PortletPreferences portletPreferences = new PortletPreferencesImpl();
+
+		for (Map.Entry<String, PortletRatingsDefinitionValues> entry :
+				_portletRatingsDefinitionValuesMap.entrySet()) {
+
+			String className = entry.getKey();
+
+			portletPreferences.setValue(
+				RatingsDataTransformerUtil.getPropertyKey(className), value);
+		}
+
+		return portletPreferences;
+	}
+
 	private UnicodeProperties _createUnicodeProperties(String value) {
 		UnicodeProperties unicodeProperties = new UnicodeProperties();
 
-		unicodeProperties.setProperty(
-			"com.liferay.blogs.model.BlogsEntry_RatingsType", value);
-		unicodeProperties.setProperty(
-			"com.liferay.bookmarks.model.BookmarksEntry_RatingsType", value);
-		unicodeProperties.setProperty(
-			"com.liferay.document.library.kernel.model.DLFileEntry_RatingsType",
-			value);
-		unicodeProperties.setProperty(
-			"com.liferay.journal.model.JournalArticle_RatingsType", value);
-		unicodeProperties.setProperty(
-			"com.liferay.knowledge.base.model.KBArticle_RatingsType", value);
-		unicodeProperties.setProperty(
-			"com.liferay.message.boards.model.MBDiscussion_RatingsType", value);
-		unicodeProperties.setProperty(
-			"com.liferay.message.boards.model.MBMessage_RatingsType", value);
-		unicodeProperties.setProperty(
-			"com.liferay.wiki.model.WikiPage_RatingsType", value);
+		for (Map.Entry<String, PortletRatingsDefinitionValues> entry :
+				_portletRatingsDefinitionValuesMap.entrySet()) {
+
+			String className = entry.getKey();
+
+			unicodeProperties.put(
+				RatingsDataTransformerUtil.getPropertyKey(className), value);
+		}
 
 		return unicodeProperties;
 	}
 
 	private static boolean _calledTransformRatingsData;
+	private static Map<String, PortletRatingsDefinitionValues>
+		_portletRatingsDefinitionValuesMap;
 	private static ServiceRegistration<RatingsDataTransformer>
 		_serviceRegistration;
 

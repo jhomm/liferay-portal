@@ -1,30 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.addon.keep.alive.web.internal.servlet.taglib;
 
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.content.security.policy.ContentSecurityPolicyNonceProviderUtil;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.servlet.taglib.BaseDynamicInclude;
 import com.liferay.portal.kernel.servlet.taglib.DynamicInclude;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.CookieKeys;
 import com.liferay.portal.kernel.util.HtmlUtil;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -40,13 +32,12 @@ import com.liferay.saml.runtime.configuration.SamlProviderConfiguration;
 import com.liferay.saml.runtime.configuration.SamlProviderConfigurationHelper;
 import com.liferay.saml.util.PortletPropsKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -54,7 +45,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Tomas Polesovsky
  */
-@Component(immediate = true, service = DynamicInclude.class)
+@Component(service = DynamicInclude.class)
 public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 
 	@Override
@@ -67,11 +58,11 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		if (!isEnabled(themeDisplay)) {
+		if (!_isEnabled(themeDisplay)) {
 			return;
 		}
 
-		String keepAliveURL = getConfiguredKeepAliveURL(httpServletRequest);
+		String keepAliveURL = _getConfiguredKeepAliveURL(httpServletRequest);
 
 		if (Validator.isBlank(keepAliveURL)) {
 			return;
@@ -80,13 +71,17 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 		SamlProviderConfiguration samlProviderConfiguration =
 			_samlProviderConfigurationHelper.getSamlProviderConfiguration();
 
-		keepAliveURL = _http.addParameter(
+		keepAliveURL = HttpComponentsUtil.addParameter(
 			keepAliveURL, "entityId", samlProviderConfiguration.entityId());
 
 		try {
 			PrintWriter printWriter = httpServletResponse.getWriter();
 
-			printWriter.write("<script src=\"");
+			printWriter.write("<script");
+			printWriter.write(
+				ContentSecurityPolicyNonceProviderUtil.getNonceAttribute(
+					httpServletRequest));
+			printWriter.write(" src=\"");
 			printWriter.write(HtmlUtil.escapeHREF(keepAliveURL));
 			printWriter.write("\" type=\"text/javascript\"></script>");
 		}
@@ -101,13 +96,13 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 		dynamicIncludeRegistry.register("/html/common/themes/bottom.jsp#post");
 	}
 
-	protected String getConfiguredKeepAliveURL(
+	private String _getConfiguredKeepAliveURL(
 		HttpServletRequest httpServletRequest) {
 
 		String keepAliveURL = null;
 
 		try {
-			SamlSpSession samlSpSession = getSamlSpSession(
+			SamlSpSession samlSpSession = _getSamlSpSession(
 				httpServletRequest, _samlSpSessionLocalService);
 
 			if (samlSpSession == null) {
@@ -157,11 +152,11 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 		return keepAliveURL;
 	}
 
-	protected SamlSpSession getSamlSpSession(
+	private SamlSpSession _getSamlSpSession(
 		HttpServletRequest httpServletRequest,
 		SamlSpSessionLocalService samlSpSessionLocalService) {
 
-		String samlSpSessionKey = getSamlSpSessionKey(httpServletRequest);
+		String samlSpSessionKey = _getSamlSpSessionKey(httpServletRequest);
 
 		if (Validator.isNotNull(samlSpSessionKey)) {
 			SamlSpSession samlSpSession =
@@ -179,23 +174,21 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 			httpSession.getId());
 	}
 
-	protected String getSamlSpSessionKey(
-		HttpServletRequest httpServletRequest) {
-
+	private String _getSamlSpSessionKey(HttpServletRequest httpServletRequest) {
 		HttpSession httpSession = httpServletRequest.getSession();
 
 		String samlSpSessionKey = (String)httpSession.getAttribute(
 			SamlWebKeys.SAML_SP_SESSION_KEY);
 
 		if (Validator.isNull(samlSpSessionKey)) {
-			samlSpSessionKey = CookieKeys.getCookie(
-				httpServletRequest, SamlWebKeys.SAML_SP_SESSION_KEY);
+			samlSpSessionKey = CookiesManagerUtil.getCookieValue(
+				SamlWebKeys.SAML_SP_SESSION_KEY, httpServletRequest);
 		}
 
 		return samlSpSessionKey;
 	}
 
-	protected boolean isEnabled(ThemeDisplay themeDisplay) {
+	private boolean _isEnabled(ThemeDisplay themeDisplay) {
 		if (!_samlProviderConfigurationHelper.isEnabled() ||
 			!_samlProviderConfigurationHelper.isRoleSp() ||
 			!themeDisplay.isSignedIn()) {
@@ -210,9 +203,6 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 		KeepAliveSPPortalDynamicInclude.class);
 
 	@Reference
-	private Http _http;
-
-	@Reference
 	private SamlPeerBindingLocalService _samlPeerBindingLocalService;
 
 	@Reference
@@ -223,10 +213,5 @@ public class KeepAliveSPPortalDynamicInclude extends BaseDynamicInclude {
 
 	@Reference
 	private SamlSpSessionLocalService _samlSpSessionLocalService;
-
-	@Reference(
-		target = "(osgi.web.symbolicname=com.liferay.saml.addon.keep.alive.web)"
-	)
-	private ServletContext _servletContext;
 
 }

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -35,14 +26,14 @@ if (ddmStructure != null) {
 
 <clay:management-toolbar
 	managementToolbarDisplayContext="<%= journalDDMTemplateManagementToolbarDisplayContext %>"
-	propsTransformer="js/DDMTemplatesManagementToolbarPropsTransformer"
+	propsTransformer="{DDMTemplatesManagementToolbarPropsTransformer} from journal-web"
 />
 
 <portlet:actionURL name="/journal/delete_ddm_template" var="deleteDDMTemplateURL">
 	<portlet:param name="mvcPath" value="/view_ddm_templates.jsp" />
 </portlet:actionURL>
 
-<aui:form action="<%= deleteDDMTemplateURL %>" cssClass="container-fluid container-fluid-max-xl" method="post" name="fm">
+<aui:form action="<%= deleteDDMTemplateURL %>" cssClass="container-fluid container-fluid-max-xxxl" method="post" name="fm">
 	<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 
 	<c:if test="<%= !journalDisplayContext.isNavigationMine() && !journalDisplayContext.isNavigationRecent() %>">
@@ -55,7 +46,7 @@ if (ddmStructure != null) {
 
 	<liferay-ui:search-container
 		id="ddmTemplates"
-		searchContainer="<%= journalDDMTemplateDisplayContext.getDDMTemplateSearch() %>"
+		searchContainer="<%= journalDDMTemplateDisplayContext.getDDMTemplateSearchContainer() %>"
 	>
 		<liferay-ui:search-container-row
 			className="com.liferay.dynamic.data.mapping.model.DDMTemplate"
@@ -88,6 +79,7 @@ if (ddmStructure != null) {
 				<c:when test='<%= Objects.equals(journalDDMTemplateDisplayContext.getDisplayStyle(), "icon") %>'>
 					<liferay-ui:search-container-column-text>
 						<clay:vertical-card
+							propsTransformer="{DDMTemplateElementsDefaultPropsTransformer} from journal-web"
 							verticalCard="<%= new JournalDDMTemplateVerticalCard(ddmTemplate, renderRequest, renderResponse, searchContainer.getRowChecker()) %>"
 						/>
 					</liferay-ui:search-container-column-text>
@@ -152,8 +144,9 @@ if (ddmStructure != null) {
 
 					<liferay-ui:search-container-column-text>
 						<clay:dropdown-actions
+							aria-label='<%= LanguageUtil.get(request, "show-actions") %>'
 							dropdownItems="<%= journalDDMTemplateDisplayContext.getDDMTemplateActionDropdownItems(ddmTemplate) %>"
-							propsTransformer="js/DDMTemplateElementsDefaultPropsTransformer"
+							propsTransformer="{DDMTemplateElementsDefaultPropsTransformer} from journal-web"
 						/>
 					</liferay-ui:search-container-column-text>
 				</c:otherwise>
@@ -166,8 +159,3 @@ if (ddmStructure != null) {
 		/>
 	</liferay-ui:search-container>
 </aui:form>
-
-<liferay-frontend:component
-	componentId="<%= JournalWebConstants.JOURNAL_DDM_TEMPLATE_ELEMENTS_DEFAULT_EVENT_HANDLER %>"
-	module="js/DDMTemplateElementsDefaultEventHandler.es"
-/>

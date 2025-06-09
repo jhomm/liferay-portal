@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.search.test;
@@ -77,8 +68,8 @@ public class CPInstanceIndexerTest {
 	}
 
 	@Test
-	public void testSkuPrefix() throws Exception {
-		CommerceCatalog catalog =
+	public void testSearchSkuGTIN() throws Exception {
+		CommerceCatalog commerceCatalog =
 			_commerceCatalogLocalService.addCommerceCatalog(
 				null, RandomTestUtil.randomString(),
 				RandomTestUtil.randomString(),
@@ -86,21 +77,48 @@ public class CPInstanceIndexerTest {
 				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
 
 		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
-			catalog.getGroupId());
+			commerceCatalog.getGroupId());
+
+		cpInstance.setPurchasable(true);
+
+		String gtin = RandomTestUtil.randomString();
+
+		cpInstance.setSku("Open4Life" + RandomTestUtil.randomString());
+
+		cpInstance.setGtin(gtin);
+
+		cpInstance = _cpInstanceLocalService.updateCPInstance(cpInstance);
+
+		_assertSearch(gtin, cpInstance.getCPDefinitionId(), cpInstance);
+	}
+
+	@Test
+	public void testSkuPrefix() throws Exception {
+		CommerceCatalog commerceCatalog =
+			_commerceCatalogLocalService.addCommerceCatalog(
+				null, RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(),
+				LocaleUtil.US.getDisplayLanguage(),
+				ServiceContextTestUtil.getServiceContext(_group.getGroupId()));
+
+		CPInstance cpInstance = CPTestUtil.addCPInstanceFromCatalog(
+			commerceCatalog.getGroupId());
 
 		cpInstance.setPurchasable(true);
 
 		String sku = "Open4Life" + RandomTestUtil.randomString();
+		String gtin = RandomTestUtil.randomString();
 
 		cpInstance.setSku(sku);
+		cpInstance.setGtin(gtin);
 
-		_cpInstanceLocalService.updateCPInstance(cpInstance);
+		cpInstance = _cpInstanceLocalService.updateCPInstance(cpInstance);
 
 		_assertSearch("open", cpInstance.getCPDefinitionId(), cpInstance);
 		_assertSearch("open4life", cpInstance.getCPDefinitionId(), cpInstance);
 		_assertSearch("OPE", cpInstance.getCPDefinitionId(), cpInstance);
-
-		_assertSearch("4lif", cpInstance.getCPDefinitionId());
+		_assertSearch("4lif", cpInstance.getCPDefinitionId(), cpInstance);
+		_assertSearch(gtin, cpInstance.getCPDefinitionId(), cpInstance);
 	}
 
 	protected Hits search(String keywords, long commerceOrderId)

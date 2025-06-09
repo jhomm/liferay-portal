@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.item.selector.criteria.group.criterion;
@@ -26,6 +17,10 @@ public class GroupItemSelectorCriterion extends BaseItemSelectorCriterion {
 
 	public GroupItemSelectorCriterion(boolean privateLayout) {
 		_privateLayout = privateLayout;
+	}
+
+	public long[] getExcludedGroupIds() {
+		return _excludedGroupIds;
 	}
 
 	public String getPortletId() {
@@ -48,12 +43,20 @@ public class GroupItemSelectorCriterion extends BaseItemSelectorCriterion {
 		return _includeChildSites;
 	}
 
+	public boolean isIncludeCompany() {
+		return _includeCompany;
+	}
+
 	public boolean isIncludeFormsSite() {
 		return _includeFormsSite;
 	}
 
 	public boolean isIncludeLayoutScopes() {
 		return _includeLayoutScopes;
+	}
+
+	public boolean isIncludeLayoutSetPrototypes() {
+		return _includeLayoutSetPrototypes;
 	}
 
 	public boolean isIncludeMySites() {
@@ -84,6 +87,10 @@ public class GroupItemSelectorCriterion extends BaseItemSelectorCriterion {
 		_allowNavigation = allowNavigation;
 	}
 
+	public void setExcludedGroupIds(long[] excludedGroupIds) {
+		_excludedGroupIds = excludedGroupIds;
+	}
+
 	public void setIncludeAllVisibleGroups(boolean includeAllVisibleGroups) {
 		_includeAllVisibleGroups = includeAllVisibleGroups;
 	}
@@ -92,12 +99,22 @@ public class GroupItemSelectorCriterion extends BaseItemSelectorCriterion {
 		_includeChildSites = includeChildSites;
 	}
 
+	public void setIncludeCompany(boolean includeCompany) {
+		_includeCompany = includeCompany;
+	}
+
 	public void setIncludeFormsSite(boolean includeFormsSite) {
 		_includeFormsSite = includeFormsSite;
 	}
 
 	public void setIncludeLayoutScopes(boolean includeLayoutScopes) {
 		_includeLayoutScopes = includeLayoutScopes;
+	}
+
+	public void setIncludeLayoutSetPrototypes(
+		boolean includeLayoutSetPrototypes) {
+
+		_includeLayoutSetPrototypes = includeLayoutSetPrototypes;
 	}
 
 	public void setIncludeMySites(boolean includeMySites) {
@@ -135,10 +152,13 @@ public class GroupItemSelectorCriterion extends BaseItemSelectorCriterion {
 	}
 
 	private boolean _allowNavigation = true;
+	private long[] _excludedGroupIds;
 	private boolean _includeAllVisibleGroups;
 	private boolean _includeChildSites;
+	private boolean _includeCompany = true;
 	private boolean _includeFormsSite;
 	private boolean _includeLayoutScopes;
+	private boolean _includeLayoutSetPrototypes;
 	private boolean _includeMySites = true;
 	private boolean _includeParentSites;
 	private boolean _includeRecentSites = true;

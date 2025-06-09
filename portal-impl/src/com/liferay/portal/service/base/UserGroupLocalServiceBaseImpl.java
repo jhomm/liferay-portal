@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.base;
@@ -24,8 +15,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.bean.BeanReference;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdate;
-import com.liferay.portal.kernel.dao.jdbc.SqlUpdateFactoryUtil;
+import com.liferay.portal.kernel.dao.jdbc.CurrentConnectionUtil;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DefaultActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
@@ -35,13 +25,14 @@ import com.liferay.portal.kernel.dao.orm.IndexableActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.Projection;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.model.UserGroup;
 import com.liferay.portal.kernel.module.framework.service.IdentifiableOSGiService;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
 import com.liferay.portal.kernel.service.BaseLocalServiceImpl;
-import com.liferay.portal.kernel.service.PersistedModelLocalServiceRegistry;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.persistence.BasePersistence;
@@ -57,7 +48,7 @@ import com.liferay.portal.kernel.util.PortalUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
+import java.sql.Connection;
 
 import java.util.List;
 
@@ -268,48 +259,21 @@ public abstract class UserGroupLocalServiceBaseImpl
 		return userGroupPersistence.fetchByUuid_C_First(uuid, companyId, null);
 	}
 
-	/**
-	 * Returns the user group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user group's external reference code
-	 * @return the matching user group, or <code>null</code> if a matching user group could not be found
-	 */
 	@Override
 	public UserGroup fetchUserGroupByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
-		return userGroupPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
+		return userGroupPersistence.fetchByERC_C(
+			externalReferenceCode, companyId);
 	}
 
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchUserGroupByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public UserGroup fetchUserGroupByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return fetchUserGroupByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * Returns the user group with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the user group's external reference code
-	 * @return the matching user group
-	 * @throws PortalException if a matching user group could not be found
-	 */
 	@Override
 	public UserGroup getUserGroupByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
-		return userGroupPersistence.findByC_ERC(
-			companyId, externalReferenceCode);
+		return userGroupPersistence.findByERC_C(
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -449,6 +413,11 @@ public abstract class UserGroupLocalServiceBaseImpl
 	public PersistedModel deletePersistedModel(PersistedModel persistedModel)
 		throws PortalException {
 
+		if (_log.isWarnEnabled()) {
+			_log.warn(
+				"Implement UserGroupLocalServiceImpl#deleteUserGroup(UserGroup) to avoid orphaned data");
+		}
+
 		return userGroupLocalService.deleteUserGroup((UserGroup)persistedModel);
 	}
 
@@ -527,29 +496,31 @@ public abstract class UserGroupLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addGroupUserGroup(long groupId, long userGroupId) {
-		groupPersistence.addUserGroup(groupId, userGroupId);
+	public boolean addGroupUserGroup(long groupId, long userGroupId) {
+		return groupPersistence.addUserGroup(groupId, userGroupId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupUserGroup(long groupId, UserGroup userGroup) {
-		groupPersistence.addUserGroup(groupId, userGroup);
+	public boolean addGroupUserGroup(long groupId, UserGroup userGroup) {
+		return groupPersistence.addUserGroup(groupId, userGroup);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupUserGroups(long groupId, long[] userGroupIds) {
-		groupPersistence.addUserGroups(groupId, userGroupIds);
+	public boolean addGroupUserGroups(long groupId, long[] userGroupIds) {
+		return groupPersistence.addUserGroups(groupId, userGroupIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addGroupUserGroups(long groupId, List<UserGroup> userGroups) {
-		groupPersistence.addUserGroups(groupId, userGroups);
+	public boolean addGroupUserGroups(
+		long groupId, List<UserGroup> userGroups) {
+
+		return groupPersistence.addUserGroups(groupId, userGroups);
 	}
 
 	/**
@@ -658,29 +629,29 @@ public abstract class UserGroupLocalServiceBaseImpl
 	/**
 	 */
 	@Override
-	public void addTeamUserGroup(long teamId, long userGroupId) {
-		teamPersistence.addUserGroup(teamId, userGroupId);
+	public boolean addTeamUserGroup(long teamId, long userGroupId) {
+		return teamPersistence.addUserGroup(teamId, userGroupId);
 	}
 
 	/**
 	 */
 	@Override
-	public void addTeamUserGroup(long teamId, UserGroup userGroup) {
-		teamPersistence.addUserGroup(teamId, userGroup);
+	public boolean addTeamUserGroup(long teamId, UserGroup userGroup) {
+		return teamPersistence.addUserGroup(teamId, userGroup);
 	}
 
 	/**
 	 */
 	@Override
-	public void addTeamUserGroups(long teamId, long[] userGroupIds) {
-		teamPersistence.addUserGroups(teamId, userGroupIds);
+	public boolean addTeamUserGroups(long teamId, long[] userGroupIds) {
+		return teamPersistence.addUserGroups(teamId, userGroupIds);
 	}
 
 	/**
 	 */
 	@Override
-	public void addTeamUserGroups(long teamId, List<UserGroup> userGroups) {
-		teamPersistence.addUserGroups(teamId, userGroups);
+	public boolean addTeamUserGroups(long teamId, List<UserGroup> userGroups) {
+		return teamPersistence.addUserGroups(teamId, userGroups);
 	}
 
 	/**
@@ -783,31 +754,43 @@ public abstract class UserGroupLocalServiceBaseImpl
 	}
 
 	/**
+	 * @throws PortalException
 	 */
 	@Override
-	public void addUserUserGroup(long userId, long userGroupId) {
-		userPersistence.addUserGroup(userId, userGroupId);
+	public boolean addUserUserGroup(long userId, long userGroupId)
+		throws PortalException {
+
+		return userPersistence.addUserGroup(userId, userGroupId);
 	}
 
 	/**
+	 * @throws PortalException
 	 */
 	@Override
-	public void addUserUserGroup(long userId, UserGroup userGroup) {
-		userPersistence.addUserGroup(userId, userGroup);
+	public boolean addUserUserGroup(long userId, UserGroup userGroup)
+		throws PortalException {
+
+		return userPersistence.addUserGroup(userId, userGroup);
 	}
 
 	/**
+	 * @throws PortalException
 	 */
 	@Override
-	public void addUserUserGroups(long userId, long[] userGroupIds) {
-		userPersistence.addUserGroups(userId, userGroupIds);
+	public boolean addUserUserGroups(long userId, long[] userGroupIds)
+		throws PortalException {
+
+		return userPersistence.addUserGroups(userId, userGroupIds);
 	}
 
 	/**
+	 * @throws PortalException
 	 */
 	@Override
-	public void addUserUserGroups(long userId, List<UserGroup> userGroups) {
-		userPersistence.addUserGroups(userId, userGroups);
+	public boolean addUserUserGroups(long userId, List<UserGroup> userGroups)
+		throws PortalException {
+
+		return userPersistence.addUserGroups(userId, userGroups);
 	}
 
 	/**
@@ -994,17 +977,11 @@ public abstract class UserGroupLocalServiceBaseImpl
 	}
 
 	public void afterPropertiesSet() {
-		persistedModelLocalServiceRegistry.register(
-			"com.liferay.portal.kernel.model.UserGroup", userGroupLocalService);
-
-		_setLocalServiceUtilService(userGroupLocalService);
+		UserGroupLocalServiceUtil.setService(userGroupLocalService);
 	}
 
 	public void destroy() {
-		persistedModelLocalServiceRegistry.unregister(
-			"com.liferay.portal.kernel.model.UserGroup");
-
-		_setLocalServiceUtilService(null);
+		UserGroupLocalServiceUtil.setService(null);
 	}
 
 	/**
@@ -1045,37 +1022,26 @@ public abstract class UserGroupLocalServiceBaseImpl
 	 * @param sql the sql query
 	 */
 	protected void runSQL(String sql) {
+		DataSource dataSource = userGroupPersistence.getDataSource();
+
+		DB db = DBManagerUtil.getDB();
+
+		Connection currentConnection = CurrentConnectionUtil.getConnection(
+			dataSource);
+
 		try {
-			DataSource dataSource = userGroupPersistence.getDataSource();
+			if (currentConnection != null) {
+				db.runSQL(currentConnection, new String[] {sql});
 
-			DB db = DBManagerUtil.getDB();
+				return;
+			}
 
-			sql = db.buildSQL(sql);
-			sql = PortalUtil.transformSQL(sql);
-
-			SqlUpdate sqlUpdate = SqlUpdateFactoryUtil.getSqlUpdate(
-				dataSource, sql);
-
-			sqlUpdate.update();
+			try (Connection connection = dataSource.getConnection()) {
+				db.runSQL(connection, new String[] {sql});
+			}
 		}
 		catch (Exception exception) {
 			throw new SystemException(exception);
-		}
-	}
-
-	private void _setLocalServiceUtilService(
-		UserGroupLocalService userGroupLocalService) {
-
-		try {
-			Field field = UserGroupLocalServiceUtil.class.getDeclaredField(
-				"_service");
-
-			field.setAccessible(true);
-
-			field.set(null, userGroupLocalService);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
 		}
 	}
 
@@ -1103,8 +1069,7 @@ public abstract class UserGroupLocalServiceBaseImpl
 	@BeanReference(type = UserPersistence.class)
 	protected UserPersistence userPersistence;
 
-	@BeanReference(type = PersistedModelLocalServiceRegistry.class)
-	protected PersistedModelLocalServiceRegistry
-		persistedModelLocalServiceRegistry;
+	private static final Log _log = LogFactoryUtil.getLog(
+		UserGroupLocalServiceBaseImpl.class);
 
 }

@@ -1,26 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.blogs.internal.util;
 
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalService;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.comment.CommentManager;
 import com.liferay.portal.kernel.comment.DuplicateCommentException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Portlet;
@@ -43,10 +35,8 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.xmlrpc.Method;
 import com.liferay.portal.kernel.xmlrpc.Response;
 import com.liferay.portal.kernel.xmlrpc.XmlRpcConstants;
-import com.liferay.portal.kernel.xmlrpc.XmlRpcUtil;
 import com.liferay.portal.util.PropsValues;
-
-import java.io.IOException;
+import com.liferay.portal.xmlrpc.XmlRpcUtil;
 
 import java.net.InetAddress;
 import java.net.URL;
@@ -89,7 +79,7 @@ public class PingbackMethodImpl implements Method {
 	@Override
 	public Response execute(long companyId) {
 		try {
-			Response response = addPingback(companyId);
+			Response response = _addPingback(companyId);
 
 			if (response != null) {
 				return response;
@@ -105,7 +95,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return XmlRpcUtil.createFault(
@@ -133,7 +123,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return false;
@@ -173,14 +163,14 @@ public class PingbackMethodImpl implements Method {
 
 	}
 
-	protected Response addPingback(long companyId) throws Exception {
-		if (!isPingbackEnabled()) {
+	private Response _addPingback(long companyId) throws Exception {
+		if (!_isPingbackEnabled()) {
 			return XmlRpcUtil.createFault(
 				XmlRpcConstants.REQUESTED_METHOD_NOT_FOUND,
 				"Pingbacks are disabled");
 		}
 
-		BlogsEntry entry = getBlogsEntry(companyId);
+		BlogsEntry entry = _getBlogsEntry(companyId);
 
 		if (!entry.isAllowPingbacks() ||
 			Validator.isNull(entry.getUrlTitle())) {
@@ -190,22 +180,22 @@ public class PingbackMethodImpl implements Method {
 				"Pingbacks are disabled");
 		}
 
-		Response response = validateSource();
+		Response response = _validateSource();
 
 		if (response != null) {
 			return response;
 		}
 
-		long userId = _userLocalService.getDefaultUserId(companyId);
+		long userId = _userLocalService.getGuestUserId(companyId);
 		long groupId = entry.getGroupId();
 		String className = BlogsEntry.class.getName();
 		long classPK = entry.getEntryId();
 
 		String body = StringBundler.concat(
-			"[...] ", getExcerpt(), " [...] <a href=", _sourceURI, ">",
-			LanguageUtil.get(LocaleUtil.getSiteDefault(), "read-more"), "</a>");
+			"[...] ", _getExcerpt(), " [...] <a href=", _sourceURI, ">",
+			_language.get(LocaleUtil.getSiteDefault(), "read-more"), "</a>");
 
-		ServiceContext serviceContext = buildServiceContext(
+		ServiceContext serviceContext = _buildServiceContext(
 			companyId, groupId, entry.getUrlTitle());
 
 		_commentManager.addComment(
@@ -215,18 +205,18 @@ public class PingbackMethodImpl implements Method {
 		return null;
 	}
 
-	protected ServiceContext buildServiceContext(
+	private ServiceContext _buildServiceContext(
 			long companyId, long groupId, String urlTitle)
 		throws Exception {
 
 		ServiceContext serviceContext = new ServiceContext();
 
-		String pingbackUserName = LanguageUtil.get(
+		String pingbackUserName = _language.get(
 			LocaleUtil.getSiteDefault(), "pingback");
 
 		serviceContext.setAttribute("pingbackUserName", pingbackUserName);
 
-		String portletId = getPortletId(
+		String portletId = _getPortletId(
 			BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
 
 		if (Validator.isNull(portletId)) {
@@ -250,13 +240,12 @@ public class PingbackMethodImpl implements Method {
 		sb.append(urlTitle);
 
 		serviceContext.setAttribute("redirect", sb.toString());
-
 		serviceContext.setLayoutFullURL(layoutFullURL);
 
 		return serviceContext;
 	}
 
-	protected BlogsEntry getBlogsEntry(long companyId) throws Exception {
+	private BlogsEntry _getBlogsEntry(long companyId) throws Exception {
 		BlogsEntry entry = null;
 
 		URL url = new URL(_targetURI);
@@ -273,13 +262,9 @@ public class PingbackMethodImpl implements Method {
 
 		Map<String, String[]> params = new HashMap<>();
 
-		FriendlyURLMapperThreadLocal.setPRPIdentifiers(
-			new HashMap<String, String>());
-
-		String portletId = getPortletId(
-			BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
-
-		Portlet portlet = _portletLocalService.getPortletById(portletId);
+		Portlet portlet = _portletLocalService.getPortletById(
+			_getPortletId(
+				BlogsEntry.class.getName(), PortletProvider.Action.VIEW));
 
 		FriendlyURLMapper friendlyURLMapper =
 			portlet.getFriendlyURLMapperInstance();
@@ -295,9 +280,15 @@ public class PingbackMethodImpl implements Method {
 
 		Map<String, Object> requestContext = new HashMap<>();
 
-		friendlyURLMapper.populateParams(friendlyURL, params, requestContext);
+		try (SafeCloseable safeCloseable =
+				FriendlyURLMapperThreadLocal.setPRPIdentifiersWithSafeCloseable(
+					new HashMap<>())) {
 
-		String param = getParam(params, "entryId");
+			friendlyURLMapper.populateParams(
+				friendlyURL, params, requestContext);
+		}
+
+		String param = _getParam(params, "entryId");
 
 		if (Validator.isNotNull(param)) {
 			long entryId = GetterUtil.getLong(param);
@@ -306,7 +297,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		else {
 			long groupId = _portal.getScopeGroupId(plid);
-			String urlTitle = getParam(params, "urlTitle");
+			String urlTitle = _getParam(params, "urlTitle");
 
 			entry = _blogsEntryLocalService.getEntry(groupId, urlTitle);
 		}
@@ -314,7 +305,7 @@ public class PingbackMethodImpl implements Method {
 		return entry;
 	}
 
-	protected String getExcerpt() throws IOException {
+	private String _getExcerpt() throws Exception {
 		String html = _http.URLtoString(_sourceURI);
 
 		Source source = new Source(html);
@@ -334,7 +325,7 @@ public class PingbackMethodImpl implements Method {
 
 				String body = textExtractor.toString();
 
-				if (body.length() < getLinkbackExcerptLength()) {
+				if (body.length() < _getLinkbackExcerptLength()) {
 					element = element.getParentElement();
 
 					if (element != null) {
@@ -344,14 +335,14 @@ public class PingbackMethodImpl implements Method {
 					}
 				}
 
-				return StringUtil.shorten(body, getLinkbackExcerptLength());
+				return StringUtil.shorten(body, _getLinkbackExcerptLength());
 			}
 		}
 
 		return StringPool.BLANK;
 	}
 
-	protected InetAddress getInetAddressByName(String domain)
+	private InetAddress _getInetAddressByName(String domain)
 		throws UnknownHostException {
 
 		if (_inetAddressLookup != null) {
@@ -361,7 +352,7 @@ public class PingbackMethodImpl implements Method {
 		return InetAddressUtil.getInetAddressByName(domain);
 	}
 
-	protected int getLinkbackExcerptLength() {
+	private int _getLinkbackExcerptLength() {
 		if (_pingbackProperties != null) {
 			return _pingbackProperties.getLinkbackExcerptLength();
 		}
@@ -369,14 +360,13 @@ public class PingbackMethodImpl implements Method {
 		return PropsValues.BLOGS_LINKBACK_EXCERPT_LENGTH;
 	}
 
-	protected String getParam(Map<String, String[]> params, String name) {
+	private String _getParam(Map<String, String[]> params, String name) {
 		String[] paramArray = params.get(name);
 
 		if (paramArray == null) {
-			String portletId = getPortletId(
-				BlogsEntry.class.getName(), PortletProvider.Action.VIEW);
-
-			String namespace = _portal.getPortletNamespace(portletId);
+			String namespace = _portal.getPortletNamespace(
+				_getPortletId(
+					BlogsEntry.class.getName(), PortletProvider.Action.VIEW));
 
 			paramArray = params.get(namespace + name);
 		}
@@ -388,7 +378,7 @@ public class PingbackMethodImpl implements Method {
 		return null;
 	}
 
-	protected String getPortletId(
+	private String _getPortletId(
 		String className, PortletProvider.Action action) {
 
 		if (_portletIdLookup != null) {
@@ -398,7 +388,7 @@ public class PingbackMethodImpl implements Method {
 		return PortletProviderUtil.getPortletId(className, action);
 	}
 
-	protected boolean isPingbackEnabled() {
+	private boolean _isPingbackEnabled() {
 		if (_pingbackProperties != null) {
 			return _pingbackProperties.isPingbackEnabled();
 		}
@@ -406,7 +396,23 @@ public class PingbackMethodImpl implements Method {
 		return PropsValues.BLOGS_PINGBACK_ENABLED;
 	}
 
-	protected Response validateSource() throws Exception {
+	private boolean _isSourceURILocalNetwork() {
+		try {
+			URL url = new URL(_sourceURI);
+
+			return InetAddressUtil.isLocalInetAddress(
+				_getInetAddressByName(url.getHost()));
+		}
+		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+		}
+
+		return true;
+	}
+
+	private Response _validateSource() throws Exception {
 		if (_isSourceURILocalNetwork()) {
 			return XmlRpcUtil.createFault(ACCESS_DENIED, "Access Denied");
 		}
@@ -420,7 +426,7 @@ public class PingbackMethodImpl implements Method {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return XmlRpcUtil.createFault(
@@ -442,22 +448,6 @@ public class PingbackMethodImpl implements Method {
 			SOURCE_URI_INVALID, "Unable to find target URI in source");
 	}
 
-	private boolean _isSourceURILocalNetwork() {
-		try {
-			URL url = new URL(_sourceURI);
-
-			return InetAddressUtil.isLocalInetAddress(
-				getInetAddressByName(url.getHost()));
-		}
-		catch (Exception exception) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
-			}
-		}
-
-		return true;
-	}
-
 	private static final Log _log = LogFactoryUtil.getLog(
 		PingbackMethodImpl.class);
 
@@ -471,6 +461,10 @@ public class PingbackMethodImpl implements Method {
 	private Http _http;
 
 	private InetAddressLookup _inetAddressLookup;
+
+	@Reference
+	private Language _language;
+
 	private PingbackProperties _pingbackProperties;
 
 	@Reference

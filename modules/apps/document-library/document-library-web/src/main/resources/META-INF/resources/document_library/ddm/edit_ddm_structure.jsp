@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -60,10 +51,12 @@ renderResponse.setTitle(title);
 		<aui:model-context bean="<%= ddmStructure %>" model="<%= com.liferay.dynamic.data.mapping.model.DDMStructure.class %>" />
 
 		<nav class="component-tbar subnav-tbar-light tbar tbar-metadata-type">
-			<clay:container-fluid>
+			<clay:container-fluid
+				size="xxxl"
+			>
 				<ul class="tbar-nav">
 					<li class="tbar-item tbar-item-expand">
-						<aui:input autoFocus="<%= windowState.equals(LiferayWindowState.POP_UP) %>" cssClass="form-control-inline" label="" name="name" placeholder='<%= LanguageUtil.format(request, "untitled", "metadata-set") %>' wrapperCssClass="mb-0" />
+						<aui:input cssClass="form-control-inline" label='<%= LanguageUtil.get(request, "name") %>' labelCssClass="sr-only" name="name" placeholder='<%= LanguageUtil.format(request, "untitled", "metadata-set") %>' wrapperCssClass="mb-0" />
 					</li>
 					<li class="tbar-item">
 						<div class="metadata-type-button-row tbar-section text-right">
@@ -112,7 +105,7 @@ renderResponse.setTitle(title);
 <liferay-frontend:component
 	componentId='<%= liferayPortletResponse.getNamespace() + "LocaleChangedHandlerComponent" %>'
 	context="<%= dlEditDDMStructureDisplayContext.getComponentContext() %>"
-	module="document_library/js/data-engine/DataEngineLayoutBuilderHandler.es"
+	module="{DataEngineLayoutBuilderHandler} from document-library-web"
 	servletContext="<%= application %>"
 />
 
@@ -123,6 +116,6 @@ renderResponse.setTitle(title);
 			"namespace", liferayPortletResponse.getNamespace()
 		).build()
 	%>'
-	module="document_library/js/saveDDMStructure.es"
+	module="{saveDDMStructure} from document-library-web"
 	servletContext="<%= application %>"
 />

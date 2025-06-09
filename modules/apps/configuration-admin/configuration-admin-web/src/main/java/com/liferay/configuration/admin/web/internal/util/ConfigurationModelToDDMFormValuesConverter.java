@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.configuration.admin.web.internal.util;
@@ -27,6 +18,7 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.settings.LocationVariableProtocol;
 import com.liferay.portal.kernel.settings.LocationVariableResolver;
 import com.liferay.portal.kernel.util.LocaleUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
@@ -67,8 +59,11 @@ public class ConfigurationModelToDDMFormValuesConverter {
 		ddmFormValues.addAvailableLocale(_locale);
 		ddmFormValues.setDefaultLocale(_locale);
 
-		addDDMFormFieldValues(
+		_addDDMFormFieldValues(
 			_configurationModel.getAttributeDefinitions(ConfigurationModel.ALL),
+			ddmFormValues);
+
+		_validateDDMFormValuesWithConfigurationOverrideProperties(
 			ddmFormValues);
 
 		return ddmFormValues;
@@ -79,12 +74,29 @@ public class ConfigurationModelToDDMFormValuesConverter {
 
 		DDMFormFieldValue ddmFormFieldValue = createDDMFormFieldValue(name);
 
-		setDDMFormFieldValueLocalizedValue(value, ddmFormFieldValue);
+		_setDDMFormFieldValueLocalizedValue(value, ddmFormFieldValue);
 
 		ddmFormValues.addDDMFormFieldValue(ddmFormFieldValue);
 	}
 
-	protected void addDDMFormFieldValues(
+	protected DDMFormFieldValue createDDMFormFieldValue(String name) {
+		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
+
+		ddmFormFieldValue.setFieldReference(name);
+		ddmFormFieldValue.setInstanceId(StringUtil.randomString());
+		ddmFormFieldValue.setName(
+			DDMFormFieldNameUtil.normalizeFieldName(name));
+
+		return ddmFormFieldValue;
+	}
+
+	protected String getDDMFormFieldType(String ddmFormFieldName) {
+		DDMFormField ddmFormField = _ddmFormFieldsMap.get(ddmFormFieldName);
+
+		return ddmFormField.getType();
+	}
+
+	private void _addDDMFormFieldValues(
 		AttributeDefinition attributeDefinition, DDMFormValues ddmFormValues) {
 
 		String[] values = null;
@@ -96,7 +108,9 @@ public class ConfigurationModelToDDMFormValuesConverter {
 			Configuration configuration =
 				_configurationModel.getConfiguration();
 
-			if (hasConfigurationAttribute(configuration, attributeDefinition)) {
+			if (_hasConfigurationAttribute(
+					configuration, attributeDefinition)) {
+
 				values = AttributeDefinitionUtil.getPropertyStringArray(
 					attributeDefinition, configuration);
 			}
@@ -106,11 +120,11 @@ public class ConfigurationModelToDDMFormValuesConverter {
 			}
 		}
 
-		addDDMFormFieldValues(
+		_addDDMFormFieldValues(
 			attributeDefinition.getID(), values, ddmFormValues);
 	}
 
-	protected void addDDMFormFieldValues(
+	private void _addDDMFormFieldValues(
 		AttributeDefinition[] attributeDefinitions,
 		DDMFormValues ddmFormValues) {
 
@@ -119,11 +133,11 @@ public class ConfigurationModelToDDMFormValuesConverter {
 		}
 
 		for (AttributeDefinition attributeDefinition : attributeDefinitions) {
-			addDDMFormFieldValues(attributeDefinition, ddmFormValues);
+			_addDDMFormFieldValues(attributeDefinition, ddmFormValues);
 		}
 	}
 
-	protected void addDDMFormFieldValues(
+	private void _addDDMFormFieldValues(
 		String name, String[] values, DDMFormValues ddmFormValues) {
 
 		for (String value : values) {
@@ -131,22 +145,7 @@ public class ConfigurationModelToDDMFormValuesConverter {
 		}
 	}
 
-	protected DDMFormFieldValue createDDMFormFieldValue(String name) {
-		DDMFormFieldValue ddmFormFieldValue = new DDMFormFieldValue();
-
-		ddmFormFieldValue.setName(name);
-		ddmFormFieldValue.setInstanceId(StringUtil.randomString());
-
-		return ddmFormFieldValue;
-	}
-
-	protected String getDDMFormFieldType(String ddmFormFieldName) {
-		DDMFormField ddmFormField = _ddmFormFieldsMap.get(ddmFormFieldName);
-
-		return ddmFormField.getType();
-	}
-
-	protected boolean hasConfigurationAttribute(
+	private boolean _hasConfigurationAttribute(
 		Configuration configuration, AttributeDefinition attributeDefinition) {
 
 		if (configuration == null) {
@@ -168,13 +167,15 @@ public class ConfigurationModelToDDMFormValuesConverter {
 		return false;
 	}
 
-	protected void setDDMFormFieldValueLocalizedValue(
+	private void _setDDMFormFieldValueLocalizedValue(
 		String value, DDMFormFieldValue ddmFormFieldValue) {
 
 		try {
 			if ((_locationVariableResolver != null) &&
-				_locationVariableResolver.isLocationVariable(
-					value, LocationVariableProtocol.RESOURCE)) {
+				(_locationVariableResolver.isLocationVariable(
+					value, LocationVariableProtocol.LANGUAGE) ||
+				 _locationVariableResolver.isLocationVariable(
+					 value, LocationVariableProtocol.RESOURCE))) {
 
 				value = _locationVariableResolver.resolve(value);
 			}
@@ -188,7 +189,7 @@ public class ConfigurationModelToDDMFormValuesConverter {
 		String type = getDDMFormFieldType(ddmFormFieldValue.getName());
 
 		if (type.equals(DDMFormFieldType.LOCALIZABLE_TEXT) &&
-			!JSONUtil.isValid(value)) {
+			!JSONUtil.isJSONObject(value)) {
 
 			value = String.valueOf(
 				JSONUtil.put(LocaleUtil.toLanguageId(_locale), value));
@@ -202,6 +203,33 @@ public class ConfigurationModelToDDMFormValuesConverter {
 		localizedValue.addString(_locale, value);
 
 		ddmFormFieldValue.setValue(localizedValue);
+	}
+
+	private void _validateDDMFormValuesWithConfigurationOverrideProperties(
+		DDMFormValues ddmFormValues) {
+
+		Map<String, Object> configurationOverrideProperties =
+			_configurationModel.getConfigurationOverrideProperties();
+
+		for (DDMFormFieldValue ddmFormFieldValue :
+				ddmFormValues.getDDMFormFieldValues()) {
+
+			if (!configurationOverrideProperties.containsKey(
+					ddmFormFieldValue.getName())) {
+
+				continue;
+			}
+
+			LocalizedValue localizedValue = new LocalizedValue();
+
+			localizedValue.addString(
+				ddmFormValues.getDefaultLocale(),
+				MapUtil.getString(
+					configurationOverrideProperties,
+					ddmFormFieldValue.getName()));
+
+			ddmFormFieldValue.setValue(localizedValue);
+		}
 	}
 
 	private static final String[] _PASSWORD_TYPE_VALUES = {

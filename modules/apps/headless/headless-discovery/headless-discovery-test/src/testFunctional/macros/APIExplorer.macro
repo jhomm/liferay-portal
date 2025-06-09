@@ -1,0 +1,307 @@
+definition {
+
+	@summary = "Default summary"
+	macro addHeaders(headerValue = null, headerKey = null) {
+		Variables.assertDefined(parameterList = "${headerKey},${headerValue}");
+
+		Click(
+			locator1 = "Button#BUTTON_WITH_VALUE",
+			value = "Headers");
+
+		Type(
+			locator1 = "OpenAPI#HEADER_PARAMETER",
+			name = "key",
+			value1 = ${headerKey});
+
+		Type(
+			locator1 = "OpenAPI#HEADER_PARAMETER",
+			name = "value",
+			value1 = ${headerValue});
+
+		Button.clickSave();
+	}
+
+	@summary = "Default summary"
+	macro assertExposedActionsInSchema(schema = null, method = null, property = null, objectHref = null) {
+		Variables.assertDefined(parameterList = "${schema},${property},${method},${objectHref}");
+
+		var portalURL = JSONCompany.getPortalURL();
+
+		AssertTextEquals(
+			field = "actions",
+			locator1 = "OpenAPI#SCHEMA_PROPERTY",
+			property = ${property},
+			schema = ${schema},
+			value1 = "${property} { method string default: ${method} href string default: ${portalURL}/o/${objectHref} }");
+	}
+
+	@summary = "Default summary"
+	macro assertSchemaFieldsPresent(schemaFields = null, schemaEntity = null) {
+		Variables.assertDefined(parameterList = "${schemaEntity},${schemaFields}");
+
+		Click(
+			locator1 = "OpenAPI#SCHEMA_COLLAPSED",
+			schema = ${schemaEntity});
+
+		for (var schemaField : list ${schemaFields}) {
+			AssertElementPresent(
+				field = ${schemaField},
+				locator1 = "OpenAPI#SCHEMA_FIELD",
+				schema = ${schemaEntity});
+		}
+	}
+
+	@summary = "Default summary"
+	macro executeAllActionInSchema(schema = null, actionsList = null) {
+		Variables.assertDefined(parameterList = "${schema},${actionsList}");
+
+		Click(
+			locator1 = "OpenAPI#SCHEMA_COLLAPSED",
+			schema = ${schema});
+
+		Click(
+			field = "actions",
+			locator1 = "OpenAPI#SCHEMA_FIELD_COLLAPSED",
+			schema = ${schema});
+
+		for (var property : list ${actionsList}) {
+			Click(
+				field = "actions",
+				locator1 = "OpenAPI#SCHEMA_PROPERTY_COLLAPSED",
+				property = ${property},
+				schema = ${schema});
+		}
+	}
+
+	@summary = "Default summary"
+	macro executeAPIMethod(parameter_two = null, method = null, requestBody = null, service = null, parameter = null, scopeKey = null, value_two = null) {
+		Variables.assertDefined(parameterList = "${service},${method}");
+
+		APIExplorer.expandAPIMethod(
+			method = ${method},
+			service = ${service});
+
+		if (isSet(parameter)) {
+			if (${parameter} == "siteId") {
+				if (!(isSet(groupName))) {
+					var groupName = "Guest";
+				}
+
+				var value = JSONGroupAPI._getGroupIdByNameNoSelenium(
+					groupName = ${groupName},
+					site = "true");
+			}
+
+			Type(
+				locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+				method = ${method},
+				parameter = ${parameter},
+				value1 = ${value});
+
+			if (isSet(parameter_two)) {
+				Type(
+					locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+					method = ${method},
+					parameter = ${parameter_two},
+					value1 = ${value_two});
+			}
+
+			if (isSet(scopeKey)) {
+				Type(
+					locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+					method = ${method},
+					parameter = "scopeKey",
+					value1 = ${scopeKey});
+			}
+		}
+
+		if (isSet(requestBody)) {
+			Type(
+				locator1 = "OpenAPI#REQUEST_BODY",
+				method = ${method},
+				value1 = ${requestBody});
+		}
+
+		Click(
+			locator1 = "Button#EXECUTE",
+			method = ${method});
+	}
+
+	@summary = "Default summary"
+	macro executeAPIMethodCompact(api = null, version= null, parameter_two = null, parameter_three = null, parameter_four = null, method = null, requestBody = null, service = null, parameter = null, scopeKey = null, value_two = null, direction = null, assertValue = null) {
+		APIExplorer.navigateToOpenAPI(
+			api = ${api},
+			version = ${version});
+
+		Variables.assertDefined(parameterList = "${service},${method}");
+
+		APIExplorer.expandAPIMethod(
+			method = ${method},
+			service = ${service});
+
+		if (isSet(parameter)) {
+			if (${parameter} == "siteId") {
+				if (!(isSet(groupName))) {
+					var groupName = "Guest";
+				}
+
+				var value = JSONGroupAPI._getGroupIdByNameNoSelenium(
+					groupName = ${groupName},
+					site = "true");
+			}
+
+			Type(
+				locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+				method = ${method},
+				parameter = ${parameter},
+				value1 = ${value});
+
+			if (isSet(parameter_two)) {
+				Type(
+					locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+					method = ${method},
+					parameter = ${parameter_two},
+					value1 = ${value_two});
+			}
+
+			if (isSet(parameter_three)) {
+				Type(
+					locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+					method = ${method},
+					parameter = ${parameter_three},
+					value1 = ${value_three});
+			}
+
+			if (isSet(parameter_four)) {
+				Type(
+					locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+					method = ${method},
+					parameter = ${parameter_four},
+					value1 = ${value_four});
+			}
+
+			if (isSet(scopeKey)) {
+				Type(
+					locator1 = "OpenAPI#PARAMETER_UNDER_METHOD",
+					method = ${method},
+					parameter = "scopeKey",
+					value1 = ${scopeKey});
+			}
+		}
+
+		if (isSet(requestBody)) {
+			Type(
+				locator1 = "OpenAPI#REQUEST_BODY",
+				method = ${method},
+				value1 = ${requestBody});
+		}
+
+		Click(
+			locator1 = "Button#EXECUTE",
+			method = ${method});
+
+		if (isSet(direction)) {
+			if (${direction} == "p") {
+				AssertTextEquals.assertPartialText(
+					locator1 = "OpenAPI#RESPONSE_BODY",
+					method = ${method},
+					value1 = ${assertValue},
+					value1 = ${assertValue});
+			}
+		}
+	}
+
+	@summary = "Default summary"
+	macro executeGraphqlQuery(query = null) {
+		Click(
+			locator1 = "Button#BUTTON_WITH_VALUE",
+			value = "GraphQL");
+
+		AssertElementPresent.assertVisible(locator1 = "OpenAPI#GRAPHQL_EDITOR_LINE");
+
+		Click(
+			editor = "query-editor",
+			locator1 = "OpenAPI#GRAPHQL_EDITOR_LINE");
+
+		Type.sendKeys(
+			locator1 = "//body",
+			value1 = "keys=CONTROL,a");
+
+		Type.typeCodeMirrorEditorNoError(
+			locator1 = "OpenAPI#GRAPHQL_EDITOR",
+			value1 = ${query});
+
+		Click(
+			locator1 = "Button#BUTTON_WITH_VALUE",
+			value = "Execute Query (Ctrl-Enter)");
+	}
+
+	@summary = "Default summary"
+	macro expandAPIMethod(method = null, service = null) {
+		Variables.assertDefined(parameterList = "${service},${method}");
+
+		Click(
+			locator1 = "OpenAPI#API_METHOD",
+			method = ${method},
+			service = ${service});
+	}
+
+	@summary = "Default summary"
+	macro expandPropertiesInActionsSchema(schema = null, property = null) {
+		Variables.assertDefined(parameterList = "${schema},${property},${property2},${property3}");
+
+		Click(
+			locator1 = "OpenAPI#SCHEMA_COLLAPSED",
+			schema = ${schema});
+
+		Click(
+			field = "actions",
+			locator1 = "OpenAPI#SCHEMA_FIELD_COLLAPSED",
+			schema = ${schema});
+
+		Click(
+			field = "actions",
+			locator1 = "OpenAPI#SCHEMA_PROPERTY_COLLAPSED",
+			property = ${property},
+			schema = ${schema});
+
+		Click(
+			field = "actions",
+			locator1 = "OpenAPI#SCHEMA_PROPERTY_PROPERTY_COLLAPSED",
+			property = ${property},
+			property2 = ${property2},
+			schema = ${schema});
+
+		Click(
+			field = "actions",
+			locator1 = "OpenAPI#SCHEMA_PROPERTY_PROPERTY_COLLAPSED",
+			property = ${property},
+			property2 = ${property3},
+			schema = ${schema});
+	}
+
+	@summary = "Default summary"
+	macro navigateToOpenAPI(customObjectPlural = null, api = null, virtualHost = null, version = null) {
+		if (isSet(virtualHost)) {
+			if (!(isSet(port))) {
+				var port = 8080;
+			}
+
+			var portalURL = "http://${virtualHost}:${port}";
+		}
+		else {
+			var portalURL = JSONCompany.getPortalURL();
+		}
+
+		if (isSet(api)) {
+			Navigator.openSpecificURL(url = "${portalURL}/o/api?endpoint=${portalURL}/o/${api}/${version}/openapi.json");
+		}
+		else if (isSet(customObjectPlural)) {
+			Navigator.openSpecificURL(url = "${portalURL}/o/api?endpoint=${portalURL}/o/c/${customObjectPlural}/openapi.json");
+		}
+		else {
+			Navigator.openSpecificURL(url = "${portalURL}/o/api");
+		}
+	}
+
+}

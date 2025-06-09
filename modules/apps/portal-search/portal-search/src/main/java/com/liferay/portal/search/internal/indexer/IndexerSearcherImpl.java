@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.indexer;
@@ -30,7 +21,7 @@ import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.search.indexer.IndexerPermissionPostFilter;
 import com.liferay.portal.search.indexer.IndexerQueryBuilder;
 import com.liferay.portal.search.indexer.IndexerSearcher;
-import com.liferay.portal.search.internal.searcher.IndexSearcherHelper;
+import com.liferay.portal.search.internal.searcher.helper.IndexSearcherHelper;
 import com.liferay.portal.search.spi.model.query.contributor.QueryConfigContributor;
 import com.liferay.portal.search.spi.model.query.contributor.helper.QueryConfigContributorHelper;
 import com.liferay.portal.search.spi.model.registrar.ModelSearchSettings;
@@ -98,7 +89,7 @@ public class IndexerSearcherImpl<T extends BaseModel<?>>
 
 		Hits hits = _search(searchContext);
 
-		processHits(searchContext, hits);
+		_processHits(searchContext, hits);
 
 		return hits;
 	}
@@ -124,9 +115,6 @@ public class IndexerSearcherImpl<T extends BaseModel<?>>
 		queryConfig.setQueryIndexingEnabled(false);
 		queryConfig.setQuerySuggestionEnabled(false);
 
-		searchContext.setSearchEngineId(
-			_modelSearchSettings.getSearchEngineId());
-
 		BooleanQuery fullQuery = _indexerQueryBuilder.getQuery(searchContext);
 
 		fullQuery.setQueryConfig(queryConfig);
@@ -134,34 +122,12 @@ public class IndexerSearcherImpl<T extends BaseModel<?>>
 		return _indexSearcherHelper.searchCount(searchContext, fullQuery);
 	}
 
-	protected Hits doSearch(SearchContext searchContext) {
-		searchContext.setSearchEngineId(
-			_modelSearchSettings.getSearchEngineId());
-
+	private Hits _doSearch(SearchContext searchContext) {
 		Query fullQuery = _indexerQueryBuilder.getQuery(searchContext);
 
 		fullQuery.setQueryConfig(searchContext.getQueryConfig());
 
 		return _indexSearcherHelper.search(searchContext, fullQuery);
-	}
-
-	protected boolean isUseSearchResultPermissionFilter() {
-		if (_indexerPermissionPostFilter.isPermissionAware() &&
-			!_modelSearchSettings.isSearchResultPermissionFilterSuppressed()) {
-
-			return true;
-		}
-
-		return false;
-	}
-
-	protected void processHits(SearchContext searchContext, Hits hits) {
-		try {
-			_hitsProcessorRegistry.process(searchContext, hits);
-		}
-		catch (SearchException searchException) {
-			throw new RuntimeException(searchException);
-		}
 	}
 
 	private SearchResultPermissionFilter _getSearchResultPermissionFilter(
@@ -184,19 +150,39 @@ public class IndexerSearcherImpl<T extends BaseModel<?>>
 			searchResultPermissionFilterSearcher, permissionChecker);
 	}
 
+	private boolean _isUseSearchResultPermissionFilter() {
+		if (_indexerPermissionPostFilter.isPermissionAware() &&
+			_modelSearchSettings.isPermissionAware() &&
+			!_modelSearchSettings.isSearchResultPermissionFilterSuppressed()) {
+
+			return true;
+		}
+
+		return false;
+	}
+
+	private void _processHits(SearchContext searchContext, Hits hits) {
+		try {
+			_hitsProcessorRegistry.process(searchContext, hits);
+		}
+		catch (SearchException searchException) {
+			throw new RuntimeException(searchException);
+		}
+	}
+
 	private Hits _search(SearchContext searchContext) {
 		try {
-			if (isUseSearchResultPermissionFilter()) {
+			if (_isUseSearchResultPermissionFilter()) {
 				SearchResultPermissionFilter searchResultPermissionFilter =
 					_getSearchResultPermissionFilter(
-						searchContext, this::doSearch);
+						searchContext, this::_doSearch);
 
 				if (searchResultPermissionFilter != null) {
 					return searchResultPermissionFilter.search(searchContext);
 				}
 			}
 
-			return doSearch(searchContext);
+			return _doSearch(searchContext);
 		}
 		catch (SearchException searchException) {
 			throw new RuntimeException(searchException);

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.builder.internal.converter.serializer;
@@ -20,34 +11,28 @@ import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.spi.converter.serializer.SPIDDMFormRuleSerializerContext;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
-import org.mockito.Mock;
-
-import org.powermock.api.mockito.PowerMockito;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
+import org.mockito.Mockito;
 
 /**
  * @author Leonardo Barros
  */
-@PrepareForTest(ServiceContextThreadLocal.class)
-@RunWith(PowerMockRunner.class)
-public class CalculateDDMFormRuleActionSerializerTest extends PowerMockito {
+public class CalculateDDMFormRuleActionSerializerTest {
 
-	@Before
-	public void setUp() {
-		setUpServiceContextThreadLocal();
-	}
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testBuildExpression1() {
@@ -160,13 +145,13 @@ public class CalculateDDMFormRuleActionSerializerTest extends PowerMockito {
 
 	@Test
 	public void testSerialize() {
-		when(
+		Mockito.when(
 			_calculateDDMFormRuleAction.getExpression()
 		).thenReturn(
 			"(text + text1) * 2"
 		);
 
-		when(
+		Mockito.when(
 			_calculateDDMFormRuleAction.getTarget()
 		).thenReturn(
 			"text2"
@@ -179,7 +164,7 @@ public class CalculateDDMFormRuleActionSerializerTest extends PowerMockito {
 
 		ddmForm.setDDMFormFields(Arrays.asList(ddmFormField1, ddmFormField2));
 
-		when(
+		Mockito.when(
 			_serviceContext.getAttribute("form")
 		).thenReturn(
 			ddmForm
@@ -190,7 +175,7 @@ public class CalculateDDMFormRuleActionSerializerTest extends PowerMockito {
 				new CalculateDDMFormRuleActionSerializer(
 					_calculateDDMFormRuleAction);
 
-		PowerMockito.when(
+		Mockito.when(
 			_spiDDMFormRuleSerializerContext.getAttribute("form")
 		).thenReturn(
 			ddmForm
@@ -206,7 +191,7 @@ public class CalculateDDMFormRuleActionSerializerTest extends PowerMockito {
 
 	@Test
 	public void testSerializeWithEmptyTarget() {
-		when(
+		Mockito.when(
 			_calculateDDMFormRuleAction.getTarget()
 		).thenReturn(
 			StringPool.BLANK
@@ -223,23 +208,12 @@ public class CalculateDDMFormRuleActionSerializerTest extends PowerMockito {
 		Assert.assertNull(result);
 	}
 
-	protected void setUpServiceContextThreadLocal() {
-		mockStatic(ServiceContextThreadLocal.class);
-
-		when(
-			ServiceContextThreadLocal.getServiceContext()
-		).thenReturn(
-			_serviceContext
-		);
-	}
-
-	@Mock
-	private CalculateDDMFormRuleAction _calculateDDMFormRuleAction;
-
-	@Mock
-	private ServiceContext _serviceContext;
-
-	@Mock
-	private SPIDDMFormRuleSerializerContext _spiDDMFormRuleSerializerContext;
+	private final CalculateDDMFormRuleAction _calculateDDMFormRuleAction =
+		Mockito.mock(CalculateDDMFormRuleAction.class);
+	private final ServiceContext _serviceContext = Mockito.mock(
+		ServiceContext.class);
+	private final SPIDDMFormRuleSerializerContext
+		_spiDDMFormRuleSerializerContext = Mockito.mock(
+			SPIDDMFormRuleSerializerContext.class);
 
 }

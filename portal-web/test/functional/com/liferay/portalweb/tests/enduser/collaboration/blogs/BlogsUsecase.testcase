@@ -1,6 +1,7 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
+	property portal.acceptance = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Blogs";
@@ -17,7 +18,7 @@ definition {
 			layoutName = "Blogs Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Blogs Page",
 			widgetName = "Blogs");
@@ -26,9 +27,9 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
@@ -44,17 +45,17 @@ definition {
 
 			PortalInstances.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			Site.tearDownCP();
 		}
 	}
 
 	@description = "This test covers LPS-127212 and LPS-128781. This ensures that a blog title can be imported to a site when a duplicate title already exists."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanImportBlogWhenDuplicateTitleExists {
-		JSONGroup.addGroup(groupName = "Source Site Name");
+		HeadlessSite.addSite(siteName = "Source Site Name");
 
 		JSONBlog.addEntry(
 			entryContent = "Blogs Entry Content",
@@ -64,7 +65,6 @@ definition {
 		BlogsNavigator.openBlogsAdmin(siteURLKey = "source-site-name");
 
 		LAR.importPortlet(
-			filePath = "enduser/collaboration/blogs",
 			larFileName = "Blogs.portlet.lar",
 			uploadFrom = "dependencies");
 
@@ -74,20 +74,19 @@ definition {
 
 		for (var i : list "1,2") {
 			AssertTextEquals(
-				key_rowNumber = "${i}",
+				key_rowNumber = ${i},
 				locator1 = "ContentRow#ENTRY_CONTENT_ROW_NUMBER_TD_2",
 				value1 = "Blogs Entry Title");
 		}
 	}
 
 	@description = "This checks that a blog entry with a comment can be imported with no data loss."
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanImportEntryWithComment {
 		BlogsNavigator.openBlogsAdmin(siteURLKey = "guest");
 
 		LAR.importPortlet(
-			filePath = "enduser/collaboration/blogs",
 			larFileName = "BlogWithComment.lar",
 			uploadFrom = "dependencies");
 
@@ -103,7 +102,7 @@ definition {
 			entryTitle = "Blog Entry Title");
 
 		Comments.viewPG(
-			commentCount = "1",
+			commentCount = 1,
 			entryComment = "Blog Entry Comment",
 			importedComment = "true",
 			userFullName = "Test Test");

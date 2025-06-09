@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.batch.planner.model.impl;
 
 import com.liferay.batch.planner.model.BatchPlannerPolicy;
 import com.liferay.batch.planner.model.BatchPlannerPolicyModel;
-import com.liferay.batch.planner.model.BatchPlannerPolicySoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.petra.string.StringBundler;
@@ -36,18 +26,15 @@ import com.liferay.portal.kernel.util.StringUtil;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.BiConsumer;
@@ -150,60 +137,6 @@ public class BatchPlannerPolicyModelImpl
 	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
 
-	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static BatchPlannerPolicy toModel(BatchPlannerPolicySoap soapModel) {
-		if (soapModel == null) {
-			return null;
-		}
-
-		BatchPlannerPolicy model = new BatchPlannerPolicyImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setBatchPlannerPolicyId(soapModel.getBatchPlannerPolicyId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setBatchPlannerPlanId(soapModel.getBatchPlannerPlanId());
-		model.setName(soapModel.getName());
-		model.setValue(soapModel.getValue());
-
-		return model;
-	}
-
-	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static List<BatchPlannerPolicy> toModels(
-		BatchPlannerPolicySoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<BatchPlannerPolicy> models = new ArrayList<BatchPlannerPolicy>(
-			soapModels.length);
-
-		for (BatchPlannerPolicySoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
-	}
-
 	public BatchPlannerPolicyModelImpl() {
 	}
 
@@ -280,120 +213,109 @@ public class BatchPlannerPolicyModelImpl
 	public Map<String, Function<BatchPlannerPolicy, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<BatchPlannerPolicy, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, BatchPlannerPolicy>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			BatchPlannerPolicy.class.getClassLoader(), BatchPlannerPolicy.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<BatchPlannerPolicy, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<BatchPlannerPolicy> constructor =
-				(Constructor<BatchPlannerPolicy>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<BatchPlannerPolicy, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<BatchPlannerPolicy, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", BatchPlannerPolicy::getMvccVersion);
+			attributeGetterFunctions.put(
+				"batchPlannerPolicyId",
+				BatchPlannerPolicy::getBatchPlannerPolicyId);
+			attributeGetterFunctions.put(
+				"companyId", BatchPlannerPolicy::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", BatchPlannerPolicy::getUserId);
+			attributeGetterFunctions.put(
+				"userName", BatchPlannerPolicy::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", BatchPlannerPolicy::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", BatchPlannerPolicy::getModifiedDate);
+			attributeGetterFunctions.put(
+				"batchPlannerPlanId",
+				BatchPlannerPolicy::getBatchPlannerPlanId);
+			attributeGetterFunctions.put("name", BatchPlannerPolicy::getName);
+			attributeGetterFunctions.put("value", BatchPlannerPolicy::getValue);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<BatchPlannerPolicy, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<BatchPlannerPolicy, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<BatchPlannerPolicy, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<BatchPlannerPolicy, Object>>();
-		Map<String, BiConsumer<BatchPlannerPolicy, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap<String, BiConsumer<BatchPlannerPolicy, ?>>();
+		private static final Map<String, BiConsumer<BatchPlannerPolicy, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", BatchPlannerPolicy::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<BatchPlannerPolicy, Long>)
-				BatchPlannerPolicy::setMvccVersion);
-		attributeGetterFunctions.put(
-			"batchPlannerPolicyId",
-			BatchPlannerPolicy::getBatchPlannerPolicyId);
-		attributeSetterBiConsumers.put(
-			"batchPlannerPolicyId",
-			(BiConsumer<BatchPlannerPolicy, Long>)
-				BatchPlannerPolicy::setBatchPlannerPolicyId);
-		attributeGetterFunctions.put(
-			"companyId", BatchPlannerPolicy::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<BatchPlannerPolicy, Long>)
-				BatchPlannerPolicy::setCompanyId);
-		attributeGetterFunctions.put("userId", BatchPlannerPolicy::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<BatchPlannerPolicy, Long>)
-				BatchPlannerPolicy::setUserId);
-		attributeGetterFunctions.put(
-			"userName", BatchPlannerPolicy::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<BatchPlannerPolicy, String>)
-				BatchPlannerPolicy::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", BatchPlannerPolicy::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<BatchPlannerPolicy, Date>)
-				BatchPlannerPolicy::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", BatchPlannerPolicy::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<BatchPlannerPolicy, Date>)
-				BatchPlannerPolicy::setModifiedDate);
-		attributeGetterFunctions.put(
-			"batchPlannerPlanId", BatchPlannerPolicy::getBatchPlannerPlanId);
-		attributeSetterBiConsumers.put(
-			"batchPlannerPlanId",
-			(BiConsumer<BatchPlannerPolicy, Long>)
-				BatchPlannerPolicy::setBatchPlannerPlanId);
-		attributeGetterFunctions.put("name", BatchPlannerPolicy::getName);
-		attributeSetterBiConsumers.put(
-			"name",
-			(BiConsumer<BatchPlannerPolicy, String>)
-				BatchPlannerPolicy::setName);
-		attributeGetterFunctions.put("value", BatchPlannerPolicy::getValue);
-		attributeSetterBiConsumers.put(
-			"value",
-			(BiConsumer<BatchPlannerPolicy, String>)
-				BatchPlannerPolicy::setValue);
+		static {
+			Map<String, BiConsumer<BatchPlannerPolicy, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<BatchPlannerPolicy, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<BatchPlannerPolicy, Long>)
+					BatchPlannerPolicy::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"batchPlannerPolicyId",
+				(BiConsumer<BatchPlannerPolicy, Long>)
+					BatchPlannerPolicy::setBatchPlannerPolicyId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<BatchPlannerPolicy, Long>)
+					BatchPlannerPolicy::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<BatchPlannerPolicy, Long>)
+					BatchPlannerPolicy::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<BatchPlannerPolicy, String>)
+					BatchPlannerPolicy::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<BatchPlannerPolicy, Date>)
+					BatchPlannerPolicy::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<BatchPlannerPolicy, Date>)
+					BatchPlannerPolicy::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"batchPlannerPlanId",
+				(BiConsumer<BatchPlannerPolicy, Long>)
+					BatchPlannerPolicy::setBatchPlannerPlanId);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<BatchPlannerPolicy, String>)
+					BatchPlannerPolicy::setName);
+			attributeSetterBiConsumers.put(
+				"value",
+				(BiConsumer<BatchPlannerPolicy, String>)
+					BatchPlannerPolicy::setValue);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -888,41 +810,12 @@ public class BatchPlannerPolicyModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<BatchPlannerPolicy, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<BatchPlannerPolicy, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<BatchPlannerPolicy, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((BatchPlannerPolicy)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, BatchPlannerPolicy>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					BatchPlannerPolicy.class, ModelWrapper.class);
 
 	}
 
@@ -940,7 +833,8 @@ public class BatchPlannerPolicyModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<BatchPlannerPolicy, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

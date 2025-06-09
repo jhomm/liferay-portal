@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.service;
@@ -27,6 +18,10 @@ public class CommerceShippingFixedOptionServiceWrapper
 	implements CommerceShippingFixedOptionService,
 			   ServiceWrapper<CommerceShippingFixedOptionService> {
 
+	public CommerceShippingFixedOptionServiceWrapper() {
+		this(null);
+	}
+
 	public CommerceShippingFixedOptionServiceWrapper(
 		CommerceShippingFixedOptionService commerceShippingFixedOptionService) {
 
@@ -39,37 +34,16 @@ public class CommerceShippingFixedOptionServiceWrapper
 		com.liferay.commerce.shipping.engine.fixed.model.
 			CommerceShippingFixedOption addCommerceShippingFixedOption(
 					long groupId, long commerceShippingMethodId,
-					java.util.Map<java.util.Locale, String> nameMap,
+					java.math.BigDecimal amount,
 					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.math.BigDecimal amount, double priority)
+					String key, java.util.Map<java.util.Locale, String> nameMap,
+					double priority)
 				throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShippingFixedOptionService.
 			addCommerceShippingFixedOption(
-				groupId, commerceShippingMethodId, nameMap, descriptionMap,
-				amount, priority);
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public
-		com.liferay.commerce.shipping.engine.fixed.model.
-			CommerceShippingFixedOption addCommerceShippingFixedOption(
-					long commerceShippingMethodId,
-					java.util.Map<java.util.Locale, String> nameMap,
-					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.math.BigDecimal amount, double priority,
-					com.liferay.portal.kernel.service.ServiceContext
-						serviceContext)
-				throws com.liferay.portal.kernel.exception.PortalException {
-
-		return _commerceShippingFixedOptionService.
-			addCommerceShippingFixedOption(
-				commerceShippingMethodId, nameMap, descriptionMap, amount,
-				priority, serviceContext);
+				groupId, commerceShippingMethodId, amount, descriptionMap, key,
+				nameMap, priority);
 	}
 
 	@Override
@@ -90,6 +64,17 @@ public class CommerceShippingFixedOptionServiceWrapper
 
 		return _commerceShippingFixedOptionService.
 			fetchCommerceShippingFixedOption(commerceShippingFixedOptionId);
+	}
+
+	@Override
+	public
+		com.liferay.commerce.shipping.engine.fixed.model.
+			CommerceShippingFixedOption fetchCommerceShippingFixedOption(
+					long companyId, String key)
+				throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _commerceShippingFixedOptionService.
+			fetchCommerceShippingFixedOption(companyId, key);
 	}
 
 	@Override
@@ -168,15 +153,16 @@ public class CommerceShippingFixedOptionServiceWrapper
 		com.liferay.commerce.shipping.engine.fixed.model.
 			CommerceShippingFixedOption updateCommerceShippingFixedOption(
 					long commerceShippingFixedOptionId,
-					java.util.Map<java.util.Locale, String> nameMap,
+					java.math.BigDecimal amount,
 					java.util.Map<java.util.Locale, String> descriptionMap,
-					java.math.BigDecimal amount, double priority)
+					String key, java.util.Map<java.util.Locale, String> nameMap,
+					double priority)
 				throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commerceShippingFixedOptionService.
 			updateCommerceShippingFixedOption(
-				commerceShippingFixedOptionId, nameMap, descriptionMap, amount,
-				priority);
+				commerceShippingFixedOptionId, amount, descriptionMap, key,
+				nameMap, priority);
 	}
 
 	@Override

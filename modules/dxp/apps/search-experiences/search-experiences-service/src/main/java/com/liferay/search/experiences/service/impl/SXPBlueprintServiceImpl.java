@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.service.impl;
@@ -19,13 +10,10 @@ import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.search.experiences.constants.SXPActionKeys;
 import com.liferay.search.experiences.constants.SXPConstants;
 import com.liferay.search.experiences.model.SXPBlueprint;
-import com.liferay.search.experiences.service.SXPBlueprintLocalService;
 import com.liferay.search.experiences.service.base.SXPBlueprintServiceBaseImpl;
 
 import java.util.Locale;
@@ -38,6 +26,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  */
 @Component(
+	enabled = false,
 	property = {
 		"json.web.service.context.name=sxp",
 		"json.web.service.context.path=SXPBlueprint",
@@ -50,8 +39,9 @@ public class SXPBlueprintServiceImpl extends SXPBlueprintServiceBaseImpl {
 
 	@Override
 	public SXPBlueprint addSXPBlueprint(
-			String configurationJSON, Map<Locale, String> descriptionMap,
-			String elementInstancesJSON, Map<Locale, String> titleMap,
+			String externalReferenceCode, String configurationJSON,
+			Map<Locale, String> descriptionMap, String elementInstancesJSON,
+			String schemaVersion, Map<Locale, String> titleMap,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -59,8 +49,9 @@ public class SXPBlueprintServiceImpl extends SXPBlueprintServiceBaseImpl {
 			getPermissionChecker(), null, SXPActionKeys.ADD_SXP_BLUEPRINT);
 
 		return sxpBlueprintLocalService.addSXPBlueprint(
-			getUserId(), configurationJSON, descriptionMap,
-			elementInstancesJSON, titleMap, serviceContext);
+			externalReferenceCode, getUserId(), configurationJSON,
+			descriptionMap, elementInstancesJSON, schemaVersion, titleMap,
+			serviceContext);
 	}
 
 	@Override
@@ -74,10 +65,42 @@ public class SXPBlueprintServiceImpl extends SXPBlueprintServiceBaseImpl {
 	}
 
 	@Override
+	public SXPBlueprint fetchSXPBlueprint(long sxpBlueprintId)
+		throws PortalException {
+
+		SXPBlueprint sxpBlueprint = sxpBlueprintLocalService.fetchSXPBlueprint(
+			sxpBlueprintId);
+
+		if (sxpBlueprint != null) {
+			_sxpBlueprintModelResourcePermission.check(
+				getPermissionChecker(), sxpBlueprint, ActionKeys.VIEW);
+		}
+
+		return sxpBlueprint;
+	}
+
+	@Override
+	public SXPBlueprint fetchSXPBlueprintByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		SXPBlueprint sxpBlueprint =
+			sxpBlueprintLocalService.fetchSXPBlueprintByExternalReferenceCode(
+				externalReferenceCode, companyId);
+
+		if (sxpBlueprint != null) {
+			_sxpBlueprintModelResourcePermission.check(
+				getPermissionChecker(), sxpBlueprint, ActionKeys.VIEW);
+		}
+
+		return sxpBlueprint;
+	}
+
+	@Override
 	public SXPBlueprint getSXPBlueprint(long sxpBlueprintId)
 		throws PortalException {
 
-		SXPBlueprint sxpBlueprint = _sxpBlueprintLocalService.getSXPBlueprint(
+		SXPBlueprint sxpBlueprint = sxpBlueprintLocalService.getSXPBlueprint(
 			sxpBlueprintId);
 
 		_sxpBlueprintModelResourcePermission.check(
@@ -88,36 +111,45 @@ public class SXPBlueprintServiceImpl extends SXPBlueprintServiceBaseImpl {
 	}
 
 	@Override
+	public SXPBlueprint getSXPBlueprintByExternalReferenceCode(
+			long companyId, String externalReferenceCode)
+		throws PortalException {
+
+		SXPBlueprint sxpBlueprint =
+			sxpBlueprintLocalService.getSXPBlueprintByExternalReferenceCode(
+				externalReferenceCode, companyId);
+
+		_sxpBlueprintModelResourcePermission.check(
+			getPermissionChecker(), sxpBlueprint,
+			SXPActionKeys.APPLY_SXP_BLUEPRINT);
+
+		return sxpBlueprint;
+	}
+
+	@Override
 	public SXPBlueprint updateSXPBlueprint(
-			long sxpBlueprintId, String configurationJSON,
-			Map<Locale, String> descriptionMap, String elementInstancesJSON,
+			String externalReferenceCode, long sxpBlueprintId,
+			String configurationJSON, Map<Locale, String> descriptionMap,
+			String elementInstancesJSON, String schemaVersion,
 			Map<Locale, String> titleMap, ServiceContext serviceContext)
 		throws PortalException {
 
 		_sxpBlueprintModelResourcePermission.check(
 			getPermissionChecker(), sxpBlueprintId, ActionKeys.UPDATE);
 
-		return _sxpBlueprintLocalService.updateSXPBlueprint(
-			getUserId(), sxpBlueprintId, configurationJSON, descriptionMap,
-			elementInstancesJSON, titleMap, serviceContext);
+		return sxpBlueprintLocalService.updateSXPBlueprint(
+			externalReferenceCode, getUserId(), sxpBlueprintId,
+			configurationJSON, descriptionMap, elementInstancesJSON,
+			schemaVersion, titleMap, serviceContext);
 	}
-
-	@Reference
-	private CompanyLocalService _companyLocalService;
 
 	@Reference(target = "(resource.name=" + SXPConstants.RESOURCE_NAME + ")")
 	private volatile PortletResourcePermission _portletResourcePermission;
-
-	@Reference
-	private SXPBlueprintLocalService _sxpBlueprintLocalService;
 
 	@Reference(
 		target = "(model.class.name=com.liferay.search.experiences.model.SXPBlueprint)"
 	)
 	private volatile ModelResourcePermission<SXPBlueprint>
 		_sxpBlueprintModelResourcePermission;
-
-	@Reference
-	private UserLocalService _userLocalService;
 
 }

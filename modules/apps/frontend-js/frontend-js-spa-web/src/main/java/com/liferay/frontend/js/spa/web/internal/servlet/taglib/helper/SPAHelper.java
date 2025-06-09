@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.js.spa.web.internal.servlet.taglib.helper;
@@ -19,6 +10,7 @@ import com.liferay.osgi.util.StringPlus;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.json.JSONArray;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -30,14 +22,19 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.PortletKeys;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import java.lang.reflect.Field;
 
@@ -48,15 +45,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ResourceBundle;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import java.util.function.Consumer;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
@@ -80,6 +77,10 @@ public class SPAHelper {
 
 	public JSONArray getExcludedPathsJSONArray() {
 		return _spaExcludedPathsJSONArray;
+	}
+
+	public JSONArray getExcludedTargetPortletsJSONArray() {
+		return _spaExcludedTargetPortletsJSONArray;
 	}
 
 	public ResourceBundle getLanguageResourceBundle(
@@ -106,21 +107,26 @@ public class SPAHelper {
 	}
 
 	public JSONArray getPortletsBlacklistJSONArray(ThemeDisplay themeDisplay) {
-		JSONArray portletsBlacklistJSONArray =
-			JSONFactoryUtil.createJSONArray();
-
-		_portletLocalService.visitPortlets(
+		return _portletsBlacklistJSONArrays.computeIfAbsent(
 			themeDisplay.getCompanyId(),
-			portlet -> {
-				if (!portlet.isSinglePageApplication() &&
-					!portlet.isUndeployedPortlet() && portlet.isActive() &&
-					portlet.isReady()) {
+			companyId -> {
+				JSONArray portletsBlacklistJSONArray =
+					_jsonFactory.createJSONArray();
 
-					portletsBlacklistJSONArray.put(portlet.getPortletId());
-				}
+				_portletLocalService.visitPortlets(
+					companyId,
+					portlet -> {
+						if (!portlet.isSinglePageApplication() &&
+							!portlet.isUndeployedPortlet() &&
+							portlet.isActive() && portlet.isReady()) {
+
+							portletsBlacklistJSONArray.put(
+								portlet.getPortletId());
+						}
+					});
+
+				return portletsBlacklistJSONArray;
 			});
-
-		return portletsBlacklistJSONArray;
 	}
 
 	public int getRequestTimeout() {
@@ -169,6 +175,10 @@ public class SPAHelper {
 		return _log.isDebugEnabled();
 	}
 
+	public boolean isPreloadCSS() {
+		return _spaConfiguration.preloadCSS();
+	}
+
 	@Activate
 	protected void activate(
 			BundleContext bundleContext, Map<String, Object> properties)
@@ -180,6 +190,9 @@ public class SPAHelper {
 		_cacheExpirationTime = _getCacheExpirationTime(_spaConfiguration);
 		_spaExcludedPathsJSONArray = _getExcludedPathsJSONArray(
 			_spaConfiguration);
+
+		_spaExcludedTargetPortletsJSONArray =
+			_getExcludedTargetPortletsJSONArray();
 
 		Collections.addAll(
 			_navigationExceptionSelectors,
@@ -197,10 +210,24 @@ public class SPAHelper {
 			new NavigationExceptionSelectorTrackerCustomizer(bundleContext));
 
 		_navigationExceptionSelectorTracker.open();
+
+		_serviceRegistration = bundleContext.registerService(
+			Consumer.class,
+			companyId -> {
+				if (companyId == null) {
+					_portletsBlacklistJSONArrays.clear();
+				}
+				else {
+					_portletsBlacklistJSONArrays.remove(companyId);
+				}
+			},
+			MapUtil.singletonDictionary(
+				"portlets.map.clear.consumer", Boolean.TRUE));
 	}
 
 	@Deactivate
 	protected void deactivate() {
+		_serviceRegistration.unregister();
 		_navigationExceptionSelectorTracker.close();
 	}
 
@@ -216,19 +243,15 @@ public class SPAHelper {
 		_spaExcludedPathsJSONArray = _getExcludedPathsJSONArray(
 			_spaConfiguration);
 
+		_spaExcludedTargetPortletsJSONArray =
+			_getExcludedTargetPortletsJSONArray();
+
 		Collections.addAll(
 			_navigationExceptionSelectors,
 			_spaConfiguration.navigationExceptionSelectors());
 
 		_navigationExceptionSelectorsString = ListUtil.toString(
 			_navigationExceptionSelectors, (String)null, StringPool.BLANK);
-	}
-
-	@Reference(unbind = "-")
-	protected void setPortletLocalService(
-		PortletLocalService portletLocalService) {
-
-		_portletLocalService = portletLocalService;
 	}
 
 	private long _getCacheExpirationTime(SPAConfiguration spaConfiguration) {
@@ -244,7 +267,7 @@ public class SPAHelper {
 	private JSONArray _getExcludedPathsJSONArray(
 		SPAConfiguration spaConfiguration) {
 
-		JSONArray jsonArray = JSONFactoryUtil.createJSONArray();
+		JSONArray jsonArray = _jsonFactory.createJSONArray();
 
 		for (String excludedPath : _SPA_DEFAULT_EXCLUDED_PATHS) {
 			jsonArray.put(_portal.getPathContext() + excludedPath);
@@ -263,10 +286,15 @@ public class SPAHelper {
 		return jsonArray;
 	}
 
+	private JSONArray _getExcludedTargetPortletsJSONArray() {
+		return _jsonFactory.createJSONArray(
+			new String[] {PortletKeys.USERS_ADMIN, PortletKeys.SERVER_ADMIN});
+	}
+
 	private static final String _REDIRECT_PARAM_NAME;
 
 	private static final String[] _SPA_DEFAULT_EXCLUDED_PATHS = {
-		"/c/document_library", "/documents", "/image"
+		"/c/document_library", "/documents", "/image", "/o/cms/download-folder"
 	};
 
 	private static final String _SPA_NAVIGATION_EXCEPTION_SELECTOR_KEY =
@@ -291,7 +319,7 @@ public class SPAHelper {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -305,14 +333,24 @@ public class SPAHelper {
 	}
 
 	private volatile long _cacheExpirationTime;
+
+	@Reference
+	private JSONFactory _jsonFactory;
+
 	private ServiceTracker<Object, Object> _navigationExceptionSelectorTracker;
 
 	@Reference
 	private Portal _portal;
 
+	@Reference
 	private PortletLocalService _portletLocalService;
+
+	private final Map<Long, JSONArray> _portletsBlacklistJSONArrays =
+		new ConcurrentHashMap<>();
+	private ServiceRegistration<?> _serviceRegistration;
 	private volatile SPAConfiguration _spaConfiguration;
 	private volatile JSONArray _spaExcludedPathsJSONArray;
+	private volatile JSONArray _spaExcludedTargetPortletsJSONArray;
 
 	private static final class NavigationExceptionSelectorTrackerCustomizer
 		implements ServiceTrackerCustomizer<Object, Object> {

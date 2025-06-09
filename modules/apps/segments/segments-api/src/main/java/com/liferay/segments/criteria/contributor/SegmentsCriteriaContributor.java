@@ -1,28 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.criteria.contributor;
 
+import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.segments.criteria.Criteria;
 import com.liferay.segments.field.Field;
 
+import jakarta.portlet.PortletRequest;
+
 import java.util.List;
 import java.util.Locale;
-
-import javax.portlet.PortletRequest;
 
 /**
  * Provides an interface for extending the segment's {@link Criteria} by adding
@@ -31,6 +23,14 @@ import javax.portlet.PortletRequest;
  * @author Eduardo García
  */
 public interface SegmentsCriteriaContributor {
+
+	public static void contribute(
+		Criteria criteria, String filterString,
+		Criteria.Conjunction conjunction, String key, Criteria.Type type) {
+
+		criteria.addCriterion(key, type, filterString, conjunction);
+		criteria.addFilter(type, filterString, conjunction);
+	}
 
 	/**
 	 * Contributes the criterion to a segment's criteria.
@@ -43,9 +43,18 @@ public interface SegmentsCriteriaContributor {
 		Criteria criteria, String filterString,
 		Criteria.Conjunction conjunction) {
 
-		criteria.addCriterion(getKey(), getType(), filterString, conjunction);
-		criteria.addFilter(getType(), filterString, conjunction);
+		SegmentsCriteriaContributor.contribute(
+			criteria, filterString, conjunction, getKey(), getType());
 	}
+
+	/**
+	 * Returns a criteria as a JSONObject.
+	 *
+	 * @param  criteria the segment's criteria
+	 * @return the JSONObject from the segment's criteria
+	 * @review
+	 */
+	public JSONObject getCriteriaJSONObject(Criteria criteria) throws Exception;
 
 	/**
 	 * Returns the contributed criterion from the criteria.

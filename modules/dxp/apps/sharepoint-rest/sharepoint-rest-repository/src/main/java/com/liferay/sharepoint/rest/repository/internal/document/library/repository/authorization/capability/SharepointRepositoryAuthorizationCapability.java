@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharepoint.rest.repository.internal.document.library.repository.authorization.capability;
@@ -20,7 +11,7 @@ import com.liferay.document.library.repository.authorization.oauth2.OAuth2Author
 import com.liferay.document.library.repository.authorization.oauth2.Token;
 import com.liferay.document.library.repository.authorization.oauth2.TokenStore;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
@@ -29,13 +20,13 @@ import com.liferay.sharepoint.rest.repository.internal.configuration.SharepointR
 import com.liferay.sharepoint.rest.repository.internal.document.library.repository.authorization.oauth2.SharepointRepositoryRequestState;
 import com.liferay.sharepoint.rest.repository.internal.document.library.repository.authorization.oauth2.SharepointRepositoryTokenBroker;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Adolfo Pérez
@@ -45,13 +36,11 @@ public class SharepointRepositoryAuthorizationCapability
 
 	public SharepointRepositoryAuthorizationCapability(
 		TokenStore tokenStore,
-		SharepointRepositoryConfiguration
-			sharepointRepositoryOAuth2Configuration,
+		SharepointRepositoryConfiguration sharepointRepositoryConfiguration,
 		SharepointRepositoryTokenBroker sharepointOAuth2AuthorizationServer) {
 
 		_tokenStore = tokenStore;
-		_sharepointRepositoryOAuth2Configuration =
-			sharepointRepositoryOAuth2Configuration;
+		_sharepointRepositoryConfiguration = sharepointRepositoryConfiguration;
 		_sharepointOAuth2AuthorizationServer =
 			sharepointOAuth2AuthorizationServer;
 	}
@@ -80,7 +69,7 @@ public class SharepointRepositoryAuthorizationCapability
 	@Override
 	public boolean hasCustomRedirectFlow(
 			PortletRequest portletRequest, PortletResponse portletResponse)
-		throws IOException, PortalException {
+		throws PortalException {
 
 		if (_hasAuthorizationGrant(
 				PortalUtil.getHttpServletRequest(portletRequest))) {
@@ -89,19 +78,16 @@ public class SharepointRepositoryAuthorizationCapability
 		}
 
 		Token token = _tokenStore.get(
-			_sharepointRepositoryOAuth2Configuration.name(),
+			_sharepointRepositoryConfiguration.name(),
 			PortalUtil.getUserId(
 				PortalUtil.getHttpServletRequest(portletRequest)));
 
 		if (token == null) {
 			return true;
 		}
-		else if (token.isExpired()) {
-			if (Validator.isNotNull(token.getRefreshToken())) {
-				return false;
-			}
 
-			return true;
+		if (token.isExpired()) {
+			return Validator.isNull(token.getRefreshToken());
 		}
 
 		return false;
@@ -119,7 +105,7 @@ public class SharepointRepositoryAuthorizationCapability
 		}
 		else {
 			Token token = _tokenStore.get(
-				_sharepointRepositoryOAuth2Configuration.name(),
+				_sharepointRepositoryConfiguration.name(),
 				PortalUtil.getUserId(httpServletRequest));
 
 			if (token == null) {
@@ -142,19 +128,17 @@ public class SharepointRepositoryAuthorizationCapability
 		HttpServletRequest httpServletRequest, String state) {
 
 		String url =
-			_sharepointRepositoryOAuth2Configuration.
-				authorizationGrantEndpoint();
+			_sharepointRepositoryConfiguration.authorizationGrantEndpoint();
 
-		url = HttpUtil.addParameter(
-			url, "client_id",
-			_sharepointRepositoryOAuth2Configuration.clientId());
+		url = HttpComponentsUtil.addParameter(
+			url, "client_id", _sharepointRepositoryConfiguration.clientId());
 
-		url = HttpUtil.addParameter(
+		url = HttpComponentsUtil.addParameter(
 			url, "redirect_uri", _getRedirectURI(httpServletRequest));
-		url = HttpUtil.addParameter(url, "response_type", "code");
-		url = HttpUtil.addParameter(
-			url, "scope", _sharepointRepositoryOAuth2Configuration.scope());
-		url = HttpUtil.addParameter(url, "state", state);
+		url = HttpComponentsUtil.addParameter(url, "response_type", "code");
+		url = HttpComponentsUtil.addParameter(
+			url, "scope", _sharepointRepositoryConfiguration.scope());
+		url = HttpComponentsUtil.addParameter(url, "state", state);
 
 		return url;
 	}
@@ -170,11 +154,7 @@ public class SharepointRepositoryAuthorizationCapability
 
 		String code = ParamUtil.getString(httpServletRequest, "code");
 
-		if (Validator.isNull(code)) {
-			return false;
-		}
-
-		return true;
+		return Validator.isNotNull(code);
 	}
 
 	private void _refreshAccessToken(
@@ -188,12 +168,11 @@ public class SharepointRepositoryAuthorizationCapability
 				_sharepointOAuth2AuthorizationServer.refreshAccessToken(token);
 
 			_tokenStore.save(
-				_sharepointRepositoryOAuth2Configuration.name(), userId,
-				freshToken);
+				_sharepointRepositoryConfiguration.name(), userId, freshToken);
 		}
 		catch (AuthorizationException authorizationException) {
 			_tokenStore.delete(
-				_sharepointRepositoryOAuth2Configuration.name(), userId);
+				_sharepointRepositoryConfiguration.name(), userId);
 
 			throw authorizationException;
 		}
@@ -219,8 +198,7 @@ public class SharepointRepositoryAuthorizationCapability
 				code, _getRedirectURI(httpServletRequest));
 
 		_tokenStore.save(
-			_sharepointRepositoryOAuth2Configuration.name(), userId,
-			accessToken);
+			_sharepointRepositoryConfiguration.name(), userId, accessToken);
 
 		sharepointRepositoryRequestState.restore(
 			httpServletRequest, httpServletResponse);
@@ -260,7 +238,7 @@ public class SharepointRepositoryAuthorizationCapability
 	private final SharepointRepositoryTokenBroker
 		_sharepointOAuth2AuthorizationServer;
 	private final SharepointRepositoryConfiguration
-		_sharepointRepositoryOAuth2Configuration;
+		_sharepointRepositoryConfiguration;
 	private final TokenStore _tokenStore;
 
 }

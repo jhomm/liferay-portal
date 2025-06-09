@@ -1,44 +1,34 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.taglib.clay.servlet.taglib.display.context;
 
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemList;
-import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.ViewTypeItemList;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Drew Brokke
@@ -77,36 +67,17 @@ public class BaseManagementToolbarDisplayContext
 
 	@Override
 	public List<DropdownItem> getFilterDropdownItems() {
-		List<DropdownItem> filterNavigationDropdownItems =
-			getFilterNavigationDropdownItems();
-		List<DropdownItem> orderByDropdownItems = getOrderByDropdownItems();
-
-		DropdownItemList filterDropdownItems = DropdownItemListBuilder.addGroup(
-			() -> filterNavigationDropdownItems != null,
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(
-					filterNavigationDropdownItems);
-				dropdownGroupItem.setLabel(
-					getFilterNavigationDropdownItemsLabel());
-			}
-		).addGroup(
-			() -> orderByDropdownItems != null,
-			dropdownGroupItem -> {
-				dropdownGroupItem.setDropdownItems(orderByDropdownItems);
-				dropdownGroupItem.setLabel(getOrderByDropdownItemsLabel());
-			}
-		).build();
-
-		if (filterDropdownItems.isEmpty()) {
-			return null;
-		}
-
-		return filterDropdownItems;
+		return getFilterNavigationDropdownItems();
 	}
 
 	@Override
 	public String getNamespace() {
 		return liferayPortletResponse.getNamespace();
+	}
+
+	@Override
+	public List<DropdownItem> getOrderDropdownItems() {
+		return getOrderByDropdownItems();
 	}
 
 	@Override
@@ -159,7 +130,7 @@ public class BaseManagementToolbarDisplayContext
 	}
 
 	protected Map<String, String> getDefaultEntriesMap(String[] entryKeys) {
-		if ((entryKeys == null) || (entryKeys.length == 0)) {
+		if (ArrayUtil.isEmpty(entryKeys)) {
 			return null;
 		}
 
@@ -217,7 +188,7 @@ public class BaseManagementToolbarDisplayContext
 	}
 
 	protected String getFilterNavigationDropdownItemsLabel() {
-		return LanguageUtil.get(httpServletRequest, "filter-by-navigation");
+		return LanguageUtil.get(httpServletRequest, "filter-by");
 	}
 
 	protected String getNavigation() {
@@ -278,7 +249,7 @@ public class BaseManagementToolbarDisplayContext
 		}
 		catch (PortletException portletException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(portletException, portletException);
+				_log.warn(portletException);
 			}
 
 			return PortletURLBuilder.createRenderURL(

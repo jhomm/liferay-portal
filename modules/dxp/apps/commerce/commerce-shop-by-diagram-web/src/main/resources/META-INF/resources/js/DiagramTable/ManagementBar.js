@@ -1,33 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {ClayButtonWithIcon} from '@clayui/button';
 import {ClayInput} from '@clayui/form';
-import ClayManagementToolbar from '@clayui/management-toolbar';
+import {ManagementToolbar} from 'frontend-js-components-web';
 import {debounce} from 'frontend-js-web';
 import React, {useRef, useState} from 'react';
 
 function ManagementBar({updateQuery}) {
-	const [inputValue, udpateInputValue] = useState('');
+	const [inputValue, setInputValue] = useState('');
 	const debouncedUpdateQueryRef = useRef(debounce(updateQuery, 500));
 
 	function handleInputChange({target}) {
-		udpateInputValue(target.value);
+		setInputValue(target.value);
 
 		debouncedUpdateQueryRef.current(target.value);
 	}
 
 	return (
-		<ClayManagementToolbar className="border-bottom">
-			<ClayManagementToolbar.Search
+		<ManagementToolbar.Container className="border-bottom">
+			<ManagementToolbar.Search
 				onSubmit={(event) => event.preventDefault()}
 			>
 				<ClayInput.Group>
@@ -49,8 +43,8 @@ function ManagementBar({updateQuery}) {
 						</ClayInput.GroupInsetItem>
 					</ClayInput.GroupItem>
 				</ClayInput.Group>
-			</ClayManagementToolbar.Search>
-		</ClayManagementToolbar>
+			</ManagementToolbar.Search>
+		</ManagementToolbar.Container>
 	);
 }
 

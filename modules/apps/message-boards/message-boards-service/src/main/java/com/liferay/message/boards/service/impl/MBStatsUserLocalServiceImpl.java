@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.impl;
@@ -97,9 +88,6 @@ public class MBStatsUserLocalServiceImpl
 	public long getMessageCountByGroupId(long groupId) throws PortalException {
 		Group group = _groupLocalService.getGroup(groupId);
 
-		long defaultUserId = _userLocalService.getDefaultUserId(
-			group.getCompanyId());
-
 		return _mbMessagePersistence.dslQuery(
 			DSLQueryFactoryUtil.count(
 			).from(
@@ -108,7 +96,8 @@ public class MBStatsUserLocalServiceImpl
 				MBMessageTable.INSTANCE.groupId.eq(
 					groupId
 				).and(
-					MBMessageTable.INSTANCE.userId.neq(defaultUserId)
+					MBMessageTable.INSTANCE.userId.neq(
+						_userLocalService.getGuestUserId(group.getCompanyId()))
 				).and(
 					MBMessageTable.INSTANCE.categoryId.neq(
 						MBCategoryConstants.DISCUSSION_CATEGORY_ID)
@@ -145,7 +134,7 @@ public class MBStatsUserLocalServiceImpl
 
 		Group group = _groupLocalService.getGroup(groupId);
 
-		long defaultUserId = _userLocalService.getDefaultUserId(
+		long guestUserId = _userLocalService.getGuestUserId(
 			group.getCompanyId());
 
 		Expression<Long> countExpression = DSLFunctionFactoryUtil.count(
@@ -168,7 +157,7 @@ public class MBStatsUserLocalServiceImpl
 				MBMessageTable.INSTANCE.groupId.eq(
 					groupId
 				).and(
-					MBMessageTable.INSTANCE.userId.neq(defaultUserId)
+					MBMessageTable.INSTANCE.userId.neq(guestUserId)
 				).and(
 					MBMessageTable.INSTANCE.categoryId.neq(
 						MBCategoryConstants.DISCUSSION_CATEGORY_ID)
@@ -205,9 +194,6 @@ public class MBStatsUserLocalServiceImpl
 
 		Group group = _groupLocalService.getGroup(groupId);
 
-		long defaultUserId = _userLocalService.getDefaultUserId(
-			group.getCompanyId());
-
 		return _mbMessagePersistence.dslQueryCount(
 			DSLQueryFactoryUtil.countDistinct(
 				MBMessageTable.INSTANCE.userId
@@ -217,7 +203,8 @@ public class MBStatsUserLocalServiceImpl
 				MBMessageTable.INSTANCE.groupId.eq(
 					groupId
 				).and(
-					MBMessageTable.INSTANCE.userId.neq(defaultUserId)
+					MBMessageTable.INSTANCE.userId.neq(
+						_userLocalService.getGuestUserId(group.getCompanyId()))
 				).and(
 					MBMessageTable.INSTANCE.categoryId.neq(
 						MBCategoryConstants.DISCUSSION_CATEGORY_ID)
@@ -271,14 +258,14 @@ public class MBStatsUserLocalServiceImpl
 					if (_isEntityRank(
 							companyId, user, entityType, entityValue)) {
 
-						rank[1] = curRank;
+						rank[1] = kvp[0];
 
 						break;
 					}
 				}
 				catch (Exception exception) {
 					if (_log.isWarnEnabled()) {
-						_log.warn(exception, exception);
+						_log.warn(exception);
 					}
 				}
 			}

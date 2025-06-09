@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -58,7 +49,9 @@ renderResponse.setTitle(GetterUtil.get(title, LanguageUtil.get(request, "view-fo
 		<aui:input name="formInstanceId" type="hidden" value="<%= ddmFormDisplayContext.getFormInstanceId() %>" />
 		<aui:input name="defaultLanguageId" type="hidden" value='<%= ParamUtil.getString(request, "defaultLanguageId") %>' />
 
-		<div class="ddm-form-basic-info">
+		<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="/dynamic_data_mapping_form/validate_csrf_token" var="validateCSRFTokenURL" />
+
+		<div id=<%= ddmFormDisplayContext.getContainerId() %>>
 
 			<%
 			String languageId = ddmFormDisplayContext.getDefaultLanguageId();
@@ -66,24 +59,14 @@ renderResponse.setTitle(GetterUtil.get(title, LanguageUtil.get(request, "view-fo
 			Locale displayLocale = LocaleUtil.fromLanguageId(languageId);
 			%>
 
-			<h1 class="ddm-form-name"><%= HtmlUtil.escape(formInstance.getName(displayLocale)) %></h1>
-
-			<%
-			String description = HtmlUtil.escape(formInstance.getDescription(displayLocale));
-			%>
-
-			<c:if test="<%= Validator.isNotNull(description) %>">
-				<h5 class="ddm-form-description"><%= description %></h5>
-			</c:if>
-		</div>
-
-		<liferay-portlet:resourceURL copyCurrentRenderParameters="<%= false %>" id="/dynamic_data_mapping_form/validate_csrf_token" var="validateCSRFTokenURL" />
-
-		<div id=<%= ddmFormDisplayContext.getContainerId() %>>
 			<react:component
-				module="admin/js/FormView.link.es"
+				module="{FormView} from dynamic-data-mapping-form-web"
 				props='<%=
 					HashMapBuilder.<String, Object>put(
+						"description", formInstance.getDescription(displayLocale)
+					).put(
+						"title", formInstance.getName(displayLocale)
+					).put(
 						"validateCSRFTokenURL", validateCSRFTokenURL.toString()
 					).putAll(
 						ddmFormDisplayContext.getDDMFormContext()

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.inventory.service.mvcc.test;
@@ -24,6 +15,7 @@ import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseItemLoca
 import com.liferay.commerce.inventory.service.CommerceInventoryWarehouseLocalService;
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.commerce.test.util.CommerceInventoryTestUtil;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -36,6 +28,8 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.math.BigDecimal;
 
 import java.util.Date;
 
@@ -72,7 +66,7 @@ public class CommerceInventoryMVCCTest {
 	public void testReplenishmentItemMVCC() throws Exception {
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
 			CommerceInventoryTestUtil.addCommerceInventoryWarehouse(
-				RandomTestUtil.randomString(), true, _serviceContext);
+				RandomTestUtil.randomLocaleStringMap(), true, _serviceContext);
 
 		CPInstance cpInstance =
 			CommerceInventoryTestUtil.addRandomCPInstanceSku(
@@ -81,23 +75,28 @@ public class CommerceInventoryMVCCTest {
 		CommerceInventoryReplenishmentItem commerceInventoryReplenishmentItem =
 			_commerceInventoryReplenishmentItemLocalService.
 				addCommerceInventoryReplenishmentItem(
-					_user.getUserId(),
+					null, _user.getUserId(),
 					commerceInventoryWarehouse.
 						getCommerceInventoryWarehouseId(),
-					cpInstance.getSku(), new Date(), 10);
+					new Date(), BigDecimal.TEN, cpInstance.getSku(),
+					StringPool.BLANK);
 
 		_commerceInventoryReplenishmentItemLocalService.
 			updateCommerceInventoryReplenishmentItem(
+				null,
 				commerceInventoryReplenishmentItem.
 					getCommerceInventoryReplenishmentItemId(),
-				commerceInventoryReplenishmentItem.getAvailabilityDate(), 15,
+				commerceInventoryReplenishmentItem.getAvailabilityDate(),
+				new BigDecimal(15),
 				commerceInventoryReplenishmentItem.getMvccVersion());
 
 		_commerceInventoryReplenishmentItemLocalService.
 			updateCommerceInventoryReplenishmentItem(
+				null,
 				commerceInventoryReplenishmentItem.
 					getCommerceInventoryReplenishmentItemId(),
-				commerceInventoryReplenishmentItem.getAvailabilityDate(), 20,
+				commerceInventoryReplenishmentItem.getAvailabilityDate(),
+				new BigDecimal(20),
 				commerceInventoryReplenishmentItem.getMvccVersion());
 	}
 
@@ -105,7 +104,7 @@ public class CommerceInventoryMVCCTest {
 	public void testWarehouseItemMVCC() throws Exception {
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
 			CommerceInventoryTestUtil.addCommerceInventoryWarehouse(
-				RandomTestUtil.randomString(), true, _serviceContext);
+				RandomTestUtil.randomLocaleStringMap(), true, _serviceContext);
 
 		CPInstance cpInstance =
 			CommerceInventoryTestUtil.addRandomCPInstanceSku(
@@ -114,36 +113,39 @@ public class CommerceInventoryMVCCTest {
 		CommerceInventoryWarehouseItem commerceInventoryWarehouseItem =
 			_commerceInventoryWarehouseItemLocalService.
 				addCommerceInventoryWarehouseItem(
-					_user.getUserId(),
+					StringPool.BLANK, _user.getUserId(),
 					commerceInventoryWarehouse.
 						getCommerceInventoryWarehouseId(),
-					cpInstance.getSku(), 1);
+					BigDecimal.ONE, cpInstance.getSku(), StringPool.BLANK);
 
 		_commerceInventoryWarehouseItemLocalService.
 			updateCommerceInventoryWarehouseItem(
 				commerceInventoryWarehouseItem.getUserId(),
 				commerceInventoryWarehouseItem.
 					getCommerceInventoryWarehouseItemId(),
-				1, commerceInventoryWarehouse.getMvccVersion());
+				commerceInventoryWarehouse.getMvccVersion(), BigDecimal.ONE,
+				StringPool.BLANK);
 
 		_commerceInventoryWarehouseItemLocalService.
 			updateCommerceInventoryWarehouseItem(
 				commerceInventoryWarehouseItem.getUserId(),
 				commerceInventoryWarehouseItem.
 					getCommerceInventoryWarehouseItemId(),
-				1, commerceInventoryWarehouse.getMvccVersion());
+				commerceInventoryWarehouse.getMvccVersion(), BigDecimal.ONE,
+				StringPool.BLANK);
 	}
 
 	@Test(expected = MVCCException.class)
 	public void testWarehouseMVCC() throws Exception {
 		CommerceInventoryWarehouse commerceInventoryWarehouse =
 			CommerceInventoryTestUtil.addCommerceInventoryWarehouse(
-				RandomTestUtil.randomString(), true, _serviceContext);
+				RandomTestUtil.randomLocaleStringMap(), true, _serviceContext);
 
 		_commerceInventoryWarehouseLocalService.
 			updateCommerceInventoryWarehouse(
 				commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				commerceInventoryWarehouse.getName(), "New Description OK",
+				commerceInventoryWarehouse.getNameMap(),
+				RandomTestUtil.randomLocaleStringMap(),
 				commerceInventoryWarehouse.isActive(),
 				commerceInventoryWarehouse.getStreet1(),
 				commerceInventoryWarehouse.getStreet2(),
@@ -159,7 +161,8 @@ public class CommerceInventoryMVCCTest {
 		_commerceInventoryWarehouseLocalService.
 			updateCommerceInventoryWarehouse(
 				commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				commerceInventoryWarehouse.getName(), "New Description KO",
+				commerceInventoryWarehouse.getNameMap(),
+				RandomTestUtil.randomLocaleStringMap(),
 				commerceInventoryWarehouse.isActive(),
 				commerceInventoryWarehouse.getStreet1(),
 				commerceInventoryWarehouse.getStreet2(),

@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.wab.generator.internal.processor;
 
+import aQute.bnd.component.DSAnnotations;
 import aQute.bnd.header.Attrs;
 import aQute.bnd.header.Parameters;
+import aQute.bnd.make.component.ServiceComponent;
 import aQute.bnd.osgi.Constants;
 import aQute.bnd.osgi.Domain;
 import aQute.bnd.osgi.Jar;
@@ -25,8 +18,13 @@ import aQute.bnd.version.Version;
 
 import aQute.lib.filter.Filter;
 
+import com.liferay.ant.bnd.jsp.JspAnalyzerPlugin;
+import com.liferay.petra.io.unsync.UnsyncByteArrayOutputStream;
 import com.liferay.portal.kernel.deploy.auto.context.AutoDeploymentContext;
 import com.liferay.portal.kernel.security.xml.SecureXMLFactoryProviderUtil;
+import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
+import com.liferay.portal.kernel.util.FileUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.xml.Document;
 import com.liferay.portal.kernel.xml.Node;
@@ -34,33 +32,45 @@ import com.liferay.portal.kernel.xml.SAXReaderUtil;
 import com.liferay.portal.kernel.xml.UnsecureSAXReaderUtil;
 import com.liferay.portal.security.xml.SecureXMLFactoryProviderImpl;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
+import com.liferay.portal.util.FastDateFormatFactoryImpl;
 import com.liferay.portal.xml.SAXReaderImpl;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.stream.Stream;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
+import java.util.jar.Manifest;
+import java.util.zip.ZipEntry;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Raymond Augé
@@ -73,6 +83,12 @@ public class WabProcessorTest {
 
 	@BeforeClass
 	public static void setUpClass() {
+		FastDateFormatFactoryUtil fastDateFormatFactoryUtil =
+			new FastDateFormatFactoryUtil();
+
+		fastDateFormatFactoryUtil.setFastDateFormatFactory(
+			new FastDateFormatFactoryImpl());
+
 		SAXReaderUtil saxReaderUtil = new SAXReaderUtil();
 
 		SAXReaderImpl secureSAXReaderImpl = new SAXReaderImpl();
@@ -95,7 +111,7 @@ public class WabProcessorTest {
 
 	@Test
 	public void testClassicThemeWab() throws Exception {
-		File file = getFile("/classic-theme.autodeployed.war");
+		File file = getFile("dependencies/classic-theme.autodeployed.war");
 
 		try (Jar jar = new Jar(file)) {
 			Assert.assertNull(jar.getBsn());
@@ -192,9 +208,6 @@ public class WabProcessorTest {
 				importedPackages.containsKey("com.liferay.portlet"));
 			Assert.assertTrue(importedPackages.containsKey("com.sun.el"));
 			Assert.assertTrue(
-				importedPackages.containsKey(
-					"org.apache.commons.chain.generic"));
-			Assert.assertTrue(
 				importedPackages.containsKey("org.apache.naming.java"));
 
 			// Check if packages only referenced in web.xml are imported
@@ -208,9 +221,79 @@ public class WabProcessorTest {
 	}
 
 	@Test
+	public void testCustomizedPlugins() throws Exception {
+		File file = FileUtil.createTempFile("war");
+
+		try (JarOutputStream jarOutputStream = new JarOutputStream(
+				new FileOutputStream(file))) {
+
+			Manifest manifest = new Manifest();
+
+			Attributes attributes = manifest.getMainAttributes();
+
+			attributes.putValue("Manifest-Version", "1.0");
+
+			jarOutputStream.putNextEntry(new ZipEntry(JarFile.MANIFEST_NAME));
+
+			manifest.write(jarOutputStream);
+
+			jarOutputStream.closeEntry();
+
+			jarOutputStream.putNextEntry(new ZipEntry("WEB-INF/beans.xml"));
+			jarOutputStream.write(
+				"<?xml version=\"1.0\" ?><beans/>".getBytes());
+
+			jarOutputStream.closeEntry();
+
+			jarOutputStream.finish();
+		}
+
+		WabProcessor wabProcessor = new TestWabProcessor(
+			file,
+			Collections.singletonMap(
+				"Web-ContextPath", new String[] {"/test-plugins"}));
+
+		Logger logger = LoggerFactory.getLogger("aQute.bnd.osgi.Processor");
+
+		int originalCurrentLogLevel = ReflectionTestUtil.getAndSetFieldValue(
+			logger, "currentLogLevel", 10);
+
+		PrintStream originalErr = System.err;
+
+		UnsyncByteArrayOutputStream unsyncByteArrayOutputStream =
+			new UnsyncByteArrayOutputStream();
+
+		System.setErr(new PrintStream(unsyncByteArrayOutputStream));
+
+		try {
+			wabProcessor.getProcessedFile();
+
+			String message = unsyncByteArrayOutputStream.toString();
+
+			Assert.assertFalse(
+				message, message.contains(DSAnnotations.class.getSimpleName()));
+			Assert.assertFalse(
+				message,
+				message.contains(ServiceComponent.class.getSimpleName()));
+			Assert.assertTrue(
+				message,
+				message.contains(JspAnalyzerPlugin.class.getSimpleName()));
+			Assert.assertTrue(
+				message,
+				message.contains(WabProcessor.class.getSimpleName() + "$2"));
+		}
+		finally {
+			ReflectionTestUtil.setFieldValue(
+				logger, "currentLogLevel", originalCurrentLogLevel);
+
+			System.setErr(originalErr);
+		}
+	}
+
+	@Test
 	public void testFatCDIWabOptsOutOfOSGiCDIIntegration() throws Exception {
 		WabProcessor wabProcessor = new TestWabProcessor(
-			getFile("/jsf.cdi.applicant.portlet.war"),
+			getFile("dependencies/jsf.cdi.applicant.portlet.war"),
 			Collections.singletonMap(
 				"Web-ContextPath",
 				new String[] {"/jsf-cdi-applicant-portlet"}));
@@ -295,7 +378,7 @@ public class WabProcessorTest {
 	@Test
 	public void testSkinnyCDIWabGainsOSGiCDIIntegration() throws Exception {
 		WabProcessor wabProcessor = new TestWabProcessor(
-			getFile("/PortletV3AnnotatedDemo.war"),
+			getFile("dependencies/PortletV3AnnotatedDemo.war"),
 			Collections.singletonMap(
 				"Web-ContextPath",
 				new String[] {"/portlet-V3-annotated-demo"}));
@@ -357,7 +440,7 @@ public class WabProcessorTest {
 
 			Parameters requirements = domain.getRequireCapability();
 
-			Map.Entry<String, Attrs> entry = findRequirement(
+			Map.Entry<String, Attrs> entry = _findRequirement(
 				requirements, "osgi.extender",
 				HashMapBuilder.<String, Object>put(
 					"osgi.extender", "osgi.cdi"
@@ -380,7 +463,7 @@ public class WabProcessorTest {
 			// The bean portlet extension
 
 			Assert.assertNotNull(
-				findRequirement(
+				_findRequirement(
 					requirements, "osgi.cdi.extension",
 					Collections.singletonMap(
 						"osgi.cdi.extension",
@@ -389,7 +472,7 @@ public class WabProcessorTest {
 			// The http extension
 
 			Assert.assertNotNull(
-				findRequirement(
+				_findRequirement(
 					requirements, "osgi.cdi.extension",
 					Collections.singletonMap(
 						"osgi.cdi.extension", "aries.cdi.http")));
@@ -397,7 +480,7 @@ public class WabProcessorTest {
 			// The EL extension
 
 			Assert.assertNotNull(
-				findRequirement(
+				_findRequirement(
 					requirements, "osgi.cdi.extension",
 					Collections.singletonMap(
 						"osgi.cdi.extension", "aries.cdi.el.jsp")));
@@ -407,7 +490,7 @@ public class WabProcessorTest {
 	@Test
 	public void testThatEmbeddedLibsAreHandledProperly() throws Exception {
 		WabProcessor wabProcessor = new TestWabProcessor(
-			getFile("/tck-V3URLTests.wab.war"),
+			getFile("dependencies/tck-V3URLTests.wab.war"),
 			Collections.singletonMap(
 				"Web-ContextPath",
 				new String[] {"/portlet-V3-annotated-demo"}));
@@ -450,7 +533,7 @@ public class WabProcessorTest {
 
 			Parameters requirements = domain.getRequireCapability();
 
-			Map.Entry<String, Attrs> entry = findRequirement(
+			Map.Entry<String, Attrs> entry = _findRequirement(
 				requirements, "osgi.extender",
 				HashMapBuilder.<String, Object>put(
 					"osgi.extender", "osgi.cdi"
@@ -482,7 +565,7 @@ public class WabProcessorTest {
 			// The bean portlet extension
 
 			Assert.assertNotNull(
-				findRequirement(
+				_findRequirement(
 					requirements, "osgi.cdi.extension",
 					Collections.singletonMap(
 						"osgi.cdi.extension",
@@ -491,7 +574,7 @@ public class WabProcessorTest {
 			// The http extension
 
 			Assert.assertNotNull(
-				findRequirement(
+				_findRequirement(
 					requirements, "osgi.cdi.extension",
 					Collections.singletonMap(
 						"osgi.cdi.extension", "aries.cdi.http")));
@@ -499,14 +582,25 @@ public class WabProcessorTest {
 			// The EL extension
 
 			Assert.assertNotNull(
-				findRequirement(
+				_findRequirement(
 					requirements, "osgi.cdi.extension",
 					Collections.singletonMap(
 						"osgi.cdi.extension", "aries.cdi.el.jsp")));
 		}
 	}
 
-	protected Map.Entry<String, Attrs> findRequirement(
+	protected File getFile(String fileName) throws URISyntaxException {
+		URL url = WabProcessor.class.getResource(fileName);
+
+		Assert.assertEquals(
+			url + "is not file protocol", "file", url.getProtocol());
+
+		Path path = Paths.get(url.toURI());
+
+		return path.toFile();
+	}
+
+	private Map.Entry<String, Attrs> _findRequirement(
 			Parameters requirements, String namespace,
 			Map<String, Object> arguments)
 		throws Exception {
@@ -536,17 +630,6 @@ public class WabProcessorTest {
 		return null;
 	}
 
-	protected File getFile(String fileName) throws URISyntaxException {
-		URL url = WabProcessor.class.getResource(fileName);
-
-		Assert.assertEquals(
-			url + "is not file protocol", "file", url.getProtocol());
-
-		Path path = Paths.get(url.toURI());
-
-		return path.toFile();
-	}
-
 	private static class TestWabProcessor extends WabProcessor {
 
 		@Override
@@ -558,15 +641,32 @@ public class WabProcessorTest {
 
 				File parent = deployDir.getParentFile();
 
-				Stream<Path> pathsStream = Files.walk(parent.toPath());
+				Files.walkFileTree(
+					parent.toPath(),
+					new SimpleFileVisitor<Path>() {
 
-				pathsStream.sorted(
-					Comparator.reverseOrder()
-				).map(
-					Path::toFile
-				).forEach(
-					File::delete
-				);
+						@Override
+						public FileVisitResult postVisitDirectory(
+								Path path, IOException ioException)
+							throws IOException {
+
+							Files.delete(path);
+
+							return FileVisitResult.CONTINUE;
+						}
+
+						@Override
+						public FileVisitResult visitFile(
+								Path path,
+								BasicFileAttributes basicFileAttributes)
+							throws IOException {
+
+							Files.delete(path);
+
+							return FileVisitResult.CONTINUE;
+						}
+
+					});
 
 				parent.mkdirs();
 

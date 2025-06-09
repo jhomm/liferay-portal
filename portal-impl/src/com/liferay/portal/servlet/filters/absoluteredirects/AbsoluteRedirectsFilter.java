@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.absoluteredirects;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.NoSuchVirtualHostException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -26,10 +18,11 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.servlet.filters.BasePortalFilter;
 import com.liferay.portal.util.PortalInstances;
+import com.liferay.portal.util.PropsValues;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * <p>
@@ -58,13 +51,22 @@ public class AbsoluteRedirectsFilter
 
 		//response.setContentType(ContentTypes.TEXT_HTML_UTF8);
 
-		// Company id needs to always be called here so that it's properly set
+		// Company ID needs to always be called here so that it is properly set
 		// in subsequent calls
 
-		long companyId = PortalInstances.getCompanyId(httpServletRequest);
+		try {
+			PortalInstances.getCompanyId(
+				httpServletRequest, PropsValues.VIRTUAL_HOSTS_STRICT_ACCESS);
+		}
+		catch (NoSuchVirtualHostException noSuchVirtualHostException) {
+			_log.error(noSuchVirtualHostException);
 
-		if (_log.isDebugEnabled()) {
-			_log.debug("Company id " + companyId);
+			httpServletRequest.setAttribute(
+				WebKeys.UNKNOWN_VIRTUAL_HOST, Boolean.TRUE);
+
+			httpServletResponse.sendError(HttpServletResponse.SC_NOT_FOUND);
+
+			return null;
 		}
 
 		PortalUtil.getCurrentCompleteURL(httpServletRequest);

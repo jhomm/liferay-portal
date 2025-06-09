@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.capabilities.test;
@@ -173,9 +164,10 @@ public class LiferayDynamicCapabilityTest {
 							public FileEntry addFileEntry(
 								String externalReferenceCode, long userId,
 								long folderId, String sourceFileName,
-								String mimeType, String title,
+								String mimeType, String title, String urlTitle,
 								String description, String changeLog, File file,
-								Date expirationDate, Date reviewDate,
+								Date displayDate, Date expirationDate,
+								Date reviewDate,
 								ServiceContext serviceContext) {
 
 								return fileEntry1;
@@ -353,9 +345,10 @@ public class LiferayDynamicCapabilityTest {
 							public FileEntry addFileEntry(
 								String externalReferenceCode, long userId,
 								long folderId, String sourceFileName,
-								String mimeType, String title,
+								String mimeType, String title, String urlTitle,
 								String description, String changeLog, File file,
-								Date expirationDate, Date reviewDate,
+								Date displayDate, Date expirationDate,
+								Date reviewDate,
 								ServiceContext serviceContext) {
 
 								return fileEntry1;
@@ -411,9 +404,10 @@ public class LiferayDynamicCapabilityTest {
 							public FileEntry addFileEntry(
 								String externalReferenceCode, long userId,
 								long folderId, String sourceFileName,
-								String mimeType, String title,
+								String mimeType, String title, String urlTitle,
 								String description, String changeLog, File file,
-								Date expirationDate, Date reviewDate,
+								Date displayDate, Date expirationDate,
+								Date reviewDate,
 								ServiceContext serviceContext) {
 
 								return fileEntry1;
@@ -447,7 +441,8 @@ public class LiferayDynamicCapabilityTest {
 			null, TestPropsValues.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			TestDataConstants.TEST_BYTE_ARRAY, null, null, serviceContext);
+			TestDataConstants.TEST_BYTE_ARRAY, null, null, null,
+			serviceContext);
 	}
 
 	private Dictionary<String, Object> _getCapabilityProperties(

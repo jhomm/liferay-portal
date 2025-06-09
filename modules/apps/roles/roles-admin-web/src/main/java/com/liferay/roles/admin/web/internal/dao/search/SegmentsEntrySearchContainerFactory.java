@@ -1,23 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.admin.web.internal.dao.search;
 
 import com.liferay.portal.kernel.dao.search.EmptyOnClickRowChecker;
+import com.liferay.portal.kernel.dao.search.RowChecker;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
-import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.portlet.SearchOrderByUtil;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.QueryConfig;
 import com.liferay.portal.kernel.search.SearchContext;
@@ -27,17 +19,18 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.roles.admin.constants.RolesAdminPortletKeys;
 import com.liferay.segments.model.SegmentsEntry;
 import com.liferay.segments.service.SegmentsEntryLocalServiceUtil;
+
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import java.io.Serializable;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 /**
  * @author Pei-Jung Lan
@@ -54,16 +47,12 @@ public class SegmentsEntrySearchContainerFactory {
 			"no-segments-were-found");
 
 		searchContainer.setId("segmentsEntries");
-
-		String orderByCol = ParamUtil.getString(
-			renderRequest, "orderByCol", "name");
-
-		searchContainer.setOrderByCol(orderByCol);
-
-		String orderByType = ParamUtil.getString(
-			renderRequest, "orderByType", "asc");
-
-		searchContainer.setOrderByType(orderByType);
+		searchContainer.setOrderByCol(
+			SearchOrderByUtil.getOrderByCol(
+				renderRequest, RolesAdminPortletKeys.ROLES_ADMIN, "name"));
+		searchContainer.setOrderByType(
+			SearchOrderByUtil.getOrderByType(
+				renderRequest, RolesAdminPortletKeys.ROLES_ADMIN, "asc"));
 
 		String tabs3 = ParamUtil.getString(renderRequest, "tabs3", "current");
 
@@ -71,31 +60,32 @@ public class SegmentsEntrySearchContainerFactory {
 
 		LinkedHashMap<String, Object> params = new LinkedHashMap<>();
 
+		RowChecker rowChecker = null;
+
 		if (tabs3.equals("current")) {
 			params.put("roleIds", new long[] {roleId});
 
-			searchContainer.setRowChecker(
-				new EmptyOnClickRowChecker(renderResponse));
+			rowChecker = new EmptyOnClickRowChecker(renderResponse);
 		}
 		else {
-			searchContainer.setRowChecker(
-				new SegmentsEntryRoleChecker(renderResponse, roleId));
+			rowChecker = new SegmentsEntryRoleChecker(renderResponse, roleId);
 		}
 
 		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		BaseModelSearchResult<SegmentsEntry> baseModelSearchResult =
+		searchContainer.setResultsAndTotal(
 			SegmentsEntryLocalServiceUtil.searchSegmentsEntries(
 				_buildSearchContext(
 					themeDisplay.getCompanyId(),
 					themeDisplay.getCompanyGroupId(),
 					ParamUtil.getString(renderRequest, "keywords"), params,
 					searchContainer.getStart(), searchContainer.getEnd(),
-					_getSort(orderByCol, orderByType, themeDisplay)));
+					_getSort(
+						searchContainer.getOrderByCol(),
+						searchContainer.getOrderByType(), themeDisplay))));
 
-		searchContainer.setResults(baseModelSearchResult.getBaseModels());
-		searchContainer.setTotal(baseModelSearchResult.getLength());
+		searchContainer.setRowChecker(rowChecker);
 
 		return searchContainer;
 	}
@@ -143,12 +133,10 @@ public class SegmentsEntrySearchContainerFactory {
 		String orderByCol, String orderByType, ThemeDisplay themeDisplay) {
 
 		if (Objects.equals(orderByCol, "name")) {
-			String sortFieldName = Field.getSortableFieldName(
-				"localized_name_".concat(themeDisplay.getLanguageId()));
-
 			return new Sort(
-				sortFieldName, Sort.STRING_TYPE,
-				!Objects.equals(orderByType, "asc"));
+				Field.getSortableFieldName(
+					"localized_name_".concat(themeDisplay.getLanguageId())),
+				Sort.STRING_TYPE, !Objects.equals(orderByType, "asc"));
 		}
 
 		return new Sort(

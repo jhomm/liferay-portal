@@ -1,19 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.internal;
 
+import com.liferay.petra.lang.SafeCloseable;
+import com.liferay.petra.lang.ThreadContextClassLoaderUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
@@ -37,13 +30,42 @@ import com.liferay.portal.kernel.util.ClassUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.JavaConstants;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Time;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portal.tools.deploy.PortletDeployer;
 import com.liferay.portlet.InvokerPortletResponse;
 import com.liferay.portlet.InvokerPortletUtil;
+
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.EventRequest;
+import jakarta.portlet.EventResponse;
+import jakarta.portlet.HeaderRequest;
+import jakarta.portlet.HeaderResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.UnavailableException;
+import jakarta.portlet.filter.ActionFilter;
+import jakarta.portlet.filter.EventFilter;
+import jakarta.portlet.filter.FilterChain;
+import jakarta.portlet.filter.HeaderFilter;
+import jakarta.portlet.filter.PortletFilter;
+import jakarta.portlet.filter.RenderFilter;
+import jakarta.portlet.filter.ResourceFilter;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -51,37 +73,6 @@ import java.io.PrintWriter;
 
 import java.util.List;
 import java.util.Map;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.EventRequest;
-import javax.portlet.EventResponse;
-import javax.portlet.HeaderRequest;
-import javax.portlet.HeaderResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.UnavailableException;
-import javax.portlet.filter.ActionFilter;
-import javax.portlet.filter.EventFilter;
-import javax.portlet.filter.FilterChain;
-import javax.portlet.filter.HeaderFilter;
-import javax.portlet.filter.PortletFilter;
-import javax.portlet.filter.RenderFilter;
-import javax.portlet.filter.ResourceFilter;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.time.StopWatch;
 
@@ -120,7 +111,9 @@ public class InvokerPortletImpl
 
 		Class<? extends Portlet> portletClass = portlet.getClass();
 
-		if (ClassUtil.isSubclass(portletClass, PortletDeployer.JSF_STANDARD)) {
+		if (ClassUtil.isSubclass(
+				portletClass, "jakarta.portlet.faces.GenericFacesPortlet")) {
+
 			facesPortlet = true;
 		}
 		else if (portlet instanceof InvokerPortlet) {
@@ -146,23 +139,20 @@ public class InvokerPortletImpl
 			return;
 		}
 
-		Thread currentThread = Thread.currentThread();
+		ClassLoader classLoader = _portletClassLoader;
 
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
+		if (classLoader == null) {
+			Thread currentThread = Thread.currentThread();
 
-		try {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(_portletClassLoader);
-			}
+			classLoader = currentThread.getContextClassLoader();
+		}
+
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				classLoader)) {
 
 			cleanUp();
 
 			_portlet.destroy();
-		}
-		finally {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
 		}
 	}
 
@@ -193,15 +183,23 @@ public class InvokerPortletImpl
 
 	@Override
 	public ClassLoader getPortletClassLoader() {
+		if (_portlet instanceof InvokerPortlet) {
+			InvokerPortlet invokerPortlet = (InvokerPortlet)_portlet;
+
+			return invokerPortlet.getPortletClassLoader();
+		}
+
 		ClassLoader classLoader =
 			(ClassLoader)_liferayPortletContext.getAttribute(
 				PluginContextListener.PLUGIN_CLASS_LOADER);
 
-		if (classLoader == null) {
-			classLoader = PortalClassLoaderUtil.getClassLoader();
+		if (classLoader != null) {
+			return classLoader;
 		}
 
-		return classLoader;
+		Class<?> portletClass = _portlet.getClass();
+
+		return portletClass.getClassLoader();
 	}
 
 	@Override
@@ -233,16 +231,18 @@ public class InvokerPortletImpl
 	public void init(PortletConfig portletConfig) throws PortletException {
 		_liferayPortletConfig = (LiferayPortletConfig)portletConfig;
 
-		Thread currentThread = Thread.currentThread();
-
-		ClassLoader contextClassLoader = currentThread.getContextClassLoader();
-
 		_portletClassLoader = getPortletClassLoader();
 
-		try {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(_portletClassLoader);
-			}
+		ClassLoader classLoader = _portletClassLoader;
+
+		if (classLoader == null) {
+			Thread currentThread = Thread.currentThread();
+
+			classLoader = currentThread.getContextClassLoader();
+		}
+
+		try (SafeCloseable safeCloseable = ThreadContextClassLoaderUtil.swap(
+				classLoader)) {
 
 			_portlet.init(portletConfig);
 		}
@@ -250,11 +250,6 @@ public class InvokerPortletImpl
 			cleanUp();
 
 			throw throwable;
-		}
-		finally {
-			if (_portletClassLoader != null) {
-				currentThread.setContextClassLoader(contextClassLoader);
-			}
 		}
 	}
 
@@ -376,7 +371,6 @@ public class InvokerPortletImpl
 			}
 			else if ((response.getTime() < now) && (_expCache.intValue() > 0)) {
 				response.setTitle(invokeRender(renderRequest, renderResponse));
-
 				response.setContent(bufferCacheServletResponse.getString());
 				response.setTime(now + (Time.SECOND * _expCache.intValue()));
 			}
@@ -531,7 +525,8 @@ public class InvokerPortletImpl
 				INIT_INVOKER_PORTLET_NAME);
 
 			if (invokerPortletName == null) {
-				invokerPortletName = _liferayPortletConfig.getPortletName();
+				invokerPortletName = PortalUtil.getJsSafePortletId(
+					_liferayPortletConfig.getPortletName());
 			}
 
 			String path = StringPool.SLASH + invokerPortletName + "/invoke";

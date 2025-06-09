@@ -1,29 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.osgi.web.servlet.context.helper.internal;
 
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServlet;
+
 import java.io.IOException;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-
-import org.apache.jasper.Constants;
 
 /**
  * @author Raymond Augé
@@ -56,20 +45,21 @@ public class JspServletWrapper extends HttpServlet {
 			ServletRequest servletRequest, ServletResponse servletResponse)
 		throws IOException, ServletException {
 
-		String curJspFile = (String)servletRequest.getAttribute(
-			Constants.JSP_FILE);
+		String curJspFile = (String)servletRequest.getAttribute(_JSP_FILE);
 
 		if (_jspFile != null) {
-			servletRequest.setAttribute(Constants.JSP_FILE, _jspFile);
+			servletRequest.setAttribute(_JSP_FILE, _jspFile);
 		}
 
 		try {
 			_servlet.service(servletRequest, servletResponse);
 		}
 		finally {
-			servletRequest.setAttribute(Constants.JSP_FILE, curJspFile);
+			servletRequest.setAttribute(_JSP_FILE, curJspFile);
 		}
 	}
+
+	private static final String _JSP_FILE = "org.apache.catalina.jsp_file";
 
 	private final String _jspFile;
 	private final Servlet _servlet;

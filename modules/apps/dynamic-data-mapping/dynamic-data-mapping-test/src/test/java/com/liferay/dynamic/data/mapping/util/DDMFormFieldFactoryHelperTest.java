@@ -1,35 +1,33 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.util;
 
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
+import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidation;
+import com.liferay.dynamic.data.mapping.model.DDMFormFieldValidationExpression;
+import com.liferay.dynamic.data.mapping.model.LocalizedValue;
 import com.liferay.dynamic.data.mapping.test.util.TestDDMForm;
+import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.util.Map;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-
-import org.powermock.modules.junit4.PowerMockRunner;
 
 /**
  * @author Carolina Barbosa
  */
-@RunWith(PowerMockRunner.class)
 public class DDMFormFieldFactoryHelperTest {
+
+	@ClassRule
+	@Rule
+	public static final LiferayUnitTestRule liferayUnitTestRule =
+		LiferayUnitTestRule.INSTANCE;
 
 	@Test
 	public void testCreateVoidDDMFormField() throws Exception {
@@ -43,6 +41,73 @@ public class DDMFormFieldFactoryHelperTest {
 			ddmFormFieldFactoryHelper.createDDMFormField();
 
 		Assert.assertEquals("", ddmFormField.getDataType());
+	}
+
+	@Test
+	public void testGetDDMFormFieldValidationWithAllParameters()
+		throws Exception {
+
+		Class<?> clazz = TestDDMForm.class;
+
+		DDMFormFieldFactoryHelper ddmFormFieldFactoryHelper =
+			new DDMFormFieldFactoryHelper(
+				new DDMFormFactoryHelper(clazz),
+				clazz.getMethod("fieldWithAllValidationParameters"));
+
+		DDMFormFieldValidation ddmFormFieldValidation =
+			ddmFormFieldFactoryHelper.getDDMFormFieldValidation();
+
+		LocalizedValue localizedValue =
+			ddmFormFieldValidation.getErrorMessageLocalizedValue();
+
+		Assert.assertEquals(
+			"errorMessage",
+			localizedValue.getString(localizedValue.getDefaultLocale()));
+
+		DDMFormFieldValidationExpression ddmFormFieldValidationExpression =
+			ddmFormFieldValidation.getDDMFormFieldValidationExpression();
+
+		Assert.assertEquals(
+			"expression", ddmFormFieldValidationExpression.getValue());
+		Assert.assertEquals(
+			"expressionName", ddmFormFieldValidationExpression.getName());
+
+		localizedValue = ddmFormFieldValidation.getParameterLocalizedValue();
+
+		Assert.assertEquals(
+			"parameter",
+			localizedValue.getString(localizedValue.getDefaultLocale()));
+	}
+
+	@Test
+	public void testGetDDMFormFieldValidationWithPartialParameters()
+		throws Exception {
+
+		Class<?> clazz = TestDDMForm.class;
+
+		DDMFormFieldFactoryHelper ddmFormFieldFactoryHelper =
+			new DDMFormFieldFactoryHelper(
+				new DDMFormFactoryHelper(clazz),
+				clazz.getMethod("fieldWithPartialValidationParameters"));
+
+		DDMFormFieldValidation ddmFormFieldValidation =
+			ddmFormFieldFactoryHelper.getDDMFormFieldValidation();
+
+		LocalizedValue localizedValue =
+			ddmFormFieldValidation.getErrorMessageLocalizedValue();
+
+		Assert.assertEquals(
+			"errorMessage",
+			localizedValue.getString(localizedValue.getDefaultLocale()));
+
+		DDMFormFieldValidationExpression ddmFormFieldValidationExpression =
+			ddmFormFieldValidation.getDDMFormFieldValidationExpression();
+
+		Assert.assertEquals(
+			"expression", ddmFormFieldValidationExpression.getValue());
+		Assert.assertNull(ddmFormFieldValidationExpression.getName());
+
+		Assert.assertNull(ddmFormFieldValidation.getParameterLocalizedValue());
 	}
 
 	@Test

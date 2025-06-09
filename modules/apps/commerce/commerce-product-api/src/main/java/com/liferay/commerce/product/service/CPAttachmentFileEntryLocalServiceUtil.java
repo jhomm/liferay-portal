@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -70,8 +62,9 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			int displayDateMinute, int expirationDateMonth,
 			int expirationDateDay, int expirationDateYear,
 			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, Map<java.util.Locale, String> titleMap,
-			String json, double priority, int type,
+			boolean neverExpire, boolean galleryEnabled,
+			Map<java.util.Locale, String> titleMap, String json,
+			double priority, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
@@ -80,8 +73,8 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			fileEntryId, cdnEnabled, cdnURL, displayDateMonth, displayDateDay,
 			displayDateYear, displayDateHour, displayDateMinute,
 			expirationDateMonth, expirationDateDay, expirationDateYear,
-			expirationDateHour, expirationDateMinute, neverExpire, titleMap,
-			json, priority, type, serviceContext);
+			expirationDateHour, expirationDateMinute, neverExpire,
+			galleryEnabled, titleMap, json, priority, type, serviceContext);
 	}
 
 	public static CPAttachmentFileEntry addOrUpdateCPAttachmentFileEntry(
@@ -92,8 +85,9 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			int displayDateHour, int displayDateMinute, int expirationDateMonth,
 			int expirationDateDay, int expirationDateYear,
 			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, Map<java.util.Locale, String> titleMap,
-			String json, double priority, int type,
+			boolean neverExpire, boolean galleryEnabled,
+			Map<java.util.Locale, String> titleMap, String json,
+			double priority, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
@@ -103,7 +97,8 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
 			displayDateMinute, expirationDateMonth, expirationDateDay,
 			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, titleMap, json, priority, type, serviceContext);
+			neverExpire, galleryEnabled, titleMap, json, priority, type,
+			serviceContext);
 	}
 
 	public static void checkCPAttachmentFileEntries() throws PortalException {
@@ -139,6 +134,12 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 		throws PortalException {
 
 		return getService().createPersistedModel(primaryKeyObj);
+	}
+
+	public static void deleteCPAttachmentFileEntries(long fileEntryId)
+		throws PortalException {
+
+		getService().deleteCPAttachmentFileEntries(fileEntryId);
 	}
 
 	public static void deleteCPAttachmentFileEntries(
@@ -280,44 +281,18 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static CPAttachmentFileEntry fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CPAttachmentFileEntry fetchCPAttachmentFileEntry(
 		long CPAttachmentFileEntryId) {
 
 		return getService().fetchCPAttachmentFileEntry(CPAttachmentFileEntryId);
 	}
 
-	/**
-	 * Returns the cp attachment file entry with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp attachment file entry's external reference code
-	 * @return the matching cp attachment file entry, or <code>null</code> if a matching cp attachment file entry could not be found
-	 */
 	public static CPAttachmentFileEntry
 		fetchCPAttachmentFileEntryByExternalReferenceCode(
-			long companyId, String externalReferenceCode) {
+			String externalReferenceCode, long companyId) {
 
 		return getService().fetchCPAttachmentFileEntryByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCPAttachmentFileEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CPAttachmentFileEntry
-		fetchCPAttachmentFileEntryByReferenceCode(
-			long companyId, String externalReferenceCode) {
-
-		return getService().fetchCPAttachmentFileEntryByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -367,6 +342,25 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 	}
 
 	public static List<CPAttachmentFileEntry> getCPAttachmentFileEntries(
+			long cpDefinitionId, Boolean galleryEnabled,
+			String serializedDDMFormValues, int type, int start, int end)
+		throws Exception {
+
+		return getService().getCPAttachmentFileEntries(
+			cpDefinitionId, galleryEnabled, serializedDDMFormValues, type,
+			start, end);
+	}
+
+	public static List<CPAttachmentFileEntry> getCPAttachmentFileEntries(
+			long classNameId, long classPK, boolean galleryEnabled, int type,
+			int status, int start, int end)
+		throws PortalException {
+
+		return getService().getCPAttachmentFileEntries(
+			classNameId, classPK, galleryEnabled, type, status, start, end);
+	}
+
+	public static List<CPAttachmentFileEntry> getCPAttachmentFileEntries(
 			long classNameId, long classPK, int type, int status, int start,
 			int end)
 		throws PortalException {
@@ -385,12 +379,12 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 	}
 
 	public static List<CPAttachmentFileEntry> getCPAttachmentFileEntries(
-			long cpDefinitionId, String serializedDDMFormValues, int type,
-			int start, int end)
-		throws Exception {
+			long classNameId, long classPK, String keywords, int type,
+			int status, int start, int end)
+		throws PortalException {
 
 		return getService().getCPAttachmentFileEntries(
-			cpDefinitionId, serializedDDMFormValues, type, start, end);
+			classNameId, classPK, keywords, type, status, start, end);
 	}
 
 	/**
@@ -443,6 +437,15 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			classNameId, classPK, type, status);
 	}
 
+	public static int getCPAttachmentFileEntriesCount(
+			long classNameId, long classPK, String keywords, int type,
+			int status)
+		throws PortalException {
+
+		return getService().getCPAttachmentFileEntriesCount(
+			classNameId, classPK, keywords, type, status);
+	}
+
 	/**
 	 * Returns the cp attachment file entry with the primary key.
 	 *
@@ -457,21 +460,13 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 		return getService().getCPAttachmentFileEntry(CPAttachmentFileEntryId);
 	}
 
-	/**
-	 * Returns the cp attachment file entry with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp attachment file entry's external reference code
-	 * @return the matching cp attachment file entry
-	 * @throws PortalException if a matching cp attachment file entry could not be found
-	 */
 	public static CPAttachmentFileEntry
 			getCPAttachmentFileEntryByExternalReferenceCode(
-				long companyId, String externalReferenceCode)
+				String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCPAttachmentFileEntryByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -523,6 +518,17 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 		return getService().getPersistedModel(primaryKeyObj);
 	}
 
+	public static void updateAsset(
+			long userId, CPAttachmentFileEntry cpAttachmentFileEntry,
+			long[] assetCategoryIds, String[] assetTagNames,
+			long[] assetLinkEntryIds, Double priority)
+		throws PortalException {
+
+		getService().updateAsset(
+			userId, cpAttachmentFileEntry, assetCategoryIds, assetTagNames,
+			assetLinkEntryIds, priority);
+	}
+
 	/**
 	 * Updates the cp attachment file entry in the database or adds it if it does not yet exist. Also notifies the appropriate model listeners.
 	 *
@@ -546,8 +552,9 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			int displayDateMinute, int expirationDateMonth,
 			int expirationDateDay, int expirationDateYear,
 			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, Map<java.util.Locale, String> titleMap,
-			String json, double priority, int type,
+			boolean neverExpire, boolean galleryEnabled,
+			Map<java.util.Locale, String> titleMap, String json,
+			double priority, int type,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
@@ -556,7 +563,8 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
 			displayDateMinute, expirationDateMonth, expirationDateDay,
 			expirationDateYear, expirationDateHour, expirationDateMinute,
-			neverExpire, titleMap, json, priority, type, serviceContext);
+			neverExpire, galleryEnabled, titleMap, json, priority, type,
+			serviceContext);
 	}
 
 	public static CPAttachmentFileEntry updateStatus(
@@ -571,9 +579,12 @@ public class CPAttachmentFileEntryLocalServiceUtil {
 	}
 
 	public static CPAttachmentFileEntryLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPAttachmentFileEntryLocalService _service;
+	private static final Snapshot<CPAttachmentFileEntryLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			CPAttachmentFileEntryLocalServiceUtil.class,
+			CPAttachmentFileEntryLocalService.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.npm.react.portlet;
@@ -44,21 +35,22 @@ public class ProjectTemplatesNpmReactPortletTest
 	public static final MavenExecutor mavenExecutor = new MavenExecutor();
 
 	@Parameterized.Parameters(
-		name = "Testcase-{index}: testing {0}, {1}, {2}, {3}"
+		name = "Testcase-{index}: testing {0}, {1}, {2}, {3}, {4}, {5}"
 	)
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(
 			new Object[][] {
-				{"foo", "foo", "Foo", "7.0.6-2"},
-				{"foo", "foo", "Foo", "7.1.3-1"},
-				{"foo", "foo", "Foo", "7.2.1-1"},
-				{"foo", "foo", "Foo", "7.3.7"},
-				{"foo", "foo", "Foo", "7.4.1-1"},
-				{"foo-bar", "foo.bar", "FooBar", "7.0.6-2"},
-				{"foo-bar", "foo.bar", "FooBar", "7.1.3-1"},
-				{"foo-bar", "foo.bar", "FooBar", "7.2.1-1"},
-				{"foo-bar", "foo.bar", "FooBar", "7.3.7"},
-				{"foo-bar", "foo.bar", "FooBar", "7.4.1-1"}
+				{"foo", "foo", "Foo", "dxp", "7.0.10.17", "yarn"},
+				{"foo", "foo", "Foo", "dxp", "7.1.10.7", "yarn"},
+				{"foo", "foo", "Foo", "dxp", "7.2.10.7", "yarn"},
+				{"foo", "foo", "Foo", "portal", "7.3.7", "npm"},
+				{"foo", "foo", "Foo", "portal", "7.4.3.56", "npm"},
+				{"foo-bar", "foo.bar", "FooBar", "dxp", "7.0.10.17", "yarn"},
+				{"foo-bar", "foo.bar", "FooBar", "dxp", "7.1.10.7", "yarn"},
+				{"foo-bar", "foo.bar", "FooBar", "dxp", "7.2.10.7", "yarn"},
+				{"foo-bar", "foo.bar", "FooBar", "dxp", "2024.q1.1", "yarn"},
+				{"foo-bar", "foo.bar", "FooBar", "portal", "7.3.7", "npm"},
+				{"foo-bar", "foo.bar", "FooBar", "portal", "7.4.3.56", "npm"}
 			});
 	}
 
@@ -80,12 +72,15 @@ public class ProjectTemplatesNpmReactPortletTest
 
 	public ProjectTemplatesNpmReactPortletTest(
 		String name, String packageName, String className,
-		String liferayVersion) {
+		String liferayProduct, String liferayVersion,
+		String nodePackageManager) {
 
 		_name = name;
 		_packageName = packageName;
 		_className = className;
+		_liferayProduct = liferayProduct;
 		_liferayVersion = liferayVersion;
+		_nodePackageManager = nodePackageManager;
 	}
 
 	@Test
@@ -94,7 +89,8 @@ public class ProjectTemplatesNpmReactPortletTest
 
 		testBuildTemplateNpm(
 			temporaryFolder, mavenExecutor, template, _name, _packageName,
-			_className, _liferayVersion, _gradleDistribution);
+			_className, _liferayProduct, _liferayVersion, _nodePackageManager,
+			_gradleDistribution);
 	}
 
 	@Rule
@@ -103,8 +99,10 @@ public class ProjectTemplatesNpmReactPortletTest
 	private static URI _gradleDistribution;
 
 	private final String _className;
+	private final String _liferayProduct;
 	private final String _liferayVersion;
 	private final String _name;
+	private final String _nodePackageManager;
 	private final String _packageName;
 
 }

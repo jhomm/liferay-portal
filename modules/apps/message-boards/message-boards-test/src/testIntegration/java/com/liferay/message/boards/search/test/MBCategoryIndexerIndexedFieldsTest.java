@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.search.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.message.boards.model.MBCategory;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Document;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.SearchEngineHelper;
 import com.liferay.portal.kernel.service.ResourcePermissionLocalService;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -29,10 +22,10 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.search.test.rule.SearchTestRule;
 import com.liferay.portal.search.test.util.FieldValuesAssert;
 import com.liferay.portal.search.test.util.IndexedFieldsFixture;
 import com.liferay.portal.search.test.util.IndexerFixture;
-import com.liferay.portal.search.test.util.SearchTestRule;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
@@ -82,7 +75,10 @@ public class MBCategoryIndexerIndexedFieldsTest {
 		indexedFieldsFixture.postProcessDocument(document);
 
 		FieldValuesAssert.assertFieldValues(
-			_expectedFieldValues(mbCategory), document, searchTerm);
+			document, _expectedFieldValues(mbCategory),
+			name ->
+				!name.contains(StringPool.PERIOD) && !name.equals("timestamp"),
+			searchTerm);
 	}
 
 	@Rule
@@ -90,7 +86,7 @@ public class MBCategoryIndexerIndexedFieldsTest {
 
 	protected void setUpIndexedFieldsFixture() {
 		indexedFieldsFixture = new IndexedFieldsFixture(
-			resourcePermissionLocalService);
+			resourcePermissionLocalService, searchEngineHelper);
 	}
 
 	protected void setUpMBCategoryIndexerFixture() {
@@ -125,6 +121,9 @@ public class MBCategoryIndexerIndexedFieldsTest {
 	@Inject
 	protected ResourcePermissionLocalService resourcePermissionLocalService;
 
+	@Inject
+	protected SearchEngineHelper searchEngineHelper;
+
 	protected UserSearchFixture userSearchFixture;
 
 	private Map<String, String> _expectedFieldValues(MBCategory mbCategory)
@@ -151,6 +150,16 @@ public class MBCategoryIndexerIndexedFieldsTest {
 			Field.USER_ID, String.valueOf(mbCategory.getUserId())
 		).put(
 			Field.USER_NAME, StringUtil.lowerCase(mbCategory.getUserName())
+		).put(
+			"externalReferenceCode", mbCategory.getExternalReferenceCode()
+		).put(
+			"groupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
+			"scopeGroupExternalReferenceCode", _group.getExternalReferenceCode()
+		).put(
+			"statusByUserId", String.valueOf(mbCategory.getStatusByUserId())
+		).put(
+			"userExternalReferenceCode", _user.getExternalReferenceCode()
 		).build();
 
 		indexedFieldsFixture.populateUID(

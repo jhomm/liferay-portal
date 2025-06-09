@@ -1,0 +1,43 @@
+/**
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
+ */
+
+package com.liferay.document.library.internal.upgrade.v3_2_6;
+
+import com.liferay.document.library.kernel.model.DLFileEntryConstants;
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.upgrade.UpgradeProcess;
+
+/**
+ * @author Adolfo Pérez
+ */
+public class DeleteStalePWCVersionsUpgradeProcess extends UpgradeProcess {
+
+	public DeleteStalePWCVersionsUpgradeProcess(Store store) {
+		_store = store;
+	}
+
+	@Override
+	protected void doUpgrade() throws Exception {
+		processConcurrently(
+			StringBundler.concat(
+				"select distinct DLFileEntry.companyId, ",
+				"DLFileEntry.repositoryId, DLFileEntry.name from DLFileEntry ",
+				"where '", DLFileEntryConstants.PRIVATE_WORKING_COPY_VERSION,
+				"' not in (select version from DLFileVersion where ",
+				"DLFileVersion.fileEntryId = DLFileEntry.fileEntryId)"),
+			resultSet -> new Object[] {
+				resultSet.getLong(1), resultSet.getLong(2),
+				resultSet.getString(3)
+			},
+			values -> _store.deleteFile(
+				(long)values[0], (long)values[1], (String)values[2],
+				DLFileEntryConstants.PRIVATE_WORKING_COPY_VERSION),
+			null);
+	}
+
+	private final Store _store;
+
+}

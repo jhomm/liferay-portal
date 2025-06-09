@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.teams.web.internal.exportimport.data.handler;
@@ -41,8 +32,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Akos Thurzo
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + SiteTeamsPortletKeys.SITE_TEAMS,
+	property = "jakarta.portlet.name=" + SiteTeamsPortletKeys.SITE_TEAMS,
 	service = StagedModelDataHandler.class
 )
 public class TeamStagedModelDataHandler
@@ -121,7 +111,7 @@ public class TeamStagedModelDataHandler
 			PortletDataContext portletDataContext, Team team)
 		throws Exception {
 
-		Team existingTeam = fetchExistingTeam(
+		Team existingTeam = _fetchExistingTeam(
 			team.getUuid(), portletDataContext.getScopeGroupId(),
 			team.getName());
 
@@ -192,7 +182,12 @@ public class TeamStagedModelDataHandler
 		portletDataContext.importClassedModel(team, importedTeam);
 	}
 
-	protected Team fetchExistingTeam(String uuid, long groupId, String name) {
+	@Override
+	protected boolean isSkipImportReferenceStagedModels() {
+		return true;
+	}
+
+	private Team _fetchExistingTeam(String uuid, long groupId, String name) {
 		Team team = fetchStagedModelByUuidAndGroupId(uuid, groupId);
 
 		if (team != null) {
@@ -202,30 +197,13 @@ public class TeamStagedModelDataHandler
 		return _teamLocalService.fetchTeam(groupId, name);
 	}
 
-	@Override
-	protected boolean isSkipImportReferenceStagedModels() {
-		return true;
-	}
-
-	@Reference(unbind = "-")
-	protected void setTeamLocalService(TeamLocalService teamLocalService) {
-		_teamLocalService = teamLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserGroupLocalService(
-		UserGroupLocalService userGroupLocalService) {
-
-		_userGroupLocalService = userGroupLocalService;
-	}
-
-	@Reference(unbind = "-")
-	protected void setUserLocalService(UserLocalService userLocalService) {
-		_userLocalService = userLocalService;
-	}
-
+	@Reference
 	private TeamLocalService _teamLocalService;
+
+	@Reference
 	private UserGroupLocalService _userGroupLocalService;
+
+	@Reference
 	private UserLocalService _userLocalService;
 
 }

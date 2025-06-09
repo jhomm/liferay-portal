@@ -1,28 +1,22 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.admin.web.internal.portlet.action;
 
 import com.liferay.layout.admin.constants.LayoutAdminPortletKeys;
+import com.liferay.layout.admin.web.internal.handler.LayoutExceptionRequestHandlerUtil;
 import com.liferay.portal.events.EventsProcessorUtil;
 import com.liferay.portal.kernel.exception.GroupInheritContentException;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.RequiredLayoutException;
+import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutType;
+import com.liferay.portal.kernel.model.impl.VirtualLayout;
+import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
@@ -43,10 +37,10 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.segments.exception.RequiredSegmentsExperienceException;
-import com.liferay.sites.kernel.util.SitesUtil;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -55,19 +49,40 @@ import org.osgi.service.component.annotations.Reference;
  * @author Pavel Savinov
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
+		"jakarta.portlet.name=" + LayoutAdminPortletKeys.GROUP_PAGES,
 		"mvc.command.name=/layout_admin/delete_layout"
 	},
 	service = MVCActionCommand.class
 )
 public class DeleteLayoutMVCActionCommand extends BaseMVCActionCommand {
 
-	protected void deleteLayout(
+	@Override
+	protected void doProcessAction(
+			ActionRequest actionRequest, ActionResponse actionResponse)
+		throws Exception {
+
+		long selPlid = ParamUtil.getLong(actionRequest, "selPlid");
+
+		long[] selPlids = ParamUtil.getLongValues(actionRequest, "rowIds");
+
+		if ((selPlid > 0) && ArrayUtil.isEmpty(selPlids)) {
+			selPlids = new long[] {selPlid};
+		}
+
+		for (long curSelPlid : selPlids) {
+			_deleteLayout(curSelPlid, actionRequest, actionResponse);
+		}
+
+		if (ParamUtil.getBoolean(actionRequest, "hideDefaultSuccessMessage")) {
+			hideDefaultSuccessMessage(actionRequest);
+		}
+	}
+
+	private void _deleteLayout(
 			long selPlid, ActionRequest actionRequest,
 			ActionResponse actionResponse)
-		throws PortalException {
+		throws Exception {
 
 		Layout layout = _layoutLocalService.fetchLayout(selPlid);
 
@@ -78,9 +93,7 @@ public class DeleteLayoutMVCActionCommand extends BaseMVCActionCommand {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		Group group = layout.getGroup();
-
-		if (!SitesUtil.isLayoutDeleteable(layout)) {
+		if ((layout instanceof VirtualLayout) || !layout.isLayoutDeleteable()) {
 			PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
 
 			SessionMessages.add(
@@ -90,6 +103,8 @@ public class DeleteLayoutMVCActionCommand extends BaseMVCActionCommand {
 
 			throw new GroupInheritContentException();
 		}
+
+		Group group = layout.getGroup();
 
 		if (group.isStagingGroup() &&
 			!GroupPermissionUtil.contains(
@@ -140,6 +155,26 @@ public class DeleteLayoutMVCActionCommand extends BaseMVCActionCommand {
 
 		try {
 			_layoutService.deleteLayout(selPlid, serviceContext);
+
+			if (!layout.isDraftLayout()) {
+				JSONPortletResponseUtil.writeJSON(
+					actionRequest, actionResponse,
+					JSONUtil.put(
+						"redirectURL",
+						() -> {
+							String redirect = ParamUtil.getString(
+								actionRequest, "redirect");
+
+							if (redirect != null) {
+								return redirect;
+							}
+
+							return _portal.getControlPanelPortletURL(
+								actionRequest,
+								LayoutAdminPortletKeys.GROUP_PAGES,
+								PortletRequest.RENDER_PHASE);
+						}));
+			}
 		}
 		catch (Exception exception) {
 			Throwable throwable = exception.getCause();
@@ -151,26 +186,11 @@ public class DeleteLayoutMVCActionCommand extends BaseMVCActionCommand {
 				SessionErrors.add(actionRequest, throwable.getClass());
 			}
 			else {
-				throw exception;
+				hideDefaultErrorMessage(actionRequest);
+
+				LayoutExceptionRequestHandlerUtil.handleException(
+					actionRequest, actionResponse, exception);
 			}
-		}
-	}
-
-	@Override
-	protected void doProcessAction(
-			ActionRequest actionRequest, ActionResponse actionResponse)
-		throws Exception {
-
-		long selPlid = ParamUtil.getLong(actionRequest, "selPlid");
-
-		long[] selPlids = ParamUtil.getLongValues(actionRequest, "rowIds");
-
-		if ((selPlid > 0) && ArrayUtil.isEmpty(selPlids)) {
-			selPlids = new long[] {selPlid};
-		}
-
-		for (long curSelPlid : selPlids) {
-			deleteLayout(curSelPlid, actionRequest, actionResponse);
 		}
 	}
 

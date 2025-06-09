@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.portlet.repository.internal;
@@ -47,16 +38,16 @@ public class PortletRepositoryFactory implements RepositoryFactory {
 
 	@Override
 	public LocalRepository createLocalRepository(long repositoryId) {
-		return createLocalRepositoryInstance(
-			getRepositoryLocation(repositoryId));
+		return _createLocalRepositoryInstance(
+			_getRepositoryLocation(repositoryId));
 	}
 
 	@Override
 	public Repository createRepository(long repositoryId) {
-		return createRepositoryInstance(getRepositoryLocation(repositoryId));
+		return _createRepositoryInstance(_getRepositoryLocation(repositoryId));
 	}
 
-	protected LocalRepository createLocalRepositoryInstance(
+	private LocalRepository _createLocalRepositoryInstance(
 		long[] repositoryLocation) {
 
 		long groupId = repositoryLocation[0];
@@ -73,7 +64,7 @@ public class PortletRepositoryFactory implements RepositoryFactory {
 			groupId, repositoryId, dlFolderId);
 	}
 
-	protected Repository createRepositoryInstance(long[] repositoryLocation) {
+	private Repository _createRepositoryInstance(long[] repositoryLocation) {
 		long groupId = repositoryLocation[0];
 		long repositoryId = repositoryLocation[1];
 		long dlFolderId = repositoryLocation[2];
@@ -88,7 +79,7 @@ public class PortletRepositoryFactory implements RepositoryFactory {
 			groupId, repositoryId, dlFolderId);
 	}
 
-	protected long[] getRepositoryLocation(long repositoryId) {
+	private long[] _getRepositoryLocation(long repositoryId) {
 		long dlFolderId = 0;
 		long groupId = 0;
 

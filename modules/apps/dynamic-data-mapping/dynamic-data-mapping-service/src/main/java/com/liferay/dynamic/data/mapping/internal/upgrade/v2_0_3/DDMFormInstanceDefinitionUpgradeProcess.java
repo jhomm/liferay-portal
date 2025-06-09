@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v2_0_3;
@@ -54,7 +45,7 @@ public class DDMFormInstanceDefinitionUpgradeProcess extends UpgradeProcess {
 					String definition = resultSet.getString("definition");
 
 					preparedStatement2.setString(
-						1, updateFieldsToLocalizable(definition));
+						1, _updateFieldsToLocalizable(definition));
 
 					long structureId = resultSet.getLong("structureId");
 
@@ -68,7 +59,7 @@ public class DDMFormInstanceDefinitionUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateFieldsToLocalizable(JSONArray fieldsJSONArray) {
+	private void _updateFieldsToLocalizable(JSONArray fieldsJSONArray) {
 		for (int i = 0; i < fieldsJSONArray.length(); i++) {
 			JSONObject fieldJSONObject = fieldsJSONArray.getJSONObject(i);
 
@@ -78,12 +69,12 @@ public class DDMFormInstanceDefinitionUpgradeProcess extends UpgradeProcess {
 				"nestedFields");
 
 			if (nestedFieldsJSONArray != null) {
-				updateFieldsToLocalizable(nestedFieldsJSONArray);
+				_updateFieldsToLocalizable(nestedFieldsJSONArray);
 			}
 		}
 	}
 
-	protected String updateFieldsToLocalizable(String definition)
+	private String _updateFieldsToLocalizable(String definition)
 		throws PortalException {
 
 		JSONObject ddmFormJSONObject = _jsonFactory.createJSONObject(
@@ -91,9 +82,9 @@ public class DDMFormInstanceDefinitionUpgradeProcess extends UpgradeProcess {
 
 		JSONArray fieldsJSONArray = ddmFormJSONObject.getJSONArray("fields");
 
-		updateFieldsToLocalizable(fieldsJSONArray);
+		_updateFieldsToLocalizable(fieldsJSONArray);
 
-		return ddmFormJSONObject.toJSONString();
+		return ddmFormJSONObject.toString();
 	}
 
 	private final JSONFactory _jsonFactory;

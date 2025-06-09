@@ -36,12 +36,12 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
                   role="presentation"
                 >
                   <use
-                    xlink:href="#asterisk"
+                    href="#asterisk"
                   />
                 </svg>
               </span>
               <span
-                class="hide-accessible"
+                class="hide-accessible sr-only"
               >
                 required
               </span>
@@ -104,12 +104,12 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
                         role="presentation"
                       >
                         <use
-                          xlink:href="#asterisk"
+                          href="#asterisk"
                         />
                       </svg>
                     </span>
                     <span
-                      class="hide-accessible"
+                      class="hide-accessible sr-only"
                     >
                       required
                     </span>
@@ -154,12 +154,12 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
                         role="presentation"
                       >
                         <use
-                          xlink:href="#asterisk"
+                          href="#asterisk"
                         />
                       </svg>
                     </span>
                     <span
-                      class="hide-accessible"
+                      class="hide-accessible sr-only"
                     >
                       required
                     </span>
@@ -198,7 +198,7 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
                     role="presentation"
                   >
                     <use
-                      xlink:href="#trash"
+                      href="#trash"
                     />
                   </svg>
                 </button>
@@ -217,7 +217,7 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
                 role="presentation"
               >
                 <use
-                  xlink:href="#plus"
+                  href="#plus"
                 />
               </svg>
             </span>
@@ -241,12 +241,12 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
                   role="presentation"
                 >
                   <use
-                    xlink:href="#asterisk"
+                    href="#asterisk"
                   />
                 </svg>
               </span>
               <span
-                class="hide-accessible"
+                class="hide-accessible sr-only"
               >
                 required
               </span>
@@ -290,6 +290,19 @@ exports[`DigitalSignatureForm Validates required fields 1`] = `
             >
               Email Message
             </textarea>
+            <div
+              class="form-feedback-group"
+            >
+              <div
+                class="form-feedback-item"
+              >
+                <div
+                  class="form-text"
+                >
+                  x-characters-remaining
+                </div>
+              </div>
+            </div>
           </div>
           <button
             class="btn btn-primary"

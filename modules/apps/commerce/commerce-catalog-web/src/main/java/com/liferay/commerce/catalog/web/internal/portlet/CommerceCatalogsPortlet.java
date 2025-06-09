@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.catalog.web.internal.portlet;
 
+import com.liferay.account.service.AccountEntryService;
 import com.liferay.commerce.catalog.web.internal.display.context.CommerceCatalogDisplayContext;
 import com.liferay.commerce.currency.service.CommerceCurrencyLocalService;
+import com.liferay.commerce.inventory.method.CommerceInventoryMethodRegistry;
 import com.liferay.commerce.media.CommerceCatalogDefaultImage;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
 import com.liferay.commerce.product.configuration.AttachmentsConfiguration;
@@ -25,20 +18,20 @@ import com.liferay.commerce.product.service.CommerceCatalogService;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCPortlet;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
 import java.io.IOException;
 
 import java.util.Map;
-
-import javax.portlet.Portlet;
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
@@ -51,7 +44,6 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	configurationPid = "com.liferay.commerce.product.configuration.AttachmentsConfiguration",
-	enabled = false, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.display-category=category.hidden",
@@ -62,14 +54,15 @@ import org.osgi.service.component.annotations.Reference;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.scopeable=true",
-		"javax.portlet.display-name=Catalogs",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.view-template=/view.jsp",
-		"javax.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=power-user,user"
+		"jakarta.portlet.display-name=Catalogs",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.view-template=/view.jsp",
+		"jakarta.portlet.name=" + CPPortletKeys.COMMERCE_CATALOGS,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=power-user,user",
+		"jakarta.portlet.version=4.0"
 	},
-	service = {CommerceCatalogsPortlet.class, Portlet.class}
+	service = Portlet.class
 )
 public class CommerceCatalogsPortlet extends MVCPortlet {
 
@@ -80,12 +73,13 @@ public class CommerceCatalogsPortlet extends MVCPortlet {
 
 		CommerceCatalogDisplayContext commerceCatalogDisplayContext =
 			new CommerceCatalogDisplayContext(
-				_attachmentsConfiguration,
+				_accountEntryService, _attachmentsConfiguration,
 				_portal.getHttpServletRequest(renderRequest),
 				_commerceCatalogDefaultImage, _commerceCatalogService,
 				_commerceCatalogModelResourcePermission,
-				_commerceCurrencyLocalService, _commercePriceListService,
-				_configurationProvider, _dlAppService, _itemSelector, _portal);
+				_commerceCurrencyLocalService, _commerceInventoryMethodRegistry,
+				_commercePriceListService, _configurationProvider,
+				_dlAppService, _itemSelector, _portal);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, commerceCatalogDisplayContext);
@@ -99,6 +93,9 @@ public class CommerceCatalogsPortlet extends MVCPortlet {
 		_attachmentsConfiguration = ConfigurableUtil.createConfigurable(
 			AttachmentsConfiguration.class, properties);
 	}
+
+	@Reference
+	private AccountEntryService _accountEntryService;
 
 	private volatile AttachmentsConfiguration _attachmentsConfiguration;
 
@@ -116,6 +113,9 @@ public class CommerceCatalogsPortlet extends MVCPortlet {
 
 	@Reference
 	private CommerceCurrencyLocalService _commerceCurrencyLocalService;
+
+	@Reference
+	private CommerceInventoryMethodRegistry _commerceInventoryMethodRegistry;
 
 	@Reference
 	private CommercePriceListService _commercePriceListService;

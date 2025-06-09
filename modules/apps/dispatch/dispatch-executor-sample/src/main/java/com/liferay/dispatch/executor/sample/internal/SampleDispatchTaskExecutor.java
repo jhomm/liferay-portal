@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.executor.sample.internal;
@@ -19,11 +10,10 @@ import com.liferay.dispatch.executor.DispatchTaskExecutor;
 import com.liferay.dispatch.executor.DispatchTaskExecutorOutput;
 import com.liferay.dispatch.model.DispatchTrigger;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.log.Log;
+import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
-
-import java.io.IOException;
 
 import java.util.Date;
 
@@ -34,18 +24,20 @@ import org.osgi.service.component.annotations.Component;
  */
 @Component(
 	property = {
-		"dispatch.task.executor.name=dispatch-executor-sample-name",
+		"dispatch.task.executor.name=" + SampleDispatchTaskExecutor.KEY,
 		"dispatch.task.executor.type=Sample"
 	},
 	service = DispatchTaskExecutor.class
 )
 public class SampleDispatchTaskExecutor extends BaseDispatchTaskExecutor {
 
+	public static final String KEY = "dispatch-executor-sample-name";
+
 	@Override
 	public void doExecute(
 			DispatchTrigger dispatchTrigger,
 			DispatchTaskExecutorOutput dispatchTaskExecutorOutput)
-		throws IOException, PortalException {
+		throws Exception {
 
 		UnicodeProperties dispatchTaskSettingsUnicodeProperties =
 			dispatchTrigger.getDispatchTaskSettingsUnicodeProperties();
@@ -63,6 +55,10 @@ public class SampleDispatchTaskExecutor extends BaseDispatchTaskExecutor {
 					new Date()));
 		}
 		catch (Exception exception) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(exception);
+			}
+
 			dispatchTaskExecutorOutput.setError(
 				StringBundler.concat(
 					"Unable to sleep for ", time, " milliseconds"));
@@ -71,7 +67,10 @@ public class SampleDispatchTaskExecutor extends BaseDispatchTaskExecutor {
 
 	@Override
 	public String getName() {
-		return null;
+		return KEY;
 	}
+
+	private static final Log _log = LogFactoryUtil.getLog(
+		SampleDispatchTaskExecutor.class);
 
 }

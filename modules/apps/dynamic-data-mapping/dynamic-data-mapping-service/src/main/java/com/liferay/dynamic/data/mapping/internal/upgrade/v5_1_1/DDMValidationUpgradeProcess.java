@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.upgrade.v5_1_1;
@@ -42,22 +33,22 @@ public class DDMValidationUpgradeProcess extends UpgradeProcess {
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement selectPreparedStatement1 =
 				connection.prepareStatement(
-					"select structureId, definition from DDMStructure where " +
-						"classNameId = ? ");
+					"select ctCollectionId, structureId, definition from " +
+						"DDMStructure where classNameId = ? ");
 			PreparedStatement selectPreparedStatement2 =
 				connection.prepareStatement(
-					"select structureVersionId, definition from " +
-						"DDMStructureVersion where structureId = ?");
+					"select ctCollectionId, structureVersionId, definition " +
+						"from DDMStructureVersion where structureId = ?");
 			PreparedStatement updatePreparedStatement1 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructure set definition = ? where " +
-						"structureId = ?");
+						"ctCollectionId = ? and structureId = ?");
 			PreparedStatement updatePreparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update DDMStructureVersion set definition = ? where " +
-						"structureVersionId = ?")) {
+						"ctCollectionId = ? and structureVersionId = ?")) {
 
 			_upgradeDDMStructure(
 				selectPreparedStatement1, selectPreparedStatement2,
@@ -126,11 +117,13 @@ public class DDMValidationUpgradeProcess extends UpgradeProcess {
 
 				if (_upgradeDefinition(definitionJSONObject)) {
 					updatePreparedStatement1.setString(
-						1, definitionJSONObject.toJSONString());
+						1, definitionJSONObject.toString());
+					updatePreparedStatement1.setLong(
+						2, resultSet.getLong("ctCollectionId"));
 
 					long structureId = resultSet.getLong("structureId");
 
-					updatePreparedStatement1.setLong(2, structureId);
+					updatePreparedStatement1.setLong(3, structureId);
 
 					updatePreparedStatement1.addBatch();
 
@@ -156,9 +149,11 @@ public class DDMValidationUpgradeProcess extends UpgradeProcess {
 
 				if (_upgradeDefinition(definitionJSONObject)) {
 					updatePreparedStatement.setString(
-						1, definitionJSONObject.toJSONString());
+						1, definitionJSONObject.toString());
 					updatePreparedStatement.setLong(
-						2, resultSet.getLong("structureVersionId"));
+						2, resultSet.getLong("ctCollectionId"));
+					updatePreparedStatement.setLong(
+						3, resultSet.getLong("structureVersionId"));
 
 					updatePreparedStatement.addBatch();
 				}

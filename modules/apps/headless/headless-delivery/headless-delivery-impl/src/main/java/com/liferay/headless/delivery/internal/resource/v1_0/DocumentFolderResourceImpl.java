@@ -1,31 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
 
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.model.DLFolderConstants;
+import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLAppService;
+import com.liferay.document.library.kernel.service.DLFolderService;
 import com.liferay.dynamic.data.mapping.util.DDMIndexer;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
-import com.liferay.headless.common.spi.service.context.ServiceContextRequestUtil;
-import com.liferay.headless.delivery.dto.v1_0.CustomField;
+import com.liferay.headless.common.spi.odata.entity.EntityFieldsUtil;
+import com.liferay.headless.common.spi.resource.SPIRatingResource;
+import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.headless.delivery.dto.v1_0.DocumentFolder;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
-import com.liferay.headless.delivery.internal.dto.v1_0.converter.DocumentFolderDTOConverter;
-import com.liferay.headless.delivery.internal.dto.v1_0.util.EntityFieldsUtil;
+import com.liferay.headless.delivery.dto.v1_0.Rating;
+import com.liferay.headless.delivery.internal.dto.v1_0.util.RatingUtil;
 import com.liferay.headless.delivery.internal.odata.entity.v1_0.DocumentFolderEntityModel;
 import com.liferay.headless.delivery.resource.v1_0.DocumentFolderResource;
 import com.liferay.headless.delivery.search.aggregation.AggregationUtil;
@@ -34,33 +27,40 @@ import com.liferay.headless.delivery.search.sort.SortUtil;
 import com.liferay.portal.kernel.repository.model.Folder;
 import com.liferay.portal.kernel.search.BooleanClauseOccur;
 import com.liferay.portal.kernel.search.Field;
+import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.BooleanFilter;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.search.filter.TermFilter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.repository.liferayrepository.model.LiferayFolder;
 import com.liferay.portal.search.aggregation.Aggregations;
+import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
 import com.liferay.portal.search.legacy.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.sort.Sorts;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
 import com.liferay.portlet.documentlibrary.constants.DLConstants;
+import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
 
+import jakarta.ws.rs.core.MultivaluedMap;
+
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-
-import javax.ws.rs.core.MultivaluedMap;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -73,12 +73,31 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/document-folder.properties",
 	scope = ServiceScope.PROTOTYPE, service = DocumentFolderResource.class
 )
-public class DocumentFolderResourceImpl
-	extends BaseDocumentFolderResourceImpl implements EntityModelResource {
+public class DocumentFolderResourceImpl extends BaseDocumentFolderResourceImpl {
 
 	@Override
 	public void deleteDocumentFolder(Long documentFolderId) throws Exception {
 		_dlAppService.deleteFolder(documentFolderId);
+	}
+
+	@Override
+	public void deleteDocumentFolderMyRating(Long documentFolderId)
+		throws Exception {
+
+		SPIRatingResource<Rating> spiRatingResource = _getSPIRatingResource();
+
+		spiRatingResource.deleteRating(documentFolderId);
+	}
+
+	@Override
+	public void deleteSiteDocumentsFolderByExternalReferenceCode(
+			Long siteId, String externalReferenceCode)
+		throws Exception {
+
+		Folder folder = _dlAppService.getFolderByExternalReferenceCode(
+			externalReferenceCode, siteId);
+
+		_dlAppService.deleteFolder(folder.getFolderId());
 	}
 
 	@Override
@@ -88,9 +107,51 @@ public class DocumentFolderResourceImpl
 			Sort[] sorts)
 		throws Exception {
 
-		return getSiteDocumentFoldersPage(
-			assetLibraryId, flatten, search, aggregation, filter, pagination,
-			sorts);
+		Long documentFolderId = null;
+
+		if (!GetterUtil.getBoolean(flatten)) {
+			documentFolderId = DLFolderConstants.DEFAULT_PARENT_FOLDER_ID;
+		}
+
+		return _getDocumentFoldersPage(
+			HashMapBuilder.put(
+				"create",
+				addAction(
+					ActionKeys.ADD_FOLDER, "postAssetLibraryDocumentFolder",
+					DLConstants.RESOURCE_NAME, assetLibraryId)
+			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_FOLDER,
+					"postAssetLibraryDocumentFolderBatch",
+					DLConstants.RESOURCE_NAME, assetLibraryId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteDocumentFolderBatch",
+					DLConstants.RESOURCE_NAME, null)
+			).put(
+				"get",
+				addAction(
+					ActionKeys.VIEW, "getAssetLibraryDocumentFoldersPage",
+					DLConstants.RESOURCE_NAME, assetLibraryId)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putDocumentFolderBatch",
+					DLConstants.RESOURCE_NAME, null)
+			).build(),
+			documentFolderId, assetLibraryId, flatten, search, aggregation,
+			filter, pagination, sorts);
+	}
+
+	@Override
+	public Page<DocumentFolder> getAssetLibraryDocumentFoldersRatedByMePage(
+			Long assetLibraryId, Pagination pagination)
+		throws Exception {
+
+		return _getGroupDocumentFoldersRatedByMePage(
+			assetLibraryId, pagination);
 	}
 
 	@Override
@@ -128,12 +189,21 @@ public class DocumentFolderResourceImpl
 	}
 
 	@Override
+	public Rating getDocumentFolderMyRating(Long documentFolderId)
+		throws Exception {
+
+		SPIRatingResource<Rating> spiRatingResource = _getSPIRatingResource();
+
+		return spiRatingResource.getRating(documentFolderId);
+	}
+
+	@Override
 	public EntityModel getEntityModel(MultivaluedMap multivaluedMap) {
 		return new DocumentFolderEntityModel(
 			EntityFieldsUtil.getEntityFields(
 				_portal.getClassNameId(DLFolder.class.getName()),
-				contextCompany.getCompanyId(), _expandoColumnLocalService,
-				_expandoTableLocalService));
+				contextCompany.getCompanyId(), _expandoBridgeIndexer,
+				_expandoColumnLocalService, _expandoTableLocalService));
 	}
 
 	@Override
@@ -156,34 +226,47 @@ public class DocumentFolderResourceImpl
 					ActionKeys.ADD_FOLDER, "postSiteDocumentFolder",
 					DLConstants.RESOURCE_NAME, siteId)
 			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_FOLDER, "postSiteDocumentFolderBatch",
+					DLConstants.RESOURCE_NAME, siteId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteDocumentFolderBatch",
+					DLConstants.RESOURCE_NAME, null)
+			).put(
 				"get",
 				addAction(
 					ActionKeys.VIEW, "getSiteDocumentFoldersPage",
 					DLConstants.RESOURCE_NAME, siteId)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putDocumentFolderBatch",
+					DLConstants.RESOURCE_NAME, null)
 			).build(),
 			documentFolderId, siteId, flatten, search, aggregation, filter,
 			pagination, sorts);
 	}
 
 	@Override
-	public DocumentFolder patchDocumentFolder(
-			Long documentFolderId, DocumentFolder documentFolder)
+	public Page<DocumentFolder> getSiteDocumentFoldersRatedByMePage(
+			Long siteId, Pagination pagination)
 		throws Exception {
 
-		Folder existingFolder = _dlAppService.getFolder(documentFolderId);
+		return _getGroupDocumentFoldersRatedByMePage(siteId, pagination);
+	}
 
-		return _updateDocumentFolder(
-			documentFolderId, documentFolder.getCustomFields(),
-			Optional.ofNullable(
-				documentFolder.getDescription()
-			).orElse(
-				existingFolder.getDescription()
-			),
-			Optional.ofNullable(
-				documentFolder.getName()
-			).orElse(
-				existingFolder.getName()
-			));
+	@Override
+	public DocumentFolder getSiteDocumentsFolderByExternalReferenceCode(
+			Long siteId, String externalReferenceCode)
+		throws Exception {
+
+		Folder folder = _dlAppService.getFolderByExternalReferenceCode(
+			externalReferenceCode, siteId);
+
+		return _toDocumentFolder(folder);
 	}
 
 	@Override
@@ -201,8 +284,20 @@ public class DocumentFolderResourceImpl
 
 		Folder folder = _dlAppService.getFolder(parentDocumentFolderId);
 
-		return _addFolder(
-			folder.getGroupId(), folder.getFolderId(), documentFolder);
+		return _addDocumentFolder(
+			documentFolder.getExternalReferenceCode(), folder.getGroupId(),
+			folder.getFolderId(), documentFolder);
+	}
+
+	@Override
+	public Rating postDocumentFolderMyRating(
+			Long documentFolderId, Rating rating)
+		throws Exception {
+
+		SPIRatingResource<Rating> spiRatingResource = _getSPIRatingResource();
+
+		return spiRatingResource.addOrUpdateRating(
+			rating.getRatingValue(), documentFolderId);
 	}
 
 	@Override
@@ -210,7 +305,9 @@ public class DocumentFolderResourceImpl
 			Long siteId, DocumentFolder documentFolder)
 		throws Exception {
 
-		return _addFolder(siteId, 0L, documentFolder);
+		return _addDocumentFolder(
+			documentFolder.getExternalReferenceCode(), siteId, 0L,
+			documentFolder);
 	}
 
 	@Override
@@ -219,8 +316,18 @@ public class DocumentFolderResourceImpl
 		throws Exception {
 
 		return _updateDocumentFolder(
-			documentFolderId, documentFolder.getCustomFields(),
-			documentFolder.getDescription(), documentFolder.getName());
+			_dlAppService.getFolder(documentFolderId), documentFolder);
+	}
+
+	@Override
+	public Rating putDocumentFolderMyRating(
+			Long documentFolderId, Rating rating)
+		throws Exception {
+
+		SPIRatingResource<Rating> spiRatingResource = _getSPIRatingResource();
+
+		return spiRatingResource.addOrUpdateRating(
+			rating.getRatingValue(), documentFolderId);
 	}
 
 	@Override
@@ -244,6 +351,23 @@ public class DocumentFolderResourceImpl
 	}
 
 	@Override
+	public DocumentFolder putSiteDocumentsFolderByExternalReferenceCode(
+			Long siteId, String externalReferenceCode,
+			DocumentFolder documentFolder)
+		throws Exception {
+
+		Folder folder = _dlAppLocalService.fetchFolderByExternalReferenceCode(
+			externalReferenceCode, siteId);
+
+		if (folder != null) {
+			return _updateDocumentFolder(folder, documentFolder);
+		}
+
+		return _addDocumentFolder(
+			externalReferenceCode, siteId, 0L, documentFolder);
+	}
+
+	@Override
 	protected Long getPermissionCheckerGroupId(Object id) throws Exception {
 		Folder folder = _dlAppService.getFolder((Long)id);
 
@@ -260,22 +384,31 @@ public class DocumentFolderResourceImpl
 		return DLFolder.class.getName();
 	}
 
-	private DocumentFolder _addFolder(
-			Long siteId, Long parentDocumentFolderId,
+	private DocumentFolder _addDocumentFolder(
+			String externalReferenceCode, Long groupId, Long parentFolderId,
 			DocumentFolder documentFolder)
 		throws Exception {
 
 		return _toDocumentFolder(
 			_dlAppService.addFolder(
-				siteId, parentDocumentFolderId, documentFolder.getName(),
-				documentFolder.getDescription(),
-				ServiceContextRequestUtil.createServiceContext(
-					CustomFieldsUtil.toMap(
-						DLFolder.class.getName(), contextCompany.getCompanyId(),
-						documentFolder.getCustomFields(),
-						contextAcceptLanguage.getPreferredLocale()),
-					siteId, contextHttpServletRequest,
+				externalReferenceCode, groupId, parentFolderId,
+				documentFolder.getName(), documentFolder.getDescription(),
+				_createServiceContext(
+					groupId, documentFolder,
 					documentFolder.getViewableByAsString())));
+	}
+
+	private ServiceContext _createServiceContext(
+		long groupId, DocumentFolder documentFolder, String viewableBy) {
+
+		return ServiceContextBuilder.create(
+			groupId, contextHttpServletRequest, viewableBy
+		).expandoBridgeAttributes(
+			CustomFieldsUtil.toMap(
+				DLFolder.class.getName(), contextCompany.getCompanyId(),
+				documentFolder.getCustomFields(),
+				contextAcceptLanguage.getPreferredLocale())
+		).build();
 	}
 
 	private Page<DocumentFolder> _getDocumentFoldersPage(
@@ -308,8 +441,8 @@ public class DocumentFolderResourceImpl
 						BooleanClauseOccur.MUST);
 				}
 			},
-			FilterUtil.processFilter(_ddmIndexer, filter),
-			DLFolder.class.getName(), keywords, pagination,
+			FilterUtil.processFilter(_ddmIndexer, filter), _dlFolderIndexer,
+			keywords, pagination,
 			queryConfig -> queryConfig.setSelectedFieldNames(
 				Field.ENTRY_CLASS_PK),
 			searchContext -> {
@@ -332,6 +465,56 @@ public class DocumentFolderResourceImpl
 			document -> _toDocumentFolder(
 				_dlAppService.getFolder(
 					GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK)))));
+	}
+
+	private Page<DocumentFolder> _getGroupDocumentFoldersRatedByMePage(
+			long groupId, Pagination pagination)
+		throws Exception {
+
+		return Page.of(
+			_toDocumentFolders(
+				_dlFolderService.getFolders(
+					groupId, 0.1, pagination.getStartPosition(),
+					pagination.getEndPosition())),
+			pagination, _dlFolderService.getFoldersCount(groupId, 0.1));
+	}
+
+	private SPIRatingResource<Rating> _getSPIRatingResource() {
+		return new SPIRatingResource<>(
+			DLFolder.class.getName(), _ratingsEntryLocalService,
+			ratingsEntry -> {
+				Folder folder = _dlAppService.getFolder(
+					ratingsEntry.getClassPK());
+
+				return RatingUtil.toRating(
+					HashMapBuilder.put(
+						"create",
+						addAction(
+							ActionKeys.VIEW, folder.getPrimaryKey(),
+							"postDocumentFolderMyRating", folder.getUserId(),
+							DLFolder.class.getName(), folder.getGroupId())
+					).put(
+						"delete",
+						addAction(
+							ActionKeys.VIEW, folder.getPrimaryKey(),
+							"deleteDocumentFolderMyRating", folder.getUserId(),
+							DLFolder.class.getName(), folder.getGroupId())
+					).put(
+						"get",
+						addAction(
+							ActionKeys.VIEW, folder.getPrimaryKey(),
+							"getDocumentFolderMyRating", folder.getUserId(),
+							DLFolder.class.getName(), folder.getGroupId())
+					).put(
+						"replace",
+						addAction(
+							ActionKeys.VIEW, folder.getPrimaryKey(),
+							"putDocumentFolderMyRating", folder.getUserId(),
+							DLFolder.class.getName(), folder.getGroupId())
+					).build(),
+					_portal, ratingsEntry, _userLocalService);
+			},
+			contextUser);
 	}
 
 	private DocumentFolder _toDocumentFolder(Folder folder) throws Exception {
@@ -380,20 +563,23 @@ public class DocumentFolderResourceImpl
 				contextUser));
 	}
 
+	private List<DocumentFolder> _toDocumentFolders(List<DLFolder> dlFolders)
+		throws Exception {
+
+		return transform(
+			dlFolders,
+			dlFolder -> _toDocumentFolder(new LiferayFolder(dlFolder)));
+	}
+
 	private DocumentFolder _updateDocumentFolder(
-			Long documentFolderId, CustomField[] customFields,
-			String description, String name)
+			Folder folder, DocumentFolder documentFolder)
 		throws Exception {
 
 		return _toDocumentFolder(
 			_dlAppService.updateFolder(
-				documentFolderId, name, description,
-				ServiceContextRequestUtil.createServiceContext(
-					CustomFieldsUtil.toMap(
-						DLFolder.class.getName(), contextCompany.getCompanyId(),
-						customFields,
-						contextAcceptLanguage.getPreferredLocale()),
-					0, contextHttpServletRequest, null)));
+				folder.getFolderId(), documentFolder.getName(),
+				documentFolder.getDescription(),
+				_createServiceContext(0, documentFolder, null)));
 	}
 
 	@Reference
@@ -403,13 +589,29 @@ public class DocumentFolderResourceImpl
 	private DDMIndexer _ddmIndexer;
 
 	@Reference
-	private DLAppService _dlAppService;
+	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
-	private DocumentFolderDTOConverter _documentFolderDTOConverter;
+	private DLAppService _dlAppService;
+
+	@Reference(
+		target = "(indexer.class.name=com.liferay.document.library.kernel.model.DLFolder)"
+	)
+	private Indexer<?> _dlFolderIndexer;
+
+	@Reference
+	private DLFolderService _dlFolderService;
+
+	@Reference(
+		target = "(component.name=com.liferay.headless.delivery.internal.dto.v1_0.converter.DocumentFolderDTOConverter)"
+	)
+	private DTOConverter<DLFolder, DocumentFolder> _documentFolderDTOConverter;
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
+
+	@Reference
+	private ExpandoBridgeIndexer _expandoBridgeIndexer;
 
 	@Reference
 	private ExpandoColumnLocalService _expandoColumnLocalService;
@@ -424,9 +626,15 @@ public class DocumentFolderResourceImpl
 	private Queries _queries;
 
 	@Reference
+	private RatingsEntryLocalService _ratingsEntryLocalService;
+
+	@Reference
 	private SearchRequestBuilderFactory _searchRequestBuilderFactory;
 
 	@Reference
 	private Sorts _sorts;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

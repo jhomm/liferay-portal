@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.reports.engine.console.internal.upgrade.v1_0_0;
@@ -38,11 +29,11 @@ public class ReportDefinitionUpgradeProcess extends UpgradeProcess {
 	@Override
 	protected void doUpgrade() throws Exception {
 		if (hasTable("Reports_Definition")) {
-			updateReportDefinitions();
+			_updateReportDefinitions();
 		}
 	}
 
-	protected void updateReportDefinitions() throws Exception {
+	private void _updateReportDefinitions() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				"select companyId, definitionId, reportParameters from " +
 					"Reports_Definition")) {
@@ -58,7 +49,7 @@ public class ReportDefinitionUpgradeProcess extends UpgradeProcess {
 					String reportParameters = resultSet.getString(
 						"reportParameters");
 
-					String updatedReportParameters = updateReportParameters(
+					String updatedReportParameters = _updateReportParameters(
 						reportParameters);
 
 					if (Validator.isNotNull(reportParameters) &&
@@ -66,8 +57,6 @@ public class ReportDefinitionUpgradeProcess extends UpgradeProcess {
 
 						continue;
 					}
-
-					preparedStatement2.setString(1, updatedReportParameters);
 
 					preparedStatement2.setString(1, reportParameters);
 					preparedStatement2.setLong(
@@ -83,7 +72,7 @@ public class ReportDefinitionUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected String updateReportParameters(String reportParameters) {
+	private String _updateReportParameters(String reportParameters) {
 		Matcher matcher = _pattern.matcher(reportParameters);
 
 		if (!matcher.find()) {

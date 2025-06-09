@@ -1,48 +1,41 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.admin.web.internal.portlet.action;
 
 import com.liferay.layout.page.template.admin.constants.LayoutPageTemplateAdminPortletKeys;
-import com.liferay.layout.page.template.admin.web.internal.handler.LayoutPageTemplateEntryExceptionRequestHandler;
+import com.liferay.layout.page.template.admin.web.internal.handler.LayoutPageTemplateEntryExceptionRequestHandlerUtil;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
+import com.liferay.portal.kernel.servlet.MultiSessionMessages;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -51,9 +44,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Eudaldo Alonso
  */
 @Component(
-	immediate = true,
 	property = {
-		"javax.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
+		"jakarta.portlet.name=" + LayoutPageTemplateAdminPortletKeys.LAYOUT_PAGE_TEMPLATES,
 		"mvc.command.name=/layout_page_template_admin/add_master_layout"
 	},
 	service = MVCActionCommand.class
@@ -76,9 +68,9 @@ public class AddMasterLayoutMVCActionCommand extends BaseMVCActionCommand {
 
 			LayoutPageTemplateEntry layoutPageTemplateEntry =
 				_layoutPageTemplateEntryService.addLayoutPageTemplateEntry(
-					serviceContext.getScopeGroupId(),
-					layoutPageTemplateCollectionId, name,
-					LayoutPageTemplateEntryTypeConstants.TYPE_MASTER_LAYOUT,
+					null, serviceContext.getScopeGroupId(),
+					layoutPageTemplateCollectionId, null, name,
+					LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT, 0,
 					WorkflowConstants.STATUS_DRAFT, serviceContext);
 
 			JSONObject jsonObject = JSONUtil.put(
@@ -87,6 +79,10 @@ public class AddMasterLayoutMVCActionCommand extends BaseMVCActionCommand {
 
 			JSONPortletResponseUtil.writeJSON(
 				actionRequest, actionResponse, jsonObject);
+
+			hideDefaultErrorMessage(actionRequest);
+
+			MultiSessionMessages.add(actionRequest, "masterPageAdded");
 		}
 		catch (PortalException portalException) {
 			SessionErrors.add(
@@ -94,7 +90,7 @@ public class AddMasterLayoutMVCActionCommand extends BaseMVCActionCommand {
 
 			hideDefaultErrorMessage(actionRequest);
 
-			_layoutPageTemplateEntryExceptionRequestHandler.
+			LayoutPageTemplateEntryExceptionRequestHandlerUtil.
 				handlePortalException(
 					actionRequest, actionResponse, portalException);
 		}
@@ -111,11 +107,8 @@ public class AddMasterLayoutMVCActionCommand extends BaseMVCActionCommand {
 		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
 			WebKeys.THEME_DISPLAY);
 
-		String layoutFullURL = _portal.getLayoutFullURL(
-			draftLayout, themeDisplay);
-
-		layoutFullURL = _http.setParameter(
-			layoutFullURL, "p_l_back_url",
+		return HttpComponentsUtil.addParameters(
+			_portal.getLayoutFullURL(draftLayout, themeDisplay), "p_l_back_url",
 			PortletURLBuilder.create(
 				PortletURLFactoryUtil.create(
 					actionRequest,
@@ -123,20 +116,17 @@ public class AddMasterLayoutMVCActionCommand extends BaseMVCActionCommand {
 					PortletRequest.RENDER_PHASE)
 			).setTabs1(
 				"master-layouts"
-			).buildString());
-
-		return _http.setParameter(layoutFullURL, "p_l_mode", Constants.EDIT);
+			).buildString(),
+			"p_l_back_url_title",
+			_language.get(themeDisplay.getLocale(), "page-templates"),
+			"p_l_mode", Constants.EDIT);
 	}
 
 	@Reference
-	private Http _http;
+	private Language _language;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;
-
-	@Reference
-	private LayoutPageTemplateEntryExceptionRequestHandler
-		_layoutPageTemplateEntryExceptionRequestHandler;
 
 	@Reference
 	private LayoutPageTemplateEntryService _layoutPageTemplateEntryService;

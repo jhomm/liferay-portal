@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.adaptive.media.journal.web.internal.exportimport.content.processor;
@@ -17,13 +8,16 @@ package com.liferay.adaptive.media.journal.web.internal.exportimport.content.pro
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
+import com.liferay.dynamic.data.mapping.service.DDMStructureLocalService;
 import com.liferay.exportimport.content.processor.ExportImportContentProcessor;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.StagedModel;
+import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.osgi.service.component.annotations.Component;
@@ -55,7 +49,7 @@ public class AMJournalArticleExportImportContentProcessor
 					portletDataContext, stagedModel, content,
 					exportReferencedContent, escapeContent);
 
-		if (!_hasTextHTMLDDMFormField(stagedModel)) {
+		if (!_hasTextHTMLDDMFormField(portletDataContext, stagedModel)) {
 			return replacedContent;
 		}
 
@@ -79,7 +73,7 @@ public class AMJournalArticleExportImportContentProcessor
 				replaceImportContentReferences(
 					portletDataContext, stagedModel, content);
 
-		if (!_hasTextHTMLDDMFormField(stagedModel)) {
+		if (!_hasTextHTMLDDMFormField(portletDataContext, stagedModel)) {
 			return replacedContent;
 		}
 
@@ -113,10 +107,21 @@ public class AMJournalArticleExportImportContentProcessor
 		}
 	}
 
-	private boolean _hasTextHTMLDDMFormField(StagedModel stagedModel) {
+	private boolean _hasTextHTMLDDMFormField(
+		PortletDataContext portletDataContext, StagedModel stagedModel) {
+
 		JournalArticle journalArticle = (JournalArticle)stagedModel;
 
-		DDMStructure ddmStructure = journalArticle.getDDMStructure();
+		Map<Long, Long> ddmStructureIds =
+			(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+				DDMStructure.class);
+
+		long ddmStructureId = MapUtil.getLong(
+			ddmStructureIds, journalArticle.getDDMStructureId(),
+			journalArticle.getDDMStructureId());
+
+		DDMStructure ddmStructure = _ddmStructureLocalService.fetchStructure(
+			ddmStructureId);
 
 		if (ddmStructure == null) {
 			return true;
@@ -138,9 +143,12 @@ public class AMJournalArticleExportImportContentProcessor
 		return false;
 	}
 
+	private final AMJournalArticleContentHTMLReplacer
+		_amJournalArticleContentHTMLReplacer =
+			new AMJournalArticleContentHTMLReplacer();
+
 	@Reference
-	private AMJournalArticleContentHTMLReplacer
-		_amJournalArticleContentHTMLReplacer;
+	private DDMStructureLocalService _ddmStructureLocalService;
 
 	@Reference(target = "(adaptive.media.format=html)")
 	private ExportImportContentProcessor<String>

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.internal.search.spi.model.query.contributor;
@@ -30,7 +21,6 @@ import org.osgi.service.component.annotations.Component;
  * @author Lucas Marques
  */
 @Component(
-	immediate = true,
 	property = "indexer.class.name=com.liferay.asset.kernel.model.AssetCategory",
 	service = ModelPreFilterContributor.class
 )
@@ -45,7 +35,7 @@ public class AssetCategoryModelPreFilterContributor
 		long[] parentCategoryIds = (long[])searchContext.getAttribute(
 			Field.ASSET_PARENT_CATEGORY_IDS);
 
-		if (!ArrayUtil.isEmpty(parentCategoryIds)) {
+		if (ArrayUtil.isNotEmpty(parentCategoryIds)) {
 			TermsFilter parentCategoryTermsFilter = new TermsFilter(
 				Field.ASSET_PARENT_CATEGORY_ID);
 
@@ -59,7 +49,7 @@ public class AssetCategoryModelPreFilterContributor
 		long[] vocabularyIds = (long[])searchContext.getAttribute(
 			Field.ASSET_VOCABULARY_IDS);
 
-		if (!ArrayUtil.isEmpty(vocabularyIds)) {
+		if (ArrayUtil.isNotEmpty(vocabularyIds)) {
 			TermsFilter vocabularyTermsFilter = new TermsFilter(
 				Field.ASSET_VOCABULARY_ID);
 

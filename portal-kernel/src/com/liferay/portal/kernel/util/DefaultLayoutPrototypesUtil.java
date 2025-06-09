@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.util;
@@ -27,11 +18,11 @@ import com.liferay.portal.kernel.service.LayoutLocalServiceUtil;
 import com.liferay.portal.kernel.service.PortletLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 
+import jakarta.portlet.PortletPreferences;
+
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletPreferences;
 
 /**
  * @author Eudaldo Alonso
@@ -52,7 +43,7 @@ public class DefaultLayoutPrototypesUtil {
 		}
 
 		Layout layout = LayoutLocalServiceUtil.addLayout(
-			group.getCreatorUserId(), group.getGroupId(),
+			null, group.getCreatorUserId(), group.getGroupId(),
 			layoutSet.isPrivateLayout(),
 			LayoutConstants.DEFAULT_PARENT_LAYOUT_ID, nameMap, null, null, null,
 			null, LayoutConstants.TYPE_PORTLET, StringPool.BLANK, false,
@@ -90,17 +81,17 @@ public class DefaultLayoutPrototypesUtil {
 			Layout layout, String portletId, Map<String, String> preferences)
 		throws Exception {
 
-		PortletPreferences portletSetup =
+		PortletPreferences portletPreferences =
 			PortletPreferencesFactoryUtil.getLayoutPortletSetup(
 				layout, portletId);
 
 		for (Map.Entry<String, String> entry : preferences.entrySet()) {
-			portletSetup.setValue(entry.getKey(), entry.getValue());
+			portletPreferences.setValue(entry.getKey(), entry.getValue());
 		}
 
-		portletSetup.store();
+		portletPreferences.store();
 
-		return portletSetup;
+		return portletPreferences;
 	}
 
 	protected static void addResourcePermissions(

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.calendar.internal.upgrade.v1_0_5;
@@ -56,10 +47,10 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 
 	@Override
 	protected void doUpgrade() throws Exception {
-		upgradeCalendarResourceUserIds();
+		_upgradeCalendarResourceUserIds();
 	}
 
-	protected long getCompanyAdminUserId(Company company)
+	private long _getCompanyAdminUserId(Company company)
 		throws PortalException {
 
 		Role role = RoleLocalServiceUtil.getRole(
@@ -67,7 +58,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 
 		long[] userIds = UserLocalServiceUtil.getRoleUserIds(role.getRoleId());
 
-		if (!ArrayUtil.isEmpty(userIds)) {
+		if (ArrayUtil.isNotEmpty(userIds)) {
 			return userIds[0];
 		}
 
@@ -79,7 +70,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				userIds = OrganizationLocalServiceUtil.getUserPrimaryKeys(
 					group.getClassPK());
 
-				if (!ArrayUtil.isEmpty(userIds)) {
+				if (ArrayUtil.isNotEmpty(userIds)) {
 					return userIds[0];
 				}
 			}
@@ -87,7 +78,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				userIds = GroupLocalServiceUtil.getUserPrimaryKeys(
 					group.getGroupId());
 
-				if (!ArrayUtil.isEmpty(userIds)) {
+				if (ArrayUtil.isNotEmpty(userIds)) {
 					return userIds[0];
 				}
 			}
@@ -95,7 +86,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				userIds = UserGroupLocalServiceUtil.getUserPrimaryKeys(
 					group.getClassPK());
 
-				if (!ArrayUtil.isEmpty(userIds)) {
+				if (ArrayUtil.isNotEmpty(userIds)) {
 					return userIds[0];
 				}
 			}
@@ -106,7 +97,7 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 				company.getCompanyId());
 	}
 
-	protected void updateCalendarUserId(long calendarId, long userId)
+	private void _updateCalendarUserId(long calendarId, long userId)
 		throws SQLException {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -119,8 +110,8 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void updateCalendarUserIds(
-			long groupClassNameId, long defaultUserId, long adminUserId)
+	private void _updateCalendarUserIds(
+			long groupClassNameId, long guestUserId, long adminUserId)
 		throws SQLException {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -132,20 +123,20 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 					"CalendarResource.userId = ?"))) {
 
 			preparedStatement.setLong(1, groupClassNameId);
-			preparedStatement.setLong(2, defaultUserId);
+			preparedStatement.setLong(2, guestUserId);
 
 			try (ResultSet resultSet = preparedStatement.executeQuery()) {
 				while (resultSet.next()) {
 					long calendarId = resultSet.getLong(1);
 
-					updateCalendarUserId(calendarId, adminUserId);
+					_updateCalendarUserId(calendarId, adminUserId);
 				}
 			}
 		}
 	}
 
-	protected void upgradeCalendarResourceUserId(
-			long groupClassNameId, long defaultUserId, long companyAdminUserId)
+	private void _upgradeCalendarResourceUserId(
+			long groupClassNameId, long guestUserId, long companyAdminUserId)
 		throws SQLException {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -153,28 +144,28 @@ public class CalendarResourceUpgradeProcess extends UpgradeProcess {
 					"classNameId = ?")) {
 
 			preparedStatement.setLong(1, companyAdminUserId);
-			preparedStatement.setLong(2, defaultUserId);
+			preparedStatement.setLong(2, guestUserId);
 			preparedStatement.setLong(3, groupClassNameId);
 
 			preparedStatement.execute();
 		}
 	}
 
-	protected void upgradeCalendarResourceUserIds() throws Exception {
+	private void _upgradeCalendarResourceUserIds() throws Exception {
 		try (LoggingTimer loggingTimer = new LoggingTimer()) {
 			_companyLocalService.forEachCompany(
 				company -> {
 					long classNameId = _classNameLocalService.getClassNameId(
 						Group.class);
-					long defaultUserId = _userLocalService.getDefaultUserId(
+					long guestUserId = _userLocalService.getGuestUserId(
 						company.getCompanyId());
-					long companyAdminUserId = getCompanyAdminUserId(company);
+					long companyAdminUserId = _getCompanyAdminUserId(company);
 
-					updateCalendarUserIds(
-						classNameId, defaultUserId, companyAdminUserId);
+					_updateCalendarUserIds(
+						classNameId, guestUserId, companyAdminUserId);
 
-					upgradeCalendarResourceUserId(
-						classNameId, defaultUserId, companyAdminUserId);
+					_upgradeCalendarResourceUserId(
+						classNameId, guestUserId, companyAdminUserId);
 				});
 		}
 	}

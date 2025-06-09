@@ -1,22 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.model.impl;
 
 import com.liferay.commerce.model.CommerceAvailabilityEstimate;
 import com.liferay.commerce.model.CommerceAvailabilityEstimateModel;
-import com.liferay.commerce.model.CommerceAvailabilityEstimateSoap;
 import com.liferay.expando.kernel.model.ExpandoBridge;
 import com.liferay.expando.kernel.util.ExpandoBridgeFactoryUtil;
 import com.liferay.exportimport.kernel.lar.StagedModelType;
@@ -41,18 +31,15 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
 import java.sql.Types;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
@@ -129,24 +116,6 @@ public class CommerceAvailabilityEstimateModelImpl
 	public static final String TX_MANAGER = "liferayTransactionManager";
 
 	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean ENTITY_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean FINDER_CACHE_ENABLED = true;
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
-	 */
-	@Deprecated
-	public static final boolean COLUMN_BITMASK_ENABLED = true;
-
-	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
@@ -166,67 +135,18 @@ public class CommerceAvailabilityEstimateModelImpl
 	public static final long TITLE_COLUMN_BITMASK = 4L;
 
 	/**
-	 * Converts the soap model instance into a normal model instance.
-	 *
-	 * @param soapModel the soap model instance to convert
-	 * @return the normal model instance
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static CommerceAvailabilityEstimate toModel(
-		CommerceAvailabilityEstimateSoap soapModel) {
-
-		if (soapModel == null) {
-			return null;
-		}
-
-		CommerceAvailabilityEstimate model =
-			new CommerceAvailabilityEstimateImpl();
-
-		model.setMvccVersion(soapModel.getMvccVersion());
-		model.setUuid(soapModel.getUuid());
-		model.setCommerceAvailabilityEstimateId(
-			soapModel.getCommerceAvailabilityEstimateId());
-		model.setCompanyId(soapModel.getCompanyId());
-		model.setUserId(soapModel.getUserId());
-		model.setUserName(soapModel.getUserName());
-		model.setCreateDate(soapModel.getCreateDate());
-		model.setModifiedDate(soapModel.getModifiedDate());
-		model.setTitle(soapModel.getTitle());
-		model.setPriority(soapModel.getPriority());
-		model.setLastPublishDate(soapModel.getLastPublishDate());
-
-		return model;
+	public static void setEntityCacheEnabled(boolean entityCacheEnabled) {
 	}
 
 	/**
-	 * Converts the soap model instances into normal model instances.
-	 *
-	 * @param soapModels the soap model instances to convert
-	 * @return the normal model instances
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
 	 */
 	@Deprecated
-	public static List<CommerceAvailabilityEstimate> toModels(
-		CommerceAvailabilityEstimateSoap[] soapModels) {
-
-		if (soapModels == null) {
-			return null;
-		}
-
-		List<CommerceAvailabilityEstimate> models =
-			new ArrayList<CommerceAvailabilityEstimate>(soapModels.length);
-
-		for (CommerceAvailabilityEstimateSoap soapModel : soapModels) {
-			models.add(toModel(soapModel));
-		}
-
-		return models;
+	public static void setFinderCacheEnabled(boolean finderCacheEnabled) {
 	}
-
-	public static final long LOCK_EXPIRATION_TIME = GetterUtil.getLong(
-		com.liferay.commerce.service.util.ServiceProps.get(
-			"lock.expiration.time.com.liferay.commerce.model.CommerceAvailabilityEstimate"));
 
 	public CommerceAvailabilityEstimateModelImpl() {
 	}
@@ -306,134 +226,122 @@ public class CommerceAvailabilityEstimateModelImpl
 	public Map<String, Function<CommerceAvailabilityEstimate, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CommerceAvailabilityEstimate, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CommerceAvailabilityEstimate>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CommerceAvailabilityEstimate.class.getClassLoader(),
-			CommerceAvailabilityEstimate.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<CommerceAvailabilityEstimate, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<CommerceAvailabilityEstimate> constructor =
-				(Constructor<CommerceAvailabilityEstimate>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<CommerceAvailabilityEstimate, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<CommerceAvailabilityEstimate, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
-
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
-	}
-
-	private static final Map
-		<String, Function<CommerceAvailabilityEstimate, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<CommerceAvailabilityEstimate, Object>>
-			_attributeSetterBiConsumers;
-
-	static {
-		Map<String, Function<CommerceAvailabilityEstimate, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<CommerceAvailabilityEstimate, Object>>();
-		Map<String, BiConsumer<CommerceAvailabilityEstimate, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<CommerceAvailabilityEstimate, ?>>();
-
-		attributeGetterFunctions.put(
-			"mvccVersion", CommerceAvailabilityEstimate::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CommerceAvailabilityEstimate, Long>)
-				CommerceAvailabilityEstimate::setMvccVersion);
-		attributeGetterFunctions.put(
-			"uuid", CommerceAvailabilityEstimate::getUuid);
-		attributeSetterBiConsumers.put(
-			"uuid",
-			(BiConsumer<CommerceAvailabilityEstimate, String>)
-				CommerceAvailabilityEstimate::setUuid);
-		attributeGetterFunctions.put(
-			"commerceAvailabilityEstimateId",
-			CommerceAvailabilityEstimate::getCommerceAvailabilityEstimateId);
-		attributeSetterBiConsumers.put(
-			"commerceAvailabilityEstimateId",
-			(BiConsumer<CommerceAvailabilityEstimate, Long>)
+			attributeGetterFunctions.put(
+				"mvccVersion", CommerceAvailabilityEstimate::getMvccVersion);
+			attributeGetterFunctions.put(
+				"uuid", CommerceAvailabilityEstimate::getUuid);
+			attributeGetterFunctions.put(
+				"commerceAvailabilityEstimateId",
 				CommerceAvailabilityEstimate::
-					setCommerceAvailabilityEstimateId);
-		attributeGetterFunctions.put(
-			"companyId", CommerceAvailabilityEstimate::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<CommerceAvailabilityEstimate, Long>)
-				CommerceAvailabilityEstimate::setCompanyId);
-		attributeGetterFunctions.put(
-			"userId", CommerceAvailabilityEstimate::getUserId);
-		attributeSetterBiConsumers.put(
-			"userId",
-			(BiConsumer<CommerceAvailabilityEstimate, Long>)
-				CommerceAvailabilityEstimate::setUserId);
-		attributeGetterFunctions.put(
-			"userName", CommerceAvailabilityEstimate::getUserName);
-		attributeSetterBiConsumers.put(
-			"userName",
-			(BiConsumer<CommerceAvailabilityEstimate, String>)
-				CommerceAvailabilityEstimate::setUserName);
-		attributeGetterFunctions.put(
-			"createDate", CommerceAvailabilityEstimate::getCreateDate);
-		attributeSetterBiConsumers.put(
-			"createDate",
-			(BiConsumer<CommerceAvailabilityEstimate, Date>)
-				CommerceAvailabilityEstimate::setCreateDate);
-		attributeGetterFunctions.put(
-			"modifiedDate", CommerceAvailabilityEstimate::getModifiedDate);
-		attributeSetterBiConsumers.put(
-			"modifiedDate",
-			(BiConsumer<CommerceAvailabilityEstimate, Date>)
-				CommerceAvailabilityEstimate::setModifiedDate);
-		attributeGetterFunctions.put(
-			"title", CommerceAvailabilityEstimate::getTitle);
-		attributeSetterBiConsumers.put(
-			"title",
-			(BiConsumer<CommerceAvailabilityEstimate, String>)
-				CommerceAvailabilityEstimate::setTitle);
-		attributeGetterFunctions.put(
-			"priority", CommerceAvailabilityEstimate::getPriority);
-		attributeSetterBiConsumers.put(
-			"priority",
-			(BiConsumer<CommerceAvailabilityEstimate, Double>)
-				CommerceAvailabilityEstimate::setPriority);
-		attributeGetterFunctions.put(
-			"lastPublishDate",
-			CommerceAvailabilityEstimate::getLastPublishDate);
-		attributeSetterBiConsumers.put(
-			"lastPublishDate",
-			(BiConsumer<CommerceAvailabilityEstimate, Date>)
-				CommerceAvailabilityEstimate::setLastPublishDate);
+					getCommerceAvailabilityEstimateId);
+			attributeGetterFunctions.put(
+				"companyId", CommerceAvailabilityEstimate::getCompanyId);
+			attributeGetterFunctions.put(
+				"userId", CommerceAvailabilityEstimate::getUserId);
+			attributeGetterFunctions.put(
+				"userName", CommerceAvailabilityEstimate::getUserName);
+			attributeGetterFunctions.put(
+				"createDate", CommerceAvailabilityEstimate::getCreateDate);
+			attributeGetterFunctions.put(
+				"modifiedDate", CommerceAvailabilityEstimate::getModifiedDate);
+			attributeGetterFunctions.put(
+				"title", CommerceAvailabilityEstimate::getTitle);
+			attributeGetterFunctions.put(
+				"priority", CommerceAvailabilityEstimate::getPriority);
+			attributeGetterFunctions.put(
+				"lastPublishDate",
+				CommerceAvailabilityEstimate::getLastPublishDate);
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
+		}
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map
+			<String, BiConsumer<CommerceAvailabilityEstimate, Object>>
+				_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<CommerceAvailabilityEstimate, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<CommerceAvailabilityEstimate, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CommerceAvailabilityEstimate, Long>)
+					CommerceAvailabilityEstimate::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"uuid",
+				(BiConsumer<CommerceAvailabilityEstimate, String>)
+					CommerceAvailabilityEstimate::setUuid);
+			attributeSetterBiConsumers.put(
+				"commerceAvailabilityEstimateId",
+				(BiConsumer<CommerceAvailabilityEstimate, Long>)
+					CommerceAvailabilityEstimate::
+						setCommerceAvailabilityEstimateId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<CommerceAvailabilityEstimate, Long>)
+					CommerceAvailabilityEstimate::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"userId",
+				(BiConsumer<CommerceAvailabilityEstimate, Long>)
+					CommerceAvailabilityEstimate::setUserId);
+			attributeSetterBiConsumers.put(
+				"userName",
+				(BiConsumer<CommerceAvailabilityEstimate, String>)
+					CommerceAvailabilityEstimate::setUserName);
+			attributeSetterBiConsumers.put(
+				"createDate",
+				(BiConsumer<CommerceAvailabilityEstimate, Date>)
+					CommerceAvailabilityEstimate::setCreateDate);
+			attributeSetterBiConsumers.put(
+				"modifiedDate",
+				(BiConsumer<CommerceAvailabilityEstimate, Date>)
+					CommerceAvailabilityEstimate::setModifiedDate);
+			attributeSetterBiConsumers.put(
+				"title",
+				(BiConsumer<CommerceAvailabilityEstimate, String>)
+					CommerceAvailabilityEstimate::setTitle);
+			attributeSetterBiConsumers.put(
+				"priority",
+				(BiConsumer<CommerceAvailabilityEstimate, Double>)
+					CommerceAvailabilityEstimate::setPriority);
+			attributeSetterBiConsumers.put(
+				"lastPublishDate",
+				(BiConsumer<CommerceAvailabilityEstimate, Date>)
+					CommerceAvailabilityEstimate::setLastPublishDate);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -979,7 +887,7 @@ public class CommerceAvailabilityEstimateModelImpl
 	@Deprecated
 	@Override
 	public boolean isEntityCacheEnabled() {
-		return ENTITY_CACHE_ENABLED;
+		return true;
 	}
 
 	/**
@@ -988,7 +896,7 @@ public class CommerceAvailabilityEstimateModelImpl
 	@Deprecated
 	@Override
 	public boolean isFinderCacheEnabled() {
-		return FINDER_CACHE_ENABLED;
+		return true;
 	}
 
 	@Override
@@ -1126,45 +1034,13 @@ public class CommerceAvailabilityEstimateModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CommerceAvailabilityEstimate, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CommerceAvailabilityEstimate, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CommerceAvailabilityEstimate, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(CommerceAvailabilityEstimate)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, CommerceAvailabilityEstimate>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						CommerceAvailabilityEstimate.class, ModelWrapper.class);
 
 	}
 
@@ -1186,7 +1062,8 @@ public class CommerceAvailabilityEstimateModelImpl
 		columnName = _attributeNames.getOrDefault(columnName, columnName);
 
 		Function<CommerceAvailabilityEstimate, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

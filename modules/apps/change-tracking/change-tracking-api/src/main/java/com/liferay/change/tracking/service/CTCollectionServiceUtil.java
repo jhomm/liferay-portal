@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.service;
 
 import com.liferay.change.tracking.model.CTCollection;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.util.List;
@@ -40,11 +32,13 @@ public class CTCollectionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.change.tracking.service.impl.CTCollectionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static CTCollection addCTCollection(
-			long companyId, long userId, String name, String description)
+			String externalReferenceCode, long companyId, long userId,
+			long ctRemoteId, String name, String description)
 		throws PortalException {
 
 		return getService().addCTCollection(
-			companyId, userId, name, description);
+			externalReferenceCode, companyId, userId, ctRemoteId, name,
+			description);
 	}
 
 	public static void deleteCTAutoResolutionInfo(long ctAutoResolutionInfoId)
@@ -59,12 +53,12 @@ public class CTCollectionServiceUtil {
 		return getService().deleteCTCollection(ctCollection);
 	}
 
-	public static void discardCTEntries(
-			long ctCollectionId, long modelClassNameId, long modelClassPK)
+	public static void discardCTEntry(
+			long ctCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
 		throws PortalException {
 
-		getService().discardCTEntries(
-			ctCollectionId, modelClassNameId, modelClassPK);
+		getService().discardCTEntry(ctCollectionId, ctEntries);
 	}
 
 	public static void discardCTEntry(
@@ -107,6 +101,25 @@ public class CTCollectionServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
+	public static void moveCTEntries(
+			long fromCTCollectionId, long toCTCollectionId,
+			List<com.liferay.change.tracking.model.CTEntry> ctEntries)
+		throws PortalException {
+
+		getService().moveCTEntries(
+			fromCTCollectionId, toCTCollectionId, ctEntries);
+	}
+
+	public static void moveCTEntry(
+			long fromCTCollectionId, long toCTCollectionId,
+			long modelClassNameId, long modelClassPK)
+		throws PortalException {
+
+		getService().moveCTEntry(
+			fromCTCollectionId, toCTCollectionId, modelClassNameId,
+			modelClassPK);
+	}
+
 	public static void publishCTCollection(long userId, long ctCollectionId)
 		throws PortalException {
 
@@ -130,9 +143,11 @@ public class CTCollectionServiceUtil {
 	}
 
 	public static CTCollectionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CTCollectionService _service;
+	private static final Snapshot<CTCollectionService> _serviceSnapshot =
+		new Snapshot<>(
+			CTCollectionServiceUtil.class, CTCollectionService.class);
 
 }

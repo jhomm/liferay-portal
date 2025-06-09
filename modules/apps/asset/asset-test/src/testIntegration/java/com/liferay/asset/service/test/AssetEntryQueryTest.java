@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.service.test;
@@ -17,15 +8,15 @@ package com.liferay.asset.service.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.asset.kernel.model.AssetCategory;
 import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetLink;
 import com.liferay.asset.kernel.model.AssetVocabulary;
 import com.liferay.asset.kernel.service.AssetCategoryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetEntryLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetEntryServiceUtil;
-import com.liferay.asset.kernel.service.AssetLinkLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetTagLocalServiceUtil;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalServiceUtil;
 import com.liferay.asset.kernel.service.persistence.AssetEntryQuery;
+import com.liferay.asset.link.model.AssetLink;
+import com.liferay.asset.link.service.AssetLinkLocalServiceUtil;
 import com.liferay.blogs.model.BlogsEntry;
 import com.liferay.blogs.service.BlogsEntryLocalServiceUtil;
 import com.liferay.petra.string.StringPool;
@@ -33,6 +24,7 @@ import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCache;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCacheManager;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -41,11 +33,13 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.CalendarFactoryUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portlet.asset.service.impl.AssetEntryServiceImpl;
 import com.liferay.ratings.kernel.model.RatingsStats;
+import com.liferay.ratings.kernel.service.RatingsEntryLocalServiceUtil;
 import com.liferay.ratings.kernel.service.RatingsEntryServiceUtil;
 import com.liferay.ratings.kernel.service.RatingsStatsLocalServiceUtil;
 
@@ -405,18 +399,23 @@ public class AssetEntryQueryTest {
 	}
 
 	@Test
+	public void testLinkedAssetMultipleLayoutContents() throws Exception {
+		testLinkedAsset(3, true);
+	}
+
+	@Test
 	public void testLinkedAssetMultipleLinked() throws Exception {
-		testLinkedAsset(3);
+		testLinkedAsset(3, false);
 	}
 
 	@Test
 	public void testLinkedAssetNoLinked() throws Exception {
-		testLinkedAsset(0);
+		testLinkedAsset(0, false);
 	}
 
 	@Test
 	public void testLinkedAssetOneLinked() throws Exception {
-		testLinkedAsset(1);
+		testLinkedAsset(1, false);
 	}
 
 	@Test
@@ -536,6 +535,18 @@ public class AssetEntryQueryTest {
 		testOrderByRatings(
 			new double[] {0.44, 0.2, 0.6, 0.22, 0.86},
 			new double[] {0.86, 0.6, 0.44, 0.22, 0.2}, "DESC");
+	}
+
+	@Test
+	public void testOrderByRatingsTotalScoreAsc() throws Exception {
+		testOrderByRatingsTotalScore(
+			new int[] {2, 3, 1, 5, 4}, new int[] {1, 2, 3, 4, 5}, "ASC");
+	}
+
+	@Test
+	public void testOrderByRatingsTotalScoreDesc() throws Exception {
+		testOrderByRatingsTotalScore(
+			new int[] {2, 3, 1, 5, 4}, new int[] {5, 4, 3, 2, 1}, "DESC");
 	}
 
 	protected AssetEntryQuery buildAssetEntryQuery(
@@ -801,7 +812,8 @@ public class AssetEntryQueryTest {
 			not, expectedAssetEntriesCount);
 	}
 
-	protected void testLinkedAsset(int expectedAssetEntriesCount)
+	protected void testLinkedAsset(
+			int expectedAssetEntriesCount, boolean multipleLayoutContents)
 		throws Exception {
 
 		ThreadLocalCache<Object[]> threadLocalCache =
@@ -829,6 +841,10 @@ public class AssetEntryQueryTest {
 
 		AssetEntry assetEntry1 = AssetEntryLocalServiceUtil.getEntry(
 			BlogsEntry.class.getName(), blogsEntry1.getEntryId());
+
+		List<Long> layoutAssetEntryIds = new ArrayList<>();
+
+		layoutAssetEntryIds.add(assetEntry1.getEntryId());
 
 		List<BlogsEntry> blogsEntries = new ArrayList<>();
 
@@ -859,6 +875,52 @@ public class AssetEntryQueryTest {
 			linkedAssetEntryIds.add(linkedAssetEntry.getEntryId());
 		}
 
+		if (multipleLayoutContents) {
+			BlogsEntry blogsEntry2 = BlogsEntryLocalServiceUtil.addEntry(
+				TestPropsValues.getUserId(), StringUtil.randomString(),
+				StringPool.BLANK, StringUtil.randomString(),
+				RandomTestUtil.randomString(), 1, 1, 1965, 0, 0, true, true,
+				null, StringPool.BLANK, null, null, serviceContext);
+
+			AssetEntry assetEntry2 = AssetEntryLocalServiceUtil.getEntry(
+				BlogsEntry.class.getName(), blogsEntry2.getEntryId());
+
+			layoutAssetEntryIds.add(assetEntry2.getEntryId());
+
+			blogsEntries.add(blogsEntry2);
+
+			AssetLink commonAssetLink = AssetLinkLocalServiceUtil.addLink(
+				TestPropsValues.getUserId(), assetEntry1.getEntryId(),
+				assetEntry2.getEntryId(), 0, 0);
+
+			assetLinks.add(commonAssetLink);
+
+			for (int i = 0; i < expectedAssetEntriesCount; i++) {
+				BlogsEntry linkedBlogsEntry =
+					BlogsEntryLocalServiceUtil.addEntry(
+						TestPropsValues.getUserId(), StringUtil.randomString(),
+						StringPool.BLANK, StringUtil.randomString(),
+						RandomTestUtil.randomString(), 1, 1, 1965, 0, 0, true,
+						true, null, StringPool.BLANK, null, null,
+						serviceContext);
+
+				AssetEntry linkedAssetEntry =
+					AssetEntryLocalServiceUtil.getEntry(
+						BlogsEntry.class.getName(),
+						linkedBlogsEntry.getEntryId());
+
+				AssetLink assetLink = AssetLinkLocalServiceUtil.addLink(
+					TestPropsValues.getUserId(), assetEntry2.getEntryId(),
+					linkedAssetEntry.getEntryId(), 0, 0);
+
+				blogsEntries.add(linkedBlogsEntry);
+
+				assetLinks.add(assetLink);
+
+				linkedAssetEntryIds.add(linkedAssetEntry.getEntryId());
+			}
+		}
+
 		BlogsEntry notLinkedBlogsEntry = BlogsEntryLocalServiceUtil.addEntry(
 			TestPropsValues.getUserId(), StringUtil.randomString(),
 			StringPool.BLANK, StringUtil.randomString(),
@@ -867,7 +929,8 @@ public class AssetEntryQueryTest {
 
 		blogsEntries.add(notLinkedBlogsEntry);
 
-		assetEntryQuery.setLinkedAssetEntryId(assetEntry1.getEntryId());
+		assetEntryQuery.setLinkedAssetEntryIds(
+			ArrayUtil.toLongArray(layoutAssetEntryIds));
 
 		threadLocalCache.removeAll();
 
@@ -875,7 +938,8 @@ public class AssetEntryQueryTest {
 			assetEntryQuery);
 
 		Assert.assertEquals(
-			initialAssetEntriesCount + expectedAssetEntriesCount,
+			initialAssetEntriesCount +
+				(expectedAssetEntriesCount * layoutAssetEntryIds.size()),
 			assetEntriesCount);
 
 		List<AssetEntry> assetEntries = AssetEntryServiceUtil.getEntries(
@@ -883,7 +947,8 @@ public class AssetEntryQueryTest {
 
 		Assert.assertEquals(
 			assetEntries.toString(),
-			initialAssetEntriesCount + expectedAssetEntriesCount,
+			initialAssetEntriesCount +
+				(expectedAssetEntriesCount * layoutAssetEntryIds.size()),
 			assetEntries.size());
 
 		for (AssetEntry assetEntry : assetEntries) {
@@ -949,6 +1014,62 @@ public class AssetEntryQueryTest {
 		}
 	}
 
+	protected void testOrderByRatingsTotalScore(
+			int[] scores, int[] orderedScores, String orderByType)
+		throws Exception {
+
+		ThreadLocalCache<Object[]> threadLocalCache =
+			ThreadLocalCacheManager.getThreadLocalCache(
+				Lifecycle.REQUEST, AssetEntryServiceImpl.class.getName());
+
+		threadLocalCache.removeAll();
+
+		ServiceContext serviceContext =
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId());
+
+		Calendar displayDateCalendar = CalendarFactoryUtil.getCalendar(
+			2012, 1, 1);
+
+		for (int score : scores) {
+			BlogsEntry blogsEntry = BlogsEntryLocalServiceUtil.addEntry(
+				TestPropsValues.getUserId(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomString(), displayDateCalendar.getTime(),
+				serviceContext);
+
+			for (int i = 0; i < score; i++) {
+				User user = UserTestUtil.addUser();
+
+				_users.add(user);
+
+				RatingsEntryLocalServiceUtil.updateEntry(
+					user.getUserId(), BlogsEntry.class.getName(),
+					blogsEntry.getEntryId(), 1, serviceContext);
+			}
+		}
+
+		threadLocalCache.removeAll();
+
+		AssetEntryQuery assetEntryQuery = buildAssetEntryQuery(
+			_group.getGroupId(), null, null, false, false);
+
+		assetEntryQuery.setOrderByCol1("ratingsTotalScore");
+		assetEntryQuery.setOrderByType1(orderByType);
+
+		List<AssetEntry> assetEntries = AssetEntryServiceUtil.getEntries(
+			assetEntryQuery);
+
+		for (int i = 0; i < assetEntries.size(); i++) {
+			AssetEntry assetEntry = assetEntries.get(i);
+
+			RatingsStats ratingsStats = RatingsStatsLocalServiceUtil.getStats(
+				assetEntry.getClassName(), assetEntry.getClassPK());
+
+			Assert.assertEquals(
+				ratingsStats.getTotalScore(), orderedScores[i], 0);
+		}
+	}
+
 	private long[] _assetCategoryIds1;
 	private long[] _assetCategoryIds2;
 	private long _assetVocabularyId;
@@ -961,5 +1082,8 @@ public class AssetEntryQueryTest {
 	private long _healthAssetCategoryId;
 	private long _sportAssetCategoryId;
 	private long _travelAssetCategoryId;
+
+	@DeleteAfterTestRun
+	private List<User> _users = new ArrayList<>();
 
 }

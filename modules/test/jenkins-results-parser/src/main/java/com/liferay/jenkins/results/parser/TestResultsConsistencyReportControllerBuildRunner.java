@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -75,14 +66,15 @@ public class TestResultsConsistencyReportControllerBuildRunner
 	}
 
 	protected String getJobURL() {
-		String mostAvailableMasterURL =
-			JenkinsResultsParserUtil.getMostAvailableMasterURL(
-				JenkinsResultsParserUtil.combine(
-					"http://" + getInvocationCohortName() + ".liferay.com"),
-				1);
+		String jobName = "test-results-consistency-report";
 
 		return JenkinsResultsParserUtil.combine(
-			mostAvailableMasterURL, "/job/test-results-consistency-report");
+			JenkinsResultsParserUtil.getMostAvailableMasterURL(
+				"http://" + getInvocationCohortName() + ".liferay.com", null, 1,
+				jobName, getLabelExpression(jobName),
+				JenkinsMaster.getSlaveRAMMinimumDefault(),
+				JenkinsMaster.getSlavesPerHostDefault()),
+			"/job/", jobName);
 	}
 
 	protected void invokeTestSuiteBuilds() {
@@ -263,6 +255,9 @@ public class TestResultsConsistencyReportControllerBuildRunner
 	}
 
 	private Map<Pair<String, String>, Long> _getLatestTestSuiteStartTimes() {
+		Map<Pair<String, String>, Long> latestTestSuiteStartTimes =
+			new LinkedHashMap<>();
+
 		List<Build> builds = _getBuildHistory();
 
 		BuildData buildData = getBuildData();
@@ -271,9 +266,6 @@ public class TestResultsConsistencyReportControllerBuildRunner
 			buildData.getBuildURL(), null);
 
 		builds.remove(currentBuild);
-
-		Map<Pair<String, String>, Long> latestTestSuiteStartTimes =
-			new LinkedHashMap<>();
 
 		for (Pair<String, String> testSuiteBranchNamePair :
 				_getTestSuiteBranchNamePairs()) {

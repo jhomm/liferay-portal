@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.info.field;
@@ -37,44 +28,6 @@ public class InfoFieldSet implements InfoFieldSetEntry {
 		return new Builder();
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public InfoFieldSet(
-		InfoLocalizedValue<String> labelInfoLocalizedValue, String name) {
-
-		this(
-			builder(
-			).labelInfoLocalizedValue(
-				labelInfoLocalizedValue
-			).name(
-				name
-			));
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public InfoFieldSet add(InfoFieldSetEntry infoFieldSetEntry) {
-		_builder.infoFieldSetEntry(infoFieldSetEntry);
-
-		return this;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public InfoFieldSet addAll(
-		Collection<InfoFieldSetEntry> infoFieldSetEntries) {
-
-		_builder.infoFieldSetEntries(infoFieldSetEntries);
-
-		return this;
-	}
-
 	@Override
 	public boolean equals(Object object) {
 		if (this == object) {
@@ -98,14 +51,14 @@ public class InfoFieldSet implements InfoFieldSetEntry {
 		return false;
 	}
 
-	public List<InfoField> getAllInfoFields() {
-		List<InfoField> allInfoFields = new ArrayList<>();
+	public List<InfoField<?>> getAllInfoFields() {
+		List<InfoField<?>> allInfoFields = new ArrayList<>();
 
 		for (InfoFieldSetEntry infoFieldSetEntry :
 				_builder._infoFieldSetEntries.values()) {
 
 			if (infoFieldSetEntry instanceof InfoField) {
-				allInfoFields.add((InfoField)infoFieldSetEntry);
+				allInfoFields.add((InfoField<?>)infoFieldSetEntry);
 			}
 			else if (infoFieldSetEntry instanceof InfoFieldSet) {
 				InfoFieldSet infoFieldSet = (InfoFieldSet)infoFieldSetEntry;
@@ -115,6 +68,35 @@ public class InfoFieldSet implements InfoFieldSetEntry {
 		}
 
 		return allInfoFields;
+	}
+
+	public InfoLocalizedValue<String> getDescriptionInfoLocalizedValue() {
+		return _builder._descriptionInfoLocalizedValue;
+	}
+
+	public InfoField<?> getInfoField(String name) {
+		for (InfoFieldSetEntry infoFieldSetEntry :
+				_builder._infoFieldSetEntries.values()) {
+
+			InfoField<?> infoField = null;
+
+			if (infoFieldSetEntry instanceof InfoField) {
+				infoField = (InfoField<?>)infoFieldSetEntry;
+			}
+			else if (infoFieldSetEntry instanceof InfoFieldSet) {
+				InfoFieldSet infoFieldSet = (InfoFieldSet)infoFieldSetEntry;
+
+				infoField = infoFieldSet.getInfoField(name);
+			}
+
+			if ((infoField != null) &&
+				Objects.equals(infoField.getUniqueId(), name)) {
+
+				return infoField;
+			}
+		}
+
+		return null;
 	}
 
 	public List<InfoFieldSetEntry> getInfoFieldSetEntries() {
@@ -161,6 +143,14 @@ public class InfoFieldSet implements InfoFieldSetEntry {
 			return new InfoFieldSet(this);
 		}
 
+		public Builder descriptionInfoLocalizedValue(
+			InfoLocalizedValue<String> descriptionInfoLocalizedValue) {
+
+			_descriptionInfoLocalizedValue = descriptionInfoLocalizedValue;
+
+			return this;
+		}
+
 		public Builder infoFieldSetEntries(
 			Collection<InfoFieldSetEntry> infoFieldSetEntries) {
 
@@ -202,6 +192,7 @@ public class InfoFieldSet implements InfoFieldSetEntry {
 			return this;
 		}
 
+		private InfoLocalizedValue<String> _descriptionInfoLocalizedValue;
 		private final Map<String, InfoFieldSetEntry> _infoFieldSetEntries =
 			new LinkedHashMap<>();
 		private InfoLocalizedValue<String> _labelInfoLocalizedValue;

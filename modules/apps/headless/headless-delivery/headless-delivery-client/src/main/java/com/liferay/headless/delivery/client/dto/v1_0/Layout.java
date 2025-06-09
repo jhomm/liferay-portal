@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.headless.delivery.client.dto.v1_0;
 import com.liferay.headless.delivery.client.function.UnsafeSupplier;
 import com.liferay.headless.delivery.client.serdes.v1_0.LayoutSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -190,6 +181,35 @@ public class Layout implements Cloneable, Serializable {
 	}
 
 	protected ContentDisplay contentDisplay;
+
+	public FlexWrap getFlexWrap() {
+		return flexWrap;
+	}
+
+	public String getFlexWrapAsString() {
+		if (flexWrap == null) {
+			return null;
+		}
+
+		return flexWrap.toString();
+	}
+
+	public void setFlexWrap(FlexWrap flexWrap) {
+		this.flexWrap = flexWrap;
+	}
+
+	public void setFlexWrap(
+		UnsafeSupplier<FlexWrap, Exception> flexWrapUnsafeSupplier) {
+
+		try {
+			flexWrap = flexWrapUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected FlexWrap flexWrap;
 
 	public Justify getJustify() {
 		return justify;
@@ -646,6 +666,39 @@ public class Layout implements Cloneable, Serializable {
 		}
 
 		private ContentDisplay(String value) {
+			_value = value;
+		}
+
+		private final String _value;
+
+	}
+
+	public static enum FlexWrap {
+
+		NO_WRAP("NoWrap"), WRAP("Wrap"), WRAP_REVERSE("WrapReverse");
+
+		public static FlexWrap create(String value) {
+			for (FlexWrap flexWrap : values()) {
+				if (Objects.equals(flexWrap.getValue(), value) ||
+					Objects.equals(flexWrap.name(), value)) {
+
+					return flexWrap;
+				}
+			}
+
+			return null;
+		}
+
+		public String getValue() {
+			return _value;
+		}
+
+		@Override
+		public String toString() {
+			return _value;
+		}
+
+		private FlexWrap(String value) {
 			_value = value;
 		}
 

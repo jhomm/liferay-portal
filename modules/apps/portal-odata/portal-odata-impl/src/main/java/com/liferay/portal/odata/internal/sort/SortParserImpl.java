@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.odata.internal.sort;
 
+import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -24,13 +16,11 @@ import com.liferay.portal.odata.sort.InvalidSortException;
 import com.liferay.portal.odata.sort.SortField;
 import com.liferay.portal.odata.sort.SortParser;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Parses {@code Sort} strings. This class uses a model to create a {@code
@@ -76,27 +66,19 @@ public class SortParserImpl implements SortParser {
 			return Collections.emptyList();
 		}
 
-		List<String> list = StringUtil.split(sortString);
+		List<SortField> sortFields = new ArrayList<>();
 
-		Stream<String> stream = list.stream();
+		for (String string : StringUtil.split(sortString)) {
+			sortFields.add(getSortField(string));
+		}
 
-		return stream.map(
-			this::getSortFieldOptional
-		).flatMap(
-			sortFieldOptional -> sortFieldOptional.map(
-				Stream::of
-			).orElseGet(
-				Stream::empty
-			)
-		).collect(
-			Collectors.toList()
-		);
+		return sortFields;
 	}
 
-	protected Optional<EntityField> getEntityFieldOptional(
+	protected EntityField getEntityField(
 		Map<String, EntityField> entityFieldsMap, String fieldName) {
 
-		if (fieldName.contains(StringPool.FORWARD_SLASH)) {
+		if (_isComplexFieldName(fieldName)) {
 			List<String> list = StringUtil.split(fieldName, '/');
 
 			String complexTypeName = list.get(0);
@@ -115,19 +97,19 @@ public class SortParserImpl implements SortParser {
 			ComplexEntityField complexEntityField =
 				(ComplexEntityField)entityField;
 
-			return getEntityFieldOptional(
+			return getEntityField(
 				complexEntityField.getEntityFieldsMap(),
 				fieldName.substring(complexTypeName.length() + 1));
 		}
 
-		return Optional.ofNullable(entityFieldsMap.get(fieldName));
+		return entityFieldsMap.get(fieldName);
 	}
 
-	protected Optional<SortField> getSortFieldOptional(String sortString) {
+	protected SortField getSortField(String sortString) {
 		List<String> list = StringUtil.split(sortString, ':');
 
 		if (list.isEmpty()) {
-			return Optional.empty();
+			return null;
 		}
 
 		if (list.size() > 2) {
@@ -147,18 +129,25 @@ public class SortParserImpl implements SortParser {
 		}
 
 		if (_entityModel == null) {
-			return Optional.of(new SortField(fieldName, ascending));
+			return new SortField(fieldName, ascending);
 		}
 
-		Optional<EntityField> entityFieldOptional = getEntityFieldOptional(
+		EntityField entityField = getEntityField(
 			_entityModel.getEntityFieldsMap(), fieldName);
 
-		return entityFieldOptional.map(
-			entityField -> Optional.of(new SortField(entityField, ascending))
-		).orElseThrow(
-			() -> new InvalidSortException(
-				"Unable to sort by property: " + fieldName)
-		);
+		if (entityField == null) {
+			throw new InvalidSortException(
+				"Unable to sort by property: " + fieldName);
+		}
+
+		if (_isComplexFieldName(fieldName)) {
+			return new SortField(
+				ascending, entityField,
+				_getParentEntityFields(
+					_entityModel.getEntityFieldsMap(), fieldName));
+		}
+
+		return new SortField(entityField, ascending);
 	}
 
 	protected boolean isAscending(String orderBy) {
@@ -181,6 +170,33 @@ public class SortParserImpl implements SortParser {
 		}
 
 		return _ASC_DEFAULT;
+	}
+
+	private List<EntityField> _getParentEntityFields(
+		Map<String, EntityField> entityFields, String fieldName) {
+
+		List<EntityField> parentEntityFields = new ArrayList<>();
+
+		Map<String, EntityField> currentEntityFields = entityFields;
+
+		List<String> fieldNameParts = StringUtil.split(
+			fieldName, CharPool.FORWARD_SLASH);
+
+		for (int i = 0; i < (fieldNameParts.size() - 1); i++) {
+			ComplexEntityField complexEntityField =
+				(ComplexEntityField)currentEntityFields.get(
+					fieldNameParts.get(i));
+
+			currentEntityFields = complexEntityField.getEntityFieldsMap();
+
+			parentEntityFields.add(complexEntityField);
+		}
+
+		return parentEntityFields;
+	}
+
+	private boolean _isComplexFieldName(String fieldName) {
+		return fieldName.contains(StringPool.FORWARD_SLASH);
 	}
 
 	private static final boolean _ASC_DEFAULT = true;

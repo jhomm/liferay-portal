@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.upgrade.v3_4_1;
 
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.jdbc.AutoBatchPreparedStatementUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -38,14 +30,14 @@ public class FragmentEntryLinkEditableValuesUpgradeProcess
 	@Override
 	protected void doUpgrade() throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
-				"select fragmentEntryLinkId,editableValues,rendererKey from " +
-					"FragmentEntryLink where rendererKey like " +
-						"'BASIC_COMPONENT%'");
+				"select ctCollectionId, fragmentEntryLinkId, editableValues, " +
+					"rendererKey from FragmentEntryLink where rendererKey " +
+						"like 'BASIC_COMPONENT%'");
 			PreparedStatement preparedStatement2 =
 				AutoBatchPreparedStatementUtil.concurrentAutoBatch(
 					connection,
 					"update FragmentEntryLink set editableValues = ? where " +
-						"fragmentEntryLinkId = ?");
+						"ctCollectionId = ? and fragmentEntryLinkId = ?");
 			ResultSet resultSet = preparedStatement1.executeQuery()) {
 
 			while (resultSet.next()) {
@@ -55,8 +47,8 @@ public class FragmentEntryLinkEditableValuesUpgradeProcess
 
 				JSONObject configurationJSONObject =
 					editablesJSONObject.getJSONObject(
-						"com.liferay.fragment.entry.processor.freemarker." +
-							"FreeMarkerFragmentEntryProcessor");
+						FragmentEntryProcessorConstants.
+							KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
 
 				if (configurationJSONObject == null) {
 					continue;
@@ -94,7 +86,9 @@ public class FragmentEntryLinkEditableValuesUpgradeProcess
 
 				preparedStatement2.setString(1, editablesJSONObject.toString());
 				preparedStatement2.setLong(
-					2, resultSet.getLong("fragmentEntryLinkId"));
+					2, resultSet.getLong("ctCollectionId"));
+				preparedStatement2.setLong(
+					3, resultSet.getLong("fragmentEntryLinkId"));
 
 				preparedStatement2.addBatch();
 			}

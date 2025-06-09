@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.aspectj.hibernate.stale.object.state;
@@ -32,9 +23,9 @@ import org.aspectj.lang.annotation.SuppressAjWarnings;
 import org.hibernate.HibernateException;
 import org.hibernate.ObjectDeletedException;
 import org.hibernate.StaleObjectStateException;
-import org.hibernate.event.DeleteEvent;
-import org.hibernate.event.MergeEvent;
-import org.hibernate.event.SaveOrUpdateEvent;
+import org.hibernate.event.spi.DeleteEvent;
+import org.hibernate.event.spi.MergeEvent;
+import org.hibernate.event.spi.SaveOrUpdateEvent;
 
 /**
  * @author Preston Crary
@@ -45,7 +36,7 @@ public class HibernateStaleObjectStateAspect {
 
 	@AfterThrowing(
 		throwing = "staleObjectStateException",
-		value = "execution(void org.hibernate.event.def.DefaultMergeEventListener.onMerge(org.hibernate.event.MergeEvent)) && args(mergeEvent)"
+		value = "execution(void org.hibernate.event.internal.DefaultMergeEventListener.onMerge(org.hibernate.event.spi.MergeEvent)) && args(mergeEvent)"
 	)
 	public void suppressMergeFailureCause(
 		MergeEvent mergeEvent,
@@ -57,7 +48,7 @@ public class HibernateStaleObjectStateAspect {
 
 	@AfterThrowing(
 		throwing = "objectDeletedException",
-		value = "execution(void org.hibernate.event.SaveOrUpdateEventListener.onSaveOrUpdate(org.hibernate.event.SaveOrUpdateEvent)) && args(saveOrUpdateEvent)"
+		value = "execution(void org.hibernate.event.spi.SaveOrUpdateEventListener.onSaveOrUpdate(org.hibernate.event.spi.SaveOrUpdateEvent)) && args(saveOrUpdateEvent)"
 	)
 	public void suppressUpdateFailureCause(
 		SaveOrUpdateEvent saveOrUpdateEvent,
@@ -68,24 +59,24 @@ public class HibernateStaleObjectStateAspect {
 	}
 
 	@AfterReturning(
-		"execution(void org.hibernate.event.DeleteEventListener.onDelete(" +
-			"org.hibernate.event.DeleteEvent)) && args(deleteEvent)"
+		"execution(void org.hibernate.event.spi.DeleteEventListener.onDelete(" +
+			"org.hibernate.event.spi.DeleteEvent)) && args(deleteEvent)"
 	)
 	public void trackDeleteEvent(DeleteEvent deleteEvent) {
 		_trackEvent("Delete", deleteEvent.getObject());
 	}
 
 	@AfterReturning(
-		"execution(void org.hibernate.event.def.DefaultMergeEventListener." +
-			"onMerge(org.hibernate.event.MergeEvent)) && args(mergeEvent)"
+		"execution(void org.hibernate.event.internal.DefaultMergeEventListener." +
+			"onMerge(org.hibernate.event.spi.MergeEvent)) && args(mergeEvent)"
 	)
 	public void trackMergeEvent(MergeEvent mergeEvent) {
 		_trackEvent("Merge", mergeEvent.getOriginal());
 	}
 
 	@AfterReturning(
-		"execution(void org.hibernate.event.SaveOrUpdateEventListener." +
-			"onSaveOrUpdate(org.hibernate.event.SaveOrUpdateEvent)) &&" +
+		"execution(void org.hibernate.event.spi.SaveOrUpdateEventListener." +
+			"onSaveOrUpdate(org.hibernate.event.spi.SaveOrUpdateEvent)) &&" +
 				"args(saveOrUpdateEvent)"
 	)
 	public void trackSaveOrUpdateEvent(SaveOrUpdateEvent saveOrUpdateEvent) {

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.segments.service.impl;
@@ -20,9 +11,11 @@ import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.segments.model.SegmentsExperiment;
 import com.liferay.segments.model.SegmentsExperimentRel;
 import com.liferay.segments.service.base.SegmentsExperimentRelServiceBaseImpl;
+import com.liferay.segments.service.persistence.SegmentsExperimentPersistence;
 
 import java.util.List;
 
@@ -86,12 +79,12 @@ public class SegmentsExperimentRelServiceImpl
 
 	@Override
 	public SegmentsExperimentRel getSegmentsExperimentRel(
-			long segmentsExperimentId, long segmentsExperienceId)
+			long segmentsExperimentId, String segmentsExperienceKey)
 		throws PortalException {
 
 		SegmentsExperimentRel segmentsExperimentRel =
 			segmentsExperimentRelLocalService.getSegmentsExperimentRel(
-				segmentsExperimentId, segmentsExperienceId);
+				segmentsExperimentId, segmentsExperienceKey);
 
 		_segmentsExperimentResourcePermission.check(
 			getPermissionChecker(), segmentsExperimentId, ActionKeys.VIEW);
@@ -105,10 +98,10 @@ public class SegmentsExperimentRelServiceImpl
 		throws PortalException {
 
 		SegmentsExperiment segmentsExperiment =
-			segmentsExperimentPersistence.findByPrimaryKey(
+			_segmentsExperimentPersistence.findByPrimaryKey(
 				segmentsExperimentId);
 
-		if (!userLocalService.hasRoleUser(
+		if (!_userLocalService.hasRoleUser(
 				segmentsExperiment.getCompanyId(),
 				RoleConstants.ANALYTICS_ADMINISTRATOR, getUserId(), true)) {
 
@@ -155,10 +148,16 @@ public class SegmentsExperimentRelServiceImpl
 			segmentsExperimentRelId, name, serviceContext);
 	}
 
+	@Reference
+	private SegmentsExperimentPersistence _segmentsExperimentPersistence;
+
 	@Reference(
 		target = "(model.class.name=com.liferay.segments.model.SegmentsExperiment)"
 	)
 	private ModelResourcePermission<SegmentsExperiment>
 		_segmentsExperimentResourcePermission;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

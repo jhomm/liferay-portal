@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
@@ -37,6 +29,7 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @AccessControlled
+@CTAware
 @JSONWebService
 @ProviderType
 @Transactional(
@@ -51,11 +44,17 @@ public interface PhoneService extends BaseService {
 	 * Never modify this interface directly. Add custom service methods to <code>com.liferay.portal.service.impl.PhoneServiceImpl</code> and rerun ServiceBuilder to automatically copy the method declarations to this interface. Consume the phone remote service via injection or a <code>org.osgi.util.tracker.ServiceTracker</code>. Use {@link PhoneServiceUtil} if injection and service tracking are not available.
 	 */
 	public Phone addPhone(
-			String className, long classPK, String number, String extension,
-			long typeId, boolean primary, ServiceContext serviceContext)
+			String externalReferenceCode, String className, long classPK,
+			String number, String extension, long typeId, boolean primary,
+			ServiceContext serviceContext)
 		throws PortalException;
 
 	public void deletePhone(long phoneId) throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Phone fetchPhoneByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
 
 	/**
 	 * Returns the OSGi service identifier.
@@ -68,12 +67,17 @@ public interface PhoneService extends BaseService {
 	public Phone getPhone(long phoneId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public Phone getPhoneByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<Phone> getPhones(String className, long classPK)
 		throws PortalException;
 
 	public Phone updatePhone(
-			long phoneId, String number, String extension, long typeId,
-			boolean primary)
+			String externalReferenceCode, long phoneId, String number,
+			String extension, long typeId, boolean primary)
 		throws PortalException;
 
 }

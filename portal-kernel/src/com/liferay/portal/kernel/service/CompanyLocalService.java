@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
@@ -28,6 +19,7 @@ import com.liferay.portal.kernel.model.PersistedModel;
 import com.liferay.portal.kernel.search.Hits;
 import com.liferay.portal.kernel.search.Indexable;
 import com.liferay.portal.kernel.search.IndexableType;
+import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -52,6 +44,9 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CompanyLocalServiceUtil
  * @generated
  */
+@OSGiBeanProperties(
+	property = {"model.class.name=com.liferay.portal.kernel.model.Company"}
+)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -87,8 +82,6 @@ public interface CompanyLocalService
 	 * @param webId the the company's web domain
 	 * @param virtualHostname the company's virtual host name
 	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e., the
-	 super company)
 	 * @param maxUsers the max number of company users (optionally
 	 <code>0</code>)
 	 * @param active whether the company is active
@@ -96,29 +89,17 @@ public interface CompanyLocalService
 	 */
 	public Company addCompany(
 			Long companyId, String webId, String virtualHostname, String mx,
-			boolean system, int maxUsers, boolean active)
+			int maxUsers, boolean active, boolean addDefaultAdminUser,
+			String defaultAdminPassword, String defaultAdminScreenName,
+			String defaultAdminEmailAddress, String defaultAdminFirstName,
+			String defaultAdminMiddleName, String defaultAdminLastName)
 		throws PortalException;
 
-	/**
-	 * Adds a company.
-	 *
-	 * @param webId the the company's web domain
-	 * @param virtualHostname the company's virtual host name
-	 * @param mx the company's mail domain
-	 * @param system whether the company is the very first company (i.e.,
-	 the super company)
-	 * @param maxUsers the max number of company users (optionally
-	 <code>0</code>)
-	 * @param active whether the company is active
-	 * @return the company
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 #addCompany(Long, String, String, String, boolean, int,
-	 boolean)}
-	 */
-	@Deprecated
-	public Company addCompany(
-			String webId, String virtualHostname, String mx, boolean system,
-			int maxUsers, boolean active)
+	public Company addDBPartitionCompany(
+			long companyId, String name, String virtualHostname, String webId)
+		throws PortalException;
+
+	public Company checkCompany(Company company, boolean newCompany)
 		throws PortalException;
 
 	/**
@@ -133,28 +114,17 @@ public interface CompanyLocalService
 	public Company checkCompany(String webId) throws PortalException;
 
 	/**
-	 * Returns the company with the web domain and mail domain.
-	 *
-	 * The method goes through a series of checks to ensure that the company
-	 * contains default users, groups, etc.
-	 *
-	 * @param webId the company's web domain
-	 * @param mx the company's mail domain
-	 * @return the company with the web domain and mail domain
-	 */
-	@Transactional(
-		isolation = Isolation.PORTAL,
-		rollbackFor = {PortalException.class, SystemException.class}
-	)
-	public Company checkCompany(String webId, String mx) throws PortalException;
-
-	/**
 	 * Checks if the company has an encryption key. It will create a key if one
 	 * does not exist.
 	 *
 	 * @param companyId the primary key of the company
 	 */
 	public void checkCompanyKey(long companyId) throws PortalException;
+
+	public Company copyDBPartitionCompany(
+			long fromCompanyId, Long toCompanyId, String name,
+			String virtualHostname, String webId)
+		throws PortalException;
 
 	/**
 	 * Creates a new company with the primary key. Does not add the company to the database.
@@ -286,6 +256,8 @@ public interface CompanyLocalService
 	public long dynamicQueryCount(
 		DynamicQuery dynamicQuery, Projection projection);
 
+	public Company exportCompany(long companyId) throws PortalException;
+
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Company fetchCompany(long companyId);
 
@@ -341,19 +313,6 @@ public interface CompanyLocalService
 	public List<Company> getCompanies();
 
 	/**
-	 * Returns all the companies used by WSRP.
-	 *
-	 * @param system whether the company is the very first company (i.e., the
-	 super company)
-	 * @return the companies used by WSRP
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Company> getCompanies(boolean system);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<Company> getCompanies(boolean system, int start, int end);
-
-	/**
 	 * Returns a range of all the companies.
 	 *
 	 * <p>
@@ -376,16 +335,6 @@ public interface CompanyLocalService
 	public int getCompaniesCount();
 
 	/**
-	 * Returns the number of companies used by WSRP.
-	 *
-	 * @param system whether the company is the very first company (i.e., the
-	 super company)
-	 * @return the number of companies used by WSRP
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public int getCompaniesCount(boolean system);
-
-	/**
 	 * Returns the company with the primary key.
 	 *
 	 * @param companyId the primary key of the company
@@ -403,24 +352,6 @@ public interface CompanyLocalService
 	 */
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public Company getCompanyById(long companyId) throws PortalException;
-
-	/**
-	 * Returns the company with the logo.
-	 *
-	 * @param logoId the ID of the company's logo
-	 * @return the company with the logo
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByLogoId(long logoId) throws PortalException;
-
-	/**
-	 * Returns the company with the mail domain.
-	 *
-	 * @param mx the company's mail domain
-	 * @return the company with the mail domain
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public Company getCompanyByMx(String mx) throws PortalException;
 
 	/**
 	 * Returns the company with the virtual host name.
@@ -602,6 +533,13 @@ public interface CompanyLocalService
 
 	@Async
 	public void updateDisplayGroupNames(long companyId) throws PortalException;
+
+	public Company updateIndexNameNext(long companyId, String indexNameNext)
+		throws PortalException;
+
+	public Company updateIndexNames(
+			long companyId, String indexNameCurrent, String indexNameNext)
+		throws PortalException;
 
 	/**
 	 * Updates the company's logo.

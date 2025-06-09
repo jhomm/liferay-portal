@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dispatch.talend.web.internal.executor;
@@ -50,7 +41,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Igor Beslic
  */
 @Component(
-	immediate = true,
 	property = {
 		"dispatch.task.executor.name=" + TalendDispatchTaskExecutor.TALEND,
 		"dispatch.task.executor.type=" + TalendDispatchTaskExecutor.TALEND
@@ -67,7 +57,7 @@ public class TalendDispatchTaskExecutor extends BaseDispatchTaskExecutor {
 			DispatchTaskExecutorOutput dispatchTaskExecutorOutput)
 		throws PortalException {
 
-		TalendArchive talendArchive = fetchTalendArchive(
+		TalendArchive talendArchive = _fetchTalendArchive(
 			dispatchTrigger.getDispatchTriggerId());
 
 		if (talendArchive == null) {
@@ -113,22 +103,7 @@ public class TalendDispatchTaskExecutor extends BaseDispatchTaskExecutor {
 
 	@Override
 	public String getName() {
-		return null;
-	}
-
-	protected TalendArchive fetchTalendArchive(long dispatchTriggerId)
-		throws PortalException {
-
-		FileEntry fileEntry = _dispatchFileRepository.fetchFileEntry(
-			dispatchTriggerId);
-
-		if (fileEntry == null) {
-			throw new DispatchRepositoryException(
-				"Unable to get file entry for dispatch trigger ID " +
-					dispatchTriggerId);
-		}
-
-		return TalendArchiveParserUtil.parse(fileEntry.getContentStream());
+		return TALEND;
 	}
 
 	private void _checkTalendProcessOutput(
@@ -144,6 +119,21 @@ public class TalendDispatchTaskExecutor extends BaseDispatchTaskExecutor {
 				"Subprocess terminated with exit code " +
 					talendProcessOutput.getExitCode());
 		}
+	}
+
+	private TalendArchive _fetchTalendArchive(long dispatchTriggerId)
+		throws PortalException {
+
+		FileEntry fileEntry = _dispatchFileRepository.fetchFileEntry(
+			dispatchTriggerId);
+
+		if (fileEntry == null) {
+			throw new DispatchRepositoryException(
+				"Unable to get file entry for dispatch trigger ID " +
+					dispatchTriggerId);
+		}
+
+		return TalendArchiveParserUtil.parse(fileEntry.getContentStream());
 	}
 
 	private TalendProcess _getTalendProcess(

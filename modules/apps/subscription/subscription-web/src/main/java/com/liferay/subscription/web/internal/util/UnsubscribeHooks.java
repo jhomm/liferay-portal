@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.subscription.web.internal.util;
@@ -23,7 +14,9 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Ticket;
+import com.liferay.portal.kernel.model.TicketConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.TicketLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.ListUtil;
@@ -32,7 +25,9 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.SubscriptionSender;
 import com.liferay.subscription.model.Subscription;
 import com.liferay.subscription.web.internal.configuration.SubscriptionConfiguration;
-import com.liferay.subscription.web.internal.constants.SubscriptionConstants;
+
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.InternetHeaders;
 
 import java.io.IOException;
 
@@ -41,21 +36,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.InternetHeaders;
-
 /**
  * @author Alejandro Tardín
  */
 public class UnsubscribeHooks {
 
 	public UnsubscribeHooks(
-		SubscriptionConfiguration configuration,
+		SubscriptionConfiguration subscriptionConfiguration,
 		TicketLocalService ticketLocalService,
 		UserLocalService userLocalService,
 		SubscriptionSender subscriptionSender) {
 
-		_configuration = configuration;
+		_subscriptionConfiguration = subscriptionConfiguration;
 		_ticketLocalService = ticketLocalService;
 		_userLocalService = userLocalService;
 		_subscriptionSender = subscriptionSender;
@@ -75,7 +67,7 @@ public class UnsubscribeHooks {
 		InternetAddress toAddress = toAddresses[0];
 
 		User user = _userLocalService.fetchUserByEmailAddress(
-			_subscriptionSender.getCompanyId(), toAddress.getAddress());
+			CompanyThreadLocal.getNonsystemCompanyId(), toAddress.getAddress());
 
 		if (user == null) {
 			return;
@@ -148,18 +140,19 @@ public class UnsubscribeHooks {
 		Calendar calendar = Calendar.getInstance();
 
 		calendar.add(
-			Calendar.DATE, _configuration.unsubscriptionTicketExpirationTime());
+			Calendar.DATE,
+			_subscriptionConfiguration.unsubscriptionTicketExpirationTime());
 
 		List<Ticket> tickets = _ticketLocalService.getTickets(
 			subscription.getCompanyId(), Subscription.class.getName(),
 			subscription.getSubscriptionId(),
-			SubscriptionConstants.TICKET_TYPE);
+			TicketConstants.TYPE_SUBSCRIPTION);
 
 		if (ListUtil.isEmpty(tickets)) {
 			return _ticketLocalService.addTicket(
 				subscription.getCompanyId(), Subscription.class.getName(),
 				subscription.getSubscriptionId(),
-				SubscriptionConstants.TICKET_TYPE, StringPool.BLANK,
+				TicketConstants.TYPE_SUBSCRIPTION, StringPool.BLANK,
 				calendar.getTime(), _subscriptionSender.getServiceContext());
 		}
 
@@ -169,7 +162,7 @@ public class UnsubscribeHooks {
 			return _ticketLocalService.updateTicket(
 				ticket.getTicketId(), Subscription.class.getName(),
 				subscription.getSubscriptionId(),
-				SubscriptionConstants.TICKET_TYPE, StringPool.BLANK,
+				TicketConstants.TYPE_SUBSCRIPTION, StringPool.BLANK,
 				calendar.getTime());
 		}
 		catch (PortalException portalException) {
@@ -184,7 +177,7 @@ public class UnsubscribeHooks {
 			ticket.getKey(), "&userId=", user.getUserId());
 	}
 
-	private final SubscriptionConfiguration _configuration;
+	private final SubscriptionConfiguration _subscriptionConfiguration;
 	private final SubscriptionSender _subscriptionSender;
 	private final TicketLocalService _ticketLocalService;
 	private final UserLocalService _userLocalService;

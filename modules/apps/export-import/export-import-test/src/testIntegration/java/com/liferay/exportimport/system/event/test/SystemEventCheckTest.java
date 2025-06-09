@@ -1,21 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.exportimport.system.event.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.SystemEvent;
@@ -25,15 +16,13 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.rule.Sync;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
+import com.liferay.portal.kernel.test.util.PropsValuesTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.uuid.PortalUUIDUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -75,7 +64,8 @@ public class SystemEventCheckTest {
 
 			systemEvent.setCreateDate(createDate);
 
-			SystemEventLocalServiceUtil.updateSystemEvent(systemEvent);
+			systemEvent = SystemEventLocalServiceUtil.updateSystemEvent(
+				systemEvent);
 
 			expiredSystemEvents.add(systemEvent);
 		}
@@ -102,49 +92,29 @@ public class SystemEventCheckTest {
 		validate(nonexpiredSystemEvents, false);
 	}
 
-	public void setPortalProperty(String propertyName, Object value)
-		throws Exception {
-
-		Field field = ReflectionUtil.getDeclaredField(
-			PropsValues.class, propertyName);
-
-		field.setAccessible(true);
-
-		Field modifiersField = Field.class.getDeclaredField("modifiers");
-
-		modifiersField.setAccessible(true);
-		modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-		field.set(null, value);
-	}
-
 	@Test
 	public void testSystemEventCheckWithMaxAge0() throws Exception {
-		int stagingSystemEventMaxAge = PropsValues.STAGING_SYSTEM_EVENT_MAX_AGE;
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"STAGING_SYSTEM_EVENT_MAX_AGE", 0)) {
 
-		setPortalProperty("STAGING_SYSTEM_EVENT_MAX_AGE", 0);
-
-		doTestSystemEventCheck();
-
-		setPortalProperty(
-			"STAGING_SYSTEM_EVENT_MAX_AGE", stagingSystemEventMaxAge);
+			doTestSystemEventCheck();
+		}
 	}
 
 	@Test
 	public void testSystemEventCheckWithMaxAge1() throws Exception {
-		int stagingSystemEventMaxAge = PropsValues.STAGING_SYSTEM_EVENT_MAX_AGE;
+		try (SafeCloseable safeCloseable =
+				PropsValuesTestUtil.swapWithSafeCloseable(
+					"STAGING_SYSTEM_EVENT_MAX_AGE", 1)) {
 
-		setPortalProperty("STAGING_SYSTEM_EVENT_MAX_AGE", 1);
-
-		doTestSystemEventCheck();
-
-		setPortalProperty(
-			"STAGING_SYSTEM_EVENT_MAX_AGE", stagingSystemEventMaxAge);
+			doTestSystemEventCheck();
+		}
 	}
 
 	protected SystemEvent addSystemEvent() throws Exception {
 		return SystemEventLocalServiceUtil.addSystemEvent(
-			TestPropsValues.getUserId(), _group.getGroupId(),
+			TestPropsValues.getUserId(), _group.getGroupId(), StringPool.BLANK,
 			Group.class.getName(), RandomTestUtil.nextLong(),
 			PortalUUIDUtil.generate(), StringPool.BLANK,
 			SystemEventConstants.TYPE_DELETE, StringPool.BLANK);

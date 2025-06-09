@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.util.comparator;
@@ -38,12 +29,12 @@ public class MBObjectsComparator<T> extends OrderByComparator<T> {
 		"modelCategory", "priority", "modifiedDate", "name", "modelId"
 	};
 
-	public MBObjectsComparator() {
-		this(false);
-	}
+	public static MBObjectsComparator getInstance(boolean ascending) {
+		if (ascending) {
+			return _INSTANCE_ASCENDING;
+		}
 
-	public MBObjectsComparator(boolean ascending) {
-		_ascending = ascending;
+		return _INSTANCE_DESCENDING;
 	}
 
 	@Override
@@ -86,14 +77,24 @@ public class MBObjectsComparator<T> extends OrderByComparator<T> {
 			return mbCategory.getModifiedDate();
 		}
 
-		if (object instanceof MBThread) {
-			MBThread mbThread = (MBThread)object;
-
-			return mbThread.getModifiedDate();
+		if (!(object instanceof MBThread)) {
+			return null;
 		}
 
-		return null;
+		MBThread mbThread = (MBThread)object;
+
+		return mbThread.getModifiedDate();
 	}
+
+	private MBObjectsComparator(boolean ascending) {
+		_ascending = ascending;
+	}
+
+	private static final MBObjectsComparator _INSTANCE_ASCENDING =
+		new MBObjectsComparator(true);
+
+	private static final MBObjectsComparator _INSTANCE_DESCENDING =
+		new MBObjectsComparator(false);
 
 	private final boolean _ascending;
 

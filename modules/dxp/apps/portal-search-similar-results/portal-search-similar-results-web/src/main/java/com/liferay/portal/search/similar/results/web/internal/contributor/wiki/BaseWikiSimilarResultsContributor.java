@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.similar.results.web.internal.contributor.wiki;
@@ -18,7 +9,7 @@ import com.liferay.asset.kernel.model.AssetEntry;
 import com.liferay.asset.kernel.model.AssetRenderer;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.portal.search.model.uid.UIDFactory;
-import com.liferay.portal.search.similar.results.web.spi.contributor.SimilarResultsContributor;
+import com.liferay.portal.search.similar.results.web.internal.contributor.SimilarResultsContributor;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.CriteriaBuilder;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.CriteriaHelper;
 import com.liferay.portal.search.similar.results.web.spi.contributor.helper.DestinationBuilder;
@@ -49,7 +40,9 @@ public abstract class BaseWikiSimilarResultsContributor
 
 		String nodeName = (String)criteriaHelper.getRouteParameter("nodeName");
 
-		WikiNode wikiNode = _wikiNodeLocalService.fetchNode(groupId, nodeName);
+		WikiNodeLocalService wikiNodeLocalService = getWikiNodeLocalService();
+
+		WikiNode wikiNode = wikiNodeLocalService.fetchNode(groupId, nodeName);
 
 		if (wikiNode == null) {
 			return;
@@ -57,24 +50,31 @@ public abstract class BaseWikiSimilarResultsContributor
 
 		String title = (String)criteriaHelper.getRouteParameter("title");
 
-		WikiPage wikiPage = _wikiPageLocalService.fetchPage(
+		WikiPageLocalService wikiPageLocalService = getWikiPageLocalService();
+
+		WikiPage wikiPage = wikiPageLocalService.fetchPage(
 			wikiNode.getNodeId(), title, 1.0);
 
 		if (wikiPage == null) {
 			return;
 		}
 
-		AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
+		AssetEntryLocalService assetEntryLocalService =
+			getAssetEntryLocalService();
+
+		AssetEntry assetEntry = assetEntryLocalService.fetchEntry(
 			groupId, wikiPage.getUuid());
 
 		if (assetEntry == null) {
 			return;
 		}
 
+		UIDFactory uidFactory = getUidFactory();
+
 		criteriaBuilder.type(
 			assetEntry.getClassName()
 		).uid(
-			_uidFactory.getUID(wikiPage)
+			uidFactory.getUID(wikiPage)
 		);
 	}
 
@@ -105,31 +105,12 @@ public abstract class BaseWikiSimilarResultsContributor
 		}
 	}
 
-	protected void setAssetEntryLocalService(
-		AssetEntryLocalService assetEntryLocalService) {
+	protected abstract AssetEntryLocalService getAssetEntryLocalService();
 
-		_assetEntryLocalService = assetEntryLocalService;
-	}
+	protected abstract UIDFactory getUidFactory();
 
-	protected void setUIDFactory(UIDFactory uidFactory) {
-		_uidFactory = uidFactory;
-	}
+	protected abstract WikiNodeLocalService getWikiNodeLocalService();
 
-	protected void setWikiNodeLocalService(
-		WikiNodeLocalService wikiNodeLocalService) {
-
-		_wikiNodeLocalService = wikiNodeLocalService;
-	}
-
-	protected void setWikiPageLocalService(
-		WikiPageLocalService wikiPageLocalService) {
-
-		_wikiPageLocalService = wikiPageLocalService;
-	}
-
-	private AssetEntryLocalService _assetEntryLocalService;
-	private UIDFactory _uidFactory;
-	private WikiNodeLocalService _wikiNodeLocalService;
-	private WikiPageLocalService _wikiPageLocalService;
+	protected abstract WikiPageLocalService getWikiPageLocalService();
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
@@ -36,9 +27,9 @@ const baseProps = {
 					id: 'infoField--title--',
 					label: 'Title',
 					multiline: false,
-					sourceContent: 'mock title',
+					sourceContent: ['mock title'],
 					sourceContentDir: 'ltr',
-					targetContent: 'mock title',
+					targetContent: ['mock title'],
 					targetContentDir: 'ltr',
 					targetLanguageId: 'es_ES',
 				},
@@ -48,9 +39,9 @@ const baseProps = {
 					id: 'infoField--description--',
 					label: 'Description',
 					multiline: false,
-					sourceContent: '<p>mock summary</p>',
+					sourceContent: ['<p>mock summary</p>'],
 					sourceContentDir: 'ltr',
-					targetContent: '<p>mock summary</p>',
+					targetContent: ['<p>mock summary</p>'],
 					targetContentDir: 'ltr',
 					targetLanguageId: 'es_ES',
 				},
@@ -65,14 +56,46 @@ const baseProps = {
 					id: 'infoField--content--',
 					label: 'Content',
 					multiline: true,
-					sourceContent: '<p>mock content</p>',
+					sourceContent: ['<p>mock content</p>'],
 					sourceContentDir: 'ltr',
-					targetContent: '<p>mock content</p',
+					targetContent: ['<p>mock content</p'],
+					targetContentDir: 'ltr',
+					targetLanguageId: 'es_ES',
+				},
+				{
+					editorConfiguration: {},
+					html: true,
+					id: 'infoField--repeteableContent--',
+					label: 'Content',
+					multiline: true,
+					sourceContent: [
+						'<p>mock source repeteable field 1</p>',
+						'<p>mock source repeteable field 2</p>',
+						'<p>mock source repeteable field 3</p>',
+					],
+					sourceContentDir: 'ltr',
+					targetContent: [
+						'<p>mock target repeteable field 1</p>',
+						'<p>mock target repeteable field 2</p>',
+						'<p>mock target repeteable field 3</p>',
+					],
+					targetContentDir: 'ltr',
+					targetLanguageId: 'es_ES',
+				},
+				{
+					editorConfiguration: null,
+					html: false,
+					id: 'infoField--text--',
+					label: 'Text',
+					multiline: false,
+					sourceContent: ['mock text'],
+					sourceContentDir: 'ltr',
+					targetContent: ['mock text'],
 					targetContentDir: 'ltr',
 					targetLanguageId: 'es_ES',
 				},
 			],
-			legend: 'Content (Basic Web Content)',
+			legend: 'Content with repeateable fields',
 		},
 	],
 	portletId: 'mock_TranslationPortlet',
@@ -115,20 +138,12 @@ const baseProps = {
 
 const renderComponent = (props) => render(<Translate {...props} />);
 
+jest.mock('frontend-js-web', () => ({
+	...jest.requireActual('frontend-js-web'),
+	sub: jest.fn((langKey, arg) => langKey.replace('x', arg)),
+}));
+
 describe('Translate', () => {
-	Liferay.Util.sub.mockImplementation((langKey, ...args) =>
-		[langKey, ...args].join('-')
-	);
-
-	Liferay.Util.unescapeHTML =
-		Liferay.Util.unescapeHTML ||
-		jest.fn((string) =>
-			string.replace(/&([^;]+);/g, (match) => {
-				return new DOMParser().parseFromString(match, 'text/html')
-					.documentElement.textContent;
-			})
-		);
-
 	afterEach(cleanup);
 
 	it('renders with auto-translate enabled', () => {
@@ -168,7 +183,7 @@ describe('Translate', () => {
 					fields: [
 						{
 							...baseProps.infoFieldSetEntries[1].fields[0],
-							sourceContent: '',
+							sourceContent: [''],
 						},
 					],
 				},
@@ -177,8 +192,7 @@ describe('Translate', () => {
 
 		expect(
 			getByText(
-				'auto-translate-x-field-' +
-					baseProps.infoFieldSetEntries[1].fields[0].label
+				`auto-translate-${baseProps.infoFieldSetEntries[1].fields[0].label}-field`
 			).closest('button')
 		).toBeDisabled();
 	});
@@ -188,9 +202,18 @@ describe('Translate', () => {
 			fetch.mockResponseOnce(
 				JSON.stringify({
 					fields: {
-						'infoField--content--': '<p>simulacro de contenido</p>',
-						'infoField--description--': '<p>resumen simulado</p>',
-						'infoField--title--': 'título simulado&#39;',
+						'infoField--content--0':
+							'<p>simulacro de contenido</p>',
+						'infoField--description--0': '<p>resumen simulado</p>',
+						'infoField--repeteableContent--0':
+							'<p>campo repetible de fuente simulada 1</p>',
+						'infoField--repeteableContent--1':
+							'<p>campo repetible de fuente simulada 2</p>',
+						'infoField--repeteableContent--2':
+							'<p>campo repetible de fuente simulada 3</p>',
+						'infoField--text--0':
+							'Esto es un &quot;texto de ejemplo&quot;',
+						'infoField--title--0': 'título simulado&#39;',
 					},
 					sourceLanguageId: 'en_US',
 					targetLanguageId: 'es_ES',
@@ -211,8 +234,9 @@ describe('Translate', () => {
 				result = renderComponent(baseProps);
 
 				const {getByText} = result;
+
 				const autoTranslateFieldButton = getByText(
-					'auto-translate-x-field-' + infoFieldContent.label
+					`auto-translate-${infoFieldContent.label}-field`
 				).closest('button');
 
 				await act(async () => {
@@ -225,9 +249,11 @@ describe('Translate', () => {
 				const request = JSON.parse(body);
 
 				expect(url).toBe(baseProps.getAutoTranslateURL);
-				expect(request.fields[infoFieldContent.id]).toBe(
-					infoFieldContent.sourceContent
+
+				expect(request.fields[`${infoFieldContent.id}0`]).toBe(
+					infoFieldContent.sourceContent[0]
 				);
+
 				expect(request.sourceLanguageId).toBe(
 					baseProps.sourceLanguageId
 				);
@@ -238,7 +264,7 @@ describe('Translate', () => {
 
 			// LPS-133164
 
-			it('updates the input with the translated message with HTML unescaped character', () => {
+			it('updates the `Title` input of a non-html field with the translated message with unescaped characters', () => {
 				const {getByDisplayValue} = result;
 
 				expect(
@@ -267,11 +293,23 @@ describe('Translate', () => {
 				});
 			});
 
-			it('updates the input with the translated message with HTML unescaped character', () => {
+			// LPS-133164
+
+			it('updates the `Title` input with a translated message containing unescaped HTML characters', () => {
 				const {getByDisplayValue} = result;
 
 				expect(
 					getByDisplayValue("título simulado'")
+				).toBeInTheDocument();
+			});
+
+			// LPD-52521
+
+			it('updates the `Text` input with a translated message containing unescaped HTML characters', () => {
+				const {getByDisplayValue} = result;
+
+				expect(
+					getByDisplayValue('Esto es un "texto de ejemplo"')
 				).toBeInTheDocument();
 			});
 
@@ -305,8 +343,7 @@ describe('Translate', () => {
 				const {getByText} = renderComponent(baseProps);
 
 				const autoTranslateFieldButton = getByText(
-					'auto-translate-x-field-' +
-						baseProps.infoFieldSetEntries[0].fields[0].label
+					`auto-translate-${baseProps.infoFieldSetEntries[0].fields[0].label}-field`
 				).closest('button');
 
 				await act(async () => {

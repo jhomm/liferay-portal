@@ -1,0 +1,61 @@
+{
+	"description_i18n": {
+		"en_US": "boost-contents-in-a-category-for-guest-users-description"
+	},
+	"elementDefinition": {
+		"category": "conditional",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "should",
+								"query": {
+									"terms": {
+										"boost": "${configuration.boost}",
+										"groupAssetCategoryExternalReferenceCodes": "${configuration.group_asset_category_external_reference_codes}"
+									}
+								}
+							}
+						],
+						"condition": {
+							"equals": {
+								"parameterName": "user.is_signed_in",
+								"value": false
+							}
+						}
+					}
+				]
+			}
+		},
+		"icon": "thumbs-up",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"label": "asset-category-external-reference-codes",
+							"name": "group_asset_category_external_reference_codes",
+							"type": "multiselect"
+						},
+						{
+							"defaultValue": 20,
+							"label": "boost",
+							"name": "boost",
+							"type": "number",
+							"typeOptions": {
+								"min": 0
+							}
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "BOOST_CONTENTS_IN_A_CATEGORY_FOR_GUEST_USERS",
+	"title_i18n": {
+		"en_US": "boost-contents-in-a-category-for-guest-users"
+	}
+}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service;
@@ -27,39 +18,46 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class MBCategoryServiceWrapper
 	implements MBCategoryService, ServiceWrapper<MBCategoryService> {
 
+	public MBCategoryServiceWrapper() {
+		this(null);
+	}
+
 	public MBCategoryServiceWrapper(MBCategoryService mbCategoryService) {
 		_mbCategoryService = mbCategoryService;
 	}
 
 	@Override
 	public MBCategory addCategory(
-			long userId, long parentCategoryId, String name, String description,
+			String externalReferenceCode, long userId, long parentCategoryId,
+			String name, String description,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbCategoryService.addCategory(
-			userId, parentCategoryId, name, description, serviceContext);
+			externalReferenceCode, userId, parentCategoryId, name, description,
+			serviceContext);
 	}
 
 	@Override
 	public MBCategory addCategory(
-			long parentCategoryId, String name, String description,
-			String displayStyle, String emailAddress, String inProtocol,
-			String inServerName, int inServerPort, boolean inUseSSL,
-			String inUserName, String inPassword, int inReadInterval,
-			String outEmailAddress, boolean outCustom, String outServerName,
-			int outServerPort, boolean outUseSSL, String outUserName,
-			String outPassword, boolean mailingListActive,
+			String externalReferenceCode, long parentCategoryId, String name,
+			String description, String displayStyle, String emailAddress,
+			String inProtocol, String inServerName, int inServerPort,
+			boolean inUseSSL, String inUserName, String inPassword,
+			int inReadInterval, String outEmailAddress, boolean outCustom,
+			String outServerName, int outServerPort, boolean outUseSSL,
+			String outUserName, String outPassword, boolean mailingListActive,
 			boolean allowAnonymousEmail,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _mbCategoryService.addCategory(
-			parentCategoryId, name, description, displayStyle, emailAddress,
-			inProtocol, inServerName, inServerPort, inUseSSL, inUserName,
-			inPassword, inReadInterval, outEmailAddress, outCustom,
-			outServerName, outServerPort, outUseSSL, outUserName, outPassword,
-			mailingListActive, allowAnonymousEmail, serviceContext);
+			externalReferenceCode, parentCategoryId, name, description,
+			displayStyle, emailAddress, inProtocol, inServerName, inServerPort,
+			inUseSSL, inUserName, inPassword, inReadInterval, outEmailAddress,
+			outCustom, outServerName, outServerPort, outUseSSL, outUserName,
+			outPassword, mailingListActive, allowAnonymousEmail,
+			serviceContext);
 	}
 
 	@Override
@@ -74,6 +72,20 @@ public class MBCategoryServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		_mbCategoryService.deleteCategory(groupId, categoryId);
+	}
+
+	@Override
+	public void deleteCategory(String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_mbCategoryService.deleteCategory(externalReferenceCode, groupId);
+	}
+
+	@Override
+	public MBCategory fetchMBCategory(long groupId, String friendlyURL)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbCategoryService.fetchMBCategory(groupId, friendlyURL);
 	}
 
 	@Override
@@ -283,6 +295,13 @@ public class MBCategoryServiceWrapper
 	@Override
 	public long[] getCategoryIds(long groupId, long categoryId) {
 		return _mbCategoryService.getCategoryIds(groupId, categoryId);
+	}
+
+	@Override
+	public MBCategory getMBCategory(long groupId, String friendlyURL)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _mbCategoryService.getMBCategory(groupId, friendlyURL);
 	}
 
 	/**

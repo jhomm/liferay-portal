@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.sharing.web.internal.display;
@@ -28,7 +19,7 @@ public class SharingEntryPermissionDisplay {
 
 	public static List<SharingEntryPermissionDisplay>
 		getSharingEntryPermissionDisplays(
-			List<SharingEntryAction> sharingEntryActions,
+			String className, List<SharingEntryAction> sharingEntryActions,
 			ResourceBundle resourceBundle) {
 
 		List<SharingEntryPermissionDisplay> sharingEntryPermissionDisplays =
@@ -40,14 +31,14 @@ public class SharingEntryPermissionDisplay {
 
 			sharingEntryPermissionDisplays.add(
 				new SharingEntryPermissionDisplay(
-					SharingEntryPermissionDisplayAction.UPDATE, true,
+					className, SharingEntryPermissionDisplayAction.UPDATE, true,
 					resourceBundle));
 		}
 		else {
 			sharingEntryPermissionDisplays.add(
 				new SharingEntryPermissionDisplay(
-					SharingEntryPermissionDisplayAction.UPDATE, false,
-					resourceBundle));
+					className, SharingEntryPermissionDisplayAction.UPDATE,
+					false, resourceBundle));
 		}
 
 		if (sharingEntryActions.contains(SharingEntryAction.ADD_DISCUSSION) &&
@@ -55,26 +46,26 @@ public class SharingEntryPermissionDisplay {
 
 			sharingEntryPermissionDisplays.add(
 				new SharingEntryPermissionDisplay(
-					SharingEntryPermissionDisplayAction.COMMENTS, true,
-					resourceBundle));
+					className, SharingEntryPermissionDisplayAction.COMMENTS,
+					true, resourceBundle));
 		}
 		else {
 			sharingEntryPermissionDisplays.add(
 				new SharingEntryPermissionDisplay(
-					SharingEntryPermissionDisplayAction.COMMENTS, false,
-					resourceBundle));
+					className, SharingEntryPermissionDisplayAction.COMMENTS,
+					false, resourceBundle));
 		}
 
 		if (sharingEntryActions.contains(SharingEntryAction.VIEW)) {
 			sharingEntryPermissionDisplays.add(
 				new SharingEntryPermissionDisplay(
-					SharingEntryPermissionDisplayAction.VIEW, true,
+					className, SharingEntryPermissionDisplayAction.VIEW, true,
 					resourceBundle));
 		}
 		else {
 			sharingEntryPermissionDisplays.add(
 				new SharingEntryPermissionDisplay(
-					SharingEntryPermissionDisplayAction.VIEW, false,
+					className, SharingEntryPermissionDisplayAction.VIEW, false,
 					resourceBundle));
 		}
 
@@ -102,14 +93,14 @@ public class SharingEntryPermissionDisplay {
 	}
 
 	private SharingEntryPermissionDisplay(
+		String className,
 		SharingEntryPermissionDisplayAction sharingEntryPermissionDisplayAction,
 		boolean enabled, ResourceBundle resourceBundle) {
 
 		_enabled = enabled;
 
-		_description = LanguageUtil.get(
-			resourceBundle,
-			sharingEntryPermissionDisplayAction.getDescriptionKey());
+		_description = sharingEntryPermissionDisplayAction.getDescription(
+			className, resourceBundle);
 		_phrase = LanguageUtil.format(
 			resourceBundle, "can-x",
 			sharingEntryPermissionDisplayAction.getVerbKey());

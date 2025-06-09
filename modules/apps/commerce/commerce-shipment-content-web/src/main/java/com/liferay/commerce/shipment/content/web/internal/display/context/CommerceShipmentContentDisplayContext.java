@@ -1,20 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipment.content.web.internal.display.context;
 
-import com.liferay.commerce.account.model.CommerceAccount;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.commerce.constants.CommerceShipmentConstants;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.model.CommerceShipment;
@@ -26,7 +17,7 @@ import com.liferay.commerce.product.model.CommerceChannel;
 import com.liferay.commerce.product.service.CommerceChannelLocalService;
 import com.liferay.commerce.service.CommerceShipmentItemLocalService;
 import com.liferay.commerce.service.CommerceShipmentLocalService;
-import com.liferay.commerce.shipment.content.web.internal.display.context.util.CommerceShipmentContentRequestHelper;
+import com.liferay.commerce.shipment.content.web.internal.display.context.helper.CommerceShipmentContentRequestHelper;
 import com.liferay.commerce.util.CommerceShippingEngineRegistry;
 import com.liferay.commerce.util.comparator.CommerceShipmentCreateDateComparator;
 import com.liferay.commerce.util.comparator.CommerceShipmentItemCreateDateComparator;
@@ -39,14 +30,13 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.FastDateFormatFactoryUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+
 import java.text.DateFormat;
 import java.text.Format;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import java.util.Collections;
 
 /**
  * @author Alessio Antonio Rendina
@@ -73,10 +63,10 @@ public class CommerceShipmentContentDisplayContext {
 		ThemeDisplay themeDisplay =
 			_commerceShipmentContentRequestHelper.getThemeDisplay();
 
-		_commerceShipmentDateFormatDate = FastDateFormatFactoryUtil.getDate(
+		_commerceShipmentDateFormat = FastDateFormatFactoryUtil.getDate(
 			DateFormat.MEDIUM, themeDisplay.getLocale(),
 			themeDisplay.getTimeZone());
-		_commerceShipmentDateFormatTime = FastDateFormatFactoryUtil.getTime(
+		_commerceShipmentTimeFormat = FastDateFormatFactoryUtil.getTime(
 			DateFormat.MEDIUM, themeDisplay.getLocale(),
 			themeDisplay.getTimeZone());
 
@@ -124,9 +114,9 @@ public class CommerceShipmentContentDisplayContext {
 			CommerceShipment commerceShipment)
 		throws PortalException {
 
-		CommerceAccount commerceAccount = commerceShipment.getCommerceAccount();
+		AccountEntry accountEntry = commerceShipment.getAccountEntry();
 
-		return commerceAccount.getName();
+		return accountEntry.getName();
 	}
 
 	public String getCommerceShipmentExpectedDate(
@@ -136,7 +126,7 @@ public class CommerceShipmentContentDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		return _commerceShipmentDateFormatDate.format(
+		return _commerceShipmentDateFormat.format(
 			commerceShipment.getExpectedDate());
 	}
 
@@ -147,7 +137,7 @@ public class CommerceShipmentContentDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		return _commerceShipmentDateFormatTime.format(
+		return _commerceShipmentTimeFormat.format(
 			commerceShipment.getExpectedDate());
 	}
 
@@ -162,19 +152,14 @@ public class CommerceShipmentContentDisplayContext {
 			_commerceShipmentContentRequestHelper.getLiferayPortletRequest(),
 			getPortletURL(), null, "this-shipment-has-no-items");
 
-		int total =
-			_commerceShipmentItemLocalService.getCommerceShipmentItemsCount(
-				_commerceShipmentId);
-
-		List<CommerceShipmentItem> results =
-			_commerceShipmentItemLocalService.getCommerceShipmentItems(
+		_commerceShipmentItemSearchContainer.setResultsAndTotal(
+			() -> _commerceShipmentItemLocalService.getCommerceShipmentItems(
 				_commerceShipmentId,
 				_commerceShipmentItemSearchContainer.getStart(),
 				_commerceShipmentItemSearchContainer.getEnd(),
-				new CommerceShipmentItemCreateDateComparator());
-
-		_commerceShipmentItemSearchContainer.setTotal(total);
-		_commerceShipmentItemSearchContainer.setResults(results);
+				CommerceShipmentItemCreateDateComparator.getInstance(false)),
+			_commerceShipmentItemLocalService.getCommerceShipmentItemsCount(
+				_commerceShipmentId));
 
 		return _commerceShipmentItemSearchContainer;
 	}
@@ -186,7 +171,7 @@ public class CommerceShipmentContentDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		return _commerceShipmentDateFormatDate.format(
+		return _commerceShipmentDateFormat.format(
 			commerceShipment.getShippingDate());
 	}
 
@@ -212,7 +197,7 @@ public class CommerceShipmentContentDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		return _commerceShipmentDateFormatTime.format(
+		return _commerceShipmentTimeFormat.format(
 			commerceShipment.getShippingDate());
 	}
 
@@ -245,29 +230,24 @@ public class CommerceShipmentContentDisplayContext {
 
 		_searchContainer = new SearchContainer<>(
 			_commerceShipmentContentRequestHelper.getLiferayPortletRequest(),
-			getPortletURL(), null, null);
-
-		_searchContainer.setEmptyResultsMessage("no-shipments-were-found");
-
-		int total = 0;
-		List<CommerceShipment> results = new ArrayList<>();
+			getPortletURL(), null, "no-shipments-were-found");
 
 		CommerceChannel commerceChannel =
 			_commerceChannelLocalService.fetchCommerceChannelBySiteGroupId(
 				_commerceShipmentContentRequestHelper.getScopeGroupId());
 
 		if (commerceChannel != null) {
-			total = _commerceShipmentLocalService.getCommerceShipmentsCount(
-				new long[] {commerceChannel.getGroupId()});
-
-			results = _commerceShipmentLocalService.getCommerceShipments(
-				new long[] {commerceChannel.getGroupId()},
-				_searchContainer.getStart(), _searchContainer.getEnd(),
-				new CommerceShipmentCreateDateComparator());
+			_searchContainer.setResultsAndTotal(
+				() -> _commerceShipmentLocalService.getCommerceShipments(
+					new long[] {commerceChannel.getGroupId()},
+					_searchContainer.getStart(), _searchContainer.getEnd(),
+					CommerceShipmentCreateDateComparator.getInstance(false)),
+				_commerceShipmentLocalService.getCommerceShipmentsCount(
+					new long[] {commerceChannel.getGroupId()}));
 		}
-
-		_searchContainer.setTotal(total);
-		_searchContainer.setResults(results);
+		else {
+			_searchContainer.setResultsAndTotal(Collections::emptyList, 0);
+		}
 
 		return _searchContainer;
 	}
@@ -283,12 +263,9 @@ public class CommerceShipmentContentDisplayContext {
 			return StringPool.BLANK;
 		}
 
-		PortletURL portletURL =
-			_commerceOrderHttpHelper.getCommerceCartPortletURL(
-				_commerceShipmentContentRequestHelper.getRequest(),
-				commerceOrderItem.getCommerceOrder());
-
-		return portletURL.toString();
+		return _commerceOrderHttpHelper.getCommerceCartPortletURL(
+			_commerceShipmentContentRequestHelper.getRequest(),
+			commerceOrderItem.getCommerceOrder());
 	}
 
 	private final CommerceChannelLocalService _commerceChannelLocalService;
@@ -296,14 +273,14 @@ public class CommerceShipmentContentDisplayContext {
 	private CommerceShipment _commerceShipment;
 	private final CommerceShipmentContentRequestHelper
 		_commerceShipmentContentRequestHelper;
-	private final Format _commerceShipmentDateFormatDate;
-	private final Format _commerceShipmentDateFormatTime;
+	private final Format _commerceShipmentDateFormat;
 	private final long _commerceShipmentId;
 	private final CommerceShipmentItemLocalService
 		_commerceShipmentItemLocalService;
 	private SearchContainer<CommerceShipmentItem>
 		_commerceShipmentItemSearchContainer;
 	private final CommerceShipmentLocalService _commerceShipmentLocalService;
+	private final Format _commerceShipmentTimeFormat;
 	private final CommerceShippingEngineRegistry
 		_commerceShippingEngineRegistry;
 	private SearchContainer<CommerceShipment> _searchContainer;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.internal.spring.transaction;
@@ -36,13 +27,11 @@ public class ReadOnlyTransactionThreadLocal {
 				TransactionAttribute transactionAttribute,
 				TransactionStatus transactionStatus) {
 
-				Deque<Boolean> strictReadOnlyDeque =
-					_strictReadOnlyTransactionThreadLocal.get();
+				Deque<Boolean> strictReadOnlyDeque = _strictReadOnlyDeque.get();
 
 				strictReadOnlyDeque.pop();
 
-				Deque<Boolean> readOnlyDeque =
-					_readOnlyTransactionThreadLocal.get();
+				Deque<Boolean> readOnlyDeque = _readOnlyDeque.get();
 
 				readOnlyDeque.pop();
 			}
@@ -52,8 +41,7 @@ public class ReadOnlyTransactionThreadLocal {
 				TransactionAttribute transactionAttribute,
 				TransactionStatus transactionStatus) {
 
-				Deque<Boolean> strictReadOnlyDeque =
-					_strictReadOnlyTransactionThreadLocal.get();
+				Deque<Boolean> strictReadOnlyDeque = _strictReadOnlyDeque.get();
 
 				if (transactionAttribute.isStrictReadOnly()) {
 					if (!transactionAttribute.isReadOnly()) {
@@ -76,8 +64,7 @@ public class ReadOnlyTransactionThreadLocal {
 					strictReadOnlyDeque.push(Boolean.FALSE);
 				}
 
-				Deque<Boolean> readOnlyDeque =
-					_readOnlyTransactionThreadLocal.get();
+				Deque<Boolean> readOnlyDeque = _readOnlyDeque.get();
 
 				readOnlyDeque.push(transactionAttribute.isReadOnly());
 			}
@@ -87,13 +74,11 @@ public class ReadOnlyTransactionThreadLocal {
 				TransactionAttribute transactionAttribute,
 				TransactionStatus transactionStatus, Throwable throwable) {
 
-				Deque<Boolean> strictReadOnlyDeque =
-					_strictReadOnlyTransactionThreadLocal.get();
+				Deque<Boolean> strictReadOnlyDeque = _strictReadOnlyDeque.get();
 
 				strictReadOnlyDeque.pop();
 
-				Deque<Boolean> readOnlyDeque =
-					_readOnlyTransactionThreadLocal.get();
+				Deque<Boolean> readOnlyDeque = _readOnlyDeque.get();
 
 				readOnlyDeque.pop();
 			}
@@ -101,7 +86,7 @@ public class ReadOnlyTransactionThreadLocal {
 		};
 
 	public static boolean isReadOnly() {
-		Deque<Boolean> deque = _readOnlyTransactionThreadLocal.get();
+		Deque<Boolean> deque = _readOnlyDeque.get();
 
 		Boolean readOnly = deque.peek();
 
@@ -112,15 +97,13 @@ public class ReadOnlyTransactionThreadLocal {
 		return readOnly;
 	}
 
-	private static final ThreadLocal<Deque<Boolean>>
-		_readOnlyTransactionThreadLocal = new CentralizedThreadLocal<>(
-			ReadOnlyTransactionThreadLocal.class +
-				"._readOnlyTransactionThreadLocal",
+	private static final ThreadLocal<Deque<Boolean>> _readOnlyDeque =
+		new CentralizedThreadLocal<>(
+			ReadOnlyTransactionThreadLocal.class + "._readOnlyDeque",
 			ArrayDeque::new, false);
-	private static final ThreadLocal<Deque<Boolean>>
-		_strictReadOnlyTransactionThreadLocal = new CentralizedThreadLocal<>(
-			ReadOnlyTransactionThreadLocal.class +
-				"._strictReadOnlyTransactionThreadLocal",
+	private static final ThreadLocal<Deque<Boolean>> _strictReadOnlyDeque =
+		new CentralizedThreadLocal<>(
+			ReadOnlyTransactionThreadLocal.class + "._strictReadOnlyDeque",
 			ArrayDeque::new, false);
 
 }

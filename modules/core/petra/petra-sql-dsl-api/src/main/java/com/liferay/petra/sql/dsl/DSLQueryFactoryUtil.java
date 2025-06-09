@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.petra.sql.dsl;
 
 import com.liferay.petra.sql.dsl.expression.Expression;
 import com.liferay.petra.sql.dsl.factory.DSLQueryFactory;
+import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.petra.sql.dsl.query.FromStep;
 
 import java.util.Iterator;
@@ -34,6 +26,13 @@ public class DSLQueryFactoryUtil {
 		return _DSL_QUERY_FACTORY.countDistinct(expression);
 	}
 
+	public static <T> Expression<T> scalarSubDSLQuery(
+		DSLQuery dslQuery, Class<T> javaType, String name, int sqlType) {
+
+		return _DSL_QUERY_FACTORY.scalarSubDSLQuery(
+			dslQuery, javaType, name, sqlType);
+	}
+
 	public static FromStep select() {
 		return _DSL_QUERY_FACTORY.select();
 	}
@@ -42,7 +41,7 @@ public class DSLQueryFactoryUtil {
 		return _DSL_QUERY_FACTORY.select(expressions);
 	}
 
-	public static <T extends Table<T>> FromStep select(T table) {
+	public static <T extends Table<T>> FromStep select(Table<T> table) {
 		return _DSL_QUERY_FACTORY.select(table);
 	}
 
@@ -50,7 +49,7 @@ public class DSLQueryFactoryUtil {
 		return _DSL_QUERY_FACTORY.selectDistinct(expressions);
 	}
 
-	public static <T extends Table<T>> FromStep selectDistinct(T table) {
+	public static <T extends Table<T>> FromStep selectDistinct(Table<T> table) {
 		return _DSL_QUERY_FACTORY.selectDistinct(table);
 	}
 

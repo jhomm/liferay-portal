@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.oauth;
 
 import com.liferay.document.library.opener.oauth.OAuth2State;
+import com.liferay.document.library.opener.onedrive.web.internal.constants.DLOpenerOneDriveWebKeys;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -27,20 +18,23 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.JSONPortletResponseUtil;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
 import com.liferay.portal.kernel.portlet.PortletURLFactory;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PwdGenerator;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+
 import java.io.IOException;
 
 import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Function;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -124,6 +118,9 @@ public class OAuth2ControllerFactory {
 		OAuth2ControllerFactory.class);
 
 	@Reference
+	private JSONFactory _jsonFactory;
+
+	@Reference
 	private Language _language;
 
 	@Reference
@@ -135,7 +132,53 @@ public class OAuth2ControllerFactory {
 	@Reference
 	private PortletURLFactory _portletURLFactory;
 
-	private static class OAuth2Result {
+	private class JSONOAuth2Controller implements OAuth2Controller {
+
+		public JSONOAuth2Controller(Function<PortletRequest, String> function) {
+			_function = function;
+		}
+
+		@Override
+		public void execute(
+				PortletRequest portletRequest, PortletResponse portletResponse,
+				UnsafeFunction<PortletRequest, JSONObject, PortalException>
+					unsafeFunction)
+			throws PortalException {
+
+			try {
+				OAuth2Result oAuth2Result = _getOAuth2Result(
+					portletRequest, unsafeFunction, _function);
+
+				PortalException portalException =
+					oAuth2Result.getPortalException();
+
+				if (Objects.nonNull(portalException)) {
+					_log.error(portalException);
+
+					JSONPortletResponseUtil.writeJSON(
+						portletRequest, portletResponse,
+						JSONUtil.put(
+							"error",
+							_translate(
+								_portal.getLocale(portletRequest),
+								"your-request-failed-to-complete")));
+				}
+				else {
+					JSONPortletResponseUtil.writeJSON(
+						portletRequest, portletResponse,
+						oAuth2Result.getResponseJSONObject());
+				}
+			}
+			catch (IOException ioException) {
+				throw new PortalException(ioException);
+			}
+		}
+
+		private final Function<PortletRequest, String> _function;
+
+	}
+
+	private class OAuth2Result {
 
 		public OAuth2Result(JSONObject responseJSONObject) {
 			_responseJSONObject = responseJSONObject;
@@ -171,62 +214,16 @@ public class OAuth2ControllerFactory {
 				return JSONUtil.put("redirectURL", _redirectURL);
 			}
 
-			return Optional.ofNullable(
-				_responseJSONObject
-			).orElseGet(
-				JSONFactoryUtil::createJSONObject
-			);
+			if (_responseJSONObject == null) {
+				return _jsonFactory.createJSONObject();
+			}
+
+			return _responseJSONObject;
 		}
 
 		private final PortalException _portalException;
 		private final String _redirectURL;
 		private final JSONObject _responseJSONObject;
-
-	}
-
-	private class JSONOAuth2Controller implements OAuth2Controller {
-
-		public JSONOAuth2Controller(Function<PortletRequest, String> function) {
-			_function = function;
-		}
-
-		@Override
-		public void execute(
-				PortletRequest portletRequest, PortletResponse portletResponse,
-				UnsafeFunction<PortletRequest, JSONObject, PortalException>
-					unsafeFunction)
-			throws PortalException {
-
-			try {
-				OAuth2Result oAuth2Result = _getOAuth2Result(
-					portletRequest, unsafeFunction, _function);
-
-				PortalException portalException =
-					oAuth2Result.getPortalException();
-
-				if (Objects.nonNull(portalException)) {
-					_log.error(portalException, portalException);
-
-					JSONPortletResponseUtil.writeJSON(
-						portletRequest, portletResponse,
-						JSONUtil.put(
-							"error",
-							_translate(
-								_portal.getLocale(portletRequest),
-								"your-request-failed-to-complete")));
-				}
-				else {
-					JSONPortletResponseUtil.writeJSON(
-						portletRequest, portletResponse,
-						oAuth2Result.getResponseJSONObject());
-				}
-			}
-			catch (IOException ioException) {
-				throw new PortalException(ioException);
-			}
-		}
-
-		private final Function<PortletRequest, String> _function;
 
 	}
 
@@ -250,25 +247,33 @@ public class OAuth2ControllerFactory {
 			PortalException portalException = oAuth2Result.getPortalException();
 
 			if (Objects.nonNull(portalException)) {
-				_log.error(portalException, portalException);
+				_log.error(portalException);
 
 				throw portalException;
 			}
 
-			JSONObject jsonObject = oAuth2Result.getResponseJSONObject();
+			String url = oAuth2Result.getRedirectURL();
 
-			for (String fieldName : jsonObject.keySet()) {
-				portletRequest.setAttribute(
-					fieldName, jsonObject.getString(fieldName));
+			if (url == null) {
+				JSONObject jsonObject = oAuth2Result.getResponseJSONObject();
+
+				if (jsonObject.length() > 0) {
+					HttpServletRequest httpServletRequest =
+						_portal.getOriginalServletRequest(
+							_portal.getHttpServletRequest(portletRequest));
+
+					HttpSession httpSession = httpServletRequest.getSession();
+
+					httpSession.setAttribute(
+						DLOpenerOneDriveWebKeys.
+							DL_OPENER_ONE_DRIVE_REDIRECTING_OAUTH2_JSON_OBJECT,
+						oAuth2Result.getResponseJSONObject());
+				}
+
+				url = _getRenderURL(portletRequest);
 			}
 
-			portletRequest.setAttribute(
-				WebKeys.REDIRECT,
-				Optional.ofNullable(
-					oAuth2Result.getRedirectURL()
-				).orElseGet(
-					() -> _getRenderURL(portletRequest)
-				));
+			portletRequest.setAttribute(WebKeys.REDIRECT, url);
 		}
 
 		private final Function<PortletRequest, String> _function;

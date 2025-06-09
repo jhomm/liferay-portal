@@ -1,11 +1,12 @@
-@component-name = "portal-collaboration"
+@component-name = "portal-content-management"
 definition {
 
-	property custom.properties = "default.layout.template.id=1_column${line.separator}jsonws.web.service.paths.excludes=";
-	property portal.release = "true";
+	property custom.properties = "default.layout.template.id=1_column${line.separator}feature.flag.LPD-35013=false{line.separator}jsonws.web.service.paths.excludes=";
+	property osgi.modules.includes = "wiki";
+	property portal.acceptance = "true";
+	property portal.release = "false";
 	property portal.upstream = "true";
-	property testray.component.names = "Wiki";
-	property testray.main.component.name = "Notifications";
+	property testray.main.component.name = "Wiki";
 
 	var pageName = "Wiki Test Page";
 	var portletName = "Wiki";
@@ -15,12 +16,14 @@ definition {
 
 		User.firstLoginPG();
 
+		WikiPortlet.enableWiki();
+
 		JSONLayout.addPublicLayout(
 			groupName = "Guest",
 			layoutName = "Wiki Test Page");
 
 		JSONLayout.addWidgetToPublicLayout(
-			column = "1",
+			column = 1,
 			groupName = "Guest",
 			layoutName = "Wiki Test Page",
 			widgetName = "Wiki");
@@ -42,21 +45,21 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			WikiNode.tearDownCP();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 
 			JSONUser.tearDownNonAdminUsers();
 		}
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewWebsiteNotificationForNewWikiPage {
 		WikiNavigator.openWikiAdmin(siteURLKey = "guest");
@@ -75,13 +78,13 @@ definition {
 			wikiPageContent = "Wiki Page Content",
 			wikiPageTitle = "Wiki Page Title");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "test@liferay.com",
 			userLoginFullName = "Test Test");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -96,10 +99,10 @@ definition {
 			wikiPageContent = "Wiki Page Content",
 			wikiPageTitle = "Wiki Page Title");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 	}
 
-	@priority = "4"
+	@priority = 4
 	@refactordone
 	test CanViewWebsiteNotificationForUpdatedWikiPage {
 		JSONWiki.addWikiPage(
@@ -125,13 +128,13 @@ definition {
 			wikiPageContentEdit = "Wiki Page Content Edit",
 			wikiPageTitle = "Wiki Page Title");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 
 		User.logoutAndLoginPG(
 			userLoginEmailAddress = "test@liferay.com",
 			userLoginFullName = "Test Test");
 
-		Notifications.viewBadgeCount(notificationCount = "1");
+		Notifications.viewBadgeCount(notificationCount = 1);
 
 		Notifications.gotoNotifications();
 
@@ -146,7 +149,7 @@ definition {
 			wikiPageContent = "Wiki Page Content Edit",
 			wikiPageTitle = "Wiki Page Title");
 
-		Notifications.viewBadgeCount(notificationCount = "0");
+		Notifications.viewBadgeCount(notificationCount = 0);
 	}
 
 }

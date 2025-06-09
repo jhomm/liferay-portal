@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.search;
@@ -34,7 +25,7 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Sergio González
@@ -102,7 +93,7 @@ public class EntriesChecker extends EmptyOnClickRowChecker {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -122,7 +113,7 @@ public class EntriesChecker extends EmptyOnClickRowChecker {
 			}
 			catch (Exception exception) {
 				if (_log.isDebugEnabled()) {
-					_log.debug(exception, exception);
+					_log.debug(exception);
 				}
 			}
 		}
@@ -131,7 +122,7 @@ public class EntriesChecker extends EmptyOnClickRowChecker {
 			return StringPool.BLANK;
 		}
 
-		String checkBoxRowIds = getEntryRowIds();
+		String checkBoxRowIds = _getEntryRowIds();
 
 		return getRowCheckBox(
 			httpServletRequest, checked, disabled,
@@ -140,7 +131,7 @@ public class EntriesChecker extends EmptyOnClickRowChecker {
 			StringPool.BLANK);
 	}
 
-	protected String getEntryRowIds() {
+	private String _getEntryRowIds() {
 		return StringBundler.concat(
 			"['", _liferayPortletResponse.getNamespace(), RowChecker.ROW_IDS,
 			MBCategory.class.getSimpleName(), "', '",

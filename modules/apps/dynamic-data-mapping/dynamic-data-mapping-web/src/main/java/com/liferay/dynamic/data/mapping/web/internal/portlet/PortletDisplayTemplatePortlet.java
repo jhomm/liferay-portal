@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.portlet;
@@ -18,13 +9,12 @@ import com.liferay.dynamic.data.mapping.configuration.DDMWebConfiguration;
 import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.kernel.util.PortletKeys;
 
-import java.util.Map;
+import jakarta.portlet.Portlet;
 
-import javax.portlet.Portlet;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Modified;
 
 /**
@@ -32,7 +22,6 @@ import org.osgi.service.component.annotations.Modified;
  */
 @Component(
 	configurationPid = "com.liferay.dynamic.data.mapping.configuration.DDMWebConfiguration",
-	configurationPolicy = ConfigurationPolicy.OPTIONAL, immediate = true,
 	property = {
 		"com.liferay.portlet.add-default-resource=true",
 		"com.liferay.portlet.autopropagated-parameters=showAncestorScopes",
@@ -47,15 +36,16 @@ import org.osgi.service.component.annotations.Modified;
 		"com.liferay.portlet.private-session-attributes=false",
 		"com.liferay.portlet.render-weight=50",
 		"com.liferay.portlet.use-default-template=true",
-		"javax.portlet.display-name=Widget Templates",
-		"javax.portlet.expiration-cache=0",
-		"javax.portlet.init-param.always-send-redirect=true",
-		"javax.portlet.init-param.refererWebDAVToken=application_display_template",
-		"javax.portlet.init-param.template-path=/META-INF/resources/",
-		"javax.portlet.init-param.view-template=/view_template.jsp",
-		"javax.portlet.name=" + PortletKeys.PORTLET_DISPLAY_TEMPLATE,
-		"javax.portlet.resource-bundle=content.Language",
-		"javax.portlet.security-role-ref=administrator"
+		"jakarta.portlet.display-name=Widget Templates",
+		"jakarta.portlet.expiration-cache=0",
+		"jakarta.portlet.init-param.always-send-redirect=true",
+		"jakarta.portlet.init-param.refererWebDAVToken=application_display_template",
+		"jakarta.portlet.init-param.template-path=/META-INF/resources/",
+		"jakarta.portlet.init-param.view-template=/view_template.jsp",
+		"jakarta.portlet.name=" + PortletKeys.PORTLET_DISPLAY_TEMPLATE,
+		"jakarta.portlet.resource-bundle=content.Language",
+		"jakarta.portlet.security-role-ref=administrator",
+		"jakarta.portlet.version=4.0"
 	},
 	service = Portlet.class
 )

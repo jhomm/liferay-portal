@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service.persistence.impl;
 
 import com.liferay.commerce.discount.model.CommerceDiscountAccountRel;
 import com.liferay.commerce.discount.service.persistence.CommerceDiscountAccountRelPersistence;
-import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.commerce.discount.service.persistence.impl.constants.CommercePersistenceConstants;
+import com.liferay.portal.kernel.configuration.Configuration;
+import com.liferay.portal.kernel.dao.orm.SessionFactory;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
@@ -25,11 +18,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import javax.sql.DataSource;
+
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Marco Leo
  * @generated
  */
-public class CommerceDiscountAccountRelFinderBaseImpl
+public abstract class CommerceDiscountAccountRelFinderBaseImpl
 	extends BasePersistenceImpl<CommerceDiscountAccountRel> {
 
 	public CommerceDiscountAccountRelFinderBaseImpl() {
@@ -45,34 +42,36 @@ public class CommerceDiscountAccountRelFinderBaseImpl
 
 	@Override
 	public Set<String> getBadColumnNames() {
-		return getCommerceDiscountAccountRelPersistence().getBadColumnNames();
+		return commerceDiscountAccountRelPersistence.getBadColumnNames();
 	}
 
-	/**
-	 * Returns the commerce discount account rel persistence.
-	 *
-	 * @return the commerce discount account rel persistence
-	 */
-	public CommerceDiscountAccountRelPersistence
-		getCommerceDiscountAccountRelPersistence() {
-
-		return commerceDiscountAccountRelPersistence;
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.SERVICE_CONFIGURATION_FILTER,
+		unbind = "-"
+	)
+	public void setConfiguration(Configuration configuration) {
 	}
 
-	/**
-	 * Sets the commerce discount account rel persistence.
-	 *
-	 * @param commerceDiscountAccountRelPersistence the commerce discount account rel persistence
-	 */
-	public void setCommerceDiscountAccountRelPersistence(
-		CommerceDiscountAccountRelPersistence
-			commerceDiscountAccountRelPersistence) {
-
-		this.commerceDiscountAccountRelPersistence =
-			commerceDiscountAccountRelPersistence;
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setDataSource(DataSource dataSource) {
+		super.setDataSource(dataSource);
 	}
 
-	@BeanReference(type = CommerceDiscountAccountRelPersistence.class)
+	@Override
+	@Reference(
+		target = CommercePersistenceConstants.ORIGIN_BUNDLE_SYMBOLIC_NAME_FILTER,
+		unbind = "-"
+	)
+	public void setSessionFactory(SessionFactory sessionFactory) {
+		super.setSessionFactory(sessionFactory);
+	}
+
+	@Reference
 	protected CommerceDiscountAccountRelPersistence
 		commerceDiscountAccountRelPersistence;
 

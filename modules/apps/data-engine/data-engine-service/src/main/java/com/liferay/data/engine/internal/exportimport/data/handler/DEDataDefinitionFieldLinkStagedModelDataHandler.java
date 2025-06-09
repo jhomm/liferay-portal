@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.internal.exportimport.data.handler;
 
 import com.liferay.data.engine.model.DEDataDefinitionFieldLink;
+import com.liferay.data.engine.service.DEDataDefinitionFieldLinkLocalService;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMStructureLayout;
 import com.liferay.dynamic.data.mapping.model.DDMStructureVersion;
@@ -26,6 +18,7 @@ import com.liferay.exportimport.kernel.lar.PortletDataContext;
 import com.liferay.exportimport.kernel.lar.StagedModelDataHandler;
 import com.liferay.exportimport.staged.model.repository.StagedModelRepository;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.xml.Element;
@@ -38,7 +31,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Pavel Savinov
  */
-@Component(immediate = true, service = StagedModelDataHandler.class)
+@Component(service = StagedModelDataHandler.class)
 public class DEDataDefinitionFieldLinkStagedModelDataHandler
 	extends BaseStagedModelDataHandler<DEDataDefinitionFieldLink> {
 
@@ -84,8 +77,20 @@ public class DEDataDefinitionFieldLinkStagedModelDataHandler
 		Element deDataDefinitionFieldLinkElement =
 			portletDataContext.getExportDataElement(deDataDefinitionFieldLink);
 
+		String className = deDataDefinitionFieldLink.getClassName();
+
 		deDataDefinitionFieldLinkElement.addAttribute(
-			"link-class-name", deDataDefinitionFieldLink.getClassName());
+			"link-class-name", className);
+
+		if (className.equals(DDMStructureLayout.class.getName())) {
+			DDMStructureLayout ddmStructureLayout =
+				_ddmStructureLayoutLocalService.getDDMStructureLayout(
+					deDataDefinitionFieldLink.getClassPK());
+
+			deDataDefinitionFieldLinkElement.addAttribute(
+				"layout-ddm-structure-id",
+				String.valueOf(ddmStructureLayout.getDDMStructureId()));
+		}
 
 		portletDataContext.addClassedModel(
 			deDataDefinitionFieldLinkElement,
@@ -140,30 +145,62 @@ public class DEDataDefinitionFieldLinkStagedModelDataHandler
 			portletDataContext.getScopeGroupId());
 		importedDEDataDefinitionFieldLink.setCompanyId(
 			portletDataContext.getCompanyId());
+
+		String className = deDataDefinitionFieldLinkElement.attributeValue(
+			"link-class-name");
+
 		importedDEDataDefinitionFieldLink.setClassNameId(
-			_portal.getClassNameId(
+			_portal.getClassNameId(className));
+
+		if (className.equals(DDMStructureLayout.class.getName())) {
+			long layoutDDMStructureId = GetterUtil.getLong(
 				deDataDefinitionFieldLinkElement.attributeValue(
-					"link-class-name")));
+					"layout-ddm-structure-id"));
+
+			layoutDDMStructureId = MapUtil.getLong(
+				ddmStructureIds, layoutDDMStructureId, layoutDDMStructureId);
+
+			DDMStructure ddmStructure =
+				_ddmStructureLocalService.getDDMStructure(layoutDDMStructureId);
+
+			DDMStructureVersion ddmStructureVersion =
+				ddmStructure.getStructureVersion();
+
+			DDMStructureLayout ddmStructureLayout =
+				_ddmStructureLayoutLocalService.
+					getStructureLayoutByStructureVersionId(
+						ddmStructureVersion.getStructureVersionId());
+
+			importedDEDataDefinitionFieldLink.setClassPK(
+				ddmStructureLayout.getStructureLayoutId());
+		}
+		else {
+			Map<Long, Long> newPrimaryKeysMap =
+				(Map<Long, Long>)portletDataContext.getNewPrimaryKeysMap(
+					className);
+
+			importedDEDataDefinitionFieldLink.setClassPK(
+				MapUtil.getLong(
+					newPrimaryKeysMap, deDataDefinitionFieldLink.getClassPK(),
+					deDataDefinitionFieldLink.getClassPK()));
+		}
+
 		importedDEDataDefinitionFieldLink.setDdmStructureId(ddmStructureId);
-
-		DDMStructure ddmStructure = _ddmStructureLocalService.getDDMStructure(
-			ddmStructureId);
-
-		DDMStructureVersion structureVersion =
-			ddmStructure.getStructureVersion();
-
-		DDMStructureLayout structureLayout =
-			_ddmStructureLayoutLocalService.
-				getStructureLayoutByStructureVersionId(
-					structureVersion.getStructureVersionId());
-
-		importedDEDataDefinitionFieldLink.setClassPK(
-			structureLayout.getStructureLayoutId());
 
 		DEDataDefinitionFieldLink existingDEDataDefinitionFieldLink =
 			_stagedModelRepository.fetchStagedModelByUuidAndGroupId(
 				deDataDefinitionFieldLink.getUuid(),
 				portletDataContext.getScopeGroupId());
+
+		if (existingDEDataDefinitionFieldLink == null) {
+			existingDEDataDefinitionFieldLink =
+				_deDataDefinitionFieldLinkLocalService.
+					fetchDEDataDefinitionFieldLinks(
+						importedDEDataDefinitionFieldLink.getClassNameId(),
+						importedDEDataDefinitionFieldLink.getClassPK(),
+						importedDEDataDefinitionFieldLink.getDdmStructureId(),
+						importedDEDataDefinitionFieldLink.getFieldName());
+		}
 
 		if ((existingDEDataDefinitionFieldLink == null) ||
 			!portletDataContext.isDataStrategyMirror()) {
@@ -200,6 +237,10 @@ public class DEDataDefinitionFieldLinkStagedModelDataHandler
 
 	@Reference
 	private DDMStructureLocalService _ddmStructureLocalService;
+
+	@Reference
+	private DEDataDefinitionFieldLinkLocalService
+		_deDataDefinitionFieldLinkLocalService;
 
 	@Reference
 	private Portal _portal;

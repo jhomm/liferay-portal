@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.sort;
@@ -63,7 +54,7 @@ public class DefaultSortTranslator implements SortTranslator {
 				continue;
 			}
 
-			String sortFieldName = getSortFieldName(sort, "_score");
+			String sortFieldName = _getSortFieldName(sort, "_score");
 
 			if (sortFieldNames.contains(sortFieldName)) {
 				continue;
@@ -71,11 +62,11 @@ public class DefaultSortTranslator implements SortTranslator {
 
 			sortFieldNames.add(sortFieldName);
 
-			searchSourceBuilder.sort(getSortBuilder(sort, sortFieldName));
+			searchSourceBuilder.sort(_getSortBuilder(sort, sortFieldName));
 		}
 	}
 
-	protected SortBuilder<?> getFieldSortBuilder(Sort sort, String fieldName) {
+	private SortBuilder<?> _getFieldSortBuilder(Sort sort, String fieldName) {
 		FieldSortBuilder fieldSortBuilder = SortBuilders.fieldSort(fieldName);
 
 		fieldSortBuilder.unmappedType("keyword");
@@ -87,7 +78,7 @@ public class DefaultSortTranslator implements SortTranslator {
 		return fieldSortBuilder;
 	}
 
-	protected SortBuilder<?> getGeoDistanceSortBuilder(
+	private SortBuilder<?> _getGeoDistanceSortBuilder(
 		Sort sort, String fieldName) {
 
 		GeoDistanceSort geoDistanceSort = (GeoDistanceSort)sort;
@@ -122,7 +113,7 @@ public class DefaultSortTranslator implements SortTranslator {
 		return geoDistanceSortBuilder;
 	}
 
-	protected SortBuilder<?> getNestedFieldSortBuilder(
+	private SortBuilder<?> _getNestedFieldSortBuilder(
 		Sort sort, String sortFieldName) {
 
 		String[] parts = StringUtil.split(sortFieldName, StringPool.POUND);
@@ -148,7 +139,7 @@ public class DefaultSortTranslator implements SortTranslator {
 		return fieldSortBuilder;
 	}
 
-	protected SortBuilder<?> getScoreSortBuilder(Sort sort) {
+	private SortBuilder<?> _getScoreSortBuilder(Sort sort) {
 		SortBuilder<?> sortBuilder = SortBuilders.scoreSort();
 
 		if (sort.isReverse()) {
@@ -158,23 +149,23 @@ public class DefaultSortTranslator implements SortTranslator {
 		return sortBuilder;
 	}
 
-	protected SortBuilder<?> getSortBuilder(Sort sort, String fieldName) {
+	private SortBuilder<?> _getSortBuilder(Sort sort, String fieldName) {
 		if (fieldName.equals("_score")) {
-			return getScoreSortBuilder(sort);
+			return _getScoreSortBuilder(sort);
 		}
 
 		if (sort.getType() == Sort.GEO_DISTANCE_TYPE) {
-			return getGeoDistanceSortBuilder(sort, fieldName);
+			return _getGeoDistanceSortBuilder(sort, fieldName);
 		}
 
 		if (fieldName.startsWith("nestedFieldArray.")) {
-			return getNestedFieldSortBuilder(sort, fieldName);
+			return _getNestedFieldSortBuilder(sort, fieldName);
 		}
 
-		return getFieldSortBuilder(sort, fieldName);
+		return _getFieldSortBuilder(sort, fieldName);
 	}
 
-	protected String getSortFieldName(Sort sort, String scoreFieldName) {
+	private String _getSortFieldName(Sort sort, String scoreFieldName) {
 		String sortFieldName = sort.getFieldName();
 
 		if (Objects.equals(sortFieldName, Field.PRIORITY) ||

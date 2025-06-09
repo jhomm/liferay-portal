@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.commerce.admin.catalog.client.dto.v1_0;
 import com.liferay.headless.commerce.admin.catalog.client.function.UnsafeSupplier;
 import com.liferay.headless.commerce.admin.catalog.client.serdes.v1_0.AttachmentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -99,16 +90,45 @@ public class Attachment implements Cloneable, Serializable {
 
 	protected String cdnURL;
 
-	public CustomField[] getCustomFields() {
+	public String getContentType() {
+		return contentType;
+	}
+
+	public void setContentType(String contentType) {
+		this.contentType = contentType;
+	}
+
+	public void setContentType(
+		UnsafeSupplier<String, Exception> contentTypeUnsafeSupplier) {
+
+		try {
+			contentType = contentTypeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String contentType;
+
+	public com.liferay.headless.commerce.admin.catalog.client.custom.field.
+		CustomField[] getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.headless.commerce.admin.catalog.client.custom.field.
+			CustomField[] customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.commerce.admin.catalog.client.custom.field.
+				CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -118,7 +138,8 @@ public class Attachment implements Cloneable, Serializable {
 		}
 	}
 
-	protected CustomField[] customFields;
+	protected com.liferay.headless.commerce.admin.catalog.client.custom.field.
+		CustomField[] customFields;
 
 	public Date getDisplayDate() {
 		return displayDate;
@@ -182,6 +203,99 @@ public class Attachment implements Cloneable, Serializable {
 	}
 
 	protected String externalReferenceCode;
+
+	public String getFileEntryExternalReferenceCode() {
+		return fileEntryExternalReferenceCode;
+	}
+
+	public void setFileEntryExternalReferenceCode(
+		String fileEntryExternalReferenceCode) {
+
+		this.fileEntryExternalReferenceCode = fileEntryExternalReferenceCode;
+	}
+
+	public void setFileEntryExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			fileEntryExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			fileEntryExternalReferenceCode =
+				fileEntryExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String fileEntryExternalReferenceCode;
+
+	public String getFileEntryGroupExternalReferenceCode() {
+		return fileEntryGroupExternalReferenceCode;
+	}
+
+	public void setFileEntryGroupExternalReferenceCode(
+		String fileEntryGroupExternalReferenceCode) {
+
+		this.fileEntryGroupExternalReferenceCode =
+			fileEntryGroupExternalReferenceCode;
+	}
+
+	public void setFileEntryGroupExternalReferenceCode(
+		UnsafeSupplier<String, Exception>
+			fileEntryGroupExternalReferenceCodeUnsafeSupplier) {
+
+		try {
+			fileEntryGroupExternalReferenceCode =
+				fileEntryGroupExternalReferenceCodeUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String fileEntryGroupExternalReferenceCode;
+
+	public Long getFileEntryId() {
+		return fileEntryId;
+	}
+
+	public void setFileEntryId(Long fileEntryId) {
+		this.fileEntryId = fileEntryId;
+	}
+
+	public void setFileEntryId(
+		UnsafeSupplier<Long, Exception> fileEntryIdUnsafeSupplier) {
+
+		try {
+			fileEntryId = fileEntryIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long fileEntryId;
+
+	public Boolean getGalleryEnabled() {
+		return galleryEnabled;
+	}
+
+	public void setGalleryEnabled(Boolean galleryEnabled) {
+		this.galleryEnabled = galleryEnabled;
+	}
+
+	public void setGalleryEnabled(
+		UnsafeSupplier<Boolean, Exception> galleryEnabledUnsafeSupplier) {
+
+		try {
+			galleryEnabled = galleryEnabledUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean galleryEnabled;
 
 	public Long getId() {
 		return id;
@@ -283,6 +397,27 @@ public class Attachment implements Cloneable, Serializable {
 	}
 
 	protected String src;
+
+	public String[] getTags() {
+		return tags;
+	}
+
+	public void setTags(String[] tags) {
+		this.tags = tags;
+	}
+
+	public void setTags(
+		UnsafeSupplier<String[], Exception> tagsUnsafeSupplier) {
+
+		try {
+			tags = tagsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected String[] tags;
 
 	public Map<String, String> getTitle() {
 		return title;

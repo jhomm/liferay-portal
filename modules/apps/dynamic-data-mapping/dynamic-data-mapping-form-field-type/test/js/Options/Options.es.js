@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {act, cleanup, fireEvent, render} from '@testing-library/react';
@@ -17,11 +8,9 @@ import userEvent from '@testing-library/user-event';
 import {PageProvider} from 'data-engine-js-components-web';
 import React from 'react';
 
-import Options from '../../../src/main/resources/META-INF/resources/Options/Options.es';
+import Options from '../../../src/main/resources/META-INF/resources/js/Options/Options.es';
 
-const DEFAULT_OPTION_NAME_REGEX = /^Option[0-9]{8}$/;
-
-let liferayLanguageSpy;
+const DEFAULT_OPTION_NAME_REGEX = /^Option[0-9]{1,}$/;
 
 const globalLanguageDirection = Liferay.Language.direction;
 
@@ -50,27 +39,13 @@ const optionsValue = {
 	],
 };
 
-const mockLiferayLanguage = () => {
-	liferayLanguageSpy = jest.spyOn(Liferay.Language, 'get');
-
-	liferayLanguageSpy.mockImplementation((key) => {
-		if (key === 'option') {
-			return 'Option';
-		}
-
-		return key;
-	});
-};
-
-const unmockLiferayLanguage = () => {
-	liferayLanguageSpy.mockRestore();
-};
-
 describe('Options', () => {
+
 	// eslint-disable-next-line no-console
 	const originalWarn = console.warn;
 
 	beforeAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = (...args) => {
 			if (/DataProvider: Trying/.test(args[0])) {
@@ -85,6 +60,7 @@ describe('Options', () => {
 	});
 
 	afterAll(() => {
+
 		// eslint-disable-next-line no-console
 		console.warn = originalWarn;
 
@@ -99,9 +75,7 @@ describe('Options', () => {
 	});
 
 	it('shows the options', () => {
-		mockLiferayLanguage();
-
-		const {container} = render(
+		const {container, getAllByRole} = render(
 			<OptionsWithProvider
 				name="options"
 				showKeyword={true}
@@ -114,33 +88,33 @@ describe('Options', () => {
 			jest.runAllTimers();
 		});
 
-		const referenceInputs = container.querySelectorAll(
-			'.key-value-reference-input'
+		const textboxes = getAllByRole('textbox');
+
+		const referenceInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueReference')
 		);
 
-		expect(referenceInputs[2].value).toEqual(
+		expect(referenceInputs[1].value).toEqual(
 			expect.stringMatching(DEFAULT_OPTION_NAME_REGEX)
 		);
 
-		referenceInputs[2].setAttribute('value', 'Any<String>');
+		referenceInputs[1].setAttribute('value', 'Any<String>');
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
 
-		expect(valueInputs[2].value).toEqual(
+		expect(optionNameInputs[1].value).toEqual(
 			expect.stringMatching(DEFAULT_OPTION_NAME_REGEX)
 		);
 
-		valueInputs[2].setAttribute('value', 'Any<String>');
+		optionNameInputs[1].setAttribute('value', 'Any<String>');
 
 		expect(container).toMatchSnapshot();
-
-		unmockLiferayLanguage();
 	});
 
 	it('shows the options with not editable value', () => {
-		mockLiferayLanguage();
-
-		const {container} = render(
+		const {getAllByRole} = render(
 			<OptionsWithProvider
 				keywordReadOnly={true}
 				name="options"
@@ -162,18 +136,18 @@ describe('Options', () => {
 			jest.runAllTimers();
 		});
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
+		const textboxes = getAllByRole('textbox');
 
-		expect(valueInputs[0].readOnly).toBeTruthy();
-		expect(valueInputs[0].value).toEqual('Option1');
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
 
-		unmockLiferayLanguage();
+		expect(optionNameInputs[0].disabled).toBeTruthy();
+		expect(optionNameInputs[0].value).toEqual('Option1');
 	});
 
 	it('shows the options with editable value', () => {
-		mockLiferayLanguage();
-
-		const {container, getByDisplayValue} = render(
+		const {getAllByRole, getByDisplayValue} = render(
 			<OptionsWithProvider
 				keywordReadOnly={false}
 				name="options"
@@ -199,54 +173,14 @@ describe('Options', () => {
 
 		userEvent.type(getByDisplayValue('Option1'), 'Option2');
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
+		const textboxes = getAllByRole('textbox');
 
-		expect(valueInputs[0].readOnly).toBeFalsy();
-		expect(valueInputs[0].value).toEqual('Option2');
-
-		unmockLiferayLanguage();
-	});
-
-	it('shows an empty option when value is an array of size 1', () => {
-		mockLiferayLanguage();
-
-		const {container} = render(
-			<OptionsWithProvider
-				name="options"
-				onChange={jest.fn()}
-				showKeyword={true}
-				spritemap={spritemap}
-				value={{
-					[themeDisplay.getLanguageId()]: [
-						{
-							id: 'option',
-							label: 'Option',
-							value: 'Option',
-						},
-					],
-				}}
-			/>
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
 		);
 
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
-
-		expect(labelInputs.length).toEqual(2);
-		expect(labelInputs[0].value).toEqual('Option');
-		expect(labelInputs[1].value).toEqual('');
-
-		const valueInputs = container.querySelectorAll('.key-value-input');
-
-		expect(valueInputs.length).toEqual(2);
-		expect(valueInputs[0].value).toEqual('Option');
-		expect(valueInputs[1].value).toEqual(
-			expect.stringMatching(DEFAULT_OPTION_NAME_REGEX)
-		);
-
-		unmockLiferayLanguage();
+		expect(optionNameInputs[0].disabled).toBeFalsy();
+		expect(optionNameInputs[0].value).toEqual('Option2');
 	});
 
 	it('does show an empty option when translating', () => {
@@ -286,9 +220,7 @@ describe('Options', () => {
 	});
 
 	it('does not changes the option value when the option label changes', () => {
-		mockLiferayLanguage();
-
-		const {container, getByDisplayValue} = render(
+		const {getAllByRole, getByDisplayValue} = render(
 			<OptionsWithProvider
 				name="options"
 				onChange={jest.fn()}
@@ -310,20 +242,27 @@ describe('Options', () => {
 			jest.runAllTimers();
 		});
 
+		const textboxes = getAllByRole('textbox');
+
+		const displayNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueDisplayName')
+		);
+
 		userEvent.type(getByDisplayValue('Option 1'), 'Option 2');
 
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
-		expect(labelInputs[0].value).toEqual('Option 2');
+		expect(displayNameInputs[0].value).toEqual('Option 2');
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
-		expect(valueInputs[0].value).toEqual('Option1');
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
 
-		unmockLiferayLanguage();
+		expect(optionNameInputs[0].value).toEqual('Option1');
 	});
 
 	it('edits the value of an option based on the label', () => {
-		const {container} = render(
+		const {getAllByRole} = render(
 			<OptionsWithProvider
+				generateOptionValueUsingOptionLabel={true}
 				name="options"
 				onChange={jest.fn()}
 				showKeyword={true}
@@ -344,9 +283,13 @@ describe('Options', () => {
 			jest.runAllTimers();
 		});
 
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
+		const textboxes = getAllByRole('textbox');
 
-		fireEvent.change(labelInputs[0], {
+		const displayNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueDisplayName')
+		);
+
+		fireEvent.change(displayNameInputs[0], {
 			target: {
 				value: 'Hello',
 			},
@@ -356,13 +299,15 @@ describe('Options', () => {
 			jest.runAllTimers();
 		});
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
 
-		expect(valueInputs[0].value).toEqual('Option');
+		expect(optionNameInputs[0].value).toEqual('Hello');
 	});
 
-	it('inserts a new empty option when editing the last option', () => {
-		const {container} = render(
+	it('new options are added with an unique value', () => {
+		const {container, getAllByRole} = render(
 			<OptionsWithProvider
 				name="options"
 				onChange={jest.fn()}
@@ -371,125 +316,36 @@ describe('Options', () => {
 				value={{
 					[themeDisplay.getLanguageId()]: [
 						{
-							id: 'option',
-							label: 'Option',
-							value: 'Option',
+							id: 'option1',
+							label: 'Option 1',
+							value: 'Option1',
 						},
 					],
 				}}
 			/>
 		);
 
-		act(() => {
-			jest.runAllTimers();
-		});
+		const addOptionButton = container.querySelector('.add-option-button');
 
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
-
-		fireEvent.change(labelInputs[1], {
-			target: {
-				value: 'Hello',
-			},
-		});
+		addOptionButton.click();
 
 		act(() => {
 			jest.runAllTimers();
 		});
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
+		const textboxes = getAllByRole('textbox');
 
-		expect(valueInputs.length).toEqual(labelInputs.length + 1);
-	});
-
-	it('does not insert a new empty option automatically if translating', () => {
-		const {container} = render(
-			<OptionsWithProvider
-				defaultLanguageId={themeDisplay.getLanguageId()}
-				editingLanguageId="pt_BR"
-				name="options"
-				onChange={jest.fn()}
-				showKeyword={true}
-				spritemap={spritemap}
-				value={{
-					[themeDisplay.getLanguageId()]: [
-						{
-							id: 'option',
-							label: 'Option',
-							value: 'Option',
-						},
-					],
-					pt_BR: [
-						{
-							id: 'option',
-							label: 'Option',
-							value: 'Option',
-						},
-					],
-				}}
-			/>
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
 		);
 
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
-
-		fireEvent.input(labelInputs[0], {target: {value: 'Hello'}});
-
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		const valueInputs = container.querySelectorAll('.key-value-input');
-
-		expect(valueInputs.length).toEqual(labelInputs.length);
+		expect(optionNameInputs[0].value).not.toEqual(
+			optionNameInputs[1].value
+		);
 	});
 
-	it('deduplication of value when adding a new option', () => {
-		mockLiferayLanguage();
-
-		const {container} = render(
-			<OptionsWithProvider
-				name="options"
-				onChange={jest.fn()}
-				showKeyword={true}
-				spritemap={spritemap}
-				value={{
-					[themeDisplay.getLanguageId()]: [
-						{
-							id: 'foo',
-							label: 'Foo',
-							value: 'Foo',
-						},
-					],
-				}}
-			/>
-		);
-
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
-
-		fireEvent.input(labelInputs[1], {target: {value: 'Foo'}});
-
-		act(() => {
-			jest.runAllTimers();
-		});
-
-		const valueInputs = container.querySelectorAll('.key-value-input');
-
-		expect(valueInputs[1].value).toEqual(
-			expect.stringMatching(DEFAULT_OPTION_NAME_REGEX)
-		);
-
-		unmockLiferayLanguage();
-	});
-
-	it('deduplication of the value when editing the value', () => {
-		const {container} = render(
+	it('deduplication of value happens when the user leaves the value field', () => {
+		const {getAllByRole} = render(
 			<OptionsWithProvider
 				name="options"
 				onChange={jest.fn()}
@@ -516,22 +372,31 @@ describe('Options', () => {
 			jest.runAllTimers();
 		});
 
-		const labelInputs = container.querySelectorAll('.ddm-field-text');
+		const textboxes = getAllByRole('textbox');
 
-		fireEvent.input(labelInputs[1], {target: {value: 'Bar'}});
+		const optionNameInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
+
+		fireEvent.input(optionNameInputs[1], {target: {value: 'Bar'}});
+
+		expect(optionNameInputs[0].value).toEqual(optionNameInputs[1].value);
+
+		fireEvent.blur(optionNameInputs[1]);
 
 		act(() => {
 			jest.runAllTimers();
 		});
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
-
-		expect(valueInputs[1].value).toEqual('Foo');
+		expect(optionNameInputs[0].value).not.toEqual(
+			optionNameInputs[1].value
+		);
 	});
 
-	it('adds a value to the value property when the label is empty', () => {
-		const {container} = render(
+	it.skip('adds a value to the value property when the label is empty', () => {
+		const {getAllByRole} = render(
 			<OptionsWithProvider
+				generateOptionValueUsingOptionLabel={true}
 				name="options"
 				onChange={jest.fn()}
 				showKeyword={true}
@@ -540,29 +405,30 @@ describe('Options', () => {
 					[themeDisplay.getLanguageId()]: [
 						{
 							id: 'bar',
-							label: 'Bar',
-							value: 'Bar',
+							label: 'Display Name',
+							reference: 'Reference',
+							value: 'Name',
 						},
 					],
 				}}
 			/>
 		);
 
-		act(() => {
-			jest.runAllTimers();
-		});
+		const textboxes = getAllByRole('textbox');
 
-		const labelInput = container.querySelector('.ddm-field-text');
+		const labels = textboxes.filter((element) =>
+			element.id.includes('keyValueDisplayName')
+		);
 
-		fireEvent.input(labelInput, {target: {value: ''}});
+		fireEvent.input(labels[0], {target: {value: ''}});
 
-		act(() => {
-			jest.runAllTimers();
-		});
+		const newTextboxes = getAllByRole('textbox');
 
-		const valueInput = container.querySelector('.key-value-input');
+		const values = newTextboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
 
-		expect(valueInput.value).toBe('Bar');
+		expect(values[0].value).toBe('Reference');
 	});
 
 	it('removes an option when click on remove button', () => {
@@ -595,7 +461,7 @@ describe('Options', () => {
 
 		let options = container.querySelectorAll('.ddm-field-options');
 
-		expect(options.length).toEqual(3);
+		expect(options.length).toEqual(2);
 
 		const removeOptionButton = document.querySelector(
 			'.ddm-option-entry .close'
@@ -605,13 +471,11 @@ describe('Options', () => {
 
 		options = container.querySelectorAll('.ddm-field-options');
 
-		expect(options.length).toEqual(2);
+		expect(options.length).toEqual(1);
 	});
 
 	it('checks if the initial value of the option reference matches the option value', () => {
-		mockLiferayLanguage();
-
-		const {container} = render(
+		const {getAllByRole} = render(
 			<OptionsWithProvider
 				name="options"
 				showKeyword={true}
@@ -620,26 +484,26 @@ describe('Options', () => {
 			/>
 		);
 
-		const referenceInputs = container.querySelectorAll(
-			'.key-value-reference-input'
+		const textboxes = getAllByRole('textbox');
+
+		const referenceInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueReference')
 		);
 
-		expect(referenceInputs[2].value).toEqual(
+		expect(referenceInputs[1].value).toEqual(
 			expect.stringMatching(DEFAULT_OPTION_NAME_REGEX)
 		);
 
-		const valueInputs = container.querySelectorAll('.key-value-input');
+		const valueInputs = textboxes.filter((element) =>
+			element.id.includes('keyValueName')
+		);
 
-		expect(referenceInputs[2].value).toBe(valueInputs[2].value);
-
-		unmockLiferayLanguage();
+		expect(referenceInputs[1].value).toBe(valueInputs[1].value);
 	});
 
 	describe('Normalize option reference during the onBlur event', () => {
 		it('changes to the option value when the reference is duplicated', () => {
-			mockLiferayLanguage();
-
-			const {container} = render(
+			const {getAllByRole} = render(
 				<OptionsWithProvider
 					name="options"
 					onChange={jest.fn()}
@@ -663,8 +527,10 @@ describe('Options', () => {
 				/>
 			);
 
-			const referenceInputs = container.querySelectorAll(
-				'.key-value-reference-input'
+			const textboxes = getAllByRole('textbox');
+
+			const referenceInputs = textboxes.filter((element) =>
+				element.id.includes('keyValueReference')
 			);
 
 			expect(referenceInputs[0].value).toBe('Reference1');
@@ -682,14 +548,10 @@ describe('Options', () => {
 
 			expect(referenceInputs[0].value).toBe('Option1');
 			expect(referenceInputs[1].value).toBe('Reference2');
-
-			unmockLiferayLanguage();
 		});
 
 		it('changes to the option value when the reference is empty', () => {
-			mockLiferayLanguage();
-
-			const {container} = render(
+			const {getAllByRole} = render(
 				<OptionsWithProvider
 					name="options"
 					onChange={jest.fn()}
@@ -707,23 +569,23 @@ describe('Options', () => {
 				/>
 			);
 
-			const referenceInput = container.querySelector(
-				'.key-value-reference-input'
+			const textboxes = getAllByRole('textbox');
+
+			const referenceInputs = textboxes.filter((element) =>
+				element.id.includes('keyValueReference')
 			);
 
-			expect(referenceInput.value).toBe('Reference');
+			expect(referenceInputs[0].value).toBe('Reference');
 
-			fireEvent.input(referenceInput, {target: {value: ''}});
+			fireEvent.input(referenceInputs[0], {target: {value: ''}});
 
-			fireEvent.blur(referenceInput);
+			fireEvent.blur(referenceInputs[0]);
 
 			act(() => {
 				jest.runAllTimers();
 			});
 
-			expect(referenceInput.value).toEqual('Value');
-
-			unmockLiferayLanguage();
+			expect(referenceInputs[0].value).toEqual('Value');
 		});
 	});
 });

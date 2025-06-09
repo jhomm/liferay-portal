@@ -1,13 +1,14 @@
 definition {
 
-	macro configure {
+	@summary = "Default summary"
+	macro configure(samlRoleType = null, samlEntityId = null) {
 		Select(
 			locator1 = "CPSAMLAdmin#SAML_ROLE_SELECT",
-			value1 = "${samlRoleType}");
+			value1 = ${samlRoleType});
 
 		Type(
 			locator1 = "CPSAMLAdmin#SAML_ENTITY_ID_FIELD",
-			value1 = "${samlEntityID}");
+			value1 = ${samlEntityId});
 
 		AssertClick(
 			locator1 = "Button#SAVE",
@@ -18,11 +19,74 @@ definition {
 			value1 = "Your request completed successfully.");
 	}
 
-	macro configureCertificateAndPrivateKey {
+	@summary = "Default summary"
+	macro configureCertificateAndPrivateKey(samlKeyPassword = null, certificateUsage = null) {
 		WaitForLiferayEvent.initializeLiferayEventLog();
 
+		if (isSet(keystoreEnabled)) {
+			AssertClick(
+				key_certificateUsage = ${certificateUsage},
+				locator1 = "CPSAMLAdmin#AUTHENTICATE_CERTIFICATE",
+				value1 = "Authenticate Certificate");
+
+			SelectFrame(locator1 = "IFrame#MODAL_BODY");
+		}
+		else {
+			SAMLRole.createCertificate(certificateUsage = ${certificateUsage});
+		}
+
+		Type(
+			locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_KEY_PASSWORD_FIELD",
+			value1 = ${samlKeyPassword});
+
 		AssertClick(
-			key_certificateUsage = "${certificateUsage}",
+			locator1 = "Button#SUBMIT",
+			value1 = "Save");
+
+		WaitForElementNotPresent(locator1 = "IFrame#MODAL_BODY");
+
+		AssertElementPresent.assertElementPresentNoWaitForSPAReFresh(
+			key_certificateUsage = ${certificateUsage},
+			locator1 = "CPSAMLAdmin#DOWNLOAD_CERTIFICATE");
+
+		AssertElementPresent.assertElementPresentNoWaitForSPAReFresh(
+			key_certificateUsage = ${certificateUsage},
+			locator1 = "CPSAMLAdmin#REPLACE_CERTIFICATE");
+	}
+
+	@summary = "Default summary"
+	macro configureIdentityProvider(idpSessionMaximumAge = null, idpSessionIdleTimeout = null) {
+		if (isSet(idpSessionIdleTimeout)) {
+			Type(
+				locator1 = "CPSAMLAdmin#IDENTITY_PROVIDER_SESSION_IDLE_TIMEOUT",
+				value1 = ${idpSessionIdleTimeout});
+		}
+
+		if (isSet(idpSessionMaximumAge)) {
+			Type(
+				locator1 = "CPSAMLAdmin#IDENTITY_PROVIDER_SESSION_MAXIMUM_AGE",
+				value1 = ${idpSessionMaximumAge});
+		}
+
+		AssertClick(
+			locator1 = "Button#SUBMIT",
+			value1 = "Save");
+	}
+
+	@summary = "Default summary"
+	macro convertEncryptionCertificate() {
+		AntCommands.runCommand("build-test.xml", "prepare-encryption-PCKS12-certificate");
+	}
+
+	@summary = "Default summary"
+	macro convertSingingCertificate() {
+		AntCommands.runCommand("build-test.xml", "prepare-signing-PCKS12-certificate");
+	}
+
+	@summary = "Default summary"
+	macro createCertificate(certificateUsage = null) {
+		AssertClick(
+			key_certificateUsage = ${certificateUsage},
 			locator1 = "CPSAMLAdmin#CREATE_CERTIFICATE",
 			value1 = "Create Certificate");
 
@@ -32,15 +96,7 @@ definition {
 			locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_COMMON_NAME_FIELD",
 			value1 = "Liferay QA");
 
-		Type(
-			locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_ORGANIZATION_FIELD",
-			value1 = "Liferay");
-
-		Type(
-			locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_COUNTRY_FIELD",
-			value1 = "USA");
-
-		if ("${certificateUsage}" == "SIGNING") {
+		if (${certificateUsage} == "SIGNING") {
 			Select(
 				locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_KEY_ALGORITHM_SELECT",
 				value1 = "RSA");
@@ -48,58 +104,11 @@ definition {
 
 		Select(
 			locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_KEY_LENGTH_SELECT",
-			value1 = "2048");
-
-		Type(
-			locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_KEY_PASSWORD_FIELD",
-			value1 = "${samlKeyPassword}");
-
-		AssertClick(
-			locator1 = "Button#SUBMIT",
-			value1 = "Save");
-
-		WaitForElementNotPresent(locator1 = "IFrame#MODAL_BODY");
-
-		AssertElementPresent(
-			key_certificateUsage = "${certificateUsage}",
-			locator1 = "CPSAMLAdmin#DOWNLOAD_CERTIFICATE");
-
-		AssertElementPresent(
-			key_certificateUsage = "${certificateUsage}",
-			locator1 = "CPSAMLAdmin#REPLACE_CERTIFICATE");
+			value1 = 2048);
 	}
 
-	macro configureIdentityProvider {
-		if (isSet(idpSessionIdleTimeout)) {
-			Type(
-				locator1 = "CPSAMLAdmin#IDENTITY_PROVIDER_SESSION_IDLE_TIMEOUT",
-				value1 = "${idpSessionIdleTimeout}");
-		}
-
-		if (isSet(idpSessionMaximumAge)) {
-			Type(
-				locator1 = "CPSAMLAdmin#IDENTITY_PROVIDER_SESSION_MAXIMUM_AGE",
-				value1 = "${idpSessionMaximumAge}");
-		}
-
-		AssertClick(
-			locator1 = "Button#SUBMIT",
-			value1 = "Save");
-	}
-
-	macro convertEncryptionCertificate {
-		AntCommand(
-			locator1 = "build-test.xml",
-			value1 = "prepare-encryption-PCKS12-certificate");
-	}
-
-	macro convertSingingCertificate {
-		AntCommand(
-			locator1 = "build-test.xml",
-			value1 = "prepare-signing-PCKS12-certificate");
-	}
-
-	macro deleteCertificate {
+	@summary = "Default summary"
+	macro deleteCertificate() {
 		ClickNoError(
 			locator1 = "CPSAMLAdmin#DELETE_CERTIFICATE",
 			value1 = "Delete Certificate");
@@ -109,10 +118,11 @@ definition {
 		Alert.viewSuccessMessage();
 	}
 
-	macro enable {
+	@summary = "Default summary"
+	macro enable(samlEntityId = null) {
 		AssertTextEquals(
 			locator1 = "CPSAMLAdmin#SAML_ENTITY_ID_FIELD",
-			value1 = "${samlEntityID}");
+			value1 = ${samlEntityId});
 
 		Check(locator1 = "CPSAMLAdmin#SAML_ENABLED_CHECKBOX");
 
@@ -125,8 +135,9 @@ definition {
 			value1 = "Your request completed successfully.");
 	}
 
-	macro importCertificateAndPrivateKey {
-		if ("${certificateUsage}" == "SIGNING") {
+	@summary = "Default summary"
+	macro importCertificateAndPrivateKey(keyStoreAlias = null, certificateUsage = null) {
+		if (${certificateUsage} == "SIGNING") {
 			AssertClick(
 				key_certificateUsage = "SIGNING",
 				locator1 = "CPSAMLAdmin#REPLACE_CERTIFICATE",
@@ -143,12 +154,10 @@ definition {
 
 		Click(locator1 = "CPSAMLAdmin#IMPORT_CERTIFICATE");
 
-		Pause(locator1 = "1000");
+		WaitForElementPresent(locator1 = "Button#SELECT_FILE");
 
-		AssertElementPresent(locator1 = "Button#SELECT_FILE");
-
-		if ("${certificateUsage}" == "SIGNING") {
-			UploadTempFile(
+		if (${certificateUsage} == "SIGNING") {
+			UploadTempFile.uploadTempFileHiddenNoMouseOver(
 				locator1 = "TextInput#FILE",
 				value1 = "samlidp.p12");
 
@@ -158,9 +167,10 @@ definition {
 		}
 		else {
 			var liferayHome = PropsUtil.get("liferay.home.dir.name");
+
 			var filePath = "${liferayHome}-1/data";
 
-			UploadTempFile(
+			UploadTempFile.uploadTempFileHiddenNoMouseOver(
 				locator1 = "TextInput#FILE",
 				value1 = "samlsp_encryption.p12");
 
@@ -171,22 +181,35 @@ definition {
 
 		Click(locator1 = "Button#CONTINUE");
 
-		var key_keyStoreAlias = "${keyStoreAlias}";
+		var key_keyStoreAlias = ${keyStoreAlias};
 
 		Click(locator1 = "CPSAMLAdmin#CERTIFICATE_AND_PRIVATE_KEY_KEYSTORE_ALIAS_RADIO");
 
 		Button.clickImport();
 
-		if ("${certificateUsage}" == "SIGNING") {
-			AssertElementPresent(
+		if (${certificateUsage} == "SIGNING") {
+			AssertElementPresent.assertElementPresentNoWaitForSPAReFresh(
 				key_certificateUsage = "SIGNING",
 				locator1 = "CPSAMLAdmin#REPLACE_CERTIFICATE");
 		}
 		else {
-			AssertElementPresent(
+			AssertElementPresent.assertElementPresentNoWaitForSPAReFresh(
 				key_certificateUsage = "ENCRYPTION",
 				locator1 = "CPSAMLAdmin#REPLACE_CERTIFICATE");
 		}
+	}
+
+	@summary = "Default summary"
+	macro viewGeneralConfigurations(samlRoleType = null, samlEntityId = null) {
+		AssertChecked(locator1 = "CPSAMLAdmin#SAML_ENABLED_CHECKBOX");
+
+		AssertElementPresent.assertElementPresentNoWaitForSPAReFresh(
+			locator1 = "CPSAMLAdmin#SAML_ROLE_SELECT",
+			value1 = ${samlRoleType});
+
+		AssertElementPresent.assertElementPresentNoWaitForSPAReFresh(
+			locator1 = "CPSAMLAdmin#SAML_ENTITY_ID_FIELD",
+			value1 = ${samlEntityId});
 	}
 
 }

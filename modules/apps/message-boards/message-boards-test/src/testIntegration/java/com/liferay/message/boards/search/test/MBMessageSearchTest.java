@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.search.test;
@@ -36,15 +27,10 @@ import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
-import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.search.test.util.BaseSearchTestCase;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
-
-import java.io.InputStream;
-
-import java.util.List;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -120,18 +106,14 @@ public class MBMessageSearchTest extends BaseSearchTestCase {
 	protected void addAttachment(ClassedModel classedModel) throws Exception {
 		MBMessage message = (MBMessage)classedModel;
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				message.getGroupId(), TestPropsValues.getUserId());
-
-		List<ObjectValuePair<String, InputStream>> inputStreamOVPs =
-			MBTestUtil.getInputStreamOVPs(
-				"OSX_Test.docx", getClass(), getSearchKeywords());
-
 		MBMessageLocalServiceUtil.updateMessage(
 			TestPropsValues.getUserId(), message.getMessageId(),
-			getSearchKeywords(), getSearchKeywords(), inputStreamOVPs, 0, false,
-			serviceContext);
+			getSearchKeywords(), getSearchKeywords(),
+			MBTestUtil.getInputStreamOVPs(
+				"OSX_Test.docx", getClass(), getSearchKeywords()),
+			0, false,
+			ServiceContextTestUtil.getServiceContext(
+				message.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Override
@@ -170,7 +152,7 @@ public class MBMessageSearchTest extends BaseSearchTestCase {
 		throws Exception {
 
 		return MBCategoryServiceUtil.addCategory(
-			TestPropsValues.getUserId(),
+			null, TestPropsValues.getUserId(),
 			MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID,
 			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 	}

@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.upgrade.v3_3_0.util;
 
+import com.liferay.fragment.entry.processor.constants.FragmentEntryProcessorConstants;
 import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -56,39 +48,36 @@ public class EditableValuesTransformerUtil {
 				JSONObject editableProcessorJSONObject =
 					(JSONObject)editableProcessorObject;
 
-				if (editableProcessorJSONObject.length() <= 0) {
-					newEditableValuesJSONObject.put(
-						editableProcessorKey,
-						JSONFactoryUtil.createJSONObject());
-
-					continue;
-				}
-
 				if (Objects.equals(
 						editableProcessorKey,
-						_KEY_FREE_MARKER_FRAGMENT_ENTRY_PROCESSOR)) {
+						FragmentEntryProcessorConstants.
+							KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR)) {
 
-					newEditableValuesJSONObject.put(
-						editableProcessorKey,
+					editableProcessorJSONObject =
 						_getFreeMarkerFragmentEntryProcessorJSONObject(
-							editableProcessorJSONObject, segmentsExperienceId));
+							editableProcessorJSONObject, segmentsExperienceId);
+				}
+				else if (editableProcessorJSONObject.length() > 0) {
+					editableProcessorJSONObject =
+						_getFragmentEntryProcessorJSONObject(
+							editableProcessorJSONObject, segmentsExperienceId);
+				}
 
+				if (editableProcessorJSONObject.length() <= 0) {
 					continue;
 				}
 
 				newEditableValuesJSONObject.put(
-					editableProcessorKey,
-					_getFragmentEntryProcessorJSONObject(
-						editableProcessorJSONObject, segmentsExperienceId));
+					editableProcessorKey, editableProcessorJSONObject);
 			}
 		}
 		catch (JSONException jsonException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(jsonException, jsonException);
+				_log.warn(jsonException);
 			}
 		}
 
-		return newEditableValuesJSONObject.toJSONString();
+		return newEditableValuesJSONObject.toString();
 	}
 
 	private static JSONObject _getFragmentEntryProcessorJSONObject(
@@ -185,10 +174,6 @@ public class EditableValuesTransformerUtil {
 	}
 
 	private static final String _ID_PREFIX = "segments-experience-id-";
-
-	private static final String _KEY_FREE_MARKER_FRAGMENT_ENTRY_PROCESSOR =
-		"com.liferay.fragment.entry.processor.freemarker." +
-			"FreeMarkerFragmentEntryProcessor";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		EditableValuesTransformerUtil.class);

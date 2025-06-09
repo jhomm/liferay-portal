@@ -1,20 +1,9 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.rest.builder.internal.yaml.openapi;
-
-import java.beans.Transient;
 
 import java.util.List;
 import java.util.Map;
@@ -53,16 +42,15 @@ public class Schema {
 		return _description;
 	}
 
+	public Discriminator getDiscriminator() {
+		return _discriminator;
+	}
+
 	public List<String> getEnumValues() {
 		return _enumValues;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	@Transient
-	public String getExample() {
+	public Object getExample() {
 		return _example;
 	}
 
@@ -78,8 +66,20 @@ public class Schema {
 		return _maximum;
 	}
 
+	public Integer getMaxLength() {
+		return _maxLength;
+	}
+
 	public Double getMinimum() {
 		return _minimum;
+	}
+
+	public Integer getMinLength() {
+		return _minLength;
+	}
+
+	public String getName() {
+		return _name;
 	}
 
 	public List<Schema> getOneOfSchemas() {
@@ -102,12 +102,24 @@ public class Schema {
 		return _type;
 	}
 
+	public XML getXml() {
+		return _xml;
+	}
+
 	public boolean isDeprecated() {
 		return _deprecated;
 	}
 
 	public boolean isJsonMap() {
 		return _jsonMap;
+	}
+
+	public boolean isJsonString() {
+		return _jsonString;
+	}
+
+	public boolean isMergeProperties() {
+		return _mergeProperties;
 	}
 
 	public boolean isReadOnly() {
@@ -142,16 +154,15 @@ public class Schema {
 		_description = description;
 	}
 
+	public void setDiscriminator(Discriminator discriminator) {
+		_discriminator = discriminator;
+	}
+
 	public void setEnumValues(List<String> enumValues) {
 		_enumValues = enumValues;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x)
-	 */
-	@Deprecated
-	@Transient
-	public void setExample(String example) {
+	public void setExample(Object example) {
 		_example = example;
 	}
 
@@ -167,12 +178,32 @@ public class Schema {
 		_jsonMap = jsonMap;
 	}
 
+	public void setJsonString(boolean jsonString) {
+		_jsonString = jsonString;
+	}
+
 	public void setMaximum(Double maximum) {
 		_maximum = maximum;
 	}
 
+	public void setMaxLength(Integer maxLength) {
+		_maxLength = maxLength;
+	}
+
+	public void setMergeProperties(boolean mergeProperties) {
+		_mergeProperties = mergeProperties;
+	}
+
 	public void setMinimum(Double minimum) {
 		_minimum = minimum;
+	}
+
+	public void setMinLength(Integer minLength) {
+		_minLength = minLength;
+	}
+
+	public void setName(String name) {
+		_name = name;
 	}
 
 	public void setOneOfSchemas(List<Schema> oneOfSchemas) {
@@ -205,19 +236,29 @@ public class Schema {
 		_writeOnly = writeOnly;
 	}
 
+	public void setXML(XML xml) {
+		_xml = xml;
+	}
+
 	private Schema _additionalPropertySchema;
 	private List<Schema> _allOfSchemas;
 	private List<Schema> _anyOfSchemas;
 	private String _default;
 	private boolean _deprecated;
 	private String _description;
+	private Discriminator _discriminator;
 	private List<String> _enumValues;
-	private String _example;
+	private Object _example;
 	private String _format;
 	private Items _items;
 	private boolean _jsonMap;
+	private boolean _jsonString;
 	private Double _maximum;
+	private Integer _maxLength;
+	private boolean _mergeProperties = true;
 	private Double _minimum;
+	private Integer _minLength;
+	private String _name;
 	private List<Schema> _oneOfSchemas;
 	private Map<String, Schema> _propertySchemas;
 	private boolean _readOnly;
@@ -225,5 +266,6 @@ public class Schema {
 	private List<String> _requiredPropertySchemaNames;
 	private String _type;
 	private boolean _writeOnly;
+	private XML _xml;
 
 }

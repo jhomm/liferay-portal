@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -18,9 +9,11 @@ import com.liferay.commerce.product.constants.CPActionKeys;
 import com.liferay.commerce.product.constants.CPConstants;
 import com.liferay.commerce.product.model.CPTaxCategory;
 import com.liferay.commerce.product.service.base.CPTaxCategoryServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.search.BaseModelSearchResult;
+import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
@@ -28,29 +21,20 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CPTaxCategory"
+	},
+	service = AopService.class
+)
 public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #addCPTaxCategory(String, Map, Map, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public CPTaxCategory addCPTaxCategory(
-			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			ServiceContext serviceContext)
-		throws PortalException {
-
-		_portletResourcePermission.check(
-			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
-
-		return cpTaxCategoryLocalService.addCPTaxCategory(
-			nameMap, descriptionMap, serviceContext);
-	}
 
 	@Override
 	public CPTaxCategory addCPTaxCategory(
@@ -72,7 +56,7 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
 		return cpTaxCategoryLocalService.countCPTaxCategoriesByCompanyId(
 			companyId, keyword);
@@ -96,7 +80,7 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
 		return cpTaxCategoryLocalService.findCPTaxCategoriesByCompanyId(
 			companyId, keyword, start, end);
@@ -108,7 +92,7 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
 		return cpTaxCategoryLocalService.getCPTaxCategories(companyId);
 	}
@@ -121,7 +105,7 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
 		return cpTaxCategoryLocalService.getCPTaxCategories(
 			companyId, start, end, orderByComparator);
@@ -131,7 +115,7 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 	public int getCPTaxCategoriesCount(long companyId) throws PortalException {
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
 		return cpTaxCategoryLocalService.getCPTaxCategoriesCount(companyId);
 	}
@@ -142,28 +126,22 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
-			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
+			CPActionKeys.VIEW_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
 		return cpTaxCategoryLocalService.getCPTaxCategory(cpTaxCategoryId);
 	}
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #updateCPTaxCategory(String, long, Map, Map)}
-	 */
-	@Deprecated
 	@Override
-	public CPTaxCategory updateCPTaxCategory(
-			long cpTaxCategoryId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap)
+	public BaseModelSearchResult<CPTaxCategory> searchCPTaxCategories(
+			long companyId, String keywords, int start, int end, Sort sort)
 		throws PortalException {
 
 		_portletResourcePermission.check(
 			getPermissionChecker(), null,
 			CPActionKeys.MANAGE_COMMERCE_PRODUCT_TAX_CATEGORIES);
 
-		return cpTaxCategoryLocalService.updateCPTaxCategory(
-			cpTaxCategoryId, nameMap, descriptionMap);
+		return cpTaxCategoryLocalService.searchCPTaxCategories(
+			companyId, keywords, start, end, sort);
 	}
 
 	@Override
@@ -180,10 +158,7 @@ public class CPTaxCategoryServiceImpl extends CPTaxCategoryServiceBaseImpl {
 			externalReferenceCode, cpTaxCategoryId, nameMap, descriptionMap);
 	}
 
-	private static volatile PortletResourcePermission
-		_portletResourcePermission =
-			PortletResourcePermissionFactory.getInstance(
-				CPTaxCategoryServiceImpl.class, "_portletResourcePermission",
-				CPConstants.RESOURCE_NAME_TAX);
+	@Reference(target = "(resource.name=" + CPConstants.RESOURCE_NAME_TAX + ")")
+	private PortletResourcePermission _portletResourcePermission;
 
 }

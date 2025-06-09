@@ -1,4 +1,5 @@
 @import 'current_nodes';
+@import 'error';
 @import 'hexagon_node';
 @import 'state_node';
 @import 'task_node';
@@ -27,12 +28,10 @@
 .workflow-instance-tracker {
 	background: #f1f2f5;
 	flex-grow: 1;
-	height: 589px;
-	max-height: 589px;
-	max-width: 1050px;
+	height: inherit;
 	padding: 15px;
 	position: relative;
-	width: 1050px;
+	width: 100%;
 
 	.react-flow__handle {
 		background: transparent;

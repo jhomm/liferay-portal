@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.info.display.internal.url.provider;
@@ -25,15 +16,15 @@ import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
-import com.liferay.portal.kernel.util.Http;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -41,7 +32,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Jürgen Kappler
  */
-@Component(immediate = true, service = AssetInfoEditURLProvider.class)
+@Component(service = AssetInfoEditURLProvider.class)
 public class AssetInfoEditURLProviderImpl implements AssetInfoEditURLProvider {
 
 	@Override
@@ -88,9 +79,27 @@ public class AssetInfoEditURLProviderImpl implements AssetInfoEditURLProvider {
 						_portal.getOriginalServletRequest(httpServletRequest),
 						"p_l_mode", Constants.VIEW);
 
-					redirect = _http.setParameter(
+					redirect = HttpComponentsUtil.setParameter(
 						_portal.getLayoutRelativeURL(layout, themeDisplay),
 						"p_l_mode", mode);
+				}
+			}
+
+			if (Validator.isNotNull(redirect)) {
+				String backURL = ParamUtil.getString(
+					httpServletRequest, "backURL");
+
+				if (Validator.isNotNull(backURL)) {
+					redirect = HttpComponentsUtil.addParameter(
+						redirect, "p_l_back_url", backURL);
+				}
+
+				String backURLTitle = ParamUtil.getString(
+					httpServletRequest, "backURLTitle");
+
+				if (Validator.isNotNull(backURLTitle)) {
+					redirect = HttpComponentsUtil.addParameter(
+						redirect, "p_l_back_url_title", backURLTitle);
 				}
 			}
 
@@ -108,7 +117,7 @@ public class AssetInfoEditURLProviderImpl implements AssetInfoEditURLProvider {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -117,9 +126,6 @@ public class AssetInfoEditURLProviderImpl implements AssetInfoEditURLProvider {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		AssetInfoEditURLProviderImpl.class);
-
-	@Reference
-	private Http _http;
 
 	@Reference
 	private Portal _portal;

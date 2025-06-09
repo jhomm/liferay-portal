@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -20,13 +11,16 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.util.PortalIncludeUtil;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
-import javax.servlet.jsp.tagext.TagSupport;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
+import jakarta.servlet.jsp.tagext.TagSupport;
 
 /**
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.user.taglib.servlet.taglib.UserDisplayTag}
  */
+@Deprecated
 public class UserDisplayTag extends TagSupport {
 
 	@Override
@@ -90,7 +84,7 @@ public class UserDisplayTag extends TagSupport {
 			User user = UserLocalServiceUtil.fetchUserById(_userId);
 
 			if (user != null) {
-				if (user.isDefaultUser()) {
+				if (user.isGuestUser()) {
 					user = null;
 				}
 
@@ -139,7 +133,6 @@ public class UserDisplayTag extends TagSupport {
 	}
 
 	public void setMarkupView(String markupView) {
-		_markupView = markupView;
 	}
 
 	public void setShowLink(boolean showLink) {
@@ -179,20 +172,12 @@ public class UserDisplayTag extends TagSupport {
 			return _endPage;
 		}
 
-		if (Validator.isNotNull(_markupView)) {
-			return "/html/taglib/ui/user_display/" + _markupView + "/end.jsp";
-		}
-
 		return "/html/taglib/ui/user_display/end.jsp";
 	}
 
 	protected String getStartPage() {
 		if (Validator.isNotNull(_startPage)) {
 			return _startPage;
-		}
-
-		if (Validator.isNotNull(_markupView)) {
-			return "/html/taglib/ui/user_display/" + _markupView + "/start.jsp";
 		}
 
 		return "/html/taglib/ui/user_display/start.jsp";
@@ -202,7 +187,6 @@ public class UserDisplayTag extends TagSupport {
 	private int _displayStyle = 1;
 	private String _endPage;
 	private String _imageCssClass;
-	private String _markupView;
 	private boolean _showLink = true;
 	private boolean _showUserDetails = true;
 	private boolean _showUserName = true;

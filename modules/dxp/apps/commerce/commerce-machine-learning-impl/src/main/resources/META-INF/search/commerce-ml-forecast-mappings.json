@@ -1,0 +1,76 @@
+{
+	"dynamic_templates": [
+		{
+			"template_long_sortable": {
+				"mapping": {
+					"type": "long"
+				},
+				"match": "*_sortable",
+				"match_mapping_type": "long"
+			}
+		}
+	],
+	"properties": {
+		"actual": {
+			"index": false,
+			"type": "float"
+		},
+		"assetCategoryId": {
+			"index": true,
+			"type": "long"
+		},
+		"commerceAccountId": {
+			"index": true,
+			"type": "integer"
+		},
+		"companyId": {
+			"index": true,
+			"type": "long"
+		},
+		"forecast": {
+			"index": false,
+			"type": "float"
+		},
+		"forecastId": {
+			"index": true,
+			"type": "long"
+		},
+		"forecastLowerBound": {
+			"index": false,
+			"type": "float"
+		},
+		"forecastUpperBound": {
+			"index": false,
+			"type": "float"
+		},
+		"jobId": {
+			"index": false,
+			"type": "keyword"
+		},
+		"period": {
+			"index": true,
+			"type": "keyword"
+		},
+		"scope": {
+			"index": true,
+			"type": "keyword"
+		},
+		"sku": {
+			"index": true,
+			"type": "keyword"
+		},
+		"target": {
+			"index": true,
+			"type": "keyword"
+		},
+		"timestamp": {
+			"format": "yyyyMMddHHmmss",
+			"index": true,
+			"type": "date"
+		},
+		"timestamp_sortable": {
+			"index": true,
+			"type": "long"
+		}
+	}
+}

@@ -1,44 +1,23 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/admin/init.jsp" %>
 
 <%
-int oAuth2ApplicationsCount = OAuth2ApplicationServiceUtil.getOAuth2ApplicationsCount(themeDisplay.getCompanyId());
+OAuth2ApplicationsDisplayContext oAuth2ApplicationsDisplayContext = new OAuth2ApplicationsDisplayContext(liferayPortletRequest, liferayPortletResponse);
 
-OAuth2ApplicationsManagementToolbarDisplayContext oAuth2ApplicationsManagementToolbarDisplayContext = new OAuth2ApplicationsManagementToolbarDisplayContext(liferayPortletRequest, liferayPortletResponse, currentURLObj);
+OAuth2ApplicationsManagementToolbarDisplayContext oAuth2ApplicationsManagementToolbarDisplayContext = new OAuth2ApplicationsManagementToolbarDisplayContext(liferayPortletRequest, liferayPortletResponse, oAuth2ApplicationsDisplayContext.getSearchContainer());
 
 String displayStyle = oAuth2ApplicationsManagementToolbarDisplayContext.getDisplayStyle();
 %>
 
 <clay:management-toolbar
-	actionDropdownItems="<%= oAuth2ApplicationsManagementToolbarDisplayContext.getActionDropdownItems() %>"
-	additionalProps="<%= oAuth2ApplicationsManagementToolbarDisplayContext.getAdditionalProps() %>"
-	creationMenu="<%= oAuth2ApplicationsManagementToolbarDisplayContext.getCreationMenu() %>"
-	disabled="<%= oAuth2ApplicationsCount == 0 %>"
-	filterDropdownItems="<%= oAuth2ApplicationsManagementToolbarDisplayContext.getFilterDropdownItems() %>"
-	itemsTotal="<%= oAuth2ApplicationsCount %>"
-	propsTransformer="admin/js/OAuth2ApplicationsManagementToolbarPropsTransformer"
-	searchContainerId="oAuth2ApplicationsSearchContainer"
-	selectable="<%= true %>"
-	showCreationMenu="<%= oAuth2AdminPortletDisplayContext.hasAddApplicationPermission() %>"
-	showSearch="<%= false %>"
-	sortingOrder="<%= oAuth2ApplicationsManagementToolbarDisplayContext.getOrderByType() %>"
-	sortingURL="<%= String.valueOf(oAuth2ApplicationsManagementToolbarDisplayContext.getSortingURL()) %>"
-	viewTypeItems="<%= oAuth2ApplicationsManagementToolbarDisplayContext.getViewTypes() %>"
+	managementToolbarDisplayContext="<%= oAuth2ApplicationsManagementToolbarDisplayContext %>"
+	propsTransformer="{OAuth2ApplicationsManagementToolbarPropsTransformer} from oauth2-provider-web"
 />
 
 <clay:container-fluid
@@ -49,16 +28,8 @@ String displayStyle = oAuth2ApplicationsManagementToolbarDisplayContext.getDispl
 		<aui:input name="oAuth2ApplicationIds" type="hidden" />
 
 		<liferay-ui:search-container
-			emptyResultsMessage="no-applications-were-found"
-			id="oAuth2ApplicationsSearchContainer"
-			iteratorURL="<%= currentURLObj %>"
-			rowChecker="<%= new EmptyOnClickRowChecker(renderResponse) %>"
-			total="<%= oAuth2ApplicationsCount %>"
+			searchContainer="<%= oAuth2ApplicationsDisplayContext.getSearchContainer() %>"
 		>
-			<liferay-ui:search-container-results
-				results="<%= OAuth2ApplicationServiceUtil.getOAuth2Applications(themeDisplay.getCompanyId(), searchContainer.getStart(), searchContainer.getEnd(), oAuth2ApplicationsManagementToolbarDisplayContext.getOrderByComparator()) %>"
-			/>
-
 			<liferay-ui:search-container-row
 				className="com.liferay.oauth2.provider.model.OAuth2Application"
 				escapedModel="<%= true %>"

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
 
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.module.service.Snapshot;
 
 import java.util.List;
 import java.util.Map;
@@ -40,15 +32,59 @@ public class ObjectDefinitionServiceUtil {
 	 * Never modify this class directly. Add custom service methods to <code>com.liferay.object.service.impl.ObjectDefinitionServiceImpl</code> and rerun ServiceBuilder to regenerate this class.
 	 */
 	public static ObjectDefinition addCustomObjectDefinition(
+			long objectFolderId, String className, boolean enableComments,
+			boolean enableFriendlyURLCustomization, boolean enableIndexSearch,
+			boolean enableLocalization, boolean enableObjectEntryDraft,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
 			Map<java.util.Locale, String> labelMap, String name,
 			String panelAppOrder, String panelCategoryKey,
-			Map<java.util.Locale, String> pluralLabelMap, String scope,
+			Map<java.util.Locale, String> pluralLabelMap, boolean portlet,
+			String scope, String storageType,
+			List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings,
 			List<com.liferay.object.model.ObjectField> objectFields)
 		throws PortalException {
 
 		return getService().addCustomObjectDefinition(
-			labelMap, name, panelAppOrder, panelCategoryKey, pluralLabelMap,
-			scope, objectFields);
+			objectFolderId, className, enableComments,
+			enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap, name,
+			panelAppOrder, panelCategoryKey, pluralLabelMap, portlet, scope,
+			storageType, objectDefinitionSettings, objectFields);
+	}
+
+	public static ObjectDefinition addObjectDefinition(
+			String externalReferenceCode, long objectFolderId,
+			boolean modifiable, String scope, boolean system)
+		throws PortalException {
+
+		return getService().addObjectDefinition(
+			externalReferenceCode, objectFolderId, modifiable, scope, system);
+	}
+
+	public static ObjectDefinition addSystemObjectDefinition(
+			String externalReferenceCode, long userId, long objectFolderId,
+			String className, boolean enableComments,
+			boolean enableFriendlyURLCustomization, boolean enableIndexSearch,
+			boolean enableLocalization, boolean enableObjectEntryDraft,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
+			Map<java.util.Locale, String> labelMap, String name,
+			String panelAppOrder, String panelCategoryKey,
+			Map<java.util.Locale, String> pluralLabelMap, boolean portlet,
+			String scope,
+			List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings,
+			List<com.liferay.object.model.ObjectField> objectFields)
+		throws PortalException {
+
+		return getService().addSystemObjectDefinition(
+			externalReferenceCode, userId, objectFolderId, className,
+			enableComments, enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap, name,
+			panelAppOrder, panelCategoryKey, pluralLabelMap, portlet, scope,
+			objectDefinitionSettings, objectFields);
 	}
 
 	public static ObjectDefinition deleteObjectDefinition(
@@ -58,10 +94,33 @@ public class ObjectDefinitionServiceUtil {
 		return getService().deleteObjectDefinition(objectDefinitionId);
 	}
 
+	public static ObjectDefinition fetchObjectDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().fetchObjectDefinitionByExternalReferenceCode(
+			externalReferenceCode, companyId);
+	}
+
+	public static List<ObjectDefinition> getCMSObjectDefinitions(
+		long companyId, String[] objectFolderExternalReferenceCodes) {
+
+		return getService().getCMSObjectDefinitions(
+			companyId, objectFolderExternalReferenceCodes);
+	}
+
 	public static ObjectDefinition getObjectDefinition(long objectDefinitionId)
 		throws PortalException {
 
 		return getService().getObjectDefinition(objectDefinitionId);
+	}
+
+	public static ObjectDefinition getObjectDefinitionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		return getService().getObjectDefinitionByExternalReferenceCode(
+			externalReferenceCode, companyId);
 	}
 
 	public static List<ObjectDefinition> getObjectDefinitions(
@@ -102,24 +161,78 @@ public class ObjectDefinitionServiceUtil {
 		return getService().publishCustomObjectDefinition(objectDefinitionId);
 	}
 
+	public static ObjectDefinition publishSystemObjectDefinition(
+			long objectDefinitionId)
+		throws PortalException {
+
+		return getService().publishSystemObjectDefinition(objectDefinitionId);
+	}
+
 	public static ObjectDefinition updateCustomObjectDefinition(
-			Long objectDefinitionId, long descriptionObjectFieldId,
-			long titleObjectFieldId, boolean active,
+			String externalReferenceCode, long objectDefinitionId,
+			long accountEntryRestrictedObjectFieldId,
+			long descriptionObjectFieldId, long objectFolderId,
+			long titleObjectFieldId, boolean accountEntryRestricted,
+			boolean active, String className, boolean enableCategorization,
+			boolean enableComments, boolean enableFriendlyURLCustomization,
+			boolean enableIndexSearch, boolean enableLocalization,
+			boolean enableObjectEntryDraft, boolean enableObjectEntryHistory,
+			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
 			Map<java.util.Locale, String> labelMap, String name,
-			String panelAppOrder, String panelCategoryKey,
-			Map<java.util.Locale, String> pluralLabelMap, String scope)
+			String panelAppOrder, String panelCategoryKey, boolean portlet,
+			Map<java.util.Locale, String> pluralLabelMap, String scope,
+			int status,
+			List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings)
 		throws PortalException {
 
 		return getService().updateCustomObjectDefinition(
-			objectDefinitionId, descriptionObjectFieldId, titleObjectFieldId,
-			active, labelMap, name, panelAppOrder, panelCategoryKey,
-			pluralLabelMap, scope);
+			externalReferenceCode, objectDefinitionId,
+			accountEntryRestrictedObjectFieldId, descriptionObjectFieldId,
+			objectFolderId, titleObjectFieldId, accountEntryRestricted, active,
+			className, enableCategorization, enableComments,
+			enableFriendlyURLCustomization, enableIndexSearch,
+			enableLocalization, enableObjectEntryDraft,
+			enableObjectEntryHistory, enableObjectEntryVersioning,
+			friendlyURLSeparator, labelMap, name, panelAppOrder,
+			panelCategoryKey, portlet, pluralLabelMap, scope, status,
+			objectDefinitionSettings);
+	}
+
+	public static ObjectDefinition updateExternalReferenceCode(
+			long objectDefinitionId, String externalReferenceCode)
+		throws PortalException {
+
+		return getService().updateExternalReferenceCode(
+			objectDefinitionId, externalReferenceCode);
+	}
+
+	public static ObjectDefinition updateSystemObjectDefinition(
+			String externalReferenceCode, long objectDefinitionId,
+			long objectFolderId, long titleObjectFieldId,
+			List<com.liferay.object.model.ObjectDefinitionSetting>
+				objectDefinitionSettings)
+		throws PortalException {
+
+		return getService().updateSystemObjectDefinition(
+			externalReferenceCode, objectDefinitionId, objectFolderId,
+			titleObjectFieldId, objectDefinitionSettings);
+	}
+
+	public static ObjectDefinition updateTitleObjectFieldId(
+			long objectDefinitionId, long titleObjectFieldId)
+		throws PortalException {
+
+		return getService().updateTitleObjectFieldId(
+			objectDefinitionId, titleObjectFieldId);
 	}
 
 	public static ObjectDefinitionService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile ObjectDefinitionService _service;
+	private static final Snapshot<ObjectDefinitionService> _serviceSnapshot =
+		new Snapshot<>(
+			ObjectDefinitionServiceUtil.class, ObjectDefinitionService.class);
 
 }

@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.security.auth;
 
-import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.change.tracking.CTCollectionThreadLocal;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+
+import java.util.Objects;
 
 /**
  * @author Brian Wing Shun Chan
@@ -47,14 +39,32 @@ public class PrincipalThreadLocal {
 		setName(String.valueOf(name));
 	}
 
+	public static void setName(long name, boolean resetCTCollectionId) {
+		setName(String.valueOf(name), resetCTCollectionId);
+	}
+
 	public static void setName(String name) {
+		setName(name, true);
+	}
+
+	public static void setName(String name, boolean resetCTCollectionId) {
+		if (Objects.equals(_name.get(), name)) {
+			if (_log.isDebugEnabled()) {
+				_log.debug("Skip setName " + name);
+			}
+
+			return;
+		}
+
 		if (_log.isDebugEnabled()) {
 			_log.debug("setName " + name);
 		}
 
 		_name.set(name);
 
-		CTCollectionThreadLocal.removeCTCollectionId();
+		if (resetCTCollectionId) {
+			CTCollectionThreadLocal.removeCTCollectionId();
+		}
 	}
 
 	public static void setPassword(String password) {
@@ -65,8 +75,10 @@ public class PrincipalThreadLocal {
 		PrincipalThreadLocal.class);
 
 	private static final ThreadLocal<String> _name =
-		new CentralizedThreadLocal<>(PrincipalThreadLocal.class + "._name");
+		new CompanyCentralizedThreadLocal<>(
+			PrincipalThreadLocal.class + "._name");
 	private static final ThreadLocal<String> _password =
-		new CentralizedThreadLocal<>(PrincipalThreadLocal.class + "._password");
+		new CompanyCentralizedThreadLocal<>(
+			PrincipalThreadLocal.class + "._password");
 
 }

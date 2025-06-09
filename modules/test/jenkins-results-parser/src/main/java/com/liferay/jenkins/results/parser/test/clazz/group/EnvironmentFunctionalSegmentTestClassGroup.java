@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser.test.clazz.group;
@@ -18,12 +9,15 @@ import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
 import com.liferay.jenkins.results.parser.Job;
 import com.liferay.jenkins.results.parser.PortalFixpackEnvironmentJob;
 import com.liferay.jenkins.results.parser.PortalGitWorkingDirectory;
+import com.liferay.jenkins.results.parser.job.property.JobProperty;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import org.json.JSONObject;
 
 /**
  * @author Michael Hashimoto
@@ -67,27 +61,31 @@ public class EnvironmentFunctionalSegmentTestClassGroup
 	}
 
 	protected EnvironmentFunctionalSegmentTestClassGroup(
-		EnvironmentFunctionalBatchTestClassGroup
-			parentEnvironmentFunctionalBatchTestClassGroup) {
+		BatchTestClassGroup parentBatchTestClassGroup) {
 
-		super(parentEnvironmentFunctionalBatchTestClassGroup);
+		super(parentBatchTestClassGroup);
+	}
+
+	protected EnvironmentFunctionalSegmentTestClassGroup(
+		BatchTestClassGroup parentBatchTestClassGroup, JSONObject jsonObject) {
+
+		super(parentBatchTestClassGroup, jsonObject);
 	}
 
 	private String _getAppServerType() {
-		BatchTestClassGroup parentBatchTestClassGroup =
-			getParentBatchTestClassGroup();
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
 
-		String appServerType = JenkinsResultsParserUtil.getProperty(
-			parentBatchTestClassGroup.getJobProperties(),
-			"environment.app.server.type",
-			parentBatchTestClassGroup.getBatchName());
+		JobProperty jobProperty = batchTestClassGroup.getJobProperty(
+			"environment.app.server.type");
 
-		if (!JenkinsResultsParserUtil.isNullOrEmpty(appServerType)) {
-			return appServerType;
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return jobPropertyValue;
 		}
 
 		PortalGitWorkingDirectory portalGitWorkingDirectory =
-			parentBatchTestClassGroup.getPortalGitWorkingDirectory();
+			batchTestClassGroup.getPortalGitWorkingDirectory();
 
 		if (portalGitWorkingDirectory == null) {
 			return null;
@@ -109,20 +107,19 @@ public class EnvironmentFunctionalSegmentTestClassGroup
 	}
 
 	private String _getAppServerVersion() {
-		BatchTestClassGroup parentBatchTestClassGroup =
-			getParentBatchTestClassGroup();
+		BatchTestClassGroup batchTestClassGroup = getBatchTestClassGroup();
 
-		String appServerVersion = JenkinsResultsParserUtil.getProperty(
-			parentBatchTestClassGroup.getJobProperties(),
-			"environment.app.server.version",
-			parentBatchTestClassGroup.getBatchName());
+		JobProperty jobProperty = batchTestClassGroup.getJobProperty(
+			"environment.app.server.version");
 
-		if (!JenkinsResultsParserUtil.isNullOrEmpty(appServerVersion)) {
-			return appServerVersion;
+		String jobPropertyValue = jobProperty.getValue();
+
+		if (!JenkinsResultsParserUtil.isNullOrEmpty(jobPropertyValue)) {
+			return jobPropertyValue;
 		}
 
 		PortalGitWorkingDirectory portalGitWorkingDirectory =
-			parentBatchTestClassGroup.getPortalGitWorkingDirectory();
+			batchTestClassGroup.getPortalGitWorkingDirectory();
 		String appServerType = _getAppServerType();
 
 		if ((portalGitWorkingDirectory == null) ||

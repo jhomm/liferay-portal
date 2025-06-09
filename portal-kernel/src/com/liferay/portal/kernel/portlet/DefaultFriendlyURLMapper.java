@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.portlet;
@@ -19,17 +10,19 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
+import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.ObjectValuePair;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.WindowState;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import javax.portlet.PortletMode;
-import javax.portlet.WindowState;
 
 /**
  * The default friendly URL mapper to use with friendly URL routes.
@@ -135,7 +128,9 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 		String friendlyURLPath, Map<String, String[]> parameterMap,
 		Map<String, Object> requestContext) {
 
-		friendlyURLPath = friendlyURLPath.substring(getMapping().length() + 1);
+		String mapping = getMapping();
+
+		friendlyURLPath = friendlyURLPath.substring(mapping.length() + 1);
 
 		if (friendlyURLPath.endsWith(StringPool.SLASH)) {
 			friendlyURLPath = friendlyURLPath.substring(
@@ -380,13 +375,23 @@ public class DefaultFriendlyURLMapper extends BaseFriendlyURLMapper {
 
 		// Copy default reserved parameters if they are not already set
 
+		Map<String, String[]> parentParameterMap =
+			FriendlyURLMapperThreadLocal.getParentParameters();
+
+		if (parentParameterMap == null) {
+			parentParameterMap = Collections.emptyMap();
+		}
+
 		for (Map.Entry<String, String> entry :
 				defaultReservedParameters.entrySet()) {
 
 			String key = entry.getKey();
 
 			if (!parameterMap.containsKey(key)) {
-				addParameter(namespace, parameterMap, key, entry.getValue());
+				addParameter(
+					namespace, parameterMap, key,
+					MapUtil.getString(
+						parentParameterMap, key, entry.getValue()));
 			}
 		}
 	}

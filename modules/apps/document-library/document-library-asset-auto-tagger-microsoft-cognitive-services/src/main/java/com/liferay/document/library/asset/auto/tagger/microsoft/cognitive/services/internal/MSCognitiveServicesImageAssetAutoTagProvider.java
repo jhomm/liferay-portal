@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.asset.auto.tagger.microsoft.cognitive.services.internal;
@@ -17,21 +8,20 @@ package com.liferay.document.library.asset.auto.tagger.microsoft.cognitive.servi
 import com.liferay.asset.auto.tagger.AssetAutoTagProvider;
 import com.liferay.document.library.asset.auto.tagger.microsoft.cognitive.services.internal.configuration.MSCognitiveServicesAssetAutoTagProviderCompanyConfiguration;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.repository.capabilities.TemporaryFileEntriesCapability;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.repository.model.FileVersion;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.FileUtil;
-import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.InetAddressUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 
@@ -66,7 +56,8 @@ public class MSCognitiveServicesImageAssetAutoTagProvider
 		try {
 			MSCognitiveServicesAssetAutoTagProviderCompanyConfiguration
 				msCognitiveServicesAssetAutoTagProviderCompanyConfiguration =
-					_getConfiguration(fileEntry);
+					_getMSCognitiveServicesAssetAutoTagProviderCompanyConfiguration(
+						fileEntry);
 
 			if (!msCognitiveServicesAssetAutoTagProviderCompanyConfiguration.
 					enabled() ||
@@ -76,7 +67,7 @@ public class MSCognitiveServicesImageAssetAutoTagProvider
 				return Collections.emptyList();
 			}
 
-			checkAPIEndpoint(
+			_checkAPIEndpoint(
 				msCognitiveServicesAssetAutoTagProviderCompanyConfiguration.
 					apiEndpoint());
 
@@ -93,14 +84,14 @@ public class MSCognitiveServicesImageAssetAutoTagProvider
 		}
 		catch (Exception exception) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(exception, exception);
+				_log.warn(exception);
 			}
 
 			return Collections.emptyList();
 		}
 	}
 
-	protected void checkAPIEndpoint(String apiEndpoint)
+	private void _checkAPIEndpoint(String apiEndpoint)
 		throws MalformedURLException, UnknownHostException {
 
 		URL url = new URL(apiEndpoint);
@@ -115,7 +106,8 @@ public class MSCognitiveServicesImageAssetAutoTagProvider
 	}
 
 	private MSCognitiveServicesAssetAutoTagProviderCompanyConfiguration
-			_getConfiguration(FileEntry fileEntry)
+			_getMSCognitiveServicesAssetAutoTagProviderCompanyConfiguration(
+				FileEntry fileEntry)
 		throws ConfigurationException {
 
 		return _configurationProvider.getCompanyConfiguration(
@@ -156,8 +148,7 @@ public class MSCognitiveServicesImageAssetAutoTagProvider
 		httpURLConnection.getResponseMessage();
 
 		try (InputStream inputStream = httpURLConnection.getInputStream()) {
-			return JSONFactoryUtil.createJSONObject(
-				StringUtil.read(inputStream));
+			return _jsonFactory.createJSONObject(StringUtil.read(inputStream));
 		}
 		catch (Exception exception) {
 			try (InputStream inputStream = httpURLConnection.getErrorStream()) {
@@ -183,6 +174,6 @@ public class MSCognitiveServicesImageAssetAutoTagProvider
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference
-	private Http _http;
+	private JSONFactory _jsonFactory;
 
 }

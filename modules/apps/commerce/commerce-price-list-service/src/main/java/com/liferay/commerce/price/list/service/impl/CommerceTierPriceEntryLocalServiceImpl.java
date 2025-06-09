@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.impl;
@@ -18,19 +9,25 @@ import com.liferay.commerce.price.list.exception.CommercePriceEntryDisplayDateEx
 import com.liferay.commerce.price.list.exception.CommercePriceEntryExpirationDateException;
 import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryDisplayDateException;
 import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryExpirationDateException;
+import com.liferay.commerce.price.list.exception.CommerceTierPriceEntryMinQuantityException;
 import com.liferay.commerce.price.list.exception.DuplicateCommerceTierPriceEntryException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceEntryException;
 import com.liferay.commerce.price.list.exception.NoSuchTierPriceEntryException;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
+import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.price.list.service.base.CommerceTierPriceEntryLocalServiceBaseImpl;
 import com.liferay.commerce.price.list.service.persistence.CommercePriceEntryPersistence;
 import com.liferay.commerce.price.list.util.comparator.CommerceTierPriceEntryMinQuantityComparator;
+import com.liferay.commerce.product.model.CPInstance;
+import com.liferay.commerce.product.model.CPInstanceUnitOfMeasure;
+import com.liferay.commerce.product.service.CPInstanceLocalService;
+import com.liferay.commerce.product.service.CPInstanceUnitOfMeasureLocalService;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.portal.kernel.bean.BeanReference;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
@@ -51,21 +48,23 @@ import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.SearchException;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
+import com.liferay.portal.kernel.util.BigDecimalUtil;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.LinkedHashMapBuilder;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.kernel.workflow.WorkflowHandlerRegistryUtil;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.io.Serializable;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -75,58 +74,48 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  * @author Zoltán Takács
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.price.list.model.CommerceTierPriceEntry",
+	service = AopService.class
+)
 public class CommerceTierPriceEntryLocalServiceImpl
 	extends CommerceTierPriceEntryLocalServiceBaseImpl {
 
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			long commercePriceEntryId, BigDecimal price, BigDecimal promoPrice,
-			boolean bulkPricing, int minQuantity, ServiceContext serviceContext)
+			BigDecimal minQuantity, ServiceContext serviceContext)
 		throws PortalException {
 
-		return addCommerceTierPriceEntry(
-			null, commercePriceEntryId, price, promoPrice, bulkPricing,
-			minQuantity, serviceContext);
+		return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
+			null, commercePriceEntryId, price, promoPrice, minQuantity,
+			serviceContext);
 	}
 
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			long commercePriceEntryId, BigDecimal price, BigDecimal promoPrice,
-			int minQuantity, ServiceContext serviceContext)
+			boolean bulkPricing, BigDecimal minQuantity,
+			ServiceContext serviceContext)
 		throws PortalException {
 
-		return addCommerceTierPriceEntry(
-			null, commercePriceEntryId, price, promoPrice, minQuantity,
-			serviceContext);
+		return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
+			null, commercePriceEntryId, price, promoPrice, bulkPricing,
+			minQuantity, serviceContext);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			String externalReferenceCode, long commercePriceEntryId,
-			BigDecimal price, BigDecimal promoPrice, boolean bulkPricing,
-			int minQuantity, ServiceContext serviceContext)
-		throws PortalException {
-
-		Calendar now = new GregorianCalendar();
-
-		return addCommerceTierPriceEntry(
-			externalReferenceCode, commercePriceEntryId, price, promoPrice,
-			minQuantity, bulkPricing, true, null, null, null, null,
-			now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH),
-			now.get(Calendar.YEAR), now.get(Calendar.HOUR),
-			now.get(Calendar.MINUTE), 0, 0, 0, 0, 0, true, serviceContext);
-	}
-
-	@Indexable(type = IndexableType.REINDEX)
-	@Override
-	public CommerceTierPriceEntry addCommerceTierPriceEntry(
-			String externalReferenceCode, long commercePriceEntryId,
-			BigDecimal price, BigDecimal promoPrice, int minQuantity,
+			BigDecimal price, BigDecimal promoPrice, BigDecimal minQuantity,
 			boolean bulkPricing, boolean discountDiscovery,
 			BigDecimal discountLevel1, BigDecimal discountLevel2,
 			BigDecimal discountLevel3, BigDecimal discountLevel4,
@@ -139,27 +128,26 @@ public class CommerceTierPriceEntryLocalServiceImpl
 
 		// Commerce tier price entry
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
-		validate(0, commercePriceEntryId, minQuantity);
+		CommercePriceEntry commercePriceEntry =
+			_commercePriceEntryPersistence.findByPrimaryKey(
+				commercePriceEntryId);
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
-		validateExternalReferenceCode(
-			externalReferenceCode, serviceContext.getCompanyId());
+		_validateMinQuantity(commercePriceEntry, minQuantity);
+		_validateCommercePriceEntryId(
+			0, commercePriceEntry.getCommercePriceEntryId(), minQuantity);
 
 		Date expirationDate = null;
 		Date date = new Date();
 
-		Date displayDate = PortalUtil.getDate(
+		Date displayDate = _portal.getDate(
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
 			displayDateMinute, user.getTimeZone(),
 			CommerceTierPriceEntryDisplayDateException.class);
 
 		if (!neverExpire) {
-			expirationDate = PortalUtil.getDate(
+			expirationDate = _portal.getDate(
 				expirationDateMonth, expirationDateDay, expirationDateYear,
 				expirationDateHour, expirationDateMinute, user.getTimeZone(),
 				CommerceTierPriceEntryExpirationDateException.class);
@@ -182,8 +170,8 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		commerceTierPriceEntry.setDiscountLevel2(discountLevel2);
 		commerceTierPriceEntry.setDiscountLevel3(discountLevel3);
 		commerceTierPriceEntry.setDiscountLevel4(discountLevel4);
-		commerceTierPriceEntry.setMinQuantity(minQuantity);
-		commerceTierPriceEntry.setExpandoBridgeAttributes(serviceContext);
+		commerceTierPriceEntry.setMinQuantity(
+			_normalizeMinQuantity(commercePriceEntry, minQuantity));
 		commerceTierPriceEntry.setDisplayDate(displayDate);
 
 		if ((expirationDate == null) || expirationDate.after(date)) {
@@ -197,29 +185,30 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		commerceTierPriceEntry.setStatusByUserId(user.getUserId());
 		commerceTierPriceEntry.setStatusDate(
 			serviceContext.getModifiedDate(date));
+		commerceTierPriceEntry.setExpandoBridgeAttributes(serviceContext);
 
 		commerceTierPriceEntry = commerceTierPriceEntryPersistence.update(
 			commerceTierPriceEntry);
 
 		// Commerce price entry
 
-		commercePriceEntryLocalService.setHasTierPrice(
+		_commercePriceEntryLocalService.setHasTierPrice(
 			commercePriceEntryId, true, bulkPricing);
 
-		return startWorkflowInstance(
+		return _startWorkflowInstance(
 			user.getUserId(), commerceTierPriceEntry, serviceContext);
 	}
 
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			String externalReferenceCode, long commercePriceEntryId,
-			BigDecimal price, BigDecimal promoPrice, int minQuantity,
+			BigDecimal price, BigDecimal promoPrice, BigDecimal minQuantity,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		Calendar now = new GregorianCalendar();
 
-		return addCommerceTierPriceEntry(
+		return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
 			externalReferenceCode, commercePriceEntryId, price, promoPrice,
 			minQuantity, true, true, null, null, null, null,
 			now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH),
@@ -230,7 +219,24 @@ public class CommerceTierPriceEntryLocalServiceImpl
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			String externalReferenceCode, long commercePriceEntryId,
-			BigDecimal price, int minQuantity, boolean bulkPricing,
+			BigDecimal price, BigDecimal promoPrice, boolean bulkPricing,
+			BigDecimal minQuantity, ServiceContext serviceContext)
+		throws PortalException {
+
+		Calendar now = new GregorianCalendar();
+
+		return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
+			externalReferenceCode, commercePriceEntryId, price, promoPrice,
+			minQuantity, bulkPricing, true, null, null, null, null,
+			now.get(Calendar.MONTH), now.get(Calendar.DAY_OF_MONTH),
+			now.get(Calendar.YEAR), now.get(Calendar.HOUR),
+			now.get(Calendar.MINUTE), 0, 0, 0, 0, 0, true, serviceContext);
+	}
+
+	@Override
+	public CommerceTierPriceEntry addCommerceTierPriceEntry(
+			String externalReferenceCode, long commercePriceEntryId,
+			BigDecimal price, BigDecimal minQuantity, boolean bulkPricing,
 			boolean discountDiscovery, BigDecimal discountLevel1,
 			BigDecimal discountLevel2, BigDecimal discountLevel3,
 			BigDecimal discountLevel4, int displayDateMonth, int displayDateDay,
@@ -241,7 +247,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		return addCommerceTierPriceEntry(
+		return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
 			externalReferenceCode, commercePriceEntryId, price, null,
 			minQuantity, bulkPricing, discountDiscovery, discountLevel1,
 			discountLevel2, discountLevel3, discountLevel4, displayDateMonth,
@@ -255,14 +261,15 @@ public class CommerceTierPriceEntryLocalServiceImpl
 	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
 			String externalReferenceCode, long commerceTierPriceEntryId,
 			long commercePriceEntryId, BigDecimal price, BigDecimal promoPrice,
-			int minQuantity, boolean bulkPricing, boolean discountDiscovery,
-			BigDecimal discountLevel1, BigDecimal discountLevel2,
-			BigDecimal discountLevel3, BigDecimal discountLevel4,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String priceEntryExternalReferenceCode,
+			BigDecimal minQuantity, boolean bulkPricing,
+			boolean discountDiscovery, BigDecimal discountLevel1,
+			BigDecimal discountLevel2, BigDecimal discountLevel3,
+			BigDecimal discountLevel4, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			String priceEntryExternalReferenceCode,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -270,14 +277,16 @@ public class CommerceTierPriceEntryLocalServiceImpl
 
 		if (commerceTierPriceEntryId > 0) {
 			try {
-				return updateCommerceTierPriceEntry(
-					commerceTierPriceEntryId, price, promoPrice, minQuantity,
-					bulkPricing, discountDiscovery, discountLevel1,
-					discountLevel2, discountLevel3, discountLevel4,
-					displayDateMonth, displayDateDay, displayDateYear,
-					displayDateHour, displayDateMinute, expirationDateMonth,
-					expirationDateDay, expirationDateYear, expirationDateHour,
-					expirationDateMinute, neverExpire, serviceContext);
+				return commerceTierPriceEntryLocalService.
+					updateCommerceTierPriceEntry(
+						commerceTierPriceEntryId, price, promoPrice,
+						minQuantity, bulkPricing, discountDiscovery,
+						discountLevel1, discountLevel2, discountLevel3,
+						discountLevel4, displayDateMonth, displayDateDay,
+						displayDateYear, displayDateHour, displayDateMinute,
+						expirationDateMonth, expirationDateDay,
+						expirationDateYear, expirationDateHour,
+						expirationDateMinute, neverExpire, serviceContext);
 			}
 			catch (NoSuchTierPriceEntryException
 						noSuchTierPriceEntryException) {
@@ -291,38 +300,38 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			}
 		}
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
 		if (Validator.isNotNull(externalReferenceCode)) {
 			CommerceTierPriceEntry commerceTierPriceEntry =
-				commerceTierPriceEntryPersistence.fetchByC_ERC(
-					serviceContext.getCompanyId(), externalReferenceCode);
+				commerceTierPriceEntryPersistence.fetchByERC_C(
+					externalReferenceCode, serviceContext.getCompanyId());
 
 			if (commerceTierPriceEntry != null) {
-				return updateCommerceTierPriceEntry(
-					commerceTierPriceEntry.getCommerceTierPriceEntryId(), price,
-					promoPrice, minQuantity, bulkPricing, discountDiscovery,
-					discountLevel1, discountLevel2, discountLevel3,
-					discountLevel4, displayDateMonth, displayDateDay,
-					displayDateYear, displayDateHour, displayDateMinute,
-					expirationDateMonth, expirationDateDay, expirationDateYear,
-					expirationDateHour, expirationDateMinute, neverExpire,
-					serviceContext);
+				return commerceTierPriceEntryLocalService.
+					updateCommerceTierPriceEntry(
+						commerceTierPriceEntry.getCommerceTierPriceEntryId(),
+						price, promoPrice, minQuantity, bulkPricing,
+						discountDiscovery, discountLevel1, discountLevel2,
+						discountLevel3, discountLevel4, displayDateMonth,
+						displayDateDay, displayDateYear, displayDateHour,
+						displayDateMinute, expirationDateMonth,
+						expirationDateDay, expirationDateYear,
+						expirationDateHour, expirationDateMinute, neverExpire,
+						serviceContext);
 			}
 		}
 
 		// Add
 
 		if (commercePriceEntryId > 0) {
-			validate(0L, commercePriceEntryId, minQuantity);
-
 			CommercePriceEntry commercePriceEntry =
 				_commercePriceEntryPersistence.findByPrimaryKey(
 					commercePriceEntryId);
 
-			return addCommerceTierPriceEntry(
+			_validateMinQuantity(commercePriceEntry, minQuantity);
+			_validateCommercePriceEntryId(
+				0L, commercePriceEntry.getCommercePriceEntryId(), minQuantity);
+
+			return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
 				externalReferenceCode,
 				commercePriceEntry.getCommercePriceEntryId(), price, promoPrice,
 				minQuantity, bulkPricing, discountDiscovery, discountLevel1,
@@ -335,14 +344,15 @@ public class CommerceTierPriceEntryLocalServiceImpl
 
 		if (Validator.isNotNull(priceEntryExternalReferenceCode)) {
 			CommercePriceEntry commercePriceEntry =
-				_commercePriceEntryPersistence.findByC_ERC(
-					serviceContext.getCompanyId(),
-					priceEntryExternalReferenceCode);
+				_commercePriceEntryPersistence.findByERC_C(
+					priceEntryExternalReferenceCode,
+					serviceContext.getCompanyId());
 
-			validate(
+			_validateMinQuantity(commercePriceEntry, minQuantity);
+			_validateCommercePriceEntryId(
 				0L, commercePriceEntry.getCommercePriceEntryId(), minQuantity);
 
-			return addCommerceTierPriceEntry(
+			return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
 				externalReferenceCode,
 				commercePriceEntry.getCommercePriceEntryId(), price, promoPrice,
 				minQuantity, bulkPricing, discountDiscovery, discountLevel1,
@@ -384,30 +394,30 @@ public class CommerceTierPriceEntryLocalServiceImpl
 	 * @return CommerceTierPriceEntry
 	 * @throws PortalException
 	 */
-	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
 			String externalReferenceCode, long commerceTierPriceEntryId,
 			long commercePriceEntryId, BigDecimal price, BigDecimal promoPrice,
-			int minQuantity, String priceEntryExternalReferenceCode,
+			BigDecimal minQuantity, String priceEntryExternalReferenceCode,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		Calendar now = new GregorianCalendar();
 
-		return addOrUpdateCommerceTierPriceEntry(
-			externalReferenceCode, commerceTierPriceEntryId,
-			commercePriceEntryId, price, promoPrice, minQuantity, true, true,
-			null, null, null, null, now.get(Calendar.MONTH),
-			now.get(Calendar.DAY_OF_MONTH), now.get(Calendar.YEAR),
-			now.get(Calendar.HOUR), now.get(Calendar.MINUTE), 0, 0, 0, 0, 0,
-			true, priceEntryExternalReferenceCode, serviceContext);
+		return commerceTierPriceEntryLocalService.
+			addOrUpdateCommerceTierPriceEntry(
+				externalReferenceCode, commerceTierPriceEntryId,
+				commercePriceEntryId, price, promoPrice, minQuantity, true,
+				true, null, null, null, null, now.get(Calendar.MONTH),
+				now.get(Calendar.DAY_OF_MONTH), now.get(Calendar.YEAR),
+				now.get(Calendar.HOUR), now.get(Calendar.MINUTE), 0, 0, 0, 0, 0,
+				true, priceEntryExternalReferenceCode, serviceContext);
 	}
 
 	@Override
 	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
 			String externalReferenceCode, long commerceTierPriceEntryId,
-			long commercePriceEntryId, BigDecimal price, int minQuantity,
+			long commercePriceEntryId, BigDecimal price, BigDecimal minQuantity,
 			boolean bulkPricing, boolean discountDiscovery,
 			BigDecimal discountLevel1, BigDecimal discountLevel2,
 			BigDecimal discountLevel3, BigDecimal discountLevel4,
@@ -419,21 +429,22 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		return addOrUpdateCommerceTierPriceEntry(
-			externalReferenceCode, commerceTierPriceEntryId,
-			commercePriceEntryId, price, null, minQuantity, bulkPricing,
-			discountDiscovery, discountLevel1, discountLevel2, discountLevel3,
-			discountLevel4, displayDateMonth, displayDateDay, displayDateYear,
-			displayDateHour, displayDateMinute, expirationDateMonth,
-			expirationDateDay, expirationDateYear, expirationDateHour,
-			expirationDateMinute, neverExpire, priceEntryExternalReferenceCode,
-			serviceContext);
+		return commerceTierPriceEntryLocalService.
+			addOrUpdateCommerceTierPriceEntry(
+				externalReferenceCode, commerceTierPriceEntryId,
+				commercePriceEntryId, price, null, minQuantity, bulkPricing,
+				discountDiscovery, discountLevel1, discountLevel2,
+				discountLevel3, discountLevel4, displayDateMonth,
+				displayDateDay, displayDateYear, displayDateHour,
+				displayDateMinute, expirationDateMonth, expirationDateDay,
+				expirationDateYear, expirationDateHour, expirationDateMinute,
+				neverExpire, priceEntryExternalReferenceCode, serviceContext);
 	}
 
 	@Override
 	public void checkCommerceTierPriceEntries() throws PortalException {
-		checkCommerceTierPriceEntriesByDisplayDate();
-		checkCommerceTierPriceEntriesByExpirationDate();
+		_checkCommerceTierPriceEntriesByDisplayDate();
+		_checkCommerceTierPriceEntriesByExpirationDate();
 	}
 
 	@Override
@@ -471,7 +482,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 				QueryUtil.ALL_POS, QueryUtil.ALL_POS);
 
 		if (commerceTierPriceEntries.isEmpty()) {
-			commercePriceEntryLocalService.setHasTierPrice(
+			_commercePriceEntryLocalService.setHasTierPrice(
 				commerceTierPriceEntry.getCommercePriceEntryId(), false);
 		}
 
@@ -497,57 +508,33 @@ public class CommerceTierPriceEntryLocalServiceImpl
 	}
 
 	@Override
-	public CommerceTierPriceEntry fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
+	public CommerceTierPriceEntry fetchClosestCommerceTierPriceEntry(
+		long commercePriceEntryId, BigDecimal minQuantity) {
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
-		return commerceTierPriceEntryPersistence.fetchByC_ERC(
-			companyId, externalReferenceCode);
+		return commerceTierPriceEntryPersistence.fetchByC_LteM_S_First(
+			commercePriceEntryId, minQuantity,
+			WorkflowConstants.STATUS_APPROVED,
+			CommerceTierPriceEntryMinQuantityComparator.getInstance(false));
 	}
 
 	@Override
-	public List<CommerceTierPriceEntry> fetchCommerceTierPriceEntries(
-		long companyId, int start, int end) {
-
-		return commerceTierPriceEntryPersistence.findByCompanyId(
-			companyId, start, end);
-	}
-
-	@Override
-	public CommerceTierPriceEntry findClosestCommerceTierPriceEntry(
-		long commercePriceEntryId, int quantity) {
-
-		CommerceTierPriceEntry commerceTierPriceEntry = null;
-
-		try {
-			commerceTierPriceEntry =
-				commerceTierPriceEntryPersistence.findByC_LteM_S_First(
-					commercePriceEntryId, quantity,
-					WorkflowConstants.STATUS_APPROVED,
-					new CommerceTierPriceEntryMinQuantityComparator(false));
-		}
-		catch (NoSuchTierPriceEntryException noSuchTierPriceEntryException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(
-					noSuchTierPriceEntryException,
-					noSuchTierPriceEntryException);
-			}
-		}
-
-		return commerceTierPriceEntry;
-	}
-
-	@Override
-	public List<CommerceTierPriceEntry> findCommerceTierPriceEntries(
-		long commercePriceEntryId, int quantity) {
+	public List<CommerceTierPriceEntry> getCommerceTierPriceEntries(
+		long commercePriceEntryId, BigDecimal minQuantity) {
 
 		return commerceTierPriceEntryPersistence.findByC_LteM_S(
-			commercePriceEntryId, quantity, WorkflowConstants.STATUS_APPROVED,
-			QueryUtil.ALL_POS, QueryUtil.ALL_POS,
-			new CommerceTierPriceEntryMinQuantityComparator(true));
+			commercePriceEntryId, minQuantity,
+			WorkflowConstants.STATUS_APPROVED, QueryUtil.ALL_POS,
+			QueryUtil.ALL_POS,
+			CommerceTierPriceEntryMinQuantityComparator.getInstance(true));
+	}
+
+	@Override
+	public List<CommerceTierPriceEntry> getCommerceTierPriceEntries(
+		long commercePriceEntryId, int status) {
+
+		return commerceTierPriceEntryPersistence.findByC_S(
+			commercePriceEntryId, status, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+			CommerceTierPriceEntryMinQuantityComparator.getInstance(true));
 	}
 
 	@Override
@@ -599,10 +586,10 @@ public class CommerceTierPriceEntryLocalServiceImpl
 				int start, int end, Sort sort)
 		throws PortalException {
 
-		SearchContext searchContext = buildSearchContext(
+		SearchContext searchContext = _buildSearchContext(
 			companyId, commercePriceEntryId, keywords, start, end, sort);
 
-		return searchCommerceTierPriceEntries(searchContext);
+		return _searchCommerceTierPriceEntries(searchContext);
 	}
 
 	@Override
@@ -610,18 +597,18 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			long companyId, long commercePriceEntryId, String keywords)
 		throws PortalException {
 
-		SearchContext searchContext = buildSearchContext(
+		SearchContext searchContext = _buildSearchContext(
 			companyId, commercePriceEntryId, keywords, QueryUtil.ALL_POS,
 			QueryUtil.ALL_POS, null);
 
-		return searchCommerceTierPriceEntriesCount(searchContext);
+		return _searchCommerceTierPriceEntriesCount(searchContext);
 	}
 
 	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
 			long commerceTierPriceEntryId, BigDecimal price,
-			BigDecimal promoPrice, int minQuantity, boolean bulkPricing,
+			BigDecimal promoPrice, BigDecimal minQuantity, boolean bulkPricing,
 			boolean discountDiscovery, BigDecimal discountLevel1,
 			BigDecimal discountLevel2, BigDecimal discountLevel3,
 			BigDecimal discountLevel4, int displayDateMonth, int displayDateDay,
@@ -632,26 +619,31 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(serviceContext.getUserId());
+		User user = _userLocalService.getUser(serviceContext.getUserId());
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
 			commerceTierPriceEntryPersistence.findByPrimaryKey(
 				commerceTierPriceEntryId);
 
-		validate(
+		CommercePriceEntry commercePriceEntry =
+			_commercePriceEntryPersistence.findByPrimaryKey(
+				commerceTierPriceEntry.getCommercePriceEntryId());
+
+		_validateMinQuantity(commercePriceEntry, minQuantity);
+		_validateCommercePriceEntryId(
 			commerceTierPriceEntryId,
-			commerceTierPriceEntry.getCommercePriceEntryId(), minQuantity);
+			commercePriceEntry.getCommercePriceEntryId(), minQuantity);
 
 		Date expirationDate = null;
 		Date date = new Date();
 
-		Date displayDate = PortalUtil.getDate(
+		Date displayDate = _portal.getDate(
 			displayDateMonth, displayDateDay, displayDateYear, displayDateHour,
 			displayDateMinute, user.getTimeZone(),
 			CommercePriceEntryDisplayDateException.class);
 
 		if (!neverExpire) {
-			expirationDate = PortalUtil.getDate(
+			expirationDate = _portal.getDate(
 				expirationDateMonth, expirationDateDay, expirationDateYear,
 				expirationDateHour, expirationDateMinute, user.getTimeZone(),
 				CommercePriceEntryExpirationDateException.class);
@@ -659,14 +651,13 @@ public class CommerceTierPriceEntryLocalServiceImpl
 
 		commerceTierPriceEntry.setPrice(price);
 		commerceTierPriceEntry.setPromoPrice(promoPrice);
-		commerceTierPriceEntry.setMinQuantity(minQuantity);
-		commerceTierPriceEntry.setExpandoBridgeAttributes(serviceContext);
 		commerceTierPriceEntry.setDiscountDiscovery(discountDiscovery);
 		commerceTierPriceEntry.setDiscountLevel1(discountLevel1);
 		commerceTierPriceEntry.setDiscountLevel2(discountLevel2);
 		commerceTierPriceEntry.setDiscountLevel3(discountLevel3);
 		commerceTierPriceEntry.setDiscountLevel4(discountLevel4);
-
+		commerceTierPriceEntry.setMinQuantity(
+			_normalizeMinQuantity(commercePriceEntry, minQuantity));
 		commerceTierPriceEntry.setDisplayDate(displayDate);
 
 		if ((expirationDate == null) || expirationDate.after(date)) {
@@ -680,35 +671,35 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		commerceTierPriceEntry.setStatusByUserId(user.getUserId());
 		commerceTierPriceEntry.setStatusDate(
 			serviceContext.getModifiedDate(date));
+		commerceTierPriceEntry.setExpandoBridgeAttributes(serviceContext);
 
 		// Commerce price entry
 
-		commercePriceEntryLocalService.setHasTierPrice(
+		_commercePriceEntryLocalService.setHasTierPrice(
 			commerceTierPriceEntry.getCommercePriceEntryId(), true,
 			bulkPricing);
 
 		commerceTierPriceEntry = commerceTierPriceEntryPersistence.update(
 			commerceTierPriceEntry);
 
-		commerceTierPriceEntry = startWorkflowInstance(
+		commerceTierPriceEntry = _startWorkflowInstance(
 			user.getUserId(), commerceTierPriceEntry, serviceContext);
 
 		return commerceTierPriceEntry;
 	}
 
-	@Indexable(type = IndexableType.REINDEX)
 	@Override
 	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
 			long commerceTierPriceEntryId, BigDecimal price,
-			BigDecimal promoPrice, int minQuantity,
+			BigDecimal promoPrice, BigDecimal minQuantity, boolean bulkPricing,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		Calendar now = new GregorianCalendar();
 
-		return updateCommerceTierPriceEntry(
-			commerceTierPriceEntryId, price, promoPrice, minQuantity, true,
-			true, null, null, null, null, now.get(Calendar.MONTH),
+		return commerceTierPriceEntryLocalService.updateCommerceTierPriceEntry(
+			commerceTierPriceEntryId, price, promoPrice, minQuantity,
+			bulkPricing, true, null, null, null, null, now.get(Calendar.MONTH),
 			now.get(Calendar.DAY_OF_MONTH), now.get(Calendar.YEAR),
 			now.get(Calendar.HOUR), now.get(Calendar.MINUTE), 0, 0, 0, 0, 0,
 			true, serviceContext);
@@ -716,18 +707,19 @@ public class CommerceTierPriceEntryLocalServiceImpl
 
 	@Override
 	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
-			long commerceTierPriceEntryId, BigDecimal price, int minQuantity,
-			boolean bulkPricing, boolean discountDiscovery,
-			BigDecimal discountLevel1, BigDecimal discountLevel2,
-			BigDecimal discountLevel3, BigDecimal discountLevel4,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
+			long commerceTierPriceEntryId, BigDecimal price,
+			BigDecimal minQuantity, boolean bulkPricing,
+			boolean discountDiscovery, BigDecimal discountLevel1,
+			BigDecimal discountLevel2, BigDecimal discountLevel3,
+			BigDecimal discountLevel4, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			ServiceContext serviceContext)
 		throws PortalException {
 
-		return updateCommerceTierPriceEntry(
+		return commerceTierPriceEntryLocalService.updateCommerceTierPriceEntry(
 			commerceTierPriceEntryId, price, null, minQuantity, bulkPricing,
 			discountDiscovery, discountLevel1, discountLevel2, discountLevel3,
 			discountLevel4, displayDateMonth, displayDateDay, displayDateYear,
@@ -743,10 +735,6 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			String externalReferenceCode)
 		throws PortalException {
 
-		if (Validator.isBlank(externalReferenceCode)) {
-			externalReferenceCode = null;
-		}
-
 		commerceTierPriceEntry.setExternalReferenceCode(externalReferenceCode);
 
 		return commerceTierPriceEntryPersistence.update(commerceTierPriceEntry);
@@ -760,7 +748,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			Map<String, Serializable> workflowContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
+		User user = _userLocalService.getUser(userId);
 		Date date = new Date();
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
@@ -796,7 +784,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		return commerceTierPriceEntryPersistence.update(commerceTierPriceEntry);
 	}
 
-	protected SearchContext buildSearchContext(
+	private SearchContext _buildSearchContext(
 		long companyId, long commercePriceEntryId, String keywords, int start,
 		int end, Sort sort) {
 
@@ -813,7 +801,6 @@ public class CommerceTierPriceEntryLocalServiceImpl
 					"keywords", keywords
 				).build()
 			).build());
-
 		searchContext.setCompanyId(companyId);
 		searchContext.setEnd(end);
 
@@ -835,7 +822,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		return searchContext;
 	}
 
-	protected void checkCommerceTierPriceEntriesByDisplayDate()
+	private void _checkCommerceTierPriceEntriesByDisplayDate()
 		throws PortalException {
 
 		List<CommerceTierPriceEntry> commerceTierPriceEntries =
@@ -845,7 +832,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		for (CommerceTierPriceEntry commerceTierPriceEntry :
 				commerceTierPriceEntries) {
 
-			long userId = PortalUtil.getValidUserId(
+			long userId = _portal.getValidUserId(
 				commerceTierPriceEntry.getCompanyId(),
 				commerceTierPriceEntry.getUserId());
 
@@ -868,7 +855,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		}
 	}
 
-	protected void checkCommerceTierPriceEntriesByExpirationDate()
+	private void _checkCommerceTierPriceEntriesByExpirationDate()
 		throws PortalException {
 
 		List<CommerceTierPriceEntry> commerceTierPriceEntries =
@@ -887,7 +874,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			for (CommerceTierPriceEntry commerceTierPriceEntry :
 					commerceTierPriceEntries) {
 
-				long userId = PortalUtil.getValidUserId(
+				long userId = _portal.getValidUserId(
 					commerceTierPriceEntry.getCompanyId(),
 					commerceTierPriceEntry.getUserId());
 
@@ -912,8 +899,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		}
 	}
 
-	protected List<CommerceTierPriceEntry> getCommerceTierPriceEntries(
-			Hits hits)
+	private List<CommerceTierPriceEntry> _getCommerceTierPriceEntries(Hits hits)
 		throws PortalException {
 
 		List<Document> documents = hits.toList();
@@ -948,8 +934,34 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		return commerceTierPriceEntries;
 	}
 
-	protected BaseModelSearchResult<CommerceTierPriceEntry>
-			searchCommerceTierPriceEntries(SearchContext searchContext)
+	private BigDecimal _normalizeMinQuantity(
+			CommercePriceEntry commercePriceEntry, BigDecimal minQuantity)
+		throws PortalException {
+
+		int unitOfMeasurePrecision = 0;
+
+		CPInstance cpInstance = _cpInstanceLocalService.fetchCProductInstance(
+			commercePriceEntry.getCProductId(),
+			commercePriceEntry.getCPInstanceUuid());
+
+		if (cpInstance != null) {
+			CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
+				_cpInstanceUnitOfMeasureLocalService.
+					fetchCPInstanceUnitOfMeasure(
+						cpInstance.getCPInstanceId(),
+						commercePriceEntry.getUnitOfMeasureKey());
+
+			if (cpInstanceUnitOfMeasure != null) {
+				unitOfMeasurePrecision = cpInstanceUnitOfMeasure.getPrecision();
+			}
+		}
+
+		return minQuantity.setScale(
+			unitOfMeasurePrecision, RoundingMode.HALF_UP);
+	}
+
+	private BaseModelSearchResult<CommerceTierPriceEntry>
+			_searchCommerceTierPriceEntries(SearchContext searchContext)
 		throws PortalException {
 
 		Indexer<CommerceTierPriceEntry> indexer =
@@ -960,7 +972,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			Hits hits = indexer.search(searchContext, _SELECTED_FIELD_NAMES);
 
 			List<CommerceTierPriceEntry> commerceTierPriceEntries =
-				getCommerceTierPriceEntries(hits);
+				_getCommerceTierPriceEntries(hits);
 
 			if (commerceTierPriceEntries != null) {
 				return new BaseModelSearchResult<>(
@@ -972,7 +984,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			"Unable to fix the search index after 10 attempts");
 	}
 
-	protected int searchCommerceTierPriceEntriesCount(
+	private int _searchCommerceTierPriceEntriesCount(
 			SearchContext searchContext)
 		throws PortalException {
 
@@ -983,7 +995,7 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		return GetterUtil.getInteger(indexer.searchCount(searchContext));
 	}
 
-	protected CommerceTierPriceEntry startWorkflowInstance(
+	private CommerceTierPriceEntry _startWorkflowInstance(
 			long userId, CommerceTierPriceEntry commerceTierPriceEntry,
 			ServiceContext serviceContext)
 		throws PortalException {
@@ -997,9 +1009,9 @@ public class CommerceTierPriceEntryLocalServiceImpl
 			commerceTierPriceEntry, serviceContext, workflowContext);
 	}
 
-	protected void validate(
+	private void _validateCommercePriceEntryId(
 			long commerceTierPriceEntryId, long commercePriceEntryId,
-			int minQuantity)
+			BigDecimal minQuantity)
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
@@ -1008,7 +1020,8 @@ public class CommerceTierPriceEntryLocalServiceImpl
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
 			commerceTierPriceEntryPersistence.fetchByC_M(
-				commercePriceEntry.getCommercePriceEntryId(), minQuantity);
+				commercePriceEntryId,
+				_normalizeMinQuantity(commercePriceEntry, minQuantity));
 
 		if ((commerceTierPriceEntry != null) &&
 			!(commerceTierPriceEntry.getCommerceTierPriceEntryId() ==
@@ -1018,22 +1031,49 @@ public class CommerceTierPriceEntryLocalServiceImpl
 		}
 	}
 
-	protected void validateExternalReferenceCode(
-			String externalReferenceCode, long companyId)
+	private void _validateMinQuantity(
+			CommercePriceEntry commercePriceEntry, BigDecimal minQuantity)
 		throws PortalException {
 
-		if (Validator.isNull(externalReferenceCode)) {
+		if (minQuantity == null) {
 			return;
 		}
 
-		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryPersistence.fetchByC_ERC(
-				companyId, externalReferenceCode);
+		if (BigDecimalUtil.lte(minQuantity, BigDecimal.ZERO)) {
+			throw new CommerceTierPriceEntryMinQuantityException(
+				"The min quantity must be greater than zero");
+		}
 
-		if (commerceTierPriceEntry != null) {
-			throw new DuplicateCommerceTierPriceEntryException(
-				"There is another commerce tier price entry with external " +
-					"reference code " + externalReferenceCode);
+		CPInstance cpInstance = _cpInstanceLocalService.fetchCProductInstance(
+			commercePriceEntry.getCProductId(),
+			commercePriceEntry.getCPInstanceUuid());
+
+		if (cpInstance != null) {
+			CPInstanceUnitOfMeasure cpInstanceUnitOfMeasure =
+				_cpInstanceUnitOfMeasureLocalService.
+					fetchCPInstanceUnitOfMeasure(
+						cpInstance.getCPInstanceId(),
+						commercePriceEntry.getUnitOfMeasureKey());
+
+			if (cpInstanceUnitOfMeasure != null) {
+				int unitOfMeasurePrecision =
+					cpInstanceUnitOfMeasure.getPrecision();
+
+				if (minQuantity.scale() > unitOfMeasurePrecision) {
+					throw new CommerceTierPriceEntryMinQuantityException(
+						"It does not have the same precision as the unit of " +
+							"measure quantity");
+				}
+
+				BigDecimal remainder = minQuantity.remainder(
+					cpInstanceUnitOfMeasure.getIncrementalOrderQuantity());
+
+				if (remainder.compareTo(BigDecimal.ZERO) != 0) {
+					throw new CommerceTierPriceEntryMinQuantityException(
+						"It is not a multiple of the incremental order " +
+							"quantity of the unit of measure");
+				}
+			}
 		}
 	}
 
@@ -1044,10 +1084,26 @@ public class CommerceTierPriceEntryLocalServiceImpl
 	private static final Log _log = LogFactoryUtil.getLog(
 		CommerceTierPriceEntryLocalServiceImpl.class);
 
-	@BeanReference(type = CommercePriceEntryPersistence.class)
+	@Reference
+	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
+
+	@Reference
 	private CommercePriceEntryPersistence _commercePriceEntryPersistence;
 
-	@ServiceReference(type = ExpandoRowLocalService.class)
+	@Reference
+	private CPInstanceLocalService _cpInstanceLocalService;
+
+	@Reference
+	private CPInstanceUnitOfMeasureLocalService
+		_cpInstanceUnitOfMeasureLocalService;
+
+	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@Reference
+	private Portal _portal;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.evaluator.internal.expression;
@@ -19,7 +10,7 @@ import com.liferay.dynamic.data.mapping.expression.GetFieldPropertyRequest;
 import com.liferay.dynamic.data.mapping.expression.GetFieldPropertyResponse;
 import com.liferay.dynamic.data.mapping.form.evaluator.DDMFormEvaluatorFieldContextKey;
 import com.liferay.dynamic.data.mapping.form.evaluator.internal.helper.DDMFormEvaluatorFormValuesHelper;
-import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesTracker;
+import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTypeServicesRegistry;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.form.field.type.DefaultDDMFormFieldValueAccessor;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
@@ -29,12 +20,12 @@ import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
  * @author Rafael Praxedes
@@ -47,13 +38,13 @@ public class DDMFormEvaluatorExpressionFieldAccessor
 		Map<String, DDMFormField> ddmFormFieldsMap,
 		Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
 			ddmFormFieldsPropertyChanges,
-		DDMFormFieldTypeServicesTracker ddmFormFieldTypeServicesTracker,
+		DDMFormFieldTypeServicesRegistry ddmFormFieldTypeServicesRegistry,
 		Locale locale) {
 
 		_ddmFormEvaluatorFormValuesHelper = ddmFormEvaluatorFormValuesHelper;
 		_ddmFormFieldsMap = ddmFormFieldsMap;
 		_ddmFormFieldsPropertyChanges = ddmFormFieldsPropertyChanges;
-		_ddmFormFieldTypeServicesTracker = ddmFormFieldTypeServicesTracker;
+		_ddmFormFieldTypeServicesRegistry = ddmFormFieldTypeServicesRegistry;
 		_locale = locale;
 	}
 
@@ -64,12 +55,12 @@ public class DDMFormEvaluatorExpressionFieldAccessor
 		Object fieldProperty = null;
 
 		if (Validator.isNull(getFieldPropertyRequest.getInstanceId())) {
-			fieldProperty = getFieldPropertyByFieldName(
+			fieldProperty = _getFieldPropertyByFieldName(
 				getFieldPropertyRequest.getField(),
 				getFieldPropertyRequest.getProperty());
 		}
 		else {
-			fieldProperty = getFieldPropertyByDDMFormFieldContextKey(
+			fieldProperty = _getFieldPropertyByDDMFormFieldContextKey(
 				new DDMFormEvaluatorFieldContextKey(
 					getFieldPropertyRequest.getField(),
 					getFieldPropertyRequest.getInstanceId()),
@@ -115,69 +106,22 @@ public class DDMFormEvaluatorExpressionFieldAccessor
 		Value ddmFormFieldValueValue = ddmFormFieldValue.getValue();
 
 		DDMFormFieldValueAccessor<?> ddmFormFieldValueAccessor =
-			getDDMFormFieldValueAccessor(
+			_getDDMFormFieldValueAccessor(
 				ddmFormEvaluatorFieldContextKey.getName());
 
+		Locale locale = _locale;
+
+		if (_locale == null) {
+			locale = ddmFormFieldValueValue.getDefaultLocale();
+		}
+
 		return ddmFormFieldValueAccessor.getValueForEvaluation(
-			ddmFormFieldValue,
-			Optional.ofNullable(
-				_locale
-			).orElse(
-				ddmFormFieldValueValue.getDefaultLocale()
-			));
+			ddmFormFieldValue, locale);
 	}
 
 	@Override
 	public boolean isField(String parameter) {
 		return _ddmFormFieldsMap.containsKey(parameter);
-	}
-
-	protected DDMFormFieldValueAccessor<?> getDDMFormFieldValueAccessor(
-		String fieldName) {
-
-		DDMFormField ddmFormField = _ddmFormFieldsMap.get(fieldName);
-
-		DDMFormFieldValueAccessor<?> ddmFormFieldValueAccessor =
-			_ddmFormFieldTypeServicesTracker.getDDMFormFieldValueAccessor(
-				ddmFormField.getType());
-
-		if (ddmFormFieldValueAccessor != null) {
-			return ddmFormFieldValueAccessor;
-		}
-
-		return _defaultDDMFormFieldValueAccessor;
-	}
-
-	protected Object getFieldLocalizedValue(
-		DDMFormEvaluatorFieldContextKey ddmFormEvaluatorFieldContextKey) {
-
-		Object localizedValue = getFieldPropertyChanged(
-			ddmFormEvaluatorFieldContextKey, "localizedValue");
-
-		if (localizedValue != null) {
-			return localizedValue;
-		}
-
-		DDMFormFieldValue ddmFormFieldValue =
-			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldValue(
-				ddmFormEvaluatorFieldContextKey);
-
-		return ddmFormFieldValue.getValue();
-	}
-
-	protected Object getFieldLocalizedValue(String fieldName) {
-		Set<DDMFormEvaluatorFieldContextKey> ddmFormFieldContextKeys =
-			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldContextKeys(
-				fieldName);
-
-		if (SetUtil.isEmpty(ddmFormFieldContextKeys)) {
-			return null;
-		}
-
-		Iterator<DDMFormEvaluatorFieldContextKey> iterator =
-			ddmFormFieldContextKeys.iterator();
-
-		return getFieldLocalizedValue(iterator.next());
 	}
 
 	protected Object getFieldProperty(String fieldName, String property) {
@@ -194,12 +138,81 @@ public class DDMFormEvaluatorExpressionFieldAccessor
 		return value;
 	}
 
-	protected Object getFieldPropertyByDDMFormFieldContextKey(
+	protected Object getFieldPropertyChanged(
+		String fieldName, String property) {
+
+		Set<DDMFormEvaluatorFieldContextKey> ddmFormEvaluatorFieldContextKeys =
+			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldContextKeys(
+				fieldName);
+
+		if (SetUtil.isEmpty(ddmFormEvaluatorFieldContextKeys)) {
+			return null;
+		}
+
+		Iterator<DDMFormEvaluatorFieldContextKey> iterator =
+			ddmFormEvaluatorFieldContextKeys.iterator();
+
+		return getFieldPropertyChanged(iterator.next(), property);
+	}
+
+	private DDMFormFieldValueAccessor<?> _getDDMFormFieldValueAccessor(
+		String fieldName) {
+
+		DDMFormField ddmFormField = _ddmFormFieldsMap.get(fieldName);
+
+		if (ddmFormField == null) {
+			return _defaultDDMFormFieldValueAccessor;
+		}
+
+		DDMFormFieldValueAccessor<?> ddmFormFieldValueAccessor =
+			_ddmFormFieldTypeServicesRegistry.getDDMFormFieldValueAccessor(
+				ddmFormField.getType());
+
+		if (ddmFormFieldValueAccessor != null) {
+			return ddmFormFieldValueAccessor;
+		}
+
+		return _defaultDDMFormFieldValueAccessor;
+	}
+
+	private Object _getFieldLocalizedValue(
+		DDMFormEvaluatorFieldContextKey ddmFormEvaluatorFieldContextKey) {
+
+		Object localizedValue = getFieldPropertyChanged(
+			ddmFormEvaluatorFieldContextKey, "localizedValue");
+
+		if (localizedValue != null) {
+			return localizedValue;
+		}
+
+		DDMFormFieldValue ddmFormFieldValue =
+			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldValue(
+				ddmFormEvaluatorFieldContextKey);
+
+		return ddmFormFieldValue.getValue();
+	}
+
+	private Object _getFieldLocalizedValue(String fieldName) {
+		Set<DDMFormEvaluatorFieldContextKey> ddmFormEvaluatorFieldContextKeys =
+			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldContextKeys(
+				fieldName);
+
+		if (SetUtil.isEmpty(ddmFormEvaluatorFieldContextKeys)) {
+			return null;
+		}
+
+		Iterator<DDMFormEvaluatorFieldContextKey> iterator =
+			ddmFormEvaluatorFieldContextKeys.iterator();
+
+		return _getFieldLocalizedValue(iterator.next());
+	}
+
+	private Object _getFieldPropertyByDDMFormFieldContextKey(
 		DDMFormEvaluatorFieldContextKey ddmFormEvaluatorFieldContextKey,
 		String property) {
 
 		if (property.equals("localizedValue")) {
-			return getFieldLocalizedValue(ddmFormEvaluatorFieldContextKey);
+			return _getFieldLocalizedValue(ddmFormEvaluatorFieldContextKey);
 		}
 		else if (property.equals("value")) {
 			return getFieldValue(ddmFormEvaluatorFieldContextKey);
@@ -209,52 +222,37 @@ public class DDMFormEvaluatorExpressionFieldAccessor
 			ddmFormEvaluatorFieldContextKey.getName(), property);
 	}
 
-	protected Object getFieldPropertyByFieldName(
+	private Object _getFieldPropertyByFieldName(
 		String fieldName, String property) {
 
 		if (property.equals("localizedValue")) {
-			return getFieldLocalizedValue(fieldName);
+			return _getFieldLocalizedValue(fieldName);
 		}
 		else if (property.equals("value")) {
-			return getFieldValues(fieldName);
+			return _getFieldValues(fieldName);
 		}
 
 		return getFieldProperty(fieldName, property);
 	}
 
-	protected Object getFieldPropertyChanged(
-		String fieldName, String property) {
+	private Object _getFieldValues(String fieldName) {
+		List<Object> list = new ArrayList<>();
 
-		Set<DDMFormEvaluatorFieldContextKey> ddmFormFieldContextKeys =
+		Set<DDMFormEvaluatorFieldContextKey> ddmFormEvaluatorFieldContextKeys =
 			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldContextKeys(
 				fieldName);
 
-		if (SetUtil.isEmpty(ddmFormFieldContextKeys)) {
-			return null;
+		for (DDMFormEvaluatorFieldContextKey ddmFormEvaluatorFieldContextKey :
+				ddmFormEvaluatorFieldContextKeys) {
+
+			list.add(getFieldValue(ddmFormEvaluatorFieldContextKey));
 		}
 
-		Iterator<DDMFormEvaluatorFieldContextKey> iterator =
-			ddmFormFieldContextKeys.iterator();
-
-		return getFieldPropertyChanged(iterator.next(), property);
-	}
-
-	protected Object getFieldValues(String fieldName) {
-		Set<DDMFormEvaluatorFieldContextKey> ddmFormFieldContextKeys =
-			_ddmFormEvaluatorFormValuesHelper.getDDMFormFieldContextKeys(
-				fieldName);
-
-		Stream<DDMFormEvaluatorFieldContextKey> stream =
-			ddmFormFieldContextKeys.stream();
-
 		DDMFormFieldValueAccessor<?> ddmFormFieldValueAccessor =
-			getDDMFormFieldValueAccessor(fieldName);
+			_getDDMFormFieldValueAccessor(fieldName);
 
-		Object[] values = stream.map(
-			this::getFieldValue
-		).toArray(
-			ddmFormFieldValueAccessor.getArrayGeneratorIntFunction()
-		);
+		Object[] values = list.toArray(
+			ddmFormFieldValueAccessor.getArrayGenericType());
 
 		if (ArrayUtil.isNotEmpty(values) && (values.length == 1)) {
 			return values[0];
@@ -268,8 +266,8 @@ public class DDMFormEvaluatorExpressionFieldAccessor
 	private final Map<String, DDMFormField> _ddmFormFieldsMap;
 	private final Map<DDMFormEvaluatorFieldContextKey, Map<String, Object>>
 		_ddmFormFieldsPropertyChanges;
-	private final DDMFormFieldTypeServicesTracker
-		_ddmFormFieldTypeServicesTracker;
+	private final DDMFormFieldTypeServicesRegistry
+		_ddmFormFieldTypeServicesRegistry;
 	private final DDMFormFieldValueAccessor<String>
 		_defaultDDMFormFieldValueAccessor =
 			new DefaultDDMFormFieldValueAccessor();

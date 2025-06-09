@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.discount.service.impl;
 
+import com.liferay.commerce.discount.exception.DuplicateCommerceDiscountOrderTypeRelException;
 import com.liferay.commerce.discount.model.CommerceDiscount;
 import com.liferay.commerce.discount.model.CommerceDiscountOrderTypeRel;
 import com.liferay.commerce.discount.model.CommerceDiscountOrderTypeRelTable;
@@ -26,6 +18,7 @@ import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.petra.sql.dsl.query.FromStep;
 import com.liferay.petra.sql.dsl.query.GroupByStep;
 import com.liferay.petra.sql.dsl.query.JoinStep;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
@@ -33,16 +26,23 @@ import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.List;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Marco Leo
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.discount.model.CommerceDiscountOrderTypeRel",
+	service = AopService.class
+)
 public class CommerceDiscountOrderTypeRelLocalServiceImpl
 	extends CommerceDiscountOrderTypeRelLocalServiceBaseImpl {
 
@@ -52,15 +52,24 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 			int priority, ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
-
 		CommerceDiscountOrderTypeRel commerceDiscountOrderTypeRel =
+			commerceDiscountOrderTypeRelPersistence.fetchByCDI_COTI(
+				commerceDiscountId, commerceOrderTypeId);
+
+		if (commerceDiscountOrderTypeRel != null) {
+			throw new DuplicateCommerceDiscountOrderTypeRelException();
+		}
+
+		commerceDiscountOrderTypeRel =
 			commerceDiscountOrderTypeRelPersistence.create(
 				counterLocalService.increment());
+
+		User user = _userLocalService.getUser(userId);
 
 		commerceDiscountOrderTypeRel.setCompanyId(user.getCompanyId());
 		commerceDiscountOrderTypeRel.setUserId(user.getUserId());
 		commerceDiscountOrderTypeRel.setUserName(user.getFullName());
+
 		commerceDiscountOrderTypeRel.setCommerceDiscountId(commerceDiscountId);
 		commerceDiscountOrderTypeRel.setCommerceOrderTypeId(
 			commerceOrderTypeId);
@@ -71,7 +80,7 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 			commerceDiscountOrderTypeRelPersistence.update(
 				commerceDiscountOrderTypeRel);
 
-		reindexCommerceDiscount(commerceDiscountId);
+		_reindexCommerceDiscount(commerceDiscountId);
 
 		return commerceDiscountOrderTypeRel;
 	}
@@ -88,7 +97,7 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 		_expandoRowLocalService.deleteRows(
 			commerceDiscountOrderTypeRel.getCommerceDiscountOrderTypeRelId());
 
-		reindexCommerceDiscount(
+		_reindexCommerceDiscount(
 			commerceDiscountOrderTypeRel.getCommerceDiscountId());
 
 		return commerceDiscountOrderTypeRel;
@@ -169,15 +178,6 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 				commerceDiscountId, name));
 	}
 
-	protected void reindexCommerceDiscount(long commerceDiscountId)
-		throws PortalException {
-
-		Indexer<CommerceDiscount> indexer =
-			IndexerRegistryUtil.nullSafeGetIndexer(CommerceDiscount.class);
-
-		indexer.reindex(CommerceDiscount.class.getName(), commerceDiscountId);
-	}
-
 	private GroupByStep _getGroupByStep(
 			FromStep fromStep, Long commerceDiscountId, String keywords)
 		throws PortalException {
@@ -209,10 +209,22 @@ public class CommerceDiscountOrderTypeRelLocalServiceImpl
 			});
 	}
 
-	@ServiceReference(type = CustomSQL.class)
+	private void _reindexCommerceDiscount(long commerceDiscountId)
+		throws PortalException {
+
+		Indexer<CommerceDiscount> indexer =
+			IndexerRegistryUtil.nullSafeGetIndexer(CommerceDiscount.class);
+
+		indexer.reindex(CommerceDiscount.class.getName(), commerceDiscountId);
+	}
+
+	@Reference
 	private CustomSQL _customSQL;
 
-	@ServiceReference(type = ExpandoRowLocalService.class)
+	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

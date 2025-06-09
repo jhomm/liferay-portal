@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.service;
 
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 
 /**
  * Provides a wrapper for {@link ERCGroupEntryLocalService}.
@@ -26,6 +18,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class ERCGroupEntryLocalServiceWrapper
 	implements ERCGroupEntryLocalService,
 			   ServiceWrapper<ERCGroupEntryLocalService> {
+
+	public ERCGroupEntryLocalServiceWrapper() {
+		this(null);
+	}
 
 	public ERCGroupEntryLocalServiceWrapper(
 		ERCGroupEntryLocalService ercGroupEntryLocalService) {
@@ -235,34 +231,29 @@ public class ERCGroupEntryLocalServiceWrapper
 		return _ercGroupEntryLocalService.fetchERCGroupEntry(ercGroupEntryId);
 	}
 
+	@Override
+	public com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry
+		fetchERCGroupEntryByExternalReferenceCode(
+			String externalReferenceCode, long groupId) {
+
+		return _ercGroupEntryLocalService.
+			fetchERCGroupEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
-	 * Returns the erc group entry with the matching external reference code and group.
+	 * Returns the erc group entry matching the UUID and group.
 	 *
+	 * @param uuid the erc group entry's UUID
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the erc group entry's external reference code
 	 * @return the matching erc group entry, or <code>null</code> if a matching erc group entry could not be found
 	 */
 	@Override
 	public com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry
-		fetchERCGroupEntryByExternalReferenceCode(
-			long groupId, String externalReferenceCode) {
+		fetchERCGroupEntryByUuidAndGroupId(String uuid, long groupId) {
 
-		return _ercGroupEntryLocalService.
-			fetchERCGroupEntryByExternalReferenceCode(
-				groupId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchERCGroupEntryByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Override
-	public com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry
-		fetchERCGroupEntryByReferenceCode(
-			long groupId, String externalReferenceCode) {
-
-		return _ercGroupEntryLocalService.fetchERCGroupEntryByReferenceCode(
-			groupId, externalReferenceCode);
+		return _ercGroupEntryLocalService.fetchERCGroupEntryByUuidAndGroupId(
+			uuid, groupId);
 	}
 
 	@Override
@@ -292,6 +283,45 @@ public class ERCGroupEntryLocalServiceWrapper
 	}
 
 	/**
+	 * Returns all the erc group entries matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the erc group entries
+	 * @param companyId the primary key of the company
+	 * @return the matching erc group entries, or an empty list if no matches were found
+	 */
+	@Override
+	public java.util.List
+		<com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry>
+			getERCGroupEntriesByUuidAndCompanyId(String uuid, long companyId) {
+
+		return _ercGroupEntryLocalService.getERCGroupEntriesByUuidAndCompanyId(
+			uuid, companyId);
+	}
+
+	/**
+	 * Returns a range of erc group entries matching the UUID and company.
+	 *
+	 * @param uuid the UUID of the erc group entries
+	 * @param companyId the primary key of the company
+	 * @param start the lower bound of the range of erc group entries
+	 * @param end the upper bound of the range of erc group entries (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the range of matching erc group entries, or an empty list if no matches were found
+	 */
+	@Override
+	public java.util.List
+		<com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry>
+			getERCGroupEntriesByUuidAndCompanyId(
+				String uuid, long companyId, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<com.liferay.portal.tools.service.builder.test.model.
+						ERCGroupEntry> orderByComparator) {
+
+		return _ercGroupEntryLocalService.getERCGroupEntriesByUuidAndCompanyId(
+			uuid, companyId, start, end, orderByComparator);
+	}
+
+	/**
 	 * Returns the number of erc group entries.
 	 *
 	 * @return the number of erc group entries
@@ -316,23 +346,32 @@ public class ERCGroupEntryLocalServiceWrapper
 		return _ercGroupEntryLocalService.getERCGroupEntry(ercGroupEntryId);
 	}
 
+	@Override
+	public com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry
+			getERCGroupEntryByExternalReferenceCode(
+				String externalReferenceCode, long groupId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _ercGroupEntryLocalService.
+			getERCGroupEntryByExternalReferenceCode(
+				externalReferenceCode, groupId);
+	}
+
 	/**
-	 * Returns the erc group entry with the matching external reference code and group.
+	 * Returns the erc group entry matching the UUID and group.
 	 *
+	 * @param uuid the erc group entry's UUID
 	 * @param groupId the primary key of the group
-	 * @param externalReferenceCode the erc group entry's external reference code
 	 * @return the matching erc group entry
 	 * @throws PortalException if a matching erc group entry could not be found
 	 */
 	@Override
 	public com.liferay.portal.tools.service.builder.test.model.ERCGroupEntry
-			getERCGroupEntryByExternalReferenceCode(
-				long groupId, String externalReferenceCode)
+			getERCGroupEntryByUuidAndGroupId(String uuid, long groupId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
-		return _ercGroupEntryLocalService.
-			getERCGroupEntryByExternalReferenceCode(
-				groupId, externalReferenceCode);
+		return _ercGroupEntryLocalService.getERCGroupEntryByUuidAndGroupId(
+			uuid, groupId);
 	}
 
 	@Override
@@ -380,6 +419,11 @@ public class ERCGroupEntryLocalServiceWrapper
 				ercGroupEntry) {
 
 		return _ercGroupEntryLocalService.updateERCGroupEntry(ercGroupEntry);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _ercGroupEntryLocalService.getBasePersistence();
 	}
 
 	@Override

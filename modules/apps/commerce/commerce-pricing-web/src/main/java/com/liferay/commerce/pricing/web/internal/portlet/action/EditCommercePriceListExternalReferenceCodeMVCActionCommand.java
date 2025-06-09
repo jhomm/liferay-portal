@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.pricing.web.internal.portlet.action;
 
+import com.liferay.commerce.price.list.exception.DuplicateCommercePriceListExternalReferenceCodeException;
 import com.liferay.commerce.price.list.exception.NoSuchPriceListException;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.service.CommercePriceListService;
@@ -27,8 +19,8 @@ import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -37,10 +29,9 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
-		"javax.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PRICE_LIST,
+		"jakarta.portlet.name=" + CommercePricingPortletKeys.COMMERCE_PROMOTION,
 		"mvc.command.name=/commerce_price_list/edit_commerce_price_list_external_reference_code"
 	},
 	service = MVCActionCommand.class
@@ -54,10 +45,12 @@ public class EditCommercePriceListExternalReferenceCodeMVCActionCommand
 		throws Exception {
 
 		try {
-			updateCommercePriceListExternalReferenceCode(actionRequest);
+			_updateCommercePriceListExternalReferenceCode(actionRequest);
 		}
 		catch (Exception exception) {
-			if (exception instanceof NoSuchPriceListException ||
+			if (exception instanceof
+					DuplicateCommercePriceListExternalReferenceCodeException ||
+				exception instanceof NoSuchPriceListException ||
 				exception instanceof PrincipalException) {
 
 				SessionErrors.add(actionRequest, exception.getClass());
@@ -65,7 +58,7 @@ public class EditCommercePriceListExternalReferenceCodeMVCActionCommand
 				actionResponse.setRenderParameter("mvcPath", "/error.jsp");
 			}
 			else {
-				_log.error(exception, exception);
+				_log.error(exception);
 
 				String redirect = ParamUtil.getString(
 					actionRequest, "redirect");
@@ -75,7 +68,7 @@ public class EditCommercePriceListExternalReferenceCodeMVCActionCommand
 		}
 	}
 
-	protected void updateCommercePriceListExternalReferenceCode(
+	private void _updateCommercePriceListExternalReferenceCode(
 			ActionRequest actionRequest)
 		throws Exception {
 

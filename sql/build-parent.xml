@@ -35,15 +35,34 @@
 			</then>
 		</if>
 
+		<if>
+			<isset property="db.build.java.add.opens[${java.specification.version}]" />
+			<then>
+				<propertycopy from="db.build.java.add.opens[${java.specification.version}]" name="db.build.java.add.opens" override="true" />
+			</then>
+		</if>
+
+		<if>
+			<equals arg1="${java.specification.version}" arg2="1.8" />
+			<then>
+				<property name="db.build.java.maxpermsize.option" value="-XX:MaxPermSize=${db.build.java.maxpermsize}" />
+			</then>
+			<else>
+				<property name="db.build.java.maxpermsize.option" value="-XX:MaxMetaspaceSize=${db.build.java.maxpermsize}" />
+			</else>
+		</if>
+
 		<java
 			classname="com.liferay.portal.tools.DBBuilder"
 			classpathref="db.builder.classpath"
-			fork="${fork.mode}"
+			failonerror="true"
+			fork="true"
 			outputproperty="db.builder.output"
 		>
 			<jvmarg if:true="${jvm.debug}" line="${jpda.settings}" />
+			<jvmarg if:set="db.build.java.add.opens" line="${db.build.java.add.opens}" />
 			<jvmarg value="-Xmx${db.build.java.mx}" />
-			<jvmarg value="-XX:MaxPermSize=${db.build.java.maxpermsize}" />
+			<jvmarg value="${db.build.java.maxpermsize.option}" />
 			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
 			<arg value="db.database.name=${database.name}" />
 			<arg value="db.database.types=${database.types}" />
@@ -86,12 +105,10 @@
 
 	<target name="rebuild-all">
 		<antcall target="rebuild-db2" />
-		<antcall target="rebuild-hypersonic" />
 		<antcall target="rebuild-mysql" />
 		<antcall target="rebuild-oracle" />
 		<antcall target="rebuild-postgresql" />
 		<antcall target="rebuild-sql-server" />
-		<antcall target="rebuild-sybase" />
 	</target>
 
 	<target name="rebuild-database">
@@ -106,30 +123,6 @@
 			<param name="arg.line" value="${db2.arg.line}" />
 			<param name="log" value="${db2.log}" />
 		</antcall>
-	</target>
-
-	<target name="rebuild-hypersonic">
-		<delete failonerror="false" file="${database.name}.lck" />
-		<delete failonerror="false" file="${database.name}.log" />
-		<delete failonerror="false" file="${database.name}.properties" />
-		<delete failonerror="false" file="${database.name}.script" />
-
-		<java
-			classname="com.liferay.portal.tools.HypersonicLoader"
-			classpathref="project.classpath"
-			fork="${fork.mode}"
-		>
-			<jvmarg if:true="${jvm.debug}" line="${jpda.settings}" />
-			<arg value="-Dexternal-properties=com/liferay/portal/tools/dependencies/portal-tools.properties" />
-			<arg value="-Dfile.encoding=UTF-8" />
-			<arg value="db.database.name=${database.name}" />
-			<arg value="db.database.password=" />
-			<arg value="db.database.username=sa" />
-			<arg value="db.file.name=portal${database.create.suffix}/portal${database.create.suffix}-hypersonic.sql,indexes.sql" />
-			<arg value="db.sql.dir=${basedir}" />
-		</java>
-
-		<delete dir="${database.name}.tmp" failonerror="false" />
 	</target>
 
 	<target name="rebuild-mysql">
@@ -180,14 +173,6 @@
 			<param name="executable" value="${sql-server.executable}" />
 			<param name="arg.line" value="${sql-server.arg.line}" />
 			<param name="log" value="${sql-server.log}" />
-		</antcall>
-	</target>
-
-	<target name="rebuild-sybase">
-		<antcall target="rebuild-database">
-			<param name="executable" value="${sybase.executable}" />
-			<param name="arg.line" value="${sybase.arg.line}" />
-			<param name="log" value="${sybase.log}" />
 		</antcall>
 	</target>
 </project>

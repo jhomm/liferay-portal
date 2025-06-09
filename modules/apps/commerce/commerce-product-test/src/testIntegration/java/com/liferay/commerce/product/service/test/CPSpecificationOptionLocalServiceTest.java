@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.test;
@@ -18,6 +9,8 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.commerce.product.exception.NoSuchCPSpecificationOptionException;
 import com.liferay.commerce.product.model.CPSpecificationOption;
 import com.liferay.commerce.product.service.CPSpecificationOptionLocalService;
+import com.liferay.list.type.model.ListTypeDefinition;
+import com.liferay.list.type.service.ListTypeDefinitionLocalService;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
@@ -30,6 +23,8 @@ import com.liferay.portal.kernel.test.util.UserTestUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+
+import java.util.List;
 
 import org.frutilla.FrutillaRule;
 
@@ -71,7 +66,7 @@ public class CPSpecificationOptionLocalServiceTest {
 	}
 
 	@Test
-	public void testAddSpecficationOption() throws Exception {
+	public void testAddSpecificationOption() throws Exception {
 		frutillaRule.scenario(
 			"Add Specification option"
 		).given(
@@ -94,8 +89,48 @@ public class CPSpecificationOptionLocalServiceTest {
 			cpSpecificationOption1.getKey(), cpSpecificationOption2.getKey());
 	}
 
+	@Test
+	public void testAddSpecificationOptionWithMultiplePicklist()
+		throws Exception {
+
+		frutillaRule.scenario(
+			"Add Specification option with multiple picklist"
+		).given(
+			"A specification is created"
+		).when(
+			"Adding picklist to the specification"
+		).then(
+			"Multiple picklist can be added"
+		);
+
+		ListTypeDefinition listTypeDefinition1 =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				RandomTestUtil.randomString(), _user.getUserId(), false);
+		ListTypeDefinition listTypeDefinition2 =
+			_listTypeDefinitionLocalService.addListTypeDefinition(
+				RandomTestUtil.randomString(), _user.getUserId(), false);
+
+		CPSpecificationOption cpSpecificationOption =
+			_cpSpecificationOptionLocalService.addCPSpecificationOption(
+				RandomTestUtil.randomString(), _serviceContext.getUserId(), 0L,
+				new long[] {
+					listTypeDefinition1.getListTypeDefinitionId(),
+					listTypeDefinition2.getListTypeDefinitionId()
+				},
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomLocaleStringMap(),
+				RandomTestUtil.randomBoolean(), RandomTestUtil.randomString(),
+				RandomTestUtil.randomDouble(), true, _serviceContext);
+
+		List<ListTypeDefinition> listTypeDefinitions =
+			cpSpecificationOption.getListTypeDefinitions();
+
+		Assert.assertEquals(
+			listTypeDefinition1.toString(), 2, listTypeDefinitions.size());
+	}
+
 	@Test(expected = NoSuchCPSpecificationOptionException.class)
-	public void testGetSpecficationOption() throws Exception {
+	public void testGetSpecificationOption() throws Exception {
 		frutillaRule.scenario(
 			"Get Specification option"
 		).given(
@@ -118,11 +153,11 @@ public class CPSpecificationOptionLocalServiceTest {
 		throws Exception {
 
 		return _cpSpecificationOptionLocalService.addCPSpecificationOption(
-			serviceContext.getUserId(), 0L,
+			RandomTestUtil.randomString(), serviceContext.getUserId(), 0L, null,
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomLocaleStringMap(),
 			RandomTestUtil.randomBoolean(), RandomTestUtil.randomString(),
-			serviceContext);
+			RandomTestUtil.randomDouble(), true, serviceContext);
 	}
 
 	private static User _user;
@@ -133,6 +168,9 @@ public class CPSpecificationOptionLocalServiceTest {
 
 	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private ListTypeDefinitionLocalService _listTypeDefinitionLocalService;
 
 	private ServiceContext _serviceContext;
 

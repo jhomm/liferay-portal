@@ -1,36 +1,24 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import classnames from 'classnames';
 import React, {useContext, useState} from 'react';
 
-import {PRODUCT_REMOVED_FROM_CART} from '../../utilities/eventsDefinitions';
+import ServiceProvider from '../../ServiceProvider/index';
+import {CART_PRODUCT_QUANTITY_CHANGED} from '../../utilities/eventsDefinitions';
 import {liferayNavigate} from '../../utilities/index';
 import {ALL} from '../add_to_cart/constants';
 import MiniCartContext from './MiniCartContext';
 import {REMOVE_ALL_ITEMS, VIEW_DETAILS} from './util/constants';
 
+const CartResource = ServiceProvider.DeliveryCartAPI('v1');
+
 function CartItemsListActions() {
-	const {
-		CartResource,
-		actionURLs,
-		cartState,
-		labels,
-		setIsUpdating,
-		updateCartModel,
-	} = useContext(MiniCartContext);
+	const {actionURLs, cartState, labels, setIsUpdating, updateCartModel} =
+		useContext(MiniCartContext);
 
 	const {cartItems = [], id: orderId} = cartState;
 	const {orderDetailURL} = actionURLs;
@@ -43,12 +31,15 @@ function CartItemsListActions() {
 		setIsUpdating(true);
 
 		CartResource.updateCartById(orderId, {cartItems: []})
-			.then(() => updateCartModel({id: orderId}))
+			.then(() => updateCartModel({order: {id: orderId}}))
 			.then(() => {
 				setIsAsking(false);
 				setIsUpdating(false);
 
-				Liferay.fire(PRODUCT_REMOVED_FROM_CART, {skuId: ALL});
+				Liferay.fire(CART_PRODUCT_QUANTITY_CHANGED, {
+					quantity: 0,
+					skuId: ALL,
+				});
 			});
 	};
 
@@ -56,14 +47,12 @@ function CartItemsListActions() {
 		<div className="mini-cart-header">
 			<div className="mini-cart-header-block">
 				<div className="mini-cart-header-resume">
-					{cartItems.length > 0 && (
+					{!!cartItems.length && (
 						<>
 							<span className="items">{cartItems.length}</span>
-							{` ${
-								cartItems.length > 1
-									? Liferay.Language.get('products')
-									: Liferay.Language.get('product')
-							}`}
+							{cartItems.length > 1
+								? ' ' + Liferay.Language.get('products')
+								: ' ' + Liferay.Language.get('product')}
 						</>
 					)}
 				</div>
@@ -114,6 +103,7 @@ function CartItemsListActions() {
 							>
 								{Liferay.Language.get('yes')}
 							</button>
+
 							<button
 								className="btn btn-outline-danger btn-sm"
 								onClick={cancel}

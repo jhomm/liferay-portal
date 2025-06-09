@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.remote.soap.extender.internal;
@@ -19,9 +10,9 @@ import com.liferay.portal.configuration.metatype.bnd.util.ConfigurableUtil;
 import com.liferay.portal.remote.soap.extender.SoapDescriptorBuilder;
 import com.liferay.portal.remote.soap.extender.internal.configuration.SoapExtenderConfiguration;
 
-import java.util.Map;
+import jakarta.xml.ws.handler.Handler;
 
-import javax.xml.ws.handler.Handler;
+import java.util.Map;
 
 import org.apache.cxf.Bus;
 import org.apache.felix.dm.DependencyManager;
@@ -32,10 +23,7 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ConfigurationPolicy;
 import org.osgi.service.component.annotations.Deactivate;
-import org.osgi.service.component.annotations.Modified;
 import org.osgi.service.component.annotations.Reference;
-import org.osgi.service.component.annotations.ReferencePolicy;
-import org.osgi.service.component.annotations.ReferencePolicyOption;
 import org.osgi.service.http.whiteboard.HttpWhiteboardConstants;
 
 /**
@@ -63,7 +51,12 @@ public class SoapExtender {
 		_enableComponent();
 	}
 
-	protected void addBusDependencies(org.apache.felix.dm.Component component) {
+	@Deactivate
+	protected void deactivate() {
+		_dependencyManager.clear();
+	}
+
+	private void _addBusDependencies(org.apache.felix.dm.Component component) {
 		SoapExtenderConfiguration soapExtenderConfiguration =
 			getSoapExtenderConfiguration();
 
@@ -74,7 +67,7 @@ public class SoapExtender {
 		}
 
 		for (String contextPath : contextPaths) {
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				component, true, Bus.class,
 				StringBundler.concat(
 					"(", HttpWhiteboardConstants.HTTP_WHITEBOARD_CONTEXT_PATH,
@@ -83,7 +76,7 @@ public class SoapExtender {
 		}
 	}
 
-	protected void addJaxWsHandlerServiceDependencies(
+	private void _addJaxWsHandlerServiceDependencies(
 		org.apache.felix.dm.Component component) {
 
 		SoapExtenderConfiguration soapExtenderConfiguration =
@@ -97,13 +90,13 @@ public class SoapExtender {
 		}
 
 		for (String jaxWsHandlerFilterString : jaxWsHandlerFilterStrings) {
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				component, false, Handler.class, jaxWsHandlerFilterString,
 				"addHandler", "removeHandler");
 		}
 	}
 
-	protected void addJaxWsServiceDependencies(
+	private void _addJaxWsServiceDependencies(
 		org.apache.felix.dm.Component component) {
 
 		SoapExtenderConfiguration soapExtenderConfiguration =
@@ -117,13 +110,13 @@ public class SoapExtender {
 		}
 
 		for (String jaxWsServiceFilterString : jaxWsServiceFilterStrings) {
-			addTCCLServiceDependency(
+			_addTCCLServiceDependency(
 				component, false, null, jaxWsServiceFilterString, "addService",
 				"removeService");
 		}
 	}
 
-	protected void addSoapDescriptorBuilderServiceDependency(
+	private void _addSoapDescriptorBuilderServiceDependency(
 		org.apache.felix.dm.Component component) {
 
 		ServiceDependency serviceDependency =
@@ -138,7 +131,7 @@ public class SoapExtender {
 		component.add(serviceDependency);
 	}
 
-	protected ServiceDependency addTCCLServiceDependency(
+	private ServiceDependency _addTCCLServiceDependency(
 		org.apache.felix.dm.Component component, boolean required,
 		Class<?> clazz, String filterString, String addName,
 		String removeName) {
@@ -161,40 +154,6 @@ public class SoapExtender {
 		return serviceDependency;
 	}
 
-	@Deactivate
-	protected void deactivate() {
-		_dependencyManager.clear();
-	}
-
-	@Modified
-	protected void modified(
-		BundleContext bundleContext, Map<String, Object> properties) {
-
-		deactivate();
-
-		activate(bundleContext, properties);
-	}
-
-	@Reference(
-		policy = ReferencePolicy.DYNAMIC,
-		policyOption = ReferencePolicyOption.GREEDY
-	)
-	protected void setSoapDescriptorBuilder(
-		SoapDescriptorBuilder soapDescriptorBuilder) {
-
-		_soapDescriptorBuilder = soapDescriptorBuilder;
-
-		if (_dependencyManager != null) {
-			_dependencyManager.clear();
-
-			_enableComponent();
-		}
-	}
-
-	protected void unsetSoapDescriptorBuilder(
-		SoapDescriptorBuilder soapDescriptorBuilder) {
-	}
-
 	private void _enableComponent() {
 		org.apache.felix.dm.Component component =
 			_dependencyManager.createComponent();
@@ -207,16 +166,19 @@ public class SoapExtender {
 
 		component.setImplementation(cxfJaxWsServiceRegistrator);
 
-		addBusDependencies(component);
-		addJaxWsHandlerServiceDependencies(component);
-		addJaxWsServiceDependencies(component);
-		addSoapDescriptorBuilderServiceDependency(component);
+		_addBusDependencies(component);
+		_addJaxWsHandlerServiceDependencies(component);
+		_addJaxWsServiceDependencies(component);
+		_addSoapDescriptorBuilderServiceDependency(component);
 
 		_dependencyManager.add(component);
 	}
 
 	private DependencyManager _dependencyManager;
+
+	@Reference
 	private SoapDescriptorBuilder _soapDescriptorBuilder;
+
 	private volatile SoapExtenderConfiguration _soapExtenderConfiguration;
 
 }

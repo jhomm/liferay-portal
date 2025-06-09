@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipping.engine.fixed.web.internal.display.context;
@@ -28,10 +19,9 @@ import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOpt
 import com.liferay.commerce.shipping.engine.fixed.model.CommerceShippingFixedOptionRel;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionRelService;
 import com.liferay.commerce.shipping.engine.fixed.service.CommerceShippingFixedOptionService;
-import com.liferay.commerce.shipping.engine.fixed.web.internal.frontend.taglib.servlet.taglib.CommerceShippingMethodFixedOptionSettingsScreenNavigationCategory;
+import com.liferay.commerce.shipping.engine.fixed.web.internal.constants.CommerceShippingFixedOptionScreenNavigationConstants;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenuBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -39,6 +29,7 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Region;
 import com.liferay.portal.kernel.portlet.LiferayWindowState;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionService;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
@@ -46,11 +37,11 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.portlet.PortletRequest;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import java.util.List;
 
 /**
  * @author Alessio Antonio Rendina
@@ -108,7 +99,7 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 
 		return _commerceInventoryWarehouseService.
 			getCommerceInventoryWarehouses(
-				commerceShippingMethod.getCompanyId(),
+				commerceShippingMethod.getCompanyId(), 0,
 				commerceShippingMethod.getGroupId(), true);
 	}
 
@@ -224,18 +215,15 @@ public class CommerceShippingFixedOptionRelsDisplayContext
 
 	@Override
 	public String getScreenNavigationCategoryKey() {
-		return CommerceShippingMethodFixedOptionSettingsScreenNavigationCategory.CATEGORY_KEY;
+		return CommerceShippingFixedOptionScreenNavigationConstants.
+			CATEGORY_KEY_SHIPPING_OPTION_SETTINGS;
 	}
 
 	public boolean isVisible() throws PortalException {
 		List<CommerceShippingFixedOption> commerceShippingFixedOptions =
 			getCommerceShippingFixedOptions();
 
-		if (commerceShippingFixedOptions.isEmpty()) {
-			return false;
-		}
-
-		return true;
+		return !commerceShippingFixedOptions.isEmpty();
 	}
 
 	private final CommerceInventoryWarehouseService

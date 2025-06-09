@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.saml.persistence.service;
@@ -18,6 +9,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.saml.persistence.model.SamlPeerBinding;
 
@@ -228,12 +220,13 @@ public class SamlPeerBindingLocalServiceUtil {
 	}
 
 	public static SamlPeerBinding fetchSamlPeerBinding(
-		long companyId, String samlNameIdFormat, String samlNameIdNameQualifier,
-		String samlNameIdValue, String samlSpEntityId) {
+		long companyId, boolean deleted, String samlNameIdFormat,
+		String samlNameIdNameQualifier, String samlNameIdValue,
+		String samlPeerEntityId) {
 
 		return getService().fetchSamlPeerBinding(
-			companyId, samlNameIdFormat, samlNameIdNameQualifier,
-			samlNameIdValue, samlSpEntityId);
+			companyId, deleted, samlNameIdFormat, samlNameIdNameQualifier,
+			samlNameIdValue, samlPeerEntityId);
 	}
 
 	public static com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery
@@ -297,6 +290,16 @@ public class SamlPeerBindingLocalServiceUtil {
 		return getService().getSamlPeerBindings(start, end);
 	}
 
+	public static List<SamlPeerBinding> getSamlPeerBindings(
+		long companyId, boolean deleted, String samlNameIdFormat,
+		String samlNameIdNameQualifier, String samlNameIdValue,
+		String samlPeerEntityId) {
+
+		return getService().getSamlPeerBindings(
+			companyId, deleted, samlNameIdFormat, samlNameIdNameQualifier,
+			samlNameIdValue, samlPeerEntityId);
+	}
+
 	/**
 	 * Returns the number of saml peer bindings.
 	 *
@@ -304,6 +307,16 @@ public class SamlPeerBindingLocalServiceUtil {
 	 */
 	public static int getSamlPeerBindingsCount() {
 		return getService().getSamlPeerBindingsCount();
+	}
+
+	public static List<SamlPeerBinding> getUserSamlPeerBindings(
+			long userId, boolean deleted, String samlNameIdFormat,
+			String samlNameIdNameQualifier, String samlPeerEntityId)
+		throws PortalException {
+
+		return getService().getUserSamlPeerBindings(
+			userId, deleted, samlNameIdFormat, samlNameIdNameQualifier,
+			samlPeerEntityId);
 	}
 
 	/**
@@ -323,9 +336,12 @@ public class SamlPeerBindingLocalServiceUtil {
 	}
 
 	public static SamlPeerBindingLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile SamlPeerBindingLocalService _service;
+	private static final Snapshot<SamlPeerBindingLocalService>
+		_serviceSnapshot = new Snapshot<>(
+			SamlPeerBindingLocalServiceUtil.class,
+			SamlPeerBindingLocalService.class);
 
 }

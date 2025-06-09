@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.util.Accessor;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -187,7 +179,7 @@ public class Entity implements Comparable<Entity> {
 			sessionFactory, _SESSION_FACTORY_DEFAULT);
 		_txManager = GetterUtil.getString(txManager, _TX_MANAGER_DEFAULT);
 
-		if (_entityColumns == null) {
+		if (entityColumns == null) {
 			_databaseRegularEntityColumns = null;
 		}
 		else {
@@ -195,7 +187,7 @@ public class Entity implements Comparable<Entity> {
 				regularEntityColumns);
 		}
 
-		if (_entityFinders != null) {
+		if (entityFinders != null) {
 			Set<EntityColumn> finderEntityColumns = new HashSet<>();
 
 			for (EntityFinder entityFinder : _entityFinders) {
@@ -210,7 +202,7 @@ public class Entity implements Comparable<Entity> {
 			_finderEntityColumns = Collections.emptyList();
 		}
 
-		if ((_blobEntityColumns != null) && !_blobEntityColumns.isEmpty()) {
+		if ((blobEntityColumns != null) && !blobEntityColumns.isEmpty()) {
 			for (EntityColumn entityColumn : _blobEntityColumns) {
 				if (!entityColumn.isLazy()) {
 					cacheEnabled = false;
@@ -224,7 +216,7 @@ public class Entity implements Comparable<Entity> {
 
 		boolean containerModel = false;
 
-		if ((_entityColumns != null) && !_entityColumns.isEmpty()) {
+		if ((entityColumns != null) && !entityColumns.isEmpty()) {
 			for (EntityColumn entityColumn : _entityColumns) {
 				if (entityColumn.isContainerModel() ||
 					entityColumn.isParentContainerModel()) {
@@ -260,11 +252,7 @@ public class Entity implements Comparable<Entity> {
 
 		Entity entity = (Entity)object;
 
-		if (_name.equals(entity.getName())) {
-			return true;
-		}
-
-		return false;
+		return _name.equals(entity.getName());
 	}
 
 	public String getAlias() {
@@ -410,6 +398,10 @@ public class Entity implements Comparable<Entity> {
 			interfaceNames.add("ContainerModel");
 		}
 
+		if (isExternalReferenceCodeModel()) {
+			interfaceNames.add("ExternalReferenceCodeModel");
+		}
+
 		if (isLocalizedModel()) {
 			interfaceNames.add("LocalizedModel");
 		}
@@ -500,6 +492,10 @@ public class Entity implements Comparable<Entity> {
 		if (isChangeTrackingEnabled()) {
 			overrideColumnName.add("ctCollectionId");
 			overrideColumnName.add("primaryKey");
+		}
+
+		if (isExternalReferenceCodeModel()) {
+			overrideColumnName.add("externalReferenceCode");
 		}
 
 		if (isGroupedModel()) {
@@ -744,15 +740,15 @@ public class Entity implements Comparable<Entity> {
 	}
 
 	public List<EntityColumn> getUADNonanonymizableEntityColumns() {
-		List<EntityColumn> uadNonanonymizableEntityColumns = new ArrayList<>();
+		return TransformUtil.transform(
+			_entityColumns,
+			entityColumn -> {
+				if (entityColumn.isUADNonanonymizable()) {
+					return entityColumn;
+				}
 
-		for (EntityColumn entityColumn : _entityColumns) {
-			if (entityColumn.isUADNonanonymizable()) {
-				uadNonanonymizableEntityColumns.add(entityColumn);
-			}
-		}
-
-		return uadNonanonymizableEntityColumns;
+				return null;
+			});
 	}
 
 	public String getUADOutputPath() {
@@ -770,15 +766,15 @@ public class Entity implements Comparable<Entity> {
 	}
 
 	public List<String> getUADUserIdColumnNames() {
-		List<String> uadUserIdColumnNames = new ArrayList<>();
+		return TransformUtil.transform(
+			_entityColumns,
+			entityColumn -> {
+				if (entityColumn.isUADUserId()) {
+					return entityColumn.getName();
+				}
 
-		for (EntityColumn entityColumn : _entityColumns) {
-			if (entityColumn.isUADUserId()) {
-				uadUserIdColumnNames.add(entityColumn.getName());
-			}
-		}
-
-		return uadUserIdColumnNames;
+				return null;
+			});
 	}
 
 	public List<EntityFinder> getUniqueEntityFinders() {
@@ -872,11 +868,7 @@ public class Entity implements Comparable<Entity> {
 	}
 
 	public boolean hasEntityColumns() {
-		if (ListUtil.isEmpty(_entityColumns)) {
-			return false;
-		}
-
-		return true;
+		return ListUtil.isNotEmpty(_entityColumns);
 	}
 
 	public boolean hasExternalReferenceCode() {
@@ -884,11 +876,7 @@ public class Entity implements Comparable<Entity> {
 	}
 
 	public boolean hasFinderClassName() {
-		if (Validator.isNull(_finderClassName)) {
-			return false;
-		}
-
-		return true;
+		return Validator.isNotNull(_finderClassName);
 	}
 
 	@Override
@@ -929,11 +917,7 @@ public class Entity implements Comparable<Entity> {
 
 		EntityColumn entityColumn = _getPKEntityColumn();
 
-		if (entityColumn.isPrimitiveType(includeWrappers)) {
-			return true;
-		}
-
-		return false;
+		return entityColumn.isPrimitiveType(includeWrappers);
 	}
 
 	public boolean hasRemoteService() {
@@ -991,27 +975,15 @@ public class Entity implements Comparable<Entity> {
 	}
 
 	public boolean isDefaultDataSource() {
-		if (_dataSource.equals(_DATA_SOURCE_DEFAULT)) {
-			return true;
-		}
-
-		return false;
+		return _dataSource.equals(_DATA_SOURCE_DEFAULT);
 	}
 
 	public boolean isDefaultSessionFactory() {
-		if (_sessionFactory.equals(_SESSION_FACTORY_DEFAULT)) {
-			return true;
-		}
-
-		return false;
+		return _sessionFactory.equals(_SESSION_FACTORY_DEFAULT);
 	}
 
 	public boolean isDefaultTXManager() {
-		if (_txManager.equals(_TX_MANAGER_DEFAULT)) {
-			return true;
-		}
-
-		return false;
+		return _txManager.equals(_TX_MANAGER_DEFAULT);
 	}
 
 	public boolean isDeprecated() {
@@ -1020,6 +992,16 @@ public class Entity implements Comparable<Entity> {
 
 	public boolean isDynamicUpdateEnabled() {
 		return _dynamicUpdateEnabled;
+	}
+
+	public boolean isExternalReferenceCodeModel() {
+		if (_serviceBuilder.isVersionGTE_7_4_0() &&
+			hasEntityColumn("externalReferenceCode")) {
+
+			return true;
+		}
+
+		return false;
 	}
 
 	public boolean isGroupedModel() {
@@ -1166,7 +1148,9 @@ public class Entity implements Comparable<Entity> {
 
 	public boolean isShardedModel() {
 		if (_packagePath.equals("com.liferay.portal") &&
-			_name.equals("Company")) {
+			(_name.equals("Company") ||
+			 (_serviceBuilder.isVersionGTE_7_4_0() &&
+			  _name.equals("VirtualHost")))) {
 
 			return false;
 		}
@@ -1208,11 +1192,7 @@ public class Entity implements Comparable<Entity> {
 	}
 
 	public boolean isTreeModel() {
-		if (hasEntityColumn("treePath")) {
-			return true;
-		}
-
-		return false;
+		return hasEntityColumn("treePath");
 	}
 
 	public boolean isTypedModel() {

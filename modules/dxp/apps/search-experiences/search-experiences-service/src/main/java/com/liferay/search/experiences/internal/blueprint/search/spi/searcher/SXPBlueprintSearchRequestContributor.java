@@ -1,21 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.internal.blueprint.search.spi.searcher;
 
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.search.SearchContext;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
@@ -24,6 +17,7 @@ import com.liferay.portal.search.searcher.SearchRequestBuilder;
 import com.liferay.portal.search.searcher.SearchRequestBuilderFactory;
 import com.liferay.portal.search.spi.searcher.SearchRequestContributor;
 import com.liferay.search.experiences.blueprint.search.request.enhancer.SXPBlueprintSearchRequestEnhancer;
+import com.liferay.search.experiences.exception.SXPExceptionUtil;
 import com.liferay.search.experiences.model.SXPBlueprint;
 import com.liferay.search.experiences.service.SXPBlueprintLocalService;
 
@@ -34,7 +28,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Petteri Karttunen
  */
 @Component(
-	immediate = true,
+	enabled = false,
 	property = "search.request.contributor.id=com.liferay.search.experiences.blueprint",
 	service = SearchRequestContributor.class
 )
@@ -46,10 +40,57 @@ public class SXPBlueprintSearchRequestContributor
 		SearchRequestBuilder searchRequestBuilder =
 			_searchRequestBuilderFactory.builder(searchRequest);
 
+		_contributeSXPBlueprintExternalReferenceCode(searchRequestBuilder);
 		_contributeSXPBlueprintId(searchRequestBuilder);
-		_contributeSXPBlueprintJSON(searchRequestBuilder);
 
 		return searchRequestBuilder.build();
+	}
+
+	private void _contributeSXPBlueprintExternalReferenceCode(
+		SearchRequestBuilder searchRequestBuilder) {
+
+		Object object = searchRequestBuilder.withSearchContextGet(
+			searchContext -> searchContext.getAttribute(
+				"search.experiences.blueprint.external.reference.code"));
+
+		if (object instanceof String) {
+			String string = (String)object;
+
+			if (Validator.isBlank(string)) {
+				return;
+			}
+
+			String[] sxpBlueprintExternalReferenceCodes = StringUtil.split(
+				string);
+
+			for (String sxpBlueprintExternalReferenceCode :
+					sxpBlueprintExternalReferenceCodes) {
+
+				if (Validator.isBlank(sxpBlueprintExternalReferenceCode)) {
+					continue;
+				}
+
+				if (_log.isDebugEnabled()) {
+					_log.debug(
+						"Search experiences blueprint external reference " +
+							"code " + string);
+				}
+
+				_enhance(
+					searchRequestBuilder,
+					_sxpBlueprintLocalService.
+						fetchSXPBlueprintByExternalReferenceCode(
+							sxpBlueprintExternalReferenceCode,
+							GetterUtil.getLong(
+								searchRequestBuilder.withSearchContextGet(
+									SearchContext::getCompanyId))));
+			}
+		}
+		else if (object != null) {
+			throw new IllegalArgumentException(
+				"Invalid search experiences blueprint external reference " +
+					"code " + object);
+		}
 	}
 
 	private void _contributeSXPBlueprintId(
@@ -59,67 +100,72 @@ public class SXPBlueprintSearchRequestContributor
 			searchContext -> searchContext.getAttribute(
 				"search.experiences.blueprint.id"));
 
-		if (_log.isDebugEnabled()) {
-			_log.debug("Search experiences blueprint ID " + object);
-		}
+		long[] sxpBlueprintIds = null;
 
-		if (object == null) {
-		}
-		else if (object instanceof Number) {
-			_enhance(searchRequestBuilder, GetterUtil.getLong(object));
+		if (object instanceof Number) {
+			sxpBlueprintIds = new long[] {GetterUtil.getLong(object)};
 		}
 		else if (object instanceof String) {
 			String string = (String)object;
 
-			if (Validator.isNotNull(string)) {
-				_enhance(
-					searchRequestBuilder,
-					GetterUtil.getLongValues(StringUtil.split(string)));
+			if (!Validator.isBlank(string)) {
+				sxpBlueprintIds = GetterUtil.getLongValues(
+					StringUtil.split(string));
 			}
 		}
-		else {
+		else if (object != null) {
 			throw new IllegalArgumentException(
 				"Invalid search experiences blueprint ID " + object);
 		}
-	}
 
-	private void _contributeSXPBlueprintJSON(
-		SearchRequestBuilder searchRequestBuilder) {
-
-		String sxpBlueprintJSON = searchRequestBuilder.withSearchContextGet(
-			searchContext -> GetterUtil.getString(
-				searchContext.getAttribute(
-					"search.experiences.blueprint.json")));
-
-		if (_log.isDebugEnabled()) {
-			_log.debug("Search experiences blueprint JSON " + sxpBlueprintJSON);
+		if (sxpBlueprintIds == null) {
+			return;
 		}
-
-		if (Validator.isNotNull(sxpBlueprintJSON)) {
-			_sxpBlueprintSearchRequestEnhancer.enhance(
-				searchRequestBuilder, sxpBlueprintJSON);
-		}
-	}
-
-	private void _enhance(
-		SearchRequestBuilder searchRequestBuilder, long... sxpBlueprintIds) {
 
 		for (long sxpBlueprintId : sxpBlueprintIds) {
 			if (sxpBlueprintId == 0) {
 				continue;
 			}
 
-			SXPBlueprint sxpBlueprint =
-				_sxpBlueprintLocalService.fetchSXPBlueprint(sxpBlueprintId);
-
 			if (_log.isDebugEnabled()) {
-				_log.debug("Search experiences blueprint " + sxpBlueprint);
+				_log.debug("Search experiences blueprint ID " + sxpBlueprintId);
 			}
 
-			if (sxpBlueprint != null) {
-				_sxpBlueprintSearchRequestEnhancer.enhance(
-					searchRequestBuilder, sxpBlueprint);
+			_enhance(
+				searchRequestBuilder,
+				_sxpBlueprintLocalService.fetchSXPBlueprint(sxpBlueprintId));
+		}
+	}
+
+	private void _enhance(
+		SearchRequestBuilder searchRequestBuilder, SXPBlueprint sxpBlueprint) {
+
+		if (_log.isDebugEnabled()) {
+			_log.debug("Search experiences blueprint " + sxpBlueprint);
+		}
+
+		if (sxpBlueprint == null) {
+			return;
+		}
+
+		RuntimeException runtimeException = new RuntimeException();
+
+		try {
+			_sxpBlueprintSearchRequestEnhancer.enhance(
+				searchRequestBuilder, sxpBlueprint);
+		}
+		catch (Exception exception) {
+			runtimeException.addSuppressed(exception);
+		}
+
+		if (ArrayUtil.isNotEmpty(runtimeException.getSuppressed())) {
+			if (_log.isWarnEnabled()) {
+				_log.warn(runtimeException);
 			}
+		}
+
+		if (SXPExceptionUtil.hasErrors(runtimeException)) {
+			throw runtimeException;
 		}
 	}
 

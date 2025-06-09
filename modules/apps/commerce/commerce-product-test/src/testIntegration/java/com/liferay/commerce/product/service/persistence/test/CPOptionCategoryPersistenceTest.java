@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.commerce.product.exception.DuplicateCPOptionCategoryExternalReferenceCodeException;
 import com.liferay.commerce.product.exception.NoSuchCPOptionCategoryException;
 import com.liferay.commerce.product.model.CPOptionCategory;
 import com.liferay.commerce.product.service.CPOptionCategoryLocalServiceUtil;
@@ -125,7 +117,14 @@ public class CPOptionCategoryPersistenceTest {
 
 		CPOptionCategory newCPOptionCategory = _persistence.create(pk);
 
+		newCPOptionCategory.setMvccVersion(RandomTestUtil.nextLong());
+
+		newCPOptionCategory.setCtCollectionId(RandomTestUtil.nextLong());
+
 		newCPOptionCategory.setUuid(RandomTestUtil.randomString());
+
+		newCPOptionCategory.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		newCPOptionCategory.setCompanyId(RandomTestUtil.nextLong());
 
@@ -153,7 +152,16 @@ public class CPOptionCategoryPersistenceTest {
 			_persistence.findByPrimaryKey(newCPOptionCategory.getPrimaryKey());
 
 		Assert.assertEquals(
+			existingCPOptionCategory.getMvccVersion(),
+			newCPOptionCategory.getMvccVersion());
+		Assert.assertEquals(
+			existingCPOptionCategory.getCtCollectionId(),
+			newCPOptionCategory.getCtCollectionId());
+		Assert.assertEquals(
 			existingCPOptionCategory.getUuid(), newCPOptionCategory.getUuid());
+		Assert.assertEquals(
+			existingCPOptionCategory.getExternalReferenceCode(),
+			newCPOptionCategory.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingCPOptionCategory.getCPOptionCategoryId(),
 			newCPOptionCategory.getCPOptionCategoryId());
@@ -187,6 +195,28 @@ public class CPOptionCategoryPersistenceTest {
 			Time.getShortTimestamp(
 				existingCPOptionCategory.getLastPublishDate()),
 			Time.getShortTimestamp(newCPOptionCategory.getLastPublishDate()));
+	}
+
+	@Test(
+		expected = DuplicateCPOptionCategoryExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		CPOptionCategory cpOptionCategory = addCPOptionCategory();
+
+		CPOptionCategory newCPOptionCategory = addCPOptionCategory();
+
+		newCPOptionCategory.setCompanyId(cpOptionCategory.getCompanyId());
+
+		newCPOptionCategory = _persistence.update(newCPOptionCategory);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newCPOptionCategory);
+
+		newCPOptionCategory.setExternalReferenceCode(
+			cpOptionCategory.getExternalReferenceCode());
+
+		_persistence.update(newCPOptionCategory);
 	}
 
 	@Test
@@ -224,6 +254,15 @@ public class CPOptionCategoryPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		CPOptionCategory newCPOptionCategory = addCPOptionCategory();
 
@@ -248,10 +287,12 @@ public class CPOptionCategoryPersistenceTest {
 
 	protected OrderByComparator<CPOptionCategory> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
-			"CPOptionCategory", "uuid", true, "CPOptionCategoryId", true,
-			"companyId", true, "userId", true, "userName", true, "createDate",
-			true, "modifiedDate", true, "title", true, "description", true,
-			"priority", true, "key", true, "lastPublishDate", true);
+			"CPOptionCategory", "mvccVersion", true, "ctCollectionId", true,
+			"uuid", true, "externalReferenceCode", true, "CPOptionCategoryId",
+			true, "companyId", true, "userId", true, "userName", true,
+			"createDate", true, "modifiedDate", true, "title", true,
+			"description", true, "priority", true, "key", true,
+			"lastPublishDate", true);
 	}
 
 	@Test
@@ -533,6 +574,17 @@ public class CPOptionCategoryPersistenceTest {
 			ReflectionTestUtil.invoke(
 				cpOptionCategory, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "key_"));
+
+		Assert.assertEquals(
+			cpOptionCategory.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				cpOptionCategory, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(cpOptionCategory.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				cpOptionCategory, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "companyId"));
 	}
 
 	protected CPOptionCategory addCPOptionCategory() throws Exception {
@@ -540,7 +592,14 @@ public class CPOptionCategoryPersistenceTest {
 
 		CPOptionCategory cpOptionCategory = _persistence.create(pk);
 
+		cpOptionCategory.setMvccVersion(RandomTestUtil.nextLong());
+
+		cpOptionCategory.setCtCollectionId(RandomTestUtil.nextLong());
+
 		cpOptionCategory.setUuid(RandomTestUtil.randomString());
+
+		cpOptionCategory.setExternalReferenceCode(
+			RandomTestUtil.randomString());
 
 		cpOptionCategory.setCompanyId(RandomTestUtil.nextLong());
 

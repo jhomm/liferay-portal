@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.frontend.js.loader.modules.extender.internal.config.generator;
@@ -25,6 +16,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 
@@ -58,7 +50,7 @@ public class JSConfigGeneratorPackage {
 		_bundle = bundle;
 		_contextPath = contextPath;
 
-		String jsVersion = String.valueOf(_bundle.getVersion());
+		String jsVersion = String.valueOf(bundle.getVersion());
 
 		int index = jsVersion.indexOf(".hotfix");
 
@@ -87,7 +79,7 @@ public class JSConfigGeneratorPackage {
 
 		URL url = _bundle.getEntry(Details.CONFIG_JSON);
 
-		urlToConfiguration(url, bundleWiring);
+		_urlToConfiguration(url, bundleWiring);
 	}
 
 	/**
@@ -140,7 +132,7 @@ public class JSConfigGeneratorPackage {
 		return _versionedConfiguration;
 	}
 
-	protected JSONObject generateConfigurationJSONObject(
+	private JSONObject _generateConfigurationJSONObject(
 		JSONObject jsonObject, BundleWiring bundleWiring,
 		boolean versionedModuleName) {
 
@@ -205,7 +197,7 @@ public class JSConfigGeneratorPackage {
 					dependenciesJSONArray.put(j, dependencyName);
 				}
 				else {
-					normalizeDependencies(
+					_normalizeDependencies(
 						dependencyName, dependencyPath, dependenciesJSONArray,
 						j, bundleWires);
 				}
@@ -224,13 +216,13 @@ public class JSConfigGeneratorPackage {
 		return jsonObject;
 	}
 
-	protected JSONObject generateMapsConfigurationJSONObject(
+	private JSONObject _generateMapsConfigurationJSONObject(
 		String configuration, String[] jsSubmodulesExport) {
+
+		JSONObject mapsConfigurationJSONObject = new JSONObject();
 
 		boolean exportAll = ArrayUtil.contains(
 			jsSubmodulesExport, StringPool.STAR);
-
-		JSONObject mapsConfigurationJSONObject = new JSONObject();
 
 		JSONObject configurationJSONObject = new JSONObject(
 			StringPool.OPEN_CURLY_BRACE + configuration +
@@ -268,7 +260,15 @@ public class JSConfigGeneratorPackage {
 		return mapsConfigurationJSONObject;
 	}
 
-	protected void normalizeDependencies(
+	private boolean _matchesWildcard(String text, String pattern) {
+		pattern = StringUtil.replace(
+			pattern, new String[] {StringPool.QUESTION, StringPool.STAR},
+			new String[] {".?", ".*"});
+
+		return text.matches(pattern);
+	}
+
+	private void _normalizeDependencies(
 		String dependencyName, String dependencyPath, JSONArray jsonArray,
 		int index, List<BundleWire> bundleWires) {
 
@@ -288,75 +288,12 @@ public class JSConfigGeneratorPackage {
 				Constants.VERSION_ATTRIBUTE);
 
 			dependencyName = StringBundler.concat(
-				dependencyName, StringPool.AT, version.toString(),
-				dependencyPath);
+				dependencyName, StringPool.AT, version, dependencyPath);
 
 			jsonArray.put(index, dependencyName);
 
 			return;
 		}
-	}
-
-	protected String removeEnclosingCurlyBraces(JSONObject jsonObject) {
-		String json = jsonObject.toString();
-
-		return json.substring(1, json.length() - 1);
-	}
-
-	protected void urlToConfiguration(URL url, BundleWiring bundleWiring) {
-		if (url == null) {
-			return;
-		}
-
-		try (Reader reader = new InputStreamReader(url.openStream())) {
-			JSONTokener jsonTokener = new JSONTokener(reader);
-
-			JSONObject jsonObject = new JSONObject(jsonTokener);
-
-			JSONObject unversionedConfigurationJSONObject =
-				generateConfigurationJSONObject(
-					jsonObject, bundleWiring, false);
-
-			_unversionedConfiguration = removeEnclosingCurlyBraces(
-				unversionedConfigurationJSONObject);
-
-			_versionedConfiguration = removeEnclosingCurlyBraces(
-				generateConfigurationJSONObject(
-					jsonObject, bundleWiring, true));
-
-			Dictionary<String, String> headers = _bundle.getHeaders(
-				StringPool.BLANK);
-
-			String jsSubmodulesExport = GetterUtil.getString(
-				headers.get("Liferay-JS-Submodules-Export"));
-
-			if (Validator.isNotNull(jsSubmodulesExport)) {
-				_unversionedMapsConfiguration = removeEnclosingCurlyBraces(
-					generateMapsConfigurationJSONObject(
-						_unversionedConfiguration,
-						StringUtil.split(jsSubmodulesExport)));
-
-				if (_log.isWarnEnabled()) {
-					_log.warn(
-						"Liferay-JS-Submodules-Export is deprecated and " +
-							"replaced with Liferay-JS-Submodules-Bridge");
-				}
-			}
-
-			_populateJSConfigGeneratorModules(
-				unversionedConfigurationJSONObject);
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
-		}
-	}
-
-	private boolean _matchesWildcard(String text, String pattern) {
-		pattern = StringUtil.replace(
-			pattern, new String[] {StringPool.QUESTION, StringPool.STAR},
-			new String[] {".?", ".*"});
-
-		return text.matches(pattern);
 	}
 
 	private void _populateJSConfigGeneratorModules(
@@ -380,6 +317,62 @@ public class JSConfigGeneratorPackage {
 			_jsConfigGeneratorModules.add(
 				new JSConfigGeneratorModule(
 					this, moduleId, dependencies, _contextPath));
+		}
+	}
+
+	private String _removeEnclosingCurlyBraces(JSONObject jsonObject) {
+		String json = jsonObject.toString();
+
+		return json.substring(1, json.length() - 1);
+	}
+
+	private void _urlToConfiguration(URL url, BundleWiring bundleWiring) {
+		if (url == null) {
+			return;
+		}
+
+		try (InputStream inputStream = url.openStream();
+			Reader reader = new InputStreamReader(inputStream)) {
+
+			JSONTokener jsonTokener = new JSONTokener(reader);
+
+			JSONObject jsonObject = new JSONObject(jsonTokener);
+
+			JSONObject unversionedConfigurationJSONObject =
+				_generateConfigurationJSONObject(
+					jsonObject, bundleWiring, false);
+
+			_unversionedConfiguration = _removeEnclosingCurlyBraces(
+				unversionedConfigurationJSONObject);
+
+			_versionedConfiguration = _removeEnclosingCurlyBraces(
+				_generateConfigurationJSONObject(
+					jsonObject, bundleWiring, true));
+
+			Dictionary<String, String> headers = _bundle.getHeaders(
+				StringPool.BLANK);
+
+			String jsSubmodulesExport = GetterUtil.getString(
+				headers.get("Liferay-JS-Submodules-Export"));
+
+			if (Validator.isNotNull(jsSubmodulesExport)) {
+				_unversionedMapsConfiguration = _removeEnclosingCurlyBraces(
+					_generateMapsConfigurationJSONObject(
+						_unversionedConfiguration,
+						StringUtil.split(jsSubmodulesExport)));
+
+				if (_log.isWarnEnabled()) {
+					_log.warn(
+						"Liferay-JS-Submodules-Export is deprecated and " +
+							"replaced with Liferay-JS-Submodules-Bridge");
+				}
+			}
+
+			_populateJSConfigGeneratorModules(
+				unversionedConfigurationJSONObject);
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
 		}
 	}
 

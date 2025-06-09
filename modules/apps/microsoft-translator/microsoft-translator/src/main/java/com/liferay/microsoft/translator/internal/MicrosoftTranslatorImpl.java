@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.microsoft.translator.internal;
@@ -46,7 +37,7 @@ public class MicrosoftTranslatorImpl implements MicrosoftTranslator {
 		throws MicrosoftTranslatorException {
 
 		try {
-			return doTranslate(fromLanguageId, toLanguageId, fromText);
+			return _translate(fromLanguageId, toLanguageId, fromText);
 		}
 		catch (MicrosoftTranslatorException microsoftTranslatorException) {
 			throw microsoftTranslatorException;
@@ -56,12 +47,38 @@ public class MicrosoftTranslatorImpl implements MicrosoftTranslator {
 		}
 	}
 
-	protected String doTranslate(
+	private String _getMicrosoftLanguageId(String languageId) {
+		if (languageId.equals("pt_BR") || languageId.equals("pt_PT")) {
+			return "pt";
+		}
+		else if (languageId.equals("hi_IN")) {
+			return "hi";
+		}
+		else if (languageId.equals("in")) {
+			return "id";
+		}
+		else if (languageId.equals("iw")) {
+			return "he";
+		}
+		else if (languageId.equals("nb")) {
+			return "no";
+		}
+		else if (languageId.equals("zh_CN")) {
+			return "zh-CHS";
+		}
+		else if (languageId.equals("zh_TW")) {
+			return "zh-CHT";
+		}
+
+		return languageId;
+	}
+
+	private String _translate(
 			String fromLanguageId, String toLanguageId, String fromText)
 		throws Exception {
 
-		fromLanguageId = getMicrosoftLanguageId(fromLanguageId);
-		toLanguageId = getMicrosoftLanguageId(toLanguageId);
+		fromLanguageId = _getMicrosoftLanguageId(fromLanguageId);
+		toLanguageId = _getMicrosoftLanguageId(toLanguageId);
 
 		Http.Options options = new Http.Options();
 
@@ -103,32 +120,6 @@ public class MicrosoftTranslatorImpl implements MicrosoftTranslator {
 		toText = toText.trim();
 
 		return StringUtil.replace(toText, CharPool.NEW_LINE, CharPool.SPACE);
-	}
-
-	protected String getMicrosoftLanguageId(String languageId) {
-		if (languageId.equals("pt_BR") || languageId.equals("pt_PT")) {
-			return "pt";
-		}
-		else if (languageId.equals("hi_IN")) {
-			return "hi";
-		}
-		else if (languageId.equals("in")) {
-			return "id";
-		}
-		else if (languageId.equals("iw")) {
-			return "he";
-		}
-		else if (languageId.equals("nb")) {
-			return "no";
-		}
-		else if (languageId.equals("zh_CN")) {
-			return "zh-CHS";
-		}
-		else if (languageId.equals("zh_TW")) {
-			return "zh-CHT";
-		}
-
-		return languageId;
 	}
 
 	private final MicrosoftTranslatorAuthenticator

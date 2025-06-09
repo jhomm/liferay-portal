@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.internal.comment.test;
@@ -73,7 +64,7 @@ public class MBCommentManagerImplTest {
 			null, _user.getUserId(), _group.getGroupId(),
 			DLFolderConstants.DEFAULT_PARENT_FOLDER_ID,
 			StringUtil.randomString(), ContentTypes.APPLICATION_OCTET_STREAM,
-			null, null, null,
+			null, null, null, null,
 			ServiceContextTestUtil.getServiceContext(
 				_group, _user.getUserId()));
 
@@ -100,10 +91,10 @@ public class MBCommentManagerImplTest {
 
 	@Test
 	public void testGetChildCommentsCount() {
-		int childCommentsCount = _commentManager.getChildCommentsCount(
-			_parentCommentId, WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(3, childCommentsCount);
+		Assert.assertEquals(
+			3,
+			_commentManager.getChildCommentsCount(
+				_parentCommentId, WorkflowConstants.STATUS_APPROVED));
 	}
 
 	@Test
@@ -118,11 +109,12 @@ public class MBCommentManagerImplTest {
 
 	@Test
 	public void testGetRootCommentsCount() {
-		int rootCommentsCount = _commentManager.getRootCommentsCount(
-			DLFileEntryConstants.getClassName(), _fileEntry.getFileEntryId(),
-			WorkflowConstants.STATUS_APPROVED);
-
-		Assert.assertEquals(2, rootCommentsCount);
+		Assert.assertEquals(
+			2,
+			_commentManager.getRootCommentsCount(
+				DLFileEntryConstants.getClassName(),
+				_fileEntry.getFileEntryId(),
+				WorkflowConstants.STATUS_APPROVED));
 	}
 
 	@Test
@@ -212,7 +204,7 @@ public class MBCommentManagerImplTest {
 					_group, user.getUserId()));
 
 		return _commentManager.addComment(
-			user.getUserId(), User.class.getName(), user.getUserId(),
+			null, user.getUserId(), User.class.getName(), user.getUserId(),
 			user.getFullName(), parentCommentId, StringUtil.randomString(),
 			StringUtil.randomString(), serviceContextFunction);
 	}
@@ -226,7 +218,9 @@ public class MBCommentManagerImplTest {
 		_addComment(_parentCommentId);
 	}
 
-	private Function<String, ServiceContext> _createServiceContextFunction() {
+	private Function<String, ServiceContext> _createServiceContextFunction()
+		throws Exception {
+
 		return new IdentityServiceContextFunction(
 			ServiceContextTestUtil.getServiceContext(
 				_group, _user.getUserId()));

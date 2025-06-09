@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.test.util;
 
 import com.liferay.commerce.currency.model.CommerceCurrency;
+import com.liferay.commerce.currency.service.CommerceCurrencyLocalServiceUtil;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
 import com.liferay.commerce.price.list.constants.CommercePriceListConstants;
 import com.liferay.commerce.price.list.model.CommercePriceList;
@@ -63,10 +55,15 @@ public class CommercePriceListTestUtil {
 			ServiceContextTestUtil.getServiceContext(groupId);
 
 		CommerceCurrency commerceCurrency =
-			CommerceCurrencyTestUtil.addCommerceCurrency(
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
 				serviceContext.getCompanyId());
 
-		User user = UserLocalServiceUtil.getDefaultUser(
+		if (commerceCurrency == null) {
+			commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				serviceContext.getCompanyId());
+		}
+
+		User user = UserLocalServiceUtil.getGuestUser(
 			serviceContext.getCompanyId());
 
 		Calendar calendar = CalendarFactoryUtil.getCalendar(user.getTimeZone());
@@ -74,8 +71,7 @@ public class CommercePriceListTestUtil {
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
 		return CommercePriceListLocalServiceUtil.addCommercePriceList(
-			null, groupId, user.getUserId(),
-			commerceCurrency.getCommerceCurrencyId(), true,
+			null, user.getUserId(), groupId, commerceCurrency.getCode(), true,
 			CommercePriceListConstants.TYPE_PRICE_LIST, 0, catalogBasePriceList,
 			RandomTestUtil.randomString(), priority,
 			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
@@ -95,10 +91,15 @@ public class CommercePriceListTestUtil {
 			ServiceContextTestUtil.getServiceContext(groupId);
 
 		CommerceCurrency commerceCurrency =
-			CommerceCurrencyTestUtil.addCommerceCurrency(
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
 				serviceContext.getCompanyId());
 
-		User user = UserLocalServiceUtil.getDefaultUser(
+		if (commerceCurrency == null) {
+			commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				serviceContext.getCompanyId());
+		}
+
+		User user = UserLocalServiceUtil.getGuestUser(
 			serviceContext.getCompanyId());
 
 		Calendar calendar = CalendarFactoryUtil.getCalendar(user.getTimeZone());
@@ -106,15 +107,14 @@ public class CommercePriceListTestUtil {
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
 		return CommercePriceListLocalServiceUtil.addCommercePriceList(
-			null, groupId, user.getUserId(),
-			commerceCurrency.getCommerceCurrencyId(), true, type, 0,
-			catalogBasePriceList, RandomTestUtil.randomString(), priority,
-			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
-			calendar.get(Calendar.YEAR), calendar.get(Calendar.HOUR_OF_DAY),
-			calendar.get(Calendar.MINUTE), calendar.get(Calendar.MONTH),
+			null, user.getUserId(), groupId, commerceCurrency.getCode(), true,
+			type, 0, catalogBasePriceList, RandomTestUtil.randomString(),
+			priority, calendar.get(Calendar.MONTH),
 			calendar.get(Calendar.DAY_OF_MONTH), calendar.get(Calendar.YEAR),
 			calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE),
-			true, serviceContext);
+			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
+			calendar.get(Calendar.YEAR), calendar.get(Calendar.HOUR_OF_DAY),
+			calendar.get(Calendar.MINUTE), true, serviceContext);
 	}
 
 	public static CommercePriceList addCommercePriceList(
@@ -125,10 +125,15 @@ public class CommercePriceListTestUtil {
 			ServiceContextTestUtil.getServiceContext(groupId);
 
 		CommerceCurrency commerceCurrency =
-			CommerceCurrencyTestUtil.addCommerceCurrency(
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
 				serviceContext.getCompanyId());
 
-		User user = UserLocalServiceUtil.getDefaultUser(
+		if (commerceCurrency == null) {
+			commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				serviceContext.getCompanyId());
+		}
+
+		User user = UserLocalServiceUtil.getGuestUser(
 			serviceContext.getCompanyId());
 
 		Calendar calendar = CalendarFactoryUtil.getCalendar(user.getTimeZone());
@@ -136,8 +141,7 @@ public class CommercePriceListTestUtil {
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
 		return CommercePriceListLocalServiceUtil.addCommercePriceList(
-			null, groupId, user.getUserId(),
-			commerceCurrency.getCommerceCurrencyId(), true,
+			null, user.getUserId(), groupId, commerceCurrency.getCode(), true,
 			CommercePriceListConstants.TYPE_PRICE_LIST, 0, false,
 			RandomTestUtil.randomString(), priority,
 			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),
@@ -155,10 +159,15 @@ public class CommercePriceListTestUtil {
 			ServiceContextTestUtil.getServiceContext(groupId);
 
 		CommerceCurrency commerceCurrency =
-			CommerceCurrencyTestUtil.addCommerceCurrency(
+			CommerceCurrencyLocalServiceUtil.fetchPrimaryCommerceCurrency(
 				serviceContext.getCompanyId());
 
-		User user = UserLocalServiceUtil.getDefaultUser(
+		if (commerceCurrency == null) {
+			commerceCurrency = CommerceCurrencyTestUtil.addCommerceCurrency(
+				serviceContext.getCompanyId());
+		}
+
+		User user = UserLocalServiceUtil.getGuestUser(
 			serviceContext.getCompanyId());
 
 		Calendar calendar = CalendarFactoryUtil.getCalendar(user.getTimeZone());
@@ -166,8 +175,7 @@ public class CommercePriceListTestUtil {
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_PUBLISH);
 
 		return CommercePriceListLocalServiceUtil.addCommercePriceList(
-			null, groupId, user.getUserId(),
-			commerceCurrency.getCommerceCurrencyId(), true,
+			null, user.getUserId(), groupId, commerceCurrency.getCode(), true,
 			CommercePriceListConstants.TYPE_PROMOTION, 0, false,
 			RandomTestUtil.randomString(), priority,
 			calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH),

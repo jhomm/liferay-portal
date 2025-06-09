@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.web.internal.display.context;
@@ -19,11 +10,10 @@ import com.liferay.info.collection.provider.CollectionQuery;
 import com.liferay.info.collection.provider.InfoCollectionProvider;
 import com.liferay.info.field.InfoFieldValue;
 import com.liferay.info.item.InfoItemFieldValues;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.info.item.provider.InfoItemFieldValuesProvider;
 import com.liferay.info.pagination.InfoPage;
 import com.liferay.info.pagination.Pagination;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.search.SearchContainer;
 import com.liferay.portal.kernel.language.LanguageUtil;
@@ -31,6 +21,7 @@ import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.ClassedModel;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ResourceActionsUtil;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -38,12 +29,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Jürgen Kappler
@@ -51,10 +42,10 @@ import javax.servlet.http.HttpServletRequest;
 public class InfoCollectionProviderItemsDisplayContext {
 
 	public InfoCollectionProviderItemsDisplayContext(
-		InfoItemServiceTracker infoItemServiceTracker,
+		InfoItemServiceRegistry infoItemServiceRegistry,
 		RenderRequest renderRequest, RenderResponse renderResponse) {
 
-		_infoItemServiceTracker = infoItemServiceTracker;
+		_infoItemServiceRegistry = infoItemServiceRegistry;
 		_renderRequest = renderRequest;
 		_renderResponse = renderResponse;
 
@@ -107,8 +98,12 @@ public class InfoCollectionProviderItemsDisplayContext {
 		InfoCollectionProvider<?> infoCollectionProvider =
 			_getInfoCollectionProvider();
 
+		if (infoCollectionProvider == null) {
+			return _infoItemFieldValuesProvider;
+		}
+
 		_infoItemFieldValuesProvider =
-			_infoItemServiceTracker.getFirstInfoItemService(
+			_infoItemServiceRegistry.getFirstInfoItemService(
 				InfoItemFieldValuesProvider.class,
 				infoCollectionProvider.getCollectionItemClassName());
 
@@ -125,6 +120,10 @@ public class InfoCollectionProviderItemsDisplayContext {
 		InfoCollectionProvider<?> infoCollectionProvider =
 			_getInfoCollectionProvider();
 
+		if (infoCollectionProvider == null) {
+			return searchContainer;
+		}
+
 		CollectionQuery collectionQuery = new CollectionQuery();
 
 		collectionQuery.setPagination(
@@ -134,8 +133,8 @@ public class InfoCollectionProviderItemsDisplayContext {
 		InfoPage infoPage = infoCollectionProvider.getCollectionInfoPage(
 			collectionQuery);
 
-		searchContainer.setResults(infoPage.getPageItems());
-		searchContainer.setTotal(infoPage.getTotalCount());
+		searchContainer.setResultsAndTotal(
+			infoPage::getPageItems, infoPage.getTotalCount());
 
 		return searchContainer;
 	}
@@ -188,7 +187,7 @@ public class InfoCollectionProviderItemsDisplayContext {
 			return _infoCollectionProvider;
 		}
 
-		_infoCollectionProvider = _infoItemServiceTracker.getInfoItemService(
+		_infoCollectionProvider = _infoItemServiceRegistry.getInfoItemService(
 			InfoCollectionProvider.class, _getInfoCollectionProviderKey());
 
 		return _infoCollectionProvider;
@@ -221,7 +220,7 @@ public class InfoCollectionProviderItemsDisplayContext {
 		}
 		catch (PortletException portletException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(portletException, portletException);
+				_log.debug(portletException);
 			}
 
 			return PortletURLBuilder.createRenderURL(
@@ -240,7 +239,7 @@ public class InfoCollectionProviderItemsDisplayContext {
 	private String _infoCollectionProviderClassName;
 	private String _infoCollectionProviderKey;
 	private InfoItemFieldValuesProvider<Object> _infoItemFieldValuesProvider;
-	private final InfoItemServiceTracker _infoItemServiceTracker;
+	private final InfoItemServiceRegistry _infoItemServiceRegistry;
 	private final RenderRequest _renderRequest;
 	private final RenderResponse _renderResponse;
 	private Boolean _showActions;

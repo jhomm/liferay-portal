@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service.persistence.test;
@@ -22,6 +13,7 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.exception.DuplicateRoleExternalReferenceCodeException;
 import com.liferay.portal.kernel.exception.NoSuchRoleException;
 import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
@@ -129,6 +121,8 @@ public class RolePersistenceTest {
 
 		newRole.setUuid(RandomTestUtil.randomString());
 
+		newRole.setExternalReferenceCode(RandomTestUtil.randomString());
+
 		newRole.setCompanyId(RandomTestUtil.nextLong());
 
 		newRole.setUserId(RandomTestUtil.nextLong());
@@ -153,6 +147,8 @@ public class RolePersistenceTest {
 
 		newRole.setSubtype(RandomTestUtil.randomString());
 
+		newRole.setStatus(RandomTestUtil.nextInt());
+
 		_roles.add(_persistence.update(newRole));
 
 		Role existingRole = _persistence.findByPrimaryKey(
@@ -163,6 +159,9 @@ public class RolePersistenceTest {
 		Assert.assertEquals(
 			existingRole.getCtCollectionId(), newRole.getCtCollectionId());
 		Assert.assertEquals(existingRole.getUuid(), newRole.getUuid());
+		Assert.assertEquals(
+			existingRole.getExternalReferenceCode(),
+			newRole.getExternalReferenceCode());
 		Assert.assertEquals(existingRole.getRoleId(), newRole.getRoleId());
 		Assert.assertEquals(
 			existingRole.getCompanyId(), newRole.getCompanyId());
@@ -183,6 +182,26 @@ public class RolePersistenceTest {
 			existingRole.getDescription(), newRole.getDescription());
 		Assert.assertEquals(existingRole.getType(), newRole.getType());
 		Assert.assertEquals(existingRole.getSubtype(), newRole.getSubtype());
+		Assert.assertEquals(existingRole.getStatus(), newRole.getStatus());
+	}
+
+	@Test(expected = DuplicateRoleExternalReferenceCodeException.class)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		Role role = addRole();
+
+		Role newRole = addRole();
+
+		newRole.setCompanyId(role.getCompanyId());
+
+		newRole = _persistence.update(newRole);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newRole);
+
+		newRole.setExternalReferenceCode(role.getExternalReferenceCode());
+
+		_persistence.update(newRole);
 	}
 
 	@Test
@@ -301,6 +320,15 @@ public class RolePersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_C() throws Exception {
+		_persistence.countByERC_C("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_C("null", 0L);
+
+		_persistence.countByERC_C((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		Role newRole = addRole();
 
@@ -326,10 +354,10 @@ public class RolePersistenceTest {
 	protected OrderByComparator<Role> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"Role_", "mvccVersion", true, "ctCollectionId", true, "uuid", true,
-			"roleId", true, "companyId", true, "userId", true, "userName", true,
-			"createDate", true, "modifiedDate", true, "classNameId", true,
-			"classPK", true, "name", true, "title", true, "description", true,
-			"type", true, "subtype", true);
+			"externalReferenceCode", true, "roleId", true, "companyId", true,
+			"userId", true, "userName", true, "createDate", true,
+			"modifiedDate", true, "classNameId", true, "classPK", true, "name",
+			true, "title", true, "type", true, "subtype", true, "status", true);
 	}
 
 	@Test
@@ -626,6 +654,17 @@ public class RolePersistenceTest {
 			ReflectionTestUtil.<Integer>invoke(
 				role, "getColumnOriginalValue", new Class<?>[] {String.class},
 				"type_"));
+
+		Assert.assertEquals(
+			role.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				role, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(role.getCompanyId()),
+			ReflectionTestUtil.<Long>invoke(
+				role, "getColumnOriginalValue", new Class<?>[] {String.class},
+				"companyId"));
 	}
 
 	protected Role addRole() throws Exception {
@@ -638,6 +677,8 @@ public class RolePersistenceTest {
 		role.setCtCollectionId(RandomTestUtil.nextLong());
 
 		role.setUuid(RandomTestUtil.randomString());
+
+		role.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		role.setCompanyId(RandomTestUtil.nextLong());
 
@@ -662,6 +703,8 @@ public class RolePersistenceTest {
 		role.setType(RandomTestUtil.nextInt());
 
 		role.setSubtype(RandomTestUtil.randomString());
+
+		role.setStatus(RandomTestUtil.nextInt());
 
 		_roles.add(_persistence.update(role));
 

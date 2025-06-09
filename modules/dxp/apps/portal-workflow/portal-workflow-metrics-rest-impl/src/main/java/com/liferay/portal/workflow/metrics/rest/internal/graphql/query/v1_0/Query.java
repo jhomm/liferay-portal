@@ -1,23 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.workflow.metrics.rest.internal.graphql.query.v1_0;
 
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeFunction;
-import com.liferay.portal.kernel.search.Sort;
-import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
 import com.liferay.portal.vulcan.accept.language.AcceptLanguage;
@@ -58,16 +47,16 @@ import com.liferay.portal.workflow.metrics.rest.resource.v1_0.SLAResultResource;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.TaskResource;
 import com.liferay.portal.workflow.metrics.rest.resource.v1_0.TimeRangeResource;
 
+import jakarta.annotation.Generated;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import jakarta.ws.rs.core.UriInfo;
+
 import java.util.Date;
 import java.util.Map;
 import java.util.function.BiFunction;
-
-import javax.annotation.Generated;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import javax.ws.rs.core.UriInfo;
 
 import org.osgi.service.component.ComponentServiceObjects;
 
@@ -249,6 +238,24 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processInstance(instanceId: ___, processId: ___){active, assetTitle, assetTitle_i18n, assetType, assetType_i18n, assignees, className, classPK, completed, creator, dateCompletion, dateCreated, dateModified, duration, id, processId, processVersion, slaResults, slaStatus, taskNames, transitions}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public Instance processInstance(
+			@GraphQLName("processId") Long processId,
+			@GraphQLName("instanceId") Long instanceId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_instanceResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			instanceResource -> instanceResource.getProcessInstance(
+				processId, instanceId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processInstances(assigneeIds: ___, classPKs: ___, dateEnd: ___, dateStart: ___, page: ___, pageSize: ___, processId: ___, slaStatuses: ___, sorts: ___, statuses: ___, taskNames: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
@@ -275,24 +282,6 @@ public class Query {
 					slaStatuses, statuses, taskNames,
 					Pagination.of(page, pageSize),
 					_sortsBiFunction.apply(instanceResource, sortsString))));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processInstance(instanceId: ___, processId: ___){assetTitle, assetTitle_i18n, assetType, assetType_i18n, assignees, className, classPK, completed, creator, dateCompletion, dateCreated, dateModified, duration, id, processId, processVersion, slaResults, slaStatus, taskNames, transitions}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public Instance processInstance(
-			@GraphQLName("processId") Long processId,
-			@GraphQLName("instanceId") Long instanceId)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_instanceResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			instanceResource -> instanceResource.getProcessInstance(
-				processId, instanceId));
 	}
 
 	/**
@@ -372,6 +361,26 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processMetric(completed: ___, dateEnd: ___, dateStart: ___, processId: ___){instanceCount, onTimeInstanceCount, overdueInstanceCount, process, untrackedInstanceCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public ProcessMetric processMetric(
+			@GraphQLName("processId") Long processId,
+			@GraphQLName("completed") Boolean completed,
+			@GraphQLName("dateEnd") Date dateEnd,
+			@GraphQLName("dateStart") Date dateStart)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_processMetricResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			processMetricResource -> processMetricResource.getProcessMetric(
+				processId, completed, dateEnd, dateStart));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processMetrics(page: ___, pageSize: ___, sorts: ___, title: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
@@ -390,26 +399,6 @@ public class Query {
 					title, Pagination.of(page, pageSize),
 					_sortsBiFunction.apply(
 						processMetricResource, sortsString))));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processMetric(completed: ___, dateEnd: ___, dateStart: ___, processId: ___){instanceCount, onTimeInstanceCount, overdueInstanceCount, process, untrackedInstanceCount}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public ProcessMetric processMetric(
-			@GraphQLName("processId") Long processId,
-			@GraphQLName("completed") Boolean completed,
-			@GraphQLName("dateEnd") Date dateEnd,
-			@GraphQLName("dateStart") Date dateStart)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_processMetricResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			processMetricResource -> processMetricResource.getProcessMetric(
-				processId, completed, dateEnd, dateStart));
 	}
 
 	/**
@@ -514,22 +503,6 @@ public class Query {
 	/**
 	 * Invoke this method with the command line:
 	 *
-	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processTasks(processId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
-	 */
-	@GraphQLField
-	public TaskPage processTasks(@GraphQLName("processId") Long processId)
-		throws Exception {
-
-		return _applyComponentServiceObjects(
-			_taskResourceComponentServiceObjects,
-			this::_populateResourceContext,
-			taskResource -> new TaskPage(
-				taskResource.getProcessTasksPage(processId)));
-	}
-
-	/**
-	 * Invoke this method with the command line:
-	 *
 	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processTask(processId: ___, taskId: ___){assetTitle, assetTitle_i18n, assetType, assetType_i18n, assignee, className, classPK, completed, completionUserId, dateCompletion, dateCreated, dateModified, duration, id, instanceId, label, name, nodeId, processId, processVersion}}"}' -u 'test@liferay.com:test'
 	 */
 	@GraphQLField
@@ -542,6 +515,22 @@ public class Query {
 			_taskResourceComponentServiceObjects,
 			this::_populateResourceContext,
 			taskResource -> taskResource.getProcessTask(processId, taskId));
+	}
+
+	/**
+	 * Invoke this method with the command line:
+	 *
+	 * curl -H 'Content-Type: text/plain; charset=utf-8' -X 'POST' 'http://localhost:8080/o/graphql' -d $'{"query": "query {processTasks(processId: ___){items {__}, page, pageSize, totalCount}}"}' -u 'test@liferay.com:test'
+	 */
+	@GraphQLField
+	public TaskPage processTasks(@GraphQLName("processId") Long processId)
+		throws Exception {
+
+		return _applyComponentServiceObjects(
+			_taskResourceComponentServiceObjects,
+			this::_populateResourceContext,
+			taskResource -> new TaskPage(
+				taskResource.getProcessTasksPage(processId)));
 	}
 
 	/**
@@ -887,7 +876,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Calendar> items;
@@ -920,7 +909,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<HistogramMetric> items;
@@ -953,7 +942,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Index> items;
@@ -986,7 +975,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Instance> items;
@@ -1019,7 +1008,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Node> items;
@@ -1052,7 +1041,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<NodeMetric> items;
@@ -1085,7 +1074,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Process> items;
@@ -1118,7 +1107,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<ProcessMetric> items;
@@ -1151,7 +1140,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<ProcessVersion> items;
@@ -1184,7 +1173,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<ReindexStatus> items;
@@ -1217,7 +1206,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Role> items;
@@ -1250,7 +1239,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SLA> items;
@@ -1283,7 +1272,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<SLAResult> items;
@@ -1316,7 +1305,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<Task> items;
@@ -1349,7 +1338,7 @@ public class Query {
 		}
 
 		@GraphQLField
-		protected Map<String, Map> actions;
+		protected Map<String, Map<String, String>> actions;
 
 		@GraphQLField
 		protected java.util.Collection<TimeRange> items;
@@ -1625,12 +1614,15 @@ public class Query {
 
 	private AcceptLanguage _acceptLanguage;
 	private com.liferay.portal.kernel.model.Company _company;
-	private BiFunction<Object, String, Filter> _filterBiFunction;
+	private BiFunction
+		<Object, String, com.liferay.portal.kernel.search.filter.Filter>
+			_filterBiFunction;
 	private GroupLocalService _groupLocalService;
 	private HttpServletRequest _httpServletRequest;
 	private HttpServletResponse _httpServletResponse;
 	private RoleLocalService _roleLocalService;
-	private BiFunction<Object, String, Sort[]> _sortsBiFunction;
+	private BiFunction<Object, String, com.liferay.portal.kernel.search.Sort[]>
+		_sortsBiFunction;
 	private UriInfo _uriInfo;
 	private com.liferay.portal.kernel.model.User _user;
 

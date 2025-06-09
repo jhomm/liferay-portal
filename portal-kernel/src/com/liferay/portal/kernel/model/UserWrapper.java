@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -51,7 +42,6 @@ public class UserWrapper
 		attributes.put("companyId", getCompanyId());
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
-		attributes.put("defaultUser", isDefaultUser());
 		attributes.put("contactId", getContactId());
 		attributes.put("password", getPassword());
 		attributes.put("passwordEncrypted", isPasswordEncrypted());
@@ -86,6 +76,7 @@ public class UserWrapper
 		attributes.put("lockoutDate", getLockoutDate());
 		attributes.put("agreedToTermsOfUse", isAgreedToTermsOfUse());
 		attributes.put("emailAddressVerified", isEmailAddressVerified());
+		attributes.put("type", getType());
 		attributes.put("status", getStatus());
 
 		return attributes;
@@ -140,12 +131,6 @@ public class UserWrapper
 
 		if (modifiedDate != null) {
 			setModifiedDate(modifiedDate);
-		}
-
-		Boolean defaultUser = (Boolean)attributes.get("defaultUser");
-
-		if (defaultUser != null) {
-			setDefaultUser(defaultUser);
 		}
 
 		Long contactId = (Long)attributes.get("contactId");
@@ -359,18 +344,17 @@ public class UserWrapper
 			setEmailAddressVerified(emailAddressVerified);
 		}
 
+		Integer type = (Integer)attributes.get("type");
+
+		if (type != null) {
+			setType(type);
+		}
+
 		Integer status = (Integer)attributes.get("status");
 
 		if (status != null) {
 			setStatus(status);
 		}
-	}
-
-	@Override
-	public void addRemotePreference(
-		com.liferay.portal.kernel.util.RemotePreference remotePreference) {
-
-		model.addRemotePreference(remotePreference);
 	}
 
 	@Override
@@ -408,6 +392,20 @@ public class UserWrapper
 	@Override
 	public boolean getAgreedToTermsOfUse() {
 		return model.getAgreedToTermsOfUse();
+	}
+
+	@Override
+	public java.util.List<Group> getAllGroups()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getAllGroups();
+	}
+
+	@Override
+	public java.util.List<Role> getAllRoles()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getAllRoles();
 	}
 
 	/**
@@ -498,16 +496,6 @@ public class UserWrapper
 	}
 
 	/**
-	 * Returns the default user of this user.
-	 *
-	 * @return the default user of this user
-	 */
-	@Override
-	public boolean getDefaultUser() {
-		return model.getDefaultUser();
-	}
-
-	/**
 	 * Returns the digest of this user.
 	 *
 	 * @return the digest of this user
@@ -520,9 +508,9 @@ public class UserWrapper
 	/**
 	 * Returns a digest for the user, incorporating the password.
 	 *
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 * @param password a password to incorporate with the digest
 	 * @return a digest for the user, incorporating the password
+	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
 	 */
 	@Deprecated
 	@Override
@@ -768,6 +756,32 @@ public class UserWrapper
 	}
 
 	@Override
+	public java.util.List<Group> getInheritedGroups()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getInheritedGroups();
+	}
+
+	@Override
+	public java.util.List<Role> getInheritedRoles()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getInheritedRoles();
+	}
+
+	@Override
+	public java.util.List<Group> getInheritedSiteGroups()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getInheritedSiteGroups();
+	}
+
+	@Override
+	public java.util.List<Role> getInheritedSiteRoles() {
+		return model.getInheritedSiteRoles();
+	}
+
+	@Override
 	public String getInitials() {
 		return model.getInitials();
 	}
@@ -998,6 +1012,29 @@ public class UserWrapper
 	}
 
 	@Override
+	public java.util.List<Organization> getOrganizations(
+			boolean includeAdministrative, boolean includeParentOrganizations)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getOrganizations(
+			includeAdministrative, includeParentOrganizations);
+	}
+
+	@Override
+	public java.util.List<Group> getOrganizationsGroups()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getOrganizationsGroups();
+	}
+
+	@Override
+	public java.util.List<Role> getOrganizationsRoles()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getOrganizationsRoles();
+	}
+
+	@Override
 	public String getOriginalEmailAddress() {
 		return model.getOriginalEmailAddress();
 	}
@@ -1134,20 +1171,6 @@ public class UserWrapper
 	}
 
 	@Override
-	public com.liferay.portal.kernel.util.RemotePreference getRemotePreference(
-		String name) {
-
-		return model.getRemotePreference(name);
-	}
-
-	@Override
-	public Iterable<com.liferay.portal.kernel.util.RemotePreference>
-		getRemotePreferences() {
-
-		return model.getRemotePreferences();
-	}
-
-	@Override
 	public long[] getRoleIds() {
 		return model.getRoleIds();
 	}
@@ -1179,6 +1202,13 @@ public class UserWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.getSiteGroups(includeAdministrative);
+	}
+
+	@Override
+	public java.util.List<Role> getSiteRoles()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getSiteRoles();
 	}
 
 	/**
@@ -1216,6 +1246,16 @@ public class UserWrapper
 		return model.getTimeZoneId();
 	}
 
+	/**
+	 * Returns the type of this user.
+	 *
+	 * @return the type of this user
+	 */
+	@Override
+	public int getType() {
+		return model.getType();
+	}
+
 	@Override
 	public Date getUnlockDate()
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -1231,6 +1271,13 @@ public class UserWrapper
 	@Override
 	public long[] getUserGroupIds() {
 		return model.getUserGroupIds();
+	}
+
+	@Override
+	public java.util.List<UserGroupRole> getUserGroupRoles()
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getUserGroupRoles();
 	}
 
 	@Override
@@ -1334,10 +1381,9 @@ public class UserWrapper
 	}
 
 	/**
-	 * Returns <code>true</code> if this user is default user.
-	 *
-	 * @return <code>true</code> if this user is default user; <code>false</code> otherwise
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #isGuestUser}
 	 */
+	@Deprecated
 	@Override
 	public boolean isDefaultUser() {
 		return model.isDefaultUser();
@@ -1370,6 +1416,11 @@ public class UserWrapper
 		return model.isFemale();
 	}
 
+	@Override
+	public boolean isGuestUser() {
+		return model.isGuestUser();
+	}
+
 	/**
 	 * Returns <code>true</code> if this user is lockout.
 	 *
@@ -1385,6 +1436,11 @@ public class UserWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return model.isMale();
+	}
+
+	@Override
+	public boolean isOnDemandUser() {
+		return model.isOnDemandUser();
 	}
 
 	/**
@@ -1413,8 +1469,18 @@ public class UserWrapper
 	}
 
 	@Override
+	public boolean isPasswordResetRequired() {
+		return model.isPasswordResetRequired();
+	}
+
+	@Override
 	public boolean isReminderQueryComplete() {
 		return model.isReminderQueryComplete();
+	}
+
+	@Override
+	public boolean isServiceAccountUser() {
+		return model.isServiceAccountUser();
 	}
 
 	@Override
@@ -1495,16 +1561,6 @@ public class UserWrapper
 	@Override
 	public void setCtCollectionId(long ctCollectionId) {
 		model.setCtCollectionId(ctCollectionId);
-	}
-
-	/**
-	 * Sets whether this user is default user.
-	 *
-	 * @param defaultUser the default user of this user
-	 */
-	@Override
-	public void setDefaultUser(boolean defaultUser) {
-		model.setDefaultUser(defaultUser);
 	}
 
 	/**
@@ -1605,6 +1661,21 @@ public class UserWrapper
 	@Override
 	public void setGreeting(String greeting) {
 		model.setGreeting(greeting);
+	}
+
+	@Override
+	public void setGroup(Group group) {
+		model.setGroup(group);
+	}
+
+	@Override
+	public void setGroupId(long groupId) {
+		model.setGroupId(groupId);
+	}
+
+	@Override
+	public void setGroupIds(long[] groupIds) {
+		model.setGroupIds(groupIds);
 	}
 
 	/**
@@ -1757,6 +1828,11 @@ public class UserWrapper
 		model.setOpenId(openId);
 	}
 
+	@Override
+	public void setOrganizationIds(long[] organizationIds) {
+		model.setOrganizationIds(organizationIds);
+	}
+
 	/**
 	 * Sets the password of this user.
 	 *
@@ -1847,6 +1923,11 @@ public class UserWrapper
 		model.setReminderQueryQuestion(reminderQueryQuestion);
 	}
 
+	@Override
+	public void setRoleIds(long[] roleIds) {
+		model.setRoleIds(roleIds);
+	}
+
 	/**
 	 * Sets the screen name of this user.
 	 *
@@ -1867,6 +1948,11 @@ public class UserWrapper
 		model.setStatus(status);
 	}
 
+	@Override
+	public void setTeamIds(long[] teamIds) {
+		model.setTeamIds(teamIds);
+	}
+
 	/**
 	 * Sets the time zone ID of this user.
 	 *
@@ -1875,6 +1961,21 @@ public class UserWrapper
 	@Override
 	public void setTimeZoneId(String timeZoneId) {
 		model.setTimeZoneId(timeZoneId);
+	}
+
+	/**
+	 * Sets the type of this user.
+	 *
+	 * @param type the type of this user
+	 */
+	@Override
+	public void setType(int type) {
+		model.setType(type);
+	}
+
+	@Override
+	public void setUserGroupIds(long[] userGroupIds) {
+		model.setUserGroupIds(userGroupIds);
 	}
 
 	/**
@@ -1905,6 +2006,11 @@ public class UserWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

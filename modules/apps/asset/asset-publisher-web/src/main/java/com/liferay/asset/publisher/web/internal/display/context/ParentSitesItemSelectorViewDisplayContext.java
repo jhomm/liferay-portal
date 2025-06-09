@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.publisher.web.internal.display.context;
@@ -18,16 +9,16 @@ import com.liferay.asset.publisher.util.AssetPublisherHelper;
 import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.WebKeys;
-import com.liferay.portlet.usersadmin.search.GroupSearch;
-import com.liferay.sites.kernel.util.SitesUtil;
+import com.liferay.site.search.GroupSearch;
 
-import java.util.ArrayList;
+import jakarta.portlet.PortletURL;
+
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.List;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -36,34 +27,42 @@ public class ParentSitesItemSelectorViewDisplayContext
 	extends BaseItemSelectorViewDisplayContext {
 
 	public ParentSitesItemSelectorViewDisplayContext(
-		HttpServletRequest httpServletRequest,
-		AssetPublisherHelper assetPublisherHelper,
 		GroupItemSelectorCriterion groupItemSelectorCriterion,
-		String itemSelectedEventName, PortletURL portletURL) {
+		HttpServletRequest httpServletRequest,
+		AssetPublisherHelper assetPublisherHelper, PortletURL portletURL) {
 
-		super(
-			httpServletRequest, assetPublisherHelper,
-			groupItemSelectorCriterion, itemSelectedEventName, portletURL);
+		super(httpServletRequest, assetPublisherHelper, portletURL);
+
+		_groupItemSelectorCriterion = groupItemSelectorCriterion;
 	}
 
 	@Override
 	public GroupSearch getGroupSearch() throws Exception {
+		GroupSearch groupSearch = new GroupSearch(
+			getPortletRequest(), portletURL);
+
+		long[] excludedGroupIds =
+			_groupItemSelectorCriterion.getExcludedGroupIds();
+
 		ThemeDisplay themeDisplay =
 			(ThemeDisplay)httpServletRequest.getAttribute(
 				WebKeys.THEME_DISPLAY);
 
-		GroupSearch groupSearch = new GroupSearch(
-			getPortletRequest(), getPortletURL());
-
 		Group group = themeDisplay.getSiteGroup();
 
-		List<Group> groups = group.getAncestors();
+		List<Group> groups = ListUtil.filter(
+			group.getAncestors(),
+			curGroup -> {
+				if (curGroup.isContentSharingWithChildrenEnabled() &&
+					!ArrayUtil.contains(excludedGroupIds, group.getGroupId())) {
 
-		groups = _filterParentSitesGroups(groups);
+					return true;
+				}
 
-		groupSearch.setTotal(groups.size());
+				return false;
+			});
 
-		groupSearch.setResults(groups);
+		groupSearch.setResultsAndTotal(() -> groups, groups.size());
 
 		return groupSearch;
 	}
@@ -73,16 +72,6 @@ public class ParentSitesItemSelectorViewDisplayContext
 		return false;
 	}
 
-	private List<Group> _filterParentSitesGroups(List<Group> groups) {
-		List<Group> filteredGroups = new ArrayList<>();
-
-		for (Group group : groups) {
-			if (SitesUtil.isContentSharingWithChildrenEnabled(group)) {
-				filteredGroups.add(group);
-			}
-		}
-
-		return filteredGroups;
-	}
+	private final GroupItemSelectorCriterion _groupItemSelectorCriterion;
 
 }

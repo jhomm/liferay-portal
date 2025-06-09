@@ -1,0 +1,69 @@
+definition {
+
+	@summary = "Default summary"
+	macro addItem(frameTitle = null, pluralLabelName = null) {
+		Click.javaScriptClick(locator1 = "VisualizeObjectDisplayPage#SELECT_ITEM");
+
+		SelectFrame(
+			key_title = ${frameTitle},
+			locator1 = "IFrame#MODAL_ANY");
+
+		Click.javaScriptClick(
+			key_pluralLabelName = ${pluralLabelName},
+			locator1 = "VisualizeObjectDisplayPage#SELECT_OBJECT");
+
+		Click(locator1 = "VisualizeObjectDisplayPage#SELECT_ENTRY");
+
+		SelectFrameTop();
+	}
+
+	@summary = "Default summary"
+	macro createObjectPageTemplate(pageTemplateName = null, contentType = null) {
+		VisualizeObjectDisplayPage.openPageTemplate();
+
+		VisualizeObjectDisplayPage.selectBlankPageTemplate();
+
+		Type(
+			locator1 = "VisualizeObjectDisplayPage#NAME_OBJECT_DISPLAY_PAGE_TEMPLATE",
+			value1 = ${pageTemplateName});
+
+		Select(
+			locator1 = "VisualizeObjectDisplayPage#OBJECT_CONTENT_TYPE",
+			value1 = ${contentType});
+
+		Click(locator1 = "VisualizeObjectCollectionDisplay#SAVE_BUTTON");
+	}
+
+	@summary = "Default summary"
+	macro openDisplayPage(displayPageName = null) {
+		NavItem.gotoDisplayPages();
+
+		Click(
+			key_pageName = ${displayPageName},
+			locator1 = "VisualizeObjectDisplayPage#DISPLAY_PAGE");
+	}
+
+	@summary = "Default summary"
+	macro openPageTemplate() {
+		Navigator.openSpecificURL(url = "/group/guest/~/control_panel/manage?p_p_id=com_liferay_layout_page_template_admin_web_portlet_LayoutPageTemplatesPortlet");
+
+		NavItem.gotoDisplayPages();
+
+		Click.javaScriptClick(locator1 = "Button#PLUS");
+	}
+
+	@summary = "Default summary"
+	macro selectBlankPageTemplate() {
+		Click(locator1 = "VisualizeObjectDisplayPage#SELECT_BLANK_OBJECT_DISPLAY_PAGE_TEMPLATE");
+
+		Click(locator1 = "VisualizeObjectDisplayPage#CARD_BLANK");
+	}
+
+	@summary = "Default summary"
+	macro validateObjectContentType(contentType = null) {
+		AssertSelectedLabel(
+			locator1 = "VisualizeObjectDisplayPage#OBJECT_CONTENT_TYPE",
+			value1 = ${contentType});
+	}
+
+}

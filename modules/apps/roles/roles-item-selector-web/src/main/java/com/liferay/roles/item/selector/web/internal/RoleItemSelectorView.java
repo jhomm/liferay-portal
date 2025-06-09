@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.roles.item.selector.web.internal;
@@ -24,15 +15,25 @@ import com.liferay.portal.kernel.portlet.PortletURLUtil;
 import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.service.RoleService;
 import com.liferay.portal.kernel.util.JavaConstants;
-import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Portal;
-import com.liferay.portlet.rolesadmin.search.RoleSearch;
-import com.liferay.portlet.rolesadmin.search.RoleSearchTerms;
+import com.liferay.portlet.usersadmin.util.UsersAdminUtil;
+import com.liferay.roles.admin.search.RoleSearch;
+import com.liferay.roles.admin.search.RoleSearchTerms;
 import com.liferay.roles.item.selector.RoleItemSelectorCriterion;
 import com.liferay.roles.item.selector.web.internal.constants.RoleItemSelectorViewConstants;
 import com.liferay.roles.item.selector.web.internal.display.context.RoleItemSelectorViewDisplayContext;
 import com.liferay.roles.item.selector.web.internal.search.RoleItemSelectorChecker;
-import com.liferay.users.admin.kernel.util.UsersAdmin;
+
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
+
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.IOException;
 
@@ -41,17 +42,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
-
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -59,7 +49,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  * @deprecated As of Mueller (7.2.x), , with no direct replacement
  */
-@Component(immediate = true, service = ItemSelectorView.class)
+@Component(service = ItemSelectorView.class)
 @Deprecated
 public class RoleItemSelectorView
 	implements ItemSelectorView<RoleItemSelectorCriterion> {
@@ -90,6 +80,11 @@ public class RoleItemSelectorView
 			PortletURL portletURL, String itemSelectedEventName, boolean search)
 		throws IOException, ServletException {
 
+		ServletContext servletContext = getServletContext();
+
+		RequestDispatcher requestDispatcher =
+			servletContext.getRequestDispatcher("/role_item_selector.jsp");
+
 		HttpServletRequest httpServletRequest =
 			(HttpServletRequest)servletRequest;
 
@@ -117,11 +112,6 @@ public class RoleItemSelectorView
 				ROLE_ITEM_SELECTOR_VIEW_DISPLAY_CONTEXT,
 			roleItemSelectorViewDisplayContext);
 
-		ServletContext servletContext = getServletContext();
-
-		RequestDispatcher requestDispatcher =
-			servletContext.getRequestDispatcher("/role_item_selector.jsp");
-
 		requestDispatcher.include(servletRequest, servletResponse);
 	}
 
@@ -136,36 +126,30 @@ public class RoleItemSelectorView
 			renderRequest, currentURL);
 
 		searchContainer.setEmptyResultsMessage("no-roles-were-found");
-
-		OrderByComparator<Role> orderByComparator =
-			_usersAdmin.getRoleOrderByComparator(
+		searchContainer.setOrderByComparator(
+			UsersAdminUtil.getRoleOrderByComparator(
 				searchContainer.getOrderByCol(),
-				searchContainer.getOrderByType());
-
-		searchContainer.setOrderByComparator(orderByComparator);
-
-		searchContainer.setRowChecker(
-			new RoleItemSelectorChecker(
-				renderResponse, checkedRoleIds, excludedRoleNames));
+				searchContainer.getOrderByType()));
 
 		RoleSearchTerms searchTerms =
 			(RoleSearchTerms)searchContainer.getSearchTerms();
 
 		searchTerms.setType(type);
 
-		List<Role> results = _roleService.search(
-			CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
-			searchTerms.getTypesObj(), new LinkedHashMap<String, Object>(),
-			searchContainer.getStart(), searchContainer.getEnd(),
-			searchContainer.getOrderByComparator());
+		searchContainer.setResultsAndTotal(
+			() -> _roleService.search(
+				CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
+				searchTerms.getTypesObj(), new LinkedHashMap<String, Object>(),
+				searchContainer.getStart(), searchContainer.getEnd(),
+				searchContainer.getOrderByComparator()),
+			_roleService.searchCount(
+				CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
+				searchTerms.getTypesObj(),
+				new LinkedHashMap<String, Object>()));
 
-		int total = _roleService.searchCount(
-			CompanyThreadLocal.getCompanyId(), searchTerms.getKeywords(),
-			searchTerms.getTypesObj(), new LinkedHashMap<String, Object>());
-
-		searchContainer.setTotal(total);
-
-		searchContainer.setResults(results);
+		searchContainer.setRowChecker(
+			new RoleItemSelectorChecker(
+				renderResponse, checkedRoleIds, excludedRoleNames));
 
 		return searchContainer;
 	}
@@ -187,8 +171,5 @@ public class RoleItemSelectorView
 		target = "(osgi.web.symbolicname=com.liferay.roles.item.selector.web)"
 	)
 	private ServletContext _servletContext;
-
-	@Reference
-	private UsersAdmin _usersAdmin;
 
 }

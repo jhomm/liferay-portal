@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service.impl;
@@ -19,14 +10,17 @@ import com.liferay.commerce.product.model.CPDefinition;
 import com.liferay.commerce.product.model.CPDefinitionOptionRel;
 import com.liferay.commerce.product.model.CPDefinitionOptionValueRel;
 import com.liferay.commerce.product.model.CommerceCatalog;
+import com.liferay.commerce.product.service.CPDefinitionLocalService;
+import com.liferay.commerce.product.service.CPDefinitionOptionRelLocalService;
+import com.liferay.commerce.product.service.CommerceCatalogLocalService;
 import com.liferay.commerce.product.service.base.CPDefinitionOptionValueRelServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.auth.PrincipalException;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
@@ -36,21 +30,33 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Marco Leo
  * @author Igor Beslic
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CPDefinitionOptionValueRel"
+	},
+	service = AopService.class
+)
 public class CPDefinitionOptionValueRelServiceImpl
 	extends CPDefinitionOptionValueRelServiceBaseImpl {
 
 	@Override
 	public CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
-			long cpDefinitionOptionRelId, Map<Locale, String> nameMap,
-			double priority, String key, ServiceContext serviceContext)
+			long cpDefinitionOptionRelId, long cpInstanceId, String key,
+			Map<Locale, String> nameMap, boolean preselected,
+			BigDecimal deltaPrice, double priority, BigDecimal quantity,
+			String unitOfMeasureKey, ServiceContext serviceContext)
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
 		_checkCommerceCatalog(
@@ -58,7 +64,28 @@ public class CPDefinitionOptionValueRelServiceImpl
 
 		return cpDefinitionOptionValueRelLocalService.
 			addCPDefinitionOptionValueRel(
-				cpDefinitionOptionRelId, nameMap, priority, key,
+				cpDefinitionOptionRelId, cpInstanceId, key, nameMap,
+				preselected, deltaPrice, priority, quantity, unitOfMeasureKey,
+				serviceContext);
+	}
+
+	@Override
+	public CPDefinitionOptionValueRel addCPDefinitionOptionValueRel(
+			long cpDefinitionOptionRelId, String key,
+			Map<Locale, String> nameMap, double priority,
+			ServiceContext serviceContext)
+		throws PortalException {
+
+		CPDefinitionOptionRel cpDefinitionOptionRel =
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+				cpDefinitionOptionRelId);
+
+		_checkCommerceCatalog(
+			cpDefinitionOptionRel.getCPDefinitionId(), ActionKeys.VIEW);
+
+		return cpDefinitionOptionValueRelLocalService.
+			addCPDefinitionOptionValueRel(
+				cpDefinitionOptionRelId, key, nameMap, priority,
 				serviceContext);
 	}
 
@@ -72,7 +99,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 				getCPDefinitionOptionValueRel(cpDefinitionOptionValueRelId);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 		_checkCommerceCatalog(
@@ -93,7 +120,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 
 		if (cpDefinitionOptionValueRel != null) {
 			CPDefinitionOptionRel cpDefinitionOptionRel =
-				cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+				_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 					cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 			_checkCommerceCatalog(
@@ -114,7 +141,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 
 		if (cpDefinitionOptionValueRel != null) {
 			CPDefinitionOptionRel cpDefinitionOptionRel =
-				cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+				_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 					cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 			_checkCommerceCatalog(
@@ -134,7 +161,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 				getCPDefinitionOptionValueRel(cpDefinitionOptionValueRelId);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 		_checkCommerceCatalog(
@@ -150,7 +177,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
 		_checkCommerceCatalog(
@@ -167,7 +194,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
 		_checkCommerceCatalog(
@@ -184,7 +211,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		throws PortalException {
 
 		CommerceCatalog commerceCatalog =
-			commerceCatalogLocalService.fetchCommerceCatalogByGroupId(groupId);
+			_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(groupId);
 
 		_commerceCatalogModelResourcePermission.check(
 			getPermissionChecker(), commerceCatalog, ActionKeys.VIEW);
@@ -198,7 +225,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
 		_checkCommerceCatalog(
@@ -218,7 +245,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 				getCPDefinitionOptionValueRel(cpDefinitionOptionValueRelId);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 		_checkCommerceCatalog(
@@ -229,35 +256,6 @@ public class CPDefinitionOptionValueRelServiceImpl
 				cpDefinitionOptionValueRelId);
 	}
 
-	/**
-	 * @param      companyId
-	 * @param      groupId
-	 * @param      cpDefinitionOptionRelId
-	 * @param      keywords
-	 * @param      start
-	 * @param      end
-	 * @param      sort
-	 * @return
-	 *
-	 * @throws     PortalException
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
-	 *             #searchCPDefinitionOptionValueRels(long, long, long, String,
-	 *             int, int, Sort[])}
-	 */
-	@Deprecated
-	@Override
-	public BaseModelSearchResult<CPDefinitionOptionValueRel>
-			searchCPDefinitionOptionValueRels(
-				long companyId, long groupId, long cpDefinitionOptionRelId,
-				String keywords, int start, int end, Sort sort)
-		throws PortalException {
-
-		return cpDefinitionOptionValueRelService.
-			searchCPDefinitionOptionValueRels(
-				companyId, groupId, cpDefinitionOptionRelId, keywords, start,
-				end, new Sort[] {sort});
-	}
-
 	@Override
 	public BaseModelSearchResult<CPDefinitionOptionValueRel>
 			searchCPDefinitionOptionValueRels(
@@ -266,7 +264,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
 		_checkCommerceCatalog(
@@ -285,7 +283,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		throws PortalException {
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionRelId);
 
 		_checkCommerceCatalog(
@@ -296,40 +294,11 @@ public class CPDefinitionOptionValueRelServiceImpl
 				companyId, groupId, cpDefinitionOptionRelId, keywords);
 	}
 
-	/**
-	 * @param      cpDefinitionOptionValueRelId
-	 * @param      nameMap
-	 * @param      priority
-	 * @param      key
-	 * @param      cpInstanceId
-	 * @param      quantity
-	 * @param      price
-	 * @param      serviceContext
-	 * @return
-	 *
-	 * @throws     PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 *             #updateCPDefinitionOptionValueRel(long, Map, double, String,
-	 *             long, int, boolean, BigDecimal, ServiceContext)}
-	 */
-	@Deprecated
 	@Override
 	public CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
-			long cpDefinitionOptionValueRelId, Map<Locale, String> nameMap,
-			double priority, String key, long cpInstanceId, int quantity,
-			BigDecimal price, ServiceContext serviceContext)
-		throws PortalException {
-
-		return updateCPDefinitionOptionValueRel(
-			cpDefinitionOptionValueRelId, nameMap, priority, key, cpInstanceId,
-			quantity, false, price, serviceContext);
-	}
-
-	@Override
-	public CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
-			long cpDefinitionOptionValueRelId, Map<Locale, String> nameMap,
-			double priority, String key, long cpInstanceId, int quantity,
-			boolean preselected, BigDecimal price,
+			long cpDefinitionOptionValueRelId, long cpInstanceId, String key,
+			Map<Locale, String> nameMap, boolean preselected, BigDecimal price,
+			double priority, BigDecimal quantity, String unitOfMeasureKey,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -338,7 +307,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 				getCPDefinitionOptionValueRel(cpDefinitionOptionValueRelId);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 		_checkCommerceCatalog(
@@ -346,33 +315,9 @@ public class CPDefinitionOptionValueRelServiceImpl
 
 		return cpDefinitionOptionValueRelLocalService.
 			updateCPDefinitionOptionValueRel(
-				cpDefinitionOptionValueRelId, nameMap, priority, key,
-				cpInstanceId, quantity, preselected, price, serviceContext);
-	}
-
-	/**
-	 * @param      cpDefinitionOptionValueRelId
-	 * @param      nameMap
-	 * @param      priority
-	 * @param      key
-	 * @param      serviceContext
-	 * @return
-	 *
-	 * @throws     PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link
-	 *             #updateCPDefinitionOptionValueRel(long, Map, double, String,
-	 *             long, int, boolean, BigDecimal, ServiceContext)}
-	 */
-	@Deprecated
-	@Override
-	public CPDefinitionOptionValueRel updateCPDefinitionOptionValueRel(
-			long cpDefinitionOptionValueRelId, Map<Locale, String> nameMap,
-			double priority, String key, ServiceContext serviceContext)
-		throws PortalException {
-
-		return updateCPDefinitionOptionValueRel(
-			cpDefinitionOptionValueRelId, nameMap, priority, key, 0, 0, false,
-			null, serviceContext);
+				cpDefinitionOptionValueRelId, cpInstanceId, key, nameMap,
+				preselected, price, priority, quantity, unitOfMeasureKey,
+				serviceContext);
 	}
 
 	@Override
@@ -386,7 +331,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 				getCPDefinitionOptionValueRel(cpDefinitionOptionValueRelId);
 
 		CPDefinitionOptionRel cpDefinitionOptionRel =
-			cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
+			_cpDefinitionOptionRelLocalService.getCPDefinitionOptionRel(
 				cpDefinitionOptionValueRel.getCPDefinitionOptionRelId());
 
 		_checkCommerceCatalog(
@@ -400,7 +345,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 	private void _checkCommerceCatalog(long cpDefinitionId, String actionId)
 		throws PortalException {
 
-		CPDefinition cpDefinition = cpDefinitionLocalService.fetchCPDefinition(
+		CPDefinition cpDefinition = _cpDefinitionLocalService.fetchCPDefinition(
 			cpDefinitionId);
 
 		if (cpDefinition == null) {
@@ -408,7 +353,7 @@ public class CPDefinitionOptionValueRelServiceImpl
 		}
 
 		CommerceCatalog commerceCatalog =
-			commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
+			_commerceCatalogLocalService.fetchCommerceCatalogByGroupId(
 				cpDefinition.getGroupId());
 
 		if (commerceCatalog == null) {
@@ -419,11 +364,20 @@ public class CPDefinitionOptionValueRelServiceImpl
 			getPermissionChecker(), commerceCatalog, actionId);
 	}
 
-	private static volatile ModelResourcePermission<CommerceCatalog>
-		_commerceCatalogModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CPDefinitionOptionValueRelServiceImpl.class,
-				"_commerceCatalogModelResourcePermission",
-				CommerceCatalog.class);
+	@Reference
+	private CommerceCatalogLocalService _commerceCatalogLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.product.model.CommerceCatalog)"
+	)
+	private ModelResourcePermission<CommerceCatalog>
+		_commerceCatalogModelResourcePermission;
+
+	@Reference
+	private CPDefinitionLocalService _cpDefinitionLocalService;
+
+	@Reference
+	private CPDefinitionOptionRelLocalService
+		_cpDefinitionOptionRelLocalService;
 
 }

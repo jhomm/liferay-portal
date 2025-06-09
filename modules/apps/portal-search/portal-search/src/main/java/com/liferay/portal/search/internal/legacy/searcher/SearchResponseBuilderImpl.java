@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.internal.legacy.searcher;
@@ -30,7 +21,6 @@ import java.io.Serializable;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -47,7 +37,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 	public SearchResponseBuilder addFederatedSearchResponse(
 		SearchResponse searchResponse) {
 
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.addFederatedSearchResponse(
 				searchResponse));
 
@@ -58,7 +48,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 	public SearchResponseBuilder aggregationResultsMap(
 		Map<String, AggregationResult> aggregationResultsMap) {
 
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setAggregationResultsMap(
 				aggregationResultsMap));
 
@@ -67,12 +57,12 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 
 	@Override
 	public SearchResponse build() {
-		return withSearchResponseGet(Function.identity());
+		return _withSearchResponseGet(Function.identity());
 	}
 
 	@Override
 	public SearchResponseBuilder count(long count) {
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setCount(count));
 
 		return this;
@@ -80,7 +70,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 
 	@Override
 	public SearchResponseBuilder federatedSearchKey(String key) {
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setFederatedSearchKey(
 				key));
 
@@ -91,7 +81,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 	public SearchResponseBuilder groupByResponses(
 		List<GroupByResponse> groupByResponses) {
 
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setGroupByResponses(
 				groupByResponses));
 
@@ -100,7 +90,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 
 	@Override
 	public SearchResponseBuilder hits(Hits hits) {
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setHits(hits));
 
 		return this;
@@ -108,7 +98,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 
 	@Override
 	public SearchResponseBuilder request(SearchRequest searchRequest) {
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setRequest(searchRequest));
 
 		return this;
@@ -118,7 +108,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 	public SearchResponseBuilder requestString(String requestString) {
 		_searchContext.setAttribute(_QUERY_STRING, requestString);
 
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setRequestString(
 				requestString));
 
@@ -127,7 +117,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 
 	@Override
 	public SearchResponseBuilder responseString(String responseString) {
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setResponseString(
 				responseString));
 
@@ -136,7 +126,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 
 	@Override
 	public SearchResponseBuilder searchHits(SearchHits searchHits) {
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setSearchHits(searchHits));
 
 		return this;
@@ -146,7 +136,7 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 	public SearchResponseBuilder searchTimeValue(
 		SearchTimeValue searchTimeValue) {
 
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setSearchTimeValue(
 				searchTimeValue));
 
@@ -157,23 +147,10 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 	public SearchResponseBuilder statsResponseMap(
 		Map<String, StatsResponse> map) {
 
-		withSearchResponseImpl(
+		_withSearchResponseImpl(
 			searchResponseImpl -> searchResponseImpl.setStatsResponseMap(map));
 
 		return this;
-	}
-
-	protected static SearchResponseImpl getSearchResponseImpl(
-		SearchContext searchContext) {
-
-		return Optional.ofNullable(
-			(SearchResponseImpl)searchContext.getAttribute(
-				_SEARCH_CONTEXT_KEY_SEARCH_RESPONSE)
-		).orElseGet(
-			() -> setAttribute(
-				searchContext, _SEARCH_CONTEXT_KEY_SEARCH_RESPONSE,
-				new SearchResponseImpl(searchContext))
-		);
 	}
 
 	protected static <T extends Serializable> T setAttribute(
@@ -184,19 +161,33 @@ public class SearchResponseBuilderImpl implements SearchResponseBuilder {
 		return value;
 	}
 
-	protected <T> T withSearchResponseGet(
-		Function<SearchResponse, T> function) {
+	private SearchResponseImpl _getSearchResponseImpl(
+		SearchContext searchContext) {
 
+		SearchResponseImpl searchResponseImpl =
+			(SearchResponseImpl)searchContext.getAttribute(
+				_SEARCH_CONTEXT_KEY_SEARCH_RESPONSE);
+
+		if (searchResponseImpl != null) {
+			return searchResponseImpl;
+		}
+
+		return setAttribute(
+			searchContext, _SEARCH_CONTEXT_KEY_SEARCH_RESPONSE,
+			new SearchResponseImpl(searchContext));
+	}
+
+	private <T> T _withSearchResponseGet(Function<SearchResponse, T> function) {
 		synchronized (_searchContext) {
-			return function.apply(getSearchResponseImpl(_searchContext));
+			return function.apply(_getSearchResponseImpl(_searchContext));
 		}
 	}
 
-	protected void withSearchResponseImpl(
+	private void _withSearchResponseImpl(
 		Consumer<SearchResponseImpl> consumer) {
 
 		synchronized (_searchContext) {
-			consumer.accept(getSearchResponseImpl(_searchContext));
+			consumer.accept(_getSearchResponseImpl(_searchContext));
 		}
 	}
 

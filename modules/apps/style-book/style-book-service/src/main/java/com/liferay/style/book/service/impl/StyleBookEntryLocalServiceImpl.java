@@ -1,33 +1,30 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.style.book.service.impl;
 
 import com.liferay.document.library.kernel.service.DLAppLocalService;
+import com.liferay.frontend.token.definition.FrontendTokenDefinition;
+import com.liferay.frontend.token.definition.FrontendTokenDefinitionRegistry;
 import com.liferay.petra.string.CharPool;
-import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.dao.orm.custom.sql.CustomSQL;
 import com.liferay.portal.kernel.dao.orm.WildcardMode;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
+import com.liferay.portal.kernel.language.Language;
+import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.ModelHintsUtil;
 import com.liferay.portal.kernel.model.Repository;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.portletfilerepository.PortletFileRepositoryUtil;
 import com.liferay.portal.kernel.repository.model.FileEntry;
+import com.liferay.portal.kernel.service.GroupLocalService;
+import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -59,19 +56,10 @@ public class StyleBookEntryLocalServiceImpl
 
 	@Override
 	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String name, String styleBookEntryKey,
+			String externalReferenceCode, long userId, long groupId,
+			boolean defaultStyleBookEntry, String frontendTokensValues,
+			String name, String styleBookEntryKey, String themeId,
 			ServiceContext serviceContext)
-		throws PortalException {
-
-		return addStyleBookEntry(
-			userId, groupId, StringPool.BLANK, name, styleBookEntryKey,
-			serviceContext);
-	}
-
-	@Override
-	public StyleBookEntry addStyleBookEntry(
-			long userId, long groupId, String frontendTokensValues, String name,
-			String styleBookEntryKey, ServiceContext serviceContext)
 		throws PortalException {
 
 		User user = _userLocalService.getUser(userId);
@@ -104,45 +92,64 @@ public class StyleBookEntryLocalServiceImpl
 			styleBookEntry.setUuid(uuid);
 		}
 
+		styleBookEntry.setExternalReferenceCode(externalReferenceCode);
 		styleBookEntry.setGroupId(groupId);
 		styleBookEntry.setCompanyId(companyId);
 		styleBookEntry.setUserId(user.getUserId());
 		styleBookEntry.setUserName(user.getFullName());
 		styleBookEntry.setCreateDate(serviceContext.getCreateDate(new Date()));
-		styleBookEntry.setDefaultStyleBookEntry(false);
+		styleBookEntry.setDefaultStyleBookEntry(defaultStyleBookEntry);
 		styleBookEntry.setFrontendTokensValues(frontendTokensValues);
 		styleBookEntry.setName(name);
 		styleBookEntry.setStyleBookEntryKey(styleBookEntryKey);
+
+		if (FeatureFlagManagerUtil.isEnabled("LPD-30204")) {
+			styleBookEntry.setThemeId(themeId);
+		}
+		else {
+			LayoutSet publicLayoutSet = _layoutSetLocalService.getLayoutSet(
+				groupId, false);
+
+			FrontendTokenDefinition frontendTokenDefinition =
+				_frontendTokenDefinitionRegistry.getFrontendTokenDefinition(
+					publicLayoutSet);
+
+			if (frontendTokenDefinition != null) {
+				styleBookEntry.setThemeId(frontendTokenDefinition.getThemeId());
+			}
+			else {
+				styleBookEntry.setThemeId(publicLayoutSet.getThemeId());
+			}
+		}
 
 		return publishDraft(styleBookEntry);
 	}
 
 	@Override
 	public StyleBookEntry copyStyleBookEntry(
-			long userId, long groupId, long styleBookEntryId,
+			long userId, long groupId, long sourceStyleBookEntryId,
 			ServiceContext serviceContext)
 		throws PortalException {
 
-		StyleBookEntry styleBookEntry = getStyleBookEntry(styleBookEntryId);
+		StyleBookEntry sourceStyleBookEntry = getStyleBookEntry(
+			sourceStyleBookEntryId);
 
-		String name = StringBundler.concat(
-			styleBookEntry.getName(), StringPool.SPACE,
-			StringPool.OPEN_PARENTHESIS,
-			LanguageUtil.get(LocaleUtil.getMostRelevantLocale(), "copy"),
-			StringPool.CLOSE_PARENTHESIS);
+		String name = _getUniqueCopyName(sourceStyleBookEntry);
 
-		StyleBookEntry copyStyleBookEntry = addStyleBookEntry(
-			userId, groupId, styleBookEntry.getFrontendTokensValues(), name,
-			StringPool.BLANK, serviceContext);
+		StyleBookEntry targetStyleBookEntry = addStyleBookEntry(
+			null, userId, groupId, false,
+			sourceStyleBookEntry.getFrontendTokensValues(), name,
+			StringPool.BLANK, sourceStyleBookEntry.getThemeId(),
+			serviceContext);
 
 		long previewFileEntryId = _copyStyleBookEntryPreviewFileEntry(
-			userId, groupId, styleBookEntry, copyStyleBookEntry);
+			userId, groupId, sourceStyleBookEntry, targetStyleBookEntry);
 
-		StyleBookEntry draftStyleBookEntry = fetchDraft(styleBookEntry);
+		StyleBookEntry draftStyleBookEntry = fetchDraft(sourceStyleBookEntry);
 
 		if (draftStyleBookEntry != null) {
 			StyleBookEntry copyDraftStyleBookEntry = getDraft(
-				copyStyleBookEntry);
+				targetStyleBookEntry);
 
 			copyDraftStyleBookEntry.setFrontendTokensValues(
 				draftStyleBookEntry.getFrontendTokensValues());
@@ -151,7 +158,16 @@ public class StyleBookEntryLocalServiceImpl
 		}
 
 		return updatePreviewFileEntryId(
-			copyStyleBookEntry.getStyleBookEntryId(), previewFileEntryId);
+			targetStyleBookEntry.getStyleBookEntryId(), previewFileEntryId);
+	}
+
+	@Override
+	public void deleteStyleBookEntries(long groupId) throws PortalException {
+		for (StyleBookEntry styleBookEntry :
+				styleBookEntryPersistence.findByGroupId_Head(groupId, true)) {
+
+			deleteStyleBookEntry(styleBookEntry);
+		}
 	}
 
 	@Override
@@ -159,6 +175,18 @@ public class StyleBookEntryLocalServiceImpl
 		throws PortalException {
 
 		return deleteStyleBookEntry(getStyleBookEntry(styleBookEntryId));
+	}
+
+	@Override
+	public StyleBookEntry deleteStyleBookEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		StyleBookEntry styleBookEntry =
+			styleBookEntryPersistence.fetchByERC_G_Head(
+				externalReferenceCode, groupId, true);
+
+		return deleteStyleBookEntry(styleBookEntry);
 	}
 
 	@Override
@@ -174,7 +202,19 @@ public class StyleBookEntryLocalServiceImpl
 	}
 
 	@Override
-	public StyleBookEntry fetchDefaultStyleBookEntry(long groupId) {
+	public StyleBookEntry fetchDefaultStyleBookEntry(
+		long groupId, String themeId) {
+
+		Group group = _groupLocalService.fetchGroup(groupId);
+
+		if ((group != null) &&
+			FeatureFlagManagerUtil.isEnabled(
+				group.getCompanyId(), "LPD-30204")) {
+
+			return styleBookEntryPersistence.fetchByG_D_T_First(
+				groupId, true, themeId, null);
+		}
+
 		return styleBookEntryPersistence.fetchByG_D_Head_First(
 			groupId, true, true, null);
 	}
@@ -236,6 +276,13 @@ public class StyleBookEntryLocalServiceImpl
 
 	@Override
 	public List<StyleBookEntry> getStyleBookEntries(
+		long groupId, String themeId) {
+
+		return styleBookEntryPersistence.findByG_T_Head(groupId, themeId, true);
+	}
+
+	@Override
+	public List<StyleBookEntry> getStyleBookEntries(
 		long groupId, String name, int start, int end,
 		OrderByComparator<StyleBookEntry> orderByComparator) {
 
@@ -274,9 +321,19 @@ public class StyleBookEntryLocalServiceImpl
 			return null;
 		}
 
-		StyleBookEntry oldDefaultStyleBookEntry =
-			styleBookEntryPersistence.fetchByG_D_First(
-				styleBookEntry.getGroupId(), true, null);
+		StyleBookEntry oldDefaultStyleBookEntry = null;
+
+		if (FeatureFlagManagerUtil.isEnabled("LPD-30204")) {
+			oldDefaultStyleBookEntry =
+				styleBookEntryPersistence.fetchByG_D_T_First(
+					styleBookEntry.getGroupId(), true,
+					styleBookEntry.getThemeId(), null);
+		}
+		else {
+			oldDefaultStyleBookEntry =
+				styleBookEntryPersistence.fetchByG_D_First(
+					styleBookEntry.getGroupId(), true, null);
+		}
 
 		if (defaultStyleBookEntry && (oldDefaultStyleBookEntry != null) &&
 			(oldDefaultStyleBookEntry.getStyleBookEntryId() !=
@@ -447,16 +504,16 @@ public class StyleBookEntryLocalServiceImpl
 	}
 
 	private long _copyStyleBookEntryPreviewFileEntry(
-			long userId, long groupId, StyleBookEntry styleBookEntry,
+			long userId, long groupId, StyleBookEntry sourceStyleBookEntry,
 			StyleBookEntry copyStyleBookEntry)
 		throws PortalException {
 
-		if (styleBookEntry.getPreviewFileEntryId() == 0) {
+		if (sourceStyleBookEntry.getPreviewFileEntryId() == 0) {
 			return 0;
 		}
 
 		FileEntry fileEntry = _dlAppLocalService.getFileEntry(
-			styleBookEntry.getPreviewFileEntryId());
+			sourceStyleBookEntry.getPreviewFileEntryId());
 
 		Repository repository =
 			PortletFileRepositoryUtil.fetchPortletRepository(
@@ -479,7 +536,7 @@ public class StyleBookEntryLocalServiceImpl
 				fileEntry.getExtension();
 
 		fileEntry = PortletFileRepositoryUtil.addPortletFileEntry(
-			groupId, userId, StyleBookEntry.class.getName(),
+			null, groupId, userId, StyleBookEntry.class.getName(),
 			copyStyleBookEntry.getStyleBookEntryId(),
 			StyleBookPortletKeys.STYLE_BOOK, repository.getDlFolderId(),
 			fileEntry.getContentStream(), fileName, fileEntry.getMimeType(),
@@ -496,6 +553,28 @@ public class StyleBookEntryLocalServiceImpl
 		}
 
 		return StringPool.BLANK;
+	}
+
+	private String _getUniqueCopyName(StyleBookEntry styleBookEntry) {
+		String copy = _language.get(LocaleUtil.getSiteDefault(), "copy");
+
+		String name = StringUtil.appendParentheticalSuffix(
+			styleBookEntry.getName(), copy);
+
+		for (int i = 1;; i++) {
+			StyleBookEntry existingStyleBookEntry =
+				styleBookEntryPersistence.fetchByG_LikeN_First(
+					styleBookEntry.getGroupId(), name, null);
+
+			if (existingStyleBookEntry == null) {
+				break;
+			}
+
+			name = StringUtil.appendParentheticalSuffix(
+				styleBookEntry.getName(), copy + StringPool.SPACE + i);
+		}
+
+		return name;
 	}
 
 	private void _validate(String name) throws PortalException {
@@ -538,6 +617,18 @@ public class StyleBookEntryLocalServiceImpl
 
 	@Reference
 	private DLAppLocalService _dlAppLocalService;
+
+	@Reference
+	private FrontendTokenDefinitionRegistry _frontendTokenDefinitionRegistry;
+
+	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
+	private Language _language;
+
+	@Reference
+	private LayoutSetLocalService _layoutSetLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

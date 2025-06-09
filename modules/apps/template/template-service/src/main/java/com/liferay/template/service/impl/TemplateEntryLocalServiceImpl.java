@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.service.impl;
@@ -40,15 +31,16 @@ public class TemplateEntryLocalServiceImpl
 
 	@Override
 	public TemplateEntry addTemplateEntry(
-			long userId, long groupId, long ddmTemplateId,
-			String infoItemClassName, String infoItemFormVariationKey,
-			ServiceContext serviceContext)
+			String externalReferenceCode, long userId, long groupId,
+			long ddmTemplateId, String infoItemClassName,
+			String infoItemFormVariationKey, ServiceContext serviceContext)
 		throws PortalException {
 
 		TemplateEntry templateEntry = templateEntryPersistence.create(
 			counterLocalService.increment());
 
 		templateEntry.setUuid(serviceContext.getUuid());
+		templateEntry.setExternalReferenceCode(externalReferenceCode);
 		templateEntry.setGroupId(groupId);
 
 		User user = _userLocalService.getUser(userId);
@@ -65,10 +57,31 @@ public class TemplateEntryLocalServiceImpl
 	}
 
 	@Override
-	public TemplateEntry deleteTemplateEntry(long templateEntryId)
-		throws PortalException {
+	public void deleteTemplateEntries(long groupId) {
+		templateEntryPersistence.removeByGroupId(groupId);
+	}
 
-		return templateEntryPersistence.remove(templateEntryId);
+	@Override
+	public TemplateEntry deleteTemplateEntry(long templateEntryId) {
+		TemplateEntry templateEntry =
+			templateEntryPersistence.fetchByPrimaryKey(templateEntryId);
+
+		return deleteTemplateEntry(templateEntry);
+	}
+
+	@Override
+	public TemplateEntry deleteTemplateEntry(
+		String externalReferenceCode, long groupId) {
+
+		TemplateEntry templateEntry = templateEntryPersistence.fetchByERC_G(
+			externalReferenceCode, groupId);
+
+		return deleteTemplateEntry(templateEntry);
+	}
+
+	@Override
+	public TemplateEntry deleteTemplateEntry(TemplateEntry templateEntry) {
+		return templateEntryPersistence.remove(templateEntry);
 	}
 
 	@Override
@@ -102,6 +115,17 @@ public class TemplateEntryLocalServiceImpl
 	}
 
 	@Override
+	public List<TemplateEntry> getTemplateEntries(
+		long[] groupIds, String infoItemClassName,
+		String infoItemFormVariationKey, int start, int end,
+		OrderByComparator<TemplateEntry> orderByComparator) {
+
+		return templateEntryPersistence.findByG_IICN_IIFVK(
+			groupIds, infoItemClassName, infoItemFormVariationKey, start, end,
+			orderByComparator);
+	}
+
+	@Override
 	public int getTemplateEntriesCount(long groupId) {
 		return templateEntryPersistence.countByGroupId(groupId);
 	}
@@ -114,6 +138,18 @@ public class TemplateEntryLocalServiceImpl
 			templateEntryId);
 
 		return templateEntryPersistence.update(templateEntry);
+	}
+
+	@Override
+	public TemplateEntry updateTemplateEntry(
+			String externalReferenceCode, long groupId)
+		throws PortalException {
+
+		TemplateEntry templateEntry = templateEntryPersistence.findByERC_G(
+			externalReferenceCode, groupId);
+
+		return templateEntryLocalService.updateTemplateEntry(
+			templateEntry.getTemplateEntryId());
 	}
 
 	@Reference

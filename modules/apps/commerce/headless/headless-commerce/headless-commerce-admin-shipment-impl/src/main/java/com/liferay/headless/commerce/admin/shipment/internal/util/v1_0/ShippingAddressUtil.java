@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.shipment.internal.util.v1_0;
@@ -19,7 +10,7 @@ import com.liferay.commerce.model.CommerceShipment;
 import com.liferay.commerce.service.CommerceAddressService;
 import com.liferay.commerce.service.CommerceShipmentService;
 import com.liferay.headless.commerce.admin.shipment.dto.v1_0.ShippingAddress;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
 import com.liferay.portal.kernel.model.Country;
 import com.liferay.portal.kernel.model.Region;
@@ -50,6 +41,7 @@ public class ShippingAddressUtil {
 			shippingAddress.getCountryISOCode());
 
 		return commerceShipmentService.updateAddress(
+			shippingAddress.getExternalReferenceCode(),
 			commerceShipment.getCommerceShipmentId(),
 			GetterUtil.get(
 				shippingAddress.getName(),
@@ -109,11 +101,9 @@ public class ShippingAddressUtil {
 			return commerceAddress.getRegionId();
 		}
 
-		long countryId = _getCountryId(
-			commerceAddress, country, shippingAddress);
-
 		Region region = regionService.fetchRegion(
-			countryId, shippingAddress.getRegionISOCode());
+			_getCountryId(commerceAddress, country, shippingAddress),
+			shippingAddress.getRegionISOCode());
 
 		if (region == null) {
 			return 0;

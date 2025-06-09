@@ -1,124 +1,79 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
 <%@ include file="/init.jsp" %>
 
 <%
-String backURL = ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL()));
-
 long batchPlannerPlanId = ParamUtil.getLong(renderRequest, "batchPlannerPlanId");
 
-renderResponse.setTitle(LanguageUtil.get(request, "export"));
+boolean editable = ParamUtil.getBoolean(renderRequest, "editable");
+
+EditBatchPlannerPlanDisplayContext editBatchPlannerPlanDisplayContext = (EditBatchPlannerPlanDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
+
+portletDisplay.setShowBackIcon(true);
+portletDisplay.setURLBack(ParamUtil.getString(request, "backURL", String.valueOf(renderResponse.createRenderURL())));
+
+renderResponse.setTitle(editable ? LanguageUtil.get(request, "edit-template") : LanguageUtil.get(request, "export"));
 %>
 
 <div class="container pt-4">
-	<form
-		action="<%=
-			PortletURLBuilder.createActionURL(
-				renderResponse
-			).setActionName(
-				"/batch_planner/edit_export_batch_planner_plan"
-			).setCMD(
-				Constants.EXPORT
-			).setRedirect(
-				backURL
-			).buildString()
-		%>"
-		id="<portlet:namespace />fm"
-		method="POST"
-		name="<portlet:namespace />fm"
-	>
-		<aui:input name="batchPlannerPlanId" type="hidden" value="<%= batchPlannerPlanId %>" />
-		<aui:input name="export" type="hidden" value="<%= true %>" />
-		<aui:input name="name" type="hidden" />
-		<aui:input name="taskItemDelegateName" type="hidden" value="DEFAULT" />
+	<form id="<portlet:namespace />fm" name="<portlet:namespace />fm">
+		<input id="<portlet:namespace />batchPlannerPlanId" name="<portlet:namespace />batchPlannerPlanId" type="hidden" value="<%= batchPlannerPlanId %>" />
+		<input id="<portlet:namespace />export" name="<portlet:namespace />export" type="hidden" value="<%= true %>" />
+		<input id="<portlet:namespace />containsHeaders" name="<portlet:namespace />containsHeaders" type="hidden" value="<%= true %>" />
 
 		<div class="card">
-			<h4 class="card-header"><%= LanguageUtil.get(request, "export-settings") %></h4>
+			<div class="card-header"><liferay-ui:message key="export-settings" /></div>
 
 			<div class="card-body">
 				<liferay-frontend:edit-form-body>
+					<div id="<portlet:namespace />templateSelect"></div>
 
-					<%
-					EditBatchPlannerPlanDisplayContext editBatchPlannerPlanDisplayContext = (EditBatchPlannerPlanDisplayContext)request.getAttribute(WebKeys.PORTLET_DISPLAY_CONTEXT);
-					%>
+					<clay:row>
+						<react:component
+							module="{ExportSettings} from batch-planner-web"
+							props='<%=
+								HashMapBuilder.<String, Object>put(
+									"__reactDOMFlushSync", true
+								).put(
+									"externalTypeId", liferayPortletResponse.getNamespace() + "externalType"
+								).put(
+									"externalTypeInitialOptions", editBatchPlannerPlanDisplayContext.getExternalTypeSelectOptions()
+								).put(
+									"externalTypeLabel", LanguageUtil.get(request, "export-file-format")
+								).put(
+									"externalTypeName", liferayPortletResponse.getNamespace() + "externalType"
+								).put(
+									"internalClassNameKeyId", liferayPortletResponse.getNamespace() + "internalClassNameKey"
+								).put(
+									"internalClassNameKeyInitialOptions", editBatchPlannerPlanDisplayContext.getInternalClassNameKeySelectOptions()
+								).put(
+									"internalClassNameKeyLabel", LanguageUtil.get(request, "entity-type")
+								).put(
+									"internalClassNameKeyName", liferayPortletResponse.getNamespace() + "internalClassNameKey"
+								).build()
+							%>'
+						/>
+					</clay:row>
 
 					<clay:row>
 						<clay:col
 							md="6"
 						>
-							<clay:select
-								id='<%= liferayPortletResponse.getNamespace() + "headlessEndpoint" %>'
-								label="headless-endpoint"
-								name="headlessEndpoint"
-								options="<%= editBatchPlannerPlanDisplayContext.getSelectOptions() %>"
-							/>
-						</clay:col>
-
-						<clay:col
-							md="6"
-						>
-							<clay:select
-								disabled="<%= true %>"
-								id='<%= liferayPortletResponse.getNamespace() + "internalClassName" %>'
-								label="entity-type"
-								name="internalClassName"
-								options="<%= Arrays.asList(new SelectOption(StringPool.BLANK, StringPool.BLANK)) %>"
+							<react:component
+								module="{Scope} from batch-planner-web"
+								props='<%=
+									HashMapBuilder.<String, Object>put(
+										"__reactDOMFlushSync", true
+									).build()
+								%>'
 							/>
 						</clay:col>
 					</clay:row>
-
-					<clay:content-section>
-						<clay:row>
-							<clay:col>
-								<clay:select
-									label="export-file-format"
-									name="externalType"
-									options="<%=
-										editBatchPlannerPlanDisplayContext.getExternalTypeSelectOptions()
-									%>"
-								/>
-							</clay:col>
-						</clay:row>
-
-						<clay:row>
-							<clay:col
-								md="6"
-							>
-								<clay:checkbox
-									id='<%= liferayPortletResponse.getNamespace() + "saveExport" %>'
-									label="save-export"
-									name='<%= liferayPortletResponse.getNamespace() + "saveExport" %>'
-								/>
-							</clay:col>
-						</clay:row>
-
-						<clay:row>
-							<clay:col
-								md="6"
-							>
-								<clay:checkbox
-									checked="<%= true %>"
-									id='<%= liferayPortletResponse.getNamespace() + "containsHeaders" %>'
-									label="contains-headers"
-									name='<%= liferayPortletResponse.getNamespace() + "containsHeaders" %>'
-								/>
-							</clay:col>
-						</clay:row>
-					</clay:content-section>
 				</liferay-frontend:edit-form-body>
 			</div>
 		</div>
@@ -126,7 +81,12 @@ renderResponse.setTitle(LanguageUtil.get(request, "export"));
 		<liferay-frontend:edit-form-body>
 			<div>
 				<react:component
-					module="js/FieldsTable"
+					module="{FieldsTable} from batch-planner-web"
+					props='<%=
+						HashMapBuilder.<String, Object>put(
+							"__reactDOMFlushSync", true
+						).build()
+					%>'
 				/>
 			</div>
 
@@ -154,50 +114,74 @@ renderResponse.setTitle(LanguageUtil.get(request, "export"));
 			</div>
 		</liferay-frontend:edit-form-body>
 
-		<div class="mt-4" id="<portlet:namespace />formButtons">
+		<div class="mt-4">
 			<liferay-frontend:edit-form-footer>
-				<clay:link
-					displayType="secondary"
-					href="<%= backURL %>"
-					label="cancel"
-					type="button"
-				/>
-
 				<span>
 					<react:component
-						module="js/SaveTemplate"
+						module="{SaveTemplate} from batch-planner-web"
 						props='<%=
 							HashMapBuilder.<String, Object>put(
+								"__reactDOMFlushSync", true
+							).put(
 								"formSaveAsTemplateDataQuerySelector", "#" + liferayPortletResponse.getNamespace() + "fm"
 							).put(
 								"formSaveAsTemplateURL",
-								ResourceURLBuilder.createResourceURL(
+								ActionURLBuilder.createActionURL(
 									renderResponse
+								).setActionName(
+									"/batch_planner/edit_export_batch_planner_plan_template"
 								).setCMD(
-									Constants.SAVE
+									Constants.ADD
 								).setParameter(
 									"template", true
-								).setResourceID(
-									"/batch_planner/edit_export_batch_planner_plan"
 								).buildString()
 							).put(
 								"namespace", liferayPortletResponse.getNamespace()
+							).put(
+								"type", "export"
 							).build()
 						%>'
 					/>
 				</span>
-
-				<clay:button
-					disabled="true"
-					displayType="primary"
-					label="export"
-					type="submit"
-				/>
+				<span>
+					<react:component
+						module="{Export} from batch-planner-web"
+						props='<%=
+							HashMapBuilder.<String, Object>put(
+								"__reactDOMFlushSync", true
+							).put(
+								"formExportDataQuerySelector", "#" + liferayPortletResponse.getNamespace() + "fm"
+							).put(
+								"formExportURL",
+								ResourceURLBuilder.createResourceURL(
+									renderResponse
+								).setCMD(
+									Constants.EXPORT
+								).setResourceID(
+									"/batch_planner/submit_batch_planner_plan"
+								).buildString()
+							).build()
+						%>'
+					/>
+				</span>
 			</liferay-frontend:edit-form-footer>
 		</div>
 	</form>
 </div>
 
 <liferay-frontend:component
-	module="js/edit_batch_planner_plan"
+	context='<%=
+		HashMapBuilder.<String, Object>put(
+			"initialExternalType", editBatchPlannerPlanDisplayContext.getSelectedExternalType()
+		).put(
+			"initialTemplateClassName", editBatchPlannerPlanDisplayContext.getSelectedInternalClassNameKey()
+		).put(
+			"initialTemplateMapping", editBatchPlannerPlanDisplayContext.getSelectedBatchPlannerPlanMappings()
+		).put(
+			"isExport", true
+		).put(
+			"templatesOptions", editBatchPlannerPlanDisplayContext.getTemplateSelectOptions()
+		).build()
+	%>'
+	module="{editBatchPlannerPlan} from batch-planner-web"
 />

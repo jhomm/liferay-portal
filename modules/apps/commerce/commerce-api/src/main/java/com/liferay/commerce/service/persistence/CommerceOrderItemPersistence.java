@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.service.persistence;
@@ -42,49 +33,401 @@ public interface CommerceOrderItemPersistence
 	 */
 
 	/**
-	 * Returns the commerce order item where bookedQuantityId = &#63; or throws a <code>NoSuchOrderItemException</code> if it could not be found.
+	 * Returns all the commerce order items where uuid = &#63;.
 	 *
-	 * @param bookedQuantityId the booked quantity ID
+	 * @param uuid the uuid
+	 * @return the matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid(String uuid);
+
+	/**
+	 * Returns a range of all the commerce order items where uuid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @return the range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid(
+		String uuid, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the commerce order items where uuid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid(
+		String uuid, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the commerce order items where uuid = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid(
+		String uuid, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first commerce order item in the ordered set where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByUuid_First(
+			String uuid,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the first commerce order item in the ordered set where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByUuid_First(
+		String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns the last commerce order item in the ordered set where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByUuid_Last(
+			String uuid,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the last commerce order item in the ordered set where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByUuid_Last(
+		String uuid,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns the commerce order items before and after the current commerce order item in the ordered set where uuid = &#63;.
+	 *
+	 * @param commerceOrderItemId the primary key of the current commerce order item
+	 * @param uuid the uuid
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next commerce order item
+	 * @throws NoSuchOrderItemException if a commerce order item with the primary key could not be found
+	 */
+	public CommerceOrderItem[] findByUuid_PrevAndNext(
+			long commerceOrderItemId, String uuid,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Removes all the commerce order items where uuid = &#63; from the database.
+	 *
+	 * @param uuid the uuid
+	 */
+	public void removeByUuid(String uuid);
+
+	/**
+	 * Returns the number of commerce order items where uuid = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @return the number of matching commerce order items
+	 */
+	public int countByUuid(String uuid);
+
+	/**
+	 * Returns the commerce order item where uuid = &#63; and groupId = &#63; or throws a <code>NoSuchOrderItemException</code> if it could not be found.
+	 *
+	 * @param uuid the uuid
+	 * @param groupId the group ID
 	 * @return the matching commerce order item
 	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
 	 */
-	public CommerceOrderItem findByBookedQuantityId(long bookedQuantityId)
+	public CommerceOrderItem findByUUID_G(String uuid, long groupId)
 		throws NoSuchOrderItemException;
 
 	/**
-	 * Returns the commerce order item where bookedQuantityId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the commerce order item where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param bookedQuantityId the booked quantity ID
+	 * @param uuid the uuid
+	 * @param groupId the group ID
 	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
 	 */
-	public CommerceOrderItem fetchByBookedQuantityId(long bookedQuantityId);
+	public CommerceOrderItem fetchByUUID_G(String uuid, long groupId);
 
 	/**
-	 * Returns the commerce order item where bookedQuantityId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the commerce order item where uuid = &#63; and groupId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param bookedQuantityId the booked quantity ID
+	 * @param uuid the uuid
+	 * @param groupId the group ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
 	 */
-	public CommerceOrderItem fetchByBookedQuantityId(
-		long bookedQuantityId, boolean useFinderCache);
+	public CommerceOrderItem fetchByUUID_G(
+		String uuid, long groupId, boolean useFinderCache);
 
 	/**
-	 * Removes the commerce order item where bookedQuantityId = &#63; from the database.
+	 * Removes the commerce order item where uuid = &#63; and groupId = &#63; from the database.
 	 *
-	 * @param bookedQuantityId the booked quantity ID
+	 * @param uuid the uuid
+	 * @param groupId the group ID
 	 * @return the commerce order item that was removed
 	 */
-	public CommerceOrderItem removeByBookedQuantityId(long bookedQuantityId)
+	public CommerceOrderItem removeByUUID_G(String uuid, long groupId)
 		throws NoSuchOrderItemException;
 
 	/**
-	 * Returns the number of commerce order items where bookedQuantityId = &#63;.
+	 * Returns the number of commerce order items where uuid = &#63; and groupId = &#63;.
 	 *
-	 * @param bookedQuantityId the booked quantity ID
+	 * @param uuid the uuid
+	 * @param groupId the group ID
 	 * @return the number of matching commerce order items
 	 */
-	public int countByBookedQuantityId(long bookedQuantityId);
+	public int countByUUID_G(String uuid, long groupId);
+
+	/**
+	 * Returns all the commerce order items where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @return the matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid_C(
+		String uuid, long companyId);
+
+	/**
+	 * Returns a range of all the commerce order items where uuid = &#63; and companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @return the range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid_C(
+		String uuid, long companyId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the commerce order items where uuid = &#63; and companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid_C(
+		String uuid, long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the commerce order items where uuid = &#63; and companyId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByUuid_C(
+		String uuid, long companyId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first commerce order item in the ordered set where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByUuid_C_First(
+			String uuid, long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the first commerce order item in the ordered set where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByUuid_C_First(
+		String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns the last commerce order item in the ordered set where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByUuid_C_Last(
+			String uuid, long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the last commerce order item in the ordered set where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByUuid_C_Last(
+		String uuid, long companyId,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns the commerce order items before and after the current commerce order item in the ordered set where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param commerceOrderItemId the primary key of the current commerce order item
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next commerce order item
+	 * @throws NoSuchOrderItemException if a commerce order item with the primary key could not be found
+	 */
+	public CommerceOrderItem[] findByUuid_C_PrevAndNext(
+			long commerceOrderItemId, String uuid, long companyId,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Removes all the commerce order items where uuid = &#63; and companyId = &#63; from the database.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 */
+	public void removeByUuid_C(String uuid, long companyId);
+
+	/**
+	 * Returns the number of commerce order items where uuid = &#63; and companyId = &#63;.
+	 *
+	 * @param uuid the uuid
+	 * @param companyId the company ID
+	 * @return the number of matching commerce order items
+	 */
+	public int countByUuid_C(String uuid, long companyId);
+
+	/**
+	 * Returns the commerce order item where commerceInventoryBookedQuantityId = &#63; or throws a <code>NoSuchOrderItemException</code> if it could not be found.
+	 *
+	 * @param commerceInventoryBookedQuantityId the commerce inventory booked quantity ID
+	 * @return the matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByCommerceInventoryBookedQuantityId(
+			long commerceInventoryBookedQuantityId)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the commerce order item where commerceInventoryBookedQuantityId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 *
+	 * @param commerceInventoryBookedQuantityId the commerce inventory booked quantity ID
+	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByCommerceInventoryBookedQuantityId(
+		long commerceInventoryBookedQuantityId);
+
+	/**
+	 * Returns the commerce order item where commerceInventoryBookedQuantityId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 *
+	 * @param commerceInventoryBookedQuantityId the commerce inventory booked quantity ID
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByCommerceInventoryBookedQuantityId(
+		long commerceInventoryBookedQuantityId, boolean useFinderCache);
+
+	/**
+	 * Removes the commerce order item where commerceInventoryBookedQuantityId = &#63; from the database.
+	 *
+	 * @param commerceInventoryBookedQuantityId the commerce inventory booked quantity ID
+	 * @return the commerce order item that was removed
+	 */
+	public CommerceOrderItem removeByCommerceInventoryBookedQuantityId(
+			long commerceInventoryBookedQuantityId)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the number of commerce order items where commerceInventoryBookedQuantityId = &#63;.
+	 *
+	 * @param commerceInventoryBookedQuantityId the commerce inventory booked quantity ID
+	 * @return the number of matching commerce order items
+	 */
+	public int countByCommerceInventoryBookedQuantityId(
+		long commerceInventoryBookedQuantityId);
 
 	/**
 	 * Returns all the commerce order items where commerceOrderId = &#63;.
@@ -516,6 +859,152 @@ public interface CommerceOrderItemPersistence
 	 * @return the number of matching commerce order items
 	 */
 	public int countByCProductId(long CProductId);
+
+	/**
+	 * Returns all the commerce order items where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @return the matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId);
+
+	/**
+	 * Returns a range of all the commerce order items where customerCommerceOrderItemId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @return the range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId, int start, int end);
+
+	/**
+	 * Returns an ordered range of all the commerce order items where customerCommerceOrderItemId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @return the ordered range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns an ordered range of all the commerce order items where customerCommerceOrderItemId = &#63;.
+	 *
+	 * <p>
+	 * Useful when paginating results. Returns a maximum of <code>end - start</code> instances. <code>start</code> and <code>end</code> are not primary keys, they are indexes in the result set. Thus, <code>0</code> refers to the first result in the set. Setting both <code>start</code> and <code>end</code> to <code>QueryUtil#ALL_POS</code> will return the full result set. If <code>orderByComparator</code> is specified, then the query will include the given ORDER BY logic. If <code>orderByComparator</code> is absent, then the query will include the default ORDER BY logic from <code>CommerceOrderItemModelImpl</code>.
+	 * </p>
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param start the lower bound of the range of commerce order items
+	 * @param end the upper bound of the range of commerce order items (not inclusive)
+	 * @param orderByComparator the comparator to order the results by (optionally <code>null</code>)
+	 * @param useFinderCache whether to use the finder cache
+	 * @return the ordered range of matching commerce order items
+	 */
+	public java.util.List<CommerceOrderItem> findByCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId, int start, int end,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator,
+		boolean useFinderCache);
+
+	/**
+	 * Returns the first commerce order item in the ordered set where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByCustomerCommerceOrderItemId_First(
+			long customerCommerceOrderItemId,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the first commerce order item in the ordered set where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the first matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByCustomerCommerceOrderItemId_First(
+		long customerCommerceOrderItemId,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns the last commerce order item in the ordered set where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching commerce order item
+	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem findByCustomerCommerceOrderItemId_Last(
+			long customerCommerceOrderItemId,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Returns the last commerce order item in the ordered set where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the last matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
+	 */
+	public CommerceOrderItem fetchByCustomerCommerceOrderItemId_Last(
+		long customerCommerceOrderItemId,
+		com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+			orderByComparator);
+
+	/**
+	 * Returns the commerce order items before and after the current commerce order item in the ordered set where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param commerceOrderItemId the primary key of the current commerce order item
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @param orderByComparator the comparator to order the set by (optionally <code>null</code>)
+	 * @return the previous, current, and next commerce order item
+	 * @throws NoSuchOrderItemException if a commerce order item with the primary key could not be found
+	 */
+	public CommerceOrderItem[] findByCustomerCommerceOrderItemId_PrevAndNext(
+			long commerceOrderItemId, long customerCommerceOrderItemId,
+			com.liferay.portal.kernel.util.OrderByComparator<CommerceOrderItem>
+				orderByComparator)
+		throws NoSuchOrderItemException;
+
+	/**
+	 * Removes all the commerce order items where customerCommerceOrderItemId = &#63; from the database.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 */
+	public void removeByCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId);
+
+	/**
+	 * Returns the number of commerce order items where customerCommerceOrderItemId = &#63;.
+	 *
+	 * @param customerCommerceOrderItemId the customer commerce order item ID
+	 * @return the number of matching commerce order items
+	 */
+	public int countByCustomerCommerceOrderItemId(
+		long customerCommerceOrderItemId);
 
 	/**
 	 * Returns all the commerce order items where parentCommerceOrderItemId = &#63;.
@@ -974,57 +1463,57 @@ public interface CommerceOrderItemPersistence
 	public int countByC_S(long commerceOrderId, boolean subscription);
 
 	/**
-	 * Returns the commerce order item where companyId = &#63; and externalReferenceCode = &#63; or throws a <code>NoSuchOrderItemException</code> if it could not be found.
+	 * Returns the commerce order item where externalReferenceCode = &#63; and companyId = &#63; or throws a <code>NoSuchOrderItemException</code> if it could not be found.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching commerce order item
 	 * @throws NoSuchOrderItemException if a matching commerce order item could not be found
 	 */
-	public CommerceOrderItem findByC_ERC(
-			long companyId, String externalReferenceCode)
+	public CommerceOrderItem findByERC_C(
+			String externalReferenceCode, long companyId)
 		throws NoSuchOrderItemException;
 
 	/**
-	 * Returns the commerce order item where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
+	 * Returns the commerce order item where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found. Uses the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
 	 */
-	public CommerceOrderItem fetchByC_ERC(
-		long companyId, String externalReferenceCode);
+	public CommerceOrderItem fetchByERC_C(
+		String externalReferenceCode, long companyId);
 
 	/**
-	 * Returns the commerce order item where companyId = &#63; and externalReferenceCode = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
+	 * Returns the commerce order item where externalReferenceCode = &#63; and companyId = &#63; or returns <code>null</code> if it could not be found, optionally using the finder cache.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @param useFinderCache whether to use the finder cache
 	 * @return the matching commerce order item, or <code>null</code> if a matching commerce order item could not be found
 	 */
-	public CommerceOrderItem fetchByC_ERC(
-		long companyId, String externalReferenceCode, boolean useFinderCache);
+	public CommerceOrderItem fetchByERC_C(
+		String externalReferenceCode, long companyId, boolean useFinderCache);
 
 	/**
-	 * Removes the commerce order item where companyId = &#63; and externalReferenceCode = &#63; from the database.
+	 * Removes the commerce order item where externalReferenceCode = &#63; and companyId = &#63; from the database.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the commerce order item that was removed
 	 */
-	public CommerceOrderItem removeByC_ERC(
-			long companyId, String externalReferenceCode)
+	public CommerceOrderItem removeByERC_C(
+			String externalReferenceCode, long companyId)
 		throws NoSuchOrderItemException;
 
 	/**
-	 * Returns the number of commerce order items where companyId = &#63; and externalReferenceCode = &#63;.
+	 * Returns the number of commerce order items where externalReferenceCode = &#63; and companyId = &#63;.
 	 *
-	 * @param companyId the company ID
 	 * @param externalReferenceCode the external reference code
+	 * @param companyId the company ID
 	 * @return the number of matching commerce order items
 	 */
-	public int countByC_ERC(long companyId, String externalReferenceCode);
+	public int countByERC_C(String externalReferenceCode, long companyId);
 
 	/**
 	 * Caches the commerce order item in the entity cache if it is enabled.

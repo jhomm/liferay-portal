@@ -1,6 +1,7 @@
-@component-name = "portal-security"
+@component-name = "portal-core-infra"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
 	property testray.main.component.name = "Permissions";
@@ -12,82 +13,79 @@ definition {
 	}
 
 	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
 
-		if ("${testPortalInstance}" == "true") {
+		if (${testLiferayVirtualInstance} == "true") {
 			PortalInstances.tearDownCP();
 		}
 		else {
 			User.firstLoginPG();
 
-			Page.tearDownCP();
+			PagesAdmin.tearDownCP();
 		}
 	}
 
 	@description = "This is a use case for LRQA-5029. Verify guest users cannot configure blogs."
-	@priority = "5"
-	@uitest
+	@priority = 5
 	test CannotConfigureBlogsPortletAsGuestPG {
-		property app.server.types = "jboss,tcserver,tomcat,weblogic,websphere,wildfly";
-		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver,sybase";
+		property app.server.types = "jboss,tomcat,weblogic,wildfly";
+		property database.types = "db2,hypersonic,mariadb,mysql,oracle,postgresql,sqlserver";
 		property environment.acceptance = "true";
-		property portal.acceptance = "false";
+		property operating.system.types = "alpine,amazonlinux,centos,debian,fedora,orcllinux,osx,redhat,rockylinux,solaris,suse,ubuntu,windows";
+		property portal.acceptance = "true";
 
 		task ("Add public page") {
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			SitePages.addPublicPage(pageName = "Blogs Page");
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "Blogs Page");
 		}
 
 		task ("Add new blog") {
-			Navigator.openSpecificURL(url = "http://localhost:8080/web/guest/blogs-page");
-
-			Portlet.addPG(portletName = "Blogs");
-
-			Blogs.viewControlsPG();
+			JSONLayout.addWidgetToPublicLayout(
+				groupName = "Guest",
+				layoutName = "Blogs Page",
+				widgetName = "Blogs");
 		}
 
 		task ("Logout and go to blogs page") {
 			User.logoutPG();
 
-			Navigator.openSpecificURL(url = "http://localhost:8080/web/guest/blogs-page");
+			Navigator.gotoPage(pageName = "Blogs Page");
 		}
+
 		task ("Assert no permission in configuration") {
 			BlogsConfiguration.viewNoPermissionPG();
 		}
 	}
 
 	@description = "This is a use case for LRQA-42712. Verify guest users cannot configure public pages."
-	@priority = "4"
-	@uitest
+	@priority = 5
 	test CannotConfigurePublicPageAsGuest {
 		property custom.properties = "virtual.hosts.default.site.name=Guest";
 		property test.assert.javascript.errors = "false";
 		property test.assert.warning.exceptions = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		var url1 = "http://localhost:8080/testxxx/?p_p_id=com_liferay_portlet_configuration_web_portlet_PortletConfigurationPortlet&amp;p_p_lifecycle=0&amp;p_p_state=maximized&amp;_com_liferay_portlet_configuration_web_portlet_PortletConfigurationPortlet_mvcPath=%2Fedit_configuration.jsp&amp;_com_liferay_portlet_configuration_web_portlet_PortletConfigurationPortlet_portletResource=com_liferay_users_admin_web_portlet_UsersAdminPortlet";
-		var url2 = "http://localhost:8080/testxxx/?p_p_id=com_liferay_users_admin_web_portlet_UsersAdminPortlet&amp;p_p_state=maximized";
+		var url1 = "http://localhost:8080/testxxx/?p_p_id=com_liferay_portlet_configuration_web_portlet_PortletConfigurationPortlet&p_p_lifecycle=0&p_p_state=maximized&_com_liferay_portlet_configuration_web_portlet_PortletConfigurationPortlet_mvcPath=%2Fedit_configuration.jsp&_com_liferay_portlet_configuration_web_portlet_PortletConfigurationPortlet_portletResource=com_liferay_users_admin_web_portlet_UsersAdminPortlet";
+		var url2 = "http://localhost:8080/testxxx/?p_p_id=com_liferay_users_admin_web_portlet_UsersAdminPortlet&p_p_state=maximized";
 
 		task ("Add public page") {
-			ProductMenu.gotoPortlet(
-				category = "Site Builder",
-				portlet = "Pages");
-
-			SitePages.addPublicPage(pageName = "testxxx");
+			JSONLayout.addPublicLayout(
+				groupName = "Guest",
+				layoutName = "testxxx");
 		}
 
 		task ("Logout, go to specific url and assert error message") {
 			User.logoutPG();
 
-			Navigator.openSpecificURL(url = "${url1}");
+			Navigator.openSpecificURL(url = ${url1});
 
 			Alert.viewErrorMessage(errorMessage = "You do not have the required permissions.");
 		}
 
 		task ("Go to specific url and assert error message") {
-			Navigator.openSpecificURL(url = "${url2}");
+			Navigator.openSpecificURL(url = ${url2});
 
 			AssertTextEquals(
 				locator1 = "Message#ERROR",

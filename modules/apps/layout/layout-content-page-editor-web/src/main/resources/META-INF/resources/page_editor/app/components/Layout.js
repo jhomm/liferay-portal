@@ -1,48 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayAlert from '@clayui/alert';
-import {useIsMounted} from '@liferay/frontend-js-react-web';
 import PropTypes from 'prop-types';
 import React, {useEffect, useRef} from 'react';
 
 import {
 	LayoutDataPropTypes,
 	getLayoutDataItemPropTypes,
-} from '../../prop-types/index';
-import {ITEM_ACTIVATION_ORIGINS} from '../config/constants/itemActivationOrigins';
+} from '../../prop_types/index';
 import {LAYOUT_DATA_ITEM_TYPES} from '../config/constants/layoutDataItemTypes';
-import {LAYOUT_TYPES} from '../config/constants/layoutTypes';
 import {config} from '../config/index';
-import {useSetCollectionActiveItemContext} from '../contexts/CollectionActiveItemContext';
-import {
-	useActivationOrigin,
-	useIsActive,
-	useSelectItem,
-} from '../contexts/ControlsContext';
+import {useSelectItem} from '../contexts/ControlsContext';
 import {useSelector} from '../contexts/StoreContext';
 import {deepEqual} from '../utils/checkDeepEqual';
-import FragmentWithControls from './layout-data-items/FragmentWithControls';
+import useDropContainerId from '../utils/useDropContainerId';
+import {FormStepWithControls} from './layout_data_items/FormStep';
+import {FormStepContainerWithControls} from './layout_data_items/FormStepContainer';
+import FragmentWithControls from './layout_data_items/FragmentWithControls';
 import {
 	CollectionItemWithControls,
 	CollectionWithControls,
 	ColumnWithControls,
 	ContainerWithControls,
 	DropZoneWithControls,
+	FormWithControls,
 	Root,
 	RowWithControls,
-} from './layout-data-items/index';
+} from './layout_data_items/index';
 
 const LAYOUT_DATA_ITEMS = {
 	[LAYOUT_DATA_ITEM_TYPES.collection]: CollectionWithControls,
@@ -50,13 +37,16 @@ const LAYOUT_DATA_ITEMS = {
 	[LAYOUT_DATA_ITEM_TYPES.column]: ColumnWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.container]: ContainerWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.dropZone]: DropZoneWithControls,
+	[LAYOUT_DATA_ITEM_TYPES.form]: FormWithControls,
+	[LAYOUT_DATA_ITEM_TYPES.formStep]: FormStepWithControls,
+	[LAYOUT_DATA_ITEM_TYPES.formStepContainer]: FormStepContainerWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.fragment]: FragmentWithControls,
 	[LAYOUT_DATA_ITEM_TYPES.fragmentDropZone]: Root,
 	[LAYOUT_DATA_ITEM_TYPES.root]: Root,
 	[LAYOUT_DATA_ITEM_TYPES.row]: RowWithControls,
 };
 
-export default function Layout({mainItemId}) {
+const Layout = React.memo(({mainItemId}) => {
 	const layoutData = useSelector((state) => state.layoutData);
 	const layoutRef = useRef(null);
 	const selectItem = useSelectItem();
@@ -94,15 +84,14 @@ export default function Layout({mainItemId}) {
 		};
 	}, [layoutRef]);
 
-	const isPageConversion = config.layoutType === LAYOUT_TYPES.conversion;
 	const hasWarningMessages =
-		isPageConversion &&
+		config.isConversionDraft &&
 		config.layoutConversionWarningMessages &&
-		config.layoutConversionWarningMessages.length > 0;
+		!!config.layoutConversionWarningMessages.length;
 
 	return (
 		<>
-			{isPageConversion && (
+			{config.isConversionDraft && (
 				<div className="page-editor__conversion-messages">
 					<ClayAlert
 						displayType="info"
@@ -128,22 +117,33 @@ export default function Layout({mainItemId}) {
 			)}
 
 			{mainItem && (
-				<div
-					className="page-editor"
-					id="page-editor"
-					onClick={onClick}
-					ref={layoutRef}
-				>
-					<LayoutDataItem item={mainItem} layoutData={layoutData} />
-				</div>
+				<>
+					<div
+						className="page-editor"
+						id="page-editor"
+						onClick={onClick}
+						ref={layoutRef}
+					>
+						<LayoutDataItem
+							item={mainItem}
+							layoutData={layoutData}
+						/>
+					</div>
+
+					<LayoutClassManager layoutRef={layoutRef} />
+				</>
 			)}
 		</>
 	);
-}
+});
+
+Layout.displayName = 'Layout';
 
 Layout.propTypes = {
 	mainItemId: PropTypes.string.isRequired,
 };
+
+export default Layout;
 
 class LayoutDataItem extends React.Component {
 	static getDerivedStateFromError(error) {
@@ -214,11 +214,6 @@ function LayoutDataItemContent({item, layoutData}) {
 
 	return (
 		<>
-			<LayoutDataItemInteractionFilter
-				componentRef={componentRef}
-				item={item}
-			/>
-
 			<Component item={item} layoutData={layoutData} ref={componentRef}>
 				{item.children.map((childId) => {
 					return (
@@ -239,32 +234,17 @@ LayoutDataItemContent.propTypes = {
 	layoutData: LayoutDataPropTypes.isRequired,
 };
 
-const LayoutDataItemInteractionFilter = ({componentRef, item}) => {
-	useSetCollectionActiveItemContext(item.itemId);
-
-	const activationOrigin = useActivationOrigin();
-	const isActive = useIsActive()(item.itemId);
-	const isMounted = useIsMounted();
+function LayoutClassManager({layoutRef}) {
+	const dropContainerId = useDropContainerId();
 
 	useEffect(() => {
-		if (
-			isActive &&
-			componentRef.current &&
-			isMounted() &&
-			activationOrigin === ITEM_ACTIVATION_ORIGINS.sidebar
-		) {
-			componentRef.current.scrollIntoView({
-				behavior: 'smooth',
-				block: 'center',
-				inline: 'nearest',
-			});
+		if (dropContainerId) {
+			layoutRef.current?.classList.add('is-dragging');
 		}
-	}, [activationOrigin, componentRef, isActive, isMounted]);
+		else {
+			layoutRef.current?.classList.remove('is-dragging');
+		}
+	}, [dropContainerId, layoutRef]);
 
 	return null;
-};
-
-LayoutDataItemInteractionFilter.propTypes = {
-	componentRef: PropTypes.object.isRequired,
-	item: getLayoutDataItemPropTypes().isRequired,
-};
+}

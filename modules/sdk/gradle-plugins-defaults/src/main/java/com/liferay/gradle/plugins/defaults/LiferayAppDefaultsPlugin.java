@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.gradle.plugins.defaults;
@@ -22,13 +13,13 @@ import com.liferay.gradle.plugins.defaults.internal.util.FileUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.GradlePluginsDefaultsUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.GradleUtil;
 import com.liferay.gradle.plugins.defaults.internal.util.LiferayRelengUtil;
-import com.liferay.gradle.plugins.defaults.tasks.WritePropertiesTask;
+import com.liferay.gradle.plugins.defaults.task.WritePropertiesTask;
 import com.liferay.gradle.plugins.jsdoc.AppJSDocConfigurationExtension;
 import com.liferay.gradle.plugins.jsdoc.AppJSDocPlugin;
 import com.liferay.gradle.plugins.jsdoc.JSDocTask;
 import com.liferay.gradle.plugins.tlddoc.builder.AppTLDDocBuilderExtension;
 import com.liferay.gradle.plugins.tlddoc.builder.AppTLDDocBuilderPlugin;
-import com.liferay.gradle.plugins.tlddoc.builder.tasks.TLDDocTask;
+import com.liferay.gradle.plugins.tlddoc.builder.task.TLDDocTask;
 import com.liferay.gradle.util.Validator;
 
 import groovy.json.JsonOutput;
@@ -65,7 +56,6 @@ import org.gradle.api.tasks.TaskInputs;
 import org.gradle.api.tasks.TaskOutputs;
 import org.gradle.api.tasks.javadoc.Javadoc;
 import org.gradle.execution.ProjectConfigurer;
-import org.gradle.external.javadoc.StandardJavadocDocletOptions;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.util.GUtil;
 
@@ -136,7 +126,7 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 		_configureAppTLDDocBuilder(project, privateProject);
 		_configureProject(project, appDescription, appVersion);
 		_configureTaskAppJSDoc(writeAppPackageJsonFileTask);
-		_configureTaskAppJavadoc(project, portalRootDir, appTitle, appVersion);
+		_configureTaskAppJavadoc(project, appTitle, appVersion);
 		_configureTaskAppTlddoc(project, portalRootDir);
 
 		if (privateProject != null) {
@@ -315,25 +305,12 @@ public class LiferayAppDefaultsPlugin implements Plugin<Project> {
 	}
 
 	private void _configureTaskAppJavadoc(
-		Project project, File portalRootDir, String appTitle,
-		String appVersion) {
-
-		Javadoc javadoc = (Javadoc)GradleUtil.getTask(
-			project, AppJavadocBuilderPlugin.APP_JAVADOC_TASK_NAME);
-
-		if (portalRootDir != null) {
-			File stylesheetFile = new File(
-				portalRootDir, "tools/styles/javadoc.css");
-
-			if (stylesheetFile.exists()) {
-				StandardJavadocDocletOptions standardJavadocDocletOptions =
-					(StandardJavadocDocletOptions)javadoc.getOptions();
-
-				standardJavadocDocletOptions.setStylesheetFile(stylesheetFile);
-			}
-		}
+		Project project, String appTitle, String appVersion) {
 
 		if (Validator.isNotNull(appTitle) && Validator.isNotNull(appVersion)) {
+			Javadoc javadoc = (Javadoc)GradleUtil.getTask(
+				project, AppJavadocBuilderPlugin.APP_JAVADOC_TASK_NAME);
+
 			javadoc.setTitle(String.format("%s %s API", appTitle, appVersion));
 		}
 	}

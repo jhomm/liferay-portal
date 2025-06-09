@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.kernel.model;
 
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
 import com.liferay.portal.kernel.model.change.tracking.CTModel;
@@ -36,7 +28,7 @@ import org.osgi.annotation.versioning.ProviderType;
 @ProviderType
 public interface DLFileEntryMetadataModel
 	extends BaseModel<DLFileEntryMetadata>, CTModel<DLFileEntryMetadata>,
-			MVCCModel, ShardedModel {
+			ExternalReferenceCodeModel, MVCCModel, ShardedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -106,6 +98,23 @@ public interface DLFileEntryMetadataModel
 	 * @param uuid the uuid of this document library file entry metadata
 	 */
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this document library file entry metadata.
+	 *
+	 * @return the external reference code of this document library file entry metadata
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this document library file entry metadata.
+	 *
+	 * @param externalReferenceCode the external reference code of this document library file entry metadata
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the file entry metadata ID of this document library file entry metadata.
@@ -195,5 +204,9 @@ public interface DLFileEntryMetadataModel
 
 	@Override
 	public DLFileEntryMetadata cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

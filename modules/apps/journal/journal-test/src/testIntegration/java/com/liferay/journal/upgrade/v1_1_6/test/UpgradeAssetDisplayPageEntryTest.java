@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.upgrade.v1_1_6.test;
@@ -19,6 +10,7 @@ import com.liferay.asset.display.page.constants.AssetDisplayPageConstants;
 import com.liferay.asset.display.page.model.AssetDisplayPageEntry;
 import com.liferay.asset.display.page.service.AssetDisplayPageEntryLocalServiceUtil;
 import com.liferay.counter.kernel.service.CounterLocalService;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
@@ -163,9 +155,10 @@ public class UpgradeAssetDisplayPageEntryTest {
 				StringBundler.concat(
 					"insert into JournalArticle (uuid_, id_, resourcePrimKey, ",
 					"groupId, companyId, userId, userName, createDate, ",
-					"modifiedDate, folderId, classNameId, classPK, treePath, ",
-					"articleId, version, layoutUuid) values (?, ?, ?, ?, ?, ",
-					"?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"))) {
+					"modifiedDate, externalReferenceCode, folderId, ",
+					"classNameId, classPK, treePath, articleId, version, ",
+					"layoutUuid) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ",
+					"?, ?, ?, ?, ?)"))) {
 
 			preparedStatement.setString(1, PortalUUIDUtil.generate());
 			preparedStatement.setLong(2, _counterLocalService.increment());
@@ -176,13 +169,14 @@ public class UpgradeAssetDisplayPageEntryTest {
 			preparedStatement.setString(7, null);
 			preparedStatement.setTimestamp(8, _timestamp);
 			preparedStatement.setTimestamp(9, _timestamp);
-			preparedStatement.setLong(10, 0);
+			preparedStatement.setString(10, RandomTestUtil.randomString());
 			preparedStatement.setLong(11, 0);
 			preparedStatement.setLong(12, 0);
-			preparedStatement.setString(13, "/");
-			preparedStatement.setString(14, RandomTestUtil.randomString());
-			preparedStatement.setDouble(15, version);
-			preparedStatement.setString(16, layoutUuid);
+			preparedStatement.setLong(13, 0);
+			preparedStatement.setString(14, "/");
+			preparedStatement.setString(15, RandomTestUtil.randomString());
+			preparedStatement.setDouble(16, version);
+			preparedStatement.setString(17, layoutUuid);
 
 			preparedStatement.executeUpdate();
 		}
@@ -194,7 +188,7 @@ public class UpgradeAssetDisplayPageEntryTest {
 
 		for (long journalResourcePrimKey : resourcePrimKeys) {
 			AssetDisplayPageEntry assetDisplayPageEntry =
-				fetchAssetDisplayPageEntryByClassPk(journalResourcePrimKey);
+				fetchAssetDisplayPageEntryByClassPK(journalResourcePrimKey);
 
 			Assert.assertNotNull(assetDisplayPageEntry);
 
@@ -285,27 +279,25 @@ public class UpgradeAssetDisplayPageEntryTest {
 			Group group, String layoutUuid)
 		throws Exception {
 
-		List<Long> resourcePrimKeys = new ArrayList<>();
+		return TransformUtil.transform(
+			stagingResourcePrimKeys,
+			stagingResourcePrimKey -> {
+				long liveResourcePrimKey = _counterLocalService.increment();
 
-		for (long stagingResourcePrimKey : stagingResourcePrimKeys) {
-			long liveResourcePrimKey = _counterLocalService.increment();
+				createJournalArticle(
+					multipleArticleVersions, group, layoutUuid,
+					liveResourcePrimKey);
 
-			createJournalArticle(
-				multipleArticleVersions, group, layoutUuid,
-				liveResourcePrimKey);
+				addAssetEntry(
+					group.getGroupId(), group.getCompanyId(),
+					_classNameIdJournalArticle, liveResourcePrimKey,
+					_assetEntryClassUuids.get(stagingResourcePrimKey));
 
-			addAssetEntry(
-				group.getGroupId(), group.getCompanyId(),
-				_classNameIdJournalArticle, liveResourcePrimKey,
-				_assetEntryClassUuids.get(stagingResourcePrimKey));
-
-			resourcePrimKeys.add(liveResourcePrimKey);
-		}
-
-		return resourcePrimKeys;
+				return liveResourcePrimKey;
+			});
 	}
 
-	protected AssetDisplayPageEntry fetchAssetDisplayPageEntryByClassPk(
+	protected AssetDisplayPageEntry fetchAssetDisplayPageEntryByClassPK(
 			long classPK)
 		throws Exception {
 
@@ -322,7 +314,6 @@ public class UpgradeAssetDisplayPageEntryTest {
 				dynamicQuery.add(
 					RestrictionsFactoryUtil.eq("classPK", classPK));
 			});
-
 		adq.setPerformActionMethod(
 			(PerformActionMethod<AssetDisplayPageEntry>)
 				assetDisplayPageEntry -> assetDisplayPageEntries.add(
@@ -407,10 +398,10 @@ public class UpgradeAssetDisplayPageEntryTest {
 			long liveResourcePrimKey = liveResourcePrimKeys.get(i);
 
 			AssetDisplayPageEntry stagingAssetDisplayPageEntry =
-				fetchAssetDisplayPageEntryByClassPk(stagingResourcePrimKey);
+				fetchAssetDisplayPageEntryByClassPK(stagingResourcePrimKey);
 
 			AssetDisplayPageEntry liveAssetDisplayPageEntry =
-				fetchAssetDisplayPageEntryByClassPk(liveResourcePrimKey);
+				fetchAssetDisplayPageEntryByClassPK(liveResourcePrimKey);
 
 			Assert.assertEquals(
 				liveAssetDisplayPageEntry.getUuid(),
@@ -469,7 +460,7 @@ public class UpgradeAssetDisplayPageEntryTest {
 			"AssetDisplayPageEntryUpgradeProcess";
 
 	@Inject(
-		filter = "(&(objectClass=com.liferay.journal.internal.upgrade.JournalServiceUpgrade))"
+		filter = "(&(component.name=com.liferay.journal.internal.upgrade.registry.JournalServiceUpgradeStepRegistrator))"
 	)
 	private static UpgradeStepRegistrator _upgradeStepRegistrator;
 

@@ -1,40 +1,35 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.knowledge.base.internal.upgrade.v1_1_0;
 
-import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBArticleAttachmentsUtil;
+import com.liferay.document.library.kernel.store.Store;
+import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBArticleAttachmentsHelper;
 import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBArticleLatestUpgradeColumnImpl;
 import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBArticleMainUpgradeColumnImpl;
 import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBArticleRootResourcePrimKeyUpgradeColumnImpl;
 import com.liferay.knowledge.base.internal.upgrade.v1_1_0.util.KBArticleTable;
 import com.liferay.petra.string.StringBundler;
-import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.upgrade.UpgradeProcess;
 import com.liferay.portal.kernel.upgrade.util.TempUpgradeColumnImpl;
 import com.liferay.portal.kernel.upgrade.util.UpgradeColumn;
 import com.liferay.portal.kernel.upgrade.util.UpgradeTable;
-import com.liferay.portal.kernel.upgrade.util.UpgradeTableFactoryUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.StringUtil;
+import com.liferay.portal.upgrade.util.UpgradeTableFactoryUtil;
 
 /**
  * @author Peter Shin
  */
 public class KBArticleUpgradeProcess extends UpgradeProcess {
+
+	public KBArticleUpgradeProcess(Store store) {
+		_store = store;
+	}
 
 	@Override
 	protected void doUpgrade() throws Exception {
@@ -77,7 +72,10 @@ public class KBArticleUpgradeProcess extends UpgradeProcess {
 
 		updateTable(newTableName, tableColumns, tableSqlCreate);
 
-		KBArticleAttachmentsUtil.deleteAttachmentsDirectory(
+		KBArticleAttachmentsHelper kbArticleAttachmentsHelper =
+			new KBArticleAttachmentsHelper(_store);
+
+		kbArticleAttachmentsHelper.deleteAttachmentsDirectory(
 			PortalUtil.getDefaultCompanyId());
 	}
 
@@ -103,33 +101,15 @@ public class KBArticleUpgradeProcess extends UpgradeProcess {
 
 		String dataTypeUpperCase = StringUtil.toUpperCase(dataType);
 
-		StringBundler sb = new StringBundler(6);
-
-		sb.append("alter table ");
-		sb.append(tableName);
-		sb.append(" add ");
-		sb.append(columnName);
-		sb.append(StringPool.SPACE);
-		sb.append(dataTypeUpperCase);
-
-		String sql = sb.toString();
-
 		if (dataTypeUpperCase.equals("DATE") || dataType.equals("STRING")) {
-			sql = sql.concat(" null");
+			dataTypeUpperCase = dataTypeUpperCase.concat(" null");
 		}
 
-		runSQL(sql);
+		alterTableAddColumn(tableName, columnName, dataTypeUpperCase);
 
-		sb.setIndex(0);
-
-		sb.append("update ");
-		sb.append(tableName);
-		sb.append(" set ");
-		sb.append(columnName);
-		sb.append(" = ");
-		sb.append(data);
-
-		runSQL(sb.toString());
+		runSQL(
+			StringBundler.concat(
+				"update ", tableName, " set ", columnName, " = ", data));
 	}
 
 	protected void updateSchema(
@@ -152,9 +132,7 @@ public class KBArticleUpgradeProcess extends UpgradeProcess {
 		updateColumn(oldTableName, "statusByUserName", "STRING", "userName");
 		updateColumn(oldTableName, "statusDate", "DATE", "modifiedDate");
 
-		if (hasColumn(oldTableName, "articleId")) {
-			runSQL("alter table " + oldTableName + " drop column articleId");
-		}
+		alterTableDropColumn(oldTableName, "articleId");
 	}
 
 	protected void updateTable(
@@ -172,13 +150,17 @@ public class KBArticleUpgradeProcess extends UpgradeProcess {
 				new KBArticleRootResourcePrimKeyUpgradeColumnImpl(
 					resourcePrimKeyColumn);
 
+		KBArticleAttachmentsHelper kbArticleAttachmentsHelper =
+			new KBArticleAttachmentsHelper(_store);
+
 		KBArticleLatestUpgradeColumnImpl kbArticleLatestUpgradeColumnImpl =
 			new KBArticleLatestUpgradeColumnImpl(
-				kbArticleIdColumn, resourcePrimKeyColumn);
-
+				kbArticleAttachmentsHelper, kbArticleIdColumn,
+				resourcePrimKeyColumn);
 		KBArticleMainUpgradeColumnImpl kbArticleMainUpgradeColumnImpl =
 			new KBArticleMainUpgradeColumnImpl(
-				kbArticleIdColumn, resourcePrimKeyColumn);
+				kbArticleAttachmentsHelper, kbArticleIdColumn,
+				resourcePrimKeyColumn);
 
 		UpgradeTable upgradeTable = UpgradeTableFactoryUtil.getUpgradeTable(
 			newTableName, tableColumns, kbArticleIdColumn,
@@ -193,5 +175,7 @@ public class KBArticleUpgradeProcess extends UpgradeProcess {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		KBArticleUpgradeProcess.class);
+
+	private final Store _store;
 
 }

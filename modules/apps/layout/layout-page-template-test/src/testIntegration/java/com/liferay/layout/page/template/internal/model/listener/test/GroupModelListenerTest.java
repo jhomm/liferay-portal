@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.page.template.internal.model.listener.test;
@@ -22,11 +13,14 @@ import com.liferay.fragment.model.FragmentEntryLink;
 import com.liferay.fragment.service.FragmentCollectionLocalService;
 import com.liferay.fragment.service.FragmentEntryLinkLocalService;
 import com.liferay.fragment.service.FragmentEntryLocalService;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateCollectionTypeConstants;
+import com.liferay.layout.page.template.constants.LayoutPageTemplateConstants;
 import com.liferay.layout.page.template.constants.LayoutPageTemplateEntryTypeConstants;
 import com.liferay.layout.page.template.model.LayoutPageTemplateCollection;
 import com.liferay.layout.page.template.model.LayoutPageTemplateEntry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateCollectionLocalService;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryLocalService;
+import com.liferay.layout.page.template.test.util.LayoutPageTemplateTestUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
@@ -40,6 +34,7 @@ import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
+import com.liferay.segments.service.SegmentsExperienceLocalService;
 
 import java.util.List;
 
@@ -71,27 +66,26 @@ public class GroupModelListenerTest {
 
 		_groupLocalService.deleteGroup(group);
 
-		fragmentCollection =
+		Assert.assertNull(
 			_fragmentCollectionLocalService.fetchFragmentCollection(
-				fragmentCollection.getFragmentCollectionId());
-
-		Assert.assertNull(fragmentCollection);
+				fragmentCollection.getFragmentCollectionId()));
 	}
 
 	@Test
 	public void testDeletingGroupDeletesFragmentEntryLinks() throws Exception {
 		Group group = GroupTestUtil.addGroup();
 
+		LayoutPageTemplateEntry layoutPageTemplateEntry =
+			_addLayoutPageTemplateEntry(group.getGroupId());
+
 		FragmentEntryLink fragmentEntryLink = _addFragmentEntryLink(
-			group.getGroupId());
+			group.getGroupId(), layoutPageTemplateEntry.getPlid());
 
 		_groupLocalService.deleteGroup(group);
 
-		fragmentEntryLink =
+		Assert.assertNull(
 			_fragmentEntryLinkLocalService.fetchFragmentEntryLink(
-				fragmentEntryLink.getFragmentEntryLinkId());
-
-		Assert.assertNull(fragmentEntryLink);
+				fragmentEntryLink.getFragmentEntryLinkId()));
 	}
 
 	@Test
@@ -105,13 +99,11 @@ public class GroupModelListenerTest {
 
 		_groupLocalService.deleteGroup(group);
 
-		layoutPageTemplateCollection =
+		Assert.assertNull(
 			_layoutPageTemplateCollectionLocalService.
 				fetchLayoutPageTemplateCollection(
 					layoutPageTemplateCollection.
-						getLayoutPageTemplateCollectionId());
-
-		Assert.assertNull(layoutPageTemplateCollection);
+						getLayoutPageTemplateCollectionId()));
 	}
 
 	@Test
@@ -124,17 +116,9 @@ public class GroupModelListenerTest {
 			_layoutPageTemplateEntryLocalService.getLayoutPageTemplateEntries(
 				group.getGroupId());
 
-		LayoutPageTemplateCollection layoutPageTemplateCollection =
-			_addLayoutPageTemplateCollection(group.getGroupId());
-
-		_addLayoutPageTemplateEntry(
-			layoutPageTemplateCollection.getLayoutPageTemplateCollectionId(),
-			group.getGroupId());
-
-		_addLayoutPageTemplateEntry(
-			RandomTestUtil.randomLong(), group.getGroupId());
-
-		_addLayoutPageTemplateEntry(0, group.getGroupId());
+		_addLayoutPageTemplateEntry(group.getGroupId());
+		_addLayoutPageTemplateEntry(group.getGroupId());
+		_addLayoutPageTemplateEntry(group.getGroupId());
 
 		_groupLocalService.deleteGroup(group);
 
@@ -156,11 +140,11 @@ public class GroupModelListenerTest {
 				groupId, TestPropsValues.getUserId());
 
 		return _fragmentCollectionLocalService.addFragmentCollection(
-			TestPropsValues.getUserId(), groupId, RandomTestUtil.randomString(),
-			StringPool.BLANK, serviceContext);
+			null, TestPropsValues.getUserId(), groupId,
+			RandomTestUtil.randomString(), StringPool.BLANK, serviceContext);
 	}
 
-	private FragmentEntryLink _addFragmentEntryLink(long groupId)
+	private FragmentEntryLink _addFragmentEntryLink(long groupId, long plid)
 		throws Exception {
 
 		ServiceContext serviceContext =
@@ -171,19 +155,23 @@ public class GroupModelListenerTest {
 
 		FragmentEntry fragmentEntry =
 			_fragmentEntryLocalService.addFragmentEntry(
-				TestPropsValues.getUserId(), groupId,
+				null, TestPropsValues.getUserId(), groupId,
 				fragmentCollection.getFragmentCollectionId(), null,
 				RandomTestUtil.randomString(), StringPool.BLANK,
-				RandomTestUtil.randomString(), StringPool.BLANK,
-				StringPool.BLANK, 0, FragmentConstants.TYPE_SECTION,
+				RandomTestUtil.randomString(), StringPool.BLANK, false,
+				StringPool.BLANK, null, 0, false, false,
+				FragmentConstants.TYPE_SECTION, null,
 				WorkflowConstants.STATUS_APPROVED, serviceContext);
 
 		return _fragmentEntryLinkLocalService.addFragmentEntryLink(
-			TestPropsValues.getUserId(), groupId, 0,
-			fragmentEntry.getFragmentEntryId(), 0, RandomTestUtil.randomLong(),
-			fragmentEntry.getCss(), fragmentEntry.getHtml(),
+			null, TestPropsValues.getUserId(), groupId, 0,
+			fragmentEntry.getFragmentEntryId(),
+			_segmentsExperienceLocalService.fetchDefaultSegmentsExperienceId(
+				plid),
+			plid, fragmentEntry.getCss(), fragmentEntry.getHtml(),
 			fragmentEntry.getJs(), fragmentEntry.getConfiguration(),
-			StringPool.BLANK, StringPool.BLANK, 0, null, serviceContext);
+			StringPool.BLANK, StringPool.BLANK, 0, null,
+			fragmentEntry.getType(), serviceContext);
 	}
 
 	private LayoutPageTemplateCollection _addLayoutPageTemplateCollection(
@@ -196,24 +184,20 @@ public class GroupModelListenerTest {
 
 		return _layoutPageTemplateCollectionLocalService.
 			addLayoutPageTemplateCollection(
-				TestPropsValues.getUserId(), groupId,
-				RandomTestUtil.randomString(), StringPool.BLANK,
+				null, TestPropsValues.getUserId(), groupId,
+				LayoutPageTemplateConstants.
+					PARENT_LAYOUT_PAGE_TEMPLATE_COLLECTION_ID_DEFAULT,
+				null, RandomTestUtil.randomString(), StringPool.BLANK,
+				LayoutPageTemplateCollectionTypeConstants.BASIC,
 				serviceContext);
 	}
 
-	private LayoutPageTemplateEntry _addLayoutPageTemplateEntry(
-			long layoutPageTemplateCollectionId, long groupId)
+	private LayoutPageTemplateEntry _addLayoutPageTemplateEntry(long groupId)
 		throws Exception {
 
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				groupId, TestPropsValues.getUserId());
-
-		return _layoutPageTemplateEntryLocalService.addLayoutPageTemplateEntry(
-			TestPropsValues.getUserId(), groupId,
-			layoutPageTemplateCollectionId, RandomTestUtil.randomString(),
-			LayoutPageTemplateEntryTypeConstants.TYPE_BASIC,
-			WorkflowConstants.STATUS_DRAFT, serviceContext);
+		return LayoutPageTemplateTestUtil.addLayoutPageTemplateEntry(
+			groupId, LayoutPageTemplateEntryTypeConstants.BASIC,
+			WorkflowConstants.STATUS_DRAFT);
 	}
 
 	@Inject
@@ -235,5 +219,8 @@ public class GroupModelListenerTest {
 	@Inject
 	private LayoutPageTemplateEntryLocalService
 		_layoutPageTemplateEntryLocalService;
+
+	@Inject
+	private SegmentsExperienceLocalService _segmentsExperienceLocalService;
 
 }

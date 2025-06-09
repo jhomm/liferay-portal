@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2023 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.categories.admin.web.internal.display.context;
@@ -22,7 +13,9 @@ import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItemListBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItem;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.LabelItemListBuilder;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.item.selector.ItemSelector;
+import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
+import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
 import com.liferay.petra.string.StringPool;
 import com.liferay.petra.string.StringUtil;
 import com.liferay.portal.kernel.exception.PortalException;
@@ -30,21 +23,19 @@ import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.LiferayPortletRequest;
 import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
-import com.liferay.portal.kernel.portlet.LiferayWindowState;
-import com.liferay.portal.kernel.portlet.PortletProvider;
-import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.PortletURLUtil;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
+import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * @author Eudaldo Alonso
@@ -81,7 +72,8 @@ public class AssetCategoriesManagementToolbarDisplayContext
 								PortletURLBuilder.createRenderURL(
 									liferayPortletResponse
 								).setMVCPath(
-									"/set_category_display_page_template.jsp"
+									"/set_asset_category_" +
+										"display_page_template.jsp"
 								).setRedirect(
 									currentURLObj
 								).setParameter(
@@ -110,7 +102,7 @@ public class AssetCategoriesManagementToolbarDisplayContext
 						dropdownItem -> {
 							dropdownItem.putData(
 								"action", "deleteSelectedCategories");
-							dropdownItem.setIcon("times-circle");
+							dropdownItem.setIcon("trash");
 							dropdownItem.setLabel(
 								LanguageUtil.get(httpServletRequest, "delete"));
 							dropdownItem.setQuickAction(true);
@@ -167,18 +159,19 @@ public class AssetCategoriesManagementToolbarDisplayContext
 					PortletURLBuilder.createRenderURL(
 						liferayPortletResponse
 					).setMVCPath(
-						"/edit_category.jsp"
+						"/edit_asset_category.jsp"
 					).setParameter(
 						"parentCategoryId",
 						() -> {
-							if (_assetCategoriesDisplayContext.getCategoryId() >
-									0) {
+							long categoryId =
+								_assetCategoriesDisplayContext.getCategoryId();
 
-								return _assetCategoriesDisplayContext.
-									getCategoryId();
+							if (categoryId <= 0) {
+								return null;
 							}
 
-							return null;
+							return _assetCategoriesDisplayContext.
+								getCategoryId();
 						}
 					).setParameter(
 						"vocabularyId",
@@ -263,15 +256,13 @@ public class AssetCategoriesManagementToolbarDisplayContext
 	}
 
 	@Override
-	public String getSearchActionURL() {
-		PortletURL searchActionURL = getPortletURL();
-
-		return searchActionURL.toString();
+	public String getSearchContainerId() {
+		return "assetCategories";
 	}
 
 	@Override
-	public String getSearchContainerId() {
-		return "assetCategories";
+	public Boolean isSelectable() {
+		return _assetCategoriesDisplayContext.isShowCategoriesSelectButton();
 	}
 
 	@Override
@@ -303,19 +294,32 @@ public class AssetCategoriesManagementToolbarDisplayContext
 	}
 
 	private String _getCategoriesSelectorURL() throws Exception {
+		ItemSelector itemSelector =
+			(ItemSelector)httpServletRequest.getAttribute(
+				ItemSelector.class.getName());
+
+		ThemeDisplay themeDisplay =
+			(ThemeDisplay)httpServletRequest.getAttribute(
+				WebKeys.THEME_DISPLAY);
+
+		RequestBackedPortletURLFactory requestBackedPortletURLFactory =
+			RequestBackedPortletURLFactoryUtil.create(liferayPortletRequest);
+
+		InfoItemItemSelectorCriterion itemSelectorCriterion =
+			new InfoItemItemSelectorCriterion();
+
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new InfoItemItemSelectorReturnType());
+		itemSelectorCriterion.setItemType(AssetCategory.class.getName());
+
 		return PortletURLBuilder.create(
-			PortletProviderUtil.getPortletURL(
-				httpServletRequest, AssetCategory.class.getName(),
-				PortletProvider.Action.BROWSE)
-		).setParameter(
-			"eventName",
-			liferayPortletResponse.getNamespace() + "selectCategory"
-		).setParameter(
-			"singleSelect", true
+			itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory, themeDisplay.getScopeGroup(),
+				themeDisplay.getScopeGroupId(),
+				liferayPortletResponse.getNamespace() + "selectCategory",
+				itemSelectorCriterion)
 		).setParameter(
 			"vocabularyIds", _assetCategoriesDisplayContext.getVocabularyId()
-		).setWindowState(
-			LiferayWindowState.POP_UP
 		).buildString();
 	}
 

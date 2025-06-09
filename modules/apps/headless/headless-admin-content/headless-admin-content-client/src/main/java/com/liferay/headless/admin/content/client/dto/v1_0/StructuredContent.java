@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.admin.content.client.dto.v1_0;
@@ -17,13 +8,13 @@ package com.liferay.headless.admin.content.client.dto.v1_0;
 import com.liferay.headless.admin.content.client.function.UnsafeSupplier;
 import com.liferay.headless.admin.content.client.serdes.v1_0.StructuredContentSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Javier Gamarra
@@ -185,16 +176,24 @@ public class StructuredContent implements Cloneable, Serializable {
 
 	protected Creator creator;
 
-	public CustomField[] getCustomFields() {
+	public com.liferay.headless.admin.content.client.custom.field.CustomField[]
+		getCustomFields() {
+
 		return customFields;
 	}
 
-	public void setCustomFields(CustomField[] customFields) {
+	public void setCustomFields(
+		com.liferay.headless.admin.content.client.custom.field.CustomField[]
+			customFields) {
+
 		this.customFields = customFields;
 	}
 
 	public void setCustomFields(
-		UnsafeSupplier<CustomField[], Exception> customFieldsUnsafeSupplier) {
+		UnsafeSupplier
+			<com.liferay.headless.admin.content.client.custom.field.
+				CustomField[],
+			 Exception> customFieldsUnsafeSupplier) {
 
 		try {
 			customFields = customFieldsUnsafeSupplier.get();
@@ -204,7 +203,9 @@ public class StructuredContent implements Cloneable, Serializable {
 		}
 	}
 
-	protected CustomField[] customFields;
+	protected
+		com.liferay.headless.admin.content.client.custom.field.CustomField[]
+			customFields;
 
 	public Date getDateCreated() {
 		return dateCreated;
@@ -226,6 +227,27 @@ public class StructuredContent implements Cloneable, Serializable {
 	}
 
 	protected Date dateCreated;
+
+	public Date getDateExpired() {
+		return dateExpired;
+	}
+
+	public void setDateExpired(Date dateExpired) {
+		this.dateExpired = dateExpired;
+	}
+
+	public void setDateExpired(
+		UnsafeSupplier<Date, Exception> dateExpiredUnsafeSupplier) {
+
+		try {
+			dateExpired = dateExpiredUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Date dateExpired;
 
 	public Date getDateModified() {
 		return dateModified;
@@ -437,6 +459,27 @@ public class StructuredContent implements Cloneable, Serializable {
 
 	protected String[] keywords;
 
+	public Boolean getNeverExpire() {
+		return neverExpire;
+	}
+
+	public void setNeverExpire(Boolean neverExpire) {
+		this.neverExpire = neverExpire;
+	}
+
+	public void setNeverExpire(
+		UnsafeSupplier<Boolean, Exception> neverExpireUnsafeSupplier) {
+
+		try {
+			neverExpire = neverExpireUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Boolean neverExpire;
+
 	public Integer getNumberOfComments() {
 		return numberOfComments;
 	}
@@ -457,6 +500,56 @@ public class StructuredContent implements Cloneable, Serializable {
 	}
 
 	protected Integer numberOfComments;
+
+	public com.liferay.headless.admin.content.client.permission.Permission[]
+		getPermissions() {
+
+		return permissions;
+	}
+
+	public void setPermissions(
+		com.liferay.headless.admin.content.client.permission.Permission[]
+			permissions) {
+
+		this.permissions = permissions;
+	}
+
+	public void setPermissions(
+		UnsafeSupplier
+			<com.liferay.headless.admin.content.client.permission.Permission[],
+			 Exception> permissionsUnsafeSupplier) {
+
+		try {
+			permissions = permissionsUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected com.liferay.headless.admin.content.client.permission.Permission[]
+		permissions;
+
+	public Double getPriority() {
+		return priority;
+	}
+
+	public void setPriority(Double priority) {
+		this.priority = priority;
+	}
+
+	public void setPriority(
+		UnsafeSupplier<Double, Exception> priorityUnsafeSupplier) {
+
+		try {
+			priority = priorityUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Double priority;
 
 	public RelatedContent[] getRelatedContents() {
 		return relatedContents;
@@ -522,6 +615,29 @@ public class StructuredContent implements Cloneable, Serializable {
 	}
 
 	protected Long siteId;
+
+	public Long getStructuredContentFolderId() {
+		return structuredContentFolderId;
+	}
+
+	public void setStructuredContentFolderId(Long structuredContentFolderId) {
+		this.structuredContentFolderId = structuredContentFolderId;
+	}
+
+	public void setStructuredContentFolderId(
+		UnsafeSupplier<Long, Exception>
+			structuredContentFolderIdUnsafeSupplier) {
+
+		try {
+			structuredContentFolderId =
+				structuredContentFolderIdUnsafeSupplier.get();
+		}
+		catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected Long structuredContentFolderId;
 
 	public Boolean getSubscribed() {
 		return subscribed;

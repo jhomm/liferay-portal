@@ -1,30 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.servlet.filters.sessionid;
 
-import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.cookies.CookiesManagerUtil;
+import com.liferay.portal.kernel.cookies.constants.CookiesConstants;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
-import com.liferay.portal.kernel.util.CookieKeys;
-import com.liferay.portal.kernel.util.Validator;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 /**
  * @author Brian Wing Shun Chan
@@ -65,9 +55,9 @@ public class SessionIdServletRequest extends HttpServletRequestWrapper {
 			return;
 		}
 
-		Object jsessionIdAlreadySet = getAttribute(_JESSIONID_ALREADY_SET);
+		Object jSessionIdAlreadySet = getAttribute(_JSESSIONID_ALREADY_SET);
 
-		if (jsessionIdAlreadySet != null) {
+		if (jSessionIdAlreadySet != null) {
 			return;
 		}
 
@@ -75,30 +65,21 @@ public class SessionIdServletRequest extends HttpServletRequestWrapper {
 			_log.debug("Processing " + httpSession.getId());
 		}
 
-		Cookie cookie = new Cookie(_JESSIONID, httpSession.getId());
+		Cookie cookie = new Cookie(_JSESSIONID, httpSession.getId());
 
 		cookie.setMaxAge(-1);
 
-		String contextPath = getContextPath();
+		CookiesManagerUtil.addCookie(
+			CookiesConstants.CONSENT_TYPE_NECESSARY, cookie,
+			(HttpServletRequest)super.getRequest(), _httpServletResponse);
 
-		if (Validator.isNotNull(contextPath)) {
-			cookie.setPath(contextPath);
-		}
-		else {
-			cookie.setPath(StringPool.SLASH);
-		}
-
-		CookieKeys.addCookie(
-			(HttpServletRequest)super.getRequest(), _httpServletResponse,
-			cookie);
-
-		setAttribute(_JESSIONID_ALREADY_SET, Boolean.TRUE);
+		setAttribute(_JSESSIONID_ALREADY_SET, Boolean.TRUE);
 	}
 
-	private static final String _JESSIONID = "JSESSIONID";
+	private static final String _JSESSIONID = "JSESSIONID";
 
-	private static final String _JESSIONID_ALREADY_SET =
-		"JESSIONID_ALREADY_SET";
+	private static final String _JSESSIONID_ALREADY_SET =
+		"JSESSIONID_ALREADY_SET";
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SessionIdServletRequest.class);

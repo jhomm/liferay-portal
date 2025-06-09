@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.redirect.service.persistence.impl;
@@ -34,7 +25,6 @@ import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
-import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.impl.BasePersistenceImpl;
 import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -53,7 +43,6 @@ import com.liferay.redirect.service.persistence.impl.constants.RedirectPersisten
 
 import java.io.Serializable;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 
 import java.util.Date;
@@ -79,9 +68,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Brian Wing Shun Chan
  * @generated
  */
-@Component(
-	service = {RedirectNotFoundEntryPersistence.class, BasePersistence.class}
-)
+@Component(service = RedirectNotFoundEntryPersistence.class)
 public class RedirectNotFoundEntryPersistenceImpl
 	extends BasePersistenceImpl<RedirectNotFoundEntry>
 	implements RedirectNotFoundEntryPersistence {
@@ -199,7 +186,7 @@ public class RedirectNotFoundEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectNotFoundEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 
 			if ((list != null) && !list.isEmpty()) {
 				for (RedirectNotFoundEntry redirectNotFoundEntry : list) {
@@ -567,7 +554,7 @@ public class RedirectNotFoundEntryPersistenceImpl
 
 		Object[] finderArgs = new Object[] {groupId};
 
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
+		Long count = (Long)finderCache.getResult(finderPath, finderArgs, this);
 
 		if (count == null) {
 			StringBundler sb = new StringBundler(2);
@@ -608,7 +595,6 @@ public class RedirectNotFoundEntryPersistenceImpl
 		"redirectNotFoundEntry.groupId = ?";
 
 	private FinderPath _finderPathFetchByG_U;
-	private FinderPath _finderPathCountByG_U;
 
 	/**
 	 * Returns the redirect not found entry where groupId = &#63; and url = &#63; or throws a <code>NoSuchNotFoundEntryException</code> if it could not be found.
@@ -682,7 +668,8 @@ public class RedirectNotFoundEntryPersistenceImpl
 		Object result = null;
 
 		if (useFinderCache) {
-			result = finderCache.getResult(_finderPathFetchByG_U, finderArgs);
+			result = finderCache.getResult(
+				_finderPathFetchByG_U, finderArgs, this);
 		}
 
 		if (result instanceof RedirectNotFoundEntry) {
@@ -788,62 +775,13 @@ public class RedirectNotFoundEntryPersistenceImpl
 	 */
 	@Override
 	public int countByG_U(long groupId, String url) {
-		url = Objects.toString(url, "");
+		RedirectNotFoundEntry redirectNotFoundEntry = fetchByG_U(groupId, url);
 
-		FinderPath finderPath = _finderPathCountByG_U;
-
-		Object[] finderArgs = new Object[] {groupId, url};
-
-		Long count = (Long)finderCache.getResult(finderPath, finderArgs);
-
-		if (count == null) {
-			StringBundler sb = new StringBundler(3);
-
-			sb.append(_SQL_COUNT_REDIRECTNOTFOUNDENTRY_WHERE);
-
-			sb.append(_FINDER_COLUMN_G_U_GROUPID_2);
-
-			boolean bindUrl = false;
-
-			if (url.isEmpty()) {
-				sb.append(_FINDER_COLUMN_G_U_URL_3);
-			}
-			else {
-				bindUrl = true;
-
-				sb.append(_FINDER_COLUMN_G_U_URL_2);
-			}
-
-			String sql = sb.toString();
-
-			Session session = null;
-
-			try {
-				session = openSession();
-
-				Query query = session.createQuery(sql);
-
-				QueryPos queryPos = QueryPos.getInstance(query);
-
-				queryPos.add(groupId);
-
-				if (bindUrl) {
-					queryPos.add(url);
-				}
-
-				count = (Long)query.uniqueResult();
-
-				finderCache.putResult(finderPath, finderArgs, count);
-			}
-			catch (Exception exception) {
-				throw processException(exception);
-			}
-			finally {
-				closeSession(session);
-			}
+		if (redirectNotFoundEntry == null) {
+			return 0;
 		}
 
-		return count.intValue();
+		return 1;
 	}
 
 	private static final String _FINDER_COLUMN_G_U_GROUPID_2 =
@@ -972,7 +910,6 @@ public class RedirectNotFoundEntryPersistenceImpl
 			redirectNotFoundEntryModelImpl.getUrl()
 		};
 
-		finderCache.putResult(_finderPathCountByG_U, args, Long.valueOf(1));
 		finderCache.putResult(
 			_finderPathFetchByG_U, args, redirectNotFoundEntryModelImpl);
 	}
@@ -1338,7 +1275,7 @@ public class RedirectNotFoundEntryPersistenceImpl
 
 		if (useFinderCache) {
 			list = (List<RedirectNotFoundEntry>)finderCache.getResult(
-				finderPath, finderArgs);
+				finderPath, finderArgs, this);
 		}
 
 		if (list == null) {
@@ -1408,7 +1345,7 @@ public class RedirectNotFoundEntryPersistenceImpl
 	@Override
 	public int countAll() {
 		Long count = (Long)finderCache.getResult(
-			_finderPathCountAll, FINDER_ARGS_EMPTY);
+			_finderPathCountAll, FINDER_ARGS_EMPTY, this);
 
 		if (count == null) {
 			Session session = null;
@@ -1498,35 +1435,14 @@ public class RedirectNotFoundEntryPersistenceImpl
 			new String[] {Long.class.getName(), String.class.getName()},
 			new String[] {"groupId", "url"}, true);
 
-		_finderPathCountByG_U = new FinderPath(
-			FINDER_CLASS_NAME_LIST_WITHOUT_PAGINATION, "countByG_U",
-			new String[] {Long.class.getName(), String.class.getName()},
-			new String[] {"groupId", "url"}, false);
-
-		_setRedirectNotFoundEntryUtilPersistence(this);
+		RedirectNotFoundEntryUtil.setPersistence(this);
 	}
 
 	@Deactivate
 	public void deactivate() {
-		_setRedirectNotFoundEntryUtilPersistence(null);
+		RedirectNotFoundEntryUtil.setPersistence(null);
 
 		entityCache.removeCache(RedirectNotFoundEntryImpl.class.getName());
-	}
-
-	private void _setRedirectNotFoundEntryUtilPersistence(
-		RedirectNotFoundEntryPersistence redirectNotFoundEntryPersistence) {
-
-		try {
-			Field field = RedirectNotFoundEntryUtil.class.getDeclaredField(
-				"_persistence");
-
-			field.setAccessible(true);
-
-			field.set(null, redirectNotFoundEntryPersistence);
-		}
-		catch (ReflectiveOperationException reflectiveOperationException) {
-			throw new RuntimeException(reflectiveOperationException);
-		}
 	}
 
 	@Override
@@ -1589,9 +1505,5 @@ public class RedirectNotFoundEntryPersistenceImpl
 	protected FinderCache getFinderCache() {
 		return finderCache;
 	}
-
-	@Reference
-	private RedirectNotFoundEntryModelArgumentsResolver
-		_redirectNotFoundEntryModelArgumentsResolver;
 
 }

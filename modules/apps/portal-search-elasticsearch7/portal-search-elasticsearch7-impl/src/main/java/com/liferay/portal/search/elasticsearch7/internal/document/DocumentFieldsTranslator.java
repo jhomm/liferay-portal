@@ -1,25 +1,20 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.document;
 
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.util.MapUtil;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.geolocation.GeoBuilders;
+import com.liferay.portal.search.geolocation.GeoLocationPoint;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 import org.elasticsearch.common.document.DocumentField;
@@ -83,7 +78,7 @@ public class DocumentFieldsTranslator {
 		DocumentField documentField, DocumentBuilder documentBuilder,
 		Map<String, DocumentField> documentFieldsMap) {
 
-		if (translateGeoLocationPoint(
+		if (_translateGeoLocationPoint(
 				documentField, documentBuilder, documentFieldsMap)) {
 
 			return;
@@ -110,7 +105,35 @@ public class DocumentFieldsTranslator {
 		}
 	}
 
-	protected boolean translateGeoLocationPoint(
+	private GeoLocationPoint _getGeoLocationPoint(
+		DocumentField documentField1, DocumentField documentField2) {
+
+		Object value1 = documentField1.getValue();
+		String value2 = documentField2.getValue();
+
+		if (StringUtil.startsWith(value2, StringPool.OPEN_CURLY_BRACE) &&
+			(value1 instanceof Map)) {
+
+			return _getGeoLocationPoint((Map<String, Object>)value1);
+		}
+
+		GeoPoint geoPoint = GeoPoint.fromGeohash(value2);
+
+		return _geoBuilders.geoLocationPoint(
+			geoPoint.getLat(), geoPoint.getLon());
+	}
+
+	private GeoLocationPoint _getGeoLocationPoint(Map<String, Object> map) {
+		if (MapUtil.isEmpty(map) || !map.containsKey("coordinates")) {
+			return null;
+		}
+
+		List<Double> list = (List<Double>)map.get("coordinates");
+
+		return _geoBuilders.geoLocationPoint(list.get(1), list.get(0));
+	}
+
+	private boolean _translateGeoLocationPoint(
 		DocumentField documentField1, DocumentBuilder documentBuilder,
 		Map<String, DocumentField> documentFieldsMap) {
 
@@ -128,12 +151,8 @@ public class DocumentFieldsTranslator {
 			return false;
 		}
 
-		GeoPoint geoPoint = GeoPoint.fromGeohash(documentField2.getValue());
-
 		documentBuilder.setGeoLocationPoint(
-			fieldName1,
-			_geoBuilders.geoLocationPoint(
-				geoPoint.getLat(), geoPoint.getLon()));
+			fieldName1, _getGeoLocationPoint(documentField1, documentField2));
 
 		return true;
 	}

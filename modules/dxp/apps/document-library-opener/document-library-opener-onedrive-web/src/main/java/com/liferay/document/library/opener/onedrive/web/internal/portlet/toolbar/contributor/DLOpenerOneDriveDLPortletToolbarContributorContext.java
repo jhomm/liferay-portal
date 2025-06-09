@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.onedrive.web.internal.portlet.toolbar.contributor;
@@ -20,7 +11,7 @@ import com.liferay.document.library.opener.onedrive.web.internal.DLOpenerOneDriv
 import com.liferay.document.library.portlet.toolbar.contributor.DLPortletToolbarContributorContext;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
-import com.liferay.portal.kernel.bean.BeanPropertiesUtil;
+import com.liferay.portal.kernel.bean.BeanProperties;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.log.Log;
@@ -38,12 +29,12 @@ import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Constants;
 import com.liferay.portal.kernel.util.Portal;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
 import java.util.Collections;
 import java.util.List;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -98,7 +89,7 @@ public class DLOpenerOneDriveDLPortletToolbarContributorContext
 					_translate(portletRequest, "create-excel-document")));
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 		}
 	}
 
@@ -139,14 +130,14 @@ public class DLOpenerOneDriveDLPortletToolbarContributorContext
 				"/document_library/create_in_one_drive");
 			liferayPortletURL.setParameter(Constants.CMD, Constants.ADD);
 
-			long repositoryId = BeanPropertiesUtil.getLong(
+			long repositoryId = _beanProperties.getLong(
 				folder, "repositoryId",
 				_portal.getScopeGroupId(portletRequest));
 
 			liferayPortletURL.setParameter(
 				"repositoryId", String.valueOf(repositoryId));
 
-			long folderId = BeanPropertiesUtil.getLong(
+			long folderId = _beanProperties.getLong(
 				folder, "folderId", DLFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
 			liferayPortletURL.setParameter(
@@ -180,6 +171,9 @@ public class DLOpenerOneDriveDLPortletToolbarContributorContext
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		DLOpenerOneDriveDLPortletToolbarContributorContext.class);
+
+	@Reference
+	private BeanProperties _beanProperties;
 
 	@Reference
 	private DLOpenerOneDriveManager _dlOpenerOneDriveManager;

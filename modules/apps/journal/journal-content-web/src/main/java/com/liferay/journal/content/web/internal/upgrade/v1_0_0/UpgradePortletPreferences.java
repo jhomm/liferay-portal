@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.content.web.internal.upgrade.v1_0_0;
@@ -24,9 +15,9 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
-import java.util.Map;
+import jakarta.portlet.PortletPreferences;
 
-import javax.portlet.PortletPreferences;
+import java.util.Map;
 
 /**
  * @author Julio Camarero
@@ -42,7 +33,23 @@ public class UpgradePortletPreferences
 		};
 	}
 
-	protected String[] upgradeBooleanAssetAddonEntry(
+	@Override
+	protected String upgradePreferences(
+			long companyId, long ownerId, int ownerType, long plid,
+			String portletId, String xml)
+		throws Exception {
+
+		PortletPreferences portletPreferences =
+			PortletPreferencesFactoryUtil.fromXML(
+				companyId, ownerId, ownerType, plid, portletId, xml);
+
+		_upgradeContentMetadataAssetAddonEntryKeys(portletPreferences);
+		_upgradeUserToolAssetAddonEntryKeys(portletPreferences);
+
+		return PortletPreferencesFactoryUtil.toXML(portletPreferences);
+	}
+
+	private String[] _upgradeBooleanAssetAddonEntry(
 			String[] assetAddonEntryKeys, PortletPreferences portletPreferences,
 			String preferenceKey)
 		throws Exception {
@@ -60,22 +67,22 @@ public class UpgradePortletPreferences
 		return assetAddonEntryKeys;
 	}
 
-	protected void upgradeContentMetadataAssetAddonEntryKeys(
+	private void _upgradeContentMetadataAssetAddonEntryKeys(
 			PortletPreferences portletPreferences)
 		throws Exception {
 
 		String[] contentMetadataAssetAddonEntryKeys = new String[0];
 
-		contentMetadataAssetAddonEntryKeys = upgradeBooleanAssetAddonEntry(
+		contentMetadataAssetAddonEntryKeys = _upgradeBooleanAssetAddonEntry(
 			contentMetadataAssetAddonEntryKeys, portletPreferences,
 			"enableCommentRatings");
-		contentMetadataAssetAddonEntryKeys = upgradeBooleanAssetAddonEntry(
+		contentMetadataAssetAddonEntryKeys = _upgradeBooleanAssetAddonEntry(
 			contentMetadataAssetAddonEntryKeys, portletPreferences,
 			"enableComments");
-		contentMetadataAssetAddonEntryKeys = upgradeBooleanAssetAddonEntry(
+		contentMetadataAssetAddonEntryKeys = _upgradeBooleanAssetAddonEntry(
 			contentMetadataAssetAddonEntryKeys, portletPreferences,
 			"enableRatings");
-		contentMetadataAssetAddonEntryKeys = upgradeBooleanAssetAddonEntry(
+		contentMetadataAssetAddonEntryKeys = _upgradeBooleanAssetAddonEntry(
 			contentMetadataAssetAddonEntryKeys, portletPreferences,
 			"enableRelatedAssets");
 
@@ -84,7 +91,7 @@ public class UpgradePortletPreferences
 			StringUtil.merge(contentMetadataAssetAddonEntryKeys));
 	}
 
-	protected String[] upgradeMultiValueAssetAddonEntryKeys(
+	private String[] _upgradeMultiValueAssetAddonEntryKeys(
 			String[] assetAddonEntryKeys, PortletPreferences portletPreferences,
 			String preferenceKey, Map<String, String> newPreferenceValues)
 		throws Exception {
@@ -109,32 +116,16 @@ public class UpgradePortletPreferences
 		return assetAddonEntryKeys;
 	}
 
-	@Override
-	protected String upgradePreferences(
-			long companyId, long ownerId, int ownerType, long plid,
-			String portletId, String xml)
-		throws Exception {
-
-		PortletPreferences portletPreferences =
-			PortletPreferencesFactoryUtil.fromXML(
-				companyId, ownerId, ownerType, plid, portletId, xml);
-
-		upgradeContentMetadataAssetAddonEntryKeys(portletPreferences);
-		upgradeUserToolAssetAddonEntryKeys(portletPreferences);
-
-		return PortletPreferencesFactoryUtil.toXML(portletPreferences);
-	}
-
-	protected void upgradeUserToolAssetAddonEntryKeys(
+	private void _upgradeUserToolAssetAddonEntryKeys(
 			PortletPreferences portletPreferences)
 		throws Exception {
 
 		String[] userToolAssetAddonEntryKeys = new String[0];
 
-		userToolAssetAddonEntryKeys = upgradeBooleanAssetAddonEntry(
+		userToolAssetAddonEntryKeys = _upgradeBooleanAssetAddonEntry(
 			userToolAssetAddonEntryKeys, portletPreferences, "enablePrint");
 
-		userToolAssetAddonEntryKeys = upgradeMultiValueAssetAddonEntryKeys(
+		userToolAssetAddonEntryKeys = _upgradeMultiValueAssetAddonEntryKeys(
 			userToolAssetAddonEntryKeys, portletPreferences, "extensions",
 			HashMapBuilder.put(
 				"doc", "enableDOC"
@@ -146,7 +137,7 @@ public class UpgradePortletPreferences
 				"txt", "enableTXT"
 			).build());
 
-		userToolAssetAddonEntryKeys = upgradeBooleanAssetAddonEntry(
+		userToolAssetAddonEntryKeys = _upgradeBooleanAssetAddonEntry(
 			userToolAssetAddonEntryKeys, portletPreferences,
 			"showAvailableLocales");
 

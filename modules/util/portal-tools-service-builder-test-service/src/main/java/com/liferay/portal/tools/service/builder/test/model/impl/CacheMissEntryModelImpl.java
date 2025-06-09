@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder.test.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.tools.service.builder.test.model.CacheMissEntryModel;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -203,76 +193,66 @@ public class CacheMissEntryModelImpl
 	public Map<String, Function<CacheMissEntry, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<CacheMissEntry, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, CacheMissEntry>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			CacheMissEntry.class.getClassLoader(), CacheMissEntry.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<CacheMissEntry, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<CacheMissEntry> constructor =
-				(Constructor<CacheMissEntry>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<CacheMissEntry, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String, Function<CacheMissEntry, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", CacheMissEntry::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", CacheMissEntry::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"cacheMissEntryId", CacheMissEntry::getCacheMissEntryId);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<CacheMissEntry, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<CacheMissEntry, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<CacheMissEntry, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<CacheMissEntry, Object>>();
-		Map<String, BiConsumer<CacheMissEntry, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<CacheMissEntry, ?>>();
+		private static final Map<String, BiConsumer<CacheMissEntry, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", CacheMissEntry::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<CacheMissEntry, Long>)CacheMissEntry::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", CacheMissEntry::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<CacheMissEntry, Long>)
-				CacheMissEntry::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"cacheMissEntryId", CacheMissEntry::getCacheMissEntryId);
-		attributeSetterBiConsumers.put(
-			"cacheMissEntryId",
-			(BiConsumer<CacheMissEntry, Long>)
-				CacheMissEntry::setCacheMissEntryId);
+		static {
+			Map<String, BiConsumer<CacheMissEntry, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<CacheMissEntry, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<CacheMissEntry, Long>)
+					CacheMissEntry::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<CacheMissEntry, Long>)
+					CacheMissEntry::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"cacheMissEntryId",
+				(BiConsumer<CacheMissEntry, Long>)
+					CacheMissEntry::setCacheMissEntryId);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -526,41 +506,12 @@ public class CacheMissEntryModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<CacheMissEntry, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<CacheMissEntry, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<CacheMissEntry, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((CacheMissEntry)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, CacheMissEntry>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					CacheMissEntry.class, ModelWrapper.class);
 
 	}
 
@@ -570,7 +521,8 @@ public class CacheMissEntryModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<CacheMissEntry, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

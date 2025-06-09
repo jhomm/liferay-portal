@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.web.internal.portlet.action;
@@ -17,7 +8,6 @@ package com.liferay.dynamic.data.mapping.web.internal.portlet.action;
 import com.liferay.dynamic.data.mapping.constants.DDMTemplateConstants;
 import com.liferay.dynamic.data.mapping.model.DDMStructure;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
-import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.PortletPreferencesException;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.LiferayPortletURL;
@@ -26,45 +16,23 @@ import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
-import com.liferay.portal.kernel.util.HttpUtil;
+import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portlet.StrictPortletPreferencesImpl;
 
-import java.util.Objects;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.PortletPreferences;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.PortletPreferences;
-import javax.portlet.PortletRequest;
+import java.util.Objects;
 
 /**
  * @author Leonardo Barros
  */
 public abstract class BaseDDMMVCActionCommand extends BaseMVCActionCommand {
-
-	protected String getRedirect(ActionRequest actionRequest) {
-		String redirect = ParamUtil.getString(actionRequest, "redirect");
-
-		String closeRedirect = ParamUtil.getString(
-			actionRequest, "closeRedirect");
-
-		if (Validator.isNull(closeRedirect)) {
-			return redirect;
-		}
-
-		redirect = HttpUtil.setParameter(
-			redirect, "closeRedirect", closeRedirect);
-
-		SessionMessages.add(
-			actionRequest,
-			PortalUtil.getPortletId(actionRequest) +
-				SessionMessages.KEY_SUFFIX_CLOSE_REDIRECT,
-			closeRedirect);
-
-		return redirect;
-	}
 
 	protected String getSaveAndContinueRedirect(
 			ActionRequest actionRequest, DDMStructure structure,
@@ -135,48 +103,16 @@ public abstract class BaseDDMMVCActionCommand extends BaseMVCActionCommand {
 		return portletURL.toString();
 	}
 
-	protected PortletPreferences getStrictPortletSetup(
-			ActionRequest actionRequest)
-		throws PortalException {
-
-		String portletResource = ParamUtil.getString(
-			actionRequest, "portletResource");
-
-		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
-			WebKeys.THEME_DISPLAY);
-
-		return getStrictPortletSetup(themeDisplay.getLayout(), portletResource);
-	}
-
-	protected PortletPreferences getStrictPortletSetup(
-			Layout layout, String portletId)
-		throws PortalException {
-
-		if (Validator.isNull(portletId)) {
-			return null;
-		}
-
-		PortletPreferences portletPreferences =
-			PortletPreferencesFactoryUtil.getStrictPortletSetup(
-				layout, portletId);
-
-		if (portletPreferences instanceof StrictPortletPreferencesImpl) {
-			throw new PortletPreferencesException.MustBeStrict(portletId);
-		}
-
-		return portletPreferences;
-	}
-
 	protected void setRedirectAttribute(ActionRequest actionRequest) {
 		actionRequest.setAttribute(
-			WebKeys.REDIRECT, getRedirect(actionRequest));
+			WebKeys.REDIRECT, _getRedirect(actionRequest));
 	}
 
 	protected void setRedirectAttribute(
 			ActionRequest actionRequest, DDMStructure structure)
 		throws Exception {
 
-		String redirect = getRedirect(actionRequest);
+		String redirect = _getRedirect(actionRequest);
 
 		boolean saveAndContinue = ParamUtil.getBoolean(
 			actionRequest, "saveAndContinue");
@@ -193,7 +129,7 @@ public abstract class BaseDDMMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, DDMTemplate template)
 		throws Exception {
 
-		String redirect = getRedirect(actionRequest);
+		String redirect = _getRedirect(actionRequest);
 
 		boolean saveAndContinue = ParamUtil.getBoolean(
 			actionRequest, "saveAndContinue");
@@ -210,7 +146,7 @@ public abstract class BaseDDMMVCActionCommand extends BaseMVCActionCommand {
 			ActionRequest actionRequest, DDMTemplate template)
 		throws Exception {
 
-		PortletPreferences portletPreferences = getStrictPortletSetup(
+		PortletPreferences portletPreferences = _getStrictPortletPreferences(
 			actionRequest);
 
 		if (portletPreferences == null) {
@@ -234,6 +170,61 @@ public abstract class BaseDDMMVCActionCommand extends BaseMVCActionCommand {
 		}
 
 		portletPreferences.store();
+	}
+
+	private String _getRedirect(ActionRequest actionRequest) {
+		String redirect = ParamUtil.getString(actionRequest, "redirect");
+
+		String closeRedirect = ParamUtil.getString(
+			actionRequest, "closeRedirect");
+
+		if (Validator.isNull(closeRedirect)) {
+			return redirect;
+		}
+
+		redirect = HttpComponentsUtil.setParameter(
+			redirect, "closeRedirect", closeRedirect);
+
+		SessionMessages.add(
+			actionRequest,
+			PortalUtil.getPortletId(actionRequest) +
+				SessionMessages.KEY_SUFFIX_CLOSE_REDIRECT,
+			closeRedirect);
+
+		return redirect;
+	}
+
+	private PortletPreferences _getStrictPortletPreferences(
+			ActionRequest actionRequest)
+		throws Exception {
+
+		String portletResource = ParamUtil.getString(
+			actionRequest, "portletResource");
+
+		ThemeDisplay themeDisplay = (ThemeDisplay)actionRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		return _getStrictPortletPreferences(
+			themeDisplay.getLayout(), portletResource);
+	}
+
+	private PortletPreferences _getStrictPortletPreferences(
+			Layout layout, String portletId)
+		throws Exception {
+
+		if (Validator.isNull(portletId)) {
+			return null;
+		}
+
+		PortletPreferences portletPreferences =
+			PortletPreferencesFactoryUtil.getStrictPortletSetup(
+				layout, portletId);
+
+		if (portletPreferences instanceof StrictPortletPreferencesImpl) {
+			throw new PortletPreferencesException.MustBeStrict(portletId);
+		}
+
+		return portletPreferences;
 	}
 
 }

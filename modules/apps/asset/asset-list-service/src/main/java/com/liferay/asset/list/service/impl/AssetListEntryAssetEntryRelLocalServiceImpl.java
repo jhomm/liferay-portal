@@ -1,48 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.asset.list.service.impl;
 
-import com.liferay.asset.entry.rel.model.AssetEntryAssetCategoryRelTable;
-import com.liferay.asset.kernel.AssetRendererFactoryRegistryUtil;
-import com.liferay.asset.kernel.model.AssetEntry;
-import com.liferay.asset.kernel.model.AssetRendererFactory;
-import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.list.exception.AssetListEntryAssetEntryRelPostionException;
 import com.liferay.asset.list.model.AssetListEntryAssetEntryRel;
-import com.liferay.asset.list.model.AssetListEntryAssetEntryRelTable;
 import com.liferay.asset.list.service.base.AssetListEntryAssetEntryRelLocalServiceBaseImpl;
-import com.liferay.petra.sql.dsl.DSLQueryFactoryUtil;
-import com.liferay.petra.sql.dsl.expression.Predicate;
-import com.liferay.petra.sql.dsl.query.DSLQuery;
-import com.liferay.petra.sql.dsl.query.JoinStep;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.mass.delete.MassDeleteCacheThreadLocal;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.TransactionCommitCallbackUtil;
-import com.liferay.portal.kernel.util.ArrayUtil;
+import com.liferay.portal.kernel.util.MapUtil;
 
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -123,16 +102,18 @@ public class AssetListEntryAssetEntryRelLocalServiceImpl
 	@Override
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public AssetListEntryAssetEntryRel deleteAssetListEntryAssetEntryRel(
-			long assetListEntryId, long segmentsEntryId, int position)
+			AssetListEntryAssetEntryRel assetListEntryAssetEntryRel)
 		throws PortalException {
 
-		AssetListEntryAssetEntryRel assetListEntryAssetEntryRel =
-			assetListEntryAssetEntryRelPersistence.removeByA_S_P(
-				assetListEntryId, segmentsEntryId, position);
+		assetListEntryAssetEntryRel =
+			assetListEntryAssetEntryRelPersistence.remove(
+				assetListEntryAssetEntryRel);
 
 		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
 			assetListEntryAssetEntryRelPersistence.findByA_S_GtP(
-				assetListEntryId, segmentsEntryId, position);
+				assetListEntryAssetEntryRel.getAssetListEntryId(),
+				assetListEntryAssetEntryRel.getSegmentsEntryId(),
+				assetListEntryAssetEntryRel.getPosition());
 
 		for (AssetListEntryAssetEntryRel curAssetListEntryAssetEntryRel :
 				assetListEntryAssetEntryRels) {
@@ -148,6 +129,57 @@ public class AssetListEntryAssetEntryRelLocalServiceImpl
 	}
 
 	@Override
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	public AssetListEntryAssetEntryRel deleteAssetListEntryAssetEntryRel(
+			long assetListEntryId, long segmentsEntryId, int position)
+		throws PortalException {
+
+		return deleteAssetListEntryAssetEntryRel(
+			assetListEntryAssetEntryRelPersistence.findByA_S_P(
+				assetListEntryId, segmentsEntryId, position));
+	}
+
+	@Override
+	public void deleteAssetListEntryAssetEntryRelByAssetEntryId(
+			long assetEntryId)
+		throws PortalException {
+
+		String ownerName =
+			AssetListEntryAssetEntryRelLocalServiceImpl.class.getName() +
+				".deleteAssetListEntryAssetEntryRelByAssetEntryId";
+
+		Map<Long, List<AssetListEntryAssetEntryRel>>
+			partitionAssetListEntryAssetEntryRels =
+				MassDeleteCacheThreadLocal.getMassDeleteCache(
+					ownerName,
+					() -> MapUtil.toPartitionMap(
+						assetListEntryAssetEntryRelPersistence.findAll(),
+						AssetListEntryAssetEntryRel::getAssetEntryId));
+
+		if (partitionAssetListEntryAssetEntryRels == null) {
+			for (AssetListEntryAssetEntryRel assetListEntryAssetEntryRel :
+					assetListEntryAssetEntryRelPersistence.findByAssetEntryId(
+						assetEntryId)) {
+
+				deleteAssetListEntryAssetEntryRel(assetListEntryAssetEntryRel);
+			}
+		}
+		else {
+			List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
+				partitionAssetListEntryAssetEntryRels.remove(assetEntryId);
+
+			if (assetListEntryAssetEntryRels != null) {
+				for (AssetListEntryAssetEntryRel assetListEntryAssetEntryRel :
+						assetListEntryAssetEntryRels) {
+
+					deleteAssetListEntryAssetEntryRel(
+						assetListEntryAssetEntryRel);
+				}
+			}
+		}
+	}
+
+	@Override
 	public void deleteAssetListEntryAssetEntryRelByAssetListEntryId(
 		long assetListEntryId) {
 
@@ -156,66 +188,35 @@ public class AssetListEntryAssetEntryRelLocalServiceImpl
 	}
 
 	@Override
+	public List<AssetListEntryAssetEntryRel>
+		getAssetListEntryAssetEntryRelByAssetEntryId(long assetEntryId) {
+
+		return assetListEntryAssetEntryRelPersistence.findByAssetEntryId(
+			assetEntryId);
+	}
+
+	@Override
 	public List<AssetListEntryAssetEntryRel> getAssetListEntryAssetEntryRels(
 		long assetListEntryId, int start, int end) {
 
-		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
-			assetListEntryAssetEntryRelPersistence.findByAssetListEntryId(
-				assetListEntryId, start, end);
-
-		return _getAssetListEntryAssetEntryRels(assetListEntryAssetEntryRels);
+		return assetListEntryAssetEntryRelPersistence.findByAssetListEntryId(
+			assetListEntryId, start, end);
 	}
 
 	@Override
 	public List<AssetListEntryAssetEntryRel> getAssetListEntryAssetEntryRels(
 		long assetListEntryId, long segmentsEntryId, int start, int end) {
 
-		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
-			assetListEntryAssetEntryRelPersistence.findByA_S(
-				assetListEntryId, segmentsEntryId, start, end);
-
-		return _getAssetListEntryAssetEntryRels(assetListEntryAssetEntryRels);
+		return assetListEntryAssetEntryRelPersistence.findByA_S(
+			assetListEntryId, segmentsEntryId, start, end);
 	}
 
 	@Override
 	public List<AssetListEntryAssetEntryRel> getAssetListEntryAssetEntryRels(
 		long assetListEntryId, long[] segmentsEntryIds, int start, int end) {
 
-		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
-			assetListEntryAssetEntryRelPersistence.findByA_S(
-				assetListEntryId, segmentsEntryIds, start, end);
-
-		return _getAssetListEntryAssetEntryRels(assetListEntryAssetEntryRels);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public List<AssetListEntryAssetEntryRel> getAssetListEntryAssetEntryRels(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds, int start, int end) {
-
-		if (ArrayUtil.isEmpty(assetCategoryIds)) {
-			return getAssetListEntryAssetEntryRels(
-				assetListEntryId, segmentsEntryIds, start, end);
-		}
-
-		DSLQuery dslQuery = DSLQueryFactoryUtil.select(
-			AssetListEntryAssetEntryRelTable.INSTANCE
-		).from(
-			AssetListEntryAssetEntryRelTable.INSTANCE
-		).where(
-			_getPredicate(assetListEntryId, segmentsEntryIds, assetCategoryIds)
-		).limit(
-			start, end
-		);
-
-		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels =
-			assetListEntryAssetEntryRelPersistence.dslQuery(dslQuery);
-
-		return _getAssetListEntryAssetEntryRels(assetListEntryAssetEntryRels);
+		return assetListEntryAssetEntryRelPersistence.findByA_S(
+			assetListEntryId, segmentsEntryIds, start, end);
 	}
 
 	@Override
@@ -234,42 +235,10 @@ public class AssetListEntryAssetEntryRelLocalServiceImpl
 
 	@Override
 	public int getAssetListEntryAssetEntryRelsCount(
-		long assetLIstEntryId, long segmentsEntryId, boolean visible) {
-
-		return assetListEntryAssetEntryRelFinder.countByA_S(
-			assetLIstEntryId, segmentsEntryId, visible);
-	}
-
-	@Override
-	public int getAssetListEntryAssetEntryRelsCount(
 		long assetListEntryId, long[] segmentsEntryIds) {
 
 		return assetListEntryAssetEntryRelPersistence.countByA_S(
 			assetListEntryId, segmentsEntryIds);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), with no direct replacement
-	 */
-	@Deprecated
-	@Override
-	public int getAssetListEntryAssetEntryRelsCount(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds) {
-
-		if (ArrayUtil.isEmpty(assetCategoryIds)) {
-			return assetListEntryAssetEntryRelPersistence.countByA_S(
-				assetListEntryId, segmentsEntryIds);
-		}
-
-		DSLQuery dslQuery = DSLQueryFactoryUtil.count(
-		).from(
-			AssetListEntryAssetEntryRelTable.INSTANCE
-		).where(
-			_getPredicate(assetListEntryId, segmentsEntryIds, assetCategoryIds)
-		);
-
-		return assetListEntryAssetEntryRelPersistence.dslQueryCount(dslQuery);
 	}
 
 	@Override
@@ -368,103 +337,6 @@ public class AssetListEntryAssetEntryRelLocalServiceImpl
 		return assetListEntryAssetEntryRelPersistence.update(
 			assetListEntryAssetEntryRel);
 	}
-
-	private Predicate _addPredicate(
-		Predicate predicate, long[][] assetCategoryIds) {
-
-		if (ArrayUtil.isEmpty(assetCategoryIds)) {
-			return predicate;
-		}
-
-		for (int i = 0; i < assetCategoryIds.length; i++) {
-			predicate = predicate.and(
-				AssetEntryAssetCategoryRelTable.INSTANCE.as(
-					"AssetEntryAssetCategoryRel" + i
-				).assetCategoryId.in(
-					ArrayUtil.toArray(assetCategoryIds[i])
-				));
-		}
-
-		return predicate;
-	}
-
-	private List<AssetListEntryAssetEntryRel> _getAssetListEntryAssetEntryRels(
-		List<AssetListEntryAssetEntryRel> assetListEntryAssetEntryRels) {
-
-		Stream<AssetListEntryAssetEntryRel> stream =
-			assetListEntryAssetEntryRels.stream();
-
-		return stream.filter(
-			assetListEntryAssetEntryRel -> {
-				AssetEntry assetEntry = _assetEntryLocalService.fetchEntry(
-					assetListEntryAssetEntryRel.getAssetEntryId());
-
-				if ((assetEntry == null) || !assetEntry.isVisible()) {
-					return false;
-				}
-
-				AssetRendererFactory<?> assetRendererFactory =
-					AssetRendererFactoryRegistryUtil.
-						getAssetRendererFactoryByClassName(
-							assetEntry.getClassName());
-
-				if (assetRendererFactory == null) {
-					if (_log.isWarnEnabled()) {
-						_log.warn(
-							"No asset renderer factory found for class " +
-								assetEntry.getClassName());
-					}
-
-					return false;
-				}
-
-				return true;
-			}
-		).collect(
-			Collectors.toList()
-		);
-	}
-
-	private Predicate _getPredicate(
-		long assetListEntryId, long[] segmentsEntryIds,
-		long[][] assetCategoryIds) {
-
-		JoinStep joinStep = DSLQueryFactoryUtil.selectDistinct(
-			AssetListEntryAssetEntryRelTable.INSTANCE.
-				assetListEntryAssetEntryRelId
-		).from(
-			AssetListEntryAssetEntryRelTable.INSTANCE
-		);
-
-		for (int i = 0; i < assetCategoryIds.length; i++) {
-			joinStep = joinStep.innerJoinON(
-				AssetEntryAssetCategoryRelTable.INSTANCE.as(
-					"AssetEntryAssetCategoryRel" + i),
-				AssetListEntryAssetEntryRelTable.INSTANCE.assetEntryId.eq(
-					AssetEntryAssetCategoryRelTable.INSTANCE.as(
-						"AssetEntryAssetCategoryRel" + i).assetEntryId));
-		}
-
-		return AssetListEntryAssetEntryRelTable.INSTANCE.
-			assetListEntryAssetEntryRelId.in(
-				joinStep.where(
-					_addPredicate(
-						AssetListEntryAssetEntryRelTable.INSTANCE.
-							assetListEntryId.eq(
-								assetListEntryId
-							).and(
-								AssetListEntryAssetEntryRelTable.INSTANCE.
-									segmentsEntryId.in(
-										ArrayUtil.toArray(segmentsEntryIds))
-							),
-						assetCategoryIds)));
-	}
-
-	private static final Log _log = LogFactoryUtil.getLog(
-		AssetListEntryAssetEntryRelLocalServiceImpl.class);
-
-	@Reference
-	private AssetEntryLocalService _assetEntryLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

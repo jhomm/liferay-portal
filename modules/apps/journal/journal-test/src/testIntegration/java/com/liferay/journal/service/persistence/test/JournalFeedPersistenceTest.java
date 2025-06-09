@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.journal.service.persistence.test;
@@ -27,15 +18,19 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.AssertUtils;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -149,7 +144,7 @@ public class JournalFeedPersistenceTest {
 
 		newJournalFeed.setDescription(RandomTestUtil.randomString());
 
-		newJournalFeed.setDDMStructureKey(RandomTestUtil.randomString());
+		newJournalFeed.setDDMStructureId(RandomTestUtil.nextLong());
 
 		newJournalFeed.setDDMTemplateKey(RandomTestUtil.randomString());
 
@@ -211,8 +206,8 @@ public class JournalFeedPersistenceTest {
 			existingJournalFeed.getDescription(),
 			newJournalFeed.getDescription());
 		Assert.assertEquals(
-			existingJournalFeed.getDDMStructureKey(),
-			newJournalFeed.getDDMStructureKey());
+			existingJournalFeed.getDDMStructureId(),
+			newJournalFeed.getDDMStructureId());
 		Assert.assertEquals(
 			existingJournalFeed.getDDMTemplateKey(),
 			newJournalFeed.getDDMTemplateKey());
@@ -315,6 +310,24 @@ public class JournalFeedPersistenceTest {
 
 	@Test
 	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
 		_persistence.filterFindByGroupId(
 			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
@@ -324,12 +337,12 @@ public class JournalFeedPersistenceTest {
 			"JournalFeed", "mvccVersion", true, "ctCollectionId", true, "uuid",
 			true, "id", true, "groupId", true, "companyId", true, "userId",
 			true, "userName", true, "createDate", true, "modifiedDate", true,
-			"feedId", true, "name", true, "description", true,
-			"DDMStructureKey", true, "DDMTemplateKey", true,
-			"DDMRendererTemplateKey", true, "delta", true, "orderByCol", true,
-			"orderByType", true, "targetLayoutFriendlyUrl", true,
-			"targetPortletId", true, "contentField", true, "feedFormat", true,
-			"feedVersion", true, "lastPublishDate", true);
+			"feedId", true, "name", true, "description", true, "DDMStructureId",
+			true, "DDMTemplateKey", true, "DDMRendererTemplateKey", true,
+			"delta", true, "orderByCol", true, "orderByType", true,
+			"targetLayoutFriendlyUrl", true, "targetPortletId", true,
+			"contentField", true, "feedFormat", true, "feedVersion", true,
+			"lastPublishDate", true);
 	}
 
 	@Test
@@ -638,7 +651,7 @@ public class JournalFeedPersistenceTest {
 
 		journalFeed.setDescription(RandomTestUtil.randomString());
 
-		journalFeed.setDDMStructureKey(RandomTestUtil.randomString());
+		journalFeed.setDDMStructureId(RandomTestUtil.nextLong());
 
 		journalFeed.setDDMTemplateKey(RandomTestUtil.randomString());
 

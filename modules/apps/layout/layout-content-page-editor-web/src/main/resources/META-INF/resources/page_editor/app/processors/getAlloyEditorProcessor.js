@@ -1,25 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {debounce, openSelectionModal} from 'frontend-js-web';
+import {isNullOrUndefined} from '@liferay/layout-js-components-web';
+import {openSelectionModal} from 'frontend-js-components-web';
+import {debounce, loadEditorClientExtensions} from 'frontend-js-web';
 
+import {SPACE_KEY_CODE} from '../config/constants/keyboardCodes';
 import {config} from '../config/index';
-import isNullOrUndefined from '../utils/isNullOrUndefined';
 
-const KEY_ENTER = 13;
-const KEY_SPACE = 32;
-const KEY_SHIFT_ENTER = (window.CKEDITOR?.SHIFT ?? 0) + KEY_ENTER;
+const ENTER_KEYCODE = 13;
+const ESCAPE_KEYCODE = 27;
+const SHIFT_ENTER_KEYCODE = (window.CKEDITOR?.SHIFT ?? 0) + ENTER_KEYCODE;
 
 const defaultGetEditorWrapper = (element) => {
 	const wrapper = document.createElement('div');
@@ -38,7 +31,7 @@ const defaultRender = (element, value) => {
 };
 
 const keyupHandler = (event) => {
-	if (event.keyCode === KEY_SPACE) {
+	if (event.code === SPACE_KEY_CODE) {
 		event.preventDefault();
 	}
 };
@@ -73,9 +66,8 @@ export default function getAlloyEditorProcessor(
 				return;
 			}
 
-			const {editorConfig} = config.defaultEditorConfigurations[
-				editorConfigurationName
-			];
+			const {editorConfig} =
+				config.defaultEditorConfigurations[editorConfigurationName];
 
 			_element = element;
 
@@ -88,99 +80,173 @@ export default function getAlloyEditorProcessor(
 
 			element.addEventListener('keyup', keyupHandler);
 
-			_editor = AlloyEditor.editable(editorWrapper, {
-				...editorConfig,
+			const initEditor = (editorConfig) => {
+				_editor = AlloyEditor.editable(editorWrapper, {
+					...editorConfig,
 
-				documentBrowseLinkCallback: (
-					editor,
-					url,
-					changeLinkCallback
-				) => {
-					openSelectionModal({
-						onSelect: changeLinkCallback,
-						selectEventName: editorName + 'selectItem',
-						title: Liferay.Language.get('select-item'),
+					documentBrowseLinkCallback: (
+						editor,
 						url,
-					});
-				},
+						changeLinkCallback
+					) => {
+						openSelectionModal({
+							onSelect: changeLinkCallback,
+							selectEventName: editorName + 'selectItem',
+							title: Liferay.Language.get('select-item'),
+							url,
+						});
+					},
 
-				documentBrowseLinkUrl: editorConfig.documentBrowseLinkUrl.replace(
-					'_EDITOR_NAME_',
-					editorName
-				),
+					documentBrowseLinkUrl:
+						editorConfig.documentBrowseLinkUrl.replace(
+							'_EDITOR_NAME_',
+							editorName
+						),
 
-				filebrowserImageBrowseLinkUrl: editorConfig.filebrowserImageBrowseLinkUrl.replace(
-					'_EDITOR_NAME_',
-					editorName
-				),
+					filebrowserImageBrowseLinkUrl:
+						editorConfig.filebrowserImageBrowseLinkUrl.replace(
+							'_EDITOR_NAME_',
+							editorName
+						),
 
-				filebrowserImageBrowseUrl: editorConfig.filebrowserImageBrowseUrl.replace(
-					'_EDITOR_NAME_',
-					editorName
-				),
+					filebrowserImageBrowseUrl:
+						editorConfig.filebrowserImageBrowseUrl.replace(
+							'_EDITOR_NAME_',
+							editorName
+						),
 
-				title: '',
-			});
+					title: '',
+				});
 
-			const nativeEditor = _editor.get('nativeEditor');
+				const nativeEditor = _editor.get('nativeEditor');
 
-			_eventHandlers = [
-				nativeEditor.on('key', (event) => {
+				// For the cases where we open the selector we need to make sure that
+				// the editor is destroyed. Since we cannot rely on the blur event for these cases
+				// (it is ignored) we have to setup an additional listener.
+
+				const onClickOutside = (event) => {
 					if (
-						(event.data.keyCode === KEY_ENTER ||
-							event.data.keyCode === KEY_SHIFT_ENTER) &&
-						_element &&
-						(_element.getAttribute('type') === 'text' ||
-							_element.dataset.lfrEditableType === 'text')
+						!event.target.closest(`[name="${editorName}"]`) &&
+						(event.target.closest('.page-editor__toolbar') ||
+							event.target.closest('.page-editor__wrapper'))
 					) {
-						event.cancel();
+						onBlurEditor();
 					}
-				}),
+				};
 
-				nativeEditor.on('blur', () => {
-					if (_editor._mainUI.state.hidden) {
-						if (_callbacks.changeCallback) {
-							_callbacks
-								.changeCallback(nativeEditor.getData())
-								.then(() => {
-									if (_callbacks.destroyCallback) {
-										_callbacks.destroyCallback();
-									}
-								})
-								.catch(() => {
-									if (_callbacks.destroyCallback) {
-										_callbacks.destroyCallback();
-									}
-								});
+				const onBlurEditor = () => {
+					if (_callbacks.changeCallback) {
+						_callbacks
+							.changeCallback(nativeEditor.getData())
+							.then(() => {
+								if (_callbacks.destroyCallback) {
+									_callbacks.destroyCallback();
+								}
+							})
+							.catch(() => {
+								if (_callbacks.destroyCallback) {
+									_callbacks.destroyCallback();
+								}
+							});
+					}
+					else if (_callbacks.destroyCallback) {
+						requestAnimationFrame(() =>
+							_callbacks.destroyCallback()
+						);
+					}
+				};
+
+				_eventHandlers = [
+					{
+						removeListener: () =>
+							document.removeEventListener(
+								'click',
+								onClickOutside
+							),
+					},
+					nativeEditor.on('key', (event) => {
+						if (
+							(event.data.keyCode === ENTER_KEYCODE ||
+								event.data.keyCode === SHIFT_ENTER_KEYCODE) &&
+							_element &&
+							(_element.getAttribute('type') === 'text' ||
+								_element.dataset.lfrEditableType === 'text')
+						) {
+							event.cancel();
 						}
-						else if (_callbacks.destroyCallback) {
-							requestAnimationFrame(() =>
-								_callbacks.destroyCallback()
-							);
+						else if (event.data.keyCode === ESCAPE_KEYCODE) {
+							onBlurEditor();
 						}
-					}
-				}),
-
-				nativeEditor.on('instanceReady', () => {
-					nativeEditor.focus();
-
-					if (clickPosition) {
-						_selectRange(clickPosition, nativeEditor);
-					}
-					else {
-						nativeEditor.execCommand('selectAll');
-					}
-				}),
-
-				nativeEditor.on(
-					'saveSnapshot',
-					debounce(() => {
-						if (_callbacks.changeCallback) {
-							_callbacks.changeCallback(nativeEditor.getData());
+					}),
+					nativeEditor.on('blur', () => {
+						if (_editor._mainUI.state.hidden) {
+							onBlurEditor();
 						}
-					}, 100)
-				),
-			];
+						else {
+
+							// Ignoring the blur event, because we don't want to destroy the editor
+							// when opening a selector (image or link).
+
+							document.addEventListener('click', onClickOutside);
+						}
+					}),
+
+					nativeEditor.on('instanceReady', (event) => {
+						event.editor.dataProcessor.htmlFilter.addRules({
+							elements: {
+								img(element) {
+									element.attributes.alt = '';
+								},
+							},
+						});
+
+						nativeEditor.focus();
+
+						if (clickPosition) {
+							_selectRange(clickPosition, nativeEditor);
+						}
+						else {
+							nativeEditor.execCommand('selectAll');
+						}
+					}),
+
+					nativeEditor.on(
+						'saveSnapshot',
+						debounce(() => {
+							if (_callbacks.changeCallback) {
+								_callbacks.changeCallback(
+									nativeEditor.getData()
+								);
+							}
+						}, 100)
+					),
+				];
+			};
+
+			const editorTransformerURLs = editorConfig.editorTransformerURLs;
+
+			if (editorTransformerURLs) {
+				const loadingIndicator = document.createElement('span');
+
+				loadingIndicator.classList.add('loading-animation');
+				loadingIndicator.setAttribute('aria-hidden', true);
+
+				_element.appendChild(loadingIndicator);
+
+				loadEditorClientExtensions({
+					config: editorConfig,
+					onLoad: ({transformedConfig}) => {
+						if (loadingIndicator) {
+							loadingIndicator.remove();
+						}
+
+						initEditor(transformedConfig);
+					},
+				});
+			}
+			else {
+				initEditor(editorConfig);
+			}
 		},
 
 		/**
@@ -188,6 +254,8 @@ export default function getAlloyEditorProcessor(
 		destroyEditor: (element, editableConfig) => {
 			if (_editor) {
 				const lastValue = _editor.get('nativeEditor').getData();
+
+				_callbacks.changeCallback(lastValue);
 
 				_editor.destroy();
 

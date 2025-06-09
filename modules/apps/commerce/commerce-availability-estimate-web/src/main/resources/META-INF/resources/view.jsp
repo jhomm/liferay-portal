@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -21,54 +12,10 @@ CommerceAvailabilityEstimateDisplayContext commerceAvailabilityEstimateDisplayCo
 %>
 
 <c:if test="<%= commerceAvailabilityEstimateDisplayContext.hasManageCommerceAvailabilityEstimatesPermission() %>">
-	<liferay-frontend:management-bar
-		includeCheckBox="<%= true %>"
-		searchContainerId="commerceAvailabilityEstimates"
-	>
-		<liferay-frontend:management-bar-filters>
-			<liferay-frontend:management-bar-navigation
-				navigationKeys='<%= new String[] {"all"} %>'
-				portletURL="<%= commerceAvailabilityEstimateDisplayContext.getPortletURL() %>"
-			/>
-
-			<liferay-frontend:management-bar-sort
-				orderByCol="<%= commerceAvailabilityEstimateDisplayContext.getOrderByCol() %>"
-				orderByType="<%= commerceAvailabilityEstimateDisplayContext.getOrderByType() %>"
-				orderColumns='<%= new String[] {"priority"} %>'
-				portletURL="<%= commerceAvailabilityEstimateDisplayContext.getPortletURL() %>"
-			/>
-		</liferay-frontend:management-bar-filters>
-
-		<liferay-frontend:management-bar-buttons>
-			<liferay-frontend:management-bar-display-buttons
-				displayViews='<%= new String[] {"list"} %>'
-				portletURL="<%= commerceAvailabilityEstimateDisplayContext.getPortletURL() %>"
-				selectedDisplayStyle="list"
-			/>
-
-			<portlet:renderURL var="addCommerceAvailabilityEstimateURL">
-				<portlet:param name="mvcRenderCommandName" value="/commerce_availability_estimate/edit_commerce_availability_estimate" />
-				<portlet:param name="redirect" value="<%= currentURL %>" />
-			</portlet:renderURL>
-
-			<liferay-frontend:add-menu
-				inline="<%= true %>"
-			>
-				<liferay-frontend:add-menu-item
-					title='<%= LanguageUtil.get(request, "add-availability-estimate") %>'
-					url="<%= addCommerceAvailabilityEstimateURL.toString() %>"
-				/>
-			</liferay-frontend:add-menu>
-		</liferay-frontend:management-bar-buttons>
-
-		<liferay-frontend:management-bar-action-buttons>
-			<liferay-frontend:management-bar-button
-				href='<%= "javascript:" + liferayPortletResponse.getNamespace() + "deleteCommerceAvailabilityEstimates();" %>'
-				icon="trash"
-				label="delete"
-			/>
-		</liferay-frontend:management-bar-action-buttons>
-	</liferay-frontend:management-bar>
+	<clay:management-toolbar
+		managementToolbarDisplayContext="<%= new CommerceAvailabilityEstimateManagementToolbarDisplayContext(request, liferayPortletRequest, liferayPortletResponse, commerceAvailabilityEstimateDisplayContext.getSearchContainer()) %>"
+		propsTransformer="{CommerceAvailabilityEstimateManagementToolbarPropsTransformer} from commerce-availability-estimate-web"
+	/>
 
 	<div class="container-fluid container-fluid-max-xl">
 		<portlet:actionURL name="/commerce_availability_estimate/edit_commerce_availability_estimate" var="editCommerceAvailabilityEstimateActionURL" />
@@ -88,14 +35,12 @@ CommerceAvailabilityEstimateDisplayContext commerceAvailabilityEstimateDisplayCo
 					modelVar="commerceAvailabilityEstimate"
 				>
 					<liferay-ui:search-container-column-text
-						cssClass="important table-cell-expand"
+						cssClass="font-weight-bold important table-cell-expand"
 						href='<%=
 							PortletURLBuilder.createRenderURL(
 								renderResponse
 							).setMVCRenderCommandName(
 								"/commerce_availability_estimate/edit_commerce_availability_estimate"
-							).setRedirect(
-								currentURL
 							).setParameter(
 								"commerceAvailabilityEstimateId", commerceAvailabilityEstimate.getCommerceAvailabilityEstimateId()
 							).buildPortletURL()
@@ -130,22 +75,24 @@ CommerceAvailabilityEstimateDisplayContext commerceAvailabilityEstimateDisplayCo
 
 	<aui:script>
 		function <portlet:namespace />deleteCommerceAvailabilityEstimates() {
-			if (
-				confirm(
-					'<liferay-ui:message key="are-you-sure-you-want-to-delete-the-selected-availability-estimates" />'
-				)
-			) {
-				var form = window.document['<portlet:namespace />fm'];
+			Liferay.Util.openConfirmModal({
+				message:
+					'<liferay-ui:message key="are-you-sure-you-want-to-delete-the-selected-availability-estimates" />',
+				onConfirm: (isConfirmed) => {
+					if (isConfirmed) {
+						var form = window.document['<portlet:namespace />fm'];
 
-				form[
-					'<portlet:namespace />deleteCommerceAvailabilityEstimateIds'
-				].value = Liferay.Util.listCheckedExcept(
-					form,
-					'<portlet:namespace />allRowIds'
-				);
+						form[
+							'<portlet:namespace />deleteCommerceAvailabilityEstimateIds'
+						].value = Liferay.Util.getCheckedCheckboxes(
+							form,
+							'<portlet:namespace />allRowIds'
+						);
 
-				submitForm(form);
-			}
+						submitForm(form);
+					}
+				},
+			});
 		}
 	</aui:script>
 </c:if>

@@ -1,10 +1,12 @@
 {
 	"pageElement": {
+		"id": "item1",
 		"pageElements": [
 			{
 				"definition": {
 					"fragment": {
-						"key": "test-text-fragment"
+						"key": "test-text-fragment",
+						"siteKey": "£{SITE_KEY}"
 					},
 					"fragmentConfig": {
 					},
@@ -13,8 +15,6 @@
 							"id": "element-text",
 							"value": {
 								"fragmentLink": {
-									"value_i18n": {
-									}
 								},
 								"text": {
 									"value_i18n": {
@@ -25,8 +25,7 @@
 						}
 					],
 					"fragmentStyle": {
-						"hidden": true,
-						"textAlign": ""
+						"hidden": true
 					},
 					"fragmentViewports": [
 						{
@@ -41,8 +40,10 @@
 							},
 							"id": "portraitMobile"
 						}
-					]
+					],
+					"indexed": true
 				},
+				"id": "item2",
 				"type": "Fragment"
 			}
 		],

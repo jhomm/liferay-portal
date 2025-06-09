@@ -1,39 +1,39 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.impl;
 
+import com.liferay.commerce.price.list.exception.DuplicateCommercePriceListChannelRelException;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommercePriceListChannelRel;
 import com.liferay.commerce.price.list.service.base.CommercePriceListChannelRelLocalServiceBaseImpl;
 import com.liferay.expando.kernel.service.ExpandoRowLocalService;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.SystemEventConstants;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.search.Indexer;
 import com.liferay.portal.kernel.search.IndexerRegistryUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.util.OrderByComparator;
-import com.liferay.portal.spring.extender.service.ServiceReference;
 
 import java.util.List;
+
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
  * @author Riccardo Alberti
  * @see CommercePriceListChannelRelLocalServiceBaseImpl
  */
+@Component(
+	property = "model.class.name=com.liferay.commerce.price.list.model.CommercePriceListChannelRel",
+	service = AopService.class
+)
 public class CommercePriceListChannelRelLocalServiceImpl
 	extends CommercePriceListChannelRelLocalServiceBaseImpl {
 
@@ -43,15 +43,24 @@ public class CommercePriceListChannelRelLocalServiceImpl
 			int order, ServiceContext serviceContext)
 		throws PortalException {
 
-		User user = userLocalService.getUser(userId);
-
 		CommercePriceListChannelRel commercePriceListChannelRel =
+			commercePriceListChannelRelPersistence.fetchByCCI_CPI(
+				commerceChannelId, commercePriceListId);
+
+		if (commercePriceListChannelRel != null) {
+			throw new DuplicateCommercePriceListChannelRelException();
+		}
+
+		commercePriceListChannelRel =
 			commercePriceListChannelRelPersistence.create(
 				counterLocalService.increment());
+
+		User user = _userLocalService.getUser(userId);
 
 		commercePriceListChannelRel.setCompanyId(user.getCompanyId());
 		commercePriceListChannelRel.setUserId(user.getUserId());
 		commercePriceListChannelRel.setUserName(user.getFullName());
+
 		commercePriceListChannelRel.setCommerceChannelId(commerceChannelId);
 		commercePriceListChannelRel.setCommercePriceListId(commercePriceListId);
 		commercePriceListChannelRel.setOrder(order);
@@ -61,10 +70,7 @@ public class CommercePriceListChannelRelLocalServiceImpl
 			commercePriceListChannelRelPersistence.update(
 				commercePriceListChannelRel);
 
-		reindexCommercePriceList(commercePriceListId);
-
-		commercePriceListLocalService.cleanPriceListCache(
-			serviceContext.getCompanyId());
+		_reindexCommercePriceList(commercePriceListId);
 
 		return commercePriceListChannelRel;
 	}
@@ -81,11 +87,8 @@ public class CommercePriceListChannelRelLocalServiceImpl
 		_expandoRowLocalService.deleteRows(
 			commercePriceListChannelRel.getCommercePriceListChannelRelId());
 
-		reindexCommercePriceList(
+		_reindexCommercePriceList(
 			commercePriceListChannelRel.getCommercePriceListId());
-
-		commercePriceListLocalService.cleanPriceListCache(
-			commercePriceListChannelRel.getCompanyId());
 
 		return commercePriceListChannelRel;
 	}
@@ -166,7 +169,7 @@ public class CommercePriceListChannelRelLocalServiceImpl
 			commercePriceListId, name);
 	}
 
-	protected void reindexCommercePriceList(long commercePriceListId)
+	private void _reindexCommercePriceList(long commercePriceListId)
 		throws PortalException {
 
 		Indexer<CommercePriceList> indexer =
@@ -175,7 +178,10 @@ public class CommercePriceListChannelRelLocalServiceImpl
 		indexer.reindex(CommercePriceList.class.getName(), commercePriceListId);
 	}
 
-	@ServiceReference(type = ExpandoRowLocalService.class)
+	@Reference
 	private ExpandoRowLocalService _expandoRowLocalService;
+
+	@Reference
+	private UserLocalService _userLocalService;
 
 }

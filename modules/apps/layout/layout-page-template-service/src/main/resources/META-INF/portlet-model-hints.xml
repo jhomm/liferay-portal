@@ -5,6 +5,7 @@
 		<field name="mvccVersion" type="long" />
 		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="layoutPageTemplateCollectionId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -12,6 +13,7 @@
 		<field name="userName" type="String" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
+		<field name="parentLayoutPageTemplateCollectionId" type="long" />
 		<field name="layoutPageTemplateCollectionKey" type="String" />
 		<field name="name" type="String">
 			<validator name="required" />
@@ -19,12 +21,14 @@
 		<field name="description" type="String">
 			<hint-collection name="TEXTAREA" />
 		</field>
+		<field name="type" type="int" />
 		<field name="lastPublishDate" type="Date" />
 	</model>
 	<model name="com.liferay.layout.page.template.model.LayoutPageTemplateEntry">
 		<field name="mvccVersion" type="long" />
 		<field name="ctCollectionId" type="long" />
 		<field name="uuid" type="String" />
+		<field name="externalReferenceCode" type="String" />
 		<field name="layoutPageTemplateEntryId" type="long" />
 		<field name="groupId" type="long" />
 		<field name="companyId" type="long" />
@@ -59,8 +63,7 @@
 		<field name="userName" type="String" />
 		<field name="createDate" type="Date" />
 		<field name="modifiedDate" type="Date" />
-		<field name="classNameId" type="long" />
-		<field name="classPK" type="long" />
+		<field name="plid" type="long" />
 	</model>
 	<model name="com.liferay.layout.page.template.model.LayoutPageTemplateStructureRel">
 		<field name="mvccVersion" type="long" />
@@ -78,5 +81,10 @@
 		<field name="data" type="String">
 			<hint-collection name="CLOB" />
 		</field>
+		<field name="lastPublishDate" type="Date" />
+		<field name="status" type="int" />
+		<field name="statusByUserId" type="long" />
+		<field name="statusByUserName" type="String" />
+		<field name="statusDate" type="Date" />
 	</model>
 </model-hints>

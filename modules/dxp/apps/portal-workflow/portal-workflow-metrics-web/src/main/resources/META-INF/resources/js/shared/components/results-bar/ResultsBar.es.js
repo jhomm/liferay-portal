@@ -1,17 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import ClayButton from '@clayui/button';
 import ClayIcon from '@clayui/icon';
 import ClayLayout from '@clayui/layout';
+import ClayList from '@clayui/list';
 import React, {useCallback} from 'react';
 
 import {useFilter} from '../../hooks/useFilter.es';
@@ -27,7 +22,9 @@ const ResultsBar = ({children}) => {
 	return (
 		<nav className="mt-0 subnav-tbar subnav-tbar-primary tbar tbar-inline-xs-down">
 			<ClayLayout.ContainerFluid>
-				<ul className="tbar-nav tbar-nav-wrap">{children}</ul>
+				<ClayList.ItemText className="tbar-nav tbar-nav-wrap">
+					{children}
+				</ClayList.ItemText>
 			</ClayLayout.ContainerFluid>
 		</nav>
 	);
@@ -55,11 +52,12 @@ const Clear = ({filters = [], filterKeys = [], withoutRouteParams}) => {
 
 			replaceHistory(query, routerProps);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [filterState, routerProps, withoutRouteParams]);
 
 	return (
-		<li className="tbar-item tbar-item-expand">
+		<ClayList.ItemText className="tbar-item tbar-item-expand">
 			<div className="tbar-section text-right">
 				<ClayButton
 					className="component-link tbar-link"
@@ -70,7 +68,7 @@ const Clear = ({filters = [], filterKeys = [], withoutRouteParams}) => {
 					{Liferay.Language.get('clear-all')}
 				</ClayButton>
 			</div>
-		</li>
+		</ClayList.ItemText>
 	);
 };
 
@@ -96,11 +94,12 @@ const FilterItem = ({filter, item, withoutRouteParams}) => {
 
 			replaceHistory(query, routerProps);
 		}
+
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [filterState, routerProps, withoutRouteParams]);
 
 	return (
-		<li className="tbar-item">
+		<ClayList.ItemText className="tbar-item">
 			<div className="tbar-section">
 				<span className="component-label label label-dismissible tbar-label">
 					<span className="label-item label-item-expand">
@@ -128,7 +127,7 @@ const FilterItem = ({filter, item, withoutRouteParams}) => {
 					)}
 				</span>
 			</div>
-		</li>
+		</ClayList.ItemText>
 	);
 };
 
@@ -158,7 +157,7 @@ const TotalCount = ({search, totalCount}) => {
 	}
 
 	return (
-		<li className="tbar-item">
+		<ClayList.ItemText className="tbar-item">
 			<div className="tbar-section">
 				<span className="component-text text-truncate-inline">
 					<span className="text-truncate">
@@ -166,7 +165,7 @@ const TotalCount = ({search, totalCount}) => {
 					</span>
 				</span>
 			</div>
-		</li>
+		</ClayList.ItemText>
 	);
 };
 

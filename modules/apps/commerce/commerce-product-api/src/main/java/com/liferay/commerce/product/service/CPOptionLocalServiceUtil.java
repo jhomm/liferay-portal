@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
@@ -19,6 +10,7 @@ import com.liferay.petra.sql.dsl.query.DSLQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.PersistedModel;
+import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.util.OrderByComparator;
 
 import java.io.Serializable;
@@ -64,14 +56,14 @@ public class CPOptionLocalServiceUtil {
 			String externalReferenceCode, long userId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, boolean facetable, boolean required,
+			String commerceOptionTypeKey, boolean facetable, boolean required,
 			boolean skuContributor, String key,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addCPOption(
 			externalReferenceCode, userId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, facetable, required, skuContributor, key,
+			commerceOptionTypeKey, facetable, required, skuContributor, key,
 			serviceContext);
 	}
 
@@ -79,14 +71,14 @@ public class CPOptionLocalServiceUtil {
 			String externalReferenceCode, long userId,
 			Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, boolean facetable, boolean required,
+			String commerceOptionTypeKey, boolean facetable, boolean required,
 			boolean skuContributor, String key,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().addOrUpdateCPOption(
 			externalReferenceCode, userId, nameMap, descriptionMap,
-			ddmFormFieldTypeName, facetable, required, skuContributor, key,
+			commerceOptionTypeKey, facetable, required, skuContributor, key,
 			serviceContext);
 	}
 
@@ -243,46 +235,19 @@ public class CPOptionLocalServiceUtil {
 		return getService().dynamicQueryCount(dynamicQuery, projection);
 	}
 
-	public static CPOption fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId) {
-
-		return getService().fetchByExternalReferenceCode(
-			externalReferenceCode, companyId);
-	}
-
 	public static CPOption fetchCPOption(long CPOptionId) {
 		return getService().fetchCPOption(CPOptionId);
 	}
 
-	public static CPOption fetchCPOption(long companyId, String key)
-		throws PortalException {
-
+	public static CPOption fetchCPOption(long companyId, String key) {
 		return getService().fetchCPOption(companyId, key);
 	}
 
-	/**
-	 * Returns the cp option with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp option's external reference code
-	 * @return the matching cp option, or <code>null</code> if a matching cp option could not be found
-	 */
 	public static CPOption fetchCPOptionByExternalReferenceCode(
-		long companyId, String externalReferenceCode) {
+		String externalReferenceCode, long companyId) {
 
 		return getService().fetchCPOptionByExternalReferenceCode(
-			companyId, externalReferenceCode);
-	}
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCPOptionByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	public static CPOption fetchCPOptionByReferenceCode(
-		long companyId, String externalReferenceCode) {
-
-		return getService().fetchCPOptionByReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -329,20 +294,12 @@ public class CPOptionLocalServiceUtil {
 		return getService().getCPOption(companyId, key);
 	}
 
-	/**
-	 * Returns the cp option with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp option's external reference code
-	 * @return the matching cp option
-	 * @throws PortalException if a matching cp option could not be found
-	 */
 	public static CPOption getCPOptionByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
+			String externalReferenceCode, long companyId)
 		throws PortalException {
 
 		return getService().getCPOptionByExternalReferenceCode(
-			companyId, externalReferenceCode);
+			externalReferenceCode, companyId);
 	}
 
 	/**
@@ -448,13 +405,13 @@ public class CPOptionLocalServiceUtil {
 	public static CPOption updateCPOption(
 			long cpOptionId, Map<java.util.Locale, String> nameMap,
 			Map<java.util.Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, boolean facetable, boolean required,
+			String commerceOptionTypeKey, boolean facetable, boolean required,
 			boolean skuContributor, String key,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws PortalException {
 
 		return getService().updateCPOption(
-			cpOptionId, nameMap, descriptionMap, ddmFormFieldTypeName,
+			cpOptionId, nameMap, descriptionMap, commerceOptionTypeKey,
 			facetable, required, skuContributor, key, serviceContext);
 	}
 
@@ -467,9 +424,11 @@ public class CPOptionLocalServiceUtil {
 	}
 
 	public static CPOptionLocalService getService() {
-		return _service;
+		return _serviceSnapshot.get();
 	}
 
-	private static volatile CPOptionLocalService _service;
+	private static final Snapshot<CPOptionLocalService> _serviceSnapshot =
+		new Snapshot<>(
+			CPOptionLocalServiceUtil.class, CPOptionLocalService.class);
 
 }

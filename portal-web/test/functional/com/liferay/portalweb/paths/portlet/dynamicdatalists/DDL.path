@@ -12,6 +12,7 @@
 <tbody>
 
 <!--TOOLBAR-->
+
 <tr>
 	<td>TOOLBAR_ADD</td>
 	<td>//a[@*='Add ${key_ddlDataDefinitionName}']</td>
@@ -27,7 +28,7 @@
 
 <tr>
 	<td>RECORD_TABLE_ENTRY</td>
-	<td>//tr/th[contains(.,'${key_fieldFieldLabel}')]/../../../tbody/tr/td/a[.='${key_ddlRecordFieldData}']</td>
+	<td>//tr/th[contains(.,'${key_fieldFieldLabel}')]/../../../tbody/tr/td[contains(., '${key_ddlRecordFieldData}')]</td>
 	<td></td>
 </tr>
 <tr>
@@ -87,12 +88,17 @@
 </tr>
 <tr>
 	<td>RECORD_TABLE_WORKFLOW_STATUS</td>
-	<td>//tr/th[contains(.,'${key_fieldFieldLabel}')]/../../../tbody/tr[contains(.,'${key_workflowStatus}')]//strong[contains(.,'${key_workflowStatus}')] | //tbody//strong[contains(.,'${key_workflowStatus}')]</td>
+	<td>//tr/th[contains(.,'${key_fieldFieldLabel}')]/../../../tbody/tr[contains(.,'${key_workflowStatus}')]//span[contains(.,'${key_workflowStatus}')] | //tbody//strong[contains(.,'${key_workflowStatus}')]</td>
 	<td></td>
 </tr>
 <tr>
 	<td>RECORD_TABLE_DISPLAY_FIELD</td>
 	<td>//div[@class='ddl-record' and contains(.,'${key_ddlRecordFieldData}')]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>NAME_INPUT</td>
+	<td>//input[@id='_com_liferay_dynamic_data_lists_web_portlet_DDLPortlet_name']</td>
 	<td></td>
 </tr>
 <tr>

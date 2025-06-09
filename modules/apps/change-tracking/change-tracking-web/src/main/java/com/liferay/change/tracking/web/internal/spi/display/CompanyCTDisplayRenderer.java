@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.change.tracking.web.internal.spi.display;
@@ -17,7 +8,7 @@ package com.liferay.change.tracking.web.internal.spi.display;
 import com.liferay.change.tracking.spi.display.BaseCTDisplayRenderer;
 import com.liferay.change.tracking.spi.display.CTDisplayRenderer;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
@@ -30,7 +21,7 @@ import org.osgi.service.component.annotations.Reference;
 /**
  * @author Samuel Trong Tran
  */
-@Component(immediate = true, service = CTDisplayRenderer.class)
+@Component(service = CTDisplayRenderer.class)
 public class CompanyCTDisplayRenderer extends BaseCTDisplayRenderer<Company> {
 
 	@Override
@@ -47,7 +38,7 @@ public class CompanyCTDisplayRenderer extends BaseCTDisplayRenderer<Company> {
 
 	@Override
 	public String getTypeName(Locale locale) {
-		return LanguageUtil.get(locale, "company");
+		return _language.get(locale, "company");
 	}
 
 	@Override
@@ -78,20 +69,22 @@ public class CompanyCTDisplayRenderer extends BaseCTDisplayRenderer<Company> {
 					return maxUsers;
 				}
 
-				return LanguageUtil.get(
-					displayBuilder.getLocale(), "unlimited");
+				return _language.get(displayBuilder.getLocale(), "unlimited");
 			}
 		).display(
 			"active",
 			() -> {
 				if (company.isActive()) {
-					return LanguageUtil.get(displayBuilder.getLocale(), "yes");
+					return _language.get(displayBuilder.getLocale(), "yes");
 				}
 
-				return LanguageUtil.get(displayBuilder.getLocale(), "no");
+				return _language.get(displayBuilder.getLocale(), "no");
 			}
 		);
 	}
+
+	@Reference
+	private Language _language;
 
 	@Reference
 	private UserLocalService _userLocalService;

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.service;
@@ -22,7 +13,7 @@ import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.CodeCoverageAssertor;
 import com.liferay.portal.spring.aop.AopInvocationHandler;
-import com.liferay.portal.spring.transaction.TransactionHandler;
+import com.liferay.portal.spring.transaction.TransactionExecutor;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
 import java.lang.reflect.Constructor;
@@ -50,7 +41,7 @@ public class ServiceContextAdviceTest {
 		Constructor<AopInvocationHandler> constructor =
 			AopInvocationHandler.class.getDeclaredConstructor(
 				Object.class, ChainableMethodAdvice[].class,
-				TransactionHandler.class);
+				TransactionExecutor.class);
 
 		constructor.setAccessible(true);
 
@@ -80,13 +71,27 @@ public class ServiceContextAdviceTest {
 	}
 
 	@Test
-	public void testWithNoArguments() {
-		Method method = ReflectionTestUtil.getMethod(
-			TestInterceptedClass.class, "method");
+	public void testWithException() {
+		AopMethodInvocation aopMethodInvocation = _createTestMethodInvocation(
+			ReflectionTestUtil.getMethod(
+				TestInterceptedClass.class, "method", ServiceContext.class));
 
+		try {
+			aopMethodInvocation.proceed(new Object[] {null});
+
+			Assert.fail();
+		}
+		catch (Throwable throwable) {
+			Assert.assertTrue(throwable instanceof IllegalStateException);
+		}
+	}
+
+	@Test
+	public void testWithNoArguments() {
 		AopMethodInvocation aopMethodInvocation = ReflectionTestUtil.invoke(
 			_aopInvocationHandler, "_getAopMethodInvocation",
-			new Class<?>[] {Method.class}, method);
+			new Class<?>[] {Method.class},
+			ReflectionTestUtil.getMethod(TestInterceptedClass.class, "method"));
 
 		Assert.assertNull(
 			ReflectionTestUtil.getFieldValue(
@@ -99,11 +104,9 @@ public class ServiceContextAdviceTest {
 
 		ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
-		Method method = ReflectionTestUtil.getMethod(
-			TestInterceptedClass.class, "method", ServiceContext.class);
-
 		AopMethodInvocation aopMethodInvocation = _createTestMethodInvocation(
-			method);
+			ReflectionTestUtil.getMethod(
+				TestInterceptedClass.class, "method", ServiceContext.class));
 
 		aopMethodInvocation.proceed(new Object[] {null});
 
@@ -115,12 +118,11 @@ public class ServiceContextAdviceTest {
 	public void testWithoutServiceContextParameter() {
 		ServiceContextThreadLocal.pushServiceContext(new ServiceContext());
 
-		Method method = ReflectionTestUtil.getMethod(
-			TestInterceptedClass.class, "method", Object.class);
-
 		AopMethodInvocation aopMethodInvocation = ReflectionTestUtil.invoke(
 			_aopInvocationHandler, "_getAopMethodInvocation",
-			new Class<?>[] {Method.class}, method);
+			new Class<?>[] {Method.class},
+			ReflectionTestUtil.getMethod(
+				TestInterceptedClass.class, "method", Object.class));
 
 		Assert.assertNull(
 			ReflectionTestUtil.getFieldValue(
@@ -174,6 +176,10 @@ public class ServiceContextAdviceTest {
 
 		@SuppressWarnings("unused")
 		public void method(ServiceContext serviceContext) {
+			if (ServiceContextThreadLocal.getServiceContext() == null) {
+				throw new IllegalStateException();
+			}
+
 			if (serviceContext == null) {
 				Assert.assertNotNull(
 					ServiceContextThreadLocal.getServiceContext());

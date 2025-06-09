@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.rest.client.dto.v1_0;
@@ -17,11 +8,11 @@ package com.liferay.search.experiences.rest.client.dto.v1_0;
 import com.liferay.search.experiences.rest.client.function.UnsafeSupplier;
 import com.liferay.search.experiences.rest.client.serdes.v1_0.RescoreSerDes;
 
+import jakarta.annotation.Generated;
+
 import java.io.Serializable;
 
 import java.util.Objects;
-
-import javax.annotation.Generated;
 
 /**
  * @author Brian Wing Shun Chan
@@ -55,16 +46,16 @@ public class Rescore implements Cloneable, Serializable {
 
 	protected Object query;
 
-	public Float getQueryWeight() {
+	public Object getQueryWeight() {
 		return queryWeight;
 	}
 
-	public void setQueryWeight(Float queryWeight) {
+	public void setQueryWeight(Object queryWeight) {
 		this.queryWeight = queryWeight;
 	}
 
 	public void setQueryWeight(
-		UnsafeSupplier<Float, Exception> queryWeightUnsafeSupplier) {
+		UnsafeSupplier<Object, Exception> queryWeightUnsafeSupplier) {
 
 		try {
 			queryWeight = queryWeightUnsafeSupplier.get();
@@ -74,18 +65,18 @@ public class Rescore implements Cloneable, Serializable {
 		}
 	}
 
-	protected Float queryWeight;
+	protected Object queryWeight;
 
-	public Float getRescoreQueryWeight() {
+	public Object getRescoreQueryWeight() {
 		return rescoreQueryWeight;
 	}
 
-	public void setRescoreQueryWeight(Float rescoreQueryWeight) {
+	public void setRescoreQueryWeight(Object rescoreQueryWeight) {
 		this.rescoreQueryWeight = rescoreQueryWeight;
 	}
 
 	public void setRescoreQueryWeight(
-		UnsafeSupplier<Float, Exception> rescoreQueryWeightUnsafeSupplier) {
+		UnsafeSupplier<Object, Exception> rescoreQueryWeightUnsafeSupplier) {
 
 		try {
 			rescoreQueryWeight = rescoreQueryWeightUnsafeSupplier.get();
@@ -95,7 +86,7 @@ public class Rescore implements Cloneable, Serializable {
 		}
 	}
 
-	protected Float rescoreQueryWeight;
+	protected Object rescoreQueryWeight;
 
 	public String getScoreMode() {
 		return scoreMode;
@@ -118,16 +109,16 @@ public class Rescore implements Cloneable, Serializable {
 
 	protected String scoreMode;
 
-	public Integer getWindowSize() {
+	public Object getWindowSize() {
 		return windowSize;
 	}
 
-	public void setWindowSize(Integer windowSize) {
+	public void setWindowSize(Object windowSize) {
 		this.windowSize = windowSize;
 	}
 
 	public void setWindowSize(
-		UnsafeSupplier<Integer, Exception> windowSizeUnsafeSupplier) {
+		UnsafeSupplier<Object, Exception> windowSizeUnsafeSupplier) {
 
 		try {
 			windowSize = windowSizeUnsafeSupplier.get();
@@ -137,7 +128,7 @@ public class Rescore implements Cloneable, Serializable {
 		}
 	}
 
-	protected Integer windowSize;
+	protected Object windowSize;
 
 	@Override
 	public Rescore clone() throws CloneNotSupportedException {

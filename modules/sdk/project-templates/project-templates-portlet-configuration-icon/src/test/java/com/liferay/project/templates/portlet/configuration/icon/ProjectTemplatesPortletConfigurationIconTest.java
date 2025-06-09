@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.project.templates.portlet.configuration.icon;
@@ -46,11 +37,13 @@ public class ProjectTemplatesPortletConfigurationIconTest
 	@ClassRule
 	public static final MavenExecutor mavenExecutor = new MavenExecutor();
 
-	@Parameterized.Parameters(name = "Testcase-{index}: testing {0}")
+	@Parameterized.Parameters(name = "Testcase-{index}: testing {1} {0}")
 	public static Iterable<Object[]> data() {
 		return Arrays.asList(
 			new Object[][] {
-				{"7.0.6-2"}, {"7.1.3-1"}, {"7.2.1-1"}, {"7.3.7"}, {"7.4.1-1"}
+				{"dxp", "7.0.10.17"}, {"dxp", "7.1.10.7"}, {"dxp", "7.2.10.7"},
+				{"portal", "7.3.7"}, {"portal", "7.4.3.56"},
+				{"dxp", "2024.q1.1"}
 			});
 	}
 
@@ -70,7 +63,10 @@ public class ProjectTemplatesPortletConfigurationIconTest
 		_gradleDistribution = URI.create(gradleDistribution);
 	}
 
-	public ProjectTemplatesPortletConfigurationIconTest(String liferayVersion) {
+	public ProjectTemplatesPortletConfigurationIconTest(
+		String liferayProduct, String liferayVersion) {
+
+		_liferayProduct = liferayProduct;
 		_liferayVersion = liferayVersion;
 	}
 
@@ -84,20 +80,28 @@ public class ProjectTemplatesPortletConfigurationIconTest
 			temporaryFolder, "gradle", "gradleWS", _liferayVersion,
 			mavenExecutor);
 
+		String liferayWorkspaceProduct = getLiferayWorkspaceProduct(
+			_liferayVersion);
+
+		if (liferayWorkspaceProduct != null) {
+			writeGradlePropertiesInWorkspace(
+				gradleWorkspaceDir,
+				"liferay.workspace.product=" + liferayWorkspaceProduct);
+		}
+
 		File gradleWorkspaceModulesDir = new File(
 			gradleWorkspaceDir, "modules");
 
 		File gradleProjectDir = buildTemplateWithGradle(
-			gradleWorkspaceModulesDir, template, name, "--liferay-version",
-			_liferayVersion, "--package-name", packageName);
+			gradleWorkspaceModulesDir, template, name, "--liferay-product",
+			_liferayProduct, "--liferay-version", _liferayVersion,
+			"--package-name", packageName);
 
 		testExists(gradleProjectDir, "bnd.bnd");
 
 		if (VersionUtil.getMinorVersion(_liferayVersion) < 3) {
 			testContains(
-				gradleProjectDir, "build.gradle", DEPENDENCY_PORTAL_KERNEL,
-				DEPENDENCY_JAVAX_PORTLET_API, DEPENDENCY_JAVAX_SERVLET_API,
-				DEPENDENCY_ORG_OSGI_ANNOTATIONS);
+				gradleProjectDir, "build.gradle", DEPENDENCY_RELEASE_DXP_API);
 		}
 		else {
 			testContains(
@@ -122,8 +126,9 @@ public class ProjectTemplatesPortletConfigurationIconTest
 
 		File mavenProjectDir = buildTemplateWithMaven(
 			mavenModulesDir, mavenModulesDir, template, name, "com.test",
-			mavenExecutor, "-DclassName=Icontest", "-Dpackage=" + packageName,
-			"-DliferayVersion=" + _liferayVersion);
+			mavenExecutor, "-DclassName=Icontest",
+			"-DliferayProduct=" + _liferayProduct,
+			"-DliferayVersion=" + _liferayVersion, "-Dpackage=" + packageName);
 
 		if (!_liferayVersion.startsWith("7.0")) {
 			testContains(
@@ -147,6 +152,7 @@ public class ProjectTemplatesPortletConfigurationIconTest
 
 	private static URI _gradleDistribution;
 
+	private final String _liferayProduct;
 	private final String _liferayVersion;
 
 }

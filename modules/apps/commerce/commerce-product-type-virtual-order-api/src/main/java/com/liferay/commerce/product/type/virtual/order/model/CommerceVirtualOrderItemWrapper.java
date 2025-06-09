@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.order.model;
@@ -46,6 +37,7 @@ public class CommerceVirtualOrderItemWrapper
 	public Map<String, Object> getModelAttributes() {
 		Map<String, Object> attributes = new HashMap<String, Object>();
 
+		attributes.put("mvccVersion", getMvccVersion());
 		attributes.put("uuid", getUuid());
 		attributes.put(
 			"commerceVirtualOrderItemId", getCommerceVirtualOrderItemId());
@@ -56,11 +48,8 @@ public class CommerceVirtualOrderItemWrapper
 		attributes.put("createDate", getCreateDate());
 		attributes.put("modifiedDate", getModifiedDate());
 		attributes.put("commerceOrderItemId", getCommerceOrderItemId());
-		attributes.put("fileEntryId", getFileEntryId());
-		attributes.put("url", getUrl());
 		attributes.put("activationStatus", getActivationStatus());
 		attributes.put("duration", getDuration());
-		attributes.put("usages", getUsages());
 		attributes.put("maxUsages", getMaxUsages());
 		attributes.put("active", isActive());
 		attributes.put("startDate", getStartDate());
@@ -71,6 +60,12 @@ public class CommerceVirtualOrderItemWrapper
 
 	@Override
 	public void setModelAttributes(Map<String, Object> attributes) {
+		Long mvccVersion = (Long)attributes.get("mvccVersion");
+
+		if (mvccVersion != null) {
+			setMvccVersion(mvccVersion);
+		}
+
 		String uuid = (String)attributes.get("uuid");
 
 		if (uuid != null) {
@@ -126,18 +121,6 @@ public class CommerceVirtualOrderItemWrapper
 			setCommerceOrderItemId(commerceOrderItemId);
 		}
 
-		Long fileEntryId = (Long)attributes.get("fileEntryId");
-
-		if (fileEntryId != null) {
-			setFileEntryId(fileEntryId);
-		}
-
-		String url = (String)attributes.get("url");
-
-		if (url != null) {
-			setUrl(url);
-		}
-
 		Integer activationStatus = (Integer)attributes.get("activationStatus");
 
 		if (activationStatus != null) {
@@ -148,12 +131,6 @@ public class CommerceVirtualOrderItemWrapper
 
 		if (duration != null) {
 			setDuration(duration);
-		}
-
-		Integer usages = (Integer)attributes.get("usages");
-
-		if (usages != null) {
-			setUsages(usages);
 		}
 
 		Integer maxUsages = (Integer)attributes.get("maxUsages");
@@ -223,6 +200,28 @@ public class CommerceVirtualOrderItemWrapper
 		return model.getCommerceOrderItemId();
 	}
 
+	@Override
+	public java.util.List<CommerceVirtualOrderItemFileEntry>
+		getCommerceVirtualOrderItemFileEntries() {
+
+		return model.getCommerceVirtualOrderItemFileEntries();
+	}
+
+	@Override
+	public int getCommerceVirtualOrderItemFileEntriesCount() {
+		return model.getCommerceVirtualOrderItemFileEntriesCount();
+	}
+
+	@Override
+	public CommerceVirtualOrderItemFileEntry
+			getCommerceVirtualOrderItemFileEntry(
+				long commerceVirtualOrderItemFileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return model.getCommerceVirtualOrderItemFileEntry(
+			commerceVirtualOrderItemFileEntryId);
+	}
+
 	/**
 	 * Returns the commerce virtual order item ID of this commerce virtual order item.
 	 *
@@ -273,23 +272,6 @@ public class CommerceVirtualOrderItemWrapper
 		return model.getEndDate();
 	}
 
-	@Override
-	public com.liferay.portal.kernel.repository.model.FileEntry getFileEntry()
-		throws com.liferay.portal.kernel.exception.PortalException {
-
-		return model.getFileEntry();
-	}
-
-	/**
-	 * Returns the file entry ID of this commerce virtual order item.
-	 *
-	 * @return the file entry ID of this commerce virtual order item
-	 */
-	@Override
-	public long getFileEntryId() {
-		return model.getFileEntryId();
-	}
-
 	/**
 	 * Returns the group ID of this commerce virtual order item.
 	 *
@@ -321,6 +303,16 @@ public class CommerceVirtualOrderItemWrapper
 	}
 
 	/**
+	 * Returns the mvcc version of this commerce virtual order item.
+	 *
+	 * @return the mvcc version of this commerce virtual order item
+	 */
+	@Override
+	public long getMvccVersion() {
+		return model.getMvccVersion();
+	}
+
+	/**
 	 * Returns the primary key of this commerce virtual order item.
 	 *
 	 * @return the primary key of this commerce virtual order item
@@ -338,26 +330,6 @@ public class CommerceVirtualOrderItemWrapper
 	@Override
 	public Date getStartDate() {
 		return model.getStartDate();
-	}
-
-	/**
-	 * Returns the url of this commerce virtual order item.
-	 *
-	 * @return the url of this commerce virtual order item
-	 */
-	@Override
-	public String getUrl() {
-		return model.getUrl();
-	}
-
-	/**
-	 * Returns the usages of this commerce virtual order item.
-	 *
-	 * @return the usages of this commerce virtual order item
-	 */
-	@Override
-	public int getUsages() {
-		return model.getUsages();
 	}
 
 	/**
@@ -496,16 +468,6 @@ public class CommerceVirtualOrderItemWrapper
 	}
 
 	/**
-	 * Sets the file entry ID of this commerce virtual order item.
-	 *
-	 * @param fileEntryId the file entry ID of this commerce virtual order item
-	 */
-	@Override
-	public void setFileEntryId(long fileEntryId) {
-		model.setFileEntryId(fileEntryId);
-	}
-
-	/**
 	 * Sets the group ID of this commerce virtual order item.
 	 *
 	 * @param groupId the group ID of this commerce virtual order item
@@ -536,6 +498,16 @@ public class CommerceVirtualOrderItemWrapper
 	}
 
 	/**
+	 * Sets the mvcc version of this commerce virtual order item.
+	 *
+	 * @param mvccVersion the mvcc version of this commerce virtual order item
+	 */
+	@Override
+	public void setMvccVersion(long mvccVersion) {
+		model.setMvccVersion(mvccVersion);
+	}
+
+	/**
 	 * Sets the primary key of this commerce virtual order item.
 	 *
 	 * @param primaryKey the primary key of this commerce virtual order item
@@ -553,26 +525,6 @@ public class CommerceVirtualOrderItemWrapper
 	@Override
 	public void setStartDate(Date startDate) {
 		model.setStartDate(startDate);
-	}
-
-	/**
-	 * Sets the url of this commerce virtual order item.
-	 *
-	 * @param url the url of this commerce virtual order item
-	 */
-	@Override
-	public void setUrl(String url) {
-		model.setUrl(url);
-	}
-
-	/**
-	 * Sets the usages of this commerce virtual order item.
-	 *
-	 * @param usages the usages of this commerce virtual order item
-	 */
-	@Override
-	public void setUsages(int usages) {
-		model.setUsages(usages);
 	}
 
 	/**
@@ -613,6 +565,11 @@ public class CommerceVirtualOrderItemWrapper
 	@Override
 	public void setUuid(String uuid) {
 		model.setUuid(uuid);
+	}
+
+	@Override
+	public String toXmlString() {
+		return model.toXmlString();
 	}
 
 	@Override

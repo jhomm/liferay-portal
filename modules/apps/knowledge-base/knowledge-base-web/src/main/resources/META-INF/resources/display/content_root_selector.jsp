@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -40,49 +31,47 @@ if (rootResourcePrimKey != KBFolderConstants.DEFAULT_PARENT_FOLDER_ID) {
 List<KBFolder> kbFolders = KBUtil.getAlternateRootKBFolders(scopeGroupId, kbDisplayPortletInstanceConfiguration.resourcePrimKey());
 %>
 
-<c:if test="<%= !kbFolders.isEmpty() %>">
-	<liferay-portlet:actionURL name="updateRootKBFolderId" var="updateRootKBFolderIdURL">
-		<c:if test="<%= kbArticle != null %>">
-			<portlet:param name="urlTitle" value="<%= kbArticle.getUrlTitle() %>" />
-		</c:if>
-	</liferay-portlet:actionURL>
+<liferay-portlet:actionURL name="/knowledge_base/update_root_kb_folder_id" var="updateRootKBFolderIdURL">
+	<c:if test="<%= kbArticle != null %>">
+		<portlet:param name="urlTitle" value="<%= kbArticle.getUrlTitle() %>" />
+	</c:if>
+</liferay-portlet:actionURL>
 
-	<div class="kbarticle-root-selector">
-		<aui:form action="<%= updateRootKBFolderIdURL %>" name="updateRootKBFolderIdFm">
-			<aui:select label="" name="rootKBFolderId">
-				<c:if test="<%= KBArticleServiceUtil.getKBArticlesCount(scopeGroupId, rootKBFolderId, WorkflowConstants.STATUS_APPROVED) > 0 %>">
-					<aui:option selected="<%= currentKBFolderURLTitle.equals(rootKBFolderURLTitle) %>" value="<%= rootKBFolderId %>">
-						<%= HtmlUtil.escape(kbDisplayPortletInstanceConfiguration.contentRootPrefix() + " " + rootKBFolderName) %>
-					</aui:option>
-				</c:if>
+<div class="kbarticle-root-selector">
+	<aui:form action="<%= updateRootKBFolderIdURL %>" name="updateRootKBFolderIdFm">
+		<aui:select disabled="<%= kbFolders.isEmpty() %>" label="" name="rootKBFolderId">
+			<c:if test="<%= KBArticleServiceUtil.getKBArticlesCount(scopeGroupId, rootKBFolderId, WorkflowConstants.STATUS_APPROVED) > 0 %>">
+				<aui:option selected="<%= currentKBFolderURLTitle.equals(rootKBFolderURLTitle) %>" value="<%= rootKBFolderId %>">
+					<%= HtmlUtil.escape(kbDisplayPortletInstanceConfiguration.contentRootPrefix() + " " + rootKBFolderName) %>
+				</aui:option>
+			</c:if>
 
-				<%
-				for (KBFolder kbFolder : kbFolders) {
-				%>
+			<%
+			for (KBFolder kbFolder : kbFolders) {
+			%>
 
-					<aui:option selected="<%= currentKBFolderURLTitle.equals(kbFolder.getUrlTitle()) %>" value="<%= kbFolder.getKbFolderId() %>">
-						<%= HtmlUtil.escape(kbDisplayPortletInstanceConfiguration.contentRootPrefix() + " " + kbFolder.getName()) %>
-					</aui:option>
+				<aui:option selected="<%= currentKBFolderURLTitle.equals(kbFolder.getUrlTitle()) %>" value="<%= kbFolder.getKbFolderId() %>">
+					<%= HtmlUtil.escape(kbDisplayPortletInstanceConfiguration.contentRootPrefix() + " " + kbFolder.getName()) %>
+				</aui:option>
 
-				<%
-				}
-				%>
+			<%
+			}
+			%>
 
-			</aui:select>
-		</aui:form>
-	</div>
+		</aui:select>
+	</aui:form>
+</div>
 
-	<script>
-		var <portlet:namespace />form = document.getElementById(
-			'<portlet:namespace />updateRootKBFolderIdFm'
-		);
+<aui:script>
+	var <portlet:namespace />form = document.getElementById(
+		'<portlet:namespace />updateRootKBFolderIdFm'
+	);
 
-		if (<portlet:namespace />form) {
-			document
-				.getElementById('<portlet:namespace />rootKBFolderId')
-				.addEventListener('change', () => {
-					<portlet:namespace />form.submit();
-				});
-		}
-	</script>
-</c:if>
+	if (<portlet:namespace />form) {
+		document
+			.getElementById('<portlet:namespace />rootKBFolderId')
+			.addEventListener('change', () => {
+				<portlet:namespace />form.submit();
+			});
+	}
+</aui:script>

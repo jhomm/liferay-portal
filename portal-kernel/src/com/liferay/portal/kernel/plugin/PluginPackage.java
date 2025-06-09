@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.plugin;
@@ -24,29 +15,7 @@ import java.util.Properties;
  */
 public interface PluginPackage {
 
-	public static final String REPOSITORY_XML_FILE_NAME_EXTENSION = "xml";
-
-	public static final String REPOSITORY_XML_FILE_NAME_PREFIX =
-		"liferay-plugin-repository";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #REPOSITORY_XML_FILE_NAME_EXTENSION}
-	 */
-	@Deprecated
-	public static final String REPOSITORY_XML_FILENAME_EXTENSION = "xml";
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
-	 *             #REPOSITORY_XML_FILE_NAME_PREFIX}
-	 */
-	@Deprecated
-	public static final String REPOSITORY_XML_FILENAME_PREFIX =
-		"liferay-plugin-repository";
-
 	public String getArtifactId();
-
-	public String getArtifactURL();
 
 	public String getAuthor();
 
@@ -55,8 +24,6 @@ public interface PluginPackage {
 	public String getContext();
 
 	public Properties getDeploymentSettings();
-
-	public String getDownloadURL();
 
 	public String getGroupId();
 
@@ -77,10 +44,6 @@ public interface PluginPackage {
 	public String getPageURL();
 
 	public String getRecommendedDeploymentContext();
-
-	public RemotePluginPackageRepository getRepository();
-
-	public String getRepositoryURL();
 
 	public List<String> getRequiredDeploymentContexts();
 
@@ -108,8 +71,6 @@ public interface PluginPackage {
 
 	public void setDeploymentSettings(Properties properties);
 
-	public void setDownloadURL(String downloadURL);
-
 	public void setLicenses(List<License> licenses);
 
 	public void setLiferayVersions(List<String> liferayVersions);
@@ -123,8 +84,6 @@ public interface PluginPackage {
 	public void setPageURL(String pageURL);
 
 	public void setRecommendedDeploymentContext(String deploymentContext);
-
-	public void setRepository(RemotePluginPackageRepository repository);
 
 	public void setRequiredDeploymentContexts(
 		List<String> requiredDeploymentContexts);

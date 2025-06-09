@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -289,7 +280,7 @@ if (portletTitleBasedNavigation) {
 
 	<c:if test="<%= !thread.isInTrash() && moreMessagesPagination %>">
 		<div class="reply-to-main-thread-container">
-			<a class="btn btn-secondary" href="javascript:;" id="<portlet:namespace />moreMessages"><liferay-ui:message key="more-messages" /></a>
+			<a class="btn btn-secondary" href="javascript:void(0);" id="<portlet:namespace />moreMessages"><liferay-ui:message key="more-messages" /></a>
 		</div>
 
 		<aui:form name="fm">
@@ -299,7 +290,7 @@ if (portletTitleBasedNavigation) {
 	</c:if>
 </div>
 
-<aui:script require="frontend-js-web/liferay/util/run_scripts_in_element.es as runScriptsInElement">
+<aui:script sandbox="<%= true %>">
 	var moreMessagesButton = document.getElementById(
 		'<portlet:namespace />moreMessages'
 	);
@@ -343,8 +334,6 @@ if (portletTitleBasedNavigation) {
 								.createRange()
 								.createContextualFragment(response)
 						);
-
-						runScriptsInElement.default(messageContainer.parentElement);
 
 						var replyContainer = document.querySelector(
 							'#<portlet:namespace />messageContainer > .reply-container'

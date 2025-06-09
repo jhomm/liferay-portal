@@ -1,48 +1,68 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.fields;
 
-import java.util.List;
+import com.liferay.portal.kernel.util.ListUtil;
 
-import javax.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.MultivaluedMap;
+
+import java.util.List;
 
 import org.apache.cxf.message.Message;
 
 /**
  * @author Ivica Cardic
  */
-public class NestedFieldsContext {
+public class NestedFieldsContext implements Cloneable {
 
-	public NestedFieldsContext(
-		List<String> fieldNames, Message message,
-		MultivaluedMap<String, String> pathParameters, String resourceVersion,
-		MultivaluedMap<String, String> queryParameters) {
-
-		_fieldNames = fieldNames;
-		_message = message;
-		_pathParameters = pathParameters;
-		_resourceVersion = resourceVersion;
-		_queryParameters = queryParameters;
+	public NestedFieldsContext(int depth, List<String> nestedFields) {
+		this(depth, null, nestedFields, null, null, null);
 	}
 
-	public List<String> getFieldNames() {
-		return _fieldNames;
+	public NestedFieldsContext(
+		int depth, Message message, List<String> nestedFields,
+		MultivaluedMap<String, String> pathParameters,
+		MultivaluedMap<String, String> queryParameters,
+		String resourceVersion) {
+
+		_depth = depth;
+		_message = message;
+		_nestedFields = ListUtil.copy(nestedFields);
+		_pathParameters = pathParameters;
+		_queryParameters = queryParameters;
+		_resourceVersion = resourceVersion;
+	}
+
+	public void addNestedField(String nestedField) {
+		_nestedFields.add(nestedField);
+	}
+
+	@Override
+	public NestedFieldsContext clone() throws CloneNotSupportedException {
+		return (NestedFieldsContext)super.clone();
+	}
+
+	public void decrementCurrentDepth() {
+		_currentDepth--;
+	}
+
+	public int getCurrentDepth() {
+		return _currentDepth;
+	}
+
+	public int getDepth() {
+		return _depth;
 	}
 
 	public Message getMessage() {
 		return _message;
+	}
+
+	public List<String> getNestedFields() {
+		return _nestedFields;
 	}
 
 	public MultivaluedMap<String, String> getPathParameters() {
@@ -57,8 +77,14 @@ public class NestedFieldsContext {
 		return _resourceVersion;
 	}
 
-	private final List<String> _fieldNames;
+	public void incrementCurrentDepth() {
+		_currentDepth++;
+	}
+
+	private int _currentDepth;
+	private final int _depth;
 	private final Message _message;
+	private final List<String> _nestedFields;
 	private final MultivaluedMap<String, String> _pathParameters;
 	private final MultivaluedMap<String, String> _queryParameters;
 	private final String _resourceVersion;

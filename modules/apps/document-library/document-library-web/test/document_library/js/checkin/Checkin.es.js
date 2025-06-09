@@ -1,28 +1,14 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import '@testing-library/jest-dom/extend-expect';
-import {
-	cleanup,
-	fireEvent,
-	render,
-	waitForElement,
-} from '@testing-library/react';
+import {fireEvent, render} from '@testing-library/react';
 import React from 'react';
 import {act} from 'react-dom/test-utils';
 
-import Checkin from '../../../../src/main/resources/META-INF/resources/document_library/js/checkin/Checkin.es';
+import Checkin from '../../../../src/main/resources/META-INF/resources/js/document_library/checkin/Checkin.es';
 
 const bridgeComponentId = '_portletNamespace_DocumentLibraryCheckinModal';
 const dlVersionNumberIncreaseValues = {
@@ -45,12 +31,16 @@ function _renderCheckinComponent({checkedOut = true} = {}) {
 }
 
 describe('Checkin', () => {
-	const components = {};
-	Liferay.component = (id, component) => {
-		components[id] = component;
-	};
-	Liferay.componentReady = (id) => Promise.resolve(components[id]);
-	afterEach(cleanup);
+	beforeEach(() => {
+		const components = {};
+
+		Liferay.component = (id, component) => {
+			components[id] = component;
+		};
+		Liferay.componentReady = (id) => Promise.resolve(components[id]);
+
+		Liferay.destroyComponent = jest.fn();
+	});
 
 	describe('when the file is checked out', () => {
 		describe('and the component is rendered', () => {
@@ -74,17 +64,15 @@ describe('Checkin', () => {
 				});
 
 				it('renders the form', async () => {
-					const form = await waitForElement(() =>
-						result.getByRole('form')
-					);
-					expect(form);
+					const form = await result.findByRole('form');
+
+					expect(form).toBeTruthy();
 				});
 
 				describe('and the form is submitted', () => {
 					beforeEach(async () => {
-						const form = await waitForElement(() =>
-							result.getByRole('form')
-						);
+						const form = await result.findByRole('form');
+
 						act(() => {
 							fireEvent.submit(form);
 						});
@@ -100,15 +88,13 @@ describe('Checkin', () => {
 
 				describe('and the save button is cliked with changes in version and changeLog', () => {
 					beforeEach(async () => {
-						const saveButton = await waitForElement(() =>
-							result.getByText('save')
-						);
-						const changeLogField = await waitForElement(() =>
-							result.getByLabelText('version-notes')
-						);
-						const minorVersionRadio = await waitForElement(() =>
-							result.getByLabelText('minor-version')
-						);
+						const saveButton = await result.findByText('save');
+
+						const changeLogField =
+							await result.findByLabelText('version-notes');
+
+						const minorVersionRadio =
+							await result.findByLabelText('minor-version');
 
 						act(() => {
 							fireEvent.change(changeLogField, {
@@ -146,24 +132,21 @@ describe('Checkin', () => {
 					callback = jest.fn();
 
 					return act(() =>
-						Liferay.componentReady(
-							bridgeComponentId
-						).then(({open}) => open(callback))
+						Liferay.componentReady(bridgeComponentId).then(
+							({open}) => open(callback)
+						)
 					);
 				});
 
 				it('renders the form', async () => {
-					const form = await waitForElement(() =>
-						result.getByRole('form')
-					);
-					expect(form);
+					const form = await result.findByRole('form');
+					expect(form).toBeTruthy();
 				});
 
 				describe('and the form is submitted', () => {
 					beforeEach(async () => {
-						const form = await waitForElement(() =>
-							result.getByRole('form')
-						);
+						const form = await result.findByRole('form');
+
 						act(() => {
 							fireEvent.submit(form);
 						});

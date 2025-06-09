@@ -1,24 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.notification.test;
 
+import com.liferay.account.constants.AccountConstants;
+import com.liferay.account.model.AccountEntry;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
-import com.liferay.commerce.account.constants.CommerceAccountConstants;
-import com.liferay.commerce.account.model.CommerceAccount;
 import com.liferay.commerce.account.test.util.CommerceAccountTestUtil;
 import com.liferay.commerce.constants.CommerceOrderConstants;
+import com.liferay.commerce.constants.CommerceOrderPaymentConstants;
 import com.liferay.commerce.constants.CommerceShipmentConstants;
 import com.liferay.commerce.currency.model.CommerceCurrency;
 import com.liferay.commerce.currency.test.util.CommerceCurrencyTestUtil;
@@ -46,6 +38,8 @@ import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.User;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
+import com.liferay.portal.kernel.test.rule.Sync;
+import com.liferay.portal.kernel.test.rule.SynchronousDestinationTestRule;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
@@ -73,6 +67,7 @@ import org.springframework.mock.web.MockHttpServletRequest;
  * @author Luca Pellizzon
  */
 @RunWith(Arquillian.class)
+@Sync
 public class CommerceOrderStatusNotificationTest {
 
 	@ClassRule
@@ -80,7 +75,8 @@ public class CommerceOrderStatusNotificationTest {
 	public static final AggregateTestRule aggregateTestRule =
 		new AggregateTestRule(
 			new LiferayIntegrationTestRule(),
-			PermissionCheckerMethodTestRule.INSTANCE);
+			PermissionCheckerMethodTestRule.INSTANCE,
+			SynchronousDestinationTestRule.INSTANCE);
 
 	@Before
 	public void setUp() throws Exception {
@@ -97,15 +93,15 @@ public class CommerceOrderStatusNotificationTest {
 		_commerceChannel = CommerceTestUtil.addCommerceChannel(
 			_group.getGroupId(), _commerceCurrency.getCode());
 
-		_commerceAccount = CommerceAccountTestUtil.addBusinessCommerceAccount(
+		_accountEntry = CommerceAccountTestUtil.addBusinessAccountEntry(
 			_user.getUserId(), RandomTestUtil.randomString(),
 			RandomTestUtil.randomString() + "@liferay.com",
 			RandomTestUtil.randomString(), _serviceContext);
 
-		CommerceAccountTestUtil.addCommerceAccountGroupAndAccountRel(
+		CommerceAccountTestUtil.addAccountGroupAndAccountRel(
 			_user.getCompanyId(), RandomTestUtil.randomString(),
-			CommerceAccountConstants.ACCOUNT_GROUP_TYPE_STATIC,
-			_commerceAccount.getCommerceAccountId(), _serviceContext);
+			AccountConstants.ACCOUNT_GROUP_TYPE_STATIC,
+			_accountEntry.getAccountEntryId(), _serviceContext);
 
 		_addCommerceNotificationTemplates();
 	}
@@ -142,18 +138,17 @@ public class CommerceOrderStatusNotificationTest {
 			_commerceOrder.getCommerceOrderId());
 
 		Assert.assertEquals(
-			CommerceOrderConstants.PAYMENT_STATUS_PAID,
+			CommerceOrderPaymentConstants.STATUS_COMPLETED,
 			_commerceOrder.getPaymentStatus());
 		Assert.assertEquals(
 			CommerceOrderConstants.ORDER_STATUS_PENDING,
 			_commerceOrder.getOrderStatus());
 
-		int commerceNotificationQueueEntriesCount =
+		Assert.assertEquals(
+			1,
 			_commerceNotificationQueueEntryLocalService.
 				getCommerceNotificationQueueEntriesCount(
-					_commerceChannel.getGroupId());
-
-		Assert.assertEquals(1, commerceNotificationQueueEntriesCount);
+					_commerceChannel.getGroupId()));
 
 		_checkCommerceNotificationTemplate(
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED);
@@ -165,32 +160,30 @@ public class CommerceOrderStatusNotificationTest {
 			_user.getUserId(), _commerceChannel.getGroupId(),
 			_commerceCurrency.getCommerceCurrencyId());
 
-		CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
+		_commerceOrder = CommerceTestUtil.addCheckoutDetailsToCommerceOrder(
 			_commerceOrder, _user.getUserId(), false);
 
 		_commerceOrder = _commerceOrderEngine.checkoutCommerceOrder(
 			_commerceOrder, _user.getUserId());
 
-		int commerceNotificationQueueEntriesCount =
+		Assert.assertEquals(
+			1,
 			_commerceNotificationQueueEntryLocalService.
 				getCommerceNotificationQueueEntriesCount(
-					_commerceChannel.getGroupId());
-
-		Assert.assertEquals(1, commerceNotificationQueueEntriesCount);
+					_commerceChannel.getGroupId()));
 
 		_checkCommerceNotificationTemplate(
 			CommerceOrderConstants.ORDER_NOTIFICATION_PLACED);
 
-		_commerceOrderEngine.transitionCommerceOrder(
+		_commerceOrder = _commerceOrderEngine.transitionCommerceOrder(
 			_commerceOrder, CommerceOrderConstants.ORDER_STATUS_PROCESSING,
-			_user.getUserId());
+			_user.getUserId(), true);
 
-		commerceNotificationQueueEntriesCount =
+		Assert.assertEquals(
+			2,
 			_commerceNotificationQueueEntryLocalService.
 				getCommerceNotificationQueueEntriesCount(
-					_commerceChannel.getGroupId());
-
-		Assert.assertEquals(2, commerceNotificationQueueEntriesCount);
+					_commerceChannel.getGroupId()));
 
 		_checkCommerceNotificationTemplate(
 			CommerceOrderConstants.ORDER_NOTIFICATION_PROCESSING);
@@ -205,6 +198,7 @@ public class CommerceOrderStatusNotificationTest {
 			List<CommerceInventoryWarehouse> commerceInventoryWarehouses =
 				_commerceInventoryWarehouseLocalService.
 					getCommerceInventoryWarehouses(
+						_commerceOrder.getCommerceAccountId(),
 						_commerceChannel.getGroupId(),
 						commerceOrderItem.getSku());
 
@@ -212,40 +206,37 @@ public class CommerceOrderStatusNotificationTest {
 				commerceInventoryWarehouses.get(0);
 
 			_commerceShipmentItemLocalService.addCommerceShipmentItem(
-				commerceShipment.getCommerceShipmentId(),
+				null, commerceShipment.getCommerceShipmentId(),
 				commerceOrderItem.getCommerceOrderItemId(),
 				commerceInventoryWarehouse.getCommerceInventoryWarehouseId(),
-				commerceOrderItem.getQuantity(), _serviceContext);
+				commerceOrderItem.getQuantity(), null, true, _serviceContext);
 		}
 
 		_commerceShipmentLocalService.updateStatus(
 			commerceShipment.getCommerceShipmentId(),
 			CommerceShipmentConstants.SHIPMENT_STATUS_SHIPPED);
 
-		_commerceOrderEngine.transitionCommerceOrder(
-			_commerceOrder, CommerceOrderConstants.ORDER_STATUS_SHIPPED,
-			_user.getUserId());
-
-		commerceNotificationQueueEntriesCount =
+		Assert.assertEquals(
+			3,
 			_commerceNotificationQueueEntryLocalService.
 				getCommerceNotificationQueueEntriesCount(
-					_commerceChannel.getGroupId());
-
-		Assert.assertEquals(4, commerceNotificationQueueEntriesCount);
+					_commerceChannel.getGroupId()));
 
 		_checkCommerceNotificationTemplate(
 			CommerceOrderConstants.ORDER_NOTIFICATION_SHIPPED);
 
-		_commerceOrderEngine.transitionCommerceOrder(
-			_commerceOrder, CommerceOrderConstants.ORDER_STATUS_COMPLETED,
-			_user.getUserId());
+		_commerceOrder = _commerceOrderLocalService.getCommerceOrder(
+			_commerceOrder.getCommerceOrderId());
 
-		commerceNotificationQueueEntriesCount =
+		_commerceOrder = _commerceOrderEngine.transitionCommerceOrder(
+			_commerceOrder, CommerceOrderConstants.ORDER_STATUS_COMPLETED,
+			_user.getUserId(), true);
+
+		Assert.assertEquals(
+			4,
 			_commerceNotificationQueueEntryLocalService.
 				getCommerceNotificationQueueEntriesCount(
-					_commerceChannel.getGroupId());
-
-		Assert.assertEquals(5, commerceNotificationQueueEntriesCount);
+					_commerceChannel.getGroupId()));
 
 		_checkCommerceNotificationTemplate(
 			CommerceOrderConstants.ORDER_NOTIFICATION_COMPLETED);
@@ -307,7 +298,7 @@ public class CommerceOrderStatusNotificationTest {
 
 	private static User _user;
 
-	private CommerceAccount _commerceAccount;
+	private AccountEntry _accountEntry;
 	private CommerceChannel _commerceChannel;
 	private CommerceCurrency _commerceCurrency;
 

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.portletext;
@@ -20,23 +11,27 @@ import com.liferay.portal.kernel.portlet.configuration.icon.PortletConfiguration
 import com.liferay.portal.kernel.theme.PortletDisplay;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.JavaConstants;
+import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.util.comparator.PortletConfigurationIconComparator;
 import com.liferay.taglib.servlet.PipingServletResponseFactory;
 import com.liferay.taglib.ui.IconMenuTag;
 import com.liferay.taglib.ui.IconTag;
 
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletResponse;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.PageContext;
+
 import java.util.List;
-
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.PageContext;
 
 /**
  * @author Brian Wing Shun Chan
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.frontend.taglib.servlet.taglib.IconOptionsTag}
  */
+@Deprecated
 public class IconOptionsTag extends IconTag {
 
 	public String getDirection() {
@@ -120,6 +115,20 @@ public class IconOptionsTag extends IconTag {
 
 		iconMenuTag.setCssClass("portlet-options");
 		iconMenuTag.setDirection(_direction);
+
+		for (PortletConfigurationIcon portletConfigurationIcon :
+				getPortletConfigurationIcons()) {
+
+			if (Validator.isNotNull(
+					portletConfigurationIcon.getIconCssClass())) {
+
+				iconMenuTag.setDropdownCssClass(
+					"dropdown-menu-indicator-start");
+
+				break;
+			}
+		}
+
 		iconMenuTag.setExtended(false);
 		iconMenuTag.setIcon("ellipsis-v");
 		iconMenuTag.setMarkupView("lexicon");
@@ -178,8 +187,15 @@ public class IconOptionsTag extends IconTag {
 				iconTag.setAriaRole(portletConfigurationIcon.getAriaRole());
 				iconTag.setCssClass(portletConfigurationIcon.getCssClass());
 				iconTag.setData(portletConfigurationIcon.getData());
-				iconTag.setIconCssClass(
-					portletConfigurationIcon.getIconCssClass());
+
+				if (Validator.isNotNull(
+						portletConfigurationIcon.getIconCssClass())) {
+
+					iconTag.setIcon(portletConfigurationIcon.getIconCssClass());
+					iconTag.setIconCssClass("dropdown-item-indicator-start");
+					iconTag.setMarkupView("lexicon");
+				}
+
 				iconTag.setId(portletConfigurationIcon.getId());
 				iconTag.setImage(portletConfigurationIcon.getImage());
 				iconTag.setImageHover(portletConfigurationIcon.getImageHover());

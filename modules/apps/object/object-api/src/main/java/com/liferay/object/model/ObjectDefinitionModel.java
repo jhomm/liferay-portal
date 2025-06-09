@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.model;
@@ -17,6 +8,7 @@ package com.liferay.object.model;
 import com.liferay.portal.kernel.bean.AutoEscape;
 import com.liferay.portal.kernel.exception.LocaleException;
 import com.liferay.portal.kernel.model.BaseModel;
+import com.liferay.portal.kernel.model.ExternalReferenceCodeModel;
 import com.liferay.portal.kernel.model.LocalizedModel;
 import com.liferay.portal.kernel.model.MVCCModel;
 import com.liferay.portal.kernel.model.ShardedModel;
@@ -41,8 +33,8 @@ import org.osgi.annotation.versioning.ProviderType;
  */
 @ProviderType
 public interface ObjectDefinitionModel
-	extends BaseModel<ObjectDefinition>, LocalizedModel, MVCCModel,
-			ShardedModel, StagedAuditedModel {
+	extends BaseModel<ObjectDefinition>, ExternalReferenceCodeModel,
+			LocalizedModel, MVCCModel, ShardedModel, StagedAuditedModel {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -96,6 +88,23 @@ public interface ObjectDefinitionModel
 	 */
 	@Override
 	public void setUuid(String uuid);
+
+	/**
+	 * Returns the external reference code of this object definition.
+	 *
+	 * @return the external reference code of this object definition
+	 */
+	@AutoEscape
+	@Override
+	public String getExternalReferenceCode();
+
+	/**
+	 * Sets the external reference code of this object definition.
+	 *
+	 * @param externalReferenceCode the external reference code of this object definition
+	 */
+	@Override
+	public void setExternalReferenceCode(String externalReferenceCode);
 
 	/**
 	 * Returns the object definition ID of this object definition.
@@ -209,6 +218,21 @@ public interface ObjectDefinitionModel
 	public void setModifiedDate(Date modifiedDate);
 
 	/**
+	 * Returns the account entry restricted object field ID of this object definition.
+	 *
+	 * @return the account entry restricted object field ID of this object definition
+	 */
+	public long getAccountEntryRestrictedObjectFieldId();
+
+	/**
+	 * Sets the account entry restricted object field ID of this object definition.
+	 *
+	 * @param accountEntryRestrictedObjectFieldId the account entry restricted object field ID of this object definition
+	 */
+	public void setAccountEntryRestrictedObjectFieldId(
+		long accountEntryRestrictedObjectFieldId);
+
+	/**
 	 * Returns the description object field ID of this object definition.
 	 *
 	 * @return the description object field ID of this object definition
@@ -223,6 +247,20 @@ public interface ObjectDefinitionModel
 	public void setDescriptionObjectFieldId(long descriptionObjectFieldId);
 
 	/**
+	 * Returns the object folder ID of this object definition.
+	 *
+	 * @return the object folder ID of this object definition
+	 */
+	public long getObjectFolderId();
+
+	/**
+	 * Sets the object folder ID of this object definition.
+	 *
+	 * @param objectFolderId the object folder ID of this object definition
+	 */
+	public void setObjectFolderId(long objectFolderId);
+
+	/**
 	 * Returns the title object field ID of this object definition.
 	 *
 	 * @return the title object field ID of this object definition
@@ -235,6 +273,27 @@ public interface ObjectDefinitionModel
 	 * @param titleObjectFieldId the title object field ID of this object definition
 	 */
 	public void setTitleObjectFieldId(long titleObjectFieldId);
+
+	/**
+	 * Returns the account entry restricted of this object definition.
+	 *
+	 * @return the account entry restricted of this object definition
+	 */
+	public boolean getAccountEntryRestricted();
+
+	/**
+	 * Returns <code>true</code> if this object definition is account entry restricted.
+	 *
+	 * @return <code>true</code> if this object definition is account entry restricted; <code>false</code> otherwise
+	 */
+	public boolean isAccountEntryRestricted();
+
+	/**
+	 * Sets whether this object definition is account entry restricted.
+	 *
+	 * @param accountEntryRestricted the account entry restricted of this object definition
+	 */
+	public void setAccountEntryRestricted(boolean accountEntryRestricted);
 
 	/**
 	 * Returns the active of this object definition.
@@ -258,6 +317,21 @@ public interface ObjectDefinitionModel
 	public void setActive(boolean active);
 
 	/**
+	 * Returns the class name of this object definition.
+	 *
+	 * @return the class name of this object definition
+	 */
+	@AutoEscape
+	public String getClassName();
+
+	/**
+	 * Sets the class name of this object definition.
+	 *
+	 * @param className the class name of this object definition
+	 */
+	public void setClassName(String className);
+
+	/**
 	 * Returns the db table name of this object definition.
 	 *
 	 * @return the db table name of this object definition
@@ -271,6 +345,191 @@ public interface ObjectDefinitionModel
 	 * @param dbTableName the db table name of this object definition
 	 */
 	public void setDBTableName(String dbTableName);
+
+	/**
+	 * Returns the enable categorization of this object definition.
+	 *
+	 * @return the enable categorization of this object definition
+	 */
+	public boolean getEnableCategorization();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable categorization.
+	 *
+	 * @return <code>true</code> if this object definition is enable categorization; <code>false</code> otherwise
+	 */
+	public boolean isEnableCategorization();
+
+	/**
+	 * Sets whether this object definition is enable categorization.
+	 *
+	 * @param enableCategorization the enable categorization of this object definition
+	 */
+	public void setEnableCategorization(boolean enableCategorization);
+
+	/**
+	 * Returns the enable comments of this object definition.
+	 *
+	 * @return the enable comments of this object definition
+	 */
+	public boolean getEnableComments();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable comments.
+	 *
+	 * @return <code>true</code> if this object definition is enable comments; <code>false</code> otherwise
+	 */
+	public boolean isEnableComments();
+
+	/**
+	 * Sets whether this object definition is enable comments.
+	 *
+	 * @param enableComments the enable comments of this object definition
+	 */
+	public void setEnableComments(boolean enableComments);
+
+	/**
+	 * Returns the enable friendly url customization of this object definition.
+	 *
+	 * @return the enable friendly url customization of this object definition
+	 */
+	public boolean getEnableFriendlyURLCustomization();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable friendly url customization.
+	 *
+	 * @return <code>true</code> if this object definition is enable friendly url customization; <code>false</code> otherwise
+	 */
+	public boolean isEnableFriendlyURLCustomization();
+
+	/**
+	 * Sets whether this object definition is enable friendly url customization.
+	 *
+	 * @param enableFriendlyURLCustomization the enable friendly url customization of this object definition
+	 */
+	public void setEnableFriendlyURLCustomization(
+		boolean enableFriendlyURLCustomization);
+
+	/**
+	 * Returns the enable index search of this object definition.
+	 *
+	 * @return the enable index search of this object definition
+	 */
+	public boolean getEnableIndexSearch();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable index search.
+	 *
+	 * @return <code>true</code> if this object definition is enable index search; <code>false</code> otherwise
+	 */
+	public boolean isEnableIndexSearch();
+
+	/**
+	 * Sets whether this object definition is enable index search.
+	 *
+	 * @param enableIndexSearch the enable index search of this object definition
+	 */
+	public void setEnableIndexSearch(boolean enableIndexSearch);
+
+	/**
+	 * Returns the enable localization of this object definition.
+	 *
+	 * @return the enable localization of this object definition
+	 */
+	public boolean getEnableLocalization();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable localization.
+	 *
+	 * @return <code>true</code> if this object definition is enable localization; <code>false</code> otherwise
+	 */
+	public boolean isEnableLocalization();
+
+	/**
+	 * Sets whether this object definition is enable localization.
+	 *
+	 * @param enableLocalization the enable localization of this object definition
+	 */
+	public void setEnableLocalization(boolean enableLocalization);
+
+	/**
+	 * Returns the enable object entry draft of this object definition.
+	 *
+	 * @return the enable object entry draft of this object definition
+	 */
+	public boolean getEnableObjectEntryDraft();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry draft.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry draft; <code>false</code> otherwise
+	 */
+	public boolean isEnableObjectEntryDraft();
+
+	/**
+	 * Sets whether this object definition is enable object entry draft.
+	 *
+	 * @param enableObjectEntryDraft the enable object entry draft of this object definition
+	 */
+	public void setEnableObjectEntryDraft(boolean enableObjectEntryDraft);
+
+	/**
+	 * Returns the enable object entry history of this object definition.
+	 *
+	 * @return the enable object entry history of this object definition
+	 */
+	public boolean getEnableObjectEntryHistory();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry history.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry history; <code>false</code> otherwise
+	 */
+	public boolean isEnableObjectEntryHistory();
+
+	/**
+	 * Sets whether this object definition is enable object entry history.
+	 *
+	 * @param enableObjectEntryHistory the enable object entry history of this object definition
+	 */
+	public void setEnableObjectEntryHistory(boolean enableObjectEntryHistory);
+
+	/**
+	 * Returns the enable object entry versioning of this object definition.
+	 *
+	 * @return the enable object entry versioning of this object definition
+	 */
+	public boolean getEnableObjectEntryVersioning();
+
+	/**
+	 * Returns <code>true</code> if this object definition is enable object entry versioning.
+	 *
+	 * @return <code>true</code> if this object definition is enable object entry versioning; <code>false</code> otherwise
+	 */
+	public boolean isEnableObjectEntryVersioning();
+
+	/**
+	 * Sets whether this object definition is enable object entry versioning.
+	 *
+	 * @param enableObjectEntryVersioning the enable object entry versioning of this object definition
+	 */
+	public void setEnableObjectEntryVersioning(
+		boolean enableObjectEntryVersioning);
+
+	/**
+	 * Returns the friendly url separator of this object definition.
+	 *
+	 * @return the friendly url separator of this object definition
+	 */
+	@AutoEscape
+	public String getFriendlyURLSeparator();
+
+	/**
+	 * Sets the friendly url separator of this object definition.
+	 *
+	 * @param friendlyURLSeparator the friendly url separator of this object definition
+	 */
+	public void setFriendlyURLSeparator(String friendlyURLSeparator);
 
 	/**
 	 * Returns the label of this object definition.
@@ -372,19 +631,25 @@ public interface ObjectDefinitionModel
 	public void setLabelMap(Map<Locale, String> labelMap, Locale defaultLocale);
 
 	/**
-	 * Returns the class name of this object definition.
+	 * Returns the modifiable of this object definition.
 	 *
-	 * @return the class name of this object definition
+	 * @return the modifiable of this object definition
 	 */
-	@AutoEscape
-	public String getClassName();
+	public boolean getModifiable();
 
 	/**
-	 * Sets the class name of this object definition.
+	 * Returns <code>true</code> if this object definition is modifiable.
 	 *
-	 * @param className the class name of this object definition
+	 * @return <code>true</code> if this object definition is modifiable; <code>false</code> otherwise
 	 */
-	public void setClassName(String className);
+	public boolean isModifiable();
+
+	/**
+	 * Sets whether this object definition is modifiable.
+	 *
+	 * @param modifiable the modifiable of this object definition
+	 */
+	public void setModifiable(boolean modifiable);
 
 	/**
 	 * Returns the name of this object definition.
@@ -563,6 +828,27 @@ public interface ObjectDefinitionModel
 		Map<Locale, String> pluralLabelMap, Locale defaultLocale);
 
 	/**
+	 * Returns the portlet of this object definition.
+	 *
+	 * @return the portlet of this object definition
+	 */
+	public boolean getPortlet();
+
+	/**
+	 * Returns <code>true</code> if this object definition is portlet.
+	 *
+	 * @return <code>true</code> if this object definition is portlet; <code>false</code> otherwise
+	 */
+	public boolean isPortlet();
+
+	/**
+	 * Sets whether this object definition is portlet.
+	 *
+	 * @param portlet the portlet of this object definition
+	 */
+	public void setPortlet(boolean portlet);
+
+	/**
 	 * Returns the scope of this object definition.
 	 *
 	 * @return the scope of this object definition
@@ -576,6 +862,21 @@ public interface ObjectDefinitionModel
 	 * @param scope the scope of this object definition
 	 */
 	public void setScope(String scope);
+
+	/**
+	 * Returns the storage type of this object definition.
+	 *
+	 * @return the storage type of this object definition
+	 */
+	@AutoEscape
+	public String getStorageType();
+
+	/**
+	 * Sets the storage type of this object definition.
+	 *
+	 * @param storageType the storage type of this object definition
+	 */
+	public void setStorageType(String storageType);
 
 	/**
 	 * Returns the system of this object definition.
@@ -641,5 +942,9 @@ public interface ObjectDefinitionModel
 
 	@Override
 	public ObjectDefinition cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

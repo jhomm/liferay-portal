@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.search.experiences.model;
@@ -37,6 +28,10 @@ public class SXPElementTable extends BaseTable<SXPElementTable> {
 		"mvccVersion", Long.class, Types.BIGINT, Column.FLAG_NULLITY);
 	public final Column<SXPElementTable, String> uuid = createColumn(
 		"uuid_", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
+	public final Column<SXPElementTable, String> externalReferenceCode =
+		createColumn(
+			"externalReferenceCode", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
 	public final Column<SXPElementTable, Long> sxpElementId = createColumn(
 		"sxpElementId", Long.class, Types.BIGINT, Column.FLAG_PRIMARY);
 	public final Column<SXPElementTable, Long> companyId = createColumn(
@@ -55,14 +50,24 @@ public class SXPElementTable extends BaseTable<SXPElementTable> {
 		createColumn(
 			"elementDefinitionJSON", Clob.class, Types.CLOB,
 			Column.FLAG_DEFAULT);
+	public final Column<SXPElementTable, String> fallbackDescription =
+		createColumn(
+			"fallbackDescription", String.class, Types.VARCHAR,
+			Column.FLAG_DEFAULT);
+	public final Column<SXPElementTable, String> fallbackTitle = createColumn(
+		"fallbackTitle", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<SXPElementTable, Boolean> hidden = createColumn(
 		"hidden_", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
 	public final Column<SXPElementTable, Boolean> readOnly = createColumn(
 		"readOnly", Boolean.class, Types.BOOLEAN, Column.FLAG_DEFAULT);
+	public final Column<SXPElementTable, String> schemaVersion = createColumn(
+		"schemaVersion", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<SXPElementTable, String> title = createColumn(
 		"title", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<SXPElementTable, Integer> type = createColumn(
 		"type_", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
+	public final Column<SXPElementTable, String> version = createColumn(
+		"version", String.class, Types.VARCHAR, Column.FLAG_DEFAULT);
 	public final Column<SXPElementTable, Integer> status = createColumn(
 		"status", Integer.class, Types.INTEGER, Column.FLAG_DEFAULT);
 

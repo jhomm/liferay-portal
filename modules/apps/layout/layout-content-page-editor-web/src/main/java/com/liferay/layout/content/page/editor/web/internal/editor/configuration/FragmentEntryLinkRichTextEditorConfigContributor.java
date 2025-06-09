@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.content.page.editor.web.internal.editor.configuration;
@@ -29,15 +20,15 @@ import com.liferay.portal.kernel.editor.configuration.EditorConfigContributor;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
-import com.liferay.portal.kernel.language.LanguageUtil;
+import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.portlet.PortletURL;
+
 import java.util.Locale;
 import java.util.Map;
-
-import javax.portlet.PortletURL;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -47,8 +38,8 @@ import org.osgi.service.component.annotations.Reference;
  */
 @Component(
 	property = {
-		"editor.config.key=fragmenEntryLinkRichTextEditor",
-		"javax.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET
+		"editor.config.key=fragmentEntryLinkRichTextEditor",
+		"jakarta.portlet.name=" + ContentPageEditorPortletKeys.CONTENT_PAGE_EDITOR_PORTLET
 	},
 	service = EditorConfigContributor.class
 )
@@ -71,14 +62,14 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		jsonObject.put(
 			"allowedContent",
 			StringBundler.concat(
-				getAllowedContentText(),
+				_getAllowedContentText(),
 				" a[*](*); div[*](*){text-align}; img[*](*){*}; p[*](*); ",
-				getAllowedContentLists(), getAllowedContentTable(),
+				_getAllowedContentLists(), _getAllowedContentTable(),
 				" span[*](*){*}; ")
 		).put(
-			"documentBrowseLinkUrl", itemSelectorURL.toString()
+			"autoParagraph", false
 		).put(
-			"enterMode", 2
+			"documentBrowseLinkUrl", itemSelectorURL.toString()
 		).put(
 			"extraPlugins", getExtraPluginsLists()
 		).put(
@@ -90,27 +81,14 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		).put(
 			"skin", "moono-lisa"
 		).put(
-			"spritemap", themeDisplay.getPathThemeImages() + "/clay/icons.svg"
+			"spritemap", themeDisplay.getPathThemeSpritemap()
 		).put(
-			"toolbars", getToolbarsJSONObject(themeDisplay.getLocale())
+			"toolbars", _getToolbarsJSONObject(themeDisplay.getLocale())
 		);
 	}
 
-	protected String getAllowedContentLists() {
-		return "li ol ul [*](*){*};";
-	}
-
-	protected String getAllowedContentTable() {
-		return "table[border, cellpadding, cellspacing] {width}; tbody td " +
-			"th[scope]; thead tr[scope];";
-	}
-
-	protected String getAllowedContentText() {
-		return "b code em h1 h2 h3 h4 h5 h6 hr i p pre strong u [*](*){*};";
-	}
-
 	protected String getExtraPluginsLists() {
-		return "ae_autolink,ae_dragresize,ae_addimages,ae_imagealignment," +
+		return "autolink,ae_dragresize,ae_addimages,ae_imagealignment," +
 			"ae_placeholder,ae_selectionregion,ae_tableresize," +
 				"ae_tabletools,ae_uicore,itemselector,media,adaptivemedia";
 	}
@@ -141,57 +119,79 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 
 		layoutItemSelectorCriterion.setDesiredItemSelectorReturnTypes(
 			new URLItemSelectorReturnType());
-		layoutItemSelectorCriterion.setShowHiddenPages(true);
 
 		return layoutItemSelectorCriterion;
 	}
 
 	protected String getRemovePluginsLists() {
-		return "contextmenu,elementspath,floatingspace,image,link,liststyle," +
+		return "contextmenu,elementspath,floatingspace,image,liststyle," +
 			"magicline,resize,tabletools,toolbar,ae_embed";
 	}
 
-	protected JSONObject getStyleFormatJSONObject(
+	protected ItemSelectorCriterion getURLItemSelectorCriterion() {
+		ItemSelectorCriterion itemSelectorCriterion =
+			new URLItemSelectorCriterion();
+
+		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
+			new URLItemSelectorReturnType());
+
+		return itemSelectorCriterion;
+	}
+
+	private String _getAllowedContentLists() {
+		return "li ol ul [*](*){*};";
+	}
+
+	private String _getAllowedContentTable() {
+		return "table[border, cellpadding, cellspacing] {width}; tbody td " +
+			"th[scope]; thead tr[scope];";
+	}
+
+	private String _getAllowedContentText() {
+		return "b code em h1 h2 h3 h4 h5 h6 hr i p pre strong u [*](*){*};";
+	}
+
+	private JSONObject _getStyleFormatJSONObject(
 		String styleFormatName, String element, String cssClass, int type) {
 
 		return JSONUtil.put(
 			"name", styleFormatName
 		).put(
-			"style", getStyleJSONObject(element, cssClass, type)
+			"style", _getStyleJSONObject(element, cssClass, type)
 		);
 	}
 
-	protected JSONArray getStyleFormatsJSONArray(Locale locale) {
+	private JSONArray _getStyleFormatsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "small"), "span", "small",
+			_getStyleFormatJSONObject(
+				_language.get(locale, "small"), "span", "small",
 				_CKEDITOR_STYLE_INLINE),
-			getStyleFormatJSONObject(
-				LanguageUtil.get(locale, "lead"), "span", "lead",
+			_getStyleFormatJSONObject(
+				_language.get(locale, "lead"), "span", "lead",
 				_CKEDITOR_STYLE_INLINE),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "1"), "h1", null,
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "1"), "h1", null,
 				_CKEDITOR_STYLE_BLOCK),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "2"), "h2", null,
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "2"), "h2", null,
 				_CKEDITOR_STYLE_BLOCK),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "3"), "h3", null,
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "3"), "h3", null,
 				_CKEDITOR_STYLE_BLOCK),
-			getStyleFormatJSONObject(
-				LanguageUtil.format(locale, "heading-x", "4"), "h4", null,
+			_getStyleFormatJSONObject(
+				_language.format(locale, "heading-x", "4"), "h4", null,
 				_CKEDITOR_STYLE_BLOCK));
 	}
 
-	protected JSONObject getStyleFormatsJSONObject(Locale locale) {
+	private JSONObject _getStyleFormatsJSONObject(Locale locale) {
 		return JSONUtil.put(
-			"cfg", JSONUtil.put("styles", getStyleFormatsJSONArray(locale))
+			"cfg", JSONUtil.put("styles", _getStyleFormatsJSONArray(locale))
 		).put(
 			"name", "styles"
 		);
 	}
 
-	protected JSONObject getStyleJSONObject(
+	private JSONObject _getStyleJSONObject(
 		String element, String cssClass, int type) {
 
 		return JSONUtil.put(
@@ -210,28 +210,28 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		);
 	}
 
-	protected JSONObject getToolbarsJSONObject(Locale locale) {
+	private JSONObject _getToolbarsJSONObject(Locale locale) {
 		return JSONUtil.put(
 			"add",
 			JSONUtil.put(
-				"buttons", toJSONArray("['image', 'hline']")
+				"buttons", JSONUtil.putAll("image", "hline")
 			).put(
 				"tabIndex", 1
 			)
 		).put(
-			"styles", getToolbarsStylesJSONObject(locale)
+			"styles", _getToolbarsStylesJSONObject(locale)
 		);
 	}
 
-	protected JSONObject getToolbarsStylesJSONObject(Locale locale) {
+	private JSONObject _getToolbarsStylesJSONObject(Locale locale) {
 		return JSONUtil.put(
-			"selections", getToolbarsStylesSelectionsJSONArray(locale)
+			"selections", _getToolbarsStylesSelectionsJSONArray(locale)
 		).put(
 			"tabIndex", 1
 		);
 	}
 
-	protected JSONObject getToolbarsStylesSelectionsImageJSONObject() {
+	private JSONObject _getToolbarsStylesSelectionsImageJSONObject() {
 		return JSONUtil.put(
 			"buttons", JSONUtil.putAll("imageLeft", "imageCenter", "imageRight")
 		).put(
@@ -241,16 +241,17 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		);
 	}
 
-	protected JSONArray getToolbarsStylesSelectionsJSONArray(Locale locale) {
+	private JSONArray _getToolbarsStylesSelectionsJSONArray(Locale locale) {
 		return JSONUtil.putAll(
-			getToolbarsStylesSelectionsImageJSONObject(),
-			getToolbarsStylesSelectionsLinkJSONObject(),
-			getToolbarsStylesSelectionsTextJSONObject(locale));
+			_getToolbarsStylesSelectionsImageJSONObject(),
+			_getToolbarsStylesSelectionsLinkJSONObject(),
+			_getToolbarsStylesSelectionsTextJSONObject(locale),
+			_getToolbarsStylesSelectionsTableJSONObject());
 	}
 
-	protected JSONObject getToolbarsStylesSelectionsLinkJSONObject() {
+	private JSONObject _getToolbarsStylesSelectionsLinkJSONObject() {
 		return JSONUtil.put(
-			"buttons", toJSONArray("['linkEditBrowse']")
+			"buttons", JSONUtil.put("linkEditBrowse")
 		).put(
 			"name", "link"
 		).put(
@@ -258,15 +259,37 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		);
 	}
 
-	protected JSONObject getToolbarsStylesSelectionsTextJSONObject(
+	private JSONObject _getToolbarsStylesSelectionsTableJSONObject() {
+		return JSONUtil.put(
+			"buttons",
+			JSONUtil.putAll(
+				"tableHeading", "tableRow", "tableColumn", "tableCell",
+				"tableRemove")
+		).put(
+			"getArrowBoxClasses",
+			"AlloyEditor.SelectionGetArrowBoxClasses.table"
+		).put(
+			"name", "table"
+		).put(
+			"setPosition", "AlloyEditor.SelectionSetPosition.table"
+		).put(
+			"test", "AlloyEditor.SelectionTest.table"
+		);
+	}
+
+	private JSONObject _getToolbarsStylesSelectionsTextJSONObject(
 		Locale locale) {
 
 		return JSONUtil.put(
 			"buttons",
 			JSONUtil.putAll(
-				getStyleFormatsJSONObject(locale),
+				_getStyleFormatsJSONObject(locale),
 				"bold", "italic", "underline", "ol",
 				"ul", "linkBrowse",
+
+				// Separate
+
+				"table",
 
 				// Separate
 
@@ -290,21 +313,14 @@ public class FragmentEntryLinkRichTextEditorConfigContributor
 		).put("test", "AlloyEditor.SelectionTest.text");
 	}
 
-	protected ItemSelectorCriterion getURLItemSelectorCriterion() {
-		ItemSelectorCriterion itemSelectorCriterion =
-			new URLItemSelectorCriterion();
-
-		itemSelectorCriterion.setDesiredItemSelectorReturnTypes(
-			new URLItemSelectorReturnType());
-
-		return itemSelectorCriterion;
-	}
-
 	private static final int _CKEDITOR_STYLE_BLOCK = 1;
 
 	private static final int _CKEDITOR_STYLE_INLINE = 2;
 
 	@Reference
 	private ItemSelector _itemSelector;
+
+	@Reference
+	private Language _language;
 
 }

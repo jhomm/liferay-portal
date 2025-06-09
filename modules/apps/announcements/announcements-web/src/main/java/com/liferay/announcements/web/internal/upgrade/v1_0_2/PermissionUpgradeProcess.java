@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.announcements.web.internal.upgrade.v1_0_2;
@@ -47,19 +38,27 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 			ignoreMissingAddEntryResourceAction;
 	}
 
-	protected void addAnnouncementsAdminResourceActions() {
-		addResourceAction(
-			ActionKeys.ACCESS_IN_CONTROL_PANEL,
-			_BITWISE_VALUE_ACCESS_IN_CONTROL_PANEL);
-		addResourceAction(ActionKeys.VIEW, _BITWISE_VALUE_VIEW);
+	@Override
+	protected void doUpgrade() throws Exception {
+		_addAnnouncementsAdminResourceActions();
+
+		_upgradeAlertsResourcePermission();
+		_upgradeAnnouncementsResourcePermission();
 	}
 
-	protected void addAnnouncementsAdminViewResourcePermission(
+	private void _addAnnouncementsAdminResourceActions() {
+		_addResourceAction(
+			ActionKeys.ACCESS_IN_CONTROL_PANEL,
+			_BITWISE_VALUE_ACCESS_IN_CONTROL_PANEL);
+		_addResourceAction(ActionKeys.VIEW, _BITWISE_VALUE_VIEW);
+	}
+
+	private void _addAnnouncementsAdminViewResourcePermission(
 			long companyId, int scope, String primKey, long primKeyId,
 			long roleId)
 		throws Exception {
 
-		String key = getKey(companyId, scope, primKey, roleId);
+		String key = _getKey(companyId, scope, primKey, roleId);
 
 		if (_resourcePermissions.contains(key)) {
 			return;
@@ -107,7 +106,7 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void addResourceAction(String actionId, long bitwiseValue) {
+	private void _addResourceAction(String actionId, long bitwiseValue) {
 		long resourceActionId = increment(ResourceAction.class.getName());
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -134,7 +133,7 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void deleteResourceAction(long resourceActionId)
+	private void _deleteResourceAction(long resourceActionId)
 		throws SQLException {
 
 		try (PreparedStatement preparedStatement = connection.prepareStatement(
@@ -146,15 +145,7 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	@Override
-	protected void doUpgrade() throws Exception {
-		addAnnouncementsAdminResourceActions();
-
-		upgradeAlertsResourcePermission();
-		upgradeAnnouncementsResourcePermission();
-	}
-
-	protected String getKey(
+	private String _getKey(
 		long companyId, int scope, String primKey, long roleId) {
 
 		return StringBundler.concat(
@@ -162,7 +153,7 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 			StringPool.PERIOD, roleId);
 	}
 
-	protected void updateResourcePermission(
+	private void _updateResourcePermission(
 			long resourcePermissionId, long bitwiseValue)
 		throws Exception {
 
@@ -177,17 +168,17 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 		}
 	}
 
-	protected void upgradeAlertsResourcePermission() throws Exception {
-		upgradeResourcePermission(
+	private void _upgradeAlertsResourcePermission() throws Exception {
+		_upgradeResourcePermission(
 			"com_liferay_announcements_web_portlet_AlertsPortlet");
 	}
 
-	protected void upgradeAnnouncementsResourcePermission() throws Exception {
-		upgradeResourcePermission(
+	private void _upgradeAnnouncementsResourcePermission() throws Exception {
+		_upgradeResourcePermission(
 			"com_liferay_announcements_web_portlet_AnnouncementsPortlet");
 	}
 
-	protected void upgradeResourcePermission(String name) throws Exception {
+	private void _upgradeResourcePermission(String name) throws Exception {
 		try (PreparedStatement preparedStatement1 = connection.prepareStatement(
 				StringBundler.concat(
 					"select resourceActionId, bitwiseValue from ",
@@ -231,7 +222,7 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 					String primKey = resultSet.getString("primKey");
 					long primKeyId = resultSet.getLong("primKeyId");
 
-					updateResourcePermission(
+					_updateResourcePermission(
 						resourcePermissionId, actionIds - bitwiseValue);
 
 					if (scope == ResourceConstants.SCOPE_INDIVIDUAL) {
@@ -247,14 +238,14 @@ public class PermissionUpgradeProcess extends UpgradeProcess {
 
 					long roleId = resultSet.getLong("roleId");
 
-					addAnnouncementsAdminViewResourcePermission(
+					_addAnnouncementsAdminViewResourcePermission(
 						companyId, scope, primKey, primKeyId, roleId);
 				}
 			}
 
 			long resourceActionId = resultSet1.getLong("resourceActionId");
 
-			deleteResourceAction(resourceActionId);
+			_deleteResourceAction(resourceActionId);
 		}
 	}
 

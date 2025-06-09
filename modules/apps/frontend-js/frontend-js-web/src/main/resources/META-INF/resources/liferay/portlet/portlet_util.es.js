@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 // Constants for URL generation
@@ -250,7 +241,7 @@ const encodeParameter = function (name, values) {
 	let str = '';
 
 	if (Array.isArray(values)) {
-		if (values.length === 0) {
+		if (!values.length) {
 			str +=
 				TOKEN_DELIM +
 				encodeURIComponent(name) +
@@ -596,7 +587,7 @@ const getUrl = function (
 			// Now add the state to the URL, taking into account cacheability if
 			// we're dealing with a resource URL.
 
-			// Put the private & public parameters on the URL if cacheability != FULL
+			// Put the private & public parameters on the URL if cacheability !== FULL
 
 			if (type !== 'RESOURCE' || cacheability !== 'cacheLevelFull') {
 
@@ -671,15 +662,14 @@ const getUrl = function (
 									mapKey
 								)
 							) {
-								publicRenderParameters[
-									mapKey
-								] = generateParameterString(
-									pageRenderState,
-									parts[0],
-									parts[1],
-									PUBLIC_RENDER_PARAM_KEY,
-									mapKey
-								);
+								publicRenderParameters[mapKey] =
+									generateParameterString(
+										pageRenderState,
+										parts[0],
+										parts[1],
+										PUBLIC_RENDER_PARAM_KEY,
+										mapKey
+									);
 
 								str += publicRenderParameters[mapKey];
 							}

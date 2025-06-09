@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.theme.builder;
@@ -48,6 +39,14 @@ public class ThemeBuilderArgs {
 		return _templateExtension;
 	}
 
+	public int getThumbnailHeight() {
+		return _thumbnailHeight;
+	}
+
+	public int getThumbnailWidth() {
+		return _thumbnailWidth;
+	}
+
 	public File getUnstyledDir() {
 		return _unstyledDir;
 	}
@@ -76,6 +75,14 @@ public class ThemeBuilderArgs {
 		_templateExtension = templateExtension;
 	}
 
+	public void setThumbnailHeight(int thumbnailHeight) {
+		_thumbnailHeight = thumbnailHeight;
+	}
+
+	public void setThumbnailWidth(int thumbnailWidth) {
+		_thumbnailWidth = thumbnailWidth;
+	}
+
 	public void setUnstyledDir(File unstyledDir) {
 		_unstyledDir = unstyledDir;
 	}
@@ -87,6 +94,10 @@ public class ThemeBuilderArgs {
 	protected static final String DEFAULT_NAME;
 
 	protected static final String DEFAULT_TEMPLATE_EXTENSION = "ftl";
+
+	protected static final int DEFAULT_THUMBNAIL_HEIGHT = 120;
+
+	protected static final int DEFAULT_THUMBNAIL_WIDTH = 160;
 
 	static {
 		File userDir = new File(System.getProperty("user.dir"));
@@ -137,6 +148,18 @@ public class ThemeBuilderArgs {
 		names = {"-t", "--template-extension"}
 	)
 	private String _templateExtension = DEFAULT_TEMPLATE_EXTENSION;
+
+	@Parameter(
+		description = "The height for the generated thumbnail.",
+		names = "--thumbnail-height"
+	)
+	private int _thumbnailHeight = DEFAULT_THUMBNAIL_HEIGHT;
+
+	@Parameter(
+		description = "The width for the generated thumbnail.",
+		names = "--thumbnail-width"
+	)
+	private int _thumbnailWidth = DEFAULT_THUMBNAIL_WIDTH;
 
 	@Parameter(
 		converter = FileConverter.class,

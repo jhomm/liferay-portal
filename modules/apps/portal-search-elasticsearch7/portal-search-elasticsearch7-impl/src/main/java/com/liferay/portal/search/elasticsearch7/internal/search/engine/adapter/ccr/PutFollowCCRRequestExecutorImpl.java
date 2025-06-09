@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.ccr;
@@ -41,10 +32,10 @@ public class PutFollowCCRRequestExecutorImpl
 	public PutFollowCCRResponse execute(
 		PutFollowCCRRequest putFollowCCRRequest) {
 
-		PutFollowRequest putFollowRequest = createPutFollowRequest(
+		PutFollowRequest putFollowRequest = _createPutFollowRequest(
 			putFollowCCRRequest);
 
-		PutFollowResponse putFollowResponse = getPutFollowResponse(
+		PutFollowResponse putFollowResponse = _getPutFollowResponse(
 			putFollowRequest, putFollowCCRRequest);
 
 		return new PutFollowCCRResponse(
@@ -52,7 +43,7 @@ public class PutFollowCCRRequestExecutorImpl
 			putFollowResponse.isIndexFollowingStarted());
 	}
 
-	protected PutFollowRequest createPutFollowRequest(
+	private PutFollowRequest _createPutFollowRequest(
 		PutFollowCCRRequest putFollowCCRRequest) {
 
 		if (putFollowCCRRequest.getWaitForActiveShards() != 0) {
@@ -70,7 +61,7 @@ public class PutFollowCCRRequestExecutorImpl
 			putFollowCCRRequest.getFollowerIndexName());
 	}
 
-	protected PutFollowResponse getPutFollowResponse(
+	private PutFollowResponse _getPutFollowResponse(
 		PutFollowRequest putFollowRequest,
 		PutFollowCCRRequest putFollowCCRRequest) {
 
@@ -90,13 +81,7 @@ public class PutFollowCCRRequestExecutorImpl
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setElasticsearchClientResolver(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		_elasticsearchClientResolver = elasticsearchClientResolver;
-	}
-
+	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 
 }

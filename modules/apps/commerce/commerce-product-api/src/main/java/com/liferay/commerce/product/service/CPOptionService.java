@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPOption;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.exception.SystemException;
 import com.liferay.portal.kernel.jsonwebservice.JSONWebService;
@@ -23,7 +15,6 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.access.control.AccessControlled;
 import com.liferay.portal.kernel.service.BaseService;
 import com.liferay.portal.kernel.service.ServiceContext;
-import com.liferay.portal.kernel.spring.osgi.OSGiBeanProperties;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.transaction.Transactional;
@@ -45,14 +36,8 @@ import org.osgi.annotation.versioning.ProviderType;
  * @generated
  */
 @AccessControlled
+@CTAware
 @JSONWebService
-@OSGiBeanProperties(
-	property = {
-		"json.web.service.context.name=commerce",
-		"json.web.service.context.path=CPOption"
-	},
-	service = CPOptionService.class
-)
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
@@ -67,13 +52,13 @@ public interface CPOptionService extends BaseService {
 	 */
 	public CPOption addCPOption(
 			Map<Locale, String> nameMap, Map<Locale, String> descriptionMap,
-			String ddmFormFieldTypeName, boolean facetable, boolean required,
+			String commerceOptionTypeKey, boolean facetable, boolean required,
 			boolean skuContributor, String key, ServiceContext serviceContext)
 		throws PortalException;
 
 	public CPOption addOrUpdateCPOption(
 			String externalReferenceCode, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			boolean facetable, boolean required, boolean skuContributor,
 			String key, ServiceContext serviceContext)
 		throws PortalException;
@@ -81,15 +66,15 @@ public interface CPOptionService extends BaseService {
 	public void deleteCPOption(long cpOptionId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPOption fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException;
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPOption fetchCPOption(long cpOptionId) throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPOption fetchCPOption(long companyId, String key)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPOption fetchCPOptionByExternalReferenceCode(
+			String externalReferenceCode, long companyId)
 		throws PortalException;
 
 	public List<CPOption> findCPOptionByCompanyId(
@@ -114,7 +99,7 @@ public interface CPOptionService extends BaseService {
 
 	public CPOption updateCPOption(
 			long cpOptionId, Map<Locale, String> nameMap,
-			Map<Locale, String> descriptionMap, String ddmFormFieldTypeName,
+			Map<Locale, String> descriptionMap, String commerceOptionTypeKey,
 			boolean facetable, boolean required, boolean skuContributor,
 			String key, ServiceContext serviceContext)
 		throws PortalException;

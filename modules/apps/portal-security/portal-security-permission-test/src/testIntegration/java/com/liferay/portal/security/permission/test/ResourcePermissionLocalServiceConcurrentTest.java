@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.security.permission.test;
@@ -54,7 +45,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.FutureTask;
 
-import org.hibernate.util.JDBCExceptionReporter;
+import org.hibernate.engine.jdbc.batch.internal.BatchingBatch;
+import org.hibernate.engine.jdbc.spi.SqlExceptionHelper;
 
 import org.junit.Assert;
 import org.junit.Assume;
@@ -94,8 +86,6 @@ public class ResourcePermissionLocalServiceConcurrentTest {
 
 		_resourceAction = _resourceActionLocalService.addResourceAction(
 			_name, _actionId, RandomTestUtil.randomLong());
-
-		_resourceActionLocalService.checkResourceActions();
 
 		AopInvocationHandler aopInvocationHandler =
 			ProxyUtil.fetchInvocationHandler(
@@ -173,7 +163,7 @@ public class ResourcePermissionLocalServiceConcurrentTest {
 					@ExpectedLog(
 						expectedDBType = ExpectedDBType.MARIADB,
 						expectedLog = "Duplicate entry '",
-						expectedType = ExpectedType.PREFIX
+						expectedType = ExpectedType.CONTAINS
 					),
 					@ExpectedLog(
 						expectedDBType = ExpectedDBType.MYSQL,
@@ -199,14 +189,19 @@ public class ResourcePermissionLocalServiceConcurrentTest {
 						expectedDBType = ExpectedDBType.SQLSERVER,
 						expectedLog = "Cannot insert duplicate key row",
 						expectedType = ExpectedType.PREFIX
-					),
-					@ExpectedLog(
-						expectedDBType = ExpectedDBType.SYBASE,
-						expectedLog = "Attempt to insert duplicate key row",
-						expectedType = ExpectedType.CONTAINS
 					)
 				},
-				level = "ERROR", loggerClass = JDBCExceptionReporter.class
+				level = "ERROR", loggerClass = SqlExceptionHelper.class
+			),
+			@ExpectedLogs(
+				expectedLogs = {
+					@ExpectedLog(
+						expectedDBType = ExpectedDBType.NONE,
+						expectedLog = "HHH000315: Exception executing batch [java.sql.BatchUpdateException",
+						expectedType = ExpectedType.PREFIX
+					)
+				},
+				level = "ERROR", loggerClass = BatchingBatch.class
 			)
 		}
 	)

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.catalog.internal.resource.v1_0;
@@ -19,35 +10,38 @@ import com.liferay.commerce.product.model.CPOption;
 import com.liferay.commerce.product.service.CPOptionService;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.Option;
 import com.liferay.headless.commerce.admin.catalog.dto.v1_0.OptionValue;
-import com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.OptionDTOConverter;
 import com.liferay.headless.commerce.admin.catalog.internal.odata.entity.v1_0.OptionEntityModel;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.OptionResource;
 import com.liferay.headless.commerce.admin.catalog.resource.v1_0.OptionValueResource;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.core.util.LanguageUtils;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
-import com.liferay.petra.function.UnsafeConsumer;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.search.Field;
-import com.liferay.portal.kernel.search.SearchContext;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
+import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.SearchUtil;
 
-import java.util.Collections;
-import java.util.Map;
+import jakarta.ws.rs.core.MultivaluedMap;
+import jakarta.ws.rs.core.Response;
 
-import javax.ws.rs.core.MultivaluedMap;
-import javax.ws.rs.core.Response;
+import java.io.Serializable;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -57,12 +51,11 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/option.properties",
 	scope = ServiceScope.PROTOTYPE, service = OptionResource.class
 )
-public class OptionResourceImpl
-	extends BaseOptionResourceImpl implements EntityModelResource {
+@CTAware
+public class OptionResourceImpl extends BaseOptionResourceImpl {
 
 	@Override
 	public Response deleteOption(Long id) throws Exception {
@@ -80,8 +73,9 @@ public class OptionResourceImpl
 			String externalReferenceCode)
 		throws Exception {
 
-		CPOption cpOption = _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, contextCompany.getCompanyId());
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (cpOption == null) {
 			throw new NoSuchCPOptionException(
@@ -112,8 +106,9 @@ public class OptionResourceImpl
 	public Option getOptionByExternalReferenceCode(String externalReferenceCode)
 		throws Exception {
 
-		CPOption cpOption = _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, contextCompany.getCompanyId());
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 
 		return _toOption(cpOption.getCPOptionId());
 	}
@@ -129,15 +124,8 @@ public class OptionResourceImpl
 			CPOption.class.getName(), search, pagination,
 			queryConfig -> queryConfig.setSelectedFieldNames(
 				Field.ENTRY_CLASS_PK),
-			new UnsafeConsumer() {
-
-				public void accept(Object object) throws Exception {
-					SearchContext searchContext = (SearchContext)object;
-
-					searchContext.setCompanyId(contextCompany.getCompanyId());
-				}
-
-			},
+			searchContext -> searchContext.setCompanyId(
+				contextCompany.getCompanyId()),
 			sorts,
 			document -> _toOption(
 				GetterUtil.getLong(document.get(Field.ENTRY_CLASS_PK))));
@@ -157,8 +145,9 @@ public class OptionResourceImpl
 			String externalReferenceCode, Option option)
 		throws Exception {
 
-		CPOption cpOption = _cpOptionService.fetchByExternalReferenceCode(
-			externalReferenceCode, contextCompany.getCompanyId());
+		CPOption cpOption =
+			_cpOptionService.fetchCPOptionByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 
 		if (cpOption == null) {
 			throw new NoSuchCPOptionException(
@@ -175,20 +164,37 @@ public class OptionResourceImpl
 
 	@Override
 	public Option postOption(Option option) throws Exception {
-		return _addOrUpdateOption(option);
+		return _addOrUpdateOption(option.getExternalReferenceCode(), option);
 	}
 
-	private Option _addOrUpdateOption(Option option) throws Exception {
+	@Override
+	public Option putOptionByExternalReferenceCode(
+			String externalReferenceCode, Option option)
+		throws Exception {
+
+		return _addOrUpdateOption(externalReferenceCode, option);
+	}
+
+	private Option _addOrUpdateOption(
+			String externalReferenceCode, Option option)
+		throws Exception {
+
 		Option.FieldType fieldType = option.getFieldType();
 
+		ServiceContext serviceContext =
+			_serviceContextHelper.getServiceContext();
+
+		serviceContext.setExpandoBridgeAttributes(
+			_getExpandoBridgeAttributes(option));
+
 		CPOption cpOption = _cpOptionService.addOrUpdateCPOption(
-			option.getExternalReferenceCode(),
+			externalReferenceCode,
 			LanguageUtils.getLocalizedMap(option.getName()),
 			LanguageUtils.getLocalizedMap(option.getDescription()),
 			fieldType.getValue(), GetterUtil.get(option.getFacetable(), false),
 			GetterUtil.get(option.getRequired(), false),
 			GetterUtil.get(option.getSkuContributor(), false), option.getKey(),
-			_serviceContextHelper.getServiceContext());
+			serviceContext);
 
 		_addOrUpdateOptionValues(cpOption, option.getOptionValues());
 
@@ -204,6 +210,8 @@ public class OptionResourceImpl
 		}
 
 		_optionValueResource.setContextAcceptLanguage(contextAcceptLanguage);
+		_optionValueResource.setContextCompany(contextCompany);
+		_optionValueResource.setContextUriInfo(contextUriInfo);
 
 		for (OptionValue optionValue : optionValues) {
 			_optionValueResource.postOptionIdOptionValue(
@@ -230,6 +238,22 @@ public class OptionResourceImpl
 		).build();
 	}
 
+	private Map<String, Serializable> _getExpandoBridgeAttributes(
+		Option option) {
+
+		Map<String, Serializable> expandoBridgeAttributes =
+			CustomFieldsUtil.toMap(
+				CPOption.class.getName(), contextCompany.getCompanyId(),
+				option.getCustomFields(),
+				contextAcceptLanguage.getPreferredLocale());
+
+		if (expandoBridgeAttributes == null) {
+			expandoBridgeAttributes = new HashMap<>();
+		}
+
+		return expandoBridgeAttributes;
+	}
+
 	private Option _toOption(Long cpOptionId) throws Exception {
 		return _optionDTOConverter.toDTO(
 			new DefaultDTOConverterContext(
@@ -244,6 +268,12 @@ public class OptionResourceImpl
 
 		Option.FieldType fieldType = option.getFieldType();
 
+		ServiceContext serviceContext =
+			_serviceContextHelper.getServiceContext();
+
+		serviceContext.setExpandoBridgeAttributes(
+			_getExpandoBridgeAttributes(option));
+
 		cpOption = _cpOptionService.updateCPOption(
 			cpOption.getCPOptionId(),
 			LanguageUtils.getLocalizedMap(option.getName()),
@@ -253,7 +283,7 @@ public class OptionResourceImpl
 			GetterUtil.get(option.getRequired(), cpOption.isRequired()),
 			GetterUtil.get(
 				option.getSkuContributor(), cpOption.isSkuContributor()),
-			option.getKey(), _serviceContextHelper.getServiceContext());
+			option.getKey(), serviceContext);
 
 		return _toOption(cpOption.getCPOptionId());
 	}
@@ -271,8 +301,10 @@ public class OptionResourceImpl
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;
 
-	@Reference
-	private OptionDTOConverter _optionDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.commerce.admin.catalog.internal.dto.v1_0.converter.OptionDTOConverter)"
+	)
+	private DTOConverter<CPOption, Option> _optionDTOConverter;
 
 	@Reference
 	private OptionValueResource _optionValueResource;

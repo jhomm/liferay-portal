@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.jenkins.results.parser;
@@ -84,6 +75,11 @@ public abstract class BaseTopLevelBuildData
 	}
 
 	@Override
+	public String getS3BucketDistPath() {
+		return optString("s3_bucket_dist_path");
+	}
+
+	@Override
 	public TopLevelBuildData getTopLevelBuildData() {
 		return this;
 	}
@@ -129,6 +125,7 @@ public abstract class BaseTopLevelBuildData
 
 		put("dist_nodes", _getDistNodes());
 		put("dist_path", _getDistPath());
+		put("s3_bucket_dist_path", _getS3BucketDistPath());
 		put("top_level_run_id", getRunID());
 
 		validateKeys(_KEYS_REQUIRED);
@@ -143,7 +140,9 @@ public abstract class BaseTopLevelBuildData
 	}
 
 	private String _getDistNodes() {
-		if (!JenkinsResultsParserUtil.isCINode()) {
+		if (!JenkinsResultsParserUtil.isCINode() ||
+			JenkinsResultsParserUtil.isCloudCINode()) {
+
 			return "";
 		}
 
@@ -157,26 +156,58 @@ public abstract class BaseTopLevelBuildData
 			throw new RuntimeException(ioException);
 		}
 
-		String cohortName = getCohortName();
-
 		List<JenkinsMaster> jenkinsMasters =
 			JenkinsResultsParserUtil.getJenkinsMasters(
 				buildProperties, JenkinsMaster.getSlaveRAMMinimumDefault(),
-				JenkinsMaster.getSlavesPerHostDefault(), cohortName);
+				JenkinsMaster.getSlavesPerHostDefault(), getCohortName());
 
-		List<String> slaves = JenkinsResultsParserUtil.getSlaves(
-			buildProperties, cohortName + "-[1-9]{1}[0-9]?");
+		List<String> distNodes = new ArrayList<>(jenkinsMasters.size());
 
-		List<String> distNodes = JenkinsResultsParserUtil.getRandomList(
-			slaves, jenkinsMasters.size());
+		for (JenkinsMaster jenkinsMaster : jenkinsMasters) {
+			int retries = 0;
+
+			while (true) {
+				if (retries > jenkinsMaster.getOnlineJenkinsSlavesCount()) {
+					break;
+				}
+
+				JenkinsSlave randomJenkinsSlave =
+					jenkinsMaster.getRandomJenkinsSlave();
+
+				if ((randomJenkinsSlave != null) &&
+					!randomJenkinsSlave.isOffline() &&
+					randomJenkinsSlave.isReachable()) {
+
+					distNodes.add(randomJenkinsSlave.getName());
+
+					break;
+				}
+
+				retries++;
+			}
+		}
 
 		return StringUtils.join(distNodes, ",");
 	}
 
 	private String _getDistPath() {
 		return JenkinsResultsParserUtil.combine(
-			BuildData.FILE_PATH_DIST_ROOT, "/", getMasterHostname(), "/",
-			getJobName(), "/", String.valueOf(getBuildNumber()), "/dist");
+			JenkinsResultsParserUtil.getJenkinsDistRootPath(), "/",
+			getMasterHostname(), "/", getJobName(), "/",
+			String.valueOf(getBuildNumber()), "/dist");
+	}
+
+	private String _getS3BucketDistPath() {
+		try {
+			return JenkinsResultsParserUtil.combine(
+				JenkinsResultsParserUtil.getBuildProperty(
+					"cloud.ci.s3.bucket.dist.path"),
+				"/", getMasterHostname(), "/", getJobName(), "/",
+				String.valueOf(getBuildNumber()), "/dist");
+		}
+		catch (IOException ioException) {
+			throw new RuntimeException(ioException);
+		}
 	}
 
 	private static final String[] _KEYS_REQUIRED = {

@@ -1,22 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.service;
 
 import com.liferay.commerce.product.model.CPInstance;
 import com.liferay.exportimport.kernel.lar.PortletDataContext;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.petra.sql.dsl.query.DSLQuery;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.dao.orm.ActionableDynamicQuery;
 import com.liferay.portal.kernel.dao.orm.DynamicQuery;
 import com.liferay.portal.kernel.dao.orm.ExportActionableDynamicQuery;
@@ -35,6 +28,8 @@ import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.service.BaseLocalService;
 import com.liferay.portal.kernel.service.PersistedModelLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
+import com.liferay.portal.kernel.service.change.tracking.CTService;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 import com.liferay.portal.kernel.systemevent.SystemEvent;
 import com.liferay.portal.kernel.transaction.Isolation;
 import com.liferay.portal.kernel.transaction.Propagation;
@@ -61,13 +56,15 @@ import org.osgi.annotation.versioning.ProviderType;
  * @see CPInstanceLocalServiceUtil
  * @generated
  */
+@CTAware
 @ProviderType
 @Transactional(
 	isolation = Isolation.PORTAL,
 	rollbackFor = {PortalException.class, SystemException.class}
 )
 public interface CPInstanceLocalService
-	extends BaseLocalService, PersistedModelLocalService {
+	extends BaseLocalService, CTService<CPInstance>,
+			PersistedModelLocalService {
 
 	/*
 	 * NOTE FOR DEVELOPERS:
@@ -87,113 +84,6 @@ public interface CPInstanceLocalService
 	 */
 	@Indexable(type = IndexableType.REINDEX)
 	public CPInstance addCPInstance(CPInstance cpInstance);
-
-	/**
-	 * @param cpDefinitionId
-	 * @param groupId
-	 * @param sku
-	 * @param gtin
-	 * @param manufacturerPartNumber
-	 * @param purchasable
-	 * @param json
-	 * @param published
-	 * @param displayDateMonth
-	 * @param displayDateDay
-	 * @param displayDateYear
-	 * @param displayDateHour
-	 * @param displayDateMinute
-	 * @param expirationDateMonth
-	 * @param expirationDateDay
-	 * @param expirationDateYear
-	 * @param expirationDateHour
-	 * @param expirationDateMinute
-	 * @param neverExpire
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #addCPInstance(long,
-	 long, String, String, String, boolean, Map, double, double,
-	 double, double, BigDecimal, BigDecimal, BigDecimal, boolean,
-	 String, int, int, int, int, int, int, int, int, int, int,
-	 boolean, boolean, boolean, int, String, UnicodeProperties,
-	 long, ServiceContext)}
-	 */
-	@Deprecated
-	public CPInstance addCPInstance(
-			long cpDefinitionId, long groupId, String sku, String gtin,
-			String manufacturerPartNumber, boolean purchasable, String json,
-			boolean published, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @param cpDefinitionId
-	 * @param groupId
-	 * @param sku
-	 * @param gtin
-	 * @param manufacturerPartNumber
-	 * @param purchasable
-	 * @param json
-	 * @param published
-	 * @param displayDateMonth
-	 * @param displayDateDay
-	 * @param displayDateYear
-	 * @param displayDateHour
-	 * @param displayDateMinute
-	 * @param expirationDateMonth
-	 * @param expirationDateDay
-	 * @param expirationDateYear
-	 * @param expirationDateHour
-	 * @param expirationDateMinute
-	 * @param neverExpire
-	 * @param unspsc
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #addCPInstance(long,
-	 long, String, String, String, boolean, Map, double, double,
-	 double, double, BigDecimal, BigDecimal, BigDecimal, boolean,
-	 String, int, int, int, int, int, int, int, int, int, int,
-	 boolean, boolean, boolean, int, String, UnicodeProperties,
-	 long, String, ServiceContext)}
-	 */
-	@Deprecated
-	public CPInstance addCPInstance(
-			long cpDefinitionId, long groupId, String sku, String gtin,
-			String manufacturerPartNumber, boolean purchasable, String json,
-			boolean published, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire, String unspsc,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	public CPInstance addCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable,
-			Map<Long, List<Long>>
-				cpDefinitionOptionRelIdCPDefinitionOptionValueRelIds,
-			double width, double height, double depth, double weight,
-			BigDecimal price, BigDecimal promoPrice, BigDecimal cost,
-			boolean published, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire,
-			boolean overrideSubscriptionInfo, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
-			int deliverySubscriptionLength, String deliverySubscriptionType,
-			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
-			long deliveryMaxSubscriptionCycles, ServiceContext serviceContext)
-		throws PortalException;
 
 	@Indexable(type = IndexableType.REINDEX)
 	public CPInstance addCPInstance(
@@ -216,94 +106,13 @@ public interface CPInstanceLocalService
 			int deliverySubscriptionLength, String deliverySubscriptionType,
 			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
 			long deliveryMaxSubscriptionCycles, String unspsc,
+			boolean discontinued, String replacementCPInstanceUuid,
+			long replacementCProductId, int discontinuedDateMonth,
+			int discontinuedDateDay, int discontinuedDateYear,
 			ServiceContext serviceContext)
 		throws PortalException;
 
-	public CPInstance addCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable,
-			Map<Long, List<Long>>
-				cpDefinitionOptionRelIdCPDefinitionOptionValueRelIds,
-			double width, double height, double depth, double weight,
-			BigDecimal price, BigDecimal promoPrice, BigDecimal cost,
-			boolean published, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire,
-			boolean overrideSubscriptionInfo, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, ServiceContext serviceContext)
-		throws PortalException;
-
-	public CPInstance addCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable,
-			Map<Long, List<Long>>
-				cpDefinitionOptionRelIdCPDefinitionOptionValueRelIds,
-			double width, double height, double depth, double weight,
-			BigDecimal price, BigDecimal promoPrice, BigDecimal cost,
-			boolean published, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire,
-			boolean overrideSubscriptionInfo, boolean subscriptionEnabled,
-			int subscriptionLength, String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, String unspsc,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @param cpDefinitionId
-	 * @param groupId
-	 * @param sku
-	 * @param gtin
-	 * @param manufacturerPartNumber
-	 * @param purchasable
-	 * @param json
-	 * @param width
-	 * @param height
-	 * @param depth
-	 * @param weight
-	 * @param price
-	 * @param promoPrice
-	 * @param cost
-	 * @param published
-	 * @param externalReferenceCode
-	 * @param displayDateMonth
-	 * @param displayDateDay
-	 * @param displayDateYear
-	 * @param displayDateHour
-	 * @param displayDateMinute
-	 * @param expirationDateMonth
-	 * @param expirationDateDay
-	 * @param expirationDateYear
-	 * @param expirationDateHour
-	 * @param expirationDateMinute
-	 * @param neverExpire
-	 * @param overrideSubscriptionInfo
-	 * @param subscriptionEnabled
-	 * @param subscriptionLength
-	 * @param subscriptionType
-	 * @param subscriptionTypeSettingsUnicodeProperties
-	 * @param maxSubscriptionCycles
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #addCPInstance(long,
-	 long, String, String, String, boolean, Map, double, double,
-	 double, double, BigDecimal, BigDecimal, BigDecimal, boolean,
-	 String, int, int, int, int, int, int, int, int, int, int,
-	 boolean, boolean, boolean, int, String, UnicodeProperties,
-	 long, ServiceContext)}
-	 */
-	@Deprecated
-	public CPInstance addCPInstance(
+	public CPInstance addOrUpdateCPInstance(
 			String externalReferenceCode, long cpDefinitionId, long groupId,
 			String sku, String gtin, String manufacturerPartNumber,
 			boolean purchasable, String json, double width, double height,
@@ -317,209 +126,21 @@ public interface CPInstanceLocalService
 			boolean subscriptionEnabled, int subscriptionLength,
 			String subscriptionType,
 			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @param cpDefinitionId
-	 * @param groupId
-	 * @param sku
-	 * @param gtin
-	 * @param manufacturerPartNumber
-	 * @param purchasable
-	 * @param json
-	 * @param width
-	 * @param height
-	 * @param depth
-	 * @param weight
-	 * @param price
-	 * @param promoPrice
-	 * @param cost
-	 * @param published
-	 * @param externalReferenceCode
-	 * @param displayDateMonth
-	 * @param displayDateDay
-	 * @param displayDateYear
-	 * @param displayDateHour
-	 * @param displayDateMinute
-	 * @param expirationDateMonth
-	 * @param expirationDateDay
-	 * @param expirationDateYear
-	 * @param expirationDateHour
-	 * @param expirationDateMinute
-	 * @param neverExpire
-	 * @param overrideSubscriptionInfo
-	 * @param subscriptionEnabled
-	 * @param subscriptionLength
-	 * @param subscriptionType
-	 * @param subscriptionTypeSettingsUnicodeProperties
-	 * @param maxSubscriptionCycles
-	 * @param unspsc
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #addCPInstance(long,
-	 long, String, String, String, boolean, Map, double, double,
-	 double, double, BigDecimal, BigDecimal, BigDecimal, boolean,
-	 String, int, int, int, int, int, int, int, int, int, int,
-	 boolean, boolean, boolean, int, String, UnicodeProperties,
-	 long, String, ServiceContext)}
-	 */
-	@Deprecated
-	public CPInstance addCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable, String json, double width, double height,
-			double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, boolean overrideSubscriptionInfo,
-			boolean subscriptionEnabled, int subscriptionLength,
-			String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, String unspsc,
+			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
+			int deliverySubscriptionLength, String deliverySubscriptionType,
+			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
+			long deliveryMaxSubscriptionCycles, String unspsc,
+			boolean discontinued, String replacementCPInstanceUuid,
+			long replacementCProductId, int discontinuedDateMonth,
+			int discontinuedDateDay, int discontinuedDateYear,
 			ServiceContext serviceContext)
 		throws PortalException;
 
-	/**
-	 * @param cpDefinitionId
-	 * @param groupId
-	 * @param sku
-	 * @param gtin
-	 * @param manufacturerPartNumber
-	 * @param purchasable
-	 * @param json
-	 * @param width
-	 * @param height
-	 * @param depth
-	 * @param weight
-	 * @param price
-	 * @param promoPrice
-	 * @param cost
-	 * @param published
-	 * @param externalReferenceCode
-	 * @param displayDateMonth
-	 * @param displayDateDay
-	 * @param displayDateYear
-	 * @param displayDateHour
-	 * @param displayDateMinute
-	 * @param expirationDateMonth
-	 * @param expirationDateDay
-	 * @param expirationDateYear
-	 * @param expirationDateHour
-	 * @param expirationDateMinute
-	 * @param neverExpire
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #addCPInstance(long,
-	 long, String, String, String, boolean, Map, double, double,
-	 double, double, BigDecimal, BigDecimal, BigDecimal, boolean,
-	 String, int, int, int, int, int, int, int, int, int, int,
-	 boolean, boolean, boolean, int, String, UnicodeProperties,
-	 long, ServiceContext)}
-	 */
-	@Deprecated
-	public CPInstance addCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable, String json, double width, double height,
-			double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
-		throws PortalException;
-
-	/**
-	 * @param cpDefinitionId
-	 * @param groupId
-	 * @param sku
-	 * @param gtin
-	 * @param manufacturerPartNumber
-	 * @param purchasable
-	 * @param json
-	 * @param width
-	 * @param height
-	 * @param depth
-	 * @param weight
-	 * @param price
-	 * @param promoPrice
-	 * @param cost
-	 * @param published
-	 * @param externalReferenceCode
-	 * @param displayDateMonth
-	 * @param displayDateDay
-	 * @param displayDateYear
-	 * @param displayDateHour
-	 * @param displayDateMinute
-	 * @param expirationDateMonth
-	 * @param expirationDateDay
-	 * @param expirationDateYear
-	 * @param expirationDateHour
-	 * @param expirationDateMinute
-	 * @param neverExpire
-	 * @param unspsc
-	 * @param serviceContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #addCPInstance(long,
-	 long, String, String, String, boolean, Map, double, double,
-	 double, double, BigDecimal, BigDecimal, BigDecimal, boolean,
-	 String, int, int, int, int, int, int, int, int, int, int,
-	 boolean, boolean, boolean, int, String, UnicodeProperties,
-	 long, String, ServiceContext)}
-	 */
-	@Deprecated
-	public CPInstance addCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable, String json, double width, double height,
-			double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String unspsc, ServiceContext serviceContext)
-		throws PortalException;
-
-	public CPInstance addOrUpdateCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable, String json, double width, double height,
-			double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
-		throws PortalException;
-
-	public CPInstance addOrUpdateCPInstance(
-			String externalReferenceCode, long cpDefinitionId, long groupId,
-			String sku, String gtin, String manufacturerPartNumber,
-			boolean purchasable, String json, double width, double height,
-			double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String unspsc, ServiceContext serviceContext)
-		throws PortalException;
-
-	public void buildCPInstances(
+	public List<CPInstance> buildCPInstances(
 			long cpDefinitionId, ServiceContext serviceContext)
 		throws PortalException;
 
-	public void checkCPInstances() throws PortalException;
+	public void checkCPInstances(long cpDefinitionId) throws PortalException;
 
 	public void checkCPInstancesByDisplayDate(long cpDefinitionId)
 		throws PortalException;
@@ -553,6 +174,11 @@ public interface CPInstanceLocalService
 	@Indexable(type = IndexableType.DELETE)
 	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
 	public CPInstance deleteCPInstance(CPInstance cpInstance)
+		throws PortalException;
+
+	@Indexable(type = IndexableType.DELETE)
+	@SystemEvent(type = SystemEventConstants.TYPE_DELETE)
+	public CPInstance deleteCPInstance(CPInstance cpInstance, boolean makeCopy)
 		throws PortalException;
 
 	/**
@@ -652,30 +278,14 @@ public interface CPInstanceLocalService
 		DynamicQuery dynamicQuery, Projection projection);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPInstance fetchByExternalReferenceCode(
-		String externalReferenceCode, long companyId);
-
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPInstance fetchCPInstance(long CPInstanceId);
 
-	/**
-	 * Returns the cp instance with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp instance's external reference code
-	 * @return the matching cp instance, or <code>null</code> if a matching cp instance could not be found
-	 */
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPInstance fetchCPInstance(long cProductId, String cpInstanceUuid);
+
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPInstance fetchCPInstanceByExternalReferenceCode(
-		long companyId, String externalReferenceCode);
-
-	/**
-	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link #fetchCPInstanceByExternalReferenceCode(long, String)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPInstance fetchCPInstanceByReferenceCode(
-		long companyId, String externalReferenceCode);
+		String externalReferenceCode, long companyId);
 
 	/**
 	 * Returns the cp instance matching the UUID and group.
@@ -693,38 +303,14 @@ public interface CPInstanceLocalService
 		long cProductId, String cpInstanceUuid);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public CPInstance fetchDefaultCPInstance(long cpDefinitionId);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public ActionableDynamicQuery getActionableDynamicQuery();
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CPInstance> getCPDefinitionApprovedCPInstances(
 		long cpDefinitionId);
-
-	/**
-	 * @param cpDefinitionId
-	 * @return
-	 * @deprecated As of Athanasius (7.3.x), use workflow aware method {@link
-	 #getCPDefinitionInstances(long, int, int, int,
-	 OrderByComparator)} or {@link
-	 #getCPDefinitionApprovedCPInstances(long)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CPInstance> getCPDefinitionInstances(long cpDefinitionId);
-
-	/**
-	 * @param cpDefinitionId
-	 * @param start
-	 * @param end
-	 * @return
-	 * @deprecated As of Athanasius (7.3.x), use workflow aware method {@link
-	 #getCPDefinitionInstances(long, int, int, int,
-	 OrderByComparator)} or {@link
-	 #getCPDefinitionApprovedCPInstances(long)}
-	 */
-	@Deprecated
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public List<CPInstance> getCPDefinitionInstances(
-		long cpDefinitionId, int start, int end);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public List<CPInstance> getCPDefinitionInstances(
@@ -746,19 +332,6 @@ public interface CPInstanceLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPInstance getCPInstance(long cpDefinitionId, String sku)
-		throws PortalException;
-
-	/**
-	 * Returns the cp instance with the matching external reference code and company.
-	 *
-	 * @param companyId the primary key of the company
-	 * @param externalReferenceCode the cp instance's external reference code
-	 * @return the matching cp instance
-	 * @throws PortalException if a matching cp instance could not be found
-	 */
-	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
-	public CPInstance getCPInstanceByExternalReferenceCode(
-			long companyId, String externalReferenceCode)
 		throws PortalException;
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
@@ -798,6 +371,14 @@ public interface CPInstanceLocalService
 			OrderByComparator<CPInstance> orderByComparator)
 		throws PortalException;
 
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPInstance> getCPInstances(long companyId, String sku);
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public List<CPInstance> getCPInstances(
+		String replacementCPInstanceUuid, long replacementCProductId,
+		int status);
+
 	/**
 	 * Returns all the cp instances matching the UUID and company.
 	 *
@@ -835,6 +416,9 @@ public interface CPInstanceLocalService
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public int getCPInstancesCount(long groupId, int status)
 		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int getCPInstancesCount(String cpInstanceUuid);
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public CPInstance getCProductInstance(
@@ -907,7 +491,19 @@ public interface CPInstanceLocalService
 
 	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
 	public BaseModelSearchResult<CPInstance> searchCPInstances(
+			long companyId, String cpInstanceUuid, long cProductId,
+			String keywords, int status, int start, int end, Sort sort)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public BaseModelSearchResult<CPInstance> searchCPInstances(
 			SearchContext searchContext)
+		throws PortalException;
+
+	@Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+	public int searchCPInstancesCount(
+			long companyId, String cpInstanceUuid, long cProductId,
+			String keywords, int status)
 		throws PortalException;
 
 	/**
@@ -923,52 +519,32 @@ public interface CPInstanceLocalService
 	@Indexable(type = IndexableType.REINDEX)
 	public CPInstance updateCPInstance(CPInstance cpInstance);
 
+	@Indexable(type = IndexableType.REINDEX)
 	public CPInstance updateCPInstance(
-			long cpInstanceId, String sku, String gtin,
-			String manufacturerPartNumber, boolean purchasable,
+			String externalReferenceCode, long cpInstanceId, String sku,
+			String gtin, String manufacturerPartNumber, boolean purchasable,
+			double width, double height, double depth, double weight,
+			BigDecimal price, BigDecimal promoPrice, BigDecimal cost,
 			boolean published, int displayDateMonth, int displayDateDay,
 			int displayDateYear, int displayDateHour, int displayDateMinute,
 			int expirationDateMonth, int expirationDateDay,
 			int expirationDateYear, int expirationDateHour,
 			int expirationDateMinute, boolean neverExpire,
+			boolean overrideSubscriptionInfo, boolean subscriptionEnabled,
+			int subscriptionLength, String subscriptionType,
+			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
+			long maxSubscriptionCycles, boolean deliverySubscriptionEnabled,
+			int deliverySubscriptionLength, String deliverySubscriptionType,
+			UnicodeProperties deliverySubscriptionTypeSettingsUnicodeProperties,
+			long deliveryMaxSubscriptionCycles, String unspsc,
+			boolean discontinued, String replacementCPInstanceUuid,
+			long replacementCProductId, int discontinuedDateMonth,
+			int discontinuedDateDay, int discontinuedDateYear,
 			ServiceContext serviceContext)
 		throws PortalException;
 
-	public CPInstance updateCPInstance(
-			long cpInstanceId, String sku, String gtin,
-			String manufacturerPartNumber, boolean purchasable,
-			boolean published, int displayDateMonth, int displayDateDay,
-			int displayDateYear, int displayDateHour, int displayDateMinute,
-			int expirationDateMonth, int expirationDateDay,
-			int expirationDateYear, int expirationDateHour,
-			int expirationDateMinute, boolean neverExpire, String unspsc,
-			ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public CPInstance updateCPInstance(
-			long cpInstanceId, String sku, String gtin,
-			String manufacturerPartNumber, boolean purchasable, double width,
-			double height, double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
-		throws PortalException;
-
-	@Indexable(type = IndexableType.REINDEX)
-	public CPInstance updateCPInstance(
-			long cpInstanceId, String sku, String gtin,
-			String manufacturerPartNumber, boolean purchasable, double width,
-			double height, double depth, double weight, BigDecimal price,
-			BigDecimal promoPrice, BigDecimal cost, boolean published,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, String unspsc, ServiceContext serviceContext)
+	public CPInstance updateExternalReferenceCode(
+			long cpInstanceId, String externalReferenceCode)
 		throws PortalException;
 
 	public CPInstance updatePricingInfo(
@@ -985,25 +561,6 @@ public interface CPInstanceLocalService
 	public CPInstance updateStatus(long userId, long cpInstanceId, int status)
 		throws PortalException;
 
-	/**
-	 * @param userId
-	 * @param cpInstanceId
-	 * @param status
-	 * @param serviceContext
-	 * @param workflowContext
-	 * @return
-	 * @throws PortalException
-	 * @deprecated As of Athanasius (7.3.x), use {@link #updateStatus(long,
-	 long, int)}
-	 */
-	@Deprecated
-	@Indexable(type = IndexableType.REINDEX)
-	public CPInstance updateStatus(
-			long userId, long cpInstanceId, int status,
-			ServiceContext serviceContext,
-			Map<String, Serializable> workflowContext)
-		throws PortalException;
-
 	@Indexable(type = IndexableType.REINDEX)
 	public CPInstance updateSubscriptionInfo(
 			long cpInstanceId, boolean overrideSubscriptionInfo,
@@ -1016,16 +573,19 @@ public interface CPInstanceLocalService
 			long deliveryMaxSubscriptionCycles)
 		throws PortalException;
 
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	public CPInstance updateSubscriptionInfo(
-			long cpInstanceId, boolean overrideSubscriptionInfo,
-			boolean subscriptionEnabled, int subscriptionLength,
-			String subscriptionType,
-			UnicodeProperties subscriptionTypeSettingsUnicodeProperties,
-			long maxSubscriptionCycles, ServiceContext serviceContext)
-		throws PortalException;
+	@Override
+	@Transactional(enabled = false)
+	public CTPersistence<CPInstance> getCTPersistence();
+
+	@Override
+	@Transactional(enabled = false)
+	public Class<CPInstance> getModelClass();
+
+	@Override
+	@Transactional(rollbackFor = Throwable.class)
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CPInstance>, R, E>
+				updateUnsafeFunction)
+		throws E;
 
 }

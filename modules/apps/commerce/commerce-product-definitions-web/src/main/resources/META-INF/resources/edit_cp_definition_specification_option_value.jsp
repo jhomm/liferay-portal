@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,6 +16,8 @@ List<CPOptionCategory> cpOptionCategories = cpDefinitionSpecificationOptionValue
 CPSpecificationOption cpSpecificationOption = cpDefinitionSpecificationOptionValue.getCPSpecificationOption();
 
 long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionValue, request, "CPOptionCategoryId");
+
+Map<String, List<SelectOption>> selectOptionsMap = cpDefinitionSpecificationOptionValueDisplayContext.getSelectOptionsMap();
 %>
 
 <portlet:actionURL name="/cp_definitions/edit_cp_definition_specification_option_value" var="editProductDefinitionSpecificationOptionValueActionURL" />
@@ -40,12 +33,30 @@ long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionV
 			<aui:input name="redirect" type="hidden" value="<%= currentURL %>" />
 			<aui:input name="cpDefinitionSpecificationOptionValueId" type="hidden" value="<%= String.valueOf(cpDefinitionSpecificationOptionValue.getCPDefinitionSpecificationOptionValueId()) %>" />
 
-			<aui:field-wrapper label='<%= LanguageUtil.get(resourceBundle, "value") %>' name="valueFieldWrapper">
-				<liferay-ui:input-localized
-					name="value"
-					xml="<%= (cpDefinitionSpecificationOptionValue == null) ? StringPool.BLANK : cpDefinitionSpecificationOptionValue.getValue() %>"
-				/>
-			</aui:field-wrapper>
+			<liferay-ui:error exception="<%= CPDefinitionSpecificationOptionValueKeyException.class %>" message="please-enter-a-valid-key" />
+
+			<c:choose>
+				<c:when test="<%= selectOptionsMap.isEmpty() %>">
+					<aui:field-wrapper label='<%= LanguageUtil.get(resourceBundle, "value") %>' name="valueFieldWrapper">
+						<liferay-ui:input-localized
+							name="value"
+							xml="<%= (cpDefinitionSpecificationOptionValue == null) ? StringPool.BLANK : cpDefinitionSpecificationOptionValue.getValue() %>"
+						/>
+					</aui:field-wrapper>
+				</c:when>
+				<c:otherwise>
+					<div>
+						<react:component
+							module="{CPDefinitionSpecificationOptionValueGroupOption} from commerce-product-definitions-web"
+							props='<%=
+								HashMapBuilder.<String, Object>put(
+									"selectOptionsMap", selectOptionsMap
+								).build()
+							%>'
+						/>
+					</div>
+				</c:otherwise>
+			</c:choose>
 
 			<aui:select label="group" name="CPOptionCategoryId" showEmptyOption="<%= true %>">
 
@@ -61,6 +72,8 @@ long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionV
 
 			</aui:select>
 
+			<aui:input label="key" name="key" required="<%= true %>" value="<%= cpDefinitionSpecificationOptionValue.getKey() %>" />
+
 			<%
 			NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
 
@@ -71,6 +84,8 @@ long cpOptionCategoryId = BeanParamUtil.getLong(cpDefinitionSpecificationOptionV
 				<aui:validator name="min">[0]</aui:validator>
 				<aui:validator name="number" />
 			</aui:input>
+
+			<aui:input checked="<%= (cpDefinitionSpecificationOptionValue == null) ? cpSpecificationOption.isVisible() : cpDefinitionSpecificationOptionValue.isVisible() %>" inlineLabel="right" label="visible" labelCssClass="simple-toggle-switch" name="visible" type="toggle-switch" />
 
 			<c:if test="<%= cpDefinitionSpecificationOptionValueDisplayContext.hasCustomAttributesAvailable() %>">
 				<liferay-expando:custom-attribute-list

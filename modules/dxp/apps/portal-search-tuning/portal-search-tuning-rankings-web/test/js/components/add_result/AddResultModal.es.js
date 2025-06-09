@@ -1,12 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 import {useModal} from '@clayui/modal';
@@ -14,8 +8,7 @@ import {
 	fireEvent,
 	getByPlaceholderText,
 	render,
-	wait,
-	waitForElement,
+	waitForElementToBeRemoved,
 } from '@testing-library/react';
 import React from 'react';
 
@@ -39,7 +32,7 @@ const AddResultModalWithModalMock = (props) => {
 
 	return (
 		<AddResultModal
-			fetchDocumentsSearchUrl={FETCH_SEARCH_DOCUMENTS_URL}
+			fetchDocumentsSearchURL={FETCH_SEARCH_DOCUMENTS_URL}
 			observer={observer}
 			onAddResultSubmit={jest.fn()}
 			onClose={onClose}
@@ -53,19 +46,16 @@ const AddResultModalWithModalMock = (props) => {
  * list of results.
  * @param {function} getByTestId The query for the modal.
  */
-async function openResultsList(getByTestId) {
-	await waitForElement(() => getByTestId(MODAL_ID));
+async function openResultsList(findByTestId) {
+	const modal = await findByTestId(MODAL_ID);
 
-	const input = getByPlaceholderText(
-		getByTestId(MODAL_ID),
-		'search-the-engine'
-	);
+	const input = getByPlaceholderText(modal, 'search-the-engine');
 
 	fireEvent.change(input, {target: {value: 'test'}});
 
 	fireEvent.keyDown(input, {key: 'Enter', keyCode: 13, which: 13});
 
-	await waitForElement(() => getByTestId(RESULTS_LIST_ID));
+	await findByTestId(RESULTS_LIST_ID);
 }
 
 describe('AddResultModal', () => {
@@ -92,11 +82,9 @@ describe('AddResultModal', () => {
 
 		fetch.mockResponse(JSON.stringify({}));
 
-		const {getByTestId} = render(<AddResultModalWithModalMock />);
+		const {findByTestId} = render(<AddResultModalWithModalMock />);
 
-		await waitForElement(() => getByTestId(MODAL_ID));
-
-		const modal = getByTestId(MODAL_ID);
+		const modal = await findByTestId(MODAL_ID);
 
 		expect(modal).toHaveTextContent('search-the-engine');
 
@@ -106,13 +94,13 @@ describe('AddResultModal', () => {
 	it('searches for results and calls the onAddResultSubmit function after add is pressed', async () => {
 		const onAddResultSubmit = jest.fn();
 
-		const {getByTestId, getByText} = render(
+		const {findByTestId, getByTestId, getByText} = render(
 			<AddResultModalWithModalMock
 				onAddResultSubmit={onAddResultSubmit}
 			/>
 		);
 
-		await openResultsList(getByTestId);
+		await openResultsList(findByTestId);
 
 		fireEvent.click(
 			getByTestId('100').querySelector('.custom-control-input')
@@ -124,62 +112,62 @@ describe('AddResultModal', () => {
 	});
 
 	it('disables the add button when the selected results are empty', async () => {
-		const {getByTestId, getByText} = render(
+		const {findByTestId, getByText} = render(
 			<AddResultModalWithModalMock />
 		);
 
-		await waitForElement(() => getByTestId(MODAL_ID));
+		await findByTestId(MODAL_ID);
 
 		expect(getByText('add')).toBeDisabled();
 	});
 
 	it('shows the results in the modal after enter key is pressed', async () => {
-		const {getByTestId} = render(<AddResultModalWithModalMock />);
+		const {findByTestId} = render(<AddResultModalWithModalMock />);
 
-		await openResultsList(getByTestId);
+		await openResultsList(findByTestId);
 
-		const modal = getByTestId(MODAL_ID);
+		const modal = await findByTestId(MODAL_ID);
 
 		expect(modal).toHaveTextContent('100 This is a Document Example');
 		expect(modal).toHaveTextContent('109 This is a Web Content Example');
 	});
 
 	it('does not show the prompt in the modal after enter key is pressed', async () => {
-		const {getByTestId} = render(<AddResultModalWithModalMock />);
+		const {findByTestId} = render(<AddResultModalWithModalMock />);
 
-		await openResultsList(getByTestId);
+		await openResultsList(findByTestId);
 
-		const modal = getByTestId(MODAL_ID);
+		const modal = await findByTestId(MODAL_ID);
 
-		expect(modal).not.toHaveTextContent('sorry-there-are-no-results-found');
+		expect(modal).not.toHaveTextContent('sorry,-no-results-were-found');
 	});
 
 	it('closes the modal when the cancel button gets clicked', async () => {
-		const {getByText, queryByTestId} = render(
+		const {findByTestId, getByText, queryByTestId} = render(
 			<AddResultModalWithModalMock />
 		);
 
-		await waitForElement(() => queryByTestId(MODAL_ID));
+		await findByTestId(MODAL_ID);
 
 		fireEvent.click(getByText('cancel'));
 
-		await wait(() => {
-			expect(queryByTestId(MODAL_ID)).toBeNull();
-		});
+		await waitForElementToBeRemoved(queryByTestId(MODAL_ID));
+
+		expect(queryByTestId(MODAL_ID)).toBeNull();
 	});
 
 	it('shows next page results in the modal after navigation is pressed', async () => {
 		const onAddResultSubmit = jest.fn();
 
-		const {getByTestId} = render(
+		const {findByTestId} = render(
 			<AddResultModalWithModalMock
 				onAddResultSubmit={onAddResultSubmit}
 			/>
 		);
 
-		await openResultsList(getByTestId);
+		await openResultsList(findByTestId);
 
-		const modal = getByTestId(MODAL_ID);
+		const modal = await findByTestId(MODAL_ID);
 
 		fetch.mockResponse(JSON.stringify(getMockResultsData(10, 10)));
 
@@ -187,7 +175,7 @@ describe('AddResultModal', () => {
 
 		const nextPageStartId = START_ID + 10;
 
-		await waitForElement(() => getByTestId(`${nextPageStartId}`));
+		await findByTestId(`${nextPageStartId}`);
 
 		expect(modal).not.toHaveTextContent('100 This is a Document Example');
 		expect(modal).not.toHaveTextContent(
@@ -200,23 +188,24 @@ describe('AddResultModal', () => {
 	it('updates results count in the modal after page delta is pressed', async () => {
 		const onAddResultSubmit = jest.fn();
 
-		const {getByTestId, queryAllByText} = render(
+		const {findByTestId, queryAllByText} = render(
 			<AddResultModalWithModalMock
 				onAddResultSubmit={onAddResultSubmit}
 			/>
 		);
 
-		await openResultsList(getByTestId);
+		await openResultsList(findByTestId);
 
-		const modal = getByTestId(MODAL_ID);
+		const modal = await findByTestId(MODAL_ID);
 
 		fetch.mockResponse(JSON.stringify(getMockResultsData(50, 0)));
 
-		await waitForElement(() => getByTestId(RESULTS_LIST_ID));
+		await findByTestId(RESULTS_LIST_ID);
 
+		fireEvent.click(queryAllByText('x-items')[0]);
 		fireEvent.click(queryAllByText('x-items')[4]);
 
-		await waitForElement(() => getByTestId('110'));
+		await findByTestId('110');
 
 		expect(modal).toHaveTextContent('149 This is a Web Content Example');
 	});

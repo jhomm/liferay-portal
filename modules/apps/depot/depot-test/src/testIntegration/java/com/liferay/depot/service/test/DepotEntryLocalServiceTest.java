@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.service.test;
@@ -48,6 +39,7 @@ import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
+import com.liferay.portal.test.rule.PermissionCheckerMethodTestRule;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,7 +64,9 @@ public class DepotEntryLocalServiceTest {
 	@ClassRule
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
-		new LiferayIntegrationTestRule();
+		new AggregateTestRule(
+			new LiferayIntegrationTestRule(),
+			PermissionCheckerMethodTestRule.INSTANCE);
 
 	@Test
 	public void testAddDepotEntry() throws Exception {
@@ -146,7 +140,7 @@ public class DepotEntryLocalServiceTest {
 	public void testDeleteDepotEntry() throws Exception {
 		DepotEntry depotEntry = _addDepotEntry("name", "description");
 
-		_depotEntryLocalService.deleteDepotEntry(depotEntry);
+		_depotEntryLocalService.deleteDepotEntry(depotEntry.getDepotEntryId());
 
 		_depotEntries.remove(depotEntry);
 
@@ -183,18 +177,10 @@ public class DepotEntryLocalServiceTest {
 	public void testUpdateDepotEntryDeleteDefaultLocale() throws Exception {
 		DepotEntry depotEntry = _addDepotEntry("name", "description");
 
-		UnicodeProperties formTypeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
 		Set<Locale> availableLocales = new HashSet<>();
 
 		availableLocales.add(LocaleUtil.getDefault());
 		availableLocales.add(LocaleUtil.fromLanguageId("es_ES"));
-
-		String[] locales = LocaleUtil.toLanguageIds(availableLocales);
-
-		formTypeSettingsUnicodeProperties.setProperty(
-			PropsKeys.LOCALES, StringUtil.merge(locales));
 
 		_depotEntryLocalService.updateDepotEntry(
 			depotEntry.getDepotEntryId(),
@@ -208,7 +194,11 @@ public class DepotEntryLocalServiceTest {
 			).put(
 				LocaleUtil.fromLanguageId("es_ES"), "nuevaDescripcion"
 			).build(),
-			Collections.emptyMap(), formTypeSettingsUnicodeProperties,
+			Collections.emptyMap(),
+			UnicodePropertiesBuilder.put(
+				PropsKeys.LOCALES,
+				StringUtil.merge(LocaleUtil.toLanguageIds(availableLocales))
+			).build(),
 			ServiceContextTestUtil.getServiceContext());
 
 		Group group = _groupLocalService.getGroup(depotEntry.getGroupId());
@@ -224,11 +214,6 @@ public class DepotEntryLocalServiceTest {
 	public void testUpdateDepotEntryInheritLocale() throws Exception {
 		DepotEntry depotEntry = _addDepotEntry("name", "description");
 
-		UnicodeProperties formTypeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
-		formTypeSettingsUnicodeProperties.setProperty("inheritLocales", "true");
-
 		_depotEntryLocalService.updateDepotEntry(
 			depotEntry.getDepotEntryId(),
 			HashMapBuilder.put(
@@ -237,7 +222,10 @@ public class DepotEntryLocalServiceTest {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), "newDescription"
 			).build(),
-			Collections.emptyMap(), formTypeSettingsUnicodeProperties,
+			Collections.emptyMap(),
+			UnicodePropertiesBuilder.put(
+				"inheritLocales", "true"
+			).build(),
 			ServiceContextTestUtil.getServiceContext());
 
 		Group group = _groupLocalService.getGroup(depotEntry.getGroupId());
@@ -327,13 +315,6 @@ public class DepotEntryLocalServiceTest {
 
 		DepotEntry depotEntry = _addDepotEntry("name", "description");
 
-		UnicodeProperties formTypeSettingsUnicodeProperties =
-			new UnicodeProperties();
-
-		formTypeSettingsUnicodeProperties.setProperty(
-			"inheritLocales", "false");
-		formTypeSettingsUnicodeProperties.setProperty(PropsKeys.LOCALES, null);
-
 		_depotEntryLocalService.updateDepotEntry(
 			depotEntry.getDepotEntryId(),
 			HashMapBuilder.put(
@@ -346,7 +327,10 @@ public class DepotEntryLocalServiceTest {
 			).put(
 				LocaleUtil.fromLanguageId("es_ES"), "descripcion"
 			).build(),
-			Collections.emptyMap(), formTypeSettingsUnicodeProperties,
+			Collections.emptyMap(),
+			UnicodePropertiesBuilder.put(
+				"inheritLocales", "false"
+			).build(),
 			ServiceContextTestUtil.getServiceContext());
 	}
 

@@ -1,21 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.service;
 
 import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.model.LayoutSet;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
 import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
@@ -27,6 +19,10 @@ import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersisten
  */
 public class LayoutSetLocalServiceWrapper
 	implements LayoutSetLocalService, ServiceWrapper<LayoutSetLocalService> {
+
+	public LayoutSetLocalServiceWrapper() {
+		this(null);
+	}
 
 	public LayoutSetLocalServiceWrapper(
 		LayoutSetLocalService layoutSetLocalService) {
@@ -249,8 +245,8 @@ public class LayoutSetLocalServiceWrapper
 	}
 
 	@Override
-	public LayoutSet fetchLayoutSetByLogoId(boolean privateLayout, long logoId)
-		throws com.liferay.portal.kernel.exception.PortalException {
+	public LayoutSet fetchLayoutSetByLogoId(
+		boolean privateLayout, long logoId) {
 
 		return _layoutSetLocalService.fetchLayoutSetByLogoId(
 			privateLayout, logoId);
@@ -356,6 +352,15 @@ public class LayoutSetLocalServiceWrapper
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _layoutSetLocalService.getPersistedModel(primaryKeyObj);
+	}
+
+	@Override
+	public LayoutSet updateFaviconFileEntryId(
+			long groupId, boolean privateLayout, long faviconFileEntryId)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _layoutSetLocalService.updateFaviconFileEntryId(
+			groupId, privateLayout, faviconFileEntryId);
 	}
 
 	/**
@@ -470,6 +475,11 @@ public class LayoutSetLocalServiceWrapper
 
 		return _layoutSetLocalService.updateVirtualHosts(
 			groupId, privateLayout, virtualHostnames);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _layoutSetLocalService.getBasePersistence();
 	}
 
 	@Override

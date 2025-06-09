@@ -1,36 +1,27 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 CKEDITOR.on(
 	'dialogDefinition',
 	(event) => {
 		if (event.editor === ckEditor) {
-			var boundingWindow = event.editor.window;
+			const boundingWindow = event.editor.window;
 
-			var dialogName = event.data.name;
+			const dialogName = event.data.name;
 
-			var dialogDefinition = event.data.definition;
+			const dialogDefinition = event.data.definition;
 
-			var dialog = event.data.dialog;
+			const dialog = event.data.dialog;
 
-			var onShow = dialogDefinition.onShow;
+			const onShow = dialogDefinition.onShow;
 
-			var centerDialog = function () {
-				var dialogSize = dialog.getSize();
+			const centerDialog = function () {
+				const dialogSize = dialog.getSize();
 
-				var x = window.innerWidth / 2 - dialogSize.width / 2;
-				var y = window.innerHeight / 2 - dialogSize.height / 2;
+				const x = window.innerWidth / 2 - dialogSize.width / 2;
+				const y = window.innerHeight / 2 - dialogSize.height / 2;
 
 				dialog.move(x, y, false);
 			};
@@ -43,9 +34,9 @@ CKEDITOR.on(
 				centerDialog();
 			};
 
-			var debounce = function (fn, delay) {
+			const debounce = function (fn, delay) {
 				return function debounced() {
-					var args = arguments;
+					const args = arguments;
 					clearTimeout(debounced.id);
 					debounced.id = setTimeout(() => {
 						fn.apply(null, args);
@@ -60,7 +51,7 @@ CKEDITOR.on(
 				}, 250)
 			);
 
-			var infoTab;
+			let infoTab;
 
 			if (dialogName === 'cellProperties') {
 				infoTab = dialogDefinition.getContents('info');

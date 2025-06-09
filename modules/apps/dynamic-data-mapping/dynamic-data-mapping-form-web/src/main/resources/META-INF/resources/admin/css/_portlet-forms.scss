@@ -1,14 +1,21 @@
 .portlet-forms {
 	.ddm-form-builder {
 		.multi-panel-sidebar {
-			top: 168px;
+			height: calc(
+				100vh - var(--control-menu-container-height) - #{$form-navigation-bar-height +
+					$form-management-bar-height}
+			);
+			top: calc(
+				var(--control-menu-container-height) + #{$form-navigation-bar-height +
+					$form-management-bar-height}
+			);
 		}
 
 		transition: padding ease 0.5s;
 
 		&--sidebar-open {
 			padding-left: 0;
-			padding-right: 338px;
+			padding-right: 408px;
 		}
 	}
 }
@@ -55,7 +62,7 @@
 
 		.ddm-form-name {
 			font-size: 32px;
-			font-weight: 300;
+			font-weight: 600;
 			padding: $baseline * 5 0 0 0;
 
 			p {
@@ -101,6 +108,14 @@
 		font-size: 14px;
 	}
 
+	.horizontal-line {
+		background-color: #cdced9;
+		height: 1px;
+		margin-bottom: 40px;
+		margin-top: 40px;
+		padding: 0 10px;
+	}
+
 	.lfr-ddm-form-page-description {
 		margin-top: 9px;
 	}
@@ -113,6 +128,8 @@
 	}
 
 	.liferay-ddm-form-field-paragraph {
+		overflow-x: auto;
+
 		blockquote {
 			margin: 1em 40px;
 		}
@@ -133,6 +150,7 @@
 		font-size: 28px;
 		margin-bottom: 9px;
 		margin-top: 0;
+		overflow-wrap: break-word;
 	}
 
 	.management-bar {

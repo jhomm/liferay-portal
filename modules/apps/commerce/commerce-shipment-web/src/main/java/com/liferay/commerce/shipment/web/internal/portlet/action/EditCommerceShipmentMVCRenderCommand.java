@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.shipment.web.internal.portlet.action;
@@ -21,17 +12,25 @@ import com.liferay.commerce.product.service.CommerceChannelService;
 import com.liferay.commerce.service.CommerceAddressService;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
+import com.liferay.commerce.service.CommerceShipmentItemService;
+import com.liferay.commerce.service.CommerceShippingMethodService;
 import com.liferay.commerce.shipment.web.internal.display.context.CommerceShipmentDisplayContext;
+import com.liferay.commerce.shipment.web.internal.portlet.action.helper.ActionHelper;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCRenderCommand;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.resource.PortletResourcePermission;
 import com.liferay.portal.kernel.service.CountryService;
 import com.liferay.portal.kernel.service.RegionService;
+import com.liferay.portal.kernel.theme.PortletDisplay;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import javax.portlet.PortletException;
-import javax.portlet.RenderRequest;
-import javax.portlet.RenderResponse;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.RenderRequest;
+import jakarta.portlet.RenderResponse;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -40,9 +39,8 @@ import org.osgi.service.component.annotations.Reference;
  * @author Alessio Antonio Rendina
  */
 @Component(
-	enabled = false, immediate = true,
 	property = {
-		"javax.portlet.name=" + CommercePortletKeys.COMMERCE_SHIPMENT,
+		"jakarta.portlet.name=" + CommercePortletKeys.COMMERCE_SHIPMENT,
 		"mvc.command.name=/commerce_shipment/edit_commerce_shipment"
 	},
 	service = MVCRenderCommand.class
@@ -59,13 +57,51 @@ public class EditCommerceShipmentMVCRenderCommand implements MVCRenderCommand {
 				_actionHelper, _commerceAddressFormatter,
 				_commerceAddressService, _commerceChannelService,
 				_commerceOrderItemService, _commerceOrderLocalService,
+				_commerceShipmentItemService, _commerceShippingMethodService,
 				_countryService, _portal.getHttpServletRequest(renderRequest),
 				_portletResourcePermission, _regionService);
 
 		renderRequest.setAttribute(
 			WebKeys.PORTLET_DISPLAY_CONTEXT, commerceShipmentDisplayContext);
 
+		_populatePortletDisplay(renderRequest);
+
 		return "/edit_commerce_shipment.jsp";
+	}
+
+	private void _populatePortletDisplay(RenderRequest renderRequest) {
+		ThemeDisplay themeDisplay = (ThemeDisplay)renderRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
+
+		PortletDisplay portletDisplay = themeDisplay.getPortletDisplay();
+
+		portletDisplay.setShowBackIcon(true);
+
+		long commerceOrderId = ParamUtil.getLong(
+			renderRequest, "commerceOrderId");
+
+		if (commerceOrderId > 0) {
+			portletDisplay.setURLBack(
+				PortletURLBuilder.create(
+					_portal.getControlPanelPortletURL(
+						renderRequest, CommercePortletKeys.COMMERCE_ORDER,
+						PortletRequest.RENDER_PHASE)
+				).setMVCRenderCommandName(
+					"/commerce_order/edit_commerce_order"
+				).setParameter(
+					"commerceOrderId", commerceOrderId
+				).setParameter(
+					"screenNavigationCategoryKey", "shipments"
+				).buildString());
+		}
+		else {
+			portletDisplay.setURLBack(
+				PortletURLBuilder.create(
+					_portal.getControlPanelPortletURL(
+						renderRequest, CommercePortletKeys.COMMERCE_SHIPMENT,
+						PortletRequest.RENDER_PHASE)
+				).buildString());
+		}
 	}
 
 	@Reference
@@ -85,6 +121,12 @@ public class EditCommerceShipmentMVCRenderCommand implements MVCRenderCommand {
 
 	@Reference
 	private CommerceOrderLocalService _commerceOrderLocalService;
+
+	@Reference
+	private CommerceShipmentItemService _commerceShipmentItemService;
+
+	@Reference
+	private CommerceShippingMethodService _commerceShippingMethodService;
 
 	@Reference
 	private CountryService _countryService;

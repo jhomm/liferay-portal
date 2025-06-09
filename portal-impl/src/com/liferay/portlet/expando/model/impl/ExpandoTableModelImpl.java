@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.expando.model.impl;
@@ -30,7 +21,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -225,85 +215,76 @@ public class ExpandoTableModelImpl
 	public Map<String, Function<ExpandoTable, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<ExpandoTable, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, ExpandoTable>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			ExpandoTable.class.getClassLoader(), ExpandoTable.class,
-			ModelWrapper.class);
+		private static final Map<String, Function<ExpandoTable, Object>>
+			_attributeGetterFunctions;
 
-		try {
-			Constructor<ExpandoTable> constructor =
-				(Constructor<ExpandoTable>)proxyClass.getConstructor(
-					InvocationHandler.class);
+		static {
+			Map<String, Function<ExpandoTable, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap<String, Function<ExpandoTable, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
+			attributeGetterFunctions.put(
+				"mvccVersion", ExpandoTable::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId", ExpandoTable::getCtCollectionId);
+			attributeGetterFunctions.put("tableId", ExpandoTable::getTableId);
+			attributeGetterFunctions.put(
+				"companyId", ExpandoTable::getCompanyId);
+			attributeGetterFunctions.put(
+				"classNameId", ExpandoTable::getClassNameId);
+			attributeGetterFunctions.put("name", ExpandoTable::getName);
 
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
 		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
+
 	}
 
-	private static final Map<String, Function<ExpandoTable, Object>>
-		_attributeGetterFunctions;
-	private static final Map<String, BiConsumer<ExpandoTable, Object>>
-		_attributeSetterBiConsumers;
+	private static class AttributeSetterBiConsumersHolder {
 
-	static {
-		Map<String, Function<ExpandoTable, Object>> attributeGetterFunctions =
-			new LinkedHashMap<String, Function<ExpandoTable, Object>>();
-		Map<String, BiConsumer<ExpandoTable, ?>> attributeSetterBiConsumers =
-			new LinkedHashMap<String, BiConsumer<ExpandoTable, ?>>();
+		private static final Map<String, BiConsumer<ExpandoTable, Object>>
+			_attributeSetterBiConsumers;
 
-		attributeGetterFunctions.put(
-			"mvccVersion", ExpandoTable::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<ExpandoTable, Long>)ExpandoTable::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", ExpandoTable::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<ExpandoTable, Long>)ExpandoTable::setCtCollectionId);
-		attributeGetterFunctions.put("tableId", ExpandoTable::getTableId);
-		attributeSetterBiConsumers.put(
-			"tableId",
-			(BiConsumer<ExpandoTable, Long>)ExpandoTable::setTableId);
-		attributeGetterFunctions.put("companyId", ExpandoTable::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<ExpandoTable, Long>)ExpandoTable::setCompanyId);
-		attributeGetterFunctions.put(
-			"classNameId", ExpandoTable::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<ExpandoTable, Long>)ExpandoTable::setClassNameId);
-		attributeGetterFunctions.put("name", ExpandoTable::getName);
-		attributeSetterBiConsumers.put(
-			"name", (BiConsumer<ExpandoTable, String>)ExpandoTable::setName);
+		static {
+			Map<String, BiConsumer<ExpandoTable, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap<String, BiConsumer<ExpandoTable, ?>>();
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<ExpandoTable, Long>)ExpandoTable::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<ExpandoTable, Long>)
+					ExpandoTable::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"tableId",
+				(BiConsumer<ExpandoTable, Long>)ExpandoTable::setTableId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<ExpandoTable, Long>)ExpandoTable::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<ExpandoTable, Long>)ExpandoTable::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"name",
+				(BiConsumer<ExpandoTable, String>)ExpandoTable::setName);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@JSON
@@ -666,41 +647,12 @@ public class ExpandoTableModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<ExpandoTable, Object>> attributeGetterFunctions =
-			getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<ExpandoTable, Object>> entry :
-				attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<ExpandoTable, Object> attributeGetterFunction =
-				entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(attributeGetterFunction.apply((ExpandoTable)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function<InvocationHandler, ExpandoTable>
-			_escapedModelProxyProviderFunction = _getProxyProviderFunction();
+			_escapedModelProxyProviderFunction =
+				ProxyUtil.getProxyProviderFunction(
+					ExpandoTable.class, ModelWrapper.class);
 
 	}
 
@@ -712,8 +664,9 @@ public class ExpandoTableModelImpl
 	private String _name;
 
 	public <T> T getColumnValue(String columnName) {
-		Function<ExpandoTable, Object> function = _attributeGetterFunctions.get(
-			columnName);
+		Function<ExpandoTable, Object> function =
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

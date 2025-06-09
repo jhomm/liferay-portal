@@ -1,0 +1,217 @@
+@component-name = "portal-content-management"
+definition {
+
+	property portal.release = "true";
+	property portal.upstream = "true";
+	property testray.main.component.name = "Documents and Media";
+
+	setUp {
+		TestCase.setUpPortalInstance();
+
+		User.firstLoginPG();
+
+		DMNavigator.openToConfigInSystemSettings(portlet = "FFMPEG Video Converter");
+
+		FormFields.enableCheckbox(fieldName = "enabled");
+
+		SystemSettings.saveConfiguration();
+
+		Clustering.shutdownSpecificServer(nodePort = 8080);
+
+		Clustering.startSpecificServer(
+			deleteLiferayHome = "true",
+			keepCachedAppServerData = "true",
+			nodePort = 8080);
+
+		HeadlessSite.addSite(siteName = "Site Name");
+
+		JSONLayout.addPublicLayout(
+			groupName = "Site Name",
+			layoutName = "Test Page");
+
+		JSONDepot.addDepot(
+			depotDescription = "This is the description of a depot",
+			depotName = "Test Depot Name");
+	}
+
+	tearDown {
+		var testLiferayVirtualInstance = PropsUtil.get("test.liferay.virtual.instance");
+
+		if (${testLiferayVirtualInstance} == "true") {
+			PortalInstances.tearDownCP();
+		}
+		else {
+			JSONDepot.deleteDepot(depotName = "Test Depot Name");
+
+			JSONGroup.deleteGroupByName(groupName = "Site Name");
+
+			User.logoutPG();
+		}
+	}
+
+	@description = "This test ensures that a web content can be published successfully after editing the embedded video."
+	@priority = 4
+	@refactordone
+	test CanPublishWCAfterEditingEmbeddedVideo {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		for (var entryCount : list "1,2") {
+			JSONDocument.addFileWithUploadedFile(
+				dmDocumentDescription = "DM Document Description",
+				dmDocumentTitle = "DM Video Title${entryCount}",
+				groupName = "Site Name",
+				mimeType = "video/mp4",
+				sourceFileName = "Document_${entryCount}.mp4");
+		}
+
+		JSONStaging.enableLocalStaging(groupName = "Site Name");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
+
+		WebContentNavigator.gotoAddCP();
+
+		WebContent.addCP(
+			embedVideo = "true",
+			navTab = "Documents and Media",
+			videoShortcutTitle = "DM Video Title1",
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC WebContent Title");
+
+		WebContent.publishWithPermissions();
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
+
+		WebContentNavigator.gotoPreviewEntryCP(
+			liveSite = "true",
+			webContentTitle = "WC WebContent Title");
+
+		WaitForVisible(locator1 = "IFrame#MODAL_BODY");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_1.mp4");
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name-staging");
+
+		WebContentNavigator.gotoEditCP(webContentTitle = "WC WebContent Title");
+
+		WebContent.editCP(
+			embedVideo = "true",
+			navTab = "Documents and Media",
+			videoShortcutTitle = "DM Video Title2",
+			webContentTitle = "WC WebContent Title",
+			webContentTitleEdit = "WC WebContent Title Edit");
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		WebContentNavigator.openWebContentAdmin(siteURLKey = "site-name");
+
+		WebContentNavigator.gotoPreviewEntryCP(
+			liveSite = "true",
+			webContentTitle = "WC WebContent Title");
+
+		WaitForVisible(locator1 = "IFrame#MODAL_BODY");
+
+		SelectFrame(locator1 = "IFrame#MODAL_BODY");
+
+		DMDocument.viewInternalVideoPreview(videoName = "Document_2.mp4");
+	}
+
+	@description = "This test ensures that a video reference can be removed after republishing a KB article"
+	@e2etest
+	@priority = 4
+	@refactordone
+	test CanRemoveVideoReferenceAfterRepublishingKBArticle {
+		property portal.acceptance = "true";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
+
+		JSONDepot.connectSite(
+			depotName = "Test Depot Name",
+			groupName = "Site Name");
+
+		JSONStaging.enableLocalStaging(
+			groupName = "Test Depot Name",
+			site = "false");
+
+		JSONStaging.enableLocalStaging(groupName = "Site Name");
+
+		JSONDocument.addFileWithUploadedFile(
+			dmDocumentDescription = "DM Document Description",
+			dmDocumentTitle = "DM Video Title In Depot",
+			groupName = "Test Depot Name-staging",
+			mimeType = "video/mp4",
+			sourceFileName = "Document_1.mp4");
+
+		DepotNavigator.openDepotDocumentsAndMediaAdminStaging(depotName = "Test Depot Name");
+
+		DepotNavigator.switchStagingStatus(stagingItem = "Publish to Live");
+
+		Staging.publishToLive();
+
+		KBAdmin.openKBAdmin(siteURLKey = "site-name-staging");
+
+		KBArticle.addCP(
+			depotName = "Test Depot Name",
+			embedVideo = "true",
+			kbArticleContent = "Knowledge Base Video Content",
+			kbArticleTitle = "Knowledge Base Article Title",
+			navTab = "Documents and Media",
+			videoName = "Document_1.mp4",
+			videoShortcutTitle = "DM Video Title In Depot",
+			viewInternalVideoPreview = "true");
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		KBAdmin.openKBAdmin(siteURLKey = "site-name-staging");
+
+		KBArticle.editCP(
+			kbArticleContentEdit = "Knowledge Base Article Content Edit",
+			kbArticleTitle = "Knowledge Base Article Title",
+			kbArticleTitleEdit = "Knowledge Base Article Title Edit");
+
+		Navigator.gotoStagedSitePage(
+			pageName = "Test Page",
+			siteName = "Site Name");
+
+		Staging.gotoPublishToLive();
+
+		Staging.publishToLive();
+
+		KBAdmin.openKBAdmin(siteURLKey = "site-name");
+
+		AssertClick(
+			key_kbArticleTitle = "Knowledge Base Article Title Edit",
+			locator1 = "KnowledgeBase#DESCRIPTIVE_VIEW_ARTICLE_TITLE",
+			value1 = "Knowledge Base Article Title Edit");
+
+		AssertElementNotPresent(locator1 = "IFrame#EMBEDDED_VIDEO_IFRAME");
+
+		AssertElementNotPresent(
+			key_videoName = "Document_1.mp4",
+			locator1 = "DocumentsAndMediaDocument#VIDEO_PREVIEW");
+	}
+
+}

@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -25,11 +16,9 @@ long commercePriceEntryId = commerceTierPriceEntryDisplayContext.getCommercePric
 long commercePriceListId = commerceTierPriceEntryDisplayContext.getCommercePriceListId();
 long commerceTierPriceEntryId = commerceTierPriceEntryDisplayContext.getCommerceTierPriceEntryId();
 
-BigDecimal price = BigDecimal.ZERO;
 BigDecimal promoPrice = BigDecimal.ZERO;
 
 if (commerceTierPriceEntry != null) {
-	price = commerceTierPriceEntry.getPrice();
 	promoPrice = commerceTierPriceEntry.getPromoPrice();
 }
 
@@ -52,6 +41,9 @@ if ((commerceTierPriceEntry != null) && (commerceTierPriceEntry.getExpirationDat
 		<aui:input name="commercePriceListId" type="hidden" value="<%= commercePriceListId %>" />
 		<aui:input name="commerceTierPriceEntryId" type="hidden" value="<%= commerceTierPriceEntryId %>" />
 
+		<liferay-ui:error exception="<%= CommerceTierPriceEntryMinQuantityException.class %>" message="the-specified-quantity-is-not-allowed" />
+		<liferay-ui:error exception="<%= CommerceTierPriceEntryPriceException.class %>" message="please-enter-a-valid-price" />
+		<liferay-ui:error exception="<%= CommerceTierPriceEntryQuantityException.class %>" message="please-enter-a-valid-quantity" />
 		<liferay-ui:error exception="<%= DuplicateCommerceTierPriceEntryException.class %>" message="there-is-already-a-tier-price-entry-with-the-same-minimum-quantity" />
 
 		<commerce-ui:panel

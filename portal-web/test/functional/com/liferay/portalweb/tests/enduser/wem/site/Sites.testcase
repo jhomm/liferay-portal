@@ -1,320 +1,688 @@
-@component-name = "portal-wcm"
+@component-name = "portal-site-management"
 definition {
 
+	property ci.retries.disabled = "true";
 	property portal.release = "true";
 	property portal.upstream = "true";
-	property testray.component.names = "Site Administration";
-	property testray.main.component.name = "Site Administration";
+	property testray.main.component.name = "Sites Administration";
+
+	static var randomSiteName = StringUtil.randomString(8);
+
+	static var randomSiteURLKey = StringUtil.toLowerCase(${randomSiteName});
 
 	setUp {
-		TestCase.setUpPortalInstance();
-
-		User.firstLoginPG();
-	}
-
-	tearDown {
-		var testPortalInstance = PropsUtil.get("test.portal.instance");
-
-		if ("${testPortalInstance}" == "true") {
-			PortalInstances.tearDownCP();
+		task ("Set up virtual instance") {
+			TestCase.setUpPortalInstance();
 		}
-		else {
-			Site.tearDownCP();
+
+		task ("Sign in") {
+			User.firstLoginPG();
+		}
+
+		task ("Enable dynamic and manual selection") {
+			AssetPublisherPortlet.enableDynamicAndManualSelection();
 		}
 	}
 
-	@priority = "4"
+	@description = "Inactive and reactive site."
+	@priority = 4
 	test ActivateSite {
-		property test.name.skip.portal.instance = "Sites#ActivateSite";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
-		SystemSettings.openSystemSettingsAdmin();
+		task ("Enable Show Inactive Request Message in system setting") {
+			SystemSettings.openSystemSettingsAdmin();
 
-		SystemSettings.gotoConfiguration(
-			configurationCategory = "Infrastructure",
-			configurationName = "Inactive Request Handler",
-			configurationScope = "System Scope");
+			SystemSettings.gotoConfiguration(
+				configurationCategory = "Infrastructure",
+				configurationName = "Inactive Request Handler",
+				configurationScope = "System Scope");
 
-		FormFields.enableCheckbox(fieldName = "Show Inactive Request Message");
+			FormFields.enableCheckbox(fieldName = "Show Inactive Request Message");
 
-		SystemSettings.saveConfiguration();
+			SystemSettings.saveConfiguration();
+		}
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a site and add a page in it") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
 
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
+			JSONLayout.addPublicLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Site Page");
+		}
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+		task ("Inactive the created site") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
-		Site.inactivateCP(siteName = "Site Name");
+			Site.inactivateCP(siteName = ${randomSiteName});
+		}
 
-		var baseURL = PropsUtil.get("portal.url");
+		task ("View Inactive Request Message") {
+			var baseURL = PropsUtil.get("portal.url");
 
-		Navigator.openSpecificURL(url = "${baseURL}/web/site-name");
+			Navigator.openSpecificURL(url = "${baseURL}/web/${randomSiteURLKey}");
 
-		Page.viewInactiveRequestMessage(resource = "site");
+			Page.viewInactiveRequestMessage(resource = "site");
+		}
 
-		Site.openSitesAdmin();
+		task ("Active the created site") {
+			Site.openSitesAdmin();
 
-		Site.activateInactive(siteName = "Site Name");
+			Site.activateInactive(siteName = ${randomSiteName});
+		}
 
-		Navigator.openSiteURL(siteName = "Site Name");
+		task ("View no Inactive Request Message") {
+			Navigator.openSiteURL(siteName = ${randomSiteName});
 
-		AssertTextNotPresent(value1 = "This site is inactive. Please contact the administrator.");
+			AssertTextNotPresent(value1 = "This site is inactive. Please contact the administrator.");
+		}
 	}
 
-	@priority = "4"
+	@description = "Add child site in child site."
+	@priority = 4
 	test AddChildChildSite {
-		JSONGroup.addGroup(groupName = "Site Name");
+		var randomChildSiteName = StringUtil.randomString(8);
+		var grandchildSiteName = StringUtil.randomString(8);
 
-		JSONGroup.addChildGroup(
-			groupName = "Child SiteName",
-			parentGroupName = "Site Name");
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+		}
 
-		JSONGroup.addChildGroup(
-			grandParentGroupName = "Site Name",
-			groupName = "Child Child SiteName",
-			parentGroupName = "Child SiteName");
+		task ("Add a child site to the site") {
+			HeadlessSite.addSite(
+				parentSiteName = ${randomSiteName},
+				siteName = ${randomChildSiteName});
+		}
 
-		Site.openSitesAdmin();
+		task ("Add a child site to the child site") {
+			HeadlessSite.addSite(
+				grandParentSiteName = ${randomSiteName},
+				parentSiteName = ${randomChildSiteName},
+				siteName = ${grandchildSiteName});
+		}
 
-		Site.viewChildCP(
-			childSiteName = "Child SiteName",
-			siteName = "Site Name");
+		task ("View the child site to the site") {
+			Site.openSitesAdmin();
 
-		Site.viewChildCP(
-			childSiteName = "Child Child SiteName",
-			siteName = "Child SiteName");
+			Site.viewChildCP(
+				childSiteName = ${randomChildSiteName},
+				siteName = ${randomSiteName});
+		}
+
+		task ("View the child site to the child site") {
+			Site.viewChildCP(
+				childSiteName = ${grandchildSiteName},
+				siteName = ${randomChildSiteName});
+		}
 	}
 
-	@priority = "3"
+	@description = "View public page via virtual host URL."
+	@priority = 3
 	test AddPublicVirtualHostsSiteURL {
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a site and a page in it") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
 
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
+			JSONLayout.addPublicLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Site Page");
+		}
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+		task ("Add a virtual host to the public page") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
-		Site.addVirtualHostsURLCP(
-			publicPageVirtualHostURL = "www.able.com",
-			publicVirtualHosts = "true");
+			Site.addVirtualHostsURLCP(
+				pageVirtualHosts = "true",
+				pageVirtualHostURL = "www.able.com");
+		}
 
-		Navigator.openSpecificURL(url = "http://www.able.com:8080/site-page");
+		task ("Visit public page by virtual host") {
+			Navigator.openSpecificURL(url = "http://www.able.com:8080/site-page");
 
-		Site.viewVirtualHostsURLPG(
-			pageName = "Site Page",
-			siteName = "Site Name",
-			sitePageURL = "http://www.able.com:8080/site-page");
+			Site.viewVirtualHostsURLPG(
+				pageName = "Site Page",
+				siteName = ${randomSiteName},
+				sitePageURL = "http://www.able.com:8080/site-page");
+		}
 	}
 
-	@priority = "3"
+	@description = "Able to add a site with comma."
+	@priority = 3
 	test AddSiteWithCommaInName {
-		JSONGroup.addGroup(groupName = "Site Name,");
+		task ("Add a site with comma") {
+			HeadlessSite.addSite(siteName = "${randomSiteName},");
+		}
 
-		Site.openSitesAdmin();
+		task ("View the site added") {
+			Site.openSitesAdmin();
 
-		Site.viewCP(siteName = "Site Name,");
+			Site.viewCP(siteName = "${randomSiteName},");
+		}
 	}
 
-	@priority = "3"
+	@description = "Unable to add same site name."
+	@priority = 3
 	test AddSiteWithInvalidDuplicateName {
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+		}
 
-		Site.openSitesAdmin();
-
-		Site.viewCannotAdd(
-			siteName = "Site Name",
-			siteNameInvalid = "Duplicate");
-	}
-
-	@priority = "3"
-	test AddSiteWithInvalidName {
-		for (var siteName : list " ,Site Name*,22222") {
+		task ("Try to add a site with the same name and assert could not add it") {
 			Site.openSitesAdmin();
 
 			Site.viewCannotAdd(
-				siteName = "${siteName}",
+				siteName = ${randomSiteName},
+				siteNameInvalid = "Duplicate");
+		}
+	}
+
+	@description = "Unable to add site name with blank name, invalid characters * and numeric."
+	@priority = 3
+	test AddSiteWithInvalidName {
+		for (var siteName : list " ,${randomSiteName}*,22222") {
+			Site.openSitesAdmin();
+
+			Site.viewCannotAdd(
+				siteName = ${siteName},
 				siteNameInvalid = "Invalid");
 		}
 	}
 
-	@priority = "4"
+	@description = "Deleting firiendly URL makes it not able to access page via fridely URL."
+	@priority = 4
 	test DeleteSiteFriendlyURL {
-		Site.openSitesAdmin();
+		property custom.properties = "virtual.hosts.default.site.name=Guest";
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
 
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Public Page");
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+		}
 
-		JSONLayout.addPrivateLayout(
-			groupName = "Site Name",
-			layoutName = "Private Page");
+		task ("Add a public page and private page to the site") {
+			JSONLayout.addPublicLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Public Page");
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+			JSONLayout.addPrivateLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Private Page");
+		}
 
-		Site.editFriendlyURLCP(siteFriendlyURLEdit = "");
+		task ("Edit friendly URL to null") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
-		var siteID = JSONGroupAPI._getGroupIdByName(groupName = "Site Name", site = "true");
+			Site.editFriendlyURLCP(siteFriendlyURLEdit = "");
+		}
 
-		AssertTextEquals(
-			locator1 = "TextInput#FRIENDLY_URL_SITE_SETTINGS",
-			value1 = "/group-${siteID}");
+		task ("View the the end of firend URL changes to site ID") {
+			var siteId = JSONGroupAPI._getGroupIdByName(
+				groupName = ${randomSiteName},
+				site = "true");
 
-		Navigator.openSiteURL(siteName = "site-name");
+			AssertTextEquals(
+				locator1 = "TextInput#FRIENDLY_URL_SITE_SETTINGS",
+				value1 = "/group-${siteId}");
+		}
 
-		Page.viewNoPG(pageName = "Public Page");
+		task ("Assert can't access public page via old friendly URL") {
+			Navigator.openSiteURL(siteName = ${randomSiteURLKey});
 
-		AssertTextEquals(
-			locator1 = "Home#ERROR_MESSAGE_ALERT_ERROR",
-			value1 = "Not Found");
+			Page.viewNoPG(pageName = "Public Page");
 
-		Navigator.openPrivateSiteURL(siteName = "site-name");
+			ContentPages.viewFragmentText(
+				fragmentName = "paragraph",
+				id = "element-text",
+				text = "Page Not Found");
+		}
 
-		Page.viewNoPG(pageName = "Private Page");
+		task ("Assert can't access private page via old friendly URL") {
+			Navigator.openPrivateSiteURL(siteName = ${randomSiteURLKey});
 
-		AssertTextEquals(
-			locator1 = "Home#ERROR_MESSAGE_ALERT_ERROR",
-			value1 = "Not Found");
+			Page.viewNoPG(pageName = "Private Page");
+
+			ContentPages.viewFragmentText(
+				fragmentName = "paragraph",
+				id = "element-text",
+				text = "Page Not Found");
+		}
 	}
 
-	@priority = "5"
+	@description = "Could edit site name."
+	@priority = 5
 	test EditSite {
 		property portal.acceptance = "true";
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+		}
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+		task ("Edit site name") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
-		Site.editCP(
-			siteName = "Site Name",
-			siteNameEdit = "Site Name Edit");
+			Site.editCP(
+				siteName = ${randomSiteName},
+				siteNameEdit = "${randomSiteName} Edit");
+		}
 
-		Site.openSitesAdmin();
+		task ("View site name edited") {
+			Site.openSitesAdmin();
 
-		Site.viewCP(siteName = "Site Name Edit");
+			Site.viewCP(siteName = "${randomSiteName} Edit");
+		}
 	}
 
-	@priority = "4"
+	@description = "Could edit friendly URL and access by it."
+	@priority = 4
 	test EditSiteFriendlyURL {
+		task ("Enable private pages") {
+			PagesAdmin.enablePrivatePages();
+		}
+
 		var portalURL = PropsUtil.get("portal.url");
 
-		Site.openSitesAdmin();
+		task ("Add a site") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+		}
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a public page and private page to the site") {
+			JSONLayout.addPublicLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Site Page");
 
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
+			JSONLayout.addPrivateLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Site Page");
+		}
 
-		JSONLayout.addPrivateLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
+		task ("Edit friendly URL to alpha") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+			Site.editFriendlyURLCP(siteFriendlyURLEdit = "alpha");
+		}
 
-		Site.editFriendlyURLCP(siteFriendlyURLEdit = "alpha");
+		task ("Access public page via edited friendly URL") {
+			Navigator.openSiteURL(siteName = "alpha");
 
-		Navigator.openSiteURL(siteName = "alpha");
+			Site.viewSiteFriendlyURLPG(
+				pageName = "Public Page",
+				siteName = ${randomSiteName},
+				sitePageURL = "${portalURL}/web/alpha");
+		}
 
-		Site.viewSiteFriendlyURLPG(
-			pageName = "Public Page",
-			siteName = "Site Name",
-			sitePageURL = "${portalURL}/web/alpha");
+		task ("Access private page via edited friendly URL") {
+			Navigator.openPrivateSiteURL(siteName = "alpha");
 
-		Navigator.openPrivateSiteURL(siteName = "alpha");
-
-		Site.viewSiteFriendlyURLPG(
-			pageName = "Private Page",
-			siteName = "Site Name",
-			sitePageURL = "${portalURL}/group/alpha");
+			Site.viewSiteFriendlyURLPG(
+				pageName = "Private Page",
+				siteName = ${randomSiteName},
+				sitePageURL = "${portalURL}/group/alpha");
+		}
 	}
 
-	@priority = "3"
+	@description = "Could not add invalid friendly URL and can access by former friendly URL."
+	@priority = 3
 	test EditSiteFriendlyURLInvalid {
 		property portal.acceptance = "true";
-		property test.name.skip.portal.instance = "Sites#EditSiteFriendlyURLInvalid";
+		property test.liferay.virtual.instance = "false";
+		property test.run.type = "single";
 
 		var portalURL = PropsUtil.get("portal.url");
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a site and a public page in it") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
 
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
+			JSONLayout.addPublicLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Site Page");
+		}
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+		task ("Edit friendly URL to have 2 slashes") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
-		Site.editFriendlyURLCP(
-			friendlyURLInvalid = "true",
-			siteFriendlyURL = "/site-name",
-			siteFriendlyURLEdit = "/alpha/alpha");
+			Site.editFriendlyURLCP(
+				friendlyURLInvalid = "true",
+				siteFriendlyURL = "/${randomSiteURLKey}",
+				siteFriendlyURLEdit = "/alpha/alpha");
+		}
 
-		SitePages.openPagesAdmin(siteURLKey = "site-name");
+		task ("View friendly URL doesn't change") {
+			PagesAdmin.openPagesAdmin(siteURLKey = ${randomSiteURLKey});
 
-		SitePages.gotoPageMenuItem(
-			menuItem = "Configure",
-			pageName = "Site Page");
+			PagesAdmin.gotoPageEllipsisMenuItem(
+				menuItem = "Configure",
+				pageName = "Site Page");
 
-		Page.viewFriendlyURL(
-			pageName = "Site Page",
-			siteFriendlyURL = "${portalURL}/web/site-name");
+			AssertTextEquals(
+				locator1 = "PagesAdmin#DETAILS_FRIENDLY_BASE_URL",
+				value1 = "${portalURL}/web/${randomSiteURLKey}");
+		}
 	}
 
-	@priority = "5"
+	@description = "Able to search and find site by site name."
+	@priority = 5
 	test SearchSite {
 		property portal.acceptance = "true";
 
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = ${randomSiteName});
 
 		Site.openSitesAdmin();
 
-		Site.searchCP(siteName = "Site Name");
+		Site.searchCP(siteName = ${randomSiteName});
 	}
 
-	@priority = "3"
+	@description = "Can not choose its own site as parent site."
+	@priority = 3
 	test SiteCannotBeItsOwnParent {
-		JSONGroup.addGroup(groupName = "Site Name");
+		HeadlessSite.addSite(siteName = ${randomSiteName});
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+		Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
 
 		Site.selectParentSite(
 			chooseButtonAvailable = "false",
-			parentSiteName = "Site Name");
+			parentSiteName = ${randomSiteName});
 	}
 
-	@priority = "3"
+	@description = "Can not choose its own site as parent site in staging."
+	@priority = 3
 	test SiteCannotBeItsOwnParentStaging {
-		JSONGroup.addGroup(groupName = "Site Name");
+		task ("Add a site and a public page in it") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+
+			JSONLayout.addPublicLayout(
+				groupName = ${randomSiteName},
+				layoutName = "Site Page");
+		}
+
+		task ("Enable local staging for the site") {
+			JSONStaging.enableLocalStaging(groupName = ${randomSiteName});
+		}
+
+		task ("View page in staging and live site") {
+			Navigator.openSiteURL(siteName = ${randomSiteName});
+
+			Navigator.gotoStagedView();
+
+			Staging.viewStagingLocalLivePG();
+		}
+
+		task ("Assert could not select its own site as parent site") {
+			Site.openSiteSettingsAdmin(siteURLKey = ${randomSiteURLKey});
+
+			Site.selectParentSite(
+				chooseButtonAvailable = "false",
+				parentSiteName = ${randomSiteName});
+		}
+	}
+
+	@description = "This is a test for LPS-177717. The tooltip of the back button of Sites and Site Templates is Go to Sites."
+	@priority = 3
+	test ViewBackButtonTooltipForSitesAdmin {
+		task ("Given a site administrator accesses to select site template") {
+			Site.openSitesAdmin();
+
+			LexiconEntry.gotoAdd();
+
+			MenuBar.viewActive(menuBar = "Provided by Liferay");
+		}
+
+		task ("When the site administrator hovers over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then the site administrator could see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to Sites",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+
+		task ("Given a site administrator views child sites in Sites admin") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+
+			Navigator.gotoBack();
+
+			LexiconTable.clickTableEntryTitle(tableEntry = ${randomSiteName});
+
+			Breadcrumb.viewActiveEntry(breadcrumbName = ${randomSiteName});
+		}
+
+		task ("When the site administrator hovers over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then the site administrator could see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to Sites",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+	}
+
+	@description = "This is a test for LPS-177717. The tooltip of the back button of a Site child is Go to Site Name."
+	@priority = 3
+	test ViewBackButtonTooltipOfChildSite {
+		task ("Given a site administrator accesses to the child site in Site admin") {
+			HeadlessSite.addSite(siteName = ${randomSiteName});
+
+			HeadlessSite.addSite(
+				parentSiteName = ${randomSiteName},
+				siteName = "Child Site Name");
+
+			HeadlessSite.addSite(
+				grandParentSiteName = ${randomSiteName},
+				parentSiteName = "Child Site Name",
+				siteName = "Grandchild Site Name");
+
+			Site.openSitesAdmin();
+
+			LexiconTable.clickTableEntryTitle(tableEntry = ${randomSiteName});
+
+			Breadcrumb.viewActiveEntry(breadcrumbName = ${randomSiteName});
+
+			LexiconTable.clickTableEntryTitle(tableEntry = "Child Site Name");
+
+			Breadcrumb.viewActiveEntry(breadcrumbName = "Child Site Name");
+		}
+
+		task ("When the site administrator hovers over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then the site administrator could see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to ${randomSiteName}",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+
+		task ("Given a site administrator accesses to the grandchild site in Site admin") {
+			LexiconTable.clickTableEntryTitle(tableEntry = "Grandchild Site Name");
+
+			Breadcrumb.viewActiveEntry(breadcrumbName = "Grandchild Site Name");
+		}
+
+		task ("When the site administrator hovers over the back button") {
+			MouseOver(locator1 = "Icon#BACK");
+		}
+
+		task ("Then the site administrator could see the tooltip message") {
+			AssertVisible(
+				key_content = "Go to Child Site Name",
+				locator1 = "Tooltip#FLOATING_TOOLTIP_CONTENT");
+		}
+	}
+
+	@description = "This is a test case for LRQA-5853. Disbale Content Sharing in instance level and view child Sites doesn't display content from parent Sites."
+	@priority = 4
+	test ViewContentSharingDisabledAcrossSitesViaAP {
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
+		var randomChildSiteName = StringUtil.randomString(8);
+
+		PortalSettings.configureContentSharingAcrossSitesCP(enableAcrossSite = "false");
+
+		PortalSettings.configureContentSharingSubSitesCP(subSites = "enabledByDefault");
+
+		HeadlessSite.addSite(siteName = ${randomSiteName});
 
 		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
+			groupName = ${randomSiteName},
+			layoutName = "AP Test Page");
 
-		Staging.openStagingAdmin(siteURLKey = "site-name");
+		HeadlessSite.addSite(
+			parentSiteName = ${randomSiteName},
+			siteName = ${randomChildSiteName});
 
-		Staging.activateStagingCP(siteName = "Site Name");
+		JSONLayout.addPublicLayout(
+			groupName = ${randomChildSiteName},
+			layoutName = "WC Test Page",
+			parentGroupName = ${randomSiteName});
 
-		Navigator.gotoStagedSitePage(
-			pageName = "Site Page",
-			siteName = "Site Name");
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = ${randomSiteName},
+			layoutName = "AP Test Page",
+			widgetName = "Asset Publisher");
 
-		Staging.viewStagingLocalLivePG();
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = ${randomChildSiteName},
+			layoutName = "WC Test Page",
+			parentGroupName = ${randomSiteName},
+			widgetName = "Web Content Display");
 
-		Site.openSiteSettingsAdmin(siteURLKey = "site-name");
+		Navigator.openSiteURL(siteName = ${randomChildSiteName});
 
-		Site.selectParentSite(
-			chooseButtonAvailable = "false",
-			parentSiteName = "Site Name");
+		WebContentDisplayPortlet.add(
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC WebContent Title");
+
+		WebContentDisplayPortlet.viewContent(
+			webContentContent = "WC WebContent Content",
+			webContentTitle = "WC WebContent Title");
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		AssetPublisherPortlet.configureSiteScopePG(
+			siteName = ${randomChildSiteName},
+			siteScopeType = "Child Site");
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		AssetPublisherPortlet.viewConfigureSiteScopeContentSharingPG(
+			childSite = "true",
+			contentSharingAcrossSitesEnabled = "false",
+			liferaySiteName = ${siteName});
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		AssetPublisherPortlet.viewContentSharingPG(
+			assetContent = "WC WebContent Content",
+			assetTitle = "WC WebContent Title",
+			siteScope1 = ${randomSiteName},
+			siteScope2 = ${randomChildSiteName});
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		Blogs.addViaAPSelectScope(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title",
+			siteScope = ${randomSiteName});
+
+		JSONLayout.addWidgetToPublicLayout(
+			groupName = ${randomChildSiteName},
+			layoutName = "WC Test Page",
+			parentGroupName = ${randomSiteName},
+			widgetName = "Asset Publisher");
+
+		Navigator.openSiteURL(siteName = ${randomChildSiteName});
+
+		AssetPublisherPortlet.configureSiteScopePG(
+			siteName = ${randomSiteName},
+			siteScopeType = "Parent Site");
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		AssetPublisherPortlet.viewConfigureSiteScopeContentSharingPG(
+			childSite = "true",
+			contentSharingAcrossSitesEnabled = "false",
+			liferaySiteName = ${siteName});
+
+		Navigator.openSiteURL(siteName = ${randomChildSiteName});
+
+		AssetPublisherPortlet.viewContentSharingPG(
+			assetContent = "Blogs Entry Content",
+			assetTitle = "Blogs Entry Title",
+			siteScope1 = ${randomSiteName},
+			siteScope2 = ${randomChildSiteName});
 	}
 
-	@priority = "4"
-	test ViewDefaultGlobalScopeLandingPage {
-		property testray.component.names = "Site Administration";
+	@description = "This is a test case for LRQA-6014. Enable Content Sharing in instance level and view child Sites display content from parent Sites."
+	@priority = 4
+	test ViewContentSharingEnabledAcrossSitesViaAP {
+		var siteName = TestCase.getSiteName(siteName = ${siteName});
 
+		PortalSettings.configureContentSharingAcrossSitesCP(enableAcrossSite = "true");
+
+		PortalSettings.configureContentSharingSubSitesCP(subSites = "enabledByDefault");
+
+		Site.openSitesAdmin();
+
+		Site.addBlankCP(siteName = ${randomSiteName});
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		PagesAdmin.addPage(pageName = "AP Test Page");
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		Portlet.addPG(portletName = "Asset Publisher");
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		AssetPublisherPortlet.viewConfigureSiteScopeContentSharingPG(
+			contentSharingAcrossSitesEnabled = "true",
+			liferaySiteName = ${siteName});
+
+		Navigator.openSiteURL(siteName = ${randomSiteName});
+
+		Blogs.addViaAP(
+			entryContent = "Blogs Entry Content",
+			entryTitle = "Blogs Entry Title");
+
+		Navigator.openURL();
+
+		ProductMenu.gotoPortlet(
+			category = "Site Builder",
+			portlet = "Pages");
+
+		PagesAdmin.addPage(pageName = "AP Test Page");
+
+		Navigator.gotoPage(pageName = "AP Test Page");
+
+		Portlet.addPG(portletName = "Asset Publisher");
+
+		Navigator.gotoPage(pageName = "AP Test Page");
+
+		AssetPublisherPortlet.viewConfigureSiteScopeContentSharingPG(
+			contentSharingAcrossSitesEnabled = "true",
+			currentSite = "true",
+			liferaySiteName = ${siteName});
+
+		Navigator.gotoPage(pageName = "AP Test Page");
+
+		AssetPublisherPortlet.configureScope(otherSite = ${randomSiteName});
+
+		Navigator.gotoPage(pageName = "AP Test Page");
+
+		AssetPublisherPortlet.viewContentSharingPG(
+			assetContent = "Blogs Entry Content",
+			assetTitle = "Blogs Entry Title",
+			siteScope1 = ${randomSiteName},
+			siteScope2 = ${siteName});
+	}
+
+	@description = "View Web Content Admin displayed in global site."
+	@priority = 4
+	test ViewDefaultGlobalScopeLandingPage {
 		WebContentNavigator.openWebContentAdmin(siteURLKey = "global");
 
 		ProductMenuHelper.openProductMenu();
@@ -322,211 +690,6 @@ definition {
 		Site.viewGlobalLandingDefault(
 			portletName = "Web Content",
 			siteName = "Global");
-	}
-
-	@priority = "4"
-	test ViewDisplayParentSiteViaSitesDirectory {
-		Site.openSitesAdmin();
-
-		JSONGroup.addGroup(groupName = "Site Name");
-
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
-
-		JSONGroup.addChildGroup(
-			groupName = "Child SiteName",
-			parentGroupName = "Site Name");
-
-		JSONLayout.addPublicLayout(
-			groupName = "Child SiteName",
-			layoutName = "Site Page",
-			parentGroupName = "Site Name");
-
-		JSONGroup.addChildGroup(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSiteName",
-			parentGroupName = "Child SiteName");
-
-		JSONLayout.addPublicLayout(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSiteName",
-			layoutName = "Site Page",
-			parentGroupName = "Child SiteName");
-
-		Site.openSitesAdmin();
-
-		Site.viewChildCP(
-			childSiteName = "Child SiteName",
-			siteName = "Site Name");
-
-		Site.viewChildCP(
-			childSiteName = "Child ChildSiteName",
-			siteName = "Child SiteName");
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Child SiteName",
-			layoutName = "Site Page",
-			parentGroupName = "Site Name",
-			widgetName = "Sites Directory");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child SiteName");
-
-		SitesDirectory.configureSetupPG(directorySites = "Parent Level");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child SiteName");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Site Name");
-	}
-
-	@priority = "4"
-	test ViewSiteHierarchiesViaSitesDirectory {
-		Site.openSitesAdmin();
-
-		JSONGroup.addGroup(groupName = "Site Name");
-
-		JSONLayout.addPublicLayout(
-			groupName = "Site Name",
-			layoutName = "Site Page");
-
-		JSONGroup.addChildGroup(
-			groupName = "Child Site1Name",
-			parentGroupName = "Site Name");
-
-		JSONLayout.addPublicLayout(
-			groupName = "Child Site1Name",
-			layoutName = "Site Page",
-			parentGroupName = "Site Name");
-
-		JSONGroup.addChildGroup(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSite1Name",
-			parentGroupName = "Child Site1Name");
-
-		JSONLayout.addPublicLayout(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSite1Name",
-			layoutName = "Site Page",
-			parentGroupName = "Child Site1Name");
-
-		JSONGroup.addChildGroup(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSite2Name",
-			parentGroupName = "Child Site1Name");
-
-		JSONLayout.addPublicLayout(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSite2Name",
-			layoutName = "Site Page",
-			parentGroupName = "Child Site1Name");
-
-		JSONGroup.addChildGroup(
-			groupName = "Child Site2Name",
-			parentGroupName = "Site Name");
-
-		JSONLayout.addPublicLayout(
-			groupName = "Child Site2Name",
-			layoutName = "Site Page",
-			parentGroupName = "Site Name");
-
-		JSONLayout.addWidgetToPublicLayout(
-			groupName = "Child Site1Name",
-			layoutName = "Site Page",
-			parentGroupName = "Site Name",
-			widgetName = "Sites Directory");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child Site1Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Top Level");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child Site1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Site Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Parent Level");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child Site1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Site Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Siblings");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child Site1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child Site1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child Site2Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Children");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child Site1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child ChildSite1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child ChildSite2Name");
-
-		JSONLayout.addWidgetToPublicLayout(
-			grandParentGroupName = "Site Name",
-			groupName = "Child ChildSite1Name",
-			layoutName = "Site Page",
-			parentGroupName = "Child Site1Name",
-			widgetName = "Sites Directory");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child ChildSite1Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Top Level");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child ChildSite1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Site Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Parent Level");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child ChildSite1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child Site1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child Site2Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Siblings");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child ChildSite1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child ChildSite1Name");
-
-		SitesDirectory.viewDescriptivePG(siteName = "Child ChildSite2Name");
-
-		SitesDirectory.configureSetupPG(directorySites = "Children");
-
-		Navigator.gotoSitePage(
-			pageName = "Site Page",
-			siteName = "Child ChildSite1Name");
-
-		AssertTextEquals(
-			locator1 = "Message#EMPTY_INFO",
-			value1 = "No sites were found.");
 	}
 
 }

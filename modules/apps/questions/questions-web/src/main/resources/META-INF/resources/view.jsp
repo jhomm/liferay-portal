@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -18,17 +9,33 @@
 
 <portlet:renderURL var="basePortletURL" />
 
-<div id="<%= liferayPortletResponse.getNamespace() + "-questions-root" %>">
+<div id="<%= liferayPortletResponse.getNamespace() %>-questions-root">
 
 	<%
-	QuestionsConfiguration questionsConfiguration = portletDisplay.getPortletInstanceConfiguration(QuestionsConfiguration.class);
+	QuestionsConfiguration questionsConfiguration = ConfigurationProviderUtil.getPortletInstanceConfiguration(QuestionsConfiguration.class, themeDisplay);
+
+	long categoryId = MBCategoryConstants.DEFAULT_PARENT_CATEGORY_ID;
+
+	if (!Validator.isBlank(questionsConfiguration.rootTopicExternalReferenceCode())) {
+		MBCategory mbCategory = MBCategoryLocalServiceUtil.getMBCategoryByExternalReferenceCode(questionsConfiguration.rootTopicExternalReferenceCode(), themeDisplay.getScopeGroupId());
+
+		categoryId = mbCategory.getCategoryId();
+	}
 	%>
 
 	<react:component
-		module="js/index.es"
+		module="{Main} from questions-web"
 		props='<%=
 			HashMapBuilder.<String, Object>put(
+				"askQuestionButtonText", LocalizationUtil.getLocalization(questionsConfiguration.askQuestionButtonTextAsLocalizedXML(), themeDisplay.getLanguageId())
+			).put(
+				"companyName", renderRequest.getAttribute(QuestionsWebKeys.COMPANY_NAME)
+			).put(
 				"defaultRank", renderRequest.getAttribute(QuestionsWebKeys.DEFAULT_RANK)
+			).put(
+				"editQuestionPageTitle", LocalizationUtil.getLocalization(questionsConfiguration.editQuestionPageTitleAsLocalizedXML(), themeDisplay.getLanguageId())
+			).put(
+				"flagsProperties", renderRequest.getAttribute(QuestionsWebKeys.FLAGS_PROPERTIES)
 			).put(
 				"historyRouterBasePath", questionsConfiguration.historyRouterBasePath()
 			).put(
@@ -36,15 +43,21 @@
 			).put(
 				"imageBrowseURL", renderRequest.getAttribute(QuestionsWebKeys.IMAGE_BROWSE_URL)
 			).put(
-				"includeContextPath", renderRequest.getAttribute("javax.servlet.include.context_path")
+				"includeContextPath", renderRequest.getAttribute("jakarta.servlet.include.context_path")
 			).put(
-				"isOmniAdmin", permissionChecker.isOmniadmin()
+				"isContentReviewer", permissionChecker.isContentReviewer(themeDisplay.getCompanyId(), themeDisplay.getScopeGroupId())
+			).put(
+				"isOmniadmin", permissionChecker.isOmniadmin()
+			).put(
+				"newQuestionPageTitle", LocalizationUtil.getLocalization(questionsConfiguration.newQuestionPageTitleAsLocalizedXML(), themeDisplay.getLanguageId())
 			).put(
 				"npmResolvedPackageName", npmResolvedPackageName
 			).put(
+				"postYourQuestionButtonText", LocalizationUtil.getLocalization(questionsConfiguration.postYourQuestionButtonTextAsLocalizedXML(), themeDisplay.getLanguageId())
+			).put(
 				"redirectToLogin", questionsConfiguration.enableRedirectToLogin()
 			).put(
-				"rootTopicId", questionsConfiguration.rootTopicId()
+				"rootTopicId", categoryId
 			).put(
 				"showCardsForTopicNavigation", questionsConfiguration.showCardsForTopicNavigation()
 			).put(
@@ -53,6 +66,8 @@
 				"tagSelectorURL", renderRequest.getAttribute(QuestionsWebKeys.TAG_SELECTOR_URL)
 			).put(
 				"trustedUser", renderRequest.getAttribute(QuestionsWebKeys.TRUSTED_USER)
+			).put(
+				"updateYourQuestionButtonText", LocalizationUtil.getLocalization(questionsConfiguration.updateYourQuestionButtonTextAsLocalizedXML(), themeDisplay.getLanguageId())
 			).put(
 				"userId", String.valueOf(themeDisplay.getUserId())
 			).put(

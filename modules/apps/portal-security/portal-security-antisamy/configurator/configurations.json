@@ -1,5 +1,9 @@
 {
-	"com.liferay.portal.security.antisamy.configuration.AntiSamyClassNameConfiguration~default": {
+	"com.liferay.portal.security.antisamy.configuration.AntiSamyClassNameConfiguration~blogs": {
+		"className": "com.liferay.blogs.model.BlogsEntry",
+		"configurationFileURL": "/META-INF/resources/blogs-sanitizer-configuration.xml"
+	},
+	"com.liferay.portal.security.antisamy.configuration.AntiSamyClassNameConfiguration~knowledgebase": {
 		"className": "com.liferay.knowledge.base.model.KBArticle",
 		"configurationFileURL": "/META-INF/resources/knowledge-base-sanitizer-configuration.xml"
 	}

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.depot.web.internal.display.context;
@@ -17,7 +8,6 @@ package com.liferay.depot.web.internal.display.context;
 import com.liferay.admin.kernel.util.PortalMyAccountApplicationType;
 import com.liferay.depot.constants.DepotRolesConstants;
 import com.liferay.depot.web.internal.constants.DepotPortletKeys;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
@@ -33,6 +23,7 @@ import com.liferay.portal.kernel.portlet.PortletProvider;
 import com.liferay.portal.kernel.portlet.PortletProviderUtil;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.security.permission.PermissionChecker;
 import com.liferay.portal.kernel.service.UserGroupRoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.permission.UserGroupRolePermissionUtil;
@@ -43,14 +34,12 @@ import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.ResourceBundleUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 
+import jakarta.portlet.WindowStateException;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
-import java.util.ResourceBundle;
-
-import javax.portlet.WindowStateException;
 
 /**
  * @author Cristina González
@@ -74,32 +63,25 @@ public class DepotAdminRolesDisplayContext {
 	}
 
 	public String getAssetLibraryLabel() {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			_themeDisplay.getLocale(), getClass());
-
-		return ResourceBundleUtil.getString(resourceBundle, "asset-library");
+		return ResourceBundleUtil.getString(
+			ResourceBundleUtil.getBundle(_themeDisplay.getLocale(), getClass()),
+			"asset-library");
 	}
 
 	public String getDepotRoleSyncEntitiesEventName() {
-		String portletNamespace = PortalUtil.getPortletNamespace(
-			DepotPortletKeys.DEPOT_ADMIN);
-
-		return portletNamespace + "syncDepotRoles";
+		return PortalUtil.getPortletNamespace(DepotPortletKeys.DEPOT_ADMIN) +
+			"syncDepotRoles";
 	}
 
 	public String getLabel() {
-		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
-			_themeDisplay.getLocale(), getClass());
-
 		return ResourceBundleUtil.getString(
-			resourceBundle, "asset-library-roles");
+			ResourceBundleUtil.getBundle(_themeDisplay.getLocale(), getClass()),
+			"asset-library-roles");
 	}
 
 	public String getSelectDepotRolesEventName() {
-		String portletNamespace = PortalUtil.getPortletNamespace(
-			DepotPortletKeys.DEPOT_ADMIN);
-
-		return portletNamespace + "selectDepotRole";
+		return PortalUtil.getPortletNamespace(DepotPortletKeys.DEPOT_ADMIN) +
+			"selectDepotRole";
 	}
 
 	public String getSelectDepotRolesURL() throws WindowStateException {
@@ -113,15 +95,13 @@ public class DepotAdminRolesDisplayContext {
 			"/depot/select_depot_role"
 		).setParameter(
 			"p_u_i_d",
-			Optional.ofNullable(
-				_user
-			).map(
-				User::getUserId
-			).map(
-				String::valueOf
-			).orElse(
-				"0"
-			)
+			() -> {
+				if (_user == null) {
+					return "0";
+				}
+
+				return String.valueOf(_user.getUserId());
+			}
 		).setParameter(
 			"step", "1"
 		).setWindowState(
@@ -152,13 +132,8 @@ public class DepotAdminRolesDisplayContext {
 
 		PortletDisplay portletDisplay = _themeDisplay.getPortletDisplay();
 
-		if (!Objects.equals(
-				portletDisplay.getPortletName(), myAccountPortletId)) {
-
-			return true;
-		}
-
-		return false;
+		return !Objects.equals(
+			portletDisplay.getPortletName(), myAccountPortletId);
 	}
 
 	private boolean _contains(UserGroupRole userGroupRole) {
@@ -186,7 +161,7 @@ public class DepotAdminRolesDisplayContext {
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(portalException, portalException);
+				_log.warn(portalException);
 			}
 		}
 
@@ -261,7 +236,7 @@ public class DepotAdminRolesDisplayContext {
 		}
 		catch (PortalException portalException) {
 			if (_log.isWarnEnabled()) {
-				_log.warn(portalException, portalException);
+				_log.warn(portalException);
 			}
 		}
 

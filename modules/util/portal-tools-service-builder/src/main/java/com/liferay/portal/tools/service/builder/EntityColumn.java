@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.tools.service.builder;
@@ -154,11 +145,7 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 
 		EntityColumn entityColumn = (EntityColumn)object;
 
-		if (_name.equals(entityColumn.getName())) {
-			return true;
-		}
-
-		return false;
+		return _name.equals(entityColumn.getName());
 	}
 
 	public String getAccessorName(String className) {
@@ -308,11 +295,7 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 	}
 
 	public boolean hasArrayableOperator() {
-		if (Validator.isNotNull(_arrayableOperator)) {
-			return true;
-		}
-
-		return false;
+		return Validator.isNotNull(_arrayableOperator);
 	}
 
 	public boolean hasArrayablePagination() {
@@ -329,11 +312,7 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 	}
 
 	public boolean isArrayableAndOperator() {
-		if (_arrayableOperator.equals("AND")) {
-			return true;
-		}
-
-		return false;
+		return _arrayableOperator.equals("AND");
 	}
 
 	public boolean isCaseSensitive() {
@@ -341,11 +320,7 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 	}
 
 	public boolean isCollection() {
-		if (_type.equals("Collection")) {
-			return true;
-		}
-
-		return false;
+		return _type.equals("Collection");
 	}
 
 	public boolean isContainerModel() {
@@ -362,6 +337,10 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 
 	public boolean isFinderPath() {
 		return _finderPath;
+	}
+
+	public boolean isIndexable() {
+		return _indexable;
 	}
 
 	public boolean isInterfaceColumn() {
@@ -517,6 +496,10 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 		_idType = idType;
 	}
 
+	public void setIndexable(boolean indexable) {
+		_indexable = indexable;
+	}
+
 	public void setInterfaceColumn(boolean interfaceColumn) {
 		_interfaceColumn = interfaceColumn;
 	}
@@ -633,6 +616,7 @@ public class EntityColumn implements Cloneable, Comparable<EntityColumn> {
 	private final String _humanName;
 	private String _idParam;
 	private String _idType;
+	private boolean _indexable = true;
 	private boolean _interfaceColumn = true;
 	private final boolean _jsonEnabled;
 	private boolean _lazy;

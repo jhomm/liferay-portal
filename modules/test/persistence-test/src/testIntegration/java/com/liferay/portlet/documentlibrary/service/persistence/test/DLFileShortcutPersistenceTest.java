@@ -1,20 +1,12 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portlet.documentlibrary.service.persistence.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.document.library.kernel.exception.DuplicateDLFileShortcutExternalReferenceCodeException;
 import com.liferay.document.library.kernel.exception.NoSuchFileShortcutException;
 import com.liferay.document.library.kernel.model.DLFileShortcut;
 import com.liferay.document.library.kernel.service.DLFileShortcutLocalServiceUtil;
@@ -27,14 +19,18 @@ import com.liferay.portal.kernel.dao.orm.ProjectionFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.dao.orm.RestrictionsFactoryUtil;
 import com.liferay.portal.kernel.dao.orm.Session;
+import com.liferay.portal.kernel.security.permission.InlineSQLHelperUtil;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.IntegerWrapper;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.OrderByComparatorFactoryUtil;
 import com.liferay.portal.kernel.util.Time;
+import com.liferay.portal.security.permission.SimplePermissionChecker;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.PersistenceTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
@@ -129,6 +125,9 @@ public class DLFileShortcutPersistenceTest {
 
 		newDLFileShortcut.setUuid(RandomTestUtil.randomString());
 
+		newDLFileShortcut.setExternalReferenceCode(
+			RandomTestUtil.randomString());
+
 		newDLFileShortcut.setGroupId(RandomTestUtil.nextLong());
 
 		newDLFileShortcut.setCompanyId(RandomTestUtil.nextLong());
@@ -174,6 +173,9 @@ public class DLFileShortcutPersistenceTest {
 			newDLFileShortcut.getCtCollectionId());
 		Assert.assertEquals(
 			existingDLFileShortcut.getUuid(), newDLFileShortcut.getUuid());
+		Assert.assertEquals(
+			existingDLFileShortcut.getExternalReferenceCode(),
+			newDLFileShortcut.getExternalReferenceCode());
 		Assert.assertEquals(
 			existingDLFileShortcut.getFileShortcutId(),
 			newDLFileShortcut.getFileShortcutId());
@@ -224,6 +226,28 @@ public class DLFileShortcutPersistenceTest {
 			Time.getShortTimestamp(newDLFileShortcut.getStatusDate()));
 	}
 
+	@Test(
+		expected = DuplicateDLFileShortcutExternalReferenceCodeException.class
+	)
+	public void testUpdateWithExistingExternalReferenceCode() throws Exception {
+		DLFileShortcut dlFileShortcut = addDLFileShortcut();
+
+		DLFileShortcut newDLFileShortcut = addDLFileShortcut();
+
+		newDLFileShortcut.setGroupId(dlFileShortcut.getGroupId());
+
+		newDLFileShortcut = _persistence.update(newDLFileShortcut);
+
+		Session session = _persistence.getCurrentSession();
+
+		session.evict(newDLFileShortcut);
+
+		newDLFileShortcut.setExternalReferenceCode(
+			dlFileShortcut.getExternalReferenceCode());
+
+		_persistence.update(newDLFileShortcut);
+	}
+
 	@Test
 	public void testCountByUuid() throws Exception {
 		_persistence.countByUuid("");
@@ -249,6 +273,13 @@ public class DLFileShortcutPersistenceTest {
 		_persistence.countByUuid_C("null", 0L);
 
 		_persistence.countByUuid_C((String)null, 0L);
+	}
+
+	@Test
+	public void testCountByGroupId() throws Exception {
+		_persistence.countByGroupId(RandomTestUtil.nextLong());
+
+		_persistence.countByGroupId(0L);
 	}
 
 	@Test
@@ -300,6 +331,15 @@ public class DLFileShortcutPersistenceTest {
 	}
 
 	@Test
+	public void testCountByERC_G() throws Exception {
+		_persistence.countByERC_G("", RandomTestUtil.nextLong());
+
+		_persistence.countByERC_G("null", 0L);
+
+		_persistence.countByERC_G((String)null, 0L);
+	}
+
+	@Test
 	public void testFindByPrimaryKeyExisting() throws Exception {
 		DLFileShortcut newDLFileShortcut = addDLFileShortcut();
 
@@ -322,15 +362,40 @@ public class DLFileShortcutPersistenceTest {
 			QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
 	}
 
+	@Test
+	public void testFilterFindByGroupId() throws Exception {
+		PermissionThreadLocal.setPermissionChecker(
+			new SimplePermissionChecker() {
+				{
+					init(TestPropsValues.getUser());
+				}
+
+				@Override
+				public boolean isCompanyAdmin(long companyId) {
+					return false;
+				}
+
+			});
+
+		Assert.assertTrue(InlineSQLHelperUtil.isEnabled(0));
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		_persistence.filterFindByGroupId(
+			0, QueryUtil.ALL_POS, QueryUtil.ALL_POS, getOrderByComparator());
+	}
+
 	protected OrderByComparator<DLFileShortcut> getOrderByComparator() {
 		return OrderByComparatorFactoryUtil.create(
 			"DLFileShortcut", "mvccVersion", true, "ctCollectionId", true,
-			"uuid", true, "fileShortcutId", true, "groupId", true, "companyId",
-			true, "userId", true, "userName", true, "createDate", true,
-			"modifiedDate", true, "repositoryId", true, "folderId", true,
-			"toFileEntryId", true, "treePath", true, "active", true,
-			"lastPublishDate", true, "status", true, "statusByUserId", true,
-			"statusByUserName", true, "statusDate", true);
+			"uuid", true, "externalReferenceCode", true, "fileShortcutId", true,
+			"groupId", true, "companyId", true, "userId", true, "userName",
+			true, "createDate", true, "modifiedDate", true, "repositoryId",
+			true, "folderId", true, "toFileEntryId", true, "treePath", true,
+			"active", true, "lastPublishDate", true, "status", true,
+			"statusByUserId", true, "statusByUserName", true, "statusDate",
+			true);
 	}
 
 	@Test
@@ -608,6 +673,17 @@ public class DLFileShortcutPersistenceTest {
 			ReflectionTestUtil.<Long>invoke(
 				dlFileShortcut, "getColumnOriginalValue",
 				new Class<?>[] {String.class}, "groupId"));
+
+		Assert.assertEquals(
+			dlFileShortcut.getExternalReferenceCode(),
+			ReflectionTestUtil.invoke(
+				dlFileShortcut, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "externalReferenceCode"));
+		Assert.assertEquals(
+			Long.valueOf(dlFileShortcut.getGroupId()),
+			ReflectionTestUtil.<Long>invoke(
+				dlFileShortcut, "getColumnOriginalValue",
+				new Class<?>[] {String.class}, "groupId"));
 	}
 
 	protected DLFileShortcut addDLFileShortcut() throws Exception {
@@ -620,6 +696,8 @@ public class DLFileShortcutPersistenceTest {
 		dlFileShortcut.setCtCollectionId(RandomTestUtil.nextLong());
 
 		dlFileShortcut.setUuid(RandomTestUtil.randomString());
+
+		dlFileShortcut.setExternalReferenceCode(RandomTestUtil.randomString());
 
 		dlFileShortcut.setGroupId(RandomTestUtil.nextLong());
 

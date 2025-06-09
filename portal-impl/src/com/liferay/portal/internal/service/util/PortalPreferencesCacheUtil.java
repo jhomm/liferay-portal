@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.internal.service.util;
@@ -42,16 +33,45 @@ public class PortalPreferencesCacheUtil {
 			preferenceMap = Collections.emptyMap();
 		}
 		else {
-			preferenceMap = Collections.unmodifiableMap(
-				new HashMap<>(preferenceMap));
+			Map<PortalPreferenceKey, String[]> copiedPreferenceMap =
+				new HashMap<>();
+
+			for (Map.Entry<PortalPreferenceKey, String[]> entry :
+					preferenceMap.entrySet()) {
+
+				copiedPreferenceMap.put(
+					_normalize(entry.getKey()), entry.getValue());
+			}
+
+			preferenceMap = Collections.unmodifiableMap(copiedPreferenceMap);
 		}
 
 		_portalCache.put(portalPreferencesId, preferenceMap);
 	}
 
+	private static PortalPreferenceKey _normalize(
+		PortalPreferenceKey portalPreferenceKey) {
+
+		PortalPreferenceKey normalizedPortalPreferenceKey =
+			_normalizedPortalCache.get(portalPreferenceKey);
+
+		if (normalizedPortalPreferenceKey == null) {
+			_normalizedPortalCache.put(
+				portalPreferenceKey, portalPreferenceKey);
+
+			normalizedPortalPreferenceKey = portalPreferenceKey;
+		}
+
+		return normalizedPortalPreferenceKey;
+	}
+
 	private PortalPreferencesCacheUtil() {
 	}
 
+	private static final PortalCache<PortalPreferenceKey, PortalPreferenceKey>
+		_normalizedPortalCache = PortalCacheHelperUtil.getPortalCache(
+			PortalCacheManagerNames.SINGLE_VM,
+			PortalPreferencesCacheUtil.class.getName() + "#_normalized");
 	private static final PortalCache<Long, Map<PortalPreferenceKey, String[]>>
 		_portalCache = PortalCacheHelperUtil.getPortalCache(
 			PortalCacheManagerNames.MULTI_VM,

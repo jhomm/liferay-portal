@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.internal.io;
@@ -40,13 +31,33 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		ddmForm.setAvailableLocales(
 			DDMFormTestUtil.createAvailableLocales(
 				LocaleUtil.BRAZIL, LocaleUtil.US));
-		ddmForm.setDDMFormFields(createDDMFormFields());
+		ddmForm.setDDMFormFields(_createDDMFormFields());
 		ddmForm.setDefaultLocale(LocaleUtil.US);
 
 		return ddmForm;
 	}
 
-	protected DDMFormFieldOptions createDDMFormFieldOptions() {
+	protected DDMFormField createTextDDMFormField(String name) {
+		DDMFormField ddmFormField = new DDMFormField(name, "text");
+
+		ddmFormField.setDataType("string");
+		ddmFormField.setIndexType("keyword");
+		ddmFormField.setLabel(_createTextDDMFormFieldLabel());
+		ddmFormField.setLocalizable(false);
+		ddmFormField.setPredefinedValue(
+			_createTextDDMFormFieldPredefinedValue());
+		ddmFormField.setReadOnly(false);
+		ddmFormField.setRepeatable(true);
+		ddmFormField.setRequired(false);
+		ddmFormField.setShowLabel(true);
+		ddmFormField.setVisibilityExpression("true");
+
+		_createNotEmptyValidation(ddmFormField);
+
+		return ddmFormField;
+	}
+
+	private DDMFormFieldOptions _createDDMFormFieldOptions() {
 		DDMFormFieldOptions ddmFormFieldOptions = new DDMFormFieldOptions();
 
 		ddmFormFieldOptions.addOption("Value 1");
@@ -66,36 +77,36 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		return ddmFormFieldOptions;
 	}
 
-	protected List<DDMFormField> createDDMFormFields() {
+	private List<DDMFormField> _createDDMFormFields() {
 		return ListUtil.fromArray(
-			createNestedDDMFormFields("ParentField", "ChildField"),
-			createRadioDDMFormField("BooleanField"),
-			createSelectDDMFormField("SelectField"),
+			_createNestedDDMFormFields("ParentField", "ChildField"),
+			_createRadioDDMFormField("BooleanField"),
+			_createSelectDDMFormField("SelectField"),
 			createTextDDMFormField("TextField"),
-			createHTMLDDMFormField("HTMLField"));
+			_createHTMLDDMFormField("HTMLField"));
 	}
 
-	protected DDMFormField createHTMLDDMFormField(String name) {
+	private DDMFormField _createHTMLDDMFormField(String name) {
 		DDMFormField ddmFormField = new DDMFormField(
 			name, DDMFormFieldType.TEXT_HTML);
 
 		ddmFormField.setDataType("html");
 		ddmFormField.setFieldNamespace("ddm");
 		ddmFormField.setIndexType("text");
-		ddmFormField.setLabel(createHTMLDDMFormFieldLabel());
+		ddmFormField.setLabel(_createHTMLDDMFormFieldLabel());
 		ddmFormField.setLocalizable(true);
 		ddmFormField.setPredefinedValue(
-			createHTMLDDMFormFieldPredefinedValue());
+			_createHTMLDDMFormFieldPredefinedValue());
 		ddmFormField.setReadOnly(false);
 		ddmFormField.setRepeatable(false);
 		ddmFormField.setRequired(false);
 		ddmFormField.setShowLabel(true);
-		ddmFormField.setTip(createHTMLDDMFormFieldTip());
+		ddmFormField.setTip(_createHTMLDDMFormFieldTip());
 
 		return ddmFormField;
 	}
 
-	protected LocalizedValue createHTMLDDMFormFieldLabel() {
+	private LocalizedValue _createHTMLDDMFormFieldLabel() {
 		LocalizedValue label = new LocalizedValue();
 
 		label.addString(LocaleUtil.BRAZIL, "HTML");
@@ -104,7 +115,7 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		return label;
 	}
 
-	protected LocalizedValue createHTMLDDMFormFieldPredefinedValue() {
+	private LocalizedValue _createHTMLDDMFormFieldPredefinedValue() {
 		LocalizedValue predefinedValue = new LocalizedValue();
 
 		predefinedValue.addString(LocaleUtil.BRAZIL, "");
@@ -113,7 +124,7 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		return predefinedValue;
 	}
 
-	protected LocalizedValue createHTMLDDMFormFieldTip() {
+	private LocalizedValue _createHTMLDDMFormFieldTip() {
 		LocalizedValue predefinedValue = new LocalizedValue();
 
 		predefinedValue.addString(LocaleUtil.BRAZIL, "Dica");
@@ -122,18 +133,18 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		return predefinedValue;
 	}
 
-	protected DDMFormField createNestedDDMFormFields(
+	private DDMFormField _createNestedDDMFormFields(
 		String parentName, String childName) {
 
 		DDMFormField parentDDMFormField = createTextDDMFormField(parentName);
 
 		parentDDMFormField.setNestedDDMFormFields(
-			ListUtil.fromArray(createSelectDDMFormField(childName)));
+			ListUtil.fromArray(_createSelectDDMFormField(childName)));
 
 		return parentDDMFormField;
 	}
 
-	protected void createNotEmptyValidation(DDMFormField ddmFormField) {
+	private void _createNotEmptyValidation(DDMFormField ddmFormField) {
 		DDMFormFieldValidation ddmFormFieldValidation =
 			new DDMFormFieldValidation();
 
@@ -152,11 +163,11 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		ddmFormField.setDDMFormFieldValidation(ddmFormFieldValidation);
 	}
 
-	protected DDMFormField createRadioDDMFormField(String name) {
+	private DDMFormField _createRadioDDMFormField(String name) {
 		DDMFormField ddmFormField = new DDMFormField(name, "radio");
 
 		ddmFormField.setDataType("string");
-		ddmFormField.setDDMFormFieldOptions(createDDMFormFieldOptions());
+		ddmFormField.setDDMFormFieldOptions(_createDDMFormFieldOptions());
 		ddmFormField.setLocalizable(false);
 		ddmFormField.setReadOnly(false);
 		ddmFormField.setRepeatable(false);
@@ -164,12 +175,12 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		ddmFormField.setShowLabel(false);
 		ddmFormField.setVisibilityExpression("false");
 
-		createNotEmptyValidation(ddmFormField);
+		_createNotEmptyValidation(ddmFormField);
 
 		return ddmFormField;
 	}
 
-	protected DDMFormField createSelectDDMFormField(String name) {
+	private DDMFormField _createSelectDDMFormField(String name) {
 		DDMFormField ddmFormField = new DDMFormField(name, "select");
 
 		ddmFormField.setDataType("string");
@@ -182,34 +193,14 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		ddmFormField.setShowLabel(true);
 		ddmFormField.setVisibilityExpression("true");
 
-		createNotEmptyValidation(ddmFormField);
+		_createNotEmptyValidation(ddmFormField);
 
-		ddmFormField.setDDMFormFieldOptions(createDDMFormFieldOptions());
-
-		return ddmFormField;
-	}
-
-	protected DDMFormField createTextDDMFormField(String name) {
-		DDMFormField ddmFormField = new DDMFormField(name, "text");
-
-		ddmFormField.setDataType("string");
-		ddmFormField.setIndexType("keyword");
-		ddmFormField.setLabel(createTextDDMFormFieldLabel());
-		ddmFormField.setLocalizable(false);
-		ddmFormField.setPredefinedValue(
-			createTextDDMFormFieldPredefinedValue());
-		ddmFormField.setReadOnly(false);
-		ddmFormField.setRepeatable(true);
-		ddmFormField.setRequired(false);
-		ddmFormField.setShowLabel(true);
-		ddmFormField.setVisibilityExpression("true");
-
-		createNotEmptyValidation(ddmFormField);
+		ddmFormField.setDDMFormFieldOptions(_createDDMFormFieldOptions());
 
 		return ddmFormField;
 	}
 
-	protected LocalizedValue createTextDDMFormFieldLabel() {
+	private LocalizedValue _createTextDDMFormFieldLabel() {
 		LocalizedValue label = new LocalizedValue();
 
 		label.addString(LocaleUtil.BRAZIL, "Texto");
@@ -218,7 +209,7 @@ public abstract class BaseDDMFormSerializerTestCase extends BaseDDMTestCase {
 		return label;
 	}
 
-	protected LocalizedValue createTextDDMFormFieldPredefinedValue() {
+	private LocalizedValue _createTextDDMFormFieldPredefinedValue() {
 		LocalizedValue predefinedValue = new LocalizedValue();
 
 		predefinedValue.addString(LocaleUtil.BRAZIL, "Exemplo");

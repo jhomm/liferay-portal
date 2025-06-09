@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.delivery.internal.resource.v1_0;
@@ -21,22 +12,21 @@ import com.liferay.blogs.service.BlogsEntryService;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
+import com.liferay.headless.common.spi.odata.entity.EntityFieldsUtil;
 import com.liferay.headless.common.spi.resource.SPIRatingResource;
-import com.liferay.headless.common.spi.service.context.ServiceContextRequestUtil;
+import com.liferay.headless.common.spi.service.context.ServiceContextBuilder;
 import com.liferay.headless.delivery.dto.v1_0.BlogPosting;
 import com.liferay.headless.delivery.dto.v1_0.Image;
 import com.liferay.headless.delivery.dto.v1_0.Rating;
 import com.liferay.headless.delivery.dto.v1_0.TaxonomyCategoryBrief;
-import com.liferay.headless.delivery.dto.v1_0.util.CustomFieldsUtil;
-import com.liferay.headless.delivery.internal.dto.v1_0.converter.BlogPostingDTOConverter;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.DisplayPageRendererUtil;
-import com.liferay.headless.delivery.internal.dto.v1_0.util.EntityFieldsUtil;
 import com.liferay.headless.delivery.internal.dto.v1_0.util.RatingUtil;
 import com.liferay.headless.delivery.internal.odata.entity.v1_0.BlogPostingEntityModel;
 import com.liferay.headless.delivery.resource.v1_0.BlogPostingResource;
-import com.liferay.info.item.InfoItemServiceTracker;
-import com.liferay.layout.display.page.LayoutDisplayPageProviderTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
+import com.liferay.layout.display.page.LayoutDisplayPageProviderRegistry;
 import com.liferay.layout.page.template.service.LayoutPageTemplateEntryService;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
@@ -52,24 +42,22 @@ import com.liferay.portal.kernel.util.HashMapBuilder;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 import com.liferay.portal.odata.entity.EntityModel;
+import com.liferay.portal.search.expando.ExpandoBridgeIndexer;
 import com.liferay.portal.vulcan.aggregation.Aggregation;
+import com.liferay.portal.vulcan.custom.field.CustomFieldsUtil;
+import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
 import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
-import com.liferay.portal.vulcan.permission.PermissionUtil;
-import com.liferay.portal.vulcan.resource.EntityModelResource;
 import com.liferay.portal.vulcan.util.LocalDateTimeUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
 import com.liferay.ratings.kernel.service.RatingsEntryLocalService;
 
-import java.io.Serializable;
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import java.time.LocalDateTime;
-
-import java.util.Map;
-
-import javax.ws.rs.core.MultivaluedMap;
+import java.time.ZoneId;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -82,8 +70,8 @@ import org.osgi.service.component.annotations.ServiceScope;
 	properties = "OSGI-INF/liferay/rest/v1_0/blog-posting.properties",
 	scope = ServiceScope.PROTOTYPE, service = BlogPostingResource.class
 )
-public class BlogPostingResourceImpl
-	extends BaseBlogPostingResourceImpl implements EntityModelResource {
+@CTAware
+public class BlogPostingResourceImpl extends BaseBlogPostingResourceImpl {
 
 	@Override
 	public void deleteBlogPosting(Long blogPostingId) throws Exception {
@@ -104,7 +92,7 @@ public class BlogPostingResourceImpl
 
 		BlogsEntry blogsEntry =
 			_blogsEntryLocalService.getBlogsEntryByExternalReferenceCode(
-				siteId, externalReferenceCode);
+				externalReferenceCode, siteId);
 
 		_blogsEntryService.deleteEntry(blogsEntry.getEntryId());
 	}
@@ -133,8 +121,8 @@ public class BlogPostingResourceImpl
 		return DisplayPageRendererUtil.toHTML(
 			BlogsEntry.class.getName(), 0, displayPageKey,
 			blogsEntry.getGroupId(), contextHttpServletRequest,
-			contextHttpServletResponse, blogsEntry, _infoItemServiceTracker,
-			_layoutDisplayPageProviderTracker, _layoutLocalService,
+			contextHttpServletResponse, blogsEntry, _infoItemServiceRegistry,
+			_layoutDisplayPageProviderRegistry, _layoutLocalService,
 			_layoutPageTemplateEntryService);
 	}
 
@@ -143,8 +131,8 @@ public class BlogPostingResourceImpl
 		return new BlogPostingEntityModel(
 			EntityFieldsUtil.getEntityFields(
 				_portal.getClassNameId(BlogsEntry.class.getName()),
-				contextCompany.getCompanyId(), _expandoColumnLocalService,
-				_expandoTableLocalService));
+				contextCompany.getCompanyId(), _expandoBridgeIndexer,
+				_expandoColumnLocalService, _expandoTableLocalService));
 	}
 
 	@Override
@@ -152,20 +140,9 @@ public class BlogPostingResourceImpl
 			Long siteId, String externalReferenceCode)
 		throws Exception {
 
-		BlogsEntry blogsEntry =
-			_blogsEntryLocalService.getBlogsEntryByExternalReferenceCode(
-				siteId, externalReferenceCode);
-
-		String resourceName = getPermissionCheckerResourceName(
-			blogsEntry.getEntryId());
-		Long resourceId = getPermissionCheckerResourceId(
-			blogsEntry.getEntryId());
-
-		PermissionUtil.checkPermission(
-			ActionKeys.VIEW, groupLocalService, resourceName, resourceId,
-			getPermissionCheckerGroupId(blogsEntry.getEntryId()));
-
-		return _toBlogPosting(blogsEntry);
+		return _toBlogPosting(
+			_blogsEntryService.getBlogsEntryByExternalReferenceCode(
+				siteId, externalReferenceCode));
 	}
 
 	@Override
@@ -181,6 +158,16 @@ public class BlogPostingResourceImpl
 					ActionKeys.ADD_ENTRY, "postSiteBlogPosting",
 					BlogsConstants.RESOURCE_NAME, siteId)
 			).put(
+				"createBatch",
+				addAction(
+					ActionKeys.ADD_ENTRY, "postSiteBlogPostingBatch",
+					BlogsConstants.RESOURCE_NAME, siteId)
+			).put(
+				"deleteBatch",
+				addAction(
+					ActionKeys.DELETE, "deleteBlogPostingBatch",
+					BlogsConstants.RESOURCE_NAME, null)
+			).put(
 				"subscribe",
 				addAction(
 					ActionKeys.SUBSCRIBE, "putSiteBlogPostingSubscribe",
@@ -190,6 +177,11 @@ public class BlogPostingResourceImpl
 				addAction(
 					ActionKeys.SUBSCRIBE, "putSiteBlogPostingUnsubscribe",
 					BlogsConstants.RESOURCE_NAME, siteId)
+			).put(
+				"updateBatch",
+				addAction(
+					ActionKeys.UPDATE, "putBlogPostingBatch",
+					BlogsConstants.RESOURCE_NAME, null)
 			).build(),
 			booleanQuery -> {
 			},
@@ -254,7 +246,7 @@ public class BlogPostingResourceImpl
 
 		BlogsEntry blogsEntry =
 			_blogsEntryLocalService.fetchBlogsEntryByExternalReferenceCode(
-				siteId, externalReferenceCode);
+				externalReferenceCode, siteId);
 
 		if (blogsEntry != null) {
 			return _updateBlogPosting(blogsEntry, blogPosting);
@@ -298,10 +290,10 @@ public class BlogPostingResourceImpl
 
 		if (image != null) {
 			existingBlogPosting.setImage(
-				new Image() {
+				() -> new Image() {
 					{
-						caption = image.getCaption();
-						imageId = image.getImageId();
+						setCaption(image::getCaption);
+						setImageId(image::getImageId);
 					}
 				});
 		}
@@ -311,10 +303,9 @@ public class BlogPostingResourceImpl
 
 		if (taxonomyCategoryBriefs != null) {
 			blogPosting.setTaxonomyCategoryIds(
-				transform(
+				() -> transform(
 					taxonomyCategoryBriefs,
-					TaxonomyCategoryBrief::getTaxonomyCategoryId,
-					Long[].class));
+					TaxonomyCategoryBrief::getTaxonomyCategoryId, Long.class));
 		}
 	}
 
@@ -323,7 +314,8 @@ public class BlogPostingResourceImpl
 		throws Exception {
 
 		LocalDateTime localDateTime = LocalDateTimeUtil.toLocalDateTime(
-			blogPosting.getDatePublished());
+			blogPosting.getDatePublished(), null,
+			ZoneId.of(contextUser.getTimeZoneId()));
 		Image image = blogPosting.getImage();
 
 		return _toBlogPosting(
@@ -341,10 +333,19 @@ public class BlogPostingResourceImpl
 	private ServiceContext _createServiceContext(
 		BlogPosting blogPosting, long groupId) {
 
-		return ServiceContextRequestUtil.createServiceContext(
-			blogPosting.getTaxonomyCategoryIds(), blogPosting.getKeywords(),
-			_getExpandoBridgeAttributes(blogPosting), groupId,
-			contextHttpServletRequest, blogPosting.getViewableByAsString());
+		return ServiceContextBuilder.create(
+			groupId, contextHttpServletRequest,
+			blogPosting.getViewableByAsString()
+		).assetCategoryIds(
+			blogPosting.getTaxonomyCategoryIds()
+		).assetTagNames(
+			blogPosting.getKeywords()
+		).expandoBridgeAttributes(
+			CustomFieldsUtil.toMap(
+				BlogsEntry.class.getName(), contextCompany.getCompanyId(),
+				blogPosting.getCustomFields(),
+				contextAcceptLanguage.getPreferredLocale())
+		).build();
 	}
 
 	private String _getCaption(Image image) {
@@ -353,15 +354,6 @@ public class BlogPostingResourceImpl
 		}
 
 		return image.getCaption();
-	}
-
-	private Map<String, Serializable> _getExpandoBridgeAttributes(
-		BlogPosting blogPosting) {
-
-		return CustomFieldsUtil.toMap(
-			BlogsEntry.class.getName(), contextCompany.getCompanyId(),
-			blogPosting.getCustomFields(),
-			contextAcceptLanguage.getPreferredLocale());
 	}
 
 	private ImageSelector _getImageSelector(Image image) {
@@ -452,7 +444,8 @@ public class BlogPostingResourceImpl
 		throws Exception {
 
 		LocalDateTime localDateTime = LocalDateTimeUtil.toLocalDateTime(
-			blogPosting.getDatePublished());
+			blogPosting.getDatePublished(), null,
+			ZoneId.of(contextUser.getTimeZoneId()));
 		Image image = blogPosting.getImage();
 
 		return _toBlogPosting(
@@ -468,8 +461,10 @@ public class BlogPostingResourceImpl
 				_createServiceContext(blogPosting, blogsEntry.getGroupId())));
 	}
 
-	@Reference
-	private BlogPostingDTOConverter _blogPostingDTOConverter;
+	@Reference(
+		target = "(component.name=com.liferay.headless.delivery.internal.dto.v1_0.converter.BlogPostingDTOConverter)"
+	)
+	private DTOConverter<BlogsEntry, BlogPosting> _blogPostingDTOConverter;
 
 	@Reference
 	private BlogsEntryLocalService _blogsEntryLocalService;
@@ -484,16 +479,20 @@ public class BlogPostingResourceImpl
 	private DTOConverterRegistry _dtoConverterRegistry;
 
 	@Reference
+	private ExpandoBridgeIndexer _expandoBridgeIndexer;
+
+	@Reference
 	private ExpandoColumnLocalService _expandoColumnLocalService;
 
 	@Reference
 	private ExpandoTableLocalService _expandoTableLocalService;
 
 	@Reference
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Reference
-	private LayoutDisplayPageProviderTracker _layoutDisplayPageProviderTracker;
+	private LayoutDisplayPageProviderRegistry
+		_layoutDisplayPageProviderRegistry;
 
 	@Reference
 	private LayoutLocalService _layoutLocalService;

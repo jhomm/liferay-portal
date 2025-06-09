@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.trash.service.test.trashhandlerresgistryutil;
@@ -25,9 +16,9 @@ import com.liferay.portal.kernel.trash.TrashHandler;
 import com.liferay.portal.kernel.trash.TrashRenderer;
 import com.liferay.trash.kernel.model.TrashEntry;
 
-import java.util.List;
+import jakarta.portlet.PortletRequest;
 
-import javax.portlet.PortletRequest;
+import java.util.List;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -35,7 +26,7 @@ import org.osgi.service.component.annotations.Component;
  * @author Peter Fellwock
  */
 @Component(
-	immediate = true, property = "service.ranking:Integer=" + Integer.MAX_VALUE,
+	property = "service.ranking:Integer=" + Integer.MAX_VALUE,
 	service = TrashHandler.class
 )
 public class TestTrashHandler implements TrashHandler {
@@ -188,11 +179,6 @@ public class TestTrashHandler implements TrashHandler {
 	}
 
 	@Override
-	public TrashEntry getTrashEntry(long classPK) {
-		return null;
-	}
-
-	@Override
 	public int getTrashModelsCount(long classPK) {
 		return 0;
 	}
@@ -215,15 +201,6 @@ public class TestTrashHandler implements TrashHandler {
 		return false;
 	}
 
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link #isDeletable(long)}
-	 */
-	@Deprecated
-	@Override
-	public boolean isDeletable() {
-		return false;
-	}
-
 	@Override
 	public boolean isDeletable(long classPK) {
 		return false;
@@ -231,20 +208,6 @@ public class TestTrashHandler implements TrashHandler {
 
 	@Override
 	public boolean isInTrash(long classPK) {
-		return false;
-	}
-
-	@Override
-	public boolean isInTrashContainer(long classPK) {
-		return false;
-	}
-
-	/**
-	 * @deprecated As of Mueller (7.2.x), replaced by {@link #isMovable(long)}
-	 */
-	@Deprecated
-	@Override
-	public boolean isMovable() {
 		return false;
 	}
 

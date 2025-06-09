@@ -1,22 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.data.provider.web.internal.exportimport.data.handler;
 
 import com.liferay.dynamic.data.mapping.constants.DDMPortletKeys;
 import com.liferay.dynamic.data.mapping.data.provider.DDMDataProvider;
-import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderTracker;
+import com.liferay.dynamic.data.mapping.data.provider.DDMDataProviderRegistry;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializer;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializerDeserializeRequest;
 import com.liferay.dynamic.data.mapping.io.DDMFormValuesDeserializerDeserializeResponse;
@@ -46,8 +37,7 @@ import org.osgi.service.component.annotations.Reference;
  * @author Dylan Rebelak
  */
 @Component(
-	immediate = true,
-	property = "javax.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
+	property = "jakarta.portlet.name=" + DDMPortletKeys.DYNAMIC_DATA_MAPPING_DATA_PROVIDER,
 	service = StagedModelDataHandler.class
 )
 public class DDMDataProviderInstanceStagedModelDataHandler
@@ -107,18 +97,6 @@ public class DDMDataProviderInstanceStagedModelDataHandler
 		return dataProviderInstance.getNameCurrentValue();
 	}
 
-	protected DDMFormValues deserialize(String content, DDMForm ddmForm) {
-		DDMFormValuesDeserializerDeserializeRequest.Builder builder =
-			DDMFormValuesDeserializerDeserializeRequest.Builder.newBuilder(
-				content, ddmForm);
-
-		DDMFormValuesDeserializerDeserializeResponse
-			ddmFormValuesDeserializerDeserializeResponse =
-				_jsonDDMFormValuesDeserializer.deserialize(builder.build());
-
-		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
-	}
-
 	@Override
 	protected void doExportStagedModel(
 			PortletDataContext portletDataContext,
@@ -162,7 +140,7 @@ public class DDMDataProviderInstanceStagedModelDataHandler
 		throws Exception {
 
 		DDMDataProvider ddmDataProvider =
-			_ddmDataProviderTracker.getDDMDataProvider(
+			_ddmDataProviderRegistry.getDDMDataProvider(
 				dataProviderInstance.getType());
 
 		if (ddmDataProvider == null) {
@@ -205,7 +183,7 @@ public class DDMDataProviderInstanceStagedModelDataHandler
 
 		DDMForm ddmForm = DDMFormFactory.create(ddmDataProvider.getSettings());
 
-		DDMFormValues ddmFormValues = deserialize(
+		DDMFormValues ddmFormValues = _deserialize(
 			dataProviderInstance.getDefinition(), ddmForm);
 
 		ServiceContext serviceContext = portletDataContext.createServiceContext(
@@ -228,14 +206,16 @@ public class DDMDataProviderInstanceStagedModelDataHandler
 		return _stagedModelRepository;
 	}
 
-	@Reference(
-		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance)",
-		unbind = "-"
-	)
-	protected void setStagedModelRepository(
-		StagedModelRepository<DDMDataProviderInstance> stagedModelRepository) {
+	private DDMFormValues _deserialize(String content, DDMForm ddmForm) {
+		DDMFormValuesDeserializerDeserializeRequest.Builder builder =
+			DDMFormValuesDeserializerDeserializeRequest.Builder.newBuilder(
+				content, ddmForm);
 
-		_stagedModelRepository = stagedModelRepository;
+		DDMFormValuesDeserializerDeserializeResponse
+			ddmFormValuesDeserializerDeserializeResponse =
+				_jsonDDMFormValuesDeserializer.deserialize(builder.build());
+
+		return ddmFormValuesDeserializerDeserializeResponse.getDDMFormValues();
 	}
 
 	@Reference
@@ -243,11 +223,14 @@ public class DDMDataProviderInstanceStagedModelDataHandler
 		_ddmDataProviderInstanceLocalService;
 
 	@Reference
-	private DDMDataProviderTracker _ddmDataProviderTracker;
+	private DDMDataProviderRegistry _ddmDataProviderRegistry;
 
 	@Reference(target = "(ddm.form.values.deserializer.type=json)")
 	private DDMFormValuesDeserializer _jsonDDMFormValuesDeserializer;
 
+	@Reference(
+		target = "(model.class.name=com.liferay.dynamic.data.mapping.model.DDMDataProviderInstance)"
+	)
 	private StagedModelRepository<DDMDataProviderInstance>
 		_stagedModelRepository;
 

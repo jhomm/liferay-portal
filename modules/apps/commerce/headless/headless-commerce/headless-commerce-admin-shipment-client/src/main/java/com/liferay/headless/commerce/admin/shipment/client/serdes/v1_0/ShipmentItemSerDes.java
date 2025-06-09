@@ -1,21 +1,16 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.shipment.client.serdes.v1_0;
 
 import com.liferay.headless.commerce.admin.shipment.client.dto.v1_0.ShipmentItem;
 import com.liferay.headless.commerce.admin.shipment.client.json.BaseJSONParser;
+
+import jakarta.annotation.Generated;
+
+import java.math.BigDecimal;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -25,8 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-
-import javax.annotation.Generated;
 
 /**
  * @author Andrea Sbarra
@@ -59,7 +52,7 @@ public class ShipmentItemSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (shipmentItem.getActions() != null) {
 			if (sb.length() > 1) {
@@ -82,6 +75,20 @@ public class ShipmentItemSerDes {
 
 			sb.append(
 				liferayToJSONDateFormat.format(shipmentItem.getCreateDate()));
+
+			sb.append("\"");
+		}
+
+		if (shipmentItem.getExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"externalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipmentItem.getExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -111,6 +118,21 @@ public class ShipmentItemSerDes {
 			sb.append("\"");
 		}
 
+		if (shipmentItem.getOrderItemExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"orderItemExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(shipmentItem.getOrderItemExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (shipmentItem.getOrderItemId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -131,6 +153,20 @@ public class ShipmentItemSerDes {
 			sb.append(shipmentItem.getQuantity());
 		}
 
+		if (shipmentItem.getShipmentExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"shipmentExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipmentItem.getShipmentExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
 		if (shipmentItem.getShipmentId() != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -139,6 +175,20 @@ public class ShipmentItemSerDes {
 			sb.append("\"shipmentId\": ");
 
 			sb.append(shipmentItem.getShipmentId());
+		}
+
+		if (shipmentItem.getUnitOfMeasureKey() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"unitOfMeasureKey\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(shipmentItem.getUnitOfMeasureKey()));
+
+			sb.append("\"");
 		}
 
 		if (shipmentItem.getUserName() != null) {
@@ -151,6 +201,31 @@ public class ShipmentItemSerDes {
 			sb.append("\"");
 
 			sb.append(_escape(shipmentItem.getUserName()));
+
+			sb.append("\"");
+		}
+
+		if (shipmentItem.getValidateInventory() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"validateInventory\": ");
+
+			sb.append(shipmentItem.getValidateInventory());
+		}
+
+		if (shipmentItem.getWarehouseExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"warehouseExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(
+				_escape(shipmentItem.getWarehouseExternalReferenceCode()));
 
 			sb.append("\"");
 		}
@@ -185,7 +260,7 @@ public class ShipmentItemSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (shipmentItem.getActions() == null) {
 			map.put("actions", null);
@@ -201,6 +276,15 @@ public class ShipmentItemSerDes {
 			map.put(
 				"createDate",
 				liferayToJSONDateFormat.format(shipmentItem.getCreateDate()));
+		}
+
+		if (shipmentItem.getExternalReferenceCode() == null) {
+			map.put("externalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"externalReferenceCode",
+				String.valueOf(shipmentItem.getExternalReferenceCode()));
 		}
 
 		if (shipmentItem.getId() == null) {
@@ -219,6 +303,16 @@ public class ShipmentItemSerDes {
 				liferayToJSONDateFormat.format(shipmentItem.getModifiedDate()));
 		}
 
+		if (shipmentItem.getOrderItemExternalReferenceCode() == null) {
+			map.put("orderItemExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"orderItemExternalReferenceCode",
+				String.valueOf(
+					shipmentItem.getOrderItemExternalReferenceCode()));
+		}
+
 		if (shipmentItem.getOrderItemId() == null) {
 			map.put("orderItemId", null);
 		}
@@ -234,6 +328,16 @@ public class ShipmentItemSerDes {
 			map.put("quantity", String.valueOf(shipmentItem.getQuantity()));
 		}
 
+		if (shipmentItem.getShipmentExternalReferenceCode() == null) {
+			map.put("shipmentExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"shipmentExternalReferenceCode",
+				String.valueOf(
+					shipmentItem.getShipmentExternalReferenceCode()));
+		}
+
 		if (shipmentItem.getShipmentId() == null) {
 			map.put("shipmentId", null);
 		}
@@ -241,11 +345,39 @@ public class ShipmentItemSerDes {
 			map.put("shipmentId", String.valueOf(shipmentItem.getShipmentId()));
 		}
 
+		if (shipmentItem.getUnitOfMeasureKey() == null) {
+			map.put("unitOfMeasureKey", null);
+		}
+		else {
+			map.put(
+				"unitOfMeasureKey",
+				String.valueOf(shipmentItem.getUnitOfMeasureKey()));
+		}
+
 		if (shipmentItem.getUserName() == null) {
 			map.put("userName", null);
 		}
 		else {
 			map.put("userName", String.valueOf(shipmentItem.getUserName()));
+		}
+
+		if (shipmentItem.getValidateInventory() == null) {
+			map.put("validateInventory", null);
+		}
+		else {
+			map.put(
+				"validateInventory",
+				String.valueOf(shipmentItem.getValidateInventory()));
+		}
+
+		if (shipmentItem.getWarehouseExternalReferenceCode() == null) {
+			map.put("warehouseExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"warehouseExternalReferenceCode",
+				String.valueOf(
+					shipmentItem.getWarehouseExternalReferenceCode()));
 		}
 
 		if (shipmentItem.getWarehouseId() == null) {
@@ -273,6 +405,67 @@ public class ShipmentItemSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "createDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "modifiedDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"orderItemExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "orderItemId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "quantity")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "shipmentExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "shipmentId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "unitOfMeasureKey")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "userName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "validateInventory")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"warehouseExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "warehouseId")) {
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			ShipmentItem shipmentItem, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -280,14 +473,21 @@ public class ShipmentItemSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					shipmentItem.setActions(
-						(Map)ShipmentItemSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "createDate")) {
 				if (jsonParserFieldValue != null) {
 					shipmentItem.setCreateDate(
 						toDate((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					shipmentItem.setExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "id")) {
@@ -302,6 +502,15 @@ public class ShipmentItemSerDes {
 						toDate((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"orderItemExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					shipmentItem.setOrderItemExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "orderItemId")) {
 				if (jsonParserFieldValue != null) {
 					shipmentItem.setOrderItemId(
@@ -311,7 +520,15 @@ public class ShipmentItemSerDes {
 			else if (Objects.equals(jsonParserFieldName, "quantity")) {
 				if (jsonParserFieldValue != null) {
 					shipmentItem.setQuantity(
-						Integer.valueOf((String)jsonParserFieldValue));
+						new BigDecimal((String)jsonParserFieldValue));
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "shipmentExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					shipmentItem.setShipmentExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "shipmentId")) {
@@ -320,9 +537,30 @@ public class ShipmentItemSerDes {
 						Long.valueOf((String)jsonParserFieldValue));
 				}
 			}
+			else if (Objects.equals(jsonParserFieldName, "unitOfMeasureKey")) {
+				if (jsonParserFieldValue != null) {
+					shipmentItem.setUnitOfMeasureKey(
+						(String)jsonParserFieldValue);
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "userName")) {
 				if (jsonParserFieldValue != null) {
 					shipmentItem.setUserName((String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "validateInventory")) {
+				if (jsonParserFieldValue != null) {
+					shipmentItem.setValidateInventory(
+						(Boolean)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(
+						jsonParserFieldName,
+						"warehouseExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					shipmentItem.setWarehouseExternalReferenceCode(
+						(String)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "warehouseId")) {
@@ -363,36 +601,7 @@ public class ShipmentItemSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -402,6 +611,42 @@ public class ShipmentItemSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

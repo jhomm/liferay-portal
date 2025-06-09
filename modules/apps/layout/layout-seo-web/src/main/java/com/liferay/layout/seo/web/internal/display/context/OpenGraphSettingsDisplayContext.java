@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.layout.seo.web.internal.display.context;
@@ -36,11 +27,7 @@ import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.WebKeys;
 
-import java.util.Optional;
-
-import javax.portlet.PortletURL;
-
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * @author Adolfo Pérez
@@ -75,30 +62,29 @@ public class OpenGraphSettingsDisplayContext {
 			new FileEntryItemSelectorReturnType(),
 			new URLItemSelectorReturnType());
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
-			_liferayPortletResponse.getNamespace() +
-				"openGraphImageSelectedItem",
-			imageItemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				RequestBackedPortletURLFactoryUtil.create(_httpServletRequest),
+				_liferayPortletResponse.getNamespace() +
+					"openGraphImageSelectedItem",
+				imageItemSelectorCriterion));
 	}
 
 	public LayoutSEOSite getLayoutSEOSite() {
-		Group group = _getGroup();
+		Group group = _themeDisplay.getScopeGroup();
 
 		return _layoutSEOSiteLocalService.fetchLayoutSEOSiteByGroupId(
 			group.getGroupId());
 	}
 
 	public long getOpenGraphImageFileEntryId() {
-		return Optional.ofNullable(
-			getLayoutSEOSite()
-		).map(
-			LayoutSEOSite::getOpenGraphImageFileEntryId
-		).orElse(
-			0L
-		);
+		LayoutSEOSite layoutSEOSite = getLayoutSEOSite();
+
+		if (layoutSEOSite != null) {
+			return layoutSEOSite.getOpenGraphImageFileEntryId();
+		}
+
+		return 0L;
 	}
 
 	public String getOpenGraphImageTitle() {
@@ -119,7 +105,7 @@ public class OpenGraphSettingsDisplayContext {
 			return fileEntry.getTitle();
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return StringPool.BLANK;
 		}
@@ -143,22 +129,15 @@ public class OpenGraphSettingsDisplayContext {
 			return _dlurlHelper.getImagePreviewURL(fileEntry, _themeDisplay);
 		}
 		catch (PortalException portalException) {
-			_log.error(portalException, portalException);
+			_log.error(portalException);
 
 			return StringPool.BLANK;
 		}
 	}
 
 	public boolean isOpenGraphEnabled() throws PortalException {
-		return _openGraphConfiguration.isOpenGraphEnabled(_getGroup());
-	}
-
-	private Group _getGroup() {
-		return Optional.ofNullable(
-			(Group)_httpServletRequest.getAttribute("site.liveGroup")
-		).orElseGet(
-			() -> (Group)_httpServletRequest.getAttribute("site.group")
-		);
+		return _openGraphConfiguration.isOpenGraphEnabled(
+			_themeDisplay.getScopeGroup());
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(

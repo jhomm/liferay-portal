@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.site.navigation.service.test;
@@ -28,16 +19,18 @@ import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.transaction.Propagation;
 import com.liferay.portal.kernel.util.OrderByComparator;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.test.rule.TransactionalTestRule;
 import com.liferay.site.navigation.constants.SiteNavigationConstants;
 import com.liferay.site.navigation.exception.DuplicateSiteNavigationMenuException;
+import com.liferay.site.navigation.exception.DuplicateSiteNavigationMenuExternalReferenceCodeException;
 import com.liferay.site.navigation.exception.SiteNavigationMenuNameException;
 import com.liferay.site.navigation.model.SiteNavigationMenu;
 import com.liferay.site.navigation.service.SiteNavigationMenuLocalService;
 import com.liferay.site.navigation.service.persistence.SiteNavigationMenuPersistence;
-import com.liferay.site.navigation.util.SiteNavigationMenuTestUtil;
+import com.liferay.site.navigation.test.util.SiteNavigationMenuTestUtil;
 import com.liferay.site.navigation.util.comparator.SiteNavigationMenuNameComparator;
 
 import java.util.List;
@@ -70,15 +63,13 @@ public class SiteNavigationMenuLocalServiceTest {
 
 	@Test
 	public void testAddAutoSiteNavigationMenu() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
-				SiteNavigationConstants.TYPE_DEFAULT, false, serviceContext);
+				SiteNavigationConstants.TYPE_DEFAULT, false,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		SiteNavigationMenu persistedSiteNavigationMenu =
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
@@ -99,14 +90,12 @@ public class SiteNavigationMenuLocalServiceTest {
 
 	@Test
 	public void testAddSiteNavigationMenu() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
-				TestPropsValues.getUserId(), _group.getGroupId(),
-				RandomTestUtil.randomString(), serviceContext);
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
+				RandomTestUtil.randomString(),
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		SiteNavigationMenu persistedSiteNavigationMenu =
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
@@ -117,15 +106,13 @@ public class SiteNavigationMenuLocalServiceTest {
 
 	@Test
 	public void testAddSiteNavigationMenuByType() throws Exception {
-		ServiceContext serviceContext =
-			ServiceContextTestUtil.getServiceContext(
-				_group.getGroupId(), TestPropsValues.getUserId());
-
 		SiteNavigationMenu siteNavigationMenu =
 			_siteNavigationMenuLocalService.addSiteNavigationMenu(
-				TestPropsValues.getUserId(), _group.getGroupId(),
+				null, TestPropsValues.getUserId(), _group.getGroupId(),
 				RandomTestUtil.randomString(),
-				SiteNavigationConstants.TYPE_DEFAULT, serviceContext);
+				SiteNavigationConstants.TYPE_DEFAULT,
+				ServiceContextTestUtil.getServiceContext(
+					_group.getGroupId(), TestPropsValues.getUserId()));
 
 		SiteNavigationMenu persistedSiteNavigationMenu =
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
@@ -138,6 +125,28 @@ public class SiteNavigationMenuLocalServiceTest {
 	public void testAddSiteNavigationMenuWithEmptyName() throws Exception {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(
 			_group, StringPool.BLANK);
+	}
+
+	@Test(
+		expected = DuplicateSiteNavigationMenuExternalReferenceCodeException.class
+	)
+	public void testAddSiteNavigationMenuWithExistingExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = StringUtil.randomString();
+
+		_siteNavigationMenuLocalService.addSiteNavigationMenu(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), RandomTestUtil.randomString(),
+			SiteNavigationConstants.TYPE_DEFAULT, false,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
+		_siteNavigationMenuLocalService.addSiteNavigationMenu(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), RandomTestUtil.randomString(),
+			SiteNavigationConstants.TYPE_DEFAULT, false,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
 	}
 
 	@Test(expected = SiteNavigationMenuNameException.class)
@@ -168,6 +177,28 @@ public class SiteNavigationMenuLocalServiceTest {
 		Assert.assertNull(
 			_siteNavigationMenuPersistence.fetchByPrimaryKey(
 				siteNavigationMenu.getSiteNavigationMenuId()));
+	}
+
+	@Test
+	public void testDeleteSiteNavigationMenuByExternalReferenceCode()
+		throws Exception {
+
+		String externalReferenceCode = StringUtil.randomString();
+
+		_siteNavigationMenuLocalService.addSiteNavigationMenu(
+			externalReferenceCode, TestPropsValues.getUserId(),
+			_group.getGroupId(), RandomTestUtil.randomString(),
+			SiteNavigationConstants.TYPE_DEFAULT, false,
+			ServiceContextTestUtil.getServiceContext(
+				_group.getGroupId(), TestPropsValues.getUserId()));
+
+		_siteNavigationMenuLocalService.deleteSiteNavigationMenu(
+			externalReferenceCode, _group.getGroupId());
+
+		Assert.assertNull(
+			_siteNavigationMenuLocalService.
+				fetchSiteNavigationMenuByExternalReferenceCode(
+					externalReferenceCode, _group.getGroupId()));
 	}
 
 	@Test
@@ -235,11 +266,9 @@ public class SiteNavigationMenuLocalServiceTest {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(
 			_group, SiteNavigationConstants.TYPE_SECONDARY);
 
-		siteNavigationMenu =
+		Assert.assertNotNull(
 			_siteNavigationMenuLocalService.fetchSiteNavigationMenu(
-				_group.getGroupId(), SiteNavigationConstants.TYPE_SECONDARY);
-
-		Assert.assertNotNull(siteNavigationMenu);
+				_group.getGroupId(), SiteNavigationConstants.TYPE_SECONDARY));
 	}
 
 	@Test
@@ -253,11 +282,9 @@ public class SiteNavigationMenuLocalServiceTest {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(
 			_group, SiteNavigationConstants.TYPE_SOCIAL);
 
-		siteNavigationMenu =
+		Assert.assertNotNull(
 			_siteNavigationMenuLocalService.fetchSiteNavigationMenu(
-				_group.getGroupId(), SiteNavigationConstants.TYPE_SOCIAL);
-
-		Assert.assertNotNull(siteNavigationMenu);
+				_group.getGroupId(), SiteNavigationConstants.TYPE_SOCIAL));
 	}
 
 	@Test
@@ -350,7 +377,7 @@ public class SiteNavigationMenuLocalServiceTest {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(_group, "dd");
 
 		OrderByComparator<SiteNavigationMenu> orderByComparator =
-			new SiteNavigationMenuNameComparator(true);
+			SiteNavigationMenuNameComparator.getInstance(true);
 
 		List<SiteNavigationMenu> siteNavigationMenus =
 			_siteNavigationMenuLocalService.getSiteNavigationMenus(
@@ -378,7 +405,7 @@ public class SiteNavigationMenuLocalServiceTest {
 		SiteNavigationMenuTestUtil.addSiteNavigationMenu(_group, "dd");
 
 		OrderByComparator<SiteNavigationMenu> orderByComparator =
-			new SiteNavigationMenuNameComparator(false);
+			SiteNavigationMenuNameComparator.getInstance(false);
 
 		List<SiteNavigationMenu> siteNavigationMenus =
 			_siteNavigationMenuLocalService.getSiteNavigationMenus(
@@ -403,7 +430,7 @@ public class SiteNavigationMenuLocalServiceTest {
 			_group, "bb Menu Name");
 
 		OrderByComparator<SiteNavigationMenu> orderByComparator =
-			new SiteNavigationMenuNameComparator(true);
+			SiteNavigationMenuNameComparator.getInstance(true);
 
 		List<SiteNavigationMenu> siteNavigationMenus =
 			_siteNavigationMenuLocalService.getSiteNavigationMenus(
@@ -427,7 +454,7 @@ public class SiteNavigationMenuLocalServiceTest {
 			_group, "bb Menu Name");
 
 		OrderByComparator<SiteNavigationMenu> orderByComparator =
-			new SiteNavigationMenuNameComparator(false);
+			SiteNavigationMenuNameComparator.getInstance(false);
 
 		List<SiteNavigationMenu> descSiteNavigationMenus =
 			_siteNavigationMenuLocalService.getSiteNavigationMenus(

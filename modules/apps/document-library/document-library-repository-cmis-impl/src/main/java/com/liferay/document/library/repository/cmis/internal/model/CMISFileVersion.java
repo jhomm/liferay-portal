@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.repository.cmis.internal.model;
@@ -78,7 +69,7 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 		}
 
@@ -133,6 +124,11 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 	}
 
 	@Override
+	public Date getDisplayDate() {
+		return null;
+	}
+
+	@Override
 	public ExpandoBridge getExpandoBridge() {
 		return null;
 	}
@@ -161,13 +157,13 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 		Document document = null;
 
 		try {
-			List<Document> allVersions = _document.getAllVersions();
+			List<Document> documents = _document.getAllVersions();
 
-			if (allVersions.isEmpty()) {
+			if (documents.isEmpty()) {
 				document = _document;
 			}
 			else {
-				document = allVersions.get(0);
+				document = documents.get(0);
 			}
 		}
 		catch (CmisObjectNotFoundException cmisObjectNotFoundException) {
@@ -186,11 +182,11 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 		}
 		catch (NoSuchFileEntryException noSuchFileEntryException) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(noSuchFileEntryException, noSuchFileEntryException);
+				_log.debug(noSuchFileEntryException);
 			}
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 		}
 
 		return 0;
@@ -225,11 +221,15 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 	public String getMimeType() {
 		String mimeType = _document.getContentStreamMimeType();
 
+		if (Validator.isNull(mimeType)) {
+			mimeType = MimeTypesUtil.getContentType(getTitle());
+		}
+
 		if (Validator.isNotNull(mimeType)) {
 			return mimeType;
 		}
 
-		return MimeTypesUtil.getContentType(getTitle());
+		return StringPool.BLANK;
 	}
 
 	@Override
@@ -317,11 +317,11 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 	@Override
 	public long getUserId() {
 		try {
-			return UserLocalServiceUtil.getDefaultUserId(getCompanyId());
+			return UserLocalServiceUtil.getGuestUserId(getCompanyId());
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return 0;
@@ -336,13 +336,13 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 	@Override
 	public String getUserUuid() {
 		try {
-			User user = UserLocalServiceUtil.getDefaultUser(getCompanyId());
+			User user = UserLocalServiceUtil.getGuestUser(getCompanyId());
 
 			return user.getUserUuid();
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return StringPool.BLANK;
@@ -386,6 +386,11 @@ public class CMISFileVersion extends BaseCMISModel implements FileVersion {
 
 	@Override
 	public boolean isPending() {
+		return false;
+	}
+
+	@Override
+	public boolean isScheduled() {
 		return false;
 	}
 

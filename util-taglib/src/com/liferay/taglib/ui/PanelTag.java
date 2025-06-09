@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.taglib.ui;
@@ -20,13 +11,16 @@ import com.liferay.portal.kernel.util.Validator;
 import com.liferay.taglib.BaseBodyTagSupport;
 import com.liferay.taglib.util.IncludeTag;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.jsp.JspException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.jsp.JspException;
 
 /**
  * @author Brian Wing Shun Chan
  * @author Shuyang Zhou
+ * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+ *             com.liferay.frontend.taglib.clay.servlet.taglib.PanelTag}
  */
+@Deprecated
 public class PanelTag extends IncludeTag {
 
 	@Override
@@ -97,7 +91,7 @@ public class PanelTag extends IncludeTag {
 	}
 
 	public String getMarkupView() {
-		return _markupView;
+		return null;
 	}
 
 	public String getParentId() {
@@ -157,7 +151,6 @@ public class PanelTag extends IncludeTag {
 	}
 
 	public void setMarkupView(String markupView) {
-		_markupView = markupView;
 	}
 
 	public void setParentId(String parentId) {
@@ -193,7 +186,6 @@ public class PanelTag extends IncludeTag {
 		_helpMessage = null;
 		_iconCssClass = null;
 		_id = null;
-		_markupView = null;
 		_parentId = StringPool.BLANK;
 		_persistState = true;
 		_startPage = null;
@@ -204,10 +196,6 @@ public class PanelTag extends IncludeTag {
 	@Override
 	protected String getEndPage() {
 		if (Validator.isNull(_endPage)) {
-			if (Validator.isNotNull(_markupView)) {
-				return "/html/taglib/ui/panel/" + _markupView + "/end.jsp";
-			}
-
 			return "/html/taglib/ui/panel/end.jsp";
 		}
 
@@ -217,10 +205,6 @@ public class PanelTag extends IncludeTag {
 	@Override
 	protected String getStartPage() {
 		if (Validator.isNull(_startPage)) {
-			if (Validator.isNotNull(_markupView)) {
-				return "/html/taglib/ui/panel/" + _markupView + "/start.jsp";
-			}
-
 			return "/html/taglib/ui/panel/start.jsp";
 		}
 
@@ -236,7 +220,6 @@ public class PanelTag extends IncludeTag {
 	private String _helpMessage;
 	private String _iconCssClass;
 	private String _id;
-	private String _markupView;
 	private String _parentId = StringPool.BLANK;
 	private boolean _persistState = true;
 	private String _startPage;

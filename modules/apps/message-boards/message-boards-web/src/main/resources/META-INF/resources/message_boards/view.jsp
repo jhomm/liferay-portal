@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -59,6 +50,12 @@ if (cur2 > 0) {
 
 portletURL.setParameter("mbCategoryId", String.valueOf(categoryId));
 
+String searchCategoryId = ParamUtil.getString(request, "searchCategoryId");
+
+if (Validator.isNotNull(searchCategoryId)) {
+	portletURL.setParameter("searchCategoryId", searchCategoryId);
+}
+
 String keywords = ParamUtil.getString(request, "keywords");
 
 if (Validator.isNotNull(keywords)) {
@@ -78,10 +75,10 @@ if (orderByType.equals("asc")) {
 OrderByComparator threadOrderByComparator = null;
 
 if (orderByCol.equals("modified-date")) {
-	threadOrderByComparator = new ThreadModifiedDateComparator(orderByAsc);
+	threadOrderByComparator = ThreadModifiedDateComparator.getInstance(orderByAsc);
 }
 
-MBListDisplayContext mbListDisplayContext = mbDisplayContextProvider.getMbListDisplayContext(request, response, categoryId, mvcRenderCommandName);
+MBListDisplayContext mbListDisplayContext = MBDisplayContextUtil.getMBListDisplayContext(request, response, categoryId, mvcRenderCommandName);
 
 request.setAttribute("view.jsp-categorySubscriptionClassPKs", categorySubscriptionClassPKs);
 request.setAttribute("view.jsp-threadSubscriptionClassPKs", threadSubscriptionClassPKs);
@@ -114,7 +111,7 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 		MBCategoryDisplay categoryDisplay = new MBCategoryDisplay(scopeGroupId, categoryId);
 		%>
 
-		<div class="main-content-body">
+		<div class="main-content-body mt-4">
 			<h3><liferay-ui:message key="my-subscriptions" /></h3>
 
 			<liferay-ui:search-container
@@ -169,7 +166,7 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 	<c:when test='<%= mbListDisplayContext.isShowSearch() || mvcRenderCommandName.equals("/message_boards/view") || mvcRenderCommandName.equals("/message_boards/view_category") || mbListDisplayContext.isShowMyPosts() || mbListDisplayContext.isShowRecentPosts() %>'>
 		<c:choose>
 			<c:when test='<%= mvcRenderCommandName.equals("/message_boards/search") || mvcRenderCommandName.equals("/message_boards/view") || mvcRenderCommandName.equals("/message_boards/view_category") %>'>
-				<div class="main-content-body">
+				<div class="main-content-body mt-4">
 					<c:if test="<%= mbListDisplayContext.isShowSearch() %>">
 						<liferay-ui:header
 							backURL="<%= redirect %>"
@@ -193,11 +190,8 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 						MBBreadcrumbUtil.addPortletBreadcrumbEntries(categoryId, request, renderResponse);
 						%>
 
-						<liferay-ui:breadcrumb
-							showCurrentGroup="<%= false %>"
-							showGuestGroup="<%= false %>"
-							showLayout="<%= false %>"
-							showParentGroups="<%= false %>"
+						<liferay-site-navigation:breadcrumb
+							breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, false, true) %>"
 						/>
 					</c:if>
 
@@ -217,11 +211,8 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 									MBBreadcrumbUtil.addPortletBreadcrumbEntries(categoryId, request, renderResponse);
 									%>
 
-									<liferay-ui:breadcrumb
-										showCurrentGroup="<%= false %>"
-										showGuestGroup="<%= false %>"
-										showLayout="<%= false %>"
-										showParentGroups="<%= false %>"
+									<liferay-site-navigation:breadcrumb
+										breadcrumbEntries="<%= BreadcrumbEntriesUtil.getBreadcrumbEntries(request, false, false, false, false, true) %>"
 									/>
 								</c:otherwise>
 							</c:choose>
@@ -238,6 +229,7 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 
 									<div class="btn-group-item">
 										<clay:link
+											data-senna-off="<%= true %>"
 											displayType="secondary"
 											href="<%= editCategoryURL %>"
 											label="add-category[message-board]"
@@ -398,7 +390,7 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 					mbListDisplayContext.setCategoryEntriesDelta(categoryEntriesSearchContainer);
 
 					categoryEntriesSearchContainer.setOrderByCol(orderByCol);
-					categoryEntriesSearchContainer.setOrderByComparator(new CategoryTitleComparator(true));
+					categoryEntriesSearchContainer.setOrderByComparator(CategoryTitleComparator.getInstance(true));
 					categoryEntriesSearchContainer.setOrderByType(orderByType);
 
 					mbListDisplayContext.populateCategoriesResultsAndTotal(categoryEntriesSearchContainer);
@@ -427,8 +419,9 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 					</c:if>
 
 					<c:if test="<%= (categoryEntriesSearchContainer.getTotal() <= 0) && (threadEntriesSearchContainer.getTotal() <= 0) %>">
-						<liferay-ui:empty-result-message
-							message="there-are-no-threads-or-categories"
+						<liferay-frontend:empty-result-message
+							animationType="<%= EmptyResultMessageKeys.AnimationType.EMPTY %>"
+							title="<%= LanguageUtil.get(resourceBundle, mbListDisplayContext.getEmptyResultsMessage()) %>"
 						/>
 					</c:if>
 
@@ -442,7 +435,7 @@ request.setAttribute("view.jsp-viewCategory", Boolean.TRUE.toString());
 				</div>
 			</c:when>
 			<c:when test="<%= mbListDisplayContext.isShowMyPosts() || mbListDisplayContext.isShowRecentPosts() %>">
-				<div class="main-content-body">
+				<div class="main-content-body mt-4">
 					<c:choose>
 						<c:when test="<%= mbListDisplayContext.isShowRecentPosts() %>">
 							<clay:content-row

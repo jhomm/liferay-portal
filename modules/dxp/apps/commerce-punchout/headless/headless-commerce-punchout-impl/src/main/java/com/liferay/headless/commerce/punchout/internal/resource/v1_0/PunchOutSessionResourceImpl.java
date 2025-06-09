@@ -1,24 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * The contents of this file are subject to the terms of the Liferay Enterprise
- * Subscription License ("License"). You may not use this file except in
- * compliance with the License. You can obtain a copy of the License by
- * contacting Liferay, Inc. See the License for the specific language governing
- * permissions and limitations under the License, including but not limited to
- * distribution rights of the Software.
- *
- *
- *
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.punchout.internal.resource.v1_0;
 
-import com.liferay.commerce.account.model.CommerceAccount;
-import com.liferay.commerce.account.service.CommerceAccountLocalService;
-import com.liferay.commerce.account.service.CommerceAccountUserRelLocalService;
+import com.liferay.account.model.AccountEntry;
+import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.commerce.context.CommerceContext;
 import com.liferay.commerce.context.CommerceContextFactory;
+import com.liferay.commerce.helper.CommerceAccountHelper;
 import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.model.CommerceChannel;
@@ -29,7 +20,7 @@ import com.liferay.commerce.punchout.oauth2.provider.PunchOutAccessTokenProvider
 import com.liferay.commerce.punchout.oauth2.provider.model.PunchOutAccessToken;
 import com.liferay.commerce.service.CommerceOrderItemLocalService;
 import com.liferay.commerce.service.CommerceOrderLocalService;
-import com.liferay.headless.commerce.core.util.ServiceContextHelper;
+import com.liferay.headless.commerce.core.helper.ServiceContextHelper;
 import com.liferay.headless.commerce.punchout.dto.v1_0.Cart;
 import com.liferay.headless.commerce.punchout.dto.v1_0.CartItem;
 import com.liferay.headless.commerce.punchout.dto.v1_0.Group;
@@ -39,14 +30,15 @@ import com.liferay.headless.commerce.punchout.helper.PunchOutContext;
 import com.liferay.headless.commerce.punchout.helper.PunchOutSessionContributor;
 import com.liferay.headless.commerce.punchout.resource.v1_0.PunchOutSessionResource;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.configuration.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.exception.NoSuchGroupException;
 import com.liferay.portal.kernel.exception.UserEmailAddressException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Role;
+import com.liferay.portal.kernel.model.UserConstants;
 import com.liferay.portal.kernel.module.configuration.ConfigurationException;
-import com.liferay.portal.kernel.module.configuration.ConfigurationProvider;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.RoleLocalService;
@@ -58,18 +50,17 @@ import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.Validator;
 
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.InternalServerErrorException;
+
+import java.math.BigDecimal;
+
 import java.net.URLEncoder;
 
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-
-import javax.validation.constraints.NotNull;
-
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.InternalServerErrorException;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -79,7 +70,6 @@ import org.osgi.service.component.annotations.ServiceScope;
  * @author Jaclyn Ong
  */
 @Component(
-	enabled = false,
 	properties = "OSGI-INF/liferay/rest/v1_0/punch-out-session.properties",
 	scope = ServiceScope.PROTOTYPE, service = PunchOutSessionResource.class
 )
@@ -88,7 +78,7 @@ public class PunchOutSessionResourceImpl
 
 	@Override
 	public PunchOutSession postPunchOutSessionRequest(
-			@NotNull PunchOutSession punchOutSession)
+			PunchOutSession punchOutSession)
 		throws Exception {
 
 		com.liferay.portal.kernel.model.Group buyerGroup = _fetchGroup(
@@ -132,10 +122,10 @@ public class PunchOutSessionResourceImpl
 				"Buyer user does not belong to group");
 		}
 
-		CommerceAccount businessCommerceAccount = _fetchBusinessCommerceAccount(
+		AccountEntry businessAccountEntry = _fetchBusinessAccountEntry(
 			punchOutSession.getBuyerAccountReferenceCode());
 
-		if (businessCommerceAccount == null) {
+		if (businessAccountEntry == null) {
 			_log.error(
 				"Business commerce account not found with external reference" +
 					"code: " + punchOutSession.getBuyerAccountReferenceCode());
@@ -145,7 +135,7 @@ public class PunchOutSessionResourceImpl
 		}
 
 		_addBuyerUserToAccount(
-			businessCommerceAccount, buyerLiferayUser.getUserId(),
+			businessAccountEntry, buyerLiferayUser.getUserId(),
 			buyerGroup.getGroupId());
 
 		String punchOutSessionType = punchOutSession.getPunchOutSessionType();
@@ -180,44 +170,40 @@ public class PunchOutSessionResourceImpl
 			commerceOrderUuid = editCartCommerceOrder.getUuid();
 		}
 
-		String punchOutStartURL = _getPunchOutStartURL(
-			commerceChannel.getGroupId());
-
 		PunchOutContext punchOutContext = new PunchOutContext(
-			businessCommerceAccount, buyerGroup, buyerLiferayUser,
-			commerceChannel, editCartCommerceOrder, punchOutSession);
-
-		HashMap<String, Object> punchOutSessionAttributes =
-			_punchOutSessionContributor.getPunchOutSessionAttributes(
-				punchOutContext);
+			businessAccountEntry, buyerGroup, buyerLiferayUser, commerceChannel,
+			editCartCommerceOrder, punchOutSession);
 
 		PunchOutAccessToken punchOutAccessToken =
 			_punchOutAccessTokenProvider.generatePunchOutAccessToken(
 				buyerGroup.getGroupId(),
-				businessCommerceAccount.getCommerceAccountId(),
+				businessAccountEntry.getAccountEntryId(),
 				cart.getCurrencyCode(), buyerLiferayUser.getEmailAddress(),
-				commerceOrderUuid, punchOutSessionAttributes);
+				commerceOrderUuid,
+				_punchOutSessionContributor.getPunchOutSessionAttributes(
+					punchOutContext));
 
-		String tokenString = Base64.encodeToURL(punchOutAccessToken.getToken());
+		cart.setChannelId(commerceChannel::getCommerceChannelId);
 
-		punchOutStartURL +=
-			StringPool.QUESTION + _PUNCH_OUT_ACCESS_TOKEN_PARAMETER +
-				URLEncoder.encode(tokenString, "UTF-8");
+		punchOutSession.setCart(() -> cart);
 
-		cart.setChannelId(commerceChannel.getCommerceChannelId());
+		punchOutSession.setPunchOutStartURL(
+			() -> {
+				String punchOutStartURL = _getPunchOutStartURL(
+					commerceChannel.getGroupId());
 
-		punchOutSession.setCart(cart);
+				String url = URLEncoder.encode(
+					Base64.encodeToURL(punchOutAccessToken.getToken()),
+					"UTF-8");
 
-		punchOutSession.setPunchOutStartURL(punchOutStartURL);
+				punchOutStartURL +=
+					StringPool.QUESTION + _PUNCH_OUT_ACCESS_TOKEN_PARAMETER +
+						url;
+
+				return punchOutStartURL;
+			});
 
 		return punchOutSession;
-	}
-
-	@Reference(unbind = "-")
-	protected void setConfigurationProvider(
-		ConfigurationProvider configurationProvider) {
-
-		_configurationProvider = configurationProvider;
 	}
 
 	private com.liferay.portal.kernel.model.User _addBuyerUser(
@@ -240,10 +226,9 @@ public class PunchOutSessionResourceImpl
 		String password2 = StringPool.BLANK;
 		boolean autoScreenName = true;
 		String screenName = StringPool.BLANK;
-		String openId = StringPool.BLANK;
 		Locale locale = LocaleUtil.getDefault();
-		long prefixId = 0;
-		long suffixId = 0;
+		long prefixListTypeId = 0;
+		long suffixListTypeId = 0;
 		int birthdayMonth = Calendar.JANUARY;
 		int birthdayDay = 1;
 		int birthdayYear = 1970;
@@ -255,11 +240,11 @@ public class PunchOutSessionResourceImpl
 
 		com.liferay.portal.kernel.model.User user = _userLocalService.addUser(
 			creatorUserId, companyId, autoPassword, password1, password2,
-			autoScreenName, screenName, email, 0, openId, locale, firstName,
-			middleName, lastName, prefixId, suffixId, false, birthdayMonth,
-			birthdayDay, birthdayYear, jobTitle, new long[] {groupId},
-			organizationIds, roleIds, userGroupIds, sendEmail,
-			_serviceContextHelper.getServiceContext(groupId));
+			autoScreenName, screenName, email, locale, firstName, middleName,
+			lastName, prefixListTypeId, suffixListTypeId, false, birthdayMonth,
+			birthdayDay, birthdayYear, jobTitle, UserConstants.TYPE_REGULAR,
+			new long[] {groupId}, organizationIds, roleIds, userGroupIds,
+			sendEmail, _serviceContextHelper.getServiceContext(groupId));
 
 		user = _userLocalService.updateLastLogin(
 			user.getUserId(), user.getLoginIP());
@@ -268,7 +253,7 @@ public class PunchOutSessionResourceImpl
 	}
 
 	private void _addBuyerUserToAccount(
-			CommerceAccount commerceAccount, long userId, long groupId)
+			AccountEntry accountEntry, long userId, long groupId)
 		throws Exception {
 
 		Role role = _roleLocalService.fetchRole(
@@ -285,8 +270,8 @@ public class PunchOutSessionResourceImpl
 			throw new InternalServerErrorException(logMessage);
 		}
 
-		_commerceAccountUserRelLocalService.addCommerceAccountUserRels(
-			commerceAccount.getCommerceAccountId(), new long[] {userId}, null,
+		_commerceAccountHelper.addAccountEntryUserRels(
+			accountEntry.getAccountEntryId(), new long[] {userId}, null,
 			new long[] {role.getRoleId()},
 			_serviceContextHelper.getServiceContext(groupId));
 	}
@@ -309,11 +294,12 @@ public class PunchOutSessionResourceImpl
 		}
 	}
 
-	private CommerceAccount _fetchBusinessCommerceAccount(
+	private AccountEntry _fetchBusinessAccountEntry(
 		String externalReferenceCode) {
 
-		return _commerceAccountLocalService.fetchByExternalReferenceCode(
-			contextCompany.getCompanyId(), externalReferenceCode);
+		return _accountEntryLocalService.
+			fetchAccountEntryByExternalReferenceCode(
+				externalReferenceCode, contextCompany.getCompanyId());
 	}
 
 	private CommerceChannel _fetchChannel(long groupId) {
@@ -393,9 +379,9 @@ public class PunchOutSessionResourceImpl
 				commerceOrder.getCommerceOrderId(), -1, -1);
 
 		CommerceContext commerceContext = _commerceContextFactory.create(
-			contextCompany.getCompanyId(), commerceOrder.getGroupId(),
-			contextUser.getUserId(), commerceOrder.getCommerceOrderId(),
-			commerceOrder.getCommerceAccountId());
+			commerceOrder.getCommerceAccountId(), commerceOrder.getGroupId(),
+			null, commerceOrder.getCommerceOrderId(),
+			contextCompany.getCompanyId());
 
 		for (CartItem cartItem : cartItems) {
 			if (!commerceOrderItems.isEmpty()) {
@@ -408,8 +394,10 @@ public class PunchOutSessionResourceImpl
 						found = true;
 
 						_commerceOrderItemLocalService.updateCommerceOrderItem(
+							commerceOrder.getUserId(),
 							commerceOrderItem.getCommerceOrderItemId(),
-							cartItem.getQuantity(), commerceContext,
+							BigDecimal.valueOf(cartItem.getQuantity()),
+							commerceContext,
 							_serviceContextHelper.getServiceContext(groupId));
 
 						break;
@@ -422,9 +410,11 @@ public class PunchOutSessionResourceImpl
 			}
 
 			_commerceOrderItemLocalService.addCommerceOrderItem(
-				commerceOrder.getCommerceOrderId(), cartItem.getSkuId(), null,
-				cartItem.getQuantity(), cartItem.getShippedQuantity(),
-				commerceContext,
+				commerceOrder.getUserId(), commerceOrder.getCommerceOrderId(),
+				cartItem.getSkuId(), null,
+				BigDecimal.valueOf(cartItem.getQuantity()), 0,
+				BigDecimal.valueOf(cartItem.getShippedQuantity()),
+				StringPool.BLANK, commerceContext,
 				_serviceContextHelper.getServiceContext(groupId));
 		}
 
@@ -448,6 +438,7 @@ public class PunchOutSessionResourceImpl
 			}
 
 			_commerceOrderItemLocalService.deleteCommerceOrderItem(
+				commerceOrder.getUserId(),
 				commerceOrderItem.getCommerceOrderItemId());
 		}
 	}
@@ -491,11 +482,10 @@ public class PunchOutSessionResourceImpl
 		PunchOutSessionResourceImpl.class);
 
 	@Reference
-	private CommerceAccountLocalService _commerceAccountLocalService;
+	private AccountEntryLocalService _accountEntryLocalService;
 
 	@Reference
-	private CommerceAccountUserRelLocalService
-		_commerceAccountUserRelLocalService;
+	private CommerceAccountHelper _commerceAccountHelper;
 
 	@Reference
 	private CommerceChannelLocalService _commerceChannelLocalService;
@@ -512,6 +502,7 @@ public class PunchOutSessionResourceImpl
 	@Reference
 	private CompanyLocalService _companyLocalService;
 
+	@Reference
 	private ConfigurationProvider _configurationProvider;
 
 	@Reference

@@ -1,23 +1,18 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.odata.sort;
 
+import com.liferay.petra.string.StringPool;
+import com.liferay.petra.string.StringUtil;
+import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.odata.entity.EntityField;
 
 import java.io.Serializable;
 
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -28,6 +23,21 @@ import java.util.Locale;
  */
 public class SortField implements Serializable {
 
+	public SortField(
+		boolean asc, EntityField entityField,
+		List<EntityField> parentEntityFields) {
+
+		if (entityField == null) {
+			throw new IllegalArgumentException("Entity field is null");
+		}
+
+		_asc = asc;
+		_entityField = entityField;
+		_parentEntityFields = parentEntityFields;
+
+		_fieldName = entityField.getName();
+	}
+
 	/**
 	 * Creates a new sort field.
 	 *
@@ -36,14 +46,7 @@ public class SortField implements Serializable {
 	 * @review
 	 */
 	public SortField(EntityField entityField, boolean asc) {
-		if (entityField == null) {
-			throw new IllegalArgumentException("Entity field is null");
-		}
-
-		_entityField = entityField;
-		_asc = asc;
-
-		_fieldName = entityField.getName();
+		this(asc, entityField, null);
 	}
 
 	/**
@@ -58,6 +61,7 @@ public class SortField implements Serializable {
 		_asc = asc;
 
 		_entityField = null;
+		_parentEntityFields = null;
 	}
 
 	/**
@@ -75,6 +79,21 @@ public class SortField implements Serializable {
 		return _entityField.getSortableName(locale);
 	}
 
+	public String getSortableFieldPath(Locale locale) {
+		String sortableFieldName = getSortableFieldName(locale);
+
+		if (ListUtil.isEmpty(_parentEntityFields)) {
+			return sortableFieldName;
+		}
+
+		String prefix = StringUtil.merge(
+			_parentEntityFields,
+			parentEntityField -> parentEntityField.getSortableName(locale),
+			StringPool.FORWARD_SLASH);
+
+		return prefix + StringPool.FORWARD_SLASH + sortableFieldName;
+	}
+
 	/**
 	 * Returns {@code true} if the sort field is ascending.
 	 *
@@ -89,5 +108,6 @@ public class SortField implements Serializable {
 	private final boolean _asc;
 	private final EntityField _entityField;
 	private final String _fieldName;
+	private final List<EntityField> _parentEntityFields;
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -21,7 +12,6 @@ import com.liferay.portal.kernel.service.LayoutSetBranchLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.util.ParamUtil;
-import com.liferay.portal.kernel.util.PortalClassLoaderUtil;
 import com.liferay.portal.kernel.util.ProxyUtil;
 
 import java.io.Serializable;
@@ -33,6 +23,7 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * @author Julio Camarero
@@ -41,6 +32,12 @@ import java.util.Set;
 public class LayoutSetStagingHandler
 	implements InvocationHandler, Serializable {
 
+	public static LayoutSet newProxyInstance(
+		InvocationHandler invocationHandler) {
+
+		return _proxyProviderFunction.apply(invocationHandler);
+	}
+
 	public LayoutSetStagingHandler(LayoutSet layoutSet) {
 		_layoutSet = layoutSet;
 
@@ -48,7 +45,7 @@ public class LayoutSetStagingHandler
 			_layoutSetBranch = _getLayoutSetBranch(layoutSet);
 		}
 		catch (Exception exception) {
-			_log.error(exception, exception);
+			_log.error(exception);
 
 			throw new IllegalStateException(exception);
 		}
@@ -101,7 +98,7 @@ public class LayoutSetStagingHandler
 					bean = _layoutSetBranch;
 				}
 				catch (NoSuchMethodException noSuchMethodException) {
-					_log.error(noSuchMethodException, noSuchMethodException);
+					_log.error(noSuchMethodException);
 				}
 			}
 
@@ -117,9 +114,7 @@ public class LayoutSetStagingHandler
 	}
 
 	private Object _clone() {
-		return ProxyUtil.newProxyInstance(
-			PortalClassLoaderUtil.getClassLoader(),
-			new Class<?>[] {LayoutSet.class, ModelWrapper.class},
+		return newProxyInstance(
 			new LayoutSetStagingHandler((LayoutSet)_layoutSet.clone()));
 	}
 
@@ -153,9 +148,7 @@ public class LayoutSetStagingHandler
 	}
 
 	private Object _toEscapedModel() {
-		return ProxyUtil.newProxyInstance(
-			PortalClassLoaderUtil.getClassLoader(),
-			new Class<?>[] {LayoutSet.class, ModelWrapper.class},
+		return newProxyInstance(
 			new LayoutSetStagingHandler(_layoutSet.toEscapedModel()));
 	}
 
@@ -174,6 +167,9 @@ public class LayoutSetStagingHandler
 				"setCss", "setLayoutSetPrototypeLinkEnabled",
 				"setLayoutSetPrototypeUuid", "setLogoId", "setSettings",
 				"setSettingsProperties", "setThemeId"));
+	private static final Function<InvocationHandler, LayoutSet>
+		_proxyProviderFunction = ProxyUtil.getProxyProviderFunction(
+			LayoutSet.class, ModelWrapper.class);
 
 	private final LayoutSet _layoutSet;
 	private LayoutSetBranch _layoutSetBranch;

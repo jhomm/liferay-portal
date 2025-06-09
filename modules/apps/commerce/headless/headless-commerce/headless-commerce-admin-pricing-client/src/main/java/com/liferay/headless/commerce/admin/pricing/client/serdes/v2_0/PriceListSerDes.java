@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.headless.commerce.admin.pricing.client.serdes.v2_0;
@@ -24,6 +15,8 @@ import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceListOrde
 import com.liferay.headless.commerce.admin.pricing.client.dto.v2_0.PriceModifier;
 import com.liferay.headless.commerce.admin.pricing.client.json.BaseJSONParser;
 
+import jakarta.annotation.Generated;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
@@ -32,9 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.stream.Stream;
-
-import javax.annotation.Generated;
 
 /**
  * @author Zoltán Takács
@@ -65,7 +55,7 @@ public class PriceListSerDes {
 		sb.append("{");
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (priceList.getActions() != null) {
 			if (sb.length() > 1) {
@@ -162,6 +152,30 @@ public class PriceListSerDes {
 			sb.append(_escape(priceList.getCurrencyCode()));
 
 			sb.append("\"");
+		}
+
+		if (priceList.getCurrencyExternalReferenceCode() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyExternalReferenceCode\": ");
+
+			sb.append("\"");
+
+			sb.append(_escape(priceList.getCurrencyExternalReferenceCode()));
+
+			sb.append("\"");
+		}
+
+		if (priceList.getCurrencyId() != null) {
+			if (sb.length() > 1) {
+				sb.append(", ");
+			}
+
+			sb.append("\"currencyId\": ");
+
+			sb.append(priceList.getCurrencyId());
 		}
 
 		if (priceList.getCustomFields() != null) {
@@ -471,7 +485,7 @@ public class PriceListSerDes {
 		Map<String, String> map = new TreeMap<>();
 
 		DateFormat liferayToJSONDateFormat = new SimpleDateFormat(
-			"yyyy-MM-dd'T'HH:mm:ss'Z'");
+			"yyyy-MM-dd'T'HH:mm:ssXX");
 
 		if (priceList.getActions() == null) {
 			map.put("actions", null);
@@ -532,6 +546,22 @@ public class PriceListSerDes {
 		else {
 			map.put(
 				"currencyCode", String.valueOf(priceList.getCurrencyCode()));
+		}
+
+		if (priceList.getCurrencyExternalReferenceCode() == null) {
+			map.put("currencyExternalReferenceCode", null);
+		}
+		else {
+			map.put(
+				"currencyExternalReferenceCode",
+				String.valueOf(priceList.getCurrencyExternalReferenceCode()));
+		}
+
+		if (priceList.getCurrencyId() == null) {
+			map.put("currencyId", null);
+		}
+		else {
+			map.put("currencyId", String.valueOf(priceList.getCurrencyId()));
 		}
 
 		if (priceList.getCustomFields() == null) {
@@ -707,6 +737,113 @@ public class PriceListSerDes {
 		}
 
 		@Override
+		protected boolean parseMaps(String jsonParserFieldName) {
+			if (Objects.equals(jsonParserFieldName, "actions")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "active")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "author")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "catalogBasePriceList")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "catalogId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "catalogName")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "createDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyCode")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "customFields")) {
+				return true;
+			}
+			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "expirationDate")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "externalReferenceCode")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "id")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "name")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "netPrice")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "neverExpire")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "parentPriceListId")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceEntries")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceListAccountGroups")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceListAccounts")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceListChannels")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceListDiscounts")) {
+
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "priceListOrderTypes")) {
+
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priceModifiers")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "priority")) {
+				return false;
+			}
+			else if (Objects.equals(jsonParserFieldName, "type")) {
+				return false;
+			}
+			else if (Objects.equals(
+						jsonParserFieldName, "workflowStatusInfo")) {
+
+				return false;
+			}
+
+			return false;
+		}
+
+		@Override
 		protected void setField(
 			PriceList priceList, String jsonParserFieldName,
 			Object jsonParserFieldValue) {
@@ -714,8 +851,7 @@ public class PriceListSerDes {
 			if (Objects.equals(jsonParserFieldName, "actions")) {
 				if (jsonParserFieldValue != null) {
 					priceList.setActions(
-						(Map)PriceListSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, Map<String, String>>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "active")) {
@@ -758,11 +894,24 @@ public class PriceListSerDes {
 					priceList.setCurrencyCode((String)jsonParserFieldValue);
 				}
 			}
+			else if (Objects.equals(
+						jsonParserFieldName, "currencyExternalReferenceCode")) {
+
+				if (jsonParserFieldValue != null) {
+					priceList.setCurrencyExternalReferenceCode(
+						(String)jsonParserFieldValue);
+				}
+			}
+			else if (Objects.equals(jsonParserFieldName, "currencyId")) {
+				if (jsonParserFieldValue != null) {
+					priceList.setCurrencyId(
+						Long.valueOf((String)jsonParserFieldValue));
+				}
+			}
 			else if (Objects.equals(jsonParserFieldName, "customFields")) {
 				if (jsonParserFieldValue != null) {
 					priceList.setCustomFields(
-						(Map)PriceListSerDes.toMap(
-							(String)jsonParserFieldValue));
+						(Map<String, ?>)jsonParserFieldValue);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "displayDate")) {
@@ -813,97 +962,128 @@ public class PriceListSerDes {
 			}
 			else if (Objects.equals(jsonParserFieldName, "priceEntries")) {
 				if (jsonParserFieldValue != null) {
-					priceList.setPriceEntries(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceEntrySerDes.toDTO((String)object)
-						).toArray(
-							size -> new PriceEntry[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceEntry[] priceEntriesArray =
+						new PriceEntry[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceEntriesArray.length; i++) {
+						priceEntriesArray[i] = PriceEntrySerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					priceList.setPriceEntries(priceEntriesArray);
 				}
 			}
 			else if (Objects.equals(
 						jsonParserFieldName, "priceListAccountGroups")) {
 
 				if (jsonParserFieldValue != null) {
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceListAccountGroup[] priceListAccountGroupsArray =
+						new PriceListAccountGroup[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceListAccountGroupsArray.length;
+						 i++) {
+
+						priceListAccountGroupsArray[i] =
+							PriceListAccountGroupSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
 					priceList.setPriceListAccountGroups(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceListAccountGroupSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new PriceListAccountGroup[size]
-						));
+						priceListAccountGroupsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "priceListAccounts")) {
 				if (jsonParserFieldValue != null) {
-					priceList.setPriceListAccounts(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceListAccountSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new PriceListAccount[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceListAccount[] priceListAccountsArray =
+						new PriceListAccount[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceListAccountsArray.length; i++) {
+						priceListAccountsArray[i] =
+							PriceListAccountSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					priceList.setPriceListAccounts(priceListAccountsArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "priceListChannels")) {
 				if (jsonParserFieldValue != null) {
-					priceList.setPriceListChannels(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceListChannelSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new PriceListChannel[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceListChannel[] priceListChannelsArray =
+						new PriceListChannel[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceListChannelsArray.length; i++) {
+						priceListChannelsArray[i] =
+							PriceListChannelSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					priceList.setPriceListChannels(priceListChannelsArray);
 				}
 			}
 			else if (Objects.equals(
 						jsonParserFieldName, "priceListDiscounts")) {
 
 				if (jsonParserFieldValue != null) {
-					priceList.setPriceListDiscounts(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceListDiscountSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new PriceListDiscount[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceListDiscount[] priceListDiscountsArray =
+						new PriceListDiscount[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceListDiscountsArray.length; i++) {
+						priceListDiscountsArray[i] =
+							PriceListDiscountSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					priceList.setPriceListDiscounts(priceListDiscountsArray);
 				}
 			}
 			else if (Objects.equals(
 						jsonParserFieldName, "priceListOrderTypes")) {
 
 				if (jsonParserFieldValue != null) {
-					priceList.setPriceListOrderTypes(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceListOrderTypeSerDes.toDTO(
-								(String)object)
-						).toArray(
-							size -> new PriceListOrderType[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceListOrderType[] priceListOrderTypesArray =
+						new PriceListOrderType[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceListOrderTypesArray.length; i++) {
+						priceListOrderTypesArray[i] =
+							PriceListOrderTypeSerDes.toDTO(
+								(String)jsonParserFieldValues[i]);
+					}
+
+					priceList.setPriceListOrderTypes(priceListOrderTypesArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "priceModifiers")) {
 				if (jsonParserFieldValue != null) {
-					priceList.setPriceModifiers(
-						Stream.of(
-							toStrings((Object[])jsonParserFieldValue)
-						).map(
-							object -> PriceModifierSerDes.toDTO((String)object)
-						).toArray(
-							size -> new PriceModifier[size]
-						));
+					Object[] jsonParserFieldValues =
+						(Object[])jsonParserFieldValue;
+
+					PriceModifier[] priceModifiersArray =
+						new PriceModifier[jsonParserFieldValues.length];
+
+					for (int i = 0; i < priceModifiersArray.length; i++) {
+						priceModifiersArray[i] = PriceModifierSerDes.toDTO(
+							(String)jsonParserFieldValues[i]);
+					}
+
+					priceList.setPriceModifiers(priceModifiersArray);
 				}
 			}
 			else if (Objects.equals(jsonParserFieldName, "priority")) {
@@ -958,36 +1138,7 @@ public class PriceListSerDes {
 
 			Object value = entry.getValue();
 
-			Class<?> valueClass = value.getClass();
-
-			if (value instanceof Map) {
-				sb.append(_toJSON((Map)value));
-			}
-			else if (valueClass.isArray()) {
-				Object[] values = (Object[])value;
-
-				sb.append("[");
-
-				for (int i = 0; i < values.length; i++) {
-					sb.append("\"");
-					sb.append(_escape(values[i]));
-					sb.append("\"");
-
-					if ((i + 1) < values.length) {
-						sb.append(", ");
-					}
-				}
-
-				sb.append("]");
-			}
-			else if (value instanceof String) {
-				sb.append("\"");
-				sb.append(_escape(entry.getValue()));
-				sb.append("\"");
-			}
-			else {
-				sb.append(String.valueOf(entry.getValue()));
-			}
+			sb.append(_toJSON(value));
 
 			if (iterator.hasNext()) {
 				sb.append(", ");
@@ -997,6 +1148,42 @@ public class PriceListSerDes {
 		sb.append("}");
 
 		return sb.toString();
+	}
+
+	private static String _toJSON(Object value) {
+		if (value == null) {
+			return "null";
+		}
+
+		if (value instanceof Map) {
+			return _toJSON((Map)value);
+		}
+
+		Class<?> clazz = value.getClass();
+
+		if (clazz.isArray()) {
+			StringBuilder sb = new StringBuilder("[");
+
+			Object[] values = (Object[])value;
+
+			for (int i = 0; i < values.length; i++) {
+				sb.append(_toJSON(values[i]));
+
+				if ((i + 1) < values.length) {
+					sb.append(", ");
+				}
+			}
+
+			sb.append("]");
+
+			return sb.toString();
+		}
+
+		if (value instanceof String) {
+			return "\"" + _escape(value) + "\"";
+		}
+
+		return String.valueOf(value);
 	}
 
 }

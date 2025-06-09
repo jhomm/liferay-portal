@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.configuration.persistence.listener;
@@ -40,7 +31,6 @@ import org.osgi.service.component.annotations.Reference;
  * @author Bryan Engler
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.portal.search.elasticsearch7.configuration.ElasticsearchConnectionConfiguration",
 	service = ConfigurationModelListener.class
 )
@@ -53,7 +43,7 @@ public class ElasticsearchConnectionConfigurationModelListener
 
 		try {
 			elasticsearchConnectionManager.removeElasticsearchConnection(
-				getConnectionId(pid));
+				_getConnectionId(pid));
 		}
 		catch (Exception exception) {
 			throw new ConfigurationModelListenerException(
@@ -82,27 +72,24 @@ public class ElasticsearchConnectionConfigurationModelListener
 		}
 	}
 
-	protected String getConnectionId(String pid) throws Exception {
-		Configuration configuration = configurationAdmin.getConfiguration(
-			pid, StringPool.QUESTION);
-
-		Dictionary<String, Object> properties = configuration.getProperties();
-
-		String connectionId = null;
-
-		if (properties != null) {
-			connectionId = StringUtil.unquote(
-				(String)properties.get("connectionId"));
-		}
-
-		return connectionId;
-	}
-
 	@Reference
 	protected ConfigurationAdmin configurationAdmin;
 
 	@Reference
 	protected ElasticsearchConnectionManager elasticsearchConnectionManager;
+
+	private String _getConnectionId(String pid) throws Exception {
+		Configuration configuration = configurationAdmin.getConfiguration(
+			pid, StringPool.QUESTION);
+
+		Dictionary<String, Object> properties = configuration.getProperties();
+
+		if (properties != null) {
+			return StringUtil.unquote((String)properties.get("connectionId"));
+		}
+
+		return null;
+	}
 
 	private String _getMessage(String key, Object... arguments) {
 		try {
@@ -111,7 +98,7 @@ public class ElasticsearchConnectionConfigurationModelListener
 		}
 		catch (Exception exception) {
 			if (_log.isDebugEnabled()) {
-				_log.debug(exception, exception);
+				_log.debug(exception);
 			}
 
 			return null;
@@ -169,7 +156,7 @@ public class ElasticsearchConnectionConfigurationModelListener
 			filterString);
 
 		if (configurations == null) {
-			String previousConnectionId = getConnectionId(pid);
+			String previousConnectionId = _getConnectionId(pid);
 
 			if ((previousConnectionId != null) &&
 				!previousConnectionId.equals(connectionId)) {

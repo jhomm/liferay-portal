@@ -1,0 +1,50 @@
+{
+	"description_i18n": {
+		"en_US": "boost-contents-on-my-sites-description"
+	},
+	"elementDefinition": {
+		"category": "boost",
+		"configuration": {
+			"queryConfiguration": {
+				"queryEntries": [
+					{
+						"clauses": [
+							{
+								"context": "query",
+								"occur": "should",
+								"query": {
+									"terms": {
+										"boost": "${configuration.boost}",
+										"groupId": "${user.group_ids}"
+									}
+								}
+							}
+						]
+					}
+				]
+			}
+		},
+		"icon": "thumbs-up",
+		"uiConfiguration": {
+			"fieldSets": [
+				{
+					"fields": [
+						{
+							"defaultValue": 10,
+							"label": "boost",
+							"name": "boost",
+							"type": "number",
+							"typeOptions": {
+								"min": 0
+							}
+						}
+					]
+				}
+			]
+		}
+	},
+	"externalReferenceCode": "BOOST_CONTENTS_ON_MY_SITES",
+	"title_i18n": {
+		"en_US": "boost-contents-on-my-sites"
+	}
+}

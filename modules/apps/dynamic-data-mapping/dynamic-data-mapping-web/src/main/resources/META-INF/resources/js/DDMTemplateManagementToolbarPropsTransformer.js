@@ -1,18 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import {postForm} from 'frontend-js-web';
+import {openConfirmModal} from 'frontend-js-components-web';
+import {getCheckedCheckboxes, postForm} from 'frontend-js-web';
 
 export default function propsTransformer({
 	additionalProps: {deleteTemplatesURL},
@@ -23,33 +15,34 @@ export default function propsTransformer({
 		...otherProps,
 		onActionButtonClick(event, {item}) {
 			if (item?.data?.action === 'deleteTemplates') {
-				if (
-					confirm(
-						Liferay.Language.get(
-							'are-you-sure-you-want-to-delete-this'
-						)
-					)
-				) {
-					const form = document.getElementById(
-						`${portletNamespace}fm`
-					);
+				openConfirmModal({
+					message: Liferay.Language.get(
+						'are-you-sure-you-want-to-delete-this'
+					),
+					onConfirm: (isConfirmed) => {
+						if (isConfirmed) {
+							const form = document.getElementById(
+								`${portletNamespace}fm`
+							);
 
-					const searchContainer = document.getElementById(
-						`${portletNamespace}entriesContainer`
-					);
+							const searchContainer = document.getElementById(
+								`${portletNamespace}entriesContainer`
+							);
 
-					if (form && searchContainer) {
-						postForm(form, {
-							data: {
-								deleteTemplateIds: Liferay.Util.listCheckedExcept(
-									searchContainer,
-									`${portletNamespace}allRowIds`
-								),
-							},
-							url: deleteTemplatesURL,
-						});
-					}
-				}
+							if (form && searchContainer) {
+								postForm(form, {
+									data: {
+										deleteTemplateIds: getCheckedCheckboxes(
+											searchContainer,
+											`${portletNamespace}allRowIds`
+										),
+									},
+									url: deleteTemplatesURL,
+								});
+							}
+						}
+					},
+				});
 			}
 		},
 	};

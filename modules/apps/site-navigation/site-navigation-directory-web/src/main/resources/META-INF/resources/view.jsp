@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -71,29 +62,29 @@
 											<liferay-ui:search-container-column-text
 												colspan="<%= 2 %>"
 											>
-												<h5>
+												<div class="h5">
 													<aui:a href="<%= (childGroup.getGroupId() != scopeGroupId) ? childGroup.getDisplayURL(themeDisplay) : null %>">
 														<%= childGroup.getDescriptiveName(locale) %>
 													</aui:a>
-												</h5>
+												</div>
 
-												<h6 class="text-default">
+												<div class="h6 text-default">
 													<%= HtmlUtil.escape(childGroup.getDescription(locale)) %>
-												</h6>
+												</div>
 
-												<h6 class="text-default">
+												<div class="h6 text-default">
 													<liferay-asset:asset-tags-summary
 														className="<%= Group.class.getName() %>"
 														classPK="<%= childGroup.getGroupId() %>"
 													/>
-												</h6>
+												</div>
 
-												<h6 class="text-default">
+												<div class="h6 text-default">
 													<liferay-asset:asset-categories-summary
 														className="<%= Group.class.getName() %>"
 														classPK="<%= childGroup.getGroupId() %>"
 													/>
-												</h6>
+												</div>
 											</liferay-ui:search-container-column-text>
 										</c:otherwise>
 									</c:choose>
@@ -141,7 +132,7 @@
 									}
 
 									if (scopeGroupId == childGroup.getGroupId()) {
-										className += "selected";
+										className += "font-weight-bold selected";
 									}
 								%>
 

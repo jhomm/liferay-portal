@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.document.library.opener.google.drive.web.internal.portlet.action;
@@ -21,9 +12,10 @@ import com.liferay.document.library.opener.constants.DLOpenerMimeTypes;
 import com.liferay.document.library.opener.google.drive.web.internal.DLOpenerGoogleDriveFileReference;
 import com.liferay.document.library.opener.google.drive.web.internal.DLOpenerGoogleDriveManager;
 import com.liferay.document.library.opener.google.drive.web.internal.constants.DLOpenerGoogleDriveWebKeys;
-import com.liferay.document.library.opener.google.drive.web.internal.util.GoogleDrivePortletRequestAuthorizationHelper;
+import com.liferay.document.library.opener.google.drive.web.internal.helper.GoogleDrivePortletRequestAuthorizationHelper;
 import com.liferay.document.library.opener.upload.UniqueFileEntryTitleProvider;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.change.tracking.CTAware;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
@@ -40,9 +32,9 @@ import com.liferay.portal.kernel.util.ParamUtil;
 import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
-import javax.portlet.PortletRequest;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+import jakarta.portlet.PortletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -53,12 +45,13 @@ import org.osgi.service.component.annotations.Reference;
 @Component(
 	property = {
 		"auth.token.ignore.mvc.action=true",
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
-		"javax.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY,
+		"jakarta.portlet.name=" + DLPortletKeys.DOCUMENT_LIBRARY_ADMIN,
 		"mvc.command.name=/document_library/edit_in_google_docs"
 	},
 	service = MVCActionCommand.class
 )
+@CTAware
 public class EditInGoogleDocsMVCActionCommand extends BaseMVCActionCommand {
 
 	@Override
@@ -76,7 +69,7 @@ public class EditInGoogleDocsMVCActionCommand extends BaseMVCActionCommand {
 				long fileEntryId = ParamUtil.getLong(
 					actionRequest, "fileEntryId");
 
-				_executeCommand(actionRequest, fileEntryId);
+				_executeCommand(actionRequest, actionResponse, fileEntryId);
 			}
 			else {
 				_googleDrivePortletRequestAuthorizationHelper.
@@ -101,8 +94,8 @@ public class EditInGoogleDocsMVCActionCommand extends BaseMVCActionCommand {
 		serviceContext.setWorkflowAction(WorkflowConstants.ACTION_SAVE_DRAFT);
 
 		FileEntry fileEntry = _dlAppService.addFileEntry(
-			null, repositoryId, folderId, null, contentType, title,
-			StringPool.BLANK, StringPool.BLANK, new byte[0], null, null,
+			null, repositoryId, folderId, null, contentType, title, null,
+			StringPool.BLANK, StringPool.BLANK, new byte[0], null, null, null,
 			serviceContext);
 
 		_dlAppService.checkOutFileEntry(
@@ -116,15 +109,20 @@ public class EditInGoogleDocsMVCActionCommand extends BaseMVCActionCommand {
 			long fileEntryId, ServiceContext serviceContext)
 		throws PortalException {
 
-		_dlAppService.checkOutFileEntry(fileEntryId, serviceContext);
+		FileEntry fileEntry = _dlAppService.getFileEntry(fileEntryId);
+
+		if (!fileEntry.isCheckedOut()) {
+			_dlAppService.checkOutFileEntry(fileEntryId, serviceContext);
+		}
 
 		return _dlOpenerGoogleDriveManager.checkOut(
-			serviceContext.getUserId(),
-			_dlAppService.getFileEntry(fileEntryId));
+			serviceContext.getUserId(), fileEntry);
 	}
 
-	private void _executeCommand(ActionRequest actionRequest, long fileEntryId)
-		throws PortalException {
+	private void _executeCommand(
+			ActionRequest actionRequest, ActionResponse actionResponse,
+			long fileEntryId)
+		throws Exception {
 
 		String cmd = ParamUtil.getString(actionRequest, Constants.CMD);
 
@@ -171,9 +169,27 @@ public class EditInGoogleDocsMVCActionCommand extends BaseMVCActionCommand {
 			ServiceContext serviceContext = ServiceContextFactory.getInstance(
 				actionRequest);
 
+			boolean hasGoogleDriveFile =
+				_dlOpenerGoogleDriveManager.hasGoogleDriveFile(
+					serviceContext.getUserId(),
+					_dlAppService.getFileEntry(fileEntryId));
+
 			_dlAppService.checkInFileEntry(
 				fileEntryId, dlVersionNumberIncrease, changeLog,
 				serviceContext);
+
+			if (!hasGoogleDriveFile) {
+				hideDefaultSuccessMessage(actionRequest);
+
+				SessionErrors.add(actionRequest, "googleDriveFileMissing");
+
+				hideDefaultErrorMessage(actionRequest);
+
+				String redirect = ParamUtil.getString(
+					actionRequest, "redirect");
+
+				sendRedirect(actionRequest, actionResponse, redirect);
+			}
 		}
 		else if (cmd.equals(Constants.CHECKOUT)) {
 			try {

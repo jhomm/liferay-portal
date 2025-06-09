@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.friendly.url.model.impl;
@@ -32,7 +23,6 @@ import com.liferay.portal.kernel.util.Validator;
 
 import java.io.Serializable;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationHandler;
 
 import java.sql.Blob;
@@ -128,25 +118,37 @@ public class FriendlyURLEntryLocalizationModelImpl
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long FRIENDLYURLENTRYID_COLUMN_BITMASK = 4L;
+	public static final long COMPANYID_COLUMN_BITMASK = 4L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long GROUPID_COLUMN_BITMASK = 8L;
+	public static final long CTCOLLECTIONID_COLUMN_BITMASK = 8L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long LANGUAGEID_COLUMN_BITMASK = 16L;
+	public static final long FRIENDLYURLENTRYID_COLUMN_BITMASK = 16L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
 	 */
 	@Deprecated
-	public static final long URLTITLE_COLUMN_BITMASK = 32L;
+	public static final long GROUPID_COLUMN_BITMASK = 32L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long LANGUAGEID_COLUMN_BITMASK = 64L;
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link #getColumnBitmask(String)}
+	 */
+	@Deprecated
+	public static final long URLTITLE_COLUMN_BITMASK = 128L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
@@ -154,7 +156,7 @@ public class FriendlyURLEntryLocalizationModelImpl
 	 */
 	@Deprecated
 	public static final long FRIENDLYURLENTRYLOCALIZATIONID_COLUMN_BITMASK =
-		64L;
+		256L;
 
 	/**
 	 * @deprecated As of Athanasius (7.3.x), with no direct replacement
@@ -248,128 +250,117 @@ public class FriendlyURLEntryLocalizationModelImpl
 	public Map<String, Function<FriendlyURLEntryLocalization, Object>>
 		getAttributeGetterFunctions() {
 
-		return _attributeGetterFunctions;
+		return AttributeGetterFunctionsHolder._attributeGetterFunctions;
 	}
 
 	public Map<String, BiConsumer<FriendlyURLEntryLocalization, Object>>
 		getAttributeSetterBiConsumers() {
 
-		return _attributeSetterBiConsumers;
+		return AttributeSetterBiConsumersHolder._attributeSetterBiConsumers;
 	}
 
-	private static Function<InvocationHandler, FriendlyURLEntryLocalization>
-		_getProxyProviderFunction() {
+	private static class AttributeGetterFunctionsHolder {
 
-		Class<?> proxyClass = ProxyUtil.getProxyClass(
-			FriendlyURLEntryLocalization.class.getClassLoader(),
-			FriendlyURLEntryLocalization.class, ModelWrapper.class);
+		private static final Map
+			<String, Function<FriendlyURLEntryLocalization, Object>>
+				_attributeGetterFunctions;
 
-		try {
-			Constructor<FriendlyURLEntryLocalization> constructor =
-				(Constructor<FriendlyURLEntryLocalization>)
-					proxyClass.getConstructor(InvocationHandler.class);
+		static {
+			Map<String, Function<FriendlyURLEntryLocalization, Object>>
+				attributeGetterFunctions =
+					new LinkedHashMap
+						<String,
+						 Function<FriendlyURLEntryLocalization, Object>>();
 
-			return invocationHandler -> {
-				try {
-					return constructor.newInstance(invocationHandler);
-				}
-				catch (ReflectiveOperationException
-							reflectiveOperationException) {
-
-					throw new InternalError(reflectiveOperationException);
-				}
-			};
-		}
-		catch (NoSuchMethodException noSuchMethodException) {
-			throw new InternalError(noSuchMethodException);
-		}
-	}
-
-	private static final Map
-		<String, Function<FriendlyURLEntryLocalization, Object>>
-			_attributeGetterFunctions;
-	private static final Map
-		<String, BiConsumer<FriendlyURLEntryLocalization, Object>>
-			_attributeSetterBiConsumers;
-
-	static {
-		Map<String, Function<FriendlyURLEntryLocalization, Object>>
-			attributeGetterFunctions =
-				new LinkedHashMap
-					<String, Function<FriendlyURLEntryLocalization, Object>>();
-		Map<String, BiConsumer<FriendlyURLEntryLocalization, ?>>
-			attributeSetterBiConsumers =
-				new LinkedHashMap
-					<String, BiConsumer<FriendlyURLEntryLocalization, ?>>();
-
-		attributeGetterFunctions.put(
-			"mvccVersion", FriendlyURLEntryLocalization::getMvccVersion);
-		attributeSetterBiConsumers.put(
-			"mvccVersion",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setMvccVersion);
-		attributeGetterFunctions.put(
-			"ctCollectionId", FriendlyURLEntryLocalization::getCtCollectionId);
-		attributeSetterBiConsumers.put(
-			"ctCollectionId",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setCtCollectionId);
-		attributeGetterFunctions.put(
-			"friendlyURLEntryLocalizationId",
-			FriendlyURLEntryLocalization::getFriendlyURLEntryLocalizationId);
-		attributeSetterBiConsumers.put(
-			"friendlyURLEntryLocalizationId",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
+			attributeGetterFunctions.put(
+				"mvccVersion", FriendlyURLEntryLocalization::getMvccVersion);
+			attributeGetterFunctions.put(
+				"ctCollectionId",
+				FriendlyURLEntryLocalization::getCtCollectionId);
+			attributeGetterFunctions.put(
+				"friendlyURLEntryLocalizationId",
 				FriendlyURLEntryLocalization::
-					setFriendlyURLEntryLocalizationId);
-		attributeGetterFunctions.put(
-			"companyId", FriendlyURLEntryLocalization::getCompanyId);
-		attributeSetterBiConsumers.put(
-			"companyId",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setCompanyId);
-		attributeGetterFunctions.put(
-			"friendlyURLEntryId",
-			FriendlyURLEntryLocalization::getFriendlyURLEntryId);
-		attributeSetterBiConsumers.put(
-			"friendlyURLEntryId",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setFriendlyURLEntryId);
-		attributeGetterFunctions.put(
-			"languageId", FriendlyURLEntryLocalization::getLanguageId);
-		attributeSetterBiConsumers.put(
-			"languageId",
-			(BiConsumer<FriendlyURLEntryLocalization, String>)
-				FriendlyURLEntryLocalization::setLanguageId);
-		attributeGetterFunctions.put(
-			"urlTitle", FriendlyURLEntryLocalization::getUrlTitle);
-		attributeSetterBiConsumers.put(
-			"urlTitle",
-			(BiConsumer<FriendlyURLEntryLocalization, String>)
-				FriendlyURLEntryLocalization::setUrlTitle);
-		attributeGetterFunctions.put(
-			"groupId", FriendlyURLEntryLocalization::getGroupId);
-		attributeSetterBiConsumers.put(
-			"groupId",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setGroupId);
-		attributeGetterFunctions.put(
-			"classNameId", FriendlyURLEntryLocalization::getClassNameId);
-		attributeSetterBiConsumers.put(
-			"classNameId",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setClassNameId);
-		attributeGetterFunctions.put(
-			"classPK", FriendlyURLEntryLocalization::getClassPK);
-		attributeSetterBiConsumers.put(
-			"classPK",
-			(BiConsumer<FriendlyURLEntryLocalization, Long>)
-				FriendlyURLEntryLocalization::setClassPK);
+					getFriendlyURLEntryLocalizationId);
+			attributeGetterFunctions.put(
+				"companyId", FriendlyURLEntryLocalization::getCompanyId);
+			attributeGetterFunctions.put(
+				"friendlyURLEntryId",
+				FriendlyURLEntryLocalization::getFriendlyURLEntryId);
+			attributeGetterFunctions.put(
+				"languageId", FriendlyURLEntryLocalization::getLanguageId);
+			attributeGetterFunctions.put(
+				"urlTitle", FriendlyURLEntryLocalization::getUrlTitle);
+			attributeGetterFunctions.put(
+				"groupId", FriendlyURLEntryLocalization::getGroupId);
+			attributeGetterFunctions.put(
+				"classNameId", FriendlyURLEntryLocalization::getClassNameId);
+			attributeGetterFunctions.put(
+				"classPK", FriendlyURLEntryLocalization::getClassPK);
 
-		_attributeGetterFunctions = Collections.unmodifiableMap(
-			attributeGetterFunctions);
-		_attributeSetterBiConsumers = Collections.unmodifiableMap(
-			(Map)attributeSetterBiConsumers);
+			_attributeGetterFunctions = Collections.unmodifiableMap(
+				attributeGetterFunctions);
+		}
+
+	}
+
+	private static class AttributeSetterBiConsumersHolder {
+
+		private static final Map
+			<String, BiConsumer<FriendlyURLEntryLocalization, Object>>
+				_attributeSetterBiConsumers;
+
+		static {
+			Map<String, BiConsumer<FriendlyURLEntryLocalization, ?>>
+				attributeSetterBiConsumers =
+					new LinkedHashMap
+						<String, BiConsumer<FriendlyURLEntryLocalization, ?>>();
+
+			attributeSetterBiConsumers.put(
+				"mvccVersion",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setMvccVersion);
+			attributeSetterBiConsumers.put(
+				"ctCollectionId",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setCtCollectionId);
+			attributeSetterBiConsumers.put(
+				"friendlyURLEntryLocalizationId",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::
+						setFriendlyURLEntryLocalizationId);
+			attributeSetterBiConsumers.put(
+				"companyId",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setCompanyId);
+			attributeSetterBiConsumers.put(
+				"friendlyURLEntryId",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setFriendlyURLEntryId);
+			attributeSetterBiConsumers.put(
+				"languageId",
+				(BiConsumer<FriendlyURLEntryLocalization, String>)
+					FriendlyURLEntryLocalization::setLanguageId);
+			attributeSetterBiConsumers.put(
+				"urlTitle",
+				(BiConsumer<FriendlyURLEntryLocalization, String>)
+					FriendlyURLEntryLocalization::setUrlTitle);
+			attributeSetterBiConsumers.put(
+				"groupId",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setGroupId);
+			attributeSetterBiConsumers.put(
+				"classNameId",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setClassNameId);
+			attributeSetterBiConsumers.put(
+				"classPK",
+				(BiConsumer<FriendlyURLEntryLocalization, Long>)
+					FriendlyURLEntryLocalization::setClassPK);
+
+			_attributeSetterBiConsumers = Collections.unmodifiableMap(
+				(Map)attributeSetterBiConsumers);
+		}
+
 	}
 
 	@Override
@@ -400,6 +391,16 @@ public class FriendlyURLEntryLocalizationModelImpl
 		_ctCollectionId = ctCollectionId;
 	}
 
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalCtCollectionId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("ctCollectionId"));
+	}
+
 	@Override
 	public long getFriendlyURLEntryLocalizationId() {
 		return _friendlyURLEntryLocalizationId;
@@ -428,6 +429,16 @@ public class FriendlyURLEntryLocalizationModelImpl
 		}
 
 		_companyId = companyId;
+	}
+
+	/**
+	 * @deprecated As of Athanasius (7.3.x), replaced by {@link
+	 *             #getColumnOriginalValue(String)}
+	 */
+	@Deprecated
+	public long getOriginalCompanyId() {
+		return GetterUtil.getLong(
+			this.<Long>getColumnOriginalValue("companyId"));
 	}
 
 	@Override
@@ -870,45 +881,13 @@ public class FriendlyURLEntryLocalizationModelImpl
 		return sb.toString();
 	}
 
-	@Override
-	public String toXmlString() {
-		Map<String, Function<FriendlyURLEntryLocalization, Object>>
-			attributeGetterFunctions = getAttributeGetterFunctions();
-
-		StringBundler sb = new StringBundler(
-			(5 * attributeGetterFunctions.size()) + 4);
-
-		sb.append("<model><model-name>");
-		sb.append(getModelClassName());
-		sb.append("</model-name>");
-
-		for (Map.Entry<String, Function<FriendlyURLEntryLocalization, Object>>
-				entry : attributeGetterFunctions.entrySet()) {
-
-			String attributeName = entry.getKey();
-			Function<FriendlyURLEntryLocalization, Object>
-				attributeGetterFunction = entry.getValue();
-
-			sb.append("<column><column-name>");
-			sb.append(attributeName);
-			sb.append("</column-name><column-value><![CDATA[");
-			sb.append(
-				attributeGetterFunction.apply(
-					(FriendlyURLEntryLocalization)this));
-			sb.append("]]></column-value></column>");
-		}
-
-		sb.append("</model>");
-
-		return sb.toString();
-	}
-
 	private static class EscapedModelProxyProviderFunctionHolder {
 
 		private static final Function
 			<InvocationHandler, FriendlyURLEntryLocalization>
 				_escapedModelProxyProviderFunction =
-					_getProxyProviderFunction();
+					ProxyUtil.getProxyProviderFunction(
+						FriendlyURLEntryLocalization.class, ModelWrapper.class);
 
 	}
 
@@ -925,7 +904,8 @@ public class FriendlyURLEntryLocalizationModelImpl
 
 	public <T> T getColumnValue(String columnName) {
 		Function<FriendlyURLEntryLocalization, Object> function =
-			_attributeGetterFunctions.get(columnName);
+			AttributeGetterFunctionsHolder._attributeGetterFunctions.get(
+				columnName);
 
 		if (function == null) {
 			throw new IllegalArgumentException(

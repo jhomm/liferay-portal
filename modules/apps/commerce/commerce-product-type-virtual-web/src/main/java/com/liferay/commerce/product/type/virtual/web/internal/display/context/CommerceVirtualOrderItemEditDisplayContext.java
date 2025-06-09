@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.product.type.virtual.web.internal.display.context;
@@ -19,28 +10,27 @@ import com.liferay.commerce.model.CommerceOrder;
 import com.liferay.commerce.model.CommerceOrderItem;
 import com.liferay.commerce.product.type.virtual.constants.VirtualCPTypeConstants;
 import com.liferay.commerce.product.type.virtual.order.model.CommerceVirtualOrderItem;
-import com.liferay.commerce.product.type.virtual.web.internal.display.context.util.CPDefinitionVirtualSettingRequestHelper;
+import com.liferay.commerce.product.type.virtual.web.internal.display.context.helper.CPDefinitionVirtualSettingRequestHelper;
 import com.liferay.commerce.service.CommerceOrderItemService;
 import com.liferay.commerce.service.CommerceOrderService;
 import com.liferay.document.library.kernel.service.DLAppService;
-import com.liferay.document.library.kernel.util.DLUtil;
+import com.liferay.document.library.util.DLURLHelperUtil;
 import com.liferay.item.selector.ItemSelector;
 import com.liferay.item.selector.ItemSelectorReturnType;
 import com.liferay.item.selector.criteria.FileEntryItemSelectorReturnType;
 import com.liferay.item.selector.criteria.file.criterion.FileItemSelectorCriterion;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.portlet.LiferayPortletResponse;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.util.ParamUtil;
 
-import java.util.Collections;
+import jakarta.portlet.PortletURL;
+import jakarta.portlet.RenderRequest;
 
-import javax.portlet.PortletURL;
-import javax.portlet.RenderRequest;
+import java.util.Collections;
 
 /**
  * @author Alessio Antonio Rendina
@@ -65,7 +55,7 @@ public class CommerceVirtualOrderItemEditDisplayContext {
 			renderRequest, "commerceOrderId");
 
 		if (commerceOrderId > 0) {
-			_commerceOrder = _commerceOrderService.getCommerceOrder(
+			_commerceOrder = commerceOrderService.getCommerceOrder(
 				commerceOrderId);
 		}
 		else {
@@ -114,12 +104,8 @@ public class CommerceVirtualOrderItemEditDisplayContext {
 	}
 
 	public PortletURL getCommerceOrderItemsPortletURL() throws PortalException {
-		LiferayPortletResponse liferayPortletResponse =
-			_cpDefinitionVirtualSettingRequestHelper.
-				getLiferayPortletResponse();
-
 		return PortletURLBuilder.createRenderURL(
-			liferayPortletResponse
+			_cpDefinitionVirtualSettingRequestHelper.getLiferayPortletResponse()
 		).setMVCRenderCommandName(
 			"/commerce_open_order_content/edit_commerce_order"
 		).setParameter(
@@ -133,30 +119,19 @@ public class CommerceVirtualOrderItemEditDisplayContext {
 		return _commerceVirtualOrderItem;
 	}
 
-	public String getDownloadFileEntryURL() throws PortalException {
+	public String getDownloadFileEntryURL(long fileEntryId)
+		throws PortalException {
+
 		if (_commerceVirtualOrderItem == null) {
 			return null;
 		}
 
-		FileEntry fileEntry = _dlAppService.getFileEntry(
-			_commerceVirtualOrderItem.getFileEntryId());
+		FileEntry fileEntry = _dlAppService.getFileEntry(fileEntryId);
 
-		return DLUtil.getDownloadURL(
+		return DLURLHelperUtil.getDownloadURL(
 			fileEntry, fileEntry.getLatestFileVersion(),
 			_cpDefinitionVirtualSettingRequestHelper.getThemeDisplay(),
 			StringPool.BLANK, true, true);
-	}
-
-	public FileEntry getFileEntry() throws PortalException {
-		if (_commerceVirtualOrderItem != null) {
-			long fileEntryId = _commerceVirtualOrderItem.getFileEntryId();
-
-			if (fileEntryId > 0) {
-				return _dlAppService.getFileEntry(fileEntryId);
-			}
-		}
-
-		return null;
 	}
 
 	public String getFileEntryItemSelectorURL() {
@@ -171,11 +146,10 @@ public class CommerceVirtualOrderItemEditDisplayContext {
 			Collections.<ItemSelectorReturnType>singletonList(
 				new FileEntryItemSelectorReturnType()));
 
-		PortletURL itemSelectorURL = _itemSelector.getItemSelectorURL(
-			requestBackedPortletURLFactory, "uploadCommerceVirtualOrderItem",
-			fileItemSelectorCriterion);
-
-		return itemSelectorURL.toString();
+		return String.valueOf(
+			_itemSelector.getItemSelectorURL(
+				requestBackedPortletURLFactory,
+				"uploadCommerceVirtualOrderItem", fileItemSelectorCriterion));
 	}
 
 	private final CommerceOrder _commerceOrder;

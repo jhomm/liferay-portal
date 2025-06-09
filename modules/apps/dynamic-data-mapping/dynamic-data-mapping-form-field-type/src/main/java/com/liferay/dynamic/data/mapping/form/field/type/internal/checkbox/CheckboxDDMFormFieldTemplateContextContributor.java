@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.dynamic.data.mapping.form.field.type.internal.checkbox;
@@ -18,18 +9,21 @@ import com.liferay.configuration.admin.constants.ConfigurationAdminPortletKeys;
 import com.liferay.dynamic.data.mapping.form.field.type.DDMFormFieldTemplateContextContributor;
 import com.liferay.dynamic.data.mapping.form.field.type.constants.DDMFormFieldTypeConstants;
 import com.liferay.dynamic.data.mapping.form.field.type.internal.util.DDMFormFieldTypeUtil;
+import com.liferay.dynamic.data.mapping.model.DDMForm;
 import com.liferay.dynamic.data.mapping.model.DDMFormField;
 import com.liferay.dynamic.data.mapping.render.DDMFormFieldRenderingContext;
-import com.liferay.petra.portlet.url.builder.PortletURLBuilder;
+import com.liferay.dynamic.data.mapping.util.DDMFormFieldTemplateContextContributorUtil;
+import com.liferay.dynamic.data.mapping.util.DDMFormFieldValueUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactory;
 import com.liferay.portal.kernel.portlet.RequestBackedPortletURLFactoryUtil;
+import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.HashMapBuilder;
 
-import java.util.Map;
+import jakarta.servlet.http.HttpServletRequest;
 
-import javax.servlet.http.HttpServletRequest;
+import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
 
@@ -37,12 +31,8 @@ import org.osgi.service.component.annotations.Component;
  * @author Marcellus Tavares
  */
 @Component(
-	immediate = true,
 	property = "ddm.form.field.type.name=" + DDMFormFieldTypeConstants.CHECKBOX,
-	service = {
-		CheckboxDDMFormFieldTemplateContextContributor.class,
-		DDMFormFieldTemplateContextContributor.class
-	}
+	service = DDMFormFieldTemplateContextContributor.class
 )
 public class CheckboxDDMFormFieldTemplateContextContributor
 	implements DDMFormFieldTemplateContextContributor {
@@ -52,7 +42,14 @@ public class CheckboxDDMFormFieldTemplateContextContributor
 		DDMFormField ddmFormField,
 		DDMFormFieldRenderingContext ddmFormFieldRenderingContext) {
 
+		DDMForm ddmForm = ddmFormField.getDDMForm();
+
+		boolean localizedObjectField = GetterUtil.getBoolean(
+			ddmFormField.getProperty("localizedObjectField"));
+
 		return HashMapBuilder.<String, Object>put(
+			"localizedObjectField", localizedObjectField
+		).put(
 			"predefinedValue",
 			GetterUtil.getBoolean(
 				DDMFormFieldTypeUtil.getValue(
@@ -86,9 +83,20 @@ public class CheckboxDDMFormFieldTemplateContextContributor
 				"tooltip")
 		).put(
 			"value",
-			GetterUtil.getBoolean(
-				DDMFormFieldTypeUtil.getValue(
-					ddmFormFieldRenderingContext.getValue()))
+			() -> {
+				if (localizedObjectField) {
+					return DDMFormFieldValueUtil.getValueJSONObject(
+						ddmFormFieldRenderingContext);
+				}
+
+				return GetterUtil.getBoolean(
+					DDMFormFieldTypeUtil.getValue(
+						ddmFormFieldRenderingContext.getValue()));
+			}
+		).putAll(
+			DDMFormFieldTemplateContextContributorUtil.
+				getLocalizationParameters(
+					ddmFormField, ddmForm.getDefaultLocale())
 		).build();
 	}
 

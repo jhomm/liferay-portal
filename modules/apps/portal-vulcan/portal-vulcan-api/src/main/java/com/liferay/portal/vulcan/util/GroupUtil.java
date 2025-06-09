@@ -1,24 +1,13 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.vulcan.util;
 
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
-import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.log.Log;
-import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.feature.flag.FeatureFlagManagerUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -29,7 +18,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 public class GroupUtil {
 
 	public static String getAssetLibraryKey(Group group) {
-		if (_isDepot(group)) {
+		if (group.isDepot()) {
 			return group.getGroupKey();
 		}
 
@@ -41,27 +30,9 @@ public class GroupUtil {
 		DepotEntryLocalService depotEntryLocalService,
 		GroupLocalService groupLocalService) {
 
-		Group group = groupLocalService.fetchGroup(companyId, assetLibraryKey);
-
-		if (group == null) {
-			try {
-				DepotEntry depotEntry = depotEntryLocalService.fetchDepotEntry(
-					GetterUtil.getLong(assetLibraryKey));
-
-				if (depotEntry == null) {
-					return null;
-				}
-
-				group = depotEntry.getGroup();
-			}
-			catch (PortalException portalException) {
-				if (_log.isDebugEnabled()) {
-					_log.debug(portalException, portalException);
-				}
-
-				return null;
-			}
-		}
+		Group group = _getGroup(
+			assetLibraryKey, companyId, depotEntryLocalService,
+			groupLocalService);
 
 		if (_checkGroup(group)) {
 			return group.getGroupId();
@@ -79,6 +50,11 @@ public class GroupUtil {
 			group = groupLocalService.fetchGroup(GetterUtil.getLong(siteKey));
 		}
 
+		if (group == null) {
+			group = groupLocalService.fetchGroupByExternalReferenceCode(
+				siteKey, companyId);
+		}
+
 		if (_checkGroup(group)) {
 			return group.getGroupId();
 		}
@@ -86,8 +62,16 @@ public class GroupUtil {
 		return null;
 	}
 
+	public static String getSiteExternalReferenceCode(Group group) {
+		if (group.isDepot()) {
+			return null;
+		}
+
+		return group.getExternalReferenceCode();
+	}
+
 	public static Long getSiteId(Group group) {
-		if (_isDepot(group)) {
+		if (group.isDepot()) {
 			return null;
 		}
 
@@ -95,8 +79,9 @@ public class GroupUtil {
 	}
 
 	private static boolean _checkGroup(Group group) {
-		if (_isDepotOrSite(group) ||
-			((group != null) && _isDepotOrSite(group.getLiveGroup()))) {
+		if ((group != null) &&
+			(_isDepotOrSite(group) || _isDepotOrSite(group.getLiveGroup()) ||
+			 group.isUserGroup())) {
 
 			return true;
 		}
@@ -104,12 +89,36 @@ public class GroupUtil {
 		return false;
 	}
 
-	private static boolean _isDepot(Group group) {
-		if (group.isDepot()) {
-			return true;
+	private static Group _getGroup(
+		String assetLibraryKey, long companyId,
+		DepotEntryLocalService depotEntryLocalService,
+		GroupLocalService groupLocalService) {
+
+		Group group = groupLocalService.fetchGroup(companyId, assetLibraryKey);
+
+		if (group != null) {
+			return group;
 		}
 
-		return false;
+		long assetLibraryId = GetterUtil.getLong(assetLibraryKey);
+
+		DepotEntry depotEntry = depotEntryLocalService.fetchDepotEntry(
+			assetLibraryId);
+
+		if (depotEntry != null) {
+			Group depotEntryGroup = groupLocalService.fetchGroup(
+				depotEntry.getGroupId());
+
+			if (depotEntryGroup != null) {
+				return depotEntryGroup;
+			}
+		}
+
+		if (!FeatureFlagManagerUtil.isEnabled(companyId, "LPD-17564")) {
+			return null;
+		}
+
+		return groupLocalService.fetchGroup(assetLibraryId);
 	}
 
 	private static boolean _isDepotOrSite(Group group) {
@@ -119,7 +128,5 @@ public class GroupUtil {
 
 		return false;
 	}
-
-	private static final Log _log = LogFactoryUtil.getLog(GroupUtil.class);
 
 }

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.object.service;
@@ -27,6 +18,10 @@ public class ObjectRelationshipServiceWrapper
 	implements ObjectRelationshipService,
 			   ServiceWrapper<ObjectRelationshipService> {
 
+	public ObjectRelationshipServiceWrapper() {
+		this(null);
+	}
+
 	public ObjectRelationshipServiceWrapper(
 		ObjectRelationshipService objectRelationshipService) {
 
@@ -35,13 +30,28 @@ public class ObjectRelationshipServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectRelationship addObjectRelationship(
-			long objectDefinitionId1, long objectDefinitionId2,
+			String externalReferenceCode, long objectDefinitionId1,
+			long objectDefinitionId2, long parameterObjectFieldId,
+			String deletionType, boolean edge,
 			java.util.Map<java.util.Locale, String> labelMap, String name,
-			String type)
+			boolean system, String type,
+			com.liferay.object.model.ObjectField objectField)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectRelationshipService.addObjectRelationship(
-			objectDefinitionId1, objectDefinitionId2, labelMap, name, type);
+			externalReferenceCode, objectDefinitionId1, objectDefinitionId2,
+			parameterObjectFieldId, deletionType, edge, labelMap, name, system,
+			type, objectField);
+	}
+
+	@Override
+	public void addObjectRelationshipMappingTableValues(
+			long objectRelationshipId, long primaryKey1, long primaryKey2,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		_objectRelationshipService.addObjectRelationshipMappingTableValues(
+			objectRelationshipId, primaryKey1, primaryKey2, serviceContext);
 	}
 
 	@Override
@@ -54,12 +64,33 @@ public class ObjectRelationshipServiceWrapper
 	}
 
 	@Override
+	public com.liferay.object.model.ObjectRelationship
+			fetchObjectRelationshipByExternalReferenceCode(
+				String externalReferenceCode, long companyId,
+				long objectDefinitionId1)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectRelationshipService.
+			fetchObjectRelationshipByExternalReferenceCode(
+				externalReferenceCode, companyId, objectDefinitionId1);
+	}
+
+	@Override
 	public com.liferay.object.model.ObjectRelationship getObjectRelationship(
 			long objectRelationshipId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectRelationshipService.getObjectRelationship(
 			objectRelationshipId);
+	}
+
+	@Override
+	public com.liferay.object.model.ObjectRelationship getObjectRelationship(
+			long objectDefinitionId1, String name)
+		throws com.liferay.portal.kernel.exception.PortalException {
+
+		return _objectRelationshipService.getObjectRelationship(
+			objectDefinitionId1, name);
 	}
 
 	@Override
@@ -83,12 +114,15 @@ public class ObjectRelationshipServiceWrapper
 
 	@Override
 	public com.liferay.object.model.ObjectRelationship updateObjectRelationship(
-			long objectRelationshipId, String deletionType,
-			java.util.Map<java.util.Locale, String> labelMap)
+			String externalReferenceCode, long objectRelationshipId,
+			long parameterObjectFieldId, String deletionType, boolean edge,
+			java.util.Map<java.util.Locale, String> labelMap,
+			com.liferay.object.model.ObjectField objectField)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _objectRelationshipService.updateObjectRelationship(
-			objectRelationshipId, deletionType, labelMap);
+			externalReferenceCode, objectRelationshipId, parameterObjectFieldId,
+			deletionType, edge, labelMap, objectField);
 	}
 
 	@Override

@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service.impl;
@@ -17,13 +8,14 @@ package com.liferay.commerce.price.list.service.impl;
 import com.liferay.commerce.price.list.model.CommercePriceEntry;
 import com.liferay.commerce.price.list.model.CommercePriceList;
 import com.liferay.commerce.price.list.model.CommerceTierPriceEntry;
+import com.liferay.commerce.price.list.service.CommercePriceEntryLocalService;
 import com.liferay.commerce.price.list.service.base.CommerceTierPriceEntryServiceBaseImpl;
+import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.search.BaseModelSearchResult;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
-import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermissionFactory;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.OrderByComparator;
 import com.liferay.portal.kernel.util.Validator;
@@ -32,17 +24,27 @@ import java.math.BigDecimal;
 
 import java.util.List;
 
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+
 /**
  * @author Alessio Antonio Rendina
  * @author Zoltán Takács
  */
+@Component(
+	property = {
+		"json.web.service.context.name=commerce",
+		"json.web.service.context.path=CommerceTierPriceEntry"
+	},
+	service = AopService.class
+)
 public class CommerceTierPriceEntryServiceImpl
 	extends CommerceTierPriceEntryServiceBaseImpl {
 
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			long commercePriceEntryId, BigDecimal price, BigDecimal promoPrice,
-			int minQuantity, ServiceContext serviceContext)
+			BigDecimal minQuantity, ServiceContext serviceContext)
 		throws PortalException {
 
 		return addCommerceTierPriceEntry(
@@ -53,12 +55,12 @@ public class CommerceTierPriceEntryServiceImpl
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			String externalReferenceCode, long commercePriceEntryId,
-			BigDecimal price, BigDecimal promoPrice, int minQuantity,
+			BigDecimal price, BigDecimal promoPrice, BigDecimal minQuantity,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryLocalService.getCommercePriceEntry(
 				commercePriceEntryId);
 
 		if (commercePriceEntry != null) {
@@ -69,13 +71,13 @@ public class CommerceTierPriceEntryServiceImpl
 
 		return commerceTierPriceEntryLocalService.addCommerceTierPriceEntry(
 			externalReferenceCode, commercePriceEntryId, price, promoPrice,
-			minQuantity, serviceContext);
+			commercePriceEntry.isBulkPricing(), minQuantity, serviceContext);
 	}
 
 	@Override
 	public CommerceTierPriceEntry addCommerceTierPriceEntry(
 			String externalReferenceCode, long commercePriceEntryId,
-			BigDecimal price, int minQuantity, boolean bulkPricing,
+			BigDecimal price, BigDecimal minQuantity, boolean bulkPricing,
 			boolean discountDiscovery, BigDecimal discountLevel1,
 			BigDecimal discountLevel2, BigDecimal discountLevel3,
 			BigDecimal discountLevel4, int displayDateMonth, int displayDateDay,
@@ -87,7 +89,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryLocalService.getCommercePriceEntry(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
@@ -108,22 +110,22 @@ public class CommerceTierPriceEntryServiceImpl
 	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
 			String externalReferenceCode, long commerceTierPriceEntryId,
 			long commercePriceEntryId, BigDecimal price, BigDecimal promoPrice,
-			int minQuantity, String priceEntryExternalReferenceCode,
+			BigDecimal minQuantity, String priceEntryExternalReferenceCode,
 			ServiceContext serviceContext)
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.fetchCommercePriceEntry(
+			_commercePriceEntryLocalService.fetchCommercePriceEntry(
 				commercePriceEntryId);
 
 		if ((commercePriceEntry == null) &&
 			Validator.isNotNull(priceEntryExternalReferenceCode)) {
 
 			commercePriceEntry =
-				commercePriceEntryLocalService.
-					fetchCommercePriceEntryByReferenceCode(
-						serviceContext.getCompanyId(),
-						priceEntryExternalReferenceCode);
+				_commercePriceEntryLocalService.
+					fetchCommercePriceEntryByExternalReferenceCode(
+						priceEntryExternalReferenceCode,
+						serviceContext.getCompanyId());
 		}
 
 		if (commercePriceEntry != null) {
@@ -142,7 +144,7 @@ public class CommerceTierPriceEntryServiceImpl
 	@Override
 	public CommerceTierPriceEntry addOrUpdateCommerceTierPriceEntry(
 			String externalReferenceCode, long commerceTierPriceEntryId,
-			long commercePriceEntryId, BigDecimal price, int minQuantity,
+			long commercePriceEntryId, BigDecimal price, BigDecimal minQuantity,
 			boolean bulkPricing, boolean discountDiscovery,
 			BigDecimal discountLevel1, BigDecimal discountLevel2,
 			BigDecimal discountLevel3, BigDecimal discountLevel4,
@@ -155,17 +157,17 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.fetchCommercePriceEntry(
+			_commercePriceEntryLocalService.fetchCommercePriceEntry(
 				commercePriceEntryId);
 
 		if ((commercePriceEntry == null) &&
 			Validator.isNotNull(priceEntryExternalReferenceCode)) {
 
 			commercePriceEntry =
-				commercePriceEntryLocalService.
-					fetchCommercePriceEntryByReferenceCode(
-						serviceContext.getCompanyId(),
-						priceEntryExternalReferenceCode);
+				_commercePriceEntryLocalService.
+					fetchCommercePriceEntryByExternalReferenceCode(
+						priceEntryExternalReferenceCode,
+						serviceContext.getCompanyId());
 		}
 
 		if (commercePriceEntry != null) {
@@ -206,39 +208,6 @@ public class CommerceTierPriceEntryServiceImpl
 	}
 
 	@Override
-	public CommerceTierPriceEntry fetchByExternalReferenceCode(
-			String externalReferenceCode, long companyId)
-		throws PortalException {
-
-		CommerceTierPriceEntry commerceTierPriceEntry =
-			commerceTierPriceEntryLocalService.fetchByExternalReferenceCode(
-				externalReferenceCode, companyId);
-
-		if (commerceTierPriceEntry != null) {
-			CommercePriceEntry commercePriceEntry =
-				commerceTierPriceEntry.getCommercePriceEntry();
-
-			_commercePriceListModelResourcePermission.check(
-				getPermissionChecker(),
-				commercePriceEntry.getCommercePriceListId(), ActionKeys.VIEW);
-		}
-
-		return commerceTierPriceEntry;
-	}
-
-	/**
-	 * @deprecated As of Athanasius (7.3.x)
-	 */
-	@Deprecated
-	@Override
-	public List<CommerceTierPriceEntry> fetchCommerceTierPriceEntries(
-			long companyId, int start, int end)
-		throws PortalException {
-
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public CommerceTierPriceEntry fetchCommerceTierPriceEntry(
 			long commerceTierPriceEntryId)
 		throws PortalException {
@@ -260,12 +229,35 @@ public class CommerceTierPriceEntryServiceImpl
 	}
 
 	@Override
+	public CommerceTierPriceEntry
+			fetchCommerceTierPriceEntryByExternalReferenceCode(
+				String externalReferenceCode, long companyId)
+		throws PortalException {
+
+		CommerceTierPriceEntry commerceTierPriceEntry =
+			commerceTierPriceEntryLocalService.
+				fetchCommerceTierPriceEntryByExternalReferenceCode(
+					externalReferenceCode, companyId);
+
+		if (commerceTierPriceEntry != null) {
+			CommercePriceEntry commercePriceEntry =
+				commerceTierPriceEntry.getCommercePriceEntry();
+
+			_commercePriceListModelResourcePermission.check(
+				getPermissionChecker(),
+				commercePriceEntry.getCommercePriceListId(), ActionKeys.VIEW);
+		}
+
+		return commerceTierPriceEntry;
+	}
+
+	@Override
 	public List<CommerceTierPriceEntry> getCommerceTierPriceEntries(
 			long commercePriceEntryId, int start, int end)
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryLocalService.getCommercePriceEntry(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
@@ -283,7 +275,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryLocalService.getCommercePriceEntry(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
@@ -299,7 +291,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryLocalService.getCommercePriceEntry(
 				commercePriceEntryId);
 
 		_commercePriceListModelResourcePermission.check(
@@ -348,7 +340,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.fetchCommercePriceEntry(
+			_commercePriceEntryLocalService.fetchCommercePriceEntry(
 				commercePriceEntryId);
 
 		if (commercePriceEntry != null) {
@@ -368,7 +360,7 @@ public class CommerceTierPriceEntryServiceImpl
 		throws PortalException {
 
 		CommercePriceEntry commercePriceEntry =
-			commercePriceEntryLocalService.getCommercePriceEntry(
+			_commercePriceEntryLocalService.getCommercePriceEntry(
 				commercePriceEntryId);
 
 		if (commercePriceEntry != null) {
@@ -377,14 +369,14 @@ public class CommerceTierPriceEntryServiceImpl
 				commercePriceEntry.getCommercePriceListId(), ActionKeys.UPDATE);
 		}
 
-		return commercePriceEntryLocalService.searchCommercePriceEntriesCount(
+		return _commercePriceEntryLocalService.searchCommercePriceEntriesCount(
 			companyId, commercePriceEntryId, keywords);
 	}
 
 	@Override
 	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
 			long commerceTierPriceEntryId, BigDecimal price,
-			BigDecimal promoPrice, int minQuantity,
+			BigDecimal promoPrice, BigDecimal minQuantity,
 			ServiceContext serviceContext)
 		throws PortalException {
 
@@ -401,20 +393,21 @@ public class CommerceTierPriceEntryServiceImpl
 
 		return commerceTierPriceEntryLocalService.updateCommerceTierPriceEntry(
 			commerceTierPriceEntryId, price, promoPrice, minQuantity,
-			serviceContext);
+			commercePriceEntry.isBulkPricing(), serviceContext);
 	}
 
 	@Override
 	public CommerceTierPriceEntry updateCommerceTierPriceEntry(
-			long commerceTierPriceEntryId, BigDecimal price, int minQuantity,
-			boolean bulkPricing, boolean discountDiscovery,
-			BigDecimal discountLevel1, BigDecimal discountLevel2,
-			BigDecimal discountLevel3, BigDecimal discountLevel4,
-			int displayDateMonth, int displayDateDay, int displayDateYear,
-			int displayDateHour, int displayDateMinute, int expirationDateMonth,
-			int expirationDateDay, int expirationDateYear,
-			int expirationDateHour, int expirationDateMinute,
-			boolean neverExpire, ServiceContext serviceContext)
+			long commerceTierPriceEntryId, BigDecimal price,
+			BigDecimal minQuantity, boolean bulkPricing,
+			boolean discountDiscovery, BigDecimal discountLevel1,
+			BigDecimal discountLevel2, BigDecimal discountLevel3,
+			BigDecimal discountLevel4, int displayDateMonth, int displayDateDay,
+			int displayDateYear, int displayDateHour, int displayDateMinute,
+			int expirationDateMonth, int expirationDateDay,
+			int expirationDateYear, int expirationDateHour,
+			int expirationDateMinute, boolean neverExpire,
+			ServiceContext serviceContext)
 		throws PortalException {
 
 		CommerceTierPriceEntry commerceTierPriceEntry =
@@ -454,11 +447,13 @@ public class CommerceTierPriceEntryServiceImpl
 			commerceTierPriceEntry, externalReferenceCode);
 	}
 
-	private static volatile ModelResourcePermission<CommercePriceList>
-		_commercePriceListModelResourcePermission =
-			ModelResourcePermissionFactory.getInstance(
-				CommerceTierPriceEntryServiceImpl.class,
-				"_commercePriceListModelResourcePermission",
-				CommercePriceList.class);
+	@Reference
+	private CommercePriceEntryLocalService _commercePriceEntryLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.commerce.price.list.model.CommercePriceList)"
+	)
+	private ModelResourcePermission<CommercePriceList>
+		_commercePriceListModelResourcePermission;
 
 }

@@ -1,20 +1,15 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.commerce.price.list.service;
 
+import com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel;
+import com.liferay.petra.function.UnsafeFunction;
 import com.liferay.portal.kernel.service.ServiceWrapper;
+import com.liferay.portal.kernel.service.persistence.BasePersistence;
+import com.liferay.portal.kernel.service.persistence.change.tracking.CTPersistence;
 
 /**
  * Provides a wrapper for {@link CommercePriceListOrderTypeRelLocalService}.
@@ -26,6 +21,10 @@ import com.liferay.portal.kernel.service.ServiceWrapper;
 public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	implements CommercePriceListOrderTypeRelLocalService,
 			   ServiceWrapper<CommercePriceListOrderTypeRelLocalService> {
+
+	public CommercePriceListOrderTypeRelLocalServiceWrapper() {
+		this(null);
+	}
 
 	public CommercePriceListOrderTypeRelLocalServiceWrapper(
 		CommercePriceListOrderTypeRelLocalService
@@ -46,21 +45,18 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @return the commerce price list order type rel that was added
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-		addCommercePriceListOrderTypeRel(
-			com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-				commercePriceListOrderTypeRel) {
+	public CommercePriceListOrderTypeRel addCommercePriceListOrderTypeRel(
+		CommercePriceListOrderTypeRel commercePriceListOrderTypeRel) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			addCommercePriceListOrderTypeRel(commercePriceListOrderTypeRel);
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-			addCommercePriceListOrderTypeRel(
-				long userId, long commercePriceListId, long commerceOrderTypeId,
-				int priority,
-				com.liferay.portal.kernel.service.ServiceContext serviceContext)
+	public CommercePriceListOrderTypeRel addCommercePriceListOrderTypeRel(
+			long userId, long commercePriceListId, long commerceOrderTypeId,
+			int priority,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListOrderTypeRelLocalService.
@@ -76,9 +72,8 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @return the new commerce price list order type rel
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-		createCommercePriceListOrderTypeRel(
-			long commercePriceListOrderTypeRelId) {
+	public CommercePriceListOrderTypeRel createCommercePriceListOrderTypeRel(
+		long commercePriceListOrderTypeRelId) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			createCommercePriceListOrderTypeRel(
@@ -109,10 +104,8 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @throws PortalException
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-			deleteCommercePriceListOrderTypeRel(
-				com.liferay.commerce.price.list.model.
-					CommercePriceListOrderTypeRel commercePriceListOrderTypeRel)
+	public CommercePriceListOrderTypeRel deleteCommercePriceListOrderTypeRel(
+			CommercePriceListOrderTypeRel commercePriceListOrderTypeRel)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListOrderTypeRelLocalService.
@@ -131,9 +124,8 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @throws PortalException if a commerce price list order type rel with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-			deleteCommercePriceListOrderTypeRel(
-				long commercePriceListOrderTypeRelId)
+	public CommercePriceListOrderTypeRel deleteCommercePriceListOrderTypeRel(
+			long commercePriceListOrderTypeRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListOrderTypeRelLocalService.
@@ -266,18 +258,16 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-		fetchCommercePriceListOrderTypeRel(
-			long commercePriceListOrderTypeRelId) {
+	public CommercePriceListOrderTypeRel fetchCommercePriceListOrderTypeRel(
+		long commercePriceListOrderTypeRelId) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			fetchCommercePriceListOrderTypeRel(commercePriceListOrderTypeRelId);
 	}
 
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-		fetchCommercePriceListOrderTypeRel(
-			long commercePriceListId, long commerceOrderTypeId) {
+	public CommercePriceListOrderTypeRel fetchCommercePriceListOrderTypeRel(
+		long commercePriceListId, long commerceOrderTypeId) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			fetchCommercePriceListOrderTypeRel(
@@ -292,7 +282,7 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @return the matching commerce price list order type rel, or <code>null</code> if a matching commerce price list order type rel could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
+	public CommercePriceListOrderTypeRel
 		fetchCommercePriceListOrderTypeRelByUuidAndCompanyId(
 			String uuid, long companyId) {
 
@@ -317,9 +307,8 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @throws PortalException if a commerce price list order type rel with the primary key could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-			getCommercePriceListOrderTypeRel(
-				long commercePriceListOrderTypeRelId)
+	public CommercePriceListOrderTypeRel getCommercePriceListOrderTypeRel(
+			long commercePriceListOrderTypeRelId)
 		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListOrderTypeRelLocalService.
@@ -335,7 +324,7 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @throws PortalException if a matching commerce price list order type rel could not be found
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
+	public CommercePriceListOrderTypeRel
 			getCommercePriceListOrderTypeRelByUuidAndCompanyId(
 				String uuid, long companyId)
 		throws com.liferay.portal.kernel.exception.PortalException {
@@ -356,32 +345,28 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @return the range of commerce price list order type rels
 	 */
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel>
-			getCommercePriceListOrderTypeRels(int start, int end) {
+	public java.util.List<CommercePriceListOrderTypeRel>
+		getCommercePriceListOrderTypeRels(int start, int end) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			getCommercePriceListOrderTypeRels(start, end);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel>
-			getCommercePriceListOrderTypeRels(long commercePriceListId) {
+	public java.util.List<CommercePriceListOrderTypeRel>
+		getCommercePriceListOrderTypeRels(long commercePriceListId) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			getCommercePriceListOrderTypeRels(commercePriceListId);
 	}
 
 	@Override
-	public java.util.List
-		<com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel>
-				getCommercePriceListOrderTypeRels(
-					long commercePriceListId, String name, int start, int end,
-					com.liferay.portal.kernel.util.OrderByComparator
-						<com.liferay.commerce.price.list.model.
-							CommercePriceListOrderTypeRel> orderByComparator)
-			throws com.liferay.portal.kernel.exception.PortalException {
+	public java.util.List<CommercePriceListOrderTypeRel>
+			getCommercePriceListOrderTypeRels(
+				long commercePriceListId, String name, int start, int end,
+				com.liferay.portal.kernel.util.OrderByComparator
+					<CommercePriceListOrderTypeRel> orderByComparator)
+		throws com.liferay.portal.kernel.exception.PortalException {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			getCommercePriceListOrderTypeRels(
@@ -460,13 +445,36 @@ public class CommercePriceListOrderTypeRelLocalServiceWrapper
 	 * @return the commerce price list order type rel that was updated
 	 */
 	@Override
-	public com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-		updateCommercePriceListOrderTypeRel(
-			com.liferay.commerce.price.list.model.CommercePriceListOrderTypeRel
-				commercePriceListOrderTypeRel) {
+	public CommercePriceListOrderTypeRel updateCommercePriceListOrderTypeRel(
+		CommercePriceListOrderTypeRel commercePriceListOrderTypeRel) {
 
 		return _commercePriceListOrderTypeRelLocalService.
 			updateCommercePriceListOrderTypeRel(commercePriceListOrderTypeRel);
+	}
+
+	@Override
+	public BasePersistence<?> getBasePersistence() {
+		return _commercePriceListOrderTypeRelLocalService.getBasePersistence();
+	}
+
+	@Override
+	public CTPersistence<CommercePriceListOrderTypeRel> getCTPersistence() {
+		return _commercePriceListOrderTypeRelLocalService.getCTPersistence();
+	}
+
+	@Override
+	public Class<CommercePriceListOrderTypeRel> getModelClass() {
+		return _commercePriceListOrderTypeRelLocalService.getModelClass();
+	}
+
+	@Override
+	public <R, E extends Throwable> R updateWithUnsafeFunction(
+			UnsafeFunction<CTPersistence<CommercePriceListOrderTypeRel>, R, E>
+				updateUnsafeFunction)
+		throws E {
+
+		return _commercePriceListOrderTypeRelLocalService.
+			updateWithUnsafeFunction(updateUnsafeFunction);
 	}
 
 	@Override

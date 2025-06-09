@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.data.engine.rest.dto.v2_0;
@@ -20,11 +11,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLField;
 import com.liferay.portal.vulcan.graphql.annotation.GraphQLName;
 import com.liferay.portal.vulcan.util.ObjectMapperUtil;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.annotation.Generated;
+
+import jakarta.validation.Valid;
+
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
 
@@ -32,12 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.annotation.Generated;
-
-import javax.validation.Valid;
-
-import javax.xml.bind.annotation.XmlRootElement;
+import java.util.function.Supplier;
 
 /**
  * @author Jeyvison Nascimento
@@ -59,42 +50,63 @@ public class DataLayoutRenderingContext implements Serializable {
 			DataLayoutRenderingContext.class, json);
 	}
 
-	@Schema
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getContainerId() {
+		if (_containerIdSupplier != null) {
+			containerId = _containerIdSupplier.get();
+
+			_containerIdSupplier = null;
+		}
+
 		return containerId;
 	}
 
 	public void setContainerId(String containerId) {
 		this.containerId = containerId;
+
+		_containerIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setContainerId(
 		UnsafeSupplier<String, Exception> containerIdUnsafeSupplier) {
 
-		try {
-			containerId = containerIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_containerIdSupplier = () -> {
+			try {
+				return containerIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String containerId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _containerIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	@Valid
 	public Map<String, Object> getDataRecordValues() {
+		if (_dataRecordValuesSupplier != null) {
+			dataRecordValues = _dataRecordValuesSupplier.get();
+
+			_dataRecordValuesSupplier = null;
+		}
+
 		return dataRecordValues;
 	}
 
 	public void setDataRecordValues(Map<String, Object> dataRecordValues) {
 		this.dataRecordValues = dataRecordValues;
+
+		_dataRecordValuesSupplier = null;
 	}
 
 	@JsonIgnore
@@ -102,160 +114,230 @@ public class DataLayoutRenderingContext implements Serializable {
 		UnsafeSupplier<Map<String, Object>, Exception>
 			dataRecordValuesUnsafeSupplier) {
 
-		try {
-			dataRecordValues = dataRecordValuesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_dataRecordValuesSupplier = () -> {
+			try {
+				return dataRecordValuesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Map<String, Object> dataRecordValues;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Map<String, Object>> _dataRecordValuesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getNamespace() {
+		if (_namespaceSupplier != null) {
+			namespace = _namespaceSupplier.get();
+
+			_namespaceSupplier = null;
+		}
+
 		return namespace;
 	}
 
 	public void setNamespace(String namespace) {
 		this.namespace = namespace;
+
+		_namespaceSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setNamespace(
 		UnsafeSupplier<String, Exception> namespaceUnsafeSupplier) {
 
-		try {
-			namespace = namespaceUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_namespaceSupplier = () -> {
+			try {
+				return namespaceUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String namespace;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _namespaceSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public String getPathThemeImages() {
+		if (_pathThemeImagesSupplier != null) {
+			pathThemeImages = _pathThemeImagesSupplier.get();
+
+			_pathThemeImagesSupplier = null;
+		}
+
 		return pathThemeImages;
 	}
 
 	public void setPathThemeImages(String pathThemeImages) {
 		this.pathThemeImages = pathThemeImages;
+
+		_pathThemeImagesSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setPathThemeImages(
 		UnsafeSupplier<String, Exception> pathThemeImagesUnsafeSupplier) {
 
-		try {
-			pathThemeImages = pathThemeImagesUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_pathThemeImagesSupplier = () -> {
+			try {
+				return pathThemeImagesUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected String pathThemeImages;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<String> _pathThemeImagesSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Boolean getReadOnly() {
+		if (_readOnlySupplier != null) {
+			readOnly = _readOnlySupplier.get();
+
+			_readOnlySupplier = null;
+		}
+
 		return readOnly;
 	}
 
 	public void setReadOnly(Boolean readOnly) {
 		this.readOnly = readOnly;
+
+		_readOnlySupplier = null;
 	}
 
 	@JsonIgnore
 	public void setReadOnly(
 		UnsafeSupplier<Boolean, Exception> readOnlyUnsafeSupplier) {
 
-		try {
-			readOnly = readOnlyUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_readOnlySupplier = () -> {
+			try {
+				return readOnlyUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Boolean readOnly;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Boolean> _readOnlySupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getScopeGroupId() {
+		if (_scopeGroupIdSupplier != null) {
+			scopeGroupId = _scopeGroupIdSupplier.get();
+
+			_scopeGroupIdSupplier = null;
+		}
+
 		return scopeGroupId;
 	}
 
 	public void setScopeGroupId(Long scopeGroupId) {
 		this.scopeGroupId = scopeGroupId;
+
+		_scopeGroupIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setScopeGroupId(
 		UnsafeSupplier<Long, Exception> scopeGroupIdUnsafeSupplier) {
 
-		try {
-			scopeGroupId = scopeGroupIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_scopeGroupIdSupplier = () -> {
+			try {
+				return scopeGroupIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long scopeGroupId;
 
-	@Schema
+	@JsonIgnore
+	private Supplier<Long> _scopeGroupIdSupplier;
+
+	@io.swagger.v3.oas.annotations.media.Schema
 	public Long getSiteGroupId() {
+		if (_siteGroupIdSupplier != null) {
+			siteGroupId = _siteGroupIdSupplier.get();
+
+			_siteGroupIdSupplier = null;
+		}
+
 		return siteGroupId;
 	}
 
 	public void setSiteGroupId(Long siteGroupId) {
 		this.siteGroupId = siteGroupId;
+
+		_siteGroupIdSupplier = null;
 	}
 
 	@JsonIgnore
 	public void setSiteGroupId(
 		UnsafeSupplier<Long, Exception> siteGroupIdUnsafeSupplier) {
 
-		try {
-			siteGroupId = siteGroupIdUnsafeSupplier.get();
-		}
-		catch (RuntimeException re) {
-			throw re;
-		}
-		catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		_siteGroupIdSupplier = () -> {
+			try {
+				return siteGroupIdUnsafeSupplier.get();
+			}
+			catch (RuntimeException runtimeException) {
+				throw runtimeException;
+			}
+			catch (Exception exception) {
+				throw new RuntimeException(exception);
+			}
+		};
 	}
 
 	@GraphQLField
 	@JsonProperty(access = JsonProperty.Access.READ_WRITE)
 	protected Long siteGroupId;
+
+	@JsonIgnore
+	private Supplier<Long> _siteGroupIdSupplier;
 
 	@Override
 	public boolean equals(Object object) {
@@ -286,6 +368,8 @@ public class DataLayoutRenderingContext implements Serializable {
 
 		sb.append("{");
 
+		String containerId = getContainerId();
+
 		if (containerId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -300,6 +384,8 @@ public class DataLayoutRenderingContext implements Serializable {
 			sb.append("\"");
 		}
 
+		Map<String, Object> dataRecordValues = getDataRecordValues();
+
 		if (dataRecordValues != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -309,6 +395,8 @@ public class DataLayoutRenderingContext implements Serializable {
 
 			sb.append(_toJSON(dataRecordValues));
 		}
+
+		String namespace = getNamespace();
 
 		if (namespace != null) {
 			if (sb.length() > 1) {
@@ -324,6 +412,8 @@ public class DataLayoutRenderingContext implements Serializable {
 			sb.append("\"");
 		}
 
+		String pathThemeImages = getPathThemeImages();
+
 		if (pathThemeImages != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -338,6 +428,8 @@ public class DataLayoutRenderingContext implements Serializable {
 			sb.append("\"");
 		}
 
+		Boolean readOnly = getReadOnly();
+
 		if (readOnly != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -348,6 +440,8 @@ public class DataLayoutRenderingContext implements Serializable {
 			sb.append(readOnly);
 		}
 
+		Long scopeGroupId = getScopeGroupId();
+
 		if (scopeGroupId != null) {
 			if (sb.length() > 1) {
 				sb.append(", ");
@@ -357,6 +451,8 @@ public class DataLayoutRenderingContext implements Serializable {
 
 			sb.append(scopeGroupId);
 		}
+
+		Long siteGroupId = getSiteGroupId();
 
 		if (siteGroupId != null) {
 			if (sb.length() > 1) {
@@ -373,17 +469,17 @@ public class DataLayoutRenderingContext implements Serializable {
 		return sb.toString();
 	}
 
-	@Schema(
-		accessMode = Schema.AccessMode.READ_ONLY,
+	@io.swagger.v3.oas.annotations.media.Schema(
+		accessMode = io.swagger.v3.oas.annotations.media.Schema.AccessMode.READ_ONLY,
 		defaultValue = "com.liferay.data.engine.rest.dto.v2_0.DataLayoutRenderingContext",
 		name = "x-class-name"
 	)
 	public String xClassName;
 
 	private static String _escape(Object object) {
-		String string = String.valueOf(object);
-
-		return string.replaceAll("\"", "\\\\\"");
+		return StringUtil.replace(
+			String.valueOf(object), _JSON_ESCAPE_STRINGS[0],
+			_JSON_ESCAPE_STRINGS[1]);
 	}
 
 	private static boolean _isArray(Object value) {
@@ -409,7 +505,7 @@ public class DataLayoutRenderingContext implements Serializable {
 			Map.Entry<String, ?> entry = iterator.next();
 
 			sb.append("\"");
-			sb.append(entry.getKey());
+			sb.append(_escape(entry.getKey()));
 			sb.append("\": ");
 
 			Object value = entry.getValue();
@@ -420,7 +516,10 @@ public class DataLayoutRenderingContext implements Serializable {
 				Object[] valueArray = (Object[])value;
 
 				for (int i = 0; i < valueArray.length; i++) {
-					if (valueArray[i] instanceof String) {
+					if (valueArray[i] instanceof Map) {
+						sb.append(_toJSON((Map<String, ?>)valueArray[i]));
+					}
+					else if (valueArray[i] instanceof String) {
 						sb.append("\"");
 						sb.append(valueArray[i]);
 						sb.append("\"");
@@ -441,7 +540,7 @@ public class DataLayoutRenderingContext implements Serializable {
 			}
 			else if (value instanceof String) {
 				sb.append("\"");
-				sb.append(value);
+				sb.append(_escape(value));
 				sb.append("\"");
 			}
 			else {
@@ -457,5 +556,12 @@ public class DataLayoutRenderingContext implements Serializable {
 
 		return sb.toString();
 	}
+
+	private static final String[][] _JSON_ESCAPE_STRINGS = {
+		{"\\", "\"", "\b", "\f", "\n", "\r", "\t"},
+		{"\\\\", "\\\"", "\\b", "\\f", "\\n", "\\r", "\\t"}
+	};
+
+	private Map<String, Serializable> _extendedProperties;
 
 }

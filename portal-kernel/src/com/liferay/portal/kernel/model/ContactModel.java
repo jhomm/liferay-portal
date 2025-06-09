@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.kernel.model;
@@ -300,32 +291,32 @@ public interface ContactModel
 	public void setLastName(String lastName);
 
 	/**
-	 * Returns the prefix ID of this contact.
+	 * Returns the prefix list type ID of this contact.
 	 *
-	 * @return the prefix ID of this contact
+	 * @return the prefix list type ID of this contact
 	 */
-	public long getPrefixId();
+	public long getPrefixListTypeId();
 
 	/**
-	 * Sets the prefix ID of this contact.
+	 * Sets the prefix list type ID of this contact.
 	 *
-	 * @param prefixId the prefix ID of this contact
+	 * @param prefixListTypeId the prefix list type ID of this contact
 	 */
-	public void setPrefixId(long prefixId);
+	public void setPrefixListTypeId(long prefixListTypeId);
 
 	/**
-	 * Returns the suffix ID of this contact.
+	 * Returns the suffix list type ID of this contact.
 	 *
-	 * @return the suffix ID of this contact
+	 * @return the suffix list type ID of this contact
 	 */
-	public long getSuffixId();
+	public long getSuffixListTypeId();
 
 	/**
-	 * Sets the suffix ID of this contact.
+	 * Sets the suffix list type ID of this contact.
 	 *
-	 * @param suffixId the suffix ID of this contact
+	 * @param suffixListTypeId the suffix list type ID of this contact
 	 */
-	public void setSuffixId(long suffixId);
+	public void setSuffixListTypeId(long suffixListTypeId);
 
 	/**
 	 * Returns the male of this contact.
@@ -514,5 +505,9 @@ public interface ContactModel
 
 	@Override
 	public Contact cloneWithOriginalValues();
+
+	public default String toXmlString() {
+		return null;
+	}
 
 }

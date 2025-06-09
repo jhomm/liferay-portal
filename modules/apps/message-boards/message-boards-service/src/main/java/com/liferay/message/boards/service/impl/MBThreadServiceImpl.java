@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.service.impl;
@@ -24,6 +15,7 @@ import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.message.boards.service.base.MBThreadServiceBaseImpl;
 import com.liferay.message.boards.service.persistence.MBMessageFinder;
 import com.liferay.message.boards.service.persistence.impl.constants.MBPersistenceConstants;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.aop.AopService;
 import com.liferay.portal.kernel.configuration.Configuration;
@@ -41,7 +33,6 @@ import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.workflow.WorkflowConstants;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -124,15 +115,9 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 				start, end);
 		}
 
-		List<MBThread> threads = new ArrayList<>(threadIds.size());
-
-		for (long threadId : threadIds) {
-			MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
-
-			threads.add(thread);
-		}
-
-		return threads;
+		return TransformUtil.transform(
+			threadIds,
+			threadId -> mbThreadPersistence.findByPrimaryKey(threadId));
 	}
 
 	@Override
@@ -152,7 +137,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 		throws PortalException {
 
 		if (!_inlineSQLHelper.isEnabled(groupId)) {
-			return doGetGroupThreads(
+			return _getGroupThreads(
 				groupId, userId, status, subscribed, includeAnonymous, start,
 				end);
 		}
@@ -189,15 +174,9 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 			}
 		}
 
-		List<MBThread> threads = new ArrayList<>(threadIds.size());
-
-		for (long threadId : threadIds) {
-			MBThread thread = mbThreadPersistence.findByPrimaryKey(threadId);
-
-			threads.add(thread);
-		}
-
-		return threads;
+		return TransformUtil.transform(
+			threadIds,
+			threadId -> mbThreadPersistence.findByPrimaryKey(threadId));
 	}
 
 	@Override
@@ -278,7 +257,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 		boolean includeAnonymous) {
 
 		if (!_inlineSQLHelper.isEnabled(groupId)) {
-			return doGetGroupThreadsCount(
+			return _getGroupThreadsCount(
 				groupId, userId, status, subscribed, includeAnonymous);
 		}
 
@@ -517,7 +496,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 					"MBThread"));
 	}
 
-	protected List<MBThread> doGetGroupThreads(
+	private List<MBThread> _getGroupThreads(
 		long groupId, long userId, int status, boolean subscribed,
 		boolean includeAnonymous, int start, int end) {
 
@@ -543,7 +522,7 @@ public class MBThreadServiceImpl extends MBThreadServiceBaseImpl {
 			groupId, userId, false, queryDefinition);
 	}
 
-	protected int doGetGroupThreadsCount(
+	private int _getGroupThreadsCount(
 		long groupId, long userId, int status, boolean subscribed,
 		boolean includeAnonymous) {
 

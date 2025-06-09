@@ -1,16 +1,7 @@
 <%--
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 --%>
 
@@ -30,44 +21,40 @@
 	<aui:input name="redirect" type="hidden" value="<%= configurationRenderURL %>" />
 
 	<liferay-frontend:edit-form-body>
-		<liferay-frontend:fieldset-group>
-			<liferay-frontend:fieldset>
-				<div class="display-template">
-					<liferay-template:template-selector
-						className="<%= AssetCategory.class.getName() %>"
-						displayStyle="<%= assetCategoriesNavigationPortletInstanceConfiguration.displayStyle() %>"
-						displayStyleGroupId="<%= assetCategoriesNavigationDisplayContext.getDisplayStyleGroupId() %>"
-						refreshURL="<%= configurationRenderURL %>"
-						showEmptyOption="<%= true %>"
-					/>
-				</div>
+		<liferay-frontend:fieldset>
+			<div class="display-template">
+				<liferay-template:template-selector
+					className="<%= AssetCategory.class.getName() %>"
+					displayStyle="<%= assetCategoriesNavigationPortletInstanceConfiguration.displayStyle() %>"
+					displayStyleGroupId="<%= assetCategoriesNavigationDisplayContext.getDisplayStyleGroupId() %>"
+					refreshURL="<%= configurationRenderURL %>"
+					showEmptyOption="<%= true %>"
+				/>
+			</div>
 
-				<aui:select label="vocabularies" name="preferences--allAssetVocabularies--">
-					<aui:option label="all" selected="<%= assetCategoriesNavigationPortletInstanceConfiguration.allAssetVocabularies() %>" value="<%= true %>" />
-					<aui:option label="filter[action]" selected="<%= !assetCategoriesNavigationPortletInstanceConfiguration.allAssetVocabularies() %>" value="<%= false %>" />
-				</aui:select>
+			<aui:select label="vocabularies" name="preferences--allAssetVocabularies--">
+				<aui:option label="all" selected="<%= assetCategoriesNavigationPortletInstanceConfiguration.allAssetVocabularies() %>" value="<%= true %>" />
+				<aui:option label="filter[action]" selected="<%= !assetCategoriesNavigationPortletInstanceConfiguration.allAssetVocabularies() %>" value="<%= false %>" />
+			</aui:select>
 
-				<aui:input name="preferences--assetVocabularyIds--" type="hidden" />
+			<aui:input name="preferences--assetVocabularyIds--" type="hidden" />
 
-				<div class="<%= assetCategoriesNavigationPortletInstanceConfiguration.allAssetVocabularies() ? "hide" : "" %>" id="<portlet:namespace />assetVocabulariesBoxes">
-					<liferay-ui:input-move-boxes
-						leftBoxName="currentAssetVocabularyIds"
-						leftList="<%= assetCategoriesNavigationDisplayContext.getCurrentVocabularyNames() %>"
-						leftReorder="<%= Boolean.TRUE.toString() %>"
-						leftTitle="current"
-						rightBoxName="availableAssetVocabularyIds"
-						rightList="<%= assetCategoriesNavigationDisplayContext.getAvailableVocabularyNames() %>"
-						rightTitle="available"
-					/>
-				</div>
-			</liferay-frontend:fieldset>
-		</liferay-frontend:fieldset-group>
+			<div class="<%= assetCategoriesNavigationPortletInstanceConfiguration.allAssetVocabularies() ? "hide" : "" %>" id="<portlet:namespace />assetVocabulariesBoxes">
+				<liferay-ui:input-move-boxes
+					leftBoxName="currentAssetVocabularyIds"
+					leftList="<%= assetCategoriesNavigationDisplayContext.getCurrentVocabularyNames() %>"
+					leftReorder="<%= Boolean.TRUE.toString() %>"
+					leftTitle="current"
+					rightBoxName="availableAssetVocabularyIds"
+					rightList="<%= assetCategoriesNavigationDisplayContext.getAvailableVocabularyNames() %>"
+					rightTitle="available"
+				/>
+			</div>
+		</liferay-frontend:fieldset>
 	</liferay-frontend:edit-form-body>
 
 	<liferay-frontend:edit-form-footer>
-		<aui:button type="submit" />
-
-		<aui:button type="cancel" />
+		<liferay-frontend:edit-form-buttons />
 	</liferay-frontend:edit-form-footer>
 </liferay-frontend:edit-form>
 
@@ -77,7 +64,7 @@
 
 		Liferay.Util.postForm(form, {
 			data: {
-				assetVocabularyIds: Liferay.Util.listSelect(
+				assetVocabularyIds: Liferay.Util.getSelectedOptionValues(
 					Liferay.Util.getFormElement(form, 'currentAssetVocabularyIds')
 				),
 			},

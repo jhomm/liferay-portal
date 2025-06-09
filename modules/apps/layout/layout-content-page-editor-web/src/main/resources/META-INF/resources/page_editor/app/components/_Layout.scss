@@ -1,6 +1,5 @@
-@import 'variables';
-
 $editablesBorderWidth: 1px;
+$editableTypes: 'link', 'rich-text', 'text';
 $emptyItemMinHeight: 180px;
 $emptyCollectionItemMinWidth: 124px;
 $emptyColumnMinWidth: 48px;
@@ -9,12 +8,31 @@ $dashedBorderWidth: 2px;
 
 html#{$cadmin-selector} {
 	.page-editor {
+		&.is-dragging {
+			.page-editor__fragment-content,
+			.empty {
+				opacity: 0.5;
+				transition: opacity 0.2s;
+			}
+
+			.drop-container .page-editor__fragment-content,
+			.drop-container .empty,
+			.drop-container.empty {
+				opacity: 1;
+			}
+		}
+
 		&__collection {
 			&__block {
 				box-shadow: inset 0 0 0 1px fade_out($cadmin-purple, 0.7);
 
 				&.empty {
 					box-shadow: inset 0 0 0 1px $cadmin-primary-l2;
+				}
+
+				&.disabled {
+					opacity: 40%;
+					pointer-events: none;
 				}
 			}
 
@@ -35,11 +53,10 @@ html#{$cadmin-selector} {
 				min-height: 80px;
 
 				&__title {
-					color: $cadmin-purple;
-					font-size: 12px;
+					color: $cadmin-purple-d3;
+					font-size: 14px;
 					font-style: italic;
-					padding-left: 8px;
-					padding-top: 8px;
+					font-weight: 500;
 				}
 			}
 		}
@@ -81,10 +98,21 @@ html#{$cadmin-selector} {
 			box-shadow: inset 0 0 0 1px $cadmin-primary-l2;
 		}
 
+		&__collection-item {
+			.page-editor__no-fragments-state {
+				background: fade_out($cadmin-purple-l4, 0.9);
+				border: $dashedBorderWidth dashed $cadmin-purple-l4;
+			}
+		}
+
 		&__col,
 		&__row,
 		&__collection-item {
 			position: relative;
+
+			.page-editor__no-fragments-state {
+				padding: 4vh 12% 6vh;
+			}
 
 			&:before {
 				$spacingUnit: 12px;
@@ -98,6 +126,11 @@ html#{$cadmin-selector} {
 				top: 0;
 				width: calc(100% - #{$spacingUnit * 2});
 			}
+		}
+
+		&__form-step {
+			box-shadow: inset 0 0 0 1px $cadmin-primary-l2;
+			height: 100%;
 		}
 
 		&__row.align-bottom,
@@ -128,23 +161,21 @@ html#{$cadmin-selector} {
 		}
 
 		&__container.empty,
-		&__row {
-			&.empty {
-				min-height: $emptyItemMinHeight;
+		&__row.empty {
+			min-height: $emptyItemMinHeight;
 
-				&.flex-column-reverse {
-					.page-editor__col {
-						flex: 1;
+			&.flex-column-reverse {
+				.page-editor__col {
+					flex: 1;
 
-						&__border {
-							min-height: $emptyItemMinHeight / 2;
-						}
+					&__border {
+						min-height: calc($emptyItemMinHeight / 2);
 					}
 				}
+			}
 
-				.page-editor__col {
-					min-height: $emptyItemMinHeight / 2;
-				}
+			.page-editor__col {
+				min-height: calc($emptyItemMinHeight / 2);
 			}
 		}
 
@@ -152,6 +183,10 @@ html#{$cadmin-selector} {
 			min-height: 16px;
 			min-width: 3ch;
 			transition: box-shadow ease 0.3s;
+
+			&:focus-visible {
+				outline: none;
+			}
 
 			&--hovered {
 				box-shadow: inset 0 0 0 $editablesBorderWidth $cadmin-primary-l1;
@@ -197,7 +232,23 @@ html#{$cadmin-selector} {
 
 			&--active {
 				box-shadow: inset 0 0 0 $editablesBorderWidth $cadmin-primary;
+
+				&:not(.page-editor__editable--mapped) {
+					@each $type in $editableTypes {
+						&[type='#{$type}'],
+						&[data-lfr-editable-type='#{$type}'] {
+							cursor: text;
+						}
+					}
+				}
 			}
+		}
+
+		&__row
+			> .page-editor__col.hovered:not(.active)
+			> .page-editor__col__border:after {
+			box-shadow: inset 0 0 0 2px $cadmin-primary-l1;
+			z-index: $portletTopperHoveredZIndex;
 		}
 
 		&__row.no-gutters > .page-editor__col:before {
@@ -214,18 +265,60 @@ html#{$cadmin-selector} {
 			left: 1px;
 		}
 
-		&__no-fragments-message {
+		&__no-fragments-state {
+			align-items: center;
 			background: $cadmin-primary-l3;
 			border: $dashedBorderWidth dashed $cadmin-primary-l2;
-			padding: 15vh 0;
+			border-radius: 8px;
+			// stylelint-disable-next-line property-no-unknown
+			container-type: inline-size;
+			justify-content: center;
+			padding: 15vh 12%;
+
+			&.page-editor__form-unmapped-state {
+				border: none;
+				box-shadow: inset 0 0 0 1px $cadmin-primary-l2;
+			}
+
+			&__message,
+			&__title {
+				font-family: $cadmin-font-family-base;
+				text-align: center;
+			}
+
+			&__message {
+				color: $secondary;
+				font-size: 14px;
+				margin: 0;
+			}
+
+			// stylelint-disable-next-line at-rule-no-unknown
+			@container (max-width: 100px) {
+				&__image {
+					display: none;
+				}
+
+				&__message {
+					overflow-wrap: anywhere;
+				}
+			}
+
+			// stylelint-disable-next-line at-rule-no-unknown
+			@container (max-height: 100px) {
+				&__image {
+					display: none;
+				}
+
+				&__message {
+					overflow-wrap: anywhere;
+				}
+			}
 
 			&__title {
-				color: $cadmin-gray-500;
-				font-family: $cadmin-font-family-base;
-				font-size: 14px;
+				color: $dark;
+				font-size: 16px;
 				font-weight: 600;
-				margin-top: 0;
-				text-align: center;
+				margin-bottom: 12px;
 			}
 		}
 
@@ -237,11 +330,8 @@ html#{$cadmin-selector} {
 			display: block;
 		}
 
-		.portlet-borderless .portlet-content {
-			padding: 0;
-		}
-
-		&__container.flex-row {
+		&__container.flex-row,
+		&__collection .flex-row {
 			.page-editor__collection-item.empty {
 				min-width: $emptyCollectionItemMinWidth;
 			}
@@ -251,7 +341,7 @@ html#{$cadmin-selector} {
 			}
 
 			.page-editor__row.empty .page-editor__col {
-				min-height: $emptyItemMinHeight / 2;
+				min-height: calc($emptyItemMinHeight / 2);
 				min-width: $emptyColumnMinWidth;
 			}
 		}
@@ -265,7 +355,7 @@ html#{$cadmin-selector} {
 		box-sizing: border-box;
 		outline-offset: -$editablesBorderWidth;
 
-		&--hovered {
+		&--hovered.page-editor__editable {
 			outline: solid $editablesBorderWidth $cadmin-primary-l1;
 		}
 
@@ -304,5 +394,11 @@ html#{$cadmin-selector} {
 		&--active {
 			outline: solid $editablesBorderWidth $cadmin-primary;
 		}
+	}
+
+	.custom-height .page-editor__no-fragments-state {
+		// stylelint-disable-next-line property-no-unknown
+		container-type: size;
+		padding: 0;
 	}
 }

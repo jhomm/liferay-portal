@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.bean.portlet.spring.extension.internal;
@@ -22,7 +13,7 @@ import com.liferay.bean.portlet.extension.BeanPortletMethodInvoker;
 import com.liferay.bean.portlet.extension.BeanPortletMethodType;
 import com.liferay.bean.portlet.extension.ScopedBean;
 import com.liferay.bean.portlet.extension.ViewRenderer;
-import com.liferay.bean.portlet.registration.BeanPortletRegistrar;
+import com.liferay.bean.portlet.registration.util.BeanPortletRegistrarUtil;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringPortletRequestScope;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringPortletSessionScope;
 import com.liferay.bean.portlet.spring.extension.internal.scope.SpringRedirectScope;
@@ -34,8 +25,40 @@ import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.portlet.async.PortletAsyncListenerFactory;
 import com.liferay.portal.kernel.portlet.async.PortletAsyncScopeManagerFactory;
 import com.liferay.portal.kernel.util.HashMapDictionaryBuilder;
-import com.liferay.portal.kernel.util.ServiceProxyFactory;
 import com.liferay.portal.kernel.util.Validator;
+
+import jakarta.portlet.ActionParameters;
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.EventPortlet;
+import jakarta.portlet.HeaderPortlet;
+import jakarta.portlet.MimeResponse;
+import jakarta.portlet.Portlet;
+import jakarta.portlet.PortletAsyncListener;
+import jakarta.portlet.PortletConfig;
+import jakarta.portlet.PortletContext;
+import jakarta.portlet.PortletException;
+import jakarta.portlet.PortletMode;
+import jakarta.portlet.PortletRequest;
+import jakarta.portlet.PortletRequestDispatcher;
+import jakarta.portlet.PortletResponse;
+import jakarta.portlet.PortletSession;
+import jakarta.portlet.RenderResponse;
+import jakarta.portlet.ResourceRequest;
+import jakarta.portlet.ResourceResponse;
+import jakarta.portlet.ResourceServingPortlet;
+import jakarta.portlet.annotations.ActionMethod;
+import jakarta.portlet.annotations.DestroyMethod;
+import jakarta.portlet.annotations.EventMethod;
+import jakarta.portlet.annotations.RenderMethod;
+import jakarta.portlet.annotations.ServeResourceMethod;
+import jakarta.portlet.filter.ActionFilter;
+import jakarta.portlet.filter.EventFilter;
+import jakarta.portlet.filter.HeaderFilter;
+import jakarta.portlet.filter.RenderFilter;
+import jakarta.portlet.filter.ResourceFilter;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpSession;
 
 import java.io.PrintWriter;
 
@@ -50,39 +73,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-
-import javax.portlet.ActionParameters;
-import javax.portlet.ActionRequest;
-import javax.portlet.EventPortlet;
-import javax.portlet.HeaderPortlet;
-import javax.portlet.MimeResponse;
-import javax.portlet.Portlet;
-import javax.portlet.PortletAsyncListener;
-import javax.portlet.PortletConfig;
-import javax.portlet.PortletContext;
-import javax.portlet.PortletException;
-import javax.portlet.PortletMode;
-import javax.portlet.PortletRequest;
-import javax.portlet.PortletRequestDispatcher;
-import javax.portlet.PortletResponse;
-import javax.portlet.PortletSession;
-import javax.portlet.RenderResponse;
-import javax.portlet.ResourceRequest;
-import javax.portlet.ResourceResponse;
-import javax.portlet.ResourceServingPortlet;
-import javax.portlet.annotations.ActionMethod;
-import javax.portlet.annotations.DestroyMethod;
-import javax.portlet.annotations.EventMethod;
-import javax.portlet.annotations.RenderMethod;
-import javax.portlet.annotations.ServeResourceMethod;
-import javax.portlet.filter.ActionFilter;
-import javax.portlet.filter.EventFilter;
-import javax.portlet.filter.HeaderFilter;
-import javax.portlet.filter.RenderFilter;
-import javax.portlet.filter.ResourceFilter;
-
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpSession;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -128,7 +118,7 @@ public class SpringBeanPortletExtension {
 			}
 		}
 		catch (ClassNotFoundException classNotFoundException) {
-			_log.error(classNotFoundException, classNotFoundException);
+			_log.error(classNotFoundException);
 		}
 	}
 
@@ -233,7 +223,7 @@ public class SpringBeanPortletExtension {
 
 				@Override
 				public void invokeWithActiveScopes(
-						List<BeanPortletMethod> beanMethods,
+						List<BeanPortletMethod> beanPortletMethods,
 						PortletConfig portletConfig,
 						PortletRequest portletRequest,
 						PortletResponse portletResponse)
@@ -244,8 +234,8 @@ public class SpringBeanPortletExtension {
 							() -> new SpringScopedBeanManager(
 								portletConfig, portletRequest, portletResponse),
 							() -> _invokePortletBeanMethods(
-								beanMethods, portletRequest, portletResponse,
-								portletConfig));
+								beanPortletMethods, portletRequest,
+								portletResponse, portletConfig));
 				}
 
 				private void _invokePortletBeanMethods(
@@ -278,7 +268,7 @@ public class SpringBeanPortletExtension {
 			};
 
 		_serviceRegistrations.addAll(
-			_beanPortletRegistrar.register(
+			BeanPortletRegistrarUtil.register(
 				new SpringBeanFilterMethodFactory(_configurableBeanFactory),
 				beanFilterMethodInvoker,
 				new SpringBeanPortletMethodFactory(_configurableBeanFactory),
@@ -304,7 +294,8 @@ public class SpringBeanPortletExtension {
 	public void step5ApplicationScopeBeforeDestroyed(
 		ServletContext servletContext) {
 
-		_beanPortletRegistrar.unregister(_serviceRegistrations, servletContext);
+		BeanPortletRegistrarUtil.unregister(
+			_serviceRegistrations, servletContext);
 
 		_serviceRegistrations.clear();
 	}
@@ -509,7 +500,8 @@ public class SpringBeanPortletExtension {
 
 			if (!className.startsWith("org.springframework")) {
 				_log.error(
-					"Unable to discover methods in class " + clazz.getName());
+					"Unable to discover methods in class " + clazz.getName(),
+					throwable);
 			}
 
 			return false;
@@ -539,11 +531,6 @@ public class SpringBeanPortletExtension {
 
 	private static final Log _log = LogFactoryUtil.getLog(
 		SpringBeanPortletExtension.class);
-
-	private static volatile BeanPortletRegistrar _beanPortletRegistrar =
-		ServiceProxyFactory.newServiceTrackedInstance(
-			BeanPortletRegistrar.class, SpringBeanPortletExtension.class,
-			"_beanPortletRegistrar", true);
 
 	private final Set<Class<?>> _annotatedClasses = new HashSet<>();
 	private final ApplicationContext _applicationContext;

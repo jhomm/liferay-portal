@@ -1,19 +1,10 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ServiceProvider from 'commerce-frontend-js/ServiceProvider/index';
-import {CLOSE_MODAL} from 'commerce-frontend-js/utilities/eventsDefinitions';
+import {CommerceServiceProvider, commerceEvents} from 'commerce-frontend-js';
+import {openToast} from 'frontend-js-components-web';
 import {createPortletURL} from 'frontend-js-web';
 
 export default function ({
@@ -21,24 +12,36 @@ export default function ({
 	editCommerceOrderTypePortletURL,
 	namespace,
 }) {
-	const CommerceOrderTypeResource = ServiceProvider.AdminOrderAPI('v1');
+	const CommerceOrderTypeResource =
+		CommerceServiceProvider.AdminOrderAPI('v1');
 
 	const form = document.getElementById(`${namespace}fm`);
 
 	form.addEventListener('submit', (event) => {
 		event.preventDefault();
 
-		const description = form.querySelector(`#${namespace}description`)
-			.value;
+		const description = form.querySelector(
+			`#${namespace}description`
+		).value;
 		const name = form.querySelector(`#${namespace}name`).value;
+
+		if (!name) {
+			openToast({
+				message: Liferay.Language.get('please-enter-a-valid-name'),
+				title: Liferay.Language.get('error'),
+				type: 'danger',
+			});
+
+			return;
+		}
 
 		const orderTypeData = {
 			description: {[defaultLanguageId]: description},
 			name: {[defaultLanguageId]: name},
 		};
 
-		return CommerceOrderTypeResource.addOrderType(orderTypeData).then(
-			(payload) => {
+		return CommerceOrderTypeResource.addOrderType(orderTypeData)
+			.then((payload) => {
 				const redirectURL = createPortletURL(
 					editCommerceOrderTypePortletURL
 				);
@@ -49,7 +52,7 @@ export default function ({
 				);
 				redirectURL.searchParams.append('p_auth', Liferay.authToken);
 
-				window.parent.Liferay.fire(CLOSE_MODAL, {
+				window.parent.Liferay.fire(commerceEvents.CLOSE_MODAL, {
 					redirectURL: redirectURL.toString(),
 					successNotification: {
 						message: Liferay.Language.get(
@@ -58,7 +61,21 @@ export default function ({
 						showSuccessNotification: true,
 					},
 				});
-			}
-		);
+			})
+			.catch((error) => {
+				const errorsMap = {
+					'please-enter-a-valid-name': Liferay.Language.get(
+						'please-enter-a-valid-name'
+					),
+				};
+
+				openToast({
+					message:
+						errorsMap[error.message] ||
+						Liferay.Language.get('an-unexpected-error-occurred'),
+					title: Liferay.Language.get('error'),
+					type: 'danger',
+				});
+			});
 	});
 }

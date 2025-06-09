@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.odata.entity;
@@ -39,6 +30,12 @@ public class ComplexEntityField extends EntityField {
 	 * @review
 	 */
 	public ComplexEntityField(String name, List<EntityField> entityFields) {
+		this(name, entityFields, name);
+	}
+
+	public ComplexEntityField(
+		String name, List<EntityField> entityFields, String typeKey) {
+
 		super(
 			name, EntityField.Type.COMPLEX, locale -> name, locale -> name,
 			fieldValue -> String.valueOf(fieldValue));
@@ -53,6 +50,19 @@ public class ComplexEntityField extends EntityField {
 				_entityFieldsMap.put(entityField.getName(), entityField);
 			}
 		}
+
+		_typeKey = typeKey;
+	}
+
+	public ComplexEntityField(
+		String name, Map<String, EntityField> entityFieldsMap, String typeKey) {
+
+		super(
+			name, EntityField.Type.COMPLEX, locale -> name, locale -> name,
+			fieldValue -> String.valueOf(fieldValue));
+
+		_entityFieldsMap = entityFieldsMap;
+		_typeKey = typeKey;
 	}
 
 	/**
@@ -65,15 +75,22 @@ public class ComplexEntityField extends EntityField {
 		return _entityFieldsMap;
 	}
 
+	public String getTypeKey() {
+		return _typeKey;
+	}
+
 	@Override
 	public String toString() {
 		Type type = getType();
 
+		Map<String, EntityField> entityFieldsMap = getEntityFieldsMap();
+
 		return StringBundler.concat(
-			"{entityFields: ", _entityFieldsMap.toString(), ", name: ",
-			getName(), ", type: ", type.name(), "}");
+			"{entityFields: ", entityFieldsMap.keySet(), ", name: ", getName(),
+			", type: ", type.name(), ", typeKey: ", getTypeKey(), "}");
 	}
 
 	private final Map<String, EntityField> _entityFieldsMap;
+	private final String _typeKey;
 
 }

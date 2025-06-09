@@ -1,19 +1,11 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.index;
 
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
@@ -50,18 +42,18 @@ public class AnalyzeIndexRequestExecutorImpl
 		AnalyzeRequest analyzeRequest = createAnalyzeRequest(
 			analyzeIndexRequest);
 
-		AnalyzeResponse analyzeResponse = getAnalyzeResponse(
+		AnalyzeResponse analyzeResponse = _getAnalyzeResponse(
 			analyzeRequest, analyzeIndexRequest);
 
 		AnalyzeIndexResponse analyzeIndexResponse = new AnalyzeIndexResponse();
 
 		if (analyzeResponse.detail() != null) {
-			processDetailAnalyzeResponse(
+			_processDetailAnalyzeResponse(
 				analyzeIndexResponse, analyzeResponse.detail());
 		}
 		else {
 			List<AnalysisIndexResponseToken> analysisIndexResponseTokens =
-				translateAnalyzeResponseTokens(analyzeResponse.getTokens());
+				_translateAnalyzeResponseTokens(analyzeResponse.getTokens());
 
 			analyzeIndexResponse.addAnalysisIndexResponseTokens(
 				analysisIndexResponseTokens);
@@ -131,7 +123,7 @@ public class AnalyzeIndexRequestExecutorImpl
 		return customAnalyzerBuilder.build(analyzeIndexRequest.getTexts());
 	}
 
-	protected AnalyzeResponse getAnalyzeResponse(
+	private AnalyzeResponse _getAnalyzeResponse(
 		AnalyzeRequest analyzeRequest,
 		AnalyzeIndexRequest analyzeIndexRequest) {
 
@@ -151,7 +143,7 @@ public class AnalyzeIndexRequestExecutorImpl
 		}
 	}
 
-	protected void processDetailAnalyzeResponse(
+	private void _processDetailAnalyzeResponse(
 		AnalyzeIndexResponse analyzeIndexResponse,
 		DetailAnalyzeResponse detailAnalyzeResponse) {
 
@@ -162,7 +154,7 @@ public class AnalyzeIndexRequestExecutorImpl
 			String analyzerName = analyzeTokenList.getName();
 
 			List<AnalysisIndexResponseToken> analysisIndexResponseTokens =
-				translateAnalyzeResponseTokens(
+				_translateAnalyzeResponseTokens(
 					ListUtil.fromArray(analyzeTokenList.getTokens()));
 
 			AnalyzeIndexResponse.DetailsAnalyzer detailsAnalyzer =
@@ -205,7 +197,7 @@ public class AnalyzeIndexRequestExecutorImpl
 				String tokenFilterName = analyzeTokenList.getName();
 
 				List<AnalysisIndexResponseToken> analysisIndexResponseTokens =
-					translateAnalyzeResponseTokens(
+					_translateAnalyzeResponseTokens(
 						ListUtil.fromArray(analyzeTokenList.getTokens()));
 
 				AnalyzeIndexResponse.DetailsTokenFilter detailsTokenFilter =
@@ -223,7 +215,7 @@ public class AnalyzeIndexRequestExecutorImpl
 			String tokenizerName = tokenizerAnalyzeTokenList.getName();
 
 			List<AnalysisIndexResponseToken> analysisIndexResponseTokens =
-				translateAnalyzeResponseTokens(
+				_translateAnalyzeResponseTokens(
 					ListUtil.fromArray(tokenizerAnalyzeTokenList.getTokens()));
 
 			AnalyzeIndexResponse.DetailsTokenizer detailsTokenizer =
@@ -234,40 +226,32 @@ public class AnalyzeIndexRequestExecutorImpl
 		}
 	}
 
-	@Reference(unbind = "-")
-	protected void setElasticsearchClientResolver(
-		ElasticsearchClientResolver elasticsearchClientResolver) {
-
-		_elasticsearchClientResolver = elasticsearchClientResolver;
-	}
-
-	protected List<AnalysisIndexResponseToken> translateAnalyzeResponseTokens(
+	private List<AnalysisIndexResponseToken> _translateAnalyzeResponseTokens(
 		List<AnalyzeResponse.AnalyzeToken> analyzeTokens) {
 
-		List<AnalysisIndexResponseToken> analysisIndexResponseTokens =
-			new ArrayList<>();
+		return TransformUtil.transform(
+			analyzeTokens,
+			analyzeToken -> {
+				AnalysisIndexResponseToken analysisIndexResponseToken =
+					new AnalysisIndexResponseToken(analyzeToken.getTerm());
 
-		for (AnalyzeResponse.AnalyzeToken analyzeToken : analyzeTokens) {
-			AnalysisIndexResponseToken analysisIndexResponseToken =
-				new AnalysisIndexResponseToken(analyzeToken.getTerm());
+				analysisIndexResponseToken.setAttributes(
+					analyzeToken.getAttributes());
+				analysisIndexResponseToken.setEndOffset(
+					analyzeToken.getEndOffset());
+				analysisIndexResponseToken.setPosition(
+					analyzeToken.getPosition());
+				analysisIndexResponseToken.setPositionLength(
+					analyzeToken.getPositionLength());
+				analysisIndexResponseToken.setStartOffset(
+					analyzeToken.getStartOffset());
+				analysisIndexResponseToken.setType(analyzeToken.getType());
 
-			analysisIndexResponseToken.setAttributes(
-				analyzeToken.getAttributes());
-			analysisIndexResponseToken.setEndOffset(
-				analyzeToken.getEndOffset());
-			analysisIndexResponseToken.setPosition(analyzeToken.getPosition());
-			analysisIndexResponseToken.setPositionLength(
-				analyzeToken.getPositionLength());
-			analysisIndexResponseToken.setStartOffset(
-				analyzeToken.getStartOffset());
-			analysisIndexResponseToken.setType(analyzeToken.getType());
-
-			analysisIndexResponseTokens.add(analysisIndexResponseToken);
-		}
-
-		return analysisIndexResponseTokens;
+				return analysisIndexResponseToken;
+			});
 	}
 
+	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
 
 }

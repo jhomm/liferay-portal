@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.message.boards.web.internal.social;
@@ -18,7 +9,7 @@ import com.liferay.message.boards.model.MBMessage;
 import com.liferay.message.boards.model.MBThread;
 import com.liferay.message.boards.service.MBMessageLocalService;
 import com.liferay.portal.kernel.exception.PortalException;
-import com.liferay.portal.kernel.json.JSONFactoryUtil;
+import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.social.BaseSocialActivityManager;
 import com.liferay.portal.kernel.social.SocialActivityManager;
@@ -45,11 +36,11 @@ public class MBThreadSocialActivityManager
 		throws PortalException {
 
 		if (type == SocialActivityConstants.TYPE_SUBSCRIBE) {
-			addSubscribeSocialActivity(
+			_addSubscribeSocialActivity(
 				userId, thread.getGroupId(), thread, extraData);
 		}
 		else if (type == SocialActivityConstants.TYPE_VIEW) {
-			addViewSocialActivity(
+			_addViewSocialActivity(
 				userId, thread, type, extraData, receiverUserId);
 		}
 		else {
@@ -57,11 +48,16 @@ public class MBThreadSocialActivityManager
 		}
 	}
 
-	protected void addSubscribeSocialActivity(
+	@Override
+	protected SocialActivityLocalService getSocialActivityLocalService() {
+		return _socialActivityLocalService;
+	}
+
+	private void _addSubscribeSocialActivity(
 			long userId, long groupId, MBThread thread, String extraData)
 		throws PortalException {
 
-		JSONObject extraDataJSONObject = JSONFactoryUtil.createJSONObject(
+		JSONObject extraDataJSONObject = _jsonFactory.createJSONObject(
 			extraData);
 
 		extraDataJSONObject.put("threadId", thread.getThreadId());
@@ -72,7 +68,7 @@ public class MBThreadSocialActivityManager
 			extraDataJSONObject.toString(), 0);
 	}
 
-	protected void addViewSocialActivity(
+	private void _addViewSocialActivity(
 			long userId, MBThread thread, int type, String extraData,
 			long receiverUserId)
 		throws PortalException {
@@ -89,10 +85,8 @@ public class MBThreadSocialActivityManager
 			rootMessage.getMessageId(), type, extraData, receiverUserId);
 	}
 
-	@Override
-	protected SocialActivityLocalService getSocialActivityLocalService() {
-		return _socialActivityLocalService;
-	}
+	@Reference
+	private JSONFactory _jsonFactory;
 
 	@Reference
 	private MBMessageLocalService _mbMessageLocalService;

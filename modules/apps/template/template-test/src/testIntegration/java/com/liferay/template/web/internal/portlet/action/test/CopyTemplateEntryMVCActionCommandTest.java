@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.template.web.internal.portlet.action.test;
@@ -17,7 +8,7 @@ package com.liferay.template.web.internal.portlet.action.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.dynamic.data.mapping.model.DDMTemplate;
 import com.liferay.dynamic.data.mapping.service.DDMTemplateLocalService;
-import com.liferay.info.item.InfoItemServiceTracker;
+import com.liferay.info.item.InfoItemServiceRegistry;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.Group;
@@ -47,12 +38,11 @@ import com.liferay.template.model.TemplateEntry;
 import com.liferay.template.service.TemplateEntryLocalService;
 import com.liferay.template.test.util.TemplateTestUtil;
 
+import jakarta.portlet.ActionRequest;
+import jakarta.portlet.ActionResponse;
+
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Stream;
-
-import javax.portlet.ActionRequest;
-import javax.portlet.ActionResponse;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -89,7 +79,7 @@ public class CopyTemplateEntryMVCActionCommandTest {
 		ServiceContextThreadLocal.pushServiceContext(_serviceContext);
 
 		_templateEntry = TemplateTestUtil.addAnyTemplateEntry(
-			_infoItemServiceTracker, _serviceContext);
+			_infoItemServiceRegistry, _serviceContext);
 	}
 
 	@Test
@@ -127,29 +117,30 @@ public class CopyTemplateEntryMVCActionCommandTest {
 
 		Assert.assertTrue(templateEntries.size() > 1);
 
+		TemplateEntry templateEntry = null;
+
 		DDMTemplate originalDDMTemplate =
 			_ddmTemplateLocalService.getDDMTemplate(
 				_templateEntry.getDDMTemplateId());
 
-		Stream<TemplateEntry> templateEntriesStream = templateEntries.stream();
+		for (TemplateEntry curTemplateEntry : templateEntries) {
+			DDMTemplate ddmTemplate = _ddmTemplateLocalService.fetchDDMTemplate(
+				curTemplateEntry.getDDMTemplateId());
 
-		Assert.assertTrue(
-			templateEntriesStream.map(
-				templateEntry -> _ddmTemplateLocalService.fetchDDMTemplate(
-					templateEntry.getDDMTemplateId())
-			).filter(
-				Objects::nonNull
-			).filter(
-				ddmTemplate -> Objects.equals(
-					name, ddmTemplate.getName(languageId))
-			).filter(
-				ddmTemplate -> Objects.equals(
-					description, ddmTemplate.getDescription(languageId))
-			).filter(
-				ddmTemplate -> Objects.equals(
-					originalDDMTemplate.getScript(), ddmTemplate.getScript())
-			).findAny(
-			).isPresent());
+			if ((ddmTemplate != null) &&
+				Objects.equals(name, ddmTemplate.getName(languageId)) &&
+				Objects.equals(
+					description, ddmTemplate.getDescription(languageId)) &&
+				Objects.equals(
+					originalDDMTemplate.getScript(), ddmTemplate.getScript())) {
+
+				templateEntry = curTemplateEntry;
+
+				break;
+			}
+		}
+
+		Assert.assertNotNull(templateEntry);
 	}
 
 	private MockLiferayPortletActionRequest
@@ -195,7 +186,7 @@ public class CopyTemplateEntryMVCActionCommandTest {
 	private Group _group;
 
 	@Inject
-	private InfoItemServiceTracker _infoItemServiceTracker;
+	private InfoItemServiceRegistry _infoItemServiceRegistry;
 
 	@Inject(filter = "mvc.command.name=/template/copy_template_entry")
 	private MVCActionCommand _mvcActionCommand;

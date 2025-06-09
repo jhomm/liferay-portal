@@ -1,15 +1,6 @@
 /**
- * Copyright (c) 2000-present Liferay, Inc. All rights reserved.
- *
- * This library is free software; you can redistribute it and/or modify it under
- * the terms of the GNU Lesser General Public License as published by the Free
- * Software Foundation; either version 2.1 of the License, or (at your option)
- * any later version.
- *
- * This library is distributed in the hope that it will be useful, but WITHOUT
- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
- * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more
- * details.
+ * SPDX-FileCopyrightText: (c) 2000 Liferay, Inc. https://liferay.com
+ * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
 package com.liferay.notifications.web.internal.portlet;
@@ -19,11 +10,11 @@ import com.liferay.notifications.web.internal.constants.NotificationsPortletKeys
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.portlet.BasePortletProvider;
-import com.liferay.portal.kernel.portlet.ViewPortletProvider;
+import com.liferay.portal.kernel.portlet.PortletProvider;
 
-import javax.portlet.PortletURL;
+import jakarta.portlet.PortletURL;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -32,12 +23,10 @@ import org.osgi.service.component.annotations.Reference;
  * @author Adolfo Pérez
  */
 @Component(
-	immediate = true,
 	property = "model.class.name=com.liferay.portal.kernel.model.UserNotificationEvent",
-	service = ViewPortletProvider.class
+	service = PortletProvider.class
 )
-public class NotificationsViewPortletProvider
-	extends BasePortletProvider implements ViewPortletProvider {
+public class NotificationsViewPortletProvider extends BasePortletProvider {
 
 	@Override
 	public String getPortletName() {
@@ -59,14 +48,16 @@ public class NotificationsViewPortletProvider
 		return getPortletURL(httpServletRequest);
 	}
 
-	@Reference(
-		target = "(javax.portlet.name=" + NotificationsPortletKeys.NOTIFICATIONS + ")",
-		unbind = "-"
-	)
-	protected void setPanelApp(PanelApp panelApp) {
-		_panelApp = panelApp;
+	@Override
+	public Action[] getSupportedActions() {
+		return _supportedActions;
 	}
 
+	@Reference(
+		target = "(jakarta.portlet.name=" + NotificationsPortletKeys.NOTIFICATIONS + ")"
+	)
 	private PanelApp _panelApp;
+
+	private final Action[] _supportedActions = {Action.VIEW};
 
 }
